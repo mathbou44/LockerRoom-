@@ -83,6 +83,9 @@ def _image(it):
             u = m.get("url")
             if u and re.search(r"\.(jpe?g|png|webp)|image", u, re.I):
                 return u
+    u = (it.findtext("image") or "").strip()          # ESPN : <image> dans chaque article
+    if u.startswith("http"):
+        return u
     enc = it.find("enclosure")
     if enc is not None and str(enc.get("type") or "").startswith("image"):
         return enc.get("url")
@@ -244,4 +247,7 @@ def pour(sports_client, joueurs=(), n=16, langue="fr"):
                         melange.append(x)
                     break
         melange = melange[:n]
+    avec = next((k for k, x in enumerate(melange) if x.get("image")), None)
+    if avec:                                     # la premiere nouvelle a l'ecran : une avec photo si possible
+        melange.insert(0, melange.pop(avec))
     return {"items": melange, "maj": c.get("maj"), "etat": c.get("etat") or {}}
