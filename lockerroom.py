@@ -22,6 +22,7 @@ import calcul
 import catalogue
 import ebay_compte
 import ebay_csv
+import nouvelles   # 24 oct 2026 : importe ici, avant les taches de fond (Render : « partially initialized module »)
 import sante
 import sports
 import valeurs
