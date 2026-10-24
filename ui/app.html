@@ -979,14 +979,19 @@ function demarrerAccueilLive(){
   chargerLive(true); S.tLive = setInterval(() => { if (!surAccueil()) { arreterAccueilLive(); return; } if (!document.hidden) chargerLive(false); }, 60000);
 }
 async function chargerLive(premier){
-  let L = null; try { L = await API.accueil_live(LANGUE); } catch (e) {}
+  // 24 oct 2026 : une reponse qui ne revient pas ne laisse plus la roue tourner (15 s, puis nouvel essai dans 10 s)
+  const delai = new Promise((_, non) => setTimeout(() => non(new Error('delai')), 15000));
+  let L = null; try { L = await Promise.race([API.accueil_live(LANGUE), delai]); } catch (e) { console.warn('accueil_live', e.message); }
   if (!surAccueil()) return;
   S.live = L || S.live;
-  $('#acc-pouls').innerHTML = htmlPouls(S.live);
-  const T = (S.live && S.live.pouls) || [], ok = T.filter(t => fraicheur(t) === 'vert').length, m = $('#pouls-etat');
-  if (m) m.innerHTML = !L ? '<span class="capsule rouge">Hors ligne</span>' : !T.length ? '' : ok === T.length
-    ? '<span class="capsule vert">✓ Tout est à jour</span>' : `<span class="capsule or">${ok} sur ${T.length} à jour</span>`;
-  if (premier || !S.newsVues) rendreNouvelles((S.live && S.live.nouvelles) || []);
+  try {
+    $('#acc-pouls').innerHTML = htmlPouls(S.live);
+    const T = (S.live && S.live.pouls) || [], ok = T.filter(t => fraicheur(t) === 'vert').length, m = $('#pouls-etat');
+    if (m) m.innerHTML = !L ? '<span class="capsule rouge">Hors ligne</span>' : !T.length ? '' : ok === T.length
+      ? '<span class="capsule vert">✓ Tout est à jour</span>' : `<span class="capsule or">${ok} sur ${T.length} à jour</span>`;
+    if (premier || !S.newsVues || !$('#acc-news .slide')) rendreNouvelles((S.live && S.live.nouvelles) || []);
+  } catch (e) { console.error('accueil live', e); }
+  if (!L) setTimeout(() => { if (surAccueil()) chargerLive(true); }, 10000);
 }
 // le pouls : chaque mise a jour automatique, sa derniere fois et la prochaine
 function fraicheur(t){
