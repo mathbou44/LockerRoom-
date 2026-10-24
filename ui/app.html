@@ -979,7 +979,7 @@ function demarrerAccueilLive(){
   chargerLive(true); S.tLive = setInterval(() => { if (!surAccueil()) { arreterAccueilLive(); return; } if (!document.hidden) chargerLive(false); }, 60000);
 }
 async function chargerLive(premier){
-  let L = null; try { L = await API.accueil_live(); } catch (e) {}
+  let L = null; try { L = await API.accueil_live(LANGUE); } catch (e) {}
   if (!surAccueil()) return;
   S.live = L || S.live;
   $('#acc-pouls').innerHTML = htmlPouls(S.live);
