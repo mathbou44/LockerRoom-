@@ -1617,7 +1617,7 @@ class Api:
     # -- 22 oct 2026 (Mathieu : « la meme app, tu choisis l'option vendeur ou acheteur pour separer
     # les fonctions et alleger le tout ; ca doit etre sexy et simple ») - volet ACHETEUR ------------
     # -- 23 oct 2026 : accueil « plein controle » (nouvelles + pouls des mises a jour), repris de Hall of Cardz --
-    def accueil_live(self):
+    def accueil_live(self, langue=None):
         import nouvelles
         try:
             nouvelles.rafraichir_si_besoin()
@@ -1644,7 +1644,8 @@ class Api:
         ordre = sorted(compte, key=lambda x: -compte[x])
         if principal not in ordre:
             ordre.insert(0, principal)
-        n = nouvelles.pour(ordre[:3], joueurs[:300])
+        lg = langue if langue in ("fr", "en") else (r.get("langue") or "fr")
+        n = nouvelles.pour(ordre[:3], joueurs[:300], langue=lg)
         st = ebay_compte.statut()
         pouls = []
         if st.get("connecte"):

@@ -157,6 +157,7 @@ def rafraichir(sports_voulus=("hockey", "football", "basketball", "baseball"), l
                 vus.add(cle)
                 cl = classer(x["titre"])
                 items.append(dict(x, source=x.pop("editeur") or nom.replace(" FR", ""), sport=sport, genre=genre,
+                                  langue="fr" if nom.endswith(" FR") else "en",
                                   type=cl[0] if cl else ("marche" if genre == "hobby" else "ligue"),
                                   libelle=cl[2] if cl else ("Marché des cartes" if genre == "hobby" else _LIGUE_FR[sport]),
                                   impact=cl[1] if cl else 0))
@@ -195,8 +196,31 @@ def rafraichir_si_besoin():
     return True
 
 
-def pour(sports_client, joueurs=(), n=16):
-    """Nouvelles d'un client : ses sports, celles qui nomment SES joueurs d'abord, sources melangees."""
+_RE_FR = re.compile(r"[àâçéèêëîïôûù]|\b(le|la|les|des|du|une|pour|avec|dans|sur|est|au|aux|et)\b", re.I)
+
+
+def langue_de(x):
+    """fr / en d'une nouvelle (les anciens caches n'ont pas le champ : on devine au titre)."""
+    return x.get("langue") or ("fr" if len(_RE_FR.findall(x.get("titre") or "")) >= 2 else "en")
+
+
+def _melanger(liste, n):
+    a_moi = [x for x in liste if x.get("joueur")]
+    par_source = {}
+    for x in liste:
+        if not x.get("joueur"):
+            par_source.setdefault(x["source"], []).append(x)
+    melange = list(a_moi[:6])
+    while len(melange) < n and any(par_source.values()):
+        for k in list(par_source):
+            if par_source[k]:
+                melange.append(par_source[k].pop(0))
+    return melange[:n]
+
+
+def pour(sports_client, joueurs=(), n=16, langue="fr"):
+    """Nouvelles d'un client : ses sports, celles qui nomment SES joueurs d'abord, sources melangees.
+    24 oct 2026 (Mathieu) : client anglophone = nouvelles en anglais ; francophone = bilingue (FR / EN en alternance)."""
     c = lire_cache()
     noms = {norm(j): j for j in joueurs or () if len(norm(j).split()) >= 2}
     tous = []
@@ -205,14 +229,19 @@ def pour(sports_client, joueurs=(), n=16):
             t = " " + norm(x["titre"]) + " "
             j = next((v for k, v in noms.items() if f" {k} " in t), None)
             tous.append(dict(x, joueur=j))
-    a_moi = [x for x in tous if x.get("joueur")]
-    reste = [x for x in tous if not x.get("joueur")]
-    par_source = {}
-    for x in reste:
-        par_source.setdefault(x["source"], []).append(x)
-    melange = list(a_moi[:6])
-    while len(melange) < n and any(par_source.values()):
-        for k in list(par_source):
-            if par_source[k]:
-                melange.append(par_source[k].pop(0))
-    return {"items": melange[:n], "maj": c.get("maj"), "etat": c.get("etat") or {}}
+    en = [x for x in tous if langue_de(x) == "en"]
+    fr = [x for x in tous if langue_de(x) == "fr"]
+    if langue == "en":
+        melange = _melanger(en or tous, n)
+    else:
+        a, b = _melanger(fr, n), _melanger(en, n)
+        melange = []
+        for i in range(n):                       # FR, EN, FR, EN... (une langue manque : l'autre complete)
+            for lst in ((a, b) if i % 2 == 0 else (b, a)):
+                if lst:
+                    x = lst.pop(0)
+                    if x not in melange:
+                        melange.append(x)
+                    break
+        melange = melange[:n]
+    return {"items": melange, "maj": c.get("maj"), "etat": c.get("etat") or {}}
