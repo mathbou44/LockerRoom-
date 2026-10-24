@@ -20,6 +20,7 @@ Cles et jetons restent dans des fichiers locaux, jamais renvoyes a l'ecran
 """
 import base64
 import json
+import re
 import os
 import secrets
 import time
@@ -106,6 +107,7 @@ SCOPES = [
     "https://api.ebay.com/oauth/api_scope/commerce.identity.readonly",
 ]
 SCOPE_ECRITURE = "https://api.ebay.com/oauth/api_scope/sell.inventory"      # mettre en vente, changer un prix
+SCOPE_MARKETING = "https://api.ebay.com/oauth/api_scope/sell.marketing"  # promouvoir une annonce (% choisi par le vendeur)
 SCOPE_MISES = "https://api.ebay.com/oauth/api_scope/buy.offer.auction"      # miser (API Offer : sandbox, ou production approuvee)
 
 
@@ -113,7 +115,7 @@ def scopes_demandes():
     c = _lire(chemin_cles())
     if os.environ.get("LOCKERROOM_MISES_APPROUVEES") == "1":
         c["mises_approuvees"] = True
-    out = list(SCOPES) + [SCOPE_ECRITURE]
+    out = list(SCOPES) + [SCOPE_ECRITURE, SCOPE_MARKETING]       # 24 oct 2026 - promotion des annonces (Promoted Listings)
     # 21 oct 2026 - buy.offer.auction est en « Limited Release » : un scope que le jeu de cles
     # n'a pas fait echouer TOUTE la connexion chez eBay (page /n/error). Seulement si permis.
     if c.get("mises_approuvees"):
@@ -457,6 +459,22 @@ def ventes_trading(jours=30):
     return tout
 
 
+def photo_item(item_id):
+    """Photo d'une de TES annonces, meme terminee (90 jours) : Trading GetItem, seulement les photos."""
+    item_id = str(item_id or "").strip()
+    if not re.fullmatch(r"\d{9,15}", item_id):
+        return None
+    corps = ('<?xml version="1.0" encoding="utf-8"?><GetItemRequest xmlns="urn:ebay:apis:eBLBaseComponents">'
+             f"<ItemID>{item_id}</ItemID><OutputSelector>PictureDetails</OutputSelector></GetItemRequest>")
+    try:
+        r = trading("GetItem", corps, fond=True)
+    except RuntimeError as e:
+        if "eBay a refusé" in str(e):
+            return None
+        raise
+    return _txt(r, "e:Item/e:PictureDetails/e:GalleryURL") or _txt(r, "e:Item/e:PictureDetails/e:PictureURL")
+
+
 def commandes(jours=90):
     depuis = (datetime.now(timezone.utc) - timedelta(days=jours)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
     tout, offset = [], 0
@@ -492,16 +510,18 @@ def jeton_application():
     return j["app_token"]
 
 
-def rechercher(q, categorie=None, prix_max=None, recentes=False, limite=50, fond=True):
+def rechercher(q, categorie=None, prix_max=None, recentes=False, limite=50, fond=True, encheres=False):
     """Annonces actives a prix fixe semblables : [{item_id, titre, prix_cad, url, photo}].
-    Cache partage (24 h ; 6 h pour les nouveautes) et compteur d'appels (appels_ebay)."""
+    Cache partage (24 h ; 6 h pour les nouveautes) et compteur d'appels (appels_ebay).
+    24 oct 2026 - encheres=True : les encans qui finissent le plus tot (prix = mise actuelle, fin, nb de mises)."""
     cle = appels_ebay.cle_recherche(environnement(), q=q[:100], categorie=categorie,
-                                     prix_max=round(float(prix_max), 2) if prix_max else None, recentes=bool(recentes), limite=int(limite))
-    deja = appels_ebay.cache_lire(cle, "recentes" if recentes else "marche")
+                                     prix_max=round(float(prix_max), 2) if prix_max else None, recentes=bool(recentes), limite=int(limite),
+                                     **({"encheres": True} if encheres else {}))
+    deja = appels_ebay.cache_lire(cle, "encheres" if encheres else "recentes" if recentes else "marche")
     if deja is not None:
         return deja
     appels_ebay.exiger("browse", fond)
-    filtres = ["buyingOptions:{FIXED_PRICE}"]
+    filtres = ["buyingOptions:{AUCTION}" if encheres else "buyingOptions:{FIXED_PRICE}"]
     if prix_max:
         filtres.append(f"price:[..{float(prix_max):.2f}]")
         filtres.append("priceCurrency:CAD")
@@ -510,6 +530,8 @@ def rechercher(q, categorie=None, prix_max=None, recentes=False, limite=50, fond
         p["category_ids"] = categorie
     if recentes:
         p["sort"] = "newlyListed"
+    if encheres:
+        p["sort"] = "endingSoonest"
     adresse = url("recherche") + "?" + urllib.parse.urlencode(p, quote_via=urllib.parse.quote)
     req = urllib.request.Request(adresse, headers={"Authorization": "Bearer " + jeton_application(), "Accept": "application/json",
                                                "X-EBAY-C-MARKETPLACE-ID": "EBAY_CA"})
@@ -527,7 +549,7 @@ def rechercher(q, categorie=None, prix_max=None, recentes=False, limite=50, fond
 def lire_recherche(d):
     out = []
     for it in d.get("itemSummaries") or []:
-        pr = it.get("price") or {}
+        pr = it.get("currentBidPrice") or it.get("price") or {}
         dev = pr.get("currency") or "CAD"
         if dev not in TAUX_CAD or not pr.get("value"):
             continue
@@ -536,7 +558,9 @@ def lire_recherche(d):
                     "prix_cad": round(float(pr["value"]) * TAUX_CAD[dev], 2),
                     "port_cad": round(float(port) * TAUX_CAD[dev], 2) if port not in (None, "") else None,
                     "url": it.get("itemWebUrl") or "", "photo": (it.get("image") or {}).get("imageUrl") or "",
-                    "vendeur": (it.get("seller") or {}).get("username") or ""})
+                    "vendeur": (it.get("seller") or {}).get("username") or "",
+                    "fin": it.get("itemEndDate"), "mises": it.get("bidCount"),
+                    "encan": "AUCTION" in (it.get("buyingOptions") or [])})
     return out
 
 

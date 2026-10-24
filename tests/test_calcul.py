@@ -455,7 +455,13 @@ class VoletAcheteur(unittest.TestCase):
         c.execute("INSERT INTO opportunites (item_id, titre, total, url, ref_prix, ratio, vu_le) VALUES ('9','x',40,'u',100,0.4,?)",
                   (lockerroom._maintenant(),))
         c.commit(); c.close()
-        d = a.acheteur_accueil()
+        import deals                     # 24 oct 2026 : sans les deals du chasseur partage (fichier du serveur)
+        lire_avant, deals.lire = deals.lire, lambda: {}
+        deals.chasser_si_besoin, chasser_avant = (lambda: False), deals.chasser_si_besoin
+        try:
+            d = a.acheteur_accueil()
+        finally:
+            deals.lire, deals.chasser_si_besoin = lire_avant, chasser_avant
         self.assertEqual(d["nb_deals"], 1)
         self.assertEqual(d["deals"][0]["rabais"], 60)
         self.assertGreater(d["deals"][0]["gain"], 40)

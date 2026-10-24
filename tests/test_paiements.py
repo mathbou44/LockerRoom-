@@ -40,7 +40,11 @@ SCRIPT = textwrap.dedent('''
 
     f = c.post("/api/forfait", json=[]).get_json()
     assert f["multi"] and f["forfait"] == "gratuit" and f["paiements"] and f["mode_paiement"] == "test", f
-    assert f["prix"] == {"montant": 1.0, "devise": "CAD", "intervalle": "month"} and f["photos_limite"] == 25, f
+    # 24 oct 2026 : nouveau compte = essai Pro de 14 jours (photos illimitees), puis 25 photos par mois
+    assert f["prix"] == {"montant": 1.0, "devise": "CAD", "intervalle": "month"} and f["essai"] and f["photos_limite"] is None, f
+    comptes.maj(cid, cree_le="2026-01-01T00:00:00")
+    f = c.post("/api/forfait", json=[]).get_json()
+    assert not f["essai"] and not f["pro"] and f["photos_limite"] == 25, f
     # l'ecran ne peut PAS se donner Pro
     c.post("/api/reglages_sauver", json=[{"forfait": "pro"}])
     assert c.post("/api/forfait", json=[]).get_json()["forfait"] == "gratuit"

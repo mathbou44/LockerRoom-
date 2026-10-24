@@ -184,9 +184,10 @@ def prix_catalogue(prod, boites=1, cout_boite=0.0, marge=0.25, frais_pct=0.109, 
             k_list = list(dict.fromkeys(equipes))
         g = s.get("groupe") or "base"
         for k in k_list:
-            d = cles.setdefault(k, {"cle": k, "ev": 0.0, "recrues": 0.0, "hits": 0.0, "numerotees": 0.0, "vedettes": {}})
+            d = cles.setdefault(k, {"cle": k, "ev": 0.0, "recrues": 0.0, "hits": 0.0, "numerotees": 0.0, "vedettes": {}, "n": 0.0})
             part = 1.0 / len(k_list)
             d["ev"] += ev * part
+            d["n"] += n * part
             d["recrues"] += n * part if (g == "recrue" or c.get("recrue")) else 0.0
             d["hits"] += n * part if g in ("auto", "memo", "auto_memo") or c.get("auto") or c.get("memo") else 0.0
             d["numerotees"] += n * part if s.get("tirage") else 0.0
@@ -195,7 +196,7 @@ def prix_catalogue(prod, boites=1, cout_boite=0.0, marge=0.25, frais_pct=0.109, 
                 d["vedettes"][j] = d["vedettes"].get(j, 0.0) + ev * part
     if mode == "equipes":
         for code in sports.equipes(sport):
-            cles.setdefault(code, {"cle": code, "ev": 0.0, "recrues": 0.0, "hits": 0.0, "numerotees": 0.0, "vedettes": {}})
+            cles.setdefault(code, {"cle": code, "ev": 0.0, "recrues": 0.0, "hits": 0.0, "numerotees": 0.0, "vedettes": {}, "n": 0.0})
         cles.pop("?", None)
     cout = round(float(cout_boite) * boites, 2)
     n = len(cles) or 1
@@ -208,7 +209,10 @@ def prix_catalogue(prod, boites=1, cout_boite=0.0, marge=0.25, frais_pct=0.109, 
         places.append({"cle": d["cle"], "nom": nom_equipe(d["cle"], sport) if mode == "equipes" else d["cle"],
                        "prix": _arrondir(brut, arrondi), "part": round(100 * d["ev"] / somme, 1), "ev": round(d["ev"], 2),
                        "recrues": round(d["recrues"], 1), "hits": round(d["hits"], 2), "numerotees": round(d["numerotees"], 2),
-                       "vedettes": [j for j, _ in sorted(d["vedettes"].items(), key=lambda kv: -kv[1])[:3]]})
+                       "vedettes": [j for j, _ in sorted(d["vedettes"].items(), key=lambda kv: -kv[1])[:3]],
+                       # 24 oct 2026 - chances (loi de Poisson sur le nombre attendu) : au moins une carte, une recrue, un hit
+                       "p_carte": round(1 - math.exp(-d.get("n", 0.0)), 3), "p_recrue": round(1 - math.exp(-d["recrues"]), 3),
+                       "p_hit": round(1 - math.exp(-d["hits"]), 3), "n_attendu": round(d.get("n", 0.0), 2)})
     places.sort(key=lambda p: (-p["prix"], p["nom"]))
     total = round(sum(p["prix"] for p in places), 2)
     net = total * (1 - float(frais_pct)) - float(frais_fixe) * len(places)

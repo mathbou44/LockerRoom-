@@ -31,6 +31,7 @@ import vision
 DOSSIER = os.environ.get("LOCKERROOM_DONNEES") or os.path.dirname(os.path.abspath(__file__))   # heberge : disque persistant
 CHEMIN_DB = os.path.join(DOSSIER, "lockerroom.db")
 _verrou = threading.RLock()
+CATEGORIE_CARTES = "261328"   # eBay : Sports Trading Card Singles
 
 REGLAGES_DEFAUT = {
     "nom_boutique": "Ma boutique",
@@ -46,6 +47,7 @@ REGLAGES_DEFAUT = {
     "epn_campid": "",
     "langue": "",                # 24 oct 2026 - "fr" ou "en" (vide = celle du navigateur)
     "devise": "",                # 24 oct 2026 - "CAD" ou "USD" (affichage ; les montants restent gardes en $ CA)
+    "modele_annonce": None,      # 24 oct 2026 - choix gardes pour la prochaine annonce (expedition, retours, offres, promotion)
     "sport": "hockey",           # 23 oct 2026 - sport principal (quand l'app hesite : voir sports.py)            # 21 oct 2026 - eBay Partner Network : liens d'achat suivis (affiliation)
 }
 
@@ -97,7 +99,7 @@ def _connecter(chemin=None):
     # 18 oct 2026 - sante de l'inventaire (tous les articles eBay)
     cols = {r[1] for r in c.execute("PRAGMA table_info(cartes)")}
     for col, typ in (("debut", "TEXT"), ("watchers", "INTEGER"), ("categorie_ebay", "TEXT"), ("photo", "TEXT"), ("vu_actif_le", "TEXT"),
-                     ("sport", "TEXT")):
+                     ("sport", "TEXT"), ("recrue", "INTEGER"), ("relique", "INTEGER"), ("cert", "TEXT")):
         if col not in cols:
             c.execute(f"ALTER TABLE cartes ADD COLUMN {col} {typ}")
     # 23 oct 2026 - autres sports : le sport du produit et du break (equipes de sa ligue)
@@ -109,6 +111,11 @@ def _connecter(chemin=None):
         CREATE TABLE IF NOT EXISTS rachats_vus (cle TEXT PRIMARY KEY, maj TEXT);
         CREATE TABLE IF NOT EXISTS opportunites (item_id TEXT PRIMARY KEY, titre TEXT, total REAL, url TEXT, photo TEXT,
         ref_titre TEXT, ref_prix REAL, ratio REAL, vu_le TEXT, masque INTEGER DEFAULT 0);""")
+    # 24 oct 2026 - les comparables gardes (memes cartes) : repere prix dans l'inventaire et comps au tap
+    for table, col, typ in (("sante", "comps", "TEXT"), ("sante", "bas", "REAL"), ("opportunites", "comps", "TEXT"),
+                            ("opportunites", "sport", "TEXT"), ("opportunites", "mediane", "REAL")):
+        if col not in {r[1] for r in c.execute(f"PRAGMA table_info({table})")}:
+            c.execute(f"ALTER TABLE {table} ADD COLUMN {col} {typ}")
     c.commit()
     return c
 
@@ -221,7 +228,8 @@ class Api:
             prix = paiements.prix_affiche()
         except Exception:
             prix = None
-        return {"multi": multi, "forfait": (info.get("forfait") or "gratuit") if multi else "pro",
+        import forfaits
+        return {**forfaits.resume(), "multi": multi, "forfait": (info.get("forfait") or "gratuit") if multi else "pro",
                 "statut": info.get("forfait_statut") or "", "fin": info.get("forfait_fin"),
                 "annule": bool(info.get("forfait_annule")), "client": bool(info.get("stripe_client")),
                 "paiements": paiements.actif(), "mode_paiement": paiements.mode(), "prix": prix,
@@ -514,6 +522,43 @@ class Api:
                    produit={"id": prod["id"], "nom": prod["nom"], "format": fmt.get("format"), "boites_par_caisse": fmt.get("boites_par_caisse"),
                             "sortie": prod.get("sortie"), "catalogue": True})
         return res
+
+    def analyse_break(self, params):
+        """24 oct 2026 (Mathieu : « break analyser dans seller et acheteur ») - pour un produit du catalogue :
+        acheteur : chaque equipe / joueur, sa valeur attendue (EV), ses chances (une carte, une recrue, un hit)
+        et, si on donne le prix demande par le breaker, si c'est un bon prix ; vendeur : le prix de chaque place
+        selon le cout du produit et la marge voulue (meme modele que « Calculer un break »)."""
+        import forfaits
+        p = params or {}
+        if not forfaits.produit_permis(str(p.get("produit_id") or "")):
+            return {"ok": False, "erreur": "L'analyse de tous les produits est dans le forfait Pro.", "pro_requis": True}
+        r = self.reglages_lire()
+        prod = catalogue.charger(p.get("produit_id"))
+        if not prod:
+            return {"ok": False, "erreur": "Produit introuvable dans le catalogue"}
+
+        def f(cle, defaut):
+            v = _float(p.get(cle))
+            return defaut if v is None else v
+        sport = prod.get("sport") or "hockey"
+        boites = f("boites", 1) or 1
+        args = dict(boites=boites, cout_boite=f("cout_boite", 0), marge=f("marge", r["marge_break"]) / 100,
+                    frais_pct=f("frais_pct", r["frais_break_pct"]) / 100, frais_fixe=f("frais_fixe", r["frais_break_fixe"]),
+                    plancher=f("plancher", r["plancher_place"]), arrondi=f("arrondi", r["arrondi_place"]) or 1, sport=sport)
+        res = calcul.prix_catalogue(prod, mode=p.get("mode") or "equipes", **args)
+        joueurs = calcul.prix_catalogue(prod, mode="joueurs", **{**args, "cout_boite": 0})["places"]
+        joueurs = sorted((j for j in joueurs if j["ev"] > 0), key=lambda j: -j["ev"])[:30]
+        demandes = {str(k): _float(v) for k, v in (p.get("prix_demandes") or {}).items() if _float(v)}
+        for pl in res["places"]:
+            d = demandes.get(pl["cle"])
+            if d:
+                pl["demande"] = d
+                pl["valeur_ratio"] = round(pl["ev"] / d, 2)
+        fmt = (prod.get("formats") or [{}])[0]
+        return {**res, "ok": True, "joueurs": joueurs, "boites": boites, "mode": p.get("mode") or "equipes",
+                "produit": {"id": prod["id"], "nom": prod["nom"], "saison": prod.get("saison"), "marque": prod.get("marque"),
+                            "format": fmt.get("format"), "boites_par_caisse": fmt.get("boites_par_caisse"), "sport": sport,
+                            "preliminaire": bool(prod.get("preliminaire"))}}
 
     def valeurs_statut(self):
         return valeurs.statut()
@@ -849,7 +894,7 @@ class Api:
     # -- inventaire -------------------------------------------------------------------------------
     CHAMPS_CARTE = ("titre", "joueur", "annee", "marque", "set_nom", "numero", "parallele", "tirage", "auto", "grade", "equipe",
                     "cout", "valeur", "prix_demande", "emplacement", "statut", "item_number", "sku", "consignataire_id", "source",
-                    "note", "client_id", "sport")
+                    "note", "client_id", "sport", "recrue", "relique", "cert", "photo")
 
     def inventaire_liste(self, filtres=None):
         f = filtres or {}
@@ -880,12 +925,73 @@ class Api:
             finally:
                 c.close()
         defaut = self.reglages_lire().get("sport") or sports.DEFAUT
+        # 24 oct 2026 - repere prix : ton prix face aux memes cartes en vente (sante : mediane, plus bas, nombre)
+        with _verrou:
+            c = self._db()
+            try:
+                marche = {r["item_number"]: r for r in _dicts(c.execute(
+                    "SELECT item_number, mediane, n, bas, verdict, ecart, suggestion, maj FROM sante"))}
+            finally:
+                c.close()
         for r in out:
             if not r.get("sport"):
                 r["sport"] = sports.detecter(r.get("titre"), r.get("equipe"), r.get("set_nom"), r.get("marque"), defaut=defaut)
+            m = marche.get(r.get("item_number")) if r.get("statut") != "Vendue" else None
+            if m and m.get("mediane"):
+                r["marche"] = {k: m[k] for k in ("mediane", "n", "bas", "verdict", "ecart", "suggestion", "maj")}
+        import forfaits                          # Gratuit : le repere prix sur 3 cartes (les autres : « Pro »)
+        if not forfaits.est_pro():
+            vus = 0
+            for r in out:
+                if r.get("marche"):
+                    vus += 1
+                    if vus > forfaits.LIMITES["repere"]:
+                        r.pop("marche")
+                        r["marche_pro"] = True
         if f.get("sport"):
             out = [r for r in out if r["sport"] == f["sport"]]
         return out
+
+    def carte_comps(self, item_number):
+        """Les memes cartes en vente (gardees par cartes_match) pour une de tes annonces."""
+        with _verrou:
+            c = self._db()
+            try:
+                r = c.execute("SELECT comps, mediane, n, bas, maj, requete FROM sante WHERE item_number=?", (str(item_number),)).fetchone()
+            finally:
+                c.close()
+        if not r:
+            return {"ok": True, "comps": [], "n": 0}
+        try:
+            comps = json.loads(r["comps"] or "[]")
+        except ValueError:
+            comps = []
+        return {"ok": True, "comps": comps, "mediane": r["mediane"], "n": r["n"], "bas": r["bas"], "maj": r["maj"], "requete": r["requete"]}
+
+    def _photos_vendues(self, n=25):
+        """Cartes vendues sans photo : la photo de l'annonce terminee (Trading GetItem, 90 jours). Peu d'appels par synchro."""
+        with _verrou:
+            c = self._db()
+            try:
+                lst = [r[0] for r in c.execute("SELECT item_number FROM cartes WHERE statut='Vendue' AND item_number IS NOT NULL "
+                                               "AND COALESCE(photo,'')='' ORDER BY vendu_le DESC LIMIT ?", (int(n),))]
+            finally:
+                c.close()
+        faites = 0
+        for item in lst:
+            try:
+                u = ebay_compte.photo_item(item)
+            except (RuntimeError, OSError):
+                break
+            with _verrou:
+                c = self._db()
+                try:
+                    c.execute("UPDATE cartes SET photo=? WHERE item_number=? AND COALESCE(photo,'')=''", (u or "-", item))
+                    c.commit()
+                finally:
+                    c.close()
+            faites += 1
+        return faites
 
     def carte_sauver(self, d):
         d = {k: v for k, v in (d or {}).items() if k in self.CHAMPS_CARTE or k == "id"}
@@ -917,6 +1023,15 @@ class Api:
             finally:
                 c.close()
         return {"ok": True, "id": cid}
+
+    def carte_lire(self, cid):
+        with _verrou:
+            c = self._db()
+            try:
+                r = c.execute("SELECT * FROM cartes WHERE id=?", (cid,)).fetchone()
+            finally:
+                c.close()
+        return dict(r) if r else {}
 
     def carte_supprimer(self, cid):
         with _verrou:
@@ -1089,20 +1204,30 @@ class Api:
         limite = (datetime.now() - timedelta(days=3)).isoformat()
         a_faire = sorted((a for a in actives if vus.get(a["item_number"], "") < limite), key=lambda a: vus.get(a["item_number"], ""))
         faits, erreur = 0, None
+        import cartes_match
         for a in a_faire[:int(n)]:
-            q = sante.requete(a["titre"])
+            carte = cartes_match.est_carte(a["titre"])                        # 24 oct 2026 : une carte -> seulement la MEME carte
+            q = (cartes_match.requete_ebay(cartes_match.cible_titre(a["titre"], a.get("joueur"))) if carte else None) or sante.requete(a["titre"])
             try:
-                semblables = [s for s in ebay_compte.rechercher(q, a.get("categorie_ebay")) if s["item_id"] != str(a["item_number"])]
+                res = ebay_compte.rechercher(q, a.get("categorie_ebay") or (CATEGORIE_CARTES if carte else None), limite=100)
             except (RuntimeError, OSError) as e:
                 erreur = str(e)
                 break
+            if carte:
+                _c, semblables, _e = cartes_match.filtrer_carte(a["titre"], res, a.get("joueur"), exclure_id=a["item_number"])
+            else:
+                semblables = [x for x in res if x["item_id"] != str(a["item_number"])]
             ev = sante.evaluer(a["prix_demande"], semblables, sante.age_jours(a.get("debut")), a.get("watchers"))
+            totaux = sorted(round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2) for x in semblables if x.get("prix_cad"))
+            comps = sorted(({"titre": x["titre"], "total": round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2),
+                             "photo": x.get("photo"), "url": x.get("url")} for x in semblables if x.get("prix_cad")), key=lambda x: x["total"])[:12]
             with _verrou:
                 c = self._db()
                 try:
-                    c.execute("INSERT OR REPLACE INTO sante (item_number, maj, verdict, suggestion, mediane, n, ecart, requete, fait) "
-                              "VALUES (?,?,?,?,?,?,?,?,0)", (a["item_number"], _maintenant(), ev["verdict"], ev["suggestion"], ev["mediane"],
-                                                            ev["n"], ev["ecart"], q))
+                    c.execute("INSERT OR REPLACE INTO sante (item_number, maj, verdict, suggestion, mediane, n, ecart, requete, fait, comps, bas) "
+                              "VALUES (?,?,?,?,?,?,?,?,0,?,?)", (a["item_number"], _maintenant(), ev["verdict"], ev["suggestion"], ev["mediane"],
+                                                            ev["n"], ev["ecart"], q, json.dumps(comps, ensure_ascii=False),
+                                                            totaux[0] if totaux else None))
                     c.commit()
                 finally:
                     c.close()
@@ -1124,17 +1249,22 @@ class Api:
         limite = (datetime.now() - timedelta(hours=12)).isoformat()
         trouvees = 0
         faites = 0
+        import cartes_match
         for v in vendues:
-            q = sante.requete(v["titre"])
+            carte = cartes_match.est_carte(v["titre"])
+            q = (cartes_match.requete_ebay(cartes_match.cible_titre(v["titre"])) if carte else None) or sante.requete(v["titre"])
             if not q or vus.get(q, "") > limite:
                 continue
             if faites >= n:
                 break
             faites += 1
             try:
-                res = ebay_compte.rechercher(q, v.get("categorie_ebay"), prix_max=v["prix_vendu"] * sante.RACHAT_RATIO, recentes=True, limite=20)
+                res = ebay_compte.rechercher(q, v.get("categorie_ebay") or (CATEGORIE_CARTES if carte else None),
+                                             prix_max=v["prix_vendu"] * sante.RACHAT_RATIO, recentes=True, limite=50)
             except (RuntimeError, OSError):
                 break
+            if carte:
+                _c, res, _e = cartes_match.filtrer_carte(v["titre"], res)
             ops = sante.opportunites(v["prix_vendu"], res, exclure=mes)
             with _verrou:
                 c = self._db()
@@ -1231,9 +1361,11 @@ class Api:
         return r
 
     def _ecrire_ebay(self, fn, *args, **kw):
+        import importlib
         import ebay_ecriture
+        mod, nom = (importlib.import_module(fn.split(".")[0]), fn.split(".")[1]) if "." in fn else (ebay_ecriture, fn)
         try:
-            r = getattr(ebay_ecriture, fn)(*args, **kw)
+            r = getattr(mod, nom)(*args, **kw)
         except (RuntimeError, ValueError, OSError) as e:
             r = {"ok": False, "erreur": str(e)}
         except Exception as e:                      # jamais une erreur muette
@@ -1281,6 +1413,108 @@ class Api:
                     c.commit()
                 finally:
                     c.close()
+        return r
+
+    # -- « Vendre » (24 oct 2026) : une annonce complete a partir des photos (voir annonces.py) ----------
+    def annonce_preparer(self, champs, langue=None):
+        """Champs de la carte (lus sur la photo ou tapes) -> titre, prix suggere (memes cartes), description, details.
+        Rien n'est publie ni enregistre ici."""
+        import annonces
+        import cartes_match
+        c = {k: v for k, v in (champs or {}).items() if not str(k).startswith("_")}
+        c["sport"] = c.get("sport") or self.sport_de(c)
+        titre = annonces.titre_optimise(c) if (c.get("joueur") or c.get("set_nom")) else str(c.get("titre") or "")[:80]
+        r = self.reglages_lire()
+        modele = {**annonces.MODELE_DEFAUT, **(r.get("modele_annonce") or {})}
+        fp, ff = (r["frais_ebay_pct"] or 0) / 100, r["frais_ebay_fixe"] or 0
+        prix, comps, n, note = None, [], 0, None
+        if titre:
+            try:
+                cib = cartes_match.cible_titre(titre, c.get("joueur"))
+                res = ebay_compte.rechercher(cartes_match.requete_ebay(cib) or titre, categorie=CATEGORIE_CARTES, limite=100, fond=False)
+                _c, gardees, _e = cartes_match.filtrer_carte(titre, res, c.get("joueur"))
+                tot = [round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2) for x in gardees if x.get("prix_cad")]
+                med, garde = cartes_match.mediane_robuste(tot)
+                n = len(garde)
+                if med:
+                    prix = {"marche": sante.prix_rond(med), "vite": sante.prix_rond(med * 0.90), "haut": sante.prix_rond(med * 1.10),
+                            "mediane": med, "bas": garde[0], "max": garde[-1]}
+                comps = sorted(({"titre": x["titre"], "total": round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2),
+                                 "photo": x.get("photo"), "url": x.get("url")} for x in gardees if x.get("prix_cad")),
+                               key=lambda x: abs(x["total"] - (med or 0)))[:8]
+            except (RuntimeError, OSError) as e:
+                note = str(e)
+        franco = (langue or r.get("langue") or "fr") != "en"
+        desc = annonces.description(c, titre, franco, modele["etat"], r.get("nom_boutique"), modele["retours"], modele["expedition"])
+        jetons = ebay_compte._lire(ebay_compte.chemin_jetons())
+        return {"ok": True, "titre": titre, "carte": c, "prix": prix, "n": n, "comps": comps, "note": note, "description": desc,
+                "specifiques": annonces.specifiques(c), "modele": modele, "frais_pct": r["frais_ebay_pct"], "frais_fixe": ff,
+                "etats": {k: v[2] if franco else v[1] for k, v in annonces.ETATS_BRUTS.items()},
+                "net_marche": round(prix["marche"] * (1 - fp) - ff, 2) if prix else None,
+                "promotion_ok": annonces.SCOPE_MARKETING in (jetons.get("scopes") or [])}
+
+    def annonce_publier(self, d, verifier=False):
+        """La carte + l'annonce : photos chez eBay, verification (frais), puis creation sur un 2e tap.
+        La carte entre dans l'inventaire (Listée) ; promotion % ensuite si choisie."""
+        import annonces
+        import forfaits
+        d = dict(d or {})
+        try:
+            forfaits.verifier("annonces_mois")
+        except forfaits.LimiteAtteinte as e:
+            return {"ok": False, "erreur": str(e), "pro_requis": True}
+        st = ebay_compte.statut()
+        if not st.get("connecte"):
+            return {"ok": False, "erreur": "Compte eBay non connecté"}
+        if not st.get("ecriture"):
+            return {"ok": False, "erreur": "Reconnecte eBay pour mettre en vente et changer tes prix depuis l'app."}
+        prix = _float(d.get("prix"))
+        if not prix or prix < 0.99:
+            return {"ok": False, "erreur": "Indique un prix"}
+        titre = re.sub(r"\s+", " ", str(d.get("titre") or "")).strip()[:80]
+        if len(titre) < 10:
+            return {"ok": False, "erreur": "Ajoute un titre"}
+        carte = {k: v for k, v in (d.get("carte") or {}).items() if k in self.CHAMPS_CARTE}
+        carte["sport"] = carte.get("sport") or self.sport_de(carte)
+        r_ = self.reglages_lire()
+        exp = r_.get("expedition_ebay") if isinstance(r_.get("expedition_ebay"), dict) else {}
+        cp = exp.get("code_postal") or "H2X 1Y4"
+        try:
+            photos = annonces.photos_ebay(d.get("photos") or [])
+        except (RuntimeError, ValueError, OSError) as e:
+            return {"ok": False, "erreur": str(e)}
+        if not photos:
+            return {"ok": False, "erreur": "Ajoute une photo de la carte"}
+        sku = d.get("sku") or ("LR-" + secrets.token_hex(4))
+        opts = {**annonces.MODELE_DEFAUT, **{k: d[k] for k in annonces.MODELE_DEFAUT if k in d}}
+        donnees = {**opts, "carte": carte, "titre": titre, "prix": prix, "description": d.get("description") or titre, "sku": sku}
+        r = self._ecrire_ebay("annonces.publier", donnees, photos, cp, verifier_seulement=bool(verifier))
+        r["photos"] = photos                          # deja chez eBay : renvoyees au 2e tap (pas televersees deux fois)
+        r["sku"] = sku
+        if not r.get("ok") or verifier:
+            return r
+        if r.get("item_id"):
+            forfaits.compter("annonces_mois")
+            champs = {**carte, "titre": titre, "prix_demande": prix, "statut": "Listée", "item_number": r["item_id"], "sku": sku,
+                      "photo": photos[0], "cout": _float(d.get("cout"))}
+            if d.get("cid"):
+                champs["id"] = d["cid"]
+            self.carte_sauver({k: v for k, v in champs.items() if v not in (None, "")})
+            with _verrou:
+                c = self._db()
+                try:
+                    c.execute("UPDATE cartes SET debut=? WHERE item_number=?", (_maintenant(), r["item_id"]))
+                    c.commit()
+                finally:
+                    c.close()
+            pct = _float(d.get("promotion")) or 0
+            if pct > 0:
+                p = self._ecrire_ebay("annonces.promouvoir", r["item_id"], pct)
+                r["promotion"] = p.get("promotion") if p.get("ok") else None
+                if not p.get("ok"):
+                    r.setdefault("avertissements", []).append(p.get("erreur"))
+            if d.get("memoriser", True):
+                self.reglages_sauver({"modele_annonce": {k: opts[k] for k in annonces.MODELE_DEFAUT}})
         return r
 
     def ebay_changer_prix(self, item_number, prix):
@@ -1366,6 +1600,10 @@ class Api:
             print(f"[synchro] ventes Trading ignorees : {e}", flush=True)
         a = self._maj_annonces(annonces)
         v = self._maj_ventes(ventes)
+        try:                                     # 24 oct 2026 - « mettre des images sur les sold aussi »
+            self._photos_vendues(25)
+        except Exception as e:
+            print(f"[synchro] photos des ventes : {e}", flush=True)
         bilan = {"annonces": a.get("lues"), "nouvelles_annonces": a.get("crees"), "ventes": v.get("nouvelles"),
                  "deja": v.get("deja"), "le": _maintenant()}
         ebay_compte.noter_synchro(bilan)
@@ -1659,13 +1897,87 @@ class Api:
         if st.get("cles_ok"):
             pouls.append({"id": "sante", "nom": "Tes prix", "dernier": sante_maj, "freq_min": 60, "href": "#sante"})
             pouls.append({"id": "deals", "nom": "Deals", "dernier": opp_maj, "freq_min": 60, "href": "#deals"})
-        pouls.append({"id": "valeurs", "nom": "Joueurs", "dernier": valeurs.statut().get("maj"), "freq_min": 1440,
-                      "href": "#reglages", "note": "chaque jour"})
+        import valeurs_maj                       # heberge : valeurs livrees avec l'app (pas la source Hall of Cardz) -> chaque semaine
+        auto = os.path.isdir(valeurs_maj.SOURCE_DEFAUT)
+        pouls.append({"id": "valeurs", "nom": "Joueurs", "dernier": valeurs.statut().get("maj"), "freq_min": 1440 if auto else 10080,
+                      "href": "#reglages", "note": "chaque jour" if auto else "chaque semaine"})
         pouls.append({"id": "nouvelles", "nom": "Infos", "dernier": n.get("maj"), "freq_min": 120, "href": "#accueil"})
         for p in pouls:
             p["dernier"] = str(p["dernier"])[:19] if p.get("dernier") else None
         return {"ok": True, "nouvelles": n["items"], "sports": ordre[:3], "pouls": pouls,
                 "maintenant": datetime.now().isoformat(timespec="seconds")}
+
+    # -- deals (24 oct 2026) : les tiens (rachats de ce que tu as vendu) + ceux du chasseur partage (deals.py) --
+    def _deals_fusion(self):
+        import deals
+        try:
+            deals.chasser_si_besoin()
+        except Exception:
+            pass
+        r = self.reglages_lire()
+        fp, ff = (r["frais_ebay_pct"] or 0) / 100, r["frais_ebay_fixe"] or 0
+        limite = (datetime.now() - timedelta(days=4)).isoformat()
+        with _verrou:
+            c = self._db()
+            try:
+                c.execute("CREATE TABLE IF NOT EXISTS deals_masques (item_id TEXT PRIMARY KEY)")
+                masques = {x[0] for x in c.execute("SELECT item_id FROM deals_masques")}
+                opps = _dicts(c.execute("SELECT * FROM opportunites WHERE masque=0 AND vu_le >= ? ORDER BY ratio LIMIT 60", (limite,)))
+            finally:
+                c.close()
+        out = {}
+        for o in opps:
+            out[o["item_id"]] = {"item_id": o["item_id"], "titre": o["titre"], "total": o["total"], "photo": o.get("photo"), "url": o["url"],
+                                 "valeur": o.get("ref_prix"), "ratio": o.get("ratio") or 1, "encan": False, "fin": None, "vu_le": o.get("vu_le"),
+                                 "sport": sports.detecter(o.get("titre"), defaut=r.get("sport") or sports.DEFAUT), "source": "ventes",
+                                 "comps": json.loads(o["comps"]) if o.get("comps") else [], "ref_titre": o.get("ref_titre")}
+        for g in deals.lire().get("deals") or []:
+            out.setdefault(g["item_id"], {**g, "source": "marche"})
+        lst = []
+        for x in out.values():
+            if x["item_id"] in masques:
+                continue
+            x["gain"] = round((x.get("valeur") or 0) * (1 - fp) - ff - (x.get("total") or 0), 2)
+            x["rabais"] = round(100 * (1 - (x.get("ratio") or 1)))
+            lst.append(x)
+        return lst
+
+    def deals_liste(self, f=None):
+        """Filtres : sports [..], type fixe|encan, tri rabais|fin|prix|gain|recent. Gratuit : les 5 meilleurs."""
+        import forfaits
+        f = f or {}
+        tout = self._deals_fusion()
+        par_sport = {}
+        for x in tout:
+            par_sport[x.get("sport") or "hockey"] = par_sport.get(x.get("sport") or "hockey", 0) + 1
+        lst = [x for x in tout if not f.get("sports") or (x.get("sport") or "hockey") in f["sports"]]
+        if f.get("type") == "fixe":
+            lst = [x for x in lst if not x.get("encan")]
+        elif f.get("type") == "encan":
+            lst = [x for x in lst if x.get("encan")]
+        tri = f.get("tri") or "rabais"
+        cles = {"rabais": lambda x: x.get("ratio") or 1, "prix": lambda x: x.get("total") or 0, "gain": lambda x: -(x.get("gain") or 0),
+                "recent": lambda x: str(x.get("vu_le") or ""), "fin": lambda x: (0, str(x.get("fin"))) if x.get("encan") else (1, str(x.get("ratio")))}
+        lst.sort(key=cles.get(tri, cles["rabais"]), reverse=(tri == "recent"))
+        n = len(lst)
+        pro = forfaits.est_pro()
+        if not pro:
+            lst = lst[:forfaits.LIMITES["deals"]]
+        import deals as _d
+        return {"ok": True, "deals": lst[:120], "n": n, "pro": pro, "limite": None if pro else forfaits.LIMITES["deals"],
+                "sports": par_sport, "maj": _d.lire().get("maj"), "ebay": ebay_compte.statut().get("cles_ok")}
+
+    def deal_masquer(self, item_id):
+        with _verrou:
+            c = self._db()
+            try:
+                c.execute("CREATE TABLE IF NOT EXISTS deals_masques (item_id TEXT PRIMARY KEY)")
+                c.execute("INSERT OR IGNORE INTO deals_masques VALUES (?)", (str(item_id),))
+                c.execute("UPDATE opportunites SET masque=1 WHERE item_id=?", (str(item_id),))
+                c.commit()
+            finally:
+                c.close()
+        return {"ok": True}
 
     def acheteur_accueil(self):
         """Deals a acheter (annonces bien sous ce que la carte vaut), achats du mois, valeur du stock achete."""
@@ -1673,19 +1985,16 @@ class Api:
         m0 = maint.strftime("%Y-%m")
         r = self.reglages_lire()
         fp, ff = (r["frais_ebay_pct"] or 0) / 100, r["frais_ebay_fixe"] or 0
-        limite = (maint - timedelta(days=4)).isoformat()
         with _verrou:
             c = self._db()
             try:
-                opps = _dicts(c.execute("SELECT * FROM opportunites WHERE masque=0 AND vu_le >= ? ORDER BY ratio LIMIT 60", (limite,)))
                 achats = _dicts(c.execute("SELECT * FROM cartes WHERE cout IS NOT NULL AND substr(cree_le,1,7)=?", (m0,)))
                 dep = c.execute("SELECT COALESCE(SUM(montant),0) FROM depenses WHERE substr(le,1,7)=? AND categorie='achats'", (m0,)).fetchone()[0]
             finally:
                 c.close()
-        deals = []
-        for o in opps:
-            gain = round((o.get("ref_prix") or 0) * (1 - fp) - ff - (o.get("total") or 0), 2)
-            deals.append({**o, "gain": gain, "rabais": round(100 * (1 - (o.get("ratio") or 1)))})
+        deals = self._deals_fusion()                  # 24 oct 2026 - tes rachats + le chasseur partage
+        for d_ in deals:
+            d_["ref_prix"] = d_.get("valeur")
         deals.sort(key=lambda d: -d["gain"])
         depense = round(sum(a["cout"] or 0 for a in achats) + (dep or 0), 2)
         valeur = round(sum((a.get("valeur") or a.get("prix_demande") or 0) for a in achats), 2)
@@ -1697,13 +2006,22 @@ class Api:
                 "nom_boutique": r["nom_boutique"]}
 
     def valeur_carte(self, q):
-        """« Combien vaut cette carte ? » : annonces actives a prix fixe (eBay Browse, cache partage),
-        prix median et le prix a ne pas depasser pour revendre avec profit (70 % du median)."""
+        """« Combien vaut cette carte ? » : annonces actives a prix fixe (eBay Browse, cache partage).
+        24 oct 2026 : seulement la MEME carte (cartes_match : variante, gradation, auto, patch, numerotation,
+        lots ecartes) ; prix median sans les extremes ; le prix a ne pas depasser pour revendre (70 %)."""
+        import cartes_match
+        import forfaits
         q = re.sub(r"\s+", " ", str(q or "")).strip()
         if len(q) < 3:
             return {"ok": False, "erreur": "Écris le joueur et la carte (ex. Bedard Young Guns)."}
         try:
-            res = ebay_compte.rechercher(q, limite=50, fond=False)
+            forfaits.verifier("valeur_jour")
+        except forfaits.LimiteAtteinte as e:
+            return {"ok": False, "erreur": str(e), "pro_requis": True}
+        c = cartes_match.cible(q)
+        q_ebay = cartes_match.requete_ebay(c) or q
+        try:
+            res = ebay_compte.rechercher(q_ebay, categorie=CATEGORIE_CARTES, limite=200, fond=False)
         except (RuntimeError, OSError) as e:
             return {"ok": False, "erreur": str(e)}
         r = self.reglages_lire()
@@ -1713,16 +2031,31 @@ class Api:
             total = round((a.get("prix_cad") or 0) + (a.get("port_cad") or 0), 2)
             if total > 0:
                 lst.append({**a, "total": total})
-        lst.sort(key=lambda x: x["total"])
-        if not lst:
-            return {"ok": True, "q": q, "n": 0, "annonces": []}
-        t = [x["total"] for x in lst]
-        med = t[len(t) // 2] if len(t) % 2 else round((t[len(t) // 2 - 1] + t[len(t) // 2]) / 2, 2)
+        _c, gardees, ecartees = cartes_match.filtrer(q, lst)
+        gardees.sort(key=lambda x: x["total"])
+        compris = cartes_match.resume(c)
+        raisons = {}
+        for x in ecartees:
+            raisons[x["raison"]] = raisons.get(x["raison"], 0) + 1
+        base = {"ok": True, "q": q, "compris": compris, "n_ecartees": len(ecartees),
+                "raisons": sorted(raisons.items(), key=lambda kv: -kv[1])[:6],
+                "ecartees": [{k: x.get(k) for k in ("item_id", "titre", "total", "photo", "url", "raison")} for x in ecartees[:30]]}
+        forfaits.compter("valeur_jour")
+        if not gardees:
+            return {**base, "n": 0, "annonces": []}
+        med, garde = cartes_match.mediane_robuste([x["total"] for x in gardees])
         bon = round(med * sante.RACHAT_RATIO, 2)
-        for x in lst:
+        for x in gardees:
             x["deal"] = x["total"] <= bon
             x["gain"] = round(med * (1 - fp) - ff - x["total"], 2)
-        return {"ok": True, "q": q, "n": len(lst), "mediane": med, "bon_prix": bon, "min": t[0], "max": t[-1], "annonces": lst[:40]}
+            x["hors_norme"] = x["total"] not in garde
+        return {**base, "n": len(gardees), "mediane": med, "bon_prix": bon, "min": garde[0], "max": garde[-1],
+                "annonces": gardees[:40]}
+
+    def valeur_signaler(self, q, item_id, titre, bonne=False):
+        """« Pas la bonne carte » (ou « c'est la bonne ») : l'app apprend, pour tout le monde."""
+        import cartes_match
+        return cartes_match.apprendre(q, item_id, titre, bool(bonne))
 
     def accueil(self):
         maint = datetime.now()
@@ -1861,9 +2194,10 @@ class Api:
     @staticmethod
     def _delai(v):
         try:
-            a = datetime.fromisoformat(str(v.get("debut") or v.get("cree_le"))[:19].replace("Z", ""))
+            # 24 oct 2026 : seulement la vraie date de mise en vente (cree_le = date d'import -> « vend en 0 j »)
+            a = datetime.fromisoformat(str(v.get("debut"))[:19].replace("Z", ""))
             b = datetime.fromisoformat(str(v.get("vendu_le"))[:19].replace("Z", ""))
-            return max(0, (b - a).days)
+            return (b - a).days if b >= a else None
         except (TypeError, ValueError):
             return None
 

@@ -24,7 +24,7 @@ CHEMIN_COMPTEUR = os.path.join(DOSSIER, "appels_ebay.json")
 CHEMIN_CACHE = os.path.join(DOSSIER, "cache_ebay.sqlite")
 LIMITES = {"browse": 5000, "trading": 5000, "fulfillment": 100000, "identity": 5000, "offer": 5000}
 RESERVE_GESTES = 0.20          # 20 % de la journee gardes pour les taps du vendeur
-DUREE_CACHE_S = {"marche": 24 * 3600, "recentes": 6 * 3600}
+DUREE_CACHE_S = {"marche": 24 * 3600, "recentes": 6 * 3600, "encheres": 3600}
 _verrou = threading.Lock()
 
 

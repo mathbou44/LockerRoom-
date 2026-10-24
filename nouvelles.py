@@ -126,6 +126,22 @@ def _get(url, timeout=12):
         return r.read()
 
 
+_RE_OG = re.compile(r"""<meta[^>]+(?:property|name)=["'](?:og:image|twitter:image)["'][^>]+content=["']([^"']+)["']|<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["'](?:og:image|twitter:image)["']""", re.I)
+
+
+def _og_image(url, lecteur=None):
+    if not url or not str(url).startswith("http"):
+        return None
+    try:
+        brut = (lecteur or (lambda u: _get(u, timeout=6)))(url)
+        html = brut[:200_000].decode("utf-8", "ignore") if isinstance(brut, bytes) else str(brut)[:200_000]
+    except Exception:
+        return None
+    m = _RE_OG.search(html)
+    u = (m.group(1) or m.group(2)) if m else None
+    return u if u and u.startswith("https://") else None
+
+
 def chemin_cache():
     import comptes
     return os.path.join(comptes.DONNEES, "nouvelles_cache.json")
@@ -166,12 +182,34 @@ def rafraichir(sports_voulus=("hockey", "football", "basketball", "baseball"), l
                                   impact=cl[1] if cl else 0))
             time.sleep(0.3)
         items.sort(key=lambda x: x["heure"], reverse=True)
+        deja = {x.get("lien"): x.get("image") for x in (ancien.get(sport) or []) if x.get("image")}
+        for x in items:
+            if not x.get("image") and deja.get(x.get("lien")):
+                x["image"] = deja[x["lien"]]
         cache["sports"][sport] = items[:60] or ancien.get(sport) or []
+    _ecrire_cache(cache)
+    # 24 oct 2026 (Mathieu : « toujours avoir une image ») : 2e passe, la photo de l'article (og:image) quand le flux
+    # n'en donne pas - liens directs seulement (pas Google News), 12 par sport, 6 s chacun ; l'accueil a deja ses nouvelles
+    change = False
+    for sport, items in cache["sports"].items():
+        faits = 0
+        for x in items[:40]:
+            if x.get("image") or faits >= 12 or "news.google." in str(x.get("lien") or ""):
+                continue
+            faits += 1
+            img = _og_image(x.get("lien"), None if lecteur is _get else lecteur)
+            if img:
+                x["image"], change = img, True
+    if change:
+        _ecrire_cache(cache)
+    return cache
+
+
+def _ecrire_cache(cache):
     tmp = chemin_cache() + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(cache, f, ensure_ascii=False)
     os.replace(tmp, chemin_cache())
-    return cache
 
 
 def rafraichir_si_besoin():

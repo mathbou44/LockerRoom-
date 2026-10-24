@@ -136,8 +136,8 @@ def _limite_compte():
     import comptes
     if not comptes.MULTI or not comptes.courant():
         return None
-    forfait = (comptes.info(comptes.courant()) or {}).get("forfait") or "gratuit"
-    return QUOTA_GRATUIT if forfait == "gratuit" else None
+    import forfaits                       # 24 oct 2026 - l'essai Pro (14 jours) compte comme Pro
+    return None if forfaits.est_pro() else QUOTA_GRATUIT
 
 
 def statut():

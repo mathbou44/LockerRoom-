@@ -84,5 +84,7 @@
 "RC/boîte": "RC/box",
 "{}/boîte": "{}/box",
 "EV": "EV",
-"/boîte": "/box"
+"/boîte": "/box",
+"renouvelé le {}": "renews on {0}",
+"se termine le {}": "ends on {0}"
 }

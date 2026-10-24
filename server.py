@@ -47,6 +47,47 @@ import lockerroom  # noqa: E402
 
 DOSSIER_UI = os.path.join(DOSSIER, "ui")
 app = Flask(__name__, static_folder=None)
+
+
+_APP_CACHE = {}
+
+
+def _page_app():
+    """app.html lue une fois (relue si le fichier change) ; compressee par _compresser. no-cache + ETag :
+    le navigateur revalide en une requete et recoit 304 si rien n'a change."""
+    from flask import Response
+    chemin = os.path.join(DOSSIER_UI, "app.html")
+    mt = os.path.getmtime(chemin)
+    if _APP_CACHE.get("mt") != mt:
+        with open(chemin, "rb") as f:
+            brut = f.read()
+        import hashlib
+        _APP_CACHE.update(mt=mt, brut=brut, etag='"' + hashlib.md5(brut).hexdigest()[:16] + '"')
+    if request.headers.get("If-None-Match") == _APP_CACHE["etag"]:
+        return Response(status=304, headers={"ETag": _APP_CACHE["etag"]})
+    return Response(_APP_CACHE["brut"], mimetype="text/html", headers={"ETag": _APP_CACHE["etag"], "Cache-Control": "no-cache"})
+
+
+# 24 oct 2026 (Mathieu : « RAPIDITE, l'app doit repondre le plus rapidement possible ») - reponses compressees
+# (app.html : ~315 Ko -> ~70 Ko) ; validation par ETag pour les fichiers (le navigateur garde sa copie).
+@app.after_request
+def _compresser(rep):
+    import gzip
+    try:
+        if (rep.status_code == 200 and not rep.direct_passthrough and "gzip" in (request.headers.get("Accept-Encoding") or "")
+                and "Content-Encoding" not in rep.headers
+                and (rep.mimetype or "").split("/")[0] in ("text", "application") and rep.mimetype != "application/octet-stream"):
+            brut = rep.get_data()
+            if len(brut) > 1400:
+                z = gzip.compress(brut, 6)
+                rep.set_data(z)
+                rep.headers["Content-Encoding"] = "gzip"
+                rep.headers["Content-Length"] = str(len(z))
+                rep.headers.add("Vary", "Accept-Encoding")
+    except Exception:
+        pass
+    return rep
+
 api = lockerroom.Api()
 
 # -- 21 oct 2026 : version hebergee (demo publique) -------------------------------------------
@@ -195,7 +236,7 @@ def page_conditions():
 
 @app.route("/")
 def racine():
-    return send_from_directory(DOSSIER_UI, "app.html")
+    return _page_app()
 
 
 def _break_public(jeton):
@@ -341,6 +382,11 @@ def _valeurs_auto():
             nouvelles.rafraichir_si_besoin()
         except Exception as e:
             print("Nouvelles : " + str(e), flush=True)
+        try:                                    # 24 oct 2026 - deals pour les acheteurs (chasseur partage, chaque heure)
+            import deals
+            deals.chasser_si_besoin()
+        except Exception as e:
+            print("Deals : " + str(e), flush=True)
         time.sleep(3600)
 
 
