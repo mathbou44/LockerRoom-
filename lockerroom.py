@@ -1645,7 +1645,11 @@ class Api:
         if principal not in ordre:
             ordre.insert(0, principal)
         lg = langue if langue in ("fr", "en") else (r.get("langue") or "fr")
-        n = nouvelles.pour(ordre[:3], joueurs[:300], langue=lg)
+        try:                                     # les nouvelles ne doivent jamais bloquer l'accueil
+            n = nouvelles.pour(ordre[:3], joueurs[:300], langue=lg)
+        except Exception as e:
+            print("Nouvelles accueil : " + repr(e), flush=True)
+            n = {"items": [], "maj": None}
         st = ebay_compte.statut()
         pouls = []
         if st.get("connecte"):
