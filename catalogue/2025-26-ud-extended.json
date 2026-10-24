@@ -1,0 +1,5830 @@
+{
+ "id": "2025-26-ud-extended",
+ "nom": "2025-26 Upper Deck Extended Series",
+ "saison": "2025-26",
+ "marque": "Upper Deck",
+ "sortie": "2026-06-03",
+ "formats": [
+  {
+   "format": "Boîte hobby",
+   "paquets": 12,
+   "cartes_par_paquet": 12,
+   "boites_par_caisse": 12
+  }
+ ],
+ "sous_ensembles": [
+  {
+   "nom": "Base",
+   "groupe": "base",
+   "nb_cartes": 200,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": null,
+   "cotes": "#501-700 : 145 vétérans (#501-645), 53 cartes 4 Nations Face-Off (#646-698), 2 checklists (#699-700)"
+  },
+  {
+   "nom": "Holiday",
+   "groupe": "insert",
+   "nb_cartes": 200,
+   "tirage": null,
+   "parallele_de": "Base",
+   "par_boite": 0,
+   "cotes": "1:1 paquet Holiday (exclusif Holiday)"
+  },
+  {
+   "nom": "Outburst Silver",
+   "groupe": "insert",
+   "nb_cartes": 200,
+   "tirage": null,
+   "parallele_de": "Base",
+   "par_boite": 0.4,
+   "cotes": "1:30 paquets hobby/ePack"
+  },
+  {
+   "nom": "Clear Cut",
+   "groupe": "insert",
+   "nb_cartes": 200,
+   "tirage": null,
+   "parallele_de": "Base",
+   "par_boite": 0.125,
+   "cotes": "1:96 paquets hobby (exclusif hobby)"
+  },
+  {
+   "nom": "Deluxe",
+   "groupe": "numerotee",
+   "nb_cartes": 200,
+   "tirage": 250,
+   "parallele_de": "Base",
+   "par_boite": null,
+   "cotes": "/250 hobby/ePack"
+  },
+  {
+   "nom": "Exclusives",
+   "groupe": "numerotee",
+   "nb_cartes": 200,
+   "tirage": 100,
+   "parallele_de": "Base",
+   "par_boite": null,
+   "cotes": "/100 hobby/ePack"
+  },
+  {
+   "nom": "Outburst Red",
+   "groupe": "numerotee",
+   "nb_cartes": 200,
+   "tirage": 25,
+   "parallele_de": "Base",
+   "par_boite": null,
+   "cotes": "/25 hobby/ePack"
+  },
+  {
+   "nom": "High Gloss",
+   "groupe": "numerotee",
+   "nb_cartes": 200,
+   "tirage": 10,
+   "parallele_de": "Base",
+   "par_boite": null,
+   "cotes": "/10 hobby/ePack"
+  },
+  {
+   "nom": "Outburst Gold",
+   "groupe": "numerotee",
+   "nb_cartes": 200,
+   "tirage": 1,
+   "parallele_de": "Base",
+   "par_boite": null,
+   "cotes": "1/1 hobby/ePack"
+  },
+  {
+   "nom": "Printing Plates",
+   "groupe": "numerotee",
+   "nb_cartes": 200,
+   "tirage": 1,
+   "parallele_de": "Base",
+   "par_boite": null,
+   "cotes": "1/1 hobby/ePack"
+  },
+  {
+   "nom": "Silver Foil",
+   "groupe": "insert",
+   "nb_cartes": 200,
+   "tirage": null,
+   "parallele_de": "Base",
+   "par_boite": 0,
+   "cotes": "Achievement ePack seulement"
+  },
+  {
+   "nom": "Speckled Rainbow Foil",
+   "groupe": "insert",
+   "nb_cartes": 200,
+   "tirage": null,
+   "parallele_de": "Base",
+   "par_boite": 0,
+   "cotes": "Achievement ePack seulement"
+  },
+  {
+   "nom": "Young Guns",
+   "groupe": "recrue",
+   "nb_cartes": 40,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": 4.0,
+   "cotes": "1:3 paquets hobby/ePack/Blaster/Hanger ; #701-740 dont 1 checklist (#740)"
+  },
+  {
+   "nom": "Young Guns Holiday",
+   "groupe": "recrue",
+   "nb_cartes": 40,
+   "tirage": null,
+   "parallele_de": "Young Guns",
+   "par_boite": 0,
+   "cotes": "1:15 paquets Holiday (exclusif Holiday)"
+  },
+  {
+   "nom": "Young Guns Outburst Silver",
+   "groupe": "recrue",
+   "nb_cartes": 40,
+   "tirage": null,
+   "parallele_de": "Young Guns",
+   "par_boite": 0.16,
+   "cotes": "1:75 paquets hobby/ePack"
+  },
+  {
+   "nom": "Young Guns Clear Cut",
+   "groupe": "recrue",
+   "nb_cartes": 40,
+   "tirage": null,
+   "parallele_de": "Young Guns",
+   "par_boite": 0.0659,
+   "cotes": "1:182 paquets hobby (exclusif hobby)"
+  },
+  {
+   "nom": "Young Guns Deluxe",
+   "groupe": "recrue",
+   "nb_cartes": 40,
+   "tirage": 250,
+   "parallele_de": "Young Guns",
+   "par_boite": null,
+   "cotes": "/250 hobby/ePack"
+  },
+  {
+   "nom": "Young Guns Exclusives",
+   "groupe": "recrue",
+   "nb_cartes": 40,
+   "tirage": 100,
+   "parallele_de": "Young Guns",
+   "par_boite": null,
+   "cotes": "/100 hobby/ePack"
+  },
+  {
+   "nom": "Young Guns Outburst Red",
+   "groupe": "recrue",
+   "nb_cartes": 40,
+   "tirage": 25,
+   "parallele_de": "Young Guns",
+   "par_boite": null,
+   "cotes": "/25 hobby/ePack"
+  },
+  {
+   "nom": "Young Guns High Gloss",
+   "groupe": "recrue",
+   "nb_cartes": 40,
+   "tirage": 10,
+   "parallele_de": "Young Guns",
+   "par_boite": null,
+   "cotes": "/10 hobby/ePack"
+  },
+  {
+   "nom": "Young Guns Outburst Gold",
+   "groupe": "recrue",
+   "nb_cartes": 40,
+   "tirage": 1,
+   "parallele_de": "Young Guns",
+   "par_boite": null,
+   "cotes": "1/1 hobby/ePack"
+  },
+  {
+   "nom": "Young Guns Silver Foil",
+   "groupe": "recrue",
+   "nb_cartes": 40,
+   "tirage": null,
+   "parallele_de": "Young Guns",
+   "par_boite": 0,
+   "cotes": "Achievement ePack seulement"
+  },
+  {
+   "nom": "Young Guns Speckled Rainbow Foil",
+   "groupe": "recrue",
+   "nb_cartes": 40,
+   "tirage": null,
+   "parallele_de": "Young Guns",
+   "par_boite": 0,
+   "cotes": "Achievement ePack seulement"
+  },
+  {
+   "nom": "1st Round Draft Rookies",
+   "groupe": "recrue",
+   "nb_cartes": 10,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": 1.2,
+   "cotes": "1:10 paquets hobby/ePack/Blaster/Hanger ; #741-750"
+  },
+  {
+   "nom": "1st Round Draft Rookies Holiday",
+   "groupe": "recrue",
+   "nb_cartes": 10,
+   "tirage": null,
+   "parallele_de": "1st Round Draft Rookies",
+   "par_boite": 0,
+   "cotes": "1:60 paquets Holiday (exclusif Holiday)"
+  },
+  {
+   "nom": "1st Round Draft Rookies Outburst Silver",
+   "groupe": "recrue",
+   "nb_cartes": 10,
+   "tirage": null,
+   "parallele_de": "1st Round Draft Rookies",
+   "par_boite": 0.04,
+   "cotes": "1:300 paquets hobby/ePack"
+  },
+  {
+   "nom": "1st Round Draft Rookies Clear Cut",
+   "groupe": "recrue",
+   "nb_cartes": 10,
+   "tirage": null,
+   "parallele_de": "1st Round Draft Rookies",
+   "par_boite": 0.0659,
+   "cotes": "1:182 paquets hobby (exclusif hobby)"
+  },
+  {
+   "nom": "1st Round Draft Rookies Deluxe",
+   "groupe": "recrue",
+   "nb_cartes": 10,
+   "tirage": 250,
+   "parallele_de": "1st Round Draft Rookies",
+   "par_boite": null,
+   "cotes": "/250 hobby/ePack"
+  },
+  {
+   "nom": "1st Round Draft Rookies Exclusives",
+   "groupe": "recrue",
+   "nb_cartes": 10,
+   "tirage": 100,
+   "parallele_de": "1st Round Draft Rookies",
+   "par_boite": null,
+   "cotes": "/100 hobby/ePack"
+  },
+  {
+   "nom": "1st Round Draft Rookies Outburst Red",
+   "groupe": "recrue",
+   "nb_cartes": 10,
+   "tirage": 25,
+   "parallele_de": "1st Round Draft Rookies",
+   "par_boite": null,
+   "cotes": "/25 hobby/ePack"
+  },
+  {
+   "nom": "1st Round Draft Rookies High Gloss",
+   "groupe": "recrue",
+   "nb_cartes": 10,
+   "tirage": 10,
+   "parallele_de": "1st Round Draft Rookies",
+   "par_boite": null,
+   "cotes": "/10 hobby/ePack"
+  },
+  {
+   "nom": "1st Round Draft Rookies Outburst Gold",
+   "groupe": "recrue",
+   "nb_cartes": 10,
+   "tirage": 1,
+   "parallele_de": "1st Round Draft Rookies",
+   "par_boite": null,
+   "cotes": "1/1 hobby/ePack"
+  },
+  {
+   "nom": "1st Round Draft Rookies Silver Foil",
+   "groupe": "recrue",
+   "nb_cartes": 10,
+   "tirage": null,
+   "parallele_de": "1st Round Draft Rookies",
+   "par_boite": 0,
+   "cotes": "Achievement ePack seulement"
+  },
+  {
+   "nom": "1st Round Draft Rookies Speckled Rainbow Foil",
+   "groupe": "recrue",
+   "nb_cartes": 10,
+   "tirage": null,
+   "parallele_de": "1st Round Draft Rookies",
+   "par_boite": 0,
+   "cotes": "Achievement ePack seulement"
+  },
+  {
+   "nom": "Young Guns Acetate",
+   "groupe": "recrue",
+   "nb_cartes": 136,
+   "tirage": null,
+   "parallele_de": "Young Guns",
+   "par_boite": null,
+   "cotes": "exclusif hobby/ePack, cote non publiée ; couvre les Young Guns Series 1 (#201-249), Series 2 (#451-498) et Extended (#701-739)"
+  },
+  {
+   "nom": "Playoff Photo Variation",
+   "groupe": "insert",
+   "nb_cartes": 15,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": null,
+   "cotes": "exclusif hobby/ePack, cote non publiée"
+  },
+  {
+   "nom": "Outdoor/Special Game Photo Variation",
+   "groupe": "insert",
+   "nb_cartes": 15,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": null,
+   "cotes": "exclusif hobby/ePack, cote non publiée"
+  },
+  {
+   "nom": "Swagnificent Variation",
+   "groupe": "insert",
+   "nb_cartes": 15,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": null,
+   "cotes": "exclusif hobby/ePack, cote non publiée"
+  },
+  {
+   "nom": "Snow Spray Auto Variation",
+   "groupe": "auto",
+   "nb_cartes": 17,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": null,
+   "cotes": "exclusif hobby/ePack, cote non publiée"
+  },
+  {
+   "nom": "Draft Swagnificent Auto Achievement",
+   "groupe": "auto",
+   "nb_cartes": 3,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": 0,
+   "cotes": "Achievement ePack seulement"
+  },
+  {
+   "nom": "UD Debut Game Jersey",
+   "groupe": "memo",
+   "nb_cartes": 9,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": 0.0093,
+   "cotes": "1:1 296 paquets hobby/ePack ; 1:1 440 Blaster/Hanger (le résumé Checklist Insider indique 1:1 008)"
+  },
+  {
+   "nom": "UD Debut Game Jersey Auto",
+   "groupe": "auto_memo",
+   "nb_cartes": 9,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": null,
+   "cotes": "autographe sur la carte, numéroté au numéro de chandail (/6 à /76) ; inséré au hasard hobby/ePack/Blaster/Hanger"
+  },
+  {
+   "nom": "UD Debut Game Jersey Auto Black",
+   "groupe": "auto_memo",
+   "nb_cartes": 9,
+   "tirage": 1,
+   "parallele_de": "UD Debut Game Jersey Auto",
+   "par_boite": null,
+   "cotes": "1/1 hobby/ePack"
+  },
+  {
+   "nom": "All-World Team",
+   "groupe": "insert",
+   "nb_cartes": 20,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": 2.0,
+   "cotes": "1:6 paquets hobby/ePack"
+  },
+  {
+   "nom": "All-World Team Speckle",
+   "groupe": "insert",
+   "nb_cartes": 20,
+   "tirage": null,
+   "parallele_de": "All-World Team",
+   "par_boite": 0.1333,
+   "cotes": "1:90 paquets hobby/ePack"
+  },
+  {
+   "nom": "All-World Team Red",
+   "groupe": "numerotee",
+   "nb_cartes": 20,
+   "tirage": 199,
+   "parallele_de": "All-World Team",
+   "par_boite": null,
+   "cotes": "/199 hobby/ePack"
+  },
+  {
+   "nom": "All-World Team Gold",
+   "groupe": "numerotee",
+   "nb_cartes": 20,
+   "tirage": 25,
+   "parallele_de": "All-World Team",
+   "par_boite": null,
+   "cotes": "/25 hobby/ePack"
+  },
+  {
+   "nom": "Champs Rookies",
+   "groupe": "insert",
+   "nb_cartes": 20,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": 0,
+   "cotes": "1:36 paquets ePack (exclusif ePack)"
+  },
+  {
+   "nom": "Day With the Cup",
+   "groupe": "insert",
+   "nb_cartes": 10,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": null,
+   "cotes": "exclusif hobby/ePack, cote non publiée"
+  },
+  {
+   "nom": "Dazzlers Blue",
+   "groupe": "insert",
+   "nb_cartes": 50,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": 1,
+   "cotes": "1 par boîte hobby (1:12 paquets hobby/ePack/Hanger)"
+  },
+  {
+   "nom": "Dazzlers Green",
+   "groupe": "insert",
+   "nb_cartes": 50,
+   "tirage": null,
+   "parallele_de": "Dazzlers Blue",
+   "par_boite": 0,
+   "cotes": "1:4 Hanger (exclusif détail)"
+  },
+  {
+   "nom": "Dazzlers Holiday",
+   "groupe": "insert",
+   "nb_cartes": 50,
+   "tirage": null,
+   "parallele_de": "Dazzlers Blue",
+   "par_boite": 0,
+   "cotes": "1:12 Holiday (exclusif Holiday)"
+  },
+  {
+   "nom": "Dazzlers Pink",
+   "groupe": "insert",
+   "nb_cartes": 50,
+   "tirage": null,
+   "parallele_de": "Dazzlers Blue",
+   "par_boite": 0.1667,
+   "cotes": "1:72 paquets hobby/ePack/Hanger"
+  },
+  {
+   "nom": "Dazzlers Gold",
+   "groupe": "insert",
+   "nb_cartes": 50,
+   "tirage": null,
+   "parallele_de": "Dazzlers Blue",
+   "par_boite": 0.0042,
+   "cotes": "1:2 880 paquets"
+  },
+  {
+   "nom": "HoloGrFx Rookies",
+   "groupe": "insert",
+   "nb_cartes": 20,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": 0.2,
+   "cotes": "1:60 paquets hobby/ePack/Hanger ; 1:120 Blaster"
+  },
+  {
+   "nom": "HoloGrFx Rookies AuSOME",
+   "groupe": "insert",
+   "nb_cartes": 20,
+   "tirage": null,
+   "parallele_de": "HoloGrFx Rookies",
+   "par_boite": 0.1,
+   "cotes": "1:120 paquets hobby/ePack/Hanger"
+  },
+  {
+   "nom": "HoloGrFx Star View",
+   "groupe": "insert",
+   "nb_cartes": 10,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": 0.0333,
+   "cotes": "1:360 paquets hobby/ePack/Hanger ; 1:720 Blaster"
+  },
+  {
+   "nom": "Killer Keepers",
+   "groupe": "insert",
+   "nb_cartes": 24,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": null,
+   "cotes": "SP acétate exclusif hobby/ePack, 35 exemplaires par carte selon Checklist Insider ; cote non publiée"
+  },
+  {
+   "nom": "Playmakers",
+   "groupe": "insert",
+   "nb_cartes": 15,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": null,
+   "cotes": "exclusif hobby/ePack, cote non publiée"
+  },
+  {
+   "nom": "Power Play",
+   "groupe": "insert",
+   "nb_cartes": 25,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": 2.4,
+   "cotes": "1:5 paquets hobby/ePack"
+  },
+  {
+   "nom": "Power Play Speckle",
+   "groupe": "insert",
+   "nb_cartes": 25,
+   "tirage": null,
+   "parallele_de": "Power Play",
+   "par_boite": 0.1667,
+   "cotes": "1:72 paquets hobby/ePack"
+  },
+  {
+   "nom": "Power Play Red",
+   "groupe": "numerotee",
+   "nb_cartes": 25,
+   "tirage": 199,
+   "parallele_de": "Power Play",
+   "par_boite": null,
+   "cotes": "/199 hobby/ePack"
+  },
+  {
+   "nom": "Power Play Gold",
+   "groupe": "numerotee",
+   "nb_cartes": 25,
+   "tirage": 25,
+   "parallele_de": "Power Play",
+   "par_boite": null,
+   "cotes": "/25 hobby/ePack"
+  },
+  {
+   "nom": "Pros and Prospects",
+   "groupe": "insert",
+   "nb_cartes": 40,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": 4.0,
+   "cotes": "1:3 paquets hobby/ePack/Blaster/Hanger"
+  },
+  {
+   "nom": "Pros and Prospects Gold",
+   "groupe": "numerotee",
+   "nb_cartes": 40,
+   "tirage": 250,
+   "parallele_de": "Pros and Prospects",
+   "par_boite": null,
+   "cotes": "/250 hobby/ePack"
+  },
+  {
+   "nom": "Pros and Prospects Printing Plates",
+   "groupe": "numerotee",
+   "nb_cartes": 40,
+   "tirage": 1,
+   "parallele_de": "Pros and Prospects",
+   "par_boite": null,
+   "cotes": "1/1 hobby/ePack"
+  },
+  {
+   "nom": "Rookie Reflections",
+   "groupe": "insert",
+   "nb_cartes": 30,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": 3.0,
+   "cotes": "1:4 paquets hobby/ePack ; 1:3 Blaster/Hanger"
+  },
+  {
+   "nom": "Rookie Reflections Gold",
+   "groupe": "numerotee",
+   "nb_cartes": 30,
+   "tirage": 100,
+   "parallele_de": "Rookie Reflections",
+   "par_boite": null,
+   "cotes": "/100 hobby/ePack"
+  },
+  {
+   "nom": "Rookie Update",
+   "groupe": "numerotee",
+   "nb_cartes": 50,
+   "tirage": 1999,
+   "parallele_de": null,
+   "par_boite": null,
+   "cotes": "/1 999 hobby/ePack, cote non publiée"
+  },
+  {
+   "nom": "Rookie Update Red",
+   "groupe": "numerotee",
+   "nb_cartes": 50,
+   "tirage": 199,
+   "parallele_de": "Rookie Update",
+   "par_boite": null,
+   "cotes": "/199 hobby/ePack"
+  },
+  {
+   "nom": "Rookie Update Gold",
+   "groupe": "numerotee",
+   "nb_cartes": 50,
+   "tirage": 10,
+   "parallele_de": "Rookie Update",
+   "par_boite": null,
+   "cotes": "/10 hobby/ePack"
+  },
+  {
+   "nom": "Sizzle Reel",
+   "groupe": "insert",
+   "nb_cartes": 25,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": 2.4,
+   "cotes": "1:5 paquets hobby/ePack"
+  },
+  {
+   "nom": "Sizzle Reel Speckle",
+   "groupe": "insert",
+   "nb_cartes": 25,
+   "tirage": null,
+   "parallele_de": "Sizzle Reel",
+   "par_boite": 0.1667,
+   "cotes": "1:72 paquets hobby/ePack"
+  },
+  {
+   "nom": "Sizzle Reel Red",
+   "groupe": "numerotee",
+   "nb_cartes": 25,
+   "tirage": 199,
+   "parallele_de": "Sizzle Reel",
+   "par_boite": null,
+   "cotes": "/199 hobby/ePack"
+  },
+  {
+   "nom": "Sizzle Reel Gold",
+   "groupe": "numerotee",
+   "nb_cartes": 25,
+   "tirage": 25,
+   "parallele_de": "Sizzle Reel",
+   "par_boite": null,
+   "cotes": "/25 hobby/ePack"
+  },
+  {
+   "nom": "Synergy Rookies",
+   "groupe": "numerotee",
+   "nb_cartes": 40,
+   "tirage": 26,
+   "parallele_de": null,
+   "par_boite": null,
+   "cotes": "/26 hobby/ePack, cote non publiée"
+  },
+  {
+   "nom": "Trilogy Rookie Premieres",
+   "groupe": "numerotee",
+   "nb_cartes": 33,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": null,
+   "cotes": "exclusif hobby/ePack, cote non publiée ; Common /999, Uncommon /499, Rare /99"
+  },
+  {
+   "nom": "Thermal Threats",
+   "groupe": "insert",
+   "nb_cartes": 1,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": null,
+   "cotes": "exclusif hobby/ePack, cote non publiée"
+  },
+  {
+   "nom": "UD3",
+   "groupe": "insert",
+   "nb_cartes": 30,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": 3.0,
+   "cotes": "1:4 paquets hobby/ePack ; 1:3 Blaster/Hanger"
+  },
+  {
+   "nom": "UD3 Gold",
+   "groupe": "numerotee",
+   "nb_cartes": 30,
+   "tirage": 333,
+   "parallele_de": "UD3",
+   "par_boite": null,
+   "cotes": "/333 hobby/ePack"
+  },
+  {
+   "nom": "Understood the Assignment",
+   "groupe": "insert",
+   "nb_cartes": 30,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": 3.0,
+   "cotes": "1:4 paquets hobby/ePack"
+  },
+  {
+   "nom": "Understood the Assignment Speckle",
+   "groupe": "insert",
+   "nb_cartes": 30,
+   "tirage": null,
+   "parallele_de": "Understood the Assignment",
+   "par_boite": 0.2,
+   "cotes": "1:60 paquets hobby/ePack"
+  },
+  {
+   "nom": "Understood the Assignment Red",
+   "groupe": "numerotee",
+   "nb_cartes": 30,
+   "tirage": 199,
+   "parallele_de": "Understood the Assignment",
+   "par_boite": null,
+   "cotes": "/199 hobby/ePack"
+  },
+  {
+   "nom": "Understood the Assignment Gold",
+   "groupe": "numerotee",
+   "nb_cartes": 30,
+   "tirage": 25,
+   "parallele_de": "Understood the Assignment",
+   "par_boite": null,
+   "cotes": "/25 hobby/ePack"
+  },
+  {
+   "nom": "Outburst Retro Young Guns",
+   "groupe": "insert",
+   "nb_cartes": 5,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": 0.0042,
+   "cotes": "1:2 880 paquets hobby/ePack"
+  },
+  {
+   "nom": "Outburst Retro Young Guns Red",
+   "groupe": "numerotee",
+   "nb_cartes": 5,
+   "tirage": 25,
+   "parallele_de": "Outburst Retro Young Guns",
+   "par_boite": null,
+   "cotes": "/25 hobby/ePack"
+  },
+  {
+   "nom": "Outburst Retro Young Guns Gold",
+   "groupe": "numerotee",
+   "nb_cartes": 5,
+   "tirage": 1,
+   "parallele_de": "Outburst Retro Young Guns",
+   "par_boite": null,
+   "cotes": "1/1 hobby/ePack"
+  },
+  {
+   "nom": "UD Canvas",
+   "groupe": "insert",
+   "nb_cartes": 90,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": 3.0,
+   "cotes": "1:4 paquets hobby/ePack ; 1:7 Blaster/Hanger"
+  },
+  {
+   "nom": "UD Canvas Black and White",
+   "groupe": "insert",
+   "nb_cartes": 90,
+   "tirage": null,
+   "parallele_de": "UD Canvas",
+   "par_boite": 0.2,
+   "cotes": "1:60 paquets hobby/ePack"
+  },
+  {
+   "nom": "UD Canvas Young Guns",
+   "groupe": "recrue",
+   "nb_cartes": 30,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": 0.5,
+   "cotes": "1:24 paquets hobby/ePack ; 1:48 Blaster/Hanger"
+  },
+  {
+   "nom": "UD Canvas Young Guns Black and White",
+   "groupe": "recrue",
+   "nb_cartes": 30,
+   "tirage": null,
+   "parallele_de": "UD Canvas Young Guns",
+   "par_boite": 0.0889,
+   "cotes": "1:135 paquets hobby/ePack"
+  },
+  {
+   "nom": "UD Canvas Young Guns Printing Plates",
+   "groupe": "recrue",
+   "nb_cartes": 30,
+   "tirage": 1,
+   "parallele_de": "UD Canvas Young Guns",
+   "par_boite": null,
+   "cotes": "1/1 hobby/ePack"
+  },
+  {
+   "nom": "UD Canvas Legends",
+   "groupe": "insert",
+   "nb_cartes": 15,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": 0.125,
+   "cotes": "1:96 paquets hobby/ePack ; 1:192 Blaster/Hanger"
+  },
+  {
+   "nom": "UD Canvas Legends Black and White",
+   "groupe": "insert",
+   "nb_cartes": 15,
+   "tirage": null,
+   "parallele_de": "UD Canvas Legends",
+   "par_boite": 0.0222,
+   "cotes": "1:540 paquets hobby/ePack"
+  },
+  {
+   "nom": "UD Canvas Legends Printing Plates",
+   "groupe": "numerotee",
+   "nb_cartes": 15,
+   "tirage": 1,
+   "parallele_de": "UD Canvas Legends",
+   "par_boite": null,
+   "cotes": "1/1 hobby/ePack"
+  },
+  {
+   "nom": "UD Canvas 4 Nations Face-Off",
+   "groupe": "insert",
+   "nb_cartes": 15,
+   "tirage": null,
+   "parallele_de": null,
+   "par_boite": 0.125,
+   "cotes": "1:96 paquets hobby/ePack ; 1:192 Blaster/Hanger"
+  },
+  {
+   "nom": "UD Canvas 4 Nations Face-Off Black and White",
+   "groupe": "insert",
+   "nb_cartes": 15,
+   "tirage": null,
+   "parallele_de": "UD Canvas 4 Nations Face-Off",
+   "par_boite": 0.0222,
+   "cotes": "1:540 paquets hobby/ePack"
+  },
+  {
+   "nom": "UD Canvas 4 Nations Face-Off Printing Plates",
+   "groupe": "numerotee",
+   "nb_cartes": 15,
+   "tirage": 1,
+   "parallele_de": "UD Canvas 4 Nations Face-Off",
+   "par_boite": null,
+   "cotes": "1/1 hobby/ePack"
+  }
+ ],
+ "groupes_boite": [
+  {
+   "libelle": "Young Guns and/or 1st Round Rookies",
+   "par_boite": 6,
+   "sous_ensembles": [
+    "Young Guns",
+    "1st Round Draft Rookies"
+   ]
+  },
+  {
+   "libelle": "Serial-numbered and/or rare ratio cards",
+   "par_boite": 3,
+   "sous_ensembles": []
+  },
+  {
+   "libelle": "Base Set Outburst Silver parallel",
+   "par_boite": 1,
+   "sous_ensembles": [
+    "Outburst Silver",
+    "Young Guns Outburst Silver",
+    "1st Round Draft Rookies Outburst Silver"
+   ]
+  },
+  {
+   "libelle": "Clear Cut parallel, UD Canvas Black & White parallel or HoloGrFx",
+   "par_boite": 1,
+   "sous_ensembles": [
+    "Clear Cut",
+    "Young Guns Clear Cut",
+    "1st Round Draft Rookies Clear Cut",
+    "UD Canvas Black and White",
+    "UD Canvas Young Guns Black and White",
+    "UD Canvas Legends Black and White",
+    "UD Canvas 4 Nations Face-Off Black and White",
+    "HoloGrFx Rookies",
+    "HoloGrFx Rookies AuSOME",
+    "HoloGrFx Star View"
+   ]
+  },
+  {
+   "libelle": "UD Canvas (Base, Young Guns, Legends and/or 4 Nations Face-Off)",
+   "par_boite": 4,
+   "sous_ensembles": [
+    "UD Canvas",
+    "UD Canvas Young Guns",
+    "UD Canvas Legends",
+    "UD Canvas 4 Nations Face-Off"
+   ]
+  },
+  {
+   "libelle": "Pros and Prospects, Rookie Reflections and/or UD3",
+   "par_boite": 10,
+   "sous_ensembles": [
+    "Pros and Prospects",
+    "Rookie Reflections",
+    "UD3"
+   ]
+  },
+  {
+   "libelle": "All-World Team, Power Play, Sizzle Reel and/or Understood the Assignment",
+   "par_boite": 9,
+   "sous_ensembles": [
+    "All-World Team",
+    "Power Play",
+    "Sizzle Reel",
+    "Understood the Assignment"
+   ]
+  },
+  {
+   "libelle": "Insert Speckle parallel (All-World Team, Power Play, Sizzle Reel, Understood the Assignment)",
+   "par_boite": 1,
+   "sous_ensembles": [
+    "All-World Team Speckle",
+    "Power Play Speckle",
+    "Sizzle Reel Speckle",
+    "Understood the Assignment Speckle"
+   ]
+  }
+ ],
+ "cartes": [
+  {
+   "numero": "501",
+   "joueur": "Mikael Granlund",
+   "equipe": "ANA",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "502",
+   "joueur": "Ryan Strome",
+   "equipe": "ANA",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "503",
+   "joueur": "Chris Kreider",
+   "equipe": "ANA",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "504",
+   "joueur": "Drew Helleson",
+   "equipe": "ANA",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "505",
+   "joueur": "Lukas Dostal",
+   "equipe": "ANA",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "506",
+   "joueur": "Tanner Jeannot",
+   "equipe": "BOS",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "507",
+   "joueur": "Viktor Arvidsson",
+   "equipe": "BOS",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "508",
+   "joueur": "Morgan Geekie",
+   "equipe": "BOS",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "509",
+   "joueur": "Charlie McAvoy",
+   "equipe": "BOS",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "510",
+   "joueur": "Bowen Byram",
+   "equipe": "BUF",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "511",
+   "joueur": "Jason Zucker",
+   "equipe": "BUF",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "512",
+   "joueur": "Owen Power",
+   "equipe": "BUF",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "513",
+   "joueur": "Josh Norris",
+   "equipe": "BUF",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "514",
+   "joueur": "Justin Danforth",
+   "equipe": "BUF",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "515",
+   "joueur": "MacKenzie Weegar",
+   "equipe": "CGY",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "516",
+   "joueur": "Joel Hanley",
+   "equipe": "CGY",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "517",
+   "joueur": "Morgan Frost",
+   "equipe": "CGY",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "518",
+   "joueur": "Connor Zary",
+   "equipe": "CGY",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "519",
+   "joueur": "Yegor Sharangovich",
+   "equipe": "CGY",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "520",
+   "joueur": "Nikolaj Ehlers",
+   "equipe": "CAR",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "521",
+   "joueur": "K'Andre Miller",
+   "equipe": "CAR",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "522",
+   "joueur": "Andrei Svechnikov",
+   "equipe": "CAR",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "523",
+   "joueur": "William Carrier",
+   "equipe": "CAR",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "524",
+   "joueur": "Arvid Soderblom",
+   "equipe": "CHI",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "525",
+   "joueur": "Nolan Allan",
+   "equipe": "CHI",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "526",
+   "joueur": "Ryan Donato",
+   "equipe": "CHI",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "527",
+   "joueur": "Landon Slaggert",
+   "equipe": "CHI",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "528",
+   "joueur": "Gabriel Landeskog",
+   "equipe": "COL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "529",
+   "joueur": "Martin Necas",
+   "equipe": "COL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "530",
+   "joueur": "Artturi Lehkonen",
+   "equipe": "COL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "531",
+   "joueur": "Brent Burns",
+   "equipe": "COL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "532",
+   "joueur": "Scott Wedgewood",
+   "equipe": "COL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "533",
+   "joueur": "Ivan Provorov",
+   "equipe": "CBJ",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "534",
+   "joueur": "Jake Christiansen",
+   "equipe": "CBJ",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "535",
+   "joueur": "Charlie Coyle",
+   "equipe": "CBJ",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "536",
+   "joueur": "Miles Wood",
+   "equipe": "CBJ",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "537",
+   "joueur": "Denton Mateychuk",
+   "equipe": "CBJ",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "538",
+   "joueur": "Matt Duchene",
+   "equipe": "DAL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "539",
+   "joueur": "Esa Lindell",
+   "equipe": "DAL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "540",
+   "joueur": "Jake Oettinger",
+   "equipe": "DAL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "541",
+   "joueur": "Radek Faksa",
+   "equipe": "DAL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "542",
+   "joueur": "Colin Blackwell",
+   "equipe": "DAL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "543",
+   "joueur": "Patrick Kane",
+   "equipe": "DET",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "544",
+   "joueur": "Jacob Bernard-Docker",
+   "equipe": "DET",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "545",
+   "joueur": "Jonatan Berggren",
+   "equipe": "DET",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "546",
+   "joueur": "Mason Appleton",
+   "equipe": "DET",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "547",
+   "joueur": "J.T. Compher",
+   "equipe": "DET",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "548",
+   "joueur": "Andrew Mangiapane",
+   "equipe": "EDM",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "549",
+   "joueur": "Curtis Lazar",
+   "equipe": "EDM",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "550",
+   "joueur": "Trent Frederic",
+   "equipe": "EDM",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "551",
+   "joueur": "Evan Bouchard",
+   "equipe": "EDM",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "552",
+   "joueur": "Jesper Boqvist",
+   "equipe": "FLA",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "553",
+   "joueur": "Carter Verhaeghe",
+   "equipe": "FLA",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "554",
+   "joueur": "Mackie Samoskevich",
+   "equipe": "FLA",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "555",
+   "joueur": "Sam Bennett",
+   "equipe": "FLA",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "556",
+   "joueur": "Aaron Ekblad",
+   "equipe": "FLA",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "557",
+   "joueur": "Joel Armia",
+   "equipe": "LAK",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "558",
+   "joueur": "Kevin Fiala",
+   "equipe": "LAK",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "559",
+   "joueur": "Brian Dumoulin",
+   "equipe": "LAK",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "560",
+   "joueur": "Alex Laferriere",
+   "equipe": "LAK",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "561",
+   "joueur": "Corey Perry",
+   "equipe": "LAK",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "562",
+   "joueur": "Nico Sturm",
+   "equipe": "MIN",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "563",
+   "joueur": "Marco Rossi",
+   "equipe": "MIN",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "564",
+   "joueur": "Marcus Johansson",
+   "equipe": "MIN",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "565",
+   "joueur": "Joel Eriksson Ek",
+   "equipe": "MIN",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "566",
+   "joueur": "Noah Dobson",
+   "equipe": "MTL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "567",
+   "joueur": "Alex Newhook",
+   "equipe": "MTL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "568",
+   "joueur": "Arber Xhekaj",
+   "equipe": "MTL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "569",
+   "joueur": "Zachary Bolduc",
+   "equipe": "MTL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "570",
+   "joueur": "Erik Haula",
+   "equipe": "NSH",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "571",
+   "joueur": "Nicolas Hague",
+   "equipe": "NSH",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "572",
+   "joueur": "Jonathan Marchessault",
+   "equipe": "NSH",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "573",
+   "joueur": "Nick Perbix",
+   "equipe": "NSH",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "574",
+   "joueur": "Jake Allen",
+   "equipe": "NJD",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "575",
+   "joueur": "Luke Hughes",
+   "equipe": "NJD",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "576",
+   "joueur": "Johnathan Kovacevic",
+   "equipe": "NJD",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "577",
+   "joueur": "Timo Meier",
+   "equipe": "NJD",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "578",
+   "joueur": "Connor Brown",
+   "equipe": "NJD",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "579",
+   "joueur": "Alexander Romanov",
+   "equipe": "NYI",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "580",
+   "joueur": "Kyle Palmieri",
+   "equipe": "NYI",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "581",
+   "joueur": "Simon Holmstrom",
+   "equipe": "NYI",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "582",
+   "joueur": "Jonathan Drouin",
+   "equipe": "NYI",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "583",
+   "joueur": "Jonathan Quick",
+   "equipe": "NYR",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "584",
+   "joueur": "Vladislav Gavrikov",
+   "equipe": "NYR",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "585",
+   "joueur": "J.T. Miller",
+   "equipe": "NYR",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "586",
+   "joueur": "Taylor Raddysh",
+   "equipe": "NYR",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "587",
+   "joueur": "Claude Giroux",
+   "equipe": "OTT",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "588",
+   "joueur": "Jake Sanderson",
+   "equipe": "OTT",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "589",
+   "joueur": "Ridly Greig",
+   "equipe": "OTT",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "590",
+   "joueur": "Drake Batherson",
+   "equipe": "OTT",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "591",
+   "joueur": "Dylan Cozens",
+   "equipe": "OTT",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "592",
+   "joueur": "Noah Cates",
+   "equipe": "PHI",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "593",
+   "joueur": "Trevor Zegras",
+   "equipe": "PHI",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "594",
+   "joueur": "Tyson Foerster",
+   "equipe": "PHI",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "595",
+   "joueur": "Cam York",
+   "equipe": "PHI",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "596",
+   "joueur": "Parker Wotherspoon",
+   "equipe": "PIT",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "597",
+   "joueur": "Connor Clifton",
+   "equipe": "PIT",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "598",
+   "joueur": "Erik Karlsson",
+   "equipe": "PIT",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "599",
+   "joueur": "Anthony Mantha",
+   "equipe": "PIT",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "600",
+   "joueur": "Jeff Skinner",
+   "equipe": "SJS",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "601",
+   "joueur": "Mario Ferraro",
+   "equipe": "SJS",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "602",
+   "joueur": "Adam Gaudette",
+   "equipe": "SJS",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "603",
+   "joueur": "Dmitry Orlov",
+   "equipe": "SJS",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "604",
+   "joueur": "Jared McCann",
+   "equipe": "SEA",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "605",
+   "joueur": "Ryan Lindgren",
+   "equipe": "SEA",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "606",
+   "joueur": "Mason Marchment",
+   "equipe": "SEA",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "607",
+   "joueur": "Kaapo Kakko",
+   "equipe": "SEA",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "608",
+   "joueur": "Joey Daccord",
+   "equipe": "SEA",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "609",
+   "joueur": "Pius Suter",
+   "equipe": "STL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "610",
+   "joueur": "Jake Neighbours",
+   "equipe": "STL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "611",
+   "joueur": "Jordan Kyrou",
+   "equipe": "STL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "612",
+   "joueur": "Nick Bjugstad",
+   "equipe": "STL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "613",
+   "joueur": "Oliver Bjorkstrand",
+   "equipe": "TBL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "614",
+   "joueur": "Pontus Holmberg",
+   "equipe": "TBL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "615",
+   "joueur": "Nikita Kucherov",
+   "equipe": "TBL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "616",
+   "joueur": "Anthony Cirelli",
+   "equipe": "TBL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "617",
+   "joueur": "John Tavares",
+   "equipe": "TOR",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "618",
+   "joueur": "Nick Robertson",
+   "equipe": "TOR",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "619",
+   "joueur": "Brandon Carlo",
+   "equipe": "TOR",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "620",
+   "joueur": "Joseph Woll",
+   "equipe": "TOR",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "621",
+   "joueur": "Simon Benoit",
+   "equipe": "TOR",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "622",
+   "joueur": "Logan Cooley",
+   "equipe": "UTA",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "623",
+   "joueur": "Michael Carcone",
+   "equipe": "UTA",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "624",
+   "joueur": "Brandon Tanev",
+   "equipe": "UTA",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "625",
+   "joueur": "John Marino",
+   "equipe": "UTA",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "626",
+   "joueur": "Kevin Lankinen",
+   "equipe": "VAN",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "627",
+   "joueur": "Evander Kane",
+   "equipe": "VAN",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "628",
+   "joueur": "Brock Boeser",
+   "equipe": "VAN",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "629",
+   "joueur": "Conor Garland",
+   "equipe": "VAN",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "630",
+   "joueur": "Jonathan Lekkerimaki",
+   "equipe": "VAN",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "631",
+   "joueur": "Brett Howden",
+   "equipe": "VGK",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "632",
+   "joueur": "Mitch Marner",
+   "equipe": "VGK",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "633",
+   "joueur": "William Karlsson",
+   "equipe": "VGK",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "634",
+   "joueur": "Zach Whitecloud",
+   "equipe": "VGK",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "635",
+   "joueur": "Adin Hill",
+   "equipe": "VGK",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "636",
+   "joueur": "Connor McMichael",
+   "equipe": "WSH",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "637",
+   "joueur": "Nic Dowd",
+   "equipe": "WSH",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "638",
+   "joueur": "Logan Thompson",
+   "equipe": "WSH",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "639",
+   "joueur": "Matt Roy",
+   "equipe": "WSH",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "640",
+   "joueur": "Jakob Chychrun",
+   "equipe": "WSH",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "641",
+   "joueur": "Jonathan Toews",
+   "equipe": "WPG",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "642",
+   "joueur": "Dylan Samberg",
+   "equipe": "WPG",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "643",
+   "joueur": "Gabe Vilardi",
+   "equipe": "WPG",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "644",
+   "joueur": "Josh Morrissey",
+   "equipe": "WPG",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "645",
+   "joueur": "Vladislav Namestnikov",
+   "equipe": "WPG",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "646",
+   "joueur": "Sidney Crosby",
+   "equipe": "PIT",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "647",
+   "joueur": "Seth Jarvis",
+   "equipe": "CAR",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "648",
+   "joueur": "Cale Makar",
+   "equipe": "COL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "649",
+   "joueur": "Brad Marchand",
+   "equipe": "FLA",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "650",
+   "joueur": "Mitch Marner",
+   "equipe": "VGK",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "651",
+   "joueur": "Connor McDavid",
+   "equipe": "EDM",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "652",
+   "joueur": "Brayden Point",
+   "equipe": "TBL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "653",
+   "joueur": "Sam Reinhart",
+   "equipe": "FLA",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "654",
+   "joueur": "Drew Doughty",
+   "equipe": "LAK",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "655",
+   "joueur": "Jordan Binnington",
+   "equipe": "STL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "656",
+   "joueur": "Josh Morrissey",
+   "equipe": "WPG",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "657",
+   "joueur": "Travis Konecny",
+   "equipe": "PHI",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "658",
+   "joueur": "Shea Theodore",
+   "equipe": "VGK",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "659",
+   "joueur": "Mark Stone",
+   "equipe": "VGK",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "660",
+   "joueur": "Patrik Laine",
+   "equipe": "MTL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "661",
+   "joueur": "Mikko Rantanen",
+   "equipe": "DAL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "662",
+   "joueur": "Roope Hintz",
+   "equipe": "DAL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "663",
+   "joueur": "Aleksander Barkov",
+   "equipe": "FLA",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "664",
+   "joueur": "Mikael Granlund",
+   "equipe": "ANA",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "665",
+   "joueur": "Kaapo Kakko",
+   "equipe": "SEA",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "666",
+   "joueur": "Ukko-Pekka Luukkonen",
+   "equipe": "BUF",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "667",
+   "joueur": "Anton Lundell",
+   "equipe": "FLA",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "668",
+   "joueur": "Artturi Lehkonen",
+   "equipe": "COL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "669",
+   "joueur": "Juuse Saros",
+   "equipe": "NSH",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "670",
+   "joueur": "Sebastian Aho",
+   "equipe": "CAR",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "671",
+   "joueur": "Niko Mikkola",
+   "equipe": "FLA",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "672",
+   "joueur": "William Nylander",
+   "equipe": "TOR",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "673",
+   "joueur": "Adrian Kempe",
+   "equipe": "LAK",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "674",
+   "joueur": "Filip Forsberg",
+   "equipe": "NSH",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "675",
+   "joueur": "Lucas Raymond",
+   "equipe": "DET",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "676",
+   "joueur": "Rasmus Dahlin",
+   "equipe": "BUF",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "677",
+   "joueur": "Jesper Bratt",
+   "equipe": "NJD",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "678",
+   "joueur": "Mika Zibanejad",
+   "equipe": "NYR",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "679",
+   "joueur": "Victor Hedman",
+   "equipe": "TBL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "680",
+   "joueur": "Filip Gustavsson",
+   "equipe": "MIN",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "681",
+   "joueur": "Elias Pettersson",
+   "equipe": "VAN",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "682",
+   "joueur": "Erik Karlsson",
+   "equipe": "PIT",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "683",
+   "joueur": "Linus Ullmark",
+   "equipe": "OTT",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "684",
+   "joueur": "Gustav Forsling",
+   "equipe": "FLA",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "685",
+   "joueur": "Matt Boldy",
+   "equipe": "MIN",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "686",
+   "joueur": "Connor Hellebuyck",
+   "equipe": "WPG",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "687",
+   "joueur": "Auston Matthews",
+   "equipe": "TOR",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "688",
+   "joueur": "Charlie McAvoy",
+   "equipe": "BOS",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "689",
+   "joueur": "Matthew Tkachuk",
+   "equipe": "FLA",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "690",
+   "joueur": "Jack Hughes",
+   "equipe": "NJD",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "691",
+   "joueur": "Kyle Connor",
+   "equipe": "WPG",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "692",
+   "joueur": "Jaccob Slavin",
+   "equipe": "CAR",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "693",
+   "joueur": "Jake Guentzel",
+   "equipe": "TBL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "694",
+   "joueur": "Adam Fox",
+   "equipe": "NYR",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "695",
+   "joueur": "Dylan Larkin",
+   "equipe": "DET",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "696",
+   "joueur": "Jack Eichel",
+   "equipe": "VGK",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "697",
+   "joueur": "Zach Werenski",
+   "equipe": "CBJ",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "698",
+   "joueur": "Brady Tkachuk",
+   "equipe": "OTT",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "699",
+   "joueur": "Jonathan Toews / Patrick Kane",
+   "equipe": "WPG/DET",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "700",
+   "joueur": "Jakob Chychrun / Noah Dobson",
+   "equipe": "WSH/MTL",
+   "sous_ensemble": "Base",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "701",
+   "joueur": "Beckett Sennecke",
+   "equipe": "ANA",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "702",
+   "joueur": "Florian Xhekaj",
+   "equipe": "MTL",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "703",
+   "joueur": "Braeden Bowman",
+   "equipe": "VGK",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "704",
+   "joueur": "Trevor Kuntar",
+   "equipe": "BUF",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "705",
+   "joueur": "Shane Lachance",
+   "equipe": "NJD",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "706",
+   "joueur": "Taylor Makar",
+   "equipe": "COL",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "707",
+   "joueur": "Zeev Buium",
+   "equipe": "VAN",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "708",
+   "joueur": "Daniil But",
+   "equipe": "UTA",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "709",
+   "joueur": "Sergei Murashov",
+   "equipe": "PIT",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "710",
+   "joueur": "Ty Murchison",
+   "equipe": "PHI",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "711",
+   "joueur": "Otto Stenberg",
+   "equipe": "STL",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "712",
+   "joueur": "Berkly Catton",
+   "equipe": "SEA",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "713",
+   "joueur": "Connor Clattenburg",
+   "equipe": "EDM",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "714",
+   "joueur": "Nate Danielson",
+   "equipe": "DET",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "715",
+   "joueur": "Jack Devine",
+   "equipe": "FLA",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "716",
+   "joueur": "Aleksanteri Kaskimaki",
+   "equipe": "STL",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "717",
+   "joueur": "Tom Willander",
+   "equipe": "VAN",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "718",
+   "joueur": "Denver Barkey",
+   "equipe": "PHI",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "719",
+   "joueur": "Thomas Milic",
+   "equipe": "WPG",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "720",
+   "joueur": "Jaroslav Chmelar",
+   "equipe": "NYR",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "721",
+   "joueur": "Adam Engstrom",
+   "equipe": "MTL",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "722",
+   "joueur": "Artur Akhtyamov",
+   "equipe": "TOR",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "723",
+   "joueur": "Jonathan Aspirot",
+   "equipe": "BOS",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "724",
+   "joueur": "Jacob Fowler",
+   "equipe": "MTL",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "725",
+   "joueur": "Jared Davidson",
+   "equipe": "MTL",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "726",
+   "joueur": "Hunter Skinner",
+   "equipe": "STL",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "727",
+   "joueur": "Xavier Bourgault",
+   "equipe": "OTT",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "728",
+   "joueur": "Tristen Nielsen",
+   "equipe": "COL",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "729",
+   "joueur": "Carson Lambos",
+   "equipe": "MIN",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "730",
+   "joueur": "Maxim Groshev",
+   "equipe": "TBL",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "731",
+   "joueur": "Nick Lardis",
+   "equipe": "CHI",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "732",
+   "joueur": "Luca Pinelli",
+   "equipe": "CBJ",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "733",
+   "joueur": "Reid Schaefer",
+   "equipe": "NSH",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "734",
+   "joueur": "Tristan Broz",
+   "equipe": "PIT",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "735",
+   "joueur": "Bogdan Trineyev",
+   "equipe": "WSH",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "736",
+   "joueur": "Elias Salomonsson",
+   "equipe": "WPG",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "737",
+   "joueur": "Stephen Halliday",
+   "equipe": "OTT",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "738",
+   "joueur": "Vyacheslav Buteyets",
+   "equipe": "ANA",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "739",
+   "joueur": "Igor Chernyshov",
+   "equipe": "SJS",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "740",
+   "joueur": "Beckett Sennecke / Berkly Catton",
+   "equipe": "ANA/SEA",
+   "sous_ensemble": "Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "741",
+   "joueur": "Artyom Levshunov",
+   "equipe": "CHI",
+   "sous_ensemble": "1st Round Draft Rookies",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "742",
+   "joueur": "Berkly Catton",
+   "equipe": "SEA",
+   "sous_ensemble": "1st Round Draft Rookies",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "743",
+   "joueur": "Ivan Demidov",
+   "equipe": "MTL",
+   "sous_ensemble": "1st Round Draft Rookies",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "744",
+   "joueur": "Beckett Sennecke",
+   "equipe": "ANA",
+   "sous_ensemble": "1st Round Draft Rookies",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "745",
+   "joueur": "Ryan Leonard",
+   "equipe": "WSH",
+   "sous_ensemble": "1st Round Draft Rookies",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "746",
+   "joueur": "Matthew Schaefer",
+   "equipe": "NYI",
+   "sous_ensemble": "1st Round Draft Rookies",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "747",
+   "joueur": "Jimmy Snuggerud",
+   "equipe": "STL",
+   "sous_ensemble": "1st Round Draft Rookies",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "748",
+   "joueur": "Easton Cowan",
+   "equipe": "TOR",
+   "sous_ensemble": "1st Round Draft Rookies",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "749",
+   "joueur": "Zayne Parekh",
+   "equipe": "CGY",
+   "sous_ensemble": "1st Round Draft Rookies",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "750",
+   "joueur": "Michael Misa",
+   "equipe": "SJS",
+   "sous_ensemble": "1st Round Draft Rookies",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-271",
+   "joueur": "Nick Suzuki",
+   "equipe": "MTL",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-272",
+   "joueur": "Nazem Kadri",
+   "equipe": "CGY",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-273",
+   "joueur": "Garnet Hathaway",
+   "equipe": "PHI",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-274",
+   "joueur": "Mikko Rantanen",
+   "equipe": "DAL",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-275",
+   "joueur": "Nico Hischier",
+   "equipe": "NJD",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-276",
+   "joueur": "Anthony Cirelli",
+   "equipe": "TBL",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-277",
+   "joueur": "Seth Jarvis",
+   "equipe": "CAR",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-278",
+   "joueur": "Vladislav Gavrikov",
+   "equipe": "NYR",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-279",
+   "joueur": "Zach Hyman",
+   "equipe": "EDM",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-280",
+   "joueur": "Karel Vejmelka",
+   "equipe": "UTA",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-281",
+   "joueur": "Frank Nazar",
+   "equipe": "CHI",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-282",
+   "joueur": "Brock Boeser",
+   "equipe": "VAN",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-283",
+   "joueur": "Alex DeBrincat",
+   "equipe": "DET",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-284",
+   "joueur": "Auston Matthews",
+   "equipe": "TOR",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-285",
+   "joueur": "Adrian Kempe",
+   "equipe": "LAK",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-286",
+   "joueur": "Thomas Novak",
+   "equipe": "PIT",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-287",
+   "joueur": "Adam Fantilli",
+   "equipe": "CBJ",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-288",
+   "joueur": "Jonathan Toews",
+   "equipe": "WPG",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-289",
+   "joueur": "Lane Hutson",
+   "equipe": "MTL",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-290",
+   "joueur": "Yaroslav Askarov",
+   "equipe": "SJS",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-291",
+   "joueur": "Jason Robertson",
+   "equipe": "DAL",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-292",
+   "joueur": "Pierre-Luc Dubois",
+   "equipe": "WSH",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-293",
+   "joueur": "Trent Frederic",
+   "equipe": "EDM",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-294",
+   "joueur": "Pavel Buchnevich",
+   "equipe": "STL",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-295",
+   "joueur": "Chris Kreider",
+   "equipe": "ANA",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-296",
+   "joueur": "J.T. Miller",
+   "equipe": "NYR",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-297",
+   "joueur": "Anze Kopitar",
+   "equipe": "LAK",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-298",
+   "joueur": "John Tavares",
+   "equipe": "TOR",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-299",
+   "joueur": "Brock Nelson",
+   "equipe": "COL",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-300",
+   "joueur": "Matvei Michkov",
+   "equipe": "PHI",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-301",
+   "joueur": "Chandler Stephenson",
+   "equipe": "SEA",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-302",
+   "joueur": "Jesperi Kotkaniemi",
+   "equipe": "CAR",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-303",
+   "joueur": "Brady Skjei",
+   "equipe": "NSH",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-304",
+   "joueur": "Shane Pinto",
+   "equipe": "OTT",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-305",
+   "joueur": "Jack McBain",
+   "equipe": "UTA",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-306",
+   "joueur": "Andrei Svechnikov",
+   "equipe": "CAR",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-307",
+   "joueur": "Rasmus Sandin",
+   "equipe": "WSH",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-308",
+   "joueur": "Jacob Markstrom",
+   "equipe": "NJD",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-309",
+   "joueur": "Sam Bennett",
+   "equipe": "FLA",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-310",
+   "joueur": "Will Cuylle",
+   "equipe": "NYR",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-311",
+   "joueur": "Brayden Point",
+   "equipe": "TBL",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-312",
+   "joueur": "Rasmus Dahlin",
+   "equipe": "BUF",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-313",
+   "joueur": "Jesper Bratt",
+   "equipe": "NJD",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-314",
+   "joueur": "Brayden McNabb",
+   "equipe": "VGK",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-315",
+   "joueur": "Patrick Kane",
+   "equipe": "DET",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-316",
+   "joueur": "Cam Fowler",
+   "equipe": "STL",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-317",
+   "joueur": "Juuse Saros",
+   "equipe": "NSH",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-318",
+   "joueur": "Bobby McMann",
+   "equipe": "TOR",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-319",
+   "joueur": "Mathieu Olivier",
+   "equipe": "CBJ",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-320",
+   "joueur": "Alexander Romanov",
+   "equipe": "NYI",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-321",
+   "joueur": "Mikhail Sergachev",
+   "equipe": "UTA",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-322",
+   "joueur": "Roope Hintz",
+   "equipe": "DAL",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-323",
+   "joueur": "Vince Dunn",
+   "equipe": "SEA",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-324",
+   "joueur": "Brock Faber",
+   "equipe": "MIN",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-325",
+   "joueur": "Tyler Toffoli",
+   "equipe": "SJS",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-326",
+   "joueur": "Ukko-Pekka Luukkonen",
+   "equipe": "BUF",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-327",
+   "joueur": "Filip Hronek",
+   "equipe": "VAN",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-328",
+   "joueur": "Gabriel Landeskog",
+   "equipe": "COL",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-329",
+   "joueur": "Ryan Graves",
+   "equipe": "PIT",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-330",
+   "joueur": "Dustin Wolf",
+   "equipe": "CGY",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-331",
+   "joueur": "Aliaksei Protas",
+   "equipe": "WSH",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-332",
+   "joueur": "Phillip Danault",
+   "equipe": "LAK",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-333",
+   "joueur": "Jordan Kyrou",
+   "equipe": "STL",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-334",
+   "joueur": "Jacob Trouba",
+   "equipe": "ANA",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-335",
+   "joueur": "Tomas Hertl",
+   "equipe": "VGK",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-336",
+   "joueur": "Ryan Donato",
+   "equipe": "CHI",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-337",
+   "joueur": "Noah Dobson",
+   "equipe": "MTL",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-338",
+   "joueur": "Adam Larsson",
+   "equipe": "SEA",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-339",
+   "joueur": "Ryan McLeod",
+   "equipe": "BUF",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-340",
+   "joueur": "Ilya Sorokin",
+   "equipe": "NYI",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-341",
+   "joueur": "Marcus Pettersson",
+   "equipe": "VAN",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-342",
+   "joueur": "Darnell Nurse",
+   "equipe": "EDM",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-343",
+   "joueur": "Nick Perbix",
+   "equipe": "NSH",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-344",
+   "joueur": "Connor Hellebuyck",
+   "equipe": "WPG",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-345",
+   "joueur": "Elias Lindholm",
+   "equipe": "BOS",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-346",
+   "joueur": "Mitch Marner",
+   "equipe": "VGK",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-347",
+   "joueur": "Gustav Forsling",
+   "equipe": "FLA",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-348",
+   "joueur": "Fabian Zetterlund",
+   "equipe": "OTT",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-349",
+   "joueur": "Josh Morrissey",
+   "equipe": "WPG",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-350",
+   "joueur": "Devon Toews",
+   "equipe": "COL",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-351",
+   "joueur": "Victor Hedman",
+   "equipe": "TBL",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-352",
+   "joueur": "Marco Rossi",
+   "equipe": "MIN",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-353",
+   "joueur": "Adam Pelech",
+   "equipe": "NYI",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-354",
+   "joueur": "Sergei Bobrovsky",
+   "equipe": "FLA",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-355",
+   "joueur": "Mikael Granlund",
+   "equipe": "ANA",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-356",
+   "joueur": "Nikita Zadorov",
+   "equipe": "BOS",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-357",
+   "joueur": "Tim Stutzle",
+   "equipe": "OTT",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-358",
+   "joueur": "Ryan Hartman",
+   "equipe": "MIN",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-359",
+   "joueur": "Kent Johnson",
+   "equipe": "CBJ",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-360",
+   "joueur": "Auston Matthews / Patrick Kane",
+   "equipe": "TOR/DET",
+   "sous_ensemble": "UD Canvas",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-361",
+   "joueur": "Taylor Makar",
+   "equipe": "COL",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-362",
+   "joueur": "Max Shabanov",
+   "equipe": "NYI",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-363",
+   "joueur": "Igor Chernyshov",
+   "equipe": "SJS",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-364",
+   "joueur": "Sergei Murashov",
+   "equipe": "PIT",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-365",
+   "joueur": "Matthew Schaefer",
+   "equipe": "NYI",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-366",
+   "joueur": "Charles-Alexis Legault",
+   "equipe": "CAR",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-367",
+   "joueur": "Dominic James",
+   "equipe": "TBL",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-368",
+   "joueur": "Beckett Sennecke",
+   "equipe": "ANA",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-369",
+   "joueur": "Curtis Douglas",
+   "equipe": "TBL",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-370",
+   "joueur": "Daniil But",
+   "equipe": "UTA",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-371",
+   "joueur": "Emmitt Finnie",
+   "equipe": "DET",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-372",
+   "joueur": "Reid Schaefer",
+   "equipe": "NSH",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-373",
+   "joueur": "Jacob Fowler",
+   "equipe": "MTL",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-374",
+   "joueur": "Berkly Catton",
+   "equipe": "SEA",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-375",
+   "joueur": "Marshall Warren",
+   "equipe": "NYI",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-376",
+   "joueur": "Nate Danielson",
+   "equipe": "DET",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-377",
+   "joueur": "Carson Lambos",
+   "equipe": "MIN",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-378",
+   "joueur": "Michael Misa",
+   "equipe": "SJS",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-379",
+   "joueur": "Hunter Skinner",
+   "equipe": "STL",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-380",
+   "joueur": "Colten Ellis",
+   "equipe": "BUF",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-381",
+   "joueur": "Jared Davidson",
+   "equipe": "MTL",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-382",
+   "joueur": "Easton Cowan",
+   "equipe": "TOR",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-383",
+   "joueur": "Hunter Brzustewicz",
+   "equipe": "CGY",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-384",
+   "joueur": "Xavier Bourgault",
+   "equipe": "OTT",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-385",
+   "joueur": "Tom Willander",
+   "equipe": "VAN",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-386",
+   "joueur": "Luca Pinelli",
+   "equipe": "CBJ",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-387",
+   "joueur": "Sam Dickinson",
+   "equipe": "SJS",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-388",
+   "joueur": "Otto Stenberg",
+   "equipe": "STL",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-389",
+   "joueur": "Nick Lardis",
+   "equipe": "CHI",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-390",
+   "joueur": "Michael Misa / Matthew Schaefer",
+   "equipe": "SJS/NYI",
+   "sous_ensemble": "UD Canvas Young Guns",
+   "recrue": true,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-391",
+   "joueur": "Sergei Fedorov",
+   "equipe": "DET",
+   "sous_ensemble": "UD Canvas Legends",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-392",
+   "joueur": "Elmer Lach",
+   "equipe": "MTL",
+   "sous_ensemble": "UD Canvas Legends",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-393",
+   "joueur": "Andy Moog",
+   "equipe": "EDM",
+   "sous_ensemble": "UD Canvas Legends",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-394",
+   "joueur": "Dick Duff",
+   "equipe": "TOR",
+   "sous_ensemble": "UD Canvas Legends",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-395",
+   "joueur": "Terry Sawchuk",
+   "equipe": "DET",
+   "sous_ensemble": "UD Canvas Legends",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-396",
+   "joueur": "Duncan Keith",
+   "equipe": "CHI",
+   "sous_ensemble": "UD Canvas Legends",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-397",
+   "joueur": "Bob Probert",
+   "equipe": "DET",
+   "sous_ensemble": "UD Canvas Legends",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-398",
+   "joueur": "Rick Kehoe",
+   "equipe": "PIT",
+   "sous_ensemble": "UD Canvas Legends",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-399",
+   "joueur": "Brian Bellows",
+   "equipe": "DAL",
+   "sous_ensemble": "UD Canvas Legends",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-400",
+   "joueur": "Bobby Hull",
+   "equipe": "CHI",
+   "sous_ensemble": "UD Canvas Legends",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-401",
+   "joueur": "Harry Howell",
+   "equipe": "NYR",
+   "sous_ensemble": "UD Canvas Legends",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-402",
+   "joueur": "Rick Tocchet",
+   "equipe": "PHI",
+   "sous_ensemble": "UD Canvas Legends",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-403",
+   "joueur": "Johnny Bower",
+   "equipe": "TOR",
+   "sous_ensemble": "UD Canvas Legends",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-404",
+   "joueur": "Bobby Orr",
+   "equipe": "BOS",
+   "sous_ensemble": "UD Canvas Legends",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-405",
+   "joueur": "Dale Hawerchuk",
+   "equipe": "WPG",
+   "sous_ensemble": "UD Canvas Legends",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-406",
+   "joueur": "Connor McDavid",
+   "equipe": "EDM",
+   "sous_ensemble": "UD Canvas 4 Nations Face-Off",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-407",
+   "joueur": "Jack Hughes",
+   "equipe": "NJD",
+   "sous_ensemble": "UD Canvas 4 Nations Face-Off",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-408",
+   "joueur": "Sebastian Aho",
+   "equipe": "CAR",
+   "sous_ensemble": "UD Canvas 4 Nations Face-Off",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-409",
+   "joueur": "Cale Makar",
+   "equipe": "COL",
+   "sous_ensemble": "UD Canvas 4 Nations Face-Off",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-410",
+   "joueur": "William Nylander",
+   "equipe": "TOR",
+   "sous_ensemble": "UD Canvas 4 Nations Face-Off",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-411",
+   "joueur": "Jack Eichel",
+   "equipe": "VGK",
+   "sous_ensemble": "UD Canvas 4 Nations Face-Off",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-412",
+   "joueur": "Sidney Crosby",
+   "equipe": "PIT",
+   "sous_ensemble": "UD Canvas 4 Nations Face-Off",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-413",
+   "joueur": "Filip Forsberg",
+   "equipe": "NSH",
+   "sous_ensemble": "UD Canvas 4 Nations Face-Off",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-414",
+   "joueur": "Auston Matthews",
+   "equipe": "TOR",
+   "sous_ensemble": "UD Canvas 4 Nations Face-Off",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-415",
+   "joueur": "Aleksander Barkov",
+   "equipe": "FLA",
+   "sous_ensemble": "UD Canvas 4 Nations Face-Off",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-416",
+   "joueur": "Mikko Rantanen",
+   "equipe": "DAL",
+   "sous_ensemble": "UD Canvas 4 Nations Face-Off",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-417",
+   "joueur": "Nathan MacKinnon",
+   "equipe": "COL",
+   "sous_ensemble": "UD Canvas 4 Nations Face-Off",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-418",
+   "joueur": "Matthew Tkachuk",
+   "equipe": "FLA",
+   "sous_ensemble": "UD Canvas 4 Nations Face-Off",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-419",
+   "joueur": "Adrian Kempe",
+   "equipe": "LAK",
+   "sous_ensemble": "UD Canvas 4 Nations Face-Off",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "C-420",
+   "joueur": "Mitch Marner",
+   "equipe": "VGK",
+   "sous_ensemble": "UD Canvas 4 Nations Face-Off",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "522",
+   "joueur": "Andrei Svechnikov",
+   "equipe": "CAR",
+   "sous_ensemble": "Playoff Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "528",
+   "joueur": "Gabriel Landeskog",
+   "equipe": "COL",
+   "sous_ensemble": "Playoff Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "529",
+   "joueur": "Martin Necas",
+   "equipe": "COL",
+   "sous_ensemble": "Playoff Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "540",
+   "joueur": "Jake Oettinger",
+   "equipe": "DAL",
+   "sous_ensemble": "Playoff Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "551",
+   "joueur": "Evan Bouchard",
+   "equipe": "EDM",
+   "sous_ensemble": "Playoff Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "556",
+   "joueur": "Aaron Ekblad",
+   "equipe": "FLA",
+   "sous_ensemble": "Playoff Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "558",
+   "joueur": "Kevin Fiala",
+   "equipe": "LAK",
+   "sous_ensemble": "Playoff Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "577",
+   "joueur": "Timo Meier",
+   "equipe": "NJD",
+   "sous_ensemble": "Playoff Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "590",
+   "joueur": "Drake Batherson",
+   "equipe": "OTT",
+   "sous_ensemble": "Playoff Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "615",
+   "joueur": "Nikita Kucherov",
+   "equipe": "TBL",
+   "sous_ensemble": "Playoff Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "616",
+   "joueur": "Anthony Cirelli",
+   "equipe": "TBL",
+   "sous_ensemble": "Playoff Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "617",
+   "joueur": "John Tavares",
+   "equipe": "TOR",
+   "sous_ensemble": "Playoff Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "638",
+   "joueur": "Logan Thompson",
+   "equipe": "WSH",
+   "sous_ensemble": "Playoff Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "643",
+   "joueur": "Gabe Vilardi",
+   "equipe": "WPG",
+   "sous_ensemble": "Playoff Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "644",
+   "joueur": "Josh Morrissey",
+   "equipe": "WPG",
+   "sous_ensemble": "Playoff Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "515",
+   "joueur": "MacKenzie Weegar",
+   "equipe": "CGY",
+   "sous_ensemble": "Outdoor/Special Game Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "525",
+   "joueur": "Nolan Allan",
+   "equipe": "CHI",
+   "sous_ensemble": "Outdoor/Special Game Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "526",
+   "joueur": "Ryan Donato",
+   "equipe": "CHI",
+   "sous_ensemble": "Outdoor/Special Game Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "533",
+   "joueur": "Ivan Provorov",
+   "equipe": "CBJ",
+   "sous_ensemble": "Outdoor/Special Game Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "534",
+   "joueur": "Jake Christiansen",
+   "equipe": "CBJ",
+   "sous_ensemble": "Outdoor/Special Game Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "537",
+   "joueur": "Denton Mateychuk",
+   "equipe": "CBJ",
+   "sous_ensemble": "Outdoor/Special Game Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "543",
+   "joueur": "Patrick Kane",
+   "equipe": "DET",
+   "sous_ensemble": "Outdoor/Special Game Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "545",
+   "joueur": "Jonatan Berggren",
+   "equipe": "DET",
+   "sous_ensemble": "Outdoor/Special Game Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "547",
+   "joueur": "J.T. Compher",
+   "equipe": "DET",
+   "sous_ensemble": "Outdoor/Special Game Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "577",
+   "joueur": "Timo Meier",
+   "equipe": "NJD",
+   "sous_ensemble": "Outdoor/Special Game Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "604",
+   "joueur": "Jared McCann",
+   "equipe": "SEA",
+   "sous_ensemble": "Outdoor/Special Game Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "608",
+   "joueur": "Joey Daccord",
+   "equipe": "SEA",
+   "sous_ensemble": "Outdoor/Special Game Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "610",
+   "joueur": "Jake Neighbours",
+   "equipe": "STL",
+   "sous_ensemble": "Outdoor/Special Game Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "611",
+   "joueur": "Jordan Kyrou",
+   "equipe": "STL",
+   "sous_ensemble": "Outdoor/Special Game Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "633",
+   "joueur": "William Karlsson",
+   "equipe": "VGK",
+   "sous_ensemble": "Outdoor/Special Game Photo Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "505",
+   "joueur": "Lukas Dostal",
+   "equipe": "ANA",
+   "sous_ensemble": "Swagnificent Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "508",
+   "joueur": "Morgan Geekie",
+   "equipe": "BOS",
+   "sous_ensemble": "Swagnificent Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "521",
+   "joueur": "K'Andre Miller",
+   "equipe": "CAR",
+   "sous_ensemble": "Swagnificent Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "526",
+   "joueur": "Ryan Donato",
+   "equipe": "CHI",
+   "sous_ensemble": "Swagnificent Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "529",
+   "joueur": "Martin Necas",
+   "equipe": "COL",
+   "sous_ensemble": "Swagnificent Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "531",
+   "joueur": "Brent Burns",
+   "equipe": "COL",
+   "sous_ensemble": "Swagnificent Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "543",
+   "joueur": "Patrick Kane",
+   "equipe": "DET",
+   "sous_ensemble": "Swagnificent Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "555",
+   "joueur": "Sam Bennett",
+   "equipe": "FLA",
+   "sous_ensemble": "Swagnificent Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "571",
+   "joueur": "Nicolas Hague",
+   "equipe": "NSH",
+   "sous_ensemble": "Swagnificent Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "575",
+   "joueur": "Luke Hughes",
+   "equipe": "NJD",
+   "sous_ensemble": "Swagnificent Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "622",
+   "joueur": "Logan Cooley",
+   "equipe": "UTA",
+   "sous_ensemble": "Swagnificent Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "628",
+   "joueur": "Brock Boeser",
+   "equipe": "VAN",
+   "sous_ensemble": "Swagnificent Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "634",
+   "joueur": "Zach Whitecloud",
+   "equipe": "VGK",
+   "sous_ensemble": "Swagnificent Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "635",
+   "joueur": "Adin Hill",
+   "equipe": "VGK",
+   "sous_ensemble": "Swagnificent Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "640",
+   "joueur": "Jakob Chychrun",
+   "equipe": "WSH",
+   "sous_ensemble": "Swagnificent Variation",
+   "recrue": false,
+   "auto": false,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "510",
+   "joueur": "Bowen Byram",
+   "equipe": "BUF",
+   "sous_ensemble": "Snow Spray Auto Variation",
+   "recrue": false,
+   "auto": true,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "512",
+   "joueur": "Owen Power",
+   "equipe": "BUF",
+   "sous_ensemble": "Snow Spray Auto Variation",
+   "recrue": false,
+   "auto": true,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "525",
+   "joueur": "Nolan Allan",
+   "equipe": "CHI",
+   "sous_ensemble": "Snow Spray Auto Variation",
+   "recrue": false,
+   "auto": true,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "528",
+   "joueur": "Gabriel Landeskog",
+   "equipe": "COL",
+   "sous_ensemble": "Snow Spray Auto Variation",
+   "recrue": false,
+   "auto": true,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "534",
+   "joueur": "Jake Christiansen",
+   "equipe": "CBJ",
+   "sous_ensemble": "Snow Spray Auto Variation",
+   "recrue": false,
+   "auto": true,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "535",
+   "joueur": "Charlie Coyle",
+   "equipe": "CBJ",
+   "sous_ensemble": "Snow Spray Auto Variation",
+   "recrue": false,
+   "auto": true,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "544",
+   "joueur": "Jacob Bernard-Docker",
+   "equipe": "DET",
+   "sous_ensemble": "Snow Spray Auto Variation",
+   "recrue": false,
+   "auto": true,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "560",
+   "joueur": "Alex Laferriere",
+   "equipe": "LAK",
+   "sous_ensemble": "Snow Spray Auto Variation",
+   "recrue": false,
+   "auto": true,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "566",
+   "joueur": "Noah Dobson",
+   "equipe": "MTL",
+   "sous_ensemble": "Snow Spray Auto Variation",
+   "recrue": false,
+   "auto": true,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "571",
+   "joueur": "Nicolas Hague",
+   "equipe": "NSH",
+   "sous_ensemble": "Snow Spray Auto Variation",
+   "recrue": false,
+   "auto": true,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "576",
+   "joueur": "Johnathan Kovacevic",
+   "equipe": "NJD",
+   "sous_ensemble": "Snow Spray Auto Variation",
+   "recrue": false,
+   "auto": true,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "581",
+   "joueur": "Simon Holmstrom",
+   "equipe": "NYI",
+   "sous_ensemble": "Snow Spray Auto Variation",
+   "recrue": false,
+   "auto": true,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "610",
+   "joueur": "Jake Neighbours",
+   "equipe": "STL",
+   "sous_ensemble": "Snow Spray Auto Variation",
+   "recrue": false,
+   "auto": true,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "613",
+   "joueur": "Oliver Bjorkstrand",
+   "equipe": "TBL",
+   "sous_ensemble": "Snow Spray Auto Variation",
+   "recrue": false,
+   "auto": true,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "614",
+   "joueur": "Pontus Holmberg",
+   "equipe": "TBL",
+   "sous_ensemble": "Snow Spray Auto Variation",
+   "recrue": false,
+   "auto": true,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "617",
+   "joueur": "John Tavares",
+   "equipe": "TOR",
+   "sous_ensemble": "Snow Spray Auto Variation",
+   "recrue": false,
+   "auto": true,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "633",
+   "joueur": "William Karlsson",
+   "equipe": "VGK",
+   "sous_ensemble": "Snow Spray Auto Variation",
+   "recrue": false,
+   "auto": true,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "DGJ-BM",
+   "joueur": "Brady Martin",
+   "equipe": "NSH",
+   "sous_ensemble": "UD Debut Game Jersey",
+   "recrue": true,
+   "auto": false,
+   "memo": true,
+   "tirage": null
+  },
+  {
+   "numero": "DGJ-BS",
+   "joueur": "Beckett Sennecke",
+   "equipe": "ANA",
+   "sous_ensemble": "UD Debut Game Jersey",
+   "recrue": true,
+   "auto": false,
+   "memo": true,
+   "tirage": null
+  },
+  {
+   "numero": "DGJ-DB",
+   "joueur": "Daniil But",
+   "equipe": "UTA",
+   "sous_ensemble": "UD Debut Game Jersey",
+   "recrue": true,
+   "auto": false,
+   "memo": true,
+   "tirage": null
+  },
+  {
+   "numero": "DGJ-DY",
+   "joueur": "Danila Yurov",
+   "equipe": "MIN",
+   "sous_ensemble": "UD Debut Game Jersey",
+   "recrue": true,
+   "auto": false,
+   "memo": true,
+   "tirage": null
+  },
+  {
+   "numero": "DGJ-EC",
+   "joueur": "Easton Cowan",
+   "equipe": "TOR",
+   "sous_ensemble": "UD Debut Game Jersey",
+   "recrue": true,
+   "auto": false,
+   "memo": true,
+   "tirage": null
+  },
+  {
+   "numero": "DGJ-IH",
+   "joueur": "Isaac Howard",
+   "equipe": "EDM",
+   "sous_ensemble": "UD Debut Game Jersey",
+   "recrue": true,
+   "auto": false,
+   "memo": true,
+   "tirage": null
+  },
+  {
+   "numero": "DGJ-MM",
+   "joueur": "Michael Misa",
+   "equipe": "SJS",
+   "sous_ensemble": "UD Debut Game Jersey",
+   "recrue": true,
+   "auto": false,
+   "memo": true,
+   "tirage": null
+  },
+  {
+   "numero": "DGJ-MS",
+   "joueur": "Matthew Schaefer",
+   "equipe": "NYI",
+   "sous_ensemble": "UD Debut Game Jersey",
+   "recrue": true,
+   "auto": false,
+   "memo": true,
+   "tirage": null
+  },
+  {
+   "numero": "DGJ-SD",
+   "joueur": "Sam Dickinson",
+   "equipe": "SJS",
+   "sous_ensemble": "UD Debut Game Jersey",
+   "recrue": true,
+   "auto": false,
+   "memo": true,
+   "tirage": null
+  },
+  {
+   "numero": "DGJA-BM",
+   "joueur": "Brady Martin",
+   "equipe": "NSH",
+   "sous_ensemble": "UD Debut Game Jersey Auto",
+   "recrue": true,
+   "auto": true,
+   "memo": true,
+   "tirage": 44
+  },
+  {
+   "numero": "DGJA-BS",
+   "joueur": "Beckett Sennecke",
+   "equipe": "ANA",
+   "sous_ensemble": "UD Debut Game Jersey Auto",
+   "recrue": true,
+   "auto": true,
+   "memo": true,
+   "tirage": 45
+  },
+  {
+   "numero": "DGJA-DB",
+   "joueur": "Daniil But",
+   "equipe": "UTA",
+   "sous_ensemble": "UD Debut Game Jersey Auto",
+   "recrue": true,
+   "auto": true,
+   "memo": true,
+   "tirage": 19
+  },
+  {
+   "numero": "DGJA-DY",
+   "joueur": "Danila Yurov",
+   "equipe": "MIN",
+   "sous_ensemble": "UD Debut Game Jersey Auto",
+   "recrue": true,
+   "auto": true,
+   "memo": true,
+   "tirage": 22
+  },
+  {
+   "numero": "DGJA-EC",
+   "joueur": "Easton Cowan",
+   "equipe": "TOR",
+   "sous_ensemble": "UD Debut Game Jersey Auto",
+   "recrue": true,
+   "auto": true,
+   "memo": true,
+   "tirage": 53
+  },
+  {
+   "numero": "DGJA-IH",
+   "joueur": "Isaac Howard",
+   "equipe": "EDM",
+   "sous_ensemble": "UD Debut Game Jersey Auto",
+   "recrue": true,
+   "auto": true,
+   "memo": true,
+   "tirage": 53
+  },
+  {
+   "numero": "DGJA-MM",
+   "joueur": "Michael Misa",
+   "equipe": "SJS",
+   "sous_ensemble": "UD Debut Game Jersey Auto",
+   "recrue": true,
+   "auto": true,
+   "memo": true,
+   "tirage": 76
+  },
+  {
+   "numero": "DGJA-MS",
+   "joueur": "Matthew Schaefer",
+   "equipe": "NYI",
+   "sous_ensemble": "UD Debut Game Jersey Auto",
+   "recrue": true,
+   "auto": true,
+   "memo": true,
+   "tirage": 48
+  },
+  {
+   "numero": "DGJA-SD",
+   "joueur": "Sam Dickinson",
+   "equipe": "SJS",
+   "sous_ensemble": "UD Debut Game Jersey Auto",
+   "recrue": true,
+   "auto": true,
+   "memo": true,
+   "tirage": 6
+  },
+  {
+   "numero": "DSA-1",
+   "joueur": "Matthew Schaefer",
+   "equipe": "NYI",
+   "sous_ensemble": "Draft Swagnificent Auto Achievement",
+   "recrue": true,
+   "auto": true,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "DSA-2",
+   "joueur": "Michael Misa",
+   "equipe": "SJS",
+   "sous_ensemble": "Draft Swagnificent Auto Achievement",
+   "recrue": true,
+   "auto": true,
+   "memo": false,
+   "tirage": null
+  },
+  {
+   "numero": "DSA-3",
+   "joueur": "Ivan Demidov",
+   "equipe": "MTL",
+   "sous_ensemble": "Draft Swagnificent Auto Achievement",
+   "recrue": true,
+   "auto": true,
+   "memo": false,
+   "tirage": null
+  }
+ ],
+ "notes": [
+  "Composition hobby (Upper Deck, Checklist Insider, Checklist Center) : 6 Young Guns et/ou 1st Round Rookies, 3 cartes numérotées et/ou rares, 1 Outburst Silver, 1 Clear Cut / UD Canvas Black & White / HoloGrFx, 1 Blue Dazzlers, 4 UD Canvas, 10 Pros and Prospects / Rookie Reflections / UD3, 9 All-World Team / Power Play / Sizzle Reel / Understood the Assignment, 1 Speckle. La ligne « numérotées et/ou rares » ne précise pas les sous-ensembles (sous_ensembles vide).",
+  "par_boite des sous-ensembles individuels = 12 paquets / cote hobby du checklist. Les variations (Playoff, Outdoor/Special Game, Swagnificent), Snow Spray Auto, Debut Game Jersey Auto, Killer Keepers, Playmakers, Day With the Cup, Thermal Threats, Synergy, Trilogy et Rookie Update n'ont pas de cote publiée : par_boite null.",
+  "Base 4 Nations Face-Off (#646-698) et UD Canvas 4 Nations Face-Off (C-406 à C-420) : cartes imprimées Team Canada / Finland / Sweden / USA. Le code équipe est l'équipe LNH du joueur sur ses autres cartes 2025-26 (Extended, Series 2, Series 1 pour Laine MTL et Larkin DET). À ajuster selon la règle du breaker.",
+  "C-399 Brian Bellows est imprimé « Minnesota North Stars » : assigné à DAL (franchise actuelle). C-405 Dale Hawerchuk est imprimé « Winnipeg Jets » : WPG.",
+  "Checklists à deux joueurs : #699 Toews/Kane (WPG/DET), #700 Chychrun/Dobson (WSH/MTL), #740 Sennecke/Catton (ANA/SEA), C-360 Matthews/Kane (TOR/DET), C-390 Misa/Schaefer (SJS/NYI). #707 Zeev Buium a une 2e Young Guns, avec Vancouver (sa YG Series 2 est avec Minnesota).",
+  "Les joueurs des variations et des Snow Spray Auto sont repris de la carte de base portant le même numéro. UD Debut Game Jersey Auto : tirage propre à chaque carte (numéro de chandail). recrue=true pour les Debut Game Jersey (joueurs recrues).",
+  "Young Guns Acetate (136) : parallèle des Young Guns des trois séries (Series 1 #201-249, Series 2 #451-498, Extended #701-739) ; rattaché à « Young Guns » faute de mieux.",
+  "Checklists des inserts (All-World Team, Power Play, Sizzle Reel, Understood the Assignment, Pros and Prospects, Rookie Reflections, UD3, Dazzlers, HoloGrFx, Rookie Update, Synergy, Trilogy, Killer Keepers, Playmakers, Champs Rookies, Day With the Cup, Thermal Threats, Outburst Retro YG) non incluses dans cartes : seuls nb_cartes et cotes sont donnés. Aucun article Beckett trouvé pour ce produit.",
+  "Écrit « Patrik Laine » (Checklist Center) ; Checklist Insider écrit « Patrick ». Accents absents des checklists consultées (ex. Stutzle, Soderblom, Bjorkstrand). Printing Plates ePack des inserts et paramètres Hanger/Holiday détaillés non repris.",
+  "Sortie hobby : 3 juin 2026 (Blaster 17 juin 2026, ePack 30 septembre 2026)."
+ ],
+ "sources": [
+  "https://upperdeck.com/2025-26-upper-deck-extended-series/",
+  "https://www.checklistinsider.com/2025-26-upper-deck-extended-series-hockey",
+  "https://www.checklistcenter.com/2025-26-upper-deck-extended-series-hockey-card-checklist/",
+  "https://www.diamondcardsonline.com/blog/2025-26-upper-deck-extended-series-hockey-cards-checklist/",
+  "https://www.checklistcenter.com/?p=59079",
+  "https://www.beckett.com/news/2025-26-upper-deck-series-1-hockey-cards/"
+ ]
+}

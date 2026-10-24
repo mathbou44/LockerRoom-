@@ -1,0 +1,1557 @@
+{
+"maj": "2026-10-22T04:37:17",
+"source": "Hall of Cardz (modèle de pointage + ventes)",
+"nb_ventes": 178282,
+"nb_ventes_modele": 80746,
+"joueurs": {
+"Aaron Ekblad": 1.48,
+"Adam Engstrom": 0.44,
+"Adam Fantilli": 1.26,
+"Adam Fox": 0.88,
+"Adam Klapka": 0.56,
+"Adam Lowry": 0.7,
+"Adam Wilsby": 0.43,
+"Adin Hill": 0.94,
+"Adrian Kempe": 0.81,
+"Aidan McDonough": 0.27,
+"Akil Thomas": 0.34,
+"Akira Schmid": 0.43,
+"Aku Raty": 0.24,
+"Albert Johansson": 0.37,
+"Aleksander Barkov": 0.86,
+"Aleksanteri Kaskimaki": 0.38,
+"Aleksei Kolosov": 0.3,
+"Alex Belzile": 0.63,
+"Alex DeBrincat": 0.76,
+"Alex Killorn": 0.53,
+"Alex Laferriere": 0.43,
+"Alex Nedeljkovic": 0.87,
+"Alex Newhook": 0.44,
+"Alex Ovechkin": 3.62,
+"Alex Tuch": 0.79,
+"Alex Turcotte": 0.39,
+"Alex Vlasic": 0.5,
+"Alexander Holtz": 0.2,
+"Alexander Nikishin": 0.76,
+"Alexander Romanov": 0.32,
+"Alexander Wennberg": 0.52,
+"Alexandre Carrier": 0.93,
+"Alexandre Texier": 0.42,
+"Alexis Lafrenière": 0.79,
+"Aliaksei Protas": 0.73,
+"Andre Burakovsky": 0.94,
+"Andre Lee": 0.28,
+"Andrei Kuzmenko": 0.4,
+"Andrei Svechnikov": 0.73,
+"Andrei Vasilevskiy": 0.83,
+"Andrew Copp": 0.37,
+"Andrew Mangiapane": 0.41,
+"Anthony Beauvillier": 0.76,
+"Anthony Cirelli": 0.64,
+"Anthony Mantha": 0.45,
+"Anthony Stolarz": 0.72,
+"Anton Lundell": 0.46,
+"Anze Kopitar": 0.93,
+"Arber Xhekaj": 0.9,
+"Arseny Gritsyuk": 0.54,
+"Arshdeep Bains": 0.63,
+"Artem Zub": 0.62,
+"Artemi Panarin": 1.19,
+"Arttu Hyry": 0.35,
+"Artturi Lehkonen": 0.53,
+"Artur Akhtyamov": 1.34,
+"Arturs Silovs": 0.5,
+"Artyom Levshunov": 0.77,
+"Arvid Soderblom": 0.57,
+"Auston Matthews": 4.97,
+"Axel Sandin-Pellikka": 0.96,
+"Aydar Suniev": 0.32,
+"Barrett Hayton": 0.49,
+"Beck Malenstyn": 0.6,
+"Beckett Sennecke": 2.55,
+"Ben Kindel": 2.06,
+"Berkly Catton": 0.86,
+"Bo Horvat": 1.45,
+"Bobby McMann": 0.66,
+"Bobby Orr": 1.45,
+"Bowen Byram": 0.52,
+"Brad Lambert": 0.55,
+"Brad Marchand": 1.12,
+"Braden Schneider": 0.45,
+"Bradly Nadeau": 0.65,
+"Brady Martin": 0.68,
+"Brady Skjei": 0.59,
+"Brady Tkachuk": 1.74,
+"Braeden Bowman": 0.38,
+"Braeden Cootes": 0.97,
+"Brandon Bussi": 1.84,
+"Brandon Carlo": 0.58,
+"Brandon Duhaime": 0.35,
+"Brandon Hagel": 0.62,
+"Brandon Montour": 1.41,
+"Brandon Tanev": 0.53,
+"Brandt Clarke": 0.57,
+"Brayden Point": 1.04,
+"Brayden Schenn": 0.73,
+"Brendan Brisson": 0.44,
+"Brendan Gallagher": 1.08,
+"Brent Burns": 0.53,
+"Brett Berard": 0.52,
+"Brett Howden": 0.76,
+"Brian Halonen": 0.49,
+"Brock Boeser": 0.6,
+"Brock Faber": 1.21,
+"Brock Nelson": 0.64,
+"Cale Fleury": 0.51,
+"Cale Makar": 3.49,
+"Calum Ritchie": 0.57,
+"Cam Lund": 0.44,
+"Cam Talbot": 0.69,
+"Cam Ward": 0.48,
+"Cam York": 0.28,
+"Cameron Butler": 0.47,
+"Carey Price": 2.08,
+"Carl Lindbom": 0.39,
+"Carson Lambos": 0.42,
+"Carter Hart": 0.74,
+"Carter Mazur": 0.35,
+"Carter Verhaeghe": 0.39,
+"Casey DeSmith": 0.85,
+"Casey Mittelstadt": 0.69,
+"Chandler Stephenson": 0.29,
+"Charle-Edouard D'Astous": 0.58,
+"Charlie Coyle": 0.95,
+"Charlie Lindgren": 0.66,
+"Charlie McAvoy": 1.11,
+"Chase Bradley": 0.69,
+"Chris Kreider": 0.45,
+"Chris Osgood": 0.79,
+"Chris Pronger": 0.81,
+"Christian Dvorak": 0.43,
+"Claude Giroux": 0.55,
+"Clay Stevenson": 0.38,
+"Clayton Keller": 1.37,
+"Cody Glass": 0.34,
+"Cole Caufield": 2.91,
+"Cole Guttman": 0.48,
+"Cole Koepke": 0.65,
+"Cole McWard": 0.46,
+"Cole Perfetti": 0.57,
+"Cole Schwindt": 0.53,
+"Cole Sillinger": 0.27,
+"Collin Graf": 0.93,
+"Colten Ellis": 0.58,
+"Colton Dach": 0.4,
+"Colton Parayko": 0.6,
+"Colton Sissons": 0.37,
+"Connor Bedard": 6.9,
+"Connor Brown": 0.61,
+"Connor Clattenburg": 0.34,
+"Connor Clifton": 0.49,
+"Connor Dewar": 0.59,
+"Connor Hellebuyck": 2.03,
+"Connor Ingram": 0.57,
+"Connor McDavid": 5.6,
+"Connor McMichael": 0.57,
+"Connor Zary": 0.44,
+"Conor Geekie": 0.4,
+"Corey Perry": 1.43,
+"Curtis Douglas": 0.37,
+"Cutter Gauthier": 2.14,
+"Daemon Hunt": 0.32,
+"Dakota Joshua": 0.52,
+"Dalibor Dvorsky": 0.88,
+"Dan Vladar": 0.99,
+"Daniel Alfredsson": 0.85,
+"Daniel Sedin": 0.93,
+"Daniil But": 0.53,
+"Daniil Tarasov": 0.39,
+"Danila Yurov": 0.57,
+"Dante Fabbro": 0.33,
+"Darnell Nurse": 1.14,
+"Darren Raddysh": 0.93,
+"Darryl Sittler": 2.41,
+"David Jiricek": 0.6,
+"David Pastrnak": 1.96,
+"Dawson Mercer": 0.37,
+"Declan Carlile": 0.31,
+"Dennis Hildeby": 0.68,
+"Denton Mateychuk": 0.58,
+"Denver Barkey": 0.75,
+"Devin Cooley": 0.54,
+"Devin Kaplan": 0.25,
+"Devon Levi": 0.94,
+"Devon Toews": 0.53,
+"Dmitri Simashev": 0.4,
+"Dmitri Voronkov": 0.54,
+"Domenick Fensore": 0.27,
+"Dominic James": 0.52,
+"Dominik Shine": 0.34,
+"Donovan Sebrango": 0.29,
+"Doug Weight": 0.67,
+"Dougie Hamilton": 0.41,
+"Drake Batherson": 0.71,
+"Drew Commesso": 0.34,
+"Drew Doughty": 1.8,
+"Drew Helleson": 0.62,
+"Duncan Keith": 1.96,
+"Dustin Wolf": 1.44,
+"Dylan Cozens": 0.41,
+"Dylan Duke": 0.36,
+"Dylan Garand": 0.66,
+"Dylan Guenther": 1.49,
+"Dylan Holloway": 0.55,
+"Dylan Larkin": 1.21,
+"Dylan Strome": 0.5,
+"Easton Cowan": 1.7,
+"Ed Jovanovski": 1.02,
+"Eeli Tolvanen": 0.39,
+"Eetu Luostarinen": 0.89,
+"Elias Lindholm": 0.96,
+"Elias Pettersson": 0.51,
+"Elias Salomonsson": 0.27,
+"Elmer Soderblom": 0.43,
+"Elvis Merzlikins": 0.39,
+"Emil Andrae": 0.59,
+"Emil Heineman": 0.5,
+"Emil Lilleberg": 0.53,
+"Emmitt Finnie": 0.92,
+"Eric Comrie": 0.6,
+"Eric Lindros": 1.46,
+"Erik Cernak": 0.55,
+"Erik Karlsson": 1.59,
+"Erik Portillo": 0.4,
+"Esa Lindell": 0.54,
+"Ethan Cardwell": 0.36,
+"Ethen Frank": 0.31,
+"Evan Bouchard": 1.46,
+"Evander Kane": 0.79,
+"Evgeni Malkin": 2.31,
+"Evgeni Nabokov": 0.94,
+"Fabian Lysell": 0.5,
+"Fabian Zetterlund": 0.55,
+"Fedor Svechkov": 0.35,
+"Felix Potvin": 1.18,
+"Filip Chytil": 0.52,
+"Filip Forsberg": 1.06,
+"Filip Gustavsson": 0.36,
+"Filip Hronek": 0.53,
+"Florian Xhekaj": 0.72,
+"Frank Nazar": 1.34,
+"Frank Vatrano": 0.57,
+"Fraser Minten": 0.93,
+"Frederic Brunet": 0.34,
+"Frederik Andersen": 1.23,
+"Gabe Perreault": 1.11,
+"Gabriel Landeskog": 1.44,
+"Gage Goncalves": 0.26,
+"Gavin Brindley": 0.46,
+"Georgii Merkulov": 0.42,
+"Gilbert Perreault": 1.29,
+"Gustav Forsling": 0.51,
+"Guy Lafleur": 2.71,
+"Guy Lapointe": 1.05,
+"Hampus Lindholm": 1.01,
+"Hayden Hodgson": 0.54,
+"Helge Grans": 0.26,
+"Hendrix Lapierre": 0.56,
+"Henrik Lundqvist": 1.7,
+"Henrik Sedin": 0.8,
+"Henrik Zetterberg": 1.94,
+"Henry Thrun": 0.34,
+"Hunter Brzustewicz": 0.58,
+"Hunter Haight": 0.34,
+"Hunter McKown": 0.39,
+"Hunter Skinner": 0.29,
+"Ian Moore": 0.44,
+"Igor Chernyshov": 2.01,
+"Igor Shesterkin": 1.09,
+"Ilya Kovalchuk": 0.86,
+"Ilya Mikheyev": 0.42,
+"Ilya Sorokin": 0.62,
+"Isaac Howard": 0.54,
+"Isaac Poulter": 0.4,
+"Isaiah George": 0.57,
+"Isak Rosen": 0.43,
+"Ivan Barbashev": 0.45,
+"Ivan Demidov": 6.51,
+"Ivan Ivan": 0.32,
+"Ivan Miroshnichenko": 0.77,
+"Ivan Provorov": 0.52,
+"J.T. Miller": 0.74,
+"JJ Peterka": 0.85,
+"Jaccob Slavin": 0.93,
+"Jack Devine": 0.31,
+"Jack Drury": 0.35,
+"Jack Eichel": 2.01,
+"Jack Finley": 0.34,
+"Jack Hughes": 2.36,
+"Jack McBain": 0.52,
+"Jack Quinn": 0.54,
+"Jack Thompson": 0.28,
+"Jack Williams": 0.32,
+"Jackson Blake": 1.16,
+"Jackson LaCombe": 0.98,
+"Jacob Bernard-Docker": 0.63,
+"Jacob Bryson": 0.27,
+"Jacob Fowler": 4.44,
+"Jacob Gaucher": 0.34,
+"Jacob Markstrom": 0.55,
+"Jacob Melanson": 0.45,
+"Jacob Quillan": 0.37,
+"Jacob Trouba": 0.85,
+"Jacques Lemaire": 1.26,
+"Jake Allen": 0.92,
+"Jake DeBrusk": 0.58,
+"Jake Evans": 0.61,
+"Jake Guentzel": 0.95,
+"Jake Livingstone": 0.59,
+"Jake Neighbours": 0.47,
+"Jake Oettinger": 0.82,
+"Jake Sanderson": 1.05,
+"Jakob Chychrun": 0.68,
+"Jakob Pelletier": 0.47,
+"Jakub Dobes": 4.94,
+"James Hamblin": 0.53,
+"James Malatesta": 0.69,
+"James van Riemsdyk": 0.69,
+"Jamie Benn": 0.99,
+"Jamie Drysdale": 0.32,
+"Jan Jenik": 0.42,
+"Jansen Harkins": 0.52,
+"Jared Davidson": 0.26,
+"Jared McCann": 0.23,
+"Jarome Iginla": 1.02,
+"Jaromir Jagr": 1.9,
+"Jaroslav Chmelar": 0.42,
+"Jason Dickinson": 0.52,
+"Jason Polin": 0.38,
+"Jason Robertson": 1.24,
+"Jason Zucker": 0.71,
+"Jayden Struble": 0.6,
+"Jeffrey Viel": 0.56,
+"Jeremy Swayman": 0.81,
+"Jesper Boqvist": 0.4,
+"Jesper Bratt": 0.87,
+"Jesper Wallstedt": 1.58,
+"Jesperi Kotkaniemi": 0.42,
+"Jet Greaves": 0.57,
+"Jett Luchanko": 0.61,
+"Jimmy Snuggerud": 1.39,
+"Jiri Kulich": 0.8,
+"Jiri Patera": 0.52,
+"Joakim Kemell": 0.3,
+"Joe Sakic": 1.57,
+"Joe Thornton": 1.4,
+"Joe Veleno": 0.2,
+"Joel Armia": 0.98,
+"Joel Eriksson Ek": 0.68,
+"Joel Farabee": 0.3,
+"Joel Hofer": 0.45,
+"Joel Kiviranta": 0.54,
+"Joel Nystrom": 0.43,
+"Joey Daccord": 0.65,
+"John Beecher": 0.38,
+"John Carlson": 0.62,
+"John LeClair": 0.94,
+"John Marino": 0.62,
+"John Tavares": 1.7,
+"Jonah Gadjovich": 0.67,
+"Jonas Rondbjerg": 0.47,
+"Jonatan Berggren": 0.56,
+"Jonathan Aspirot": 0.31,
+"Jonathan Huberdeau": 0.46,
+"Jonathan Lekkerimäki": 0.95,
+"Jonathan Toews": 1.27,
+"Jordan Binnington": 1.59,
+"Jordan Eberle": 0.76,
+"Jordan Greenway": 0.47,
+"Jordan Harris": 0.28,
+"Jordan Kyrou": 0.55,
+"Jordan Spence": 0.42,
+"Jordan Staal": 2.45,
+"Joseph Woll": 1.0,
+"Josh Anderson": 0.58,
+"Josh Doan": 0.94,
+"Josh Morrissey": 0.63,
+"Juha Jaaska": 0.57,
+"Juraj Slafkovský": 3.77,
+"Justin Barron": 0.62,
+"Justin Brazeau": 0.57,
+"Justin Hryckowian": 0.41,
+"Justin Kirkland": 0.54,
+"Justin Sourdif": 0.38,
+"Justus Annunen": 0.63,
+"Juuse Saros": 0.47,
+"Juuso Välimäki": 0.55,
+"K'Andre Miller": 0.54,
+"Kaapo Kakko": 0.44,
+"Kaedan Korczak": 0.38,
+"Kaiden Guhle": 0.94,
+"Kailer Yamamoto": 0.56,
+"Karel Vejmelka": 0.52,
+"Kasperi Kapanen": 0.61,
+"Keegan Kolesar": 0.44,
+"Keith Primeau": 0.58,
+"Keith Tkachuk": 0.85,
+"Kent Johnson": 0.43,
+"Kevin Fiala": 0.42,
+"Kevin Korchinski": 0.47,
+"Kevin Lankinen": 0.47,
+"Kevin Stenlund": 0.51,
+"Kiefer Sherwood": 1.03,
+"Kirby Dach": 0.56,
+"Kirill Kaprizov": 1.95,
+"Kirill Kudryavtsev": 0.31,
+"Kirill Marchenko": 1.39,
+"Kris Letang": 1.08,
+"Kyle Connor": 1.02,
+"Kyle MacLean": 0.57,
+"Landon Slaggert": 0.64,
+"Lane Hutson": 4.75,
+"Lane Pederson": 0.55,
+"Lawson Crouse": 0.63,
+"Leo Carlsson": 2.62,
+"Leon Draisaitl": 2.5,
+"Liam Foudy": 0.61,
+"Liam Ohgren": 0.4,
+"Lian Bichsel": 0.53,
+"Libor Hajek": 0.66,
+"Linus Karlsson": 0.52,
+"Linus Ullmark": 0.6,
+"Logan Cooley": 1.54,
+"Logan Mailloux": 0.43,
+"Logan Stankoven": 1.48,
+"Logan Thompson": 0.45,
+"Louis Crevier": 0.55,
+"Luca Cagnoni": 0.57,
+"Luca Del Bel Belluz": 0.88,
+"Luca Pinelli": 0.25,
+"Lucas Condotta": 0.64,
+"Lucas Raymond": 0.7,
+"Lukas Cormier": 0.59,
+"Lukas Dostal": 0.79,
+"Lukas Reichel": 0.42,
+"Luke Evangelista": 0.36,
+"Luke Hughes": 1.22,
+"Luke Schenn": 0.84,
+"MacKenzie Entwistle": 0.6,
+"MacKenzie Weegar": 0.84,
+"Mackenzie Blackwood": 0.52,
+"Macklin Celebrini": 12.65,
+"Mads Sogaard": 0.35,
+"Maksymilian Szuber": 0.27,
+"Marat Khusnutdinov": 0.54,
+"Marc Gatcomb": 0.56,
+"Marc McLaughlin": 0.6,
+"Marc-Andre Fleury": 3.48,
+"Marcel Dionne": 1.51,
+"Marco Kasper": 0.58,
+"Marco Rossi": 0.5,
+"Marcus Pettersson": 0.58,
+"Marian Gaborik": 1.42,
+"Marian Hossa": 1.37,
+"Mario Ferraro": 0.5,
+"Mario Lemieux": 1.5,
+"Mark Howe": 0.35,
+"Mark Kastelic": 0.48,
+"Mark Scheifele": 1.05,
+"Mark Stone": 1.18,
+"Marshall Rifai": 0.39,
+"Marshall Warren": 0.34,
+"Martin Brodeur": 2.36,
+"Martin Necas": 1.18,
+"Martin Pospisil": 0.61,
+"Martin St. Louis": 1.58,
+"Mason Lohrei": 0.45,
+"Mason Marchment": 0.44,
+"Mason McTavish": 0.6,
+"Mathew Barzal": 0.91,
+"Mathieu Joseph": 0.45,
+"Matias Maccelli": 0.36,
+"Mats Sundin": 0.82,
+"Matt Boldy": 1.88,
+"Matt Duchene": 0.81,
+"Matt Luff": 0.59,
+"Matt Murray": 0.36,
+"Matt Rempe": 0.53,
+"Matt Savoie": 0.81,
+"Matt Tomkins": 0.48,
+"Matt Villalta": 0.45,
+"Matthew Kessel": 0.39,
+"Matthew Knies": 2.11,
+"Matthew Robertson": 0.42,
+"Matthew Schaefer": 10.49,
+"Matthew Tkachuk": 1.81,
+"Matthew Wood": 0.48,
+"Mattias Ekholm": 1.01,
+"Mattias Samuelsson": 0.37,
+"Matty Beniers": 0.63,
+"Matvei Gridin": 0.73,
+"Matvei Michkov": 1.84,
+"Maveric Lamoureux": 0.36,
+"Mavrik Bourque": 0.62,
+"Max Domi": 0.68,
+"Max Sasson": 0.55,
+"Maxence Guenette": 0.56,
+"Maxim Groshev": 0.31,
+"Maxim Shabanov": 0.41,
+"Maxim Tsyplakov": 0.3,
+"Michael Brandsegg-Nygård": 0.98,
+"Michael Bunting": 0.3,
+"Michael Callahan": 0.22,
+"Michael DiPietro": 0.42,
+"Michael Kesselring": 0.34,
+"Michael Misa": 3.88,
+"Michael Pezzetta": 0.46,
+"Mika Zibanejad": 0.99,
+"Mikael Backlund": 0.91,
+"Mikael Granlund": 0.85,
+"Mike Bossy": 1.36,
+"Mikey Anderson": 0.56,
+"Mikhail Sergachev": 0.69,
+"Mikko Rantanen": 1.42,
+"Miro Heiskanen": 0.81,
+"Mitch Marner": 2.05,
+"Morgan Barron": 0.61,
+"Morgan Frost": 0.55,
+"Morgan Geekie": 0.8,
+"Moritz Seider": 0.98,
+"Nate Danielson": 0.46,
+"Nathan MacKinnon": 2.24,
+"Nazem Kadri": 0.44,
+"Nic Dowd": 0.68,
+"Nick Lardis": 0.91,
+"Nick Paul": 0.4,
+"Nick Robertson": 0.65,
+"Nick Schmaltz": 0.79,
+"Nick Suzuki": 2.34,
+"Nicklas Lidstrom": 0.63,
+"Nico Daws": 0.42,
+"Nico Hischier": 0.9,
+"Nicolas Hague": 0.47,
+"Nikita Chibrikov": 0.85,
+"Nikita Grebenkin": 0.59,
+"Nikita Kucherov": 1.88,
+"Nikita Nesterenko": 0.61,
+"Nikita Prishchepov": 0.41,
+"Nikita Tolopilo": 0.45,
+"Niklas Backstrom": 0.79,
+"Niklas Kokko": 0.39,
+"Niko Mikkola": 0.7,
+"Nikolaj Ehlers": 0.76,
+"Nikolas Matinpalo": 0.57,
+"Nils Hoglander": 0.39,
+"Nils Lundkvist": 0.52,
+"Noah Cates": 0.42,
+"Noah Dobson": 1.37,
+"Noah Hanifin": 0.66,
+"Noah Juulsen": 0.57,
+"Noah Laba": 0.43,
+"Noah Ostlund": 1.05,
+"Noel Acciari": 0.49,
+"Nolan Allan": 0.47,
+"Olen Zellweger": 0.72,
+"Oliver Bjorkstrand": 0.46,
+"Oliver Kapanen": 1.03,
+"Oliver Moore": 0.59,
+"Olivier Rodrigue": 0.4,
+"Ondrej Palat": 0.79,
+"Otto Stenberg": 0.75,
+"Owen Beck": 0.57,
+"Owen Nolan": 0.65,
+"Owen Power": 0.66,
+"Owen Sillinger": 0.33,
+"Owen Tippett": 0.67,
+"Ozzy Wiesblatt": 0.31,
+"Parker Ford": 0.3,
+"Parker Kelly": 0.4,
+"Patrick Giles": 0.44,
+"Patrick Kane": 5.63,
+"Patrick Roy": 2.99,
+"Patrik Laine": 0.87,
+"Paul Cotter": 0.37,
+"Paul Kariya": 1.22,
+"Pavel Buchnevich": 0.63,
+"Pavel Bure": 1.03,
+"Pavel Datsyuk": 4.71,
+"Pavel Dorofeyev": 0.88,
+"Pavel Mintyukov": 0.5,
+"Pavel Zacha": 0.37,
+"Peter Forsberg": 1.03,
+"Peyton Krebs": 0.34,
+"Philip Broberg": 0.52,
+"Phillip Danault": 0.82,
+"Pierre-Luc Dubois": 0.53,
+"Pius Suter": 0.62,
+"Pontus Holmberg": 0.84,
+"Pyotr Kochetkov": 0.46,
+"Quinn Hughes": 2.88,
+"Quinn Hutson": 0.59,
+"Quinton Byfield": 0.61,
+"Raphael Lavoie": 0.5,
+"Rasmus Andersson": 0.57,
+"Rasmus Dahlin": 1.8,
+"Rasmus Sandin": 0.47,
+"Ray Bourque": 0.92,
+"Reid Schaefer": 0.3,
+"Reilly Walsh": 0.44,
+"Rick Nash": 1.5,
+"Ridly Greig": 0.27,
+"Riley Duran": 0.34,
+"Rob Blake": 0.73,
+"Robert Thomas": 0.56,
+"Roberto Luongo": 1.23,
+"Roman Josi": 1.22,
+"Ronnie Attard": 0.6,
+"Roope Hintz": 0.62,
+"Rory Kerins": 0.43,
+"Ross Colton": 0.23,
+"Rutger Mcgroarty": 0.53,
+"Ryan Donato": 0.57,
+"Ryan Getzlaf": 1.19,
+"Ryan Greene": 0.28,
+"Ryan Hartman": 0.69,
+"Ryan Leonard": 1.45,
+"Ryan McDonagh": 0.72,
+"Ryan McLeod": 0.45,
+"Ryan Miller": 1.76,
+"Ryan Nugent-Hopkins": 1.03,
+"Ryan O'Reilly": 0.92,
+"Ryan Poehling": 0.55,
+"Ryan Shea": 0.32,
+"Ryan Ufko": 0.38,
+"Ryan Winterton": 0.62,
+"Ryker Evans": 0.45,
+"Saku Koivu": 1.08,
+"Sam Bennett": 0.8,
+"Sam Colangelo": 0.44,
+"Sam Dickinson": 1.09,
+"Sam Malinski": 0.51,
+"Sam Morton": 0.28,
+"Sam Reinhart": 0.93,
+"Sam Rinzel": 0.7,
+"Sam Steel": 0.58,
+"Samuel Ersson": 1.03,
+"Samuel Girard": 0.6,
+"Samuel Helenius": 0.32,
+"Samuel Honzek": 0.36,
+"Samuel Montembeault": 0.91,
+"Samuel Poulin": 0.43,
+"Scott Niedermayer": 0.44,
+"Scott Perunovich": 0.19,
+"Scott Wedgewood": 0.91,
+"Seamus Casey": 0.48,
+"Sean Couturier": 0.76,
+"Sean Durzi": 0.37,
+"Sean Farrell": 0.44,
+"Sean Monahan": 0.64,
+"Sebastian Aho": 1.06,
+"Sebastian Cossa": 1.04,
+"Sergei Bobrovsky": 1.91,
+"Sergei Fedorov": 0.82,
+"Sergei Murashov": 1.7,
+"Sergei Zubov": 0.84,
+"Seth Jarvis": 1.17,
+"Seth Jones": 0.77,
+"Shakir Mukhamadullin": 0.63,
+"Shane Lachance": 0.29,
+"Shane Pinto": 0.37,
+"Shane Wright": 0.71,
+"Shayne Gostisbehere": 1.17,
+"Shea Theodore": 0.54,
+"Shea Weber": 1.48,
+"Sidney Crosby": 4.86,
+"Simon Benoit": 0.63,
+"Simon Holmstrom": 0.69,
+"Simon Nemec": 0.63,
+"Spencer Knight": 0.7,
+"Spencer Stastney": 0.27,
+"Stephen Halliday": 0.34,
+"Steve Yzerman": 1.64,
+"Steven Stamkos": 2.12,
+"Stuart Skinner": 0.7,
+"Tage Thompson": 1.38,
+"Tanner Jeannot": 0.48,
+"Taylor Hall": 1.52,
+"Taylor Makar": 0.46,
+"Taylor Raddysh": 0.57,
+"Taylor Ward": 0.35,
+"Teammates Rc": 1.17,
+"Teddy Blueger": 0.37,
+"Teemu Selanne": 0.73,
+"Teuvo Teravainen": 0.44,
+"Thatcher Demko": 0.91,
+"Thomas Chabot": 0.62,
+"Thomas Harley": 0.62,
+"Thomas Milic": 0.47,
+"Tim Stützle": 1.09,
+"Tim Thomas": 1.52,
+"Tim Washe": 0.31,
+"Timo Meier": 0.62,
+"Timothy Liljegren": 0.58,
+"Tom Willander": 0.63,
+"Tom Wilson": 1.52,
+"Tomas Hertl": 1.03,
+"Tony Amonte": 0.77,
+"Travis Konecny": 0.7,
+"Travis Sanheim": 0.36,
+"Trent Frederic": 0.58,
+"Trent Miner": 0.63,
+"Trevor Kuntar": 0.39,
+"Trevor Moore": 0.3,
+"Trevor Zegras": 0.78,
+"Trevor van Riemsdyk": 0.57,
+"Trey Fix-Wolansky": 0.57,
+"Tristan Jarry": 0.59,
+"Tristan Luneau": 0.52,
+"Troy Terry": 0.58,
+"Ty Dellandrea": 0.21,
+"Ty Young": 0.31,
+"Tye Felhaber": 0.42,
+"Tye Kartye": 0.27,
+"Tyler Bertuzzi": 0.81,
+"Tyler Kleven": 0.53,
+"Tyler Seguin": 0.94,
+"Tyler Toffoli": 0.47,
+"Tyler Tucker": 0.65,
+"Tyson Foerster": 0.85,
+"Tyson Kozak": 0.46,
+"Ukko-Pekka Luukkonen": 0.51,
+"Uvis Balinskis": 0.56,
+"Valeri Nichushkin": 0.77,
+"Vasily Podkolzin": 0.48,
+"Victor Hedman": 0.96,
+"Victor Mancini": 0.23,
+"Victor Olofsson": 0.45,
+"Viktor Arvidsson": 0.55,
+"Ville Husso": 0.92,
+"Ville Koivunen": 0.41,
+"Ville Ottavainen": 0.34,
+"Vince Dunn": 0.54,
+"Vincent Desharnais": 0.45,
+"Vincent Iorio": 0.76,
+"Vincent Lecavalier": 0.88,
+"Vincent Trocheck": 1.07,
+"Vitek Vanecek": 0.4,
+"Vladimir Tarasenko": 0.65,
+"Vladislav Gavrikov": 0.55,
+"Vladislav Kolyachonok": 0.65,
+"Walker Duehr": 0.36,
+"Wayne Gretzky": 17.3,
+"Will Cuylle": 0.53,
+"Will Smith": 3.27,
+"William Eklund": 0.75,
+"William Karlsson": 0.74,
+"William Nylander": 2.0,
+"Wyatt Aamodt": 0.27,
+"Wyatt Johnston": 1.96,
+"Wyatt Kaiser": 0.63,
+"Yan Kuznetsov": 0.34,
+"Yaroslav Askarov": 1.0,
+"Yegor Sharangovich": 0.44,
+"Zach Benson": 1.09,
+"Zach Dean": 0.31,
+"Zach Hyman": 0.76,
+"Zach Metsa": 0.41,
+"Zach Werenski": 1.46,
+"Zach Whitecloud": 0.52,
+"Zachary Bolduc": 0.8,
+"Zachary L'Heureux": 0.7,
+"Zack MacEwen": 0.66,
+"Zack Ostapchuk": 0.32,
+"Zayne Parekh": 1.33,
+"Zdeno Chara": 5.76,
+"Zeev Buium": 1.01
+},
+"sous_ensembles": {
+"2026-27-ud-series-1": {
+"Outburst Silver": {
+"valeur": 4.71,
+"n": 20
+},
+"Clear Cut": {
+"valeur": 8.69,
+"n": 26
+},
+"Deluxe": {
+"valeur": 2.54,
+"n": 9
+},
+"UD Exclusives": {
+"valeur": 13.42,
+"n": 7
+},
+"Outburst Red": {
+"valeur": 75.61,
+"n": 4
+},
+"Country Logo Variations": {
+"valeur": 6.39,
+"n": 14
+},
+"Swagnificent Variations": {
+"valeur": 12.49,
+"n": 13
+},
+"Team Color Variations": {
+"valeur": 5.47,
+"n": 42
+},
+"SSP Variations": {
+"valeur": 21.1,
+"n": 15
+},
+"UD Canvas": {
+"valeur": 2.48,
+"n": 111
+},
+"UD Canvas Black & White": {
+"valeur": 8.22,
+"n": 30
+},
+"Stencils": {
+"valeur": 2.2,
+"n": 13
+},
+"Stencils Red": {
+"valeur": 3.1,
+"n": 5
+},
+"Dazzlers Blue": {
+"valeur": 2.72,
+"n": 34
+},
+"Dazzlers Pink": {
+"valeur": 4.93,
+"n": 9
+},
+"Fan Faves": {
+"valeur": 1.05,
+"n": 40
+},
+"Fan Faves Speckle": {
+"valeur": 1.69,
+"n": 8
+},
+"Repping": {
+"valeur": 2.0,
+"n": 7
+},
+"Repping Speckle": {
+"valeur": 0.94,
+"n": 5
+},
+"Vibe Check": {
+"valeur": 0.62,
+"n": 17
+},
+"Vibe Check Speckle": {
+"valeur": 0.74,
+"n": 10
+},
+"Sizzle Reel": {
+"valeur": 1.18,
+"n": 12
+},
+"Sizzle Reel Speckle": {
+"valeur": 1.95,
+"n": 6
+},
+"UD Portraits": {
+"valeur": 0.5,
+"n": 16
+},
+"UD Portraits Speckle": {
+"valeur": 2.01,
+"n": 5
+},
+"Population Count": {
+"valeur": 3.57,
+"n": 17
+},
+"Holotypes": {
+"valeur": 18.65,
+"n": 4
+},
+"Outburst Retro Young Guns": {
+"valeur": 63.42,
+"n": 4
+}
+},
+"2025-26-ultimate-collection": {
+"Ultimate Rookies Auto": {
+"valeur": 29.05,
+"n": 166
+},
+"Ultimate Rookies Auto Patch": {
+"valeur": 142.46,
+"n": 36
+},
+"Ultimate Rookies Jersey": {
+"valeur": 6.5,
+"n": 24
+},
+"Base Jumbo Jersey": {
+"valeur": 12.44,
+"n": 28
+},
+"Ultimate Rookies Auto Jumbo Patch": {
+"valeur": 643.96,
+"n": 8
+},
+"Ultimate Rookies Patch": {
+"valeur": 67.27,
+"n": 6
+},
+"Ultimate Introductions": {
+"valeur": 4.45,
+"n": 5
+},
+"Ultimate Phenoms": {
+"valeur": 10.82,
+"n": 8
+},
+"Ultimate Phenoms Auto": {
+"valeur": 33.55,
+"n": 20
+},
+"Ultimate Introductions Auto": {
+"valeur": 16.19,
+"n": 71
+},
+"Ultimate Signatures": {
+"valeur": 15.49,
+"n": 64
+},
+"Ultimate Signatures Rookies": {
+"valeur": 32.34,
+"n": 51
+},
+"Debut Threads Auto Patch": {
+"valeur": 132.53,
+"n": 13
+},
+"Ultimate Apparel Auto": {
+"valeur": 221.3,
+"n": 6
+},
+"Ultimate Emblems Auto": {
+"valeur": 25.68,
+"n": 10
+},
+"Ultimate Emblems Rookies Auto": {
+"valeur": 34.26,
+"n": 59
+},
+"Ultimate Access Patch": {
+"valeur": 61.06,
+"n": 5
+},
+"Ultimate Apparel": {
+"valeur": 41.91,
+"n": 4
+},
+"Ultimate Patches": {
+"valeur": 83.52,
+"n": 11
+},
+"Ultimate Introductions Auto Gold": {
+"valeur": 56.21,
+"n": 10
+},
+"Ultimate Introductions Auto Purple": {
+"valeur": 77.37,
+"n": 5
+},
+"Ultimate Phenoms Auto Gold": {
+"valeur": 92.73,
+"n": 15
+},
+"Ultimate Emblems Rookies Auto Gold": {
+"valeur": 56.77,
+"n": 32
+}
+},
+"2025-26-sp-authentic": {
+"Base Limited Gold": {
+"valeur": 3.57,
+"n": 7
+},
+"Future Watch": {
+"valeur": 10.94,
+"n": 6
+},
+"Future Watch Limited Red": {
+"valeur": 1.16,
+"n": 163
+},
+"Future Watch Limited Blue": {
+"valeur": 6.64,
+"n": 6
+},
+"Future Watch Limited Green": {
+"valeur": 4.73,
+"n": 6
+},
+"Future Watch Limited Gold": {
+"valeur": 25.43,
+"n": 17
+},
+"Future Watch Auto Patch": {
+"valeur": 181.69,
+"n": 54
+},
+"Future Watch Acetate": {
+"valeur": 135.38,
+"n": 5
+},
+"Limited Auto": {
+"valeur": 20.71,
+"n": 103
+},
+"Limited Auto Material": {
+"valeur": 16.47,
+"n": 5
+},
+"Authentic Moments Autographs": {
+"valeur": 27.11,
+"n": 25
+},
+"Chirography": {
+"valeur": 24.59,
+"n": 8
+},
+"Color Palette Autographs": {
+"valeur": 20.79,
+"n": 27
+},
+"Curated Signatures": {
+"valeur": 27.94,
+"n": 8
+},
+"Pageantry Autographs": {
+"valeur": 19.93,
+"n": 34
+},
+"Sign of the Times": {
+"valeur": 22.18,
+"n": 114
+},
+"Sign of the Times Rookies": {
+"valeur": 51.96,
+"n": 6
+},
+"UD Authentics Autographs": {
+"valeur": 20.43,
+"n": 88
+},
+"UD Authentics Auto Patch": {
+"valeur": 203.75,
+"n": 4
+},
+"Pageantry Red": {
+"valeur": 3.55,
+"n": 7
+},
+"Freshman Focus": {
+"valeur": 2.47,
+"n": 9
+},
+"Freshman Focus Blue": {
+"valeur": 4.04,
+"n": 7
+},
+"Freshman Focus Green": {
+"valeur": 4.81,
+"n": 4
+},
+"Holofoil": {
+"valeur": 2.71,
+"n": 4
+},
+"Spectrum FX Gold": {
+"valeur": 6.71,
+"n": 5
+}
+},
+"2025-26-ud-extended": {
+"Outburst Silver": {
+"valeur": 5.54,
+"n": 75
+},
+"Clear Cut": {
+"valeur": 33.92,
+"n": 111
+},
+"Deluxe": {
+"valeur": 3.48,
+"n": 13
+},
+"Exclusives": {
+"valeur": 12.59,
+"n": 10
+},
+"Outburst Red": {
+"valeur": 102.46,
+"n": 46
+},
+"High Gloss": {
+"valeur": 76.5,
+"n": 10
+},
+"Young Guns": {
+"valeur": 10.36,
+"n": 6974
+},
+"Young Guns Holiday": {
+"valeur": 19.16,
+"n": 132
+},
+"Young Guns Outburst Silver": {
+"valeur": 50.11,
+"n": 228
+},
+"Young Guns Clear Cut": {
+"valeur": 63.66,
+"n": 308
+},
+"Young Guns Deluxe": {
+"valeur": 55.56,
+"n": 215
+},
+"Young Guns Exclusives": {
+"valeur": 107.12,
+"n": 89
+},
+"Young Guns Outburst Red": {
+"valeur": 451.65,
+"n": 23
+},
+"Young Guns High Gloss": {
+"valeur": 650.94,
+"n": 6
+},
+"Young Guns Silver Foil": {
+"valeur": 20.81,
+"n": 23
+},
+"1st Round Draft Rookies": {
+"valeur": 2.2,
+"n": 5
+},
+"1st Round Draft Rookies Deluxe": {
+"valeur": 16.99,
+"n": 9
+},
+"Young Guns Acetate": {
+"valeur": 358.24,
+"n": 63
+},
+"Swagnificent Variation": {
+"valeur": 6.8,
+"n": 32
+},
+"UD Debut Game Jersey": {
+"valeur": 150.94,
+"n": 25
+},
+"UD Debut Game Jersey Auto": {
+"valeur": 664.63,
+"n": 4
+},
+"UD Canvas": {
+"valeur": 3.32,
+"n": 30
+},
+"UD Canvas Black and White": {
+"valeur": 6.47,
+"n": 9
+},
+"UD Canvas Young Guns": {
+"valeur": 18.04,
+"n": 1901
+},
+"UD Canvas Young Guns Black and White": {
+"valeur": 25.5,
+"n": 302
+}
+},
+"2025-26-ud-series-2": {
+"Outburst Silver": {
+"valeur": 4.65,
+"n": 40
+},
+"Clear Cut": {
+"valeur": 33.39,
+"n": 183
+},
+"Deluxe": {
+"valeur": 3.27,
+"n": 7
+},
+"Outburst Red": {
+"valeur": 51.33,
+"n": 14
+},
+"High Gloss": {
+"valeur": 75.66,
+"n": 6
+},
+"Young Guns": {
+"valeur": 8.11,
+"n": 6828
+},
+"Young Guns Outburst Silver": {
+"valeur": 36.78,
+"n": 270
+},
+"Young Guns Clear Cut": {
+"valeur": 66.09,
+"n": 215
+},
+"Young Guns Deluxe": {
+"valeur": 60.88,
+"n": 170
+},
+"Young Guns Exclusives": {
+"valeur": 121.23,
+"n": 55
+},
+"Young Guns Outburst Red": {
+"valeur": 646.83,
+"n": 17
+},
+"Young Guns High Gloss": {
+"valeur": 1028.88,
+"n": 10
+},
+"Young Guns Silver Foil": {
+"valeur": 38.32,
+"n": 43
+},
+"Young Guns Speckled Rainbow Foil": {
+"valeur": 120.42,
+"n": 61
+},
+"Swagnificent Variation": {
+"valeur": 20.11,
+"n": 18
+},
+"UD Canvas": {
+"valeur": 2.24,
+"n": 31
+},
+"UD Canvas Black and White": {
+"valeur": 4.69,
+"n": 6
+},
+"UD Canvas Young Guns": {
+"valeur": 13.22,
+"n": 1670
+},
+"UD Canvas Young Guns Black and White": {
+"valeur": 27.04,
+"n": 204
+},
+"UD Canvas Program of Excellence": {
+"valeur": 5.69,
+"n": 61
+}
+},
+"2025-26-sp-game-used": {
+"Authentic Rookies": {
+"valeur": 9.92,
+"n": 6
+},
+"Base Gold": {
+"valeur": 4.01,
+"n": 9
+},
+"Base Rainbow": {
+"valeur": 12.24,
+"n": 7
+},
+"Base Blue Auto": {
+"valeur": 16.56,
+"n": 85
+},
+"Base Red Auto Jersey": {
+"valeur": 24.92,
+"n": 46
+},
+"Base Purple Auto Premium Memorabilia": {
+"valeur": 52.43,
+"n": 8
+},
+"Base Red Jersey": {
+"valeur": 4.49,
+"n": 15
+},
+"Authentic Rookies Blue Auto": {
+"valeur": 24.81,
+"n": 54
+},
+"Authentic Rookies Red Auto Jersey": {
+"valeur": 29.96,
+"n": 4
+},
+"Authentic Rookies Red Jersey": {
+"valeur": 4.86,
+"n": 5
+},
+"New Grooves Blue Auto": {
+"valeur": 22.68,
+"n": 5
+},
+"Inked Rookie Sweaters": {
+"valeur": 46.74,
+"n": 14
+},
+"2025 Winter Classic Fabrics": {
+"valeur": 4.96,
+"n": 4
+},
+"Supreme Patches": {
+"valeur": 114.37,
+"n": 6
+},
+"NHL Masters Jersey": {
+"valeur": 6.55,
+"n": 15
+},
+"New Grooves Rainbow": {
+"valeur": 6.25,
+"n": 4
+},
+"Inked Sweaters Auto Patch": {
+"valeur": 93.1,
+"n": 4
+}
+},
+"2024-25-the-cup": {
+"Base Rookie Auto Patch": {
+"valeur": 166.02,
+"n": 28
+},
+"Base Rookie Gold Spectrum Foil Variation Auto": {
+"valeur": 105.54,
+"n": 6
+},
+"Base Rookie Auto Gold Foil Patch": {
+"valeur": 140.72,
+"n": 8
+},
+"Baroque Auto": {
+"valeur": 49.02,
+"n": 17
+},
+"Elegant Etchings Auto": {
+"valeur": 54.09,
+"n": 14
+},
+"Enshrinements Auto": {
+"valeur": 75.9,
+"n": 5
+},
+"Lavish Auto": {
+"valeur": 77.06,
+"n": 10
+},
+"Logomarks Auto": {
+"valeur": 36.42,
+"n": 4
+},
+"Signature Renditions": {
+"valeur": 140.57,
+"n": 12
+},
+"Foundations Quad Jersey Auto": {
+"valeur": 68.48,
+"n": 4
+},
+"Signature Patches": {
+"valeur": 86.22,
+"n": 7
+},
+"Signature Pucks": {
+"valeur": 43.45,
+"n": 4
+},
+"Logomarks Auto Gold": {
+"valeur": 77.19,
+"n": 6
+}
+},
+"2025-26-ud-series-1": {
+"Outburst Silver": {
+"valeur": 5.24,
+"n": 42
+},
+"Clear Cut": {
+"valeur": 34.43,
+"n": 125
+},
+"Deluxe": {
+"valeur": 6.52,
+"n": 4
+},
+"Exclusives": {
+"valeur": 9.45,
+"n": 4
+},
+"Outburst Red": {
+"valeur": 67.84,
+"n": 48
+},
+"Young Guns": {
+"valeur": 8.45,
+"n": 5188
+},
+"Young Guns Outburst Silver": {
+"valeur": 42.49,
+"n": 212
+},
+"Young Guns Clear Cut": {
+"valeur": 71.9,
+"n": 243
+},
+"Young Guns Deluxe": {
+"valeur": 44.57,
+"n": 120
+},
+"Young Guns Exclusives": {
+"valeur": 92.6,
+"n": 68
+},
+"Young Guns Outburst Red": {
+"valeur": 492.82,
+"n": 25
+},
+"Young Guns High Gloss": {
+"valeur": 420.62,
+"n": 11
+},
+"Young Guns Oversized": {
+"valeur": 7.42,
+"n": 21
+},
+"Swagnificent Variations": {
+"valeur": 6.11,
+"n": 71
+},
+"UD Canvas": {
+"valeur": 1.55,
+"n": 19
+},
+"UD Canvas Black and White": {
+"valeur": 2.91,
+"n": 8
+},
+"UD Canvas Young Guns": {
+"valeur": 9.55,
+"n": 712
+},
+"UD Canvas Young Guns Black and White": {
+"valeur": 18.51,
+"n": 113
+},
+"Encore": {
+"valeur": 0.34,
+"n": 14
+},
+"Encore Gold": {
+"valeur": 10.06,
+"n": 8
+},
+"Blue Dazzlers": {
+"valeur": 2.03,
+"n": 82
+},
+"Pink Dazzlers": {
+"valeur": 2.52,
+"n": 46
+},
+"Gold Dazzlers": {
+"valeur": 66.77,
+"n": 7
+},
+"Green Dazzlers": {
+"valeur": 2.57,
+"n": 45
+},
+"Orange Dazzlers": {
+"valeur": 2.51,
+"n": 58
+},
+"Red Dazzlers": {
+"valeur": 4.82,
+"n": 53
+},
+"Black Dazzlers": {
+"valeur": 16.0,
+"n": 7
+},
+"Compositions": {
+"valeur": 0.54,
+"n": 5
+},
+"Compositions Gold": {
+"valeur": 18.98,
+"n": 6
+},
+"Holotypes": {
+"valeur": 14.62,
+"n": 17
+},
+"Bootlegs": {
+"valeur": 113.34,
+"n": 6
+},
+"Fanimation": {
+"valeur": 23.0,
+"n": 6
+},
+"Outburst Retro Young Guns": {
+"valeur": 33.45,
+"n": 56
+},
+"Population Count 1000": {
+"valeur": 5.92,
+"n": 18
+},
+"Population Count 500": {
+"valeur": 5.92,
+"n": 18
+},
+"Population Count 100": {
+"valeur": 5.92,
+"n": 18
+},
+"Population Count 50": {
+"valeur": 5.92,
+"n": 18
+},
+"Population Count 25": {
+"valeur": 5.92,
+"n": 18
+},
+"Population Count 10": {
+"valeur": 5.92,
+"n": 18
+},
+"Population Count 1": {
+"valeur": 5.92,
+"n": 18
+},
+"Retro Young Guns Achievements": {
+"valeur": 13.13,
+"n": 30
+},
+"Retro Young Guns Achievements Exclusives": {
+"valeur": 29.43,
+"n": 4
+}
+}
+}
+}

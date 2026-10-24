@@ -1,0 +1,590 @@
+"""
+LOCKERROOM - « Se connecter avec eBay » (OAuth officiel, aucun mot de passe).
+
+Le vendeur se connecte sur la page d'eBay elle-meme et approuve l'app ; eBay
+renvoie un code que l'app echange contre un jeton (2 h, renouvele tout seul
+pendant ~18 mois). L'app ne voit jamais le mot de passe et le vendeur peut
+revoquer l'acces dans son compte eBay (Compte > Preferences de connexion).
+
+Ce que l'app lit (lecture seule) :
+  - annonces actives          : Trading API GetMyeBaySelling (ActiveList)
+  - commandes et frais reels  : Sell Fulfillment API getOrders (totalMarketplaceFee)
+  - nom du compte             : Commerce Identity API
+
+Configuration (une fois, par le vendeur, sur developer.ebay.com) : cles de
+PRODUCTION d'une application LockerRoom (App ID, Cert ID) + un RuName dont
+l'« auth accepted URL » est http://localhost:8430/api/ebay_retour (ou
+n'importe quelle page : l'app accepte aussi l'adresse collee a la main).
+Cles et jetons restent dans des fichiers locaux, jamais renvoyes a l'ecran
+(seulement les 4 derniers caracteres).
+"""
+import base64
+import json
+import os
+import secrets
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+import xml.etree.ElementTree as ET
+from datetime import datetime, timedelta, timezone
+
+import appels_ebay
+import comptes
+
+DOSSIER = os.environ.get("LOCKERROOM_DONNEES") or os.path.dirname(os.path.abspath(__file__))   # heberge : disque persistant
+CHEMIN_ENV = os.path.join(DOSSIER, "ebay_env.json")
+
+# 21 oct 2026 (Mathieu : « on prepare le sandbox ? ») - deux environnements eBay
+# completement separes : adresses, cles, jetons ET base de donnees (lockerroom.py).
+ENVIRONNEMENTS = {
+    "production": {"auth": "https://auth.ebay.com/oauth2/authorize",
+                   "api": "https://api.ebay.com", "apiz": "https://apiz.ebay.com",
+                   "cles": "ebay_cles.json", "jetons": ".ebay_jetons.json", "site_web": "https://www.ebay.ca"},
+    "sandbox": {"auth": "https://auth.sandbox.ebay.com/oauth2/authorize",
+                "api": "https://api.sandbox.ebay.com", "apiz": "https://apiz.sandbox.ebay.com",
+                "cles": "ebay_cles_sandbox.json", "jetons": ".ebay_jetons_sandbox.json", "site_web": "https://sandbox.ebay.ca"},
+}
+
+
+def environnement():
+    if comptes.MULTI:                       # heberge : fixe par le serveur (demo = sandbox)
+        e = os.environ.get("LOCKERROOM_EBAY_ENV", "production")
+        return e if e in ENVIRONNEMENTS else "production"
+    e = _lire(CHEMIN_ENV).get("env")
+    return e if e in ENVIRONNEMENTS else "production"
+
+
+def changer_environnement(env):
+    if comptes.MULTI:
+        raise ValueError("L'environnement eBay est fixé par le serveur")
+    if env not in ENVIRONNEMENTS:
+        raise ValueError("Environnement inconnu")
+    _ecrire(CHEMIN_ENV, {"env": env})
+    return statut()
+
+
+def _env():
+    return ENVIRONNEMENTS[environnement()]
+
+
+CHEMIN_CLES = None        # tests : chemins imposes (sinon selon l'environnement)
+CHEMIN_JETONS = None
+
+
+def chemin_cles():
+    return CHEMIN_CLES or os.path.join(DOSSIER, _env()["cles"])
+
+
+def chemin_jetons():
+    if CHEMIN_JETONS:
+        return CHEMIN_JETONS
+    d = comptes.dossier()                   # multi-comptes : les jetons du client de la session
+    return os.path.join(d or DOSSIER, _env()["jetons"])
+
+
+def _cles_serveur():
+    """Heberge : NOS cles, en variables d'environnement (jamais dans un fichier, jamais au client)."""
+    suf = "_SANDBOX" if environnement() == "sandbox" else ""
+    c = {k: os.environ.get(f"LOCKERROOM_EBAY_{k.upper()}{suf}") for k in ("app_id", "cert_id", "runame")}
+    return c if all(c.values()) else None
+
+
+def url(nom):
+    e = _env()
+    return {"auth": e["auth"], "jeton": e["api"] + "/identity/v1/oauth2/token", "trading": e["api"] + "/ws/api.dll",
+            "commandes": e["api"] + "/sell/fulfillment/v1/order", "identite": e["apiz"] + "/commerce/identity/v1/user/",
+            "recherche": e["api"] + "/buy/browse/v1/item_summary/search", "offre": e["api"] + "/buy/offer/v1_beta/bidding",
+            "site": e["site_web"]}[nom]
+
+
+# les noms de scopes sont les memes en sandbox (toujours https://api.ebay.com/...)
+SCOPES = [
+    "https://api.ebay.com/oauth/api_scope",
+    "https://api.ebay.com/oauth/api_scope/sell.fulfillment.readonly",
+    "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly",
+    "https://api.ebay.com/oauth/api_scope/commerce.identity.readonly",
+]
+SCOPE_ECRITURE = "https://api.ebay.com/oauth/api_scope/sell.inventory"      # mettre en vente, changer un prix
+SCOPE_MISES = "https://api.ebay.com/oauth/api_scope/buy.offer.auction"      # miser (API Offer : sandbox, ou production approuvee)
+
+
+def scopes_demandes():
+    c = _lire(chemin_cles())
+    if os.environ.get("LOCKERROOM_MISES_APPROUVEES") == "1":
+        c["mises_approuvees"] = True
+    out = list(SCOPES) + [SCOPE_ECRITURE]
+    # 21 oct 2026 - buy.offer.auction est en « Limited Release » : un scope que le jeu de cles
+    # n'a pas fait echouer TOUTE la connexion chez eBay (page /n/error). Seulement si permis.
+    if c.get("mises_approuvees"):
+        out.append(SCOPE_MISES)
+    return out
+
+
+SITE_ID = "2"                         # eBay Canada
+NIVEAU = "1193"
+_NS = {"e": "urn:ebay:apis:eBLBaseComponents"}
+MARGE_S = 120
+
+
+def _lire(chemin):
+    try:
+        with open(chemin, encoding="utf-8") as f:
+            return json.loads(comptes.dechiffrer(f.read())) or {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _ecrire(chemin, data):
+    texte = json.dumps(data)
+    if os.path.basename(chemin).startswith(".ebay_jetons"):
+        texte = comptes.chiffrer(texte)      # LOCKERROOM_CLE definie : jetons chiffres sur le disque
+    tmp = chemin + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        f.write(texte)
+    os.replace(tmp, chemin)
+
+
+def _fin(v):
+    v = str(v or "")
+    return ("•••• " + v[-4:]) if len(v) >= 8 else ("••••" if v else "")
+
+
+# -- cles -------------------------------------------------------------------------------
+def sauver_cles(app_id=None, cert_id=None, runame=None):
+    c = _lire(chemin_cles())
+    for k, v in (("app_id", app_id), ("cert_id", cert_id), ("runame", runame)):
+        v = str(v or "").strip()
+        if v and "•" not in v:
+            c[k] = v
+    _ecrire(chemin_cles(), c)
+    return statut()
+
+
+def _cles():
+    c = _cles_serveur() or _lire(chemin_cles())
+    if not (c.get("app_id") and c.get("cert_id") and c.get("runame")):
+        raise RuntimeError("Clés eBay manquantes : App ID, Cert ID et RuName dans Réglages")
+    if c["runame"] == c["app_id"]:
+        # eBay repond alors « temporarily_unavailable » (500) au lieu d'un message clair
+        raise RuntimeError("Le RuName enregistré est ton App ID : colle le vrai RuName (User Tokens sur developer.ebay.com)")
+    return c
+
+
+def statut():
+    c, j = (_cles_serveur() or _lire(chemin_cles())), _lire(chemin_jetons())
+    connecte = bool(j.get("refresh_token")) and j.get("refresh_expire_a", 0) > time.time()
+    return {"cles": {"app_id": _fin(c.get("app_id")), "cert_id": _fin(c.get("cert_id")), "runame": _fin(c.get("runame"))},
+            "cles_ok": bool(c.get("app_id") and c.get("cert_id") and c.get("runame")) and c.get("runame") != c.get("app_id"),
+            "runame_erreur": "Le RuName est ton App ID : colle le vrai RuName" if c.get("runame") and c.get("runame") == c.get("app_id") else None,
+            "connecte": connecte, "compte": j.get("compte") if connecte else None,
+            "expire_le": datetime.fromtimestamp(j["refresh_expire_a"]).isoformat(timespec="minutes") if connecte else None,
+            "derniere_synchro": j.get("derniere_synchro"), "bilan_synchro": j.get("bilan_synchro"),
+            "env": environnement(), "site": url("site"),
+            "ecriture": connecte and SCOPE_ECRITURE in (j.get("scopes") or []),
+            "mises": connecte and SCOPE_MISES in (j.get("scopes") or []),
+            "multi": comptes.MULTI, "cles_serveur": bool(_cles_serveur())}
+
+
+# -- OAuth ----------------------------------------------------------------------------------
+def url_connexion():
+    c = _cles()
+    etat = secrets.token_urlsafe(16)
+    if comptes.MULTI and not comptes.courant():
+        _attente_ajouter(etat, scopes_demandes())
+    else:
+        j = _lire(chemin_jetons())
+        j["etat_attendu"] = etat
+        j["scopes_attendus"] = scopes_demandes()
+        _ecrire(chemin_jetons(), j)
+    q = urllib.parse.urlencode({"client_id": c["app_id"], "redirect_uri": c["runame"], "response_type": "code",
+                                "scope": " ".join(scopes_demandes()), "state": etat, "prompt": "login"}, quote_via=urllib.parse.quote)
+    return {"ok": True, "url": url("auth") + "?" + q}
+
+
+def _post_jeton(data):
+    c = _cles()
+    auth = base64.b64encode(f"{c['app_id']}:{c['cert_id']}".encode()).decode()
+    req = urllib.request.Request(url("jeton"), data=urllib.parse.urlencode(data).encode(), method="POST",
+                                 headers={"Authorization": "Basic " + auth, "Content-Type": "application/x-www-form-urlencoded"})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return json.loads(r.read()), None
+    except urllib.error.HTTPError as e:
+        return None, f"eBay a refusé (HTTP {e.code}) : {e.read().decode('utf-8', 'ignore')[:200]}"
+    except urllib.error.URLError as e:
+        return None, f"eBay injoignable : {e.reason}"
+
+
+def code_depuis(texte):
+    """Le code d'autorisation, a partir du code lui-meme ou de l'adresse complete
+    de la page ou eBay a renvoye le vendeur (?code=...&state=...)."""
+    t = str(texte or "").strip()
+    if "code=" in t:
+        q = urllib.parse.urlparse(t).query or t.split("?", 1)[-1]
+        p = urllib.parse.parse_qs(q)
+        return (p.get("code") or [""])[0], (p.get("state") or [None])[0]
+    return urllib.parse.unquote(t), None
+
+
+# -- multi-comptes : connexions en cours (aucun compte encore : c'est eBay qui nous dira qui) ----
+def _chemin_attente():
+    return os.path.join(comptes.DONNEES, "connexions_en_attente.json")
+
+
+def _attente_ajouter(etat, scopes):
+    a = {k: v for k, v in _lire(_chemin_attente()).items() if v.get("le", 0) > time.time() - 900}
+    a[etat] = {"le": time.time(), "scopes": scopes}
+    _ecrire(_chemin_attente(), a)
+
+
+def _attente_prendre(etat):
+    a = _lire(_chemin_attente())
+    e = a.pop(etat, None) if etat else None
+    _ecrire(_chemin_attente(), a)
+    return e if e and e.get("le", 0) > time.time() - 900 else None
+
+
+def _identite(access_token):
+    appels_ebay.compter("identity")
+    req = urllib.request.Request(url("identite"), headers={"Authorization": "Bearer " + access_token, "Accept": "application/json"})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return json.loads(r.read())
+
+
+def connexion_compte(texte, etat=None):
+    """Multi-comptes : « Se connecter avec eBay » EST l'inscription. eBay renvoie le code,
+    on apprend qui est le vendeur, son compte est cree au besoin. -> {ok, compte, nouveau}"""
+    code, etat_url = code_depuis(texte)
+    attente = _attente_prendre(etat or etat_url)
+    if not code or not attente:
+        return {"ok": False, "erreur": "Connexion eBay expirée : recommence"}
+    c = _cles()
+    p, err = _post_jeton({"grant_type": "authorization_code", "code": code, "redirect_uri": c["runame"]})
+    if err:
+        return {"ok": False, "erreur": err}
+    try:
+        u = _identite(p["access_token"])
+    except Exception:
+        return {"ok": False, "erreur": "eBay n'a pas confirmé ton identité : recommence"}
+    if not u.get("userId"):
+        return {"ok": False, "erreur": "eBay n'a pas confirmé ton identité : recommence"}
+    cid, nouveau = comptes.trouver_ou_creer(u["userId"], u.get("username"), environnement())
+    maintenant = time.time()
+    with comptes.utiliser(cid):
+        j = _lire(chemin_jetons())
+        j.update(access_token=p["access_token"], access_expire_a=maintenant + int(p.get("expires_in", 7200)),
+                 refresh_token=p.get("refresh_token"), refresh_expire_a=maintenant + int(p.get("refresh_token_expires_in", 47304000)),
+                 scopes=attente.get("scopes") or SCOPES, compte=u.get("username"), ebay_user_id=u["userId"])
+        _ecrire(chemin_jetons(), j)
+    return {"ok": True, "compte": cid, "nouveau": nouveau, "username": u.get("username")}
+
+
+def terminer_connexion(texte, etat=None):
+    code, etat_url = code_depuis(texte)
+    if not code:
+        return {"ok": False, "erreur": "Aucun code d'autorisation eBay dans cette adresse"}
+    if comptes.MULTI and not comptes.courant():
+        return connexion_compte(texte, etat)
+    j = _lire(chemin_jetons())
+    recu = etat or etat_url
+    if (recu and j.get("etat_attendu") and recu != j["etat_attendu"]) or (comptes.MULTI and (not recu or recu != j.get("etat_attendu"))):
+        return {"ok": False, "erreur": "Réponse eBay inattendue (état différent) : recommence la connexion"}
+    c = _cles()
+    p, err = _post_jeton({"grant_type": "authorization_code", "code": code, "redirect_uri": c["runame"]})
+    if err:
+        return {"ok": False, "erreur": err}
+    maintenant = time.time()
+    j.update(access_token=p["access_token"], access_expire_a=maintenant + int(p.get("expires_in", 7200)),
+             refresh_token=p.get("refresh_token"), refresh_expire_a=maintenant + int(p.get("refresh_token_expires_in", 47304000)))
+    j["scopes"] = j.pop("scopes_attendus", None) or SCOPES
+    j.pop("etat_attendu", None)
+    _ecrire(chemin_jetons(), j)
+    try:
+        u = _get_json(url("identite"))
+        j["compte"] = u.get("username")
+        _ecrire(chemin_jetons(), j)
+    except Exception:
+        pass
+    return {"ok": True, **statut()}
+
+
+def deconnecter():
+    j = _lire(chemin_jetons())
+    for k in ("access_token", "access_expire_a", "refresh_token", "refresh_expire_a", "compte"):
+        j.pop(k, None)
+    _ecrire(chemin_jetons(), j)
+    return statut()
+
+
+def jeton():
+    j = _lire(chemin_jetons())
+    if j.get("access_token") and j.get("access_expire_a", 0) > time.time() + MARGE_S:
+        return j["access_token"]
+    if not j.get("refresh_token") or j.get("refresh_expire_a", 0) <= time.time():
+        raise RuntimeError("Compte eBay non connecté")
+    p, err = _post_jeton({"grant_type": "refresh_token", "refresh_token": j["refresh_token"], "scope": " ".join(j.get("scopes") or SCOPES)})
+    if err:
+        raise RuntimeError(err)
+    j.update(access_token=p["access_token"], access_expire_a=time.time() + int(p.get("expires_in", 7200)))
+    if p.get("refresh_token"):
+        j.update(refresh_token=p["refresh_token"], refresh_expire_a=time.time() + int(p.get("refresh_token_expires_in", 47304000)))
+    _ecrire(chemin_jetons(), j)
+    return j["access_token"]
+
+
+# -- lectures ---------------------------------------------------------------------------------
+def _get_json(url):
+    appels_ebay.compter("identity" if "/identity/" in url else "fulfillment")
+    req = urllib.request.Request(url, headers={"Authorization": "Bearer " + jeton(), "Accept": "application/json",
+                                               "X-EBAY-C-MARKETPLACE-ID": "EBAY_CA"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        raise RuntimeError(f"eBay HTTP {e.code} : {e.read().decode('utf-8', 'ignore')[:200]}")
+
+
+def _num(el, chemin):
+    x = el.find(chemin, _NS)
+    try:
+        return float(x.text) if x is not None and x.text else None
+    except ValueError:
+        return None
+
+
+def _txt(el, chemin):
+    x = el.find(chemin, _NS)
+    return (x.text or "").strip() if x is not None and x.text else ""
+
+
+def lire_annonces_xml(brut):
+    """(annonces, nb_pages) d'une reponse GetMyeBaySelling."""
+    racine = ET.fromstring(brut)
+    ack = _txt(racine, "e:Ack")
+    if ack not in ("Success", "Warning"):
+        raise RuntimeError(_txt(racine, "e:Errors/e:LongMessage") or f"eBay : Ack={ack}")
+    out = []
+    for it in racine.findall("e:ActiveList/e:ItemArray/e:Item", _NS):
+        out.append({"item_number": _txt(it, "e:ItemID"), "titre": _txt(it, "e:Title"), "sku": _txt(it, "e:SKU"),
+                    "prix": _num(it, "e:SellingStatus/e:CurrentPrice") or _num(it, "e:BuyItNowPrice"),
+                    "quantite": _num(it, "e:QuantityAvailable"), "debut": _txt(it, "e:ListingDetails/e:StartTime"),
+                    "photo": _txt(it, "e:PictureDetails/e:GalleryURL"), "watchers": int(_num(it, "e:WatchCount") or 0),
+                    "categorie": _txt(it, "e:PrimaryCategory/e:CategoryID")})
+    pages = _txt(racine, "e:ActiveList/e:PaginationResult/e:TotalNumberOfPages")
+    return out, int(pages) if pages.isdigit() else 1
+
+
+def annonces_actives():
+    tout, page, pages = [], 1, 1
+    while page <= pages and page <= 50:
+        corps = ('<?xml version="1.0" encoding="utf-8"?>'
+                 '<GetMyeBaySellingRequest xmlns="urn:ebay:apis:eBLBaseComponents">'
+                 "<ActiveList><Include>true</Include><IncludeWatchCount>true</IncludeWatchCount>"
+                 "<Pagination><EntriesPerPage>200</EntriesPerPage>"
+                 f"<PageNumber>{page}</PageNumber></Pagination></ActiveList>"
+                 "<DetailLevel>ReturnAll</DetailLevel></GetMyeBaySellingRequest>")
+        req = urllib.request.Request(url("trading"), data=corps.encode(), method="POST", headers={
+            "X-EBAY-API-SITEID": SITE_ID, "X-EBAY-API-COMPATIBILITY-LEVEL": NIVEAU, "X-EBAY-API-CALL-NAME": "GetMyeBaySelling",
+            "X-EBAY-API-IAF-TOKEN": jeton(), "Content-Type": "text/xml"})
+        appels_ebay.exiger("trading", fond=True)
+        appels_ebay.compter("trading")
+        with urllib.request.urlopen(req, timeout=40) as r:
+            lot, pages = lire_annonces_xml(r.read())
+        tout += lot
+        page += 1
+    return tout
+
+
+def lire_commandes(payload):
+    """Lignes de vente d'une page getOrders : une par article vendu."""
+    out = []
+    for o in payload.get("orders") or []:
+        lignes = o.get("lineItems") or []
+        frais_cmd = float(((o.get("totalMarketplaceFee") or {}).get("value")) or 0) or None
+        base_tot = sum(float((l.get("lineItemCost") or {}).get("value") or 0) for l in lignes) or 1.0
+        for l in lignes:
+            prix = float((l.get("lineItemCost") or {}).get("value") or 0)
+            port = float(((l.get("deliveryCost") or {}).get("shippingCost") or {}).get("value") or 0)
+            out.append({"transaction_id": f"api:{o.get('orderId')}:{l.get('lineItemId')}", "item_number": str(l.get("legacyItemId") or ""),
+                        "titre": l.get("title") or "", "sku": l.get("sku") or "", "prix": prix, "port_charge": port,
+                        "frais_reels": round(frais_cmd * prix / base_tot, 2) if frais_cmd else None,
+                        "date": str(o.get("creationDate") or "")[:10], "acheteur": (o.get("buyer") or {}).get("username") or "",
+                        "statut_paiement": o.get("orderPaymentStatus"), "annulee": (o.get("cancelStatus") or {}).get("cancelState") == "CANCELED"})
+    return out
+
+
+def lire_transactions_xml(brut):
+    """(ventes, nb_pages) d'une reponse GetSellerTransactions - meme format que lire_commandes."""
+    racine = ET.fromstring(brut)
+    ack = _txt(racine, "e:Ack")
+    if ack not in ("Success", "Warning"):
+        raise RuntimeError(_txt(racine, "e:Errors/e:LongMessage") or f"eBay : Ack={ack}")
+    out = []
+    for t in racine.findall("e:TransactionArray/e:Transaction", _NS):
+        iid, tid = _txt(t, "e:Item/e:ItemID"), _txt(t, "e:TransactionID")
+        if not iid:
+            continue
+        statut = _txt(t, "e:Status/e:CompleteStatus") or ""
+        out.append({"transaction_id": f"trd:{iid}:{tid}", "item_number": iid,
+                    "titre": _txt(t, "e:Item/e:Title") or "", "sku": _txt(t, "e:Item/e:SKU") or "",
+                    "prix": _num(t, "e:TransactionPrice") or 0.0,
+                    "port_charge": _num(t, "e:ShippingServiceSelected/e:ShippingServiceCost") or 0.0,
+                    "frais_reels": None, "date": (_txt(t, "e:CreatedDate") or "")[:10],
+                    "acheteur": _txt(t, "e:Buyer/e:UserID") or "",
+                    "statut_paiement": "PAID" if _txt(t, "e:PaidTime") else "PENDING",
+                    "annulee": statut.lower() == "canceled" or bool(_txt(t, "e:ContainingOrder/e:CancelStatus") == "CancelComplete"),
+                    "source": "trading"})
+    pages = _txt(racine, "e:PaginationResult/e:TotalNumberOfPages") or "1"
+    return out, int(pages) if pages.isdigit() else 1
+
+
+def ventes_trading(jours=30):
+    """22 oct 2026 - 2e source des ventes (API Trading, GetSellerTransactions) : la nouvelle API
+    des commandes tarde parfois (sandbox surtout). Frais estimes ici ; les frais reels arrivent
+    par commandes() et remplacent l'estimation (voir lockerroom._maj_ventes)."""
+    tout, page, pages = [], 1, 1
+    while page <= pages and page <= 20:
+        corps = ('<?xml version="1.0" encoding="utf-8"?>'
+                 '<GetSellerTransactionsRequest xmlns="urn:ebay:apis:eBLBaseComponents">'
+                 f"<NumberOfDays>{max(1, min(30, int(jours)))}</NumberOfDays>"
+                 f"<Pagination><EntriesPerPage>200</EntriesPerPage><PageNumber>{page}</PageNumber></Pagination>"
+                 "<DetailLevel>ReturnAll</DetailLevel></GetSellerTransactionsRequest>")
+        r = trading("GetSellerTransactions", corps, fond=True)
+        lot, pages = lire_transactions_xml(ET.tostring(r))
+        tout += lot
+        page += 1
+    return tout
+
+
+def commandes(jours=90):
+    depuis = (datetime.now(timezone.utc) - timedelta(days=jours)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    tout, offset = [], 0
+    while offset < 5000:
+        q = urllib.parse.urlencode({"filter": f"creationdate:[{depuis}..]", "limit": 200, "offset": offset})
+        p = _get_json(url("commandes") + "?" + q)
+        tout += lire_commandes(p)
+        offset += 200
+        if offset >= int(p.get("total") or 0):
+            break
+    return tout
+
+
+def noter_synchro(bilan):
+    j = _lire(chemin_jetons())
+    j.update(derniere_synchro=datetime.now().isoformat(timespec="seconds"), bilan_synchro=bilan)
+    _ecrire(chemin_jetons(), j)
+
+
+# -- marche (API Browse, jeton d'application : aucune donnee du compte) ----------------------
+TAUX_CAD = {"CAD": 1.0, "USD": 1.38}
+
+
+def jeton_application():
+    j = _lire(chemin_jetons())
+    if j.get("app_token") and j.get("app_expire_a", 0) > time.time() + MARGE_S:
+        return j["app_token"]
+    p, err = _post_jeton({"grant_type": "client_credentials", "scope": SCOPES[0]})
+    if err:
+        raise RuntimeError(err)
+    j.update(app_token=p["access_token"], app_expire_a=time.time() + int(p.get("expires_in", 7200)))
+    _ecrire(chemin_jetons(), j)
+    return j["app_token"]
+
+
+def rechercher(q, categorie=None, prix_max=None, recentes=False, limite=50, fond=True):
+    """Annonces actives a prix fixe semblables : [{item_id, titre, prix_cad, url, photo}].
+    Cache partage (24 h ; 6 h pour les nouveautes) et compteur d'appels (appels_ebay)."""
+    cle = appels_ebay.cle_recherche(environnement(), q=q[:100], categorie=categorie,
+                                     prix_max=round(float(prix_max), 2) if prix_max else None, recentes=bool(recentes), limite=int(limite))
+    deja = appels_ebay.cache_lire(cle, "recentes" if recentes else "marche")
+    if deja is not None:
+        return deja
+    appels_ebay.exiger("browse", fond)
+    filtres = ["buyingOptions:{FIXED_PRICE}"]
+    if prix_max:
+        filtres.append(f"price:[..{float(prix_max):.2f}]")
+        filtres.append("priceCurrency:CAD")
+    p = {"q": q[:100], "limit": int(limite), "filter": ",".join(filtres)}
+    if categorie:
+        p["category_ids"] = categorie
+    if recentes:
+        p["sort"] = "newlyListed"
+    adresse = url("recherche") + "?" + urllib.parse.urlencode(p, quote_via=urllib.parse.quote)
+    req = urllib.request.Request(adresse, headers={"Authorization": "Bearer " + jeton_application(), "Accept": "application/json",
+                                               "X-EBAY-C-MARKETPLACE-ID": "EBAY_CA"})
+    appels_ebay.compter("browse")
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            d = json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        raise RuntimeError(f"eBay HTTP {e.code} : {e.read().decode('utf-8', 'ignore')[:200]}")
+    res = lire_recherche(d)
+    appels_ebay.cache_ecrire(cle, res)
+    return res
+
+
+def lire_recherche(d):
+    out = []
+    for it in d.get("itemSummaries") or []:
+        pr = it.get("price") or {}
+        dev = pr.get("currency") or "CAD"
+        if dev not in TAUX_CAD or not pr.get("value"):
+            continue
+        port = ((it.get("shippingOptions") or [{}])[0].get("shippingCost") or {}).get("value")
+        out.append({"item_id": str(it.get("legacyItemId") or it.get("itemId") or ""), "titre": it.get("title") or "",
+                    "prix_cad": round(float(pr["value"]) * TAUX_CAD[dev], 2),
+                    "port_cad": round(float(port) * TAUX_CAD[dev], 2) if port not in (None, "") else None,
+                    "url": it.get("itemWebUrl") or "", "photo": (it.get("image") or {}).get("imageUrl") or "",
+                    "vendeur": (it.get("seller") or {}).get("username") or ""})
+    return out
+
+
+# -- appels Trading generiques (ecriture : toujours declenches par un tap du vendeur) ------------
+def trading(appel, corps, fond=False):
+    """POST Trading API -> racine XML ; erreur claire si eBay refuse (Ack=Failure)."""
+    appels_ebay.exiger("trading", fond)
+    appels_ebay.compter("trading")
+    req = urllib.request.Request(url("trading"), data=corps.encode("utf-8"), method="POST", headers={
+        "X-EBAY-API-SITEID": SITE_ID, "X-EBAY-API-COMPATIBILITY-LEVEL": NIVEAU, "X-EBAY-API-CALL-NAME": appel,
+        "X-EBAY-API-IAF-TOKEN": jeton(), "Content-Type": "text/xml"})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            racine = ET.fromstring(r.read())
+    except urllib.error.HTTPError as e:
+        raise RuntimeError(f"eBay HTTP {e.code} : {e.read().decode('utf-8', 'ignore')[:200]}")
+    ack = _txt(racine, "e:Ack")
+    if ack not in ("Success", "Warning"):
+        msgs = [(_txt(er, "e:LongMessage") or _txt(er, "e:ShortMessage")) for er in racine.findall("e:Errors", _NS)
+                if _txt(er, "e:SeverityCode") != "Warning"]
+        raise RuntimeError("eBay a refusé : " + (" · ".join(m for m in msgs if m) or f"Ack={ack}"))
+    return racine
+
+
+def avertissements(racine):
+    return [(_txt(er, "e:ShortMessage") or _txt(er, "e:LongMessage")) for er in racine.findall("e:Errors", _NS)
+            if _txt(er, "e:SeverityCode") == "Warning"]
+
+
+def post_json(adresse, corps, marketplace="EBAY_CA"):
+    api = "offer" if "/buy/offer/" in adresse else "autre"
+    appels_ebay.exiger(api, fond=False) if api in appels_ebay.LIMITES else None
+    appels_ebay.compter(api)
+    req = urllib.request.Request(adresse, data=json.dumps(corps).encode(), method="POST", headers={
+        "Authorization": "Bearer " + jeton(), "Content-Type": "application/json", "Accept": "application/json",
+        "X-EBAY-C-MARKETPLACE-ID": marketplace})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            brut = r.read()
+            return json.loads(brut) if brut else {}
+    except urllib.error.HTTPError as e:
+        texte = e.read().decode("utf-8", "ignore")
+        try:
+            d = json.loads(texte)
+            msg = " · ".join(x.get("longMessage") or x.get("message") or "" for x in d.get("errors") or [])
+        except ValueError:
+            msg = texte[:200]
+        if e.code in (401, 403):
+            raise RuntimeError("eBay refuse cet accès (" + str(e.code) + ") : " + (msg or "permission manquante")
+                               + (" — en production, les mises demandent l'approbation d'eBay (API Offer)" if "/bidding" in adresse else ""))
+        raise RuntimeError(f"eBay HTTP {e.code} : {msg}")

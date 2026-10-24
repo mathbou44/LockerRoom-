@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A0D10">
+<title>Break · LockerRoom</title>
+<link rel="icon" href="/icone.png">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--fond:#0A0D10; --carte:#14181D; --carte2:#1C2228; --ligne:#29313A; --sep:#1A1F25; --texte:#F2F5F7; --doux:#A3ACB5; --pale:#87909A;
+  --acc:#7FD0FF; --acc-fonce:#0F2533; --or:#E8C46A; --or-fonce:#2B2414; --vert:#8FD4A4; --vert-fond:#13261B; --rouge:#FFB3B3; --rouge-fond:#2A1114}
+*{box-sizing:border-box}
+html,body{margin:0; background:var(--fond); color:var(--texte); font-family:'Barlow',system-ui,sans-serif}
+.ecran{max-width:760px; margin:0 auto; padding:max(18px, env(safe-area-inset-top)) 16px 40px; display:flex; flex-direction:column; gap:14px}
+.marque{display:flex; align-items:center; gap:8px; color:var(--doux); font-size:13px}
+.marque img{width:24px; height:24px; border-radius:6px}
+h1{margin:0; font-family:'Barlow Condensed',sans-serif; font-size:32px; line-height:1.05}
+.pastilles{display:flex; flex-wrap:wrap; gap:6px}
+.tag{display:inline-flex; align-items:center; font-size:12.5px; padding:4px 9px; border-radius:9px; background:var(--carte2); color:#D6DBE0; white-space:nowrap}
+.tag.acc{background:var(--acc-fonce); color:var(--acc)} .tag.or{background:var(--or-fonce); color:var(--or)} .tag.vert{background:var(--vert-fond); color:var(--vert)}
+.bloc{background:var(--carte); border-radius:16px; padding:14px; display:flex; flex-direction:column; gap:8px}
+.section{font-size:12px; font-weight:600; color:var(--pale); text-transform:uppercase; letter-spacing:1px}
+.rangee{display:flex; align-items:center; gap:12px; padding:9px 0; border-bottom:1px solid var(--sep)}
+.rangee:last-child{border-bottom:none}
+.ecusson{width:40px; height:40px; border-radius:10px; background:var(--carte2); color:var(--acc); display:flex; align-items:center; justify-content:center; font-family:'Barlow Condensed',sans-serif; font-weight:700; flex-shrink:0}
+.milieu{flex:1; min-width:0; display:flex; flex-direction:column; gap:4px}
+.nom{font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.prix{font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:19px}
+.code{font-family:ui-monospace,Menlo,monospace; font-size:12px; color:var(--doux); word-break:break-all}
+.vide{color:var(--doux); text-align:center; padding:40px}
+details summary{cursor:pointer; color:var(--acc); font-weight:600}
+</style>
+</head>
+<body>
+<main class="ecran" id="vue"><div class="vide">Chargement…</div></main>
+<script>
+'use strict';
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const tag = (t, c='') => `<span class="tag ${c}">${esc(t)}</span>`;
+const argent = (v) => (Number(v) || 0).toLocaleString('fr-CA', {maximumFractionDigits:0}) + ' $';
+const heure = (d) => { const t = Date.parse(d || ''); return isFinite(t) ? new Date(t).toLocaleString('fr-CA', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}) : ''; };
+const jeton = location.pathname.split('/').filter(Boolean).pop();
+async function charger(){
+  let d;
+  try { const r = await fetch('/api/b/' + encodeURIComponent(jeton)); d = await r.json(); if (!r.ok) throw new Error(d.erreur || 'Introuvable'); }
+  catch (e) { document.getElementById('vue').innerHTML = `<div class="vide">${esc(e.message)}</div>`; return; }
+  const t = d.tirage || {}, vendues = d.places.filter(p => p.acheteur).length;
+  const parPlace = Object.fromEntries(d.places.map(p => [p.id, p]));
+  const modes = {equipes:'Équipes', divisions:'Divisions', joueurs:'Joueurs', aleatoire:'Équipes aléatoires'};
+  document.getElementById('vue').innerHTML = `
+    <div class="marque"><img src="/icone.png" alt="">LockerRoom · page publique du break</div>
+    <h1>${esc(d.nom)}</h1>
+    <div class="pastilles">${d.produit ? tag(d.produit.nom, 'acc') + tag(d.boites + ' × ' + d.produit.format) : ''}${tag(modes[d.mode] || d.mode)}${tag(vendues + '/' + d.places.length + ' places vendues')}
+      ${t.resultat ? tag('Tirage fait ' + heure(t.le), 'vert') : t.engage ? tag('Tirage engagé', 'or') : ''}</div>
+    ${d.empreinte ? `<div class="bloc"><div class="section">Tirage vérifiable</div>
+      <div class="pastilles">${tag('Empreinte publiée avant le tirage', 'acc')}${t.graine ? tag('Graine révélée', 'vert') : tag('Graine révélée après le tirage')}</div>
+      <div class="code">SHA-256 : ${esc(d.empreinte)}</div>
+      ${t.graine ? `<details><summary>Vérifier</summary><div class="code" style="margin-top:8px">graine : ${esc(t.graine)}<br>sha256(graine) = empreinte ci-dessus<br>méthode : ${esc(t.methode || '')}<br>lots : ${esc((t.lots || []).join(', '))}<br>places (ordre) : ${esc((t.participants || []).map(id => (parPlace[id] || {}).libelle || id).join(', '))}</div></details>` : ''}</div>` : ''}
+    <div class="bloc"><div class="section">Places</div>${d.places.map(p => `<div class="rangee"><span class="ecusson">${esc(String(p.cle || '').length <= 4 && p.cle ? p.cle : String(p.libelle).slice(0, 3).toUpperCase())}</span>
+      <span class="milieu"><span class="nom">${esc(p.libelle)}</span><span class="pastilles">${p.acheteur ? tag(p.acheteur, 'acc') : tag('Disponible', 'vert')}${p.lot ? p.lot.split(',').map(e => tag(e, 'or')).join('') : ''}</span></span>
+      <span class="prix">${argent(p.prix)}</span></div>`).join('')}</div>
+    ${d.frappes.length ? `<div class="bloc"><div class="section">Cartes sorties</div>${d.frappes.map(f => { const p = parPlace[f.place_id]; return `<div class="rangee"><span class="ecusson">${esc(f.equipe || '?')}</span>
+      <span class="milieu"><span class="nom">${esc(f.joueur || f.carte)}</span><span class="pastilles">${f.carte && f.joueur ? tag(f.carte) : ''}${p ? tag('→ ' + (p.acheteur || p.libelle), 'acc') : ''}${f.pile_ou_face ? tag('Pile ou face ' + f.pile_ou_face.options.join('/') + ' → ' + f.pile_ou_face.gagnant, 'or') : ''}${tag(heure(f.le))}</span></span></div>`; }).join('')}</div>` : ''}
+    ${Object.keys(d.resume_equipes || {}).length && d.mode !== 'joueurs' ? `<details class="bloc"><summary>Checklist par équipe</summary>${Object.entries(d.resume_equipes).sort((a, b) => b[1].recrues - a[1].recrues || b[1].nb - a[1].nb).map(([k, r]) => `<div class="rangee"><span class="ecusson">${esc(k)}</span>
+      <span class="milieu"><span class="pastilles">${tag(r.nb + ' cartes')}${r.recrues ? tag(r.recrues + ' RC', 'acc') : ''}${r.autos ? tag(r.autos + ' auto', 'or') : ''}${r.numerotees ? tag(r.numerotees + ' /#') : ''}</span></span></div>`).join('')}</details>` : ''}`;
+}
+charger(); setInterval(() => { if (document.visibilityState === 'visible') charger(); }, 20000);
+</script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+# LockerRoom - en ligne sur Render.com. Un seul worker : les taches de fond
+# (synchro eBay chaque heure) tournent dans ce processus.
+# 24 oct 2026 - lancement : eBay en production, paiements Stripe (mode test d'abord).
+services:
+  - type: web
+    name: lockerroom
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -w 1 --threads 8 -b 0.0.0.0:$PORT server:app
+    healthCheckPath: /confidentialite
+    disk:
+      name: donnees
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: LOCKERROOM_HEBERGE
+        value: "1"
+      - key: LOCKERROOM_DONNEES
+        value: /data
+      - key: LOCKERROOM_CODE
+        sync: false            # code d'acces de la version privee (toi + tes proches) ; vide = public
+      - key: LOCKERROOM_SECRET
+        generateValue: true
+      - key: LOCKERROOM_MULTI          # un compte par client (connexion = « Se connecter avec eBay »)
+        value: "1"
+      - key: LOCKERROOM_CLE            # chiffre les jetons eBay des clients sur le disque (ne jamais la perdre)
+        generateValue: true
+      - key: LOCKERROOM_EBAY_ENV       # production : les vrais comptes eBay (sandbox = comptes de test)
+        value: production
+      - key: LOCKERROOM_EBAY_APP_ID
+        sync: false
+      - key: LOCKERROOM_EBAY_CERT_ID
+        sync: false
+      - key: LOCKERROOM_EBAY_RUNAME
+        sync: false
+      - key: LOCKERROOM_EBAY_AVIS_JETON  # avis de suppression de compte : le MEME jeton que dans developer.ebay.com
+        sync: false
+      - key: LOCKERROOM_EPN_CAMPID     # n° de campagne eBay Partner Network de LockerRoom (liens d'achat suivis)
+        sync: false
+      - key: ANTHROPIC_API_KEY          # reconnaissance photo (vision.py) : collee par Mathieu dans Render, jamais ici
+        sync: false
+      - key: LR_VISION_PLAFOND_USD      # plafond de depense photo du serveur, par mois
+        value: "50"
+      - key: LR_VISION_GRATUIT          # photos par mois pour un compte gratuit
+        value: "25"
+      - key: STRIPE_CLE_SECRETE         # sk_test_... (test) puis sk_live_... (vrais paiements)
+        sync: false
+      - key: STRIPE_PRIX_PRO            # price_... du forfait Pro (le prix se change dans Stripe)
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET      # whsec_... de l'adresse https://.../stripe/webhook
+        sync: false
