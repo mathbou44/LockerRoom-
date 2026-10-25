@@ -44,7 +44,7 @@ def lire():
             d = json.load(f) or {}
     except (OSError, ValueError):
         d = {}
-    for k in ("detectes", "demandes"):
+    for k in ("detectes", "demandes", "gts"):
         d.setdefault(k, {})
     d.setdefault("ignores", [])
     return d
@@ -253,8 +253,21 @@ def liste():
         e = out.setdefault(k, {"cle": k, "nom": v["nom"], "sport": v.get("sport"), "nb_annonces": 0, "photo": None,
                                "prix_boite": None, "vu_le": v.get("le"), "demandes": 0})
         e["demandes"] = len(v.get("comptes") or [])
+    # 25 oct 2026 - les checklists GTS (gogts.net) des saisons en cours : « Importer » d'un geste
+    import checklist_import
+    import catalogue
+    noms_cat = catalogue.liste()
+    for k, v in d["gts"].items():
+        if checklist_import.produit_semblable(v["nom"], noms_cat):
+            continue
+        cible = k if k in out else next((k2 for k2, x in out.items() if checklist_import.produit_semblable(v["nom"], [{"nom": x["nom"]}])), None)
+        if cible:
+            out[cible]["gts"] = v["url"]
+        else:
+            out[k] = {"cle": k, "nom": v["nom"], "sport": "hockey", "nb_annonces": 0, "photo": None, "prix_boite": None,
+                      "vu_le": v.get("vu_le"), "demandes": 0, "gts": v["url"]}
     res = [x for k, x in out.items() if k not in d["ignores"] and not _deja(k, cat)]
-    res.sort(key=lambda x: (-x["demandes"], -x["nb_annonces"], x["nom"]))
+    res.sort(key=lambda x: (-x["demandes"], not x.get("gts"), -x["nb_annonces"], x["nom"]))
     return res
 
 
@@ -265,3 +278,37 @@ def ignorer(k):
             d["ignores"] = (d["ignores"] + [k])[-2000:]
         _ecrire(d)
     return {"ok": True}
+
+
+_GTS = {"le": 0.0}
+
+
+def gts_si_besoin(force=False, lister=None):
+    """25 oct 2026 - une fois par jour : les checklists GTS des saisons en cours absentes du catalogue
+    vont dans « Produits a ajouter » (l'admin les importe d'un geste ; rien n'est importe tout seul)."""
+    if not force and time.time() - _GTS["le"] < 86400:
+        return None
+    _GTS["le"] = time.time()
+    import gts
+    r = (lister or gts.lister)("hockey")
+    if not r.get("ok") and not r.get("produits"):
+        return r
+    cours = set(saisons("hockey"))
+    ici = datetime.now().isoformat(timespec="seconds")
+    with _verrou:
+        d = lire()
+        for x in r.get("produits") or []:
+            if x["saison"] not in cours:
+                continue
+            k = cle(x["nom"], "hockey")
+            e = d["gts"].get(k) or {}
+            d["gts"][k] = {"nom": x["nom"], "url": x["url"], "vu_le": e.get("vu_le") or ici}
+        _ecrire(d)
+    return {"ok": True, "n": len(d["gts"])}
+
+
+def retirer_gts(url):
+    with _verrou:
+        d = lire()
+        d["gts"] = {k: v for k, v in d["gts"].items() if v.get("url") != url}
+        _ecrire(d)

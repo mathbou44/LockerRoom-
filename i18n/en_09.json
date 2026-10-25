@@ -46,5 +46,10 @@
  "Beaucoup de messages aujourd'hui : réessaie demain": "Lots of messages today: try again tomorrow",
  "Demande introuvable": "Request not found",
  "Compte introuvable": "Account not found",
- "L'agent n'a pas répondu (clé Anthropic absente ou budget du mois atteint)": "The agent didn't answer (no Anthropic key or monthly budget reached)"
+ "L'agent n'a pas répondu (clé Anthropic absente ou budget du mois atteint)": "The agent didn't answer (no Anthropic key or monthly budget reached)",
+ "Alertes": "Alerts",
+ "Nom du joueur ?": "Player name?",
+ "Prix cible ?": "Target price?",
+ "Écris la carte et ton prix cible": "Type the card and your target price",
+ "30 alertes au plus : retires-en une": "30 alerts max: remove one"
 }

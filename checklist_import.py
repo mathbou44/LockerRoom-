@@ -22,8 +22,17 @@ ENTETES = {
     "numero": ("card #", "card number", "card no", "card", "#", "no", "no.", "number", "num", "card num"),
     "joueur": ("player", "name", "player name", "athlete", "subject", "description"),
     "equipe": ("team", "team name", "club"),
-    "tirage": ("print run", "serial", "serial #", "numbered", "seq", "seq.", "/#", "#'d", "run"),
-    "notes": ("notes", "note", "rc", "rookie", "info", "attributes"),
+    "tirage": ("print run", "serial", "serial #", "numbered", "seq", "seq.", "/#", "#'d", "run", "serial #'d", "serial #d",
+               "serial numbered", "serial number", "#d"),
+    "notes": ("notes", "note", "info", "attributes"),
+    # 25 oct 2026 - format GTS Distribution (gogts.net) : Set Name | Card | Description | Team City | Team Name | Rookie |
+    # Auto | Tech | Serial #'d | SPs | Stated Odds | Point
+    "ville": ("team city", "city"),
+    "recrue": ("rookie", "rc", "rookie card", "rc?"),
+    "auto": ("auto", "autograph", "autographed", "signed"),
+    "tech": ("tech", "technology", "finish"),
+    "sp": ("sps", "sp", "short print", "sp/ssp"),
+    "cotes": ("stated odds", "odds", "insertion odds", "pack odds"),
 }
 
 
@@ -138,14 +147,25 @@ def lire(brut, nom_fichier="checklist.xlsx", sport=None):
             notes = " ".join(reste)
             g = lambda k: (reste[0] if reste else "") if k == "equipe" else ""
         equipe_txt = re.sub(r"#?\s*/\s*\d+|\bRC\b|\brookie\b", " ", str(g("equipe") or ""), flags=re.I).strip()
-        codes = [sports.code_equipe(e, sport) for e in re.split(r"\s*/\s*|\s*,\s*", str(equipe_txt)) if e.strip()]
-        rc = bool(re.search(r"\bRC\b|rookie", notes + " " + joueur + " " + str(g("equipe") or ""), re.I))
+        villes = [v.strip() for v in re.split(r"\s*/\s*", str(g("ville") or "")) if v.strip()]
+        noms_eq = [e for e in re.split(r"\s*/\s*|\s*,\s*", str(equipe_txt)) if e.strip()]
+        if villes and len(villes) == len(noms_eq):              # GTS : « New York » + « Rangers »
+            noms_eq = [f"{v} {e}" for v, e in zip(villes, noms_eq)]
+        codes = [sports.code_equipe(e, sport) for e in noms_eq]
+        rc = bool(re.search(r"\bRC\b|rookie", notes + " " + joueur + " " + str(g("equipe") or ""), re.I)) or bool(str(g("recrue") or "").strip())
+        tech, sp, cote_txt = str(g("tech") or "").strip(), str(g("sp") or "").strip().upper(), str(g("cotes") or "").strip()
         joueur = re.sub(r"\s*\bRC\b\s*", " ", joueur).strip(" ,")
         se = re.sub(r"\s+", " ", str(se)).strip()
-        cartes.append({"numero": str(num).strip(), "joueur": joueur, "equipe": "/".join(c for c in codes if c) or str(equipe_txt).strip(),
-                       "sous_ensemble": se, "recrue": rc or groupe_de(se) == "recrue", "auto": groupe_de(se) in ("auto", "auto_memo"),
-                       "memo": groupe_de(se) in ("memo", "auto_memo"),
-                       "tirage": _tirage_colonne(g("tirage") if idx else "") or tirage_de(notes, se)})
+        tir = 1 if re.search(r"\bplate", tech + " " + se, re.I) else (_tirage_colonne(g("tirage") if idx else "") or tirage_de(notes, se))
+        carte = {"numero": str(num).strip(), "joueur": joueur, "equipe": "/".join(c for c in codes if c) or str(equipe_txt).strip(),
+                 "sous_ensemble": se, "recrue": rc or groupe_de(se) == "recrue",
+                 "auto": groupe_de(se) in ("auto", "auto_memo") or bool(str(g("auto") or "").strip()),
+                 "memo": groupe_de(se) in ("memo", "auto_memo"), "tirage": tir}
+        if sp in ("SP", "SSP"):
+            carte["sp"] = sp
+        if cote_txt:
+            carte["_cotes"] = cote_txt
+        cartes.append(carte)
     noms = []
     for c in cartes:
         if c["sous_ensemble"] not in noms:
@@ -154,9 +174,69 @@ def lire(brut, nom_fichier="checklist.xlsx", sport=None):
     for nom in noms:
         lot = [c for c in cartes if c["sous_ensemble"] == nom]
         tir = {c["tirage"] for c in lot if c["tirage"]}
-        sous.append({"nom": nom, "groupe": groupe_de(nom), "nb_cartes": len(lot), "tirage": tir.pop() if len(tir) == 1 else None,
-                     "parallele_de": None, "par_boite": None, "cotes": None})
+        cotes = [c.pop("_cotes") for c in lot if c.get("_cotes")]
+        txt = max(set(cotes), key=cotes.count) if cotes else None
+        g = groupe_de(nom)
+        if g not in ("auto", "auto_memo") and lot and all(c["auto"] for c in lot):
+            g = "auto"
+        s = {"nom": nom, "groupe": g, "nb_cartes": len(lot), "tirage": tir.pop() if len(tir) == 1 else None,
+             "parallele_de": None, "par_boite": None, "cotes": txt}
+        ch = cote_hobby(txt)
+        if ch:
+            s["cote_hobby"] = ch
+        sous.append(s)
+    _paralleles(sous, cartes)
     return {"sous_ensembles": sous, "cartes": cartes, "lignes": len(cartes)}
+
+
+def cote_hobby(txt):
+    """« 1:30 h, 1:90 b » -> 30 (1 carte tous les 30 paquets hobby) ; « 3:1 h » -> 0.333. None sans cote hobby."""
+    m = re.search(r"(\d[\d,]*)\s*:\s*(\d[\d,]*)\s*(?:h|hobby)\b", str(txt or ""), re.I)
+    if not m:
+        return None
+    a, b = float(m.group(1).replace(",", "")), float(m.group(2).replace(",", ""))
+    return round(b / a, 4) if a > 0 and b > 0 else None
+
+
+def _paralleles(sous, cartes):
+    """« Green Foil Parallel » = parallele de « Base Set » : meme liste de numeros, sous-ensemble non parallele avant lui."""
+    nums = {}
+    for c in cartes:
+        nums.setdefault(c["sous_ensemble"], set()).add(c["numero"])
+    for i, s in enumerate(sous):
+        if not re.search(r"\bparallel", s["nom"], re.I):
+            continue
+        for p in sous[:i]:
+            if not re.search(r"\bparallel", p["nom"], re.I) and nums.get(p["nom"]) == nums.get(s["nom"]):
+                s["parallele_de"] = p["nom"]
+                if s["groupe"] == "insert":
+                    s["groupe"] = p["groupe"]
+                break
+
+
+def cle_sous(nom):
+    """Cle de rapprochement de deux noms de sous-ensemble (Beckett, GTS, catalogue) :
+    « Deluxe Parallel - Young Guns » = « Young Guns Deluxe » ; « Population Count 500 Parallel » = « Population Count /500 »."""
+    t = _n(nom).replace("&", " and ")
+    t = re.sub(r"[^a-z0-9]+", " ", t)
+    mots = [w for w in t.split() if w not in ("set", "sets", "card", "cards", "checklist", "parallel", "parallels", "the")]
+    if len(mots) > 1:
+        mots = [w for w in mots if w != "base"]
+    mots = [w[:-1] if len(w) > 4 and w.endswith("s") and not w.endswith("ss") else w for w in mots]   # Bootlegs = Bootleg
+    return " ".join(sorted(set(mots)))
+
+
+def par_boite_depuis_cotes(prod):
+    """Cotes hobby de la checklist -> cartes par boite (paquets de la boite hobby / cote), sans ecraser une valeur connue."""
+    paquets = next((f.get("paquets") for f in prod.get("formats") or [] if f.get("paquets") and "hobby" in _n(f.get("format"))), None)
+    n = 0
+    if not paquets:
+        return 0
+    for s in prod.get("sous_ensembles") or []:
+        if s.get("par_boite") is None and s.get("cote_hobby"):
+            s["par_boite"] = round(paquets / s["cote_hobby"], 3)
+            n += 1
+    return n
 
 
 def fusionner(existant, lu):
@@ -165,8 +245,20 @@ def fusionner(existant, lu):
         return None
     se_old = {s["nom"]: s for s in existant.get("sous_ensembles") or []}
     # « BASE SET » (Beckett) = « Base » (catalogue) : meme sous-ensemble, on garde son nom et ses cotes
-    cle = lambda n: re.sub(r"\b(set|cards?|checklist)\b", " ", _n(n)).replace("  ", " ").strip()
+    cle = cle_sous
     par_cle = {cle(n): n for n in se_old}
+    # meme liste de numeros, nom different (« Dazzlers » = « Dazzlers Blue ») : c'est le meme sous-ensemble
+    nums = lambda cartes, nom: frozenset(c.get("numero") for c in cartes if c.get("sous_ensemble") == nom)
+    libres = [n for n in se_old if not any(cle(s["nom"]) == cle(n) for s in lu["sous_ensembles"])]
+    for s in lu["sous_ensembles"]:
+        if cle(s["nom"]) in par_cle or s.get("parallele_de"):
+            continue
+        ns = nums(lu["cartes"], s["nom"])
+        for n in libres:
+            if ns and nums(existant.get("cartes") or [], n) == ns and not (se_old[n].get("parallele_de")):
+                par_cle[cle(s["nom"])] = n
+                libres.remove(n)
+                break
     for c in lu["cartes"]:
         c["sous_ensemble"] = par_cle.get(cle(c["sous_ensemble"]), c["sous_ensemble"])
     for s in lu["sous_ensembles"]:
@@ -176,7 +268,11 @@ def fusionner(existant, lu):
     sous = list(existant.get("sous_ensembles") or [])
     for s in lu["sous_ensembles"]:
         if s["nom"] in se_old:
-            se_old[s["nom"]].update(nb_cartes=s["nb_cartes"], tirage=se_old[s["nom"]].get("tirage") or s["tirage"])
+            o = se_old[s["nom"]]
+            o.update(nb_cartes=s["nb_cartes"], tirage=o.get("tirage") or s["tirage"], cotes=o.get("cotes") or s.get("cotes"),
+                     parallele_de=o.get("parallele_de") or (par_cle.get(cle(s["parallele_de"]), s["parallele_de"]) if s.get("parallele_de") else None))
+            if s.get("cote_hobby") and not o.get("cote_hobby"):
+                o["cote_hobby"] = s["cote_hobby"]
         else:
             sous.append(s)
     out = {k: v for k, v in existant.items() if not k.startswith("_")}
@@ -218,7 +314,8 @@ def cotes_modele(prod, autres):
             continue
         ma = _mots_ligne(a.get("nom"))
         communs = len(set(mots) & set(ma))
-        if communs < 2:
+        # 25 oct 2026 : « Upper Deck » seul ne suffit pas (Artifacts n'a pas les cotes de Series 1)
+        if communs < 2 or not (_mots_produit(prod.get("nom"))[1] & _mots_produit(a.get("nom"))[1]):
             continue
         sa = int((re.search(r"(19|20)\d{2}", str(a.get("nom"))) or [0])[0] or 0)
         score = communs * 10 + (5 if ma == mots else 0) - min(abs(saison - sa), 5) \
@@ -227,7 +324,7 @@ def cotes_modele(prod, autres):
             meilleur, score_m = a, score
     if not meilleur:
         return prod, None
-    cle = lambda n: re.sub(r"\b(set|cards?|checklist)\b", " ", _n(n)).replace("  ", " ").strip()
+    cle = cle_sous
     ref = {cle(s["nom"]): s for s in meilleur.get("sous_ensembles") or []}
     copie = 0
     for s in prod.get("sous_ensembles") or []:
@@ -250,3 +347,33 @@ def cotes_modele(prod, autres):
     prod["notes"] = [x for x in prod.get("notes") or [] if "à compléter" not in x] + \
         [f"Cotes par boîte reprises de {meilleur.get('nom')} ({copie} sous-ensembles) : à confirmer"]
     return prod, meilleur.get("nom")
+
+
+_MARQUES = {"upper", "deck", "ud", "topps", "panini", "leaf", "in", "the", "game", "hockey", "nhl", "cards", "card"}
+
+
+def _mots_produit(nom):
+    t = _n(nom).replace("series one", "series 1").replace("series two", "series 2")
+    an = (re.search(r"(19|20)\d{2}", t) or [""])[0]
+    mots = set(re.sub(r"(19|20)\d{2}(-\d{2})?", " ", t).replace("-", " ").split()) - _MARQUES
+    mots |= {w for w in ("game",) if re.search(r"\bgame used\b", t)}    # « SP Game Used » garde « game »
+    return an, mots
+
+
+def produit_semblable(nom, produits):
+    """Le produit du catalogue qui est le meme que `nom` (meme saison ; les mots de l'un contenus dans l'autre,
+    marques mises a part) : « 2025-26 Upper Deck SP Authentic » = « 2025-26 SP Authentic ». -> produit | None."""
+    an, mots = _mots_produit(nom)
+    if not an or not mots:
+        return None
+    meilleur = None
+    for p in produits or []:
+        a2, m2 = _mots_produit(p.get("nom"))
+        if a2 != an or not m2:
+            continue
+        if mots == m2:
+            return p
+        petit, grand = (mots, m2) if len(mots) <= len(m2) else (m2, mots)
+        if petit <= grand and (len(petit) >= 2 or grand - petit <= {"series", "edition", "set"}) and len(grand - petit) <= 2:
+            meilleur = meilleur or p
+    return meilleur

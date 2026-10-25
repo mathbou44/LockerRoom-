@@ -101,7 +101,7 @@ app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", S
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024        # 23 oct 2026 - 2 photos (devant, dos) par requete
 # pages qui restent publiques : break partage, retour et avis eBay, pages legales, icones
 _PUBLIQUES = ("/b/", "/api/b/", "/api/ebay_retour", "/ebay/suppression-compte", "/confidentialite", "/conditions",
-              "/connexion", "/icone", "/manifest.json", "/stripe/webhook")
+              "/connexion", "/icone", "/favicon", "/manifest.json", "/stripe/webhook")
 
 
 import comptes  # noqa: E402
@@ -397,6 +397,11 @@ def _valeurs_auto():
             nouveaux_produits.detecter_si_besoin()
         except Exception as e:
             print("Nouveaux produits : " + str(e), flush=True)
+        try:                                    # 25 oct 2026 - nouvelles checklists GTS (gogts.net, chaque jour)
+            import nouveaux_produits
+            nouveaux_produits.gts_si_besoin()
+        except Exception as e:
+            print("Checklists GTS : " + str(e), flush=True)
         try:                                    # 25 oct 2026 - les vraies ventes de la communaute (chaque jour)
             import ventes_communaute
             ventes_communaute.rafraichir_si_besoin()
@@ -423,6 +428,12 @@ def _ebay_auto():
                     if st.get("connecte"):
                         r = api.ebay_synchroniser(30)
                         print("Synchro eBay :", cid or "", {k: r.get(k) for k in ("ok", "annonces", "ventes", "erreur")}, flush=True)
+                    try:                         # 26 oct 2026 : les alertes de prix de chaque compte
+                        ra = api.alertes_verifier()
+                        if ra.get("nouvelles"):
+                            print("Alertes :", cid or "", ra, flush=True)
+                    except Exception as e:
+                        print("Alertes : " + str(e), flush=True)
                     if st.get("cles_ok") and st.get("connecte" if _c.MULTI else "cles_ok"):
                         r = api.sante_rafraichir(40)
                         print("Sante :", cid or "", {k: r.get(k) for k in ("evaluees", "rachats", "erreur")}, flush=True)

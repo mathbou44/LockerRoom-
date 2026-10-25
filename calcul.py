@@ -183,6 +183,9 @@ def _gamma_p(k, x):
     return max(0.0, 1.0 - math.exp(-x + k * math.log(x) - math.lgamma(k)) * h)
 
 
+SEUIL_REVENTE = 1.50           # $ CA : sous ce prix, une carte ne se revend pas a l'unite
+
+
 def chance_rembourser(dist, prix):
     """25 oct 2026 - la chance que les cartes recues valent AU MOINS le prix paye pour la place. La somme des
     valeurs suit une loi de Poisson composee (chaque carte possible arrive un nombre de fois aleatoire) ;
@@ -216,6 +219,9 @@ def prix_catalogue(prod, boites=1, cout_boite=0.0, marge=0.25, frais_pct=0.109, 
     for c, s, n in catalogue.cartes_attendues(prod, boites):
         nom = s["nom"]
         v1, mesure = valeurs.valeur_carte(prod, nom, c.get("joueur"), se, taux, cache)      # 25 oct 2026 : ventes reelles
+        # 26 oct 2026 (Mathieu : « on cherche les rookies ») : ce qui fait le prix d'une place, c'est ce qui se REVEND ;
+        # une carte de 1 $ (base d'un veteran) ne vaut rien a revendre (frais + envoi) : seule la valeur au-dessus compte
+        v1 = max(0.0, v1 - SEUIL_REVENTE)
         ev = n * v1
         ev_total += ev
         ev_mesuree += ev if mesure else 0.0

@@ -40,8 +40,10 @@ import deals  # noqa: E402
 import demandes  # noqa: E402
 import forfaits  # noqa: E402
 import nouveaux_produits  # noqa: E402
+import gts  # noqa: E402
 import paiements  # noqa: E402
 import valeurs_maj  # noqa: E402
+import marche  # noqa: E402
 import valeur_produit  # noqa: E402
 import vendues  # noqa: E402
 import ventes_communaute  # noqa: E402
@@ -67,7 +69,9 @@ REGLAGES_DEFAUT = {
     "epn_campid": "",
     "langue": "",
     "partage_ventes": True,
-    "budget_mois": 0,            # 25 oct 2026 - acheteur : budget du mois ($ CA), 0 = aucun      # 25 oct 2026 - mes ventes (anonymes) aident les prix vendus de la communaute                # 24 oct 2026 - "fr" ou "en" (vide = celle du navigateur)
+    "budget_mois": 0,            # 25 oct 2026 - acheteur : budget du mois ($ CA), 0 = aucun
+    "niveau": "",                # 26 oct 2026 - questionnaire : debutant | retour | moyen | expert (adapte les conseils)
+    "objectif": "",              #   collection | profit | breaks | tout      # 25 oct 2026 - mes ventes (anonymes) aident les prix vendus de la communaute                # 24 oct 2026 - "fr" ou "en" (vide = celle du navigateur)
     "devise": "",                # 24 oct 2026 - "CAD" ou "USD" (affichage ; les montants restent gardes en $ CA)
     "modele_annonce": None,      # 24 oct 2026 - choix gardes pour la prochaine annonce (expedition, retours, offres, promotion)
     "sport": "hockey",           # 23 oct 2026 - sport principal (quand l'app hesite : voir sports.py)            # 21 oct 2026 - eBay Partner Network : liens d'achat suivis (affiliation)
@@ -258,7 +262,10 @@ class Api:
         except Exception:
             prix = None
         import forfaits
-        return {**forfaits.resume(), "multi": multi, "admin": self._est_admin(), "forfait": (info.get("forfait") or "gratuit") if multi else "pro",
+        return {**forfaits.resume(), "multi": multi, "admin": self._est_admin(),
+                "logos_lnh": os.environ.get("LOCKERROOM_LOGOS_LNH") == "1",     # 25 oct 2026 : choix de Mathieu (licence LNH)
+                "username": info.get("username") if multi else None,           # 26 oct 2026 : « Bonjour ... » sur l'accueil
+                "forfait": (info.get("forfait") or "gratuit") if multi else "pro",
                 "statut": info.get("forfait_statut") or "", "fin": info.get("forfait_fin"),
                 "annule": bool(info.get("forfait_annule")), "client": bool(info.get("stripe_client")),
                 "paiements": paiements.actif(), "mode_paiement": paiements.mode(), "prix": prix,
@@ -511,13 +518,18 @@ class Api:
         ajouts = catalogue.dossier_ajouts()
         cle = (valeurs.statut().get("maj"), tuple(sorted(os.listdir(catalogue.DOSSIER))) if os.path.isdir(catalogue.DOSSIER) else (),
                tuple(sorted((f, os.path.getmtime(os.path.join(ajouts, f))) for f in os.listdir(ajouts))) if os.path.isdir(ajouts) else ())
+        try:
+            cle = cle + (os.path.getmtime(valeur_produit._chemin()),)
+        except OSError:
+            pass
         out = []
         for p in catalogue.liste():
             k = (cle, p["id"])
             if k not in self._EV_CACHE:
                 prod = catalogue.charger(p["id"])
                 self._EV_CACHE[k] = calcul.prix_catalogue(prod, boites=1)["ev_par_boite"]
-            out.append(dict(p, ev_par_boite=self._EV_CACHE[k]))
+            boite = valeur_produit.de(p["id"]).get("boite")       # 26 oct 2026 : vaut-il la peine d'ouvrir ?
+            out.append(dict(p, ev_par_boite=self._EV_CACHE[k], prix_boite=boite, ouvrir=marche.verdict_ouvrir(self._EV_CACHE[k], boite)))
         return {"produits": out, "valeurs": valeurs.statut()}
 
     # -- 24 oct 2026 : checklists Excel de Beckett (telechargees par l'utilisateur, deposees dans l'app) -----------
@@ -679,7 +691,7 @@ class Api:
         except Exception as e:
             return {"ok": False, "erreur": "Fichier non reconnu : " + type(e).__name__}
         if lu["lignes"] < 5:
-            return {"ok": False, "erreur": "Aucune checklist reconnue dans ce fichier (il faut le .xlsx ou .csv de Beckett)"}
+            return {"ok": False, "erreur": "Aucune checklist reconnue dans ce fichier (il faut le .xlsx ou .csv de GTS ou Beckett)"}
         modele = None
         if existant:
             prod = checklist_import.fusionner(existant, lu)
@@ -693,6 +705,9 @@ class Api:
                     if (checklist_import._mots_ligne(x.get("nom")), (re.search(r"(19|20)\d{2}", str(x.get("nom"))) or [""])[0]) == cle_n:
                         existant = catalogue.charger(x["id"])
                         break
+            if not existant:                         # 25 oct 2026 : « Upper Deck SP Authentic » = « SP Authentic »
+                x = checklist_import.produit_semblable(nom, catalogue.liste())
+                existant = catalogue.charger(x["id"]) if x else None
             if len(nom) < 4:
                 return {"ok": False, "erreur": "Donne le nom du produit (ex. 2025-26 Upper Deck Series 2)"}
             pid = re.sub(r"[^a-z0-9]+", "-", unicodedata.normalize("NFKD", nom).encode("ascii", "ignore").decode().lower()).strip("-")[:60]
@@ -701,7 +716,7 @@ class Api:
                     "sport": sport, "sortie": datetime.now().strftime("%Y-%m"),
                     "formats": [{"format": "Boîte hobby", "paquets": None, "cartes_par_paquet": None, "boites_par_caisse": 12}],
                     "sous_ensembles": lu["sous_ensembles"], "groupes_boite": [], "cartes": lu["cartes"],
-                    "notes": ["Checklist importée d'un fichier Beckett (" + nom_f + ") : cotes par boîte à compléter"], "sources": ["beckett.com"]}
+                    "notes": ["Checklist importée (" + nom_f + ") : cotes par boîte à compléter"], "sources": []}
             if existant:
                 prod = checklist_import.fusionner(existant, lu)
             else:
@@ -712,14 +727,63 @@ class Api:
                     except Exception:
                         continue
                 prod, modele = checklist_import.cotes_modele(prod, autres)
-        prod["sources"] = list(dict.fromkeys((prod.get("sources") or []) + ["beckett.com (" + nom_f + ")"]))
+        # 25 oct 2026 - les cotes hobby de la checklist (GTS : « 1:2 h » = 6 Young Guns par boite de 12 paquets)
+        n_cotes = checklist_import.par_boite_depuis_cotes(prod)
+        src = "gogts.net" if re.search(r"gts|stated odds", nom_f + " " + json.dumps([x.get("cotes") for x in lu["sous_ensembles"]][:3]), re.I) \
+            or any(x.get("cote_hobby") for x in lu["sous_ensembles"]) else "beckett.com"
+        prod["sources"] = list(dict.fromkeys((prod.get("sources") or []) + [src + " (" + nom_f + ")"]))
         catalogue.enregistrer_ajout(prod)
         self._EV_CACHE.clear()
         p2 = catalogue.charger(prod["id"]) or prod
         taux = p2.get("_taux") or {}
         return {"ok": True, "id": prod["id"], "nom": prod["nom"], "nb_cartes": len(prod["cartes"]), "nouveau": not existant, "modele": modele,
+                "cotes_lues": n_cotes,
                 "sous_ensembles": [{"nom": x["nom"], "groupe": x.get("groupe"), "nb_cartes": x.get("nb_cartes"), "tirage": x.get("tirage"),
                                     "par_boite": x.get("par_boite"), "taux": round(taux.get(x["nom"], 0), 4)} for x in prod["sous_ensembles"]]}
+
+    # 25 oct 2026 - Mathieu : « essaie d'aller chercher toutes les checklists comme celle-ci » (gogts.net).
+    def gts_liste(self, force=False):
+        """Les checklists GTS recentes, et pour chacune : deja au catalogue ou pas."""
+        import checklist_import
+        import gts
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        try:
+            r = gts.lister("hockey", force=bool(force))
+        except Exception as e:
+            return {"ok": False, "erreur": "gogts.net injoignable (" + type(e).__name__ + ")", "produits": []}
+        cat = catalogue.liste()
+        out = []
+        for x in r.get("produits") or []:
+            p = checklist_import.produit_semblable(x["nom"], cat)
+            out.append({**x, "au_catalogue": (p or {}).get("id"), "nom_catalogue": (p or {}).get("nom"),
+                        "ligue": next((l for l in ("AHL", "PWHL", "CHL", "USA") if l in x["nom"].split()), None)})
+        return {"ok": r.get("ok", True), "erreur": r.get("erreur"), "produits": out, "maj": r.get("maj")}
+
+    def gts_importer(self, url, nom=None):
+        """Telecharge l'Excel d'une page produit GTS et l'importe (meme chemin qu'un fichier depose)."""
+        import base64
+        import gts
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        if not gts._sur(url):
+            return {"ok": False, "erreur": "Adresse refusée (gogts.net seulement)"}
+        try:
+            brut, nom_f = gts.telecharger(url)
+        except ValueError as e:
+            return {"ok": False, "erreur": str(e)}
+        except Exception as e:
+            return {"ok": False, "erreur": "Téléchargement impossible (" + type(e).__name__ + ")"}
+        slug_nom = gts.nom_de_slug(str(url).rstrip("/").rsplit("/", 1)[-1])[0]
+        r = self.catalogue_importer({"fichier": base64.b64encode(brut).decode(), "nom_fichier": nom_f, "sport": "hockey",
+                                     "nom": nom or slug_nom})
+        if r.get("ok"):
+            try:
+                import nouveaux_produits
+                nouveaux_produits.retirer_gts(url)
+            except Exception:
+                pass
+        return r
 
     def checklist_cotes(self, pid, cotes=None, boites_par_caisse=None):
         """Les cotes par boite (« Young Guns : 6 », « Auto : 1 ») d'un produit importe, tapees par l'utilisateur."""
@@ -971,6 +1035,48 @@ class Api:
             out[pr["id"]] = self._image_pour("prod:" + pr["id"], f"{nom} hobby box sealed",
                                              [pr["saison"].split("-")[0], "box"], cache)
         return out
+
+    def portraits_joueurs(self, joueurs):
+        """26 oct 2026 (Mathieu : « les images doivent etre celles des joueurs et non de la carte ») : le portrait officiel
+        de la LNH (recherche publique de joueurs, puis la fiche du joueur), garde 30 jours. Seulement si Mathieu active
+        le contenu officiel LNH (LOCKERROOM_LOGOS_LNH=1 : marques et photos de la LNH, sa decision)."""
+        if os.environ.get("LOCKERROOM_LOGOS_LNH") != "1":
+            return {}
+        import urllib.parse
+        import urllib.request
+        cache = self._cache_images()
+        ch, d = cache
+
+        def un(j):
+            cle = "lnh:" + cartes_match.norm(j)
+            e = d.get(cle)
+            if e and (time.time() - e.get("le", 0)) < 30 * 86400:
+                return j, e.get("url")
+            url = None
+            try:
+                q = urllib.parse.urlencode({"culture": "en-us", "limit": 5, "q": j, "active": "true"})
+                req = urllib.request.Request("https://search.d3.nhle.com/api/v1/search/player?" + q, headers={"User-Agent": "LockerRoom"})
+                with urllib.request.urlopen(req, timeout=8) as r:
+                    res = json.loads(r.read().decode("utf-8")) or []
+                n = cartes_match.norm(j)
+                pid = next((x.get("playerId") for x in res if cartes_match.norm(x.get("name") or "") == n), None)
+                if pid:
+                    req = urllib.request.Request(f"https://api-web.nhle.com/v1/player/{pid}/landing", headers={"User-Agent": "LockerRoom"})
+                    with urllib.request.urlopen(req, timeout=8) as r:
+                        url = (json.loads(r.read().decode("utf-8")) or {}).get("headshot")
+            except Exception:
+                url = None
+            with _VERROU_IMG:
+                d[cle] = {"url": url, "le": time.time() if url else time.time() - 23 * 86400}      # pas trouve : reessaie dans 7 j
+                tmp = ch + ".tmp"
+                with open(tmp, "w", encoding="utf-8") as fo:
+                    json.dump(d, fo)
+                os.replace(tmp, ch)
+            return j, url
+        from concurrent.futures import ThreadPoolExecutor
+        liste = [x for x in dict.fromkeys(str(y) for y in (joueurs or []) if y)][:40]
+        with ThreadPoolExecutor(max_workers=6) as ex:
+            return {j: u for j, u in ex.map(un, liste) if u}
 
     def images_joueurs(self, produit_id, joueurs, genre="hits"):
         """La carte (auto / patch, ou recrue) de chaque joueur dans ce produit : une photo par joueur, 12 au plus."""
@@ -2072,6 +2178,40 @@ class Api:
             break
         return {"ok": True, "joueurs": [{"joueur": j, "demande": round(float(v), 2)} for j, v in top], "recrues": recrues, "produit": nom_prod}
 
+    # -- 26 oct 2026 : fiche joueur, alertes, tendances, collection, calendrier (marche.py) ---------------------------
+    def joueur_fiche(self, nom):
+        return marche.fiche_joueur(self, nom)
+
+    def alerte_ajouter(self, q, prix_max):
+        return marche.alerte_ajouter(self, q, prix_max)
+
+    def alertes_liste(self):
+        return marche.alertes_liste(self)
+
+    def alerte_supprimer(self, aid):
+        return marche.alerte_supprimer(self, aid)
+
+    def notifications_lues(self):
+        return marche.notifications_lues(self)
+
+    def alertes_verifier(self):
+        return marche.verifier_alertes(self)
+
+    def tendances(self):
+        return marche.tendances()
+
+    def collection(self):
+        return marche.collection(self)
+
+    def calendrier(self):
+        return marche.calendrier()
+
+    def conseils(self, force=False, langue=None):
+        """26 oct 2026 - la zone Conseils de l'accueil (IA, 6 h par compte ; sinon par regles)."""
+        import conseils
+        r = self.reglages_lire()
+        return conseils.obtenir(self, mode=r.get("mode") or "vendeur", langue=langue or r.get("langue") or "fr", force=bool(force))
+
     def budget_etat(self):
         """25 oct 2026 (Mathieu : « qu'il fasse un choix éclairé avec ses sous durement gagnés tout en s'assurant qu'il
         ne dépasse pas son budget ») : budget du mois, ce qui est deja depense (achats eBay du compte, synchro) et le reste."""
@@ -2476,6 +2616,10 @@ class Api:
         for x in out.values():
             if x["item_id"] in masques:
                 continue
+            # 26 oct 2026 : « −96 % » sur une carte a prix fixe = presque toujours une autre carte (pas la meme parallele,
+            # pas le patch) : trop beau pour etre vrai, on ne le montre pas
+            if not x.get("encan") and (x.get("ratio") or 1) < 0.15:
+                continue
             x["gain"] = round((x.get("valeur") or 0) * (1 - fp) - ff - (x.get("total") or 0), 2)
             x["rabais"] = round(100 * (1 - (x.get("ratio") or 1)))
             lst.append(x)
@@ -2539,7 +2683,9 @@ class Api:
         return {"ok": True, "deals": lst[:120], "n": n, "pro": pro, "limite": None if pro else forfaits.LIMITES["deals"],
                 "sports": par_sport, "maj": _d.lire().get("maj"), "ebay": ebay_compte.statut().get("cles_ok")}
 
-    def annonce_detail(self, item_id, titre=None):
+    def annonce_detail(self, item_id, titre=None, rapide=False, q=None):
+        """26 oct 2026 (Mathieu : « beaucoup trop long à charger ») : l'ecran demande d'abord la version rapide
+        (annonce + memes cartes en vente, sans les ventes), puis la complete (+ ventes reelles) qui la remplace."""
         """24 oct 2026 (Mathieu : « comme Hall of Cardz, une fenetre dans l'app qui ouvre avec l'annonce eBay et les comps
         sous celle-ci avec leurs images ») : l'annonce (photos, prix, vendeur, fin) + les MEMES cartes en vente."""
         import cartes_match
@@ -2573,7 +2719,12 @@ class Api:
         fp, ff = (r["frais_ebay_pct"] or 0) / 100, r["frais_ebay_fixe"] or 0
         # 25 oct 2026 (Mathieu : « montre les last sold comps avec leurs photos aussi et le prix suggere »)
         try:
-            vc = vendues.memes(t, requete=False, n=16) if t else {"ventes": []}
+            if rapide:
+                vc = {"ventes": [], "attente": True}
+            elif q:                                        # la recherche du chasseur de deals : ventes deja en cache
+                vc = vendues.memes(q, requete=True, n=16)
+            else:
+                vc = vendues.memes(t, requete=False, n=16) if t else {"ventes": []}
         except Exception:
             vc = {"ventes": []}
         ventes = vc.get("ventes") or (self._mes_ventes_pareilles(t, item_id) if t else [])
@@ -2588,7 +2739,8 @@ class Api:
                        "achat_max": round(max(0.0, (valeur * (1 - fp) - ff) / 1.20), 2), "source": "vendues" if vm else "annonces"}
         return {"ok": True, "article": {**a, "total": total}, "comps": comps, "mediane": med, "n": n,
                 "suggere": suggere, "ventes": ventes, "mediane_vendue": vc.get("mediane"), "nb_vendues": vc.get("nb") or len(ventes),
-                "valeur": valeur, "valeur_source": "vendues" if vm else "annonces",
+                "valeur": valeur, "valeur_source": "vendues" if vm else "annonces", "ventes_attente": bool(vc.get("attente")),
+                "points": vc.get("points") or [], "tendance": vc.get("tendance"),
                 "rabais": round(100 * (1 - total / valeur)) if total and valeur else None,
                 "gain": round(valeur * (1 - fp) - ff - total, 2) if total and valeur else None}
 
@@ -2835,6 +2987,10 @@ class Api:
                           "jours": self._delai(v), "photo": v.get("photo"), "id": v["id"]})
         coups.sort(key=lambda x: -x["profit"])
 
+        try:                                     # 26 oct 2026 : la valeur de la collection, un point par jour
+            marche.noter_collection(self, valeur, cout, len(stock))
+        except Exception:
+            pass
         analysees = sum(1 for it in act if it in sante_)
         derniere = max((sv.get("maj") or "" for it, sv in sante_.items() if it in act), default=None)
         return {"hero": hero, "actions": actions, "coups": coups[:3],

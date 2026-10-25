@@ -117,7 +117,16 @@ def valeur_carte(prod, nom, joueur, se, taux, cache=None):
                     v = vp * (vref / cache[k][0]) if cache[k][0] else vp
                 s, chaine = se.get(k) or {}, chaine + 1
         if v is None:
-            v, m = vref * demande(j), mesure
+            dj = demande(j)
+            if not connu(j):                              # recrue toute neuve : sa cote d'apres ses annonces
+                dr = valeur_produit.demande_recrue(prod, j)
+                dj = dr if dr is not None else dj
+            # 26 oct 2026 : la demande d'un joueur (mesuree surtout sur ses recrues et ses hits) gonfle trop ses cartes de
+            # base et ses inserts de veteran : la, elle compte a moitie (racine) ; recrues, autos et patchs : pleine
+            g = (se.get(nom) or {}).get("groupe") or "base"
+            if g in ("base", "insert"):
+                dj = dj ** 0.5 if dj > 1 else dj
+            v, m = vref * dj, mesure
         vals.append(v)
         ok = ok or m
     return sum(vals) / len(vals), ok

@@ -29,12 +29,23 @@ def _chemin():
     return os.path.join(comptes.DONNEES, "valeurs_produits.json")
 
 
+_CACHE = {"mt": None, "d": {}}
+
+
 def lire():
+    """26 oct 2026 : en memoire tant que le fichier ne change pas (lu des milliers de fois par analyse de break :
+    le relire a chaque carte rendait l'ecran tres lent en ligne, jusqu'a l'erreur du serveur)."""
     try:
-        with open(_chemin(), encoding="utf-8") as f:
-            return json.load(f) or {}
-    except (OSError, ValueError):
+        mt = os.path.getmtime(_chemin())
+    except OSError:
         return {}
+    if _CACHE["mt"] != mt:
+        try:
+            with open(_chemin(), encoding="utf-8") as f:
+                _CACHE.update(mt=mt, d=json.load(f) or {})
+        except (OSError, ValueError):
+            return _CACHE["d"]
+    return _CACHE["d"]
 
 
 def _ecrire(d):
@@ -66,13 +77,63 @@ def _court(prod):
     return saison, marque
 
 
-def mesurer(prod, rechercher=None):
+def recrues_du_produit(prod):
+    se = {s["nom"]: s for s in prod.get("sous_ensembles") or []}
+    return sorted({c["joueur"] for c in prod.get("cartes") or [] if c.get("joueur") and "/" not in c["joueur"]
+                   and (se.get(c.get("sous_ensemble")) or {}).get("groupe") == "recrue"
+                   and not (se.get(c.get("sous_ensemble")) or {}).get("parallele_de")})
+
+
+def annonces_recrues(prod, chercher=None):
+    """26 oct 2026 (Mathieu : « dans les Series 1, 2, Extended, on cherche les rookies : Boston (Hagens) devrait etre
+    parmi les plus chers avec Chicago, Philadelphie, Washington ») - une recrue toute neuve n'a encore aucune vente :
+    sa cote se lit dans ses cartes deja en vente (prospect, junior, autres produits). Mediane des annonces eBay
+    a son nom (API Browse, gratuite) -> {joueur: mediane $ CA}. Seulement les recrues que l'indice ne connait pas."""
+    import cartes_match
+    import ebay_compte
+    import valeurs
+    chercher = chercher or (lambda q: ebay_compte.rechercher(q, categorie="261328", limite=50, fond=True))
+    out = {}
+    for j in recrues_du_produit(prod):
+        if valeurs.connu(j):
+            continue
+        try:
+            res = chercher(f"{j} hockey card") or []
+        except (RuntimeError, OSError):
+            break
+        fam = cartes_match.norm(j).split()[-1]
+        prix = [round((a.get("prix_cad") or 0) + (a.get("port_cad") or 0), 2) for a in res
+                if fam in cartes_match.norm(a.get("titre") or "").split() and not cartes_match.decoder(a.get("titre") or "").get("exclu")
+                and (a.get("prix_cad") or 0) > 0]
+        if len(prix) >= 3:
+            out[j] = {"m": round(statistics.median(prix), 2), "n": len(prix)}
+    return out
+
+
+def demande_recrue(prod, joueur):
+    """Demande relative d'une recrue sans ventes (meme echelle que valeurs.demande : ~0,6 = un joueur ordinaire),
+    d'apres ses annonces comparees aux autres recrues du produit. None si on ne sait pas."""
+    a = (de(prod["id"]).get("annonces_recrues") or {})
+    j = a.get(joueur)
+    if not j:
+        return None
+    ref = statistics.median([x["m"] for x in a.values()]) if a else None
+    if not ref:
+        return None
+    return round(max(0.2, min(15.0, 0.6 * (j["m"] / ref) ** 1.2)), 2)
+
+
+def mesurer(prod, rechercher=None, chercher_annonces=None):
     import cartes_match
     import vendues
     rechercher = rechercher or vendues.rechercher
     saison, marque = _court(prod)
     out = {"maj": datetime.now().isoformat(timespec="seconds"), "sous": {}, "boite": None}
-    for s in _importants(prod):
+    try:
+        out["annonces_recrues"] = annonces_recrues(prod, chercher_annonces)
+    except Exception as e:
+        out["erreur_annonces"] = type(e).__name__
+    for s in (_importants(prod) if (vendues.actif() or rechercher is not vendues.rechercher) else []):
         nom = s["nom"]
         q = " ".join(x for x in (saison, marque if marque not in nom.lower() else "", nom) if x)
         r = rechercher(q, fond=True)
@@ -98,11 +159,14 @@ def mesurer(prod, rechercher=None):
                 cibles[j] = cartes_match.cible(f"{saison} {j} {nom}")
             if cartes_match.raisons_refus(cibles[j], v["titre"]):
                 continue
-            par.setdefault(j, []).append(v["prix"])
+            par.setdefault(j, []).append(v)
         js = {}
-        for j, l in par.items():
+        for j, lv in par.items():
+            l = [v["prix"] for v in lv]
             m = cartes_match.mediane_robuste(l)[0] if len(l) >= 3 else round(statistics.median(l), 2)
-            js[j] = {"m": round(m, 2), "n": len(l)}
+            # 26 oct 2026 - tendance et courbe du joueur (fiche joueur, tendances de la semaine)
+            lv = sorted(lv, key=lambda v: str(v.get("le") or ""), reverse=True)
+            js[j] = {"m": round(m, 2), "n": len(l), "t": vendues.tendance(lv), "p": [[v.get("le"), v["prix"]] for v in lv[:40] if v.get("le")]}
         tous = [x["m"] for x in js.values()]
         out["sous"][nom] = {"mediane": round(statistics.median(tous), 2) if tous else None, "n": sum(x["n"] for x in js.values()),
                             "joueurs": js}
@@ -119,7 +183,7 @@ def mesurer(prod, rechercher=None):
     except Exception:
         pass
     with _verrou:
-        d = lire()
+        d = dict(lire())
         d[prod["id"]] = out
         _ecrire(d)
     return out
@@ -133,9 +197,6 @@ def mesurer_si_besoin(prod, attendre=False):
     except ValueError:
         age = 1e9
     if age < FRAICHEUR_S and not e.get("erreur"):
-        return e
-    import vendues
-    if not vendues.actif():
         return e
     if attendre:
         return mesurer(prod)

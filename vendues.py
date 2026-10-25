@@ -162,7 +162,7 @@ def rechercher(q, fond=True):
         _DERNIER[0] = time.time()
     req = urllib.request.Request(url, headers={"Authorization": "Bearer " + _cle(), "Accept": "application/json"})
     try:
-        with urllib.request.urlopen(req, timeout=60) as r:
+        with urllib.request.urlopen(req, timeout=25) as r:
             d = json.loads(r.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         return {"ventes": [], "erreur": {401: "clé SoldComps refusée", 429: "quota SoldComps atteint"}.get(e.code, f"SoldComps HTTP {e.code}")}
@@ -196,7 +196,23 @@ def memes(texte, requete=True, n=24, fond=False, exclure_titre=None):
     if prix:
         med, _g = cartes_match.mediane_robuste(prix) if len(prix) >= 4 else (round(statistics.median(prix), 2), prix)
     return {"ventes": tout[:n], "mediane": med, "nb": len(tout), "derniere": tout[0]["le"] if tout else None,
-            "ebay": len(ebay), "communaute": len(comm), "erreur": r.get("erreur") if not tout else None}
+            "ebay": len(ebay), "communaute": len(comm), "erreur": r.get("erreur") if not tout else None,
+            "points": [[v.get("le"), v["prix"]] for v in tout[:200] if v.get("le") and v.get("prix")],
+            "tendance": tendance(tout)}
+
+
+def tendance(ventes, jours=30):
+    """26 oct 2026 - % de variation : mediane des ventes des `jours` derniers jours vs les `jours`*2 d'avant.
+    None s'il n'y a pas assez de ventes des deux cotes (3 chacune)."""
+    from datetime import timedelta
+    auj = datetime.now()
+    d1, d2 = (auj - timedelta(days=jours)).strftime("%Y-%m-%d"), (auj - timedelta(days=jours * 3)).strftime("%Y-%m-%d")
+    recent = [v["prix"] for v in ventes if v.get("prix") and str(v.get("le") or "") >= d1]
+    avant = [v["prix"] for v in ventes if v.get("prix") and d2 <= str(v.get("le") or "") < d1]
+    if len(recent) < 3 or len(avant) < 3:
+        return None
+    a, b = statistics.median(avant), statistics.median(recent)
+    return {"pct": round(100 * (b - a) / a) if a else None, "recent": round(b, 2), "avant": round(a, 2), "n": len(recent) + len(avant)}
 
 
 def statut():

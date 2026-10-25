@@ -164,5 +164,101 @@ class DemandesAdmin(unittest.TestCase):
         self.assertTrue(admin.catalogue_etat()["produits"])
 
 
+class ChecklistGTS(unittest.TestCase):
+    """25 oct 2026 - l'Excel de GTS Distribution (gogts.net) : colonnes, recrues, numerotation, cotes hobby."""
+    def test_format_gts(self):
+        import io
+        import openpyxl
+        import checklist_import as ci
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Checklist"
+        ws.append(["Set Name", "Card", "Description", "Team City", "Team Name", "Rookie", "Auto", "Tech", "Serial #'d", "SPs", "Stated Odds", "Point"])
+        for i in range(1, 6):
+            ws.append(["Base Set", str(i), f"Joueur {i}", "New York", "Rangers", None, None, None, None, None, None, 20])
+        for i in range(201, 206):
+            ws.append(["Base Set - Young Guns ", str(i), f"Recrue {i}", "Boston", "Bruins", "Rookie", None, None, None, None, "1:2 h, 1:2 e, 1:1 hanger", 20])
+        for i in range(201, 206):
+            ws.append(["Deluxe Parallel - Young Guns", str(i), f"Recrue {i}", "Boston", "Bruins", "Rookie", None, None, 250, None, "Random Inserts in Hobby and e-Pack", 20])
+        ws.append(["Snow Spray Auto Variations", "10", "Joueur 1", "New York", "Rangers", None, "Auto", None, None, "SSP", "1:5570 h", 20])
+        b = io.BytesIO()
+        wb.save(b)
+        lu = ci.lire(b.getvalue(), "2026-27-Upper-Deck-Series-1-Hockey-Checklist.xlsx", "hockey")
+        se = {s["nom"]: s for s in lu["sous_ensembles"]}
+        self.assertEqual(lu["cartes"][0]["equipe"], "NYR")
+        self.assertTrue(all(c["recrue"] for c in lu["cartes"] if c["sous_ensemble"].endswith("Young Guns")))
+        self.assertEqual(se["Deluxe Parallel - Young Guns"]["tirage"], 250)
+        self.assertEqual(se["Deluxe Parallel - Young Guns"]["parallele_de"], "Base Set - Young Guns")
+        self.assertEqual(se["Deluxe Parallel - Young Guns"]["groupe"], "recrue")
+        self.assertEqual(se["Base Set - Young Guns"]["cote_hobby"], 2.0)
+        self.assertEqual(se["Snow Spray Auto Variations"]["groupe"], "auto")
+        prod = {"formats": [{"format": "Boîte hobby", "paquets": 12}], "sous_ensembles": lu["sous_ensembles"]}
+        ci.par_boite_depuis_cotes(prod)
+        self.assertEqual(se["Base Set - Young Guns"]["par_boite"], 6.0)          # 6 Young Guns par boite
+        self.assertEqual(ci.cle_sous("Deluxe Parallel - Young Guns"), ci.cle_sous("Young Guns Deluxe"))
+        self.assertEqual(ci.cle_sous("Population Count 500 Parallel"), ci.cle_sous("Population Count /500"))
+        self.assertEqual(ci.cle_sous("Bootlegs"), ci.cle_sous("Bootleg"))
+        self.assertEqual(ci.cle_sous("Base Set"), ci.cle_sous("Base"))
+
+
+class GTS(unittest.TestCase):
+    """25 oct 2026 - la liste des checklists de gogts.net et le telechargement (reseau simule)."""
+    def test_liste_et_lien(self):
+        import gts
+        pages = {
+            gts.CATEGORIES["hockey"]: '<a href="https://gogts.net/2026-27-upper-deck-series-1-nhl-hockey-cards-checklist/">S1</a>'
+                                      '<a href="https://gogts.net/2025-26-upper-deck-sp-authentic-nhl-hockey-checklist/">SPA</a>'
+                                      '<a href="https://gogts.net/trading-card-checklists/hockey-card-checklists/">cat</a>',
+            gts.CATEGORIES["hockey"] + "page/2/": '<a href="https://gogts.net/2019-20-upper-deck-series-two-nhl-hockey-cards-checklist/">x</a>',
+            "https://gogts.net/2026-27-upper-deck-series-1-nhl-hockey-cards-checklist/":
+                '<a href="https://gogts.net/wp-content/uploads/2026/04/X.pdf">PDF</a><a href="https://gogts.net/wp-content/uploads/2026/04/2026-27-Upper-Deck-Series-1-Hockey-Checklist.xlsx">EXCEL</a>',
+        }
+        def faux(url, max_octets=0, timeout=0):
+            if url.endswith(".xlsx"):
+                return b"PK"
+            if url not in pages:
+                e = OSError("404"); e.code = 404; raise e
+            return pages[url].encode()
+        vrai, gts._get = gts._get, faux
+        ancien = gts._chemin
+        with tempfile.TemporaryDirectory() as t:
+            gts._chemin = lambda: os.path.join(t, "g.json")
+            try:
+                r = gts.lister("hockey", force=True, maint=datetime(2026, 10, 25))
+                noms = [x["nom"] for x in r["produits"]]
+                self.assertEqual(noms, ["2026-27 Upper Deck Series 1", "2025-26 Upper Deck SP Authentic"])
+                brut, nom = gts.telecharger(r["produits"][0]["url"])
+                self.assertEqual(nom, "2026-27-Upper-Deck-Series-1-Hockey-Checklist.xlsx")
+                self.assertFalse(gts._sur("https://exemple.com/gogts.net/x.xlsx"))
+            finally:
+                gts._get, gts._chemin = vrai, ancien
+
+
+class Marche(unittest.TestCase):
+    def test_alerte_meme_carte(self):
+        import lockerroom
+        import marche
+        a = lockerroom.Api(os.path.join(tempfile.mkdtemp(), "m.db"))
+        a.alerte_ajouter("will smith young guns", 30)
+
+        def rech(q, **k):
+            return [{"item_id": "1", "titre": "2023-24 Upper Deck Will Smith Young Guns #230", "prix_cad": 20, "port_cad": 2},
+                    {"item_id": "2", "titre": "2023-24 Upper Deck Will Smith Young Guns #230 PSA 10", "prix_cad": 20, "port_cad": 2},
+                    {"item_id": "3", "titre": "2023-24 Upper Deck Will Smith Young Guns #230", "prix_cad": 40, "port_cad": 2}]
+        self.assertEqual(marche.verifier_alertes(a, rech)["nouvelles"], 1)       # gradee et trop chere : non
+        self.assertEqual(marche.verifier_alertes(a, rech)["nouvelles"], 0)       # deja vue
+        self.assertEqual(a.alertes_liste()["non_lues"], 1)
+
+    def test_tendance_et_ouvrir(self):
+        import vendues
+        import marche
+        from datetime import datetime as dt, timedelta as td
+        v = [{"prix": 10, "le": (dt.now() - td(days=50 + i)).strftime("%Y-%m-%d")} for i in range(4)] + \
+            [{"prix": 15, "le": (dt.now() - td(days=5 + i)).strftime("%Y-%m-%d")} for i in range(4)]
+        self.assertEqual(vendues.tendance(v)["pct"], 50)
+        self.assertEqual(marche.verdict_ouvrir(120, 100)["verdict"], "ouvrir")
+        self.assertEqual(marche.verdict_ouvrir(60, 100)["verdict"], "garder")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

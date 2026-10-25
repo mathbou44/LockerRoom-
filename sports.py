@@ -103,7 +103,7 @@ SPORTS = {
                             "parkhurst", "synergy", "mvp hockey", "allure", "trilogy", "credentials",
                             "ultimate collection", "sp game used", "chl", "ahl"],
                         1: ["upper deck", "canvas", "rookie redemption"]},
-               "alias": {"utah hockey club": "UTA", "mammoth": "UTA", "ny rangers": "NYR", "ny islanders": "NYI",
+               "alias": {"utah hockey club": "UTA", "mammoth": "UTA", "arizona coyotes": "UTA", "coyotes": "UTA", "ny rangers": "NYR", "ny islanders": "NYI",
                          "st louis blues": "STL", "montreal canadiens": "MTL", "habs": "MTL"}},
     "football": {"nom": "Football", "ligue": "NFL", "ebay_sport": "Football", "equipes": _NFL,
                  "mots": {3: ["nfl", "football", "contenders", "rated rookie", "rookie ticket", "absolute football",
