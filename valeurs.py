@@ -89,3 +89,35 @@ def valeur_sous_ensemble(prod, nom, se, taux, _prof=0):
     if tirage:
         v *= max(1.0, (250.0 / max(1, tirage)) ** 0.5)
     return v, False
+
+
+def valeur_carte(prod, nom, joueur, se, taux, cache=None):
+    """25 oct 2026 - la valeur d'UNE carte (sous-ensemble x joueur), mesuree sur les ventes reelles quand on les a
+    (valeur_produit) ; une parallele = la valeur vendue du joueur dans le sous-ensemble parent x l'ecart du modele ;
+    sinon l'ancien modele (valeur du sous-ensemble x demande du joueur). -> (valeur $ CA, mesuree ?)"""
+    import valeur_produit
+    cache = {} if cache is None else cache
+    if nom not in cache:
+        cache[nom] = valeur_sous_ensemble(prod, nom, se, taux)
+    vref, mesure = cache[nom]
+    noms = [x.strip() for x in re.split(r"\s*/\s*|\s+&\s+", str(joueur or "")) if x.strip()]
+    if not noms:
+        return vref * DEMANDE_INCONNUE, mesure
+    vals, ok = [], False
+    for j in noms:
+        v, m = valeur_produit.valeur(prod, nom, j, None)
+        if v is None:                                    # parallele : remonte au sous-ensemble mesure
+            s, k, chaine = se.get(nom) or {}, nom, 0
+            while v is None and s.get("parallele_de") and chaine < 6:
+                k = s["parallele_de"]
+                vp, m = valeur_produit.valeur(prod, k, j, None)
+                if vp is not None:
+                    if k not in cache:
+                        cache[k] = valeur_sous_ensemble(prod, k, se, taux)
+                    v = vp * (vref / cache[k][0]) if cache[k][0] else vp
+                s, chaine = se.get(k) or {}, chaine + 1
+        if v is None:
+            v, m = vref * demande(j), mesure
+        vals.append(v)
+        ok = ok or m
+    return sum(vals) / len(vals), ok

@@ -189,8 +189,13 @@ def raisons_refus(c, titre, appris=None):
         r.append("checklist")
     if c["mots"]:
         autres = [n for n in _noms_dans(t) if n.split()[-1] not in c["mots"]]      # meme nom de famille = meme joueur
+        if not autres:      # 25 oct 2026 : « Geekie/ Will Smith », « Will Smith Lekkerimaki » : le nom de famille seul
+            fam = _noms_famille()
+            autres = [fam[w] for w in dict.fromkeys(t.split()) if w in fam and w not in c["mots"] and not _a_mot(c["texte"], w)]
         if autres:
             r.append("autre joueur (" + autres[0] + ")")
+        elif "/" not in c["texte"] and _deux_noms(t):
+            r.append("plusieurs joueurs")
     if c["annee"] and a["annee"] and a["annee"] != c["annee"]:
         r.append("autre année")
     if c["num"] and a["num"] and a["num"] != c["num"]:
@@ -420,6 +425,38 @@ def _joueurs_connus():
             pass
         _JOUEURS_CONNUS["t"] = sorted((n for n in noms if len(n.split()) >= 2), key=len, reverse=True)
     return _JOUEURS_CONNUS["t"]
+
+
+# noms de famille qui sont aussi des mots de cartes (« Power Play », « Wood », « Price ») : jamais seuls
+_FAM_AMBIGUS = set("""power wood price king gold black white brown green young rookie star best hunt march may day long little
+bear love page rose stone bell hill park lee case box ford mason miller fox wolf snow frost glass bird hall""".split())
+_FAM = {"t": None}
+
+
+def _noms_famille():
+    """{nom de famille : nom complet} des joueurs connus (noms distinctifs seulement)."""
+    if _FAM["t"] is None:
+        gen = GENERIQUES | VIDES | set(PARALLELES) | set(PRODUITS) | _FAM_AMBIGUS
+        if _EQUIPES_MOTS["t"] is None:
+            _EQUIPES_MOTS["t"] = _mots_equipes()
+        gen |= _EQUIPES_MOTS["t"]
+        out = {}
+        prenoms = {n.split()[0] for n in _joueurs_connus()}          # « Connor » : prenom de Bedard, nom de Logan O'Connor
+        for n in _joueurs_connus():
+            f = n.split()[-1]
+            if len(f) >= 4 and f.isalpha() and f not in gen and f not in prenoms:
+                out.setdefault(f, n)
+        _FAM["t"] = out
+    return _FAM["t"]
+
+
+def _deux_noms(t):
+    """« Celebrini / Will Smith » : deux noms separes par « / » (pas « auto/patch », « w/ », ni un /99)."""
+    gen = GENERIQUES | VIDES | set(PARALLELES) | set(PRODUITS) | {"auto", "autograph", "patch", "jersey", "relic", "rc", "rookie", "mem"}
+    for g, d in re.findall(r"(?<![a-z])([a-z]{3,})\s*/\s*([a-z]{3,})(?![a-z])", t):
+        if g not in gen and d not in gen:
+            return True
+    return False
 
 
 def _mots_equipes():

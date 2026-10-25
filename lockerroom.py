@@ -42,6 +42,9 @@ import forfaits  # noqa: E402
 import nouveaux_produits  # noqa: E402
 import paiements  # noqa: E402
 import valeurs_maj  # noqa: E402
+import valeur_produit  # noqa: E402
+import vendues  # noqa: E402
+import ventes_communaute  # noqa: E402
 
 _VERROU_IMG = threading.Lock()
 
@@ -62,7 +65,9 @@ REGLAGES_DEFAUT = {
     "activites": None,           # 22 oct 2026 - onglets visibles {"breaks":bool,"magasin":bool} ; None = deduit des donnees
     "mode": "",                  # 22 oct 2026 - "vendeur" ou "acheteur" (vide = a choisir a la 1re ouverture)
     "epn_campid": "",
-    "langue": "",                # 24 oct 2026 - "fr" ou "en" (vide = celle du navigateur)
+    "langue": "",
+    "partage_ventes": True,
+    "budget_mois": 0,            # 25 oct 2026 - acheteur : budget du mois ($ CA), 0 = aucun      # 25 oct 2026 - mes ventes (anonymes) aident les prix vendus de la communaute                # 24 oct 2026 - "fr" ou "en" (vide = celle du navigateur)
     "devise": "",                # 24 oct 2026 - "CAD" ou "USD" (affichage ; les montants restent gardes en $ CA)
     "modele_annonce": None,      # 24 oct 2026 - choix gardes pour la prochaine annonce (expedition, retours, offres, promotion)
     "sport": "hockey",           # 23 oct 2026 - sport principal (quand l'app hesite : voir sports.py)            # 21 oct 2026 - eBay Partner Network : liens d'achat suivis (affiliation)
@@ -530,7 +535,8 @@ class Api:
         return {"ok": True, "abonnes": {k: v for k, v in a.items() if k != "comptes"},
                 "demandes": {"ouvertes": dm["ouvertes"], "nouvelles": dm["nouvelles"]},
                 "a_ajouter": len(nouveaux_produits.liste()), "erreurs_24h": sum(1 for e in s["erreurs"] if str(e["le"]) > (datetime.now() - timedelta(days=1)).isoformat()),
-                "ebay": s["ebay"], "version": s["version"]}
+                "ebay": s["ebay"], "version": s["version"], "vendues": vendues.statut(), "photos": s.get("photos"),
+                "taches": s.get("taches"), "disque": s.get("disque")}
 
     def admin_abonnes(self):
         if not self._est_admin():
@@ -794,7 +800,18 @@ class Api:
         args = dict(boites=boites, cout_boite=f("cout_boite", 0), marge=f("marge", r["marge_break"]) / 100,
                     frais_pct=frais_pct, frais_fixe=frais_fixe, plancher=f("plancher", r["plancher_place"]), arrondi=arrondi, sport=sport)
         mode = p.get("mode") or "equipes"
-        res = calcul.prix_catalogue(prod, mode=mode, **args)
+        # 25 oct 2026 : les valeurs viennent des ventes reelles du produit (mesurees en arriere-plan, 7 jours) ;
+        # sans cout entre, le prix d'une boite = ses ventes recentes
+        mes = valeur_produit.mesurer_si_besoin(prod) or {}
+        boite_marche = mes.get("boite")
+        cout_estime = None
+        if p.get("cout_boite") in (None, "", 0, "0"):
+            if boite_marche:
+                args["cout_boite"] = cout_estime = boite_marche
+            else:                                # ni cout ni ventes de boites : la valeur attendue d'une boite
+                ev0 = calcul.prix_catalogue(prod, mode=mode, **{**args, "cout_boite": 0}).get("ev_par_boite") or 0
+                args["cout_boite"] = cout_estime = round(ev0, 2)
+        res = calcul.prix_catalogue(prod, mode=mode, garder_dist=True, **args)
         # le prix affiche : celui qui donne le profit voulu meme si les places partent `decote` plus bas
         n = len(res["places"]) or 1
         for pl in res["places"]:
@@ -806,16 +823,80 @@ class Api:
         res["profit_estime"] = round(total * (1 - decote) * (1 - frais_pct) - frais_fixe * n - res["cout"], 2)
         res["decote"] = round(decote * 100, 1)
         demandes = {str(k): _float(v) for k, v in (p.get("prix_demandes") or {}).items() if _float(v)}
+        stats = self._stats_checklist(prod, mode, sport)
         for pl in res["places"]:
-            d = demandes.get(pl["cle"])
-            if d:
-                pl["demande"] = d
-                pl["valeur_ratio"] = round(pl["ev"] / d, 2)
+            self._noter_place(pl, demandes.get(pl["cle"]), stats.get(pl["cle"]))
+        # 25 oct 2026 (Mathieu : acheteur = « des scores », joueurs ET equipes) : la meme chose, place par joueur
+        joueurs = None
+        if p.get("acheteur"):
+            rj = calcul.prix_catalogue(prod, mode="joueurs", garder_dist=True, **args)
+            sj = self._stats_checklist(prod, "joueurs", sport)
+            dj = {str(k): _float(v) for k, v in (p.get("prix_joueurs") or {}).items() if _float(v)}
+            joueurs = [pl for pl in rj["places"] if pl["ev"] > 0]
+            for pl in joueurs:
+                pl["prix"] = calcul._arrondir(pl["prix"] / max(0.4, 1 - decote), arrondi)
+                self._noter_place(pl, dj.get(pl["cle"]), sj.get(pl["cle"]))
+                pl["equipe"] = (sj.get(pl["cle"]) or {}).get("equipe")
+            joueurs.sort(key=lambda x: -x["score"])
+            joueurs = joueurs[:60]
         fmt = (prod.get("formats") or [{}])[0]
         return {**res, "ok": True, "hits": self._hits_produit(prod, boites), "boites": boites, "mode": mode,
+                "joueurs": joueurs, "prix_boite_marche": boite_marche, "cout_boite": args["cout_boite"], "cout_estime": cout_estime,
+                "ventes_actives": vendues.actif(),
+                "valeurs_mesurees": bool(mes.get("sous")), "valeurs_maj": mes.get("maj"),
                 "produit": {"id": prod["id"], "nom": prod["nom"], "saison": prod.get("saison"), "marque": prod.get("marque"),
                             "format": fmt.get("format"), "boites_par_caisse": fmt.get("boites_par_caisse"), "sport": sport,
                             "preliminaire": bool(prod.get("preliminaire"))}}
+
+    @staticmethod
+    def _noter_place(pl, demande, stats):
+        """Score d'une place pour l'acheteur (0-100) : la chance de rembourser son prix (au moins une carte qui vaut
+        le prix paye) et la valeur attendue / prix. Sans prix demande : le prix estime d'un breaker."""
+        prix = demande or pl["prix"] or 0
+        dist = pl.pop("_dist", [])
+        pl["prix_compare"] = prix
+        if demande:
+            pl["demande"] = demande
+        pl["valeur_ratio"] = round(pl["ev"] / prix, 2) if prix else None
+        pl["p_rembourse"] = calcul.chance_rembourser(dist, prix) if prix else 0
+        pl["score"] = round(100 * (0.6 * pl["p_rembourse"] + 0.4 * min(1.0, (pl["valeur_ratio"] or 0) / 1.5)))
+        top = sorted(dist, key=lambda x: -x[0])[:1]
+        pl["meilleure_valeur"] = round(top[0][0], 2) if top else None
+        pl.update({k: v for k, v in (stats or {}).items() if k != "equipe"})
+
+    @staticmethod
+    def _stats_checklist(prod, mode, sport):
+        """Par equipe (ou joueur) : combien de joueurs dans le produit, de recrues, de cartes numerotees, de patchs,
+        d'autos et de SSP dans la checklist (ce que l'acheteur peut esperer)."""
+        se = {s["nom"]: s for s in prod.get("sous_ensembles") or []}
+        out = {}
+        for c in prod.get("cartes") or []:
+            s = se.get(c.get("sous_ensemble")) or {}
+            if s.get("parallele_de"):
+                continue                                   # une parallele n'est pas une carte de plus dans la checklist
+            if mode == "joueurs":
+                cles = [x.strip() for x in str(c.get("joueur") or "").split("/") if x.strip()]
+            else:
+                cles = list(dict.fromkeys(calcul.code_equipe(e, sport) for e in re.split(r"\s*/\s*|\s*,\s*", str(c.get("equipe") or "")) if e.strip()))
+            g = s.get("groupe") or "base"
+            for k in cles:
+                d = out.setdefault(k, {"_j": set(), "_r": set(), "nb_numerotees": 0, "nb_patchs": 0, "nb_autos": 0, "nb_ssp": 0,
+                                       "equipe": c.get("equipe")})
+                if c.get("joueur"):
+                    d["_j"].add(c["joueur"])
+                    if g == "recrue" or c.get("recrue"):
+                        d["_r"].add(c["joueur"])
+                if c.get("tirage") or s.get("tirage"):
+                    d["nb_numerotees"] += 1
+                if c.get("memo") or g in ("memo", "auto_memo"):
+                    d["nb_patchs"] += 1
+                if c.get("auto") or g in ("auto", "auto_memo"):
+                    d["nb_autos"] += 1
+                if re.search(r"\bssp\b|short print", s.get("nom") or "", re.I):
+                    d["nb_ssp"] += 1
+        for d in out.values():
+            d["nb_joueurs"], d["nb_recrues"] = len(d.pop("_j")), len(d.pop("_r"))
+        return out
 
     def _hits_produit(self, prod, boites):
         """Joueur par joueur : ses autos / patchs attendus dans le break, la chance d'en sortir au moins un et leur valeur."""
@@ -831,12 +912,10 @@ class Api:
             genre = "recrues"
         cache, par = {}, {}
         for c, s, n in hits:
-            if s["nom"] not in cache:
-                cache[s["nom"]] = valeurs.valeur_sous_ensemble(prod, s["nom"], se, taux)[0]
             for j in [x.strip() for x in str(c.get("joueur") or "").split("/") if x.strip()]:
                 d = par.setdefault(j, {"joueur": j, "equipe": c.get("equipe"), "n": 0.0, "ev": 0.0, "cartes": {}})
                 part = 1.0 / max(1, len(str(c.get("joueur")).split("/")))
-                v = n * part * cache[s["nom"]] * valeurs.demande(j)
+                v = n * part * valeurs.valeur_carte(prod, s["nom"], j, se, taux, cache)[0]       # 25 oct 2026 : ventes reelles
                 d["n"] += n * part
                 d["ev"] += v
                 d["cartes"][s["nom"]] = d["cartes"].get(s["nom"], 0.0) + v
@@ -1950,14 +2029,117 @@ class Api:
             print(f"[synchro] ventes Trading ignorees : {e}", flush=True)
         a = self._maj_annonces(annonces)
         v = self._maj_ventes(ventes)
+        try:                                     # 25 oct 2026 - le cout d'achat : les achats eBay du compte
+            cx = self.couts_depuis_achats()
+        except Exception as e:
+            cx = {"relies": 0}
+            print(f"[synchro] couts depuis les achats eBay : {e}", flush=True)
         try:                                     # 24 oct 2026 - « mettre des images sur les sold aussi »
             self._photos_vendues(25)
         except Exception as e:
             print(f"[synchro] photos des ventes : {e}", flush=True)
         bilan = {"annonces": a.get("lues"), "nouvelles_annonces": a.get("crees"), "ventes": v.get("nouvelles"),
-                 "deja": v.get("deja"), "le": _maintenant()}
+                 "deja": v.get("deja"), "couts_relies": cx.get("relies"), "le": _maintenant()}
         ebay_compte.noter_synchro(bilan)
         return {"ok": True, **bilan}
+
+    def guide_donnees(self):
+        """25 oct 2026 - pour le guide du hobby : les joueurs les plus recherches (indice de demande LockerRoom)
+        et les recrues de la saison (le produit le plus recent du catalogue, ses Young Guns les plus chers)."""
+        d = valeurs._charger() or {}
+        top = sorted((d.get("joueurs") or {}).items(), key=lambda kv: -float(kv[1] or 0))[:12]
+        prods = sorted(catalogue.liste(), key=lambda p: str(p.get("saison") or "") + str(p.get("sortie") or ""), reverse=True)
+        recrues, nom_prod = [], None
+        for p in prods[:3]:
+            try:
+                prod = catalogue.charger(p["id"])
+            except Exception:
+                continue
+            se = {x["nom"]: x for x in prod.get("sous_ensembles") or []}
+            yg = [c for c in prod.get("cartes") or [] if (se.get(c.get("sous_ensemble")) or {}).get("groupe") == "recrue"
+                  and not (se.get(c.get("sous_ensemble")) or {}).get("parallele_de") and c.get("joueur")]
+            if not yg:
+                continue
+            taux = prod.get("_taux") or {}
+            cache, vals = {}, {}
+            for c in yg:
+                v, _m = valeurs.valeur_carte(prod, c["sous_ensemble"], c["joueur"], se, taux, cache)
+                if v > vals.get(c["joueur"], (0, ""))[0]:
+                    vals[c["joueur"]] = (round(v, 2), c.get("equipe") or "", c["sous_ensemble"], _m)
+            recrues = [{"joueur": j, "valeur": v[0], "equipe": v[1], "carte": v[2], "mesuree": v[3]}
+                       for j, v in sorted(vals.items(), key=lambda kv: (-kv[1][0], -valeurs.demande(kv[0])))[:10]]
+            nom_prod = prod["nom"]
+            break
+        return {"ok": True, "joueurs": [{"joueur": j, "demande": round(float(v), 2)} for j, v in top], "recrues": recrues, "produit": nom_prod}
+
+    def budget_etat(self):
+        """25 oct 2026 (Mathieu : « qu'il fasse un choix éclairé avec ses sous durement gagnés tout en s'assurant qu'il
+        ne dépasse pas son budget ») : budget du mois, ce qui est deja depense (achats eBay du compte, synchro) et le reste."""
+        r = self.reglages_lire()
+        budget = float(r.get("budget_mois") or 0)
+        m0 = datetime.now().strftime("%Y-%m")
+        c = self._db()
+        try:
+            c.execute("CREATE TABLE IF NOT EXISTS achats_ebay (item_id TEXT, n INTEGER, titre TEXT, cout REAL, devise TEXT, "
+                      "date TEXT, carte_id INTEGER, PRIMARY KEY (item_id, n))")
+            l = _dicts(c.execute("SELECT titre, cout, date FROM achats_ebay WHERE date LIKE ? ORDER BY date DESC", (m0 + "%",)))
+        finally:
+            c.close()
+        dep = round(sum(x["cout"] or 0 for x in l), 2)
+        return {"ok": True, "mois": m0, "budget": budget, "depense": dep, "reste": round(budget - dep, 2) if budget else None,
+                "nb_achats": len(l), "achats": l[:8], "pct": round(100 * dep / budget) if budget else None}
+
+    def couts_depuis_achats(self, achats=None):
+        """25 oct 2026 - le cout d'acquisition des cartes ACHETEES sur eBay (comme Hall of Cardz) : chaque achat
+        (role acheteur, 90 jours) est relie a la carte de l'inventaire qui lui ressemble le plus (meme joueur, meme
+        carte, mise en vente apres l'achat), et son cout reel paye devient le cout de la carte. Une carte achetee
+        ailleurs : l'utilisateur entre son cout lui-meme. Jamais un cout deja entre n'est remplace."""
+        import difflib
+        if achats is None:
+            achats = ebay_compte.achats(90)
+        taux = 1 / float(self.taux_change().get("usd") or 0.72)                  # 1 $ US -> $ CA
+        res = {"achats": len(achats), "relies": 0}
+        with _verrou:
+            c = self._db()
+            try:
+                c.execute("CREATE TABLE IF NOT EXISTS achats_ebay (item_id TEXT, n INTEGER, titre TEXT, cout REAL, devise TEXT, "
+                          "date TEXT, carte_id INTEGER, PRIMARY KEY (item_id, n))")
+                for x in achats:
+                    if x.get("cout_total") is None:
+                        continue
+                    cout = x["cout_total"] / max(1, x.get("quantite") or 1)
+                    cout = round(cout * (taux if (x.get("devise") or "CAD") == "USD" else 1.0), 2)
+                    for k in range(max(1, x.get("quantite") or 1)):
+                        c.execute("INSERT OR IGNORE INTO achats_ebay (item_id, n, titre, cout, devise, date) VALUES (?,?,?,?,?,?)",
+                                  (str(x["item_id"]), k, x.get("titre") or "", cout, "CAD", x.get("date")))
+                libres = _dicts(c.execute("SELECT rowid AS rid, * FROM achats_ebay WHERE carte_id IS NULL"))
+                cartes = _dicts(c.execute("SELECT id, titre, joueur, cree_le, debut FROM cartes WHERE COALESCE(cout, 0) = 0 "
+                                          "AND COALESCE(titre, '') <> ''"))
+                pris = {r[0] for r in c.execute("SELECT carte_id FROM achats_ebay WHERE carte_id IS NOT NULL")}
+                for a in sorted(libres, key=lambda z: str(z.get("date") or "")):
+                    cib = cartes_match.cible_titre(a["titre"])
+                    meilleur, score_m = None, 0.0
+                    for k in cartes:
+                        if k["id"] in pris:
+                            continue
+                        quand = str(k.get("debut") or k.get("cree_le") or "")[:10]
+                        if quand and a.get("date") and quand < str(a["date"])[:10]:
+                            continue                                   # mise en vente avant l'achat : pas cette carte
+                        if cartes_match.raisons_refus(cib, k["titre"]):
+                            continue
+                        sc = difflib.SequenceMatcher(None, cartes_match.norm(a["titre"]), cartes_match.norm(k["titre"])).ratio()
+                        if sc > score_m:
+                            meilleur, score_m = k, sc
+                    if meilleur and score_m >= 0.45:
+                        c.execute("UPDATE cartes SET cout=?, note=TRIM(COALESCE(note,'') || ' Coût : achat eBay #' || ?) WHERE id=? "
+                                  "AND COALESCE(cout,0)=0", (a["cout"], a["item_id"], meilleur["id"]))
+                        c.execute("UPDATE achats_ebay SET carte_id=? WHERE rowid=?", (meilleur["id"], a["rid"]))
+                        pris.add(meilleur["id"])
+                        res["relies"] += 1
+                c.commit()
+            finally:
+                c.close()
+        return {"ok": True, **res}
 
     # -- comptoir (boutique physique) -----------------------------------------------------------
     def comptoir_vente(self, d):
@@ -2390,17 +2572,25 @@ class Api:
         r = self.reglages_lire()
         fp, ff = (r["frais_ebay_pct"] or 0) / 100, r["frais_ebay_fixe"] or 0
         # 25 oct 2026 (Mathieu : « montre les last sold comps avec leurs photos aussi et le prix suggere »)
+        try:
+            vc = vendues.memes(t, requete=False, n=16) if t else {"ventes": []}
+        except Exception:
+            vc = {"ventes": []}
+        ventes = vc.get("ventes") or (self._mes_ventes_pareilles(t, item_id) if t else [])
+        # 25 oct 2026 : la valeur = les ventes reelles (3 ou plus), sinon les annonces en vente
+        vm = vc.get("mediane") if (vc.get("nb") or 0) >= 3 else None
+        valeur = vm or med
         suggere = None
-        if med and n >= 3:
-            prix = sorted(x["total"] for x in comps) if comps else []
-            vente = prix[max(0, int(len(prix) * 0.4) - 1)] if len(prix) >= 3 else med      # sous la mediane : vendu plus vite
-            suggere = {"vente": round(min(vente, med), 2),
-                       "achat_max": round(max(0.0, (med * (1 - fp) - ff) / 1.20), 2)}    # garde 20 % a la revente
-        ventes = self._mes_ventes_pareilles(t, item_id) if t else []
+        if valeur and (vm or n >= 3):
+            pv = sorted(x["prix"] for x in ventes if x.get("prix")) if vm else sorted(x["total"] for x in comps)
+            vente = pv[max(0, int(len(pv) * 0.6) - 1)] if len(pv) >= 3 else valeur     # vendues : un peu au-dessus du milieu
+            suggere = {"vente": round(vente if vm else min(vente, valeur), 2),
+                       "achat_max": round(max(0.0, (valeur * (1 - fp) - ff) / 1.20), 2), "source": "vendues" if vm else "annonces"}
         return {"ok": True, "article": {**a, "total": total}, "comps": comps, "mediane": med, "n": n,
-                "suggere": suggere, "ventes": ventes,
-                "rabais": round(100 * (1 - total / med)) if total and med else None,
-                "gain": round(med * (1 - fp) - ff - total, 2) if total and med else None}
+                "suggere": suggere, "ventes": ventes, "mediane_vendue": vc.get("mediane"), "nb_vendues": vc.get("nb") or len(ventes),
+                "valeur": valeur, "valeur_source": "vendues" if vm else "annonces",
+                "rabais": round(100 * (1 - total / valeur)) if total and valeur else None,
+                "gain": round(valeur * (1 - fp) - ff - total, 2) if total and valeur else None}
 
     def _mes_ventes_pareilles(self, titre, item_id=None, n=8):
         """Les MEMES cartes deja vendues par ce compte (vraies ventes, avec photo) : {titre, prix, le, photo}."""
@@ -2496,16 +2686,25 @@ class Api:
                 "raisons": sorted(raisons.items(), key=lambda kv: -kv[1])[:6],
                 "ecartees": [{k: x.get(k) for k in ("item_id", "titre", "total", "photo", "url", "raison")} for x in ecartees[:30]]}
         forfaits.compter("valeur_jour")
+        # 25 oct 2026 (Mathieu : « base-toi toujours sur les last sold ») : la valeur = ventes reelles
+        try:
+            base["vendues"] = vendues.memes(q, requete=True, n=24)
+        except Exception as e:
+            base["vendues"] = {"ventes": [], "mediane": None, "nb": 0, "erreur": type(e).__name__}
+        vm = base["vendues"].get("mediane") if (base["vendues"].get("nb") or 0) >= 3 else None
         if not gardees:
-            return {**base, "n": 0, "annonces": []}
+            return {**base, "n": 0, "annonces": [], "valeur": vm, "valeur_source": "vendues" if vm else None,
+                    "bon_prix": round(vm * sante.RACHAT_RATIO, 2) if vm else None}
         med, garde = cartes_match.mediane_robuste([x["total"] for x in gardees])
-        bon = round(med * sante.RACHAT_RATIO, 2)
+        valeur = vm or med
+        bon = round(valeur * sante.RACHAT_RATIO, 2)
         for x in gardees:
             x["deal"] = x["total"] <= bon
-            x["gain"] = round(med * (1 - fp) - ff - x["total"], 2)
+            x["bon"] = (not x["deal"]) and x["total"] <= valeur          # « bon prix » : sous la valeur vendue
+            x["gain"] = round(valeur * (1 - fp) - ff - x["total"], 2)
             x["hors_norme"] = x["total"] not in garde
-        return {**base, "n": len(gardees), "mediane": med, "bon_prix": bon, "min": garde[0], "max": garde[-1],
-                "annonces": gardees[:40]}
+        return {**base, "n": len(gardees), "mediane": med, "valeur": valeur, "valeur_source": "vendues" if vm else "annonces",
+                "bon_prix": bon, "min": garde[0], "max": garde[-1], "annonces": gardees[:40]}
 
     def valeur_signaler(self, q, item_id, titre, bonne=False):
         """« Pas la bonne carte » (ou « c'est la bonne ») : l'app apprend, pour tout le monde."""

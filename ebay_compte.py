@@ -459,6 +459,47 @@ def ventes_trading(jours=30):
     return tout
 
 
+def achats(jours=90):
+    """25 oct 2026 (Mathieu : « sur Hall of Cardz tu as ete capable d'aller chercher mon cout d'acquisition dans eBay ») :
+    tout ce que le compte a ACHETE ou gagne sur eBay (Trading GetOrders, role acheteur, 90 jours max), avec le cout
+    REEL paye (prix + port + taxes percues par eBay), reparti au prorata du prix dans une commande a plusieurs articles."""
+    fin = datetime.now(timezone.utc)
+    debut = fin - timedelta(days=min(90, int(jours)))
+    f = lambda d: d.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    out, page, pages = [], 1, 1
+    while page <= pages and page <= 20:
+        corps = ('<?xml version="1.0" encoding="utf-8"?><GetOrdersRequest xmlns="urn:ebay:apis:eBLBaseComponents">'
+                 f"<CreateTimeFrom>{f(debut)}</CreateTimeFrom><CreateTimeTo>{f(fin)}</CreateTimeTo>"
+                 "<OrderRole>Buyer</OrderRole><OrderStatus>All</OrderStatus>"
+                 f"<Pagination><EntriesPerPage>100</EntriesPerPage><PageNumber>{page}</PageNumber></Pagination>"
+                 "<DetailLevel>ReturnAll</DetailLevel></GetOrdersRequest>")
+        r = trading("GetOrders", corps, fond=True)
+        for o in r.findall("e:OrderArray/e:Order", _NS):
+            if (_txt(o, "e:OrderStatus") or "") in ("Cancelled", "CancelPending", "Inactive"):
+                continue
+            trans = o.findall("e:TransactionArray/e:Transaction", _NS)
+            paye = _num(o, "e:AmountPaid") or _num(o, "e:Total")
+            el = o.find("e:AmountPaid", _NS)
+            devise = el.get("currencyID") if el is not None else None
+            base = sum((_num(t, "e:TransactionPrice") or 0) * int(_txt(t, "e:QuantityPurchased") or 1) for t in trans) or 0
+            for t in trans:
+                iid = _txt(t, "e:Item/e:ItemID")
+                if not iid:
+                    continue
+                qte = int(_txt(t, "e:QuantityPurchased") or 1)
+                prix = _num(t, "e:TransactionPrice")
+                part = (prix or 0) * qte / base if base else 1 / max(1, len(trans))
+                out.append({"item_id": iid, "titre": _txt(t, "e:Item/e:Title") or "", "quantite": qte, "prix": prix,
+                            "cout_total": round(paye * part, 2) if paye is not None else None, "devise": devise,
+                            "date": (_txt(o, "e:CreatedTime") or "")[:10], "commande": _txt(o, "e:OrderID")})
+        try:
+            pages = int(_txt(r, "e:PaginationResult/e:TotalNumberOfPages") or 1)
+        except ValueError:
+            pages = 1
+        page += 1
+    return out
+
+
 def photo_item(item_id):
     """Photo d'une de TES annonces, meme terminee (90 jours) : Trading GetItem, seulement les photos."""
     item_id = str(item_id or "").strip()

@@ -397,6 +397,11 @@ def _valeurs_auto():
             nouveaux_produits.detecter_si_besoin()
         except Exception as e:
             print("Nouveaux produits : " + str(e), flush=True)
+        try:                                    # 25 oct 2026 - les vraies ventes de la communaute (chaque jour)
+            import ventes_communaute
+            ventes_communaute.rafraichir_si_besoin()
+        except Exception as e:
+            print("Ventes communaute : " + str(e), flush=True)
         try:                                    # 25 oct 2026 - demandes pas encore triees par l'agent
             import demandes
             demandes.trier_en_attente()

@@ -231,7 +231,7 @@ body.avec-barre .ecran{padding-top:14px}
 
 /* 23 oct 2026 (v2) - Mathieu : « optimiser l'espace ; pastilles Apple : simples, belles, pas trop d'infos,
    pertinentes ». Ordi : nouvelles a gauche, « a faire » + mises a jour a droite (aucun trou). */
-.acc{display:grid; grid-template-columns:minmax(0,1fr); grid-template-areas:"tete" "news" "cote" "plus"; gap:16px}
+.ecran.acc{display:grid; grid-template-columns:minmax(0,1fr); grid-template-areas:"tete" "news" "cote" "plus"; gap:16px}
 .acc-tete{display:flex; flex-direction:column; gap:14px}
 .marque{display:flex; align-items:center; gap:16px; min-width:0}
 .marque .logo{width:64px; height:64px; border-radius:18px; object-fit:contain; background:var(--carte2); flex-shrink:0}
@@ -286,10 +286,10 @@ body.avec-barre .ecran{padding-top:14px}
   .marque .logo{width:56px; height:56px; border-radius:16px} .horloge .h{font-size:46px} .nouv .visuel{aspect-ratio:16/9} }
 @media (min-width:900px){ .marque .logo, .marque .nom-b{display:none} }
 @media (min-width:1100px){
-  .acc{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); grid-template-areas:"tete tete" "news cote" "plus plus"}
+  .ecran.acc{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); grid-template-areas:"tete tete" "news cote" "plus plus"}
   .acc-tete{flex-direction:row; align-items:center; justify-content:space-between; gap:24px} .acc-tuiles{flex:1; max-width:660px}
   .marque .logo{width:76px; height:76px; border-radius:20px} .horloge .h{font-size:64px}
-  .acc:has(.nouv.vide-n){grid-template-areas:"tete tete" "cote cote" "plus plus"} .acc:has(.nouv.vide-n) .acc-cote{display:grid; grid-template-columns:1fr 1fr; align-items:start}
+  .ecran.acc:has(.nouv.vide-n){grid-template-areas:"tete tete" "cote cote" "plus plus"} .ecran.acc:has(.nouv.vide-n) .acc-cote{display:grid; grid-template-columns:1fr 1fr; align-items:start}
   .nouv .visuel{flex:1; aspect-ratio:auto; min-height:220px} .nouv.sans-img .slide-titre{font-size:28px}
   #acc-plus{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start}
 }
@@ -391,6 +391,8 @@ details.r-plie summary .r-note{flex:1; text-align:right; white-space:nowrap; ove
 .tuile-c .x:hover{opacity:1; background:#C8102E}
 .tuile-c.estompe{opacity:.55}
 .capsule.petit{height:26px; font-size:13px; padding:0 10px}
+/* 25 oct 2026 (Mathieu : « la pastille on eBay est mal centrée ») : texte toujours au centre, toutes les polices */
+.capsule{justify-content:center; line-height:1; text-align:center; vertical-align:middle} .tuile-c .coin{align-items:center}
 .compris{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
 .compris .lib{font-size:14px; color:var(--doux); margin-right:2px}
 .hero-l{display:grid; grid-template-columns:1fr 1fr; gap:10px}
@@ -511,7 +513,7 @@ body.pro .nav-logo{text-shadow:0 0 18px rgba(232,196,106,.25)}
 .visuel.genere .v-source{position:relative; font-size:13px; color:rgba(255,255,255,.6); font-weight:600; letter-spacing:.04em; text-transform:uppercase}
 .nouv .visuel{aspect-ratio:2/1}
 @media (min-width:1100px){
-  .acc{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)}
+  .ecran.acc{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)}
   .nouv .slide{height:100%} .nouv .visuel{flex:1; min-height:200px; max-height:none; aspect-ratio:auto}
   .nouv .slide-titre{font-size:21px; -webkit-line-clamp:3}
 }
@@ -624,7 +626,7 @@ body.fen-ouverte{overflow:hidden}
 @media (min-width:1100px){
   #acc-plus{grid-template-columns:repeat(auto-fit,minmax(320px,1fr)) !important; align-items:stretch !important; gap:16px}
   #acc-plus > *{height:100%}
-  .acc{align-items:stretch} .acc .nouv{height:100%} .acc-cote{justify-content:stretch} .acc-cote > .carte-acc:last-child{flex:1}
+  .ecran.acc{align-items:stretch} .ecran.acc .nouv{height:100%} .acc-cote{justify-content:stretch} .acc-cote > .carte-acc:last-child{flex:1}
 }
 
 /* 24 oct 2026 - breaks v2 : photo du produit, reglages (boites, cout, profit, decote), tuiles simples */
@@ -686,7 +688,7 @@ body.fen-ouverte{overflow:hidden}
   .acc-cote > .carte-acc, #acc-plus > *{flex:1 1 0; min-height:0; height:auto !important; overflow:hidden; display:flex; flex-direction:column}
   .acc-cote > .carte-acc > .gestes, .acc-cote > .carte-acc > #acc-pouls, #acc-plus > * > .liste{flex:1; min-height:0; overflow:auto; scrollbar-width:thin}
   #acc-plus > .hero .courbe{flex:1; min-height:90px; height:auto}
-  .acc .nouv{height:auto; min-height:0}
+  .ecran.acc .nouv{height:auto; min-height:0}
   .nouv .visuel{min-height:0}
 }
 @media (min-width:1100px) and (min-height:720px){
@@ -699,6 +701,118 @@ body.fen-ouverte{overflow:hidden}
   #acc-plus > *{flex:none}
   #acc-plus > *:last-child:nth-child(odd){grid-column:span 2}
 }
+
+/* 25 oct 2026 - le logo officiel LockerRoom (Mathieu : « le même effet de swipe que le logo gold, ultra premium »).
+   Le reflet ne passe QUE sur le dessin du logo (masque = le logo lui-même). */
+.logo-lr{position:relative; display:inline-flex; line-height:0; flex-shrink:0}
+.logo-lr img{display:block; width:auto; filter:drop-shadow(0 10px 28px rgba(232,196,106,.16))}
+.logo-lr::after{content:''; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(110deg, transparent 0%, transparent 38%, rgba(255,246,214,.85) 50%, transparent 62%, transparent 100%);
+  background-size:250% 100%; animation:reflet 5.5s ease-in-out infinite; mix-blend-mode:screen;
+  -webkit-mask:var(--masque) center/contain no-repeat; mask:var(--masque) center/contain no-repeat}
+.logo-lr.officiel{--masque:url(/logo_lr.png)} .logo-lr.officiel img{height:118px}
+.nav-logo .logo-lr{--masque:url(/logo_lr_mono.png)} .nav-logo .logo-lr img, .nav-logo span img{width:auto !important; height:36px !important; border-radius:0 !important}
+.nav-logo span:not(.logo-lr) img{width:38px !important; height:38px !important; border-radius:10px !important}
+body.marque-perso .logo-lr.officiel{display:none !important}
+body:not(.marque-perso) .marque .logo{display:none !important}
+.marque .logo-lr.officiel{display:inline-flex !important}
+@media (max-width:560px){ .logo-lr.officiel img{height:84px} }
+@media (min-width:1100px){ .logo-lr.officiel img{height:108px} .ecran.acc .marque{gap:22px} }
+@media (prefers-reduced-motion:reduce){ .logo-lr::after{animation:none; opacity:0} }
+
+/* 25 oct 2026 (Mathieu : « le logo en mosaïque translucide derrière, comme dans Hall of Cardz ; celui en haut à gauche
+   doit activement shiner comme le badge gold ; plus de gold shiny dans l'app premium ») */
+#vue{position:relative; z-index:1}
+#mosaique{position:fixed; inset:-30%; z-index:0; pointer-events:none;
+  background-image:var(--mosaique, url(/logo_lr_mono.png)); background-size:120px auto; background-repeat:space;
+  opacity:.035; transform:rotate(-14deg)}
+body.pro #mosaique{opacity:.05}
+.nav-logo .logo-lr::after{animation-duration:3.2s; background:linear-gradient(110deg, transparent 0%, transparent 34%, rgba(255,248,224,.95) 50%, transparent 66%, transparent 100%); background-size:250% 100%}
+#nav-logo-nom{background:linear-gradient(110deg,#F9E7A8 0%,#D9A93F 38%,#FFF4CF 50%,#D9A93F 62%,#F6D77A 100%); background-size:250% 100%;
+  -webkit-background-clip:text; background-clip:text; color:transparent; animation:reflet 3.2s ease-in-out infinite}
+body.marque-perso #nav-logo-nom{background:none; -webkit-text-fill-color:currentColor; color:var(--texte); animation:none}
+body.pro .titre{background:linear-gradient(110deg,#FFFFFF 0%,#FBEFC8 30%,#E8C46A 45%,#FFF6D8 50%,#E8C46A 55%,#FBEFC8 70%,#FFFFFF 100%); background-size:250% 100%;
+  -webkit-background-clip:text; background-clip:text; color:transparent; animation:reflet 7s ease-in-out infinite}
+body.pro .kpi .v, body.pro .t-acc b:not(.vert):not(.rouge){text-shadow:0 0 22px rgba(232,196,106,.12)}
+body.pro .kpi, body.pro .carte-acc, body.pro .t-acc{background-image:linear-gradient(160deg, rgba(232,196,106,.07), rgba(232,196,106,0) 42%)}
+body.pro .rond.acc, body.pro .btn:not(.ghost){box-shadow:0 6px 20px rgba(217,169,63,.18)}
+body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px rgba(232,196,106,.55))}
+@media (prefers-reduced-motion:reduce){ #nav-logo-nom, body.pro .titre{animation:none} }
+
+/* 25 oct 2026 - breaks v3 : écussons d'équipe LockerRoom (couleurs de l'équipe), cartes des joueurs au même cadre, scores acheteur */
+.ecu-eq{width:46px; height:52px; flex-shrink:0; display:flex; align-items:center; justify-content:center; position:relative;
+  clip-path:polygon(50% 0, 100% 14%, 100% 62%, 50% 100%, 0 62%, 0 14%); background:linear-gradient(160deg, var(--c1) 0 58%, var(--c2) 58% 100%)}
+.ecu-eq::after{content:''; position:absolute; inset:3px; clip-path:inherit; border:0; background:linear-gradient(160deg, rgba(255,255,255,.22), rgba(255,255,255,0) 45%); pointer-events:none}
+.ecu-eq i{font:700 15px/1 'Barlow Condensed',sans-serif; font-style:normal; color:#fff; letter-spacing:.04em; text-shadow:0 1px 3px rgba(0,0,0,.6); position:relative; z-index:1}
+.ecu-eq.grand{width:58px; height:66px} .ecu-eq.grand i{font-size:19px}
+.vig-j{width:46px; height:64px; flex-shrink:0; border-radius:7px; overflow:hidden; background:#0E1216; border:1px solid var(--ligne); display:flex; align-items:center; justify-content:center; position:relative; color:var(--ligne)}
+.vig-j svg{width:60%; height:60%} .vig-j img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+.score-l .vig-j{width:52px; height:72px}
+.ana-ctrl{display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:12px; margin-top:12px}
+@media (max-width:760px){ .ana-ctrl{grid-template-columns:1fr} }
+.ana-ctrl > div{background:var(--carte); border:1px solid var(--ligne); border-radius:18px; padding:12px 14px; display:flex; flex-direction:column; gap:8px}
+.ana-ctrl .lib{font-size:14px; color:var(--doux); font-weight:600} .ana-ctrl small{font-size:13px; color:var(--doux)}
+.ac-cout{display:flex; align-items:center; gap:8px} .ac-cout .champ{font:700 22px 'Barlow Condensed',sans-serif; height:46px} .ac-cout span{color:var(--doux); font-weight:600}
+.ana-src{margin-top:8px; font-size:13px}
+.score-liste{display:flex; flex-direction:column; gap:10px}
+.score-l{display:grid; grid-template-columns:28px auto minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) auto; align-items:center; gap:14px; background:var(--carte); border:1px solid var(--ligne); border-radius:18px; padding:12px 14px}
+.score-l.hors{opacity:.45}
+.score-l .rang{font:700 18px 'Barlow Condensed',sans-serif; color:var(--doux); text-align:center}
+.sl-n{min-width:0; display:flex; flex-direction:column; gap:4px} .sl-n b{font-size:17px} .sl-n > span{font-size:14px; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.sl-m{display:flex; flex-direction:column; gap:2px; min-width:0} .sl-m span{font-size:13px; color:var(--doux); font-weight:600} .sl-m b{font:700 24px/1.05 'Barlow Condensed',sans-serif} .sl-m small{font-size:13px; color:var(--doux)}
+.barre-p{height:6px; border-radius:3px; background:var(--carte2); overflow:hidden; margin-top:4px} .barre-p i{display:block; height:100%; background:linear-gradient(90deg,#8FD4A4,#E8C46A)}
+.sl-s{display:flex; flex-direction:column; align-items:flex-end; gap:6px} .sl-s .champ{width:86px; height:34px; font-size:14px}
+.score{display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:74px; padding:6px 10px; border-radius:14px; background:var(--carte2)}
+.score b{font:700 30px/1 'Barlow Condensed',sans-serif} .score small{font-size:12px; font-weight:700; white-space:nowrap}
+.score.vert{background:var(--vert-fond); color:var(--vert)} .score.acc{background:var(--acc-fonce); color:var(--acc)} .score.or{background:var(--or-fonce); color:var(--or)} .score.rouge{background:var(--rouge-fond); color:var(--rouge)}
+@media (max-width:900px){ .score-l{grid-template-columns:56px minmax(0,1fr) auto; grid-template-areas:"i n s" "m1 m1 m2"; gap:10px 12px; position:relative}
+  .score-l .rang{position:absolute; top:6px; left:8px; font-size:13px} .score-l > .ecu-eq, .score-l > .vig-j{grid-area:i; justify-self:center}
+  .sl-n{grid-area:n} .sl-s{grid-area:s} .score-l .m1{grid-area:m1} .score-l .m2{grid-area:m2; text-align:right; align-items:flex-end}
+  .score-l .sl-n .pastilles .tag{font-size:12px} }
+
+/* 25 oct 2026 - accueil admin : les nouvelles moitié moins larges, un bloc « À surveiller » */
+@media (min-width:1100px){
+  .ecran.acc.admin{grid-template-columns:minmax(0,.72fr) minmax(0,1fr) minmax(0,1.45fr) !important}
+  .ecran.acc.admin .nouv .slide-titre{font-size:19px; -webkit-line-clamp:5}
+}
+@media (min-width:1600px){ .ecran.acc.admin{grid-template-columns:minmax(0,.7fr) minmax(0,.95fr) minmax(0,2.1fr) !important}
+  .ecran.acc.admin #acc-plus > .acc-admin{grid-row:span 2; order:-1} }
+.adm-t{padding:8px 10px !important; display:grid !important; grid-template-columns:auto 1fr; grid-template-areas:"ic t" "v v" "s s"; column-gap:6px; row-gap:1px}
+.adm-t .ic{grid-area:ic} .adm-t .t{grid-area:t; align-self:center} .adm-t b{grid-area:v; font-size:22px !important} .adm-t small{grid-area:s}
+.adm-grille{display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:8px}
+.adm-t{display:flex; flex-direction:column; gap:2px; padding:10px 12px; border-radius:14px; background:var(--carte2); color:var(--texte); min-width:0; border:1px solid transparent}
+.adm-t .ic{display:flex; color:#E8C46A} .adm-t.rouge .ic{color:var(--rouge)} .adm-t .t{font-size:13px; color:var(--doux); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.adm-t b{font:700 24px/1.05 'Barlow Condensed',sans-serif} .adm-t small{font-size:12px; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.adm-t.or{border-color:rgba(232,196,106,.4)} .adm-t.or b{color:var(--or)} .adm-t.rouge{border-color:rgba(255,107,107,.45)} .adm-t.rouge b{color:var(--rouge)} .adm-t.vert b{color:var(--vert)}
+
+/* 25 oct 2026 - Vendre : les 4 étapes en pictogrammes (or), légères */
+.etapes-v{display:flex; align-items:flex-start; justify-content:space-between; gap:6px; margin:4px 0 2px}
+.etapes-v .ev{flex:1; display:flex; flex-direction:column; align-items:center; text-align:center; gap:4px; min-width:0}
+.ev-i{position:relative; width:58px; height:58px; border-radius:18px; display:flex; align-items:center; justify-content:center; color:#1a1405;
+  background:linear-gradient(135deg,#F9E7A8 0%,#E8C46A 45%,#C9962E 100%); box-shadow:0 8px 22px rgba(217,169,63,.22), inset 0 1px 0 rgba(255,255,255,.6)}
+.ev-i svg{width:28px; height:28px}
+.ev-i em{position:absolute; top:-6px; right:-6px; width:22px; height:22px; border-radius:11px; background:var(--fond); color:#E8C46A; border:1.5px solid #E8C46A; font:700 12px/19px 'Barlow Condensed',sans-serif; font-style:normal}
+.etapes-v b{font-size:15px; color:var(--texte); margin-top:4px} .etapes-v small{font-size:13px; color:var(--doux)}
+.ev-f{flex:0 0 26px; height:2px; margin-top:29px; background:linear-gradient(90deg,rgba(232,196,106,.15),rgba(232,196,106,.7),rgba(232,196,106,.15)); border-radius:2px}
+.ev-res{display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 14px; border-radius:16px; background:linear-gradient(135deg, rgba(232,196,106,.10), rgba(232,196,106,.02)); border:1px solid rgba(232,196,106,.28)}
+.ev-res-t{font-weight:700; color:#F2D27C; font-size:15px} .ev-res > span:last-child{display:flex; gap:6px; flex-wrap:wrap}
+@media (max-width:560px){ .ev-i{width:48px; height:48px; border-radius:15px} .ev-i svg{width:24px; height:24px} .ev-f{flex-basis:10px; margin-top:24px} .etapes-v small{display:none} .etapes-v b{font-size:13px} }
+
+/* 25 oct 2026 - guide du hobby et budget */
+.g-regles{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:10px}
+.g-regles > div{display:grid; grid-template-columns:auto 1fr; grid-template-areas:"n t" "n b"; gap:6px 12px; background:var(--carte); border:1px solid var(--ligne); border-radius:18px; padding:14px}
+.g-regles b{grid-area:n; width:34px; height:34px; border-radius:17px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#F9E7A8,#C9962E); color:#1a1405; font:700 18px 'Barlow Condensed',sans-serif}
+.g-regles span{grid-area:t; font-size:14px; color:var(--doux); display:flex; flex-direction:column; gap:3px} .g-regles strong{font-size:16px; color:var(--texte)}
+.g-regles .pilule{grid-area:b; justify-self:start}
+.g-grille{display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:10px}
+.g-c{background:var(--carte); border:1px solid var(--ligne); border-radius:16px; padding:12px 14px; display:flex; flex-direction:column; gap:4px}
+.g-c b{font-size:16px; color:#F2D27C} .g-c span{font-size:14px; color:var(--doux); line-height:1.4}
+.g-c.acc{border-color:rgba(124,200,255,.35)} .g-c.or{border-color:rgba(232,196,106,.4)} .g-c.rouge{border-color:rgba(255,107,107,.4)}
+.g-check{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:8px}
+.g-check label{display:flex; gap:10px; align-items:center; background:var(--carte); border-radius:14px; padding:10px 12px; font-size:15px}
+.g-check input{width:20px; height:20px; accent-color:#E8C46A}
+.fen-budget{font-size:15px; font-weight:700; padding:8px 12px; border-radius:12px} .fen-budget.vert{background:var(--vert-fond); color:var(--vert)} .fen-budget.rouge{background:var(--rouge-fond); color:var(--rouge)}
+.ev-f{flex:1 1 30px !important; max-width:140px}
 /* I18N CSS DEBUT - pastille Langue / Devise */
 .pref{display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 11px 0 4px; border-radius:999px; border:1px solid rgba(255,255,255,.14);
   background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.04)); color:var(--texte); font:700 12.5px/1 inherit; font-family:inherit; white-space:nowrap; cursor:pointer; flex-shrink:0}
@@ -719,11 +833,12 @@ html[lang=en] body.sandbox::before{content:'SANDBOX eBay · test data'}
 </style>
 </head>
 <body>
+<div id="mosaique" aria-hidden="true"></div>
 <header class="barre-mode" id="barre-mode" hidden></header>
 <main id="vue"></main>
 
 <nav class="onglets" aria-label="Navigation">
-  <div class="nav-logo"><img src="/icone.png" alt="" id="nav-logo-img"><span id="nav-logo-nom">LockerRoom</span></div><div class="nav-pref" id="nav-pref"></div>
+  <div class="nav-logo"><span class="logo-lr petit"><img src="/logo_lr_mono.png" alt="" id="nav-logo-img"></span><span id="nav-logo-nom">LockerRoom</span></div><div class="nav-pref" id="nav-pref"></div>
   <div class="nav-mode" id="nav-mode"></div>
   <a href="#accueil" data-onglet="accueil"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 11 12 4l9 7v9H3z"/></svg>Accueil</a>
   <a href="#analyse" data-onglet="breaks" data-mode="vendeur"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 11h18M8 7V4h8v3"/></svg>Breaks<span class="pastille" id="pastille-breaks" hidden></span></a>
@@ -985,7 +1100,13 @@ async function appliquerMarque(){
     try { if (S.logo) localStorage.setItem('lr_logo', JSON.stringify({v, d:S.logo})); else localStorage.removeItem('lr_logo'); } catch (e) {}
   }
   const src = S.logo || '/icone.png', nom = nomMarque(r);
-  for (const id of ['nav-logo-img', 'acc-logo', 'g-logo-img']) { const im = $('#' + id); if (im && im.getAttribute('src') !== src) im.src = src; }
+  for (const id of ['acc-logo', 'g-logo-img']) { const im = $('#' + id); if (im && im.getAttribute('src') !== src) im.src = src; }
+  // 25 oct 2026 - le logo officiel LockerRoom (avec son reflet or) ; une boutique qui a mis SON logo garde le sien
+  const nl = $('#nav-logo-img'), srcNav = S.logo || '/logo_lr_mono.png';
+  if (nl && nl.getAttribute('src') !== srcNav) nl.src = srcNav;
+  if (nl) nl.parentElement.classList.toggle('logo-lr', !S.logo);
+  document.body.classList.toggle('marque-perso', !!S.logo);
+  document.documentElement.style.setProperty('--mosaique', S.logo ? `url("${S.logo}")` : 'url(/logo_lr_mono.png)');
   const nn = $('#nav-logo-nom'); if (nn) nn.textContent = nom;
   const an = $('#acc-nom'); if (an) an.textContent = nom;
   document.title = nom === 'LockerRoom' ? 'LockerRoom' : nom + ' · LockerRoom';
@@ -1038,7 +1159,7 @@ function route(){
   });
   if (!$('#fond-feuille').hidden) fermerFeuille();
   window.scrollTo(0, 0);
-  const vues = {analyse:vueAnalyse, vendre:vueVendre, deals:vueDeals, valeur:vueValeur, accueil:vueAccueil, sante:vueSante, breaks:vueBreaks, break:vueBreak, inventaire:vueInventaire, comptoir:vueComptoir, bilan:vueBilan, reglages:vueReglages, admin:vueAdmin};
+  const vues = {analyse:vueAnalyse, vendre:vueVendre, deals:vueDeals, valeur:vueValeur, accueil:vueAccueil, sante:vueSante, breaks:vueBreaks, break:vueBreak, inventaire:vueInventaire, comptoir:vueComptoir, bilan:vueBilan, reglages:vueReglages, admin:vueAdmin, guide:vueGuide};
   (vues[ecran] || vueAccueil)(arg);
 }
 window.addEventListener('hashchange', route);
@@ -1230,6 +1351,18 @@ function tuileCarte(x, o={}){
 // réglée par de grosses pastilles ; rien ne part sur eBay sans « Publier ».
 // ============================================================
 const V2 = {};                                   // l'annonce en cours (garde si on change d'onglet)
+// 25 oct 2026 (Mathieu : « des icônes des étapes en haut, des pictogrammes sexy, montrer le résultat et comment c'est facile ; léger »)
+function etapesVente(){
+  const ic = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  const E = [
+    [ic('<rect x="3" y="6.5" width="18" height="13" rx="3"/><circle cx="12" cy="13" r="3.6"/><path d="M8.5 6.5 10 4h4l1.5 2.5"/>'), tt('Photo', 'Photo'), tt('devant et dos', 'front and back')],
+    [ic('<path d="M4 7V5a1 1 0 0 1 1-1h2M17 4h2a1 1 0 0 1 1 1v2M20 17v2a1 1 0 0 1-1 1h-2M7 20H5a1 1 0 0 1-1-1v-2"/><path d="M8 12h8M12 8v8"/>'), tt('L’app lit la carte', 'The app reads it'), tt('joueur, set, numéro', 'player, set, number')],
+    [ic('<path d="M3 17l5-5 4 4 8-8"/><path d="M15 8h5v5"/>'), tt('Prix des ventes', 'Price from sales'), tt('les vraies ventes eBay', 'real eBay sales')],
+    [ic('<path d="M20 6 9 17l-5-5"/>'), tt('En vente sur eBay', 'Listed on eBay'), tt('un tap : publié', 'one tap: live')]];
+  return `<div class="etapes-v">${E.map(([i, t, d], k) => `<div class="ev"><span class="ev-i">${i}<em>${k + 1}</em></span><b>${t}</b><small>${d}</small></div>`).join('<span class="ev-f" aria-hidden="true"></span>')}</div>
+    <div class="ev-res"><span class="ev-res-t">${tt('Résultat en ~30 secondes', 'Result in ~30 seconds')}</span>
+      <span>${capsule(tt('Titre optimisé eBay', 'Optimized eBay title'), 'petit')}${capsule(tt('Prix suggéré', 'Suggested price'), 'petit')}${capsule(tt('Détails remplis', 'Item specifics filled'), 'petit')}${capsule(tt('Photos', 'Photos'), 'petit')}</span></div>`;
+}
 async function vueVendre(arg){
   if (arg === 'nouvelle') { for (const k in V2) delete V2[k]; history.replaceState(null, '', '#vendre'); }
   if (arg && /^\d+$/.test(arg) && V2.cid !== +arg) {          // depuis l'inventaire : la fiche de la carte
@@ -1242,6 +1375,7 @@ async function vueVendre(arg){
   V().innerHTML = `<section class="ecran large vendre">
     <div class="entete"><div><div class="titre">${tt('Vendre une carte', 'Sell a card')}</div>
       <div class="sous" style="font-size:15px;margin-top:6px">${tt('Une photo : l’app lit la carte, trouve le bon prix et prépare toute l’annonce eBay.', 'One photo: the app reads the card, finds the right price and builds the whole eBay listing.')}</div></div></div>
+    ${etapesVente()}
     <div class="depart-vente">
       <label class="photo-xl">${ICONES.photo}<b>${tt('Photo du devant', 'Front photo')}</b><span>${tt('Puis le dos : moins d’erreurs', 'Then the back: fewer mistakes')}</span>
         <input type="file" accept="image/*" capture="environment" id="vd-f" hidden></label>
@@ -1528,7 +1662,9 @@ function finDans(fin){
   return h >= 1 ? `${h} h ${String(m % 60).padStart(2, '0')}` : `${m} min`;
 }
 function compsHtml(x){
-  const c = x.comps || [];
+  const c = x.comps || [], v = x.vendues || [];
+  if (v.length) return `<div class="pop-t">${tt('Vendues récemment', 'Recently sold')}<span>${x.n || v.length} · ${tt('médiane ', 'median ')}${argentCourt(x.valeur)}</span></div>
+    <div class="pop-g">${v.slice(0, 8).map(k => `<a href="${esc(k.url || '#')}" target="_blank" rel="noopener" class="pop-c vendue"><span style="${k.photo ? `background-image:url('${esc(k.photo)}')` : ''}"></span><b>${argentCourt(k.prix)}</b></a>`).join('')}</div>`;
   return `<div class="pop-t">${tt('Les mêmes cartes en vente', 'The same cards listed')}<span>${x.n || c.length} · ${tt('médiane ', 'median ')}${argentCourt(x.valeur)}</span></div>
     ${c.length ? `<div class="pop-g">${c.slice(0, 8).map(k => `<a href="${esc(k.url || '#')}" target="_blank" rel="noopener" class="pop-c" ${attrsAnnonce(k)}><span style="${k.photo ? `background-image:url('${esc(k.photo)}')` : ''}"></span><b>${argentCourt(k.total)}</b></a>`).join('')}</div>`
       : `<div class="sous">${x.ref_titre ? tt('Comparé à ta vente : ', 'Compared to your sale: ') + esc(x.ref_titre) : ''}</div>`}`;
@@ -1549,7 +1685,7 @@ function tuileDeal(x){
 // les joueurs avec la meilleure probabilité/valeur et trace une liste selon le produit ; pour le vendeur, les mêmes
 // probabilités, mais un prix pour chaque joueur ou équipe selon le coût du produit et la marge désirée »)
 // ============================================================
-S.ana = {produit:null, boites:1, mode:'equipes', cout:'', marge:25, decote:15, demandes:{}, vue:'hits', reglages:false};
+S.ana = {produit:null, boites:1, mode:'equipes', cout:'', marge:25, decote:15, demandes:{}, demandesJ:{}, vue:'joueurs', reglages:false, budget:0};
 // montants tapes dans la devise affichee -> gardes en $ CA
 const versCAD = (v) => (typeof DEVISE !== 'undefined' && DEVISE === 'USD' && typeof TAUX_USD !== 'undefined') ? Math.round(v / TAUX_USD * 100) / 100 : v;
 const symDevise = () => (typeof DEVISE !== 'undefined' && DEVISE === 'USD') ? '$ US' : '$ CA';
@@ -1685,56 +1821,104 @@ function panneauReglagesBreak(r, vendeur){
       <label>${tt('Décote (%)', 'Discount (%)')}<input class="champ" id="rb-dec" type="number" inputmode="decimal" value="${esc(A.decote)}"><small>${tt('les places partent souvent plus bas que le prix voulu', 'spots often sell below the target price')}</small></label>
     </div>` : ''}</div>`;
 }
+// 25 oct 2026 (Mathieu : équipes = un écusson propre, pas n'importe quoi ; acheteur = des SCORES, pas des prix ;
+// vendeur = coût et nombre de boîtes modifiables ; la valeur vient des ventes réelles des recrues du produit)
+const COUL_LNH = {ANA:['#F47A38','#B9975B'], BOS:['#FFB81C','#111111'], BUF:['#003087','#FFB81C'], CGY:['#C8102E','#F1BE48'], CAR:['#CE1126','#111111'],
+  CHI:['#CF0A2C','#111111'], COL:['#6F263D','#236192'], CBJ:['#002654','#CE1126'], DAL:['#006847','#8F8F8C'], DET:['#CE1126','#FFFFFF'],
+  EDM:['#041E42','#FF4C00'], FLA:['#041E42','#C8102E'], LAK:['#111111','#A2AAAD'], MIN:['#154734','#A6192E'], MTL:['#AF1E2D','#192168'],
+  NSH:['#FFB81C','#041E42'], NJD:['#CE1126','#111111'], NYI:['#00539B','#F47D30'], NYR:['#0038A8','#CE1126'], OTT:['#C52032','#C2912C'],
+  PHI:['#F74902','#111111'], PIT:['#111111','#FCB514'], SJS:['#006D75','#EA7200'], SEA:['#001628','#99D9D9'], STL:['#002F87','#FCB514'],
+  TBL:['#002868','#FFFFFF'], TOR:['#00205B','#FFFFFF'], UTA:['#6CACE4','#010101'], VAN:['#00205B','#00843D'], VGK:['#B4975A','#333F42'],
+  WSH:['#041E42','#C8102E'], WPG:['#041E42','#004C97']};
+function ecussonEquipe(code, taille){
+  const c = COUL_LNH[code] || [COUL_EQ(code), '#0E1216'];
+  return `<span class="ecu-eq ${taille || ''}" style="--c1:${c[0]};--c2:${c[1]}"><i>${esc(code)}</i></span>`;
+}
+function vignetteJoueur(nom){ return `<span class="vig-j" data-vj="${esc(nom)}">${SVG_CARTE}</span>`; }
+const TIERS = (s) => s >= 80 ? ['vert', tt('Top choix', 'Top pick')] : s >= 55 ? ['acc', tt('Bon choix', 'Good pick')] : s >= 30 ? ['or', tt('Correct', 'Fair')] : ['rouge', tt('À éviter', 'Avoid')];
 async function rendreAnalyse(){
   const z = $('#an-z'), A = S.ana, vendeur = S.mode !== 'acheteur';
-  const r = await API.analyse_break({produit_id:A.produit, boites:A.boites, mode:A.mode, cout_boite: vendeur ? A.cout : 0, marge:A.marge, decote:A.decote, prix_demandes:A.demandes}).catch(e => ({ok:false, erreur:e.message}));
+  A.demandesJ = A.demandesJ || {};
+  const r = await API.analyse_break({produit_id:A.produit, boites:A.boites, mode: vendeur ? A.mode : 'equipes', cout_boite: vendeur ? A.cout : 0, marge:A.marge, decote:A.decote,
+    prix_demandes:A.demandes, prix_joueurs:A.demandesJ, acheteur: !vendeur}).catch(e => ({ok:false, erreur:e.message}));
   await imagesProduits();
   if (!$('#an-z')) return;
   if (!r.ok) { z.innerHTML = `<div class="vide">${esc(r.erreur)}</div>`; if (r.pro_requis) feuillePro('breaks'); return; }
-  const P = r.produit;
+  const P = r.produit, bpc = P.boites_par_caisse || 12;
   const segA = (id, choix, actuel) => `<div class="seg" id="${id}">${choix.map(([v, l]) => `<button data-v="${v}" class="${String(v) === String(actuel) ? 'on' : ''}">${esc(l)}</button>`).join('')}</div>`;
+  const choixB = [...new Set([1, 3, 6, bpc, 18, bpc * 2])].sort((x, y) => x - y);
+  const boitesHtml = `<div class="rb-boites">${choixB.map(n => `<button class="chip ${n === r.boites ? 'on' : ''}" data-bx="${n}">${n === bpc ? tt('Caisse', 'Case') + ' ' + n : n}</button>`).join('')}
+      <input class="champ petit-n" id="rb-n" type="number" min="1" max="120" value="${r.boites}" aria-label="${esc(tt('Nombre de boîtes', 'Number of boxes'))}"></div>`;
   const tete = `<div class="ana-hero"><button class="ana-prod" id="an-chg"><span class="ap-img">${imgProduit(P.id)}</span><span><b>${esc(P.nom)}</b><small>${r.boites} ${tt('boîte' + (r.boites > 1 ? 's' : ''), 'box' + (r.boites > 1 ? 'es' : ''))} · ${tt('changer', 'change')}</small></span></button>
-      <button class="pilule" id="an-ck">${ICONES.import} ${tt('Checklist', 'Checklist')}</button><button class="pilule" id="an-reg">⚙ ${tt('Réglages', 'Settings')}</button></div>${panneauReglagesBreak(r, vendeur)}`;
+      <button class="pilule" id="an-ck">${ICONES.import} ${tt('Checklist', 'Checklist')}</button>${vendeur ? `<button class="pilule" id="an-reg">⚙ ${tt('Profit et décote', 'Profit and discount')}</button>` : ''}</div>
+    <div class="ana-ctrl">
+      <div class="ac-b"><span class="lib">${tt('Boîtes dans le break', 'Boxes in the break')}</span>${boitesHtml}</div>
+      ${vendeur ? `<div class="ac-c"><span class="lib">${tt('Coût d’une boîte', 'Cost of one box')}</span><div class="ac-cout"><input class="champ" id="rb-cout" type="number" inputmode="decimal" value="${esc(A.cout ? Math.round(convertir(nb(A.cout)) * 100) / 100 : '')}" placeholder="${esc(String(Math.round(convertir(r.prix_boite_marche || r.cout_estime || 0))))}"><span>${symDevise()}</span></div>
+        <small>${r.prix_boite_marche ? (A.cout ? tt('ventes eBay : ', 'eBay sales: ') + argentCourt(r.prix_boite_marche) : tt('vide = prix vendu sur eBay (', 'empty = eBay sold price (') + argentCourt(r.prix_boite_marche) + ')') : A.cout ? tt('ton prix payé', 'what you paid') : tt('vide = valeur des cartes d’une boîte (', 'empty = value of one box’s cards (') + argentCourt(r.cout_estime) + ') : ' + tt('entre ton prix payé', 'enter what you paid')}</small></div>`
+      : `<div class="ac-c"><span class="lib">${tt('Mon budget pour une place', 'My budget for a spot')}</span><div class="ac-cout"><input class="champ" id="an-budget" type="number" inputmode="decimal" value="${esc(A.budget ? Math.round(convertir(A.budget)) : '')}" placeholder="${esc(tt('ex. 50', 'e.g. 50'))}"><span>${symDevise()}</span></div>
+        <small>${tt('on te montre ce qui rentre dans ton budget', 'we show what fits your budget')}</small></div>`}
+    </div>
+    ${vendeur ? `<div class="reg-break ${A.reglages ? 'ouvert' : ''}"><div class="rb-g">
+      <label>${tt('Profit voulu (%)', 'Target profit (%)')}<input class="champ" id="rb-marge" type="number" inputmode="decimal" value="${esc(A.marge)}"></label>
+      <label>${tt('Décote (%)', 'Discount (%)')}<input class="champ" id="rb-dec" type="number" inputmode="decimal" value="${esc(A.decote)}"><small>${tt('les places partent souvent plus bas que le prix voulu', 'spots often sell below the target price')}</small></label></div></div>` : ''}
+    ${r.valeurs_mesurees ? `<div class="sous ana-src">✓ ${tt('Valeurs tirées des ventes réelles de ce produit', 'Values from real sales of this product')}${r.valeurs_maj ? ' · ' + dateCourte(r.valeurs_maj) : ''}</div>`
+      : r.ventes_actives ? `<div class="sous ana-src">${tt('Valeurs estimées : les ventes réelles de ce produit arrivent en arrière-plan (quelques minutes).', 'Estimated values: real sales of this product are loading in the background (a few minutes).')}</div>`
+      : `<div class="sous ana-src">${tt('Valeurs estimées (modèle LockerRoom) : les ventes réelles s’activent avec SoldComps.', 'Estimated values (LockerRoom model): real sales turn on with SoldComps.')}</div>`}`;
   let corps;
   if (vendeur) {
+    const places = [...r.places].sort((a, b) => b.prix - a.prix);
     corps = `<div class="hero-l" style="margin:12px 0">
         <div class="kpi"><span class="lib">${tt('Coût', 'Cost')}</span><span class="v">${argentCourt(r.cout)}</span><span class="s">${r.boites} × ${argentCourt(r.cout / r.boites || 0)}</span></div>
         <div class="kpi acc"><span class="lib">${tt('Prix affichés', 'Listed prices')}</span><span class="v">${argentCourt(r.total)}</span><span class="s">${r.places.length} ${tt('places', 'spots')}</span></div>
         <div class="kpi ${r.profit_estime >= 0 ? 'vert' : 'rouge'}"><span class="lib">${tt('Profit attendu', 'Expected profit')}</span><span class="v">${argentCourt(r.profit_estime)}</span><span class="s">${tt('si les places partent', 'if spots sell')} −${r.decote} %</span></div>
         <div class="kpi"><span class="lib">${tt('Au plein prix', 'At full price')}</span><span class="v">${argentCourt(r.profit_plein)}</span><span class="s">${tt('de profit', 'profit')}</span></div></div>
       ${segA('an-m', [['equipes', tt('Équipes', 'Teams')], ['joueurs', tt('Joueurs', 'Players')], ['divisions', 'Divisions']], A.mode)}
-      <div class="grille-c grille-places" style="margin-top:12px">${[...r.places].sort((a, b) => b.prix - a.prix).map(x => `<div class="tuile-c place-s">
-        <span class="ecusson-eq" style="background:${COUL_EQ(x.cle)}" ${(x.vedettes || [])[0] ? `data-vj="${esc(x.vedettes[0])}"` : ''}><i>${esc(r.mode === 'equipes' ? x.cle : String(x.nom).split(/\s+/).map(m => m[0]).join('').slice(0, 3))}</i></span>
-        <div class="ps-n"><b>${esc(x.nom)}</b>${(x.vedettes || [])[0] ? `<span>${esc(x.vedettes[0])}</span>` : ''}</div>
+      <div class="grille-c grille-places" style="margin-top:12px">${places.map(x => `<div class="tuile-c place-s">
+        ${r.mode === 'equipes' ? ecussonEquipe(x.cle) : r.mode === 'joueurs' ? vignetteJoueur(x.cle) : `<span class="ecu-eq" style="--c1:${COUL_EQ(x.cle)};--c2:#0E1216"><i>${esc(String(x.nom).split(/\s+/).map(m => m[0]).join('').slice(0, 3))}</i></span>`}
+        <div class="ps-n"><b>${esc(x.nom)}</b>${(x.vedettes || [])[0] && r.mode !== 'joueurs' ? `<span>${esc(x.vedettes.slice(0, 2).join(' · '))}</span>` : ''}</div>
         <span class="ps-p">${argent(x.prix, 0)}</span></div>`).join('')}</div>
       <button class="btn" id="an-creer" style="margin-top:14px">${tt('Créer ce break avec ces prix', 'Create this break with these prices')}</button>`;
   } else {
-    const H = r.hits || {joueurs:[]};
-    const vue = A.vue;
-    corps = `${segA('an-v', [['hits', H.genre === 'hits' ? tt('Les hits (auto, patch)', 'The hits (auto, patch)') : tt('Les recrues', 'The rookies')], ['equipes', tt('Les équipes', 'The teams')]], vue)}
-      ${vue === 'hits' ? `<div class="sous" style="margin:10px 0 12px;font-size:15px">${H.genre === 'hits' ? tt('Les joueurs les plus susceptibles de sortir en auto ou patch, et ce que vaut leur carte.', 'The players most likely to come out as an auto or patch, and what their card is worth.') : tt('Ce produit n’a pas d’auto garantie : voici les recrues les plus intéressantes.', 'This product has no guaranteed auto: here are the best rookies.')}</div>
-        <div class="grille-c">${H.joueurs.map((j, i) => `<div class="tuile-c tuile-hit" data-j="${esc(j.joueur)}"><div class="img">${SVG_CARTE}</div>
-          <div class="coin">${capsule(pct(j.chance), 'vert petit')}${j.equipe ? capsule(String(j.equipe).split('/')[0], 'petit') : ''}</div>
-          <div class="corps"><div class="t">${esc(j.joueur)}</div><div class="det-c">${esc(j.meilleure)}</div>
-            <div class="ligne-b"><span class="p">${argentCourt(j.valeur)}</span><span class="sous">${tt('la carte', 'the card')}</span></div></div></div>`).join('')}</div>`
-      : `<div class="grille-c grille-places" style="margin-top:12px">${[...r.places].sort((a, b) => b.ev - a.ev).map(x => {
-          const ratio = x.valeur_ratio, verdict = ratio == null ? '' : ratio >= 1.15 ? capsule(tt('Excellente valeur', 'Great value'), 'vert petit') : ratio >= 0.9 ? capsule(tt('Bon prix', 'Fair price'), 'acc petit') : capsule(tt('Trop cher', 'Too expensive'), 'rouge petit');
-          return `<div class="tuile-c place-s"><span class="ecusson-eq" style="background:${COUL_EQ(x.cle)}" ${(x.vedettes || [])[0] ? `data-vj="${esc(x.vedettes[0])}"` : ''}><i>${esc(x.cle)}</i></span>
-            <div class="ps-n"><b>${esc(x.nom)}</b><span>${pct(x.p_hit || x.p_recrue)} ${x.p_hit ? tt('un hit', 'a hit') : tt('une recrue', 'a rookie')}</span></div>
-            <span class="ps-p">${argentCourt(x.ev)}</span>
-            <div class="demande"><input class="champ" type="number" inputmode="decimal" placeholder="${esc(tt('Prix demandé', 'Asked price') + ' (' + symDevise() + ')')}" data-dem="${esc(x.cle)}" value="${esc(A.demandes[x.cle] ? Math.round(convertir(A.demandes[x.cle]) * 100) / 100 : '')}">${verdict}</div></div>`; }).join('')}</div>`}`;
+    const vue = A.vue === 'equipes' ? 'equipes' : 'joueurs';
+    const liste = vue === 'joueurs' ? (r.joueurs || []) : [...r.places];
+    const sc = liste.map(x => x.score), mn = Math.min(...sc), mx = Math.max(...sc);
+    liste.forEach(x => { x.rel = mx > mn ? Math.round(100 * (x.score - mn) / (mx - mn)) : 50; });
+    liste.sort((a, b) => b.rel - a.rel || b.ev - a.ev);
+    const budget = A.budget || 0;
+    const ligne = (x, i) => {
+      const [cl, lib] = TIERS(x.rel), hors = budget && x.prix_compare > budget;
+      const stats = vue === 'equipes' ? [x.nb_joueurs ? x.nb_joueurs + ' ' + tt('joueurs', 'players') : '', x.nb_recrues ? x.nb_recrues + ' ' + tt('recrues', 'rookies') : '',
+        x.nb_numerotees ? x.nb_numerotees + ' ' + tt('numérotées', 'numbered') : '', x.nb_patchs ? x.nb_patchs + ' patch' + (x.nb_patchs > 1 ? 's' : '') : '',
+        x.nb_autos ? x.nb_autos + ' auto' + (x.nb_autos > 1 ? 's' : '') : '', x.nb_ssp ? x.nb_ssp + ' SSP' : ''].filter(Boolean) : [];
+      const cle = vue === 'joueurs' ? 'data-demj' : 'data-dem', val0 = vue === 'joueurs' ? A.demandesJ[x.cle] : A.demandes[x.cle];
+      return `<div class="score-l ${hors ? 'hors' : ''}">
+        <span class="rang">${i + 1}</span>
+        ${vue === 'equipes' ? ecussonEquipe(x.cle, 'grand') : vignetteJoueur(x.cle)}
+        <div class="sl-n"><b>${esc(x.nom)}</b>
+          <span>${vue === 'equipes' ? esc((x.vedettes || []).slice(0, 3).join(' · ')) : esc(x.equipe || '')}</span>
+          ${stats.length ? `<div class="pastilles">${stats.map(t => tag(t)).join('')}</div>` : ''}</div>
+        <div class="sl-m m1"><span>${tt('Chance de rembourser', 'Chance to pay back')}</span><b>${pct(x.p_rembourse)}</b><div class="barre-p"><i style="width:${Math.round(100 * x.p_rembourse)}%"></i></div></div>
+        <div class="sl-m m2"><span>${tt('Valeur attendue', 'Expected value')}</span><b>${argentCourt(x.ev)}</b><small>${tt('pour ', 'for ')}${argentCourt(x.prix_compare)}${x.demande ? '' : ' ' + tt('(prix estimé)', '(est. price)')}</small></div>
+        <div class="sl-s"><span class="score ${cl}"><b>${x.rel}</b><small>${lib}</small></span>
+          <input class="champ petit-n" type="number" inputmode="decimal" ${cle}="${esc(x.cle)}" value="${esc(val0 ? Math.round(convertir(val0)) : '')}" placeholder="${esc(tt('prix', 'price'))}" aria-label="${esc(tt('Prix demandé', 'Asked price'))}"></div></div>`;
+    };
+    corps = `${segA('an-v', [['joueurs', tt('Joueurs', 'Players')], ['equipes', tt('Équipes', 'Teams')]], vue)}
+      <div class="sous" style="margin:10px 0 12px;font-size:15px">${tt('Le score compare tes chances de te faire rembourser (la valeur des cartes reçues ≥ le prix payé) et la valeur attendue au prix de la place. Entre le prix du breaker pour un score exact.', 'The score compares your chance to get paid back (cards received worth ≥ the price paid) and the expected value to the spot price. Enter the breaker’s price for an exact score.')}</div>
+      <div class="score-liste">${liste.map(ligne).join('') || `<div class="vide">${tt('Rien à analyser pour ce produit', 'Nothing to analyze for this product')}</div>`}</div>`;
   }
   z.innerHTML = tete + corps;
   $('#an-chg').onclick = () => { location.hash = '#analyse/choisir'; };
   $('#an-ck').onclick = async () => { const c = await API.catalogue_liste().catch(() => ({produits:[]})); feuilleChecklist(P.id, c.produits || []); };
-  $('#an-reg').onclick = () => { A.reglages = !A.reglages; const p = $('.reg-break'); if (p) p.classList.toggle('ouvert', A.reglages); };
+  const rg0 = $('#an-reg'); if (rg0) rg0.onclick = () => { A.reglages = !A.reglages; const p = $('.reg-break'); if (p) p.classList.toggle('ouvert', A.reglages); };
   $$('[data-bx]', z).forEach(b => b.onclick = () => { A.boites = +b.dataset.bx; rendreAnalyse(); });
   const n = $('#rb-n'); if (n) n.onchange = () => { A.boites = Math.max(1, Math.min(120, Math.round(nb(n.value) || 1))); rendreAnalyse(); };
   const ch = (id, f) => { const e = $('#' + id); if (e) e.onchange = () => { f(nb(e.value)); rendreAnalyse(); }; };
   ch('rb-cout', v => { A.cout = v ? versCAD(v) : ''; }); ch('rb-marge', v => { A.marge = v ?? 25; }); ch('rb-dec', v => { A.decote = Math.max(0, Math.min(60, v ?? 15)); });
+  ch('an-budget', v => { A.budget = v ? versCAD(v) : 0; });
   $$('#an-m button').forEach(b => b.onclick = () => { A.mode = b.dataset.v; rendreAnalyse(); });
   $$('#an-v button').forEach(b => b.onclick = () => { A.vue = b.dataset.v; rendreAnalyse(); });
   $$('[data-dem]', z).forEach(i => i.onchange = () => { const v = nb(i.value); if (v) A.demandes[i.dataset.dem] = versCAD(v); else delete A.demandes[i.dataset.dem]; rendreAnalyse(); });
+  $$('[data-demj]', z).forEach(i => i.onchange = () => { const v = nb(i.value); if (v) A.demandesJ[i.dataset.demj] = versCAD(v); else delete A.demandesJ[i.dataset.demj]; rendreAnalyse(); });
   const cr = $('#an-creer'); if (cr) cr.onclick = async () => {
     const rg = S.reglages || {};
     const res = await essai(API.break_creer({nom: P.nom, catalogue_id: P.id, mode: A.mode, boites: r.boites, cout: r.cout,
@@ -1742,16 +1926,11 @@ async function rendreAnalyse(){
       places: r.places.map(x => ({cle:x.cle, libelle:x.nom, prix:x.prix}))}), tt('Break créé', 'Break created'));
     if (res && res.id) location.hash = '#break/' + res.id;
   };
-  // les photos des cartes (une annonce eBay par joueur), chargees apres l'ecran
+  // la carte de chaque joueur (sa recrue / son hit dans ce produit), meme cadre pour tous
   const vj = $$('[data-vj]', z);
-  if (vj.length) API.images_joueurs(P.id, [...new Set(vj.map(e => e.dataset.vj))], (r.hits || {}).genre).then(im => vj.forEach(e => {
-    const u = (im || {})[e.dataset.vj]; if (u && !e.querySelector('img')) { e.classList.add('photo'); e.insertAdjacentHTML('afterbegin', `<img src="${esc(u)}" alt="" loading="lazy" onerror="this.parentNode.classList.remove('photo'); this.remove()">`); }
+  if (vj.length) API.images_joueurs(P.id, [...new Set(vj.map(e => e.dataset.vj))].slice(0, 40), (r.hits || {}).genre).then(im => vj.forEach(e => {
+    const u = (im || {})[e.dataset.vj]; if (u && !e.querySelector('img')) e.insertAdjacentHTML('beforeend', `<img src="${esc(photoHD(u))}" alt="" loading="lazy" onerror="this.remove()">`);
   })).catch(() => {});
-  const tuiles = $$('.tuile-hit', z);
-  if (tuiles.length) {
-    const im = await API.images_joueurs(P.id, tuiles.slice(0, 12).map(t => t.dataset.j), (r.hits || {}).genre).catch(() => ({}));
-    tuiles.forEach(t => { const u = im[t.dataset.j]; if (u) t.querySelector('.img').insertAdjacentHTML('beforeend', `<img src="${esc(u)}" alt="" loading="lazy" onerror="this.remove()">`); });
-  }
 }
 // ============================================================
 // 24 oct 2026 (Mathieu : « comme Hall of Cardz, une fenêtre dans l'app qui ouvre avec l'annonce eBay et les comps
@@ -1777,10 +1956,11 @@ async function ouvrirAnnonce(base){
         <div class="fen-photos"><div class="fen-img" id="fen-img">${photos[0] ? `<img src="${esc(photos[0])}" alt="">` : SVG_CARTE}</div>
           ${photos.length > 1 ? `<div class="fen-vigs">${photos.map((p, i) => `<button class="${i ? '' : 'on'}" data-ph="${esc(p)}" style="background-image:url('${esc(p)}')" aria-label="photo ${i + 1}"></button>`).join('')}</div>` : ''}</div>
         <div class="fen-info">
-          <div class="pastilles">${d.rabais != null && d.rabais > 0 ? capsule('−' + d.rabais + ' %', 'vert') : ''}${a.encan ? capsule('⏱ ' + finDans(a.fin) + (a.mises != null ? ' · ' + a.mises + ' ' + tt('mise' + (a.mises > 1 ? 's' : ''), 'bid' + (a.mises > 1 ? 's' : '')) : ''), 'or') : ''}${a.etat ? capsule(a.etat) : ''}</div>
+          <div class="pastilles">${d.rabais != null && d.rabais >= 30 ? capsule('Deal −' + d.rabais + ' %', 'vert') : d.rabais != null && d.rabais > 0 ? capsule(tt('Bon prix', 'Good price') + ' −' + d.rabais + ' %', 'acc') : d.rabais != null && d.rabais < -15 ? capsule(tt('Trop cher', 'Too expensive') + ' +' + (-d.rabais) + ' %', 'rouge') : ''}${a.encan ? capsule('⏱ ' + finDans(a.fin) + (a.mises != null ? ' · ' + a.mises + ' ' + tt('mise' + (a.mises > 1 ? 's' : ''), 'bid' + (a.mises > 1 ? 's' : '')) : ''), 'or') : ''}${a.etat ? capsule(a.etat) : ''}</div>
           <h3>${esc(a.titre || base.titre || '')}</h3>
+          ${S.budget && S.budget.budget && total ? `<div class="fen-budget ${total > S.budget.reste ? 'rouge' : 'vert'}">${total > S.budget.reste ? tt('Dépasse ton budget : il te reste ', 'Over your budget: you have ') + argent(Math.max(0, S.budget.reste), 0) + tt(' ce mois', ' left this month') : tt('Dans ton budget : il restera ', 'Fits your budget: ') + argent(S.budget.reste - total, 0) + tt('', ' left after')}</div>` : ''}
           <div class="fen-prix"><b>${total ? argent(total, 2) : '—'}</b><span>${a.port_cad != null ? (a.port_cad ? tt('dont port ', 'incl. shipping ') + argent(a.port_cad, 2) : tt('livraison gratuite', 'free shipping')) : ''}</span></div>
-          ${d.mediane ? `<div class="fen-val"><div><span>${tt('Vaut', 'Worth')}</span><b>${argent(d.mediane, 0)}</b><small>${tt('médiane de ', 'median of ')}${d.n} ${tt('mêmes cartes', 'same cards')}</small></div>
+          ${d.valeur ? `<div class="fen-val"><div><span>${tt('Vaut', 'Worth')}</span><b>${argent(d.valeur, 0)}</b><small>${d.valeur_source === 'vendues' ? tt('médiane de ' + d.nb_vendues + ' ventes réelles', 'median of ' + d.nb_vendues + ' real sales') : tt('médiane de ' + d.n + ' en vente (pas encore de ventes)', 'median of ' + d.n + ' listed (no sales yet)')}</small></div>
             ${d.gain != null ? `<div class="${d.gain > 0 ? 'vert' : 'rouge'}"><span>${tt('À la revente', 'On resale')}</span><b>${d.gain > 0 ? '+' : ''}${argent(d.gain, 0)}</b><small>${tt('après frais eBay', 'after eBay fees')}</small></div>` : ''}</div>` : (d.chargement ? `<div class="lecture"><span class="roue"></span>${tt('Les mêmes cartes…', 'The same cards…')}</div>` : '')}
           ${d.suggere ? `<div class="fen-sug">${S.mode === 'acheteur'
               ? `<div class="on"><span>${tt('Paie au plus', 'Pay at most')}</span><b>${argent(d.suggere.achat_max, 0)}</b><small>${tt('pour garder 20 % à la revente', 'to keep 20 % on resale')}</small></div><div><span>${tt('Prix de vente suggéré', 'Suggested sale price')}</span><b>${argent(d.suggere.vente, 0)}</b><small>${tt('pour vendre vite', 'to sell fast')}</small></div>`
@@ -1789,20 +1969,22 @@ async function ouvrirAnnonce(base){
           <div class="fen-btns"><a class="btn" href="${esc(url)}" target="_blank" rel="noopener">${tt('Voir sur eBay', 'View on eBay')}</a>
             <a class="btn ghost" href="#valeur/${encodeURIComponent(a.titre || base.titre || '')}" data-fermer>${tt('Combien elle vaut', 'What it’s worth')}</a></div>
         </div></div>
-      ${(d.ventes || []).length ? `<div class="fen-comps"><div class="bloc-t">${tt('Tes ventes de cette carte', 'Your sales of this card')} <span class="sous">${d.ventes.length}</span></div>
+      ${(d.ventes || []).length ? `<div class="fen-comps"><div class="bloc-t">${tt('Vendues récemment', 'Recently sold')} <span class="sous">${d.nb_vendues || d.ventes.length}${d.mediane_vendue ? ' · ' + tt('médiane ', 'median ') + argentCourt(d.mediane_vendue) : ''} · ${tt('ventes réelles eBay et LockerRoom', 'real eBay and LockerRoom sales')}</span></div>
         <div class="grille-c">${d.ventes.map(k => `<div class="tuile-c"><div class="img">${SVG_CARTE}${k.photo ? `<img src="${esc(photoHD(k.photo))}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
           <div class="coin">${capsule(tt('Vendue', 'Sold') + (k.le ? ' · ' + dateCourte(k.le) : ''), 'vert petit')}</div>
-          <div class="corps"><div class="t">${esc(k.titre)}</div><div class="ligne-b"><span class="p">${argent(k.prix, 0)}</span></div></div></div>`).join('')}</div></div>` : ''}
+          <div class="corps"><div class="t">${esc(k.titre)}</div><div class="ligne-b"><span class="p">${argent(k.prix, 0)}</span>${k.offre ? capsule(tt('Offre', 'Offer'), 'petit') : ''}</div></div></div>`).join('')}</div></div>`
+        : d.chargement ? '' : `<div class="sous">${tt('Pas encore de ventes de cette carte exacte : la valeur vient des annonces en vente.', 'No sales of this exact card yet: the value comes from listings.')}</div>`}
       <div class="fen-comps">${d.chargement ? '' : (d.comps || []).length ? `<div class="bloc-t">${tt('Les mêmes cartes en vente', 'The same cards listed')} <span class="sous">${d.n} · ${tt('médiane ', 'median ')}${argentCourt(d.mediane)}</span></div>
         <div class="grille-c">${d.comps.map(k => `<div class="tuile-c" ${attrsAnnonce(k)}><div class="img">${SVG_CARTE}${k.photo ? `<img src="${esc(k.photo)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
           ${k.encan ? `<div class="coin">${capsule('⏱ ' + finDans(k.fin), 'or petit')}</div>` : ''}
-          <div class="corps"><div class="t">${esc(k.titre)}</div><div class="ligne-b"><span class="p">${argent(k.total, 0)}</span>${d.mediane && k.total < d.mediane * 0.85 ? capsule('−' + Math.round(100 * (1 - k.total / d.mediane)) + ' %', 'vert petit') : ''}</div></div></div>`).join('')}</div>`
+          <div class="corps"><div class="t">${esc(k.titre)}</div><div class="ligne-b"><span class="p">${argent(k.total, 0)}</span>${d.valeur && k.total <= d.valeur * 0.7 ? capsule('Deal', 'vert petit') : d.valeur && k.total <= d.valeur ? capsule(tt('Bon prix', 'Good price'), 'acc petit') : ''}</div></div></div>`).join('')}</div>`
         : `<div class="sous">${tt('Pas assez de cartes pareilles en vente pour comparer.', 'Not enough same cards listed to compare.')}</div>`}</div></div>`;
     $$('.fen-vigs [data-ph]', f).forEach(b => b.onclick = () => { $('#fen-img', f).innerHTML = `<img src="${esc(b.dataset.ph)}" alt="">`; $$('.fen-vigs button', f).forEach(x => x.classList.toggle('on', x === b)); brancherLoupe($('#fen-img', f)); });
     brancherLoupe($('#fen-img', f));
     $$('[data-fermer]', f).forEach(b => b.addEventListener('click', fermerAnnonce));
   };
   montrer({chargement:true});
+  if (S.mode === 'acheteur') await budgetEtat().catch(() => null);
   const d = await API.annonce_detail(base.item_id, base.titre).catch(() => null);
   if (d && $('#fen-annonce') && document.body.classList.contains('fen-ouverte')) montrer(d);
 }
@@ -1885,6 +2067,15 @@ async function chargerDeals(){
   clearInterval(S.tDeals);
   S.tDeals = setInterval(() => { if (!$('#d-res')) { clearInterval(S.tDeals); return; } $$('.tuile-deal').forEach(t => { const x = L.find(k => k.item_id === t.dataset.id); const c = t.querySelector('.capsule.or'); if (x && x.encan && c) c.textContent = '⏱ ' + finDans(x.fin); }); }, 30000);
 }
+// 25 oct 2026 (Mathieu : « où sont tous les last sold comp ? ») : les vraies ventes de la communauté LockerRoom
+function blocVendues(v, titre){
+  const l = (v && v.ventes) || [];
+  if (!l.length) return '';
+  return `<div class="bloc-t" style="margin-top:6px">${titre || tt('Vendues récemment', 'Recently sold')} <span class="sous">${v.nb} · ${tt('médiane ', 'median ')}${argentCourt(v.mediane)} · ${tt('ventes réelles eBay et LockerRoom', 'real eBay and LockerRoom sales')}</span></div>
+    <div class="grille-c">${l.map(k => `<div class="tuile-c vendue"><div class="img">${SVG_CARTE}${k.photo ? `<img src="${esc(photoHD(k.photo))}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
+      <div class="coin">${capsule(tt('Vendue', 'Sold') + (k.le ? ' · ' + dateCourte(k.le) : ''), 'vert petit')}</div>
+      <div class="corps"><div class="t">${esc(k.titre)}</div><div class="ligne-b"><span class="p">${argent(k.prix, 0)}</span></div></div></div>`).join('')}</div>`;
+}
 async function vueValeur(arg){
   // 24 oct 2026 (Mathieu : « will smith young guns et ca me sort tout sauf ca ») : la MEME carte seulement ;
   // l'app montre ce qu'elle a compris, ce qu'elle a ecarte et pourquoi, et apprend de « pas la bonne carte ».
@@ -1906,17 +2097,20 @@ async function vueValeur(arg){
       <div class="grille-c">${(r.ecartees || []).map(x => tuileCarte(x, {classe: 'estompe', milieu: `<div class="pastilles">${tag(x.raison)}</div>`,
         droite: `<button class="btn ghost petit" style="width:auto" data-bonne="${esc(x.item_id)}" data-titre="${esc(x.titre)}">${tt('C’est la bonne', 'It’s the one')}</button>`})).join('')}</div></details>` : '';
   if (!r.n) {
-    z.innerHTML = `${compris}<div class="vide" style="margin-top:12px">${tt('Aucune annonce à prix fixe de cette carte exacte en ce moment. Essaie moins de mots, ou regarde les annonces écartées.', 'No fixed-price listing of this exact card right now. Try fewer words, or look at the set-aside listings.')}</div>${ecart}`;
+    z.innerHTML = `${compris}${r.valeur ? `<div class="hero-l" style="margin:14px 0"><div class="kpi vert"><span class="lib">${tt('Valeur (vendues)', 'Value (sold)')}</span><span class="v">${argent(r.valeur, 0)}</span><span class="s">${tt('médiane de ' + r.vendues.nb + ' ventes réelles', 'median of ' + r.vendues.nb + ' real sales')}</span></div><div class="kpi"><span class="lib">${tt('Deal sous', 'Deal under')}</span><span class="v">${argent(r.bon_prix, 0)}</span><span class="s">${tt('pour revendre avec profit', 'to resell with profit')}</span></div></div>` : ''}${blocVendues(r.vendues)}<div class="vide" style="margin-top:12px">${tt('Aucune annonce à prix fixe de cette carte exacte en ce moment. Essaie moins de mots, ou regarde les annonces écartées.', 'No fixed-price listing of this exact card right now. Try fewer words, or look at the set-aside listings.')}</div>${ecart}`;
   } else {
     const deals = r.annonces.filter(x => x.deal).length;
     z.innerHTML = `${compris}
       <div class="hero-l" style="margin:14px 0">
-        <div class="kpi acc"><span class="lib">${tt('Prix du marché', 'Market price')}</span><span class="v">${argent(r.mediane, 0)}</span><span class="s">${tt('médiane de ' + r.n + ' annonce' + (r.n > 1 ? 's' : ''), 'median of ' + r.n + ' listing' + (r.n > 1 ? 's' : ''))}</span></div>
-        <div class="kpi vert"><span class="lib">${tt('Bon achat sous', 'Good buy under')}</span><span class="v">${argent(r.bon_prix, 0)}</span><span class="s">${tt('pour revendre avec profit', 'to resell with profit')}</span></div>
-        <div class="kpi"><span class="lib">${tt('Fourchette', 'Range')}</span><span class="v">${argentCourt(r.min)} – ${argentCourt(r.max)}</span><span class="s">${tt('sans les prix extrêmes', 'without extreme prices')}</span></div>
+        ${r.valeur_source === 'vendues' ? `<div class="kpi vert"><span class="lib">${tt('Valeur (vendues)', 'Value (sold)')}</span><span class="v">${argent(r.valeur, 0)}</span><span class="s">${tt('médiane de ' + r.vendues.nb + ' ventes réelles', 'median of ' + r.vendues.nb + ' real sales')}</span></div>` : ''}
+        <div class="kpi acc"><span class="lib">${tt('En vente', 'Listed')}</span><span class="v">${argent(r.mediane, 0)}</span><span class="s">${tt('médiane de ' + r.n + ' annonce' + (r.n > 1 ? 's' : ''), 'median of ' + r.n + ' listing' + (r.n > 1 ? 's' : ''))}</span></div>
+        <div class="kpi ${r.valeur_source === 'vendues' ? '' : 'vert'}"><span class="lib">${tt('Deal sous', 'Deal under')}</span><span class="v">${argent(r.bon_prix, 0)}</span><span class="s">${tt('pour revendre avec profit', 'to resell with profit')}</span></div>
+        ${(r.vendues || {}).nb ? '' : `<div class="kpi"><span class="lib">${tt('Fourchette', 'Range')}</span><span class="v">${argentCourt(r.min)} – ${argentCourt(r.max)}</span><span class="s">${tt('sans les prix extrêmes', 'without extreme prices')}</span></div>`}
         <div class="kpi or"><span class="lib">Deals</span><span class="v">${deals}</span><span class="s">${tt('sous le bon prix maintenant', 'under the good price now')}</span></div></div>
+      ${blocVendues(r.vendues)}
+      <div class="bloc-t" style="margin-top:6px">${tt('En vente maintenant', 'Listed now')} <span class="sous">${r.n}</span></div>
       <div class="grille-c">${r.annonces.map(x => tuileCarte({...x, url: lienAchat(x.url, 'valeur')}, {
-        coin: x.deal ? capsule('Deal', 'vert petit') : '',
+        coin: x.deal ? capsule('Deal', 'vert petit') : x.bon ? capsule(tt('Bon prix', 'Good price'), 'acc petit') : '',
         x: `<button class="x" title="${esc(tt('Pas la bonne carte', 'Not the right card'))}" aria-label="${esc(tt('Pas la bonne carte', 'Not the right card'))}" data-refus="${esc(x.item_id)}" data-titre="${esc(x.titre)}">✕</button>`,
         droite: x.gain > 0 ? capsule('+' + argentCourt(x.gain), x.deal ? 'vert petit' : 'petit') : ''})).join('')}</div>
       <div class="sous" style="margin:10px 0">${tt('Prix + port des annonces à prix fixe actives de la même carte. ✕ sur une annonce qui n’est pas la bonne carte : l’app l’écarte et apprend.', 'Price + shipping of active fixed-price listings of the same card. ✕ on a listing that isn’t the right card: the app sets it aside and learns.')}</div>${ecart}`;
@@ -1944,7 +2138,7 @@ async function vueAccueil(arg){
   }
   arreterAccueilLive();
   V().innerHTML = `<section class="ecran acc">
-    <div class="acc-tete" style="grid-area:tete"><div class="marque"><img class="logo" id="acc-logo" src="${esc(S.logo || '/icone.png')}" alt="">
+    <div class="acc-tete" style="grid-area:tete"><div class="marque"><span class="logo-lr officiel" aria-label="LockerRoom"><img src="/logo_lr.png" alt="LockerRoom"></span><img class="logo" id="acc-logo" src="${esc(S.logo || '/icone.png')}" alt="">
         <div class="horloge"><div class="nom-b" id="acc-nom">${esc(nomMarque())}</div><div class="h" id="acc-h">--:--</div><div class="d" id="acc-d"></div></div></div>
       <div class="acc-tuiles" id="acc-tuiles">${roue}</div></div>
     <div class="carte-acc nouv" id="acc-nouv"><div id="acc-news">${roue}</div></div>
@@ -1966,12 +2160,19 @@ async function vueAccueil(arg){
   // 3 chiffres qui comptent, en grand
   const tuile = (lib, val, sous, cl, href) => `<a class="t-acc" href="${href}"><span class="l">${lib}</span><b class="${cl || ''}">${val}</b><span class="s">${sous}</span></a>`;
   $('#acc-tuiles').innerHTML = [
-    tuile('Profit', (h.profit < 0 ? '−' : '') + argentCourt(Math.abs(h.profit)), nomMois(h.mois) + (h.nb_ventes ? ` · ${h.nb_ventes} vente${h.nb_ventes > 1 ? 's' : ''}` : ''), h.profit > 0 ? 'vert' : h.profit < 0 ? 'rouge' : '', '#bilan'),
+    S.mode === 'acheteur' ? `<a class="t-acc" href="#guide" id="t-budget"><span class="l">${tt('Budget du mois', 'Monthly budget')}</span><b>…</b><span class="s">${tt('touche pour le fixer', 'tap to set it')}</span></a>`
+      : tuile('Profit', (h.profit < 0 ? '−' : '') + argentCourt(Math.abs(h.profit)), nomMois(h.mois) + (h.nb_ventes ? ` · ${h.nb_ventes} vente${h.nb_ventes > 1 ? 's' : ''}` : ''), h.profit > 0 ? 'vert' : h.profit < 0 ? 'rouge' : '', '#bilan'),
     tuile('Deals', a && a.gain_deals > 0 ? '+' + argentCourt(a.gain_deals) : String((a && a.nb_deals) || 0), a && a.nb_deals ? `${a.nb_deals} sous la valeur` : 'on cherche pour toi', a && a.gain_deals > 0 ? 'or' : '', S.mode === 'acheteur' ? '#deals' : '#sante/racheter'),
     tuile('Stock', argentKpi(st.valeur), `${st.nb} carte${st.nb > 1 ? 's' : ''}${vi.delai_median != null ? ' · vend en ' + vi.delai_median + ' j' : ''}`, '', '#inventaire'),
   ].join('');
+  if (S.mode === 'acheteur') budgetEtat(true).then(b => { const t = $('#t-budget'); if (!t || !b) return;
+    if (!b.budget) { t.querySelector('b').textContent = tt('À fixer', 'Not set'); t.onclick = (e) => { e.preventDefault(); feuilleBudget(); }; return; }
+    t.querySelector('b').textContent = argentCourt(b.reste); t.querySelector('b').className = b.reste < 0 ? 'rouge' : b.pct > 80 ? 'or' : 'vert';
+    t.querySelector('.s').textContent = tt(`reste · ${argentCourt(b.depense)} dépensés sur ${argentCourt(b.budget)}`, `left · ${argentCourt(b.depense)} spent of ${argentCourt(b.budget)}`);
+    t.onclick = (e) => { e.preventDefault(); feuilleBudget(); }; });
   // a faire : vendeur + acheteur ensemble, classe par argent
   const gestes = [...(d.actions || [])];
+  if (S.mode === 'acheteur') gestes.push({cle:'guide', n:'?', titre:tt('Nouveau dans le hobby ?', 'New to the hobby?'), texte:tt('Le guide : les produits, les sortes de cartes, ton budget', 'The guide: products, card types, your budget'), lien:'#guide', ton:'acc'});
   if (!d.cles) gestes.unshift({cle:'ebay', n:'!', titre:'Connecter eBay', texte:'2 minutes, aucun mot de passe : tout s’importe seul', lien:'#reglages', ton:'acc'});
   const r0 = S.reglages || {};
   if (!r0.logo_v && nomMarque(r0) === 'LockerRoom') gestes.push({cle:'marque', n:'★', titre:'Mets ton logo et ton nom', texte:'Ton app à l’image de ta boutique', lien:'#reglages', ton:'acc'});
@@ -1987,11 +2188,31 @@ async function vueAccueil(arg){
       ${courbeProfit(h)}</div>`);
   if (deals.length) plus.push(`<div class="carte-acc"><div class="acc-titre">Meilleurs deals <a href="#deals">tous ›</a></div><div class="liste">${deals.map(o => `<a class="deal-l" href="${esc(lienAchat(o.url, 'accueil'))}" target="_blank" rel="noopener" ${attrsAnnonce(o)}>${vignette(o.photo, o.titre)}
       <span class="t"><b>${esc(titreCourt(o.titre))}</b><span>vaut ${argentCourt(o.ref_prix)} · ${o.rabais} % sous la valeur</span></span><span class="m">${argent(o.total, 0)}</span></a>`).join('')}</div></div>`);
-  if (d.coups.length) plus.push(`<div class="carte-acc"><div class="acc-titre">Meilleurs coups · 30 j</div><div class="liste">${d.coups.map(rangeeCoup).join('')}</div></div>`);
+  // 25 oct 2026 (Mathieu : « pour l'accueil admin, des infos importantes à monitorer à la place des best flips »)
+  const admin = !!(S.forfait && S.forfait.admin);
+  if (admin) plus.push(`<div class="carte-acc acc-admin" id="acc-admin"><div class="acc-titre">${tt('À surveiller', 'To monitor')} <a href="#admin">Admin ›</a></div><div class="liste">${roue}</div></div>`);
+  else if (d.coups.length) plus.push(`<div class="carte-acc"><div class="acc-titre">Meilleurs coups · 30 j</div><div class="liste">${d.coups.map(rangeeCoup).join('')}</div></div>`);
   const brk = (d.breaks_ouverts || []).map(rangeeBreak).join('');
   if (brk && d.activites.breaks) plus.push(`<div class="carte-acc"><div class="acc-titre">Breaks en cours <a href="#breaks/liste">tous ›</a></div><div class="liste">${brk}</div></div>`);
   $('#acc-plus').innerHTML = plus.join('');
   brancherCourbe(h);
+  const ec = $('.ecran.acc'); if (ec) ec.classList.toggle('admin', admin);
+  if (admin) API.admin_resume().then(rA => {
+    const z = $('#acc-admin .liste'); if (!z || !rA || !rA.ok) return;
+    const a = rA.abonnes || {}, br = ((rA.ebay || {}).appels || {}).browse, v = rA.vendues || {}, ph = rA.photos || {}, dq = rA.disque;
+    const pc = (n, m) => m ? Math.round(100 * n / m) : 0;
+    const L = [
+      ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>', tt('Revenu / mois', 'Revenue / mo'), a.revenu_mensuel == null ? '—' : argentCourt(a.revenu_mensuel), `${a.pro || 0} Pro · ${a.essai || 0} ${tt('en essai', 'on trial')}`, '#admin/abonnes', ''],
+      ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-7 7-7s7 3 7 7M17 3a4 4 0 0 1 0 8M22 21c0-3-2-5.5-5-6.5"/></svg>', tt('Nouveaux comptes', 'New accounts'), '+' + (a.nouveaux_7j || 0), `${a.actifs_7j || 0} ${tt('actifs sur', 'active of')} ${a.total || 0}`, '#admin/abonnes', ''],
+      ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>', tt('Demandes', 'Requests'), String((rA.demandes || {}).nouvelles || 0), `${(rA.demandes || {}).ouvertes || 0} ${tt('ouvertes', 'open')}`, '#admin/demandes', (rA.demandes || {}).nouvelles ? 'or' : ''],
+      ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>', tt('Produits à ajouter', 'Products to add'), String(rA.a_ajouter || 0), tt('repérés sur eBay ou demandés', 'spotted or requested'), '#admin/catalogue', rA.a_ajouter ? 'or' : ''],
+      ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 21h20z"/><path d="M12 10v5M12 18h.01"/></svg>', tt('Erreurs 24 h', 'Errors 24 h'), String(rA.erreurs_24h || 0), tt('serveur', 'server'), '#admin/serveur', rA.erreurs_24h ? 'rouge' : 'vert'],
+      ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>', 'SoldComps', v.actif ? `${v.aujourdhui || 0} / ${v.plafond || 0}` : tt('inactif', 'off'), tt('recherches aujourd’hui', 'searches today'), '#admin/serveur', !v.actif ? 'rouge' : pc(v.aujourdhui, v.plafond) > 80 ? 'or' : ''],
+      ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.5 12h11L21 8H7"/><circle cx="10" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/></svg>', tt('Appels eBay', 'eBay calls'), br ? pc(br.utilises, br.limite) + ' %' : '—', tt('de la limite du jour', 'of today’s limit'), '#admin/serveur', br && pc(br.utilises, br.limite) > 80 ? 'rouge' : ''],
+      ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="3"/><circle cx="12" cy="13.5" r="3.5"/><path d="M8 7l1.5-3h5L16 7"/></svg>', tt('Photos IA', 'AI photos'), ph.ce_mois != null ? String(ph.ce_mois) : '—', ph.usd != null ? `${Math.round(ph.usd * 100) / 100} $ US / ${ph.plafond_usd} $` : '', '#admin/serveur', ph.usd > (ph.plafond_usd || 50) * 0.8 ? 'rouge' : ''],
+      ...(dq ? [['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 3v6h10V3M7 21v-7h10v7"/></svg>', tt('Disque', 'Disk'), pc(dq.total_go - dq.libre_go, dq.total_go) + ' %', `${dq.libre_go} Go ${tt('libres', 'free')}`, '#admin/serveur', pc(dq.total_go - dq.libre_go, dq.total_go) > 85 ? 'rouge' : '']] : [])];
+    z.innerHTML = `<div class="adm-grille">${L.map(([ic, t, val, sous, href, cl]) => `<a class="adm-t ${cl}" href="${href}"><span class="ic">${ic}</span><span class="t">${esc(t)}</span><b>${esc(val)}</b><small>${esc(sous)}</small></a>`).join('')}</div>`;
+  }).catch(() => {});
   visBreaks($('#acc-plus'));
 }
 // -- horloge + nouvelles + pouls, en direct (arretes en quittant l'accueil) --
@@ -3108,6 +3329,71 @@ async function verifierReponses(){
     <button class="btn" id="rp-ok">${tt('Merci', 'Thanks')}</button>`);
   $('#rp-ok').onclick = async () => { await API.demande_lue(x.id).catch(() => {}); fermerFeuille(); setTimeout(verifierReponses, 400); };
 }
+// ============================================================
+// 25 oct 2026 - Guide du hobby (Mathieu : « qu'un nouvel arrivé ou quelqu'un qui retourne dans le hobby comprenne
+// les produits à chasser, les joueurs à acheter, les variations et types de cartes, pour un choix éclairé avec
+// ses sous durement gagnés, sans dépasser son budget »). Court, visuel, avec les vraies données de l'app.
+// ============================================================
+const GUIDE_TYPES = () => [
+  ['Base', tt('La carte ordinaire du set. Beaucoup d’exemplaires : vaut peu, sauf les grandes vedettes.', 'The regular card of the set. Many copies: worth little, except big stars.')],
+  ['RC · Rookie', tt('La carte de la 1re saison d’un joueur. C’est celle que les collectionneurs veulent.', 'A player’s first-season card. The one collectors want.')],
+  ['Young Guns', tt('LA recrue d’Upper Deck (Series 1, 2, Extended). La référence en hockey : 6 par boîte hobby environ.', 'Upper Deck’s signature rookie (Series 1, 2, Extended). The hockey benchmark: about 6 per hobby box.')],
+  [tt('Parallèle', 'Parallel'), tt('La même carte avec une autre finition (Clear Cut, Outburst, Exclusives, High Gloss). Plus rare = plus cher.', 'Same card, different finish (Clear Cut, Outburst, Exclusives, High Gloss). Rarer = pricier.')],
+  [tt('Numérotée /99', 'Numbered /99'), tt('Il en existe 99 au monde (le numéro est imprimé). /10 ou 1/1 : très rare.', 'Only 99 exist (the number is printed). /10 or 1/1: very rare.')],
+  ['SP · SSP', tt('Short Print / Super Short Print : imprimée beaucoup moins souvent, sans être numérotée.', 'Short Print / Super Short Print: printed far less often, without a number.')],
+  ['Auto', tt('Signée par le joueur (sur la carte ou un autocollant). Une auto de recrue vedette = gros hit.', 'Signed by the player (on-card or sticker). A star rookie auto = big hit.')],
+  [tt('Patch · Jersey', 'Patch · Jersey'), tt('Un morceau de chandail porté. Un « patch » (logo, couture) vaut plus qu’un simple jersey.', 'A piece of a worn jersey. A “patch” (logo, stitching) beats a plain jersey swatch.')],
+  ['RPA', tt('Rookie Patch Auto : recrue + patch + signature. Le Graal (ex. The Cup).', 'Rookie Patch Auto: rookie + patch + signature. The holy grail (e.g. The Cup).')],
+  [tt('Gradée', 'Graded'), tt('Notée sur 10 et scellée par PSA, BGS ou SGC. Une PSA 10 vaut souvent 2 à 5 fois la carte brute.', 'Rated out of 10 and sealed by PSA, BGS or SGC. A PSA 10 is often worth 2-5× the raw card.')],
+];
+const GUIDE_PRODUITS = () => [
+  ['Series 1 · Series 2 · Extended', tt('Les produits de base d’Upper Deck. Abordables, pleins de Young Guns : le meilleur point de départ.', 'Upper Deck’s flagship sets. Affordable, full of Young Guns: the best place to start.'), 'acc'],
+  ['O-Pee-Chee · MVP', tt('Petits prix, beaucoup de cartes, des recrues « Marquee Rookies ». Pour le plaisir d’ouvrir.', 'Low price, lots of cards, “Marquee Rookies”. For the fun of opening.'), ''],
+  ['SP Authentic', tt('Les autos de recrues « Future Watch » numérotées. Une boîte coûte plus, les hits valent plus.', 'Numbered “Future Watch” rookie autos. Pricier box, bigger hits.'), 'or'],
+  ['Artifacts · SPx · Black Diamond', tt('Mi-haut de gamme : patchs, autos, cartes spéciales garanties.', 'Mid-high end: guaranteed patches, autos, special cards.'), 'or'],
+  ['The Cup · Ultimate', tt('Très haut de gamme : quelques cartes par boîte, des RPA. Réservé aux budgets solides ou en break.', 'Ultra high end: a few cards per box, RPAs. For big budgets, or via a break.'), 'rouge'],
+  [tt('Hobby ou Retail ?', 'Hobby or retail?'), tt('Hobby (boutique, en ligne) : meilleures chances de hits. Retail (blaster, tin en magasin) : moins cher, cotes plus faibles.', 'Hobby (card shops, online): better hit odds. Retail (blasters, tins in stores): cheaper, lower odds.'), ''],
+];
+async function vueGuide(){
+  V().innerHTML = `<section class="ecran large guide">
+    <div class="titre">${tt('Guide du hobby', 'Hobby guide')}</div>
+    <div class="sous" style="font-size:16px">${tt('Tout ce qu’il faut savoir pour acheter malin, en 3 minutes.', 'Everything you need to buy smart, in 3 minutes.')}</div>
+    <div class="g-regles">
+      <div><b>1</b><span><strong>${tt('Fixe ton budget du mois', 'Set your monthly budget')}</strong>${tt('et tiens-t’y : LockerRoom te dit ce qu’il te reste.', 'and stick to it: LockerRoom shows what’s left.')}</span><button class="pilule" id="g-budget">${tt('Mon budget', 'My budget')}</button></div>
+      <div><b>2</b><span><strong>${tt('Regarde les ventes, pas les prix demandés', 'Look at sales, not asking prices')}</strong>${tt('Les annonces sont souvent plus chères que ce qui se vend vraiment.', 'Listings are often pricier than what actually sells.')}</span><a class="pilule" href="#valeur">${tt('Combien ça vaut ?', 'What is it worth?')}</a></div>
+      <div><b>3</b><span><strong>${tt('Un joueur précis ? Achète la carte', 'Want one player? Buy the card')}</strong>${tt('C’est moins cher et sans surprise que d’ouvrir des boîtes pour l’avoir.', 'It’s cheaper and safer than opening boxes hoping for it.')}</span><a class="pilule" href="#deals">Deals</a></div>
+      <div><b>4</b><span><strong>${tt('Un break, c’est une loterie', 'A break is a lottery')}</strong>${tt('Le breaker paie la boîte et prend sa marge : en moyenne, les cartes valent moins que le prix. Choisis avec le Score.', 'The breaker pays for the box and takes a cut: on average, cards are worth less than the price. Pick with the Score.')}</span><a class="pilule" href="#analyse">Breaks</a></div>
+    </div>
+    <div class="bloc-t">${tt('Les sortes de cartes', 'Card types')}</div>
+    <div class="g-grille">${GUIDE_TYPES().map(([t, d]) => `<div class="g-c"><b>${t}</b><span>${d}</span></div>`).join('')}</div>
+    <div class="bloc-t">${tt('Les produits à chasser (hockey)', 'Products to hunt (hockey)')}</div>
+    <div class="g-grille">${GUIDE_PRODUITS().map(([t, d, cl]) => `<div class="g-c ${cl}"><b>${t}</b><span>${d}</span></div>`).join('')}</div>
+    <div id="g-donnees"><div class="lecture"><span class="roue"></span></div></div>
+    <div class="bloc-t">${tt('Avant d’acheter : la liste', 'Before you buy: the checklist')}</div>
+    <div class="g-check">${[tt('Le bon joueur, la bonne année, le bon numéro ?', 'Right player, right year, right number?'), tt('Parallèle ou base ? Gradée ou brute ?', 'Parallel or base? Graded or raw?'),
+      tt('Le prix est-il sous les ventes récentes (badge « Bon prix » ou « Deal ») ?', 'Is the price under recent sales (“Good price” or “Deal” badge)?'), tt('Le port est-il inclus dans le total ?', 'Is shipping included in the total?'),
+      tt('Le vendeur a-t-il de bonnes évaluations (98 % et plus) ?', 'Does the seller have good feedback (98 %+)?'), tt('Est-ce que ça rentre dans mon budget du mois ?', 'Does it fit my monthly budget?')].map(x => `<label><input type="checkbox"><span>${x}</span></label>`).join('')}</div>
+  </section>`;
+  $('#g-budget').onclick = feuilleBudget;
+  const d = await API.guide_donnees().catch(() => null);
+  const z = $('#g-donnees'); if (!z) return;
+  if (!d || !d.ok) { z.innerHTML = ''; return; }
+  z.innerHTML = `<div class="deux-col">
+    <div><div class="bloc-t">${tt('Les joueurs les plus recherchés', 'Most wanted players')}</div><div class="bloc"><div class="liste">${d.joueurs.map((j, i) => `<a class="rangee" href="#valeur/${encodeURIComponent(j.joueur)}"><span class="rang">${i + 1}</span><span class="milieu"><span class="nom">${esc(j.joueur)}</span></span><span class="droite">${capsule(tt('demande ', 'demand ') + '×' + j.demande, 'or petit')}</span></a>`).join('')}</div></div></div>
+    <div><div class="bloc-t">${tt('Les recrues de la saison', 'This season’s rookies')} <span class="sous">${esc(d.produit || '')}</span></div><div class="bloc"><div class="liste">${d.recrues.map((j, i) => `<a class="rangee" href="#valeur/${encodeURIComponent(j.joueur + ' young guns')}"><span class="rang">${i + 1}</span><span class="milieu"><span class="nom">${esc(j.joueur)}</span><span class="det">${esc(j.equipe)} · ${esc(j.carte)}</span></span><span class="droite">${j.mesuree ? `<span class="prix">${argent(j.valeur, 0)}</span>` : capsule(tt('voir la valeur', 'see value'), 'petit')}</span></a>`).join('')}</div></div></div></div>`;
+}
+function feuilleBudget(){
+  const r = S.reglages || {};
+  ouvrirFeuille(`<h3>${tt('Mon budget du mois', 'My monthly budget')}</h3>
+    <div class="sous" style="font-size:15px">${tt('LockerRoom additionne tes achats eBay du mois et te prévient avant de dépasser.', 'LockerRoom adds up your eBay purchases this month and warns you before you go over.')}</div>
+    <div class="ac-cout"><input class="champ" id="bu-v" type="number" inputmode="decimal" value="${r.budget_mois ? Math.round(convertir(r.budget_mois)) : ''}" placeholder="200"><span>${symDevise()}</span></div>
+    <div class="pastilles">${[50, 100, 200, 500].map(v => `<button class="chip" data-bu="${v}">${argentCourt(versCAD(v))}</button>`).join('')}</div>
+    <button class="btn" id="bu-ok">${tt('Enregistrer', 'Save')}</button>`);
+  $$('[data-bu]').forEach(b => b.onclick = () => { $('#bu-v').value = b.dataset.bu; });
+  $('#bu-ok').onclick = async () => { const v = nb(val('bu-v')); const res = await essai(API.reglages_sauver({budget_mois: v ? versCAD(v) : 0}), tt('Budget enregistré', 'Budget saved'));
+    if (res) { S.reglages = res; S.budget = null; fermerFeuille(); if ((location.hash || '#accueil').startsWith('#accueil')) vueAccueil(); } };
+}
+async function budgetEtat(force){ if (!S.budget || force) S.budget = await API.budget_etat().catch(() => null); return S.budget; }
 async function vueBilan(){
   S.mois = S.mois || new Date().toISOString().slice(0, 7);
   V().innerHTML = `<section class="ecran">
@@ -3163,6 +3449,8 @@ async function vueReglages(arg){
     <div class="r-bloc" ${S.mode === 'acheteur' ? 'hidden' : ''}><div class="r-titre">Ce que je fais</div>
       <div class="r-ligne fixe"><span class="t"><b>Vendre sur eBay</b><span>Inventaire, prix, annonces, profit</span></span><span class="interrupteur on"><i></i></span></div>
       ${ligneAct('breaks', 'Breaks', 'Prix des places, tirage, envois')}${ligneAct('magasin', 'Magasin / comptoir', 'Ventes en personne, rachats, consignation')}</div>
+    <div class="r-bloc"><button class="r-ligne" id="g-partage"><span class="t"><b>${tt('Partager mes ventes (anonymes)', 'Share my sales (anonymous)')}</b><span>${tt('Tes prix vendus, sans ton nom ni l’acheteur, aident les prix « vendues » de tout le monde', 'Your sold prices, without your name or the buyer’s, power everyone’s “sold” prices')}</span></span><span class="interrupteur ${(S.reglages || {}).partage_ventes !== false ? 'on' : ''}"><i></i></span></button></div>
+    <a class="r-bloc r-idee" href="#guide"><span class="aaj-n">★</span><span><b>${tt('Guide du hobby', 'Hobby guide')}</b><small>${tt('Produits, sortes de cartes, budget : tout pour bien acheter', 'Products, card types, budget: buy smart')}</small></span><span class="fl">›</span></a>
     <button class="r-bloc r-idee" id="g-idee"><span class="aaj-n">?</span><span><b>${tt('Une idée ? Un problème ?', 'An idea? A problem?')}</b><small>${tt('Écris-nous, on répond ici dans l’app', 'Write to us, we reply here in the app')}</small></span><span class="fl">›</span></button>
     <div class="r-bloc"><div class="r-titre">Mon sport principal</div>${puceSports(r.sport || 'hockey', 'g-sport')}
       <div class="r-note">L'app devine le sport de chaque carte ; sinon, elle prend celui-ci.</div></div>
@@ -3203,6 +3491,11 @@ async function vueReglages(arg){
     if (await essai(API.reglages_sauver({activites:n}))) { appliquerActivites(n); toast(n[b.dataset.act] ? 'Onglet ajouté' : 'Onglet masqué'); vueReglages(); }
   });
   if ($('#g-idee')) $('#g-idee').onclick = feuilleIdee;
+  if ($('#g-partage')) $('#g-partage').onclick = async () => {
+    const on = !($('#g-partage .interrupteur').classList.contains('on'));
+    const res = await essai(API.reglages_sauver({partage_ventes: on}), on ? tt('Merci : tes ventes aident la communauté', 'Thanks: your sales help the community') : tt('Tes ventes ne sont plus partagées', 'Your sales are no longer shared'));
+    if (res) { S.reglages = res; $('#g-partage .interrupteur').classList.toggle('on', on); }
+  };
   $('#g-ok').onclick = async () => {
     const paliers = pal.map((x, i) => [i === pal.length - 1 ? 999999 : (nb(val('g-ps' + i)) ?? x[0]), nb(val('g-pp' + i)) ?? x[1]]);
     const n = (id, d) => nb(val(id)) ?? d;

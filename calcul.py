@@ -153,8 +153,54 @@ def prix_places(checklist, boites=1, cout_boite=0.0, marge=0.25, frais_pct=0.109
             "profit_estime": round(net - cout, 2), "nb_cartes": len(checklist)}
 
 
+def _gamma_p(k, x):
+    """Gamma incomplete reguliere P(k, x) (series / fraction continue, Numerical Recipes)."""
+    if x <= 0:
+        return 0.0
+    if x < k + 1:
+        terme = somme = 1.0 / k
+        a = k
+        for _ in range(500):
+            a += 1
+            terme *= x / a
+            somme += terme
+            if abs(terme) < abs(somme) * 1e-10:
+                break
+        return min(1.0, somme * math.exp(-x + k * math.log(x) - math.lgamma(k)))
+    b, c, d = x + 1 - k, 1e300, 1 / (x + 1 - k)
+    h = d
+    for i in range(1, 500):
+        an = -i * (i - k)
+        b += 2
+        d = an * d + b
+        d = 1e-300 if abs(d) < 1e-300 else d
+        c = b + an / c
+        c = 1e-300 if abs(c) < 1e-300 else c
+        d = 1 / d
+        h *= d * c
+        if abs(d * c - 1) < 1e-10:
+            break
+    return max(0.0, 1.0 - math.exp(-x + k * math.log(x) - math.lgamma(k)) * h)
+
+
+def chance_rembourser(dist, prix):
+    """25 oct 2026 - la chance que les cartes recues valent AU MOINS le prix paye pour la place. La somme des
+    valeurs suit une loi de Poisson composee (chaque carte possible arrive un nombre de fois aleatoire) ;
+    on l'approche par une loi Gamma de meme moyenne et meme variance (positive et asymetrique, comme un break :
+    souvent peu, parfois un gros hit). dist = [(valeur d'une carte, nombre attendu dans le break)]."""
+    prix = float(prix or 0)
+    mu = sum(v * n for v, n in dist or [])
+    var = sum(v * v * n for v, n in dist or [])
+    if prix <= 0:
+        return 1.0
+    if mu <= 0 or var <= 0:
+        return 0.0
+    k, theta = mu * mu / var, var / mu
+    return round(max(0.0, min(1.0, 1 - _gamma_p(k, prix / theta))), 3)
+
+
 def prix_catalogue(prod, boites=1, cout_boite=0.0, marge=0.25, frais_pct=0.109, frais_fixe=0.30,
-                   mode="equipes", plancher=1.0, arrondi=1.0, sport=None):
+                   mode="equipes", plancher=1.0, arrondi=1.0, sport=None, garder_dist=False):
     """Liste de prix d'un break a partir d'un produit du CATALOGUE : chaque
     carte (et chaque parallele) compte pour son nombre d'exemplaires attendus
     dans `boites` boites x sa valeur (valeur du sous-ensemble x demande du
@@ -169,10 +215,8 @@ def prix_catalogue(prod, boites=1, cout_boite=0.0, marge=0.25, frais_pct=0.109, 
     ev_total = ev_mesuree = 0.0
     for c, s, n in catalogue.cartes_attendues(prod, boites):
         nom = s["nom"]
-        if nom not in cache:
-            cache[nom] = valeurs.valeur_sous_ensemble(prod, nom, se, taux)
-        vref, mesure = cache[nom]
-        ev = n * vref * valeurs.demande(c.get("joueur"))
+        v1, mesure = valeurs.valeur_carte(prod, nom, c.get("joueur"), se, taux, cache)      # 25 oct 2026 : ventes reelles
+        ev = n * v1
         ev_total += ev
         ev_mesuree += ev if mesure else 0.0
         equipes = [code_equipe(e, sport) for e in re.split(r"\s*/\s*|\s*,\s*", str(c.get("equipe") or "")) if e.strip()] or ["?"]
@@ -186,6 +230,7 @@ def prix_catalogue(prod, boites=1, cout_boite=0.0, marge=0.25, frais_pct=0.109, 
         for k in k_list:
             d = cles.setdefault(k, {"cle": k, "ev": 0.0, "recrues": 0.0, "hits": 0.0, "numerotees": 0.0, "vedettes": {}, "n": 0.0})
             part = 1.0 / len(k_list)
+            d.setdefault("dist", []).append((v1, n * part))         # 25 oct 2026 : valeur de chaque carte possible
             d["ev"] += ev * part
             d["n"] += n * part
             d["recrues"] += n * part if (g == "recrue" or c.get("recrue")) else 0.0
@@ -212,7 +257,8 @@ def prix_catalogue(prod, boites=1, cout_boite=0.0, marge=0.25, frais_pct=0.109, 
                        "vedettes": [j for j, _ in sorted(d["vedettes"].items(), key=lambda kv: -kv[1])[:3]],
                        # 24 oct 2026 - chances (loi de Poisson sur le nombre attendu) : au moins une carte, une recrue, un hit
                        "p_carte": round(1 - math.exp(-d.get("n", 0.0)), 3), "p_recrue": round(1 - math.exp(-d["recrues"]), 3),
-                       "p_hit": round(1 - math.exp(-d["hits"]), 3), "n_attendu": round(d.get("n", 0.0), 2)})
+                       "p_hit": round(1 - math.exp(-d["hits"]), 3), "n_attendu": round(d.get("n", 0.0), 2),
+                       **({"_dist": d.get("dist") or []} if garder_dist else {})})
     places.sort(key=lambda p: (-p["prix"], p["nom"]))
     total = round(sum(p["prix"] for p in places), 2)
     net = total * (1 - float(frais_pct)) - float(frais_fixe) * len(places)

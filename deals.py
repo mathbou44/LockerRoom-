@@ -112,8 +112,19 @@ def chasser(n=PAR_TOUR, rechercher=None):
             break
         _c, memes, _e = cartes_match.filtrer(r["q"], fixes)
         med, garde = cartes_match.mediane_robuste([_total(x) for x in memes])
-        if not med or len(garde) < 3:
+        # 25 oct 2026 (Mathieu : « base-toi toujours sur les last sold ») : valeur = ventes reelles ; sans ventes,
+        # les prix demandes moins 15 % (ils sont souvent plus hauts que ce qui se vend vraiment)
+        try:
+            import vendues
+            vs = vendues.memes(r["q"], requete=True, n=8, fond=True)
+        except Exception:
+            vs = {}
+        vmed = vs.get("mediane") if (vs.get("nb") or 0) >= 3 else None
+        if not vmed and (not med or len(garde) < 3):
             continue
+        source = "vendues" if vmed else "annonces"
+        med = vmed or round(med * 0.85, 2)
+        ventes = [{k: v.get(k) for k in ("titre", "prix", "le", "photo", "url")} for v in (vs.get("ventes") or [])[:6]]
         comps = sorted(({"titre": x["titre"], "total": _total(x), "photo": x.get("photo"), "url": x.get("url")} for x in memes),
                        key=lambda x: abs(x["total"] - med))[:8]
         _c, memes_e, _e = cartes_match.filtrer(r["q"], encans)
@@ -131,7 +142,8 @@ def chasser(n=PAR_TOUR, rechercher=None):
                     continue
             deals[a["item_id"]] = {"item_id": a["item_id"], "titre": a["titre"], "total": t, "photo": a.get("photo"), "url": a.get("url"),
                                    "valeur": med, "ratio": round(t / med, 3), "encan": bool(a.get("encan")), "fin": fin,
-                                   "mises": a.get("mises"), "sport": r["sport"], "joueur": r["joueur"], "q": r["q"], "n": len(garde),
+                                   "mises": a.get("mises"), "sport": r["sport"], "joueur": r["joueur"], "q": r["q"],
+                                   "n": (vs.get("nb") or 0) if vmed else len(garde), "valeur_source": source, "vendues": ventes,
                                    "comps": comps, "vu_le": maint.isoformat(timespec="seconds")}
             trouves += 1
     limite = (maint - timedelta(hours=48)).isoformat()

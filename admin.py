@@ -155,11 +155,17 @@ def sante():
         disque = None
     taches = {"deals": _maj_fichier("deals_globaux.json"), "nouvelles": _maj_fichier("nouvelles_cache.json"),
               "nouveaux_produits": _maj_fichier("produits_a_ajouter.json"), "valeurs": (valeurs.statut() or {}).get("maj")}
+    try:
+        import ventes_communaute
+        vc = ventes_communaute.statut()
+        taches["ventes_communaute"] = vc.get("maj")
+    except Exception:
+        vc = None
     return {"version": (os.environ.get("RENDER_GIT_COMMIT") or "")[:7] or "PC",
             "demarre_le": datetime.fromtimestamp(DEMARRE).isoformat(timespec="minutes"),
             "en_ligne_h": round((time.time() - DEMARRE) / 3600, 1),
             "ebay": appels_ebay.resume(), "photos": photos, "disque": disque, "taches": taches,
-            "erreurs": erreurs()[:30], "multi": comptes.MULTI}
+            "erreurs": erreurs()[:30], "multi": comptes.MULTI, "ventes_communaute": vc}
 
 
 # -- catalogue -----------------------------------------------------------------------------------
