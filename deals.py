@@ -17,6 +17,7 @@ import time
 from datetime import datetime, timedelta, timezone
 
 RATIO_DEAL = 0.70
+VERSION = 2                      # 26 oct 2026 : valeur par annonce (les deals d'avant sont retires)
 ENCAN_H = 6                      # 25 oct 2026 : un encan n'est montre que s'il finit dans 6 h (avant, la mise monte encore)
 PAR_TOUR = 8                     # requetes par tour (x2 appels : prix fixe + encans)
 FRAICHEUR_S = 3600
@@ -50,6 +51,8 @@ _VALIDES = {}
 def valide(x):
     """La carte passe-t-elle les regles ACTUELLES du filtre ? (les deals gardes d'avant une correction sont retires)."""
     import cartes_match
+    if int(x.get("v") or 0) < VERSION:
+        return False
     k = (x.get("item_id"), x.get("q"), x.get("titre"))
     if k not in _VALIDES:
         if len(_VALIDES) > 5000:
@@ -90,6 +93,23 @@ def _total(a):
     return round((a.get("prix_cad") or 0) + (a.get("port_cad") or 0), 2)
 
 
+def valeur_annonce(a, ventes, actives):
+    """La valeur de LA carte d'une annonce : mediane des ventes de la meme carte (3 au moins) ; sinon les autres
+    annonces de la meme carte moins 15 % (3 au moins). -> (valeur, source, n, ventes) ou None."""
+    import cartes_match
+    cib = cartes_match.cible_titre(a.get("titre") or "")
+    pv = [v for v in ventes or [] if v.get("prix") and not cartes_match.raisons_refus(cib, v.get("titre") or "")]
+    if len(pv) >= 3:
+        m = cartes_match.mediane_robuste([v["prix"] for v in pv])[0] if len(pv) >= 4 else sorted(v["prix"] for v in pv)[len(pv) // 2]
+        pv.sort(key=lambda v: str(v.get("le") or ""), reverse=True)
+        return round(m, 2), "vendues", len(pv), [{k: v.get(k) for k in ("titre", "prix", "le", "photo", "url")} for v in pv[:6]]
+    pa = [_total(x) for x in actives or [] if x.get("item_id") != a.get("item_id")
+          and not cartes_match.raisons_refus(cib, x.get("titre") or "")]
+    if len(pa) >= 3:
+        return round(cartes_match.mediane_robuste(pa)[0] * 0.85, 2), "annonces", len(pa), []
+    return None
+
+
 def chasser(n=PAR_TOUR, rechercher=None):
     """Un tour : n requetes (on reprend la ou on etait), deals gardes 48 h (encans : jusqu'a la fin)."""
     import cartes_match
@@ -112,6 +132,15 @@ def chasser(n=PAR_TOUR, rechercher=None):
             break
         _c, memes, _e = cartes_match.filtrer(r["q"], fixes)
         med, garde = cartes_match.mediane_robuste([_total(x) for x in memes])
+        # 26 oct 2026 (Mathieu : « en quoi c'est 60 $ de profit ? » - un Purple Shock a 1 $ « vaut 70 $ » : la valeur
+        # etait celle de TOUTE la recherche, autos et gradees comprises) : chaque annonce a SA valeur, celle des
+        # ventes de la MEME carte (meme parallele, meme numero, brute ou gradee pareil), sinon pas de deal.
+        try:
+            import vendues
+            q_v = cartes_match.requete_ebay(cartes_match.cible(r["q"])) or r["q"]
+            brut_v = vendues.rechercher(q_v, fond=True).get("ventes") or []
+        except Exception:
+            brut_v = []
         # 25 oct 2026 (Mathieu : « base-toi toujours sur les last sold ») : valeur = ventes reelles ; sans ventes,
         # les prix demandes moins 15 % (ils sont souvent plus hauts que ce qui se vend vraiment)
         try:
@@ -128,9 +157,16 @@ def chasser(n=PAR_TOUR, rechercher=None):
         comps = sorted(({"titre": x["titre"], "total": _total(x), "photo": x.get("photo"), "url": x.get("url")} for x in memes),
                        key=lambda x: abs(x["total"] - med))[:8]
         _c, memes_e, _e = cartes_match.filtrer(r["q"], encans)
+        plafond = max([v["prix"] for v in brut_v] + [med or 0]) * RATIO_DEAL
         for a in memes + memes_e:
             t = _total(a)
-            if not t or t > med * RATIO_DEAL:
+            if not t or t > plafond:
+                continue
+            va = valeur_annonce(a, brut_v, memes)
+            if not va:
+                continue
+            med_a, source_a, n_a, ventes_a = va
+            if t > med_a * RATIO_DEAL:
                 continue
             fin = a.get("fin")
             if a.get("encan"):
@@ -141,10 +177,10 @@ def chasser(n=PAR_TOUR, rechercher=None):
                 if fin_dt - maint > timedelta(hours=ENCAN_H):     # encan : seulement ceux qui finissent bientot
                     continue
             deals[a["item_id"]] = {"item_id": a["item_id"], "titre": a["titre"], "total": t, "photo": a.get("photo"), "url": a.get("url"),
-                                   "valeur": med, "ratio": round(t / med, 3), "encan": bool(a.get("encan")), "fin": fin,
+                                   "valeur": med_a, "ratio": round(t / med_a, 3), "encan": bool(a.get("encan")), "fin": fin,
                                    "mises": a.get("mises"), "sport": r["sport"], "joueur": r["joueur"], "q": r["q"],
-                                   "n": (vs.get("nb") or 0) if vmed else len(garde), "valeur_source": source, "vendues": ventes,
-                                   "comps": comps, "vu_le": maint.isoformat(timespec="seconds")}
+                                   "n": n_a, "valeur_source": source_a, "vendues": ventes_a or ventes,
+                                   "comps": comps, "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION}
             trouves += 1
     limite = (maint - timedelta(hours=48)).isoformat()
     garde_ = []

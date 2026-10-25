@@ -108,6 +108,18 @@ class Deals(unittest.TestCase):
         self.assertTrue(d and all(x["ratio"] <= deals.RATIO_DEAL for x in d))
         self.assertTrue(any(x["encan"] for x in d))
 
+    def test_valeur_de_la_meme_carte(self):
+        """26 oct 2026 : un Purple Shock a 1 $ ne « vaut » pas 70 $ parce que les autos de la recherche se vendent 70 $."""
+        import deals
+        v = [{"titre": "2024 Donruss Optic Rated Rookie Bucky Irving #216 Purple Shock", "prix": p, "le": "2026-10-2" + str(i)}
+             for i, p in enumerate([1, 1, 2, 3, 1])]
+        v += [{"titre": "2024 Donruss Optic Rated Rookie Bucky Irving #216 Auto /25", "prix": 70, "le": "2026-10-20"}] * 6
+        r = deals.valeur_annonce({"titre": "2024 Panini Donruss Optic - Rated Rookie Bucky Irving #216 Purple Shock", "item_id": "x"}, v, [])
+        self.assertLessEqual(r[0], 3)
+        self.assertEqual(r[1], "vendues")
+        self.assertIsNone(deals.valeur_annonce({"titre": "2024 Donruss Optic Rated Rookie Bucky Irving #216 Holo", "item_id": "y"}, v, []))
+        self.assertFalse(deals.valide({"item_id": "z", "titre": "t"}))       # deal d'avant la correction : retire
+
 
 class AnalyseBreak(unittest.TestCase):
     def test_chances_et_prix(self):

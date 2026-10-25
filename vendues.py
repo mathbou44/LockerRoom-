@@ -201,6 +201,28 @@ def memes(texte, requete=True, n=24, fond=False, exclure_titre=None):
             "tendance": tendance(tout)}
 
 
+def memes_annonce(titre, q=None, n=24, fond=False):
+    """26 oct 2026 - les ventes de la MEME carte qu'une annonce. Avec q (la recherche du chasseur de deals, deja en
+    cache) : ses ventes filtrees par le titre de l'annonce (meme parallele, meme numero) ; s'il y en a moins de 3,
+    la recherche faite a partir du titre."""
+    import cartes_match
+    if q:
+        try:
+            cib_q = cartes_match.cible(q)
+            r = rechercher(cartes_match.requete_ebay(cib_q) or q, fond=fond)
+            cib = cartes_match.cible_titre(titre)
+            l = [v for v in r.get("ventes") or [] if not cartes_match.raisons_refus(cib, v["titre"])]
+            if len(l) >= 3:
+                l.sort(key=lambda v: str(v.get("le") or ""), reverse=True)
+                prix = [v["prix"] for v in l]
+                med = cartes_match.mediane_robuste(prix)[0] if len(prix) >= 4 else round(statistics.median(prix), 2)
+                return {"ventes": l[:n], "mediane": med, "nb": len(l), "derniere": l[0]["le"], "ebay": len(l), "communaute": 0,
+                        "erreur": None, "points": [[v.get("le"), v["prix"]] for v in l[:200] if v.get("le")], "tendance": tendance(l)}
+        except Exception:
+            pass
+    return memes(titre, requete=False, n=n, fond=fond)
+
+
 def tendance(ventes, jours=30):
     """26 oct 2026 - % de variation : mediane des ventes des `jours` derniers jours vs les `jours`*2 d'avant.
     None s'il n'y a pas assez de ventes des deux cotes (3 chacune)."""

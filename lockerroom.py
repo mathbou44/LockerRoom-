@@ -1797,9 +1797,19 @@ class Api:
                                              prix_max=v["prix_vendu"] * sante.RACHAT_RATIO, recentes=True, limite=50)
             except (RuntimeError, OSError):
                 break
+            ref = v["prix_vendu"]
             if carte:
                 _c, res, _e = cartes_match.filtrer_carte(v["titre"], res)
-            ops = sante.opportunites(v["prix_vendu"], res, exclure=mes)
+                # 26 oct 2026 : la reference = les ventes recentes de la meme carte (pas seulement notre vente d'avant,
+                # qui peut etre un coup de chance) ; on garde la plus basse des deux
+                try:
+                    import vendues
+                    vm = vendues.memes(v["titre"], requete=False, n=8, fond=True)
+                    if (vm.get("nb") or 0) >= 3 and vm.get("mediane"):
+                        ref = min(ref, vm["mediane"])
+                except Exception:
+                    pass
+            ops = sante.opportunites(ref, res, exclure=mes)
             with _verrou:
                 c = self._db()
                 try:
@@ -1807,7 +1817,7 @@ class Api:
                     for o in ops[:3]:
                         c.execute("INSERT OR IGNORE INTO opportunites (item_id, titre, total, url, photo, ref_titre, ref_prix, ratio, vu_le) "
                                   "VALUES (?,?,?,?,?,?,?,?,?)", (o["item_id"], o["titre"], o["total"], o["url"], o["photo"], v["titre"],
-                                                                  v["prix_vendu"], o["ratio"], _maintenant()))
+                                                                  ref, o["ratio"], _maintenant()))
                         trouvees += 1
                     c.commit()
                 finally:
@@ -2721,10 +2731,8 @@ class Api:
         try:
             if rapide:
                 vc = {"ventes": [], "attente": True}
-            elif q:                                        # la recherche du chasseur de deals : ventes deja en cache
-                vc = vendues.memes(q, requete=True, n=16)
-            else:
-                vc = vendues.memes(t, requete=False, n=16) if t else {"ventes": []}
+            else:                                          # 26 oct 2026 : les ventes de CETTE carte (pas de toute la recherche)
+                vc = vendues.memes_annonce(t, q=q, n=16) if t else {"ventes": []}
         except Exception:
             vc = {"ventes": []}
         ventes = vc.get("ventes") or (self._mes_ventes_pareilles(t, item_id) if t else [])
