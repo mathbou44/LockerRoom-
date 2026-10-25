@@ -17,6 +17,7 @@ import time
 from datetime import datetime, timedelta, timezone
 
 RATIO_DEAL = 0.70
+ENCAN_H = 6                      # 25 oct 2026 : un encan n'est montre que s'il finit dans 6 h (avant, la mise monte encore)
 PAR_TOUR = 8                     # requetes par tour (x2 appels : prix fixe + encans)
 FRAICHEUR_S = 3600
 _verrou = threading.Lock()
@@ -41,6 +42,20 @@ def _ecrire(d):
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(d, f, ensure_ascii=False)
     os.replace(tmp, _chemin())
+
+
+_VALIDES = {}
+
+
+def valide(x):
+    """La carte passe-t-elle les regles ACTUELLES du filtre ? (les deals gardes d'avant une correction sont retires)."""
+    import cartes_match
+    k = (x.get("item_id"), x.get("q"), x.get("titre"))
+    if k not in _VALIDES:
+        if len(_VALIDES) > 5000:
+            _VALIDES.clear()
+        _VALIDES[k] = not x.get("q") or not cartes_match.raisons_refus(cartes_match.cible(x["q"]), x.get("titre") or "")
+    return _VALIDES[k]
 
 
 def requetes():
@@ -112,7 +127,7 @@ def chasser(n=PAR_TOUR, rechercher=None):
                     fin_dt = datetime.fromisoformat(str(fin).replace("Z", "+00:00"))
                 except ValueError:
                     continue
-                if fin_dt - maint > timedelta(hours=24):          # encan : seulement ceux qui finissent bientot
+                if fin_dt - maint > timedelta(hours=ENCAN_H):     # encan : seulement ceux qui finissent bientot
                     continue
             deals[a["item_id"]] = {"item_id": a["item_id"], "titre": a["titre"], "total": t, "photo": a.get("photo"), "url": a.get("url"),
                                    "valeur": med, "ratio": round(t / med, 3), "encan": bool(a.get("encan")), "fin": fin,
@@ -129,6 +144,8 @@ def chasser(n=PAR_TOUR, rechercher=None):
             except ValueError:
                 continue
         elif str(x.get("vu_le") or "") < limite:
+            continue
+        if not valide(x):
             continue
         garde_.append(x)
     garde_.sort(key=lambda x: x["ratio"])

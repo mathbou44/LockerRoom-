@@ -53,7 +53,10 @@ EXCLUS = [r"\blots?\b", r"\bx\s?[2-9]\b", r"\(\s*[2-9]\s*\)", r"\b[2-9]\s*cards?
           r"\breprint\b", r"\brp\b", r"\bcustom\b", r"\bdigital\b", r"\bproxy\b", r"\bfacsimile\b", r"\bnovelty\b",
           r"\bart card\b", r"\b(case|box|team|player|random|pack) break\b", r"\bbreak (spot|slot)\b", r"\bhobby box\b",
           r"\bblaster\b", r"\bpacks\b", r"\bunopened\b", r"\bsealed\b", r"\bteam set\b", r"\bset of\b", r"\bmystery\b",
-          r"\bcomplete set\b", r"\brandom (team|player)\b"]
+          r"\bcomplete set\b", r"\brandom (team|player)\b",
+          # 25 oct 2026 - cartes a plusieurs joueurs vues dans les deals (« Young Guns Teamates Schaefer / Misa »)
+          r"\btea?mm?ates?\b", r"\bduo\b", r"\bcombo\b", r"\btandem\b",       # pas « dual » / « triple » (Dual Jersey, Triple Threads)
+          r"\brookie class\b", r"\bteam leaders?\b", r"\b\d+\s*card lot\b", r"\bpick (your|a) card\b", r"\byou pick\b", r"\bpyc\b"]
 # noms d'equipes qui contiennent une couleur (« Red Wings » n'est pas une variante Red)
 EQUIPES_COULEUR = ["red wings", "blue jackets", "blue jays", "red sox", "white sox", "green bay", "red devils", "golden knights",
                    "black hawks", "silver knights", "orange crush"]

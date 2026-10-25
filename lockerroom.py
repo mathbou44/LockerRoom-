@@ -137,6 +137,13 @@ def _connecter(chemin=None):
     return c
 
 
+def _opp_ok(titre):
+    """25 oct 2026 : un « deal » de rachat n'est jamais un lot, une checklist ou une carte a plusieurs joueurs
+    (« Young Guns Teamates Schaefer » affiche a -99 % sur l'accueil)."""
+    t = cartes_match.norm(titre or "")
+    return not (cartes_match.decoder(titre or "").get("exclu") or re.search(r"\bchecklists?\b|\bcl\b", t))
+
+
 def _dicts(lignes):
     return [dict(r) for r in lignes]
 
@@ -1646,7 +1653,8 @@ class Api:
             try:
                 if verdict == "racheter":
                     limite = (datetime.now() - timedelta(days=4)).isoformat()
-                    return _dicts(c.execute("SELECT * FROM opportunites WHERE masque=0 AND vu_le >= ? ORDER BY ratio LIMIT 100", (limite,)))
+                    return [o for o in _dicts(c.execute("SELECT * FROM opportunites WHERE masque=0 AND vu_le >= ? ORDER BY ratio LIMIT 100", (limite,)))
+                            if _opp_ok(o.get("titre"))]
                 actives = {a["item_number"]: a for a in self._annonces_actives(c)}
                 out = []
                 for s in _dicts(c.execute("SELECT * FROM sante WHERE verdict=? AND fait=0", (verdict,))):
@@ -2264,7 +2272,8 @@ class Api:
             try:
                 c.execute("CREATE TABLE IF NOT EXISTS deals_masques (item_id TEXT PRIMARY KEY)")
                 masques = {x[0] for x in c.execute("SELECT item_id FROM deals_masques")}
-                opps = _dicts(c.execute("SELECT * FROM opportunites WHERE masque=0 AND vu_le >= ? ORDER BY ratio LIMIT 60", (limite,)))
+                opps = [o for o in _dicts(c.execute("SELECT * FROM opportunites WHERE masque=0 AND vu_le >= ? ORDER BY ratio LIMIT 80", (limite,)))
+                        if _opp_ok(o.get("titre"))]
             finally:
                 c.close()
         out = {}
@@ -2273,7 +2282,13 @@ class Api:
                                  "valeur": o.get("ref_prix"), "ratio": o.get("ratio") or 1, "encan": False, "fin": None, "vu_le": o.get("vu_le"),
                                  "sport": sports.detecter(o.get("titre"), defaut=r.get("sport") or sports.DEFAUT), "source": "ventes",
                                  "comps": json.loads(o["comps"]) if o.get("comps") else [], "ref_titre": o.get("ref_titre")}
+        maint_utc = datetime.utcnow().isoformat()
         for g in deals.lire().get("deals") or []:
+            if not deals.valide(g):
+                continue
+            if g.get("encan") and not (maint_utc < str(g.get("fin") or "").replace("Z", "") <
+                                       (datetime.utcnow() + timedelta(hours=deals.ENCAN_H)).isoformat()):   # fini, ou trop loin
+                continue
             out.setdefault(g["item_id"], {**g, "source": "marche"})
         lst = []
         for x in out.values():
@@ -2283,6 +2298,37 @@ class Api:
             x["rabais"] = round(100 * (1 - (x.get("ratio") or 1)))
             lst.append(x)
         return lst
+
+    @staticmethod
+    def _deals_filtrer(lst, f):
+        """prix_min / prix_max (total, $ CA), rabais_min (%), gain_min ($), valeur_min ($), joueurs [..] (un des noms),
+        sortes [recrue, auto, patch, numerotee, gradee, brute] (toutes demandees), avec_mise (encans avec au moins 1 mise)."""
+        n = lambda k: _float(f.get(k))
+        pmin, pmax, rmin, gmin, vmin = n("prix_min"), n("prix_max"), n("rabais_min"), n("gain_min"), n("valeur_min")
+        joueurs = [cartes_match.norm(j) for j in (f.get("joueurs") or []) if str(j).strip()][:20]
+        sortes = [x for x in (f.get("sortes") or []) if x in ("recrue", "auto", "patch", "numerotee", "gradee", "brute")]
+        out = []
+        for x in lst:
+            if pmin is not None and (x.get("total") or 0) < pmin or pmax is not None and (x.get("total") or 0) > pmax:
+                continue
+            if rmin is not None and (x.get("rabais") or 0) < rmin or gmin is not None and (x.get("gain") or 0) < gmin:
+                continue
+            if vmin is not None and (x.get("valeur") or 0) < vmin:
+                continue
+            if f.get("avec_mise") and x.get("encan") and not x.get("mises"):
+                continue
+            t = cartes_match.norm(x.get("titre") or "")
+            if joueurs and not any(j in t or j.split()[-1] in t.split() for j in joueurs):
+                continue
+            if sortes:
+                d = cartes_match.decoder(x.get("titre") or "")
+                a = {"recrue": bool(d.get("rc")) or "young guns" in t or "rookie" in t, "auto": bool(d.get("auto")),
+                     "patch": bool(d.get("patch")), "numerotee": d.get("serie") is not None, "gradee": bool(d.get("grade")),
+                     "brute": not d.get("grade")}
+                if not all(a[s_] for s_ in sortes):
+                    continue
+            out.append(x)
+        return out
 
     def deals_liste(self, f=None):
         """Filtres : sports [..], type fixe|encan, tri rabais|fin|prix|gain|recent. Gratuit : les 5 meilleurs."""
@@ -2297,8 +2343,10 @@ class Api:
             lst = [x for x in lst if not x.get("encan")]
         elif f.get("type") == "encan":
             lst = [x for x in lst if x.get("encan")]
+        # 25 oct 2026 (Mathieu : « une option de tri/filtre pour que l'utilisateur puisse customizer ses deals »)
+        lst = self._deals_filtrer(lst, f)
         tri = f.get("tri") or "rabais"
-        cles = {"rabais": lambda x: x.get("ratio") or 1, "prix": lambda x: x.get("total") or 0, "gain": lambda x: -(x.get("gain") or 0),
+        cles = {"rabais": lambda x: (1 if x.get("encan") else 0, x.get("ratio") or 1),       # prix fixe d'abord : la mise d'un encan monte "prix": lambda x: x.get("total") or 0, "gain": lambda x: -(x.get("gain") or 0),
                 "recent": lambda x: str(x.get("vu_le") or ""), "fin": lambda x: (0, str(x.get("fin"))) if x.get("encan") else (1, str(x.get("ratio")))}
         lst.sort(key=cles.get(tri, cles["rabais"]), reverse=(tri == "recent"))
         n = len(lst)
@@ -2341,9 +2389,38 @@ class Api:
         total = round((a.get("prix_cad") or 0) + (a.get("port_cad") or 0), 2) if a.get("prix_cad") else None
         r = self.reglages_lire()
         fp, ff = (r["frais_ebay_pct"] or 0) / 100, r["frais_ebay_fixe"] or 0
+        # 25 oct 2026 (Mathieu : « montre les last sold comps avec leurs photos aussi et le prix suggere »)
+        suggere = None
+        if med and n >= 3:
+            prix = sorted(x["total"] for x in comps) if comps else []
+            vente = prix[max(0, int(len(prix) * 0.4) - 1)] if len(prix) >= 3 else med      # sous la mediane : vendu plus vite
+            suggere = {"vente": round(min(vente, med), 2),
+                       "achat_max": round(max(0.0, (med * (1 - fp) - ff) / 1.20), 2)}    # garde 20 % a la revente
+        ventes = self._mes_ventes_pareilles(t, item_id) if t else []
         return {"ok": True, "article": {**a, "total": total}, "comps": comps, "mediane": med, "n": n,
+                "suggere": suggere, "ventes": ventes,
                 "rabais": round(100 * (1 - total / med)) if total and med else None,
                 "gain": round(med * (1 - fp) - ff - total, 2) if total and med else None}
+
+    def _mes_ventes_pareilles(self, titre, item_id=None, n=8):
+        """Les MEMES cartes deja vendues par ce compte (vraies ventes, avec photo) : {titre, prix, le, photo}."""
+        nom = str(cartes_match.joueur_du_titre(titre) or "").split()[-1:] or [""]
+        nom = nom[0]
+        if not nom or len(nom) < 3:
+            return []
+        c = self._db()
+        try:
+            l = _dicts(c.execute("SELECT id, titre, joueur, prix_vendu, port_charge, vendu_le, photo, item_number FROM cartes "
+                                 "WHERE statut='Vendue' AND prix_vendu > 0 AND (titre LIKE ? OR joueur LIKE ?) ORDER BY vendu_le DESC LIMIT 200",
+                                 (f"%{nom}%", f"%{nom}%")))
+        except sqlite3.Error:
+            return []
+        finally:
+            c.close()
+        _c, memes, _e = cartes_match.filtrer_carte(titre, [{**x, "item_id": x.get("item_number") or ("c" + str(x["id"])), "titre": x.get("titre") or x.get("joueur") or ""} for x in l],
+                                                   exclure_id=item_id)
+        return [{"titre": x["titre"], "prix": round((x.get("prix_vendu") or 0) + (x.get("port_charge") or 0), 2), "le": x.get("vendu_le"),
+                 "photo": x.get("photo") if str(x.get("photo") or "") not in ("", "-") else None} for x in memes[:n]]
 
     def deal_masquer(self, item_id):
         with _verrou:
@@ -2455,7 +2532,7 @@ class Api:
                 actives = self._annonces_actives(c)
                 sante_ = {x["item_number"]: x for x in _dicts(c.execute("SELECT * FROM sante"))}
                 limite = (maint - timedelta(days=4)).isoformat()
-                opps = _dicts(c.execute("SELECT * FROM opportunites WHERE masque=0 AND vu_le >= ?", (limite,)))
+                opps = [o for o in _dicts(c.execute("SELECT * FROM opportunites WHERE masque=0 AND vu_le >= ?", (limite,))) if _opp_ok(o.get("titre"))]
                 stock = _dicts(c.execute("SELECT * FROM cartes WHERE statut!='Vendue'"))
                 d30 = (maint - timedelta(days=30)).isoformat()
                 d90 = (maint - timedelta(days=90)).isoformat()
