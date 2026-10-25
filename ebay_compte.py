@@ -546,6 +546,44 @@ def rechercher(q, categorie=None, prix_max=None, recentes=False, limite=50, fond
     return res
 
 
+def article(item_id, fond=False):
+    """24 oct 2026 - une annonce eBay complete (toutes ses photos, vendeur, livraison, fin) : Browse getItem,
+    jeton d'application (aucune donnee de compte). Cache 1 h."""
+    item_id = str(item_id or "").strip()
+    if not re.fullmatch(r"\d{9,15}", item_id):
+        raise RuntimeError("Numéro d'annonce eBay invalide")
+    cle = appels_ebay.cle_recherche(environnement(), article=item_id)
+    deja = appels_ebay.cache_lire(cle, "encheres")
+    if deja is not None:
+        return deja
+    appels_ebay.exiger("browse", fond)
+    adresse = url("recherche").split("/item_summary/")[0] + "/item/get_item_by_legacy_id?" + urllib.parse.urlencode({"legacy_item_id": item_id})
+    req = urllib.request.Request(adresse, headers={"Authorization": "Bearer " + jeton_application(), "Accept": "application/json",
+                                               "X-EBAY-C-MARKETPLACE-ID": "EBAY_CA"})
+    appels_ebay.compter("browse")
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            d = json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        raise RuntimeError(f"eBay HTTP {e.code} : {e.read().decode('utf-8', 'ignore')[:160]}")
+    pr = d.get("currentBidPrice") or d.get("price") or {}
+    dev = pr.get("currency") or "CAD"
+    t = TAUX_CAD.get(dev, 1.0)
+    opt = (d.get("shippingOptions") or [{}])[0]
+    port = (opt.get("shippingCost") or {}).get("value")
+    imgs = [x.get("imageUrl") for x in [d.get("image") or {}] + (d.get("additionalImages") or []) if x.get("imageUrl")]
+    vend = d.get("seller") or {}
+    res = {"item_id": item_id, "titre": d.get("title") or "", "prix_cad": round(float(pr.get("value") or 0) * t, 2),
+           "port_cad": round(float(port) * t, 2) if port not in (None, "") else None, "photos": imgs[:12],
+           "photo": imgs[0] if imgs else "", "url": d.get("itemWebUrl") or "", "etat": d.get("condition") or "",
+           "vendeur": vend.get("username") or "", "vendeur_pct": vend.get("feedbackPercentage"), "vendeur_score": vend.get("feedbackScore"),
+           "fin": d.get("itemEndDate"), "mises": d.get("bidCount"), "encan": "AUCTION" in (d.get("buyingOptions") or []),
+           "lieu": ((d.get("itemLocation") or {}).get("country") or ""), "service": opt.get("shippingServiceCode") or "",
+           "retours": bool((d.get("returnTerms") or {}).get("returnsAccepted"))}
+    appels_ebay.cache_ecrire(cle, res)
+    return res
+
+
 def lire_recherche(d):
     out = []
     for it in d.get("itemSummaries") or []:

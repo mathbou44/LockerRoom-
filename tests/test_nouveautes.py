@@ -119,7 +119,49 @@ class AnalyseBreak(unittest.TestCase):
         self.assertTrue(r["ok"])
         self.assertTrue(all(0 <= p["p_recrue"] <= 1 for p in r["places"]))
         self.assertGreater(r["total"], 0)
-        self.assertTrue(r["joueurs"])
+        self.assertTrue(r["hits"]["joueurs"])
+        self.assertGreater(r["total"] * (1 - r["decote"] / 100), 0)
+
+
+class NouveauxProduits(unittest.TestCase):
+    def test_reperer_et_demander(self):
+        import nouveaux_produits as n
+        self.assertEqual(n.nom_produit("Upper Deck 2025-26 Series 2 Hockey Hobby Box Factory Sealed", "hockey")[0], "2025-26 Upper Deck Series 2")
+        self.assertEqual(n.nom_produit("2025 Panini Prizm Football Hobby Box FOTL", "football")[0], "2025 Panini Prizm Football")
+        titres = {"hockey": ["PRESALE 2026-27 SP Authentic Hockey Hobby Box"] * 3 + ["2026-27 Upper Deck Series 1 Hobby Box"] * 3}
+
+        def rech(q, **k):
+            return [{"titre": t, "prix_cad": 300} for t in titres.get(q.split()[1], [])]
+        n.detecter(rech, datetime(2026, 10, 24))
+        noms = [x["nom"] for x in n.liste()]
+        self.assertIn("2026-27 SP Authentic", noms)
+        self.assertNotIn("2026-27 Upper Deck Series 1", noms)          # deja au catalogue
+        n.demander("2026-27 Upper Deck Trilogy", "hockey", "a")
+        n.demander("2026-27 Upper Deck Trilogy", "hockey", "b")
+        self.assertEqual(n.liste()[0]["demandes"], 2)
+
+
+class DemandesAdmin(unittest.TestCase):
+    def test_demande_agent_reponse(self):
+        import demandes
+        r = demandes.envoyer("probleme", "La recherche Will Smith Young Guns montre des PSA", "c1", "bob", "fr", "valeur", agent=False)
+        self.assertTrue(r["ok"])
+        faux = lambda corps: {"content": [{"type": "tool_use", "input": {"categorie": "bug", "priorite": 2, "resume": "Recherche : gradées mélangées",
+                                                                          "reponse_proposee": "Merci Bob !", "a_faire": "Filtrer les gradées"}}]}
+        ia = demandes.trier(r["id"], appeler=faux)
+        self.assertEqual(ia["categorie"], "bug")
+        self.assertIn("Filtrer les gradées", demandes.brief())
+        demandes.repondre(r["id"], "C'est réglé, merci !")
+        self.assertEqual(demandes.mes_reponses("c1")[0]["reponse"], "C'est réglé, merci !")
+        demandes.marquer_lu("c1", r["id"])
+        self.assertEqual(demandes.mes_reponses("c1"), [])
+
+    def test_sante_et_catalogue(self):
+        import admin
+        admin.noter_erreur("test", ValueError("x"))
+        s = admin.sante()
+        self.assertTrue(s["erreurs"] and "ebay" in s)
+        self.assertTrue(admin.catalogue_etat()["produits"])
 
 
 if __name__ == "__main__":

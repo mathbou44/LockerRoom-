@@ -336,6 +336,11 @@ def dispatcher(nom):
     try:
         return jsonify(m(*args))
     except Exception as e:  # l'ecran affiche l'erreur dans un toast
+        try:
+            import admin
+            admin.noter_erreur("api " + nom, e)
+        except Exception:
+            pass
         if HEBERGE:
             app.logger.exception("Erreur API %s", nom)
             return jsonify({"erreur": "Erreur du serveur : réessaie dans un instant"}), 500
@@ -387,6 +392,16 @@ def _valeurs_auto():
             deals.chasser_si_besoin()
         except Exception as e:
             print("Deals : " + str(e), flush=True)
+        try:                                    # 24 oct 2026 - nouveaux produits sur eBay (chaque semaine)
+            import nouveaux_produits
+            nouveaux_produits.detecter_si_besoin()
+        except Exception as e:
+            print("Nouveaux produits : " + str(e), flush=True)
+        try:                                    # 25 oct 2026 - demandes pas encore triees par l'agent
+            import demandes
+            demandes.trier_en_attente()
+        except Exception as e:
+            print("Demandes : " + str(e), flush=True)
         time.sleep(3600)
 
 

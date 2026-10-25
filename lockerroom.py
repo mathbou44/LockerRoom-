@@ -16,6 +16,8 @@ import re
 import secrets
 import sqlite3
 import threading
+import unicodedata
+import time
 from datetime import datetime, timedelta
 
 import calcul
@@ -27,6 +29,21 @@ import sante
 import sports
 import valeurs
 import vision
+# 25 oct 2026 - Render : « partially initialized module 'valeurs_maj' » (deux fils importaient le meme module en
+# meme temps). Tous les modules importes ici, une seule fois, au demarrage, avant les taches de fond.
+import admin  # noqa: E402
+import annonces  # noqa: E402
+import cartes_match  # noqa: E402
+import checklist_import  # noqa: E402
+import comptes  # noqa: E402
+import deals  # noqa: E402
+import demandes  # noqa: E402
+import forfaits  # noqa: E402
+import nouveaux_produits  # noqa: E402
+import paiements  # noqa: E402
+import valeurs_maj  # noqa: E402
+
+_VERROU_IMG = threading.Lock()
 
 DOSSIER = os.environ.get("LOCKERROOM_DONNEES") or os.path.dirname(os.path.abspath(__file__))   # heberge : disque persistant
 CHEMIN_DB = os.path.join(DOSSIER, "lockerroom.db")
@@ -229,7 +246,7 @@ class Api:
         except Exception:
             prix = None
         import forfaits
-        return {**forfaits.resume(), "multi": multi, "forfait": (info.get("forfait") or "gratuit") if multi else "pro",
+        return {**forfaits.resume(), "multi": multi, "admin": self._est_admin(), "forfait": (info.get("forfait") or "gratuit") if multi else "pro",
                 "statut": info.get("forfait_statut") or "", "fin": info.get("forfait_fin"),
                 "annule": bool(info.get("forfait_annule")), "client": bool(info.get("stripe_client")),
                 "paiements": paiements.actif(), "mode_paiement": paiements.mode(), "prix": prix,
@@ -479,7 +496,9 @@ class Api:
 
     def catalogue_liste(self):
         """Produits du catalogue + valeur attendue par boite (algo LockerRoom)."""
-        cle = (valeurs.statut().get("maj"), tuple(sorted(os.listdir(catalogue.DOSSIER))) if os.path.isdir(catalogue.DOSSIER) else ())
+        ajouts = catalogue.dossier_ajouts()
+        cle = (valeurs.statut().get("maj"), tuple(sorted(os.listdir(catalogue.DOSSIER))) if os.path.isdir(catalogue.DOSSIER) else (),
+               tuple(sorted((f, os.path.getmtime(os.path.join(ajouts, f))) for f in os.listdir(ajouts))) if os.path.isdir(ajouts) else ())
         out = []
         for p in catalogue.liste():
             k = (cle, p["id"])
@@ -488,6 +507,224 @@ class Api:
                 self._EV_CACHE[k] = calcul.prix_catalogue(prod, boites=1)["ev_par_boite"]
             out.append(dict(p, ev_par_boite=self._EV_CACHE[k]))
         return {"produits": out, "valeurs": valeurs.statut()}
+
+    # -- 24 oct 2026 : checklists Excel de Beckett (telechargees par l'utilisateur, deposees dans l'app) -----------
+    # -- 25 oct 2026 : la console admin (abonnes, sante, catalogue, demandes) ------------------------------
+    def admin_resume(self):
+        """Tout ce que la console affiche au premier coup d'oeil."""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import admin
+        import demandes
+        import nouveaux_produits
+        a = admin.abonnes()
+        dm = demandes.liste("ouvertes")
+        s = admin.sante()
+        return {"ok": True, "abonnes": {k: v for k, v in a.items() if k != "comptes"},
+                "demandes": {"ouvertes": dm["ouvertes"], "nouvelles": dm["nouvelles"]},
+                "a_ajouter": len(nouveaux_produits.liste()), "erreurs_24h": sum(1 for e in s["erreurs"] if str(e["le"]) > (datetime.now() - timedelta(days=1)).isoformat()),
+                "ebay": s["ebay"], "version": s["version"]}
+
+    def admin_abonnes(self):
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import admin
+        return {"ok": True, **admin.abonnes()}
+
+    def admin_offrir_pro(self, cid, jours=None):
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import admin
+        return admin.offrir_pro(str(cid), None if jours is None else int(_float(jours) or 0))
+
+    def admin_prolonger_essai(self, cid, jours=7):
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import admin
+        return admin.prolonger_essai(str(cid), int(_float(jours) or 7))
+
+    def admin_sante(self):
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import admin
+        return {"ok": True, **admin.sante()}
+
+    def admin_catalogue(self):
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import admin
+        return {"ok": True, **admin.catalogue_etat()}
+
+    def admin_remettre(self, cle):
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import admin
+        return admin.remettre(str(cle or ""))
+
+    def admin_demandes(self, statut="ouvertes"):
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import demandes
+        import vision
+        return {"ok": True, "agent": vision.disponible(), **demandes.liste(statut or None)}
+
+    def admin_repondre(self, did, texte=None, statut=None):
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import demandes
+        return demandes.repondre(str(did), texte, statut)
+
+    def admin_trier(self, did):
+        """Relance l'agent sur une demande (apres une panne, ou pour un nouveau brouillon)."""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import demandes
+        ia = demandes.trier(str(did))
+        return {"ok": bool(ia), "ia": ia, **({} if ia else {"erreur": "L'agent n'a pas répondu (clé Anthropic absente ou budget du mois atteint)"})}
+
+    def admin_brief(self):
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import demandes
+        return {"ok": True, "texte": demandes.brief()}
+
+    # -- demandes des utilisateurs (tous les comptes) --
+    def demande_envoyer(self, d):
+        import comptes
+        import demandes
+        d = d or {}
+        cid = comptes.courant() if comptes.MULTI else "local"
+        info = comptes.info(cid) if comptes.MULTI else {}
+        return demandes.envoyer(d.get("type"), d.get("texte"), cid, (info or {}).get("username"),
+                                d.get("langue") or self.reglages_lire().get("langue") or "fr", d.get("page"))
+
+    def demandes_reponses(self):
+        import comptes
+        import demandes
+        return demandes.mes_reponses(comptes.courant() if comptes.MULTI else "local")
+
+    def demande_lue(self, did):
+        import comptes
+        import demandes
+        return demandes.marquer_lu(comptes.courant() if comptes.MULTI else "local", str(did))
+
+    # -- 24 oct 2026 : ne manquer aucun nouveau produit (eBay chaque semaine + demandes des utilisateurs) --------
+    def produits_a_ajouter(self):
+        import nouveaux_produits
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        d = nouveaux_produits.lire()
+        return {"ok": True, "produits": nouveaux_produits.liste(), "maj": d.get("maj")}
+
+    def produits_detecter(self):
+        import nouveaux_produits
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        return nouveaux_produits.detecter()
+
+    def produit_ignorer(self, cle):
+        import nouveaux_produits
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        return nouveaux_produits.ignorer(str(cle or ""))
+
+    def produit_demander(self, nom, sport=None):
+        import comptes
+        import nouveaux_produits
+        return nouveaux_produits.demander(nom, sport or self.reglages_lire().get("sport"), comptes.courant() if comptes.MULTI else "local")
+
+    def _est_admin(self):
+        """Qui ajoute les produits au catalogue (pour TOUS les comptes) : le PC de Mathieu, et en ligne les comptes eBay
+        listes dans LOCKERROOM_ADMINS (Render). Les utilisateurs n'ont jamais de fichier a telecharger."""
+        import comptes
+        if not comptes.MULTI:
+            return True
+        u = str((comptes.info(comptes.courant()) or {}).get("username") or "").strip().lower()
+        admins = {x.strip().lower() for x in os.environ.get("LOCKERROOM_ADMINS", "").split(",") if x.strip()}
+        return bool(u) and u in admins
+
+    def catalogue_importer(self, d):
+        """d : {fichier (data URL ou base64), nom_fichier, produit_id (produit existant) | nom, saison, marque, sport}."""
+        import base64
+        import checklist_import
+        d = d or {}
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Les produits sont ajoutés par LockerRoom pour tout le monde"}
+        brut_txt = str(d.get("fichier") or "")
+        brut_txt = brut_txt.split(",", 1)[1] if brut_txt.startswith("data:") else brut_txt
+        try:
+            brut = base64.b64decode(brut_txt)
+        except (ValueError, TypeError):
+            return {"ok": False, "erreur": "Fichier illisible"}
+        if not brut or len(brut) > 12_000_000:
+            return {"ok": False, "erreur": "Fichier vide ou trop lourd (12 Mo au plus)"}
+        nom_f = str(d.get("nom_fichier") or "checklist.xlsx")
+        existant = catalogue.charger(d.get("produit_id")) if d.get("produit_id") else None
+        sport = sports.valide(d.get("sport") or (existant or {}).get("sport") or self.reglages_lire().get("sport"))
+        try:
+            lu = checklist_import.lire(brut, nom_f, sport)
+        except Exception as e:
+            return {"ok": False, "erreur": "Fichier non reconnu : " + type(e).__name__}
+        if lu["lignes"] < 5:
+            return {"ok": False, "erreur": "Aucune checklist reconnue dans ce fichier (il faut le .xlsx ou .csv de Beckett)"}
+        modele = None
+        if existant:
+            prod = checklist_import.fusionner(existant, lu)
+        else:
+            nom = re.sub(r"\s+", " ", str(d.get("nom") or "") or checklist_import.nom_devine(nom_f)).strip()
+            pid0 = re.sub(r"[^a-z0-9]+", "-", unicodedata.normalize("NFKD", nom).encode("ascii", "ignore").decode().lower()).strip("-")[:60]
+            existant = catalogue.charger(pid0)        # meme produit deja au catalogue : on le met a jour
+            if not existant:
+                cle_n = (checklist_import._mots_ligne(nom), (re.search(r"(19|20)\d{2}", nom) or [""])[0])
+                for x in catalogue.liste():
+                    if (checklist_import._mots_ligne(x.get("nom")), (re.search(r"(19|20)\d{2}", str(x.get("nom"))) or [""])[0]) == cle_n:
+                        existant = catalogue.charger(x["id"])
+                        break
+            if len(nom) < 4:
+                return {"ok": False, "erreur": "Donne le nom du produit (ex. 2025-26 Upper Deck Series 2)"}
+            pid = re.sub(r"[^a-z0-9]+", "-", unicodedata.normalize("NFKD", nom).encode("ascii", "ignore").decode().lower()).strip("-")[:60]
+            saison = d.get("saison") or (re.search(r"(19|20)\d{2}(-\d{2})?", nom) or [None])[0]
+            prod = {"id": pid, "nom": nom, "saison": saison, "marque": d.get("marque") or nom.split()[1] if len(nom.split()) > 1 else "",
+                    "sport": sport, "sortie": datetime.now().strftime("%Y-%m"),
+                    "formats": [{"format": "Boîte hobby", "paquets": None, "cartes_par_paquet": None, "boites_par_caisse": 12}],
+                    "sous_ensembles": lu["sous_ensembles"], "groupes_boite": [], "cartes": lu["cartes"],
+                    "notes": ["Checklist importée d'un fichier Beckett (" + nom_f + ") : cotes par boîte à compléter"], "sources": ["beckett.com"]}
+            if existant:
+                prod = checklist_import.fusionner(existant, lu)
+            else:
+                autres = []
+                for x in catalogue.liste():
+                    try:
+                        autres.append(catalogue.charger(x["id"]))
+                    except Exception:
+                        continue
+                prod, modele = checklist_import.cotes_modele(prod, autres)
+        prod["sources"] = list(dict.fromkeys((prod.get("sources") or []) + ["beckett.com (" + nom_f + ")"]))
+        catalogue.enregistrer_ajout(prod)
+        self._EV_CACHE.clear()
+        p2 = catalogue.charger(prod["id"]) or prod
+        taux = p2.get("_taux") or {}
+        return {"ok": True, "id": prod["id"], "nom": prod["nom"], "nb_cartes": len(prod["cartes"]), "nouveau": not existant, "modele": modele,
+                "sous_ensembles": [{"nom": x["nom"], "groupe": x.get("groupe"), "nb_cartes": x.get("nb_cartes"), "tirage": x.get("tirage"),
+                                    "par_boite": x.get("par_boite"), "taux": round(taux.get(x["nom"], 0), 4)} for x in prod["sous_ensembles"]]}
+
+    def checklist_cotes(self, pid, cotes=None, boites_par_caisse=None):
+        """Les cotes par boite (« Young Guns : 6 », « Auto : 1 ») d'un produit importe, tapees par l'utilisateur."""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Les produits sont ajoutés par LockerRoom pour tout le monde"}
+        prod = catalogue.charger(pid)
+        if not prod:
+            return {"ok": False, "erreur": "Produit introuvable dans le catalogue"}
+        prod = {k: v for k, v in prod.items() if not k.startswith("_")}
+        for x in prod.get("sous_ensembles") or []:
+            if x["nom"] in (cotes or {}):
+                v = _float((cotes or {})[x["nom"]])
+                x["par_boite"] = v if v and v > 0 else None
+        if _float(boites_par_caisse):
+            prod["formats"] = [{**((prod.get("formats") or [{}])[0]), "boites_par_caisse": int(_float(boites_par_caisse))}]
+        catalogue.enregistrer_ajout(prod)
+        self._EV_CACHE.clear()
+        return {"ok": True, "id": pid}
 
     def catalogue_checklist(self, pid):
         prod = catalogue.charger(pid)
@@ -524,10 +761,12 @@ class Api:
         return res
 
     def analyse_break(self, params):
-        """24 oct 2026 (Mathieu : « break analyser dans seller et acheteur ») - pour un produit du catalogue :
-        acheteur : chaque equipe / joueur, sa valeur attendue (EV), ses chances (une carte, une recrue, un hit)
-        et, si on donne le prix demande par le breaker, si c'est un bon prix ; vendeur : le prix de chaque place
-        selon le cout du produit et la marge voulue (meme modele que « Calculer un break »)."""
+        """24 oct 2026 (Mathieu : « break analyser dans seller et acheteur ») - pour un produit du catalogue (checklists
+        officielles extraites dans catalogue/*.json) :
+          vendeur  : prix de chaque place selon le cout des boites, le profit voulu et la decote (les places partent
+                     souvent ~15 % sous le prix voulu : le prix affiche en tient compte) ;
+          acheteur : les hits (autos, patchs) les plus susceptibles de sortir, joueur par joueur, et leur valeur ;
+                     produit sans hit garanti : les recrues. Vue equipes aussi (valeur attendue, prix demande)."""
         import forfaits
         p = params or {}
         if not forfaits.produit_permis(str(p.get("produit_id") or "")):
@@ -541,13 +780,24 @@ class Api:
             v = _float(p.get(cle))
             return defaut if v is None else v
         sport = prod.get("sport") or "hockey"
-        boites = f("boites", 1) or 1
+        boites = max(1, min(120, int(f("boites", 1) or 1)))
+        decote = max(0.0, min(0.6, f("decote", 15) / 100))
+        frais_pct, frais_fixe = f("frais_pct", r["frais_break_pct"]) / 100, f("frais_fixe", r["frais_break_fixe"])
+        arrondi = f("arrondi", r["arrondi_place"]) or 1
         args = dict(boites=boites, cout_boite=f("cout_boite", 0), marge=f("marge", r["marge_break"]) / 100,
-                    frais_pct=f("frais_pct", r["frais_break_pct"]) / 100, frais_fixe=f("frais_fixe", r["frais_break_fixe"]),
-                    plancher=f("plancher", r["plancher_place"]), arrondi=f("arrondi", r["arrondi_place"]) or 1, sport=sport)
-        res = calcul.prix_catalogue(prod, mode=p.get("mode") or "equipes", **args)
-        joueurs = calcul.prix_catalogue(prod, mode="joueurs", **{**args, "cout_boite": 0})["places"]
-        joueurs = sorted((j for j in joueurs if j["ev"] > 0), key=lambda j: -j["ev"])[:30]
+                    frais_pct=frais_pct, frais_fixe=frais_fixe, plancher=f("plancher", r["plancher_place"]), arrondi=arrondi, sport=sport)
+        mode = p.get("mode") or "equipes"
+        res = calcul.prix_catalogue(prod, mode=mode, **args)
+        # le prix affiche : celui qui donne le profit voulu meme si les places partent `decote` plus bas
+        n = len(res["places"]) or 1
+        for pl in res["places"]:
+            pl["prix_vise"] = pl["prix"]
+            pl["prix"] = calcul._arrondir(pl["prix"] / max(0.4, 1 - decote), arrondi)
+        total = round(sum(pl["prix"] for pl in res["places"]), 2)
+        res["total"] = total
+        res["profit_plein"] = round(total * (1 - frais_pct) - frais_fixe * n - res["cout"], 2)
+        res["profit_estime"] = round(total * (1 - decote) * (1 - frais_pct) - frais_fixe * n - res["cout"], 2)
+        res["decote"] = round(decote * 100, 1)
         demandes = {str(k): _float(v) for k, v in (p.get("prix_demandes") or {}).items() if _float(v)}
         for pl in res["places"]:
             d = demandes.get(pl["cle"])
@@ -555,10 +805,102 @@ class Api:
                 pl["demande"] = d
                 pl["valeur_ratio"] = round(pl["ev"] / d, 2)
         fmt = (prod.get("formats") or [{}])[0]
-        return {**res, "ok": True, "joueurs": joueurs, "boites": boites, "mode": p.get("mode") or "equipes",
+        return {**res, "ok": True, "hits": self._hits_produit(prod, boites), "boites": boites, "mode": mode,
                 "produit": {"id": prod["id"], "nom": prod["nom"], "saison": prod.get("saison"), "marque": prod.get("marque"),
                             "format": fmt.get("format"), "boites_par_caisse": fmt.get("boites_par_caisse"), "sport": sport,
                             "preliminaire": bool(prod.get("preliminaire"))}}
+
+    def _hits_produit(self, prod, boites):
+        """Joueur par joueur : ses autos / patchs attendus dans le break, la chance d'en sortir au moins un et leur valeur."""
+        import math
+        se = {s["nom"]: s for s in prod.get("sous_ensembles") or []}
+        taux = prod["_taux"]
+        lignes = catalogue.cartes_attendues(prod, boites)
+        groupes = ("auto", "memo", "auto_memo")
+        hits = [(c, s, n) for c, s, n in lignes if (s.get("groupe") in groupes) or c.get("auto") or c.get("memo")]
+        genre = "hits"
+        if sum(n for _c, _s, n in hits) < 0.3 * float(boites):   # pas de hit garanti (ex. Series 1) : les recrues
+            hits = [(c, s, n) for c, s, n in lignes if s.get("groupe") == "recrue" or c.get("recrue")]
+            genre = "recrues"
+        cache, par = {}, {}
+        for c, s, n in hits:
+            if s["nom"] not in cache:
+                cache[s["nom"]] = valeurs.valeur_sous_ensemble(prod, s["nom"], se, taux)[0]
+            for j in [x.strip() for x in str(c.get("joueur") or "").split("/") if x.strip()]:
+                d = par.setdefault(j, {"joueur": j, "equipe": c.get("equipe"), "n": 0.0, "ev": 0.0, "cartes": {}})
+                part = 1.0 / max(1, len(str(c.get("joueur")).split("/")))
+                v = n * part * cache[s["nom"]] * valeurs.demande(j)
+                d["n"] += n * part
+                d["ev"] += v
+                d["cartes"][s["nom"]] = d["cartes"].get(s["nom"], 0.0) + v
+        out = []
+        for d in par.values():
+            if d["n"] <= 0:
+                continue
+            out.append({"joueur": d["joueur"], "equipe": d["equipe"], "chance": round(1 - math.exp(-d["n"]), 3),
+                        "valeur": round(d["ev"] / d["n"], 2), "ev": round(d["ev"], 2),
+                        "meilleure": max(d["cartes"].items(), key=lambda kv: kv[1])[0]})
+        out.sort(key=lambda x: -x["ev"])                   # chance x valeur : ce qui vaut le plus d'etre vise
+        return {"genre": genre, "joueurs": out[:30]}
+
+    # -- images (24 oct 2026, « ajoute toujours le plus d'images possible ») : photos d'annonces eBay, en cache ------
+    def _cache_images(self):
+        import comptes
+        ch = os.path.join(comptes.DONNEES, "images_cartes.json")
+        try:
+            with open(ch, encoding="utf-8") as fi:
+                return ch, json.load(fi)
+        except (OSError, ValueError):
+            return ch, {}
+
+    def _image_pour(self, cle, q, doit=None, cache=None):
+        ch, d = cache or self._cache_images()
+        e = d.get(cle)
+        if e and (time.time() - e.get("le", 0)) < 14 * 86400:
+            return e.get("url")
+        url = None
+        try:
+            for a in ebay_compte.rechercher(q, limite=20, fond=False):
+                if a.get("photo") and (not doit or all(m in a["titre"].lower() for m in doit)):
+                    url = a["photo"]
+                    break
+        except (RuntimeError, OSError):
+            return None
+        with _VERROU_IMG:
+            d[cle] = {"url": url, "le": time.time()}
+            tmp = ch + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as fo:
+                json.dump(d, fo)
+            os.replace(tmp, ch)
+        return url
+
+    def images_produits(self, ids=None):
+        """Une vraie photo de la boite de chaque produit (une annonce eBay), gardee 14 jours."""
+        cache = self._cache_images()
+        out = {}
+        for pr in catalogue.liste():
+            if ids and pr["id"] not in ids:
+                continue
+            nom = re.sub(r"^(\d{4})-(\d{2})", r"\1-\2", pr["nom"])
+            out[pr["id"]] = self._image_pour("prod:" + pr["id"], f"{nom} hobby box sealed",
+                                             [pr["saison"].split("-")[0], "box"], cache)
+        return out
+
+    def images_joueurs(self, produit_id, joueurs, genre="hits"):
+        """La carte (auto / patch, ou recrue) de chaque joueur dans ce produit : une photo par joueur, 12 au plus."""
+        prod = catalogue.charger(produit_id)
+        if not prod:
+            return {}
+        cache = self._cache_images()
+        mot = "auto" if genre == "hits" else "rookie"
+        liste = [j for j in dict.fromkeys(str(x) for x in (joueurs or []) if x)][:40]   # 40 : une vedette par equipe
+
+        def une(j):
+            nom_fam = j.split("/")[0].split()[-1].lower()
+            return j, self._image_pour(f"j:{produit_id}:{j}", f"{j.split('/')[0]} {prod['nom']} {mot}", [nom_fam], cache)
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=6) as ex:          # en parallele : 32 equipes en quelques secondes
+            return dict(ex.map(une, liste))
 
     def valeurs_statut(self):
         return valeurs.statut()
@@ -1966,6 +2308,42 @@ class Api:
         import deals as _d
         return {"ok": True, "deals": lst[:120], "n": n, "pro": pro, "limite": None if pro else forfaits.LIMITES["deals"],
                 "sports": par_sport, "maj": _d.lire().get("maj"), "ebay": ebay_compte.statut().get("cles_ok")}
+
+    def annonce_detail(self, item_id, titre=None):
+        """24 oct 2026 (Mathieu : « comme Hall of Cardz, une fenetre dans l'app qui ouvre avec l'annonce eBay et les comps
+        sous celle-ci avec leurs images ») : l'annonce (photos, prix, vendeur, fin) + les MEMES cartes en vente."""
+        import cartes_match
+        a = None
+        try:
+            a = ebay_compte.article(item_id)
+        except (RuntimeError, OSError) as e:
+            a = {"item_id": str(item_id), "titre": titre or "", "photos": [], "erreur": str(e)}
+        t = a.get("titre") or titre or ""
+        comps, med, n = [], None, 0
+        if t:
+            try:
+                carte = cartes_match.est_carte(t)
+                cib = cartes_match.cible_titre(t) if carte else None
+                q = (cartes_match.requete_ebay(cib) if cib else None) or sante.requete(t)
+                res = ebay_compte.rechercher(q, categorie=CATEGORIE_CARTES if carte else None, limite=100, fond=False)
+                if carte:
+                    _c, memes, _e = cartes_match.filtrer_carte(t, res, exclure_id=item_id)
+                else:
+                    memes = [x for x in res if str(x.get("item_id")) != str(item_id)]
+                tot = lambda x: round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2)
+                med, garde = cartes_match.mediane_robuste([tot(x) for x in memes])
+                n = len(garde)
+                comps = sorted(({"item_id": x["item_id"], "titre": x["titre"], "total": tot(x), "photo": x.get("photo"), "url": x.get("url"),
+                                 "encan": x.get("encan"), "fin": x.get("fin")} for x in memes if x.get("prix_cad")),
+                               key=lambda x: abs(x["total"] - (med or 0)))[:12]
+            except (RuntimeError, OSError) as e:
+                a.setdefault("erreur_comps", str(e))
+        total = round((a.get("prix_cad") or 0) + (a.get("port_cad") or 0), 2) if a.get("prix_cad") else None
+        r = self.reglages_lire()
+        fp, ff = (r["frais_ebay_pct"] or 0) / 100, r["frais_ebay_fixe"] or 0
+        return {"ok": True, "article": {**a, "total": total}, "comps": comps, "mediane": med, "n": n,
+                "rabais": round(100 * (1 - total / med)) if total and med else None,
+                "gain": round(med * (1 - fp) - ff - total, 2) if total and med else None}
 
     def deal_masquer(self, item_id):
         with _verrou:

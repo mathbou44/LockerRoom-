@@ -43,21 +43,33 @@ def _compte():
     return comptes.courant() if comptes.MULTI else None
 
 
-def etat():
-    """{pro, essai, jours_restants, payant} du compte courant."""
+def offert(info):
+    """25 oct 2026 - Pro offert par l'admin : « toujours » ou jusqu'a une date (champ distinct de Stripe)."""
+    o = str((info or {}).get("pro_offert") or "")
+    if o == "toujours":
+        return True
+    try:
+        return bool(o) and datetime.now() < datetime.fromisoformat(o[:19])
+    except ValueError:
+        return False
+
+
+def etat(cid=None):
+    """{pro, essai, jours_restants, payant, offert} du compte courant (ou du compte cid, pour l'admin)."""
     import comptes
-    cid = _compte()
+    cid = cid or _compte()
     if not cid:
         return {"pro": True, "essai": False, "payant": True, "jours_restants": None, "local": True}
     info = comptes.info(cid) or {}
     payant = (info.get("forfait") or "gratuit") == "pro"
+    don = offert(info)
     try:
-        fin = datetime.fromisoformat(str(info.get("cree_le"))[:19]) + timedelta(days=ESSAI_JOURS)
-    except ValueError:
+        fin = datetime.fromisoformat(str(info.get("cree_le"))[:19]) + timedelta(days=ESSAI_JOURS + int(info.get("essai_bonus_jours") or 0))
+    except (ValueError, TypeError):
         fin = None
-    essai = (not payant) and fin is not None and datetime.now() < fin
+    essai = (not payant) and (not don) and fin is not None and datetime.now() < fin
     reste = max(0, (fin - datetime.now()).days + 1) if essai else 0
-    return {"pro": payant or essai, "essai": essai, "payant": payant, "jours_restants": reste,
+    return {"pro": payant or essai or don, "essai": essai, "payant": payant, "offert": don, "jours_restants": reste,
             "essai_fin": fin.isoformat(timespec="minutes") if fin else None}
 
 

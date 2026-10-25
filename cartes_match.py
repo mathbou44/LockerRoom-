@@ -181,6 +181,13 @@ def raisons_refus(c, titre, appris=None):
     manque = [m for m in c["mots"] if not _a_mot(t, m)]
     if manque:
         r.append("autre carte (" + " ".join(manque[:3]) + " absent)")
+    # 24 oct 2026 - « Will Smith / Lekkerimaki checklist » n'est pas la Young Guns de Will Smith
+    if _a_mot(t, "checklist") and not _a_mot(c["texte"], "checklist"):
+        r.append("checklist")
+    if c["mots"]:
+        autres = [n for n in _noms_dans(t) if n.split()[-1] not in c["mots"]]      # meme nom de famille = meme joueur
+        if autres:
+            r.append("autre joueur (" + autres[0] + ")")
     if c["annee"] and a["annee"] and a["annee"] != c["annee"]:
         r.append("autre année")
     if c["num"] and a["num"] and a["num"] != c["num"]:
@@ -426,6 +433,17 @@ def _mots_equipes():
 
 
 _EQUIPES_MOTS = {"t": None}
+
+
+_RE_NOMS = {"rx": None}
+
+
+def _noms_dans(t):
+    """Les joueurs connus nommes dans un titre (une seule expression pour tous : rapide)."""
+    if _RE_NOMS["rx"] is None:
+        noms = _joueurs_connus()
+        _RE_NOMS["rx"] = re.compile(r"(?<![a-z0-9])(" + "|".join(re.escape(n) for n in noms) + r")(?![a-z0-9])") if noms else False
+    return _RE_NOMS["rx"].findall(t) if _RE_NOMS["rx"] else []
 
 
 def joueur_du_titre(titre, joueur=None):

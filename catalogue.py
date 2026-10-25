@@ -18,20 +18,44 @@ DOSSIER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "catalogue")
 _CACHE = {}
 
 
+def dossier_ajouts():
+    """24 oct 2026 - checklists importees (Excel Beckett) : sur le disque des donnees (gardees entre deux deploiements)."""
+    base = os.environ.get("LOCKERROOM_DONNEES") or os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base, "catalogue_ajouts")
+
+
 def _fichiers():
-    try:
-        return sorted(f for f in os.listdir(DOSSIER) if f.endswith(".json"))
-    except OSError:
-        return []
+    """Chemins des produits ; un produit importe remplace celui livre avec l'app (meme nom de fichier)."""
+    out = {}
+    for d in (DOSSIER, dossier_ajouts()):
+        try:
+            for f in os.listdir(d):
+                if f.endswith(".json"):
+                    out[f] = os.path.join(d, f)
+        except OSError:
+            continue
+    return [out[k] for k in sorted(out)]
 
 
-def _lire(nom):
-    chemin = os.path.join(DOSSIER, nom)
+def _lire(chemin):
+    if not os.path.isabs(chemin):
+        chemin = os.path.join(DOSSIER, chemin)
     mt = os.path.getmtime(chemin)
-    if _CACHE.get(nom, (None,))[0] != mt:
+    if _CACHE.get(chemin, (None,))[0] != mt:
         with open(chemin, encoding="utf-8") as f:
-            _CACHE[nom] = (mt, json.load(f))
-    return _CACHE[nom][1]
+            _CACHE[chemin] = (mt, json.load(f))
+    return _CACHE[chemin][1]
+
+
+def enregistrer_ajout(prod):
+    os.makedirs(dossier_ajouts(), exist_ok=True)
+    chemin = os.path.join(dossier_ajouts(), prod["id"] + ".json")
+    tmp = chemin + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump({k: v for k, v in prod.items() if not k.startswith("_")}, f, ensure_ascii=False, indent=1)
+    os.replace(tmp, chemin)
+    _CACHE.pop(chemin, None)
+    return chemin
 
 
 def _racine(se, nom, prof=0):
