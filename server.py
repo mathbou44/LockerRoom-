@@ -106,13 +106,15 @@ _PUBLIQUES = ("/b/", "/api/b/", "/api/ebay_retour", "/ebay/suppression-compte", 
 
 import comptes  # noqa: E402
 
-_PUBLIQUES_MULTI = _PUBLIQUES + ("/auth/ebay", "/deconnexion")
+_PUBLIQUES_MULTI = _PUBLIQUES + ("/auth/ebay", "/deconnexion", "/demo")
 
 
 @app.before_request
 def _garde():
     from flask import redirect, session
     comptes.activer(None)
+    import lockerroom as _lr                       # 26 oct 2026 - requete venue de l'app iPhone ?
+    _lr.marquer_ios("LockerRoomiOS" in (request.headers.get("User-Agent") or ""))
     publique = request.path.startswith(_PUBLIQUES_MULTI)
     if CODE_ACCES and not session.get("ok") and not publique:       # demo : code d'acces d'abord
         return (jsonify({"erreur": "Connexion requise"}), 401) if request.path.startswith("/api/") else redirect("/connexion")
@@ -134,6 +136,56 @@ def auth_ebay():
     if not r.get("ok"):
         return redirect("/connexion?erreur=1")
     return redirect(r["url"])
+
+
+# 26 oct 2026 - compte de demonstration pour l'equipe d'Apple (et les essais) : code dans LOCKERROOM_DEMO_CODE.
+# Un compte a part, Pro offert, quelques cartes d'exemple ; sans code configure, la route n'existe pas.
+_DEMO_EBAY_ID = "demo-app-review"
+
+
+@app.route("/demo", methods=["GET", "POST"])
+def demo():
+    import hmac
+    from flask import redirect, session
+    code = os.environ.get("LOCKERROOM_DEMO_CODE") or ""
+    if not code or not comptes.MULTI:
+        abort(404)
+    erreur = ""
+    if request.method == "POST":
+        if hmac.compare_digest(str(request.form.get("code") or "").strip(), code):
+            cid, nouveau = comptes.trouver_ou_creer(_DEMO_EBAY_ID, "Demo", "demo")
+            comptes.maj(cid, pro_offert="toujours", demo=True)
+            session.permanent = True
+            session["ok"] = True
+            session["compte"] = cid
+            if nouveau:
+                with comptes.utiliser(cid):
+                    _remplir_demo()
+            return redirect("/")
+        erreur = "<p style='color:#FFB3B3'>Code incorrect</p>"
+    return _page_langue("<!doctype html><meta name='viewport' content='width=device-width,initial-scale=1'><title>LockerRoom</title>"
+            "<body style='background:#0A0D10;color:#F2F5F7;font-family:system-ui;display:grid;place-items:center;min-height:90vh'>"
+            "<form method='post' style='display:grid;gap:12px;width:min(320px,90vw)'><img src='/icone.png' width='56' alt=''>"
+            "<b style='font-size:22px'>LockerRoom · démo</b><input name='code' autocomplete='off' autofocus placeholder='Code d’accès' "
+            "style='padding:12px;border-radius:10px;border:1px solid #29313A;background:#14181D;color:#F2F5F7;font-size:16px'>"
+            f"{erreur}<button style='padding:12px;border-radius:10px;border:0;background:#E8C46A;font-weight:700;font-size:16px'>Entrer</button>"
+            "<a href='/connexion' style='color:#A3ACB5;font-size:13px'>‹ Retour</a></form></body>")
+
+
+def _remplir_demo():
+    """Quelques vraies cartes d'exemple (inventaire) pour que l'equipe d'Apple voie l'app remplie."""
+    exemples = [("Connor Bedard", "2023-24", "Upper Deck", "Series 2", "Young Guns", "451", 1, 120.0, 165.0),
+                ("Macklin Celebrini", "2024-25", "Upper Deck", "Series 1", "Young Guns", "201", 1, 95.0, 140.0),
+                ("Ivan Demidov", "2025-26", "Upper Deck", "Series 1", "Young Guns", "205", 1, 60.0, 89.0),
+                ("Matthew Schaefer", "2025-26", "Upper Deck", "Series 2", "Young Guns", "451", 1, 110.0, 160.0),
+                ("Lane Hutson", "2024-25", "Upper Deck", "Series 1", "Young Guns Canvas", "C-91", 1, 30.0, 48.0),
+                ("Sidney Crosby", "2025-26", "Upper Deck", "SP Authentic", "Base", "1", 0, 2.0, 4.0)]
+    for j, an, m, s_, par, num, rc, cout, prix in exemples:
+        try:
+            api.carte_sauver({"joueur": j, "annee": an, "marque": m, "set_nom": s_, "parallele": par, "numero": num,
+                              "recrue": rc, "cout": cout, "prix_demande": prix, "sport": "hockey"})
+        except Exception as e:
+            print("Demo : " + repr(e), flush=True)
 
 
 @app.route("/deconnexion")
@@ -205,7 +257,10 @@ def connexion():
         if session.get("compte") in comptes.lister():
             return redirect("/")
         e = "<span style='color:#FFB3B3'>Connexion eBay interrompue : réessaie</span>" if request.args.get("erreur") else ""
-        return _page_langue(_PAGE_EBAY.replace("{erreur}", e))
+        page = _PAGE_EBAY.replace("{erreur}", e)
+        if os.environ.get("LOCKERROOM_DEMO_CODE") and "LockerRoomiOS" in (request.headers.get("User-Agent") or ""):
+            page = page.replace("</main>", "<a href='/demo' style='color:#87909A;font-size:13px'>Code de démonstration</a></main>")
+        return _page_langue(page)
     if not CODE_ACCES:
         return redirect("/")
     erreur = ""

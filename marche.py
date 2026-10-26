@@ -181,6 +181,15 @@ def verifier_alertes(api, rechercher=None):
             c.commit()
         finally:
             c.close()
+        nouv_a = [x for x in memes if str(x.get("item_id")) in vus and str(x.get("item_id")) not in set(json.loads(a.get("vus") or "[]"))]
+        if nouv_a and hasattr(api, "_push"):          # 26 oct 2026 - l'iPhone sonne (app App Store, notifications acceptees)
+            x = min(nouv_a, key=lambda y: (y.get("prix_cad") or 0) + (y.get("port_cad") or 0))
+            tot = round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2)
+            try:
+                api._push(f"🔔 {a['q']} : {tot:.2f} $", (x.get("titre") or "")[:140] + (f" (+{len(nouv_a) - 1})" if len(nouv_a) > 1 else ""),
+                          {"lien": "#alertes"})
+            except Exception as e:
+                print("Push : " + repr(e), flush=True)
     return {"ok": True, "alertes": len(al), "nouvelles": nouvelles}
 
 

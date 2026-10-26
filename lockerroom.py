@@ -193,6 +193,20 @@ def chemin_db_env():
     return os.path.join(d, "lockerroom.db" if ebay_compte.environnement() == "production" else "lockerroom_sandbox.db")
 
 
+# 26 oct 2026 - app iPhone (App Store) : le serveur sait qu'une requete vient de l'app (User-Agent « LockerRoomiOS »).
+# Au Canada, Apple interdit d'y vendre le Pro autrement que par ses achats integres : dans l'app, rien a acheter.
+import contextvars as _cv  # noqa: E402
+_IOS = _cv.ContextVar("lockerroom_ios", default=False)
+
+
+def marquer_ios(oui):
+    _IOS.set(bool(oui))
+
+
+def est_ios():
+    return _IOS.get()
+
+
 class Api:
     def __init__(self, chemin_db=None):
         self._chemin_fixe = chemin_db            # tests : base imposee
@@ -278,12 +292,82 @@ class Api:
                 "annule": bool(info.get("forfait_annule")), "client": bool(info.get("stripe_client")),
                 "paiements": paiements.actif(), "mode_paiement": paiements.mode(), "prix": prix,
                 "photos_mois": photos.get("ce_mois"), "photos_limite": photos.get("limite"),
-                "gratuit_photos": vision.QUOTA_GRATUIT}
+                "gratuit_photos": vision.QUOTA_GRATUIT, "ios": est_ios(), "demo": bool(info.get("demo")),
+                "push": __import__("apns").actif()}
+
+    # -- 26 oct 2026 : app iPhone ---------------------------------------------------------------------------------
+    def push_enregistrer(self, jeton, plateforme="ios"):
+        """Le jeton de notifications de cet iPhone (l'utilisateur a accepte), garde dans SON compte."""
+        jeton = re.sub(r"[^0-9a-fA-F]", "", str(jeton or ""))[:200]
+        if len(jeton) < 32:
+            return {"ok": False, "erreur": "Jeton invalide"}
+        with _verrou:
+            c = self._db()
+            try:
+                c.execute("CREATE TABLE IF NOT EXISTS push_jetons (jeton TEXT PRIMARY KEY, plateforme TEXT, le TEXT)")
+                c.execute("INSERT OR REPLACE INTO push_jetons VALUES (?,?,?)", (jeton, str(plateforme or "ios")[:10], _maintenant()))
+                c.commit()
+            finally:
+                c.close()
+        return {"ok": True}
+
+    def _push(self, titre, texte, donnees=None):
+        """Envoie a tous les iPhone du compte courant ; oublie les jetons perimes."""
+        import apns
+        if not apns.actif():
+            return 0
+        with _verrou:
+            c = self._db()
+            try:
+                c.execute("CREATE TABLE IF NOT EXISTS push_jetons (jeton TEXT PRIMARY KEY, plateforme TEXT, le TEXT)")
+                jetons = [r[0] for r in c.execute("SELECT jeton FROM push_jetons")]
+            finally:
+                c.close()
+        n, perimes = 0, []
+        for j in jetons:
+            r = apns.envoyer(j, titre, texte, donnees)
+            n += r == "ok"
+            if r == "perime":
+                perimes.append(j)
+        if perimes:
+            with _verrou:
+                c = self._db()
+                try:
+                    c.executemany("DELETE FROM push_jetons WHERE jeton=?", [(j,) for j in perimes])
+                    c.commit()
+                finally:
+                    c.close()
+        return n
+
+    def compte_supprimer(self, confirmation=None):
+        """Apple 5.1.1(v) : supprimer son compte DANS l'app. Annule l'abonnement Stripe, efface tout son dossier
+        (base, jetons eBay chiffres, reglages) ; ses ventes partagees anonymement restent anonymes."""
+        import comptes
+        import paiements
+        cid = comptes.courant() if comptes.MULTI else None
+        if not cid:
+            return {"ok": False, "erreur": "Rien à supprimer sur ce PC"}
+        if str(confirmation or "").strip().upper() not in ("SUPPRIMER", "DELETE"):
+            return {"ok": False, "erreur": "Écris SUPPRIMER pour confirmer"}
+        info = comptes.info(cid) or {}
+        if info.get("stripe_abonnement") and (info.get("forfait") == "pro"):
+            try:
+                paiements._appel("DELETE", "subscriptions/" + str(info["stripe_abonnement"]))
+            except Exception as e:
+                try:
+                    import admin
+                    admin.noter_erreur("compte_supprimer stripe", e)
+                except Exception:
+                    pass
+        comptes.supprimer(cid)
+        return {"ok": True, "deconnecter": True}
 
     def abonnement_payer(self):
         import comptes
         import paiements
         cid = comptes.courant() if comptes.MULTI else None
+        if est_ios():
+            return {"ok": False, "erreur": "Non disponible dans l’app iPhone"}
         if not cid:
             return {"ok": False, "erreur": "Le forfait Pro se prend dans la version en ligne"}
         try:
@@ -295,6 +379,8 @@ class Api:
         import comptes
         import paiements
         cid = comptes.courant() if comptes.MULTI else None
+        if est_ios():
+            return {"ok": False, "erreur": "Non disponible dans l’app iPhone"}
         try:
             return {"ok": True, "url": paiements.portail((comptes.info(cid) or {}).get("stripe_client") if cid else None)}
         except paiements.Erreur as e:

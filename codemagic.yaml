@@ -1,0 +1,57 @@
+# LockerRoom - compilation de l'app iPhone sur Codemagic (Mac dans le nuage) et envoi a App Store Connect.
+# Ce fichier va a la RACINE du depot GitHub (a cote de server.py). Render l'ignore.
+#
+# Une seule fois dans Codemagic (codemagic.io) :
+#   1. Teams > Integrations > Developer Portal : ajouter la cle API d'App Store Connect, nom « LockerRoom ASC ».
+#   2. Teams > Code signing identities : « Generate certificate » (Apple Distribution) avec cette cle.
+#   3. Application > Environment variables : groupe « lockerroom » avec LR_URL (l'adresse Render, ex. https://xxx.onrender.com)
+#      et APP_STORE_APPLE_ID (le numero « Apple ID » de l'app dans App Store Connect > Infos de l'app).
+# Ensuite : « Start new build » > ios-app-store. La version arrive dans TestFlight, puis on la soumet a Apple.
+workflows:
+  ios-app-store:
+    name: LockerRoom iOS - App Store
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: LockerRoom ASC
+    environment:
+      groups:
+        - lockerroom
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.lockerroom.app
+      node: 22
+      xcode: latest
+    scripts:
+      - name: Dependances
+        script: |
+          cd mobile
+          npm ci
+      - name: Adresse de l'app et plugins natifs
+        script: |
+          cd mobile
+          node scripts/config.js
+          npx cap sync ios
+      - name: Signature (profils App Store)
+        script: |
+          xcode-project use-profiles
+      - name: Numero de version (build)
+        script: |
+          cd mobile/ios/App
+          DERNIER=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || echo 0)
+          TF=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || echo 0)
+          [ "$TF" -gt "$DERNIER" ] 2>/dev/null && DERNIER=$TF
+          NOUVEAU=$((DERNIER + 1))
+          sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*;/CURRENT_PROJECT_VERSION = $NOUVEAU;/g" App.xcodeproj/project.pbxproj
+          echo "Build $NOUVEAU"
+      - name: Compiler l'app (.ipa)
+        script: |
+          cd mobile/ios/App
+          xcode-project build-ipa --project App.xcodeproj --scheme App
+    artifacts:
+      - mobile/ios/App/build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
