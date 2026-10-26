@@ -930,9 +930,9 @@ class Api:
         # sous-ensemble par sous-ensemble : nombre attendu, chance d'en avoir au moins une, valeur d'une carte
         det = pl.pop("_detail", {}) or {}
         import math as _m
-        pl["cartes_possibles"] = [{"sous": k, "attendu": round(v[0], 3), "chance": round(1 - _m.exp(-v[0]), 3), "valeur": round(v[1], 2),
+        pl["cartes_possibles"] = [{"sous": k, "attendu": round(v[0], 3), "chance": round(1 - _m.exp(-v[0]), 6), "valeur": round(v[1], 2),
                                    "part_ev": round(100 * v[2] / pl["ev"], 1) if pl["ev"] else 0, "ventes": v[3]}
-                                  for k, v in sorted(det.items(), key=lambda kv: -kv[1][2])[:5] if v[2] > 0]
+                                  for k, v in sorted(det.items(), key=lambda kv: -kv[1][2])[:8] if v[2] > 0]
         pl["seuil_revente"] = calcul.SEUIL_REVENTE
         pl.update({k: v for k, v in (stats or {}).items() if k != "equipe"})
 
@@ -2734,6 +2734,8 @@ class Api:
             if not x.get("encan") and (x.get("ratio") or 1) < 0.15:
                 continue
             x["gain"] = round((x.get("valeur") or 0) * (1 - fp) - ff - (x.get("total") or 0), 2)
+            if not x.get("encan") and x["gain"] <= 1:          # 26 oct 2026 : pas de profit apres les frais : pas un deal
+                continue
             x["rabais"] = round(100 * (1 - (x.get("ratio") or 1)))
             lst.append(x)
         return lst
@@ -2867,6 +2869,15 @@ class Api:
             vente = pv[max(0, int(len(pv) * 0.6) - 1)] if len(pv) >= 3 else valeur     # vendues : un peu au-dessus du milieu
             suggere = {"vente": round(vente if vm else min(vente, valeur), 2),
                        "achat_max": round(max(0.0, (valeur * (1 - fp) - ff) / 1.20), 2), "source": "vendues" if vm else "annonces"}
+        # 26 oct 2026 (Mathieu : « les deals sont pas bons avec les last sold ») : la fenetre a les ventes de CETTE carte ;
+        # si elles disent que ce n'est pas un deal, l'annonce sort des deals de tout le monde (et sa valeur est corrigee)
+        if not rapide and total:
+            try:
+                import deals as _dl
+                gain_v = round(valeur * (1 - fp) - ff - total, 2) if valeur and juger else None
+                _dl.corriger(item_id, valeur if juger else None, gain_v, total)
+            except Exception:
+                pass
         return {"ok": True, "article": {**a, "total": total}, "comps": comps, "mediane": med, "n": n,
                 "suggere": suggere, "ventes": ventes, "mediane_vendue": vc.get("mediane"), "nb_vendues": vc.get("nb") or len(ventes),
                 "valeur": valeur, "valeur_source": "vendues" if vm else "annonces", "ventes_attente": bool(vc.get("attente")),

@@ -694,19 +694,26 @@ body.fen-ouverte{overflow:hidden}
   .ecran.acc:has(.nouv.vide-n) .acc-cote{display:flex}
   .acc-tete .acc-tuiles{max-width:none}
   .acc-cote, #acc-plus{display:flex !important; flex-direction:column; gap:16px; min-height:0}
-  .acc-cote > .carte-acc, #acc-plus > *{flex:1 1 0; min-height:0; height:auto !important; overflow:hidden; display:flex; flex-direction:column}
-  .acc-cote > .carte-acc > .gestes, .acc-cote > .carte-acc > #acc-pouls, #acc-plus > * > .liste{flex:1; min-height:0; overflow:auto; scrollbar-width:thin}
+  /* 26 oct 2026 (Mathieu : « la page main est chier » : écran d'ordi mis à l'échelle 125-150 % = moins de 720 px de haut :
+     les tuiles s'écrasaient à leur titre). Hauteur libre par défaut : chaque tuile prend la place de son contenu ;
+     plein écran (sans défiler) seulement quand l'écran est assez haut. */
+  .acc-cote > .carte-acc, #acc-plus > *{flex:1 1 auto; min-height:auto; height:auto !important; display:flex; flex-direction:column}
+  .acc-cote > .carte-acc > .gestes, .acc-cote > .carte-acc > #acc-pouls, #acc-plus > * > .liste{flex:1; min-height:0; overflow:auto; scrollbar-width:thin; max-height:360px}
   #acc-plus > .hero .courbe{flex:1; min-height:90px; height:auto}
-  .ecran.acc .nouv{height:auto; min-height:0}
+  .ecran.acc .nouv{height:auto; min-height:420px}
   .nouv .visuel{min-height:0}
 }
+@media (min-width:1600px) and (min-height:720px){ #acc-plus{grid-auto-rows:minmax(0,1fr)} }
 @media (min-width:1100px) and (min-height:720px){
   .ecran.acc{height:100vh; height:calc(100dvh - var(--bandeau-h, 0px)); overflow:hidden}
+  .acc-cote > .carte-acc, #acc-plus > *{flex:1 1 0; min-height:0; overflow:hidden}
+  .acc-cote > .carte-acc > .gestes, .acc-cote > .carte-acc > #acc-pouls, #acc-plus > * > .liste{max-height:none}
+  .ecran.acc .nouv{min-height:0}
   body.sandbox{--bandeau-h:26px} body:has(.ecran.acc){padding-bottom:0}
 }
 @media (min-width:1600px){
   .ecran.acc{grid-template-columns:minmax(0,1.25fr) minmax(0,.95fr) minmax(0,1.8fr) !important}
-  #acc-plus{display:grid !important; grid-template-columns:1fr 1fr; grid-auto-rows:minmax(0,1fr)}
+  #acc-plus{display:grid !important; grid-template-columns:1fr 1fr; grid-auto-rows:auto}
   #acc-plus > *{flex:none}
   #acc-plus > *:last-child:nth-child(odd){grid-column:span 2}
 }
@@ -2019,7 +2026,8 @@ function vignetteJoueur(nom, equipe){
 const nbFr = (v, d = 1) => (Math.round((+v || 0) * 10 ** d) / 10 ** d).toLocaleString(LOC());
 function explicationPlace(x, vue, r, nbListe){
   const qui = vue === 'joueurs' ? esc(x.nom) : esc(x.nom), cp = x.cartes_possibles || [];
-  const chance = (p) => p >= 0.995 ? '> 99 %' : p < 0.005 ? '< 1 %' : Math.round(p * 100) + ' %';
+  // 26 oct 2026 (Mathieu : « 26 cartes de Misa sur 1040, dont des /100, /250 ») : « 1 sur N » plutôt que « < 1 % »
+  const chance = (p) => p >= 0.995 ? '> 99 %' : p >= 0.05 ? Math.round(p * 100) + ' %' : p > 0 ? tt('1 sur ', '1 in ') + Math.round(1 / p).toLocaleString(LOC()) : '—';
   return `<div class="sl-exp">
     <div class="ex-l"><span class="ex-n">1</span><div><b>${vue === 'joueurs' ? tt('Ses cartes', 'His cards') : tt('Ses cartes', 'Its cards')}</b>
       ${vue === 'joueurs' ? tt(`${x.nb_cartes || 0} carte${x.nb_cartes > 1 ? 's' : ''} de ${qui} dans la checklist (${x.nb_versions || 0} versions avec les parallèles), sur ${r.nb_cartes} cartes du produit.`, `${x.nb_cartes || 0} card${x.nb_cartes > 1 ? 's' : ''} of ${qui} in the checklist (${x.nb_versions || 0} versions with parallels), out of ${r.nb_cartes} cards in the product.`)
@@ -2028,7 +2036,7 @@ function explicationPlace(x, vue, r, nbListe){
       ${tt(`il sort en moyenne ${nbFr(x.n_attendu, 2)} de ces cartes : ${chance(x.p_carte)} de chances d’en avoir au moins une.`, `on average ${nbFr(x.n_attendu, 2)} of these cards come out: ${chance(x.p_carte)} chance to get at least one.`)}</div></div>
     ${cp.length ? `<div class="ex-l"><span class="ex-n">3</span><div><b>${tt('Ce qui fait sa valeur', 'What drives its value')}</b>
       <div class="ex-t">${cp.map(c => `<div><span>${esc(c.sous)}</span><span>${chance(c.chance)}</span><span>${argentCourt(c.valeur)}${tt(' / carte', ' / card')}</span><span class="${c.ventes ? 'vert' : ''}">${c.ventes ? tt('ventes réelles', 'real sales') : tt('estimée', 'estimate')}</span></div>`).join('')}</div>
-      <small>${tt('chance d’en sortir au moins une · valeur d’une carte', 'chance to pull at least one · value of one card')}</small></div></div>` : ''}
+      <small>${tt('chance d’en sortir au moins une · valeur d’une carte. Toutes ses versions comptent (numérotées, autos, patchs) selon le nombre d’exemplaires imprimés : une /499 sort 10 fois plus souvent qu’une /49, une 1/1 presque jamais.', 'chance to pull at least one · value of one card. All his versions count (numbered, autos, patches) by how many copies were printed: a /499 comes out 10 times more than a /49, a 1/1 almost never.')}</small></div></div>` : ''}
     <div class="ex-l"><span class="ex-n">4</span><div><b>${tt('Chance de rembourser', 'Chance to pay back')} : ${pct(x.p_rembourse)}</b>
       ${tt(`la chance que toutes tes cartes reçues valent ensemble au moins ${argentCourt(x.prix_compare)} (le prix ${x.demande ? 'de la place' : 'estimé d’une place'}). Chaque carte possible compte pour sa chance de sortir × sa valeur (ventes eBay réelles quand on les a), moins ${argentCourt(x.seuil_revente || 1.5)} : sous ce prix, une carte ne se revend pas.`,
         `the chance that all the cards you get are worth at least ${argentCourt(x.prix_compare)} together (the ${x.demande ? 'spot' : 'estimated spot'} price). Each possible card counts for its chance to come out × its value (real eBay sales when we have them), minus ${argentCourt(x.seuil_revente || 1.5)}: below that, a card doesn’t resell.`)}</div></div>

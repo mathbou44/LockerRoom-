@@ -60,6 +60,28 @@ def _bannis():
     return _BANNIS["s"]
 
 
+def corriger(item_id, valeur, gain, total):
+    """26 oct 2026 - la fenetre d'une annonce a recalcule sa valeur avec les ventes de la meme carte : pas assez de
+    ventes, ou plus sous 70 % de la valeur, ou pas de profit -> retiree ; sinon sa valeur est mise a jour."""
+    iid = str(item_id)
+    d = lire()
+    l = d.get("deals") or []
+    x = next((g for g in l if str(g.get("item_id")) == iid), None)
+    if not x:
+        return False
+    with _verrou:
+        d = lire()
+        l = d.get("deals") or []
+        if not valeur or (gain is not None and gain <= 1) or (total and total > valeur * RATIO_DEAL and not x.get("encan")):
+            d["deals"] = [g for g in l if str(g.get("item_id")) != iid]
+        else:
+            for g in l:
+                if str(g.get("item_id")) == iid:
+                    g.update(valeur=valeur, ratio=round(total / valeur, 3) if total else g.get("ratio"))
+        _ecrire(d)
+    return True
+
+
 def bannir(item_id):
     """26 oct 2026 - « pas un deal » signale par l'admin : retire pour tout le monde."""
     with _verrou:
