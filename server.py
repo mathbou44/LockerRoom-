@@ -407,6 +407,11 @@ def _valeurs_auto():
             ventes_communaute.rafraichir_si_besoin()
         except Exception as e:
             print("Ventes communaute : " + str(e), flush=True)
+        try:                                    # 26 oct 2026 - la base des ventes (tendances) : quelques recherches par heure
+            import base_ventes
+            base_ventes.enrichir_si_besoin()
+        except Exception as e:
+            print("Base des ventes : " + str(e), flush=True)
         try:                                    # 25 oct 2026 - demandes pas encore triees par l'agent
             import demandes
             demandes.trier_en_attente()

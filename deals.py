@@ -17,7 +17,7 @@ import time
 from datetime import datetime, timedelta, timezone
 
 RATIO_DEAL = 0.70
-VERSION = 2                      # 26 oct 2026 : valeur par annonce (les deals d'avant sont retires)
+VERSION = 3                      # 26 oct 2026 : valeur par annonce, puis meme produit / insert (v3) : les deals d avant sont retires
 ENCAN_H = 6                      # 25 oct 2026 : un encan n'est montre que s'il finit dans 6 h (avant, la mise monte encore)
 PAR_TOUR = 8                     # requetes par tour (x2 appels : prix fixe + encans)
 FRAICHEUR_S = 3600

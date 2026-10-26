@@ -833,7 +833,7 @@ body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px rgba(232,196,106,.55))}
 .quota.vide{border-color:var(--rouge); color:var(--rouge)} .quota.pro{cursor:default; color:var(--or); border-color:rgba(232,196,106,.45); background:linear-gradient(90deg,rgba(232,196,106,.14),rgba(232,196,106,.03))}
 @media (max-width:899px){ .onglets .nav-idees{display:none} }
 .idee-f{display:flex; flex-direction:column; gap:12px} .idee-r .milieu{gap:8px}
-.trois-col{display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:14px}
+.trois-col{display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:14px}
 .t-col .r-titre{display:flex; flex-direction:column; gap:2px} .t-col .r-titre small{font-size:13px; color:var(--doux); font-weight:500}
 .t-l{gap:12px} .t-l .vig-j{width:40px; height:52px} .t-l .vig-j.init i{font-size:17px} .t-l .det{font-size:13.5px}
 .t-mini{width:64px; height:30px; flex-shrink:0; fill:none; stroke:var(--acc); stroke-width:2.2; vector-effect:non-scaling-stroke} .t-mini.vert{stroke:var(--vert)} .t-mini.rouge{stroke:var(--rouge)}
@@ -3819,14 +3819,16 @@ async function blocTendances(z){
     <span class="milieu"><span class="nom">${esc(x.joueur)}${x.recrue ? ' ' + tag('RC', 'acc') : ''}</span><span class="det">${esc(x.carte)} · ${esc(String(x.produit || '').replace(/^(\d{4}-\d{2})\s+Upper Deck\s+/, '$1 '))}</span>
       <span class="det">${x.n} ${tt('ventes', 'sales')}${x.derniere ? ' · ' + tt('dernière ', 'last ') + dateCourte(x.derniere) : ''}</span></span>
     ${mini(x.points, genre === 'baisse' ? 'rouge' : genre === 'hausse' ? 'vert' : '')}
-    <span class="droite">${genre === 'vendue' ? `<b class="t-prix">${argentCourt(x.mediane)}</b><span class="sous">${tt('médiane', 'median')}</span>`
+    <span class="droite">${genre === 'record' ? `<b class="t-prix">${argentCourt(x.prix)}</b><span class="sous">${dateCourte(x.le)}</span>`
+      : genre === 'vendue' ? `<b class="t-prix">${argentCourt(x.mediane)}</b><span class="sous">${x.n_7j ? x.n_7j + ' ' + tt('cette sem.', 'this wk') : tt('médiane', 'median')}</span>`
       : `${capsule((x.pct > 0 ? '▲ +' : '▼ ') + x.pct + ' %', (x.pct > 0 ? 'vert' : 'rouge') + ' petit')}<span class="sous">${argentCourt(x.avant)} → ${argentCourt(x.recent)}</span>`}</span></a>`;
   const col = (titre, sous, l, genre, vide) => `<div class="bloc t-col"><div class="r-titre">${titre}<small>${sous}</small></div><div class="liste">${l.map(x => ligne(x, genre)).join('') || `<div class="vide t-vide">${vide}</div>`}</div></div>`;
   z.innerHTML = `<div class="bloc-t">${tt('Tendances de la semaine', 'This week’s trends')} <span class="sous">${(r.nb_ventes || 0).toLocaleString(LOC())} ${tt('ventes réelles analysées', 'real sales analyzed')} · ${r.nb_cartes || 0} ${tt('cartes', 'cards')}${r.maj ? ' · ' + dateCourte(r.maj) : ''}</span></div>
     <div class="trois-col">
       ${col('▲ ' + tt('En hausse', 'Rising'), tt('30 derniers jours vs les 60 d’avant', 'last 30 days vs the 60 before'), r.hausses, 'hausse', tt('Rien ne monte fort cette semaine', 'Nothing rising sharply this week'))}
       ${col('▼ ' + tt('En baisse', 'Falling'), tt('bon moment pour acheter ?', 'good time to buy?'), r.baisses, 'baisse', tt('Rien ne baisse cette semaine : les prix tiennent', 'Nothing falling this week: prices are holding'))}
-      ${col('🔥 ' + tt('Les plus vendues', 'Most sold'), tt('ce que les acheteurs s’arrachent', 'what buyers are grabbing'), r.plus_vendues || [], 'vendue', '—')}</div>`;
+      ${col('🔥 ' + tt('Les plus vendues', 'Most sold'), tt('ce que les acheteurs s’arrachent', 'what buyers are grabbing'), r.plus_vendues || [], 'vendue', '—')}
+      ${(r.records || []).length ? col('💎 ' + tt('Plus grosses ventes', 'Biggest sales'), tt('les 7 derniers jours', 'last 7 days'), r.records, 'record', '—') : ''}</div>`;
   remplirPortraits(z);
 }
 // calendrier des sorties

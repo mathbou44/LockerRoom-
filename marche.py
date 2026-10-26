@@ -217,12 +217,27 @@ def tendances():
                 k = (j, p["id"])
                 if k not in tout or abs(t["pct"]) > abs(tout[k]["pct"]):
                     tout[k] = {**base, "pct": t["pct"], "recent": t["recent"], "avant": t["avant"], "n_t": t["n"]}
+    # 26 oct 2026 : la base des ventes (recherches planifiees + toutes celles de l'app) passe en premier
+    try:
+        import base_ventes
+        b = base_ventes.tendances() or {}
+    except Exception:
+        b = {}
     l = list(tout.values())
     fiables = [x for x in l if x["n_t"] >= 6] if sum(1 for x in l if x["n_t"] >= 6) >= 6 else l
-    return {"ok": True, "hausses": sorted([x for x in fiables if x["pct"] > 0], key=lambda x: -x["pct"])[:8],
-            "baisses": sorted([x for x in fiables if x["pct"] < 0], key=lambda x: x["pct"])[:8],
-            "plus_vendues": sorted(vendues, key=lambda x: -x["n"])[:8],
-            "nb_cartes": len(vendues), "nb_ventes": sum(x["n"] for x in vendues),
+    def fusion(a, b2, cle, n=8):
+        vus, out = set(), []
+        for x in list(a or []) + list(b2 or []):
+            k = (x["joueur"], x.get("carte"))
+            if k not in vus:
+                vus.add(k)
+                out.append(x)
+        return sorted(out, key=cle)[:n]
+    return {"ok": True, "hausses": fusion(b.get("hausses"), [x for x in fiables if x["pct"] > 0], lambda x: -x["pct"]),
+            "baisses": fusion(b.get("baisses"), [x for x in fiables if x["pct"] < 0], lambda x: x["pct"]),
+            "plus_vendues": b.get("plus_vendues") or sorted(vendues, key=lambda x: -x["n"])[:8],
+            "records": b.get("records") or [],
+            "nb_cartes": max(len(vendues), b.get("nb_cartes") or 0), "nb_ventes": max(sum(x["n"] for x in vendues), b.get("nb_ventes") or 0),
             "maj": max((valeur_produit.de(p["id"]).get("maj") or "" for p in catalogue.liste()), default=None)}
 
 

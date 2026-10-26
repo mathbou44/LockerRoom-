@@ -231,6 +231,19 @@ def raisons_refus(c, titre, appris=None):
         r.append("pas la variante " + ", ".join(sorted(absents)))
     if en_trop:
         r.append("variante " + ", ".join(sorted(en_trop)[:2]))
+    # 26 oct 2026 : le meme produit / insert (comparables d'une annonce seulement : cible_titre)
+    if "ident" in c and not r:
+        ia, ma = identite(titre, c.get("joueur") or "")
+        autres_j = {w for n in _noms_dans(t) for w in n.split()}
+        ia -= autres_j
+        en_plus = ia - c["ident"]
+        manque_i = c["ident"] - ia
+        if en_plus:
+            r.append("autre carte (" + " ".join(sorted(en_plus)[:3]) + ")")
+        elif len(manque_i) > len(c["ident"]) // 3:
+            r.append("autre carte (" + " ".join(sorted(manque_i)[:3]) + " absent)")
+        elif c["marques"] and ma and not (c["marques"] & ma):
+            r.append("autre marque")
     # appris : des mots que les utilisateurs ont refuses souvent
     if appris:
         mauvais = [m for m in appris if _a_mot(t, m) and not _a_mot(c["texte"], m)]
@@ -509,6 +522,49 @@ def joueur_du_titre(titre, joueur=None):
     return " ".join(out)
 
 
+# 26 oct 2026 (Mathieu : « pas du tout les memes cartes » : une National Hockey Card Day comparee a des Tim Hortons,
+# une Metal Universe a des Copperheads et des Young Guns) : une annonce n'a comme comparables que les cartes du MEME
+# produit / insert. On lit les mots qui disent QUELLE carte c'est (produit, insert, sous-ensemble) ; un comparable
+# doit les avoir, et ne pas en avoir d'autres. Les marques (Upper Deck, Panini...) peuvent manquer d'un cote.
+MARQUES = {"upper", "deck", "panini", "topps", "leaf", "fleer", "skybox", "donruss", "bowman", "score", "pinnacle", "pacific"}
+REMPLISSAGE = set("""rc card cards prospect prospects nm mt nmmt gem invest investment hot fire rare look wow pc pr stash
+nice great sharp clean centered condition pack fresh pulled ready pristine perfect beauty beautiful bonus
+nhl hockey ungraded raw slab slabbed toploader top loader sleeve mint new shipping free ships ship fast read
+description see photos pic pics picture pictures front back from of the and with for in on to by or a an vs
+season year years rookie edition version rookies sports trading card's limited official licensed team lot
+qty quantity single singles box goat future star stars legend legends superstar phenom young superb wild""".split())
+REMPLISSAGE -= {"young"}
+_MOTS_CARTE = {"auto", "patch", "jersey", "relic", "game", "used", "worn", "swatch", "rpa", "memorabilia", "gu", "fabric",
+               "material", "materials", "stick", "numbered", "serial", "graded", "parallel", "base", "sp", "ssp", "short",
+               "print", "variation", "insert", "on", "sticker"}
+
+
+def identite(titre, joueur=""):
+    """Les mots qui disent QUELLE carte c'est (produit, insert, sous-ensemble) -> (mots, marques)."""
+    t = norm(titre)
+    t = _RE_GRADE.sub(" ", t)
+    t = _RE_SERIE.sub(" ", t)
+    t = _RE_NUM.sub(" ", t)
+    t = _RE_ANNEE.sub(" ", t)
+    t = re.sub(r"(?<![a-z0-9])[a-z]{1,6}-?\d{1,4}[a-z]?(?![a-z0-9])", " ", t)     # numeros de carte sans # (NHCD-6, FW-12)
+    for x in EQUIPES_COULEUR:
+        t = t.replace(x, " ")
+    if _EQUIPES_MOTS["t"] is None:
+        _EQUIPES_MOTS["t"] = _mots_equipes()
+    mots = re.findall(r"[a-z][a-z'\-]*", t)
+    if len(str(titre or "")) >= 76 and mots:
+        mots = mots[:-1]                               # titre eBay coupe a 80 caracteres : dernier mot peut-etre tronque
+    jm = set(norm(joueur).split())
+    par = set(" ".join(PARALLELES).split())
+    out, marques = set(), set()
+    for w in mots:
+        w = w.strip("-'")
+        if len(w) < 3 or w in jm or w in VIDES or w in REMPLISSAGE or w in _MOTS_CARTE or w in par or w in _EQUIPES_MOTS["t"]:
+            continue
+        (marques if w in MARQUES else out).add(w)
+    return out, marques
+
+
 def cible_titre(titre, joueur=None):
     """Notre carte (son titre) -> ce que les comparables doivent avoir."""
     c = cible(titre)
@@ -522,6 +578,7 @@ def cible_titre(titre, joueur=None):
             break
     c["mots"] = [m for m in (j.split() + " ".join(sets).split()) if m not in VIDES]
     c["joueur"] = j
+    c["ident"], c["marques"] = identite(titre, j)
     return c
 
 

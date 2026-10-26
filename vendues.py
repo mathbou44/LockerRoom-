@@ -172,6 +172,11 @@ def rechercher(q, fond=True):
     taux = _taux_usd_cad()
     ventes = [v for v in (_vers_vente(it, taux) for it in (d or {}).get("items") or []) if v]
     _cache_ecrire(q.lower(), ventes)
+    try:                                       # 26 oct 2026 - la base des ventes (tendances) garde tout, sans appel de plus
+        import base_ventes
+        base_ventes.noter(q, ventes)
+    except Exception:
+        pass
     return {"ventes": ventes, "erreur": None}
 
 

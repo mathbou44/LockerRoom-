@@ -34,6 +34,19 @@ class MemeCarte(unittest.TestCase):
             else:
                 self.assertTrue(r and r[0].startswith(attendu), (t, r))
 
+    def test_meme_produit_annonce(self):
+        """26 oct 2026 : « pas du tout les memes cartes » (National Hockey Card Day vs Tim Hortons, Metal Universe vs Copperheads)."""
+        c = cm.cible_titre("2025-26 Skybox Metal Universe - Zeev Buium #112 Rookie (RC)")
+        self.assertTrue(cm.raisons_refus(c, "SkyBox 2025-26 Metal Universe Hockey Copperheads Zeev Buium"))
+        self.assertTrue(cm.raisons_refus(c, "2025-26 Upper Deck Series 2 Zeev Buium Young Guns"))
+        self.assertTrue(cm.raisons_refus(c, "2025-26 Parkhurst Penworks Rookies Zeev Buium Minnesota"))
+        self.assertFalse(cm.raisons_refus(c, "2025-26 Skybox Metal Universe Zeev Buium RC #112 Minnesota Wild"))
+        c = cm.cible_titre("Zeev Buium 2026 National Hockey Card Day Prominent Rookies #NHCD-6 Minnesota Wil")
+        self.assertTrue(cm.raisons_refus(c, "2026-27 Tim Hortons Zeev Buium Next Gen Phenoms Vancouver"))
+        self.assertFalse(cm.raisons_refus(c, "2026 National Hockey Card Day Zeev Buium Prominent Rookies NHCD-6"))
+        c = cm.cible_titre("2025-26 Upper Deck Series 1 Young Guns #224 Quinn Hutson RC Oilers")
+        self.assertFalse(cm.raisons_refus(c, "Quinn Hutson 2025 Upper Deck YG Rookie #224 Invest"))
+
     def test_variantes_demandees(self):
         self.assertEqual(cm.raisons_refus(cm.cible("bedard young guns psa 10"), "2023-24 UD Young Guns Connor Bedard #451 PSA 10"), [])
         self.assertTrue(cm.raisons_refus(cm.cible("bedard young guns psa 10"), "2023-24 UD Young Guns Connor Bedard #451 PSA 9"))

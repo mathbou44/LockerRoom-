@@ -92,9 +92,14 @@ def taux_par_boite(prod):
         if not inconnus or reste <= 0:
             continue
         poids = {}
-        for m in inconnus:
-            nb = se[m].get("nb_cartes") or len(_liste_de(prod, se, m)) or 1
-            poids[m] = nb * float(se[m].get("tirage") or 100)
+        for m in inconnus:                      # 26 oct 2026 : exemplaires imprimes = somme des tirages de ses cartes
+            lc = _liste_de(prod, se, m) if prod.get("_par_se") is not None else []
+            propres = bool((prod.get("_par_se") or {}).get(m))       # une parallele reprend les cartes du parent : SON tirage compte
+            if lc and propres and any(c.get("tirage") for c in lc):
+                poids[m] = sum(float(c.get("tirage") or se[m].get("tirage") or 100) for c in lc)
+            else:
+                nb = se[m].get("nb_cartes") or len(lc) or 1
+                poids[m] = nb * float(se[m].get("tirage") or 100)
         total = sum(poids.values()) or 1.0
         for m in inconnus:
             taux[m] = reste * poids[m] / total
@@ -189,10 +194,25 @@ def cartes_attendues(prod, boites):
         liste_c = _liste_de(prod, se, nom)
         if not liste_c:
             continue
-        par_carte = t * float(boites) / len(liste_c)
-        for c in liste_c:
-            out.append((c, se[nom], par_carte))
+        # 26 oct 2026 (Mathieu : « valide ta methodologie ») : dans un meme sous-ensemble, une carte /99 sort 3 fois
+        # moins qu'une /299 : chaque carte pese son tirage (exemplaires imprimes), pas 1. Tirages tous pareils (ou
+        # inconnus) : poids egaux, comme avant.
+        poids = poids_cartes(se[nom], liste_c) if prod["_par_se"].get(nom) else [1.0] * len(liste_c)
+        tot = sum(poids) or 1.0
+        for c, w in zip(liste_c, poids):
+            out.append((c, se[nom], t * float(boites) * w / tot))
     return out
+
+
+def poids_cartes(s, liste_c):
+    """Poids de tirage de chaque carte d'un sous-ensemble (proportionnel au nombre d'exemplaires imprimes).
+    Carte non numerotee dans un sous-ensemble ou d'autres le sont : au moins 100 et au moins le plus gros tirage connu."""
+    tirs = [c.get("tirage") or s.get("tirage") for c in liste_c]
+    connus = [float(x) for x in tirs if x]
+    if not connus or len(set(connus)) == 1 and len(connus) == len(tirs):
+        return [1.0] * len(liste_c)
+    defaut = max(100.0, max(connus))
+    return [float(x) if x else defaut for x in tirs]
 
 
 def joueurs(prod):
