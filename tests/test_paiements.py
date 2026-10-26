@@ -94,6 +94,44 @@ SCRIPT = textwrap.dedent('''
     assert c.get("/ebay/suppression-compte?challenge_code=abc").get_json()["challengeResponse"] == attendu
     assert ebay_avis.jeton_valide(os.environ["LOCKERROOM_EBAY_AVIS_JETON"]) and not ebay_avis.jeton_valide("a+b")
     assert c.post("/api/reglages_lire", json=[]).get_json()["epn_campid"] == "5339000001"
+
+    # 26 oct 2026 - app iPhone : rien a acheter dans l'app (Apple, Canada), le forfait se voit quand meme
+    IOS = {"User-Agent": "Mozilla/5.0 (iPhone) LockerRoomiOS/1.0"}
+    r = c.post("/api/abonnement_payer", json=[], headers=IOS).get_json()
+    assert not r["ok"] and "iPhone" in r["erreur"], r
+    assert not c.post("/api/abonnement_gerer", json=[], headers=IOS).get_json()["ok"]
+    f = c.post("/api/forfait", json=[], headers=IOS).get_json()
+    assert f["ios"] is True and "forfait" in f
+    assert c.post("/api/forfait", json=[]).get_json()["ios"] is False
+    # notifications : jeton garde dans le compte
+    assert c.post("/api/push_enregistrer", json=["ab" * 32, "ios"]).get_json()["ok"]
+    assert not c.post("/api/push_enregistrer", json=["zz"]).get_json()["ok"]
+    # jeton APNs (JWT ES256) avec une cle de test
+    from cryptography.hazmat.primitives.asymmetric import ec
+    from cryptography.hazmat.primitives import serialization
+    k = ec.generate_private_key(ec.SECP256R1())
+    os.environ.update(APNS_KEY_ID="ABC123DEFG", APNS_TEAM_ID="TEAM123456",
+                      APNS_KEY=k.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption()).decode())
+    import apns, base64 as _b
+    j = apns.jeton_auth(1700000000)
+    tete = json.loads(_b.urlsafe_b64decode(j.split(".")[0] + "=="))
+    assert tete == {"alg": "ES256", "kid": "ABC123DEFG"} and len(_b.urlsafe_b64decode(j.split(".")[2] + "==")) == 64
+    # compte de demonstration (Apple) : seulement avec un code
+    assert c.get("/demo").status_code == 404
+    os.environ["LOCKERROOM_DEMO_CODE"] = "DEMO-2026"
+    c2 = server.app.test_client()
+    assert c2.post("/demo", data={"code": "mauvais"}).status_code == 200
+    r = c2.post("/demo", data={"code": "DEMO-2026"})
+    assert r.status_code == 302
+    f = c2.post("/api/forfait", json=[]).get_json()
+    assert f["demo"] and f["pro"], f
+    assert len(c2.post("/api/inventaire_liste", json=[]).get_json()) >= 5
+    # supprimer son compte dans l'app (Apple 5.1.1(v))
+    assert not c2.post("/api/compte_supprimer", json=["non"]).get_json()["ok"]
+    nb = len(comptes.lister())
+    assert c2.post("/api/compte_supprimer", json=["SUPPRIMER"]).get_json()["ok"]
+    assert len(comptes.lister()) == nb - 1
+    assert c2.post("/api/forfait", json=[]).status_code == 401
     print("PAIEMENTS OK")
 ''')
 

@@ -1,0 +1,45 @@
+{
+  "appId": "com.lockerroom.app",
+  "appName": "LockerRoom",
+  "webDir": "www",
+  "server": {
+    "url": "https://lockerroom.onrender.com",
+    "errorPath": "erreur.html",
+    "allowNavigation": [
+      "lockerroom.onrender.com",
+      "*.ebay.com",
+      "*.ebay.ca",
+      "signin.ebay.com",
+      "auth.ebay.com",
+      "auth.sandbox.ebay.com",
+      "signin.sandbox.ebay.com"
+    ]
+  },
+  "ios": {
+    "contentInset": "never",
+    "scheme": "LockerRoom",
+    "appendUserAgent": "LockerRoomiOS/1.0",
+    "backgroundColor": "#0A0D10",
+    "limitsNavigationsToAppBoundDomains": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 900,
+      "launchAutoHide": true,
+      "backgroundColor": "#0A0D10",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#0A0D10",
+      "overlaysWebView": true
+    },
+    "PushNotifications": {
+      "presentationOptions": [
+        "badge",
+        "sound",
+        "alert"
+      ]
+    }
+  }
+}

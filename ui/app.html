@@ -268,11 +268,19 @@ body.avec-barre .ecran{padding-top:14px}
 .nouv .visuel{aspect-ratio:16/9; background:#1A2027 center/cover no-repeat; flex-shrink:0}
 .nouv .texte{display:flex; flex-direction:column; justify-content:space-between; gap:12px; padding:16px 18px 18px; flex:1; min-width:0}
 .nouv .haut-n{display:flex; justify-content:space-between; align-items:center; gap:10px}
-.astuce-v{display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-end; gap:6px; padding:18px 20px; min-height:150px;
+.nouv .visuel.astuce-v{flex:0 0 auto !important; height:132px; min-height:0 !important; aspect-ratio:auto !important; position:relative; overflow:hidden}
+.as-img{position:absolute; right:14px; top:50%; transform:translateY(-50%); width:96px; height:96px; border-radius:24px; display:grid; place-items:center;
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.10); box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 10px 26px rgba(0,0,0,.35)}
+.as-img svg{width:56px; height:56px; stroke:var(--or); fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round}
+.g-acheter .as-img svg{stroke:var(--vert)} .g-vendre .as-img svg{stroke:#9DC4FF}
+.as-chiffre{max-width:calc(100% - 120px); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.slide-astuce .as-titre{font-size:17px} .slide-astuce .as-texte{font-size:14px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden}
+.slide-astuce .as-truc{font-size:14px} .slide-astuce .texte{gap:8px; padding:12px 16px 14px; justify-content:flex-start}
+.astuce-v{display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-end; gap:4px; padding:14px 18px;
   background:radial-gradient(120% 120% at 0% 0%, rgba(232,196,106,.35), transparent 55%), linear-gradient(160deg, #1D2430, #0E1216)}
 .astuce-v.g-acheter{background:radial-gradient(120% 120% at 0% 0%, rgba(143,212,164,.30), transparent 55%), linear-gradient(160deg, #17261E, #0E1216)}
 .astuce-v.g-vendre{background:radial-gradient(120% 120% at 0% 0%, rgba(120,170,255,.28), transparent 55%), linear-gradient(160deg, #172033, #0E1216)}
-.as-lib{font-weight:700; font-size:14px; color:var(--or); letter-spacing:.3px} .as-chiffre{font-family:'Barlow Condensed',sans-serif; font-size:64px; line-height:1; font-weight:800; color:#fff; text-shadow:0 4px 18px rgba(0,0,0,.4)}
+.as-lib{font-weight:700; font-size:13px; color:var(--or); letter-spacing:.3px} .as-chiffre{font-family:'Barlow Condensed',sans-serif; font-size:48px; line-height:1; font-weight:800; color:#fff; text-shadow:0 4px 18px rgba(0,0,0,.4)}
 .as-niv{font-size:13px; color:var(--doux); font-weight:600} .slide-astuce .haut-n{flex-wrap:wrap} .nouv-t{white-space:nowrap; font-size:13px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:var(--doux)}
 .as-titre{font-size:20px; line-height:1.25; font-weight:800; color:var(--texte)} .as-texte{font-size:15px; line-height:1.45; color:var(--doux)}
 .as-truc{font-size:15px; line-height:1.45; padding:10px 12px; border-radius:12px; background:rgba(232,196,106,.08); border:1px solid rgba(232,196,106,.25)} .as-truc b{color:var(--or); margin-right:4px}
@@ -475,6 +483,10 @@ button.tuile-c{font:inherit; text-align:left; padding:0; cursor:pointer}
 .tuile-prod{position:relative} .ck-ok{position:absolute; top:10px; right:10px; z-index:3; width:30px; height:30px; border-radius:50%; display:grid; place-items:center;
   background:var(--vert, #3FB97A); color:#06130C; font-weight:900; font-size:17px; box-shadow:0 0 0 3px rgba(63,185,122,.25), 0 4px 14px rgba(0,0,0,.45)}
 .ck-lib{font-size:14px; color:var(--doux); font-weight:600} .ck-lib.vert{color:var(--vert, #3FB97A)} .ck-lib.or{color:var(--or)}
+.r-lien.danger{color:var(--rouge)} .btn.danger{background:#5A1F24; color:#FFD7D7; border-color:#7A2A31}
+/* app iPhone : pas de survol, toucher plus doux */
+html.natif{-webkit-tap-highlight-color:transparent} html.natif body{-webkit-user-select:none; user-select:none}
+html.natif input, html.natif textarea{-webkit-user-select:text; user-select:text}
 .pas-deal{margin-top:8px; align-self:flex-start; background:none; border:0; padding:4px 0; color:var(--doux); font-size:13.5px; text-decoration:underline; text-underline-offset:3px; cursor:pointer}
 .pas-deal:hover{color:var(--rouge)} .pas-deal.grand{margin-top:14px; font-size:15px}
 .tuile-c .det-c{font-size:13.5px; color:var(--doux); line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
@@ -698,7 +710,7 @@ body.fen-ouverte{overflow:hidden}
    pas trop lourd et immersif ») : ordi = tableau de bord plein écran, 3 colonnes, tout tient sans défiler. */
 @media (min-width:1100px){
   .ecran.acc{max-width:none; width:100%; padding:22px 28px 22px; gap:16px;
-    grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr) !important; grid-template-rows:auto minmax(0,1fr);
+    grid-template-columns:minmax(0,.72fr) minmax(0,1fr) minmax(0,1fr) !important; grid-template-rows:auto minmax(0,1fr);
     grid-template-areas:"tete tete tete" "news cote plus" !important}
   .ecran.acc:has(.nouv.vide-n){grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important; grid-template-areas:"tete tete" "cote plus" !important}
   .ecran.acc:has(.nouv.vide-n) .acc-cote{display:flex}
@@ -710,7 +722,7 @@ body.fen-ouverte{overflow:hidden}
   .acc-cote > .carte-acc, #acc-plus > *{flex:1 1 auto; min-height:auto; height:auto !important; display:flex; flex-direction:column}
   .acc-cote > .carte-acc > .gestes, .acc-cote > .carte-acc > #acc-pouls, #acc-plus > * > .liste{flex:1; min-height:0; overflow:auto; scrollbar-width:thin; max-height:360px}
   #acc-plus > .hero .courbe{flex:1; min-height:90px; height:auto}
-  .ecran.acc .nouv{height:auto; min-height:420px}
+  .ecran.acc .nouv{height:auto; min-height:300px}
   .nouv .visuel{min-height:0}
 }
 @media (min-width:1600px) and (min-height:720px){ #acc-plus{grid-auto-rows:minmax(0,1fr)} }
@@ -722,7 +734,7 @@ body.fen-ouverte{overflow:hidden}
   body.sandbox{--bandeau-h:26px} body:has(.ecran.acc){padding-bottom:0}
 }
 @media (min-width:1600px){
-  .ecran.acc{grid-template-columns:minmax(0,1.25fr) minmax(0,.95fr) minmax(0,1.8fr) !important}
+  .ecran.acc{grid-template-columns:minmax(0,.7fr) minmax(0,.95fr) minmax(0,1.8fr) !important}
   #acc-plus{display:grid !important; grid-template-columns:1fr 1fr; grid-auto-rows:auto}
   #acc-plus > *{flex:none}
   #acc-plus > *:last-child:nth-child(odd){grid-column:span 2}
@@ -849,6 +861,8 @@ body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px rgba(232,196,106,.55))}
   color:var(--doux); font-size:14px; font-weight:600; white-space:nowrap; cursor:pointer} .quota b{color:var(--or)}
 .quota.vide{border-color:var(--rouge); color:var(--rouge)} .quota.pro{cursor:default; color:var(--or); border-color:rgba(232,196,106,.45); background:linear-gradient(90deg,rgba(232,196,106,.14),rgba(232,196,106,.03))}
 @media (max-width:899px){ .onglets .nav-idees{display:none} }
+@media (max-width:600px){ #d-tri{display:flex; overflow-x:auto; scrollbar-width:none; -webkit-mask-image:linear-gradient(to right,#000 85%,transparent)} #d-tri::-webkit-scrollbar{display:none}
+  #d-tri button{flex:0 0 auto; padding:0 14px; white-space:nowrap} }
 .idee-f{display:flex; flex-direction:column; gap:12px} .idee-r .milieu{gap:8px}
 .trois-col{display:grid; grid-template-columns:repeat(auto-fit, minmax(290px, 1fr)); gap:14px}
 .t-col .r-titre{display:flex; flex-direction:column; gap:2px} .t-col .r-titre small{font-size:13px; color:var(--doux); font-weight:500}
@@ -1094,10 +1108,48 @@ function argentKpi(v){
   let n = nb(v); if (n === null) return '—'; n = convertir(n);
   return Math.abs(n) >= 1000 ? fmtMontant(n / 1000, 1, true) : fmtMontant(Math.round(n), 0);
 }
+// 26 oct 2026 - Apple 5.1.1(v) : supprimer son compte dans l'app (abonnement annulé, toutes ses données effacées)
+function feuilleSupprimerCompte(){
+  ouvrirFeuille(`<h3>${tt('Supprimer mon compte', 'Delete my account')}</h3>
+    <div class="sous" style="font-size:15px">${tt('Ton compte LockerRoom et toutes ses données (inventaire, ventes, breaks, réglages, lien avec eBay) seront effacés pour de bon. Un abonnement Pro sera annulé. Ton compte eBay, lui, ne change pas.', 'Your LockerRoom account and all its data (inventory, sales, breaks, settings, eBay link) will be erased for good. A Pro subscription will be cancelled. Your eBay account itself is not affected.')}</div>
+    <label>${tt('Écris SUPPRIMER pour confirmer', 'Type DELETE to confirm')}<input class="champ" id="sc-mot" autocomplete="off" autocapitalize="characters"></label>
+    <button class="btn danger" id="sc-ok">${tt('Supprimer définitivement', 'Delete permanently')}</button>`);
+  $('#sc-ok').onclick = async () => {
+    const r = await essai(API.compte_supprimer(val('sc-mot')));
+    if (r && r.ok) location.href = '/deconnexion';
+  };
+}
 function dateCourte(d){ const t = Date.parse(String(d || '').slice(0, 10) + 'T12:00'); return isFinite(t) ? new Date(t).toLocaleDateString(LOC(), {day:'numeric', month:'short'}) : ''; }
 function heure(d){ const t = Date.parse(d || ''); return isFinite(t) ? new Date(t).toLocaleTimeString(LOC(), {hour:'2-digit', minute:'2-digit'}) : ''; }
+// ============================================================
+// 26 oct 2026 - l'app iPhone (App Store, Capacitor) : la même app, avec ce que l'iPhone fait mieux :
+// liens eBay dans une fenêtre Safari intégrée, partage natif, vibration légère, notifications des alertes.
+// Rien à acheter dans l'app (règle d'Apple au Canada) : le forfait Pro se gère sur le site.
+// ============================================================
+const NATIF = /LockerRoomiOS/.test(navigator.userAgent) || !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+const PLUG = () => (window.Capacitor && window.Capacitor.Plugins) || {};
+if (NATIF) {
+  document.documentElement.classList.add('natif');
+  const ouvrirExterne = (url) => { const B = PLUG().Browser; if (B) B.open({url, presentationStyle:'popover', toolbarColor:'#0A0D10'}); else location.href = url; };
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[href]'); if (!a || e.defaultPrevented) return;
+    let u; try { u = new URL(a.getAttribute('href'), location.href); } catch (x) { return; }
+    if (u.origin !== location.origin && /^https?:$/.test(u.protocol)) { e.preventDefault(); ouvrirExterne(u.href); }
+  });
+  const ouvrirFen = window.open;
+  window.open = (url, ...r) => { if (url) { ouvrirExterne(new URL(url, location.href).href); return null; } return ouvrirFen ? ouvrirFen.call(window, url, ...r) : null; };
+  if (PLUG().Share) navigator.share = (d) => PLUG().Share.share({title:d.title, text:d.text, url:d.url, dialogTitle:d.title});
+  const P = PLUG().PushNotifications;
+  if (P) {
+    P.addListener('registration', (t) => { API.push_enregistrer(t.value, 'ios').catch(() => {}); });
+    P.addListener('pushNotificationActionPerformed', (n) => { const l = ((n.notification || {}).data || {}).lien; if (l) location.hash = l; });
+    P.checkPermissions().then(p => { if (p.receive === 'granted') P.register(); }).catch(() => {});
+  }
+}
+const vibrer = () => { try { const H = PLUG().Haptics; if (NATIF && H) H.impact({style:'LIGHT'}); } catch (e) {} };
 let minuterieToast = null;
 function toast(msg, ms=2600){
+  vibrer();
   const t = $('#toast'); t.textContent = msg; t.classList.add('vu');
   clearTimeout(minuterieToast); minuterieToast = setTimeout(() => t.classList.remove('vu'), ms);
 }
@@ -1691,6 +1743,7 @@ async function publierVente2(){
 S.forfait = null;
 function htmlBadge(compact){
   const f = S.forfait; if (!f || f.local) return '';
+  if (NATIF && !(f.payant || f.offert || f.essai)) return '';        // app iPhone : pas d'invitation à acheter
   if (f.payant || f.offert) return `<button class="badge-f pro" data-pro-ouvrir aria-label="Pro">${compact ? '✦' : '✦ PRO'}</button>`;
   if (f.essai) return `<button class="badge-f essai" data-pro-ouvrir>${compact ? '✦ ' + f.jours_restants + tt(' j', ' d') : tt('Essai Pro', 'Pro trial') + ' · ' + f.jours_restants + ' ' + tt('j', 'd')}</button>`;
   return `<button class="badge-f gratuit" data-pro-ouvrir>${compact ? 'Pro' : tt('Gratuit', 'Free') + ' <b>' + tt('Passer Pro', 'Go Pro') + '</b>'}</button>`;
@@ -1717,6 +1770,13 @@ const AVANTAGES_PRO = () => [
   [tt('Le look Pro doré', 'The gold Pro look'), tt('parce que tu le vaux bien', 'because you’re worth it')]];
 async function feuillePro(raison){
   const f = S.forfait || await API.forfait().catch(() => ({})) || {};
+  if (NATIF) {                                 // app iPhone : ce que comprend le forfait, sans prix ni bouton d'achat
+    ouvrirFeuille(`<div class="pro-tete"><span class="badge-f pro grand">✦ PRO</span>
+        <h3>${f.pro ? (f.essai ? tt(`Essai Pro : encore ${f.jours_restants} jour${f.jours_restants > 1 ? 's' : ''}`, `Pro trial: ${f.jours_restants} day${f.jours_restants > 1 ? 's' : ''} left`) : tt('Tu es Pro', 'You’re Pro')) : tt('Fonction du forfait Pro', 'Pro plan feature')}</h3></div>
+      <div class="avantages">${AVANTAGES_PRO().map(([a, b]) => `<div class="av"><span class="coche">✓</span><div><b>${esc(a)}</b>${b ? `<span>${esc(b)}</span>` : ''}</div></div>`).join('')}</div>
+      <button class="btn ghost" onclick="fermerFeuille()">${tt('OK', 'OK')}</button>`);
+    return;
+  }
   const prix = f.prix ? `${f.prix.montant.toLocaleString(LOC(), {minimumFractionDigits:2, maximumFractionDigits:2})} $ / ${tt(f.prix.intervalle === 'year' ? 'an' : 'mois', f.prix.intervalle === 'year' ? 'year' : 'month')}` : '';
   const motif = {annonces_mois: tt('Tu as utilisé tes annonces gratuites du mois.', 'You used your free listings this month.'),
     valeur_jour: tt('Tu as utilisé tes recherches gratuites du jour.', 'You used your free searches today.'),
@@ -1738,7 +1798,7 @@ function bandeauEssai(){
   const f = S.forfait; if (!f || !f.essai || f.jours_restants > 3) return '';
   return `<div class="bandeau-essai"><div><b>${tt(`Ton essai Pro finit dans ${f.jours_restants} jour${f.jours_restants > 1 ? 's' : ''}`, `Your Pro trial ends in ${f.jours_restants} day${f.jours_restants > 1 ? 's' : ''}`)}</b>
     <span>${tt('Ton inventaire et tes ventes restent à toi. Les annonces, le repère prix et les deals redeviennent limités.', 'Your inventory and sales stay yours. Listings, price checks and deals go back to limited.')}</span></div>
-    <button class="btn btn-or petit" data-pro-ouvrir>${tt('Garder le Pro', 'Keep Pro')}</button></div>`;
+    ${NATIF ? '' : `<button class="btn btn-or petit" data-pro-ouvrir>${tt('Garder le Pro', 'Keep Pro')}</button>`}</div>`;
 }
 chargerForfait();
 setTimeout(() => { if (S.mode) verifierReponses(); }, 2500);       // 25 oct 2026 : une reponse de LockerRoom a une demande
@@ -2301,7 +2361,7 @@ async function chargerDeals(){
         ${(F.sortes || []).map(k => `<span class="chip on petit">${esc({recrue:tt('Recrue', 'Rookie'), auto:'Auto', patch:'Patch', numerotee:tt('Numérotée', 'Numbered'), gradee:tt('Gradée', 'Graded'), brute:tt('Non gradée', 'Raw')}[k] || k)}</span>`).join('')}
         ${F.rabais_min ? `<span class="chip on petit">−${F.rabais_min} %+</span>` : ''}${F.prix_max ? `<span class="chip on petit">≤ ${argentCourt(F.prix_max)}</span>` : ''}${(F.joueurs || []).slice(0, 3).map(j => `<span class="chip on petit">${esc(j)}</span>`).join('')}</div></div>
     ${L.length ? `<div class="grille-c">${L.map(tuileDeal).join('')}
-        ${d.limite && d.n > L.length ? `<button class="tuile-c tuile-pro" data-pro-deals><span class="badge-f pro grand">✦ PRO</span><b>+${d.n - L.length} ${tt('deals de plus', 'more deals')}</b><span>${tt('avec filtres et comps', 'with filters and comps')}</span></button>` : ''}</div>`
+        ${d.limite && d.n > L.length && !NATIF ? `<button class="tuile-c tuile-pro" data-pro-deals><span class="badge-f pro grand">✦ PRO</span><b>+${d.n - L.length} ${tt('deals de plus', 'more deals')}</b><span>${tt('avec filtres et comps', 'with filters and comps')}</span></button>` : ''}</div>`
       : `<div class="vide">${tt('Aucun deal pour ces filtres pour l’instant. Le chasseur regarde eBay chaque heure.', 'No deal for these filters right now. The hunter checks eBay every hour.')}</div>`}`;
   $$('#d-sp [data-sp]').forEach(b => b.onclick = () => { const k = b.dataset.sp; F.sports = !k ? [] : F.sports.includes(k) ? F.sports.filter(x => x !== k) : [...F.sports, k]; chargerDeals(); });
   $$('#d-tri button').forEach(b => b.onclick = () => { F.tri = b.dataset.v; sauverDealsF(); chargerDeals(); });
@@ -2339,6 +2399,7 @@ function pastilleQuota(cle){
   if (f.pro) return `<span class="quota pro">✦ ${lib[1]} · Pro${f.essai ? ' (' + tt('essai', 'trial') + ' · ' + f.jours_restants + ' j)' : ''}</span>`;
   const reste = (f.reste || {})[cle];
   const txt = reste != null ? `${reste} / ${lim} ${lib[0]}` : `${lim} ${lib[0]}`;
+  if (NATIF) return `<span class="quota ${reste === 0 ? 'vide' : ''}">${txt}</span>`;
   return `<button class="quota ${reste === 0 ? 'vide' : ''}" data-quota-pro>${txt} · <b>${tt('Passer à Pro', 'Go Pro')}</b></button>`;
 }
 function brancherQuota(z){ $$('[data-quota-pro]', z || document).forEach(b => b.onclick = () => feuillePro(b.dataset.raison || 'quota')); }
@@ -2570,6 +2631,21 @@ function visuelSport(n){
 }
 // 26 oct 2026 (Mathieu : « ajouter dans les news des tips, renommer la section Tips & News ») : les astuces vérifiées
 // (« Le savais-tu ? ») alternent avec les nouvelles, une sur deux
+const IMG_ASTUCE = {
+  chute_sortie:'<path d="M6 14l10 10 8-8 18 18"/><path d="M42 26v8h-8"/><path d="M6 40h36"/>',
+  bedard:'<path d="M8 36l8-10 7 5 9-14 8 7"/><circle cx="16" cy="26" r="2"/><circle cx="32" cy="17" r="2"/><path d="M8 42h32"/>',
+  frais:'<rect x="6" y="12" width="36" height="24" rx="4"/><path d="M6 16l18 12 18-12"/><path d="M30 40h12M36 34v12"/>',
+  numerotation:'<rect x="10" y="6" width="28" height="36" rx="3"/><path d="M18 30l12-12"/><path d="M17 20h2M29 28h2"/><path d="M16 36h16"/>',
+  gradation:'<rect x="12" y="4" width="24" height="40" rx="3"/><rect x="16" y="8" width="16" height="8" rx="1.5"/><rect x="16" y="20" width="16" height="20" rx="1.5"/>',
+  psa10:'<rect x="12" y="4" width="24" height="40" rx="3"/><path d="M18 12h12"/><path d="M24 22l2.6 5.2 5.7.8-4.1 4 1 5.7-5.2-2.7-5.2 2.7 1-5.7-4.1-4 5.7-.8z"/>',
+  offres:'<path d="M6 24l8-8 8 4 6-4 8 0 6 8"/><path d="M14 16l10 14 6-4 6 6"/><path d="M6 24l10 10 4-2"/>',
+  jours:'<rect x="6" y="10" width="36" height="32" rx="4"/><path d="M6 20h36M16 6v8M32 6v8"/><path d="M20 30l4 4 8-8"/>',
+  chance_boite:'<rect x="8" y="16" width="32" height="24" rx="3"/><path d="M8 24h32M20 16v-6h8v6"/><circle cx="24" cy="32" r="3"/>',
+  ouvrir:'<path d="M8 20l16-8 16 8v18l-16 8-16-8z"/><path d="M8 20l16 8 16-8M24 28v18"/>',
+  hobby:'<rect x="6" y="14" width="36" height="26" rx="3"/><path d="M6 22h36"/><path d="M16 30h6M28 30h4"/><path d="M14 8h20"/>',
+  canvas:'<rect x="8" y="6" width="20" height="30" rx="2"/><rect x="20" y="12" width="20" height="30" rx="2"/><path d="M24 20h12M24 26h12M24 32h8"/>',
+  demande:'<path d="M10 8h20l8 8v24H10z"/><path d="M16 22h16M16 28h10"/><path d="M28 34l10 10M38 34L28 44"/>'};
+const imgAstuce = (id) => `<span class="as-img" aria-hidden="true"><svg viewBox="0 0 48 48">${IMG_ASTUCE[id] || IMG_ASTUCE.numerotation}</svg></span>`;
 function rendreNouvelles(items){
   const z = $('#acc-news'); if (!z) return;
   if (!S.astuces && !S.astucesEnCours) {
@@ -2588,7 +2664,7 @@ function rendreNouvelles(items){
     const pts = `<div class="points">${L.map((x, k) => `<button data-k="${k}" class="${k === i % L.length ? 'on' : ''} ${x.astuce ? 'astuce' : ''}" aria-label="${x.astuce ? 'Astuce' : 'Nouvelle'} ${k + 1}"></button>`).join('')}</div>`;
     if (n.astuce) {
       zz.innerHTML = `<div class="slide slide-astuce"><div class="visuel astuce-v g-${esc(n.genre || 'info')}"><span class="as-lib">💡 ${tt('Le savais-tu ?', 'Did you know?')}</span>
-          <b class="as-chiffre">${esc(n.chiffre || '')}</b><span class="as-niv">${{debutant:tt('Pour débuter', 'For beginners'), tous:tt('Pour tous', 'For everyone'), avance:tt('Pour les pros', 'For pros')}[n.niveau] || ''}</span></div>
+          <b class="as-chiffre">${esc(n.chiffre || '')}</b><span class="as-niv">${{debutant:tt('Pour débuter', 'For beginners'), tous:tt('Pour tous', 'For everyone'), avance:tt('Pour les pros', 'For pros')}[n.niveau] || ''}</span>${imgAstuce(n.id)}</div>
         <div class="texte"><div class="haut-n"><span class="nouv-t">${tt('Astuces & nouvelles', 'Tips & News')}</span>${pts}</div>
           <div class="as-titre">${esc(n.titre)}</div><div class="as-texte">${esc(n.texte)}</div>
           <div class="as-truc"><b>${tt('Le truc', 'The tip')}</b> ${esc(n.truc)}</div>
@@ -3809,7 +3885,13 @@ function feuilleAlerte(q, prix){
     <button class="btn" id="al-ok">${tt('Créer l’alerte', 'Create alert')}</button>`);
   $('#al-ok').onclick = async () => { const p = nb(val('al-p')); if (await essai(API.alerte_ajouter(val('al-q'), p ? versCAD(p) : 0), tt('Alerte créée', 'Alert created'))) { fermerFeuille(); demanderNotifications(); } };
 }
-function demanderNotifications(){ try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {} }
+function demanderNotifications(){
+  try {
+    const P = PLUG().PushNotifications;
+    if (NATIF && P) { P.requestPermissions().then(p => { if (p.receive === 'granted') P.register(); }).catch(() => {}); return; }
+    if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+  } catch (e) {}
+}
 async function feuilleAlertes(){
   const r = await API.alertes_liste().catch(() => ({alertes:[], notifications:[]}));
   ouvrirFeuille(`<h3>🔔 ${tt('Mes alertes', 'My alerts')}</h3>
@@ -4041,6 +4123,12 @@ async function rendreForfait(retourPaiement){
   const f = await API.forfait().catch(() => null);
   if (!f || !f.multi) { z.hidden = true; return; }
   z.hidden = false;
+  if (NATIF) {                                   // app iPhone : l'état du forfait seulement (il se gère sur le site)
+    z.innerHTML = `<div class="r-titre" style="display:flex;justify-content:space-between;align-items:center">${tt('Mon forfait', 'My plan')} ${htmlBadge()}</div>
+      <div class="r-note">${f.forfait === 'pro' || f.offert ? tt('Forfait Pro actif', 'Pro plan active') : f.essai ? tt(`Essai Pro : encore ${f.jours_restants} jour${f.jours_restants > 1 ? 's' : ''}`, `Pro trial: ${f.jours_restants} day${f.jours_restants > 1 ? 's' : ''} left`) : tt('Forfait gratuit', 'Free plan')}</div>`;
+    brancherBadge(z);
+    return;
+  }
   const pro = f.forfait === 'pro';
   const prix = f.prix ? `${f.prix.montant.toLocaleString(LOC(), {minimumFractionDigits:2, maximumFractionDigits:2})} $ ${f.prix.devise === 'CAD' ? '' : f.prix.devise + ' '}/ ${f.prix.intervalle === 'year' ? 'an' : 'mois'}` : '';
   const fin = f.fin ? new Date(f.fin * 1000).toLocaleDateString(LOC(), {day:'numeric', month:'long'}) : '';
@@ -4139,7 +4227,9 @@ async function rendreBlocEbay(){
       ${s.ecriture ? '' : `<div class="r-alerte">Reconnecte eBay pour mettre en vente et changer tes prix depuis l'app.</div>`}
       <div class="boutons"><button class="btn" id="e-sync">Synchroniser maintenant</button></div>
       <button class="r-lien" id="e-deco">Déconnecter eBay</button>
-      ${s.multi ? `<a class="r-lien" href="/deconnexion">Quitter LockerRoom</a>` : ''}`;
+      ${s.multi ? `<a class="r-lien" href="/deconnexion">Quitter LockerRoom</a>
+        <button class="r-lien danger" id="e-supprimer">${tt('Supprimer mon compte LockerRoom', 'Delete my LockerRoom account')}</button>` : ''}`;
+    const bs = $('#e-supprimer'); if (bs) bs.onclick = feuilleSupprimerCompte;
     if (zAv) zAv.innerHTML = `${envSeg ? '<div class="r-sous">Environnement eBay</div>' + envSeg : ''}<div class="r-note" id="e-appels"></div>${blocTest}${s.multi ? '' : avis}`;
     $('#e-sync').onclick = async () => { const bt = $('#e-sync'); bt.disabled = true; bt.textContent = 'Synchro…';
       const res = await essai(API.ebay_synchroniser(90)); if (res) toast(`${res.annonces} annonces · ${res.ventes} nouvelles ventes`, 3500); rendreBlocEbay(); };
