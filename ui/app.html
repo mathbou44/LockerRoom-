@@ -861,6 +861,42 @@ body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px rgba(232,196,106,.55))}
   color:var(--doux); font-size:14px; font-weight:600; white-space:nowrap; cursor:pointer} .quota b{color:var(--or)}
 .quota.vide{border-color:var(--rouge); color:var(--rouge)} .quota.pro{cursor:default; color:var(--or); border-color:rgba(232,196,106,.45); background:linear-gradient(90deg,rgba(232,196,106,.14),rgba(232,196,106,.03))}
 @media (max-width:899px){ .onglets .nav-idees{display:none} }
+/* ===== 26 oct 2026 - mobile « app premium » : inspiré de CollX / Ludex (scan au centre), Collectr / Card Ladder
+   (valeur et courbe en héros), Robinhood (chiffres nets), et du guide d'Apple (barre en verre, cibles de 44 pt,
+   feuilles qu'on glisse, retour au toucher) ===== */
+@media (max-width:899px){
+  .onglets{background:rgba(12,15,19,.72); backdrop-filter:blur(22px) saturate(180%); -webkit-backdrop-filter:blur(22px) saturate(180%);
+    border-top:1px solid rgba(255,255,255,.06); padding:6px 6px calc(6px + var(--bas)); overflow:visible}
+  .onglets a{min-height:48px; justify-content:center; font-weight:600; letter-spacing:.1px}
+  .onglets a.on::before{content:""; position:absolute; top:-6px; width:22px; height:3px; border-radius:2px; background:var(--acc)}
+  .onglets a.centre{color:var(--texte)}
+  .onglets a.centre svg{box-sizing:content-box; width:26px; height:26px; padding:13px; margin-top:-26px; border-radius:50%;
+    background:radial-gradient(120% 120% at 30% 20%, #F6DC8E, #E8C46A 45%, #B8903A); color:#1A1408; stroke:#1A1408;
+    box-shadow:0 0 0 5px rgba(12,15,19,.92), 0 10px 24px rgba(232,196,106,.35)}
+  body:not(.mode-acheteur) .onglets a.centre svg{background:radial-gradient(120% 120% at 30% 20%, #B9E6FF, #7FD0FF 45%, #3E95C9); stroke:#06121B;
+    box-shadow:0 0 0 5px rgba(12,15,19,.92), 0 10px 24px rgba(127,208,255,.35)}
+  .onglets a.centre.on::before{display:none}
+  .barre-mode{transition:background .2s, border-color .2s; border-bottom-color:transparent; background:rgba(10,13,16,.55)}
+  body.defile .barre-mode{background:rgba(10,13,16,.78); border-bottom-color:rgba(255,255,255,.06)}
+  #vue > .ecran{animation:lr-entre .22s ease-out}
+  .rech-ligne{display:flex; gap:10px} .rech-ligne .recherche{flex:1; min-width:0}
+  .acc-tuiles{display:flex; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; scroll-padding:0 2px; padding-bottom:2px}
+  .acc-tuiles::-webkit-scrollbar{display:none} .acc-tuiles > *{flex:0 0 44%; scroll-snap-align:start}
+  .ecran.acc .horloge .h{font-size:44px} .ecran.acc .marque .logo-lr.officiel img{height:72px}
+  .ecran.acc .nouv .visuel{aspect-ratio:2.4/1 !important; min-height:0 !important}
+  .ecran.acc .nouv .slide-titre{font-size:18px; -webkit-line-clamp:3}
+}
+@keyframes lr-entre{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+.rech-ligne{display:flex; gap:10px} .rech-ligne .recherche{flex:1; min-width:0}
+.btn-scan{flex-shrink:0; display:inline-flex; align-items:center; gap:8px; height:44px; padding:0 16px; border-radius:12px; cursor:pointer; font-weight:700;
+  background:linear-gradient(180deg, rgba(232,196,106,.22), rgba(232,196,106,.08)); border:1px solid rgba(232,196,106,.45); color:var(--or)}
+.btn-scan svg{width:22px; height:22px}
+@media (max-width:420px){ .btn-scan span{display:none} .btn-scan{padding:0 12px} }
+/* retour au toucher (iOS) */
+@media (hover:none){
+  .tuile-c, .rangee, .btn, .pilule, .chip, .t-acc, .carte-acc a, .onglets a{transition:transform .12s ease, opacity .12s}
+  .tuile-c:active, .rangee:active, .btn:active, .pilule:active, .chip:active, .t-acc:active, .onglets a:active{transform:scale(.97); opacity:.9}
+}
 @media (max-width:600px){ #d-tri{display:flex; overflow-x:auto; scrollbar-width:none; -webkit-mask-image:linear-gradient(to right,#000 85%,transparent)} #d-tri::-webkit-scrollbar{display:none}
   #d-tri button{flex:0 0 auto; padding:0 14px; white-space:nowrap} }
 .idee-f{display:flex; flex-direction:column; gap:12px} .idee-r .milieu{gap:8px}
@@ -926,6 +962,23 @@ body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px rgba(232,196,106,.55))}
   .grille-c{grid-template-columns:repeat(auto-fill, minmax(210px, 1fr))}
 }
 @media (min-width:1500px){ .grille-c{grid-template-columns:repeat(auto-fill, minmax(230px, 1fr))} }
+/* 26 oct 2026 (Mathieu : « Tips & News, je la mettrais sur le large, pas sur le long ») : ordi = une bande pleine
+   largeur sous l'en-tête (image à gauche, texte à droite), puis les deux colonnes */
+@media (min-width:1100px){
+  .ecran.acc:not(:has(.nouv.vide-n)){grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important;
+    grid-template-rows:auto auto minmax(0,1fr) !important; grid-template-areas:"tete tete" "news news" "cote plus" !important}
+  .ecran.acc .nouv{height:212px !important; min-height:0 !important}
+  .ecran.acc .nouv .slide{flex-direction:row !important; height:100%}
+  .ecran.acc .nouv .visuel{flex:0 0 32% !important; width:32%; height:100% !important; aspect-ratio:auto !important; min-height:0 !important; max-height:none}
+  .ecran.acc .nouv .visuel.astuce-v{flex:0 0 28% !important; width:28%; justify-content:center}
+  .ecran.acc .nouv .texte{padding:16px 24px; justify-content:center; gap:8px}
+  .ecran.acc .nouv .slide-titre{font-size:22px; -webkit-line-clamp:2}
+  .ecran.acc .slide-astuce .texte{display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); grid-template-areas:"h h" "t t" "x r" "s s"; column-gap:18px; row-gap:6px; align-content:center}
+  .ecran.acc .slide-astuce .haut-n{grid-area:h} .ecran.acc .slide-astuce .as-titre{grid-area:t; font-size:19px}
+  .ecran.acc .slide-astuce .as-texte{grid-area:x; -webkit-line-clamp:3; font-size:14px} .ecran.acc .slide-astuce .as-truc{grid-area:r; font-size:14px; padding:8px 12px; align-self:start}
+  .ecran.acc .slide-astuce .slide-src{grid-area:s}
+}
+@media (min-width:1600px){ .ecran.acc:not(:has(.nouv.vide-n)){grid-template-columns:minmax(0,.95fr) minmax(0,1.8fr) !important} }
 /* I18N CSS DEBUT - pastille Langue / Devise */
 .pref{display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 11px 0 4px; border-radius:999px; border:1px solid rgba(255,255,255,.14);
   background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.04)); color:var(--texte); font:700 12.5px/1 inherit; font-family:inherit; white-space:nowrap; cursor:pointer; flex-shrink:0}
@@ -1216,7 +1269,17 @@ function anneau(taille, p, cls=''){
     + `<b>${Math.round(v * 100)}<small>%</small></b></span>`;
 }
 const V = () => $('#vue');
-function ouvrirFeuille(html){ $('#feuille').innerHTML = '<div class="poignee"></div>' + html; $('#fond-feuille').hidden = false; $('#feuille').scrollTop = 0; }
+function ouvrirFeuille(html){ $('#feuille').innerHTML = '<div class="poignee"></div>' + html; $('#fond-feuille').hidden = false; $('#feuille').scrollTop = 0; $('#feuille').style.transform = ''; }
+// 26 oct 2026 - feuilles comme sur iPhone : on les glisse vers le bas pour les fermer
+(() => {
+  let y0 = null, dy = 0;
+  document.addEventListener('touchstart', (e) => { const f = e.target.closest('#feuille'); if (!f || f.scrollTop > 0) { y0 = null; return; } y0 = e.touches[0].clientY; dy = 0; }, {passive:true});
+  document.addEventListener('touchmove', (e) => { if (y0 === null) return; dy = Math.max(0, e.touches[0].clientY - y0); const f = $('#feuille'); if (f && dy > 0) { f.style.transition = 'none'; f.style.transform = `translateY(${dy}px)`; } }, {passive:true});
+  document.addEventListener('touchend', () => { if (y0 === null) return; const f = $('#feuille'); y0 = null; if (!f) return;
+    f.style.transition = 'transform .2s ease'; if (dy > 110) { f.style.transform = 'translateY(100%)'; setTimeout(fermerFeuille, 180); } else f.style.transform = ''; });
+})();
+// barre du haut « verre » quand on défile (grand titre iOS)
+addEventListener('scroll', () => document.body.classList.toggle('defile', scrollY > 8), {passive:true});
 function fermerFeuille(){ $('#fond-feuille').hidden = true; $('#feuille').innerHTML = ''; }
 $('#fond-feuille').addEventListener('click', (e) => { if (e.target.id === 'fond-feuille') fermerFeuille(); });
 function confirmer(titre, libelle, danger, quatrieme){
@@ -1404,7 +1467,14 @@ function appliquerActivites(a){
     const m = x.dataset.mode, bonMode = !m || !S.mode || m === S.mode;
     x.hidden = !bonMode || (x.dataset.onglet in voir && !voir[x.dataset.onglet]) || (x.dataset.onglet === 'admin' && !(S.forfait && S.forfait.admin));
   });
-  nav.style.gridTemplateColumns = `repeat(${$$('a:not([hidden]):not(.nav-reglages):not(.nav-admin):not(.nav-alertes)', nav).length},minmax(0,1fr))`;
+  // 26 oct 2026 (Mathieu : « inspiré des meilleures apps ») : comme CollX et Ludex, l'action principale au centre de
+  // la barre du bas, en bouton rond doré : Valeur (acheteur : scanner ou chercher une carte), Vendre (vendeur : une photo)
+  const mobile = matchMedia('(max-width:899px)').matches;
+  const vis = $$('a:not([hidden]):not(.nav-reglages):not(.nav-admin):not(.nav-alertes)' + (mobile ? ':not(.nav-idees):not(.nav-logo)' : ''), nav);
+  $$('a', nav).forEach(x => x.classList.remove('centre'));
+  const c = vis[Math.floor(vis.length / 2)];
+  if (c && ['valeur', 'vendre'].includes(c.dataset.onglet)) c.classList.add('centre');
+  nav.style.gridTemplateColumns = `repeat(${vis.length},minmax(0,1fr))`;
   majBarreMode();
 }
 API.activites().then(appliquerActivites).catch(() => {});
@@ -2403,19 +2473,34 @@ function pastilleQuota(cle){
   return `<button class="quota ${reste === 0 ? 'vide' : ''}" data-quota-pro>${txt} · <b>${tt('Passer à Pro', 'Go Pro')}</b></button>`;
 }
 function brancherQuota(z){ $$('[data-quota-pro]', z || document).forEach(b => b.onclick = () => feuillePro(b.dataset.raison || 'quota')); }
+// Scanner (acheteur) : une photo -> l'IA lit la carte -> sa valeur (les mêmes cartes vendues)
+async function scannerCarte(f){
+  if (!f) return;
+  ouvrirFeuille(`<h3>${tt('Lecture de la carte…', 'Reading the card…')}</h3><div class="lecture"><span class="roue"></span>${tt('Joueur, année, set, parallèle, numéro…', 'Player, year, set, parallel, number…')}</div>`);
+  let ph; try { ph = await reduirePhoto(f); } catch (x) { fermerFeuille(); toast(tt('Photo illisible : reprends-la', 'Unreadable photo: try again')); return; }
+  const r = await API.photo_identifier([ph]).catch(e => ({ok:false, erreur:e.message}));
+  if (!r || !r.ok) { fermerFeuille(); toast((r && r.erreur) || tt('Carte pas reconnue', 'Card not recognized'), 5000); return; }
+  const c = r.champs || {};
+  const q = [c.annee, c.joueur, c.set_nom && !/young guns/i.test(c.parallele || '') ? c.set_nom : '', c.parallele, c.tirage ? '/' + c.tirage : '', c.auto ? 'auto' : '', c.grade || '']
+    .filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+  fermerFeuille();
+  if (q) location.hash = '#valeur/' + encodeURIComponent(q); else toast(tt('Carte pas reconnue', 'Card not recognized'));
+}
 async function vueValeur(arg){
   // 24 oct 2026 (Mathieu : « will smith young guns et ca me sort tout sauf ca ») : la MEME carte seulement ;
   // l'app montre ce qu'elle a compris, ce qu'elle a ecarte et pourquoi, et apprend de « pas la bonne carte ».
   const q = arg ? decodeURIComponent(arg) : '';
   V().innerHTML = `<section class="ecran large">
     <div class="entete"><div class="titre">${tt('Combien vaut une carte ?', 'What is a card worth?')}</div>${pastilleQuota('valeur_jour')}</div>
-    <form class="recherche" id="v-form" role="search">${ICONES.loupe}<input id="v-q" type="search" enterkeyhint="search" value="${esc(q)}" placeholder="${esc(tt('Joueur + carte (ex. Will Smith Young Guns, Bedard PSA 10, Celebrini Exclusives /100)', 'Player + card (e.g. Will Smith Young Guns, Bedard PSA 10, Celebrini Exclusives /100)'))}" aria-label="${esc(tt('Carte à évaluer', 'Card to value'))}"></form>
+    <div class="rech-ligne"><form class="recherche" id="v-form" role="search">${ICONES.loupe}<input id="v-q" type="search" enterkeyhint="search" value="${esc(q)}" placeholder="${esc(tt('Joueur + carte (ex. Will Smith Young Guns, Bedard PSA 10, Celebrini Exclusives /100)', 'Player + card (e.g. Will Smith Young Guns, Bedard PSA 10, Celebrini Exclusives /100)'))}" aria-label="${esc(tt('Carte à évaluer', 'Card to value'))}"></form>
+      <label class="btn-scan" aria-label="${esc(tt('Scanner une carte', 'Scan a card'))}">${ICONES.photo}<span>${tt('Scanner', 'Scan')}</span><input type="file" accept="image/*" capture="environment" id="v-scan" hidden></label></div>
     <div id="v-res">${q ? roue : `<div class="vide">${tt('Écris le joueur et la carte. Ajoute la variante, la gradation, « auto », « patch » ou « /99 » si ta carte en a : l’app ne garde que la même carte.', 'Type the player and the card. Add the parallel, grade, “auto”, “patch” or “/99” if your card has one: the app keeps only the same card.')}</div><div id="v-tend"></div>`}</div>
   </section>`;
   brancherSwitchMode(V());
   $('#v-form').onsubmit = (e) => { e.preventDefault(); const v = $('#v-q').value.trim(); if (v) location.hash = '#valeur/' + encodeURIComponent(v); };
   brancherQuota(V());
-  if (!q) { $('#v-q').focus(); blocTendances($('#v-tend')); return; }
+  $('#v-scan').onchange = (e) => scannerCarte(e.target.files && e.target.files[0]);
+  if (!q) { if (!matchMedia('(max-width:899px)').matches) $('#v-q').focus(); blocTendances($('#v-tend')); return; }
   let r; try { r = await API.valeur_carte(q); } catch (e) { r = {ok: false, erreur: e.message}; }
   chargerForfait().then(() => { const e = $('.ecran .entete .quota'); if (e) { e.outerHTML = pastilleQuota('valeur_jour'); brancherQuota(V()); } }).catch(() => {});
   const z = $('#v-res'); if (!z) return;
@@ -2650,17 +2735,22 @@ function rendreNouvelles(items){
   const z = $('#acc-news'); if (!z) return;
   if (!S.astuces && !S.astucesEnCours) {
     S.astucesEnCours = true;
-    API.astuces(false, typeof LANGUE !== 'undefined' ? LANGUE : null).then(r => { S.astuces = (r && r.astuces) || []; if ($('#acc-news')) rendreNouvelles(items); })
+    API.astuces(false, typeof LANGUE !== 'undefined' ? LANGUE : null).then(r => { S.astuces = (r && r.astuces) || []; S.astucesEnCours = false; if (S.newsMaj) S.newsMaj(); })
       .catch(() => { S.astuces = []; }).finally(() => { S.astucesEnCours = false; });
   }
-  const news = items.slice(0, 8), tips = (S.astuces || []).slice(0, 12), L = [];
-  for (let k = 0; k < Math.max(news.length, tips.length); k++) { if (news[k]) L.push(news[k]); if (tips[k]) L.push({...tips[k], astuce:true}); }
+  let L = [];
+  const construire = () => {
+    const news = items.slice(0, 8), tips = (S.astuces || []).slice(0, 12), out = [];
+    for (let k = 0; k < Math.max(news.length, tips.length); k++) { if (news[k]) out.push(news[k]); if (tips[k]) out.push({...tips[k], astuce:true}); }
+    return out;
+  };
+  L = construire();
   const carteN = $('#acc-nouv'); if (carteN) carteN.classList.toggle('vide-n', !L.length);
-  if (!L.length) { z.innerHTML = ''; return; }
+  if (!L.length) { z.innerHTML = ''; S.newsMaj = () => { if ($('#acc-news') && (S.astuces || []).length) rendreNouvelles(items); }; return; }
   S.newsVues = true;
   let i = 0;
   const montrer = () => {
-    const n = L[i % L.length], zz = $('#acc-news'); if (!zz) return;
+    const n = L[i % L.length], zz = $('#acc-news'); if (!zz || !n) return;
     const pts = `<div class="points">${L.map((x, k) => `<button data-k="${k}" class="${k === i % L.length ? 'on' : ''} ${x.astuce ? 'astuce' : ''}" aria-label="${x.astuce ? 'Astuce' : 'Nouvelle'} ${k + 1}"></button>`).join('')}</div>`;
     if (n.astuce) {
       zz.innerHTML = `<div class="slide slide-astuce"><div class="visuel astuce-v g-${esc(n.genre || 'info')}"><span class="as-lib">💡 ${tt('Le savais-tu ?', 'Did you know?')}</span>
@@ -2687,6 +2777,7 @@ function rendreNouvelles(items){
     zz.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { i = +b.dataset.k; montrer(); });
   };
   montrer();
+  S.newsMaj = () => { const n0 = L[i % L.length]; L = construire(); const k = L.indexOf(n0); i = k >= 0 ? k : 0; const c = $('#acc-nouv'); if (c) c.classList.toggle('vide-n', !L.length); if (L.length) montrer(); };
   if (S.tNews) clearInterval(S.tNews);
   S.tNews = setInterval(() => { if (!surAccueil()) { arreterAccueilLive(); return; } if (!document.hidden && !z.matches(':hover')) { i++; montrer(); } }, 10000);
   let x0 = null;
