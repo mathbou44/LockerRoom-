@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#070708">
+<title>SlabCoach</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2">
+<link rel="icon" href="/favicon.ico?v=2" sizes="any">
+<link rel="apple-touch-icon" href="/icone.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;800;900&display=swap" rel="stylesheet">
+<style>
+/* 27 oct 2026 - page de connexion SlabCoach (Mathieu : « ca manque de punch et de premium »).
+   Noir profond, une lueur d'or derriere le logo, des slabs en filigrane, le logo or poli avec son reflet. */
+:root{--noir:#070708; --carte:#111114; --ligne:#26231E; --ivoire:#F4F1EA; --doux:#A8A39A; --or1:#F7E2A0; --or2:#E0B655; --or3:#A57A25; --rouge:#FFB3B3}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0; background:var(--noir); color:var(--ivoire); font-family:Inter,system-ui,-apple-system,sans-serif; overflow-x:hidden;
+  padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+.scene{position:fixed; inset:0; pointer-events:none; overflow:hidden}
+.lueur{position:absolute; left:50%; top:30%; width:900px; height:900px; transform:translate(-50%,-50%);
+  background:radial-gradient(circle, rgba(232,196,106,.20) 0%, rgba(232,196,106,.07) 32%, rgba(7,7,8,0) 62%)}
+.grain{position:absolute; inset:0; background:repeating-linear-gradient(115deg, rgba(255,255,255,.018) 0 1px, transparent 1px 7px)}
+.vignette{position:absolute; inset:0; background:radial-gradient(ellipse at 50% 40%, transparent 40%, rgba(0,0,0,.75) 100%)}
+.slab{position:absolute; width:190px; height:300px; border-radius:16px; border:1.5px solid rgba(232,196,106,.22);
+  background:linear-gradient(160deg, rgba(255,255,255,.05), rgba(255,255,255,.01) 45%, rgba(232,196,106,.04)); box-shadow:0 30px 80px rgba(0,0,0,.6)}
+.slab::before{content:''; position:absolute; left:14px; right:14px; top:14px; height:46px; border-radius:6px; border:1px solid rgba(232,196,106,.28); background:rgba(0,0,0,.35)}
+.slab::after{content:''; position:absolute; left:14px; right:14px; top:72px; bottom:14px; border-radius:6px; border:1px solid rgba(255,255,255,.06)}
+.s1{left:calc(50% - 520px); top:16%; transform:rotate(-14deg); opacity:.55}
+.s2{right:calc(50% - 520px); top:22%; transform:rotate(12deg); opacity:.55}
+.s3{left:calc(50% - 360px); top:58%; transform:rotate(8deg) scale(.8); opacity:.28}
+.s4{right:calc(50% - 380px); top:62%; transform:rotate(-9deg) scale(.8); opacity:.28}
+
+main{position:relative; min-height:100%; display:grid; place-items:center}
+.boite{width:min(440px,100%); display:grid; justify-items:center; text-align:center; gap:0; animation:monte .9s cubic-bezier(.2,.8,.2,1) both}
+.logo{position:relative; width:132px; height:132px; filter:drop-shadow(0 18px 40px rgba(232,196,106,.25))}
+.logo img{width:100%; height:100%; display:block}
+.logo::after{content:''; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(110deg, transparent 0%, transparent 38%, rgba(255,248,224,.95) 50%, transparent 62%, transparent 100%);
+  background-size:250% 100%; animation:reflet 4.5s ease-in-out infinite; mix-blend-mode:screen;
+  -webkit-mask:url(/logo_sc_gold_poli.png) center/contain no-repeat; mask:url(/logo_sc_gold_poli.png) center/contain no-repeat}
+.mot{margin-top:22px; font-weight:900; font-size:clamp(30px,8vw,44px); letter-spacing:.16em; line-height:1}
+.mot .slab-t{color:var(--ivoire)}
+.mot .coach{background:linear-gradient(110deg,var(--or1) 0%,var(--or2) 38%,#FFF8E6 50%,var(--or2) 62%,var(--or1) 100%); background-size:250% 100%;
+  -webkit-background-clip:text; background-clip:text; color:transparent; animation:reflet 4.5s ease-in-out infinite}
+.filet{display:flex; align-items:center; gap:12px; margin-top:12px; color:var(--doux); font-size:12px; font-weight:600; letter-spacing:.42em; text-transform:uppercase}
+.filet::before,.filet::after{content:''; width:34px; height:2px; background:var(--or2); opacity:.8}
+.titre{margin:30px 0 0; font-size:clamp(22px,5.4vw,28px); font-weight:800; line-height:1.2; text-wrap:balance}
+.titre em{font-style:normal; color:var(--or1)}
+.puces{display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:18px}
+.puces span{padding:7px 12px; border-radius:999px; border:1px solid var(--ligne); background:rgba(255,255,255,.03); color:#D9D4CA; font-size:13px; font-weight:600}
+.puces b{color:var(--or2); margin-right:6px}
+.btn{position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center; gap:10px; width:100%; margin-top:30px; padding:17px 20px;
+  border-radius:14px; text-decoration:none; color:#1A1408; font-weight:800; font-size:17px;
+  background:linear-gradient(180deg,#F6DE97 0%,#E3BA5C 55%,#C99A3A 100%);
+  box-shadow:0 14px 34px rgba(217,169,63,.28), inset 0 1px 0 rgba(255,255,255,.55); transition:transform .15s, box-shadow .15s}
+.btn:hover{transform:translateY(-1px); box-shadow:0 18px 40px rgba(217,169,63,.36), inset 0 1px 0 rgba(255,255,255,.55)}
+.btn:focus-visible{outline:3px solid var(--ivoire); outline-offset:3px}
+.btn::after{content:''; position:absolute; inset:0; background:linear-gradient(110deg, transparent 35%, rgba(255,255,255,.55) 50%, transparent 65%); background-size:250% 100%; animation:reflet 4.5s ease-in-out infinite}
+.note{margin-top:14px; color:#8A857C; font-size:13px}
+.erreur{margin-top:16px; color:var(--rouge); font-size:14px}
+.liens{margin-top:26px; display:flex; gap:16px; justify-content:center; font-size:13px}
+.liens a{color:var(--doux); text-decoration:none; border-bottom:1px solid #3A362F}
+.liens a:hover{color:var(--ivoire)}
+.demo{display:inline-block; margin-top:12px; color:#8A857C; font-size:13px}
+@keyframes reflet{0%,100%{background-position:100% 0} 50%{background-position:0 0}}
+@keyframes monte{from{opacity:0; transform:translateY(14px)} to{opacity:1; transform:none}}
+@media (max-width:700px){ .s1,.s2{opacity:.35} .s1{left:-90px; top:6%} .s2{right:-90px; top:8%} .s3,.s4{display:none} .lueur{width:620px; height:620px} }
+@media (prefers-reduced-motion:reduce){ .logo::after,.btn::after,.mot .coach{animation:none} .boite{animation:none} }
+</style>
+</head>
+<body>
+<div class="scene" aria-hidden="true"><div class="lueur"></div><div class="grain"></div>
+  <div class="slab s1"></div><div class="slab s2"></div><div class="slab s3"></div><div class="slab s4"></div><div class="vignette"></div></div>
+<main><div class="boite">
+  <div class="logo"><img src="/logo_sc_gold_poli.png" alt="SlabCoach"></div>
+  <div class="mot"><span class="slab-t">SLAB</span><span class="coach">COACH</span></div>
+  <div class="filet">Sports cards</div>
+  <h1 class="titre">Joue tes cartes <em>comme un pro.</em></h1>
+  <div class="puces"><span><b>●</b>Deals sous la valeur</span><span><b>●</b>Vraies valeurs</span><span><b>●</b>Chances de breaks</span><span><b>●</b>Inventaire et ventes eBay</span></div>
+  {erreur}
+  <a class="btn" href="/auth/ebay">Se connecter avec eBay</a>
+  <div class="note">Aucun mot de passe dans l’app · ton compte est créé tout seul</div>
+  <div class="liens"><a href="/support">Support</a><a href="/confidentialite">Confidentialité</a><a href="/conditions">Conditions</a></div>
+</div></main>
+</body>
+</html>

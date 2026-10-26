@@ -163,9 +163,9 @@ def demo():
                     _remplir_demo()
             return redirect("/")
         erreur = "<p style='color:#FFB3B3'>Code incorrect</p>"
-    return _page_langue("<!doctype html><meta name='viewport' content='width=device-width,initial-scale=1'><title>SlabCoach</title>"
+    return _page_langue("<!doctype html><meta name='viewport' content='width=device-width,initial-scale=1'><title>SlabCoach</title><link rel='icon' href='/favicon.ico?v=2'>"
             "<body style='background:#0A0D10;color:#F2F5F7;font-family:system-ui;display:grid;place-items:center;min-height:90vh'>"
-            "<form method='post' style='display:grid;gap:12px;width:min(320px,90vw)'><img src='/icone.png' width='56' alt=''>"
+            "<form method='post' style='display:grid;gap:12px;width:min(320px,90vw)'><img src='/logo_sc_gold_poli.png' width='72' style='margin:auto' alt=''>"
             "<b style='font-size:22px'>SlabCoach · démo</b><input name='code' autocomplete='off' autofocus placeholder='Code d’accès' "
             "style='padding:12px;border-radius:10px;border:1px solid #29313A;background:#14181D;color:#F2F5F7;font-size:16px'>"
             f"{erreur}<button style='padding:12px;border-radius:10px;border:0;background:#E8C46A;font-weight:700;font-size:16px'>Entrer</button>"
@@ -209,7 +209,7 @@ def _premiere_synchro(cid):
 
 _PAGE_EBAY = ("<!doctype html><meta name='viewport' content='width=device-width,initial-scale=1'><title>SlabCoach</title>"
               "<body style='background:#0A0D10;color:#F2F5F7;font-family:system-ui;display:grid;place-items:center;min-height:90vh;margin:0'>"
-              "<main style='display:grid;gap:16px;width:min(340px,88vw);text-align:center'><img src='/icone.png' width='64' style='margin:auto' alt=''>"
+              "<main style='display:grid;gap:16px;width:min(340px,88vw);text-align:center'><img src='/logo_sc_gold_poli.png' width='80' style='margin:auto' alt=''>"
               "<b style='font-size:26px'>SlabCoach</b><span style='color:#A3ACB5'>Ton inventaire eBay, tes prix et tes ventes, tout seuls.</span>"
               "{erreur}<a href='/auth/ebay' style='padding:15px;border-radius:12px;background:#7FD0FF;color:#0A0D10;font-weight:700;font-size:17px;text-decoration:none'>"
               "Se connecter avec eBay</a><span style='color:#87909A;font-size:13px'>Aucun mot de passe dans l’app · ton compte est créé tout seul</span>"
@@ -217,13 +217,26 @@ _PAGE_EBAY = ("<!doctype html><meta name='viewport' content='width=device-width,
               "<a href='/conditions' style='color:#A3ACB5'>Conditions</a></span></main></body>")
 
 
+
+def _page_connexion():
+    """27 oct 2026 - la page « Se connecter avec eBay » (ui/connexion.html : noir et or, le logo avec son reflet)."""
+    try:
+        with open(os.path.join(DOSSIER_UI, "connexion.html"), encoding="utf-8") as f:
+            return f.read()
+    except OSError:
+        return _PAGE_EBAY
+
 # 24 oct 2026 - pages de connexion en francais ou en anglais : ?lang=, sinon le choix de l'app (temoin lr_langue),
 # sinon la langue du navigateur ; un lien en haut a gauche pour changer.
 _EN = [("Ton inventaire eBay, tes prix et tes ventes, tout seuls.", "Your eBay inventory, prices and sales, on autopilot."),
        ("Se connecter avec eBay", "Sign in with eBay"), ("Aucun mot de passe dans l’app · ton compte est créé tout seul",
        "No password in the app · your account is created automatically"), ("Confidentialité", "Privacy"),
        (">Conditions<", ">Terms<"), ("Connexion eBay interrompue : réessaie", "eBay sign-in interrupted: try again"),
-       ("Code incorrect", "Wrong code"), ("Code d’accès", "Access code"), (">Entrer<", ">Enter<")]
+       ("Code incorrect", "Wrong code"), ("Code d’accès", "Access code"), (">Entrer<", ">Enter<"),
+       ('<html lang="fr">', '<html lang="en">'), ("Joue tes cartes <em>comme un pro.</em>", "Play your cards <em>like a pro.</em>"),
+       ("Deals sous la valeur", "Deals under value"), ("Vraies valeurs", "Real values"), ("Chances de breaks", "Break odds"),
+       ("Inventaire et ventes eBay", "eBay inventory and sales"),
+       ("Code de démonstration", "Demo code")]
 
 
 def _langue():
@@ -241,7 +254,7 @@ def _page_langue(html):
             html = html.replace(a, b)
     autre = "fr" if l == "en" else "en"
     lien = (f"<a href='?lang={autre}' style='position:fixed;top:14px;left:14px;padding:7px 12px;border-radius:999px;"
-            f"border:1px solid #29313A;color:#F2F5F7;font:700 13px system-ui;text-decoration:none'>"
+            f"border:1px solid #3A352C;background:rgba(17,17,20,.7);color:#F4F1EA;font:700 13px system-ui;text-decoration:none;z-index:5'>"
             f"{'Français' if autre == 'fr' else 'English'}</a>")
     r = make_response(html.replace("</body>", lien + "</body>"))
     if request.args.get("lang") in ("fr", "en"):
@@ -256,10 +269,10 @@ def connexion():
     if comptes.MULTI and (not CODE_ACCES or session.get("ok")):
         if session.get("compte") in comptes.lister():
             return redirect("/")
-        e = "<span style='color:#FFB3B3'>Connexion eBay interrompue : réessaie</span>" if request.args.get("erreur") else ""
-        page = _PAGE_EBAY.replace("{erreur}", e)
+        e = "<div class='erreur'>Connexion eBay interrompue : réessaie</div>" if request.args.get("erreur") else ""
+        page = _page_connexion().replace("{erreur}", e)
         if os.environ.get("LOCKERROOM_DEMO_CODE") and "LockerRoomiOS" in (request.headers.get("User-Agent") or ""):
-            page = page.replace("</main>", "<a href='/demo' style='color:#87909A;font-size:13px'>Code de démonstration</a></main>")
+            page = page.replace("</div></main>", "<a class='demo' href='/demo'>Code de démonstration</a></div></main>")
         return _page_langue(page)
     if not CODE_ACCES:
         return redirect("/")
@@ -270,9 +283,9 @@ def connexion():
             session["ok"] = True
             return redirect("/connexion" if comptes.MULTI else "/")
         erreur = "<p style='color:#FFB3B3'>Code incorrect</p>"
-    return _page_langue("<!doctype html><meta name='viewport' content='width=device-width,initial-scale=1'><title>SlabCoach</title>"
+    return _page_langue("<!doctype html><meta name='viewport' content='width=device-width,initial-scale=1'><title>SlabCoach</title><link rel='icon' href='/favicon.ico?v=2'>"
             "<body style='background:#0A0D10;color:#F2F5F7;font-family:system-ui;display:grid;place-items:center;min-height:90vh'>"
-            "<form method='post' style='display:grid;gap:12px;width:min(320px,90vw)'><img src='/icone.png' width='56' alt=''>"
+            "<form method='post' style='display:grid;gap:12px;width:min(320px,90vw)'><img src='/logo_sc_gold_poli.png' width='72' style='margin:auto' alt=''>"
             "<b style='font-size:22px'>SlabCoach</b><input name='code' type='password' autofocus placeholder='Code d’accès' "
             "style='padding:12px;border-radius:10px;border:1px solid #29313A;background:#14181D;color:#F2F5F7;font-size:16px'>"
             f"{erreur}<button style='padding:12px;border-radius:10px;border:0;background:#7FD0FF;font-weight:700;font-size:16px'>Entrer</button>"
