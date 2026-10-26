@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0A0D10">
-<title>Break · LockerRoom</title>
+<title>Break · SlabCoach</title>
 <link rel="icon" href="/icone.png">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
 <style>
@@ -49,7 +49,7 @@ async function charger(){
   const parPlace = Object.fromEntries(d.places.map(p => [p.id, p]));
   const modes = {equipes:'Équipes', divisions:'Divisions', joueurs:'Joueurs', aleatoire:'Équipes aléatoires'};
   document.getElementById('vue').innerHTML = `
-    <div class="marque"><img src="/icone.png" alt="">LockerRoom · page publique du break</div>
+    <div class="marque"><img src="/icone.png" alt="">SlabCoach · page publique du break</div>
     <h1>${esc(d.nom)}</h1>
     <div class="pastilles">${d.produit ? tag(d.produit.nom, 'acc') + tag(d.boites + ' × ' + d.produit.format) : ''}${tag(modes[d.mode] || d.mode)}${tag(vendues + '/' + d.places.length + ' places vendues')}
       ${t.resultat ? tag('Tirage fait ' + heure(t.le), 'vert') : t.engage ? tag('Tirage engagé', 'or') : ''}</div>

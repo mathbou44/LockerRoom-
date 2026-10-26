@@ -1,5 +1,5 @@
 <!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>LockerRoom</title>
+<title>SlabCoach</title>
 <style>
 html,body{margin:0;height:100%;background:#0A0D10;color:#F2F5F7;font-family:-apple-system,system-ui,sans-serif}
 main{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center;box-sizing:border-box}
@@ -10,13 +10,13 @@ button{margin-top:8px;padding:15px 28px;border:0;border-radius:14px;background:#
 </style></head><body><main>
 <img src="icone.png" alt="">
 <h1 id="t">Pas de connexion</h1>
-<p id="m">LockerRoom a besoin d’Internet pour lire les ventes eBay. Vérifie ton Wi-Fi ou tes données cellulaires.</p>
+<p id="m">SlabCoach a besoin d’Internet pour lire les ventes eBay. Vérifie ton Wi-Fi ou tes données cellulaires.</p>
 <button id="b">Réessayer</button>
 </main>
 <script>
 if (!/^fr/i.test(navigator.language || '')) {
   document.getElementById('t').textContent = 'No connection';
-  document.getElementById('m').textContent = 'LockerRoom needs the internet to read eBay sales. Check your Wi-Fi or cellular data.';
+  document.getElementById('m').textContent = 'SlabCoach needs the internet to read eBay sales. Check your Wi-Fi or cellular data.';
   document.getElementById('b').textContent = 'Try again';
 }
 document.getElementById('b').onclick = function () { location.href = (window.Capacitor && Capacitor.getServerUrl && Capacitor.getServerUrl()) || '/'; };

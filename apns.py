@@ -9,7 +9,7 @@ Render (variables) - rien n'est envoye tant qu'elles manquent :
   APNS_KEY_ID   l'identifiant de la cle (.p8) creee dans developer.apple.com > Keys (Apple Push Notifications service)
   APNS_TEAM_ID  l'identifiant d'equipe Apple (10 caracteres)
   APNS_KEY      le contenu du fichier .p8 (-----BEGIN PRIVATE KEY----- ...), jamais dans le depot
-  APNS_TOPIC    l'identifiant de l'app (com.lockerroom.app par defaut)
+  APNS_TOPIC    l'identifiant de l'app (com.slabcoach.app par defaut)
   APNS_SANDBOX  1 pour les versions de test installees depuis Xcode (TestFlight et App Store : laisser vide)
 Le jeton d'authentification (JWT ES256) est refait toutes les 50 minutes, comme Apple le demande.
 """
@@ -59,7 +59,7 @@ def envoyer(jeton, titre, texte, donnees=None, client=None):
         return "erreur"
     hote = "api.sandbox.push.apple.com" if os.environ.get("APNS_SANDBOX") == "1" else "api.push.apple.com"
     corps = {"aps": {"alert": {"title": str(titre)[:120], "body": str(texte)[:240]}, "sound": "default"}, **(donnees or {})}
-    tetes = {"authorization": "bearer " + jeton_auth(), "apns-topic": os.environ.get("APNS_TOPIC") or "com.lockerroom.app",
+    tetes = {"authorization": "bearer " + jeton_auth(), "apns-topic": os.environ.get("APNS_TOPIC") or "com.slabcoach.app",
              "apns-push-type": "alert", "apns-priority": "10"}
     try:
         import httpx

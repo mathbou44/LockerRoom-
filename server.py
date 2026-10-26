@@ -101,7 +101,7 @@ app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", S
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024        # 23 oct 2026 - 2 photos (devant, dos) par requete
 # pages qui restent publiques : break partage, retour et avis eBay, pages legales, icones
 _PUBLIQUES = ("/b/", "/api/b/", "/api/ebay_retour", "/ebay/suppression-compte", "/confidentialite", "/conditions",
-              "/connexion", "/icone", "/favicon", "/manifest.json", "/stripe/webhook")
+              "/support", "/connexion", "/icone", "/favicon", "/manifest.json", "/stripe/webhook")
 
 
 import comptes  # noqa: E402
@@ -163,10 +163,10 @@ def demo():
                     _remplir_demo()
             return redirect("/")
         erreur = "<p style='color:#FFB3B3'>Code incorrect</p>"
-    return _page_langue("<!doctype html><meta name='viewport' content='width=device-width,initial-scale=1'><title>LockerRoom</title>"
+    return _page_langue("<!doctype html><meta name='viewport' content='width=device-width,initial-scale=1'><title>SlabCoach</title>"
             "<body style='background:#0A0D10;color:#F2F5F7;font-family:system-ui;display:grid;place-items:center;min-height:90vh'>"
             "<form method='post' style='display:grid;gap:12px;width:min(320px,90vw)'><img src='/icone.png' width='56' alt=''>"
-            "<b style='font-size:22px'>LockerRoom · démo</b><input name='code' autocomplete='off' autofocus placeholder='Code d’accès' "
+            "<b style='font-size:22px'>SlabCoach · démo</b><input name='code' autocomplete='off' autofocus placeholder='Code d’accès' "
             "style='padding:12px;border-radius:10px;border:1px solid #29313A;background:#14181D;color:#F2F5F7;font-size:16px'>"
             f"{erreur}<button style='padding:12px;border-radius:10px;border:0;background:#E8C46A;font-weight:700;font-size:16px'>Entrer</button>"
             "<a href='/connexion' style='color:#A3ACB5;font-size:13px'>‹ Retour</a></form></body>")
@@ -207,10 +207,10 @@ def _premiere_synchro(cid):
     threading.Thread(target=tache, daemon=True, name="premiere_synchro").start()
 
 
-_PAGE_EBAY = ("<!doctype html><meta name='viewport' content='width=device-width,initial-scale=1'><title>LockerRoom</title>"
+_PAGE_EBAY = ("<!doctype html><meta name='viewport' content='width=device-width,initial-scale=1'><title>SlabCoach</title>"
               "<body style='background:#0A0D10;color:#F2F5F7;font-family:system-ui;display:grid;place-items:center;min-height:90vh;margin:0'>"
               "<main style='display:grid;gap:16px;width:min(340px,88vw);text-align:center'><img src='/icone.png' width='64' style='margin:auto' alt=''>"
-              "<b style='font-size:26px'>LockerRoom</b><span style='color:#A3ACB5'>Ton inventaire eBay, tes prix et tes ventes, tout seuls.</span>"
+              "<b style='font-size:26px'>SlabCoach</b><span style='color:#A3ACB5'>Ton inventaire eBay, tes prix et tes ventes, tout seuls.</span>"
               "{erreur}<a href='/auth/ebay' style='padding:15px;border-radius:12px;background:#7FD0FF;color:#0A0D10;font-weight:700;font-size:17px;text-decoration:none'>"
               "Se connecter avec eBay</a><span style='color:#87909A;font-size:13px'>Aucun mot de passe dans l’app · ton compte est créé tout seul</span>"
               "<span style='font-size:13px'><a href='/confidentialite' style='color:#A3ACB5'>Confidentialité</a> · "
@@ -270,10 +270,10 @@ def connexion():
             session["ok"] = True
             return redirect("/connexion" if comptes.MULTI else "/")
         erreur = "<p style='color:#FFB3B3'>Code incorrect</p>"
-    return _page_langue("<!doctype html><meta name='viewport' content='width=device-width,initial-scale=1'><title>LockerRoom</title>"
+    return _page_langue("<!doctype html><meta name='viewport' content='width=device-width,initial-scale=1'><title>SlabCoach</title>"
             "<body style='background:#0A0D10;color:#F2F5F7;font-family:system-ui;display:grid;place-items:center;min-height:90vh'>"
             "<form method='post' style='display:grid;gap:12px;width:min(320px,90vw)'><img src='/icone.png' width='56' alt=''>"
-            "<b style='font-size:22px'>LockerRoom</b><input name='code' type='password' autofocus placeholder='Code d’accès' "
+            "<b style='font-size:22px'>SlabCoach</b><input name='code' type='password' autofocus placeholder='Code d’accès' "
             "style='padding:12px;border-radius:10px;border:1px solid #29313A;background:#14181D;color:#F2F5F7;font-size:16px'>"
             f"{erreur}<button style='padding:12px;border-radius:10px;border:0;background:#7FD0FF;font-weight:700;font-size:16px'>Entrer</button>"
             "<a href='/confidentialite' style='color:#A3ACB5;font-size:13px'>Confidentialité</a></form></body>")
@@ -287,6 +287,12 @@ def page_confidentialite():
 @app.route("/conditions")
 def page_conditions():
     return send_from_directory(DOSSIER_UI, "conditions.html")
+
+
+@app.route("/support")
+def page_support():
+    """27 oct 2026 - page de support (exigee par Apple et Stripe) : contact et questions frequentes."""
+    return send_from_directory(DOSSIER_UI, "support.html")
 
 
 @app.route("/")
@@ -422,7 +428,7 @@ def _surveiller():
 
 
 def _valeurs_auto():
-    """Valeur des joueurs (algo LockerRoom) : recalculee au demarrage si elle a
+    """Valeur des joueurs (algo SlabCoach) : recalculee au demarrage si elle a
     plus de 20 h, puis verifiee chaque heure. Prototype : la source est le
     dossier de Hall of Cardz sur ce PC (lecture seule) ; sans source, les
     valeurs deja la (ou celles par defaut) restent."""
@@ -513,7 +519,7 @@ if HEBERGE and os.environ.get("LOCKERROOM_TACHES", "1") == "1":
 
 if __name__ == "__main__":
     if not _prendre_verrou():
-        print("LockerRoom tourne deja - tu peux fermer cette fenetre.", flush=True)
+        print("SlabCoach tourne deja - tu peux fermer cette fenetre.", flush=True)
         sys.exit(0)
     import socket
     try:
@@ -521,7 +527,7 @@ if __name__ == "__main__":
     except Exception:
         ip = "<ip-du-pc>"
     print("=" * 56)
-    print("LockerRoom - serveur demarre")
+    print("SlabCoach - serveur demarre")
     print(f"  Sur ce PC      : http://localhost:{PORT}")
     print(f"  iPhone (wifi)  : http://{ip}:{PORT}")
     print("=" * 56, flush=True)

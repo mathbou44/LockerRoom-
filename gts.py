@@ -26,7 +26,7 @@ CATEGORIES = {"hockey": "https://gogts.net/trading-card-checklists/hockey-card-c
 FRAICHEUR_S = 12 * 3600
 MAX_PAGES = 12
 MAX_OCTETS = 12_000_000
-UA = "Mozilla/5.0 (LockerRoom checklist import; +https://lockerroom.onrender.com)"
+UA = "Mozilla/5.0 (SlabCoach checklist import; +https://slabcoach.com)"
 _verrou = threading.Lock()
 
 _RE_PAGE = re.compile(r"""href=["'](https?://(?:www\.)?gogts\.net/([a-z0-9][a-z0-9-]*checklists?[a-z0-9-]*)/?)["']""", re.I)

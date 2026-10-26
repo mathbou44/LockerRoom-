@@ -57,6 +57,7 @@ CATEGORIE_CARTES = "261328"   # eBay : Sports Trading Card Singles
 
 REGLAGES_DEFAUT = {
     "nom_boutique": "Ma boutique",
+    "equipe_fav": "",                                           # 26 oct 2026 : les accents de l'app aux couleurs de cette equipe
     "frais_ebay_pct": 13.25, "frais_ebay_fixe": 0.40,           # eBay Canada, cartes (a ajuster a ton compte)
     "frais_break_pct": 10.9, "frais_break_fixe": 0.30,          # plateforme de live (ex. commission + paiement)
     "taxes_pct": 14.975,                                        # TPS + TVQ (Quebec)
@@ -207,6 +208,14 @@ def est_ios():
     return _IOS.get()
 
 
+
+def _niveau(resume, info):
+    """bronze (gratuit) | silver (forfait intermediaire, plus tard) | gold (Pro, essai, offert, app locale)."""
+    f = str((info or {}).get("forfait") or "").lower()
+    if f in ("silver", "argent", "collector"):
+        return "silver"
+    return "gold" if (resume or {}).get("pro") else "bronze"
+
 class Api:
     def __init__(self, chemin_db=None):
         self._chemin_fixe = chemin_db            # tests : base imposee
@@ -234,7 +243,7 @@ class Api:
             finally:
                 c.close()
         r.setdefault("logo_v", "")
-        # 24 oct 2026 - heberge : la campagne eBay Partner Network est celle de LockerRoom (serveur), pour tous les clients
+        # 24 oct 2026 - heberge : la campagne eBay Partner Network est celle de SlabCoach (serveur), pour tous les clients
         epn = re.sub(r"\D", "", os.environ.get("LOCKERROOM_EPN_CAMPID") or "")
         if epn:
             r["epn_campid"] = epn
@@ -255,7 +264,7 @@ class Api:
         try:
             import urllib.request
             req = urllib.request.Request("https://www.bankofcanada.ca/valet/observations/FXUSDCAD/json?recent=1",
-                                         headers={"User-Agent": "LockerRoom"})
+                                         headers={"User-Agent": "SlabCoach"})
             with urllib.request.urlopen(req, timeout=8) as r:
                 d = json.loads(r.read())
             obs = (d.get("observations") or [])[-1]
@@ -293,7 +302,10 @@ class Api:
                 "paiements": paiements.actif(), "mode_paiement": paiements.mode(), "prix": prix,
                 "photos_mois": photos.get("ce_mois"), "photos_limite": photos.get("limite"),
                 "gratuit_photos": vision.QUOTA_GRATUIT, "ios": est_ios(), "demo": bool(info.get("demo")),
-                "push": __import__("apns").actif()}
+                "push": __import__("apns").actif(),
+                # 26 oct 2026 (Mathieu : « bronze pour la version de base, gold pour Pro, eventuellement silver ») :
+                # la couleur du logo et du badge ; « silver » est pret pour un futur forfait intermediaire
+                "niveau": _niveau(forfaits.resume(), info)}
 
     # -- 26 oct 2026 : app iPhone ---------------------------------------------------------------------------------
     def push_enregistrer(self, jeton, plateforme="ios"):
@@ -608,7 +620,7 @@ class Api:
     _EV_CACHE = {}
 
     def catalogue_liste(self):
-        """Produits du catalogue + valeur attendue par boite (algo LockerRoom)."""
+        """Produits du catalogue + valeur attendue par boite (algo SlabCoach)."""
         ajouts = catalogue.dossier_ajouts()
         cle = (valeurs.statut().get("maj"), tuple(sorted(os.listdir(catalogue.DOSSIER))) if os.path.isdir(catalogue.DOSSIER) else (),
                tuple(sorted((f, os.path.getmtime(os.path.join(ajouts, f))) for f in os.listdir(ajouts))) if os.path.isdir(ajouts) else ())
@@ -768,7 +780,7 @@ class Api:
         import checklist_import
         d = d or {}
         if not self._est_admin():
-            return {"ok": False, "erreur": "Les produits sont ajoutés par LockerRoom pour tout le monde"}
+            return {"ok": False, "erreur": "Les produits sont ajoutés par SlabCoach pour tout le monde"}
         brut_txt = str(d.get("fichier") or "")
         brut_txt = brut_txt.split(",", 1)[1] if brut_txt.startswith("data:") else brut_txt
         try:
@@ -882,7 +894,7 @@ class Api:
     def checklist_cotes(self, pid, cotes=None, boites_par_caisse=None):
         """Les cotes par boite (« Young Guns : 6 », « Auto : 1 ») d'un produit importe, tapees par l'utilisateur."""
         if not self._est_admin():
-            return {"ok": False, "erreur": "Les produits sont ajoutés par LockerRoom pour tout le monde"}
+            return {"ok": False, "erreur": "Les produits sont ajoutés par SlabCoach pour tout le monde"}
         prod = catalogue.charger(pid)
         if not prod:
             return {"ok": False, "erreur": "Produit introuvable dans le catalogue"}
@@ -1226,7 +1238,7 @@ class Api:
         import urllib.request
 
         def get(url, n=600_000):
-            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (LockerRoom)", "Accept": "*/*"})
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (SlabCoach)", "Accept": "*/*"})
             with urllib.request.urlopen(req, timeout=8) as r:
                 return r.read(n).decode("utf-8", "ignore")
 
@@ -1287,7 +1299,7 @@ class Api:
             url = None
             try:
                 q = urllib.parse.urlencode({"culture": "en-us", "limit": 8, "q": j})      # actifs ET espoirs repeches
-                req = urllib.request.Request("https://search.d3.nhle.com/api/v1/search/player?" + q, headers={"User-Agent": "LockerRoom"})
+                req = urllib.request.Request("https://search.d3.nhle.com/api/v1/search/player?" + q, headers={"User-Agent": "SlabCoach"})
                 with urllib.request.urlopen(req, timeout=8) as r:
                     res = json.loads(r.read().decode("utf-8")) or []
                 n = cartes_match.norm(j)
@@ -1295,7 +1307,7 @@ class Api:
                 cands.sort(key=lambda x: (not x.get("active"), str(x.get("lastSeasonId") or "")), reverse=False)
                 pid = next((x.get("playerId") for x in cands), None)
                 if pid:
-                    req = urllib.request.Request(f"https://api-web.nhle.com/v1/player/{pid}/landing", headers={"User-Agent": "LockerRoom"})
+                    req = urllib.request.Request(f"https://api-web.nhle.com/v1/player/{pid}/landing", headers={"User-Agent": "SlabCoach"})
                     with urllib.request.urlopen(req, timeout=8) as r:
                         url = (json.loads(r.read().decode("utf-8")) or {}).get("headshot")
                     if url and re.search(r"default|silhouette|placeholder", url, re.I):
@@ -2396,7 +2408,7 @@ class Api:
         return {"ok": True, **bilan}
 
     def guide_donnees(self):
-        """25 oct 2026 - pour le guide du hobby : les joueurs les plus recherches (indice de demande LockerRoom)
+        """25 oct 2026 - pour le guide du hobby : les joueurs les plus recherches (indice de demande SlabCoach)
         et les recrues de la saison (le produit le plus recent du catalogue, ses Young Guns les plus chers)."""
         d = valeurs._charger() or {}
         top = sorted((d.get("joueurs") or {}).items(), key=lambda kv: -float(kv[1] or 0))[:12]

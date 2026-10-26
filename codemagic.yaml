@@ -1,25 +1,25 @@
-# LockerRoom - compilation de l'app iPhone sur Codemagic (Mac dans le nuage) et envoi a App Store Connect.
+# SlabCoach (ex-LockerRoom) - compilation de l'app iPhone sur Codemagic (Mac dans le nuage) et envoi a App Store Connect.
 # Ce fichier va a la RACINE du depot GitHub (a cote de server.py). Render l'ignore.
 #
 # Une seule fois dans Codemagic (codemagic.io) :
-#   1. Teams > Integrations > Developer Portal : ajouter la cle API d'App Store Connect, nom « LockerRoom ASC ».
+#   1. Teams > Integrations > Developer Portal : ajouter la cle API d'App Store Connect, nom « SlabCoach ASC ».
 #   2. Teams > Code signing identities : « Generate certificate » (Apple Distribution) avec cette cle.
-#   3. Application > Environment variables : groupe « lockerroom » avec LR_URL (l'adresse Render, ex. https://xxx.onrender.com)
+#   3. Application > Environment variables : groupe « slabcoach » avec LR_URL (l'adresse Render, ex. https://xxx.onrender.com)
 #      et APP_STORE_APPLE_ID (le numero « Apple ID » de l'app dans App Store Connect > Infos de l'app).
 # Ensuite : « Start new build » > ios-app-store. La version arrive dans TestFlight, puis on la soumet a Apple.
 workflows:
   ios-app-store:
-    name: LockerRoom iOS - App Store
+    name: SlabCoach iOS - App Store
     max_build_duration: 60
     instance_type: mac_mini_m2
     integrations:
-      app_store_connect: LockerRoom ASC
+      app_store_connect: SlabCoach ASC
     environment:
       groups:
-        - lockerroom
+        - slabcoach
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: com.lockerroom.app
+        bundle_identifier: com.slabcoach.app
       node: 22
       xcode: latest
     scripts:

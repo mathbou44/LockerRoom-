@@ -1,5 +1,5 @@
 """
-LOCKERROOM - mise a jour de valeurs_joueurs.json (« l'algo LockerRoom »).
+LOCKERROOM - mise a jour de valeurs_joueurs.json (« l'algo SlabCoach »).
 
 1. Demande de chaque joueur : modele de pointage de Hall of Cardz
    (pointage_modele.json, cle "demande" : combien les cartes du joueur se

@@ -148,7 +148,7 @@ def description(c, titre, francophone=True, etat="nm", boutique=None, retours="n
     det = " · ".join(x for x in [c.get("annee"), c.get("marque"), c.get("set_nom"), c.get("parallele"),
                                  f"#{c['numero']}" if c.get("numero") else None, f"/{c['tirage']}" if c.get("tirage") else None,
                                  "Auto" if c.get("auto") else None, "Rookie" if c.get("recrue") else None] if x)
-    s = boutique or "LockerRoom"
+    s = boutique or "SlabCoach"
     en = (f"<h2>{escape(titre)}</h2><p><b>Card:</b> {escape(det)}</p><p><b>Condition:</b> {escape(etat_en)}. "
           "The card in the photos is the exact card you will receive.</p>"
           f"<p>{escape(envoi_en)} Combined shipping available.</p><p>{escape(ret_en)}</p><p>Thank you! — {escape(s)}</p>")
@@ -288,7 +288,7 @@ def _base_marketing():
 
 
 def promouvoir(item_id, pct):
-    """Ajoute l'annonce a la campagne « LockerRoom » (creee au besoin) au taux choisi."""
+    """Ajoute l'annonce a la campagne « SlabCoach » (creee au besoin) au taux choisi."""
     import json
     import urllib.request
     pct = round(float(pct), 1)
@@ -315,13 +315,13 @@ def promouvoir(item_id, pct):
             raise RuntimeError(f"Promotion refusée par eBay ({e.code}) : {texte[:160]}")
 
     camps, _h = appel("GET", "/ad_campaign?campaign_status=RUNNING&limit=100")
-    camp = next((x for x in camps.get("campaigns") or [] if x.get("campaignName") == "LockerRoom"
+    camp = next((x for x in camps.get("campaigns") or [] if x.get("campaignName") in ("SlabCoach", "LockerRoom")
                  and (x.get("fundingStrategy") or {}).get("fundingModel") == "COST_PER_SALE"), None)
     if camp:
         cid = camp["campaignId"]
     else:
         debut = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        _r, h = appel("POST", "/ad_campaign", {"campaignName": "LockerRoom", "marketplaceId": "EBAY_CA", "startDate": debut,
+        _r, h = appel("POST", "/ad_campaign", {"campaignName": "SlabCoach", "marketplaceId": "EBAY_CA", "startDate": debut,
                                                 "fundingStrategy": {"fundingModel": "COST_PER_SALE", "bidPercentage": str(pct)}})
         cid = str(h.get("Location") or "").rstrip("/").split("/")[-1]
         if not cid:

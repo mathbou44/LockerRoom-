@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>LockerRoom</string>
+        <string>SlabCoach</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -61,11 +61,11 @@
 		<string>en</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>LockerRoom uses the camera to photograph your cards so it can identify them and create your eBay listing. / LockerRoom utilise la caméra pour photographier tes cartes, les reconnaître et créer ton annonce eBay.</string>
+	<string>SlabCoach uses the camera to photograph your cards so it can identify them and create your eBay listing. / SlabCoach utilise la caméra pour photographier tes cartes, les reconnaître et créer ton annonce eBay.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>LockerRoom opens your photos so you can choose pictures of your cards for a listing. / LockerRoom ouvre tes photos pour choisir les images de tes cartes à mettre en vente.</string>
+	<string>SlabCoach opens your photos so you can choose pictures of your cards for a listing. / SlabCoach ouvre tes photos pour choisir les images de tes cartes à mettre en vente.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>LockerRoom saves the images you export (break lists, cards) to your photos. / LockerRoom enregistre dans tes photos les images que tu exportes (listes de break, cartes).</string>
+	<string>SlabCoach saves the images you export (break lists, cards) to your photos. / SlabCoach enregistre dans tes photos les images que tu exportes (listes de break, cartes).</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>UIBackgroundModes</key>

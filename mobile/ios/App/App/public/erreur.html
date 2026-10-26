@@ -1,0 +1,23 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SlabCoach</title>
+<style>
+html,body{margin:0;height:100%;background:#0A0D10;color:#F2F5F7;font-family:-apple-system,system-ui,sans-serif}
+main{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center;box-sizing:border-box}
+img{width:84px;height:84px;border-radius:20px}
+h1{font-size:22px;margin:4px 0 0}
+p{color:#A3ACB5;font-size:16px;line-height:1.45;margin:0;max-width:320px}
+button{margin-top:8px;padding:15px 28px;border:0;border-radius:14px;background:#E8C46A;color:#0A0D10;font-weight:700;font-size:17px}
+</style></head><body><main>
+<img src="icone.png" alt="">
+<h1 id="t">Pas de connexion</h1>
+<p id="m">SlabCoach a besoin d’Internet pour lire les ventes eBay. Vérifie ton Wi-Fi ou tes données cellulaires.</p>
+<button id="b">Réessayer</button>
+</main>
+<script>
+if (!/^fr/i.test(navigator.language || '')) {
+  document.getElementById('t').textContent = 'No connection';
+  document.getElementById('m').textContent = 'SlabCoach needs the internet to read eBay sales. Check your Wi-Fi or cellular data.';
+  document.getElementById('b').textContent = 'Try again';
+}
+document.getElementById('b').onclick = function () { location.href = (window.Capacitor && Capacitor.getServerUrl && Capacitor.getServerUrl()) || '/'; };
+</script></body></html>

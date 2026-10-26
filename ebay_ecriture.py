@@ -255,7 +255,7 @@ def donnees_test(n=20, prix_base=4.99, progression=None):
         if progression:
             progression(i, len(lot))
         try:
-            r = publier(c, prix_base + i, [photo], "Annonce de test LockerRoom (sandbox)", sku=f"LR-TEST-{i + 1}")
+            r = publier(c, prix_base + i, [photo], "Annonce de test SlabCoach (sandbox)", sku=f"LR-TEST-{i + 1}")
             faites.append({"item_id": r["item_id"], "titre": ebay_csv.titre_annonce(c)})
         except (RuntimeError, ValueError) as e:
             erreurs.append(str(e)[:200])

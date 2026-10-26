@@ -19,7 +19,7 @@ from datetime import datetime
 FRAICHEUR_S = 6 * 3600
 LIENS_PERMIS = re.compile(r"^#(accueil|deals|valeur(/[^\s]{0,80})?|inventaire(/[a-z\-]{0,20})?|sante(/[a-z\-]{0,20})?|analyse(/[a-z0-9\-]{0,60})?|vendre|bilan|guide|breaks(/[a-z]{0,12})?)$")
 
-OUTIL = {"name": "conseils", "description": "Conseils pour l'utilisateur de LockerRoom.",
+OUTIL = {"name": "conseils", "description": "Conseils pour l'utilisateur de SlabCoach.",
          "input_schema": {"type": "object", "properties": {"conseils": {"type": "array", "maxItems": 5, "items": {
              "type": "object", "properties": {
                  "genre": {"type": "string", "enum": ["acheter", "vendre", "prix", "budget", "break", "info"]},
@@ -29,7 +29,7 @@ OUTIL = {"name": "conseils", "description": "Conseils pour l'utilisateur de Lock
                  "lien": {"type": "string", "description": "Un des liens permis"}},
              "required": ["genre", "titre", "texte", "action", "lien"]}}}, "required": ["conseils"]}}
 
-SYSTEME = """Tu es le conseiller de LockerRoom, une app pour vendeurs, breakers et acheteurs de cartes de sport (hockey surtout).
+SYSTEME = """Tu es le conseiller de SlabCoach, une app pour vendeurs, breakers et acheteurs de cartes de sport (hockey surtout).
 A partir des donnees du compte, donne 3 a 5 conseils concrets, les plus payants d'abord : quoi acheter, quoi vendre,
 quel prix changer, comment rester dans le budget. Langage simple pour un debutant, chiffres reels, jamais de promesse.
 Ne recommande jamais de depasser le budget. Adapte-toi au niveau : « debutant » ou « retour » = explique chaque
@@ -95,8 +95,8 @@ def par_regles(ctx, langue="fr"):
     b = ctx.get("budget") or {}
     if ctx.get("mode") == "acheteur" and not b.get("budget"):
         out.append({"genre": "budget", "titre": t("Fixe ton budget", "Set your budget"),
-                    "texte": t("Un budget du mois t'aide à acheter malin : LockerRoom te dit ce qu'il te reste.",
-                               "A monthly budget helps you buy smart: LockerRoom shows what's left."),
+                    "texte": t("Un budget du mois t'aide à acheter malin : SlabCoach te dit ce qu'il te reste.",
+                               "A monthly budget helps you buy smart: SlabCoach shows what's left."),
                     "action": t("Le guide", "The guide"), "lien": "#guide"})
     return out[:5]
 

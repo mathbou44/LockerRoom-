@@ -2,7 +2,7 @@
 LOCKERROOM - les vraies ventes de la communaute (25 oct 2026).
 
 Mathieu : « ou sont tous les last sold comp ? on compare juste aux comparables eBay en ce moment ».
-eBay ne donne les ventes terminees (Marketplace Insights) qu'aux grands partenaires. LockerRoom a mieux :
+eBay ne donne les ventes terminees (Marketplace Insights) qu'aux grands partenaires. SlabCoach a mieux :
 les ventes REELLES des comptes eBay connectes a l'app (deja importees dans chaque inventaire), mises en commun.
 
   - anonymes : ni vendeur, ni acheteur, ni numero d'annonce ; juste titre, prix vendu (+ port), date, photo ;

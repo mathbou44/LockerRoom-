@@ -2,8 +2,8 @@
 LOCKERROOM - nouvelles des sports et du hobby pour l'accueil (23 oct 2026).
 
 Mathieu : « ajouter les fonctions de nouvelles et suivi d'heures a l'accueil
-[de LockerRoom] ... varie les sources ». Repris de Hall of Cardz (sa version
-test), pour tous les sports de LockerRoom.
+[de SlabCoach] ... varie les sources ». Repris de Hall of Cardz (sa version
+test), pour tous les sports de SlabCoach.
 
   - Sources (gratuites, publiques) : ESPN (un flux par ligue), Google News en
     anglais ET en francais (le vrai editeur : TSN, RDS, La Presse, NHL.com...),
@@ -121,7 +121,7 @@ def lire_rss(xml, jours=JOURS):
 
 
 def _get(url, timeout=12):
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (LockerRoom)"})
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (SlabCoach)"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return r.read()
 

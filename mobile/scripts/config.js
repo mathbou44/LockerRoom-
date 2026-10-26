@@ -1,4 +1,4 @@
-// LockerRoom iOS : ecrit capacitor.config.json a partir de l'adresse de l'app en ligne (variable LR_URL,
+// SlabCoach iOS (ex-LockerRoom) : ecrit capacitor.config.json a partir de l'adresse de l'app en ligne (variable LR_URL,
 // sinon lr_url.txt). L'app iPhone charge l'app web de Render : une mise a jour du site = l'app a jour,
 // sans repasser par Apple (sauf changement natif).
 const fs = require('fs');
@@ -13,8 +13,8 @@ if (!/^https:\/\/[a-z0-9.-]+(:\d+)?\/?$/i.test(url)) {
 url = url.replace(/\/$/, '');
 const hote = new URL(url).hostname;
 const conf = {
-  appId: 'com.lockerroom.app',
-  appName: 'LockerRoom',
+  appId: 'com.slabcoach.app',
+  appName: 'SlabCoach',
   webDir: 'www',
   server: {
     url,
@@ -23,7 +23,7 @@ const conf = {
   },
   ios: {
     contentInset: 'never',
-    scheme: 'LockerRoom',
+    scheme: 'SlabCoach',
     appendUserAgent: 'LockerRoomiOS/1.0',       // le serveur et l'ecran savent qu'on est dans l'app iPhone
     backgroundColor: '#0A0D10',
     limitsNavigationsToAppBoundDomains: false

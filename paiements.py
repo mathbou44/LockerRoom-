@@ -4,7 +4,7 @@ LOCKERROOM - abonnement Pro par Stripe (24 oct 2026).
 Mathieu : « activer le mode de paiement pour test si tout fonctionne ... Gratuit +
 Pro a 1 $ pour faire tester mes proches ». Choix : Stripe (2,9 % + 0,30 $ CA par
 carte + 0,7 % Billing ; mode test gratuit ; page de paiement et portail client
-heberges par Stripe : aucun numero de carte ne touche LockerRoom).
+heberges par Stripe : aucun numero de carte ne touche SlabCoach).
 
   - Le prix vit dans Stripe (STRIPE_PRIX_PRO = un price_...) : le changer = 1 clic
     dans Stripe, rien a redeployer.

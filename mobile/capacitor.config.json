@@ -1,6 +1,6 @@
 {
-  "appId": "com.lockerroom.app",
-  "appName": "LockerRoom",
+  "appId": "com.slabcoach.app",
+  "appName": "SlabCoach",
   "webDir": "www",
   "server": {
     "url": "https://lockerroom.onrender.com",
@@ -17,7 +17,7 @@
   },
   "ios": {
     "contentInset": "never",
-    "scheme": "LockerRoom",
+    "scheme": "SlabCoach",
     "appendUserAgent": "LockerRoomiOS/1.0",
     "backgroundColor": "#0A0D10",
     "limitsNavigationsToAppBoundDomains": false

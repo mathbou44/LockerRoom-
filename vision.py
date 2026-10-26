@@ -226,7 +226,7 @@ def _appeler(corps, timeout=90):
 
 
 def _nettoyer(f):
-    """Reponse du modele -> champs de la fiche LockerRoom + champs a verifier."""
+    """Reponse du modele -> champs de la fiche SlabCoach + champs a verifier."""
     conf = {k: float(v) for k, v in (f.get("confiance") or {}).items() if isinstance(v, (int, float))}
     out = {}
     for k in CHAMPS:

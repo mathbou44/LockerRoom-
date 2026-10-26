@@ -10,7 +10,7 @@ Source : SoldComps (sold-comps.com), le meme compte que Hall of Cardz (forfait m
   - cache 3 jours par recherche (tous les comptes) et plafond par jour (LR_SOLDCOMPS_JOUR, 150 par defaut)
     pour ne pas manger le quota de HoC ;
   - prix en $ US sur eBay.com -> $ CA (taux de la Banque du Canada), port non compris (comme 130point).
-Plus les ventes reelles de la communaute LockerRoom (ventes_communaute). Les MEMES cartes seulement (cartes_match).
+Plus les ventes reelles de la communaute SlabCoach (ventes_communaute). Les MEMES cartes seulement (cartes_match).
 """
 import json
 import os
@@ -186,7 +186,7 @@ def rechercher(q, fond=True):
 
 
 def memes(texte, requete=True, n=24, fond=False, exclure_titre=None):
-    """Les MEMES cartes vendues (eBay via SoldComps + communaute LockerRoom), les plus recentes d'abord.
+    """Les MEMES cartes vendues (eBay via SoldComps + communaute SlabCoach), les plus recentes d'abord.
     texte = ce que l'utilisateur a tape (requete=True) ou le titre d'une annonce (requete=False).
     -> {ventes, mediane, nb, derniere, source, erreur}"""
     import cartes_match
@@ -199,7 +199,7 @@ def memes(texte, requete=True, n=24, fond=False, exclure_titre=None):
         comm = (ventes_communaute.chercher(texte, requete=requete, n=40) or {}).get("ventes") or []
     except Exception:
         comm = []
-    tout = ebay + [{**v, "source": "LockerRoom"} for v in comm]
+    tout = ebay + [{**v, "source": "SlabCoach"} for v in comm]
     tout.sort(key=lambda v: str(v.get("le") or ""), reverse=True)
     prix = [v["prix"] for v in tout if v.get("prix")]
     med = None

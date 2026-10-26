@@ -1,6 +1,6 @@
 """
 LOCKERROOM - sports (23 oct 2026, Mathieu : "il va falloir commencer a
-elargir pour d'autres sports comme NFL, basket ... pour LockerRoom").
+elargir pour d'autres sports comme NFL, basket ... pour SlabCoach").
 
 Choix de Mathieu : l'app DEVINE le sport de chaque carte (titre, equipe,
 produit) et prend le « sport principal » des Reglages quand elle hesite -

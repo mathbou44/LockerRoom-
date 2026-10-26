@@ -12,7 +12,7 @@ Ce que l'app lit (lecture seule) :
   - nom du compte             : Commerce Identity API
 
 Configuration (une fois, par le vendeur, sur developer.ebay.com) : cles de
-PRODUCTION d'une application LockerRoom (App ID, Cert ID) + un RuName dont
+PRODUCTION d'une application SlabCoach (App ID, Cert ID) + un RuName dont
 l'« auth accepted URL » est http://localhost:8430/api/ebay_retour (ou
 n'importe quelle page : l'app accepte aussi l'adresse collee a la main).
 Cles et jetons restent dans des fichiers locaux, jamais renvoyes a l'ecran

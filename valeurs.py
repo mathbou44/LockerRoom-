@@ -1,5 +1,5 @@
 """
-LOCKERROOM - valeur des joueurs et des cartes (« l'algo LockerRoom »).
+LOCKERROOM - valeur des joueurs et des cartes (« l'algo SlabCoach »).
 
 valeurs_joueurs.json (a cote de ce fichier), produit par valeurs_maj.py :
   {"maj": "...", "source": "...",

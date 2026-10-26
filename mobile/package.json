@@ -2,7 +2,7 @@
   "name": "lockerroom-ios",
   "version": "1.0.0",
   "private": true,
-  "description": "LockerRoom - app iPhone (Capacitor) : charge l'app web hebergee sur Render",
+  "description": "SlabCoach - app iPhone (Capacitor) : charge l'app web hebergee sur Render",
   "scripts": {
     "sync": "node scripts/config.js && npx cap sync ios"
   },
