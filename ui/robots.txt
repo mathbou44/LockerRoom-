@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /connexion
+Allow: /support
+Allow: /confidentialite
+Allow: /conditions
+Disallow: /api/
+Disallow: /auth/
+Disallow: /b/
+
+Sitemap: https://slabcoach.com/sitemap.xml

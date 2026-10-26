@@ -101,7 +101,7 @@ app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", S
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024        # 23 oct 2026 - 2 photos (devant, dos) par requete
 # pages qui restent publiques : break partage, retour et avis eBay, pages legales, icones
 _PUBLIQUES = ("/b/", "/api/b/", "/api/ebay_retour", "/ebay/suppression-compte", "/confidentialite", "/conditions",
-              "/support", "/connexion", "/icone", "/favicon", "/manifest.json", "/stripe/webhook")
+              "/support", "/robots.txt", "/sitemap.xml", "/logo_sc_", "/connexion", "/icone", "/favicon", "/manifest.json", "/stripe/webhook")
 
 
 import comptes  # noqa: E402
@@ -234,6 +234,7 @@ _EN = [("Ton inventaire eBay, tes prix et tes ventes, tout seuls.", "Your eBay i
        (">Conditions<", ">Terms<"), ("Connexion eBay interrompue : réessaie", "eBay sign-in interrupted: try again"),
        ("Code incorrect", "Wrong code"), ("Code d’accès", "Access code"), (">Entrer<", ">Enter<"),
        ('<html lang="fr">', '<html lang="en">'), ("Joue tes cartes <em>comme un pro.</em>", "Play your cards <em>like a pro.</em>"),
+       ("SlabCoach · Joue tes cartes comme un pro", "SlabCoach · Play your cards like a pro"),
        ("Deals sous la valeur", "Deals under value"), ("Vraies valeurs", "Real values"), ("Chances de breaks", "Break odds"),
        ("Inventaire et ventes eBay", "eBay inventory and sales"),
        ("Code de démonstration", "Demo code")]
