@@ -46,12 +46,34 @@ def _ecrire(d):
 
 
 _VALIDES = {}
+_BANNIS = {"mt": None, "s": set()}
+
+
+def _bannis():
+    try:
+        mt = os.path.getmtime(_chemin())
+    except OSError:
+        return _BANNIS["s"]
+    if mt != _BANNIS["mt"]:
+        d = lire()
+        _BANNIS.update(mt=mt, s=set(d.get("bannis") or []))
+    return _BANNIS["s"]
+
+
+def bannir(item_id):
+    """26 oct 2026 - « pas un deal » signale par l'admin : retire pour tout le monde."""
+    with _verrou:
+        d = lire()
+        d["bannis"] = (list(d.get("bannis") or []) + [str(item_id)])[-3000:]
+        d["deals"] = [x for x in d.get("deals") or [] if str(x.get("item_id")) != str(item_id)]
+        _ecrire(d)
+    return {"ok": True}
 
 
 def valide(x):
     """La carte passe-t-elle les regles ACTUELLES du filtre ? (les deals gardes d'avant une correction sont retires)."""
     import cartes_match
-    if int(x.get("v") or 0) < VERSION:
+    if int(x.get("v") or 0) < VERSION or str(x.get("item_id")) in _bannis():
         return False
     k = (x.get("item_id"), x.get("q"), x.get("titre"))
     if k not in _VALIDES:
@@ -99,15 +121,18 @@ def valeur_annonce(a, ventes, actives):
     import cartes_match
     cib = cartes_match.cible_titre(a.get("titre") or "")
     pv = [v for v in ventes or [] if v.get("prix") and not cartes_match.raisons_refus(cib, v.get("titre") or "")]
-    if len(pv) >= 3:
-        m = cartes_match.mediane_robuste([v["prix"] for v in pv])[0] if len(pv) >= 4 else sorted(v["prix"] for v in pv)[len(pv) // 2]
-        pv.sort(key=lambda v: str(v.get("le") or ""), reverse=True)
-        return round(m, 2), "vendues", len(pv), [{k: v.get(k) for k in ("titre", "prix", "le", "photo", "url")} for v in pv[:6]]
+    # 26 oct 2026 (Mathieu : « encore pas un deal » - un Red Prism /199 a 7,49 $ « vaut 21 $ » d'apres 6 annonces, alors
+    # que la seule vente est a 3 $) : un deal se juge sur les VENTES (2 au moins) ; les annonces ne servent que de plafond
+    if len(pv) < 2:
+        return None
+    prix = sorted(v["prix"] for v in pv)
+    m = cartes_match.mediane_robuste(prix)[0] if len(prix) >= 4 else prix[len(prix) // 2] if len(prix) == 3 else min(prix)
     pa = [_total(x) for x in actives or [] if x.get("item_id") != a.get("item_id")
           and not cartes_match.raisons_refus(cib, x.get("titre") or "")]
     if len(pa) >= 3:
-        return round(cartes_match.mediane_robuste(pa)[0] * 0.85, 2), "annonces", len(pa), []
-    return None
+        m = min(m, cartes_match.mediane_robuste(pa)[0] * 0.85)
+    pv.sort(key=lambda v: str(v.get("le") or ""), reverse=True)
+    return round(m, 2), "vendues", len(pv), [{k: v.get(k) for k in ("titre", "prix", "le", "photo", "url")} for v in pv[:6]]
 
 
 def chasser(n=PAR_TOUR, rechercher=None):

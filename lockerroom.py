@@ -263,7 +263,7 @@ class Api:
             prix = None
         import forfaits
         return {**forfaits.resume(), "multi": multi, "admin": self._est_admin(),
-                "logos_lnh": os.environ.get("LOCKERROOM_LOGOS_LNH") == "1",     # 25 oct 2026 : choix de Mathieu (licence LNH)
+                "logos_lnh": os.environ.get("LOCKERROOM_LOGOS_LNH") != "0",     # 26 oct 2026 : Mathieu veut les vrais logos (=0 pour couper)
                 "username": info.get("username") if multi else None,           # 26 oct 2026 : « Bonjour ... » sur l'accueil
                 "forfait": (info.get("forfait") or "gratuit") if multi else "pro",
                 "statut": info.get("forfait_statut") or "", "fin": info.get("forfait_fin"),
@@ -926,6 +926,14 @@ class Api:
         pl["score"] = round(100 * (0.6 * pl["p_rembourse"] + 0.4 * min(1.0, (pl["valeur_ratio"] or 0) / 1.5)))
         top = sorted(dist, key=lambda x: -x[0])[:1]
         pl["meilleure_valeur"] = round(top[0][0], 2) if top else None
+        # 26 oct 2026 (Mathieu : « l'utilisateur doit savoir comment tu as calcule le tout ») : ce qui peut sortir,
+        # sous-ensemble par sous-ensemble : nombre attendu, chance d'en avoir au moins une, valeur d'une carte
+        det = pl.pop("_detail", {}) or {}
+        import math as _m
+        pl["cartes_possibles"] = [{"sous": k, "attendu": round(v[0], 3), "chance": round(1 - _m.exp(-v[0]), 3), "valeur": round(v[1], 2),
+                                   "part_ev": round(100 * v[2] / pl["ev"], 1) if pl["ev"] else 0, "ventes": v[3]}
+                                  for k, v in sorted(det.items(), key=lambda kv: -kv[1][2])[:5] if v[2] > 0]
+        pl["seuil_revente"] = calcul.SEUIL_REVENTE
         pl.update({k: v for k, v in (stats or {}).items() if k != "equipe"})
 
     @staticmethod
@@ -945,7 +953,8 @@ class Api:
             g = s.get("groupe") or "base"
             for k in cles:
                 d = out.setdefault(k, {"_j": set(), "_r": set(), "nb_numerotees": 0, "nb_patchs": 0, "nb_autos": 0, "nb_ssp": 0,
-                                       "equipe": c.get("equipe")})
+                                       "equipe": c.get("equipe"), "nb_cartes": 0, "nb_versions": 0})
+                d["nb_cartes"] += 1
                 if c.get("joueur"):
                     d["_j"].add(c["joueur"])
                     if g == "recrue" or c.get("recrue"):
@@ -958,6 +967,25 @@ class Api:
                     d["nb_autos"] += 1
                 if re.search(r"\bssp\b|short print", s.get("nom") or "", re.I):
                     d["nb_ssp"] += 1
+        # 26 oct 2026 : les versions = chaque carte x ses paralleles (les paralleles reprennent la liste du parent)
+        par = {}
+        for c in prod.get("cartes") or []:
+            par.setdefault(c.get("sous_ensemble"), []).append(c)
+        for nom, s in se.items():
+            lc = par.get(nom)
+            if not lc:
+                k, ch = s.get("parallele_de"), 0
+                while k and not par.get(k) and ch < 6:
+                    k, ch = (se.get(k) or {}).get("parallele_de"), ch + 1
+                lc = par.get(k) or []
+            for c in lc:
+                if mode == "joueurs":
+                    cles = [x.strip() for x in str(c.get("joueur") or "").split("/") if x.strip()]
+                else:
+                    cles = list(dict.fromkeys(calcul.code_equipe(e, sport) for e in re.split(r"\s*/\s*|\s*,\s*", str(c.get("equipe") or "")) if e.strip()))
+                for k2 in cles:
+                    if k2 in out:
+                        out[k2]["nb_versions"] += 1
         for d in out.values():
             d["nb_joueurs"], d["nb_recrues"] = len(d.pop("_j")), len(d.pop("_r"))
         return out
@@ -1025,22 +1053,93 @@ class Api:
         return url
 
     def images_produits(self, ids=None):
-        """Une vraie photo de la boite de chaque produit (une annonce eBay), gardee 14 jours."""
+        """La photo de la boite de chaque produit. 26 oct 2026 (Mathieu : « de meilleures photos du produit, voir sur
+        upperdeck.com ») : l'image officielle d'upperdeck.com, sinon celle de la page GTS du produit (30 jours) ;
+        sinon une annonce eBay (14 jours)."""
+        from concurrent.futures import ThreadPoolExecutor
         cache = self._cache_images()
-        out = {}
-        for pr in catalogue.liste():
-            if ids and pr["id"] not in ids:
-                continue
-            nom = re.sub(r"^(\d{4})-(\d{2})", r"\1-\2", pr["nom"])
-            out[pr["id"]] = self._image_pour("prod:" + pr["id"], f"{nom} hobby box sealed",
-                                             [pr["saison"].split("-")[0], "box"], cache)
+        ch, d = cache
+        prods = [pr for pr in catalogue.liste() if not ids or pr["id"] in ids]
+
+        def un(pr):
+            e = d.get("off:" + pr["id"])
+            if e and time.time() - e.get("le", 0) < (30 if e.get("url") else 3) * 86400:
+                return pr["id"], e.get("url")
+            try:
+                url = self._photo_officielle(pr["nom"])
+            except Exception:
+                url = None
+            with _VERROU_IMG:
+                d["off:" + pr["id"]] = {"url": url, "le": time.time()}
+                tmp = ch + ".tmp"
+                with open(tmp, "w", encoding="utf-8") as fo:
+                    json.dump(d, fo)
+                os.replace(tmp, ch)
+            return pr["id"], url
+        with ThreadPoolExecutor(max_workers=4) as ex:
+            out = {k: u for k, u in ex.map(un, prods) if u}
+        for pr in prods:
+            if pr["id"] not in out:
+                nom = re.sub(r"^(\d{4})-(\d{2})", r"\1-\2", pr["nom"])
+                out[pr["id"]] = self._image_pour("prod:" + pr["id"], f"{nom} hobby box sealed",
+                                                 [pr["saison"].split("-")[0], "box"], cache)
         return out
+
+    @staticmethod
+    def _photo_officielle(nom):
+        """upperdeck.com (WordPress : recherche puis l'image de partage de la page), sinon la page GTS du produit."""
+        import html as _html
+        import urllib.parse
+        import urllib.request
+
+        def get(url, n=600_000):
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (LockerRoom)", "Accept": "*/*"})
+            with urllib.request.urlopen(req, timeout=8) as r:
+                return r.read(n).decode("utf-8", "ignore")
+
+        def og(page):
+            m = re.search(r"""<meta[^>]+property=["']og:image(?::secure_url)?["'][^>]+content=["']([^"']+)["']""", page, re.I) \
+                or re.search(r"""<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']""", page, re.I)
+            return _html.unescape(m.group(1)) if m else None
+        saison = (re.search(r"(19|20)\d{2}-\d{2}|(19|20)\d{2}", nom) or [""])[0]
+        court = re.sub(r"^((?:19|20)\d{2}(?:-\d{2})?)\s+(Upper Deck\s+)?", r"\1 ", nom).strip()
+        mots = [w.lower() for w in re.sub(r"(19|20)\d{2}(-\d{2})?", " ", court).split() if len(w) > 1]
+        try:
+            q = urllib.parse.urlencode({"search": court + " hockey", "per_page": 10})
+            res = json.loads(get("https://upperdeck.com/wp-json/wp/v2/search?" + q)) or []
+            meilleur, sc_m = None, -99
+            for x in res:
+                t = _html.unescape(str(x.get("title") or "")).lower()
+                if saison and saison not in t and saison.replace("-", "/") not in t:
+                    continue
+                sc = sum(2 for w in mots if w in t) - 3 * bool(re.search(r"blaster|retail|tin\b|mega|hanger|checklist|fat pack|value", t))
+                if sc > sc_m:
+                    meilleur, sc_m = x, sc
+            if meilleur and sc_m >= 2 * max(1, len(mots) - 1) and str(meilleur.get("url") or "").startswith("https://upperdeck.com"):
+                u = og(get(meilleur["url"]))
+                if u and urllib.parse.urlparse(u).hostname and urllib.parse.urlparse(u).hostname.endswith("upperdeck.com"):
+                    return u
+        except Exception:
+            pass
+        try:                                          # la page GTS du produit (deja connue par la liste des checklists)
+            import checklist_import
+            import gts
+            l = gts._lire().get("hockey", {}).get("produits") or []
+            p = next((x for x in l if checklist_import.produit_semblable(x["nom"], [{"nom": nom}])), None)
+            if p:
+                u = og(gts._get(p["url"]).decode("utf-8", "ignore"))
+                fichier = urllib.parse.unquote(str(u or "").rsplit("/", 1)[-1]).lower()
+                if u and gts._sur(u) and (any(w in fichier for w in mots) or saison[:4] in fichier):
+                    return u
+        except Exception:
+            pass
+        return None
 
     def portraits_joueurs(self, joueurs):
         """26 oct 2026 (Mathieu : « les images doivent etre celles des joueurs et non de la carte ») : le portrait officiel
         de la LNH (recherche publique de joueurs, puis la fiche du joueur), garde 30 jours. Seulement si Mathieu active
         le contenu officiel LNH (LOCKERROOM_LOGOS_LNH=1 : marques et photos de la LNH, sa decision)."""
-        if os.environ.get("LOCKERROOM_LOGOS_LNH") != "1":
+        if os.environ.get("LOCKERROOM_LOGOS_LNH") == "0":        # 26 oct 2026 : actif par defaut (choix de Mathieu)
             return {}
         import urllib.parse
         import urllib.request
@@ -1054,16 +1153,20 @@ class Api:
                 return j, e.get("url")
             url = None
             try:
-                q = urllib.parse.urlencode({"culture": "en-us", "limit": 5, "q": j, "active": "true"})
+                q = urllib.parse.urlencode({"culture": "en-us", "limit": 8, "q": j})      # actifs ET espoirs repeches
                 req = urllib.request.Request("https://search.d3.nhle.com/api/v1/search/player?" + q, headers={"User-Agent": "LockerRoom"})
                 with urllib.request.urlopen(req, timeout=8) as r:
                     res = json.loads(r.read().decode("utf-8")) or []
                 n = cartes_match.norm(j)
-                pid = next((x.get("playerId") for x in res if cartes_match.norm(x.get("name") or "") == n), None)
+                cands = [x for x in res if cartes_match.norm(x.get("name") or "") == n]
+                cands.sort(key=lambda x: (not x.get("active"), str(x.get("lastSeasonId") or "")), reverse=False)
+                pid = next((x.get("playerId") for x in cands), None)
                 if pid:
                     req = urllib.request.Request(f"https://api-web.nhle.com/v1/player/{pid}/landing", headers={"User-Agent": "LockerRoom"})
                     with urllib.request.urlopen(req, timeout=8) as r:
                         url = (json.loads(r.read().decode("utf-8")) or {}).get("headshot")
+                    if url and re.search(r"default|silhouette|placeholder", url, re.I):
+                        url = None                          # pas de vraie photo : l'ecran met ses initiales
             except Exception:
                 url = None
             with _VERROU_IMG:
@@ -2667,6 +2770,11 @@ class Api:
         return out
 
     def deals_liste(self, f=None):
+        def _ts(v):
+            try:
+                return datetime.fromisoformat(str(v).replace("Z", "+00:00")).timestamp()
+            except ValueError:
+                return 0.0
         """Filtres : sports [..], type fixe|encan, tri rabais|fin|prix|gain|recent. Gratuit : les 5 meilleurs."""
         import forfaits
         f = f or {}
@@ -2682,8 +2790,13 @@ class Api:
         # 25 oct 2026 (Mathieu : « une option de tri/filtre pour que l'utilisateur puisse customizer ses deals »)
         lst = self._deals_filtrer(lst, f)
         tri = f.get("tri") or "rabais"
-        cles = {"rabais": lambda x: (1 if x.get("encan") else 0, x.get("ratio") or 1),       # prix fixe d'abord : la mise d'un encan monte "prix": lambda x: x.get("total") or 0, "gain": lambda x: -(x.get("gain") or 0),
-                "recent": lambda x: str(x.get("vu_le") or ""), "fin": lambda x: (0, str(x.get("fin"))) if x.get("encan") else (1, str(x.get("ratio")))}
+        # 26 oct 2026 (Mathieu : « ca ne fonctionne pas quand je selectionne biggest profit, price, ending soon ») : un
+        # commentaire avalait les tris « prix » et « gain » (tout retombait sur « meilleur deal »)
+        cles = {"rabais": lambda x: (1 if x.get("encan") else 0, x.get("ratio") or 1),     # prix fixe d'abord : la mise d'un encan monte
+                "prix": lambda x: (x.get("total") or 0, x.get("ratio") or 1),
+                "gain": lambda x: (-(x.get("gain") or 0), x.get("ratio") or 1),
+                "recent": lambda x: str(x.get("vu_le") or ""),
+                "fin": lambda x: (0, str(x.get("fin")), 0) if x.get("encan") else (1, "", -_ts(x.get("vu_le")))}
         lst.sort(key=cles.get(tri, cles["rabais"]), reverse=(tri == "recent"))
         n = len(lst)
         pro = forfaits.est_pro()
@@ -2737,8 +2850,17 @@ class Api:
             vc = {"ventes": []}
         ventes = vc.get("ventes") or (self._mes_ventes_pareilles(t, item_id) if t else [])
         # 25 oct 2026 : la valeur = les ventes reelles (3 ou plus), sinon les annonces en vente
-        vm = vc.get("mediane") if (vc.get("nb") or 0) >= 3 else None
-        valeur = vm or med
+        # 26 oct 2026 (Mathieu : « encore pas un deal » : 6 annonces a 21 $, 1 vente a 3 $) : les annonces sont un PLAFOND ;
+        # 1 ou 2 ventes : on les croit plus que les prix demandes ; aucune vente : pas de verdict deal / bon prix
+        nb_v = vc.get("nb") or 0
+        vm = vc.get("mediane") if nb_v >= 3 else None
+        prix_v = sorted(x["prix"] for x in (vc.get("ventes") or []) if x.get("prix"))
+        if vm and med and n >= 3:
+            vm = min(vm, round(med * 0.85, 2)) if vm > med else vm
+        if not vm and prix_v:                                 # 1-2 ventes
+            vm = round(min(prix_v[len(prix_v) // 2] * 1.25, med * 0.85 if med else 1e9), 2)
+        valeur = vm or (round(med * 0.85, 2) if med else None)
+        juger = nb_v >= 2
         suggere = None
         if valeur and (vm or n >= 3):
             pv = sorted(x["prix"] for x in ventes if x.get("prix")) if vm else sorted(x["total"] for x in comps)
@@ -2749,8 +2871,9 @@ class Api:
                 "suggere": suggere, "ventes": ventes, "mediane_vendue": vc.get("mediane"), "nb_vendues": vc.get("nb") or len(ventes),
                 "valeur": valeur, "valeur_source": "vendues" if vm else "annonces", "ventes_attente": bool(vc.get("attente")),
                 "points": vc.get("points") or [], "tendance": vc.get("tendance"),
-                "rabais": round(100 * (1 - total / valeur)) if total and valeur else None,
-                "gain": round(valeur * (1 - fp) - ff - total, 2) if total and valeur else None}
+                "rabais": round(100 * (1 - total / valeur)) if total and valeur and juger else None,
+                "gain": round(valeur * (1 - fp) - ff - total, 2) if total and valeur and juger else None,
+                "peu_de_ventes": not juger}
 
     def _mes_ventes_pareilles(self, titre, item_id=None, n=8):
         """Les MEMES cartes deja vendues par ce compte (vraies ventes, avec photo) : {titre, prix, le, photo}."""
@@ -2783,6 +2906,39 @@ class Api:
             finally:
                 c.close()
         return {"ok": True}
+
+    def deal_signaler(self, d):
+        """26 oct 2026 (Mathieu : « encore pas un deal ... une option pas un deal : l'annonce disparait et ca nous laisse
+        savoir quoi modifier ») : masque l'annonce, et la signale a l'admin avec tout le calcul (l'agent l'analyse).
+        Signale par l'admin : retiree des deals de TOUT le monde."""
+        import comptes
+        import deals
+        import demandes
+        d = d or {}
+        iid = str(d.get("item_id") or "")
+        if not iid:
+            return {"ok": False, "erreur": "Annonce inconnue"}
+        self.deal_masquer(iid)
+        g = next((x for x in deals.lire().get("deals") or [] if str(x.get("item_id")) == iid), {})
+        ctx = {"item_id": iid, "titre": d.get("titre") or g.get("titre"), "prix": d.get("total") or g.get("total"),
+               "valeur_calculee": d.get("valeur") or g.get("valeur"), "source_valeur": d.get("valeur_source") or g.get("valeur_source"),
+               "nb": d.get("n") or g.get("n"), "recherche": g.get("q") or d.get("q"), "url": d.get("url") or g.get("url"),
+               "ventes": [{k: v.get(k) for k in ("titre", "prix", "le")} for v in (d.get("ventes") or g.get("vendues") or [])[:8]],
+               "annonces": [{k: v.get(k) for k in ("titre", "total")} for v in (d.get("comps") or g.get("comps") or [])[:8]]}
+        raison = str(d.get("raison") or "").strip()[:300]
+        texte = f"Pas un deal ({raison or 'sans raison'}) : {str(ctx['titre'] or '')[:140]} à {ctx['prix']} $ « vaut » {ctx['valeur_calculee']} $ ({ctx['source_valeur'] or '?'})"
+        cid = comptes.courant() if comptes.MULTI else "local"
+        info = comptes.info(cid) if comptes.MULTI else {}
+        r = demandes.envoyer("pas_deal", texte, cid, (info or {}).get("username"), self.reglages_lire().get("langue") or "fr", "deals",
+                             contexte=ctx)
+        if self._est_admin():
+            deals.bannir(iid)
+        return {"ok": True, "signale": bool(r.get("ok"))}
+
+    def demandes_mes(self):
+        import comptes
+        import demandes
+        return {"ok": True, "items": demandes.mes_demandes(comptes.courant() if comptes.MULTI else "local")}
 
     def acheteur_accueil(self):
         """Deals a acheter (annonces bien sous ce que la carte vaut), achats du mois, valeur du stock achete."""

@@ -181,7 +181,8 @@ def catalogue_etat():
         se = pr.get("sous_ensembles") or []
         produits.append({"id": p["id"], "nom": p["nom"], "sport": pr.get("sport") or "hockey",
                          "nb_cartes": len(pr.get("cartes") or []), "nb_sous": len(se),
-                         "sans_cote": sum(1 for s in se if s.get("par_boite") is None and s.get("groupe") in ("auto", "memo", "auto_memo", "recrue")),
+                         "sans_cote": len(catalogue.etat_cotes(pr)["manquantes"]),        # 26 oct 2026 : meme regle que la fleche verte
+                         "manquantes": catalogue.etat_cotes(pr)["manquantes"][:20], "complete": catalogue.etat_cotes(pr)["complete"],
                          "importe": os.path.exists(os.path.join(catalogue.dossier_ajouts(), p["id"] + ".json")),
                          "sources": pr.get("sources") or []})
     d = nouveaux_produits.lire()

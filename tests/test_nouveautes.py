@@ -102,7 +102,14 @@ class Deals(unittest.TestCase):
             return [{"item_id": f"{i}{int(encheres)}", "titre": f"2025-26 Upper Deck {q} #201 RC", "prix_cad": 9.0 if i == 0 else 25.0 + i,
                      "port_cad": 1, "url": "u", "photo": None, "encan": encheres,
                      "fin": (maint + timedelta(hours=2)).isoformat().replace("+00:00", "Z") if encheres else None} for i in range(6)]
-        r = deals.chasser(2, rech)
+        import vendues
+        vrai = vendues.rechercher
+        vendues.rechercher = lambda q, fond=True: {"ventes": [{"titre": f"2025-26 Upper Deck {q} #201 RC", "prix": p, "le": "2026-10-20"}
+                                                              for p in (24, 26, 25, 27)], "erreur": None}
+        try:
+            r = deals.chasser(2, rech)
+        finally:
+            vendues.rechercher = vrai
         self.assertTrue(r["ok"])
         d = deals.lire()["deals"]
         self.assertTrue(d and all(x["ratio"] <= deals.RATIO_DEAL for x in d))
@@ -115,6 +122,13 @@ class Deals(unittest.TestCase):
              for i, p in enumerate([1, 1, 2, 3, 1])]
         v += [{"titre": "2024 Donruss Optic Rated Rookie Bucky Irving #216 Auto /25", "prix": 70, "le": "2026-10-20"}] * 6
         r = deals.valeur_annonce({"titre": "2024 Panini Donruss Optic - Rated Rookie Bucky Irving #216 Purple Shock", "item_id": "x"}, v, [])
+        # une seule vente (3 $) et des annonces a 21 $ : pas de valeur de deal (Red Prism /199, 26 oct 2026)
+        une = [{"titre": "2025-26 O-Pee-Chee Platinum Red Prism Michael Callahan Marquee Rookie /199", "prix": 3, "le": "2026-10-01"}]
+        ann = [{"item_id": str(i), "titre": "2025-26 O-Pee-Chee Platinum Red Prism Michael Callahan Marquee Rookie /199", "prix_cad": 21}
+               for i in range(6)]
+        self.assertIsNone(deals.valeur_annonce({"titre": une[0]["titre"], "item_id": "z"}, une, ann))
+        deux = une + [{**une[0], "prix": 4}]
+        self.assertLessEqual(deals.valeur_annonce({"titre": une[0]["titre"], "item_id": "z"}, deux, ann)[0], 4)
         self.assertLessEqual(r[0], 3)
         self.assertEqual(r[1], "vendues")
         self.assertIsNone(deals.valeur_annonce({"titre": "2024 Donruss Optic Rated Rookie Bucky Irving #216 Holo", "item_id": "y"}, v, []))

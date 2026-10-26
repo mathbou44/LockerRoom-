@@ -237,6 +237,12 @@ def prix_catalogue(prod, boites=1, cout_boite=0.0, marge=0.25, frais_pct=0.109, 
             d = cles.setdefault(k, {"cle": k, "ev": 0.0, "recrues": 0.0, "hits": 0.0, "numerotees": 0.0, "vedettes": {}, "n": 0.0})
             part = 1.0 / len(k_list)
             d.setdefault("dist", []).append((v1, n * part))         # 25 oct 2026 : valeur de chaque carte possible
+            if garder_dist:                                         # 26 oct 2026 : « comment tu as calcule » (par sous-ensemble)
+                x = d.setdefault("detail", {}).setdefault(nom, [0.0, 0.0, 0.0, False])
+                x[0] += n * part
+                x[1] = max(x[1], v1 + SEUIL_REVENTE)
+                x[2] += ev * part
+                x[3] = x[3] or bool(mesure)
             d["ev"] += ev * part
             d["n"] += n * part
             d["recrues"] += n * part if (g == "recrue" or c.get("recrue")) else 0.0
@@ -264,7 +270,7 @@ def prix_catalogue(prod, boites=1, cout_boite=0.0, marge=0.25, frais_pct=0.109, 
                        # 24 oct 2026 - chances (loi de Poisson sur le nombre attendu) : au moins une carte, une recrue, un hit
                        "p_carte": round(1 - math.exp(-d.get("n", 0.0)), 3), "p_recrue": round(1 - math.exp(-d["recrues"]), 3),
                        "p_hit": round(1 - math.exp(-d["hits"]), 3), "n_attendu": round(d.get("n", 0.0), 2),
-                       **({"_dist": d.get("dist") or []} if garder_dist else {})})
+                       **({"_dist": d.get("dist") or [], "_detail": d.get("detail") or {}} if garder_dist else {})})
     places.sort(key=lambda p: (-p["prix"], p["nom"]))
     total = round(sum(p["prix"] for p in places), 2)
     net = total * (1 - float(frais_pct)) - float(frais_fixe) * len(places)

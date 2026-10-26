@@ -18,8 +18,8 @@ import secrets
 import threading
 from datetime import datetime, timedelta
 
-TYPES = ("idee", "probleme", "question")
-CATEGORIES = ("bug", "idee", "produit", "question", "abonnement", "autre")
+TYPES = ("idee", "probleme", "question", "amelioration", "pas_deal")      # 26 oct 2026 : idees d'amelioration, « pas un deal »
+CATEGORIES = ("bug", "idee", "produit", "question", "abonnement", "deal", "autre")
 MAX_PAR_JOUR = 10                       # par compte
 MAX_AGENT_MOIS = 400                    # appels a Claude par mois (budget)
 MODELE = os.environ.get("LR_AGENT_MODELE") or None          # None : le meme modele que la reconnaissance photo
@@ -71,7 +71,7 @@ def _maint():
     return datetime.now().isoformat(timespec="seconds")
 
 
-def envoyer(type_, texte, compte, username=None, langue="fr", page=None, agent=True):
+def envoyer(type_, texte, compte, username=None, langue="fr", page=None, agent=True, contexte=None):
     texte = re.sub(r"[ \t]+", " ", str(texte or "")).strip()[:2000]
     if len(texte) < 5:
         return {"ok": False, "erreur": "Écris quelques mots"}
@@ -80,11 +80,13 @@ def envoyer(type_, texte, compte, username=None, langue="fr", page=None, agent=T
     with _verrou:
         d = lire()
         hier = (datetime.now() - timedelta(days=1)).isoformat()
-        if sum(1 for x in d["items"] if x.get("compte") == qui and str(x.get("le")) > hier) >= MAX_PAR_JOUR:
+        if sum(1 for x in d["items"] if x.get("compte") == qui and str(x.get("le")) > hier
+               and (x.get("type") == "pas_deal") == (type_ == "pas_deal")) >= (40 if type_ == "pas_deal" else MAX_PAR_JOUR):
             return {"ok": False, "erreur": "Beaucoup de messages aujourd'hui : réessaie demain"}
         it = {"id": secrets.token_hex(4), "le": _maint(), "compte": qui, "username": username, "langue": langue if langue in ("fr", "en") else "fr",
               "page": str(page or "")[:60], "type": type_, "texte": texte, "statut": "nouveau", "ia": None,
-              "reponse": None, "repondu_le": None, "lu": False}
+              "reponse": None, "repondu_le": None, "lu": False,
+              **({"contexte": json.loads(json.dumps(contexte, default=str))} if contexte else {})}
         d["items"] = (d["items"] + [it])[-3000:]
         _ecrire(d)
     if agent:
@@ -115,7 +117,10 @@ def trier(did, appeler=None):
              "messages": [{"role": "user", "content":
                            f"Demandes ouvertes (id : resume) :\n{contexte}\n\n"
                            f"Nouvelle demande ({it['type']}, langue {it['langue']}, ecran {it['page'] or '?'}) :\n"
-                           f"<demande>\n{it['texte']}\n</demande>"}]}
+                           f"<demande>\n{it['texte']}\n</demande>"
+                           + (f"\n<donnees_annonce>\n{json.dumps(it['contexte'], ensure_ascii=False)[:3500]}\n</donnees_annonce>\n"
+                              "C'est un « pas un deal » : dis dans a_faire pourquoi le calcul s'est trompe (meme carte ? "
+                              "assez de ventes ? annonces plus cheres que les ventes ?) et quelle regle changer." if it.get("contexte") else "")}]}
     try:
         r = appeler(corps)
     except Exception as e:
@@ -225,6 +230,16 @@ def mes_reponses(compte):
     d = lire()
     return [{"id": x["id"], "texte": x["texte"], "reponse": x["reponse"], "repondu_le": x.get("repondu_le")}
             for x in d["items"] if x.get("compte") == qui and x.get("reponse") and not x.get("lu")]
+
+
+def mes_demandes(compte, n=30):
+    """26 oct 2026 - l'ecran « Idees » : ce que l'utilisateur a ecrit et ou c'en est."""
+    qui = str(compte or "local")
+    d = lire()
+    l = [x for x in d["items"] if x.get("compte") == qui and x.get("type") != "pas_deal"]
+    l.sort(key=lambda x: str(x.get("le")), reverse=True)
+    return [{"id": x["id"], "type": x["type"], "texte": x["texte"], "le": x["le"], "statut": x.get("statut"),
+             "reponse": x.get("reponse"), "repondu_le": x.get("repondu_le")} for x in l[:n]]
 
 
 def marquer_lu(compte, did):

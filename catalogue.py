@@ -98,7 +98,44 @@ def taux_par_boite(prod):
         total = sum(poids.values()) or 1.0
         for m in inconnus:
             taux[m] = reste * poids[m] / total
+    # 26 oct 2026 - les cartes de base d'une boite hobby (rarement publiees) : ce qui reste des cartes de la boite
+    # (paquets x cartes par paquet) une fois tout le reste compte
+    fmt = next((f for f in prod.get("formats") or [] if f.get("paquets") and f.get("cartes_par_paquet")), None)
+    if fmt:
+        base = [n for n, s in se.items() if s.get("groupe") == "base" and not s.get("parallele_de") and n not in taux
+                and not re.search(r"variation|short print|\bsp\b|ssp", n, re.I)]
+        if len(base) == 1:
+            reste_b = float(fmt["paquets"]) * float(fmt["cartes_par_paquet"]) - sum(taux.values())
+            if reste_b > 0:
+                taux[base[0]] = round(reste_b, 2)
     return taux
+
+
+_RE_SANS_HOBBY = re.compile(r"absent|retail|hanger|blaster|advent|mega|tin\b|dollar|starter|oversized|walmart|target|amazon", re.I)
+_RE_HOBBY = re.compile(r"\bh\b|hobby|e-?pack", re.I)
+
+
+def etat_cotes(prod):
+    """26 oct 2026 (Mathieu : « une fleche verte lorsque nous avons la checklist avec tous les odds calcules ») -
+    les sous-ensembles d'une boite HOBBY dont on ne connait pas la chance de sortir (donc absents du calcul).
+    Ne comptent pas : plaques d'impression, 1/1, et ce qui ne sort que dans le retail. -> {manquantes: [noms], complete}"""
+    taux = prod.get("_taux") or taux_par_boite(prod)
+    manq, non_pub = [], []
+    for s in prod.get("sous_ensembles") or []:
+        if (taux.get(s["nom"]) or 0) > 0 or s.get("par_boite"):
+            continue
+        if s.get("tirage") == 1 or re.search(r"printing plate|\bplates?\b|1/1|one of one", s["nom"], re.I):
+            continue
+        txt = str(s.get("cotes") or "")
+        if txt and _RE_SANS_HOBBY.search(txt) and not _RE_HOBBY.search(re.sub(r"absent de la bo[iî]te hobby", "", txt, flags=re.I)):
+            continue
+        if re.search(r"oversized|retail|blaster|hanger|tin\b|mega", s["nom"], re.I):
+            continue
+        if re.search(r"random", txt, re.I):          # « Random Inserts » : le fabricant ne publie pas la cote
+            non_pub.append(s["nom"])
+            continue
+        manq.append(s["nom"])
+    return {"manquantes": manq, "non_publiees": non_pub, "complete": not manq}
 
 
 def charger(pid):
@@ -131,6 +168,7 @@ def liste():
                     "boites_par_caisse": fmt.get("boites_par_caisse"), "nb_cartes": len(p["cartes"]),
                     "nb_sous_ensembles": len(p.get("sous_ensembles") or []),
                     "recrues_par_boite": round(recrues, 1), "hits_par_boite": round(hits, 2),
+                    "cotes_manquantes": len(etat_cotes(p)["manquantes"]), "complete": etat_cotes(p)["complete"],
                     "preliminaire": any("preliminaire" in str(n).lower() for n in (p.get("notes") or [])[:1])})
     out.sort(key=lambda x: str(x.get("sortie") or ""), reverse=True)
     return out

@@ -196,24 +196,34 @@ def verdict_ouvrir(ev_boite, prix_boite):
 
 # -- 4. tendances ----------------------------------------------------------------------------------------------
 def tendances():
+    """26 oct 2026 (Mathieu : « plus d'infos dans les tendances de la semaine ») : hausses, baisses et cartes les plus
+    vendues, toutes les cartes mesurees des produits du catalogue (pas seulement les recrues), avec la courbe des
+    ventes, le nombre de ventes et le prix d'avant / maintenant."""
     import catalogue
     import valeur_produit
-    tout = {}
+    tout, vendues = {}, []
     for p in catalogue.liste():
         e = valeur_produit.de(p["id"]).get("sous") or {}
         for sn, s in e.items():
-            if "young guns" not in sn.lower() and "rookie" not in sn.lower():
-                continue
             for j, x in (s.get("joueurs") or {}).items():
+                pts = [pt for pt in (x.get("p") or []) if pt and pt[0]][:30]
+                base = {"joueur": j, "produit": p["nom"], "produit_id": p["id"], "carte": sn, "n": x.get("n") or 0,
+                        "mediane": x.get("m"), "points": pts[::-1], "derniere": pts[0][0] if pts else None,
+                        "recrue": bool(re.search(r"young guns|rookie|future watch|\brc\b", sn, re.I))}
+                vendues.append(base)
                 t = x.get("t")
-                if not t or t.get("pct") is None or (t.get("n") or 0) < 6:
+                if not t or t.get("pct") is None or (t.get("n") or 0) < 4:
                     continue
                 k = (j, p["id"])
                 if k not in tout or abs(t["pct"]) > abs(tout[k]["pct"]):
-                    tout[k] = {"joueur": j, "produit": p["nom"], "carte": sn, "pct": t["pct"], "recent": t["recent"], "avant": t["avant"], "n": t["n"]}
+                    tout[k] = {**base, "pct": t["pct"], "recent": t["recent"], "avant": t["avant"], "n_t": t["n"]}
     l = list(tout.values())
-    return {"ok": True, "hausses": sorted([x for x in l if x["pct"] > 0], key=lambda x: -x["pct"])[:8],
-            "baisses": sorted([x for x in l if x["pct"] < 0], key=lambda x: x["pct"])[:8]}
+    fiables = [x for x in l if x["n_t"] >= 6] if sum(1 for x in l if x["n_t"] >= 6) >= 6 else l
+    return {"ok": True, "hausses": sorted([x for x in fiables if x["pct"] > 0], key=lambda x: -x["pct"])[:8],
+            "baisses": sorted([x for x in fiables if x["pct"] < 0], key=lambda x: x["pct"])[:8],
+            "plus_vendues": sorted(vendues, key=lambda x: -x["n"])[:8],
+            "nb_cartes": len(vendues), "nb_ventes": sum(x["n"] for x in vendues),
+            "maj": max((valeur_produit.de(p["id"]).get("maj") or "" for p in catalogue.liste()), default=None)}
 
 
 # -- 5. collection ---------------------------------------------------------------------------------------------
