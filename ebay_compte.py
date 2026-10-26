@@ -551,14 +551,15 @@ def jeton_application():
     return j["app_token"]
 
 
-def rechercher(q, categorie=None, prix_max=None, recentes=False, limite=50, fond=True, encheres=False):
+def rechercher(q, categorie=None, prix_max=None, recentes=False, limite=50, fond=True, encheres=False, flux=False, offset=0):
     """Annonces actives a prix fixe semblables : [{item_id, titre, prix_cad, url, photo}].
     Cache partage (24 h ; 6 h pour les nouveautes) et compteur d'appels (appels_ebay).
     24 oct 2026 - encheres=True : les encans qui finissent le plus tot (prix = mise actuelle, fin, nb de mises)."""
     cle = appels_ebay.cle_recherche(environnement(), q=q[:100], categorie=categorie,
                                      prix_max=round(float(prix_max), 2) if prix_max else None, recentes=bool(recentes), limite=int(limite),
-                                     **({"encheres": True} if encheres else {}))
-    deja = appels_ebay.cache_lire(cle, "encheres" if encheres else "recentes" if recentes else "marche")
+                                     **({"encheres": True} if encheres else {}), **({"flux": True} if flux else {}), **({"offset": int(offset)} if offset else {}))
+    # 26 oct 2026 (Mathieu : « on doit trouver le maximum ») : flux = les nouvelles annonces chaque heure (cache 50 min)
+    deja = appels_ebay.cache_lire(cle, "flux" if flux else "encheres" if encheres else "recentes" if recentes else "marche")
     if deja is not None:
         return deja
     appels_ebay.exiger("browse", fond)
@@ -566,7 +567,9 @@ def rechercher(q, categorie=None, prix_max=None, recentes=False, limite=50, fond
     if prix_max:
         filtres.append(f"price:[..{float(prix_max):.2f}]")
         filtres.append("priceCurrency:CAD")
-    p = {"q": q[:100], "limit": int(limite), "filter": ",".join(filtres)}
+    p = {"q": q[:100], "limit": max(1, min(200, int(limite))), "filter": ",".join(filtres)}
+    if offset:
+        p["offset"] = int(offset)
     if categorie:
         p["category_ids"] = categorie
     if recentes:

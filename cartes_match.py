@@ -85,8 +85,17 @@ def norm(t):
     return re.sub(r"\s+", " ", t).strip()
 
 
+_RX_MOT = {}
+
+
 def _a_mot(t, mot):
-    return re.search(r"(?<![a-z0-9])" + re.escape(mot) + r"(?![a-z0-9])", t) is not None
+    # 26 oct 2026 : motifs gardes en memoire (le chasseur de deals juge des milliers d'annonces par heure)
+    rx = _RX_MOT.get(mot)
+    if rx is None:
+        if len(_RX_MOT) > 20000:
+            _RX_MOT.clear()
+        rx = _RX_MOT[mot] = re.compile(r"(?<![a-z0-9])" + re.escape(mot) + r"(?![a-z0-9])")
+    return rx.search(t) is not None
 
 
 def _annee(t):
@@ -174,9 +183,22 @@ def cible(recherche):
     return d
 
 
+_DEC = {}
+
+
+def _decoder_memo(titre):
+    """decoder() garde en memoire (lecture seule) : une vente est comparee a des centaines d'annonces par heure."""
+    a = _DEC.get(titre)
+    if a is None:
+        if len(_DEC) > 60000:
+            _DEC.clear()
+        a = _DEC[titre] = decoder(titre)
+    return a
+
+
 def raisons_refus(c, titre, appris=None):
     """[] si l'annonce est la meme carte, sinon pourquoi pas (en mots simples)."""
-    a = decoder(titre)
+    a = _decoder_memo(titre)
     t = a["texte"]
     r = []
     if a["exclu"] and not c["exclu"]:
@@ -504,9 +526,10 @@ def joueur_du_titre(titre, joueur=None):
     if joueur:
         return norm(joueur)
     t = norm(titre)
-    for n in _joueurs_connus():
-        if _a_mot(t, n):
-            return n
+    # le nom connu le plus long du titre (une seule expression pour tous les noms : rapide)
+    trouves = _noms_dans(t)
+    if trouves:
+        return max(trouves, key=len)
     if _EQUIPES_MOTS["t"] is None:
         _EQUIPES_MOTS["t"] = _mots_equipes()
     gen = GENERIQUES | VIDES | _EQUIPES_MOTS["t"] | set(PARALLELES)

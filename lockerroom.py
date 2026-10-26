@@ -984,6 +984,7 @@ class Api:
         stats = self._stats_checklist(prod, mode, sport)
         for pl in res["places"]:
             self._noter_place(pl, demandes.get(pl["cle"]), stats.get(pl["cle"]))
+        self._scores_relatifs(res["places"])
         # 25 oct 2026 (Mathieu : acheteur = « des scores », joueurs ET equipes) : la meme chose, place par joueur
         joueurs = None
         if p.get("acheteur"):
@@ -995,6 +996,7 @@ class Api:
                 pl["prix"] = calcul._arrondir(pl["prix"] / max(0.4, 1 - decote), arrondi)
                 self._noter_place(pl, dj.get(pl["cle"]), sj.get(pl["cle"]))
                 pl["equipe"] = (sj.get(pl["cle"]) or {}).get("equipe")
+            self._scores_relatifs(joueurs)
             joueurs.sort(key=lambda x: -x["score"])
             joueurs = joueurs[:60]
         fmt = (prod.get("formats") or [{}])[0]
@@ -1017,7 +1019,10 @@ class Api:
             pl["demande"] = demande
         pl["valeur_ratio"] = round(pl["ev"] / prix, 2) if prix else None
         pl["p_rembourse"] = calcul.chance_rembourser(dist, prix) if prix else 0
-        pl["score"] = round(100 * (0.6 * pl["p_rembourse"] + 0.4 * min(1.0, (pl["valeur_ratio"] or 0) / 1.5)))
+        # 26 oct 2026 (Mathieu : « la chance de tomber sur une numerotee, patch, auto, auto-patch, SSP, pas la chance de
+        # rembourser la mise ») : le score = 50 % la chance d'au moins un hit + 50 % la valeur attendue / le prix
+        # (score provisoire : _scores_relatifs le refait sur la liste entiere)
+        pl["score"] = round(100 * min(1.0, (pl["valeur_ratio"] or 0) / 1.5), 2)
         top = sorted(dist, key=lambda x: -x[0])[:1]
         pl["meilleure_valeur"] = round(top[0][0], 2) if top else None
         # 26 oct 2026 (Mathieu : « l'utilisateur doit savoir comment tu as calcule le tout ») : ce qui peut sortir,
@@ -1029,6 +1034,15 @@ class Api:
                                   for k, v in sorted(det.items(), key=lambda kv: -kv[1][2])[:8] if v[2] > 0]
         pl["seuil_revente"] = calcul.SEUIL_REVENTE
         pl.update({k: v for k, v in (stats or {}).items() if k != "equipe"})
+
+    @staticmethod
+    def _scores_relatifs(liste):
+        """Le meme score pour tous : 50 % la chance d'au moins un hit (rapportee a la meilleure de la liste) + 50 % la
+        valeur attendue / le prix (1,5 x le prix = le maximum)."""
+        mx = max([((pl.get("chances") or {}).get("hit") or {}).get("p") or 0 for pl in liste] + [1e-9])
+        for pl in liste:
+            p_hit = ((pl.get("chances") or {}).get("hit") or {}).get("p") or 0
+            pl["score"] = round(100 * (0.5 * p_hit / mx + 0.5 * min(1.0, (pl.get("valeur_ratio") or 0) / 1.5)), 2)
 
     @staticmethod
     def _stats_checklist(prod, mode, sport):
@@ -1061,7 +1075,11 @@ class Api:
                     d["nb_autos"] += 1
                 if re.search(r"\bssp\b|short print", s.get("nom") or "", re.I):
                     d["nb_ssp"] += 1
-        # 26 oct 2026 : les versions = chaque carte x ses paralleles (les paralleles reprennent la liste du parent)
+        # 26 oct 2026 : les versions = chaque carte x ses paralleles (les paralleles reprennent la liste du parent) ;
+        # par categorie de hit : [versions, versions dont le fabricant ne publie pas la cote (absentes du calcul)]
+        taux = prod.get("_taux") or {}
+        for d in out.values():
+            d["versions_cat"] = {}
         par = {}
         for c in prod.get("cartes") or []:
             par.setdefault(c.get("sous_ensemble"), []).append(c)
@@ -1077,12 +1095,33 @@ class Api:
                     cles = [x.strip() for x in str(c.get("joueur") or "").split("/") if x.strip()]
                 else:
                     cles = list(dict.fromkeys(calcul.code_equipe(e, sport) for e in re.split(r"\s*/\s*|\s*,\s*", str(c.get("equipe") or "")) if e.strip()))
+                cats = calcul.categories_carte(c, s)
+                sans_cote = (taux.get(nom) or 0) <= 0
                 for k2 in cles:
                     if k2 in out:
                         out[k2]["nb_versions"] += 1
+                        for cat in list(cats) + (["hit"] if cats else []):
+                            vc = out[k2]["versions_cat"].setdefault(cat, [0, 0])
+                            vc[0] += 1
+                            vc[1] += 1 if sans_cote else 0
         for d in out.values():
             d["nb_joueurs"], d["nb_recrues"] = len(d.pop("_j")), len(d.pop("_r"))
         return out
+
+    def break_ventes_joueur(self, params):
+        """26 oct 2026 (Mathieu : « les ventes moyennes de ce joueur, la meme maniere pour tous ») : ses ventes eBay
+        reelles dans CE produit, classees par categorie de hit (ventes_joueur : la meme regle pour chaque joueur)."""
+        import forfaits
+        import ventes_joueur
+        p = params or {}
+        if not forfaits.produit_permis(str(p.get("produit_id") or "")):
+            return {"ok": False, "erreur": "L'analyse de tous les produits est dans le forfait Pro.", "pro_requis": True}
+        prod = catalogue.charger(p.get("produit_id"))
+        if not prod:
+            return {"ok": False, "erreur": "Produit introuvable dans le catalogue"}
+        if not vendues.actif():
+            return {"ok": False, "erreur": "Les ventes réelles s'activent avec SoldComps."}
+        return ventes_joueur.ventes(prod, str(p.get("joueur") or ""))
 
     def _hits_produit(self, prod, boites):
         """Joueur par joueur : ses autos / patchs attendus dans le break, la chance d'en sortir au moins un et leur valeur."""
@@ -2906,8 +2945,9 @@ class Api:
         if not pro:
             lst = lst[:forfaits.LIMITES["deals"]]
         import deals as _d
-        return {"ok": True, "deals": lst[:120], "n": n, "pro": pro, "limite": None if pro else forfaits.LIMITES["deals"],
-                "sports": par_sport, "maj": _d.lire().get("maj"), "ebay": ebay_compte.statut().get("cles_ok")}
+        return {"ok": True, "deals": lst[:240], "n": n, "pro": pro, "limite": None if pro else forfaits.LIMITES["deals"],
+                "sports": par_sport, "maj": _d.lire().get("maj"), "ebay": ebay_compte.statut().get("cles_ok"),
+                "diag": _d.diagnostic(), "total": len(tout), "bassin": _d.lire().get("bassin"), "nb_flux": len(_d.flux_liste())}
 
     def annonce_detail(self, item_id, titre=None, rapide=False, q=None):
         """26 oct 2026 (Mathieu : « beaucoup trop long à charger ») : l'ecran demande d'abord la version rapide

@@ -85,6 +85,33 @@ def _groupe(c):
     return "base"
 
 
+# 26 oct 2026 (Mathieu : « la chance de tomber sur une carte numerotee, patch, auto, auto-patch ou SSP, pour une
+# equipe ou un joueur ; tous evalues sur les memes metriques ») : une definition unique, la meme pour tout le monde.
+CATEGORIES_HIT = ("numerotee", "auto", "patch", "auto_patch", "ssp")
+_RE_SSP = re.compile(r"\bssp\b|super short", re.I)
+
+
+def categories_carte(c, s):
+    """Les categories de hit d'une version (carte x sous-ensemble) : numerotee (tirage connu, 1/1 compris), auto,
+    patch (relique / memorabilia), auto_patch (les deux), ssp. Une auto-patch /25 compte dans les 4 premieres."""
+    s = s or {}
+    g = s.get("groupe") or "base"
+    auto = bool(c.get("auto")) or g in ("auto", "auto_memo")
+    patch = bool(c.get("memo") or c.get("relique")) or g in ("memo", "auto_memo")
+    out = set()
+    if c.get("tirage") or s.get("tirage"):
+        out.add("numerotee")
+    if auto:
+        out.add("auto")
+    if patch:
+        out.add("patch")
+    if auto and patch:
+        out.add("auto_patch")
+    if str(c.get("sp") or "").upper() == "SSP" or _RE_SSP.search(str(s.get("nom") or "")):
+        out.add("ssp")
+    return out
+
+
 def _arrondir(v, pas):
     pas = max(0.01, float(pas or 1))
     return round(math.ceil(v / pas - 1e-9) * pas, 2)
@@ -186,20 +213,39 @@ def _gamma_p(k, x):
 SEUIL_REVENTE = 1.50           # $ CA : sous ce prix, une carte ne se revend pas a l'unite
 
 
-def chance_rembourser(dist, prix):
-    """25 oct 2026 - la chance que les cartes recues valent AU MOINS le prix paye pour la place. La somme des
-    valeurs suit une loi de Poisson composee (chaque carte possible arrive un nombre de fois aleatoire) ;
-    on l'approche par une loi Gamma de meme moyenne et meme variance (positive et asymetrique, comme un break :
-    souvent peu, parfois un gros hit). dist = [(valeur d'une carte, nombre attendu dans le break)]."""
+def chance_rembourser(dist, prix, pas_max=400):
+    """La chance que les cartes recues valent AU MOINS le prix paye pour la place. dist = [(valeur d'une carte,
+    nombre attendu dans le break)]. La somme suit une loi de Poisson composee (chaque carte possible arrive un
+    nombre de fois aleatoire).
+    26 oct 2026 (Mathieu : « comment ca 0 % ? ») : l'approximation Gamma (meme moyenne, meme variance) d'avant
+    ecrasait les places « peu de chances, gros hit » (Islanders d'Ultimate Collection : 1 % au lieu de 5 %). Calcul
+    exact maintenant : recursion de Panjer sur les valeurs arrondies au pas (prix / 400, 0,25 $ minimum),
+    verifiee contre une simulation Monte-Carlo (memes chiffres a 0,5 point pres)."""
     prix = float(prix or 0)
-    mu = sum(v * n for v, n in dist or [])
-    var = sum(v * v * n for v, n in dist or [])
     if prix <= 0:
         return 1.0
-    if mu <= 0 or var <= 0:
+    l = [(float(v), float(n)) for v, n in dist or [] if v > 0 and n > 0]
+    lam = sum(n for _v, n in l)
+    if lam <= 0:
         return 0.0
-    k, theta = mu * mu / var, var / mu
-    return round(max(0.0, min(1.0, 1 - _gamma_p(k, prix / theta))), 3)
+    h = max(0.25, prix / pas_max)
+    m = int(math.ceil(prix / h))
+    fx = {}
+    for v, n in l:
+        k = max(1, int(round(v / h)))
+        if k < m:                                   # une carte qui vaut a elle seule le prix : rembourse d'office
+            fx[k] = fx.get(k, 0.0) + n / lam
+    sauts = sorted(fx.items())
+    fs = [0.0] * m
+    fs[0] = math.exp(-lam)
+    for s_ in range(1, m):
+        acc = 0.0
+        for k, f in sauts:
+            if k > s_:
+                break
+            acc += k * f * fs[s_ - k]
+        fs[s_] = lam / s_ * acc
+    return round(max(0.0, min(1.0, 1 - sum(fs))), 3)
 
 
 def prix_catalogue(prod, boites=1, cout_boite=0.0, marge=0.25, frais_pct=0.109, frais_fixe=0.30,
@@ -243,6 +289,15 @@ def prix_catalogue(prod, boites=1, cout_boite=0.0, marge=0.25, frais_pct=0.109, 
                 x[1] = max(x[1], v1 + SEUIL_REVENTE)
                 x[2] += ev * part
                 x[3] = x[3] or bool(mesure)
+            # les memes metriques pour chaque equipe / joueur : nombre attendu et valeur de chaque categorie de hit
+            cats = categories_carte(c, s)
+            if cats:
+                ch = d.setdefault("cats", {})
+                for cat in list(cats) + ["hit"]:
+                    x = ch.setdefault(cat, [0.0, 0.0, 0.0])
+                    x[0] += n * part
+                    x[1] += n * part * (v1 + SEUIL_REVENTE)
+                    x[2] += n * part * (v1 + SEUIL_REVENTE) if mesure else 0.0
             d["ev"] += ev * part
             d["n"] += n * part
             d["recrues"] += n * part if (g == "recrue" or c.get("recrue")) else 0.0
@@ -270,6 +325,7 @@ def prix_catalogue(prod, boites=1, cout_boite=0.0, marge=0.25, frais_pct=0.109, 
                        # 24 oct 2026 - chances (loi de Poisson sur le nombre attendu) : au moins une carte, une recrue, un hit
                        "p_carte": round(1 - math.exp(-d.get("n", 0.0)), 3), "p_recrue": round(1 - math.exp(-d["recrues"]), 3),
                        "p_hit": round(1 - math.exp(-d["hits"]), 3), "n_attendu": round(d.get("n", 0.0), 2),
+                       "chances": _chances(d.get("cats") or {}),
                        **({"_dist": d.get("dist") or [], "_detail": d.get("detail") or {}} if garder_dist else {})})
     places.sort(key=lambda p: (-p["prix"], p["nom"]))
     total = round(sum(p["prix"] for p in places), 2)
@@ -281,6 +337,17 @@ def prix_catalogue(prod, boites=1, cout_boite=0.0, marge=0.25, frais_pct=0.109, 
 
 
 # -- tirage verifiable ------------------------------------------------------------------
+def _chances(cats):
+    """{categorie: {p (au moins une, loi de Poisson), attendu, valeur (moyenne d'une carte de la categorie, ponderee par
+    sa chance de sortir), reelle (% de cette valeur tiree des ventes reelles)}} ; « hit » = au moins une des categories."""
+    out = {}
+    for cat in CATEGORIES_HIT + ("hit",):
+        lam, sv, sm = cats.get(cat) or (0.0, 0.0, 0.0)
+        out[cat] = {"p": round(1 - math.exp(-lam), 6), "attendu": round(lam, 4),
+                    "valeur": round(sv / lam, 2) if lam > 0 else None, "reelle": round(100 * sm / sv) if sv > 0 else 0}
+    return out
+
+
 def tirage(participants, lots, graine=None):
     """Melange `lots` et les attribue dans l'ordre a `participants` (les places
     vendues). Graine aleatoire forte ; son empreinte SHA-256 est publiee AVANT

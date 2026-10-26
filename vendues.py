@@ -141,6 +141,11 @@ def _vers_vente(it, taux):
             "mises": it.get("bidCount"), "source": "eBay"}
 
 
+def en_cache(q):
+    """Les ventes d'une recherche si elles sont en cache (3 jours), sinon None : jamais d'appel SoldComps."""
+    return _cache_lire(" ".join(str(q or "").split())[:120].lower())
+
+
 def rechercher(q, fond=True):
     """Ventes eBay d'une recherche (toutes cartes confondues : filtrer ensuite). {ventes, erreur, cache}."""
     q = " ".join(str(q or "").split())[:120]
