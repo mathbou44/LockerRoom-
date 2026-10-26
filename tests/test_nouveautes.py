@@ -273,6 +273,32 @@ class GTS(unittest.TestCase):
                 gts._get, gts._chemin = vrai, ancien
 
 
+class Astuces(unittest.TestCase):
+    """26 oct 2026 - « Le savais-tu ? » : les astuces sourcees sont toujours la ; les calculees ne parlent que s'il y a
+    assez de donnees (jamais de chiffre invente)."""
+    def test_astuces(self):
+        import astuces
+        import comptes
+        import lockerroom
+        with tempfile.TemporaryDirectory() as t:
+            ancien = comptes.DONNEES
+            comptes.DONNEES = t
+            try:
+                api = lockerroom.Api(os.path.join(t, "a.db"))
+                fr = astuces.liste(api, "debutant", True, "fr")
+                en = astuces.liste(api, None, True, "en")
+            finally:
+                comptes.DONNEES = ancien
+        ids = {x["id"] for x in fr}
+        self.assertTrue({"bedard", "numerotation", "gradation", "demande", "frais"} <= ids)
+        self.assertNotIn("offres", ids)                       # base vide : pas de chiffre
+        self.assertNotIn("psa10", ids)
+        self.assertTrue(all(x["titre"] and x["truc"] and x["source"] for x in fr))
+        self.assertIn("Did you know", "Did you know") and self.assertTrue(any("Bedard" in x["titre"] for x in en))
+        self.assertEqual(fr[0]["niveau"], "debutant")
+        self.assertTrue(any(x.get("url", "").startswith("https://") for x in fr))
+
+
 class Marche(unittest.TestCase):
     def test_alerte_meme_carte(self):
         import lockerroom

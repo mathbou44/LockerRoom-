@@ -223,8 +223,29 @@ def tendances():
         b = base_ventes.tendances() or {}
     except Exception:
         b = {}
+    # 26 oct 2026 (Mathieu : « bcp trop vide ») : une carte trop jeune pour « 30 j vs 60 j » (produit sorti il y a 3
+    # semaines) a quand meme une tendance : ses 3 premieres ventes vs ses 3 dernieres (au moins 7 jours d'ecart)
+    for p in catalogue.liste():
+        e = valeur_produit.de(p["id"]).get("sous") or {}
+        for sn, s_ in e.items():
+            for j, x in (s_.get("joueurs") or {}).items():
+                k = (j, p["id"])
+                if k in tout:
+                    continue
+                pts = sorted((str(d)[:10], float(v)) for d, v in (x.get("p") or []) if d and v)
+                if len(pts) < 6 or (datetime.fromisoformat(pts[-1][0]) - datetime.fromisoformat(pts[0][0])).days < 7:
+                    continue
+                a0 = statistics.median(v for _d, v in pts[:3])
+                a1 = statistics.median(v for _d, v in pts[-3:])
+                pct = round(100 * (a1 - a0) / a0) if a0 else None
+                if pct is None or abs(pct) < 5:
+                    continue
+                tout[k] = {"joueur": j, "produit": p["nom"], "produit_id": p["id"], "carte": sn, "n": x.get("n") or len(pts),
+                           "mediane": x.get("m"), "points": [[d, v] for d, v in pts], "derniere": pts[-1][0],
+                           "recrue": bool(re.search(r"young guns|rookie|future watch|\brc\b", sn, re.I)),
+                           "pct": pct, "avant": round(a0, 2), "recent": round(a1, 2), "n_t": 6, "periode": "debut"}
     l = list(tout.values())
-    fiables = [x for x in l if x["n_t"] >= 6] if sum(1 for x in l if x["n_t"] >= 6) >= 6 else l
+    fiables = l
     def fusion(a, b2, cle, n=8):
         vus, out = set(), []
         for x in list(a or []) + list(b2 or []):

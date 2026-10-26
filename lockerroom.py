@@ -137,6 +137,14 @@ def _connecter(chemin=None):
         CREATE TABLE IF NOT EXISTS rachats_vus (cle TEXT PRIMARY KEY, maj TEXT);
         CREATE TABLE IF NOT EXISTS opportunites (item_id TEXT PRIMARY KEY, titre TEXT, total REAL, url TEXT, photo TEXT,
         ref_titre TEXT, ref_prix REAL, ratio REAL, vu_le TEXT, masque INTEGER DEFAULT 0);""")
+    # 26 oct 2026 (Mathieu : « les faux deals sont encore presents ?? ») : les rachats calcules avec l'ancienne reference
+    # (ta vente d'avant au lieu des ventes eBay de la meme carte) sont effaces une fois ; ils se refont tout seuls
+    c.execute("CREATE TABLE IF NOT EXISTS migrations (nom TEXT PRIMARY KEY, le TEXT)")
+    if not c.execute("SELECT 1 FROM migrations WHERE nom='rachats_ventes_reelles'").fetchone():
+        c.execute("DELETE FROM opportunites")
+        c.execute("DELETE FROM rachats_vus")
+        c.execute("INSERT INTO migrations VALUES ('rachats_ventes_reelles', ?)", (datetime.now().isoformat(timespec="seconds"),))
+        c.commit()
     # 24 oct 2026 - les comparables gardes (memes cartes) : repere prix dans l'inventaire et comps au tap
     for table, col, typ in (("sante", "comps", "TEXT"), ("sante", "bas", "REAL"), ("opportunites", "comps", "TEXT"),
                             ("opportunites", "sport", "TEXT"), ("opportunites", "mediane", "REAL")):
@@ -2313,6 +2321,12 @@ class Api:
     def tendances(self):
         return marche.tendances()
 
+    def astuces(self, force=False, langue=None):
+        """26 oct 2026 - « Le savais-tu ? » : astuces verifiees (calculees sur les vraies ventes ou sourcees), pour l'accueil."""
+        import astuces
+        rg = self.reglages_lire()
+        return {"ok": True, "astuces": astuces.liste(self, rg.get("niveau"), bool(force), "en" if (langue or rg.get("langue")) == "en" else "fr")}
+
     def collection(self):
         return marche.collection(self)
 
@@ -2707,8 +2721,9 @@ class Api:
             try:
                 c.execute("CREATE TABLE IF NOT EXISTS deals_masques (item_id TEXT PRIMARY KEY)")
                 masques = {x[0] for x in c.execute("SELECT item_id FROM deals_masques")}
-                opps = [o for o in _dicts(c.execute("SELECT * FROM opportunites WHERE masque=0 AND vu_le >= ? ORDER BY ratio LIMIT 80", (limite,)))
-                        if _opp_ok(o.get("titre"))]
+                # 26 oct 2026 (Mathieu : « les faux deals sont encore presents ?? ») : les « rachats » (une annonce comparee a
+                # TA vente d'avant, pas aux ventes eBay de la meme carte) ne sont plus des deals : ils restent dans Sante
+                opps = []
             finally:
                 c.close()
         out = {}

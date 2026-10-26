@@ -268,6 +268,16 @@ body.avec-barre .ecran{padding-top:14px}
 .nouv .visuel{aspect-ratio:16/9; background:#1A2027 center/cover no-repeat; flex-shrink:0}
 .nouv .texte{display:flex; flex-direction:column; justify-content:space-between; gap:12px; padding:16px 18px 18px; flex:1; min-width:0}
 .nouv .haut-n{display:flex; justify-content:space-between; align-items:center; gap:10px}
+.astuce-v{display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-end; gap:6px; padding:18px 20px; min-height:150px;
+  background:radial-gradient(120% 120% at 0% 0%, rgba(232,196,106,.35), transparent 55%), linear-gradient(160deg, #1D2430, #0E1216)}
+.astuce-v.g-acheter{background:radial-gradient(120% 120% at 0% 0%, rgba(143,212,164,.30), transparent 55%), linear-gradient(160deg, #17261E, #0E1216)}
+.astuce-v.g-vendre{background:radial-gradient(120% 120% at 0% 0%, rgba(120,170,255,.28), transparent 55%), linear-gradient(160deg, #172033, #0E1216)}
+.as-lib{font-weight:700; font-size:14px; color:var(--or); letter-spacing:.3px} .as-chiffre{font-family:'Barlow Condensed',sans-serif; font-size:64px; line-height:1; font-weight:800; color:#fff; text-shadow:0 4px 18px rgba(0,0,0,.4)}
+.as-niv{font-size:13px; color:var(--doux); font-weight:600} .slide-astuce .haut-n{flex-wrap:wrap} .nouv-t{white-space:nowrap; font-size:13px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:var(--doux)}
+.as-titre{font-size:20px; line-height:1.25; font-weight:800; color:var(--texte)} .as-texte{font-size:15px; line-height:1.45; color:var(--doux)}
+.as-truc{font-size:15px; line-height:1.45; padding:10px 12px; border-radius:12px; background:rgba(232,196,106,.08); border:1px solid rgba(232,196,106,.25)} .as-truc b{color:var(--or); margin-right:4px}
+.points button.astuce{background:rgba(232,196,106,.45)} .points button.astuce.on{background:var(--or)}
+.slide-src a{color:var(--acc)}
 .slide-titre{font-size:20px; line-height:1.3; font-weight:700; color:var(--texte); display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden}
 .nouv.sans-img .slide-titre{font-size:22px}
 .slide-src{font-size:14px; color:var(--doux)}
@@ -840,7 +850,7 @@ body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px rgba(232,196,106,.55))}
 .quota.vide{border-color:var(--rouge); color:var(--rouge)} .quota.pro{cursor:default; color:var(--or); border-color:rgba(232,196,106,.45); background:linear-gradient(90deg,rgba(232,196,106,.14),rgba(232,196,106,.03))}
 @media (max-width:899px){ .onglets .nav-idees{display:none} }
 .idee-f{display:flex; flex-direction:column; gap:12px} .idee-r .milieu{gap:8px}
-.trois-col{display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:14px}
+.trois-col{display:grid; grid-template-columns:repeat(auto-fit, minmax(290px, 1fr)); gap:14px}
 .t-col .r-titre{display:flex; flex-direction:column; gap:2px} .t-col .r-titre small{font-size:13px; color:var(--doux); font-weight:500}
 .t-l{gap:12px} .t-l .vig-j{width:40px; height:52px} .t-l .vig-j.init i{font-size:17px} .t-l .det{font-size:13.5px}
 .t-mini{width:64px; height:30px; flex-shrink:0; fill:none; stroke:var(--acc); stroke-width:2.2; vector-effect:non-scaling-stroke} .t-mini.vert{stroke:var(--vert)} .t-mini.rouge{stroke:var(--rouge)}
@@ -2405,7 +2415,7 @@ async function vueAccueil(arg){
     <div class="carte-acc nouv" id="acc-nouv"><div id="acc-news">${roue}</div></div>
     <div class="acc-cote">${bandeauEssai()}
       <div class="carte-acc"><div class="acc-titre">À faire <span id="afaire-n"></span></div><div id="acc-afaire" class="gestes">${roue}</div></div>
-      <div class="carte-acc conseils-acc"><div class="acc-titre"><span>✦ ${tt('Conseils', 'Tips')}</span><button class="lien-doux" id="cs-maj" aria-label="${esc(tt('Nouveaux conseils', 'New tips'))}">↻</button></div><div id="acc-conseils" class="liste">${roue}</div></div>
+      <div class="carte-acc conseils-acc"><div class="acc-titre"><span>✦ ${tt('Conseils pour toi', 'For you')}</span><button class="lien-doux" id="cs-maj" aria-label="${esc(tt('Nouveaux conseils', 'New tips'))}">↻</button></div><div id="acc-conseils" class="liste">${roue}</div></div>
       <div class="carte-acc"><div class="acc-titre">Mises à jour <span id="pouls-etat"></span></div><div id="acc-pouls">${roue}</div></div>
     </div>
     <div id="acc-plus"></div>
@@ -2509,7 +2519,7 @@ async function chargerConseils(force){
   z.innerHTML = l.length ? l.map(c => `<a class="conseil ${esc(c.genre)}" href="${esc(c.lien)}"><span class="cs-i">${IC_CONSEIL[c.genre] || '✦'}</span>
       <span class="cs-t"><b>${esc(c.titre)}</b><span>${esc(c.texte)}</span></span><span class="pilule petit">${esc(c.action)}</span></a>`).join('')
     : `<div class="vide" style="padding:10px">${tt('Rien d’urgent : tout roule.', 'Nothing urgent: all good.')}</div>`;
-  const t = $('.conseils-acc .acc-titre span'); if (t && r) t.innerHTML = '✦ ' + tt('Conseils', 'Tips') + (r.source === 'ia' ? ` <small class="cs-ia">${tt('analyse IA', 'AI analysis')}</small>` : '');
+  const t = $('.conseils-acc .acc-titre span'); if (t && r) t.innerHTML = '✦ ' + tt('Conseils pour toi', 'For you') + (r.source === 'ia' ? ` <small class="cs-ia">${tt('analyse IA', 'AI analysis')}</small>` : '');
 }
 async function chargerLive(premier){
   // 24 oct 2026 : une reponse qui ne revient pas ne laisse plus la roue tourner (15 s, puis nouvel essai dans 10 s)
@@ -2558,15 +2568,34 @@ function visuelSport(n){
   return `<div class="visuel genere v-${sp}"><div class="terrain">${TERRAINS[sp]}</div>
     <span class="v-ligue">${esc(lig)}</span>${n.joueur ? `<span class="v-joueur">${esc(n.joueur)}</span>` : ''}<span class="v-source">${esc(n.source || '')}</span></div>`;
 }
+// 26 oct 2026 (Mathieu : « ajouter dans les news des tips, renommer la section Tips & News ») : les astuces vérifiées
+// (« Le savais-tu ? ») alternent avec les nouvelles, une sur deux
 function rendreNouvelles(items){
   const z = $('#acc-news'); if (!z) return;
-  const L = items.slice(0, 8);
+  if (!S.astuces && !S.astucesEnCours) {
+    S.astucesEnCours = true;
+    API.astuces(false, typeof LANGUE !== 'undefined' ? LANGUE : null).then(r => { S.astuces = (r && r.astuces) || []; if ($('#acc-news')) rendreNouvelles(items); })
+      .catch(() => { S.astuces = []; }).finally(() => { S.astucesEnCours = false; });
+  }
+  const news = items.slice(0, 8), tips = (S.astuces || []).slice(0, 12), L = [];
+  for (let k = 0; k < Math.max(news.length, tips.length); k++) { if (news[k]) L.push(news[k]); if (tips[k]) L.push({...tips[k], astuce:true}); }
   const carteN = $('#acc-nouv'); if (carteN) carteN.classList.toggle('vide-n', !L.length);
   if (!L.length) { z.innerHTML = ''; return; }
   S.newsVues = true;
   let i = 0;
   const montrer = () => {
     const n = L[i % L.length], zz = $('#acc-news'); if (!zz) return;
+    const pts = `<div class="points">${L.map((x, k) => `<button data-k="${k}" class="${k === i % L.length ? 'on' : ''} ${x.astuce ? 'astuce' : ''}" aria-label="${x.astuce ? 'Astuce' : 'Nouvelle'} ${k + 1}"></button>`).join('')}</div>`;
+    if (n.astuce) {
+      zz.innerHTML = `<div class="slide slide-astuce"><div class="visuel astuce-v g-${esc(n.genre || 'info')}"><span class="as-lib">💡 ${tt('Le savais-tu ?', 'Did you know?')}</span>
+          <b class="as-chiffre">${esc(n.chiffre || '')}</b><span class="as-niv">${{debutant:tt('Pour débuter', 'For beginners'), tous:tt('Pour tous', 'For everyone'), avance:tt('Pour les pros', 'For pros')}[n.niveau] || ''}</span></div>
+        <div class="texte"><div class="haut-n"><span class="nouv-t">${tt('Astuces & nouvelles', 'Tips & News')}</span>${pts}</div>
+          <div class="as-titre">${esc(n.titre)}</div><div class="as-texte">${esc(n.texte)}</div>
+          <div class="as-truc"><b>${tt('Le truc', 'The tip')}</b> ${esc(n.truc)}</div>
+          <div class="slide-src">${n.url ? `<a href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.source)} ↗</a>` : esc(n.source || '')}${n.calcule ? ' · ' + tt('chiffre du jour', 'today’s figure') : ''}</div></div></div>`;
+      zz.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { i = +b.dataset.k; montrer(); });
+      return;
+    }
     const cl = n.impact > 0 ? 'vert' : n.impact < 0 ? 'rouge' : n.genre === 'hobby' ? 'or' : 'acc';
     if (n.image && !n.imgOk && !n.charge) { n.charge = true; const im = new Image(), ici = () => L[i % L.length] === n && montrer();
       im.onload = () => { n.imgOk = true; ici(); }; im.onerror = () => { n.image = null; ici(); }; im.src = n.image; }
@@ -2576,14 +2605,14 @@ function rendreNouvelles(items){
     // 24 oct 2026 (Mathieu : « toujours avoir une image ») : la photo de l'article, sinon un visuel du sport
     zz.innerHTML = `<div class="slide">${voirImg ? `<div class="visuel" style="background-image:url('${esc(n.image)}')"></div>` : visuelSport(n)}
       <div class="texte"><div class="haut-n"><span class="capsule ${cl}">${esc(n.libelle || nomSport(n.sport))}${n.joueur ? ' · ' + esc(n.joueur) : ''}</span>
-          <div class="points">${L.map((_, k) => `<button data-k="${k}" class="${k === k0 ? 'on' : ''}" aria-label="Nouvelle ${k + 1}"></button>`).join('')}</div></div>
+          ${pts}</div>
         <a class="slide-titre" href="${esc(n.lien || '#')}" target="_blank" rel="noopener">${esc(n.titre)}</a>
         <div class="slide-src">${esc(n.source || '')} · ${esc(n.date ? dateCourte(n.date) : '')}</div></div></div>`;
     zz.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { i = +b.dataset.k; montrer(); });
   };
   montrer();
   if (S.tNews) clearInterval(S.tNews);
-  S.tNews = setInterval(() => { if (!surAccueil()) { arreterAccueilLive(); return; } if (!document.hidden) { i++; montrer(); } }, 8000);
+  S.tNews = setInterval(() => { if (!surAccueil()) { arreterAccueilLive(); return; } if (!document.hidden && !z.matches(':hover')) { i++; montrer(); } }, 10000);
   let x0 = null;
   z.ontouchstart = (e) => { x0 = e.touches[0].clientX; };
   z.ontouchend = (e) => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 40) { i = Math.max(0, i + (dx < 0 ? 1 : -1)); montrer(); } x0 = null; };
@@ -3825,7 +3854,7 @@ async function blocTendances(z){
   };
   const ligne = (x, genre) => `<a class="rangee t-l" href="#joueur/${encodeURIComponent(x.joueur)}">${vignetteJoueur(x.joueur)}
     <span class="milieu"><span class="nom">${esc(x.joueur)}${x.recrue ? ' ' + tag('RC', 'acc') : ''}</span><span class="det">${esc(x.carte)} · ${esc(String(x.produit || '').replace(/^(\d{4}-\d{2})\s+Upper Deck\s+/, '$1 '))}</span>
-      <span class="det">${x.n} ${tt('ventes', 'sales')}${x.derniere ? ' · ' + tt('dernière ', 'last ') + dateCourte(x.derniere) : ''}</span></span>
+      <span class="det">${x.n} ${tt('ventes', 'sales')}${x.derniere ? ' · ' + tt('dernière ', 'last ') + dateCourte(x.derniere) : ''}${x.periode === 'debut' && genre !== 'vendue' && genre !== 'record' ? ' · ' + tt('depuis ses 1res ventes', 'since its first sales') : ''}</span></span>
     ${mini(x.points, genre === 'baisse' ? 'rouge' : genre === 'hausse' ? 'vert' : '')}
     <span class="droite">${genre === 'record' ? `<b class="t-prix">${argentCourt(x.prix)}</b><span class="sous">${dateCourte(x.le)}</span>`
       : genre === 'vendue' ? `<b class="t-prix">${argentCourt(x.mediane)}</b><span class="sous">${x.n_7j ? x.n_7j + ' ' + tt('cette sem.', 'this wk') : tt('médiane', 'median')}</span>`
@@ -3833,7 +3862,7 @@ async function blocTendances(z){
   const col = (titre, sous, l, genre, vide) => `<div class="bloc t-col"><div class="r-titre">${titre}<small>${sous}</small></div><div class="liste">${l.map(x => ligne(x, genre)).join('') || `<div class="vide t-vide">${vide}</div>`}</div></div>`;
   z.innerHTML = `<div class="bloc-t">${tt('Tendances de la semaine', 'This week’s trends')} <span class="sous">${(r.nb_ventes || 0).toLocaleString(LOC())} ${tt('ventes réelles analysées', 'real sales analyzed')} · ${r.nb_cartes || 0} ${tt('cartes', 'cards')}${r.maj ? ' · ' + dateCourte(r.maj) : ''}</span></div>
     <div class="trois-col">
-      ${col('▲ ' + tt('En hausse', 'Rising'), tt('30 derniers jours vs les 60 d’avant', 'last 30 days vs the 60 before'), r.hausses, 'hausse', tt('Rien ne monte fort cette semaine', 'Nothing rising sharply this week'))}
+      ${col('▲ ' + tt('En hausse', 'Rising'), tt('les ventes récentes vs avant (ou depuis la sortie)', 'recent sales vs before (or since release)'), r.hausses, 'hausse', tt('Rien ne monte fort cette semaine', 'Nothing rising sharply this week'))}
       ${col('▼ ' + tt('En baisse', 'Falling'), tt('bon moment pour acheter ?', 'good time to buy?'), r.baisses, 'baisse', tt('Rien ne baisse cette semaine : les prix tiennent', 'Nothing falling this week: prices are holding'))}
       ${col('🔥 ' + tt('Les plus vendues', 'Most sold'), tt('ce que les acheteurs s’arrachent', 'what buyers are grabbing'), r.plus_vendues || [], 'vendue', '—')}
       ${(r.records || []).length ? col('💎 ' + tt('Plus grosses ventes', 'Biggest sales'), tt('les 7 derniers jours', 'last 7 days'), r.records, 'record', '—') : ''}</div>`;

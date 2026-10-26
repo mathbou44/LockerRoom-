@@ -455,8 +455,10 @@ class VoletAcheteur(unittest.TestCase):
         c.execute("INSERT INTO opportunites (item_id, titre, total, url, ref_prix, ratio, vu_le) VALUES ('9','x',40,'u',100,0.4,?)",
                   (lockerroom._maintenant(),))
         c.commit(); c.close()
-        import deals                     # 24 oct 2026 : sans les deals du chasseur partage (fichier du serveur)
-        lire_avant, deals.lire = deals.lire, lambda: {}
+        import deals                     # 26 oct 2026 : les deals = le chasseur (ventes reelles) ; les rachats n'y sont plus
+        un = {"item_id": "9", "titre": "x", "total": 40, "url": "u", "valeur": 100, "ratio": 0.4, "encan": False, "fin": None,
+              "sport": "hockey", "q": None, "v": deals.VERSION, "vu_le": lockerroom._maintenant()}
+        lire_avant, deals.lire = deals.lire, lambda: {"deals": [un]}
         deals.chasser_si_besoin, chasser_avant = (lambda: False), deals.chasser_si_besoin
         try:
             d = a.acheteur_accueil()
