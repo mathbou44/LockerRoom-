@@ -68,7 +68,7 @@ _RE_GRADE = re.compile(r"\b(psa|bgs|sgc|cgc|tag|ksa|hga|beckett|bccg)\s*-?\s*(ge
 _RE_SERIE = re.compile(r"(?:#\s*)?(?:\b\d{1,4}\s*)?/\s*0*(\d{1,4})\b|\b(\d{1,4})\s+of\s+(\d{1,4})\b|\b1\s*/\s*1\b|\bone of one\b")
 _RE_NUM = re.compile(r"(?:#|\bno\.?\s*|\bcard\s*)\s*([a-z]{0,4}-?\d{1,4}[a-z]?)\b")
 _RE_AUTO = re.compile(r"\bauto\b|\bon card\b|\bsticker auto\b")
-_RE_PATCH = re.compile(r"\bpatch\b|\bjersey\b|\brelic\b|\bgame (used|worn)\b|\bswatch\b|\brpa\b|\bmemorabilia\b|\bgu\b|\bfabric\b|\bmaterials?\b|\bstick\b")
+_RE_PATCH = re.compile(r"\bpatch\b|\bjerseys?\b|\brelics?\b|\bgame (used|worn)\b|\bswatch(es)?\b|\brpa\b|\bmemorabilia\b|\bgu\b|\bfabrics?\b|\bmaterials?\b|\bstick\b")
 _RE_RC = re.compile(r"\brc\b|\byoung guns\b|\brated rc\b|\b1st bowman\b|\bbowman 1st\b|\bfuture watch\b|\bcanvas rc\b")
 VIDES = set("the a an of and with for in on card cards hockey nhl nba nfl mlb football basketball baseball new mint nm nmmt "
             "near ex excellent sharp clean look hot invest investment beautiful rare ssp sp lot free shipping ship ships "

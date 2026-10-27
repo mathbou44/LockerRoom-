@@ -74,6 +74,21 @@ def evaluer(prix, semblables, age=None, watchers=None):
     return {"verdict": verdict, "suggestion": sugg, "mediane": med, "n": n, "ecart": ecart}
 
 
+def evaluer_vendues(prix, valeur, nb, age=None, watchers=None):
+    """27 oct 2026 (Mathieu : « impossible que je sois 90 % au-dessus du marche ») : le repere d'une CARTE se juge sur
+    ses ventes reelles SURES (deals.valeur_sure), jamais sur les prix demandes. Sans valeur sure : pas de verdict prix."""
+    prix = float(prix or 0)
+    ecart = round(prix / valeur - 1, 3) if valeur else None
+    verdict, sugg = "ok", None
+    if valeur and prix > valeur * HAUT:
+        verdict, sugg = "baisser", prix_rond(valeur * 0.98)
+    elif valeur and prix < valeur * BAS:
+        verdict, sugg = "monter", prix_rond(valeur * 0.95)
+    elif age is not None and age >= TRAINE_JOURS:
+        verdict, sugg = "traine", prix_rond(prix * (0.90 if not watchers else 0.95))
+    return {"verdict": verdict, "suggestion": sugg, "mediane": valeur, "n": nb if valeur else 0, "ecart": ecart}
+
+
 def opportunites(ref_prix, trouvees, exclure=()):
     """Annonces au moins 30 % sous ce que l'article s'est vendu chez toi."""
     out = []

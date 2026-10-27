@@ -60,5 +60,16 @@ class TestDealsSurs(unittest.TestCase):
         self.assertEqual(r["stats"]["reverifies"], 3)
 
 
+class TestRepere(unittest.TestCase):
+    def test_repere_sur_les_ventes(self):
+        import cartes_match
+        import sante
+        self.assertTrue(cartes_match.decoder("SP Game Used Nations Face-Off Fabrics Filip Forsberg")["patch"])   # « Fabrics »
+        self.assertEqual(sante.evaluer_vendues(65, 60, 5)["verdict"], "ok")
+        self.assertEqual(sante.evaluer_vendues(65, 34, 5)["verdict"], "baisser")
+        r = sante.evaluer_vendues(65, None, 1)                  # pas de valeur sure : aucun verdict de prix
+        self.assertEqual((r["verdict"], r["mediane"], r["ecart"]), ("ok", None, None))
+
+
 if __name__ == "__main__":
     unittest.main()

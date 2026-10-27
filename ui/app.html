@@ -3491,7 +3491,7 @@ function tuileInv(c){
   return `<button class="tuile-c tuile-inv" data-id="${c.id}">${img}<div class="coin">${etat}</div>
     <div class="corps"><div class="t">${esc(nom)}</div>${det ? `<div class="det-c">${esc(det)}</div>` : ''}
       ${c.marche_pro ? `<div class="repere verrou" data-pro="repere"><b>🔒 ${tt('Repère prix', 'Price check')}</b><span>${tt('ton prix vs le marché : Pro', 'your price vs market: Pro')}</span></div>` : ''}
-      ${r ? `<div class="repere ${r.cl}"><b>${esc(r.court)}</b><span>${esc(r.long)}${m.bas ? ' · ' + tt('plus bas ', 'lowest ') + argentCourt(m.bas) : ''} · ${m.n} ${tt('en vente', 'listed')}</span></div>` : ''}
+      ${r ? `<div class="repere ${r.cl}"><b>${esc(r.court)}</b><span>${esc(r.long)}${m.bas ? ' · ' + tt('plus bas ', 'lowest ') + argentCourt(m.bas) : ''} · ${m.n} ${tt('ventes réelles', 'real sales')}</span></div>` : ''}
       <div class="ligne-b">${bas}</div></div></button>`;
 }
 async function consignataires(force){ if (!S.consig || force) S.consig = await API.consignataires_liste(); return S.consig; }

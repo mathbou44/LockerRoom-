@@ -148,6 +148,12 @@ def _connecter(chemin=None):
         c.execute("DELETE FROM rachats_vus")
         c.execute("INSERT INTO migrations VALUES ('rachats_ventes_reelles', ?)", (datetime.now().isoformat(timespec="seconds"),))
         c.commit()
+    # 27 oct 2026 (Mathieu : « impossible que je sois 90 % au-dessus du marche ») : le repere prix se juge maintenant sur les
+    # ventes reelles sures ; ceux d'avant (prix demandes) sont effaces une fois et se refont tout seuls
+    if not c.execute("SELECT 1 FROM migrations WHERE nom='sante_ventes_reelles'").fetchone():
+        c.execute("DELETE FROM sante")
+        c.execute("INSERT INTO migrations VALUES ('sante_ventes_reelles', ?)", (datetime.now().isoformat(timespec="seconds"),))
+        c.commit()
     # 24 oct 2026 - les comparables gardes (memes cartes) : repere prix dans l'inventaire et comps au tap
     for table, col, typ in (("sante", "comps", "TEXT"), ("sante", "bas", "REAL"), ("opportunites", "comps", "TEXT"),
                             ("opportunites", "sport", "TEXT"), ("opportunites", "mediane", "REAL")):
@@ -2001,19 +2007,30 @@ class Api:
         a_faire = sorted((a for a in actives if vus.get(a["item_number"], "") < limite), key=lambda a: vus.get(a["item_number"], ""))
         faits, erreur = 0, None
         import cartes_match
+        import deals as _deals
         for a in a_faire[:int(n)]:
             carte = cartes_match.est_carte(a["titre"])                        # 24 oct 2026 : une carte -> seulement la MEME carte
-            q = (cartes_match.requete_ebay(cartes_match.cible_titre(a["titre"], a.get("joueur"))) if carte else None) or sante.requete(a["titre"])
+            # 27 oct 2026 (Forsberg Fabrics AUTO compare a des Fabrics sans auto) : l'auto connue de la fiche compte meme si le
+            # titre ne le dit pas
+            titre_c = a["titre"] + (" auto" if a.get("auto") and not cartes_match.decoder(a["titre"])["auto"] else "")
+            q = (cartes_match.requete_ebay(cartes_match.cible_titre(titre_c, a.get("joueur"))) if carte else None) or sante.requete(a["titre"])
             try:
                 res = ebay_compte.rechercher(q, a.get("categorie_ebay") or (CATEGORIE_CARTES if carte else None), limite=100)
             except (RuntimeError, OSError) as e:
                 erreur = str(e)
                 break
             if carte:
-                _c, semblables, _e = cartes_match.filtrer_carte(a["titre"], res, a.get("joueur"), exclure_id=a["item_number"])
+                _c, semblables, _e = cartes_match.filtrer_carte(titre_c, res, a.get("joueur"), exclure_id=a["item_number"])
+                # 27 oct 2026 (Mathieu : « pas de faux prix ») : le marche d'une carte = ses ventes reelles SURES, pas les prix demandes
+                try:
+                    vs = [v for v in (vendues.memes_annonce(titre_c, fond=True).get("ventes") or []) if v.get("prix")]
+                except Exception:
+                    vs = []
+                sure = _deals.valeur_sure(vs, titre_c)[0] if len(vs) >= 2 else None
+                ev = sante.evaluer_vendues(a["prix_demande"], sure, len(vs), sante.age_jours(a.get("debut")), a.get("watchers"))
             else:
                 semblables = [x for x in res if x["item_id"] != str(a["item_number"])]
-            ev = sante.evaluer(a["prix_demande"], semblables, sante.age_jours(a.get("debut")), a.get("watchers"))
+                ev = sante.evaluer(a["prix_demande"], semblables, sante.age_jours(a.get("debut")), a.get("watchers"))
             totaux = sorted(round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2) for x in semblables if x.get("prix_cad"))
             comps = sorted(({"titre": x["titre"], "total": round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2),
                              "photo": x.get("photo"), "url": x.get("url")} for x in semblables if x.get("prix_cad")), key=lambda x: x["total"])[:12]
