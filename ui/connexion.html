@@ -16,15 +16,22 @@
 <link rel="apple-touch-icon" href="/icone.png">
 <link rel="preload" href="/manrope-800.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/manrope-400.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;800;900&display=swap" rel="stylesheet">
 <style>
+/* 27 oct 2026 - les memes polices que l'app, servies par SlabCoach */
+@font-face{font-family:'Barlow';font-weight:400;font-display:swap;src:url(/barlow-400.woff2) format('woff2')}
+@font-face{font-family:'Barlow';font-weight:500;font-display:swap;src:url(/barlow-500.woff2) format('woff2')}
+@font-face{font-family:'Barlow';font-weight:600;font-display:swap;src:url(/barlow-600.woff2) format('woff2')}
+@font-face{font-family:'Barlow';font-weight:700;font-display:swap;src:url(/barlow-700.woff2) format('woff2')}
+@font-face{font-family:'Barlow Condensed';font-weight:500;font-display:swap;src:url(/barlow-cond-500.woff2) format('woff2')}
+@font-face{font-family:'Barlow Condensed';font-weight:600;font-display:swap;src:url(/barlow-cond-600.woff2) format('woff2')}
+@font-face{font-family:'Barlow Condensed';font-weight:700;font-display:swap;src:url(/barlow-cond-700.woff2) format('woff2')}
+
 /* 27 oct 2026 - page de connexion SlabCoach, marque SC1 : noir du logo, lueur refractor douce derriere le logo
    (refractor au hasard a chaque visite), des slabs en filigrane, l'ecriture Manrope + ™ + SPORTS CARDS. */
 :root{--noir:#0B0B0E; --carte:#151519; --ligne:#2B2A32; --ivoire:#F4F2EE; --doux:#A9A6B1; --holo:linear-gradient(100deg,#9FE6D2 0%,#B9BEFF 36%,#F2B3D6 68%,#F1D58E 100%); --rouge:#FFB3B3}
 *{box-sizing:border-box}
 html,body{height:100%}
-body{margin:0; background:var(--noir); color:var(--ivoire); font-family:Inter,system-ui,-apple-system,sans-serif; overflow-x:hidden;
+body{margin:0; background:var(--noir); color:var(--ivoire); font-family:'Barlow',system-ui,-apple-system,sans-serif; overflow-x:hidden;
   padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
 .scene{position:fixed; inset:0; pointer-events:none; overflow:hidden}
 .lueur{position:absolute; left:50%; top:30%; width:900px; height:900px; transform:translate(-50%,-50%);
@@ -62,12 +69,12 @@ main{position:relative; min-height:100%; display:grid; place-items:center}
 .btn::after{content:''; position:absolute; inset:0; background:linear-gradient(110deg, transparent 35%, rgba(255,255,255,.55) 50%, transparent 65%); background-size:250% 100%; animation:reflet 4.5s ease-in-out infinite}
 .note{margin-top:14px; color:#8C8996; font-size:13px}
 .note + .note{margin-top:6px}
-.btn .reco{position:absolute; top:-10px; right:14px; padding:3px 9px; border-radius:999px; font:800 10.5px 'Manrope',Inter,sans-serif; letter-spacing:.08em; text-transform:uppercase; color:#F4F2EE; background:#1E2038; box-shadow:0 0 0 1px rgba(185,190,255,.35)}
+.btn .reco{position:absolute; top:-10px; right:14px; padding:3px 9px; border-radius:999px; font:700 10.5px 'Barlow Condensed',sans-serif; letter-spacing:.08em; text-transform:uppercase; color:#F4F2EE; background:#1E2038; box-shadow:0 0 0 1px rgba(185,190,255,.35)}
 .btn{overflow:visible} .btn::after{border-radius:14px}
 .ou{display:flex; align-items:center; gap:12px; width:100%; margin-top:18px; color:#8C8996; font-size:13px}
 .ou::before,.ou::after{content:''; flex:1; height:1px; background:var(--ligne)}
 .tiers{display:grid; gap:10px; width:100%; margin-top:14px} .tiers:empty{display:none}
-.btn-t{display:flex; align-items:center; justify-content:center; gap:10px; height:56px; border-radius:14px; text-decoration:none; font:700 17px Inter,system-ui,sans-serif; transition:transform .15s}
+.btn-t{display:flex; align-items:center; justify-content:center; gap:10px; height:56px; border-radius:14px; text-decoration:none; font:700 17px 'Barlow Condensed',sans-serif; transition:transform .15s}
 .btn-t:hover{transform:translateY(-1px)} .btn-t:focus-visible{outline:3px solid var(--ivoire); outline-offset:3px}
 .btn-t svg{width:18px; height:18px}
 .btn-t.apple{background:#fff; color:#000} .btn-t.google{background:#fff; color:#1F1F1F; border:1px solid #DADCE0}
@@ -78,7 +85,7 @@ main{position:relative; min-height:100%; display:grid; place-items:center}
 .demo{display:inline-block; margin-top:12px; color:#8C8996; font-size:13px}
 @font-face{font-family:'Manrope'; font-weight:800; font-display:swap; src:url(/manrope-800.woff2) format('woff2')}
 @font-face{font-family:'Manrope'; font-weight:400; font-display:swap; src:url(/manrope-400.woff2) format('woff2')}
-.mot-sc{display:inline-block; margin-top:24px; font:400 clamp(40px,11vw,54px)/1 'Manrope',Inter,sans-serif; letter-spacing:-.025em; color:var(--ivoire); white-space:nowrap}
+.mot-sc{display:inline-block; margin-top:24px; font:400 clamp(40px,11vw,54px)/1 'Manrope',sans-serif; letter-spacing:-.025em; color:var(--ivoire); white-space:nowrap}
 .mot-sc b{font-weight:800}
 .mot-sc sup{font-size:.26em; font-weight:800; letter-spacing:0; vertical-align:1.75em; margin-left:.1em; opacity:.8}
 .mot-sc .tag{display:block; margin-top:.4em; font-size:.17em; font-weight:800; letter-spacing:1.79em; margin-right:-1.79em; text-align:left;

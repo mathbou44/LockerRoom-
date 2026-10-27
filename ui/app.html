@@ -12,11 +12,19 @@
 <link rel="icon" href="/favicon.ico?v=2" sizes="any">
 <link rel="apple-touch-icon" href="/icone.png">
 <title>SlabCoach</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="preload" href="/barlow-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/barlow-cond-700.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/manrope-800.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/manrope-400.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+/* 27 oct 2026 - 3 polices seulement : Barlow (texte), Barlow Condensed (titres, chiffres, etiquettes), Manrope (le mot SlabCoach) */
+@font-face{font-family:'Barlow'; font-weight:400; font-display:swap; src:url(/barlow-400.woff2) format('woff2')}
+@font-face{font-family:'Barlow'; font-weight:500; font-display:swap; src:url(/barlow-500.woff2) format('woff2')}
+@font-face{font-family:'Barlow'; font-weight:600; font-display:swap; src:url(/barlow-600.woff2) format('woff2')}
+@font-face{font-family:'Barlow'; font-weight:700; font-display:swap; src:url(/barlow-700.woff2) format('woff2')}
+@font-face{font-family:'Barlow Condensed'; font-weight:500; font-display:swap; src:url(/barlow-cond-500.woff2) format('woff2')}
+@font-face{font-family:'Barlow Condensed'; font-weight:600; font-display:swap; src:url(/barlow-cond-600.woff2) format('woff2')}
+@font-face{font-family:'Barlow Condensed'; font-weight:700; font-display:swap; src:url(/barlow-cond-700.woff2) format('woff2')}
 /* SlabCoach - outils pour breakers et boutiques de cartes. Sombre, glace. */
 :root{
   /* 27 oct 2026 - palette refractor douce (Mathieu : « que ca fit avec les refractor mais pas trop intense ») :
@@ -183,17 +191,27 @@ body{--h1:#9FE6D2; --h2:#B9BEFF; --h3:#F2B3D6; --h4:#F1D58E;
   --holo:linear-gradient(100deg,var(--h1) 0%,var(--h2) 36%,var(--h3) 68%,var(--h4) 100%)}
 /* 27 oct 2026 (Mathieu) : 5 palettes inspirees des paralleles du hobby, avec des noms a nous (Eclat argent / rouge / or,
    Vague emeraude, Damier orange) ; Prisme reste la palette SlabCoach par defaut */
-body[data-palette="silver"], body[data-palette="silver"].mode-acheteur{--h1:#FFFFFF; --h2:#C9D0DA; --h3:#E8ECF2; --h4:#9FA9B8; --acc:#DDE2EA; --acc-fonce:#22252B; --acc-texte:#111317}
-body[data-palette="rouge"], body[data-palette="rouge"].mode-acheteur{--h1:#FFC9C9; --h2:#FF6B72; --h3:#E0404C; --h4:#FFE1DC; --acc:#FF7A80; --acc-fonce:#3A1518; --acc-texte:#22070A}
-body[data-palette="gold"], body[data-palette="gold"].mode-acheteur{--h1:#FFF0C4; --h2:#F5D27A; --h3:#D9AE4E; --h4:#FFE6A0; --acc:#F5D27A; --acc-fonce:#2E2410; --acc-texte:#1C1406}
-body[data-palette="emeraude"], body[data-palette="emeraude"].mode-acheteur{--h1:#B8F5DC; --h2:#34D399; --h3:#10B981; --h4:#D7FFF0; --acc:#3EDBA6; --acc-fonce:#0F2A21; --acc-texte:#04140E}
-body[data-palette="orange"], body[data-palette="orange"].mode-acheteur{--h1:#FFD9B0; --h2:#FF9A3D; --h3:#F07A1A; --h4:#FFE8CC; --acc:#FFA24D; --acc-fonce:#3A2412; --acc-texte:#1E1004}
+/* 27 oct 2026 (Mathieu : « que les couleurs changent entre buyer et seller ») : chaque palette a 2 accents,
+   vendeur (le reflet froid) et acheteur (le reflet chaud). Jamais le vert ni le rouge des gains et pertes. */
+body[data-palette="refractor"]{--acc:#B9BEFF; --acc-fonce:#1E2038; --acc-texte:#0E1026}
+body[data-palette="refractor"].mode-acheteur{--acc:#E9CF8E; --acc-fonce:#2A2416; --acc-texte:#1A1408}
+body[data-palette="silver"]{--h1:#FFFFFF; --h2:#C9D0DA; --h3:#E8ECF2; --h4:#9FA9B8; --acc:#DDE2EA; --acc-fonce:#22252B; --acc-texte:#111317}
+body[data-palette="silver"].mode-acheteur{--acc:#9CC8F0; --acc-fonce:#15222F; --acc-texte:#07121C}
+body[data-palette="rouge"]{--h1:#FFC9C9; --h2:#FF6B72; --h3:#E0404C; --h4:#FFE1DC; --acc:#FF7A80; --acc-fonce:#3A1518; --acc-texte:#22070A}
+body[data-palette="rouge"].mode-acheteur{--acc:#FFB08A; --acc-fonce:#3A2014; --acc-texte:#221006}
+body[data-palette="gold"]{--h1:#FFF0C4; --h2:#F5D27A; --h3:#D9AE4E; --h4:#FFE6A0; --acc:#F5D27A; --acc-fonce:#2E2410; --acc-texte:#1C1406}
+body[data-palette="gold"].mode-acheteur{--acc:#FFAE5C; --acc-fonce:#33200E; --acc-texte:#1E1004}
+body[data-palette="emeraude"]{--h1:#B8F5DC; --h2:#34D399; --h3:#10B981; --h4:#D7FFF0; --acc:#3EDBA6; --acc-fonce:#0F2A21; --acc-texte:#04140E}
+body[data-palette="emeraude"].mode-acheteur{--acc:#5FD3E6; --acc-fonce:#0E2629; --acc-texte:#031214}
+body[data-palette="orange"]{--h1:#FFD9B0; --h2:#FF9A3D; --h3:#F07A1A; --h4:#FFE8CC; --acc:#FFA24D; --acc-fonce:#3A2412; --acc-texte:#1E1004}
+body[data-palette="orange"].mode-acheteur{--acc:#FFCF6B; --acc-fonce:#33270E; --acc-texte:#1C1404}
+body{--acc-clair:color-mix(in srgb, var(--acc) 48%, #fff); --acc-sombre:color-mix(in srgb, var(--acc) 64%, #000)}
 /* une palette choisie l'emporte sur l'or Pro et l'or acheteur pour les touches de couleur (le vert / rouge restent) */
 body[data-palette] .horloge .salut{color:color-mix(in srgb, var(--acc) 72%, #fff)}
 body[data-palette].pro .onglets a.on{color:var(--acc)}
 body[data-palette].pro .onglets a.on svg{filter:drop-shadow(0 0 6px color-mix(in srgb, var(--acc) 55%, transparent))}
 @media (min-width:900px){ body[data-palette].pro .onglets a.on{background:linear-gradient(90deg,color-mix(in srgb, var(--acc) 16%, transparent),color-mix(in srgb, var(--acc) 4%, transparent))} }
-@media (max-width:899px){ body[data-palette] .onglets a.centre svg, body[data-palette]:not(.mode-acheteur) .onglets a.centre svg{
+@media (max-width:899px){ body .onglets a.centre svg, body:not(.mode-acheteur) .onglets a.centre svg, body.mode-acheteur .onglets a.centre svg{
   background:radial-gradient(120% 120% at 30% 20%, var(--h1), var(--acc) 45%, color-mix(in srgb, var(--acc) 62%, #000)); stroke:var(--acc-texte); color:var(--acc-texte);
   box-shadow:0 0 0 5px rgba(13,13,17,.92), 0 10px 24px color-mix(in srgb, var(--acc) 35%, transparent)} }
 body{background-image:radial-gradient(900px 360px at 12% -150px, color-mix(in srgb, var(--h1) 6%, transparent), transparent 70%), radial-gradient(900px 360px at 88% -150px, color-mix(in srgb, var(--h3) 5%, transparent), transparent 70%)}
@@ -316,14 +334,14 @@ body.avec-barre .ecran{padding-top:14px}
 .slide-astuce .as-titre{font-size:17px} .slide-astuce .as-texte{font-size:14px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden}
 .slide-astuce .as-truc{font-size:14px} .slide-astuce .texte{gap:8px; padding:12px 16px 14px; justify-content:flex-start}
 .astuce-v{display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-end; gap:4px; padding:14px 18px;
-  background:radial-gradient(120% 120% at 0% 0%, rgba(233,207,142,.35), transparent 55%), linear-gradient(160deg, #1F1E27, #111115)}
+  background:radial-gradient(120% 120% at 0% 0%, color-mix(in srgb, var(--acc) 35%, transparent), transparent 55%), linear-gradient(160deg, #1F1E27, #111115)}
 .astuce-v.g-acheter{background:radial-gradient(120% 120% at 0% 0%, rgba(143,212,164,.30), transparent 55%), linear-gradient(160deg, #16241D, #111115)}
 .astuce-v.g-vendre{background:radial-gradient(120% 120% at 0% 0%, rgba(185,190,255,.26), transparent 55%), linear-gradient(160deg, #1C1D33, #111115)}
 .as-lib{font-weight:700; font-size:13px; color:var(--or); letter-spacing:.3px} .as-chiffre{font-family:'Barlow Condensed',sans-serif; font-size:48px; line-height:1; font-weight:800; color:#fff; text-shadow:0 4px 18px rgba(0,0,0,.4)}
 .as-niv{font-size:13px; color:var(--doux); font-weight:600} .slide-astuce .haut-n{flex-wrap:wrap} .nouv-t{white-space:nowrap; font-size:13px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:var(--doux)}
 .as-titre{font-size:20px; line-height:1.25; font-weight:800; color:var(--texte)} .as-texte{font-size:15px; line-height:1.45; color:var(--doux)}
-.as-truc{font-size:15px; line-height:1.45; padding:10px 12px; border-radius:12px; background:rgba(233,207,142,.08); border:1px solid rgba(233,207,142,.25)} .as-truc b{color:var(--or); margin-right:4px}
-.points button.astuce{background:rgba(233,207,142,.45)} .points button.astuce.on{background:var(--or)}
+.as-truc{font-size:15px; line-height:1.45; padding:10px 12px; border-radius:12px; background:color-mix(in srgb, var(--acc) 8%, transparent); border:1px solid color-mix(in srgb, var(--acc) 25%, transparent)} .as-truc b{color:var(--or); margin-right:4px}
+.points button.astuce{background:color-mix(in srgb, var(--acc) 45%, transparent)} .points button.astuce.on{background:var(--or)}
 .slide-src a{color:var(--acc)}
 .slide-titre{font-size:20px; line-height:1.3; font-weight:700; color:var(--texte); display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden}
 .nouv.sans-img .slide-titre{font-size:22px}
@@ -531,11 +549,11 @@ html.natif input, html.natif textarea{-webkit-user-select:text; user-select:text
 /* 27 oct 2026 - licence eBay (§8.1) : l'annonce eBay et l'estimation SlabCoach sont visuellement separees */
 .tuile-c .src-ebay{font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--pale); margin-bottom:2px}
 .tuile-c .est-sc{display:flex; flex-direction:column; gap:3px; margin-top:8px; padding:8px 10px; border-radius:10px; background:rgba(185,190,255,.06); box-shadow:inset 0 0 0 1px rgba(185,190,255,.14)}
-.tuile-c .est-sc .lib{font:800 10px 'Manrope',sans-serif; letter-spacing:.14em; text-transform:uppercase; background:var(--holo); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; align-self:flex-start}
+.tuile-c .est-sc .lib{font:700 11px 'Barlow Condensed',sans-serif; letter-spacing:.16em; text-transform:uppercase; background:var(--holo); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; align-self:flex-start}
 .tuile-c .est-sc .v{font-size:13.5px; color:var(--doux); display:flex; align-items:center; gap:6px; flex-wrap:wrap} .tuile-c .est-sc .v b{color:var(--texte)}
 .mention-epn{margin:6px 0 0; font-size:12px; line-height:1.45; color:var(--pale); max-width:760px}
 .tuile-c .det-c{font-size:13.5px; color:var(--doux); line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
-.tuile-c .mise-max{margin-top:4px; font-size:12.5px} .tuile-c .mise-max b{color:var(--or, #E9CF8E)}
+.tuile-c .mise-max{margin-top:4px; font-size:12.5px} .tuile-c .mise-max b{color:var(--or, var(--acc))}
 .tuile-inv .t{min-height:0; font-size:16px; font-weight:700}
 .ecusson.gros{width:84px; height:84px; border-radius:42px; font-size:28px}
 .repere{display:flex; flex-direction:column; gap:2px; border-radius:12px; padding:8px 10px; background:var(--carte2)}
@@ -586,12 +604,12 @@ body.theme-equipe{background-image:radial-gradient(1200px 420px at 50% -120px, c
 /* le look Pro : un fil dore en haut, des bordures qui accrochent la lumiere, les titres et l'onglet actif dores */
 body.pro::after{content:''; position:fixed; left:0; right:0; top:0; height:2px; z-index:70; pointer-events:none; background:linear-gradient(90deg,transparent,var(--h1),var(--h2),var(--h3),var(--h4),transparent); opacity:.85}
 body.pro{--ligne:#2E2C25}
-body.pro .titre{background:linear-gradient(92deg,#FFFFFF 0%,#F8EDCF 60%,#E9CF8E 100%); -webkit-background-clip:text; background-clip:text; color:transparent}
-body.pro .kpi, body.pro .tuile-c, body.pro .carte-acc{border-color:rgba(233,207,142,.16)}
-body.pro .tuile-c:hover{border-color:rgba(233,207,142,.45); box-shadow:0 10px 30px rgba(217,184,102,.12)}
-body.pro .onglets a.on{color:var(--or-clair)}
-@media (min-width:900px){ body.pro .onglets a.on{background:linear-gradient(90deg,rgba(233,207,142,.16),rgba(233,207,142,.04)); color:var(--or-clair)} }
-body.pro .nav-logo{text-shadow:0 0 18px rgba(233,207,142,.25)}
+body.pro .titre{background:linear-gradient(92deg,#FFFFFF 0%,var(--acc-clair) 60%,var(--acc) 100%); -webkit-background-clip:text; background-clip:text; color:transparent}
+body.pro .kpi, body.pro .tuile-c, body.pro .carte-acc{border-color:color-mix(in srgb, var(--acc) 16%, transparent)}
+body.pro .tuile-c:hover{border-color:color-mix(in srgb, var(--acc) 45%, transparent); box-shadow:0 10px 30px color-mix(in srgb, var(--acc) 12%, transparent)}
+body.pro .onglets a.on{color:var(--acc-clair)}
+@media (min-width:900px){ body.pro .onglets a.on{background:linear-gradient(90deg,color-mix(in srgb, var(--acc) 16%, transparent),color-mix(in srgb, var(--acc) 4%, transparent)); color:var(--acc-clair)} }
+body.pro .nav-logo{text-shadow:0 0 18px color-mix(in srgb, var(--acc) 25%, transparent)}
 
 /* 24 oct 2026 - nouvelles : un peu moins de place, et toujours une image (photo de l'article ou visuel du sport) */
 .visuel.genere{position:relative; overflow:hidden; display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-end; gap:4px; padding:18px 20px;
@@ -601,7 +619,7 @@ body.pro .nav-logo{text-shadow:0 0 18px rgba(233,207,142,.25)}
 .visuel.v-baseball{background:radial-gradient(120% 140% at 85% 10%, #6B1D2E 0%, #291016 50%, #12080A 100%)}
 .visuel.genere .terrain{position:absolute; inset:8% 6%; color:rgba(255,255,255,.10)} .visuel.genere .terrain svg{width:100%; height:100%}
 .visuel.genere .v-ligue{position:relative; font:700 44px/1 'Barlow Condensed',sans-serif; letter-spacing:.06em; color:rgba(255,255,255,.92)}
-.visuel.genere .v-joueur{position:relative; font:700 22px/1.1 'Barlow Condensed',sans-serif; color:var(--or-clair)}
+.visuel.genere .v-joueur{position:relative; font:700 22px/1.1 'Barlow Condensed',sans-serif; color:var(--acc-clair)}
 .visuel.genere .v-source{position:relative; font-size:13px; color:rgba(255,255,255,.6); font-weight:600; letter-spacing:.04em; text-transform:uppercase}
 .nouv .visuel{aspect-ratio:2/1}
 @media (min-width:1100px){
@@ -697,7 +715,7 @@ body.fen-ouverte{overflow:hidden}
 .fen-img.zoom .loupe{display:none}
 .fen-sug{display:grid; grid-template-columns:1fr 1fr; gap:10px}
 .fen-sug > div{border-radius:16px; padding:12px 14px; display:flex; flex-direction:column; gap:2px; background:var(--carte); border:1px solid var(--ligne)}
-.fen-sug > div.on{background:linear-gradient(135deg, rgba(233,207,142,.16), rgba(233,207,142,.04)); border-color:rgba(233,207,142,.45)}
+.fen-sug > div.on{background:linear-gradient(135deg, color-mix(in srgb, var(--acc) 16%, transparent), color-mix(in srgb, var(--acc) 4%, transparent)); border-color:color-mix(in srgb, var(--acc) 45%, transparent)}
 .fen-sug span{font-size:14px; color:var(--doux); font-weight:600} .fen-sug b{font:700 30px/1.05 'Barlow Condensed',sans-serif} .fen-sug .on b{color:var(--or)} .fen-sug small{font-size:13px; color:var(--doux)} .fen-img svg{width:30%; height:30%}
 .fen-vigs{display:flex; gap:8px; margin-top:10px; overflow-x:auto; scrollbar-width:none}
 .fen-vigs button{flex:0 0 auto; width:62px; height:62px; border-radius:10px; border:1.5px solid var(--ligne); background:#111115 center/cover no-repeat; cursor:pointer}
@@ -740,19 +758,19 @@ body.fen-ouverte{overflow:hidden}
 .ecusson-eq.photo img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
 .ecusson-eq.photo i{position:absolute; left:0; right:0; bottom:0; font-size:12px; line-height:18px; text-align:center; background:rgba(0,0,0,.62)}
 .vig-boite{display:flex; align-items:center; justify-content:center; overflow:hidden; background:#fff} .vig-boite img{width:100%; height:100%; object-fit:contain}
-.adm-n{display:inline-flex; min-width:20px; height:20px; border-radius:10px; align-items:center; justify-content:center; background:var(--or); color:#1a1405; font-size:12px; font-weight:700; padding:0 6px; margin-left:4px}
+.adm-n{display:inline-flex; min-width:20px; height:20px; border-radius:10px; align-items:center; justify-content:center; background:var(--or); color:var(--acc-texte); font-size:12px; font-weight:700; padding:0 6px; margin-left:4px}
 .adm-agent{display:flex; align-items:center; gap:12px; padding:14px 16px; border-radius:16px; background:var(--carte); border:1px solid var(--ligne)}
-.adm-agent .aa-ic{width:36px; height:36px; border-radius:18px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,var(--or),#B8963F); color:#1a1405; font-size:18px; flex-shrink:0}
+.adm-agent .aa-ic{width:36px; height:36px; border-radius:18px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,var(--or),var(--acc-sombre)); color:var(--acc-texte); font-size:18px; flex-shrink:0}
 .adm-agent b{display:block; font-size:16px} .adm-agent small{color:var(--doux); font-size:14px} .adm-agent .pilule{margin-left:auto}
 .ecusson.prio1{background:#3A1418; color:#FFB3B3} .ecusson.prio2{background:#2E2610; color:var(--or)} .ecusson.prio3{color:var(--doux)}
 .dm-texte{white-space:pre-wrap; background:var(--carte2); border-radius:14px; padding:12px 14px; font-size:16px; line-height:1.45; margin:10px 0}
-.dm-texte.rep{background:linear-gradient(135deg, rgba(233,207,142,.14), rgba(233,207,142,.04)); border:1px solid rgba(233,207,142,.35)}
+.dm-texte.rep{background:linear-gradient(135deg, color-mix(in srgb, var(--acc) 14%, transparent), color-mix(in srgb, var(--acc) 4%, transparent)); border:1px solid color-mix(in srgb, var(--acc) 35%, transparent)}
 .adm-l{display:flex; flex-direction:column; gap:4px; margin:10px 0} .adm-l b{font-size:15px}
 .adm-barre{height:8px; border-radius:4px; background:var(--carte2); overflow:hidden} .adm-barre i{display:block; height:100%; background:var(--acc); border-radius:4px} .adm-barre i.rouge{background:var(--rouge)}
 .r-idee{display:flex; align-items:center; gap:14px; width:100%; text-align:left; cursor:pointer; color:var(--texte)} .r-idee .aaj-n{min-width:38px; height:38px; border-radius:19px; display:flex; align-items:center; justify-content:center; background:var(--acc-fonce); color:var(--acc); font-weight:700; font-size:18px}
 .r-idee b{display:block; font-size:17px} .r-idee small{color:var(--doux); font-size:14px} .r-idee .fl{margin-left:auto; font-size:24px; color:var(--doux)}
-.bandeau-aaj{display:flex; align-items:center; gap:14px; width:100%; padding:14px 18px; margin-bottom:14px; border-radius:18px; border:1px solid rgba(233,207,142,.45); background:linear-gradient(135deg, rgba(233,207,142,.16), rgba(233,207,142,.04)); color:var(--texte); text-align:left; cursor:pointer}
-.bandeau-aaj .aaj-n{min-width:38px; height:38px; border-radius:19px; display:flex; align-items:center; justify-content:center; background:var(--or); color:#1a1405; font:700 18px 'Barlow Condensed',sans-serif}
+.bandeau-aaj{display:flex; align-items:center; gap:14px; width:100%; padding:14px 18px; margin-bottom:14px; border-radius:18px; border:1px solid color-mix(in srgb, var(--acc) 45%, transparent); background:linear-gradient(135deg, color-mix(in srgb, var(--acc) 16%, transparent), color-mix(in srgb, var(--acc) 4%, transparent)); color:var(--texte); text-align:left; cursor:pointer}
+.bandeau-aaj .aaj-n{min-width:38px; height:38px; border-radius:19px; display:flex; align-items:center; justify-content:center; background:var(--or); color:var(--acc-texte); font:700 18px 'Barlow Condensed',sans-serif}
 .bandeau-aaj b{display:block; font-size:17px} .bandeau-aaj small{color:var(--doux); font-size:14px} .bandeau-aaj .fl{margin-left:auto; font-size:24px; color:var(--or)}
 .aaj-act{display:flex; gap:6px; align-items:center; flex-wrap:wrap; justify-content:flex-end}
 .place-s{display:grid !important; grid-template-columns:auto 1fr auto; align-items:center; gap:10px; padding:12px 14px}
@@ -854,12 +872,12 @@ body.pro #mosaique{opacity:.03}
 #nav-logo-nom{background:linear-gradient(110deg,var(--niv1) 0%,var(--niv2) 38%,#FFF8E6 50%,var(--niv2) 62%,var(--niv1) 100%); background-size:250% 100%;
   -webkit-background-clip:text; background-clip:text; color:transparent; animation:reflet 3.2s ease-in-out infinite}
 body.marque-perso #nav-logo-nom{background:none; -webkit-text-fill-color:currentColor; color:var(--texte); animation:none}
-body.pro .titre{background:linear-gradient(110deg,#FFFFFF 0%,#F8EDCF 30%,#E9CF8E 45%,#FFF8E8 50%,#E9CF8E 55%,#F8EDCF 70%,#FFFFFF 100%); background-size:250% 100%;
+body.pro .titre{background:linear-gradient(110deg,#FFFFFF 0%,var(--acc-clair) 30%,var(--acc) 45%,var(--acc-clair) 50%,var(--acc) 55%,var(--acc-clair) 70%,#FFFFFF 100%); background-size:250% 100%;
   -webkit-background-clip:text; background-clip:text; color:transparent; animation:reflet 7s ease-in-out infinite}
-body.pro .kpi .v, body.pro .t-acc b:not(.vert):not(.rouge){text-shadow:0 0 22px rgba(233,207,142,.12)}
-body.pro .kpi, body.pro .carte-acc, body.pro .t-acc{background-image:linear-gradient(160deg, rgba(233,207,142,.07), rgba(233,207,142,0) 42%)}
-body.pro .rond.acc, body.pro .btn:not(.ghost){box-shadow:0 6px 20px rgba(217,184,102,.18)}
-body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px rgba(233,207,142,.55))}
+body.pro .kpi .v, body.pro .t-acc b:not(.vert):not(.rouge){text-shadow:0 0 22px color-mix(in srgb, var(--acc) 12%, transparent)}
+body.pro .kpi, body.pro .carte-acc, body.pro .t-acc{background-image:linear-gradient(160deg, color-mix(in srgb, var(--acc) 7%, transparent), color-mix(in srgb, var(--acc) 0%, transparent) 42%)}
+body.pro .rond.acc, body.pro .btn:not(.ghost){box-shadow:0 6px 20px color-mix(in srgb, var(--acc) 18%, transparent)}
+body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px color-mix(in srgb, var(--acc) 55%, transparent))}
 @media (prefers-reduced-motion:reduce){ #nav-logo-nom, body.pro .titre{animation:none} }
 
 /* 25 oct 2026 - breaks v3 : écussons d'équipe SlabCoach (couleurs de l'équipe), cartes des joueurs au même cadre, scores acheteur */
@@ -883,7 +901,7 @@ body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px rgba(233,207,142,.55))}
 .score-l .rang{font:700 18px 'Barlow Condensed',sans-serif; color:var(--doux); text-align:center}
 .sl-n{min-width:0; display:flex; flex-direction:column; gap:4px} .sl-n b{font-size:17px} .sl-n > span{font-size:14px; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .sl-m{display:flex; flex-direction:column; gap:2px; min-width:0} .sl-m span{font-size:13px; color:var(--doux); font-weight:600} .sl-m b{font:700 24px/1.05 'Barlow Condensed',sans-serif} .sl-m small{font-size:13px; color:var(--doux)}
-.barre-p{height:6px; border-radius:3px; background:var(--carte2); overflow:hidden; margin-top:4px} .barre-p i{display:block; height:100%; background:linear-gradient(90deg,#8FD4A4,#E9CF8E)}
+.barre-p{height:6px; border-radius:3px; background:var(--carte2); overflow:hidden; margin-top:4px} .barre-p i{display:block; height:100%; background:linear-gradient(90deg,#8FD4A4,var(--acc))}
 .sl-s{display:flex; flex-direction:column; align-items:flex-end; gap:6px} .sl-s .champ{width:86px; height:34px; font-size:14px}
 .score{display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:74px; padding:6px 10px; border-radius:14px; background:var(--carte2)}
 .score b{font:700 30px/1 'Barlow Condensed',sans-serif} .score small{font-size:12px; font-weight:700; white-space:nowrap}
@@ -904,36 +922,36 @@ body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px rgba(233,207,142,.55))}
 .adm-t .ic{grid-area:ic} .adm-t .t{grid-area:t; align-self:center} .adm-t b{grid-area:v; font-size:22px !important} .adm-t small{grid-area:s}
 .adm-grille{display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:8px}
 .adm-t{display:flex; flex-direction:column; gap:2px; padding:10px 12px; border-radius:14px; background:var(--carte2); color:var(--texte); min-width:0; border:1px solid transparent}
-.adm-t .ic{display:flex; color:#E9CF8E} .adm-t.rouge .ic{color:var(--rouge)} .adm-t .t{font-size:13px; color:var(--doux); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.adm-t .ic{display:flex; color:var(--acc)} .adm-t.rouge .ic{color:var(--rouge)} .adm-t .t{font-size:13px; color:var(--doux); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .adm-t b{font:700 24px/1.05 'Barlow Condensed',sans-serif} .adm-t small{font-size:12px; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-.adm-t.or{border-color:rgba(233,207,142,.4)} .adm-t.or b{color:var(--or)} .adm-t.rouge{border-color:rgba(255,179,179,.45)} .adm-t.rouge b{color:var(--rouge)} .adm-t.vert b{color:var(--vert)}
+.adm-t.or{border-color:color-mix(in srgb, var(--acc) 40%, transparent)} .adm-t.or b{color:var(--or)} .adm-t.rouge{border-color:rgba(255,179,179,.45)} .adm-t.rouge b{color:var(--rouge)} .adm-t.vert b{color:var(--vert)}
 
 /* 25 oct 2026 - Vendre : les 4 étapes en pictogrammes (or), légères */
 .etapes-v{display:flex; align-items:flex-start; justify-content:space-between; gap:6px; margin:4px 0 2px}
 .etapes-v .ev{flex:1; display:flex; flex-direction:column; align-items:center; text-align:center; gap:4px; min-width:0}
-.ev-i{position:relative; width:58px; height:58px; border-radius:18px; display:flex; align-items:center; justify-content:center; color:#1a1405;
-  background:linear-gradient(135deg,#F7EAC4 0%,#E9CF8E 45%,#B8963F 100%); box-shadow:0 8px 22px rgba(217,184,102,.22), inset 0 1px 0 rgba(255,255,255,.6)}
+.ev-i{position:relative; width:58px; height:58px; border-radius:18px; display:flex; align-items:center; justify-content:center; color:var(--acc-texte);
+  background:linear-gradient(135deg,var(--acc-clair) 0%,var(--acc) 45%,var(--acc-sombre) 100%); box-shadow:0 8px 22px color-mix(in srgb, var(--acc) 22%, transparent), inset 0 1px 0 rgba(255,255,255,.6)}
 .ev-i svg{width:28px; height:28px}
-.ev-i em{position:absolute; top:-6px; right:-6px; width:22px; height:22px; border-radius:11px; background:var(--fond); color:#E9CF8E; border:1.5px solid #E9CF8E; font:700 12px/19px 'Barlow Condensed',sans-serif; font-style:normal}
+.ev-i em{position:absolute; top:-6px; right:-6px; width:22px; height:22px; border-radius:11px; background:var(--fond); color:var(--acc); border:1.5px solid var(--acc); font:700 12px/19px 'Barlow Condensed',sans-serif; font-style:normal}
 .etapes-v b{font-size:15px; color:var(--texte); margin-top:4px} .etapes-v small{font-size:13px; color:var(--doux)}
-.ev-f{flex:0 0 26px; height:2px; margin-top:29px; background:linear-gradient(90deg,rgba(233,207,142,.15),rgba(233,207,142,.7),rgba(233,207,142,.15)); border-radius:2px}
-.ev-res{display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 14px; border-radius:16px; background:linear-gradient(135deg, rgba(233,207,142,.10), rgba(233,207,142,.02)); border:1px solid rgba(233,207,142,.28)}
-.ev-res-t{font-weight:700; color:var(--or-clair); font-size:15px} .ev-res > span:last-child{display:flex; gap:6px; flex-wrap:wrap}
+.ev-f{flex:0 0 26px; height:2px; margin-top:29px; background:linear-gradient(90deg,color-mix(in srgb, var(--acc) 15%, transparent),color-mix(in srgb, var(--acc) 70%, transparent),color-mix(in srgb, var(--acc) 15%, transparent)); border-radius:2px}
+.ev-res{display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 14px; border-radius:16px; background:linear-gradient(135deg, color-mix(in srgb, var(--acc) 10%, transparent), color-mix(in srgb, var(--acc) 2%, transparent)); border:1px solid color-mix(in srgb, var(--acc) 28%, transparent)}
+.ev-res-t{font-weight:700; color:var(--acc-clair); font-size:15px} .ev-res > span:last-child{display:flex; gap:6px; flex-wrap:wrap}
 @media (max-width:560px){ .ev-i{width:48px; height:48px; border-radius:15px} .ev-i svg{width:24px; height:24px} .ev-f{flex-basis:10px; margin-top:24px} .etapes-v small{display:none} .etapes-v b{font-size:13px} }
 
 /* 25 oct 2026 - guide du hobby et budget */
 .g-regles{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:10px}
 .g-regles > div{display:grid; grid-template-columns:auto 1fr; grid-template-areas:"n t" "n b"; gap:6px 12px; background:var(--carte); border:1px solid var(--ligne); border-radius:18px; padding:14px}
-.g-regles b{grid-area:n; width:34px; height:34px; border-radius:17px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#F7EAC4,#B8963F); color:#1a1405; font:700 18px 'Barlow Condensed',sans-serif}
+.g-regles b{grid-area:n; width:34px; height:34px; border-radius:17px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,var(--acc-clair),var(--acc-sombre)); color:var(--acc-texte); font:700 18px 'Barlow Condensed',sans-serif}
 .g-regles span{grid-area:t; font-size:14px; color:var(--doux); display:flex; flex-direction:column; gap:3px} .g-regles strong{font-size:16px; color:var(--texte)}
 .g-regles .pilule{grid-area:b; justify-self:start}
 .g-grille{display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:10px}
 .g-c{background:var(--carte); border:1px solid var(--ligne); border-radius:16px; padding:12px 14px; display:flex; flex-direction:column; gap:4px}
-.g-c b{font-size:16px; color:var(--or-clair)} .g-c span{font-size:14px; color:var(--doux); line-height:1.4}
-.g-c.acc{border-color:rgba(185,190,255,.35)} .g-c.or{border-color:rgba(233,207,142,.4)} .g-c.rouge{border-color:rgba(255,179,179,.4)}
+.g-c b{font-size:16px; color:var(--acc-clair)} .g-c span{font-size:14px; color:var(--doux); line-height:1.4}
+.g-c.acc{border-color:rgba(185,190,255,.35)} .g-c.or{border-color:color-mix(in srgb, var(--acc) 40%, transparent)} .g-c.rouge{border-color:rgba(255,179,179,.4)}
 .g-check{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:8px}
 .g-check label{display:flex; gap:10px; align-items:center; background:var(--carte); border-radius:14px; padding:10px 12px; font-size:15px}
-.g-check input{width:20px; height:20px; accent-color:#E9CF8E}
+.g-check input{width:20px; height:20px; accent-color:var(--acc)}
 .fen-budget{font-size:15px; font-weight:700; padding:8px 12px; border-radius:12px} .fen-budget.vert{background:var(--vert-fond); color:var(--vert)} .fen-budget.rouge{background:var(--rouge-fond); color:var(--rouge)}
 .ev-f{flex:1 1 30px !important; max-width:140px}
 
@@ -944,7 +962,7 @@ body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px rgba(233,207,142,.55))}
 .ecran .entete{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap}
 .quota{display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 14px; border-radius:17px; border:1px solid var(--ligne); background:rgba(255,255,255,.03);
   color:var(--doux); font-size:14px; font-weight:600; white-space:nowrap; cursor:pointer} .quota b{color:var(--or)}
-.quota.vide{border-color:var(--rouge); color:var(--rouge)} .quota.pro{cursor:default; color:var(--or); border-color:rgba(233,207,142,.45); background:linear-gradient(90deg,rgba(233,207,142,.14),rgba(233,207,142,.03))}
+.quota.vide{border-color:var(--rouge); color:var(--rouge)} .quota.pro{cursor:default; color:var(--or); border-color:color-mix(in srgb, var(--acc) 45%, transparent); background:linear-gradient(90deg,color-mix(in srgb, var(--acc) 14%, transparent),color-mix(in srgb, var(--acc) 3%, transparent))}
 @media (max-width:899px){ .onglets .nav-idees{display:none} }
 /* ===== 26 oct 2026 - mobile « app premium » : inspiré de CollX / Ludex (scan au centre), Collectr / Card Ladder
    (valeur et courbe en héros), Robinhood (chiffres nets), et du guide d'Apple (barre en verre, cibles de 44 pt,
@@ -956,10 +974,10 @@ body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px rgba(233,207,142,.55))}
   .onglets a.on::before{content:""; position:absolute; top:-6px; width:22px; height:3px; border-radius:2px; background:var(--acc)}
   .onglets a.centre{color:var(--texte)}
   .onglets a.centre svg{box-sizing:content-box; width:26px; height:26px; padding:13px; margin-top:-26px; border-radius:50%;
-    background:radial-gradient(120% 120% at 30% 20%, var(--or-clair), #E9CF8E 45%, #B8963F); color:#1A1408; stroke:#1A1408;
-    box-shadow:0 0 0 5px rgba(13,13,17,.92), 0 10px 24px rgba(233,207,142,.35)}
-  body:not(.mode-acheteur) .onglets a.centre svg{background:radial-gradient(120% 120% at 30% 20%, #E4E6FF, #B9BEFF 45%, #7479CF); stroke:#0E1026;
-    box-shadow:0 0 0 5px rgba(13,13,17,.92), 0 10px 24px rgba(185,190,255,.35)}
+    background:radial-gradient(120% 120% at 30% 20%, var(--acc-clair), var(--acc) 45%, var(--acc-sombre)); color:var(--acc-texte); stroke:var(--acc-texte);
+    box-shadow:0 0 0 5px rgba(13,13,17,.92), 0 10px 24px color-mix(in srgb, var(--acc) 35%, transparent)}
+  body:not(.mode-acheteur) .onglets a.centre svg{background:radial-gradient(120% 120% at 30% 20%, var(--acc-clair), var(--acc) 45%, var(--acc-sombre)); stroke:var(--acc-texte); color:var(--acc-texte);
+    box-shadow:0 0 0 5px rgba(13,13,17,.92), 0 10px 24px color-mix(in srgb, var(--acc) 35%, transparent)}
   .onglets a.centre.on::before{display:none}
   .barre-mode{transition:background .2s, border-color .2s; border-bottom-color:transparent; background:rgba(11,11,14,.55)}
   body.defile .barre-mode{background:rgba(11,11,14,.78); border-bottom-color:rgba(255,255,255,.06)}
@@ -974,7 +992,7 @@ body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px rgba(233,207,142,.55))}
 @keyframes lr-entre{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
 .rech-ligne{display:flex; gap:10px} .rech-ligne .recherche{flex:1; min-width:0}
 .btn-scan{flex-shrink:0; display:inline-flex; align-items:center; gap:8px; height:44px; padding:0 16px; border-radius:12px; cursor:pointer; font-weight:700;
-  background:linear-gradient(180deg, rgba(233,207,142,.22), rgba(233,207,142,.08)); border:1px solid rgba(233,207,142,.45); color:var(--or)}
+  background:linear-gradient(180deg, color-mix(in srgb, var(--acc) 22%, transparent), color-mix(in srgb, var(--acc) 8%, transparent)); border:1px solid color-mix(in srgb, var(--acc) 45%, transparent); color:var(--or)}
 .btn-scan svg{width:22px; height:22px}
 @media (max-width:420px){ .btn-scan span{display:none} .btn-scan{padding:0 12px} }
 /* retour au toucher (iOS) */
@@ -1005,7 +1023,7 @@ body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px rgba(233,207,142,.55))}
 .hits-l .hc{display:flex; flex-direction:column; padding:4px 6px; border-radius:8px; background:rgba(255,255,255,.04); min-width:0}
 .hits-l .hc i{font-style:normal; font-size:11px; color:var(--doux); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .hits-l .hc b{font:700 15px/1.1 'Barlow Condensed',sans-serif; white-space:nowrap} .hits-l .hc.off b{color:var(--doux); font-weight:600}
-.hits-l .np{font:600 12px 'Inter',sans-serif; color:var(--doux)} .sl-st{display:block; font-size:13px; color:var(--doux); margin-top:2px}
+.hits-l .np{font:600 12px 'Barlow',sans-serif; color:var(--doux)} .sl-st{display:block; font-size:13px; color:var(--doux); margin-top:2px}
 .ex-h > div{grid-template-columns:minmax(0,1.3fr) .7fr .7fr .8fr .7fr .8fr !important} .ex-v > div{grid-template-columns:minmax(0,1.6fr) .5fr .7fr .7fr .9fr !important}
 .ex-t .tete{background:none !important; font-size:12px !important; color:var(--doux); padding-top:0 !important; padding-bottom:0 !important}
 .ex-t .tot{background:rgba(143,212,164,.08) !important; font-weight:600} .ex-t .doux{color:var(--doux)} .ex-t small{color:var(--doux)}
@@ -1032,14 +1050,14 @@ body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px rgba(233,207,142,.55))}
 .ac-p .btn{height:44px; margin-top:2px}
 
 /* 26 oct 2026 - salutation et Conseils (IA) sur l'accueil ; prix des deals toujours visible */
-.horloge .salut{font-size:16px; font-weight:600; color:var(--or-clair); margin-bottom:2px; white-space:nowrap}
+.horloge .salut{font-size:16px; font-weight:600; color:var(--acc-clair); margin-bottom:2px; white-space:nowrap}
 .deal-l .m{flex-shrink:0; white-space:nowrap; padding-right:4px}
-.conseils-acc{background-image:linear-gradient(160deg, rgba(233,207,142,.10), rgba(233,207,142,0) 55%) !important; border:1px solid rgba(233,207,142,.25)}
-.conseils-acc .acc-titre span{color:var(--or-clair)} .cs-ia{font-size:12px; font-weight:600; color:var(--doux); margin-left:6px}
+.conseils-acc{background-image:linear-gradient(160deg, color-mix(in srgb, var(--acc) 10%, transparent), color-mix(in srgb, var(--acc) 0%, transparent) 55%) !important; border:1px solid color-mix(in srgb, var(--acc) 25%, transparent)}
+.conseils-acc .acc-titre span{color:var(--acc-clair)} .cs-ia{font-size:12px; font-weight:600; color:var(--doux); margin-left:6px}
 .conseils-acc .lien-doux{background:none; border:none; color:var(--doux); font-size:18px; cursor:pointer}
 .conseil{display:grid; grid-template-columns:34px minmax(0,1fr) auto; gap:10px; align-items:center; padding:9px 0; border-bottom:1px solid var(--sep); color:var(--texte)}
 .conseil:last-child{border-bottom:none}
-.cs-i{width:34px; height:34px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px; background:var(--carte2); color:#E9CF8E}
+.cs-i{width:34px; height:34px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px; background:var(--carte2); color:var(--acc)}
 .conseil.acheter .cs-i{background:var(--vert-fond); color:var(--vert)} .conseil.vendre .cs-i, .conseil.prix .cs-i{background:var(--or-fonce); color:var(--or)} .conseil.budget .cs-i{background:var(--acc-fonce); color:var(--acc)}
 .cs-t{display:flex; flex-direction:column; gap:2px; min-width:0} .cs-t b{font-size:15px} .cs-t span{font-size:13px; color:var(--doux); line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
 .conseil .pilule.petit{height:30px; font-size:13px; padding:0 10px; white-space:nowrap}
@@ -1050,16 +1068,16 @@ body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px rgba(233,207,142,.55))}
 .fen-courbe{display:flex; flex-direction:column; gap:4px}
 .j-tete{display:flex; align-items:center; gap:16px} .vig-j.grand{width:96px; height:128px; border-radius:14px} .j-n{flex:1; min-width:0; display:flex; flex-direction:column; gap:8px}
 .j-alerte{width:auto !important; padding:0 18px}
-.lien-j{color:inherit; text-decoration:none; border-bottom:1px dotted rgba(233,207,142,.6)} .lien-j:hover{color:var(--or-clair)}
-.nav-alertes{display:none !important; position:relative} .cloche-n{min-width:18px; height:18px; border-radius:9px; background:#E9CF8E; color:#1a1405; font-size:11px; font-weight:800; display:inline-flex; align-items:center; justify-content:center; padding:0 5px; margin-left:auto}
+.lien-j{color:inherit; text-decoration:none; border-bottom:1px dotted color-mix(in srgb, var(--acc) 60%, transparent)} .lien-j:hover{color:var(--acc-clair)}
+.nav-alertes{display:none !important; position:relative} .cloche-n{min-width:18px; height:18px; border-radius:9px; background:var(--acc); color:var(--acc-texte); font-size:11px; font-weight:800; display:inline-flex; align-items:center; justify-content:center; padding:0 5px; margin-left:auto}
 @media (min-width:900px){ .nav-alertes{display:flex !important} }
-.rangee.nouvelle{background:linear-gradient(90deg, rgba(233,207,142,.12), transparent)}
-.cal-m{margin-bottom:14px} .cal-t{font:700 18px 'Barlow Condensed',sans-serif; color:var(--or-clair); text-transform:capitalize; margin:6px 0}
+.rangee.nouvelle{background:linear-gradient(90deg, color-mix(in srgb, var(--acc) 12%, transparent), transparent)}
+.cal-m{margin-bottom:14px} .cal-t{font:700 18px 'Barlow Condensed',sans-serif; color:var(--acc-clair); text-transform:capitalize; margin:6px 0}
 .coll{display:flex; flex-direction:column; gap:8px} .coll-t{display:flex; gap:22px; flex-wrap:wrap} .coll-t > div{display:flex; flex-direction:column} .coll-t b{font:700 26px 'Barlow Condensed',sans-serif} .coll-t .lib{font-size:13px; color:var(--doux)}
 .coll-t b.vert{color:var(--vert)} .coll-t b.rouge{color:var(--rouge)}
 .tuto.quest{max-width:520px} .q-opts{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:14px 0}
 .q-o{display:flex; flex-direction:column; gap:4px; text-align:left; padding:14px; border-radius:16px; border:1px solid var(--ligne); background:var(--carte2); color:var(--texte); cursor:pointer}
-.q-o:hover{border-color:#E9CF8E} .q-o b{font-size:16px} .q-o span{font-size:13px; color:var(--doux)}
+.q-o:hover{border-color:var(--acc)} .q-o b{font-size:16px} .q-o span{font-size:13px; color:var(--doux)}
 @media (max-width:480px){ .q-opts{grid-template-columns:1fr} }
 /* 26 oct 2026 (Mathieu : « maximiser l'espace sans que ce soit trop chargé », sur toutes les pages) : les écrans
    prennent la largeur disponible (jusqu'à 1680 px), marges égales ; les grilles de tuiles gagnent des colonnes */
@@ -1086,6 +1104,203 @@ body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px rgba(233,207,142,.55))}
   .ecran.acc .slide-astuce .slide-src{grid-area:s}
 }
 @media (min-width:1600px){ .ecran.acc:not(:has(.nouv.vide-n)){grid-template-columns:minmax(0,.95fr) minmax(0,1.8fr) !important} }
+
+/* ============================================================
+   27 oct 2026 - SYSTEME SLAB (Mathieu : « un design standardise, unique, pas generique »)
+   L'idee : chaque bloc est un boitier grade (slab). Un cadre double comme l'acrylique, une etiquette en haut
+   avec un fil refractor, des chiffres comme sur un certificat. Une seule famille de pastilles.
+   Regles : 3 polices (Barlow texte, Barlow Condensed titres / chiffres / etiquettes, Manrope pour le mot SlabCoach),
+   3 rayons (6 pastilles, 10 controles, 14 boitiers), l'accent vient de la palette ET du mode, le vert et le rouge
+   ne servent qu'aux gains et pertes, et l'accent ne colore jamais un montant.
+   ============================================================ */
+:root{--f-txt:'Barlow',system-ui,sans-serif; --f-cond:'Barlow Condensed','Barlow',system-ui,sans-serif;
+  --r-pas:6px; --r-ctl:10px; --r-slab:14px; --cadre:#26252D;
+  --etiq:linear-gradient(180deg,#1F1F26,#17171C)}
+body{font-family:var(--f-txt)}
+/* --- titres : condenses, en capitales, comme le nom sur l'etiquette --- */
+.titre{font-family:var(--f-cond); font-weight:700; font-size:34px; letter-spacing:.01em; text-transform:uppercase; line-height:1}
+.titre.moyen{text-transform:none; font-size:26px; letter-spacing:0}
+/* --- etiquette : la petite ligne en capitales espacees (sections, libelles des chiffres) --- */
+.section, .kpi .lib, .kpi > span:not(.v):not(.s), .t-acc .l, .tuile-n span, .tuile-c .src-ebay, .r-titre, .ev-res-t{
+  font-family:var(--f-cond); font-weight:600; font-size:12.5px; letter-spacing:.16em; text-transform:uppercase}
+.section{color:var(--pale); padding-left:11px; position:relative}
+.section::before{content:''; position:absolute; left:0; top:2px; bottom:2px; width:3px; border-radius:2px; background:var(--holo)}
+/* --- chiffres : condenses, alignes, comme un numero de certificat --- */
+.kpi b, .kpi .v, .tuile-n b, .t-acc b, .prix, .fiche-s .prix, .tuile-c .p, .total.grand b, .horloge .h, .adm-t b{
+  font-family:var(--f-cond); font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:.005em}
+.kpi.acc .v, .tuile-n.acc b{color:var(--texte)}
+/* --- le boitier (slab) : cadre double + coins de 14 --- */
+.bloc, .kpi, .tuile-n, .fiche-s, .tuile, .action, .r-bloc, .tuile-c, .bloc-v, .carte-acc, .t-acc, .carte-mode, details.replie,
+.ana-prod, .reg-break, .score-l, .g-regles > div, .g-c, .q-o, .tuto, .fen-sug > div, .fen-val > div, .ana-ctrl > div, .adm-agent, .geste{
+  border-radius:var(--r-slab); border:1px solid var(--ligne);
+  box-shadow:inset 0 0 0 3px var(--carte), inset 0 0 0 4px var(--cadre)}
+.bloc .bloc, .r-bloc .bloc, .bloc .tuile, .carte-acc .geste, .feuille .bloc .bloc, .bloc .kpi{box-shadow:none}
+.carte-acc .geste{border:none; border-radius:0}
+.tuile-c{box-shadow:inset 0 0 0 3px var(--carte), inset 0 0 0 4px var(--cadre)}
+.tuile-c:hover{box-shadow:inset 0 0 0 3px var(--carte), inset 0 0 0 4px var(--cadre), 0 10px 28px rgba(0,0,0,.35)}
+/* l'etiquette du boitier : le libelle du haut devient la bande du slab, avec le fil refractor */
+.r-bloc > .r-titre:first-child, .kpi > .lib:first-child, .t-acc > .l:first-child{
+  display:block; position:relative; background:var(--etiq); color:var(--doux); border-bottom:1px solid var(--ligne);
+  border-radius:calc(var(--r-slab) - 1px) calc(var(--r-slab) - 1px) 0 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.r-bloc > .r-titre:first-child::after, .kpi > .lib:first-child::after, .t-acc > .l:first-child::after{
+  content:''; position:absolute; left:0; right:0; bottom:-1px; height:1px; background:var(--holo); opacity:.6}
+.r-bloc > .r-titre:first-child{margin:-16px -16px 2px; padding:9px 16px}
+.kpi > .lib:first-child{margin:-14px -16px 8px; padding:7px 16px}
+.t-acc > .l:first-child{margin:-14px -16px 8px; padding:7px 16px}
+/* --- une seule famille de pastilles : rectangle de 6, capitales condensees, un trait de couleur a gauche --- */
+.tag, .capsule, .badge-niv, .pastille-deal, .quota{
+  border-radius:var(--r-pas); font-family:var(--f-cond); font-weight:600; letter-spacing:.06em; text-transform:uppercase; position:relative}
+.tag{height:24px; font-size:13px; padding:0 9px 0 13px}
+.tag.grand{height:auto; min-height:26px; padding:4px 10px 4px 14px; border-radius:var(--r-pas)}
+.capsule{height:28px; font-size:14px; padding:0 11px 0 15px}
+.capsule.petit{height:24px; font-size:13px; padding:0 9px 0 13px}
+.tag::before, .capsule::before{content:''; position:absolute; left:5px; top:6px; bottom:6px; width:3px; border-radius:2px; background:currentColor; opacity:.9}
+.tag:not(.acc):not(.or):not(.vert):not(.rouge)::before, .capsule:not(.vert):not(.rouge):not(.or):not(.acc)::before{background:var(--pale)}
+button.tag{font-family:var(--f-cond); font-size:13px}
+.badge-f{border-radius:var(--r-ctl); font-family:var(--f-cond); font-weight:700; letter-spacing:.08em; text-transform:uppercase}
+/* --- les controles : boutons, filtres, segments, champs : coins de 10, meme etat « choisi » partout --- */
+.btn{border-radius:var(--r-ctl); font-family:var(--f-cond); font-weight:700; font-size:18px; letter-spacing:.1em; text-transform:uppercase;
+  box-shadow:inset 0 -3px 0 rgba(0,0,0,.2)}
+.btn.petit{font-size:15px; border-radius:var(--r-ctl)}
+.btn.ghost{box-shadow:none; font-weight:700}
+.pilule{border-radius:var(--r-ctl); font-family:var(--f-cond); font-weight:600; font-size:15px; letter-spacing:.05em; text-transform:uppercase}
+.chip{border-radius:var(--r-ctl); font-family:var(--f-cond); font-weight:600; font-size:15px; letter-spacing:.05em; text-transform:uppercase; color:var(--texte2)}
+.chip.on, .seg button.on, .th-eq.on{background:color-mix(in srgb, var(--acc) 16%, var(--carte2)); color:var(--texte); border-color:var(--acc);
+  box-shadow:inset 0 0 0 1px var(--acc)}
+.seg{border-radius:var(--r-ctl); border:1px solid var(--ligne)}
+.seg button{border-radius:7px; font-family:var(--f-cond); font-weight:600; font-size:15px; letter-spacing:.05em; text-transform:uppercase}
+.seg.petit button{font-size:14px}
+.mode-switch{border-radius:var(--r-ctl)}
+.mode-switch button{border-radius:7px; font-family:var(--f-cond); font-size:14.5px; letter-spacing:.08em; text-transform:uppercase}
+.th-eq{border-radius:var(--r-ctl)}
+.champ, .recherche, select.champ{border-radius:var(--r-ctl)}
+.vig, .ecusson{border-radius:8px; box-shadow:inset 0 0 0 2px var(--carte2), 0 0 0 1px var(--ligne)}
+/* --- Pro : le meme systeme, les reflets prennent la palette --- */
+body.pro{--ligne:color-mix(in srgb, var(--acc) 10%, #2B2A32)}
+body.pro .titre{background:linear-gradient(110deg,#FFFFFF 0%,var(--acc-clair) 30%,var(--acc) 45%,#FFFFFF 50%,var(--acc) 55%,var(--acc-clair) 70%,#FFFFFF 100%);
+  background-size:250% 100%; -webkit-background-clip:text; background-clip:text; color:transparent}
+body.pro .onglets a.on{color:var(--acc)}
+.coll-t .lib, .acc-titre{font-family:var(--f-cond); font-weight:600; letter-spacing:.16em; text-transform:uppercase}
+.coll-t .lib{font-size:12.5px; color:var(--pale)}
+.carte-acc > .acc-titre:first-child{margin:-16px -16px 0; padding:9px 16px; font-size:12.5px; color:var(--doux); background:var(--etiq);
+  border-bottom:1px solid var(--ligne); border-radius:calc(var(--r-slab) - 1px) calc(var(--r-slab) - 1px) 0 0; position:relative}
+.carte-acc > .acc-titre:first-child::after{content:''; position:absolute; left:0; right:0; bottom:-1px; height:1px; background:var(--holo); opacity:.6}
+.acc-titre a{font-family:var(--f-cond); letter-spacing:.1em}
+
+/* ============================================================
+   27 oct 2026 (Mathieu : « comme Meta organise l'app, le plus intuitif possible »)
+   Telephone : barre du haut + / nom / cloche ; cercles du jour ; fil ; barre du bas flottante avec Profil.
+   ============================================================ */
+.nav-moi{display:none} .histoires, .acc-fil, .acc-salut-tel{display:none}
+.choix-volet, .liste-ajout{display:flex; flex-direction:column}
+.choix-volet .r-ligne, .liste-ajout .r-ligne{padding:14px 4px; border-top:1px solid var(--sep)}
+.choix-volet .r-ligne:first-child, .liste-ajout .r-ligne:first-child{border-top:none}
+.v-ico, .aj-ico{width:44px; height:44px; border-radius:var(--r-ctl); display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  background:color-mix(in srgb, var(--acc) 14%, var(--carte2)); color:var(--acc); font:700 20px var(--f-cond)}
+.v-ico svg, .aj-ico svg{width:22px; height:22px}
+.v-ico.acheteur{background:#2A2416; color:#E9CF8E} .v-ico.vendeur{background:#1E2038; color:#B9BEFF}
+.choix-volet .on{background:color-mix(in srgb, var(--acc) 8%, transparent); border-radius:var(--r-ctl)}
+.v-ok{color:var(--acc); font-weight:700; font-size:18px; margin-right:6px}
+/* Profil */
+.profil-tete{display:flex; align-items:center; gap:14px}
+.profil-av{width:72px; height:72px; border-radius:50%; padding:3px; background:var(--holo); flex-shrink:0}
+.profil-av img{width:100%; height:100%; border-radius:50%; object-fit:cover; background:var(--carte); box-shadow:0 0 0 3px var(--fond)}
+.profil-n{min-width:0; display:flex; flex-direction:column; gap:4px}
+.profil-b{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:4px}
+.profil-rac{display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:8px}
+.pr-r{display:flex; flex-direction:column; align-items:center; gap:6px; padding:12px 6px; border-radius:var(--r-slab); border:1px solid var(--ligne);
+  background:var(--carte); color:var(--texte); font:600 13px var(--f-cond); letter-spacing:.1em; text-transform:uppercase; cursor:pointer;
+  box-shadow:inset 0 0 0 3px var(--carte), inset 0 0 0 4px var(--cadre)}
+.pr-i{width:24px; height:24px; color:var(--acc); display:flex; align-items:center; justify-content:center; font-size:18px} .pr-i svg{width:24px; height:24px}
+@media (min-width:900px){ .bureau-seul{display:flex} .onglets a.nav-moi{display:none !important} }
+@media (max-width:899px){
+  .bureau-seul{display:none !important}
+  /* barre du haut */
+  .barre-mode{display:grid !important; grid-template-columns:44px minmax(0,1fr) 44px; align-items:center; gap:8px}
+  .barre-mode[hidden]{display:none !important}
+  .haut-plus, .haut-cloche{background:transparent; width:44px; height:44px; position:relative}
+  .haut-plus svg{width:26px; height:26px} .haut-cloche svg{width:25px; height:25px}
+  .haut-cloche .pt{position:absolute; top:8px; right:9px; width:9px; height:9px; border-radius:50%; background:var(--acc); box-shadow:0 0 0 2px var(--fond)}
+  .haut-nom{justify-self:center; display:flex; flex-direction:column; align-items:center; gap:2px; background:none; border:none; color:var(--texte); padding:2px 8px; min-width:0; max-width:100%}
+  .haut-mot{font:400 24px/1 'Manrope',system-ui,sans-serif; letter-spacing:-.025em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%}
+  .haut-mot b{font-weight:800}
+  .haut-nom small{font:700 11px var(--f-cond); letter-spacing:.2em; text-transform:uppercase; color:var(--acc)}
+  .haut-nom small i{font-style:normal; letter-spacing:0; color:var(--doux)}
+  /* barre du bas : une pilule flottante, l'onglet actif dans une bulle avec son nom */
+  body{padding-bottom:calc(96px + var(--bas))}
+  .onglets{left:12px; right:12px; bottom:calc(10px + var(--bas)); height:64px; padding:7px; border-radius:32px; border:none !important;
+    display:flex !important; align-items:center; gap:2px; overflow:hidden;
+    background:rgba(24,24,30,.86); box-shadow:0 12px 34px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.08)}
+  .onglets a{flex:1 1 0; min-width:0; min-height:50px; height:50px; flex-direction:row; justify-content:center; gap:0; font-size:0; border-radius:25px;
+    color:var(--texte2); transition:flex-grow .2s ease, background .2s}
+  .onglets a::before, .onglets a.on::before{display:none !important}
+  .onglets a.on{flex-grow:1.9; gap:7px; font:700 13.5px var(--f-cond); letter-spacing:.08em; text-transform:uppercase; color:var(--acc);
+    background:color-mix(in srgb, var(--acc) 14%, rgba(255,255,255,.04))}
+  .onglets a svg{width:25px; height:25px; flex-shrink:0}
+  .onglets a.centre{flex-grow:1} .onglets a.centre.on{font-size:0; gap:0; background:none}
+  .onglets a.centre svg, body .onglets a.centre svg, body:not(.mode-acheteur) .onglets a.centre svg, body.mode-acheteur .onglets a.centre svg{
+    box-sizing:content-box; width:24px; height:24px; padding:11px; margin-top:0; border-radius:50%;
+    box-shadow:0 6px 16px color-mix(in srgb, var(--acc) 35%, transparent)}
+  .onglets .nav-moi{display:flex}
+  .moi-av{width:32px; height:32px; border-radius:50%; padding:2px; background:var(--ligne); flex-shrink:0}
+  .nav-moi.on .moi-av{background:var(--holo)}
+  .moi-av img{width:100%; height:100%; border-radius:50%; object-fit:cover; background:var(--carte); box-shadow:0 0 0 2px #18181e}
+  /* ordre de la barre : vendeur Accueil, Inventaire, Vendre, Breaks, Profil ; acheteur Accueil, Deals, Valeur, Collection, Profil */
+  .onglets [data-onglet="accueil"]{order:1} .onglets [data-onglet="inventaire"]{order:2} .onglets [data-onglet="vendre"]{order:3}
+  .onglets [data-onglet="breaks"]{order:4} .onglets .nav-moi{order:9}
+  body.mode-acheteur .onglets [data-onglet="deals"]{order:2} body.mode-acheteur .onglets [data-onglet="valeur"]{order:3} body.mode-acheteur .onglets [data-onglet="inventaire"]{order:4}
+  /* accueil : salutation, cercles du jour, chiffres, fil */
+  .ecran.acc{grid-template-areas:"salut" "hist" "tete" "fil" "cote" "news" "plus"; gap:14px}
+  .acc-salut-tel{display:block; grid-area:salut; font:700 13px var(--f-cond); letter-spacing:.18em; text-transform:uppercase; color:var(--doux); margin-bottom:-6px}
+  .acc-salut-tel:empty{display:none}
+  .ecran.acc .acc-tete .marque{display:none}
+  .histoires{grid-area:hist; display:flex; gap:12px; overflow-x:auto; scrollbar-width:none; margin:0 -18px; padding:2px 18px 4px}
+  .histoires:empty{display:none} .histoires::-webkit-scrollbar{display:none}
+  .hist{display:flex; flex-direction:column; align-items:center; gap:6px; width:74px; flex-shrink:0; background:none; border:none; color:var(--texte); padding:0}
+  .hist .anneau{width:70px; height:70px; border-radius:50%; padding:3px; background:var(--ligne-fort, #403E4A)}
+  .hist .anneau.neuf{background:var(--holo)}
+  .hist .rond-in{width:100%; height:100%; border-radius:50%; background:var(--carte); box-shadow:inset 0 0 0 3px var(--fond); display:flex; flex-direction:column;
+    align-items:center; justify-content:center; color:var(--texte)}
+  .hist .rond-in b{font:700 24px/1 var(--f-cond); font-variant-numeric:tabular-nums}
+  .hist .rond-in small{font:600 8.5px var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--doux); margin-top:2px; max-width:56px; text-align:center; line-height:1.1}
+  .hist .rond-in svg{width:26px; height:26px; color:var(--acc)}
+  .hist .nom{font-size:12.5px; color:var(--texte2); white-space:nowrap; max-width:74px; overflow:hidden; text-overflow:ellipsis}
+  .acc-fil{grid-area:fil; display:block} .acc-fil:empty{display:none}
+}
+/* la publication (fil) */
+.post{display:flex; flex-direction:column; margin:0 -18px}
+.post-t{display:flex; align-items:center; gap:10px; padding:0 18px 10px}
+.post-av{width:36px; height:36px; border-radius:50%; padding:2px; background:var(--holo); flex-shrink:0; display:flex}
+.post-av svg{width:100%; height:100%; border-radius:50%; background:var(--carte); padding:7px; box-sizing:border-box; color:var(--acc); box-shadow:inset 0 0 0 2px var(--fond)}
+.post-n{flex:1; min-width:0; display:flex; flex-direction:column} .post-n b{font-size:15px} .post-n small{font-size:12.5px; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.post-cadre{position:relative}
+.post-car{display:flex; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; overscroll-behavior-x:contain}
+.post-car::-webkit-scrollbar{display:none}
+.post-slide{flex:0 0 100%; scroll-snap-align:center; aspect-ratio:1/1; display:flex; align-items:center; justify-content:center; cursor:pointer;
+  background:radial-gradient(110% 85% at 30% 15%, color-mix(in srgb, var(--acc) 22%, #15151c), #101015 62%, #0B0B0E)}
+.post-slab{width:58%; height:88%; border-radius:12px; padding:10px; box-sizing:border-box; display:flex; flex-direction:column; gap:8px;
+  background:linear-gradient(180deg,#26252D,#121216); box-shadow:inset 0 0 0 4px #0B0B0E, inset 0 0 0 5px #3A3944, 0 22px 44px rgba(0,0,0,.5)}
+.post-lab{flex-shrink:0; border-radius:5px; background:var(--etiq); padding:6px 8px; font:700 10px/1.25 var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:#E4E2EA;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; border-bottom:1px solid #444}
+.post-img{flex:1; min-height:0; position:relative; border-radius:6px; overflow:hidden; background:#111115; display:flex; align-items:center; justify-content:center; color:#34333D}
+.post-img > svg{width:40%; height:40%}
+.post-img img{position:absolute; inset:0; width:100%; height:100%; object-fit:contain}
+.post-compte{position:absolute; top:12px; right:12px; padding:3px 10px; border-radius:12px; background:rgba(0,0,0,.62); font:600 13px var(--f-txt); color:#fff}
+.post-points{display:flex; justify-content:center; gap:5px; padding-top:10px} .post-points i{width:6px; height:6px; border-radius:50%; background:var(--ligne-fort, #403E4A); transition:background .2s}
+.post-points i.on{background:var(--acc)}
+.post-act{display:flex; align-items:center; gap:4px; padding:4px 10px 0}
+.ic-act{width:44px; height:44px; border:none; background:none; color:var(--texte); display:flex; align-items:center; justify-content:center; padding:0}
+.ic-act:active{transform:scale(.9)}
+.post-ebay{margin-left:auto; width:auto !important; padding:0 16px !important}
+.post-info{display:flex; flex-direction:column; gap:6px; padding:2px 18px 0}
+.post-prix{display:flex; align-items:baseline; gap:10px} .post-prix b{font:700 30px/1 var(--f-cond); font-variant-numeric:tabular-nums} .post-prix span{font-size:13px; color:var(--doux)}
+.post-cap{font-size:14.5px; line-height:1.4; color:var(--texte2); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.post-est{display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px 10px; border-radius:var(--r-ctl); font-size:14px; color:var(--doux);
+  background:color-mix(in srgb, var(--acc) 6%, transparent); box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--acc) 18%, transparent)}
+.post-est .lib{font:700 11px var(--f-cond); letter-spacing:.16em; text-transform:uppercase; background:var(--holo); -webkit-background-clip:text; background-clip:text; color:transparent}
+.post-est b{color:var(--texte)}
+.post .pas-deal{align-self:flex-start}
+.post-tous{padding:8px 18px 0; font:700 13px var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--acc)}
 /* I18N CSS DEBUT - pastille Langue / Devise */
 .pref{display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 11px 0 4px; border-radius:999px; border:1px solid rgba(255,255,255,.14);
   background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.04)); color:var(--texte); font:700 12.5px/1 inherit; font-family:inherit; white-space:nowrap; cursor:pointer; flex-shrink:0}
@@ -1125,6 +1340,7 @@ html[lang=en] body.sandbox::before{content:'SANDBOX eBay · test data'}
   <a href="#alertes" data-onglet="alertes" class="nav-alertes" data-alertes><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>Alertes<span class="cloche-n" hidden></span></a>
   <a href="#idees" data-onglet="idees" class="nav-idees"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z"/></svg>Idées</a>
   <a href="#admin" data-onglet="admin" class="nav-admin" hidden><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="m9 12 2 2 4-4"/></svg>Admin</a>
+  <a href="#reglages" data-onglet="reglages" class="nav-moi" aria-label="Profil"><span class="moi-av"><img id="nav-moi-img" src="/icone.png" alt=""></span>Profil</a>
   <a href="#reglages" data-onglet="reglages" class="nav-reglages"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>Réglages</a>
 </nav>
 
@@ -1456,7 +1672,7 @@ const PALETTES_AVANT = {or:'gold', chrome:'silver'};   // premiers choix (27 oct
 function clePalette(k){ k = PALETTES_AVANT[k] || k; return PALETTES.some(p => p.k === k) ? k : 'refractor'; }
 function appliquerPalette(k){
   const ok = clePalette(k);
-  if (ok === 'refractor') delete document.body.dataset.palette; else document.body.dataset.palette = ok;
+  document.body.dataset.palette = ok;
   try { localStorage.setItem('lr_palette', ok); } catch (e) {}
 }
 try { const p0 = localStorage.getItem('lr_palette'); if (p0) appliquerPalette(p0); } catch (e) {}
@@ -1470,7 +1686,7 @@ async function appliquerMarque(){
     try { if (S.logo) localStorage.setItem('lr_logo', JSON.stringify({v, d:S.logo})); else localStorage.removeItem('lr_logo'); } catch (e) {}
   }
   const src = S.logo || '/icone.png', nom = nomMarque(r);
-  for (const id of ['acc-logo', 'g-logo-img']) { const im = $('#' + id); if (im && im.getAttribute('src') !== src) im.src = src; }
+  for (const id of ['acc-logo', 'g-logo-img', 'nav-moi-img', 'pr-logo']) { const im = $('#' + id); if (im && im.getAttribute('src') !== src) im.src = src; }
   // 25 oct 2026 - le logo officiel SlabCoach (avec son reflet or) ; une boutique qui a mis SON logo garde le sien
   const niv = nivLogo(), nl = $('#nav-logo-img'), srcNav = S.logo || LOGO_SC;
   if (nl && nl.getAttribute('src') !== srcNav) nl.src = srcNav;
@@ -1482,6 +1698,7 @@ async function appliquerMarque(){
   for (const el of [$('#nav-logo-nom'), $('#acc-nom')]) { if (!el) continue; const mot = nom === 'SlabCoach';
     el.classList.toggle('a-mot', mot); if (mot) { if (!el.querySelector('.mot-sc')) el.innerHTML = MOT_SC; } else el.textContent = nom; }
   document.title = nom === 'SlabCoach' ? 'SlabCoach' : nom + ' · SlabCoach';
+  const hm = $('#h-nom .haut-mot'); if (hm) hm.innerHTML = nom === 'SlabCoach' ? '<b>slab</b>coach' : esc(nom);
 }
 // logo choisi : carre de 256 px au plus, PNG (transparence) sinon JPEG ; jamais plus de ~300 Ko
 async function reduireLogo(fichier, cote = 256){
@@ -1623,10 +1840,12 @@ function appliquerActivites(a){
     const m = x.dataset.mode, bonMode = !m || !S.mode || m === S.mode;
     x.hidden = !bonMode || (x.dataset.onglet in voir && !voir[x.dataset.onglet]) || (x.dataset.onglet === 'admin' && !(S.forfait && S.forfait.admin));
   });
+  const tel = matchMedia('(max-width:899px)').matches;
+  $$('a', nav).forEach(x => { if (tel && (['comptoir', 'bilan'].includes(x.dataset.onglet) || (x.dataset.onglet === 'analyse' && x.dataset.mode === 'acheteur'))) x.hidden = true; });
   // 26 oct 2026 (Mathieu : « inspiré des meilleures apps ») : comme CollX et Ludex, l'action principale au centre de
   // la barre du bas, en bouton rond doré : Valeur (acheteur : scanner ou chercher une carte), Vendre (vendeur : une photo)
   const mobile = matchMedia('(max-width:899px)').matches;
-  const vis = $$('a:not([hidden]):not(.nav-reglages):not(.nav-admin):not(.nav-alertes)' + (mobile ? ':not(.nav-idees):not(.nav-logo)' : ''), nav);
+  const vis = $$('a:not([hidden]):not(.nav-reglages):not(.nav-moi):not(.nav-admin):not(.nav-alertes)' + (mobile ? ':not(.nav-idees):not(.nav-logo)' : ''), nav);
   $$('a', nav).forEach(x => x.classList.remove('centre'));
   const c = vis[Math.floor(vis.length / 2)];
   if (c && ['valeur', 'vendre'].includes(c.dataset.onglet)) c.classList.add('centre');
@@ -1654,8 +1873,53 @@ function switchMode(){
 function majBarreMode(){
   const b = $('#barre-mode'), n = $('#nav-mode'), voir = !!S.mode;
   document.body.classList.toggle('avec-barre', voir);
-  if (b) { b.hidden = !voir; b.innerHTML = voir ? `${htmlPref()}${switchMode()}${typeof htmlBadge === 'function' ? htmlBadge(true) : ''}<a class="rond" href="#reglages" aria-label="Réglages">${ICONES.engrenage}</a>` : ''; brancherSwitchMode(b); if (typeof brancherBadge === 'function') brancherBadge(b); }
+  // 27 oct 2026 (Mathieu : « comme Meta ») : + a gauche (ajouter), le nom au centre (change de volet), la cloche a droite.
+  // Langue, devise, forfait et reglages : dans l'onglet Profil.
+  if (b) {
+    b.hidden = !voir;
+    const perso = nomMarque() !== 'SlabCoach';
+    b.innerHTML = voir ? `<button class="rond haut-plus" id="h-plus" aria-label="${esc(tt('Ajouter', 'Add'))}">${ICONES.plus}</button>
+      <button class="haut-nom" id="h-nom" aria-haspopup="dialog" aria-label="${esc(tt('Changer de volet', 'Switch mode'))}"><span class="haut-mot">${perso ? esc(nomMarque()) : '<b>slab</b>coach'}</span><small>${S.mode === 'acheteur' ? tt('Acheteur', 'Buyer') : tt('Vendeur', 'Seller')} <i>▾</i></small></button>
+      <button class="rond haut-cloche" data-alertes aria-label="${esc(tt('Alertes', 'Alerts'))}">${ICO_CLOCHE}<i class="pt" id="h-pt" hidden></i></button>` : '';
+    const hp = $('#h-plus', b); if (hp) hp.onclick = feuilleAjouter;
+    const hn = $('#h-nom', b); if (hn) hn.onclick = feuilleModes;
+    if (voir) majCloche();
+  }
   if (n) { n.innerHTML = voir ? switchMode() : ''; brancherSwitchMode(n); }
+}
+const ICO_CLOCHE = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9M10 20.5a2 2 0 0 0 4 0"/></svg>';
+// la cloche : un point quand une alerte a trouve quelque chose de pas encore vu (au plus une fois aux 5 min)
+function majCloche(force){
+  const pt = $('#h-pt'); if (!pt) return;
+  if (S.clocheN != null) pt.hidden = !S.clocheN;
+  if (!force && S.clocheLe && Date.now() - S.clocheLe < 300000) return;
+  S.clocheLe = Date.now();
+  API.alertes_liste().then(r => { S.clocheN = ((r && r.notifications) || []).filter(n => !n.lu).length; const q = $('#h-pt'); if (q) q.hidden = !S.clocheN; }).catch(() => {});
+}
+document.addEventListener('click', (e) => { if (e.target.closest && e.target.closest('.haut-cloche')) { S.clocheN = 0; const q = $('#h-pt'); if (q) q.hidden = true; } }, true);
+// le nom au centre : le choix du volet, comme le menu des comptes d'une app sociale
+function feuilleModes(){
+  const l = [['vendeur', tt('Vendeur', 'Seller'), tt('Inventaire, annonces eBay, prix, profit', 'Inventory, eBay listings, prices, profit')],
+    ['acheteur', tt('Acheteur', 'Buyer'), tt('Deals, valeur d’une carte, ma collection', 'Deals, card value, my collection')]];
+  ouvrirFeuille(`<h3>${tt('Ton volet', 'Your mode')}</h3><div class="choix-volet">${l.map(([k, n, d]) => `<button class="r-ligne ${S.mode === k ? 'on' : ''}" data-volet="${k}"><span class="v-ico ${k}">${ICO_MODE[k]}</span><span class="t"><b>${n}</b><span>${d}</span></span>${S.mode === k ? '<span class="v-ok">✓</span>' : ''}</button>`).join('')}</div>`);
+  $$('[data-volet]').forEach(b => b.onclick = () => { fermerFeuille(); changerMode(b.dataset.volet); });
+}
+// le + : ajouter, selon le volet et ce que tu fais
+function feuilleAjouter(){
+  const act = S.activites || {}, v = S.mode !== 'acheteur';
+  const L = v ? [
+    [ICONES.photo || ICONES.plus, tt('Vendre une carte', 'Sell a card'), tt('Une photo : l’annonce eBay complète', 'One photo: the full eBay listing'), () => { location.hash = '#vendre'; }],
+    [ICONES.plus, tt('Ajouter une carte à la main', 'Add a card by hand'), tt('Dans ton inventaire, sans photo', 'To your inventory, no photo'), () => { location.hash = '#vendre/nouvelle'; }],
+    ...(act.breaks !== false ? [[ICONES.calc || ICONES.plus, tt('Préparer un break', 'Plan a break'), tt('Prix des places selon le produit', 'Spot prices from the product'), () => { location.hash = '#analyse'; }]] : []),
+    ...(act.magasin ? [[ICONES.caisse || ICONES.plus, tt('Vente au comptoir', 'Counter sale'), tt('En personne, à la boutique', 'In person, at the shop'), () => { location.hash = '#comptoir'; }]] : []),
+  ] : [
+    [ICONES.loupe, tt('Valeur d’une carte', 'What a card is worth'), tt('Une photo ou le nom de la carte', 'A photo or the card name'), () => { location.hash = '#valeur'; }],
+    [ICONES.plus, tt('Ajouter à ma collection', 'Add to my collection'), tt('Ce que tu as acheté, au prix payé', 'What you bought, at the price paid'), () => { location.hash = '#inventaire/ajout'; feuilleNouvelleCarte(); }],
+    [ICO_CLOCHE, tt('Créer une alerte de prix', 'Create a price alert'), tt('On te prévient quand la carte passe sous ton prix', 'We tell you when the card drops under your price'), () => feuilleAlerte('', 0)],
+    ['$', tt('Mon budget du mois', 'My monthly budget'), tt('Ce qui te reste à dépenser', 'What you have left to spend'), () => feuilleBudget()],
+  ];
+  ouvrirFeuille(`<h3>${tt('Ajouter', 'Add')}</h3><div class="liste-ajout">${L.map(([ic, t, d], i) => `<button class="r-ligne" data-aj="${i}"><span class="aj-ico">${ic}</span><span class="t"><b>${t}</b><span>${d}</span></span></button>`).join('')}</div>`);
+  $$('[data-aj]').forEach(b => b.onclick = () => { const f = L[+b.dataset.aj][3]; fermerFeuille(); setTimeout(f, 60); });
 }
 function brancherSwitchMode(z){ $$('[data-mode-choix]', z || document).forEach(b => b.onclick = () => changerMode(b.dataset.modeChoix)); }
 async function changerMode(m){
@@ -1997,7 +2261,7 @@ const AVANTAGES_PRO = () => [
   [tt('Tous les deals, avec filtres et comps', 'All deals, with filters and comps'), tt('Gratuit : les 5 meilleurs', 'Free: the top 5')],
   [tt('Analyse de breaks sur tous les produits', 'Break analysis on every product'), tt('Gratuit : 1 produit', 'Free: 1 product')],
   [tt('Photos lues par l’IA illimitées', 'Unlimited AI photo reads'), ''],
-  [tt('Le look Pro doré', 'The gold Pro look'), tt('parce que tu le vaux bien', 'because you’re worth it')]];
+  [tt('Le look Pro', 'The Pro look'), tt('les reflets de ta palette, partout dans l’app', 'your palette’s shine, all through the app')]];
 // 27 oct 2026 (revue Apple 3.1.1 / 3.1.2) : dans l'app iPhone, le Pro s'achete avec l'identifiant Apple (StoreKit 2,
 // plugin NativePurchases). Le serveur verifie la transaction signee par Apple (achats_apple.py). La feuille montre ce
 // qu'Apple exige : nom, duree et prix de l'abonnement, renouvellement automatique et comment l'annuler, Conditions et
@@ -2933,12 +3197,15 @@ async function vueAccueil(arg){
   }
   arreterAccueilLive();
   V().innerHTML = `<section class="ecran acc">
+    <div class="acc-salut-tel" id="acc-salut2"></div>
+    <div class="histoires" id="acc-hist" role="list"></div>
     <div class="acc-tete" style="grid-area:tete"><div class="marque"><span class="logo-lr officiel piece-sc" aria-label="SlabCoach">${htmlPiece()}</span><img class="logo" id="acc-logo" src="${esc(S.logo || '/icone.png')}" alt="">
         <div class="horloge"><div class="nom-b${nomMarque() === 'SlabCoach' ? ' a-mot' : ''}" id="acc-nom">${nomMarque() === 'SlabCoach' ? MOT_SC : esc(nomMarque())}</div><div class="salut" id="acc-salut"></div><div class="h" id="acc-h">--:--</div><div class="d" id="acc-d"></div></div></div>
       <div class="acc-tuiles" id="acc-tuiles">${roue}</div></div>
+    <div class="acc-fil" id="acc-fil"></div>
     <div class="carte-acc nouv" id="acc-nouv"><div id="acc-news">${roue}</div></div>
     <div class="acc-cote">${bandeauEssai()}
-      <div class="carte-acc"><div class="acc-titre">À faire <span id="afaire-n"></span></div><div id="acc-afaire" class="gestes">${roue}</div></div>
+      <div class="carte-acc"><div class="acc-titre">${tt('À faire', 'To do')} <span id="afaire-n"></span></div><div id="acc-afaire" class="gestes">${roue}</div></div>
       <div class="carte-acc conseils-acc"><div class="acc-titre"><span>✦ ${tt('Conseils pour toi', 'For you')}</span><button class="lien-doux" id="cs-maj" aria-label="${esc(tt('Nouveaux conseils', 'New tips'))}">↻</button></div><div id="acc-conseils" class="liste">${roue}</div></div>
       <div class="carte-acc"><div class="acc-titre">Mises à jour <span id="pouls-etat"></span></div><div id="acc-pouls">${roue}</div></div>
     </div>
@@ -2984,7 +3251,7 @@ async function vueAccueil(arg){
   if (h.profit || h.pareille_date || h.nb_ventes) plus.push(`<div class="hero"><span class="lib">Profit · ${nomMois(h.mois)} vs ${nomMois(h.mois_passe)}</span>
       <div class="ligne-info">${(h.ecart || 0) >= 0 ? '▲' : '▼'} ${argentCourt(Math.abs(h.ecart || 0))} par rapport à pareille date · ${argentCourt(h.revenus)} de ventes${h.marge != null ? ' · marge ' + h.marge + ' %' : ''}</div>
       ${courbeProfit(h)}</div>`);
-  if (deals.length) plus.push(`<div class="carte-acc"><div class="acc-titre">Meilleurs deals <a href="#deals">tous ›</a></div><div class="liste">${deals.map(o => `<a class="deal-l" href="${esc(lienAchat(o.url, 'accueil'))}" target="_blank" rel="noopener" ${attrsAnnonce(o)}>${vignette(o.photo, o.titre)}
+  if (deals.length) plus.push(`<div class="carte-acc bureau-seul"><div class="acc-titre">Meilleurs deals <a href="#deals">tous ›</a></div><div class="liste">${deals.map(o => `<a class="deal-l" href="${esc(lienAchat(o.url, 'accueil'))}" target="_blank" rel="noopener" ${attrsAnnonce(o)}>${vignette(o.photo, o.titre)}
       <span class="t"><b>${esc(titreCourt(o.titre))}</b><span>vaut ${argentCourt(o.ref_prix)} · ${o.rabais} % sous la valeur</span></span><span class="m">${argent(o.total, 0)}</span></a>`).join('')}</div></div>`);
   // 25 oct 2026 (Mathieu : « pour l'accueil admin, des infos importantes à monitorer à la place des best flips »)
   const admin = !!(S.forfait && S.forfait.admin);
@@ -2993,6 +3260,9 @@ async function vueAccueil(arg){
   const brk = (d.breaks_ouverts || []).map(rangeeBreak).join('');
   if (brk && d.activites.breaks) plus.push(`<div class="carte-acc"><div class="acc-titre">Breaks en cours <a href="#breaks/liste">tous ›</a></div><div class="liste">${brk}</div></div>`);
   $('#acc-plus').innerHTML = plus.join('');
+  // 27 oct 2026 (Mathieu : « comme Meta ») : les cercles du jour et les deals en carrousel, en haut du fil
+  const zh = $('#acc-hist'); if (zh) { zh.innerHTML = histoiresAccueil(d, a); brancherHistoires(zh); }
+  const zf = $('#acc-fil'); if (zf) { zf.innerHTML = postDeals((a && a.deals) || []); brancherPostDeals(); }
   brancherCourbe(h);
   const ec = $('.ecran.acc'); if (ec) ec.classList.toggle('admin', admin);
   if (admin) API.admin_resume().then(rA => {
@@ -3013,6 +3283,101 @@ async function vueAccueil(arg){
   }).catch(() => {});
   visBreaks($('#acc-plus'));
 }
+// ============================================================
+// 27 oct 2026 (Mathieu : « comme Meta organise l'app ») - les cercles du jour : ce qui t'attend, d'un coup d'oeil.
+// Anneau refractor = du nouveau depuis ta derniere visite ; gris = deja vu ou raccourci.
+// ============================================================
+const ICO_H = {
+  valeur:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+  guide:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5M9 7h6"/></svg>',
+  budget:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+  breaks:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 11h18M8 7V4h8v3"/></svg>',
+  comptoir:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9h18l-1.5 11h-15z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg>',
+  bilan:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>'};
+function histoiresAccueil(d, a){
+  const act = d.activites || S.activites || {}, A = Object.fromEntries((d.actions || []).map(x => [x.cle, x])), h = d.hero || {};
+  const n = (x) => (x && x.n) || 0;
+  const L = S.mode !== 'acheteur' ? [
+    ['lister', n(A.lister), tt('À lister', 'To list'), tt('cartes', 'cards'), '#inventaire/stock'],
+    ['envoyer', n(A.envoyer), tt('À envoyer', 'To ship'), tt('envois', 'orders'), '#breaks/liste'],
+    ['prix', n(A.baisser) + n(A.monter), tt('Prix', 'Prices'), tt('à revoir', 'to fix'), '#sante'],
+    ['deals', A.racheter ? n(A.racheter) : ((a && a.nb_deals) || 0), 'Deals', tt('à racheter', 'to flip'), A.racheter ? A.racheter.lien : '#sante'],
+    ['ventes', h.nb_ventes || 0, tt('Ventes', 'Sales'), tt('ce mois', 'this month'), '#bilan'],
+    ...(act.breaks !== false ? [['breaks', (d.breaks_ouverts || []).length, 'Breaks', tt('en cours', 'open'), '#breaks/liste']] : []),
+    ...(act.magasin ? [['comptoir', null, tt('Comptoir', 'Counter'), '', '#comptoir']] : []),
+    ['bilan', null, tt('Bilan', 'Report'), '', '#bilan'],
+  ] : [
+    ['deals', (a && a.nb_deals) || 0, 'Deals', tt('sous la valeur', 'under value'), '#deals'],
+    ['alertes', S.clocheN || 0, tt('Alertes', 'Alerts'), tt('trouvées', 'found'), 'alertes'],
+    ['valeur', null, tt('Valeur', 'Value'), '', '#valeur'],
+    ['budget', null, 'Budget', '', 'budget'],
+    ['breaks', null, 'Breaks', '', '#analyse'],
+    ['guide', null, 'Guide', '', '#guide'],
+  ];
+  let vu = {}; try { vu = JSON.parse(localStorage.getItem('lr_vu') || '{}'); } catch (e) {}
+  const items = [...L.filter(x => x[1] > 0), ...L.filter(x => x[1] === null)];
+  S.histoires = Object.fromEntries(items.map(x => [x[0], x]));
+  return items.map(([k, nb_, nom, mini]) => {
+    const neuf = nb_ > 0 && vu[k] !== nb_;
+    return `<button class="hist" role="listitem" data-h="${k}" aria-label="${esc(nom + (nb_ ? ' : ' + nb_ : ''))}"><span class="anneau${neuf ? ' neuf' : ''}"><span class="rond-in">${nb_ != null ? `<b>${nb_ > 99 ? '99+' : nb_}</b><small>${esc(mini)}</small>` : (ICO_H[k] || '')}</span></span><span class="nom">${esc(nom)}</span></button>`;
+  }).join('');
+}
+function brancherHistoires(z){
+  $$('[data-h]', z).forEach(b => b.onclick = () => {
+    const x = (S.histoires || {})[b.dataset.h]; if (!x) return;
+    let vu = {}; try { vu = JSON.parse(localStorage.getItem('lr_vu') || '{}'); } catch (e) {}
+    if (x[1] != null) { vu[x[0]] = x[1]; try { localStorage.setItem('lr_vu', JSON.stringify(vu)); } catch (e) {} }
+    b.querySelector('.anneau').classList.remove('neuf');
+    if (x[4] === 'alertes') feuilleAlertes(); else if (x[4] === 'budget') feuilleBudget(); else location.hash = x[4];
+  });
+}
+// les deals en carrousel, comme une publication : on glisse d'une carte a l'autre (1/5), les gestes en dessous.
+// L'annonce eBay (photo, titre, prix) reste separee de l'estimation SlabCoach (licence eBay).
+const ICO_POST = {
+  suivre:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg>',
+  comps:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+  partager:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>'};
+function postDeals(deals){
+  const L = deals.slice(0, 5); S.filDeals = L;
+  if (!L.length) return '';
+  return `<article class="post" id="post-deals">
+    <header class="post-t"><span class="post-av">${ICO_MODE.acheteur}</span><span class="post-n"><b>${tt('Deals du jour', 'Today’s deals')}</b><small id="pd-sous"></small></span><span id="pd-tag"></span></header>
+    <div class="post-cadre"><div class="post-car" id="pd-car">${L.map(x => `<div class="post-slide" ${attrsAnnonce(x)}><div class="post-slab"><div class="post-lab">${esc(titreCourt(x.titre))}</div><div class="post-img">${SVG_CARTE}${x.photo ? `<img src="${esc(photoHD(x.photo))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}</div></div></div>`).join('')}</div>
+      ${L.length > 1 ? `<span class="post-compte" id="pd-n">1/${L.length}</span>` : ''}</div>
+    ${L.length > 1 ? `<div class="post-points" id="pd-pts">${L.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>` : ''}
+    <div class="post-act"><button class="ic-act" id="pd-suivre" aria-label="${esc(tt('Surveiller cette carte', 'Watch this card'))}">${ICO_POST.suivre}</button>
+      <button class="ic-act" id="pd-comps" aria-label="${esc(tt('Annonce et comps', 'Listing and comps'))}">${ICO_POST.comps}</button>
+      <button class="ic-act" id="pd-part" aria-label="${esc(tt('Partager', 'Share'))}">${ICO_POST.partager}</button>
+      <a class="btn petit post-ebay" id="pd-ebay" target="_blank" rel="noopener">${tt('Voir sur eBay', 'View on eBay')}</a></div>
+    <div class="post-info" id="pd-info"></div>
+    <a class="post-tous" href="#${S.mode === 'acheteur' ? 'deals' : 'sante/racheter'}">${tt('Tous les deals', 'All deals')} ›</a>
+  </article>`;
+}
+function brancherPostDeals(){
+  const car = $('#pd-car'), L = S.filDeals || []; if (!car || !L.length) return;
+  let cur = 0;
+  const montrer = (i) => {
+    const x = L[i]; if (!x) return; cur = i;
+    const n = $('#pd-n'); if (n) n.textContent = `${i + 1}/${L.length}`;
+    $$('#pd-pts i').forEach((p, j) => p.classList.toggle('on', j === i));
+    $('#pd-sous').textContent = tt('Annonce eBay', 'eBay listing') + ' · ' + (x.encan ? tt('encan, finit dans ', 'auction, ends in ') + finDans(x.fin) : tt('achat immédiat', 'Buy It Now'));
+    $('#pd-tag').innerHTML = capsule('−' + x.rabais + ' %', 'vert');
+    $('#pd-ebay').href = lienAchat(x.url, 'fil');
+    $('#pd-info').innerHTML = `<div class="post-prix"><b>${argent(x.total, 0)}</b><span>${tt('sur eBay, port compris', 'on eBay, shipping incl.')}</span></div>
+      <div class="post-cap">${esc(x.titre)}</div>
+      <div class="post-est"><span class="lib">${tt('Estimation SlabCoach', 'SlabCoach estimate')}</span><span>${tt('vaut ', 'worth ')}<b>${argentCourt(x.valeur)}</b>${x.gain > 0 ? ' ' + capsule('+' + argentCourt(x.gain), 'vert petit') : ''}</span></div>
+      <button class="pas-deal" id="pd-pas">${tt('Pas un deal ?', 'Not a deal?')}</button>`;
+    $('#pd-pas').onclick = () => feuillePasDeal(x, () => { const z = $('#acc-fil'); if (z) { z.innerHTML = postDeals(L.filter(k => k !== x)); brancherPostDeals(); } });
+  };
+  montrer(0);
+  car.addEventListener('scroll', () => { const i = Math.round(car.scrollLeft / Math.max(1, car.clientWidth)); if (i !== cur) montrer(Math.min(L.length - 1, Math.max(0, i))); }, {passive:true});
+  $('#pd-suivre').onclick = () => { const x = L[cur]; feuilleAlerte(titreCourt(x.titre), x.total); };
+  $('#pd-comps').onclick = () => { const x = L[cur]; ouvrirAnnonce({item_id:x.item_id, titre:x.titre, photo:x.photo, total:x.total, url:x.url}); };
+  $('#pd-part').onclick = async () => {
+    const x = L[cur], u = lienAchat(x.url, 'partage');
+    try { if (navigator.share) await navigator.share({title:titreCourt(x.titre), url:u}); else { await navigator.clipboard.writeText(u); toast(tt('Lien copié', 'Link copied')); } } catch (e) {}
+  };
+}
 // -- horloge + nouvelles + pouls, en direct (arretes en quittant l'accueil) --
 function surAccueil(){ return (location.hash || '#accueil').startsWith('#accueil') && !!$('#acc-h'); }
 function arreterAccueilLive(){ for (const k of ['tHorloge', 'tLive', 'tNews']) if (S[k]) { clearInterval(S[k]); S[k] = null; } }
@@ -3026,6 +3391,7 @@ function demarrerAccueilLive(){
     const sa = $('#acc-salut'); if (sa) { const hr = n.getHours(), nm = (nomMarque() !== 'SlabCoach' && nomMarque()) || (S.forfait && S.forfait.username) || '';
       const txt = (hr < 5 || hr >= 18 ? tt('Bonsoir', 'Good evening') : hr < 12 ? tt('Bonjour', 'Good morning') : tt('Bon après-midi', 'Good afternoon')) + (nm ? ', ' + nm : '');
       if (sa.textContent !== txt) sa.textContent = txt; }
+    const s2 = $('#acc-salut2'); if (s2 && sa && s2.textContent !== sa.textContent) s2.textContent = sa.textContent;
   };
   chargerConseils(false);
   // les comptes d'avant le questionnaire : une fois, sur l'accueil ; ensuite les conseils s'adaptent
@@ -4506,7 +4872,18 @@ async function vueReglages(arg){
   // le technique (sandbox, appels API, cles, EPN, avis eBay) dans « Avancé », ferme.
   const ligneAct = (k, t, d) => `<button class="r-ligne" data-act="${k}"><span class="t"><b>${t}</b><span>${d}</span></span><span class="interrupteur ${act[k] ? 'on' : ''}"><i></i></span></button>`;
   V().innerHTML = `<section class="ecran reglages">
-    <div class="titre">Réglages</div>
+    <div class="profil-tete"><span class="profil-av"><img id="pr-logo" src="${esc(S.logo || '/icone.png')}" alt=""></span>
+      <div class="profil-n"><div class="titre moyen">${esc(nomMarque())}</div><div class="sous">${S.forfait && S.forfait.username ? '@' + esc(S.forfait.username) + ' · ' : ''}${S.mode === 'acheteur' ? tt('Acheteur', 'Buyer') : tt('Vendeur', 'Seller')}</div>
+        <div class="profil-b">${typeof htmlBadge === 'function' ? htmlBadge(false) : ''}${typeof htmlPref === 'function' ? htmlPref() : ''}</div></div></div>
+    <div class="profil-rac">${[
+      ...(S.mode !== 'acheteur' ? [['#bilan', ICO_H.bilan, tt('Bilan', 'Report')]] : []),
+      ...(S.mode !== 'acheteur' && act.magasin ? [['#comptoir', ICO_H.comptoir, tt('Comptoir', 'Counter')]] : []),
+      ['#' + (S.mode === 'acheteur' ? 'analyse' : 'breaks/liste'), ICO_H.breaks, 'Breaks'],
+      ['alertes', ICO_CLOCHE, tt('Alertes', 'Alerts')],
+      ['#guide', ICO_H.guide, 'Guide'],
+      ...(S.forfait && S.forfait.admin ? [['#admin', '✦', 'Admin']] : []),
+    ].map(([h, ic, t]) => h === 'alertes' ? `<button class="pr-r" data-alertes><span class="pr-i">${ic}</span>${t}</button>` : `<a class="pr-r" href="${h}"><span class="pr-i">${ic}</span>${t}</a>`).join('')}</div>
+    <div class="section">${tt('Réglages', 'Settings')}</div>
     ${S.forfait && S.forfait.admin ? `<a class="bandeau-aaj" href="#admin"><span class="aaj-n">✦</span><span><b>${tt('Console admin', 'Admin console')}</b><small>${tt('Abonnés, demandes, catalogue, serveur', 'Subscribers, requests, catalogue, server')}</small></span><span class="fl">›</span></a>` : ''}
     <div class="r-bloc" id="g-ebay">${roue}</div>
     <div class="r-bloc" id="g-forfait" hidden></div>
@@ -4558,6 +4935,7 @@ async function vueReglages(arg){
       ${r.ia_photos_ok ? `<button class="r-lien" id="g-ia-retirer">${tt('Lecture des photos par l’IA (Anthropic) : permise · retirer', 'Photo reading by AI (Anthropic): allowed · withdraw')}</button>` : ''}
       <div class="r-note">${tt('SlabCoach n’est affilié ni à eBay, ni à Upper Deck, ni à la LNH.', 'SlabCoach is not affiliated with eBay, Upper Deck or the NHL.')}</div></div>
   </section>`;
+  brancherBadge($('.profil-tete'));
   const gsup = $('#g-supprimer'); if (gsup) gsup.onclick = feuilleSupprimerCompte;
   const gia = $('#g-ia-retirer'); if (gia) gia.onclick = async () => { const x = await essai(API.reglages_sauver({ia_photos_ok:false}), tt('Permission retirée', 'Permission withdrawn')); if (x) { S.reglages = x; vueReglages(); } };
   $$('#g-palette [data-pal]').forEach(b => b.onclick = async () => {

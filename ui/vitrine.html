@@ -15,9 +15,16 @@
 <link rel="icon" href="/favicon.ico?v=3" sizes="any">
 <link rel="apple-touch-icon" href="/icone.png">
 <link rel="preload" href="/manrope-800.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+/* 27 oct 2026 - les memes polices que l'app, servies par SlabCoach */
+@font-face{font-family:'Barlow';font-weight:400;font-display:swap;src:url(/barlow-400.woff2) format('woff2')}
+@font-face{font-family:'Barlow';font-weight:500;font-display:swap;src:url(/barlow-500.woff2) format('woff2')}
+@font-face{font-family:'Barlow';font-weight:600;font-display:swap;src:url(/barlow-600.woff2) format('woff2')}
+@font-face{font-family:'Barlow';font-weight:700;font-display:swap;src:url(/barlow-700.woff2) format('woff2')}
+@font-face{font-family:'Barlow Condensed';font-weight:500;font-display:swap;src:url(/barlow-cond-500.woff2) format('woff2')}
+@font-face{font-family:'Barlow Condensed';font-weight:600;font-display:swap;src:url(/barlow-cond-600.woff2) format('woff2')}
+@font-face{font-family:'Barlow Condensed';font-weight:700;font-display:swap;src:url(/barlow-cond-700.woff2) format('woff2')}
+
 /* 27 oct 2026 - la vitrine de slabcoach.com (Mathieu : « simple, sexy, montrer pourquoi nous choisir, l'option gratuite et
    le free trial, et ne pas obliger d'avoir un compte eBay mais fortement recommande »). Une page, deux langues. */
 @font-face{font-family:'Manrope'; font-weight:800; font-display:swap; src:url(/manrope-800.woff2) format('woff2')}
@@ -28,7 +35,7 @@ html[lang="fr"] .en, html[lang="en"] .fr{display:none !important}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 html,body{overflow-x:clip}
-body{margin:0; background:var(--fond); color:var(--texte); font:16px/1.55 Inter,system-ui,-apple-system,sans-serif; overflow-x:hidden}
+body{margin:0; background:var(--fond); color:var(--texte); font:16px/1.55 'Barlow',system-ui,-apple-system,sans-serif; overflow-x:hidden}
 a{color:inherit}
 .holo-t{background:var(--holo); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent}
 .conteneur{width:min(1120px,100%); margin:0 auto; padding:0 20px}
@@ -42,13 +49,13 @@ a{color:inherit}
 .mot-sc .tag{display:block; font-size:7.5px; font-weight:800; letter-spacing:.66em; margin-right:-.66em; margin-top:5px; background:var(--holo); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent}
 .nav{display:flex; align-items:center; gap:20px; font-size:14.5px; font-weight:600}
 .nav a{text-decoration:none; color:var(--doux)} .nav a:hover{color:var(--texte)}
-.btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; height:48px; padding:0 22px; border-radius:14px; font:800 16px 'Manrope',Inter,sans-serif; text-decoration:none; white-space:nowrap; transition:transform .15s, box-shadow .15s}
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; height:48px; padding:0 22px; border-radius:14px; font:700 16px 'Barlow Condensed',sans-serif; text-decoration:none; white-space:nowrap; transition:transform .15s, box-shadow .15s}
 .btn:focus-visible{outline:3px solid var(--texte); outline-offset:3px}
 .btn.holo{color:#12111A; background:linear-gradient(100deg,#D3F4EA 0%,#DCDEFF 36%,#F9DCEB 68%,#F7EAC2 100%); box-shadow:0 14px 34px rgba(185,190,255,.22), inset 0 1px 0 rgba(255,255,255,.7)}
 .btn.holo:hover{transform:translateY(-1px); box-shadow:0 18px 40px rgba(185,190,255,.32), inset 0 1px 0 rgba(255,255,255,.7)}
 .btn.ghost{color:var(--texte); border:1px solid var(--ligne); background:rgba(255,255,255,.02)} .btn.ghost:hover{border-color:#403E4A}
 .haut .btn{height:40px; padding:0 16px; font-size:14.5px; border-radius:12px}
-.lang{font:700 13px Inter,sans-serif; color:var(--doux); text-decoration:none; padding:6px 10px; border:1px solid var(--ligne); border-radius:999px}
+.lang{font:700 13px 'Barlow Condensed',sans-serif; color:var(--doux); text-decoration:none; padding:6px 10px; border:1px solid var(--ligne); border-radius:999px}
 @media (max-width:760px){ .nav .lien{display:none} .nav{gap:8px} }
 @media (max-width:480px){ .haut .btn{height:38px; padding:0 12px; font-size:13.5px} .lang{padding:5px 8px; font-size:12px} .marque .mot-sc{font-size:19px} .marque img{width:30px; height:30px} .marque{gap:8px} }
 /* hero */
@@ -58,7 +65,7 @@ a{color:inherit}
 .hero .conteneur{display:grid; grid-template-columns:1.05fr .95fr; gap:40px; align-items:center}
 .surtitre{display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:999px; border:1px solid var(--ligne); background:rgba(255,255,255,.03); font-size:13px; font-weight:600; color:#DCD9E2}
 .surtitre i{width:7px; height:7px; border-radius:50%; background:var(--holo)}
-h1{font:800 clamp(40px,6.4vw,68px)/1.02 'Manrope',Inter,sans-serif; letter-spacing:-.035em; margin:18px 0 0; text-wrap:balance}
+h1{font:700 clamp(40px,6.4vw,68px)/1.02 'Barlow Condensed',sans-serif; letter-spacing:.005em; margin:18px 0 0; text-wrap:balance}
 .sous-titre{font-size:clamp(17px,2vw,19px); color:var(--doux); margin:18px 0 0; max-width:540px}
 .actions{display:flex; flex-wrap:wrap; gap:12px; margin-top:28px}
 .rassure{display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:16px; font-size:13.5px; color:var(--pale)}
@@ -71,11 +78,11 @@ h1{font:800 clamp(40px,6.4vw,68px)/1.02 'Manrope',Inter,sans-serif; letter-spaci
 .tuile .img{aspect-ratio:3/4; border-radius:12px; position:relative; overflow:hidden; display:flex; align-items:flex-end; padding:12px}
 .tuile .img::after{content:''; position:absolute; inset:0; background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.22) 45%, transparent 60%); background-size:250% 100%; animation:reflet 5s ease-in-out infinite}
 .tuile .cadre{position:absolute; inset:14px; border-radius:8px; border:2px solid rgba(255,255,255,.35)}
-.tuile .rabais{position:absolute; top:10px; left:10px; z-index:2; padding:4px 10px; border-radius:999px; background:#13261B; color:var(--vert); font:800 13px 'Manrope',sans-serif; box-shadow:inset 0 0 0 1px rgba(143,212,164,.25)}
-.tuile .nom{position:relative; z-index:1; font:800 15px/1.2 'Manrope',sans-serif; color:#fff; text-shadow:0 2px 12px rgba(0,0,0,.6)}
-.tuile .prix{display:flex; align-items:baseline; justify-content:space-between; margin-top:10px; font:800 22px 'Manrope',sans-serif}
+.tuile .rabais{position:absolute; top:10px; left:10px; z-index:2; padding:4px 10px; border-radius:999px; background:#13261B; color:var(--vert); font:700 13px 'Barlow Condensed',sans-serif; box-shadow:inset 0 0 0 1px rgba(143,212,164,.25)}
+.tuile .nom{position:relative; z-index:1; font:700 15px/1.2 'Barlow Condensed',sans-serif; color:#fff; text-shadow:0 2px 12px rgba(0,0,0,.6)}
+.tuile .prix{display:flex; align-items:baseline; justify-content:space-between; margin-top:10px; font:700 22px 'Barlow Condensed',sans-serif}
 .tuile .est{margin-top:6px; padding:7px 9px; border-radius:9px; background:rgba(185,190,255,.06); box-shadow:inset 0 0 0 1px rgba(185,190,255,.14); font-size:12.5px; color:var(--doux)}
-.tuile .est b{color:var(--texte)} .tuile .est small{display:block; font:800 9px 'Manrope',sans-serif; letter-spacing:.14em; text-transform:uppercase}
+.tuile .est b{color:var(--texte)} .tuile .est small{display:block; font:700 9px 'Barlow Condensed',sans-serif; letter-spacing:.14em; text-transform:uppercase}
 .t1{left:4%; top:46px; transform:rotate(-8deg)} .t1 .img{background:radial-gradient(120% 90% at 30% 10%, #2F7A55, #10291A 70%)}
 .t2{left:31%; top:0; z-index:2} .t2 .img{background:radial-gradient(120% 90% at 30% 10%, #6E73C9, #1C1D33 70%)}
 .t3{left:58%; top:60px; transform:rotate(8deg)} .t3 .img{background:radial-gradient(120% 90% at 30% 10%, #B08A3E, #2A2416 70%)}
@@ -84,8 +91,8 @@ h1{font:800 clamp(40px,6.4vw,68px)/1.02 'Manrope',Inter,sans-serif; letter-spaci
 @media (max-width:480px){ .tuile{width:160px} .t1{left:0} .t2{left:26%} .t3{left:50%} .visuel{height:310px} }
 /* sections */
 section{padding:72px 0}
-.kicker{font:800 12px 'Manrope',sans-serif; letter-spacing:.3em; text-transform:uppercase; margin:0}
-h2{font:800 clamp(30px,4vw,44px)/1.08 'Manrope',Inter,sans-serif; letter-spacing:-.03em; margin:12px 0 0; text-wrap:balance; max-width:760px}
+.kicker{font:700 12px 'Barlow Condensed',sans-serif; letter-spacing:.3em; text-transform:uppercase; margin:0}
+h2{font:700 clamp(30px,4vw,44px)/1.08 'Barlow Condensed',sans-serif; letter-spacing:-.03em; margin:12px 0 0; text-wrap:balance; max-width:760px}
 .intro{color:var(--doux); margin:14px 0 0; max-width:640px; font-size:17px}
 .grille{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-top:34px}
 @media (max-width:900px){ .grille{grid-template-columns:repeat(2,minmax(0,1fr))} }
@@ -93,15 +100,15 @@ h2{font:800 clamp(30px,4vw,44px)/1.08 'Manrope',Inter,sans-serif; letter-spacing
 .atout{position:relative; padding:22px; border-radius:20px; background:var(--carte); border:1px solid var(--ligne)}
 .atout .ic{width:44px; height:44px; border-radius:13px; display:flex; align-items:center; justify-content:center; background:rgba(185,190,255,.08); box-shadow:inset 0 0 0 1px rgba(185,190,255,.16); color:var(--acc)}
 .atout .ic svg{width:22px; height:22px}
-.atout h3{font:800 18px/1.25 'Manrope',sans-serif; margin:16px 0 0; letter-spacing:-.01em}
+.atout h3{font:700 18px/1.25 'Barlow Condensed',sans-serif; margin:16px 0 0; letter-spacing:-.01em}
 .atout p{margin:8px 0 0; color:var(--doux); font-size:15px}
 .puce-ebay{position:absolute; top:18px; right:18px; font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:999px; color:var(--acc); background:#1E2038; box-shadow:inset 0 0 0 1px rgba(185,190,255,.2)}
 /* etapes */
 .etapes{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-top:34px; counter-reset:e}
 @media (max-width:800px){ .etapes{grid-template-columns:1fr} }
 .etape{padding:22px; border-radius:20px; border:1px solid var(--ligne); background:linear-gradient(160deg, rgba(255,255,255,.03), transparent 60%)}
-.etape b{display:flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:50%; font:800 16px 'Manrope',sans-serif; color:#12111A; background:linear-gradient(100deg,#D3F4EA,#DCDEFF 40%,#F9DCEB 75%,#F7EAC2)}
-.etape h3{font:800 18px 'Manrope',sans-serif; margin:14px 0 0} .etape p{margin:6px 0 0; color:var(--doux); font-size:15px}
+.etape b{display:flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:50%; font:700 16px 'Barlow Condensed',sans-serif; color:#12111A; background:linear-gradient(100deg,#D3F4EA,#DCDEFF 40%,#F9DCEB 75%,#F7EAC2)}
+.etape h3{font:700 18px 'Barlow Condensed',sans-serif; margin:14px 0 0} .etape p{margin:6px 0 0; color:var(--doux); font-size:15px}
 /* eBay recommande */
 .ebay{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:34px}
 @media (max-width:800px){ .ebay{grid-template-columns:1fr} }
@@ -109,8 +116,8 @@ h2{font:800 clamp(30px,4vw,44px)/1.08 'Manrope',Inter,sans-serif; letter-spacing
 .col.reco{position:relative; background:linear-gradient(160deg, rgba(185,190,255,.08), var(--carte) 55%)}
 .col.reco::before{content:''; position:absolute; inset:-1px; border-radius:21px; padding:1px; background:var(--holo); opacity:.5;
   -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none}
-.col h3{font:800 19px 'Manrope',sans-serif; margin:0; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
-.badge{font:800 11px 'Manrope',sans-serif; letter-spacing:.08em; text-transform:uppercase; padding:4px 10px; border-radius:999px; color:#12111A; background:linear-gradient(100deg,#D3F4EA,#DCDEFF 40%,#F9DCEB 75%,#F7EAC2)}
+.col h3{font:700 19px 'Barlow Condensed',sans-serif; margin:0; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.badge{font:700 11px 'Barlow Condensed',sans-serif; letter-spacing:.08em; text-transform:uppercase; padding:4px 10px; border-radius:999px; color:#12111A; background:linear-gradient(100deg,#D3F4EA,#DCDEFF 40%,#F9DCEB 75%,#F7EAC2)}
 .col ul{list-style:none; margin:16px 0 0; padding:0; display:grid; gap:10px}
 .col li{display:flex; gap:10px; color:#DCD9E2; font-size:15px} .col li::before{content:'✓'; color:var(--vert); font-weight:800}
 .col li.plus::before{content:'+'; color:var(--acc)}
@@ -120,20 +127,20 @@ h2{font:800 clamp(30px,4vw,44px)/1.08 'Manrope',Inter,sans-serif; letter-spacing
 @media (max-width:800px){ .forfaits{grid-template-columns:1fr} }
 .forfait{display:flex; flex-direction:column; padding:26px; border-radius:22px; background:var(--carte); border:1px solid var(--ligne)}
 .forfait.pro{position:relative; background:radial-gradient(120% 80% at 80% 0%, rgba(233,207,142,.12), var(--carte) 60%); border-color:#5C4E2C}
-.forfait .t{font:800 14px 'Manrope',sans-serif; letter-spacing:.2em; text-transform:uppercase; color:var(--doux)}
+.forfait .t{font:700 14px 'Barlow Condensed',sans-serif; letter-spacing:.2em; text-transform:uppercase; color:var(--doux)}
 .forfait.pro .t{color:var(--or)}
-.forfait .prix{font:800 46px/1 'Manrope',sans-serif; letter-spacing:-.03em; margin-top:12px} .forfait .prix small{font:600 15px Inter,sans-serif; color:var(--doux); letter-spacing:0}
+.forfait .prix{font:700 46px/1 'Barlow Condensed',sans-serif; letter-spacing:-.03em; margin-top:12px} .forfait .prix small{font:600 15px 'Barlow',sans-serif; color:var(--doux); letter-spacing:0}
 .forfait .d{color:var(--doux); margin-top:8px; font-size:15px}
 .forfait ul{list-style:none; margin:20px 0 24px; padding:0; display:grid; gap:10px; flex:1}
 .forfait li{display:flex; gap:10px; font-size:15px; color:#DCD9E2} .forfait li::before{content:'✓'; color:var(--vert); font-weight:800}
 .forfait.pro li::before{color:var(--or)}
 .forfait li em{font-style:normal; color:var(--pale)}
-.essai{position:absolute; top:-13px; right:20px; padding:5px 12px; border-radius:999px; font:800 12px 'Manrope',sans-serif; color:#2A1F05; background:linear-gradient(110deg,#F7EAC4,#D9B866 45%,#FBF0CF 55%,#F1D58E)}
+.essai{position:absolute; top:-13px; right:20px; padding:5px 12px; border-radius:999px; font:700 12px 'Barlow Condensed',sans-serif; color:#2A1F05; background:linear-gradient(110deg,#F7EAC4,#D9B866 45%,#FBF0CF 55%,#F1D58E)}
 .btn.or{color:#2A1F05; background:linear-gradient(110deg,#F3E0A6,#D9B866); box-shadow:0 12px 30px rgba(217,184,102,.22)}
 /* faq */
 .faq{margin-top:28px; max-width:820px; display:grid; gap:10px}
 .faq details{border:1px solid var(--ligne); border-radius:16px; background:var(--carte); padding:0 20px}
-.faq summary{cursor:pointer; list-style:none; padding:18px 0; font:800 16.5px 'Manrope',sans-serif; display:flex; justify-content:space-between; gap:12px}
+.faq summary{cursor:pointer; list-style:none; padding:18px 0; font:700 16.5px 'Barlow Condensed',sans-serif; display:flex; justify-content:space-between; gap:12px}
 .faq summary::-webkit-details-marker{display:none} .faq summary::after{content:'+'; color:var(--acc); font-size:22px; line-height:1}
 .faq details[open] summary::after{content:'–'}
 .faq p{margin:0 0 18px; color:var(--doux); font-size:15px}
