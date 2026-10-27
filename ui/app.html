@@ -788,6 +788,15 @@ body.fen-ouverte{overflow:hidden}
 .piece-sc{position:relative; display:inline-block; width:118px; height:118px; line-height:0}
 .piece-sc img, .piece-sc svg{position:absolute; inset:0; width:100% !important; height:100% !important}
 .nav-logo .logo-lr{--masque:url(/logo_sc_gold.png)} .nav-logo .logo-lr img, .nav-logo span img{width:auto !important; height:36px !important; border-radius:0 !important}
+/* 27 oct 2026 (Mathieu : « le logo est mal centre, pas tres esthetique ») : logo net de 40 px, sans reflet ni ombre,
+   centre sur le bloc slabcoach + SPORTS CARDS */
+@media (min-width:900px){
+  .onglets .nav-logo{align-items:center; gap:12px; padding:2px 10px 24px; line-height:0}
+  .nav-logo .logo-lr{width:40px; height:40px; flex:none; display:flex; align-items:center; justify-content:center}
+  .nav-logo .logo-lr img{width:40px !important; height:40px !important; filter:none !important}
+  .nav-logo .logo-lr::after{display:none}
+  #nav-logo-nom.a-mot{display:flex; flex-direction:column; justify-content:center; line-height:1}
+}
 .nav-logo span:not(.logo-lr) img{width:38px !important; height:38px !important; border-radius:10px !important}
 body.marque-perso .logo-lr.officiel{display:none !important}
 body:not(.marque-perso) .marque .logo{display:none !important}
@@ -810,12 +819,12 @@ body.pro #mosaique{opacity:.03}
 .mot-sc{display:inline-block; font-family:'Manrope',system-ui,sans-serif; font-weight:400; letter-spacing:-.025em; line-height:1; white-space:nowrap; color:var(--texte); text-transform:none}
 .mot-sc b{font-weight:800}
 .mot-sc sup{font-size:.26em; font-weight:800; letter-spacing:0; vertical-align:1.75em; margin-left:.1em; opacity:.8}
-.mot-sc .tag{display:block; margin-top:.38em; font-size:.17em; font-weight:800; letter-spacing:1.79em; margin-right:-1.79em;
+.mot-sc .sc-tag{display:block; margin-top:.38em; font-size:.17em; font-weight:800; letter-spacing:1.79em; margin-right:-1.79em;
   background:var(--holo); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent}
 #nav-logo-nom.a-mot{background:none; -webkit-text-fill-color:initial; color:inherit; animation:none; font-size:23px}
-#nav-logo-nom.a-mot .tag{font-size:7.5px; letter-spacing:.66em; margin-right:-.66em; margin-top:5px}
+#nav-logo-nom.a-mot .sc-tag{font-size:7.5px; letter-spacing:.66em; margin-right:-.66em; margin-top:5px}
 .marque .nom-b.a-mot{font-size:26px; overflow:visible}
-.marque .nom-b.a-mot .tag{font-size:8px; letter-spacing:.73em; margin-right:-.73em; margin-top:6px}
+.marque .nom-b.a-mot .sc-tag{font-size:8px; letter-spacing:.73em; margin-right:-.73em; margin-top:6px}
 #nav-logo-nom{background:linear-gradient(110deg,var(--niv1) 0%,var(--niv2) 38%,#FFF8E6 50%,var(--niv2) 62%,var(--niv1) 100%); background-size:250% 100%;
   -webkit-background-clip:text; background-clip:text; color:transparent; animation:reflet 3.2s ease-in-out infinite}
 body.marque-perso #nav-logo-nom{background:none; -webkit-text-fill-color:currentColor; color:var(--texte); animation:none}
@@ -1076,7 +1085,7 @@ html[lang=en] body.sandbox::before{content:'SANDBOX eBay · test data'}
 <main id="vue"></main>
 
 <nav class="onglets" aria-label="Navigation">
-  <a class="nav-logo" href="#accueil" aria-label="Accueil"><span class="logo-lr petit"><img src="/logo_sc_gold.png" alt="" id="nav-logo-img"></span><span id="nav-logo-nom" class="a-mot"><span class="mot-sc" role="img" aria-label="SlabCoach"><b>slab</b>coach<sup>™</sup><span class="tag">SPORTS CARDS</span></span></span></a><div class="nav-pref" id="nav-pref"></div>
+  <a class="nav-logo" href="#accueil" aria-label="Accueil"><span class="logo-lr petit"><img src="/logo_sc_gold.png" alt="" id="nav-logo-img"></span><span id="nav-logo-nom" class="a-mot"><span class="mot-sc" role="img" aria-label="SlabCoach"><b>slab</b>coach<sup>™</sup><span class="sc-tag">SPORTS CARDS</span></span></span></a><div class="nav-pref" id="nav-pref"></div>
   <div class="nav-mode" id="nav-mode"></div>
   <a href="#accueil" data-onglet="accueil"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 11 12 4l9 7v9H3z"/></svg>Accueil</a>
   <a href="#analyse" data-onglet="breaks" data-mode="vendeur"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 11h18M8 7V4h8v3"/></svg>Breaks<span class="pastille" id="pastille-breaks" hidden></span></a>
@@ -1337,7 +1346,7 @@ const roue = '<div class="charge"><div class="roue"></div></div>';
 // Le refractor change au hasard a chaque ouverture : Prizm, Cracked Ice, Laser, Mosaic, Mojo, Wave, Pulsar.
 const MOTIFS_SC = ['prizm', 'cracked', 'laser', 'mosaic', 'mojo', 'wave', 'pulsar'];
 const LOGO_SC = `/logo_sc_${MOTIFS_SC[Math.floor(Math.random() * MOTIFS_SC.length)]}.svg`;
-const MOT_SC = '<span class="mot-sc" role="img" aria-label="SlabCoach"><b>slab</b>coach<sup>™</sup><span class="tag">SPORTS CARDS</span></span>';
+const MOT_SC = '<span class="mot-sc" role="img" aria-label="SlabCoach"><b>slab</b>coach<sup>™</sup><span class="sc-tag">SPORTS CARDS</span></span>';
 function htmlPiece(){ return `<img src="${LOGO_SC}" alt="">`; }
 function piecesNiveau(){ document.querySelectorAll('.piece-sc').forEach(el => el.style.setProperty('--masque', 'url(/logo_sc_gold_poli.png)')); }
 const C_ANNEAU = 97.39;
