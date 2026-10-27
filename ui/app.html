@@ -1009,6 +1009,14 @@ body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px color-mix(in srgb, var(--a
 .t-mini{width:64px; height:30px; flex-shrink:0; fill:none; stroke:var(--acc); stroke-width:2.2; vector-effect:non-scaling-stroke} .t-mini.vert{stroke:var(--vert)} .t-mini.rouge{stroke:var(--rouge)}
 .t-prix{font-size:18px} .t-vide{padding:22px 8px; font-size:15px}
 @media (max-width:600px){ .t-mini{display:none} }
+/* 27 oct 2026 (Mathieu : « on devrait pouvoir voir le nom complet du joueur ») : le nom et la carte au long,
+   la mini-courbe passe sous le texte sur toute la largeur */
+.rangee.t-l{display:grid; grid-template-columns:auto minmax(0,1fr) auto; grid-template-areas:"v m d" "v c c"; column-gap:12px; row-gap:6px; align-items:start}
+.t-l > .vig-j{grid-area:v; align-self:center} .t-l > .milieu{grid-area:m} .t-l > .droite{grid-area:d}
+.t-l > .t-mini{grid-area:c; width:100%; height:22px; display:block}
+.t-l .nom{white-space:normal; overflow:visible; text-overflow:clip; line-height:1.25}
+.t-l .det{white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; line-height:1.3}
+@media (max-width:600px){ .t-l > .t-mini{display:none} .rangee.t-l{grid-template-areas:"v m d"} }
 .vig-j.init{background:linear-gradient(160deg, var(--c1), color-mix(in srgb, var(--c1) 45%, #0B0B0E) 70%); border-color:color-mix(in srgb, var(--c1) 60%, transparent); color:#fff}
 .vig-j.init i{font-style:normal; font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:22px; letter-spacing:.5px; text-shadow:0 2px 6px rgba(0,0,0,.45)}
 .vig-j.init.portrait i{display:none}
@@ -3207,7 +3215,7 @@ async function vueAccueil(arg){
     <div class="acc-cote">${bandeauEssai()}
       <div class="carte-acc"><div class="acc-titre">${tt('À faire', 'To do')} <span id="afaire-n"></span></div><div id="acc-afaire" class="gestes">${roue}</div></div>
       <div class="carte-acc conseils-acc"><div class="acc-titre"><span>✦ ${tt('Conseils pour toi', 'For you')}</span><button class="lien-doux" id="cs-maj" aria-label="${esc(tt('Nouveaux conseils', 'New tips'))}">↻</button></div><div id="acc-conseils" class="liste">${roue}</div></div>
-      <div class="carte-acc"><div class="acc-titre">Mises à jour <span id="pouls-etat"></span></div><div id="acc-pouls">${roue}</div></div>
+      <div class="carte-acc"><div class="acc-titre">${tt('Mises à jour', 'Updates')} <span id="pouls-etat"></span></div><div id="acc-pouls">${roue}</div></div>
     </div>
     <div id="acc-plus"></div>
   </section>`;
@@ -3251,14 +3259,14 @@ async function vueAccueil(arg){
   if (h.profit || h.pareille_date || h.nb_ventes) plus.push(`<div class="hero"><span class="lib">Profit · ${nomMois(h.mois)} vs ${nomMois(h.mois_passe)}</span>
       <div class="ligne-info">${(h.ecart || 0) >= 0 ? '▲' : '▼'} ${argentCourt(Math.abs(h.ecart || 0))} par rapport à pareille date · ${argentCourt(h.revenus)} de ventes${h.marge != null ? ' · marge ' + h.marge + ' %' : ''}</div>
       ${courbeProfit(h)}</div>`);
-  if (deals.length) plus.push(`<div class="carte-acc bureau-seul"><div class="acc-titre">Meilleurs deals <a href="#deals">tous ›</a></div><div class="liste">${deals.map(o => `<a class="deal-l" href="${esc(lienAchat(o.url, 'accueil'))}" target="_blank" rel="noopener" ${attrsAnnonce(o)}>${vignette(o.photo, o.titre)}
+  if (deals.length) plus.push(`<div class="carte-acc bureau-seul"><div class="acc-titre">${tt('Meilleurs deals', 'Best deals')} <a href="#deals">${tt('tous', 'all')} ›</a></div><div class="liste">${deals.map(o => `<a class="deal-l" href="${esc(lienAchat(o.url, 'accueil'))}" target="_blank" rel="noopener" ${attrsAnnonce(o)}>${vignette(o.photo, o.titre)}
       <span class="t"><b>${esc(titreCourt(o.titre))}</b><span>vaut ${argentCourt(o.ref_prix)} · ${o.rabais} % sous la valeur</span></span><span class="m">${argent(o.total, 0)}</span></a>`).join('')}</div></div>`);
   // 25 oct 2026 (Mathieu : « pour l'accueil admin, des infos importantes à monitorer à la place des best flips »)
   const admin = !!(S.forfait && S.forfait.admin);
   if (admin) plus.push(`<div class="carte-acc acc-admin" id="acc-admin"><div class="acc-titre">${tt('À surveiller', 'To monitor')} <a href="#admin">Admin ›</a></div><div class="liste">${roue}</div></div>`);
-  else if (d.coups.length) plus.push(`<div class="carte-acc"><div class="acc-titre">Meilleurs coups · 30 j</div><div class="liste">${d.coups.map(rangeeCoup).join('')}</div></div>`);
+  else if (d.coups.length) plus.push(`<div class="carte-acc"><div class="acc-titre">${tt('Meilleurs coups · 30 j', 'Best flips · 30 d')}</div><div class="liste">${d.coups.map(rangeeCoup).join('')}</div></div>`);
   const brk = (d.breaks_ouverts || []).map(rangeeBreak).join('');
-  if (brk && d.activites.breaks) plus.push(`<div class="carte-acc"><div class="acc-titre">Breaks en cours <a href="#breaks/liste">tous ›</a></div><div class="liste">${brk}</div></div>`);
+  if (brk && d.activites.breaks) plus.push(`<div class="carte-acc"><div class="acc-titre">${tt('Breaks en cours', 'Breaks in progress')} <a href="#breaks/liste">${tt('tous', 'all')} ›</a></div><div class="liste">${brk}</div></div>`);
   $('#acc-plus').innerHTML = plus.join('');
   // 27 oct 2026 (Mathieu : « comme Meta ») : les cercles du jour et les deals en carrousel, en haut du fil
   const zh = $('#acc-hist'); if (zh) { zh.innerHTML = histoiresAccueil(d, a); brancherHistoires(zh); }

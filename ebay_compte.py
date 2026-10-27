@@ -116,6 +116,8 @@ def scopes_demandes():
     if os.environ.get("LOCKERROOM_MISES_APPROUVEES") == "1":
         c["mises_approuvees"] = True
     out = list(SCOPES) + [SCOPE_ECRITURE, SCOPE_MARKETING]       # 24 oct 2026 - promotion des annonces (Promoted Listings)
+    import ebay_moderne                                           # 27 oct 2026 : politiques d'affaires (mode inventaire)
+    out += [s for s in ebay_moderne.scopes_en_plus() if s not in out]
     # 21 oct 2026 - buy.offer.auction est en « Limited Release » : un scope que le jeu de cles
     # n'a pas fait echouer TOUTE la connexion chez eBay (page /n/error). Seulement si permis.
     if c.get("mises_approuvees"):

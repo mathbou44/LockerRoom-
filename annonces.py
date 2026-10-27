@@ -272,6 +272,9 @@ def photos_ebay(photos):
 
 
 def publier(d, photos_hebergees, code_postal, verifier_seulement=False):
+    import ebay_moderne                     # 27 oct 2026 : LOCKERROOM_EBAY_API=inventaire -> Inventory API (API modernes d'eBay)
+    if ebay_moderne.mode() == "inventaire":
+        return ebay_moderne.publier(d, photos_hebergees, code_postal, verifier_seulement)
     encan = d.get("format") == "encan"
     appel = "AddItem" if encan else "AddFixedPriceItem"
     item = xml_item(d, photos_hebergees, code_postal)

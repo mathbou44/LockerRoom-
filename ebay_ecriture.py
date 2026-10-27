@@ -13,7 +13,6 @@ import base64
 import os
 import re
 import urllib.request
-import uuid
 from xml.sax.saxutils import escape
 
 import ebay_compte
@@ -149,6 +148,10 @@ def changer_prix(item_id, prix):
     prix = float(prix)
     if prix < 0.99:
         raise ValueError("Prix trop bas (minimum 0,99 $)")
+    import ebay_moderne                     # 27 oct 2026 : annonce creee par l'Inventory API -> son offre
+    r = ebay_moderne.changer_prix(item_id, prix)
+    if r:
+        return r
     corps = (f'<?xml version="1.0" encoding="utf-8"?><ReviseInventoryStatusRequest xmlns="{NS}">'
              f"<InventoryStatus><ItemID>{item_id}</ItemID><StartPrice>{prix:.2f}</StartPrice></InventoryStatus>"
              "</ReviseInventoryStatusRequest>")
@@ -174,29 +177,10 @@ def miser(item_id, montant, devise="CAD"):
 
 
 def televerser_photo(chemin, nom="lockerroom"):
-    """UploadSiteHostedPictures (multipart) -> URL d'image hebergee par eBay."""
-    with open(chemin, "rb") as f:
-        contenu = f.read()
-    borne = "LR" + uuid.uuid4().hex
-    xml = (f'<?xml version="1.0" encoding="utf-8"?><UploadSiteHostedPicturesRequest xmlns="{NS}">'
-           f"<PictureName>{escape(nom)}</PictureName><PictureSet>Standard</PictureSet></UploadSiteHostedPicturesRequest>")
-    corps = (f"--{borne}\r\nContent-Disposition: form-data; name=\"XML Payload\"\r\nContent-Type: text/xml\r\n\r\n{xml}\r\n"
-             f"--{borne}\r\nContent-Disposition: form-data; name=\"image\"; filename=\"{nom}.png\"\r\n"
-             "Content-Type: image/png\r\n\r\n").encode() + contenu + f"\r\n--{borne}--\r\n".encode()
-    req = urllib.request.Request(ebay_compte.url("trading"), data=corps, method="POST", headers={
-        "X-EBAY-API-SITEID": ebay_compte.SITE_ID, "X-EBAY-API-COMPATIBILITY-LEVEL": ebay_compte.NIVEAU,
-        "X-EBAY-API-CALL-NAME": "UploadSiteHostedPictures", "X-EBAY-API-IAF-TOKEN": ebay_compte.jeton(),
-        "Content-Type": f"multipart/form-data; boundary={borne}"})
-    import xml.etree.ElementTree as ET
-    import appels_ebay
-    appels_ebay.exiger("trading", fond=False)
-    appels_ebay.compter("trading")
-    with urllib.request.urlopen(req, timeout=60) as r:
-        racine = ET.fromstring(r.read())
-    u = ebay_compte._txt(racine, "e:SiteHostedPictureDetails/e:FullURL")
-    if not u:
-        raise RuntimeError("Photo refusée par eBay : " + (ebay_compte._txt(racine, "e:Errors/e:LongMessage") or "?"))
-    return u
+    """Photo -> URL d'image hebergee par eBay. 27 oct 2026 : UploadSiteHostedPictures (Trading) a ete retire par eBay
+    le 30 sept. 2026 ; on passe par la Media API (createImageFromFile), meme resultat (une URL EPS)."""
+    import ebay_moderne
+    return ebay_moderne.televerser_fichier(chemin, nom)
 
 
 def cartes_test(n=20):
