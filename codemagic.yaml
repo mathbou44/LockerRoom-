@@ -4,8 +4,8 @@
 # Une seule fois dans Codemagic (codemagic.io) :
 #   1. Teams > Integrations > Developer Portal : ajouter la cle API d'App Store Connect, nom « SlabCoach ASC ».
 #   2. Teams > Code signing identities : « Generate certificate » (Apple Distribution) avec cette cle.
-#   3. Application > Environment variables : groupe « slabcoach » avec LR_URL (l'adresse Render, ex. https://xxx.onrender.com)
-#      et APP_STORE_APPLE_ID (le numero « Apple ID » de l'app dans App Store Connect > Infos de l'app).
+#   3. (27 oct 2026) APP_STORE_APPLE_ID est ecrit plus bas (vars) ; l'adresse de l'app vient de mobile/lr_url.txt
+#      (ou d'une variable LR_URL ajoutee dans Codemagic, qui l'emporte).
 # Ensuite : « Start new build » > ios-app-store. La version arrive dans TestFlight, puis on la soumet a Apple.
 workflows:
   ios-app-store:
@@ -15,8 +15,8 @@ workflows:
     integrations:
       app_store_connect: SlabCoach ASC
     environment:
-      groups:
-        - slabcoach
+      vars:
+        APP_STORE_APPLE_ID: "6827726629"     # 27 oct 2026 : Apple ID de l'app (pas secret) ; LR_URL : mobile/lr_url.txt
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.slabcoach.app
