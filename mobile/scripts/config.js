@@ -7,7 +7,7 @@ const ici = path.join(__dirname, '..');
 let url = (process.env.LR_URL || '').trim();
 if (!url && fs.existsSync(path.join(ici, 'lr_url.txt'))) url = fs.readFileSync(path.join(ici, 'lr_url.txt'), 'utf8').trim();
 if (!/^https:\/\/[a-z0-9.-]+(:\d+)?\/?$/i.test(url)) {
-  console.error("LR_URL manquante ou invalide (ex. https://lockerroom.onrender.com) : ecris-la dans mobile/lr_url.txt");
+  console.error("LR_URL manquante ou invalide (ex. https://slabcoach.com) : ecris-la dans mobile/lr_url.txt");
   process.exit(1);
 }
 url = url.replace(/\/$/, '');
@@ -19,7 +19,7 @@ const conf = {
   server: {
     url,
     errorPath: 'erreur.html',                 // hors ligne : un ecran natif avec « Reessayer », pas une page d'erreur
-    allowNavigation: [hote, 'appleid.apple.com', '*.ebay.com', '*.ebay.ca', 'signin.ebay.com', 'auth.ebay.com', 'auth.sandbox.ebay.com', 'signin.sandbox.ebay.com']
+    allowNavigation: [hote, '*.' + hote.replace(/^www\./, ''), 'appleid.apple.com', '*.ebay.com', '*.ebay.ca', 'signin.ebay.com', 'auth.ebay.com', 'auth.sandbox.ebay.com', 'signin.sandbox.ebay.com']
   },
   ios: {
     contentInset: 'never',

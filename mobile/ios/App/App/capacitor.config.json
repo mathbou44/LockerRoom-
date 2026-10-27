@@ -3,10 +3,10 @@
 	"appName": "SlabCoach",
 	"webDir": "www",
 	"server": {
-		"url": "https://lockerroom.onrender.com",
+		"url": "https://www.slabcoach.com",
 		"errorPath": "erreur.html",
 		"allowNavigation": [
-			"lockerroom.onrender.com",
+			"www.slabcoach.com",
 			"*.ebay.com",
 			"*.ebay.ca",
 			"signin.ebay.com",

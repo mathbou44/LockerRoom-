@@ -433,6 +433,11 @@ class Api:
         except paiements.Erreur as e:
             return {"ok": False, "erreur": str(e)}
 
+    # -- 27 oct 2026 : verification d'un certificat PSA (voir psa.py), un a la fois, a la demande du vendeur ---------
+    def psa_cert(self, cert):
+        import psa
+        return psa.verifier(cert)
+
     # -- 27 oct 2026 : achat integre Apple (voir achats_apple.py) -------------------------------------------------
     def apple_achat_info(self):
         """Pour l'app iPhone : le produit a acheter et le jeton (UUID) qui relie l'achat a CE compte."""
@@ -2399,7 +2404,7 @@ class Api:
                 "specifiques": annonces.specifiques(c), "modele": modele, "frais_pct": r["frais_ebay_pct"], "frais_fixe": ff,
                 "etats": {k: v[2] if franco else v[1] for k, v in annonces.ETATS_BRUTS.items()},
                 "net_marche": round(prix["marche"] * (1 - fp) - ff, 2) if prix else None,
-                "promotion_ok": annonces.SCOPE_MARKETING in (jetons.get("scopes") or [])}
+                "promotion_ok": annonces.SCOPE_MARKETING in (jetons.get("scopes") or []), "psa_ok": __import__("psa").actif()}
 
     def annonce_publier(self, d, verifier=False):
         """La carte + l'annonce : photos chez eBay, verification (frais), puis creation sur un 2e tap.

@@ -1188,6 +1188,10 @@ body.pro{--ligne:color-mix(in srgb, var(--acc) 10%, #2B2A32)}
 body.pro .titre{background:linear-gradient(110deg,#FFFFFF 0%,var(--acc-clair) 30%,var(--acc) 45%,#FFFFFF 50%,var(--acc) 55%,var(--acc-clair) 70%,#FFFFFF 100%);
   background-size:250% 100%; -webkit-background-clip:text; background-clip:text; color:transparent}
 body.pro .onglets a.on{color:var(--acc)}
+.psa-v{display:flex; flex-direction:column; gap:8px}
+.psa-ok{display:flex; flex-direction:column; gap:3px; padding:10px 12px; border-radius:var(--r-ctl); font-size:14px;
+  background:color-mix(in srgb, var(--vert) 8%, transparent); box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--vert) 30%, transparent)}
+.psa-ok b{color:var(--vert)} .psa-ok a{font-size:13px; font-weight:600}
 .coll-t .lib, .acc-titre{font-family:var(--f-cond); font-weight:600; letter-spacing:.16em; text-transform:uppercase}
 .coll-t .lib{font-size:12.5px; color:var(--pale)}
 .carte-acc > .acc-titre:first-child{margin:-16px -16px 0; padding:9px 16px; font-size:12.5px; color:var(--doux); background:var(--etiq);
@@ -2157,6 +2161,7 @@ function rendreVente2(){
             ${champ('v2-s', 'Set', c.set_nom || '')}${champ('v2-pa', tt('Variante / insert', 'Parallel / insert'), c.parallele || '')}
             ${champ('v2-nu', tt('N° de carte', 'Card #'), c.numero || '')}${champ('v2-ti', tt('Numérotée /', 'Numbered /'), c.tirage || '', 'number')}
             ${champ('v2-g', tt('Gradation', 'Grade'), c.grade || '', 'text', 'placeholder="PSA 10"')}${champ('v2-ce', tt('N° de certificat', 'Cert #'), c.cert || '')}
+            ${p.psa_ok ? `<div class="large psa-v"><button class="btn ghost petit" id="v2-psa">${tt('Vérifier le certificat chez PSA', 'Verify the cert with PSA')}</button><div id="v2-psa-r">${V2.psa ? htmlPsa(V2.psa) : ''}</div></div>` : ''}
             <label class="bascule">Auto<input type="checkbox" id="v2-au" ${c.auto ? 'checked' : ''}></label>
             <label class="bascule">${tt('Recrue (RC)', 'Rookie (RC)')}<input type="checkbox" id="v2-rc" ${c.recrue ? 'checked' : ''}></label>
             <label class="bascule">Patch / relique<input type="checkbox" id="v2-re" ${c.relique ? 'checked' : ''}></label>
@@ -2171,6 +2176,13 @@ function rendreVente2(){
       <button class="btn" id="v2-pub">${tt('Vérifier et publier', 'Check and publish')}</button></div>
   </section>`;
   brancherVente2();
+}
+// 27 oct 2026 (Mathieu : « l'API publique de PSA ») : un tap verifie le certificat et remplit la carte (note, joueur, numero...)
+function htmlPsa(r){
+  const pop = r.pop != null ? ` · Pop ${esc(r.pop)}${r.pop_plus_haute != null ? ' · ' + esc(r.pop_plus_haute) + ' ' + tt('plus haute', 'higher') : ''}` : '';
+  return `<div class="psa-ok"><b>✓ ${tt('Vérifié chez PSA', 'Verified with PSA')}</b> · ${esc(r.grade || r.grade_texte || '')}${pop}
+    <span class="sous">${esc([r.annee, r.marque, r.joueur, r.numero ? '#' + r.numero : '', r.variante].filter(Boolean).join(' · '))}</span>
+    <a href="${esc(r.lien)}" target="_blank" rel="noopener">${tt('Voir le certificat officiel', 'View the official cert')} ↗</a></div>`;
 }
 function lireChampsVente(){
   const c = {...(V2.prep.carte || {}), ...(V2.champs || {})};
@@ -2191,6 +2203,18 @@ function brancherVente2(){
   seg('v2-ret', v => { o.retours = v; }); seg('v2-pro', v => { o.promotion = +v; }); seg('v2-etat', v => { o.etat = v; });
   const ch = (id, f) => { const e = $('#' + id); if (e) e.onchange = () => { f(e); re(); }; };
   ch('v2-off', e => { o.offres = e.checked; }); ch('v2-us', e => { o.us = e.checked; });
+  const bpsa = $('#v2-psa');
+  if (bpsa) bpsa.onclick = async () => {
+    const z = $('#v2-psa-r'); bpsa.disabled = true; z.innerHTML = roue;
+    const r = await API.psa_cert(val('v2-ce')).catch(e => ({ok:false, erreur:e.message}));
+    bpsa.disabled = false;
+    if (!r || !r.ok) { z.innerHTML = `<div class="bandeau">${esc((r && r.erreur) || tt('PSA ne répond pas', 'PSA is not answering'))}</div>`; return; }
+    const vide = (id, v) => { const e = $('#' + id); if (e && v && !e.value.trim()) e.value = v; };
+    const eg = $('#v2-g'); if (eg && r.grade) eg.value = r.grade;         // la note de PSA fait foi
+    vide('v2-j', r.joueur); vide('v2-nu', r.numero); vide('v2-m', r.marque); vide('v2-pa', r.variante); vide('v2-a', r.annee);
+    V2.psa = r; re();
+    toast(tt('Certificat vérifié chez PSA : touche « Refaire le titre et le prix » si la carte a changé', 'Cert verified with PSA: tap “Redo the title and price” if the card changed'), 4500);
+  };
   ch('v2-cl', e => { o.cout_lettre = nb(e.value) ?? o.cout_lettre; }); ch('v2-cs', e => { o.cout_suivi = nb(e.value) ?? o.cout_suivi; });
   ch('v2-ul', e => { o.us_cout_lettre = nb(e.value) ?? o.us_cout_lettre; }); ch('v2-us2', e => { o.us_cout_suivi = nb(e.value) ?? o.us_cout_suivi; });
   ch('v2-pds', e => { o.poids_g = nb(e.value) ?? o.poids_g; });
