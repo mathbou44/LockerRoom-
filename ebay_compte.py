@@ -129,12 +129,27 @@ _NS = {"e": "urn:ebay:apis:eBLBaseComponents"}
 MARGE_S = 120
 
 
+_VERROUS = {}
+
+
+def _verrou_de(chemin):
+    """27 oct 2026 (revue) : un verrou par fichier de jetons (rafraichir pendant une deconnexion ne la defait plus)."""
+    import threading
+    return _VERROUS.setdefault(chemin, threading.RLock())
+
+
 def _lire(chemin):
     try:
         with open(chemin, encoding="utf-8") as f:
-            return json.loads(comptes.dechiffrer(f.read())) or {}
-    except (OSError, ValueError):
+            brut = f.read()
+    except OSError:
         return {}
+    try:
+        return json.loads(comptes.dechiffrer(brut)) or {}
+    except ValueError:
+        return {}
+    except Exception:                         # cle LOCKERROOM_CLE changee ou absente : message clair, rien n'est ecrase
+        raise RuntimeError("Jetons eBay illisibles (clé du serveur changée) : reconnecte eBay")
 
 
 def _ecrire(chemin, data):
@@ -213,7 +228,11 @@ def _post_jeton(data):
         with urllib.request.urlopen(req, timeout=20) as r:
             return json.loads(r.read()), None
     except urllib.error.HTTPError as e:
-        return None, f"eBay a refusé (HTTP {e.code}) : {e.read().decode('utf-8', 'ignore')[:200]}"
+        brut = e.read().decode("utf-8", "ignore")[:300]
+        print(f"eBay jeton refuse HTTP {e.code} : {brut}", flush=True)          # journal du serveur seulement
+        if "invalid_grant" in brut:
+            return None, "invalid_grant"
+        return None, f"eBay a refusé la connexion (HTTP {e.code}) : réessaie dans un instant"
     except urllib.error.URLError as e:
         return None, f"eBay injoignable : {e.reason}"
 
@@ -264,7 +283,7 @@ def connexion_compte(texte, etat=None):
     c = _cles()
     p, err = _post_jeton({"grant_type": "authorization_code", "code": code, "redirect_uri": c["runame"]})
     if err:
-        return {"ok": False, "erreur": err}
+        return {"ok": False, "erreur": "Code eBay expiré : recommence la connexion" if err == "invalid_grant" else err}
     try:
         u = _identite(p["access_token"])
     except Exception:
@@ -273,6 +292,7 @@ def connexion_compte(texte, etat=None):
         return {"ok": False, "erreur": "eBay n'a pas confirmé ton identité : recommence"}
     relie = next(iter(comptes.par_champ("ebay_user_id", u["userId"])), None)   # 27 oct 2026 : deja relie a un compte Apple / Google
     cid, nouveau = (relie, False) if relie else comptes.trouver_ou_creer(u["userId"], u.get("username"), environnement())
+    comptes.maj(cid, ebay_user_id=u["userId"], ebay_username=u.get("username"))   # identite confirmee par eBay
     maintenant = time.time()
     with comptes.utiliser(cid):
         j = _lire(chemin_jetons())
@@ -296,7 +316,7 @@ def terminer_connexion(texte, etat=None):
     c = _cles()
     p, err = _post_jeton({"grant_type": "authorization_code", "code": code, "redirect_uri": c["runame"]})
     if err:
-        return {"ok": False, "erreur": err}
+        return {"ok": False, "erreur": "Code eBay expiré : recommence la connexion" if err == "invalid_grant" else err}
     maintenant = time.time()
     j.update(access_token=p["access_token"], access_expire_a=maintenant + int(p.get("expires_in", 7200)),
              refresh_token=p.get("refresh_token"), refresh_expire_a=maintenant + int(p.get("refresh_token_expires_in", 47304000)))
@@ -306,6 +326,7 @@ def terminer_connexion(texte, etat=None):
     try:
         u = _get_json(url("identite"))
         j["compte"] = u.get("username")
+        j["ebay_user_id"] = u.get("userId")
         _ecrire(chemin_jetons(), j)
         if comptes.MULTI and comptes.courant():           # 27 oct 2026 : compte Apple / Google qui relie son eBay
             comptes.maj(comptes.courant(), ebay_username=u.get("username"), ebay_user_id=u.get("userId"))
@@ -315,27 +336,39 @@ def terminer_connexion(texte, etat=None):
 
 
 def deconnecter():
-    j = _lire(chemin_jetons())
-    for k in ("access_token", "access_expire_a", "refresh_token", "refresh_expire_a", "compte"):
-        j.pop(k, None)
-    _ecrire(chemin_jetons(), j)
+    ch = chemin_jetons()
+    with _verrou_de(ch):
+        j = _lire(ch)
+        for k in ("access_token", "access_expire_a", "refresh_token", "refresh_expire_a", "compte"):
+            j.pop(k, None)
+        _ecrire(ch, j)
     return statut()
 
 
 def jeton():
-    j = _lire(chemin_jetons())
-    if j.get("access_token") and j.get("access_expire_a", 0) > time.time() + MARGE_S:
-        return j["access_token"]
-    if not j.get("refresh_token") or j.get("refresh_expire_a", 0) <= time.time():
-        raise RuntimeError("Compte eBay non connecté")
-    p, err = _post_jeton({"grant_type": "refresh_token", "refresh_token": j["refresh_token"], "scope": " ".join(j.get("scopes") or SCOPES)})
-    if err:
-        raise RuntimeError(err)
-    j.update(access_token=p["access_token"], access_expire_a=time.time() + int(p.get("expires_in", 7200)))
-    if p.get("refresh_token"):
-        j.update(refresh_token=p["refresh_token"], refresh_expire_a=time.time() + int(p.get("refresh_token_expires_in", 47304000)))
-    _ecrire(chemin_jetons(), j)
-    return j["access_token"]
+    ch = chemin_jetons()
+    with _verrou_de(ch):                      # un seul rafraichissement a la fois par compte
+        j = _lire(ch)
+        if j.get("access_token") and j.get("access_expire_a", 0) > time.time() + MARGE_S:
+            return j["access_token"]
+        if not j.get("refresh_token") or j.get("refresh_expire_a", 0) <= time.time():
+            raise RuntimeError("Compte eBay non connecté")
+        p, err = _post_jeton({"grant_type": "refresh_token", "refresh_token": j["refresh_token"], "scope": " ".join(j.get("scopes") or SCOPES)})
+        j2 = _lire(ch)                        # relu apres l'appel : on ne garde que les champs du jeton
+        if j2.get("refresh_token") != j.get("refresh_token"):
+            raise RuntimeError("Compte eBay changé pendant la connexion : réessaie")
+        if err == "invalid_grant":            # 27 oct 2026 : acces retire chez eBay -> on le dit, on arrete de reessayer
+            for k in ("access_token", "access_expire_a", "refresh_token", "refresh_expire_a"):
+                j2.pop(k, None)
+            _ecrire(ch, j2)
+            raise RuntimeError("Accès eBay retiré ou expiré : reconnecte eBay dans Réglages")
+        if err:
+            raise RuntimeError(err)
+        j2.update(access_token=p["access_token"], access_expire_a=time.time() + int(p.get("expires_in", 7200)))
+        if p.get("refresh_token"):
+            j2.update(refresh_token=p["refresh_token"], refresh_expire_a=time.time() + int(p.get("refresh_token_expires_in", 47304000)))
+        _ecrire(ch, j2)
+        return j2["access_token"]
 
 
 # -- lectures ---------------------------------------------------------------------------------
@@ -542,16 +575,37 @@ def noter_synchro(bilan):
 TAUX_CAD = {"CAD": 1.0, "USD": 1.38}
 
 
+def _taux_vers_cad(dev):
+    """27 oct 2026 (revue) : le meme taux USD -> CAD que SoldComps (Banque du Canada, du jour) ; devise inconnue : None."""
+    if dev == "CAD":
+        return 1.0
+    if dev == "USD":
+        if time.time() - _TAUX_MEMO[1] > 600:
+            try:
+                import vendues
+                _TAUX_MEMO[:] = [float(vendues._taux_usd_cad()), time.time()]
+            except Exception:
+                _TAUX_MEMO[:] = [TAUX_CAD["USD"], time.time()]
+        return _TAUX_MEMO[0]
+    return None
+
+
+_TAUX_MEMO = [TAUX_CAD["USD"], 0.0]
+
+
 def jeton_application():
-    j = _lire(chemin_jetons())
-    if j.get("app_token") and j.get("app_expire_a", 0) > time.time() + MARGE_S:
-        return j["app_token"]
-    p, err = _post_jeton({"grant_type": "client_credentials", "scope": SCOPES[0]})
-    if err:
-        raise RuntimeError(err)
-    j.update(app_token=p["access_token"], app_expire_a=time.time() + int(p.get("expires_in", 7200)))
-    _ecrire(chemin_jetons(), j)
-    return j["app_token"]
+    ch = chemin_jetons()
+    with _verrou_de(ch):
+        j = _lire(ch)
+        if j.get("app_token") and j.get("app_expire_a", 0) > time.time() + MARGE_S:
+            return j["app_token"]
+        p, err = _post_jeton({"grant_type": "client_credentials", "scope": SCOPES[0]})
+        if err:
+            raise RuntimeError("eBay a refusé la connexion de l'app : réessaie dans un instant" if err == "invalid_grant" else err)
+        j2 = _lire(ch)
+        j2.update(app_token=p["access_token"], app_expire_a=time.time() + int(p.get("expires_in", 7200)))
+        _ecrire(ch, j2)
+        return j2["app_token"]
 
 
 def rechercher(q, categorie=None, prix_max=None, recentes=False, limite=50, fond=True, encheres=False, flux=False, offset=0):
@@ -619,7 +673,7 @@ def article(item_id, fond=False):
         raise RuntimeError(f"eBay HTTP {e.code} : {e.read().decode('utf-8', 'ignore')[:160]}")
     pr = d.get("currentBidPrice") or d.get("price") or {}
     dev = pr.get("currency") or "CAD"
-    t = TAUX_CAD.get(dev, 1.0)
+    t = _taux_vers_cad(dev) or 0.0              # devise inconnue : prix 0 -> l'annonce n'est pas jugee
     opt = (d.get("shippingOptions") or [{}])[0]
     port = (opt.get("shippingCost") or {}).get("value")
     imgs = [x.get("imageUrl") for x in [d.get("image") or {}] + (d.get("additionalImages") or []) if x.get("imageUrl")]
@@ -644,8 +698,8 @@ def lire_recherche(d):
             continue
         port = ((it.get("shippingOptions") or [{}])[0].get("shippingCost") or {}).get("value")
         out.append({"item_id": str(it.get("legacyItemId") or it.get("itemId") or ""), "titre": it.get("title") or "",
-                    "prix_cad": round(float(pr["value"]) * TAUX_CAD[dev], 2),
-                    "port_cad": round(float(port) * TAUX_CAD[dev], 2) if port not in (None, "") else None,
+                    "prix_cad": round(float(pr["value"]) * _taux_vers_cad(dev), 2),
+                    "port_cad": round(float(port) * _taux_vers_cad(dev), 2) if port not in (None, "") else None,
                     "url": it.get("itemWebUrl") or "", "photo": (it.get("image") or {}).get("imageUrl") or "",
                     "vendeur": (it.get("seller") or {}).get("username") or "",
                     "vendeur_pct": (it.get("seller") or {}).get("feedbackPercentage"),

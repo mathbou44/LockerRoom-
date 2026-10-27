@@ -60,6 +60,8 @@ CATEGORIE_CARTES = "261328"   # eBay : Sports Trading Card Singles
 REGLAGES_DEFAUT = {
     "nom_boutique": "Ma boutique",
     "equipe_fav": "",                                           # 26 oct 2026 : les accents de l'app aux couleurs de cette equipe
+    "palette": "refractor",                                     # 27 oct 2026 : refractor + 5 paralleles
+    "ia_photos_ok": False,                                      # 27 oct 2026 : permission explicite (Apple 5.1.2(i))
     "frais_ebay_pct": 13.25, "frais_ebay_fixe": 0.40,           # eBay Canada, cartes (a ajuster a ton compte)
     "frais_break_pct": 10.9, "frais_break_fixe": 0.30,          # plateforme de live (ex. commission + paiement)
     "taxes_pct": 14.975,                                        # TPS + TVQ (Quebec)
@@ -71,7 +73,7 @@ REGLAGES_DEFAUT = {
     "mode": "",                  # 22 oct 2026 - "vendeur" ou "acheteur" (vide = a choisir a la 1re ouverture)
     "epn_campid": "",
     "langue": "",
-    "partage_ventes": True,
+    "partage_ventes": None,       # 27 oct 2026 : on DEMANDE (oui / non) ; sans reponse, rien n'est partage
     "budget_mois": 0,            # 25 oct 2026 - acheteur : budget du mois ($ CA), 0 = aucun
     "niveau": "",                # 26 oct 2026 - questionnaire : debutant | retour | moyen | expert (adapte les conseils)
     "objectif": "",              #   collection | profit | breaks | tout      # 25 oct 2026 - mes ventes (anonymes) aident les prix vendus de la communaute                # 24 oct 2026 - "fr" ou "en" (vide = celle du navigateur)
@@ -210,6 +212,14 @@ _IOS = _cv.ContextVar("lockerroom_ios", default=False)
 
 def marquer_ios(oui):
     _IOS.set(bool(oui))
+
+
+def ebay_prix_actif():
+    """27 oct 2026 - interrupteur du serveur (LOCKERROOM_EBAY_PRIX=0) : coupe d'un geste les fonctions de prix sur les
+    ANNONCES eBay (deals, prix suggere d'une annonce, repere prix et comparables, « Mettre au prix du marche ») si eBay
+    le demande (licence API §9.5) ou coupe nos cles. Valeur d'une carte, tendances, breaks, inventaire et comptoir
+    continuent : ils ne dependent pas de l'API eBay."""
+    return os.environ.get("LOCKERROOM_EBAY_PRIX", "1") != "0"
 
 
 def est_ios():
@@ -381,6 +391,16 @@ class Api:
                     admin.noter_erreur("compte_supprimer stripe", e)
                 except Exception:
                     pass
+        if info.get("apple_rt"):                 # 27 oct 2026 : Sign in with Apple -> acces retire chez Apple aussi
+            try:
+                import auth_tiers
+                auth_tiers.revoquer_apple(comptes.dechiffrer(info["apple_rt"]))
+            except Exception as e:
+                try:
+                    import admin
+                    admin.noter_erreur("compte_supprimer apple", e)
+                except Exception:
+                    pass
         comptes.supprimer(cid)
         return {"ok": True, "deconnecter": True}
 
@@ -392,8 +412,11 @@ class Api:
             return {"ok": False, "erreur": "Non disponible dans l’app iPhone"}
         if not cid:
             return {"ok": False, "erreur": "Le forfait Pro se prend dans la version en ligne"}
+        e = comptes.info(cid) or {}
+        if e.get("forfait") == "pro" and (e.get("stripe_abonnement") or e.get("forfait_source") == "apple"):   # pas un 2e abonnement
+            return {"ok": False, "erreur": "Ton forfait Pro est déjà actif : gère-le dans « Gérer mon abonnement »", "deja_pro": True}
         try:
-            return {"ok": True, "url": paiements.creer_paiement(cid, (comptes.info(cid) or {}).get("stripe_client"))}
+            return {"ok": True, "url": paiements.creer_paiement(cid, e.get("stripe_client"))}
         except paiements.Erreur as e:
             return {"ok": False, "erreur": str(e)}
 
@@ -403,10 +426,64 @@ class Api:
         cid = comptes.courant() if comptes.MULTI else None
         if est_ios():
             return {"ok": False, "erreur": "Non disponible dans l’app iPhone"}
+        if cid and (comptes.info(cid) or {}).get("forfait_source") == "apple":
+            return {"ok": False, "erreur": "Ton Pro est pris avec ton identifiant Apple : gère-le dans Réglages de l’iPhone › ton nom › Abonnements"}
         try:
             return {"ok": True, "url": paiements.portail((comptes.info(cid) or {}).get("stripe_client") if cid else None)}
         except paiements.Erreur as e:
             return {"ok": False, "erreur": str(e)}
+
+    # -- 27 oct 2026 : achat integre Apple (voir achats_apple.py) -------------------------------------------------
+    def apple_achat_info(self):
+        """Pour l'app iPhone : le produit a acheter et le jeton (UUID) qui relie l'achat a CE compte."""
+        import achats_apple
+        import comptes
+        import forfaits
+        cid = comptes.courant() if comptes.MULTI else None
+        if not cid:
+            return {"ok": False, "erreur": "Connecte-toi pour prendre le Pro"}
+        e = forfaits.etat()
+        return {"ok": True, "produit": achats_apple.produit(), "jeton": achats_apple.jeton_compte(cid),
+                "pro_ailleurs": bool(e.get("payant") and e.get("source") != "apple") or bool(e.get("offert")),
+                "pro_apple": bool(e.get("payant") and e.get("source") == "apple")}
+
+    def apple_achat_valider(self, jws):
+        """Transaction signee par Apple (achat, renouvellement vu par l'app) -> forfait du compte."""
+        import achats_apple
+        import comptes
+        import forfaits
+        cid = comptes.courant() if comptes.MULTI else None
+        if not cid:
+            return {"ok": False, "erreur": "Connecte-toi pour prendre le Pro"}
+        try:
+            ch = achats_apple.valider(jws, cid, comptes)
+        except achats_apple.Refus as e:
+            return {"ok": False, "erreur": str(e)}
+        return {"ok": True, "pro": ch["forfait"] == "pro", **forfaits.resume()}
+
+    def apple_achats_restaurer(self, liste):
+        """« Restaurer mes achats » : les transactions de l'identifiant Apple ; la plus recente valide gagne."""
+        import achats_apple
+        import comptes
+        import forfaits
+        cid = comptes.courant() if comptes.MULTI else None
+        if not cid:
+            return {"ok": False, "erreur": "Connecte-toi pour restaurer"}
+        bons, erreur = [], None
+        for jws in (liste or [])[:20]:
+            try:
+                tx = achats_apple.verifier_jws(jws)
+                achats_apple.champs_transaction(tx)
+                bons.append((tx.get("expiresDate") or 0, jws))
+            except achats_apple.Refus as e:
+                erreur = str(e)
+        if not bons:
+            return {"ok": False, "erreur": "Aucun abonnement SlabCoach Pro trouvé pour cet identifiant Apple" if not erreur or "autre" in erreur else erreur}
+        try:
+            ch = achats_apple.valider(max(bons)[1], cid, comptes)
+        except achats_apple.Refus as e:
+            return {"ok": False, "erreur": str(e)}
+        return {"ok": True, "pro": ch["forfait"] == "pro", **forfaits.resume()}
 
     # -- logo de la boutique (23 oct 2026) : une petite image (data URL, reduite par l'ecran) ------
     def logo_lire(self):
@@ -461,6 +538,8 @@ class Api:
     def photo_identifier(self, photos):
         """1 ou 2 photos (devant, dos) -> fiche pre-remplie. Rien n'est enregistre : l'ecran montre
         la fiche (champs douteux en or) et l'utilisateur touche « Enregistrer »."""
+        if not self.reglages_lire().get("ia_photos_ok"):      # 27 oct 2026 : rien ne part chez l'IA sans un OUI explicite
+            return {"ok": False, "erreur": "Permission de lecture par l’IA requise", "consentement_requis": True}
         try:
             r = vision.identifier(photos if isinstance(photos, list) else [photos])
         except vision.Erreur as e:
@@ -780,9 +859,17 @@ class Api:
         import comptes
         if not comptes.MULTI:
             return True
-        u = str((comptes.info(comptes.courant()) or {}).get("username") or "").strip().lower()
+        # 27 oct 2026 (revue de securite) : seulement une identite VERIFIEE. Le nom d'un compte Apple / Google est choisi
+        # par la personne (on pourrait s'appeler comme l'admin) : il ne compte pas. Valent : le pseudo eBay confirme par eBay,
+        # ou l'identifiant du compte SlabCoach.
+        cid = comptes.courant()
+        e = comptes.info(cid) or {}
+        verifies = {cid, e.get("ebay_username")}
+        if e.get("env") in ("production", "sandbox"):          # compte cree par « Se connecter avec eBay »
+            verifies.add(e.get("username"))
+        verifies = {str(x).strip().lower() for x in verifies if x}
         admins = {x.strip().lower() for x in os.environ.get("LOCKERROOM_ADMINS", "").split(",") if x.strip()}
-        return bool(u) and u in admins
+        return bool(verifies & admins)
 
     def catalogue_importer(self, d):
         """d : {fichier (data URL ou base64), nom_fichier, produit_id (produit existant) | nom, saison, marque, sport}."""
@@ -1742,7 +1829,10 @@ class Api:
             if m and m.get("mediane"):
                 r["marche"] = {k: m[k] for k in ("mediane", "n", "bas", "verdict", "ecart", "suggestion", "maj")}
         import forfaits                          # Gratuit : le repere prix sur 3 cartes (les autres : « Pro »)
-        if not forfaits.est_pro():
+        if not ebay_prix_actif():                # interrupteur : pas de repere prix sur les annonces eBay
+            for r_ in out:
+                r_.pop("marche", None)
+        elif not forfaits.est_pro():
             vus = 0
             for r in out:
                 if r.get("marche"):
@@ -1756,6 +1846,8 @@ class Api:
 
     def carte_comps(self, item_number):
         """Les memes cartes en vente (gardees par cartes_match) pour une de tes annonces."""
+        if not ebay_prix_actif():
+            return {"ok": True, "comps": [], "n": 0, "coupe": True}
         with _verrou:
             c = self._db()
             try:
@@ -1768,6 +1860,15 @@ class Api:
             comps = json.loads(r["comps"] or "[]")
         except ValueError:
             comps = []
+        # 27 oct 2026 (licence eBay §8.1) : des annonces eBay de plus de 6 h ne sont plus montrees (la mediane, elle, vient
+        # des ventes reelles)
+        try:
+            vieux = (datetime.now() - datetime.fromisoformat(str(r["maj"])[:19])).total_seconds() > 6 * 3600
+        except (TypeError, ValueError):
+            vieux = True
+        if vieux:
+            return {"ok": True, "comps": [], "mediane": r["mediane"], "n": r["n"], "bas": None, "maj": r["maj"],
+                    "requete": r["requete"], "a_rafraichir": True}
         return {"ok": True, "comps": comps, "mediane": r["mediane"], "n": r["n"], "bas": r["bas"], "maj": r["maj"], "requete": r["requete"]}
 
     def _photos_vendues(self, n=25):
@@ -2122,6 +2223,8 @@ class Api:
                 "ebay": ebay_compte.statut().get("connecte"), "cles": ebay_compte.statut().get("cles_ok")}
 
     def sante_liste(self, verdict):
+        if not ebay_prix_actif():
+            return []
         with _verrou:
             c = self._db()
             try:
@@ -2140,7 +2243,14 @@ class Api:
                 c.close()
         cle = {"baisser": lambda x: -(x.get("ecart") or 0), "monter": lambda x: x.get("ecart") or 0,
                "traine": lambda x: -(x.get("age") or 0)}.get(verdict, lambda x: 0)
-        return sorted(out, key=cle)
+        out = sorted(out, key=cle)
+        import forfaits                          # 27 oct 2026 (revue) : Gratuit = le repere prix sur 3 cartes, ici aussi
+        if not forfaits.est_pro():
+            for x in out[forfaits.LIMITES["repere"]:]:
+                for k in ("mediane", "suggestion", "ecart", "bas", "n"):
+                    x.pop(k, None)
+                x["marche_pro"] = True
+        return out
 
     def sante_fait(self, item_number):
         """Le vendeur a traite la suggestion : cachee jusqu'a la prochaine evaluation."""
@@ -2208,6 +2318,11 @@ class Api:
 
     def ebay_publier(self, cid, prix=None, verifier=False):
         """Met UNE carte de l'inventaire en vente (photo de la fiche, details deja remplis)."""
+        import forfaits
+        try:                                     # 27 oct 2026 (revue) : meme limite du Gratuit que l'ecran Vendre
+            forfaits.verifier("annonces_mois")
+        except forfaits.LimiteAtteinte as e:
+            return {"ok": False, "erreur": str(e), "pro_requis": True}
         with _verrou:
             c = self._db()
             try:
@@ -2229,6 +2344,7 @@ class Api:
         r = self._ecrire_ebay("publier", carte, prix, photos, r_.get("description_ebay") or "",
                               expedition=r_.get("expedition_ebay") or None, sku=sku, verifier_seulement=bool(verifier))
         if r.get("ok") and r.get("item_id"):
+            forfaits.compter("annonces_mois")
             with _verrou:
                 c = self._db()
                 try:
@@ -2245,6 +2361,12 @@ class Api:
         Rien n'est publie ni enregistre ici."""
         import annonces
         import cartes_match
+        import forfaits
+        try:                                     # 27 oct 2026 (revue) : le quota eBay est partage par tous les comptes
+            forfaits.verifier("preparer_jour")
+        except forfaits.LimiteAtteinte as e:
+            return {"ok": False, "erreur": str(e), "pro_requis": True}
+        forfaits.compter("preparer_jour")
         c = {k: v for k, v in (champs or {}).items() if not str(k).startswith("_")}
         c["sport"] = c.get("sport") or self.sport_de(c)
         titre = annonces.titre_optimise(c) if (c.get("joueur") or c.get("set_nom")) else str(c.get("titre") or "")[:80]
@@ -2271,6 +2393,8 @@ class Api:
         franco = (langue or r.get("langue") or "fr") != "en"
         desc = annonces.description(c, titre, franco, modele["etat"], r.get("nom_boutique"), modele["retours"], modele["expedition"])
         jetons = ebay_compte._lire(ebay_compte.chemin_jetons())
+        if not ebay_prix_actif():                # interrupteur : pas de prix suggere pour une annonce eBay
+            prix, n, comps, note = None, 0, [], "Choisis ton prix"
         return {"ok": True, "titre": titre, "carte": c, "prix": prix, "n": n, "comps": comps, "note": note, "description": desc,
                 "specifiques": annonces.specifiques(c), "modele": modele, "frais_pct": r["frais_ebay_pct"], "frais_fixe": ff,
                 "etats": {k: v[2] if franco else v[1] for k, v in annonces.ETATS_BRUTS.items()},
@@ -2962,7 +3086,13 @@ class Api:
         """Filtres : sports [..], type fixe|encan, tri rabais|fin|prix|gain|recent. Gratuit : les 5 meilleurs."""
         import forfaits
         f = f or {}
-        tout = self._deals_fusion()
+        if not ebay_prix_actif():
+            return {"ok": True, "deals": [], "pres": [], "n": 0, "total": 0, "pro": forfaits.est_pro(), "limite": None,
+                    "secours": False, "sports": {}, "coupe": True}
+        import deals as _dl
+        # 27 oct 2026 (revue) : verifie AUSSI a la lecture (meme si le chasseur est en panne) : vu il y a 6 h au plus, encan pas fini
+        lim_l = (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat()
+        tout = [x for x in self._deals_fusion() if _dl.encore_ouvert(x) and (x.get("source") != "marche" or str(x.get("vu_le") or "") >= lim_l)]
         rg = self.reglages_lire()
         fp_, ff_ = (rg["frais_ebay_pct"] or 0) / 100, rg["frais_ebay_fixe"] or 0
         par_sport = {}
@@ -2996,7 +3126,9 @@ class Api:
         secours = False
         if not tout and (dd.get("secours") or {}).get("deals"):
             lim6 = (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat()
-            sec = [dict(x, source="marche") for x in dd["secours"]["deals"] if str(x.get("vu_le") or "") >= lim6 and _d.valide(x)]
+            ret = dd.get("retires") or {}            # 27 oct 2026 (revue) : ni vendu / retire, ni encan fini
+            sec = [dict(x, source="marche") for x in dd["secours"]["deals"] if str(x.get("vu_le") or "") >= lim6 and _d.valide(x)
+                   and str(x.get("item_id")) not in ret and _d.encore_ouvert(x)]
             for x in sec:
                 x["gain"] = round((x.get("valeur") or 0) * (1 - fp_) - ff_ - (x.get("total") or 0), 2)
                 x["rabais"] = round(100 * (1 - (x.get("ratio") or 1)))
@@ -3006,8 +3138,9 @@ class Api:
                 if not pro:
                     lst = lst[:forfaits.LIMITES["deals"]]
         pres = []
+        ret_p = dd.get("retires") or {}
         for x in dd.get("pres") or []:
-            if str(x.get("item_id")) in _d._bannis():
+            if str(x.get("item_id")) in _d._bannis() or str(x.get("item_id")) in ret_p or not _d.encore_ouvert(x):
                 continue
             y = dict(x, source="marche", gain=round((x.get("valeur") or 0) * (1 - fp_) - ff_ - (x.get("total") or 0), 2),
                      rabais=round(100 * (1 - (x.get("ratio") or 1))))
@@ -3095,6 +3228,8 @@ class Api:
                 _dl.corriger(item_id, valeur if juger else None, gain_v, total)
             except Exception:
                 pass
+        if not ebay_prix_actif():                # interrupteur : l'annonce seule, sans valeur ni rabais
+            return {"ok": True, "article": {**a, "total": total}, "comps": [], "n": 0, "coupe": True}
         return {"ok": True, "article": {**a, "total": total}, "comps": comps, "mediane": med, "n": n,
                 "suggere": suggere, "ventes": ventes, "mediane_vendue": vc.get("mediane"), "nb_vendues": vc.get("nb") or len(ventes),
                 "valeur": valeur, "valeur_source": "vendues" if vm else "annonces", "ventes_attente": bool(vc.get("attente")),
@@ -3258,7 +3393,9 @@ class Api:
     def valeur_signaler(self, q, item_id, titre, bonne=False):
         """« Pas la bonne carte » (ou « c'est la bonne ») : l'app apprend, pour tout le monde."""
         import cartes_match
-        return cartes_match.apprendre(q, item_id, titre, bool(bonne))
+        import comptes
+        return cartes_match.apprendre(q, item_id, titre, bool(bonne), votant=comptes.courant(),
+                                      confiance=(not comptes.MULTI) or self._est_admin())
 
     def accueil(self):
         maint = datetime.now()

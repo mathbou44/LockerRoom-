@@ -24,6 +24,7 @@ p,li{color:#DCD9E2} a{color:var(--acc)} .maj{color:var(--doux); font-size:14px}
 details{background:var(--carte); border-radius:14px; padding:12px 14px; margin:10px 0} summary{cursor:pointer; font-weight:600} details p{margin:8px 0 2px}
 .mail{font-size:20px; font-weight:700}
 nav{display:flex; flex-wrap:wrap; gap:14px; margin-top:32px; font-size:14px}
+.ios-seul{display:none}
 </style>
 </head>
 <body><main>
@@ -34,30 +35,30 @@ nav{display:flex; flex-wrap:wrap; gap:14px; margin-top:32px; font-size:14px}
 
 <h2>Questions fréquentes</h2>
 <details><summary>Comment annuler mon abonnement Pro ?</summary>
-<p><b>Acheté sur slabcoach.com :</b> dans l'app, Réglages › Gérer mon abonnement, puis Annuler. Le Pro reste actif jusqu'à la fin du mois payé.</p>
+<p class="web-seul"><b>Acheté sur slabcoach.com :</b> dans l'app, Réglages › Gérer mon abonnement, puis Annuler. Le Pro reste actif jusqu'à la fin du mois payé.</p>
 <p><b>Acheté dans l'app iPhone :</b> Réglages de l'iPhone › ton nom › Abonnements › SlabCoach › Annuler l'abonnement.</p></details>
 <details><summary>Comment obtenir un remboursement ?</summary>
-<p><b>Acheté sur slabcoach.com :</b> écris à support@slabcoach.com avec le courriel de ton compte.</p>
+<p class="web-seul"><b>Acheté sur slabcoach.com :</b> écris à support@slabcoach.com avec le courriel de ton compte.</p>
 <p><b>Acheté dans l'app iPhone :</b> c'est Apple qui rembourse, sur <a href="https://reportaproblem.apple.com" rel="noopener">reportaproblem.apple.com</a>.</p></details>
 <details><summary>Comment supprimer mon compte ?</summary>
-<p>Dans l'app : Réglages › Supprimer mon compte SlabCoach. Toutes tes données sont effacées pour de bon. Un abonnement acheté sur le site est annulé ; un abonnement acheté sur iPhone s'annule dans les Réglages de l'iPhone.</p></details>
+<p>Dans l'app : Réglages › Compte et aide › Supprimer mon compte SlabCoach. Toutes tes données sont effacées pour de bon.<span class="web-seul"> Un abonnement acheté sur le site est annulé.</span> Un abonnement acheté sur iPhone s'annule dans les Réglages de l'iPhone : sinon Apple continue de le facturer.</p></details>
 <details><summary>Comment déconnecter mon compte eBay ?</summary>
-<p>Dans l'app : Réglages › eBay › Déconnecter. Tu peux aussi retirer l'accès sur eBay : Compte › Préférences de connexion.</p></details>
+<p>Dans l'app : Réglages › eBay › Déconnecter eBay. Tu peux aussi retirer l'accès sur eBay : Compte › Préférences de connexion.</p></details>
 <details><summary>Est-ce que SlabCoach achète ou mise à ma place ?</summary>
 <p>Non. Rien n'est acheté, misé, publié ou changé de prix sans un geste de ta part.</p></details>
 <details><summary>D'où viennent les valeurs des cartes ?</summary>
-<p>Des ventes réelles des mêmes cartes (eBay et la communauté SlabCoach), sur les 90 derniers jours. Quand il y a peu de ventes, l'app le dit.</p></details>
+<p>Des ventes réelles des mêmes cartes (eBay et la communauté SlabCoach), sur les 90 derniers jours (jusqu'à 6 mois pour les cartes rares : numérotées, autos, patchs). Quand il n'y a pas assez de ventes sûres, l'app n'affiche pas de valeur.</p></details>
 
 <h2 id="en">Support (English)</h2>
 <div class="bloc">Questions, problems or ideas? Email <span class="mail">support@slabcoach.com</span>. We answer every email.</div>
 <details><summary>How do I cancel Pro?</summary>
-<p><b>Bought on slabcoach.com:</b> in the app, Settings › Manage my subscription › Cancel. Pro stays active until the end of the paid month.</p>
+<p class="web-seul"><b>Bought on slabcoach.com:</b> in the app, Settings › Manage my subscription › Cancel. Pro stays active until the end of the paid month.</p>
 <p><b>Bought in the iPhone app:</b> iPhone Settings › your name › Subscriptions › SlabCoach › Cancel Subscription.</p></details>
 <details><summary>How do I get a refund?</summary>
-<p><b>Bought on slabcoach.com:</b> email support@slabcoach.com with your account email.</p>
+<p class="web-seul"><b>Bought on slabcoach.com:</b> email support@slabcoach.com with your account email.</p>
 <p><b>Bought in the iPhone app:</b> Apple handles refunds at <a href="https://reportaproblem.apple.com" rel="noopener">reportaproblem.apple.com</a>.</p></details>
 <details><summary>How do I delete my account?</summary>
-<p>In the app: Settings › Delete my SlabCoach account. All your data is permanently erased.</p></details>
+<p>In the app: Settings › Account and help › Delete my SlabCoach account. All your data is permanently erased.<span class="web-seul"> A subscription bought on the website is cancelled.</span> A subscription bought on iPhone is cancelled in iPhone Settings; otherwise Apple keeps billing it.</p></details>
 <details><summary>Does SlabCoach buy or bid for me?</summary>
 <p>No. Nothing is bought, bid, listed or repriced without your action.</p></details>
 <nav><a href="/">Ouvrir l'app</a><a href="/support">Support</a><a href="/confidentialite">Confidentialité</a><a href="/conditions">Conditions</a></nav>

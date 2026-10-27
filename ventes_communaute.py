@@ -74,12 +74,13 @@ def _bases():
 
 
 def _partage(c):
-    """Le compte partage-t-il ses ventes ? (oui par defaut ; Reglages : « partage_ventes »)"""
+    """Le compte partage-t-il ses ventes ? 27 oct 2026 (Apple 5.1.1(ii), Loi 25) : seulement apres un OUI clair ;
+    sans reponse, non (Reglages : « partage_ventes »)."""
     try:
         r = c.execute("SELECT v FROM reglages WHERE k='partage_ventes'").fetchone()
-        return True if r is None else bool(json.loads(r[0]))
+        return False if r is None else json.loads(r[0]) is True
     except (sqlite3.Error, ValueError):
-        return True
+        return False
 
 
 def rafraichir():
@@ -112,7 +113,7 @@ def rafraichir():
                 continue
             cle = hashlib.sha256(f"{sel}|{cid}|{r['item_number'] or r['id']}".encode()).hexdigest()[:24]
             photo = r["photo"] if str(r["photo"] or "").startswith("http") else None        # jamais une photo privee (data:)
-            lignes.append((cle, titre[:200], cartes_match.norm(titre), round(float(r["prix_vendu"] or 0) + float(r["port_charge"] or 0), 2),
+            lignes.append((cle, titre[:200], cartes_match.norm(titre), round(float(r["prix_vendu"] or 0), 2),     # 27 oct 2026 : sans le port, comme les ventes SoldComps
                            str(r["vendu_le"] or "")[:10], photo, r["sport"], ici))
             n += 1
     with _verrou:

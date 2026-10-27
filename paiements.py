@@ -187,7 +187,7 @@ def _fin_periode(abo):
 
 def _depuis_abonnement(abo):
     statut = abo.get("status") or ""
-    return {"forfait": "pro" if statut in STATUTS_PRO else "gratuit", "forfait_statut": statut,
+    return {"forfait": "pro" if statut in STATUTS_PRO else "gratuit", "forfait_statut": statut, "forfait_source": "stripe",
             "stripe_client": abo.get("customer"), "stripe_abonnement": abo.get("id"),
             "forfait_fin": _fin_periode(abo), "forfait_annule": bool(abo.get("cancel_at_period_end"))}
 
@@ -203,7 +203,7 @@ def traiter(ev, relire=True):
         cid = o.get("client_reference_id") or (o.get("metadata") or {}).get("compte")
         if o.get("mode") != "subscription" or not cid:
             return None
-        champs = {"forfait": "pro", "forfait_statut": "active", "stripe_client": o.get("customer"),
+        champs = {"forfait": "pro", "forfait_statut": "active", "forfait_source": "stripe", "stripe_client": o.get("customer"),
                   "stripe_abonnement": o.get("subscription")}
         if relire and o.get("subscription"):
             try:
@@ -270,5 +270,14 @@ def recevoir(corps, entete):
         cid = next(iter(comptes.par_champ("stripe_client", cid[7:])), None)
     if not cid or cid not in comptes.lister():
         return 200, "compte inconnu"
+    # 27 oct 2026 (revue) : un AUTRE abonnement du meme compte (ancien, ou pris deux fois) qui finit ne retire pas le Pro
+    # de celui qui est encore paye.
+    if (comptes.info(cid) or {}).get("forfait_source") == "apple" and champs.get("forfait") != "pro":
+        return 200, "Pro Apple : ignoré"            # 27 oct 2026 : un avis Stripe ne retire pas un Pro pris chez Apple
+    actuel = (comptes.info(cid) or {}).get("stripe_abonnement")
+    if (ev.get("type") or "").startswith("customer.subscription.") and actuel and champs.get("stripe_abonnement") \
+            and champs["stripe_abonnement"] != actuel and champs.get("forfait") != "pro" \
+            and (comptes.info(cid) or {}).get("forfait") == "pro":
+        return 200, "autre abonnement : ignoré"
     comptes.maj(cid, **champs)
     return 200, "ok"

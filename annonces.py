@@ -30,7 +30,7 @@ MODELE_DEFAUT = {
     "cout_lettre": 2.50, "cout_suivi": 12.00, "us": True, "us_cout_lettre": 6.50, "us_cout_suivi": 22.00,
     "delai": 2, "poids_g": 30,
     "retours": "non",                       # non | 30_acheteur | 30_gratuit
-    "offres": True, "offre_auto_pct": 90, "offre_min_pct": 70,
+    "offres": True, "offre_auto_pct": 0, "offre_min_pct": 70,       # 27 oct 2026 : 0 = jamais accepte tout seul (choix du vendeur)
     "promotion": 0,                         # % Promoted Listings (0 = pas de promotion)
     "etat": "nm",                           # carte brute : nm | ex | vg | p
 }
@@ -42,13 +42,16 @@ _PREF_CA = {"lettre": ("CA_PostLettermail",),
             "gratuit": ("CA_PostTrackedPacket", "CA_PostExpeditedParcel", "CA_PostLettermail")}
 _PREF_US = {"lettre": ("USALetterPost", "SmallPacketsUSA", "TrackedPacketsUSA", "USA"),
             "suivi": ("TrackedPacketsUSA", "TrackedPacketUSA", "SmallPacketsUSA", "USA")}
-_cache_services = {"ca": None, "us": None}
+_cache_services = {}          # 27 oct 2026 : par environnement, 24 h ; un echec n'est pas garde
 
 
 def _services():
     """Codes de services postaux valides chez eBay (GeteBayDetails, lu une fois). Sans reponse : codes connus."""
-    if _cache_services["ca"] is not None:
-        return _cache_services["ca"], _cache_services["us"]
+    import time
+    env = ebay_compte.environnement()
+    e = _cache_services.get(env)
+    if e and time.time() - e[2] < 86400:
+        return e[0], e[1]
     ca, us = [], []
     try:
         r = ebay_compte.trading("GeteBayDetails", f'<?xml version="1.0" encoding="utf-8"?><GeteBayDetailsRequest xmlns="{NS}">'
@@ -60,7 +63,8 @@ def _services():
             (us if (ebay_compte._txt(d, "e:InternationalService") or "").lower() == "true" else ca).append(code)
     except Exception:
         pass
-    _cache_services["ca"], _cache_services["us"] = ca, us
+    if ca or us:
+        _cache_services[env] = (ca, us, time.time())
     return ca, us
 
 
@@ -219,11 +223,12 @@ def xml_item(d, photos, code_postal="H2X 1Y4"):
     photos_xml = "".join(f"<PictureURL>{escape(u)}</PictureURL>" for u in (photos or [])[:12])
     offres = ""
     if not encan and d.get("offres"):
-        auto = round(prix * float(d.get("offre_auto_pct") or 90) / 100, 2)
+        pa = d.get("offre_auto_pct")
+        auto = round(prix * float(90 if pa is None else pa) / 100, 2)       # 0 : aucune acceptation automatique
         mini = round(prix * float(d.get("offre_min_pct") or 70) / 100, 2)
         offres = ("<BestOfferDetails><BestOfferEnabled>true</BestOfferEnabled></BestOfferDetails><ListingDetails>"
                   + (f'<BestOfferAutoAcceptPrice currencyID="CAD">{auto:.2f}</BestOfferAutoAcceptPrice>' if 0 < auto < prix else "")
-                  + (f'<MinimumBestOfferPrice currencyID="CAD">{mini:.2f}</MinimumBestOfferPrice>' if 0 < mini < auto else "")
+                  + (f'<MinimumBestOfferPrice currencyID="CAD">{mini:.2f}</MinimumBestOfferPrice>' if 0 < mini < (auto or prix) else "")
                   + "</ListingDetails>")
     return (f"<Item><Title>{escape(str(d['titre'])[:80])}</Title>"
             f"<Description><![CDATA[{str(d.get('description') or d['titre']).replace(']]>', '')}]]></Description>"

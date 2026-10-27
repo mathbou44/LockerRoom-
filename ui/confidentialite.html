@@ -28,7 +28,7 @@ nav{display:flex; gap:14px; margin-top:32px; font-size:14px}
 <div class="marque"><img src="/logo_sc_prizm.svg" alt="">SlabCoach</div>
 <h1>Politique de confidentialité</h1>
 <p class="maj">En vigueur le 27 octobre 2026 · <a href="#en">English below</a></p>
-<div class="bloc">En bref : SlabCoach lit ton compte eBay seulement avec ta permission, ne voit jamais ton mot de passe eBay, ne vend aucune donnée et efface tout sur demande.</div>
+<div class="bloc">En bref : SlabCoach lit ton compte eBay seulement avec ta permission, ne voit jamais tes mots de passe, ne vend aucune donnée, n'a pas de publicité et efface tout quand tu supprimes ton compte.</div>
 
 <h2>Qui sommes-nous</h2>
 <p>SlabCoach est exploité par Mathieu Bourassa, à Terrebonne (Québec, Canada). Responsable de la protection des renseignements personnels : Mathieu Bourassa, support@slabcoach.com.</p>
@@ -36,11 +36,12 @@ nav{display:flex; gap:14px; margin-top:32px; font-size:14px}
 <h2>Ce que nous recueillons</h2>
 <ul>
 <li><b>Ta connexion Apple ou Google</b>, si tu l’utilises : un identifiant anonyme fourni par Apple ou Google, ton nom et ton courriel (Apple peut te donner une adresse relais privée). Jamais ton mot de passe.</li>
-<li><b>Ton compte eBay</b>, si tu le connectes : ton nom d'utilisateur, tes annonces (titre, prix, photo, quantité), tes commandes (article, prix, frais eBay, date, nom d'utilisateur de l'acheteur, statut du paiement). Connexion par la page officielle d'eBay (OAuth) : nous ne voyons ni ne gardons ton mot de passe.</li>
+<li><b>Ton compte eBay</b>, si tu le connectes : ton nom d'utilisateur et ton identifiant eBay, tes annonces (titre, prix, photo, quantité), tes commandes (article, prix, frais eBay, date, nom d'utilisateur de l'acheteur, statut du paiement). Connexion par la page officielle d'eBay (OAuth) : nous ne voyons ni ne gardons ton mot de passe.</li>
 <li><b>Les photos de cartes</b> que tu prends pour remplir une fiche : envoyées pour être reconnues, puis gardées seulement avec ta fiche.</li>
 <li><b>Ce que tu entres dans l'app</b> : inventaire, coûts, breaks, ventes au comptoir, clients, consignataires, dépenses.</li>
-<li><b>Les jetons d'accès eBay</b> nécessaires pour lire et écrire à ta place. Ils ne sont jamais affichés et tu peux les révoquer en tout temps (eBay : Compte › Préférences de connexion, ou « Déconnecter » dans SlabCoach).</li>
-<li><b>Un témoin (cookie) de session</b>, seulement pour te garder connecté. Aucun témoin publicitaire ni de pistage.</li>
+<li><b>Les jetons d'accès eBay</b> nécessaires pour lire et écrire à ta place, chiffrés sur nos serveurs. Ils ne sont jamais affichés et tu peux les révoquer en tout temps (eBay : Compte › Préférences de connexion, ou « Déconnecter eBay » dans SlabCoach).</li>
+<li><b>Les notifications</b>, si tu les acceptes sur iPhone : un jeton d'appareil fourni par Apple, pour t'envoyer tes alertes.</li>
+<li><b>Un témoin (cookie) de session</b>, seulement pour te garder connecté, et un témoin temporaire (15 minutes) pendant une connexion eBay, Apple ou Google, pour la protéger. Ton navigateur garde aussi tes choix d'affichage (langue, devise, palette). Aucun témoin publicitaire ni de pistage.</li>
 </ul>
 
 <h2>Pourquoi</h2>
@@ -49,26 +50,36 @@ nav{display:flex; gap:14px; margin-top:32px; font-size:14px}
 <h2>Avec qui</h2>
 <ul>
 <li><b>eBay</b>, par ses API officielles, pour lire et écrire sur ton compte.</li>
-<li><b>Apple et Google</b>, seulement si tu te connectes avec eux, pour confirmer qui tu es.</li>
-<li><b>Stripe</b>, qui traite le paiement du forfait Pro sur le web : nous ne voyons jamais ton numéro de carte.</li>
+<li><b>Apple et Google</b>, seulement si tu te connectes avec eux, pour confirmer qui tu es ; Apple aussi pour les notifications et les achats dans l'app iPhone.</li>
+<li><b>Stripe</b>, notre processeur de paiement : nous ne voyons jamais ton numéro de carte.</li>
 <li><b>Anthropic</b> (Claude), qui analyse les photos de cartes pour reconnaître le joueur, l'année et le set. Anthropic ne se sert pas de ces photos pour entraîner ses modèles (conditions commerciales de son API).</li>
-<li><b>Notre hébergeur</b> Render (Render Services, Inc.), qui garde les données pour nous sur des serveurs en Oregon, aux États-Unis. Tes données sont donc conservées hors du Québec.</li>
+<li><b>SoldComps</b>, qui nous donne les ventes eBay terminées : il reçoit seulement des noms de cartes à chercher, jamais de renseignement sur toi.</li>
+<li><b>Notre hébergeur</b> Render (Render Services, Inc.), qui garde les données pour nous sur des serveurs en Oregon, aux États-Unis.</li>
 <li>Personne d'autre. Nous ne vendons ni ne louons aucune donnée, et il n'y a pas de publicité.</li>
 </ul>
+<p><b>Hors du Québec.</b> Ces fournisseurs traitent les données aux États-Unis (et ailleurs pour Stripe, Apple et Google). Tes renseignements y sont donc conservés ou traités hors du Québec, chacun seulement pour ce qui est décrit ci-dessus, sous contrat avec nous.</p>
 
 <h2>Ventes partagées (anonymes)</h2>
-<p>Pour afficher les prix « vendues » réels, SlabCoach met en commun les ventes eBay des comptes connectés : seulement le titre de la carte, le prix vendu (avec le port), la date et la photo publique de l'annonce. Jamais ton nom, ton pseudo eBay, l'acheteur, ni le numéro de l'annonce. Tu peux arrêter à tout moment dans Réglages (« Partager mes ventes ») : tes ventes sont retirées au plus tard le lendemain.</p>
+<p>Pour afficher les prix « vendues » réels, SlabCoach met en commun les ventes des comptes qui ont dit oui (la question est posée une fois ; sans réponse, rien n'est partagé) : seulement le titre de la carte, le prix vendu (sans le port), la date et la photo publique de l'annonce. Jamais ton nom, ton pseudo eBay, l'acheteur, ni le numéro de l'annonce. Tu changes d'idée à tout moment dans Réglages (« Partager mes ventes ») : tes ventes sont retirées au plus tard le lendemain.</p>
 
 <h2>Liens d'affiliation</h2>
 <p>Certains liens vers eBay sont des liens d'affiliation (eBay Partner Network). Si tu achètes après avoir cliqué, nous pouvons recevoir une commission d'eBay, sans aucun coût pour toi.</p>
 
 <h2>Conservation et suppression</h2>
-<p>Tes données restent tant que ton compte SlabCoach est actif. Tu peux demander leur suppression complète en tout temps à support@slabcoach.com ; elle est faite dans les 30 jours. Si tu supprimes ton compte eBay, eBay nous en avise et nous effaçons les données eBay de ce compte.</p>
+<p>Tes données restent tant que ton compte SlabCoach est actif. Tu supprimes ton compte toi-même dans l'app (Réglages › Compte et aide › Supprimer mon compte SlabCoach) : tout ton dossier est effacé sur-le-champ, et un abonnement pris sur le site est annulé. Tu peux aussi l'écrire à support@slabcoach.com ; c'est fait dans les 30 jours. Nous gardons seulement un identifiant opaque (qui ne révèle pas qui tu es) et la date de création du compte, pour qu'un compte supprimé puis recréé n'obtienne pas un 2e essai gratuit. Si tu supprimes ton compte eBay, eBay nous en avise (avis signé et vérifié) et nous effaçons ton compte SlabCoach relié à ce compte eBay.</p>
+
+<h2>Sécurité</h2>
+<p>Connexions chiffrées (HTTPS), jetons eBay chiffrés, comptes séparés les uns des autres, et une connexion ne peut revenir que dans le navigateur qui l'a commencée. En cas d'incident qui présente un risque sérieux, nous t'avisons, ainsi que la Commission d'accès à l'information.</p>
 
 <h2>Tes droits</h2>
-<p>Selon la Loi 25 (Québec) et la LPRPDE (Canada), tu peux accéder à tes renseignements, les faire corriger, les faire supprimer et retirer ton consentement. Écris à support@slabcoach.com. Tu peux aussi porter plainte à la Commission d'accès à l'information du Québec.</p>
+<p>Selon la Loi 25 (Québec) et la LPRPDE (Canada), tu peux accéder à tes renseignements, les faire corriger, les faire supprimer, retirer ton consentement et en obtenir une copie dans un format technologique structuré et couramment utilisé. Écris à support@slabcoach.com : nous répondons dans les 30 jours. Tu peux aussi porter plainte à la Commission d'accès à l'information du Québec.</p>
 
 <h2 id="en">Privacy policy (English)</h2>
-<p>If you sign in with Apple or Google, we receive an anonymous ID, your name and your email (Apple may give a private relay address), never your password. Payments for Pro on the web are processed by Stripe; we never see your card number. SlabCoach reads your eBay account only with your permission (official eBay OAuth sign-in; we never see your eBay password). We collect your eBay username, listings and orders (item, price, eBay fees, date, buyer username, payment status), the data you enter in the app, eBay access tokens, and a session cookie. We use them only to run the app and to perform the actions you request; every write to eBay starts with your own tap. We share data only with eBay (through its APIs) and our hosting provider Render, servers in Oregon, USA. Sold prices of connected accounts are pooled anonymously to show real “sold” prices (card title, sold price with shipping, date, public listing photo; never usernames, buyers or listing numbers); you can opt out anytime in Settings (“Share my sales”). We do not sell data and show no ads. Some eBay links are eBay Partner Network affiliate links; we may earn a commission at no cost to you. You may request access, correction or deletion at support@slabcoach.com (done within 30 days); when you delete your eBay account, eBay notifies us and we erase that account's eBay data.</p>
+<p><b>Who we are.</b> SlabCoach is run by Mathieu Bourassa, Terrebonne, Quebec, Canada. Person in charge of privacy: Mathieu Bourassa, support@slabcoach.com.</p>
+<p><b>What we collect.</b> If you sign in with Apple or Google: an anonymous ID, your name and your email (Apple may give a private relay address), never your password. If you connect eBay (official OAuth sign-in; we never see your eBay password): your eBay username and ID, your listings and orders (item, price, eBay fees, date, buyer username, payment status), and eBay access tokens, encrypted on our servers. Card photos you take to fill a card. The data you enter in the app. If you allow notifications on iPhone, an Apple device token. A session cookie, a temporary cookie (15 minutes) that protects an eBay, Apple or Google sign-in, and your display choices (language, currency, palette) in your browser. No advertising or tracking cookies.</p>
+<p><b>Why and with whom.</b> Only to run the app and to perform the actions you request; every write to eBay starts with your own tap. We share data only with: eBay (through its APIs); Apple and Google (sign-in, plus Apple for notifications and iPhone purchases); Stripe (payment processor; we never see your card number); Anthropic (Claude), which reads card photos to recognize the card and does not train on them; SoldComps, which only receives card names to search, never anything about you; and our host Render, servers in Oregon, USA. These providers process data in the United States (and elsewhere for Stripe, Apple and Google), so your information is stored or processed outside Quebec, each only for the purpose above. We do not sell data and show no ads.</p>
+<p><b>Shared sales.</b> Sold prices of accounts that said yes (asked once; no answer means nothing is shared) are pooled anonymously to show real “sold” prices (card title, sold price without shipping, date, public listing photo; never usernames, buyers or listing numbers); you can change your mind anytime in Settings (“Share my sales”). Some eBay links are eBay Partner Network affiliate links; we may earn a commission at no cost to you.</p>
+<p><b>Retention and deletion.</b> Your data stays while your account is active. Delete your account yourself in the app (Settings › Account and help › Delete my SlabCoach account): everything is erased at once and a web subscription is cancelled; or email support@slabcoach.com (done within 30 days). We keep only an opaque ID and the account creation date so that a deleted and recreated account does not get a second free trial. When you delete your eBay account, eBay notifies us (signed, verified notice) and we erase the SlabCoach account linked to it.</p>
+<p><b>Security and rights.</b> HTTPS, encrypted eBay tokens, separated accounts, and a sign-in can only return to the browser that started it. In case of an incident with a risk of serious injury, we notify you and Quebec's Commission d'accès à l'information. Under Quebec's Law 25 and PIPEDA you may access, correct or delete your information, withdraw consent, and get a copy in a structured, commonly used format: email support@slabcoach.com (answer within 30 days). You may also complain to the Commission d'accès à l'information du Québec.</p>
 <nav><a href="/">Ouvrir l'app</a><a href="/support">Support</a><a href="/confidentialite">Confidentialité</a><a href="/conditions">Conditions</a></nav>
 </main></body></html>

@@ -19,18 +19,18 @@ const conf = {
   server: {
     url,
     errorPath: 'erreur.html',                 // hors ligne : un ecran natif avec « Reessayer », pas une page d'erreur
-    allowNavigation: [hote, '*.ebay.com', '*.ebay.ca', 'signin.ebay.com', 'auth.ebay.com', 'auth.sandbox.ebay.com', 'signin.sandbox.ebay.com']
+    allowNavigation: [hote, 'appleid.apple.com', '*.ebay.com', '*.ebay.ca', 'signin.ebay.com', 'auth.ebay.com', 'auth.sandbox.ebay.com', 'signin.sandbox.ebay.com']
   },
   ios: {
     contentInset: 'never',
     scheme: 'SlabCoach',
     appendUserAgent: 'LockerRoomiOS/1.0',       // le serveur et l'ecran savent qu'on est dans l'app iPhone
-    backgroundColor: '#0A0D10',
+    backgroundColor: '#0B0B0E',
     limitsNavigationsToAppBoundDomains: false
   },
   plugins: {
-    SplashScreen: { launchShowDuration: 900, launchAutoHide: true, backgroundColor: '#0A0D10', showSpinner: false },
-    StatusBar: { style: 'DARK', backgroundColor: '#0A0D10', overlaysWebView: true },
+    SplashScreen: { launchShowDuration: 900, launchAutoHide: true, backgroundColor: '#0B0B0E', showSpinner: false },
+    StatusBar: { style: 'DARK', backgroundColor: '#0B0B0E', overlaysWebView: true },
     PushNotifications: { presentationOptions: ['badge', 'sound', 'alert'] }
   }
 };

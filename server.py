@@ -102,7 +102,7 @@ app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", S
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024        # 23 oct 2026 - 2 photos (devant, dos) par requete
 # pages qui restent publiques : break partage, retour et avis eBay, pages legales, icones
 _PUBLIQUES = ("/b/", "/api/b/", "/api/ebay_retour", "/ebay/suppression-compte", "/confidentialite", "/conditions",
-              "/support", "/robots.txt", "/sitemap.xml", "/logo_sc_", "/syne-800.woff2", "/manrope-", "/connexion", "/icone", "/favicon", "/manifest.json", "/stripe/webhook")
+              "/support", "/robots.txt", "/sitemap.xml", "/logo_sc_", "/syne-800.woff2", "/manrope-", "/connexion", "/icone", "/favicon", "/manifest.json", "/stripe/webhook", "/apple/notifications")
 
 
 import comptes  # noqa: E402
@@ -124,6 +124,8 @@ def _garde():
         if cid and cid in comptes.lister():
             comptes.activer(cid)                                     # cette requete ne voit que ce compte
         elif request.path == "/" and not CODE_ACCES:
+            if "LockerRoomiOS" in (request.headers.get("User-Agent") or ""):
+                return redirect("/connexion")                        # app iPhone : pas la vitrine (prix du site)
             return _page_vitrine()                                   # 27 oct 2026 : visiteur -> la vitrine
         elif not publique:
             session.pop("compte", None)
@@ -138,12 +140,40 @@ def auth_ebay():
     r = api.ebay_url_connexion()
     if not r.get("ok"):
         return redirect("/connexion?erreur=1")
-    return redirect(r["url"])
+    return _lier_navigateur(redirect(r["url"]), r["url"])
 
 
 # 27 oct 2026 (Mathieu : « ne pas obliger d'avoir un compte eBay, mais fortement recommande ») : Apple et Google.
 def _base_publique():
     return (os.environ.get("LOCKERROOM_URL") or request.host_url).rstrip("/")
+
+
+# 27 oct 2026 (revue de securite) : une connexion (eBay, Apple, Google) revient seulement dans le NAVIGATEUR qui l'a
+# commencee. Sinon quelqu'un pourrait envoyer son propre lien de retour et nous faire entrer dans SON compte.
+# Temoin a part, SameSite=None : Apple revient en POST depuis son site.
+_TEMOIN_LIEN = "sc_lien"
+
+
+def _empreinte_etat(etat):
+    import hashlib
+    return hashlib.sha256(str(etat or "").encode()).hexdigest()[:32]
+
+
+def _lier_navigateur(reponse, url):
+    import urllib.parse
+    etat = (urllib.parse.parse_qs(urllib.parse.urlparse(url).query).get("state") or [""])[0]
+    if etat:
+        reponse.set_cookie(_TEMOIN_LIEN, _empreinte_etat(etat), max_age=900, httponly=True, secure=HEBERGE,
+                           samesite="None" if HEBERGE else "Lax", path="/")
+    return reponse
+
+
+def _navigateur_lie(etat):
+    import hmac
+    if not comptes.MULTI:                    # sur le PC du vendeur : un seul utilisateur
+        return True
+    t = request.cookies.get(_TEMOIN_LIEN) or ""
+    return bool(etat) and bool(t) and hmac.compare_digest(t, _empreinte_etat(etat))
 
 
 @app.route("/auth/<fournisseur>")
@@ -153,9 +183,10 @@ def auth_tiers(fournisseur):
     if fournisseur not in at.FOURNISSEURS or not comptes.MULTI:
         abort(404)
     try:
-        return redirect(at.url_connexion(fournisseur, _base_publique()))
+        u = at.url_connexion(fournisseur, _base_publique())
     except RuntimeError:
         return redirect("/connexion?erreur=2")
+    return _lier_navigateur(redirect(u), u)
 
 
 @app.route("/auth/<fournisseur>/retour", methods=["GET", "POST"])
@@ -166,6 +197,9 @@ def auth_tiers_retour(fournisseur):
     if fournisseur not in at.FOURNISSEURS or not comptes.MULTI:
         abort(404)
     v = request.values
+    if not _navigateur_lie(v.get("state")):
+        app.logger.warning("Connexion %s : retour dans un autre navigateur", fournisseur)
+        return redirect("/connexion?erreur=3")
     r = at.terminer(fournisseur, v.get("code"), v.get("state"), _base_publique(), v.get("user"))
     if not r.get("ok"):
         app.logger.warning("Connexion %s refusee : %s", fournisseur, r.get("erreur"))
@@ -174,6 +208,8 @@ def auth_tiers_retour(fournisseur):
     champs = {"connexion": fournisseur}
     if r.get("courriel"):
         champs["courriel"] = r["courriel"]
+    if r.get("jeton_apple"):                 # pour le retirer chez Apple si le compte est supprime (chiffre)
+        champs["apple_rt"] = comptes.chiffrer(r["jeton_apple"])
     comptes.maj(cid, **champs)
     session.permanent = True
     session["compte"] = cid
@@ -181,6 +217,29 @@ def auth_tiers_retour(fournisseur):
     # Apple arrive en POST d'un autre site : une petite page qui repart chez nous (le cookie suit a coup sur)
     return (f"<!doctype html><meta charset='utf-8'><meta http-equiv='refresh' content='0;url={cible}'>"
             f"<script>location.replace({json.dumps(cible)})</script>", 200, {"Content-Type": "text/html; charset=utf-8"})
+
+
+# 27 oct 2026 (revue de securite) : codes d'acces et de demo : 8 essais rates par 15 min par adresse, puis on attend.
+_ECHECS = {}
+
+
+def _ip():
+    return (request.headers.get("X-Forwarded-For") or request.remote_addr or "").split(",")[0].strip() if HEBERGE \
+        else (request.remote_addr or "")
+
+
+def _trop_d_essais():
+    import time
+    m = time.time()
+    for k in [k for k, v in _ECHECS.items() if m - v[-1] > 900]:
+        _ECHECS.pop(k, None)
+    return len([t for t in _ECHECS.get(_ip(), []) if m - t < 900]) >= 8
+
+
+def _noter_echec():
+    import time
+    _ECHECS.setdefault(_ip(), []).append(time.time())
+    _ECHECS[_ip()] = _ECHECS[_ip()][-20:]
 
 
 # 26 oct 2026 - compte de demonstration pour l'equipe d'Apple (et les essais) : code dans LOCKERROOM_DEMO_CODE.
@@ -196,7 +255,9 @@ def demo():
     if not code or not comptes.MULTI:
         abort(404)
     erreur = ""
-    if request.method == "POST":
+    if request.method == "POST" and _trop_d_essais():
+        erreur = "<p style='color:#FFB3B3'>Trop d’essais : réessaie dans 15 minutes</p>"
+    elif request.method == "POST":
         if hmac.compare_digest(str(request.form.get("code") or "").strip(), code):
             cid, nouveau = comptes.trouver_ou_creer(_DEMO_EBAY_ID, "Demo", "demo")
             comptes.maj(cid, pro_offert="toujours", demo=True)
@@ -207,6 +268,7 @@ def demo():
                 with comptes.utiliser(cid):
                     _remplir_demo()
             return redirect("/")
+        _noter_echec()
         erreur = "<p style='color:#FFB3B3'>Code incorrect</p>"
     return _page_langue("<!doctype html><meta name='viewport' content='width=device-width,initial-scale=1'><title>SlabCoach</title><link rel='icon' href='/favicon.ico?v=2'>"
             "<body style='background:#0B0B0E;color:#F4F2EE;font-family:system-ui;display:grid;place-items:center;min-height:90vh'>"
@@ -297,7 +359,8 @@ _EN = [("Ton inventaire eBay, tes prix et tes ventes, tout seuls.", "Your eBay i
        ('<div class="ou">ou</div>', '<div class="ou">or</div>'), ("Pas de compte eBay ? Aucun problème.", "No eBay account? No problem."),
        ("Cette connexion n’est pas encore offerte : utilise eBay", "This sign-in isn’t available yet: use eBay"),
        ("Connexion interrompue : réessaie", "Sign-in interrupted: try again"), ("‹ Retour au site", "‹ Back to site"),
-       ("14 jours de Pro offerts · aucune carte de crédit", "14 days of Pro on us · no credit card")]
+       ("14 jours de Pro offerts · aucune carte de crédit", "14 days of Pro on us · no credit card"),
+       ("Trop d’essais : réessaie dans 15 minutes", "Too many attempts: try again in 15 minutes")]
 
 
 def _langue():
@@ -359,6 +422,8 @@ def connexion():
         ios = "LockerRoomiOS" in (request.headers.get("User-Agent") or "")
         autres = [f for f in auth_tiers.actifs() if not (ios and f == "google")]   # Google refuse les vues web integrees
         page = page.replace("{autres}", "".join(_BOUTONS_TIERS[f] for f in ("apple", "google") if f in autres))
+        if ios:                                   # app iPhone : pas de lien vers la vitrine (prix du site)
+            page = page.replace('<a href="/">‹ Retour au site</a>', "")
         if not autres:
             page = page.replace('<div class="ou">ou</div>', "")
         if os.environ.get("LOCKERROOM_DEMO_CODE") and "LockerRoomiOS" in (request.headers.get("User-Agent") or ""):
@@ -367,11 +432,14 @@ def connexion():
     if not CODE_ACCES:
         return redirect("/")
     erreur = ""
-    if request.method == "POST":
+    if request.method == "POST" and _trop_d_essais():
+        erreur = "<p style='color:#FFB3B3'>Trop d’essais : réessaie dans 15 minutes</p>"
+    elif request.method == "POST":
         if hmac.compare_digest(str(request.form.get("code") or ""), CODE_ACCES):
             session.permanent = True
             session["ok"] = True
             return redirect("/connexion" if comptes.MULTI else "/")
+        _noter_echec()
         erreur = "<p style='color:#FFB3B3'>Code incorrect</p>"
     return _page_langue("<!doctype html><meta name='viewport' content='width=device-width,initial-scale=1'><title>SlabCoach</title><link rel='icon' href='/favicon.ico?v=2'>"
             "<body style='background:#0B0B0E;color:#F4F2EE;font-family:system-ui;display:grid;place-items:center;min-height:90vh'>"
@@ -382,20 +450,39 @@ def connexion():
             "<a href='/confidentialite' style='color:#A9A6B1;font-size:13px'>Confidentialité</a></form></body>")
 
 
+def _dans_app_ios():
+    return "LockerRoomiOS" in (request.headers.get("User-Agent") or "")
+
+
+def _page_legale(nom):
+    """27 oct 2026 (revue Apple 3.1.1) : dans l'app iPhone, rien sur l'achat par le site (prix, Stripe) : au Canada,
+    Apple interdit d'orienter vers un autre moyen de paiement. Sur le web : la page complete."""
+    if not _dans_app_ios():
+        return send_from_directory(DOSSIER_UI, nom)
+    import re as _re
+    from flask import Response
+    with open(os.path.join(DOSSIER_UI, nom), encoding="utf-8") as f:
+        html = f.read()
+    for _ in range(3):                        # elements « web-seul » (p, li, span), du plus interne au plus externe
+        html = _re.sub(r'<(p|li|span)\b[^>]*class="web-seul"[^>]*>(?:(?!<\1\b)[\s\S])*?</\1>', "", html)
+    html = html.replace(".ios-seul{display:none}", "")
+    return Response(html, mimetype="text/html")
+
+
 @app.route("/confidentialite")
 def page_confidentialite():
-    return send_from_directory(DOSSIER_UI, "confidentialite.html")
+    return _page_legale("confidentialite.html")
 
 
 @app.route("/conditions")
 def page_conditions():
-    return send_from_directory(DOSSIER_UI, "conditions.html")
+    return _page_legale("conditions.html")
 
 
 @app.route("/support")
 def page_support():
     """27 oct 2026 - page de support (exigee par Apple et Stripe) : contact et questions frequentes."""
-    return send_from_directory(DOSSIER_UI, "support.html")
+    return _page_legale("support.html")
 
 
 @app.route("/")
@@ -405,15 +492,38 @@ def racine():
 
 def _break_public(jeton):
     """Page publique d'un break : en multi-comptes, on trouve le compte qui l'a cree."""
+    import re
+    import time
     import comptes as _c
     if not _c.MULTI:
         return api.break_public(jeton)
+    # 27 oct 2026 (revue) : avant, CHAQUE visite ouvrait la base de tous les comptes. Maintenant : forme du lien verifiee,
+    # compte memorise une fois trouve, lien inconnu oublie 10 min (pas de 2e recherche complete).
+    if not re.fullmatch(r"[A-Za-z0-9_-]{8,40}", str(jeton or "")):
+        return None
+    m = time.time()
+    cid = _BREAKS_TROUVES.get(jeton)
+    if cid and cid in _c.lister():
+        with _c.utiliser(cid):
+            d = api.break_public(jeton)
+        if d:
+            return d
+        _BREAKS_TROUVES.pop(jeton, None)
+    if m - _BREAKS_INCONNUS.get(jeton, 0) < 600:
+        return None
     for cid in _c.lister():
         with _c.utiliser(cid):
             d = api.break_public(jeton)
             if d:
+                _BREAKS_TROUVES[jeton] = cid
                 return d
+    if len(_BREAKS_INCONNUS) > 5000:
+        _BREAKS_INCONNUS.clear()
+    _BREAKS_INCONNUS[jeton] = m
     return None
+
+
+_BREAKS_TROUVES, _BREAKS_INCONNUS = {}, {}
 
 
 @app.route("/b/<jeton>")
@@ -435,6 +545,8 @@ def donnees_break(jeton):
 def ebay_retour():
     """Page ou eBay renvoie le vendeur apres « Accepter » (auth accepted URL)."""
     from flask import redirect, session
+    if not _navigateur_lie(request.args.get("state")):
+        return redirect("/connexion?erreur=1" if not comptes.courant() else "/#reglages/ebay-erreur")
     if comptes.MULTI and not comptes.courant():
         import ebay_compte
         r = ebay_compte.connexion_compte(request.url, request.args.get("state"))
@@ -446,6 +558,16 @@ def ebay_retour():
         return redirect("/#accueil/" + ("bienvenue" if r.get("nouveau") else "retour"))
     r = api.ebay_terminer(request.url, request.args.get("state"))
     return redirect("/#reglages/" + ("ebay-ok" if r.get("ok") else "ebay-erreur"))
+
+
+@app.route("/apple/notifications", methods=["POST"])
+def apple_notifications():
+    """27 oct 2026 - avis signes d'Apple (App Store Server Notifications v2) : renouvellement, annulation, remboursement."""
+    import achats_apple
+    code, msg = achats_apple.recevoir_avis(request.get_data(), comptes)
+    if code >= 400:
+        app.logger.warning("Avis Apple refuse : %s", msg)
+    return jsonify({"recu": msg}), code
 
 
 @app.route("/stripe/webhook", methods=["POST"])
@@ -470,7 +592,8 @@ def ebay_suppression_compte():
             return jsonify(ebay_avis.reponse_defi(code))
         except RuntimeError:
             abort(503)
-    ebay_avis.recevoir(request.get_data())
+    if not ebay_avis.recevoir(request.get_data(), request.headers.get("X-EBAY-SIGNATURE")):
+        return ("", 412)                    # 27 oct 2026 : signature absente ou invalide -> rien n'est supprime
     return ("", 204)
 
 
@@ -481,14 +604,25 @@ def statiques(nom):
 
 # multi-comptes : ce qui touche le serveur entier (nos cles, l'environnement, les avis) n'est pas aux clients
 _RESERVEES_SERVEUR = {"ebay_cles_sauver", "ebay_environnement", "ebay_avis_regler", "ebay_avis_jeton", "valeurs_maj"}
+# 27 oct 2026 (revue de securite) : sur le PC (sans code d'acces), un autre appareil du meme wifi peut LIRE l'app mais
+# pas ecrire sur eBay, ni toucher aux cles : ces gestes restent sur le PC lui-meme (ou avec LOCKERROOM_CODE).
+_ECRITURES_EBAY = {"ebay_publier", "annonce_publier", "ebay_changer_prix", "ebay_miser", "ebay_cles_sauver", "ebay_avis_regler",
+                   "ebay_avis_jeton", "ebay_deconnecter", "ebay_environnement", "ebay_terminer", "ebay_url_connexion", "ebay_promouvoir"}
 
 
 @app.route("/api/<nom>", methods=["POST"])
 def dispatcher(nom):
     if nom.startswith("_"):
         return jsonify({"erreur": "méthode non autorisée"}), 403
+    o = request.headers.get("Origin")
+    if o and o != "null":                    # 27 oct 2026 : appels venus d'un autre site refuses (en plus de SameSite)
+        import urllib.parse
+        if urllib.parse.urlparse(o).netloc.lower() != request.host.lower():
+            return jsonify({"erreur": "Origine refusée"}), 403
     if comptes.MULTI and nom in _RESERVEES_SERVEUR:
         return jsonify({"erreur": "Réglage du serveur : non modifiable ici"}), 403
+    if not comptes.MULTI and not CODE_ACCES and nom in _ECRITURES_EBAY and request.remote_addr not in ("127.0.0.1", "::1"):
+        return jsonify({"erreur": "Sur un autre appareil, ajoute un code d’accès (LOCKERROOM_CODE) pour écrire sur eBay"}), 403
     m = getattr(api, nom, None)
     if m is None or not callable(m):
         return jsonify({"erreur": f"méthode inconnue : {nom}"}), 404
@@ -498,7 +632,10 @@ def dispatcher(nom):
     if not isinstance(args, list):
         args = [args]
     try:
-        return jsonify(m(*args))
+        res = m(*args)
+        if nom == "ebay_url_connexion" and isinstance(res, dict) and res.get("url"):
+            return _lier_navigateur(jsonify(res), res["url"])
+        return jsonify(res)
     except Exception as e:  # l'ecran affiche l'erreur dans un toast
         try:
             import admin
@@ -611,7 +748,15 @@ def _ebay_auto():
         time.sleep(3600)
 
 
+def _verifier_secrets():
+    """27 oct 2026 (revue) : en ligne, les jetons eBay doivent etre chiffres. On le dit fort dans le journal de Render."""
+    if comptes.MULTI and not os.environ.get("LOCKERROOM_CLE"):
+        app.logger.error("ATTENTION : LOCKERROOM_CLE absente -> jetons eBay NON chiffres sur le disque. Ajoute-la dans Render.")
+        print("ATTENTION : LOCKERROOM_CLE absente : jetons eBay non chiffres", flush=True)
+
+
 def demarrer_taches():
+    _verifier_secrets()
     threading.Thread(target=_valeurs_auto, daemon=True).start()
     threading.Thread(target=_ebay_auto, daemon=True).start()
 

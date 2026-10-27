@@ -147,12 +147,12 @@ def charger(pid):
     for f in _fichiers():
         d = _lire(f)
         if d.get("id") == pid and d.get("cartes"):
-            if "_par_se" not in d:
+            if "_par_se" not in d or "_taux" not in d:
                 par = {}
                 for c in d["cartes"]:
                     par.setdefault(c.get("sous_ensemble"), []).append(c)
-                d["_par_se"] = par
-                d["_taux"] = taux_par_boite(d)
+                taux = taux_par_boite(d)          # 27 oct 2026 (revue) : calcules d'abord, poses ensemble (autre fil : pas de KeyError)
+                d.update(_taux=taux, _par_se=par)
             return d
     return None
 

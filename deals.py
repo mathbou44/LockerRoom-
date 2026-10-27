@@ -77,14 +77,34 @@ def corriger(item_id, valeur, gain, total):
     with _verrou:
         d = lire()
         l = d.get("deals") or []
-        if not valeur or (gain is not None and gain <= 1) or (total and total > valeur * RATIO_DEAL and not x.get("encan")):
-            d["deals"] = [g for g in l if str(g.get("item_id")) != iid]
-        else:
+        retirer = not valeur or (gain is not None and gain <= 1) or (total and total > valeur * RATIO_DEAL and not x.get("encan"))
+        if not retirer:
             for g in l:
                 if str(g.get("item_id")) == iid:
                     g.update(valeur=valeur, ratio=round(total / valeur, 3) if total else g.get("ratio"))
+                    if g.get("encan"):          # 27 oct 2026 (revue) : la mise max suit la nouvelle valeur
+                        g["mise_max"] = round(valeur * RATIO_DEAL - (g.get("port") or 0), 2)
+                        if g["mise_max"] <= (g.get("total") or 0) - (g.get("port") or 0):
+                            retirer = True
+        if retirer:
+            d["deals"] = [g for g in l if str(g.get("item_id")) != iid]
+            _noter_retires(d, [iid])            # un tour de chasse deja commence ne le remettra pas
         _ecrire(d)
     return True
+
+
+RETIRES_JOURS = 7
+
+
+def _noter_retires(d, ids):
+    """27 oct 2026 (revue) : annonces retirees (vendues, corrigees, plus un deal) : elles ne reviennent ni dans la liste,
+    ni dans « a surveiller », ni dans la liste de secours."""
+    maint = datetime.now(timezone.utc)
+    r = {k: v for k, v in (d.get("retires") or {}).items() if str(v) >= (maint - timedelta(days=RETIRES_JOURS)).isoformat()}
+    for i in ids:
+        r[str(i)] = maint.isoformat(timespec="seconds")
+    d["retires"] = r
+    return r
 
 
 def bannir(item_id):
@@ -188,6 +208,8 @@ def memes_ventes(cib, ventes):
 #   - des ventes coherentes entre elles : trop d'ecart = on ne sait pas -> pas de deal.
 MIN_VENTES_SURES = 3
 JOURS_RECENTS = 60
+JOURS_MAX = 90                   # 27 oct 2026 : comme le dit la page Support (« les 90 derniers jours »)
+JOURS_MAX_HITS = 180
 
 
 def _jours(v, maint=None):
@@ -204,6 +226,14 @@ def valeur_sure(pv, titre_annonce=""):
     if not cartes_match.serie_speciale(titre_annonce):
         pv = [v for v in pv if not cartes_match.serie_speciale(v.get("titre") or "")]
     pv = [v for v in pv if not cartes_match.abimee(v.get("titre") or "")]
+    # 27 oct 2026 (revue) : jamais des ventes trop vieilles : 90 jours, 180 pour un hit (numerotee /99 ou moins, auto,
+    # patch : ca se vend moins souvent)
+    jm = JOURS_MAX
+    if titre_annonce:
+        dc = cartes_match.decoder(titre_annonce)
+        if dc.get("auto") or dc.get("patch") or (dc.get("serie") and dc["serie"] <= 99):
+            jm = JOURS_MAX_HITS
+    pv = [v for v in pv if _jours(v) <= jm]
     recentes = [v for v in pv if _jours(v) <= JOURS_RECENTS]
     if len(recentes) >= MIN_VENTES_SURES:
         pv = recentes
@@ -355,7 +385,7 @@ class Bassin:
 
 
 import re as _re
-_RE_GRADE_V = _re.compile(r" (psa|bgs|sgc|cgc|beckett) ?\d")
+_RE_GRADE_V = _re.compile(r" (psa|bgs|sgc|cgc|beckett|csg|gma|isa|ags|mnt|tag|ksa|hga) ?\d")
 VERIF_JOUR = 40                  # recherches SoldComps ciblees par jour pour confirmer une annonce prometteuse
 
 
@@ -536,6 +566,16 @@ def _ranger(d, deals, maint):
     return garde_[:800]
 
 
+def encore_ouvert(x, maint=None):
+    """Un encan dont la fin est passee n'est plus un deal."""
+    if not x.get("encan"):
+        return True
+    try:
+        return datetime.fromisoformat(str(x.get("fin")).replace("Z", "+00:00")) > (maint or datetime.now(timezone.utc))
+    except ValueError:
+        return False
+
+
 def _verifier_tard(st, deals, maint, bassin, verif):
     """27 oct 2026 (Mathieu : la Savoie Draft Day Marks /35 a 50 $, qui finit dans 25 h) : les encans de hits sans ventes
     connues qui finissent dans 6 a 30 h, verifies a la fin du tour avec le budget qui reste, les plus proches de la fin d'abord."""
@@ -553,16 +593,22 @@ def _sauver(d, deals, maint, st, **champs):
     st.pop("_vus", None)
     st.pop("_tard", None)
     nouveaux_pres = st.pop("_pres", {})
+    nouveaux_retires = st.pop("_retires", [])
     with _verrou:
         d2 = lire()
+        retires = _noter_retires(d2, nouveaux_retires)
+        garde_ = [x for x in garde_ if str(x["item_id"]) not in retires]
         ids = {x["item_id"] for x in garde_}
         pres = {x["item_id"]: x for x in d2.get("pres") or []}
         pres.update(nouveaux_pres)
         lim = (maint - timedelta(hours=FRAICHEUR_EBAY_H)).isoformat()
-        pres_l = sorted((x for k, x in pres.items() if k not in ids and str(x.get("vu_le") or "") >= lim), key=lambda x: x["ratio"])[:300]
+        pres_l = sorted((x for k, x in pres.items() if k not in ids and str(k) not in retires and str(x.get("vu_le") or "") >= lim),
+                        key=lambda x: x["ratio"])[:300]
         d2.update(deals=garde_, pres=pres_l, **champs)
         if len(garde_) >= 5:                              # la derniere bonne liste, en secours
             d2["secours"] = {"le": maint.isoformat(timespec="seconds"), "deals": garde_[:120]}
+        elif d2.get("secours"):                           # 27 oct 2026 (revue) : le secours perd ses annonces finies / retirees
+            d2["secours"]["deals"] = [x for x in d2["secours"].get("deals") or [] if str(x.get("item_id")) not in retires and encore_ouvert(x, maint)]
         if "verif" in d:
             d2["verif"] = d["verif"]
         _diag(d2, **st)
@@ -747,6 +793,7 @@ def reverifier(lire_article=None, max_=None):
         except RuntimeError as e:
             if "404" in str(e) or "11001" in str(e):
                 deals.pop(x["item_id"], None)          # annonce finie ou retiree
+                st.setdefault("_retires", []).append(x["item_id"])
                 st["reverif_finies"] = st.get("reverif_finies", 0) + 1
             continue
         except OSError:
@@ -759,6 +806,7 @@ def reverifier(lire_article=None, max_=None):
             pass
         if fini or not t or cartes_match.abimee(a.get("titre") or "") or t > (x.get("valeur") or 0) * RATIO_DEAL:
             deals.pop(x["item_id"], None)
+            st.setdefault("_retires", []).append(x["item_id"])
             st["reverif_retires"] = st.get("reverif_retires", 0) + 1
             continue
         x.update(total=t, ratio=round(t / x["valeur"], 3), mises=a.get("mises", x.get("mises")), fin=a.get("fin") or x.get("fin"),
@@ -776,6 +824,7 @@ def chasser_si_besoin():
         age = time.time() - datetime.fromisoformat(str(d.get("maj"))).timestamp()
     except ValueError:
         age = 1e9
+    age = min(age, time.time() - _ETAT.get("essai_le", 0))      # 27 oct 2026 (revue) : un tour rate compte aussi
     # une seule fois par demarrage (mise a jour, redemarrage) : peu de deals -> un tour apres 10 min, pas apres 1 h
     # (jamais plus : le quota d'appels eBay du jour)
     peu = not _ETAT.get("rapide") and sum(1 for x in d.get("deals") or [] if valide(x)) < 10
@@ -787,6 +836,7 @@ def chasser_si_besoin():
         if _ETAT["en_cours"]:
             return False
         _ETAT["en_cours"] = True
+        _ETAT["essai_le"] = time.time()
 
     def tache():
         try:

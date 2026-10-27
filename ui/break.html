@@ -35,37 +35,51 @@ details summary{cursor:pointer; color:var(--acc); font-weight:600}
 </style>
 </head>
 <body>
-<main class="ecran" id="vue"><div class="vide">Chargement…</div></main>
+<main class="ecran" id="vue"><div class="vide">…</div></main>
 <script>
 'use strict';
+// 27 oct 2026 (revue) : page publique en francais OU en anglais (langue du navigateur, ?lang=, ou le choix fait dans l'app),
+// une place sans prix affiche « — » (pas « 0 $ »), et les sections ouvertes le restent quand la page se met a jour.
+const EN = (() => {
+  const q = new URLSearchParams(location.search).get('lang');
+  if (q === 'en' || q === 'fr') return q === 'en';
+  const c = (document.cookie.match(/(?:^|; )lr_langue=(fr|en)/) || [])[1];
+  if (c) return c === 'en';
+  return (navigator.language || '').toLowerCase().startsWith('en');
+})();
+document.documentElement.lang = EN ? 'en' : 'fr';
+const T = (fr, en) => EN ? en : fr;
+const LOC = EN ? 'en-CA' : 'fr-CA';
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const tag = (t, c='') => `<span class="tag ${c}">${esc(t)}</span>`;
-const argent = (v) => (Number(v) || 0).toLocaleString('fr-CA', {maximumFractionDigits:0}) + ' $';
-const heure = (d) => { const t = Date.parse(d || ''); return isFinite(t) ? new Date(t).toLocaleString('fr-CA', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}) : ''; };
+const argent = (v) => { const n = Number(v); if (!(n > 0)) return '—'; const x = n.toLocaleString(LOC, {maximumFractionDigits:0}); return EN ? '$' + x : x + ' $'; };
+const heure = (d) => { const t = Date.parse(d || ''); return isFinite(t) ? new Date(t).toLocaleString(LOC, {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}) : ''; };
 const jeton = location.pathname.split('/').filter(Boolean).pop();
 async function charger(){
   let d;
-  try { const r = await fetch('/api/b/' + encodeURIComponent(jeton)); d = await r.json(); if (!r.ok) throw new Error(d.erreur || 'Introuvable'); }
-  catch (e) { document.getElementById('vue').innerHTML = `<div class="vide">${esc(e.message)}</div>`; return; }
+  try { const r = await fetch('/api/b/' + encodeURIComponent(jeton)); d = await r.json(); if (!r.ok) throw new Error(d.erreur || T('Introuvable', 'Not found')); }
+  catch (e) { document.getElementById('vue').innerHTML = `<div class="vide">${esc(T(e.message, e.message === 'Break introuvable' ? 'Break not found' : e.message))}</div>`; return; }
+  const ouverts = [...document.querySelectorAll('#vue details')].map(x => x.open);
   const t = d.tirage || {}, vendues = d.places.filter(p => p.acheteur).length;
   const parPlace = Object.fromEntries(d.places.map(p => [p.id, p]));
-  const modes = {equipes:'Équipes', divisions:'Divisions', joueurs:'Joueurs', aleatoire:'Équipes aléatoires'};
+  const modes = {equipes:T('Équipes', 'Teams'), divisions:'Divisions', joueurs:T('Joueurs', 'Players'), aleatoire:T('Équipes aléatoires', 'Random teams')};
   document.getElementById('vue').innerHTML = `
-    <div class="marque"><img src="/logo_sc_prizm.svg" alt="">SlabCoach · page publique du break</div>
+    <div class="marque"><img src="/logo_sc_prizm.svg" alt="">SlabCoach · ${T('page publique du break', 'public break page')}</div>
     <h1>${esc(d.nom)}</h1>
-    <div class="pastilles">${d.produit ? tag(d.produit.nom, 'acc') + tag(d.boites + ' × ' + d.produit.format) : ''}${tag(modes[d.mode] || d.mode)}${tag(vendues + '/' + d.places.length + ' places vendues')}
-      ${t.resultat ? tag('Tirage fait ' + heure(t.le), 'vert') : t.engage ? tag('Tirage engagé', 'or') : ''}</div>
-    ${d.empreinte ? `<div class="bloc"><div class="section">Tirage vérifiable</div>
-      <div class="pastilles">${tag('Empreinte publiée avant le tirage', 'acc')}${t.graine ? tag('Graine révélée', 'vert') : tag('Graine révélée après le tirage')}</div>
+    <div class="pastilles">${d.produit ? tag(d.produit.nom, 'acc') + tag(d.boites + ' × ' + d.produit.format) : ''}${tag(modes[d.mode] || d.mode)}${tag(vendues + '/' + d.places.length + ' ' + T('places vendues', 'spots sold'))}
+      ${t.resultat ? tag(T('Tirage fait ', 'Draw done ') + heure(t.le), 'vert') : t.engage ? tag(T('Tirage engagé', 'Draw committed'), 'or') : ''}</div>
+    ${d.empreinte ? `<div class="bloc"><div class="section">${T('Tirage vérifiable', 'Verifiable draw')}</div>
+      <div class="pastilles">${tag(T('Empreinte publiée avant le tirage', 'Fingerprint published before the draw'), 'acc')}${t.graine ? tag(T('Graine révélée', 'Seed revealed'), 'vert') : tag(T('Graine révélée après le tirage', 'Seed revealed after the draw'))}</div>
       <div class="code">SHA-256 : ${esc(d.empreinte)}</div>
-      ${t.graine ? `<details><summary>Vérifier</summary><div class="code" style="margin-top:8px">graine : ${esc(t.graine)}<br>sha256(graine) = empreinte ci-dessus<br>méthode : ${esc(t.methode || '')}<br>lots : ${esc((t.lots || []).join(', '))}<br>places (ordre) : ${esc((t.participants || []).map(id => (parPlace[id] || {}).libelle || id).join(', '))}</div></details>` : ''}</div>` : ''}
-    <div class="bloc"><div class="section">Places</div>${d.places.map(p => `<div class="rangee"><span class="ecusson">${esc(String(p.cle || '').length <= 4 && p.cle ? p.cle : String(p.libelle).slice(0, 3).toUpperCase())}</span>
-      <span class="milieu"><span class="nom">${esc(p.libelle)}</span><span class="pastilles">${p.acheteur ? tag(p.acheteur, 'acc') : tag('Disponible', 'vert')}${p.lot ? p.lot.split(',').map(e => tag(e, 'or')).join('') : ''}</span></span>
+      ${t.graine ? `<details><summary>${T('Vérifier', 'Verify')}</summary><div class="code" style="margin-top:8px">${T('graine', 'seed')} : ${esc(t.graine)}<br>sha256(${T('graine', 'seed')}) = ${T('empreinte ci-dessus', 'fingerprint above')}<br>${T('méthode', 'method')} : ${esc(t.methode || '')}<br>${T('lots', 'lots')} : ${esc((t.lots || []).join(', '))}<br>${T('places (ordre)', 'spots (order)')} : ${esc((t.participants || []).map(id => (parPlace[id] || {}).libelle || id).join(', '))}</div></details>` : ''}</div>` : ''}
+    <div class="bloc"><div class="section">${T('Places', 'Spots')}</div>${d.places.map(p => `<div class="rangee"><span class="ecusson">${esc(String(p.cle || '').length <= 4 && p.cle ? p.cle : String(p.libelle).slice(0, 3).toUpperCase())}</span>
+      <span class="milieu"><span class="nom">${esc(p.libelle)}</span><span class="pastilles">${p.acheteur ? tag(p.acheteur, 'acc') : tag(T('Disponible', 'Available'), 'vert')}${p.lot ? p.lot.split(',').map(e => tag(e, 'or')).join('') : ''}</span></span>
       <span class="prix">${argent(p.prix)}</span></div>`).join('')}</div>
-    ${d.frappes.length ? `<div class="bloc"><div class="section">Cartes sorties</div>${d.frappes.map(f => { const p = parPlace[f.place_id]; return `<div class="rangee"><span class="ecusson">${esc(f.equipe || '?')}</span>
-      <span class="milieu"><span class="nom">${esc(f.joueur || f.carte)}</span><span class="pastilles">${f.carte && f.joueur ? tag(f.carte) : ''}${p ? tag('→ ' + (p.acheteur || p.libelle), 'acc') : ''}${f.pile_ou_face ? tag('Pile ou face ' + f.pile_ou_face.options.join('/') + ' → ' + f.pile_ou_face.gagnant, 'or') : ''}${tag(heure(f.le))}</span></span></div>`; }).join('')}</div>` : ''}
-    ${Object.keys(d.resume_equipes || {}).length && d.mode !== 'joueurs' ? `<details class="bloc"><summary>Checklist par équipe</summary>${Object.entries(d.resume_equipes).sort((a, b) => b[1].recrues - a[1].recrues || b[1].nb - a[1].nb).map(([k, r]) => `<div class="rangee"><span class="ecusson">${esc(k)}</span>
-      <span class="milieu"><span class="pastilles">${tag(r.nb + ' cartes')}${r.recrues ? tag(r.recrues + ' RC', 'acc') : ''}${r.autos ? tag(r.autos + ' auto', 'or') : ''}${r.numerotees ? tag(r.numerotees + ' /#') : ''}</span></span></div>`).join('')}</details>` : ''}`;
+    ${d.frappes.length ? `<div class="bloc"><div class="section">${T('Cartes sorties', 'Cards pulled')}</div>${d.frappes.map(f => { const p = parPlace[f.place_id]; return `<div class="rangee"><span class="ecusson">${esc(f.equipe || '?')}</span>
+      <span class="milieu"><span class="nom">${esc(f.joueur || f.carte)}</span><span class="pastilles">${f.carte && f.joueur ? tag(f.carte) : ''}${p ? tag('→ ' + (p.acheteur || p.libelle), 'acc') : ''}${f.pile_ou_face ? tag(T('Pile ou face ', 'Coin flip ') + f.pile_ou_face.options.join('/') + ' → ' + f.pile_ou_face.gagnant, 'or') : ''}${tag(heure(f.le))}</span></span></div>`; }).join('')}</div>` : ''}
+    ${Object.keys(d.resume_equipes || {}).length && d.mode !== 'joueurs' ? `<details class="bloc"><summary>${T('Checklist par équipe', 'Checklist by team')}</summary>${Object.entries(d.resume_equipes).sort((a, b) => b[1].recrues - a[1].recrues || b[1].nb - a[1].nb).map(([k, r]) => `<div class="rangee"><span class="ecusson">${esc(k)}</span>
+      <span class="milieu"><span class="pastilles">${tag(r.nb + ' ' + T('cartes', 'cards'))}${r.recrues ? tag(r.recrues + ' RC', 'acc') : ''}${r.autos ? tag(r.autos + ' auto', 'or') : ''}${r.numerotees ? tag(r.numerotees + ' /#') : ''}</span></span></div>`).join('')}</details>` : ''}`;
+  document.querySelectorAll('#vue details').forEach((x, i) => { if (ouverts[i]) x.open = true; });
 }
 charger(); setInterval(() => { if (document.visibilityState === 'visible') charger(); }, 20000);
 </script>

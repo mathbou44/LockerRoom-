@@ -30,7 +30,25 @@ SCRIPT = textwrap.dedent('''
     assert not (vb if isinstance(vb, list) else vb.get("cartes")), "fuite entre comptes"
     assert a.post("/api/ebay_cles_sauver", json=[{}]).status_code == 403
     assert len(comptes.lister()) == 2
-    ebay_avis.recevoir(json.dumps({"notification": {"data": {"username": "autre"}}}).encode())
+    # 27 oct 2026 : un avis NON signe ne supprime rien (avant : n'importe qui pouvait effacer un compte)
+    assert ebay_avis.recevoir(json.dumps({"notification": {"data": {"username": "autre", "userId": "uid-B"}}}).encode()) is False
+    assert len(comptes.lister()) == 2
+    import base64
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import ec
+    cle = ec.generate_private_key(ec.SECP256R1())
+    pem = cle.public_key().public_bytes(serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo).decode()
+    def signe(d):
+        corps = json.dumps(d).encode()
+        e = base64.b64encode(json.dumps({"alg": "ECDSA", "kid": "k1", "digest": "SHA1",
+                                         "signature": base64.b64encode(cle.sign(corps, ec.ECDSA(hashes.SHA1()))).decode()}).encode())
+        return corps, e
+    lire = lambda kid: (pem, "SHA1", 0)
+    corps, e = signe({"metadata": {"topic": "MARKETPLACE_ACCOUNT_DELETION"}, "notification": {"data": {"username": "vendeur", "userId": "uid-inconnu"}}})
+    assert ebay_avis.recevoir(corps, e, lire) and len(comptes.lister()) == 2     # le pseudo seul ne suffit plus
+    corps, e = signe({"metadata": {"topic": "MARKETPLACE_ACCOUNT_DELETION"}, "notification": {"data": {"username": "autre", "userId": "uid-B"}}})
+    assert not ebay_avis.recevoir(corps[:-1] + b" ", e, lire)                   # corps modifie : refuse
+    assert ebay_avis.recevoir(corps, e, lire)
     assert len(comptes.lister()) == 1 and b.post("/api/inventaire_liste", json=[]).status_code == 401
     assert a.get("/api/ebay_retour?state=faux&code=C").headers["Location"] != "/#accueil/bienvenue"
     print("MULTI OK")

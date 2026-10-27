@@ -158,6 +158,9 @@ def rechercher(q, fond=True):
         return {"ventes": [], "erreur": "inactif"}
     if utilises_aujourdhui() >= plafond_jour() * (0.7 if fond else 1.0):     # les taps passent avant les taches de fond
         return {"ventes": [], "erreur": "plafond du jour"}
+    e = _ERREURS.get(q.lower())
+    if e and time.time() - e[0] < 600:          # 27 oct 2026 (revue) : une recherche en erreur n'est pas refaite avant 10 min
+        return {"ventes": [], "erreur": e[1]}
     url = URL_API + "/v1/scrape?" + urllib.parse.urlencode({"keyword": q, "categoryId": CATEGORIE_CARTES, "count": NB_PAR_REQUETE,
                                                             "ebaySite": "ebay.com", "hydrateBoa": "true"})
     with _verrou:
@@ -166,14 +169,18 @@ def rechercher(q, fond=True):
             time.sleep(attente)
         _DERNIER[0] = time.time()
     req = urllib.request.Request(url, headers={"Authorization": "Bearer " + _cle(), "Accept": "application/json"})
+    _compter()                                  # 27 oct 2026 (revue) : compte AVANT l'appel (un echec coute aussi au budget)
     try:
         with urllib.request.urlopen(req, timeout=25) as r:
             d = json.loads(r.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
-        return {"ventes": [], "erreur": {401: "clé SoldComps refusée", 429: "quota SoldComps atteint"}.get(e.code, f"SoldComps HTTP {e.code}")}
+        err = {401: "clé SoldComps refusée", 429: "quota SoldComps atteint"}.get(e.code, f"SoldComps HTTP {e.code}")
+        _noter_erreur(q, err)
+        return {"ventes": [], "erreur": err}
     except Exception as e:
-        return {"ventes": [], "erreur": "SoldComps injoignable (" + type(e).__name__ + ")"}
-    _compter()
+        err = "SoldComps injoignable (" + type(e).__name__ + ")"
+        _noter_erreur(q, err)
+        return {"ventes": [], "erreur": err}
     taux = _taux_usd_cad()
     ventes = [v for v in (_vers_vente(it, taux) for it in (d or {}).get("items") or []) if v]
     _cache_ecrire(q.lower(), ventes)
@@ -183,6 +190,15 @@ def rechercher(q, fond=True):
     except Exception:
         pass
     return {"ventes": ventes, "erreur": None}
+
+
+_ERREURS = {}
+
+
+def _noter_erreur(q, err):
+    if len(_ERREURS) > 2000:
+        _ERREURS.clear()
+    _ERREURS[q.lower()] = (time.time(), err)
 
 
 def memes(texte, requete=True, n=24, fond=False, exclure_titre=None):
@@ -201,11 +217,12 @@ def memes(texte, requete=True, n=24, fond=False, exclure_titre=None):
         comm = []
     tout = ebay + [{**v, "source": "SlabCoach"} for v in comm]
     tout.sort(key=lambda v: str(v.get("le") or ""), reverse=True)
-    prix = [v["prix"] for v in tout if v.get("prix")]
-    med = None
-    if prix:
-        med, _g = cartes_match.mediane_robuste(prix) if len(prix) >= 4 else (round(statistics.median(prix), 2), prix)
-    return {"ventes": tout[:n], "mediane": med, "nb": len(tout), "derniere": tout[0]["le"] if tout else None,
+    # 27 oct 2026 (revue) : la valeur affichee passe par les MEMES garde-fous que les deals (valeur_sure) : sinon aucune
+    import deals
+    med, _r = deals.valeur_sure([v for v in tout if v.get("prix")], texte if not requete else "")
+    if not isinstance(med, (int, float)):
+        med = None
+    return {"ventes": tout[:n], "mediane": med, "valeur_sure": med is not None, "nb": len(tout), "derniere": tout[0]["le"] if tout else None,
             "ebay": len(ebay), "communaute": len(comm), "erreur": r.get("erreur") if not tout else None,
             "points": [[v.get("le"), v["prix"]] for v in tout[:200] if v.get("le") and v.get("prix")],
             "tendance": tendance(tout)}

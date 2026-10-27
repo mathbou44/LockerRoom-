@@ -21,6 +21,7 @@ import re
 import statistics
 import threading
 import unicodedata
+from datetime import datetime
 
 _verrou = threading.Lock()
 
@@ -50,7 +51,10 @@ PARALLELES = [
 PRODUITS = ["prizm", "optic", "mosaic", "select", "chrome", "ice", "platinum", "black diamond", "retro", "sapphire",
             "premier", "artifacts", "heritage", "finest", "stadium club", "contenders", "national treasures", "immaculate"]
 EXCLUS = [r"\blots?\b", r"\bx\s?[2-9]\b", r"\(\s*[2-9]\s*\)", r"\b[2-9]\s*cards?\b", r"you pick", r"pick your", r"\bchoose\b",
-          r"\breprint\b", r"\brp\b", r"\bcustom\b", r"\bdigital\b", r"\bproxy\b", r"\bfacsimile\b", r"\bnovelty\b",
+          r"\breprint\b", r"\brp\b",
+          # 27 oct 2026 (revue) : toutes les facons d'ecrire une reproduction, et les lots qui ne disent pas « lot »
+          r"\breprints\b", r"\bre-print", r"\brepros?\b", r"\breproductions?\b", r"\bunofficial\b", r"\baceo\b",
+          r"\bbundle\b", r"\bqty\s*[2-9]\b", r"\bquantity\s*[2-9]\b", r"\bcustom\b", r"\bdigital\b", r"\bproxy\b", r"\bfacsimile\b", r"\bnovelty\b",
           r"\bart card\b", r"\b(case|box|team|player|random|pack) break\b", r"\bbreak (spot|slot)\b", r"\bhobby box\b",
           r"\bblaster\b", r"\bpacks\b", r"\bunopened\b", r"\bsealed\b", r"\bteam set\b", r"\bset of\b", r"\bmystery\b",
           r"\bcomplete set\b", r"\brandom (team|player)\b",
@@ -64,11 +68,11 @@ PRODUITS_LONGS = ["black diamond", "stadium club", "national treasures", "young 
                   "rated rc", "color blast", "power play", "gold label", "red line"]
 _EXCLUS_RE = [re.compile(x) for x in EXCLUS]
 _RE_ANNEE = re.compile(r"\b(19[5-9]\d|20[0-4]\d)\s*(?:[-/]\s*(\d{2,4}))?\b|\b(\d{2})\s*-\s*(\d{2})\b")
-_RE_GRADE = re.compile(r"\b(psa|bgs|sgc|cgc|tag|ksa|hga|beckett|bccg)\s*-?\s*(gem\s*(?:mint|mt)?\s*|mint\s*|pristine\s*|black label\s*)?(10|9\.5|9|8\.5|8|7\.5|7|6|5|4|3|2|1)?\b")
+_RE_GRADE = re.compile(r"\b(psa|bgs|sgc|cgc|tag|ksa|hga|beckett|bccg|csg|gma|isa|ags|mnt)\s*-?\s*(gem\s*(?:mint|mt)?\s*|mint\s*|pristine\s*|black label\s*)?(10|9\.5|9|8\.5|8|7\.5|7|6|5|4|3|2|1)?\b")
 _RE_SERIE = re.compile(r"(?:#\s*)?(?:\b\d{1,4}\s*)?/\s*0*(\d{1,4})\b|\b(\d{1,4})\s+of\s+(\d{1,4})\b|\b1\s*/\s*1\b|\bone of one\b")
 _RE_NUM = re.compile(r"(?:#|\bno\.?\s*|\bcard\s*)\s*([a-z]{0,4}-?\d{1,4}[a-z]?)\b")
-_RE_AUTO = re.compile(r"\bauto\b|\bon card\b|\bsticker auto\b")
-_RE_PATCH = re.compile(r"\bpatch\b|\bjerseys?\b|\brelics?\b|\bgame (used|worn)\b|\bswatch(es)?\b|\brpa\b|\bmemorabilia\b|\bgu\b|\bfabrics?\b|\bmaterials?\b|\bstick\b")
+_RE_AUTO = re.compile(r"(?<!non )(?<!non-)(?<!no )(?<!not )\bauto\b|\bon card\b|\bsticker auto\b")
+_RE_PATCH = re.compile(r"\bpatch\b|(?<!new )\bjerseys?\b|\brelics?\b|\bgame (used|worn)\b|\bswatch(es)?\b|\brpa\b|\bmemorabilia\b|\bgu\b|\bfabrics?\b|\bmaterials?\b|\bstick\b")
 _RE_RC = re.compile(r"\brc\b|\byoung guns\b|\brated rc\b|\b1st bowman\b|\bbowman 1st\b|\bfuture watch\b|\bcanvas rc\b")
 VIDES = set("the a an of and with for in on card cards hockey nhl nba nfl mlb football basketball baseball new mint nm nmmt "
             "near ex excellent sharp clean look hot invest investment beautiful rare ssp sp lot free shipping ship ships "
@@ -121,6 +125,9 @@ def decoder(texte):
     for m in _RE_SERIE.finditer(t):
         txt = m.group(0)
         if re.match(r"\s*#?\s*(19|20)\d{2}\s*/", txt):         # « 2024/25 » : une saison, pas /25
+            continue
+        ms = re.match(r"\s*(\d{2})\s*/\s*0*(\d{2})\b", txt)
+        if ms and est_saison(t, m.start(), m.end(), ms.group(1), ms.group(2)):   # « 24/25 » : une saison aussi
             continue
         if re.search(r"1\s*/\s*1\b|one of one", txt):
             serie = 1
@@ -315,17 +322,35 @@ def requete_ebay(c):
 # numeros speciaux : 1/99, 99/99, 1/1 se vendent bien plus cher qu'une copie ordinaire -> jamais comparables d'une
 # copie ordinaire ; carte abimee, douteuse ou contrefaite -> jamais un deal.
 _RE_NUM_SERIE = re.compile(r"(?<![\d/])#?\s*0*(\d{1,4})\s*/\s*0*(\d{1,4})\b|\b0*(\d{1,4})\s+of\s+0*(\d{1,4})\b")
-_RE_ABIMEE = re.compile(r"\b(creased?|creases|creasing|damaged?|dings?|dinged|bent|bend|stain(ed|s)?|water damage|poor( condition)?|"
+_RE_ABIMEE = re.compile(r"\b(creased?|creases|creasing|damaged?|dings?|dinged|bent|bend|stain(ed|s)?(?! glass)|water damage|poor( condition)?|"
+                        r"scratch(ed|es)?|chipped|chipping|surface wear|edge wear|corner wear|soft corners?|"
                         r"miscut|off[- ]?cent(er|re)d?|as[- ]is|writing|written on|torn|tears?|trimmed|altered|fake|replica|"
                         r"counterfeit|filler|low grade|abimee?|pliee?|tachee?)\b")
 
 
+_RE_APRES_SAISON = re.compile(r"\s*(upper deck|ud\b|o-?pee|opc\b|sp\b|series|s[12]\b|tim hortons|parkhurst|mvp\b|ice\b|artifacts|"
+                              r"black diamond|chronology|synergy|allure|credentials|premier|the cup|trilogy|clear cut|skybox|"
+                              r"panini|topps|bowman|prizm|select|mosaic|donruss|hockey|nhl)")
+
+
+def est_saison(t, debut, fin, a, b):
+    """27 oct 2026 (revue) : « 24/25 Upper Deck » est une SAISON, pas un tirage /25 (sinon : faux deal).
+    Deux nombres qui se suivent, au debut du titre ou devant une marque / un produit."""
+    a, b = int(a), int(b)
+    if b != (a + 1) % 100:
+        return False
+    return debut <= 2 or bool(_RE_APRES_SAISON.match(t[fin:]))
+
+
 def numero_serie(titre):
     """(numero, tirage) d'une carte numerotee (« 12/99 », « 12 of 99 »), sinon None. Les saisons (2024/25) ne comptent pas."""
-    for m in _RE_NUM_SERIE.finditer(norm(titre)):
+    t = norm(titre)
+    for m in _RE_NUM_SERIE.finditer(t):
         n, d = (m.group(1), m.group(2)) if m.group(1) else (m.group(3), m.group(4))
         n, d = int(n), int(d)
         if n >= 1900 or d >= 1900 or n < 1 or d < 1 or n > d:
+            continue
+        if m.group(1) and est_saison(t, m.start(), m.end(), n, d):
             continue
         return n, d
     return None
@@ -367,7 +392,14 @@ def _lire():
     d.setdefault("bons", {})
     d.setdefault("items", {})
     d.setdefault("oui", {})
+    d.setdefault("votants", {})       # 27 oct 2026 : mot -> comptes distincts (empreintes) qui l'ont refuse
+    d.setdefault("attente", {})       # annonce refusee par 1 seul compte : en attente d'un 2e avis
+    d.setdefault("jour", {})          # votes du jour par compte (plafond)
     return d
+
+
+VOTES_PAR_JOUR = 30
+VOTANTS_MOT = 3                       # un mot devient exclu pour tous apres 3 comptes differents
 
 
 _JOUEURS = {"t": None}
@@ -390,17 +422,34 @@ def signature(recherche):
     return requete_ebay(c)
 
 
-def apprendre(recherche, item_id, titre, bonne):
-    """L'utilisateur dit : cette annonce est (ou n'est pas) la carte cherchee."""
+def apprendre(recherche, item_id, titre, bonne, votant=None, confiance=True):
+    """L'utilisateur dit : cette annonce est (ou n'est pas) la carte cherchee.
+    27 oct 2026 (revue) : en ligne, un seul compte ne peut pas fausser les prix de tout le monde : plafond de votes par jour,
+    une annonce est ecartee pour tous au 2e compte, un mot au 3e. confiance=True (PC du vendeur, admin) : effet immediat."""
+    import hashlib
     sig = signature(recherche)
     mots_q = set(norm(recherche).split())
     mots_t = {m for m in norm(titre).split() if len(m) > 2 and m not in VIDES and not m.isdigit() and m not in mots_q}
+    qui = hashlib.sha256(str(votant or "local").encode()).hexdigest()[:10]
     with _verrou:
         d = _lire()
+        jour = datetime.now().strftime("%Y-%m-%d")
+        d["jour"] = {k: v for k, v in d["jour"].items() if k.startswith(jour)}
+        if not confiance and d["jour"].get(jour + qui, 0) >= VOTES_PAR_JOUR:
+            return {"ok": True, "plafond": True}
+        d["jour"][jour + qui] = d["jour"].get(jour + qui, 0) + 1
         lst = d["items"].setdefault(sig, [])
+        cle_att = sig + "|" + str(item_id)
         if not bonne and str(item_id) not in lst:
-            lst.append(str(item_id))
-            d["items"][sig] = lst[-200:]
+            att = d["attente"].setdefault(cle_att, [])
+            if qui not in att:
+                att.append(qui)
+            if confiance or len(att) >= 2:
+                lst.append(str(item_id))
+                d["items"][sig] = lst[-200:]
+                d["attente"].pop(cle_att, None)
+            if len(d["attente"]) > 2000:
+                d["attente"] = dict(list(d["attente"].items())[-1500:])
         elif bonne:
             if str(item_id) in lst:
                 lst.remove(str(item_id))
@@ -411,6 +460,11 @@ def apprendre(recherche, item_id, titre, bonne):
         cpt = d["refus"] if not bonne else d["bons"]
         for m in mots_t:
             cpt[m] = cpt.get(m, 0) + 1
+            if not bonne:
+                v = d["votants"].setdefault(m, [])
+                if qui not in v:
+                    v.append("*" if confiance else qui)
+                    d["votants"][m] = v[-20:]
         tmp = _chemin() + ".tmp"
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(d, f, ensure_ascii=False)
@@ -422,7 +476,10 @@ def appris(recherche=None):
     """(mots d'exclusion appris, annonces refusees pour cette recherche)."""
     d = _lire()
     joueurs = _mots_joueurs()
-    mots = [m for m, n in d["refus"].items() if n >= 5 and n >= 3 * d["bons"].get(m, 0) and m not in joueurs]
+    def assez(m):                     # anciens mots (avant les votants) : comme avant ; sinon 3 comptes, ou un vote de confiance
+        v = d["votants"].get(m)
+        return v is None or "*" in v or len(set(v)) >= VOTANTS_MOT
+    mots = [m for m, n in d["refus"].items() if n >= 5 and n >= 3 * d["bons"].get(m, 0) and m not in joueurs and assez(m)]
     refuses = set(d["items"].get(signature(recherche), [])) if recherche else set()
     oui = set(d["oui"].get(signature(recherche), [])) if recherche else set()
     return mots, refuses, oui

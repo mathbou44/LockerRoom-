@@ -16,6 +16,7 @@ restent gratuits et illimites. PC de Mathieu (sans multi-comptes) : tout est Pro
 import json
 import os
 import threading
+import time
 from datetime import datetime, timedelta
 
 ESSAI_JOURS = 14
@@ -25,6 +26,7 @@ LIMITES = {                    # Gratuit (apres l'essai) ; Pro = illimite
     "deals": 5,                # deals visibles
     "repere": 3,               # cartes de l'inventaire avec le repere prix vs marche
     "breaks_produits": 1,      # produits dans l'analyse de breaks
+    "preparer_jour": 20,       # 27 oct 2026 : annonces preparees (prix suggere) par jour - protege le quota eBay partage
 }
 _verrou = threading.Lock()
 
@@ -34,7 +36,17 @@ class LimiteAtteinte(Exception):
         self.cle, self.limite = cle, limite
         msg = {"annonces_mois": f"Tes {limite} annonces gratuites du mois sont utilisées : passe au forfait Pro pour continuer.",
                "valeur_jour": f"Tes {limite} recherches gratuites du jour sont utilisées : passe au forfait Pro pour continuer.",
+               "preparer_jour": f"Tes {limite} annonces préparées du jour sont utilisées : reviens demain ou passe au forfait Pro.",
                }.get(cle, "Fonction Pro : passe au forfait Pro pour continuer.")
+        try:                                  # 27 oct 2026 (revue Apple 3.1.1) : dans l'app iPhone, pas d'appel a acheter ailleurs
+            import lockerroom
+            if lockerroom.est_ios():
+                msg = {"annonces_mois": f"Tes {limite} annonces gratuites du mois sont utilisées : reviens le mois prochain.",
+                       "valeur_jour": f"Tes {limite} recherches gratuites du jour sont utilisées : reviens demain.",
+                       "preparer_jour": f"Tes {limite} annonces préparées du jour sont utilisées : reviens demain.",
+                       }.get(cle, "Limite du forfait gratuit atteinte.")
+        except Exception:
+            pass
         super().__init__(msg)
 
 
@@ -62,6 +74,11 @@ def etat(cid=None):
         return {"pro": True, "essai": False, "payant": True, "jours_restants": None, "local": True}
     info = comptes.info(cid) or {}
     payant = (info.get("forfait") or "gratuit") == "pro"
+    if payant and info.get("forfait_source") == "apple":       # 27 oct 2026 : filet si un avis d'Apple se perd
+        try:
+            payant = time.time() < float(info.get("forfait_fin") or 0) + 3 * 86400
+        except (TypeError, ValueError):
+            payant = False
     don = offert(info)
     try:
         fin = datetime.fromisoformat(str(info.get("cree_le"))[:19]) + timedelta(days=ESSAI_JOURS + int(info.get("essai_bonus_jours") or 0))
@@ -70,6 +87,7 @@ def etat(cid=None):
     essai = (not payant) and (not don) and fin is not None and datetime.now() < fin
     reste = max(0, (fin - datetime.now()).days + 1) if essai else 0
     return {"pro": payant or essai or don, "essai": essai, "payant": payant, "offert": don, "jours_restants": reste,
+            "source": info.get("forfait_source") if payant else None, "annule": bool(info.get("forfait_annule")),
             "essai_fin": fin.isoformat(timespec="minutes") if fin else None}
 
 

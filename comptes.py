@@ -57,7 +57,10 @@ def dossier(compte_id=None):
     if not re.fullmatch(r"[a-z0-9]{8,40}", str(cid)):
         raise ValueError("Compte invalide")
     d = os.path.join(DOSSIER_COMPTES, cid)
-    os.makedirs(d, exist_ok=True)
+    if not os.path.isdir(d):
+        if cid not in _index():             # 27 oct 2026 : compte supprime pendant une synchro -> on ne le recree pas
+            raise ValueError("Compte inconnu")
+        os.makedirs(d, exist_ok=True)
     return d
 
 
@@ -87,7 +90,8 @@ def trouver_ou_creer(ebay_user_id, username, env):
     with _verrou:
         ix = _index()
         nouveau = cid not in ix
-        e = ix.setdefault(cid, {"cree_le": datetime.now().isoformat(timespec="seconds"), "env": env})
+        # 27 oct 2026 (revue) : un compte supprime puis recree garde sa date de creation (pas un 2e essai gratuit)
+        e = ix.setdefault(cid, {"cree_le": _anciens().get(cid) or datetime.now().isoformat(timespec="seconds"), "env": env})
         e.update(username=username, vu_le=datetime.now().isoformat(timespec="seconds"))
         _ecrire_index(ix)
     dossier(cid)
@@ -128,9 +132,28 @@ def supprimer(compte_id):
     d = os.path.join(DOSSIER_COMPTES, compte_id)
     with _verrou:
         ix = _index()
-        ix.pop(compte_id, None)
+        e = ix.pop(compte_id, None) or {}
         _ecrire_index(ix)
+        if e.get("cree_le"):                # seulement l'identifiant opaque et la date : rien d'autre ne reste
+            a = _anciens()
+            a[compte_id] = min(e["cree_le"], a.get(compte_id) or e["cree_le"])
+            _ecrire_json(os.path.join(DONNEES, "comptes_supprimes.json"), a)
     shutil.rmtree(d, ignore_errors=True)
+
+
+def _anciens():
+    try:
+        with open(os.path.join(DONNEES, "comptes_supprimes.json"), encoding="utf-8") as f:
+            return json.load(f) or {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _ecrire_json(chemin, d):
+    tmp = chemin + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(d, f)
+    os.replace(tmp, chemin)
 
 
 # -- chiffrement des jetons (cle : LOCKERROOM_CLE, jamais sur le disque) ----------------------

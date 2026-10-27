@@ -149,7 +149,11 @@ def obtenir(api, mode="vendeur", langue="fr", force=False, appeler=None):
     ctx = contexte(api, mode, langue)
     source, liste = "regles", None
     import vision
-    if appeler or vision.disponible():
+    # 27 oct 2026 (revue juridique) : les conseils par IA envoyaient des donnees eBay (titres et prix d'annonces, ventes)
+    # et des donnees du compte a un modele d'IA tiers. Interdit sans l'accord ECRIT d'eBay (licence API, entente EPN
+    # VI.E) et sans le consentement explicite de l'utilisateur (Apple 5.1.2(i), Loi 25). Coupe par defaut : les conseils
+    # par regles prennent le relais. A rallumer (LR_CONSEILS_IA=1) seulement avec l'accord d'eBay ET un consentement.
+    if appeler or (vision.disponible() and os.environ.get("LR_CONSEILS_IA") == "1"):
         try:
             _p, serveur = vision._chemins()
             if (vision._lire(serveur).get(vision._mois()) or {}).get("usd", 0) < vision.PLAFOND_SERVEUR_USD:

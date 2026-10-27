@@ -35,6 +35,7 @@ FOURNISSEURS = {
 }
 DUREE_ETAT_S = 600
 _JWKS = {}
+_ETATS_UTILISES = {}          # 27 oct 2026 : un retour ne sert qu'une fois (nonce -> heure)
 
 
 def _b64e(b):
@@ -192,6 +193,12 @@ def terminer(f, code, etat, base, utilisateur_json=None):
     d = _lire_etat(etat)
     if not d or d.get("f") != f:
         return {"ok": False, "erreur": "Connexion expirée : recommence"}
+    maint = time.time()
+    for k in [k for k, t in _ETATS_UTILISES.items() if maint - t > DUREE_ETAT_S]:
+        _ETATS_UTILISES.pop(k, None)
+    if d.get("n") in _ETATS_UTILISES:
+        return {"ok": False, "erreur": "Connexion déjà utilisée : recommence"}
+    _ETATS_UTILISES[d.get("n")] = maint
     if not code:
         return {"ok": False, "erreur": "Connexion annulée"}
     c = cfg(f)
@@ -205,9 +212,28 @@ def terminer(f, code, etat, base, utilisateur_json=None):
     nom = claims.get("name") or ""
     if f == "apple" and utilisateur_json:                 # Apple donne le nom UNE seule fois, au premier passage
         try:
-            n = (json.loads(utilisateur_json) or {}).get("name") or {}
-            nom = " ".join(x for x in (n.get("firstName"), n.get("lastName")) if x)
+            u = json.loads(utilisateur_json)
+            n = (u.get("name") if isinstance(u, dict) else None) or {}
+            if isinstance(n, dict):
+                nom = " ".join(str(x) for x in (n.get("firstName"), n.get("lastName")) if isinstance(x, str) and x)[:80]
         except ValueError:
             pass
-    return {"ok": True, "sub": str(claims["sub"]), "courriel": claims.get("email") if claims.get("email_verified") in (True, "true", None) else None,
+    return {"ok": True, "jeton_apple": rep.get("refresh_token") if f == "apple" else None,
+            "sub": str(claims["sub"]), "courriel": claims.get("email") if claims.get("email_verified") in (True, "true", None) else None,
             "nom": nom or (str(claims.get("email") or "").split("@")[0]) or FOURNISSEURS[f]["nom"]}
+
+
+def revoquer_apple(jeton):
+    """27 oct 2026 (revue Apple, TN3194) : a la suppression du compte, on retire aussi l'acces chez Apple
+    (POST /auth/revoke avec le jeton de rafraichissement garde a la connexion). -> True si Apple l'a accepte."""
+    if not jeton or not actif("apple"):
+        return False
+    try:
+        req = urllib.request.Request("https://appleid.apple.com/auth/revoke", method="POST",
+                                     data=urllib.parse.urlencode({"client_id": cfg("apple")["client_id"], "client_secret": _secret_apple(),
+                                                                  "token": jeton, "token_type_hint": "refresh_token"}).encode(),
+                                     headers={"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "SlabCoach"})
+        with urllib.request.urlopen(req, timeout=15) as r:      # Apple repond 200, corps vide
+            return 200 <= r.status < 300
+    except Exception:
+        return False

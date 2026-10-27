@@ -116,7 +116,7 @@ def lire_rss(xml, jours=JOURS):
         editeur = (src.text or "").strip() if src is not None and src.text else None
         if editeur and titre.endswith(" - " + editeur):
             titre = titre[: -len(editeur) - 3].strip()
-        out.append({"titre": titre[:200], "date": d.date().isoformat(), "heure": d.isoformat(), "lien": it.findtext("link") or "",
+        out.append({"titre": titre[:200], "date": d.date().isoformat(), "heure": d.isoformat(), "lien": lien if re.match(r"https?://", lien := (it.findtext("link") or "").strip(), re.I) else "",
                     "editeur": editeur, "image": None if SANS_IMAGES else _image(it)})
     return out
 

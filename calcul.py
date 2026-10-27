@@ -224,17 +224,27 @@ def chance_rembourser(dist, prix, pas_max=400):
     prix = float(prix or 0)
     if prix <= 0:
         return 1.0
-    l = [(float(v), float(n)) for v, n in dist or [] if v > 0 and n > 0]
-    lam = sum(n for _v, n in l)
+    h = max(0.01, prix / pas_max)
+    # 27 oct 2026 (revue) : avant, max(1, round(v / h)) comptait une carte de 0,12 $ pour un pas entier (0,25 $) : 100
+    # petites cartes gonflaient la chance (83 % au lieu de 19 %). Maintenant chaque valeur est partagee entre les deux pas
+    # voisins (meme moyenne exacte) : une carte de 2,4 pas compte 60 % pour 2 pas et 40 % pour 3. La part « 0 pas » d'une
+    # toute petite carte ne change pas la somme : elle sort du taux d'arrivee. Verifie contre Monte-Carlo (tests).
+    m = int(math.ceil(prix / h - 1e-9))
+    poids = {}
+    for v, n in dist or []:
+        v, n = float(v), float(n)
+        if v <= 0 or n <= 0:
+            continue
+        x = v / h
+        k = int(math.floor(x))
+        fr = x - k
+        for kk, w in ((k, n * (1 - fr)), (k + 1, n * fr)):
+            if kk >= 1 and w > 0:
+                poids[kk] = poids.get(kk, 0.0) + w
+    lam = sum(poids.values())
     if lam <= 0:
         return 0.0
-    h = max(0.25, prix / pas_max)
-    m = int(math.ceil(prix / h))
-    fx = {}
-    for v, n in l:
-        k = max(1, int(round(v / h)))
-        if k < m:                                   # une carte qui vaut a elle seule le prix : rembourse d'office
-            fx[k] = fx.get(k, 0.0) + n / lam
+    fx = {k: w / lam for k, w in poids.items() if k < m}   # une carte qui vaut a elle seule le prix : rembourse d'office
     sauts = sorted(fx.items())
     fs = [0.0] * m
     fs[0] = math.exp(-lam)

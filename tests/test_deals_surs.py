@@ -96,5 +96,40 @@ class TestToujoursQuelqueChose(unittest.TestCase):
         self.assertTrue(r["secours"])
         self.assertEqual(len(r["deals"]), 1)
 
+class TestRevue27Oct(unittest.TestCase):
+    """27 oct 2026 - revue du code : titres trompeurs, ventes trop vieilles, chance de rentabiliser."""
+
+    def test_titres(self):
+        import cartes_match as cm
+        exclu = lambda t: any(r.search(cm.norm(t)) for r in cm._EXCLUS_RE)      # noqa: E731
+        self.assertTrue(exclu("2015-16 Young Guns McDavid #201 RC Reproduction"))
+        self.assertTrue(exclu("McDavid Young Guns RE-PRINT"))
+        self.assertTrue(exclu("Bundle of Bedard rookies"))
+        self.assertIsNone(cm.decoder("24/25 Upper Deck Ice Macklin Celebrini Rookie")["serie"])      # une saison
+        self.assertEqual(cm.decoder("2024-25 Upper Deck Celebrini Young Guns 12/25")["serie"], 25)
+        self.assertFalse(cm.decoder("Jack Hughes New Jersey Devils Young Guns")["patch"])
+        self.assertTrue(cm.decoder("Hughes Game Used Jersey Patch")["patch"])
+        self.assertFalse(cm.decoder("Bedard non auto Young Guns")["auto"])
+        self.assertTrue(cm.decoder("CSG 9.5 Bedard Young Guns")["grade"])
+        self.assertTrue(cm.abimee("McDavid Young Guns scratched"))
+        self.assertFalse(cm.abimee("Stained Glass McDavid SSP"))
+
+    def test_ventes_trop_vieilles(self):
+        import deals
+        from datetime import datetime, timedelta
+        vieux = (datetime.now() - timedelta(days=200)).strftime("%Y-%m-%d")
+        pv = [{"titre": "Bedard Young Guns", "prix": p, "le": vieux} for p in (100, 101, 99)]
+        self.assertIsNone(deals.valeur_sure(pv, "Bedard Young Guns")[0])
+        moyen = (datetime.now() - timedelta(days=120)).strftime("%Y-%m-%d")
+        pv = [{"titre": "Savoie Draft Day Marks Patch Auto 3/35", "prix": p, "le": moyen} for p in (100, 101, 99)]
+        self.assertTrue(deals.valeur_sure(pv, "Savoie Draft Day Marks Patch Auto 9/35")[0])       # un hit : 180 jours
+        self.assertIsNone(deals.valeur_sure(pv, "Savoie Young Guns")[0])
+
+    def test_chance_petites_cartes(self):
+        import calcul
+        self.assertLess(calcul.chance_rembourser([(0.12, 100)], 30), 0.01)       # 12 $ attendus : 30 $ presque impossible
+        self.assertGreater(calcul.chance_rembourser([(0.12, 100)], 11), 0.7)     # Monte-Carlo : 80 %
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -90,8 +90,9 @@ def _tirage_colonne(v):
 
 def groupe_de(nom):
     t = _n(nom)
-    auto = bool(re.search(r"auto|signature|signed|ink|chirography|inscri", t))
-    memo = bool(re.search(r"patch|jersey|material|relic|memorabilia|swatch|game[- ]used|game[- ]worn|fabric|stick|threads", t))
+    # 27 oct 2026 (revue) : « ink » et « stick » en mots entiers (« Pink », « Rink », « Stickers » ne sont ni auto ni memo)
+    auto = bool(re.search(r"auto|signature|signed|\bink(ed)?\b|chirography|inscri", t))
+    memo = bool(re.search(r"patch|jersey|material|relic|memorabilia|swatch|game[- ]used|game[- ]worn|fabric|\bsticks?\b|threads", t))
     if auto and memo:
         return "auto_memo"
     if auto:
