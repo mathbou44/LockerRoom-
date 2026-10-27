@@ -181,8 +181,8 @@ select.champ{appearance:none; -webkit-appearance:none; background-image:linear-g
    = 4 teintes refractor (--h1..--h4) + l'accent ; le vert et le rouge des gains / pertes ne changent jamais */
 body{--h1:#9FE6D2; --h2:#B9BEFF; --h3:#F2B3D6; --h4:#F1D58E;
   --holo:linear-gradient(100deg,var(--h1) 0%,var(--h2) 36%,var(--h3) 68%,var(--h4) 100%)}
-/* 27 oct 2026 (Mathieu) : les 5 = paralleles du hobby (Outburst Silver / Red / Gold des Young Guns, Emerald Surge et
-   Orange Checkers des O-Pee-Chee) ; Refractor reste la palette SlabCoach par defaut */
+/* 27 oct 2026 (Mathieu) : 5 palettes inspirees des paralleles du hobby, avec des noms a nous (Eclat argent / rouge / or,
+   Vague emeraude, Damier orange) ; Prisme reste la palette SlabCoach par defaut */
 body[data-palette="silver"], body[data-palette="silver"].mode-acheteur{--h1:#FFFFFF; --h2:#C9D0DA; --h3:#E8ECF2; --h4:#9FA9B8; --acc:#DDE2EA; --acc-fonce:#22252B; --acc-texte:#111317}
 body[data-palette="rouge"], body[data-palette="rouge"].mode-acheteur{--h1:#FFC9C9; --h2:#FF6B72; --h3:#E0404C; --h4:#FFE1DC; --acc:#FF7A80; --acc-fonce:#3A1518; --acc-texte:#22070A}
 body[data-palette="gold"], body[data-palette="gold"].mode-acheteur{--h1:#FFF0C4; --h2:#F5D27A; --h3:#D9AE4E; --h4:#FFE6A0; --acc:#F5D27A; --acc-fonce:#2E2410; --acc-texte:#1C1406}
@@ -200,7 +200,7 @@ body{background-image:radial-gradient(900px 360px at 12% -150px, color-mix(in sr
 .abo-apple{font-size:15px; text-align:center; margin:4px 0 12px; color:var(--texte)}
 .petit-legal{font-size:12px; line-height:1.45; text-align:center; margin-top:12px} .petit-legal a{color:var(--acc)}
 .th-pal .pas{background:linear-gradient(135deg,var(--p1) 0%,var(--p2) 36%,var(--p3) 68%,var(--p4) 100%) !important}
-/* le motif du parallele dans la pastille : eclats (Outburst), stries (Surge), damier (Checkers) */
+/* le motif du parallele dans la pastille : eclats, stries, damier */
 .th-pal[data-pal="silver"] .pas, .th-pal[data-pal="rouge"] .pas, .th-pal[data-pal="gold"] .pas{background:repeating-conic-gradient(from 6deg, rgba(255,255,255,.6) 0 7deg, transparent 7deg 24deg), radial-gradient(circle, var(--p1) 0%, var(--p2) 45%, var(--p3) 100%) !important}
 .th-pal[data-pal="emeraude"] .pas{background:repeating-linear-gradient(118deg, rgba(255,255,255,.45) 0 1.5px, transparent 1.5px 5px), linear-gradient(135deg, var(--p1), var(--p2) 45%, var(--p3)) !important}
 .th-pal[data-pal="orange"] .pas{background:conic-gradient(var(--p2) 25%, var(--p4) 0 50%, var(--p2) 0 75%, var(--p4) 0) 0 0/7.33px 7.33px !important}
@@ -1442,15 +1442,16 @@ const nomMarque = (r) => { const n = String(((r || S.reglages) || {}).nom_boutiq
 try { const c = JSON.parse(localStorage.getItem('lr_logo') || 'null'); if (c && c.v) { S.logoV = c.v; S.logo = c.d; } } catch (e) {}
 setTimeout(() => appliquerMarque(), 0);
 // le thème de l'équipe favorite : tout de suite au chargement (copie locale), puis celui des réglages du compte
-try { const e = localStorage.getItem('lr_equipe'); if (e) setTimeout(() => appliquerTheme(e), 0); } catch (e) {}
+// 27 oct 2026 (Mathieu) : plus de couleurs d'equipe, seulement les palettes ; on efface l'ancien choix
+try { localStorage.removeItem('lr_equipe'); } catch (e) {}
 // 27 oct 2026 - la palette refractor choisie (5 choix), appliquee avant le premier ecran
-const PALETTES = [
-  {k:'refractor', fr:'Refractor', en:'Refractor', dfr:'SlabCoach, par défaut', den:'SlabCoach, default', c:['#9FE6D2', '#B9BEFF', '#F2B3D6', '#F1D58E']},
-  {k:'silver', fr:'Outburst Silver', en:'Outburst Silver', dfr:'argent éclaté', den:'silver burst', c:['#FFFFFF', '#C9D0DA', '#E8ECF2', '#9FA9B8']},
-  {k:'rouge', fr:'Red Outburst', en:'Red Outburst', dfr:'rouge éclaté', den:'red burst', c:['#FFC9C9', '#FF6B72', '#E0404C', '#FFE1DC']},
-  {k:'gold', fr:'Gold Outburst', en:'Gold Outburst', dfr:'or éclaté', den:'gold burst', c:['#FFF0C4', '#F5D27A', '#D9AE4E', '#FFE6A0']},
-  {k:'emeraude', fr:'Emerald Surge', en:'Emerald Surge', dfr:'vert émeraude', den:'emerald green', c:['#B8F5DC', '#34D399', '#10B981', '#D7FFF0']},
-  {k:'orange', fr:'Orange Checkers', en:'Orange Checkers', dfr:'damier orange', den:'orange checkers', c:['#FFD9B0', '#FF9A3D', '#F07A1A', '#FFE8CC']}];
+const PALETTES = [                      // 27 oct 2026 : noms a nous (pas ceux des fabricants)
+  {k:'refractor', fr:'Prisme', en:'Prism', dfr:'SlabCoach, par défaut', den:'SlabCoach, default', c:['#9FE6D2', '#B9BEFF', '#F2B3D6', '#F1D58E']},
+  {k:'silver', fr:'Éclat argent', en:'Silver Burst', dfr:'éclats', den:'burst', c:['#FFFFFF', '#C9D0DA', '#E8ECF2', '#9FA9B8']},
+  {k:'rouge', fr:'Éclat rouge', en:'Red Burst', dfr:'éclats', den:'burst', c:['#FFC9C9', '#FF6B72', '#E0404C', '#FFE1DC']},
+  {k:'gold', fr:'Éclat or', en:'Gold Burst', dfr:'éclats', den:'burst', c:['#FFF0C4', '#F5D27A', '#D9AE4E', '#FFE6A0']},
+  {k:'emeraude', fr:'Vague émeraude', en:'Emerald Wave', dfr:'stries', den:'stripes', c:['#B8F5DC', '#34D399', '#10B981', '#D7FFF0']},
+  {k:'orange', fr:'Damier orange', en:'Orange Check', dfr:'damier', den:'checkerboard', c:['#FFD9B0', '#FF9A3D', '#F07A1A', '#FFE8CC']}];
 const PALETTES_AVANT = {or:'gold', chrome:'silver'};   // premiers choix (27 oct) -> leur parallele ; glace / aurore -> refractor
 function clePalette(k){ k = PALETTES_AVANT[k] || k; return PALETTES.some(p => p.k === k) ? k : 'refractor'; }
 function appliquerPalette(k){
@@ -1463,7 +1464,6 @@ try { const p0 = localStorage.getItem('lr_palette'); if (p0) appliquerPalette(p0
 function nivLogo(){ const n = document.body.dataset.niveau; return n === 'bronze' || n === 'silver' ? n : 'gold'; }
 async function appliquerMarque(){
   const r = S.reglages || {}, v = r.logo_v || '';
-  if ('equipe_fav' in r) { appliquerTheme(r.equipe_fav); try { localStorage.setItem('lr_equipe', r.equipe_fav || ''); } catch (e) {} }
   if ('palette' in r) appliquerPalette(r.palette || 'refractor');
   if (S.reglages && v !== (S.logoV || '')) {
     S.logo = v ? ((await API.logo_lire().catch(() => ({}))).logo || null) : null; S.logoV = v;
@@ -4518,13 +4518,8 @@ async function vueReglages(arg){
     <a class="r-bloc r-idee" href="#guide"><span class="aaj-n">★</span><span><b>${tt('Guide du hobby', 'Hobby guide')}</b><small>${tt('Produits, sortes de cartes, budget : tout pour bien acheter', 'Products, card types, budget: buy smart')}</small></span><span class="fl">›</span></a>
     <button class="r-bloc r-idee" id="g-idee"><span class="aaj-n">?</span><span><b>${tt('Une idée ? Un problème ?', 'An idea? A problem?')}</b><small>${tt('Écris-nous, on répond ici dans l’app', 'Write to us, we reply here in the app')}</small></span><span class="fl">›</span></button>
     <div class="r-bloc"><div class="r-titre">${tt('Palette de l’app', 'App palette')}</div>
-      <div class="r-note">${tt('Ton parallèle préféré : les touches de couleur, les boutons et les onglets de l’app. Le vert et le rouge restent ceux des gains et des pertes.', 'Your favorite parallel: the color touches, buttons and tabs of the app. Green and red stay for gains and losses.')}</div>
+      <div class="r-note">${tt('Ta finition préférée : les touches de couleur, les boutons et les onglets de l’app. Le vert et le rouge restent ceux des gains et des pertes.', 'Your favorite finish: the color touches, buttons and tabs of the app. Green and red stay for gains and losses.')}</div>
       <div class="th-grille" id="g-palette">${PALETTES.map(p => `<button class="th-eq th-pal ${clePalette(r.palette) === p.k ? 'on' : ''}" data-pal="${p.k}"><span class="pas" style="--p1:${p.c[0]};--p2:${p.c[1]};--p3:${p.c[2]};--p4:${p.c[3]}"></span><span>${esc(tt(p.fr, p.en))}<small>${esc(tt(p.dfr, p.den))}</small></span></button>`).join('')}</div></div>
-    <div class="r-bloc"><div class="r-titre">${tt('Couleurs de mon équipe', 'My team colors')}</div>
-      <div class="r-note">${tt('Choisis ton équipe : les boutons, onglets et liens prennent ses couleurs. Le vert et le rouge restent ceux des gains et des pertes.', 'Pick your team: buttons, tabs and links take its colors. Green and red stay for gains and losses.')}</div>
-      <div class="th-grille" id="g-theme"><button class="th-eq ${r.equipe_fav ? '' : 'on'}" data-eq=""><span class="pas" style="--c1:#E9CF8E;--c2:#0B0B0E"></span><span>SlabCoach<small>${tt('par défaut', 'default')}</small></span></button>
-        ${Object.keys(COUL_LNH).sort((a, b) => NOMS_LNH[a].localeCompare(NOMS_LNH[b])).map(k => { const a = accentEquipe(k);
-          return `<button class="th-eq ${r.equipe_fav === k ? 'on' : ''}" data-eq="${k}" ${a ? '' : `title="${esc(tt('Couleurs trop proches du vert et du rouge des gains et pertes : thème SlabCoach', 'Colors too close to the gain/loss green and red: SlabCoach theme'))}"`}><span class="pas" style="--c1:${COUL_LNH[k][0]};--c2:${COUL_LNH[k][1]}"></span><span>${esc(NOMS_LNH[k])}<small>${k}${a ? '' : ' · ' + tt('thème SlabCoach', 'SlabCoach theme')}</small></span></button>`; }).join('')}</div></div>
     <div class="r-bloc"><div class="r-titre">Mon sport principal</div>${puceSports(r.sport || 'hockey', 'g-sport')}
       <div class="r-note">L'app devine le sport de chaque carte ; sinon, elle prend celui-ci.</div></div>
     <div class="r-bloc"><div class="r-titre">Ma boutique</div>
@@ -4570,13 +4565,6 @@ async function vueReglages(arg){
     $$('#g-palette [data-pal]').forEach(x => x.classList.toggle('on', x === b));
     const p = PALETTES.find(x => x.k === b.dataset.pal);
     const res = await essai(API.reglages_sauver({palette:b.dataset.pal}), tt('Palette ', 'Palette ') + tt(p.fr, p.en));
-    if (res) S.reglages = res;
-  });
-  $$('#g-theme [data-eq]').forEach(b => b.onclick = async () => {
-    const k = b.dataset.eq;
-    appliquerTheme(k);                                     // tout de suite, puis on garde le choix
-    $$('#g-theme [data-eq]').forEach(x => x.classList.toggle('on', x === b));
-    const res = await essai(API.reglages_sauver({equipe_fav:k}), k ? NOMS_LNH[k] + tt(' : couleurs appliquées', ': colors applied') : tt('Couleurs SlabCoach', 'SlabCoach colors'));
     if (res) S.reglages = res;
   });
   $$('#g-sport [data-sport]').forEach(b => b.onclick = async () => {
