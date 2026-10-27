@@ -937,7 +937,7 @@
    "nb_cartes": 1,
    "tirage": null,
    "parallele_de": null,
-   "par_boite": 0.0002,
+   "par_boite": 0.00016,
    "cotes": "1:75 000 paquets hobby/ePack"
   }
  ],
@@ -1008,7 +1008,52 @@
   {
    "libelle": "Additional Serial-Numbered Cards, Short Prints or Printing Plates",
    "par_boite": 1,
-   "sous_ensembles": []
+   "sous_ensembles": [
+    "Deluxe",
+    "Exclusives",
+    "Outburst Red",
+    "High Gloss",
+    "Outburst Gold",
+    "Printing Plates",
+    "Young Guns Deluxe",
+    "Young Guns Exclusives",
+    "Young Guns Outburst Red",
+    "Young Guns High Gloss",
+    "Young Guns Outburst Gold",
+    "Celebration Variation",
+    "Swagnificent Variation",
+    "Snow Spray Auto Variation",
+    "UD Canvas Signatures",
+    "Boomtown Red",
+    "Boomtown Gold",
+    "Dazzlers Printing Plates",
+    "Encore Red",
+    "Encore Gold",
+    "Fluorescence Gold",
+    "Fluorescence Blue",
+    "Fluorescence Green",
+    "Fluorescence Magenta",
+    "Glow-Up Red",
+    "Glow-Up Gold",
+    "IYKYK Red",
+    "IYKYK Gold",
+    "Let Them Cook Red",
+    "Let Them Cook Gold",
+    "Outburst Retro Young Guns Red",
+    "Outburst Retro Young Guns Gold",
+    "Sizzle Reel Red",
+    "Sizzle Reel Gold",
+    "Slaps Red",
+    "Slaps Gold",
+    "UD Canvas Printing Plates",
+    "UD Canvas Young Guns Printing Plates",
+    "UD Canvas Retired Printing Plates",
+    "UD Canvas Program of Excellence Printing Plates",
+    "UD Portraits Red",
+    "UD Portraits Gold",
+    "Vibing Red",
+    "Vibing Gold"
+   ]
   }
  ],
  "cartes": [
@@ -5543,7 +5588,8 @@
   "Let Them Cook : 20 cartes selon Checklist Center (LTC-1 à LTC-20, dont LTC-17 Ovechkin sans équipe), 15 selon Beckett. NHL Firsts : 18 cartes (Checklist Center), 15 selon Beckett.",
   "Les checklists des inserts (Encore, Dazzlers, Boomtown, Glow-Up, Slaps, UD Portraits, IYKYK, Let Them Cook, Sizzle Reel, Vibing, Fluorescence, Incarnations, Day With The Cup, Fanimation, Population Count, etc.) ne sont pas incluses dans cartes : seuls nb_cartes et cotes sont donnés.",
   "Printing Plates ePack des inserts et paramètres Hanger/Dollar non repris. Les accents ne sont pas reproduits par les checklists consultées (ex. Stutzle, Slafkovsky, Lafreniere, Beliveau) : noms gardés tels quels. Gritsyuk est écrit « Arseni » (base) et « Arseny » (Canvas) sur les checklists.",
-  "Date de sortie hobby : 4 mars 2026 (Blaster : 18 mars 2026), annoncée « sujette à changement »."
+  "Date de sortie hobby : 4 mars 2026 (Blaster : 18 mars 2026), annoncée « sujette à changement ».",
+  "27 oct 2026 - « Additional Serial-Numbered Cards, Short Prints or Printing Plates » (1 par boite, composition officielle) : membres remplis comme pour Series 1 (cartes numerotees, SP, variations et plaques de la boite hobby) ; le reste de la ligne se partage selon les exemplaires imprimes."
  ],
  "sources": [
   "https://upperdeck.com/2025-26-upper-deck-series-2/",

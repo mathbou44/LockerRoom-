@@ -311,6 +311,36 @@ def requete_ebay(c):
     return " ".join(m)[:100]
 
 
+# 27 oct 2026 (Mathieu : « pas de faux deals ni de faux prix ») ------------------------------------------------------
+# numeros speciaux : 1/99, 99/99, 1/1 se vendent bien plus cher qu'une copie ordinaire -> jamais comparables d'une
+# copie ordinaire ; carte abimee, douteuse ou contrefaite -> jamais un deal.
+_RE_NUM_SERIE = re.compile(r"(?<![\d/])#?\s*0*(\d{1,4})\s*/\s*0*(\d{1,4})\b|\b0*(\d{1,4})\s+of\s+0*(\d{1,4})\b")
+_RE_ABIMEE = re.compile(r"\b(creased?|creases|creasing|damaged?|dings?|dinged|bent|bend|stain(ed|s)?|water damage|poor( condition)?|"
+                        r"miscut|off[- ]?cent(er|re)d?|as[- ]is|writing|written on|torn|tears?|trimmed|altered|fake|replica|"
+                        r"counterfeit|filler|low grade|abimee?|pliee?|tachee?)\b")
+
+
+def numero_serie(titre):
+    """(numero, tirage) d'une carte numerotee (« 12/99 », « 12 of 99 »), sinon None. Les saisons (2024/25) ne comptent pas."""
+    for m in _RE_NUM_SERIE.finditer(norm(titre)):
+        n, d = (m.group(1), m.group(2)) if m.group(1) else (m.group(3), m.group(4))
+        n, d = int(n), int(d)
+        if n >= 1900 or d >= 1900 or n < 1 or d < 1 or n > d:
+            continue
+        return n, d
+    return None
+
+
+def serie_speciale(titre):
+    """1/99 (premiere), 99/99 (derniere), 1/1 : un numero qui fait monter le prix."""
+    ns = numero_serie(titre)
+    return bool(ns and (ns[0] == 1 or ns[0] == ns[1]))
+
+
+def abimee(titre):
+    return bool(_RE_ABIMEE.search(norm(titre)))
+
+
 def mediane_robuste(prix):
     """Mediane sans les prix aberrants (moins du tiers ou plus du triple de la mediane)."""
     p = sorted(x for x in prix if x and x > 0)

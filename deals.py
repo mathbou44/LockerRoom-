@@ -10,6 +10,7 @@ recherches eBay (joueurs les plus demandes x cartes recrues du catalogue), prix 
 bientot. Une annonce est un deal si elle coute 70 % ou moins de la mediane des MEMES cartes (cartes_match).
 Chaque deal garde ses comparables (pour la pastille). Budget : ~15 recherches par heure.
 """
+import statistics
 import json
 import os
 import threading
@@ -18,7 +19,7 @@ from datetime import datetime, timedelta, timezone
 
 RATIO_DEAL = 0.70
 PAR_TOUR_ENCANS = 30             # 26 oct 2026 (Mathieu : « aucune enchere se terminant ? ») : 30 recherches d encans par heure
-VERSION = 3                      # 26 oct 2026 : valeur par annonce, puis meme produit / insert (v3) : les deals d avant sont retires
+VERSION = 4                      # 27 oct 2026 : valeur SURE (numeros speciaux, recence, coherence), vendeur, etat (v4)
 ENCAN_H = 48                     # 26 oct 2026 (Mathieu : « tous les deals d'encheres de 48 h et moins ») ; avant : 6 h
 ENCAN_VERIF_H = 6                # une recherche de ventes ciblee pour un encan : seulement s'il finit dans 6 h (la mise monte)
 PAGES_ENCANS = 3                 # flux d'encans : jusqu'a 3 pages de 200 (les plus proches de la fin d'abord)
@@ -136,8 +137,12 @@ def requetes():
     return uniq[:120]
 
 
+PORT_INCONNU = 15.0              # 27 oct 2026 : port non affiche (calcule a l'adresse) -> on compte 15 $ pour ne pas surestimer le deal
+
+
 def _total(a):
-    return round((a.get("prix_cad") or 0) + (a.get("port_cad") or 0), 2)
+    port = a.get("port_cad")
+    return round((a.get("prix_cad") or 0) + (PORT_INCONNU if port is None and a.get("prix_cad") else (port or 0)), 2)
 
 
 def memes_ventes(cib, ventes):
@@ -156,18 +161,67 @@ def memes_ventes(cib, ventes):
     return out
 
 
+# 27 oct 2026 (Mathieu : « quand on va etre live, je veux pas que les utilisateurs aient de faux deals ou de faux prix »)
+# Une valeur ne sert a juger un deal que si elle est SURE :
+#   - les numeros speciaux (1/99, 99/99, 1/1) ne comparent jamais une copie ordinaire ;
+#   - les ventes recentes d'abord (60 jours si on en a 3), et la tendance : si les 3 dernieres ventes sont plus basses,
+#     c'est elles qui comptent (une recrue qui baisse) ;
+#   - 3 ventes au moins, ou 2 ventes recentes (45 jours) qui se ressemblent (ecart de 35 % au plus) ;
+#   - des ventes coherentes entre elles : trop d'ecart = on ne sait pas -> pas de deal.
+MIN_VENTES_SURES = 3
+JOURS_RECENTS = 60
+
+
+def _jours(v, maint=None):
+    try:
+        d = datetime.fromisoformat(str(v.get("le"))[:10])
+    except ValueError:
+        return 999
+    return ((maint or datetime.now()).replace(tzinfo=None) - d).days
+
+
+def valeur_sure(pv, titre_annonce=""):
+    """(valeur, ventes retenues) ou (None, raison)."""
+    import cartes_match
+    if not cartes_match.serie_speciale(titre_annonce):
+        pv = [v for v in pv if not cartes_match.serie_speciale(v.get("titre") or "")]
+    pv = [v for v in pv if not cartes_match.abimee(v.get("titre") or "")]
+    recentes = [v for v in pv if _jours(v) <= JOURS_RECENTS]
+    if len(recentes) >= MIN_VENTES_SURES:
+        pv = recentes
+    if len(pv) < 2:
+        return None, "pas assez de ventes"
+    prix = sorted(float(v["prix"]) for v in pv)
+    if len(pv) == 2:
+        if prix[1] > prix[0] * 1.35 or any(_jours(v) > 45 for v in pv):
+            return None, "2 ventes trop differentes ou trop vieilles"
+        return round(prix[0], 2), pv                         # 2 ventes : la plus basse
+    m, garde = cartes_match.mediane_robuste(prix)
+    if len(garde) < MIN_VENTES_SURES:
+        return None, "ventes trop dispersees"
+    if len(garde) >= 4:
+        q1, _q2, q3 = statistics.quantiles(garde, n=4)
+    if len(garde) >= 4 and (q3 - q1) > max(0.9 * m, 3.0):      # 3 $ : une carte a 1-3 $ varie toujours un peu
+        return None, "ventes trop dispersees"
+    if len(garde) == 3 and garde[-1] > garde[0] * 2.5:
+        return None, "ventes trop dispersees"
+    dernieres = sorted(pv, key=lambda v: str(v.get("le") or ""), reverse=True)[:3]
+    if len(dernieres) == 3:
+        m = min(m, statistics.median(float(v["prix"]) for v in dernieres))
+    return round(m, 2), pv
+
+
 def valeur_annonce(a, ventes, actives, cib=None):
-    """La valeur de LA carte d'une annonce : mediane des ventes de la meme carte (2 au moins) ; les autres annonces
-    de la meme carte (moins 15 %) ne servent que de plafond. -> (valeur, source, n, ventes) ou None."""
+    """La valeur de LA carte d'une annonce : ventes de la meme carte, seulement si elle est SURE (valeur_sure) ; les
+    autres annonces de la meme carte (moins 15 %) ne servent que de plafond. -> (valeur, source, n, ventes) ou None."""
     import cartes_match
     cib = cib or cartes_match.cible_titre(a.get("titre") or "")
     pv = memes_ventes(cib, ventes)
-    # 26 oct 2026 (Mathieu : « encore pas un deal » - un Red Prism /199 a 7,49 $ « vaut 21 $ » d'apres 6 annonces, alors
-    # que la seule vente est a 3 $) : un deal se juge sur les VENTES (2 au moins) ; les annonces ne servent que de plafond
     if len(pv) < 2:
         return None
-    prix = sorted(v["prix"] for v in pv)
-    m = cartes_match.mediane_robuste(prix)[0] if len(prix) >= 4 else prix[len(prix) // 2] if len(prix) == 3 else min(prix)
+    m, pv = valeur_sure(pv, a.get("titre") or "")
+    if m is None:
+        return None
     pa = [_total(x) for x in actives or [] if x.get("item_id") != a.get("item_id")
           and not cartes_match.raisons_refus(cib, x.get("titre") or "")]
     if len(pa) >= 3:
@@ -351,6 +405,15 @@ def _prometteuse(a, t, pv, pa, maint, cib=None):
     return len(pa) >= 3 and t <= (cartes_match.mediane_robuste(pa)[0] or 0) * 0.6
 
 
+def vendeur_risque(a):
+    """Vendeur sans historique ou mal note : le « deal » est trop souvent une arnaque ou une contrefacon."""
+    pct, score = a.get("vendeur_pct"), a.get("vendeur_score")
+    try:
+        return (pct not in (None, "") and float(pct) < 97) or (score not in (None, "") and int(score) < 10)
+    except (TypeError, ValueError):
+        return False
+
+
 def _juger(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=None, bassin=None, verif=None):
     """Une annonce : deal ou non (et pourquoi). Les memes regles pour le prix fixe, les encans et les flux."""
     import cartes_match
@@ -369,6 +432,10 @@ def _juger(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=N
     cib = cartes_match.cible_titre(a.get("titre") or "")
     if cib.get("exclu") or not cib.get("joueur"):
         return                                                                  # lot, ou on ne sait pas quel joueur
+    if cartes_match.abimee(a.get("titre") or "") or vendeur_risque(a):
+        st["ecartees"] = st.get("ecartees", 0) + 1                              # abimee, douteuse, ou vendeur sans historique
+        deals.pop(a.get("item_id"), None)
+        return
     st["annonces"] = st.get("annonces", 0) + 1
     if a.get("encan"):
         st["encans_fen"] = st.get("encans_fen", 0) + 1
@@ -618,6 +685,58 @@ def flux(rechercher=None, bassin=None):
     return {"ok": True, "deals": len(garde_), "stats": st}
 
 
+REVERIF_PAR_TOUR = 40           # 27 oct 2026 : deals revus directement sur eBay chaque tour (prix, fin, encore en vente)
+REVERIF_APRES_H = 1.5
+
+
+def reverifier(lire_article=None, max_=None):
+    """Chaque deal garde, revu sur eBay (Browse getItem) s'il n'a pas ete vu depuis 1 h 30 : prix et port du moment,
+    encore en vente, toujours 70 % de sa valeur ou moins. Sinon il sort. Les plus vieux d'abord."""
+    import cartes_match
+    import ebay_compte
+    lire_article = lire_article or (lambda i: ebay_compte.article(i, fond=True))
+    try:
+        max_ = int(max_ or os.environ.get("LR_DEALS_REVERIF") or REVERIF_PAR_TOUR)
+    except ValueError:
+        max_ = REVERIF_PAR_TOUR
+    d = lire()
+    maint = datetime.now(timezone.utc)
+    limite = (maint - timedelta(hours=REVERIF_APRES_H)).isoformat(timespec="seconds")
+    deals = {x["item_id"]: x for x in d.get("deals") or []}
+    st = {}
+    for x in sorted(deals.values(), key=lambda x: str(x.get("vu_le") or "")):
+        if st.get("reverifies", 0) >= max_:
+            break
+        if str(x.get("vu_le") or "") >= limite:
+            continue
+        st["reverifies"] = st.get("reverifies", 0) + 1
+        try:
+            a = lire_article(x["item_id"])
+        except RuntimeError as e:
+            if "404" in str(e) or "11001" in str(e):
+                deals.pop(x["item_id"], None)          # annonce finie ou retiree
+                st["reverif_finies"] = st.get("reverif_finies", 0) + 1
+            continue
+        except OSError:
+            continue
+        t = _total(a)
+        fini = False
+        try:
+            fini = bool(a.get("fin")) and datetime.fromisoformat(str(a["fin"]).replace("Z", "+00:00")) < maint
+        except ValueError:
+            pass
+        if fini or not t or cartes_match.abimee(a.get("titre") or "") or t > (x.get("valeur") or 0) * RATIO_DEAL:
+            deals.pop(x["item_id"], None)
+            st["reverif_retires"] = st.get("reverif_retires", 0) + 1
+            continue
+        x.update(total=t, ratio=round(t / x["valeur"], 3), mises=a.get("mises", x.get("mises")), fin=a.get("fin") or x.get("fin"),
+                 port=a.get("port_cad"), vu_le=maint.isoformat(timespec="seconds"))
+        if x.get("encan"):
+            x["mise_max"] = round(x["valeur"] * RATIO_DEAL - (a.get("port_cad") or 0), 2)
+    garde_ = _sauver(d, deals, maint, st)
+    return {"ok": True, "deals": len(garde_), "stats": st}
+
+
 def chasser_si_besoin():
     """En arriere-plan, au plus une fois par heure, jamais deux a la fois."""
     d = lire()
@@ -635,6 +754,10 @@ def chasser_si_besoin():
     def tache():
         try:
             b = Bassin()                                 # une fois par tour : toutes les ventes connues
+            try:
+                reverifier()                             # d'abord : les deals deja affiches, revus sur eBay
+            except Exception as e:
+                print("Deals (revue) : " + repr(e), flush=True)
             for f in (chasser, encans, flux):
                 try:
                     f(bassin=b)

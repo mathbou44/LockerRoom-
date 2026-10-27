@@ -1053,12 +1053,17 @@ class Api:
 
     @staticmethod
     def _scores_relatifs(liste):
-        """Le meme score pour tous : 50 % la chance d'au moins un hit (rapportee a la meilleure de la liste) + 50 % la
-        valeur attendue / le prix (1,5 x le prix = le maximum)."""
-        mx = max([((pl.get("chances") or {}).get("hit") or {}).get("p") or 0 for pl in liste] + [1e-9])
-        for pl in liste:
+        """27 oct 2026 (Mathieu : « la valeur attendue sert pas a grand chose » ; choix : « hit + prix ») : le meme score
+        pour tous = la chance d'au moins un hit POUR TON ARGENT (chance / prix de la place), classee de 0 a 100 :
+        100 = la place qui donne le plus de chances de hit par dollar dans la liste."""
+        def r(pl):
             p_hit = ((pl.get("chances") or {}).get("hit") or {}).get("p") or 0
-            pl["score"] = round(100 * (0.5 * p_hit / mx + 0.5 * min(1.0, (pl.get("valeur_ratio") or 0) / 1.5)), 2)
+            prix = pl.get("prix_compare") or pl.get("prix") or 0
+            return p_hit / prix if prix > 0 else 0.0
+        mx = max([r(pl) for pl in liste] + [1e-12])
+        for pl in liste:
+            pl["hit_par_dollar"] = round(r(pl), 6)
+            pl["score"] = round(100 * r(pl) / mx, 2)
 
     @staticmethod
     def _stats_checklist(prod, mode, sport):
@@ -3023,14 +3028,14 @@ class Api:
                 autres = vendues.autres_joueurs(t)
             except Exception:
                 autres = None
-        vm = vc.get("mediane") if nb_v >= 3 else None
-        prix_v = sorted(x["prix"] for x in (vc.get("ventes") or []) if x.get("prix"))
-        if vm and med and n >= 3:
-            vm = min(vm, round(med * 0.85, 2)) if vm > med else vm
-        if not vm and prix_v:                                 # 1-2 ventes
-            vm = round(min(prix_v[len(prix_v) // 2] * 1.25, med * 0.85 if med else 1e9), 2)
-        valeur = vm or (round(med * 0.85, 2) if med else None)
-        juger = nb_v >= 2
+        # 27 oct 2026 (Mathieu : « pas de faux deals ni de faux prix ») : une valeur SEULEMENT si les ventes reelles de
+        # CETTE carte sont sures (deals.valeur_sure) ; les annonces ne font que la plafonner. Sinon : aucun « vaut ».
+        import deals as _deals
+        vm = _deals.valeur_sure([x for x in (vc.get("ventes") or []) if x.get("prix")], t or "")[0] if nb_v >= 2 else None
+        if vm and med and n >= 3 and vm > med:
+            vm = min(vm, round(med * 0.85, 2))
+        valeur = vm
+        juger = bool(vm)
         suggere = None
         if valeur and (vm or n >= 3):
             pv = sorted(x["prix"] for x in ventes if x.get("prix")) if vm else sorted(x["total"] for x in comps)
@@ -3186,19 +3191,24 @@ class Api:
             base["vendues"] = vendues.memes(q, requete=True, n=24)
         except Exception as e:
             base["vendues"] = {"ventes": [], "mediane": None, "nb": 0, "erreur": type(e).__name__}
-        vm = base["vendues"].get("mediane") if (base["vendues"].get("nb") or 0) >= 3 else None
+        # 27 oct 2026 (Mathieu : « pas de faux prix ») : une valeur SEULEMENT si les ventes reelles sont sures (deals.valeur_sure :
+        # numeros speciaux ecartes, ventes recentes, coherentes). Jamais une valeur tiree des prix demandes.
+        import deals as _deals
+        vs = [v for v in (base["vendues"].get("ventes") or []) if v.get("prix")]
+        vm = _deals.valeur_sure(vs, q)[0] if len(vs) >= 2 else None
+        base["valeur_sure"] = bool(vm)
         if not gardees:
             return {**base, "n": 0, "annonces": [], "valeur": vm, "valeur_source": "vendues" if vm else None,
                     "bon_prix": round(vm * sante.RACHAT_RATIO, 2) if vm else None}
         med, garde = cartes_match.mediane_robuste([x["total"] for x in gardees])
-        valeur = vm or med
-        bon = round(valeur * sante.RACHAT_RATIO, 2)
+        valeur = vm
+        bon = round(valeur * sante.RACHAT_RATIO, 2) if valeur else None
         for x in gardees:
-            x["deal"] = x["total"] <= bon
-            x["bon"] = (not x["deal"]) and x["total"] <= valeur          # « bon prix » : sous la valeur vendue
-            x["gain"] = round(valeur * (1 - fp) - ff - x["total"], 2)
+            x["deal"] = bool(bon) and x["total"] <= bon
+            x["bon"] = bool(valeur) and (not x["deal"]) and x["total"] <= valeur          # « bon prix » : sous la valeur vendue
+            x["gain"] = round(valeur * (1 - fp) - ff - x["total"], 2) if valeur else None
             x["hors_norme"] = x["total"] not in garde
-        return {**base, "n": len(gardees), "mediane": med, "valeur": valeur, "valeur_source": "vendues" if vm else "annonces",
+        return {**base, "n": len(gardees), "mediane": med, "valeur": valeur, "valeur_source": "vendues" if vm else None,
                 "bon_prix": bon, "min": garde[0], "max": garde[-1], "annonces": gardees[:40]}
 
     def valeur_signaler(self, q, item_id, titre, bonne=False):

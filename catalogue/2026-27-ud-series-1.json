@@ -55,8 +55,8 @@
    "nb_cartes": 200,
    "tirage": null,
    "parallele_de": "Base",
-   "par_boite": 1,
-   "cotes": "1 par boîte hobby; 1:30 Hobby/ePack; 1:90 Blaster/Starter/Tin/Hanger"
+   "par_boite": 0.4,
+   "cotes": "1:30 Hobby/ePack (des sources disent aussi « 1 par boîte hobby » : on garde la cote la plus prudente); 1:90 Blaster/Starter/Tin/Hanger"
   },
   {
    "nom": "Clear Cut",
@@ -11753,7 +11753,7 @@
   "Formats : le Tin contient en plus 1 paquet bonus Dazzlers; le Starter Kit contient en plus 1 insert exclusif. ePack, Hanger, Advent, Dollar, Target Mega Box, Amazon Blaster, Walmart Black Friday Blaster et Young Guns Oversized Blaster existent mais leur configuration n'est pas publiee.",
   "par_boite null = inconnu ou absent de la boite hobby (voir 'cotes'). Base veterans : nombre par boite non publie.",
   "Ligne de boite '#'d Card, Non #'d Short Print OR Printing Plate' : les sous-ensembles listes sont deduits (paralleles numerotees hobby + printing plates); les short prints non numerotes concernes ne sont pas precises par Upper Deck.",
-  "Outburst Silver de base : la composition officielle donne 1 par boite alors que la cote 1:30 donnerait 0,4; la composition est retenue.",
+  "Outburst Silver de base : la composition officielle donne 1 par boite alors que la cote 1:30 donne 0,4 ; 27 oct 2026 : la cote 1:30 (la plus prudente) est retenue.",
   "UD Canvas : la ligne '4 UD Canvas Inserts' inclut aussi les UD Canvas Young Guns selon Cardlines ('UD Canvas and/or UD Canvas Young Guns').",
   "Snow Spray Auto Variations : SP = #10, 66, 168, 178; SSP = #30, 50, 146, 155, 193 (cotes SP/SSP non publiees).",
   "UD Canvas C-120 (James Hagens / Porter Martone) : equipes non indiquees sur la checklist; BOS/PHI repris de leurs cartes Young Guns.",

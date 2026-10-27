@@ -644,6 +644,8 @@ def lire_recherche(d):
                     "port_cad": round(float(port) * TAUX_CAD[dev], 2) if port not in (None, "") else None,
                     "url": it.get("itemWebUrl") or "", "photo": (it.get("image") or {}).get("imageUrl") or "",
                     "vendeur": (it.get("seller") or {}).get("username") or "",
+                    "vendeur_pct": (it.get("seller") or {}).get("feedbackPercentage"),
+                    "vendeur_score": (it.get("seller") or {}).get("feedbackScore"),
                     "fin": it.get("itemEndDate"), "mises": it.get("bidCount"),
                     "encan": "AUCTION" in (it.get("buyingOptions") or [])})
     return out

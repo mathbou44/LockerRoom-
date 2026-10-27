@@ -447,9 +447,11 @@ class VoletAcheteur(unittest.TestCase):
             ebay_compte.rechercher = avant
         self.assertTrue(r["ok"])
         self.assertEqual(r["mediane"], 100)
-        self.assertEqual(r["bon_prix"], 70)
+        # 27 oct 2026 (« pas de faux prix ») : sans ventes reelles sures, pas de valeur ni de « deal » tires des prix demandes
+        self.assertIsNone(r["bon_prix"])
+        self.assertIsNone(r["valeur"])
         self.assertEqual([x["total"] for x in r["annonces"]][:2], [50, 80])
-        self.assertTrue(r["annonces"][0]["deal"] and not r["annonces"][1]["deal"])
+        self.assertFalse(any(x["deal"] for x in r["annonces"]))
         self.assertFalse(a.valeur_carte("ab")["ok"])
         c = a._db()
         c.execute("INSERT INTO opportunites (item_id, titre, total, url, ref_prix, ratio, vu_le) VALUES ('9','x',40,'u',100,0.4,?)",
