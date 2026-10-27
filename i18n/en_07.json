@@ -254,8 +254,8 @@
 "valeur affichée": "value shown",
 "Valeur attendue": "Expected value",
 "Valeur des joueurs": "Player values",
-"Valeur des joueurs : algo LockerRoom": "Player values: LockerRoom algo",
-"Valeur des joueurs : algo LockerRoom · {} joueurs": "Player values: LockerRoom algo · {} players",
+"Valeur des joueurs : algo SlabCoach": "Player values: SlabCoach algo",
+"Valeur des joueurs : algo SlabCoach · {} joueurs": "Player values: SlabCoach algo · {} players",
 "Valeur estimée": "Estimated value",
 "Valeur estimée avec {} ventes proches : mise réduite de 15 %. Vérifie les ventes avant de miser": "Value estimated with {} close sales: bid reduced by 15%. Check the sales before bidding",
 "Valeur fragile : vérifie les ventes avant de miser": "Fragile value: check the sales before bidding",
@@ -466,5 +466,7 @@
 "📈 Prix seulement": "📈 Price only",
 "📰 Nouvelles": "📰 News",
 "📰 Nouvelles + 📈 Prix": "📰 News + 📈 Price",
-"🧪 Labo prédictions": "🧪 Prediction lab"
+"🧪 Labo prédictions": "🧪 Prediction lab",
+"Les ventes réelles s'activent avec SoldComps": "Real sales turn on with SoldComps",
+"un joueur à la fois": "one player at a time"
 }

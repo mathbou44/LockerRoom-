@@ -50,3 +50,16 @@ services:
         sync: false
       - key: STRIPE_WEBHOOK_SECRET      # whsec_... de l'adresse https://.../stripe/webhook
         sync: false
+      # 27 oct 2026 - se connecter sans eBay (Apple + Google) : valeurs collees dans Render, jamais ici
+      - key: APPLE_SERVICES_ID          # identifiant du Services ID (ex. com.slabcoach.web)
+        sync: false
+      - key: APPLE_TEAM_ID
+        sync: false
+      - key: APPLE_KEY_ID
+        sync: false
+      - key: APPLE_PRIVATE_KEY          # contenu du fichier .p8 (Sign in with Apple)
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false

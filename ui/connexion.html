@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#070708">
+<meta name="theme-color" content="#0B0B0E">
 <title>SlabCoach · Joue tes cartes comme un pro</title>
 <meta name="description" content="SlabCoach, l'app des cartes de sport : deals sous la valeur sur eBay, vraies valeurs des cartes, chances de hits dans les breaks, inventaire et ventes eBay.">
 <link rel="canonical" href="https://slabcoach.com/connexion">
@@ -14,24 +14,26 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2">
 <link rel="icon" href="/favicon.ico?v=2" sizes="any">
 <link rel="apple-touch-icon" href="/icone.png">
+<link rel="preload" href="/manrope-800.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/manrope-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;800;900&display=swap" rel="stylesheet">
 <style>
-/* 27 oct 2026 - page de connexion SlabCoach (Mathieu : « ca manque de punch et de premium »).
-   Noir profond, une lueur d'or derriere le logo, des slabs en filigrane, le logo or poli avec son reflet. */
-:root{--noir:#070708; --carte:#111114; --ligne:#26231E; --ivoire:#F4F1EA; --doux:#A8A39A; --or1:#F7E2A0; --or2:#E0B655; --or3:#A57A25; --rouge:#FFB3B3}
+/* 27 oct 2026 - page de connexion SlabCoach, marque SC1 : noir du logo, lueur refractor douce derriere le logo
+   (refractor au hasard a chaque visite), des slabs en filigrane, l'ecriture Manrope + ™ + SPORTS CARDS. */
+:root{--noir:#0B0B0E; --carte:#151519; --ligne:#2B2A32; --ivoire:#F4F2EE; --doux:#A9A6B1; --holo:linear-gradient(100deg,#9FE6D2 0%,#B9BEFF 36%,#F2B3D6 68%,#F1D58E 100%); --rouge:#FFB3B3}
 *{box-sizing:border-box}
 html,body{height:100%}
 body{margin:0; background:var(--noir); color:var(--ivoire); font-family:Inter,system-ui,-apple-system,sans-serif; overflow-x:hidden;
   padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
 .scene{position:fixed; inset:0; pointer-events:none; overflow:hidden}
 .lueur{position:absolute; left:50%; top:30%; width:900px; height:900px; transform:translate(-50%,-50%);
-  background:radial-gradient(circle, rgba(232,196,106,.20) 0%, rgba(232,196,106,.07) 32%, rgba(7,7,8,0) 62%)}
+  background:radial-gradient(circle at 42% 44%, rgba(159,230,210,.13) 0%, rgba(0,0,0,0) 40%), radial-gradient(circle at 60% 52%, rgba(242,179,214,.11) 0%, rgba(0,0,0,0) 42%), radial-gradient(circle, rgba(185,190,255,.10) 0%, rgba(0,0,0,0) 60%)}
 .grain{position:absolute; inset:0; background:repeating-linear-gradient(115deg, rgba(255,255,255,.018) 0 1px, transparent 1px 7px)}
 .vignette{position:absolute; inset:0; background:radial-gradient(ellipse at 50% 40%, transparent 40%, rgba(0,0,0,.75) 100%)}
-.slab{position:absolute; width:190px; height:300px; border-radius:16px; border:1.5px solid rgba(232,196,106,.22);
-  background:linear-gradient(160deg, rgba(255,255,255,.05), rgba(255,255,255,.01) 45%, rgba(232,196,106,.04)); box-shadow:0 30px 80px rgba(0,0,0,.6)}
-.slab::before{content:''; position:absolute; left:14px; right:14px; top:14px; height:46px; border-radius:6px; border:1px solid rgba(232,196,106,.28); background:rgba(0,0,0,.35)}
+.slab{position:absolute; width:190px; height:300px; border-radius:16px; border:1.5px solid rgba(185,190,255,.18);
+  background:linear-gradient(160deg, rgba(255,255,255,.05), rgba(255,255,255,.01) 45%, rgba(242,179,214,.035)); box-shadow:0 30px 80px rgba(0,0,0,.6)}
+.slab::before{content:''; position:absolute; left:14px; right:14px; top:14px; height:46px; border-radius:6px; border:1px solid rgba(185,190,255,.22); background:rgba(0,0,0,.35)}
 .slab::after{content:''; position:absolute; left:14px; right:14px; top:72px; bottom:14px; border-radius:6px; border:1px solid rgba(255,255,255,.06)}
 .s1{left:calc(50% - 520px); top:16%; transform:rotate(-14deg); opacity:.55}
 .s2{right:calc(50% - 520px); top:22%; transform:rotate(12deg); opacity:.55}
@@ -40,55 +42,70 @@ body{margin:0; background:var(--noir); color:var(--ivoire); font-family:Inter,sy
 
 main{position:relative; min-height:100%; display:grid; place-items:center}
 .boite{width:min(440px,100%); display:grid; justify-items:center; text-align:center; gap:0; animation:monte .9s cubic-bezier(.2,.8,.2,1) both}
-.logo{position:relative; width:132px; height:132px; filter:drop-shadow(0 18px 40px rgba(232,196,106,.25))}
+.logo{position:relative; width:136px; height:136px; filter:drop-shadow(0 18px 44px rgba(185,190,255,.22))}
 .logo img{width:100%; height:100%; display:block}
 .logo::after{content:''; position:absolute; inset:0; pointer-events:none;
   background:linear-gradient(110deg, transparent 0%, transparent 38%, rgba(255,248,224,.95) 50%, transparent 62%, transparent 100%);
   background-size:250% 100%; animation:reflet 4.5s ease-in-out infinite; mix-blend-mode:screen;
   -webkit-mask:url(/logo_sc_gold_poli.png) center/contain no-repeat; mask:url(/logo_sc_gold_poli.png) center/contain no-repeat}
-.mot{margin-top:22px; font-weight:900; font-size:clamp(30px,8vw,44px); letter-spacing:.16em; line-height:1}
-.mot .slab-t{color:var(--ivoire)}
-.mot .coach{background:linear-gradient(110deg,var(--or1) 0%,var(--or2) 38%,#FFF8E6 50%,var(--or2) 62%,var(--or1) 100%); background-size:250% 100%;
-  -webkit-background-clip:text; background-clip:text; color:transparent; animation:reflet 4.5s ease-in-out infinite}
-.filet{display:flex; align-items:center; gap:12px; margin-top:12px; color:var(--doux); font-size:12px; font-weight:600; letter-spacing:.42em; text-transform:uppercase}
-.filet::before,.filet::after{content:''; width:34px; height:2px; background:var(--or2); opacity:.8}
 .titre{margin:30px 0 0; font-size:clamp(22px,5.4vw,28px); font-weight:800; line-height:1.2; text-wrap:balance}
-.titre em{font-style:normal; color:var(--or1)}
+.titre em{font-style:normal; background:var(--holo); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent}
 .puces{display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:18px}
-.puces span{padding:7px 12px; border-radius:999px; border:1px solid var(--ligne); background:rgba(255,255,255,.03); color:#D9D4CA; font-size:13px; font-weight:600}
-.puces b{color:var(--or2); margin-right:6px}
+.puces span{padding:7px 12px; border-radius:999px; border:1px solid var(--ligne); background:rgba(255,255,255,.03); color:#DCD9E2; font-size:13px; font-weight:600}
+.puces b{background:var(--holo); -webkit-background-clip:text; background-clip:text; color:transparent; margin-right:6px}
 .btn{position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center; gap:10px; width:100%; margin-top:30px; padding:17px 20px;
-  border-radius:14px; text-decoration:none; color:#1A1408; font-weight:800; font-size:17px;
-  background:linear-gradient(180deg,#F6DE97 0%,#E3BA5C 55%,#C99A3A 100%);
-  box-shadow:0 14px 34px rgba(217,169,63,.28), inset 0 1px 0 rgba(255,255,255,.55); transition:transform .15s, box-shadow .15s}
-.btn:hover{transform:translateY(-1px); box-shadow:0 18px 40px rgba(217,169,63,.36), inset 0 1px 0 rgba(255,255,255,.55)}
+  border-radius:14px; text-decoration:none; color:#12111A; font-weight:800; font-size:17px;
+  background:linear-gradient(100deg,#D3F4EA 0%,#DCDEFF 36%,#F9DCEB 68%,#F7EAC2 100%);
+  box-shadow:0 14px 34px rgba(185,190,255,.22), inset 0 1px 0 rgba(255,255,255,.7); transition:transform .15s, box-shadow .15s}
+.btn:hover{transform:translateY(-1px); box-shadow:0 18px 40px rgba(185,190,255,.32), inset 0 1px 0 rgba(255,255,255,.7)}
 .btn:focus-visible{outline:3px solid var(--ivoire); outline-offset:3px}
 .btn::after{content:''; position:absolute; inset:0; background:linear-gradient(110deg, transparent 35%, rgba(255,255,255,.55) 50%, transparent 65%); background-size:250% 100%; animation:reflet 4.5s ease-in-out infinite}
-.note{margin-top:14px; color:#8A857C; font-size:13px}
+.note{margin-top:14px; color:#8C8996; font-size:13px}
+.note + .note{margin-top:6px}
+.btn .reco{position:absolute; top:-10px; right:14px; padding:3px 9px; border-radius:999px; font:800 10.5px 'Manrope',Inter,sans-serif; letter-spacing:.08em; text-transform:uppercase; color:#F4F2EE; background:#1E2038; box-shadow:0 0 0 1px rgba(185,190,255,.35)}
+.btn{overflow:visible} .btn::after{border-radius:14px}
+.ou{display:flex; align-items:center; gap:12px; width:100%; margin-top:18px; color:#8C8996; font-size:13px}
+.ou::before,.ou::after{content:''; flex:1; height:1px; background:var(--ligne)}
+.tiers{display:grid; gap:10px; width:100%; margin-top:14px} .tiers:empty{display:none}
+.btn-t{display:flex; align-items:center; justify-content:center; gap:10px; height:56px; border-radius:14px; text-decoration:none; font:700 17px Inter,system-ui,sans-serif; transition:transform .15s}
+.btn-t:hover{transform:translateY(-1px)} .btn-t:focus-visible{outline:3px solid var(--ivoire); outline-offset:3px}
+.btn-t svg{width:18px; height:18px}
+.btn-t.apple{background:#fff; color:#000} .btn-t.google{background:#fff; color:#1F1F1F; border:1px solid #DADCE0}
 .erreur{margin-top:16px; color:var(--rouge); font-size:14px}
 .liens{margin-top:26px; display:flex; gap:16px; justify-content:center; font-size:13px}
-.liens a{color:var(--doux); text-decoration:none; border-bottom:1px solid #3A362F}
+.liens a{color:var(--doux); text-decoration:none; border-bottom:1px solid #3A3842}
 .liens a:hover{color:var(--ivoire)}
-.demo{display:inline-block; margin-top:12px; color:#8A857C; font-size:13px}
+.demo{display:inline-block; margin-top:12px; color:#8C8996; font-size:13px}
+@font-face{font-family:'Manrope'; font-weight:800; font-display:swap; src:url(/manrope-800.woff2) format('woff2')}
+@font-face{font-family:'Manrope'; font-weight:400; font-display:swap; src:url(/manrope-400.woff2) format('woff2')}
+.mot-sc{display:inline-block; margin-top:24px; font:400 clamp(40px,11vw,54px)/1 'Manrope',Inter,sans-serif; letter-spacing:-.025em; color:var(--ivoire); white-space:nowrap}
+.mot-sc b{font-weight:800}
+.mot-sc sup{font-size:.26em; font-weight:800; letter-spacing:0; vertical-align:1.75em; margin-left:.1em; opacity:.8}
+.mot-sc .tag{display:block; margin-top:.4em; font-size:.17em; font-weight:800; letter-spacing:1.79em; margin-right:-1.79em; text-align:left;
+  background:var(--holo); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent}
 @keyframes reflet{0%,100%{background-position:100% 0} 50%{background-position:0 0}}
 @keyframes monte{from{opacity:0; transform:translateY(14px)} to{opacity:1; transform:none}}
 @media (max-width:700px){ .s1,.s2{opacity:.35} .s1{left:-90px; top:6%} .s2{right:-90px; top:8%} .s3,.s4{display:none} .lueur{width:620px; height:620px} }
-@media (prefers-reduced-motion:reduce){ .logo::after,.btn::after,.mot .coach{animation:none} .boite{animation:none} }
+@media (prefers-reduced-motion:reduce){ .logo::after,.btn::after{animation:none} .boite{animation:none} }
 </style>
 </head>
 <body>
 <div class="scene" aria-hidden="true"><div class="lueur"></div><div class="grain"></div>
   <div class="slab s1"></div><div class="slab s2"></div><div class="slab s3"></div><div class="slab s4"></div><div class="vignette"></div></div>
 <main><div class="boite">
-  <div class="logo"><img src="/logo_sc_gold_poli.png" alt="SlabCoach"></div>
-  <div class="mot"><span class="slab-t">SLAB</span><span class="coach">COACH</span></div>
-  <div class="filet">Sports cards</div>
+  <div class="logo"><img id="logo-sc" src="/logo_sc_prizm.svg" alt="SlabCoach"></div>
+  <div class="mot-sc" role="img" aria-label="SlabCoach Sports Cards"><b>slab</b>coach<sup>™</sup><span class="tag">SPORTS CARDS</span></div>
   <h1 class="titre">Joue tes cartes <em>comme un pro.</em></h1>
   <div class="puces"><span><b>●</b>Deals sous la valeur</span><span><b>●</b>Vraies valeurs</span><span><b>●</b>Chances de breaks</span><span><b>●</b>Inventaire et ventes eBay</span></div>
   {erreur}
-  <a class="btn" href="/auth/ebay">Se connecter avec eBay</a>
+  <a class="btn" href="/auth/ebay">Se connecter avec eBay<span class="reco">Recommandé</span></a>
+  <div class="note">Ton inventaire et tes ventes arrivent tout seuls</div>
+  <div class="ou">ou</div>
+  <div class="tiers">{autres}</div>
+  <div class="note">14 jours de Pro offerts · aucune carte de crédit</div>
   <div class="note">Aucun mot de passe dans l’app · ton compte est créé tout seul</div>
-  <div class="liens"><a href="/support">Support</a><a href="/confidentialite">Confidentialité</a><a href="/conditions">Conditions</a></div>
+  <div class="liens"><a href="/">‹ Retour au site</a><a href="/support">Support</a><a href="/confidentialite">Confidentialité</a><a href="/conditions">Conditions</a></div>
 </div></main>
+<script>(function(){var m=["prizm","cracked","laser","mosaic","mojo","wave","pulsar"];document.getElementById("logo-sc").src="/logo_sc_"+m[Math.floor(Math.random()*m.length)]+".svg"})()</script>
 </body>
 </html>

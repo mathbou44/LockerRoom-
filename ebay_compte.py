@@ -271,7 +271,8 @@ def connexion_compte(texte, etat=None):
         return {"ok": False, "erreur": "eBay n'a pas confirmé ton identité : recommence"}
     if not u.get("userId"):
         return {"ok": False, "erreur": "eBay n'a pas confirmé ton identité : recommence"}
-    cid, nouveau = comptes.trouver_ou_creer(u["userId"], u.get("username"), environnement())
+    relie = next(iter(comptes.par_champ("ebay_user_id", u["userId"])), None)   # 27 oct 2026 : deja relie a un compte Apple / Google
+    cid, nouveau = (relie, False) if relie else comptes.trouver_ou_creer(u["userId"], u.get("username"), environnement())
     maintenant = time.time()
     with comptes.utiliser(cid):
         j = _lire(chemin_jetons())
@@ -306,6 +307,8 @@ def terminer_connexion(texte, etat=None):
         u = _get_json(url("identite"))
         j["compte"] = u.get("username")
         _ecrire(chemin_jetons(), j)
+        if comptes.MULTI and comptes.courant():           # 27 oct 2026 : compte Apple / Google qui relie son eBay
+            comptes.maj(comptes.courant(), ebay_username=u.get("username"), ebay_user_id=u.get("userId"))
     except Exception:
         pass
     return {"ok": True, **statut()}

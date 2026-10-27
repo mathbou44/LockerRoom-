@@ -323,9 +323,20 @@ def _verificateur(d, st, bassin):
     return f
 
 
-def _prometteuse(a, t, pv, pa, maint):
+VERIF_TARD_H = 30                # 27 oct 2026 : un encan de hit qui finit dans 6 a 30 h est verifie a la fin du tour, s'il reste du budget
+HIT_MIN = 25.0                   # 27 oct 2026 : un hit (auto, patch, numerotee /99 et moins) de 25 $ et plus (port compris) vaut une verification
+
+
+def _hit(cib):
+    s = cib.get("serie")
+    return bool(cib.get("auto") or cib.get("patch") or (s and int(s) <= 99))
+
+
+def _prometteuse(a, t, pv, pa, maint, cib=None):
     """Vaut une recherche de ventes ? une seule vente connue et le prix est sous 70 % de celle-ci, ou 3 annonces de la
-    meme carte et le prix est sous 60 % de leur mediane. Encan : seulement s'il finit dans 6 h (la mise monte)."""
+    meme carte et le prix est sous 60 % de leur mediane. Encan : seulement s'il finit dans 6 h (la mise monte).
+    27 oct 2026 (Mathieu : la Pride of a Nation Stutzle /99 a 101 $ « devrait etre dans notre radar ») : un ENCAN de hit
+    (auto, patch ou /99 et moins) de 25 $ et plus (port compris) qui finit dans 6 h, meme sans aucune vente connue."""
     import cartes_match
     if a.get("encan"):
         try:
@@ -334,6 +345,8 @@ def _prometteuse(a, t, pv, pa, maint):
         except ValueError:
             return False
     if len(pv) == 1 and t <= pv[0]["prix"] * RATIO_DEAL:
+        return True
+    if a.get("encan") and not pv and cib and _hit(cib) and t >= HIT_MIN:
         return True
     return len(pa) >= 3 and t <= (cartes_match.mediane_robuste(pa)[0] or 0) * 0.6
 
@@ -365,10 +378,16 @@ def _juger(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=N
         pv = memes_ventes(cib, tout_v)
         pa = [_total(x) for x in actives or [] if x.get("item_id") != a.get("item_id")
               and not cartes_match.raisons_refus(cib, x.get("titre") or "")]
-        if _prometteuse(a, t, pv, pa, maint):
+        if _prometteuse(a, t, pv, pa, maint, cib):
             nv = verif(cib)
             if nv:
                 va = valeur_annonce(a, tout_v + nv, actives, cib=cib)
+    if not va and verif and a.get("encan") and t >= HIT_MIN and _hit(cib) and not memes_ventes(cib, tout_v):
+        try:
+            if datetime.fromisoformat(str(fin).replace("Z", "+00:00")) - maint <= timedelta(hours=VERIF_TARD_H):
+                st.setdefault("_tard", []).append((a, r, cib))      # verifie a la fin du tour (budget restant)
+        except ValueError:
+            pass
     if not va:
         st["sans_ventes"] = st.get("sans_ventes", 0) + 1
         deals.pop(a["item_id"], None)                 # revue : plus un deal (encan dont la mise a monte...)
@@ -386,6 +405,8 @@ def _juger(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=N
                            "valeur": med_a, "ratio": round(t / med_a, 3), "encan": bool(a.get("encan")), "fin": fin,
                            "mises": a.get("mises"), "sport": sport, "joueur": joueur, "q": r.get("q"), "flux": r.get("flux"),
                            "n": n_a, "valeur_source": source_a, "vendues": ventes_a or ventes_requete or [],
+                           # 27 oct 2026 : encan - la mise maximale pour que ca reste un deal (70 % de la valeur, port compris)
+                           "port": a.get("port_cad"), "mise_max": round(med_a * RATIO_DEAL - (a.get("port_cad") or 0), 2) if a.get("encan") else None,
                            "comps": comps or [], "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION}
 
 
@@ -400,8 +421,13 @@ def _ventes(q, cache_seul=False):
     return r.get("ventes") or [], r.get("erreur")
 
 
+# 27 oct 2026 - licence API eBay (§8.1(c)) : une annonce affichee n'a jamais plus de 6 h de retard sur eBay.
+# Un deal (achat immediat OU encan) qui n'a pas ete revu sur eBay depuis 6 h sort de la liste.
+FRAICHEUR_EBAY_H = 5             # 5 h + 1 h au plus entre deux tours = jamais plus de 6 h
+
+
 def _ranger(d, deals, maint):
-    limite = (maint - timedelta(hours=48)).isoformat()
+    limite = (maint - timedelta(hours=FRAICHEUR_EBAY_H)).isoformat()
     garde_ = []
     for x in deals.values():
         if x.get("encan"):
@@ -410,7 +436,7 @@ def _ranger(d, deals, maint):
                     continue
             except ValueError:
                 continue
-        elif str(x.get("vu_le") or "") < limite:
+        if str(x.get("vu_le") or "") < limite:
             continue
         if not valide(x):
             continue
@@ -419,9 +445,22 @@ def _ranger(d, deals, maint):
     return garde_[:800]
 
 
+def _verifier_tard(st, deals, maint, bassin, verif):
+    """27 oct 2026 (Mathieu : la Savoie Draft Day Marks /35 a 50 $, qui finit dans 25 h) : les encans de hits sans ventes
+    connues qui finissent dans 6 a 30 h, verifies a la fin du tour avec le budget qui reste, les plus proches de la fin d'abord."""
+    for a, r, cib in sorted(st.pop("_tard", []), key=lambda x: str(x[0].get("fin"))):
+        avant = st.get("verif_budget", 0)
+        nv = verif(cib)
+        if st.get("verif_budget", 0) > avant:
+            break                                        # budget du jour epuise
+        st["_vus"].discard(a.get("item_id"))
+        _juger(a, r, nv or [], [], maint, deals, st, bassin=bassin, verif=None)
+
+
 def _sauver(d, deals, maint, st, **champs):
     garde_ = _ranger(d, deals, maint)
     st.pop("_vus", None)
+    st.pop("_tard", None)
     with _verrou:
         d2 = lire()
         d2.update(deals=garde_, **champs)
@@ -502,6 +541,7 @@ def encans(n=PAR_TOUR_ENCANS, rechercher=None, bassin=None):
         brut_v, _err = _ventes(r["q"], cache_seul=True)
         for a in memes_e:
             _juger(a, r, brut_v or [], [], maint, deals, st, bassin=bassin, verif=verif)
+    _verifier_tard(st, deals, maint, bassin, verif)
     garde_ = _sauver(d, deals, maint, st, curseur_e=(i0 + len(lot)) % len(reqs))
     return {"ok": True, "deals": len(garde_), "stats": st}
 
@@ -516,6 +556,24 @@ FLUX = [("young guns", "hockey"), ("young guns canvas", "hockey"), ("young guns 
         ("black diamond rookie", "hockey"), ("synergy rookie", "hockey"), ("upper deck numbered rookie", "hockey"),
         ("mcdavid", "hockey"), ("bedard", "hockey"),
         ("prizm rookie", None), ("topps chrome rookie", None), ("bowman chrome 1st auto", None)]
+
+
+# 27 oct 2026 (Mathieu : « pourquoi c'est juste des Young Guns ? ») : les hits des autres produits (autos, patchs,
+# numerotees). 5 flux par heure en rotation : chacun revient aux 3 h, l'appel eBay le plus cher reste borne.
+FLUX_HITS = [("ud black auto", "hockey"), ("spx auto patch", "hockey"), ("patch auto /99 hockey", "hockey"),
+             ("auto patch /49 hockey", "hockey"), ("auto /25 hockey", "hockey"), ("1/1 hockey card", "hockey"),
+             ("the cup auto patch", "hockey"), ("sp game used auto", "hockey"), ("premier auto patch", "hockey"),
+             ("ice auto patch", "hockey"), ("artifacts auto patch", "hockey"), ("trilogy auto", "hockey"),
+             ("ultimate collection auto", "hockey"), ("black diamond auto", "hockey"), ("synergy auto", "hockey")]
+HITS_PAR_TOUR = 5
+
+
+def flux_hits(curseur):
+    """Les flux de hits de ce tour, et le curseur du prochain."""
+    if os.environ.get("LR_DEALS_FLUX") or not FLUX_HITS:
+        return [], 0
+    i0 = int(curseur or 0) % len(FLUX_HITS)
+    return (FLUX_HITS[i0:] + FLUX_HITS[:i0])[:HITS_PAR_TOUR], (i0 + HITS_PAR_TOUR) % len(FLUX_HITS)
 
 
 def flux_liste():
@@ -539,7 +597,8 @@ def flux(rechercher=None, bassin=None):
     except ValueError:
         pages = PAGES_ENCANS
     limite_fin = (maint + timedelta(hours=ENCAN_H)).isoformat().replace("+00:00", "Z")
-    for q, sport in flux_liste():
+    hits, curseur_h = flux_hits(d.get("curseur_h"))
+    for q, sport in flux_liste() + hits:
         r = {"q": None, "flux": q, "sport": sport, "joueur": None}
         # prix fixe : les 200 plus recentes ; encans : page apres page (200) tant qu'ils finissent dans 48 h
         for ench, page in [(False, 0)] + [(True, k) for k in range(pages)]:
@@ -554,7 +613,8 @@ def flux(rechercher=None, bassin=None):
                 _juger(a, r, [], [] if ench else l, maint, deals, st, bassin=bassin, verif=verif)
             if ench and (len(l) < 150 or not l or str(l[-1].get("fin") or "9") > limite_fin):
                 break                                   # derniere page, ou on depasse 48 h
-    garde_ = _sauver(d, deals, maint, st)
+    _verifier_tard(st, deals, maint, bassin, verif)
+    garde_ = _sauver(d, deals, maint, st, curseur_h=curseur_h)
     return {"ok": True, "deals": len(garde_), "stats": st}
 
 

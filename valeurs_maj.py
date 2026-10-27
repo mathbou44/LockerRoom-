@@ -30,8 +30,6 @@ import catalogue
 import valeurs
 
 DOSSIER = os.path.dirname(os.path.abspath(__file__))
-SOURCE_DEFAUT = os.path.join(os.path.dirname(DOSSIER), "INVENTORY ANALYSIS")
-TAUX_USD_CAD = 1.38
 MIN_VENTES = 4
 JOURS_MAX = 730
 
@@ -87,66 +85,70 @@ def _saison_rx(saison):
     return re.compile(rf"\b(?:{a}\s*[-/]\s*{b:02d}|{a % 100:02d}\s*[-/]\s*{b:02d}|{a})\b")
 
 
-def _copier_base(chemin):
-    if not os.path.exists(chemin):
-        return None
-    d = tempfile.mkdtemp(prefix="lr_valeurs_")
-    for suf in ("", "-wal", "-shm"):
-        if os.path.exists(chemin + suf):
-            shutil.copy2(chemin + suf, os.path.join(d, os.path.basename(chemin) + suf))
-    return os.path.join(d, os.path.basename(chemin))
-
-
-def _ventes(source):
-    """[(titre normalise, titre brut, prix $ CA)] des ventes de hockey des 2 dernieres annees."""
+def _ventes(source=None):
+    """[(titre normalise, titre brut, prix $ CA)] des ventes de hockey des 2 dernieres annees.
+    27 oct 2026 - revue legale : SEULEMENT les ventes SoldComps gardees par base_ventes (licence commerciale de
+    SoldComps) ; plus rien de Hall of Cardz (cache 130point lu avec Scrapfly, archive TCA)."""
+    import base_ventes
     limite = (datetime.now() - timedelta(days=JOURS_MAX)).strftime("%Y-%m-%d")
     out, vus = [], set()
-
-    def ajouter(url, titre, prix, devise, date):
-        if not titre or not prix or (date and str(date)[:10] < limite):
-            return
-        cle = url or (titre, prix, date)
-        if cle in vus:
-            return
+    try:
+        with base_ventes._verrou:
+            c = base_ventes._cx()
+            try:
+                lignes = c.execute("SELECT cle, titre, prix, le FROM ventes WHERE le >= ?", (limite,)).fetchall()
+            finally:
+                c.close()
+    except sqlite3.Error:
+        lignes = []
+    for cle, titre, prix, le in lignes:
+        if not titre or not prix or cle in vus:
+            continue
         vus.add(cle)
-        dev = str(devise or "USD").upper()
-        if dev not in ("USD", "CAD"):
-            return
-        p = float(prix) * (TAUX_USD_CAD if dev == "USD" else 1.0)
+        p = float(prix)
         if p <= 0 or _RE_GRADEE.search(titre) or _RE_LOT.search(titre):
-            return
+            continue
         out.append((" " + _norm(titre) + " ", titre, p))
-
-    c130 = _copier_base(os.path.join(source, "cache_130point.sqlite"))
-    if c130:
-        c = sqlite3.connect(c130)
-        try:
-            for url, titre, prix, devise, date in c.execute("SELECT url, titre, prix, devise, date_vente FROM ventes_vues"):
-                ajouter(url, titre, prix, devise, date)
-        finally:
-            c.close()
-    inv = _copier_base(os.path.join(source, "hallofcardz_inventaire.db"))
-    if inv:
-        c = sqlite3.connect(inv)
-        try:
-            for url, titre, prix, devise, date in c.execute(
-                    "SELECT listing_url, titre, price, currency, sale_date FROM archive_ventes_tca WHERE sport='hockey'"):
-                ajouter(url, titre, prix, devise, date)
-        except sqlite3.Error:
-            pass
-        finally:
-            c.close()
     return out
 
 
-def _demande(source):
-    with open(os.path.join(source, "pointage_modele.json"), encoding="utf-8") as f:
-        m = json.load(f)
-    return {nom: float(v["mult"]) for nom, v in (m.get("demande") or {}).items() if v.get("mult")}, m.get("nb_ventes")
+def _demande(ventes):
+    """Demande de chaque joueur, mesuree sur les memes ventes SoldComps : pour chaque sous-ensemble assez vendu,
+    (mediane des ventes du joueur) / (mediane de tout le sous-ensemble) ; moyenne geometrique, ramenee vers 1,0
+    quand le joueur a peu de ventes. 1,0 = un joueur moyen."""
+    import math
+    uns = {}
+    for p in catalogue.liste():
+        prod = catalogue.charger(p["id"])
+        for nom, prix_joueurs in _ventes_par_joueur(prod, ventes).items():
+            tous = [x for l in prix_joueurs.values() for x in l]
+            if len(tous) < MIN_VENTES * 2 or len(prix_joueurs) < 3:
+                continue
+            m = statistics.median(tous)
+            for j, l in prix_joueurs.items():
+                uns.setdefault(j, []).append((math.log(max(0.02, statistics.median(l) / m)), len(l)))
+    out = {}
+    for j, l in uns.items():
+        n = sum(k for _, k in l)
+        moy = sum(v * k for v, k in l) / n
+        out[j] = round(math.exp(moy * n / (n + 3)), 3)           # peu de ventes : on reste pres de 1,0
+    return out, len(ventes)
 
 
-def mesurer_produit(prod, ventes, demande):
-    """{sous_ensemble: {"valeur", "n"}} pour les sous-ensembles assez vendus."""
+def _ventes_par_joueur(prod, ventes):
+    """{sous_ensemble: {joueur normalise: [prix]}} : la meme selection que mesurer_produit, joueur a 1,0."""
+    noms_tous = {}
+    for c in prod.get("cartes") or []:
+        jn = str(c.get("joueur") or "")
+        if "/" not in jn and len(_norm(jn).split()) >= 2:
+            noms_tous[_norm(jn)] = jn
+    r = mesurer_produit(prod, ventes, {v: 1.0 for v in noms_tous.values()}, detail=True)
+    return {se: {noms_tous.get(j, j): l for j, l in d.items()} for se, d in r.items()}
+
+
+def mesurer_produit(prod, ventes, demande, detail=False):
+    """{sous_ensemble: {"valeur", "n"}} pour les sous-ensembles assez vendus
+    (detail=True : {sous_ensemble: {joueur: [prix bruts]}} pour mesurer la demande)."""
     se = {s["nom"]: s for s in prod.get("sous_ensembles") or []}
     rx_saison = _saison_rx(prod.get("saison") or prod["id"][:4])
     suffixe = prod["id"].split("-", 2)[-1] if prod["id"].count("-") >= 2 else prod["id"]
@@ -165,7 +167,7 @@ def mesurer_produit(prod, ventes, demande):
         if autres and any(r.search(tn) for r in autres):
             continue
         candidates.append((tn, tb, p))
-    out = {}
+    out, det = {}, {}
     for nom, s in se.items():
         j = jetons[nom]
         if not j:
@@ -201,29 +203,38 @@ def mesurer_produit(prod, ventes, demande):
             if not joueur:
                 continue
             vals.append(p / max(0.05, noms[joueur]))
+            det.setdefault(nom, {}).setdefault(joueur, []).append(p)
         if len(vals) >= MIN_VENTES:
             out[nom] = {"valeur": round(statistics.median(vals), 2), "n": len(vals)}
-    return out
+    return det if detail else out
 
 
-def construire(source=None):
-    source = source or SOURCE_DEFAUT
-    demande, nb_modele = _demande(source)
-    ventes = _ventes(source)
+MIN_JOUEURS = int(os.environ.get("LR_VALEURS_MIN_JOUEURS") or 40)
+
+
+def construire(source=None, forcer=False):
+    """Recalcule les valeurs depuis les ventes SoldComps. Tant que la base est trop mince (moins de MIN_JOUEURS
+    joueurs mesures), on n'ecrit rien : les valeurs deja la restent."""
+    ventes = _ventes()
+    demande, nb = _demande(ventes)
+    if len(demande) < MIN_JOUEURS and not forcer:
+        return {"ok": False, "erreur": f"Pas encore assez de ventes SoldComps ({len(demande)} joueurs mesurés)",
+                "joueurs": len(demande), "ventes": len(ventes)}
     mesures = {}
     for p in catalogue.liste():
         prod = catalogue.charger(p["id"])
         mesures[p["id"]] = mesurer_produit(prod, ventes, demande)
-    data = {"maj": datetime.now().isoformat(timespec="seconds"), "source": "Hall of Cardz (modèle de pointage + ventes)",
-            "nb_ventes": len(ventes), "nb_ventes_modele": nb_modele,
+    data = {"maj": datetime.now().isoformat(timespec="seconds"), "source": "SoldComps (ventes eBay réelles)",
+            "nb_ventes": len(ventes), "nb_ventes_modele": nb,
             "joueurs": {k: round(v, 3) for k, v in sorted(demande.items())}, "sous_ensembles": mesures}
-    tmp = valeurs.CHEMIN + ".tmp"
+    chemin = valeurs.chemin_ecriture()
+    tmp = chemin + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=0)
-    os.replace(tmp, valeurs.CHEMIN)
+    os.replace(tmp, chemin)
     return {"ok": True, "joueurs": len(demande), "ventes": len(ventes),
             "mesures": {k: len(v) for k, v in mesures.items()}}
 
 
 if __name__ == "__main__":
-    print(json.dumps(construire(sys.argv[1] if len(sys.argv) > 1 else None), ensure_ascii=False, indent=1))
+    print(json.dumps(construire(forcer="--forcer" in sys.argv), ensure_ascii=False, indent=1))

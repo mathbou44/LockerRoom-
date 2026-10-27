@@ -43,14 +43,15 @@ def _gn(q, fr=False):
     return f"https://news.google.com/rss/search?q={urllib.parse.quote(q)}&hl={hl}&gl=CA&ceid={ceid}"
 
 
+# 27 oct 2026 - revue legale (Mathieu : « assure-toi que tout est legal ») : Google News (flux RSS pour usage personnel
+# et non commercial selon Google) et ESPN (titres gratuits seulement pour un usage non commercial) sont retires.
+# On garde le flux public de l'editeur, en TITRE + LIEN vers l'article seulement : pas d'image, pas de texte repris.
+SANS_IMAGES = True
+
+
 def sources(sport):
     s = sport if sport in _ESPN else "hockey"
-    return [
-        ("ESPN", f"https://www.espn.com/espn/rss/{_ESPN[s]}/news", "ligue"),
-        ("Google News", _gn(_LIGUE_EN[s]), "ligue"),
-        ("Google News FR", _gn(_LIGUE_FR[s] + (" hockey" if s == "hockey" else ""), fr=True), "ligue"),
-        ("Hobby", _gn(f'"{_HOBBY[s]}" OR "rookie card" {_LIGUE_EN[s]}'), "hobby"),
-    ] + ([("Sportsnet", "https://www.sportsnet.ca/hockey/nhl/feed/", "ligue")] if s == "hockey" else [])
+    return [("Sportsnet", "https://www.sportsnet.ca/hockey/nhl/feed/", "ligue")] if s == "hockey" else []
 
 
 _CLASSES = [
@@ -116,7 +117,7 @@ def lire_rss(xml, jours=JOURS):
         if editeur and titre.endswith(" - " + editeur):
             titre = titre[: -len(editeur) - 3].strip()
         out.append({"titre": titre[:200], "date": d.date().isoformat(), "heure": d.isoformat(), "lien": it.findtext("link") or "",
-                    "editeur": editeur, "image": _image(it)})
+                    "editeur": editeur, "image": None if SANS_IMAGES else _image(it)})
     return out
 
 
@@ -188,6 +189,8 @@ def rafraichir(sports_voulus=("hockey", "football", "basketball", "baseball"), l
                 x["image"] = deja[x["lien"]]
         cache["sports"][sport] = items[:60] or ancien.get(sport) or []
     _ecrire_cache(cache)
+    if SANS_IMAGES:
+        return cache
     # 24 oct 2026 (Mathieu : « toujours avoir une image ») : 2e passe, la photo de l'article (og:image) quand le flux
     # n'en donne pas - liens directs seulement (pas Google News), 12 par sport, 6 s chacun ; l'accueil a deja ses nouvelles
     change = False
@@ -269,7 +272,12 @@ def pour(sports_client, joueurs=(), n=16, langue="fr"):
         for x in (c.get("sports") or {}).get(s) or []:
             t = " " + norm(x["titre"]) + " "
             j = next((v for k, v in noms.items() if f" {k} " in t), None)
-            tous.append(dict(x, joueur=j))
+            y = dict(x, joueur=j)
+            if SANS_IMAGES:
+                y.pop("image", None)               # anciens caches : jamais d'image d'article a l'ecran
+            if "news.google." in str(y.get("lien") or "") or y.get("source") in ("ESPN", "Google News", "Hobby"):
+                continue                           # anciens caches : sources retirees
+            tous.append(y)
     en = [x for x in tous if langue_de(x) == "en"]
     fr = [x for x in tous if langue_de(x) == "fr"]
     if langue == "en":

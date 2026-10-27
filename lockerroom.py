@@ -49,6 +49,8 @@ import vendues  # noqa: E402
 import ventes_communaute  # noqa: E402
 
 _VERROU_IMG = threading.Lock()
+# 27 oct 2026 - photos de tiers (Upper Deck, GTS, annonces eBay hors contexte) : seulement avec une licence (=1)
+IMAGES_TIERCES = os.environ.get("LOCKERROOM_IMAGES_TIERCES") == "1"
 
 DOSSIER = os.environ.get("LOCKERROOM_DONNEES") or os.path.dirname(os.path.abspath(__file__))   # heberge : disque persistant
 CHEMIN_DB = os.path.join(DOSSIER, "lockerroom.db")
@@ -294,7 +296,9 @@ class Api:
             prix = None
         import forfaits
         return {**forfaits.resume(), "multi": multi, "admin": self._est_admin(),
-                "logos_lnh": os.environ.get("LOCKERROOM_LOGOS_LNH") != "0",     # 26 oct 2026 : Mathieu veut les vrais logos (=0 pour couper)
+                # 27 oct 2026 - revue legale : logos et photos de la LNH = marques et contenu de la LNH (conditions : usage
+                # non commercial) -> coupes par defaut ; seulement avec une licence (LOCKERROOM_LOGOS_LNH=1)
+                "logos_lnh": os.environ.get("LOCKERROOM_LOGOS_LNH") == "1",
                 "username": info.get("username") if multi else None,           # 26 oct 2026 : « Bonjour ... » sur l'accueil
                 "forfait": (info.get("forfait") or "gratuit") if multi else "pro",
                 "statut": info.get("forfait_statut") or "", "fin": info.get("forfait_fin"),
@@ -1201,6 +1205,11 @@ class Api:
         """La photo de la boite de chaque produit. 26 oct 2026 (Mathieu : « de meilleures photos du produit, voir sur
         upperdeck.com ») : l'image officielle d'upperdeck.com, sinon celle de la page GTS du produit (30 jours) ;
         sinon une annonce eBay (14 jours)."""
+        # 27 oct 2026 - revue legale (Mathieu : « trouve des sources autorisees, sinon enleve les images ») : les photos
+        # d'upperdeck.com, de gogts.net et des annonces eBay (hors de leur annonce) ne sont pas a nous. L'ecran montre
+        # le visuel SlabCoach du produit (saison + nom) a la place.
+        if not IMAGES_TIERCES:
+            return {}
         from concurrent.futures import ThreadPoolExecutor
         cache = self._cache_images()
         ch, d = cache
@@ -1284,7 +1293,7 @@ class Api:
         """26 oct 2026 (Mathieu : « les images doivent etre celles des joueurs et non de la carte ») : le portrait officiel
         de la LNH (recherche publique de joueurs, puis la fiche du joueur), garde 30 jours. Seulement si Mathieu active
         le contenu officiel LNH (LOCKERROOM_LOGOS_LNH=1 : marques et photos de la LNH, sa decision)."""
-        if os.environ.get("LOCKERROOM_LOGOS_LNH") == "0":        # 26 oct 2026 : actif par defaut (choix de Mathieu)
+        if os.environ.get("LOCKERROOM_LOGOS_LNH") != "1":        # 27 oct 2026 : coupe par defaut (revue legale)
             return {}
         import urllib.parse
         import urllib.request
@@ -1329,7 +1338,7 @@ class Api:
     def images_joueurs(self, produit_id, joueurs, genre="hits"):
         """La carte (auto / patch, ou recrue) de chaque joueur dans ce produit : une photo par joueur, 12 au plus."""
         prod = catalogue.charger(produit_id)
-        if not prod:
+        if not prod or not IMAGES_TIERCES:          # 27 oct 2026 : vignettes aux initiales (photos d'annonces = pas a nous)
             return {}
         cache = self._cache_images()
         mot = "auto" if genre == "hits" else "rookie"
@@ -2833,8 +2842,7 @@ class Api:
         if st.get("cles_ok"):
             pouls.append({"id": "sante", "nom": "Tes prix", "dernier": sante_maj, "freq_min": 60, "href": "#sante"})
             pouls.append({"id": "deals", "nom": "Deals", "dernier": opp_maj, "freq_min": 60, "href": "#deals"})
-        import valeurs_maj                       # heberge : valeurs livrees avec l'app (pas la source Hall of Cardz) -> chaque semaine
-        auto = os.path.isdir(valeurs_maj.SOURCE_DEFAUT)
+        auto = True                              # 27 oct 2026 : recalculees chaque jour depuis les ventes SoldComps
         pouls.append({"id": "valeurs", "nom": "Joueurs", "dernier": valeurs.statut().get("maj"), "freq_min": 1440 if auto else 10080,
                       "href": "#reglages", "note": "chaque jour" if auto else "chaque semaine"})
         pouls.append({"id": "nouvelles", "nom": "Infos", "dernier": n.get("maj"), "freq_min": 120, "href": "#accueil"})
@@ -3008,6 +3016,13 @@ class Api:
         # 26 oct 2026 (Mathieu : « encore pas un deal » : 6 annonces a 21 $, 1 vente a 3 $) : les annonces sont un PLAFOND ;
         # 1 ou 2 ventes : on les croit plus que les prix demandes ; aucune vente : pas de verdict deal / bon prix
         nb_v = vc.get("nb") or 0
+        # 27 oct 2026 : pas (ou presque pas) de ventes de CETTE carte : celles de la meme carte par d'autres joueurs, en repere
+        autres = None
+        if not rapide and t and nb_v < 2:
+            try:
+                autres = vendues.autres_joueurs(t)
+            except Exception:
+                autres = None
         vm = vc.get("mediane") if nb_v >= 3 else None
         prix_v = sorted(x["prix"] for x in (vc.get("ventes") or []) if x.get("prix"))
         if vm and med and n >= 3:
@@ -3034,7 +3049,7 @@ class Api:
         return {"ok": True, "article": {**a, "total": total}, "comps": comps, "mediane": med, "n": n,
                 "suggere": suggere, "ventes": ventes, "mediane_vendue": vc.get("mediane"), "nb_vendues": vc.get("nb") or len(ventes),
                 "valeur": valeur, "valeur_source": "vendues" if vm else "annonces", "ventes_attente": bool(vc.get("attente")),
-                "points": vc.get("points") or [], "tendance": vc.get("tendance"),
+                "points": vc.get("points") or [], "tendance": vc.get("tendance"), "autres_joueurs": autres,
                 "rabais": round(100 * (1 - total / valeur)) if total and valeur and juger else None,
                 "gain": round(valeur * (1 - fp) - ff - total, 2) if total and valeur and juger else None,
                 "peu_de_ventes": not juger}

@@ -88,7 +88,9 @@ def recevoir(corps):
     import comptes
     import ebay_compte
     if comptes.MULTI:                    # multi-comptes : tout le dossier du client disparait
-        for cid in comptes.par_username(data.get("username")):
+        cids = set(comptes.par_username(data.get("username"))) | set(comptes.par_champ("ebay_username", data.get("username"))) \
+            | set(comptes.par_champ("ebay_user_id", data.get("userId")))
+        for cid in cids:                 # 27 oct 2026 : aussi un compte Apple / Google relie a ce compte eBay
             comptes.supprimer(cid)
         return True
     for env in ebay_compte.ENVIRONNEMENTS:

@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B0B0E">
+<title>SlabCoach · L’app des cartes de sport</title>
+<meta name="description" content="SlabCoach : deals eBay sous la valeur, vraies valeurs des cartes, chances de breaks, inventaire et ventes. Gratuit, avec 14 jours de Pro offerts.">
+<link rel="canonical" href="https://slabcoach.com/">
+<meta property="og:title" content="SlabCoach · Joue tes cartes comme un pro">
+<meta property="og:description" content="Deals sous la valeur, vraies valeurs, chances de breaks, inventaire et ventes. Gratuit, 14 jours de Pro offerts.">
+<meta property="og:image" content="https://slabcoach.com/icone-512.png">
+<meta property="og:url" content="https://slabcoach.com/">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=3">
+<link rel="icon" href="/favicon.ico?v=3" sizes="any">
+<link rel="apple-touch-icon" href="/icone.png">
+<link rel="preload" href="/manrope-800.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* 27 oct 2026 - la vitrine de slabcoach.com (Mathieu : « simple, sexy, montrer pourquoi nous choisir, l'option gratuite et
+   le free trial, et ne pas obliger d'avoir un compte eBay mais fortement recommande »). Une page, deux langues. */
+@font-face{font-family:'Manrope'; font-weight:800; font-display:swap; src:url(/manrope-800.woff2) format('woff2')}
+@font-face{font-family:'Manrope'; font-weight:400; font-display:swap; src:url(/manrope-400.woff2) format('woff2')}
+:root{--fond:#0B0B0E; --carte:#151519; --carte2:#1D1D23; --ligne:#2B2A32; --texte:#F4F2EE; --doux:#A9A6B1; --pale:#8C8996;
+  --acc:#B9BEFF; --or:#E9CF8E; --vert:#8FD4A4; --holo:linear-gradient(100deg,#9FE6D2 0%,#B9BEFF 36%,#F2B3D6 68%,#F1D58E 100%)}
+html[lang="fr"] .en, html[lang="en"] .fr{display:none !important}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+html,body{overflow-x:clip}
+body{margin:0; background:var(--fond); color:var(--texte); font:16px/1.55 Inter,system-ui,-apple-system,sans-serif; overflow-x:hidden}
+a{color:inherit}
+.holo-t{background:var(--holo); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent}
+.conteneur{width:min(1120px,100%); margin:0 auto; padding:0 20px}
+/* barre du haut */
+.haut{position:sticky; top:0; z-index:20; backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); background:rgba(11,11,14,.72); border-bottom:1px solid rgba(255,255,255,.05)}
+.haut .conteneur{display:flex; align-items:center; justify-content:space-between; gap:12px; height:64px}
+.marque{display:flex; align-items:center; gap:10px; text-decoration:none}
+.marque img{width:34px; height:34px}
+.mot-sc{display:inline-block; font:400 22px/1 'Manrope',system-ui,sans-serif; letter-spacing:-.025em; white-space:nowrap}
+.mot-sc b{font-weight:800} .mot-sc sup{font-size:.26em; font-weight:800; letter-spacing:0; vertical-align:1.75em; margin-left:.1em; opacity:.8}
+.mot-sc .tag{display:block; font-size:7.5px; font-weight:800; letter-spacing:.66em; margin-right:-.66em; margin-top:5px; background:var(--holo); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent}
+.nav{display:flex; align-items:center; gap:20px; font-size:14.5px; font-weight:600}
+.nav a{text-decoration:none; color:var(--doux)} .nav a:hover{color:var(--texte)}
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; height:48px; padding:0 22px; border-radius:14px; font:800 16px 'Manrope',Inter,sans-serif; text-decoration:none; white-space:nowrap; transition:transform .15s, box-shadow .15s}
+.btn:focus-visible{outline:3px solid var(--texte); outline-offset:3px}
+.btn.holo{color:#12111A; background:linear-gradient(100deg,#D3F4EA 0%,#DCDEFF 36%,#F9DCEB 68%,#F7EAC2 100%); box-shadow:0 14px 34px rgba(185,190,255,.22), inset 0 1px 0 rgba(255,255,255,.7)}
+.btn.holo:hover{transform:translateY(-1px); box-shadow:0 18px 40px rgba(185,190,255,.32), inset 0 1px 0 rgba(255,255,255,.7)}
+.btn.ghost{color:var(--texte); border:1px solid var(--ligne); background:rgba(255,255,255,.02)} .btn.ghost:hover{border-color:#403E4A}
+.haut .btn{height:40px; padding:0 16px; font-size:14.5px; border-radius:12px}
+.lang{font:700 13px Inter,sans-serif; color:var(--doux); text-decoration:none; padding:6px 10px; border:1px solid var(--ligne); border-radius:999px}
+@media (max-width:760px){ .nav .lien{display:none} .nav{gap:8px} }
+@media (max-width:480px){ .haut .btn{height:38px; padding:0 12px; font-size:13.5px} .lang{padding:5px 8px; font-size:12px} .marque .mot-sc{font-size:19px} .marque img{width:30px; height:30px} .marque{gap:8px} }
+/* hero */
+.hero{position:relative; padding:72px 0 40px}
+.hero::before{content:''; position:absolute; inset:-120px 0 auto; height:720px; pointer-events:none; z-index:-1;
+  background:radial-gradient(520px 320px at 30% 30%, rgba(159,230,210,.10), transparent 70%), radial-gradient(560px 340px at 70% 35%, rgba(242,179,214,.09), transparent 70%), radial-gradient(700px 420px at 50% 20%, rgba(185,190,255,.08), transparent 70%)}
+.hero .conteneur{display:grid; grid-template-columns:1.05fr .95fr; gap:40px; align-items:center}
+.surtitre{display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:999px; border:1px solid var(--ligne); background:rgba(255,255,255,.03); font-size:13px; font-weight:600; color:#DCD9E2}
+.surtitre i{width:7px; height:7px; border-radius:50%; background:var(--holo)}
+h1{font:800 clamp(40px,6.4vw,68px)/1.02 'Manrope',Inter,sans-serif; letter-spacing:-.035em; margin:18px 0 0; text-wrap:balance}
+.sous-titre{font-size:clamp(17px,2vw,19px); color:var(--doux); margin:18px 0 0; max-width:540px}
+.actions{display:flex; flex-wrap:wrap; gap:12px; margin-top:28px}
+.rassure{display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:16px; font-size:13.5px; color:var(--pale)}
+.rassure span::before{content:'✓'; margin-right:6px; color:var(--vert); font-weight:700}
+/* visuel : trois tuiles de deal en eventail, bordure refractor */
+.visuel{position:relative; height:440px}
+.tuile{position:absolute; width:230px; border-radius:20px; padding:12px; background:var(--carte); border:1px solid var(--ligne); box-shadow:0 30px 80px rgba(0,0,0,.55)}
+.tuile::before{content:''; position:absolute; inset:-1px; border-radius:21px; padding:1px; background:var(--holo); opacity:.55;
+  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none}
+.tuile .img{aspect-ratio:3/4; border-radius:12px; position:relative; overflow:hidden; display:flex; align-items:flex-end; padding:12px}
+.tuile .img::after{content:''; position:absolute; inset:0; background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.22) 45%, transparent 60%); background-size:250% 100%; animation:reflet 5s ease-in-out infinite}
+.tuile .cadre{position:absolute; inset:14px; border-radius:8px; border:2px solid rgba(255,255,255,.35)}
+.tuile .rabais{position:absolute; top:10px; left:10px; z-index:2; padding:4px 10px; border-radius:999px; background:#13261B; color:var(--vert); font:800 13px 'Manrope',sans-serif; box-shadow:inset 0 0 0 1px rgba(143,212,164,.25)}
+.tuile .nom{position:relative; z-index:1; font:800 15px/1.2 'Manrope',sans-serif; color:#fff; text-shadow:0 2px 12px rgba(0,0,0,.6)}
+.tuile .prix{display:flex; align-items:baseline; justify-content:space-between; margin-top:10px; font:800 22px 'Manrope',sans-serif}
+.tuile .est{margin-top:6px; padding:7px 9px; border-radius:9px; background:rgba(185,190,255,.06); box-shadow:inset 0 0 0 1px rgba(185,190,255,.14); font-size:12.5px; color:var(--doux)}
+.tuile .est b{color:var(--texte)} .tuile .est small{display:block; font:800 9px 'Manrope',sans-serif; letter-spacing:.14em; text-transform:uppercase}
+.t1{left:4%; top:46px; transform:rotate(-8deg)} .t1 .img{background:radial-gradient(120% 90% at 30% 10%, #2F7A55, #10291A 70%)}
+.t2{left:31%; top:0; z-index:2} .t2 .img{background:radial-gradient(120% 90% at 30% 10%, #6E73C9, #1C1D33 70%)}
+.t3{left:58%; top:60px; transform:rotate(8deg)} .t3 .img{background:radial-gradient(120% 90% at 30% 10%, #B08A3E, #2A2416 70%)}
+@keyframes reflet{0%,100%{background-position:100% 0} 50%{background-position:0 0}}
+@media (max-width:900px){ .hero .conteneur{grid-template-columns:1fr} .visuel{height:360px; max-width:520px; width:100%; margin:0 auto} .tuile{width:190px} .t2{left:30%} .t3{left:56%} }
+@media (max-width:480px){ .tuile{width:160px} .t1{left:0} .t2{left:26%} .t3{left:50%} .visuel{height:310px} }
+/* sections */
+section{padding:72px 0}
+.kicker{font:800 12px 'Manrope',sans-serif; letter-spacing:.3em; text-transform:uppercase; margin:0}
+h2{font:800 clamp(30px,4vw,44px)/1.08 'Manrope',Inter,sans-serif; letter-spacing:-.03em; margin:12px 0 0; text-wrap:balance; max-width:760px}
+.intro{color:var(--doux); margin:14px 0 0; max-width:640px; font-size:17px}
+.grille{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-top:34px}
+@media (max-width:900px){ .grille{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:600px){ .grille{grid-template-columns:1fr} }
+.atout{position:relative; padding:22px; border-radius:20px; background:var(--carte); border:1px solid var(--ligne)}
+.atout .ic{width:44px; height:44px; border-radius:13px; display:flex; align-items:center; justify-content:center; background:rgba(185,190,255,.08); box-shadow:inset 0 0 0 1px rgba(185,190,255,.16); color:var(--acc)}
+.atout .ic svg{width:22px; height:22px}
+.atout h3{font:800 18px/1.25 'Manrope',sans-serif; margin:16px 0 0; letter-spacing:-.01em}
+.atout p{margin:8px 0 0; color:var(--doux); font-size:15px}
+.puce-ebay{position:absolute; top:18px; right:18px; font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:999px; color:var(--acc); background:#1E2038; box-shadow:inset 0 0 0 1px rgba(185,190,255,.2)}
+/* etapes */
+.etapes{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-top:34px; counter-reset:e}
+@media (max-width:800px){ .etapes{grid-template-columns:1fr} }
+.etape{padding:22px; border-radius:20px; border:1px solid var(--ligne); background:linear-gradient(160deg, rgba(255,255,255,.03), transparent 60%)}
+.etape b{display:flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:50%; font:800 16px 'Manrope',sans-serif; color:#12111A; background:linear-gradient(100deg,#D3F4EA,#DCDEFF 40%,#F9DCEB 75%,#F7EAC2)}
+.etape h3{font:800 18px 'Manrope',sans-serif; margin:14px 0 0} .etape p{margin:6px 0 0; color:var(--doux); font-size:15px}
+/* eBay recommande */
+.ebay{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:34px}
+@media (max-width:800px){ .ebay{grid-template-columns:1fr} }
+.col{padding:24px; border-radius:20px; background:var(--carte); border:1px solid var(--ligne)}
+.col.reco{position:relative; background:linear-gradient(160deg, rgba(185,190,255,.08), var(--carte) 55%)}
+.col.reco::before{content:''; position:absolute; inset:-1px; border-radius:21px; padding:1px; background:var(--holo); opacity:.5;
+  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none}
+.col h3{font:800 19px 'Manrope',sans-serif; margin:0; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.badge{font:800 11px 'Manrope',sans-serif; letter-spacing:.08em; text-transform:uppercase; padding:4px 10px; border-radius:999px; color:#12111A; background:linear-gradient(100deg,#D3F4EA,#DCDEFF 40%,#F9DCEB 75%,#F7EAC2)}
+.col ul{list-style:none; margin:16px 0 0; padding:0; display:grid; gap:10px}
+.col li{display:flex; gap:10px; color:#DCD9E2; font-size:15px} .col li::before{content:'✓'; color:var(--vert); font-weight:800}
+.col li.plus::before{content:'+'; color:var(--acc)}
+.note{margin-top:14px; font-size:13.5px; color:var(--pale)}
+/* forfaits */
+.forfaits{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:34px; max-width:900px}
+@media (max-width:800px){ .forfaits{grid-template-columns:1fr} }
+.forfait{display:flex; flex-direction:column; padding:26px; border-radius:22px; background:var(--carte); border:1px solid var(--ligne)}
+.forfait.pro{position:relative; background:radial-gradient(120% 80% at 80% 0%, rgba(233,207,142,.12), var(--carte) 60%); border-color:#5C4E2C}
+.forfait .t{font:800 14px 'Manrope',sans-serif; letter-spacing:.2em; text-transform:uppercase; color:var(--doux)}
+.forfait.pro .t{color:var(--or)}
+.forfait .prix{font:800 46px/1 'Manrope',sans-serif; letter-spacing:-.03em; margin-top:12px} .forfait .prix small{font:600 15px Inter,sans-serif; color:var(--doux); letter-spacing:0}
+.forfait .d{color:var(--doux); margin-top:8px; font-size:15px}
+.forfait ul{list-style:none; margin:20px 0 24px; padding:0; display:grid; gap:10px; flex:1}
+.forfait li{display:flex; gap:10px; font-size:15px; color:#DCD9E2} .forfait li::before{content:'✓'; color:var(--vert); font-weight:800}
+.forfait.pro li::before{color:var(--or)}
+.forfait li em{font-style:normal; color:var(--pale)}
+.essai{position:absolute; top:-13px; right:20px; padding:5px 12px; border-radius:999px; font:800 12px 'Manrope',sans-serif; color:#2A1F05; background:linear-gradient(110deg,#F7EAC4,#D9B866 45%,#FBF0CF 55%,#F1D58E)}
+.btn.or{color:#2A1F05; background:linear-gradient(110deg,#F3E0A6,#D9B866); box-shadow:0 12px 30px rgba(217,184,102,.22)}
+/* faq */
+.faq{margin-top:28px; max-width:820px; display:grid; gap:10px}
+.faq details{border:1px solid var(--ligne); border-radius:16px; background:var(--carte); padding:0 20px}
+.faq summary{cursor:pointer; list-style:none; padding:18px 0; font:800 16.5px 'Manrope',sans-serif; display:flex; justify-content:space-between; gap:12px}
+.faq summary::-webkit-details-marker{display:none} .faq summary::after{content:'+'; color:var(--acc); font-size:22px; line-height:1}
+.faq details[open] summary::after{content:'–'}
+.faq p{margin:0 0 18px; color:var(--doux); font-size:15px}
+/* appel final + pied */
+.final{text-align:center; padding:84px 0}
+.final .logo{width:92px; height:92px; filter:drop-shadow(0 16px 40px rgba(185,190,255,.25))}
+.final h2{margin:22px auto 0}
+.final .actions{justify-content:center}
+footer{border-top:1px solid rgba(255,255,255,.06); padding:28px 0 calc(28px + env(safe-area-inset-bottom)); color:var(--pale); font-size:13.5px}
+footer .conteneur{display:flex; flex-wrap:wrap; gap:14px 24px; align-items:center; justify-content:space-between}
+footer nav{display:flex; gap:18px} footer a{color:var(--doux); text-decoration:none} footer a:hover{color:var(--texte)}
+footer .mention{flex-basis:100%; font-size:12.5px}
+@media (prefers-reduced-motion:reduce){ .tuile .img::after{animation:none} html{scroll-behavior:auto} }
+</style>
+</head>
+<body>
+<header class="haut"><div class="conteneur">
+  <a class="marque" href="/" aria-label="SlabCoach"><img class="logo-sc" src="/logo_sc_prizm.svg" alt=""><span class="mot-sc"><b>slab</b>coach<sup>™</sup><span class="tag">SPORTS CARDS</span></span></a>
+  <nav class="nav">
+    <a class="lien" href="#pourquoi"><span class="fr">Pourquoi nous</span><span class="en">Why us</span></a>
+    <a class="lien" href="#forfaits"><span class="fr">Forfaits</span><span class="en">Pricing</span></a>
+    <a class="lien" href="/connexion"><span class="fr">Se connecter</span><span class="en">Sign in</span></a>
+    <a class="btn holo" href="/connexion"><span class="fr">Commencer</span><span class="en">Get started</span></a>
+  </nav>
+</div></header>
+
+<main>
+<div class="hero"><div class="conteneur">
+  <div>
+    <span class="surtitre"><i></i><span class="fr">Pour les collectionneurs, les vendeurs et les breakers</span><span class="en">For collectors, sellers and breakers</span></span>
+    <h1><span class="fr">Joue tes cartes <span class="holo-t">comme un pro.</span></span><span class="en">Play your cards <span class="holo-t">like a pro.</span></span></h1>
+    <p class="sous-titre"><span class="fr">Les deals sous la valeur, la vraie valeur de tes cartes, les chances de ton break, ton inventaire et tes ventes : tout au même endroit.</span><span class="en">Deals under value, the real value of your cards, your break odds, your inventory and your sales: all in one place.</span></p>
+    <div class="actions">
+      <a class="btn holo" href="/connexion"><span class="fr">Commencer gratuitement</span><span class="en">Start for free</span></a>
+      <a class="btn ghost" href="#forfaits"><span class="fr">Voir les forfaits</span><span class="en">See pricing</span></a>
+    </div>
+    <div class="rassure"><span class="fr">14 jours de Pro offerts</span><span class="en">14 days of Pro, on us</span><span class="fr">Aucune carte de crédit</span><span class="en">No credit card</span><span class="fr">Gratuit ensuite</span><span class="en">Free after that</span></div>
+  </div>
+  <div class="visuel" aria-hidden="true">
+    <div class="tuile t1"><div class="img"><span class="rabais">−41 %</span><span class="cadre"></span><span class="nom">Young Guns RC</span></div>
+      <div class="prix">$24</div><div class="est"><small class="holo-t"><span class="fr">Estimation SlabCoach</span><span class="en">SlabCoach estimate</span></small><span class="fr">vaut <b>$41</b></span><span class="en">worth <b>$41</b></span></div></div>
+    <div class="tuile t2"><div class="img"><span class="rabais">−47 %</span><span class="cadre"></span><span class="nom">Auto Patch /25</span></div>
+      <div class="prix">$89</div><div class="est"><small class="holo-t"><span class="fr">Estimation SlabCoach</span><span class="en">SlabCoach estimate</span></small><span class="fr">vaut <b>$168</b></span><span class="en">worth <b>$168</b></span></div></div>
+    <div class="tuile t3"><div class="img"><span class="rabais">−38 %</span><span class="cadre"></span><span class="nom">Exclusives /100</span></div>
+      <div class="prix">$31</div><div class="est"><small class="holo-t"><span class="fr">Estimation SlabCoach</span><span class="en">SlabCoach estimate</span></small><span class="fr">vaut <b>$50</b></span><span class="en">worth <b>$50</b></span></div></div>
+  </div>
+</div></div>
+
+<section id="pourquoi"><div class="conteneur">
+  <p class="kicker holo-t"><span class="fr">Pourquoi SlabCoach</span><span class="en">Why SlabCoach</span></p>
+  <h2><span class="fr">Arrête de deviner. Achète, vends et ouvre avec les vrais chiffres.</span><span class="en">Stop guessing. Buy, sell and break with real numbers.</span></h2>
+  <div class="grille">
+    <div class="atout"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg></div>
+      <h3><span class="fr">Les deals avant tout le monde</span><span class="en">Deals before everyone else</span></h3>
+      <p><span class="fr">Chaque heure, SlabCoach passe les annonces au peigne fin et te montre les cartes sous leur vraie valeur, avec la mise maximale pour rester un bon achat.</span><span class="en">Every hour, SlabCoach combs through listings and shows you cards under their real value, with the max bid that keeps it a good buy.</span></p></div>
+    <div class="atout"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 6-6"/></svg></div>
+      <h3><span class="fr">La vraie valeur, pas le prix demandé</span><span class="en">Real value, not asking price</span></h3>
+      <p><span class="fr">Des ventes réelles de la même carte : même joueur, même parallèle, même numérotation. Pas les prix rêvés des annonces.</span><span class="en">Real sales of the same card: same player, same parallel, same numbering. Not wishful asking prices.</span></p></div>
+    <div class="atout"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>
+      <h3><span class="fr">Les chances de ton break</span><span class="en">Your break odds</span></h3>
+      <p><span class="fr">Le prix juste de chaque place, les chances de recrues et de hits par équipe. Tu sais si ça vaut le coup avant de payer.</span><span class="en">The fair price of every spot, rookie and hit odds by team. You know if it’s worth it before you pay.</span></p></div>
+    <div class="atout"><span class="puce-ebay"><span class="fr">avec eBay</span><span class="en">with eBay</span></span><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1h-3z"/><circle cx="12" cy="13" r="3.5"/></svg></div>
+      <h3><span class="fr">Vends en une photo</span><span class="en">Sell with one photo</span></h3>
+      <p><span class="fr">L’app lit ta carte, trouve le bon prix selon les ventes et prépare toute l’annonce. Tu vérifies, tu publies.</span><span class="en">The app reads your card, finds the right price from sales and builds the whole listing. You check, you publish.</span></p></div>
+    <div class="atout"><span class="puce-ebay"><span class="fr">avec eBay</span><span class="en">with eBay</span></span><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></div>
+      <h3><span class="fr">Ton inventaire à jour tout seul</span><span class="en">Your inventory, always up to date</span></h3>
+      <p><span class="fr">Annonces, ventes, frais et profit réel se mettent à jour chaque heure. Tes prix sont comparés au marché pour savoir quoi baisser ou monter.</span><span class="en">Listings, sales, fees and real profit update every hour. Your prices are compared to the market so you know what to lower or raise.</span></p></div>
+    <div class="atout"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18l-2 11H5z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg></div>
+      <h3><span class="fr">Fait aussi pour les boutiques</span><span class="en">Built for shops too</span></h3>
+      <p><span class="fr">Comptoir, rachats, consignation et rapport mensuel avec les taxes. Une app pour toute ta business de cartes.</span><span class="en">Counter sales, buybacks, consignment and a monthly report with taxes. One app for your whole card business.</span></p></div>
+  </div>
+</div></section>
+
+<section><div class="conteneur">
+  <p class="kicker holo-t"><span class="fr">Comment ça marche</span><span class="en">How it works</span></p>
+  <h2><span class="fr">Prêt en deux minutes.</span><span class="en">Ready in two minutes.</span></h2>
+  <div class="etapes">
+    <div class="etape"><b>1</b><h3><span class="fr">Crée ton compte</span><span class="en">Create your account</span></h3><p><span class="fr">Avec Apple, Google ou eBay. Aucun mot de passe à inventer.</span><span class="en">With Apple, Google or eBay. No password to make up.</span></p></div>
+    <div class="etape"><b>2</b><h3><span class="fr">Connecte eBay (recommandé)</span><span class="en">Connect eBay (recommended)</span></h3><p><span class="fr">Un tap sur la page officielle d’eBay : ton inventaire et tes ventes arrivent tout seuls.</span><span class="en">One tap on eBay’s official page: your inventory and sales come in on their own.</span></p></div>
+    <div class="etape"><b>3</b><h3><span class="fr">Joue tes cartes</span><span class="en">Play your cards</span></h3><p><span class="fr">Deals, valeurs, breaks, ventes : les bonnes décisions, au bon moment.</span><span class="en">Deals, values, breaks, sales: the right calls, at the right time.</span></p></div>
+  </div>
+</div></section>
+
+<section id="ebay"><div class="conteneur">
+  <p class="kicker holo-t"><span class="fr">Et eBay ?</span><span class="en">What about eBay?</span></p>
+  <h2><span class="fr">Pas obligatoire. Fortement recommandé.</span><span class="en">Not required. Highly recommended.</span></h2>
+  <p class="intro"><span class="fr">Tu peux utiliser SlabCoach sans compte eBay. En le connectant, l’app fait le travail à ta place.</span><span class="en">You can use SlabCoach without an eBay account. Connect it and the app does the work for you.</span></p>
+  <div class="ebay">
+    <div class="col"><h3><span class="fr">Sans eBay</span><span class="en">Without eBay</span></h3>
+      <ul><li><span class="fr">Les deals sous la valeur</span><span class="en">Deals under value</span></li><li><span class="fr">La valeur de n’importe quelle carte</span><span class="en">The value of any card</span></li>
+        <li><span class="fr">L’analyse de breaks</span><span class="en">Break analysis</span></li><li><span class="fr">Ton inventaire, entré à la main ou par fichier</span><span class="en">Your inventory, entered by hand or by file</span></li></ul></div>
+    <div class="col reco"><h3><span class="fr">Avec eBay</span><span class="en">With eBay</span><span class="badge"><span class="fr">Recommandé</span><span class="en">Recommended</span></span></h3>
+      <ul><li><span class="fr">Tout ce qu’il y a sans eBay</span><span class="en">Everything without eBay</span></li><li class="plus"><span class="fr">Ton inventaire importé tout seul, mis à jour chaque heure</span><span class="en">Your inventory imported for you, updated every hour</span></li>
+        <li class="plus"><span class="fr">Tes annonces créées en une photo</span><span class="en">Your listings created from one photo</span></li><li class="plus"><span class="fr">Tes ventes, tes frais et ton profit réel</span><span class="en">Your sales, fees and real profit</span></li>
+        <li class="plus"><span class="fr">Tes prix comparés au marché</span><span class="en">Your prices compared to the market</span></li></ul>
+      <p class="note"><span class="fr">Connexion officielle d’eBay : aucun mot de passe dans l’app, révocable en tout temps.</span><span class="en">Official eBay sign-in: no password in the app, revocable anytime.</span></p></div>
+  </div>
+</div></section>
+
+<section id="forfaits"><div class="conteneur">
+  <p class="kicker holo-t"><span class="fr">Forfaits</span><span class="en">Pricing</span></p>
+  <h2><span class="fr">Gratuit pour commencer. Pro quand tu veux aller plus loin.</span><span class="en">Free to start. Pro when you want more.</span></h2>
+  <p class="intro"><span class="fr">Chaque nouveau compte a 14 jours de Pro complet, sans carte de crédit. Ensuite, tu restes en Gratuit, ou tu passes au Pro.</span><span class="en">Every new account gets 14 days of full Pro, no credit card. After that, you stay on Free, or you go Pro.</span></p>
+  <div class="forfaits">
+    <div class="forfait"><span class="t"><span class="fr">Gratuit</span><span class="en">Free</span></span><div class="prix">0 $</div><div class="d"><span class="fr">Pour toujours.</span><span class="en">Forever.</span></div>
+      <ul><li><span class="fr">Inventaire, ventes et profit illimités</span><span class="en">Unlimited inventory, sales and profit</span></li>
+        <li><span class="fr">5 valeurs de cartes par jour</span><span class="en">5 card values per day</span></li>
+        <li><span class="fr">Les 5 meilleurs deals</span><span class="en">The top 5 deals</span></li>
+        <li><span class="fr">5 annonces par mois à partir de tes photos</span><span class="en">5 listings per month from your photos</span></li>
+        <li><span class="fr">L’analyse de breaks sur 1 produit</span><span class="en">Break analysis on 1 product</span></li></ul>
+      <a class="btn ghost" href="/connexion"><span class="fr">Commencer gratuitement</span><span class="en">Start for free</span></a></div>
+    <div class="forfait pro"><span class="essai"><span class="fr">14 jours offerts</span><span class="en">14 days free</span></span><span class="t">Pro</span>
+      <div class="prix">7,99 $ <small><span class="fr">CA / mois</span><span class="en">CAD / month</span></small></div><div class="d"><span class="fr">Annule en tout temps.</span><span class="en">Cancel anytime.</span></div>
+      <ul><li><span class="fr">Tout le Gratuit, sans limite</span><span class="en">Everything in Free, unlimited</span></li>
+        <li><span class="fr">Tous les deals, avec filtres et ventes comparables</span><span class="en">All deals, with filters and comparable sales</span></li>
+        <li><span class="fr">Valeurs de cartes illimitées</span><span class="en">Unlimited card values</span></li>
+        <li><span class="fr">Annonces et lectures de photos illimitées</span><span class="en">Unlimited listings and photo reads</span></li>
+        <li><span class="fr">Tes prix comparés au marché sur tout l’inventaire</span><span class="en">Market price check on your whole inventory</span></li>
+        <li><span class="fr">L’analyse de breaks sur tous les produits</span><span class="en">Break analysis on every product</span></li></ul>
+      <a class="btn or" href="/connexion"><span class="fr">Essayer Pro 14 jours</span><span class="en">Try Pro for 14 days</span></a></div>
+  </div>
+</div></section>
+
+<section><div class="conteneur">
+  <p class="kicker holo-t">FAQ</p>
+  <h2><span class="fr">Questions fréquentes</span><span class="en">Common questions</span></h2>
+  <div class="faq">
+    <details><summary><span class="fr">Est-ce que j’ai besoin d’un compte eBay ?</span><span class="en">Do I need an eBay account?</span></summary>
+      <p><span class="fr">Non. Tu peux créer ton compte avec Apple ou Google et utiliser les deals, les valeurs et les breaks. On le recommande quand même : connecter eBay importe ton inventaire et tes ventes, et permet de créer tes annonces en une photo.</span><span class="en">No. You can sign up with Apple or Google and use deals, values and breaks. We still recommend it: connecting eBay imports your inventory and sales, and lets you create listings from a photo.</span></p></details>
+    <details><summary><span class="fr">L’essai Pro est vraiment gratuit ?</span><span class="en">Is the Pro trial really free?</span></summary>
+      <p><span class="fr">Oui. 14 jours de Pro complet dès la création du compte, sans carte de crédit. À la fin, tu passes au Gratuit automatiquement : rien n’est facturé si tu ne choisis pas le Pro.</span><span class="en">Yes. 14 days of full Pro from sign-up, no credit card. At the end, you move to Free automatically: nothing is charged unless you choose Pro.</span></p></details>
+    <details><summary><span class="fr">D’où viennent les valeurs ?</span><span class="en">Where do the values come from?</span></summary>
+      <p><span class="fr">De ventes réelles et récentes de la même carte, et non des prix demandés. Ce sont des estimations de SlabCoach : vérifie toujours avant d’acheter ou de vendre.</span><span class="en">From real, recent sales of the same card, not asking prices. They are SlabCoach estimates: always double-check before you buy or sell.</span></p></details>
+    <details><summary><span class="fr">Comment j’annule le Pro ?</span><span class="en">How do I cancel Pro?</span></summary>
+      <p><span class="fr">En un tap dans Réglages, en tout temps. Ton inventaire et tes ventes restent à toi.</span><span class="en">In one tap in Settings, anytime. Your inventory and sales stay yours.</span></p></details>
+  </div>
+</div></section>
+
+<section class="final"><div class="conteneur">
+  <img class="logo logo-sc" src="/logo_sc_prizm.svg" alt="">
+  <h2><span class="fr">Ta prochaine bonne carte t’attend.</span><span class="en">Your next great card is waiting.</span></h2>
+  <div class="actions"><a class="btn holo" href="/connexion"><span class="fr">Commencer gratuitement</span><span class="en">Start for free</span></a></div>
+  <div class="rassure" style="justify-content:center"><span class="fr">14 jours de Pro offerts</span><span class="en">14 days of Pro, on us</span><span class="fr">Aucune carte de crédit</span><span class="en">No credit card</span></div>
+</div></section>
+</main>
+
+<footer><div class="conteneur">
+  <span class="mot-sc" style="font-size:18px"><b>slab</b>coach<sup>™</sup></span>
+  <nav><a href="/support">Support</a><a href="/confidentialite"><span class="fr">Confidentialité</span><span class="en">Privacy</span></a><a href="/conditions"><span class="fr">Conditions</span><span class="en">Terms</span></a></nav>
+  <span class="mention"><span class="fr">© 2026 SlabCoach. SlabCoach n’est pas affilié à eBay, Apple ou Google, ni commandité par eux. eBay est une marque d’eBay Inc. Les valeurs sont des estimations de SlabCoach.</span><span class="en">© 2026 SlabCoach. SlabCoach is not affiliated with or sponsored by eBay, Apple or Google. eBay is a trademark of eBay Inc. Values are SlabCoach estimates.</span></span>
+</div></footer>
+<script>(function(){var m=["prizm","cracked","laser","mosaic","mojo","wave","pulsar"],s="/logo_sc_"+m[Math.floor(Math.random()*m.length)]+".svg";
+document.querySelectorAll(".logo-sc").forEach(function(i){i.src=s})})()</script>
+</body>
+</html>

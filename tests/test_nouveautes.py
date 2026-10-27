@@ -116,17 +116,137 @@ class Deals(unittest.TestCase):
                      "port_cad": 1, "url": "u", "photo": None, "encan": encheres,
                      "fin": (maint + timedelta(hours=2)).isoformat().replace("+00:00", "Z") if encheres else None} for i in range(6)]
         import vendues
-        vrai = vendues.rechercher
-        vendues.rechercher = lambda q, fond=True: {"ventes": [{"titre": f"2025-26 Upper Deck {q} #201 RC", "prix": p, "le": "2026-10-20"}
-                                                              for p in (24, 26, 25, 27)], "erreur": None}
+        vrai, vrai_c = vendues.rechercher, vendues.en_cache
+        ventes = lambda q: [{"titre": f"2025-26 Upper Deck {q} #201 RC", "prix": p, "le": "2026-10-20"} for p in (24, 26, 25, 27)]
+        vendues.rechercher = lambda q, fond=True: {"ventes": ventes(q), "erreur": None}
+        vendues.en_cache = ventes
         try:
             r = deals.chasser(2, rech)
+            e = deals.encans(2, rech)
         finally:
-            vendues.rechercher = vrai
-        self.assertTrue(r["ok"])
+            vendues.rechercher, vendues.en_cache = vrai, vrai_c
+        self.assertTrue(r["ok"] and e["ok"])
         d = deals.lire()["deals"]
         self.assertTrue(d and all(x["ratio"] <= deals.RATIO_DEAL for x in d))
         self.assertTrue(any(x["encan"] for x in d))
+        dg = deals.diagnostic()                      # 26 oct 2026 : ce qui a ete verifie (preuve)
+        self.assertGreaterEqual(dg.get("requetes_encans", 0), 1)
+        self.assertGreaterEqual(dg.get("encans_fen", 0), 1)
+        self.assertGreaterEqual(dg.get("trop_cher", 0), 1)
+
+    def test_flux_bassin_verif(self):
+        """26 oct 2026 (« trouver le maximum ») : flux larges, valeur tiree de TOUTES les ventes connues, verification ciblee."""
+        import deals
+        import vendues
+        maint = datetime.now(timezone.utc)
+        T = "2024-25 Upper Deck Young Guns Lane Hutson #493 RC"
+        T2 = "2024-25 Upper Deck Young Guns Canvas Ivan Demidov #C250 RC"
+
+        def rech(q, categorie=None, limite=50, fond=True, encheres=False, **k):
+            if encheres:
+                return [{"item_id": "e1", "titre": T, "prix_cad": 20.0, "port_cad": 2, "encan": True, "url": "u",
+                         "fin": (maint + timedelta(hours=1)).isoformat().replace("+00:00", "Z")}]
+            return [{"item_id": "f1", "titre": T, "prix_cad": 30.0, "port_cad": 2, "url": "u"},          # 32 > 70 % de 40 : non
+                    {"item_id": "f2", "titre": T, "prix_cad": 12.0, "port_cad": 2, "url": "u"},          # deal (bassin)
+                    {"item_id": "f3", "titre": T2, "prix_cad": 8.0, "port_cad": 2, "url": "u"},          # deal apres verification
+                    {"item_id": "f4", "titre": "Lot of 5 2024-25 Upper Deck Young Guns", "prix_cad": 5.0, "url": "u"}]
+        b = deals.Bassin(charger=False)
+        b.ajouter([{"titre": T, "prix": p, "le": "2026-10-2" + str(i), "url": "v" + str(i)} for i, p in enumerate((38, 40, 42, 41))])
+        b.ajouter([{"titre": T2, "prix": 60, "le": "2026-10-20", "url": "w0"}])               # une seule vente : a verifier
+        appels = []
+
+        def rech_v(q, fond=True):
+            appels.append(q)
+            return {"ventes": [{"titre": T2, "prix": p, "le": "2026-10-2" + str(i), "url": "w" + str(i)} for i, p in enumerate((60, 55, 65))],
+                    "erreur": None}
+        vrai = vendues.rechercher
+        vendues.rechercher = rech_v
+        avant, avant_h = deals.FLUX, deals.FLUX_HITS
+        deals.FLUX, deals.FLUX_HITS = [("young guns", "hockey")], []
+        try:
+            r = deals.flux(rech, bassin=b)
+        finally:
+            vendues.rechercher, deals.FLUX, deals.FLUX_HITS = vrai, avant, avant_h
+        ids = {x["item_id"] for x in deals.lire()["deals"]}
+        self.assertTrue({"f2", "f3", "e1"} <= ids, ids)
+        self.assertFalse({"f1", "f4"} & ids)
+        self.assertEqual(len(appels), 1)                         # une seule verification (Demidov Canvas)
+        self.assertEqual(r["stats"].get("requetes_flux"), 2)          # 1 prix fixe + 1 page d'encans (derniere page)
+        import deals as D
+        self.assertEqual(D.ENCAN_H, 48)                               # 26 oct 2026 : encans de 48 h et moins
+
+    def test_hits_autres_produits(self):
+        """27 oct 2026 (Mathieu : « pourquoi c'est juste des Young Guns ? ») : un encan de hit d'un autre produit, sans
+        aucune vente connue (Pride of a Nation Stutzle /99 a 101 $, qui finit dans 2 h), est verifie et devient un deal ;
+        les flux de hits tournent (5 par tour)."""
+        import deals
+        import vendues
+        maint = datetime.now(timezone.utc)
+        T = "2025 SPx 2023-24 Update UD Black Pride of a Nation 34/99 Tim Stutzle Patch Auto"
+        fin = lambda h: (maint + timedelta(hours=h)).isoformat().replace("+00:00", "Z")
+
+        def rech(q, categorie=None, limite=50, fond=True, encheres=False, **k):
+            if not encheres:
+                return []
+            return [{"item_id": "s1", "titre": T, "prix_cad": 78.42, "port_cad": 23.03, "encan": True, "url": "u", "fin": fin(2)},
+                    {"item_id": "s2", "titre": T.replace("34/99", "12/99"), "prix_cad": 30.0, "port_cad": 2, "encan": True,
+                     "url": "u", "fin": fin(30)},                                   # finit dans 30 h : pas de verification
+                    {"item_id": "s3", "titre": "2023-24 Upper Deck Tim Stutzle #120", "prix_cad": 5.0, "port_cad": 2,
+                     "encan": True, "url": "u", "fin": fin(1)},                     # base a 7 $ : pas un hit, rien
+                    {"item_id": "s4", "titre": "MATT SAVOIE 2022-23 UD SP GAME USED ROOKIE DRAFT DAY MARKS PATCH AUTO /35",
+                     "prix_cad": 49.75, "port_cad": 6.0, "encan": True, "url": "u", "fin": fin(25)},   # verifie en fin de tour
+                    {"item_id": "s5", "titre": "2022-23 SP Game Used Draft Day Marks Wyatt Johnston Patch Auto /35",
+                     "prix_cad": 40.0, "port_cad": 6.0, "encan": True, "url": "u", "fin": fin(40)}]    # 40 h : trop loin
+        appels = []
+
+        def rech_v(q, fond=True):
+            appels.append(q)
+            if "savoie" in q:
+                return {"ventes": [{"titre": "2022-23 SP Game Used Draft Day Marks Matt Savoie Patch Auto %d/35" % n, "prix": p,
+                                    "le": "2026-03-1" + str(i), "url": "x" + str(i)}
+                                   for i, (n, p) in enumerate(((3, 174.5), (27, 84.08), (13, 87.09), (8, 118.24), (11, 84.08), (4, 56.05)))],
+                        "erreur": None}
+            return {"ventes": [{"titre": "2025-26 SPx Update UD Black Pride of a Nation Patch Auto %d/99 Tim Stutzle" % n, "prix": p,
+                                "le": "2026-10-1" + str(i), "url": "w" + str(i)}
+                               for i, (n, p) in enumerate(((48, 143.82), (66, 241.72), (3, 177.50), (9, 145.03), (7, 135.31)))],
+                    "erreur": None}
+        vrai = vendues.rechercher
+        vendues.rechercher = rech_v
+        avant, avant_h = deals.FLUX, deals.FLUX_HITS
+        deals.FLUX, deals.FLUX_HITS = [], [("ud black auto", "hockey")] + [("h%d" % i, "hockey") for i in range(6)]
+        try:
+            d0 = deals.lire().get("curseur_h")
+            r = deals.flux(rech, bassin=deals.Bassin(charger=False))
+            d1 = deals.lire().get("curseur_h")
+        finally:
+            vendues.rechercher, deals.FLUX, deals.FLUX_HITS = vrai, avant, avant_h
+        ids = {x["item_id"]: x for x in deals.lire()["deals"]}
+        self.assertIn("s1", ids)
+        self.assertGreater(ids["s1"]["valeur"], 140)
+        self.assertNotIn("s3", ids)
+        self.assertEqual(len(appels), 2)                          # s1 (finit dans 2 h), puis s4 en fin de tour
+        self.assertIn("s4", ids)                                  # Savoie : 55,75 $ pour ~86 $
+        self.assertAlmostEqual(ids["s4"]["mise_max"], round(ids["s4"]["valeur"] * deals.RATIO_DEAL - 6.0, 2))
+        self.assertNotIn("s5", ids)
+        self.assertEqual((int(d0 or 0) + 5) % 7, d1)              # 5 flux de hits par tour, en rotation
+        self.assertEqual(r["stats"].get("requetes_flux"), 10)      # 5 flux x (prix fixe + 1 page d'encans)
+
+    def test_autres_joueurs(self):
+        """27 oct 2026 : la meme carte vendue par d'autres joueurs (repere), sans le meme joueur ni une autre carte."""
+        import vendues
+        T = "COLTON PARAYKO 2025-26 UD SP GAME USED PURPLE PREMIUM PATCH AUTO /15 Q1303"
+        V = [("2025-26 SP Game Used Edition Purple Premium Patch Auto 11/15 Jaccob Slavin", 72.87),
+             ("2025-26 SP Game Used Purple Auto Premium Patch Troy Terry /15 #124 Anaheim Ducks", 41.0),
+             ("2022 Immaculate College Premium Purple Chris Olave /15 ROOKIE PATCH AUTO RC RPA", 115.68),   # autre carte
+             ("2025-26 SP Game Used Colton Parayko Gold Patch Auto /25", 30.0)]                             # le meme joueur
+        vrai = vendues.rechercher
+        vendues.rechercher = lambda q, fond=False: {"ventes": [{"titre": t, "prix": p, "le": "2026-10-0%d" % i} for i, (t, p) in enumerate(V)]}
+        try:
+            r = vendues.autres_joueurs(T)
+        finally:
+            vendues.rechercher = vrai
+        self.assertEqual(sorted(v["joueur"] for v in r["ventes"]), ["Jaccob Slavin", "Troy Terry"])
+        self.assertEqual((r["min"], r["max"]), (41.0, 72.87))
 
     def test_valeur_de_la_meme_carte(self):
         """26 oct 2026 : un Purple Shock a 1 $ ne « vaut » pas 70 $ parce que les autos de la recherche se vendent 70 $."""
@@ -323,6 +443,41 @@ class Marche(unittest.TestCase):
         self.assertEqual(vendues.tendance(v)["pct"], 50)
         self.assertEqual(marche.verdict_ouvrir(120, 100)["verdict"], "ouvrir")
         self.assertEqual(marche.verdict_ouvrir(60, 100)["verdict"], "garder")
+
+
+
+class ChancesHits(unittest.TestCase):
+    """26 oct 2026 : les memes categories de hit pour chaque joueur / equipe, et ses ventes reelles avec la meme regle."""
+
+    def test_categories_carte(self):
+        import calcul
+        s_ap = {"nom": "Auto Patch", "groupe": "auto_memo", "tirage": 25}
+        self.assertEqual(calcul.categories_carte({}, s_ap), {"numerotee", "auto", "patch", "auto_patch"})
+        self.assertEqual(calcul.categories_carte({"sp": "SSP"}, {"nom": "Base", "groupe": "base"}), {"ssp"})
+        self.assertEqual(calcul.categories_carte({}, {"nom": "Young Guns", "groupe": "recrue"}), set())
+        ch = calcul._chances({"auto": [0.1, 5.0, 5.0], "hit": [0.1, 5.0, 5.0]})
+        self.assertAlmostEqual(ch["auto"]["p"], 0.095163, places=5)
+        self.assertEqual(ch["auto"]["valeur"], 50.0)
+        self.assertEqual(ch["ssp"]["p"], 0)
+
+    def test_ventes_joueur(self):
+        import ventes_joueur as V
+        prod = {"nom": "2026-27 Upper Deck Series 1", "saison": "2026-27", "marque": "Upper Deck",
+                "sous_ensembles": [{"nom": "Young Guns"}, {"nom": "Young Guns Exclusives"}]}
+        self.assertFalse(V.de_ce_produit(prod, "Macklin Celebrini", "2026-27 Upper Deck MVP Celebrini Rookie"))
+        self.assertFalse(V.de_ce_produit(prod, "Macklin Celebrini", "2025-26 Upper Deck Series 1 Celebrini Young Guns"))
+        self.assertTrue(V.de_ce_produit(prod, "Macklin Celebrini", "2026-27 UD Young Guns Celebrini #201"))
+        self.assertEqual(V.categories_titre("2026-27 Upper Deck Series 1 Celebrini Auto Patch 3/25"), {"numerotee", "auto", "patch", "auto_patch"})
+        self.assertEqual(V.categories_titre("2026-27 Upper Deck Series 1 Celebrini Young Guns"), set())
+
+        def rech(q, fond=False):
+            return {"ventes": [{"titre": "2026-27 Upper Deck Series 1 Young Guns Macklin Celebrini #201", "prix": 100, "le": "2026-10-20"},
+                               {"titre": "2026-27 Upper Deck Series 1 Celebrini Young Guns Exclusives 12/100", "prix": 300, "le": "2026-10-21"},
+                               {"titre": "2026-27 Upper Deck Series 1 Celebrini Young Guns PSA 10", "prix": 900, "le": "2026-10-21"}]}
+        r = V.ventes(prod, "Macklin Celebrini", rechercher=rech)
+        self.assertEqual((r["n"], r["gradees"]), (2, 1))
+        self.assertEqual(r["par_cat"]["numerotee"]["moyenne"], 300.0)
+        self.assertEqual(r["autres"]["moyenne"], 100.0)
 
 
 if __name__ == "__main__":

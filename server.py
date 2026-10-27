@@ -13,6 +13,7 @@ Routes :
   /api/b/<jeton>     donnees de cette page
   POST /api/<methode> appelle Api.<methode>(*args JSON)
 """
+import json
 import os
 import sys
 import threading
@@ -101,12 +102,12 @@ app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", S
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024        # 23 oct 2026 - 2 photos (devant, dos) par requete
 # pages qui restent publiques : break partage, retour et avis eBay, pages legales, icones
 _PUBLIQUES = ("/b/", "/api/b/", "/api/ebay_retour", "/ebay/suppression-compte", "/confidentialite", "/conditions",
-              "/support", "/robots.txt", "/sitemap.xml", "/logo_sc_", "/connexion", "/icone", "/favicon", "/manifest.json", "/stripe/webhook")
+              "/support", "/robots.txt", "/sitemap.xml", "/logo_sc_", "/syne-800.woff2", "/manrope-", "/connexion", "/icone", "/favicon", "/manifest.json", "/stripe/webhook")
 
 
 import comptes  # noqa: E402
 
-_PUBLIQUES_MULTI = _PUBLIQUES + ("/auth/ebay", "/deconnexion", "/demo")
+_PUBLIQUES_MULTI = _PUBLIQUES + ("/auth/", "/deconnexion", "/demo")
 
 
 @app.before_request
@@ -122,6 +123,8 @@ def _garde():
         cid = session.get("compte")
         if cid and cid in comptes.lister():
             comptes.activer(cid)                                     # cette requete ne voit que ce compte
+        elif request.path == "/" and not CODE_ACCES:
+            return _page_vitrine()                                   # 27 oct 2026 : visiteur -> la vitrine
         elif not publique:
             session.pop("compte", None)
             return (jsonify({"erreur": "Connexion requise"}), 401) if request.path.startswith("/api/") else redirect("/connexion")
@@ -136,6 +139,48 @@ def auth_ebay():
     if not r.get("ok"):
         return redirect("/connexion?erreur=1")
     return redirect(r["url"])
+
+
+# 27 oct 2026 (Mathieu : « ne pas obliger d'avoir un compte eBay, mais fortement recommande ») : Apple et Google.
+def _base_publique():
+    return (os.environ.get("LOCKERROOM_URL") or request.host_url).rstrip("/")
+
+
+@app.route("/auth/<fournisseur>")
+def auth_tiers(fournisseur):
+    from flask import redirect
+    import auth_tiers as at
+    if fournisseur not in at.FOURNISSEURS or not comptes.MULTI:
+        abort(404)
+    try:
+        return redirect(at.url_connexion(fournisseur, _base_publique()))
+    except RuntimeError:
+        return redirect("/connexion?erreur=2")
+
+
+@app.route("/auth/<fournisseur>/retour", methods=["GET", "POST"])
+def auth_tiers_retour(fournisseur):
+    """Google revient en GET, Apple en POST (form_post). Compte cree au premier passage."""
+    from flask import redirect, session
+    import auth_tiers as at
+    if fournisseur not in at.FOURNISSEURS or not comptes.MULTI:
+        abort(404)
+    v = request.values
+    r = at.terminer(fournisseur, v.get("code"), v.get("state"), _base_publique(), v.get("user"))
+    if not r.get("ok"):
+        app.logger.warning("Connexion %s refusee : %s", fournisseur, r.get("erreur"))
+        return redirect("/connexion?erreur=3")
+    cid, nouveau = comptes.trouver_ou_creer(fournisseur + ":" + r["sub"], r.get("nom"), fournisseur)
+    champs = {"connexion": fournisseur}
+    if r.get("courriel"):
+        champs["courriel"] = r["courriel"]
+    comptes.maj(cid, **champs)
+    session.permanent = True
+    session["compte"] = cid
+    cible = "/#accueil/" + ("bienvenue" if nouveau else "retour")
+    # Apple arrive en POST d'un autre site : une petite page qui repart chez nous (le cookie suit a coup sur)
+    return (f"<!doctype html><meta charset='utf-8'><meta http-equiv='refresh' content='0;url={cible}'>"
+            f"<script>location.replace({json.dumps(cible)})</script>", 200, {"Content-Type": "text/html; charset=utf-8"})
 
 
 # 26 oct 2026 - compte de demonstration pour l'equipe d'Apple (et les essais) : code dans LOCKERROOM_DEMO_CODE.
@@ -164,12 +209,12 @@ def demo():
             return redirect("/")
         erreur = "<p style='color:#FFB3B3'>Code incorrect</p>"
     return _page_langue("<!doctype html><meta name='viewport' content='width=device-width,initial-scale=1'><title>SlabCoach</title><link rel='icon' href='/favicon.ico?v=2'>"
-            "<body style='background:#0A0D10;color:#F2F5F7;font-family:system-ui;display:grid;place-items:center;min-height:90vh'>"
+            "<body style='background:#0B0B0E;color:#F4F2EE;font-family:system-ui;display:grid;place-items:center;min-height:90vh'>"
             "<form method='post' style='display:grid;gap:12px;width:min(320px,90vw)'><img src='/logo_sc_gold_poli.png' width='72' style='margin:auto' alt=''>"
             "<b style='font-size:22px'>SlabCoach · démo</b><input name='code' autocomplete='off' autofocus placeholder='Code d’accès' "
-            "style='padding:12px;border-radius:10px;border:1px solid #29313A;background:#14181D;color:#F2F5F7;font-size:16px'>"
-            f"{erreur}<button style='padding:12px;border-radius:10px;border:0;background:#E8C46A;font-weight:700;font-size:16px'>Entrer</button>"
-            "<a href='/connexion' style='color:#A3ACB5;font-size:13px'>‹ Retour</a></form></body>")
+            "style='padding:12px;border-radius:10px;border:1px solid #2B2A32;background:#151519;color:#F4F2EE;font-size:16px'>"
+            f"{erreur}<button style='padding:12px;border-radius:10px;border:0;background:#E9CF8E;font-weight:700;font-size:16px'>Entrer</button>"
+            "<a href='/connexion' style='color:#A9A6B1;font-size:13px'>‹ Retour</a></form></body>")
 
 
 def _remplir_demo():
@@ -208,13 +253,13 @@ def _premiere_synchro(cid):
 
 
 _PAGE_EBAY = ("<!doctype html><meta name='viewport' content='width=device-width,initial-scale=1'><title>SlabCoach</title>"
-              "<body style='background:#0A0D10;color:#F2F5F7;font-family:system-ui;display:grid;place-items:center;min-height:90vh;margin:0'>"
+              "<body style='background:#0B0B0E;color:#F4F2EE;font-family:system-ui;display:grid;place-items:center;min-height:90vh;margin:0'>"
               "<main style='display:grid;gap:16px;width:min(340px,88vw);text-align:center'><img src='/logo_sc_gold_poli.png' width='80' style='margin:auto' alt=''>"
-              "<b style='font-size:26px'>SlabCoach</b><span style='color:#A3ACB5'>Ton inventaire eBay, tes prix et tes ventes, tout seuls.</span>"
-              "{erreur}<a href='/auth/ebay' style='padding:15px;border-radius:12px;background:#7FD0FF;color:#0A0D10;font-weight:700;font-size:17px;text-decoration:none'>"
-              "Se connecter avec eBay</a><span style='color:#87909A;font-size:13px'>Aucun mot de passe dans l’app · ton compte est créé tout seul</span>"
-              "<span style='font-size:13px'><a href='/confidentialite' style='color:#A3ACB5'>Confidentialité</a> · "
-              "<a href='/conditions' style='color:#A3ACB5'>Conditions</a></span></main></body>")
+              "<b style='font-size:26px'>SlabCoach</b><span style='color:#A9A6B1'>Ton inventaire eBay, tes prix et tes ventes, tout seuls.</span>"
+              "{erreur}<a href='/auth/ebay' style='padding:15px;border-radius:12px;background:#B9BEFF;color:#0B0B0E;font-weight:700;font-size:17px;text-decoration:none'>"
+              "Se connecter avec eBay</a><span style='color:#8C8996;font-size:13px'>Aucun mot de passe dans l’app · ton compte est créé tout seul</span>"
+              "<span style='font-size:13px'><a href='/confidentialite' style='color:#A9A6B1'>Confidentialité</a> · "
+              "<a href='/conditions' style='color:#A9A6B1'>Conditions</a></span></main></body>")
 
 
 
@@ -225,6 +270,16 @@ def _page_connexion():
             return f.read()
     except OSError:
         return _PAGE_EBAY
+
+_BOUTONS_TIERS = {
+    "apple": ("<a class='btn-t apple' href='/auth/apple'><svg viewBox='0 0 17 20' aria-hidden='true'><path fill='currentColor' d='M14.1 10.6c0-2.4 2-3.6 2.1-3.7-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9-.8 0-1.9-.9-3.2-.8-1.6 0-3.1 1-4 2.4-1.7 3-.4 7.3 1.2 9.7.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8s1.9.8 3.2.8c1.3 0 2.1-1.2 2.9-2.4.9-1.3 1.3-2.6 1.3-2.7 0 0-2.4-.9-2.4-3.9zM11.8 3.4c.7-.8 1.1-1.9 1-3-.9 0-2.1.6-2.8 1.4-.6.7-1.2 1.8-1 2.9 1.1.1 2.1-.5 2.8-1.3z'/></svg>"
+              "Continuer avec Apple</a>"),
+    "google": ("<a class='btn-t google' href='/auth/google'><svg viewBox='0 0 18 18' aria-hidden='true'><path fill='#4285F4' d='M17.6 9.2c0-.6-.1-1.2-.2-1.8H9v3.4h4.8a4.1 4.1 0 0 1-1.8 2.7v2.2h2.9c1.7-1.6 2.7-3.9 2.7-6.5z'/>"
+               "<path fill='#34A853' d='M9 18c2.4 0 4.5-.8 6-2.2l-2.9-2.2c-.8.5-1.8.9-3.1.9-2.4 0-4.4-1.6-5.1-3.8H.9v2.3A9 9 0 0 0 9 18z'/>"
+               "<path fill='#FBBC05' d='M3.9 10.7a5.4 5.4 0 0 1 0-3.4V5H.9a9 9 0 0 0 0 8z'/><path fill='#EA4335' d='M9 3.6c1.3 0 2.5.5 3.5 1.4l2.6-2.6A9 9 0 0 0 .9 5l3 2.3C4.6 5.1 6.6 3.6 9 3.6z'/></svg>"
+               "Continuer avec Google</a>"),
+}
+
 
 # 24 oct 2026 - pages de connexion en francais ou en anglais : ?lang=, sinon le choix de l'app (temoin lr_langue),
 # sinon la langue du navigateur ; un lien en haut a gauche pour changer.
@@ -237,7 +292,12 @@ _EN = [("Ton inventaire eBay, tes prix et tes ventes, tout seuls.", "Your eBay i
        ("SlabCoach · Joue tes cartes comme un pro", "SlabCoach · Play your cards like a pro"),
        ("Deals sous la valeur", "Deals under value"), ("Vraies valeurs", "Real values"), ("Chances de breaks", "Break odds"),
        ("Inventaire et ventes eBay", "eBay inventory and sales"),
-       ("Code de démonstration", "Demo code")]
+       ("Code de démonstration", "Demo code"), ("Continuer avec Apple", "Continue with Apple"), ("Continuer avec Google", "Continue with Google"),
+       ("Recommandé", "Recommended"), ("Ton inventaire et tes ventes arrivent tout seuls", "Your inventory and sales come in on their own"),
+       ('<div class="ou">ou</div>', '<div class="ou">or</div>'), ("Pas de compte eBay ? Aucun problème.", "No eBay account? No problem."),
+       ("Cette connexion n’est pas encore offerte : utilise eBay", "This sign-in isn’t available yet: use eBay"),
+       ("Connexion interrompue : réessaie", "Sign-in interrupted: try again"), ("‹ Retour au site", "‹ Back to site"),
+       ("14 jours de Pro offerts · aucune carte de crédit", "14 days of Pro on us · no credit card")]
 
 
 def _langue():
@@ -245,6 +305,26 @@ def _langue():
     if l in ("fr", "en"):
         return l
     return "en" if (request.accept_languages.best_match(["fr", "en"]) or "fr") == "en" else "fr"
+
+
+def _page_vitrine():
+    """27 oct 2026 - slabcoach.com pour un visiteur : la vitrine (pourquoi nous, Gratuit / essai / Pro, eBay recommande)."""
+    try:
+        with open(os.path.join(DOSSIER_UI, "vitrine.html"), encoding="utf-8") as f:
+            html = f.read()
+    except OSError:
+        from flask import redirect
+        return redirect("/connexion")
+    l = _langue()
+    autre = "fr" if l == "en" else "en"
+    html = html.replace('<html lang="fr">', f'<html lang="{l}">').replace(
+        '<a class="btn holo" href="/connexion"><span class="fr">Commencer</span>',
+        f'<a class="lang" href="?lang={autre}">{"Français" if autre == "fr" else "English"}</a><a class="btn holo" href="/connexion"><span class="fr">Commencer</span>', 1)
+    from flask import make_response
+    r = make_response(html)
+    if request.args.get("lang") in ("fr", "en"):
+        r.set_cookie("lr_langue", l, max_age=365 * 86400, samesite="Lax")
+    return r
 
 
 def _page_langue(html):
@@ -255,7 +335,7 @@ def _page_langue(html):
             html = html.replace(a, b)
     autre = "fr" if l == "en" else "en"
     lien = (f"<a href='?lang={autre}' style='position:fixed;top:14px;left:14px;padding:7px 12px;border-radius:999px;"
-            f"border:1px solid #3A352C;background:rgba(17,17,20,.7);color:#F4F1EA;font:700 13px system-ui;text-decoration:none;z-index:5'>"
+            f"border:1px solid #34333D;background:rgba(21,21,25,.7);color:#F4F2EE;font:700 13px system-ui;text-decoration:none;z-index:5'>"
             f"{'Français' if autre == 'fr' else 'English'}</a>")
     r = make_response(html.replace("</body>", lien + "</body>"))
     if request.args.get("lang") in ("fr", "en"):
@@ -270,8 +350,17 @@ def connexion():
     if comptes.MULTI and (not CODE_ACCES or session.get("ok")):
         if session.get("compte") in comptes.lister():
             return redirect("/")
-        e = "<div class='erreur'>Connexion eBay interrompue : réessaie</div>" if request.args.get("erreur") else ""
+        err = request.args.get("erreur")
+        e = ("<div class='erreur'>Connexion eBay interrompue : réessaie</div>" if err == "1" else
+             "<div class='erreur'>Cette connexion n’est pas encore offerte : utilise eBay</div>" if err == "2" else
+             "<div class='erreur'>Connexion interrompue : réessaie</div>" if err else "")
         page = _page_connexion().replace("{erreur}", e)
+        import auth_tiers
+        ios = "LockerRoomiOS" in (request.headers.get("User-Agent") or "")
+        autres = [f for f in auth_tiers.actifs() if not (ios and f == "google")]   # Google refuse les vues web integrees
+        page = page.replace("{autres}", "".join(_BOUTONS_TIERS[f] for f in ("apple", "google") if f in autres))
+        if not autres:
+            page = page.replace('<div class="ou">ou</div>', "")
         if os.environ.get("LOCKERROOM_DEMO_CODE") and "LockerRoomiOS" in (request.headers.get("User-Agent") or ""):
             page = page.replace("</div></main>", "<a class='demo' href='/demo'>Code de démonstration</a></div></main>")
         return _page_langue(page)
@@ -285,12 +374,12 @@ def connexion():
             return redirect("/connexion" if comptes.MULTI else "/")
         erreur = "<p style='color:#FFB3B3'>Code incorrect</p>"
     return _page_langue("<!doctype html><meta name='viewport' content='width=device-width,initial-scale=1'><title>SlabCoach</title><link rel='icon' href='/favicon.ico?v=2'>"
-            "<body style='background:#0A0D10;color:#F2F5F7;font-family:system-ui;display:grid;place-items:center;min-height:90vh'>"
+            "<body style='background:#0B0B0E;color:#F4F2EE;font-family:system-ui;display:grid;place-items:center;min-height:90vh'>"
             "<form method='post' style='display:grid;gap:12px;width:min(320px,90vw)'><img src='/logo_sc_gold_poli.png' width='72' style='margin:auto' alt=''>"
             "<b style='font-size:22px'>SlabCoach</b><input name='code' type='password' autofocus placeholder='Code d’accès' "
-            "style='padding:12px;border-radius:10px;border:1px solid #29313A;background:#14181D;color:#F2F5F7;font-size:16px'>"
-            f"{erreur}<button style='padding:12px;border-radius:10px;border:0;background:#7FD0FF;font-weight:700;font-size:16px'>Entrer</button>"
-            "<a href='/confidentialite' style='color:#A3ACB5;font-size:13px'>Confidentialité</a></form></body>")
+            "style='padding:12px;border-radius:10px;border:1px solid #2B2A32;background:#151519;color:#F4F2EE;font-size:16px'>"
+            f"{erreur}<button style='padding:12px;border-radius:10px;border:0;background:#B9BEFF;font-weight:700;font-size:16px'>Entrer</button>"
+            "<a href='/confidentialite' style='color:#A9A6B1;font-size:13px'>Confidentialité</a></form></body>")
 
 
 @app.route("/confidentialite")
@@ -451,7 +540,7 @@ def _valeurs_auto():
     while True:
         try:
             age = time.time() - os.path.getmtime(valeurs.CHEMIN) if os.path.exists(valeurs.CHEMIN) else 1e9
-            if age > 20 * 3600 and os.path.isdir(valeurs_maj.SOURCE_DEFAUT):
+            if age > 20 * 3600:                 # 27 oct 2026 : depuis les ventes SoldComps (plus Hall of Cardz)
                 print("Mise a jour de la valeur des joueurs...", flush=True)
                 r = api.valeurs_maj()
                 print("  ", {k: r.get(k) for k in ("ok", "joueurs", "ventes")}, flush=True)

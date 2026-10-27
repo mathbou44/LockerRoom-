@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SlabCoach">
-<meta name="theme-color" content="#0A0D10">
+<meta name="theme-color" content="#0B0B0E">
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2">
 <link rel="icon" href="/favicon.ico?v=2" sizes="any">
@@ -14,13 +14,19 @@
 <title>SlabCoach</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="preload" href="/manrope-800.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/manrope-400.woff2" as="font" type="font/woff2" crossorigin>
 <style>
 /* SlabCoach - outils pour breakers et boutiques de cartes. Sombre, glace. */
 :root{
-  --fond:#0A0D10; --carte:#14181D; --carte2:#1C2228; --ligne:#29313A; --sep:#1A1F25;
-  --texte:#F2F5F7; --doux:#A3ACB5; --pale:#87909A;
-  --acc:#7FD0FF; --acc-fonce:#0F2533; --acc-texte:#03131E;
-  --or:#E8C46A; --or-fonce:#2B2414;
+  /* 27 oct 2026 - palette refractor douce (Mathieu : « que ca fit avec les refractor mais pas trop intense ») :
+     noir neutre du logo, ivoire du S, accent pervenche chrome, or champagne, et le degrade refractor en touches fines */
+  --fond:#0B0B0E; --carte:#151519; --carte2:#1D1D23; --ligne:#2B2A32; --sep:#1B1B21;
+  --texte:#F4F2EE; --doux:#A9A6B1; --pale:#8C8996;
+  --acc:#B9BEFF; --acc-fonce:#1E2038; --acc-texte:#0E1026;
+  --or:#E9CF8E; --or-clair:#F3E2B3; --or-fort:#D9B866; --or-sombre:#A88A45; --or-fonce:#2A2416; --or-ligne:#5C4E2C;
+  --img:#111115; --eteint:#34333D; --ligne-fort:#403E4A; --texte2:#DCD9E2;
+  --holo:linear-gradient(100deg,#9FE6D2 0%,#B9BEFF 36%,#F2B3D6 68%,#F1D58E 100%);
   --vert:#8FD4A4; --vert-fond:#13261B; --rouge:#FFB3B3; --rouge-fond:#2A1114;
   --haut:max(14px, env(safe-area-inset-top)); --bas:env(safe-area-inset-bottom);
 }
@@ -52,16 +58,16 @@ h1,h2,h3{margin:0}
 .ligne-btn{display:flex; gap:10px; flex-wrap:wrap} .ligne-btn .btn{flex:1 1 140px}
 .chips{display:flex; gap:8px; overflow-x:auto; scrollbar-width:none; margin:0 -18px; padding:0 18px}
 .chips::-webkit-scrollbar{display:none}
-.chip{height:34px; padding:0 14px; border-radius:17px; border:1px solid var(--ligne); background:transparent; color:#D6DBE0; font-size:14px; white-space:nowrap; flex-shrink:0}
+.chip{height:34px; padding:0 14px; border-radius:17px; border:1px solid var(--ligne); background:transparent; color:#DCD9E2; font-size:14px; white-space:nowrap; flex-shrink:0}
 .chip.on{background:var(--texte); color:var(--fond); border-color:var(--texte); font-weight:600}
 .seg{display:flex; background:var(--carte); border-radius:12px; padding:4px}
-.seg button{flex:1; height:40px; border-radius:9px; border:none; background:transparent; color:#D6DBE0; font-size:14px; font-weight:600; padding:0 2px; white-space:nowrap}
+.seg button{flex:1; height:40px; border-radius:9px; border:none; background:transparent; color:#DCD9E2; font-size:14px; font-weight:600; padding:0 2px; white-space:nowrap}
 .seg button.on{background:var(--texte); color:var(--fond)}
 .seg.petit button{height:34px; font-size:13px}
 .pastilles{display:flex; flex-wrap:wrap; gap:6px; align-items:center}
 @media (max-width:899px){ .pastilles.defile{flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; -webkit-mask-image:linear-gradient(to right,#000 88%,transparent); mask-image:linear-gradient(to right,#000 88%,transparent); padding-right:18px} .pastilles.defile::-webkit-scrollbar{display:none} .pastilles.defile > *{flex-shrink:0} }
 button.tag{border:none; cursor:pointer; font:inherit; font-size:12px}
-.tag{display:inline-flex; align-items:center; gap:4px; font-size:13px; font-weight:600; height:26px; padding:0 10px; border-radius:999px; background:var(--carte2); color:#D6DBE0; white-space:nowrap}
+.tag{display:inline-flex; align-items:center; gap:4px; font-size:13px; font-weight:600; height:26px; padding:0 10px; border-radius:999px; background:var(--carte2); color:#DCD9E2; white-space:nowrap}
 .tag.acc{background:var(--acc-fonce); color:var(--acc)} .tag.or{background:var(--or-fonce); color:var(--or)}
 .tag.vert{background:var(--vert-fond); color:var(--vert)} .tag.rouge{background:var(--rouge-fond); color:var(--rouge)}
 .tag.grand{font-size:13px; padding:5px 10px; border-radius:10px}
@@ -120,13 +126,13 @@ details.reglage summary::-webkit-details-marker{display:none}
 .barre i.vert{background:var(--vert)}
 .vide{text-align:center; color:var(--doux); padding:34px 10px; font-size:15px; line-height:1.5; display:flex; flex-direction:column; align-items:center; gap:12px}
 .charge{display:flex; justify-content:center; padding:40px}
-.roue{width:30px; height:30px; background:linear-gradient(135deg,var(--niv1,#F9E7A8),var(--niv2,#D9A93F) 55%,var(--niv3,#A57A25));
+.roue{width:30px; height:30px; background:conic-gradient(from 0deg,#9FE6D2,#B9BEFF,#F2B3D6,#F1D58E,#9FE6D2);
   -webkit-mask:url(/sc_anneau.svg) center/contain no-repeat; mask:url(/sc_anneau.svg) center/contain no-repeat; animation:tourne .9s linear infinite}
 @keyframes tourne{to{transform:rotate(360deg)}}
 .prog{position:relative; width:26px; height:26px; flex-shrink:0; display:inline-flex; align-items:center; justify-content:center}
 .prog svg{position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg)}
 .prog circle{fill:none; stroke-width:3.4}
-.prog .fond{stroke:rgba(127,208,255,.2)}
+.prog .fond{stroke:rgba(185,190,255,.2)}
 .prog .arc{stroke:var(--acc); stroke-linecap:round; stroke-dasharray:97.39; stroke-dashoffset:97.39; transition:stroke-dashoffset .6s ease}
 .prog.vert .arc{stroke:var(--vert)} .prog.vert .fond{stroke:rgba(143,212,164,.2)} .prog.vert b{color:var(--vert)}
 .prog b{position:relative; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:11px; line-height:1; color:var(--acc)}
@@ -167,11 +173,14 @@ select.champ{appearance:none; -webkit-appearance:none; background-image:linear-g
 .etapes .tag{font-size:12px}
 .code{font-family:ui-monospace,Menlo,monospace; font-size:12px; word-break:break-all; color:var(--doux)}
 /* onglets */
-.onglets{position:fixed; left:0; right:0; bottom:0; z-index:20; background:rgba(16,20,24,.94); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-top:1px solid var(--ligne); display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); padding:7px 8px calc(7px + var(--bas))}
+.onglets{position:fixed; left:0; right:0; bottom:0; z-index:20; background:rgba(17,17,21,.94); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-top:1px solid var(--ligne); display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); padding:7px 8px calc(7px + var(--bas))}
 .onglets a{display:flex; flex-direction:column; align-items:center; gap:3px; font-size:11px; color:var(--pale); padding:4px 0; position:relative}
 .onglets a.on{color:var(--acc)}
+.onglets a.on::before{content:''; position:absolute; top:-7px; left:32%; right:32%; height:2px; border-radius:2px; background:var(--holo); opacity:.9}
+body{background-image:radial-gradient(900px 360px at 12% -150px, rgba(159,230,210,.055), transparent 70%), radial-gradient(900px 360px at 88% -150px, rgba(242,179,214,.045), transparent 70%)}
+.barre i:not([class]){background:var(--holo)}
 /* 22 oct 2026 - deux volets dans la meme app : Vendeur (bleu) et Acheteur (dore) */
-body.mode-acheteur{--acc:#E8C46A; --acc-fonce:#2B2414; --acc-texte:#1A1408}
+body.mode-acheteur{--acc:#E9CF8E; --acc-fonce:#2A2416; --acc-texte:#1A1408}
 .mode-switch{display:inline-flex; background:var(--carte); border:1px solid var(--ligne); border-radius:999px; padding:3px; gap:2px}
 .mode-switch button{border:none; background:transparent; color:var(--doux); font-weight:700; font-size:13.5px; padding:7px 14px; border-radius:999px; display:inline-flex; align-items:center; gap:6px}
 .mode-switch button.on{background:var(--acc); color:var(--acc-texte)}
@@ -181,17 +190,17 @@ body.mode-acheteur{--acc:#E8C46A; --acc-fonce:#2B2414; --acc-texte:#1A1408}
 .choix-mode .sous{font-size:15px}
 .carte-mode{display:flex; gap:14px; align-items:center; text-align:left; width:100%; background:var(--carte); border:1px solid var(--ligne); border-radius:20px; padding:18px; color:var(--texte)}
 .carte-mode .ico{width:52px; height:52px; border-radius:16px; display:flex; align-items:center; justify-content:center; flex-shrink:0}
-.carte-mode.v .ico{background:#0F2533; color:#7FD0FF} .carte-mode.a .ico{background:#2B2414; color:#E8C46A}
+.carte-mode.v .ico{background:#1E2038; color:#B9BEFF} .carte-mode.a .ico{background:#2A2416; color:#E9CF8E}
 .carte-mode b{font-size:19px; display:block} .carte-mode span.d{font-size:13.5px; color:var(--doux); display:block; margin-top:3px}
 .carte-mode:active{transform:scale(.99)}
-.hero.acheteur{background:linear-gradient(160deg,#241E10 0%,var(--carte) 70%)}
+.hero.acheteur{background:linear-gradient(160deg,#221D12 0%,var(--carte) 70%)}
 .hero.acheteur .grand{color:var(--or)}
-.onglets .pastille{position:absolute; top:0; left:calc(50% + 6px); min-width:17px; height:17px; padding:0 4px; border-radius:9px; background:#C8102E; color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center}
+.onglets .pastille{position:absolute; top:0; left:calc(50% + 6px); min-width:17px; height:17px; padding:0 4px; border-radius:9px; background:#E5484D; color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center}
 .onglets .nav-logo{display:none}
 /* 22 oct 2026 (Mathieu : « toujours pouvoir aller d'un cote comme de l'autre, en haut ; passer par l'accueil est une
    etape de trop ») - le selecteur Vendeur | Acheteur est sur TOUS les ecrans : barre du haut (mobile), menu (ordi). */
 .barre-mode{position:sticky; top:0; z-index:30; display:flex; align-items:center; justify-content:space-between; gap:10px;
-  padding:calc(var(--haut) + 4px) 18px 8px; background:rgba(10,13,16,.9); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-bottom:1px solid var(--sep)}
+  padding:calc(var(--haut) + 4px) 18px 8px; background:rgba(11,11,14,.9); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-bottom:1px solid var(--sep)}
 body.sandbox .barre-mode{top:25px; padding-top:8px}
 body.avec-barre .ecran{padding-top:14px}
 .barre-mode .rond{width:40px; height:40px}
@@ -200,22 +209,23 @@ body.avec-barre .ecran{padding-top:14px}
 .nav-mode, .nav-reglages, .nav-admin{display:none !important}
 /* feuille + toast */
 .fond-feuille{position:fixed; inset:0; z-index:40; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center}
-.feuille{width:100%; max-width:640px; max-height:90vh; overflow-y:auto; background:#11151A; border-radius:22px 22px 0 0; padding:10px 18px calc(18px + var(--bas)); display:flex; flex-direction:column; gap:14px; animation:monte .18s ease-out}
+.feuille{width:100%; max-width:640px; max-height:90vh; overflow-y:auto; background:#131317; border-radius:22px 22px 0 0; padding:10px 18px calc(18px + var(--bas)); display:flex; flex-direction:column; gap:14px; animation:monte .18s ease-out}
 .feuille > *{flex-shrink:0}
 .feuille .poignee{width:40px; height:5px; border-radius:3px; background:var(--ligne); align-self:center}
 .feuille h3{font-size:18px; font-weight:600; line-height:1.3}
 .feuille .bloc{background:var(--carte)}
 @keyframes monte{from{transform:translateY(40px); opacity:.4}to{transform:none; opacity:1}}
-#toast{position:fixed; left:50%; bottom:calc(92px + var(--bas)); transform:translateX(-50%) translateY(20px); z-index:60; background:#F2F5F7; color:#0A0D10; font-weight:600; font-size:14px; padding:11px 16px; border-radius:12px; max-width:calc(100% - 36px); opacity:0; pointer-events:none; transition:all .2s; text-align:center}
+#toast{position:fixed; left:50%; bottom:calc(92px + var(--bas)); transform:translateX(-50%) translateY(20px); z-index:60; background:#F4F2EE; color:#0B0B0E; font-weight:600; font-size:14px; padding:11px 16px; border-radius:12px; max-width:calc(100% - 36px); opacity:0; pointer-events:none; transition:all .2s; text-align:center}
 #toast.vu{opacity:1; transform:translateX(-50%)}
 .table{width:100%; border-collapse:collapse; font-size:14px}
 .table td{padding:8px 4px; border-bottom:1px solid var(--sep)}
 .table td.num{text-align:right; white-space:nowrap}
 @media (min-width: 900px){
   body{padding-bottom:24px; padding-left:212px}
-  .onglets{top:0; bottom:0; right:auto; width:212px; display:flex; flex-direction:column; gap:4px; padding:22px 12px; border-top:none; border-right:1px solid var(--ligne); background:rgba(12,15,19,.97)}
+  .onglets{top:0; bottom:0; right:auto; width:212px; display:flex; flex-direction:column; gap:4px; padding:22px 12px; border-top:none; border-right:1px solid var(--ligne); background:rgba(13,13,17,.97)}
   .onglets a{flex-direction:row; justify-content:flex-start; gap:12px; font-size:15px; font-weight:600; padding:11px 12px; border-radius:12px}
   .onglets a.on{background:var(--acc-fonce)}
+  .onglets a.on::before{top:11px; bottom:11px; left:0; right:auto; width:3px; height:auto}
   .onglets .pastille{position:static; margin-left:auto}
   .onglets .nav-logo{display:flex; flex-direction:row; border-radius:0; align-items:center; gap:10px; padding:4px 8px 22px; color:var(--texte); font-family:'Barlow Condensed',sans-serif; font-size:21px; font-weight:700; letter-spacing:.3px; white-space:nowrap}
   .nav-logo img{width:38px; height:38px; border-radius:10px}
@@ -224,7 +234,7 @@ body.avec-barre .ecran{padding-top:14px}
   .nav-mode{display:block !important; padding:0 2px 16px}
   .nav-mode .mode-switch{display:flex; width:100%} .nav-mode .mode-switch button{flex:1; min-width:0; justify-content:center; padding:8px 4px; font-size:13px} .nav-mode .mode-switch svg{display:none}
   .nav-reglages{display:flex !important; margin-top:auto}
-  .nav-admin:not([hidden]){display:flex !important; margin-top:auto; color:#F0C65C} .nav-admin:not([hidden]) + .nav-reglages{margin-top:0}
+  .nav-admin:not([hidden]){display:flex !important; margin-top:auto; color:var(--or)} .nav-admin:not([hidden]) + .nav-reglages{margin-top:0}
   .ecran{max-width:1100px; padding-left:32px; padding-right:32px}
   .deux-col{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px; align-items:start}
   .grille-actions{grid-template-columns:repeat(4,minmax(0,1fr))}
@@ -260,37 +270,39 @@ body.avec-barre .ecran{padding-top:14px}
 .capsule{display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 12px; border-radius:999px; font-size:14px; font-weight:700; white-space:nowrap; background:var(--carte2); color:var(--texte)}
 .capsule.vert{background:var(--vert-fond); color:var(--vert)} .capsule.rouge{background:var(--rouge-fond); color:var(--rouge)}
 .capsule.or{background:var(--or-fonce); color:var(--or)} .capsule.acc{background:var(--acc-fonce); color:var(--acc)}
+.capsule.vert, .capsule.rouge, .capsule.or, .capsule.acc, .tag.acc, .tag.or, .tag.vert, .tag.rouge{box-shadow:inset 0 0 0 1px color-mix(in srgb, currentColor 20%, transparent)}
+.capsule:not(.vert):not(.rouge):not(.or):not(.acc), .tag:not(.acc):not(.or):not(.vert):not(.rouge){box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
 /* nouvelles : une a la fois ; sans image, pas de faux visuel */
 .nouv{padding:0; overflow:hidden; gap:0; grid-area:news; min-height:200px}
 .nouv.sans-img{background:radial-gradient(140% 120% at 100% 0%, var(--acc-fonce), var(--carte) 60%)}
 #acc-news{display:flex; flex:1; min-height:0}
 .nouv .slide{display:flex; flex-direction:column; flex:1; min-width:0; animation:fondu .45s ease-out}
 @keyframes fondu{from{opacity:0; transform:translateY(6px)}}
-.nouv .visuel{aspect-ratio:16/9; background:#1A2027 center/cover no-repeat; flex-shrink:0}
+.nouv .visuel{aspect-ratio:16/9; background:#1D1D23 center/cover no-repeat; flex-shrink:0}
 .nouv .texte{display:flex; flex-direction:column; justify-content:space-between; gap:12px; padding:16px 18px 18px; flex:1; min-width:0}
 .nouv .haut-n{display:flex; justify-content:space-between; align-items:center; gap:10px}
 .nouv .visuel.astuce-v{flex:0 0 auto !important; height:132px; min-height:0 !important; aspect-ratio:auto !important; position:relative; overflow:hidden}
 .as-img{position:absolute; right:14px; top:50%; transform:translateY(-50%); width:96px; height:96px; border-radius:24px; display:grid; place-items:center;
   background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.10); box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 10px 26px rgba(0,0,0,.35)}
 .as-img svg{width:56px; height:56px; stroke:var(--or); fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round}
-.g-acheter .as-img svg{stroke:var(--vert)} .g-vendre .as-img svg{stroke:#9DC4FF}
+.g-acheter .as-img svg{stroke:var(--vert)} .g-vendre .as-img svg{stroke:var(--acc)}
 .as-chiffre{max-width:calc(100% - 120px); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .slide-astuce .as-titre{font-size:17px} .slide-astuce .as-texte{font-size:14px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden}
 .slide-astuce .as-truc{font-size:14px} .slide-astuce .texte{gap:8px; padding:12px 16px 14px; justify-content:flex-start}
 .astuce-v{display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-end; gap:4px; padding:14px 18px;
-  background:radial-gradient(120% 120% at 0% 0%, rgba(232,196,106,.35), transparent 55%), linear-gradient(160deg, #1D2430, #0E1216)}
-.astuce-v.g-acheter{background:radial-gradient(120% 120% at 0% 0%, rgba(143,212,164,.30), transparent 55%), linear-gradient(160deg, #17261E, #0E1216)}
-.astuce-v.g-vendre{background:radial-gradient(120% 120% at 0% 0%, rgba(120,170,255,.28), transparent 55%), linear-gradient(160deg, #172033, #0E1216)}
+  background:radial-gradient(120% 120% at 0% 0%, rgba(233,207,142,.35), transparent 55%), linear-gradient(160deg, #1F1E27, #111115)}
+.astuce-v.g-acheter{background:radial-gradient(120% 120% at 0% 0%, rgba(143,212,164,.30), transparent 55%), linear-gradient(160deg, #16241D, #111115)}
+.astuce-v.g-vendre{background:radial-gradient(120% 120% at 0% 0%, rgba(185,190,255,.26), transparent 55%), linear-gradient(160deg, #1C1D33, #111115)}
 .as-lib{font-weight:700; font-size:13px; color:var(--or); letter-spacing:.3px} .as-chiffre{font-family:'Barlow Condensed',sans-serif; font-size:48px; line-height:1; font-weight:800; color:#fff; text-shadow:0 4px 18px rgba(0,0,0,.4)}
 .as-niv{font-size:13px; color:var(--doux); font-weight:600} .slide-astuce .haut-n{flex-wrap:wrap} .nouv-t{white-space:nowrap; font-size:13px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:var(--doux)}
 .as-titre{font-size:20px; line-height:1.25; font-weight:800; color:var(--texte)} .as-texte{font-size:15px; line-height:1.45; color:var(--doux)}
-.as-truc{font-size:15px; line-height:1.45; padding:10px 12px; border-radius:12px; background:rgba(232,196,106,.08); border:1px solid rgba(232,196,106,.25)} .as-truc b{color:var(--or); margin-right:4px}
-.points button.astuce{background:rgba(232,196,106,.45)} .points button.astuce.on{background:var(--or)}
+.as-truc{font-size:15px; line-height:1.45; padding:10px 12px; border-radius:12px; background:rgba(233,207,142,.08); border:1px solid rgba(233,207,142,.25)} .as-truc b{color:var(--or); margin-right:4px}
+.points button.astuce{background:rgba(233,207,142,.45)} .points button.astuce.on{background:var(--or)}
 .slide-src a{color:var(--acc)}
 .slide-titre{font-size:20px; line-height:1.3; font-weight:700; color:var(--texte); display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden}
 .nouv.sans-img .slide-titre{font-size:22px}
 .slide-src{font-size:14px; color:var(--doux)}
-.points{display:flex; gap:6px; flex-shrink:0} .points button{width:8px; height:8px; border-radius:50%; border:none; padding:0; background:#2E353D} .points button.on{background:var(--acc); width:20px; border-radius:4px}
+.points{display:flex; gap:6px; flex-shrink:0} .points button{width:8px; height:8px; border-radius:50%; border:none; padding:0; background:#34333D} .points button.on{background:var(--acc); width:20px; border-radius:4px}
 /* mises a jour : une capsule par tache, couleur = fraicheur */
 .pils{display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:8px}
 .pil{display:flex; align-items:center; gap:8px; height:42px; padding:0 14px; border-radius:999px; background:var(--carte2); color:var(--texte); font-size:15px; font-weight:600; white-space:nowrap; min-width:0; transition:transform .15s}
@@ -334,7 +346,7 @@ body.avec-barre .ecran{padding-top:14px}
 .r-lien{background:none; border:none; color:var(--doux); font-size:15px; padding:4px 0; text-align:left; align-self:flex-start}
 .r-ligne{display:flex; align-items:center; gap:12px; background:none; border:none; border-top:1px solid var(--sep); padding:12px 0 2px; color:var(--texte); text-align:left; width:100%}
 .r-ligne .t{flex:1; display:flex; flex-direction:column; gap:2px} .r-ligne b{font-size:16px} .r-ligne .t span{font-size:14px; color:var(--doux)}
-.interrupteur{width:50px; height:30px; border-radius:15px; background:#2E353D; position:relative; flex-shrink:0; transition:background .2s}
+.interrupteur{width:50px; height:30px; border-radius:15px; background:#34333D; position:relative; flex-shrink:0; transition:background .2s}
 .interrupteur i{position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%; background:#fff; transition:left .2s}
 .interrupteur.on{background:var(--acc)} .interrupteur.on i{left:23px}
 .r-ligne.fixe .interrupteur{opacity:.55}
@@ -347,7 +359,7 @@ details.r-plie summary .r-note{flex:1; text-align:right; white-space:nowrap; ove
 .salut .sous{font-size:14px}
 .etat-analyse{height:32px; padding:0 12px; border-radius:16px; border:1px solid var(--ligne); background:transparent; color:var(--doux); font-size:13px; display:inline-flex; align-items:center; gap:6px; white-space:nowrap}
 .etat-analyse i{width:7px; height:7px; border-radius:4px; background:var(--vert); display:inline-block}
-.hero{background:linear-gradient(180deg,#121A21 0%,var(--carte) 100%); border:1px solid var(--ligne); border-radius:20px; padding:16px 16px 12px; display:flex; flex-direction:column; gap:8px}
+.hero{background:linear-gradient(180deg,#18181F 0%,var(--carte) 100%); border:1px solid var(--ligne); border-radius:20px; padding:16px 16px 12px; display:flex; flex-direction:column; gap:8px}
 .hero .lib{font-size:13px; color:var(--doux); font-weight:600; letter-spacing:.3px}
 .hero .grand{font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:52px; line-height:.95; letter-spacing:.3px}
 .hero .grand.vert{color:var(--vert)} .hero .grand.rouge{color:var(--rouge)}
@@ -359,7 +371,7 @@ details.r-plie summary .r-note{flex:1; text-align:right; white-space:nowrap; ove
 .axe{display:flex; justify-content:space-between; font-size:11px; color:var(--pale)}
 .legende{display:flex; gap:12px; font-size:12px; color:var(--doux); align-items:center}
 .legende i{display:inline-block; width:14px; height:2px; background:var(--acc); vertical-align:middle; margin-right:5px; border-radius:1px}
-.legende i.passe{background:none; border-top:2px dashed #5A6570; height:0}
+.legende i.passe{background:none; border-top:2px dashed #6B6878; height:0}
 .gestes{display:flex; flex-direction:column; gap:8px}
 .geste{display:flex; align-items:center; gap:12px; background:var(--carte); border:1px solid var(--ligne); border-radius:16px; padding:12px 14px; color:var(--texte); text-align:left; width:100%}
 .geste:active{border-color:var(--acc)}
@@ -400,18 +412,18 @@ details.r-plie summary .r-note{flex:1; text-align:right; white-space:nowrap; ove
 @media (min-width:900px){ .grille-c{grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:16px} }
 .tuile-c{position:relative; background:var(--carte); border:1px solid var(--ligne); border-radius:18px; overflow:hidden; display:flex; flex-direction:column;
   transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease; color:var(--texte)}
-.tuile-c:hover{transform:translateY(-3px); border-color:#3B4754; box-shadow:0 10px 28px rgba(0,0,0,.35)}
-.tuile-c .img{aspect-ratio:1/1; background:#0E1216 center/contain no-repeat; display:flex; align-items:center; justify-content:center; color:#2E353D}
+.tuile-c:hover{transform:translateY(-3px); border-color:#403E4A; box-shadow:0 10px 28px rgba(0,0,0,.35)}
+.tuile-c .img{aspect-ratio:1/1; background:#111115 center/contain no-repeat; display:flex; align-items:center; justify-content:center; color:#34333D}
 .tuile-c .img svg{width:40%; height:40%} .tuile-c .img{position:relative}
-.tuile-c .img img{position:absolute; inset:0; width:100%; height:100%; object-fit:contain; background:#0E1216}
+.tuile-c .img img{position:absolute; inset:0; width:100%; height:100%; object-fit:contain; background:#111115}
 .tuile-c .corps{padding:10px 12px 12px; display:flex; flex-direction:column; gap:7px; flex:1}
 .tuile-c .t{font-weight:600; font-size:14px; line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; min-height:36px}
 .tuile-c .p{font-family:'Barlow Condensed',sans-serif; font-size:26px; font-weight:700; line-height:1}
 .tuile-c .ligne-b{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:auto}
 .tuile-c .coin{position:absolute; top:8px; left:8px; display:flex; gap:6px}
-.tuile-c .x{position:absolute; top:8px; right:8px; width:34px; height:34px; border-radius:17px; border:none; background:rgba(10,13,16,.78);
+.tuile-c .x{position:absolute; top:8px; right:8px; width:34px; height:34px; border-radius:17px; border:none; background:rgba(11,11,14,.78);
   color:#fff; font-size:16px; display:flex; align-items:center; justify-content:center; opacity:.85}
-.tuile-c .x:hover{opacity:1; background:#C8102E}
+.tuile-c .x:hover{opacity:1; background:#E5484D}
 .tuile-c.estompe{opacity:.55}
 .capsule.petit{height:26px; font-size:13px; padding:0 10px}
 /* 25 oct 2026 (Mathieu : « la pastille on eBay est mal centrée ») : texte toujours au centre, toutes les polices */
@@ -435,7 +447,7 @@ details.replie[open] > summary{margin-bottom:12px}
 .depart-vente{display:grid; grid-template-columns:1fr; gap:14px}
 @media (min-width:900px){ .depart-vente{grid-template-columns:1fr 1fr} }
 .photo-xl{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; min-height:260px; border-radius:24px; cursor:pointer;
-  background:radial-gradient(120% 90% at 50% 0%, #17324A 0%, #10161C 60%); border:1.5px dashed #2F5673; color:var(--texte); transition:transform .18s, border-color .18s}
+  background:radial-gradient(120% 90% at 50% 0%, #24254A 0%, #121218 60%); border:1.5px dashed rgba(185,190,255,.38); color:var(--texte); transition:transform .18s, border-color .18s}
 .photo-xl:hover{transform:translateY(-3px); border-color:var(--acc)}
 .photo-xl svg{width:54px; height:54px; color:var(--acc)} .photo-xl b{font-size:22px} .photo-xl span{font-size:15px; color:var(--doux)}
 .photo-xl.secondaire{background:var(--carte); border-color:var(--ligne)} .photo-xl.secondaire svg{color:var(--doux)}
@@ -444,14 +456,14 @@ details.replie[open] > summary{margin-bottom:12px}
 @media (min-width:1000px){ .studio{grid-template-columns:minmax(300px,420px) 1fr; align-items:start} .studio-g{position:sticky; top:20px} }
 .studio-g{display:flex; flex-direction:column; gap:12px}
 .studio-d{display:flex; flex-direction:column; gap:12px}
-.photo-princ{aspect-ratio:3/4; max-height:46vh; width:100%; border-radius:20px; background:#0E1216 center/contain no-repeat; border:1px solid var(--ligne); display:flex; align-items:center; justify-content:center; color:#2E353D}
+.photo-princ{aspect-ratio:3/4; max-height:46vh; width:100%; border-radius:20px; background:#111115 center/contain no-repeat; border:1px solid var(--ligne); display:flex; align-items:center; justify-content:center; color:#34333D}
 .photo-princ svg{width:30%; height:30%}
 .vignettes{display:flex; gap:8px; flex-wrap:wrap}
-.vg{width:58px; height:76px; border-radius:10px; border:1.5px solid var(--ligne); background:#0E1216 center/cover no-repeat; padding:0; cursor:pointer}
+.vg{width:58px; height:76px; border-radius:10px; border:1.5px solid var(--ligne); background:#111115 center/cover no-repeat; padding:0; cursor:pointer}
 .vg.on{border-color:var(--acc)} .vg.plus-ph{display:flex; align-items:center; justify-content:center; font-size:26px; color:var(--doux); border-style:dashed}
 .comps-l{display:flex; gap:8px; overflow-x:auto; scrollbar-width:none} .comps-l::-webkit-scrollbar{display:none}
 .comp-m{flex:0 0 auto; width:84px; display:flex; flex-direction:column; gap:4px; color:var(--texte); text-align:center}
-.comp-m span{height:96px; border-radius:10px; background:#0E1216 center/contain no-repeat; border:1px solid var(--ligne)}
+.comp-m span{height:96px; border-radius:10px; background:#111115 center/contain no-repeat; border:1px solid var(--ligne)}
 .comp-m b{font-family:'Barlow Condensed',sans-serif; font-size:18px}
 .bloc-v{background:var(--carte); border:1px solid var(--ligne); border-radius:18px; padding:14px 16px; display:flex; flex-direction:column; gap:12px}
 .bloc-v.gris{opacity:.55}
@@ -471,7 +483,7 @@ textarea.champ.titre-a{resize:none; font-size:17px; font-weight:600; line-height
 .lib-s{font-size:15px; color:var(--doux)} .lib-s b{color:var(--texte)}
 details.avance > summary{cursor:pointer; color:var(--acc); font-weight:600; font-size:15px}
 .barre-publier{position:sticky; bottom:calc(84px + var(--bas)); z-index:15; display:flex; align-items:center; gap:14px; padding:12px 14px;
-  background:rgba(20,24,29,.94); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); border:1px solid var(--ligne); border-radius:20px; box-shadow:0 12px 30px rgba(0,0,0,.4)}
+  background:rgba(21,21,25,.94); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); border:1px solid var(--ligne); border-radius:20px; box-shadow:0 12px 30px rgba(0,0,0,.4)}
 @media (min-width:900px){ .barre-publier{bottom:16px} }
 .barre-publier .btn{width:auto; min-width:150px} @media (min-width:900px){ .barre-publier .btn{min-width:230px} }
 @media (max-width:899px){ .photo-princ{max-height:38vh} } .resume-p{display:flex; flex-direction:column; flex:1; min-width:0}
@@ -482,7 +494,7 @@ details.avance > summary{cursor:pointer; color:var(--acc); font-weight:600; font
 /* 24 oct 2026 - inventaire en tuiles : grande image, nom lisible, repere prix vs les memes cartes */
 button.tuile-c{font:inherit; text-align:left; padding:0; cursor:pointer}
 .tuile-prod{position:relative} .ck-ok{position:absolute; top:10px; right:10px; z-index:3; width:30px; height:30px; border-radius:50%; display:grid; place-items:center;
-  background:var(--vert, #3FB97A); color:#06130C; font-weight:900; font-size:17px; box-shadow:0 0 0 3px rgba(63,185,122,.25), 0 4px 14px rgba(0,0,0,.45)}
+  background:var(--vert, #3FB97A); color:#06130C; font-weight:900; font-size:17px; box-shadow:0 0 0 3px rgba(143,212,164,.25), 0 4px 14px rgba(0,0,0,.45)}
 .ck-lib{font-size:14px; color:var(--doux); font-weight:600} .ck-lib.vert{color:var(--vert, #3FB97A)} .ck-lib.or{color:var(--or)}
 .r-lien.danger{color:var(--rouge)} .btn.danger{background:#5A1F24; color:#FFD7D7; border-color:#7A2A31}
 /* app iPhone : pas de survol, toucher plus doux */
@@ -490,7 +502,14 @@ html.natif{-webkit-tap-highlight-color:transparent} html.natif body{-webkit-user
 html.natif input, html.natif textarea{-webkit-user-select:text; user-select:text}
 .pas-deal{margin-top:8px; align-self:flex-start; background:none; border:0; padding:4px 0; color:var(--doux); font-size:13.5px; text-decoration:underline; text-underline-offset:3px; cursor:pointer}
 .pas-deal:hover{color:var(--rouge)} .pas-deal.grand{margin-top:14px; font-size:15px}
+/* 27 oct 2026 - licence eBay (§8.1) : l'annonce eBay et l'estimation SlabCoach sont visuellement separees */
+.tuile-c .src-ebay{font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--pale); margin-bottom:2px}
+.tuile-c .est-sc{display:flex; flex-direction:column; gap:3px; margin-top:8px; padding:8px 10px; border-radius:10px; background:rgba(185,190,255,.06); box-shadow:inset 0 0 0 1px rgba(185,190,255,.14)}
+.tuile-c .est-sc .lib{font:800 10px 'Manrope',sans-serif; letter-spacing:.14em; text-transform:uppercase; background:var(--holo); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; align-self:flex-start}
+.tuile-c .est-sc .v{font-size:13.5px; color:var(--doux); display:flex; align-items:center; gap:6px; flex-wrap:wrap} .tuile-c .est-sc .v b{color:var(--texte)}
+.mention-epn{margin:6px 0 0; font-size:12px; line-height:1.45; color:var(--pale); max-width:760px}
 .tuile-c .det-c{font-size:13.5px; color:var(--doux); line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.tuile-c .mise-max{margin-top:4px; font-size:12.5px} .tuile-c .mise-max b{color:var(--or, #E9CF8E)}
 .tuile-inv .t{min-height:0; font-size:16px; font-weight:700}
 .ecusson.gros{width:84px; height:84px; border-radius:42px; font-size:28px}
 .repere{display:flex; flex-direction:column; gap:2px; border-radius:12px; padding:8px 10px; background:var(--carte2)}
@@ -506,11 +525,11 @@ html.natif input, html.natif textarea{-webkit-user-select:text; user-select:text
 @media (min-width:900px){ .badge-coin{display:block; position:fixed; top:calc(var(--haut) - 4px); right:22px; z-index:35} body.sandbox .badge-coin{top:34px}
   body.a-badge .ecran{padding-top:calc(var(--haut) + 46px)} }
 .badge-f{height:34px; padding:0 14px; border-radius:17px; border:1px solid var(--ligne); font:700 14px 'Barlow',sans-serif; display:inline-flex; align-items:center; gap:8px; cursor:pointer; white-space:nowrap; flex-shrink:0}
-.badge-f.gratuit{background:#1C2228; color:#A3ACB5} .badge-f.gratuit b{color:var(--texte); font-weight:700; padding-left:8px; border-left:1px solid var(--ligne)}
-.badge-f.essai{background:var(--or-fonce); color:var(--or); border-color:#5A4A22}
+.badge-f.gratuit{background:#1D1D23; color:#A9A6B1} .badge-f.gratuit b{color:var(--texte); font-weight:700; padding-left:8px; border-left:1px solid var(--ligne)}
+.badge-f.essai{background:var(--or-fonce); color:var(--or); border-color:#5C4E2C}
 /* 26 oct 2026 (Mathieu : « bronze pour la version de base, gold pour Pro, eventuellement silver ; le logo change de
    couleur avec le niveau ») : le logo et le badge prennent la couleur du niveau */
-body{--niv1:#F9E7A8; --niv2:#D9A93F; --niv3:#A57A25; --niv-txt:#E8C46A}
+body{--niv1:#F7EAC4; --niv2:#D9B866; --niv3:#A88A45; --niv-txt:#E9CF8E}
 body[data-niveau="bronze"]{--niv1:#F2C29A; --niv2:#C9874A; --niv3:#8A5A2B; --niv-txt:#E0A877}
 body[data-niveau="silver"]{--niv1:#F5F7FA; --niv2:#BFC5CC; --niv3:#7E858D; --niv-txt:#D5DADF}
 .badge-f.gratuit{border-color:color-mix(in srgb, var(--niv2) 45%, var(--ligne))} .badge-f.gratuit .niv{color:var(--niv-txt); font-weight:700}
@@ -523,40 +542,40 @@ body.theme-equipe{background-image:radial-gradient(1200px 420px at 50% -120px, c
 .th-eq.on{border-color:var(--acc); box-shadow:0 0 0 1px var(--acc) inset}
 .th-eq .pas{width:22px; height:22px; border-radius:50%; flex-shrink:0; background:linear-gradient(135deg,var(--c1) 0 50%,var(--c2) 50% 100%); box-shadow:0 0 0 1px rgba(255,255,255,.18)}
 .th-eq small{display:block; color:var(--doux); font-size:11px; font-weight:500}
-.badge-f.pro{border:none; color:#2A1F05; letter-spacing:.12em; background:linear-gradient(110deg,#F9E7A8 0%,#D9A93F 38%,#FBEAB0 50%,#D9A93F 62%,#F6D77A 100%); background-size:250% 100%;
-  box-shadow:0 0 0 1px rgba(255,226,140,.35), 0 6px 22px rgba(217,169,63,.35); animation:reflet 5s ease-in-out infinite}
+.badge-f.pro{border:none; color:#2A1F05; letter-spacing:.12em; background:linear-gradient(110deg,#F7EAC4 0%,#D9B866 38%,#FBF0CF 50%,#D9B866 62%,#F1D58E 100%); background-size:250% 100%;
+  box-shadow:0 0 0 1px rgba(243,226,179,.35), 0 6px 22px rgba(217,184,102,.35); animation:reflet 5s ease-in-out infinite}
 .badge-f.pro.grand{height:40px; font-size:16px; padding:0 18px}
 @keyframes reflet{0%,100%{background-position:100% 0} 50%{background-position:0 0}}
 @media (prefers-reduced-motion:reduce){ .badge-f.pro{animation:none} }
 #barre-mode .badge-f{height:34px; min-width:34px; font-size:14px; padding:0 9px; justify-content:center; letter-spacing:0}
-.btn-or{background:linear-gradient(110deg,#F6D77A,#D9A93F); color:#2A1F05}
+.btn-or{background:linear-gradient(110deg,#F1D58E,#D9B866); color:#2A1F05}
 .pro-tete{display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center}
 .avantages{display:flex; flex-direction:column; gap:10px; margin:8px 0}
 .av{display:flex; gap:12px; align-items:flex-start} .av b{display:block; font-size:16px} .av span:not(.coche){font-size:14px; color:var(--doux)}
 .av .coche{width:26px; height:26px; border-radius:13px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-weight:800; background:var(--or-fonce); color:var(--or)}
-.repere.verrou{background:repeating-linear-gradient(135deg,#1A1F25 0 8px,#1F252C 8px 16px); cursor:pointer} .repere.verrou b{color:var(--or)}
+.repere.verrou{background:repeating-linear-gradient(135deg,#1B1B21 0 8px,#212027 8px 16px); cursor:pointer} .repere.verrou b{color:var(--or)}
 .bandeau-essai{display:flex; align-items:center; gap:14px; justify-content:space-between; border-radius:18px; padding:14px 16px;
-  background:linear-gradient(110deg,#2B2414,#1C1709); border:1px solid #5A4A22} .bandeau-essai b{color:var(--or); display:block; font-size:16px} .bandeau-essai span{font-size:14px; color:#D9CDAE}
+  background:linear-gradient(110deg,#2A2416,#1B170E); border:1px solid #5C4E2C} .bandeau-essai b{color:var(--or); display:block; font-size:16px} .bandeau-essai span{font-size:14px; color:#D9CDAE}
 .bandeau-essai .btn{width:auto; flex-shrink:0}
 /* le look Pro : un fil dore en haut, des bordures qui accrochent la lumiere, les titres et l'onglet actif dores */
-body.pro::after{content:''; position:fixed; left:0; right:0; top:0; height:2px; z-index:70; pointer-events:none; background:linear-gradient(90deg,transparent,#E8C46A,#FBEAB0,#E8C46A,transparent)}
+body.pro::after{content:''; position:fixed; left:0; right:0; top:0; height:2px; z-index:70; pointer-events:none; background:linear-gradient(90deg,transparent,#9FE6D2,#B9BEFF,#F2B3D6,#F1D58E,transparent); opacity:.85}
 body.pro{--ligne:#2E2C25}
-body.pro .titre{background:linear-gradient(92deg,#FFFFFF 0%,#FBEFC8 60%,#E8C46A 100%); -webkit-background-clip:text; background-clip:text; color:transparent}
-body.pro .kpi, body.pro .tuile-c, body.pro .carte-acc{border-color:rgba(232,196,106,.16)}
-body.pro .tuile-c:hover{border-color:rgba(232,196,106,.45); box-shadow:0 10px 30px rgba(217,169,63,.12)}
-body.pro .onglets a.on{color:#F2D27C}
-@media (min-width:900px){ body.pro .onglets a.on{background:linear-gradient(90deg,rgba(232,196,106,.16),rgba(232,196,106,.04)); color:#F6DC8E} }
-body.pro .nav-logo{text-shadow:0 0 18px rgba(232,196,106,.25)}
+body.pro .titre{background:linear-gradient(92deg,#FFFFFF 0%,#F8EDCF 60%,#E9CF8E 100%); -webkit-background-clip:text; background-clip:text; color:transparent}
+body.pro .kpi, body.pro .tuile-c, body.pro .carte-acc{border-color:rgba(233,207,142,.16)}
+body.pro .tuile-c:hover{border-color:rgba(233,207,142,.45); box-shadow:0 10px 30px rgba(217,184,102,.12)}
+body.pro .onglets a.on{color:var(--or-clair)}
+@media (min-width:900px){ body.pro .onglets a.on{background:linear-gradient(90deg,rgba(233,207,142,.16),rgba(233,207,142,.04)); color:var(--or-clair)} }
+body.pro .nav-logo{text-shadow:0 0 18px rgba(233,207,142,.25)}
 
 /* 24 oct 2026 - nouvelles : un peu moins de place, et toujours une image (photo de l'article ou visuel du sport) */
 .visuel.genere{position:relative; overflow:hidden; display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-end; gap:4px; padding:18px 20px;
-  background:radial-gradient(120% 140% at 85% 10%, #1D4A6B 0%, #102131 45%, #0B141C 100%)}
+  background:radial-gradient(120% 140% at 85% 10%, #2B2C4E 0%, #17172A 45%, #0E0E16 100%)}
 .visuel.v-basketball{background:radial-gradient(120% 140% at 85% 10%, #6B3A1D 0%, #2A1810 50%, #120C08 100%)}
 .visuel.v-football{background:radial-gradient(120% 140% at 85% 10%, #1D6B3A 0%, #10291A 50%, #08120C 100%)}
 .visuel.v-baseball{background:radial-gradient(120% 140% at 85% 10%, #6B1D2E 0%, #291016 50%, #12080A 100%)}
 .visuel.genere .terrain{position:absolute; inset:8% 6%; color:rgba(255,255,255,.10)} .visuel.genere .terrain svg{width:100%; height:100%}
 .visuel.genere .v-ligue{position:relative; font:700 44px/1 'Barlow Condensed',sans-serif; letter-spacing:.06em; color:rgba(255,255,255,.92)}
-.visuel.genere .v-joueur{position:relative; font:700 22px/1.1 'Barlow Condensed',sans-serif; color:#F2D27C}
+.visuel.genere .v-joueur{position:relative; font:700 22px/1.1 'Barlow Condensed',sans-serif; color:var(--or-clair)}
 .visuel.genere .v-source{position:relative; font-size:13px; color:rgba(255,255,255,.6); font-weight:600; letter-spacing:.04em; text-transform:uppercase}
 .nouv .visuel{aspect-ratio:2/1}
 @media (min-width:1100px){
@@ -569,13 +588,13 @@ body.pro .nav-logo{text-shadow:0 0 18px rgba(232,196,106,.25)}
 @media (min-width:900px){ body:has(.choix-plein){padding-left:0} body:has(.choix-plein) .badge-coin{display:none} }
 .choix-plein{min-height:100vh; display:flex; flex-direction:column; gap:18px; padding:calc(var(--haut) + 14px) 16px 24px; max-width:1280px; margin:0 auto}
 .choix-tete{display:flex; flex-direction:column; align-items:center; text-align:center; gap:8px}
-.choix-tete img{width:60px; height:60px; border-radius:16px} .choix-tete h1{font-size:30px; line-height:1.1; margin:0} .choix-tete .sous{font-size:15px}
+.choix-tete img{width:76px; height:76px} .choix-tete h1{font-size:30px; line-height:1.1; margin:0} .choix-tete .sous{font-size:15px}
 .moities{flex:1; display:grid; grid-template-columns:1fr; gap:14px; min-height:420px}
 @media (min-width:900px){ .moities{grid-template-columns:1fr 1fr; min-height:min(68vh,640px)} .choix-tete h1{font-size:40px} }
 .moitie{position:relative; border:none; border-radius:28px; padding:28px; display:flex; flex-direction:column; justify-content:flex-end; align-items:flex-start; gap:12px; text-align:left;
   color:#fff; cursor:pointer; overflow:hidden; transition:transform .35s cubic-bezier(.2,.8,.2,1), filter .35s, box-shadow .35s}
-.moitie.v{background:radial-gradient(130% 110% at 20% 0%, #2A7FB8 0%, #123A57 45%, #0B1A26 100%)}
-.moitie.a{background:radial-gradient(130% 110% at 80% 0%, #D9A93F 0%, #6B4E17 45%, #1C1409 100%)}
+.moitie.v{background:radial-gradient(130% 110% at 20% 0%, #6E73C9 0%, #2A2B58 45%, #101022 100%)}
+.moitie.a{background:radial-gradient(130% 110% at 80% 0%, #C9A65A 0%, #5E4A22 45%, #19140C 100%)}
 .moitie .ico{width:64px; height:64px; border-radius:20px; background:rgba(255,255,255,.14); display:flex; align-items:center; justify-content:center; margin-bottom:auto}
 .moitie .ico svg{width:34px; height:34px}
 .moitie b{font:700 46px/1 'Barlow Condensed',sans-serif; letter-spacing:.3px}
@@ -583,9 +602,9 @@ body.pro .nav-logo{text-shadow:0 0 18px rgba(232,196,106,.25)}
 .moitie .go{font-weight:700; font-size:17px; padding:12px 18px; border-radius:999px; background:rgba(255,255,255,.16); transition:background .3s}
 .moities:hover .moitie{filter:saturate(.55) brightness(.75)}
 .moities .moitie:hover{filter:none; transform:scale(1.015); box-shadow:0 24px 60px rgba(0,0,0,.45)}
-.moitie.v:hover{background:radial-gradient(130% 110% at 20% 0%, #45A8EE 0%, #17527C 45%, #0B1A26 100%)}
-.moitie.a:hover{background:radial-gradient(130% 110% at 80% 0%, #F2C75C 0%, #8A6519 45%, #1C1409 100%)}
-.moitie:hover .go{background:#fff; color:#0A0D10}
+.moitie.v:hover{background:radial-gradient(130% 110% at 20% 0%, #8C91E6 0%, #34366B 45%, #101022 100%)}
+.moitie.a:hover{background:radial-gradient(130% 110% at 80% 0%, #E2C27A 0%, #7A6230 45%, #19140C 100%)}
+.moitie:hover .go{background:#fff; color:#0B0B0E}
 @media (prefers-reduced-motion:reduce){ .moitie{transition:none} .moities .moitie:hover{transform:none} }
 .tuto-fond{position:fixed; inset:0; z-index:80; background:rgba(0,0,0,.6); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:18px}
 .tuto{width:min(440px,100%); background:var(--carte); border:1px solid var(--ligne); border-radius:26px; padding:26px 24px 18px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; animation:fondu .3s ease-out}
@@ -600,21 +619,21 @@ body.pro .nav-logo{text-shadow:0 0 18px rgba(232,196,106,.25)}
 .filtres-d{display:flex; flex-direction:column; gap:10px; margin-bottom:14px}
 .filtres-d .seg{flex:1; min-width:260px} .filtres-d .seg button{height:40px; font-size:14.5px}
 .pastille-deal{border:none; cursor:pointer; font:700 15px 'Barlow',sans-serif; height:32px; box-shadow:0 4px 14px rgba(0,0,0,.35)}
-.pop-comps{display:none; position:absolute; z-index:5; left:8px; right:8px; top:48px; background:rgba(16,20,24,.97); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+.pop-comps{display:none; position:absolute; z-index:5; left:8px; right:8px; top:48px; background:rgba(17,17,21,.97); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
   border:1px solid var(--ligne); border-radius:16px; padding:12px; box-shadow:0 18px 40px rgba(0,0,0,.5); flex-direction:column; gap:10px}
 .pop-comps.statique{display:flex; position:static; box-shadow:none}
 @media (hover:hover) and (pointer:fine){ .tuile-deal:has(.pastille-deal:hover) .pop-comps, .tuile-deal.pop-ouvert .pop-comps, .pop-comps:hover{display:flex} }
 .pop-t{display:flex; flex-direction:column; gap:2px; font-weight:700; font-size:14.5px} .pop-t span{color:var(--doux); font-weight:600; font-size:13px}
 .pop-g{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px} .pop-comps.statique .pop-g{grid-template-columns:repeat(auto-fill,minmax(72px,1fr))}
 .pop-comps.statique{padding:0; border:none; background:none}
-.pop-c{display:flex; flex-direction:column; gap:3px; color:var(--texte); text-align:center} .pop-c span{aspect-ratio:3/4; border-radius:8px; background:#0E1216 center/contain no-repeat; border:1px solid var(--ligne)}
+.pop-c{display:flex; flex-direction:column; gap:3px; color:var(--texte); text-align:center} .pop-c span{aspect-ratio:3/4; border-radius:8px; background:#111115 center/contain no-repeat; border:1px solid var(--ligne)}
 .pop-c b{font:700 14px 'Barlow Condensed',sans-serif; white-space:nowrap}
-.tuile-pro{align-items:center; justify-content:center; gap:10px; text-align:center; min-height:260px; background:radial-gradient(120% 100% at 50% 0%, #2B2414, var(--carte) 70%); border-color:#5A4A22}
+.tuile-pro{align-items:center; justify-content:center; gap:10px; text-align:center; min-height:260px; background:radial-gradient(120% 100% at 50% 0%, #2A2416, var(--carte) 70%); border-color:#5C4E2C}
 .tuile-pro b{font-size:20px} .tuile-pro span:not(.badge-f){color:var(--doux); font-size:14px}
 
 /* 24 oct 2026 - analyse de break : produit en visuel, places en tuiles (ecusson d'equipe, valeur, chances) */
 .visuel-prod{flex-direction:column; align-items:flex-start !important; justify-content:flex-end !important; padding:16px; gap:4px; aspect-ratio:4/3 !important;
-  background:radial-gradient(130% 120% at 85% 0%, #1F4C70 0%, #12263A 45%, #0B141C 100%) !important; color:#fff !important}
+  background:radial-gradient(130% 120% at 85% 0%, #2E2F55 0%, #191A2E 45%, #0E0E16 100%) !important; color:#fff !important}
 .vp-saison{font:700 15px 'Barlow Condensed',sans-serif; color:var(--or); letter-spacing:.08em} .vp-nom{font:700 26px/1.05 'Barlow Condensed',sans-serif}
 .vp-marque{font-size:13px; color:rgba(255,255,255,.6); text-transform:uppercase; letter-spacing:.1em; font-weight:700}
 .ana-tete{display:flex; flex-wrap:wrap; gap:10px; align-items:center} .ana-tete .seg{flex:1; min-width:240px}
@@ -632,7 +651,7 @@ body.pro .nav-logo{text-shadow:0 0 18px rgba(232,196,106,.25)}
 .liste-j{display:flex; flex-direction:column} .ligne-j{display:grid; grid-template-columns:30px 1fr auto; gap:4px 10px; align-items:center; padding:10px 0; border-bottom:1px solid var(--sep)}
 .ligne-j .rang{font:700 18px 'Barlow Condensed',sans-serif; color:var(--doux)} .ligne-j .sous{grid-column:2; font-size:13px} .ligne-j .p{grid-row:1 / span 2; grid-column:3; font:700 22px 'Barlow Condensed',sans-serif}
 .tuile-analyse{display:grid; grid-template-columns:1fr auto; gap:2px 12px; align-items:center; padding:16px 18px; border-radius:18px; color:var(--texte);
-  background:radial-gradient(120% 140% at 90% 0%, #1F4C70, var(--carte) 70%); border:1px solid #2F5673}
+  background:radial-gradient(120% 140% at 90% 0%, #2A2B52, var(--carte) 70%); border:1px solid rgba(185,190,255,.28)}
 .tuile-analyse b{font-size:19px} .tuile-analyse span{font-size:14px; color:var(--doux)} .tuile-analyse .go{grid-row:1 / span 2; grid-column:2; font-size:26px; color:var(--acc)}
 
 /* 24 oct 2026 - fenetre d'annonce : photos + infos en haut, les memes cartes (avec images) dessous */
@@ -645,17 +664,17 @@ body.fen-ouverte{overflow:hidden}
 .fen-haut{display:grid; grid-template-columns:1fr; gap:18px}
 @media (min-width:860px){ .fen-haut{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} }
 @media (max-width:600px){ .fen-img{aspect-ratio:4/3 !important; max-height:42vh !important} }
-.fen-img{aspect-ratio:1/1; max-height:62vh; border-radius:20px; background:#0E1216; border:1px solid var(--ligne); display:flex; align-items:center; justify-content:center; overflow:hidden; color:#2E353D}
+.fen-img{aspect-ratio:1/1; max-height:62vh; border-radius:20px; background:#111115; border:1px solid var(--ligne); display:flex; align-items:center; justify-content:center; overflow:hidden; color:#34333D}
 .fen-img img{width:100%; height:100%; object-fit:contain; transition:transform .25s ease}
 .fen-img{position:relative; cursor:zoom-in} .fen-img.zoom{cursor:zoom-out} .fen-img.zoom img{transform:scale(2.6)}
-.loupe{position:absolute; pointer-events:none; opacity:0; border-radius:50%; border:3px solid rgba(255,255,255,.85); box-shadow:0 10px 30px rgba(0,0,0,.55), inset 0 0 0 1px rgba(0,0,0,.3); background:#0E1216 no-repeat; transition:opacity .12s; z-index:3}
+.loupe{position:absolute; pointer-events:none; opacity:0; border-radius:50%; border:3px solid rgba(255,255,255,.85); box-shadow:0 10px 30px rgba(0,0,0,.55), inset 0 0 0 1px rgba(0,0,0,.3); background:#111115 no-repeat; transition:opacity .12s; z-index:3}
 .fen-img.zoom .loupe{display:none}
 .fen-sug{display:grid; grid-template-columns:1fr 1fr; gap:10px}
 .fen-sug > div{border-radius:16px; padding:12px 14px; display:flex; flex-direction:column; gap:2px; background:var(--carte); border:1px solid var(--ligne)}
-.fen-sug > div.on{background:linear-gradient(135deg, rgba(240,198,92,.16), rgba(240,198,92,.04)); border-color:rgba(240,198,92,.45)}
-.fen-sug span{font-size:14px; color:var(--doux); font-weight:600} .fen-sug b{font:700 30px/1.05 'Barlow Condensed',sans-serif} .fen-sug .on b{color:#F0C65C} .fen-sug small{font-size:13px; color:var(--doux)} .fen-img svg{width:30%; height:30%}
+.fen-sug > div.on{background:linear-gradient(135deg, rgba(233,207,142,.16), rgba(233,207,142,.04)); border-color:rgba(233,207,142,.45)}
+.fen-sug span{font-size:14px; color:var(--doux); font-weight:600} .fen-sug b{font:700 30px/1.05 'Barlow Condensed',sans-serif} .fen-sug .on b{color:var(--or)} .fen-sug small{font-size:13px; color:var(--doux)} .fen-img svg{width:30%; height:30%}
 .fen-vigs{display:flex; gap:8px; margin-top:10px; overflow-x:auto; scrollbar-width:none}
-.fen-vigs button{flex:0 0 auto; width:62px; height:62px; border-radius:10px; border:1.5px solid var(--ligne); background:#0E1216 center/cover no-repeat; cursor:pointer}
+.fen-vigs button{flex:0 0 auto; width:62px; height:62px; border-radius:10px; border:1.5px solid var(--ligne); background:#111115 center/cover no-repeat; cursor:pointer}
 .fen-vigs button.on{border-color:var(--acc)}
 .fen-info{display:flex; flex-direction:column; gap:14px; padding-top:6px}
 .fen-info h3{font-size:22px; line-height:1.3; margin:0; padding-right:44px}
@@ -682,7 +701,7 @@ body.fen-ouverte{overflow:hidden}
 .visuel-prod .vp-saison, .visuel-prod .vp-nom{position:relative; text-shadow:0 2px 12px rgba(0,0,0,.7)}
 .ana-hero{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
 .ana-prod{display:flex; align-items:center; gap:12px; flex:1; min-width:240px; padding:8px 14px 8px 8px; border-radius:18px; border:1px solid var(--ligne); background:var(--carte); color:var(--texte); cursor:pointer; text-align:left}
-.ap-img{width:64px; height:64px; border-radius:12px; background:#0E1216; overflow:hidden; flex-shrink:0} .ap-img img{width:100%; height:100%; object-fit:cover}
+.ap-img{width:64px; height:64px; border-radius:12px; background:#111115; overflow:hidden; flex-shrink:0} .ap-img img{width:100%; height:100%; object-fit:cover}
 .ana-prod b{display:block; font-size:18px} .ana-prod small{font-size:14px; color:var(--acc)}
 .reg-break{display:none; margin-top:12px; background:var(--carte); border:1px solid var(--ligne); border-radius:18px; padding:14px 16px; flex-direction:column; gap:14px}
 .reg-break.ouvert{display:flex}
@@ -695,20 +714,20 @@ body.fen-ouverte{overflow:hidden}
 .ecusson-eq.photo img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
 .ecusson-eq.photo i{position:absolute; left:0; right:0; bottom:0; font-size:12px; line-height:18px; text-align:center; background:rgba(0,0,0,.62)}
 .vig-boite{display:flex; align-items:center; justify-content:center; overflow:hidden; background:#fff} .vig-boite img{width:100%; height:100%; object-fit:contain}
-.adm-n{display:inline-flex; min-width:20px; height:20px; border-radius:10px; align-items:center; justify-content:center; background:#F0C65C; color:#1a1405; font-size:12px; font-weight:700; padding:0 6px; margin-left:4px}
+.adm-n{display:inline-flex; min-width:20px; height:20px; border-radius:10px; align-items:center; justify-content:center; background:var(--or); color:#1a1405; font-size:12px; font-weight:700; padding:0 6px; margin-left:4px}
 .adm-agent{display:flex; align-items:center; gap:12px; padding:14px 16px; border-radius:16px; background:var(--carte); border:1px solid var(--ligne)}
-.adm-agent .aa-ic{width:36px; height:36px; border-radius:18px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#F0C65C,#C99A2E); color:#1a1405; font-size:18px; flex-shrink:0}
+.adm-agent .aa-ic{width:36px; height:36px; border-radius:18px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,var(--or),#B8963F); color:#1a1405; font-size:18px; flex-shrink:0}
 .adm-agent b{display:block; font-size:16px} .adm-agent small{color:var(--doux); font-size:14px} .adm-agent .pilule{margin-left:auto}
-.ecusson.prio1{background:#3A1418; color:#FFB3B3} .ecusson.prio2{background:#2E2610; color:#F0C65C} .ecusson.prio3{color:var(--doux)}
+.ecusson.prio1{background:#3A1418; color:#FFB3B3} .ecusson.prio2{background:#2E2610; color:var(--or)} .ecusson.prio3{color:var(--doux)}
 .dm-texte{white-space:pre-wrap; background:var(--carte2); border-radius:14px; padding:12px 14px; font-size:16px; line-height:1.45; margin:10px 0}
-.dm-texte.rep{background:linear-gradient(135deg, rgba(240,198,92,.14), rgba(240,198,92,.04)); border:1px solid rgba(240,198,92,.35)}
+.dm-texte.rep{background:linear-gradient(135deg, rgba(233,207,142,.14), rgba(233,207,142,.04)); border:1px solid rgba(233,207,142,.35)}
 .adm-l{display:flex; flex-direction:column; gap:4px; margin:10px 0} .adm-l b{font-size:15px}
-.adm-barre{height:8px; border-radius:4px; background:var(--carte2); overflow:hidden} .adm-barre i{display:block; height:100%; background:var(--acc); border-radius:4px} .adm-barre i.rouge{background:#FF6B6B}
+.adm-barre{height:8px; border-radius:4px; background:var(--carte2); overflow:hidden} .adm-barre i{display:block; height:100%; background:var(--acc); border-radius:4px} .adm-barre i.rouge{background:var(--rouge)}
 .r-idee{display:flex; align-items:center; gap:14px; width:100%; text-align:left; cursor:pointer; color:var(--texte)} .r-idee .aaj-n{min-width:38px; height:38px; border-radius:19px; display:flex; align-items:center; justify-content:center; background:var(--acc-fonce); color:var(--acc); font-weight:700; font-size:18px}
 .r-idee b{display:block; font-size:17px} .r-idee small{color:var(--doux); font-size:14px} .r-idee .fl{margin-left:auto; font-size:24px; color:var(--doux)}
-.bandeau-aaj{display:flex; align-items:center; gap:14px; width:100%; padding:14px 18px; margin-bottom:14px; border-radius:18px; border:1px solid rgba(240,198,92,.45); background:linear-gradient(135deg, rgba(240,198,92,.16), rgba(240,198,92,.04)); color:var(--texte); text-align:left; cursor:pointer}
-.bandeau-aaj .aaj-n{min-width:38px; height:38px; border-radius:19px; display:flex; align-items:center; justify-content:center; background:#F0C65C; color:#1a1405; font:700 18px 'Barlow Condensed',sans-serif}
-.bandeau-aaj b{display:block; font-size:17px} .bandeau-aaj small{color:var(--doux); font-size:14px} .bandeau-aaj .fl{margin-left:auto; font-size:24px; color:#F0C65C}
+.bandeau-aaj{display:flex; align-items:center; gap:14px; width:100%; padding:14px 18px; margin-bottom:14px; border-radius:18px; border:1px solid rgba(233,207,142,.45); background:linear-gradient(135deg, rgba(233,207,142,.16), rgba(233,207,142,.04)); color:var(--texte); text-align:left; cursor:pointer}
+.bandeau-aaj .aaj-n{min-width:38px; height:38px; border-radius:19px; display:flex; align-items:center; justify-content:center; background:var(--or); color:#1a1405; font:700 18px 'Barlow Condensed',sans-serif}
+.bandeau-aaj b{display:block; font-size:17px} .bandeau-aaj small{color:var(--doux); font-size:14px} .bandeau-aaj .fl{margin-left:auto; font-size:24px; color:var(--or)}
 .aaj-act{display:flex; gap:6px; align-items:center; flex-wrap:wrap; justify-content:flex-end}
 .place-s{display:grid !important; grid-template-columns:auto 1fr auto; align-items:center; gap:10px; padding:12px 14px}
 .place-s .ps-n b{display:block; font-size:16px; line-height:1.2} .place-s .ps-n span{font-size:13px; color:var(--doux)}
@@ -759,15 +778,15 @@ body.fen-ouverte{overflow:hidden}
 /* 25 oct 2026 - le logo officiel SlabCoach (Mathieu : « le même effet de swipe que le logo gold, ultra premium »).
    Le reflet ne passe QUE sur le dessin du logo (masque = le logo lui-même). */
 .logo-lr{position:relative; display:inline-flex; line-height:0; flex-shrink:0}
-.logo-lr img{display:block; width:auto; filter:drop-shadow(0 10px 28px rgba(232,196,106,.16))}
+.logo-lr img{display:block; width:auto; filter:drop-shadow(0 10px 28px rgba(185,190,255,.14))}
 .logo-lr::after{content:''; position:absolute; inset:0; pointer-events:none;
-  background:linear-gradient(110deg, transparent 0%, transparent 38%, rgba(255,246,214,.85) 50%, transparent 62%, transparent 100%);
+  background:linear-gradient(110deg, transparent 0%, transparent 38%, rgba(255,250,236,.85) 50%, transparent 62%, transparent 100%);
   background-size:250% 100%; animation:reflet 5.5s ease-in-out infinite; mix-blend-mode:screen;
   -webkit-mask:var(--masque) center/contain no-repeat; mask:var(--masque) center/contain no-repeat}
 .logo-lr.officiel{--masque:url(/logo_sc_gold_poli.png)}
 /* 27 oct 2026 - le logo SlabCoach de l'accueil : le Bloc en or poli, le reflet qui passe dessus (pas de rotation) */
 .piece-sc{position:relative; display:inline-block; width:118px; height:118px; line-height:0}
-.piece-sc img{position:absolute; inset:0; width:100% !important; height:100% !important}
+.piece-sc img, .piece-sc svg{position:absolute; inset:0; width:100% !important; height:100% !important}
 .nav-logo .logo-lr{--masque:url(/logo_sc_gold.png)} .nav-logo .logo-lr img, .nav-logo span img{width:auto !important; height:36px !important; border-radius:0 !important}
 .nav-logo span:not(.logo-lr) img{width:38px !important; height:38px !important; border-radius:10px !important}
 body.marque-perso .logo-lr.officiel{display:none !important}
@@ -782,18 +801,30 @@ body:not(.marque-perso) .marque .logo{display:none !important}
 #vue{position:relative; z-index:1}
 #mosaique{position:fixed; inset:-30%; z-index:0; pointer-events:none;
   background-image:var(--mosaique, url(/logo_sc_mono.png)); background-size:120px auto; background-repeat:space;
-  opacity:.035; transform:rotate(-14deg)}
-body.pro #mosaique{opacity:.05}
+  opacity:.018; transform:rotate(-14deg)}
+body.pro #mosaique{opacity:.03}
 .nav-logo .logo-lr::after{animation-duration:3.2s; background:linear-gradient(110deg, transparent 0%, transparent 34%, rgba(255,248,224,.95) 50%, transparent 66%, transparent 100%); background-size:250% 100%}
+/* 27 oct 2026 - l'ecriture SlabCoach (Mathieu : « simple, beau, moderne et premium », + ™ et un petit « sports cards » subtil) */
+@font-face{font-family:'Manrope'; font-weight:800; font-display:swap; src:url(/manrope-800.woff2) format('woff2')}
+@font-face{font-family:'Manrope'; font-weight:400; font-display:swap; src:url(/manrope-400.woff2) format('woff2')}
+.mot-sc{display:inline-block; font-family:'Manrope',system-ui,sans-serif; font-weight:400; letter-spacing:-.025em; line-height:1; white-space:nowrap; color:var(--texte); text-transform:none}
+.mot-sc b{font-weight:800}
+.mot-sc sup{font-size:.26em; font-weight:800; letter-spacing:0; vertical-align:1.75em; margin-left:.1em; opacity:.8}
+.mot-sc .tag{display:block; margin-top:.38em; font-size:.17em; font-weight:800; letter-spacing:1.79em; margin-right:-1.79em;
+  background:var(--holo); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent}
+#nav-logo-nom.a-mot{background:none; -webkit-text-fill-color:initial; color:inherit; animation:none; font-size:23px}
+#nav-logo-nom.a-mot .tag{font-size:7.5px; letter-spacing:.66em; margin-right:-.66em; margin-top:5px}
+.marque .nom-b.a-mot{font-size:26px; overflow:visible}
+.marque .nom-b.a-mot .tag{font-size:8px; letter-spacing:.73em; margin-right:-.73em; margin-top:6px}
 #nav-logo-nom{background:linear-gradient(110deg,var(--niv1) 0%,var(--niv2) 38%,#FFF8E6 50%,var(--niv2) 62%,var(--niv1) 100%); background-size:250% 100%;
   -webkit-background-clip:text; background-clip:text; color:transparent; animation:reflet 3.2s ease-in-out infinite}
 body.marque-perso #nav-logo-nom{background:none; -webkit-text-fill-color:currentColor; color:var(--texte); animation:none}
-body.pro .titre{background:linear-gradient(110deg,#FFFFFF 0%,#FBEFC8 30%,#E8C46A 45%,#FFF6D8 50%,#E8C46A 55%,#FBEFC8 70%,#FFFFFF 100%); background-size:250% 100%;
+body.pro .titre{background:linear-gradient(110deg,#FFFFFF 0%,#F8EDCF 30%,#E9CF8E 45%,#FFF8E8 50%,#E9CF8E 55%,#F8EDCF 70%,#FFFFFF 100%); background-size:250% 100%;
   -webkit-background-clip:text; background-clip:text; color:transparent; animation:reflet 7s ease-in-out infinite}
-body.pro .kpi .v, body.pro .t-acc b:not(.vert):not(.rouge){text-shadow:0 0 22px rgba(232,196,106,.12)}
-body.pro .kpi, body.pro .carte-acc, body.pro .t-acc{background-image:linear-gradient(160deg, rgba(232,196,106,.07), rgba(232,196,106,0) 42%)}
-body.pro .rond.acc, body.pro .btn:not(.ghost){box-shadow:0 6px 20px rgba(217,169,63,.18)}
-body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px rgba(232,196,106,.55))}
+body.pro .kpi .v, body.pro .t-acc b:not(.vert):not(.rouge){text-shadow:0 0 22px rgba(233,207,142,.12)}
+body.pro .kpi, body.pro .carte-acc, body.pro .t-acc{background-image:linear-gradient(160deg, rgba(233,207,142,.07), rgba(233,207,142,0) 42%)}
+body.pro .rond.acc, body.pro .btn:not(.ghost){box-shadow:0 6px 20px rgba(217,184,102,.18)}
+body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px rgba(233,207,142,.55))}
 @media (prefers-reduced-motion:reduce){ #nav-logo-nom, body.pro .titre{animation:none} }
 
 /* 25 oct 2026 - breaks v3 : écussons d'équipe SlabCoach (couleurs de l'équipe), cartes des joueurs au même cadre, scores acheteur */
@@ -802,7 +833,7 @@ body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px rgba(232,196,106,.55))}
 .ecu-eq::after{content:''; position:absolute; inset:3px; clip-path:inherit; border:0; background:linear-gradient(160deg, rgba(255,255,255,.22), rgba(255,255,255,0) 45%); pointer-events:none}
 .ecu-eq i{font:700 15px/1 'Barlow Condensed',sans-serif; font-style:normal; color:#fff; letter-spacing:.04em; text-shadow:0 1px 3px rgba(0,0,0,.6); position:relative; z-index:1}
 .ecu-eq.grand{width:58px; height:66px} .ecu-eq.grand i{font-size:19px}
-.vig-j{width:46px; height:64px; flex-shrink:0; border-radius:7px; overflow:hidden; background:#0E1216; border:1px solid var(--ligne); display:flex; align-items:center; justify-content:center; position:relative; color:var(--ligne)}
+.vig-j{width:46px; height:64px; flex-shrink:0; border-radius:7px; overflow:hidden; background:#111115; border:1px solid var(--ligne); display:flex; align-items:center; justify-content:center; position:relative; color:var(--ligne)}
 .vig-j svg{width:60%; height:60%} .vig-j img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
 .score-l .vig-j{width:52px; height:72px}
 .ana-ctrl{display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:12px; margin-top:12px}
@@ -817,7 +848,7 @@ body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px rgba(232,196,106,.55))}
 .score-l .rang{font:700 18px 'Barlow Condensed',sans-serif; color:var(--doux); text-align:center}
 .sl-n{min-width:0; display:flex; flex-direction:column; gap:4px} .sl-n b{font-size:17px} .sl-n > span{font-size:14px; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .sl-m{display:flex; flex-direction:column; gap:2px; min-width:0} .sl-m span{font-size:13px; color:var(--doux); font-weight:600} .sl-m b{font:700 24px/1.05 'Barlow Condensed',sans-serif} .sl-m small{font-size:13px; color:var(--doux)}
-.barre-p{height:6px; border-radius:3px; background:var(--carte2); overflow:hidden; margin-top:4px} .barre-p i{display:block; height:100%; background:linear-gradient(90deg,#8FD4A4,#E8C46A)}
+.barre-p{height:6px; border-radius:3px; background:var(--carte2); overflow:hidden; margin-top:4px} .barre-p i{display:block; height:100%; background:linear-gradient(90deg,#8FD4A4,#E9CF8E)}
 .sl-s{display:flex; flex-direction:column; align-items:flex-end; gap:6px} .sl-s .champ{width:86px; height:34px; font-size:14px}
 .score{display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:74px; padding:6px 10px; border-radius:14px; background:var(--carte2)}
 .score b{font:700 30px/1 'Barlow Condensed',sans-serif} .score small{font-size:12px; font-weight:700; white-space:nowrap}
@@ -838,36 +869,36 @@ body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px rgba(232,196,106,.55))}
 .adm-t .ic{grid-area:ic} .adm-t .t{grid-area:t; align-self:center} .adm-t b{grid-area:v; font-size:22px !important} .adm-t small{grid-area:s}
 .adm-grille{display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:8px}
 .adm-t{display:flex; flex-direction:column; gap:2px; padding:10px 12px; border-radius:14px; background:var(--carte2); color:var(--texte); min-width:0; border:1px solid transparent}
-.adm-t .ic{display:flex; color:#E8C46A} .adm-t.rouge .ic{color:var(--rouge)} .adm-t .t{font-size:13px; color:var(--doux); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.adm-t .ic{display:flex; color:#E9CF8E} .adm-t.rouge .ic{color:var(--rouge)} .adm-t .t{font-size:13px; color:var(--doux); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .adm-t b{font:700 24px/1.05 'Barlow Condensed',sans-serif} .adm-t small{font-size:12px; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-.adm-t.or{border-color:rgba(232,196,106,.4)} .adm-t.or b{color:var(--or)} .adm-t.rouge{border-color:rgba(255,107,107,.45)} .adm-t.rouge b{color:var(--rouge)} .adm-t.vert b{color:var(--vert)}
+.adm-t.or{border-color:rgba(233,207,142,.4)} .adm-t.or b{color:var(--or)} .adm-t.rouge{border-color:rgba(255,179,179,.45)} .adm-t.rouge b{color:var(--rouge)} .adm-t.vert b{color:var(--vert)}
 
 /* 25 oct 2026 - Vendre : les 4 étapes en pictogrammes (or), légères */
 .etapes-v{display:flex; align-items:flex-start; justify-content:space-between; gap:6px; margin:4px 0 2px}
 .etapes-v .ev{flex:1; display:flex; flex-direction:column; align-items:center; text-align:center; gap:4px; min-width:0}
 .ev-i{position:relative; width:58px; height:58px; border-radius:18px; display:flex; align-items:center; justify-content:center; color:#1a1405;
-  background:linear-gradient(135deg,#F9E7A8 0%,#E8C46A 45%,#C9962E 100%); box-shadow:0 8px 22px rgba(217,169,63,.22), inset 0 1px 0 rgba(255,255,255,.6)}
+  background:linear-gradient(135deg,#F7EAC4 0%,#E9CF8E 45%,#B8963F 100%); box-shadow:0 8px 22px rgba(217,184,102,.22), inset 0 1px 0 rgba(255,255,255,.6)}
 .ev-i svg{width:28px; height:28px}
-.ev-i em{position:absolute; top:-6px; right:-6px; width:22px; height:22px; border-radius:11px; background:var(--fond); color:#E8C46A; border:1.5px solid #E8C46A; font:700 12px/19px 'Barlow Condensed',sans-serif; font-style:normal}
+.ev-i em{position:absolute; top:-6px; right:-6px; width:22px; height:22px; border-radius:11px; background:var(--fond); color:#E9CF8E; border:1.5px solid #E9CF8E; font:700 12px/19px 'Barlow Condensed',sans-serif; font-style:normal}
 .etapes-v b{font-size:15px; color:var(--texte); margin-top:4px} .etapes-v small{font-size:13px; color:var(--doux)}
-.ev-f{flex:0 0 26px; height:2px; margin-top:29px; background:linear-gradient(90deg,rgba(232,196,106,.15),rgba(232,196,106,.7),rgba(232,196,106,.15)); border-radius:2px}
-.ev-res{display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 14px; border-radius:16px; background:linear-gradient(135deg, rgba(232,196,106,.10), rgba(232,196,106,.02)); border:1px solid rgba(232,196,106,.28)}
-.ev-res-t{font-weight:700; color:#F2D27C; font-size:15px} .ev-res > span:last-child{display:flex; gap:6px; flex-wrap:wrap}
+.ev-f{flex:0 0 26px; height:2px; margin-top:29px; background:linear-gradient(90deg,rgba(233,207,142,.15),rgba(233,207,142,.7),rgba(233,207,142,.15)); border-radius:2px}
+.ev-res{display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 14px; border-radius:16px; background:linear-gradient(135deg, rgba(233,207,142,.10), rgba(233,207,142,.02)); border:1px solid rgba(233,207,142,.28)}
+.ev-res-t{font-weight:700; color:var(--or-clair); font-size:15px} .ev-res > span:last-child{display:flex; gap:6px; flex-wrap:wrap}
 @media (max-width:560px){ .ev-i{width:48px; height:48px; border-radius:15px} .ev-i svg{width:24px; height:24px} .ev-f{flex-basis:10px; margin-top:24px} .etapes-v small{display:none} .etapes-v b{font-size:13px} }
 
 /* 25 oct 2026 - guide du hobby et budget */
 .g-regles{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:10px}
 .g-regles > div{display:grid; grid-template-columns:auto 1fr; grid-template-areas:"n t" "n b"; gap:6px 12px; background:var(--carte); border:1px solid var(--ligne); border-radius:18px; padding:14px}
-.g-regles b{grid-area:n; width:34px; height:34px; border-radius:17px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#F9E7A8,#C9962E); color:#1a1405; font:700 18px 'Barlow Condensed',sans-serif}
+.g-regles b{grid-area:n; width:34px; height:34px; border-radius:17px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#F7EAC4,#B8963F); color:#1a1405; font:700 18px 'Barlow Condensed',sans-serif}
 .g-regles span{grid-area:t; font-size:14px; color:var(--doux); display:flex; flex-direction:column; gap:3px} .g-regles strong{font-size:16px; color:var(--texte)}
 .g-regles .pilule{grid-area:b; justify-self:start}
 .g-grille{display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:10px}
 .g-c{background:var(--carte); border:1px solid var(--ligne); border-radius:16px; padding:12px 14px; display:flex; flex-direction:column; gap:4px}
-.g-c b{font-size:16px; color:#F2D27C} .g-c span{font-size:14px; color:var(--doux); line-height:1.4}
-.g-c.acc{border-color:rgba(124,200,255,.35)} .g-c.or{border-color:rgba(232,196,106,.4)} .g-c.rouge{border-color:rgba(255,107,107,.4)}
+.g-c b{font-size:16px; color:var(--or-clair)} .g-c span{font-size:14px; color:var(--doux); line-height:1.4}
+.g-c.acc{border-color:rgba(185,190,255,.35)} .g-c.or{border-color:rgba(233,207,142,.4)} .g-c.rouge{border-color:rgba(255,179,179,.4)}
 .g-check{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:8px}
 .g-check label{display:flex; gap:10px; align-items:center; background:var(--carte); border-radius:14px; padding:10px 12px; font-size:15px}
-.g-check input{width:20px; height:20px; accent-color:#E8C46A}
+.g-check input{width:20px; height:20px; accent-color:#E9CF8E}
 .fen-budget{font-size:15px; font-weight:700; padding:8px 12px; border-radius:12px} .fen-budget.vert{background:var(--vert-fond); color:var(--vert)} .fen-budget.rouge{background:var(--rouge-fond); color:var(--rouge)}
 .ev-f{flex:1 1 30px !important; max-width:140px}
 
@@ -878,25 +909,25 @@ body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px rgba(232,196,106,.55))}
 .ecran .entete{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap}
 .quota{display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 14px; border-radius:17px; border:1px solid var(--ligne); background:rgba(255,255,255,.03);
   color:var(--doux); font-size:14px; font-weight:600; white-space:nowrap; cursor:pointer} .quota b{color:var(--or)}
-.quota.vide{border-color:var(--rouge); color:var(--rouge)} .quota.pro{cursor:default; color:var(--or); border-color:rgba(232,196,106,.45); background:linear-gradient(90deg,rgba(232,196,106,.14),rgba(232,196,106,.03))}
+.quota.vide{border-color:var(--rouge); color:var(--rouge)} .quota.pro{cursor:default; color:var(--or); border-color:rgba(233,207,142,.45); background:linear-gradient(90deg,rgba(233,207,142,.14),rgba(233,207,142,.03))}
 @media (max-width:899px){ .onglets .nav-idees{display:none} }
 /* ===== 26 oct 2026 - mobile « app premium » : inspiré de CollX / Ludex (scan au centre), Collectr / Card Ladder
    (valeur et courbe en héros), Robinhood (chiffres nets), et du guide d'Apple (barre en verre, cibles de 44 pt,
    feuilles qu'on glisse, retour au toucher) ===== */
 @media (max-width:899px){
-  .onglets{background:rgba(12,15,19,.72); backdrop-filter:blur(22px) saturate(180%); -webkit-backdrop-filter:blur(22px) saturate(180%);
+  .onglets{background:rgba(13,13,17,.72); backdrop-filter:blur(22px) saturate(180%); -webkit-backdrop-filter:blur(22px) saturate(180%);
     border-top:1px solid rgba(255,255,255,.06); padding:6px 6px calc(6px + var(--bas)); overflow:visible}
   .onglets a{min-height:48px; justify-content:center; font-weight:600; letter-spacing:.1px}
   .onglets a.on::before{content:""; position:absolute; top:-6px; width:22px; height:3px; border-radius:2px; background:var(--acc)}
   .onglets a.centre{color:var(--texte)}
   .onglets a.centre svg{box-sizing:content-box; width:26px; height:26px; padding:13px; margin-top:-26px; border-radius:50%;
-    background:radial-gradient(120% 120% at 30% 20%, #F6DC8E, #E8C46A 45%, #B8903A); color:#1A1408; stroke:#1A1408;
-    box-shadow:0 0 0 5px rgba(12,15,19,.92), 0 10px 24px rgba(232,196,106,.35)}
-  body:not(.mode-acheteur) .onglets a.centre svg{background:radial-gradient(120% 120% at 30% 20%, #B9E6FF, #7FD0FF 45%, #3E95C9); stroke:#06121B;
-    box-shadow:0 0 0 5px rgba(12,15,19,.92), 0 10px 24px rgba(127,208,255,.35)}
+    background:radial-gradient(120% 120% at 30% 20%, var(--or-clair), #E9CF8E 45%, #B8963F); color:#1A1408; stroke:#1A1408;
+    box-shadow:0 0 0 5px rgba(13,13,17,.92), 0 10px 24px rgba(233,207,142,.35)}
+  body:not(.mode-acheteur) .onglets a.centre svg{background:radial-gradient(120% 120% at 30% 20%, #E4E6FF, #B9BEFF 45%, #7479CF); stroke:#0E1026;
+    box-shadow:0 0 0 5px rgba(13,13,17,.92), 0 10px 24px rgba(185,190,255,.35)}
   .onglets a.centre.on::before{display:none}
-  .barre-mode{transition:background .2s, border-color .2s; border-bottom-color:transparent; background:rgba(10,13,16,.55)}
-  body.defile .barre-mode{background:rgba(10,13,16,.78); border-bottom-color:rgba(255,255,255,.06)}
+  .barre-mode{transition:background .2s, border-color .2s; border-bottom-color:transparent; background:rgba(11,11,14,.55)}
+  body.defile .barre-mode{background:rgba(11,11,14,.78); border-bottom-color:rgba(255,255,255,.06)}
   #vue > .ecran{animation:lr-entre .22s ease-out}
   .rech-ligne{display:flex; gap:10px} .rech-ligne .recherche{flex:1; min-width:0}
   .acc-tuiles{display:flex; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; scroll-padding:0 2px; padding-bottom:2px}
@@ -908,7 +939,7 @@ body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px rgba(232,196,106,.55))}
 @keyframes lr-entre{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
 .rech-ligne{display:flex; gap:10px} .rech-ligne .recherche{flex:1; min-width:0}
 .btn-scan{flex-shrink:0; display:inline-flex; align-items:center; gap:8px; height:44px; padding:0 16px; border-radius:12px; cursor:pointer; font-weight:700;
-  background:linear-gradient(180deg, rgba(232,196,106,.22), rgba(232,196,106,.08)); border:1px solid rgba(232,196,106,.45); color:var(--or)}
+  background:linear-gradient(180deg, rgba(233,207,142,.22), rgba(233,207,142,.08)); border:1px solid rgba(233,207,142,.45); color:var(--or)}
 .btn-scan svg{width:22px; height:22px}
 @media (max-width:420px){ .btn-scan span{display:none} .btn-scan{padding:0 12px} }
 /* retour au toucher (iOS) */
@@ -925,7 +956,7 @@ body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px rgba(232,196,106,.55))}
 .t-mini{width:64px; height:30px; flex-shrink:0; fill:none; stroke:var(--acc); stroke-width:2.2; vector-effect:non-scaling-stroke} .t-mini.vert{stroke:var(--vert)} .t-mini.rouge{stroke:var(--rouge)}
 .t-prix{font-size:18px} .t-vide{padding:22px 8px; font-size:15px}
 @media (max-width:600px){ .t-mini{display:none} }
-.vig-j.init{background:linear-gradient(160deg, var(--c1), color-mix(in srgb, var(--c1) 45%, #0B0E11) 70%); border-color:color-mix(in srgb, var(--c1) 60%, transparent); color:#fff}
+.vig-j.init{background:linear-gradient(160deg, var(--c1), color-mix(in srgb, var(--c1) 45%, #0B0B0E) 70%); border-color:color-mix(in srgb, var(--c1) 60%, transparent); color:#fff}
 .vig-j.init i{font-style:normal; font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:22px; letter-spacing:.5px; text-shadow:0 2px 6px rgba(0,0,0,.45)}
 .vig-j.init.portrait i{display:none}
 .lien-exp{margin-top:6px; align-self:flex-start; background:none; border:0; padding:2px 0; color:var(--acc); font-weight:600; font-size:14px; cursor:pointer}
@@ -942,9 +973,9 @@ body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px rgba(232,196,106,.55))}
 .hits-l .np{font:600 12px 'Inter',sans-serif; color:var(--doux)} .sl-st{display:block; font-size:13px; color:var(--doux); margin-top:2px}
 .ex-h > div{grid-template-columns:minmax(0,1.3fr) .7fr .7fr .8fr .7fr .8fr !important} .ex-v > div{grid-template-columns:minmax(0,1.6fr) .5fr .7fr .7fr .9fr !important}
 .ex-t .tete{background:none !important; font-size:12px !important; color:var(--doux); padding-top:0 !important; padding-bottom:0 !important}
-.ex-t .tot{background:rgba(52,211,153,.08) !important; font-weight:600} .ex-t .doux{color:var(--doux)} .ex-t small{color:var(--doux)}
+.ex-t .tot{background:rgba(143,212,164,.08) !important; font-weight:600} .ex-t .doux{color:var(--doux)} .ex-t small{color:var(--doux)}
 .vj-ex{display:flex; gap:8px; overflow-x:auto; margin-top:8px} .vj-ex a{flex:0 0 74px; display:flex; flex-direction:column; gap:2px; color:var(--texte); text-decoration:none; font-size:13px}
-.vj-ex a span{height:96px; border-radius:8px; background:#1a1f26 center/cover} .vj-ex a small{color:var(--doux)}
+.vj-ex a span{height:96px; border-radius:8px; background:#1D1D23 center/cover} .vj-ex a small{color:var(--doux)}
 .hits-m{display:none}
 .preuve-d{margin:0 0 12px; border:1px solid var(--ligne); border-radius:14px; background:var(--carte); padding:10px 14px; font-size:14px; color:var(--doux)}
 .preuve-d summary{cursor:pointer; list-style:none} .preuve-d summary::-webkit-details-marker{display:none} .preuve-d summary b{color:var(--texte)}
@@ -959,21 +990,21 @@ body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px rgba(232,196,106,.55))}
   .ex-h > div > span:first-child, .ex-v > div > span:first-child{white-space:normal !important} }
 .ex-t > div span:first-child{color:var(--texte); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap} .ex-t .vert{color:var(--vert)}
 .ex-l small{font-size:13px}
-.vig-j.portrait{background:radial-gradient(120% 90% at 50% 20%, #26303A, #0E1216)} .vig-j.portrait img{object-fit:cover; object-position:50% 12%}
+.vig-j.portrait{background:radial-gradient(120% 90% at 50% 20%, #2A2932, #111115)} .vig-j.portrait img{object-fit:cover; object-position:50% 12%}
 
 .ana-ctrl{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,.9fr) !important}
 @media (max-width:960px){ .ana-ctrl{grid-template-columns:1fr !important} }
 .ac-p .btn{height:44px; margin-top:2px}
 
 /* 26 oct 2026 - salutation et Conseils (IA) sur l'accueil ; prix des deals toujours visible */
-.horloge .salut{font-size:16px; font-weight:600; color:#F2D27C; margin-bottom:2px; white-space:nowrap}
+.horloge .salut{font-size:16px; font-weight:600; color:var(--or-clair); margin-bottom:2px; white-space:nowrap}
 .deal-l .m{flex-shrink:0; white-space:nowrap; padding-right:4px}
-.conseils-acc{background-image:linear-gradient(160deg, rgba(232,196,106,.10), rgba(232,196,106,0) 55%) !important; border:1px solid rgba(232,196,106,.25)}
-.conseils-acc .acc-titre span{color:#F2D27C} .cs-ia{font-size:12px; font-weight:600; color:var(--doux); margin-left:6px}
+.conseils-acc{background-image:linear-gradient(160deg, rgba(233,207,142,.10), rgba(233,207,142,0) 55%) !important; border:1px solid rgba(233,207,142,.25)}
+.conseils-acc .acc-titre span{color:var(--or-clair)} .cs-ia{font-size:12px; font-weight:600; color:var(--doux); margin-left:6px}
 .conseils-acc .lien-doux{background:none; border:none; color:var(--doux); font-size:18px; cursor:pointer}
 .conseil{display:grid; grid-template-columns:34px minmax(0,1fr) auto; gap:10px; align-items:center; padding:9px 0; border-bottom:1px solid var(--sep); color:var(--texte)}
 .conseil:last-child{border-bottom:none}
-.cs-i{width:34px; height:34px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px; background:var(--carte2); color:#E8C46A}
+.cs-i{width:34px; height:34px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px; background:var(--carte2); color:#E9CF8E}
 .conseil.acheter .cs-i{background:var(--vert-fond); color:var(--vert)} .conseil.vendre .cs-i, .conseil.prix .cs-i{background:var(--or-fonce); color:var(--or)} .conseil.budget .cs-i{background:var(--acc-fonce); color:var(--acc)}
 .cs-t{display:flex; flex-direction:column; gap:2px; min-width:0} .cs-t b{font-size:15px} .cs-t span{font-size:13px; color:var(--doux); line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
 .conseil .pilule.petit{height:30px; font-size:13px; padding:0 10px; white-space:nowrap}
@@ -984,16 +1015,16 @@ body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px rgba(232,196,106,.55))}
 .fen-courbe{display:flex; flex-direction:column; gap:4px}
 .j-tete{display:flex; align-items:center; gap:16px} .vig-j.grand{width:96px; height:128px; border-radius:14px} .j-n{flex:1; min-width:0; display:flex; flex-direction:column; gap:8px}
 .j-alerte{width:auto !important; padding:0 18px}
-.lien-j{color:inherit; text-decoration:none; border-bottom:1px dotted rgba(232,196,106,.6)} .lien-j:hover{color:#F2D27C}
-.nav-alertes{display:none !important; position:relative} .cloche-n{min-width:18px; height:18px; border-radius:9px; background:#E8C46A; color:#1a1405; font-size:11px; font-weight:800; display:inline-flex; align-items:center; justify-content:center; padding:0 5px; margin-left:auto}
+.lien-j{color:inherit; text-decoration:none; border-bottom:1px dotted rgba(233,207,142,.6)} .lien-j:hover{color:var(--or-clair)}
+.nav-alertes{display:none !important; position:relative} .cloche-n{min-width:18px; height:18px; border-radius:9px; background:#E9CF8E; color:#1a1405; font-size:11px; font-weight:800; display:inline-flex; align-items:center; justify-content:center; padding:0 5px; margin-left:auto}
 @media (min-width:900px){ .nav-alertes{display:flex !important} }
-.rangee.nouvelle{background:linear-gradient(90deg, rgba(232,196,106,.12), transparent)}
-.cal-m{margin-bottom:14px} .cal-t{font:700 18px 'Barlow Condensed',sans-serif; color:#F2D27C; text-transform:capitalize; margin:6px 0}
+.rangee.nouvelle{background:linear-gradient(90deg, rgba(233,207,142,.12), transparent)}
+.cal-m{margin-bottom:14px} .cal-t{font:700 18px 'Barlow Condensed',sans-serif; color:var(--or-clair); text-transform:capitalize; margin:6px 0}
 .coll{display:flex; flex-direction:column; gap:8px} .coll-t{display:flex; gap:22px; flex-wrap:wrap} .coll-t > div{display:flex; flex-direction:column} .coll-t b{font:700 26px 'Barlow Condensed',sans-serif} .coll-t .lib{font-size:13px; color:var(--doux)}
 .coll-t b.vert{color:var(--vert)} .coll-t b.rouge{color:var(--rouge)}
 .tuto.quest{max-width:520px} .q-opts{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:14px 0}
 .q-o{display:flex; flex-direction:column; gap:4px; text-align:left; padding:14px; border-radius:16px; border:1px solid var(--ligne); background:var(--carte2); color:var(--texte); cursor:pointer}
-.q-o:hover{border-color:#E8C46A} .q-o b{font-size:16px} .q-o span{font-size:13px; color:var(--doux)}
+.q-o:hover{border-color:#E9CF8E} .q-o b{font-size:16px} .q-o span{font-size:13px; color:var(--doux)}
 @media (max-width:480px){ .q-opts{grid-template-columns:1fr} }
 /* 26 oct 2026 (Mathieu : « maximiser l'espace sans que ce soit trop chargé », sur toutes les pages) : les écrans
    prennent la largeur disponible (jusqu'à 1680 px), marges égales ; les grilles de tuiles gagnent des colonnes */
@@ -1045,7 +1076,7 @@ html[lang=en] body.sandbox::before{content:'SANDBOX eBay · test data'}
 <main id="vue"></main>
 
 <nav class="onglets" aria-label="Navigation">
-  <a class="nav-logo" href="#accueil" aria-label="Accueil"><span class="logo-lr petit"><img src="/logo_sc_gold.png" alt="" id="nav-logo-img"></span><span id="nav-logo-nom">SlabCoach</span></a><div class="nav-pref" id="nav-pref"></div>
+  <a class="nav-logo" href="#accueil" aria-label="Accueil"><span class="logo-lr petit"><img src="/logo_sc_gold.png" alt="" id="nav-logo-img"></span><span id="nav-logo-nom" class="a-mot"><span class="mot-sc" role="img" aria-label="SlabCoach"><b>slab</b>coach<sup>™</sup><span class="tag">SPORTS CARDS</span></span></span></a><div class="nav-pref" id="nav-pref"></div>
   <div class="nav-mode" id="nav-mode"></div>
   <a href="#accueil" data-onglet="accueil"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 11 12 4l9 7v9H3z"/></svg>Accueil</a>
   <a href="#analyse" data-onglet="breaks" data-mode="vendeur"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 11h18M8 7V4h8v3"/></svg>Breaks<span class="pastille" id="pastille-breaks" hidden></span></a>
@@ -1224,7 +1255,7 @@ const NATIF = /LockerRoomiOS/.test(navigator.userAgent) || !!(window.Capacitor &
 const PLUG = () => (window.Capacitor && window.Capacitor.Plugins) || {};
 if (NATIF) {
   document.documentElement.classList.add('natif');
-  const ouvrirExterne = (url) => { const B = PLUG().Browser; if (B) B.open({url, presentationStyle:'popover', toolbarColor:'#0A0D10'}); else location.href = url; };
+  const ouvrirExterne = (url) => { const B = PLUG().Browser; if (B) B.open({url, presentationStyle:'popover', toolbarColor:'#0B0B0E'}); else location.href = url; };
   document.addEventListener('click', (e) => {
     const a = e.target.closest('a[href]'); if (!a || e.defaultPrevented) return;
     let u; try { u = new URL(a.getAttribute('href'), location.href); } catch (x) { return; }
@@ -1302,15 +1333,13 @@ const ICONES = {
   boite:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 7l9-4 9 4-9 4z"/><path d="M3 7v10l9 4 9-4V7M12 11v10"/></svg>',
 };
 const roue = '<div class="charge"><div class="roue"></div></div>';
-// 27 oct 2026 - le logo SlabCoach de l'accueil (Mathieu : « enleve la rotation et met seulement un swipe ») :
-// le Bloc en or poli a la couleur du niveau, et le reflet (.logo-lr::after) qui passe dessus.
-function htmlPiece(){ const n = nivLogo(); return `<img src="/logo_sc_${n}_poli.png" alt="SlabCoach">`; }
-function piecesNiveau(){
-  const n = nivLogo();
-  document.querySelectorAll('.piece-sc').forEach(el => { const im = el.querySelector('img');
-    if (im && !im.src.endsWith(`/logo_sc_${n}_poli.png`)) im.src = `/logo_sc_${n}_poli.png`;
-    el.style.setProperty('--masque', `url(/logo_sc_${n}_poli.png)`); });
-}
+// 27 oct 2026 - logo SC1 (Mathieu : « parfait ») : le C refractor fait l'anneau, S ivoire au centre.
+// Le refractor change au hasard a chaque ouverture : Prizm, Cracked Ice, Laser, Mosaic, Mojo, Wave, Pulsar.
+const MOTIFS_SC = ['prizm', 'cracked', 'laser', 'mosaic', 'mojo', 'wave', 'pulsar'];
+const LOGO_SC = `/logo_sc_${MOTIFS_SC[Math.floor(Math.random() * MOTIFS_SC.length)]}.svg`;
+const MOT_SC = '<span class="mot-sc" role="img" aria-label="SlabCoach"><b>slab</b>coach<sup>™</sup><span class="tag">SPORTS CARDS</span></span>';
+function htmlPiece(){ return `<img src="${LOGO_SC}" alt="">`; }
+function piecesNiveau(){ document.querySelectorAll('.piece-sc').forEach(el => el.style.setProperty('--masque', 'url(/logo_sc_gold_poli.png)')); }
 const C_ANNEAU = 97.39;
 function anneau(taille, p, cls=''){
   const v = Math.max(0, Math.min(1, p || 0));
@@ -1373,15 +1402,15 @@ async function appliquerMarque(){
   const src = S.logo || '/icone.png', nom = nomMarque(r);
   for (const id of ['acc-logo', 'g-logo-img']) { const im = $('#' + id); if (im && im.getAttribute('src') !== src) im.src = src; }
   // 25 oct 2026 - le logo officiel SlabCoach (avec son reflet or) ; une boutique qui a mis SON logo garde le sien
-  const niv = nivLogo(), nl = $('#nav-logo-img'), srcNav = S.logo || `/logo_sc_${niv}.png`;
+  const niv = nivLogo(), nl = $('#nav-logo-img'), srcNav = S.logo || LOGO_SC;
   if (nl && nl.getAttribute('src') !== srcNav) nl.src = srcNav;
   if (nl) nl.parentElement.classList.toggle('logo-lr', !S.logo);
   document.body.classList.toggle('marque-perso', !!S.logo);
   document.documentElement.style.setProperty('--mosaique', S.logo ? `url("${S.logo}")` : 'url(/logo_sc_mono.png)');
-  if (nl) nl.parentElement.style.setProperty('--masque', `url(/logo_sc_${niv}.png)`);
+  if (nl) nl.parentElement.style.setProperty('--masque', 'url(/logo_sc_gold.png)');
   piecesNiveau();
-  const nn = $('#nav-logo-nom'); if (nn) nn.textContent = nom;
-  const an = $('#acc-nom'); if (an) an.textContent = nom;
+  for (const el of [$('#nav-logo-nom'), $('#acc-nom')]) { if (!el) continue; const mot = nom === 'SlabCoach';
+    el.classList.toggle('a-mot', mot); if (mot) { if (!el.querySelector('.mot-sc')) el.innerHTML = MOT_SC; } else el.textContent = nom; }
   document.title = nom === 'SlabCoach' ? 'SlabCoach' : nom + ' · SlabCoach';
 }
 // logo choisi : carre de 256 px au plus, PNG (transparence) sinon JPEG ; jamais plus de ~300 Ko
@@ -1396,7 +1425,7 @@ async function reduireLogo(fichier, cote = 256){
     if (d.length > 380000) { d = cv.toDataURL('image/webp', 0.9); }
     if (d.length > 380000 || !/^data:image\/(png|webp)/.test(d)) {
       const c2 = document.createElement('canvas'); c2.width = cv.width; c2.height = cv.height;
-      const g2 = c2.getContext('2d'); g2.fillStyle = '#1C2228'; g2.fillRect(0, 0, c2.width, c2.height); g2.drawImage(cv, 0, 0);
+      const g2 = c2.getContext('2d'); g2.fillStyle = '#1D1D23'; g2.fillRect(0, 0, c2.width, c2.height); g2.drawImage(cv, 0, 0);
       d = c2.toDataURL('image/jpeg', 0.88);
     }
     return d;
@@ -1477,10 +1506,10 @@ function courbeProfit(h){
   const der = a.length - 1;
   return `<div class="courbe" id="h-courbe" data-n="${n}">
     <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-      <defs><linearGradient id="g-aire" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7FD0FF" stop-opacity=".28"/><stop offset="1" stop-color="#7FD0FF" stop-opacity="0"/></linearGradient></defs>
-      ${min < 0 ? `<path d="M0,${Y(0)}H100" stroke="#29313A" stroke-width="1" vector-effect="non-scaling-stroke"/>` : ''}
-      ${b.length ? `<path d="${ligne(b)}" fill="none" stroke="#5A6570" stroke-width="2" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>` : ''}
-      ${aire ? `<path d="${aire}" fill="url(#g-aire)"/><path d="${ligne(a)}" fill="none" stroke="#7FD0FF" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>` : ''}
+      <defs><linearGradient id="g-aire" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B9BEFF" stop-opacity=".28"/><stop offset="1" stop-color="#B9BEFF" stop-opacity="0"/></linearGradient></defs>
+      ${min < 0 ? `<path d="M0,${Y(0)}H100" stroke="#2B2A32" stroke-width="1" vector-effect="non-scaling-stroke"/>` : ''}
+      ${b.length ? `<path d="${ligne(b)}" fill="none" stroke="#6B6878" stroke-width="2" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>` : ''}
+      ${aire ? `<path d="${aire}" fill="url(#g-aire)"/><path d="${ligne(a)}" fill="none" stroke="#B9BEFF" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>` : ''}
     </svg>
     ${der >= 0 ? `<span class="pt" style="left:${X(der)}%; top:${Y(a[der])}%"></span>` : ''}
     <span class="vise" hidden></span><span class="bulle" hidden></span></div>
@@ -1575,7 +1604,7 @@ function vueChoixMode(){
   majBarreMode();
   const pts = (l) => `<ul>${l.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`;
   V().innerHTML = `<section class="choix-plein"><div class="pref-coin">${htmlPref()}</div>
-    <div class="choix-tete"><img src="/logo_sc_gold_poli.png" alt=""><h1>${tt('Comment tu utilises SlabCoach ?', 'How do you use SlabCoach?')}</h1>
+    <div class="choix-tete"><img src="${LOGO_SC}" alt=""><h1>${tt('Comment tu utilises SlabCoach ?', 'How do you use SlabCoach?')}</h1>
       <div class="sous">${tt('Tu peux changer en tout temps, d’un tap.', 'You can switch anytime, in one tap.')}</div></div>
     <div class="moities">
       <button class="moitie v" data-choisir="vendeur"><span class="ico">${ICO_MODE.vendeur}</span><b>${tt('Je vends', 'I sell')}</b>
@@ -1983,6 +2012,16 @@ function compsHtml(x){
     ${c.length ? `<div class="pop-g">${c.slice(0, 8).map(k => `<a href="${esc(k.url || '#')}" target="_blank" rel="noopener" class="pop-c" ${attrsAnnonce(k)}><span style="${k.photo ? `background-image:url('${esc(k.photo)}')` : ''}"></span><b>${argentCourt(k.total)}</b></a>`).join('')}</div>`
       : `<div class="sous">${x.ref_titre ? tt('Comparé à ta vente : ', 'Compared to your sale: ') + esc(x.ref_titre) : ''}</div>`}`;
 }
+// 27 oct 2026 (Mathieu : « Colton pas de comp, mais on peut montrer des ventes de joueurs de la même carte ») :
+// la même carte vendue par d'autres joueurs, en repère seulement (la valeur dépend du joueur)
+function autresJoueursHtml(a){
+  if (!a || !(a.ventes || []).length) return '';
+  return `<div class="fen-comps autres-j"><div class="bloc-t">${tt('Même carte, autres joueurs', 'Same card, other players')} <span class="sous">${a.nb} ${tt('ventes', 'sales')} · ${a.joueurs} ${tt('joueurs', 'players')} · ${argentCourt(a.min)} ${tt('à', 'to')} ${argentCourt(a.max)} · ${tt('médiane ', 'median ')}${argentCourt(a.mediane)}</span></div>
+    <div class="sous">${tt('Un repère, pas la valeur de cette carte : le prix dépend surtout du joueur.', 'A reference, not this card\'s value: the price depends mostly on the player.')}</div>
+    <div class="grille-c">${a.ventes.map(k => `<a class="tuile-c" href="${esc(k.url || '#')}" target="_blank" rel="noopener"><div class="img">${SVG_CARTE}${k.photo ? `<img src="${esc(photoHD(k.photo))}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
+      <div class="coin">${capsule(tt('Vendue', 'Sold') + (k.le ? ' · ' + dateCourte(k.le) : ''), 'petit')}</div>
+      <div class="corps"><div class="t">${esc(k.joueur || k.titre)}</div><div class="ligne-b"><span class="p">${argent(k.prix, 0)}</span></div></div></a>`).join('')}</div></div>`;
+}
 function tuileDeal(x){
   const encan = x.encan, fin = encan ? finDans(x.fin) : '';
   return `<div class="tuile-c tuile-deal" data-id="${esc(x.item_id)}" ${attrsAnnonce(x)}>
@@ -1990,9 +2029,10 @@ function tuileDeal(x){
     <div class="coin"><button class="capsule vert pastille-deal" data-comps="${esc(x.item_id)}">−${x.rabais} %</button>${encan ? capsule('⏱ ' + fin, 'or petit') : ''}</div>
     <button class="x" data-masquer="${esc(x.item_id)}" aria-label="${esc(tt('Masquer', 'Hide'))}">✕</button>
     <div class="pop-comps">${compsHtml(x)}</div>
-    <div class="corps"><div class="t">${esc(x.titre)}</div>
-      <div class="det-c">${tt('vaut ', 'worth ')}<b>${argentCourt(x.valeur)}</b>${encan ? ' · ' + (x.mises || 0) + ' ' + tt('mise' + ((x.mises || 0) > 1 ? 's' : ''), 'bid' + ((x.mises || 0) > 1 ? 's' : '')) : ''}</div>
-      <div class="ligne-b"><span class="p">${argent(x.total, 0)}</span>${x.gain > 0 ? capsule('+' + argentCourt(x.gain), 'vert petit') : ''}</div>
+    <div class="corps"><div class="src-ebay">${tt('Annonce eBay', 'eBay listing')}${encan ? ' · ' + (x.mises || 0) + ' ' + tt('mise' + ((x.mises || 0) > 1 ? 's' : ''), 'bid' + ((x.mises || 0) > 1 ? 's' : '')) : ''}</div><div class="t">${esc(x.titre)}</div>
+      <div class="ligne-b"><span class="p">${argent(x.total, 0)}</span></div>
+      <div class="est-sc"><span class="lib">${tt('Estimation SlabCoach', 'SlabCoach estimate')}</span><span class="v">${tt('vaut ', 'worth ')}<b>${argentCourt(x.valeur)}</b>${x.gain > 0 ? ' ' + capsule('+' + argentCourt(x.gain), 'vert petit') : ''}</span>
+      ${encan && x.mise_max > 0 ? `<span class="det-c mise-max">${tt('Mise max ', 'Max bid ')}<b>${argentCourt(x.mise_max)}</b> ${tt('pour rester un deal', 'to stay a deal')}</span>` : ''}</div>
       <button class="pas-deal" data-pasdeal="${esc(x.item_id)}">${tt('Pas un deal ?', 'Not a deal?')}</button></div></div>`;
 }
 // 26 oct 2026 (Mathieu : « encore pas un deal ... une option : l'annonce disparaît et ça nous laisse savoir quoi
@@ -2229,11 +2269,11 @@ function _hsl(c){ const [r, g, b] = c.map(v => v / 255), mx = Math.max(r, g, b),
 function _deHsl([h, s, l]){ const k = (n) => (n + h / 30) % 12, a = s * Math.min(l, 1 - l);
   return [0, 8, 4].map(n => 255 * (l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1)))); }
 function accentEquipe(code){
-  const cs = (COUL_LNH[code] || []).map(_rgb), FOND = _rgb('#0A0D10');
+  const cs = (COUL_LNH[code] || []).map(_rgb), FOND = _rgb('#0B0B0E');
   // la couleur la plus « vivante » de l'équipe (la principale a un bonus), jamais une qui ressemble au vert / rouge
   const score = (c, i) => { const [, s, l] = _hsl(c); return s * (Math.min(l, .5) / .5 + .3) + (i === 0 ? .5 : 0); };
   const ok = cs.map((c, i) => [c, score(c, i)]).filter(([c]) => !_ressemblePerteGain(c)).sort((a, b) => b[1] - a[1]);
-  if (!ok.length) return null;                             // ex. Wild : vert et rouge -> on garde le thème CardCoach
+  if (!ok.length) return null;                             // ex. Wild : vert et rouge -> on garde le thème SlabCoach
   let [h, s, l] = _hsl(ok[0][0]);
   if (s < .12 && l < .25) { s = 0; l = .92; }              // noir (Hurricanes, Blackhawks, Devils) : blanc glacé
   let c = _deHsl([h, s, l]);
@@ -2249,7 +2289,7 @@ function appliquerTheme(code){
   st.setProperty('--acc', a.acc); st.setProperty('--acc-fonce', a.fonce); st.setProperty('--acc-texte', a.texte);
 }
 function ecussonEquipe(code, taille){
-  const c = COUL_LNH[code] || [COUL_EQ(code), '#0E1216'];
+  const c = COUL_LNH[code] || [COUL_EQ(code), '#111115'];
   // 25 oct 2026 (Mathieu : « tu peux pas mettre les logos ? ») : les logos officiels de la LNH si le serveur l'active
   // (LOCKERROOM_LOGOS_LNH=1 dans Render, sa décision : marques de la LNH) ; sinon, ou si l'image ne charge pas, l'écusson.
   if (S.forfait && S.forfait.logos_lnh && COUL_LNH[code]) return `<span class="logo-eq ${taille || ''}"><img src="https://assets.nhle.com/logos/nhl/svg/${esc(code)}_dark.svg" alt="${esc(code)}" loading="lazy"
@@ -2259,7 +2299,7 @@ function ecussonEquipe(code, taille){
 // 26 oct 2026 (Mathieu : « les photos LNH des joueurs ») : le portrait officiel LNH ; sans portrait, ses initiales
 // aux couleurs de son équipe (jamais l'image d'une carte)
 function vignetteJoueur(nom, equipe){
-  const eq = String(equipe || '').split('/')[0], c = COUL_LNH[eq] || [COUL_EQ(nom), '#0E1216'];
+  const eq = String(equipe || '').split('/')[0], c = COUL_LNH[eq] || [COUL_EQ(nom), '#111115'];
   const ini = String(nom || '').split(/\s+/).filter(Boolean).map(m => m[0]).join('').slice(0, 2).toUpperCase();
   return `<span class="vig-j init" data-vj="${esc(nom)}" style="--c1:${c[0]};--c2:${c[1]}"><i>${esc(ini)}</i></span>`;
 }
@@ -2370,7 +2410,7 @@ async function rendreAnalyse(){
         <div class="kpi"><span class="lib">${tt('Au plein prix', 'At full price')}</span><span class="v">${argentCourt(r.profit_plein)}</span><span class="s">${tt('de profit', 'profit')}</span></div></div>
       ${segA('an-m', [['equipes', tt('Équipes', 'Teams')], ['joueurs', tt('Joueurs', 'Players')], ['divisions', 'Divisions']], A.mode)}
       <div class="grille-c grille-places" style="margin-top:12px">${places.map(x => `<div class="tuile-c place-s">
-        ${r.mode === 'equipes' ? ecussonEquipe(x.cle) : r.mode === 'joueurs' ? vignetteJoueur(x.cle) : `<span class="ecu-eq" style="--c1:${COUL_EQ(x.cle)};--c2:#0E1216"><i>${esc(String(x.nom).split(/\s+/).map(m => m[0]).join('').slice(0, 3))}</i></span>`}
+        ${r.mode === 'equipes' ? ecussonEquipe(x.cle) : r.mode === 'joueurs' ? vignetteJoueur(x.cle) : `<span class="ecu-eq" style="--c1:${COUL_EQ(x.cle)};--c2:#111115"><i>${esc(String(x.nom).split(/\s+/).map(m => m[0]).join('').slice(0, 3))}</i></span>`}
         <div class="ps-n"><b>${r.mode === 'joueurs' ? lienJoueur(x.cle, x.nom) : esc(x.nom)}</b>${(x.vedettes || [])[0] && r.mode !== 'joueurs' ? `<span>${x.vedettes.slice(0, 2).map(v => lienJoueur(v)).join(' · ')}</span>` : ''}</div>
         <span class="ps-p">${argent(x.prix, 0)}</span></div>`).join('')}</div>
       <button class="btn" id="an-creer" style="margin-top:14px">${tt('Créer ce break avec ces prix', 'Create this break with these prices')}</button>`;
@@ -2495,6 +2535,7 @@ async function ouvrirAnnonce(base){
           <div class="corps"><div class="t">${esc(k.titre)}</div><div class="ligne-b"><span class="p">${argent(k.prix, 0)}</span>${k.offre ? capsule(tt('Offre', 'Offer'), 'petit') : ''}</div></div></div>`).join('')}</div></div>`
         : d.chargement ? '' : d.ventes_attente ? `<div class="fen-comps"><div class="bloc-t">${tt('Vendues récemment', 'Recently sold')}</div><div class="lecture"><span class="roue"></span>${tt('Les ventes réelles arrivent…', 'Real sales are loading…')}</div></div>`
         : `<div class="sous">${tt('Pas encore de ventes de cette carte exacte : la valeur vient des annonces en vente.', 'No sales of this exact card yet: the value comes from listings.')}</div>`}
+      ${d.chargement ? '' : autresJoueursHtml(d.autres_joueurs)}
       <div class="fen-comps">${d.chargement ? '' : (d.comps || []).length ? `<div class="bloc-t">${tt('Les mêmes cartes en vente', 'The same cards listed')} <span class="sous">${d.n} · ${tt('médiane ', 'median ')}${argentCourt(d.mediane)}</span></div>
         <div class="grille-c">${d.comps.map(k => `<div class="tuile-c" ${attrsAnnonce(k)}><div class="img">${SVG_CARTE}${k.photo ? `<img src="${esc(k.photo)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
           ${k.encan ? `<div class="coin">${capsule('⏱ ' + finDans(k.fin), 'or petit')}</div>` : ''}
@@ -2548,7 +2589,8 @@ async function vueDeals(){
   V().innerHTML = `<section class="ecran large">
     <div class="entete"><div class="titre">Deals</div>${pastilleQuota('deals')}</div>
     <form class="recherche" id="v-form" role="search">${ICONES.loupe}<input id="v-q" type="search" enterkeyhint="search" placeholder="${esc(tt('Combien vaut une carte ? (ex. Bedard Young Guns)', 'What is a card worth? (e.g. Bedard Young Guns)'))}"></form>
-    <div id="d-res">${roue}</div></section>`;
+    <div id="d-res">${roue}</div>
+    <p class="mention-epn">${tt('Les liens vers eBay peuvent être des liens affiliés (eBay Partner Network) : SlabCoach peut toucher une commission, sans frais pour toi. SlabCoach n’est pas affilié à eBay. Les estimations sont celles de SlabCoach, pas d’eBay.', 'Links to eBay may be affiliate links (eBay Partner Network): SlabCoach may earn a commission at no cost to you. SlabCoach is not affiliated with eBay. Estimates are SlabCoach’s, not eBay’s.')}</p></section>`;
   brancherSwitchMode(V()); brancherQuota(V());
   $('#v-form').onsubmit = (e) => { e.preventDefault(); const q = $('#v-q').value.trim(); if (q) location.hash = '#valeur/' + encodeURIComponent(q); };
   await chargerDeals();
@@ -2725,7 +2767,7 @@ async function vueAccueil(arg){
   arreterAccueilLive();
   V().innerHTML = `<section class="ecran acc">
     <div class="acc-tete" style="grid-area:tete"><div class="marque"><span class="logo-lr officiel piece-sc" aria-label="SlabCoach">${htmlPiece()}</span><img class="logo" id="acc-logo" src="${esc(S.logo || '/icone.png')}" alt="">
-        <div class="horloge"><div class="nom-b" id="acc-nom">${esc(nomMarque())}</div><div class="salut" id="acc-salut"></div><div class="h" id="acc-h">--:--</div><div class="d" id="acc-d"></div></div></div>
+        <div class="horloge"><div class="nom-b${nomMarque() === 'SlabCoach' ? ' a-mot' : ''}" id="acc-nom">${nomMarque() === 'SlabCoach' ? MOT_SC : esc(nomMarque())}</div><div class="salut" id="acc-salut"></div><div class="h" id="acc-h">--:--</div><div class="d" id="acc-d"></div></div></div>
       <div class="acc-tuiles" id="acc-tuiles">${roue}</div></div>
     <div class="carte-acc nouv" id="acc-nouv"><div id="acc-news">${roue}</div></div>
     <div class="acc-cote">${bandeauEssai()}
@@ -2761,7 +2803,8 @@ async function vueAccueil(arg){
   // a faire : vendeur + acheteur ensemble, classe par argent
   const gestes = [...(d.actions || [])];
   if (S.mode === 'acheteur') gestes.push({cle:'guide', n:'?', titre:tt('Nouveau dans le hobby ?', 'New to the hobby?'), texte:tt('Le guide : les produits, les sortes de cartes, ton budget', 'The guide: products, card types, your budget'), lien:'#guide', ton:'acc'});
-  if (!d.cles) gestes.unshift({cle:'ebay', n:'!', titre:'Connecter eBay', texte:'2 minutes, aucun mot de passe : tout s’importe seul', lien:'#reglages', ton:'acc'});
+  // 27 oct 2026 : un compte Apple / Google sans eBay -> eBay fortement recommande (en premier dans « A faire »)
+  if (!d.cles || d.ebay === false) gestes.unshift({cle:'ebay', n:'!', titre:tt('Connecter eBay (recommandé)', 'Connect eBay (recommended)'), texte:tt('Ton inventaire et tes ventes arrivent seuls, et tes annonces se font en une photo', 'Your inventory and sales come in on their own, and listings take one photo'), lien:'#reglages', ton:'acc'});
   const r0 = S.reglages || {};
   if (!r0.logo_v && nomMarque(r0) === 'SlabCoach') gestes.push({cle:'marque', n:'★', titre:'Mets ton logo et ton nom', texte:'Ton app à l’image de ta boutique', lien:'#reglages', ton:'acc'});
   const vus = gestes.slice(0, 5);
@@ -2864,7 +2907,7 @@ function prochain(t){
   if (m <= 0) return 'en retard';
   return m < 60 ? `prochaine dans ${m} min` : m < 24 * 60 ? `prochaine vers ${new Date(d + t.freq_min * 60000).toLocaleTimeString(LOC(), {hour:'2-digit', minute:'2-digit'})}` : (t.note || '');
 }
-const COUL_POULS = {vert:'var(--vert)', or:'var(--or)', rouge:'var(--rouge)', vide:'#2E353D'};
+const COUL_POULS = {vert:'var(--vert)', or:'var(--or)', rouge:'var(--rouge)', vide:'#34333D'};
 function htmlPouls(L){
   const T = (L && L.pouls) || [];
   if (!T.length) return '<div class="vide">Serveur injoignable</div>';
@@ -4095,9 +4138,9 @@ function courbeVentes(points, opts){
   const ligne = glisse.map((p, i) => (i ? 'L' : 'M') + X(p[0]).toFixed(1) + ' ' + Y(p[1]).toFixed(1)).join(' ');
   const d0 = new Date(t0).toLocaleDateString(LOC(), {day:'numeric', month:'short'}), d1 = new Date(t1).toLocaleDateString(LOC(), {day:'numeric', month:'short'});
   return `<div class="courbe-v"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
-      <defs><linearGradient id="cvg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#E8C46A" stop-opacity=".28"/><stop offset="1" stop-color="#E8C46A" stop-opacity="0"/></linearGradient></defs>
+      <defs><linearGradient id="cvg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#E9CF8E" stop-opacity=".28"/><stop offset="1" stop-color="#E9CF8E" stop-opacity="0"/></linearGradient></defs>
       <path d="${ligne} L ${X(t1).toFixed(1)} ${H - 14} L ${X(t0).toFixed(1)} ${H - 14} Z" fill="url(#cvg)"/>
-      <path d="${ligne}" fill="none" stroke="#E8C46A" stroke-width="2.4" vector-effect="non-scaling-stroke"/>
+      <path d="${ligne}" fill="none" stroke="#E9CF8E" stroke-width="2.4" vector-effect="non-scaling-stroke"/>
       ${P.map(p => `<circle cx="${X(p[0]).toFixed(1)}" cy="${Y(p[1]).toFixed(1)}" r="3" fill="#8FD4A4" fill-opacity=".75"/>`).join('')}
     </svg><div class="cv-axe"><span>${d0}</span><span>${argentCourt(lo)} – ${argentCourt(hi)}</span><span>${d1}</span></div></div>`;
 }
@@ -4293,9 +4336,9 @@ async function vueReglages(arg){
     <button class="r-bloc r-idee" id="g-idee"><span class="aaj-n">?</span><span><b>${tt('Une idée ? Un problème ?', 'An idea? A problem?')}</b><small>${tt('Écris-nous, on répond ici dans l’app', 'Write to us, we reply here in the app')}</small></span><span class="fl">›</span></button>
     <div class="r-bloc"><div class="r-titre">${tt('Couleurs de l’app', 'App colors')}</div>
       <div class="r-note">${tt('Choisis ton équipe : les boutons, onglets et liens prennent ses couleurs. Le vert et le rouge restent ceux des gains et des pertes.', 'Pick your team: buttons, tabs and links take its colors. Green and red stay for gains and losses.')}</div>
-      <div class="th-grille" id="g-theme"><button class="th-eq ${r.equipe_fav ? '' : 'on'}" data-eq=""><span class="pas" style="--c1:#E8C46A;--c2:#0A0D10"></span><span>CardCoach<small>${tt('par défaut', 'default')}</small></span></button>
+      <div class="th-grille" id="g-theme"><button class="th-eq ${r.equipe_fav ? '' : 'on'}" data-eq=""><span class="pas" style="--c1:#E9CF8E;--c2:#0B0B0E"></span><span>SlabCoach<small>${tt('par défaut', 'default')}</small></span></button>
         ${Object.keys(COUL_LNH).sort((a, b) => NOMS_LNH[a].localeCompare(NOMS_LNH[b])).map(k => { const a = accentEquipe(k);
-          return `<button class="th-eq ${r.equipe_fav === k ? 'on' : ''}" data-eq="${k}" ${a ? '' : `title="${esc(tt('Couleurs trop proches du vert et du rouge des gains et pertes : thème CardCoach', 'Colors too close to the gain/loss green and red: CardCoach theme'))}"`}><span class="pas" style="--c1:${COUL_LNH[k][0]};--c2:${COUL_LNH[k][1]}"></span><span>${esc(NOMS_LNH[k])}<small>${k}${a ? '' : ' · ' + tt('thème CardCoach', 'CardCoach theme')}</small></span></button>`; }).join('')}</div></div>
+          return `<button class="th-eq ${r.equipe_fav === k ? 'on' : ''}" data-eq="${k}" ${a ? '' : `title="${esc(tt('Couleurs trop proches du vert et du rouge des gains et pertes : thème SlabCoach', 'Colors too close to the gain/loss green and red: SlabCoach theme'))}"`}><span class="pas" style="--c1:${COUL_LNH[k][0]};--c2:${COUL_LNH[k][1]}"></span><span>${esc(NOMS_LNH[k])}<small>${k}${a ? '' : ' · ' + tt('thème SlabCoach', 'SlabCoach theme')}</small></span></button>`; }).join('')}</div></div>
     <div class="r-bloc"><div class="r-titre">Mon sport principal</div>${puceSports(r.sport || 'hockey', 'g-sport')}
       <div class="r-note">L'app devine le sport de chaque carte ; sinon, elle prend celui-ci.</div></div>
     <div class="r-bloc"><div class="r-titre">Ma boutique</div>
@@ -4330,7 +4373,7 @@ async function vueReglages(arg){
     const k = b.dataset.eq;
     appliquerTheme(k);                                     // tout de suite, puis on garde le choix
     $$('#g-theme [data-eq]').forEach(x => x.classList.toggle('on', x === b));
-    const res = await essai(API.reglages_sauver({equipe_fav:k}), k ? NOMS_LNH[k] + tt(' : couleurs appliquées', ': colors applied') : tt('Couleurs CardCoach', 'CardCoach colors'));
+    const res = await essai(API.reglages_sauver({equipe_fav:k}), k ? NOMS_LNH[k] + tt(' : couleurs appliquées', ': colors applied') : tt('Couleurs SlabCoach', 'SlabCoach colors'));
     if (res) S.reglages = res;
   });
   $$('#g-sport [data-sport]').forEach(b => b.onclick = async () => {
@@ -4516,7 +4559,7 @@ async function rendreBlocEbay(){
   }
   if (zAv) zAv.innerHTML = envSeg ? '<div class="r-sous">Environnement eBay</div>' + envSeg : '';
   z.innerHTML = `<div class="r-titre">Compte eBay</div>
-    <div class="r-statut"><span class="pt"></span><span class="t"><b>Pas encore connecté</b><span>Connexion officielle eBay · aucun mot de passe dans l'app · révocable en tout temps</span></span></div>
+    <div class="r-statut"><span class="pt"></span><span class="t"><b>Pas encore connecté</b><span>Recommandé : inventaire et ventes importés seuls, annonces en une photo · connexion officielle eBay, aucun mot de passe dans l'app, révocable en tout temps</span></span></div>
     ${s.cles_serveur ? '' : `<details class="reglage" ${s.cles_ok ? '' : 'open'}><summary>Clés de l’application ${s.cles_ok ? tag('OK', 'vert') : tag('À entrer', 'rouge')}</summary>
       ${s.runame_erreur ? `<div class="pastilles" style="margin-top:8px">${tag(s.runame_erreur, 'rouge')}</div>` : ''}
       <div class="etapes" style="margin:10px 0">${tag('developer.ebay.com')}›${tag('Application Keys · ' + (sbx ? 'Sandbox' : 'Production'))}›${tag('User Tokens · RuName')}</div>

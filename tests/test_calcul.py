@@ -1,4 +1,4 @@
-"""Tests LockerRoom : python tests/test_calcul.py (depuis le dossier de l'app)."""
+"""Tests SlabCoach : python tests/test_calcul.py (depuis le dossier de l'app)."""
 import os
 import sys
 import tempfile

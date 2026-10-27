@@ -1,4 +1,4 @@
-"""23 oct 2026 - LockerRoom multi-sports (sports.py)."""
+"""23 oct 2026 - SlabCoach multi-sports (sports.py)."""
 import os
 import sys
 import unittest

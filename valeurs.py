@@ -18,7 +18,16 @@ import os
 import re
 import unicodedata
 
-CHEMIN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "valeurs_joueurs.json")
+CHEMIN_CODE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "valeurs_joueurs.json")
+# 27 oct 2026 - recalcule chaque jour depuis les ventes SoldComps, sur le disque de donnees (garde entre deux deploiements)
+CHEMIN_DONNEES = os.path.join(os.environ.get("LOCKERROOM_DONNEES") or os.path.dirname(os.path.abspath(__file__)), "valeurs_joueurs.json")
+CHEMIN = CHEMIN_DONNEES if os.path.exists(CHEMIN_DONNEES) else CHEMIN_CODE
+
+
+def chemin_ecriture():
+    global CHEMIN
+    CHEMIN = CHEMIN_DONNEES
+    return CHEMIN_DONNEES
 DEMANDE_INCONNUE = 0.5            # joueur sans ventes mesurees : un peu sous la mediane (0,59)
 # $ CA pour un joueur a 1,0 - quand aucune vente ne mesure le sous-ensemble
 DEFAUTS = {"base": 0.25, "insert": 1.0, "recrue": 6.0, "numerotee": 5.0, "auto": 20.0, "memo": 6.0, "auto_memo": 35.0}

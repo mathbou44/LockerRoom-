@@ -233,6 +233,39 @@ def memes_annonce(titre, q=None, n=24, fond=False):
     return memes(titre, requete=False, n=n, fond=fond)
 
 
+def autres_joueurs(titre, n=12, fond=False):
+    """27 oct 2026 (Mathieu : « Colton Parayko pas de comp, mais on peut montrer des ventes de joueurs de la meme carte ») :
+    les ventes de la MEME carte (meme produit, insert, parallele, numerotation, auto, patch) par D'AUTRES joueurs.
+    C'est un repere de prix (la valeur depend du joueur), jamais un verdict de deal."""
+    import cartes_match
+    cib = cartes_match.cible_titre(titre)
+    j = cib.get("joueur")
+    if cib.get("exclu") or not j:
+        return None
+    noms = set(j.split())
+    cib2 = dict(cib, joueur=None, mots=[m for m in cib["mots"] if m not in noms],
+                texte=" ".join(w for w in cib["texte"].split() if w not in noms))
+    if not cib2["mots"]:
+        return None
+    q = cartes_match.requete_ebay(cib2)
+    r = rechercher(q, fond=fond)
+    l = []
+    for v in r.get("ventes") or []:
+        raisons = [x for x in cartes_match.raisons_refus(cib2, v.get("titre") or "") if not x.startswith(("autre joueur", "plusieurs joueurs"))]
+        if raisons or not v.get("prix"):
+            continue
+        jv = cartes_match.joueur_du_titre(v.get("titre") or "")
+        if jv and jv.split()[-1] in noms:
+            continue                                       # le meme joueur : ce sont ses ventes, pas un repere
+        l.append(dict(v, joueur=" ".join(w.capitalize() for w in (jv or "").split())))
+    if not l:
+        return {"ventes": [], "nb": 0, "q": q, "erreur": r.get("erreur")}
+    l.sort(key=lambda v: str(v.get("le") or ""), reverse=True)
+    prix = sorted(v["prix"] for v in l)
+    return {"ventes": l[:n], "nb": len(l), "mediane": round(statistics.median(prix), 2), "min": prix[0], "max": prix[-1],
+            "joueurs": len({v["joueur"] for v in l if v.get("joueur")}), "q": q}
+
+
 def tendance(ventes, jours=30):
     """26 oct 2026 - % de variation : mediane des ventes des `jours` derniers jours vs les `jours`*2 d'avant.
     None s'il n'y a pas assez de ventes des deux cotes (3 chacune)."""
