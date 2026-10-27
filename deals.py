@@ -18,6 +18,7 @@ import time
 from datetime import datetime, timedelta, timezone
 
 RATIO_DEAL = 0.70
+RATIO_PRES = 0.85                # 27 oct 2026 : « a surveiller » = 70 a 85 % de la valeur (jamais affiche comme un deal)
 PAR_TOUR_ENCANS = 30             # 26 oct 2026 (Mathieu : « aucune enchere se terminant ? ») : 30 recherches d encans par heure
 VERSION = 4                      # 27 oct 2026 : valeur SURE (numeros speciaux, recence, coherence), vendeur, etat (v4)
 ENCAN_H = 48                     # 26 oct 2026 (Mathieu : « tous les deals d'encheres de 48 h et moins ») ; avant : 6 h
@@ -96,10 +97,27 @@ def bannir(item_id):
     return {"ok": True}
 
 
-def valide(x):
-    """La carte passe-t-elle les regles ACTUELLES du filtre ? (les deals gardes d'avant une correction sont retires)."""
+def _rejuger(x):
+    """27 oct 2026 (Mathieu : « les users doivent TOUJOURS voir quelque chose ») : un deal d'une version d'avant n'est
+    plus efface d'un coup ; il est rejuge avec les regles d'aujourd'hui sur ses ventes gardees. S'il passe, il reste."""
     import cartes_match
-    if int(x.get("v") or 0) < VERSION or str(x.get("item_id")) in _bannis():
+    if cartes_match.abimee(x.get("titre") or ""):
+        return False
+    m, _pv = valeur_sure([v for v in x.get("vendues") or [] if v.get("prix")], x.get("titre") or "")
+    if not m or not x.get("total") or x["total"] > m * RATIO_DEAL:
+        return False
+    x.update(valeur=m, ratio=round(x["total"] / m, 3), v=VERSION)
+    if x.get("encan"):
+        x["mise_max"] = round(m * RATIO_DEAL - (x.get("port") or 0), 2)
+    return True
+
+
+def valide(x):
+    """La carte passe-t-elle les regles ACTUELLES du filtre ? (une ancienne version est rejugee, pas effacee)."""
+    import cartes_match
+    if str(x.get("item_id")) in _bannis():
+        return False
+    if int(x.get("v") or 0) < VERSION and not _rejuger(x):
         return False
     k = (x.get("item_id"), x.get("q"), x.get("titre"))
     if k not in _VALIDES:
@@ -463,6 +481,12 @@ def _juger(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=N
     if t > med_a * RATIO_DEAL:
         st["trop_cher"] = st.get("trop_cher", 0) + 1
         deals.pop(a["item_id"], None)
+        if t <= med_a * RATIO_PRES and not a.get("encan"):      # a surveiller : sous la valeur, pas encore un deal
+            st.setdefault("_pres", {})[a["item_id"]] = {"item_id": a["item_id"], "titre": a["titre"], "total": t, "photo": a.get("photo"),
+                                                         "url": a.get("url"), "valeur": med_a, "ratio": round(t / med_a, 3), "encan": False,
+                                                         "joueur": r.get("joueur"), "q": r.get("q"), "flux": r.get("flux"), "n": n_a,
+                                                         "vendues": ventes_a or [], "sport": r.get("sport") or "hockey",
+                                                         "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION, "palier": "pres"}
         return
     st["deals"] = st.get("deals", 0) + 1
     import sports
@@ -528,9 +552,17 @@ def _sauver(d, deals, maint, st, **champs):
     garde_ = _ranger(d, deals, maint)
     st.pop("_vus", None)
     st.pop("_tard", None)
+    nouveaux_pres = st.pop("_pres", {})
     with _verrou:
         d2 = lire()
-        d2.update(deals=garde_, **champs)
+        ids = {x["item_id"] for x in garde_}
+        pres = {x["item_id"]: x for x in d2.get("pres") or []}
+        pres.update(nouveaux_pres)
+        lim = (maint - timedelta(hours=FRAICHEUR_EBAY_H)).isoformat()
+        pres_l = sorted((x for k, x in pres.items() if k not in ids and str(x.get("vu_le") or "") >= lim), key=lambda x: x["ratio"])[:300]
+        d2.update(deals=garde_, pres=pres_l, **champs)
+        if len(garde_) >= 5:                              # la derniere bonne liste, en secours
+            d2["secours"] = {"le": maint.isoformat(timespec="seconds"), "deals": garde_[:120]}
         if "verif" in d:
             d2["verif"] = d["verif"]
         _diag(d2, **st)
@@ -744,8 +776,13 @@ def chasser_si_besoin():
         age = time.time() - datetime.fromisoformat(str(d.get("maj"))).timestamp()
     except ValueError:
         age = 1e9
-    if age < FRAICHEUR_S:
+    # une seule fois par demarrage (mise a jour, redemarrage) : peu de deals -> un tour apres 10 min, pas apres 1 h
+    # (jamais plus : le quota d'appels eBay du jour)
+    peu = not _ETAT.get("rapide") and sum(1 for x in d.get("deals") or [] if valide(x)) < 10
+    if age < (600 if peu else FRAICHEUR_S):
         return False
+    if peu:
+        _ETAT["rapide"] = True
     with _verrou:
         if _ETAT["en_cours"]:
             return False

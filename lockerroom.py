@@ -18,7 +18,7 @@ import sqlite3
 import threading
 import unicodedata
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import calcul
 import catalogue
@@ -2963,6 +2963,8 @@ class Api:
         import forfaits
         f = f or {}
         tout = self._deals_fusion()
+        rg = self.reglages_lire()
+        fp_, ff_ = (rg["frais_ebay_pct"] or 0) / 100, rg["frais_ebay_fixe"] or 0
         par_sport = {}
         for x in tout:
             par_sport[x.get("sport") or "hockey"] = par_sport.get(x.get("sport") or "hockey", 0) + 1
@@ -2987,7 +2989,32 @@ class Api:
         if not pro:
             lst = lst[:forfaits.LIMITES["deals"]]
         import deals as _d
+        # 27 oct 2026 (Mathieu : « les users doivent TOUJOURS voir quelque chose, sinon ils vont decrocher ») :
+        #   - pas de deal en ce moment : la derniere bonne liste (secours), encore fraiche (6 h) et revalidee ;
+        #   - « a surveiller » : 15 a 30 % sous la valeur (meme valeur sure), jamais affiche comme un deal.
+        dd = _d.lire()
+        secours = False
+        if not tout and (dd.get("secours") or {}).get("deals"):
+            lim6 = (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat()
+            sec = [dict(x, source="marche") for x in dd["secours"]["deals"] if str(x.get("vu_le") or "") >= lim6 and _d.valide(x)]
+            for x in sec:
+                x["gain"] = round((x.get("valeur") or 0) * (1 - fp_) - ff_ - (x.get("total") or 0), 2)
+                x["rabais"] = round(100 * (1 - (x.get("ratio") or 1)))
+            sec = [x for x in self._deals_filtrer(sec, f) if x.get("encan") or x["gain"] > 1]
+            if sec:
+                lst, n, secours = sec, len(sec), True
+                if not pro:
+                    lst = lst[:forfaits.LIMITES["deals"]]
+        pres = []
+        for x in dd.get("pres") or []:
+            if str(x.get("item_id")) in _d._bannis():
+                continue
+            y = dict(x, source="marche", gain=round((x.get("valeur") or 0) * (1 - fp_) - ff_ - (x.get("total") or 0), 2),
+                     rabais=round(100 * (1 - (x.get("ratio") or 1))))
+            pres.append(y)
+        pres = [x for x in self._deals_filtrer(pres, f) if not f.get("sports") or (x.get("sport") or "hockey") in f["sports"]][:24 if pro else 6]
         return {"ok": True, "deals": lst[:240], "n": n, "pro": pro, "limite": None if pro else forfaits.LIMITES["deals"],
+                "pres": pres, "secours": secours, "secours_le": (dd.get("secours") or {}).get("le") if secours else None,
                 "sports": par_sport, "maj": _d.lire().get("maj"), "ebay": ebay_compte.statut().get("cles_ok"),
                 "diag": _d.diagnostic(), "total": len(tout), "bassin": _d.lire().get("bassin"), "nb_flux": len(_d.flux_liste())}
 

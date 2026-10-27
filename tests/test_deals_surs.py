@@ -71,5 +71,30 @@ class TestRepere(unittest.TestCase):
         self.assertEqual((r["verdict"], r["mediane"], r["ecart"]), ("ok", None, None))
 
 
+
+
+class TestToujoursQuelqueChose(unittest.TestCase):
+    """27 oct 2026 : apres une mise a jour, les users voient toujours quelque chose."""
+    def test_continuite_et_a_surveiller(self):
+        maint = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        ventes = [{"titre": "Young Guns Demidov", "prix": p, "le": j(d)} for p, d in [(40, 3), (42, 5), (41, 8)]]
+        vieux = {"item_id": "555555555", "titre": "Young Guns Demidov", "total": 20, "valeur": 45, "ratio": .44, "encan": False,
+                 "vu_le": maint, "v": deals.VERSION - 1, "vendues": ventes}
+        self.assertTrue(deals.valide(dict(vieux)))                    # rejuge, pas efface
+        trop = dict(vieux, item_id="666666666", total=35)
+        self.assertFalse(deals.valide(trop))                          # 35 > 70 % de 41 : plus un deal
+        pres = dict(vieux, item_id="777777777", total=33, ratio=.8, v=deals.VERSION, palier="pres")
+        deals._ecrire({"deals": [dict(vieux)], "pres": [pres], "maj": maint})
+        import lockerroom
+        a = lockerroom.Api(os.path.join(tempfile.mkdtemp(), "t.db"))
+        r = a.deals_liste({})
+        self.assertEqual([x["item_id"] for x in r["deals"]], ["555555555"])
+        self.assertEqual([x["item_id"] for x in r["pres"]], ["777777777"])
+        # plus aucun deal courant : la derniere bonne liste sert de secours
+        deals._ecrire({"deals": [], "pres": [], "maj": maint, "secours": {"le": maint, "deals": [dict(vieux, v=deals.VERSION)]}})
+        r = a.deals_liste({})
+        self.assertTrue(r["secours"])
+        self.assertEqual(len(r["deals"]), 1)
+
 if __name__ == "__main__":
     unittest.main()

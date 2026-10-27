@@ -581,7 +581,9 @@ def rechercher(q, categorie=None, prix_max=None, recentes=False, limite=50, fond
         p["sort"] = "endingSoonest"
     adresse = url("recherche") + "?" + urllib.parse.urlencode(p, quote_via=urllib.parse.quote)
     req = urllib.request.Request(adresse, headers={"Authorization": "Bearer " + jeton_application(), "Accept": "application/json",
-                                               "X-EBAY-C-MARKETPLACE-ID": "EBAY_CA"})
+                                               "X-EBAY-C-MARKETPLACE-ID": "EBAY_CA",
+                                               # 27 oct 2026 : le port affiche = le port vers le Canada (pas de faux prix)
+                                               "X-EBAY-C-ENDUSERCTX": "contextualLocation=country%3DCA"})
     appels_ebay.compter("browse")
     try:
         with urllib.request.urlopen(req, timeout=30) as r:
@@ -606,7 +608,9 @@ def article(item_id, fond=False):
     appels_ebay.exiger("browse", fond)
     adresse = url("recherche").split("/item_summary/")[0] + "/item/get_item_by_legacy_id?" + urllib.parse.urlencode({"legacy_item_id": item_id})
     req = urllib.request.Request(adresse, headers={"Authorization": "Bearer " + jeton_application(), "Accept": "application/json",
-                                               "X-EBAY-C-MARKETPLACE-ID": "EBAY_CA"})
+                                               "X-EBAY-C-MARKETPLACE-ID": "EBAY_CA",
+                                               # 27 oct 2026 : le port affiche = le port vers le Canada (pas de faux prix)
+                                               "X-EBAY-C-ENDUSERCTX": "contextualLocation=country%3DCA"})
     appels_ebay.compter("browse")
     try:
         with urllib.request.urlopen(req, timeout=30) as r:

@@ -2035,7 +2035,7 @@ function tuileDeal(x){
   const encan = x.encan, fin = encan ? finDans(x.fin) : '';
   return `<div class="tuile-c tuile-deal" data-id="${esc(x.item_id)}" ${attrsAnnonce(x)}>
     <a href="${esc(lienAchat(x.url, 'deal'))}" target="_blank" rel="noopener"><div class="img">${SVG_CARTE}${x.photo ? `<img src="${esc(x.photo)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}</div></a>
-    <div class="coin"><button class="capsule vert pastille-deal" data-comps="${esc(x.item_id)}">−${x.rabais} %</button>${encan ? capsule('⏱ ' + fin, 'or petit') : ''}</div>
+    <div class="coin"><button class="capsule ${x.pres ? 'acc' : 'vert'} pastille-deal" data-comps="${esc(x.item_id)}">−${x.rabais} %</button>${encan ? capsule('⏱ ' + fin, 'or petit') : ''}</div>
     <button class="x" data-masquer="${esc(x.item_id)}" aria-label="${esc(tt('Masquer', 'Hide'))}">✕</button>
     <div class="pop-comps">${compsHtml(x)}</div>
     <div class="corps"><div class="src-ebay">${tt('Annonce eBay', 'eBay listing')}${encan ? ' · ' + (x.mises || 0) + ' ' + tt('mise' + ((x.mises || 0) > 1 ? 's' : ''), 'bid' + ((x.mises || 0) > 1 ? 's' : '')) : ''}</div><div class="t">${esc(x.titre)}</div>
@@ -2620,6 +2620,8 @@ function preuveDeals(d){
       <div><b>${n('annonces')}</b><span>${tt('annonces de la bonne carte', 'listings of the right card')}</span></div>
       <div><b>${n('sans_ventes')}</b><span>${tt('refusées : moins de 2 ventes de la même carte', 'rejected: fewer than 2 sales of the same card')}</span></div>
       <div><b>${n('trop_cher')}</b><span>${tt('refusées : au-dessus de 70 % de la valeur', 'rejected: above 70% of value')}</span></div>
+      <div><b>${n('ecartees')}</b><span>${tt('refusées : carte abîmée ou douteuse, ou vendeur sans historique', 'rejected: damaged or dubious card, or seller with no track record')}</span></div>
+      <div><b>${n('reverif_retires')}</b><span>${tt('retirés à la revérification eBay (prix monté, vendue, finie)', 'removed on eBay re-check (price up, sold, ended)')}</span></div>
       <div class="vert"><b>${n('deals')}</b><span>${tt('deals trouvés (avant le filtre de profit)', 'deals found (before the profit filter)')}</span></div>
       ${g.erreurs_ventes || g.erreurs_ebay ? `<div class="rouge"><b>${n('erreurs_ventes') !== '0' ? n('erreurs_ventes') : n('erreurs_ebay')}</b><span>${g.erreurs_ventes ? tt('recherches de ventes refusées (limite SoldComps du jour)', 'sales lookups refused (SoldComps daily limit)') : tt('recherches eBay en erreur', 'eBay searches failed')}</span></div>` : ''}
     </div>
@@ -2632,7 +2634,9 @@ async function chargerDeals(){
   if (!$('#d-res')) return;
   if (!d.ok) { z.innerHTML = `<div class="vide">${esc(d.erreur || 'Erreur')}</div>`; return; }
   const pD = $('#pastille-deals'); if (pD) { pD.hidden = !d.n; pD.textContent = d.n || ''; }
-  S.dealsParId = Object.fromEntries((d.deals || []).map(x => [String(x.item_id), x]));
+  // 27 oct 2026 (Mathieu : « les users doivent TOUJOURS voir quelque chose ») : « a surveiller » (15 a 30 % sous la valeur)
+  const P = (d.pres || []).map(x => ({...x, pres:true}));
+  S.dealsParId = Object.fromEntries([...(d.deals || []), ...P].map(x => [String(x.item_id), x]));
   const L = d.deals || [], gain = L.filter(x => !x.encan).reduce((t, x) => t + Math.max(0, x.gain || 0), 0), encans = L.filter(x => x.encan).length;
   const sp = Object.entries(d.sports || {}).sort((a, b) => b[1] - a[1]);
   const segD = (id, choix, actuel) => `<div class="seg" id="${id}">${choix.map(([v, l]) => `<button data-v="${v}" class="${v === actuel ? 'on' : ''}">${esc(l)}</button>`).join('')}</div>`;
@@ -2652,7 +2656,10 @@ async function chargerDeals(){
         ${F.rabais_min ? `<span class="chip on petit">−${F.rabais_min} %+</span>` : ''}${F.prix_max ? `<span class="chip on petit">≤ ${argentCourt(F.prix_max)}</span>` : ''}${(F.joueurs || []).slice(0, 3).map(j => `<span class="chip on petit">${esc(j)}</span>`).join('')}</div></div>
     ${L.length ? `<div class="grille-c">${L.map(tuileDeal).join('')}
         ${d.limite && d.n > L.length && !NATIF ? `<button class="tuile-c tuile-pro" data-pro-deals><span class="badge-f pro grand">✦ PRO</span><b>+${d.n - L.length} ${tt('deals de plus', 'more deals')}</b><span>${tt('avec filtres et comps', 'with filters and comps')}</span></button>` : ''}</div>`
-      : `<div class="vide">${tt('Aucun deal pour ces filtres pour l’instant. Le chasseur regarde eBay chaque heure.', 'No deal for these filters right now. The hunter checks eBay every hour.')}</div>`}`;
+      : `<div class="vide">${P.length ? tt('Pas de deal sous 70 % de la valeur en ce moment : voici les meilleurs prix à surveiller.', 'No deal under 70% of value right now: here are the best prices to watch.') : tt('Aucun deal pour ces filtres pour l’instant. Le chasseur regarde eBay chaque heure.', 'No deal for these filters right now. The hunter checks eBay every hour.')}</div>`}
+    ${d.secours ? `<div class="sous" style="margin-top:8px">${tt('Dernière liste vérifiée', 'Last checked list')} · ${new Date(d.secours_le).toLocaleTimeString(LOC(), {hour:'2-digit', minute:'2-digit'})} · ${tt('le chasseur prépare la nouvelle', 'the hunter is preparing the new one')}</div>` : ''}
+    ${P.length ? `<div class="bloc-t" style="margin:22px 0 6px">${tt('À surveiller', 'To watch')} <span class="sous">${tt('15 à 30 % sous la valeur : pas encore un deal, mais un bon prix', '15–30% under value: not a deal yet, but a good price')}</span></div>
+      <div class="grille-c">${P.map(tuileDeal).join('')}</div>` : ''}`;
   $$('#d-sp [data-sp]').forEach(b => b.onclick = () => { const k = b.dataset.sp; F.sports = !k ? [] : F.sports.includes(k) ? F.sports.filter(x => x !== k) : [...F.sports, k]; chargerDeals(); });
   $$('#d-tri button').forEach(b => b.onclick = () => { F.tri = b.dataset.v; sauverDealsF(); chargerDeals(); });
   $$('#d-type button').forEach(b => b.onclick = () => { F.type = b.dataset.v; sauverDealsF(); chargerDeals(); });
@@ -2662,7 +2669,7 @@ async function chargerDeals(){
   $$('[data-comps]', z).forEach(b => b.onclick = (e) => {
     e.preventDefault(); e.stopPropagation();
     if (matchMedia('(hover:hover) and (pointer:fine)').matches) { b.closest('.tuile-c').classList.toggle('pop-ouvert'); return; }
-    const x = L.find(k => k.item_id === b.dataset.comps); if (!x) return;
+    const x = [...L, ...P].find(k => k.item_id === b.dataset.comps); if (!x) return;
     ouvrirFeuille(`<h3>${esc(x.titre)}</h3><div class="pastilles">${capsule('−' + x.rabais + ' %', 'vert')}${capsule(argent(x.total, 0))}${capsule(tt('vaut ', 'worth ') + argentCourt(x.valeur), 'acc')}</div>
       <div class="pop-comps statique">${compsHtml(x)}</div><a class="btn" href="${esc(lienAchat(x.url, 'deal'))}" target="_blank" rel="noopener">${tt('Voir sur eBay', 'View on eBay')}</a>`);
   });
