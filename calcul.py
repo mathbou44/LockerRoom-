@@ -117,6 +117,50 @@ def _arrondir(v, pas):
     return round(math.ceil(v / pas - 1e-9) * pas, 2)
 
 
+# 28 oct 2026 (Mathieu : « l'ecart entre Schaefer et Demidov me semble eleve : revois l'attribution des prix et reste dans
+# les chiffres ronds, 5 et 0 a la fin : 45 $ et non 43 $ ») :
+#   - la part de chaque place suit sa valeur attendue ADOUCIE (valeur ^ 0,7) : la grosse place reste la plus chere, mais
+#     l'ecart se resserre (une place 3 fois plus riche coute ~2,2 fois plus), comme les breakers fixent leurs prix ;
+#   - prix ronds : sous 10 $ au dollar pres, a partir de 10 $ en multiples de 5 ;
+#   - le total vise (cout + profit + frais) est toujours atteint : l'arrondi qui manque est ajoute aux places les plus riches.
+COMPRESSION = 0.7
+
+
+def pas_rond(v, arrondi=1.0):
+    return max(float(arrondi or 1), 1.0 if v < 10 else 5.0)
+
+
+def arrondi_rond(v, arrondi=1.0):
+    """Le prix rond juste au-dessus (ou egal) : 43 -> 45, 7.2 -> 8."""
+    pas = pas_rond(v, arrondi)
+    r = math.ceil(v / pas - 1e-9) * pas
+    return float(r if r >= 10 or pas_rond(r, arrondi) == pas else math.ceil(r / 5) * 5)
+
+
+def repartir(evs, cible, plancher=1.0, arrondi=1.0):
+    """Valeurs attendues des places -> prix ronds dont la somme atteint `cible`."""
+    n = len(evs)
+    if not n:
+        return []
+    poids = [max(0.0, e) ** COMPRESSION for e in evs]
+    sp = sum(poids) or 1.0
+    reste = max(0.0, cible - float(plancher) * n)
+    bruts = [float(plancher) + reste * w / sp for w in poids]
+    # chaque place au prix rond juste en dessous, puis les crans qui manquent vont aux places les plus « coupees »
+    # par l'arrondi (methode du plus fort reste) : le total depasse la cible d'au plus un cran
+    prix = []
+    for b in bruts:
+        pas = pas_rond(b, arrondi)
+        prix.append(max(float(plancher), math.floor(b / pas + 1e-9) * pas))
+    k = 0
+    while sum(prix) < cible - 1e-6 and k < 20 * n:
+        i = max(range(n), key=lambda x: (bruts[x] - prix[x]) / pas_rond(prix[x], arrondi))
+        p = prix[i]
+        prix[i] = p + pas_rond(p, arrondi) if p >= 10 else (10.0 if p + 1 >= 10 else p + 1)
+        k += 1
+    return [round(p, 2) for p in prix]
+
+
 def prix_places(checklist, boites=1, cout_boite=0.0, marge=0.25, frais_pct=0.109, frais_fixe=0.30,
                 mode="equipes", par_boite=None, etoiles=None, plancher=1.0, arrondi=1.0, poids=None, sport=None):
     """Prix de chaque place. `par_boite` : cartes de chaque groupe par boite
@@ -163,13 +207,12 @@ def prix_places(checklist, boites=1, cout_boite=0.0, marge=0.25, frais_pct=0.109
     n = len(cles) or 1
     cible = (cout * (1 + float(marge)) + float(frais_fixe) * n) / max(0.01, 1 - float(frais_pct))
     total_ev = sum(d["ev"] for d in cles.values()) or 1.0
-    reste = max(0.0, cible - float(plancher) * n)
+    prix_r = repartir([d["ev"] for d in cles.values()], cible, plancher, arrondi)
     places = []
-    for d in cles.values():
-        brut = float(plancher) + reste * d["ev"] / total_ev
+    for d, pr in zip(cles.values(), prix_r):
         places.append({
             "cle": d["cle"], "nom": nom_equipe(d["cle"], sport) if mode == "equipes" else d["cle"],
-            "prix": _arrondir(brut, arrondi), "part": round(100 * d["ev"] / total_ev, 1), "nb_cartes": d["nb"],
+            "prix": pr, "part": round(100 * d["ev"] / total_ev, 1), "nb_cartes": d["nb"],
             "recrues": d["recrues"], "autos": d["autos"], "numerotees": d["numerotees"],
             "vedettes": [j for j, _ in sorted(d["vedettes"].items(), key=lambda kv: -kv[1])[:3]],
         })
@@ -324,12 +367,11 @@ def prix_catalogue(prod, boites=1, cout_boite=0.0, marge=0.25, frais_pct=0.109, 
     n = len(cles) or 1
     cible = (cout * (1 + float(marge)) + float(frais_fixe) * n) / max(0.01, 1 - float(frais_pct))
     somme = sum(d["ev"] for d in cles.values()) or 1.0
-    reste = max(0.0, cible - float(plancher) * n)
+    prix_r = repartir([d["ev"] for d in cles.values()], cible, plancher, arrondi)
     places = []
-    for d in cles.values():
-        brut = float(plancher) + reste * d["ev"] / somme
+    for d, pr in zip(cles.values(), prix_r):
         places.append({"cle": d["cle"], "nom": nom_equipe(d["cle"], sport) if mode == "equipes" else d["cle"],
-                       "prix": _arrondir(brut, arrondi), "part": round(100 * d["ev"] / somme, 1), "ev": round(d["ev"], 2),
+                       "prix": pr, "part": round(100 * d["ev"] / somme, 1), "ev": round(d["ev"], 2),
                        "part_brute": d["ev"] / somme,          # 29 oct 2026 : la part exacte (le classement acheteur ne doit pas bouger avec les boites)
                        "recrues": round(d["recrues"], 1), "hits": round(d["hits"], 2), "numerotees": round(d["numerotees"], 2),
                        "vedettes": [j for j, _ in sorted(d["vedettes"].items(), key=lambda kv: -kv[1])[:3]],

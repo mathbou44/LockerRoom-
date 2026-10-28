@@ -1125,7 +1125,7 @@ class Api:
         n = len(res["places"]) or 1
         for pl in res["places"]:
             pl["prix_vise"] = pl["prix"]
-            pl["prix"] = calcul._arrondir(pl["prix"] / max(0.4, 1 - decote), arrondi)
+            pl["prix"] = calcul.arrondi_rond(pl["prix"] / max(0.4, 1 - decote), arrondi)    # 28 oct : prix ronds (5 et 0)
         total = round(sum(pl["prix"] for pl in res["places"]), 2)
         res["total"] = total
         res["profit_plein"] = round(total * (1 - frais_pct) - frais_fixe * n - res["cout"], 2)
@@ -1144,7 +1144,7 @@ class Api:
             dj = {str(k): _float(v) for k, v in (p.get("prix_joueurs") or {}).items() if _float(v)}
             joueurs = [pl for pl in rj["places"] if (pl.get("part_brute") or pl["ev"]) > 0]   # 29 oct : la part exacte (l'ev arrondi cachait des joueurs a 1 boite)
             for pl in joueurs:
-                pl["prix"] = calcul._arrondir(pl["prix"] / max(0.4, 1 - decote), arrondi)
+                pl["prix"] = calcul.arrondi_rond(pl["prix"] / max(0.4, 1 - decote), arrondi)
                 self._noter_place(pl, dj.get(pl["cle"]), sj.get(pl["cle"]))
                 pl["equipe"] = (sj.get(pl["cle"]) or {}).get("equipe")
             self._scores_relatifs(joueurs)

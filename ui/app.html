@@ -134,8 +134,13 @@ details.reglage summary::-webkit-details-marker{display:none}
 .barre i.vert{background:var(--vert)}
 .vide{text-align:center; color:var(--doux); padding:34px 10px; font-size:15px; line-height:1.5; display:flex; flex-direction:column; align-items:center; gap:12px}
 .charge{display:flex; justify-content:center; padding:40px}
-.roue{width:30px; height:30px; background:conic-gradient(from 0deg,var(--h1,#9FE6D2),var(--h2,#B9BEFF),var(--h3,#F2B3D6),var(--h4,#F1D58E),var(--h1,#9FE6D2));
-  -webkit-mask:url(/sc_anneau.svg) center/contain no-repeat; mask:url(/sc_anneau.svg) center/contain no-repeat; animation:tourne .9s linear infinite}
+/* 28 oct 2026 (Mathieu : « le logo avec le C qui tourne autour du S pour le loading ») */
+.roue{position:relative; display:inline-block; width:30px; height:30px; flex-shrink:0; vertical-align:middle}
+.roue::before{content:''; position:absolute; inset:0; background:conic-gradient(from 0deg,var(--h1,#9FE6D2),var(--h2,#B9BEFF),var(--h3,#F2B3D6),var(--h4,#F1D58E),var(--h1,#9FE6D2));
+  -webkit-mask:url(/sc_anneau.svg) center/contain no-repeat; mask:url(/sc_anneau.svg) center/contain no-repeat; animation:tourne 1.1s cubic-bezier(.45,.1,.55,.9) infinite}
+.roue::after{content:''; position:absolute; inset:25%; background:#F4F1EA; -webkit-mask:url(/logo_sc_s.svg) center/contain no-repeat; mask:url(/logo_sc_s.svg) center/contain no-repeat}
+.roue.grande{width:48px; height:48px}
+.charge-logo{display:flex; justify-content:center; align-items:center; padding:56px 0 70px; animation:lr-entre .2s ease-out}
 @keyframes tourne{to{transform:rotate(360deg)}}
 .prog{position:relative; width:26px; height:26px; flex-shrink:0; display:inline-flex; align-items:center; justify-content:center}
 .prog svg{position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg)}
@@ -2148,7 +2153,7 @@ const ICONES = {
   rafraichir:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.4L21 8"/><path d="M21 3v5h-5"/></svg>',
   boite:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 7l9-4 9 4-9 4z"/><path d="M3 7v10l9 4 9-4V7M12 11v10"/></svg>',
 };
-const roue = '<div class="charge"><div class="roue"></div></div>';
+const roue = '<div class="charge"><div class="roue grande"></div></div>';
 // 27 oct 2026 - logo SC1 (Mathieu : « parfait ») : le C refractor fait l'anneau, S ivoire au centre.
 // Le refractor change au hasard a chaque ouverture : Prizm, Cracked Ice, Laser, Mosaic, Mojo, Wave, Pulsar.
 const MOTIFS_SC = ['prizm', 'cracked', 'laser', 'mosaic', 'mojo', 'wave', 'pulsar'];
@@ -4161,8 +4166,9 @@ function feuilleReglagesAna(r, vendeur){
 async function rendreAnalyse(){
   const z = $('#an-z'), A = S.ana, vendeur = S.mode !== 'acheteur';
   A.demandesJ = A.demandesJ || {};
-  const r = await API.analyse_break({produit_id:A.produit, boites:A.boites, mode: vendeur ? A.mode : 'equipes', cout_boite: vendeur ? A.cout : 0, marge:A.marge, decote:0,
-    prix_demandes:A.demandes, prix_joueurs:A.demandesJ, acheteur: !vendeur}).catch(e => ({ok:false, erreur:e.message}));
+  const args = (m) => ({produit_id:A.produit, boites:A.boites, mode: vendeur ? (m || A.mode) : 'equipes', cout_boite: vendeur ? A.cout : 0, marge:A.marge, decote:0,
+    prix_demandes:A.demandes, prix_joueurs:A.demandesJ, acheteur: !vendeur});
+  const r = await API.analyse_break(args()).catch(e => ({ok:false, erreur:e.message}));
   await imagesProduits();
   if (!$('#an-z')) return;
   if (!r.ok) { z.innerHTML = `<div class="vide">${esc(r.erreur)}</div>`; if (r.pro_requis) feuillePro('breaks'); return; }
@@ -4267,8 +4273,16 @@ async function rendreAnalyse(){
   const bc = $('#an-calc'); if (bc) bc.onclick = calculer;
   $$('#rb-n, #rb-lot, #rb-marge, #an-budget', z).forEach(i => i.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); calculer(); } }));
   const bu0 = $('#an-budget'); if (bu0) bu0.onchange = calculer;
-  $$('#an-m button').forEach(b => b.onclick = () => { A.mode = b.dataset.v; rendreAnalyse(); });
-  $$('#an-v button').forEach(b => b.onclick = () => { A.vue = b.dataset.v; rendreAnalyse(); });
+  // 28 oct 2026 (Mathieu : « quand je clique sur Joueurs il y a un delai : ca devrait switcher tout de suite et montrer le
+  // logo qui tourne ») : l'onglet change au tap, la liste laisse place au logo de chargement ; les autres onglets du
+  // vendeur sont precalcules en arriere-plan (le tap suivant est instantane)
+  const ongletTout = (b) => { const seg = b.closest('.seg'); $$('button', seg).forEach(x => x.classList.toggle('on', x === b));
+    let n = seg.nextElementSibling; while (n) { const s2 = n.nextElementSibling; n.remove(); n = s2; }
+    seg.insertAdjacentHTML('afterend', `<div class="charge-logo"><span class="roue grande"></span></div>`); };
+  $$('#an-m button').forEach(b => b.onclick = () => { if (b.classList.contains('on')) return; ongletTout(b); A.mode = b.dataset.v; rendreAnalyse(); });
+  $$('#an-v button').forEach(b => b.onclick = () => { if (b.classList.contains('on')) return; ongletTout(b); A.vue = b.dataset.v; setTimeout(rendreAnalyse, 30); });
+  if (vendeur && !manque) setTimeout(async () => { for (const m of ['equipes', 'joueurs', 'divisions']) { if (m === A.mode || !$('#an-z')) continue;
+    await API.analyse_break(args(m)).catch(() => {}); } }, 900);
   $$('[data-tri-a]', z).forEach(b => b.onclick = () => { A.tri = b.dataset.triA; rendreAnalyse(); });
   const filtrerA = () => { const q = (A.rech || '').trim().toLowerCase(); let n = 0;
     $$('.score-bloc.simple', z).forEach(e => { const ok = q ? e.dataset.nom.includes(q) : !e.classList.contains('loin'); e.hidden = !ok; n += ok; });
