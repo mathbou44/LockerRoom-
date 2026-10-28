@@ -77,6 +77,7 @@ main{position:relative; min-height:100%; display:grid; place-items:center}
 .btn-t{display:flex; align-items:center; justify-content:center; gap:10px; height:56px; border-radius:14px; text-decoration:none; font:700 17px 'Barlow Condensed',sans-serif; transition:transform .15s}
 .btn-t:hover{transform:translateY(-1px)} .btn-t:focus-visible{outline:3px solid var(--ivoire); outline-offset:3px}
 .btn-t svg{width:18px; height:18px}
+.ios-seul{color:#E9CF8E; max-width:340px; margin:6px auto 0; line-height:1.4}
 .btn-t.apple{background:#fff; color:#000} .btn-t.google{background:#fff; color:#1F1F1F; border:1px solid #DADCE0}
 .erreur{margin-top:16px; color:var(--rouge); font-size:14px}
 .liens{margin-top:26px; display:flex; gap:16px; justify-content:center; font-size:13px}
@@ -107,12 +108,14 @@ main{position:relative; min-height:100%; display:grid; place-items:center}
   {erreur}
   <a class="btn" href="/auth/ebay">Se connecter avec eBay<span class="reco">Recommandé</span></a>
   <div class="note">Ton inventaire et tes ventes arrivent tout seuls</div>
+  <div class="note ios-seul" id="note-ios" hidden>Sur l’iPhone, chez eBay, entre ton courriel et ton mot de passe eBay : « Continuer avec Google » ne fonctionne pas dans une app (règle de Google).</div>
   <div class="ou">ou</div>
   <div class="tiers">{autres}</div>
   <div class="note">14 jours de Pro offerts · aucune carte de crédit</div>
   <div class="note">Aucun mot de passe dans l’app · ton compte est créé tout seul</div>
   <div class="liens"><a href="/">‹ Retour au site</a><a href="/support">Support</a><a href="/confidentialite">Confidentialité</a><a href="/conditions">Conditions</a></div>
 </div></main>
+<script>if(/LockerRoomiOS/.test(navigator.userAgent)){var n=document.getElementById("note-ios");if(n)n.hidden=false;}</script>
 <script>(function(){var m=["prizm","cracked","laser","mosaic","mojo","wave","pulsar"];document.getElementById("logo-sc").src="/logo_sc_"+m[Math.floor(Math.random()*m.length)]+".svg"})()</script>
 </body>
 </html>

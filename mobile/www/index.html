@@ -1,3 +1,9 @@
 <!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>SlabCoach</title><style>html,body{margin:0;height:100%;background:#0A0D10}body{display:grid;place-items:center}img{width:96px;height:96px;border-radius:22px}</style>
-</head><body><img src="icone.png" alt="SlabCoach"></body></html>
+<title>SlabCoach</title><style>html,body{margin:0;height:100%;background:#0B0B0E}body{display:grid;place-items:center}img{width:96px;height:96px;border-radius:22px}</style>
+<script src="lr_url.js"></script>
+</head><body><img src="icone.png" alt="SlabCoach">
+<script>
+// 28 oct 2026 : cette page locale ne doit jamais rester affichee : on part tout de suite vers l'app en ligne
+// (avant : « Reessayer » revenait ici et l'ecran restait sur le logo).
+setTimeout(function () { if (window.LR_URL) location.replace(window.LR_URL); }, 150);
+</script></body></html>

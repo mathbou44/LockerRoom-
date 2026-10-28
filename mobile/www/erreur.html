@@ -1,23 +1,27 @@
 <!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>SlabCoach</title>
+<script src="lr_url.js"></script>
 <style>
-html,body{margin:0;height:100%;background:#0A0D10;color:#F2F5F7;font-family:-apple-system,system-ui,sans-serif}
+html,body{margin:0;height:100%;background:#0B0B0E;color:#F4F2EE;font-family:-apple-system,system-ui,sans-serif}
 main{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center;box-sizing:border-box}
 img{width:84px;height:84px;border-radius:20px}
 h1{font-size:22px;margin:4px 0 0}
-p{color:#A3ACB5;font-size:16px;line-height:1.45;margin:0;max-width:320px}
-button{margin-top:8px;padding:15px 28px;border:0;border-radius:14px;background:#E8C46A;color:#0A0D10;font-weight:700;font-size:17px}
+p{color:#A9A6B1;font-size:16px;line-height:1.45;margin:0;max-width:320px}
+button{margin-top:8px;padding:15px 28px;border:0;border-radius:14px;background:#B9BEFF;color:#0E1026;font-weight:700;font-size:17px}
 </style></head><body><main>
 <img src="icone.png" alt="">
-<h1 id="t">Pas de connexion</h1>
-<p id="m">SlabCoach a besoin d’Internet pour lire les ventes eBay. Vérifie ton Wi-Fi ou tes données cellulaires.</p>
-<button id="b">Réessayer</button>
+<h1 id="t"></h1>
+<p id="m"></p>
+<button id="b"></button>
 </main>
 <script>
-if (!/^fr/i.test(navigator.language || '')) {
-  document.getElementById('t').textContent = 'No connection';
-  document.getElementById('m').textContent = 'SlabCoach needs the internet to read eBay sales. Check your Wi-Fi or cellular data.';
-  document.getElementById('b').textContent = 'Try again';
-}
-document.getElementById('b').onclick = function () { location.href = (window.Capacitor && Capacitor.getServerUrl && Capacitor.getServerUrl()) || '/'; };
+// 28 oct 2026 : en ligne mais la page n'a pas pu s'ouvrir (ex. une connexion Google ouverte hors de l'app) :
+// on ne dit plus « pas d'Internet », et « Reessayer » repart vers l'app en ligne (pas vers la page locale).
+var fr = /^fr/i.test(navigator.language || ''), horsLigne = navigator.onLine === false;
+document.getElementById('t').textContent = horsLigne ? (fr ? 'Pas de connexion' : 'No connection') : (fr ? 'La page n’a pas pu s’ouvrir' : 'The page could not open');
+document.getElementById('m').textContent = horsLigne
+  ? (fr ? 'SlabCoach a besoin d’Internet pour lire les ventes eBay. Vérifie ton Wi-Fi ou tes données cellulaires.' : 'SlabCoach needs the internet to read eBay sales. Check your Wi-Fi or cellular data.')
+  : (fr ? 'La connexion a été interrompue. Touche « Réessayer » pour revenir à SlabCoach.' : 'The connection was interrupted. Tap “Try again” to go back to SlabCoach.');
+document.getElementById('b').textContent = fr ? 'Réessayer' : 'Try again';
+document.getElementById('b').onclick = function () { location.replace(window.LR_URL || 'https://www.slabcoach.com'); };
 </script></body></html>

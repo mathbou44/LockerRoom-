@@ -35,4 +35,6 @@ const conf = {
   }
 };
 fs.writeFileSync(path.join(ici, 'capacitor.config.json'), JSON.stringify(conf, null, 2));
+// 28 oct 2026 : les pages locales (demarrage, erreur) savent ou est l'app en ligne : « Reessayer » y retourne
+fs.writeFileSync(path.join(ici, 'www', 'lr_url.js'), 'window.LR_URL = ' + JSON.stringify(url) + ';\n');
 console.log('capacitor.config.json -> ' + url);
