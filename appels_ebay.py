@@ -67,10 +67,37 @@ def utilises(api):
     return int(_lire()["appels"].get(api, 0))
 
 
+RYTHME_AVANCE_H = 2               # 28 oct 2026 : la tache de fond peut prendre 2 h d'avance sur son rythme, pas plus
+_LIBRE = {"jusqu": 0.0}           # un tour force par l'admin (« Recharger les deals ») passe outre le rythme, pas le plafond
+
+
+def _heures_ecoulees():
+    """Heures depuis la remise a zero des compteurs eBay (minuit, heure du Pacifique)."""
+    m = datetime.now(timezone.utc) - timedelta(hours=8)
+    return m.hour + m.minute / 60
+
+
+def rythme(api):
+    """Ce que la tache de fond a le droit d'avoir utilise a cette heure-ci : son budget du jour etale sur 24 h.
+    28 oct 2026 (Mathieu : « il en manque une chier ») : sans rythme, le chasseur de deals vidait le budget eBay vers
+    20 h ; plus aucun tour jusqu'a la remise a zero, les deals (6 h au plus, licence eBay) disparaissaient la nuit."""
+    plafond = limite(api) * (1 - RESERVE_GESTES)
+    return plafond * min(1.0, (_heures_ecoulees() + RYTHME_AVANCE_H) / 24)
+
+
+def liberer(secondes=900):
+    _LIBRE["jusqu"] = time.time() + secondes
+
+
 def budget_ok(api, fond=True):
-    """Tache de fond : s'arrete a 80 % de la limite. Geste du vendeur : jusqu'a 100 %."""
+    """Tache de fond : s'arrete a 80 % de la limite, au rythme de la journee. Geste du vendeur : jusqu'a 100 %."""
     plafond = limite(api) * ((1 - RESERVE_GESTES) if fond else 1.0)
-    return utilises(api) < plafond
+    n = utilises(api)
+    if n >= plafond:
+        return False
+    if fond and api == "browse" and time.time() > _LIBRE["jusqu"] and os.environ.get("LR_EBAY_RYTHME") != "0":
+        return n < rythme(api)
+    return True
 
 
 def exiger(api, fond=True):

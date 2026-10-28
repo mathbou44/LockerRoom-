@@ -757,6 +757,19 @@ class Api:
             return {"ok": True, "vendeurs": _d.regler_vendeurs(liste)}
         return {"ok": True, "vendeurs": _d.vendeurs_suivis()}
 
+    def deals_recharger(self):
+        """28 oct 2026 - admin : un tour du chasseur de deals tout de suite."""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import deals as _d
+        return {**_d.recharger(), "etat": _d.etat()}
+
+    def deals_etat(self):
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import deals as _d
+        return _d.etat()
+
     def admin_resume(self):
         """Tout ce que la console affiche au premier coup d'oeil."""
         if not self._est_admin():

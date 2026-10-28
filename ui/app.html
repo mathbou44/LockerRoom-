@@ -6023,7 +6023,10 @@ async function adminServeur(){
   const ap = (d.ebay && d.ebay.appels) || {};
   const barre = (n, max) => { const p = max ? Math.min(100, Math.round(100 * n / max)) : 0; return `<div class="adm-barre"><i style="width:${p}%" class="${p > 80 ? 'rouge' : ''}"></i></div><span class="sous">${n} / ${max} · ${p} %</span>`; };
   const t = d.taches || {};
-  z.innerHTML = `<div class="bloc" id="adm-vend" style="margin-bottom:14px"><div class="r-titre">${tt('Vendeurs suivis (deals)', 'Followed sellers (deals)')}</div>
+  z.innerHTML = `<div class="bloc" id="adm-deals" style="margin-bottom:14px"><div class="r-titre">${tt('Chasseur de deals', 'Deal hunter')}</div>
+    <div class="sous" id="adm-deals-e">…</div>
+    <button class="btn petit" id="adm-deals-ok" style="width:auto;align-self:flex-start">${tt('Recharger les deals', 'Reload deals')}</button></div>
+    <div class="bloc" id="adm-vend" style="margin-bottom:14px"><div class="r-titre">${tt('Vendeurs suivis (deals)', 'Followed sellers (deals)')}</div>
     <div class="sous">${tt('Pseudos eBay exacts, séparés par des virgules. Leurs encans (48 h) et nouvelles annonces sont analysés chaque heure.', 'Exact eBay usernames, comma-separated. Their auctions (48 h) and new listings are checked every hour.')}</div>
     <textarea class="champ" id="adm-vend-l" style="min-height:70px"></textarea><button class="btn petit" id="adm-vend-ok" style="width:auto;align-self:flex-start">${tt('Enregistrer', 'Save')}</button></div>
     <div class="deux-col"><div class="bloc">
@@ -6040,6 +6043,15 @@ async function adminServeur(){
     <div class="r-titre" style="margin-top:14px">${tt('Erreurs récentes', 'Recent errors')}</div>
     ${d.erreurs.length ? `<div class="bloc"><div class="liste">${d.erreurs.map(e => `<div class="rangee"><span class="milieu"><span class="nom">${esc(e.ou)}</span><span class="det">${esc(e.erreur)}</span></span><span class="droite"><span class="sous">${ilYa(e.le)}</span></span></div>`).join('')}</div></div>`
       : `<div class="vide">${tt('Aucune erreur ✓', 'No errors ✓')}</div>`}`;
+  const etatDeals = (e) => { const el = $('#adm-deals-e'); if (!el || !e || !e.ok) return;
+    el.innerHTML = `${e.en_cours ? '<span class="roue"></span> ' + tt('Tour en cours… ', 'Running… ') : ''}<b>${e.deals}</b> ${tt('deals en ligne', 'live deals')} · ${tt('dernier tour', 'last run')} ${e.maj ? heureCourte(e.maj) : '—'}<br>
+      eBay ${e.ebay} / ${e.ebay_plafond} ${tt('(rythme du jour : ', '(today’s pace: ')}${e.ebay_rythme}) · ${tt('vérifications', 'checks')} ${e.verif} / ${e.verif_max}${e.verif >= e.verif_max ? ' · <span style="color:var(--rouge)">' + tt('épuisées pour aujourd’hui', 'used up for today') + '</span>' : ''}`; };
+  API.deals_etat().then(etatDeals).catch(() => {});
+  const bd = $('#adm-deals-ok'); if (bd) bd.onclick = async () => {
+    bd.disabled = true; const r = await essai(API.deals_recharger(), tt('Tour lancé : les deals arrivent d’ici quelques minutes', 'Run started: deals arrive within a few minutes'));
+    if (r) etatDeals(r.etat);
+    let k = 0; const suivre = setInterval(async () => { k++; const e = await API.deals_etat().catch(() => null); etatDeals(e);
+      if (!e || !e.en_cours || k > 40 || !document.body.contains(bd)) { clearInterval(suivre); bd.disabled = false; } }, 15000); };
   API.deals_vendeurs().then(v => { const t = $('#adm-vend-l'); if (t && v && v.ok) t.value = v.vendeurs.join(', '); }).catch(() => {});
   const bv = $('#adm-vend-ok'); if (bv) bv.onclick = async () => { const v = await essai(API.deals_vendeurs(val('adm-vend-l')), tt('Enregistré', 'Saved')); if (v && v.ok) $('#adm-vend-l').value = v.vendeurs.join(', '); };
 }

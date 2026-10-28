@@ -382,6 +382,9 @@ class AppelsEbay(unittest.TestCase):
 
     def test_reserve_pour_les_gestes(self):
         a = self.a
+        vrai = a._heures_ecoulees
+        a._heures_ecoulees = lambda: 23.9        # 28 oct 2026 : fin de journee (le rythme est teste dans test_rythme_ebay)
+        self.addCleanup(setattr, a, "_heures_ecoulees", vrai)
         a.compter("browse", 3999)
         self.assertTrue(a.budget_ok("browse", fond=True))
         a.compter("browse")                       # 4 000 = 80 % : les taches de fond s'arretent

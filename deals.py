@@ -937,7 +937,39 @@ def reverifier(lire_article=None, max_=None):
     return {"ok": True, "deals": len(garde_), "stats": st}
 
 
-def chasser_si_besoin():
+def recharger():
+    """28 oct 2026 (Mathieu : « on doit recharger les deals ») : un tour complet tout de suite (admin), sans attendre
+    l'heure et sans le rythme du budget eBay (le plafond du jour, lui, tient toujours)."""
+    import appels_ebay
+    if _ETAT["en_cours"]:
+        return {"ok": True, "deja": True}
+    appels_ebay.liberer(900)
+    return {"ok": True, "lance": bool(chasser_si_besoin(force=True))}
+
+
+def etat():
+    """Pour l'admin : ou en est le chasseur (deals affiches, budget eBay et budget de verification du jour)."""
+    import appels_ebay
+    d = lire()
+    try:
+        vmax = int(os.environ.get("LR_DEALS_VERIF_JOUR") or VERIF_JOUR)
+    except ValueError:
+        vmax = VERIF_JOUR
+    v = d.get("verif") or {}
+    jour = datetime.now().strftime("%Y-%m-%d")
+    return {"ok": True, "en_cours": _ETAT["en_cours"], "maj": d.get("maj"),
+            "deals": sum(1 for x in d.get("deals") or [] if valide(x) and encore_ouvert(x)),
+            "ebay": utilises_ebay(), "ebay_rythme": round(appels_ebay.rythme("browse")),
+            "ebay_plafond": round(appels_ebay.limite("browse") * (1 - appels_ebay.RESERVE_GESTES)),
+            "verif": v.get("n", 0) if v.get("jour") == jour else 0, "verif_max": vmax}
+
+
+def utilises_ebay():
+    import appels_ebay
+    return appels_ebay.utilises("browse")
+
+
+def chasser_si_besoin(force=False):
     """En arriere-plan, au plus une fois par heure, jamais deux a la fois."""
     d = lire()
     try:
@@ -948,7 +980,7 @@ def chasser_si_besoin():
     # une seule fois par demarrage (mise a jour, redemarrage) : peu de deals -> un tour apres 10 min, pas apres 1 h
     # (jamais plus : le quota d'appels eBay du jour)
     peu = not _ETAT.get("rapide") and sum(1 for x in d.get("deals") or [] if valide(x)) < 10
-    if age < (600 if peu else FRAICHEUR_S):
+    if age < (600 if peu else FRAICHEUR_S) and not force:
         return False
     if peu:
         _ETAT["rapide"] = True
@@ -965,7 +997,9 @@ def chasser_si_besoin():
                 reverifier()                             # d'abord : les deals deja affiches, revus sur eBay
             except Exception as e:
                 print("Deals (revue) : " + repr(e), flush=True)
-            for f in (chasser, encans, flux):
+            # 28 oct 2026 : les flux d'abord (hits, vendeurs suivis, encans larges) : ce sont eux qui trouvent le plus ;
+            # si le rythme du budget eBay coupe le tour, il coupe les recherches par joueur
+            for f in (flux, encans, chasser):
                 try:
                     f(bassin=b)
                 except Exception as e:
