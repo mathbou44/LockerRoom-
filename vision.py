@@ -97,6 +97,10 @@ Regles :
 - Lis ce qui est IMPRIME sur la carte (devant et dos) et sur l'etiquette de gradation. N'invente jamais : un champ illisible reste vide, avec une confiance basse, et va dans a_verifier.
 - Le dos donne souvent l'annee (copyright), le numero de la carte et le set ; l'estampe /99 donne le tirage.
 - Parallele : decris ce que tu vois (couleur, motif, finition) seulement si tu es sur du nom officiel ; sinon mets-le dans a_verifier.
+- Les paralleles qui existent en plusieurs couleurs (Color Flow, Prizm, Refractor, Rainbow, Wave, Mojo, Cracked Ice, Spectrum,
+  High Gloss...) : donne TOUJOURS la couleur dans « parallele » (ex. « Color Flow Purple Blue », « Blue Prizm », « Gold Refractor »).
+  La couleur change beaucoup le prix. Si tu n'es pas sur du nom exact de la couleur, ecris la couleur que tu vois et mets
+  « parallele » dans a_verifier.
 - Recrue : RC imprime, Young Guns, Rated Rookie, 1st Bowman, Rookie Ticket...
 - photos : pour chaque image, les 4 coins exterieurs de la carte (ou de son etui / slab), le plus precis possible, et si la photo est a reprendre (coin coupe, floue, reflet sur le texte).
 - Reponds uniquement avec l'outil « carte »."""
@@ -225,7 +229,8 @@ def _decoder(photo):
 
 
 _MODELE_OK = {"m": None}
-_CHOIX_AUTO = {"oui": False}     # 28 oct 2026 : ce modele refuse tool_choice « tool » : on demande l'outil par la consigne
+_CHOIX_AUTO = {"oui": True}      # 28 oct 2026 : le modele refuse tool_choice « tool » : on demande l'outil par la consigne
+                                 # (des le 1er appel : avant, chaque redemarrage coutait un appel rate de plus au 1er scan)
 
 
 def _choix_auto(corps):

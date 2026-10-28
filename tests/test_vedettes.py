@@ -28,7 +28,7 @@ class TestVedettes(unittest.TestCase):
 
     def test_budget_garde_pour_les_hits(self):
         vrai = vendues.rechercher
-        vendues.rechercher = lambda q, fond=True: {"ventes": [{"titre": q, "prix": 10, "le": "2026-10-20"}]}
+        vendues.rechercher = lambda q, fond=True, **k: {"ventes": [{"titre": q, "prix": 10, "le": "2026-10-20"}]}
         os.environ["LR_DEALS_VERIF_JOUR"] = "10"
         try:
             st = {}
@@ -100,7 +100,7 @@ class TestVedettes(unittest.TestCase):
                          "url": "https://www.ebay.com/itm/s1", "vendeur_pct": "100", "vendeur_score": 5000}]
             return []
         vrai, avant, avant_h = vendues.rechercher, deals.FLUX, deals.FLUX_HITS
-        vendues.rechercher = lambda q, fond=True: {"ventes": [{"titre": titre, "prix": p, "le": j(k), "url": f"w{k}"} for k, p in ((2, 240), (8, 255), (14, 230))]}
+        vendues.rechercher = lambda q, fond=True, **k: {"ventes": [{"titre": titre, "prix": p, "le": j(k), "url": f"w{k}"} for k, p in ((2, 240), (8, 255), (14, 230))]}
         deals.FLUX, deals.FLUX_HITS = [], []
         try:
             r = deals.flux(rech, bassin=deals.Bassin(charger=False))

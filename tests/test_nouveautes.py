@@ -122,7 +122,7 @@ class Deals(unittest.TestCase):
         import vendues
         vrai, vrai_c = vendues.rechercher, vendues.en_cache
         ventes = lambda q: [{"titre": f"2025-26 Upper Deck {q} #201 RC", "prix": p, "le": "2026-10-20"} for p in (24, 26, 25, 27)]
-        vendues.rechercher = lambda q, fond=True: {"ventes": ventes(q), "erreur": None}
+        vendues.rechercher = lambda q, fond=True, **k: {"ventes": ventes(q), "erreur": None}
         vendues.en_cache = ventes
         try:
             r = deals.chasser(2, rech)
@@ -159,7 +159,7 @@ class Deals(unittest.TestCase):
         b.ajouter([{"titre": T2, "prix": 60, "le": "2026-10-20", "url": "w0"}])               # une seule vente : a verifier
         appels = []
 
-        def rech_v(q, fond=True):
+        def rech_v(q, fond=True, **k):
             appels.append(q)
             return {"ventes": [{"titre": T2, "prix": p, "le": "2026-10-2" + str(i), "url": "w" + str(i)} for i, p in enumerate((60, 55, 65))],
                     "erreur": None}
@@ -203,7 +203,7 @@ class Deals(unittest.TestCase):
                      "prix_cad": 40.0, "port_cad": 6.0, "encan": True, "url": "u", "fin": fin(40)}]    # 40 h : trop loin
         appels = []
 
-        def rech_v(q, fond=True):
+        def rech_v(q, fond=True, **k):
             appels.append(q)
             if "savoie" in q:
                 return {"ventes": [{"titre": "2022-23 SP Game Used Draft Day Marks Matt Savoie Patch Auto %d/35" % n, "prix": p,
@@ -245,7 +245,7 @@ class Deals(unittest.TestCase):
              ("2022 Immaculate College Premium Purple Chris Olave /15 ROOKIE PATCH AUTO RC RPA", 115.68),   # autre carte
              ("2025-26 SP Game Used Colton Parayko Gold Patch Auto /25", 30.0)]                             # le meme joueur
         vrai = vendues.rechercher
-        vendues.rechercher = lambda q, fond=False: {"ventes": [{"titre": t, "prix": p, "le": "2026-10-0%d" % i} for i, (t, p) in enumerate(V)]}
+        vendues.rechercher = lambda q, fond=False, **k: {"ventes": [{"titre": t, "prix": p, "le": "2026-10-0%d" % i} for i, (t, p) in enumerate(V)]}
         try:
             r = vendues.autres_joueurs(T)
         finally:

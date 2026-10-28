@@ -482,7 +482,7 @@ def _verificateur(d, st, bassin):
             st["verif_budget"] = st.get("verif_budget", 0) + 1
             return None
         faites.add(q)
-        r = vendues.rechercher(q, fond=True)
+        r = vendues.rechercher(q, fond=True, usage="verif")
         if r.get("erreur"):
             st["erreurs_ventes"] = st.get("erreurs_ventes", 0) + 1
             return None
@@ -1071,6 +1071,7 @@ def _etat_soldcomps():
     try:
         e = vendues.derniere_erreur()
         return {"jour": vendues.utilises_aujourdhui(), "plafond": vendues.plafond_jour(), "fond": int(vendues.plafond_jour() * 0.7),
+                "verif": vendues.utilises_aujourdhui("verif"), "autres_max": int(vendues.plafond_jour() * vendues.PART_AUTRES_FOND),
                 "erreur": e.get("erreur") if e and time.time() - e.get("le", 0) < 6 * 3600 else None, "sites": vendues.sites()}
     except Exception as x:
         return {"erreur": repr(x)}

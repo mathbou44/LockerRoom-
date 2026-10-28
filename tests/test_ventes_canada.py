@@ -18,15 +18,15 @@ def it(i, prix, dev, site):
 class TestCanada(unittest.TestCase):
     def test_deux_sites_fusionnes_sans_doublon(self):
         appels = []
-        def appel(q, site):
+        def appel(q, site, attendre=True, usage=None):
             appels.append(site)
             if site == "ebay.com":
                 return {"items": [it(111111111111, 100, "USD", site), it(222222222222, 80, "USD", site)]}, None
             return {"items": [it(222222222222, 110, "CAD", site), it(333333333333, 150, "CAD", site)]}, None
         with mock.patch.object(vendues, "_appel", side_effect=appel), mock.patch.object(vendues, "actif", return_value=True), \
              mock.patch.object(vendues, "_taux_usd_cad", return_value=1.4), mock.patch.object(vendues, "utilises_aujourdhui", return_value=0):
-            r = vendues.rechercher("demidov young guns canada test")
-        self.assertEqual(appels, ["ebay.com", "ebay.ca"])
+            r = vendues.rechercher("demidov young guns canada test", fond=False)
+        self.assertEqual(sorted(appels), ["ebay.ca", "ebay.com"])
         ids = sorted(vendues._id_vente(v) for v in r["ventes"])
         self.assertEqual(ids, ["111111111111", "222222222222", "333333333333"])
         ca = [v for v in r["ventes"] if v["site"] == "ebay.ca"]
@@ -41,13 +41,35 @@ class TestCanada(unittest.TestCase):
         self.assertEqual(vendues.sites(), ["ebay.com", "ebay.ca"])
 
     def test_erreur_du_site_canadien_garde_les_ventes_us(self):
-        def appel(q, site):
+        def appel(q, site, attendre=True, usage=None):
             return ({"items": [it(444444444444, 50, "USD", site)]}, None) if site == "ebay.com" else (None, "SoldComps HTTP 500")
         with mock.patch.object(vendues, "_appel", side_effect=appel), mock.patch.object(vendues, "actif", return_value=True), \
              mock.patch.object(vendues, "_taux_usd_cad", return_value=1.4), mock.patch.object(vendues, "utilises_aujourdhui", return_value=0):
-            r = vendues.rechercher("autre recherche canada test")
+            r = vendues.rechercher("autre recherche canada test", fond=False)
         self.assertEqual(len(r["ventes"]), 1)
         self.assertIsNone(r["erreur"])
+
+    def test_budget_garde_pour_les_verifications(self):
+        """28 oct 2026 : les autres taches de fond ont au plus 35 % ; les verifications de deals gardent le reste (70 %)."""
+        u = {None: 40, "verif": 4}
+        with mock.patch.object(vendues, "utilises_aujourdhui", side_effect=lambda usage=None: u[usage]), \
+             mock.patch.object(vendues, "plafond_jour", return_value=100):
+            self.assertFalse(vendues._budget_ok(True, None))          # autres : 36 >= 35
+            self.assertTrue(vendues._budget_ok(True, "verif"))        # verifs : 40 < 70
+            self.assertTrue(vendues._budget_ok(False, None))          # un tap : jusqu'a 100
+            u[None] = 70
+            self.assertFalse(vendues._budget_ok(True, "verif"))
+
+    def test_taches_de_fond_un_seul_site(self):
+        appels = []
+        def appel(q, site, attendre=True, usage=None):
+            appels.append(site)
+            return {"items": [it(555555555555, 50, "USD", site)]}, None
+        with mock.patch.object(vendues, "_appel", side_effect=appel), mock.patch.object(vendues, "actif", return_value=True), \
+             mock.patch.object(vendues, "_taux_usd_cad", return_value=1.4), mock.patch.object(vendues, "_budget_ok", return_value=True):
+            vendues.rechercher("valeur produit fond test")
+            vendues.rechercher("verif deal test", usage="verif")
+        self.assertEqual(appels, ["ebay.com", "ebay.com", "ebay.ca"])
 
 
 if __name__ == "__main__":

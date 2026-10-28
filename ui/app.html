@@ -1082,6 +1082,7 @@ body.scan-ouvert{overflow:hidden}
 .scan-tete{flex-direction:row; gap:14px; align-items:flex-start; margin-bottom:12px; animation:lr-entre .25s ease-out}
 .scan-tete img{width:112px; aspect-ratio:1; object-fit:contain; border-radius:12px; background:#EDEDEA; flex-shrink:0}
 .st-c{display:flex; flex-direction:column; gap:6px; min-width:0} .st-c > b{font-size:20px} .st-c > span{color:var(--doux); font-size:13.5px}
+.st-corr{background:none; border:none; color:var(--acc); font-size:13.5px; padding:0 0 0 4px; text-decoration:underline}
 .st-v{display:flex; align-items:baseline; gap:8px} .st-v small{color:var(--doux)} .st-v b{font:700 26px var(--f-cond); color:var(--vert)}
 .st-c .lien-doux{display:inline-flex; align-items:center; gap:6px; font-size:14px} .st-c .lien-doux svg{width:17px; height:17px}
 .sr-tete b{display:block; font-size:22px} .sr-tete span{color:var(--doux); font-size:14px}
@@ -4713,10 +4714,11 @@ function scanAnalyser(){
 function scanPhoto(){
   const z = scanZone(); if (!z) return null;
   SCAN.quadPhoto = (SCAN.angle && SCAN.angle.ok && SCAN.angle.quad) || z.cadre;    // les coins de la carte dans cette photo (0..1000)
-  const r = Math.min(1, 1400 / Math.max(z.w, z.h)), cv = document.createElement('canvas');
+  // 28 oct 2026 (vitesse) : 1150 px suffisent pour lire l'etiquette PSA ; moins a envoyer, moins a lire pour l'IA
+  const r = Math.min(1, 1150 / Math.max(z.w, z.h)), cv = document.createElement('canvas');
   cv.width = Math.round(z.w * r); cv.height = Math.round(z.h * r);
   cv.getContext('2d').drawImage(z.v, z.x, z.y, z.w, z.h, 0, 0, cv.width, cv.height);
-  return cv.toDataURL('image/jpeg', 0.88);
+  return cv.toDataURL('image/jpeg', 0.86);
 }
 async function scanCapturer(manuel){
   if (SCAN.etat !== 'cherche') return;
@@ -4744,10 +4746,13 @@ async function scanCapturer(manuel){
   // trouvee : la photo arrangee (studio), puis l'ecran tombe sur l'analyse complete de la carte (valeur, ventes, comps)
   SCAN.etat = 'trouve'; SCAN.ph = ph; SCAN.champs = c; SCAN.q = q;
   scanAide(tt('Trouvée !', 'Found!'), 'vert');
-  const studio = await scanStudio(ph, ((r.photos || [])[0] || {}).coins);
-  S.scanRes = {q, champs: c, ph, studio, but: SCAN.opts.but || 'valeur'};
+  // 28 oct 2026 (vitesse) : on part tout de suite vers l'analyse ; la photo studio se fait pendant que la valeur charge
+  const sr = S.scanRes = {q, champs: c, ph, studio: null, but: SCAN.opts.but || 'valeur'};
+  const coins = ((r.photos || [])[0] || {}).coins, quad = SCAN.quadPhoto;
   scanFermer();
   location.hash = '#valeur/' + encodeURIComponent(q);
+  photoStudio(ph, (coins && coins.length === 4) ? coins : quad).then(st => { sr.studio = st.photo;
+    const im = $('.scan-tete img'); if (im) im.src = st.photo; }).catch(() => {});
 }
 // 28 oct 2026 (Mathieu : « l'app arrange la photo pour qu'elle soit parfaite, pour une annonce ou pour une super photo
 // en collection ») : la carte est detouree sur ses vrais bords, redressee et posee sur le fond studio (comme les annonces).
@@ -4846,7 +4851,9 @@ async function vueValeur(arg){
     <div id="v-res">${q ? roue : '<div id="v-tend"></div>'}</div>
   </section>`;
   brancherSwitchMode(V());
-  $('#v-form').onsubmit = (e) => { e.preventDefault(); const v = $('#v-q').value.trim(); if (v) location.hash = '#valeur/' + encodeURIComponent(v); };
+  $('#v-form').onsubmit = (e) => { e.preventDefault(); const v = $('#v-q').value.trim(); if (!v) return;
+    if (S.scanRes && S.scanRes.q === q) { S.scanRes.q = v; S.scanRes.champs = {...S.scanRes.champs, titre: v}; }   // la carte scannee suit la correction
+    location.hash = '#valeur/' + encodeURIComponent(v); };
   brancherQuota(V());
   $('#v-scan').onclick = () => ouvrirScanner();
   if (!q) { if (!matchMedia('(max-width:899px)').matches) $('#v-q').focus(); blocMarche($('#v-tend')); return; }
@@ -4885,11 +4892,14 @@ async function vueValeur(arg){
   if (sr) {
     const c = sr.champs || {}, det = [c.annee, c.set_nom, c.parallele, c.numero ? '#' + c.numero : '', c.tirage ? '/' + c.tirage : '', c.auto ? 'Auto' : '', c.grade].filter(Boolean).join(' · ');
     z.insertAdjacentHTML('afterbegin', `<div class="bloc scan-tete"><img src="${esc(sr.studio || sr.ph)}" alt="">
-      <div class="st-c"><b>${esc(c.joueur || tt('Carte', 'Card'))}</b><span>${esc(det)}</span>
+      <div class="st-c"><b>${esc(c.joueur || tt('Carte', 'Card'))}</b><span>${esc(det)} <button class="st-corr" id="st-corr" aria-label="${esc(tt('Préciser la carte', 'Refine the card'))}">✎ ${tt('Préciser', 'Refine')}</button></span>
         ${r.valeur ? `<div class="st-v"><small>${tt('Vaut', 'Worth')}</small><b>${argent(r.valeur, 0)}</b></div>` : ''}
         <button class="btn petit" id="st-garder">${tt('Ajouter à ma collection', 'Add to my collection')}</button>
         <button class="lien-doux" id="st-autre">${ICONES.photo} ${tt('Scanner une autre carte', 'Scan another card')}</button></div></div>`);
     $('#st-autre', z).onclick = () => ouvrirScanner({but: sr.but});
+    // 28 oct 2026 (« c'est une Color Flow Purple Blue ») : l'app a mal lu un detail -> on corrige la recherche, la carte scannee reste
+    $('#st-corr', z).onclick = () => { const i = $('#v-q'); if (!i) return; i.focus(); i.setSelectionRange(i.value.length, i.value.length);
+      toast(tt('Ajoute ou corrige un détail (ex. la couleur), puis Rechercher', 'Add or fix a detail (e.g. the color), then Search'), 3500); };
     $('#st-garder', z).onclick = async () => {
       const b = $('#st-garder', z); b.disabled = true; b.textContent = tt('Ajout…', 'Adding…');
       const p = await API.annonce_preparer(c, typeof LANGUE !== 'undefined' ? LANGUE : 'fr').catch(() => ({ok:false}));
@@ -6530,7 +6540,8 @@ async function adminServeur(){
       ${e.repartition ? '<br>' + tt('En ligne : ', 'Live: ') + e.repartition.hits + ' hits · ' + e.repartition.veterans + tt(' vétérans/légendes · ', ' veterans/legends · ') + e.repartition.recrues + tt(' autres recrues · ', ' other rookies · ') + e.repartition.young_guns + ' Young Guns' : ''}
       ${e.hits_24h ? '<br>' + tt('Hits (24 h) : ', 'Hits (24 h): ') + e.hits_24h.vus + tt(' vus · ', ' seen · ') + e.hits_24h.verifies + tt(' vérifiés · ', ' checked · ') + e.hits_24h.deals + ' deals'
         + '<br><small>' + tt('Bloqués (24 h) : budget ', 'Blocked (24 h): budget ') + (e.hits_24h.refus_budget || 0) + tt(' · erreurs SoldComps ', ' · SoldComps errors ') + (e.hits_24h.erreurs_ventes || 0) + tt(' · sans ventes ', ' · no sales ') + (e.hits_24h.sans_ventes || 0) + '</small>' : ''}
-      ${e.soldcomps ? '<br>SoldComps : ' + (e.soldcomps.jour ?? '?') + ' / ' + (e.soldcomps.fond ?? '?') + tt(' aujourd’hui (tâches de fond)', ' today (background)') + (e.soldcomps.erreur ? ' · <span style="color:var(--rouge)">' + esc(e.soldcomps.erreur) + '</span>' : '') : ''}
+      ${e.soldcomps ? '<br>SoldComps : ' + (e.soldcomps.jour ?? '?') + ' / ' + (e.soldcomps.fond ?? '?') + tt(' aujourd’hui (tâches de fond)', ' today (background)')
+        + (e.soldcomps.verif != null ? tt(' · vérifs de deals ', ' · deal checks ') + e.soldcomps.verif + tt(' · autres ', ' · other ') + ((e.soldcomps.jour || 0) - e.soldcomps.verif) + ' / ' + e.soldcomps.autres_max : '') + (e.soldcomps.erreur ? ' · <span style="color:var(--rouge)">' + esc(e.soldcomps.erreur) + '</span>' : '') : ''}
       <br>${tt('Reconnaissance photo', 'Photo recognition')} : ${esc(e.vision_modele || '—')}${e.vision_erreur ? ' · <span style="color:var(--rouge)">' + tt('dernière erreur', 'last error') + ' HTTP ' + esc(e.vision_erreur.code) + ' ' + esc((e.vision_erreur.detail || '').slice(0, 140)) + '</span>' : ''}`; };
   API.deals_etat().then(etatDeals).catch(() => {});
   const bd = $('#adm-deals-ok'); if (bd) bd.onclick = async () => {

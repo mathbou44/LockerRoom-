@@ -86,11 +86,12 @@ def _cache_ecrire(q, ventes):
             c.close()
 
 
-def utilises_aujourdhui():
+def utilises_aujourdhui(usage=None):
+    """Requetes SoldComps du jour ; usage="verif" : celles des verifications de deals seulement."""
     try:
         c = _cx()
         try:
-            r = c.execute("SELECT n FROM compteur WHERE jour=?", (datetime.now().strftime("%Y-%m-%d"),)).fetchone()
+            r = c.execute("SELECT n FROM compteur WHERE jour=?", (datetime.now().strftime("%Y-%m-%d") + (":" + usage if usage else ""),)).fetchone()
         finally:
             c.close()
         return int(r[0]) if r else 0
@@ -98,12 +99,14 @@ def utilises_aujourdhui():
         return 0
 
 
-def _compter():
+def _compter(usage=None):
     with _verrou:
         c = _cx()
         try:
             j = datetime.now().strftime("%Y-%m-%d")
             c.execute("INSERT INTO compteur VALUES (?, 1) ON CONFLICT(jour) DO UPDATE SET n = n + 1", (j,))
+            if usage:
+                c.execute("INSERT INTO compteur VALUES (?, 1) ON CONFLICT(jour) DO UPDATE SET n = n + 1", (j + ":" + usage,))
             c.commit()
         finally:
             c.close()
@@ -146,7 +149,23 @@ def en_cache(q):
     return _cache_lire(" ".join(str(q or "").split())[:120].lower())
 
 
-def rechercher(q, fond=True):
+# 28 oct 2026 (admin : « SoldComps 706 / 700 », 15 245 verifications de deals refusees) : les autres taches de fond (valeurs
+# des produits, chasse par joueur, repere des prix) avaient mange tout le budget du jour avant le soir. Maintenant elles ont
+# au plus la moitie du budget de fond ; l'autre moitie est gardee aux verifications de deals. Et eBay.ca seulement pour les
+# recherches des utilisateurs et les verifications de deals (les autres taches : eBay.com, 1 requete au lieu de 2).
+PART_AUTRES_FOND = 0.35
+
+
+def _budget_ok(fond, usage):
+    tot, pl = utilises_aujourdhui(), plafond_jour()
+    if not fond:
+        return tot < pl
+    if tot >= pl * 0.7:
+        return False
+    return usage == "verif" or (tot - utilises_aujourdhui("verif")) < pl * PART_AUTRES_FOND
+
+
+def rechercher(q, fond=True, usage=None):
     """Ventes eBay d'une recherche (toutes cartes confondues : filtrer ensuite). {ventes, erreur, cache}."""
     q = " ".join(str(q or "").split())[:120]
     if not q:
@@ -156,17 +175,25 @@ def rechercher(q, fond=True):
         return {"ventes": deja, "erreur": None, "cache": True}
     if not actif():
         return {"ventes": [], "erreur": "inactif"}
-    if utilises_aujourdhui() >= plafond_jour() * (0.7 if fond else 1.0):     # les taps passent avant les taches de fond
+    if not _budget_ok(fond, usage):                 # les taps passent avant les taches de fond
         return {"ventes": [], "erreur": "plafond du jour"}
     e = _ERREURS.get(q.lower())
     if e and time.time() - e[0] < 600:          # 27 oct 2026 (revue) : une recherche en erreur n'est pas refaite avant 10 min
         return {"ventes": [], "erreur": e[1]}
     taux = _taux_usd_cad()
     ventes, vus, erreur = [], {}, None
-    for i, site in enumerate(sites()):
-        if i and utilises_aujourdhui() >= plafond_jour() * (0.7 if fond else 1.0):
+    les_sites = sites() if (not fond or usage == "verif") else sites()[:1]
+    pre = {}
+    if not fond and len(les_sites) > 1 and utilises_aujourdhui() + len(les_sites) <= plafond_jour():
+        # 28 oct 2026 (vitesse du scan) : une demande de l'utilisateur interroge les deux sites EN MEME TEMPS (avant : l'un
+        # apres l'autre, ~1 s d'attente en plus) ; les taches de fond gardent le rythme d'un appel par seconde
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=len(les_sites)) as ex:
+            pre = dict(zip(les_sites, ex.map(lambda st: _appel(q, st, attendre=False, usage=usage), les_sites)))
+    for i, site in enumerate(les_sites):
+        if site not in pre and i and not _budget_ok(fond, usage):
             break                                   # le budget du jour : le site principal d'abord
-        d, err = _appel(q, site)
+        d, err = pre[site] if site in pre else _appel(q, site, usage=usage)
         if err:
             erreur = erreur or err
             if i == 0:
@@ -208,17 +235,18 @@ def _id_vente(v):
     return m.group(1) if m else None
 
 
-def _appel(q, site):
+def _appel(q, site, attendre=True, usage=None):
     """Une requete SoldComps (compte au budget AVANT l'appel). -> (donnees, erreur)"""
     url = URL_API + "/v1/scrape?" + urllib.parse.urlencode({"keyword": q, "categoryId": CATEGORIE_CARTES, "count": NB_PAR_REQUETE,
                                                             "ebaySite": site, "hydrateBoa": "true"})
-    with _verrou:
-        attente = INTERVALLE_MIN_S - (time.time() - _DERNIER[0])
-        if attente > 0:
-            time.sleep(attente)
-        _DERNIER[0] = time.time()
+    if attendre:
+        with _verrou:
+            attente = INTERVALLE_MIN_S - (time.time() - _DERNIER[0])
+            if attente > 0:
+                time.sleep(attente)
+            _DERNIER[0] = time.time()
     req = urllib.request.Request(url, headers={"Authorization": "Bearer " + _cle(), "Accept": "application/json"})
-    _compter()                                  # 27 oct 2026 (revue) : compte AVANT l'appel (un echec coute aussi au budget)
+    _compter(usage)                             # 27 oct 2026 (revue) : compte AVANT l'appel (un echec coute aussi au budget)
     try:
         with urllib.request.urlopen(req, timeout=25) as r:
             return json.loads(r.read().decode("utf-8")), None
