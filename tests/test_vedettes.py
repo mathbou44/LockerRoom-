@@ -54,6 +54,58 @@ class TestVedettes(unittest.TestCase):
         self.assertEqual(len(f(L, {"sortes": ["hit"]})), 3)
         self.assertEqual(len(f(L, {"sortes": ["veteran", "hit"]})), 2)
 
+    def test_hit_prix_fixe_vedette_verifie(self):
+        """29 oct 2026 : un hit d'une vedette a prix fixe, sans vente connue de sa carte, est verifie en fin de tour."""
+        from datetime import datetime, timedelta, timezone
+        maint = datetime.now(timezone.utc)
+        j = lambda n: (datetime.now() - timedelta(days=n)).strftime("%Y-%m-%d")
+        titre = "2019-20 Upper Deck The Cup Wayne Gretzky Auto Patch /25"
+        ventes = [{"titre": titre, "prix": p, "le": j(k), "url": f"u{k}"} for k, p in ((3, 410), (9, 395), (15, 430), (20, 400))]
+        vus = []
+        def verif(cib):
+            vus.append(cib.get("joueur"))
+            return ventes
+        a = {"item_id": "v1", "titre": titre, "prix_cad": 180.0, "port_cad": 0.0, "url": "https://www.ebay.com/itm/v1", "vendeur_pct": "100", "vendeur_score": 900}
+        st, deals_ = {}, {}
+        r = {"q": "Wayne Gretzky auto", "joueur": "Wayne Gretzky", "sport": "hockey", "vedette": True}
+        deals._juger(a, r, [], [], maint, deals_, st, bassin=deals.Bassin(charger=False), verif=verif)
+        self.assertNotIn("v1", deals_)                       # pas encore : verifie en fin de tour
+        self.assertEqual(len(st.get("_tard") or []), 1)
+        deals._verifier_tard(st, deals_, maint, deals.Bassin(charger=False), verif)
+        self.assertEqual(vus, ["wayne gretzky"])
+        self.assertIn("v1", deals_)                          # 180 $ pour une carte qui se vend ~400 $
+        # un hit a prix fixe ordinaire, sans repere : pas de verification (on garde le budget)
+        st2 = {}
+        b = dict(a, item_id="v2")
+        deals._juger(b, {"q": "x", "joueur": "Wayne Gretzky", "sport": "hockey"}, [], [], maint, {}, st2, bassin=deals.Bassin(charger=False), verif=verif)
+        self.assertFalse(st2.get("_tard"))
+
+    def test_vendeurs_suivis(self):
+        """29 oct 2026 : les encans des vendeurs suivis (toutes cartes de 25 $ et plus), verifies en fin de tour."""
+        from datetime import datetime, timedelta, timezone
+        j = lambda n: (datetime.now() - timedelta(days=n)).strftime("%Y-%m-%d")
+        self.assertEqual(deals.regler_vendeurs(["@savage_cards", "savage_cards", "remi.cards", "bad name!"]), ["savage_cards", "remi.cards", "badname"])
+        fin = (datetime.now(timezone.utc) + timedelta(hours=3)).isoformat().replace("+00:00", "Z")
+        titre = "2015-16 Upper Deck SP Authentic Connor McDavid Sign of the Times Auto"
+        appels = []
+        def rech(q, **k):
+            appels.append(k.get("vendeurs"))
+            if k.get("vendeurs") and k.get("encheres"):
+                return [{"item_id": "s1", "titre": titre, "prix_cad": 60.0, "port_cad": 0.0, "encan": True, "fin": fin, "mises": 4,
+                         "url": "https://www.ebay.com/itm/s1", "vendeur_pct": "100", "vendeur_score": 5000}]
+            return []
+        vrai, avant, avant_h = vendues.rechercher, deals.FLUX, deals.FLUX_HITS
+        vendues.rechercher = lambda q, fond=True: {"ventes": [{"titre": titre, "prix": p, "le": j(k), "url": f"w{k}"} for k, p in ((2, 240), (8, 255), (14, 230))]}
+        deals.FLUX, deals.FLUX_HITS = [], []
+        try:
+            r = deals.flux(rech, bassin=deals.Bassin(charger=False))
+        finally:
+            vendues.rechercher, deals.FLUX, deals.FLUX_HITS = vrai, avant, avant_h
+            deals.regler_vendeurs(deals.VENDEURS_DEFAUT)
+        self.assertIn(["savage_cards", "remi.cards", "badname"], appels)
+        ids = {x["item_id"]: x for x in deals.lire().get("deals") or []}
+        self.assertIn("s1", ids, r)                              # 60 $ pour une auto qui se vend ~240 $
+
 
 if __name__ == "__main__":
     unittest.main()

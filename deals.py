@@ -10,6 +10,7 @@ recherches eBay (joueurs les plus demandes x cartes recrues du catalogue), prix 
 bientot. Une annonce est un deal si elle coute 70 % ou moins de la mediane des MEMES cartes (cartes_match).
 Chaque deal garde ses comparables (pour la pastille). Budget : ~15 recherches par heure.
 """
+import re
 import statistics
 import json
 import os
@@ -538,6 +539,18 @@ def _juger(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=N
                 st.setdefault("_tard", []).append((a, r, cib))      # verifie a la fin du tour (budget restant)
         except ValueError:
             pass
+    # 29 oct 2026 (Mathieu : « les deals montrent encore juste des Young Guns et des Future Watch ») : un hit a PRIX FIXE
+    # (auto, patch, /99) sans vente connue de sa carte etait toujours ecarte. Maintenant il est verifie en fin de tour
+    # (apres les encans, avec le budget qui reste) s'il a l'air bas : 25 % sous les memes cartes en vente, ou une
+    # vedette (veteran / legende) de 40 $ et plus.
+    elif not va and verif and r.get("suivi") and t >= HIT_MIN and not memes_ventes(cib, tout_v):
+        st.setdefault("_tard", []).append((a, r, cib))           # 29 oct : vendeur suivi, toutes ses cartes de 25 $ et plus
+    elif not va and verif and not a.get("encan") and t >= HIT_MIN and _hit(cib) and not memes_ventes(cib, tout_v):
+        pa2 = [_total(x) for x in actives or [] if x.get("item_id") != a.get("item_id")
+               and not cartes_match.raisons_refus(cib, x.get("titre") or "")]
+        bas = bool(pa2) and t <= (cartes_match.mediane_robuste(pa2)[0] or 0) * 0.75
+        if bas or (r.get("vedette") and t >= 40):
+            st.setdefault("_tard", []).append((a, r, cib))
     if not va:
         st["sans_ventes"] = st.get("sans_ventes", 0) + 1
         deals.pop(a["item_id"], None)                 # revue : plus un deal (encan dont la mise a monte...)
@@ -614,7 +627,10 @@ def encore_ouvert(x, maint=None):
 def _verifier_tard(st, deals, maint, bassin, verif):
     """27 oct 2026 (Mathieu : la Savoie Draft Day Marks /35 a 50 $, qui finit dans 25 h) : les encans de hits sans ventes
     connues qui finissent dans 6 a 30 h, verifies a la fin du tour avec le budget qui reste, les plus proches de la fin d'abord."""
-    for a, r, cib in sorted(st.pop("_tard", []), key=lambda x: str(x[0].get("fin"))):
+    tard = st.pop("_tard", [])
+    # les encans d'abord (le plus proche de la fin), puis les prix fixes (le plus cher d'abord : plus de profit possible)
+    tard.sort(key=lambda x: (0, 0 if x[1].get("suivi") else 1, str(x[0].get("fin")), 0) if x[0].get("encan") else (1, 0 if x[1].get("suivi") else 1, "", -(_total(x[0]) or 0)))
+    for a, r, cib in tard:
         avant = st.get("verif_budget", 0)
         nv = verif(cib)
         if st.get("verif_budget", 0) > avant:
@@ -700,6 +716,7 @@ def chasser(n=PAR_TOUR, rechercher=None, bassin=None):
             comps = []                                   # des cartes differentes du meme joueur : pas des comparables
         for a in memes:
             _juger(a, r, brut_v, memes, maint, deals, st, comps=comps, bassin=bassin, verif=verif)
+    _verifier_tard(st, deals, maint, bassin, verif)          # 29 oct : les hits a prix fixe des vedettes aussi
     garde_ = _sauver(d, deals, maint, st, curseur=(i0 + len(lot)) % len(reqs), maj=maint.isoformat(timespec="seconds"))
     return {"ok": True, "deals": len(garde_), "nouveaux": st.get("deals", 0), "stats": st}
 
@@ -777,6 +794,35 @@ def flux_hits(curseur):
     return (FLUX_HITS[i0:] + FLUX_HITS[:i0])[:HITS_PAR_TOUR], (i0 + HITS_PAR_TOUR) % len(FLUX_HITS)
 
 
+# 29 oct 2026 (Mathieu : « au moins une centaine de deals autres que des Young Guns en encheres, comme chez savage, remi,
+# cf_31, dc sports 87, slab shark et d'autres particuliers. Je les veux TOUS ») : des vendeurs suivis. Chaque heure : leurs
+# encans qui finissent dans 48 h (toutes cartes, pas seulement des recrues) et leurs nouvelles annonces a prix fixe.
+# La liste se regle dans la console admin (pseudos eBay exacts) ou avec LR_DEALS_VENDEURS (« a;b;c »).
+VENDEURS_DEFAUT = ["savage.cards", "remi-card-trader", "slabsharksinc", "dcsports87", "cf_31"]   # 29 oct : savage.cards et remi-card-trader confirmes par Mathieu
+VENDEURS_PAR_APPEL = 10                  # la Browse API accepte plusieurs vendeurs dans un meme filtre
+
+
+def vendeurs_suivis():
+    e = os.environ.get("LR_DEALS_VENDEURS")
+    if e:
+        return [x.strip() for x in e.split(";") if x.strip()]
+    v = lire().get("vendeurs")
+    return list(v) if isinstance(v, list) else list(VENDEURS_DEFAUT)
+
+
+def regler_vendeurs(liste):
+    l = []
+    for x in liste or []:
+        x = re.sub(r"[^A-Za-z0-9._-]", "", str(x).strip().lstrip("@"))[:64]
+        if x and x.lower() not in [y.lower() for y in l]:
+            l.append(x)
+    with _verrou:
+        d = lire()
+        d["vendeurs"] = l[:40]
+        _ecrire(d)
+    return l[:40]
+
+
 def flux_liste():
     e = os.environ.get("LR_DEALS_FLUX")                 # « young guns;canvas » pour remplacer la liste
     return [(x.strip(), None) for x in e.split(";") if x.strip()] if e else FLUX
@@ -799,6 +845,24 @@ def flux(rechercher=None, bassin=None):
         pages = PAGES_ENCANS
     limite_fin = (maint + timedelta(hours=ENCAN_H)).isoformat().replace("+00:00", "Z")
     hits, curseur_h = flux_hits(d.get("curseur_h"))
+    # 29 oct : les vendeurs suivis d'abord (leurs encans et leurs nouvelles annonces), par groupes de 10 vendeurs par appel
+    vs = vendeurs_suivis()
+    for k in range(0, len(vs), VENDEURS_PAR_APPEL):
+        grp = vs[k:k + VENDEURS_PAR_APPEL]
+        rv = {"q": None, "flux": "vendeurs", "sport": None, "joueur": None, "suivi": True}
+        for ench, page in [(False, 0)] + [(True, j) for j in range(pages)]:
+            try:
+                l = rechercher("", categorie="261328", limite=200, fond=True, encheres=ench, recentes=not ench, flux=True, offset=200 * page, vendeurs=grp)
+            except (RuntimeError, OSError, TypeError):
+                st["erreurs_ebay"] = st.get("erreurs_ebay", 0) + 1
+                break
+            st["requetes_flux"] = st.get("requetes_flux", 0) + 1
+            st["vendeurs_annonces"] = st.get("vendeurs_annonces", 0) + len(l)
+            l = [a for a in l if cartes_match.est_carte(a.get("titre") or "")]
+            for a in l:
+                _juger(a, rv, [], [] if ench else l, maint, deals, st, bassin=bassin, verif=verif)
+            if ench and (len(l) < 150 or not l or str(l[-1].get("fin") or "9") > limite_fin):
+                break
     for q, sport in hits + flux_liste():                # 28 oct : les hits d'abord (le budget de verification va aux hits)
         r = {"q": None, "flux": q, "sport": sport, "joueur": None}
         # prix fixe : les 200 plus recentes ; encans : page apres page (200) tant qu'ils finissent dans 48 h

@@ -12,6 +12,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import cartes_match as cm  # noqa: E402
 
 
+
+import deals as _deals_t  # noqa: E402
+_deals_t.VENDEURS_DEFAUT = []          # 29 oct : ces tests comptent les appels des flux, sans les vendeurs suivis
+
 class MemeCarte(unittest.TestCase):
     TITRES = {
         "2023-24 Upper Deck Will Smith Young Guns Rookie RC #230 San Jose Sharks": None,

@@ -1563,6 +1563,54 @@ body.pro #mosaique{background-image:
   border:1px solid color-mix(in srgb, var(--acc) 30%, var(--ligne)); background:color-mix(in srgb, var(--acc) 8%, var(--carte)); color:var(--texte)}
 .acc-ligne b{font-size:15px} .acc-ligne span{grid-column:1; font-size:13px; color:var(--doux)} .acc-ligne i{grid-column:2; grid-row:1 / span 2; font-style:normal; font-size:22px; color:var(--acc)}
 .acc-feu{border-color:color-mix(in srgb, var(--h3) 38%, var(--ligne)); background:color-mix(in srgb, var(--h3) 8%, var(--carte))} .acc-feu i{color:var(--h3)}
+/* 29 oct 2026 : Mes alertes (cases a cocher) */
+.al-reglages{border:1px solid var(--ligne); border-radius:16px; padding:4px 12px 12px; background:var(--carte)}
+.al-reglages > summary{cursor:pointer; list-style:none; padding:10px 0; font-weight:700; display:flex; justify-content:space-between}
+.al-reglages > summary::-webkit-details-marker{display:none} .al-reglages > summary::after{content:'›'; color:var(--acc); transition:transform .2s} .al-reglages[open] > summary::after{transform:rotate(90deg)}
+.al-cases{display:flex; flex-direction:column; gap:6px}
+.al-case{display:flex; align-items:center; gap:12px; padding:9px 10px; border-radius:12px; background:var(--carte2); cursor:pointer}
+.al-case .al-ic{width:32px; height:32px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:var(--fond); font-size:17px; flex:none}
+.al-case .t{flex:1; min-width:0; display:flex; flex-direction:column} .al-case .t b{font-size:15px} .al-case .t span{font-size:12.5px; color:var(--doux)}
+.al-case input{width:24px; height:24px; accent-color:var(--acc); flex:none}
+.al-seuil{display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin:10px 0 6px; font-size:13.5px; color:var(--doux)} .al-seuil span{margin-right:4px}
+/* 29 oct 2026 : la fiche d'un deal s'ouvre depuis l'annonce, un peu plus petite que l'ecran (on voit la page autour) ;
+   les ventes de la meme carte en carrousel */
+@keyframes sc-fen-in{from{transform:scale(.3); opacity:0} 60%{opacity:1} to{transform:none; opacity:1}}
+.fen.entree{animation:sc-fen-in .34s cubic-bezier(.2,.8,.2,1) both}
+@media (max-width:600px){
+  .fen-fond{padding:calc(var(--haut) + 26px) 14px calc(20px + var(--bas)) !important; background:rgba(0,0,0,.48) !important; -webkit-backdrop-filter:blur(5px) !important; backdrop-filter:blur(5px) !important}
+  .fen{border-radius:26px !important; min-height:auto !important; padding:14px 12px 18px !important; border:1px solid rgba(255,255,255,.1) !important; box-shadow:0 30px 70px rgba(0,0,0,.7) !important}
+  .fen .fen-x{top:8px !important}
+  .fen-btns{bottom:10px !important}
+}
+.fen-vendues{display:flex; flex-direction:column; gap:10px}
+.fv-t{display:flex; flex-direction:column; gap:1px} .fv-t b{font-size:17px} .fv-t span{font-size:13px; color:var(--doux)}
+.fv-car{display:flex; gap:10px; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; margin:0 -12px; padding:2px 12px 4px; overscroll-behavior-x:contain}
+.fv-car::-webkit-scrollbar{display:none}
+.fv{flex:0 0 132px; scroll-snap-align:start; display:flex; flex-direction:column; gap:3px; color:var(--texte); text-decoration:none}
+.fv-ph{position:relative; aspect-ratio:3/4; border-radius:12px; overflow:hidden; background:#101014; display:flex; align-items:center; justify-content:center; color:#34333D; box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.fv-ph > svg{width:36%; height:36%} .fv-ph img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+.fv b{font:700 20px/1.1 var(--f-cond); color:var(--vert); margin-top:3px} .fv small{font-size:12px; color:var(--doux)}
+/* 29 oct 2026 : les deals en slabs */
+.slab-deal{display:flex; flex-direction:column; gap:8px; cursor:pointer; min-width:0; -webkit-tap-highlight-color:transparent}
+.slab-deal:active .sd-slab{transform:scale(.97)}
+.sd-slab{border-radius:12px; padding:6px; display:flex; flex-direction:column; gap:5px; transition:transform .15s;
+  background:linear-gradient(180deg,#2B2A33,#141419); box-shadow:inset 0 0 0 1px rgba(255,255,255,.08), 0 10px 26px rgba(0,0,0,.45)}
+.sd-lab{display:flex; align-items:center; justify-content:space-between; gap:6px; height:28px; padding:0 9px; border-radius:6px;
+  background:var(--etiq, linear-gradient(180deg,#1F1F26,#17171C)); border-bottom:1px solid #46454f}
+.sd-rab{font:700 17px/1 var(--f-cond); color:var(--vert); letter-spacing:.01em} .slab-deal.pres .sd-rab{color:var(--acc)}
+.sd-fin{font:600 12px/1 var(--f-cond); letter-spacing:.06em; text-transform:uppercase; color:#C9C6D2; white-space:nowrap}
+.sd-ph{position:relative; aspect-ratio:3/4; border-radius:5px; overflow:hidden; background:#101014; display:flex; align-items:center; justify-content:center; color:#34333D}
+.sd-ph > svg{width:36%; height:36%} .sd-ph img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+.sd-bas{display:flex; flex-direction:column; gap:2px; padding:0 2px}
+.sd-t{font-size:13.5px; line-height:1.25; color:var(--texte2); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.sd-px{display:flex; align-items:baseline; gap:8px} .sd-px b{font:700 23px/1.1 var(--f-cond)} .sd-px .g{font:700 17px var(--f-cond); color:var(--vert)}
+.sd-bas small{font-size:11.5px; color:var(--pale)}
+/* 29 oct 2026 : les nouvelles en bande (carrousel natif, aimante) */
+#acc-news .news-car{display:flex; width:100%; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; scrollbar-width:none; overscroll-behavior-x:contain; -webkit-overflow-scrolling:touch}
+#acc-news .news-car::-webkit-scrollbar{display:none}
+#acc-news .news-car > .slide{flex:0 0 100%; min-width:100%; scroll-snap-align:start; scroll-snap-stop:always; animation:none !important}
+.visuel-pile{position:relative; overflow:hidden; flex-shrink:0} .visuel-pile > .visuel{margin:0} .visuel-img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
 /* 28 oct 2026 : Breaks, une ligne par joueur / equipe */
 .score-bloc.simple{border-radius:18px; background:var(--carte); border:1px solid var(--ligne); overflow:hidden}
 .score-bloc.simple + .score-bloc.simple{margin-top:8px}
@@ -3537,14 +3585,16 @@ function autresJoueursHtml(a){
       <div class="corps"><div class="t">${esc(k.joueur || k.titre)}</div><div class="ligne-b"><span class="p">${argent(k.prix, 0)}</span></div></div></a>`).join('')}</div></div>`;
 }
 function tuileDeal(x){
-  const encan = x.encan, fin = encan ? finDans(x.fin) : '';
-  return `<div class="tuile-c tuile-deal" data-id="${esc(x.item_id)}" ${attrsAnnonce(x)}>
-    <a href="${esc(lienAchat(x.url, 'deal'))}" target="_blank" rel="noopener"><div class="img">${SVG_CARTE}${x.photo ? `<img src="${esc(photoNet(x.photo))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}</div></a>
-    <div class="coin"><button class="capsule ${x.pres ? 'acc' : 'vert'} pastille-deal" data-comps="${esc(x.item_id)}">−${x.rabais} %</button>${encan ? capsule('⏱ ' + fin, 'or petit') : ''}</div>
-    <div class="pop-comps">${compsHtml(x)}</div>
-    <div class="corps"><div class="t">${esc(x.titre)}</div>
-      <div class="ligne-b"><span class="p">${argent(x.total, 0)}</span><span class="src-ebay mini">${tt('sur eBay', 'on eBay')}</span></div>
-      <div class="est-sc mini"><span>${tt('Vaut', 'Worth')} <b>${argentCourt(x.valeur)}</b></span>${x.gain > 0 ? `<span class="g">+${argentCourt(x.gain)}</span>` : ''}<small>${tt('estimation SlabCoach', 'SlabCoach estimate')}</small></div></div></div>`;
+  // 29 oct 2026 (Mathieu : « revoir les annonces comme les slabs de l'accueil : sexy et simple ») : chaque deal est un petit
+  // slab. L'etiquette porte le rabais (et le temps d'un encan) ; la fenetre, la photo eBay ; dessous, le prix et le gain.
+  // L'annonce eBay (photo, titre, prix) reste separee de l'estimation SlabCoach.
+  const encan = x.encan;
+  return `<div class="tuile-deal slab-deal ${x.pres ? 'pres' : ''}" data-id="${esc(x.item_id)}" ${attrsAnnonce(x)} role="button" tabindex="0">
+    <div class="sd-slab"><div class="sd-lab"><b class="sd-rab">−${x.rabais} %</b>${encan ? `<span class="sd-fin">⏱ ${finDans(x.fin)}</span>` : `<span class="sd-fin">${tt('Achat imm.', 'Buy now')}</span>`}</div>
+      <div class="sd-ph">${SVG_CARTE}${x.photo ? `<img src="${esc(photoNet(x.photo))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}</div></div>
+    <div class="sd-bas"><div class="sd-t">${esc(titreCourt(x.titre))}</div>
+      <div class="sd-px"><b>${argent(x.total, 0)}</b>${x.gain > 0 ? `<span class="g">+${argentCourt(x.gain)}</span>` : ''}</div>
+      <small>${tt('vaut', 'worth')} ${argentCourt(x.valeur)} · ${tt('estimation SlabCoach', 'SlabCoach estimate')}</small></div></div>`;
 }
 // 26 oct 2026 (Mathieu : « encore pas un deal ... une option : l'annonce disparaît et ça nous laisse savoir quoi
 // modifier ») : un tap, une raison (facultative) ; l'annonce part, l'admin reçoit tout le calcul, l'agent l'analyse.
@@ -4014,6 +4064,7 @@ document.addEventListener('click', (e) => {
   const a = e.target.closest('[data-annonce]'); if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return;
   if (e.target.closest('[data-masquer], [data-refus], [data-bonne], [data-comps], [data-pasdeal], .x')) return;
   e.preventDefault(); e.stopPropagation();
+  S.fenOrigine = a.getBoundingClientRect();          // 29 oct : la fiche s'ouvre depuis l'annonce touchee
   ouvrirAnnonce({item_id:a.dataset.annonce, titre:a.dataset.titre, photo:a.dataset.photo, total:nb(a.dataset.total), url:a.dataset.url, q:a.dataset.q || null});
 }, true);
 async function ouvrirAnnonce(base){
@@ -4041,13 +4092,12 @@ async function ouvrirAnnonce(base){
           <div class="fen-btns un"><a class="btn" href="${esc(url)}" target="_blank" rel="noopener">${tt('Voir sur eBay', 'View on eBay')}</a></div>
           ${(S.dealsParId || {})[String(base.item_id)] ? `<button class="pas-deal" id="fen-pasdeal">${tt('Pas un deal ? Dis-le-nous', 'Not a deal? Tell us')}</button>` : ''}
         </div></div>
-      ${d.chargement ? '' : `<details class="fen-plus" ${S.fenPlus ? 'open' : ''}><summary>${tt('Voir les ventes et les cartes pareilles', 'See the sales and similar cards')}</summary>
-      ${(d.points || []).length >= 3 ? `<div class="fen-courbe">${flecheTendance(d.tendance)}${courbeVentes(d.points, {h:90})}</div>` : ''}
-      ${(d.ventes || []).length ? `<div class="fen-comps"><div class="bloc-t">${tt('Vendues récemment', 'Recently sold')}</div>
-        <div class="grille-c">${d.ventes.map(k => `<div class="tuile-c"><div class="img">${SVG_CARTE}${k.photo ? `<img src="${esc(photoHD(k.photo))}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
-          <div class="coin">${capsule(tt('Vendue', 'Sold') + (k.le ? ' · ' + dateCourte(k.le) : ''), 'vert petit')}</div>
-          <div class="corps"><div class="t">${esc(k.titre)}</div><div class="ligne-b"><span class="p">${argent(k.prix, 0)}</span></div></div></div>`).join('')}</div></div>`
+      ${(d.ventes || []).length ? `<div class="fen-vendues"><div class="fv-t"><b>${tt('Vendues récemment', 'Recently sold')}</b><span>${tt('ventes réelles de la même carte', 'real sales of the same card')}</span></div>
+        <div class="fv-car">${d.ventes.slice(0, 12).map(k => `<a class="fv" ${k.url ? `href="${esc(k.url)}" target="_blank" rel="noopener"` : ''}><div class="fv-ph">${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo))}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
+          <b>${argent(k.prix, 0)}</b><small>${k.le ? tt('vendue ', 'sold ') + dateCourte(k.le) : tt('vendue', 'sold')}</small></a>`).join('')}</div></div>`
         : d.ventes_attente ? `<div class="lecture"><span class="roue"></span>${tt('Les ventes réelles arrivent…', 'Real sales are loading…')}</div>` : ''}
+      ${d.chargement ? '' : `<details class="fen-plus" ${S.fenPlus ? 'open' : ''}><summary>${tt('Plus : la courbe et les cartes pareilles en vente', 'More: the chart and similar cards for sale')}</summary>
+      ${(d.points || []).length >= 3 ? `<div class="fen-courbe">${flecheTendance(d.tendance)}${courbeVentes(d.points, {h:90})}</div>` : ''}
       ${(d.comps || []).length ? `<div class="fen-comps"><div class="bloc-t">${tt('Les mêmes cartes en vente', 'The same cards listed')}</div>
         <div class="grille-c">${d.comps.map(k => `<div class="tuile-c" ${attrsAnnonce(k)}><div class="img">${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo))}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
           <div class="corps"><div class="t">${esc(k.titre)}</div><div class="ligne-b"><span class="p">${argent(k.total, 0)}</span></div></div></div>`).join('')}</div></div>` : ''}
@@ -4058,9 +4108,16 @@ async function ouvrirAnnonce(base){
     brancherLoupe($('#fen-img', f));
     $$('[data-fermer]', f).forEach(b => b.addEventListener('click', fermerAnnonce));
     const fp = $('.fen-plus', f); if (fp) fp.ontoggle = () => { S.fenPlus = fp.open; };
+    const fe = $('.fen', f);
+    if (fe && S.fenEntree) {                          // 29 oct 2026 : la fiche grandit depuis l'annonce touchee
+      S.fenEntree = false;
+      const o = S.fenOrigine; S.fenOrigine = null;
+      if (o) { const r = fe.getBoundingClientRect(); fe.style.transformOrigin = `${Math.round(o.left + o.width / 2 - r.left)}px ${Math.round(o.top + o.height / 2 - r.top)}px`; }
+      fe.classList.add('entree');
+    }
     const pd = $('#fen-pasdeal', f); if (pd) pd.onclick = () => { const x = (S.dealsParId || {})[String(base.item_id)]; fermerAnnonce(); feuillePasDeal({...x, ventes:d.ventes, comps:d.comps, valeur:x.valeur}); };
   };
-  S.fenPlus = false;
+  S.fenPlus = false; S.fenEntree = true;
   montrer({chargement:true});
   // 26 oct 2026 (Mathieu : « beaucoup trop long à charger ») : l'annonce et les cartes en vente tout de suite,
   // les ventes réelles (plus longues à chercher) ensuite, sans bloquer la fenêtre
@@ -4202,7 +4259,7 @@ async function chargerDeals(){
   });
   const bp = $('[data-pro-deals]', z); if (bp) bp.onclick = () => feuillePro('deals');
   clearInterval(S.tDeals);
-  S.tDeals = setInterval(() => { if (!$('#d-res')) { clearInterval(S.tDeals); return; } $$('.tuile-deal').forEach(t => { const x = L.find(k => k.item_id === t.dataset.id); const c = t.querySelector('.capsule.or'); if (x && x.encan && c) c.textContent = '⏱ ' + finDans(x.fin); }); }, 30000);
+  S.tDeals = setInterval(() => { if (!$('#d-res')) { clearInterval(S.tDeals); return; } $$('.tuile-deal').forEach(t => { const x = L.find(k => k.item_id === t.dataset.id); const c = t.querySelector('.sd-fin'); if (x && x.encan && c) c.textContent = '⏱ ' + finDans(x.fin); }); }, 30000);
 }
 // 25 oct 2026 (Mathieu : « où sont tous les last sold comp ? ») : les vraies ventes de la communauté SlabCoach
 function blocVendues(v, titre){
@@ -4667,42 +4724,41 @@ function rendreNouvelles(items){
   const carteN = $('#acc-nouv'); if (carteN) carteN.classList.toggle('vide-n', !L.length);
   if (!L.length) { z.innerHTML = ''; S.newsMaj = () => { if ($('#acc-news') && (S.astuces || []).length) rendreNouvelles(items); }; return; }
   S.newsVues = true;
-  let i = 0;
-  const montrer = () => {
-    const n = L[i % L.length], zz = $('#acc-news'); if (!zz || !n) return;
-    const pts = `<div class="points">${L.map((x, k) => `<button data-k="${k}" class="${k === i % L.length ? 'on' : ''} ${x.astuce ? 'astuce' : ''}" aria-label="${x.astuce ? 'Astuce' : 'Nouvelle'} ${k + 1}"></button>`).join('')}</div>`;
-    if (n.astuce) {
-      zz.innerHTML = `<div class="slide slide-astuce"><div class="visuel astuce-v g-${esc(n.genre || 'info')}"><span class="as-lib">${['pouls', 'en_feu'].includes(n.id) ? '〰 ' + tt('Le pouls du hobby', 'Hobby pulse') : '💡 ' + tt('Le savais-tu ?', 'Did you know?')}</span>
+  // 29 oct 2026 (Mathieu : « quand je swipe les nouvelles, ca doit defiler comme une bande de carrousel sur Insta, fluide ») :
+  // toutes les nouvelles cote a cote dans une bande qui suit le doigt (defilement natif, aimante a chaque nouvelle) ;
+  // elle avance seule toutes les 10 s, sauf quand on la touche.
+  const pts = (k) => `<div class="points">${L.map((x, j) => `<button data-k="${j}" class="${j === k ? 'on' : ''} ${x.astuce ? 'astuce' : ''}" aria-label="${x.astuce ? 'Astuce' : 'Nouvelle'} ${j + 1}"></button>`).join('')}</div>`;
+  const slide = (n, k) => {
+    if (n.astuce) return `<div class="slide slide-astuce"><div class="visuel astuce-v g-${esc(n.genre || 'info')}"><span class="as-lib">${['pouls', 'en_feu'].includes(n.id) ? '〰 ' + tt('Le pouls du hobby', 'Hobby pulse') : '💡 ' + tt('Le savais-tu ?', 'Did you know?')}</span>
           <b class="as-chiffre">${esc(n.chiffre || '')}</b><span class="as-niv">${{debutant:tt('Pour débuter', 'For beginners'), tous:tt('Pour tous', 'For everyone'), avance:tt('Pour les pros', 'For pros')}[n.niveau] || ''}</span>${imgAstuce(n.id)}</div>
-        <div class="texte"><div class="haut-n"><span class="nouv-t">${tt('Astuces & nouvelles', 'Tips & News')}</span>${pts}</div>
+        <div class="texte"><div class="haut-n"><span class="nouv-t">${tt('Astuces & nouvelles', 'Tips & News')}</span>${pts(k)}</div>
           <div class="as-titre">${esc(n.titre)}</div><div class="as-texte">${esc(n.texte)}</div>
           <div class="as-truc"><b>${tt('Le truc', 'The tip')}</b> ${esc(n.truc)}</div>
           ${['pouls', 'en_feu'].includes(n.id) && /^#/.test(n.lien || '') ? `<a class="as-lien" href="${esc(n.lien.replace(/^(#joueur\/)(.*)$/, (m, a, b) => a + encodeURIComponent(b)))}">${tt('Va jeter un œil', 'Take a look')} ›</a>` : ''}
           <div class="slide-src">${n.url ? `<a href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.source)} ↗</a>` : esc(n.source || '')}${n.calcule ? ' · ' + tt('chiffre du jour', 'today’s figure') : ''}</div></div></div>`;
-      zz.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { i = +b.dataset.k; montrer(); });
-      return;
-    }
     const cl = n.impact > 0 ? 'vert' : n.impact < 0 ? 'rouge' : n.genre === 'hobby' ? 'or' : 'acc';
-    if (n.image && !n.imgOk && !n.charge) { n.charge = true; const im = new Image(), ici = () => L[i % L.length] === n && montrer();
-      im.onload = () => { n.imgOk = true; ici(); }; im.onerror = () => { n.image = null; ici(); }; im.src = n.image; }
-    const voirImg = n.image && n.imgOk;
-    const carte = $('#acc-nouv'); if (carte) carte.classList.remove('sans-img');
-    const k0 = i % L.length;
-    // 24 oct 2026 (Mathieu : « toujours avoir une image ») : la photo de l'article, sinon un visuel du sport
-    zz.innerHTML = `<div class="slide">${voirImg ? `<div class="visuel" style="background-image:url('${esc(n.image)}')"></div>` : visuelSport(n)}
-      <div class="texte"><div class="haut-n"><span class="capsule ${cl}">${esc(n.libelle || nomSport(n.sport))}${n.joueur ? ' · ' + esc(n.joueur) : ''}</span>
-          ${pts}</div>
+    return `<div class="slide"><div class="visuel-pile">${visuelSport(n)}${n.image ? `<img class="visuel-img" src="${esc(n.image)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}</div>
+      <div class="texte"><div class="haut-n"><span class="capsule ${cl}">${esc(n.libelle || nomSport(n.sport))}${n.joueur ? ' · ' + esc(n.joueur) : ''}</span>${pts(k)}</div>
         <a class="slide-titre" href="${esc(/^https?:\/\//i.test(n.lien || '') ? n.lien : '#')}" target="_blank" rel="noopener">${esc(n.titre)}</a>
         <div class="slide-src">${esc(n.source || '')} · ${esc(n.date ? dateCourte(n.date) : '')}</div></div></div>`;
-    zz.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { i = +b.dataset.k; montrer(); });
   };
-  montrer();
-  S.newsMaj = () => { const n0 = L[i % L.length]; L = construire(); const k = L.indexOf(n0); i = k >= 0 ? k : 0; const c = $('#acc-nouv'); if (c) c.classList.toggle('vide-n', !L.length); if (L.length) montrer(); };
+  let i = 0, touche = 0;
+  const dessiner = () => {
+    const zz = $('#acc-news'); if (!zz) return;
+    zz.innerHTML = `<div class="news-car" id="news-car">${L.map(slide).join('')}</div>`;
+    const car = $('#news-car', zz);
+    const aller = (k, doux = true) => { i = (k + L.length) % L.length; car.scrollTo({left: i * car.clientWidth, behavior: doux ? 'smooth' : 'auto'}); };
+    car.addEventListener('scroll', () => { i = Math.round(car.scrollLeft / Math.max(1, car.clientWidth)); }, {passive:true});
+    car.addEventListener('touchstart', () => { touche = Date.now(); }, {passive:true});
+    car.addEventListener('pointerdown', () => { touche = Date.now(); }, {passive:true});
+    $$('[data-k]', car).forEach(b => b.onclick = () => { touche = Date.now(); aller(+b.dataset.k); });
+    S.newsAller = aller;
+  };
+  dessiner();
+  S.newsMaj = () => { L = construire(); const c = $('#acc-nouv'); if (c) c.classList.toggle('vide-n', !L.length); if (L.length) { const k = i; dessiner(); if (S.newsAller) S.newsAller(Math.min(k, L.length - 1), false); } };
   if (S.tNews) clearInterval(S.tNews);
-  S.tNews = setInterval(() => { if (!surAccueil()) { arreterAccueilLive(); return; } if (!document.hidden && !z.matches(':hover')) { i++; montrer(); } }, 10000);
-  let x0 = null;
-  z.ontouchstart = (e) => { x0 = e.touches[0].clientX; };
-  z.ontouchend = (e) => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 40) { i = Math.max(0, i + (dx < 0 ? 1 : -1)); montrer(); } x0 = null; };
+  S.tNews = setInterval(() => { if (!surAccueil()) { arreterAccueilLive(); return; }
+    if (!document.hidden && !z.matches(':hover') && Date.now() - touche > 12000 && S.newsAller) S.newsAller(i + 1); }, 10000);
 }
 
 const LIBELLES = {baisser:'À baisser', monter:'À monter', traine:'Traîne', racheter:'À racheter'};
@@ -5372,11 +5428,11 @@ async function chargerInventaire(){
       <div class="kpi acc"><span class="lib">${tt('Sous le marché', 'Below market')}</span><span class="v">${bas}</span><span class="s">${tt('tu peux monter', 'room to raise')}</span></div>`}</div>` : '';
   const note = vendues ? `<div class="bandeau info" style="margin-bottom:12px">${tt('À la connexion eBay, SlabCoach importe tes ventes des <b>90 derniers jours</b>. Ensuite, chaque nouvelle vente s’ajoute toute seule, toutes les heures.', 'When you connect eBay, SlabCoach imports your sales from the <b>last 90 days</b>. After that, every new sale is added automatically, every hour.')}</div>` : '';
   z.innerHTML = puces + note + kpis + (l.length ? `<div class="grille-c">${l.map(tuileInv).join('')}</div>`
-    : `<div class="vide">${tt('Rien ici', 'Nothing here')}<button class="pilule" id="i-vide">${tt('Ajouter un article', 'Add an item')}</button></div>`);
+    : `<div class="vide">${S.filtreInv === 'collection' ? tt('Ta collection est vide', 'Your collection is empty') : tt('Rien ici', 'Nothing here')}<button class="pilule" id="i-vide">${tt('Ajouter des cartes', 'Add cards')}</button></div>`);
   $$('#i-sports [data-sp]').forEach(b => b.onclick = () => { S.sportInv = b.dataset.sp || null; chargerInventaire(); });
   $$('#i-liste .tuile-inv').forEach(r => r.onclick = () => { const c = l.find(x => x.id === +r.dataset.id); if (c && c.emplacement === 'Collection' && c.statut === 'En stock') ficheCollection(c); else feuilleCarte(c); });
   $$('#i-liste [data-pro]').forEach(b => b.onclick = (e) => { e.stopPropagation(); feuillePro(b.dataset.pro); });
-  const v = $('#i-vide'); if (v) v.onclick = () => { location.hash = '#vendre/nouvelle'; };
+  const v = $('#i-vide'); if (v) v.onclick = () => feuilleAjout();   // 29 oct (Mathieu : « Ajouter un article t'envoie a la page d'accueil ») : #vendre est ferme a l'acheteur
 }
 function initiales(c){
   const e = String(c.equipe || '').trim();
@@ -5515,7 +5571,7 @@ function feuilleCarte(c){
     if (await essai(API.carte_sauver(d), 'Enregistré')) { fermerFeuille(); chargerInventaire(); }
   };
   const v = $('#c-vendre'); if (v) v.onclick = () => feuilleVente(c);
-  const pe = $('#c-ebay'); if (pe) pe.onclick = () => { fermerFeuille(); location.hash = '#vendre/' + c.id; };
+  const pe = $('#c-ebay'); if (pe) pe.onclick = () => { fermerFeuille(); vendreDepuisCollection(c.id); };   // passe en mode Vendeur au besoin
   const s = $('#c-suppr'); if (s) s.onclick = async () => { if (await confirmer('Supprimer cet article ?', 'Supprimer', true) && await essai(API.carte_supprimer(c.id), 'Supprimée')) chargerInventaire(); };
 }
 // 24 oct 2026 - dans la fiche : les memes cartes en vente (comps) et un tap pour se mettre au prix du marche
@@ -5880,7 +5936,10 @@ async function adminServeur(){
   const ap = (d.ebay && d.ebay.appels) || {};
   const barre = (n, max) => { const p = max ? Math.min(100, Math.round(100 * n / max)) : 0; return `<div class="adm-barre"><i style="width:${p}%" class="${p > 80 ? 'rouge' : ''}"></i></div><span class="sous">${n} / ${max} · ${p} %</span>`; };
   const t = d.taches || {};
-  z.innerHTML = `<div class="deux-col"><div class="bloc">
+  z.innerHTML = `<div class="bloc" id="adm-vend" style="margin-bottom:14px"><div class="r-titre">${tt('Vendeurs suivis (deals)', 'Followed sellers (deals)')}</div>
+    <div class="sous">${tt('Pseudos eBay exacts, séparés par des virgules. Leurs encans (48 h) et nouvelles annonces sont analysés chaque heure.', 'Exact eBay usernames, comma-separated. Their auctions (48 h) and new listings are checked every hour.')}</div>
+    <textarea class="champ" id="adm-vend-l" style="min-height:70px"></textarea><button class="btn petit" id="adm-vend-ok" style="width:auto;align-self:flex-start">${tt('Enregistrer', 'Save')}</button></div>
+    <div class="deux-col"><div class="bloc">
       <div class="r-titre">${tt('Appels eBay aujourd’hui', 'eBay calls today')}</div>
       ${['browse', 'trading'].map(k => ap[k] ? `<div class="adm-l"><b>${k === 'browse' ? tt('Recherches', 'Searches') : tt('Compte vendeur', 'Seller account')}</b>${barre(ap[k].utilises, ap[k].limite)}</div>` : '').join('')}
       ${d.ebay && d.ebay.cache_pct != null ? `<div class="sous">${tt('Cache', 'Cache')} : ${d.ebay.cache_pct} % ${tt('des recherches sans appel', 'of searches without a call')}</div>` : ''}
@@ -5894,6 +5953,8 @@ async function adminServeur(){
     <div class="r-titre" style="margin-top:14px">${tt('Erreurs récentes', 'Recent errors')}</div>
     ${d.erreurs.length ? `<div class="bloc"><div class="liste">${d.erreurs.map(e => `<div class="rangee"><span class="milieu"><span class="nom">${esc(e.ou)}</span><span class="det">${esc(e.erreur)}</span></span><span class="droite"><span class="sous">${ilYa(e.le)}</span></span></div>`).join('')}</div></div>`
       : `<div class="vide">${tt('Aucune erreur ✓', 'No errors ✓')}</div>`}`;
+  API.deals_vendeurs().then(v => { const t = $('#adm-vend-l'); if (t && v && v.ok) t.value = v.vendeurs.join(', '); }).catch(() => {});
+  const bv = $('#adm-vend-ok'); if (bv) bv.onclick = async () => { const v = await essai(API.deals_vendeurs(val('adm-vend-l')), tt('Enregistré', 'Saved')); if (v && v.ok) $('#adm-vend-l').value = v.vendeurs.join(', '); };
 }
 // -- utilisateurs : « Une idée ? Un problème ? » et la réponse de SlabCoach dans l'app --
 function feuilleIdee(){
@@ -6089,16 +6150,36 @@ function demanderNotifications(){
     if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
   } catch (e) {}
 }
+// 29 oct 2026 (Mathieu : « regler ses alarmes de maniere simple et efficace » ; « il peut les cocher ») : les 6 alertes
+// cochables en haut de la cloche ; un seul reglage (le rabais d'un gros deal). 3 notifications par jour au plus, rien la nuit.
+const ALARMES = () => [
+  ['gros_deal', '🔥', tt('Gros deal', 'Big deal'), tt('Un deal sur tes joueurs ou dans ton budget', 'A deal on your players or in your budget')],
+  ['encan_fin', '⏱', tt('Encan qui finit', 'Auction ending'), tt('Un deal sur tes joueurs finit dans l’heure', 'A deal on your players ends within the hour')],
+  ['en_feu', '🏒', tt('Joueur en feu', 'Player on fire'), tt('Un joueur de tes cartes enchaîne les points', 'A player from your cards is on a streak')],
+  ['prix_cible', '🎯', tt('Prix cible', 'Target price'), tt('Une carte que tu suis passe sous ton prix', 'A card you watch drops under your price')],
+  ['acheteurs', '👀', tt('Acheteurs intéressés', 'Interested buyers'), tt('Des acheteurs surveillent tes annonces eBay', 'Buyers are watching your eBay listings')],
+  ['vendu', '💰', tt('Vendu', 'Sold'), tt('Une de tes cartes vient de se vendre', 'One of your cards just sold')]];
 async function feuilleAlertes(){
-  const r = await API.alertes_liste().catch(() => ({alertes:[], notifications:[]}));
+  const [r, ra] = await Promise.all([API.alertes_liste().catch(() => ({alertes:[], notifications:[]})), API.alarmes_lire().catch(() => null)]);
+  const al = (ra && ra.alarmes) || {};
+  const ligneNotif = (n) => n.alerte_id == null && /^#/.test(n.url || '')
+    ? `<a class="rangee ${n.lu ? '' : 'nouvelle'}" href="${esc(n.url)}" data-fermer-f>${n.photo ? vignette(n.photo, n.titre) : ''}<span class="milieu"><span class="nom">${esc(n.titre)}</span><span class="det">${ilYa(n.le)}</span></span>${n.total ? `<span class="droite"><span class="prix">${argent(n.total, 0)}</span></span>` : ''}</a>`
+    : `<div class="rangee ${n.lu ? '' : 'nouvelle'}" ${attrsAnnonce({item_id:n.item_id, titre:n.titre, photo:n.photo, total:n.total, url:n.url})}>${vignette(n.photo, n.titre)}
+      <span class="milieu"><span class="nom">${esc(n.titre)}</span><span class="det">${ilYa(n.le)}</span></span><span class="droite"><span class="prix">${argent(n.total, 0)}</span></span></div>`;
   ouvrirFeuille(`<h3>🔔 ${tt('Mes alertes', 'My alerts')}</h3>
-    ${r.notifications.length ? `<div class="r-titre">${tt('Trouvées pour toi', 'Found for you')}</div><div class="liste">${r.notifications.slice(0, 15).map(n => `<div class="rangee ${n.lu ? '' : 'nouvelle'}" ${attrsAnnonce({item_id:n.item_id, titre:n.titre, photo:n.photo, total:n.total, url:n.url})}>${vignette(n.photo, n.titre)}
-      <span class="milieu"><span class="nom">${esc(n.titre)}</span><span class="det">${ilYa(n.le)}</span></span><span class="droite"><span class="prix">${argent(n.total, 0)}</span></span></div>`).join('')}</div>` : ''}
+    <details class="al-reglages" ${r.notifications.length ? '' : 'open'}><summary>${tt('Ce que je veux recevoir', 'What I want to get')}</summary>
+      <div class="al-cases">${ALARMES().map(([k, ic, t, d]) => `<label class="al-case"><span class="al-ic">${ic}</span><span class="t"><b>${t}</b><span>${d}</span></span><input type="checkbox" data-alarme="${k}" ${al[k] !== false ? 'checked' : ''}></label>`).join('')}</div>
+      <div class="al-seuil"><span>${tt('Gros deal à partir de', 'Big deal from')}</span>${[30, 40, 50, 60].map(v => `<button class="chip ${+al.seuil_deal === v ? 'on' : ''}" data-seuil="${v}">−${v} %</button>`).join('')}</div>
+      <div class="sous">${tt('Au plus 3 notifications par jour, rien entre 22 h et 8 h : le reste attend ici.', 'At most 3 notifications a day, none between 10 pm and 8 am: the rest waits here.')}</div></details>
+    ${r.notifications.length ? `<div class="r-titre" style="margin-top:12px">${tt('Trouvées pour toi', 'Found for you')}</div><div class="liste">${r.notifications.slice(0, 15).map(ligneNotif).join('')}</div>` : ''}
     <div class="r-titre" style="margin-top:12px">${tt('Je suis', 'Watching')}</div>
     ${r.alertes.length ? `<div class="liste">${r.alertes.map(a => `<div class="rangee"><span class="milieu"><span class="nom">${esc(a.q)}</span><span class="det">≤ ${argent(a.prix_max, 0)}${a.verifie_le ? ' · ' + tt('vérifiée ', 'checked ') + ilYa(a.verifie_le) : ''}</span></span><button class="ix" data-alx="${a.id}" aria-label="${esc(tt('Retirer', 'Remove'))}">${ICONES.x}</button></div>`).join('')}</div>`
       : `<div class="vide" style="padding:12px">${tt('Aucune alerte : ouvre une carte ou un joueur et touche « M’alerter ».', 'No alert: open a card or a player and tap “Alert me”.')}</div>`}
     <button class="btn ghost" id="al-nv">${ICONES.plus} ${tt('Nouvelle alerte', 'New alert')}</button>`);
   $$('[data-alx]').forEach(b => b.onclick = async () => { await API.alerte_supprimer(+b.dataset.alx).catch(() => {}); b.closest('.rangee').remove(); });
+  $$('[data-alarme]').forEach(c => c.onchange = () => { API.alarmes_regler({[c.dataset.alarme]: c.checked}).then(() => toast(c.checked ? tt('Alerte activée', 'Alert on') : tt('Alerte coupée', 'Alert off'), 1500)).catch(() => {}); });
+  $$('[data-seuil]').forEach(b => b.onclick = () => { $$('[data-seuil]').forEach(x => x.classList.toggle('on', x === b)); API.alarmes_regler({seuil_deal: +b.dataset.seuil}).catch(() => {}); });
+  $$('[data-fermer-f]').forEach(a => a.addEventListener('click', () => fermerFeuille()));
   $('#al-nv').onclick = () => feuilleAlerte('', '');
   if (r.non_lues) { API.notifications_lues().catch(() => {}); majCloche(0); }
 }
@@ -6111,7 +6192,7 @@ async function verifierAlertesEcran(){
   const deja = new Set(JSON.parse(sessionStorageGet('lr_notif_vues') || '[]'));
   const neuves = nv.filter(n => !deja.has(n.id));
   if (neuves.length && 'Notification' in window && Notification.permission === 'granted' && document.hidden) {
-    try { new Notification('SlabCoach', {body: neuves[0].titre + ' · ' + argent(neuves[0].total, 0), icon:'/icone.png'}); } catch (e) {}
+    try { new Notification('SlabCoach', {body: neuves[0].titre + (neuves[0].total ? ' · ' + argent(neuves[0].total, 0) : ''), icon:'/icone.png'}); } catch (e) {}
   }
   sessionStorageSet('lr_notif_vues', JSON.stringify([...deja, ...neuves.map(n => n.id)].slice(-200)));
 }

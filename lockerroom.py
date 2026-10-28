@@ -59,6 +59,7 @@ CATEGORIE_CARTES = "261328"   # eBay : Sports Trading Card Singles
 
 REGLAGES_DEFAUT = {
     "prix_auto": {},                                            # 27 oct 2026 : mode Auto des prix eBay (voir prix_auto_regler)
+    "alarmes": {},                                              # 29 oct 2026 : les alertes cochees (voir alarmes.py)
     "nom_boutique": "Ma boutique",
     "equipe_fav": "",                                           # 26 oct 2026 : les accents de l'app aux couleurs de cette equipe
     "palette": "refractor",                                     # 27 oct 2026 : refractor + 5 paralleles
@@ -745,6 +746,17 @@ class Api:
 
     # -- 24 oct 2026 : checklists Excel de Beckett (telechargees par l'utilisateur, deposees dans l'app) -----------
     # -- 25 oct 2026 : la console admin (abonnes, sante, catalogue, demandes) ------------------------------
+    def deals_vendeurs(self, liste=None):
+        """29 oct 2026 - admin : les vendeurs eBay suivis par le chasseur de deals (pseudos exacts). Sans liste : la lire."""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import deals as _d
+        if liste is not None:
+            if isinstance(liste, str):
+                liste = re.split(r"[\s,;]+", liste)
+            return {"ok": True, "vendeurs": _d.regler_vendeurs(liste)}
+        return {"ok": True, "vendeurs": _d.vendeurs_suivis()}
+
     def admin_resume(self):
         """Tout ce que la console affiche au premier coup d'oeil."""
         if not self._est_admin():
@@ -1116,7 +1128,7 @@ class Api:
             rj = calcul.prix_catalogue(prod, mode="joueurs", garder_dist=True, **args)
             sj = self._stats_checklist(prod, "joueurs", sport)
             dj = {str(k): _float(v) for k, v in (p.get("prix_joueurs") or {}).items() if _float(v)}
-            joueurs = [pl for pl in rj["places"] if pl["ev"] > 0]
+            joueurs = [pl for pl in rj["places"] if (pl.get("part_brute") or pl["ev"]) > 0]   # 29 oct : la part exacte (l'ev arrondi cachait des joueurs a 1 boite)
             for pl in joueurs:
                 pl["prix"] = calcul._arrondir(pl["prix"] / max(0.4, 1 - decote), arrondi)
                 self._noter_place(pl, dj.get(pl["cle"]), sj.get(pl["cle"]))
@@ -1165,10 +1177,21 @@ class Api:
         """27 oct 2026 (Mathieu : « la valeur attendue sert pas a grand chose » ; choix : « hit + prix ») : le meme score
         pour tous = la chance d'au moins un hit POUR TON ARGENT (chance / prix de la place), classee de 0 a 100 :
         100 = la place qui donne le plus de chances de hit par dollar dans la liste."""
+        # 29 oct 2026 (Mathieu : « pourquoi le meilleur joueur change avec le nombre de boites ? chaque boite est un nouveau
+        # cas ») : le classement ne doit pas dependre du nombre de boites. Avant : chance d'au moins un hit (pas lineaire)
+        # divisee par le prix estime de la place (avec plancher et arrondi) -> l'ordre bougeait avec les boites.
+        # Maintenant : le NOMBRE attendu de hits (lineaire : 2 fois plus de boites = 2 fois plus de hits, pour tous)
+        # divise par le prix proportionnel a la valeur de la place (sans plancher ni arrondi), ou par le prix demande
+        # par le breaker quand tu l'entres. Meme ordre avec 1, 3 ou 32 boites.
+        import math as _m
+        tot_px = sum(pl.get("prix") or 0 for pl in liste) or 1.0
+
         def r(pl):
-            p_hit = ((pl.get("chances") or {}).get("hit") or {}).get("p") or 0
-            prix = pl.get("prix_compare") or pl.get("prix") or 0
-            return p_hit / prix if prix > 0 else 0.0
+            p_hit = min(0.999999, ((pl.get("chances") or {}).get("hit") or {}).get("p") or 0)
+            lam = -_m.log(1 - p_hit) if p_hit > 0 else 0.0
+            part = pl.get("part_brute")
+            prix = pl.get("demande") or (part * tot_px if part is not None else (pl.get("prix_compare") or pl.get("prix") or 0))
+            return lam / prix if prix > 0 else 0.0
         mx = max([r(pl) for pl in liste] + [1e-12])
         for pl in liste:
             pl["hit_par_dollar"] = round(r(pl), 6)
@@ -2808,7 +2831,23 @@ class Api:
         return marche.notifications_lues(self)
 
     def alertes_verifier(self):
+        import alarmes
+        if not alarmes.reglages(self)["prix_cible"]:          # 29 oct 2026 : decochee dans « Mes alertes »
+            return {"ok": True, "alertes": 0, "nouvelles": 0, "coupee": True}
         return marche.verifier_alertes(self)
+
+    # 29 oct 2026 (Mathieu : « l'utilisateur doit pouvoir regler ses alarmes de maniere simple » ; « il peut les cocher »)
+    def alarmes_lire(self):
+        import alarmes
+        return {"ok": True, "alarmes": alarmes.reglages(self)}
+
+    def alarmes_regler(self, d=None):
+        import alarmes
+        return {"ok": True, "alarmes": alarmes.regler(self, d or {})}
+
+    def alarmes_verifier(self):
+        import alarmes
+        return {"ok": True, "envoyees": alarmes.verifier(self)}
 
     def tendances(self):
         return marche.tendances()

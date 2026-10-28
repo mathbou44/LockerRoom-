@@ -849,6 +849,12 @@ def _ebay_auto():
                             print("Alertes :", cid or "", ra, flush=True)
                     except Exception as e:
                         print("Alertes : " + str(e), flush=True)
+                    try:                         # 29 oct 2026 : les alertes cochees (deals, encans, joueur en feu, offres, vendu)
+                        rm = api.alarmes_verifier()
+                        if rm.get("envoyees"):
+                            print("Alarmes :", cid or "", rm["envoyees"], flush=True)
+                    except Exception as e:
+                        print("Alarmes : " + str(e), flush=True)
                     if st.get("cles_ok") and st.get("connecte" if _c.MULTI else "cles_ok"):
                         r = api.sante_rafraichir(40)
                         print("Sante :", cid or "", {k: r.get(k) for k in ("evaluees", "rachats", "erreur")}, flush=True)
