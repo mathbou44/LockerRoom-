@@ -45,6 +45,15 @@ class TestVedettes(unittest.TestCase):
         self.assertEqual(sum(1 for x in yg if x is not None), 4)      # 40 % de 10 pour les cartes ordinaires
         self.assertEqual(sum(1 for x in hits if x is not None), 6)    # le reste pour les hits
 
+    def test_filtres_veteran_et_hit(self):
+        import lockerroom
+        L = [{"titre": "2026-27 Upper Deck Young Guns Anton Frondell"}, {"titre": "2019-20 The Cup Wayne Gretzky Auto Patch /25"},
+             {"titre": "2020-21 SP Authentic Sidney Crosby Sign of the Times Auto"}, {"titre": "2025-26 SP Authentic Demidov Future Watch Auto /999"}]
+        f = lockerroom.Api._deals_filtrer
+        self.assertEqual([x["titre"][:12] for x in f(L, {"sortes": ["veteran"]})], ["2019-20 The ", "2020-21 SP A"])
+        self.assertEqual(len(f(L, {"sortes": ["hit"]})), 3)
+        self.assertEqual(len(f(L, {"sortes": ["veteran", "hit"]})), 2)
+
 
 if __name__ == "__main__":
     unittest.main()

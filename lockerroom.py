@@ -3258,7 +3258,7 @@ class Api:
         n = lambda k: _float(f.get(k))
         pmin, pmax, rmin, gmin, vmin = n("prix_min"), n("prix_max"), n("rabais_min"), n("gain_min"), n("valeur_min")
         joueurs = [cartes_match.norm(j) for j in (f.get("joueurs") or []) if str(j).strip()][:20]
-        sortes = [x for x in (f.get("sortes") or []) if x in ("recrue", "auto", "patch", "numerotee", "gradee", "brute")]
+        sortes = [x for x in (f.get("sortes") or []) if x in ("recrue", "auto", "patch", "numerotee", "gradee", "brute", "veteran", "hit")]
         out = []
         for x in lst:
             if pmin is not None and (x.get("total") or 0) < pmin or pmax is not None and (x.get("total") or 0) > pmax:
@@ -3277,6 +3277,9 @@ class Api:
                 a = {"recrue": bool(d.get("rc")) or "young guns" in t or "rookie" in t, "auto": bool(d.get("auto")),
                      "patch": bool(d.get("patch")), "numerotee": d.get("serie") is not None, "gradee": bool(d.get("grade")),
                      "brute": not d.get("grade")}
+                # 28 oct 2026 (Mathieu : « encore que des rookies ») : veterans / legendes (pas une recrue) et hits
+                a["veteran"] = not a["recrue"] and "future watch" not in t
+                a["hit"] = a["auto"] or a["patch"] or (d.get("serie") is not None and int(d["serie"]) <= 99)
                 if not all(a[s_] for s_ in sortes):
                     continue
             out.append(x)

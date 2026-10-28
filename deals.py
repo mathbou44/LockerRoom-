@@ -175,7 +175,7 @@ def requetes():
     uniq = uniq[:110]
     # 28 oct 2026 (Mathieu : « les deals sont presque juste des Future Watch et des Young Guns ; ou sont les auto patch de
     # veterans ou de legendes ? ») : les veterans et les legendes aussi, en autos et en patchs, intercales avec les recrues
-    # (2 recrues, 1 vedette) : le meme nombre de recherches par heure, mieux reparties
+    # (1 pour 1) : le meme nombre de recherches par heure, mieux reparties
     ved = []
     for j in VEDETTES:
         for genre in ("auto", "patch"):
@@ -184,13 +184,13 @@ def requetes():
                 vus.add(q.lower())
                 ved.append({"q": q, "joueur": j, "sport": "hockey", "poids": float(dem.get(j) or 1.0), "vedette": True})
     mix, i, k = [], 0, 0
-    while i < len(uniq) or k < len(ved):
-        mix += uniq[i:i + 2]
-        i += 2
+    while i < len(uniq) or k < len(ved):         # 28 oct (« encore que des rookies ») : 1 vedette, 1 recrue, vedettes d'abord
         if k < len(ved):
             mix.append(ved[k])
             k += 1
-    return mix[:180]
+        mix += uniq[i:i + 1]
+        i += 1
+    return mix[:200]
 
 
 # 28 oct 2026 : veterans et legendes de la LNH dont les autos et patchs se vendent bien (noms seulement, rien d'autre)

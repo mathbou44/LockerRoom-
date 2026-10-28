@@ -1424,6 +1424,46 @@ body.pro #mosaique{background-image:
   background-size:260% 100%; animation:sc-reflet 14s ease-in-out infinite}
 @keyframes sc-reflet{0%,100%{background-position:100% 0} 50%{background-position:0 0}}
 @media (prefers-reduced-motion:reduce){ #mosaique::after{animation:none} }
+/* 28 oct 2026 (Mathieu, sur iPhone) : accueil plus clair. Les deals en « stories » (anneau prisme), les 3 chiffres tiennent
+   dans l'ecran, des sections bien separees avec un vrai titre et une phrase qui dit ce qu'il y a dedans ; la barre du bas
+   translucide qui rapetisse quand on descend et revient (jamais plus grosse que sa taille normale) */
+.acc-sous{display:none}
+@media (max-width:899px){
+  .ecran.acc{gap:22px !important}
+  .histoires{gap:14px !important; scroll-snap-type:x proximity; scroll-padding:0 18px; overscroll-behavior-x:contain}
+  .hist{scroll-snap-align:start; width:76px !important; cursor:pointer}
+  .hist .anneau{position:relative; width:72px !important; height:72px !important; padding:3px !important}
+  .hist .anneau.neuf{background:conic-gradient(from 210deg, var(--h1), var(--h2), var(--h3), var(--h4), var(--h1)) !important}
+  .hist .rond-in.photo{overflow:hidden; background:#111115; color:#34333D}
+  .hist .rond-in.photo img{width:100%; height:100%; object-fit:cover; object-position:50% 30%; border-radius:50%}
+  .hist .rond-in.photo > svg{width:44%; height:44%}
+  .h-rab{position:absolute; left:50%; bottom:-7px; transform:translateX(-50%); font:700 11px/1 var(--f-cond); font-style:normal; letter-spacing:.04em; white-space:nowrap;
+    padding:3px 6px; border-radius:7px; background:var(--vert-fond); color:var(--vert); box-shadow:0 0 0 2px var(--fond)}
+  .hist .nom{margin-top:4px; font-size:12.5px !important}
+  /* les 3 chiffres : tous visibles, sans glisser */
+  .acc-tuiles{display:grid !important; grid-template-columns:repeat(3, minmax(0, 1fr)) !important; gap:8px !important; overflow:visible !important}
+  .acc-tuiles > *{flex:none !important}
+  .t-acc{padding:10px 10px 11px !important; border-radius:16px !important}
+  .t-acc > .l:first-child{margin:-10px -10px 7px !important; padding:6px 10px !important; font-size:10.5px !important; letter-spacing:.12em !important}
+  .t-acc b{font-size:clamp(19px, 6vw, 26px) !important; overflow:hidden; text-overflow:clip}
+  .t-acc .s{display:block !important; font-size:11.5px !important; line-height:1.25; white-space:normal !important; display:-webkit-box !important; -webkit-line-clamp:2; -webkit-box-orient:vertical}
+  /* les sections */
+  .carte-acc{padding:16px !important; gap:10px !important; border:1px solid rgba(255,255,255,.075); box-shadow:0 10px 26px rgba(0,0,0,.28)}
+  .acc-titre{font-size:16.5px !important; letter-spacing:.12em !important; color:var(--texte) !important; padding-left:12px; position:relative}
+  .acc-titre::before{content:''; position:absolute; left:0; top:50%; width:3px; height:18px; margin-top:-9px; border-radius:2px; background:var(--holo)}
+  .acc-sous{display:block; font-size:13.5px; line-height:1.35; color:var(--doux); margin-top:-2px}
+  .post{padding-top:4px}
+  .post-t .post-n b{font-size:16.5px}
+  /* barre du bas : translucide et dynamique */
+  .onglets{background:rgba(22,22,28,.58) !important; backdrop-filter:blur(22px) saturate(180%); -webkit-backdrop-filter:blur(22px) saturate(180%);
+    transform-origin:50% 100%; transition:transform .28s cubic-bezier(.2,.7,.2,1), opacity .28s, box-shadow .28s; will-change:transform}
+  .onglets.mini{transform:translateY(6px) scale(.86); opacity:.9; box-shadow:0 6px 18px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.06)}
+}
+/* 28 oct 2026 (Mathieu : « le menu d'eBay est dynamique : quand tu selectionnes une icone, elle bouge un peu ») */
+@keyframes sc-saut{0%{transform:scale(1)} 30%{transform:scale(.8)} 62%{transform:scale(1.14) translateY(-2px)} 100%{transform:scale(1)}}
+@media (max-width:899px){ .onglets a.tape svg, .onglets a.tape .moi-av{animation:sc-saut .42s cubic-bezier(.3,.7,.3,1.2)}
+  .onglets a.on{transition:flex-grow .28s cubic-bezier(.2,.8,.2,1.15), background .25s} }
+@media (max-width:899px) and (prefers-reduced-motion:reduce){ .onglets{transition:none} .onglets.mini{transform:none} .onglets a.tape svg, .onglets a.tape .moi-av{animation:none} }
 /* 28 oct 2026 : vendre en lot */
 .carte-lot{display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:center; padding:13px 15px; border-radius:var(--r-ctl, 14px); border:1px solid color-mix(in srgb, var(--acc) 30%, var(--ligne)); background:color-mix(in srgb, var(--acc) 7%, var(--carte)); color:var(--texte)}
 .carte-lot b{font-size:15.5px} .carte-lot span{grid-column:1; font-size:13px; color:var(--doux)} .carte-lot i{grid-column:2; grid-row:1 / span 2; font-style:normal; font-size:22px; color:var(--acc)}
@@ -1811,6 +1851,25 @@ function ouvrirFeuille(html){ $('#feuille').innerHTML = '<div class="poignee"></
 })();
 // barre du haut « verre » quand on défile (grand titre iOS)
 addEventListener('scroll', () => document.body.classList.toggle('defile', scrollY > 8), {passive:true});
+// 28 oct 2026 (Mathieu : « comme Insta : le menu du bas rapetisse quand on descend, regrossit quand on arrete ou remonte,
+// jamais plus gros que sa taille normale ») : une seule classe, la taille normale est le maximum
+(() => {
+  let y0 = scrollY, t = null;
+  addEventListener('scroll', () => {
+    const o = document.querySelector('.onglets'); if (!o || !matchMedia('(max-width:899px)').matches) return;
+    const y = scrollY;
+    if (y > y0 + 6 && y > 80) o.classList.add('mini');
+    else if (y < y0 - 6) o.classList.remove('mini');
+    y0 = y;
+    clearTimeout(t); t = setTimeout(() => o.classList.remove('mini'), 520);
+  }, {passive:true});
+})();
+document.addEventListener('pointerdown', (e) => {
+  const a = e.target.closest && e.target.closest('.onglets a, .onglets button'); if (!a || !matchMedia('(max-width:899px)').matches) return;
+  a.classList.remove('tape'); void a.offsetWidth; a.classList.add('tape');
+  setTimeout(() => a.classList.remove('tape'), 460);
+  const o = a.closest('.onglets'); if (o) o.classList.remove('mini');
+});
 function fermerFeuille(){ $('#fond-feuille').hidden = true; $('#feuille').innerHTML = ''; }
 // 27 oct 2026 (revue Apple 5.1.2(i)) : une photo de carte part chez une IA tierce (Anthropic) seulement apres un OUI explicite.
 // Le choix est garde dans le compte (Reglages › Compte et aide pour le retirer) ; le serveur le verifie aussi.
@@ -3862,7 +3921,9 @@ async function chargerDeals(){
       <div class="deux">${segD('d-tri', [['rabais', tt('Meilleur deal', 'Best deal')], ['fin', tt('Finit bientôt', 'Ending soon')], ['gain', tt('Plus gros profit', 'Biggest profit')], ['prix', tt('Prix', 'Price')], ['recent', tt('Nouveaux', 'New')]], F.tri)}
         ${segD('d-type', [['', tt('Tous', 'All')], ['fixe', tt('Prix fixe', 'Buy It Now')], ['encan', tt('Encans', 'Auctions')]], F.type)}</div>
       <div class="chips"><button class="chip filtre-d ${nbFiltresDeals(F) ? 'on' : ''}" id="d-filtres">⚙ ${tt('Filtres', 'Filters')}${nbFiltresDeals(F) ? ' · ' + nbFiltresDeals(F) : ''}</button>
-        ${(F.sortes || []).map(k => `<span class="chip on petit">${esc({recrue:tt('Recrue', 'Rookie'), auto:'Auto', patch:'Patch', numerotee:tt('Numérotée', 'Numbered'), gradee:tt('Gradée', 'Graded'), brute:tt('Non gradée', 'Raw')}[k] || k)}</span>`).join('')}
+        <button class="chip ${(F.sortes || []).includes('veteran') ? 'on' : ''}" data-sorte="veteran">${tt('Vétérans et légendes', 'Veterans & legends')}</button>
+        <button class="chip ${(F.sortes || []).includes('hit') ? 'on' : ''}" data-sorte="hit">${tt('Autos, patchs, /99', 'Autos, patches, /99')}</button>
+        ${(F.sortes || []).filter(k => k !== 'veteran' && k !== 'hit').map(k => `<span class="chip on petit">${esc({recrue:tt('Recrue', 'Rookie'), auto:'Auto', patch:'Patch', numerotee:tt('Numérotée', 'Numbered'), gradee:tt('Gradée', 'Graded'), brute:tt('Non gradée', 'Raw')}[k] || k)}</span>`).join('')}
         ${F.rabais_min ? `<span class="chip on petit">−${F.rabais_min} %+</span>` : ''}${F.prix_max ? `<span class="chip on petit">≤ ${argentCourt(F.prix_max)}</span>` : ''}${(F.joueurs || []).slice(0, 3).map(j => `<span class="chip on petit">${esc(j)}</span>`).join('')}</div></div>
     ${L.length ? `<div class="grille-c">${L.map(tuileDeal).join('')}
         ${d.limite && d.n > L.length && !NATIF ? `<button class="tuile-c tuile-pro" data-pro-deals><span class="badge-f pro grand">✦ PRO</span><b>+${d.n - L.length} ${tt('deals de plus', 'more deals')}</b><span>${tt('avec filtres et comps', 'with filters and comps')}</span></button>` : ''}</div>`
@@ -3874,6 +3935,9 @@ async function chargerDeals(){
   $$('#d-tri button').forEach(b => b.onclick = () => { F.tri = b.dataset.v; sauverDealsF(); chargerDeals(); });
   $$('#d-type button').forEach(b => b.onclick = () => { F.type = b.dataset.v; sauverDealsF(); chargerDeals(); });
   $('#d-filtres').onclick = feuilleFiltresDeals;
+  // 28 oct 2026 (Mathieu : « encore que des rookies ») : deux raccourcis, un tap
+  $$('[data-sorte]', z).forEach(b => b.onclick = () => { const k = b.dataset.sorte, l = F.sortes || [];
+    F.sortes = l.includes(k) ? l.filter(x => x !== k) : [...l.filter(x => !(k === 'veteran' && x === 'recrue')), k]; sauverDealsF(); chargerDeals(); });
   $$('[data-pasdeal]', z).forEach(b => b.onclick = (e) => { e.stopPropagation(); e.preventDefault(); const x = (S.dealsParId || {})[b.dataset.pasdeal]; if (x) feuillePasDeal(x); });
   $$('[data-masquer]', z).forEach(b => b.onclick = async (e) => { e.stopPropagation(); const t = b.closest('.tuile-c'); if (t) t.remove(); await API.deal_masquer(b.dataset.masquer).catch(() => {}); });
   $$('[data-comps]', z).forEach(b => b.onclick = (e) => {
@@ -4017,9 +4081,9 @@ async function vueAccueil(arg){
     <div class="acc-fil" id="acc-fil"></div>
     <div class="carte-acc nouv" id="acc-nouv"><div id="acc-news">${roue}</div></div>
     <div class="acc-cote">${bandeauEssai()}
-      <div class="carte-acc"><div class="acc-titre">${tt('À faire', 'To do')} <span id="afaire-n"></span></div><div id="acc-afaire" class="gestes">${roue}</div></div>
-      <div class="carte-acc conseils-acc"><div class="acc-titre"><span>✦ ${tt('Conseils pour toi', 'For you')}</span><button class="lien-doux" id="cs-maj" aria-label="${esc(tt('Nouveaux conseils', 'New tips'))}">↻</button></div><div id="acc-conseils" class="liste">${roue}</div></div>
-      <div class="carte-acc"><div class="acc-titre">${tt('Mises à jour', 'Updates')} <span id="pouls-etat"></span></div><div id="acc-pouls">${roue}</div></div>
+      <div class="carte-acc"><div class="acc-titre">${tt('À faire', 'To do')} <span id="afaire-n"></span></div><div class="acc-sous">${tt('Ce qui t’attend, le plus payant en premier', 'What’s waiting, most profitable first')}</div><div id="acc-afaire" class="gestes">${roue}</div></div>
+      <div class="carte-acc conseils-acc"><div class="acc-titre"><span>✦ ${tt('Conseils pour toi', 'For you')}</span><button class="lien-doux" id="cs-maj" aria-label="${esc(tt('Nouveaux conseils', 'New tips'))}">↻</button></div><div class="acc-sous">${tt('Selon tes cartes et le marché de la semaine', 'Based on your cards and this week’s market')}</div><div id="acc-conseils" class="liste">${roue}</div></div>
+      <div class="carte-acc"><div class="acc-titre">${tt('Mises à jour', 'Updates')} <span id="pouls-etat"></span></div><div class="acc-sous">${tt('Le pouls du hobby et ce que SlabCoach a vérifié', 'The hobby’s pulse and what SlabCoach checked')}</div><div id="acc-pouls">${roue}</div></div>
     </div>
     <div id="acc-plus"></div>
   </section>`;
@@ -4073,7 +4137,7 @@ async function vueAccueil(arg){
   if (brk && d.activites.breaks) plus.push(`<div class="carte-acc"><div class="acc-titre">${tt('Breaks en cours', 'Breaks in progress')} <a href="#breaks/liste">${tt('tous', 'all')} ›</a></div><div class="liste">${brk}</div></div>`);
   $('#acc-plus').innerHTML = plus.join('');
   // 27 oct 2026 (Mathieu : « comme Meta ») : les cercles du jour et les deals en carrousel, en haut du fil
-  const zh = $('#acc-hist'); if (zh) { zh.innerHTML = histoiresAccueil(d, a); brancherHistoires(zh); }
+  const zh = $('#acc-hist'); if (zh) { zh.innerHTML = histoiresDeals(a); brancherHistoiresDeals(zh); }
   const zf = $('#acc-fil'); if (zf) { zf.innerHTML = postDeals((a && a.deals) || []); brancherPostDeals(); }
   brancherCourbe(h);
   const ec = $('.ecran.acc'); if (ec) ec.classList.toggle('admin', admin);
@@ -4106,6 +4170,30 @@ const ICO_H = {
   breaks:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 11h18M8 7V4h8v3"/></svg>',
   comptoir:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9h18l-1.5 11h-15z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg>',
   bilan:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>'};
+// 28 oct 2026 (Mathieu : « a la place des stories, les deals en bande defilante qu'on swipe comme un carrousel, le contour
+// comme Insta mais dans nos couleurs prismatiques » ; les cercles raccourcis doublaient la barre du bas) : chaque cercle =
+// un deal (la photo de l'annonce, le rabais en pastille). Anneau prisme = pas encore vu ; gris = deja ouvert.
+function histoiresDeals(a){
+  const L = ((a && a.deals) || []).filter(x => x && x.item_id).slice(0, 24);
+  if (!L.length) return '';
+  let vus = {}; try { vus = JSON.parse(localStorage.getItem('lr_vu_deals') || '{}'); } catch (e) {}
+  const tri = [...L.filter(x => !vus[x.item_id]), ...L.filter(x => vus[x.item_id])].slice(0, 15);
+  const nom = (x) => { const j = String(x.joueur || '').trim(); if (j) return j.split(/\s+/).slice(-1)[0];
+    return titreCourt(x.titre).split(/\s+/).filter(w => !/^(\d|#|rc|auto|sp|ud|series)/i.test(w)).slice(0, 2).join(' ') || 'Deal'; };
+  const tous = `<a class="hist hist-tous" role="listitem" href="#${S.mode === 'acheteur' ? 'deals' : 'sante/racheter'}"><span class="anneau neuf"><span class="rond-in"><b>${L.length > 99 ? '99+' : ((a && a.nb_deals) || L.length)}</b><small>deals</small></span></span><span class="nom">${tt('Tous', 'All')}</span></a>`;
+  return tous + tri.map(x => `<button class="hist hist-deal" role="listitem" data-vu-deal="${esc(x.item_id)}" ${attrsAnnonce(x)} aria-label="${esc(titreCourt(x.titre) + ' · −' + (x.rabais || 0) + ' %')}">
+    <span class="anneau${vus[x.item_id] ? '' : ' neuf'}"><span class="rond-in photo">${x.photo ? `<img src="${esc(photoNet(x.photo))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : SVG_CARTE}</span>
+      ${x.rabais ? `<i class="h-rab">−${x.rabais} %</i>` : ''}</span><span class="nom">${esc(nom(x))}</span></button>`).join('');
+}
+function brancherHistoiresDeals(z){
+  $$('[data-vu-deal]', z).forEach(b => b.addEventListener('click', () => {
+    let vus = {}; try { vus = JSON.parse(localStorage.getItem('lr_vu_deals') || '{}'); } catch (e) {}
+    vus[b.dataset.vuDeal] = Date.now();
+    const k = Object.keys(vus); if (k.length > 400) k.sort((x, y) => vus[x] - vus[y]).slice(0, k.length - 400).forEach(i => delete vus[i]);
+    try { localStorage.setItem('lr_vu_deals', JSON.stringify(vus)); } catch (e) {}
+    const an = b.querySelector('.anneau'); if (an) an.classList.remove('neuf');
+  }, true));
+}
 function histoiresAccueil(d, a){
   const act = d.activites || S.activites || {}, A = Object.fromEntries((d.actions || []).map(x => [x.cle, x])), h = d.hero || {};
   const n = (x) => (x && x.n) || 0;
@@ -5792,6 +5880,20 @@ function feuilleIndice(){
     <div class="sous" style="font-size:14px; line-height:1.5">${(P ? tt('Les données viennent de ventes réelles analysées par SlabCoach et des populations publiques de PSA (psacard.com). SlabCoach n’est ni affilié à PSA ni à Collectors Universe, Inc. Le passé ne garantit pas l’avenir : l’indice est une information, pas un conseil financier ni une recommandation d’acheter ou de vendre.', 'Data comes from real sales analyzed by SlabCoach and, when available, PSA public population data (psacard.com). SlabCoach is not affiliated with PSA or Collectors Universe, Inc. Past results do not guarantee the future: the index is information, not financial advice or a recommendation to buy or sell.') : tt('Les données viennent de ventes eBay réelles analysées par SlabCoach. SlabCoach n’est ni affilié à PSA ni à Collectors Universe, Inc. Le passé ne garantit pas l’avenir : l’indice est une information, pas un conseil financier ni une recommandation d’acheter ou de vendre.', 'Data comes from real eBay sales analyzed by SlabCoach. SlabCoach is not affiliated with PSA or Collectors Universe, Inc. Past results do not guarantee the future: the index is information, not financial advice or a recommendation to buy or sell.'))}</div>
     <button class="btn ghost" onclick="fermerFeuille()">OK</button>`);
 }
+// 28 oct 2026 (Mathieu : « le joueur ok, mais le type de carte c'est peut-etre un peu trop specifique ») : le calcul reste fait
+// sur la MEME carte (sinon on melangerait une Young Guns de 2 $ et un patch auto de 300 $), mais on affiche la famille de
+// carte et la saison courte (« Patch auto · 25-26 ») ; le nom complet reste au survol. Un joueur une seule fois par colonne.
+function typeCourt(x){
+  const t = (String(x.carte || '') + ' ' + String(x.produit || '')).toLowerCase();
+  const auto = /\bauto|signature|signed/.test(t), patch = /patch|emblem|jersey|relic|materials|swatch|game.?used|fabric/.test(t);
+  const fam = /young guns/.test(t) ? (/canvas/.test(t) ? 'Young Guns Canvas' : 'Young Guns') : /future watch/.test(t) ? 'Future Watch' + (auto ? ' Auto' : '')
+    : auto && patch ? 'Patch auto' : auto ? 'Auto' : patch ? tt('Patch', 'Patch') : /\/\d+|numbered|numérot/.test(t) ? tt('Numérotée', 'Numbered')
+    : /canvas/.test(t) ? 'Canvas' : /refractor|prizm|parallel|parallèle|exclusives|high gloss/.test(t) ? tt('Parallèle', 'Parallel')
+    : x.recrue ? tt('Carte recrue', 'Rookie card') : tt('Carte de base', 'Base card');
+  const m = String(x.produit || x.carte || '').match(/\b(?:19|20)(\d{2})-(\d{2})\b/) || String(x.produit || '').match(/\b(?:19|20)(\d{2})\b/);
+  return m ? fam + ' · ' + (m[2] ? m[1] + '\u2011' + m[2] : "'" + m[1]) : fam;        // tiret insecable : « 25-26 » ne se coupe pas
+}
+const unParJoueur = (l) => { const vus = new Set(); return (l || []).filter(x => { const k = String(x.joueur || '').toLowerCase(); if (vus.has(k)) return false; vus.add(k); return true; }); };
 // tendances de la semaine
 async function blocTendances(z){
   if (!z) return;
@@ -5805,13 +5907,13 @@ async function blocTendances(z){
     return `<svg class="t-mini ${cl}" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><path d="${d}"/></svg>`;
   };
   const ligne = (x, genre) => `<a class="rangee t-l" href="#joueur/${encodeURIComponent(x.joueur)}">${vignetteJoueur(x.joueur)}
-    <span class="milieu"><span class="nom">${esc(x.joueur)}${x.recrue ? ' ' + tag('RC', 'acc') : ''}${sigPsa(x.psa)}</span><span class="det">${esc(x.carte)} · ${esc(String(x.produit || '').replace(/^(\d{4}-\d{2})\s+Upper Deck\s+/, '$1 '))}</span>
+    <span class="milieu"><span class="nom">${esc(x.joueur)}${x.recrue ? ' ' + tag('RC', 'acc') : ''}${sigPsa(x.psa)}</span><span class="det" title="${esc(x.carte + ' · ' + (x.produit || ''))}">${esc(typeCourt(x))}</span>
       <span class="det">${x.n} ${tt('ventes', 'sales')}${x.derniere ? ' · ' + tt('dernière ', 'last ') + dateCourte(x.derniere) : ''}${x.periode === 'debut' && genre !== 'vendue' && genre !== 'record' ? ' · ' + tt('depuis ses 1res ventes', 'since its first sales') : ''}</span>${lignePsa(x.psa)}</span>
     ${mini(x.points, genre === 'baisse' ? 'rouge' : genre === 'hausse' ? 'vert' : '')}
     <span class="droite">${genre === 'record' ? `<b class="t-prix">${argentCourt(x.prix)}</b><span class="sous">${dateCourte(x.le)}</span>`
       : genre === 'vendue' ? `<b class="t-prix">${argentCourt(x.mediane)}</b><span class="sous">${x.n_7j ? x.n_7j + ' ' + tt('cette sem.', 'this wk') : tt('médiane', 'median')}</span>`
       : `${capsule((x.pct > 0 ? '▲ +' : '▼ ') + x.pct + ' %', (x.pct > 0 ? 'vert' : 'rouge') + ' petit')}<span class="sous">${argentCourt(x.avant)} → ${argentCourt(x.recent)}</span>`}${pastilleIndice(x.indice)}</span></a>`;
-  const col = (titre, sous, l, genre, vide) => `<div class="bloc t-col"><div class="r-titre">${titre}<small>${sous}</small></div><div class="liste">${l.map(x => ligne(x, genre)).join('') || `<div class="vide t-vide">${vide}</div>`}</div></div>`;
+  const col = (titre, sous, l, genre, vide) => `<div class="bloc t-col"><div class="r-titre">${titre}<small>${sous}</small></div><div class="liste">${unParJoueur(l).map(x => ligne(x, genre)).join('') || `<div class="vide t-vide">${vide}</div>`}</div></div>`;
   z.innerHTML = `${blocIndiceMarche(r.indice)}<div class="bloc-t">${tt('Tendances de la semaine', 'This week’s trends')} <span class="sous">${(r.nb_ventes || 0).toLocaleString(LOC())} ${tt('ventes réelles analysées', 'real sales analyzed')} · ${r.nb_cartes || 0} ${tt('cartes', 'cards')}${r.maj ? ' · ' + dateCourte(r.maj) : ''}</span></div>
     <div class="trois-col">
       ${col('▲ ' + tt('En hausse', 'Rising'), tt('les ventes récentes vs avant (ou depuis la sortie)', 'recent sales vs before (or since release)'), r.hausses, 'hausse', tt('Rien ne monte fort cette semaine', 'Nothing rising sharply this week'))}
