@@ -3272,7 +3272,7 @@ class Api:
                                  "sport": sports.detecter(o.get("titre"), defaut=r.get("sport") or sports.DEFAUT), "source": "ventes",
                                  "comps": json.loads(o["comps"]) if o.get("comps") else [], "ref_titre": o.get("ref_titre")}
         maint_utc = datetime.utcnow().isoformat()
-        for g in deals.lire().get("deals") or []:
+        for g in deals.lire_vite().get("deals") or []:
             if not deals.valide(g):
                 continue
             if g.get("encan") and not (maint_utc < str(g.get("fin") or "").replace("Z", "") <
@@ -3373,7 +3373,7 @@ class Api:
         # 27 oct 2026 (Mathieu : « les users doivent TOUJOURS voir quelque chose, sinon ils vont decrocher ») :
         #   - pas de deal en ce moment : la derniere bonne liste (secours), encore fraiche (6 h) et revalidee ;
         #   - « a surveiller » : 15 a 30 % sous la valeur (meme valeur sure), jamais affiche comme un deal.
-        dd = _d.lire()
+        dd = _d.lire_vite()
         secours = False
         if not tout and (dd.get("secours") or {}).get("deals"):
             lim6 = (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat()
@@ -3399,8 +3399,8 @@ class Api:
         pres = [x for x in self._deals_filtrer(pres, f) if not f.get("sports") or (x.get("sport") or "hockey") in f["sports"]][:24 if pro else 6]
         return {"ok": True, "deals": lst[:240], "n": n, "pro": pro, "limite": None if pro else forfaits.LIMITES["deals"],
                 "pres": pres, "secours": secours, "secours_le": (dd.get("secours") or {}).get("le") if secours else None,
-                "sports": par_sport, "maj": _d.lire().get("maj"), "ebay": ebay_compte.statut().get("cles_ok"),
-                "diag": _d.diagnostic(), "total": len(tout), "bassin": _d.lire().get("bassin"), "nb_flux": len(_d.flux_liste())}
+                "sports": par_sport, "maj": dd.get("maj"), "ebay": ebay_compte.statut().get("cles_ok"),
+                "diag": _d.diagnostic(dd), "total": len(tout), "bassin": dd.get("bassin"), "nb_flux": len(_d.flux_liste())}
 
     def annonce_detail(self, item_id, titre=None, rapide=False, q=None):
         """26 oct 2026 (Mathieu : « beaucoup trop long à charger ») : l'ecran demande d'abord la version rapide
@@ -3533,7 +3533,7 @@ class Api:
         if not iid:
             return {"ok": False, "erreur": "Annonce inconnue"}
         self.deal_masquer(iid)
-        g = next((x for x in deals.lire().get("deals") or [] if str(x.get("item_id")) == iid), {})
+        g = next((x for x in deals.lire_vite().get("deals") or [] if str(x.get("item_id")) == iid), {})
         ctx = {"item_id": iid, "titre": d.get("titre") or g.get("titre"), "prix": d.get("total") or g.get("total"),
                "valeur_calculee": d.get("valeur") or g.get("valeur"), "source_valeur": d.get("valeur_source") or g.get("valeur_source"),
                "nb": d.get("n") or g.get("n"), "recherche": g.get("q") or d.get("q"), "url": d.get("url") or g.get("url"),

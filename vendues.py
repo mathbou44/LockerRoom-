@@ -161,8 +161,57 @@ def rechercher(q, fond=True):
     e = _ERREURS.get(q.lower())
     if e and time.time() - e[0] < 600:          # 27 oct 2026 (revue) : une recherche en erreur n'est pas refaite avant 10 min
         return {"ventes": [], "erreur": e[1]}
+    taux = _taux_usd_cad()
+    ventes, vus, erreur = [], {}, None
+    for i, site in enumerate(sites()):
+        if i and utilises_aujourdhui() >= plafond_jour() * (0.7 if fond else 1.0):
+            break                                   # le budget du jour : le site principal d'abord
+        d, err = _appel(q, site)
+        if err:
+            erreur = erreur or err
+            if i == 0:
+                _noter_erreur(q, err)
+                return {"ventes": [], "erreur": err}
+            continue
+        for v in (_vers_vente(it, taux) for it in (d or {}).get("items") or []):
+            if not v:
+                continue
+            v["site"] = site
+            k = _id_vente(v)
+            if k and k in vus:                      # la meme vente vue sur les deux sites : on la garde une fois
+                continue
+            if k:
+                vus[k] = True
+            ventes.append(v)
+    _cache_ecrire(q.lower(), ventes)
+    try:                                       # 26 oct 2026 - la base des ventes (tendances) garde tout, sans appel de plus
+        import base_ventes
+        base_ventes.noter(q, ventes)
+    except Exception:
+        pass
+    return {"ventes": ventes, "erreur": None}
+
+
+def sites():
+    """28 oct 2026 (Mathieu : « Canada, y'en a énormément et c'est notre clientèle #1 ») : les ventes d'eBay.com ET
+    d'eBay.ca (une recherche par site, fusionnees, doublons retires). LR_SOLDCOMPS_SITES pour changer (ex. « ebay.com »)."""
+    l = [x.strip().lower() for x in (os.environ.get("LR_SOLDCOMPS_SITES") or "ebay.com,ebay.ca").split(",") if x.strip()]
+    return [x for x in l if x in SITES_OK] or ["ebay.com"]
+
+
+SITES_OK = {"ebay.com", "ebay.ca", "ebay.co.uk", "ebay.de", "ebay.fr", "ebay.it", "ebay.es", "ebay.com.au"}
+
+
+def _id_vente(v):
+    import re
+    m = re.search(r"/itm/(?:[^/?]+/)?(\d{9,15})", str(v.get("url") or ""))
+    return m.group(1) if m else None
+
+
+def _appel(q, site):
+    """Une requete SoldComps (compte au budget AVANT l'appel). -> (donnees, erreur)"""
     url = URL_API + "/v1/scrape?" + urllib.parse.urlencode({"keyword": q, "categoryId": CATEGORIE_CARTES, "count": NB_PAR_REQUETE,
-                                                            "ebaySite": "ebay.com", "hydrateBoa": "true"})
+                                                            "ebaySite": site, "hydrateBoa": "true"})
     with _verrou:
         attente = INTERVALLE_MIN_S - (time.time() - _DERNIER[0])
         if attente > 0:
@@ -172,24 +221,11 @@ def rechercher(q, fond=True):
     _compter()                                  # 27 oct 2026 (revue) : compte AVANT l'appel (un echec coute aussi au budget)
     try:
         with urllib.request.urlopen(req, timeout=25) as r:
-            d = json.loads(r.read().decode("utf-8"))
+            return json.loads(r.read().decode("utf-8")), None
     except urllib.error.HTTPError as e:
-        err = {401: "clé SoldComps refusée", 429: "quota SoldComps atteint"}.get(e.code, f"SoldComps HTTP {e.code}")
-        _noter_erreur(q, err)
-        return {"ventes": [], "erreur": err}
+        return None, {401: "clé SoldComps refusée", 429: "quota SoldComps atteint"}.get(e.code, f"SoldComps HTTP {e.code}")
     except Exception as e:
-        err = "SoldComps injoignable (" + type(e).__name__ + ")"
-        _noter_erreur(q, err)
-        return {"ventes": [], "erreur": err}
-    taux = _taux_usd_cad()
-    ventes = [v for v in (_vers_vente(it, taux) for it in (d or {}).get("items") or []) if v]
-    _cache_ecrire(q.lower(), ventes)
-    try:                                       # 26 oct 2026 - la base des ventes (tendances) garde tout, sans appel de plus
-        import base_ventes
-        base_ventes.noter(q, ventes)
-    except Exception:
-        pass
-    return {"ventes": ventes, "erreur": None}
+        return None, "SoldComps injoignable (" + type(e).__name__ + ")"
 
 
 _ERREURS = {}

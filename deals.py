@@ -44,6 +44,22 @@ def lire():
         return {}
 
 
+_LU = {"cle": None, "d": {}}
+
+
+def lire_vite():
+    """28 oct 2026 (Mathieu : « c'est tres lent de changer de page ») : LECTURE SEULE (ne pas modifier le resultat).
+    Le fichier des deals (plusieurs Mo) n'est relu que s'il a change : l'ecran Deals le lisait 4 fois par appel."""
+    try:
+        st = os.stat(_chemin())
+    except OSError:
+        return {}
+    cle = (st.st_mtime_ns, st.st_size)
+    if _LU["cle"] != cle:
+        _LU.update(cle=cle, d=lire())
+    return _LU["d"]
+
+
 def _ecrire(d):
     tmp = _chemin() + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
@@ -61,7 +77,7 @@ def _bannis():
     except OSError:
         return _BANNIS["s"]
     if mt != _BANNIS["mt"]:
-        d = lire()
+        d = lire_vite()
         _BANNIS.update(mt=mt, s=set(d.get("bannis") or []))
     return _BANNIS["s"]
 

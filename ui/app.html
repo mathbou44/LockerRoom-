@@ -1009,7 +1009,10 @@ body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px color-mix(in srgb, var(--a
   .onglets a.centre.on::before{display:none}
   .barre-mode{transition:background .2s, border-color .2s; border-bottom-color:transparent; background:rgba(11,11,14,.55)}
   body.defile .barre-mode{background:rgba(11,11,14,.78); border-bottom-color:rgba(255,255,255,.06)}
-  #vue > .ecran{animation:lr-entre .22s ease-out}
+  #vue > .ecran.entre{animation:lr-entre .2s ease-out}
+  #vue{transition:opacity .15s ease-out} body.nav-attente #vue{opacity:.55; transition:opacity .2s ease-out .14s}
+  #adm-z{transition:opacity .15s ease-out} #adm-z.charge{opacity:.5; transition:opacity .2s ease-out .12s}
+  #adm-o button{padding:0 4px} #adm-o .adm-n{min-width:18px; height:18px; font-size:11px; padding:0 5px; margin-left:3px}
   .rech-ligne{display:flex; gap:10px} .rech-ligne .recherche{flex:1; min-width:0}
   .acc-tuiles{display:flex; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; scroll-padding:0 2px; padding-bottom:2px}
   .acc-tuiles::-webkit-scrollbar{display:none} .acc-tuiles > *{flex:0 0 44%; scroll-snap-align:start}
@@ -1442,9 +1445,11 @@ body.pro #mosaique{background-image:
     radial-gradient(900px 620px at -6% 108%, rgba(255,255,255,.04), transparent 60%),
     repeating-conic-gradient(from 8deg at 76% -8%, rgba(255,255,255,.028) 0deg 1.2deg, transparent 1.2deg 4.5deg),
     repeating-linear-gradient(118deg, rgba(255,255,255,.014) 0 1px, transparent 1px 7px) !important}
-#mosaique::after{content:''; position:absolute; inset:0; background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.025) 46%, transparent 62%);
-  background-size:260% 100%; animation:sc-reflet 14s ease-in-out infinite}
-@keyframes sc-reflet{0%,100%{background-position:100% 0} 50%{background-position:0 0}}
+#mosaique{will-change:transform; contain:strict; overflow:hidden}
+#mosaique::after{content:''; position:absolute; top:0; bottom:0; left:-80%; width:260%; background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.025) 46%, transparent 62%);
+  will-change:transform; animation:sc-reflet 14s ease-in-out infinite}
+@keyframes sc-reflet{0%,100%{transform:translate3d(0,0,0)} 50%{transform:translate3d(-38%,0,0)}}
+body.en-defil .logo-lr::after, body.en-defil #nav-logo-nom, body.en-defil .titre, body.en-defil .badge-f.pro, body.en-defil #mosaique::after{animation-play-state:paused}
 @media (prefers-reduced-motion:reduce){ #mosaique::after{animation:none} }
 /* 28 oct 2026 (Mathieu, sur iPhone) : accueil plus clair. Les deals en « stories » (anneau prisme), les 3 chiffres tiennent
    dans l'ecran, des sections bien separees avec un vrai titre et une phrase qui dit ce qu'il y a dedans ; la barre du bas
@@ -1617,6 +1622,8 @@ body.pro #mosaique{background-image:
 .ana-resume{display:flex; flex-wrap:wrap; align-items:center; gap:6px; width:100%; margin:10px 0 4px; padding:0; background:none; border:none; color:var(--doux); text-align:left; cursor:pointer}
 .ana-resume span{padding:5px 10px; border-radius:999px; background:var(--carte2); font-size:13px; color:var(--texte2)} .ana-resume i{font-style:normal; color:var(--acc); font-size:18px; margin-left:2px}
 .ra-g{display:flex; flex-direction:column; gap:8px; margin-bottom:16px} .ra-g .lib{font:700 12.5px var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--doux)}
+.ra-nb{display:flex; gap:8px; align-items:center; flex-wrap:wrap} .ra-nb .champ{width:96px; text-align:center; font-size:20px; font-weight:700}
+.ra-pm{width:48px; height:48px; border-radius:12px; border:1px solid var(--ligne); background:var(--carte2); color:var(--texte); font-size:24px; line-height:1}
 .ra-g .chips{flex-wrap:wrap; overflow:visible; gap:6px} .ra-g .ra-autre{width:84px; min-height:0; height:38px; padding:0 12px; border-radius:999px; font-size:15px} .ra-g small{font-size:12.5px; color:var(--doux)}
 .ra-tris{display:flex; flex-direction:column; gap:6px}
 .ra-tri{display:flex; gap:12px; align-items:flex-start; padding:11px 12px; border-radius:14px; background:var(--carte2); border:1px solid transparent; cursor:pointer}
@@ -1920,14 +1927,65 @@ function ouvrirPref(b){
 // ============================================================
 // Outils (repris de Hall of Cardz)
 // ============================================================
+// 28 oct 2026 (Mathieu : « c'est très lent de changer de page en page ») : les LECTURES qui construisent les ecrans sont
+// gardees en memoire. Revenir sur une page l'affiche tout de suite avec ce qu'on avait, et la version fraiche est
+// rechargee en arriere-plan pour la prochaine fois. Toute action qui modifie quelque chose (sauver, vendre, ajouter...)
+// vide cette memoire : on ne montre jamais une donnee perimee apres un geste de l'utilisateur. Au demarrage, les donnees
+// des onglets du bas sont prechargees doucement (les memes appels que la derniere visite de chaque onglet).
+const LECTURES = new Set(['accueil', 'acheteur_accueil', 'activites', 'conseils', 'astuces', 'forfait', 'ebay_statut', 'taux_change',
+  'reglages_lire', 'deals_liste', 'inventaire_liste', 'catalogue_liste', 'produits_liste', 'equipes', 'images_produits', 'images_joueurs',
+  'budget_etat', 'alertes_liste', 'breaks_liste', 'bilan', 'tendances', 'calendrier', 'collection', 'offres_liste', 'analyse_break',
+  'admin_resume', 'admin_abonnes', 'admin_demandes', 'admin_catalogue', 'admin_sante', 'valeurs_statut', 'portraits_joueurs',
+  'etoiles_lire', 'alarmes_lire', 'sante_liste', 'pouls', 'guide_donnees', 'consignataires_liste', 'ebay_avis_statut', 'ebay_appels']);
+const SANS_EFFET = new Set(['deals_etat', 'accueil_live', 'annonce_detail', 'carte_comps', 'valeur_carte', 'joueur_fiche', 'checklist',
+  'catalogue_checklist', 'break_detail', 'photo_statut', 'demandes_reponses', 'demandes_mes', 'ebay_environnement', 'logo_lire', 'prix_auto_lire']);
+const MEMO = new Map(), MEMO_MAX_MS = 10 * 60 * 1000;
+const RECETTES = (() => { try { return JSON.parse(localStorage.getItem('lr_recettes') || '{}'); } catch (e) { return {}; } })();
+function noterRecette(nom, corps){
+  const ecran = (location.hash || '#accueil').slice(1).split('/')[0];
+  if (!['accueil', 'deals', 'inventaire', 'breaks', 'valeur', 'bilan', 'comptoir'].includes(ecran) || nom === 'analyse_break') return;
+  const l = RECETTES[ecran] = RECETTES[ecran] || [];
+  if (l.some(x => x[0] === nom && x[1] === corps)) return;
+  l.push([nom, corps]); if (l.length > 8) l.shift();
+  try { localStorage.setItem('lr_recettes', JSON.stringify(RECETTES)); } catch (e) {}
+}
+async function appelServeur(nom, corps){
+  let r;
+  try { r = await fetch('/api/' + nom, {method:'POST', headers:{'Content-Type':'application/json'}, body:corps}); }
+  catch (e) { throw new Error('Serveur injoignable'); }
+  if (r.status === 401) { location.href = '/connexion'; throw new Error(tt('Connexion requise', 'Sign-in required')); }
+  if (!r.ok) { const e = await r.json().catch(() => ({erreur:r.statusText})); throw new Error(e.erreur || 'Erreur serveur'); }
+  return r.json();
+}
+function lectureFraiche(nom, corps){
+  const cle = nom + corps, m = MEMO.get(cle);
+  if (m && m.p) return m.p;                                   // deja en route : on attend le meme appel
+  const p = appelServeur(nom, corps).then(v => { if (v && v.ok !== false) MEMO.set(cle, {t:Date.now(), v}); else MEMO.delete(cle); return v; },
+    e => { MEMO.delete(cle); throw e; });
+  MEMO.set(cle, {...(m || {}), p});
+  p.finally(() => { const x = MEMO.get(cle); if (x && x.p === p) { delete x.p; if (!('v' in x)) MEMO.delete(cle); } }).catch(() => {});
+  return p;
+}
+function prechargerOnglets(){
+  const l = Object.values(RECETTES).flat(); let i = 0;
+  const suivant = () => { if (i >= l.length) return; const [nom, corps] = l[i++];
+    if (!MEMO.has(nom + corps)) lectureFraiche(nom, corps).catch(() => {}).finally(() => setTimeout(suivant, 250)); else suivant(); };
+  setTimeout(suivant, 2500);
+}
 function fabriquerApi(){
   return new Proxy({}, { get(_, nom){ return async (...args) => {
-    let r;
-    try { r = await fetch('/api/' + nom, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(args)}); }
-    catch (e) { throw new Error('Serveur injoignable'); }
-    if (r.status === 401) { location.href = '/connexion'; throw new Error(tt('Connexion requise', 'Sign-in required')); }   // 27 oct 2026 : session finie
-    if (!r.ok) { const e = await r.json().catch(() => ({erreur:r.statusText})); throw new Error(e.erreur || 'Erreur serveur'); }
-    return r.json();
+    const corps = JSON.stringify(args);
+    if (LECTURES.has(nom)) {
+      noterRecette(nom, corps);
+      const m = MEMO.get(nom + corps);
+      if (m && 'v' in m && Date.now() - m.t < MEMO_MAX_MS) {
+        if (Date.now() - m.t > 4000 && !m.p) lectureFraiche(nom, corps).catch(() => {});   // la version fraiche, pour la prochaine fois
+        return JSON.parse(JSON.stringify(m.v));
+      }
+      return JSON.parse(JSON.stringify(await lectureFraiche(nom, corps)));
+    }
+    if (!SANS_EFFET.has(nom)) MEMO.clear();                    // un geste qui modifie : plus rien de perime
+    return appelServeur(nom, corps);
   }; } });
 }
 const API = fabriquerApi();
@@ -2106,6 +2164,9 @@ function ouvrirFeuille(html){ $('#feuille').innerHTML = '<div class="poignee"></
 })();
 // barre du haut « verre » quand on défile (grand titre iOS)
 addEventListener('scroll', () => document.body.classList.toggle('defile', scrollY > 8), {passive:true});
+// 28 oct 2026 (« saccadé ») : pendant qu'on defile, les reflets animes se mettent en pause (moins de travail par image)
+(() => { let t = null; addEventListener('scroll', () => { if (!t) document.body.classList.add('en-defil'); clearTimeout(t);
+  t = setTimeout(() => { t = null; document.body.classList.remove('en-defil'); }, 180); }, {passive:true}); })();
 // 28 oct 2026 (Mathieu : « comme Insta : le menu du bas rapetisse quand on descend, regrossit quand on arrete ou remonte,
 // jamais plus gros que sa taille normale ») : une seule classe, la taille normale est le maximum
 (() => {
@@ -2271,12 +2332,39 @@ function route(){
     a.classList.toggle('on', o === ecran || (o === 'breaks' && ['break', 'analyse'].includes(ecran)) || (o === 'analyse' && ecran === 'analyse') || (o === (S.mode === 'acheteur' ? 'deals' : 'accueil') && ecran === 'sante'));
   });
   if (!$('#fond-feuille').hidden) fermerFeuille();
-  window.scrollTo(0, 0);
+  navDebut(S.ecranCourant === ecran && !!arg);              // meme ecran, autre onglet (Admin, Breaks, Sante...) : navigation douce
+  S.ecranCourant = ecran;
   const vues = {analyse:vueAnalyse, vendre:vueVendre, deals:vueDeals, valeur:vueValeur, accueil:vueAccueil, sante:vueSante, breaks:vueBreaks, break:vueBreak, inventaire:vueInventaire, comptoir:vueComptoir, bilan:vueBilan, reglages:vueReglages, admin:vueAdmin, guide:vueGuide, joueur:vueJoueur, calendrier:vueCalendrier, idees:vueIdees, pouls:vuePouls, offres:vueOffres};
   (vues[ecran] || vueAccueil)(arg);
   if (ecran === 'alertes') setTimeout(() => { try { feuilleAlertes(); } catch (e) {} }, 300);
 }
 window.addEventListener('hashchange', route);
+// 28 oct 2026 (Mathieu : « manque de fluidité, très saccadé et bug entre chaque section ») : avant, la page sautait en
+// haut tout de suite, restait figee pendant l'appel au serveur, puis la nouvelle page apparaissait (et rejouait son
+// animation a chaque rafraichissement). Maintenant : l'ancienne page s'estompe doucement si le serveur tarde, on remonte
+// en haut seulement quand la nouvelle page est la, et l'animation d'entree ne joue qu'une fois par navigation.
+// Un onglet du meme ecran (Admin › Serveur...) : pas de saut, pas d'animation, la hauteur est gardee (rien ne bouge).
+const NAV = {attend:false, doux:false, t:null, obs:null};
+function navDebut(doux){
+  const v = V(); if (!v) return;
+  if (!NAV.obs) {
+    NAV.obs = new MutationObserver(ms => { if (!NAV.attend) return;
+      for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1 && n.classList.contains('ecran')) { if (!NAV.doux) n.classList.add('entre'); navFin(); return; } });
+    NAV.obs.observe(v, {childList:true});
+  }
+  NAV.attend = true; NAV.doux = doux;
+  if (doux) v.style.minHeight = v.offsetHeight + 'px';
+  document.body.classList.add('nav-attente');
+  clearTimeout(NAV.t); NAV.t = setTimeout(navFin, 1200);
+}
+function navFin(){
+  if (!NAV.attend) return;
+  NAV.attend = false; clearTimeout(NAV.t);
+  document.body.classList.remove('nav-attente');
+  const v = V();
+  if (NAV.doux) setTimeout(() => { if (!NAV.attend && v) v.style.minHeight = ''; }, 700);
+  else { if (v) v.style.minHeight = ''; window.scrollTo(0, 0); }
+}
 // 28 oct 2026 (Mathieu : « encore » : le menu restait ouvert par-dessus la page) : apres un clic, la barre se referme
 // tout de suite, meme si la souris est encore dessus ; elle se rouvre quand on la quitte puis la survole de nouveau
 document.addEventListener('click', (e) => {
@@ -3647,6 +3735,24 @@ function feuillePasDeal(x, apres){
 // probabilités, mais un prix pour chaque joueur ou équipe selon le coût du produit et la marge désirée »)
 // ============================================================
 S.ana = {produit:null, boites:1, mode:'equipes', cout:'', marge:'', decote:15, demandes:{}, demandesJ:{}, vue:'joueurs', reglages:false, budget:0};
+// 28 oct 2026 (Mathieu : « ça remet toujours à 1 boîte même si je mets 16 ») : les reglages du break etaient seulement en
+// memoire (l'app qui se recharge = 1 boite). Gardes sur l'appareil : le produit, et pour CHAQUE produit ses boites, son cout
+// et le profit vise (le nombre de boites d'une caisse change d'un produit a l'autre).
+function anaSauver(){
+  const A = S.ana; if (!A.produit) return;
+  try { const m = JSON.parse(localStorage.getItem('lr_ana') || '{}'); m.produit = A.produit; m.tri = A.tri; m.budget = A.budget;
+    m.par = m.par || {}; m.par[A.produit] = {boites:A.boites, cout:A.cout, marge:A.marge};
+    localStorage.setItem('lr_ana', JSON.stringify(m)); } catch (e) {}
+}
+function anaCharger(produit){
+  const A = S.ana; let m = {};
+  try { m = JSON.parse(localStorage.getItem('lr_ana') || '{}'); } catch (e) {}
+  if (!produit) { produit = m.produit || null; if (m.tri) A.tri = m.tri; if (m.budget) A.budget = m.budget; }
+  A.produit = produit;
+  const p = ((m.par || {})[produit]) || {};
+  A.boites = p.boites > 0 ? p.boites : 1; A.cout = p.cout ?? ''; A.marge = p.marge ?? '';
+}
+anaCharger();
 // montants tapes dans la devise affichee -> gardes en $ CA
 const versCAD = (v) => (typeof DEVISE !== 'undefined' && DEVISE === 'USD' && typeof TAUX_USD !== 'undefined') ? Math.round(v / TAUX_USD * 100) / 100 : v;
 const symDevise = () => (typeof DEVISE !== 'undefined' && DEVISE === 'USD') ? '$ US' : '$ CA';
@@ -3661,7 +3767,7 @@ async function imagesProduits(){ if (!S.imgProd) S.imgProd = await API.images_pr
 const imgProduit = (id, nom) => { const u = (S.imgProd || {})[id]; return u ? `<img src="${esc(u)}" alt="" loading="lazy" onerror="this.remove()">` : ''; };
 async function vueAnalyse(arg){
   const vendeur = S.mode !== 'acheteur', A = S.ana;
-  if (arg && arg !== 'choisir') A.produit = decodeURIComponent(arg);
+  if (arg && arg !== 'choisir' && A.produit !== decodeURIComponent(arg)) anaCharger(decodeURIComponent(arg));
   V().innerHTML = `<section class="ecran large"><div class="entete"><div class="titre">${vendeur ? tt('Breaks', 'Breaks') : tt('Breaks', 'Breaks')}</div>
       <div class="pastilles">${vendeur ? '<a class="pilule" href="#breaks/liste">' + tt('Mes breaks', 'My breaks') + '</a>' : ''}</div></div>
     <div id="an-z">${roue}</div></section>`;
@@ -3684,7 +3790,7 @@ async function choisirProduitAnalyse(){
   if (!(S.forfait && S.forfait.admin)) z.querySelector('.grille-c').insertAdjacentHTML('beforeend', `<button class="tuile-c tuile-ajout" id="an-demande"><span class="plus-g">?</span><b>${tt('Il manque un produit ?', 'Missing a product?')}</b><span>${tt('Dis-le-nous, on l’ajoute pour tout le monde', 'Tell us, we’ll add it for everyone')}</span></button>`);
   if (S.forfait && S.forfait.admin) z.querySelector('.grille-c').insertAdjacentHTML('beforeend', `<button class="tuile-c tuile-ajout" id="an-import"><span class="plus-g">+</span><b>${tt('Ajouter des produits', 'Add products')}</b><span>${tt('checklists GTS en un geste', 'GTS checklists in one tap')}</span></button>`);
   brancherQuota(z);
-  $$('[data-p]', z).forEach(b => b.onclick = () => { S.ana.produit = b.dataset.p; S.ana.demandes = {}; location.hash = '#analyse/' + encodeURIComponent(b.dataset.p); });
+  $$('[data-p]', z).forEach(b => b.onclick = () => { anaCharger(b.dataset.p); S.ana.demandes = {}; location.hash = '#analyse/' + encodeURIComponent(b.dataset.p); });
   if ($('#an-import')) $('#an-import').onclick = () => feuilleGTS(c.produits || []);
   if ($('#an-demande')) $('#an-demande').onclick = feuilleDemandeProduit;
   if (S.forfait && S.forfait.admin) API.produits_a_ajouter().then(a => {        // admin : les produits a ajouter, en tete
@@ -3967,12 +4073,13 @@ const TRIS_ANA = () => [
   ['rentab', tt('Seuil de rentabilité', 'Break-even'), tt('Probabilité que l’ensemble des cartes couvre le prix de la place.', 'Probability that all cards together cover the spot price.')]];
 // la feuille des reglages d'une analyse : on choisit, on applique, elle se referme
 function feuilleReglagesAna(r, vendeur){
-  const A = S.ana, P = r.produit, bpc = P.boites_par_caisse || 12;
-  const choixB = [...new Set([1, 3, 6, bpc, 18, bpc * 2])].sort((x, y) => x - y);
+  const A = S.ana, P = r.produit, bpc = P.boites_par_caisse;
   let tri = A.tri || 'place', bx = r.boites;
   ouvrirFeuille(`<h3>${tt('Réglages', 'Settings')}</h3>
     <div class="ra-g"><span class="lib">${tt('Nombre de boîtes', 'Number of boxes')}</span>
-      <div class="chips" id="ra-bx">${choixB.map(n => `<button class="chip ${n === bx ? 'on' : ''}" data-rbx="${n}">${n === bpc ? tt('Caisse', 'Case') + ' · ' + n : n}</button>`).join('')}<input class="champ ra-autre" id="ra-n" type="number" inputmode="numeric" min="1" max="120" value="${choixB.includes(bx) ? '' : bx}" placeholder="${esc(tt('Autre', 'Other'))}" aria-label="${esc(tt('Nombre de boîtes', 'Number of boxes'))}"></div></div>
+      <div class="ra-nb"><button type="button" class="ra-pm" data-pm="-1" aria-label="−1">−</button><input class="champ" id="ra-n" type="number" inputmode="numeric" min="1" max="120" value="${bx}" aria-label="${esc(tt('Nombre de boîtes', 'Number of boxes'))}"><button type="button" class="ra-pm" data-pm="1" aria-label="+1">+</button>
+        ${bpc ? `<button type="button" class="chip" id="ra-caisse">${tt('1 caisse', '1 case')} = ${bpc}</button>` : ''}</div>
+      <small>${tt('Le nombre exact de boîtes que tu ouvres (une caisse varie d’un produit à l’autre).', 'The exact number of boxes you open (a case varies by product).')}</small></div>
     ${vendeur ? `<div class="ra-g"><span class="lib">${tt('Prix payé pour le lot', 'Price paid for the lot')} (${symDevise()})</span>
         <input class="champ" id="ra-lot" type="number" inputmode="decimal" value="${esc(A.cout ? Math.round(convertir(nb(A.cout) * bx)) : '')}" placeholder="${esc(tt('Obligatoire', 'Required'))}">
         <small>${r.prix_boite_marche ? tt('Repère eBay : ', 'eBay guide: ') + argentCourt(r.prix_boite_marche) + tt(' par boîte', ' per box') : tt('Ce que tu as payé pour ces boîtes', 'What you paid for these boxes')}</small></div>
@@ -3985,8 +4092,10 @@ function feuilleReglagesAna(r, vendeur){
     <button class="btn" id="ra-ok">${vendeur ? tt('Calculer les prix', 'Calculate prices') : tt('Appliquer', 'Apply')}</button>
     <div class="ra-bas"><button class="lien-doux" id="ra-ck">${tt('Checklist du produit', 'Product checklist')}</button>
       <span class="sous">${r.valeurs_mesurees ? '✓ ' + tt('Valeurs tirées des ventes réelles', 'Values from real sales') + (r.valeurs_maj ? ' · ' + dateCourte(r.valeurs_maj) : '') : tt('Valeurs estimées', 'Estimated values')}</span></div>`);
-  $$('[data-rbx]').forEach(b => b.onclick = () => { bx = +b.dataset.rbx; $('#ra-n').value = ''; $$('[data-rbx]').forEach(x => x.classList.toggle('on', x === b)); });
-  $('#ra-n').oninput = () => { const v = nb($('#ra-n').value); if (v > 0) { bx = Math.round(v); $$('[data-rbx]').forEach(x => x.classList.toggle('on', +x.dataset.rbx === bx)); } };
+  const metBx = (n) => { bx = Math.max(1, Math.min(120, Math.round(n) || 1)); $('#ra-n').value = bx; };
+  $$('[data-pm]').forEach(b => b.onclick = () => metBx((nb($('#ra-n').value) || bx) + +b.dataset.pm));
+  const rc = $('#ra-caisse'); if (rc) rc.onclick = () => metBx(bpc);
+  $('#ra-n').oninput = () => { const v = nb($('#ra-n').value); if (v > 0) bx = Math.round(v); };
   $$('[name="ra-tri"]').forEach(i => i.onchange = () => { tri = i.value; });
   $('#ra-ck').onclick = async () => { const c = await API.catalogue_liste().catch(() => ({produits:[]})); feuilleChecklist(P.id, c.produits || []); };
   $('#ra-ok').onclick = () => {
@@ -4000,7 +4109,7 @@ function feuilleReglagesAna(r, vendeur){
     } else {
       const v = nb($('#ra-budget').value); A.budget = v ? versCAD(v) : 0; A.tri = tri;
     }
-    A.boites = n0; fermerFeuille(); rendreAnalyse();
+    A.boites = n0; anaSauver(); fermerFeuille(); rendreAnalyse();
   };
 }
 async function rendreAnalyse(){
@@ -5928,8 +6037,16 @@ async function vueAdmin(onglet){
       <div class="kpi ${r.erreurs_24h ? 'rouge' : ''}"><span class="lib">${tt('Serveur', 'Server')}</span><span class="v">${r.erreurs_24h ? r.erreurs_24h + ' ⚠' : 'OK'}</span><span class="s">eBay ${br ? Math.round(100 * br.utilises / br.limite) : 0} % ${tt('du jour', 'today')}</span></div></div>
     <div class="seg" id="adm-o" style="margin:14px 0">${[['abonnes', tt('Abonnés', 'Subscribers')], ['demandes', tt('Demandes', 'Requests') + pastille(r.demandes.nouvelles)], ['catalogue', 'Catalogue' + pastille(r.a_ajouter)], ['serveur', tt('Serveur', 'Server')]].map(([k, t]) => `<button data-v="${k}" class="${o === k ? 'on' : ''}">${t}</button>`).join('')}</div>
     <div id="adm-z"><div class="lecture"><span class="roue"></span></div></div></section>`;
-  $$('#adm-o button').forEach(b => b.onclick = () => { location.hash = '#admin/' + b.dataset.v; });
-  ({abonnes:adminAbonnes, demandes:adminDemandes, catalogue:adminCatalogue, serveur:adminServeur}[o] || adminAbonnes)();
+  const sous = {abonnes:adminAbonnes, demandes:adminDemandes, catalogue:adminCatalogue, serveur:adminServeur};
+  // 28 oct 2026 (« saccadé ») : un onglet se change sur place ; le contenu d'avant reste (estompe) jusqu'a l'arrivee du nouveau
+  $$('#adm-o button').forEach(b => b.onclick = async () => {
+    if (b.classList.contains('on')) return;
+    S.ongletAdmin = b.dataset.v; history.replaceState(null, '', '#admin/' + b.dataset.v);
+    $$('#adm-o button').forEach(x => x.classList.toggle('on', x === b));
+    const z = $('#adm-z'); z.style.minHeight = z.offsetHeight + 'px'; z.classList.add('charge');
+    try { await (sous[b.dataset.v] || adminAbonnes)(); } finally { z.classList.remove('charge'); setTimeout(() => { z.style.minHeight = ''; }, 400); }
+  });
+  (sous[o] || adminAbonnes)();
 }
 async function adminAbonnes(){
   const z = $('#adm-z'); const d = await API.admin_abonnes().catch(e => ({ok:false, erreur:e.message}));
@@ -6770,6 +6887,7 @@ async function rendreBlocEbay(){
 // ============================================================
 reglages().then(() => equipes()).catch(() => {});
 route();
+prechargerOnglets();
 /* I18N APP DEBUT */
 // 24 oct 2026 - langue et devise : gardees aussi sur le compte (memes choix sur tous tes appareils) + taux du jour
 function prefSauver(l, d){ return API.reglages_sauver({langue:l, devise:d}); }
