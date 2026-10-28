@@ -82,5 +82,35 @@ class TestVendeursSuivis(unittest.TestCase):
         self.assertNotIn("young guns ivan demidov", " ".join(x["titre"].lower() for x in vet))
 
 
+    def test_encans_veterans_visibles_sans_credit(self):
+        """29 oct 2026 (« je ne vois toujours pas les cartes non rookie ») : budget SoldComps a zero, les encans de
+        veterans et de legendes des vendeurs suivis sont quand meme montres (« valeur à vérifier »), jamais comme des deals."""
+        avant = deals.FLUX, deals.FLUX_HITS, os.environ.get("LR_DEALS_VERIF_JOUR")
+        deals.FLUX, deals.FLUX_HITS = [], []
+        os.environ["LR_DEALS_VERIF_JOUR"] = "0"
+        d0 = deals.lire()
+        d0["deals"], d0["suivis"] = [], []
+        deals._ecrire(d0)
+        try:
+            deals.flux(rech, bassin=deals.Bassin(charger=False))
+        finally:
+            deals.FLUX, deals.FLUX_HITS = avant[0], avant[1]
+            os.environ["LR_DEALS_VERIF_JOUR"] = avant[2] or "400"
+        d = deals.lire()
+        su = {x["titre"]: x for x in d.get("suivis") or []}
+        self.assertIn("1979-80 O-Pee-Chee Wayne Gretzky #18 Rookie PSA 7", su)
+        self.assertIn("2019-20 Upper Deck The Cup Wayne Gretzky Auto Patch /25", su)
+        self.assertIn("2023-24 Upper Deck Young Guns Connor Bedard #451 PSA 10", su)        # joueur de 4e annee
+        self.assertNotIn("2025-26 Upper Deck Young Guns Ivan Demidov #451", su)            # recrue de l'annee
+        self.assertNotIn("2012-13 Upper Deck Sidney Crosby Base #1", su)                   # carte de base a 2 $
+        self.assertFalse(any(t.startswith("2023-24 Upper Deck The Cup Connor McDavid") for t in su))   # finit dans plus de 5 jours
+        self.assertIsNone(su["1979-80 O-Pee-Chee Wayne Gretzky #18 Rookie PSA 7"]["valeur"])
+        import lockerroom
+        a = lockerroom.Api(os.path.join(tempfile.mkdtemp(), "a.db"))
+        lockerroom.ebay_prix_actif = lambda: True
+        r = a.deals_liste({"sortes": ["veteran"]})
+        self.assertGreaterEqual(len(r["suivis"]), 5, r.get("suivis"))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -2726,7 +2726,12 @@ class Api:
             return {"ok": False, "erreur": "Ajoute une photo de la carte"}
         sku = d.get("sku") or ("LR-" + secrets.token_hex(4))
         opts = {**annonces.MODELE_DEFAUT, **{k: d[k] for k in annonces.MODELE_DEFAUT if k in d}}
-        donnees = {**opts, "carte": carte, "titre": titre, "prix": prix, "description": d.get("description") or titre, "sku": sku}
+        try:                                          # 29 oct 2026 : publication programmee (ScheduleTime d'eBay)
+            debut_utc = annonces.debut_programme(d.get("debut"))
+        except ValueError as e:
+            return {"ok": False, "erreur": str(e)}
+        donnees = {**opts, "carte": carte, "titre": titre, "prix": prix, "description": d.get("description") or titre, "sku": sku,
+                   "debut_utc": debut_utc}
         r = self._ecrire_ebay("annonces.publier", donnees, photos, cp, verifier_seulement=bool(verifier))
         r["photos"] = photos                          # deja chez eBay : renvoyees au 2e tap (pas televersees deux fois)
         r["sku"] = sku
@@ -2742,12 +2747,19 @@ class Api:
             with _verrou:
                 c = self._db()
                 try:
-                    c.execute("UPDATE cartes SET debut=? WHERE item_number=?", (_maintenant(), r["item_id"]))
+                    c.execute("UPDATE cartes SET debut=? WHERE item_number=?", (debut_utc or _maintenant(), r["item_id"]))
                     c.commit()
                 finally:
                     c.close()
             pct = _float(d.get("promotion")) or 0
-            if pct > 0:
+            r["debut"] = debut_utc
+            if pct > 0 and debut_utc:
+                # 29 oct 2026 : une annonce programmee n'est pas encore active : la promotion s'ajoute toute seule quand
+                # elle passe en ligne (boucle de l'heure)
+                self._promo_attente(r["item_id"], pct, debut_utc)
+                r["promotion"] = pct
+                r["promotion_attente"] = True
+            elif pct > 0:
                 p = self._ecrire_ebay("annonces.promouvoir", r["item_id"], pct)
                 r["promotion"] = p.get("promotion") if p.get("ok") else None
                 if not p.get("ok"):
@@ -2755,6 +2767,203 @@ class Api:
             if d.get("memoriser", True):
                 self.reglages_sauver({"modele_annonce": {k: opts[k] for k in annonces.MODELE_DEFAUT}})
         return r
+
+    # -- 29 oct 2026 (Mathieu : « le bon shipping policy, 250 g 16 x 23 x 3 cm, promo 2 %, offres, description… et les
+    # ceduler sur une vingtaine de jours, une apres l'autre, pour ne pas toutes les mettre en meme temps ») --
+    def ebay_politiques(self, force=False):
+        """Les politiques d'expedition / retours / paiement du vendeur chez eBay (Business Policies)."""
+        import annonces
+        if not ebay_compte.statut().get("connecte"):
+            return {"ok": False, "erreur": "Compte eBay non connecté"}
+        try:
+            return annonces.politiques(bool(force))
+        except (RuntimeError, OSError) as e:
+            return {"ok": False, "erreur": str(e)}
+
+    def _serie_chemin(self):
+        import comptes
+        return os.path.join(comptes.dossier() or DOSSIER, "serie_annonces.json")
+
+    def serie_candidates(self):
+        """Les cartes pretes a publier : en stock (pas sur eBay, pas vendues), avec un titre, un prix et une photo."""
+        out = []
+        for c in self.inventaire_liste({}) or []:
+            if c.get("statut") in ("Vendue", "Listée") or c.get("item_number"):
+                continue
+            try:
+                ph = json.loads(c.get("photos") or "[]") or ([c["photo"]] if c.get("photo") else [])
+            except ValueError:
+                ph = [c["photo"]] if c.get("photo") else []
+            prix = c.get("prix_demande") or (sante.prix_rond(c["valeur"]) if c.get("valeur") else None)
+            out.append({"id": c["id"], "titre": c.get("titre") or ebay_csv.titre_annonce(c), "prix": prix, "photo": c.get("photo"),
+                        "nb_photos": len(ph), "emplacement": c.get("emplacement"),
+                        "manque": [m for m, ok in (("prix", bool(prix)), ("photo", bool(ph)), ("titre", len(str(c.get("titre") or "")) >= 10)) if not ok]})
+        return {"ok": True, "cartes": out, "modele": {**__import__("annonces").MODELE_DEFAUT, **(self.reglages_lire().get("modele_annonce") or {})}}
+
+    def serie_programmer(self, ids, debut, ecart_h=24, modele=None):
+        """Programme les cartes choisies sur eBay, une apres l'autre : la 1re a « debut », puis une toutes les ecart_h
+        heures. Chaque annonce : titre, prix, photos, description, details, politiques eBay, colis, offres, promotion
+        (le modele d'annonce). Tout se fait en arriere-plan ; serie_etat() suit l'avancement."""
+        import annonces
+        import comptes
+        import threading
+        from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+        st = ebay_compte.statut()
+        if not st.get("connecte") or not st.get("ecriture"):
+            return {"ok": False, "erreur": "Reconnecte eBay pour publier depuis l'app."}
+        e = self.serie_etat()
+        if e.get("en_cours"):
+            return {"ok": False, "erreur": "Une série est déjà en cours"}
+        ids = [int(i) for i in (ids or [])][:200]
+        if not ids:
+            return {"ok": False, "erreur": "Choisis au moins une carte"}
+        try:
+            ecart = max(0.25, float(ecart_h or 24))
+            t0 = _dt.fromisoformat(str(debut).replace("Z", "+00:00"))
+        except (TypeError, ValueError):
+            return {"ok": False, "erreur": "Date de départ invalide"}
+        if t0.tzinfo is None:
+            t0 = t0.replace(tzinfo=_tz.utc)
+        heures = [t0 + _td(hours=ecart * i) for i in range(len(ids))]
+        try:
+            annonces.debut_programme(heures[0].isoformat())
+            annonces.debut_programme(heures[-1].isoformat())
+        except ValueError as x:
+            n_ok = int((_dt.now(_tz.utc) + _td(days=annonces.PROGRAMME_MAX_J) - t0).total_seconds() // (ecart * 3600)) + 1
+            return {"ok": False, "erreur": str(x) + (f" : à ce rythme, {max(0, n_ok)} cartes au plus dans cette série" if n_ok < len(ids) else "")}
+        r_ = self.reglages_lire()
+        mod = {**annonces.MODELE_DEFAUT, **(r_.get("modele_annonce") or {}), **{k: v for k, v in (modele or {}).items() if k in annonces.MODELE_DEFAUT}}
+        if modele:
+            self.reglages_sauver({"modele_annonce": {k: mod[k] for k in annonces.MODELE_DEFAUT}})
+        plan = [{"id": i, "debut": h.astimezone(_tz.utc).isoformat()} for i, h in zip(ids, heures)]
+        etat = {"en_cours": True, "total": len(plan), "faites": 0, "erreurs": [], "plan": plan, "lance_le": _maintenant()}
+        self._serie_ecrire(etat)
+        compte = comptes.courant()
+
+        def tache():
+            with comptes.utiliser(compte):
+                franco = (r_.get("langue") or "fr") != "en"
+                for p in plan:
+                    c = self.carte_lire(p["id"])
+                    err = None
+                    if not c:
+                        err = "carte introuvable"
+                    elif c.get("statut") in ("Vendue", "Listée"):
+                        err = "déjà sur eBay ou vendue"
+                    else:
+                        try:
+                            ph = json.loads(c.get("photos") or "[]") or ([c["photo"]] if c.get("photo") else [])
+                        except ValueError:
+                            ph = [c["photo"]] if c.get("photo") else []
+                        titre = (c.get("titre") or ebay_csv.titre_annonce(c) or "")[:80]
+                        prix = c.get("prix_demande") or (sante.prix_rond(c["valeur"]) if c.get("valeur") else None)
+                        desc = annonces.description(c, titre, franco, mod["etat"], r_.get("nom_boutique"), mod["retours"], mod["expedition"])
+                        d = {**mod, "carte": {k: v for k, v in c.items() if k in self.CHAMPS_CARTE}, "titre": titre, "prix": prix,
+                             "description": desc, "photos": ph, "cid": c["id"], "cout": c.get("cout"), "sku": c.get("sku"),
+                             "debut": p["debut"], "memoriser": False}
+                        try:
+                            r = self.annonce_publier(d)
+                            if not r.get("ok"):
+                                err = r.get("erreur") or "eBay"
+                            else:
+                                p["item_id"] = r.get("item_id")
+                        except Exception as x:
+                            err = f"{type(x).__name__} : {x}"
+                    etat["faites"] += 1
+                    if err:
+                        etat["erreurs"].append({"id": p["id"], "titre": (c or {}).get("titre"), "erreur": str(err)[:200]})
+                    self._serie_ecrire(etat)
+                etat["en_cours"] = False
+                etat["fini_le"] = _maintenant()
+                self._serie_ecrire(etat)
+        threading.Thread(target=tache, daemon=True, name="serie-annonces").start()
+        return {"ok": True, **etat}
+
+    def annonce_reviser(self, cid, d):
+        """Modifier une annonce deja chez eBay (programmee ou en ligne) : titre, prix, heure de mise en ligne."""
+        import annonces
+        c = self.carte_lire(cid)
+        if not c or not c.get("item_number"):
+            return {"ok": False, "erreur": "Cette carte n'a pas d'annonce eBay"}
+        d = d or {}
+        titre = re.sub(r"\s+", " ", str(d.get("titre") or "")).strip()[:80] or None
+        prix = _float(d.get("prix"))
+        try:
+            debut_utc = annonces.debut_programme(d.get("debut")) if d.get("debut") else None
+        except ValueError as e:
+            return {"ok": False, "erreur": str(e)}
+        if titre is not None and len(titre) < 10:
+            return {"ok": False, "erreur": "Ajoute un titre"}
+        r = self._ecrire_ebay("annonces.reviser", c["item_number"], titre, prix, debut_utc)
+        if r.get("ok"):
+            ch = {"id": cid}
+            if titre:
+                ch["titre"] = titre
+            if prix:
+                ch["prix_demande"] = prix
+            if len(ch) > 1:
+                self.carte_sauver(ch)
+            if debut_utc:
+                cx = self._db()
+                try:
+                    cx.execute("UPDATE cartes SET debut=? WHERE id=?", (debut_utc, cid))
+                    cx.commit()
+                finally:
+                    cx.close()
+        return r
+
+    def serie_etat(self):
+        try:
+            with open(self._serie_chemin(), encoding="utf-8") as f:
+                e = json.load(f)
+        except (OSError, ValueError):
+            return {"ok": True, "en_cours": False}
+        if e.get("en_cours") and str(e.get("lance_le") or "") < (datetime.now() - timedelta(hours=3)).isoformat():
+            e["en_cours"] = False                      # redemarrage du serveur pendant une serie
+        return {"ok": True, **e}
+
+    def _serie_ecrire(self, e):
+        p = self._serie_chemin()
+        with open(p + ".tmp", "w", encoding="utf-8") as f:
+            json.dump(e, f, ensure_ascii=False)
+        os.replace(p + ".tmp", p)
+
+    _PROMOS = "CREATE TABLE IF NOT EXISTS promos_attente (item_id TEXT PRIMARY KEY, pct REAL, debut TEXT, essais INTEGER DEFAULT 0)"
+
+    def _promo_attente(self, item_id, pct, debut):
+        c = self._db()
+        try:
+            c.execute(self._PROMOS)
+            c.execute("INSERT OR REPLACE INTO promos_attente (item_id, pct, debut, essais) VALUES (?,?,?,0)", (str(item_id), pct, debut))
+            c.commit()
+        finally:
+            c.close()
+
+    def promos_attente_appliquer(self):
+        """Boucle de l'heure : la promotion des annonces programmees qui sont maintenant en ligne (6 essais au plus)."""
+        maint = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+        c = self._db()
+        try:
+            c.execute(self._PROMOS)
+            lst = [dict(x) for x in c.execute("SELECT * FROM promos_attente WHERE debut <= ?", (maint,))]
+        finally:
+            c.close()
+        faits = 0
+        for x in lst:
+            p = self._ecrire_ebay("annonces.promouvoir", x["item_id"], x["pct"])
+            c = self._db()
+            try:
+                if p.get("ok") or x["essais"] >= 5:
+                    c.execute("DELETE FROM promos_attente WHERE item_id=?", (x["item_id"],))
+                    faits += 1 if p.get("ok") else 0
+                    if not p.get("ok"):
+                        print("Promotion programmee abandonnee :", x["item_id"], p.get("erreur"), flush=True)
+                else:
+                    c.execute("UPDATE promos_attente SET essais=essais+1 WHERE item_id=?", (x["item_id"],))
+                c.commit()
+            finally:
+                c.close()
+        return faits
 
     def ebay_changer_prix(self, item_number, prix):
         r = self._ecrire_ebay("changer_prix", item_number, prix)
@@ -2921,6 +3130,10 @@ class Api:
             r["watchlist"] = watchlist.verifier(self)
         except Exception as e:
             print("Watchlist : " + repr(e), flush=True)
+        try:                                    # 29 oct 2026 : la promotion des annonces programmees passees en ligne
+            r["promos"] = self.promos_attente_appliquer()
+        except Exception as e:
+            print("Promos programmees : " + repr(e), flush=True)
         try:                                    # 29 oct 2026 : l'alerte de valeur des cartes de la collection (chaque semaine par carte)
             import suivi_valeur
             r["valeur"] = suivi_valeur.verifier(self)
@@ -3529,7 +3742,24 @@ class Api:
                      rabais=round(100 * (1 - (x.get("ratio") or 1))))
             pres.append(y)
         pres = [x for x in self._deals_filtrer(pres, f) if not f.get("sports") or (x.get("sport") or "hockey") in f["sports"]][:24 if pro else 6]
+        # 29 oct 2026 (Mathieu : « je ne vois toujours pas les cartes non rookie ») : les encans de veterans et de legendes
+        # des vendeurs suivis (Savage, Remi, Slab Sharks...), meme sans valeur verifiee ; jamais montres comme un deal
+        ids_d = {str(x.get("item_id")) for x in lst}
+        lim_s = (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat()
+        suivis = []
+        for x in dd.get("suivis") or []:
+            if str(x.get("item_id")) in ids_d or str(x.get("item_id")) in ret_p or str(x.get("item_id")) in _d._bannis() \
+                    or not _d.encore_ouvert(x) or str(x.get("vu_le") or "") < lim_s:
+                continue
+            y = dict(x, source="marche")
+            if y.get("valeur"):
+                y["gain"] = round(y["valeur"] * (1 - fp_) - ff_ - (y.get("total") or 0), 2)
+                y["rabais"] = round(100 * (1 - (y.get("total") or 0) / y["valeur"]))
+            suivis.append(y)
+        f_s = {k: v for k, v in f.items() if k in ("joueurs", "sortes", "prix_min", "prix_max")}
+        suivis = self._deals_filtrer(suivis, f_s)[:120 if pro else 6]
         return {"ok": True, "deals": lst[:240], "n": n, "pro": pro, "limite": None if pro else forfaits.LIMITES["deals"],
+                "suivis": suivis,
                 "pres": pres, "secours": secours, "secours_le": (dd.get("secours") or {}).get("le") if secours else None,
                 "sports": par_sport, "maj": dd.get("maj"), "ebay": ebay_compte.statut().get("cles_ok"),
                 "diag": _d.diagnostic(dd), "total": len(tout), "bassin": dd.get("bassin"), "nb_flux": len(_d.flux_liste()),

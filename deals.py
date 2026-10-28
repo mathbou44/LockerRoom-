@@ -742,6 +742,44 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
                            "comps": comps or [], "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION}
 
 
+SUIVIS_MAX = 400                 # 29 oct 2026 : encans de veterans / legendes des vendeurs suivis gardes pour l'ecran
+
+
+def _noter_suivi(st, a, bassin, maint):
+    """29 oct 2026 (Mathieu : « je ne vois toujours pas les cartes non rookie » ; « chez Savage, Remi, Slab Sharks… je les
+    veux TOUS ») : chaque ENCAN d'un vendeur suivi qui est une carte de veteran, de legende ou de jeune de 2e a 4e annee
+    (pas une recrue de l'annee) et qui vaut la peine (hit, gradee, vintage, vedette) est garde pour l'ecran Deals, MEME
+    sans valeur verifiee : « Encans de vétérans et légendes ». Sa valeur s'affiche seulement si elle est sure (ventes
+    reelles de la meme carte) ; sinon « valeur à vérifier ». Aucun credit SoldComps."""
+    import cartes_match
+    if not a.get("encan") or not a.get("item_id"):
+        return
+    cib = cartes_match.cible_titre(a.get("titre") or "")
+    if cib.get("exclu") or not cib.get("joueur") or _recrue(cib) or not _precieuse(cib):
+        return
+    if cartes_match.abimee(a.get("titre") or "") or vendeur_risque(a):
+        return
+    f = a.get("fin")
+    fd = None
+    try:
+        fd = datetime.fromisoformat(str(f).replace("Z", "+00:00"))
+    except ValueError:
+        return
+    if fd < maint or fd - maint > timedelta(hours=ENCAN_SUIVI_H):
+        return
+    t = _total(a)
+    an = cib.get("annee")
+    if not (_hit(cib) or cib.get("grade") or (an and int(an) < 1995) or t >= 20):
+        return                                       # une carte de base d'une vedette a 3 $ : pas un encan a montrer
+    va = valeur_annonce(a, bassin.candidats(cib) if bassin else [], [], cib=cib)
+    st.setdefault("_suivis", {})[str(a["item_id"])] = {
+        "item_id": str(a["item_id"]), "titre": a.get("titre"), "total": t, "photo": a.get("photo"), "url": a.get("url"),
+        "encan": True, "fin": f, "mises": a.get("mises"), "port": a.get("port_cad"), "vendeur": a.get("vendeur"),
+        "valeur": va[0] if va else None, "n": va[2] if va else 0, "vendues": va[3] if va else [],
+        "mise_max": round(va[0] * RATIO_DEAL - (a.get("port_cad") or 0), 2) if va else None,
+        "sport": "hockey", "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION, "suivi": True}
+
+
 def _q_deal(r):
     """29 oct 2026 (Mathieu : « on voit encore juste des Young Guns et des Future Watch ») : une recherche de vedette
     (« Wayne Gretzky auto ») trouve TOUTES les cartes du joueur (patchs, /25, /99...). Le deal gardait cette requete, et
@@ -824,6 +862,7 @@ def _sauver(d, deals, maint, st, **champs):
     nouveaux_pres = st.pop("_pres", {})
     nouveaux_retires = st.pop("_retires", [])
     journal = st.pop("_journal", [])
+    nouveaux_suivis = st.pop("_suivis", None)
     st.pop("_dern_verif", None)
     st.pop("_res", None)
     with _verrou:
@@ -845,6 +884,12 @@ def _sauver(d, deals, maint, st, **champs):
             d2["verif"] = d["verif"]
         if journal:
             d2["journal"] = ((d2.get("journal") or []) + journal)[-JOURNAL_MAX:]
+        if nouveaux_suivis is not None:                  # 29 oct : les encans de veterans des vendeurs suivis (ce tour-ci)
+            vieux = {str(x.get("item_id")): x for x in d2.get("suivis") or [] if encore_ouvert(x, maint)
+                     and str(x.get("vu_le") or "") >= (maint - timedelta(hours=FRAICHEUR_EBAY_H)).isoformat()}
+            vieux.update(nouveaux_suivis)
+            d2["suivis"] = sorted((x for k, x in vieux.items() if k not in ids and str(k) not in retires),
+                                  key=lambda x: str(x.get("fin")))[:SUIVIS_MAX]
         _diag(d2, **st)
         _ecrire(d2)
     return garde_
@@ -891,7 +936,9 @@ def chasser(n=PAR_TOUR, rechercher=None, bassin=None, vedettes=False):
         st["requetes"] = st.get("requetes", 0) + 1
         _c, memes, _e = _memes(r, fixes)
         # chaque annonce a SA valeur, celle des ventes de la MEME carte (2 au moins), sinon pas de deal
-        brut_v, err = _ventes(r["q"])
+        # 29 oct 2026 : « Wayne Gretzky auto » melange toutes ses cartes : une recherche SoldComps pour ca ne sert a rien
+        # (credits perdus). Les vedettes : ventes en cache seulement ; chaque carte a sa verification ciblee au besoin
+        brut_v, err = _ventes(r["q"], cache_seul=bool(r.get("vedette")))
         if err:
             st["erreurs_ventes"] = st.get("erreurs_ventes", 0) + 1
         bassin.ajouter(brut_v)
@@ -1051,6 +1098,7 @@ def flux(rechercher=None, bassin=None):
             l = [a for a in l if cartes_match.est_carte(a.get("titre") or "")]
             for a in l:
                 _juger(a, rv, [], [] if ench else l, maint, deals, st, bassin=bassin, verif=verif)
+                _noter_suivi(st, a, bassin, maint)
             if ench and (len(l) < 150 or not l or str(l[-1].get("fin") or "9") > limite_suivi):
                 break
     # 28 oct 2026 (Mathieu : « les maudits deals sont encore juste des Young Guns ») : les flux larges de recrues (Young
@@ -1262,7 +1310,10 @@ def _etat_soldcomps():
         e = vendues.derniere_erreur()
         return {"jour": vendues.utilises_aujourdhui(), "plafond": vendues.plafond_jour(), "fond": int(vendues.plafond_jour() * 0.7),
                 "verif": vendues.utilises_aujourdhui("verif"), "autres_max": int(vendues.plafond_jour() * vendues.PART_AUTRES_FOND),
-                "erreur": e.get("erreur") if e and time.time() - e.get("le", 0) < 6 * 3600 else None, "sites": vendues.sites()}
+                "erreur": e.get("erreur") if e and time.time() - e.get("le", 0) < 6 * 3600 else None, "sites": vendues.sites(),
+                # 29 oct 2026 : budget du jour atteint -> quand ca repart (le compteur suit le jour du serveur, UTC)
+                "epuise": vendues.utilises_aujourdhui() >= int(vendues.plafond_jour() * 0.7),
+                "reprise": (datetime.now(timezone.utc) + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()}
     except Exception as x:
         return {"erreur": repr(x)}
 

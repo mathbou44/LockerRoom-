@@ -72,5 +72,20 @@ class TestCanada(unittest.TestCase):
         self.assertEqual(appels, ["ebay.com", "ebay.com", "ebay.ca"])
 
 
+    def test_verif_un_seul_credit_si_assez_de_ventes(self):
+        """29 oct 2026 : une verification de deal n'interroge eBay.ca que si eBay.com n'a pas deja 3 ventes."""
+        appels = []
+        def appel(q, site, attendre=True, usage=None):
+            appels.append(site)
+            n = 3 if "beaucoup" in q else 1
+            return {"items": [{"title": f"{q} {site} {k}", "soldPrice": "50", "soldDate": "2026-10-20", "url": f"https://www.ebay.com/itm/{site[-2:]}{k}12345678"} for k in range(n)]}, None
+        with mock.patch.object(vendues, "_appel", appel), mock.patch.object(vendues, "actif", lambda: True), \
+                mock.patch.object(vendues, "_cache_lire", lambda q: None), mock.patch.object(vendues, "_budget_ok", lambda f, u: True):
+            vendues.rechercher("beaucoup gretzky opc", fond=True, usage="verif")
+            self.assertEqual(appels, ["ebay.com"])
+            appels.clear()
+            vendues.rechercher("rare gretzky auto", fond=True, usage="verif")
+            self.assertEqual(appels, ["ebay.com", "ebay.ca"])
+
 if __name__ == "__main__":
     unittest.main()

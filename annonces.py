@@ -33,6 +33,10 @@ MODELE_DEFAUT = {
     "offres": True, "offre_auto_pct": 0, "offre_min_pct": 70,       # 27 oct 2026 : 0 = jamais accepte tout seul (choix du vendeur)
     "promotion": 0,                         # % Promoted Listings (0 = pas de promotion)
     "etat": "nm",                           # carte brute : nm | ex | vg | p
+    # 29 oct 2026 (Mathieu : « le bon shipping policy ; le poids, c'est toujours 250 g, 16 x 23 x 3 cm ») : les politiques
+    # d'eBay du vendeur (Business Policies) et le colis, gardes pour toutes ses annonces
+    "politique_exp": "", "politique_ret": "", "politique_pai": "",
+    "longueur_cm": 0, "largeur_cm": 0, "hauteur_cm": 0,      # 0 : la taille d'une enveloppe / d'un petit colis
 }
 # carte brute : descripteur eBay 40001 (Card Condition)
 ETATS_BRUTS = {"nm": ("400010", "Near Mint or Better", "Quasi neuve ou mieux"), "ex": ("400011", "Excellent", "Excellente"),
@@ -186,12 +190,56 @@ def _xml_livraison(d):
 
 def _xml_colis(d):
     g = max(10, int(float(d.get("poids_g") or 30)))
-    lettre = (d.get("expedition") or "lettre") == "lettre"
+    lettre = (d.get("expedition") or "lettre") == "lettre" and not d.get("politique_exp")
+    dims = [int(round(float(d.get(k) or 0))) for k in ("longueur_cm", "largeur_cm", "hauteur_cm")]
+    if not all(x > 0 for x in dims):
+        dims = [16, 11, 1] if lettre else [20, 15, 2]
     return ("<ShippingPackageDetails><MeasurementUnit>Metric</MeasurementUnit>"
             f"<ShippingPackage>{'Letter' if lettre else 'PackageThickEnvelope'}</ShippingPackage>"
             f'<WeightMajor unit="kg">{g // 1000}</WeightMajor><WeightMinor unit="gm">{g % 1000}</WeightMinor>'
-            f'<PackageLength unit="cm">{"16" if lettre else "20"}</PackageLength><PackageWidth unit="cm">{"11" if lettre else "15"}</PackageWidth>'
-            f'<PackageDepth unit="cm">{"1" if lettre else "2"}</PackageDepth></ShippingPackageDetails>')
+            f'<PackageLength unit="cm">{dims[0]}</PackageLength><PackageWidth unit="cm">{dims[1]}</PackageWidth>'
+            f'<PackageDepth unit="cm">{dims[2]}</PackageDepth></ShippingPackageDetails>')
+
+
+_cache_pol = {}
+
+
+def politiques(force=False):
+    """29 oct 2026 : les politiques d'expedition, de retours et de paiement du vendeur chez eBay (Business Policies,
+    Trading GetUserPreferences). -> {ok, expedition:[{id, nom, resume, defaut}], retours:[...], paiement:[...]}"""
+    import time
+    env = ebay_compte.environnement()
+    c = _cache_pol.get(env)
+    if c and not force and time.time() - c[0] < 600:
+        return c[1]
+    r = ebay_compte.trading("GetUserPreferences", f'<?xml version="1.0" encoding="utf-8"?><GetUserPreferencesRequest xmlns="{NS}">'
+                            "<ShowSellerProfilePreferences>true</ShowSellerProfilePreferences></GetUserPreferencesRequest>")
+    out = {"ok": True, "expedition": [], "retours": [], "paiement": [],
+           "actif": (ebay_compte._txt(r, "e:SellerProfilePreferences/e:SellerProfileOptedIn") or "").lower() == "true"}
+    cles = {"SHIPPING": "expedition", "RETURN_POLICY": "retours", "PAYMENT": "paiement"}
+    for p in r.findall("e:SellerProfilePreferences/e:SupportedSellerProfiles/e:SupportedSellerProfile", ebay_compte._NS):
+        k = cles.get(ebay_compte._txt(p, "e:ProfileType") or "")
+        if not k:
+            continue
+        defaut = any((ebay_compte._txt(g, "e:IsDefault") or "").lower() == "true" for g in p.findall("e:CategoryGroup", ebay_compte._NS))
+        out[k].append({"id": ebay_compte._txt(p, "e:ProfileID"), "nom": ebay_compte._txt(p, "e:ProfileName") or "",
+                       "resume": (ebay_compte._txt(p, "e:ShortSummary") or "")[:160], "defaut": defaut})
+    for k in ("expedition", "retours", "paiement"):
+        out[k].sort(key=lambda x: (not x["defaut"], x["nom"].lower()))
+    _cache_pol[env] = (time.time(), out)
+    return out
+
+
+def _xml_profils(d):
+    """<SellerProfiles> : les politiques choisies (l'expedition, et les retours / le paiement si choisis)."""
+    if not d.get("politique_exp"):
+        return ""
+    x = f"<SellerShippingProfile><ShippingProfileID>{escape(str(d['politique_exp']))}</ShippingProfileID></SellerShippingProfile>"
+    if d.get("politique_ret"):
+        x += f"<SellerReturnProfile><ReturnProfileID>{escape(str(d['politique_ret']))}</ReturnProfileID></SellerReturnProfile>"
+    if d.get("politique_pai"):
+        x += f"<SellerPaymentProfile><PaymentProfileID>{escape(str(d['politique_pai']))}</PaymentProfileID></SellerPaymentProfile>"
+    return "<SellerProfiles>" + x + "</SellerProfiles>"
 
 
 def _xml_retours(mode):
@@ -210,6 +258,30 @@ def _xml_etat(c, etat):
         return cond, desc
     code = ETATS_BRUTS.get(etat, ETATS_BRUTS["nm"])[0]
     return ebay_csv.CONDITION_NON_GRADEE, f"<ConditionDescriptor><Name>40001</Name><Value>{code}</Value></ConditionDescriptor>"
+
+
+PROGRAMME_MIN_MIN = 10           # 29 oct 2026 : une annonce programmee part dans 10 min au plus tot
+PROGRAMME_MAX_J = 21             # et dans 3 semaines au plus (limite d'eBay)
+
+
+def debut_programme(v, maint=None):
+    """29 oct 2026 (Mathieu : « avoir une date a laquelle l'annonce va etre publiee ») : l'heure de mise en ligne
+    choisie (ISO), en UTC pour eBay (ScheduleTime). None = maintenant. ValueError si hors limites."""
+    from datetime import datetime, timedelta, timezone
+    if not v:
+        return None
+    try:
+        t = datetime.fromisoformat(str(v).replace("Z", "+00:00"))
+    except ValueError:
+        raise ValueError("Date de publication invalide")
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=timezone.utc)
+    maint = maint or datetime.now(timezone.utc)
+    if t < maint + timedelta(minutes=PROGRAMME_MIN_MIN - 1):
+        raise ValueError(f"Choisis une heure dans {PROGRAMME_MIN_MIN} min ou plus")
+    if t > maint + timedelta(days=PROGRAMME_MAX_J):
+        raise ValueError(f"eBay permet de programmer {PROGRAMME_MAX_J} jours d'avance au plus")
+    return t.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
 def xml_item(d, photos, code_postal="H2X 1Y4"):
@@ -240,8 +312,12 @@ def xml_item(d, photos, code_postal="H2X 1Y4"):
             f"<ListingDuration>{'Days_7' if encan else 'GTC'}</ListingDuration>"
             f"<ListingType>{'Chinese' if encan else 'FixedPriceItem'}</ListingType><Quantity>1</Quantity>"
             + (f"<PictureDetails>{photos_xml}</PictureDetails>" if photos_xml else "")
-            + f"<ItemSpecifics>{specs}</ItemSpecifics>" + _xml_retours(d.get("retours")) + _xml_livraison(d) + _xml_colis(d)
-            + offres + (f"<SKU>{escape(str(d['sku']))[:50]}</SKU>" if d.get("sku") else "") + "</Item>")
+            + f"<ItemSpecifics>{specs}</ItemSpecifics>"
+            # 29 oct 2026 : la politique d'expedition (et de retours) d'eBay du vendeur, sinon les reglages de l'app
+            + ("" if d.get("politique_exp") and d.get("politique_ret") else _xml_retours(d.get("retours")))
+            + ("" if d.get("politique_exp") else _xml_livraison(d)) + _xml_colis(d) + _xml_profils(d)
+            + offres + (f"<SKU>{escape(str(d['sku']))[:50]}</SKU>" if d.get("sku") else "")
+            + (f"<ScheduleTime>{d['debut_utc']}</ScheduleTime>" if d.get("debut_utc") else "") + "</Item>")
 
 
 def photos_ebay(photos):
@@ -280,6 +356,8 @@ def photos_ebay(photos):
 def publier(d, photos_hebergees, code_postal, verifier_seulement=False):
     import ebay_moderne                     # 27 oct 2026 : LOCKERROOM_EBAY_API=inventaire -> Inventory API (API modernes d'eBay)
     if ebay_moderne.mode() == "inventaire":
+        if d.get("debut_utc"):
+            raise ValueError("La publication programmée passe par l'API Trading d'eBay (LOCKERROOM_EBAY_API) : publie maintenant")
         return ebay_moderne.publier(d, photos_hebergees, code_postal, verifier_seulement)
     encan = d.get("format") == "encan"
     appel = "AddItem" if encan else "AddFixedPriceItem"
@@ -291,6 +369,23 @@ def publier(d, photos_hebergees, code_postal, verifier_seulement=False):
         return {"ok": True, "verifie": True, "frais": frais, "avertissements": ebay_compte.avertissements(v)}
     r = ebay_compte.trading(appel, req(appel))
     return {"ok": True, "item_id": ebay_compte._txt(r, "e:ItemID"), "frais": frais, "avertissements": ebay_compte.avertissements(r)}
+
+
+def reviser(item_id, titre=None, prix=None, debut_utc=None):
+    """29 oct 2026 (Mathieu : « il peut rentrer dans l'annonce et modifier l'information s'il a fait une erreur ») :
+    titre, prix et heure de mise en ligne d'une annonce (programmee ou en ligne), ReviseFixedPriceItem."""
+    if not re.fullmatch(r"\d{9,15}", str(item_id or "")):
+        raise ValueError("Numéro d'annonce invalide")
+    x = f"<ItemID>{item_id}</ItemID>"
+    if titre:
+        x += f"<Title>{escape(str(titre)[:80])}</Title>"
+    if prix:
+        x += f'<StartPrice currencyID="CAD">{float(prix):.2f}</StartPrice>'
+    if debut_utc:
+        x += f"<ScheduleTime>{debut_utc}</ScheduleTime>"
+    r = ebay_compte.trading("ReviseFixedPriceItem", f'<?xml version="1.0" encoding="utf-8"?><ReviseFixedPriceItemRequest xmlns="{NS}">'
+                            f"<Item>{x}</Item></ReviseFixedPriceItemRequest>")
+    return {"ok": True, "item_id": str(item_id), "avertissements": ebay_compte.avertissements(r)}
 
 
 # -- promotion (Promoted Listings Standard : % paye seulement si l'article se vend via la pub) -----

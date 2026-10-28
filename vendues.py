@@ -153,7 +153,7 @@ def en_cache(q):
 # des produits, chasse par joueur, repere des prix) avaient mange tout le budget du jour avant le soir. Maintenant elles ont
 # au plus la moitie du budget de fond ; l'autre moitie est gardee aux verifications de deals. Et eBay.ca seulement pour les
 # recherches des utilisateurs et les verifications de deals (les autres taches : eBay.com, 1 requete au lieu de 2).
-PART_AUTRES_FOND = 0.35
+PART_AUTRES_FOND = 0.25          # 29 oct 2026 : 0,35 -> 0,25 : les verifications de deals (encans) passent d'abord
 
 
 def _budget_ok(fond, usage):
@@ -193,6 +193,10 @@ def rechercher(q, fond=True, usage=None):
     for i, site in enumerate(les_sites):
         if site not in pre and i and not _budget_ok(fond, usage):
             break                                   # le budget du jour : le site principal d'abord
+        # 29 oct 2026 (Mathieu : « des credits depenses dans le vide ») : une verification de deal interroge eBay.ca
+        # seulement si eBay.com n'a pas deja 3 ventes : 1 credit au lieu de 2 la plupart du temps
+        if site not in pre and i and usage == "verif" and len(ventes) >= 3:
+            break
         d, err = pre[site] if site in pre else _appel(q, site, usage=usage)
         if err:
             erreur = erreur or err
