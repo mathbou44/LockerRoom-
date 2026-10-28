@@ -132,6 +132,77 @@ class TestVedettes(unittest.TestCase):
                      bassin=deals.Bassin(charger=False), verif=lambda c: [])
         self.assertEqual(len(st.get("_tard") or []), 1)
 
+    def test_deal_de_vedette_garde_a_la_sauvegarde(self):
+        """29 oct 2026 (« encore juste des Young Guns et des Future Watch ») : un deal trouve par « Wayne Gretzky auto »
+        (un patch /25) etait jete par valide() a la sauvegarde : il compare maintenant la carte a elle-meme."""
+        from datetime import datetime, timedelta
+        j = lambda n: (datetime.now() - timedelta(days=n)).strftime("%Y-%m-%d")
+        titre = "2023-24 SP Game Used Wayne Gretzky Jersey Patch /25"
+        ventes = [{"titre": titre, "prix": p, "le": j(k), "url": f"g{k}"} for k, p in ((3, 300), (9, 310), (15, 290))]
+        def rech(q, **k):
+            if "Gretzky" in q and not k.get("encheres"):
+                return [{"item_id": "gp1", "titre": titre, "prix_cad": 120.0, "port_cad": 0.0, "url": "https://www.ebay.com/itm/gp1",
+                         "vendeur_pct": "100", "vendeur_score": 900}]
+            return []
+        vrai = vendues.rechercher
+        vendues.rechercher = lambda q, fond=True, **k: {"ventes": ventes}
+        try:
+            deals.chasser(2, rech, bassin=deals.Bassin(charger=False), vedettes=True)
+        finally:
+            vendues.rechercher = vrai
+        d = deals.lire()
+        ids = {x["item_id"]: x for x in d.get("deals") or []}
+        self.assertIn("gp1", ids)
+        self.assertTrue(ids["gp1"]["vedette"])
+        self.assertIsNone(ids["gp1"]["q"])
+        self.assertTrue(deals.valide(ids["gp1"]))
+        self.assertEqual(deals.etat()["repartition"]["hits"] >= 1, True)
+
+    def test_journal_des_verifications(self):
+        from datetime import datetime, timedelta, timezone
+        maint = datetime.now(timezone.utc)
+        titre = "2019-20 Upper Deck The Cup Mario Lemieux Auto Patch /25"
+        j = lambda n: (datetime.now() - timedelta(days=n)).strftime("%Y-%m-%d")
+        ventes = [{"titre": titre, "prix": p, "le": j(k), "url": f"m{k}"} for k, p in ((3, 500), (9, 520), (15, 480))]
+        def verif(cib):
+            st["_dern_verif"] = {"q": "lemieux cup auto patch", "n": 3}
+            return ventes
+        a = {"item_id": "lm1", "titre": titre, "prix_cad": 200.0, "port_cad": 0.0, "url": "u", "vendeur_pct": "100", "vendeur_score": 900}
+        st, dd = {}, {}
+        deals._juger(a, {"q": "Mario Lemieux auto", "joueur": "Mario Lemieux", "vedette": True}, [], [], maint, dd, st,
+                     bassin=deals.Bassin(charger=False), verif=verif)
+        deals._verifier_tard(st, dd, maint, deals.Bassin(charger=False), verif)
+        jr = st.get("_journal") or []
+        self.assertEqual(len(jr), 1)
+        self.assertEqual(jr[0]["res"], "deal")
+        self.assertEqual(jr[0]["genre"], "vedette")
+
+    def test_budget_hits_recrues_limite(self):
+        vrai = vendues.rechercher
+        vendues.rechercher = lambda q, fond=True, **k: {"ventes": []}
+        os.environ["LR_DEALS_VERIF_JOUR"] = "20"
+        vrai_j = deals._jour_mtl
+        deals._jour_mtl = lambda: ("2026-10-29", 14.0)
+        try:
+            st = {}
+            f = deals._verificateur({}, st, deals.Bassin(charger=False))
+            base = {"mots": [], "auto": True, "patch": False, "serie": 999, "annee": 2025, "num": None, "grade": None, "paralleles": set(),
+                    "exclu": False, "veut_grade": False, "brute": False, "veut_serie": False, "base": False, "produits": set()}
+            rec = [f(dict(base, texte=f"joueur{i} future watch auto", joueur=f"joueur{i}", mots=[f"joueur{i}", "future", "watch"], rc=True))
+                   for i in range(12)]
+        finally:
+            vendues.rechercher, deals._jour_mtl = vrai, vrai_j
+            os.environ.pop("LR_DEALS_VERIF_JOUR", None)
+        self.assertEqual(sum(1 for x in rec if x is not None), 7)       # 35 % de 20 avant 18 h
+        self.assertEqual(st.get("verif_budget_recrues"), 5)
+
+    def test_vedettes_elargies(self):
+        r = deals.requetes()
+        noms = {x["joueur"] for x in r if x.get("vedette")}
+        for n in ("Connor Bedard", "Macklin Celebrini", "Maurice Richard", "Kirill Kaprizov"):
+            self.assertIn(n, noms)
+        self.assertEqual(sum(1 for x in r[:3] if x.get("vedette")), 2)
+
 
 if __name__ == "__main__":
     unittest.main()

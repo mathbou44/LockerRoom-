@@ -778,6 +778,13 @@ class Api:
         import deals as _d
         return {**_d.recharger(), "etat": self.deals_etat()}
 
+    def deals_chasser_vedettes(self):
+        """29 oct 2026 - admin : un tour seulement pour les veterans, les legendes et les jeunes de 2e a 4e annee."""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import deals as _d
+        return {**_d.chasser_vedettes(), "etat": self.deals_etat()}
+
     def deals_etat(self):
         if not self._est_admin():
             return {"ok": False, "erreur": "Réservé à l'administrateur"}
@@ -2908,7 +2915,63 @@ class Api:
 
     def alarmes_verifier(self):
         import alarmes
-        return {"ok": True, "envoyees": alarmes.verifier(self)}
+        r = {"ok": True, "envoyees": alarmes.verifier(self)}
+        try:                                    # 29 oct 2026 : la watchlist (le reste de l'heure ; les fins d'encans : boucle de 5 min)
+            import watchlist
+            r["watchlist"] = watchlist.verifier(self)
+        except Exception as e:
+            print("Watchlist : " + repr(e), flush=True)
+        try:                                    # 29 oct 2026 : l'alerte de valeur des cartes de la collection (chaque semaine par carte)
+            import suivi_valeur
+            r["valeur"] = suivi_valeur.verifier(self)
+        except Exception as e:
+            print("Suivi valeur : " + repr(e), flush=True)
+        return r
+
+    # -- 29 oct 2026 (Mathieu : « une alarme quand la carte de ma collection prend ou perd de la valeur ») --
+    def valeur_suivi(self, cid, actif=None):
+        import suivi_valeur
+        if actif is None:
+            return suivi_valeur.etat(self, cid)
+        r = suivi_valeur.regler(self, cid, bool(actif))
+        if actif and r.get("ok") and not r.get("reference"):
+            import threading                          # pas encore de valeur : la premiere, tout de suite, en arriere-plan
+            threading.Thread(target=lambda: self._suivi_premier(cid), daemon=True).start()
+        return r
+
+    def _suivi_premier(self, cid):
+        import suivi_valeur
+        try:
+            carte = self.carte_lire(cid)
+            v = suivi_valeur.valeur_actuelle(carte) if carte else None
+            if v:
+                suivi_valeur._maj(self, cid, reference=v, derniere=v, verifie_le=datetime.now().isoformat(timespec="seconds"))
+                c = self._db()
+                try:
+                    c.execute("UPDATE cartes SET valeur=? WHERE id=? AND valeur IS NULL", (v, cid))
+                    c.commit()
+                finally:
+                    c.close()
+        except Exception as e:
+            print("Suivi valeur (1re) : " + repr(e), flush=True)
+
+    # -- 29 oct 2026 (Mathieu : « une etoile pour l'enregistrer dans une watchlist ») --
+    def watch_ajouter(self, x):
+        import watchlist
+        return watchlist.ajouter(self, x)
+
+    def watch_retirer(self, item_id):
+        import watchlist
+        return watchlist.retirer(self, item_id)
+
+    def watch_liste(self):
+        import watchlist
+        return watchlist.liste(self)
+
+    def watch_proches(self):
+        """Boucle du serveur (5 min) : les encans suivis qui finissent bientot, relus sur eBay."""
+        import watchlist
+        return {"ok": True, "envoyees": watchlist.verifier(self, proches=True)}
 
     _TENDANCES = {"le": 0.0, "v": None}
 
@@ -3385,7 +3448,10 @@ class Api:
                      "patch": bool(d.get("patch")), "numerotee": d.get("serie") is not None, "gradee": bool(d.get("grade")),
                      "brute": not d.get("grade")}
                 # 28 oct 2026 (Mathieu : « encore que des rookies ») : veterans / legendes (pas une recrue) et hits
-                a["veteran"] = not a["recrue"] and "future watch" not in t
+                # 29 oct 2026 (« pas juste des rookies premiere annee ») : une RC vintage de legende ou une Young Guns de
+                # 2023-24 (joueur de 3e/4e annee) compte comme veteran / legende ; seulement les recrues de l'annee n'y sont pas
+                import deals as _dlr
+                a["veteran"] = not _dlr.recrue_recente(t, d.get("rc"), d.get("annee"))
                 a["hit"] = a["auto"] or a["patch"] or (d.get("serie") is not None and int(d["serie"]) <= 99)
                 if not all(a[s_] for s_ in sortes):
                     continue
@@ -3466,7 +3532,15 @@ class Api:
         return {"ok": True, "deals": lst[:240], "n": n, "pro": pro, "limite": None if pro else forfaits.LIMITES["deals"],
                 "pres": pres, "secours": secours, "secours_le": (dd.get("secours") or {}).get("le") if secours else None,
                 "sports": par_sport, "maj": dd.get("maj"), "ebay": ebay_compte.statut().get("cles_ok"),
-                "diag": _d.diagnostic(dd), "total": len(tout), "bassin": dd.get("bassin"), "nb_flux": len(_d.flux_liste())}
+                "diag": _d.diagnostic(dd), "total": len(tout), "bassin": dd.get("bassin"), "nb_flux": len(_d.flux_liste()),
+                "watch": self._watch_ids()}
+
+    def _watch_ids(self):
+        try:
+            import watchlist
+            return watchlist.ids(self)
+        except Exception:
+            return []
 
     def annonce_detail(self, item_id, titre=None, rapide=False, q=None):
         """26 oct 2026 (Mathieu : « beaucoup trop long à charger ») : l'ecran demande d'abord la version rapide

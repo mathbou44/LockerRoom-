@@ -22,6 +22,9 @@ RATIO_DEAL = 0.70
 RATIO_PRES = 0.85                # 27 oct 2026 : « a surveiller » = 70 a 85 % de la valeur (jamais affiche comme un deal)
 PAR_TOUR_ENCANS = 30             # 26 oct 2026 (Mathieu : « aucune enchere se terminant ? ») : 30 recherches d encans par heure
 VERSION = 4                      # 27 oct 2026 : valeur SURE (numeros speciaux, recence, coherence), vendeur, etat (v4)
+ENCAN_SUIVI_H = 120              # 29 oct 2026 (Mathieu : « deux jours avant les encheres, chez Savage, Remi, CF31, Slab Sharks,
+                                 # DC Sports… plusieurs cartes sont supposees sortir dans les deals ») : leurs encans de 5 jours et moins
+PAGES_SUIVIS = 10                # et jusqu'a 10 pages de 200 encans par groupe de vendeurs (2 000)
 ENCAN_H = 48                     # 26 oct 2026 (Mathieu : « tous les deals d'encheres de 48 h et moins ») ; avant : 6 h
 ENCAN_VERIF_H = 6                # une recherche de ventes ciblee pour un encan : seulement s'il finit dans 6 h (la mise monte)
 PAGES_ENCANS = 3                 # flux d'encans : jusqu'a 3 pages de 200 (les plus proches de la fin d'abord)
@@ -205,21 +208,43 @@ def requetes():
                 vus.add(q.lower())
                 ved.append({"q": q, "joueur": j, "sport": "hockey", "poids": float(dem.get(j) or 1.0), "vedette": True})
     mix, i, k = [], 0, 0
-    while i < len(uniq) or k < len(ved):         # 28 oct (« encore que des rookies ») : 1 vedette, 1 recrue, vedettes d'abord
-        if k < len(ved):
-            mix.append(ved[k])
-            k += 1
+    while i < len(uniq) or k < len(ved):         # 29 oct : 2 vedettes pour 1 recrue (les flux couvrent deja les recrues)
+        mix += ved[k:k + 2]
+        k += 2
         mix += uniq[i:i + 1]
         i += 1
-    return mix[:200]
+    return mix[:260]
 
 
 # 28 oct 2026 : veterans et legendes de la LNH dont les autos et patchs se vendent bien (noms seulement, rien d'autre)
-VEDETTES = ["Wayne Gretzky", "Mario Lemieux", "Sidney Crosby", "Connor McDavid", "Alex Ovechkin", "Patrick Roy", "Bobby Orr",
+_VEDETTES_28 = ["Wayne Gretzky", "Mario Lemieux", "Sidney Crosby", "Connor McDavid", "Alex Ovechkin", "Patrick Roy", "Bobby Orr",
             "Jaromir Jagr", "Steve Yzerman", "Joe Sakic", "Nathan MacKinnon", "Auston Matthews", "Cale Makar", "Carey Price",
             "Mark Messier", "Guy Lafleur", "Martin Brodeur", "Nikita Kucherov", "Leon Draisaitl", "Nicklas Lidstrom",
             "Gordie Howe", "Teemu Selanne", "Evgeni Malkin", "Jack Hughes", "Cole Caufield", "Nick Suzuki", "Mike Bossy",
             "Jean Beliveau", "Ray Bourque", "Marc-Andre Fleury"]
+# 29 oct 2026 (Mathieu : « des legendes puis des veterans aux deuxieme, troisieme, quatrieme annee ») : plus de legendes,
+# les vedettes d'aujourd'hui et les jeunes de 2e a 4e annee (plus des recrues de l'annee : les flux les couvrent deja)
+_LEGENDES_29 = ["Maurice Richard", "Bobby Hull", "Brett Hull", "Pavel Bure", "Peter Forsberg", "Ken Dryden", "Dominik Hasek",
+                "Eric Lindros", "Paul Kariya", "Phil Esposito", "Luc Robitaille", "Mats Sundin", "Henrik Lundqvist", "Patrick Kane",
+                "Jonathan Toews", "Marcel Dionne", "Bryan Trottier", "Denis Savard", "Pierre Turgeon", "Vincent Lecavalier"]
+_ETOILES_29 = ["Kirill Kaprizov", "Quinn Hughes", "David Pastrnak", "Jason Robertson", "Mitch Marner", "William Nylander",
+               "Igor Shesterkin", "Brady Tkachuk", "Matthew Tkachuk", "Jack Eichel", "Elias Pettersson", "Tim Stutzle"]
+_JEUNES_29 = ["Connor Bedard", "Macklin Celebrini", "Matvei Michkov", "Adam Fantilli", "Lane Hutson", "Leo Carlsson",
+              "Logan Cooley", "Cutter Gauthier", "Will Smith", "Luke Hughes", "Wyatt Johnston", "Juraj Slafkovsky",
+              "Mason McTavish", "Matty Beniers", "Moritz Seider", "Lucas Raymond", "Owen Power", "Shane Wright"]
+
+
+def _intercaler(*listes):
+    out, vus = [], set()
+    for k in range(max(len(x) for x in listes)):
+        for l in listes:
+            if k < len(l) and l[k].lower() not in vus:
+                vus.add(l[k].lower())
+                out.append(l[k])
+    return out
+
+
+VEDETTES = _intercaler(_VEDETTES_28, _JEUNES_29, _LEGENDES_29, _ETOILES_29)
 
 
 PORT_INCONNU = 15.0              # 27 oct 2026 : port non affiche (calcule a l'adresse) -> on compte 15 $ pour ne pas surestimer le deal
@@ -472,14 +497,30 @@ def _verificateur(d, st, bassin):
         q = (cartes_match.requete_ebay(cib) or "").strip()
         if not q or q in faites:
             return None
+        # 29 oct 2026 : une carte deja verifiee (ventes en cache, 3 jours) ne coute rien : jamais bloquee par le budget
+        # (avant : budget epuise = ses ventes connues ignorees, et le deal disparaissait au tour suivant)
+        deja = vendues.en_cache(q)
+        if deja is not None:
+            faites.add(q)
+            st["verifs_cache"] = st.get("verifs_cache", 0) + 1
+            bassin.ajouter(deja)
+            st["_dern_verif"] = {"q": q, "n": len(deja), "cache": True}
+            return deja
         if v["n"] >= max_ or v["n"] >= rythme:
             st["verif_budget"] = st.get("verif_budget", 0) + 1
             return None
         # 28 oct 2026 : 60 % du budget du jour est garde pour les hits (autos, patchs, /99) : les Young Guns ont deja
         # beaucoup de ventes connues, les hits de veterans et de legendes ont besoin de la verification
-        hit = _hit(cib)
+        hit = _precieuse(cib)               # 29 oct : une Gretzky OPC PSA 8 compte comme un hit (pas la part des cartes ordinaires)
         if not hit and v.get("n_std", 0) >= max_ * (1 - PART_HITS):
             st["verif_budget"] = st.get("verif_budget", 0) + 1
+            return None
+        # 29 oct 2026 (Mathieu : « encore juste des callistes de Young Guns et de Future Watch ») : une auto Future Watch
+        # est aussi un « hit » et mangeait le budget des hits. Les hits de RECRUES ont au plus 35 % du budget jusqu'a
+        # 18 h (Montreal) : la moitie du budget reste aux veterans et aux legendes ; le soir, ce qui reste va a tous
+        rec = hit and _recrue(cib)
+        if rec and heure < 18 and v.get("n_rh", 0) >= max_ * PART_HITS_RECRUES:
+            st["verif_budget_recrues"] = st.get("verif_budget_recrues", 0) + 1
             return None
         faites.add(q)
         r = vendues.rechercher(q, fond=True, usage="verif")
@@ -490,12 +531,58 @@ def _verificateur(d, st, bassin):
             v["n"] += 1
             if not hit:
                 v["n_std"] = v.get("n_std", 0) + 1
+            elif rec:
+                v["n_rh"] = v.get("n_rh", 0) + 1
         if hit:
             st["hits_verifies"] = st.get("hits_verifies", 0) + 1
+            if not rec:
+                st["vedettes_verifiees"] = st.get("vedettes_verifiees", 0) + 1
+        st["_dern_verif"] = {"q": q, "n": len(r.get("ventes") or []), "cache": bool(r.get("cache"))}
         st["verifs"] = st.get("verifs", 0) + 1
         bassin.ajouter(r.get("ventes"))
         return r.get("ventes") or []
     return f
+
+
+PART_HITS_RECRUES = 0.35         # 29 oct 2026 : hits de recrues (auto Future Watch, YG patch...) : 35 % du budget avant 18 h
+
+
+def saison_recrues():
+    """L'annee de depart la plus ancienne des recrues « de l'annee » : en oct. 2026, les produits 2025-26 et 2026-27."""
+    m = datetime.now()
+    return m.year - 1 if m.month >= 7 else m.year - 2
+
+
+def recrue_recente(texte, rc=False, annee=None):
+    """29 oct 2026 (Mathieu : « pas juste des rookies premiere annee ») : une RC de Lemieux 1985 ou une Young Guns de Bedard
+    2023-24 n'est plus une « recrue » : ce sont des legendes et des joueurs de 2e a 4e annee. Seulement les recrues de
+    l'annee (et les cartes de recrue sans annee)."""
+    t = " " + str(texte or "").lower() + " "
+    if not (rc or any(m in t for m in (" young guns", " future watch", " rookie", " rc ", " 1st "))):
+        return False
+    return annee is None or int(annee) >= saison_recrues()
+
+
+def _recrue(cib):
+    """Une carte de recrue de l'annee : pour garder le budget des veterans, des legendes et des jeunes de 2e a 4e annee."""
+    return recrue_recente(cib.get("texte"), cib.get("rc"), cib.get("annee"))
+
+
+_NOMS_VEDETTES = None
+
+
+def _precieuse(cib):
+    """29 oct 2026 : vaut une verification meme sans auto ni patch : un hit, une carte gradee d'avant 2015, une vintage
+    (avant 1995) ou une carte d'une vedette (veteran, legende, jeune de 2e a 4e annee)."""
+    global _NOMS_VEDETTES
+    if _hit(cib):
+        return True
+    an = cib.get("annee")
+    if an and (int(an) < 1995 or (cib.get("grade") and int(an) < 2015)):
+        return True
+    if _NOMS_VEDETTES is None:
+        _NOMS_VEDETTES = {n.lower() for n in VEDETTES}
+    return str(cib.get("joueur") or "").lower() in _NOMS_VEDETTES
 
 
 VERIF_TARD_H = 30                # 27 oct 2026 : un encan de hit qui finit dans 6 a 30 h est verifie a la fin du tour, s'il reste du budget
@@ -535,8 +622,33 @@ def vendeur_risque(a):
         return False
 
 
+JOURNAL_MAX = 200                # 29 oct 2026 : les dernieres verifications SoldComps (admin)
+
+
+def _noter_journal(st, a, r, cib, dv):
+    """29 oct 2026 (Mathieu : « je suis pas capable de voir ce que tu as cherche avec mes credits ») : chaque
+    verification SoldComps, sa carte, son prix et le resultat (deal, trop cher, pas assez de ventes)."""
+    res, ratio = st.pop("_res", (None, None))
+    st.setdefault("_journal", []).append({
+        "le": datetime.now(timezone.utc).isoformat(timespec="seconds"), "titre": str(a.get("titre") or "")[:140],
+        "total": _total(a), "url": a.get("url"), "encan": bool(a.get("encan")), "q": dv.get("q"), "ventes": dv.get("n", 0),
+        "cache": dv.get("cache", False), "res": res or "sans_ventes", "ratio": ratio,
+        "genre": "recrue" if _recrue(cib) else ("vedette" if _hit(cib) else "autre"),
+        "source": "joueur" if r.get("vedette") else ("vendeur" if r.get("suivi") else ("flux" if r.get("flux") else "joueur"))})
+
+
 def _juger(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=None, bassin=None, verif=None):
     """Une annonce : deal ou non (et pourquoi). Les memes regles pour le prix fixe, les encans et les flux."""
+    st.pop("_dern_verif", None)
+    st.pop("_res", None)
+    _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete, comps, bassin, verif)
+    dv = st.pop("_dern_verif", None)
+    if dv:
+        import cartes_match
+        _noter_journal(st, a, r, cartes_match.cible_titre(a.get("titre") or ""), dv)
+
+
+def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=None, bassin=None, verif=None):
     import cartes_match
     t = _total(a)
     if not t or a.get("item_id") in st.setdefault("_vus", set()):
@@ -548,7 +660,7 @@ def _juger(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=N
             fin_dt = datetime.fromisoformat(str(fin).replace("Z", "+00:00"))
         except ValueError:
             return
-        if fin_dt - maint > timedelta(hours=ENCAN_H) or fin_dt < maint:       # encan : seulement ceux qui finissent dans 48 h
+        if fin_dt - maint > timedelta(hours=ENCAN_SUIVI_H if r.get("suivi") else ENCAN_H) or fin_dt < maint:   # 48 h (vendeurs suivis : 5 jours)
             return
     cib = cartes_match.cible_titre(a.get("titre") or "")
     if cib.get("exclu") or not cib.get("joueur"):
@@ -576,7 +688,7 @@ def _juger(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=N
     # 28 oct 2026 (Mathieu : « les deals affichent toujours la meme cochonnerie » ; admin : 7 407 hits vus, 14 verifies) :
     # un hit avec 1 ou 2 ventes connues (pas assez pour une valeur sure) n'etait JAMAIS verifie ; maintenant oui
     peu_ventes = len(memes_ventes(cib, tout_v)) < 3
-    if not va and verif and a.get("encan") and t >= HIT_MIN and _hit(cib) and peu_ventes:
+    if not va and verif and a.get("encan") and t >= HIT_MIN and _precieuse(cib) and peu_ventes and not r.get("suivi"):
         try:
             if datetime.fromisoformat(str(fin).replace("Z", "+00:00")) - maint <= timedelta(hours=VERIF_TARD_H):
                 st.setdefault("_tard", []).append((a, r, cib))      # verifie a la fin du tour (budget restant)
@@ -586,42 +698,57 @@ def _juger(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=N
     # (auto, patch, /99) sans vente connue de sa carte etait toujours ecarte. Maintenant il est verifie en fin de tour
     # (apres les encans, avec le budget qui reste) s'il a l'air bas : 25 % sous les memes cartes en vente, ou une
     # vedette (veteran / legende) de 40 $ et plus.
-    elif not va and verif and r.get("suivi") and t >= HIT_MIN and peu_ventes:
+    elif not va and verif and r.get("suivi") and peu_ventes and (t >= HIT_MIN or (a.get("encan") and _precieuse(cib))):
+        # 29 oct 2026 : un encan d'un vendeur suivi a 2 jours de la fin a souvent une mise de 5 $ : c'est la carte qui compte
         st.setdefault("_tard", []).append((a, r, cib))           # 29 oct : vendeur suivi, toutes ses cartes de 25 $ et plus
-    elif not va and verif and not a.get("encan") and t >= HIT_MIN and _hit(cib) and peu_ventes:
+    elif not va and verif and not a.get("encan") and t >= HIT_MIN and _precieuse(cib) and peu_ventes:
         pa2 = [_total(x) for x in actives or [] if x.get("item_id") != a.get("item_id")
                and not cartes_match.raisons_refus(cib, x.get("titre") or "")]
         bas = bool(pa2) and t <= (cartes_match.mediane_robuste(pa2)[0] or 0) * 0.75
         if bas or (r.get("vedette") and t >= 40) or t >= 60:     # 28 oct : tout hit de 60 $ et plus (le budget est plus gros)
             st.setdefault("_tard", []).append((a, r, cib))
     if not va:
+        st["_res"] = ("sans_ventes", None)
         st["sans_ventes"] = st.get("sans_ventes", 0) + 1
         deals.pop(a["item_id"], None)                 # revue : plus un deal (encan dont la mise a monte...)
         return
     med_a, source_a, n_a, ventes_a = va
     if t > med_a * RATIO_DEAL:
+        st["_res"] = ("pres" if t <= med_a * RATIO_PRES and not a.get("encan") else "trop_cher", round(t / med_a, 3))
         st["trop_cher"] = st.get("trop_cher", 0) + 1
         deals.pop(a["item_id"], None)
         if t <= med_a * RATIO_PRES and not a.get("encan"):      # a surveiller : sous la valeur, pas encore un deal
             st.setdefault("_pres", {})[a["item_id"]] = {"item_id": a["item_id"], "titre": a["titre"], "total": t, "photo": a.get("photo"),
                                                          "url": a.get("url"), "valeur": med_a, "ratio": round(t / med_a, 3), "encan": False,
-                                                         "joueur": r.get("joueur"), "q": r.get("q"), "flux": r.get("flux"), "n": n_a,
+                                                         "joueur": r.get("joueur"), "q": _q_deal(r), "vedette": bool(r.get("vedette")), "flux": r.get("flux"), "n": n_a,
                                                          "vendues": ventes_a or [], "sport": r.get("sport") or "hockey",
                                                          "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION, "palier": "pres"}
         return
+    st["_res"] = ("deal", round(t / med_a, 3))
     st["deals"] = st.get("deals", 0) + 1
     if est_hit:
         st["hits_deals"] = st.get("hits_deals", 0) + 1
+        if not _recrue(cib):
+            st["vedettes_deals"] = st.get("vedettes_deals", 0) + 1
     import sports
     joueur = r.get("joueur") or " ".join(w.capitalize() for w in cib["joueur"].split())
     sport = r.get("sport") or sports.detecter(a.get("titre") or "", defaut="hockey")
     deals[a["item_id"]] = {"item_id": a["item_id"], "titre": a["titre"], "total": t, "photo": a.get("photo"), "url": a.get("url"),
                            "valeur": med_a, "ratio": round(t / med_a, 3), "encan": bool(a.get("encan")), "fin": fin,
-                           "mises": a.get("mises"), "sport": sport, "joueur": joueur, "q": r.get("q"), "flux": r.get("flux"),
+                           "mises": a.get("mises"), "sport": sport, "joueur": joueur, "q": _q_deal(r), "vedette": bool(r.get("vedette")), "flux": r.get("flux"),
                            "n": n_a, "valeur_source": source_a, "vendues": ventes_a or ventes_requete or [],
                            # 27 oct 2026 : encan - la mise maximale pour que ca reste un deal (70 % de la valeur, port compris)
                            "port": a.get("port_cad"), "mise_max": round(med_a * RATIO_DEAL - (a.get("port_cad") or 0), 2) if a.get("encan") else None,
                            "comps": comps or [], "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION}
+
+
+def _q_deal(r):
+    """29 oct 2026 (Mathieu : « on voit encore juste des Young Guns et des Future Watch ») : une recherche de vedette
+    (« Wayne Gretzky auto ») trouve TOUTES les cartes du joueur (patchs, /25, /99...). Le deal gardait cette requete, et
+    valide() comparait la carte a « Wayne Gretzky auto » : un patch ou une numerotee etait refuse a la sauvegarde. Tous les
+    deals de veterans et de legendes trouves par joueur etaient jetes. Le deal ne garde donc pas la requete d'une vedette
+    (comme les flux) : il est juge sur SA carte."""
+    return None if r.get("vedette") else r.get("q")
 
 
 def _ventes(q, cache_seul=False):
@@ -674,14 +801,20 @@ def _verifier_tard(st, deals, maint, bassin, verif):
     connues qui finissent dans 6 a 30 h, verifies a la fin du tour avec le budget qui reste, les plus proches de la fin d'abord."""
     tard = st.pop("_tard", [])
     # les encans d'abord (le plus proche de la fin), puis les prix fixes (le plus cher d'abord : plus de profit possible)
-    tard.sort(key=lambda x: (0, 0 if x[1].get("suivi") else 1, str(x[0].get("fin")), 0) if x[0].get("encan") else (1, 0 if x[1].get("suivi") else 1, "", -(_total(x[0]) or 0)))
+    # 29 oct 2026 : dans chaque groupe, les veterans et les legendes passent avant les recrues
+    tard.sort(key=lambda x: (0, 0 if x[1].get("suivi") else 1, 1 if _recrue(x[2]) else 0, 0 if _precieuse(x[2]) else 1, str(x[0].get("fin")), 0)
+              if x[0].get("encan") else (1, 0 if x[1].get("suivi") else 1, 1 if _recrue(x[2]) else 0, 0 if _precieuse(x[2]) else 1, "", -(_total(x[0]) or 0)))
     for a, r, cib in tard:
         avant = st.get("verif_budget", 0)
+        st.pop("_dern_verif", None)
         nv = verif(cib)
         if st.get("verif_budget", 0) > avant:
             break                                        # budget du jour epuise
+        dv = st.pop("_dern_verif", None)
         st["_vus"].discard(a.get("item_id"))
         _juger(a, r, nv or [], [], maint, deals, st, bassin=bassin, verif=None)
+        if dv:
+            _noter_journal(st, a, r, cib, dv)
 
 
 def _sauver(d, deals, maint, st, **champs):
@@ -690,6 +823,9 @@ def _sauver(d, deals, maint, st, **champs):
     st.pop("_tard", None)
     nouveaux_pres = st.pop("_pres", {})
     nouveaux_retires = st.pop("_retires", [])
+    journal = st.pop("_journal", [])
+    st.pop("_dern_verif", None)
+    st.pop("_res", None)
     with _verrou:
         d2 = lire()
         retires = _noter_retires(d2, nouveaux_retires)
@@ -707,6 +843,8 @@ def _sauver(d, deals, maint, st, **champs):
             d2["secours"]["deals"] = [x for x in d2["secours"].get("deals") or [] if str(x.get("item_id")) not in retires and encore_ouvert(x, maint)]
         if "verif" in d:
             d2["verif"] = d["verif"]
+        if journal:
+            d2["journal"] = ((d2.get("journal") or []) + journal)[-JOURNAL_MAX:]
         _diag(d2, **st)
         _ecrire(d2)
     return garde_
@@ -724,7 +862,7 @@ def _memes(r, annonces):
     return None, l, []
 
 
-def chasser(n=PAR_TOUR, rechercher=None, bassin=None):
+def chasser(n=PAR_TOUR, rechercher=None, bassin=None, vedettes=False):
     """Prix fixe : n requetes joueur (on reprend la ou on etait), les annonces les plus RECENTES d'abord (les bons prix
     partent vite) ; deals gardes 48 h."""
     import cartes_match
@@ -733,9 +871,12 @@ def chasser(n=PAR_TOUR, rechercher=None, bassin=None):
     bassin = bassin if bassin is not None else Bassin()
     d = lire()
     reqs = requetes()
+    cle = "curseur"
+    if vedettes:                                         # 29 oct 2026 : admin « Chasser veterans et legendes maintenant »
+        reqs, cle = [r for r in reqs if r.get("vedette")], "curseur_v"
     if not reqs:
         return {"ok": True, "deals": 0}
-    i0 = int(d.get("curseur") or 0) % len(reqs)
+    i0 = int(d.get(cle) or 0) % len(reqs)
     lot = (reqs[i0:] + reqs[:i0])[:n]
     maint = datetime.now(timezone.utc)
     deals = {x["item_id"]: x for x in d.get("deals") or []}
@@ -762,11 +903,11 @@ def chasser(n=PAR_TOUR, rechercher=None, bassin=None):
         for a in memes:
             _juger(a, r, brut_v, memes, maint, deals, st, comps=comps, bassin=bassin, verif=verif)
     _verifier_tard(st, deals, maint, bassin, verif)          # 29 oct : les hits a prix fixe des vedettes aussi
-    garde_ = _sauver(d, deals, maint, st, curseur=(i0 + len(lot)) % len(reqs), maj=maint.isoformat(timespec="seconds"))
+    garde_ = _sauver(d, deals, maint, st, **{cle: (i0 + len(lot)) % len(reqs)}, maj=maint.isoformat(timespec="seconds"))
     return {"ok": True, "deals": len(garde_), "nouveaux": st.get("deals", 0), "stats": st}
 
 
-def encans(n=PAR_TOUR_ENCANS, rechercher=None, bassin=None):
+def encans(n=PAR_TOUR_ENCANS, rechercher=None, bassin=None, vedettes=False):
     """26 oct 2026 (Mathieu : « aucune enchere se terminant ? ») : chaque heure, n recherches d'ENCANS (ceux qui finissent
     le plus tot, 48 h et moins) : toute la liste en 3 h. La valeur vient des ventes
     deja connues (le bassin) et, pour un encan prometteur qui finit dans 3 h, d'une recherche ciblee."""
@@ -776,9 +917,12 @@ def encans(n=PAR_TOUR_ENCANS, rechercher=None, bassin=None):
     bassin = bassin if bassin is not None else Bassin()
     d = lire()
     reqs = requetes()
+    cle = "curseur_e"
+    if vedettes:
+        reqs, cle = [r for r in reqs if r.get("vedette")], "curseur_ev"
     if not reqs:
         return {"ok": True}
-    i0 = int(d.get("curseur_e") or 0) % len(reqs)
+    i0 = int(d.get(cle) or 0) % len(reqs)
     lot = (reqs[i0:] + reqs[:i0])[:n]
     maint = datetime.now(timezone.utc)
     deals = {x["item_id"]: x for x in d.get("deals") or []}
@@ -798,7 +942,7 @@ def encans(n=PAR_TOUR_ENCANS, rechercher=None, bassin=None):
         for a in memes_e:
             _juger(a, r, brut_v or [], [], maint, deals, st, bassin=bassin, verif=verif)
     _verifier_tard(st, deals, maint, bassin, verif)
-    garde_ = _sauver(d, deals, maint, st, curseur_e=(i0 + len(lot)) % len(reqs))
+    garde_ = _sauver(d, deals, maint, st, **{cle: (i0 + len(lot)) % len(reqs)})
     return {"ok": True, "deals": len(garde_), "stats": st}
 
 
@@ -892,10 +1036,11 @@ def flux(rechercher=None, bassin=None):
     hits, curseur_h = flux_hits(d.get("curseur_h"))
     # 29 oct : les vendeurs suivis d'abord (leurs encans et leurs nouvelles annonces), par groupes de 10 vendeurs par appel
     vs = vendeurs_suivis()
+    limite_suivi = (maint + timedelta(hours=ENCAN_SUIVI_H)).isoformat().replace("+00:00", "Z")
     for k in range(0, len(vs), VENDEURS_PAR_APPEL):
         grp = vs[k:k + VENDEURS_PAR_APPEL]
         rv = {"q": None, "flux": "vendeurs", "sport": None, "joueur": None, "suivi": True}
-        for ench, page in [(False, 0)] + [(True, j) for j in range(pages)]:
+        for ench, page in [(False, 0)] + [(True, j) for j in range(max(pages, PAGES_SUIVIS))]:
             try:
                 l = rechercher("", categorie="261328", limite=200, fond=True, encheres=ench, recentes=not ench, flux=True, offset=200 * page, vendeurs=grp)
             except (RuntimeError, OSError, TypeError):
@@ -906,7 +1051,7 @@ def flux(rechercher=None, bassin=None):
             l = [a for a in l if cartes_match.est_carte(a.get("titre") or "")]
             for a in l:
                 _juger(a, rv, [], [] if ench else l, maint, deals, st, bassin=bassin, verif=verif)
-            if ench and (len(l) < 150 or not l or str(l[-1].get("fin") or "9") > limite_fin):
+            if ench and (len(l) < 150 or not l or str(l[-1].get("fin") or "9") > limite_suivi):
                 break
     # 28 oct 2026 (Mathieu : « les maudits deals sont encore juste des Young Guns ») : les flux larges de recrues (Young
     # Guns, rookies) un tour sur deux seulement ; les appels eBay economises vont aux hits (2 fois plus de flux de hits)
@@ -996,6 +1141,49 @@ def recharger():
     return {"ok": True, "lance": bool(chasser_si_besoin(force=True))}
 
 
+VEDETTES_PAR_CHASSE = 40         # 29 oct 2026 : admin « Chasser veterans maintenant » : 40 recherches prix fixe + 40 encans
+
+
+def chasser_vedettes():
+    """29 oct 2026 (Mathieu : « depuis le debut de la journee je te demande des legendes et des veterans ») : un tour
+    seulement pour les veterans, les legendes et les jeunes de 2e a 4e annee, tout de suite (admin). Le budget du jour
+    (eBay et SoldComps) tient toujours."""
+    import appels_ebay
+    with _verrou:
+        if _ETAT["en_cours"]:
+            return {"ok": True, "deja": True}
+        _ETAT["en_cours"] = True
+        _ETAT["essai_le"] = time.time()
+    appels_ebay.liberer(900)
+
+    def tache():
+        try:
+            b = Bassin()
+            for f in (chasser, encans):
+                try:
+                    f(VEDETTES_PAR_CHASSE, bassin=b, vedettes=True)
+                except Exception as e:
+                    print("Deals (vedettes) : " + repr(e), flush=True)
+        finally:
+            _ETAT["en_cours"] = False
+    threading.Thread(target=tache, daemon=True, name="deals-vedettes").start()
+    return {"ok": True, "lance": True}
+
+
+def journal(n=80):
+    """Les dernieres verifications SoldComps (la plus recente d'abord) et le bilan des 24 dernieres heures."""
+    l = list(lire_vite().get("journal") or [])
+    lim = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+    b = {}
+    for x in l:
+        if str(x.get("le") or "") < lim:
+            continue
+        g = b.setdefault(x.get("genre") or "autre", {"verifiees": 0, "deals": 0, "pres": 0, "trop_cher": 0, "sans_ventes": 0})
+        g["verifiees"] += 1
+        g[x.get("res") if x.get("res") in g else "sans_ventes"] += 1
+    return {"lignes": l[::-1][:n], "bilan": b}
+
+
 def etat():
     """Pour l'admin : ou en est le chasseur (deals affiches, budget eBay et budget de verification du jour)."""
     import appels_ebay
@@ -1016,7 +1204,9 @@ def etat():
     return {"ok": True, "en_cours": _ETAT["en_cours"], "maj": d.get("maj"), "repartition": rep,
             "hits_24h": {"vus": g.get("hits_vus", 0), "verifies": g.get("hits_verifies", 0), "deals": g.get("hits_deals", 0),
                          "refus_budget": g.get("verif_budget", 0), "erreurs_ventes": g.get("erreurs_ventes", 0), "sans_ventes": g.get("sans_ventes", 0)},
-            "soldcomps": _etat_soldcomps(),
+            "soldcomps": _etat_soldcomps(), "journal": journal(),
+            "vedettes_24h": {"verifiees": g.get("vedettes_verifiees", 0), "deals": g.get("vedettes_deals", 0),
+                             "refus_recrues": g.get("verif_budget_recrues", 0)},
             "deals": sum(1 for x in d.get("deals") or [] if valide(x) and encore_ouvert(x)),
             "ebay": utilises_ebay(), "ebay_rythme": round(appels_ebay.rythme("browse")),
             "ebay_plafond": round(appels_ebay.limite("browse") * (1 - appels_ebay.RESERVE_GESTES)),
@@ -1043,11 +1233,11 @@ def _sorte(titre):
     s = c.get("serie")
     if c.get("auto") or c.get("patch") or (s is not None and int(s) <= 99):
         return "hits"
+    if not recrue_recente(t, c.get("rc"), c.get("annee")):
+        return "veterans"                # 29 oct : legendes (RC vintage) et joueurs de 2e a 4e annee
     if "young guns" in t:
         return "young_guns"
-    if c.get("rc") or "rookie" in t or "future watch" in t:
-        return "recrues"
-    return "veterans"
+    return "recrues"
 
 
 def melanger(lst, ratio=2):
