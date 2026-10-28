@@ -2109,7 +2109,9 @@ const roue = '<div class="charge"><div class="roue"></div></div>';
 // 27 oct 2026 - logo SC1 (Mathieu : « parfait ») : le C refractor fait l'anneau, S ivoire au centre.
 // Le refractor change au hasard a chaque ouverture : Prizm, Cracked Ice, Laser, Mosaic, Mojo, Wave, Pulsar.
 const MOTIFS_SC = ['prizm', 'cracked', 'laser', 'mosaic', 'mojo', 'wave', 'pulsar'];
-const LOGO_SC = `/logo_sc_${MOTIFS_SC[Math.floor(Math.random() * MOTIFS_SC.length)]}.svg`;
+// 28 oct 2026 (Mathieu : « pas de blanc saccadé, un film plus fluide qui bouge lentement, comme le tour d'une carte
+// refractor ») : un seul motif, un film holographique liquide (couleurs fondues qui tournent lentement dans le C)
+const LOGO_SC = '/logo_sc_holo.svg';
 const MOT_SC = '<span class="mot-sc" role="img" aria-label="SlabCoach"><b>slab</b>coach<sup>™</sup><span class="sc-tag">SPORTS CARDS</span></span>';
 function htmlPiece(){ return `<img src="${LOGO_SC}" alt="">`; }
 function piecesNiveau(){ document.querySelectorAll('.piece-sc').forEach(el => el.style.setProperty('--masque', 'url(/logo_sc_gold_poli.png)')); }
