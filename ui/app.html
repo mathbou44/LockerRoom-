@@ -1076,6 +1076,14 @@ body.scan-ouvert{overflow:hidden}
 .scan-res{position:absolute; left:0; right:0; bottom:0; z-index:3; max-height:68vh; overflow:auto; padding:18px 16px calc(env(safe-area-inset-bottom) + 16px);
   background:var(--fond, #0B0B0E); border-radius:22px 22px 0 0; display:flex; flex-direction:column; gap:12px; transform:translateY(100%); transition:transform .35s cubic-bezier(.3,.8,.25,1)}
 .scan-res.ouvert{transform:none}
+.scan-analyse{position:absolute; inset:0; z-index:4; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+  background:rgba(8,8,11,.55); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); animation:lr-entre .2s ease-out}
+.scan-analyse .roue.grande{width:64px; height:64px} .scan-analyse b{font-size:20px} .scan-analyse small{color:rgba(255,255,255,.75)}
+.scan-tete{flex-direction:row; gap:14px; align-items:flex-start; margin-bottom:12px; animation:lr-entre .25s ease-out}
+.scan-tete img{width:112px; aspect-ratio:1; object-fit:contain; border-radius:12px; background:#EDEDEA; flex-shrink:0}
+.st-c{display:flex; flex-direction:column; gap:6px; min-width:0} .st-c > b{font-size:20px} .st-c > span{color:var(--doux); font-size:13.5px}
+.st-v{display:flex; align-items:baseline; gap:8px} .st-v small{color:var(--doux)} .st-v b{font:700 26px var(--f-cond); color:var(--vert)}
+.st-c .lien-doux{display:inline-flex; align-items:center; gap:6px; font-size:14px} .st-c .lien-doux svg{width:17px; height:17px}
 .sr-tete b{display:block; font-size:22px} .sr-tete span{color:var(--doux); font-size:14px}
 .sr-chiffre{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap} .sr-chiffre span{color:var(--doux)} .sr-chiffre b{font:700 32px var(--f-cond)} .sr-chiffre small{color:var(--doux)}
 .sr-bas{display:flex; gap:10px} .sr-bas > *{flex:1}
@@ -2024,10 +2032,17 @@ function noterRecette(nom, corps){
   l.push([nom, corps]); if (l.length > 8) l.shift();
   try { localStorage.setItem('lr_recettes', JSON.stringify(RECETTES)); } catch (e) {}
 }
-async function appelServeur(nom, corps){
+async function appelServeur(nom, corps, essai2){
   let r;
   try { r = await fetch('/api/' + nom, {method:'POST', headers:{'Content-Type':'application/json'}, body:corps}); }
-  catch (e) { throw new Error('Serveur injoignable'); }
+  catch (e) {
+    // 28 oct 2026 (« Server unreachable » sur la valeur) : une lecture se refait seule une fois apres 2 s
+    if (!essai2 && (LECTURES.has(nom) || SANS_EFFET.has(nom))) { await new Promise(x => setTimeout(x, 2000)); return appelServeur(nom, corps, true); }
+    throw new Error(tt('Serveur injoignable : vérifie ta connexion', 'Server unreachable: check your connection'));
+  }
+  if (!essai2 && [502, 503, 504].includes(r.status) && (LECTURES.has(nom) || SANS_EFFET.has(nom))) {     // redemarrage (mise a jour)
+    await new Promise(x => setTimeout(x, 2500)); return appelServeur(nom, corps, true);
+  }
   if (r.status === 401) { location.href = '/connexion'; throw new Error(tt('Connexion requise', 'Sign-in required')); }
   if (!r.ok) { const e = await r.json().catch(() => ({erreur:r.statusText})); throw new Error(e.erreur || 'Erreur serveur'); }
   return r.json();
@@ -4709,23 +4724,30 @@ async function scanCapturer(manuel){
   if (SCAN.opts.but === 'photo') { SCAN.etat = 'fige'; scanFiger(ph); SCAN.ph = ph; const st = await scanStudio(ph); return scanConfirmerPhoto(st || ph); }
   if (!manuel && SCAN.essais >= 3) { scanAide(tt('Pas reconnue : appuie sur le bouton ou cherche par son nom', 'Not recognized: tap the button or search by name'), 'or'); return; }
   SCAN.etat = 'lecture'; SCAN.essais++;
-  $('#scan-cadre').classList.add('lit'); scanAide(tt('Lecture de la carte…', 'Reading the card…'), 'vert');
+  // 28 oct 2026 (Mathieu : « je dois tenir mon appareil longtemps ») : la photo est prise, l'ecran fige tout de suite sur
+  // elle avec le logo qui charge : on peut poser le telephone pendant l'analyse
+  scanFiger(ph, false);
+  $('#scan').insertAdjacentHTML('beforeend', `<div class="scan-analyse" id="scan-an"><span class="roue grande"></span><b>${tt('Analyse de la carte…', 'Analyzing the card…')}</b><small>${tt('Tu peux poser ton téléphone', 'You can put your phone down')}</small></div>`);
+  scanAide(tt('Photo prise', 'Photo taken'), 'vert');
   const r = await API.photo_identifier([ph]).catch(e => ({ok:false, erreur:e.message}));
   if (!SCAN.actif) return;
-  $('#scan-cadre').classList.remove('lit');
+  const an = $('#scan-an'); if (an) an.remove();
   const c = (r && r.champs) || {};
   const q = [c.annee, c.joueur, c.set_nom && !/young guns/i.test(c.parallele || '') ? c.set_nom : '', c.parallele, c.tirage ? '/' + c.tirage : '', c.auto ? 'auto' : '', c.grade || '']
     .filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
   if (!r || !r.ok || !q) {
     if (r && r.detail && r.detail.code) toast('Admin · Anthropic HTTP ' + r.detail.code + ' : ' + (r.detail.detail || '').slice(0, 160), 9000);
+    scanRecommencer();
     scanAide((r && r.erreur) || tt('Carte pas reconnue : rapproche-toi, sans reflet', 'Card not recognized: closer, no glare'), 'or');
-    SCAN.t = setTimeout(() => { if (!SCAN.actif) return; SCAN.etat = 'cherche'; SCAN.stable = 0; SCAN.debut = Date.now(); }, 2600);
     return;
   }
+  // trouvee : la photo arrangee (studio), puis l'ecran tombe sur l'analyse complete de la carte (valeur, ventes, comps)
   SCAN.etat = 'trouve'; SCAN.ph = ph; SCAN.champs = c; SCAN.q = q;
-  scanFiger(ph, true);
-  scanResultat(c, q);
-  scanStudio(ph, ((r.photos || [])[0] || {}).coins);
+  scanAide(tt('Trouvée !', 'Found!'), 'vert');
+  const studio = await scanStudio(ph, ((r.photos || [])[0] || {}).coins);
+  S.scanRes = {q, champs: c, ph, studio, but: SCAN.opts.but || 'valeur'};
+  scanFermer();
+  location.hash = '#valeur/' + encodeURIComponent(q);
 }
 // 28 oct 2026 (Mathieu : « l'app arrange la photo pour qu'elle soit parfaite, pour une annonce ou pour une super photo
 // en collection ») : la carte est detouree sur ses vrais bords, redressee et posee sur le fond studio (comme les annonces).
@@ -4857,6 +4879,27 @@ async function vueValeur(arg){
         x: `<button class="x" title="${esc(tt('Pas la bonne carte', 'Not the right card'))}" aria-label="${esc(tt('Pas la bonne carte', 'Not the right card'))}" data-refus="${esc(x.item_id)}" data-titre="${esc(x.titre)}">✕</button>`,
         droite: x.gain > 0 ? capsule('+' + argentCourt(x.gain), x.deal ? 'vert petit' : 'petit') : ''})).join('')}</div>
       <div class="sous" style="margin:10px 0">${tt('Prix + port des annonces à prix fixe actives de la même carte. ✕ sur une annonce qui n’est pas la bonne carte : l’app l’écarte et apprend.', 'Price + shipping of active fixed-price listings of the same card. ✕ on a listing that isn’t the right card: the app sets it aside and learns.')}</div>${ecart}`;
+  }
+  // 28 oct 2026 : venue du scanner : la photo prise et ce que l'app a lu, en tete, avec « Ajouter a ma collection »
+  const sr = S.scanRes && S.scanRes.q === q ? S.scanRes : null;
+  if (sr) {
+    const c = sr.champs || {}, det = [c.annee, c.set_nom, c.parallele, c.numero ? '#' + c.numero : '', c.tirage ? '/' + c.tirage : '', c.auto ? 'Auto' : '', c.grade].filter(Boolean).join(' · ');
+    z.insertAdjacentHTML('afterbegin', `<div class="bloc scan-tete"><img src="${esc(sr.studio || sr.ph)}" alt="">
+      <div class="st-c"><b>${esc(c.joueur || tt('Carte', 'Card'))}</b><span>${esc(det)}</span>
+        ${r.valeur ? `<div class="st-v"><small>${tt('Vaut', 'Worth')}</small><b>${argent(r.valeur, 0)}</b></div>` : ''}
+        <button class="btn petit" id="st-garder">${tt('Ajouter à ma collection', 'Add to my collection')}</button>
+        <button class="lien-doux" id="st-autre">${ICONES.photo} ${tt('Scanner une autre carte', 'Scan another card')}</button></div></div>`);
+    $('#st-autre', z).onclick = () => ouvrirScanner({but: sr.but});
+    $('#st-garder', z).onclick = async () => {
+      const b = $('#st-garder', z); b.disabled = true; b.textContent = tt('Ajout…', 'Adding…');
+      const p = await API.annonce_preparer(c, typeof LANGUE !== 'undefined' ? LANGUE : 'fr').catch(() => ({ok:false}));
+      const g = await API.carte_garder({carte:{...c, emplacement:'Collection', valeur: r.valeur || (p && p.ok && p.prix ? p.prix.marche : null)},
+        titre:(p && p.ok && p.titre) || c.titre || '', prix:null, photos: sr.studio ? [sr.studio, sr.ph] : [sr.ph]}).catch(e => ({ok:false, erreur:e.message}));
+      if (!g || !g.ok) { b.disabled = false; b.textContent = tt('Ajouter à ma collection', 'Add to my collection'); toast((g && g.erreur) || tt('Erreur', 'Error'), 5000); return; }
+      b.outerHTML = `<a class="btn petit" href="#inventaire" id="st-voir">✓ ${tt('Dans ta collection · voir', 'In your collection · view')}</a>`;
+      $('#st-voir', z).onclick = () => { S.filtreInv = 'collection'; };
+      S.scanRes = null;
+    };
   }
   const va = $('#v-alerte', z); if (va) va.onclick = () => feuilleAlerte(q, r.valeur ? Math.round(r.valeur * 0.8) : '');
   $$('[data-refus]', z).forEach(b => b.onclick = async (e) => {
