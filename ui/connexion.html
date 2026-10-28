@@ -115,7 +115,35 @@ main{position:relative; min-height:100%; display:grid; place-items:center}
   <div class="note">Aucun mot de passe dans l’app · ton compte est créé tout seul</div>
   <div class="liens"><a href="/">‹ Retour au site</a><a href="/support">Support</a><a href="/confidentialite">Confidentialité</a><a href="/conditions">Conditions</a></div>
 </div></main>
-<script>if(/LockerRoomiOS/.test(navigator.userAgent)){var n=document.getElementById("note-ios");if(n)n.hidden=false;}</script>
+<script>
+/* 28 oct 2026 : dans l'app iPhone (version qui le permet), eBay, Apple et Google s'ouvrent dans le navigateur securise
+   d'iOS : Google y fonctionne (il refuse les vues web integrees), « Continuer avec Google » d'eBay aussi. Au retour,
+   slabcoachauth://retour?b=... ramene un billet a usage unique, echange ici contre la session avec le secret de l'app. */
+(function () {
+  var ua = navigator.userAgent, C = window.Capacitor, P = C && C.Plugins;
+  var flux = /SlabCoachAuth/.test(ua) && P && P.Browser && P.App;
+  if (/LockerRoomiOS/.test(ua) && !flux) { var n = document.getElementById("note-ios"); if (n) n.hidden = false; }
+  if (!flux) return;
+  function b64(a) { return btoa(String.fromCharCode.apply(null, a)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+  async function hex(t) { var d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)); return Array.from(new Uint8Array(d)).map(function (x) { return x.toString(16).padStart(2, "0"); }).join(""); }
+  function retour(url) {
+    var m = /^slabcoachauth:\/\/retour\?b=([\w-]+)/.exec(url || ""); if (!m) return;
+    var v = ""; try { v = localStorage.getItem("sc_v") || ""; localStorage.removeItem("sc_v"); } catch (e) {}
+    try { P.Browser.close(); } catch (e) {}
+    location.href = "/auth/terminer?b=" + m[1] + "&v=" + encodeURIComponent(v);
+  }
+  P.App.addListener("appUrlOpen", function (e) { retour(e && e.url); });
+  if (P.App.getLaunchUrl) P.App.getLaunchUrl().then(function (r) { if (r && r.url) retour(r.url); }).catch(function () {});
+  document.addEventListener("click", async function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="/auth/"]'); if (!a) return;
+    e.preventDefault();
+    var r = new Uint8Array(32); crypto.getRandomValues(r); var v = b64(r);
+    try { localStorage.setItem("sc_v", v); } catch (x) {}
+    var h = await hex(v), u = location.origin + a.getAttribute("href");
+    P.Browser.open({ url: u + (u.indexOf("?") < 0 ? "?" : "&") + "app=" + h, presentationStyle: "popover", toolbarColor: "#0B0B0E" });
+  }, true);
+})();
+</script>
 <script>(function(){var m=["prizm","cracked","laser","mosaic","mojo","wave","pulsar"];document.getElementById("logo-sc").src="/logo_sc_"+m[Math.floor(Math.random()*m.length)]+".svg"})()</script>
 </body>
 </html>

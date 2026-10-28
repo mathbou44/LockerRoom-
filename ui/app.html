@@ -1400,6 +1400,56 @@ body.pro .onglets a.on{color:var(--acc)}
 .of-l .btn.petit{width:auto; height:42px; padding:0 16px; font-size:15px}
 .of-l.fait{color:var(--vert); background:var(--vert-fond); border-color:var(--vert); font-weight:600}
 .champ-l{display:flex; flex-direction:column; gap:6px; font-size:13px; color:var(--doux)}
+
+/* 28 oct 2026 (Mathieu : « le derriere de l'app avec la mosaique : plutot un style refractor, noir et blanc, subtil ») :
+   le fond = des rayons de refractor en gris tres doux + deux halos, plus de logo en mosaique */
+#mosaique{inset:0 !important; transform:none !important; opacity:1 !important; background-repeat:no-repeat !important; background-size:auto !important;
+  background-image:
+    radial-gradient(1100px 680px at 82% -12%, rgba(255,255,255,.05), transparent 62%),
+    radial-gradient(900px 620px at -6% 108%, rgba(255,255,255,.035), transparent 60%),
+    repeating-conic-gradient(from 8deg at 76% -8%, rgba(255,255,255,.022) 0deg 1.2deg, transparent 1.2deg 4.5deg),
+    repeating-linear-gradient(118deg, rgba(255,255,255,.012) 0 1px, transparent 1px 7px) !important}
+body.pro #mosaique{background-image:
+    radial-gradient(1100px 680px at 82% -12%, rgba(255,255,255,.06), transparent 62%),
+    radial-gradient(900px 620px at -6% 108%, rgba(255,255,255,.04), transparent 60%),
+    repeating-conic-gradient(from 8deg at 76% -8%, rgba(255,255,255,.028) 0deg 1.2deg, transparent 1.2deg 4.5deg),
+    repeating-linear-gradient(118deg, rgba(255,255,255,.014) 0 1px, transparent 1px 7px) !important}
+#mosaique::after{content:''; position:absolute; inset:0; background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.025) 46%, transparent 62%);
+  background-size:260% 100%; animation:sc-reflet 14s ease-in-out infinite}
+@keyframes sc-reflet{0%,100%{background-position:100% 0} 50%{background-position:0 0}}
+@media (prefers-reduced-motion:reduce){ #mosaique::after{animation:none} }
+
+/* 28 oct 2026 (Mathieu : « le style simple d'Instagram : le menu a gauche apparait quand tu survoles la fleche,
+   avec une legere barre de selection ») : sur ordi, une barre d'icones ; au survol elle s'ouvre par-dessus la page */
+@media (min-width:900px) and (hover:hover){
+  body{padding-left:76px !important}
+  .fond-feuille{padding-left:76px !important}
+  #toast{left:calc(50% + 38px) !important}
+  .onglets{width:76px !important; padding:22px 12px !important; overflow:hidden; z-index:40;
+    transition:width .22s cubic-bezier(.2,.7,.2,1), box-shadow .22s; background:rgba(11,11,14,.98) !important}
+  .onglets:hover, .onglets:focus-within{width:236px !important; box-shadow:18px 0 48px rgba(0,0,0,.55)}
+  .onglets > a{white-space:nowrap; padding:11px 15px !important; border-radius:12px !important; transition:background .15s, color .15s}
+  .onglets > a svg{flex:none; color:var(--doux); transition:color .15s, transform .15s}
+  .onglets > a:hover{background:rgba(255,255,255,.06) !important; color:var(--texte)}
+  .onglets > a:hover svg{color:var(--texte); transform:scale(1.06)}
+  .onglets > a.on{background:rgba(255,255,255,.08) !important; color:var(--texte); font-weight:700}
+  .onglets > a.on svg{color:var(--acc)}
+  .onglets > a.on::before{display:none !important}
+  /* fermee : les mots s'effacent, les icones restent */
+  .onglets:not(:hover):not(:focus-within) > a{color:transparent !important}
+  .onglets:not(:hover):not(:focus-within) .nav-admin svg{color:var(--or)}
+  .onglets:not(:hover):not(:focus-within) .pastille{position:absolute !important; left:34px; top:5px; transform:scale(.82); margin:0}
+  .onglets:not(:hover):not(:focus-within) #nav-logo-nom,
+  .onglets:not(:hover):not(:focus-within) .nav-mode,
+  .onglets:not(:hover):not(:focus-within) .nav-pref{opacity:0; pointer-events:none}
+  #nav-logo-nom, .nav-mode, .nav-pref{transition:opacity .18s; min-width:188px}
+  .onglets .nav-logo{padding:2px 6px 24px !important}
+  .onglets .nav-mode{padding:0 0 14px !important}
+  /* la fleche, au bord : elle tourne quand le menu s'ouvre */
+  .onglets::after{content:''; position:absolute; top:50%; right:10px; width:8px; height:8px; margin-top:-4px;
+    border-right:2px solid var(--pale); border-bottom:2px solid var(--pale); transform:rotate(-45deg); opacity:.7; transition:transform .22s, opacity .2s}
+  .onglets:hover::after, .onglets:focus-within::after{transform:rotate(135deg); opacity:.35}
+}
 /* I18N CSS DEBUT - pastille Langue / Devise */
 .pref{display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 11px 0 4px; border-radius:999px; border:1px solid rgba(255,255,255,.14);
   background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.04)); color:var(--texte); font:700 12.5px/1 inherit; font-family:inherit; white-space:nowrap; cursor:pointer; flex-shrink:0}

@@ -140,6 +140,7 @@ def auth_ebay():
     r = api.ebay_url_connexion()
     if not r.get("ok"):
         return redirect("/connexion?erreur=1")
+    _noter_app(r["url"])
     return _lier_navigateur(redirect(r["url"]), r["url"])
 
 
@@ -168,6 +169,55 @@ def _lier_navigateur(reponse, url):
     return reponse
 
 
+# 28 oct 2026 (Mathieu : « ca doit marcher avec Google, eBay, Apple ») : dans l'app iPhone, la connexion s'ouvre dans le
+# navigateur securise d'iOS (Google refuse les vues web integrees, et « Continuer avec Google » d'eBay aussi). Au retour,
+# pas de session dans ce navigateur : un billet a usage unique revient a l'app par slabcoachauth://retour, et l'app
+# l'echange contre sa session. Le billet ne sert qu'avec le secret que l'app a garde (son empreinte part au depart).
+_APP_ETATS = {}
+SCHEMA_APP = "slabcoachauth://retour"
+
+
+def _noter_app(url):
+    import re
+    import time
+    import urllib.parse
+    h = (request.args.get("app") or "").strip().lower()
+    if not re.fullmatch(r"[0-9a-f]{64}", h):
+        return
+    etat = (urllib.parse.parse_qs(urllib.parse.urlparse(url).query).get("state") or [""])[0]
+    if etat:
+        for k in [k for k, v in _APP_ETATS.items() if time.time() - v[1] > 900]:
+            _APP_ETATS.pop(k, None)
+        _APP_ETATS[etat] = (h, time.time())
+
+
+def _billet(cid, cible, etat):
+    """Ouvre la session ici (navigateur normal) ou, pour l'app iPhone, prepare le billet. -> reponse Flask."""
+    from flask import redirect, session
+    import secrets as _s
+    import time as _t
+    app_h = (_APP_ETATS.pop(etat, None) or (None,))[0] if etat else None
+    for k in [k for k, v in _BILLETS.items() if _t.time() - v[2] > 120]:
+        _BILLETS.pop(k, None)
+    b = _s.token_urlsafe(32)
+    if app_h:
+        _BILLETS[b] = (cid, cible, _t.time(), "", app_h)
+        dest = SCHEMA_APP + "?b=" + b
+        return (f"<!doctype html><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
+                f"<body style='margin:0;background:#0B0B0E;color:#F4F2EE;font-family:-apple-system,sans-serif;display:grid;place-items:center;height:100vh'>"
+                f"<a href='{dest}' style='padding:16px 26px;border-radius:14px;background:#B9BEFF;color:#0E1026;font-weight:700;text-decoration:none'>"
+                f"Revenir à SlabCoach</a><script>location.replace({json.dumps(dest)})</script>", 200, {"Content-Type": "text/html; charset=utf-8"})
+    if request.method == "GET":
+        session.permanent = True
+        session["compte"] = cid
+        return redirect(cible)
+    _BILLETS[b] = (cid, cible, _t.time(), request.cookies.get(_TEMOIN_LIEN) or "", None)
+    suite = "/auth/terminer?b=" + b
+    return (f"<!doctype html><meta charset='utf-8'><meta name='referrer' content='no-referrer'>"
+            f"<meta http-equiv='refresh' content='0;url={suite}'>"
+            f"<script>location.replace({json.dumps(suite)})</script>", 200, {"Content-Type": "text/html; charset=utf-8"})
+
+
 def _navigateur_lie(etat):
     import hmac
     if not comptes.MULTI:                    # sur le PC du vendeur : un seul utilisateur
@@ -186,6 +236,7 @@ def auth_tiers(fournisseur):
         u = at.url_connexion(fournisseur, _base_publique())
     except RuntimeError:
         return redirect("/connexion?erreur=2")
+    _noter_app(u)
     return _lier_navigateur(redirect(u), u)
 
 
@@ -211,12 +262,39 @@ def auth_tiers_retour(fournisseur):
     if r.get("jeton_apple"):                 # pour le retirer chez Apple si le compte est supprime (chiffre)
         champs["apple_rt"] = comptes.chiffrer(r["jeton_apple"])
     comptes.maj(cid, **champs)
+    # 28 oct 2026 : Apple revient en POST depuis SON site. Safari (et l'app iPhone) n'enregistre pas un temoin
+    # SameSite=Lax dans la reponse a un POST venu d'un autre site : la session etait perdue -> boucle vers la connexion.
+    # Billet a usage unique (2 min) : une petite page repart chez nous en GET, ou la session s'ouvre (voir _billet).
+    return _billet(cid, "/#accueil/" + ("bienvenue" if nouveau else "retour"), v.get("state"))
+
+
+_BILLETS = {}
+
+
+@app.route("/auth/terminer")
+def auth_terminer():
+    """2e moitie du retour d'Apple : meme site, en GET -> le temoin de session s'enregistre (Safari compris)."""
+    from flask import redirect, session
+    import hmac
+    import time as _t
+    b = request.args.get("b") or ""
+    v = _BILLETS.pop(b, None)
+    if not v or _t.time() - v[2] > 120:
+        return redirect("/connexion?erreur=3")
+    cid, cible, _le, lien, app_h = v
+    if app_h:                                  # app iPhone : le secret garde par l'app doit correspondre
+        import hashlib
+        if not hmac.compare_digest(app_h, hashlib.sha256((request.args.get("v") or "").encode()).hexdigest()):
+            return redirect("/connexion?erreur=3")
+    elif lien and not hmac.compare_digest(lien, request.cookies.get(_TEMOIN_LIEN) or ""):   # meme navigateur seulement
+        return redirect("/connexion?erreur=3")
+    if cid not in comptes.lister():
+        return redirect("/connexion?erreur=3")
     session.permanent = True
     session["compte"] = cid
-    cible = "/#accueil/" + ("bienvenue" if nouveau else "retour")
-    # Apple arrive en POST d'un autre site : une petite page qui repart chez nous (le cookie suit a coup sur)
-    return (f"<!doctype html><meta charset='utf-8'><meta http-equiv='refresh' content='0;url={cible}'>"
-            f"<script>location.replace({json.dumps(cible)})</script>", 200, {"Content-Type": "text/html; charset=utf-8"})
+    r = redirect(cible)
+    r.delete_cookie(_TEMOIN_LIEN, path="/")
+    return r
 
 
 # 27 oct 2026 (revue de securite) : codes d'acces et de demo : 8 essais rates par 15 min par adresse, puis on attend.
@@ -420,7 +498,8 @@ def connexion():
         page = _page_connexion().replace("{erreur}", e)
         import auth_tiers
         ios = "LockerRoomiOS" in (request.headers.get("User-Agent") or "")
-        autres = [f for f in auth_tiers.actifs() if not (ios and f == "google")]   # Google refuse les vues web integrees
+        flux_app = "SlabCoachAuth" in (request.headers.get("User-Agent") or "")    # 28 oct 2026 : app avec navigateur securise
+        autres = [f for f in auth_tiers.actifs() if not (ios and f == "google" and not flux_app)]   # Google refuse les vues web
         page = page.replace("{autres}", "".join(_BOUTONS_TIERS[f] for f in ("apple", "google") if f in autres))
         if ios:                                   # app iPhone : pas de lien vers la vitrine (prix du site)
             page = page.replace('<a href="/">‹ Retour au site</a>', "")
@@ -552,10 +631,8 @@ def ebay_retour():
         r = ebay_compte.connexion_compte(request.url, request.args.get("state"))
         if not r.get("ok"):
             return redirect("/connexion?erreur=1")
-        session.permanent = True
-        session["compte"] = r["compte"]
         _premiere_synchro(r["compte"])
-        return redirect("/#accueil/" + ("bienvenue" if r.get("nouveau") else "retour"))
+        return _billet(r["compte"], "/#accueil/" + ("bienvenue" if r.get("nouveau") else "retour"), request.args.get("state"))
     r = api.ebay_terminer(request.url, request.args.get("state"))
     return redirect("/#reglages/" + ("ebay-ok" if r.get("ok") else "ebay-erreur"))
 

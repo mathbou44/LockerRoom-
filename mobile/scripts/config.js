@@ -24,7 +24,7 @@ const conf = {
   ios: {
     contentInset: 'never',
     scheme: 'SlabCoach',
-    appendUserAgent: 'LockerRoomiOS/1.0',       // le serveur et l'ecran savent qu'on est dans l'app iPhone
+    appendUserAgent: 'LockerRoomiOS/1.1 SlabCoachAuth',   // 28 oct 2026 : SlabCoachAuth = sait ouvrir la connexion dans le navigateur securise d'iOS       // le serveur et l'ecran savent qu'on est dans l'app iPhone
     backgroundColor: '#0B0B0E',
     limitsNavigationsToAppBoundDomains: false
   },
