@@ -58,6 +58,7 @@ _verrou = threading.RLock()
 CATEGORIE_CARTES = "261328"   # eBay : Sports Trading Card Singles
 
 REGLAGES_DEFAUT = {
+    "prix_auto": {},                                            # 27 oct 2026 : mode Auto des prix eBay (voir prix_auto_regler)
     "nom_boutique": "Ma boutique",
     "equipe_fav": "",                                           # 26 oct 2026 : les accents de l'app aux couleurs de cette equipe
     "palette": "refractor",                                     # 27 oct 2026 : refractor + 5 paralleles
@@ -130,7 +131,7 @@ def _connecter(chemin=None):
     # 18 oct 2026 - sante de l'inventaire (tous les articles eBay)
     cols = {r[1] for r in c.execute("PRAGMA table_info(cartes)")}
     for col, typ in (("debut", "TEXT"), ("watchers", "INTEGER"), ("categorie_ebay", "TEXT"), ("photo", "TEXT"), ("vu_actif_le", "TEXT"),
-                     ("sport", "TEXT"), ("recrue", "INTEGER"), ("relique", "INTEGER"), ("cert", "TEXT")):
+                     ("sport", "TEXT"), ("recrue", "INTEGER"), ("relique", "INTEGER"), ("cert", "TEXT"), ("photos", "TEXT")):
         if col not in cols:
             c.execute(f"ALTER TABLE cartes ADD COLUMN {col} {typ}")
     # 23 oct 2026 - autres sports : le sport du produit et du break (equipes de sa ligue)
@@ -538,7 +539,8 @@ class Api:
 
     # -- « une photo, un bouton » (23 oct 2026) : voir vision.py ---------------------------------
     def photo_statut(self):
-        return vision.statut()
+        import cardsight
+        return {**vision.statut(), "cardsight": cardsight.actif()}
 
     def photo_identifier(self, photos):
         """1 ou 2 photos (devant, dos) -> fiche pre-remplie. Rien n'est enregistre : l'ecran montre
@@ -549,6 +551,15 @@ class Api:
             r = vision.identifier(photos if isinstance(photos, list) else [photos])
         except vision.Erreur as e:
             return {"ok": False, "erreur": str(e)}
+        try:                                   # 28 oct 2026 : CardSight AI confirme les champs douteux (si CARDSIGHT_CLE)
+            import cardsight
+            if cardsight.actif() and not r.get("cache"):
+                img = vision._decoder((photos if isinstance(photos, list) else [photos])[0])[0]
+                r["champs"], r["a_verifier"], src = cardsight.completer(r["champs"], r.get("a_verifier"), img)
+                if src:
+                    r["complement"] = src
+        except Exception as e:
+            print("CardSight : " + repr(e), flush=True)
         ch = r["champs"]
         ch["sport"] = sports.valide(ch.get("sport")) if ch.get("sport") else self.sport_de(ch)
         if not ch.get("titre"):
@@ -1788,7 +1799,7 @@ class Api:
     # -- inventaire -------------------------------------------------------------------------------
     CHAMPS_CARTE = ("titre", "joueur", "annee", "marque", "set_nom", "numero", "parallele", "tirage", "auto", "grade", "equipe",
                     "cout", "valeur", "prix_demande", "emplacement", "statut", "item_number", "sku", "consignataire_id", "source",
-                    "note", "client_id", "sport", "recrue", "relique", "cert", "photo")
+                    "note", "client_id", "sport", "recrue", "relique", "cert", "photo", "photos")
 
     def inventaire_liste(self, filtres=None):
         f = filtres or {}
@@ -1941,7 +1952,33 @@ class Api:
                 c.close()
         return dict(r) if r else {}
 
+    def carte_garder(self, d):
+        """27 oct 2026 - assistant de vente, « Garder dans mon inventaire » : la carte preparee (fiche, titre, prix, photos
+        studio) entre dans l'inventaire (En stock), prete a publier plus tard d'un tap. Rien ne part chez eBay."""
+        import photos_cartes
+        d = dict(d or {})
+        carte = {k: v for k, v in (d.get("carte") or {}).items() if k in self.CHAMPS_CARTE and k not in ("id", "photo", "photos", "statut")}
+        try:
+            refs = photos_cartes.sauver(d.get("photos") or [])
+        except ValueError as e:
+            return {"ok": False, "erreur": str(e)}
+        titre = re.sub(r"\s+", " ", str(d.get("titre") or "")).strip()[:80]
+        champs = {**carte, "titre": titre or None, "prix_demande": _float(d.get("prix")), "cout": _float(d.get("cout")),
+                  "photo": refs[0] if refs else None, "photos": json.dumps(refs) if refs else None}
+        if d.get("cid"):
+            champs["id"] = d["cid"]
+        else:
+            champs["statut"] = "En stock"
+        r = self.carte_sauver({k: v for k, v in champs.items() if v not in (None, "")})
+        return {"ok": True, "id": r["id"], "photos": refs}
+
     def carte_supprimer(self, cid):
+        import photos_cartes
+        try:
+            refs = json.loads((self.carte_lire(cid) or {}).get("photos") or "[]")
+        except ValueError:
+            refs = []
+        photos_cartes.supprimer(refs if isinstance(refs, list) else [])
         with _verrou:
             c = self._db()
             try:
@@ -2243,7 +2280,7 @@ class Api:
                     a = actives.get(s["item_number"])
                     if a:
                         out.append({**s, "titre": a["titre"], "prix": a["prix_demande"], "photo": a.get("photo"), "watchers": a.get("watchers"),
-                                    "age": sante.age_jours(a.get("debut")), "carte_id": a["id"]})
+                                    "age": sante.age_jours(a.get("debut")), "carte_id": a["id"], "cout": a.get("cout")})
             finally:
                 c.close()
         cle = {"baisser": lambda x: -(x.get("ecart") or 0), "monter": lambda x: x.get("ecart") or 0,
@@ -2268,6 +2305,164 @@ class Api:
             finally:
                 c.close()
         return {"ok": True}
+
+    # -- prix eBay en un tap, ou en automatique (27 oct 2026) ------------------------------------
+    # Mathieu : « une maniere rapide de modifier ses prix, un clic par annonce ou toutes d'un coup, ou une solution cle en
+    # main qui agit directement dans eBay ». « Tout appliquer » : l'ecran envoie chaque prix (ebay_changer_prix) apres UNE
+    # confirmation. Mode Auto (Pro, choisi par le vendeur) : une fois par jour, les prix conseilles sont appliques dans
+    # eBay, dans ses limites : jamais plus de max_pct % par jour, jamais sous son plancher ni sous son cout + marge,
+    # au plus max_jour annonces ; chaque changement est note (journal) et il recoit un resume.
+    PRIX_AUTO_DEFAUT = {"actif": False, "baisser": True, "monter": True, "max_pct": 15, "max_jour": 25, "plancher": 1.0, "marge_min_pct": 0}
+
+    def _chemin_prix_auto(self):
+        import comptes
+        return os.path.join(comptes.dossier() or comptes.DONNEES, "prix_auto.json")
+
+    def _prix_auto_etat(self):
+        try:
+            with open(self._chemin_prix_auto(), encoding="utf-8") as f:
+                return json.load(f) or {}
+        except (OSError, ValueError):
+            return {}
+
+    def prix_auto_lire(self):
+        import forfaits
+        r = self.reglages_lire().get("prix_auto")
+        cfg = {**self.PRIX_AUTO_DEFAUT, **(r if isinstance(r, dict) else {})}
+        e = self._prix_auto_etat()
+        return {**cfg, "pro": forfaits.est_pro(), "dernier": e.get("dernier"), "journal": (e.get("journal") or [])[-30:][::-1]}
+
+    def prix_auto_regler(self, d):
+        d = d or {}
+        cfg = {**self.PRIX_AUTO_DEFAUT, **{k: v for k, v in (self.reglages_lire().get("prix_auto") or {}).items() if k in self.PRIX_AUTO_DEFAUT}}
+        borne = lambda v, a, b, defaut: max(a, min(b, _float(v) if _float(v) is not None else defaut))
+        if "actif" in d:
+            import forfaits
+            if d["actif"] and not forfaits.est_pro():
+                return {"ok": False, "erreur": "Le mode Auto des prix fait partie de Pro", "pro_requis": True}
+            cfg["actif"] = bool(d["actif"])
+            if cfg["actif"]:
+                cfg["active_le"] = _maintenant()
+        for k in ("baisser", "monter"):
+            if k in d:
+                cfg[k] = bool(d[k])
+        if "max_pct" in d:
+            cfg["max_pct"] = round(borne(d["max_pct"], 3, 30, 15))
+        if "max_jour" in d:
+            cfg["max_jour"] = int(borne(d["max_jour"], 1, 100, 25))
+        if "plancher" in d:
+            cfg["plancher"] = round(borne(d["plancher"], 0.99, 100000, 1.0), 2)
+        if "marge_min_pct" in d:
+            cfg["marge_min_pct"] = round(borne(d["marge_min_pct"], -50, 300, 0))
+        self.reglages_sauver({"prix_auto": cfg})
+        return {"ok": True, **self.prix_auto_lire()}
+
+    @staticmethod
+    def _prix_cible(a, cfg):
+        """Le prix a mettre pour une annonce, dans les limites du vendeur (None = ne rien changer)."""
+        avant, sug = _float(a.get("prix")), _float(a.get("suggestion"))
+        if not avant or not sug or avant <= 0:
+            return None
+        m = cfg["max_pct"] / 100
+        p = max(avant * (1 - m), min(avant * (1 + m), sug))
+        cout = _float(a.get("cout"))
+        plancher = max(cfg["plancher"], cout * (1 + cfg["marge_min_pct"] / 100) if cout else 0, 0.99)
+        p = round(max(p, plancher), 2)
+        if abs(p - avant) < max(0.5, avant * 0.02):
+            return None                                   # trop petit pour valoir un changement
+        return p
+
+    def prix_auto_appliquer(self, force=False):
+        """Appele chaque heure par le serveur : au plus une fois par 20 h, seulement si le vendeur l'a choisi (et Pro)."""
+        import forfaits
+        cfg = {**self.PRIX_AUTO_DEFAUT, **(self.reglages_lire().get("prix_auto") or {})}
+        if not cfg.get("actif") or not forfaits.est_pro():
+            return {"ok": True, "faits": 0, "raison": "inactif"}
+        e = self._prix_auto_etat()
+        if not force and e.get("dernier") and (datetime.now() - datetime.fromisoformat(e["dernier"])).total_seconds() < 20 * 3600:
+            return {"ok": True, "faits": 0, "raison": "deja fait aujourd'hui"}
+        if not ebay_compte.statut().get("ecriture"):
+            return {"ok": False, "faits": 0, "erreur": "Reconnecte eBay pour que le mode Auto change tes prix"}
+        cands = (self.sante_liste("baisser") if cfg["baisser"] else []) + (self.sante_liste("monter") if cfg["monter"] else [])
+        journal, faits = e.get("journal") or [], 0
+        for a in cands:
+            if faits >= cfg["max_jour"]:
+                break
+            p = self._prix_cible(a, cfg)
+            if p is None:
+                continue
+            r = self.ebay_changer_prix(a["item_number"], p)
+            journal.append({"le": _maintenant(), "item": a["item_number"], "titre": (a.get("titre") or "")[:80], "avant": a.get("prix"),
+                            "apres": p, "ok": bool(r.get("ok")), "erreur": None if r.get("ok") else str(r.get("erreur") or "")[:120]})
+            faits += 1 if r.get("ok") else 0
+        e = {"dernier": _maintenant(), "journal": journal[-200:]}
+        with open(self._chemin_prix_auto(), "w", encoding="utf-8") as f:
+            json.dump(e, f)
+        if faits:
+            try:
+                self._push("Prix ajustés sur eBay", f"SlabCoach a ajusté {faits} prix selon le marché, dans tes limites.", {"lien": "#sante/auto"})
+            except Exception:
+                pass
+        return {"ok": True, "faits": faits}
+
+    # -- offres aux acheteurs interesses (28 oct 2026, API Negotiation d'eBay) ------------------
+    def offres_liste(self, force=False):
+        """Les annonces qu'un acheteur surveille ou a laissees dans son panier, avec un rabais conseille.
+        Rabais conseille : l'ecart avec le marche si l'annonce est trop chere (5 a 25 %), sinon 10 % ; jamais sous le cout."""
+        import ebay_offres
+        st = ebay_compte.statut()
+        if not st.get("connecte"):
+            return {"ok": False, "erreur": "Compte eBay non connecté", "items": []}
+        r = ebay_offres.eligibles(force=bool(force))
+        if not r.get("ok"):
+            return {**r, "items": []}
+        ids, recents = set(r.get("ids") or []), ebay_offres.recentes()
+        with _verrou:
+            c = self._db()
+            try:
+                actives = {a["item_number"]: a for a in self._annonces_actives(c)}
+                sante_ = {x["item_number"]: x for x in _dicts(c.execute("SELECT item_number, verdict, suggestion, mediane FROM sante"))}
+            finally:
+                c.close()
+        items = []
+        for i in ids:
+            a = actives.get(i)
+            if not a or i in recents:
+                continue
+            prix, cout = _float(a.get("prix_demande")), _float(a.get("cout"))
+            s_ = sante_.get(i) or {}
+            pct = 10.0
+            if prix and _float(s_.get("suggestion")) and s_["suggestion"] < prix:
+                pct = max(5.0, min(25.0, round(100 * (1 - s_["suggestion"] / prix))))
+            if prix and cout and prix * (1 - pct / 100) < cout:
+                pct = max(5.0, int(1000 * (1 - cout / prix)) / 10) if cout < prix * 0.95 else None
+            items.append({"item_number": i, "titre": a.get("titre"), "prix": prix, "photo": a.get("photo"), "watchers": a.get("watchers"),
+                          "cout": cout, "carte_id": a.get("id"), "pct": pct, "mediane": s_.get("mediane"),
+                          "sous_cout": pct is None})
+        items.sort(key=lambda x: (x["sous_cout"], -(x.get("watchers") or 0), -(x.get("prix") or 0)))
+        return {"ok": True, "items": items, "marche": r.get("marche"), "le": r.get("le"), "n_ebay": len(ids)}
+
+    def offres_envoyer(self, item_number, pct, message=None):
+        """Un tap = une offre a TOUS les acheteurs interesses d'une annonce (eBay les previent). Gratuit : 3 par jour."""
+        import ebay_offres
+        import forfaits
+        try:
+            forfaits.verifier("offres_jour")
+        except forfaits.LimiteAtteinte as e:
+            return {"ok": False, "erreur": str(e), "pro_requis": True}
+        if not ebay_compte.statut().get("ecriture"):
+            return {"ok": False, "erreur": "Reconnecte eBay pour envoyer des offres depuis l'app."}
+        r = ebay_offres.envoyer(item_number, pct, message)
+        if r.get("ok"):
+            forfaits.compter("offres_jour")
+        return r
+
+    def offres_compte(self):
+        """Pour l'accueil : combien d'annonces ont des acheteurs interesses (garde d'une heure, aucun appel eBay ici)."""
+        import ebay_offres
+        g = (ebay_offres._lire().get("eligibles") or {})
+        rec = ebay_offres.recentes()
+        return {"n": len([i for i in g.get("ids") or [] if i not in rec]), "le": g.get("le")}
 
     # -- compte eBay (OAuth officiel) -----------------------------------------------------------
     def ebay_statut(self):
@@ -2617,6 +2812,11 @@ class Api:
 
     def tendances(self):
         return marche.tendances()
+
+    def pouls(self, langue=None):
+        """27 oct 2026 : le pouls du hobby (segments qui chauffent, mesures sur ventes reelles)."""
+        import pouls
+        return pouls.resume(langue or self.reglages_lire().get("langue") or "fr")
 
     def astuces(self, force=False, langue=None):
         """26 oct 2026 - « Le savais-tu ? » : astuces verifiees (calculees sur les vraies ventes ou sourcees), pour l'accueil."""
@@ -3514,6 +3714,13 @@ class Api:
         if sans_cout:
             actions.append({"cle": "couts", "n": sans_cout, "titre": "Coût manquant", "montant": None,
                             "texte": "ajoute-le : profit exact", "lien": "#inventaire/sans-cout", "ton": "", "rang": -1})
+        try:                                     # 28 oct 2026 : acheteurs interesses (API Negotiation, garde d'une heure)
+            no = self.offres_compte()["n"]
+            if no:
+                actions.append({"cle": "offres", "n": no, "titre": "Acheteurs intéressés", "montant": None,
+                                "texte": "envoie-leur une offre en un tap", "lien": "#offres", "ton": "vert", "rang": 50})
+        except Exception:
+            pass
         actions.sort(key=lambda a: -a["rang"])
 
         # -- meilleurs coups (30 j) : ce qui marche, pour en racheter

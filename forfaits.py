@@ -27,6 +27,7 @@ LIMITES = {                    # Gratuit (apres l'essai) ; Pro = illimite
     "repere": 3,               # cartes de l'inventaire avec le repere prix vs marche
     "breaks_produits": 1,      # produits dans l'analyse de breaks
     "preparer_jour": 20,       # 27 oct 2026 : annonces preparees (prix suggere) par jour - protege le quota eBay partage
+    "offres_jour": 3,          # 28 oct 2026 : offres envoyees aux acheteurs interesses, par jour
 }
 _verrou = threading.Lock()
 
@@ -37,6 +38,7 @@ class LimiteAtteinte(Exception):
         msg = {"annonces_mois": f"Tes {limite} annonces gratuites du mois sont utilisées : passe au forfait Pro pour continuer.",
                "valeur_jour": f"Tes {limite} recherches gratuites du jour sont utilisées : passe au forfait Pro pour continuer.",
                "preparer_jour": f"Tes {limite} annonces préparées du jour sont utilisées : reviens demain ou passe au forfait Pro.",
+               "offres_jour": f"Tes {limite} offres gratuites du jour sont envoyées : reviens demain ou passe au forfait Pro.",
                }.get(cle, "Fonction Pro : passe au forfait Pro pour continuer.")
         try:                                  # 27 oct 2026 (revue Apple 3.1.1) : dans l'app iPhone, pas d'appel a acheter ailleurs
             import lockerroom
@@ -44,6 +46,7 @@ class LimiteAtteinte(Exception):
                 msg = {"annonces_mois": f"Tes {limite} annonces gratuites du mois sont utilisées : reviens le mois prochain.",
                        "valeur_jour": f"Tes {limite} recherches gratuites du jour sont utilisées : reviens demain.",
                        "preparer_jour": f"Tes {limite} annonces préparées du jour sont utilisées : reviens demain.",
+                       "offres_jour": f"Tes {limite} offres gratuites du jour sont envoyées : reviens demain.",
                        }.get(cle, "Limite du forfait gratuit atteinte.")
         except Exception:
             pass

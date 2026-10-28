@@ -38,10 +38,13 @@ workflows:
       - name: Numero de version (build)
         script: |
           cd mobile/ios/App
-          DERNIER=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || echo 0)
-          TF=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || echo 0)
+          # 27 oct 2026 : si la lecture chez Apple echoue, on ne retombe plus sur 1 (Apple refuse un numero deja utilise) :
+          # le numero de build Codemagic (1, 2, 3...) sert de plancher.
+          DERNIER=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID" || echo 0)
+          TF=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" || echo 0)
           [ "$TF" -gt "$DERNIER" ] 2>/dev/null && DERNIER=$TF
           NOUVEAU=$((DERNIER + 1))
+          [ "${BUILD_NUMBER:-0}" -gt "$NOUVEAU" ] 2>/dev/null && NOUVEAU=$BUILD_NUMBER
           sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*;/CURRENT_PROJECT_VERSION = $NOUVEAU;/g" App.xcodeproj/project.pbxproj
           echo "Build $NOUVEAU"
       - name: Compiler l'app (.ipa)

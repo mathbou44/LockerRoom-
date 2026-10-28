@@ -252,6 +252,12 @@ def photos_ebay(photos):
         if p.startswith("https://"):
             out.append(p)
             continue
+        import photos_cartes                    # 27 oct 2026 : photo d'une carte gardee dans l'inventaire
+        if p.startswith(photos_cartes.PREFIXE):
+            f = photos_cartes.chemin(p)
+            if f:
+                out.append(ebay_ecriture.televerser_photo(f, f"lockerroom-{i + 1}"))
+            continue
         m = re.match(r"data:image/(png|jpe?g|webp);base64,(.+)", p, re.S)
         if not m:
             continue

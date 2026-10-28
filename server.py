@@ -597,6 +597,16 @@ def ebay_suppression_compte():
     return ("", 204)
 
 
+@app.route("/mes-photos/<nom>")
+def mes_photos(nom):
+    """27 oct 2026 : photos des cartes gardees dans l'inventaire, seulement pour le compte connecte (voir _garde)."""
+    import photos_cartes
+    f = photos_cartes.chemin(nom)
+    if not f:
+        abort(404)
+    return send_from_directory(os.path.dirname(f), os.path.basename(f), mimetype="image/jpeg", max_age=30 * 86400)
+
+
 @app.route("/<path:nom>")
 def statiques(nom):
     return send_from_directory(DOSSIER_UI, nom)
@@ -607,7 +617,8 @@ _RESERVEES_SERVEUR = {"ebay_cles_sauver", "ebay_environnement", "ebay_avis_regle
 # 27 oct 2026 (revue de securite) : sur le PC (sans code d'acces), un autre appareil du meme wifi peut LIRE l'app mais
 # pas ecrire sur eBay, ni toucher aux cles : ces gestes restent sur le PC lui-meme (ou avec LOCKERROOM_CODE).
 _ECRITURES_EBAY = {"ebay_publier", "annonce_publier", "ebay_changer_prix", "ebay_miser", "ebay_cles_sauver", "ebay_avis_regler",
-                   "ebay_avis_jeton", "ebay_deconnecter", "ebay_environnement", "ebay_terminer", "ebay_url_connexion", "ebay_promouvoir"}
+                   "ebay_avis_jeton", "ebay_deconnecter", "ebay_environnement", "ebay_terminer", "ebay_url_connexion", "ebay_promouvoir",
+                   "prix_auto_appliquer", "prix_auto_regler", "offres_envoyer"}
 
 
 @app.route("/api/<nom>", methods=["POST"])
@@ -713,6 +724,13 @@ def _valeurs_auto():
             base_ventes.enrichir_si_besoin()
         except Exception as e:
             print("Base des ventes : " + str(e), flush=True)
+        try:                                    # 27 oct 2026 - population PSA des fiches connues (PSA_TENDANCES=1, 1 fois/jour)
+            import psa
+            n_psa = psa.rafraichir_si_besoin()
+            if n_psa:
+                print("Population PSA :", n_psa, "fiches", flush=True)
+        except Exception as e:
+            print("Population PSA : " + str(e), flush=True)
         try:                                    # 25 oct 2026 - demandes pas encore triees par l'agent
             import demandes
             demandes.trier_en_attente()
@@ -743,6 +761,28 @@ def _ebay_auto():
                     if st.get("cles_ok") and st.get("connecte" if _c.MULTI else "cles_ok"):
                         r = api.sante_rafraichir(40)
                         print("Sante :", cid or "", {k: r.get(k) for k in ("evaluees", "rachats", "erreur")}, flush=True)
+                        try:                     # 28 oct 2026 : acheteurs interesses (1 appel eBay par heure, pour l'accueil)
+                            import ebay_offres
+                            ebay_offres.eligibles(force=True)
+                        except Exception as e:
+                            print("Offres : " + str(e), flush=True)
+                        try:                     # 27 oct 2026 : mode Auto des prix (si le vendeur l'a choisi)
+                            rp = api.prix_auto_appliquer()
+                            if rp.get("faits") or rp.get("erreur"):
+                                print("Prix auto :", cid or "", rp, flush=True)
+                        except Exception as e:
+                            print("Prix auto : " + str(e), flush=True)
+                    if cid == (_c.lister() if _c.MULTI else [None])[0]:     # 27 oct 2026 : le pouls du hobby (commun a tous)
+                        try:
+                            import pouls
+                            pouls.rafraichir_si_besoin()
+                        except Exception as e:
+                            print("Pouls : " + str(e), flush=True)
+                        try:                     # 28 oct 2026 : la forme des joueurs des tendances (LNH)
+                            import nhl
+                            nhl.rafraichir_si_besoin()
+                        except Exception as e:
+                            print("LNH : " + str(e), flush=True)
                 except Exception as e:
                     print("Synchro eBay : " + str(e), flush=True)
         time.sleep(3600)

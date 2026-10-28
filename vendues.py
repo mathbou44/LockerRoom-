@@ -136,7 +136,7 @@ def _vers_vente(it, taux):
     cad = prix * (taux if dev == "USD" else 1.0) if dev in ("USD", "CAD") else None
     if cad is None:
         return None
-    return {"titre": it.get("title") or "", "prix": round(cad, 2), "le": str(it.get("endedAt") or "")[:10],
+    return {"titre": it.get("title") or "", "prix": round(cad, 2), "le": str(it.get("endedAt") or "")[:10], "ts": str(it.get("endedAt") or "")[:19],
             "photo": it.get("thumbnailUrl"), "url": it.get("url"), "offre": bool(it.get("bestOfferAccepted")),
             "mises": it.get("bidCount"), "source": "eBay"}
 

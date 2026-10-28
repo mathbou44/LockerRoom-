@@ -263,10 +263,34 @@ def tendances():
                 vus.add(k)
                 out.append(x)
         return sorted(out, key=cle)[:n]
-    return {"ok": True, "hausses": fusion(b.get("hausses"), [x for x in fiables if x["pct"] > 0], lambda x: -x["pct"]),
-            "baisses": fusion(b.get("baisses"), [x for x in fiables if x["pct"] < 0], lambda x: x["pct"]),
-            "plus_vendues": b.get("plus_vendues") or sorted(vendues, key=lambda x: -x["n"])[:8],
-            "records": b.get("records") or [],
+    # 27 oct 2026 : population PSA (si activee) : gem, nouvelles gradations 30 j ; la popularite departage par les gradations
+    try:
+        import psa
+        idx = psa._index() if psa.tendances_actives() else {}
+    except Exception:
+        idx = {}
+    pop_n = lambda x: ((x.get("psa") or {}).get("nouvelles_30j") or 0)
+    hausses = fusion(b.get("hausses"), [x for x in fiables if x["pct"] > 0], lambda x: -x["pct"])
+    baisses = fusion(b.get("baisses"), [x for x in fiables if x["pct"] < 0], lambda x: x["pct"])
+    plus = list(b.get("plus_vendues") or sorted(vendues, key=lambda x: -x["n"])[:8])
+    records = list(b.get("records") or [])
+    if idx:
+        for l_ in (hausses, baisses, plus, records):
+            psa.enrichir(l_, idx)
+        plus.sort(key=lambda x: (-(x.get("n") or 0), -pop_n(x)))
+    # 27 oct 2026 : l'Indice SlabCoach (indice.py) : chaque carte affichee, et le marche avec TOUTES les cartes mesurees
+    import indice
+    for l_ in (hausses, baisses, plus, records):
+        for x in l_:
+            x["indice"] = indice.carte(x)
+    vus, toutes = set(), []
+    for x in list(b.get("hausses") or []) + list(b.get("baisses") or []) + l:
+        k = (x.get("joueur"), x.get("carte"))
+        if k not in vus:
+            vus.add(k)
+            toutes.append(x)
+    ind = indice.marche(toutes, psa.stats_toutes() if idx else None)
+    return {"ok": True, "hausses": hausses, "baisses": baisses, "plus_vendues": plus, "records": records, "indice": ind,
             "nb_cartes": max(len(vendues), b.get("nb_cartes") or 0), "nb_ventes": max(sum(x["n"] for x in vendues), b.get("nb_ventes") or 0),
             "maj": max((valeur_produit.de(p["id"]).get("maj") or "" for p in catalogue.liste()), default=None)}
 

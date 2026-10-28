@@ -73,6 +73,19 @@ OUTIL = {
             "a_verifier": {"type": "array", "items": {"type": "string"},
                            "description": "Ce qui n'est pas lisible ou ambigu, en francais simple (ex. « le parallele : reflet sur la photo »)."},
             "conseil_photo": {"type": "string", "description": "Si une meilleure photo aiderait : quoi faire, en francais simple. Sinon vide."},
+            # 27 oct 2026 : la photo studio (recadrage dans le telephone) et la prise de photo guidee
+            "photos": {"type": "array", "description": "Une entree par image, dans l'ordre recu.",
+                       "items": {"type": "object", "properties": {
+                           "cote": {"type": "string", "enum": ["devant", "dos", "autre"]},
+                           "coins": {"type": "array", "items": {"type": "array", "items": {"type": "integer"}},
+                                     "description": "Les 4 coins exterieurs de la carte, ou de son etui / slab si elle est dedans (jamais le support), "
+                                                    "en coordonnees 0 a 1000 de l'image (x vers la droite, y vers le bas), dans l'ordre : haut-gauche, "
+                                                    "haut-droit, bas-droit, bas-gauche, le haut etant le haut de la carte telle qu'on la lit."},
+                           "entiere": {"type": "boolean", "description": "true si toute la carte (ou l'etui) est dans la photo, aucun coin coupe"},
+                           "nette": {"type": "boolean", "description": "true si le texte imprime est net"},
+                           "reflet": {"type": "boolean", "description": "true si un reflet cache du texte ou l'image"},
+                           "probleme": {"type": "string", "description": "Si cette photo doit etre reprise : pourquoi, en 6 mots max, en francais. Sinon vide."}},
+                           "required": ["cote", "coins", "entiere"]}},
         },
         "required": ["est_une_carte", "sport", "joueur", "confiance", "a_verifier"],
     },
@@ -84,6 +97,7 @@ Regles :
 - Le dos donne souvent l'annee (copyright), le numero de la carte et le set ; l'estampe /99 donne le tirage.
 - Parallele : decris ce que tu vois (couleur, motif, finition) seulement si tu es sur du nom officiel ; sinon mets-le dans a_verifier.
 - Recrue : RC imprime, Young Guns, Rated Rookie, 1st Bowman, Rookie Ticket...
+- photos : pour chaque image, les 4 coins exterieurs de la carte (ou de son etui / slab), le plus precis possible, et si la photo est a reprendre (coin coupe, floue, reflet sur le texte).
 - Reponds uniquement avec l'outil « carte »."""
 
 
@@ -248,7 +262,25 @@ def _nettoyer(f):
         out["titre"] = str(f["titre_ebay"]).strip()[:80]
     douteux = sorted(k for k in out if k in conf and conf[k] < SEUIL_CONFIANCE)
     return {"champs": out, "a_verifier": douteux, "notes": [str(x) for x in (f.get("a_verifier") or [])][:6],
-            "conseil_photo": str(f.get("conseil_photo") or "").strip(), "confiance": conf}
+            "conseil_photo": str(f.get("conseil_photo") or "").strip(), "confiance": conf, "photos": _photos(f.get("photos"))}
+
+
+def _photos(l):
+    """Coins (0..1000) et qualite de chaque photo, nettoyes ; une photo douteuse garde au moins son cote."""
+    out = []
+    for p in (l if isinstance(l, list) else [])[:MAX_PHOTOS]:
+        p = p if isinstance(p, dict) else {}
+        coins = p.get("coins")
+        try:
+            coins = [[max(-50, min(1050, int(x))), max(-50, min(1050, int(y)))] for x, y in coins][:4]
+        except (TypeError, ValueError):
+            coins = None
+        if not coins or len(coins) != 4:
+            coins = None
+        out.append({"cote": p.get("cote") if p.get("cote") in ("devant", "dos", "autre") else None, "coins": coins,
+                    "entiere": p.get("entiere") is not False, "nette": p.get("nette") is not False, "reflet": p.get("reflet") is True,
+                    "probleme": str(p.get("probleme") or "").strip()[:60]})
+    return out
 
 
 def identifier(photos):
@@ -270,7 +302,7 @@ def identifier(photos):
         contenu.append({"type": "text", "text": "Devant de la carte :" if i == 0 else "Dos de la carte :"})
         contenu.append({"type": "image", "source": {"type": "base64", "media_type": typ, "data": base64.b64encode(b).decode()}})
     contenu.append({"type": "text", "text": "Remplis la fiche de cette carte."})
-    r = _appeler({"model": MODELE, "max_tokens": 1200, "system": SYSTEME, "tools": [OUTIL],
+    r = _appeler({"model": MODELE, "max_tokens": 1500, "system": SYSTEME, "tools": [OUTIL],
                   "tool_choice": {"type": "tool", "name": "carte"}, "messages": [{"role": "user", "content": contenu}]})
     cout = _noter(r.get("usage") or {})
     fiche = next((b.get("input") for b in r.get("content") or [] if b.get("type") == "tool_use"), None)

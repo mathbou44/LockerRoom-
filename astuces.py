@@ -403,7 +403,47 @@ def demande_vs_vendu(api=None, langue="fr"):
             "source": t("Règle SlabCoach : valeur = ventes réelles", "SlabCoach rule: value = real sales"), "lien": "#valeur", "calcule": False}
 
 
-GENERATEURS = [chute_sortie, bedard, frais, numerotation, gradation, prime_psa10, offres, jours, chance_boite, ouvrir,
+# -- 27 oct 2026 : le pouls du hobby, un indice (jamais une affirmation) -----------------------------------------
+def pouls_hobby(api=None, langue="fr"):
+    import pouls
+    t = T(langue)
+    x = pouls.indice(langue)
+    if not x:
+        return None
+    n = x["nom"]
+    return {"id": "pouls", "niveau": "tous", "genre": "acheter",
+            "titre": t(f"Psst… ça bouge du côté de {n}", f"Psst… things are moving around {n}"),
+            "chiffre": {3: t("Ça chauffe", "Heating up"), 2: t("Ça monte", "Rising")}.get(x["chaleur"], t("Ça bouge", "Moving")),
+            "texte": t(f"Ces jours-ci, {n} se vendent plus vite que d’habitude sur eBay. Jette un œil à ce qui part.",
+                       f"These days, {n} are selling faster than usual on eBay. Take a look at what’s moving."),
+            "truc": t("Quand un créneau chauffe, les acheteurs sont au rendez-vous : c’est souvent un bon moment pour lister ce que tu "
+                      "as dans ce créneau, et un moins bon pour acheter au gros prix.",
+                      "When a niche heats up, buyers show up: it’s often a good time to list what you have in it, and a less good "
+                      "one to buy at top price."),
+            "source": t("Ventes eBay réelles (SoldComps), comparées aux semaines précédentes, calcul SlabCoach",
+                        "Real eBay sales (SoldComps) vs previous weeks, SlabCoach math"), "lien": "#pouls/" + x["cle"], "calcule": True}
+
+
+# -- 28 oct 2026 : un joueur en feu (forme LNH des 5 derniers matchs), un indice ------------------------------------
+def joueur_en_feu(api=None, langue="fr"):
+    import nhl
+    t = T(langue)
+    f = nhl.en_feu()
+    if not f:
+        return None
+    j = f["joueur"]
+    return {"id": "en_feu", "niveau": "tous", "genre": "acheter",
+            "titre": t(f"Psst… {j} : {f['points']} points à ses {f['matchs']} derniers matchs", f"Psst… {j}: {f['points']} points in his last {f['matchs']} games"),
+            "chiffre": t(f"{f['points']} pts", f"{f['points']} pts"),
+            "texte": t(f"{f['buts']} buts et {f['passes']} passes en {f['matchs']} matchs. Une séquence comme ça se voit souvent dans le prix de ses cartes. Jette un œil.",
+                       f"{f['buts']} goals and {f['passes']} assists in {f['matchs']} games. A streak like this often shows up in his card prices. Take a look."),
+            "truc": t("Une séquence fait monter les prix vite, puis ils se calment souvent quand elle s’arrête : vends pendant la vague, achète après.",
+                      "A streak lifts prices fast, and they often cool off when it ends: sell during the wave, buy after."),
+            "source": t("Statistiques publiques de la LNH, calcul SlabCoach", "Public NHL stats, SlabCoach math"),
+            "lien": "#joueur/" + j, "calcule": True}
+
+
+GENERATEURS = [pouls_hobby, joueur_en_feu, chute_sortie, bedard, frais, numerotation, gradation, prime_psa10, offres, jours, chance_boite, ouvrir,
                hobby_seulement, yg_canvas, demande_vs_vendu]
 
 

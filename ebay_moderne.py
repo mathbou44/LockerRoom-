@@ -70,7 +70,7 @@ def rest(meth, chemin, corps=None, base=None, marche=True):
     """Appel REST eBay avec le jeton du vendeur. chemin : « /sell/inventory/v1/... »."""
     h = {"Authorization": "Bearer " + ebay_compte.jeton(), "Accept": "application/json", "Content-Language": LANGUE}
     if marche:
-        h["X-EBAY-C-MARKETPLACE-ID"] = MARCHE
+        h["X-EBAY-C-MARKETPLACE-ID"] = marche if isinstance(marche, str) else MARCHE
     data = None
     if corps is not None:
         data = json.dumps(corps).encode()
