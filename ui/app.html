@@ -231,6 +231,9 @@ body{--or:var(--acc); --or-clair:color-mix(in srgb, var(--acc) 55%, #fff); --or-
 body[data-palette] .horloge .salut{color:color-mix(in srgb, var(--acc) 72%, #fff)}
 body[data-palette].pro .onglets a.on{color:var(--acc)}
 body[data-palette].pro .onglets a.on svg{filter:drop-shadow(0 0 6px color-mix(in srgb, var(--acc) 55%, transparent))}
+/* 28 oct 2026 (Mathieu : « un carre degrade autour de l'appareil photo dans la barre ») : sur iPhone, le filtre lumineux
+   d'un onglet actif se dessinait en carre autour du bouton rond du centre ; le bouton rond garde seulement son ombre */
+.onglets a.centre svg, body[data-palette].pro .onglets a.centre.on svg{filter:none !important}
 @media (min-width:900px){ body[data-palette].pro .onglets a.on{background:linear-gradient(90deg,color-mix(in srgb, var(--acc) 16%, transparent),color-mix(in srgb, var(--acc) 4%, transparent))} }
 @media (max-width:899px){ body .onglets a.centre svg, body:not(.mode-acheteur) .onglets a.centre svg, body.mode-acheteur .onglets a.centre svg{
   background:radial-gradient(120% 120% at 30% 20%, var(--h1), var(--acc) 45%, color-mix(in srgb, var(--acc) 62%, #000)); stroke:var(--acc-texte); color:var(--acc-texte);

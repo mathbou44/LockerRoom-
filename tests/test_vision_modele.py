@@ -51,6 +51,24 @@ class TestModele(unittest.TestCase):
         self.assertIn("crédit", str(e.exception))
         self.assertEqual(vision.derniere_erreur()["code"], 400)
 
+    def test_tool_choice_refuse_on_passe_en_auto(self):
+        vus = []
+        vision._CHOIX_AUTO["oui"] = False
+
+        def ouvrir(req, timeout=None):
+            c = json.loads(req.data); vus.append(c.get("tool_choice"))
+            if (c.get("tool_choice") or {}).get("type") == "tool":
+                raise urllib.error.HTTPError(req.full_url, 400, "x", {}, io.BytesIO(
+                    b'{"type":"error","error":{"type":"invalid_request_error","message":"tool_choice: type \\"tool\\" and \\"any\\" are not supported for this model."}}'))
+            assert "UNIQUEMENT" in c["system"]
+            return Rep(b'{"content": [{"type": "tool_use", "name": "carte", "input": {}}]}')
+        with mock.patch.object(vision.urllib.request, "urlopen", side_effect=ouvrir), mock.patch.object(vision, "_cle", return_value="k"):
+            r = vision._appeler({"model": "m", "system": "S", "tools": [{"name": "carte"}], "tool_choice": {"type": "tool", "name": "carte"}, "messages": []})
+            vision._appeler({"model": "m", "system": "S", "tools": [{"name": "carte"}], "tool_choice": {"type": "tool", "name": "carte"}, "messages": []})
+        self.assertEqual(r["content"][0]["name"], "carte")
+        self.assertEqual([v["type"] for v in vus], ["tool", "auto", "auto"])          # ensuite : directement en auto
+        vision._CHOIX_AUTO["oui"] = False
+
 
 if __name__ == "__main__":
     unittest.main()

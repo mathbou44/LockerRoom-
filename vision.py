@@ -225,6 +225,24 @@ def _decoder(photo):
 
 
 _MODELE_OK = {"m": None}
+_CHOIX_AUTO = {"oui": False}     # 28 oct 2026 : ce modele refuse tool_choice « tool » : on demande l'outil par la consigne
+
+
+def _choix_auto(corps):
+    """tool_choice impose -> auto, et la consigne du systeme demande d'appeler l'outil (meme resultat)."""
+    tc = corps.get("tool_choice") or {}
+    if tc.get("type") not in ("tool", "any"):
+        return corps
+    nom = tc.get("name") or ((corps.get("tools") or [{}])[0].get("name"))
+    consigne = f"\n\nIMPORTANT : reponds UNIQUEMENT en appelant l'outil « {nom} », sans texte autour."
+    sysm = corps.get("system")
+    if isinstance(sysm, str):
+        sysm = sysm + consigne
+    elif isinstance(sysm, list):
+        sysm = sysm + [{"type": "text", "text": consigne}]
+    else:
+        sysm = consigne.strip()
+    return dict(corps, tool_choice={"type": "auto"}, system=sysm)
 
 
 def modeles_disponibles():
@@ -253,6 +271,8 @@ def _meilleur_modele():
 def _appeler(corps, timeout=90, _reessai=True):
     if _MODELE_OK["m"] and corps.get("model") in (MODELE, None):
         corps = dict(corps, model=_MODELE_OK["m"])
+    if _CHOIX_AUTO["oui"]:
+        corps = _choix_auto(corps)
     req = urllib.request.Request(URL, data=json.dumps(corps).encode("utf-8"), method="POST", headers={
         "x-api-key": _cle(), "anthropic-version": VERSION_API, "content-type": "application/json"})
     try:
@@ -264,7 +284,11 @@ def _appeler(corps, timeout=90, _reessai=True):
                 corps_err = e.read().decode("utf-8", "ignore")[:400]
             except Exception:
                 corps_err = ""
-            if e.code == 404 or ("model" in corps_err.lower() and "not" in corps_err.lower()):
+            if "tool_choice" in corps_err and (corps.get("tool_choice") or {}).get("type") in ("tool", "any"):
+                print("Vision : tool_choice impose refuse par le modele, on passe en auto", flush=True)
+                _CHOIX_AUTO["oui"] = True
+                return _appeler(_choix_auto(corps), timeout, _reessai=False)
+            if e.code == 404 or ("model" in corps_err.lower() and "not found" in corps_err.lower()):
                 m = _meilleur_modele()
                 if m and m != corps.get("model"):
                     print(f"Vision : modele {corps.get('model')} refuse, on passe a {m}", flush=True)
@@ -292,7 +316,7 @@ def _erreur_http(code, detail):
         return Erreur("Reconnaissance photo indisponible (clé du serveur) : remplis la fiche à la main.")
     if "credit balance" in d or "billing" in d:
         return Erreur("Reconnaissance photo en pause (crédit Anthropic du serveur épuisé) : cherche la carte par son nom.")
-    if code == 404 or ("model" in d and "not" in d):
+    if code == 404 or ("model" in d and "not found" in d):
         return Erreur("Reconnaissance photo indisponible (modèle du serveur) : cherche la carte par son nom.")
     if code == 413 or "image" in d:
         return Erreur("Photo trop lourde pour la reconnaissance : reprends-la de plus près.")
