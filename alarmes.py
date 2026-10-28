@@ -78,8 +78,10 @@ def _heure_locale(maint=None):
         return (maint or datetime.now()).hour
 
 
-def _notifier(api, etat, cle, titre, texte, lien, total=None, photo=None, maint=None):
-    """Une alerte, une seule fois : dans la cloche toujours ; sur l'iPhone si le quota du jour et l'heure le permettent."""
+def _notifier(api, etat, cle, titre, texte, lien, total=None, photo=None, maint=None, force=False):
+    """Une alerte, une seule fois : dans la cloche toujours ; sur l'iPhone si le quota du jour et l'heure le permettent.
+    force (29 oct 2026, watchlist) : une alerte que l'utilisateur a demandee pour UNE carte (« place ta mise ») part
+    meme la nuit et hors quota : les encans finissent souvent le soir."""
     vus = etat.setdefault("vus", {})
     if cle in vus:
         return False
@@ -102,9 +104,9 @@ def _notifier(api, etat, cle, titre, texte, lien, total=None, photo=None, maint=
         q.update(jour=jour, n=0)
     h = _heure_locale(maint)
     nuit = h >= NUIT[0] or h < NUIT[1]
-    if not nuit and q["n"] < MAX_JOUR and hasattr(api, "_push"):
+    if (force or (not nuit and q["n"] < MAX_JOUR)) and hasattr(api, "_push"):
         try:
-            if api._push(titre, texte, {"lien": lien}):
+            if api._push(titre, texte, {"lien": lien}) and not force:
                 q["n"] += 1
         except Exception as e:
             print("Push : " + repr(e), flush=True)

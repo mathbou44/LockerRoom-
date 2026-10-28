@@ -877,6 +877,23 @@ def _valeurs_auto():
         time.sleep(3600)
 
 
+def _watch_boucle():
+    """29 oct 2026 (Mathieu : watchlist, « vraiment proche de finir, il faut qu'il place son enchere ») : toutes les 5 min,
+    les encans suivis qui finissent dans 75 min, relus sur eBay ; l'alerte part 15 min avant la fin."""
+    import comptes as _c
+    time.sleep(90)
+    while True:
+        for cid in (_c.lister() if _c.MULTI else [None]):
+            with _c.utiliser(cid):
+                try:
+                    r = api.watch_proches()
+                    if r.get("envoyees"):
+                        print("Watchlist :", cid or "", r["envoyees"], flush=True)
+                except Exception as e:
+                    print("Watchlist : " + str(e), flush=True)
+        time.sleep(300)
+
+
 def _ebay_auto():
     """Toutes les heures : annonces et ventes relues (compte connecte), puis prix compares au marche (cles eBay)."""
     import ebay_compte
@@ -943,6 +960,7 @@ def demarrer_taches():
     _verifier_secrets()
     threading.Thread(target=_valeurs_auto, daemon=True).start()
     threading.Thread(target=_ebay_auto, daemon=True).start()
+    threading.Thread(target=_watch_boucle, daemon=True, name="watchlist").start()
 
 
 if HEBERGE and os.environ.get("LOCKERROOM_TACHES", "1") == "1":

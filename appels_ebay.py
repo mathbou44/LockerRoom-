@@ -25,7 +25,7 @@ CHEMIN_CACHE = os.path.join(DOSSIER, "cache_ebay.sqlite")
 LIMITES = {"browse": 5000, "trading": 5000, "fulfillment": 100000, "identity": 5000, "offer": 5000}
 RESERVE_GESTES = 0.20          # 20 % de la journee gardes pour les taps du vendeur
 # 27 oct 2026 (licence eBay §8.1 : donnees d'annonces de 6 h au plus) : 5 h au maximum, partout
-DUREE_CACHE_S = {"marche": 5 * 3600, "recentes": 5 * 3600, "encheres": 3600, "flux": 3000}     # flux : chasseur de deals (chaque heure)
+DUREE_CACHE_S = {"marche": 5 * 3600, "recentes": 5 * 3600, "encheres": 3600, "flux": 3000, "article_frais": 180}     # flux : chasseur de deals (chaque heure)
 _verrou = threading.Lock()
 
 

@@ -96,6 +96,9 @@ SYSTEME = """Tu identifies des cartes de sport (hockey, football NFL, basketball
 Regles :
 - Lis ce qui est IMPRIME sur la carte (devant et dos) et sur l'etiquette de gradation. N'invente jamais : un champ illisible reste vide, avec une confiance basse, et va dans a_verifier.
 - Le dos donne souvent l'annee (copyright), le numero de la carte et le set ; l'estampe /99 donne le tirage.
+- Avec 2 images (le devant puis le dos de la MEME carte) : combine-les. Le numero de serie (ex. 12/99) peut etre au devant
+  OU au dos ; l'autographe et le patch se voient au devant ; le dos confirme l'annee, le set, le numero de la carte et
+  souvent le nom de l'insert ou du parallele (Exclusives, High Gloss, Canvas...). Une info lue d'un seul cote compte.
 - Parallele : decris ce que tu vois (couleur, motif, finition) seulement si tu es sur du nom officiel ; sinon mets-le dans a_verifier.
 - Les paralleles qui existent en plusieurs couleurs (Color Flow, Prizm, Refractor, Rainbow, Wave, Mojo, Cracked Ice, Spectrum,
   High Gloss...) : donne TOUJOURS la couleur dans « parallele » (ex. « Color Flow Purple Blue », « Blue Prizm », « Gold Refractor »).

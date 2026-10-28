@@ -658,14 +658,14 @@ def rechercher(q, categorie=None, prix_max=None, recentes=False, limite=50, fond
     return res
 
 
-def article(item_id, fond=False):
+def article(item_id, fond=False, frais=False):
     """24 oct 2026 - une annonce eBay complete (toutes ses photos, vendeur, livraison, fin) : Browse getItem,
     jeton d'application (aucune donnee de compte). Cache 1 h."""
     item_id = str(item_id or "").strip()
     if not re.fullmatch(r"\d{9,15}", item_id):
         raise RuntimeError("Numéro d'annonce eBay invalide")
     cle = appels_ebay.cle_recherche(environnement(), article=item_id)
-    deja = appels_ebay.cache_lire(cle, "encheres")
+    deja = appels_ebay.cache_lire(cle, "article_frais" if frais else "encheres")     # 29 oct : watchlist, fin d'encan : 3 min
     if deja is not None:
         return deja
     appels_ebay.exiger("browse", fond)
