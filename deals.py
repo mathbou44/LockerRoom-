@@ -430,7 +430,7 @@ class Bassin:
 import re as _re
 _RE_GRADE_V = _re.compile(r" (psa|bgs|sgc|cgc|beckett|csg|gma|isa|ags|mnt|tag|ksa|hga) ?\d")
 VERIF_JOUR = 40                  # recherches SoldComps ciblees par jour pour confirmer une annonce prometteuse
-PART_HITS = 0.6                  # 28 oct 2026 : la part de ces 40 gardee pour les hits
+PART_HITS = 0.85                 # 28 oct 2026 : la part gardee pour les hits (0,6 -> 0,85 : « encore juste des Young Guns » ; les YG ont deja leurs ventes connues)
 
 
 def _verificateur(d, st, bassin):
@@ -799,7 +799,7 @@ FLUX_HITS = [("ud black auto", "hockey"), ("spx auto patch", "hockey"), ("patch 
              ("leaf auto hockey", "hockey"), ("tag patch hockey", "hockey"), ("letter patch hockey", "hockey"),
              ("gretzky auto", "hockey"), ("lemieux auto", "hockey"), ("crosby auto", "hockey"), ("ovechkin auto", "hockey"),
              ("patrick roy auto", "hockey"), ("mcdavid auto patch", "hockey")]
-HITS_PAR_TOUR = 8                # 28 oct : 8 par heure (au lieu de 5) : chaque flux de hits revient aux ~4 h
+HITS_PAR_TOUR = 16               # 28 oct (soir) : 16 par heure : tous les flux de hits en ~2 h
 
 
 def flux_hits(curseur):
@@ -879,7 +879,11 @@ def flux(rechercher=None, bassin=None):
                 _juger(a, rv, [], [] if ench else l, maint, deals, st, bassin=bassin, verif=verif)
             if ench and (len(l) < 150 or not l or str(l[-1].get("fin") or "9") > limite_fin):
                 break
-    for q, sport in hits + flux_liste():                # 28 oct : les hits d'abord (le budget de verification va aux hits)
+    # 28 oct 2026 (Mathieu : « les maudits deals sont encore juste des Young Guns ») : les flux larges de recrues (Young
+    # Guns, rookies) un tour sur deux seulement ; les appels eBay economises vont aux hits (2 fois plus de flux de hits)
+    tour_n = int(d.get("tour_n") or 0)
+    recrues = flux_liste() if tour_n % 2 == 0 or os.environ.get("LR_DEALS_FLUX") else []
+    for q, sport in hits + recrues:                     # 28 oct : les hits d'abord (le budget de verification va aux hits)
         r = {"q": None, "flux": q, "sport": sport, "joueur": None}
         # prix fixe : les 200 plus recentes ; encans : page apres page (200) tant qu'ils finissent dans 48 h
         for ench, page in [(False, 0)] + [(True, k) for k in range(pages)]:
@@ -895,7 +899,7 @@ def flux(rechercher=None, bassin=None):
             if ench and (len(l) < 150 or not l or str(l[-1].get("fin") or "9") > limite_fin):
                 break                                   # derniere page, ou on depasse 48 h
     _verifier_tard(st, deals, maint, bassin, verif)
-    garde_ = _sauver(d, deals, maint, st, curseur_h=curseur_h)
+    garde_ = _sauver(d, deals, maint, st, curseur_h=curseur_h, tour_n=tour_n + 1)
     return {"ok": True, "deals": len(garde_), "stats": st}
 
 
@@ -973,11 +977,48 @@ def etat():
         vmax = VERIF_JOUR
     v = d.get("verif") or {}
     jour = datetime.now().strftime("%Y-%m-%d")
-    return {"ok": True, "en_cours": _ETAT["en_cours"], "maj": d.get("maj"),
+    import cartes_match
+    rep = {"young_guns": 0, "recrues": 0, "hits": 0, "veterans": 0}
+    for x in d.get("deals") or []:
+        if not (valide(x) and encore_ouvert(x)):
+            continue
+        rep[sorte(x.get("titre"))] += 1
+    return {"ok": True, "en_cours": _ETAT["en_cours"], "maj": d.get("maj"), "repartition": rep,
             "deals": sum(1 for x in d.get("deals") or [] if valide(x) and encore_ouvert(x)),
             "ebay": utilises_ebay(), "ebay_rythme": round(appels_ebay.rythme("browse")),
             "ebay_plafond": round(appels_ebay.limite("browse") * (1 - appels_ebay.RESERVE_GESTES)),
             "verif": v.get("n", 0) if v.get("jour") == jour else 0, "verif_max": vmax}
+
+
+def sorte(titre):
+    """young_guns | recrues | hits | veterans : pour la repartition (admin) et le melange de l'ecran Deals."""
+    import cartes_match
+    t = cartes_match.norm(titre or "")
+    c = cartes_match.decoder(titre or "")
+    s = c.get("serie")
+    if c.get("auto") or c.get("patch") or (s is not None and int(s) <= 99):
+        return "hits"
+    if "young guns" in t:
+        return "young_guns"
+    if c.get("rc") or "rookie" in t or "future watch" in t:
+        return "recrues"
+    return "veterans"
+
+
+def melanger(lst, ratio=2):
+    """28 oct 2026 (« encore juste des Young Guns ») : l'ecran Deals par defaut alterne : 2 deals d'autres cartes (hits,
+    veterans, legendes, autres recrues) pour 1 Young Guns, dans leur ordre ; les Young Guns restants a la fin."""
+    yg, autres = [], []
+    for x in lst:
+        (yg if sorte(x.get("titre")) == "young_guns" else autres).append(x)
+    out, i, j = [], 0, 0
+    while i < len(autres) or j < len(yg):
+        for _ in range(ratio):
+            if i < len(autres):
+                out.append(autres[i]); i += 1
+        if j < len(yg):
+            out.append(yg[j]); j += 1
+    return out
 
 
 def utilises_ebay():

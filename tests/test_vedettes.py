@@ -42,8 +42,8 @@ class TestVedettes(unittest.TestCase):
         finally:
             vendues.rechercher = vrai
             os.environ.pop("LR_DEALS_VERIF_JOUR", None)
-        self.assertEqual(sum(1 for x in yg if x is not None), 4)      # 40 % de 10 pour les cartes ordinaires
-        self.assertEqual(sum(1 for x in hits if x is not None), 6)    # le reste pour les hits
+        self.assertEqual(sum(1 for x in yg if x is not None), 2)      # 15 % de 10 pour les cartes ordinaires (28 oct : 0,85 aux hits)
+        self.assertEqual(sum(1 for x in hits if x is not None), 8)    # le reste pour les hits
 
     def test_filtres_veteran_et_hit(self):
         import lockerroom
@@ -105,6 +105,13 @@ class TestVedettes(unittest.TestCase):
         self.assertIn(["savage_cards", "remi.cards", "badname"], appels)
         ids = {x["item_id"]: x for x in deals.lire().get("deals") or []}
         self.assertIn("s1", ids, r)                              # 60 $ pour une auto qui se vend ~240 $
+
+    def test_ecran_melange_pas_un_mur_de_young_guns(self):
+        L = [{"titre": f"2025-26 Upper Deck Young Guns Joueur{i}"} for i in range(6)] + [{"titre": "2019-20 The Cup Gretzky Auto Patch /25"},
+             {"titre": "2020-21 SP Authentic Sidney Crosby"}]
+        m = deals.melanger(L)
+        self.assertEqual([deals.sorte(x["titre"]) for x in m[:3]], ["hits", "veterans", "young_guns"])
+        self.assertEqual(len(m), len(L))
 
 
 if __name__ == "__main__":

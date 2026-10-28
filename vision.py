@@ -224,34 +224,79 @@ def _decoder(photo):
     return b, typ
 
 
-def _appeler(corps, timeout=90):
+_MODELE_OK = {"m": None}
+
+
+def modeles_disponibles():
+    """Les modeles que la cle du serveur peut utiliser (API Models d'Anthropic), les plus recents d'abord."""
+    req = urllib.request.Request("https://api.anthropic.com/v1/models?limit=100", headers={"x-api-key": _cle(), "anthropic-version": VERSION_API})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        d = json.loads(r.read().decode("utf-8"))
+    return [m.get("id") for m in d.get("data") or [] if m.get("id")]
+
+
+def _meilleur_modele():
+    """28 oct 2026 (Mathieu, sur iPhone : « reconnaissance indisponible (modele du serveur) ») : le modele configure
+    n'existe pas pour cette cle. On prend le plus recent que la cle peut utiliser : Opus d'abord, sinon Sonnet."""
+    try:
+        l = modeles_disponibles()
+    except Exception as e:
+        print("Vision : liste des modeles impossible : " + repr(e), flush=True)
+        return None
+    for famille in ("opus", "sonnet"):
+        for m in l:
+            if famille in m.lower():
+                return m
+    return l[0] if l else None
+
+
+def _appeler(corps, timeout=90, _reessai=True):
+    if _MODELE_OK["m"] and corps.get("model") in (MODELE, None):
+        corps = dict(corps, model=_MODELE_OK["m"])
     req = urllib.request.Request(URL, data=json.dumps(corps).encode("utf-8"), method="POST", headers={
         "x-api-key": _cle(), "anthropic-version": VERSION_API, "content-type": "application/json"})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return json.loads(r.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
-        # 28 oct 2026 (Mathieu : « la reconnaissance n'a pas répondu ») : la vraie raison dans les journaux de Render
-        # (jamais la cle), et un message qui dit quoi faire
+        if _reessai and e.code in (400, 404):
+            try:
+                corps_err = e.read().decode("utf-8", "ignore")[:400]
+            except Exception:
+                corps_err = ""
+            if e.code == 404 or ("model" in corps_err.lower() and "not" in corps_err.lower()):
+                m = _meilleur_modele()
+                if m and m != corps.get("model"):
+                    print(f"Vision : modele {corps.get('model')} refuse, on passe a {m}", flush=True)
+                    _MODELE_OK["m"] = m
+                    return _appeler(dict(corps, model=m), timeout, _reessai=False)
+            _noter_erreur(e.code, corps_err)
+            print(f"Vision : HTTP {e.code} {corps_err}", flush=True)
+            raise _erreur_http(e.code, corps_err)
         try:
             detail = e.read().decode("utf-8", "ignore")[:400]
         except Exception:
             detail = ""
         print(f"Vision : HTTP {e.code} {detail}", flush=True)
         _noter_erreur(e.code, detail)
-        if e.code in (429, 529):
-            raise Erreur("Beaucoup de demandes en ce moment : réessaie dans une minute.")
-        if e.code in (401, 403):
-            raise Erreur("Reconnaissance photo indisponible (clé du serveur) : remplis la fiche à la main.")
-        if "credit balance" in detail.lower() or "billing" in detail.lower():
-            raise Erreur("Reconnaissance photo en pause (crédit Anthropic du serveur épuisé) : cherche la carte par son nom.")
-        if e.code == 404 or "model" in detail.lower():
-            raise Erreur("Reconnaissance photo indisponible (modèle du serveur) : cherche la carte par son nom.")
-        if e.code == 413 or "image" in detail.lower():
-            raise Erreur("Photo trop lourde pour la reconnaissance : reprends-la de plus près.")
-        raise Erreur("La reconnaissance n'a pas répondu : réessaie.")
+        raise _erreur_http(e.code, detail)
     except (urllib.error.URLError, TimeoutError, OSError):
         raise Erreur("Pas de connexion avec la reconnaissance : réessaie.")
+
+
+def _erreur_http(code, detail):
+    d = (detail or "").lower()
+    if code in (429, 529):
+        return Erreur("Beaucoup de demandes en ce moment : réessaie dans une minute.")
+    if code in (401, 403):
+        return Erreur("Reconnaissance photo indisponible (clé du serveur) : remplis la fiche à la main.")
+    if "credit balance" in d or "billing" in d:
+        return Erreur("Reconnaissance photo en pause (crédit Anthropic du serveur épuisé) : cherche la carte par son nom.")
+    if code == 404 or ("model" in d and "not" in d):
+        return Erreur("Reconnaissance photo indisponible (modèle du serveur) : cherche la carte par son nom.")
+    if code == 413 or "image" in d:
+        return Erreur("Photo trop lourde pour la reconnaissance : reprends-la de plus près.")
+    return Erreur("La reconnaissance n'a pas répondu : réessaie.")
 
 
 _DERNIERE = {}

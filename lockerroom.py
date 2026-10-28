@@ -763,13 +763,14 @@ class Api:
         if not self._est_admin():
             return {"ok": False, "erreur": "Réservé à l'administrateur"}
         import deals as _d
-        return {**_d.recharger(), "etat": _d.etat()}
+        return {**_d.recharger(), "etat": self.deals_etat()}
 
     def deals_etat(self):
         if not self._est_admin():
             return {"ok": False, "erreur": "Réservé à l'administrateur"}
         import deals as _d
-        return _d.etat()
+        # 28 oct 2026 : la reconnaissance photo aussi (modele utilise, derniere erreur d'Anthropic sans la cle)
+        return {**_d.etat(), "vision_modele": vision._MODELE_OK["m"] or vision.MODELE, "vision_erreur": vision.derniere_erreur()}
 
     def admin_resume(self):
         """Tout ce que la console affiche au premier coup d'oeil."""
@@ -3395,6 +3396,8 @@ class Api:
                 "recent": lambda x: str(x.get("vu_le") or ""),
                 "fin": lambda x: (0, str(x.get("fin")), 0) if x.get("encan") else (1, "", -_ts(x.get("vu_le")))}
         lst.sort(key=cles.get(tri, cles["rabais"]), reverse=(tri == "recent"))
+        if tri == "rabais" and not f.get("sortes") and not f.get("joueurs"):
+            lst = _dl.melanger(lst)                # 28 oct 2026 : pas un mur de Young Guns
         n = len(lst)
         pro = forfaits.est_pro()
         if not pro:

@@ -6408,7 +6408,9 @@ async function adminServeur(){
       : `<div class="vide">${tt('Aucune erreur ✓', 'No errors ✓')}</div>`}`;
   const etatDeals = (e) => { const el = $('#adm-deals-e'); if (!el || !e || !e.ok) return;
     el.innerHTML = `${e.en_cours ? '<span class="roue"></span> ' + tt('Tour en cours… ', 'Running… ') : ''}<b>${e.deals}</b> ${tt('deals en ligne', 'live deals')} · ${tt('dernier tour', 'last run')} ${e.maj ? heureCourte(e.maj) : '—'}<br>
-      eBay ${e.ebay} / ${e.ebay_plafond} ${tt('(rythme du jour : ', '(today’s pace: ')}${e.ebay_rythme}) · ${tt('vérifications', 'checks')} ${e.verif} / ${e.verif_max}${e.verif >= e.verif_max ? ' · <span style="color:var(--rouge)">' + tt('épuisées pour aujourd’hui', 'used up for today') + '</span>' : ''}`; };
+      eBay ${e.ebay} / ${e.ebay_plafond} ${tt('(rythme du jour : ', '(today’s pace: ')}${e.ebay_rythme}) · ${tt('vérifications', 'checks')} ${e.verif} / ${e.verif_max}${e.verif >= e.verif_max ? ' · <span style="color:var(--rouge)">' + tt('épuisées pour aujourd’hui', 'used up for today') + '</span>' : ''}
+      ${e.repartition ? '<br>' + tt('En ligne : ', 'Live: ') + e.repartition.hits + ' hits · ' + e.repartition.veterans + tt(' vétérans/légendes · ', ' veterans/legends · ') + e.repartition.recrues + tt(' autres recrues · ', ' other rookies · ') + e.repartition.young_guns + ' Young Guns' : ''}
+      <br>${tt('Reconnaissance photo', 'Photo recognition')} : ${esc(e.vision_modele || '—')}${e.vision_erreur ? ' · <span style="color:var(--rouge)">' + tt('dernière erreur', 'last error') + ' HTTP ' + esc(e.vision_erreur.code) + ' ' + esc((e.vision_erreur.detail || '').slice(0, 140)) + '</span>' : ''}`; };
   API.deals_etat().then(etatDeals).catch(() => {});
   const bd = $('#adm-deals-ok'); if (bd) bd.onclick = async () => {
     bd.disabled = true; const r = await essai(API.deals_recharger(), tt('Tour lancé : les deals arrivent d’ici quelques minutes', 'Run started: deals arrive within a few minutes'));
