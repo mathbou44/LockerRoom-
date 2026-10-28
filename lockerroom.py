@@ -1814,7 +1814,7 @@ class Api:
         if f.get("sans_cout"):                       # 22 oct 2026 - « Cout manquant » de l'accueil
             sql += " AND statut!='Vendue' AND cout IS NULL"
         if f.get("a_lister"):
-            sql += " AND statut='En stock' AND COALESCE(emplacement,'')!='Magasin'"
+            sql += " AND statut='En stock' AND COALESCE(emplacement,'') NOT IN ('Magasin','Collection')"
         if f.get("emplacement"):
             sql += " AND emplacement=?"
             args.append(f["emplacement"])
@@ -3108,7 +3108,7 @@ class Api:
             try:
                 stock = c.execute("SELECT COUNT(*), COALESCE(SUM(COALESCE(valeur, prix_demande, cout, 0)),0), COALESCE(SUM(cout),0) "
                                   "FROM cartes WHERE statut!='Vendue'").fetchone()
-                a_lister = c.execute("SELECT COUNT(*) FROM cartes WHERE statut='En stock' AND emplacement!='Magasin'").fetchone()[0]
+                a_lister = c.execute("SELECT COUNT(*) FROM cartes WHERE statut='En stock' AND COALESCE(emplacement,'') NOT IN ('Magasin','Collection')").fetchone()[0]
             finally:
                 c.close()
         brk = self.breaks_liste()
@@ -3705,7 +3705,8 @@ class Api:
             m = somme(par["traine"], lambda x: x["prix"])
             actions.append({"cle": "traine", "n": len(par["traine"]), "titre": "Ça dort", "montant": m,
                             "texte": "immobilisés, à relancer", "lien": "#sante/traine", "ton": "or", "rang": m * 0.5})
-        a_lister = [k for k in stock if k.get("statut") == "En stock" and (k.get("emplacement") or "") != "Magasin"]
+        # 28 oct 2026 : une carte de collection (gardee, pas a vendre) n'est jamais « a mettre en ligne »
+        a_lister = [k for k in stock if k.get("statut") == "En stock" and (k.get("emplacement") or "") not in ("Magasin", "Collection")]
         if a_lister:
             m = somme(a_lister, lambda k: k.get("valeur") or k.get("cout") or 0)
             actions.append({"cle": "lister", "n": len(a_lister), "titre": "Pas en vente", "montant": m or None,
@@ -3742,7 +3743,25 @@ class Api:
             pass
         analysees = sum(1 for it in act if it in sante_)
         derniere = max((sv.get("maj") or "" for it, sv in sante_.items() if it in act), default=None)
-        return {"hero": hero, "actions": actions, "coups": coups[:3],
+        # 28 oct 2026 (Mathieu : « donner des infos sur la valeur de sa collection et si le joueur est en feu », mais simple) :
+        # UN seul indice, le joueur de TES cartes qui est le plus en feu (LNH, 5 derniers matchs)
+        chaud = None
+        try:
+            import nhl
+            mes = {}
+            for k in stock:
+                j = cartes_match.norm(k.get("joueur") or "")
+                if j:
+                    mes[j] = mes.get(j, 0) + 1
+            for f in nhl.chauds():
+                n = mes.get(cartes_match.norm(f["joueur"]))
+                if n:
+                    chaud = {"joueur": f["joueur"], "points": f["points"], "matchs": f["matchs"], "n": n}
+                    break
+        except Exception:
+            chaud = None
+        coll_n = sum(1 for k in stock if k.get("statut") == "En stock" and (k.get("emplacement") or "") == "Collection")
+        return {"hero": hero, "actions": actions, "coups": coups[:3], "chaud": chaud, "collection_n": coll_n,
                 "stock": {"valeur": round(valeur, 2), "cout": round(cout, 2), "latent": round(latent, 2), "nb": len(stock),
                           "ages": {k: {"n": v[0], "montant": round(v[1], 2)} for k, v in ages.items()}},
                 "vitesse": vitesse, "analyse": {"actives": len(actives), "analysees": analysees, "maj": derniere},

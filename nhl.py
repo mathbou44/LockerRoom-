@@ -139,3 +139,12 @@ def en_feu(min_points=7, maintenant=None):
     l = [g["f"] for g in (_lire().get("joueurs") or {}).values() if g.get("f") and g["f"]["dernier"] >= lim
          and (g["f"]["points"] >= min_points or g["f"]["buts"] >= 5)]
     return max(l, key=lambda f: (f["points"], f["buts"])) if l else None
+
+
+def chauds(min_points=6, maintenant=None):
+    """28 oct 2026 : tous les joueurs en feu (5 derniers matchs, joues dans les 10 derniers jours), du plus chaud au moins."""
+    t = maintenant or time.time()
+    lim = time.strftime("%Y-%m-%d", time.localtime(t - 10 * 86400))
+    l = [g["f"] for g in (_lire().get("joueurs") or {}).values() if g.get("f") and g["f"]["dernier"] >= lim
+         and (g["f"]["points"] >= min_points or g["f"]["buts"] >= 4)]
+    return sorted(l, key=lambda f: (-f["points"], -f["buts"]))

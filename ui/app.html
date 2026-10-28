@@ -608,7 +608,7 @@ body.theme-equipe{background-image:radial-gradient(1200px 420px at 50% -120px, c
   background:linear-gradient(110deg,#2A2416,#1B170E); border:1px solid #5C4E2C} .bandeau-essai b{color:var(--pro-or); display:block; font-size:16px} .bandeau-essai span{font-size:14px; color:#D9CDAE}
 .bandeau-essai .btn{width:auto; flex-shrink:0}
 /* le look Pro : un fil dore en haut, des bordures qui accrochent la lumiere, les titres et l'onglet actif dores */
-body.pro::after{content:''; position:fixed; left:0; right:0; top:0; height:2px; z-index:70; pointer-events:none; background:linear-gradient(90deg,transparent,var(--h1),var(--h2),var(--h3),var(--h4),transparent); opacity:.85}
+/* 28 oct 2026 (Mathieu : « une barre prism pas rapport dans le haut de l'ecran ») : la ligne prisme du Pro en haut est retiree */
 body.pro{--ligne:#2E2C25}
 body.pro .titre{background:linear-gradient(92deg,#FFFFFF 0%,var(--acc-clair) 60%,var(--acc) 100%); -webkit-background-clip:text; background-clip:text; color:transparent}
 body.pro .kpi, body.pro .tuile-c, body.pro .carte-acc{border-color:color-mix(in srgb, var(--acc) 16%, transparent)}
@@ -710,8 +710,30 @@ body.fen-ouverte{overflow:hidden}
 .fen-fond{position:fixed; inset:0; z-index:90; background:rgba(0,0,0,.66); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); display:flex; align-items:flex-start; justify-content:center; overflow-y:auto; padding:24px 16px}
 .fen{position:relative; width:min(1120px,100%); background:var(--fond); border:1px solid var(--ligne); border-radius:26px; padding:22px; display:flex; flex-direction:column; gap:20px; animation:fondu .25s ease-out; box-shadow:0 30px 80px rgba(0,0,0,.6)}
 @media (max-width:600px){ .fen-fond{padding:0} .fen{border-radius:0; min-height:100%; padding:16px 14px 30px} }
+/* 28 oct 2026 (Mathieu : « l'affichage quand on clique sur le petit graphique sous le deal : tout croche, on voit rien ») :
+   la rangee de vignettes elargissait toute la fenetre (plus large que l'ecran) ; tout reste dans la largeur du telephone */
+.fen, .fen-haut > *, .fen-photos, .fen-info, .fen-comps, .fen-val > *, .fen-sug > *{min-width:0; max-width:100%}
+.fen{overflow-x:hidden}
+.fen-info h3{overflow-wrap:anywhere}
+@media (max-width:600px){
+  .fen{padding:calc(var(--haut) + 6px) 14px calc(30px + var(--bas)); gap:16px}
+  .fen .fen-x{position:sticky !important; top:calc(var(--haut) + 4px); right:auto; margin-left:auto; margin-bottom:-52px; z-index:5; width:40px; height:40px; border-radius:20px;
+    background:rgba(20,20,26,.82) !important; -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,.12) !important}
+  .fen-img{aspect-ratio:4/5 !important; max-height:58vh !important; border-radius:16px}
+  .fen-vigs{margin-top:8px; padding-bottom:2px} .fen-vigs button{width:54px; height:54px}
+  .fen-info{gap:12px; padding-top:0} .fen-info .pastilles{flex-wrap:wrap}
+  .fen-info h3{font-size:20px; line-height:1.2; margin:0}
+  .fen-budget{font-size:15px !important; padding:10px 12px !important; border-radius:12px}
+  .fen-prix b{font-size:34px !important}
+  .fen-val > div, .fen-sug > div{padding:12px !important}
+  .fen-val b, .fen-sug b{font-size:26px !important}
+  .fen-courbe{margin:0 -2px; border-radius:14px; overflow:hidden}
+  .fen-btns{position:sticky; bottom:calc(10px + var(--bas)); z-index:4; padding:10px; margin:4px -6px 0; border-radius:18px;
+    background:rgba(16,16,21,.88); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); box-shadow:0 10px 30px rgba(0,0,0,.5)}
+  .fen-btns .btn{height:48px; font-size:15px}
+}
 .fen-x{position:absolute; top:12px; right:12px; width:42px; height:42px; border-radius:21px; border:none; background:var(--carte2); color:var(--texte); font-size:18px; z-index:2; cursor:pointer}
-.fen-haut{display:grid; grid-template-columns:1fr; gap:18px}
+.fen-haut{display:grid; grid-template-columns:minmax(0,1fr); gap:18px}
 @media (min-width:860px){ .fen-haut{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} }
 @media (max-width:600px){ .fen-img{aspect-ratio:4/3 !important; max-height:42vh !important} }
 .fen-img{aspect-ratio:1/1; max-height:62vh; border-radius:20px; background:#111115; border:1px solid var(--ligne); display:flex; align-items:center; justify-content:center; overflow:hidden; color:#34333D}
@@ -729,12 +751,12 @@ body.fen-ouverte{overflow:hidden}
 .fen-info{display:flex; flex-direction:column; gap:14px; padding-top:6px}
 .fen-info h3{font-size:22px; line-height:1.3; margin:0; padding-right:44px}
 .fen-prix{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap} .fen-prix b{font:700 44px/1 'Barlow Condensed',sans-serif} .fen-prix span{color:var(--doux); font-size:15px}
-.fen-val{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.fen-val{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px}
 .fen-val > div{background:var(--carte); border:1px solid var(--ligne); border-radius:16px; padding:12px 14px; display:flex; flex-direction:column; gap:2px}
 .fen-val span{font-size:14px; color:var(--doux); font-weight:600} .fen-val b{font:700 30px/1.05 'Barlow Condensed',sans-serif; color:var(--acc)} .fen-val small{font-size:13px; color:var(--doux)}
 .fen-val .vert b{color:var(--vert)} .fen-val .rouge b{color:var(--rouge)}
 .fen-vend{font-size:15px; color:var(--doux)}
-.fen-btns{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:auto}
+.fen-btns{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; margin-top:auto}
 .fen-comps{display:flex; flex-direction:column; gap:12px}
 .fen-comps .tuile-c{cursor:pointer}
 
@@ -1427,7 +1449,8 @@ body.pro #mosaique{background-image:
 /* 28 oct 2026 (Mathieu, sur iPhone) : accueil plus clair. Les deals en « stories » (anneau prisme), les 3 chiffres tiennent
    dans l'ecran, des sections bien separees avec un vrai titre et une phrase qui dit ce qu'il y a dedans ; la barre du bas
    translucide qui rapetisse quand on descend et revient (jamais plus grosse que sa taille normale) */
-.acc-sous{display:none}
+.acc-sous{display:none} .titre-tel{display:none}
+.haut-bascule{display:none} @media (max-width:899px){ .haut-bascule{display:inline-flex} }
 @media (max-width:899px){
   .ecran.acc{gap:22px !important}
   .histoires{gap:14px !important; scroll-snap-type:x proximity; scroll-padding:0 18px; overscroll-behavior-x:contain}
@@ -1440,11 +1463,28 @@ body.pro #mosaique{background-image:
   .h-rab{position:absolute; left:50%; bottom:-7px; transform:translateX(-50%); font:700 11px/1 var(--f-cond); font-style:normal; letter-spacing:.04em; white-space:nowrap;
     padding:3px 6px; border-radius:7px; background:var(--vert-fond); color:var(--vert); box-shadow:0 0 0 2px var(--fond)}
   .hist .nom{margin-top:4px; font-size:12.5px !important}
+  /* les stories en slab : etui (contour prisme si pas vu), etiquette de gradation avec le rabais, fenetre avec la photo */
+  .hist .anneau.slab{width:64px !important; height:94px !important; border-radius:9px !important; padding:2.5px !important}
+  .slab-in{display:flex; flex-direction:column; width:100%; height:100%; border-radius:7px; overflow:hidden; gap:3px; padding:3px; box-sizing:border-box;
+    background:linear-gradient(180deg,#26252D,#121216); box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+  .slab-lab{flex:none; display:flex; align-items:center; justify-content:space-between; gap:2px; height:19px; padding:0 4px; border-radius:3px;
+    background:var(--etiq, #1C1C22); border-bottom:1px solid #444}
+  .slab-lab small{font:700 7px/1 var(--f-cond); letter-spacing:.1em; color:#BDBAC6}
+  .slab-lab b{font:700 12px/1 var(--f-cond); letter-spacing:.01em; color:#fff; font-variant-numeric:tabular-nums} .slab-lab b.vert{color:var(--vert)}
+  .slab-ph{flex:1; min-height:0; border-radius:3px; overflow:hidden; background:#111115; display:flex; align-items:center; justify-content:center; color:#34333D}
+  .slab-ph img{width:100%; height:100%; object-fit:cover; object-position:50% 35%}
+  .slab-ph > svg{width:46%; height:46%} .slab-ph.ico svg{width:52%; height:52%; color:var(--acc)}
+  .hist:active .anneau.slab{transform:scale(.95)}
   /* les 3 chiffres : tous visibles, sans glisser */
   .acc-tuiles{display:grid !important; grid-template-columns:repeat(3, minmax(0, 1fr)) !important; gap:8px !important; overflow:visible !important}
   .acc-tuiles > *{flex:none !important}
   .t-acc{padding:10px 10px 11px !important; border-radius:16px !important}
-  .t-acc > .l:first-child{margin:-10px -10px 7px !important; padding:6px 10px !important; font-size:10.5px !important; letter-spacing:.12em !important}
+  /* 28 oct 2026 (Mathieu : « grossir le texte des titres des pastilles, et en relief ») */
+  .t-acc > .l:first-child{margin:-10px -10px 8px !important; padding:7px 10px !important; font:700 13.5px/1.1 var(--f-cond) !important; letter-spacing:.07em !important;
+    color:var(--texte) !important; text-overflow:clip !important;
+    text-shadow:0 1px 0 rgba(0,0,0,.85), 0 -1px 0 rgba(255,255,255,.12);
+    background:linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.015)) !important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.09), inset 0 -1px 0 rgba(0,0,0,.5)}
   .t-acc b{font-size:clamp(19px, 6vw, 26px) !important; overflow:hidden; text-overflow:clip}
   .t-acc .s{display:block !important; font-size:11.5px !important; line-height:1.25; white-space:normal !important; display:-webkit-box !important; -webkit-line-clamp:2; -webkit-box-orient:vertical}
   /* les sections */
@@ -1452,18 +1492,89 @@ body.pro #mosaique{background-image:
   .acc-titre{font-size:16.5px !important; letter-spacing:.12em !important; color:var(--texte) !important; padding-left:12px; position:relative}
   .acc-titre::before{content:''; position:absolute; left:0; top:50%; width:3px; height:18px; margin-top:-9px; border-radius:2px; background:var(--holo)}
   .acc-sous{display:block; font-size:13.5px; line-height:1.35; color:var(--doux); margin-top:-2px}
+  /* 28 oct 2026 (Mathieu : « changer la couleur de fond des pastilles pour bien separer les sections ») : chaque section a sa
+     teinte du prisme (tres douce) et un bandeau de titre plus clair ; le petit trait du titre prend la meme teinte */
+  .carte-acc{--teinte:var(--h2); background:linear-gradient(180deg, color-mix(in srgb, var(--teinte) 9%, #17171D), color-mix(in srgb, var(--teinte) 4%, #131318)) !important;
+    border-color:color-mix(in srgb, var(--teinte) 22%, transparent) !important}
+  .carte-acc > .acc-titre{margin:-16px -16px 0; padding:13px 16px 12px 28px; border-radius:16px 16px 0 0;
+    background:color-mix(in srgb, var(--teinte) 13%, rgba(255,255,255,.03)); border-bottom:1px solid color-mix(in srgb, var(--teinte) 25%, transparent)}
+  .carte-acc > .acc-titre::before{left:16px; background:var(--teinte)}
+  .ecran.acc .carte-acc > .acc-titre{padding-left:28px !important}
+  .carte-acc > .acc-sous{margin-top:2px}
+  .carte-acc:has(#acc-afaire){--teinte:var(--h2)}
+  .carte-acc.conseils-acc{--teinte:var(--h1)}
+  .carte-acc:has(#acc-pouls){--teinte:var(--h3)}
+  .titre-tel{display:flex} .acc-sous.titre-tel{display:block}
+  .carte-acc.nouv{padding-top:16px !important} .carte-acc.nouv > #acc-news{margin-top:2px}
+  .acc-profit > .lib{display:none}
+  #acc-plus .carte-acc, .carte-acc.nouv{--teinte:color-mix(in srgb, var(--h1) 45%, var(--h2))}   /* pas d'or : le prisme froid seulement */
+  #acc-plus .hero{background:linear-gradient(180deg, color-mix(in srgb, var(--h2) 8%, #17171D), #131318) !important; border:1px solid color-mix(in srgb, var(--h2) 20%, transparent)}
   .post{padding-top:4px}
   .post-t .post-n b{font-size:16.5px}
   /* barre du bas : translucide et dynamique */
   .onglets{background:rgba(22,22,28,.58) !important; backdrop-filter:blur(22px) saturate(180%); -webkit-backdrop-filter:blur(22px) saturate(180%);
-    transform-origin:50% 100%; transition:transform .28s cubic-bezier(.2,.7,.2,1), opacity .28s, box-shadow .28s; will-change:transform}
-  .onglets.mini{transform:translateY(6px) scale(.86); opacity:.9; box-shadow:0 6px 18px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.06)}
+    transform-origin:50% 100%; will-change:transform;
+    transform:translateY(calc(var(--nk, 0) * 7px)) scale(calc(1 - var(--nk, 0) * .15)); opacity:calc(1 - var(--nk, 0) * .12);
+    transition:transform .45s cubic-bezier(.2,.8,.2,1), opacity .45s}
+  /* 28 oct 2026 (Mathieu : « smooth, comme si je poncais l'ecran avec mes doigts ») : pendant le defilement, la taille suit
+     le doigt pixel par pixel (aucune transition) ; a l'arret, elle revient doucement */
+  .onglets.suit{transition:none}
+}
+/* 28 oct 2026 (Mathieu : « passer d'acheteur a vendeur en un clic, la on ne le voit pas » ; « je ne vois pas la section
+   Breaks dans le menu ») : la bascule des deux volets sous le nom ; la barre du bas comme eBay, chaque onglet avec son nom
+   en dessous (Breaks inclus pour l'acheteur), l'onglet choisi dans une bulle */
+@media (max-width:899px){
+  .haut-nom{gap:4px !important}
+  .haut-bascule{display:inline-flex; gap:2px; padding:2px; border-radius:999px; background:rgba(255,255,255,.07); box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+  .haut-bascule button{border:none; background:none; color:var(--doux); font:700 11.5px/1 var(--f-cond); letter-spacing:.1em; text-transform:uppercase;
+    padding:5px 11px; border-radius:999px; transition:background .2s, color .2s}
+  .haut-bascule button.on{background:var(--acc); color:var(--acc-texte)}
+  body.mode-acheteur .onglets [data-onglet="analyse"]{order:5}
+  .onglets{height:68px !important; padding:6px !important}
+  .onglets a{flex:1 1 0 !important; flex-direction:column !important; gap:3px !important; height:56px !important; min-height:56px !important; border-radius:20px !important;
+    font:600 10.5px/1.05 var(--f-txt) !important; letter-spacing:0 !important; text-transform:none !important; color:var(--texte2) !important; white-space:nowrap}
+  .onglets a.on{color:var(--acc) !important; background:color-mix(in srgb, var(--acc) 15%, rgba(255,255,255,.04)) !important; font-weight:700 !important}
+  .onglets a svg{width:23px !important; height:23px !important}
+  .onglets a.centre, .onglets a.centre.on{background:none !important}
+  .onglets a.centre svg, body .onglets a.centre svg, body:not(.mode-acheteur) .onglets a.centre svg, body.mode-acheteur .onglets a.centre svg{width:19px !important; height:19px !important; padding:7px !important}
+  .onglets .nav-moi .moi-av{width:25px; height:25px}
 }
 /* 28 oct 2026 (Mathieu : « le menu d'eBay est dynamique : quand tu selectionnes une icone, elle bouge un peu ») */
 @keyframes sc-saut{0%{transform:scale(1)} 30%{transform:scale(.8)} 62%{transform:scale(1.14) translateY(-2px)} 100%{transform:scale(1)}}
 @media (max-width:899px){ .onglets a.tape svg, .onglets a.tape .moi-av{animation:sc-saut .42s cubic-bezier(.3,.7,.3,1.2)}
   .onglets a.on{transition:flex-grow .28s cubic-bezier(.2,.8,.2,1.15), background .25s} }
-@media (max-width:899px) and (prefers-reduced-motion:reduce){ .onglets{transition:none} .onglets.mini{transform:none} .onglets a.tape svg, .onglets a.tape .moi-av{animation:none} }
+/* 28 oct 2026 (Mathieu : « mauvaise utilisation de l'espace pour les gains, 30 jours etc. ») : Inventaire sur telephone,
+   la collection sur 3 colonnes egales et les 4 chiffres sur une seule rangee compacte */
+@media (max-width:899px){
+  .coll-t{display:grid !important; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px !important}
+  .coll-t > div{min-width:0} .coll-t b{font-size:clamp(20px, 6.4vw, 26px) !important; white-space:nowrap}
+  .coll-t .lib{font-size:11px !important; letter-spacing:.1em !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  #i-liste .hero-l{grid-template-columns:none !important; grid-auto-flow:column; grid-auto-columns:minmax(0, 1fr); gap:6px !important}
+  #i-liste .kpi{padding:8px 8px 10px !important; border-radius:14px !important; min-width:0}
+  #i-liste .kpi > .lib:first-child{margin:-8px -8px 6px !important; padding:6px 8px !important; font-size:10.5px !important; letter-spacing:.05em !important;
+    line-height:1.1; white-space:normal; height:2.6em; box-sizing:content-box; display:flex !important; align-items:center}
+  #i-liste .kpi .v{font-size:clamp(20px, 6.5vw, 26px) !important; line-height:1.05}
+  #i-liste .kpi .s{font-size:11px !important; line-height:1.2; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+}
+@media (max-width:899px) and (prefers-reduced-motion:reduce){ .onglets{transition:none; transform:none !important; opacity:1 !important} .onglets a.tape svg, .onglets a.tape .moi-av{animation:none} }
+/* 28 oct 2026 : une seule ligne sous les chiffres de l'accueil (collection a ajouter, ou joueur en feu) */
+.acc-ligne{display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:center; width:100%; margin-top:10px; padding:12px 14px; border-radius:16px; text-align:left;
+  border:1px solid color-mix(in srgb, var(--acc) 30%, var(--ligne)); background:color-mix(in srgb, var(--acc) 8%, var(--carte)); color:var(--texte)}
+.acc-ligne b{font-size:15px} .acc-ligne span{grid-column:1; font-size:13px; color:var(--doux)} .acc-ligne i{grid-column:2; grid-row:1 / span 2; font-style:normal; font-size:22px; color:var(--acc)}
+.acc-feu{border-color:color-mix(in srgb, var(--h3) 38%, var(--ligne)); background:color-mix(in srgb, var(--h3) 8%, var(--carte))} .acc-feu i{color:var(--h3)}
+/* 28 oct 2026 : fiche d'une carte de collection */
+.fc{display:flex; flex-direction:column; gap:12px} .fc h3{margin:0}
+.fc-img{border-radius:16px; overflow:hidden; background:#111115; aspect-ratio:4/5; max-height:46vh; display:flex; align-items:center; justify-content:center}
+.fc-img img{width:100%; height:100%; object-fit:contain}
+.fc-chiffres{display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); gap:8px}
+.fc-chiffres div{display:flex; flex-direction:column; gap:2px; padding:10px 12px; border-radius:14px; background:var(--carte); border:1px solid var(--ligne)}
+.fc-chiffres span{font:700 11px var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--doux)} .fc-chiffres b{font:700 24px/1.05 var(--f-cond)}
+.fc-chiffres b.vert{color:var(--vert)} .fc-chiffres b.rouge{color:var(--rouge)}
+/* 28 oct 2026 : la feuille « Ajouter des cartes » */
+.aj-bloc{display:flex; flex-direction:column; gap:8px; margin-bottom:14px} .aj-t{display:flex; flex-direction:column; gap:2px; padding:0 2px}
+.aj-t b{font:700 15px var(--f-cond); letter-spacing:.12em; text-transform:uppercase} .aj-t span{font-size:13.5px; color:var(--doux)}
+.aj-bloc .r-ligne > svg:last-child{width:18px; height:18px; margin-left:auto; color:var(--doux); flex:none}
+.lot-ok{width:32px; height:32px; border-radius:16px; display:flex; align-items:center; justify-content:center; background:var(--vert-fond); color:var(--vert); font-weight:800; flex:none}
 /* 28 oct 2026 : vendre en lot */
 .carte-lot{display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:center; padding:13px 15px; border-radius:var(--r-ctl, 14px); border:1px solid color-mix(in srgb, var(--acc) 30%, var(--ligne)); background:color-mix(in srgb, var(--acc) 7%, var(--carte)); color:var(--texte)}
 .carte-lot b{font-size:15.5px} .carte-lot span{grid-column:1; font-size:13px; color:var(--doux)} .carte-lot i{grid-column:2; grid-row:1 / span 2; font-style:normal; font-size:22px; color:var(--acc)}
@@ -1854,21 +1965,25 @@ addEventListener('scroll', () => document.body.classList.toggle('defile', scroll
 // 28 oct 2026 (Mathieu : « comme Insta : le menu du bas rapetisse quand on descend, regrossit quand on arrete ou remonte,
 // jamais plus gros que sa taille normale ») : une seule classe, la taille normale est le maximum
 (() => {
-  let y0 = scrollY, t = null;
+  // k : 0 = taille normale (le maximum), 1 = la plus petite. Descendre de 220 px fait tout le chemin ; remonter le defait
+  // au meme rythme ; a l'arret, retour doux a 0. Jamais au-dela de la taille normale.
+  let y0 = scrollY, k = 0, t = null, rf = 0;
+  const poser = (o) => { rf = 0; o.style.setProperty('--nk', k.toFixed(3)); };
   addEventListener('scroll', () => {
     const o = document.querySelector('.onglets'); if (!o || !matchMedia('(max-width:899px)').matches) return;
-    const y = scrollY;
-    if (y > y0 + 6 && y > 80) o.classList.add('mini');
-    else if (y < y0 - 6) o.classList.remove('mini');
-    y0 = y;
-    clearTimeout(t); t = setTimeout(() => o.classList.remove('mini'), 520);
+    const y = Math.max(0, scrollY), dy = y - y0; y0 = y;
+    k = y < 40 ? 0 : Math.min(1, Math.max(0, k + dy / 220));
+    o.classList.add('suit');
+    if (!rf) rf = requestAnimationFrame(() => poser(o));
+    clearTimeout(t);
+    t = setTimeout(() => { o.classList.remove('suit'); k = 0; o.style.setProperty('--nk', '0'); }, 420);
   }, {passive:true});
 })();
 document.addEventListener('pointerdown', (e) => {
   const a = e.target.closest && e.target.closest('.onglets a, .onglets button'); if (!a || !matchMedia('(max-width:899px)').matches) return;
   a.classList.remove('tape'); void a.offsetWidth; a.classList.add('tape');
   setTimeout(() => a.classList.remove('tape'), 460);
-  const o = a.closest('.onglets'); if (o) o.classList.remove('mini');
+  const o = a.closest('.onglets'); if (o) { o.classList.remove('suit'); o.style.setProperty('--nk', '0'); }
 });
 function fermerFeuille(){ $('#fond-feuille').hidden = true; $('#feuille').innerHTML = ''; }
 // 27 oct 2026 (revue Apple 5.1.2(i)) : une photo de carte part chez une IA tierce (Anthropic) seulement apres un OUI explicite.
@@ -2000,7 +2115,7 @@ function route(){
   // 22 oct 2026 - deux volets : la 1re ouverture demande le volet ; « Accueil » d'un acheteur = ses deals
   if (!S.mode && ecran !== 'reglages') { vueChoixMode(); return; }
   if (S.mode === 'vendeur' && ['deals', 'valeur'].includes(ecran)) { ecran = 'accueil'; history.replaceState(null, '', '#accueil'); }
-  if (S.mode === 'acheteur' && ['vendre', 'comptoir', 'bilan'].includes(ecran)) { ecran = 'accueil'; history.replaceState(null, '', '#accueil'); }
+  if (S.mode === 'acheteur' && ['vendre', 'comptoir', 'bilan'].includes(ecran) && !(ecran === 'vendre' && /^collection/.test(arg || ''))) { ecran = 'accueil'; history.replaceState(null, '', '#accueil'); }
   $$('.onglets a').forEach(a => {
     const o = a.dataset.onglet;
     a.classList.toggle('on', o === ecran || (o === 'breaks' && ['break', 'analyse'].includes(ecran)) || (o === 'analyse' && ecran === 'analyse') || (o === (S.mode === 'acheteur' ? 'deals' : 'accueil') && ecran === 'sante'));
@@ -2111,7 +2226,7 @@ function appliquerActivites(a){
     x.hidden = !bonMode || (x.dataset.onglet in voir && !voir[x.dataset.onglet]) || (x.dataset.onglet === 'admin' && !(S.forfait && S.forfait.admin));
   });
   const tel = matchMedia('(max-width:899px)').matches;
-  $$('a', nav).forEach(x => { if (tel && (['comptoir', 'bilan'].includes(x.dataset.onglet) || (x.dataset.onglet === 'analyse' && x.dataset.mode === 'acheteur'))) x.hidden = true; });
+  $$('a', nav).forEach(x => { if (tel && ['comptoir', 'bilan'].includes(x.dataset.onglet)) x.hidden = true; });   // 28 oct : Breaks revient dans la barre de l'acheteur
   // 26 oct 2026 (Mathieu : « inspiré des meilleures apps ») : comme CollX et Ludex, l'action principale au centre de
   // la barre du bas, en bouton rond doré : Valeur (acheteur : scanner ou chercher une carte), Vendre (vendeur : une photo)
   const mobile = matchMedia('(max-width:899px)').matches;
@@ -2149,10 +2264,11 @@ function majBarreMode(){
     b.hidden = !voir;
     const perso = nomMarque() !== 'SlabCoach';
     b.innerHTML = voir ? `<button class="rond haut-plus" id="h-plus" aria-label="${esc(tt('Ajouter', 'Add'))}">${ICONES.plus}</button>
-      <button class="haut-nom" id="h-nom" aria-haspopup="dialog" aria-label="${esc(tt('Changer de volet', 'Switch mode'))}"><span class="haut-mot">${perso ? esc(nomMarque()) : '<b>slab</b>coach'}</span><small>${S.mode === 'acheteur' ? tt('Acheteur', 'Buyer') : tt('Vendeur', 'Seller')} <i>▾</i></small></button>
+      <div class="haut-nom" id="h-nom"><span class="haut-mot">${perso ? esc(nomMarque()) : '<b>slab</b>coach'}</span>
+        <span class="haut-bascule" role="tablist" aria-label="${esc(tt('Volet', 'Mode'))}">${['acheteur', 'vendeur'].map(m => `<button role="tab" aria-selected="${S.mode === m}" data-mode-choix="${m}" class="${S.mode === m ? 'on' : ''}">${m === 'acheteur' ? tt('Acheteur', 'Buyer') : tt('Vendeur', 'Seller')}</button>`).join('')}</span></div>
       <button class="rond haut-cloche" data-alertes aria-label="${esc(tt('Alertes', 'Alerts'))}">${ICO_CLOCHE}<i class="pt" id="h-pt" hidden></i></button>` : '';
     const hp = $('#h-plus', b); if (hp) hp.onclick = feuilleAjouter;
-    const hn = $('#h-nom', b); if (hn) hn.onclick = feuilleModes;
+    brancherSwitchMode(b);            // 28 oct 2026 (Mathieu : « passer d'acheteur a vendeur en un clic ») : les deux volets, visibles, un tap
     if (voir) majCloche();
   }
   if (n) { n.innerHTML = voir ? switchMode() : ''; brancherSwitchMode(n); }
@@ -2174,17 +2290,40 @@ function feuilleModes(){
   ouvrirFeuille(`<h3>${tt('Ton volet', 'Your mode')}</h3><div class="choix-volet">${l.map(([k, n, d]) => `<button class="r-ligne ${S.mode === k ? 'on' : ''}" data-volet="${k}"><span class="v-ico ${k}">${ICO_MODE[k]}</span><span class="t"><b>${n}</b><span>${d}</span></span>${S.mode === k ? '<span class="v-ok">✓</span>' : ''}</button>`).join('')}</div>`);
   $$('[data-volet]').forEach(b => b.onclick = () => { fermerFeuille(); changerMode(b.dataset.volet); });
 }
+// 28 oct 2026 (Mathieu : « revoir l'ajout de photo / creation d'annonce / ajout de ta carte a l'app, sans necessairement la
+// mettre sur eBay : l'utilisateur peut avoir une collection sans vouloir vendre ») : deux chemins clairs.
+// Ma collection : la carte entre dans l'app avec sa valeur estimee, rien ne va sur eBay. Vendre : l'annonce eBay.
+function feuilleAjout(){
+  const vend = S.mode !== 'acheteur';
+  const coll = [['collection', ICONES.photo, tt('Scanner une carte', 'Scan a card'), tt('Devant et dos : l’app la lit et estime sa valeur', 'Front and back: the app reads it and estimates its value')],
+    ['collection-lot', ICO_LOT, tt('Plusieurs cartes d’un coup', 'Several cards at once'), tt('Depuis ta photothèque, devant puis dos', 'From your photo library, front then back')],
+    ['main', ICONES.plus, tt('À la main', 'By hand'), tt('Sans photo : joueur, année, set, prix payé', 'No photo: player, year, set, price paid')]];
+  const vente = [['nouvelle', ICO_EBAY_TAG, tt('Créer une annonce eBay', 'Create an eBay listing'), tt('Une photo : titre, prix et annonce complète', 'One photo: title, price and full listing')],
+    ['lot', ICO_LOT, tt('Plusieurs annonces d’un coup', 'Several listings at once'), tt('Tes photos en lot, prêtes à publier', 'Your photos in a batch, ready to publish')]];
+  const bloc = (t, d, l) => `<div class="aj-bloc"><div class="aj-t"><b>${t}</b><span>${d}</span></div><div class="liste-ajout">${l.map(([k, ic, n, x]) => `<button class="r-ligne" data-aj2="${k}"><span class="aj-ico">${ic}</span><span class="t"><b>${n}</b><span>${x}</span></span>${ICONES.chevron || '›'}</button>`).join('')}</div></div>`;
+  const bC = bloc(tt('Dans ma collection', 'To my collection'), tt('Rien ne va sur eBay. Tu la mets en vente plus tard si tu veux.', 'Nothing goes to eBay. List it later if you want.'), coll);
+  const bV = vend ? bloc(tt('Pour vendre', 'To sell'), tt('L’annonce eBay, prête en une photo.', 'The eBay listing, ready in one photo.'), vente) : '';
+  ouvrirFeuille(`<h3>${tt('Ajouter des cartes', 'Add cards')}</h3>${vend ? bV + bC : bC}
+    ${!vend ? `<div class="sous" style="margin-top:4px">${tt('Pour vendre sur eBay, passe en mode Vendeur (en haut).', 'To sell on eBay, switch to Seller mode (top).')}</div>` : ''}`);
+  $$('[data-aj2]').forEach(b => b.onclick = () => {
+    const k = b.dataset.aj2; fermerFeuille();
+    if (k === 'main') { feuilleCarte({emplacement: 'Collection'}); return; }
+    location.hash = '#vendre/' + k;
+  });
+}
+const ICO_LOT = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="3" width="13" height="17" rx="2"/><path d="M4 7v12a2 2 0 0 0 2 2h9"/></svg>';
+const ICO_EBAY_TAG = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>';
 // le + : ajouter, selon le volet et ce que tu fais
 function feuilleAjouter(){
   const act = S.activites || {}, v = S.mode !== 'acheteur';
   const L = v ? [
     [ICONES.photo || ICONES.plus, tt('Vendre une carte', 'Sell a card'), tt('Une photo : l’annonce eBay complète', 'One photo: the full eBay listing'), () => { location.hash = '#vendre'; }],
-    [ICONES.plus, tt('Ajouter une carte à la main', 'Add a card by hand'), tt('Dans ton inventaire, sans photo', 'To your inventory, no photo'), () => { location.hash = '#vendre/nouvelle'; }],
+    [ICONES.plus, tt('Ajouter à ma collection', 'Add to my collection'), tt('Garder des cartes sans les vendre : scanner, en lot ou à la main', 'Keep cards without selling: scan, batch or by hand'), () => feuilleAjout()],
     ...(act.breaks !== false ? [[ICONES.calc || ICONES.plus, tt('Préparer un break', 'Plan a break'), tt('Prix des places selon le produit', 'Spot prices from the product'), () => { location.hash = '#analyse'; }]] : []),
     ...(act.magasin ? [[ICONES.caisse || ICONES.plus, tt('Vente au comptoir', 'Counter sale'), tt('En personne, à la boutique', 'In person, at the shop'), () => { location.hash = '#comptoir'; }]] : []),
   ] : [
     [ICONES.loupe, tt('Valeur d’une carte', 'What a card is worth'), tt('Une photo ou le nom de la carte', 'A photo or the card name'), () => { location.hash = '#valeur'; }],
-    [ICONES.plus, tt('Ajouter à ma collection', 'Add to my collection'), tt('Ce que tu as acheté, au prix payé', 'What you bought, at the price paid'), () => { location.hash = '#inventaire/ajout'; feuilleNouvelleCarte(); }],
+    [ICONES.plus, tt('Ajouter à ma collection', 'Add to my collection'), tt('Scanner, en lot ou à la main : rien ne va sur eBay', 'Scan, batch or by hand: nothing goes to eBay'), () => feuilleAjout()],
     [ICO_CLOCHE, tt('Créer une alerte de prix', 'Create a price alert'), tt('On te prévient quand la carte passe sous ton prix', 'We tell you when the card drops under your price'), () => feuilleAlerte('', 0)],
     ['$', tt('Mon budget du mois', 'My monthly budget'), tt('Ce qui te reste à dépenser', 'What you have left to spend'), () => feuilleBudget()],
   ];
@@ -2574,7 +2713,7 @@ async function qualitePhoto(src){
 // Assistant de vente : Devant -> Dos -> Lecture -> Verifier -> Publier (ou Garder). Chaque photo est controlee tout de
 // suite dans le telephone (floue, sombre, reflet) ; la lecture IA dit aussi si un coin est coupe. Puis photo studio.
 // ============================================================
-const ETAPES_ASSIST = () => [tt('Devant', 'Front'), tt('Dos', 'Back'), tt('Lecture', 'Scan'), tt('Vérifier', 'Check'), tt('Publier', 'Publish')];
+const ETAPES_ASSIST = () => [tt('Devant', 'Front'), tt('Dos', 'Back'), tt('Lecture', 'Scan'), tt('Vérifier', 'Check'), V2.but === 'collection' ? tt('Ajouter', 'Add') : tt('Publier', 'Publish')];
 function filAssistant(n){
   return `<ol class="fil-v" aria-label="${esc(tt('Étapes', 'Steps'))}">${ETAPES_ASSIST().map((t, i) =>
     `<li class="${i < n ? 'fait' : i === n ? 'on' : ''}"><i>${i < n ? '✓' : i + 1}</i><span>${t}</span></li>`).join('')}</ol>`;
@@ -2589,7 +2728,8 @@ const MSG_PHOTO = {
   coupee: [tt('Un coin est coupé', 'A corner is cut off'), tt('Recule un peu : toute la carte doit être dans la photo.', 'Step back a little: the whole card must be in the photo.')],
 };
 async function vueVendre(arg){
-  if (arg === 'lot') { if (LOT.l && !LOT.fini) rendreLot(); else vueLot(); return; }
+  if (arg === 'lot' || arg === 'collection-lot') { const but = arg === 'lot' ? 'vente' : 'collection'; if (LOT.l && !LOT.fini && LOT.but === but) rendreLot(); else vueLot(but); return; }
+  if (arg === 'collection') { for (const k in V2) delete V2[k]; V2.but = 'collection'; etapePhoto(0); return; }
   if (arg === 'nouvelle') { for (const k in V2) delete V2[k]; history.replaceState(null, '', '#vendre'); }
   if (arg && /^\d+$/.test(arg) && V2.cid !== +arg) {          // depuis l'inventaire : la fiche de la carte (et ses photos gardees)
     for (const k in V2) delete V2[k];
@@ -2613,7 +2753,8 @@ async function etapePhoto(i){
   V().innerHTML = `<section class="ecran vendre assist">
     ${filAssistant(i)}
     <div class="titre">${dev ? tt('Photo du devant', 'Front photo') : tt('Et le dos', 'Now the back')}</div>
-    <div class="sous">${dev ? tt('L’app lit la carte, trouve le prix et fait l’annonce. Une belle photo, c’est une vente plus rapide.', 'The app reads the card, finds the price and builds the listing. A great photo sells faster.')
+    <div class="sous">${dev && V2.but === 'collection' ? tt('L’app lit la carte et estime sa valeur. Elle va dans ta collection : rien ne va sur eBay.', 'The app reads the card and estimates its value. It goes to your collection: nothing goes to eBay.')
+      : dev ? tt('L’app lit la carte, trouve le prix et fait l’annonce. Une belle photo, c’est une vente plus rapide.', 'The app reads the card, finds the price and builds the listing. A great photo sells faster.')
       : tt('Le dos donne l’année, le numéro et le set : moins d’erreurs dans l’annonce.', 'The back gives the year, number and set: fewer mistakes in the listing.')}</div>
     ${i === 1 && V2.photos[0] ? `<div class="photos-prises"><img src="${esc(V2.photos[0])}" alt=""></div>` : `<div class="guide-ph">${SVG_GUIDE}</div>`}
     <ul class="conseils-ph">
@@ -2624,7 +2765,7 @@ async function etapePhoto(i){
       <input type="file" accept="image/*" capture="environment" id="as-cam" hidden></label>
     ${dev ? `<label class="plus">${tt('Choisir dans mes photos', 'Pick from my photos')}<input type="file" accept="image/*" multiple id="as-gal" hidden></label>
       <div class="pastilles" style="justify-content:center">${pastilleQuota('annonces_mois')}${st.limite != null ? capsule(tt(st.reste + ' lecture' + (st.reste > 1 ? 's' : '') + ' de photo ce mois', st.reste + ' photo read' + (st.reste > 1 ? 's' : '') + ' left this month'), st.reste ? 'acc' : 'rouge') : ''}</div>
-      <a class="carte-lot" href="#vendre/lot"><b>${tt('Plusieurs cartes ? Vends en lot', 'Several cards? Sell in a batch')}</b><span>${tt('Tes photos de la photothèque, devant puis dos : jusqu’à 20 cartes d’un coup', 'Photos from your library, front then back: up to 20 cards at once')}</span><i>›</i></a>
+      <a class="carte-lot" href="#vendre/${V2.but === 'collection' ? 'collection-lot' : 'lot'}"><b>${tt('Plusieurs cartes ? Vends en lot', 'Several cards? Sell in a batch')}</b><span>${tt('Tes photos de la photothèque, devant puis dos : jusqu’à 20 cartes d’un coup', 'Photos from your library, front then back: up to 20 cards at once')}</span><i>›</i></a>
       <button class="plus" id="vd-main">${tt('Remplir à la main', 'Fill in by hand')}</button>`
       : `<button class="plus" id="as-sans">${tt('Continuer sans le dos', 'Continue without the back')}</button>`}
   </section>`;
@@ -2637,7 +2778,7 @@ async function etapePhoto(i){
       if (!V2.photos.length) { toast(tt('Photo illisible : reprends-la', 'Unreadable photo: retake it')); return; }
       lireVente();
     };
-    $('#vd-main').onclick = async () => { V2.champs = {}; await preparerVente(); };
+    $('#vd-main').onclick = async () => { if (V2.but === 'collection') { feuilleCarte({emplacement: 'Collection'}); return; } V2.champs = {}; await preparerVente(); };
     brancherQuota(V());
   } else $('#as-sans').onclick = lireVente;
 }
@@ -2696,7 +2837,7 @@ async function continuerLecture(r, ph){
   V2.douteux = (r && r.a_verifier) || [];
   V2.notes = [...((r && r.notes) || []), r && r.conseil_photo].filter(Boolean);
   await studioPhotos(ph);
-  if (r && r.ok) etapeVerifier(); else await preparerVente();
+  if ((r && r.ok) || V2.but === 'collection') etapeVerifier(); else await preparerVente();
 }
 // photo studio : les coins lus par l'IA -> carte redressee sur fond clair ; l'originale reste a cote
 let MODE_STUDIO = true; try { MODE_STUDIO = localStorage.getItem('lr_studio') !== '0'; } catch (e) {}
@@ -2733,12 +2874,14 @@ function etapeVerifier(){
           <label class="bascule">${tt('Recrue (RC)', 'Rookie (RC)')}<input type="checkbox" id="vf-recrue" ${c.recrue ? 'checked' : ''}></label>
           <label class="bascule">Patch<input type="checkbox" id="vf-relique" ${c.relique ? 'checked' : ''}></label></div></div></div>
     ${(V2.notes || []).length ? `<div class="bandeau info">${V2.notes.slice(0, 3).map(esc).join('<br>')}</div>` : ''}
-    <button class="btn" id="vf-ok">${tt('C’est bon : faire l’annonce', 'Looks good: build the listing')}</button></section>`;
+    ${V2.but === 'collection' ? `<label class="vc"><span>${tt('Prix payé (optionnel)', 'Price paid (optional)')}</span><input class="champ" id="vf-cout" inputmode="decimal" placeholder="0,00" value="${esc(V2.cout ?? '')}"></label>` : ''}
+    <button class="btn" id="vf-ok">${V2.but === 'collection' ? tt('Ajouter à ma collection', 'Add to my collection') : tt('C’est bon : faire l’annonce', 'Looks good: build the listing')}</button></section>`;
   $('#vf-ok').onclick = async () => {
     const n = {...(V2.champs || {})};
     for (const [k] of CHAMPS_VERIF()) { const v = val('vf-' + k).trim(); if (v !== String(n[k] ?? '')) { n[k] = k === 'tirage' ? (nb(v) || '') : v; if (k !== 'titre') delete n.titre; } }
     for (const k of ['auto', 'recrue', 'relique']) { const v = coche('vf-' + k) ? 1 : 0; if (v !== (+n[k] || 0)) { n[k] = v; delete n.titre; } }
     V2.champs = n; V2.douteux = []; V2.assist = true;
+    if (V2.but === 'collection') { V2.cout = val('vf-cout'); await garderCollection(); return; }
     $('#vf-ok').disabled = true; $('#vf-ok').textContent = tt('Le prix et le titre…', 'Price and title…');
     await preparerVente();
   };
@@ -2778,6 +2921,23 @@ function feuilleCadrage(j){
     } catch (e) { $('#cd-ok').disabled = false; toast(tt('Recadrage impossible sur cette photo', 'Could not crop this photo')); }
   };
 }
+// 28 oct 2026 : la carte entre dans la collection (emplacement « Collection »), avec sa valeur estimee ; rien sur eBay
+async function garderCollection(){
+  const b = $('#vf-ok'); if (b) { b.disabled = true; b.textContent = tt('Estimation de la valeur…', 'Estimating the value…'); }
+  const p = await API.annonce_preparer(V2.champs || {}, typeof LANGUE !== 'undefined' ? LANGUE : 'fr').catch(() => ({ok:false}));
+  const valeur = p && p.ok && p.prix ? p.prix.marche : null, titre = (p && p.ok && p.titre) || (V2.champs || {}).titre || '';
+  const r = await API.carte_garder({carte: {...(V2.champs || {}), emplacement: 'Collection', valeur}, titre, prix: null, cout: V2.cout, photos: V2.photos || []})
+    .catch(e => ({ok:false, erreur:e.message}));
+  if (!r || !r.ok) { if (b) { b.disabled = false; b.textContent = tt('Ajouter à ma collection', 'Add to my collection'); } toast((r && r.erreur) || tt('Erreur', 'Error'), 5000); return; }
+  const ph = (V2.photos || [])[0];
+  for (const k in V2) delete V2[k];
+  V().innerHTML = `<section class="ecran vendre fini">${ph ? `<div class="photos-prises"><img src="${esc(ph)}" alt=""></div>` : '<div class="gros-ok">✓</div>'}
+    <div class="titre">${tt('Dans ta collection', 'In your collection')}</div>
+    <div class="sous" style="text-align:center">${valeur ? tt('Valeur estimée ', 'Estimated value ') + '<b>' + argent(valeur, 0) + '</b> · ' : ''}${tt('Rien n’est allé sur eBay. Tu peux la mettre en vente plus tard, d’un tap.', 'Nothing went to eBay. You can list it later, in one tap.')}</div>
+    <a class="btn" href="#inventaire" id="gc-voir">${tt('Voir ma collection', 'See my collection')}</a>
+    <a class="btn ghost" href="#vendre/collection">${tt('Ajouter une autre carte', 'Add another card')}</a></section>`;
+  const gv = $('#gc-voir'); if (gv) gv.onclick = () => { S.filtreInv = 'collection'; };
+}
 async function garderVente(){
   const b = $('#v2-garde'); if (b) { b.disabled = true; b.textContent = tt('Enregistrement…', 'Saving…'); }
   const r = await API.carte_garder({carte: lireChampsVente(), titre: $('#v2-titre').value.trim(), prix: V2.prix, cout: val('v2-cout'),
@@ -2801,11 +2961,14 @@ async function garderVente(){
 // ============================================================
 const LOT_MAX = 20;
 const LOT = {};
-function vueLot(){
+function vueLot(but){
   for (const k in LOT) delete LOT[k];
+  LOT.but = but || 'vente';
+  const C = LOT.but === 'collection';
   V().innerHTML = `<section class="ecran vendre assist lot">
     <div class="titre">${tt('Plusieurs cartes d’un coup', 'Several cards at once')}</div>
-    <div class="sous">${tt('Choisis tes photos dans ta photothèque, dans l’ordre : le devant puis le dos de chaque carte. L’app vérifie chaque photo, lit chaque carte, fait la photo studio, le titre et le prix, puis la range dans ton inventaire, prête à publier.', 'Pick your photos from your library, in order: the front then the back of each card. The app checks each photo, reads each card, makes the studio photo, title and price, then saves it to your inventory, ready to publish.')}</div>
+    <div class="sous">${C ? tt('Choisis tes photos dans ta photothèque, dans l’ordre : le devant puis le dos de chaque carte. L’app vérifie chaque photo, lit chaque carte, estime sa valeur et l’ajoute à ta collection. Rien ne va sur eBay.', 'Pick your photos from your library, in order: the front then the back of each card. The app checks each photo, reads each card, estimates its value and adds it to your collection. Nothing goes to eBay.')
+      : tt('Choisis tes photos dans ta photothèque, dans l’ordre : le devant puis le dos de chaque carte. L’app vérifie chaque photo, lit chaque carte, fait la photo studio, le titre et le prix, puis la range dans ton inventaire, prête à publier.', 'Pick your photos from your library, in order: the front then the back of each card. The app checks each photo, reads each card, makes the studio photo, title and price, then saves it to your inventory, ready to publish.')}</div>
     <div class="lot-ordre" aria-hidden="true"><span><i>1</i>${tt('Devant', 'Front')}</span><span class="dos"><i>1</i>${tt('Dos', 'Back')}</span><span><i>2</i>${tt('Devant', 'Front')}</span><span class="dos"><i>2</i>${tt('Dos', 'Back')}</span><em>…</em></div>
     <ul class="conseils-ph">
       <li><b>1</b>${tt('Une carte par photo, les 4 coins visibles', 'One card per photo, all 4 corners visible')}</li>
@@ -2815,7 +2978,7 @@ function vueLot(){
     <label class="bascule">${tt('Mes photos sont seulement des devants', 'My photos are fronts only')}<input type="checkbox" id="lot-devants"></label>
     <label class="btn gros prise">${ICONES.photo}<span>${tt('Choisir mes photos', 'Choose my photos')}</span><input type="file" accept="image/*" multiple id="lot-f" hidden></label>
     <div class="sous" style="text-align:center">${tt(`Jusqu’à ${LOT_MAX} cartes par lot. Chaque carte compte pour une lecture de photo.`, `Up to ${LOT_MAX} cards per batch. Each card counts as one photo read.`)}</div>
-    <a class="plus" href="#vendre/nouvelle">${tt('Une seule carte', 'Just one card')}</a></section>`;
+    <a class="plus" href="#vendre/${C ? 'collection' : 'nouvelle'}">${tt('Une seule carte', 'Just one card')}</a></section>`;
   $('#lot-f').onchange = (e) => { const l = [...(e.target.files || [])]; if (l.length) lancerLot(l, coche('lot-devants')); };
 }
 async function lancerLot(fichiers, devantsSeuls){
@@ -2834,7 +2997,7 @@ async function lancerLot(fichiers, devantsSeuls){
   }
   if (avis) toast(avis, 5000);
   LOT.l = cartes.map((f, i) => ({n: i + 1, f, etat: 'attente', impair: !devantsSeuls && f.length === 1}));
-  LOT.devants = devantsSeuls; LOT.fini = false;
+  LOT.devants = devantsSeuls; LOT.fini = false; LOT.but = LOT.but || 'vente';
   rendreLot();
   for (const c of LOT.l) { try { await traiterCarteLot(c); } catch (e) { c.etat = 'revoir'; c.raison = tt('Erreur : reprends cette carte', 'Error: redo this card'); } c.f = null; rendreLot(); }
   LOT.fini = true; rendreLot();
@@ -2870,42 +3033,47 @@ async function traiterCarteLot(c){
   const titre = (prep && prep.ok && prep.titre) || champs.titre || '';
   const prix = prep && prep.ok && prep.prix ? prep.prix.marche : '';
   if (dt.length) champs.note = tt('À vérifier : ', 'To check: ') + dt.join(', ');
-  const g = await API.carte_garder({carte: champs, titre, prix, photos}).catch(e => ({ok:false, erreur:e.message}));
+  const C = LOT.but === 'collection';
+  if (C) { champs.emplacement = 'Collection'; champs.valeur = prix || null; }        // collection : la valeur estimee, pas de prix de vente
+  const g = await API.carte_garder({carte: champs, titre, prix: C ? null : prix, photos}).catch(e => ({ok:false, erreur:e.message}));
   if (!g || !g.ok) { c.etat = 'revoir'; c.raison = (g && g.erreur) || tt('Pas enregistrée', 'Not saved'); return; }
   Object.assign(c, {etat: dt.length ? 'verifier' : 'ok', id: g.id, titre, prix, vig: photos[0], douteux: dt});
   c.ph = null;
 }
 function rendreLot(){
-  if (!/^#vendre\/lot/.test(location.hash) || !LOT.l) return;    // le lot continue meme si on change de page
+  if (!/^#vendre\/(collection-)?lot/.test(location.hash) || !LOT.l) return;    // le lot continue meme si on change de page
+  const C = LOT.but === 'collection';
   const l = LOT.l, finis = l.filter(c => ['ok', 'verifier', 'revoir'].includes(c.etat)).length;
   const prets = l.filter(c => c.etat === 'ok' || c.etat === 'verifier').length, rev = l.filter(c => c.etat === 'revoir').length;
   const lib = {attente: tt('En attente', 'Waiting'), photos: tt('Contrôle des photos…', 'Checking photos…'), lecture: tt('Lecture de la carte…', 'Reading the card…'),
-    prix: tt('Photo studio, titre et prix…', 'Studio photo, title and price…'), ok: tt('Prête dans ton inventaire', 'Ready in your inventory'), verifier: '', revoir: ''};
+    prix: C ? tt('Valeur estimée…', 'Estimating value…') : tt('Photo studio, titre et prix…', 'Studio photo, title and price…'), ok: C ? tt('Dans ta collection', 'In your collection') : tt('Prête dans ton inventaire', 'Ready in your inventory'), verifier: '', revoir: ''};
   const ligne = (c, i) => {
-    const sous = c.etat === 'revoir' ? c.raison : c.etat === 'verifier' ? tt('Prête · à vérifier : ', 'Ready · check: ') + c.douteux.join(', ') : lib[c.etat];
-    const bout = (c.etat === 'ok' || c.etat === 'verifier') ? `<a class="btn petit ghost" href="#vendre/${c.id}">${tt('Ouvrir', 'Open')}</a>`
+    const sous = c.etat === 'revoir' ? c.raison : c.etat === 'verifier' ? (C ? tt('Ajoutée · à vérifier : ', 'Added · check: ') : tt('Prête · à vérifier : ', 'Ready · check: ')) + c.douteux.join(', ') : lib[c.etat];
+    const bout = (c.etat === 'ok' || c.etat === 'verifier') ? (C ? '<span class="lot-ok">✓</span>' : `<a class="btn petit ghost" href="#vendre/${c.id}">${tt('Ouvrir', 'Open')}</a>`)
       : c.etat === 'revoir' && LOT.fini ? `<button class="btn petit" data-lot-r="${i}">${tt('Corriger', 'Fix')}</button>`
       : ['photos', 'lecture', 'prix'].includes(c.etat) ? '<span class="roue"></span>' : '';
     const v = c.vig || (c.ph && c.ph[0]);
     return `<div class="rangee lot-r ${c.etat}">${v ? `<img class="vig" src="${esc(v)}" alt="">` : `<span class="ecusson">${c.n}</span>`}
-      <span class="milieu"><b>${esc(c.titre || tt('Carte ', 'Card ') + c.n)}</b><small>${esc(sous || '')}${c.prix ? ' · ' + argent(c.prix, 0) : ''}${c.impair && c.etat !== 'revoir' ? ' · ' + tt('sans dos', 'no back') : ''}</small></span>${bout}</div>`;
+      <span class="milieu"><b>${esc(c.titre || tt('Carte ', 'Card ') + c.n)}</b><small>${esc(sous || '')}${c.prix ? ' · ' + (C ? tt('vaut ', 'worth ') : '') + argent(c.prix, 0) : ''}${c.impair && c.etat !== 'revoir' ? ' · ' + tt('sans dos', 'no back') : ''}</small></span>${bout}</div>`;
   };
   V().innerHTML = `<section class="ecran vendre assist lot">
-    <div class="titre">${LOT.fini ? tt(`${prets} carte${prets > 1 ? 's' : ''} prête${prets > 1 ? 's' : ''}`, `${prets} card${prets > 1 ? 's' : ''} ready`) : tt(`Lot en cours · ${finis} / ${l.length}`, `Batch in progress · ${finis} / ${l.length}`)}</div>
+    <div class="titre">${LOT.fini ? (C ? tt(`${prets} carte${prets > 1 ? 's' : ''} ajoutée${prets > 1 ? 's' : ''}`, `${prets} card${prets > 1 ? 's' : ''} added`) : tt(`${prets} carte${prets > 1 ? 's' : ''} prête${prets > 1 ? 's' : ''}`, `${prets} card${prets > 1 ? 's' : ''} ready`)) : tt(`Lot en cours · ${finis} / ${l.length}`, `Batch in progress · ${finis} / ${l.length}`)}</div>
     <div class="barre"><i style="width:${Math.round(100 * finis / Math.max(1, l.length))}%"></i></div>
-    <div class="sous">${LOT.fini ? (rev ? tt(`${rev} à reprendre : elles ne respectent pas nos règles photo (rien n’a été gardé pour elles).`, `${rev} to redo: they don’t meet our photo rules (nothing was saved for them).`) : tt('Tout est dans ton inventaire, prêt à publier.', 'Everything is in your inventory, ready to publish.'))
+    <div class="sous">${LOT.fini ? (rev ? tt(`${rev} à reprendre : elles ne respectent pas nos règles photo (rien n’a été gardé pour elles).`, `${rev} to redo: they don’t meet our photo rules (nothing was saved for them).`) : (C ? tt('Tout est dans ta collection. Rien n’est allé sur eBay.', 'Everything is in your collection. Nothing went to eBay.') : tt('Tout est dans ton inventaire, prêt à publier.', 'Everything is in your inventory, ready to publish.')))
       : tt('Garde l’app ouverte pendant le lot. Tu peux regarder ailleurs dans l’app : le lot continue.', 'Keep the app open during the batch. You can look around the app: the batch keeps going.')}</div>
     <div class="liste lot-l">${l.map(ligne).join('')}</div>
-    ${LOT.fini ? `<a class="btn" href="#inventaire" id="lot-inv">${tt('Voir mes cartes à lister', 'See my cards to list')}</a>
-      <a class="btn ghost" href="#vendre/lot" id="lot-encore">${tt('Faire un autre lot', 'Do another batch')}</a>` : ''}</section>`;
-  const bi = $('#lot-inv'); if (bi) bi.onclick = () => { S.filtreInv = 'stock'; };
-  const be = $('#lot-encore'); if (be) be.onclick = (e) => { e.preventDefault(); vueLot(); };
+    ${LOT.fini ? `<a class="btn" href="#inventaire" id="lot-inv">${C ? tt('Voir ma collection', 'See my collection') : tt('Voir mes cartes à lister', 'See my cards to list')}</a>
+      <a class="btn ghost" href="#vendre/${C ? 'collection-lot' : 'lot'}" id="lot-encore">${tt('Faire un autre lot', 'Do another batch')}</a>` : ''}</section>`;
+  const bi = $('#lot-inv'); if (bi) bi.onclick = () => { S.filtreInv = C ? 'collection' : 'stock'; };
+  const be = $('#lot-encore'); if (be) be.onclick = (e) => { e.preventDefault(); vueLot(LOT.but); };
   $$('[data-lot-r]').forEach(b => b.onclick = () => corrigerLot(LOT.l[+b.dataset.lotR]));
 }
 // une carte a reprendre : la photo en cause (ou tout, si l'ordre est decale) dans l'assistant d'une carte
 function corrigerLot(c){
+  const but = LOT.but;
   for (const k in V2) delete V2[k];
-  history.replaceState(null, '', '#vendre');
+  if (but === 'collection') V2.but = 'collection';
+  history.replaceState(null, '', but === 'collection' ? '#vendre/collection' : '#vendre');
   if (c.ordre || !c.ph) { toast(c.detail || tt('Reprends le devant puis le dos', 'Retake the front then the back'), 4500); etapePhoto(0); return; }
   V2.photos = c.ph.slice();
   if (c.qj != null) { aReprendre(c.qj, c.ph[c.qj], c.raison, c.detail || '', () => lireVente(), () => lireVente()); return; }
@@ -4079,11 +4247,11 @@ async function vueAccueil(arg){
         <div class="horloge"><div class="nom-b${nomMarque() === 'SlabCoach' ? ' a-mot' : ''}" id="acc-nom">${nomMarque() === 'SlabCoach' ? MOT_SC : esc(nomMarque())}</div><div class="salut" id="acc-salut"></div><div class="h" id="acc-h">--:--</div><div class="d" id="acc-d"></div></div></div>
       <div class="acc-tuiles" id="acc-tuiles">${roue}</div></div>
     <div class="acc-fil" id="acc-fil"></div>
-    <div class="carte-acc nouv" id="acc-nouv"><div id="acc-news">${roue}</div></div>
+    <div class="carte-acc nouv" id="acc-nouv"><div class="acc-titre titre-tel">${tt('Nouvelles et astuces', 'News and tips')}</div><div class="acc-sous titre-tel">${tt('L’actualité de la LNH et des cartes, et des trucs pour mieux acheter et vendre. Glisse pour la suivante.', 'NHL and card news, plus tips to buy and sell better. Swipe for the next one.')}</div><div id="acc-news">${roue}</div></div>
     <div class="acc-cote">${bandeauEssai()}
       <div class="carte-acc"><div class="acc-titre">${tt('À faire', 'To do')} <span id="afaire-n"></span></div><div class="acc-sous">${tt('Ce qui t’attend, le plus payant en premier', 'What’s waiting, most profitable first')}</div><div id="acc-afaire" class="gestes">${roue}</div></div>
       <div class="carte-acc conseils-acc"><div class="acc-titre"><span>✦ ${tt('Conseils pour toi', 'For you')}</span><button class="lien-doux" id="cs-maj" aria-label="${esc(tt('Nouveaux conseils', 'New tips'))}">↻</button></div><div class="acc-sous">${tt('Selon tes cartes et le marché de la semaine', 'Based on your cards and this week’s market')}</div><div id="acc-conseils" class="liste">${roue}</div></div>
-      <div class="carte-acc"><div class="acc-titre">${tt('Mises à jour', 'Updates')} <span id="pouls-etat"></span></div><div class="acc-sous">${tt('Le pouls du hobby et ce que SlabCoach a vérifié', 'The hobby’s pulse and what SlabCoach checked')}</div><div id="acc-pouls">${roue}</div></div>
+      <div class="carte-acc" ${(S.forfait && S.forfait.admin) ? '' : 'hidden'}><div class="acc-titre">${tt('Mises à jour', 'Updates')} <span id="pouls-etat"></span></div><div class="acc-sous">${tt('Le pouls du hobby et ce que SlabCoach a vérifié', 'The hobby’s pulse and what SlabCoach checked')}</div><div id="acc-pouls">${roue}</div></div>
     </div>
     <div id="acc-plus"></div>
   </section>`;
@@ -4103,8 +4271,20 @@ async function vueAccueil(arg){
     S.mode === 'acheteur' ? `<a class="t-acc" href="#guide" id="t-budget"><span class="l">${tt('Budget du mois', 'Monthly budget')}</span><b>…</b><span class="s">${tt('touche pour le fixer', 'tap to set it')}</span></a>`
       : tuile('Profit', (h.profit < 0 ? '−' : '') + argentCourt(Math.abs(h.profit)), nomMois(h.mois) + (h.nb_ventes ? ` · ${h.nb_ventes} vente${h.nb_ventes > 1 ? 's' : ''}` : ''), h.profit > 0 ? 'vert' : h.profit < 0 ? 'rouge' : '', '#bilan'),
     tuile('Deals', a && a.gain_deals > 0 ? '+' + argentCourt(a.gain_deals) : String((a && a.nb_deals) || 0), a && a.nb_deals ? `${a.nb_deals} sous la valeur` : 'on cherche pour toi', a && a.gain_deals > 0 ? 'or' : '', S.mode === 'acheteur' ? '#deals' : '#sante/racheter'),
-    tuile('Stock', argentKpi(st.valeur), `${st.nb} carte${st.nb > 1 ? 's' : ''}${vi.delai_median != null ? ' · vend en ' + vi.delai_median + ' j' : ''}`, '', '#inventaire'),
+    S.mode === 'acheteur' ? tuile(tt('Ma collection', 'My collection'), argentKpi(st.valeur), `${st.nb} carte${st.nb > 1 ? 's' : ''}`, '', '#inventaire')
+      : tuile('Stock', argentKpi(st.valeur), `${st.nb} carte${st.nb > 1 ? 's' : ''}${vi.delai_median != null ? ' · vend en ' + vi.delai_median + ' j' : ''}`, '', '#inventaire'),
   ].join('');
+  // 28 oct 2026 (Mathieu : « ajouter sa collection, la valeur, si le joueur est en feu… mais tres simple, moins de stats ») :
+  // une seule ligne en dessous des chiffres. Collection vide : une invitation a l'ajouter. Sinon, le joueur de TES cartes en feu.
+  const zt = $('#acc-tuiles');
+  if (zt) {
+    const ch = d.chaud, vide = !st.nb, nc = S.mode !== 'acheteur' ? (d.collection_n || 0) : 0;
+    const l = nc ? `<a class="acc-ligne" href="#inventaire" id="acc-coll"><b>${tt(`Tes ${nc} carte${nc > 1 ? 's' : ''} de collection`, `Your ${nc} collection card${nc > 1 ? 's' : ''}`)}</b><span>${tt('Touche une carte pour en faire une annonce eBay', 'Tap a card to turn it into an eBay listing')}</span><i>›</i></a>`
+      : vide ? `<button class="acc-ligne acc-invite" id="acc-ajout"><b>${tt('Ajoute ta collection', 'Add your collection')}</b><span>${tt('Scanne tes cartes : on suit leur valeur pour toi', 'Scan your cards: we track their value for you')}</span><i>›</i></button>`
+      : ch ? `<a class="acc-ligne acc-feu" href="#joueur/${encodeURIComponent(ch.joueur)}"><b>🔥 ${esc(ch.joueur)} ${tt('est en feu', 'is on fire')}</b><span>${ch.points} ${tt('points en', 'points in')} ${ch.matchs} ${tt('matchs', 'games')} · ${tt('tu as', 'you have')} ${ch.n} ${tt(ch.n > 1 ? 'de ses cartes' : 'de ses cartes', ch.n > 1 ? 'of his cards' : 'of his cards')}</span><i>›</i></a>` : '';
+    const old = $('.acc-ligne'); if (old) old.remove();
+    if (l) { zt.insertAdjacentHTML('afterend', l); const b = $('#acc-ajout'); if (b) b.onclick = () => feuilleAjout(); const bc = $('#acc-coll'); if (bc) bc.onclick = () => { S.filtreInv = 'collection'; }; }
+  }
   if (S.mode === 'acheteur') budgetEtat(true).then(b => { const t = $('#t-budget'); if (!t || !b) return;
     if (!b.budget) { t.querySelector('b').textContent = tt('À fixer', 'Not set'); t.onclick = (e) => { e.preventDefault(); feuilleBudget(); }; return; }
     t.querySelector('b').textContent = argentCourt(b.reste); t.querySelector('b').className = b.reste < 0 ? 'rouge' : b.pct > 80 ? 'or' : 'vert';
@@ -4124,7 +4304,7 @@ async function vueAccueil(arg){
   // plus bas : courbe du profit, meilleurs deals, meilleurs coups, breaks
   const deals = (a && a.deals || []).slice(0, 3);
   const plus = [];
-  if (h.profit || h.pareille_date || h.nb_ventes) plus.push(`<div class="hero"><span class="lib">Profit · ${nomMois(h.mois)} vs ${nomMois(h.mois_passe)}</span>
+  if (S.mode !== 'acheteur' && (h.profit || h.pareille_date || h.nb_ventes)) plus.push(`<div class="hero carte-acc acc-profit"><div class="acc-titre titre-tel">${tt('Ton profit du mois', 'Your profit this month')}</div><div class="acc-sous titre-tel">${tt(`Ligne pleine = ${nomMois(h.mois)} · pointillé = ${nomMois(h.mois_passe)} à la même date. Touche la courbe pour voir un jour.`, `Solid line = ${nomMois(h.mois)} · dotted = ${nomMois(h.mois_passe)} at the same date. Touch the curve to see a day.`)}</div><span class="lib">Profit · ${nomMois(h.mois)} vs ${nomMois(h.mois_passe)}</span>
       <div class="ligne-info">${(h.ecart || 0) >= 0 ? '▲' : '▼'} ${argentCourt(Math.abs(h.ecart || 0))} par rapport à pareille date · ${argentCourt(h.revenus)} de ventes${h.marge != null ? ' · marge ' + h.marge + ' %' : ''}</div>
       ${courbeProfit(h)}</div>`);
   if (deals.length) plus.push(`<div class="carte-acc bureau-seul"><div class="acc-titre">${tt('Meilleurs deals', 'Best deals')} <a href="#deals">${tt('tous', 'all')} ›</a></div><div class="liste">${deals.map(o => `<a class="deal-l" href="${esc(lienAchat(o.url, 'accueil'))}" target="_blank" rel="noopener" ${attrsAnnonce(o)}>${vignette(o.photo, o.titre)}
@@ -4180,10 +4360,16 @@ function histoiresDeals(a){
   const tri = [...L.filter(x => !vus[x.item_id]), ...L.filter(x => vus[x.item_id])].slice(0, 15);
   const nom = (x) => { const j = String(x.joueur || '').trim(); if (j) return j.split(/\s+/).slice(-1)[0];
     return titreCourt(x.titre).split(/\s+/).filter(w => !/^(\d|#|rc|auto|sp|ud|series)/i.test(w)).slice(0, 2).join(' ') || 'Deal'; };
-  const tous = `<a class="hist hist-tous" role="listitem" href="#${S.mode === 'acheteur' ? 'deals' : 'sante/racheter'}"><span class="anneau neuf"><span class="rond-in"><b>${L.length > 99 ? '99+' : ((a && a.nb_deals) || L.length)}</b><small>deals</small></span></span><span class="nom">${tt('Tous', 'All')}</span></a>`;
+  // 28 oct 2026 (Mathieu : « les cercles en forme de slab, et le % dans la portion de gradation ») : chaque story est un
+  // petit slab : l'etiquette en haut porte le rabais a la place de la note, la photo dans la fenetre
+  const nb_ = (a && a.nb_deals) || L.length;
+  const tous = `<a class="hist hist-tous" role="listitem" href="#${S.mode === 'acheteur' ? 'deals' : 'sante/racheter'}"><span class="anneau slab neuf"><span class="slab-in">
+      <span class="slab-lab"><small>DEALS</small><b>${nb_ > 99 ? '99+' : nb_}</b></span><span class="slab-ph ico">${ICO_MODE.acheteur}</span></span></span><span class="nom">${tt('Tous', 'All')}</span></a>`;
   return tous + tri.map(x => `<button class="hist hist-deal" role="listitem" data-vu-deal="${esc(x.item_id)}" ${attrsAnnonce(x)} aria-label="${esc(titreCourt(x.titre) + ' · −' + (x.rabais || 0) + ' %')}">
-    <span class="anneau${vus[x.item_id] ? '' : ' neuf'}"><span class="rond-in photo">${x.photo ? `<img src="${esc(photoNet(x.photo))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : SVG_CARTE}</span>
-      ${x.rabais ? `<i class="h-rab">−${x.rabais} %</i>` : ''}</span><span class="nom">${esc(nom(x))}</span></button>`).join('');
+    <span class="anneau slab${vus[x.item_id] ? '' : ' neuf'}"><span class="slab-in">
+      <span class="slab-lab"><small>DEAL</small><b class="vert">${x.rabais ? '−' + x.rabais + '%' : '✓'}</b></span>
+      <span class="slab-ph">${x.photo ? `<img src="${esc(photoNet(x.photo))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : SVG_CARTE}</span></span></span>
+    <span class="nom">${esc(nom(x))}</span></button>`).join('');
 }
 function brancherHistoiresDeals(z){
   $$('[data-vu-deal]', z).forEach(b => b.addEventListener('click', () => {
@@ -5018,11 +5204,11 @@ async function rechargerBreakSilencieux(){ const d = await API.break_detail(S.br
 // ============================================================
 // Inventaire (boutique eBay + magasin)
 // ============================================================
-const FILTRES_INV = [['tous','Tous',{dispo:1}],['stock','À lister',{a_lister:1}],['listee','Sur eBay',{statut:'Listée'}],
+const FILTRES_INV = [['tous','Tous',{dispo:1}],['collection','Ma collection',{dispo:1, emplacement:'Collection'}],['stock','À lister',{a_lister:1}],['listee','Sur eBay',{statut:'Listée'}],
   ['sans-cout','Sans coût',{sans_cout:1}],['magasin','Magasin',{dispo:1, emplacement:'Magasin'}],['consig','Consignation',{dispo:1, consignation:1}],['vendue','Vendues',{statut:'Vendue'}]];
 // 22 oct 2026 - pas de magasin : pas de filtres magasin (moins de choix = plus vite)
 const filtresInv = () => FILTRES_INV.filter(f => (S.activites || {}).magasin !== false || !['magasin', 'consig'].includes(f[0]));
-const EMPLACEMENTS = ['Réserve', 'Magasin', 'Vitrine', 'eBay', 'Break'];
+const EMPLACEMENTS = ['Collection', 'Réserve', 'Magasin', 'Vitrine', 'eBay', 'Break'];
 async function vueInventaire(arg){
   // 24 oct 2026 (Mathieu : « changer le design des pastilles ... textes trop minces et trop codés ; on doit rapidement voir
   // si notre prix se situe vs les last comp et la compétition ... maximiser l'écran et mettre des images sur les sold »)
@@ -5038,13 +5224,13 @@ async function vueInventaire(arg){
   blocCollection($('#i-coll'));
   $$('.chip[data-f]', V()).forEach(c => c.onclick = () => { S.filtreInv = c.dataset.f; $$('.chip[data-f]', V()).forEach(x => x.classList.toggle('on', x === c)); chargerInventaire(); });
   let t; $('#i-q').oninput = (e) => { clearTimeout(t); t = setTimeout(() => { S.rechInv = e.target.value.trim(); chargerInventaire(); }, 250); };
-  $('#i-plus').onclick = () => { location.hash = S.mode === 'acheteur' ? '#inventaire/ajout' : '#vendre/nouvelle'; if (S.mode === 'acheteur') feuilleNouvelleCarte(); };
+  $('#i-plus').onclick = () => feuilleAjout();
   $('#i-import').onclick = feuilleImportEbay;
   $('#i-brouillons').onclick = feuilleBrouillons;
   await Promise.all([reglages(), consignataires()]).catch(() => {});
   await chargerInventaire();
   if (arg === 'import') feuilleImportEbay();
-  if (arg === 'ajout') feuilleNouvelleCarte();
+  if (arg === 'ajout') feuilleAjout();
 }
 // le repere prix : ton prix face a la mediane des memes cartes en vente (et le plus bas de la concurrence)
 function repere(c){
@@ -5055,7 +5241,7 @@ function repere(c){
   if (e > 0) return {cl: e > 0.25 ? 'rouge' : 'or', court: tt(`+${pct} % vs marché`, `+${pct}% vs market`), long: tt('marché ', 'market ') + argentCourt(m.mediane)};
   return {cl:'acc', court: tt(`−${pct} % : tu peux monter`, `−${pct}%: room to raise`), long: tt('marché ', 'market ') + argentCourt(m.mediane)};
 }
-const photoOk = (u) => u && u !== '-' && /^(https?:|data:)/.test(u);
+const photoOk = (u) => u && u !== '-' && /^(https?:|data:|\/mes-photos\/)/.test(u);   // 28 oct : les photos gardees (/mes-photos/) aussi
 function tuileInv(c){
   const vendue = c.statut === 'Vendue', r = !vendue ? repere(c) : null, m = c.marche;
   const etat = vendue ? capsule(tt('Vendue', 'Sold') + (c.vendu_le ? ' · ' + dateCourte(c.vendu_le) : ''), 'petit')
@@ -5102,7 +5288,7 @@ async function chargerInventaire(){
   z.innerHTML = puces + note + kpis + (l.length ? `<div class="grille-c">${l.map(tuileInv).join('')}</div>`
     : `<div class="vide">${tt('Rien ici', 'Nothing here')}<button class="pilule" id="i-vide">${tt('Ajouter un article', 'Add an item')}</button></div>`);
   $$('#i-sports [data-sp]').forEach(b => b.onclick = () => { S.sportInv = b.dataset.sp || null; chargerInventaire(); });
-  $$('#i-liste .tuile-inv').forEach(r => r.onclick = () => feuilleCarte(l.find(c => c.id === +r.dataset.id)));
+  $$('#i-liste .tuile-inv').forEach(r => r.onclick = () => { const c = l.find(x => x.id === +r.dataset.id); if (c && c.emplacement === 'Collection' && c.statut === 'En stock') ficheCollection(c); else feuilleCarte(c); });
   $$('#i-liste [data-pro]').forEach(b => b.onclick = (e) => { e.stopPropagation(); feuillePro(b.dataset.pro); });
   const v = $('#i-vide'); if (v) v.onclick = () => { location.hash = '#vendre/nouvelle'; };
 }
@@ -5167,6 +5353,32 @@ const CHAMP_ID = {titre:'c-titre', joueur:'c-joueur', equipe:'c-equipe', annee:'
   numero:'c-num', tirage:'c-tir', grade:'c-grade'};
 const NOMS_CHAMPS = {titre:'titre', joueur:'joueur', equipe:'équipe', annee:'saison', marque:'marque', set_nom:'set', parallele:'parallèle', numero:'n° de carte',
   tirage:'numérotée /', grade:'gradation', sport:'sport', auto:'auto'};
+// 28 oct 2026 (Mathieu : « l'acheteur veut voir sa collection sans necessairement vendre ; dans la meme page, l'option de la
+// vendre sur eBay avec l'info deja presente ») : la fiche d'une carte de collection, simple : photo, valeur, ce que tu as paye,
+// et un seul bouton pour la vendre (l'annonce se fait avec ce que l'app sait deja). Modifier ouvre le formulaire complet.
+function ficheCollection(c){
+  let ph = []; try { ph = JSON.parse(c.photos || '[]'); } catch (e) {}
+  const img = ph[0] || c.photo, val_ = nb(c.valeur), cout = nb(c.cout), gain = val_ != null && cout != null ? val_ - cout : null;
+  const det = [c.annee, c.set_nom, c.parallele, c.numero ? '#' + c.numero : '', c.tirage ? '/' + c.tirage : '', c.grade].filter(Boolean).join(' · ');
+  ouvrirFeuille(`<div class="fc">${img && photoOk(img) ? `<div class="fc-img"><img src="${esc(photoNet(img, 1600))}" alt=""></div>` : ''}
+      <h3>${esc(c.joueur || titreCourt(c.titre) || tt('Carte', 'Card'))}</h3>${det ? `<div class="sous">${esc(det)}</div>` : ''}
+      <div class="fc-chiffres"><div><span>${tt('Valeur', 'Value')}</span><b>${val_ != null ? argent(val_, 0) : '—'}</b></div>
+        <div><span>${tt('Payée', 'Paid')}</span><b>${cout != null ? argent(cout, 0) : '—'}</b></div>
+        ${gain != null ? `<div><span>${tt('Gain', 'Gain')}</span><b class="${gain >= 0 ? 'vert' : 'rouge'}">${gain >= 0 ? '+' : '−'}${argent(Math.abs(gain), 0)}</b></div>` : ''}</div>
+      <button class="btn" id="fc-vendre">${tt('Vendre sur eBay', 'Sell on eBay')}</button>
+      <div class="sous" style="text-align:center">${tt('L’annonce se fait avec ce que l’app sait déjà : photos, titre, prix. Tu vérifies avant de publier.', 'The listing uses what the app already knows: photos, title, price. You check before publishing.')}</div>
+      <button class="plus" id="fc-modif">${tt('Modifier', 'Edit')}</button></div>`);
+  $('#fc-vendre').onclick = () => { fermerFeuille(); vendreDepuisCollection(c.id); };
+  $('#fc-modif').onclick = () => feuilleCarte(c);
+}
+function vendreDepuisCollection(id){
+  if (S.mode !== 'vendeur') {                    // vendre = le volet vendeur ; on y passe tout seul
+    S.mode = 'vendeur'; try { localStorage.setItem('lr_mode', 'vendeur'); } catch (e) {}
+    appliquerActivites(); API.reglages_sauver({mode: 'vendeur'}).then(r => { S.reglages = r; }).catch(() => {});
+    toast(tt('Mode Vendeur : on prépare l’annonce', 'Seller mode: preparing the listing'));
+  }
+  location.hash = '#vendre/' + id;
+}
 function feuilleCarte(c){
   const vendue = c.statut === 'Vendue', carte = !!(c.joueur || c.set_nom || c.parallele);
   const douteux = (c._douteux || []).filter(k => NOMS_CHAMPS[k]);
