@@ -1135,7 +1135,7 @@ class Api:
                 pl["equipe"] = (sj.get(pl["cle"]) or {}).get("equipe")
             self._scores_relatifs(joueurs)
             joueurs.sort(key=lambda x: -x["score"])
-            joueurs = joueurs[:60]
+            joueurs = joueurs[:400]          # 29 oct : tous (recherche d'un joueur dans l'ecran) ; l'ecran en montre 60
         fmt = (prod.get("formats") or [{}])[0]
         return {**res, "ok": True, "hits": self._hits_produit(prod, boites), "boites": boites, "mode": mode,
                 "joueurs": joueurs, "prix_boite_marche": boite_marche, "cout_boite": args["cout_boite"], "cout_estime": cout_estime,
@@ -1156,6 +1156,11 @@ class Api:
             pl["demande"] = demande
         pl["valeur_ratio"] = round(pl["ev"] / prix, 2) if prix else None
         pl["p_rembourse"] = calcul.chance_rembourser(dist, prix) if prix else 0
+        # 29 oct 2026 (Mathieu : « les rookies sont de loin les plus presents, explique ta logique » ; choix : « un hit qui
+        # vaut ta place ») : la chance de tirer AU MOINS UNE carte qui vaut, a elle seule, le prix de la place
+        import math as _m2
+        n_bonnes = sum(float(n) for v, n in dist if prix and float(v) >= prix)
+        pl["p_carte_prix"] = round(1 - _m2.exp(-n_bonnes), 6) if prix else 0
         # 26 oct 2026 (Mathieu : « la chance de tomber sur une numerotee, patch, auto, auto-patch, SSP, pas la chance de
         # rembourser la mise ») : le score = 50 % la chance d'au moins un hit + 50 % la valeur attendue / le prix
         # (score provisoire : _scores_relatifs le refait sur la liste entiere)
@@ -1174,28 +1179,14 @@ class Api:
 
     @staticmethod
     def _scores_relatifs(liste):
-        """27 oct 2026 (Mathieu : « la valeur attendue sert pas a grand chose » ; choix : « hit + prix ») : le meme score
-        pour tous = la chance d'au moins un hit POUR TON ARGENT (chance / prix de la place), classee de 0 a 100 :
-        100 = la place qui donne le plus de chances de hit par dollar dans la liste."""
-        # 29 oct 2026 (Mathieu : « pourquoi le meilleur joueur change avec le nombre de boites ? chaque boite est un nouveau
-        # cas ») : le classement ne doit pas dependre du nombre de boites. Avant : chance d'au moins un hit (pas lineaire)
-        # divisee par le prix estime de la place (avec plancher et arrondi) -> l'ordre bougeait avec les boites.
-        # Maintenant : le NOMBRE attendu de hits (lineaire : 2 fois plus de boites = 2 fois plus de hits, pour tous)
-        # divise par le prix proportionnel a la valeur de la place (sans plancher ni arrondi), ou par le prix demande
-        # par le breaker quand tu l'entres. Meme ordre avec 1, 3 ou 32 boites.
-        import math as _m
-        tot_px = sum(pl.get("prix") or 0 for pl in liste) or 1.0
-
-        def r(pl):
-            p_hit = min(0.999999, ((pl.get("chances") or {}).get("hit") or {}).get("p") or 0)
-            lam = -_m.log(1 - p_hit) if p_hit > 0 else 0.0
-            part = pl.get("part_brute")
-            prix = pl.get("demande") or (part * tot_px if part is not None else (pl.get("prix_compare") or pl.get("prix") or 0))
-            return lam / prix if prix > 0 else 0.0
-        mx = max([r(pl) for pl in liste] + [1e-12])
+        """29 oct 2026 (Mathieu, choix : « un hit qui vaut ta place ») : le score = la chance de tirer au moins UNE carte qui
+        vaut a elle seule le prix de la place (prix du breaker s'il est entre, sinon le prix estime). 100 = la meilleure
+        place de la liste. Avant (27-29 oct) : les hits par dollar, qui mettaient en haut des places de legendes presque
+        gratuites dont les autos valent 10-20 $ ; les recrues, qui ont le plus de cartes qui valent cher, remontent."""
+        mx = max([pl.get("p_carte_prix") or 0 for pl in liste] + [1e-12])
         for pl in liste:
-            pl["hit_par_dollar"] = round(r(pl), 6)
-            pl["score"] = round(100 * r(pl) / mx, 2)
+            pl["hit_par_dollar"] = None
+            pl["score"] = round(100 * (pl.get("p_carte_prix") or 0) / mx, 2)
 
     @staticmethod
     def _stats_checklist(prod, mode, sport):

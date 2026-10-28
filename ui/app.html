@@ -1611,6 +1611,13 @@ body.pro #mosaique{background-image:
 #acc-news .news-car::-webkit-scrollbar{display:none}
 #acc-news .news-car > .slide{flex:0 0 100%; min-width:100%; scroll-snap-align:start; scroll-snap-stop:always; animation:none !important}
 .visuel-pile{position:relative; overflow:hidden; flex-shrink:0} .visuel-pile > .visuel{margin:0} .visuel-img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+/* 29 oct 2026 : Breaks vendeur, prix paye et profit obligatoires */
+.champ.manque{border-color:var(--rouge) !important; box-shadow:0 0 0 1px var(--rouge) inset}
+.an-attente{margin-top:12px; gap:4px; border:1px dashed color-mix(in srgb, var(--acc) 45%, var(--ligne))} .an-attente span{font-size:14px; color:var(--doux)}
+/* 29 oct 2026 : Breaks, tri et recherche */
+.an-tri{display:flex; flex-direction:column; gap:8px; margin:10px 0 12px} .an-tri .chips{flex-wrap:wrap; overflow:visible; gap:6px}
+.an-expl{font-size:14px; line-height:1.35} .recherche.petite input{height:42px; font-size:15px}
+.score-bloc.simple[hidden]{display:none !important}
 /* 28 oct 2026 : Breaks, une ligne par joueur / equipe */
 .score-bloc.simple{border-radius:18px; background:var(--carte); border:1px solid var(--ligne); overflow:hidden}
 .score-bloc.simple + .score-bloc.simple{margin-top:8px}
@@ -3623,7 +3630,7 @@ function feuillePasDeal(x, apres){
 // les joueurs avec la meilleure probabilité/valeur et trace une liste selon le produit ; pour le vendeur, les mêmes
 // probabilités, mais un prix pour chaque joueur ou équipe selon le coût du produit et la marge désirée »)
 // ============================================================
-S.ana = {produit:null, boites:1, mode:'equipes', cout:'', marge:25, decote:15, demandes:{}, demandesJ:{}, vue:'joueurs', reglages:false, budget:0};
+S.ana = {produit:null, boites:1, mode:'equipes', cout:'', marge:'', decote:15, demandes:{}, demandesJ:{}, vue:'joueurs', reglages:false, budget:0};
 // montants tapes dans la devise affichee -> gardes en $ CA
 const versCAD = (v) => (typeof DEVISE !== 'undefined' && DEVISE === 'USD' && typeof TAUX_USD !== 'undefined') ? Math.round(v / TAUX_USD * 100) / 100 : v;
 const symDevise = () => (typeof DEVISE !== 'undefined' && DEVISE === 'USD') ? '$ US' : '$ CA';
@@ -3954,10 +3961,10 @@ async function rendreAnalyse(){
     <div class="ana-ctrl">
       <div class="ac-b"><span class="lib">${tt('Boîtes dans le break', 'Boxes in the break')}</span>${boitesHtml}</div>
       ${vendeur ? `<div class="ac-c"><span class="lib">${tt('Prix payé pour le lot', 'Price paid for the lot')} · ${r.boites} ${tt('boîte' + (r.boites > 1 ? 's' : ''), 'box' + (r.boites > 1 ? 'es' : ''))}</span>
-        <div class="ac-cout"><input class="champ" id="rb-lot" type="number" inputmode="decimal" value="${esc(A.cout ? Math.round(convertir(nb(A.cout) * r.boites)) : '')}" placeholder="${esc(String(Math.round(convertir((r.prix_boite_marche || r.cout_estime || 0) * r.boites))))}"><span>${symDevise()}</span></div>
+        <div class="ac-cout"><input class="champ" id="rb-lot" type="number" inputmode="decimal" value="${esc(A.cout ? Math.round(convertir(nb(A.cout) * r.boites)) : '')}" placeholder="${esc(tt('Obligatoire', 'Required'))}"><span>${symDevise()}</span></div>
         <small>${A.cout ? argentCourt(A.cout) + tt(' par boîte', ' per box') + (r.prix_boite_marche ? ' · ' + tt('eBay : ', 'eBay: ') + argentCourt(r.prix_boite_marche) + tt('/boîte', '/box') : '')
-          : r.prix_boite_marche ? tt('vide = ', 'empty = ') + r.boites + ' × ' + argentCourt(r.prix_boite_marche) + tt(' (prix vendu d’une boîte sur eBay)', ' (eBay sold price of a box)') : tt('vide = valeur des cartes : entre ton prix payé', 'empty = value of the cards: enter what you paid')}</small></div>
-      <div class="ac-p"><span class="lib">${tt('Profit voulu', 'Target profit')}</span><div class="ac-cout"><input class="champ" id="rb-marge" type="number" inputmode="decimal" value="${esc(A.marge)}"><span>%</span></div>
+          : tt('Ce que TU as payé pour ces boîtes', 'What YOU paid for these boxes') + (r.prix_boite_marche ? ' · ' + tt('repère eBay : ', 'eBay guide: ') + argentCourt(r.prix_boite_marche) + tt('/boîte', '/box') : '')}</small></div>
+      <div class="ac-p"><span class="lib">${tt('Profit voulu', 'Target profit')}</span><div class="ac-cout"><input class="champ" id="rb-marge" type="number" inputmode="decimal" value="${esc(A.marge ?? '')}" placeholder="${esc(tt('Obligatoire · ex. 25', 'Required · e.g. 25'))}"><span>%</span></div>
         <button class="btn" id="an-calc">${tt('Calculer les prix', 'Calculate prices')}</button></div>`
       : `<div class="ac-c"><span class="lib">${tt('Mon budget pour une place', 'My budget for a spot')}</span><div class="ac-cout"><input class="champ" id="an-budget" type="number" inputmode="decimal" value="${esc(A.budget ? Math.round(convertir(A.budget)) : '')}" placeholder="${esc(tt('ex. 50', 'e.g. 50'))}"><span>${symDevise()}</span></div>
         <small>${tt('on te montre ce qui rentre dans ton budget', 'we show what fits your budget')}</small></div>`}
@@ -3966,7 +3973,13 @@ async function rendreAnalyse(){
       : r.ventes_actives ? `<div class="sous ana-src">${tt('Valeurs estimées : les ventes réelles de ce produit arrivent en arrière-plan (quelques minutes).', 'Estimated values: real sales of this product are loading in the background (a few minutes).')}</div>`
       : `<div class="sous ana-src">${tt('Valeurs estimées (modèle SlabCoach) : les ventes réelles s’activent avec SoldComps.', 'Estimated values (SlabCoach model): real sales turn on with SoldComps.')}</div>`}`;
   let corps;
-  if (vendeur) {
+  // 29 oct 2026 (Mathieu : « pour le vendeur, le cout de la boite et le % de profit vides, a lui de les entrer, mais
+  // obligatoires pour dresser ses listes ») : pas de prix de places tant que les deux ne sont pas entres
+  const manque = vendeur && (!A.cout || A.marge === '' || A.marge == null);
+  if (manque) {
+    corps = `<div class="bloc an-attente"><b>${tt('Entre ton prix payé et ton profit voulu', 'Enter what you paid and your target profit')}</b>
+      <span>${tt('Les deux sont nécessaires pour calculer le prix de chaque place. Puis touche « Calculer les prix ».', 'Both are needed to price each spot. Then tap “Calculate prices”.')}</span></div>`;
+  } else if (vendeur) {
     const places = [...r.places].sort((a, b) => b.prix - a.prix);
     corps = `<div class="hero-l" style="margin:12px 0">
         <div class="kpi"><span class="lib">${tt('Coût', 'Cost')}</span><span class="v">${argentCourt(r.cout)}</span><span class="s">${r.boites} × ${argentCourt(r.cout / r.boites || 0)}</span></div>
@@ -3982,9 +3995,19 @@ async function rendreAnalyse(){
   } else {
     const vue = A.vue === 'equipes' ? 'equipes' : 'joueurs';
     const liste = vue === 'joueurs' ? (r.joueurs || []) : [...r.places];
-    const sc = liste.map(x => x.score), mn = Math.min(...sc), mx = Math.max(...sc);
-    liste.forEach(x => { x.rel = mx > mn ? Math.round(100 * (x.score - mn) / (mx - mn)) : 50; });
-    liste.sort((a, b) => b.rel - a.rel || b.ev - a.ev);
+    // 29 oct 2026 (Mathieu : « l'expliquer, donner des choix de tri a l'utilisateur, et une recherche pour un joueur ») :
+    // 4 facons de classer, chacune expliquee en une phrase ; 100 = la meilleure place de la liste pour ce critere.
+    const TRIS = [['place', tt('Vaut ta place', 'Worth your spot'), tt('La chance de tirer au moins une carte qui vaut, à elle seule, le prix de ta place.', 'The chance to pull at least one card that alone is worth your spot price.')],
+      ['hits', tt('Le plus de hits', 'Most hits'), tt('La chance d’au moins un hit (numérotée, auto, patch, SSP), peu importe le prix de la place.', 'The chance of at least one hit (numbered, auto, patch, SSP), whatever the spot costs.')],
+      ['argent', tt('Pour ton argent', 'Bang for buck'), tt('Le plus de hits pour chaque dollar payé : souvent des places pas chères, aux hits moins payants.', 'The most hits per dollar paid: often cheap spots with lower-value hits.')],
+      ['rentab', tt('Rentabiliser', 'Break even'), tt('La chance que toutes tes cartes ensemble valent au moins ton prix.', 'The chance that all your cards together are worth at least your price.')]];
+    const tri = TRIS.some(t => t[0] === A.tri) ? A.tri : 'place';
+    const pH = (x) => ((x.chances || {}).hit || {}).p || 0;
+    const crit = {place: (x) => x.p_carte_prix || 0, hits: pH, rentab: (x) => x.p_rembourse || 0,
+      argent: (x) => { const p = Math.min(.999999, pH(x)), px = x.demande || x.part_brute || x.prix_compare || x.prix || 0; return px > 0 ? -Math.log(1 - p) / px : 0; }}[tri];   // part exacte : le meme ordre avec 1 ou 32 boites
+    const mxv = Math.max(1e-12, ...liste.map(crit));
+    liste.forEach(x => { x.rel = Math.round(100 * crit(x) / mxv); x.vtri = crit(x); });
+    liste.sort((a, b) => b.vtri - a.vtri || b.ev - a.ev);
     const budget = A.budget || 0, maxHit = Math.max(1e-9, ...liste.map(x => ((x.chances || {}).hit || {}).p || 0));
     const ligne = (x, i) => {
       const [cl, lib] = TIERS(x.rel), hors = budget && x.prix_compare > budget;
@@ -3996,10 +4019,12 @@ async function rendreAnalyse(){
       // 28 oct 2026 (Mathieu : « vraiment beaucoup trop d'info : synthetiser, agreable a l'oeil, rapide et efficace ») : une ligne
       // par joueur ou equipe : le nom, UNE phrase (la chance d'un hit), le score. Un tap ouvre le detail (chances, prix, calcul).
       const ph = ((x.chances || {}).hit || {}).p || 0;
-      return `<div class="score-bloc simple"><button class="score-l ${hors ? 'hors' : ''}" data-exp="${i}" aria-expanded="false">
+      return `<div class="score-bloc simple ${i >= 60 ? 'loin' : ''}" data-nom="${esc(String(x.nom + ' ' + (x.equipe || '') + ' ' + (x.vedettes || []).join(' ')).toLowerCase())}"><button class="score-l ${hors ? 'hors' : ''}" data-exp="${i}" aria-expanded="false">
         <span class="rang">${i + 1}</span>
         ${vue === 'equipes' ? ecussonEquipe(x.cle) : vignetteJoueur(x.cle, x.equipe)}
-        <span class="sl-n"><b>${esc(x.nom)}</b><span>${esc(vue === 'equipes' ? (x.vedettes || []).slice(0, 2).join(' · ') : (x.equipe || ''))}${ph > 0 ? ' · ' + tt('hit : ', 'hit: ') + chanceTxt(ph) : ''}</span></span>
+        <span class="sl-n"><b>${esc(x.nom)}</b><span>${esc(vue === 'equipes' ? (x.vedettes || []).slice(0, 2).join(' · ') : (x.equipe || ''))} · ${
+          tri === 'place' ? tt('vaut ta place : ', 'worth your spot: ') + chanceTxt(x.p_carte_prix || 0) : tri === 'rentab' ? tt('rentabiliser : ', 'break even: ') + chanceTxt(x.p_rembourse || 0)
+          : tri === 'argent' ? tt('hit : ', 'hit: ') + chanceTxt(ph) + ' · ' + argentCourt(x.prix_compare || x.prix || 0) : tt('hit : ', 'hit: ') + chanceTxt(ph)}</span></span>
         <span class="score ${cl}"><b>${x.rel}</b><small>${lib}</small></span></button>
         <div class="exp-z" id="exp-${i}" hidden>
           <div class="hits-m">${bandeHits(x)}</div>
@@ -4010,8 +4035,11 @@ async function rendreAnalyse(){
           <details class="exp-calc"><summary>${tt('Comment c’est calculé', 'How it’s calculated')}</summary>${explicationPlace(x, vue, r, liste.length)}</details></div></div>`;
     };
     corps = `${segA('an-v', [['joueurs', tt('Joueurs', 'Players')], ['equipes', tt('Équipes', 'Teams')]], vue)}
-      <div class="sous" style="margin:10px 0 12px;font-size:15px">${tt('Le meilleur choix en haut. Touche une ligne pour le détail.', 'Best pick on top. Tap a row for details.')}</div>
-      <div class="score-liste">${liste.map(ligne).join('') || `<div class="vide">${tt('Rien à analyser pour ce produit', 'Nothing to analyze for this product')}</div>`}</div>`;
+      <div class="an-tri"><div class="chips" id="an-tri">${TRIS.map(([k, t]) => `<button class="chip ${k === tri ? 'on' : ''}" data-tri-a="${k}">${t}</button>`).join('')}</div>
+        <div class="sous an-expl">${TRIS.find(t => t[0] === tri)[2]} ${tt('Touche une ligne pour le détail.', 'Tap a row for details.')}</div>
+        <div class="recherche petite"><input id="an-rech" type="search" placeholder="${esc(vue === 'joueurs' ? tt('Chercher un joueur', 'Search a player') : tt('Chercher une équipe ou un joueur', 'Search a team or player'))}" value="${esc(A.rech || '')}" autocomplete="off"></div></div>
+      <div class="score-liste">${liste.map(ligne).join('') || `<div class="vide">${tt('Rien à analyser pour ce produit', 'Nothing to analyze for this product')}</div>`}
+        <div class="vide" id="an-vide" hidden>${tt('Aucun joueur de ce produit ne correspond.', 'No player in this product matches.')}</div></div>`;
   }
   z.innerHTML = tete + corps;
   $('#an-chg').onclick = () => { location.hash = '#analyse/choisir'; };
@@ -4021,9 +4049,15 @@ async function rendreAnalyse(){
   $$('[data-bx]', z).forEach(b => b.onclick = () => { A.boites = +b.dataset.bx; rendreAnalyse(); });
   const calculer = () => {
     const nb0 = $('#rb-n') ? Math.max(1, Math.min(120, Math.round(nb($('#rb-n').value) || 1))) : A.boites;
-    const lot = $('#rb-lot') ? nb($('#rb-lot').value) : null, m = $('#rb-marge') ? nb($('#rb-marge').value) : null;
+    const lot = $('#rb-lot') ? nb($('#rb-lot').value) : null, mv = $('#rb-marge') ? $('#rb-marge').value.trim() : null, m = mv ? nb(mv) : null;
     A.boites = nb0; A.cout = lot ? versCAD(lot) / nb0 : '';
-    if (m != null) A.marge = Math.max(0, Math.min(300, m));
+    if ($('#rb-marge')) A.marge = m != null && isFinite(m) ? Math.max(0, Math.min(300, m)) : '';
+    if (vendeur && (!A.cout || A.marge === '')) {                      // les deux sont obligatoires
+      [['#rb-lot', !A.cout], ['#rb-marge', A.marge === '']].forEach(([id, vide]) => { const e = $(id); if (e) e.classList.toggle('manque', vide); });
+      toast(tt('Entre ton prix payé et ton profit voulu', 'Enter what you paid and your target profit'), 3000);
+      (!A.cout ? $('#rb-lot') : $('#rb-marge')).focus();
+      return;
+    }
     const bu = $('#an-budget'); if (bu) { const v = nb(bu.value); A.budget = v ? versCAD(v) : 0; }
     rendreAnalyse();
   };
@@ -4032,6 +4066,11 @@ async function rendreAnalyse(){
   const bu0 = $('#an-budget'); if (bu0) bu0.onchange = calculer;
   $$('#an-m button').forEach(b => b.onclick = () => { A.mode = b.dataset.v; rendreAnalyse(); });
   $$('#an-v button').forEach(b => b.onclick = () => { A.vue = b.dataset.v; rendreAnalyse(); });
+  $$('[data-tri-a]', z).forEach(b => b.onclick = () => { A.tri = b.dataset.triA; rendreAnalyse(); });
+  const filtrerA = () => { const q = (A.rech || '').trim().toLowerCase(); let n = 0;
+    $$('.score-bloc.simple', z).forEach(e => { const ok = q ? e.dataset.nom.includes(q) : !e.classList.contains('loin'); e.hidden = !ok; n += ok; });
+    const v = $('#an-vide', z); if (v) v.hidden = n > 0; };
+  const ar = $('#an-rech', z); if (ar) { ar.oninput = () => { A.rech = ar.value; filtrerA(); }; filtrerA(); }
   $$('[data-exp]', z).forEach(b => b.onclick = (ev) => { if (ev.target.closest('a')) return; const e = $('#exp-' + b.dataset.exp); if (!e) return; e.hidden = !e.hidden; b.classList.toggle('on', !e.hidden); b.setAttribute('aria-expanded', String(!e.hidden));
     const vj = !e.hidden && $('.vj-z', e); if (vj) ventesJoueurBreak(vj, vj.dataset.vjP, vj.dataset.vjJ); });
   $$('[data-dem]', z).forEach(i => i.onchange = () => { const v = nb(i.value); if (v) A.demandes[i.dataset.dem] = versCAD(v); else delete A.demandes[i.dataset.dem]; rendreAnalyse(); });
