@@ -229,12 +229,19 @@ def _appel(q, site):
 
 
 _ERREURS = {}
+_DERNIERE = {}
+
+
+def derniere_erreur():
+    """28 oct 2026 : pour l'admin, la derniere erreur de SoldComps (quota, cle, panne)."""
+    return dict(_DERNIERE) if _DERNIERE else None
 
 
 def _noter_erreur(q, err):
     if len(_ERREURS) > 2000:
         _ERREURS.clear()
     _ERREURS[q.lower()] = (time.time(), err)
+    _DERNIERE.update(erreur=err, le=time.time())
 
 
 def memes(texte, requete=True, n=24, fond=False, exclure_titre=None):

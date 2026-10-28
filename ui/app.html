@@ -1681,6 +1681,16 @@ body.en-defil .logo-lr::after, body.en-defil #nav-logo-nom, body.en-defil .titre
 .ana-resume{display:flex; flex-wrap:wrap; align-items:center; gap:6px; width:100%; margin:10px 0 4px; padding:0; background:none; border:none; color:var(--doux); text-align:left; cursor:pointer}
 .ana-resume span{padding:5px 10px; border-radius:999px; background:var(--carte2); font-size:13px; color:var(--texte2)} .ana-resume i{font-style:normal; color:var(--acc); font-size:18px; margin-left:2px}
 .ra-g{display:flex; flex-direction:column; gap:8px; margin-bottom:16px} .ra-g .lib{font:700 12.5px var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--doux)}
+.valeur-v .titre{font-size:clamp(34px, 9vw, 52px)}
+.v-scan-grand{display:flex; align-items:center; gap:14px; width:100%; padding:18px 18px; border-radius:20px; border:none; margin:4px 0 12px; text-align:left;
+  background:linear-gradient(135deg, color-mix(in srgb, var(--acc) 92%, #fff), var(--acc)); color:var(--acc-texte); box-shadow:0 10px 30px color-mix(in srgb, var(--acc) 25%, transparent)}
+.v-scan-grand svg{width:34px; height:34px; flex-shrink:0; stroke:currentColor}
+.v-scan-grand b{display:block; font:700 22px var(--f-cond); letter-spacing:.04em; text-transform:uppercase} .v-scan-grand small{font-size:14px; opacity:.8}
+.marche-c{margin-top:18px; gap:12px} .mc-tete{display:flex; justify-content:space-between; align-items:center; gap:10px}
+.mc-tete b{font-size:19px} .mc-tete b small{display:block; font-size:13px; font-weight:500; color:var(--doux)}
+.mc-ong .chip{flex:1; padding:0 8px; font-size:14px; justify-content:center; white-space:nowrap} .mc-ind{background:none; border:1px solid var(--ligne); border-radius:999px; padding:5px 10px; font-size:13px; color:var(--doux); white-space:nowrap}
+.mc-ind.vert{color:var(--vert)} .mc-ind.rouge{color:var(--rouge)} .mc-ong{flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none}
+.mc-tout{align-self:center; font-size:14px}
 .ra-nb{display:flex; gap:8px; align-items:center; flex-wrap:wrap} .ra-nb .champ{width:96px; text-align:center; font-size:20px; font-weight:700}
 .ra-pm{width:48px; height:48px; border-radius:12px; border:1px solid var(--ligne); background:var(--carte2); color:var(--texte); font-size:24px; line-height:1}
 .ra-g .chips{flex-wrap:wrap; overflow:visible; gap:6px} .ra-g .ra-autre{width:84px; min-height:0; height:38px; padding:0 12px; border-radius:999px; font-size:15px} .ra-g small{font-size:12.5px; color:var(--doux)}
@@ -4800,17 +4810,21 @@ async function vueValeur(arg){
   // 24 oct 2026 (Mathieu : « will smith young guns et ca me sort tout sauf ca ») : la MEME carte seulement ;
   // l'app montre ce qu'elle a compris, ce qu'elle a ecarte et pourquoi, et apprend de « pas la bonne carte ».
   const q = arg ? decodeURIComponent(arg) : '';
-  V().innerHTML = `<section class="ecran large">
-    <div class="entete"><div class="titre">${tt('Combien vaut une carte ?', 'What is a card worth?')}</div>${pastilleQuota('valeur_jour')}</div>
-    <div class="rech-ligne"><form class="recherche" id="v-form" role="search">${ICONES.loupe}<input id="v-q" type="search" enterkeyhint="search" value="${esc(q)}" placeholder="${esc(tt('Joueur + carte (ex. Will Smith Young Guns, Bedard PSA 10, Celebrini Exclusives /100)', 'Player + card (e.g. Will Smith Young Guns, Bedard PSA 10, Celebrini Exclusives /100)'))}" aria-label="${esc(tt('Carte à évaluer', 'Card to value'))}"></form>
-      <button class="btn-scan" id="v-scan" aria-label="${esc(tt('Scanner une carte', 'Scan a card'))}">${ICONES.photo}<span>${tt('Scanner', 'Scan')}</span></button></div>
-    <div id="v-res">${q ? roue : `<div class="vide">${tt('Écris le joueur et la carte. Ajoute la variante, la gradation, « auto », « patch » ou « /99 » si ta carte en a : l’app ne garde que la même carte.', 'Type the player and the card. Add the parallel, grade, “auto”, “patch” or “/99” if your card has one: the app keeps only the same card.')}</div><div id="v-tend"></div>`}</div>
+  // 28 oct 2026 (Mathieu : « trop d'info dans cette page, c'est lourd et on ne sait pas ou chercher ») : une seule action
+  // en vedette (scanner), la recherche juste dessous, et le marche resume en une carte (un onglet a la fois, 5 lignes)
+  const fv = S.forfait || {};
+  V().innerHTML = `<section class="ecran large valeur-v">
+    <div class="entete"><div class="titre">${tt('Valeur', 'Value')}</div>${fv.pro ? '' : pastilleQuota('valeur_jour')}</div>
+    ${q ? '' : `<button class="v-scan-grand" id="v-scan">${ICONES.photo}<span><b>${tt('Scanner une carte', 'Scan a card')}</b><small>${tt('La caméra la reconnaît et montre sa valeur', 'The camera recognizes it and shows its value')}</small></span></button>`}
+    <div class="rech-ligne"><form class="recherche" id="v-form" role="search">${ICONES.loupe}<input id="v-q" type="search" enterkeyhint="search" value="${esc(q)}" placeholder="${esc(tt('Ou écris : joueur + carte (ex. Celebrini Young Guns)', 'Or type: player + card (e.g. Celebrini Young Guns)'))}" aria-label="${esc(tt('Carte à évaluer', 'Card to value'))}"></form>
+      ${q ? `<button class="btn-scan" id="v-scan" aria-label="${esc(tt('Scanner une carte', 'Scan a card'))}">${ICONES.photo}<span>${tt('Scanner', 'Scan')}</span></button>` : ''}</div>
+    <div id="v-res">${q ? roue : '<div id="v-tend"></div>'}</div>
   </section>`;
   brancherSwitchMode(V());
   $('#v-form').onsubmit = (e) => { e.preventDefault(); const v = $('#v-q').value.trim(); if (v) location.hash = '#valeur/' + encodeURIComponent(v); };
   brancherQuota(V());
   $('#v-scan').onclick = () => ouvrirScanner();
-  if (!q) { if (!matchMedia('(max-width:899px)').matches) $('#v-q').focus(); blocTendances($('#v-tend')); return; }
+  if (!q) { if (!matchMedia('(max-width:899px)').matches) $('#v-q').focus(); blocMarche($('#v-tend')); return; }
   let r; try { r = await API.valeur_carte(q); } catch (e) { r = {ok: false, erreur: e.message}; }
   chargerForfait().then(() => { const e = $('.ecran .entete .quota'); if (e) { e.outerHTML = pastilleQuota('valeur_jour'); brancherQuota(V()); } }).catch(() => {});
   const z = $('#v-res'); if (!z) return;
@@ -6468,7 +6482,9 @@ async function adminServeur(){
     el.innerHTML = `${e.en_cours ? '<span class="roue"></span> ' + tt('Tour en cours… ', 'Running… ') : ''}<b>${e.deals}</b> ${tt('deals en ligne', 'live deals')} · ${tt('dernier tour', 'last run')} ${e.maj ? heureCourte(e.maj) : '—'}<br>
       eBay ${e.ebay} / ${e.ebay_plafond} ${tt('(rythme du jour : ', '(today’s pace: ')}${e.ebay_rythme}) · ${tt('vérifications', 'checks')} ${e.verif} / ${e.verif_max}${e.verif >= e.verif_max ? ' · <span style="color:var(--rouge)">' + tt('épuisées pour aujourd’hui', 'used up for today') + '</span>' : ''}
       ${e.repartition ? '<br>' + tt('En ligne : ', 'Live: ') + e.repartition.hits + ' hits · ' + e.repartition.veterans + tt(' vétérans/légendes · ', ' veterans/legends · ') + e.repartition.recrues + tt(' autres recrues · ', ' other rookies · ') + e.repartition.young_guns + ' Young Guns' : ''}
-      ${e.hits_24h ? '<br>' + tt('Hits (24 h) : ', 'Hits (24 h): ') + e.hits_24h.vus + tt(' vus · ', ' seen · ') + e.hits_24h.verifies + tt(' vérifiés · ', ' checked · ') + e.hits_24h.deals + ' deals' : ''}
+      ${e.hits_24h ? '<br>' + tt('Hits (24 h) : ', 'Hits (24 h): ') + e.hits_24h.vus + tt(' vus · ', ' seen · ') + e.hits_24h.verifies + tt(' vérifiés · ', ' checked · ') + e.hits_24h.deals + ' deals'
+        + '<br><small>' + tt('Bloqués (24 h) : budget ', 'Blocked (24 h): budget ') + (e.hits_24h.refus_budget || 0) + tt(' · erreurs SoldComps ', ' · SoldComps errors ') + (e.hits_24h.erreurs_ventes || 0) + tt(' · sans ventes ', ' · no sales ') + (e.hits_24h.sans_ventes || 0) + '</small>' : ''}
+      ${e.soldcomps ? '<br>SoldComps : ' + (e.soldcomps.jour ?? '?') + ' / ' + (e.soldcomps.fond ?? '?') + tt(' aujourd’hui (tâches de fond)', ' today (background)') + (e.soldcomps.erreur ? ' · <span style="color:var(--rouge)">' + esc(e.soldcomps.erreur) + '</span>' : '') : ''}
       <br>${tt('Reconnaissance photo', 'Photo recognition')} : ${esc(e.vision_modele || '—')}${e.vision_erreur ? ' · <span style="color:var(--rouge)">' + tt('dernière erreur', 'last error') + ' HTTP ' + esc(e.vision_erreur.code) + ' ' + esc((e.vision_erreur.detail || '').slice(0, 140)) + '</span>' : ''}`; };
   API.deals_etat().then(etatDeals).catch(() => {});
   const bd = $('#adm-deals-ok'); if (bd) bd.onclick = async () => {
@@ -6798,6 +6814,33 @@ function typeCourt(x){
 }
 const unParJoueur = (l) => { const vus = new Set(); return (l || []).filter(x => { const k = String(x.joueur || '').toLowerCase(); if (vus.has(k)) return false; vus.add(k); return true; }); };
 // tendances de la semaine
+// 28 oct 2026 : le marche en une carte : l'indice en une ligne, puis En hausse / En baisse / Plus vendues (un a la fois)
+async function blocMarche(z){
+  if (!z) return;
+  z.innerHTML = '<div class="charge-logo"><span class="roue"></span></div>';
+  const r = await API.tendances().catch(() => null);
+  if (!z.isConnected) return;
+  if (!r || (!r.hausses.length && !r.baisses.length && !(r.plus_vendues || []).length)) { z.innerHTML = ''; return; }
+  const m = r.indice, ong = [['hausses', '▲ ' + tt('En hausse', 'Rising')], ['baisses', '▼ ' + tt('En baisse', 'Falling')], ['plus_vendues', tt('Plus vendues', 'Most sold')]];
+  let actif = S.marcheOng || 'hausses';
+  const ligne = (x) => `<a class="rangee t-l" href="#joueur/${encodeURIComponent(x.joueur)}">${vignetteJoueur(x.joueur)}
+    <span class="milieu"><span class="nom">${esc(x.joueur)}${x.recrue ? ' ' + tag('RC', 'acc') : ''}</span><span class="det">${esc(typeCourt(x))}</span></span>
+    <span class="droite">${actif === 'plus_vendues' ? `<b class="t-prix">${argentCourt(x.mediane)}</b><span class="sous">${x.n} ${tt('ventes', 'sales')}</span>`
+      : `${capsule((x.pct > 0 ? '▲ +' : '▼ ') + x.pct + ' %', (x.pct > 0 ? 'vert' : 'rouge') + ' petit')}<span class="sous">${argentCourt(x.recent)}</span>`}</span></a>`;
+  const rendre = () => {
+    const l = unParJoueur(r[actif] || []).slice(0, 5);
+    z.innerHTML = `<div class="bloc marche-c"><div class="mc-tete"><b>${tt('Le marché', 'The market')}<small>${tt('cette semaine', 'this week')}</small></b>
+        ${m ? `<button class="mc-ind ${m.variation > 0 ? 'vert' : m.variation < 0 ? 'rouge' : ''}" data-ind-info>${tt('Indice', 'Index')} ${pctS(m.variation)} · 30 ${tt('j', 'd')} ⓘ</button>` : ''}</div>
+      <div class="chips mc-ong">${ong.map(([k, t]) => `<button class="chip ${k === actif ? 'on' : ''}" data-mc="${k}">${t}</button>`).join('')}</div>
+      <div class="liste">${l.map(ligne).join('') || `<div class="vide t-vide">${tt('Rien à signaler cette semaine', 'Nothing to report this week')}</div>`}</div>
+      <button class="lien-doux mc-tout" id="mc-tout">${tt('Toutes les tendances', 'All trends')} ›</button></div>`;
+    remplirPortraits(z);
+    $$('[data-mc]', z).forEach(b => b.onclick = () => { actif = S.marcheOng = b.dataset.mc; rendre(); });
+    $('#mc-tout', z).onclick = () => { ouvrirFeuille(`<div id="mc-feuille"><div class="charge-logo"><span class="roue"></span></div></div>`); blocTendances($('#mc-feuille')); };
+    $$('[data-ind-info]', z).forEach(b => b.onclick = (e) => { e.preventDefault(); feuilleIndice(); });
+  };
+  rendre();
+}
 async function blocTendances(z){
   if (!z) return;
   const r = await API.tendances().catch(() => null);

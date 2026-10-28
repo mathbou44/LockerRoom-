@@ -573,7 +573,10 @@ def _juger(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=N
             nv = verif(cib)
             if nv:
                 va = valeur_annonce(a, tout_v + nv, actives, cib=cib)
-    if not va and verif and a.get("encan") and t >= HIT_MIN and _hit(cib) and not memes_ventes(cib, tout_v):
+    # 28 oct 2026 (Mathieu : « les deals affichent toujours la meme cochonnerie » ; admin : 7 407 hits vus, 14 verifies) :
+    # un hit avec 1 ou 2 ventes connues (pas assez pour une valeur sure) n'etait JAMAIS verifie ; maintenant oui
+    peu_ventes = len(memes_ventes(cib, tout_v)) < 3
+    if not va and verif and a.get("encan") and t >= HIT_MIN and _hit(cib) and peu_ventes:
         try:
             if datetime.fromisoformat(str(fin).replace("Z", "+00:00")) - maint <= timedelta(hours=VERIF_TARD_H):
                 st.setdefault("_tard", []).append((a, r, cib))      # verifie a la fin du tour (budget restant)
@@ -583,9 +586,9 @@ def _juger(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=N
     # (auto, patch, /99) sans vente connue de sa carte etait toujours ecarte. Maintenant il est verifie en fin de tour
     # (apres les encans, avec le budget qui reste) s'il a l'air bas : 25 % sous les memes cartes en vente, ou une
     # vedette (veteran / legende) de 40 $ et plus.
-    elif not va and verif and r.get("suivi") and t >= HIT_MIN and not memes_ventes(cib, tout_v):
+    elif not va and verif and r.get("suivi") and t >= HIT_MIN and peu_ventes:
         st.setdefault("_tard", []).append((a, r, cib))           # 29 oct : vendeur suivi, toutes ses cartes de 25 $ et plus
-    elif not va and verif and not a.get("encan") and t >= HIT_MIN and _hit(cib) and not memes_ventes(cib, tout_v):
+    elif not va and verif and not a.get("encan") and t >= HIT_MIN and _hit(cib) and peu_ventes:
         pa2 = [_total(x) for x in actives or [] if x.get("item_id") != a.get("item_id")
                and not cartes_match.raisons_refus(cib, x.get("titre") or "")]
         bas = bool(pa2) and t <= (cartes_match.mediane_robuste(pa2)[0] or 0) * 0.75
@@ -1011,7 +1014,9 @@ def etat():
             continue
         rep[sorte(x.get("titre"))] += 1
     return {"ok": True, "en_cours": _ETAT["en_cours"], "maj": d.get("maj"), "repartition": rep,
-            "hits_24h": {"vus": g.get("hits_vus", 0), "verifies": g.get("hits_verifies", 0), "deals": g.get("hits_deals", 0)},
+            "hits_24h": {"vus": g.get("hits_vus", 0), "verifies": g.get("hits_verifies", 0), "deals": g.get("hits_deals", 0),
+                         "refus_budget": g.get("verif_budget", 0), "erreurs_ventes": g.get("erreurs_ventes", 0), "sans_ventes": g.get("sans_ventes", 0)},
+            "soldcomps": _etat_soldcomps(),
             "deals": sum(1 for x in d.get("deals") or [] if valide(x) and encore_ouvert(x)),
             "ebay": utilises_ebay(), "ebay_rythme": round(appels_ebay.rythme("browse")),
             "ebay_plafond": round(appels_ebay.limite("browse") * (1 - appels_ebay.RESERVE_GESTES)),
@@ -1059,6 +1064,16 @@ def melanger(lst, ratio=2):
         if j < len(yg):
             out.append(yg[j]); j += 1
     return out
+
+
+def _etat_soldcomps():
+    import vendues
+    try:
+        e = vendues.derniere_erreur()
+        return {"jour": vendues.utilises_aujourdhui(), "plafond": vendues.plafond_jour(), "fond": int(vendues.plafond_jour() * 0.7),
+                "erreur": e.get("erreur") if e and time.time() - e.get("le", 0) < 6 * 3600 else None, "sites": vendues.sites()}
+    except Exception as x:
+        return {"erreur": repr(x)}
 
 
 def utilises_ebay():

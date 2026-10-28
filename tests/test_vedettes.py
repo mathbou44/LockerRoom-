@@ -118,6 +118,20 @@ class TestVedettes(unittest.TestCase):
         self.assertEqual([deals.sorte(x["titre"]) for x in m[:3]], ["hits", "veterans", "young_guns"])
         self.assertEqual(len(m), len(L))
 
+    def test_hit_avec_une_seule_vente_connue_verifie(self):
+        """28 oct 2026 : un hit avec 1 vente connue (pas assez pour une valeur sure) est verifie, plus jamais ecarte."""
+        from datetime import datetime, timedelta, timezone
+        maint = datetime.now(timezone.utc)
+        titre = "2021-22 SP Authentic Cole Caufield Future Watch Auto Patch /100"
+        fin = (maint + timedelta(hours=10)).isoformat().replace("+00:00", "Z")
+        a = {"item_id": "h1", "titre": titre, "prix_cad": 70.0, "port_cad": 0.0, "encan": True, "fin": fin, "mises": 2,
+             "url": "https://www.ebay.com/itm/h1", "vendeur_pct": "100", "vendeur_score": 900}
+        une = [{"titre": titre, "prix": 200.0, "le": datetime.now().strftime("%Y-%m-%d"), "url": "u1"}]
+        st = {}
+        deals._juger(a, {"q": None, "flux": "x", "sport": "hockey", "joueur": None}, une, [], maint, {}, st,
+                     bassin=deals.Bassin(charger=False), verif=lambda c: [])
+        self.assertEqual(len(st.get("_tard") or []), 1)
+
 
 if __name__ == "__main__":
     unittest.main()
