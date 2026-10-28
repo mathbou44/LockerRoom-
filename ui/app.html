@@ -194,7 +194,7 @@ body{--h1:#9FE6D2; --h2:#B9BEFF; --h3:#F2B3D6; --h4:#F1D58E;
 /* 27 oct 2026 (Mathieu : « que les couleurs changent entre buyer et seller ») : chaque palette a 2 accents,
    vendeur (le reflet froid) et acheteur (le reflet chaud). Jamais le vert ni le rouge des gains et pertes. */
 body[data-palette="refractor"]{--acc:#B9BEFF; --acc-fonce:#1E2038; --acc-texte:#0E1026}
-body[data-palette="refractor"].mode-acheteur{--acc:#E9CF8E; --acc-fonce:#2A2416; --acc-texte:#1A1408}
+body[data-palette="refractor"].mode-acheteur{--acc:#B9BEFF; --acc-fonce:#1E2038; --acc-texte:#0E1026}
 body[data-palette="silver"]{--h1:#FFFFFF; --h2:#C9D0DA; --h3:#E8ECF2; --h4:#9FA9B8; --acc:#DDE2EA; --acc-fonce:#22252B; --acc-texte:#111317}
 body[data-palette="silver"].mode-acheteur{--acc:#9CC8F0; --acc-fonce:#15222F; --acc-texte:#07121C}
 body[data-palette="rouge"]{--h1:#FFC9C9; --h2:#FF6B72; --h3:#E0404C; --h4:#FFE1DC; --acc:#FF7A80; --acc-fonce:#3A1518; --acc-texte:#22070A}
@@ -206,6 +206,11 @@ body[data-palette="emeraude"].mode-acheteur{--acc:#5FD3E6; --acc-fonce:#0E2629; 
 body[data-palette="orange"]{--h1:#FFD9B0; --h2:#FF9A3D; --h3:#F07A1A; --h4:#FFE8CC; --acc:#FFA24D; --acc-fonce:#3A2412; --acc-texte:#1E1004}
 body[data-palette="orange"].mode-acheteur{--acc:#FFCF6B; --acc-fonce:#33270E; --acc-texte:#1C1404}
 body{--acc-clair:color-mix(in srgb, var(--acc) 48%, #fff); --acc-sombre:color-mix(in srgb, var(--acc) 64%, #000)}
+/* 28 oct 2026 (Mathieu : « enlever le gold et remplacer par le style de prism partout pour etre standard, sauf le badge Pro
+   qui reste bien visible et gold ») : les touches « or » suivent l'accent de la palette (Prisme par defaut) ;
+   seul ce qui est Pro (badge, essai, bouton S'abonner) garde l'or, en dur */
+body{--or:var(--acc); --or-clair:color-mix(in srgb, var(--acc) 55%, #fff); --or-fort:var(--acc); --or-sombre:color-mix(in srgb, var(--acc) 60%, #000);
+  --or-fonce:var(--acc-fonce); --or-ligne:color-mix(in srgb, var(--acc) 32%, #15151A); --pro-or:#E9CF8E; --pro-or-fonce:#2A2416; --pro-or-ligne:#5C4E2C}
 /* une palette choisie l'emporte sur l'or Pro et l'or acheteur pour les touches de couleur (le vert / rouge restent) */
 body[data-palette] .horloge .salut{color:color-mix(in srgb, var(--acc) 72%, #fff)}
 body[data-palette].pro .onglets a.on{color:var(--acc)}
@@ -219,12 +224,13 @@ body{background-image:radial-gradient(900px 360px at 12% -150px, color-mix(in sr
 .petit-legal{font-size:12px; line-height:1.45; text-align:center; margin-top:12px} .petit-legal a{color:var(--acc)}
 .th-pal .pas{background:linear-gradient(135deg,var(--p1) 0%,var(--p2) 36%,var(--p3) 68%,var(--p4) 100%) !important}
 /* le motif du parallele dans la pastille : eclats, stries, damier */
-.th-pal[data-pal="silver"] .pas, .th-pal[data-pal="rouge"] .pas, .th-pal[data-pal="gold"] .pas{background:repeating-conic-gradient(from 6deg, rgba(255,255,255,.6) 0 7deg, transparent 7deg 24deg), radial-gradient(circle, var(--p1) 0%, var(--p2) 45%, var(--p3) 100%) !important}
-.th-pal[data-pal="emeraude"] .pas{background:repeating-linear-gradient(118deg, rgba(255,255,255,.45) 0 1.5px, transparent 1.5px 5px), linear-gradient(135deg, var(--p1), var(--p2) 45%, var(--p3)) !important}
+.th-pal[data-pal="rouge"] .pas{background:repeating-linear-gradient(62deg, rgba(255,255,255,.55) 0 1px, transparent 1px 5px), repeating-linear-gradient(-62deg, rgba(255,255,255,.3) 0 1px, transparent 1px 7px), linear-gradient(135deg, var(--p1), var(--p2) 45%, var(--p3)) !important}
+.th-pal[data-pal="silver"] .pas{background:repeating-conic-gradient(from 6deg, rgba(255,255,255,.6) 0 7deg, transparent 7deg 24deg), radial-gradient(circle, var(--p1) 0%, var(--p2) 45%, var(--p3) 100%) !important}
+.th-pal[data-pal="emeraude"] .pas{background:repeating-radial-gradient(circle at 120% 130%, rgba(255,255,255,.45) 0 1.5px, transparent 1.5px 5px), linear-gradient(135deg, var(--p1), var(--p2) 45%, var(--p3)) !important}
 .th-pal[data-pal="orange"] .pas{background:conic-gradient(var(--p2) 25%, var(--p4) 0 50%, var(--p2) 0 75%, var(--p4) 0) 0 0/7.33px 7.33px !important}
 .barre i:not([class]){background:var(--holo)}
 /* 22 oct 2026 - deux volets dans la meme app : Vendeur (bleu) et Acheteur (dore) */
-body.mode-acheteur{--acc:#E9CF8E; --acc-fonce:#2A2416; --acc-texte:#1A1408}
+body.mode-acheteur{--acc:#B9BEFF; --acc-fonce:#1E2038; --acc-texte:#0E1026}
 .mode-switch{display:inline-flex; background:var(--carte); border:1px solid var(--ligne); border-radius:999px; padding:3px; gap:2px}
 .mode-switch button{border:none; background:transparent; color:var(--doux); font-weight:700; font-size:13.5px; padding:7px 14px; border-radius:999px; display:inline-flex; align-items:center; gap:6px}
 .mode-switch button.on{background:var(--acc); color:var(--acc-texte)}
@@ -234,10 +240,10 @@ body.mode-acheteur{--acc:#E9CF8E; --acc-fonce:#2A2416; --acc-texte:#1A1408}
 .choix-mode .sous{font-size:15px}
 .carte-mode{display:flex; gap:14px; align-items:center; text-align:left; width:100%; background:var(--carte); border:1px solid var(--ligne); border-radius:20px; padding:18px; color:var(--texte)}
 .carte-mode .ico{width:52px; height:52px; border-radius:16px; display:flex; align-items:center; justify-content:center; flex-shrink:0}
-.carte-mode.v .ico{background:#1E2038; color:#B9BEFF} .carte-mode.a .ico{background:#2A2416; color:#E9CF8E}
+.carte-mode.v .ico{background:#1E2038; color:#B9BEFF} .carte-mode.a .ico{background:#12302A; color:#9FE6D2}
 .carte-mode b{font-size:19px; display:block} .carte-mode span.d{font-size:13.5px; color:var(--doux); display:block; margin-top:3px}
 .carte-mode:active{transform:scale(.99)}
-.hero.acheteur{background:linear-gradient(160deg,#221D12 0%,var(--carte) 70%)}
+.hero.acheteur{background:linear-gradient(160deg,var(--acc-fonce) 0%,var(--carte) 70%)}
 .hero.acheteur .grand{color:var(--or)}
 .onglets .pastille{position:absolute; top:0; left:calc(50% + 6px); min-width:17px; height:17px; padding:0 4px; border-radius:9px; background:#E5484D; color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center}
 .onglets .nav-logo{display:none}
@@ -570,7 +576,7 @@ html.natif input, html.natif textarea{-webkit-user-select:text; user-select:text
   body.a-badge .ecran{padding-top:calc(var(--haut) + 46px)} }
 .badge-f{height:34px; padding:0 14px; border-radius:17px; border:1px solid var(--ligne); font:700 14px 'Barlow',sans-serif; display:inline-flex; align-items:center; gap:8px; cursor:pointer; white-space:nowrap; flex-shrink:0}
 .badge-f.gratuit{background:#1D1D23; color:#A9A6B1} .badge-f.gratuit b{color:var(--texte); font-weight:700; padding-left:8px; border-left:1px solid var(--ligne)}
-.badge-f.essai{background:var(--or-fonce); color:var(--or); border-color:#5C4E2C}
+.badge-f.essai{background:var(--pro-or-fonce); color:var(--pro-or); border-color:var(--pro-or-ligne)}
 /* 26 oct 2026 (Mathieu : « bronze pour la version de base, gold pour Pro, eventuellement silver ; le logo change de
    couleur avec le niveau ») : le logo et le badge prennent la couleur du niveau */
 body{--niv1:#F7EAC4; --niv2:#D9B866; --niv3:#A88A45; --niv-txt:#E9CF8E}
@@ -599,7 +605,7 @@ body.theme-equipe{background-image:radial-gradient(1200px 420px at 50% -120px, c
 .av .coche{width:26px; height:26px; border-radius:13px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-weight:800; background:var(--or-fonce); color:var(--or)}
 .repere.verrou{background:repeating-linear-gradient(135deg,#1B1B21 0 8px,#212027 8px 16px); cursor:pointer} .repere.verrou b{color:var(--or)}
 .bandeau-essai{display:flex; align-items:center; gap:14px; justify-content:space-between; border-radius:18px; padding:14px 16px;
-  background:linear-gradient(110deg,#2A2416,#1B170E); border:1px solid #5C4E2C} .bandeau-essai b{color:var(--or); display:block; font-size:16px} .bandeau-essai span{font-size:14px; color:#D9CDAE}
+  background:linear-gradient(110deg,#2A2416,#1B170E); border:1px solid #5C4E2C} .bandeau-essai b{color:var(--pro-or); display:block; font-size:16px} .bandeau-essai span{font-size:14px; color:#D9CDAE}
 .bandeau-essai .btn{width:auto; flex-shrink:0}
 /* le look Pro : un fil dore en haut, des bordures qui accrochent la lumiere, les titres et l'onglet actif dores */
 body.pro::after{content:''; position:fixed; left:0; right:0; top:0; height:2px; z-index:70; pointer-events:none; background:linear-gradient(90deg,transparent,var(--h1),var(--h2),var(--h3),var(--h4),transparent); opacity:.85}
@@ -762,7 +768,7 @@ body.fen-ouverte{overflow:hidden}
 .adm-agent{display:flex; align-items:center; gap:12px; padding:14px 16px; border-radius:16px; background:var(--carte); border:1px solid var(--ligne)}
 .adm-agent .aa-ic{width:36px; height:36px; border-radius:18px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,var(--or),var(--acc-sombre)); color:var(--acc-texte); font-size:18px; flex-shrink:0}
 .adm-agent b{display:block; font-size:16px} .adm-agent small{color:var(--doux); font-size:14px} .adm-agent .pilule{margin-left:auto}
-.ecusson.prio1{background:#3A1418; color:#FFB3B3} .ecusson.prio2{background:#2E2610; color:var(--or)} .ecusson.prio3{color:var(--doux)}
+.ecusson.prio1{background:#3A1418; color:#FFB3B3} .ecusson.prio2{background:var(--or-fonce); color:var(--or)} .ecusson.prio3{color:var(--doux)}
 .dm-texte{white-space:pre-wrap; background:var(--carte2); border-radius:14px; padding:12px 14px; font-size:16px; line-height:1.45; margin:10px 0}
 .dm-texte.rep{background:linear-gradient(135deg, color-mix(in srgb, var(--acc) 14%, transparent), color-mix(in srgb, var(--acc) 4%, transparent)); border:1px solid color-mix(in srgb, var(--acc) 35%, transparent)}
 .adm-l{display:flex; flex-direction:column; gap:4px; margin:10px 0} .adm-l b{font-size:15px}
@@ -962,7 +968,7 @@ body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px color-mix(in srgb, var(--a
 .ecran .entete{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap}
 .quota{display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 14px; border-radius:17px; border:1px solid var(--ligne); background:rgba(255,255,255,.03);
   color:var(--doux); font-size:14px; font-weight:600; white-space:nowrap; cursor:pointer} .quota b{color:var(--or)}
-.quota.vide{border-color:var(--rouge); color:var(--rouge)} .quota.pro{cursor:default; color:var(--or); border-color:color-mix(in srgb, var(--acc) 45%, transparent); background:linear-gradient(90deg,color-mix(in srgb, var(--acc) 14%, transparent),color-mix(in srgb, var(--acc) 3%, transparent))}
+.quota.vide{border-color:var(--rouge); color:var(--rouge)} .quota.pro{cursor:default; color:var(--pro-or); border-color:color-mix(in srgb, var(--acc) 45%, transparent); background:linear-gradient(90deg,color-mix(in srgb, var(--acc) 14%, transparent),color-mix(in srgb, var(--acc) 3%, transparent))}
 @media (max-width:899px){ .onglets .nav-idees{display:none} }
 /* ===== 26 oct 2026 - mobile « app premium » : inspiré de CollX / Ludex (scan au centre), Collectr / Card Ladder
    (valeur et courbe en héros), Robinhood (chiffres nets), et du guide d'Apple (barre en verre, cibles de 44 pt,
@@ -1221,7 +1227,7 @@ body.pro .onglets a.on{color:var(--acc)}
 .v-ico, .aj-ico{width:44px; height:44px; border-radius:var(--r-ctl); display:flex; align-items:center; justify-content:center; flex-shrink:0;
   background:color-mix(in srgb, var(--acc) 14%, var(--carte2)); color:var(--acc); font:700 20px var(--f-cond)}
 .v-ico svg, .aj-ico svg{width:22px; height:22px}
-.v-ico.acheteur{background:#2A2416; color:#E9CF8E} .v-ico.vendeur{background:#1E2038; color:#B9BEFF}
+.v-ico.acheteur{background:#12302A; color:#9FE6D2} .v-ico.vendeur{background:#1E2038; color:#B9BEFF}
 .choix-volet .on{background:color-mix(in srgb, var(--acc) 8%, transparent); border-radius:var(--r-ctl)}
 .v-ok{color:var(--acc); font-weight:700; font-size:18px; margin-right:6px}
 /* Profil */
@@ -1418,6 +1424,44 @@ body.pro #mosaique{background-image:
   background-size:260% 100%; animation:sc-reflet 14s ease-in-out infinite}
 @keyframes sc-reflet{0%,100%{background-position:100% 0} 50%{background-position:0 0}}
 @media (prefers-reduced-motion:reduce){ #mosaique::after{animation:none} }
+/* 28 oct 2026 : vendre en lot */
+.carte-lot{display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:center; padding:13px 15px; border-radius:var(--r-ctl, 14px); border:1px solid color-mix(in srgb, var(--acc) 30%, var(--ligne)); background:color-mix(in srgb, var(--acc) 7%, var(--carte)); color:var(--texte)}
+.carte-lot b{font-size:15.5px} .carte-lot span{grid-column:1; font-size:13px; color:var(--doux)} .carte-lot i{grid-column:2; grid-row:1 / span 2; font-style:normal; font-size:22px; color:var(--acc)}
+.lot-ordre{display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap}
+.lot-ordre span{width:58px; height:80px; border-radius:8px; border:1.5px solid color-mix(in srgb, var(--acc) 55%, transparent); background:color-mix(in srgb, var(--acc) 10%, var(--carte)); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; font-size:12px; color:var(--texte2)}
+.lot-ordre span.dos{border-style:dashed; background:var(--carte)} .lot-ordre i{font:700 20px 'Barlow Condensed',sans-serif; font-style:normal; color:var(--acc)} .lot-ordre em{color:var(--doux); font-style:normal}
+.lot-l{display:flex; flex-direction:column; gap:8px} .lot-r{display:flex; align-items:center; gap:12px}
+.lot-r .vig{width:44px; height:60px; object-fit:cover; border-radius:6px; flex:none} .lot-r .milieu{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px}
+.lot-r .milieu b{white-space:nowrap; overflow:hidden; text-overflow:ellipsis} .lot-r .milieu small{color:var(--doux); font-size:13px}
+.lot-r.revoir .milieu small{color:var(--rouge)} .lot-r.ok .milieu small{color:var(--vert)} .lot-r.attente{opacity:.6}
+.lot-r .btn.petit{width:auto; height:36px; padding:0 14px; font-size:14px; flex:none}
+/* 28 oct 2026 (Mathieu : « le background doit changer entre les differents styles de paralleles : laser, prism, surge,
+   outburst, checkers ») : chaque palette a son motif, toujours en gris tres doux (+ un soupcon de sa couleur) */
+body[data-palette] #mosaique{background-repeat:no-repeat !important; background-size:auto !important}
+body[data-palette="silver"] #mosaique{background-image:
+    radial-gradient(circle at 50% 30%, transparent 0, transparent 18%, rgba(11,11,14,.55) 78%),
+    repeating-conic-gradient(from 0deg at 50% 30%, rgba(255,255,255,.032) 0deg 2deg, transparent 2deg 7deg),
+    repeating-radial-gradient(circle at 50% 30%, rgba(255,255,255,.016) 0 1px, transparent 1px 30px),
+    radial-gradient(800px 520px at 50% 30%, color-mix(in srgb, var(--acc) 5%, transparent), transparent 70%) !important}
+body[data-palette="rouge"] #mosaique{background-image:
+    radial-gradient(1000px 640px at 86% -10%, color-mix(in srgb, var(--acc) 6%, transparent), transparent 62%),
+    repeating-linear-gradient(62deg, rgba(255,255,255,.034) 0 1px, transparent 1px 23px),
+    repeating-linear-gradient(-62deg, rgba(255,255,255,.016) 0 1px, transparent 1px 37px),
+    repeating-linear-gradient(62deg, transparent 0 160px, rgba(255,255,255,.02) 160px 162px, transparent 162px 420px) !important}
+body[data-palette="emeraude"] #mosaique{background-image:
+    radial-gradient(1000px 640px at 100% 110%, color-mix(in srgb, var(--acc) 6%, transparent), transparent 62%),
+    repeating-radial-gradient(circle at 115% 125%, rgba(255,255,255,.034) 0 1.5px, transparent 1.5px 30px),
+    repeating-radial-gradient(circle at -25% -40%, rgba(255,255,255,.014) 0 1px, transparent 1px 44px) !important}
+body[data-palette="orange"] #mosaique{background-image:
+    radial-gradient(ellipse at 40% 45%, rgba(11,11,14,.92) 0, rgba(11,11,14,.55) 45%, transparent 85%),
+    radial-gradient(1000px 640px at 90% -10%, color-mix(in srgb, var(--acc) 6%, transparent), transparent 62%),
+    conic-gradient(rgba(255,255,255,.03) 25%, transparent 0 50%, rgba(255,255,255,.03) 0 75%, transparent 0) !important;
+  background-size:auto, auto, 46px 46px !important; background-repeat:no-repeat, no-repeat, repeat !important}
+body[data-palette="refractor"] #mosaique{background-image:
+    radial-gradient(1100px 680px at 82% -12%, color-mix(in srgb, var(--acc) 5%, rgba(255,255,255,.04)), transparent 62%),
+    radial-gradient(900px 620px at -6% 108%, rgba(255,255,255,.035), transparent 60%),
+    repeating-conic-gradient(from 8deg at 76% -8%, rgba(255,255,255,.024) 0deg 1.2deg, transparent 1.2deg 4.5deg),
+    repeating-conic-gradient(from 200deg at 8% 112%, rgba(255,255,255,.014) 0deg 1.6deg, transparent 1.6deg 6deg) !important}
 
 /* 28 oct 2026 (Mathieu : « le style simple d'Instagram : le menu a gauche apparait quand tu survoles la fleche,
    avec une legere barre de selection ») : sur ordi, une barre d'icones ; au survol elle s'ouvre par-dessus la page */
@@ -1427,7 +1471,7 @@ body.pro #mosaique{background-image:
   #toast{left:calc(50% + 38px) !important}
   .onglets{width:76px !important; padding:22px 12px !important; overflow:hidden; z-index:40;
     transition:width .22s cubic-bezier(.2,.7,.2,1), box-shadow .22s; background:rgba(11,11,14,.98) !important}
-  .onglets:hover, .onglets:focus-within{width:236px !important; box-shadow:18px 0 48px rgba(0,0,0,.55)}
+  .onglets:not(.rail-ferme):hover, .onglets:not(.rail-ferme):has(:focus-visible){width:236px !important; box-shadow:18px 0 48px rgba(0,0,0,.55)}
   .onglets > a{white-space:nowrap; padding:11px 15px !important; border-radius:12px !important; transition:background .15s, color .15s}
   .onglets > a svg{flex:none; color:var(--doux); transition:color .15s, transform .15s}
   .onglets > a:hover{background:rgba(255,255,255,.06) !important; color:var(--texte)}
@@ -1436,20 +1480,24 @@ body.pro #mosaique{background-image:
   .onglets > a.on svg{color:var(--acc)}
   .onglets > a.on::before{display:none !important}
   /* fermee : les mots s'effacent, les icones restent */
-  .onglets:not(:hover):not(:focus-within) > a{color:transparent !important}
-  .onglets:not(:hover):not(:focus-within) .nav-admin svg{color:var(--or)}
-  .onglets:not(:hover):not(:focus-within) .pastille{position:absolute !important; left:34px; top:5px; transform:scale(.82); margin:0}
-  .onglets:not(:hover):not(:focus-within) #nav-logo-nom,
-  .onglets:not(:hover):not(:focus-within) .nav-mode,
-  .onglets:not(:hover):not(:focus-within) .nav-pref{opacity:0; pointer-events:none}
+  .onglets:is(.rail-ferme, :not(:hover):not(:has(:focus-visible))) > a{color:transparent !important}
+  .onglets:is(.rail-ferme, :not(:hover):not(:has(:focus-visible))) .nav-admin svg{color:var(--or)}
+  .onglets:is(.rail-ferme, :not(:hover):not(:has(:focus-visible))) .pastille{position:absolute !important; left:34px; top:5px; transform:scale(.82); margin:0}
+  .onglets:is(.rail-ferme, :not(:hover):not(:has(:focus-visible))) #nav-logo-nom,
+  .onglets:is(.rail-ferme, :not(:hover):not(:has(:focus-visible))) .nav-mode,
+  .onglets:is(.rail-ferme, :not(:hover):not(:has(:focus-visible))) .nav-pref{opacity:0; pointer-events:none}
   #nav-logo-nom, .nav-mode, .nav-pref{transition:opacity .18s; min-width:188px}
   .onglets .nav-logo{padding:2px 6px 24px !important}
   .onglets .nav-mode{padding:0 0 14px !important}
   /* la fleche, au bord : elle tourne quand le menu s'ouvre */
   .onglets::after{content:''; position:absolute; top:50%; right:10px; width:8px; height:8px; margin-top:-4px;
     border-right:2px solid var(--pale); border-bottom:2px solid var(--pale); transform:rotate(-45deg); opacity:.7; transition:transform .22s, opacity .2s}
-  .onglets:hover::after, .onglets:focus-within::after{transform:rotate(135deg); opacity:.35}
+  .onglets:hover::after, .onglets:has(:focus-visible)::after{transform:rotate(135deg); opacity:.35}
 }
+
+.profil-av.sc{background:var(--carte2); padding:0; border:1px solid var(--ligne-fort)}
+.profil-av.sc img{object-fit:contain; padding:12px; box-sizing:border-box; background:transparent; box-shadow:none}
+.moi-av.sc{background:var(--carte2) !important} .moi-av.sc img{object-fit:contain !important; padding:3px; box-sizing:border-box; background:transparent !important}
 /* I18N CSS DEBUT - pastille Langue / Devise */
 .pref{display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 11px 0 4px; border-radius:999px; border:1px solid rgba(255,255,255,.14);
   background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.04)); color:var(--texte); font:700 12.5px/1 inherit; font-family:inherit; white-space:nowrap; cursor:pointer; flex-shrink:0}
@@ -1811,13 +1859,12 @@ setTimeout(() => appliquerMarque(), 0);
 try { localStorage.removeItem('lr_equipe'); } catch (e) {}
 // 27 oct 2026 - la palette refractor choisie (5 choix), appliquee avant le premier ecran
 const PALETTES = [                      // 27 oct 2026 : noms a nous (pas ceux des fabricants)
-  {k:'refractor', fr:'Prisme', en:'Prism', dfr:'SlabCoach, par défaut', den:'SlabCoach, default', c:['#9FE6D2', '#B9BEFF', '#F2B3D6', '#F1D58E']},
-  {k:'silver', fr:'Éclat argent', en:'Silver Burst', dfr:'éclats', den:'burst', c:['#FFFFFF', '#C9D0DA', '#E8ECF2', '#9FA9B8']},
-  {k:'rouge', fr:'Éclat rouge', en:'Red Burst', dfr:'éclats', den:'burst', c:['#FFC9C9', '#FF6B72', '#E0404C', '#FFE1DC']},
-  {k:'gold', fr:'Éclat or', en:'Gold Burst', dfr:'éclats', den:'burst', c:['#FFF0C4', '#F5D27A', '#D9AE4E', '#FFE6A0']},
-  {k:'emeraude', fr:'Vague émeraude', en:'Emerald Wave', dfr:'stries', den:'stripes', c:['#B8F5DC', '#34D399', '#10B981', '#D7FFF0']},
+  {k:'refractor', fr:'Prisme', en:'Prism', dfr:'éclats de prisme · par défaut', den:'prism shards · default', c:['#9FE6D2', '#B9BEFF', '#F2B3D6', '#F1D58E']},
+  {k:'silver', fr:'Éclat argent', en:'Silver Burst', dfr:'explosion', den:'outburst', c:['#FFFFFF', '#C9D0DA', '#E8ECF2', '#9FA9B8']},
+  {k:'rouge', fr:'Laser rouge', en:'Red Laser', dfr:'lasers', den:'laser', c:['#FFC9C9', '#FF6B72', '#E0404C', '#FFE1DC']},
+  {k:'emeraude', fr:'Vague émeraude', en:'Emerald Wave', dfr:'vagues', den:'surge', c:['#B8F5DC', '#34D399', '#10B981', '#D7FFF0']},
   {k:'orange', fr:'Damier orange', en:'Orange Check', dfr:'damier', den:'checkerboard', c:['#FFD9B0', '#FF9A3D', '#F07A1A', '#FFE8CC']}];
-const PALETTES_AVANT = {or:'gold', chrome:'silver'};   // premiers choix (27 oct) -> leur parallele ; glace / aurore -> refractor
+const PALETTES_AVANT = {or:'refractor', gold:'refractor', chrome:'silver'};   // 28 oct : plus de palette or (l'or = le Pro)   // premiers choix (27 oct) -> leur parallele ; glace / aurore -> refractor
 function clePalette(k){ k = PALETTES_AVANT[k] || k; return PALETTES.some(p => p.k === k) ? k : 'refractor'; }
 function appliquerPalette(k){
   const ok = clePalette(k);
@@ -1835,7 +1882,11 @@ async function appliquerMarque(){
     try { if (S.logo) localStorage.setItem('lr_logo', JSON.stringify({v, d:S.logo})); else localStorage.removeItem('lr_logo'); } catch (e) {}
   }
   const src = S.logo || '/icone.png', nom = nomMarque(r);
-  for (const id of ['acc-logo', 'g-logo-img', 'nav-moi-img', 'pr-logo']) { const im = $('#' + id); if (im && im.getAttribute('src') !== src) im.src = src; }
+  for (const id of ['acc-logo', 'g-logo-img']) { const im = $('#' + id); if (im && im.getAttribute('src') !== src) im.src = src; }
+  // 28 oct 2026 (Mathieu : « le logo est bizarre ») : dans les ronds (profil, onglet Profil), l'icone carree de l'app etait
+  // coupee en cercle ; on y met le logo SlabCoach detoure, centre, et un simple contour
+  for (const id of ['nav-moi-img', 'pr-logo']) { const im = $('#' + id); if (!im) continue; const s2 = S.logo || LOGO_SC;
+    if (im.getAttribute('src') !== s2) im.src = s2; if (im.parentElement) im.parentElement.classList.toggle('sc', !S.logo); }
   // 25 oct 2026 - le logo officiel SlabCoach (avec son reflet or) ; une boutique qui a mis SON logo garde le sien
   const niv = nivLogo(), nl = $('#nav-logo-img'), srcNav = S.logo || LOGO_SC;
   if (nl && nl.getAttribute('src') !== srcNav) nl.src = srcNav;
@@ -1902,6 +1953,16 @@ function route(){
   if (ecran === 'alertes') setTimeout(() => { try { feuilleAlertes(); } catch (e) {} }, 300);
 }
 window.addEventListener('hashchange', route);
+// 28 oct 2026 (Mathieu : « encore » : le menu restait ouvert par-dessus la page) : apres un clic, la barre se referme
+// tout de suite, meme si la souris est encore dessus ; elle se rouvre quand on la quitte puis la survole de nouveau
+document.addEventListener('click', (e) => {
+  const a = e.target.closest && e.target.closest('.onglets a, .onglets button');
+  if (!a || !matchMedia('(hover:hover)').matches) return;
+  setTimeout(() => a.blur(), 0);
+  const o = a.closest('.onglets'); if (!o) return;
+  o.classList.add('rail-ferme');
+  o.addEventListener('mouseleave', () => o.classList.remove('rail-ferme'), {once:true});
+});
 // 21 oct 2026 - eBay Partner Network : un lien d'ACHAT vers eBay porte la campagne EPN
 // (developer.ebay.com/api-docs/buy/static/ref-epn-link.html). Jamais en sandbox.
 const EPN_ROTATION = {'ebay.ca':'706-53473-19255-0', 'ebay.com':'711-53200-19255-0'};
@@ -1976,7 +2037,7 @@ function rangeeGeste(g){
 // « 2025-26 Upper Deck Connor Bedard YG » -> « Connor Bedard YG » : le joueur d'abord
 const titreCourt = (t) => String(t || '').replace(/^\s*(19|20)\d{2}(-\d{2,4})?\s+/, '').replace(/^(Upper Deck|UD|O-Pee-Chee|OPC|Topps|Panini|Bowman|Leaf)\s+/i, '') || t;
 function rangeeCoup(c){
-  return `<div class="rangee">${c.photo ? `<img class="vig" src="${esc(c.photo)}" alt="" loading="lazy">` : `<span class="ecusson">${esc(titreCourt(c.titre).split(/\s+/).slice(0, 2).map(m => m[0] || '').join('').toUpperCase())}</span>`}
+  return `<div class="rangee">${c.photo ? `<img class="vig" src="${esc(photoNet(c.photo))}" alt="" loading="lazy">` : `<span class="ecusson">${esc(titreCourt(c.titre).split(/\s+/).slice(0, 2).map(m => m[0] || '').join('').toUpperCase())}</span>`}
     <span class="milieu"><span class="nom">${esc(titreCourt(c.titre))}</span><span class="pastilles">${c.roi != null ? tag((c.roi >= 0 ? '+' : '') + c.roi + ' %', c.roi >= 0 ? 'vert' : 'rouge') : ''}${c.jours != null ? tag(c.jours + ' j') : ''}${c.prix ? tag('vendu ' + argentCourt(c.prix)) : ''}</span></span>
     <span class="droite"><span class="prix ${c.profit >= 0 ? 'vert' : 'rouge'}">${signe(c.profit)}</span></span></div>`;
 }
@@ -2112,13 +2173,16 @@ const TUTO = {
 function questionnaireProfil(ensuite, forcer){
   const r0 = S.reglages || {};
   if (r0.niveau && !forcer) { if (ensuite) ensuite(); return; }
+  // 28 oct 2026 (Mathieu : « celui-la revient 2x ») : le choix du volet l'ouvrait, puis l'accueil derriere le rouvrait
+  if (S.questionOuvert) return;
+  S.questionOuvert = true; S.questionVue = true;
   const Q = [
     ['niveau', tt('Tu connais le hobby ?', 'How well do you know the hobby?'), [['debutant', tt('Je débute', 'I’m new'), tt('Je découvre les cartes', 'Just discovering cards')], ['retour', tt('Je reviens', 'I’m coming back'), tt('J’ai collectionné il y a longtemps', 'I collected years ago')], ['moyen', tt('Je me débrouille', 'I know my way'), tt('J’achète et je vends un peu', 'I buy and sell a bit')], ['expert', 'Expert', tt('Je flip, je breake, je connais les cotes', 'I flip, break, know the odds')]]],
     ['objectif', tt('Ton but ?', 'Your goal?'), [['collection', tt('Collectionner', 'Collect'), tt('Mes joueurs préférés', 'My favorite players')], ['profit', tt('Faire du profit', 'Make a profit'), tt('Acheter bas, revendre', 'Buy low, resell')], ['breaks', tt('Les breaks', 'Breaks'), tt('Acheter ou vendre des places', 'Buy or sell spots')], ['tout', tt('Un peu de tout', 'A bit of everything'), '']]],
     ['budget_mois', tt('Ton budget par mois ?', 'Your monthly budget?'), [[50, '≤ 50 $', ''], [150, '~150 $', ''], [400, '~400 $', ''], [1000, '1 000 $ +', ''], [0, tt('Pas de budget', 'No budget'), '']]]];
   const rep = {}; let i = 0;
   const f = document.createElement('div'); f.className = 'tuto-fond'; document.body.appendChild(f);
-  const fin = async () => { f.remove(); const res = await API.reglages_sauver(rep).catch(() => null); if (res) S.reglages = res; S.budget = null; if (ensuite) ensuite(); };
+  const fin = async () => { f.remove(); S.questionOuvert = false; const res = await API.reglages_sauver(rep).catch(() => null); if (res) S.reglages = res; S.budget = null; if (ensuite) ensuite(); };
   const montrer = () => {
     const [cle, t, opts] = Q[i];
     f.innerHTML = `<div class="tuto quest"><div class="tuto-pts">${Q.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div><h3>${esc(t)}</h3>
@@ -2146,12 +2210,12 @@ function tutoriel(mode, forcer){
   f.onclick = (e) => { if (e.target === f) fermer(); };
   montrer();
 }
-const vignette = (photo, titre) => photo ? `<img class="vig" src="${esc(photo)}" alt="" loading="lazy">`
+const vignette = (photo, titre) => photo ? `<img class="vig" src="${esc(photoNet(photo))}" alt="" loading="lazy">`
   : `<span class="ecusson">${esc(String(titreCourt(titre) || '?').split(/\s+/).slice(0, 2).map(m => m[0] || '').join('').toUpperCase())}</span>`;
 // 24 oct 2026 - une tuile = une carte avec sa grande image (valeur, deals, vendues, comps)
 const SVG_CARTE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 17h5"/></svg>';
 function tuileCarte(x, o={}){
-  const img = `<div class="img">${SVG_CARTE}${x.photo ? `<img src="${esc(x.photo)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}</div>`;
+  const img = `<div class="img">${SVG_CARTE}${x.photo ? `<img src="${esc(photoNet(x.photo))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}</div>`;
   const lien = o.lien || x.url;
   return `<div class="tuile-c ${o.classe || ''}" ${o.attrs || ''} ${attrsAnnonce(x)}>
     ${lien ? `<a href="${esc(lien)}" target="_blank" rel="noopener">${img}</a>` : img}
@@ -2466,6 +2530,7 @@ const MSG_PHOTO = {
   coupee: [tt('Un coin est coupé', 'A corner is cut off'), tt('Recule un peu : toute la carte doit être dans la photo.', 'Step back a little: the whole card must be in the photo.')],
 };
 async function vueVendre(arg){
+  if (arg === 'lot') { if (LOT.l && !LOT.fini) rendreLot(); else vueLot(); return; }
   if (arg === 'nouvelle') { for (const k in V2) delete V2[k]; history.replaceState(null, '', '#vendre'); }
   if (arg && /^\d+$/.test(arg) && V2.cid !== +arg) {          // depuis l'inventaire : la fiche de la carte (et ses photos gardees)
     for (const k in V2) delete V2[k];
@@ -2500,6 +2565,7 @@ async function etapePhoto(i){
       <input type="file" accept="image/*" capture="environment" id="as-cam" hidden></label>
     ${dev ? `<label class="plus">${tt('Choisir dans mes photos', 'Pick from my photos')}<input type="file" accept="image/*" multiple id="as-gal" hidden></label>
       <div class="pastilles" style="justify-content:center">${pastilleQuota('annonces_mois')}${st.limite != null ? capsule(tt(st.reste + ' lecture' + (st.reste > 1 ? 's' : '') + ' de photo ce mois', st.reste + ' photo read' + (st.reste > 1 ? 's' : '') + ' left this month'), st.reste ? 'acc' : 'rouge') : ''}</div>
+      <a class="carte-lot" href="#vendre/lot"><b>${tt('Plusieurs cartes ? Vends en lot', 'Several cards? Sell in a batch')}</b><span>${tt('Tes photos de la photothèque, devant puis dos : jusqu’à 20 cartes d’un coup', 'Photos from your library, front then back: up to 20 cards at once')}</span><i>›</i></a>
       <button class="plus" id="vd-main">${tt('Remplir à la main', 'Fill in by hand')}</button>`
       : `<button class="plus" id="as-sans">${tt('Continuer sans le dos', 'Continue without the back')}</button>`}
   </section>`;
@@ -2665,6 +2731,127 @@ async function garderVente(){
     <button class="btn ghost" id="v2-encore">${tt('Vendre une autre carte', 'Sell another card')}</button></section>`;
   $('#v2-encore').onclick = () => { location.hash = '#vendre/nouvelle'; };
 }
+// ============================================================
+// 28 oct 2026 (Mathieu : « sur iPhone, l'utilisateur doit pouvoir uploader les photos de sa bibliotheque, a condition
+// qu'elles respectent l'ordre recto verso et la qualite de la photo cadree selon nos specifications, pour faciliter la
+// prise de photos en lots pour faire plusieurs annonces ») : Vendre en lot.
+// Les photos dans l'ordre (devant 1, dos 1, devant 2, dos 2...) -> pour chaque carte : controle de chaque photo dans le
+// telephone (nette, eclairee, sans reflet, assez grande), lecture IA (qui dit aussi devant / dos et si un coin est coupe),
+// photo studio, titre et prix -> la carte entre dans l'inventaire, prete a publier d'un tap. Une carte qui ne respecte
+// pas les regles n'est PAS gardee : elle est montree « a reprendre », avec la raison. Rien ne part chez eBay ici.
+// ============================================================
+const LOT_MAX = 20;
+const LOT = {};
+function vueLot(){
+  for (const k in LOT) delete LOT[k];
+  V().innerHTML = `<section class="ecran vendre assist lot">
+    <div class="titre">${tt('Plusieurs cartes d’un coup', 'Several cards at once')}</div>
+    <div class="sous">${tt('Choisis tes photos dans ta photothèque, dans l’ordre : le devant puis le dos de chaque carte. L’app vérifie chaque photo, lit chaque carte, fait la photo studio, le titre et le prix, puis la range dans ton inventaire, prête à publier.', 'Pick your photos from your library, in order: the front then the back of each card. The app checks each photo, reads each card, makes the studio photo, title and price, then saves it to your inventory, ready to publish.')}</div>
+    <div class="lot-ordre" aria-hidden="true"><span><i>1</i>${tt('Devant', 'Front')}</span><span class="dos"><i>1</i>${tt('Dos', 'Back')}</span><span><i>2</i>${tt('Devant', 'Front')}</span><span class="dos"><i>2</i>${tt('Dos', 'Back')}</span><em>…</em></div>
+    <ul class="conseils-ph">
+      <li><b>1</b>${tt('Une carte par photo, les 4 coins visibles', 'One card per photo, all 4 corners visible')}</li>
+      <li><b>2</b>${tt('Fond uni, bonne lumière, pas de flash ni de reflet', 'Plain background, good light, no flash or glare')}</li>
+      <li><b>3</b>${tt('Nette et de près (600 px et plus)', 'Sharp and close up (600 px or more)')}</li>
+      <li><b>4</b>${tt('Touche les photos dans l’ordre : devant 1, dos 1, devant 2, dos 2…', 'Tap the photos in order: front 1, back 1, front 2, back 2…')}</li></ul>
+    <label class="bascule">${tt('Mes photos sont seulement des devants', 'My photos are fronts only')}<input type="checkbox" id="lot-devants"></label>
+    <label class="btn gros prise">${ICONES.photo}<span>${tt('Choisir mes photos', 'Choose my photos')}</span><input type="file" accept="image/*" multiple id="lot-f" hidden></label>
+    <div class="sous" style="text-align:center">${tt(`Jusqu’à ${LOT_MAX} cartes par lot. Chaque carte compte pour une lecture de photo.`, `Up to ${LOT_MAX} cards per batch. Each card counts as one photo read.`)}</div>
+    <a class="plus" href="#vendre/nouvelle">${tt('Une seule carte', 'Just one card')}</a></section>`;
+  $('#lot-f').onchange = (e) => { const l = [...(e.target.files || [])]; if (l.length) lancerLot(l, coche('lot-devants')); };
+}
+async function lancerLot(fichiers, devantsSeuls){
+  if (!await okIA()) { toast(tt('La lecture des photos par l’IA est nécessaire pour un lot', 'AI photo reading is needed for a batch'), 5000); return; }
+  const par = devantsSeuls ? 1 : 2;
+  if (!devantsSeuls && fichiers.length === 1) { toast(tt('Une seule photo : ajoute le dos, ou coche « seulement des devants »', 'Only one photo: add the back, or tick “fronts only”'), 5000); return; }
+  let cartes = [];
+  for (let i = 0; i < fichiers.length; i += par) cartes.push(fichiers.slice(i, i + par));
+  const st = await API.photo_statut().catch(() => ({}));
+  S.photoStatut = st;
+  let avis = '';
+  if (cartes.length > LOT_MAX) { cartes = cartes.slice(0, LOT_MAX); avis = tt(`${LOT_MAX} cartes au plus par lot : les autres au prochain`, `${LOT_MAX} cards max per batch: the rest next time`); }
+  if (st.limite != null && st.reste != null && cartes.length > st.reste) {
+    if (!st.reste) { toast(tt('Plus de lecture de photo ce mois : passe au Pro pour continuer', 'No photo reads left this month: go Pro to continue'), 5000); return; }
+    cartes = cartes.slice(0, st.reste); avis = tt(`Il te reste ${st.reste} lecture(s) ce mois : on fait les ${st.reste} premières cartes`, `${st.reste} read(s) left this month: doing the first ${st.reste} cards`);
+  }
+  if (avis) toast(avis, 5000);
+  LOT.l = cartes.map((f, i) => ({n: i + 1, f, etat: 'attente', impair: !devantsSeuls && f.length === 1}));
+  LOT.devants = devantsSeuls; LOT.fini = false;
+  rendreLot();
+  for (const c of LOT.l) { try { await traiterCarteLot(c); } catch (e) { c.etat = 'revoir'; c.raison = tt('Erreur : reprends cette carte', 'Error: redo this card'); } c.f = null; rendreLot(); }
+  LOT.fini = true; rendreLot();
+}
+async function traiterCarteLot(c){
+  const nom = (j) => (c.ph.length > 1 ? (j ? tt('Dos : ', 'Back: ') : tt('Devant : ', 'Front: ')) : '');
+  c.etat = 'photos'; rendreLot();
+  c.ph = [];
+  for (const f of c.f) { try { c.ph.push(await reduirePhoto(f)); } catch (e) { c.etat = 'revoir'; c.raison = tt('Photo illisible', 'Unreadable photo'); return; } }
+  for (let j = 0; j < c.ph.length; j++) {                       // nos regles, dans le telephone, avant toute lecture
+    const q = await qualitePhoto(c.ph[j]).catch(() => ({ok: true}));
+    if (!q.ok) { const [t, d] = MSG_PHOTO[q.raison] || MSG_PHOTO.floue; c.etat = 'revoir'; c.qj = j; c.raison = nom(j) + t; c.detail = d; return; }
+  }
+  c.etat = 'lecture'; rendreLot();
+  const r = await API.photo_identifier(c.ph).catch(e => ({ok:false, erreur:e.message}));
+  if (!r || !r.ok) { c.etat = 'revoir'; c.raison = (r && r.erreur) || tt('Carte pas reconnue', 'Card not recognized'); return; }
+  const p = (r.photos || []).slice();
+  if (p[0] && p[1] && p[0].cote === 'dos' && p[1].cote === 'devant') { c.ph.reverse(); p.reverse(); }   // dos puis devant : on remet dans l'ordre
+  if (p[0] && p[1] && p[0].cote && p[0].cote === p[1].cote) {   // deux devants (ou deux dos) : l'ordre recto-verso est decale
+    c.etat = 'revoir'; c.ordre = true;
+    c.raison = p[0].cote === 'dos' ? tt('Deux dos : l’ordre devant / dos est décalé', 'Two backs: the front / back order is off') : tt('Deux devants : l’ordre devant / dos est décalé', 'Two fronts: the front / back order is off');
+    c.detail = tt('Remets les photos dans l’ordre : devant puis dos de la même carte.', 'Put the photos back in order: front then back of the same card.'); return;
+  }
+  if (c.ph.length === 1 && p[0] && p[0].cote === 'dos') { c.etat = 'revoir'; c.ordre = true; c.raison = tt('C’est un dos : il manque le devant', 'This is a back: the front is missing'); return; }
+  const k = p.findIndex(x => x && (x.entiere === false || x.nette === false));
+  if (k >= 0) { const [t, d] = p[k].entiere === false ? MSG_PHOTO.coupee : MSG_PHOTO.floue; c.etat = 'revoir'; c.qj = k; c.raison = nom(k) + t; c.detail = p[k].probleme || d; return; }
+  c.etat = 'prix'; rendreLot();
+  const studio = [];
+  for (let j = 0; j < c.ph.length; j++) { if (p[j] && p[j].coins) { try { studio[j] = (await photoStudio(c.ph[j], p[j].coins)).photo; } catch (e) {} } }
+  const photos = c.ph.map((o, j) => (MODE_STUDIO && studio[j]) || o);
+  const noms = Object.fromEntries(CHAMPS_VERIF()), champs = {...(r.champs || {})}, dt = (r.a_verifier || []).map(k => (noms[k] || k).toLowerCase());
+  const prep = await API.annonce_preparer(champs, typeof LANGUE !== 'undefined' ? LANGUE : 'fr').catch(() => ({ok:false}));
+  const titre = (prep && prep.ok && prep.titre) || champs.titre || '';
+  const prix = prep && prep.ok && prep.prix ? prep.prix.marche : '';
+  if (dt.length) champs.note = tt('À vérifier : ', 'To check: ') + dt.join(', ');
+  const g = await API.carte_garder({carte: champs, titre, prix, photos}).catch(e => ({ok:false, erreur:e.message}));
+  if (!g || !g.ok) { c.etat = 'revoir'; c.raison = (g && g.erreur) || tt('Pas enregistrée', 'Not saved'); return; }
+  Object.assign(c, {etat: dt.length ? 'verifier' : 'ok', id: g.id, titre, prix, vig: photos[0], douteux: dt});
+  c.ph = null;
+}
+function rendreLot(){
+  if (!/^#vendre\/lot/.test(location.hash) || !LOT.l) return;    // le lot continue meme si on change de page
+  const l = LOT.l, finis = l.filter(c => ['ok', 'verifier', 'revoir'].includes(c.etat)).length;
+  const prets = l.filter(c => c.etat === 'ok' || c.etat === 'verifier').length, rev = l.filter(c => c.etat === 'revoir').length;
+  const lib = {attente: tt('En attente', 'Waiting'), photos: tt('Contrôle des photos…', 'Checking photos…'), lecture: tt('Lecture de la carte…', 'Reading the card…'),
+    prix: tt('Photo studio, titre et prix…', 'Studio photo, title and price…'), ok: tt('Prête dans ton inventaire', 'Ready in your inventory'), verifier: '', revoir: ''};
+  const ligne = (c, i) => {
+    const sous = c.etat === 'revoir' ? c.raison : c.etat === 'verifier' ? tt('Prête · à vérifier : ', 'Ready · check: ') + c.douteux.join(', ') : lib[c.etat];
+    const bout = (c.etat === 'ok' || c.etat === 'verifier') ? `<a class="btn petit ghost" href="#vendre/${c.id}">${tt('Ouvrir', 'Open')}</a>`
+      : c.etat === 'revoir' && LOT.fini ? `<button class="btn petit" data-lot-r="${i}">${tt('Corriger', 'Fix')}</button>`
+      : ['photos', 'lecture', 'prix'].includes(c.etat) ? '<span class="roue"></span>' : '';
+    const v = c.vig || (c.ph && c.ph[0]);
+    return `<div class="rangee lot-r ${c.etat}">${v ? `<img class="vig" src="${esc(v)}" alt="">` : `<span class="ecusson">${c.n}</span>`}
+      <span class="milieu"><b>${esc(c.titre || tt('Carte ', 'Card ') + c.n)}</b><small>${esc(sous || '')}${c.prix ? ' · ' + argent(c.prix, 0) : ''}${c.impair && c.etat !== 'revoir' ? ' · ' + tt('sans dos', 'no back') : ''}</small></span>${bout}</div>`;
+  };
+  V().innerHTML = `<section class="ecran vendre assist lot">
+    <div class="titre">${LOT.fini ? tt(`${prets} carte${prets > 1 ? 's' : ''} prête${prets > 1 ? 's' : ''}`, `${prets} card${prets > 1 ? 's' : ''} ready`) : tt(`Lot en cours · ${finis} / ${l.length}`, `Batch in progress · ${finis} / ${l.length}`)}</div>
+    <div class="barre"><i style="width:${Math.round(100 * finis / Math.max(1, l.length))}%"></i></div>
+    <div class="sous">${LOT.fini ? (rev ? tt(`${rev} à reprendre : elles ne respectent pas nos règles photo (rien n’a été gardé pour elles).`, `${rev} to redo: they don’t meet our photo rules (nothing was saved for them).`) : tt('Tout est dans ton inventaire, prêt à publier.', 'Everything is in your inventory, ready to publish.'))
+      : tt('Garde l’app ouverte pendant le lot. Tu peux regarder ailleurs dans l’app : le lot continue.', 'Keep the app open during the batch. You can look around the app: the batch keeps going.')}</div>
+    <div class="liste lot-l">${l.map(ligne).join('')}</div>
+    ${LOT.fini ? `<a class="btn" href="#inventaire" id="lot-inv">${tt('Voir mes cartes à lister', 'See my cards to list')}</a>
+      <a class="btn ghost" href="#vendre/lot" id="lot-encore">${tt('Faire un autre lot', 'Do another batch')}</a>` : ''}</section>`;
+  const bi = $('#lot-inv'); if (bi) bi.onclick = () => { S.filtreInv = 'stock'; };
+  const be = $('#lot-encore'); if (be) be.onclick = (e) => { e.preventDefault(); vueLot(); };
+  $$('[data-lot-r]').forEach(b => b.onclick = () => corrigerLot(LOT.l[+b.dataset.lotR]));
+}
+// une carte a reprendre : la photo en cause (ou tout, si l'ordre est decale) dans l'assistant d'une carte
+function corrigerLot(c){
+  for (const k in V2) delete V2[k];
+  history.replaceState(null, '', '#vendre');
+  if (c.ordre || !c.ph) { toast(c.detail || tt('Reprends le devant puis le dos', 'Retake the front then the back'), 4500); etapePhoto(0); return; }
+  V2.photos = c.ph.slice();
+  if (c.qj != null) { aReprendre(c.qj, c.ph[c.qj], c.raison, c.detail || '', () => lireVente(), () => lireVente()); return; }
+  lireVente();
+}
 async function preparerVente(){
   if (!$('.vendre .lecture')) V().innerHTML = `<section class="ecran vendre">${roue}</section>`;
   const p = await API.annonce_preparer(V2.champs || {}, typeof LANGUE !== 'undefined' ? LANGUE : 'fr').catch(e => ({ok:false, erreur:e.message}));
@@ -2696,7 +2883,7 @@ function rendreVente2(){
           ${photos.length < 12 ? `<label class="vg plus-ph" title="${esc(tt('Ajouter une photo', 'Add a photo'))}">+<input type="file" accept="image/*" multiple id="v2-ph" hidden></label>` : ''}</div>
         <div class="kpi acc"><span class="lib">${tt('Prix du marché', 'Market price')}</span><span class="v">${pr ? argent(pr.mediane, 0) : '—'}</span>
           <span class="s">${pr ? tt(p.n + ' même' + (p.n > 1 ? 's' : '') + ' carte' + (p.n > 1 ? 's' : '') + ' en vente · ' + argentCourt(pr.bas) + ' à ' + argentCourt(pr.max), p.n + ' same card' + (p.n > 1 ? 's' : '') + ' listed · ' + argentCourt(pr.bas) + ' to ' + argentCourt(pr.max)) : esc(p.note || tt('Pas assez d’annonces pareilles : choisis ton prix', 'Not enough same listings: pick your price'))}</span></div>
-        ${p.comps && p.comps.length ? `<div class="comps-l">${p.comps.map(x => `<a class="comp-m" href="${esc(x.url)}" target="_blank" rel="noopener"><span style="${x.photo ? `background-image:url('${esc(x.photo)}')` : ''}"></span><b>${argentCourt(x.total)}</b></a>`).join('')}</div>` : ''}
+        ${p.comps && p.comps.length ? `<div class="comps-l">${p.comps.map(x => `<a class="comp-m" href="${esc(x.url)}" target="_blank" rel="noopener"><span style="${x.photo ? `background-image:url('${esc(photoNet(x.photo))}')` : ''}"></span><b>${argentCourt(x.total)}</b></a>`).join('')}</div>` : ''}
       </div>
       <div class="studio-d">
         <div class="bloc-v"><div class="bloc-t">${tt('Titre', 'Title')} <span class="compte" id="v2-n">${(V2.titre || '').length}/80</span></div>
@@ -3023,9 +3210,9 @@ function finDans(fin){
 function compsHtml(x){
   const c = x.comps || [], v = x.vendues || [];
   if (v.length) return `<div class="pop-t">${tt('Vendues récemment', 'Recently sold')}<span>${x.n || v.length} · ${tt('médiane ', 'median ')}${argentCourt(x.valeur)}</span></div>
-    <div class="pop-g">${v.slice(0, 8).map(k => `<a href="${esc(k.url || '#')}" target="_blank" rel="noopener" class="pop-c vendue"><span style="${k.photo ? `background-image:url('${esc(k.photo)}')` : ''}"></span><b>${argentCourt(k.prix)}</b></a>`).join('')}</div>`;
+    <div class="pop-g">${v.slice(0, 8).map(k => `<a href="${esc(k.url || '#')}" target="_blank" rel="noopener" class="pop-c vendue"><span style="${k.photo ? `background-image:url('${esc(photoNet(k.photo))}')` : ''}"></span><b>${argentCourt(k.prix)}</b></a>`).join('')}</div>`;
   return `<div class="pop-t">${tt('Les mêmes cartes en vente', 'The same cards listed')}<span>${x.n || c.length} · ${tt('médiane ', 'median ')}${argentCourt(x.valeur)}</span></div>
-    ${c.length ? `<div class="pop-g">${c.slice(0, 8).map(k => `<a href="${esc(k.url || '#')}" target="_blank" rel="noopener" class="pop-c" ${attrsAnnonce(k)}><span style="${k.photo ? `background-image:url('${esc(k.photo)}')` : ''}"></span><b>${argentCourt(k.total)}</b></a>`).join('')}</div>`
+    ${c.length ? `<div class="pop-g">${c.slice(0, 8).map(k => `<a href="${esc(k.url || '#')}" target="_blank" rel="noopener" class="pop-c" ${attrsAnnonce(k)}><span style="${k.photo ? `background-image:url('${esc(photoNet(k.photo))}')` : ''}"></span><b>${argentCourt(k.total)}</b></a>`).join('')}</div>`
       : `<div class="sous">${x.ref_titre ? tt('Comparé à ta vente : ', 'Compared to your sale: ') + esc(x.ref_titre) : ''}</div>`}`;
 }
 // 27 oct 2026 (Mathieu : « Colton pas de comp, mais on peut montrer des ventes de joueurs de la même carte ») :
@@ -3041,7 +3228,7 @@ function autresJoueursHtml(a){
 function tuileDeal(x){
   const encan = x.encan, fin = encan ? finDans(x.fin) : '';
   return `<div class="tuile-c tuile-deal" data-id="${esc(x.item_id)}" ${attrsAnnonce(x)}>
-    <a href="${esc(lienAchat(x.url, 'deal'))}" target="_blank" rel="noopener"><div class="img">${SVG_CARTE}${x.photo ? `<img src="${esc(x.photo)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}</div></a>
+    <a href="${esc(lienAchat(x.url, 'deal'))}" target="_blank" rel="noopener"><div class="img">${SVG_CARTE}${x.photo ? `<img src="${esc(photoNet(x.photo))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}</div></a>
     <div class="coin"><button class="capsule ${x.pres ? 'acc' : 'vert'} pastille-deal" data-comps="${esc(x.item_id)}">−${x.rabais} %</button>${encan ? capsule('⏱ ' + fin, 'or petit') : ''}</div>
     <button class="x" data-masquer="${esc(x.item_id)}" aria-label="${esc(tt('Masquer', 'Hide'))}">✕</button>
     <div class="pop-comps">${compsHtml(x)}</div>
@@ -3557,7 +3744,7 @@ async function ouvrirAnnonce(base){
         : `<div class="sous">${tt('Pas encore de ventes de cette carte exacte : la valeur vient des annonces en vente.', 'No sales of this exact card yet: the value comes from listings.')}</div>`}
       ${d.chargement ? '' : autresJoueursHtml(d.autres_joueurs)}
       <div class="fen-comps">${d.chargement ? '' : (d.comps || []).length ? `<div class="bloc-t">${tt('Les mêmes cartes en vente', 'The same cards listed')} <span class="sous">${d.n} · ${tt('médiane ', 'median ')}${argentCourt(d.mediane)}</span></div>
-        <div class="grille-c">${d.comps.map(k => `<div class="tuile-c" ${attrsAnnonce(k)}><div class="img">${SVG_CARTE}${k.photo ? `<img src="${esc(k.photo)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
+        <div class="grille-c">${d.comps.map(k => `<div class="tuile-c" ${attrsAnnonce(k)}><div class="img">${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo))}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
           ${k.encan ? `<div class="coin">${capsule('⏱ ' + finDans(k.fin), 'or petit')}</div>` : ''}
           <div class="corps"><div class="t">${esc(k.titre)}</div><div class="ligne-b"><span class="p">${argent(k.total, 0)}</span>${d.valeur && k.total <= d.valeur * 0.7 ? capsule('Deal', 'vert petit') : d.valeur && k.total <= d.valeur ? capsule(tt('Bon prix', 'Good price'), 'acc petit') : ''}</div></div></div>`).join('')}</div>`
         : `<div class="sous">${tt('Pas assez de cartes pareilles en vente pour comparer.', 'Not enough same cards listed to compare.')}</div>`}</div></div>`;
@@ -3579,7 +3766,14 @@ async function ouvrirAnnonce(base){
 }
 // 25 oct 2026 (Mathieu : « les photos en HD, quand tu passes la souris sur la photo ça fait une genre de loupe ») :
 // photos eBay en 1600 px ; souris : loupe ronde x3 ; doigt : un tap zoome a cet endroit, un autre tap revient.
-const photoHD = (u) => String(u || '').replace(/\/s-l\d+(\.(?:jpg|jpeg|png|webp))/i, '/s-l1600$1');
+// 28 oct 2026 (Mathieu : « pourquoi photo embrouillée ? ») : eBay donne la vignette de galerie (140 px, dossier /thumbs/) ;
+// on demande la vraie photo, a la taille qu'il faut (500 px pour une tuile, 1600 px pour la fenetre)
+function photoNet(u, t){
+  u = String(u || '');
+  if (!/^https?:\/\/[^/]*ebayimg\./i.test(u)) return u;
+  return u.replace('/thumbs/images/', '/images/').replace(/\/s-l\d+(\.(?:jpg|jpeg|png|webp))/i, '/s-l' + (t || 500) + '$1').replace(/\$_\d+\.(jpg|jpeg|png)/i, '$_' + ((t || 500) > 500 ? 57 : 10) + '.$1');
+}
+const photoHD = (u) => photoNet(u, 1600);
 function brancherLoupe(box){
   const img = box && box.querySelector('img'); if (!img) return;
   let loupe = box.querySelector('.loupe');
@@ -4159,7 +4353,7 @@ async function vueSante(verdict){
   V().innerHTML = `<section class="ecran">${roue}</section>`;
   const [l] = await Promise.all([API.sante_liste(verdict).catch(() => []), reglages().catch(() => null)]);
   const aAppliquer = verdict === 'racheter' || verdict === 'traine' ? [] : l.filter(a => a.suggestion && !a.marche_pro && Math.abs(a.suggestion - a.prix) >= 0.01);
-  const vig = (photo, titre) => photo ? `<img class="vig" src="${esc(photo)}" alt="" loading="lazy">`
+  const vig = (photo, titre) => photo ? `<img class="vig" src="${esc(photoNet(photo))}" alt="" loading="lazy">`
     : `<span class="ecusson">${esc(String(titre || '?').split(/\s+/).slice(0, 2).map(m => m[0] || '').join('').toUpperCase())}</span>`;
   const ligne = verdict === 'racheter' ? (o) => `<div class="fiche-s">
       <div class="haut">${vig(o.photo, o.titre)}<span class="nom">${esc(o.titre)}</span></div>
@@ -4272,7 +4466,7 @@ async function vueOffres(){
   const MSG = tt('Merci de suivre ma carte ! Voici un prix spécial, juste pour toi.', 'Thanks for watching my card! Here’s a special price, just for you.');
   const net = (x) => (x.prix || 0) * (1 - (choix[x.item_number] || 0) / 100);
   const ligne = (x) => `<div class="of-l" data-of="${esc(x.item_number)}">
-      <div class="haut">${x.photo ? `<img class="vig" src="${esc(x.photo)}" alt="" loading="lazy">` : `<span class="ecusson">${esc(titreCourt(x.titre).split(/\s+/).slice(0, 2).map(m => m[0] || '').join('').toUpperCase())}</span>`}
+      <div class="haut">${x.photo ? `<img class="vig" src="${esc(photoNet(x.photo))}" alt="" loading="lazy">` : `<span class="ecusson">${esc(titreCourt(x.titre).split(/\s+/).slice(0, 2).map(m => m[0] || '').join('').toUpperCase())}</span>`}
         <span class="nom">${esc(x.titre)}</span></div>
       <div class="pastilles">${x.watchers ? tag(x.watchers + ' ' + tt('surveillent', 'watching'), 'acc') : tag(tt('acheteur intéressé', 'interested buyer'), 'acc')}${x.mediane ? tag(tt('marché ', 'market ') + argentCourt(x.mediane)) : ''}${x.sous_cout ? tag(tt('déjà près de ton coût', 'already near your cost'), 'or') : ''}</div>
       <div class="seg petit of-seg">${[5, 10, 15, 20].concat(x.pct && ![5, 10, 15, 20].includes(x.pct) ? [x.pct] : []).sort((a, b) => a - b).map(p => `<button data-p="${p}" class="${+choix[x.item_number] === p ? 'on' : ''}">−${p} %</button>`).join('')}</div>
@@ -4338,13 +4532,16 @@ async function vuePouls(arg){
   peindre();
 }
 async function suivrePremiereSynchro(){
-  for (let i = 0; i < 40; i++) {                 // jusqu'a ~2 min
+  // 28 oct 2026 : on attend une NOUVELLE synchro (pas celle d'avant), jusqu'a ~4 min, puis l'ecran se met a jour
+  const avant = ((await API.ebay_statut().catch(() => null)) || {}).derniere_synchro || '';
+  for (let i = 0; i < 80; i++) {
     await new Promise(ok => setTimeout(ok, 3000));
     const st = await API.ebay_statut().catch(() => null);
-    if (st && st.derniere_synchro) {
+    if (st && st.derniere_synchro && st.derniere_synchro !== avant) {
       const b = st.bilan_synchro || {};
-      toast(`${b.annonces || 0} annonces et ${b.ventes || 0} ventes importées`, 4500);
-      if ((location.hash || '#accueil').startsWith('#accueil')) vueAccueil();
+      toast(tt(`${b.annonces || 0} annonces et ${b.ventes || 0} ventes importées`, `${b.annonces || 0} listings and ${b.ventes || 0} sales imported`), 4500);
+      const h = (location.hash || '#accueil');
+      if (h.startsWith('#accueil')) vueAccueil(); else if (h.startsWith('#reglages')) vueReglages(); else if (h.startsWith('#inventaire')) route();
       return;
     }
   }
@@ -4777,7 +4974,7 @@ function tuileInv(c){
     : c.statut === 'Listée' ? capsule(tt('Sur eBay', 'On eBay'), 'acc petit') : capsule(c.emplacement || tt('En stock', 'In stock'), 'petit');
   const nom = c.joueur || titreCourt(c.titre) || tt('Article', 'Item');
   const det = [c.annee, c.set_nom, c.parallele, c.numero ? '#' + c.numero : '', c.tirage ? '/' + c.tirage : '', c.auto ? 'Auto' : '', c.grade].filter(Boolean).join(' · ');
-  const img = `<div class="img">${c.joueur ? `<span class="ecusson gros">${esc(initiales(c))}</span>` : SVG_CARTE}${photoOk(c.photo) ? `<img src="${esc(c.photo)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}</div>`;
+  const img = `<div class="img">${c.joueur ? `<span class="ecusson gros">${esc(initiales(c))}</span>` : SVG_CARTE}${photoOk(c.photo) ? `<img src="${esc(photoNet(c.photo))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}</div>`;
   const bas = vendue
     ? `<span class="p">${argent(c.prix_vendu, 0)}</span>${c.profit != null ? capsule((c.profit >= 0 ? '+' : '') + argentCourt(c.profit), (c.profit >= 0 ? 'vert' : 'rouge') + ' petit') : ''}`
     : `<span class="p">${argent(c.prix_demande ?? c.valeur, 0)}</span>${c.cout == null ? capsule(tt('coût ?', 'cost?'), 'or petit') : capsule(tt('coût ', 'cost ') + argentCourt(c.cout), 'petit')}`;
@@ -4946,7 +5143,7 @@ async function chargerCompsCarte(c){
   const rep = repere(c), sugg = c.marche && c.marche.suggestion;
   z.innerHTML = `<div class="bloc-v"><div class="bloc-t">${tt('Les mêmes cartes en vente', 'The same cards listed')} <span class="sous">${r.n} · ${tt('médiane ', 'median ')}${argentCourt(r.mediane)}</span></div>
     ${rep ? `<div class="repere ${rep.cl}"><b>${esc(rep.court)}</b><span>${tt('ton prix ', 'your price ')}${argentCourt(c.prix_demande)} · ${esc(rep.long)}</span></div>` : ''}
-    <div class="comps-l">${r.comps.map(x => `<a class="comp-m" href="${esc(x.url)}" target="_blank" rel="noopener" ${attrsAnnonce({...x, item_id: x.item_id || (String(x.url || '').match(/itm\/(\d+)/) || [])[1]})}><span style="${x.photo ? `background-image:url('${esc(x.photo)}')` : ''}"></span><b>${argentCourt(x.total)}</b></a>`).join('')}</div>
+    <div class="comps-l">${r.comps.map(x => `<a class="comp-m" href="${esc(x.url)}" target="_blank" rel="noopener" ${attrsAnnonce({...x, item_id: x.item_id || (String(x.url || '').match(/itm\/(\d+)/) || [])[1]})}><span style="${x.photo ? `background-image:url('${esc(photoNet(x.photo))}')` : ''}"></span><b>${argentCourt(x.total)}</b></a>`).join('')}</div>
     ${sugg && Math.abs(sugg - (nb(c.prix_demande) || 0)) >= 1 ? `<button class="btn petit" id="c-aumarche">${tt('Mettre au prix du marché', 'Set to market price')} · ${argent(sugg, 2)}</button>` : ''}</div>`;
   const b = $('#c-aumarche'); if (b) b.onclick = async () => {
     if (!await confirmer(tt('Changer le prix sur eBay ?', 'Change the price on eBay?'), argentCourt(c.prix_demande) + ' → ' + argent(sugg, 2), tt('Changer', 'Change'))) return;
@@ -5010,7 +5207,7 @@ async function feuilleBrouillons(){
   ouvrirFeuille(`<h3>Brouillons eBay</h3>
     <div class="etapes">${tag('Fichier Draft', 'acc')}${tag('Item specifics remplis')}${tag('Rien n\'est publié', 'vert')}</div>
     ${l.length ? `<div class="bascule"><span>Tout</span><input type="checkbox" id="d-tout" checked></div>
-      <div class="liste">${l.map(c => `<label class="rangee">${photoOk(c.photo) ? `<img class="vig" src="${esc(c.photo)}" alt="" loading="lazy">` : ''}<span class="milieu"><span class="nom">${esc(c.titre || c.joueur)}</span><span class="pastilles">${tag(argent(c.prix_demande, 0))}${c.prix_demande ? '' : tag('Prix ?', 'rouge')}</span></span>
+      <div class="liste">${l.map(c => `<label class="rangee">${photoOk(c.photo) ? `<img class="vig" src="${esc(photoNet(c.photo))}" alt="" loading="lazy">` : ''}<span class="milieu"><span class="nom">${esc(c.titre || c.joueur)}</span><span class="pastilles">${tag(argent(c.prix_demande, 0))}${c.prix_demande ? '' : tag('Prix ?', 'rouge')}</span></span>
         <input type="checkbox" class="d-c" value="${c.id}" checked style="width:22px;height:22px;accent-color:var(--acc)"></label>`).join('')}</div>
       <button class="btn" id="d-ok">${ICONES.export} Télécharger le fichier</button>
       <div class="etapes">${tag('Seller Hub')}›${tag('Rapports')}›${tag('Téléverser')}›${tag('Brouillons')}</div>` : `<div class="vide">Aucune carte « En stock »</div>`}`);
@@ -5090,7 +5287,7 @@ async function chercherStock(q){
   const z = $('#m-res'); if (!z) return;
   if (q.length < 2) { z.innerHTML = ''; return; }
   const l = (await API.inventaire_liste({dispo:1, q, limite:8}).catch(() => [])).filter(c => !S.panier.some(x => x.carte_id === c.id));
-  z.innerHTML = l.length ? `<div class="bloc"><div class="liste">${l.map(c => `<button class="rangee" data-id="${c.id}">${photoOk(c.photo) ? `<img class="vig" src="${esc(c.photo)}" alt="" loading="lazy">` : `<span class="ecusson">${esc(initiales(c))}</span>`}
+  z.innerHTML = l.length ? `<div class="bloc"><div class="liste">${l.map(c => `<button class="rangee" data-id="${c.id}">${photoOk(c.photo) ? `<img class="vig" src="${esc(photoNet(c.photo))}" alt="" loading="lazy">` : `<span class="ecusson">${esc(initiales(c))}</span>`}
       <span class="milieu"><span class="nom">${esc(c.titre || c.joueur)}</span><span class="pastilles">${c.emplacement ? tag(c.emplacement) : ''}${c.consignataire_id ? tag('Consigné', 'or') : ''}</span></span>
       <span class="prix">${argent(c.prix_demande ?? c.valeur, 0)}</span></button>`).join('')}</div></div>` : `<div class="pastilles">${tag('Rien trouvé')}</div>`;
   $$('#m-res .rangee').forEach(r => r.onclick = () => {
@@ -5448,9 +5645,9 @@ function courbeVentes(points, opts){
   const ligne = glisse.map((p, i) => (i ? 'L' : 'M') + X(p[0]).toFixed(1) + ' ' + Y(p[1]).toFixed(1)).join(' ');
   const d0 = new Date(t0).toLocaleDateString(LOC(), {day:'numeric', month:'short'}), d1 = new Date(t1).toLocaleDateString(LOC(), {day:'numeric', month:'short'});
   return `<div class="courbe-v"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
-      <defs><linearGradient id="cvg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#E9CF8E" stop-opacity=".28"/><stop offset="1" stop-color="#E9CF8E" stop-opacity="0"/></linearGradient></defs>
+      <defs><linearGradient id="cvg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" style="stop-color:var(--acc)" stop-opacity=".28"/><stop offset="1" style="stop-color:var(--acc)" stop-opacity="0"/></linearGradient></defs>
       <path d="${ligne} L ${X(t1).toFixed(1)} ${H - 14} L ${X(t0).toFixed(1)} ${H - 14} Z" fill="url(#cvg)"/>
-      <path d="${ligne}" fill="none" stroke="#E9CF8E" stroke-width="2.4" vector-effect="non-scaling-stroke"/>
+      <path d="${ligne}" fill="none" style="stroke:var(--acc)" stroke-width="2.4" vector-effect="non-scaling-stroke"/>
       ${P.map(p => `<circle cx="${X(p[0]).toFixed(1)}" cy="${Y(p[1]).toFixed(1)}" r="3" fill="#8FD4A4" fill-opacity=".75"/>`).join('')}
     </svg><div class="cv-axe"><span>${d0}</span><span>${argentCourt(lo)} – ${argentCourt(hi)}</span><span>${d1}</span></div></div>`;
 }
@@ -5685,7 +5882,9 @@ function feuilleDepense(){
 // ============================================================
 async function vueReglages(arg){
   V().innerHTML = `<section class="ecran">${roue}</section>`;
-  if (arg === 'ebay-ok') setTimeout(() => toast('Compte eBay connecté', 3500), 300);
+  if (arg === 'ebay-ok') { history.replaceState(null, '', '#reglages');
+    setTimeout(() => toast(tt('eBay connecté : on importe tes annonces et tes ventes…', 'eBay connected: importing your listings and sales…'), 4500), 300);
+    suivrePremiereSynchro(); }
   if (arg === 'ebay-erreur') setTimeout(() => toast('Connexion eBay refusée : recommence ou colle l’adresse', 4500), 300);
   let r, act;
   try {
@@ -5702,7 +5901,7 @@ async function vueReglages(arg){
   // le technique (sandbox, appels API, cles, EPN, avis eBay) dans « Avancé », ferme.
   const ligneAct = (k, t, d) => `<button class="r-ligne" data-act="${k}"><span class="t"><b>${t}</b><span>${d}</span></span><span class="interrupteur ${act[k] ? 'on' : ''}"><i></i></span></button>`;
   V().innerHTML = `<section class="ecran reglages">
-    <div class="profil-tete"><span class="profil-av"><img id="pr-logo" src="${esc(S.logo || '/icone.png')}" alt=""></span>
+    <div class="profil-tete"><span class="profil-av ${S.logo ? '' : 'sc'}"><img id="pr-logo" src="${esc(S.logo || LOGO_SC)}" alt=""></span>
       <div class="profil-n"><div class="titre moyen">${esc(nomMarque())}</div><div class="sous">${S.forfait && S.forfait.username ? '@' + esc(S.forfait.username) + ' · ' : ''}${S.mode === 'acheteur' ? tt('Acheteur', 'Buyer') : tt('Vendeur', 'Seller')}</div>
         <div class="profil-b">${typeof htmlBadge === 'function' ? htmlBadge(false) : ''}${typeof htmlPref === 'function' ? htmlPref() : ''}</div></div></div>
     <div class="profil-rac">${[

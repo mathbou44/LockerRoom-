@@ -228,8 +228,9 @@ class Deals(unittest.TestCase):
         self.assertIn("s4", ids)                                  # Savoie : 55,75 $ pour ~86 $
         self.assertAlmostEqual(ids["s4"]["mise_max"], round(ids["s4"]["valeur"] * deals.RATIO_DEAL - 6.0, 2))
         self.assertNotIn("s5", ids)
-        self.assertEqual((int(d0 or 0) + 5) % 7, d1)              # 5 flux de hits par tour, en rotation
-        self.assertEqual(r["stats"].get("requetes_flux"), 10)      # 5 flux x (prix fixe + 1 page d'encans)
+        n = min(deals.HITS_PAR_TOUR, 7)
+        self.assertEqual((int(d0 or 0) + deals.HITS_PAR_TOUR) % 7, d1)   # HITS_PAR_TOUR flux de hits par tour, en rotation
+        self.assertEqual(r["stats"].get("requetes_flux"), 2 * n)   # n flux x (prix fixe + 1 page d'encans)
 
     def test_autres_joueurs(self):
         """27 oct 2026 : la meme carte vendue par d'autres joueurs (repere), sans le meme joueur ni une autre carte."""

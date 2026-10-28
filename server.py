@@ -146,6 +146,13 @@ def auth_ebay():
 
 # 27 oct 2026 (Mathieu : « ne pas obliger d'avoir un compte eBay, mais fortement recommande ») : Apple et Google.
 def _base_publique():
+    """28 oct 2026 : l'adresse ou l'utilisateur EST (slabcoach.com ou www.slabcoach.com), pas une adresse fixe.
+    Avant : Apple revenait sur www, que Render redirige vers slabcoach.com, et la redirection perdait le formulaire
+    d'Apple (POST) -> « Connexion interrompue ». Les deux adresses sont enregistrees chez Apple et Google."""
+    h = (request.host or "").split(",")[0].strip().lower()
+    import re
+    if HEBERGE and re.fullmatch(r"(www\.)?slabcoach\.com", h):
+        return "https://" + h
     return (os.environ.get("LOCKERROOM_URL") or request.host_url).rstrip("/")
 
 
@@ -249,12 +256,15 @@ def auth_tiers_retour(fournisseur):
         abort(404)
     v = request.values
     if not _navigateur_lie(v.get("state")):
-        app.logger.warning("Connexion %s : retour dans un autre navigateur", fournisseur)
-        return redirect("/connexion?erreur=3")
+        app.logger.warning("Connexion %s : retour dans un autre navigateur (etat %s, temoin %s)", fournisseur,
+                           bool(v.get("state")), bool(request.cookies.get(_TEMOIN_LIEN)))
+        print(f"Connexion {fournisseur} : temoin absent ou different (etat={bool(v.get('state'))})", flush=True)
+        return redirect("/connexion?erreur=3&r=lien")
     r = at.terminer(fournisseur, v.get("code"), v.get("state"), _base_publique(), v.get("user"))
     if not r.get("ok"):
         app.logger.warning("Connexion %s refusee : %s", fournisseur, r.get("erreur"))
-        return redirect("/connexion?erreur=3")
+        print(f"Connexion {fournisseur} refusee : {r.get('erreur')}", flush=True)
+        return redirect("/connexion?erreur=3&r=" + ("expire" if "expir" in str(r.get("erreur")) else "jeton"))
     cid, nouveau = comptes.trouver_ou_creer(fournisseur + ":" + r["sub"], r.get("nom"), fournisseur)
     champs = {"connexion": fournisseur}
     if r.get("courriel"):
@@ -494,7 +504,9 @@ def connexion():
         err = request.args.get("erreur")
         e = ("<div class='erreur'>Connexion eBay interrompue : réessaie</div>" if err == "1" else
              "<div class='erreur'>Cette connexion n’est pas encore offerte : utilise eBay</div>" if err == "2" else
-             "<div class='erreur'>Connexion interrompue : réessaie</div>" if err else "")
+             "<div class='erreur'>Connexion interrompue : réessaie" + {"lien": " (le retour n’est pas arrivé dans ce navigateur)",
+                "jeton": " (le service n’a pas confirmé ton identité)", "expire": " (connexion expirée)"}.get(request.args.get("r"), "")
+             + "</div>" if err else "")
         page = _page_connexion().replace("{erreur}", e)
         import auth_tiers
         ios = "LockerRoomiOS" in (request.headers.get("User-Agent") or "")
@@ -634,6 +646,8 @@ def ebay_retour():
         _premiere_synchro(r["compte"])
         return _billet(r["compte"], "/#accueil/" + ("bienvenue" if r.get("nouveau") else "retour"), request.args.get("state"))
     r = api.ebay_terminer(request.url, request.args.get("state"))
+    if r.get("ok") and comptes.MULTI and comptes.courant():      # 28 oct 2026 : eBay relie depuis Reglages -> import tout seul
+        _premiere_synchro(comptes.courant())
     return redirect("/#reglages/" + ("ebay-ok" if r.get("ok") else "ebay-erreur"))
 
 

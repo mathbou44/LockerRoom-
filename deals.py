@@ -172,7 +172,33 @@ def requetes():
         if r["q"].lower() not in vus:
             vus.add(r["q"].lower())
             uniq.append(r)
-    return uniq[:120]
+    uniq = uniq[:110]
+    # 28 oct 2026 (Mathieu : « les deals sont presque juste des Future Watch et des Young Guns ; ou sont les auto patch de
+    # veterans ou de legendes ? ») : les veterans et les legendes aussi, en autos et en patchs, intercales avec les recrues
+    # (2 recrues, 1 vedette) : le meme nombre de recherches par heure, mieux reparties
+    ved = []
+    for j in VEDETTES:
+        for genre in ("auto", "patch"):
+            q = f"{j} {genre}"
+            if q.lower() not in vus:
+                vus.add(q.lower())
+                ved.append({"q": q, "joueur": j, "sport": "hockey", "poids": float(dem.get(j) or 1.0), "vedette": True})
+    mix, i, k = [], 0, 0
+    while i < len(uniq) or k < len(ved):
+        mix += uniq[i:i + 2]
+        i += 2
+        if k < len(ved):
+            mix.append(ved[k])
+            k += 1
+    return mix[:180]
+
+
+# 28 oct 2026 : veterans et legendes de la LNH dont les autos et patchs se vendent bien (noms seulement, rien d'autre)
+VEDETTES = ["Wayne Gretzky", "Mario Lemieux", "Sidney Crosby", "Connor McDavid", "Alex Ovechkin", "Patrick Roy", "Bobby Orr",
+            "Jaromir Jagr", "Steve Yzerman", "Joe Sakic", "Nathan MacKinnon", "Auston Matthews", "Cale Makar", "Carey Price",
+            "Mark Messier", "Guy Lafleur", "Martin Brodeur", "Nikita Kucherov", "Leon Draisaitl", "Nicklas Lidstrom",
+            "Gordie Howe", "Teemu Selanne", "Evgeni Malkin", "Jack Hughes", "Cole Caufield", "Nick Suzuki", "Mike Bossy",
+            "Jean Beliveau", "Ray Bourque", "Marc-Andre Fleury"]
 
 
 PORT_INCONNU = 15.0              # 27 oct 2026 : port non affiche (calcule a l'adresse) -> on compte 15 $ pour ne pas surestimer le deal
@@ -387,6 +413,7 @@ class Bassin:
 import re as _re
 _RE_GRADE_V = _re.compile(r" (psa|bgs|sgc|cgc|beckett|csg|gma|isa|ags|mnt|tag|ksa|hga) ?\d")
 VERIF_JOUR = 40                  # recherches SoldComps ciblees par jour pour confirmer une annonce prometteuse
+PART_HITS = 0.6                  # 28 oct 2026 : la part de ces 40 gardee pour les hits
 
 
 def _verificateur(d, st, bassin):
@@ -412,6 +439,12 @@ def _verificateur(d, st, bassin):
         if v["n"] >= max_:
             st["verif_budget"] = st.get("verif_budget", 0) + 1
             return None
+        # 28 oct 2026 : 60 % du budget du jour est garde pour les hits (autos, patchs, /99) : les Young Guns ont deja
+        # beaucoup de ventes connues, les hits de veterans et de legendes ont besoin de la verification
+        hit = _hit(cib)
+        if not hit and v.get("n_std", 0) >= max_ * (1 - PART_HITS):
+            st["verif_budget"] = st.get("verif_budget", 0) + 1
+            return None
         faites.add(q)
         r = vendues.rechercher(q, fond=True)
         if r.get("erreur"):
@@ -419,6 +452,8 @@ def _verificateur(d, st, bassin):
             return None
         if not r.get("cache"):
             v["n"] += 1
+            if not hit:
+                v["n_std"] = v.get("n_std", 0) + 1
         st["verifs"] = st.get("verifs", 0) + 1
         bassin.ajouter(r.get("ventes"))
         return r.get("ventes") or []
@@ -616,6 +651,18 @@ def _sauver(d, deals, maint, st, **champs):
     return garde_
 
 
+def _memes(r, annonces):
+    """Les annonces a juger pour une requete. Recrue : la carte exacte de la requete. Vedette (« Gretzky auto ») : toutes
+    les cartes de ce joueur (autos, patchs, numerotees...) ; chacune est jugee sur les ventes de SA carte, comme les flux."""
+    import cartes_match
+    if not r.get("vedette"):
+        return cartes_match.filtrer(r["q"], annonces)
+    nom = cartes_match.norm(r.get("joueur") or "") if hasattr(cartes_match, "norm") else str(r.get("joueur") or "").lower()
+    der = nom.split()[-1] if nom else ""
+    l = [a for a in annonces if der and der in (a.get("titre") or "").lower() and cartes_match.est_carte(a.get("titre") or "")]
+    return None, l, []
+
+
 def chasser(n=PAR_TOUR, rechercher=None, bassin=None):
     """Prix fixe : n requetes joueur (on reprend la ou on etait), les annonces les plus RECENTES d'abord (les bons prix
     partent vite) ; deals gardes 48 h."""
@@ -640,7 +687,7 @@ def chasser(n=PAR_TOUR, rechercher=None, bassin=None):
             st["erreurs_ebay"] = st.get("erreurs_ebay", 0) + 1
             break
         st["requetes"] = st.get("requetes", 0) + 1
-        _c, memes, _e = cartes_match.filtrer(r["q"], fixes)
+        _c, memes, _e = _memes(r, fixes)
         # chaque annonce a SA valeur, celle des ventes de la MEME carte (2 au moins), sinon pas de deal
         brut_v, err = _ventes(r["q"])
         if err:
@@ -649,6 +696,8 @@ def chasser(n=PAR_TOUR, rechercher=None, bassin=None):
         med = cartes_match.mediane_robuste([_total(x) for x in memes])[0] if memes else None
         comps = sorted(({"titre": x["titre"], "total": _total(x), "photo": x.get("photo"), "url": x.get("url")} for x in memes),
                        key=lambda x: abs(x["total"] - (med or 0)))[:8]
+        if r.get("vedette"):
+            comps = []                                   # des cartes differentes du meme joueur : pas des comparables
         for a in memes:
             _juger(a, r, brut_v, memes, maint, deals, st, comps=comps, bassin=bassin, verif=verif)
     garde_ = _sauver(d, deals, maint, st, curseur=(i0 + len(lot)) % len(reqs), maj=maint.isoformat(timespec="seconds"))
@@ -680,7 +729,7 @@ def encans(n=PAR_TOUR_ENCANS, rechercher=None, bassin=None):
             st["erreurs_ebay"] = st.get("erreurs_ebay", 0) + 1
             break
         st["requetes_encans"] = st.get("requetes_encans", 0) + 1
-        _c, memes_e, _e = cartes_match.filtrer(r["q"], ench)
+        _c, memes_e, _e = _memes(r, ench)
         if not memes_e:
             continue
         brut_v, _err = _ventes(r["q"], cache_seul=True)
@@ -709,8 +758,15 @@ FLUX_HITS = [("ud black auto", "hockey"), ("spx auto patch", "hockey"), ("patch 
              ("auto patch /49 hockey", "hockey"), ("auto /25 hockey", "hockey"), ("1/1 hockey card", "hockey"),
              ("the cup auto patch", "hockey"), ("sp game used auto", "hockey"), ("premier auto patch", "hockey"),
              ("ice auto patch", "hockey"), ("artifacts auto patch", "hockey"), ("trilogy auto", "hockey"),
-             ("ultimate collection auto", "hockey"), ("black diamond auto", "hockey"), ("synergy auto", "hockey")]
-HITS_PAR_TOUR = 5
+             ("ultimate collection auto", "hockey"), ("black diamond auto", "hockey"), ("synergy auto", "hockey"),
+             # 28 oct 2026 (Mathieu : « ou sont les cartes auto patch de veterans ou de legendes ? »)
+             ("legends auto hockey", "hockey"), ("legends patch hockey", "hockey"), ("veteran auto patch hockey", "hockey"),
+             ("game used auto patch hockey", "hockey"), ("sp legendary signatures", "hockey"), ("ud legends auto", "hockey"),
+             ("signature moments auto", "hockey"), ("the cup legends", "hockey"), ("sp signature edition auto", "hockey"),
+             ("leaf auto hockey", "hockey"), ("tag patch hockey", "hockey"), ("letter patch hockey", "hockey"),
+             ("gretzky auto", "hockey"), ("lemieux auto", "hockey"), ("crosby auto", "hockey"), ("ovechkin auto", "hockey"),
+             ("patrick roy auto", "hockey"), ("mcdavid auto patch", "hockey")]
+HITS_PAR_TOUR = 8                # 28 oct : 8 par heure (au lieu de 5) : chaque flux de hits revient aux ~4 h
 
 
 def flux_hits(curseur):
@@ -743,7 +799,7 @@ def flux(rechercher=None, bassin=None):
         pages = PAGES_ENCANS
     limite_fin = (maint + timedelta(hours=ENCAN_H)).isoformat().replace("+00:00", "Z")
     hits, curseur_h = flux_hits(d.get("curseur_h"))
-    for q, sport in flux_liste() + hits:
+    for q, sport in hits + flux_liste():                # 28 oct : les hits d'abord (le budget de verification va aux hits)
         r = {"q": None, "flux": q, "sport": sport, "joueur": None}
         # prix fixe : les 200 plus recentes ; encans : page apres page (200) tant qu'ils finissent dans 48 h
         for ench, page in [(False, 0)] + [(True, k) for k in range(pages)]:
