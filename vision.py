@@ -24,6 +24,7 @@ import json
 import os
 import re
 import threading
+import time
 import urllib.error
 import urllib.request
 from datetime import datetime
@@ -230,13 +231,39 @@ def _appeler(corps, timeout=90):
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return json.loads(r.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
+        # 28 oct 2026 (Mathieu : « la reconnaissance n'a pas répondu ») : la vraie raison dans les journaux de Render
+        # (jamais la cle), et un message qui dit quoi faire
+        try:
+            detail = e.read().decode("utf-8", "ignore")[:400]
+        except Exception:
+            detail = ""
+        print(f"Vision : HTTP {e.code} {detail}", flush=True)
+        _noter_erreur(e.code, detail)
         if e.code in (429, 529):
             raise Erreur("Beaucoup de demandes en ce moment : réessaie dans une minute.")
         if e.code in (401, 403):
             raise Erreur("Reconnaissance photo indisponible (clé du serveur) : remplis la fiche à la main.")
+        if "credit balance" in detail.lower() or "billing" in detail.lower():
+            raise Erreur("Reconnaissance photo en pause (crédit Anthropic du serveur épuisé) : cherche la carte par son nom.")
+        if e.code == 404 or "model" in detail.lower():
+            raise Erreur("Reconnaissance photo indisponible (modèle du serveur) : cherche la carte par son nom.")
+        if e.code == 413 or "image" in detail.lower():
+            raise Erreur("Photo trop lourde pour la reconnaissance : reprends-la de plus près.")
         raise Erreur("La reconnaissance n'a pas répondu : réessaie.")
     except (urllib.error.URLError, TimeoutError, OSError):
         raise Erreur("Pas de connexion avec la reconnaissance : réessaie.")
+
+
+_DERNIERE = {}
+
+
+def _noter_erreur(code, detail):
+    _DERNIERE.update(code=code, detail=re.sub(r"sk-[A-Za-z0-9_-]+", "sk-…", detail or "")[:300], le=time.time())
+
+
+def derniere_erreur():
+    """Pour l'admin : la derniere erreur de l'API de reconnaissance (code + message d'Anthropic, sans cle)."""
+    return dict(_DERNIERE) if _DERNIERE else None
 
 
 def _nettoyer(f):

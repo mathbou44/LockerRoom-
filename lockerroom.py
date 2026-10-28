@@ -551,7 +551,8 @@ class Api:
         try:
             r = vision.identifier(photos if isinstance(photos, list) else [photos])
         except vision.Erreur as e:
-            return {"ok": False, "erreur": str(e)}
+            # 28 oct 2026 : l'admin voit la vraie raison (code et message d'Anthropic, sans la cle)
+            return {"ok": False, "erreur": str(e), **({"detail": vision.derniere_erreur()} if self._est_admin() else {})}
         try:                                   # 28 oct 2026 : CardSight AI confirme les champs douteux (si CARDSIGHT_CLE)
             import cardsight
             if cardsight.actif() and not r.get("cache"):
@@ -1998,6 +1999,35 @@ class Api:
             champs["statut"] = "En stock"
         r = self.carte_sauver({k: v for k, v in champs.items() if v not in (None, "")})
         return {"ok": True, "id": r["id"], "photos": refs}
+
+    def carte_photo_changer(self, cid, photo):
+        """28 oct 2026 (Mathieu : « en tout temps il peut modifier la photo associee a la carte dans sa collection pour
+        en prendre une meilleure ») : la nouvelle photo devient la premiere ; l'ancienne premiere est effacee du disque."""
+        import photos_cartes
+        carte = self.carte_lire(cid)
+        if not carte:
+            return {"ok": False, "erreur": "Carte introuvable"}
+        try:
+            refs = photos_cartes.sauver([photo])
+        except ValueError as e:
+            return {"ok": False, "erreur": str(e)}
+        if not refs:
+            return {"ok": False, "erreur": "Photo illisible : reprends-la"}
+        try:
+            avant = json.loads(carte.get("photos") or "[]")
+            avant = avant if isinstance(avant, list) else []
+        except ValueError:
+            avant = []
+        if not avant and carte.get("photo"):
+            avant = [carte["photo"]]
+        nouv = refs[:1] + avant[1:]
+        self.carte_sauver({"id": cid, "photo": nouv[0], "photos": json.dumps(nouv)})
+        if avant and avant[0] not in nouv:
+            try:
+                photos_cartes.supprimer([avant[0]])
+            except Exception:
+                pass
+        return {"ok": True, "photo": nouv[0], "photos": nouv}
 
     def carte_supprimer(self, cid):
         import photos_cartes

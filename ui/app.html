@@ -1022,6 +1022,46 @@ body.pro .onglets a.on svg{filter:drop-shadow(0 0 6px color-mix(in srgb, var(--a
 }
 @keyframes lr-entre{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
 .rech-ligne{display:flex; gap:10px} .rech-ligne .recherche{flex:1; min-width:0}
+/* 28 oct 2026 - le scanner en direct (camera dans l'app) */
+body.scan-ouvert{overflow:hidden}
+.scan{position:fixed; inset:0; z-index:400; background:#000; color:#fff; animation:lr-entre .2s ease-out; overflow:hidden}
+.scan.sort{opacity:0; transition:opacity .2s}
+.scan video{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+.scan-cadre{position:absolute; left:50%; top:46%; width:min(70vw, 330px); aspect-ratio:5/7; transform:translate(-50%,-50%); border-radius:18px;
+  box-shadow:0 0 0 200vmax rgba(5,5,8,.58); transition:box-shadow .3s}
+.scan-cadre i{position:absolute; width:34px; height:34px; border:3.5px solid rgba(255,255,255,.92); transition:border-color .25s}
+.scan-cadre i:nth-child(1){left:-2px; top:-2px; border-right:none; border-bottom:none; border-top-left-radius:18px}
+.scan-cadre i:nth-child(2){right:-2px; top:-2px; border-left:none; border-bottom:none; border-top-right-radius:18px}
+.scan-cadre i:nth-child(3){left:-2px; bottom:-2px; border-right:none; border-top:none; border-bottom-left-radius:18px}
+.scan-cadre i:nth-child(4){right:-2px; bottom:-2px; border-left:none; border-top:none; border-bottom-right-radius:18px}
+.scan-cadre.pret i{border-color:var(--acc)}
+.scan-fil{position:absolute; inset:0; border-radius:18px; opacity:0; pointer-events:none}
+.scan-cadre.lit .scan-fil{opacity:1; background:linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--acc) 40%, transparent) 50%, transparent 100%) 0 0/100% 40% no-repeat;
+  animation:scan-balaye 1.3s ease-in-out infinite}
+@keyframes scan-balaye{0%{background-position:0 -40%} 100%{background-position:0 140%}}
+.scan-haut{position:absolute; left:0; right:0; top:0; padding:calc(env(safe-area-inset-top) + 10px) 14px 0; display:flex; align-items:center; gap:10px}
+.scan-x{width:42px; height:42px; border-radius:50%; border:none; background:rgba(0,0,0,.5); color:#fff; font-size:18px; flex-shrink:0; backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px)}
+.scan-aide{flex:1; text-align:center; margin-right:52px; padding:9px 14px; border-radius:999px; background:rgba(0,0,0,.55); font-weight:700; font-size:15px;
+  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); transition:color .2s}
+.scan-aide[data-ton="vert"]{color:var(--acc)} .scan-aide[data-ton="or"]{color:#F3D68B}
+.scan-bas{position:absolute; left:0; right:0; bottom:0; padding:0 20px calc(env(safe-area-inset-bottom) + 22px); display:flex; flex-direction:column; align-items:center; gap:10px}
+.scan-bas small{color:rgba(255,255,255,.78); font-size:13.5px; text-align:center}
+.scan-declic{width:72px; height:72px; border-radius:50%; border:4px solid rgba(255,255,255,.9); background:rgba(255,255,255,.22); padding:0}
+.scan-declic:active{transform:scale(.94)}
+.scan.fige .scan-bas, .scan.fige .scan-cadre i{opacity:0; transition:opacity .2s}
+.scan video{transition:filter .4s} .scan.fige video{filter:blur(16px) brightness(.5)} .scan.fige .scan-cadre{box-shadow:0 0 0 200vmax transparent}
+.scan-fige{position:fixed; z-index:2; object-fit:cover; border-radius:16px; transform-origin:0 0; box-shadow:0 18px 50px rgba(0,0,0,.6);
+  transition:transform .55s cubic-bezier(.3,.8,.25,1), border-radius .55s; animation:scan-flash .35s ease-out}
+.scan-fige.reduit{border-radius:60px}
+@keyframes scan-flash{from{filter:brightness(1.8)} to{filter:none}}
+.scan-res{position:absolute; left:0; right:0; bottom:0; z-index:3; max-height:68vh; overflow:auto; padding:18px 16px calc(env(safe-area-inset-bottom) + 16px);
+  background:var(--fond, #0B0B0E); border-radius:22px 22px 0 0; display:flex; flex-direction:column; gap:12px; transform:translateY(100%); transition:transform .35s cubic-bezier(.3,.8,.25,1)}
+.scan-res.ouvert{transform:none}
+.sr-tete b{display:block; font-size:22px} .sr-tete span{color:var(--doux); font-size:14px}
+.sr-chiffre{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap} .sr-chiffre span{color:var(--doux)} .sr-chiffre b{font:700 32px var(--f-cond)} .sr-chiffre small{color:var(--doux)}
+.sr-bas{display:flex; gap:10px} .sr-bas > *{flex:1}
+.fc-liens{display:flex; justify-content:center; gap:18px} .fc-liens .plus{display:inline-flex; align-items:center; gap:6px} .fc-liens svg{width:18px; height:18px}
+button.btn-scan{border:none; font:inherit; font-weight:700}
 .btn-scan{flex-shrink:0; display:inline-flex; align-items:center; gap:8px; height:44px; padding:0 16px; border-radius:12px; cursor:pointer; font-weight:700;
   background:linear-gradient(180deg, color-mix(in srgb, var(--acc) 22%, transparent), color-mix(in srgb, var(--acc) 8%, transparent)); border:1px solid color-mix(in srgb, var(--acc) 45%, transparent); color:var(--or)}
 .btn-scan svg{width:22px; height:22px}
@@ -1278,6 +1318,9 @@ body.pro .onglets a.on{color:var(--acc)}
   .haut-nom{justify-self:center; display:flex; flex-direction:column; align-items:center; gap:2px; background:none; border:none; color:var(--texte); padding:2px 8px; min-width:0; max-width:100%}
   .haut-mot{font:400 24px/1 'Manrope',system-ui,sans-serif; letter-spacing:-.025em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%}
   .haut-mot b{font-weight:800}
+  /* 28 oct 2026 (Mathieu : « inserer le logo dans l'entete ») : le C holographique a gauche du mot */
+  .haut-ligne{display:flex; align-items:center; gap:5px; min-width:0; max-width:100%}
+  .haut-logo{width:28px; height:28px; flex-shrink:0; object-fit:contain; border-radius:50%; margin-top:1px}
   .haut-nom small{font:700 11px var(--f-cond); letter-spacing:.2em; text-transform:uppercase; color:var(--acc)}
   .haut-nom small i{font-style:normal; letter-spacing:0; color:var(--doux)}
   /* barre du bas : une pilule flottante, l'onglet actif dans une bulle avec son nom */
@@ -2504,7 +2547,7 @@ function majBarreMode(){
     b.hidden = !voir;
     const perso = nomMarque() !== 'SlabCoach';
     b.innerHTML = voir ? `<button class="rond haut-plus" id="h-plus" aria-label="${esc(tt('Ajouter', 'Add'))}">${ICONES.plus}</button>
-      <div class="haut-nom" id="h-nom"><span class="haut-mot">${perso ? esc(nomMarque()) : '<b>slab</b>coach'}</span>
+      <div class="haut-nom" id="h-nom"><span class="haut-ligne"><img class="haut-logo" src="${esc(perso && S.logo ? S.logo : LOGO_SC)}" alt=""><span class="haut-mot">${perso ? esc(nomMarque()) : '<b>slab</b>coach'}</span></span>
         <span class="haut-bascule" role="tablist" aria-label="${esc(tt('Volet', 'Mode'))}">${['acheteur', 'vendeur'].map(m => `<button role="tab" aria-selected="${S.mode === m}" data-mode-choix="${m}" class="${S.mode === m ? 'on' : ''}">${m === 'acheteur' ? tt('Acheteur', 'Buyer') : tt('Vendeur', 'Seller')}</button>`).join('')}</span></div>
       <button class="rond haut-cloche" data-alertes aria-label="${esc(tt('Alertes', 'Alerts'))}">${ICO_CLOCHE}<i class="pt" id="h-pt" hidden></i></button>` : '';
     const hp = $('#h-plus', b); if (hp) hp.onclick = feuilleAjouter;
@@ -2535,7 +2578,7 @@ function feuilleModes(){
 // Ma collection : la carte entre dans l'app avec sa valeur estimee, rien ne va sur eBay. Vendre : l'annonce eBay.
 function feuilleAjout(){
   const vend = S.mode !== 'acheteur';
-  const coll = [['collection', ICONES.photo, tt('Scanner une carte', 'Scan a card'), tt('Devant et dos : l’app la lit et estime sa valeur', 'Front and back: the app reads it and estimates its value')],
+  const coll = [['collection', ICONES.photo, tt('Scanner une carte', 'Scan a card'), tt('La caméra la lit en direct, montre sa valeur et l’ajoute', 'The camera reads it live, shows its value and adds it')],
     ['collection-lot', ICO_LOT, tt('Plusieurs cartes d’un coup', 'Several cards at once'), tt('Depuis ta photothèque, devant puis dos', 'From your photo library, front then back')],
     ['main', ICONES.plus, tt('À la main', 'By hand'), tt('Sans photo : joueur, année, set, prix payé', 'No photo: player, year, set, price paid')]];
   const vente = [['nouvelle', ICO_EBAY_TAG, tt('Créer une annonce eBay', 'Create an eBay listing'), tt('Une photo : titre, prix et annonce complète', 'One photo: title, price and full listing')],
@@ -2548,6 +2591,7 @@ function feuilleAjout(){
   $$('[data-aj2]').forEach(b => b.onclick = () => {
     const k = b.dataset.aj2; fermerFeuille();
     if (k === 'main') { feuilleCarte({emplacement: 'Collection'}); return; }
+    if (k === 'collection') { ouvrirScanner({but:'collection'}); return; }      // 28 oct 2026 : le meme scanner en direct
     location.hash = '#vendre/' + k;
   });
 }
@@ -4496,6 +4540,191 @@ async function scannerCarte(f){
   fermerFeuille();
   if (q) location.hash = '#valeur/' + encodeURIComponent(q); else toast(tt('Carte pas reconnue', 'Card not recognized'));
 }
+// ============================================================
+// 28 oct 2026 (Mathieu : « une integration camera dans l'app : il voit le resultat avec la camera sans prendre la photo ;
+// quand la carte est trouvee avec ses comps, l'image fige, retrecit en diagonale, montre les comps et demande s'il veut
+// l'ajouter a sa collection ; en tout temps il peut changer la photo d'une carte de sa collection »).
+// La camera reste ouverte ; l'app guide (lumiere, reflet, stabilite) et prend la photo TOUTE SEULE quand l'image est
+// nette et stable. Au plus 3 lectures automatiques par carte (chaque lecture coute un appel a l'IA).
+// Sans camera dans l'app (refus, vieil appareil) : l'appareil photo du telephone, comme avant.
+// ============================================================
+const SCAN = {};
+function scanFermer(){
+  SCAN.actif = false; cancelAnimationFrame(SCAN.rf || 0); clearTimeout(SCAN.t);
+  try { (SCAN.flux && SCAN.flux.getTracks() || []).forEach(t => t.stop()); } catch (e) {}
+  const z = $('#scan'); if (z) { z.classList.add('sort'); setTimeout(() => z.remove(), 220); }
+  document.body.classList.remove('scan-ouvert');
+  for (const k in SCAN) delete SCAN[k];
+}
+function scannerSecours(opts){
+  const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.setAttribute('capture', 'environment');
+  i.onchange = async () => { const f = i.files && i.files[0]; if (!f) return;
+    if (opts.but === 'photo') { let ph; try { ph = await reduirePhoto(f, 1600); } catch (e) { toast(tt('Photo illisible : reprends-la', 'Unreadable photo: try again')); return; } changerPhotoCarte(opts.cid, ph); }
+    else scannerCarte(f); };
+  i.click();
+}
+async function ouvrirScanner(opts = {}){
+  if (opts.but !== 'photo' && !await okIA()) { toast(tt('Sans l’IA : cherche la carte par son nom', 'Without AI: search the card by name'), 4000); return; }
+  if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) return scannerSecours(opts);
+  let flux;
+  try { flux = await navigator.mediaDevices.getUserMedia({audio:false, video:{facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1440}}}); }
+  catch (e) { return scannerSecours(opts); }
+  scanFermer();
+  Object.assign(SCAN, {flux, opts, actif:true, essais:0, stable:0, avant:null, debut:Date.now(), etat:'cherche'});
+  const photo = opts.but === 'photo';
+  document.body.insertAdjacentHTML('beforeend', `<div id="scan" class="scan" role="dialog" aria-modal="true">
+    <video playsinline muted autoplay></video>
+    <div class="scan-cadre" id="scan-cadre"><i></i><i></i><i></i><i></i><span class="scan-fil"></span></div>
+    <div class="scan-haut"><button class="scan-x" id="scan-x" aria-label="${esc(tt('Fermer', 'Close'))}">✕</button>
+      <span class="scan-aide" id="scan-aide">${tt('Place la carte dans le cadre', 'Place the card in the frame')}</span></div>
+    <div class="scan-bas"><button class="scan-declic" id="scan-declic" aria-label="${esc(tt('Prendre la photo', 'Take the photo'))}"></button>
+      <small>${photo ? tt('La photo se prend toute seule quand c’est net', 'The photo takes itself when it’s sharp') : tt('La carte se lit toute seule : garde-la stable dans le cadre', 'The card reads itself: hold it steady in the frame')}</small></div>
+    <img class="scan-fige" id="scan-fige" alt="" hidden>
+    <div class="scan-res" id="scan-res" hidden></div></div>`);
+  document.body.classList.add('scan-ouvert');
+  const v = $('#scan video'); v.srcObject = flux; v.play().catch(() => {});
+  $('#scan-x').onclick = scanFermer;
+  $('#scan-declic').onclick = () => { if (SCAN.etat === 'cherche') scanCapturer(true); };
+  SCAN.petit = document.createElement('canvas'); SCAN.petit.width = 72; SCAN.petit.height = 100;
+  const boucle = () => { if (!SCAN.actif) return; SCAN.rf = requestAnimationFrame(boucle);
+    const t = performance.now(); if (t - (SCAN.dernier || 0) < 160) return; SCAN.dernier = t; scanAnalyser(); };
+  boucle();
+}
+// la zone du cadre, en pixels de la video (la video remplit l'ecran : object-fit cover)
+function scanZone(){
+  const v = $('#scan video'), c = $('#scan-cadre'); if (!v || !c || !v.videoWidth) return null;
+  const e = v.getBoundingClientRect(), r = c.getBoundingClientRect();
+  const k = Math.max(e.width / v.videoWidth, e.height / v.videoHeight), ox = (e.width - v.videoWidth * k) / 2, oy = (e.height - v.videoHeight * k) / 2;
+  const m = 0.04 * r.width;                                    // un peu de marge autour de la carte
+  const x = Math.max(0, (r.left - e.left - ox - m) / k), y = Math.max(0, (r.top - e.top - oy - m) / k);
+  return {v, x, y, w:Math.min(v.videoWidth - x, (r.width + 2 * m) / k), h:Math.min(v.videoHeight - y, (r.height + 2 * m) / k)};
+}
+function scanAide(txt, ton){ const a = $('#scan-aide'); if (!a) return; if (a.textContent !== txt) a.textContent = txt; a.dataset.ton = ton || ''; }
+function scanAnalyser(){
+  if (SCAN.etat !== 'cherche') return;
+  const z = scanZone(); if (!z) return;
+  const cv = SCAN.petit, g = cv.getContext('2d', {willReadFrequently:true});
+  g.drawImage(z.v, z.x, z.y, z.w, z.h, 0, 0, cv.width, cv.height);
+  const d = g.getImageData(0, 0, cv.width, cv.height).data, W = cv.width, H = cv.height, n = W * H, gris = new Float32Array(n);
+  let som = 0, som2 = 0, brille = 0;
+  for (let i = 0; i < n; i++) { const y = .299 * d[i * 4] + .587 * d[i * 4 + 1] + .114 * d[i * 4 + 2]; gris[i] = y; som += y; som2 += y * y; if (y > 248) brille++; }
+  const moy = som / n, ecart = Math.sqrt(Math.max(0, som2 / n - moy * moy));
+  let net = 0; for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) { const i = y * W + x; net += Math.abs(4 * gris[i] - gris[i - 1] - gris[i + 1] - gris[i - W] - gris[i + W]); }
+  net /= (W - 2) * (H - 2);
+  let bouge = 0; if (SCAN.avant) { for (let i = 0; i < n; i += 3) bouge += Math.abs(gris[i] - SCAN.avant[i]); bouge /= n / 3; } else bouge = 99;
+  SCAN.avant = gris;
+  const photo = SCAN.opts.but === 'photo';
+  let ok = false;
+  if (moy < 45) scanAide(tt('Plus de lumière', 'More light'), 'or');
+  else if (ecart < 14) scanAide(tt('Place la carte dans le cadre', 'Place the card in the frame'));
+  else if (brille / n > 0.045) scanAide(tt('Reflet : incline un peu la carte', 'Glare: tilt the card a little'), 'or');
+  else if (bouge > 7) { scanAide(tt('Tiens stable…', 'Hold steady…')); SCAN.stable = 0; }
+  else if (net < 5) scanAide(tt('Rapproche-toi un peu', 'Move a little closer'));
+  else { ok = true; scanAide(photo ? tt('Parfait, ne bouge plus…', 'Perfect, hold still…') : tt('Parfait, ne bouge plus…', 'Perfect, hold still…'), 'vert'); }
+  $('#scan-cadre').classList.toggle('pret', ok);
+  SCAN.stable = ok ? SCAN.stable + 1 : 0;
+  // net et stable pendant ~0,6 s : on prend la photo. Apres 6 s sans y arriver (lumiere juste, etc.) : on essaie quand meme
+  const tard = Date.now() - SCAN.debut > 6000 && moy >= 45 && ecart >= 14 && bouge <= 9;
+  if (SCAN.stable >= 4 || tard) scanCapturer(false);
+}
+function scanPhoto(){
+  const z = scanZone(); if (!z) return null;
+  const r = Math.min(1, 1400 / Math.max(z.w, z.h)), cv = document.createElement('canvas');
+  cv.width = Math.round(z.w * r); cv.height = Math.round(z.h * r);
+  cv.getContext('2d').drawImage(z.v, z.x, z.y, z.w, z.h, 0, 0, cv.width, cv.height);
+  return cv.toDataURL('image/jpeg', 0.88);
+}
+async function scanCapturer(manuel){
+  if (SCAN.etat !== 'cherche') return;
+  const ph = scanPhoto(); if (!ph) return;
+  if (SCAN.opts.but === 'photo') { SCAN.etat = 'fige'; scanFiger(ph); return scanConfirmerPhoto(ph); }
+  if (!manuel && SCAN.essais >= 3) { scanAide(tt('Pas reconnue : appuie sur le bouton ou cherche par son nom', 'Not recognized: tap the button or search by name'), 'or'); return; }
+  SCAN.etat = 'lecture'; SCAN.essais++;
+  $('#scan-cadre').classList.add('lit'); scanAide(tt('Lecture de la carte…', 'Reading the card…'), 'vert');
+  const r = await API.photo_identifier([ph]).catch(e => ({ok:false, erreur:e.message}));
+  if (!SCAN.actif) return;
+  $('#scan-cadre').classList.remove('lit');
+  const c = (r && r.champs) || {};
+  const q = [c.annee, c.joueur, c.set_nom && !/young guns/i.test(c.parallele || '') ? c.set_nom : '', c.parallele, c.tirage ? '/' + c.tirage : '', c.auto ? 'auto' : '', c.grade || '']
+    .filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+  if (!r || !r.ok || !q) {
+    if (r && r.detail && r.detail.code) toast('Admin · Anthropic HTTP ' + r.detail.code + ' : ' + (r.detail.detail || '').slice(0, 160), 9000);
+    scanAide((r && r.erreur) || tt('Carte pas reconnue : rapproche-toi, sans reflet', 'Card not recognized: closer, no glare'), 'or');
+    SCAN.t = setTimeout(() => { if (!SCAN.actif) return; SCAN.etat = 'cherche'; SCAN.stable = 0; SCAN.debut = Date.now(); }, 2600);
+    return;
+  }
+  SCAN.etat = 'trouve'; SCAN.ph = ph; SCAN.champs = c; SCAN.q = q;
+  scanFiger(ph, true);
+  scanResultat(c, q);
+}
+// l'image fige dans le cadre, puis retrecit en diagonale vers le coin (l'espace libre est pour les comps)
+function scanFiger(ph, retrecir){
+  const im = $('#scan-fige'), r = $('#scan-cadre').getBoundingClientRect();
+  Object.assign(im.style, {left:r.left + 'px', top:r.top + 'px', width:r.width + 'px', height:r.height + 'px', transform:'none'});
+  im.src = ph; im.hidden = false; $('#scan').classList.add('fige');
+  const v = $('#scan video'); if (v) v.pause();                 // l'image derriere reste (floue), la camera ne travaille plus
+  if (retrecir) scanAide(tt('Trouvée !', 'Found!'), 'vert');
+  if (!retrecir) return;
+  const cible = 108, k = cible / r.width, haut = $('#scan .scan-haut').getBoundingClientRect().bottom + 10;
+  requestAnimationFrame(() => setTimeout(() => {
+    im.classList.add('reduit');
+    im.style.transform = `translate(${16 - r.left}px, ${haut - r.top}px) scale(${k})`;
+  }, 380));
+}
+async function scanResultat(c, q){
+  const z = $('#scan-res'), nom = c.joueur || tt('Carte', 'Card');
+  const det = [c.annee, c.set_nom, c.parallele, c.numero ? '#' + c.numero : '', c.tirage ? '/' + c.tirage : '', c.auto ? 'Auto' : '', c.grade].filter(Boolean).join(' · ');
+  z.innerHTML = `<div class="sr-tete"><b>${esc(nom)}</b><span>${esc(det)}</span></div>
+    <div class="sr-val" id="sr-val"><div class="lecture"><span class="roue"></span>${tt('Les ventes réelles de cette carte…', 'Real sales of this card…')}</div></div>
+    <button class="btn" id="sr-garder">${tt('Ajouter à ma collection', 'Add to my collection')}</button>
+    <div class="sr-bas"><button class="btn ghost" id="sr-autre">${tt('Une autre', 'Another')}</button><a class="btn ghost" href="#valeur/${encodeURIComponent(q)}" id="sr-fiche">${tt('Fiche complète', 'Full details')}</a></div>`;
+  setTimeout(() => { z.hidden = false; requestAnimationFrame(() => z.classList.add('ouvert')); }, 520);
+  $('#sr-autre').onclick = scanRecommencer;
+  $('#sr-fiche').onclick = () => scanFermer();
+  $('#sr-garder').onclick = scanGarder;
+  const r = await API.valeur_carte(q).catch(e => ({ok:false, erreur:e.message}));
+  if (!SCAN.actif) return;
+  const ventes = ((r && r.vendues) || {}).ventes || [];
+  SCAN.valeur = r && r.valeur;
+  $('#sr-val').innerHTML = `${r && r.valeur ? `<div class="sr-chiffre"><span>${tt('Vaut', 'Worth')}</span><b>${argent(r.valeur, 0)}</b><small>${tt('médiane de ventes réelles', 'median of real sales')}</small></div>`
+      : `<div class="sous">${(r && r.erreur) || tt('Pas assez de ventes sûres de cette carte pour donner une valeur.', 'Not enough reliable sales of this card to give a value.')}</div>`}
+    ${ventes.length ? `<div class="fv-car">${ventes.slice(0, 12).map(k => `<a class="fv" ${k.url ? `href="${esc(k.url)}" target="_blank" rel="noopener"` : ''}><div class="fv-ph">${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo))}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
+      <b>${argent(k.prix, 0)}</b><small>${k.le ? tt('vendue ', 'sold ') + dateCourte(k.le) : tt('vendue', 'sold')}</small></a>`).join('')}</div>` : ''}`;
+}
+function scanRecommencer(){
+  const z = $('#scan-res'); z.classList.remove('ouvert'); setTimeout(() => { z.hidden = true; }, 260);
+  const im = $('#scan-fige'); im.hidden = true; im.classList.remove('reduit'); $('#scan').classList.remove('fige');
+  const v = $('#scan video'); if (v) v.play().catch(() => {});
+  Object.assign(SCAN, {etat:'cherche', essais:0, stable:0, avant:null, debut:Date.now(), ph:null, champs:null, q:null, valeur:null});
+  scanAide(tt('Place la carte dans le cadre', 'Place the card in the frame'));
+}
+async function scanGarder(){
+  const b = $('#sr-garder'); b.disabled = true; b.textContent = tt('Ajout…', 'Adding…');
+  const c = SCAN.champs || {};
+  const p = await API.annonce_preparer(c, typeof LANGUE !== 'undefined' ? LANGUE : 'fr').catch(() => ({ok:false}));
+  const valeur = SCAN.valeur || (p && p.ok && p.prix ? p.prix.marche : null), titre = (p && p.ok && p.titre) || c.titre || '';
+  const r = await API.carte_garder({carte:{...c, emplacement:'Collection', valeur}, titre, prix:null, photos:[SCAN.ph]}).catch(e => ({ok:false, erreur:e.message}));
+  if (!r || !r.ok) { b.disabled = false; b.textContent = tt('Ajouter à ma collection', 'Add to my collection'); toast((r && r.erreur) || tt('Erreur', 'Error'), 5000); return; }
+  // en serie (collection) : la suivante d'un tap ; sinon, voir la collection
+  b.outerHTML = SCAN.opts.but === 'collection'
+    ? `<button class="btn" id="sr-suiv">✓ ${tt('Ajoutée · scanner la suivante', 'Added · scan the next one')}</button><a class="plus" href="#inventaire" id="sr-voir" style="text-align:center">${tt('Voir ma collection', 'See my collection')}</a>`
+    : `<a class="btn" href="#inventaire" id="sr-voir">✓ ${tt('Dans ta collection · voir', 'In your collection · view')}</a>`;
+  $('#sr-voir').onclick = () => { S.filtreInv = 'collection'; scanFermer(); if ((location.hash || '').startsWith('#inventaire')) vueInventaire(); };
+  const su = $('#sr-suiv'); if (su) su.onclick = scanRecommencer;
+  toast(tt('Ajoutée à ta collection. Tu pourras changer la photo en tout temps.', 'Added to your collection. You can change the photo anytime.'), 3500);
+}
+function scanConfirmerPhoto(ph){
+  const z = $('#scan-res');
+  z.innerHTML = `<div class="sr-tete"><b>${tt('Cette photo ?', 'This photo?')}</b><span>${tt('Elle remplace la photo de la carte dans ta collection.', 'It replaces the card’s photo in your collection.')}</span></div>
+    <button class="btn" id="sr-ok">${tt('Utiliser cette photo', 'Use this photo')}</button><button class="btn ghost" id="sr-re">${tt('Reprendre', 'Retake')}</button>`;
+  z.hidden = false; requestAnimationFrame(() => z.classList.add('ouvert'));
+  $('#sr-re').onclick = scanRecommencer;
+  $('#sr-ok').onclick = async () => { $('#sr-ok').disabled = true; const cid = SCAN.opts.cid; scanFermer(); changerPhotoCarte(cid, ph); };
+}
+async function changerPhotoCarte(cid, ph){
+  const r = await essai(API.carte_photo_changer(cid, ph), tt('Photo changée', 'Photo changed'));
+  if (r && (location.hash || '').startsWith('#inventaire')) vueInventaire();
+}
 async function vueValeur(arg){
   // 24 oct 2026 (Mathieu : « will smith young guns et ca me sort tout sauf ca ») : la MEME carte seulement ;
   // l'app montre ce qu'elle a compris, ce qu'elle a ecarte et pourquoi, et apprend de « pas la bonne carte ».
@@ -4503,13 +4732,13 @@ async function vueValeur(arg){
   V().innerHTML = `<section class="ecran large">
     <div class="entete"><div class="titre">${tt('Combien vaut une carte ?', 'What is a card worth?')}</div>${pastilleQuota('valeur_jour')}</div>
     <div class="rech-ligne"><form class="recherche" id="v-form" role="search">${ICONES.loupe}<input id="v-q" type="search" enterkeyhint="search" value="${esc(q)}" placeholder="${esc(tt('Joueur + carte (ex. Will Smith Young Guns, Bedard PSA 10, Celebrini Exclusives /100)', 'Player + card (e.g. Will Smith Young Guns, Bedard PSA 10, Celebrini Exclusives /100)'))}" aria-label="${esc(tt('Carte à évaluer', 'Card to value'))}"></form>
-      <label class="btn-scan" aria-label="${esc(tt('Scanner une carte', 'Scan a card'))}">${ICONES.photo}<span>${tt('Scanner', 'Scan')}</span><input type="file" accept="image/*" capture="environment" id="v-scan" hidden></label></div>
+      <button class="btn-scan" id="v-scan" aria-label="${esc(tt('Scanner une carte', 'Scan a card'))}">${ICONES.photo}<span>${tt('Scanner', 'Scan')}</span></button></div>
     <div id="v-res">${q ? roue : `<div class="vide">${tt('Écris le joueur et la carte. Ajoute la variante, la gradation, « auto », « patch » ou « /99 » si ta carte en a : l’app ne garde que la même carte.', 'Type the player and the card. Add the parallel, grade, “auto”, “patch” or “/99” if your card has one: the app keeps only the same card.')}</div><div id="v-tend"></div>`}</div>
   </section>`;
   brancherSwitchMode(V());
   $('#v-form').onsubmit = (e) => { e.preventDefault(); const v = $('#v-q').value.trim(); if (v) location.hash = '#valeur/' + encodeURIComponent(v); };
   brancherQuota(V());
-  $('#v-scan').onchange = (e) => scannerCarte(e.target.files && e.target.files[0]);
+  $('#v-scan').onclick = () => ouvrirScanner();
   if (!q) { if (!matchMedia('(max-width:899px)').matches) $('#v-q').focus(); blocTendances($('#v-tend')); return; }
   let r; try { r = await API.valeur_carte(q); } catch (e) { r = {ok: false, erreur: e.message}; }
   chargerForfait().then(() => { const e = $('.ecran .entete .quota'); if (e) { e.outerHTML = pastilleQuota('valeur_jour'); brancherQuota(V()); } }).catch(() => {});
@@ -5707,8 +5936,9 @@ function ficheCollection(c){
         ${gain != null ? `<div><span>${tt('Gain', 'Gain')}</span><b class="${gain >= 0 ? 'vert' : 'rouge'}">${gain >= 0 ? '+' : '−'}${argent(Math.abs(gain), 0)}</b></div>` : ''}</div>
       <button class="btn" id="fc-vendre">${tt('Vendre sur eBay', 'Sell on eBay')}</button>
       <div class="sous" style="text-align:center">${tt('L’annonce se fait avec ce que l’app sait déjà : photos, titre, prix. Tu vérifies avant de publier.', 'The listing uses what the app already knows: photos, title, price. You check before publishing.')}</div>
-      <button class="plus" id="fc-modif">${tt('Modifier', 'Edit')}</button></div>`);
+      <div class="fc-liens"><button class="plus" id="fc-photo">${ICONES.photo}${tt('Changer la photo', 'Change the photo')}</button><button class="plus" id="fc-modif">${tt('Modifier', 'Edit')}</button></div></div>`);
   $('#fc-vendre').onclick = () => { fermerFeuille(); vendreDepuisCollection(c.id); };
+  $('#fc-photo').onclick = () => { fermerFeuille(); ouvrirScanner({but:'photo', cid:c.id}); };
   $('#fc-modif').onclick = () => feuilleCarte(c);
 }
 function vendreDepuisCollection(id){
