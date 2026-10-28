@@ -296,7 +296,17 @@ def tendances():
 
 
 # -- 5. collection ---------------------------------------------------------------------------------------------
+_NOTE_COLL = {}
+
+
 def noter_collection(api, valeur, cout, nb):
+    # 28 oct 2026 (vitesse) : une ecriture sur le disque a chaque ouverture de l'accueil -> au plus toutes les 30 min, ou si ca change
+    import time as _t
+    cle, v = getattr(api, "chemin_db", None) or "x", (round(valeur or 0, 2), round(cout or 0, 2), int(nb or 0), datetime.now().strftime("%Y-%m-%d"))
+    avant = _NOTE_COLL.get(cle)
+    if avant and avant[1] == v and _t.time() - avant[0] < 1800:
+        return
+    _NOTE_COLL[cle] = (_t.time(), v)
     c = _cx(api)
     try:
         c.execute("INSERT OR REPLACE INTO valeur_historique VALUES (?,?,?,?)", (datetime.now().strftime("%Y-%m-%d"), round(valeur or 0, 2),

@@ -21,9 +21,11 @@ a._push = lambda t, x, d=None: pushs.append((t, d)) or 1
 ebay_offres.eligibles = lambda force=False: {"ok": True, "ids": ["111", "222"]}
 ebay_offres.recentes = lambda jours=3: set()
 
-# reglages : par defaut tout est coche ; on decoche et on regle le seuil
+# reglages : par defaut tout est coche SAUF les alertes promotionnelles (28 oct 2026, Apple 4.5.4) ; on les coche pour la suite
 r = a.alarmes_lire()["alarmes"]
-assert all(r[k] for k in alarmes.TYPES) and r["seuil_deal"] == 40
+assert r["gros_deal"] is False and r["en_feu"] is False and r["seuil_deal"] == 40
+assert all(r[k] for k in alarmes.TYPES if k not in ("gros_deal", "en_feu"))
+a.alarmes_regler({"gros_deal": True, "en_feu": True})
 r = a.alarmes_regler({"vendu": False, "seuil_deal": 55, "nimporte": True})["alarmes"]
 assert r["vendu"] is False and r["seuil_deal"] == 55 and "nimporte" not in r
 

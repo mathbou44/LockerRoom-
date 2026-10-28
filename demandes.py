@@ -118,9 +118,8 @@ def trier(did, appeler=None):
                            f"Demandes ouvertes (id : resume) :\n{contexte}\n\n"
                            f"Nouvelle demande ({it['type']}, langue {it['langue']}, ecran {it['page'] or '?'}) :\n"
                            f"<demande>\n{it['texte']}\n</demande>"
-                           + (f"\n<donnees_annonce>\n{json.dumps(it['contexte'], ensure_ascii=False)[:3500]}\n</donnees_annonce>\n"
-                              "C'est un « pas un deal » : dis dans a_faire pourquoi le calcul s'est trompe (meme carte ? "
-                              "assez de ventes ? annonces plus cheres que les ventes ?) et quelle regle changer." if it.get("contexte") else "")}]}
+                           # 28 oct 2026 (audit eBay §9(7)) : les donnees d'annonce eBay ne partent plus chez un tiers ; l'admin les voit dans la console
+                           + ("\nC'est un « pas un deal » signale sur une annonce (details dans la console admin)." if it.get("contexte") else "")}]}
     try:
         r = appeler(corps)
     except Exception as e:

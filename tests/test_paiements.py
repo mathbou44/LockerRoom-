@@ -124,7 +124,7 @@ SCRIPT = textwrap.dedent('''
     r = c2.post("/demo", data={"code": "DEMO-2026"})
     assert r.status_code == 302
     f = c2.post("/api/forfait", json=[]).get_json()
-    assert f["demo"] and f["pro"], f
+    assert f["demo"] and not f["pro"], f          # 28 oct 2026 : compte demo GRATUIT (Apple doit voir l achat integre)
     assert len(c2.post("/api/inventaire_liste", json=[]).get_json()) >= 5
     # supprimer son compte dans l'app (Apple 5.1.1(v))
     assert not c2.post("/api/compte_supprimer", json=["non"]).get_json()["ok"]

@@ -79,7 +79,22 @@ VIDES = set("the a an of and with for in on card cards hockey nhl nba nfl mlb fo
             "canada usa us read description see photos pic pics pictures box".split())
 
 
+_NORM = {}
+
+
 def norm(t):
+    """28 oct 2026 (vitesse) : garde en memoire (les memes titres reviennent sans cesse)."""
+    if isinstance(t, str):
+        r = _NORM.get(t)
+        if r is None:
+            if len(_NORM) > 80000:
+                _NORM.clear()
+            r = _NORM[t] = _norm(t)
+        return r
+    return _norm(t)
+
+
+def _norm(t):
     t = unicodedata.normalize("NFKD", str(t or "")).encode("ascii", "ignore").decode().lower()
     t = t.replace("&", " and ").replace("’", "'")
     t = re.sub(r"[^a-z0-9#/.\- ]+", " ", t)
@@ -572,9 +587,14 @@ def _noms_famille():
     return _FAM["t"]
 
 
+_GEN_DEUX = {"s": None}
+
+
 def _deux_noms(t):
     """« Celebrini / Will Smith » : deux noms separes par « / » (pas « auto/patch », « w/ », ni un /99)."""
-    gen = GENERIQUES | VIDES | set(PARALLELES) | set(PRODUITS) | {"auto", "autograph", "patch", "jersey", "relic", "rc", "rookie", "mem"}
+    gen = _GEN_DEUX["s"]
+    if gen is None:              # 28 oct 2026 (vitesse) : l'ensemble est construit une fois (avant : a chaque titre)
+        gen = _GEN_DEUX["s"] = GENERIQUES | VIDES | set(PARALLELES) | set(PRODUITS) | {"auto", "autograph", "patch", "jersey", "relic", "rc", "rookie", "mem"}
     for g, d in re.findall(r"(?<![a-z])([a-z]{3,})\s*/\s*([a-z]{3,})(?![a-z])", t):
         if g not in gen and d not in gen:
             return True
@@ -600,12 +620,21 @@ _EQUIPES_MOTS = {"t": None}
 _RE_NOMS = {"rx": None}
 
 
+_NOMS_MEMO = {}
+
+
 def _noms_dans(t):
     """Les joueurs connus nommes dans un titre (une seule expression pour tous : rapide)."""
     if _RE_NOMS["rx"] is None:
         noms = _joueurs_connus()
         _RE_NOMS["rx"] = re.compile(r"(?<![a-z0-9])(" + "|".join(re.escape(n) for n in noms) + r")(?![a-z0-9])") if noms else False
-    return _RE_NOMS["rx"].findall(t) if _RE_NOMS["rx"] else []
+        _NOMS_MEMO.clear()
+    r = _NOMS_MEMO.get(t)            # 28 oct 2026 (vitesse) : le meme titre revient des centaines de fois (deals, tendances)
+    if r is None:
+        if len(_NOMS_MEMO) > 60000:
+            _NOMS_MEMO.clear()
+        r = _NOMS_MEMO[t] = list(_RE_NOMS["rx"].findall(t)) if _RE_NOMS["rx"] else []
+    return list(r)
 
 
 def joueur_du_titre(titre, joueur=None):

@@ -9,8 +9,8 @@ fait mieux :
 - un écran « Pas de connexion » apparaît avec un bouton Réessayer ;
 - les alertes de prix arrivent en notification.
 
-Chaque mise à jour du site met l'app à jour sans repasser par Apple. Il faut repasser par Apple seulement si on
-change une partie native (icône, plugins, permissions).
+Le contenu (deals, valeurs, textes) se met à jour par le serveur. Toute NOUVELLE fonction importante se soumet à
+Apple avec une nouvelle version (règle 2.5.2 : ne jamais écrire ailleurs que l'app change sans revue).
 
 **Achats dans l'app iPhone : par Apple seulement.** Au Canada, Apple interdit les boutons, prix et liens qui mènent à
 Stripe (l'app n'en montre aucun). Le Pro s'achète DANS l'app avec l'identifiant Apple (achat intégré, règle 3.1.3(b)) :
@@ -116,8 +116,10 @@ Les clés restent dans Render, jamais dans GitHub.
 **Nom :** SlabCoach
 **Sous-titre (30 car.) :** Cartes sportives : vrais prix
 **Catégorie :** Sports (secondaire : Affaires)
-**Âge :** réponds au questionnaire honnêtement. Jeux d'argent : *aucun* (l'app analyse des produits achetés ailleurs ;
-rien ne se mise ni ne se gagne dans l'app). Accès Web sans restriction : *non* (seulement des annonces eBay précises,
+**Âge :** réponds au questionnaire honnêtement. Jeux d'argent réels : *aucun* (aucune mise, aucun paiement, aucun prix
+dans l'app). Mais l'app sert aussi aux breakers : ils y notent les places vendues ailleurs et font le TIRAGE des équipes.
+Si le questionnaire demande « jeux de hasard simulés » ou « concours », lis bien la définition : ce n'est pas un jeu dans
+l'app, mais ne cache pas les breaks. Le résultat sera probablement 9+ ou 12+ : ne le force pas. Accès Web sans restriction : *non* (seulement des annonces eBay précises,
 dans une fenêtre Safari intégrée). Contenu généré par les utilisateurs : *non*. Le résultat sera probablement 4+ ou 9+ :
 ne le force pas.
 
@@ -170,29 +172,38 @@ et une Valeur avec tes vraies données (le compte démo n'a pas de deals). Ne pl
 (ancien logo LockerRoom, nouvelles RDS, « valeur attendue »).
 
 ## Notes pour l'examen d'Apple (Review Notes, en anglais)
+28 oct 2026 (audit) : compte démo GRATUIT (l'équipe d'Apple doit voir l'achat intégré), natif mis en avant, breaks
+décrits honnêtement. Remplace <TON CODE> par la valeur de LOCKERROOM_DEMO_CODE (Render).
 ```
-SlabCoach is a tool for sports card collectors and sellers: real-sales card values, deals, break odds, inventory.
+SlabCoach is a tool for sports card collectors, sellers and breakers: real-sales card values, deals, break pricing
+and odds, inventory and profit.
 
-Sign-in: Sign in with Apple, or the user's own eBay account (eBay's official OAuth page) when they want their
-listings and sales imported. Google sign-in is hidden in the iOS app.
+DEMO ACCOUNT: on the sign-in screen tap "Code de démonstration" and enter: <TON CODE>.
+It is a FREE account (trial ended) with sample inventory, breaks and sales, so you can see the In-App Purchase.
+No eBay account is needed.
 
-Demo access: on the sign-in screen tap "Code de démonstration" and enter: <TON CODE>.
-It is a full Pro account with sample inventory, breaks and sales (no eBay account needed).
+IN-APP PURCHASE: SlabCoach Pro (auto-renewable subscription, monthly, product com.slabcoach.app.pro.mensuel).
+Where to find it: Profile tab (bottom right) > "Mon forfait" > "Voir le Pro" (also the "Pro" badges in the app). The sheet shows the
+price, period, auto-renewal terms, Terms of Use, Privacy Policy and "Restore purchases". The app shows no other way
+to pay and no external prices.
 
-In-App Purchase: SlabCoach Pro (auto-renewable, monthly) is offered in the app through In-App Purchase.
-The app has no buttons, prices or links to other payment methods.
+NATIVE FEATURES (beyond the web content):
+- Live card scanner: the camera opens inside the app, guides the user (light, glare, angle), captures automatically
+  when the card is sharp and straight, then crops and straightens the card into a clean "studio" photo.
+- Push notifications for price alerts (opt-in, max 3 per day, none at night).
+- In-App Purchase (StoreKit) with restore and subscription management.
+- Sign in with Apple; Google and eBay sign-in run in SFSafariViewController (no password in the app).
+- Native share sheet, haptics, in-app Safari view for listings, offline screen with retry.
 
-Native features: price-alert push notifications, Sign in with Apple, native share sheet, in-app Safari view for
-listings, camera / photo library to identify cards, haptics, offline screen with retry.
+PRIVACY: card photos are sent to a third-party AI (Anthropic) only after an explicit in-app permission ("Read the
+card with AI?"), withdrawable in Settings. Support messages may be sorted by the same AI (stated in the form and in
+the privacy policy). Promotional alerts (deals) are off until the user turns them on.
 
-Privacy: card photos are sent to a third-party AI (Anthropic) ONLY after an explicit in-app permission
-("Read the card with AI?"); it can be withdrawn in Settings. Sharing anonymous sold prices is asked once,
-off unless the user says yes.
+ACCOUNT DELETION: Profile > Account and help > Delete my SlabCoach account (immediate; Sign in with Apple tokens are
+revoked).
 
-Account deletion: Settings > Account and help > Delete my SlabCoach account (immediate; Sign in with Apple tokens
-are revoked).
-Breaks: the app only analyzes the odds of products users buy elsewhere; there is no gambling, betting or paid
-chance in the app.
+BREAKS: breakers use the app to price spots, record spots they sold on their own channels and run the random team
+assignment. No payment, wager, bet or prize happens in the app.
 ```
 
 ## Confidentialité de l'app (App Store Connect › Confidentialité de l'app)

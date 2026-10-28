@@ -121,10 +121,19 @@ def _maintenant():
     return datetime.now().isoformat(timespec="seconds")
 
 
+_BASES_PRETES = set()      # 28 oct 2026 (vitesse) : schema et migrations verifies une fois par base et par demarrage
+
+
 def _connecter(chemin=None):
-    c = sqlite3.connect(chemin or CHEMIN_DB, timeout=30)
+    p = chemin or CHEMIN_DB
+    c = sqlite3.connect(p, timeout=30)
     c.row_factory = sqlite3.Row
+    if p in _BASES_PRETES and os.path.exists(p):
+        return c
     c.executescript(SCHEMA)
+    # 28 oct 2026 (vitesse) : index des places et frappes (la liste des breaks faisait 4 sous-requetes par break)
+    c.executescript("CREATE INDEX IF NOT EXISTS places_break ON places(break_id, vendu); "
+                    "CREATE INDEX IF NOT EXISTS frappes_break ON frappes(break_id, envoye);")
     cols = {r[1] for r in c.execute("PRAGMA table_info(breaks)")}
     if "catalogue_id" not in cols:                 # 18 oct 2026 - break fait a partir du catalogue
         c.execute("ALTER TABLE breaks ADD COLUMN catalogue_id TEXT")
@@ -164,6 +173,7 @@ def _connecter(chemin=None):
         if col not in {r[1] for r in c.execute(f"PRAGMA table_info({table})")}:
             c.execute(f"ALTER TABLE {table} ADD COLUMN {col} {typ}")
     c.commit()
+    _BASES_PRETES.add(p)
     return c
 
 
@@ -235,6 +245,8 @@ def _niveau(resume, info):
     if f in ("silver", "argent", "collector"):
         return "silver"
     return "gold" if (resume or {}).get("pro") else "bronze"
+
+LIER = {}          # 28 oct 2026 : jetons a usage unique pour relier eBay depuis l'app iPhone (jeton -> (compte, le))
 
 class Api:
     def __init__(self, chemin_db=None):
@@ -313,7 +325,8 @@ class Api:
         except Exception:
             prix = None
         import forfaits
-        return {**forfaits.resume(), "multi": multi, "admin": self._est_admin(),
+        import ventes_communaute
+        return {**forfaits.resume(), "multi": multi, "admin": self._est_admin(), "communaute": ventes_communaute.actif(),
                 # 27 oct 2026 - revue legale : logos et photos de la LNH = marques et contenu de la LNH (conditions : usage
                 # non commercial) -> coupes par defaut ; seulement avec une licence (LOCKERROOM_LOGOS_LNH=1)
                 "logos_lnh": os.environ.get("LOCKERROOM_LOGOS_LNH") == "1",
@@ -2536,6 +2549,19 @@ class Api:
         except RuntimeError as e:
             return {"ok": False, "erreur": str(e)}
 
+    def ebay_jeton_lier(self):
+        """28 oct 2026 : un jeton a usage unique (10 min) pour relier eBay dans le navigateur securise de l'iPhone."""
+        cid = comptes.courant()
+        if not cid:
+            return {"ok": False, "erreur": "Connexion requise"}
+        import secrets as _s
+        import time as _t
+        for k in [k for k, v in LIER.items() if _t.time() - v[1] > 600]:
+            LIER.pop(k, None)
+        j = _s.token_urlsafe(24)
+        LIER[j] = (cid, _t.time())
+        return {"ok": True, "jeton": j}
+
     def ebay_terminer(self, texte, etat=None):
         try:
             return ebay_compte.terminer_connexion(texte, etat)
@@ -2884,8 +2910,15 @@ class Api:
         import alarmes
         return {"ok": True, "envoyees": alarmes.verifier(self)}
 
+    _TENDANCES = {"le": 0.0, "v": None}
+
     def tendances(self):
-        return marche.tendances()
+        """28 oct 2026 (vitesse) : 2 a 6 s de calcul, le meme resultat pour tous les comptes : garde 15 min."""
+        import time as _t
+        T = Api._TENDANCES
+        if T["v"] is None or _t.time() - T["le"] > 900:
+            T["v"], T["le"] = marche.tendances(), _t.time()
+        return T["v"]
 
     def pouls(self, langue=None):
         """27 oct 2026 : le pouls du hobby (segments qui chauffent, mesures sur ventes reelles)."""
@@ -3347,7 +3380,7 @@ class Api:
             if joueurs and not any(j in t or j.split()[-1] in t.split() for j in joueurs):
                 continue
             if sortes:
-                d = cartes_match.decoder(x.get("titre") or "")
+                d = cartes_match._decoder_memo(x.get("titre") or "")
                 a = {"recrue": bool(d.get("rc")) or "young guns" in t or "rookie" in t, "auto": bool(d.get("auto")),
                      "patch": bool(d.get("patch")), "numerotee": d.get("serie") is not None, "gradee": bool(d.get("grade")),
                      "brute": not d.get("grade")}
@@ -3606,7 +3639,8 @@ class Api:
         deals.sort(key=lambda d: -d["gain"])
         depense = round(sum(a["cout"] or 0 for a in achats) + (dep or 0), 2)
         valeur = round(sum((a.get("valeur") or a.get("prix_demande") or 0) for a in achats), 2)
-        return {"mois": m0, "deals": deals, "nb_deals": len(deals), "gain_deals": round(sum(max(0, d["gain"]) for d in deals), 2),
+        # 28 oct 2026 (vitesse) : l'accueil en montre au plus 24 ; avant, les ~800 deals partaient a chaque ouverture (1,6 Mo)
+        return {"mois": m0, "deals": deals[:24], "nb_deals": len(deals), "gain_deals": round(sum(max(0, d["gain"]) for d in deals), 2),
                 "achats": {"n": len(achats), "depense": depense, "valeur": valeur,
                            "latent": round(sum(((a.get("valeur") or a.get("prix_demande") or 0) * (1 - fp) - ff - (a["cout"] or 0))
                                              for a in achats if a.get("valeur") or a.get("prix_demande")), 2)},

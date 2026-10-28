@@ -35,6 +35,10 @@ _CACHE = {"mt": None, "d": {}}
 def lire():
     """26 oct 2026 : en memoire tant que le fichier ne change pas (lu des milliers de fois par analyse de break :
     le relire a chaque carte rendait l'ecran tres lent en ligne, jusqu'a l'erreur du serveur)."""
+    import time as _t
+    if _CACHE.get("vu") and _t.time() - _CACHE["vu"] < 2.0 and _CACHE["mt"] is not None:
+        return _CACHE["d"]           # 28 oct 2026 (vitesse) : la date du fichier regardee au plus toutes les 2 s (avant : ~26 000 fois)
+    _CACHE["vu"] = _t.time()
     try:
         mt = os.path.getmtime(_chemin())
     except OSError:

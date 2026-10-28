@@ -22,6 +22,13 @@ import time
 from datetime import datetime, timedelta
 
 FRAICHEUR_S = 24 * 3600
+
+
+def actif():
+    """28 oct 2026 (audit eBay, contrat de licence §8.1) : la mise en commun des ventes des comptes connectes est
+    COUPEE tant qu'eBay ne l'a pas permise par ecrit. Chaque vendeur voit seulement SES ventes (permis : ses donnees, a
+    lui). LR_VENTES_COMMUNAUTE=1 pour la rallumer apres l'accord d'eBay."""
+    return os.environ.get("LR_VENTES_COMMUNAUTE") == "1"
 JOURS = 365
 _verrou = threading.Lock()
 _ETAT = {"en_cours": False}
@@ -84,6 +91,10 @@ def _partage(c):
 
 
 def rafraichir():
+    if not actif():
+        _ETAT["vide"] = False
+        _vider_une_fois()
+        return {"ok": True, "ventes": 0, "comptes": 0, "coupe": True}
     import cartes_match
     sel = _sel()
     depuis = (datetime.now() - timedelta(days=JOURS)).strftime("%Y-%m-%d")
@@ -143,6 +154,9 @@ def statut():
 
 
 def rafraichir_si_besoin():
+    if not actif():
+        _vider_une_fois()
+        return False
     st = statut()
     try:
         age = time.time() - datetime.fromisoformat(str(st.get("maj"))).timestamp()
@@ -163,6 +177,48 @@ def rafraichir_si_besoin():
     return True
 
 
+def _vider_une_fois():
+    """Coupee : les ventes mises en commun sont effacees du serveur (une fois par demarrage)."""
+    if _ETAT.get("vide"):
+        return
+    _ETAT["vide"] = True
+    try:
+        with _verrou:
+            c = _cx()
+            try:
+                c.execute("DELETE FROM ventes")
+                c.execute("INSERT OR REPLACE INTO etat VALUES ('comptes', '0')")
+                c.commit()
+            finally:
+                c.close()
+    except sqlite3.Error:
+        pass
+
+
+def _miennes(nom):
+    """Les ventes du compte connecte seulement (sa propre base)."""
+    import lockerroom
+    try:
+        c = sqlite3.connect("file:" + lockerroom.chemin_db_env() + "?mode=ro", uri=True, timeout=10)
+        c.row_factory = sqlite3.Row
+        try:
+            depuis = (datetime.now() - timedelta(days=JOURS)).strftime("%Y-%m-%d")
+            rows = c.execute("SELECT titre, joueur, prix_vendu, vendu_le, photo FROM cartes WHERE statut='Vendue' AND prix_vendu > 0 "
+                             "AND COALESCE(vendu_le,'') >= ? ORDER BY vendu_le DESC LIMIT 2000", (depuis,)).fetchall()
+        finally:
+            c.close()
+    except sqlite3.Error:
+        return []
+    import cartes_match
+    out = []
+    for r in rows:
+        t = r["titre"] or r["joueur"] or ""
+        if t and nom in cartes_match.norm(t):
+            out.append({"titre": t[:200], "prix": round(float(r["prix_vendu"] or 0), 2), "vendu_le": str(r["vendu_le"] or "")[:10],
+                        "photo": r["photo"] if str(r["photo"] or "").startswith("http") else None})
+    return out[:400]
+
+
 def chercher(titre, requete=False, n=12):
     """Les MEMES cartes vendues : {ventes:[{titre, prix, le, photo}], mediane, nb, derniere}.
     titre = le titre d'une annonce, ou (requete=True) ce que l'utilisateur a tape (« will smith young guns »)."""
@@ -171,15 +227,18 @@ def chercher(titre, requete=False, n=12):
     nom = (joueur.split() or [""])[-1]
     if len(nom) < 3:
         return {"ventes": [], "mediane": None, "nb": 0}
-    try:
-        c = _cx()
+    if not actif():
+        rows = _miennes(nom)
+    else:
         try:
-            rows = [dict(r) for r in c.execute("SELECT titre, prix, vendu_le, photo FROM ventes WHERE titre_n LIKE ? "
-                                               "ORDER BY vendu_le DESC LIMIT 400", (f"%{nom}%",))]
-        finally:
-            c.close()
-    except sqlite3.Error:
-        return {"ventes": [], "mediane": None, "nb": 0}
+            c = _cx()
+            try:
+                rows = [dict(r) for r in c.execute("SELECT titre, prix, vendu_le, photo FROM ventes WHERE titre_n LIKE ? "
+                                                   "ORDER BY vendu_le DESC LIMIT 400", (f"%{nom}%",))]
+            finally:
+                c.close()
+        except sqlite3.Error:
+            return {"ventes": [], "mediane": None, "nb": 0}
     if requete:
         cib = cartes_match.cible(titre)
         memes = [r for r in rows if not cartes_match.raisons_refus(cib, r["titre"] or "")]

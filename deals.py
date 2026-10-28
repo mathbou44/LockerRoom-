@@ -72,6 +72,10 @@ _BANNIS = {"mt": None, "s": set()}
 
 
 def _bannis():
+    # 28 oct 2026 (vitesse) : un seul coup d'oeil au fichier par seconde (avant : un par deal, ~1 900 par ecran)
+    if time.time() - _BANNIS.get("vu", 0) < 1.0:
+        return _BANNIS["s"]
+    _BANNIS["vu"] = time.time()
     try:
         mt = os.path.getmtime(_chemin())
     except OSError:
@@ -367,7 +371,9 @@ class Bassin:
                 continue
             self.vus.add(k)
             self.n += 1
-            tl = cartes_match.norm(v["titre"])
+            if self.n % 2000 == 0:
+                time.sleep(0.003)            # 28 oct 2026 (vitesse) : laisse respirer les requetes des utilisateurs (meme processus)
+            tl = cartes_match._norm(v["titre"])     # sans la memoire de norm() : 150 000 titres vus une seule fois
             e = (" " + tl + " ", v["titre"], float(v["prix"]), v.get("le"), v.get("photo"), v.get("url"))
             for w in set(tl.split()):
                 if len(w) >= 4 and w.isalpha():
@@ -433,6 +439,16 @@ VERIF_JOUR = 40                  # recherches SoldComps ciblees par jour pour co
 PART_HITS = 0.85                 # 28 oct 2026 : la part gardee pour les hits (0,6 -> 0,85 : « encore juste des Young Guns » ; les YG ont deja leurs ventes connues)
 
 
+def _jour_mtl():
+    """(jour, heure decimale) a Montreal : le budget de verification suit la journee des acheteurs."""
+    try:
+        from zoneinfo import ZoneInfo
+        m = datetime.now(ZoneInfo("America/Toronto"))
+    except Exception:
+        m = datetime.now(timezone.utc) - timedelta(hours=4)
+    return m.strftime("%Y-%m-%d"), m.hour + m.minute / 60
+
+
 def _verificateur(d, st, bassin):
     """Une annonce qui a l'air d'un deal mais sans 2 ventes connues de la MEME carte : une recherche SoldComps de CETTE
     carte (budget : LR_DEALS_VERIF_JOUR, 40 par jour par defaut), puis on la juge sur ses vraies ventes."""
@@ -442,18 +458,21 @@ def _verificateur(d, st, bassin):
         max_ = int(os.environ.get("LR_DEALS_VERIF_JOUR") or VERIF_JOUR)
     except ValueError:
         max_ = VERIF_JOUR
-    jour = datetime.now().strftime("%Y-%m-%d")
+    jour, heure = _jour_mtl()
     v = d.setdefault("verif", {})
     if v.get("jour") != jour:
         v.clear()
         v.update(jour=jour, n=0)
+    # 28 oct 2026 (« vraiment tous les deals, pas juste Future Watch et Young Guns ») : le budget du jour (journee de
+    # Montreal) est etale : il en reste toujours pour le soir, quand finissent la plupart des encans
+    rythme = max_ * min(1.0, (heure + 4) / 24)
     faites = set()
 
     def f(cib):
         q = (cartes_match.requete_ebay(cib) or "").strip()
         if not q or q in faites:
             return None
-        if v["n"] >= max_:
+        if v["n"] >= max_ or v["n"] >= rythme:
             st["verif_budget"] = st.get("verif_budget", 0) + 1
             return None
         # 28 oct 2026 : 60 % du budget du jour est garde pour les hits (autos, patchs, /99) : les Young Guns ont deja
@@ -471,6 +490,8 @@ def _verificateur(d, st, bassin):
             v["n"] += 1
             if not hit:
                 v["n_std"] = v.get("n_std", 0) + 1
+        if hit:
+            st["hits_verifies"] = st.get("hits_verifies", 0) + 1
         st["verifs"] = st.get("verifs", 0) + 1
         bassin.ajouter(r.get("ventes"))
         return r.get("ventes") or []
@@ -539,6 +560,9 @@ def _juger(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=N
     st["annonces"] = st.get("annonces", 0) + 1
     if a.get("encan"):
         st["encans_fen"] = st.get("encans_fen", 0) + 1
+    est_hit = _hit(cib)
+    if est_hit:
+        st["hits_vus"] = st.get("hits_vus", 0) + 1
     tout_v = list(brut_v or []) + (bassin.candidats(cib) if bassin else [])
     va = valeur_annonce(a, tout_v, actives, cib=cib)
     if not va and verif:
@@ -565,7 +589,7 @@ def _juger(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=N
         pa2 = [_total(x) for x in actives or [] if x.get("item_id") != a.get("item_id")
                and not cartes_match.raisons_refus(cib, x.get("titre") or "")]
         bas = bool(pa2) and t <= (cartes_match.mediane_robuste(pa2)[0] or 0) * 0.75
-        if bas or (r.get("vedette") and t >= 40):
+        if bas or (r.get("vedette") and t >= 40) or t >= 60:     # 28 oct : tout hit de 60 $ et plus (le budget est plus gros)
             st.setdefault("_tard", []).append((a, r, cib))
     if not va:
         st["sans_ventes"] = st.get("sans_ventes", 0) + 1
@@ -583,6 +607,8 @@ def _juger(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=N
                                                          "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION, "palier": "pres"}
         return
     st["deals"] = st.get("deals", 0) + 1
+    if est_hit:
+        st["hits_deals"] = st.get("hits_deals", 0) + 1
     import sports
     joueur = r.get("joueur") or " ".join(w.capitalize() for w in cib["joueur"].split())
     sport = r.get("sport") or sports.detecter(a.get("titre") or "", defaut="hockey")
@@ -822,7 +848,7 @@ def vendeurs_suivis():
     e = os.environ.get("LR_DEALS_VENDEURS")
     if e:
         return [x.strip() for x in e.split(";") if x.strip()]
-    v = lire().get("vendeurs")
+    v = lire_vite().get("vendeurs")
     return list(v) if isinstance(v, list) else list(VENDEURS_DEFAUT)
 
 
@@ -970,13 +996,14 @@ def recharger():
 def etat():
     """Pour l'admin : ou en est le chasseur (deals affiches, budget eBay et budget de verification du jour)."""
     import appels_ebay
-    d = lire()
+    d = lire_vite()
     try:
         vmax = int(os.environ.get("LR_DEALS_VERIF_JOUR") or VERIF_JOUR)
     except ValueError:
         vmax = VERIF_JOUR
     v = d.get("verif") or {}
-    jour = datetime.now().strftime("%Y-%m-%d")
+    jour = _jour_mtl()[0]
+    g = diagnostic(d)
     import cartes_match
     rep = {"young_guns": 0, "recrues": 0, "hits": 0, "veterans": 0}
     for x in d.get("deals") or []:
@@ -984,17 +1011,30 @@ def etat():
             continue
         rep[sorte(x.get("titre"))] += 1
     return {"ok": True, "en_cours": _ETAT["en_cours"], "maj": d.get("maj"), "repartition": rep,
+            "hits_24h": {"vus": g.get("hits_vus", 0), "verifies": g.get("hits_verifies", 0), "deals": g.get("hits_deals", 0)},
             "deals": sum(1 for x in d.get("deals") or [] if valide(x) and encore_ouvert(x)),
             "ebay": utilises_ebay(), "ebay_rythme": round(appels_ebay.rythme("browse")),
             "ebay_plafond": round(appels_ebay.limite("browse") * (1 - appels_ebay.RESERVE_GESTES)),
             "verif": v.get("n", 0) if v.get("jour") == jour else 0, "verif_max": vmax}
 
 
+_SORTES = {}
+
+
 def sorte(titre):
     """young_guns | recrues | hits | veterans : pour la repartition (admin) et le melange de l'ecran Deals."""
+    r = _SORTES.get(titre)           # 28 oct 2026 (vitesse) : 800 deals a chaque ecran
+    if r is None:
+        if len(_SORTES) > 20000:
+            _SORTES.clear()
+        r = _SORTES[titre] = _sorte(titre)
+    return r
+
+
+def _sorte(titre):
     import cartes_match
     t = cartes_match.norm(titre or "")
-    c = cartes_match.decoder(titre or "")
+    c = cartes_match._decoder_memo(titre or "")
     s = c.get("serie")
     if c.get("auto") or c.get("patch") or (s is not None and int(s) <= 99):
         return "hits"
@@ -1028,7 +1068,7 @@ def utilises_ebay():
 
 def chasser_si_besoin(force=False):
     """En arriere-plan, au plus une fois par heure, jamais deux a la fois."""
-    d = lire()
+    d = lire_vite()                  # 28 oct 2026 (vitesse) : appele a chaque ecran Deals / Accueil : lecture en cache
     try:
         age = time.time() - datetime.fromisoformat(str(d.get("maj"))).timestamp()
     except ValueError:

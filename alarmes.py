@@ -19,7 +19,8 @@ import time
 from datetime import datetime, timedelta
 
 TYPES = ["prix_cible", "gros_deal", "encan_fin", "en_feu", "acheteurs", "vendu"]
-DEFAUT = {"prix_cible": True, "gros_deal": True, "encan_fin": True, "en_feu": True, "acheteurs": True, "vendu": True, "seuil_deal": 40}
+# 28 oct 2026 (audit Apple 4.5.4) : les alertes « promotionnelles » (deals, joueur en feu) seulement si l'utilisateur les coche
+DEFAUT = {"prix_cible": True, "gros_deal": False, "encan_fin": True, "en_feu": False, "acheteurs": True, "vendu": True, "seuil_deal": 40}
 MAX_JOUR = 3
 NUIT = (22, 8)
 

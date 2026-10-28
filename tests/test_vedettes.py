@@ -32,7 +32,12 @@ class TestVedettes(unittest.TestCase):
         os.environ["LR_DEALS_VERIF_JOUR"] = "10"
         try:
             st = {}
-            f = deals._verificateur({}, st, deals.Bassin(charger=False))
+            vrai_j = deals._jour_mtl
+            deals._jour_mtl = lambda: ("2026-10-28", 23.9)          # fin de journee : le rythme ne limite plus
+            try:
+                f = deals._verificateur({}, st, deals.Bassin(charger=False))
+            finally:
+                deals._jour_mtl = vrai_j
             yg = [f({"texte": f"joueur{i} young guns", "mots": [f"joueur{i}"], "joueur": f"joueur{i}", "auto": False, "patch": False,
                      "serie": None, "annee": 2025, "num": None, "grade": None, "rc": True, "paralleles": set(), "exclu": False,
                      "veut_grade": False, "brute": False, "veut_serie": False, "base": False, "produits": set()}) for i in range(8)]
@@ -76,7 +81,7 @@ class TestVedettes(unittest.TestCase):
         self.assertIn("v1", deals_)                          # 180 $ pour une carte qui se vend ~400 $
         # un hit a prix fixe ordinaire, sans repere : pas de verification (on garde le budget)
         st2 = {}
-        b = dict(a, item_id="v2")
+        b = dict(a, item_id="v2", prix_cad=50.0)                 # 28 oct : sous 60 $, sans repere (a 60 $ et plus, verifie)
         deals._juger(b, {"q": "x", "joueur": "Wayne Gretzky", "sport": "hockey"}, [], [], maint, {}, st2, bassin=deals.Bassin(charger=False), verif=verif)
         self.assertFalse(st2.get("_tard"))
 

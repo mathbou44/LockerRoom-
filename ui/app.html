@@ -136,6 +136,17 @@ details.reglage summary::-webkit-details-marker{display:none}
 .charge{display:flex; justify-content:center; padding:40px}
 /* 28 oct 2026 (Mathieu : « le logo avec le C qui tourne autour du S pour le loading ») */
 .roue{position:relative; display:inline-block; width:30px; height:30px; flex-shrink:0; vertical-align:middle}
+.logo-holo{position:relative; display:inline-block; width:28px; height:28px; flex-shrink:0; vertical-align:middle}
+.logo-holo .lh-c{position:absolute; inset:0; overflow:hidden; isolation:isolate;
+  -webkit-mask:url(/logo_sc_c.svg) center/contain no-repeat; mask:url(/logo_sc_c.svg) center/contain no-repeat}
+.logo-holo .lh-c i{position:absolute; inset:-35%; border-radius:50%; will-change:transform}
+.logo-holo .lh-c i:nth-child(1){background:conic-gradient(from 0deg,#FF8AD8,#A58BFF,#6FD8FF,#9FF2D8,#FFE08A,#FF8AD8); animation:tourne 30s linear infinite}
+.logo-holo .lh-c i:nth-child(2){background:radial-gradient(40% 40% at 30% 30%,rgba(255,255,255,.55),transparent 70%),radial-gradient(35% 35% at 75% 70%,rgba(255,95,210,.5),transparent 70%);
+  animation:tourne 44s linear infinite reverse}
+.logo-holo b{position:absolute; left:27%; top:23%; width:46%; height:54%; background:#F4F1EA;
+  -webkit-mask:url(/logo_sc_s.svg) center/contain no-repeat; mask:url(/logo_sc_s.svg) center/contain no-repeat}
+.moi-av .logo-holo{width:100%; height:100%} .profil-av .logo-holo{width:100%; height:100%} .choix-tete .logo-holo{width:72px; height:72px}
+@media (prefers-reduced-motion:reduce){ .logo-holo .lh-c i{animation:none} }
 .roue::before{content:''; position:absolute; inset:0; background:conic-gradient(from 0deg,var(--h1,#9FE6D2),var(--h2,#B9BEFF),var(--h3,#F2B3D6),var(--h4,#F1D58E),var(--h1,#9FE6D2));
   -webkit-mask:url(/sc_anneau.svg) center/contain no-repeat; mask:url(/sc_anneau.svg) center/contain no-repeat; animation:tourne 1.1s cubic-bezier(.45,.1,.55,.9) infinite}
 .roue::after{content:''; position:absolute; inset:25%; background:#F4F1EA; -webkit-mask:url(/logo_sc_s.svg) center/contain no-repeat; mask:url(/logo_sc_s.svg) center/contain no-repeat}
@@ -1057,7 +1068,7 @@ body.scan-ouvert{overflow:hidden}
 .scan video{transition:filter .4s} .scan.fige video{filter:blur(16px) brightness(.5)} .scan.fige .scan-cadre{box-shadow:0 0 0 200vmax transparent}
 .scan-fige{position:fixed; z-index:2; object-fit:cover; border-radius:16px; transform-origin:0 0; box-shadow:0 18px 50px rgba(0,0,0,.6);
   transition:transform .55s cubic-bezier(.3,.8,.25,1), border-radius .55s; animation:scan-flash .35s ease-out}
-.scan-fige.reduit{border-radius:60px}
+.scan-fige.reduit{border-radius:60px} .scan-fige.studio{object-fit:contain; background:#EDEDEA}
 @keyframes scan-flash{from{filter:brightness(1.8)} to{filter:none}}
 .scan-res{position:absolute; left:0; right:0; bottom:0; z-index:3; max-height:68vh; overflow:auto; padding:18px 16px calc(env(safe-area-inset-bottom) + 16px);
   background:var(--fond, #0B0B0E); border-radius:22px 22px 0 0; display:flex; flex-direction:column; gap:12px; transform:translateY(100%); transition:transform .35s cubic-bezier(.3,.8,.25,1)}
@@ -1986,7 +1997,10 @@ const LECTURES = new Set(['accueil', 'acheteur_accueil', 'activites', 'conseils'
   'admin_resume', 'admin_abonnes', 'admin_demandes', 'admin_catalogue', 'admin_sante', 'valeurs_statut', 'portraits_joueurs',
   'etoiles_lire', 'alarmes_lire', 'sante_liste', 'pouls', 'guide_donnees', 'consignataires_liste', 'ebay_avis_statut', 'ebay_appels']);
 const SANS_EFFET = new Set(['deals_etat', 'accueil_live', 'annonce_detail', 'carte_comps', 'valeur_carte', 'joueur_fiche', 'checklist',
-  'catalogue_checklist', 'break_detail', 'photo_statut', 'demandes_reponses', 'demandes_mes', 'ebay_environnement', 'logo_lire', 'prix_auto_lire']);
+  'catalogue_checklist', 'break_detail', 'photo_statut', 'demandes_reponses', 'demandes_mes', 'ebay_environnement', 'logo_lire', 'prix_auto_lire',
+  // 28 oct 2026 (vitesse) : ces appels ne changent rien a ce que les ecrans affichent : ils ne vident plus la memoire
+  'push_enregistrer', 'calculer_prix', 'calculer_catalogue', 'carte_lire', 'rachat_calculer', 'clients_liste', 'break_ventes_joueur',
+  'apple_achat_info', 'bilan_csv', 'break_envois', 'psa_cert', 'ebay_jeton_lier', 'deals_etat']);
 const MEMO = new Map(), MEMO_MAX_MS = 10 * 60 * 1000;
 const RECETTES = (() => { try { return JSON.parse(localStorage.getItem('lr_recettes') || '{}'); } catch (e) { return {}; } })();
 function noterRecette(nom, corps){
@@ -2162,6 +2176,9 @@ const MOTIFS_SC = ['prizm', 'cracked', 'laser', 'mosaic', 'mojo', 'wave', 'pulsa
 const LOGO_SC = '/logo_sc_holo.svg';
 const MOT_SC = '<span class="mot-sc" role="img" aria-label="SlabCoach"><b>slab</b>coach<sup>™</sup><span class="sc-tag">SPORTS CARDS</span></span>';
 function htmlPiece(){ return `<img src="${LOGO_SC}" alt="">`; }
+// 28 oct 2026 (vitesse : le logo anime en image SVG occupait ~25 % du processeur du telephone) : le film holographique
+// est fait en CSS (degrades qui tournent sur la carte graphique, masques par le C) : meme effet, ~0 % du processeur
+const LOGO_HOLO = (cls = '') => `<span class="logo-holo ${cls}" aria-hidden="true"><span class="lh-c"><i></i><i></i></span><b></b></span>`;
 function piecesNiveau(){ document.querySelectorAll('.piece-sc').forEach(el => el.style.setProperty('--masque', 'url(/logo_sc_gold_poli.png)')); }
 const C_ANNEAU = 97.39;
 function anneau(taille, p, cls=''){
@@ -2321,7 +2338,9 @@ async function appliquerMarque(){
   // 28 oct 2026 (Mathieu : « le logo est bizarre ») : dans les ronds (profil, onglet Profil), l'icone carree de l'app etait
   // coupee en cercle ; on y met le logo SlabCoach detoure, centre, et un simple contour
   for (const id of ['nav-moi-img', 'pr-logo']) { const im = $('#' + id); if (!im) continue; const s2 = S.logo || LOGO_SC;
-    if (im.getAttribute('src') !== s2) im.src = s2; if (im.parentElement) im.parentElement.classList.toggle('sc', !S.logo); }
+    if (im.getAttribute('src') !== s2) im.src = s2; const pa = im.parentElement; if (pa) pa.classList.toggle('sc', !S.logo);
+    im.hidden = !S.logo; let h = pa && pa.querySelector('.logo-holo');            // sans logo de boutique : le film holo en CSS
+    if (!S.logo && pa && !h) pa.insertAdjacentHTML('beforeend', LOGO_HOLO()); else if (S.logo && h) h.remove(); }
   // 25 oct 2026 - le logo officiel SlabCoach (avec son reflet or) ; une boutique qui a mis SON logo garde le sien
   const niv = nivLogo(), nl = $('#nav-logo-img'), srcNav = S.logo || LOGO_SC;
   if (nl && nl.getAttribute('src') !== srcNav) nl.src = srcNav;
@@ -2552,7 +2571,7 @@ function majBarreMode(){
     b.hidden = !voir;
     const perso = nomMarque() !== 'SlabCoach';
     b.innerHTML = voir ? `<button class="rond haut-plus" id="h-plus" aria-label="${esc(tt('Ajouter', 'Add'))}">${ICONES.plus}</button>
-      <div class="haut-nom" id="h-nom"><span class="haut-ligne"><img class="haut-logo" src="${esc(perso && S.logo ? S.logo : LOGO_SC)}" alt=""><span class="haut-mot">${perso ? esc(nomMarque()) : '<b>slab</b>coach'}</span></span>
+      <div class="haut-nom" id="h-nom"><span class="haut-ligne">${perso && S.logo ? `<img class="haut-logo" src="${esc(S.logo)}" alt="">` : LOGO_HOLO('haut-logo')}<span class="haut-mot">${perso ? esc(nomMarque()) : '<b>slab</b>coach'}</span></span>
         <span class="haut-bascule" role="tablist" aria-label="${esc(tt('Volet', 'Mode'))}">${['acheteur', 'vendeur'].map(m => `<button role="tab" aria-selected="${S.mode === m}" data-mode-choix="${m}" class="${S.mode === m ? 'on' : ''}">${m === 'acheteur' ? tt('Acheteur', 'Buyer') : tt('Vendeur', 'Seller')}</button>`).join('')}</span></div>
       <button class="rond haut-cloche" data-alertes aria-label="${esc(tt('Alertes', 'Alerts'))}">${ICO_CLOCHE}<i class="pt" id="h-pt" hidden></i></button>` : '';
     const hp = $('#h-plus', b); if (hp) hp.onclick = feuilleAjouter;
@@ -2636,7 +2655,7 @@ function vueChoixMode(){
   majBarreMode();
   const pts = (l) => `<ul>${l.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`;
   V().innerHTML = `<section class="choix-plein"><div class="pref-coin">${htmlPref()}</div>
-    <div class="choix-tete"><img src="${LOGO_SC}" alt=""><h1>${tt('Comment tu utilises SlabCoach ?', 'How do you use SlabCoach?')}</h1>
+    <div class="choix-tete">${LOGO_HOLO('choix-logo')}<h1>${tt('Comment tu utilises SlabCoach ?', 'How do you use SlabCoach?')}</h1>
       <div class="sous">${tt('Tu peux changer en tout temps, d’un tap.', 'You can switch anytime, in one tap.')}</div></div>
     <div class="moities">
       <button class="moitie v" data-choisir="vendeur"><span class="ico">${ICO_MODE.vendeur}</span><b>${tt('Je vends', 'I sell')}</b>
@@ -2752,8 +2771,9 @@ function chargerImage(src){
 }
 // niveaux de gris lisses (flou 3x3) d'une image reduite
 function grisLisse(img, maxCote){
-  const k = Math.min(1, maxCote / Math.max(img.naturalWidth, img.naturalHeight));
-  const w = Math.max(8, Math.round(img.naturalWidth * k)), h = Math.max(8, Math.round(img.naturalHeight * k));
+  const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;     // image ou canvas (scanner en direct)
+  const k = Math.min(1, maxCote / Math.max(iw, ih));
+  const w = Math.max(8, Math.round(iw * k)), h = Math.max(8, Math.round(ih * k));
   const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
   const g = cv.getContext('2d', {willReadFrequently: true}); g.drawImage(img, 0, 0, w, h);
   const d = g.getImageData(0, 0, w, h).data, a = new Float32Array(w * h), b = new Float32Array(w * h);
@@ -2791,7 +2811,7 @@ function affinerCoins(G, q){
   const c = [q.reduce((s, p) => s + p[0], 0) / 4, q.reduce((s, p) => s + p[1], 0) / 4];
   const diag = Math.max(_dist(q[0], q[2]), _dist(q[1], q[3]));
   const d = Math.max(8, Math.round(0.055 * diag)), N = 40;
-  const lignes = [];
+  const lignes = [], cotes = [];
   for (let i = 0; i < 4; i++) {
     const a = q[i], b = q[(i + 1) % 4], L = _dist(a, b);
     const ux = (b[0] - a[0]) / L, uy = (b[1] - a[1]) / L;
@@ -2824,17 +2844,18 @@ function affinerCoins(G, q){
       const sc = score(oa, ob) * Math.exp(-((oa * oa + ob * ob) / 2) / ((1.6 * d) ** 2));
       if (sc > best) { best = sc; ba = oa; bb = ob; }
     }
-    if (best < 3) { lignes.push(null); continue; }
+    if (best < 3) { lignes.push(null); cotes.push(null); continue; }
+    cotes.push({force: best, penche: Math.abs(Math.atan2(bb - ba, L)) * 180 / Math.PI});   // 28 oct : l'angle du bord trouve
     const pa = [a[0] + nx * ba, a[1] + ny * ba], pb = [b[0] + nx * bb, b[1] + ny * bb], l = _dist(pa, pb);
     lignes.push({x: pa[0], y: pa[1], dx: (pb[0] - pa[0]) / l, dy: (pb[1] - pa[1]) / l});
   }
-  if (lignes.every(l => !l)) return {coins: q, affine: false};
+  if (lignes.every(l => !l)) return {coins: q, affine: false, cotes};
   // un cote sans bord net garde sa droite d'origine
   for (let i = 0; i < 4; i++) if (!lignes[i]) { const a = q[i], b = q[(i + 1) % 4], l = _dist(a, b); lignes[i] = {x: a[0], y: a[1], dx: (b[0] - a[0]) / l, dy: (b[1] - a[1]) / l}; }
   const n = [];
   for (let i = 0; i < 4; i++) { const p = _inter(lignes[(i + 3) % 4], lignes[i]); if (!p) return {coins: q, affine: false}; n.push(p); }
   const ok = _convexe(n) && n.every((p, i) => _dist(p, q[i]) < 0.1 * diag);
-  return ok ? {coins: n, affine: true} : {coins: q, affine: false};
+  return ok ? {coins: n, affine: true, cotes} : {coins: q, affine: false, cotes};
 }
 // homographie : rectangle (0..W, 0..H) -> quadrilatere source
 function homographie(W, H, q){
@@ -3742,7 +3763,7 @@ function autresJoueursHtml(a){
   if (!a || !(a.ventes || []).length) return '';
   return `<div class="fen-comps autres-j"><div class="bloc-t">${tt('Même carte, autres joueurs', 'Same card, other players')} <span class="sous">${a.nb} ${tt('ventes', 'sales')} · ${a.joueurs} ${tt('joueurs', 'players')} · ${argentCourt(a.min)} ${tt('à', 'to')} ${argentCourt(a.max)} · ${tt('médiane ', 'median ')}${argentCourt(a.mediane)}</span></div>
     <div class="sous">${tt('Un repère, pas la valeur de cette carte : le prix dépend surtout du joueur.', 'A reference, not this card\'s value: the price depends mostly on the player.')}</div>
-    <div class="grille-c">${a.ventes.map(k => `<a class="tuile-c" href="${esc(k.url || '#')}" target="_blank" rel="noopener"><div class="img">${SVG_CARTE}${k.photo ? `<img src="${esc(photoHD(k.photo))}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
+    <div class="grille-c">${a.ventes.map(k => `<a class="tuile-c" href="${esc(k.url || '#')}" target="_blank" rel="noopener"><div class="img">${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo, 640))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}</div>
       <div class="coin">${capsule(tt('Vendue', 'Sold') + (k.le ? ' · ' + dateCourte(k.le) : ''), 'petit')}</div>
       <div class="corps"><div class="t">${esc(k.joueur || k.titre)}</div><div class="ligne-b"><span class="p">${argent(k.prix, 0)}</span></div></div></a>`).join('')}</div></div>`;
 }
@@ -4522,7 +4543,7 @@ function blocVendues(v, titre){
   const l = (v && v.ventes) || [];
   if (!l.length) return '';
   return `<div class="bloc-t" style="margin-top:6px">${titre || tt('Vendues récemment', 'Recently sold')} <span class="sous">${v.nb} · ${tt('médiane ', 'median ')}${argentCourt(v.mediane)} · ${tt('ventes réelles eBay et SlabCoach', 'real eBay and SlabCoach sales')}</span></div>
-    <div class="grille-c">${l.map(k => `<div class="tuile-c vendue"><div class="img">${SVG_CARTE}${k.photo ? `<img src="${esc(photoHD(k.photo))}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
+    <div class="grille-c">${l.map(k => `<div class="tuile-c vendue"><div class="img">${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo, 640))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}</div>
       <div class="coin">${capsule(tt('Vendue', 'Sold') + (k.le ? ' · ' + dateCourte(k.le) : ''), 'vert petit')}</div>
       <div class="corps"><div class="t">${esc(k.titre)}</div><div class="ligne-b"><span class="p">${argent(k.prix, 0)}</span></div></div></div>`).join('')}</div>`;
 }
@@ -4605,13 +4626,17 @@ async function ouvrirScanner(opts = {}){
   boucle();
 }
 // la zone du cadre, en pixels de la video (la video remplit l'ecran : object-fit cover)
-function scanZone(){
+function scanZone(marge = 0.08){
   const v = $('#scan video'), c = $('#scan-cadre'); if (!v || !c || !v.videoWidth) return null;
   const e = v.getBoundingClientRect(), r = c.getBoundingClientRect();
   const k = Math.max(e.width / v.videoWidth, e.height / v.videoHeight), ox = (e.width - v.videoWidth * k) / 2, oy = (e.height - v.videoHeight * k) / 2;
-  const m = 0.04 * r.width;                                    // un peu de marge autour de la carte
+  const m = marge * r.width;                                  // de la marge autour du cadre : les bords de la carte y sont cherches
   const x = Math.max(0, (r.left - e.left - ox - m) / k), y = Math.max(0, (r.top - e.top - oy - m) / k);
-  return {v, x, y, w:Math.min(v.videoWidth - x, (r.width + 2 * m) / k), h:Math.min(v.videoHeight - y, (r.height + 2 * m) / k)};
+  const w = Math.min(v.videoWidth - x, (r.width + 2 * m) / k), h = Math.min(v.videoHeight - y, (r.height + 2 * m) / k);
+  // le cadre dans cette zone, en 0..1000 (haut-gauche puis sens horaire) : point de depart de la recherche des bords
+  const fx = (px) => Math.round(((px - e.left - ox) / k - x) / w * 1000), fy = (py) => Math.round(((py - e.top - oy) / k - y) / h * 1000);
+  const cadre = [[fx(r.left), fy(r.top)], [fx(r.right), fy(r.top)], [fx(r.right), fy(r.bottom)], [fx(r.left), fy(r.bottom)]];
+  return {v, x, y, w, h, cadre};
 }
 function scanAide(txt, ton){ const a = $('#scan-aide'); if (!a) return; if (a.textContent !== txt) a.textContent = txt; a.dataset.ton = ton || ''; }
 function scanAnalyser(){
@@ -4626,6 +4651,21 @@ function scanAnalyser(){
   let net = 0; for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) { const i = y * W + x; net += Math.abs(4 * gris[i] - gris[i - 1] - gris[i + 1] - gris[i - W] - gris[i + W]); }
   net /= (W - 2) * (H - 2);
   let bouge = 0; if (SCAN.avant) { for (let i = 0; i < n; i += 3) bouge += Math.abs(gris[i] - SCAN.avant[i]); bouge /= n / 3; } else bouge = 99;
+  // 28 oct 2026 (Mathieu : « quand la camera a le bon angle et une vue claire, elle prend l'image toute seule ») : les
+  // 4 bords de la carte sont cherches autour du cadre (la meme methode que le studio photo) ; bon angle = au moins 3 bords
+  // nets, droits (penches de 4 degres au plus) et pres du cadre. Une analyse sur deux (le calcul est un peu plus lourd).
+  let angle = SCAN.angle || {ok:false, raison:'loin'};
+  if ((SCAN.tic = (SCAN.tic || 0) + 1) % 2 === 0 && ecart >= 14) {
+    const zc = SCAN.zoneCv || (SCAN.zoneCv = document.createElement('canvas'));
+    const kz = Math.min(1, 220 / Math.max(z.w, z.h)); zc.width = Math.round(z.w * kz); zc.height = Math.round(z.h * kz);
+    zc.getContext('2d', {willReadFrequently:true}).drawImage(z.v, z.x, z.y, z.w, z.h, 0, 0, zc.width, zc.height);
+    const G = grisLisse(zc, 220), q0 = z.cadre.map(([x, y]) => [x / 1000 * G.w, y / 1000 * G.h]);
+    const r = affinerCoins(G, q0), trouves = r.cotes.filter(Boolean);
+    const penche = Math.max(0, ...trouves.map(c => c.penche));
+    angle = {ok: trouves.length >= 3 && penche <= 4 && r.affine, raison: trouves.length < 3 ? 'loin' : 'penche',
+      quad: r.coins.map(([x, y]) => [Math.round(x / G.w * 1000), Math.round(y / G.h * 1000)])};
+    SCAN.angle = angle;
+  }
   SCAN.avant = gris;
   const photo = SCAN.opts.but === 'photo';
   let ok = false;
@@ -4634,6 +4674,7 @@ function scanAnalyser(){
   else if (brille / n > 0.045) scanAide(tt('Reflet : incline un peu la carte', 'Glare: tilt the card a little'), 'or');
   else if (bouge > 7) { scanAide(tt('Tiens stable…', 'Hold steady…')); SCAN.stable = 0; }
   else if (net < 5) scanAide(tt('Rapproche-toi un peu', 'Move a little closer'));
+  else if (!angle.ok) scanAide(angle.raison === 'penche' ? tt('Redresse la carte : elle est penchée', 'Straighten the card: it’s tilted') : tt('Remplis le cadre avec la carte', 'Fill the frame with the card'));
   else { ok = true; scanAide(photo ? tt('Parfait, ne bouge plus…', 'Perfect, hold still…') : tt('Parfait, ne bouge plus…', 'Perfect, hold still…'), 'vert'); }
   $('#scan-cadre').classList.toggle('pret', ok);
   SCAN.stable = ok ? SCAN.stable + 1 : 0;
@@ -4643,6 +4684,7 @@ function scanAnalyser(){
 }
 function scanPhoto(){
   const z = scanZone(); if (!z) return null;
+  SCAN.quadPhoto = (SCAN.angle && SCAN.angle.ok && SCAN.angle.quad) || z.cadre;    // les coins de la carte dans cette photo (0..1000)
   const r = Math.min(1, 1400 / Math.max(z.w, z.h)), cv = document.createElement('canvas');
   cv.width = Math.round(z.w * r); cv.height = Math.round(z.h * r);
   cv.getContext('2d').drawImage(z.v, z.x, z.y, z.w, z.h, 0, 0, cv.width, cv.height);
@@ -4651,7 +4693,7 @@ function scanPhoto(){
 async function scanCapturer(manuel){
   if (SCAN.etat !== 'cherche') return;
   const ph = scanPhoto(); if (!ph) return;
-  if (SCAN.opts.but === 'photo') { SCAN.etat = 'fige'; scanFiger(ph); return scanConfirmerPhoto(ph); }
+  if (SCAN.opts.but === 'photo') { SCAN.etat = 'fige'; scanFiger(ph); SCAN.ph = ph; const st = await scanStudio(ph); return scanConfirmerPhoto(st || ph); }
   if (!manuel && SCAN.essais >= 3) { scanAide(tt('Pas reconnue : appuie sur le bouton ou cherche par son nom', 'Not recognized: tap the button or search by name'), 'or'); return; }
   SCAN.etat = 'lecture'; SCAN.essais++;
   $('#scan-cadre').classList.add('lit'); scanAide(tt('Lecture de la carte…', 'Reading the card…'), 'vert');
@@ -4670,6 +4712,21 @@ async function scanCapturer(manuel){
   SCAN.etat = 'trouve'; SCAN.ph = ph; SCAN.champs = c; SCAN.q = q;
   scanFiger(ph, true);
   scanResultat(c, q);
+  scanStudio(ph, ((r.photos || [])[0] || {}).coins);
+}
+// 28 oct 2026 (Mathieu : « l'app arrange la photo pour qu'elle soit parfaite, pour une annonce ou pour une super photo
+// en collection ») : la carte est detouree sur ses vrais bords, redressee et posee sur le fond studio (comme les annonces).
+// L'originale est gardee en 2e photo. Coins : ceux de l'IA, sinon ceux trouves en direct par le scanner.
+async function scanStudio(ph, coinsIA){
+  const coins = (coinsIA && coinsIA.length === 4) ? coinsIA : SCAN.quadPhoto;
+  if (!coins) return null;
+  try {
+    const st = await photoStudio(ph, coins);
+    if (!SCAN.actif) return null;
+    SCAN.studio = st.photo;
+    const im = $('#scan-fige'); if (im) { im.classList.add('studio'); im.src = st.photo; }
+    return st.photo;
+  } catch (e) { return null; }
 }
 // l'image fige dans le cadre, puis retrecit en diagonale vers le coin (l'espace libre est pour les comps)
 function scanFiger(ph, retrecir){
@@ -4717,7 +4774,7 @@ async function scanGarder(){
   const c = SCAN.champs || {};
   const p = await API.annonce_preparer(c, typeof LANGUE !== 'undefined' ? LANGUE : 'fr').catch(() => ({ok:false}));
   const valeur = SCAN.valeur || (p && p.ok && p.prix ? p.prix.marche : null), titre = (p && p.ok && p.titre) || c.titre || '';
-  const r = await API.carte_garder({carte:{...c, emplacement:'Collection', valeur}, titre, prix:null, photos:[SCAN.ph]}).catch(e => ({ok:false, erreur:e.message}));
+  const r = await API.carte_garder({carte:{...c, emplacement:'Collection', valeur}, titre, prix:null, photos: SCAN.studio ? [SCAN.studio, SCAN.ph] : [SCAN.ph]}).catch(e => ({ok:false, erreur:e.message}));
   if (!r || !r.ok) { b.disabled = false; b.textContent = tt('Ajouter à ma collection', 'Add to my collection'); toast((r && r.erreur) || tt('Erreur', 'Error'), 5000); return; }
   // en serie (collection) : la suivante d'un tap ; sinon, voir la collection
   b.outerHTML = SCAN.opts.but === 'collection'
@@ -4806,6 +4863,7 @@ async function demanderPartage(){
   if (S._partageDemande) return;
   const r = await reglages().catch(() => null);
   if (!r || r.partage_ventes === true || r.partage_ventes === false) return;
+  if (!(S.forfait && S.forfait.communaute)) return;      // 28 oct 2026 (audit eBay) : mise en commun coupee, on ne demande rien
   const fond = $('#fond-feuille'); if (fond && !fond.hidden) return;          // une autre feuille est ouverte : plus tard
   S._partageDemande = true;
   ouvrirFeuille(`<h3>${tt('Aider les prix « vendues » ?', 'Help the “sold” prices?')}</h3>
@@ -6410,6 +6468,7 @@ async function adminServeur(){
     el.innerHTML = `${e.en_cours ? '<span class="roue"></span> ' + tt('Tour en cours… ', 'Running… ') : ''}<b>${e.deals}</b> ${tt('deals en ligne', 'live deals')} · ${tt('dernier tour', 'last run')} ${e.maj ? heureCourte(e.maj) : '—'}<br>
       eBay ${e.ebay} / ${e.ebay_plafond} ${tt('(rythme du jour : ', '(today’s pace: ')}${e.ebay_rythme}) · ${tt('vérifications', 'checks')} ${e.verif} / ${e.verif_max}${e.verif >= e.verif_max ? ' · <span style="color:var(--rouge)">' + tt('épuisées pour aujourd’hui', 'used up for today') + '</span>' : ''}
       ${e.repartition ? '<br>' + tt('En ligne : ', 'Live: ') + e.repartition.hits + ' hits · ' + e.repartition.veterans + tt(' vétérans/légendes · ', ' veterans/legends · ') + e.repartition.recrues + tt(' autres recrues · ', ' other rookies · ') + e.repartition.young_guns + ' Young Guns' : ''}
+      ${e.hits_24h ? '<br>' + tt('Hits (24 h) : ', 'Hits (24 h): ') + e.hits_24h.vus + tt(' vus · ', ' seen · ') + e.hits_24h.verifies + tt(' vérifiés · ', ' checked · ') + e.hits_24h.deals + ' deals' : ''}
       <br>${tt('Reconnaissance photo', 'Photo recognition')} : ${esc(e.vision_modele || '—')}${e.vision_erreur ? ' · <span style="color:var(--rouge)">' + tt('dernière erreur', 'last error') + ' HTTP ' + esc(e.vision_erreur.code) + ' ' + esc((e.vision_erreur.detail || '').slice(0, 140)) + '</span>' : ''}`; };
   API.deals_etat().then(etatDeals).catch(() => {});
   const bd = $('#adm-deals-ok'); if (bd) bd.onclick = async () => {
@@ -6426,7 +6485,8 @@ function feuilleIdee(){
     <div class="sous" style="font-size:15px">${tt('On lit tout. La réponse arrive ici, dans l’app.', 'We read everything. The reply comes here, in the app.')}</div>
     <div class="seg" id="id-t">${[['idee', tt('Idée', 'Idea')], ['probleme', tt('Problème', 'Problem')], ['question', 'Question']].map(([k, t], i) => `<button data-v="${k}" class="${i ? '' : 'on'}">${t}</button>`).join('')}</div>
     <textarea class="champ" id="id-txt" style="min-height:130px" placeholder="${esc(tt('Dis-nous tout…', 'Tell us everything…'))}"></textarea>
-    <button class="btn" id="id-ok">${tt('Envoyer', 'Send')}</button>`);
+    <button class="btn" id="id-ok">${tt('Envoyer', 'Send')}</button>
+    <div class="sous" style="font-size:12.5px">${tt('Pour répondre plus vite, ton message (le texte seulement) peut être classé par un assistant IA, Claude d’Anthropic. Voir la politique de confidentialité.', 'To reply faster, your message (text only) may be sorted by an AI assistant, Anthropic’s Claude. See the privacy policy.')}</div>`);
   let type = 'idee';
   $$('#id-t button').forEach(b => b.onclick = () => { type = b.dataset.v; $$('#id-t button').forEach(x => x.classList.toggle('on', x === b)); });
   setTimeout(() => $('#id-txt') && $('#id-txt').focus(), 50);
@@ -6864,7 +6924,7 @@ async function vueReglages(arg){
     <div class="r-bloc" ${S.mode === 'acheteur' ? 'hidden' : ''}><div class="r-titre">Ce que je fais</div>
       <div class="r-ligne fixe"><span class="t"><b>Vendre sur eBay</b><span>Inventaire, prix, annonces, profit</span></span><span class="interrupteur on"><i></i></span></div>
       ${ligneAct('breaks', 'Breaks', 'Prix des places, tirage, envois')}${ligneAct('magasin', 'Magasin / comptoir', 'Ventes en personne, rachats, consignation')}</div>
-    <div class="r-bloc"><button class="r-ligne" id="g-partage"><span class="t"><b>${tt('Partager mes ventes (anonymes)', 'Share my sales (anonymous)')}</b><span>${tt('Tes prix vendus, sans ton nom ni l’acheteur, aident les prix « vendues » de tout le monde', 'Your sold prices, without your name or the buyer’s, power everyone’s “sold” prices')}</span></span><span class="interrupteur ${(S.reglages || {}).partage_ventes === true ? 'on' : ''}"><i></i></span></button></div>
+    <div class="r-bloc" ${S.forfait && S.forfait.communaute ? '' : 'hidden'}><button class="r-ligne" id="g-partage"><span class="t"><b>${tt('Partager mes ventes (anonymes)', 'Share my sales (anonymous)')}</b><span>${tt('Tes prix vendus, sans ton nom ni l’acheteur, aident les prix « vendues » de tout le monde', 'Your sold prices, without your name or the buyer’s, power everyone’s “sold” prices')}</span></span><span class="interrupteur ${(S.reglages || {}).partage_ventes === true ? 'on' : ''}"><i></i></span></button></div>
     <button class="r-bloc r-idee" id="g-profil"><span class="aaj-n">◎</span><span><b>${tt('Mon profil', 'My profile')}</b><small>${tt('Niveau, but, budget : pour des conseils à ta mesure', 'Level, goal, budget: tips made for you')}</small></span><span class="fl">›</span></button>
     <a class="r-bloc r-idee" href="#guide"><span class="aaj-n">★</span><span><b>${tt('Guide du hobby', 'Hobby guide')}</b><small>${tt('Produits, sortes de cartes, budget : tout pour bien acheter', 'Products, card types, budget: buy smart')}</small></span><span class="fl">›</span></a>
     <button class="r-bloc r-idee" id="g-idee"><span class="aaj-n">?</span><span><b>${tt('Une idée ? Un problème ?', 'An idea? A problem?')}</b><small>${tt('Écris-nous, on répond ici dans l’app', 'Write to us, we reply here in the app')}</small></span><span class="fl">›</span></button>
@@ -6896,14 +6956,14 @@ async function vueReglages(arg){
       <div class="r-sous">Description par défaut des annonces</div><textarea class="champ" id="g-desc" placeholder="Tes politiques, ton expédition…">${esc(r.description_ebay || '')}</textarea>
       <div id="g-epn-bloc"><div class="r-sous">eBay Partner Network</div><div class="grille-champs">
         <label class="large">N° de campagne (campid)<input class="champ" id="g-epn" value="${esc(r.epn_campid || '')}" placeholder="ex. 5339xxxxxx" inputmode="numeric"></label></div></div>
-      <div class="r-sous">Valeur des joueurs</div><div class="r-note" id="g-val">${roue}</div>
-      <button class="btn ghost petit" id="g-val-maj">Mettre à jour maintenant</button>
+      <div id="g-val-bloc" ${S.forfait && S.forfait.multi && !S.forfait.admin ? 'hidden' : ''}><div class="r-sous">Valeur des joueurs</div><div class="r-note" id="g-val">${roue}</div>
+      <button class="btn ghost petit" id="g-val-maj">Mettre à jour maintenant</button></div>
       <div class="r-note" id="g-local">Données gardées sur ce PC (lockerroom.db) · aucun mot de passe enregistré.</div>
     </details>
     <div class="r-bloc"><div class="r-titre">${tt('Compte et aide', 'Account and help')}</div>
-      <a class="r-lien" href="/support" target="_blank" rel="noopener">${tt('Aide et support', 'Help and support')}</a>
-      <a class="r-lien" href="/confidentialite" target="_blank" rel="noopener">${tt('Politique de confidentialité', 'Privacy policy')}</a>
-      <a class="r-lien" href="/conditions" target="_blank" rel="noopener">${tt('Conditions d’utilisation', 'Terms of use')}</a>
+      <a class="r-lien" href="/support" ${NATIF ? '' : 'target="_blank" rel="noopener"'}>${tt('Aide et support', 'Help and support')}</a>
+      <a class="r-lien" href="/confidentialite" ${NATIF ? '' : 'target="_blank" rel="noopener"'}>${tt('Politique de confidentialité', 'Privacy policy')}</a>
+      <a class="r-lien" href="/conditions" ${NATIF ? '' : 'target="_blank" rel="noopener"'}>${tt('Conditions d’utilisation', 'Terms of use')}</a>
       ${(S.forfait || {}).multi ? `<a class="r-lien" href="/deconnexion">${tt('Quitter SlabCoach (me déconnecter)', 'Sign out of SlabCoach')}</a>
         <button class="r-lien danger" id="g-supprimer">${tt('Supprimer mon compte SlabCoach', 'Delete my SlabCoach account')}</button>` : ''}
       ${r.ia_photos_ok ? `<button class="r-lien" id="g-ia-retirer">${tt('Lecture des photos par l’IA (Anthropic) : permise · retirer', 'Photo reading by AI (Anthropic): allowed · withdraw')}</button>` : ''}
@@ -7115,7 +7175,7 @@ async function rendreBlocEbay(){
       <button class="btn ghost petit" id="e-cles" style="margin-top:10px">Enregistrer les clés</button></details>`}
     <button class="btn" id="e-co" ${s.cles_ok ? '' : 'disabled'}>Se connecter avec eBay</button>
     <div class="grille-champs" id="e-fin" ${s.cles_ok ? '' : 'hidden'}><label class="large">Page eBay pas revenue toute seule ? Colle son adresse<input class="champ" id="e-url" placeholder="https://…?code=…" autocomplete="off"></label>
-      <button class="btn petit large" id="e-terminer">Terminer la connexion</button></div>${avis}`;
+      <button class="btn petit large" id="e-terminer">Terminer la connexion</button></div>${s.multi ? '' : avis}`;
   brancherEnv(); brancherAvis();
   const ecop = $('#e-copier'); if (ecop) ecop.onclick = async () => toast(await copier(retour) ? 'Adresse copiée' : 'Copie impossible');
   const ecl = $('#e-cles'); if (ecl) ecl.onclick = async () => {
@@ -7123,6 +7183,7 @@ async function rendreBlocEbay(){
     if (res) { toast(res.cles_ok ? 'Clés enregistrées' : 'Il manque une clé'); rendreBlocEbay(); }
   };
   $('#e-co').onclick = async () => {
+    if (await relierEbayApp()) return;               // app iPhone : le navigateur securise (Google marche)
     const fen = window.open('', '_blank');
     const res = await essai(API.ebay_url_connexion());
     if (!res) { if (fen) fen.close(); return; }
@@ -7132,6 +7193,41 @@ async function rendreBlocEbay(){
   $('#e-terminer').onclick = async () => { const res = await essai(API.ebay_terminer(val('e-url'))); if (res) { toast('Compte eBay connecté', 3000); rendreBlocEbay(); } };
 }
 
+// 28 oct 2026 (Mathieu : « je me connecte a eBay avec Google et ca ne marche plus ») : dans l'app iPhone, relier eBay se
+// fait dans le navigateur securise d'iOS (Google refuse les vues web : « Continuer avec Google » partait dans Safari et
+// ne revenait jamais). Au retour, slabcoachauth://retour?b=... : le billet + le secret garde ici ouvrent la session.
+const CAP = window.Capacitor && window.Capacitor.Plugins;
+const FLUX_AUTH = /SlabCoachAuth/.test(navigator.userAgent) && CAP && CAP.Browser && CAP.App;
+async function relierEbayApp(){
+  if (!FLUX_AUTH) return false;
+  const j = await API.ebay_jeton_lier().catch(() => null);
+  if (!j || !j.ok) return false;
+  const r = new Uint8Array(32); crypto.getRandomValues(r);
+  const v = btoa(String.fromCharCode.apply(null, r)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  try { localStorage.setItem('sc_v', v); } catch (e) {}
+  const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(v));
+  const h = Array.from(new Uint8Array(d)).map(x => x.toString(16).padStart(2, '0')).join('');
+  CAP.Browser.open({url: location.origin + '/auth/ebay-lier?t=' + encodeURIComponent(j.jeton) + '&app=' + h, presentationStyle: 'popover', toolbarColor: '#0B0B0E'});
+  return true;
+}
+if (FLUX_AUTH) {
+  const retourApp = (url) => {
+    const m = /^slabcoachauth:\/\/retour\?b=([\w-]+)/.exec(url || ''); if (!m) return;
+    let v = ''; try { v = localStorage.getItem('sc_v') || ''; localStorage.removeItem('sc_v'); } catch (e) {}
+    try { CAP.Browser.close(); } catch (e) {}
+    location.href = '/auth/terminer?b=' + m[1] + '&v=' + encodeURIComponent(v);
+  };
+  try { CAP.App.addListener('appUrlOpen', e => retourApp(e && e.url)); } catch (e) {}
+}
+// 28 oct 2026 (audit Apple 3.1.1) : dans l'app, Aide / Confidentialite / Conditions s'ouvrent dans le navigateur integre,
+// en version iPhone (?ios=1 : aucun prix du site, aucun lien vers la vitrine)
+document.addEventListener('click', (e) => {
+  if (!NATIF) return;
+  const a = e.target.closest && e.target.closest('a[href="/support"], a[href="/confidentialite"], a[href="/conditions"]'); if (!a) return;
+  e.preventDefault();
+  const u = location.origin + a.getAttribute('href') + '?ios=1';
+  if (CAP && CAP.Browser) CAP.Browser.open({url: u, presentationStyle: 'popover', toolbarColor: '#0B0B0E'}); else location.href = u;
+}, true);
 // ============================================================
 reglages().then(() => equipes()).catch(() => {});
 route();

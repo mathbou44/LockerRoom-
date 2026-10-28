@@ -66,6 +66,13 @@ def _page_app():
         _APP_CACHE.update(mt=mt, brut=brut, etag='"' + hashlib.md5(brut).hexdigest()[:16] + '"')
     if request.headers.get("If-None-Match") == _APP_CACHE["etag"]:
         return Response(status=304, headers={"ETag": _APP_CACHE["etag"]})
+    if "gzip" in (request.headers.get("Accept-Encoding") or ""):
+        # 28 oct 2026 (vitesse) : la page (~790 Ko) compressee UNE fois, pas a chaque telechargement (~47 ms)
+        if _APP_CACHE.get("gz_mt") != _APP_CACHE["mt"]:
+            import gzip
+            _APP_CACHE.update(gz=gzip.compress(_APP_CACHE["brut"], 6), gz_mt=_APP_CACHE["mt"])
+        return Response(_APP_CACHE["gz"], mimetype="text/html", headers={"ETag": _APP_CACHE["etag"], "Cache-Control": "no-cache",
+                        "Content-Encoding": "gzip", "Vary": "Accept-Encoding", "Content-Length": str(len(_APP_CACHE["gz"]))})
     return Response(_APP_CACHE["brut"], mimetype="text/html", headers={"ETag": _APP_CACHE["etag"], "Cache-Control": "no-cache"})
 
 
@@ -131,6 +138,34 @@ def _garde():
             session.pop("compte", None)
             return (jsonify({"erreur": "Connexion requise"}), 401) if request.path.startswith("/api/") else redirect("/connexion")
     return None
+
+
+# 28 oct 2026 (Mathieu : « je me connecte a eBay avec Google et ca ne marche plus ») : RELIER eBay depuis Profil, dans
+# l'app iPhone. Dans la vue web, « Continuer avec Google » d'eBay partait dans Safari et ne revenait jamais. Maintenant :
+# l'app demande un jeton a usage unique (lie a SON compte, 10 min), ouvre le navigateur securise d'iOS sur
+# /auth/ebay-lier, et le retour d'eBay ramene un billet a l'app (slabcoachauth://retour), comme la connexion.
+_LIER_ETATS = {}      # etat OAuth -> (compte, le) ; les jetons a usage unique : lockerroom.LIER
+
+
+@app.route("/auth/ebay-lier")
+def auth_ebay_lier():
+    from flask import redirect
+    import time as _t
+    import lockerroom as _lrm
+    v = _lrm.LIER.pop(request.args.get("t") or "", None)
+    if not v or _t.time() - v[1] > 600 or v[0] not in comptes.lister():
+        return redirect("/connexion?erreur=3&r=expire")
+    comptes.activer(v[0])
+    r = api.ebay_url_connexion()
+    if not r.get("ok"):
+        return redirect("/connexion?erreur=1")
+    import urllib.parse
+    etat = (urllib.parse.parse_qs(urllib.parse.urlparse(r["url"]).query).get("state") or [""])[0]
+    for k in [k for k, x in _LIER_ETATS.items() if _t.time() - x[1] > 900]:
+        _LIER_ETATS.pop(k, None)
+    _LIER_ETATS[etat] = (v[0], _t.time())
+    _noter_app(r["url"])
+    return _lier_navigateur(redirect(r["url"]), r["url"])
 
 
 @app.route("/auth/ebay")
@@ -331,7 +366,8 @@ def _noter_echec():
 
 
 # 26 oct 2026 - compte de demonstration pour l'equipe d'Apple (et les essais) : code dans LOCKERROOM_DEMO_CODE.
-# Un compte a part, Pro offert, quelques cartes d'exemple ; sans code configure, la route n'existe pas.
+# Un compte a part, quelques cartes d'exemple ; sans code configure, la route n'existe pas.
+# 28 oct 2026 (audit Apple 2.1(b)) : compte GRATUIT (essai termine), pour que l'equipe d'Apple voie l'achat integre.
 _DEMO_EBAY_ID = "demo-app-review"
 
 
@@ -348,7 +384,7 @@ def demo():
     elif request.method == "POST":
         if hmac.compare_digest(str(request.form.get("code") or "").strip(), code):
             cid, nouveau = comptes.trouver_ou_creer(_DEMO_EBAY_ID, "Demo", "demo")
-            comptes.maj(cid, pro_offert="toujours", demo=True)
+            comptes.maj(cid, pro_offert=None, essai_bonus_jours=-30, demo=True)
             session.permanent = True
             session["ok"] = True
             session["compte"] = cid
@@ -542,7 +578,8 @@ def connexion():
 
 
 def _dans_app_ios():
-    return "LockerRoomiOS" in (request.headers.get("User-Agent") or "")
+    # 28 oct 2026 (audit Apple 3.1.1) : ?ios=1 quand l'app ouvre une page dans le navigateur integre (sans son agent)
+    return "LockerRoomiOS" in (request.headers.get("User-Agent") or "") or request.args.get("ios") == "1"
 
 
 def _page_legale(nom):
@@ -557,6 +594,9 @@ def _page_legale(nom):
     for _ in range(3):                        # elements « web-seul » (p, li, span), du plus interne au plus externe
         html = _re.sub(r'<(p|li|span)\b[^>]*class="web-seul"[^>]*>(?:(?!<\1\b)[\s\S])*?</\1>', "", html)
     html = html.replace(".ios-seul{display:none}", "")
+    html = html.replace('<a href="/">Ouvrir l\'app</a>', "")             # pas de chemin vers le site (prix) depuis l'app
+    for page in ("support", "confidentialite", "conditions"):
+        html = html.replace(f'href="/{page}"', f'href="/{page}?ios=1"')
     return Response(html, mimetype="text/html")
 
 
@@ -638,6 +678,13 @@ def ebay_retour():
     from flask import redirect, session
     if not _navigateur_lie(request.args.get("state")):
         return redirect("/connexion?erreur=1" if not comptes.courant() else "/#reglages/ebay-erreur")
+    lie = _LIER_ETATS.pop(request.args.get("state") or "", None)
+    if lie and lie[0] in comptes.lister():            # 28 oct 2026 : eBay relie depuis l'app (navigateur securise)
+        comptes.activer(lie[0])
+        r = api.ebay_terminer(request.url, request.args.get("state"))
+        if r.get("ok"):
+            _premiere_synchro(lie[0])
+        return _billet(lie[0], "/#reglages/" + ("ebay-ok" if r.get("ok") else "ebay-erreur"), request.args.get("state"))
     if comptes.MULTI and not comptes.courant():
         import ebay_compte
         r = ebay_compte.connexion_compte(request.url, request.args.get("state"))

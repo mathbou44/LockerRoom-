@@ -34,7 +34,23 @@ DEFAUTS = {"base": 0.25, "insert": 1.0, "recrue": 6.0, "numerotee": 5.0, "auto":
 _ETAT = {"mtime": None, "data": {"joueurs": {}, "sous_ensembles": {}}, "index": {}}
 
 
+_NOMS_N = {}
+
+
 def norm_nom(n):
+    """28 oct 2026 (vitesse) : ~25 000 appels par analyse de break : garde en memoire."""
+    k = n if isinstance(n, str) else None
+    if k is not None and k in _NOMS_N:
+        return _NOMS_N[k]
+    r = _norm_nom(n)
+    if k is not None:
+        if len(_NOMS_N) > 50000:
+            _NOMS_N.clear()
+        _NOMS_N[k] = r
+    return r
+
+
+def _norm_nom(n):
     t = "".join(c for c in unicodedata.normalize("NFKD", str(n or "")) if not unicodedata.combining(c)).lower()
     t = re.sub(r"\((?:d|f|g)\)|\bjr\.?|\bsr\.?", " ", t)
     return re.sub(r"[^a-z]+", " ", t).strip()
