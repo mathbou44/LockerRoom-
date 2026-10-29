@@ -112,6 +112,7 @@ Regles :
 - Recrue : RC imprime, Young Guns, Rated Rookie, 1st Bowman, Rookie Ticket...
 - Gradation : une carte est gradee SEULEMENT si on voit le slab scelle et son etiquette (PSA, BGS, SGC, CGC...). Dans un
   toploader, un one-touch ou sur un support, elle est brute (raw) : grade et cert vides, et jamais de note dans le titre.
+  Pas d'etiquette lisible avec un numero de certificat = carte brute. Ne devine jamais une note d'apres l'etat de la carte.
 - photos : pour chaque image, les 4 coins exterieurs de la carte (ou de son etui / slab), le plus precis possible, et si la photo est a reprendre (coin coupe, floue, reflet sur le texte).
 - Reponds uniquement avec l'outil « carte »."""
 
@@ -212,7 +213,7 @@ def _chemin_cache():
 
 
 def _empreinte(images):
-    h = hashlib.sha256(b"v2-slab")              # 29 oct 2026 : nouvelle regle de gradation -> les anciennes lectures sont refaites
+    h = hashlib.sha256(b"v3-slab-cert")              # 29 oct 2026 : nouvelle regle de gradation -> les anciennes lectures sont refaites
     for b in images:
         h.update(hashlib.sha256(b).digest())
     return h.hexdigest()
@@ -375,7 +376,10 @@ def _nettoyer(f):
     if f.get("titre_ebay"):
         out["titre"] = str(f["titre_ebay"]).strip()[:80]
     # 29 oct 2026 : pas de slab vu = carte brute. Une note devinee (« PSA 10 » sur une carte raw) est retiree partout.
-    if f.get("slab") is not True:
+    # 30 oct 2026 (« encore PSA 10 ») : le modele peut dire slab = true sur une carte brute. Une etiquette de gradation a
+    # TOUJOURS un numero de certificat : sans certificat lu (6 chiffres et plus), pas de note.
+    cert_lu = re.sub(r"\D", "", str(out.get("cert") or ""))
+    if f.get("slab") is not True or len(cert_lu) < 6:
         out.pop("grade", None)
         out.pop("cert", None)
         if out.get("titre"):

@@ -245,7 +245,7 @@ details.reglage summary::-webkit-details-marker{display:none}
 .verif-ph span{font-size:13px; font-weight:600}
 .pv-liste{display:flex; flex-direction:column; gap:14px; margin-top:12px}
 .pv-f{margin:0; display:flex; flex-direction:column; gap:6px} .pv-f img{width:100%; max-height:62vh; object-fit:contain; border-radius:14px; background:#111115; border:1px solid var(--ligne)}
-.pv-f.studio img{background:#ECECE9} .pv-f figcaption{font-size:13px; color:var(--doux); text-align:center}
+.pv-f.studio img{background:#111115} .pv-f figcaption{font-size:13px; color:var(--doux); text-align:center}
 .d-sec{grid-column:1/-1; margin:14px 2px 2px; font:700 13px 'Barlow Condensed',sans-serif; letter-spacing:.2em; text-transform:uppercase; color:var(--doux); display:flex; align-items:center; gap:8px}
 .d-sec span{font-size:12px; letter-spacing:0; padding:1px 8px; border-radius:999px; background:var(--carte2); color:var(--texte)}
 .d-sec::after{content:''; flex:1; height:1px; background:var(--ligne)}
@@ -1245,7 +1245,7 @@ body.scan-ouvert{overflow:hidden}
 .scan video{transition:filter .4s} .scan.fige video{filter:blur(16px) brightness(.5)} .scan.fige .scan-cadre{box-shadow:0 0 0 200vmax transparent}
 .scan-fige{position:fixed; z-index:2; object-fit:cover; border-radius:16px; transform-origin:0 0; box-shadow:0 18px 50px rgba(0,0,0,.6);
   transition:transform .55s cubic-bezier(.3,.8,.25,1), border-radius .55s; animation:scan-flash .35s ease-out}
-.scan-fige.reduit{border-radius:60px} .scan-fige.studio{object-fit:contain; background:#EDEDEA}
+.scan-fige.reduit{border-radius:60px} .scan-fige.studio{object-fit:contain; background:#111115}
 @keyframes scan-flash{from{filter:brightness(1.8)} to{filter:none}}
 .scan-res{position:absolute; left:0; right:0; bottom:0; z-index:3; max-height:68vh; overflow:auto; padding:18px 16px calc(env(safe-area-inset-bottom) + 16px);
   background:var(--fond, #0B0B0E); border-radius:22px 22px 0 0; display:flex; flex-direction:column; gap:12px; transform:translateY(100%); transition:transform .35s cubic-bezier(.3,.8,.25,1)}
@@ -1642,14 +1642,14 @@ body.pro .onglets a.on{color:var(--acc)}
 .pc-etat.ok{background:var(--vert-fond); color:var(--vert); border-color:var(--vert)} .pc-etat.ko{background:var(--or-fonce); color:var(--or); border-color:var(--or-ligne)}
 .pc-etat .roue{width:22px; height:22px}
 .verif-v{display:grid; grid-template-columns:110px 1fr; gap:14px; align-items:start}
-.verif-ph img{width:100%; border-radius:var(--r-ctl); border:1px solid var(--ligne); display:block; background:#ECECE9}
+.verif-ph img{width:100%; border-radius:var(--r-ctl); border:1px solid var(--ligne); display:block; background:#111115}
 .verif-ch{display:flex; flex-direction:column; gap:8px; min-width:0}
 .vc{display:flex; flex-direction:column; gap:4px; font-size:13px; color:var(--doux)} .vc .champ{height:44px}
 .vc em{font-style:normal; font-family:'Barlow Condensed',sans-serif; text-transform:uppercase; letter-spacing:.08em; font-size:11px; color:var(--or); margin-left:4px}
 .vc.douteux .champ{border-color:var(--or-ligne); background:var(--or-fonce); color:var(--or-clair)}
 .vc-bas{display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:4px}
 @media (max-width:420px){ .verif-v{grid-template-columns:1fr} .verif-ph{width:140px; justify-self:center} }
-.photo-princ.studio-on{background-color:#ECECE9}
+.photo-princ.studio-on{background-color:#111115}
 .studio-bar{display:flex; align-items:center; gap:10px; flex-wrap:wrap} .studio-bar .seg{flex:1; min-width:200px} .studio-bar .pilule{flex-shrink:0}
 .bp-actions{display:flex; gap:10px} .bp-actions .btn.ghost{min-width:0}
 .btn.duo{flex-direction:column; gap:0; line-height:1.1} .btn.duo b{font-size:inherit} .btn.duo small{font-family:'Barlow',sans-serif; text-transform:none; letter-spacing:0; font-weight:500; font-size:12px; opacity:.75}
@@ -3064,7 +3064,7 @@ function etapesVente(){
 }
 // ============================================================
 // 27 oct 2026 (Mathieu : « un recadrage simple et beau pour eBay, qui refait le fond, sans ressembler a Hall of Cardz »)
-// PHOTO STUDIO SLABCOACH : la carte (ou son etui / slab) est redressee, recadree et posee sur un fond clair de studio
+// PHOTO STUDIO SLABCOACH : la carte (ou son etui / slab) est redressee, recadree et posee sur sa photo floue et assombrie
 // avec une ombre douce. Regles : rien n'est ajoute sur la photo (eBay interdit texte, logo, bordure, filigrane) et les
 // pixels de la carte ne sont pas retouches (on redresse seulement) : la photo reste fidele a l'etat de la carte.
 // Les coins viennent de la lecture IA (deja faite pour la fiche, aucun cout de plus), puis sont affines ici sur les
@@ -3273,20 +3273,34 @@ function _nettoyerCoins(out, O, od, W, H, fond){
   og.putImageData(O, 0, 0);
   return out;
 }
-// la carte redressee sur le fond studio clair (1600 x 1600, sans texte ni logo)
-function poserStudio(carte){
+// 30 oct 2026 (Mathieu : « un fond flou noirci comme sur Teams en meeting : la, on voit les bouts de pattes du support et
+// l'acheteur pourrait interpreter ca comme un defaut de la carte ») : le fond est SA photo, tres floue et assombrie
+// (le support, la table : rien de lisible), la carte nette par-dessus avec une ombre. Un mince liseré (0,6 %) est retire
+// sur le pourtour du recadrage : les bouts de support colles au bord partent, la carte elle-meme n'est pas retouchee.
+function _fondFlou(img, N){
+  // flou sans ctx.filter (Safari) : on reduit l'image a quelques pixels puis on la ragrandit, deux fois
+  const W = img.naturalWidth || img.width, H = img.naturalHeight || img.height, k = Math.max(N / W, N / H);
+  const etape = (src, w, h) => { const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h));
+    const g = c.getContext('2d'); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.drawImage(src, 0, 0, c.width, c.height); return c; };
+  let c = etape(img, W * k / 8, H * k / 8); c = etape(c, c.width / 4, c.height / 4); c = etape(c, c.width / 2, c.height / 2);
+  const out = document.createElement('canvas'); out.width = N; out.height = N;
+  const g = out.getContext('2d'); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+  const w = W * k, h = H * k; g.drawImage(c, (N - w) / 2, (N - h) / 2, w, h);
+  g.fillStyle = 'rgba(8,8,12,.55)'; g.fillRect(0, 0, N, N);
+  const v = g.createRadialGradient(N / 2, N / 2, N * .25, N / 2, N / 2, N * .75);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.45)'); g.fillStyle = v; g.fillRect(0, 0, N, N);
+  return out;
+}
+function poserStudio(carte, img){
   const N = STUDIO.cote, cv = document.createElement('canvas'); cv.width = N; cv.height = N;
   const g = cv.getContext('2d');
-  const lin = g.createLinearGradient(0, 0, 0, N); lin.addColorStop(0, '#F6F6F4'); lin.addColorStop(1, '#E3E3DF');
-  g.fillStyle = lin; g.fillRect(0, 0, N, N);
-  const rad = g.createRadialGradient(N * .5, N * .42, 0, N * .5, N * .42, N * .62);
-  rad.addColorStop(0, 'rgba(255,255,255,.85)'); rad.addColorStop(1, 'rgba(255,255,255,0)');
-  g.fillStyle = rad; g.fillRect(0, 0, N, N);
-  const k = Math.min(N * 0.84 / carte.height, N * 0.8 / carte.width);
-  const w = Math.round(carte.width * k), h = Math.round(carte.height * k), x = Math.round((N - w) / 2), y = Math.round((N - h) / 2 - N * 0.015);
-  g.save(); g.shadowColor = 'rgba(28,28,34,.26)'; g.shadowBlur = 70; g.shadowOffsetY = 34; g.drawImage(carte, x, y, w, h); g.restore();
-  g.save(); g.shadowColor = 'rgba(28,28,34,.22)'; g.shadowBlur = 12; g.shadowOffsetY = 5; g.drawImage(carte, x, y, w, h); g.restore();
-  g.imageSmoothingQuality = 'high'; g.drawImage(carte, x, y, w, h);
+  if (img) g.drawImage(_fondFlou(img, N), 0, 0);
+  else { g.fillStyle = '#1A1A1F'; g.fillRect(0, 0, N, N); }
+  const e = 0.006, sx = carte.width * e, sy = carte.height * e, sw = carte.width - 2 * sx, sh = carte.height - 2 * sy;
+  const k = Math.min(N * 0.84 / sh, N * 0.8 / sw);
+  const w = Math.round(sw * k), h = Math.round(sh * k), x = Math.round((N - w) / 2), y = Math.round((N - h) / 2 - N * 0.01);
+  g.save(); g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = 80; g.shadowOffsetY = 30; g.drawImage(carte, sx, sy, sw, sh, x, y, w, h); g.restore();
+  g.imageSmoothingQuality = 'high'; g.drawImage(carte, sx, sy, sw, sh, x, y, w, h);
   return cv.toDataURL('image/jpeg', STUDIO.qualite);
 }
 // photo (data URL) + coins IA (0..1000, haut-gauche puis sens horaire) -> {photo studio, coins affines (0..1000)}
@@ -3299,7 +3313,7 @@ async function photoStudio(src, coins1000, opts){
   const fond = _couleurFond(G, r.coins);
   const q = r.coins.map(([x, y]) => [x / G.k, y / G.k]);
   const carte = redresser(img, q, fond);
-  return {photo: poserStudio(carte), coins: r.coins.map(([x, y]) => [Math.round(x / G.w * 1000), Math.round(y / G.h * 1000)]), affine: r.affine, W, H};
+  return {photo: poserStudio(carte, img), coins: r.coins.map(([x, y]) => [Math.round(x / G.w * 1000), Math.round(y / G.h * 1000)]), affine: r.affine, W, H};
 }
 // controle de la photo, tout de suite apres la prise : floue, sombre, reflet, trop petite
 async function qualitePhoto(src){
@@ -8134,7 +8148,7 @@ async function vueReglages(arg){
       <div class="r-note">L'app devine le sport de chaque carte ; sinon, elle prend celui-ci.</div></div>
     <div class="r-bloc" ${S.mode === 'acheteur' ? 'hidden' : ''}><div class="r-titre">${tt('Photos de mes annonces', 'My listing photos')}</div>
       ${segV('g-studio', [['0', tt('Mes photos telles quelles', 'My photos as they are')], ['1', tt('Studio SlabCoach', 'SlabCoach studio')]], r.photo_studio === false ? '0' : '1')}
-      <div class="r-note">${tt('Telles quelles : exactement comme tes autres annonces eBay (ton fond, ton logo). Studio : la carte recadrée sur un fond clair.', 'As they are: exactly like your other eBay listings (your background, your logo). Studio: the card cropped on a light background.')}</div></div>
+      <div class="r-note">${tt('Telles quelles : exactement comme tes autres annonces eBay (ton fond, ton logo). Studio : la carte recadrée, nette, sur son fond flou et assombri.', 'As they are: exactly like your other eBay listings (your background, your logo). Studio: the card cropped and sharp, on its own blurred, darkened background.')}</div></div>
     <div class="r-bloc" ${S.mode === 'acheteur' ? 'hidden' : ''}><div class="r-titre">Ma boutique</div>
       <div class="r-logo"><img class="apercu" id="g-logo-img" src="${esc(S.logo || '/icone.png')}" alt="Logo">
         <div class="t"><b>Ton logo</b><span>Il remplace celui de SlabCoach dans ton app</span>
