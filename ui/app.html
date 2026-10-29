@@ -280,6 +280,12 @@ details.reglage summary::-webkit-details-marker{display:none}
 .vendre.vs .photo-princ.vs-ph{width:auto; max-width:100%; aspect-ratio:auto; height:min(40vh, 380px); margin:0 auto; background:none; border:0; overflow:hidden}
 .vendre.vs .photo-princ.vs-ph img{height:100%; width:auto; max-width:100%; object-fit:contain; border-radius:16px; display:block}
 .vendre.vs .studio-bar{gap:4px 12px}
+.pol-tete{display:flex; align-items:center; gap:8px; margin-bottom:6px; font-size:14px} .pol-tete .aide-q{width:24px; height:24px; font-size:12.5px}
+.pol-aide{margin:4px 0 10px; padding:10px 12px; border-radius:12px; background:var(--carte2); border:1px solid var(--ligne); font-size:13px; line-height:1.4}
+.pol-aide ol{margin:6px 0 8px; padding-left:18px; display:flex; flex-direction:column; gap:4px} .pol-act{display:flex; gap:16px; flex-wrap:wrap}
+.colis-l{display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:8px} .colis-l label{display:flex; flex-direction:column; gap:3px; font-size:12px; color:var(--doux)}
+.colis-l span{display:flex; align-items:center; gap:4px; font-size:12px} .colis-l .champ{width:100%; min-width:0; height:40px; padding:0 8px}
+.colis-n{margin-top:6px; font-size:12px} .colis-n.att{color:var(--or)}
 .vm-tit{margin-top:12px; font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--doux)}
 .vm{display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:6px}
 .vm-t{display:flex; flex-direction:column; align-items:center; gap:1px; padding:8px 4px; border-radius:12px; background:var(--carte2); border:1px solid var(--ligne); color:var(--texte); font:inherit; cursor:pointer}
@@ -3344,7 +3350,14 @@ async function changerFlou(n){
   if (V2.loc) for (let j = 0; j < V2.loc.length; j++) V2.loc[j] = await refaire(V2.originales && V2.originales[j] || V2.photos[j], V2.loc[j]);
   if (V2.studio && V2.originales) { for (let j = 0; j < V2.studio.length; j++) V2.studio[j] = await refaire(V2.originales[j], V2.studio[j]); syncPhotos(); }
 }
-const _FILTRE_OK = (() => { try { const g = document.createElement('canvas').getContext('2d'); g.filter = 'blur(2px)'; return g.filter === 'blur(2px)'; } catch (e) { return false; } })();
+// 30 oct 2026 (Mathieu : « aucune difference de blur, y'a rien ») : le WebView de l'iPhone accepte g.filter = 'blur()'
+// (la valeur reste) mais ne floute pas -> on testait la mauvaise chose et le fond sortait net. On verifie pour vrai :
+// un point blanc flou doit deborder sur ses voisins.
+const _FILTRE_OK = (() => { try {
+  const s = document.createElement('canvas'); s.width = s.height = 24; const gs = s.getContext('2d'); gs.fillStyle = '#000'; gs.fillRect(0, 0, 24, 24); gs.fillStyle = '#fff'; gs.fillRect(10, 10, 4, 4);
+  const c = document.createElement('canvas'); c.width = c.height = 24; const g = c.getContext('2d', {willReadFrequently: true}); g.filter = 'blur(3px)'; g.drawImage(s, 0, 0); g.filter = 'none';
+  return g.getImageData(5, 12, 1, 1).data[0] > 3;
+} catch (e) { return false; } })();
 // 30 oct 2026 (Mathieu : « pourquoi l'image derriere le blur change autour de la carte ? je veux un blur super simple ») :
 // avant, le fond flou etait (1) legerement agrandi pour cacher les bords sombres du flou -> il ne s'alignait plus avec la
 // photo (le support et la table « bougeaient » autour de la carte), et (2) assombri -> le 1 mm net autour de la carte
@@ -3990,6 +4003,39 @@ async function preparerVente(){
   V2.prix = V2.prix || (p.prix ? p.prix.marche : (V2.champs && V2.champs.prix_demande) || '');
   rendreVente2();
 }
+// 30 oct 2026 (Mathieu : « par defaut, le maximum permis par Expedited Lite ») : Postes Canada Expedited Lite (eBay Labels) :
+// 250 g, aucun cote de plus de 41 cm, 3 220 cm3. Par defaut 250 g et 23 x 20 x 7 cm (= 3 220 cm3).
+const LITE = {g: 250, cote: 41, vol: 3220, dims: [23, 20, 7]};
+const colisDims = (o) => { const d = [o.longueur_cm, o.largeur_cm, o.hauteur_cm].map(x => +x || 0); return d.every(x => x > 0) ? d : LITE.dims; };
+const colisResume = (o) => `${+o.poids_g || LITE.g} g · ${colisDims(o).join(' × ')} cm`;
+function colisLite(o){
+  const d = colisDims(o), g = +o.poids_g || LITE.g;
+  return g <= LITE.g && Math.max(...d) <= LITE.cote && d[0] * d[1] * d[2] <= LITE.vol;
+}
+function colisChamps(o, px){
+  const d = colisDims(o), ok = colisLite(o);
+  return `<div class="colis-l">
+    <label>${tt('Poids', 'Weight')}<span><input class="champ" type="number" inputmode="numeric" id="${px}-pds" value="${esc(+o.poids_g || LITE.g)}">g</span></label>
+    <label>${tt('Long.', 'Length')}<span><input class="champ" type="number" inputmode="decimal" id="${px}-lo" value="${esc(d[0])}">cm</span></label>
+    <label>${tt('Larg.', 'Width')}<span><input class="champ" type="number" inputmode="decimal" id="${px}-la" value="${esc(d[1])}">cm</span></label>
+    <label>${tt('Haut.', 'Height')}<span><input class="champ" type="number" inputmode="decimal" id="${px}-h" value="${esc(d[2])}">cm</span></label></div>
+    <div class="sous colis-n ${ok ? '' : 'att'}" id="${px}-lite">${ok ? tt('✓ Entre dans Expedited Lite (max 250 g, 41 cm, 3 220 cm³)', '✓ Fits Expedited Lite (max 250 g, 41 cm, 3,220 cm³)')
+      : tt('Trop gros pour Expedited Lite (max 250 g, 41 cm, 3 220 cm³) : tarif Expedited Parcel', 'Too big for Expedited Lite (max 250 g, 41 cm, 3,220 cm³): Expedited Parcel rate')}</div>`;
+}
+function polTete(){
+  return `<div class="pol-tete"><span>${tt('Ta politique d’expédition eBay', 'Your eBay shipping policy')}</span><button class="aide-q" data-pol-q aria-label="${esc(tt('Où créer une politique', 'Where to create a policy'))}">?</button></div>`;
+}
+function polAide(maj){
+  return `<div class="pol-aide" hidden><b>${tt('Créer une politique d’expédition', 'Create a shipping policy')}</b>
+    <ol><li>${tt('Sur <b>ebay.ca</b> (plus simple à l’ordi) : <b>Mon eBay → Compte → Politiques commerciales</b>.', 'On <b>ebay.ca</b> (easier on a computer): <b>My eBay → Account → Business policies</b>.')}</li>
+      <li>${tt('<b>Créer une politique → Expédition</b>.', '<b>Create policy → Shipping</b>.')}</li>
+      <li>${tt('Poste Canada (ex. Colis accéléré), ton prix, ton délai, les États-Unis si tu veux.', 'Canada Post (e.g. Expedited Parcel), your price, handling time, the U.S. if you want.')}</li>
+      <li>${tt('Enregistre, puis reviens ici.', 'Save, then come back here.')}</li></ol>
+    <div class="pol-act"><a class="lien-t" href="https://www.ebay.ca/help/selling/business-policies/business-policies?id=4212" target="_blank" rel="noopener">${tt('Aide eBay', 'eBay help')} ↗</a>
+      ${maj ? `<button class="lien-t" data-pol-maj>↻ ${tt('Rafraîchir la liste', 'Refresh the list')}</button>` : ''}</div></div>`;
+}
+document.addEventListener('click', (e) => { const q = e.target.closest('[data-pol-q]'); if (!q) return; e.preventDefault();
+  const a = (q.closest('.pol-z') || document).querySelector('.pol-aide'); if (a) { vibrer(); a.hidden = !a.hidden; } });
 function segV(id, choix, actuel){
   return `<div class="seg gros" id="${id}">${choix.map(([v, lib, sous]) => `<button data-v="${esc(v)}" class="${String(v) === String(actuel) ? 'on' : ''}">${esc(lib)}${sous ? `<small>${esc(sous)}</small>` : ''}</button>`).join('')}</div>`;
 }
@@ -4064,8 +4110,7 @@ function rendreVente2(){
             ${o.us ? champ('v2-cus', tt('Vers les É.-U. ($ CA)', 'To the U.S. ($ CA)'), o.expedition === 'lettre' ? o.us_cout_lettre : o.us_cout_suivi, 'number', 'inputmode="decimal" step="0.01"') : ''}</div>` : ''}
           <div class="deux"><label class="bascule">${tt('Aussi aux États-Unis', 'Also to the U.S.')}<input type="checkbox" id="v2-us" ${o.us ? 'checked' : ''}></label></div>
           <div class="deux">${segV('v2-del', [[1, tt('1 jour', '1 day')], [2, tt('2 jours', '2 days')], [3, tt('3 jours', '3 days')]], o.delai)}<span class="lib-s">${tt('pour expédier', 'to ship')}</span></div>
-          <details class="avance"><summary>${tt('Colis', 'Package')}</summary><div class="grille-champs">
-            ${champ('v2-pds', tt('Poids (g)', 'Weight (g)'), o.poids_g, 'number')}</div></details></div></div>
+          ${o.expedition === 'lettre' ? '' : `<details class="avance"><summary>${tt('Colis', 'Package')} · ${esc(colisResume(o))}</summary>${colisChamps(o, 'v2')}</details>`}</div></div>
 </div>
       <div id="vs-b-ret"><div class="bloc-v"><div class="bloc-t">${tt('Retours', 'Returns')}</div>
           ${segV('v2-ret', [['non', tt('Pas de retours', 'No returns'), tt('vente finale', 'final sale')], ['30_acheteur', tt('30 jours', '30 days'), tt('l’acheteur paie', 'buyer pays')], ['30_gratuit', tt('30 jours', '30 days'), tt('retour gratuit', 'free return')]], o.retours)}</div>
@@ -4181,15 +4226,24 @@ function brancherVente2(){
   seg('v2-exp', v => { o.expedition = v; }); seg('v2-del', v => { o.delai = +v; });
   // 30 oct 2026 (Mathieu : « comment as-tu sette le shipping pour etre sur que ca fonctionne ? ») : ta politique d'expedition
   // eBay (celle de tes autres annonces) en premier choix ; sinon nos reglages. eBay verifie l'annonce avant de la publier.
-  API.ebay_politiques().then(pol => { const z = $('#v2-pol'); if (!z || !pol || !pol.ok || !(pol.expedition || []).length) return;
-    z.innerHTML = `<label class="large">${tt('Ta politique d’expédition eBay', 'Your eBay shipping policy')}<select class="champ" id="v2-pexp"><option value="">${tt('Aucune : les réglages ci-dessous', 'None: the settings below')}</option>${pol.expedition.map(x => `<option value="${esc(x.id)}" ${String(x.id) === String(o.politique_exp || '') ? 'selected' : ''}>${esc(x.nom)}${x.defaut ? ' ★' : ''}</option>`).join('')}</select></label>
-      <div class="sous vp-pol" id="v2-pexp-r">${esc(((pol.expedition.find(x => String(x.id) === String(o.politique_exp || '')) || {}).resume) || '')}</div>`;
-    $('#v2-pexp').onchange = (e) => { o.politique_exp = e.target.value || null;
+  // 30 oct 2026 (Mathieu : « un petit ? a cote des shipping policies pour expliquer ou aller dans eBay ») : le ? deplie
+  // les etapes ; « Rafraichir » relit les politiques chez eBay une fois creee. Sans politique, on le montre quand meme.
+  const remplirPol = (force) => API.ebay_politiques(!!force).then(pol => { const z = $('#v2-pol'); if (!z || !pol || !pol.ok) return;
+    const L = pol.expedition || [];
+    z.innerHTML = `<div class="pol-z">${polTete()}
+      ${L.length ? `<select class="champ" id="v2-pexp" aria-label="${esc(tt('Ta politique d’expédition eBay', 'Your eBay shipping policy'))}"><option value="">${tt('Aucune : les réglages ci-dessous', 'None: the settings below')}</option>${L.map(x => `<option value="${esc(x.id)}" ${String(x.id) === String(o.politique_exp || '') ? 'selected' : ''}>${esc(x.nom)}${x.defaut ? ' ★' : ''}</option>`).join('')}</select>
+      <div class="sous vp-pol" id="v2-pexp-r">${esc(((L.find(x => String(x.id) === String(o.politique_exp || '')) || {}).resume) || '')}</div>`
+      : `<div class="sous vp-pol">${tt('Aucune dans ton compte eBay : on utilise les réglages ci-dessous.', 'None in your eBay account: using the settings below.')}</div>`}
+      ${polAide(true)}</div>`;
+    const mj = z.querySelector('[data-pol-maj]'); if (mj) mj.onclick = async () => { mj.disabled = true; await remplirPol(true); const a = $('#v2-pol .pol-aide'); if (a) a.hidden = false; toast(tt('Liste à jour', 'List updated')); };
+    const sp = $('#v2-pexp'); if (!sp) return;
+    sp.onchange = (e) => { o.politique_exp = e.target.value || null;
       o.politique_ret = o.politique_exp && pol.retours && pol.retours[0] ? (pol.retours.find(x => x.defaut) || pol.retours[0]).id : null;
       o.politique_pai = o.politique_exp && pol.paiement && pol.paiement[0] ? (pol.paiement.find(x => x.defaut) || pol.paiement[0]).id : null;
-      const r = $('#v2-pexp-r'); if (r) r.textContent = ((pol.expedition.find(x => String(x.id) === String(o.politique_exp || '')) || {}).resume) || '';
+      const r = $('#v2-pexp-r'); if (r) r.textContent = ((L.find(x => String(x.id) === String(o.politique_exp || '')) || {}).resume) || '';
       const ap = $('#v2-livr-app'); if (ap) ap.hidden = !!o.politique_exp; };
   }).catch(() => {});
+  remplirPol(false);
   seg('v2-ret', v => { o.retours = v; }); seg('v2-pro', v => { o.promotion = +v; }); seg('v2-etat', v => { o.etat = v; });
   // 29 oct 2026 (Mathieu : « une date a laquelle l'annonce va etre publiee ») : par defaut, ce soir 19 h (ou demain)
   seg('v2-quand', v => { V2.debut = v ? (V2.debut || soir19h()) : null; });
@@ -4213,7 +4267,12 @@ function brancherVente2(){
   const chS = (id, f) => { const e = $('#' + id); if (e) e.oninput = e.onchange = () => { const v = nb(e.value); if (v != null) f(v); }; };
   chS('v2-cship', v => { if (o.expedition === 'lettre') o.cout_lettre = v; else o.cout_suivi = v; });
   chS('v2-cus', v => { if (o.expedition === 'lettre') o.us_cout_lettre = v; else o.us_cout_suivi = v; });
-  ch('v2-pds', e => { o.poids_g = nb(e.value) ?? o.poids_g; });
+  for (const [id, k] of [['v2-pds', 'poids_g'], ['v2-lo', 'longueur_cm'], ['v2-la', 'largeur_cm'], ['v2-h', 'hauteur_cm']]) {
+    const e = $('#' + id); if (!e) continue;
+    e.oninput = () => { const v = nb(e.value); if (v != null && v > 0) o[k] = v;
+      const n = $('#v2-lite'); if (n) { const ok = colisLite(o); n.classList.toggle('att', !ok); n.textContent = ok ? tt('✓ Entre dans Expedited Lite (max 250 g, 41 cm, 3 220 cm³)', '✓ Fits Expedited Lite (max 250 g, 41 cm, 3,220 cm³)')
+        : tt('Trop gros pour Expedited Lite (max 250 g, 41 cm, 3 220 cm³) : tarif Expedited Parcel', 'Too big for Expedited Lite (max 250 g, 41 cm, 3,220 cm³): Expedited Parcel rate'); } };
+  }
   const fp = (V2.prep.frais_pct || 0) / 100, ff = V2.prep.frais_fixe || 0;
   $('#v2-prix').oninput = (e) => { V2.prix = e.target.value; const n = $('#v2-net'); if (n) n.textContent = argent(Math.max(0, (nb(V2.prix) || 0) * (1 - fp) - ff), 2);
     const rp = $('#v2-rp'); if (rp) rp.textContent = argent(V2.prix, 2); $$('#v2-pp button').forEach(b => b.classList.toggle('on', b.dataset.v === String(V2.prix))); };
@@ -4307,15 +4366,15 @@ function rendrePG(){
     <div class="pg-liste">${L.map(x => `<div class="pg-ligne edit">${vig(x)}<span class="pg-mil"><textarea class="champ" rows="2" maxlength="80" data-pt="${x.id}">${esc(x.titre || '')}</textarea></span>
       <label class="pg-prix">$<input class="champ" type="number" inputmode="decimal" step="0.01" data-pp="${x.id}" value="${esc(x.prix ?? '')}"></label></div>`).join('')}</div>`;
   if (e === 3) corps = `<div class="pg-q">${tt('Expédition', 'Shipping')}</div><div class="pg-sous">${tt('La même pour toutes les cartes du lot.', 'The same for every card in the batch.')}</div>
-    ${pol && pol.expedition.length ? `<div class="bloc-v"><div class="bloc-t">${tt('Ta politique d’expédition eBay', 'Your eBay shipping policy')}</div>${sel('pg-pexp', pol.expedition, o.politique_exp, tt('Aucune : réglages de l’app', 'None: app settings'))}
+    ${pol && pol.expedition.length ? `<div class="bloc-v pol-z">${polTete()}${polAide(false)}${sel('pg-pexp', pol.expedition, o.politique_exp, tt('Aucune : réglages de l’app', 'None: app settings'))}
       ${(pol.expedition.find(p => String(p.id) === String(o.politique_exp)) || {}).resume ? `<div class="pg-sous">${esc(pol.expedition.find(p => String(p.id) === String(o.politique_exp)).resume)}</div>` : ''}</div>`
-      : `<div class="pg-sous">${tt('Aucune politique d’expédition trouvée dans ton compte eBay : on utilise les réglages ci-dessous.', 'No shipping policy found in your eBay account: using the settings below.')}</div>`}
+      : `<div class="pol-z"><div class="pg-sous">${tt('Aucune politique d’expédition trouvée dans ton compte eBay : on utilise les réglages ci-dessous.', 'No shipping policy found in your eBay account: using the settings below.')} <button class="aide-q" data-pol-q aria-label="?">?</button></div>${polAide(false)}</div>`}
     ${!o.politique_exp ? `<div class="bloc-v"><div class="bloc-t">${tt('Livraison', 'Shipping')}</div>${segV('pg-exp', [['lettre', tt('Enveloppe', 'Envelope'), argent(o.cout_lettre, 2)], ['suivi', tt('Suivi', 'Tracked'), argent(o.cout_suivi, 2)], ['gratuit', tt('Gratuite', 'Free')]], o.expedition)}</div>` : ''}
     <div class="bloc-v"><div class="bloc-t">${tt('Colis', 'Package')}</div><div class="pg-colis">
-      <label>${tt('Poids', 'Weight')}<span><input class="champ" type="number" inputmode="numeric" id="pg-g" value="${esc(o.poids_g || '')}">g</span></label>
-      <label>${tt('Long.', 'Length')}<span><input class="champ" type="number" inputmode="decimal" id="pg-lo" value="${esc(o.longueur_cm || '')}" placeholder="23">cm</span></label>
-      <label>${tt('Larg.', 'Width')}<span><input class="champ" type="number" inputmode="decimal" id="pg-la" value="${esc(o.largeur_cm || '')}" placeholder="16">cm</span></label>
-      <label>${tt('Haut.', 'Height')}<span><input class="champ" type="number" inputmode="decimal" id="pg-h" value="${esc(o.hauteur_cm || '')}" placeholder="3">cm</span></label></div></div>
+      <label>${tt('Poids', 'Weight')}<span><input class="champ" type="number" inputmode="numeric" id="pg-g" value="${esc(o.poids_g || LITE.g)}">g</span></label>
+      <label>${tt('Long.', 'Length')}<span><input class="champ" type="number" inputmode="decimal" id="pg-lo" value="${esc(colisDims(o)[0])}">cm</span></label>
+      <label>${tt('Larg.', 'Width')}<span><input class="champ" type="number" inputmode="decimal" id="pg-la" value="${esc(colisDims(o)[1])}">cm</span></label>
+      <label>${tt('Haut.', 'Height')}<span><input class="champ" type="number" inputmode="decimal" id="pg-h" value="${esc(colisDims(o)[2])}">cm</span></label></div></div>
     <div class="bloc-v"><div class="bloc-t">${tt('Délai d’envoi', 'Handling time')}</div>${segV('pg-del', [[1, tt('1 jour', '1 day')], [2, tt('2 jours', '2 days')], [3, tt('3 jours', '3 days')]], o.delai)}</div>`;
   if (e === 4) corps = `<div class="pg-q">${tt('Vente', 'Selling')}</div><div class="pg-sous">${tt('Offres, promotion et retours, pour tout le lot.', 'Offers, promotion and returns, for the whole batch.')}</div>
     <div class="bloc-v"><div class="bloc-t">${tt('Accepter les offres', 'Accept offers')}<label class="bascule"><input type="checkbox" id="pg-off" ${o.offres ? 'checked' : ''}></label></div>

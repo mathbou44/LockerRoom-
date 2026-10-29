@@ -283,6 +283,12 @@ class Api:
             finally:
                 c.close()
         r.setdefault("logo_v", "")
+        # 30 oct 2026 : un modele jamais touche (ancien defaut 30 g, sans dimensions) prend le colis Expedited Lite
+        m = r.get("modele_annonce")
+        if isinstance(m, dict) and int(float(m.get("poids_g") or 0)) == 30 and not any(m.get(k) for k in ("longueur_cm", "largeur_cm", "hauteur_cm")):
+            import annonces
+            r["modele_annonce"] = {**m, "poids_g": annonces.LITE["poids_g"],
+                                   **dict(zip(("longueur_cm", "largeur_cm", "hauteur_cm"), annonces.LITE["dims"]))}
         # 24 oct 2026 - heberge : la campagne eBay Partner Network est celle de SlabCoach (serveur), pour tous les clients
         epn = re.sub(r"\D", "", os.environ.get("LOCKERROOM_EPN_CAMPID") or "")
         if epn:

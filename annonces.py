@@ -28,7 +28,7 @@ MODELE_DEFAUT = {
     "format": "fixe",                       # fixe (Bon prix, jusqu'a la vente) | encan (7 jours)
     "expedition": "lettre",                 # lettre | suivi | gratuit
     "cout_lettre": 2.50, "cout_suivi": 12.00, "us": True, "us_cout_lettre": 6.50, "us_cout_suivi": 22.00,
-    "delai": 2, "poids_g": 30,
+    "delai": 2, "poids_g": 250,             # 30 oct 2026 : le maximum de Postes Canada Expedited Lite (eBay Labels)
     "retours": "non",                       # non | 30_acheteur | 30_gratuit
     "offres": True, "offre_auto_pct": 0, "offre_min_pct": 70,       # 27 oct 2026 : 0 = jamais accepte tout seul (choix du vendeur)
     "promotion": 0,                         # % Promoted Listings (0 = pas de promotion)
@@ -36,8 +36,12 @@ MODELE_DEFAUT = {
     # 29 oct 2026 (Mathieu : « le bon shipping policy ; le poids, c'est toujours 250 g, 16 x 23 x 3 cm ») : les politiques
     # d'eBay du vendeur (Business Policies) et le colis, gardes pour toutes ses annonces
     "politique_exp": "", "politique_ret": "", "politique_pai": "",
-    "longueur_cm": 0, "largeur_cm": 0, "hauteur_cm": 0,      # 0 : la taille d'une enveloppe / d'un petit colis
+    # 30 oct 2026 (Mathieu : « par defaut, le maximum permis par Expedited Lite ») : 250 g, aucun cote > 41 cm, 3 220 cm3
+    "longueur_cm": 23, "largeur_cm": 20, "hauteur_cm": 7,
 }
+LITE = {"poids_g": 250, "cote_cm": 41, "volume_cm3": 3220, "dims": (23, 20, 7)}
+_LETTRE_DIMS = (16, 11, 1)
+
 # carte brute : descripteur eBay 40001 (Card Condition)
 ETATS_BRUTS = {"nm": ("400010", "Near Mint or Better", "Quasi neuve ou mieux"), "ex": ("400011", "Excellent", "Excellente"),
                "vg": ("400012", "Very Good", "Très bonne"), "p": ("400013", "Poor", "Usée")}
@@ -196,6 +200,18 @@ def _xml_livraison(d):
     return x + "</ShippingDetails>"
 
 
+def colis_dims(d, lettre=False):
+    """30 oct 2026 : les dimensions du colis (cm). Une lettre garde la taille d'une enveloppe ; sinon celles du vendeur,
+    ou par defaut le maximum d'Expedited Lite (23 x 20 x 7 = 3 220 cm3)."""
+    if lettre:
+        return list(_LETTRE_DIMS)
+    try:
+        dims = [int(round(float(d.get(k) or 0))) for k in ("longueur_cm", "largeur_cm", "hauteur_cm")]
+    except (TypeError, ValueError):
+        dims = [0, 0, 0]
+    return dims if all(x > 0 for x in dims) else list(LITE["dims"])
+
+
 def _xml_colis(d):
     g = max(10, int(float(d.get("poids_g") or 30)))
     try:
@@ -203,9 +219,9 @@ def _xml_colis(d):
     except (TypeError, ValueError):
         cher = False
     lettre = (d.get("expedition") or "lettre") == "lettre" and not d.get("politique_exp") and not cher
-    dims = [int(round(float(d.get(k) or 0))) for k in ("longueur_cm", "largeur_cm", "hauteur_cm")]
-    if not all(x > 0 for x in dims):
-        dims = [16, 11, 1] if lettre else [20, 15, 2]
+    dims = colis_dims(d, lettre)
+    if lettre:
+        g = min(g, 30)                      # une lettre (Lettermail) : une carte et son enveloppe, pas 250 g
     return ("<ShippingPackageDetails><MeasurementUnit>Metric</MeasurementUnit>"
             f"<ShippingPackage>{'Letter' if lettre else 'PackageThickEnvelope'}</ShippingPackage>"
             f'<WeightMajor unit="kg">{g // 1000}</WeightMajor><WeightMinor unit="gm">{g % 1000}</WeightMinor>'

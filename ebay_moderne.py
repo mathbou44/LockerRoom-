@@ -283,9 +283,8 @@ def corps_article(d, photos):
             "condition": cond, "conditionDescriptors": descs,
             "product": {"title": str(d["titre"])[:80], "description": str(d.get("description") or d["titre"]),
                         "aspects": aspects, "imageUrls": list(photos or [])[:24]},
-            "packageWeightAndSize": {"weight": {"value": g, "unit": "GRAM"},
-                                     "dimensions": {"length": 16 if lettre else 20, "width": 11 if lettre else 15,
-                                                    "height": 1 if lettre else 2, "unit": "CENTIMETER"},
+            "packageWeightAndSize": {"weight": {"value": min(g, 30) if lettre else g, "unit": "GRAM"},
+                                     "dimensions": dict(zip(("length", "width", "height"), annonces.colis_dims(d, lettre)), unit="CENTIMETER"),
                                      "packageType": "LETTER" if lettre else "PADDED_BAGS"}}
 
 
