@@ -4218,7 +4218,14 @@ class Api:
                 y["gain"] = round(y["valeur"] * (1 - fp_) - ff_ - (y.get("total") or 0), 2)
                 y["rabais"] = round(100 * (1 - (y.get("total") or 0) / y["valeur"]))
             suivis.append(y)
-        f_s = {k: v for k, v in f.items() if k in ("joueurs", "sortes", "prix_min", "prix_max")}
+        # 31 oct 2026 (Mathieu : « assure-toi que le filtre fonctionne lorsqu'applique ») : TOUS les filtres s'appliquent aussi
+        # aux encans des gros vendeurs : rabais minimum (un encan sans valeur verifiee n'a pas de rabais -> cache), une mise
+        # au moins, prix fixe seulement (-> aucun encan)
+        f_s = {k: v for k, v in f.items() if k in ("joueurs", "sortes", "prix_min", "prix_max", "rabais_min", "avec_mise", "gain_min")}
+        if _float(f.get("rabais_min")) or _float(f.get("gain_min")):
+            suivis = [x for x in suivis if x.get("valeur")]
+        if f.get("type") == "fixe":
+            suivis = []
         suivis = [x for x in self._deals_filtrer(suivis, f_s) if not f.get("sports") or (x.get("sport") or "hockey") in f["sports"]]
         suivis.sort(key=lambda x: (0 if (x.get("sport") or "hockey") == "hockey" else 1, _dl.rang_vendeur(x.get("vendeur")), str(x.get("fin"))))
         suivis = self._appliquer_profil(suivis, prof)

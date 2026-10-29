@@ -1923,6 +1923,8 @@ def proches_prio(rechercher=None, bassin=None, maint=None):
         if len(l) < 150 or len(dans) < len(l):
             break                                    # plus d'encans, ou on depasse 6 h
     st["proches_vus"] = vus
+    if not st.get("requetes_proches"):
+        return {"ok": False, "vus": 0, "erreur": "eBay injoignable"}        # rien lu : on n'ecrit rien (pas d'ecrasement)
     _publier(d, deals, maint, st, force=True)
     with _verrou:                                    # le budget de verification utilise (comme a la fin d'un tour)
         d2 = lire()

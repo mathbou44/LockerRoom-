@@ -327,6 +327,7 @@ def requete_ebay(c):
     """La recherche envoyee a eBay : les mots qui comptent, sans le bruit. Annee, numero et /99 restent
     hors de la recherche (eBay exige TOUS les mots ; trop de vendeurs les ecrivent autrement) : le tri les verifie."""
     m = list(c["mots"])
+    m += [w for w in c.get("q_plus") or [] if w not in m]
     m += sorted(p for p in c["paralleles"] if p not in m)
     if c["auto"]:
         m.append("auto")
@@ -754,6 +755,18 @@ def cible_titre(titre, joueur=None):
         if m_ and m_.group(1) in SUITES_SET and m_.group(1) in c["ident"] and m_.group(1) not in suite:
             suite.append(m_.group(1))
     c["mots"] = [m for m in (j.split() + " ".join(sets).split() + suite) if m not in VIDES]
+    # 31 oct 2026 (Mathieu : « valide les comps de toutes les cartes de Savage et Remi, on capte rien ») : un produit qu'on ne
+    # connait pas par son nom (Tim Hortons NHL Signatures, SP Rookie Authentics, Debut Ticket Access...) donnait une recherche
+    # « brady tkachuk auto » : eBay renvoyait les 200 dernieres autos de Tkachuk (The Cup, SPA...) et la bonne carte se
+    # perdait -> « valeur a verifier ». Maintenant : sans set connu, les 2 premiers mots qui disent QUELLE carte c'est
+    # entrent dans la recherche (pas dans les mots obligatoires : le tri garde sa tolerance d'un tiers)
+    c["q_plus"] = []
+    if c["ident"]:
+        ordre = norm(titre).split()
+        set_mots = set(" ".join(sets).split())
+        bons = [w for w in c["ident"] if w.isalpha() and len(w) >= 3 and w not in GENERIQUES and w not in c["mots"] and w not in set_mots]
+        bons.sort(key=lambda w: ordre.index(w) if w in ordre else 99)
+        c["q_plus"] = bons[:1 if sets else 2]            # set connu : 1 mot de l'insert (Premieres, Cranked) ; sinon 2
     return c
 
 

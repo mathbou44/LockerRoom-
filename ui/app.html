@@ -370,7 +370,9 @@ details.reglage summary::-webkit-details-marker{display:none}
 .cb-c:active{transform:scale(.98)} .cb-i{width:46px; height:46px; border-radius:14px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.05); color:var(--acc)}
 .cb-i svg{width:24px; height:24px} .cb-c b{font:700 19px 'Barlow Condensed',sans-serif} .cb-c small{font-size:12.5px; color:var(--doux); line-height:1.3}
 .d-ent{display:flex; align-items:center; gap:8px; margin-left:auto} .d-chips{display:flex; align-items:center; flex-wrap:nowrap; gap:7px} .d-chips .aide-q{margin-left:auto} .d-chips .chip{padding-left:11px; padding-right:11px}
-.fd-w{flex-wrap:wrap !important; overflow:visible !important} .fd-s{display:flex; flex-direction:column; gap:8px}
+.fd-w{flex-wrap:wrap !important; overflow:visible !important} .fd-n{display:inline-flex; width:18px; height:18px; margin-right:8px; border-radius:50%; align-items:center; justify-content:center; background:var(--holo); color:#0B0B0E; font-size:11px; vertical-align:1px}
+.fd-aide{display:block; margin-top:6px; font-size:12px; color:var(--pale)} .fd-plus{margin-top:14px} .fd-plus summary{cursor:pointer; color:var(--doux); font-weight:600; padding:6px 0} .fd-plus > *:not(summary){margin-top:10px}
+.fd-s{display:flex; flex-direction:column; gap:8px}
 .fd-l{align-items:center; padding:10px 0} .fd-l > span{display:flex; flex-direction:column; gap:2px} .fd-l small{font-size:13px; color:var(--doux)}
 .filtres-d{margin-bottom:12px}
 .d-onglets{display:flex; gap:4px; margin:0 0 12px; padding:4px; border-radius:999px; background:var(--carte); width:100%}
@@ -4782,41 +4784,61 @@ S.dealsF = {sports:[], tri:'rabais', type:''};
 try { Object.assign(S.dealsF, JSON.parse(localStorage.getItem('lr_deals_f') || '{}')); } catch (e) {}
 const sauverDealsF = () => { try { localStorage.setItem('lr_deals_f', JSON.stringify(S.dealsF)); } catch (e) {} };
 const nbFiltresDeals = (F) => ['prix_min', 'prix_max', 'rabais_min', 'gain_min'].filter(k => F[k] != null && F[k] !== '').length + (F.sortes || []).length + ((F.joueurs || []).length ? 1 : 0) + (F.avec_mise ? 1 : 0);
-function feuilleFiltresDeals(){
-  // 29 oct 2026 (Mathieu : « revoir cette page ; meilleur deal = plus gros profit, redondance ») : 3 tris, tout tient sans
-  // glisser, un seul prix (le budget max), les gros vendeurs en un interrupteur
-  const F = S.dealsF, so = new Set(F.sortes || []);
+// 31 oct 2026 (Mathieu : « la zone Mes deals et Filtres dans Deals, c'est la meme chose : moins complique ; et assure-toi
+// que le filtre fonctionne quand il est applique ») : UNE seule fenetre, 4 questions simples. Ce qui dure (ce que je
+// collectionne, mon budget, mes joueurs, mes vendeurs) est garde sur le compte ; le reste sur le telephone.
+async function feuilleFiltresDeals(){
+  const F = S.dealsF;
+  const p = (await API.deals_profil_lire().catch(() => null)) || {};
   const enDev = (v) => v == null || v === '' ? '' : Math.round(convertir(v));
-  const SORTES = [['recrue', tt('Recrue', 'Rookie')], ['auto', 'Auto'], ['patch', 'Patch'], ['numerotee', tt('Numérotée', 'Numbered')], ['gradee', tt('Gradée', 'Graded')], ['brute', tt('Non gradée', 'Raw')]];
-  let tri = F.tri || 'rabais';
-  ouvrirFeuille(`<h3>${tt('Trier et filtrer', 'Sort and filter')}</h3>
-    <label class="bascule fd-l"><span><b>${tt('Seulement les gros vendeurs', 'Top sellers only')}</b><small>${tt('Les vendeurs de hockey qu’on suit de près', 'The hockey sellers we follow closely')}</small></span><input type="checkbox" id="fd-vend" ${F.vendeurs ? 'checked' : ''}></label>
-    <button class="acc-pil fd-ram" id="fd-ram"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.pin}</svg></span><span class="ap-t"><b>${tt('Je ramasse sur place', 'I pick up locally')}</b><small id="fd-ram-s">${tt('Le port ne compte pas chez ces vendeurs', 'Shipping doesn’t count with these sellers')}</small></span><i aria-hidden="true">›</i></button>
-    <div class="fd-s"><div class="r-titre">${tt('Sorte de carte', 'Card type')}</div>
-      <div class="chips fd-w" id="fd-so">${SORTES.map(([k, t]) => `<button class="chip ${so.has(k) ? 'on' : ''}" data-so="${k}">${t}</button>`).join('')}</div></div>
-    <div class="fd-s"><div class="r-titre">${tt('Rabais minimum', 'Minimum discount')}</div>
-      <div class="chips fd-w" id="fd-rb">${[['', tt('Tous', 'Any')], [40, '40 %'], [50, '50 %'], [60, '60 %'], [75, '75 %']].map(([k, t]) => `<button class="chip ${String(F.rabais_min ?? '') === String(k) ? 'on' : ''}" data-rb="${k}">${t}</button>`).join('')}</div></div>
-    <div class="grille-champs">
-      <label>${tt('Budget max', 'Max budget')} (${symDevise()})<input class="champ" type="number" inputmode="decimal" id="fd-pmax" value="${enDev(F.prix_max)}" placeholder="${tt('aucun', 'none')}"></label>
-      <label>${tt('Joueurs', 'Players')}<input class="champ" id="fd-j" value="${esc((F.joueurs || []).join(', '))}" placeholder="Bedard, Celebrini"></label></div>
-    <label class="bascule fd-l"><span>${tt('Encans : seulement avec au moins une mise', 'Auctions: only with at least one bid')}</span><input type="checkbox" id="fd-mise" ${F.avec_mise ? 'checked' : ''}></label>
+  const ep = new Set((p.collectionne || []).filter(k => ['recrues', 'veterans', 'legendes'].includes(k)));
+  const so = new Set((F.sortes || []).filter(k => ['auto', 'patch', 'numerotee', 'gradee', 'brute'].includes(k)));
+  let rb = F.rabais_min ?? '';
+  const seul = !!(F.joueurs || []).length;
+  const pmin0 = p.prix_min ?? F.prix_min, pmax0 = p.prix_max ?? F.prix_max;
+  const chips = (id, L, on, attr) => `<div class="chips fd-w" id="${id}">${L.map(([k, t]) => `<button class="chip ${on(k) ? 'on' : ''}" data-${attr}="${k}">${t}</button>`).join('')}</div>`;
+  ouvrirFeuille(`<h3>${tt('Filtres', 'Filters')}</h3>
+    <div class="sous" style="margin-bottom:4px">${tt('Rien de choisi = tout voir.', 'Nothing chosen = see everything.')}</div>
+    <div class="fd-s"><div class="r-titre"><b class="fd-n">1</b>${tt('Quelles cartes ?', 'Which cards?')}</div>
+      ${chips('fd-ep', [['recrues', tt('Recrues', 'Rookies')], ['veterans', tt('Vétérans', 'Veterans')], ['legendes', tt('Légendes', 'Legends')]], k => ep.has(k), 'ep')}
+      ${chips('fd-so', [['auto', 'Auto'], ['patch', 'Patch'], ['numerotee', tt('Numérotée', 'Numbered')], ['gradee', tt('Gradée', 'Graded')], ['brute', tt('Non gradée', 'Raw')]], k => so.has(k), 'so')}</div>
+    <div class="fd-s"><div class="r-titre"><b class="fd-n">2</b>${tt('Quel rabais ?', 'What discount?')}</div>
+      ${chips('fd-rb', [['', tt('Tous', 'Any')], [30, '−30 %'], [40, '−40 %'], [50, '−50 %'], [60, '−60 %']], k => String(rb) === String(k), 'rb')}
+      <small class="fd-aide">${tt('Avec un rabais choisi, les encans sans valeur vérifiée sont cachés.', 'With a discount chosen, auctions without a checked value are hidden.')}</small></div>
+    <div class="fd-s"><div class="r-titre"><b class="fd-n">3</b>${tt('Mon budget par carte', 'My budget per card')} (${symDevise()})</div>
+      <div class="md-b"><input class="champ" id="fd-pmin" type="number" inputmode="decimal" value="${enDev(pmin0)}" placeholder="min"><span>–</span><input class="champ" id="fd-pmax" type="number" inputmode="decimal" value="${enDev(pmax0)}" placeholder="max"></div></div>
+    <div class="fd-s"><div class="r-titre"><b class="fd-n">4</b>${tt('Mes joueurs et équipes', 'My players and teams')}</div>
+      <input class="champ" id="fd-j" value="${esc(((p.favoris || []).length ? p.favoris : (F.joueurs || [])).join(', '))}" placeholder="Bedard, Canadiens, Crosby">
+      <label class="bascule fd-l"><span>${tt('Seulement eux', 'Only them')}<small>${tt('Sinon : ils passent en premier, avec une ★', 'Otherwise: they come first, with a ★')}</small></span><input type="checkbox" id="fd-seul" ${seul ? 'checked' : ''}></label></div>
+    <details class="fd-plus"><summary>${tt('Vendeurs et encans', 'Sellers and auctions')}</summary>
+      <label class="bascule fd-l"><span><b>${tt('Seulement les gros vendeurs', 'Top sellers only')}</b><small>Savage, Remi, CF31, Slab Sharks…</small></span><input type="checkbox" id="fd-vend" ${F.vendeurs ? 'checked' : ''}></label>
+      <label class="bascule fd-l"><span>${tt('Encans : seulement avec au moins une mise', 'Auctions: only with at least one bid')}</span><input type="checkbox" id="fd-mise" ${F.avec_mise ? 'checked' : ''}></label>
+      <button class="acc-pil fd-ram" id="fd-ram"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.pin}</svg></span><span class="ap-t"><b>${tt('Je ramasse sur place', 'I pick up locally')}</b><small id="fd-ram-s">${tt('Le port ne compte pas chez ces vendeurs', 'Shipping doesn’t count with these sellers')}</small></span><i aria-hidden="true">›</i></button>
+      ${p.vendeurs_max ? `<label class="md-l">${tt(`Mes vendeurs eBay (${p.vendeurs_max} max)`, `My eBay sellers (${p.vendeurs_max} max)`)}${p.pro ? '' : ' <span class="badge-f pro">✦ PRO</span>'}<input class="champ" id="fd-v" value="${esc((p.vendeurs || []).join(', '))}" placeholder="${esc(tt('pseudo eBay exact', 'exact eBay username'))}" ${p.pro ? '' : 'disabled'}></label>` : ''}</details>
     <div class="fen-btns"><button class="btn" id="fd-ok">${tt('Voir les deals', 'Show deals')}</button><button class="btn ghost" id="fd-raz">${tt('Tout effacer', 'Clear all')}</button></div>`);
-  $$('#fd-so [data-so]').forEach(b => b.onclick = () => { const k = b.dataset.so;
+  $$('#fd-ep [data-ep]').forEach(b => b.onclick = () => { const k = b.dataset.ep; ep.has(k) ? ep.delete(k) : ep.add(k); b.classList.toggle('on', ep.has(k)); vibrer(); });
+  $$('#fd-so [data-so]').forEach(b => b.onclick = () => { const k = b.dataset.so; vibrer();
     if (so.has(k)) so.delete(k); else { so.add(k); if (k === 'gradee') so.delete('brute'); if (k === 'brute') so.delete('gradee'); }
     $$('#fd-so [data-so]').forEach(x => x.classList.toggle('on', so.has(x.dataset.so))); });
-  let rb = F.rabais_min ?? '';
-  $$('#fd-rb [data-rb]').forEach(b => b.onclick = () => { rb = b.dataset.rb; $$('#fd-rb [data-rb]').forEach(x => x.classList.toggle('on', x === b)); });
+  $$('#fd-rb [data-rb]').forEach(b => b.onclick = () => { rb = b.dataset.rb; vibrer(); $$('#fd-rb [data-rb]').forEach(x => x.classList.toggle('on', x === b)); });
   const cad = (id) => { const v = nb(val(id)); return v ? Math.round(versCAD(v) * 100) / 100 : null; };
-  $$('#fd-tri [data-tri]').forEach(b => b.onclick = () => { tri = b.dataset.tri; $$('#fd-tri [data-tri]').forEach(x => x.classList.toggle('on', x === b)); });
-  $('#fd-ok').onclick = () => {
-    F.tri = tri;
-    Object.assign(F, {sortes:[...so], rabais_min: rb === '' ? null : +rb, prix_min:null, prix_max:cad('fd-pmax'), gain_min:null,
-      joueurs: val('fd-j').split(',').map(x => x.trim()).filter(Boolean), avec_mise: $('#fd-mise').checked, vendeurs: $('#fd-vend').checked});
-    sauverDealsF(); fermerFeuille(); chargerDeals();
+  const appliquer = async (raz) => {
+    const noms = raz ? [] : val('fd-j').split(',').map(x => x.trim()).filter(Boolean);
+    Object.assign(F, raz ? {sortes:[], rabais_min:null, prix_min:null, prix_max:null, gain_min:null, joueurs:[], avec_mise:false, vendeurs:false}
+      : {sortes:[...so], rabais_min: rb === '' ? null : +rb, prix_min:null, prix_max:null, gain_min:null,       // le budget : sur le compte
+         joueurs: $('#fd-seul').checked ? noms : [], avec_mise: $('#fd-mise').checked, vendeurs: $('#fd-vend').checked});
+    const d = raz ? {collectionne: [], favoris: [], prix_min: null, prix_max: null}
+      : {collectionne: [...ep], favoris: noms.join(', '), prix_min: cad('fd-pmin'), prix_max: cad('fd-pmax')};
+    const v = $('#fd-v'); if (!raz && v && p.pro) d.vendeurs = v.value;
+    const r = await API.deals_profil_regler(d).catch(e => ({ok:false, erreur:e.message}));
+    if (r && r.ok === false) { toast(r.erreur || 'Erreur', 4000); return; }
+    S.dealsProfil = r || null; sauverDealsF(); MEMO.clear(); fermerFeuille(); chargerDeals(true);
+    toast(raz ? tt('Filtres effacés : tous les deals', 'Filters cleared: all deals') : tt('Filtres appliqués', 'Filters applied'), 1600);
   };
+  $('#fd-ok').onclick = () => appliquer(false);
+  $('#fd-raz').onclick = () => appliquer(true);
   API.deals_vendeurs_liste().then(r => { const e = $('#fd-ram-s'); if (e && r && r.ok && r.ramassage.length) e.textContent = r.ramassage.join(', '); }).catch(() => {});
-  $('#fd-ram').onclick = () => feuilleRamassage(() => { fermerFeuille(); chargerDeals(); });
-  $('#fd-raz').onclick = () => { Object.assign(F, {sortes:[], rabais_min:null, prix_min:null, prix_max:null, gain_min:null, joueurs:[], avec_mise:false, vendeurs:false, tri:'rabais'}); sauverDealsF(); fermerFeuille(); chargerDeals(); };
+  $('#fd-ram').onclick = () => feuilleRamassage(() => { fermerFeuille(); chargerDeals(true); });
 }
 // 30 oct 2026 (Mathieu : « Remi, Savage et CF31, je peux aller pick up sur place ») : le port ne compte pas chez eux
 async function feuilleRamassage(apres){
@@ -5982,8 +6004,8 @@ function rondsDeals(F, sp){
   const un = F.sports.length === 1 ? F.sports[0] : '';
   const spL = un ? nomSport(un) : tt('Sports', 'Sports');
   const triL = (TRIS_DEALS().find(t => t[0] === F.tri) || TRIS_DEALS()[0])[1] + (F.type === 'encan' ? tt(' · encans', ' · auctions') : F.type === 'fixe' ? tt(' · prix fixe', ' · BIN') : '');
-  const nf = nbFiltresDeals(F) + (F.vendeurs ? 1 : 0);
-  return `<div class="d-ronds">${sp.length > 1 ? r('dr-sp', icSport(un), spL) : ''}${r('dr-tri', IC_D.tri, triL)}${r('dr-fil', IC_D.filtre, tt('Filtres', 'Filters'), nf)}${r('dr-reg', IC_PIL.admin, tt('Mes deals', 'My deals'))}</div>`;
+  const pf = S.dealsProfil || {}, nf = nbFiltresDeals(F) + (F.vendeurs ? 1 : 0) + ((pf.collectionne || []).length ? 1 : 0) + (pf.prix_min || pf.prix_max ? 1 : 0) + ((pf.favoris || []).length && !(F.joueurs || []).length ? 1 : 0);
+  return `<div class="d-ronds">${sp.length > 1 ? r('dr-sp', icSport(un), spL) : ''}${r('dr-tri', IC_D.tri, triL)}${r('dr-fil', IC_D.filtre, tt('Filtres', 'Filters'), nf)}</div>`;
 }
 function brancherRondsDeals(F, sp){
   const go = () => { sauverDealsF(); fermerFeuille(); chargerDeals(); };
@@ -5997,14 +6019,15 @@ function brancherRondsDeals(F, sp){
     $$('[data-dtri]').forEach(b => b.onclick = () => { F.tri = b.dataset.dtri; go(); });
     $$('#dr-type button').forEach(b => b.onclick = () => { F.type = b.dataset.v; if (F.type === 'encan' && F.tri === 'rabais') F.tri = 'fin'; go(); }); };
   $('#dr-fil').onclick = () => { vibrer(); feuilleFiltresDeals(); };
-  $('#dr-reg').onclick = () => { vibrer(); feuilleMesDeals(); };
+
 }
 async function chargerDeals(frais){
   const z = $('#d-res'); if (!z) return;
   const F = S.dealsF;
   if ((F.sortes || []).some(k => k === 'veteran' || k === 'hit')) { F.sortes = F.sortes.filter(k => k !== 'veteran' && k !== 'hit'); sauverDealsF(); }
   if (frais) for (const k of [...MEMO.keys()]) if (k.startsWith('deals_liste')) MEMO.delete(k);     // tirer pour actualiser : jamais la memoire
-  const d = await API.deals_liste(F).catch(e => ({ok:false, erreur:e.message}));
+  const [d, pf] = await Promise.all([API.deals_liste(F).catch(e => ({ok:false, erreur:e.message})), S.dealsProfil ? S.dealsProfil : API.deals_profil_lire().catch(() => ({}))]);
+  S.dealsProfil = pf || {};
   S.dealsMaj = d && d.maj;
   if (d && d.watch) { S.watch = new Set(d.watch.map(String)); majNbWatch(); }
   if (!$('#d-res')) return;
@@ -9168,7 +9191,7 @@ async function vueReglages(arg){
     if (await essai(API.reglages_sauver({activites:n}))) { appliquerActivites(n); toast(n[b.dataset.act] ? 'Onglet ajouté' : 'Onglet masqué'); vueReglages(); }
   });
   if ($('#g-idee')) $('#g-idee').onclick = feuilleIdee;
-  if ($('#g-deals')) $('#g-deals').onclick = feuilleMesDeals;
+  if ($('#g-deals')) $('#g-deals').onclick = () => { location.hash = '#deals'; setTimeout(() => { if (S.dealsF) feuilleFiltresDeals(); }, 700); };
   if ($('#g-profil')) $('#g-profil').onclick = () => questionnaireProfil(() => toast(tt('Profil enregistré', 'Profile saved')), true);
   if ($('#g-tour')) $('#g-tour').onclick = () => tutoriel(S.mode === 'acheteur' ? 'acheteur' : 'vendeur', true);
   if ($('#g-partage')) $('#g-partage').onclick = async () => {
