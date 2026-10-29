@@ -443,7 +443,23 @@ def joueur_en_feu(api=None, langue="fr"):
             "lien": "#joueur/" + j, "calcule": True}
 
 
-GENERATEURS = [pouls_hobby, joueur_en_feu, chute_sortie, bedard, frais, numerotation, gradation, prime_psa10, offres, jours, chance_boite, ouvrir,
+# -- 31 oct 2026 : nos nouvelles du marche (ventes reelles, regles strictes : voir nouvelles_donnees.py) ---------------
+def marche_hausse(api=None, langue="fr"):
+    import nouvelles_donnees
+    return nouvelles_donnees.nouvelle_mouvement(1, langue)
+
+
+def marche_baisse(api=None, langue="fr"):
+    import nouvelles_donnees
+    return nouvelles_donnees.nouvelle_mouvement(-1, langue)
+
+
+def marche_prime(api=None, langue="fr"):
+    import nouvelles_donnees
+    return nouvelles_donnees.nouvelle_prime(langue)
+
+
+GENERATEURS = [pouls_hobby, joueur_en_feu, marche_hausse, marche_baisse, marche_prime, chute_sortie, bedard, frais, numerotation, gradation, prime_psa10, offres, jours, chance_boite, ouvrir,
                hobby_seulement, yg_canvas, demande_vs_vendu]
 
 

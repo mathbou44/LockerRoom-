@@ -756,7 +756,7 @@ _RESERVEES_SERVEUR = {"ebay_cles_sauver", "ebay_environnement", "ebay_avis_regle
 # pas ecrire sur eBay, ni toucher aux cles : ces gestes restent sur le PC lui-meme (ou avec LOCKERROOM_CODE).
 _ECRITURES_EBAY = {"ebay_publier", "annonce_publier", "ebay_changer_prix", "ebay_miser", "ebay_cles_sauver", "ebay_avis_regler",
                    "ebay_avis_jeton", "ebay_deconnecter", "ebay_environnement", "ebay_terminer", "ebay_url_connexion", "ebay_promouvoir",
-                   "prix_auto_appliquer", "prix_auto_regler", "offres_envoyer", "ebay_prix_lot", "annonce_reviser", "watch_vers_ebay", "annonce_promotion"}
+                   "prix_auto_appliquer", "prix_auto_regler", "offres_envoyer", "ebay_prix_lot", "annonce_reviser", "watch_vers_ebay", "annonce_promotion", "gixen_envoyer"}
 
 
 @app.route("/api/<nom>", methods=["POST"])

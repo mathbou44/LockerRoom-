@@ -408,7 +408,7 @@ details.reglage summary::-webkit-details-marker{display:none}
 .gx-l{display:flex; flex-direction:column; gap:8px; padding:10px 12px; border-radius:14px; background:var(--carte2)} .gx-l.gx-off{opacity:.55}
 .gx-t{display:flex; flex-direction:column; gap:2px; min-width:0} .gx-t b{font-size:14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis} .gx-t small{font-size:12.5px; color:var(--doux)}
 .gx-c{display:flex; gap:8px} .gx-b{flex:1; height:40px; border-radius:12px; border:1px solid var(--ligne); background:var(--carte); color:var(--texte); font:600 15px/1 var(--f-cond); letter-spacing:.04em; cursor:pointer}
-.gx-b.gx-m{flex:0 0 38%; color:var(--vert); border-color:color-mix(in srgb, var(--vert) 40%, transparent)} .gx-b.copie{box-shadow:inset 0 0 0 1.5px var(--acc)} .gx-b:disabled{opacity:.5}
+.gx-b.gx-m{flex:0 0 38%; color:var(--vert); border-color:color-mix(in srgb, var(--vert) 40%, transparent)} .gx-b.copie{box-shadow:inset 0 0 0 1.5px var(--acc)} .gx-env{width:100%; margin:0} .gx-env.gx-ok{background:var(--carte); color:var(--vert); box-shadow:inset 0 0 0 1.5px var(--vert)} #gx-env-tout.gx-conf{background:var(--or); color:#15141A} .gx-b:disabled{opacity:.5}
 .mi-etapes{display:flex; gap:6px; margin:-2px 0 12px} .mi-etapes span{flex:1; display:flex; align-items:center; gap:6px; font-size:12px; color:var(--doux); padding:6px 8px; border-radius:99px; background:var(--carte2); white-space:nowrap}
 .mi-etapes b{width:18px; height:18px; flex:none; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--holo); color:#0B0B0E; font-size:11px}
 .mi-haut{display:flex; gap:8px; margin-bottom:12px; align-items:stretch} .mi-haut .btn{width:auto; margin:0} .mi-haut #ml-go{flex:1 1 auto} .mi-haut #ml-gx{flex:0 0 auto; padding:0 18px} .mi-lst{display:flex; flex-direction:column; gap:8px}
@@ -421,6 +421,8 @@ details.reglage summary::-webkit-details-marker{display:none}
 .mi-info{display:flex; flex-wrap:wrap; gap:6px 14px; font-size:13px; color:var(--doux); margin-bottom:12px} .mi-info b{color:var(--texte)}
 .mi-in{font:700 26px/1 var(--f-cond) !important; text-align:center} .mi-av{min-height:20px; font-size:13px; margin:6px 0} .mi-av .rouge{color:var(--rouge)} .mi-av .or{color:var(--or)}
 .mi-go.off{opacity:.45; pointer-events:none} .mi-go{display:flex; align-items:center; justify-content:center; text-decoration:none; margin:6px 0 8px} .mi-nav{display:flex; justify-content:space-between; gap:8px; margin-top:12px}
+.px-liste{display:flex; flex-direction:column; gap:4px} .px-l{display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; background:var(--carte2); color:inherit; text-decoration:none; font-size:13px}
+.px-d{flex:none; width:54px; color:var(--doux)} .px-t{flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--doux)} .px-l b{flex:none; font:700 15px var(--f-cond)}
 .w-pils{margin-top:14px} .w-rang .ap-t{display:flex; flex-direction:column; gap:2px} .w-rang .ap-t b{font-size:15.5px; font-weight:600} .w-rang .ap-t small{font-size:12.5px; color:var(--doux); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .ic-h{width:1.05em; height:1.05em; flex-shrink:0; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; vertical-align:-.15em; margin-right:4px}
 .w-reg-i svg{width:18px; height:18px; fill:none; stroke:var(--texte); stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round}
@@ -1818,6 +1820,7 @@ body.pro .onglets a.on{color:var(--acc)}
 .petit-l{font-size:12.5px; line-height:1.4; margin:4px 0 12px}
 
 .as-lien{display:inline-block; margin-top:8px; font-weight:700; color:var(--acc)}
+button.as-lien{background:none; border:0; padding:0; font:inherit; font-weight:700; color:var(--acc); cursor:pointer; text-align:left; -webkit-appearance:none; appearance:none}
 .pl-liste{display:flex; flex-direction:column; gap:6px}
 .pl-l{display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:12px 14px; border-radius:var(--r-ctl); background:var(--carte); border:1px solid var(--ligne); color:var(--texte); font-size:15px}
 .pl-l.on{border-color:var(--acc); background:var(--acc-fonce)} .pl-n{flex:1; min-width:0}
@@ -2063,7 +2066,9 @@ body.en-defil .logo-lr::after, body.en-defil #nav-logo-nom, body.en-defil .titre
 .slab-deal:active .sd-slab{transform:scale(.97)}
 .sd-slab{border-radius:12px; padding:6px; display:flex; flex-direction:column; gap:5px; transition:transform .15s;
   background:linear-gradient(180deg,#2B2A33,#141419); box-shadow:inset 0 0 0 1px rgba(255,255,255,.08), 0 4px 10px rgba(0,0,0,.35)}
-.grille-c > .slab-deal{content-visibility:auto; contain-intrinsic-size:auto 330px}       /* 31 oct 2026 : hors ecran, pas dessinee */
+/* 31 oct 2026 (Mathieu : « corrige le bug », barre du bas au milieu de l'ecran) : plus de content-visibility sur les tuiles :
+   la hauteur estimee (330 px) puis reelle (~280 px) faisait retrecir la page pendant le defilement sur iPhone ; le feed
+   par paquets de 30 suffit a garder le defilement fluide */
 .d-plus{height:1px}
 .sd-lab{display:flex; align-items:center; justify-content:space-between; gap:6px; height:28px; padding:0 9px; border-radius:6px;
   background:var(--etiq, linear-gradient(180deg,#1F1F26,#17171C)); border-bottom:1px solid #46454f}
@@ -4996,7 +5001,20 @@ function feuilleWatchEbay(L, W){
 // et ouvre la mise de l'annonce sur eBay ; en lot, l'encan suivant arrive tout seul au retour dans l'app
 const argentDev = (v, dv) => (Math.round((+v || 0) * 100) / 100).toLocaleString(LOC(), {minimumFractionDigits: (+v || 0) % 1 ? 2 : 0, maximumFractionDigits: 2}) + ' ' + dv;
 const devCourt = (d) => d === 'CAD' || !d ? '$' : d === 'USD' ? '$ US' : d;
-const lienMise = (x) => { let o = 'https://www.ebay.ca'; try { o = new URL(x.url).origin; } catch (e) {} return lienAchat(o + '/bfl/placebid/' + x.item_id, 'mise'); };
+// 31 oct 2026 (Mathieu : « ca me dit de me connecter, apres erreur serveur, apres Safari, apres l'app : c'est lourd ») :
+// la page de mise d'eBay (bfl/placebid) dans le navigateur de l'app demande de se connecter puis plante. Maintenant :
+// dans l'app iPhone, l'annonce s'ouvre DIRECTEMENT dans l'app eBay (deja connectee) ; sur le web, la page de l'annonce
+const lienMise = (x) => { let o = 'https://www.ebay.ca'; try { o = new URL(x.url).origin; } catch (e) {} return lienAchat(o + '/itm/' + x.item_id, 'mise'); };
+function ouvrirMiseEbay(x){
+  if (!NATIF) return false;
+  const web = lienMise(x);
+  let parti = false;
+  const vu = () => { if (document.hidden) parti = true; };
+  document.addEventListener('visibilitychange', vu);
+  location.href = 'ebay://launch?itm=' + encodeURIComponent(x.item_id);      // l'app eBay (si elle est installee)
+  setTimeout(() => { document.removeEventListener('visibilitychange', vu); if (!parti && !document.hidden) window.open(web); }, 1600);
+  return true;
+}
 async function feuilleMiser(id, lot){
   ouvrirFeuille(`<h3>${lot ? tt('Miser en lot', 'Bid in a batch') : tt('Ma mise', 'My bid')}</h3><div class="sous">${tt('SlabCoach prépare tes mises chez eBay…', 'SlabCoach is preparing your bids on eBay…')}</div>`);
   const r = await API.watch_preparer().catch(e => ({ok:false, erreur:e.message}));
@@ -5017,7 +5035,7 @@ async function feuilleMiser(id, lot){
       <label class="large mi-l">${tt('Ma mise', 'My bid')} (${x.devise === 'USD' ? '$ US' : !x.devise || x.devise === 'CAD' ? '$ CA' : x.devise})<input class="champ mi-in" id="mi-v" type="number" inputmode="decimal" step="1" min="0" value="${Math.floor(m)}"></label>
       <div class="mi-av" id="mi-av"></div>
       <a class="btn mi-go" id="mi-go" href="${esc(lienMise(x))}" target="_blank" rel="noopener"></a>
-      <div class="sous" style="text-align:center">${tt('Le montant est copié : sur eBay, colle-le dans ta mise max et confirme.', 'The amount is copied: on eBay, paste it as your max bid and confirm.')}</div>
+      <div class="sous" style="text-align:center">${tt('Le montant est copié. Sur eBay : « Enchérir », colle-le dans ton enchère max et confirme.', 'The amount is copied. On eBay: “Place bid”, paste it as your max bid and confirm.')}</div>
       ${lot ? `<div class="mi-nav"><button class="btn ghost petit" id="mi-passe">${tt('Passer', 'Skip')}</button>${M.i + 1 < Q.length ? `<button class="btn ghost petit" id="mi-suiv">${tt('Suivant ›', 'Next ›')}</button>` : ''}</div>` : ''}`);
     const i = $('#mi-v'), go = $('#mi-go'), av = $('#mi-av');
     const maj = () => { const v = nb(i.value) || 0; x._m = v;
@@ -5026,7 +5044,8 @@ async function feuilleMiser(id, lot){
       av.innerHTML = x.mise_min != null && v < x.mise_min ? `<span class="rouge">${tt('eBay demande au moins ', 'eBay needs at least ')}${argentDev(x.mise_min, dv)}</span>`
         : v > x.mise_max ? `<span class="or">${tt('Au-dessus de ta mise max : moins rentable', 'Above your max bid: less profitable')}</span>` : ''; };
     i.oninput = maj; maj();
-    go.onclick = () => { const v = nb(i.value) || 0; copier(String(Math.floor(v * 100) / 100)); vibrer(); M.envoye = true; M.faits++;
+    go.onclick = (e) => { const v = nb(i.value) || 0; copier(String(Math.floor(v * 100) / 100)); vibrer(); M.envoye = true; M.faits++;
+      if (ouvrirMiseEbay(x)) { e.preventDefault(); e.stopPropagation(); }
       if (v > 0 && x.taux) API.watch_mise_max(x.item_id, Math.round(v * x.taux * 100) / 100).catch(() => {});   // ta mise devient ta mise max (alertes)
       toast(tt('Montant copié : colle-le sur eBay', 'Amount copied: paste it on eBay'), 2500); };
     const p = $('#mi-passe'); if (p) p.onclick = () => { M.i++; etape(); };
@@ -5074,17 +5093,34 @@ async function feuilleGixen(montants){
   let L = r.cartes || [];
   if (montants) { L = L.filter(x => montants[x.item_id] != null).map(x => ({...x, mise_max: +montants[x.item_id], trop_bas: false}));
     r.texte = L.map(x => `${x.item_id} ${x.mise_max.toFixed(2)}`).join('\n'); }
-  const bons = L.filter(x => !x.trop_bas);
+  const bons = L.filter(x => !x.trop_bas), api = !!r.gixen_api;
   const m = (x) => `${x.mise_max.toFixed(0)} $${x.devise === 'CAD' ? '' : ' ' + (x.devise === 'USD' ? 'US' : x.devise)}`;
-  ouvrirFeuille(`<h3>${tt('Mises rapides · Gixen', 'Quick bids · Gixen')}</h3>
-    <div class="sous" style="margin-bottom:10px">${tt('Touche le numéro, colle-le dans Gixen ; touche la mise, colle-la. La mise est dans la devise de l’annonce.', 'Tap the number, paste it in Gixen; tap the bid, paste it. The bid is in the listing’s currency.')}</div>
-    <div class="gx-actions"><a class="btn petit" href="https://www.gixen.com" target="_blank" rel="noopener">${tt('Ouvrir Gixen', 'Open Gixen')}</a>
-      ${bons.length ? `<button class="btn ghost petit" id="gx-tout">${tt(`Tout copier (${bons.length})`, `Copy all (${bons.length})`)}</button>` : ''}</div>
-    <div class="gx-liste">${L.map(x => `<div class="gx-l ${x.trop_bas ? 'gx-off' : ''}">
+  // 31 oct 2026 (Mathieu : « pour Gixen, y'a rien de plus rapide ? ») : avec ses identifiants Gixen dans Render, la mise
+  // part chez Gixen en un tap (API de Gixen) ; sinon, copier-coller comme avant
+  const ligne = (x) => `<div class="gx-l ${x.trop_bas ? 'gx-off' : ''}" data-gxl="${esc(x.item_id)}">
       <div class="gx-t"><b>${esc(titreCourt(x.titre))}</b><small>${icH()}${finCourt(x.reste_min)}${x.mise_actuelle != null ? ' · ' + tt('mise ', 'bid ') + Math.round(x.mise_actuelle) + ' $' + (x.devise === 'USD' ? ' US' : '') : ''}${x.trop_bas ? ' · ' + tt('déjà au-dessus de ta mise max', 'already over your max') : ''}${x.erreur ? ' · ' + esc(x.erreur) : ''}</small></div>
-      <div class="gx-c"><button class="gx-b" data-cp="${esc(x.item_id)}">${esc(x.item_id)}</button><button class="gx-b gx-m" data-cp="${x.mise_max.toFixed(2)}" ${x.trop_bas ? 'disabled' : ''}>${m(x)}</button></div></div>`).join('') || `<div class="vide">${tt('Aucun encan en cours dans ta watchlist', 'No live auction in your watchlist')}</div>`}</div>`);
+      ${api ? `<button class="btn petit gx-env" data-gx="${esc(x.item_id)}" ${x.trop_bas ? 'disabled' : ''}>${tt('Envoyer à Gixen', 'Send to Gixen')} · ${m(x)}</button>`
+        : `<div class="gx-c"><button class="gx-b" data-cp="${esc(x.item_id)}">${esc(x.item_id)}</button><button class="gx-b gx-m" data-cp="${x.mise_max.toFixed(2)}" ${x.trop_bas ? 'disabled' : ''}>${m(x)}</button></div>`}</div>`;
+  ouvrirFeuille(`<h3>${tt('Mises rapides · Gixen', 'Quick bids · Gixen')}</h3>
+    <div class="sous" style="margin-bottom:10px">${api ? tt('Un tap : la mise part chez Gixen, qui mise dans les dernières secondes. Montant dans la devise de l’annonce.', 'One tap: the bid goes to Gixen, which bids in the last seconds. Amount in the listing’s currency.')
+      : tt('Touche le numéro, colle-le dans Gixen ; touche la mise, colle-la. Pour un seul tap : ajoute GIXEN_UTILISATEUR et GIXEN_MOT_DE_PASSE dans Render.', 'Tap the number, paste it in Gixen; tap the bid, paste it. For one tap: add GIXEN_UTILISATEUR and GIXEN_MOT_DE_PASSE in Render.')}</div>
+    <div class="gx-actions">${api ? (bons.length > 1 ? `<button class="btn petit" id="gx-env-tout">${tt(`Tout envoyer à Gixen (${bons.length})`, `Send all to Gixen (${bons.length})`)}</button>` : '') + `<a class="btn ghost petit" href="https://www.gixen.com/main/home_2.php" target="_blank" rel="noopener">${tt('Mes snipes', 'My snipes')}</a>`
+      : `<a class="btn petit" href="https://www.gixen.com" target="_blank" rel="noopener">${tt('Ouvrir Gixen', 'Open Gixen')}</a>${bons.length ? `<button class="btn ghost petit" id="gx-tout">${tt(`Tout copier (${bons.length})`, `Copy all (${bons.length})`)}</button>` : ''}`}</div>
+    <div class="gx-liste">${L.map(ligne).join('') || `<div class="vide">${tt('Aucun encan en cours dans ta watchlist', 'No live auction in your watchlist')}</div>`}</div>`);
   $$('[data-cp]').forEach(b => b.onclick = async () => { if (await copier(b.dataset.cp)) { vibrer(); b.classList.add('copie'); toast(tt('Copié : ', 'Copied: ') + b.dataset.cp, 1400); } });
   const t = $('#gx-tout'); if (t) t.onclick = async () => { if (await copier(r.texte)) { vibrer(); toast(tt('Liste copiée : numéro et mise max, une carte par ligne', 'List copied: number and max bid, one card per line'), 2500); } };
+  const envoyer = async (x, b) => {
+    b.disabled = true; b.textContent = tt('Envoi…', 'Sending…');
+    const res = await API.gixen_envoyer(x.item_id, x.mise_max).catch(e => ({ok:false, erreur:e.message}));
+    if (res && res.ok) { b.textContent = '✓ ' + tt('Chez Gixen', 'At Gixen') + ' · ' + m(x); b.classList.add('gx-ok'); return true; }
+    b.disabled = false; b.textContent = tt('Réessayer', 'Try again') + ' · ' + m(x); toast((res && res.erreur) || 'Gixen', 6000); return false;
+  };
+  $$('[data-gx]').forEach(b => b.onclick = () => { vibrer(); const x = L.find(y => y.item_id === b.dataset.gx); if (x) envoyer(x, b); });
+  const tout = $('#gx-env-tout'); if (tout) { let pret = false; tout.onclick = async () => {
+    if (!pret) { pret = true; vibrer(); tout.textContent = tt(`Confirmer : ${bons.length} mises chez Gixen`, `Confirm: ${bons.length} bids to Gixen`); tout.classList.add('gx-conf'); return; }
+    tout.disabled = true; let ok = 0;
+    for (const x of bons) { const b = $(`[data-gx="${CSS.escape(x.item_id)}"]`); if (b && !b.classList.contains('gx-ok') && await envoyer(x, b)) ok++; }
+    tout.textContent = tt(`${ok} / ${bons.length} chez Gixen`, `${ok} / ${bons.length} at Gixen`); vibrer(); }; }
 }
 function feuilleMiseMax(x, W){
   const defaut = x.valeur ? Math.round((x.valeur * W.ratio_pct / 100 - (x.port || 0)) * 100) / 100 : null;
@@ -6824,8 +6860,8 @@ function pastillesAccueil(d, a, gestes, admin){
 function rendreTicker(){
   const z = $('#acc-ticker'), L = S.newsListe || []; if (!z) return;
   if (!L.length) { z.hidden = true; return; }
-  const item = (n, j) => `<button class="tk ${n.astuce ? 'astuce' : ''}" data-tk="${j}"><span class="tk-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${n.astuce ? IC_PIL.ampoule : IC_SP[n.sport] || IC_PIL.news}</svg></span>
-    <span class="tk-t"><small>${n.astuce ? tt('Astuce', 'Tip') : esc(n.libelle || nomSport(n.sport) || tt('Nouvelle', 'News'))}</small><b>${esc(String(n.titre || '').slice(0, 70))}</b></span></button>`;
+  const item = (n, j) => `<button class="tk ${n.astuce ? 'astuce' : ''}" data-tk="${j}"><span class="tk-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${n.marche ? IC_PIL.graphe : n.astuce ? IC_PIL.ampoule : IC_SP[n.sport] || IC_PIL.news}</svg></span>
+    <span class="tk-t"><small>${n.marche ? tt('Marché', 'Market') : n.astuce ? tt('Astuce', 'Tip') : esc(n.libelle || nomSport(n.sport) || tt('Nouvelle', 'News'))}</small><b>${esc(String(n.titre || '').slice(0, 70))}</b></span></button>`;
   const html = L.map(item).join('');
   z.innerHTML = `<div class="tk-piste" style="--tk-d:${Math.max(24, L.length * 7)}s">${html}${html}</div>`;
   z.hidden = false;
@@ -6926,6 +6962,18 @@ const IMG_ASTUCE = {
   canvas:'<rect x="8" y="6" width="20" height="30" rx="2"/><rect x="20" y="12" width="20" height="30" rx="2"/><path d="M24 20h12M24 26h12M24 32h8"/>',
   demande:'<path d="M10 8h20l8 8v24H10z"/><path d="M16 22h16M16 28h10"/><path d="M28 34l10 10M38 34L28 44"/>'};
 const imgAstuce = (id) => `<span class="as-img" aria-hidden="true"><svg viewBox="0 0 48 48">${IMG_ASTUCE[id] || IMG_ASTUCE.numerotation}</svg></span>`;
+// 31 oct 2026 (Mathieu : « assure-toi que les donnees soient bonnes, sinon on fait de la desinformation ») : chaque
+// nouvelle du marche montre ses ventes (date, prix, lien eBay) : chacun peut verifier
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-preuve]'); if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  const n = (S.newsSlides || [])[+b.dataset.preuve]; if (!n || !n.preuve) return;
+  vibrer();
+  ouvrirFeuille(`<h3>${esc(n.titre)}</h3><div class="sous" style="margin-bottom:10px">${esc(n.texte)}</div>
+    ${n.preuve.map(g => `<div class="r-titre" style="margin:12px 0 6px">${esc(g.titre)} <span class="sous">· ${g.ventes.length} ${tt('ventes', 'sales')}</span></div>
+      <div class="px-liste">${g.ventes.map(v => `<a class="px-l" ${v.url ? `href="${esc(v.url)}" target="_blank" rel="noopener"` : ''}><span class="px-d">${esc(dateCourte(v.le))}</span><span class="px-t">${esc(v.titre)}</span><b>${argent(v.prix, 0)}</b></a>`).join('')}</div>`).join('')}
+    <div class="sous" style="margin-top:12px">${esc(n.source || '')}. ${tt('Même carte et même condition seulement ; prix aberrants retirés ; une vente comptée une fois.', 'Same card and same condition only; outlier prices removed; each sale counted once.')}</div>`);
+}, true);
 function rendreNouvelles(items){
   const z = $('#acc-news'); if (!z) return;
   if (!S.astuces && !S.astucesEnCours) {
@@ -6939,6 +6987,9 @@ function rendreNouvelles(items){
     for (let k = 0; k < Math.max(news.length, tips.length); k++) { if (news[k]) out.push(news[k]); if (tips[k]) out.push({...tips[k], astuce:true}); }
     const ip = out.findIndex(x => x.astuce && ['pouls', 'en_feu'].includes(x.id));          // 27 oct 2026 : le pouls du hobby passe en premier
     if (ip > 0) out.unshift(out.splice(ip, 1)[0]);
+    // 31 oct 2026 : nos nouvelles du marche (ventes reelles) juste apres
+    const mk = out.filter(x => x.marche); mk.forEach(x => out.splice(out.indexOf(x), 1)); out.splice(Math.min(1, out.length), 0, ...mk);
+    S.newsSlides = out;
     return out;
   };
   L = construire();
@@ -6950,11 +7001,12 @@ function rendreNouvelles(items){
   // elle avance seule toutes les 10 s, sauf quand on la touche.
   const pts = (k) => `<div class="points">${L.map((x, j) => `<button data-k="${j}" class="${j === k ? 'on' : ''} ${x.astuce ? 'astuce' : ''}" aria-label="${x.astuce ? 'Astuce' : 'Nouvelle'} ${j + 1}"></button>`).join('')}</div>`;
   const slide = (n, k) => {
-    if (n.astuce) return `<div class="slide slide-astuce"><div class="visuel astuce-v g-${esc(n.genre || 'info')}"><span class="as-lib">${['pouls', 'en_feu'].includes(n.id) ? '〰 ' + tt('Le pouls du hobby', 'Hobby pulse') : tt('Le savais-tu ?', 'Did you know?')}</span>
+    if (n.astuce) return `<div class="slide slide-astuce"><div class="visuel astuce-v g-${esc(n.genre || 'info')}"><span class="as-lib">${n.marche ? tt('Le marché SlabCoach', 'SlabCoach market') : ['pouls', 'en_feu'].includes(n.id) ? '〰 ' + tt('Le pouls du hobby', 'Hobby pulse') : tt('Le savais-tu ?', 'Did you know?')}</span>
           <b class="as-chiffre">${esc(n.chiffre || '')}</b><span class="as-niv">${{debutant:tt('Pour débuter', 'For beginners'), tous:tt('Pour tous', 'For everyone'), avance:tt('Pour les pros', 'For pros')}[n.niveau] || ''}</span>${imgAstuce(n.id)}</div>
         <div class="texte"><div class="haut-n"><span class="nouv-t">${tt('Astuces & nouvelles', 'Tips & News')}</span>${pts(k)}</div>
           <div class="as-titre">${esc(n.titre)}</div><div class="as-texte">${esc(n.texte)}</div>
-          <div class="as-truc"><b>${tt('Le truc', 'The tip')}</b> ${esc(n.truc)}</div>
+          <div class="as-truc"><b>${n.marche ? tt('À savoir', 'Good to know') : tt('Le truc', 'The tip')}</b> ${esc(n.truc)}</div>
+          ${n.marche && (n.preuve || []).length ? `<button class="as-lien" data-preuve="${k}">${tt(`Voir les ${(n.preuve || []).reduce((t, g) => t + g.ventes.length, 0)} ventes`, `See the ${(n.preuve || []).reduce((t, g) => t + g.ventes.length, 0)} sales`)} ›</button>` : ''}
           ${['pouls', 'en_feu'].includes(n.id) && /^#/.test(n.lien || '') ? `<a class="as-lien" href="${esc(n.lien.replace(/^(#joueur\/)(.*)$/, (m, a, b) => a + encodeURIComponent(b)))}">${tt('Va jeter un œil', 'Take a look')} ›</a>` : ''}
           <div class="slide-src">${n.url ? `<a href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.source)} ↗</a>` : esc(n.source || '')}${n.calcule ? ' · ' + tt('chiffre du jour', 'today’s figure') : ''}</div></div></div>`;
     const cl = n.impact > 0 ? 'vert' : n.impact < 0 ? 'rouge' : n.genre === 'hobby' ? 'or' : 'acc';
