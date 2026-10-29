@@ -11,13 +11,15 @@ import deals, vendues, cartes_match
 maint = datetime.now(timezone.utc)
 fin = lambda h: (maint + timedelta(hours=h)).isoformat().replace("+00:00", "Z")
 # (titre, prix, valeur reelle, heures avant la fin ou None, vendeur)
+# 31 oct 2026 (Mathieu : « pour les gros vendeurs, analyse seulement les encheres ») : leurs encans ; un prix fixe : jamais
 CARTES = [
- ("2024-25 Upper Deck Young Guns Renewed Sidney Crosby #YGR-10 Pittsburgh Penguins", 22, 60, None, "savage.cards"),
- ("2025-26 Upper Deck Young Guns Outburst Otto Stenberg #711 St. Louis Blues", 12, 45, None, "savage.cards"),
+ ("2024-25 Upper Deck Young Guns Renewed Sidney Crosby #YGR-10 Pittsburgh Penguins", 22, 60, 20, "savage.cards"),
+ ("2025-26 Upper Deck Young Guns Outburst Otto Stenberg #711 St. Louis Blues", 12, 45, 25, "savage.cards"),
  ("2023-24 Upper Deck Canvas Auston Matthews #C70 Toronto Maple Leafs", 11, 40, 30, "savage.cards"),
- ("2022-23 Upper Deck Clear Cut Connor McDavid #CC-1 Edmonton Oilers", 18, 70, None, "remi-card-trader"),
- ("2021-22 Upper Deck Ice Nathan MacKinnon #20 Colorado Avalanche", 4, 6, None, "savage.cards"),            # sous 10 $
- ("2023-24 Upper Deck Canvas Cale Makar #C120 Colorado Avalanche", 12, 45, None, "dcsports87"),          # pas prioritaire
+ ("2022-23 Upper Deck Clear Cut Connor McDavid #CC-1 Edmonton Oilers", 18, 70, 28, "remi-card-trader"),
+ ("2021-22 Upper Deck Ice Nathan MacKinnon #20 Colorado Avalanche", 4, 6, 40, "savage.cards"),             # encan a 4 $
+ ("2023-24 Upper Deck Canvas Cale Makar #C120 Colorado Avalanche", 12, 45, 22, "dcsports87"),            # pas prioritaire
+ ("2022-23 Upper Deck Ice Jack Hughes #10 New Jersey Devils", 15, 60, None, "savage.cards"),             # prix fixe : jamais
 ]
 VAL = {t: v for t, _p, v, _h, _v in CARTES}
 appels = []
@@ -72,7 +74,8 @@ class TestPrioSavage(unittest.TestCase):
         deals.flux(rech, bassin=deals.Bassin(charger=False))
         prio_q = [q for q, u in appels if u == "prio"]
         ids = {x["item_id"]: x for x in deals.lire().get("deals") or []}
-        for i in (0, 1, 3):                                  # Savage et Remi, prix fixe, 10 $ et plus : verifies -> deals
+        self.assertFalse(any("hughes" in q for q in prio_q))  # 31 oct : un prix fixe des 4 vendeurs n'est pas analyse
+        for i in (0, 1, 3):                                  # Savage et Remi, leurs encans : verifies -> deals
             self.assertIn(f"p{i}", ids, (CARTES[i][0], prio_q))
             self.assertTrue(ids[f"p{i}"].get("valeur"))
         self.assertIn("p4", ids)                             # 31 oct : TOUTES les cartes des 4 vendeurs (meme a 4 $)

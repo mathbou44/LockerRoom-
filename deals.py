@@ -834,7 +834,9 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
     # vedette (veteran / legende) de 40 $ et plus.
     # 30 oct 2026 (Mathieu : « y'en a encore plein marques Auction ») : un encan a 2 jours de la fin a souvent une mise de
     # 3 $ : c'est la carte qui compte, pas la mise -> tous les encans des 4 vendeurs ; le prix fixe a partir de 10 $
-    elif not va and verif and r.get("suivi") and peu_ventes and _prio(a) and (a.get("encan") or t >= PRIO_MIN):
+    # 31 oct 2026 (Mathieu : « pour les gros vendeurs, analyse seulement les encheres ; leurs prix fixes ne sont pas des deals,
+    # sinon ils sortiront dans nos recherches ») : la reserve ne sert qu'aux ENCANS des 4 vendeurs
+    elif not va and verif and r.get("suivi") and peu_ventes and _prio(a) and a.get("encan"):
         st.setdefault("_tard", []).append((a, dict(r, prio=True), cib))     # 30 oct : reserve Savage, Remi, CF31, Slab Sharks
     elif not va and verif and r.get("suivi") and peu_ventes and (t >= HIT_MIN or (a.get("encan") and _precieuse(cib))):
         # 29 oct 2026 : un encan d'un vendeur suivi a 2 jours de la fin a souvent une mise de 5 $ : c'est la carte qui compte
@@ -1476,7 +1478,8 @@ def flux(rechercher=None, bassin=None):
         _progres(detail=f"vendeurs:{i_g + 1}/{len(grps)}")
         rv = {"q": None, "flux": "vendeurs", "sport": None, "joueur": None, "suivi": True}
         # 30 oct 2026 : prix fixe : les 600 plus recentes (3 pages) ; un gros vendeur en met des centaines par jour
-        fixe_fini = False
+        # 31 oct 2026 : le groupe des gros vendeurs : leurs encans seulement (leurs prix fixes passent par les recherches normales)
+        fixe_fini = all(rang_vendeur(v) < len(VENDEURS_PRIORITE) for v in grp)
         for ench, page in [(False, k) for k in range(PAGES_FIXE_SUIVIS)] + [(True, j) for j in range(max(pages, PAGES_SUIVIS))]:
             if not ench and fixe_fini:
                 continue
@@ -1493,7 +1496,7 @@ def flux(rechercher=None, bassin=None):
             for a in l:
                 st.pop("_res", None)
                 _juger(a, rv, [], [] if ench else l, maint, deals, st, bassin=bassin, verif=verif)
-                if _prio(a) and st.get("_res"):
+                if _prio(a) and a.get("encan") and st.get("_res"):
                     cov = st.setdefault("_prio_cov", {})
                     cov[str(a.get("item_id"))] = cov.get(str(a.get("item_id"))) or st["_res"][0] != "sans_ventes"
                     st.setdefault("_prio_v", {})[str(a.get("item_id"))] = a.get("vendeur")
