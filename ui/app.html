@@ -241,7 +241,7 @@ details.reglage summary::-webkit-details-marker{display:none}
 .fc-px{font:700 30px/1 'Barlow Condensed',sans-serif; margin-top:4px} .fc-st{margin-top:2px}
 .fc-lien{font-size:13.5px; font-weight:600; color:var(--acc); text-decoration:none; margin-top:4px}
 .fc-marche{margin-top:16px} .fc-note{margin:4px 0 10px; font-size:13px}
-.verif-ph{display:flex; flex-direction:column; gap:6px; background:none; border:0; padding:0; cursor:zoom-in; font:inherit; color:var(--acc); text-align:center}
+.verif-ph{display:flex; flex-direction:column; gap:10px; align-self:start; position:sticky; top:96px; background:none; border:0; padding:0; cursor:zoom-in; font:inherit; color:var(--acc); text-align:center}
 .verif-ph span{font-size:13px; font-weight:600}
 .pv-liste{display:flex; flex-direction:column; gap:14px; margin-top:12px}
 .pv-f{margin:0; display:flex; flex-direction:column; gap:6px} .pv-f img{width:100%; max-height:62vh; object-fit:contain; border-radius:14px; background:#111115; border:1px solid var(--ligne)}
@@ -1649,7 +1649,7 @@ body.pro .onglets a.on{color:var(--acc)}
 .vc em{font-style:normal; font-family:'Barlow Condensed',sans-serif; text-transform:uppercase; letter-spacing:.08em; font-size:11px; color:var(--or); margin-left:4px}
 .vc.douteux .champ{border-color:var(--or-ligne); background:var(--or-fonce); color:var(--or-clair)}
 .vc-bas{display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:4px}
-@media (max-width:420px){ .verif-v{grid-template-columns:1fr} .verif-ph{width:140px; justify-self:center} }
+@media (max-width:420px){ .verif-v{grid-template-columns:1fr} .verif-ph{position:static; flex-direction:row; flex-wrap:wrap; justify-content:center; justify-self:center} .verif-ph img{width:120px} .verif-ph span{flex-basis:100%} }
 .photo-princ.studio-on{background-color:#111115}
 .studio-bar{display:flex; align-items:center; gap:10px; flex-wrap:wrap} .studio-bar .seg{flex:1; min-width:200px} .studio-bar .pilule{flex-shrink:0}
 .bp-actions{display:flex; gap:10px} .bp-actions .btn.ghost{min-width:0}
@@ -3278,13 +3278,28 @@ function _nettoyerCoins(out, O, od, W, H, fond){
 // 30 oct 2026 (Mathieu : « garde exactement la meme photo, fait juste tout flouer autour et garde seulement la carte et
 // un mm autour pour que l'acheteur voie la condition de la carte ») : meme cadrage, meme taille, rien n'est redresse ni
 // recadre. La carte + 1 mm autour restent les pixels d'origine ; tout le reste est flou et assombri (comme Teams).
+// 30 oct 2026 (« ne pixelise pas trop, le user doit quand meme voir derriere que c'est un support ») : un flou doux,
+// assez pour que le support et la table ne distraient pas, pas assez pour cacher ce que c'est
+const _FILTRE_OK = (() => { try { const g = document.createElement('canvas').getContext('2d'); g.filter = 'blur(2px)'; return g.filter === 'blur(2px)'; } catch (e) { return false; } })();
 function _flouImage(img, W, H){
-  const etape = (src, w, h) => { const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h));
-    const g = c.getContext('2d'); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.drawImage(src, 0, 0, c.width, c.height); return c; };
-  let c = etape(img, W / 10, H / 10); c = etape(c, c.width / 3, c.height / 3); c = etape(c, c.width * 3, c.height * 3);   // flou sans ctx.filter (Safari)
   const out = document.createElement('canvas'); out.width = W; out.height = H;
-  const g = out.getContext('2d'); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.drawImage(c, 0, 0, W, H);
-  g.fillStyle = 'rgba(6,6,10,.55)'; g.fillRect(0, 0, W, H);
+  const g = out.getContext('2d'); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+  const r = Math.max(4, Math.round(Math.min(W, H) * 0.008));             // ~12 px sur une photo de 1 500 px
+  if (_FILTRE_OK) { g.filter = `blur(${r}px)`; g.drawImage(img, -2 * r, -2 * r, W + 4 * r, H + 4 * r); g.filter = 'none'; }   // deborde : pas de bord sombre
+  else {
+    // Safari sans ctx.filter : reduction douce (1/4) + moyenne de voisins, puis agrandissement lisse (pas de pixels)
+    const w = Math.max(1, Math.round(W / 4)), h = Math.max(1, Math.round(H / 4));
+    let a = document.createElement('canvas'); a.width = w; a.height = h;
+    let ga = a.getContext('2d'); ga.imageSmoothingQuality = 'high'; ga.drawImage(img, 0, 0, w, h);
+    for (let k = 0; k < 3; k++) {
+      const b = document.createElement('canvas'); b.width = w; b.height = h; const gb = b.getContext('2d');
+      gb.drawImage(a, 0, 0); gb.globalAlpha = 0.5;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) gb.drawImage(a, dx, dy);
+      a = b;
+    }
+    g.drawImage(a, 0, 0, W, H);
+  }
+  g.fillStyle = 'rgba(6,6,10,.32)'; g.fillRect(0, 0, W, H);
   return out;
 }
 function poserFlou(img, q){
@@ -3589,7 +3604,7 @@ function etapeVerifier(){
     <div class="sous">${dt.size ? tt(`${dt.size} détail${dt.size > 1 ? 's' : ''} à confirmer, en or. Le titre et le prix en dépendent.`, `${dt.size} detail${dt.size > 1 ? 's' : ''} to confirm, in gold. The title and price depend on them.`)
       : tt('Tout a été lu clairement. Un coup d’œil, puis on fait l’annonce.', 'Everything was read clearly. A quick look, then we build the listing.')}</div>
     <div class="verif-v">
-      <button class="verif-ph" id="vf-ph"><img src="${esc(V2.photos[0] || '')}" alt=""><span>${tt(`Voir mes ${(V2.photos || []).length > 1 ? (V2.photos || []).length + ' ' : ''}photos`, `See my ${(V2.photos || []).length > 1 ? (V2.photos || []).length + ' ' : ''}photos`)} ›</span></button>
+      <button class="verif-ph" id="vf-ph">${(V2.photos || []).slice(0, 4).map((u, k) => `<img src="${esc(u)}" alt="${k === 0 ? esc(tt('Devant', 'Front')) : k === 1 ? esc(tt('Dos', 'Back')) : ''}">`).join('')}<span>${tt('Voir en grand', 'See full size')} ›</span></button>
       <div class="verif-ch">${l.map(([k, t]) => `<label class="vc ${dt.has(k) ? 'douteux' : ''}"><span>${t}${dt.has(k) ? ` <em>${tt('à vérifier', 'check')}</em>` : ''}</span>
         <input class="champ" id="vf-${k}" value="${esc(c[k] ?? '')}" ${k === 'tirage' ? 'inputmode="numeric"' : ''} ${k === 'grade' ? `placeholder="${esc(tt('Raw (non gradée)', 'Raw (ungraded)'))}"` : ''}></label>`).join('')}
         <div class="vc-bas"><label class="bascule">Auto<input type="checkbox" id="vf-auto" ${c.auto ? 'checked' : ''}></label>
