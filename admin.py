@@ -183,6 +183,10 @@ def catalogue_etat():
                          "nb_cartes": len(pr.get("cartes") or []), "nb_sous": len(se),
                          "sans_cote": len(catalogue.etat_cotes(pr)["manquantes"]),        # 26 oct 2026 : meme regle que la fleche verte
                          "manquantes": catalogue.etat_cotes(pr)["manquantes"][:20], "complete": catalogue.etat_cotes(pr)["complete"],
+                         # 30 oct 2026 : cotes estimees (tirage imprime, ou la meme ligne d'une autre saison) et non publiees
+                         "estimees": [{"nom": n, "source": (pr.get("_estimees_src") or {}).get(n), "par_boite": round((pr.get("_taux") or {}).get(n) or 0, 4)}
+                                      for n in catalogue.etat_cotes(pr)["estimees"]][:40],
+                         "non_publiees": catalogue.etat_cotes(pr)["non_publiees"][:20],
                          "importe": os.path.exists(os.path.join(catalogue.dossier_ajouts(), p["id"] + ".json")),
                          "sources": pr.get("sources") or []})
     d = nouveaux_produits.lire()

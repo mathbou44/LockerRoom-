@@ -1084,7 +1084,12 @@ class Api:
         if existant:
             prod = checklist_import.fusionner(existant, lu)
         else:
-            nom = re.sub(r"\s+", " ", str(d.get("nom") or "") or checklist_import.nom_devine(nom_f)).strip()
+            # 30 oct 2026 (Mathieu : « l'app doit reconnaitre directement le produit avec le Excel ») : le nom du fichier s'il
+            # dit la saison, sinon le titre ecrit dans le fichier (GTS / Beckett), puis le produit du catalogue qui y correspond
+            nom_fic = checklist_import.nom_devine(nom_f)
+            if not re.search(r"(19|20)\d{2}", nom_fic) and lu.get("titre_doc"):
+                nom_fic = checklist_import.nom_devine(lu["titre_doc"])
+            nom = re.sub(r"\s+", " ", str(d.get("nom") or "") or nom_fic).strip()
             pid0 = re.sub(r"[^a-z0-9]+", "-", unicodedata.normalize("NFKD", nom).encode("ascii", "ignore").decode().lower()).strip("-")[:60]
             existant = catalogue.charger(pid0)        # meme produit deja au catalogue : on le met a jour
             if not existant:
@@ -1124,10 +1129,29 @@ class Api:
         self._EV_CACHE.clear()
         p2 = catalogue.charger(prod["id"]) or prod
         taux = p2.get("_taux") or {}
+        e_c = catalogue.etat_cotes(p2)
         return {"ok": True, "id": prod["id"], "nom": prod["nom"], "nb_cartes": len(prod["cartes"]), "nouveau": not existant, "modele": modele,
+                "manquantes": e_c["manquantes"], "estimees": e_c["estimees"], "non_publiees": e_c["non_publiees"],
                 "cotes_lues": n_cotes,
                 "sous_ensembles": [{"nom": x["nom"], "groupe": x.get("groupe"), "nb_cartes": x.get("nb_cartes"), "tirage": x.get("tirage"),
                                     "par_boite": x.get("par_boite"), "taux": round(taux.get(x["nom"], 0), 4)} for x in prod["sous_ensembles"]]}
+
+    # 30 oct 2026 (Mathieu : « une liste des produits populaires, classes par sport, je clique et je mets le fichier ;
+    # un petit dashboard avec les dates de sortie Upper Deck et Topps ») : le calendrier public des sorties, et pour
+    # chaque produit : deja au catalogue (avec ses cotes) ou pas
+    def admin_sorties(self, force=False):
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import checklist_import
+        import sorties
+        r = sorties.lister(force=bool(force))
+        cat = catalogue.liste()
+        for x in r.get("produits") or []:
+            p = checklist_import.produit_semblable(re.sub(r"\s+(hockey|baseball|basketball|football|soccer)\b", "", x["nom"], flags=re.I), cat)
+            x["catalogue_id"] = p["id"] if p else None
+            x["complete"] = bool(p and p.get("complete"))
+            x["dans"] = sorties.jours(x.get("date"))
+        return r
 
     # 25 oct 2026 - Mathieu : « essaie d'aller chercher toutes les checklists comme celle-ci » (gogts.net).
     def gts_liste(self, force=False):

@@ -300,6 +300,18 @@ details.reglage summary::-webkit-details-marker{display:none}
 .fc-ach-liste{display:flex; flex-direction:column; gap:6px; margin-top:8px}
 .fc-ach-r{display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:10px 12px; border-radius:12px; border:1px solid var(--ligne); background:var(--carte); color:var(--texte); font:inherit; text-align:left; cursor:pointer}
 .fc-ach-r span{font-size:14px; font-weight:600} .fc-ach-r small{font-size:12px; color:var(--doux)} .fc-ach-r:active{transform:scale(.98)}
+.ac-prod{width:100%; background:none; border:0; color:inherit; font:inherit; text-align:left; cursor:pointer} .ac-prod .ac-ch{font-style:normal; font-size:22px; color:var(--pale); margin-left:auto}
+.ap-et{padding:12px; border-radius:12px; display:flex; flex-direction:column; gap:4px; font-size:13.5px} .ap-et.vert{background:var(--vert-fond); color:var(--vert)} .ap-et.rouge{background:color-mix(in srgb, var(--rouge) 14%, transparent); color:var(--rouge)}
+.ap-et span{color:var(--doux)} .ap-l{margin:6px 0 0; padding-left:18px; font-size:13px; line-height:1.45; color:var(--texte)} .ap-d{margin-top:10px} .ap-d summary{cursor:pointer; font-weight:600; color:var(--acc)}
+.adm-so{margin-top:12px} .adm-so .r-titre{display:flex; justify-content:space-between; align-items:center}
+.adm-so-l{display:flex; flex-direction:column; gap:6px; margin-top:8px}
+.adm-so-r{display:flex; align-items:center; gap:12px; padding:8px 10px; border-radius:12px; background:var(--carte2); border:1px solid var(--ligne); color:var(--texte); font:inherit; text-align:left; cursor:pointer}
+.adm-so-r .d{display:flex; flex-direction:column; min-width:52px} .adm-so-r .d b{font:700 15px 'Barlow Condensed',sans-serif} .adm-so-r .d small{font-size:11px; color:var(--doux)}
+.adm-so-r .n{flex:1; min-width:0; font-size:13.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis} .adm-so-r .s{color:var(--acc); font-weight:700}
+.adm-so-r.bientot .d b{color:var(--acc)} .adm-so-r.passe{opacity:.7}
+.pop-l{display:flex; flex-direction:column; gap:6px; margin-top:10px}
+.pop-r{display:flex; flex-direction:column; align-items:flex-start; gap:3px; padding:10px 12px; border-radius:12px; border:1px solid var(--ligne); background:var(--carte2); color:var(--texte); font:inherit; text-align:left; cursor:pointer}
+.pop-r .n{font-size:14px; font-weight:600} .pop-r .n i{font-style:normal; color:var(--or)} .pop-r small{font-size:12px; color:var(--doux)} .pop-r b.v{color:var(--vert)} .pop-r b.a{color:var(--acc)}
 .vm-tit{margin-top:12px; font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--doux)}
 .vm{display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:6px}
 .vm-t{display:flex; flex-direction:column; align-items:center; gap:1px; padding:8px 4px; border-radius:12px; background:var(--carte2); border:1px solid var(--ligne); color:var(--texte); font:inherit; cursor:pointer}
@@ -4872,7 +4884,7 @@ S.ana = {produit:null, boites:1, mode:'equipes', cout:'', marge:'', decote:15, d
 function anaSauver(){
   const A = S.ana; if (!A.produit) return;
   try { const m = JSON.parse(localStorage.getItem('lr_ana') || '{}'); m.produit = A.produit; m.tri = A.tri; m.budget = A.budget;
-    m.par = m.par || {}; m.par[A.produit] = {boites:A.boites, cout:A.cout, marge:A.marge};
+    m.par = m.par || {}; m.par[A.produit] = {boites:A.boites, cout:A.cout, marge:A.marge, tri:A.tri};
     localStorage.setItem('lr_ana', JSON.stringify(m)); } catch (e) {}
 }
 function anaCharger(produit){
@@ -4882,7 +4894,12 @@ function anaCharger(produit){
   A.produit = produit;
   const p = ((m.par || {})[produit]) || {};
   A.boites = p.boites > 0 ? p.boites : 1; A.cout = p.cout ?? ''; A.marge = p.marge ?? '';
+  // 30 oct 2026 (Mathieu : « Series 1, 2, Extended : les plus recherches et avec de la valeur sont les rookies, ensuite le
+  // reste ; pour les autres produits, ca peut etre le cas ou non ») : ces produits s'ouvrent classes par recrue ; le choix
+  // fait pour un produit est garde pour ce produit
+  A.tri = p.tri || (produitPhare(produit) ? 'recrue' : (m.tri || A.tri || 'place'));
 }
+function produitPhare(id){ return /(^|-)(series-?(1|2|one|two)|extended)(-|$)/i.test(String(id || '')); }
 anaCharger();
 // montants tapes dans la devise affichee -> gardes en $ CA
 const versCAD = (v) => (typeof DEVISE !== 'undefined' && DEVISE === 'USD' && typeof TAUX_USD !== 'undefined') ? Math.round(v / TAUX_USD * 100) / 100 : v;
@@ -5002,33 +5019,91 @@ async function feuilleGTS(produits, force){
     bt.textContent = '✓ ' + ok + ' ' + tt('produits ajoutés', 'products added');
   };
 }
-function feuilleChecklist(pid, produits, nomInit){
+// 30 oct 2026 (Mathieu : « je ne peux plus cliquer sur le produit ; la methode des odds doit etre robuste ») : un tap sur
+// un produit : l'etat de ses cotes en clair (publiees, estimees et d'ou, non publiees, manquantes), mettre a jour la
+// checklist (Excel), voir l'analyse
+// 30 oct 2026 (Mathieu : « une liste des produits populaires que je peux cliquer et mettre le fichier, classee par sport ;
+// un petit dashboard avec les dates de sortie des produits Upper Deck et Topps dans mon admin ») : le calendrier public
+// des sorties ; un tap sur un produit = deposer son Excel (reconnu et mis au catalogue)
+const SPORTS_POP = [['hockey', 'Hockey'], ['baseball', 'Baseball'], ['basketball', 'Basketball'], ['football', 'Football']];
+const dateSortie = (x) => x.date ? new Date(x.date + 'T12:00:00').toLocaleDateString(LOC(), {day: 'numeric', month: 'short'}) : tt('à venir', 'TBA');
+async function blocSorties(){
+  const z = $('#adm-sorties'); if (!z) return;
+  const r = await API.admin_sorties().catch(() => null);
+  if (!$('#adm-sorties') || !r || !r.ok) return;
+  const l = (r.produits || []).filter(x => ['Upper Deck', 'Topps'].includes(x.marque) && SPORTS_POP.some(s => s[0] === x.sport) && x.dans != null && x.dans >= -14)
+    .sort((a, b) => a.dans - b.dans).slice(0, 8);
+  if (!l.length) return;
+  z.innerHTML = `<div class="bloc adm-so"><div class="r-titre">${tt('Sorties Upper Deck et Topps', 'Upper Deck & Topps releases')}<button class="lien-t" id="adm-so-t">${tt('Tout voir', 'See all')}</button></div>
+    <div class="adm-so-l">${l.map((x, i) => `<button class="adm-so-r ${x.dans < 0 ? 'passe' : x.dans <= 7 ? 'bientot' : ''}" data-so="${i}">
+      <span class="d"><b>${dateSortie(x)}</b><small>${x.dans < 0 ? tt('sorti', 'out') : x.dans === 0 ? tt('auj.', 'today') : tt('dans ', 'in ') + x.dans + tt(' j', ' d')}</small></span>
+      <span class="n">${esc(x.nom)}</span><span class="s">${x.catalogue_id ? (x.complete ? '✓' : '•') : '+'}</span></button>`).join('')}</div></div>`;
+  $$('[data-so]', z).forEach(b => b.onclick = () => { vibrer(); const x = l[+b.dataset.so]; x.catalogue_id ? feuilleChecklist(x.catalogue_id, [{id: x.catalogue_id, nom: x.nom}]) : feuilleChecklist(null, [], x.nom, x.sport); });
+  $('#adm-so-t').onclick = () => feuillePopulaires([], r);
+}
+async function feuillePopulaires(produits, deja){
+  const r = deja || await API.admin_sorties().catch(e => ({ok:false, erreur:e.message}));
+  if (!r || !r.ok) { toast((r && r.erreur) || 'Erreur', 5000); return; }
+  let sp = 'hockey';
+  const peindre = () => {
+    const l = (r.produits || []).filter(x => x.sport === sp && (x.dans == null || x.dans >= -300))
+      .sort((a, b) => (b.phare - a.phare) || ((a.dans ?? 99) < 0) - ((b.dans ?? 99) < 0) || (a.dans ?? 99) - (b.dans ?? 99));
+    ouvrirFeuille(`<h3>${tt('Produits populaires', 'Popular products')}</h3>
+      <div class="sous" style="margin-bottom:10px">${tt('Touche un produit pour déposer son Excel (GTS ou Beckett). ★ = les plus recherchés. ✓ = au catalogue, cotes complètes.', 'Tap a product to drop its Excel (GTS or Beckett). ★ = most sought-after. ✓ = in the catalogue, odds complete.')}</div>
+      ${segV('pop-s', SPORTS_POP.map(([k, n]) => [k, n]), sp)}
+      <div class="pop-l">${l.length ? l.map((x, i) => `<button class="pop-r" data-pop="${i}"><span class="n">${x.phare ? '<i>★</i> ' : ''}${esc(x.nom)}</span>
+        <small>${dateSortie(x)} · ${esc(x.marque)}${x.catalogue_id ? ' · ' + (x.complete ? '<b class="v">✓ ' + tt('au catalogue', 'in catalogue') + '</b>' : tt('au catalogue, cotes à compléter', 'in catalogue, odds to complete')) : ' · <b class="a">' + tt('à ajouter', 'to add') + '</b>'}</small></button>`).join('')
+        : `<div class="vide">${tt('Aucun produit pour ce sport.', 'No product for this sport.')}</div>`}</div>
+      <div class="sous" style="margin-top:10px">${tt('Calendrier : Checklist Insider', 'Calendar: Checklist Insider')}${r.maj ? ' · ' + esc(String(r.maj).replace('T', ' ')) : ''}${r.erreur ? ' · ' + esc(r.erreur) : ''}</div>`);
+    $$('#pop-s button').forEach(b => b.onclick = () => { sp = b.dataset.v; vibrer(); peindre(); });
+    $$('[data-pop]').forEach(b => b.onclick = () => { const x = l[+b.dataset.pop]; vibrer();
+      x.catalogue_id ? feuilleChecklist(x.catalogue_id, [{id: x.catalogue_id, nom: x.nom}, ...produits]) : feuilleChecklist(null, produits, x.nom, x.sport); });
+  };
+  peindre();
+}
+function feuilleProduitAdmin(p, produits){
+  if (!p) return;
+  const est = p.estimees || [], np = p.non_publiees || [], mq = p.manquantes || [];
+  const lst = (l, f) => `<ul class="ap-l">${l.map(f).join('')}</ul>`;
+  ouvrirFeuille(`<h3>${esc(p.nom)}</h3>
+    <div class="sous" style="margin-bottom:12px">${p.nb_cartes} ${tt('cartes', 'cards')} · ${p.nb_sous} ${tt('sous-ensembles', 'subsets')} · ${p.importe ? tt('importé', 'imported') : tt('livré avec l’app', 'shipped with the app')}</div>
+    <div class="ap-et ${mq.length ? 'rouge' : 'vert'}"><b>${mq.length ? mq.length + ' ' + tt('cotes manquantes', 'missing odds') : '✓ ' + tt('Toutes les cotes de la boîte hobby sont dans le calcul', 'Every hobby box odd is in the calculation')}</b>
+      ${mq.length ? `<span>${tt('Absentes du calcul : la valeur de la boîte est sous-estimée. Ajoute leur cote (Excel GTS ou nombre par boîte).', 'Left out of the calculation: the box value is underestimated. Add their odds (GTS Excel or count per box).')}</span>` + lst(mq, n => `<li>${esc(n)}</li>`) : ''}</div>
+    ${est.length ? `<details class="ap-d"><summary>${est.length} ${tt('cotes estimées', 'estimated odds')}</summary>
+      <div class="sous">${tt('Numérotées : tirées du tirage imprimé et du nombre de boîtes produites (calculé sur les autres numérotées du produit). Sinon : la cote publiée du même insert dans une autre saison du même produit.', 'Numbered: from the printed run and the number of boxes produced (computed from the product’s other numbered cards). Otherwise: the published odds of the same insert in another season of the product.')}</div>
+      ${lst(est, x => `<li>${esc(x.nom)} · <b>${x.par_boite >= 1 ? x.par_boite : '1:' + Math.round(1 / Math.max(1e-9, x.par_boite))} ${tt('boîte', 'box')}</b>${x.source ? ' · ' + tt('d’après ', 'from ') + esc(x.source) : ' · ' + tt('tirage', 'print run')}</li>`)}</details>` : ''}
+    ${np.length ? `<details class="ap-d"><summary>${np.length} ${tt('non publiées par le fabricant', 'not published by the maker')}</summary>
+      <div class="sous">${tt('Laissées hors du calcul : il reste prudent (jamais gonflé).', 'Left out of the calculation: it stays conservative (never inflated).')}</div>${lst(np, n => `<li>${esc(n)}</li>`)}</details>` : ''}
+    <button class="btn" id="ap-maj" style="margin-top:14px">${tt('Mettre à jour la checklist (Excel)', 'Update the checklist (Excel)')}</button>
+    <button class="btn ghost" id="ap-ana">${tt('Voir l’analyse', 'See the analysis')}</button>`);
+  $('#ap-maj').onclick = () => feuilleChecklist(p.id, produits);
+  $('#ap-ana').onclick = () => { fermerFeuille(); location.hash = '#analyse/' + encodeURIComponent(p.id); };
+}
+function feuilleChecklist(pid, produits, nomInit, sportInit){
   const choisi = (produits || []).find(p => p.id === pid);
-  ouvrirFeuille(`<h3>${choisi ? tt('Mettre à jour la checklist', 'Update the checklist') : tt('Ajouter un produit', 'Add a product')}</h3>
-    <label>${tt('Produit', 'Product')}<select class="champ" id="ck-p"><option value="">${tt('+ Nouveau produit', '+ New product')}</option>${(produits || []).map(p => `<option value="${esc(p.id)}" ${p.id === pid ? 'selected' : ''}>${esc(p.nom)}</option>`).join('')}</select></label>
-    <label id="ck-nom-l" ${pid ? 'hidden' : ''}>${tt('Nom du produit', 'Product name')}<input class="champ" id="ck-nom" placeholder="${esc(tt('Automatique (nom du fichier)', 'Automatic (file name)'))}"></label>
+  ouvrirFeuille(`<h3>${choisi ? tt('Mettre à jour la checklist', 'Update the checklist') : nomInit ? esc(nomInit) : tt('Ajouter un produit', 'Add a product')}</h3>
+    <input type="hidden" id="ck-p" value="${esc(pid || '')}">${choisi ? `<div class="sous">${esc(choisi.nom)}</div>` : `<div class="sous">${tt('Le produit est reconnu tout seul (titre du fichier) : un produit déjà au catalogue est mis à jour, sinon il est créé.', 'The product is recognized on its own (file title): a product already in the catalogue is updated, otherwise it is created.')}</div>`}
+    <input type="hidden" id="ck-nom" value="">
     <div class="etapes-ck"><div><b>1</b>${tt('Ouvre la page GTS (ou Beckett) du produit et touche « EXCEL Checklist ».', 'Open the product’s GTS (or Beckett) page and tap “EXCEL Checklist”.')}</div>
       <a class="btn ghost petit" id="ck-beckett" target="_blank" rel="noopener">${tt('Trouver sur GTS', 'Find on GTS')} ↗</a>
       <div><b>2</b>${tt('Dépose un ou plusieurs fichiers : chaque produit apparaît pour tous les utilisateurs.', 'Drop one or more files: each product shows up for every user.')}</div>
       <label class="photo-grand" style="min-height:110px">${ICONES.import}<b>${tt('Choisir les fichiers', 'Choose the files')}</b><span id="ck-f-nom">.xlsx · .csv</span><input type="file" accept=".xlsx,.xlsm,.csv" id="ck-f" multiple hidden></label></div>
     <div id="ck-res"></div>`);
   if (nomInit) $('#ck-nom').value = nomInit;
-  const lien = () => { const n = $('#ck-p').value ? $('#ck-p').selectedOptions[0].textContent : val('ck-nom');
+  const lien = () => { const n = choisi ? choisi.nom : val('ck-nom');
     $('#ck-beckett').href = 'https://gogts.net/?s=' + encodeURIComponent(n || 'hockey checklist'); };
   lien();
-  $('#ck-p').onchange = () => { $('#ck-nom-l').hidden = !!$('#ck-p').value; lien(); };
-  $('#ck-nom').oninput = lien;
   $('#ck-f').onchange = async (e) => {
     const fs = [...(e.target.files || [])]; if (!fs.length) return;
     const lire = (f) => new Promise((ok, ko) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = ko; r.readAsDataURL(f); });
-    if (fs.length > 1) {                       // plusieurs produits d'un coup : nom et cotes automatiques
+    if (fs.length > 1 || !pid) {               // 30 oct : reconnus tout seuls (un ou plusieurs fichiers)
       $('#ck-f-nom').textContent = fs.length + ' ' + tt('fichiers', 'files');
       $('#ck-res').innerHTML = `<div class="liste" id="ck-lot">${fs.map((f, i) => `<div class="rangee" id="ck-l${i}"><span class="milieu"><span class="nom">${esc(f.name)}</span><span class="sous"><span class="roue"></span></span></span></div>`).join('')}</div>`;
       for (const [i, f] of fs.entries()) {
-        const r = await API.catalogue_importer({fichier:await lire(f), nom_fichier:f.name}).catch(x => ({ok:false, erreur:x.message}));
+        const r = await API.catalogue_importer({fichier:await lire(f), nom_fichier:f.name, ...(nomInit && fs.length === 1 ? {nom: nomInit} : {}), ...(sportInit ? {sport: sportInit} : {})}).catch(x => ({ok:false, erreur:x.message}));
         const l = $('#ck-l' + i); if (!l) return;
         l.querySelector('.milieu').innerHTML = r.ok
-          ? `<span class="nom">✓ ${esc(r.nom)}</span><span class="sous">${r.nb_cartes} ${tt('cartes', 'cards')} · ${r.modele ? tt('cotes de ', 'odds from ') + esc(r.modele) : tt('cotes à compléter', 'odds to fill in')}</span>`
+          ? `<span class="nom">✓ ${esc(r.nom)} <small>${r.nouveau ? tt('· nouveau produit', '· new product') : tt('· mis à jour', '· updated')}</small></span><span class="sous">${r.nb_cartes} ${tt('cartes', 'cards')} · ${(r.manquantes || []).length ? (r.manquantes || []).length + tt(' cotes manquantes', ' missing odds') : tt('cotes complètes', 'odds complete')}${(r.estimees || []).length ? ' · ' + r.estimees.length + tt(' estimées', ' estimated') : ''}${r.modele ? ' · ' + tt('cotes de ', 'odds from ') + esc(r.modele) : ''}</span>`
           : `<span class="nom">${esc(f.name)}</span><span class="sous" style="color:var(--rouge)">${esc(r.erreur)}</span>`;
       }
       $('#ck-res').insertAdjacentHTML('beforeend', `<button class="btn" id="ck-fin">${tt('Terminé', 'Done')}</button>`);
@@ -5200,6 +5275,8 @@ const TIERS = (s) => s >= 80 ? ['vert', tt('Top choix', 'Top pick')] : s >= 55 ?
 const TRIS_ANA = () => [
   ['place', tt('Carte qui couvre la place', 'Card covering the spot'), tt('Probabilité qu’une seule carte vaille au moins le prix de la place.', 'Probability that a single card is worth at least the spot price.')],
   ['hits', tt('Probabilité de hit', 'Hit probability'), tt('Probabilité d’obtenir au moins un hit : numérotée, autographe, relique ou SSP.', 'Probability of at least one hit: numbered, autograph, relic or SSP.')],
+  // 30 oct 2026 (Mathieu : « mettre l'option rookie »)
+  ['recrue', tt('Probabilité de recrue', 'Rookie probability'), tt('Probabilité d’obtenir au moins une carte recrue (Young Guns et autres RC).', 'Probability of at least one rookie card (Young Guns and other RCs).')],
   ['argent', tt('Hits par dollar', 'Hits per dollar'), tt('Nombre de hits espérés pour chaque dollar investi.', 'Expected hits for each dollar spent.')],
   ['rentab', tt('Seuil de rentabilité', 'Break-even'), tt('Probabilité que l’ensemble des cartes couvre le prix de la place.', 'Probability that all cards together cover the spot price.')]];
 // la feuille des reglages d'une analyse : on choisit, on applique, elle se referme
@@ -5292,7 +5369,7 @@ async function rendreAnalyse(){
     const TRIS = TRIS_ANA();
     const tri = TRIS.some(t => t[0] === A.tri) ? A.tri : 'place';
     const pH = (x) => ((x.chances || {}).hit || {}).p || 0;
-    const crit = {place: (x) => x.p_carte_prix || 0, hits: pH, rentab: (x) => x.p_rembourse || 0,
+    const crit = {place: (x) => x.p_carte_prix || 0, hits: pH, rentab: (x) => x.p_rembourse || 0, recrue: (x) => x.p_recrue || 0,
       argent: (x) => { const p = Math.min(.999999, pH(x)), px = x.demande || x.part_brute || x.prix_compare || x.prix || 0; return px > 0 ? -Math.log(1 - p) / px : 0; }}[tri];   // part exacte : le meme ordre avec 1 ou 32 boites
     const mxv = Math.max(1e-12, ...liste.map(crit));
     liste.forEach(x => { x.rel = Math.round(100 * crit(x) / mxv); x.vtri = crit(x); });
@@ -5313,6 +5390,7 @@ async function rendreAnalyse(){
         ${vue === 'equipes' ? ecussonEquipe(x.cle) : vignetteJoueur(x.cle, x.equipe)}
         <span class="sl-n"><b>${esc(x.nom)}</b><span>${esc(vue === 'equipes' ? (x.vedettes || []).slice(0, 2).join(' · ') : (x.equipe || ''))} · ${
           tri === 'place' ? tt('couvre la place : ', 'covers the spot: ') + chanceTxt(x.p_carte_prix || 0) : tri === 'rentab' ? tt('rentable : ', 'break even: ') + chanceTxt(x.p_rembourse || 0)
+          : tri === 'recrue' ? tt('recrue : ', 'rookie: ') + chanceTxt(x.p_recrue || 0)
           : tri === 'argent' ? tt('hit : ', 'hit: ') + chanceTxt(ph) + ' · ' + argentCourt(x.prix_compare || x.prix || 0) : tt('hit : ', 'hit: ') + chanceTxt(ph)}</span></span>
         <span class="score ${cl}"><b>${x.rel}</b><small>${lib}</small></span></button>
         <div class="exp-z" id="exp-${i}" hidden>
@@ -5363,7 +5441,7 @@ async function rendreAnalyse(){
   $$('#an-v button').forEach(b => b.onclick = () => { if (b.classList.contains('on')) return; ongletTout(b); A.vue = b.dataset.v; setTimeout(rendreAnalyse, 30); });
   if (vendeur && !manque) setTimeout(async () => { for (const m of ['equipes', 'joueurs', 'divisions']) { if (m === A.mode || !$('#an-z')) continue;
     await API.analyse_break(args(m)).catch(() => {}); } }, 900);
-  $$('[data-tri-a]', z).forEach(b => b.onclick = () => { A.tri = b.dataset.triA; rendreAnalyse(); });
+  $$('[data-tri-a]', z).forEach(b => b.onclick = () => { A.tri = b.dataset.triA; anaSauver(); rendreAnalyse(); });
   const filtrerA = () => { const q = (A.rech || '').trim().toLowerCase(); let n = 0;
     $$('.score-bloc.simple', z).forEach(e => { const ok = q ? e.dataset.nom.includes(q) : !e.classList.contains('loin'); e.hidden = !ok; n += ok; });
     const v = $('#an-vide', z); if (v) v.hidden = n > 0; };
@@ -7848,8 +7926,10 @@ async function vueAdmin(onglet){
       <div class="kpi acc"><span class="lib">${tt('Comptes', 'Accounts')}</span><span class="v">${a.total}</span><span class="s">+${a.nouveaux_7j} ${tt('cette semaine', 'this week')} · ${a.essai} ${tt('en essai', 'on trial')}</span></div>
       <div class="kpi"><span class="lib">${tt('Actifs 7 jours', 'Active 7 days')}</span><span class="v">${a.actifs_7j}</span><span class="s">${a.total ? Math.round(100 * a.actifs_7j / a.total) : 0} %</span></div>
       <div class="kpi ${r.erreurs_24h ? 'rouge' : ''}"><span class="lib">${tt('Serveur', 'Server')}</span><span class="v">${r.erreurs_24h ? r.erreurs_24h + ' ⚠' : 'OK'}</span><span class="s">eBay ${br ? Math.round(100 * br.utilises / br.limite) : 0} % ${tt('du jour', 'today')}</span></div></div>
+    <div id="adm-sorties"></div>
     <div class="seg" id="adm-o" style="margin:14px 0">${[['abonnes', tt('Abonnés', 'Subscribers')], ['demandes', tt('Demandes', 'Requests') + pastille(r.demandes.nouvelles)], ['catalogue', 'Catalogue' + pastille(r.a_ajouter)], ['serveur', tt('Serveur', 'Server')]].map(([k, t]) => `<button data-v="${k}" class="${o === k ? 'on' : ''}">${t}</button>`).join('')}</div>
     <div id="adm-z"><div class="lecture"><span class="roue"></span></div></div></section>`;
+  blocSorties();
   const sous = {abonnes:adminAbonnes, demandes:adminDemandes, catalogue:adminCatalogue, serveur:adminServeur};
   // 28 oct 2026 (« saccadé ») : un onglet se change sur place ; le contenu d'avant reste (estompe) jusqu'a l'arrivee du nouveau
   $$('#adm-o button').forEach(b => b.onclick = async () => {
@@ -7936,15 +8016,16 @@ function feuilleDemande(x){
 async function adminCatalogue(){
   const z = $('#adm-z'); const [d, c] = await Promise.all([API.admin_catalogue().catch(e => ({ok:false, erreur:e.message})), API.catalogue_liste().catch(() => ({produits:[]})), imagesProduits()]);
   if (!d.ok) { z.innerHTML = `<div class="vide">${esc(d.erreur)}</div>`; return; }
-  z.innerHTML = `<div class="pastilles" style="margin-bottom:10px"><button class="pilule" id="ac-aaj">${tt('Produits à ajouter', 'Products to add')} · ${d.a_ajouter.length}</button><button class="pilule" id="ac-imp">${ICONES.plus} ${tt('Importer des Excel', 'Import Excel files')}</button>
+  z.innerHTML = `<div class="pastilles" style="margin-bottom:10px"><button class="pilule" id="ac-pop">★ ${tt('Produits populaires', 'Popular products')}</button><button class="pilule" id="ac-aaj">${tt('Produits à ajouter', 'Products to add')} · ${d.a_ajouter.length}</button><button class="pilule" id="ac-imp">${ICONES.plus} ${tt('Importer des Excel', 'Import Excel files')}</button>
       ${tag(tt('Recherche eBay : ', 'eBay search: ') + (d.maj_recherche ? ilYa(d.maj_recherche) : tt('jamais', 'never')))}</div>
-    <div class="bloc"><div class="liste">${d.produits.map(p => `<div class="rangee"><span class="vig vig-boite">${imgProduit(p.id) || ICONES.boite}</span>
-      <span class="milieu"><span class="nom">${esc(p.nom)}</span><span class="pastilles">${p.sport !== 'hockey' ? tag(nomSport(p.sport), 'or') : ''}${tag(p.nb_cartes + ' ' + tt('cartes', 'cards'))}${p.complete ? tag('✓ ' + tt('Checklist complète', 'Checklist complete'), 'vert') : `<span class="tag rouge" title="${esc((p.manquantes || []).join(', '))}">${p.sans_cote} ${tt('cotes manquantes', 'missing odds')}</span>`}${p.importe ? tag(tt('Importé', 'Imported'), 'acc') : tag(tt('Livré avec l’app', 'Shipped'))}</span></span>
-      <button class="pilule" data-ck="${esc(p.id)}">${tt('Checklist', 'Checklist')}</button></div>`).join('')}</div></div>
+    <div class="bloc"><div class="liste">${d.produits.map(p => `<button class="rangee ac-prod" data-prod="${esc(p.id)}"><span class="vig vig-boite">${imgProduit(p.id) || ICONES.boite}</span>
+      <span class="milieu"><span class="nom">${esc(p.nom)}</span><span class="pastilles">${p.sport !== 'hockey' ? tag(nomSport(p.sport), 'or') : ''}${tag(p.nb_cartes + ' ' + tt('cartes', 'cards'))}${p.complete ? tag('✓ ' + tt('Cotes complètes', 'Odds complete'), 'vert') : tag(p.sans_cote + ' ' + tt('cotes manquantes', 'missing odds'), 'rouge')}${(p.estimees || []).length ? tag((p.estimees || []).length + ' ' + tt('estimées', 'estimated'), 'or') : ''}</span></span>
+      <i class="ac-ch" aria-hidden="true">›</i></button>`).join('')}</div></div>
     ${d.ignores.length ? `<div class="r-titre" style="margin-top:14px">${tt('Ignorés', 'Ignored')}</div><div class="bloc"><div class="liste">${d.ignores.map(x => `<div class="rangee"><span class="milieu"><span class="nom">${esc(x.nom)}</span></span><button class="pilule" data-rm="${esc(x.cle)}">${tt('Remettre', 'Restore')}</button></div>`).join('')}</div></div>` : ''}`;
   $('#ac-aaj').onclick = () => feuilleAAjouter(c.produits || []);
+  $('#ac-pop').onclick = () => feuillePopulaires(c.produits || []);
   $('#ac-imp').onclick = () => feuilleChecklist(null, c.produits || []);
-  $$('[data-ck]', z).forEach(b => b.onclick = () => feuilleChecklist(b.dataset.ck, c.produits || []));
+  $$('[data-prod]', z).forEach(b => b.onclick = () => { vibrer(); feuilleProduitAdmin(d.produits.find(p => p.id === b.dataset.prod), c.produits || []); });
   $$('[data-rm]', z).forEach(b => b.onclick = async () => { if (await essai(API.admin_remettre(b.dataset.rm))) adminCatalogue(); });
 }
 // 29 oct 2026 (Mathieu : « quand je vais voir mes deals a jour ? c'est un probleme de pas savoir, pour l'admin »)

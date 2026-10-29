@@ -113,7 +113,119 @@ def taux_par_boite(prod):
             reste_b = float(fmt["paquets"]) * float(fmt["cartes_par_paquet"]) - sum(taux.values())
             if reste_b > 0:
                 taux[base[0]] = round(reste_b, 2)
+    _estimer_par_tirage(prod, se, taux)
     return taux
+
+
+# 30 oct 2026 (Mathieu : « ta methode d'evaluation des odds et du retour sur investissement doit etre robuste ») ----------
+# Un sous-ensemble NUMEROTE sans cote publiee (ex. une parallele /199, Population Count 500) : on sait combien d'exemplaires
+# existent (cartes x tirage). Les sous-ensembles numerotes du MEME produit dont la cote est connue donnent le nombre de
+# boites produites (exemplaires / cote par boite) ; leur mediane (au moins 2) donne la cote estimee des autres.
+# Marquees « estimees » (prod["_estimees"]) : comptees dans le calcul, montrees comme telles a l'admin.
+_RE_TIR_NOM = re.compile(r"/\s*(\d{1,5})\b")
+_RE_TIR_IMPRIME = re.compile(r"(?:chiffre imprim\w*|limit\w*)[^()]*\((\d[\d\s\u00a0\u202f]*)\)", re.I)
+
+
+def tirage_de(s):
+    """Le tirage d'un sous-ensemble : le champ, sinon « /199 » dans le nom, sinon le chiffre imprime des Population Count."""
+    t = s.get("tirage")
+    if t:
+        try:
+            return int(t)
+        except (TypeError, ValueError):
+            pass
+    m = _RE_TIR_NOM.search(str(s.get("nom") or ""))
+    if m:
+        return int(m.group(1))
+    m = _RE_TIR_IMPRIME.search(str(s.get("cotes") or ""))
+    if m:
+        return int(re.sub(r"\D", "", m.group(1)) or 0) or None
+    vs = set(_RE_TIR_NOM.findall(str(s.get("cotes") or "")))
+    return int(vs.pop()) if len(vs) == 1 else None
+
+
+def _nb_cartes(prod, se, nom):
+    s = se.get(nom) or {}
+    if s.get("nb_cartes"):
+        return int(s["nb_cartes"])
+    return len(_liste_de(prod, se, nom)) if prod.get("_par_se") is not None else 0
+
+
+def _estimer_par_tirage(prod, se, taux):
+    if prod.get("_par_se") is None:
+        par = {}
+        for c in prod.get("cartes") or []:
+            par.setdefault(c.get("sous_ensemble"), []).append(c)
+        prod["_par_se"] = par
+    boites = []
+    for n, t in taux.items():
+        s = se.get(n) or {}
+        tir = tirage_de(s)                       # cote publiee, ou tiree de la composition de la boite (groupes)
+        k = _nb_cartes(prod, se, n)
+        if tir and 1 < tir <= 5000 and k and t and t > 0:
+            boites.append(k * tir / t)
+    est = []
+    if len(boites) >= 2:
+        boites.sort()
+        b = boites[len(boites) // 2] if len(boites) % 2 else (boites[len(boites) // 2 - 1] + boites[len(boites) // 2]) / 2
+        for n, s in se.items():
+            if n in taux or hors_boite_hobby(s):
+                continue
+            tir, k = tirage_de(s), _nb_cartes(prod, se, n)
+            if tir and 1 < tir <= 5000 and k:
+                taux[n] = round(k * tir / b, 5)
+                est.append(n)
+    # 2) le meme sous-ensemble dans la meme ligne de produit d'une autre saison (cote PUBLIEE la-bas) : Outburst Retro
+    #    Young Guns 2026-27 (« cotes non publiees ») prend celle de 2025-26
+    src = {}
+    try:
+        import checklist_import as ci
+        ligne = ci._mots_ligne(prod.get("nom"))
+        an = int((re.search(r"(19|20)\d{2}", str(prod.get("nom"))) or [0])[0] or 0)
+        refs = {}
+        if ligne:
+            for f in _fichiers():
+                d = _lire(f)
+                if d.get("id") == prod.get("id") or str(d.get("sport") or "hockey") != str(prod.get("sport") or "hockey") \
+                        or ci._mots_ligne(d.get("nom")) != ligne:
+                    continue
+                a2 = int((re.search(r"(19|20)\d{2}", str(d.get("nom"))) or [0])[0] or 0)
+                for x in d.get("sous_ensembles") or []:
+                    try:
+                        pb = float(x.get("par_boite"))
+                    except (TypeError, ValueError):
+                        continue
+                    if pb > 0:
+                        k = ci.cle_sous(x["nom"])
+                        if k not in refs or abs(an - a2) < refs[k][1]:
+                            refs[k] = (pb, abs(an - a2), d.get("nom"))
+        for n, s in se.items():
+            if n in taux or hors_boite_hobby(s):
+                continue
+            r = refs.get(ci.cle_sous(n))
+            if r:
+                taux[n] = r[0]
+                est.append(n)
+                src[n] = r[2]
+    except Exception:
+        pass
+    prod["_estimees"] = est
+    prod["_estimees_src"] = src
+    return est
+
+
+def hors_boite_hobby(s):
+    """Ce qui ne sort pas d'une boite hobby (retail, ePack seulement, hors checklist, plaques, 1/1) : jamais une cote manquante."""
+    nom, txt = str(s.get("nom") or ""), str(s.get("cotes") or "")
+    if s.get("tirage") == 1 or tirage_de(s) == 1 or re.search(r"printing plate|\bplates?\b|1/1|one of one", nom, re.I):
+        return True
+    if re.search(r"liste commune|uniquement en versions", txt, re.I):
+        return True                                          # la liste des versions de couleur, pas une carte
+    if re.search(r"absent\w* d(e la|es?) bo[iî]tes? hobby|exclusi\w* (e-?pack|retail|walmart|target|amazon)|hors checklist", txt, re.I):
+        return True
+    if txt and _RE_SANS_HOBBY.search(txt) and not _RE_HOBBY.search(txt):
+        return True
+    return bool(re.search(r"oversized|retail|blaster|hanger|tin\b|mega", nom, re.I))
 
 
 _RE_SANS_HOBBY = re.compile(r"absent|retail|hanger|blaster|advent|mega|tin\b|dollar|starter|oversized|walmart|target|amazon", re.I)
@@ -123,24 +235,23 @@ _RE_HOBBY = re.compile(r"\bh\b|hobby|e-?pack", re.I)
 def etat_cotes(prod):
     """26 oct 2026 (Mathieu : « une fleche verte lorsque nous avons la checklist avec tous les odds calcules ») -
     les sous-ensembles d'une boite HOBBY dont on ne connait pas la chance de sortir (donc absents du calcul).
-    Ne comptent pas : plaques d'impression, 1/1, et ce qui ne sort que dans le retail. -> {manquantes: [noms], complete}"""
+    30 oct 2026 : ne comptent pas (hors_boite_hobby) : retail, ePack seulement, hors checklist, plaques, 1/1 ; « non
+    publiees » : le fabricant ne donne pas la cote (le calcul les laisse de cote : il est prudent, jamais gonfle) ;
+    « estimees » : numerotees, cote tiree du tirage imprime. -> {manquantes, non_publiees, estimees, complete}"""
     taux = prod.get("_taux") or taux_par_boite(prod)
+    est = set(prod.get("_estimees") or [])
     manq, non_pub = [], []
     for s in prod.get("sous_ensembles") or []:
         if (taux.get(s["nom"]) or 0) > 0 or s.get("par_boite"):
             continue
-        if s.get("tirage") == 1 or re.search(r"printing plate|\bplates?\b|1/1|one of one", s["nom"], re.I):
+        if hors_boite_hobby(s):
             continue
         txt = str(s.get("cotes") or "")
-        if txt and _RE_SANS_HOBBY.search(txt) and not _RE_HOBBY.search(re.sub(r"absent de la bo[iî]te hobby", "", txt, flags=re.I)):
-            continue
-        if re.search(r"oversized|retail|blaster|hanger|tin\b|mega", s["nom"], re.I):
-            continue
-        if re.search(r"random", txt, re.I):          # « Random Inserts » : le fabricant ne publie pas la cote
-            non_pub.append(s["nom"])
+        if re.search(r"random|non publi|not published|non annonc|unannounced", txt, re.I):
+            non_pub.append(s["nom"])                    # le fabricant ne publie pas la cote
             continue
         manq.append(s["nom"])
-    return {"manquantes": manq, "non_publiees": non_pub, "complete": not manq}
+    return {"manquantes": manq, "non_publiees": non_pub, "estimees": sorted(est), "complete": not manq}
 
 
 def charger(pid):
@@ -174,6 +285,7 @@ def liste():
                     "nb_sous_ensembles": len(p.get("sous_ensembles") or []),
                     "recrues_par_boite": round(recrues, 1), "hits_par_boite": round(hits, 2),
                     "cotes_manquantes": len(etat_cotes(p)["manquantes"]), "complete": etat_cotes(p)["complete"],
+                    "cotes_estimees": len(p.get("_estimees") or []),
                     "preliminaire": any("preliminaire" in str(n).lower() for n in (p.get("notes") or [])[:1])})
     out.sort(key=lambda x: str(x.get("sortie") or ""), reverse=True)
     return out

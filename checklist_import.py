@@ -117,7 +117,14 @@ def lire(brut, nom_fichier="checklist.xlsx", sport=None):
     rangs = _rangs_xlsx(brut) if str(nom_fichier).lower().endswith((".xlsx", ".xlsm")) else _rangs_csv(brut)
     cartes, idx, titre = [], None, None
     feuille_prec = None
+    titre_doc = None                    # 30 oct 2026 : « 2025-26 Upper Deck Series 2 Hockey Checklist » en haut du fichier
     for feuille, cells in rangs:
+        if titre_doc is None:
+            for x in [feuille] + [c for c in cells if c][:2]:
+                if x and re.search(r"(19|20)\d{2}", str(x)) and re.search(r"[a-z]{4,}", str(x), re.I) and len(str(x)) < 120 \
+                        and not _est_numero(str(x)):
+                    titre_doc = str(x).strip()
+                    break
         if feuille != feuille_prec:
             feuille_prec, idx = feuille, None
             titre = feuille if feuille and not re.fullmatch(r"sheet\s*\d*|feuil\w*\s*\d*|checklist", _n(feuille)) else None
@@ -187,7 +194,7 @@ def lire(brut, nom_fichier="checklist.xlsx", sport=None):
             s["cote_hobby"] = ch
         sous.append(s)
     _paralleles(sous, cartes)
-    return {"sous_ensembles": sous, "cartes": cartes, "lignes": len(cartes)}
+    return {"sous_ensembles": sous, "cartes": cartes, "lignes": len(cartes), "titre_doc": titre_doc}
 
 
 def cote_hobby(txt):
