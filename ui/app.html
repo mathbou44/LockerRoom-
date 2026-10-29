@@ -407,7 +407,7 @@ details.reglage summary::-webkit-details-marker{display:none}
 .w-reg > span:nth-child(2){flex:1; display:flex; flex-direction:column; gap:2px} .w-reg b{font-size:15px; font-weight:600} .w-reg small{font-size:13px; color:var(--doux)}
 .w-reg-i{width:34px; height:34px; border-radius:11px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.05); font-size:16px}
 .w-reg i{font-style:normal; color:var(--doux); font-size:20px}
-.gx-actions{display:flex; gap:8px; margin-bottom:12px} .gx-liste{display:flex; flex-direction:column; gap:8px}
+.gx-actions{display:flex; gap:8px; margin-bottom:12px} .gx-aide{margin:-4px 0 12px; font-size:12.5px} .gx-liste{display:flex; flex-direction:column; gap:8px}
 .gx-l{display:flex; flex-direction:column; gap:8px; padding:10px 12px; border-radius:14px; background:var(--carte2)} .gx-l.gx-off{opacity:.55}
 .gx-t{display:flex; flex-direction:column; gap:2px; min-width:0} .gx-t b{font-size:14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis} .gx-t small{font-size:12.5px; color:var(--doux)}
 .gx-c{display:flex; gap:8px} .gx-b{flex:1; height:40px; border-radius:12px; border:1px solid var(--ligne); background:var(--carte); color:var(--texte); font:600 15px/1 var(--f-cond); letter-spacing:.04em; cursor:pointer}
@@ -2406,6 +2406,42 @@ function ouvrirPref(b){
 (() => { for (const id of ['nav-pref', 'barre-pref']) { const z = document.getElementById(id); if (z) z.innerHTML = htmlPref(); } })();
 /* I18N FIN */
 
+// 31 oct 2026 (Mathieu : « l'interface ordi doit etre comme celle du cell, mais en plus gros ; il manque le defilement des
+// slabs par exemple ») : a l'ordinateur, l'app du telephone, la meme, agrandie, au centre de l'ecran (un cadre de la
+// largeur d'un telephone : exactement les memes ecrans). « Version large » (en bas a droite) garde l'ancienne mise en page.
+(function(){
+  try {
+    const q = new URLSearchParams(location.search), natif = /LockerRoomiOS/.test(navigator.userAgent);
+    if (q.get('bureau') === '1') { try { localStorage.setItem('lr_bureau', '1'); } catch (e) {} return; }
+    if (q.get('bureau') === '0') { try { localStorage.removeItem('lr_bureau'); } catch (e) {} }
+    let large = false; try { large = localStorage.getItem('lr_bureau') === '1'; } catch (e) {}
+    if (window.top !== window || natif || large || q.get('cadre') === '1' || innerWidth < 900 || !matchMedia('(hover:hover) and (pointer:fine)').matches) return;
+    window.__HOTE = true;
+    document.documentElement.classList.add('hote');
+    const L = 430;
+    const f = document.createElement('iframe');
+    f.id = 'cadre-app'; f.title = 'SlabCoach';
+    const u = new URL(location.href); u.searchParams.set('cadre', '1'); f.src = u.pathname + u.search + u.hash;
+    const ajuster = () => { const s = Math.max(1.15, Math.min(1.75, innerHeight / 700, innerWidth * 0.92 / L));
+      f.style.width = L + 'px'; f.style.height = Math.floor(innerHeight / s) + 'px'; f.style.transform = `translateX(-50%) scale(${s})`; };
+    ajuster(); addEventListener('resize', ajuster);
+    const l = document.createElement('a'); l.id = 'cadre-large'; l.href = '?bureau=1'; l.textContent = 'Version large';
+    document.body.append(f, l);
+    // la page d'ouverture, la connexion, eBay... : jamais dans le cadre
+    addEventListener('message', (e) => { if (e.origin === location.origin && e.data && e.data.lrAller) location.href = e.data.lrAller; });
+  } catch (e) { window.__HOTE = false; }
+})();
+</script>
+<style>
+html.hote, html.hote body{overflow:hidden; height:100%; background:#08080B}
+html.hote body > *:not(#cadre-app):not(#cadre-large){display:none !important}
+html.hote body{background:radial-gradient(900px 600px at 50% 40%, rgba(185,190,255,.08), transparent 70%), #08080B !important; padding:0 !important}
+#cadre-app{position:fixed; top:0; left:50%; border:0; transform-origin:top center; background:#0B0B0E; box-shadow:0 0 0 1px rgba(255,255,255,.06), 0 30px 80px rgba(0,0,0,.6)}
+#cadre-large{position:fixed; right:16px; bottom:12px; font:500 12px system-ui, sans-serif; color:#8C8A96; text-decoration:none; opacity:.7}
+#cadre-large:hover{opacity:1; color:#E9E7F0}
+</style>
+<script>
+if (window.__HOTE) throw new Error('SlabCoach : affichee dans le cadre');
 
 
 'use strict';
@@ -2448,7 +2484,7 @@ async function appelServeur(nom, corps, essai2){
   if (!essai2 && [502, 503, 504].includes(r.status) && (LECTURES.has(nom) || SANS_EFFET.has(nom))) {     // redemarrage (mise a jour)
     await new Promise(x => setTimeout(x, 2500)); return appelServeur(nom, corps, true);
   }
-  if (r.status === 401) { location.href = '/connexion'; throw new Error(tt('Connexion requise', 'Sign-in required')); }
+  if (r.status === 401) { allerA('/connexion'); throw new Error(tt('Connexion requise', 'Sign-in required')); }
   if (!r.ok) { const e = await r.json().catch(() => ({erreur:r.statusText})); throw new Error(e.erreur || 'Erreur serveur'); }
   return r.json();
 }
@@ -2542,7 +2578,7 @@ function feuilleSupprimerCompte(){
     <button class="btn danger" id="sc-ok">${tt('Supprimer définitivement', 'Delete permanently')}</button>`);
   $('#sc-ok').onclick = async () => {
     const r = await essai(API.compte_supprimer(val('sc-mot')));
-    if (r && r.ok) location.href = '/deconnexion';
+    if (r && r.ok) allerA('/deconnexion');
   };
 }
 function dateCourte(d){ const t = Date.parse(String(d || '').slice(0, 10) + 'T12:00'); return isFinite(t) ? new Date(t).toLocaleDateString(LOC(), {day:'numeric', month:'short'}) : ''; }
@@ -2552,6 +2588,8 @@ function heure(d){ const t = Date.parse(d || ''); return isFinite(t) ? new Date(
 // liens eBay dans une fenêtre Safari intégrée, partage natif, vibration légère, notifications des alertes.
 // Rien à acheter dans l'app (règle d'Apple au Canada) : le forfait Pro se gère sur le site.
 // ============================================================
+// 31 oct 2026 : dans le cadre de l'ordinateur, une navigation de page entiere (connexion, eBay, deconnexion) se fait en haut
+const allerA = (u) => { try { if (window.top !== window) { window.top.postMessage({lrAller: String(u)}, location.origin); return; } } catch (e) {} location.href = u; };
 const NATIF = /LockerRoomiOS/.test(navigator.userAgent) || !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 const PLUG = () => (window.Capacitor && window.Capacitor.Plugins) || {};
 if (NATIF) {
@@ -2579,6 +2617,7 @@ if (NATIF) {
   })();
   const ouvrirFen = window.open;
   window.open = (url, ...r) => { if (url) { ouvrirExterne(new URL(url, location.href).href); return null; } return ouvrirFen ? ouvrirFen.call(window, url, ...r) : null; };
+  window.__partageWeb = navigator.share ? navigator.share.bind(navigator) : null;     // 31 oct 2026 : partager un fichier (CSV Gixen)
   if (PLUG().Share) navigator.share = (d) => PLUG().Share.share({title:d.title, text:d.text, url:d.url, dialogTitle:d.title});
   const P = PLUG().PushNotifications;
   if (P) {
@@ -4783,7 +4822,7 @@ async function feuillePro(raison){
     ${f.payant ? `<button class="btn ghost" id="fp-gerer">${tt('Gérer mon abonnement', 'Manage my subscription')}</button>`
       : f.paiements ? `<button class="btn btn-or" id="fp-payer">${tt('Passer à Pro', 'Go Pro')}${prix ? ' · ' + prix : ''}</button><div class="sous" style="text-align:center">${tt('Annule en tout temps, en un clic.', 'Cancel anytime, in one click.')}${f.mode_paiement === 'test' ? ' · ' + tt('Mode test : carte 4242 4242 4242 4242', 'Test mode: card 4242 4242 4242 4242') : ''}</div>`
       : `<div class="sous" style="text-align:center">${tt('Le forfait Pro arrive bientôt.', 'The Pro plan is coming soon.')}</div>`}`);
-  const ouvrir = async (appel, b) => { b.disabled = true; const r = await essai(appel()); b.disabled = false; if (r && r.url) location.href = r.url; };
+  const ouvrir = async (appel, b) => { b.disabled = true; const r = await essai(appel()); b.disabled = false; if (r && r.url) allerA(r.url); };
   const bp = $('#fp-payer'); if (bp) bp.onclick = () => ouvrir(API.abonnement_payer, bp);
   const bg = $('#fp-gerer'); if (bg) bg.onclick = () => ouvrir(API.abonnement_gerer, bg);
 }
@@ -5126,6 +5165,26 @@ async function feuilleMiser(id, lot){
 }
 // 31 oct 2026 (Mathieu : « accelerer mes mises sur plusieurs cartes ; j'utilise Gixen » ; « pour moi (admin) seulement ») :
 // les encans de la watchlist, par fin : le numero eBay et la mise max DANS LA DEVISE DE L'ANNONCE, un tap = copie
+// 31 oct 2026 (Mathieu : « l'API de Gixen n'existe plus : exporte en Excel pour Gixen ») : le fichier d'import de Gixen
+// (Mirror) : une carte par ligne, sans en-tete, « numero eBay, mise max, groupe » (format confirme par Gixen : le meme
+// qu'a l'export). La mise est dans la devise de l'annonce, arrondie vers le bas.
+async function exporterGixen(L){
+  const lignes = L.filter(x => x.mise_max > 0).map(x => `${x.item_id},${Math.floor(x.mise_max)}.00,0`);
+  if (!lignes.length) { toast(tt('Aucune mise à exporter', 'No bid to export')); return; }
+  const texte = lignes.join('\r\n') + '\r\n', d = new Date(), z = (n) => String(n).padStart(2, '0');
+  const nom = `gixen_${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}_${z(d.getHours())}${z(d.getMinutes())}.csv`;
+  const f = new File([texte], nom, {type: 'text/csv'});
+  try {
+    if (NATIF && window.__partageWeb && navigator.canShare && navigator.canShare({files: [f]})) {
+      await window.__partageWeb({files: [f], title: nom});
+      toast(tt('Enregistre le fichier, puis importe-le dans Gixen', 'Save the file, then import it in Gixen'), 3500); return;
+    }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  const u = URL.createObjectURL(f), a = document.createElement('a');
+  a.href = u; a.download = nom; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(u); a.remove(); }, 1500);
+  toast(tt(`${lignes.length} mises exportées : importe le fichier dans Gixen`, `${lignes.length} bids exported: import the file in Gixen`), 3500);
+}
 async function feuilleGixen(montants){
   ouvrirFeuille(`<h3>${tt('Mises rapides · Gixen', 'Quick bids · Gixen')}</h3><div class="sous">${tt('Lecture des encans chez eBay…', 'Reading auctions on eBay…')}</div>`);
   const r = await API.watch_gixen().catch(e => ({ok:false, erreur:e.message}));
@@ -5146,10 +5205,11 @@ async function feuilleGixen(montants){
     <div class="sous" style="margin-bottom:10px">${api ? tt('Un tap : la mise part chez Gixen, qui mise dans les dernières secondes. Montant dans la devise de l’annonce.', 'One tap: the bid goes to Gixen, which bids in the last seconds. Amount in the listing’s currency.')
       : tt('Le plus rapide : « Envoyer dans ma watchlist eBay », puis importe ta watchlist dans l’app Gixen et tape les montants ci-dessous. Sinon : touche le numéro, colle-le dans Gixen ; touche la mise, colle-la.', 'Fastest: “Send to my eBay watchlist”, then import your watchlist in the Gixen app and type the amounts below. Otherwise: tap the number, paste it in Gixen; tap the bid, paste it.')}</div>
     <div class="gx-actions">${api ? (bons.length > 1 ? `<button class="btn petit" id="gx-env-tout">${tt(`Tout envoyer à Gixen (${bons.length})`, `Send all to Gixen (${bons.length})`)}</button>` : '') + `<a class="btn ghost petit" href="https://www.gixen.com/main/home_2.php" target="_blank" rel="noopener">${tt('Mes snipes', 'My snipes')}</a>`
-      : `<a class="btn petit" href="https://www.gixen.com" target="_blank" rel="noopener">${tt('Ouvrir Gixen', 'Open Gixen')}</a>${bons.length ? `<button class="btn ghost petit" id="gx-tout">${tt(`Tout copier (${bons.length})`, `Copy all (${bons.length})`)}</button>` : ''}`}</div>
+      : `${bons.length ? `<button class="btn petit" id="gx-csv">${tt(`Exporter pour Gixen (${bons.length})`, `Export for Gixen (${bons.length})`)}</button>` : ''}<a class="btn ghost petit" href="https://www.gixen.com/main/settings.php" target="_blank" rel="noopener">${tt('Importer dans Gixen', 'Import in Gixen')}</a>`}</div>
+    ${api ? '' : `<div class="sous gx-aide">${tt('Le fichier (Excel / CSV) contient le numéro et la mise max de chaque carte. Dans Gixen : Settings › « Import your snipes from a CSV file » (Mirror).', 'The file (Excel / CSV) has each card’s number and max bid. In Gixen: Settings › “Import your snipes from a CSV file” (Mirror).')}</div>`}
     <div class="gx-liste">${L.map(ligne).join('') || `<div class="vide">${tt('Aucun encan en cours dans ta watchlist', 'No live auction in your watchlist')}</div>`}</div>`);
   $$('[data-cp]').forEach(b => b.onclick = async () => { if (await copier(b.dataset.cp)) { vibrer(); b.classList.add('copie'); toast(tt('Copié : ', 'Copied: ') + b.dataset.cp, 1400); } });
-  const t = $('#gx-tout'); if (t) t.onclick = async () => { if (await copier(r.texte)) { vibrer(); toast(tt('Liste copiée : numéro et mise max, une carte par ligne', 'List copied: number and max bid, one card per line'), 2500); } };
+  const cx = $('#gx-csv'); if (cx) cx.onclick = () => { vibrer(); exporterGixen(bons); };
   const envoyer = async (x, b) => {
     b.disabled = true; b.textContent = tt('Envoi…', 'Sending…');
     const res = await API.gixen_envoyer(x.item_id, x.mise_max).catch(e => ({ok:false, erreur:e.message}));
@@ -9193,7 +9253,7 @@ async function vueReglages(arg){
       <a class="r-lien" href="/support" ${NATIF ? '' : 'target="_blank" rel="noopener"'}>${tt('Aide et support', 'Help and support')}</a>
       <a class="r-lien" href="/confidentialite" ${NATIF ? '' : 'target="_blank" rel="noopener"'}>${tt('Politique de confidentialité', 'Privacy policy')}</a>
       <a class="r-lien" href="/conditions" ${NATIF ? '' : 'target="_blank" rel="noopener"'}>${tt('Conditions d’utilisation', 'Terms of use')}</a>
-      ${(S.forfait || {}).multi ? `<a class="r-lien" href="/deconnexion">${tt('Quitter SlabCoach (me déconnecter)', 'Sign out of SlabCoach')}</a>
+      ${(S.forfait || {}).multi ? `<a class="r-lien" href="/deconnexion" onclick="event.preventDefault(); allerA('/deconnexion')">${tt('Quitter SlabCoach (me déconnecter)', 'Sign out of SlabCoach')}</a>
         <button class="r-lien danger" id="g-supprimer">${tt('Supprimer mon compte SlabCoach', 'Delete my SlabCoach account')}</button>` : ''}
       ${r.ia_photos_ok ? `<button class="r-lien" id="g-ia-retirer">${tt('Lecture des photos par l’IA (Anthropic) : permise · retirer', 'Photo reading by AI (Anthropic): allowed · withdraw')}</button>` : ''}
       <div class="r-note">${tt('SlabCoach n’est affilié ni à eBay, ni à Upper Deck, ni à PSA, ni à la LNH.', 'SlabCoach is not affiliated with eBay, Upper Deck, PSA or the NHL.')}</div></div>
@@ -9342,7 +9402,7 @@ async function rendreForfait(retourPaiement){
     const r = await essai(appel());
     b.disabled = false;
     if (!r || !r.url) { if (fen) fen.close(); return; }
-    if (fen) fen.location = r.url; else location.href = r.url;
+    if (fen) fen.location = r.url; else allerA(r.url);
   };
   brancherBadge(z);
   const bp = $('#g-pro'); if (bp) bp.onclick = () => ouvrir(API.abonnement_payer, bp);
@@ -9460,7 +9520,7 @@ async function rendreBlocEbay(){
     const fen = window.open('', '_blank');
     const res = await essai(API.ebay_url_connexion());
     if (!res) { if (fen) fen.close(); return; }
-    if (fen) fen.location = res.url; else location.href = res.url;
+    if (fen) fen.location = res.url; else allerA(res.url);
     $('#e-fin').hidden = false;
   };
   $('#e-terminer').onclick = async () => { const res = await essai(API.ebay_terminer(val('e-url'))); if (res) { toast('Compte eBay connecté', 3000); rendreBlocEbay(); } };
@@ -9488,7 +9548,7 @@ if (FLUX_AUTH) {
     const m = /^slabcoachauth:\/\/retour\?b=([\w-]+)/.exec(url || ''); if (!m) return;
     let v = ''; try { v = localStorage.getItem('sc_v') || ''; localStorage.removeItem('sc_v'); } catch (e) {}
     try { CAP.Browser.close(); } catch (e) {}
-    location.href = '/auth/terminer?b=' + m[1] + '&v=' + encodeURIComponent(v);
+    allerA('/auth/terminer?b=' + m[1] + '&v=' + encodeURIComponent(v));
   };
   try { CAP.App.addListener('appUrlOpen', e => retourApp(e && e.url)); } catch (e) {}
 }
