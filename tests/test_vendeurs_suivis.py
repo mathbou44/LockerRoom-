@@ -101,7 +101,9 @@ class TestVendeursSuivis(unittest.TestCase):
         self.assertIn("1979-80 O-Pee-Chee Wayne Gretzky #18 Rookie PSA 7", su)
         self.assertIn("2019-20 Upper Deck The Cup Wayne Gretzky Auto Patch /25", su)
         self.assertIn("2023-24 Upper Deck Young Guns Connor Bedard #451 PSA 10", su)        # joueur de 4e annee
-        self.assertNotIn("2025-26 Upper Deck Young Guns Ivan Demidov #451", su)            # recrue de l'annee
+        # 30 oct 2026 (« rookie pas rookie ») : la recrue de l'annee est gardee aussi, marquee recrue (classee apres)
+        self.assertIn("2025-26 Upper Deck Young Guns Ivan Demidov #451", su)
+        self.assertTrue(su["2025-26 Upper Deck Young Guns Ivan Demidov #451"]["recrue"])
         self.assertNotIn("2012-13 Upper Deck Sidney Crosby Base #1", su)                   # carte de base a 2 $
         self.assertFalse(any(t.startswith("2023-24 Upper Deck The Cup Connor McDavid") for t in su))   # finit dans plus de 5 jours
         self.assertIsNone(su["1979-80 O-Pee-Chee Wayne Gretzky #18 Rookie PSA 7"]["valeur"])

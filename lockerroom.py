@@ -4138,7 +4138,7 @@ class Api:
                 vc = self._valeur_en_cache(x)
                 if vc:
                     x = dict(x, valeur=vc[0], n=vc[1], mise_max=round(vc[0] * _dl.RATIO_DEAL - (x.get("port") or 0), 2))
-            y = self._ramasser(dict(x, source="marche", recrue=False), chez_s)
+            y = self._ramasser(dict(x, source="marche", recrue=bool(x.get("recrue"))), chez_s)
             if y.get("valeur"):
                 y["gain"] = round(y["valeur"] * (1 - fp_) - ff_ - (y.get("total") or 0), 2)
                 y["rabais"] = round(100 * (1 - (y.get("total") or 0) / y["valeur"]))
@@ -4147,7 +4147,7 @@ class Api:
         suivis = [x for x in self._deals_filtrer(suivis, f_s) if not f.get("sports") or (x.get("sport") or "hockey") in f["sports"]]
         suivis.sort(key=lambda x: (0 if (x.get("sport") or "hockey") == "hockey" else 1, _dl.rang_vendeur(x.get("vendeur")), str(x.get("fin"))))
         suivis = self._appliquer_profil(suivis, prof)
-        suivis = suivis[:120 if pro else 6]
+        suivis = suivis[:300 if pro else 6]
         # 30 oct 2026 (Mathieu : « l'etiquette du deal : le nom du joueur en haut, son % sous la mediane des dernieres ventes
         # et le prix actuel, comme ces slabs ») : le joueur et la carte, separes, pour l'etiquette
         for x in [*lst[:240], *suivis, *pres]:

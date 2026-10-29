@@ -24,6 +24,7 @@ PAR_TOUR_ENCANS = 30             # 26 oct 2026 (Mathieu : « aucune enchere se t
 VERSION = 4                      # 27 oct 2026 : valeur SURE (numeros speciaux, recence, coherence), vendeur, etat (v4)
 ENCAN_SUIVI_H = 120              # 29 oct 2026 (Mathieu : « deux jours avant les encheres, chez Savage, Remi, CF31, Slab Sharks,
                                  # DC Sports… plusieurs cartes sont supposees sortir dans les deals ») : leurs encans de 5 jours et moins
+PAGES_FIXE_SUIVIS = 3
 PAGES_SUIVIS = 10                # et jusqu'a 10 pages de 200 encans par groupe de vendeurs (2 000)
 ENCAN_H = 48                     # 26 oct 2026 (Mathieu : « tous les deals d'encheres de 48 h et moins ») ; avant : 6 h
 ENCAN_VERIF_H = 6                # une recherche de ventes ciblee pour un encan : seulement s'il finit dans 6 h (la mise monte)
@@ -807,7 +808,9 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
     # (auto, patch, /99) sans vente connue de sa carte etait toujours ecarte. Maintenant il est verifie en fin de tour
     # (apres les encans, avec le budget qui reste) s'il a l'air bas : 25 % sous les memes cartes en vente, ou une
     # vedette (veteran / legende) de 40 $ et plus.
-    elif not va and verif and r.get("suivi") and peu_ventes and _prio(a) and t >= PRIO_MIN:
+    # 30 oct 2026 (Mathieu : « y'en a encore plein marques Auction ») : un encan a 2 jours de la fin a souvent une mise de
+    # 3 $ : c'est la carte qui compte, pas la mise -> tous les encans des 4 vendeurs ; le prix fixe a partir de 10 $
+    elif not va and verif and r.get("suivi") and peu_ventes and _prio(a) and (a.get("encan") or t >= PRIO_MIN):
         st.setdefault("_tard", []).append((a, dict(r, prio=True), cib))     # 30 oct : reserve Savage, Remi, CF31, Slab Sharks
     elif not va and verif and r.get("suivi") and peu_ventes and (t >= HIT_MIN or (a.get("encan") and _precieuse(cib))):
         # 29 oct 2026 : un encan d'un vendeur suivi a 2 jours de la fin a souvent une mise de 5 $ : c'est la carte qui compte
@@ -899,8 +902,9 @@ def _noter_suivi(st, a, bassin, maint):
     cib = cartes_match.cible_titre(a.get("titre") or "")
     if cib.get("exclu") or not cib.get("joueur"):
         return "joueur_inconnu"
-    if _recrue(cib):
-        return "recrue"
+    # 30 oct 2026 (Mathieu : « on doit voir tous les deals, rookie pas rookie, chez les gros vendeurs surtout ») : les
+    # recrues de l'annee sont gardees aussi (classees apres les veterans a l'ecran)
+    rec = bool(_recrue(cib))
     if not (_precieuse(cib) or cib.get("rc") or cib.get("yg")):
         return "ordinaire"                           # 29 oct : la recrue d'un veteran (Ovechkin YG 2005) compte aussi
     if cartes_match.abimee(a.get("titre") or "") or vendeur_risque(a):
@@ -926,8 +930,8 @@ def _noter_suivi(st, a, bassin, maint):
         "encan": True, "fin": f, "mises": a.get("mises"), "port": a.get("port_cad"), "vendeur": a.get("vendeur"),
         "valeur": va[0] if va else None, "n": va[2] if va else 0, "vendues": va[3] if va else [],
         "mise_max": round(va[0] * RATIO_DEAL - (a.get("port_cad") or 0), 2) if va else None,
-        "sport": sport, "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION, "suivi": True}
-    return "ok"
+        "sport": sport, "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION, "suivi": True, "recrue": rec}
+    return "ok_recrue" if rec else "ok"
 
 
 def _q_deal(r):
@@ -1001,7 +1005,8 @@ def _verifier_tard(st, deals, maint, bassin, verif):
     tard.sort(key=lambda x: (0 if x[1].get("suivi") else 1, 0, 1 if _recrue(x[2]) else 0, 0 if _precieuse(x[2]) else 1, str(x[0].get("fin")), 0)
               if x[0].get("encan") else (0 if x[1].get("suivi") else 1, 1, 1 if _recrue(x[2]) else 0, 0 if _precieuse(x[2]) else 1, "", -(_total(x[0]) or 0)))
     tard.sort(key=lambda x: 0 if x[1].get("prio") else 1)                    # 30 oct : la reserve d'abord (tri stable)
-    tard.sort(key=lambda x: rang_vendeur(x[0].get("vendeur")) if x[1].get("prio") else 9)
+    tard.sort(key=lambda x: (rang_vendeur(x[0].get("vendeur")), 0 if x[0].get("encan") else 1, str(x[0].get("fin") or "")) if x[1].get("prio") else (9,))
+    # 30 oct : dans la reserve, par vendeur (Savage d'abord), les encans qui finissent le plus tot d'abord
     fini = {"prio": False, "std": False}
     for a, r, cib in tard:
         k = "prio" if r.get("prio") else "std"
@@ -1378,7 +1383,11 @@ def flux(rechercher=None, bassin=None):
     for i_g, grp in enumerate(grps):
         _progres(detail=f"vendeurs:{i_g + 1}/{len(grps)}")
         rv = {"q": None, "flux": "vendeurs", "sport": None, "joueur": None, "suivi": True}
-        for ench, page in [(False, 0)] + [(True, j) for j in range(max(pages, PAGES_SUIVIS))]:
+        # 30 oct 2026 : prix fixe : les 600 plus recentes (3 pages) ; un gros vendeur en met des centaines par jour
+        fixe_fini = False
+        for ench, page in [(False, k) for k in range(PAGES_FIXE_SUIVIS)] + [(True, j) for j in range(max(pages, PAGES_SUIVIS))]:
+            if not ench and fixe_fini:
+                continue
             try:
                 l = rechercher("", categorie="261328", limite=200, fond=True, encheres=ench, recentes=not ench, flux=True, offset=200 * page, vendeurs=grp)
             except (RuntimeError, OSError, TypeError):
@@ -1392,6 +1401,8 @@ def flux(rechercher=None, bassin=None):
                 _juger(a, rv, [], [] if ench else l, maint, deals, st, bassin=bassin, verif=verif)
                 k_s = "suivi_" + (_noter_suivi(st, a, bassin, maint) or "ok")
                 st[k_s] = st.get(k_s, 0) + 1
+            if not ench and len(l) < 150:
+                fixe_fini = True                       # plus d'autres annonces a prix fixe : on passe aux encans
             if ench and (len(l) < 150 or not l or str(l[-1].get("fin") or "9") > limite_suivi):
                 break
     # 28 oct 2026 (Mathieu : « les maudits deals sont encore juste des Young Guns ») : les flux larges de recrues (Young
@@ -1576,7 +1587,7 @@ def etat():
                          "refus_budget": g.get("verif_budget", 0), "erreurs_ventes": g.get("erreurs_ventes", 0), "sans_ventes": g.get("sans_ventes", 0),
                          "plafond": g.get("verif_plafond", 0)},
             "soldcomps": _etat_soldcomps(), "journal": journal(), "tour": tour(d),
-            "vendeurs_24h": {"annonces": g.get("vendeurs_annonces", 0), "gardes": g.get("suivi_ok", 0), "erreurs": g.get("vendeurs_erreurs", 0),
+            "vendeurs_24h": {"annonces": g.get("vendeurs_annonces", 0), "gardes": g.get("suivi_ok", 0) + g.get("suivi_ok_recrue", 0), "erreurs": g.get("vendeurs_erreurs", 0),
                              "suivis": len(d.get("suivis") or []), "deals": sum(1 for x in d.get("deals") or [] if x.get("flux") == "vendeurs")},
             "vedettes_24h": {"verifiees": g.get("vedettes_verifiees", 0), "deals": g.get("vedettes_deals", 0),
                              "refus_recrues": g.get("verif_budget_recrues", 0)},

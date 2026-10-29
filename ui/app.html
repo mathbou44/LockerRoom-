@@ -5739,8 +5739,9 @@ async function chargerDeals(frais){
       // vendeurs, puis les recrues de l'annee (sous leur titre) ; le chip « Recrues » les montre seules
       const defaut = (F.tri || 'rabais') === 'rabais' && !(F.sortes || []).length;
       if (!defaut) return [...L, ...SU].map(tuileDeal).join('');
-      const vet = L.filter(x => !x.recrue), rec = L.filter(x => x.recrue);
-      return [...vet, ...SU].map(tuileDeal).join('') + (rec.length ? `<div class="d-sec">${tt('Recrues de l’année', 'This year’s rookies')} <span>${rec.length}</span></div>` + rec.map(tuileDeal).join('') : '');
+      // 30 oct 2026 (« rookie pas rookie ») : les recrues des gros vendeurs aussi, sous les veterans
+      const vet = L.filter(x => !x.recrue), rec = [...L.filter(x => x.recrue), ...SU.filter(x => x.recrue)];
+      return [...vet, ...SU.filter(x => !x.recrue)].map(tuileDeal).join('') + (rec.length ? `<div class="d-sec">${tt('Recrues de l’année', 'This year’s rookies')} <span>${rec.length}</span></div>` + rec.map(tuileDeal).join('') : '');
     })()}
         ${d.limite && d.n > L.length && !NATIF ? `<button class="tuile-c tuile-pro" data-pro-deals><span class="badge-f pro grand">✦ PRO</span><b>+${d.n - L.length} ${tt('deals de plus', 'more deals')}</b><span>${tt('avec filtres et comps', 'with filters and comps')}</span></button>` : ''}</div>`
       : `<div class="vide">${P.length ? tt('Pas de deal sous 70 % de la valeur en ce moment : voici les meilleurs prix à surveiller.', 'No deal under 70% of value right now: here are the best prices to watch.') : tt('Aucun deal pour ces filtres pour l’instant. Le chasseur regarde eBay chaque heure.', 'No deal for these filters right now. The hunter checks eBay every hour.')}</div>`}
