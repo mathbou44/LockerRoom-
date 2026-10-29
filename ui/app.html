@@ -2406,42 +2406,46 @@ function ouvrirPref(b){
 (() => { for (const id of ['nav-pref', 'barre-pref']) { const z = document.getElementById(id); if (z) z.innerHTML = htmlPref(); } })();
 /* I18N FIN */
 
-// 31 oct 2026 (Mathieu : « l'interface ordi doit etre comme celle du cell, mais en plus gros ; il manque le defilement des
-// slabs par exemple ») : a l'ordinateur, l'app du telephone, la meme, agrandie, au centre de l'ecran (un cadre de la
-// largeur d'un telephone : exactement les memes ecrans). « Version large » (en bas a droite) garde l'ancienne mise en page.
+// 31 oct 2026 (Mathieu : « l'interface ordi doit etre comme celle du cell, mais en plus gros » ; puis « je voulais que tu
+// l'adaptes pour fitter l'entierete de l'ecran ») : a l'ordinateur, les ecrans du TELEPHONE (barre du haut, barre du bas
+// en pilule, defilement des slabs, ronds...) sur toute la largeur de l'ecran : les regles « telephone » (max-width 899 px)
+// s'appliquent partout et les anciennes regles « ordinateur » (min-width) sont eteintes. « Version large » (en bas a
+// droite) garde l'ancienne mise en page.
 (function(){
   try {
     const q = new URLSearchParams(location.search), natif = /LockerRoomiOS/.test(navigator.userAgent);
-    if (q.get('bureau') === '1') { try { localStorage.setItem('lr_bureau', '1'); } catch (e) {} return; }
+    if (q.get('bureau') === '1') { try { localStorage.setItem('lr_bureau', '1'); } catch (e) {} }
     if (q.get('bureau') === '0') { try { localStorage.removeItem('lr_bureau'); } catch (e) {} }
     let large = false; try { large = localStorage.getItem('lr_bureau') === '1'; } catch (e) {}
-    if (window.top !== window || natif || large || q.get('cadre') === '1' || innerWidth < 900 || !matchMedia('(hover:hover) and (pointer:fine)').matches) return;
-    window.__HOTE = true;
-    document.documentElement.classList.add('hote');
-    const L = 430;
-    const f = document.createElement('iframe');
-    f.id = 'cadre-app'; f.title = 'SlabCoach';
-    const u = new URL(location.href); u.searchParams.set('cadre', '1'); f.src = u.pathname + u.search + u.hash;
-    const ajuster = () => { const s = Math.max(1.15, Math.min(1.75, innerHeight / 700, innerWidth * 0.92 / L));
-      f.style.width = L + 'px'; f.style.height = Math.floor(innerHeight / s) + 'px'; f.style.transform = `translateX(-50%) scale(${s})`; };
-    ajuster(); addEventListener('resize', ajuster);
-    const l = document.createElement('a'); l.id = 'cadre-large'; l.href = '?bureau=1'; l.textContent = 'Version large';
-    document.body.append(f, l);
-    // la page d'ouverture, la connexion, eBay... : jamais dans le cadre
-    addEventListener('message', (e) => { if (e.origin === location.origin && e.data && e.data.lrAller) location.href = e.data.lrAller; });
-  } catch (e) { window.__HOTE = false; }
+    if (natif || large || innerWidth < 900) { if (large && !natif) document.addEventListener('DOMContentLoaded', () => { const l = document.createElement('a'); l.id = 'cadre-large'; l.href = '?bureau=0'; l.textContent = 'Version téléphone'; document.body.appendChild(l); }); return; }
+    document.documentElement.classList.add('tel-large');
+    const BUREAU = /\(\s*min-width\s*:\s*(\d+)px\s*\)/, TEL = /\(\s*max-width\s*:\s*(899|900)px\s*\)/;
+    const passer = (regles) => {
+      for (const r of Array.from(regles || [])) {
+        if (r.media && r.cssRules !== undefined && r.type === 4) {
+          const t = r.media.mediaText, mb = t.match(BUREAU);
+          if (TEL.test(t)) r.media.mediaText = t.replace(TEL, '(min-width: 0px)');
+          else if (mb && +mb[1] >= 700) r.media.mediaText = 'not all';
+          passer(r.cssRules);
+        }
+      }
+    };
+    for (const f of Array.from(document.styleSheets)) { let rs = null; try { rs = f.cssRules; } catch (e) {} if (rs) passer(rs); }
+    document.addEventListener('DOMContentLoaded', () => { const l = document.createElement('a'); l.id = 'cadre-large'; l.href = '?bureau=1'; l.textContent = 'Version large'; document.body.appendChild(l); });
+  } catch (e) {}
 })();
 </script>
 <style>
-html.hote, html.hote body{overflow:hidden; height:100%; background:#08080B}
-html.hote body > *:not(#cadre-app):not(#cadre-large){display:none !important}
-html.hote body{background:radial-gradient(900px 600px at 50% 40%, rgba(185,190,255,.08), transparent 70%), #08080B !important; padding:0 !important}
-#cadre-app{position:fixed; top:0; left:50%; border:0; transform-origin:top center; background:#0B0B0E; box-shadow:0 0 0 1px rgba(255,255,255,.06), 0 30px 80px rgba(0,0,0,.6)}
-#cadre-large{position:fixed; right:16px; bottom:12px; font:500 12px system-ui, sans-serif; color:#8C8A96; text-decoration:none; opacity:.7}
+#cadre-large{position:fixed; right:14px; bottom:10px; z-index:5; font:500 12px system-ui, sans-serif; color:#8C8A96; text-decoration:none; opacity:.6}
 #cadre-large:hover{opacity:1; color:#E9E7F0}
+/* le telephone, sur toute la largeur : un peu plus gros, la barre du bas centree, le contenu sur tout l'ecran */
+html.tel-large{zoom:1.12; scroll-padding-top:140px}
+html.tel-large .onglets{left:50% !important; right:auto !important; transform:translateX(-50%); width:min(620px, calc(100% - 24px)) !important}
+html.tel-large .ecran, html.tel-large .ecran.large{max-width:none !important; width:100%; padding-left:clamp(18px, 3vw, 48px) !important; padding-right:clamp(18px, 3vw, 48px) !important}
+html.tel-large .grille-c{grid-template-columns:repeat(auto-fill, minmax(220px, 1fr))}
+html.tel-large .fond-feuille .feuille{max-width:620px; margin:0 auto}
 </style>
 <script>
-if (window.__HOTE) throw new Error('SlabCoach : affichee dans le cadre');
 
 
 'use strict';
