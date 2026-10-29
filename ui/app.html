@@ -4329,8 +4329,10 @@ async function publierVente2(){
   if (!v.ok) { if (v.pro_requis) feuillePro('annonces_mois'); else toast(v.erreur || 'eBay', 6000); return; }
   V2.hebergees = v.photos; V2.sku = v.sku;
   const ok = await confirmer(V2.debut ? tt('Programmer : en ligne ', 'Schedule: live ') + dateProg(V2.debut) + ' ?' : tt('Publier sur eBay ?', 'Publish on eBay?'),
-    tt(`${argent(V2.prix, 2)} · frais d’insertion ${argent(v.frais || 0, 2)}${(v.avertissements || []).length ? ' · ' + v.avertissements[0] : ''}`,
-       `${argent(V2.prix, 2)} · insertion fees ${argent(v.frais || 0, 2)}${(v.avertissements || []).length ? ' · ' + v.avertissements[0] : ''}`),
+    // 30 oct 2026 : les frais d'eBay pour mettre en ligne, par nom (souvent aucun : annonces gratuites du mois)
+    [argent(V2.prix, 2), (v.frais_detail || []).length ? v.frais_detail.map(f => tt(f.fr, f.en) + ' ' + argent(f.montant, 2)).join(' · ')
+      : v.frais ? tt('frais eBay ', 'eBay fees ') + argent(v.frais, 2) : tt('aucuns frais pour la mettre en ligne', 'no fee to list it'),
+      (v.avertissements || [])[0] || ''].filter(Boolean).join(' · '),
     V2.debut ? tt('Programmer', 'Schedule') : tt('Publier', 'Publish'));
   if (!ok) return;
   b.disabled = true; b.textContent = tt('Publication…', 'Publishing…');

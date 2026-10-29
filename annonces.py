@@ -445,7 +445,7 @@ def publier(d, photos_hebergees, code_postal, verifier_seulement=False):
                 raise
     frais = ebay_ecriture._frais(v)
     if verifier_seulement:
-        return {"ok": True, "verifie": True, "frais": frais, "avertissements": ebay_compte.avertissements(v)}
+        return {"ok": True, "verifie": True, "frais": frais, "frais_detail": ebay_ecriture.frais_detail(v), "avertissements": ebay_compte.avertissements(v)}
     r = ebay_compte.trading(appel, req(appel))
     return {"ok": True, "item_id": ebay_compte._txt(r, "e:ItemID"), "frais": frais, "avertissements": ebay_compte.avertissements(r)}
 

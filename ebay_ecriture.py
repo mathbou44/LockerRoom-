@@ -126,19 +126,37 @@ def publier(carte, prix, photos, description="", expedition=None, sku=None, veri
     v = ebay_compte.trading("VerifyAddFixedPriceItem", _requete("VerifyAddFixedPriceItem", item))
     frais = _frais(v)
     if verifier_seulement:
-        return {"ok": True, "verifie": True, "frais": frais, "avertissements": ebay_compte.avertissements(v)}
+        return {"ok": True, "verifie": True, "frais": frais, "frais_detail": frais_detail(v), "avertissements": ebay_compte.avertissements(v)}
     r = ebay_compte.trading("AddFixedPriceItem", _requete("AddFixedPriceItem", item))
     return {"ok": True, "item_id": ebay_compte._txt(r, "e:ItemID"), "frais": frais, "avertissements": ebay_compte.avertissements(r)}
 
 
-def _frais(racine):
-    tot = 0.0
+# 30 oct 2026 (Mathieu : « depuis quand j'ai des frais d'insertion ? ») : on additionnait TOUTES les lignes de <Fees>,
+# y compris « ListingFee » (le total des autres, donc compte deux fois) et sans retirer les rabais promotionnels (les
+# annonces gratuites du mois). Maintenant : chaque frais moins son rabais, sans le total d'eBay.
+NOMS_FRAIS = {"InsertionFee": ("Frais d'insertion", "Insertion fee"), "ScheduleFee": ("Programmation", "Scheduling"),
+              "GalleryFee": ("Galerie", "Gallery"), "GalleryPlusFee": ("Gallery Plus", "Gallery Plus"),
+              "SubtitleFee": ("Sous-titre", "Subtitle"), "BoldFee": ("Gras", "Bold"), "ReserveFee": ("Prix de réserve", "Reserve"),
+              "BuyItNowFee": ("Achat immédiat", "Buy It Now"), "InternationalInsertionFee": ("Insertion internationale", "International insertion")}
+
+
+def frais_detail(racine):
+    out = []
     for f in racine.findall("e:Fees/e:Fee", ebay_compte._NS):
+        nom = ebay_compte._txt(f, "e:Name") or ""
+        if nom == "ListingFee":                         # le total d'eBay : deja compte dans les lignes
+            continue
         try:
-            tot += float(ebay_compte._txt(f, "e:Fee") or 0)
+            m = float(ebay_compte._txt(f, "e:Fee") or 0) - float(ebay_compte._txt(f, "e:PromotionalDiscount") or 0)
         except ValueError:
-            pass
-    return round(tot, 2)
+            continue
+        if m > 0.004:
+            out.append({"nom": nom, "fr": NOMS_FRAIS.get(nom, (nom, nom))[0], "en": NOMS_FRAIS.get(nom, (nom, nom))[1], "montant": round(m, 2)})
+    return out
+
+
+def _frais(racine):
+    return round(sum(x["montant"] for x in frais_detail(racine)), 2)
 
 
 def changer_prix(item_id, prix):
