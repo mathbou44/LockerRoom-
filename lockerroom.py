@@ -3879,6 +3879,33 @@ class Api:
                 "maintenant": datetime.now().isoformat(timespec="seconds")}
 
     # -- deals (24 oct 2026) : les tiens (rachats de ce que tu as vendu) + ceux du chasseur partage (deals.py) --
+    _ETIQ = {}
+
+    @classmethod
+    def _etiquette_deal(cls, titre):
+        """« 2025-26 Tim Hortons Next Gen Phenoms Michael Misa #NG-7 San Jose » -> (« Michael Misa », « 2025-26 Tim Hortons
+        Next Gen Phenoms »). Le joueur reconnu, sinon (None, titre)."""
+        r = cls._ETIQ.get(titre)
+        if r is None:
+            j = cartes_match.joueur_du_titre(titre)
+            cap = lambda w: re.sub(r"^(Mc|Mac|O')([a-z])", lambda m: m.group(1) + m.group(2).upper(), w.capitalize()) if len(w) > 3 else w.capitalize()
+            nom = " ".join(cap(w) for w in j.split()) if j and len(j) < 40 else None
+            reste = titre
+            if nom:
+                reste = re.sub(r"(?i)\b" + r"\s+".join(re.escape(w) for w in j.split()) + r"\b", " ", titre)
+            reste = re.sub(r"#\s*\S+", " ", reste)
+            if cartes_match._EQUIPES_MOTS["t"] is None:
+                cartes_match._EQUIPES_MOTS["t"] = cartes_match._mots_equipes()
+            eq = cartes_match._EQUIPES_MOTS["t"] | {"st.", "st"}
+            mots = re.sub(r"\s+", " ", reste).strip(" -·,").split()
+            while len(mots) > 2 and cartes_match.norm(mots[-1]) in eq:     # l'equipe en fin de titre (San Jose Sharks)
+                mots.pop()
+            reste = " ".join(mots)
+            r = cls._ETIQ[titre] = (nom, reste[:60])
+            if len(cls._ETIQ) > 20000:
+                cls._ETIQ.clear()
+        return r
+
     @staticmethod
     def _ramasser(x, chez):
         """30 oct 2026 (Mathieu : « Remi, Savage et CF31, je peux aller pick up sur place ») : chez un vendeur ou
@@ -4089,6 +4116,11 @@ class Api:
         suivis.sort(key=lambda x: (0 if (x.get("sport") or "hockey") == "hockey" else 1, _dl.rang_vendeur(x.get("vendeur")), str(x.get("fin"))))
         suivis = self._appliquer_profil(suivis, prof)
         suivis = suivis[:120 if pro else 6]
+        # 30 oct 2026 (Mathieu : « l'etiquette du deal : le nom du joueur en haut, son % sous la mediane des dernieres ventes
+        # et le prix actuel, comme ces slabs ») : le joueur et la carte, separes, pour l'etiquette
+        for x in [*lst[:240], *suivis, *pres]:
+            if "joueur_n" not in x:
+                x["joueur_n"], x["carte_n"] = self._etiquette_deal(x.get("titre") or "")
         return {"ok": True, "deals": lst[:240], "n": n, "pro": pro, "limite": None if pro else forfaits.LIMITES["deals"],
                 "suivis": suivis,
                 "pres": pres, "secours": secours, "secours_le": (dd.get("secours") or {}).get("le") if secours else None,

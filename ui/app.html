@@ -312,6 +312,28 @@ details.reglage summary::-webkit-details-marker{display:none}
 .pop-l{display:flex; flex-direction:column; gap:6px; margin-top:10px}
 .pop-r{display:flex; flex-direction:column; align-items:flex-start; gap:3px; padding:10px 12px; border-radius:12px; border:1px solid var(--ligne); background:var(--carte2); color:var(--texte); font:inherit; text-align:left; cursor:pointer}
 .pop-r .n{font-size:14px; font-weight:600} .pop-r .n i{font-style:normal; color:var(--or)} .pop-r small{font-size:12px; color:var(--doux)} .pop-r b.v{color:var(--vert)} .pop-r b.a{color:var(--acc)}
+/* 30 oct 2026 : les ronds de l'ecran Deals, l'etiquette slab et le contour prisme */
+.d-ronds{display:flex; justify-content:space-around; gap:8px; margin:6px 0 14px}
+.d-rond{display:flex; flex-direction:column; align-items:center; gap:6px; background:none; border:0; color:var(--texte); font:inherit; cursor:pointer; min-width:64px; max-width:92px}
+.d-rond .ap-ic{position:relative; width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  background:conic-gradient(from 210deg, var(--h1,#9FE6D2), var(--h2,#B9BEFF), var(--h3,#F2B3D6), var(--h4,#F1D58E), var(--h1,#9FE6D2))}
+.d-rond .ap-ic::before{content:''; position:absolute; inset:2px; border-radius:50%; background:var(--carte)}
+.d-rond .ap-ic svg{position:relative; width:20px; height:20px; fill:none; stroke:var(--texte); stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round}
+.d-rond .ap-ic em{position:absolute; top:-3px; right:-3px; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:var(--acc); color:var(--acc-texte); font:700 11px/18px inherit; font-style:normal}
+.d-rond small{font-size:11.5px; color:var(--doux); text-align:center; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%}
+.d-rond:active .ap-ic{transform:scale(.94)}
+.d-choix{display:flex; flex-direction:column; gap:6px}
+.d-ch{display:flex; justify-content:space-between; align-items:center; padding:13px 14px; border-radius:14px; background:var(--carte2); border:1px solid var(--ligne); color:var(--texte); font:inherit; font-size:15px; font-weight:600; cursor:pointer}
+.d-ch small{color:var(--doux); font-weight:500} .d-ch.on{border-color:var(--acc); box-shadow:inset 0 0 0 1px var(--acc)}
+.slab-deal .sd-slab{border:1.5px solid transparent; background:linear-gradient(180deg,#2B2A33,#141419) padding-box, var(--holo) border-box}
+.slab-deal .sd-lab{height:auto; flex-direction:column; align-items:stretch; justify-content:flex-start; padding:7px 9px 6px; gap:2px}
+.sd-l2{display:flex; justify-content:space-between; align-items:baseline; gap:6px; margin-top:3px; padding-top:4px; border-top:1px solid rgba(255,255,255,.08)}
+.sd-j{font:700 14.5px/1.1 var(--f-cond); letter-spacing:.03em; text-transform:uppercase; color:#F4F2F8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.sd-c{font-size:10.5px; line-height:1.2; color:#A9A6B4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.sd-j .sd-fav{font-style:normal; color:var(--or)}
+.sd-l2 .sd-rab{font:700 19px/1 var(--f-cond)} .sd-pr{font:700 17px/1 var(--f-cond); color:#F4F2F8}
+.sd-ph .sd-fin{position:absolute; left:6px; bottom:6px; z-index:2; padding:3px 7px; border-radius:99px; background:rgba(10,10,14,.78); backdrop-filter:blur(4px); color:#F4F2F8; font:600 12px/1.2 var(--f-cond); letter-spacing:.04em}
+.sd-bas small .g{color:var(--vert); font-weight:700}
 .vm-tit{margin-top:12px; font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--doux)}
 .vm{display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:6px}
 .vm-t{display:flex; flex-direction:column; align-items:center; gap:1px; padding:8px 4px; border-radius:12px; background:var(--carte2); border:1px solid var(--ligne); color:var(--texte); font:inherit; cursor:pointer}
@@ -4650,10 +4672,8 @@ function feuilleFiltresDeals(){
   const F = S.dealsF, so = new Set(F.sortes || []);
   const enDev = (v) => v == null || v === '' ? '' : Math.round(convertir(v));
   const SORTES = [['recrue', tt('Recrue', 'Rookie')], ['auto', 'Auto'], ['patch', 'Patch'], ['numerotee', tt('Numérotée', 'Numbered')], ['gradee', tt('Gradée', 'Graded')], ['brute', tt('Non gradée', 'Raw')]];
-  let tri = ['rabais', 'fin', 'prix'].includes(F.tri) ? F.tri : 'rabais';
+  let tri = F.tri || 'rabais';
   ouvrirFeuille(`<h3>${tt('Trier et filtrer', 'Sort and filter')}</h3>
-    <div class="fd-s"><div class="r-titre">${tt('Trier par', 'Sort by')}</div>
-      <div class="chips fd-w" id="fd-tri">${[['rabais', tt('Meilleur deal', 'Best deal')], ['fin', tt('Finit bientôt', 'Ending soon')], ['prix', tt('Prix bas', 'Lowest price')]].map(([k, t]) => `<button class="chip ${tri === k ? 'on' : ''}" data-tri="${k}">${t}</button>`).join('')}</div></div>
     <label class="bascule fd-l"><span><b>${tt('Seulement les gros vendeurs', 'Top sellers only')}</b><small>${tt('Les vendeurs de hockey qu’on suit de près', 'The hockey sellers we follow closely')}</small></span><input type="checkbox" id="fd-vend" ${F.vendeurs ? 'checked' : ''}></label>
     <button class="acc-pil fd-ram" id="fd-ram"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.pin}</svg></span><span class="ap-t"><b>${tt('Je ramasse sur place', 'I pick up locally')}</b><small id="fd-ram-s">${tt('Le port ne compte pas chez ces vendeurs', 'Shipping doesn’t count with these sellers')}</small></span><i aria-hidden="true">›</i></button>
     <div class="fd-s"><div class="r-titre">${tt('Sorte de carte', 'Card type')}</div>
@@ -4839,16 +4859,18 @@ function feuilleMiseMax(x, W){
   const d = $('#wm-def'); if (d) d.onclick = () => fin(null);
 }
 function tuileDeal(x){
-  // 29 oct 2026 (Mathieu : « revoir les annonces comme les slabs de l'accueil : sexy et simple ») : chaque deal est un petit
-  // slab. L'etiquette porte le rabais (et le temps d'un encan) ; la fenetre, la photo eBay ; dessous, le prix et le gain.
-  // L'annonce eBay (photo, titre, prix) reste separee de l'estimation SlabCoach.
-  const encan = x.encan;
-  return `<div class="tuile-deal slab-deal ${x.pres ? 'pres' : ''} ${x.suivi && !(x.valeur && x.rabais > 0) ? 'suivi' : ''}" data-id="${esc(x.item_id)}" ${attrsAnnonce(x)} role="button" tabindex="0">
-    <div class="sd-slab"><div class="sd-lab"><b class="sd-rab">${x.suivi && !(x.valeur && x.rabais > 0) ? tt('Encan', 'Auction') : '−' + x.rabais + ' %'}</b>${encan ? `<span class="sd-fin">⏱ ${finDans(x.fin)}</span>` : `<span class="sd-fin">${tt('Achat imm.', 'Buy now')}</span>`}</div>
-      <div class="sd-ph">${SVG_CARTE}${x.photo ? `<img src="${esc(photoNet(x.photo))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}${boutonWatch(x)}</div></div>
-    <div class="sd-bas"><div class="sd-t">${x.favori ? '<span class="sd-fav">★</span> ' : ''}${esc(titreCourt(x.titre))}</div>
-      <div class="sd-px"><b>${argent(x.total, 0)}</b>${x.gain > 0 ? `<span class="g">+${argentCourt(x.gain)}</span>` : ''}</div>
-      <small>${x.valeur ? `${tt('vaut', 'worth')} ${argentCourt(x.valeur)}` : tt('Valeur à vérifier', 'Value to check')}${x.ramassage ? ` · <span class="sd-ram">📍 ${tt('ramassage', 'pickup')}</span>` : ''}</small></div></div>`;
+  // 30 oct 2026 (Mathieu : « l'annonce du deal : le nom du joueur en haut, son % sous la mediane des dernieres ventes et le
+  // prix actuel ; prends exemple sur ces slabs (PSA, TAG) ; un contour prisme mince ») : l'etiquette du slab porte le joueur
+  // et la carte a gauche, le rabais et le prix a droite ; le temps d'un encan sur la photo
+  const encan = x.encan, sansV = x.suivi && !(x.valeur && x.rabais > 0);
+  const nom = x.joueur_n || titreCourt(x.titre), carte = x.joueur_n ? x.carte_n : '';
+  return `<div class="tuile-deal slab-deal ${x.pres ? 'pres' : ''} ${sansV ? 'suivi' : ''}" data-id="${esc(x.item_id)}" ${attrsAnnonce(x)} role="button" tabindex="0">
+    <div class="sd-slab"><div class="sd-lab">
+        <b class="sd-j">${x.favori ? '<i class="sd-fav">★</i> ' : ''}${esc(nom)}</b>${carte ? `<small class="sd-c">${esc(carte)}</small>` : ''}
+        <span class="sd-l2"><b class="sd-rab">${sansV ? tt('Encan', 'Auction') : '−' + x.rabais + ' %'}</b><b class="sd-pr">${argent(x.total, 0)}</b></span></div>
+      <div class="sd-ph">${SVG_CARTE}${x.photo ? `<img src="${esc(photoNet(x.photo))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}${boutonWatch(x)}
+        ${encan ? `<span class="sd-fin">⏱ ${finDans(x.fin)}</span>` : ''}</div></div>
+    <div class="sd-bas"><small>${x.valeur ? `${tt('vaut', 'worth')} ${argentCourt(x.valeur)}${x.gain > 0 ? ` · <b class="g">+${argentCourt(x.gain)}</b>` : ''}` : tt('Valeur à vérifier', 'Value to check')}${x.ramassage ? ` · <span class="sd-ram">📍 ${tt('ramassage', 'pickup')}</span>` : ''}</small></div></div>`;
 }
 // 26 oct 2026 (Mathieu : « encore pas un deal ... une option : l'annonce disparaît et ça nous laisse savoir quoi
 // modifier ») : un tap, une raison (facultative) ; l'annonce part, l'admin reçoit tout le calcul, l'agent l'analyse.
@@ -5592,7 +5614,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document
 async function vueDeals(arg){
   const w = arg === 'watch';
   V().innerHTML = `<section class="ecran large">
-    <div class="entete"><div class="titre">Deals</div>${w ? '' : `<span class="d-ent">${pastilleQuota('deals')}<button class="aide-q" id="d-aide" aria-label="${esc(tt('Comment lire un deal', 'How to read a deal'))}">?</button></span>`}</div>
+    <div class="entete"><div class="titre">Deals</div>${w ? '' : `<span class="d-ent"><button class="aide-q" id="d-aide" aria-label="${esc(tt('Comment lire un deal', 'How to read a deal'))}">?</button></span>`}</div>
     <div class="d-onglets" role="tablist"><a role="tab" href="#deals" aria-selected="${!w}" class="${w ? '' : 'on'}">${tt('Deals', 'Deals')}<span class="d-nb" id="d-nb" hidden></span></a>
       <a role="tab" href="#deals/watch" aria-selected="${w}" class="${w ? 'on' : ''}">${ICO_ETOILE}${tt('Watchlist', 'Watchlist')}<span class="w-nb" hidden></span></a></div>
     <form class="recherche pas-tel" id="v-form" role="search">${ICONES.loupe}<input id="v-q" type="search" enterkeyhint="search" placeholder="${esc(tt('Combien vaut une carte ? (ex. Bedard Young Guns)', 'What is a card worth? (e.g. Bedard Young Guns)'))}"></form>
@@ -5649,6 +5671,31 @@ function feuilleAideDeals(){
     <button class="btn" id="aide-ok">${tt('Compris', 'Got it')}</button>`);
   $('#aide-ok').onclick = fermerFeuille;
 }
+// 30 oct 2026 (Mathieu : « les tuiles a selectionner : des ronds comme dans les autres menus, avec des petits icones ; tu
+// cliques et un menu s'ouvre : sports, reglages des deals, ordre du tri, filtres. Plus doux a l'oeil »)
+const TRIS_DEALS = () => [['rabais', tt('Meilleur deal', 'Best deal')], ['fin', tt('Finit bientôt', 'Ending soon')], ['gain', tt('Plus gros profit', 'Biggest profit')], ['prix', tt('Prix bas', 'Lowest price')], ['recent', tt('Nouveaux', 'Newest')]];
+const IC_D = {tri: '<path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/>', filtre: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>'};
+function rondsDeals(F, sp){
+  const r = (id, svg, lib, n) => `<button class="d-rond" id="${id}"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${svg}</svg>${n ? `<em>${n}</em>` : ''}</span><small>${lib}</small></button>`;
+  const spL = F.sports.length === 1 ? nomSport(F.sports[0]) : F.sports.length > 1 ? F.sports.length + ' ' + tt('sports', 'sports') : tt('Tous', 'All');
+  const triL = (TRIS_DEALS().find(t => t[0] === F.tri) || TRIS_DEALS()[0])[1] + (F.type === 'encan' ? ' · ⏱' : F.type === 'fixe' ? ' · $' : '');
+  const nf = nbFiltresDeals(F) + (F.vendeurs ? 1 : 0);
+  return `<div class="d-ronds">${sp.length > 1 ? r('dr-sp', IC_PIL.sport, spL, F.sports.length) : ''}${r('dr-tri', IC_D.tri, triL)}${r('dr-fil', IC_D.filtre, tt('Filtres', 'Filters'), nf)}${r('dr-reg', IC_PIL.admin, tt('Mes deals', 'My deals'))}</div>`;
+}
+function brancherRondsDeals(F, sp){
+  const go = () => { sauverDealsF(); fermerFeuille(); chargerDeals(); };
+  const s_ = $('#dr-sp'); if (s_) s_.onclick = () => { vibrer();
+    ouvrirFeuille(`<h3>${tt('Sports', 'Sports')}</h3><div class="d-choix">${[['', tt('Tous les sports', 'All sports'), sp.reduce((t, x) => t + x[1], 0)], ...sp.map(([k, n]) => [k, nomSport(k), n])].map(([k, l, n]) =>
+      `<button class="d-ch ${(!k && !F.sports.length) || F.sports.includes(k) && k ? 'on' : ''}" data-dsp="${k}"><span>${esc(l)}</span><small>${n}</small></button>`).join('')}</div>`);
+    $$('[data-dsp]').forEach(b => b.onclick = () => { const k = b.dataset.dsp; F.sports = k ? [k] : []; go(); }); };
+  $('#dr-tri').onclick = () => { vibrer();
+    ouvrirFeuille(`<h3>${tt('Ordre', 'Order')}</h3><div class="d-choix">${TRIS_DEALS().map(([k, l]) => `<button class="d-ch ${F.tri === k ? 'on' : ''}" data-dtri="${k}"><span>${l}</span></button>`).join('')}</div>
+      <div class="r-titre" style="margin:14px 0 8px">${tt('Annonces', 'Listings')}</div>${segV('dr-type', [['', tt('Toutes', 'All')], ['fixe', tt('Prix fixe', 'Buy It Now')], ['encan', tt('Encans', 'Auctions')]], F.type || '')}`);
+    $$('[data-dtri]').forEach(b => b.onclick = () => { F.tri = b.dataset.dtri; go(); });
+    $$('#dr-type button').forEach(b => b.onclick = () => { F.type = b.dataset.v; if (F.type === 'encan' && F.tri === 'rabais') F.tri = 'fin'; go(); }); };
+  $('#dr-fil').onclick = () => { vibrer(); feuilleFiltresDeals(); };
+  $('#dr-reg').onclick = () => { vibrer(); feuilleMesDeals(); };
+}
 async function chargerDeals(frais){
   const z = $('#d-res'); if (!z) return;
   const F = S.dealsF;
@@ -5686,14 +5733,7 @@ async function chargerDeals(frais){
       <div class="kpi or"><span class="lib">${tt('Encans', 'Auctions')}</span><span class="v">${encans}</span><span class="s">${tt('finissent dans 48 h · la mise peut monter', 'ending within 48 h · bids can rise')}</span></div>
       <div class="kpi"><span class="lib">${tt('Mis à jour', 'Updated')}</span><span class="v">${d.maj ? heureCourte(d.maj) : '—'}</span><span class="s">${tt('chaque heure', 'every hour')}</span></div></div>
     <div class="pas-tel">${preuveDeals(d)}</div>
-    <div class="filtres-d">
-      ${sp.length > 1 ? `<div class="chips" id="d-sp"><button class="chip ${F.sports.length ? '' : 'on'}" data-sp="">${tt('Tous sports', 'All sports')}</button>${sp.map(([k, n]) => `<button class="chip ${F.sports.includes(k) ? 'on' : ''}" data-sp="${k}">${nomSport(k)} ${n}</button>`).join('')}</div>` : ''}
-      <div class="deux pas-tel">${segD('d-tri', [['rabais', tt('Meilleur deal', 'Best deal')], ['fin', tt('Finit bientôt', 'Ending soon')], ['gain', tt('Plus gros profit', 'Biggest profit')], ['prix', tt('Prix', 'Price')], ['recent', tt('Nouveaux', 'New')]], F.tri)}
-        ${segD('d-type', [['', tt('Tous', 'All')], ['fixe', tt('Prix fixe', 'Buy It Now')], ['encan', tt('Encans', 'Auctions')]], F.type)}</div>
-      <div class="chips d-chips"><button class="chip filtre-d ${nbFiltresDeals(F) ? 'on' : ''}" id="d-filtres" aria-label="${esc(tt('Trier et filtrer', 'Sort and filter'))}">⚙<span class="pas-tel"> ${tt('Filtres', 'Filters')}</span>${nbFiltresDeals(F) ? ' ' + nbFiltresDeals(F) : ''}</button>
-        <button class="chip tel-seul ${F.type === 'encan' ? 'on' : ''}" data-type-t="encan">⏱ ${tt('Encans', 'Auctions')}</button>
-        <button class="chip ${(F.sortes || []).includes('recrue') ? 'on' : ''}" data-sorte="recrue">${tt('Recrues', 'Rookies')}</button>
-        <button class="chip ${F.vendeurs ? 'on' : ''}" id="d-vend">${tt('Top vendeurs', 'Top sellers')}</button></div></div>
+    ${rondsDeals(F, sp)}
     ${L.length || SU.length ? `<div class="grille-c">${(() => {
       // 29 oct 2026 (Mathieu : « encore que des rookies ») : veterans, legendes et hits d'abord, puis les encans des gros
       // vendeurs, puis les recrues de l'annee (sous leur titre) ; le chip « Recrues » les montre seules
@@ -5707,15 +5747,10 @@ async function chargerDeals(frais){
     ${d.secours ? `<div class="sous" style="margin-top:8px">${tt('Dernière liste vérifiée', 'Last checked list')} · ${new Date(d.secours_le).toLocaleTimeString(LOC(), {hour:'2-digit', minute:'2-digit'})} · ${tt('le chasseur prépare la nouvelle', 'the hunter is preparing the new one')}</div>` : ''}
     ${P.length ? `<div class="bloc-t" style="margin:22px 0 6px">${tt('À surveiller', 'To watch')} <span class="sous">${tt('15 à 30 % sous la valeur : pas encore un deal, mais un bon prix', '15–30% under value: not a deal yet, but a good price')}</span></div>
       <div class="grille-c">${P.map(tuileDeal).join('')}</div>` : ''}`;
-  $$('#d-sp [data-sp]').forEach(b => b.onclick = () => { const k = b.dataset.sp; F.sports = !k ? [] : F.sports.includes(k) ? F.sports.filter(x => x !== k) : [...F.sports, k]; chargerDeals(); });
-  $$('#d-tri button').forEach(b => b.onclick = () => { F.tri = b.dataset.v; sauverDealsF(); chargerDeals(); });
-  $$('#d-type button').forEach(b => b.onclick = () => { F.type = b.dataset.v; sauverDealsF(); chargerDeals(); });
-  // 28 oct 2026 (telephone, « simplifie ») : un seul choix rapide « Encans », qui les trie aussi par fin la plus proche
-  $$('[data-type-t]', z).forEach(b => b.onclick = () => { const on = F.type !== 'encan'; F.type = on ? 'encan' : ''; if (on && F.tri === 'rabais') F.tri = 'fin'; if (!on && F.tri === 'fin') F.tri = 'rabais'; sauverDealsF(); chargerDeals(); });
-  $('#d-filtres').onclick = feuilleFiltresDeals;
+  brancherRondsDeals(F, sp);
   const da = $('#d-aide'); if (da) da.onclick = feuilleAideDeals;
   // 29 oct 2026 (Mathieu : « je veux voir tous les deals des gros vendeurs ») : un tap
-  const dv = $('#d-vend'); if (dv) dv.onclick = () => { F.vendeurs = !F.vendeurs; sauverDealsF(); chargerDeals(); };
+
   // 28 oct 2026 (Mathieu : « encore que des rookies ») : deux raccourcis, un tap
   $$('[data-sorte]', z).forEach(b => b.onclick = () => { const k = b.dataset.sorte, l = F.sortes || [];
     F.sortes = l.includes(k) ? l.filter(x => x !== k) : [...l, k]; sauverDealsF(); chargerDeals(); });
