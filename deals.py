@@ -34,6 +34,18 @@ _verrou = threading.Lock()
 _ETAT = {"en_cours": False}
 
 
+# 29 oct 2026 (Mathieu : « quand je vais voir mes deals a jour ? c'est un probleme de pas savoir, pour l'admin ») :
+# l'admin voit ou en est le tour (etape, progression, fin estimee) et quand vient le prochain.
+ETAPES = {"revue": (1, "Deals revus sur eBay"), "flux": (2, "Vendeurs suivis et flux"), "encans": (3, "Encans par joueur"),
+          "chasser": (4, "Prix fixe par joueur")}
+
+
+def _progres(etape=None, detail=None):
+    if etape:
+        _ETAT["etape"] = etape
+    _ETAT["detail"] = detail
+
+
 def _chemin():
     import comptes
     return os.path.join(comptes.DONNEES, "deals_globaux.json")
@@ -982,7 +994,8 @@ def chasser(n=PAR_TOUR, rechercher=None, bassin=None, vedettes=False):
     deals = {x["item_id"]: x for x in d.get("deals") or []}
     st = {}
     verif = _verificateur(d, st, bassin)
-    for r in lot:
+    for i_r, r in enumerate(lot):
+        _progres(detail=f"{i_r + 1}/{len(lot)}")
         try:
             fixes = rechercher(r["q"], categorie="261328", limite=100, fond=True, recentes=True)
         except (RuntimeError, OSError):
@@ -1031,7 +1044,8 @@ def encans(n=PAR_TOUR_ENCANS, rechercher=None, bassin=None, vedettes=False):
     deals = {x["item_id"]: x for x in d.get("deals") or []}
     st = {}
     verif = _verificateur(d, st, bassin)
-    for r in lot:
+    for i_r, r in enumerate(lot):
+        _progres(detail=f"{i_r + 1}/{len(lot)}")
         try:
             ench = rechercher(r["q"], categorie="261328", limite=100, fond=True, encheres=True)
         except (RuntimeError, OSError):
@@ -1193,6 +1207,7 @@ def flux(rechercher=None, bassin=None):
     limite_suivi = (maint + timedelta(hours=ENCAN_SUIVI_H)).isoformat().replace("+00:00", "Z")
     for k in range(0, len(vs), VENDEURS_PAR_APPEL):
         grp = vs[k:k + VENDEURS_PAR_APPEL]
+        _progres(detail=f"vendeurs:{min(k + VENDEURS_PAR_APPEL, len(vs))}/{len(vs)}")
         rv = {"q": None, "flux": "vendeurs", "sport": None, "joueur": None, "suivi": True}
         for ench, page in [(False, 0)] + [(True, j) for j in range(max(pages, PAGES_SUIVIS))]:
             try:
@@ -1214,7 +1229,9 @@ def flux(rechercher=None, bassin=None):
     # Guns, rookies) un tour sur deux seulement ; les appels eBay economises vont aux hits (2 fois plus de flux de hits)
     tour_n = int(d.get("tour_n") or 0)
     recrues = flux_liste() if tour_n % 2 == 0 or os.environ.get("LR_DEALS_FLUX") else []
-    for q, sport in hits + recrues:                     # 28 oct : les hits d'abord (le budget de verification va aux hits)
+    tous_f = hits + recrues
+    for i_f, (q, sport) in enumerate(tous_f):            # 28 oct : les hits d'abord (le budget de verification va aux hits)
+        _progres(detail=f"flux:{i_f + 1}/{len(tous_f)}")
         r = {"q": None, "flux": q, "sport": sport, "joueur": None}
         # prix fixe : les 200 plus recentes ; encans : page apres page (200) tant qu'ils finissent dans 48 h
         for ench, page in [(False, 0)] + [(True, k) for k in range(pages)]:
@@ -1314,6 +1331,7 @@ def chasser_vedettes():
     appels_ebay.liberer(900)
 
     def tache():
+        _ETAT.update(debut=time.time(), etape="vedettes", detail=None)
         try:
             b = Bassin()
             for f in (chasser, encans):
@@ -1322,9 +1340,33 @@ def chasser_vedettes():
                 except Exception as e:
                     print("Deals (vedettes) : " + repr(e), flush=True)
         finally:
-            _ETAT["en_cours"] = False
+            _ETAT.update(en_cours=False, etape=None, detail=None)
     threading.Thread(target=tache, daemon=True, name="deals-vedettes").start()
     return {"ok": True, "lance": True}
+
+
+def tour(d=None):
+    """Ou en est le chasseur : en cours (etape i/4, progression, depuis, fin estimee) ou le prochain tour."""
+    d = d or lire_vite()
+    der = d.get("dernier_tour") or {}
+    duree = der.get("duree_s") or 1800
+    if _ETAT.get("en_cours"):
+        deb = _ETAT.get("debut") or _ETAT.get("essai_le") or time.time()
+        n, lib = ETAPES.get(_ETAT.get("etape") or "", (1, "Vétérans et légendes"))
+        if _ETAT.get("etape") == "vedettes":
+            duree = 600
+        return {"en_cours": True, "debut": datetime.fromtimestamp(deb, timezone.utc).isoformat(timespec="seconds"),
+                "etape": _ETAT.get("etape"), "etape_n": n, "etapes": 1 if _ETAT.get("etape") == "vedettes" else len(ETAPES), "etape_lib": lib, "detail": _ETAT.get("detail"),
+                "fin_estimee": datetime.fromtimestamp(max(deb + duree, time.time() + 60), timezone.utc).isoformat(timespec="seconds"),
+                "dernier": der or None}
+    try:
+        m = datetime.fromisoformat(str(d.get("maj"))).timestamp()
+    except ValueError:
+        m = 0
+    base = max(m, _ETAT.get("essai_le", 0))
+    prochain = max(base + FRAICHEUR_S, time.time())
+    return {"en_cours": False, "prochain": datetime.fromtimestamp(prochain, timezone.utc).isoformat(timespec="seconds"),
+            "dernier": der or None}
 
 
 def journal(n=80):
@@ -1362,7 +1404,7 @@ def etat():
             "hits_24h": {"vus": g.get("hits_vus", 0), "verifies": g.get("hits_verifies", 0), "deals": g.get("hits_deals", 0),
                          "refus_budget": g.get("verif_budget", 0), "erreurs_ventes": g.get("erreurs_ventes", 0), "sans_ventes": g.get("sans_ventes", 0),
                          "plafond": g.get("verif_plafond", 0)},
-            "soldcomps": _etat_soldcomps(), "journal": journal(),
+            "soldcomps": _etat_soldcomps(), "journal": journal(), "tour": tour(d),
             "vendeurs_24h": {"annonces": g.get("vendeurs_annonces", 0), "gardes": g.get("suivi_ok", 0), "erreurs": g.get("vendeurs_erreurs", 0),
                              "suivis": len(d.get("suivis") or []), "deals": sum(1 for x in d.get("deals") or [] if x.get("flux") == "vendeurs")},
             "vedettes_24h": {"verifiees": g.get("vedettes_verifiees", 0), "deals": g.get("vedettes_deals", 0),
@@ -1457,6 +1499,8 @@ def chasser_si_besoin(force=False):
         _ETAT["essai_le"] = time.time()
 
     def tache():
+        debut = time.time()
+        _ETAT.update(debut=debut, etape="revue", detail=None)
         try:
             b = Bassin()                                 # une fois par tour : toutes les ventes connues
             try:
@@ -1466,6 +1510,7 @@ def chasser_si_besoin(force=False):
             # 28 oct 2026 : les flux d'abord (hits, vendeurs suivis, encans larges) : ce sont eux qui trouvent le plus ;
             # si le rythme du budget eBay coupe le tour, il coupe les recherches par joueur
             for f in (flux, encans, chasser):
+                _progres(f.__name__)
                 try:
                     f(bassin=b)
                 except Exception as e:
@@ -1473,8 +1518,10 @@ def chasser_si_besoin(force=False):
             with _verrou:
                 d = lire()
                 d["bassin"] = b.n
+                d["dernier_tour"] = {"debut": datetime.fromtimestamp(debut, timezone.utc).isoformat(timespec="seconds"),
+                                     "fin": datetime.now(timezone.utc).isoformat(timespec="seconds"), "duree_s": round(time.time() - debut)}
                 _ecrire(d)
         finally:
-            _ETAT["en_cours"] = False
+            _ETAT.update(en_cours=False, etape=None, detail=None)
     threading.Thread(target=tache, daemon=True, name="deals").start()
     return True

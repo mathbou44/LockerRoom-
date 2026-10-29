@@ -202,7 +202,7 @@ class Sante(unittest.TestCase):
         import sante
         marche = [{"prix_cad": p} for p in (40, 42, 45, 39, 41, 44)]
         self.assertEqual(sante.evaluer(60, marche)["verdict"], "baisser")
-        self.assertEqual(sante.evaluer(60, marche)["suggestion"], 39.99)
+        self.assertEqual(sante.evaluer(60, marche)["suggestion"], 40.0)            # 29 oct 2026 : multiples de 5
         self.assertEqual(sante.evaluer(25, marche)["verdict"], "monter")
         self.assertEqual(sante.evaluer(42, marche, age=90, watchers=0)["verdict"], "traine")
         self.assertEqual(sante.evaluer(42, marche, age=10)["verdict"], "ok")
@@ -234,7 +234,7 @@ class Sante(unittest.TestCase):
         cpt = a.sante_resume()["compte"]
         self.assertEqual((cpt["baisser"], cpt["monter"], cpt["racheter"]), (1, 1, 1))
         b = a.sante_liste("baisser")[0]
-        self.assertEqual(b["suggestion"], 959.99)
+        self.assertEqual(b["suggestion"], 960.0)
         a.sante_fait(b["item_number"])
         self.assertEqual(a.sante_resume()["compte"]["baisser"], 0)
 

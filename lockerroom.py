@@ -11,6 +11,7 @@ import csv
 import hashlib
 import io
 import json
+import math
 import os
 import re
 import secrets
@@ -59,6 +60,7 @@ CATEGORIE_CARTES = "261328"   # eBay : Sports Trading Card Singles
 
 REGLAGES_DEFAUT = {
     "prix_auto": {},                                            # 27 oct 2026 : mode Auto des prix eBay (voir prix_auto_regler)
+    "watch": {},                                                # 29 oct 2026 : alarmes de la watchlist (voir watchlist.regler)
     "alarmes": {},                                              # 29 oct 2026 : les alertes cochees (voir alarmes.py)
     "nom_boutique": "Ma boutique",
     "equipe_fav": "",                                           # 26 oct 2026 : les accents de l'app aux couleurs de cette equipe
@@ -784,6 +786,13 @@ class Api:
             return {"ok": False, "erreur": "Réservé à l'administrateur"}
         import deals as _d
         return {**_d.chasser_vedettes(), "etat": self.deals_etat()}
+
+    def deals_tour(self):
+        """29 oct 2026 - admin : ou en est le chasseur (leger : l'ecran Deals le demande a chaque ouverture)."""
+        if not self._est_admin():
+            return {"ok": False}
+        import deals as _d
+        return {"ok": True, **_d.tour()}
 
     def deals_tester_vendeurs(self):
         """29 oct 2026 - admin : ce qu'eBay renvoie maintenant pour chaque vendeur suivi, et pourquoi un encan est garde."""
@@ -2452,7 +2461,16 @@ class Api:
         p = max(avant * (1 - m), min(avant * (1 + m), sug))
         cout = _float(a.get("cout"))
         plancher = max(cfg["plancher"], cout * (1 + cfg["marge_min_pct"] / 100) if cout else 0, 0.99)
-        p = round(max(p, plancher), 2)
+        # 29 oct 2026 (Mathieu : « toujours des multiples de 5 ») : le multiple de 5 le plus proche, du meme cote du prix
+        # actuel et dans la limite du jour ; aucun -> on ne change rien
+        lo, hi = avant * (1 - m), avant * (1 + m)
+        mult = [5.0 * k for k in range(max(1, math.ceil(lo / 5.0)), math.floor(hi / 5.0) + 1)]
+        mult = [x for x in mult if (x < avant if p < avant else x > avant)]
+        if not mult:
+            return None
+        p = min(mult, key=lambda x: abs(x - p))
+        if p < plancher:
+            p = max(5.0, 5.0 * math.ceil(plancher / 5.0))
         if abs(p - avant) < max(0.5, avant * 0.02):
             return None                                   # trop petit pour valoir un changement
         return p
@@ -3215,6 +3233,14 @@ class Api:
     def watch_liste(self):
         import watchlist
         return watchlist.liste(self)
+
+    def watch_regler(self, d):
+        import watchlist
+        return watchlist.regler(self, d)
+
+    def watch_mise_max(self, item_id, valeur=None):
+        import watchlist
+        return watchlist.mise_max(self, item_id, valeur)
 
     def watch_proches(self):
         """Boucle du serveur (5 min) : les encans suivis qui finissent bientot, relus sur eBay."""

@@ -229,6 +229,10 @@ details.reglage summary::-webkit-details-marker{display:none}
 .pr-roue{display:inline-block; width:15px; height:15px; margin-right:8px; vertical-align:-2px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:pr-tour .7s linear infinite}
 @keyframes pr-tour{to{transform:rotate(360deg)}}
 #adm-vend-r .det, #adm-vend-r .nom{white-space:normal; overflow:visible; text-overflow:clip}
+.d-tour{display:block; position:relative; padding-right:26px !important; margin:-4px 0 12px; padding:9px 12px; border-radius:12px; background:rgba(233,207,142,.07); border:1px solid rgba(233,207,142,.22); font-size:13px; color:var(--doux); text-decoration:none; line-height:1.35}
+.d-tour b{color:var(--texte); font-weight:600} .d-tour i{font-style:normal; position:absolute; right:12px; top:50%; transform:translateY(-50%); color:var(--or)} .d-tour-a{margin-right:6px} .d-tour .roue{width:13px; height:13px; display:inline-block; vertical-align:-2px}
+.d-tour-a{font:700 10.5px 'Barlow Condensed',sans-serif; letter-spacing:.12em; text-transform:uppercase; color:var(--or)}
+.adm-tour{margin-bottom:6px; color:var(--texte)} .adm-tour .roue{width:13px; height:13px; vertical-align:-2px}
 .d-ent{display:flex; align-items:center; gap:8px; margin-left:auto} .d-chips{display:flex; align-items:center; flex-wrap:nowrap; gap:7px} .d-chips .aide-q{margin-left:auto} .d-chips .chip{padding-left:11px; padding-right:11px}
 .fd-w{flex-wrap:wrap !important; overflow:visible !important} .fd-s{display:flex; flex-direction:column; gap:8px}
 .fd-l{align-items:center; padding:10px 0} .fd-l > span{display:flex; flex-direction:column; gap:2px} .fd-l small{font-size:13px; color:var(--doux)}
@@ -258,6 +262,13 @@ details.reglage summary::-webkit-details-marker{display:none}
 .w-vide{display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; padding:48px 20px; color:var(--doux); font-size:15px}
 .w-vide b{color:var(--texte); font-size:18px} .w-vide .btn{width:auto; margin-top:6px}
 .w-vide-et svg{width:44px; height:44px; fill:var(--or-fonce); stroke:var(--or); stroke-width:1.2}
+.w-max{font:inherit; color:inherit; background:none; border:0; border-bottom:1px dashed rgba(255,255,255,.35); padding:0 0 1px; cursor:pointer}
+.w-max.perso{color:var(--or); border-bottom-color:rgba(233,207,142,.6)}
+.w-reg{display:flex; align-items:center; gap:12px; width:100%; margin-top:14px; padding:12px 14px; border-radius:16px; background:var(--carte); border:1px solid var(--ligne); color:var(--texte); font:inherit; text-align:left; cursor:pointer}
+.w-reg > span:nth-child(2){flex:1; display:flex; flex-direction:column; gap:2px} .w-reg b{font-size:15px; font-weight:600} .w-reg small{font-size:13px; color:var(--doux)}
+.w-reg-i{width:34px; height:34px; border-radius:11px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.05); font-size:16px}
+.w-reg i{font-style:normal; color:var(--doux); font-size:20px}
+.lien-t{background:none; border:0; padding:0; color:var(--acc); font:inherit; text-decoration:underline; cursor:pointer}
 .w-note{font-size:12.5px; color:var(--pale); margin:14px 2px 0; line-height:1.4}
 /* 29 oct 2026 (Mathieu : « refresh comme ma page d'accueil Instagram… notre logo qui tourne ») : tirer pour actualiser */
 #ptr{position:fixed; left:50%; top:0; z-index:29; width:44px; height:44px; margin-left:-22px; border-radius:50%; background:var(--carte);
@@ -4260,16 +4271,16 @@ async function chargerWatch(){
   const r = await API.watch_liste().catch(e => ({ok:false, erreur:e.message}));
   if (!$('#d-res')) return;
   if (!r.ok) { z.innerHTML = `<div class="vide">${esc(r.erreur || 'Erreur')}</div>`; return; }
-  const L = r.cartes || [];
+  const L = r.cartes || [], W = r.reglages || {fin_min: 15, ratio_pct: 70, alerte_fin: true, alerte_seuil: true};
   S.watch = new Set(L.map(x => String(x.item_id))); majNbWatch();
   if (!L.length) { z.innerHTML = `<div class="w-vide"><span class="w-vide-et">${ICO_ETOILE}</span><b>${tt('Ta watchlist est vide', 'Your watchlist is empty')}</b>
     <span>${tt('Touche l’étoile d’un deal pour le suivre. On t’avertit 15 min avant la fin d’un encan, et si la mise dépasse ta mise max.', 'Tap a deal’s star to follow it. We alert you 15 min before an auction ends, and if the bid goes over your max bid.')}</span>
     <a class="btn petit" href="#deals">${tt('Voir les deals', 'See deals')}</a></div>`; return; }
   const ligne = (x) => {
-    const mx = x.mise_max != null ? argent(x.mise_max, 0) : '—', cur = argent((x.total || 0) - (x.port || 0), 0);
+    const mx = `<button class="w-max ${x.mise_perso ? 'perso' : ''}" data-wmax="${esc(x.item_id)}">max ${x.mise_max != null ? argent(x.mise_max, 0) : '—'}</button>`, cur = argent((x.total || 0) - (x.port || 0), 0);
     const etat = x.etat === 'fini' ? `<span class="w-pil gris">${tt('Terminé', 'Ended')}</span>`
-      : x.etat === 'depasse' ? `<span class="w-pil rouge">${tt('Dépassée', 'Over max')}</span><span class="w-px">${cur} <i>›</i> max ${mx}</span>`
-      : `${x.encan ? `<span class="w-pil ${x.reste_min != null && x.reste_min <= 60 ? 'or' : ''}">⏱ ${finCourt(x.reste_min)}</span>` : `<span class="w-pil">${tt('Achat imm.', 'Buy now')}</span>`}<span class="w-px"><b>${cur}</b> · max ${mx}</span>`;
+      : x.etat === 'depasse' ? `<span class="w-pil rouge">${tt('Dépassée', 'Over max')}</span><span class="w-px">${cur} <i>›</i> ${mx}</span>`
+      : `${x.encan ? `<span class="w-pil ${x.reste_min != null && x.reste_min <= 60 ? 'or' : ''}">⏱ ${finCourt(x.reste_min)}</span>` : `<span class="w-pil">${tt('Achat imm.', 'Buy now')}</span>`}<span class="w-px"><b>${cur}</b> · ${mx}</span>`;
     return `<div class="w-ligne e-${x.etat}" ${attrsAnnonce(x)} role="button" tabindex="0">
       <div class="w-ph">${SVG_CARTE}${x.photo ? `<img src="${esc(photoNet(x.photo))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}</div>
       <div class="w-mil"><div class="w-t">${esc(titreCourt(x.titre))}</div><div class="w-l">${etat}</div></div>
@@ -4277,9 +4288,50 @@ async function chargerWatch(){
         <button class="sd-et on w-et" data-watch="${esc(x.item_id)}" aria-pressed="true" aria-label="${esc(tt('Retirer de la watchlist', 'Remove from watchlist'))}">${ICO_ETOILE}</button></div></div>`;
   };
   z.innerHTML = `<div class="w-liste">${L.map(ligne).join('')}</div>
-    <p class="w-note">${tt('Alerte 15 min avant la fin et si la mise dépasse ta mise max (70 % de la valeur, port compris). Tu mises toi-même sur eBay.', 'Alert 15 min before the end and if the bid goes over your max (70% of value, shipping included). You bid yourself on eBay.')}</p>`;
+    <button class="w-reg" id="w-reg"><span class="w-reg-i">🔔</span><span><b>${tt('Mes alertes', 'My alerts')}</b>
+      <small>${[W.alerte_fin ? tt(`${W.fin_min} min avant la fin`, `${W.fin_min} min before the end`) : '', W.alerte_seuil ? tt(`mise max ${W.ratio_pct} % de la valeur`, `max bid ${W.ratio_pct}% of value`) : ''].filter(Boolean).join(' · ') || tt('Aucune alerte', 'No alerts')}</small></span><i>›</i></button>
+    <p class="w-note">${tt('Touche « max » pour choisir ta mise max d’une carte. Tu mises toi-même sur eBay.', 'Tap “max” to set a card’s max bid. You bid yourself on eBay.')}</p>`;
+  $('#w-reg').onclick = () => feuilleAlertesWatch(W);
+  $$('[data-wmax]', z).forEach(b => b.onclick = (e) => { e.stopPropagation(); const x = L.find(y => String(y.item_id) === b.dataset.wmax); if (x) feuilleMiseMax(x, W); });
   clearInterval(S.tDeals);
   S.tDeals = setInterval(() => { if (!$('.w-liste')) { clearInterval(S.tDeals); return; } chargerWatch(); }, 60000);
+}
+// 29 oct 2026 (Mathieu : « laisser l'utilisateur choisir les valeurs, mais laisser celles-ci par defaut pour les alarmes »)
+function feuilleAlertesWatch(W){
+  const C = {...W};
+  const seg = (id, choix, v, suf) => `<div class="seg petit" id="${id}">${choix.map(k => `<button data-v="${k}" class="${+k === +v ? 'on' : ''}">${k}${suf}</button>`).join('')}</div>`;
+  const peindre = () => { ouvrirFeuille(`<h3>${tt('Mes alertes', 'My alerts')}</h3>
+    <label class="bascule fd-l"><span><b>${tt('Avant la fin d’un encan', 'Before an auction ends')}</b><small>${tt('« Place ta mise »', '“Place your bid”')}</small></span><input type="checkbox" id="wa-fin" ${C.alerte_fin ? 'checked' : ''}></label>
+    ${C.alerte_fin ? seg('wa-min', [5, 10, 15, 30, 60], C.fin_min, ' min') : ''}
+    <label class="bascule fd-l" style="margin-top:14px"><span><b>${tt('Si la mise dépasse ma mise max', 'If the bid goes over my max')}</b><small>${tt('La carte n’est plus rentable', 'The card is no longer worth it')}</small></span><input type="checkbox" id="wa-seuil" ${C.alerte_seuil ? 'checked' : ''}></label>
+    <div class="fd-s" style="margin-top:14px">${tt('Ma mise max par défaut', 'My default max bid')} <small>${tt('% de la valeur, port compris', '% of value, shipping included')}</small></div>
+    ${seg('wa-ratio', [50, 60, 70, 80, 90], C.ratio_pct, ' %')}
+    <div class="sous" style="margin-top:12px">${tt('Par défaut : 15 min et 70 %.', 'Default: 15 min and 70%.')} <button class="lien-t" id="wa-def">${tt('Remettre', 'Reset')}</button></div>
+    <button class="btn" id="wa-ok" style="margin-top:16px">OK</button>`);
+    const ch = (k, v) => { C[k] = v; vibrer(); garderF(peindre); };
+    $('#wa-fin').onchange = (e) => ch('alerte_fin', e.target.checked);
+    $('#wa-seuil').onchange = (e) => ch('alerte_seuil', e.target.checked);
+    $$('#wa-min button').forEach(b => b.onclick = () => ch('fin_min', +b.dataset.v));
+    $$('#wa-ratio button').forEach(b => b.onclick = () => ch('ratio_pct', +b.dataset.v));
+    $('#wa-def').onclick = () => { Object.assign(C, {fin_min: 15, ratio_pct: 70, alerte_fin: true, alerte_seuil: true}); vibrer(); garderF(peindre); };
+    $('#wa-ok').onclick = async () => { const r = await essai(API.watch_regler(C), tt('Alertes enregistrées', 'Alerts saved')); if (r) { fermerFeuille(); chargerWatch(); } };
+  };
+  const garderF = (f) => { const y = $('#feuille') ? $('#feuille').scrollTop : 0; f(); $('#feuille').scrollTop = y; };
+  peindre();
+}
+function feuilleMiseMax(x, W){
+  const defaut = x.valeur ? Math.round((x.valeur * W.ratio_pct / 100 - (x.port || 0)) * 100) / 100 : null;
+  ouvrirFeuille(`<h3>${tt('Ma mise max', 'My max bid')}</h3>
+    <div class="sous" style="margin-bottom:12px">${esc(titreCourt(x.titre))}${x.valeur ? ' · ' + tt('vaut ', 'worth ') + argentCourt(x.valeur) : ''}</div>
+    <label class="large">${tt('Mise max', 'Max bid')} ${symDevise()}<input class="champ" id="wm-v" type="number" inputmode="decimal" step="1" min="1" value="${dev2(x.mise_max)}"></label>
+    ${defaut != null ? `<div class="sous" style="margin-top:8px">${tt(`Par défaut : ${argent(defaut, 0)} (${W.ratio_pct} % de la valeur, port compris)`, `Default: ${argent(defaut, 0)} (${W.ratio_pct}% of value, shipping included)`)}</div>` : ''}
+    <button class="btn" id="wm-ok" style="margin-top:16px">${tt('Enregistrer', 'Save')}</button>
+    ${x.mise_perso && defaut != null ? `<button class="plus" id="wm-def">${tt('Revenir au défaut', 'Back to default')}</button>` : ''}`);
+  const i = $('#wm-v'); setTimeout(() => { i.focus(); i.select(); }, 250);
+  const fin = async (v) => { const r = await essai(API.watch_mise_max(x.item_id, v), tt('Mise max enregistrée', 'Max bid saved')); if (r) { fermerFeuille(); chargerWatch(); } };
+  $('#wm-ok').onclick = () => { const v = nb(i.value); if (!v || v <= 0) { toast(tt('Entre un montant', 'Enter an amount')); return; } fin(versCAD(v)); };
+  i.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); $('#wm-ok').click(); } };
+  const d = $('#wm-def'); if (d) d.onclick = () => fin(null);
 }
 function tuileDeal(x){
   // 29 oct 2026 (Mathieu : « revoir les annonces comme les slabs de l'accueil : sexy et simple ») : chaque deal est un petit
@@ -4853,7 +4905,7 @@ async function rendreAnalyse(){
 const attrsAnnonce = (x) => x && x.item_id ? `data-annonce="${esc(x.item_id)}" data-titre="${esc(x.titre || '')}" data-photo="${esc(x.photo || '')}" data-total="${esc(x.total ?? '')}" data-url="${esc(x.url || '')}"${x.q ? ` data-q="${esc(x.q)}"` : ''}` : '';
 document.addEventListener('click', (e) => {
   const a = e.target.closest('[data-annonce]'); if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return;
-  if (e.target.closest('[data-masquer], [data-refus], [data-bonne], [data-comps], [data-pasdeal], [data-watch], .w-go, .x')) return;
+  if (e.target.closest('[data-masquer], [data-refus], [data-bonne], [data-comps], [data-pasdeal], [data-watch], [data-wmax], .w-go, .x')) return;
   e.preventDefault(); e.stopPropagation();
   S.fenOrigine = a.getBoundingClientRect();          // 29 oct : la fiche s'ouvre depuis l'annonce touchee
   ouvrirAnnonce({item_id:a.dataset.annonce, titre:a.dataset.titre, photo:a.dataset.photo, total:nb(a.dataset.total), url:a.dataset.url, q:a.dataset.q || null});
@@ -4962,13 +5014,23 @@ async function vueDeals(arg){
     <div class="d-onglets" role="tablist"><a role="tab" href="#deals" aria-selected="${!w}" class="${w ? '' : 'on'}">${tt('Deals', 'Deals')}<span class="d-nb" id="d-nb" hidden></span></a>
       <a role="tab" href="#deals/watch" aria-selected="${w}" class="${w ? 'on' : ''}">${ICO_ETOILE}${tt('Watchlist', 'Watchlist')}<span class="w-nb" hidden></span></a></div>
     <form class="recherche pas-tel" id="v-form" role="search">${ICONES.loupe}<input id="v-q" type="search" enterkeyhint="search" placeholder="${esc(tt('Combien vaut une carte ? (ex. Bedard Young Guns)', 'What is a card worth? (e.g. Bedard Young Guns)'))}"></form>
+    ${!w && S.forfait && S.forfait.admin ? '<a class="d-tour" id="d-tour" href="#admin/serveur"></a>' : ''}
     <div id="d-res">${roue}</div>
     <p class="mention-epn">${tt('Les liens vers eBay peuvent être des liens affiliés (eBay Partner Network) : SlabCoach peut toucher une commission, sans frais pour toi. SlabCoach n’est pas affilié à eBay. Les estimations sont celles de SlabCoach, pas d’eBay.', 'Links to eBay may be affiliate links (eBay Partner Network): SlabCoach may earn a commission at no cost to you. SlabCoach is not affiliated with eBay. Estimates are SlabCoach’s, not eBay’s.')}</p></section>`;
   brancherSwitchMode(V()); brancherQuota(V());
   $('#v-form').onsubmit = (e) => { e.preventDefault(); const q = $('#v-q').value.trim(); if (q) location.hash = '#valeur/' + encodeURIComponent(q); };
   majNbWatch();
   if (w) { await chargerWatch(); return; }
+  majTourDeals();
   await chargerDeals();
+}
+// 29 oct 2026 : l'admin voit sur l'ecran Deals ou en est le chasseur (un tap : l'admin, onglet Serveur)
+async function majTourDeals(){
+  const z = $('#d-tour'); if (!z) return;
+  const t = await API.deals_tour().catch(() => null);
+  if (!$('#d-tour') || !t || !t.ok) { if (z) z.remove(); return; }
+  z.innerHTML = '<span class="d-tour-a">Admin</span>' + ligneTour(t, true) + ' <i>›</i>';
+  clearTimeout(S.tTour); S.tTour = setTimeout(majTourDeals, 30000);
 }
 // 26 oct 2026 (Mathieu : « y'a rien d'autre ? aucune enchère ? sommes-nous certains ? ») : ce que le chasseur a
 // vraiment vérifié dans les 24 dernières heures, et pourquoi le reste n'est pas un deal
@@ -6700,13 +6762,20 @@ async function chargerInventaire(){
 // 29 oct 2026 (Mathieu : « il faut un moyen rapide de corriger le prix des annonces sur eBay, très rapide et efficace ») :
 // une feuille, toutes les annonces à corriger déjà au prix du marché. Un tap sur un prix pour l'ajuster, un tap sur une ligne
 // pour la garder telle quelle, puis UN bouton (touché deux fois : on confirme) : tout part dans eBay, 4 à la fois.
+// 29 oct 2026 (Mathieu : « toujours des multiples de 5 ») : 177,99 -> 180 ; 6,99 -> 5 ; un prix a baisser reste sous l'actuel
+function rond5(v, plafond){
+  if (!v) return v;
+  let p = Math.max(5, Math.round(v / 5) * 5);
+  if (plafond && p >= plafond) p = Math.max(5, Math.ceil(plafond / 5) * 5 - 5);
+  return p;
+}
 function feuillePrixRapide(verdict){
   verdict = verdict === 'monter' ? 'monter' : 'baisser';
   const L = S.invL || [];
   const cl = (c) => { const r = repere(c); return r && r.cl; };
   const prend = (v) => (c) => c.statut === 'Listée' && c.item_number && c.marche && nb(c.marche.suggestion) && (v === 'baisser' ? ['rouge', 'or'].includes(cl(c)) : cl(c) === 'acc');
   const nB = L.filter(prend('baisser')).length, nM = L.filter(prend('monter')).length, verrou = L.filter(c => c.statut === 'Listée' && c.marche_pro).length;
-  const items = L.filter(prend(verdict)).map(c => ({c, avant: nb(c.prix_demande), prix: Math.round(nb(c.marche.suggestion) * 100) / 100, on: true, etat: ''}))
+  const items = L.filter(prend(verdict)).map(c => ({c, avant: nb(c.prix_demande), prix: rond5(nb(c.marche.suggestion), verdict === 'baisser' ? nb(c.prix_demande) : null), on: true, etat: ''}))
     .sort((a, b) => Math.abs(b.avant - b.prix) - Math.abs(a.avant - a.prix));
   let arme = 0, fini = false;
   const choisis = () => items.filter(x => x.on && !x.etat);
@@ -6873,7 +6942,7 @@ function feuilleCarte(c){
     ${c.item_number && !vendue ? (() => { const prog = c.debut && Date.parse(c.debut) > Date.now(); const z = (n) => String(n).padStart(2, '0'), d = prog ? new Date(c.debut) : null;
       return `<div class="bandeau info fc-ebay"><b>${prog ? '⏱ ' + tt('Programmée : en ligne ', 'Scheduled: live ') + esc(dateProg(c.debut)) : tt('En vente sur eBay', 'Listed on eBay')}</b>
         ${prog ? `<label class="large">${tt('Mise en ligne', 'Goes live')}<input class="champ" type="datetime-local" id="c-debut" value="${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}" min="${esc(heureLocaleInput(15))}" max="${esc(heureLocaleInput(21 * 1440))}"></label>` : ''}
-        <button class="btn ghost petit" id="c-reviser">${tt('Mettre à jour l’annonce eBay', 'Update the eBay listing')} (${tt('titre, prix', 'title, price')}${prog ? tt(', date', ', date') : ''})</button></div>`; })() : ''}
+        <small>${tt('Change le prix ou le titre plus bas puis touche Enregistrer : eBay est mis à jour aussi.', 'Change the price or title below, then tap Save: eBay is updated too.')}</small></div>`; })() : ''}
     <div class="grille-champs">
       <label class="large">Titre<input class="champ" id="c-titre" value="${esc(c.titre || '')}" placeholder="Ce que c'est" maxlength="80"></label>
       ${champ('c-prix', 'Prix ' + symDevise(), dev2(c.prix_demande), 'number')}${champ('c-cout', 'Coût ' + symDevise(), dev2(c.cout), 'number')}
@@ -6918,6 +6987,26 @@ function feuilleCarte(c){
     if (sportChoisi) d.sport = sportChoisi;          // sinon : devine par le serveur (nouvelle carte)
     if (!c.id && c.note) d.note = c.note;            // photo : numero estampe, cert de gradation
     if (!d.titre && !d.joueur) { toast('Ajoute un titre'); $('#c-titre').focus(); return; }
+    // 29 oct 2026 (Mathieu : « la carte de Hintz est encore 25 $ et non 20 sur eBay ») : « Enregistrer » ne changeait que
+    // SlabCoach. Une carte en vente : le nouveau prix (et le titre, la date) part d'abord dans eBay ; si eBay refuse, rien
+    // n'est change ici et l'erreur s'affiche.
+    if (c.item_number && !vendue) {
+      const db = $('#c-debut'), avant = c.debut ? new Date(c.debut) : null, nv = db && db.value ? new Date(db.value) : null;
+      const debut = nv && (!avant || Math.abs(nv - avant) > 60000) ? nv.toISOString() : null;
+      const pChange = nb(d.prix_demande) && Math.abs(nb(d.prix_demande) - (nb(c.prix_demande) || 0)) >= 0.02;
+      const tChange = d.titre && d.titre !== (c.titre || '');
+      if (pChange || tChange || debut) {
+        const b = $('#c-ok'); b.disabled = true; b.textContent = tt('Mise à jour sur eBay…', 'Updating eBay…');
+        const prog = c.debut && Date.parse(c.debut) > Date.now();
+        const r = (pChange && !tChange && !debut && !prog)
+          ? await API.ebay_changer_prix(c.item_number, nb(d.prix_demande)).catch(e => ({ok:false, erreur:e.message}))
+          : await API.annonce_reviser(c.id, {titre: tChange ? d.titre : null, prix: pChange ? nb(d.prix_demande) : null, debut}).catch(e => ({ok:false, erreur:e.message}));
+        b.disabled = false; b.textContent = tt('Enregistrer', 'Save');
+        if (!r || !r.ok) { toast(tt('eBay a refusé : ', 'eBay refused: ') + ((r && r.erreur) || 'eBay') + tt(' · rien n’a changé', ' · nothing changed'), 5000); return; }
+        if (await essai(API.carte_sauver(d), tt('Enregistré · eBay mis à jour', 'Saved · eBay updated'))) { fermerFeuille(); chargerInventaire(); }
+        return;
+      }
+    }
     if (await essai(API.carte_sauver(d), 'Enregistré')) { fermerFeuille(); chargerInventaire(); }
   };
   const v = $('#c-vendre'); if (v) v.onclick = () => feuilleVente(c);
@@ -6932,7 +7021,7 @@ async function chargerCompsCarte(c){
   if (!$('#c-comps')) return;
   if (r && r.a_rafraichir) { z.innerHTML = `<div class="sous" style="font-size:14px">${tt('Les annonces comparées datent de plus de 6 h : elles reviennent à la prochaine analyse.', 'Compared listings are over 6 h old: they come back at the next check.')}</div>`; return; }
   if (!r || !r.comps || !r.comps.length) { z.innerHTML = `<div class="sous" style="font-size:14px">${tt('Pas encore comparée aux mêmes cartes (chaque heure, quelques annonces à la fois).', 'Not compared to the same cards yet (every hour, a few listings at a time).')}</div>`; return; }
-  const rep = repere(c), sugg = c.marche && c.marche.suggestion;
+  const rep = repere(c), sugg = c.marche && c.marche.suggestion ? rond5(nb(c.marche.suggestion), nb(c.marche.suggestion) < nb(c.prix_demande) ? nb(c.prix_demande) : null) : null;
   z.innerHTML = `<div class="bloc-v"><div class="bloc-t">${tt('Les mêmes cartes en vente', 'The same cards listed')} <span class="sous">${r.n} · ${tt('médiane ', 'median ')}${argentCourt(r.mediane)}</span></div>
     ${rep ? `<div class="repere ${rep.cl}"><b>${esc(rep.court)}</b><span>${tt('ton prix ', 'your price ')}${argentCourt(c.prix_demande)} · ${esc(rep.long)}</span></div>` : ''}
     <div class="comps-l">${r.comps.map(x => `<a class="comp-m" href="${esc(x.url)}" target="_blank" rel="noopener" ${attrsAnnonce({...x, item_id: x.item_id || (String(x.url || '').match(/itm\/(\d+)/) || [])[1]})}><span style="${x.photo ? `background-image:url('${esc(photoNet(x.photo))}')` : ''}"></span><b>${argentCourt(x.total)}</b></a>`).join('')}</div>
@@ -7288,6 +7377,20 @@ async function adminCatalogue(){
   $$('[data-ck]', z).forEach(b => b.onclick = () => feuilleChecklist(b.dataset.ck, c.produits || []));
   $$('[data-rm]', z).forEach(b => b.onclick = async () => { if (await essai(API.admin_remettre(b.dataset.rm))) adminCatalogue(); });
 }
+// 29 oct 2026 (Mathieu : « quand je vais voir mes deals a jour ? c'est un probleme de pas savoir, pour l'admin »)
+function ligneTour(t, court){
+  if (!t) return '';
+  const LIB = {revue: tt('deals revus sur eBay', 'deals rechecked on eBay'), flux: tt('vendeurs suivis et flux', 'followed sellers and feeds'),
+    encans: tt('encans par joueur', 'auctions by player'), chasser: tt('prix fixe par joueur', 'fixed price by player'), vedettes: tt('vétérans et légendes', 'veterans and legends')};
+  const dans = (iso) => { const m = Math.max(1, Math.round((Date.parse(iso) - Date.now()) / 60000)); return m >= 60 ? Math.floor(m / 60) + ' h ' + String(m % 60).padStart(2, '0') : m + ' min'; };
+  const der = t.dernier && t.dernier.duree_s ? tt(`dernier tour ${heureCourte(t.dernier.debut)} → ${heureCourte(t.dernier.fin)} (${Math.round(t.dernier.duree_s / 60)} min)`, `last run ${heureCourte(t.dernier.debut)} → ${heureCourte(t.dernier.fin)} (${Math.round(t.dernier.duree_s / 60)} min)`) : '';
+  if (t.en_cours) {
+    const et = t.etape_n ? tt(`étape ${t.etape_n}/${t.etapes} : `, `step ${t.etape_n}/${t.etapes}: `) + (LIB[t.etape] || '') + (t.detail ? ` (${String(t.detail).replace('vendeurs:', tt('vendeurs ', 'sellers ')).replace('flux:', tt('flux ', 'feeds '))})` : '') : '';
+    return `<span class="roue"></span> <b>${tt('Tour en cours', 'Run in progress')}</b>${et ? ' · ' + et : ''}${court ? '' : ' · ' + tt('depuis ', 'for ') + ilYa(t.debut).replace(/^il y a |ago$/g, '').trim()}`
+      + ` · <b>${tt('nouveaux deals vers ', 'new deals around ')}${heureCourte(t.fin_estimee)}</b>`;
+  }
+  return `${tt('Prochain tour vers ', 'Next run around ')}<b>${heureCourte(t.prochain)}</b> (${tt('dans ', 'in ')}${dans(t.prochain)})${der && !court ? ' · ' + der : ''}`;
+}
 async function adminServeur(){
   const z = $('#adm-z'); const d = await API.admin_sante().catch(e => ({ok:false, erreur:e.message}));
   if (!d.ok) { z.innerHTML = `<div class="vide">${esc(d.erreur)}</div>`; return; }
@@ -7320,7 +7423,7 @@ async function adminServeur(){
     ${d.erreurs.length ? `<div class="bloc"><div class="liste">${d.erreurs.map(e => `<div class="rangee"><span class="milieu"><span class="nom">${esc(e.ou)}</span><span class="det">${esc(e.erreur)}</span></span><span class="droite"><span class="sous">${ilYa(e.le)}</span></span></div>`).join('')}</div></div>`
       : `<div class="vide">${tt('Aucune erreur ✓', 'No errors ✓')}</div>`}`;
   const etatDeals = (e) => { const el = $('#adm-deals-e'); if (!el || !e || !e.ok) return;
-    el.innerHTML = `${e.en_cours ? '<span class="roue"></span> ' + tt('Tour en cours… ', 'Running… ') : ''}<b>${e.deals}</b> ${tt('deals en ligne', 'live deals')} · ${tt('dernier tour', 'last run')} ${e.maj ? heureCourte(e.maj) : '—'}<br>
+    el.innerHTML = `<div class="adm-tour">${ligneTour(e.tour)}</div><b>${e.deals}</b> ${tt('deals en ligne', 'live deals')} · ${tt('mis à jour', 'updated')} ${e.maj ? heureCourte(e.maj) : '—'}<br>
       eBay ${e.ebay} / ${e.ebay_plafond} ${tt('(rythme du jour : ', '(today’s pace: ')}${e.ebay_rythme}) · ${tt('vérifications', 'checks')} ${e.verif} / ${e.verif_max}${e.verif >= e.verif_max ? ' · <span style="color:var(--rouge)">' + tt('épuisées pour aujourd’hui', 'used up for today') + '</span>' : ''}
       ${e.repartition ? '<br>' + tt('En ligne : ', 'Live: ') + e.repartition.hits + ' hits · ' + e.repartition.veterans + tt(' vétérans/légendes · ', ' veterans/legends · ') + e.repartition.recrues + tt(' autres recrues · ', ' other rookies · ') + e.repartition.young_guns + ' Young Guns' : ''}
       ${e.hits_24h ? '<br>' + tt('Hits (24 h) : ', 'Hits (24 h): ') + e.hits_24h.vus + tt(' vus · ', ' seen · ') + e.hits_24h.verifies + tt(' vérifiés · ', ' checked · ') + e.hits_24h.deals + ' deals'
@@ -7335,6 +7438,8 @@ async function adminServeur(){
       <br>${tt('Reconnaissance photo', 'Photo recognition')} : ${esc(e.vision_modele || '—')}${e.vision_erreur ? ' · <span style="color:var(--rouge)">' + tt('dernière erreur', 'last error') + ' HTTP ' + esc(e.vision_erreur.code) + ' ' + esc((e.vision_erreur.detail || '').slice(0, 140)) + '</span>' : ''}`;
     journalChasse(e.journal); };
   API.deals_etat().then(etatDeals).catch(() => {});
+  clearInterval(S.tAdmTour);              // 29 oct : la ligne du tour se met a jour toute seule (30 s)
+  S.tAdmTour = setInterval(async () => { if (!$('#adm-deals-e')) { clearInterval(S.tAdmTour); return; } etatDeals(await API.deals_etat().catch(() => null)); }, 30000);
   const bd = $('#adm-deals-ok'); if (bd) bd.onclick = async () => {
     bd.disabled = true; const r = await essai(API.deals_recharger(), tt('Tour lancé : les deals arrivent d’ici quelques minutes', 'Run started: deals arrive within a few minutes'));
     if (r) etatDeals(r.etat);

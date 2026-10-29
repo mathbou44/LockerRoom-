@@ -58,4 +58,24 @@ from unittest import mock  # noqa: E402
 with mock.patch.object(alarmes, "_heure_locale", lambda m=None: 23):
     a_maj = watchlist.verifier(a, proches=False, lire_article=lire, maint=maint + timedelta(minutes=90))
 assert a_maj >= 1 and len(pushs) > n0, (a_maj, pushs[n0:])
+
+# 29 oct 2026 : les reglages de l'utilisateur (defaut 15 min / 70 %), et une mise max a la main pour une carte
+assert a.watch_liste()["reglages"] == {"fin_min": 15, "ratio_pct": 70, "alerte_fin": True, "alerte_seuil": True}
+a.watch_ajouter({"item_id": "555", "titre": "Crosby YG", "valeur": 1000, "port": 0, "total": 300, "encan": True, "fin": iso(25)})
+a.watch_ajouter({"item_id": "666", "titre": "Ovechkin YG", "valeur": 1000, "port": 0, "total": 300, "encan": True, "fin": iso(25)})
+a.watch_mise_max("666", 450)
+r = a.watch_regler({"ratio_pct": 60, "fin_min": 30, "alerte_seuil": False})
+assert r["ratio_pct"] == 60 and r["fin_min"] == 30 and r["alerte_seuil"] is False
+L = {x["item_id"]: x for x in a.watch_liste()["cartes"]}
+assert L["555"]["mise_max"] == 600.0 and L["666"]["mise_max"] == 450.0, (L["555"]["mise_max"], L["666"]["mise_max"])
+assert a.watch_regler({"fin_min": 7})["fin_min"] == 30                         # seulement les choix offerts
+n0 = len(pushs)
+watchlist.verifier(a, proches=True, lire_article=lambda i: {"prix_cad": 300.0, "port_cad": 0.0, "fin": iso(25)}, maint=maint)
+assert any("place ta mise" in t for t, _x in pushs[n0:]), pushs[n0:]           # 25 min : alerte, car reglee a 30 min
+a.watch_regler({"alerte_fin": False})
+a.watch_ajouter({"item_id": "777", "titre": "McDavid YG", "valeur": 1000, "total": 300, "encan": True, "fin": iso(20)})
+n0 = len(pushs)
+watchlist.verifier(a, proches=True, lire_article=lambda i: {"prix_cad": 300.0, "port_cad": 0.0, "fin": iso(20)}, maint=maint)
+assert not any("777" in str(x) or "McDavid" in str(x) for x in pushs[n0:]), pushs[n0:]
+assert {x["item_id"]: x for x in a.watch_mise_max("666", None)["cartes"]}["666"]["mise_max"] == 600.0
 print("WATCHLIST OK")

@@ -42,11 +42,15 @@ def requete(titre, max_mots=8):
     return " ".join(out)
 
 
-def prix_rond(v):
-    """39.37 -> 38.99 ; sous 5 $ : 2 decimales."""
+def prix_rond(v, plafond=None):
+    """29 oct 2026 (Mathieu : « toujours des multiples de 5 ») : 39.37 -> 40 ; 182 -> 180 ; 7 -> 5 ; jamais sous 5 $.
+    plafond : un prix a BAISSER reste sous le prix actuel (le multiple de 5 en dessous au besoin)."""
     if v is None:
         return None
-    return round(max(0.99, math.floor(v) - 0.01), 2) if v >= 5 else round(v, 2)
+    p = max(5.0, 5.0 * math.floor(v / 5.0 + 0.5))
+    if plafond is not None and p >= plafond:
+        p = max(5.0, 5.0 * math.ceil(plafond / 5.0) - 5.0)
+    return p
 
 
 def age_jours(debut):
@@ -66,11 +70,11 @@ def evaluer(prix, semblables, age=None, watchers=None):
     ecart = round(prix / med - 1, 3) if med else None
     verdict, sugg = "ok", None
     if med and n >= MIN_ANNONCES and prix > med * HAUT:
-        verdict, sugg = "baisser", prix_rond(med * 0.98)
+        verdict, sugg = "baisser", prix_rond(med * 0.98, plafond=prix)
     elif med and n >= MIN_ANNONCES and prix < med * BAS:
         verdict, sugg = "monter", prix_rond(med * 0.95)
     elif age is not None and age >= TRAINE_JOURS:
-        verdict, sugg = "traine", prix_rond(prix * (0.90 if not watchers else 0.95))
+        verdict, sugg = "traine", prix_rond(prix * (0.90 if not watchers else 0.95), plafond=prix)
     return {"verdict": verdict, "suggestion": sugg, "mediane": med, "n": n, "ecart": ecart}
 
 
@@ -81,11 +85,11 @@ def evaluer_vendues(prix, valeur, nb, age=None, watchers=None):
     ecart = round(prix / valeur - 1, 3) if valeur else None
     verdict, sugg = "ok", None
     if valeur and prix > valeur * HAUT:
-        verdict, sugg = "baisser", prix_rond(valeur * 0.98)
+        verdict, sugg = "baisser", prix_rond(valeur * 0.98, plafond=prix)
     elif valeur and prix < valeur * BAS:
         verdict, sugg = "monter", prix_rond(valeur * 0.95)
     elif age is not None and age >= TRAINE_JOURS:
-        verdict, sugg = "traine", prix_rond(prix * (0.90 if not watchers else 0.95))
+        verdict, sugg = "traine", prix_rond(prix * (0.90 if not watchers else 0.95), plafond=prix)
     return {"verdict": verdict, "suggestion": sugg, "mediane": valeur, "n": nb if valeur else 0, "ecart": ecart}
 
 

@@ -25,7 +25,81 @@ RATIO = 0.70                    # la mise max : 70 % de la valeur (comme les dea
 def _cx(api):
     c = api._db()
     c.executescript(SCHEMA)
+    try:                                         # 29 oct 2026 : la mise max choisie par l'utilisateur pour une carte
+        c.execute("ALTER TABLE watchlist ADD COLUMN mise_perso INTEGER DEFAULT 0")
+    except Exception:
+        pass
     return c
+
+
+# 29 oct 2026 (Mathieu : « laisser l'utilisateur choisir les valeurs, mais laisser celles-ci par defaut pour les alarmes »)
+DEFAUT = {"fin_min": FIN_MIN, "ratio_pct": int(RATIO * 100), "alerte_fin": True, "alerte_seuil": True}
+CHOIX_FIN = (5, 10, 15, 30, 60)
+
+
+def reglages(api):
+    r = (api.reglages_lire() or {}).get("watch")
+    r = r if isinstance(r, dict) else {}
+    out = dict(DEFAUT)
+    if r.get("fin_min") in CHOIX_FIN:
+        out["fin_min"] = int(r["fin_min"])
+    try:
+        out["ratio_pct"] = max(30, min(100, int(r.get("ratio_pct", out["ratio_pct"]))))
+    except (TypeError, ValueError):
+        pass
+    for k in ("alerte_fin", "alerte_seuil"):
+        if k in r:
+            out[k] = bool(r[k])
+    return out
+
+
+def regler(api, d):
+    """Les alarmes de la watchlist : minutes avant la fin, % de la valeur pour la mise max, chaque alerte on/off.
+    Un nouveau % refait la mise max des cartes que l'utilisateur n'a pas reglees a la main (et leur alerte repart)."""
+    d = d or {}
+    cfg = reglages(api)
+    if d.get("fin_min") is not None:
+        try:
+            if int(d["fin_min"]) in CHOIX_FIN:
+                cfg["fin_min"] = int(d["fin_min"])
+        except (TypeError, ValueError):
+            pass
+    ancien = cfg["ratio_pct"]
+    if d.get("ratio_pct") is not None:
+        try:
+            cfg["ratio_pct"] = max(30, min(100, int(d["ratio_pct"])))
+        except (TypeError, ValueError):
+            pass
+    for k in ("alerte_fin", "alerte_seuil"):
+        if k in d:
+            cfg[k] = bool(d[k])
+    api.reglages_sauver({"watch": cfg})
+    if cfg["ratio_pct"] != ancien:
+        c = _cx(api)
+        try:
+            c.execute("UPDATE watchlist SET mise_max=ROUND(valeur*?-COALESCE(port,0),2), notif_seuil=0 "
+                      "WHERE COALESCE(mise_perso,0)=0 AND valeur IS NOT NULL", (cfg["ratio_pct"] / 100,))
+            c.commit()
+        finally:
+            c.close()
+    return {"ok": True, **cfg}
+
+
+def mise_max(api, item_id, valeur):
+    """La mise max d'UNE carte, choisie par l'utilisateur (vide = revient au % par defaut)."""
+    v = _f(valeur)
+    cfg = reglages(api)
+    c = _cx(api)
+    try:
+        if v and v > 0:
+            c.execute("UPDATE watchlist SET mise_max=?, mise_perso=1, notif_seuil=0 WHERE item_id=?", (v, str(item_id)))
+        else:
+            c.execute("UPDATE watchlist SET mise_max=ROUND(valeur*?-COALESCE(port,0),2), mise_perso=0, notif_seuil=0 "
+                      "WHERE item_id=? AND valeur IS NOT NULL", (cfg["ratio_pct"] / 100, str(item_id)))
+        c.commit()
+    finally:
+        c.close()
+    return liste(api)
 
 
 def _f(v):
@@ -54,7 +128,7 @@ def ajouter(api, x):
     valeur, port = _f(x.get("valeur")), _f(x.get("port"))
     mm = _f(x.get("mise_max"))
     if mm is None and valeur:
-        mm = round(valeur * RATIO - (port or 0), 2)
+        mm = round(valeur * reglages(api)["ratio_pct"] / 100 - (port or 0), 2)
     c = _cx(api)
     try:
         if c.execute("SELECT COUNT(*) FROM watchlist").fetchone()[0] >= MAX and not c.execute(
@@ -131,7 +205,7 @@ def liste(api):
         x["reste_min"] = int((f - maint).total_seconds() // 60) if f and x["encan"] else None
     rang = {"ok": 0, "depasse": 1, "fini": 2}
     lst.sort(key=lambda x: (rang[x["etat"]], x["reste_min"] if x["reste_min"] is not None else 10 ** 7))
-    return {"ok": True, "cartes": lst, "n": len(lst)}
+    return {"ok": True, "cartes": lst, "n": len(lst), "reglages": reglages(api)}
 
 
 def verifier(api, proches=False, lire_article=None, maint=None):
@@ -139,6 +213,9 @@ def verifier(api, proches=False, lire_article=None, maint=None):
     (prix du chasseur d'abord ; eBay pour les cartes qu'il ne revoit pas, 20 au plus). -> nombre d'alertes envoyees."""
     import alarmes
     maint = maint or _maint()
+    cfg = reglages(api)
+    fin_min = cfg["fin_min"]
+    proche_min = max(PROCHE_MIN, fin_min + 15)
     if lire_article is None:
         import ebay_compte
         lire_article = lambda i: ebay_compte.article(i, fond=True, frais=proches)     # noqa: E731
@@ -155,7 +232,7 @@ def verifier(api, proches=False, lire_article=None, maint=None):
     for x in lst:
         f = _dt(x.get("fin"))
         reste = (f - maint) if f else None
-        proche = bool(x.get("encan") and reste is not None and timedelta(0) < reste <= timedelta(minutes=PROCHE_MIN))
+        proche = bool(x.get("encan") and reste is not None and timedelta(0) < reste <= timedelta(minutes=proche_min))
         vieux = str(x.get("maj_le") or "") < (maint - timedelta(minutes=70)).isoformat()
         if proche if proches else (proche or (vieux and n_ebay < 20)):
             try:
@@ -176,13 +253,14 @@ def verifier(api, proches=False, lire_article=None, maint=None):
         e = _etat(x, maint)
         titre = alarmes.cartes_match_titre(x)
         mm = x.get("mise_max")
-        if e == "depasse" and not x.get("notif_seuil"):
+        if e == "depasse" and not x.get("notif_seuil") and cfg["alerte_seuil"]:
             if alarmes._notifier(api, etat_a, "watch-seuil:" + x["item_id"], f"📈 {titre}",
                                  f"{'La mise' if x.get('encan') else 'Le prix'} ({(x.get('total') or 0):.0f} $) dépasse ta mise max ({(mm or 0):.0f} $) : plus rentable.",
                                  "#deals/watch", x.get("total"), x.get("photo"), force=True):
                 envoyees += 1
             x["notif_seuil"] = 1
-        if e == "ok" and x.get("encan") and reste is not None and timedelta(0) < reste <= timedelta(minutes=FIN_MIN) and not x.get("notif_fin"):
+        if e == "ok" and x.get("encan") and reste is not None and timedelta(0) < reste <= timedelta(minutes=fin_min) and not x.get("notif_fin") \
+                and cfg["alerte_fin"]:
             mn = max(1, int(reste.total_seconds() // 60))
             if alarmes._notifier(api, etat_a, "watch-fin:" + x["item_id"], f"⏱ {mn} min : place ta mise",
                                  f"{titre} · mise {(x.get('total') or 0):.0f} $ · ta mise max {(mm or 0):.0f} $",

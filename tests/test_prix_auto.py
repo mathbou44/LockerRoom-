@@ -33,15 +33,15 @@ assert r["ok"] and r["actif"] and r["max_pct"] == 30 and r["max_jour"] == 1 and 
 r = a.prix_auto_regler({"max_pct": 15, "max_jour": 10, "marge_min_pct": 0})
 # application
 r = a.prix_auto_appliquer()
-assert r["faits"] == 3, (r, CHANGES)
-assert ("1", 85.0) in CHANGES and ("2", 48.0) in CHANGES and ("4", 44.0) in CHANGES and not any(i in ("3", "5") for i, _ in CHANGES), CHANGES
+assert r["faits"] == 2, (r, CHANGES)                 # 29 oct 2026 : multiples de 5 (2 : 40 $ sous le cout -> 50 $, rien a changer)
+assert ("1", 85.0) in CHANGES and ("4", 45.0) in CHANGES and not any(i in ("2", "3", "5") for i, _ in CHANGES), CHANGES
 # une fois par jour
-assert a.prix_auto_appliquer()["faits"] == 0 and len(CHANGES) == 3
-j = a.prix_auto_lire()["journal"]; assert len(j) == 3 and j[0]["ok"] and j[0]["apres"] in (85.0, 48.0, 44.0)
+assert a.prix_auto_appliquer()["faits"] == 0 and len(CHANGES) == 2
+j = a.prix_auto_lire()["journal"]; assert len(j) == 2 and j[0]["ok"] and j[0]["apres"] in (85.0, 45.0)
 # marge minimum : cout 48 + 20 % = 57,60 > prix actuel 50 -> on ne baisse pas sous le cout + marge (on monte meme pas : plancher)
 a.prix_auto_regler({"marge_min_pct": 20, "monter": False})
 CHANGES.clear(); r = a.prix_auto_appliquer(force=True)
-assert ("2", 57.6) in CHANGES and not any(i == "4" for i, _ in CHANGES), CHANGES
+assert ("2", 60.0) in CHANGES and not any(i == "4" for i, _ in CHANGES), CHANGES
 # Pro perdu -> plus rien
 PRO[0] = False; CHANGES.clear()
 assert a.prix_auto_appliquer(force=True)["raison"] == "inactif" and not CHANGES
