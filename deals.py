@@ -994,7 +994,7 @@ def encore_ouvert(x, maint=None):
         return False
 
 
-def _verifier_tard(st, deals, maint, bassin, verif):
+def _verifier_tard(st, deals, maint, bassin, verif, d=None):
     """27 oct 2026 (Mathieu : la Savoie Draft Day Marks /35 a 50 $, qui finit dans 25 h) : les encans de hits sans ventes
     connues qui finissent dans 6 a 30 h, verifies a la fin du tour avec le budget qui reste, les plus proches de la fin d'abord."""
     tard = st.pop("_tard", [])
@@ -1022,6 +1022,8 @@ def _verifier_tard(st, deals, maint, bassin, verif):
         dv = st.pop("_dern_verif", None)
         st["_vus"].discard(a.get("item_id"))
         _juger(a, r, nv or [], [], maint, deals, st, bassin=bassin, verif=None)
+        if d is not None:
+            _publier(d, deals, maint, st)
         # 30 oct 2026 : l'encan d'un vendeur suivi, deja garde sans valeur, prend la valeur trouvee
         s_ = (st.get("_suivis") or {}).get(str(a.get("item_id")))
         if s_ is not None and not s_.get("valeur"):
@@ -1071,6 +1073,35 @@ def _sauver(d, deals, maint, st, **champs):
         _diag(d2, **st)
         _ecrire(d2)
     return garde_
+
+
+PUBLIER_S = 30
+
+
+def _publier(d, deals, maint, st, force=False):
+    """30 oct 2026 (Mathieu : « les deals doivent arriver aussitot qu'ils sont calcules, pas en mega batch aux heures ») :
+    pendant un tour, les deals et les encans des gros vendeurs trouves jusqu'ici sont publies (au plus aux 30 s), sans
+    attendre la fin de l'etape. La fin de l'etape (_sauver) fait le reste (retraits, journal, statistiques)."""
+    if not force and time.time() - st.get("_pub_le", 0) < PUBLIER_S:
+        return False
+    st["_pub_le"] = time.time()
+    garde_ = _ranger(d, deals, maint)
+    ns = dict(st.get("_suivis") or {})
+    with _verrou:
+        d2 = lire()
+        retires = {str(k) for k in (d2.get("retires") or {})}
+        d2["deals"] = [x for x in garde_ if str(x["item_id"]) not in retires]
+        if ns:
+            ids = {str(x["item_id"]) for x in d2["deals"]}
+            vieux = {str(x.get("item_id")): x for x in d2.get("suivis") or [] if encore_ouvert(x, maint)}
+            for k, x in ns.items():
+                if vieux.get(str(k), {}).get("valeur") and not x.get("valeur"):
+                    continue                              # deja valorise entre deux tours : on garde la valeur
+                vieux[str(k)] = x
+            d2["suivis"] = sorted((x for k, x in vieux.items() if k not in ids and k not in retires),
+                                  key=lambda x: (rang_vendeur(x.get("vendeur")), str(x.get("fin"))))[:SUIVIS_MAX]
+        _ecrire(d2)
+    return True
 
 
 def _memes(r, annonces):
@@ -1129,7 +1160,8 @@ def chasser(n=PAR_TOUR, rechercher=None, bassin=None, vedettes=False):
             comps = []                                   # des cartes differentes du meme joueur : pas des comparables
         for a in memes:
             _juger(a, r, brut_v, memes, maint, deals, st, comps=comps, bassin=bassin, verif=verif)
-    _verifier_tard(st, deals, maint, bassin, verif)          # 29 oct : les hits a prix fixe des vedettes aussi
+        _publier(d, deals, maint, st)
+    _verifier_tard(st, deals, maint, bassin, verif, d)          # 29 oct : les hits a prix fixe des vedettes aussi
     garde_ = _sauver(d, deals, maint, st, **{cle: (i0 + len(lot)) % len(reqs)}, maj=maint.isoformat(timespec="seconds"))
     return {"ok": True, "deals": len(garde_), "nouveaux": st.get("deals", 0), "stats": st}
 
@@ -1169,7 +1201,8 @@ def encans(n=PAR_TOUR_ENCANS, rechercher=None, bassin=None, vedettes=False):
         brut_v, _err = _ventes(r["q"], cache_seul=True)
         for a in memes_e:
             _juger(a, r, brut_v or [], [], maint, deals, st, bassin=bassin, verif=verif)
-    _verifier_tard(st, deals, maint, bassin, verif)
+        _publier(d, deals, maint, st)
+    _verifier_tard(st, deals, maint, bassin, verif, d)
     garde_ = _sauver(d, deals, maint, st, **{cle: (i0 + len(lot)) % len(reqs)})
     return {"ok": True, "deals": len(garde_), "stats": st}
 
@@ -1401,6 +1434,7 @@ def flux(rechercher=None, bassin=None):
                 _juger(a, rv, [], [] if ench else l, maint, deals, st, bassin=bassin, verif=verif)
                 k_s = "suivi_" + (_noter_suivi(st, a, bassin, maint) or "ok")
                 st[k_s] = st.get(k_s, 0) + 1
+            _publier(d, deals, maint, st)
             if not ench and len(l) < 150:
                 fixe_fini = True                       # plus d'autres annonces a prix fixe : on passe aux encans
             if ench and (len(l) < 150 or not l or str(l[-1].get("fin") or "9") > limite_suivi):
@@ -1424,9 +1458,10 @@ def flux(rechercher=None, bassin=None):
             l = [a for a in l if cartes_match.est_carte(a.get("titre") or "")]
             for a in l:
                 _juger(a, r, [], [] if ench else l, maint, deals, st, bassin=bassin, verif=verif)
+            _publier(d, deals, maint, st)
             if ench and (len(l) < 150 or not l or str(l[-1].get("fin") or "9") > limite_fin):
                 break                                   # derniere page, ou on depasse 48 h
-    _verifier_tard(st, deals, maint, bassin, verif)
+    _verifier_tard(st, deals, maint, bassin, verif, d)
     garde_ = _sauver(d, deals, maint, st, curseur_h=curseur_h, tour_n=tour_n + 1)
     return {"ok": True, "deals": len(garde_), "stats": st}
 
@@ -1677,6 +1712,80 @@ def utilises_ebay():
     return appels_ebay.utilises("browse")
 
 
+# 30 oct 2026 (Mathieu : « encore » des encans « Auction » chez Savage) : entre deux tours (aux 10 min), les encans des
+# 4 vendeurs prioritaires encore sans valeur, ceux qui finissent le plus tot d'abord, sont verifies sur leurs vraies
+# ventes avec la reserve (usage « prio », meme plafond et meme rythme que dans le tour) ; jamais pendant un tour.
+VALO_PAS_S = 600
+VALO_PAR_PASSE = 40
+
+
+def valoriser_suivis_si_besoin(attendre=False):
+    if _ETAT.get("en_cours") or _ETAT.get("valo") or time.time() - _ETAT.get("valo_le", 0) < VALO_PAS_S:
+        return False
+    _ETAT["valo"], _ETAT["valo_le"] = True, time.time()
+
+    def tache():
+        try:
+            valoriser_suivis()
+        except Exception as e:
+            print("Deals (valeurs des encans suivis) : " + repr(e), flush=True)
+        finally:
+            _ETAT["valo"] = False
+    if attendre:
+        tache()
+    else:
+        threading.Thread(target=tache, daemon=True).start()
+    return True
+
+
+def valoriser_suivis(rechercher=None, n_max=VALO_PAR_PASSE):
+    import cartes_match
+    import vendues
+    rechercher = rechercher or vendues.rechercher
+    d = lire()
+    maint = datetime.now(timezone.utc)
+    a_faire = [x for x in d.get("suivis") or [] if not x.get("valeur") and _prio(x) and encore_ouvert(x)]
+    a_faire.sort(key=lambda x: (rang_vendeur(x.get("vendeur")), str(x.get("fin") or "")))
+    jour, heure = _jour_mtl()
+    trouves, faites, n = {}, set(), 0
+    for x in a_faire:
+        if n >= n_max:
+            break
+        cib = cartes_match.cible_titre(x.get("titre") or "")
+        q = (cartes_match.requete_ebay(cib) or "").strip()
+        if not q or q in faites:
+            continue
+        faites.add(q)
+        v = vendues.en_cache(q)
+        if v is None:
+            n_p = vendues.utilises_aujourdhui("prio")
+            if n_p >= prio_max() or n_p >= prio_max() * min(1.0, (heure + 6) / 24):
+                break                                        # la reserve du jour (ou son rythme) est atteinte
+            r = rechercher(q, fond=True, usage="prio")
+            n += 1
+            if r.get("erreur"):
+                continue
+            v = r.get("ventes") or []
+        for y in a_faire:                                    # une recherche sert a toutes les annonces de la meme carte
+            if str(y.get("item_id")) in trouves:
+                continue
+            c2 = cartes_match.cible_titre(y.get("titre") or "")
+            if (cartes_match.requete_ebay(c2) or "").strip() != q:
+                continue
+            va = valeur_annonce(y, v, [], cib=c2)
+            if va:
+                trouves[str(y.get("item_id"))] = va
+    if trouves:
+        with _verrou:
+            d = lire()
+            for g in d.get("suivis") or []:
+                va = trouves.get(str(g.get("item_id")))
+                if va and not g.get("valeur"):
+                    g.update(valeur=va[0], n=va[2], vendues=va[3], mise_max=round(va[0] * RATIO_DEAL - (g.get("port") or 0), 2))
+            _ecrire(d)
+    return {"verifies": n, "valeurs": len(trouves), "a_faire": len(a_faire)}
+
+
 def chasser_si_besoin(force=False):
     """En arriere-plan, au plus une fois par heure, jamais deux a la fois."""
     d = lire_vite()                  # 28 oct 2026 (vitesse) : appele a chaque ecran Deals / Accueil : lecture en cache
@@ -1689,6 +1798,7 @@ def chasser_si_besoin(force=False):
     # (jamais plus : le quota d'appels eBay du jour)
     peu = not _ETAT.get("rapide") and sum(1 for x in d.get("deals") or [] if valide(x)) < 10
     if age < (600 if peu else FRAICHEUR_S) and not force:
+        valoriser_suivis_si_besoin()             # 30 oct 2026 : entre deux tours, les encans des gros vendeurs sans valeur
         return False
     if peu:
         _ETAT["rapide"] = True

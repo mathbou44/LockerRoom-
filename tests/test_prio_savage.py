@@ -89,6 +89,21 @@ class TestPrioSavage(unittest.TestCase):
         deals.flux(rech, bassin=deals.Bassin(charger=False))
         self.assertEqual(len([1 for _q, u in appels if u == "prio"]), 1)
 
+    def test_valoriser_entre_deux_tours(self):
+        """30 oct 2026 : entre deux tours, les encans de Savage sans valeur prennent la leur (reserve « prio »)."""
+        d0 = deals.lire()
+        T = "2024-25 Upper Deck Young Guns Renewed Sidney Crosby #YGR-10 Pittsburgh Penguins"
+        d0["suivis"] = [{"item_id": "v1", "titre": T, "total": 15, "port": 0, "encan": True, "fin": fin(6), "vendeur": "savage.cards", "suivi": True},
+                        {"item_id": "v2", "titre": T, "total": 18, "port": 0, "encan": True, "fin": fin(9), "vendeur": "savage.cards", "suivi": True},
+                        {"item_id": "v3", "titre": CARTES[5][0], "total": 12, "port": 0, "encan": True, "fin": fin(5), "vendeur": "dcsports87", "suivi": True}]
+        deals._ecrire(d0)
+        r = deals.valoriser_suivis()
+        su = {x["item_id"]: x for x in deals.lire()["suivis"]}
+        self.assertEqual(r["verifies"], 1)                    # une seule recherche pour les deux Crosby
+        self.assertAlmostEqual(su["v1"]["valeur"], 60, delta=4)
+        self.assertTrue(su["v2"]["valeur"])
+        self.assertFalse(su["v3"].get("valeur"))              # vendeur non prioritaire : pas de credit
+
 
 if __name__ == "__main__":
     unittest.main()

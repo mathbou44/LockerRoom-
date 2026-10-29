@@ -334,6 +334,8 @@ details.reglage summary::-webkit-details-marker{display:none}
 .sd-l2 .sd-rab{font:700 19px/1 var(--f-cond)} .sd-pr{font:700 17px/1 var(--f-cond); color:#F4F2F8}
 .sd-ph .sd-fin{position:absolute; left:6px; bottom:6px; z-index:2; padding:3px 7px; border-radius:99px; background:rgba(10,10,14,.78); backdrop-filter:blur(4px); color:#F4F2F8; font:600 12px/1.2 var(--f-cond); letter-spacing:.04em}
 .sd-bas small .g{color:var(--vert); font-weight:700}
+.d-nv{position:sticky; top:calc(env(safe-area-inset-top, 0px) + 74px); z-index:30; display:block; margin:0 auto 10px; padding:9px 16px; border-radius:99px; border:0;
+  background:var(--acc); color:var(--acc-texte); font:700 14px inherit; font-family:inherit; box-shadow:0 8px 22px rgba(0,0,0,.45); cursor:pointer}
 .vm-tit{margin-top:12px; font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--doux)}
 .vm{display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:6px}
 .vm-t{display:flex; flex-direction:column; align-items:center; gap:1px; padding:8px 4px; border-radius:12px; background:var(--carte2); border:1px solid var(--ligne); color:var(--texte); font:inherit; cursor:pointer}
@@ -5766,6 +5768,22 @@ async function chargerDeals(frais){
   });
   const bp = $('[data-pro-deals]', z); if (bp) bp.onclick = () => feuillePro('deals');
   clearInterval(S.tDeals);
+  // 30 oct 2026 (Mathieu : « les deals doivent arriver aussitot calcules, pas en mega batch aux heures ») : l'ecran
+  // regarde aux 45 s ; les nouveaux deals (et les encans qui viennent de recevoir leur valeur) : une pastille, un tap
+  clearInterval(S.tDealsNv);
+  S.tDealsNv = setInterval(async () => {
+    if (!$('#d-res')) { clearInterval(S.tDealsNv); return; }
+    if (document.hidden || !$('#fond-feuille').hidden) return;
+    for (const k of [...MEMO.keys()]) if (k.startsWith('deals_liste')) MEMO.delete(k);
+    const n = await API.deals_liste(F).catch(() => null); if (!n || !n.ok || !$('#d-res')) return;
+    const avant = S.dealsParId || {};
+    const nv = [...(n.deals || []), ...(n.suivis || [])].filter(x => { const a = avant[String(x.item_id)]; return !a || (x.valeur && !a.valeur); }).length;
+    let p = $('#d-nv');
+    if (!nv) { if (p) p.remove(); return; }
+    if (!p) { p = document.createElement('button'); p.id = 'd-nv'; p.className = 'd-nv'; $('#d-res').prepend(p); }
+    p.textContent = '✦ ' + nv + ' ' + tt(nv > 1 ? 'nouveaux deals · voir' : 'nouveau deal · voir', nv > 1 ? 'new deals · show' : 'new deal · show');
+    p.onclick = () => { vibrer(); window.scrollTo({top: 0, behavior: 'smooth'}); chargerDeals(true); };
+  }, 45000);
   S.tDeals = setInterval(() => { if (!$('#d-res')) { clearInterval(S.tDeals); return; } $$('.tuile-deal').forEach(t => { const x = [...L, ...SU].find(k => k.item_id === t.dataset.id); const c = t.querySelector('.sd-fin'); if (x && x.encan && c) c.textContent = '⏱ ' + finDans(x.fin); }); }, 30000);
 }
 // 25 oct 2026 (Mathieu : « où sont tous les last sold comp ? ») : les vraies ventes de la communauté SlabCoach
