@@ -226,6 +226,10 @@ def raisons_refus(c, titre, appris=None):
     if a["exclu"] and not c["exclu"]:
         r.append("lot / pas une carte seule")
     manque = [m for m in c["mots"] if not _a_mot(t, m)]
+    # 30 oct 2026 : « Crosby » sans « Sidney » reste Crosby (le prenom manque souvent dans les titres de ventes)
+    jp = (c.get("joueur") or "").split()
+    if len(jp) >= 2 and _a_mot(t, jp[-1]) and _nom_unique(jp[-1], " ".join(jp)):
+        manque = [m for m in manque if m not in jp[:-1]]
     if manque:
         r.append("autre carte (" + " ".join(manque[:3]) + " absent)")
     # 24 oct 2026 - « Will Smith / Lekkerimaki checklist » n'est pas la Young Guns de Will Smith
@@ -242,7 +246,7 @@ def raisons_refus(c, titre, appris=None):
             r.append("plusieurs joueurs")
     if c["annee"] and a["annee"] and a["annee"] != c["annee"]:
         r.append("autre année")
-    if c["num"] and a["num"] and a["num"] != c["num"]:
+    if c["num"] and a["num"] and a["num"].replace("-", "") != c["num"].replace("-", ""):      # YGR10 = YGR-10
         r.append("autre numéro")
     # gradation
     if c["grade"]:
@@ -587,6 +591,17 @@ def _noms_famille():
     return _FAM["t"]
 
 
+_NOMS_N = {"t": None}
+
+
+def _nom_unique(fam, complet):
+    """30 oct 2026 : « Crosby » seul = Sidney Crosby (un seul Crosby connu) ; « Hughes » seul : Jack, Quinn ou Luke -> non."""
+    if _NOMS_N["t"] is None:
+        from collections import Counter
+        _NOMS_N["t"] = Counter(n.split()[-1] for n in _joueurs_connus())
+    return _noms_famille().get(fam) == complet and _NOMS_N["t"].get(fam, 0) == 1
+
+
 _GEN_DEUX = {"s": None}
 
 
@@ -689,6 +704,7 @@ def identite(titre, joueur=""):
     # 30 oct 2026 (Mathieu : « je vois pas de prix suggere ») : les codes de carte en lettres (#BYA-DA, SS-AM) ne sont presque
     # jamais dans les titres des ventes : ils ne servent pas a dire quelle carte c'est (sinon aucune vente n'est gardee)
     t = re.sub(r"(?<![a-z0-9])[a-z]{2,4}-[a-z]{1,3}(?![a-z0-9])", " ", t)
+    t = re.sub(r"\bseries\s*(one|two|1|2|i{1,2})?\b", " ", t)        # 30 oct 2026 : « Series 2 » = le produit, pas une autre carte
     for x in EQUIPES_COULEUR:
         t = t.replace(x, " ")
     if _EQUIPES_MOTS["t"] is None:
@@ -718,9 +734,17 @@ def cible_titre(titre, joueur=None):
             sets.append(s_)
         if len(sets) >= 2:
             break
-    c["mots"] = [m for m in (j.split() + " ".join(sets).split()) if m not in VIDES]
     c["joueur"] = j
     c["ident"], c["marques"] = identite(titre, j)
+    # 30 oct 2026 (Mathieu : « impossible qu'il n'y ait pas de comp » : Crosby Young Guns RENEWED) : le mot qui suit le set
+    # (Renewed, Retro, Throwback...) fait partie de la carte : dans la recherche eBay ET obligatoire dans les ventes ;
+    # sinon eBay renvoie surtout la vraie Young Guns 2005-06 et les Renewed se perdent
+    suite = []
+    for s_ in sets:
+        m_ = re.search(r"\b" + re.escape(s_) + r"\s+([a-z]{4,})\b", t)
+        if m_ and m_.group(1) in c["ident"] and m_.group(1) not in VIDES and m_.group(1) not in suite:
+            suite.append(m_.group(1))
+    c["mots"] = [m for m in (j.split() + " ".join(sets).split() + suite) if m not in VIDES]
     return c
 
 
