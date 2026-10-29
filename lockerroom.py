@@ -3710,6 +3710,9 @@ class Api:
         lst.sort(key=cles.get(tri, cles["rabais"]), reverse=(tri == "recent"))
         if tri == "rabais" and not f.get("sortes") and not f.get("joueurs"):
             lst = _dl.melanger(lst)                # 28 oct 2026 : pas un mur de Young Guns
+        if tri == "rabais":
+            # 29 oct 2026 (Mathieu : « as-tu priorise les vendeurs qu'on a mentionnes, et apres le reste ? ») : leurs deals d'abord
+            lst = [x for x in lst if x.get("flux") == "vendeurs"] + [x for x in lst if x.get("flux") != "vendeurs"]
         n = len(lst)
         pro = forfaits.est_pro()
         if not pro:
@@ -3757,7 +3760,9 @@ class Api:
                 y["rabais"] = round(100 * (1 - (y.get("total") or 0) / y["valeur"]))
             suivis.append(y)
         f_s = {k: v for k, v in f.items() if k in ("joueurs", "sortes", "prix_min", "prix_max")}
-        suivis = self._deals_filtrer(suivis, f_s)[:120 if pro else 6]
+        suivis = [x for x in self._deals_filtrer(suivis, f_s) if not f.get("sports") or (x.get("sport") or "hockey") in f["sports"]]
+        suivis.sort(key=lambda x: (0 if (x.get("sport") or "hockey") == "hockey" else 1, str(x.get("fin"))))   # 29 oct : le hockey d'abord
+        suivis = suivis[:120 if pro else 6]
         return {"ok": True, "deals": lst[:240], "n": n, "pro": pro, "limite": None if pro else forfaits.LIMITES["deals"],
                 "suivis": suivis,
                 "pres": pres, "secours": secours, "secours_le": (dd.get("secours") or {}).get("le") if secours else None,

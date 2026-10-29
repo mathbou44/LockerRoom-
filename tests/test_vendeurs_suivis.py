@@ -112,5 +112,14 @@ class TestVendeursSuivis(unittest.TestCase):
         self.assertGreaterEqual(len(r["suivis"]), 5, r.get("suivis"))
 
 
+    def test_pas_de_soccer_ni_tennis(self):
+        """29 oct 2026 (« pour les legendes on dirait tout sauf du hockey ») : Haaland, Paire... ne sortent pas."""
+        import cartes_match
+        for t in ("2026 Panini Prizm World Cup Erling Haaland Red #/50 Norway", "2023 Topps Chrome Benoit Paire Auto Autograph"):
+            self.assertIsNone(deals.sport_carte(t, cartes_match.cible_titre(t)))
+        for t in ("2023-24 SPx Kirill Kaprizov Radiance Auto /49", "Bobby Orr 1966-67 Topps #35 Rookie SGC 3", "1979-80 O-Pee-Chee Wayne Gretzky #18 PSA 7"):
+            self.assertEqual(deals.sport_carte(t, cartes_match.cible_titre(t)), "hockey")
+
+
 if __name__ == "__main__":
     unittest.main()

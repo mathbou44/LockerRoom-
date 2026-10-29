@@ -201,7 +201,12 @@ details.reglage summary::-webkit-details-marker{display:none}
 .d-suivis-t{display:flex; align-items:center; justify-content:space-between; gap:10px; margin:4px 0 8px}
 .d-car{display:flex; gap:12px; overflow-x:auto; scroll-snap-type:x proximity; scrollbar-width:none; overscroll-behavior-x:contain; margin:0 -16px 18px; padding:0 16px 4px}
 .d-car::-webkit-scrollbar{display:none} .d-car .tuile-deal{flex:0 0 150px; scroll-snap-align:start}
-.d-onglets{display:flex; gap:6px; margin:-2px 0 14px; padding:4px; border-radius:999px; background:var(--carte); width:max-content; max-width:100%}
+.d-nb{min-width:20px; height:20px; padding:0 6px; border-radius:10px; background:var(--acc); color:#15141A; font:700 12px/20px var(--f-cond); text-align:center}
+.ecran.large > .entete:has(+ .d-onglets){margin-bottom:6px}
+.d-chips{display:flex; align-items:center; flex-wrap:nowrap; gap:8px} .d-chips .aide-q{margin-left:auto}
+.filtres-d{margin-bottom:12px}
+.d-onglets{display:flex; gap:4px; margin:0 0 12px; padding:4px; border-radius:999px; background:var(--carte); width:100%}
+.d-onglets a{flex:1; justify-content:center}
 .d-onglets a{display:inline-flex; align-items:center; gap:6px; height:36px; padding:0 16px; border-radius:999px; font-weight:600; font-size:15px; color:var(--doux); text-decoration:none}
 .d-onglets a.on{background:var(--carte2); color:var(--texte)}
 .d-onglets svg{width:15px; height:15px; fill:var(--or)}
@@ -1757,6 +1762,20 @@ body.en-defil .logo-lr::after, body.en-defil #nav-logo-nom, body.en-defil .titre
 .acc-pil .ap-t{flex:1; min-width:0; font-size:16px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .acc-pil > i{font-style:normal; font-size:22px; color:var(--pale); line-height:1}
 .acc-pil[hidden]{display:none}
+.acc-ticker{position:relative; overflow:hidden; margin:2px -16px; padding:4px 0;
+  -webkit-mask:linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); mask:linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent)}
+.acc-ticker[hidden]{display:none}
+.tk-piste{display:flex; gap:10px; width:max-content; padding:0 16px; animation:tk-defile var(--tk-d, 40s) linear infinite; will-change:transform}
+.acc-ticker.pause .tk-piste, body.en-defil .tk-piste{animation-play-state:paused}
+@keyframes tk-defile{to{transform:translateX(-50%)}}
+.tk{position:relative; display:flex; align-items:center; gap:12px; max-width:340px; min-height:78px; padding:10px 22px 10px 12px; border:none; border-radius:999px; color:var(--texte); font:inherit; text-align:left; cursor:pointer;
+  background:linear-gradient(var(--carte), var(--carte)) padding-box, conic-gradient(from 200deg, var(--h1,#9FE6D2), var(--h2,#B9BEFF), var(--h3,#F2B3D6), var(--h4,#F1D58E), var(--h1,#9FE6D2)) border-box;
+  border:1.5px solid transparent; -webkit-tap-highlight-color:transparent}
+.tk-ic{width:50px; height:50px; flex-shrink:0; border-radius:50%; background:var(--carte2); display:flex; align-items:center; justify-content:center; font-size:24px}
+.tk-t{display:flex; flex-direction:column; gap:2px; min-width:0} .tk-t small{font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--acc)}
+.tk.astuce .tk-t small{color:var(--or)}
+.tk-t b{font-size:16.5px; font-weight:600; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:260px}
+@media (prefers-reduced-motion:reduce){ .tk-piste{animation:none} .acc-ticker{overflow-x:auto} }
 .ecran.reglages .acc-pils{margin-top:12px}
 .vendre.vs .vs-photo{display:flex; flex-direction:column; gap:8px; max-width:420px; margin:0 auto; width:100%}
 .vendre.vs .photo-princ{height:min(32vh, 300px)}
@@ -1774,6 +1793,11 @@ body.en-defil .logo-lr::after, body.en-defil #nav-logo-nom, body.en-defil .titre
 .vs-chip{display:inline-flex; align-items:center; gap:7px; min-height:42px; padding:8px 14px; border:1px solid var(--ligne); border-radius:999px; background:var(--carte); color:var(--texte); font:inherit; font-size:14.5px}
 .vs-chip b{font-weight:600} .vs-chip span{font-size:16px} .vs-chip:active{transform:scale(.97)}
 #vs-reserve{display:none}
+.actions-inv{display:flex; align-items:center; gap:10px} .actions-inv .rond{width:44px; height:44px; font-size:22px; font-weight:700}
+.i-filtres{flex-wrap:nowrap; overflow:visible} .i-filtres .chip{flex:0 1 auto; padding-left:12px; padding-right:12px}
+.menu-f{display:flex; flex-direction:column; gap:8px}
+.choix-f{width:100%; min-height:50px; padding:0 16px; border:none; border-radius:14px; background:var(--carte); color:var(--texte); font:inherit; font-size:16px; font-weight:600; text-align:left}
+.choix-f.on{background:var(--carte2); color:var(--acc)}
 .inv-res{display:flex; align-items:center; gap:12px; width:100%; min-height:54px; margin-bottom:14px; padding:10px 16px; border:none; border-radius:18px; background:var(--carte); color:var(--texte); font:inherit; text-align:left}
 .inv-res .ir-n{flex:1; font-size:15px; color:var(--doux)} .inv-res .ir-n b{color:var(--texte); font-size:17px} .inv-res .ir-v{font:700 24px var(--f-cond)} .inv-res > i{font-style:normal; color:var(--pale); font-size:22px}
 .acc-ligne{display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:center; width:100%; margin-top:10px; padding:12px 14px; border-radius:16px; text-align:left;
@@ -4890,7 +4914,7 @@ async function vueDeals(arg){
   const w = arg === 'watch';
   V().innerHTML = `<section class="ecran large">
     <div class="entete"><div class="titre">Deals</div>${w ? '' : pastilleQuota('deals')}</div>
-    <div class="d-onglets" role="tablist"><a role="tab" href="#deals" aria-selected="${!w}" class="${w ? '' : 'on'}">${tt('Deals', 'Deals')}</a>
+    <div class="d-onglets" role="tablist"><a role="tab" href="#deals" aria-selected="${!w}" class="${w ? '' : 'on'}">${tt('Deals', 'Deals')}<span class="d-nb" id="d-nb" hidden></span></a>
       <a role="tab" href="#deals/watch" aria-selected="${w}" class="${w ? 'on' : ''}">${ICO_ETOILE}${tt('Watchlist', 'Watchlist')}<span class="w-nb" hidden></span></a></div>
     <form class="recherche pas-tel" id="v-form" role="search">${ICONES.loupe}<input id="v-q" type="search" enterkeyhint="search" placeholder="${esc(tt('Combien vaut une carte ? (ex. Bedard Young Guns)', 'What is a card worth? (e.g. Bedard Young Guns)'))}"></form>
     <div id="d-res">${roue}</div>
@@ -4939,6 +4963,7 @@ function feuilleAideDeals(){
 async function chargerDeals(frais){
   const z = $('#d-res'); if (!z) return;
   const F = S.dealsF;
+  if ((F.sortes || []).some(k => k === 'veteran' || k === 'hit')) { F.sortes = F.sortes.filter(k => k !== 'veteran' && k !== 'hit'); sauverDealsF(); }
   if (frais) for (const k of [...MEMO.keys()]) if (k.startsWith('deals_liste')) MEMO.delete(k);     // tirer pour actualiser : jamais la memoire
   const d = await API.deals_liste(F).catch(e => ({ok:false, erreur:e.message}));
   S.dealsMaj = d && d.maj;
@@ -4951,17 +4976,21 @@ async function chargerDeals(frais){
     return;
   }
   const pD = $('#pastille-deals'); if (pD) { pD.hidden = !d.n; pD.textContent = d.n || ''; }
+  const dn = $('#d-nb'); if (dn) { dn.hidden = !d.n; dn.textContent = d.n || ''; }
   // 27 oct 2026 (Mathieu : « les users doivent TOUJOURS voir quelque chose ») : « a surveiller » (15 a 30 % sous la valeur)
   const P = (d.pres || []).map(x => ({...x, pres:true}));
   // 29 oct 2026 (Mathieu : « je ne vois toujours pas les cartes non rookie ») : les encans de veterans et de legendes des
   // vendeurs suivis, en haut (une rangee qui defile) ; tous en grille quand le filtre « Légendes » est actif
-  const SU = d.suivis || [], legendes = (F.sortes || []).includes('veteran');
+  // 29 oct 2026 (Mathieu : « pourquoi separer rookie des legendes ? juste un filtre rookie ») : une seule liste ; les encans
+  // des vendeurs suivis sans valeur sure suivent les deals (« Valeur à vérifier »), tries par fin avec le filtre Encans
+  let SU = d.suivis || [];
+  if (F.type === 'encan' || F.tri === 'fin') SU = [...SU].sort((a, b) => String(a.fin).localeCompare(String(b.fin)));
   S.dealsParId = Object.fromEntries([...(d.deals || []), ...P, ...SU].map(x => [String(x.item_id), x]));
   const L = d.deals || [], gain = L.filter(x => !x.encan).reduce((t, x) => t + Math.max(0, x.gain || 0), 0), encans = L.filter(x => x.encan).length;
   const sp = Object.entries(d.sports || {}).sort((a, b) => b[1] - a[1]);
   const segD = (id, choix, actuel) => `<div class="seg" id="${id}">${choix.map(([v, l]) => `<button data-v="${v}" class="${v === actuel ? 'on' : ''}">${esc(l)}</button>`).join('')}</div>`;
   z.innerHTML = `
-    <div class="d-resume tel-seul"><span><b>${d.n} deal${d.n > 1 ? 's' : ''}</b>${gain > 0 ? ` · ${tt('jusqu’à', 'up to')} <b class="vert">+${argentCourt(gain)}</b>` : ''}</span><button class="aide-q" id="d-aide" aria-label="${esc(tt('Comment lire un deal', 'How to read a deal'))}">?</button></div>
+
     <div class="hero-l pas-tel" style="margin-bottom:12px">
       <div class="kpi vert"><span class="lib">Deals</span><span class="v">${d.n}</span><span class="s">${tt('sous 70 % de la valeur', 'under 70% of value')}</span></div>
       <div class="kpi acc"><span class="lib">${tt('Profit possible', 'Possible profit')}</span><span class="v">${argentCourt(gain)}</span><span class="s">${tt('à la revente, après frais', 'on resale, after fees')}</span></div>
@@ -4974,18 +5003,12 @@ async function chargerDeals(frais){
         ${segD('d-type', [['', tt('Tous', 'All')], ['fixe', tt('Prix fixe', 'Buy It Now')], ['encan', tt('Encans', 'Auctions')]], F.type)}</div>
       <div class="chips d-chips"><button class="chip filtre-d ${nbFiltresDeals(F) ? 'on' : ''}" id="d-filtres">⚙<span class="pas-tel"> ${tt('Filtres', 'Filters')}</span><span class="tel-seul"> ${tt('Trier', 'Sort')}</span>${nbFiltresDeals(F) ? ' · ' + nbFiltresDeals(F) : ''}</button>
         <button class="chip tel-seul ${F.type === 'encan' ? 'on' : ''}" data-type-t="encan">⏱ ${tt('Encans', 'Auctions')}</button>
-        <button class="chip ${(F.sortes || []).includes('veteran') ? 'on' : ''}" data-sorte="veteran"><span class="pas-tel">${tt('Vétérans et légendes', 'Veterans & legends')}</span><span class="tel-seul">${tt('Légendes', 'Legends')}</span></button>
-        <button class="chip ${(F.sortes || []).includes('hit') ? 'on' : ''}" data-sorte="hit"><span class="pas-tel">${tt('Autos, patchs, /99', 'Autos, patches, /99')}</span><span class="tel-seul">${tt('Hits', 'Hits')}</span></button>
-        ${(F.sortes || []).filter(k => k !== 'veteran' && k !== 'hit').map(k => `<span class="chip on petit">${esc({recrue:tt('Recrue', 'Rookie'), auto:'Auto', patch:'Patch', numerotee:tt('Numérotée', 'Numbered'), gradee:tt('Gradée', 'Graded'), brute:tt('Non gradée', 'Raw')}[k] || k)}</span>`).join('')}
-        ${F.rabais_min ? `<span class="chip on petit">−${F.rabais_min} %+</span>` : ''}${F.prix_max ? `<span class="chip on petit">≤ ${argentCourt(F.prix_max)}</span>` : ''}${(F.joueurs || []).slice(0, 3).map(j => `<span class="chip on petit">${esc(j)}</span>`).join('')}</div></div>
-    ${SU.length && !legendes ? `<div class="bloc-t d-suivis-t"><span>${tt('Encans de vétérans et légendes', 'Veteran & legend auctions')}</span><button class="lien-doux" data-sorte="veteran">${tt('Tout voir', 'See all')} ${SU.length} ›</button></div>
-      <div class="d-car">${SU.slice(0, 16).map(tuileDeal).join('')}</div>` : ''}
-    ${L.length ? `<div class="grille-c">${L.map(tuileDeal).join('')}
+        <button class="chip ${(F.sortes || []).includes('recrue') ? 'on' : ''}" data-sorte="recrue">${tt('Recrues', 'Rookies')}</button>
+        <button class="aide-q" id="d-aide" aria-label="${esc(tt('Comment lire un deal', 'How to read a deal'))}">?</button></div></div>
+    ${L.length || SU.length ? `<div class="grille-c">${[...L, ...SU].map(tuileDeal).join('')}
         ${d.limite && d.n > L.length && !NATIF ? `<button class="tuile-c tuile-pro" data-pro-deals><span class="badge-f pro grand">✦ PRO</span><b>+${d.n - L.length} ${tt('deals de plus', 'more deals')}</b><span>${tt('avec filtres et comps', 'with filters and comps')}</span></button>` : ''}</div>`
       : `<div class="vide">${P.length ? tt('Pas de deal sous 70 % de la valeur en ce moment : voici les meilleurs prix à surveiller.', 'No deal under 70% of value right now: here are the best prices to watch.') : tt('Aucun deal pour ces filtres pour l’instant. Le chasseur regarde eBay chaque heure.', 'No deal for these filters right now. The hunter checks eBay every hour.')}</div>`}
     ${d.secours ? `<div class="sous" style="margin-top:8px">${tt('Dernière liste vérifiée', 'Last checked list')} · ${new Date(d.secours_le).toLocaleTimeString(LOC(), {hour:'2-digit', minute:'2-digit'})} · ${tt('le chasseur prépare la nouvelle', 'the hunter is preparing the new one')}</div>` : ''}
-    ${SU.length && legendes ? `<div class="bloc-t" style="margin:22px 0 6px">${tt('Encans de vétérans et légendes', 'Veteran & legend auctions')} <span class="sous">${tt('vendeurs suivis · finissent dans 5 jours et moins · ⭐ pour être averti avant la fin', 'followed sellers · ending within 5 days · ⭐ to get alerted before the end')}</span></div>
-      <div class="grille-c">${SU.map(tuileDeal).join('')}</div>` : ''}
     ${P.length ? `<div class="bloc-t" style="margin:22px 0 6px">${tt('À surveiller', 'To watch')} <span class="sous">${tt('15 à 30 % sous la valeur : pas encore un deal, mais un bon prix', '15–30% under value: not a deal yet, but a good price')}</span></div>
       <div class="grille-c">${P.map(tuileDeal).join('')}</div>` : ''}`;
   $$('#d-sp [data-sp]').forEach(b => b.onclick = () => { const k = b.dataset.sp; F.sports = !k ? [] : F.sports.includes(k) ? F.sports.filter(x => x !== k) : [...F.sports, k]; chargerDeals(); });
@@ -4997,7 +5020,7 @@ async function chargerDeals(frais){
   const da = $('#d-aide'); if (da) da.onclick = feuilleAideDeals;
   // 28 oct 2026 (Mathieu : « encore que des rookies ») : deux raccourcis, un tap
   $$('[data-sorte]', z).forEach(b => b.onclick = () => { const k = b.dataset.sorte, l = F.sortes || [];
-    F.sortes = l.includes(k) ? l.filter(x => x !== k) : [...l.filter(x => !(k === 'veteran' && x === 'recrue')), k]; sauverDealsF(); chargerDeals(); });
+    F.sortes = l.includes(k) ? l.filter(x => x !== k) : [...l, k]; sauverDealsF(); chargerDeals(); });
   $$('[data-pasdeal]', z).forEach(b => b.onclick = (e) => { e.stopPropagation(); e.preventDefault(); const x = (S.dealsParId || {})[b.dataset.pasdeal]; if (x) feuillePasDeal(x); });
   $$('[data-masquer]', z).forEach(b => b.onclick = async (e) => { e.stopPropagation(); const t = b.closest('.tuile-c'); if (t) t.remove(); await API.deal_masquer(b.dataset.masquer).catch(() => {}); });
   $$('[data-comps]', z).forEach(b => b.onclick = (e) => {
@@ -5027,7 +5050,7 @@ function pastilleQuota(cle){
     annonces_mois:[tt('annonces ce mois', 'listings this month'), tt('Annonces illimitées', 'Unlimited listings')],
     deals:[tt('deals visibles', 'deals shown'), tt('Tous les deals', 'All deals')], breaks_produits:[tt('produit en analyse', 'product to analyze'), tt('Tous les produits', 'All products')]}[cle];
   if (!lib) return '';
-  if (f.pro) return `<span class="quota pro">✦ ${lib[1]} · Pro${f.essai ? ' (' + tt('essai', 'trial') + ' · ' + f.jours_restants + ' j)' : ''}</span>`;
+  if (f.pro) return `<span class="quota pro">✦ Pro${f.essai ? ' · ' + tt('essai ', 'trial ') + f.jours_restants + tt(' j', ' d') : ''}</span>`;
   const reste = (f.reste || {})[cle];
   const txt = reste != null ? `${reste} / ${lim} ${lib[0]}` : `${lim} ${lib[0]}`;
   if (NATIF) return `<span class="quota ${reste === 0 ? 'vide' : ''}">${txt}</span>`;
@@ -5474,6 +5497,7 @@ async function vueAccueil(arg){
     <div class="acc-tete" style="grid-area:tete"><div class="marque"><span class="logo-lr officiel piece-sc" aria-label="SlabCoach">${htmlPiece()}</span><img class="logo" id="acc-logo" src="${esc(S.logo || '/icone.png')}" alt="">
         <div class="horloge"><div class="nom-b${nomMarque() === 'SlabCoach' ? ' a-mot' : ''}" id="acc-nom">${nomMarque() === 'SlabCoach' ? MOT_SC : esc(nomMarque())}</div><div class="salut" id="acc-salut"></div><div class="h" id="acc-h">--:--</div><div class="d" id="acc-d"></div></div></div>
       <div class="acc-tuiles" id="acc-tuiles">${roue}</div></div>
+    <div class="acc-ticker" id="acc-ticker" hidden></div>
     <div class="acc-pils" id="acc-pils"></div>
     <div class="acc-reserve" id="acc-reserve" hidden>
     <div class="carte-acc nouv" id="acc-nouv"><div class="acc-titre titre-tel">${tt('Nouvelles et astuces', 'News and tips')}</div><div class="acc-sous titre-tel">${tt('L’actualité de la LNH et des cartes, et des trucs pour mieux acheter et vendre. Glisse pour la suivante.', 'NHL and card news, plus tips to buy and sell better. Swipe for the next one.')}</div><div id="acc-news">${roue}</div></div>
@@ -5740,7 +5764,6 @@ function pastillesAccueil(d, a, gestes, admin){
     pilAcc('pil-conseils', 'conseils', tt('Conseils pour toi', 'Tips for you'), ''),
     brk ? pilAcc('pil-breaks', 'breaks', tt('Breaks en cours', 'Breaks in progress'), d.breaks_ouverts.length) : '',
     $('#acc-b-coups') ? pilAcc('pil-coups', 'coups', tt('Meilleurs coups · 30 j', 'Best flips · 30 d'), (d.coups || []).length) : '',
-    pilAcc('pil-news', 'news', tt('Nouvelles et astuces', 'News and tips'), ''),
     admin ? pilAcc('pil-admin', 'admin', tt('À surveiller · admin', 'To monitor · admin'), '') : '',
     admin ? pilAcc('pil-pouls', 'pouls', tt('Mises à jour', 'Updates'), '') : '',
   ].join('');
@@ -5754,8 +5777,25 @@ function pastillesAccueil(d, a, gestes, admin){
   o('pil-coups', () => feuilleBloc($('#acc-b-coups')));
   o('pil-admin', () => feuilleBloc($('#acc-admin')));
   o('pil-pouls', () => feuilleBloc(blocParent('#acc-pouls')));
-  o('pil-news', () => { feuilleBloc($('#acc-nouv')); requestAnimationFrame(() => rendreNouvelles((S.live && S.live.nouvelles) || [])); });
+  rendreTicker();
   const tp = $('#t-profit'); if (tp && $('#acc-b-profit')) tp.onclick = (e) => { e.preventDefault(); feuilleBloc($('#acc-b-profit'), `<a class="btn ghost petit" href="#bilan" style="align-self:flex-start">${tt('Bilan complet', 'Full report')} ›</a>`); };
+}
+// 29 oct 2026 (Mathieu : « les news et tips en pastille defilante sexy ») : une bande qui defile toute seule (transform,
+// fluide) ; un doigt dessus la met en pause ; un tap ouvre la nouvelle ou l'astuce en grand dans une feuille
+function rendreTicker(){
+  const z = $('#acc-ticker'), L = S.newsListe || []; if (!z) return;
+  if (!L.length) { z.hidden = true; return; }
+  const item = (n, j) => `<button class="tk ${n.astuce ? 'astuce' : ''}" data-tk="${j}"><span class="tk-ic">${n.astuce ? '💡' : ({hockey:'🏒', basketball:'🏀', football:'🏈', baseball:'⚾'}[n.sport] || '📰')}</span>
+    <span class="tk-t"><small>${n.astuce ? tt('Astuce', 'Tip') : esc(n.libelle || nomSport(n.sport) || tt('Nouvelle', 'News'))}</small><b>${esc(String(n.titre || '').slice(0, 70))}</b></span></button>`;
+  const html = L.map(item).join('');
+  z.innerHTML = `<div class="tk-piste" style="--tk-d:${Math.max(24, L.length * 7)}s">${html}${html}</div>`;
+  z.hidden = false;
+  const piste = z.firstChild;
+  const pause = (on) => z.classList.toggle('pause', on);
+  z.onpointerdown = () => pause(true); z.onpointerup = z.onpointerleave = z.onpointercancel = () => setTimeout(() => pause(false), 1200);
+  $$('[data-tk]', z).forEach(b => b.onclick = () => { vibrer(); const k = +b.dataset.tk;
+    feuilleBloc($('#acc-nouv')); requestAnimationFrame(() => { rendreNouvelles((S.live && S.live.nouvelles) || []); if (S.newsAller) S.newsAller(k, false); }); });
+  void piste;
 }
 function feuilleStockAcc(d){
   const st = d.stock || {}, vi = d.vitesse || {}, ch = d.chaud, nc = d.collection_n || 0, ach = S.mode === 'acheteur';
@@ -5896,7 +5936,9 @@ function rendreNouvelles(items){
     S.newsAller = aller;
   };
   dessiner();
-  S.newsMaj = () => { L = construire(); const c = $('#acc-nouv'); if (c) c.classList.toggle('vide-n', !L.length); if (L.length) { const k = i; dessiner(); if (S.newsAller) S.newsAller(Math.min(k, L.length - 1), false); } };
+  S.newsListe = L; rendreTicker();
+  S.newsMaj = () => { L = construire(); const c = $('#acc-nouv'); if (c) c.classList.toggle('vide-n', !L.length); if (L.length) { const k = i; dessiner(); if (S.newsAller) S.newsAller(Math.min(k, L.length - 1), false); }
+    S.newsListe = L; rendreTicker(); };
   if (S.tNews) clearInterval(S.tNews);
   S.tNews = setInterval(() => { if (!surAccueil()) { arreterAccueilLive(); return; }
     if (!document.hidden && !z.matches(':hover') && Date.now() - touche > 12000 && S.newsAller) S.newsAller(i + 1); }, 10000);
@@ -6489,6 +6531,25 @@ async function rechargerBreakSilencieux(){ const d = await API.break_detail(S.br
 const FILTRES_INV = [['tous','Tous',{dispo:1}],['collection','Ma collection',{dispo:1, emplacement:'Collection'}],   // 28 oct (Mathieu) : plus de filtre « À lister »
   ['listee','Sur eBay',{statut:'Listée'}],
   ['sans-cout','Sans coût',{sans_cout:1}],['magasin','Magasin',{dispo:1, emplacement:'Magasin'}],['consig','Consignation',{dispo:1, consignation:1}],['vendue','Vendues',{statut:'Vendue'}]];
+// 29 oct 2026 (Mathieu : « trop d'options et je dois swiper ») : 3 filtres visibles, le reste (et les sports) dans « Filtrer »
+const LIB_FILTRE = (k) => ({tous: tt('Tout', 'All'), collection: tt('Collection', 'Collection'), listee: tt('Sur eBay', 'On eBay'), 'sans-cout': tt('Sans coût', 'No cost'),
+  magasin: tt('Magasin', 'Store'), consig: tt('Consignation', 'Consignment'), vendue: tt('Vendues', 'Sold')})[k] || k;
+function filtresBarreInv(){
+  const f = S.filtreInv || 'tous', autre = !['tous', 'collection', 'listee'].includes(f), sp = S.sportInv;
+  return ['tous', 'collection', 'listee'].map(k => `<button class="chip ${f === k ? 'on' : ''}" data-f="${k}">${LIB_FILTRE(k)}</button>`).join('')
+    + `<button class="chip ${autre || sp ? 'on' : ''}" id="i-plus-f">${autre ? LIB_FILTRE(f) : sp ? nomSport(sp) : tt('Filtrer', 'Filter')} ▾</button>`;
+}
+function brancherFiltresInv(){
+  $$('.i-filtres [data-f]').forEach(c => c.onclick = () => { S.filtreInv = c.dataset.f; $('.i-filtres').innerHTML = filtresBarreInv(); brancherFiltresInv(); chargerInventaire(); });
+  const p = $('#i-plus-f'); if (p) p.onclick = () => {
+    const ps = S.parSportInv || {}, sports = Object.entries(ps).sort((a, b) => b[1] - a[1]);
+    ouvrirFeuille(`<h3>${tt('Filtrer', 'Filter')}</h3><div class="menu-f">${filtresInv().map(([k]) => `<button class="choix-f ${S.filtreInv === k ? 'on' : ''}" data-ff="${k}">${LIB_FILTRE(k)}${S.filtreInv === k ? ' ✓' : ''}</button>`).join('')}</div>
+      ${sports.length > 1 ? `<div class="sous">${tt('Sport', 'Sport')}</div><div class="menu-f"><button class="choix-f ${S.sportInv ? '' : 'on'}" data-fs="">${tt('Tous les sports', 'All sports')}${S.sportInv ? '' : ' ✓'}</button>${sports.map(([k, n]) => `<button class="choix-f ${S.sportInv === k ? 'on' : ''}" data-fs="${k}">${nomSport(k)} · ${n}${S.sportInv === k ? ' ✓' : ''}</button>`).join('')}</div>` : ''}`);
+    const fin = () => { fermerFeuille(); const z = $('.i-filtres'); if (z) { z.innerHTML = filtresBarreInv(); brancherFiltresInv(); } chargerInventaire(); };
+    $$('[data-ff]').forEach(b => b.onclick = () => { S.filtreInv = b.dataset.ff; fin(); });
+    $$('[data-fs]').forEach(b => b.onclick = () => { S.sportInv = b.dataset.fs || null; fin(); });
+  };
+}
 // 22 oct 2026 - pas de magasin : pas de filtres magasin (moins de choix = plus vite)
 const filtresInv = () => FILTRES_INV.filter(f => (S.activites || {}).magasin !== false || !['magasin', 'consig'].includes(f[0]));
 const EMPLACEMENTS = ['Collection', 'Réserve', 'Magasin', 'Vitrine', 'eBay', 'Break'];
@@ -6498,18 +6559,22 @@ async function vueInventaire(arg){
   if (FILTRES_INV.some(f => f[0] === arg)) S.filtreInv = arg;
   V().innerHTML = `<section class="ecran large">
     <div class="entete"><div class="titre">${tt('Inventaire', 'Inventory')}</div>
-      <div class="pastilles actions-inv">${S.mode === 'vendeur' ? `<a class="pilule acc" href="#vendre/programmer" id="i-prog">⏱<span>${tt('Programmer sur eBay', 'Schedule on eBay')}</span></a>` : ''}<button class="pilule" id="i-import">${ICONES.import}<span>${tt('Importer eBay', 'Import eBay')}</span></button><button class="pilule" id="i-brouillons">${ICONES.export}<span>${tt('Brouillons', 'Drafts')}</span></button>
+      <div class="actions-inv"><button class="rond" id="i-menu" aria-label="${esc(tt('Plus d’actions', 'More actions'))}">⋯</button>
       <button class="rond acc" id="i-plus" aria-label="${esc(tt('Ajouter', 'Add'))}">${ICONES.plus}</button></div></div>
     <div class="recherche">${ICONES.loupe}<input id="i-q" placeholder="${esc(tt('Rechercher un joueur, un set…', 'Search a player, a set…'))}" value="${esc(S.rechInv)}"></div>
-    <div class="chips">${filtresInv().map(([k, t]) => `<button class="chip ${S.filtreInv === k ? 'on' : ''}" data-f="${k}">${t}</button>`).join('')}</div>
+    <div class="chips i-filtres">${filtresBarreInv()}</div>
     <div class="acc-reserve"><div id="i-b-res"><div id="i-coll"></div><div id="i-kpis"></div></div></div>
     <div id="i-liste">${roue}</div></section>`;
   blocCollection($('#i-coll'));
-  $$('.chip[data-f]', V()).forEach(c => c.onclick = () => { S.filtreInv = c.dataset.f; $$('.chip[data-f]', V()).forEach(x => x.classList.toggle('on', x === c)); chargerInventaire(); });
+  brancherFiltresInv();
   let t; $('#i-q').oninput = (e) => { clearTimeout(t); t = setTimeout(() => { S.rechInv = e.target.value.trim(); chargerInventaire(); }, 250); };
   $('#i-plus').onclick = () => feuilleAjout();
-  $('#i-import').onclick = feuilleImportEbay;
-  $('#i-brouillons').onclick = feuilleBrouillons;
+  $('#i-menu').onclick = () => { vibrer(); ouvrirFeuille(`<h3>${tt('Inventaire', 'Inventory')}</h3><div class="menu-f">
+      ${S.mode === 'vendeur' ? `<a class="acc-pil" href="#vendre/programmer"><span class="ap-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg></span><span class="ap-t">${tt('Programmer sur eBay', 'Schedule on eBay')}</span><i>›</i></a>` : ''}
+      <button class="acc-pil" id="im-import"><span class="ap-ic"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg></span><span class="ap-t">${tt('Importer mes annonces eBay', 'Import my eBay listings')}</span><i>›</i></button>
+      <button class="acc-pil" id="im-brou"><span class="ap-ic"><svg viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M4 21h16"/></svg></span><span class="ap-t">${tt('Brouillons et export', 'Drafts and export')}</span><i>›</i></button></div>`);
+    $('#im-import').onclick = () => { fermerFeuille(); feuilleImportEbay(); };
+    $('#im-brou').onclick = () => { fermerFeuille(); feuilleBrouillons(); }; };
   await Promise.all([reglages(), consignataires()]).catch(() => {});
   await chargerInventaire();
   if (arg === 'import') feuilleImportEbay();
@@ -6561,7 +6626,9 @@ async function chargerInventaire(){
   const vendues = S.filtreInv === 'vendue';
   const valeur = l.reduce((s, c) => s + (nb(vendues ? c.prix_vendu : (c.valeur ?? c.prix_demande)) || 0), 0);
   const rep = l.map(repere).filter(Boolean), bien = rep.filter(r => r.cl === 'vert').length, cher = rep.filter(r => r.cl === 'rouge' || r.cl === 'or').length, bas = rep.filter(r => r.cl === 'acc').length;
-  const puces = Object.keys(parSport).length > 1 ? `<div class="chips" id="i-sports" style="margin-bottom:12px"><button class="chip ${S.sportInv ? '' : 'on'}" data-sp="">${tt('Tous sports', 'All sports')}</button>${Object.entries(parSport).sort((a, b) => b[1] - a[1]).map(([k, n]) => `<button class="chip ${S.sportInv === k ? 'on' : ''}" data-sp="${k}">${nomSport(k)} ${n}</button>`).join('')}</div>` : '';
+  S.parSportInv = parSport;
+  const fz = $('.i-filtres'); if (fz) { fz.innerHTML = filtresBarreInv(); brancherFiltresInv(); }
+  const puces = '' && Object.keys(parSport).length > 1 ? `<div class="chips" id="i-sports" style="margin-bottom:12px"><button class="chip ${S.sportInv ? '' : 'on'}" data-sp="">${tt('Tous sports', 'All sports')}</button>${Object.entries(parSport).sort((a, b) => b[1] - a[1]).map(([k, n]) => `<button class="chip ${S.sportInv === k ? 'on' : ''}" data-sp="${k}">${nomSport(k)} ${n}</button>`).join('')}</div>` : '';
   const kpis = l.length ? `<div class="hero-l" style="margin-bottom:14px">
       <div class="kpi"><span class="lib">${vendues ? tt('Vendues', 'Sold') : tt('Articles', 'Items')}</span><span class="v">${l.length}</span><span class="s">${argentCourt(valeur)}</span></div>
       ${vendues ? `<div class="kpi vert"><span class="lib">${tt('Profit', 'Profit')}</span><span class="v">${argentCourt(l.reduce((s, c) => s + (nb(c.profit) || 0), 0))}</span><span class="s">${tt('sur les ventes avec coût', 'on sales with a cost')}</span></div>`

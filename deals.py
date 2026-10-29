@@ -669,6 +669,8 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
         st["ecartees"] = st.get("ecartees", 0) + 1                              # abimee, douteuse, ou vendeur sans historique
         deals.pop(a.get("item_id"), None)
         return
+    if r.get("suivi") and not sport_carte(a.get("titre"), cib):
+        return                                                                  # 29 oct : vendeurs suivis : pas de soccer, tennis...
     st["annonces"] = st.get("annonces", 0) + 1
     if a.get("encan"):
         st["encans_fen"] = st.get("encans_fen", 0) + 1
@@ -732,7 +734,7 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
             st["vedettes_deals"] = st.get("vedettes_deals", 0) + 1
     import sports
     joueur = r.get("joueur") or " ".join(w.capitalize() for w in cib["joueur"].split())
-    sport = r.get("sport") or sports.detecter(a.get("titre") or "", defaut="hockey")
+    sport = r.get("sport") or (sport_carte(a.get("titre"), cib) if r.get("suivi") else None) or sports.detecter(a.get("titre") or "", defaut="hockey")
     deals[a["item_id"]] = {"item_id": a["item_id"], "titre": a["titre"], "total": t, "photo": a.get("photo"), "url": a.get("url"),
                            "valeur": med_a, "ratio": round(t / med_a, 3), "encan": bool(a.get("encan")), "fin": fin,
                            "mises": a.get("mises"), "sport": sport, "joueur": joueur, "q": _q_deal(r), "vedette": bool(r.get("vedette")), "flux": r.get("flux"),
@@ -743,6 +745,36 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
 
 
 SUIVIS_MAX = 400                 # 29 oct 2026 : encans de veterans / legendes des vendeurs suivis gardes pour l'ecran
+
+
+_HORS_SPORTS = re.compile(r"\b(world cup|fifa|uefa|premier league|serie a|la liga|bundesliga|ligue 1|mls|soccer|futbol|tennis|atp|wta|golf|pga|"
+                          r"formula 1|\bf1\b|ufc|mma|wwe|wrestling|boxing|nascar|pok[eé]mon|yu-?gi-?oh|magic the gathering|one piece|lorcana)\b", re.I)
+_JOUEURS_HOCKEY = None
+
+
+def sport_carte(titre, cib=None):
+    """29 oct 2026 (Mathieu : « pour les legendes on dirait tout sauf du hockey ») : le sport d'une carte des vendeurs
+    suivis, avec une PREUVE : hockey si le titre le dit (set, equipe LNH...) ou si le joueur est un joueur de hockey connu ;
+    un autre sport de l'app (NFL, NBA, MLB) s'il gagne nettement. Soccer, tennis, Pokemon... et les cartes sans preuve :
+    None (pas montrees)."""
+    global _JOUEURS_HOCKEY
+    import sports
+    t = str(titre or "")
+    if _HORS_SPORTS.search(t):
+        return None
+    sc = sports.scores(t)
+    if _JOUEURS_HOCKEY is None:
+        try:
+            import valeurs
+            _JOUEURS_HOCKEY = {str(j).lower() for j in ((valeurs._charger() or {}).get("joueurs") or {})} | {v.lower() for v in VEDETTES}
+        except Exception:
+            _JOUEURS_HOCKEY = {v.lower() for v in VEDETTES}
+    j = str((cib or {}).get("joueur") or "").lower()
+    if (j and j in _JOUEURS_HOCKEY) or (sc.get("hockey", 0) >= 2 and sc["hockey"] >= max(sc.values())):
+        return "hockey"
+    m = max(sc.values())
+    gagnants = [k for k, v in sc.items() if v == m]
+    return gagnants[0] if m >= 2 and len(gagnants) == 1 else None
 
 
 def _noter_suivi(st, a, bassin, maint):
@@ -759,6 +791,9 @@ def _noter_suivi(st, a, bassin, maint):
         return
     if cartes_match.abimee(a.get("titre") or "") or vendeur_risque(a):
         return
+    sport = sport_carte(a.get("titre"), cib)
+    if not sport:
+        return                                       # soccer, tennis, sans preuve : pas dans SlabCoach (hockey d'abord)
     f = a.get("fin")
     fd = None
     try:
@@ -777,7 +812,7 @@ def _noter_suivi(st, a, bassin, maint):
         "encan": True, "fin": f, "mises": a.get("mises"), "port": a.get("port_cad"), "vendeur": a.get("vendeur"),
         "valeur": va[0] if va else None, "n": va[2] if va else 0, "vendues": va[3] if va else [],
         "mise_max": round(va[0] * RATIO_DEAL - (a.get("port_cad") or 0), 2) if va else None,
-        "sport": "hockey", "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION, "suivi": True}
+        "sport": sport, "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION, "suivi": True}
 
 
 def _q_deal(r):
@@ -840,8 +875,10 @@ def _verifier_tard(st, deals, maint, bassin, verif):
     tard = st.pop("_tard", [])
     # les encans d'abord (le plus proche de la fin), puis les prix fixes (le plus cher d'abord : plus de profit possible)
     # 29 oct 2026 : dans chaque groupe, les veterans et les legendes passent avant les recrues
-    tard.sort(key=lambda x: (0, 0 if x[1].get("suivi") else 1, 1 if _recrue(x[2]) else 0, 0 if _precieuse(x[2]) else 1, str(x[0].get("fin")), 0)
-              if x[0].get("encan") else (1, 0 if x[1].get("suivi") else 1, 1 if _recrue(x[2]) else 0, 0 if _precieuse(x[2]) else 1, "", -(_total(x[0]) or 0)))
+    # 29 oct 2026 (Mathieu : « on doit passer toutes les cartes de ces vendeurs, ensuite on analyse le reste ») : les vendeurs
+    # suivis d'abord (encans puis prix fixe), ensuite le reste
+    tard.sort(key=lambda x: (0 if x[1].get("suivi") else 1, 0, 1 if _recrue(x[2]) else 0, 0 if _precieuse(x[2]) else 1, str(x[0].get("fin")), 0)
+              if x[0].get("encan") else (0 if x[1].get("suivi") else 1, 1, 1 if _recrue(x[2]) else 0, 0 if _precieuse(x[2]) else 1, "", -(_total(x[0]) or 0)))
     for a, r, cib in tard:
         avant = st.get("verif_budget", 0)
         st.pop("_dern_verif", None)
@@ -1034,16 +1071,30 @@ def flux_hits(curseur):
 # cf_31, dc sports 87, slab shark et d'autres particuliers. Je les veux TOUS ») : des vendeurs suivis. Chaque heure : leurs
 # encans qui finissent dans 48 h (toutes cartes, pas seulement des recrues) et leurs nouvelles annonces a prix fixe.
 # La liste se regle dans la console admin (pseudos eBay exacts) ou avec LR_DEALS_VENDEURS (« a;b;c »).
-VENDEURS_DEFAUT = ["savage.cards", "remi-card-trader", "slabsharksinc", "dcsports87", "cf_31"]   # 29 oct : savage.cards et remi-card-trader confirmes par Mathieu
-VENDEURS_PAR_APPEL = 10                  # la Browse API accepte plusieurs vendeurs dans un meme filtre
+# 29 oct 2026 (Mathieu : « on doit passer toutes les cartes de ces vendeurs et des autres gros vendeurs de cartes de hockey,
+# ensuite on analyse le reste ») : pseudos verifies sur eBay le 29 oct. CF31 = « cf31_sports_cards » (pas « cf_31 »).
+# Groupe 1 : les specialistes du hockey ; groupe 2 : les mega-vendeurs multi-sports (leurs cartes de hockey seulement).
+VENDEURS_DEFAUT = ["savage.cards", "remi-card-trader", "cf31_sports_cards", "wests01", "ultsportscards",     # hockey
+                   "rakesecret", "sforget76", "slabsharksinc", "dcsports87", "probstein123"]                 # + mega-vendeurs
+VENDEURS_PAR_APPEL = 5                   # 5 vendeurs par recherche : chaque groupe a ses 10 pages d'encans (2 000)
+VENDEURS_V = 2
 
 
 def vendeurs_suivis():
     e = os.environ.get("LR_DEALS_VENDEURS")
     if e:
         return [x.strip() for x in e.split(";") if x.strip()]
-    v = lire_vite().get("vendeurs")
-    return list(v) if isinstance(v, list) else list(VENDEURS_DEFAUT)
+    d = lire_vite()
+    v = d.get("vendeurs")
+    if not isinstance(v, list):
+        return list(VENDEURS_DEFAUT)
+    if int(d.get("vendeurs_v") or 0) < VENDEURS_V:
+        # 29 oct 2026 : une liste reglee avant : « cf_31 » corrige, et les nouveaux gros vendeurs de hockey ajoutes
+        v = ["cf31_sports_cards" if x.lower() == "cf_31" else x for x in v]
+        v += [x for x in VENDEURS_DEFAUT if x.lower() not in {y.lower() for y in v}]
+        ordre = {x.lower(): i for i, x in enumerate(VENDEURS_DEFAUT)}
+        v.sort(key=lambda x: ordre.get(x.lower(), len(ordre)))
+    return list(v)
 
 
 def regler_vendeurs(liste):
@@ -1055,6 +1106,7 @@ def regler_vendeurs(liste):
     with _verrou:
         d = lire()
         d["vendeurs"] = l[:40]
+        d["vendeurs_v"] = VENDEURS_V
         _ecrire(d)
     return l[:40]
 
