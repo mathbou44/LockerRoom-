@@ -228,6 +228,7 @@ details.reglage summary::-webkit-details-marker{display:none}
 .pr-bas .btn{width:100%} #pr-go.arme{background:linear-gradient(110deg,#F3E0A6,#D9B866) !important; color:#2A1F05; box-shadow:0 0 0 4px rgba(233,207,142,.18)}
 .pr-roue{display:inline-block; width:15px; height:15px; margin-right:8px; vertical-align:-2px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:pr-tour .7s linear infinite}
 @keyframes pr-tour{to{transform:rotate(360deg)}}
+#adm-vend-r .det, #adm-vend-r .nom{white-space:normal; overflow:visible; text-overflow:clip}
 .d-ent{display:flex; align-items:center; gap:8px; margin-left:auto} .d-chips{display:flex; align-items:center; flex-wrap:nowrap; gap:7px} .d-chips .aide-q{margin-left:auto} .d-chips .chip{padding-left:11px; padding-right:11px}
 .fd-w{flex-wrap:wrap !important; overflow:visible !important} .fd-s{display:flex; flex-direction:column; gap:8px}
 .fd-l{align-items:center; padding:10px 0} .fd-l > span{display:flex; flex-direction:column; gap:2px} .fd-l small{font-size:13px; color:var(--doux)}
@@ -7300,7 +7301,10 @@ async function adminServeur(){
     <div id="adm-journal"></div></div>
     <div class="bloc" id="adm-vend" style="margin-bottom:14px"><div class="r-titre">${tt('Vendeurs suivis (deals)', 'Followed sellers (deals)')}</div>
     <div class="sous">${tt('Pseudos eBay exacts, séparés par des virgules. Leurs encans (5 jours) et nouvelles annonces sont analysés chaque heure.', 'Exact eBay usernames, comma-separated. Their auctions (5 days) and new listings are checked every hour.')}</div>
-    <textarea class="champ" id="adm-vend-l" style="min-height:70px"></textarea><button class="btn petit" id="adm-vend-ok" style="width:auto;align-self:flex-start">${tt('Enregistrer', 'Save')}</button></div>
+    <textarea class="champ" id="adm-vend-l" style="min-height:70px"></textarea>
+    <div class="ligne-btn"><button class="btn petit" id="adm-vend-ok" style="width:auto">${tt('Enregistrer', 'Save')}</button>
+      <button class="btn petit ghost" id="adm-vend-t" style="width:auto">${tt('Tester maintenant', 'Test now')}</button></div>
+    <div class="sous" id="adm-vend-e"></div><div id="adm-vend-r"></div></div>
     <div class="deux-col"><div class="bloc">
       <div class="r-titre">${tt('Appels eBay aujourd’hui', 'eBay calls today')}</div>
       ${['browse', 'trading'].map(k => ap[k] ? `<div class="adm-l"><b>${k === 'browse' ? tt('Recherches', 'Searches') : tt('Compte vendeur', 'Seller account')}</b>${barre(ap[k].utilises, ap[k].limite)}</div>` : '').join('')}
@@ -7324,6 +7328,7 @@ async function adminServeur(){
           + tt(' · plafond SoldComps du jour atteint (aucun appel) ', ' · SoldComps daily cap reached (no call) ') + (e.hits_24h.plafond || 0)
           + tt(' · erreurs SoldComps ', ' · SoldComps errors ') + (e.hits_24h.erreurs_ventes || 0)
           + tt(' · annonces sans ventes connues ', ' · listings with no known sales ') + (e.hits_24h.sans_ventes || 0) + '</small>' : ''}
+      ${e.vendeurs_24h ? '<br>' + tt('Vendeurs suivis (24 h) : ', 'Followed sellers (24 h): ') + e.vendeurs_24h.annonces + tt(' annonces vues · ', ' listings seen · ') + e.vendeurs_24h.gardes + tt(' encans gardés · ', ' auctions kept · ') + e.vendeurs_24h.suivis + tt(' à l’écran · ', ' on screen · ') + e.vendeurs_24h.deals + ' deals' + (e.vendeurs_24h.erreurs ? ' · <span style="color:var(--rouge)">' + e.vendeurs_24h.erreurs + tt(' erreurs eBay', ' eBay errors') + '</span>' : '') : ''}
       ${e.soldcomps && e.soldcomps.epuise ? '<br><b style="color:var(--rouge)">' + tt('Budget SoldComps du jour atteint : aucune vérification (ni crédit) jusqu’à ', 'SoldComps daily budget reached: no checks (and no credits) until ') + heureCourte(e.soldcomps.reprise) + '</b>' : ''}
       ${e.soldcomps ? '<br>SoldComps : ' + (e.soldcomps.jour ?? '?') + ' / ' + (e.soldcomps.fond ?? '?') + tt(' aujourd’hui (tâches de fond)', ' today (background)')
         + (e.soldcomps.verif != null ? tt(' · vérifs de deals ', ' · deal checks ') + e.soldcomps.verif + tt(' · autres ', ' · other ') + ((e.soldcomps.jour || 0) - e.soldcomps.verif) + ' / ' + e.soldcomps.autres_max : '') + (e.soldcomps.erreur ? ' · <span style="color:var(--rouge)">' + esc(e.soldcomps.erreur) + '</span>' : '') : ''}
@@ -7341,6 +7346,20 @@ async function adminServeur(){
     let k = 0; const suivre = setInterval(async () => { k++; const e = await API.deals_etat().catch(() => null); etatDeals(e);
       if (!e || !e.en_cours || k > 40 || !document.body.contains(bvd)) { clearInterval(suivre); bvd.disabled = false; } }, 15000); };
   API.deals_vendeurs().then(v => { const t = $('#adm-vend-l'); if (t && v && v.ok) t.value = v.vendeurs.join(', '); }).catch(() => {});
+  // 29 oct 2026 (Mathieu : « Top vendeurs : toujours rien ») : ce qu'eBay renvoie MAINTENANT, vendeur par vendeur
+  const LIB_R = {ok: tt('gardés', 'kept'), recrue: tt('recrues de l’année', 'this year’s rookies'), ordinaire: tt('cartes ordinaires', 'common cards'),
+    base: tt('base à bas prix', 'cheap base'), pas_hockey: tt('pas du hockey', 'not hockey'), fin: tt('finit après 5 j', 'ends after 5 d'),
+    joueur_inconnu: tt('joueur non reconnu', 'player not recognized'), abimee: tt('abîmées', 'damaged'), pas_carte: tt('pas une carte', 'not a card'), prix_fixe: tt('sans enchère', 'no bidding')};
+  const bt = $('#adm-vend-t'); if (bt) bt.onclick = async () => {
+    bt.disabled = true; $('#adm-vend-e').innerHTML = '<span class="roue"></span> ' + tt('Recherche sur eBay…', 'Searching eBay…');
+    const r = await API.deals_tester_vendeurs().catch(e => ({ok:false, erreur:e.message})); bt.disabled = false;
+    if (!r.ok) { $('#adm-vend-e').innerHTML = '<span style="color:var(--rouge)">' + esc(r.erreur || 'Erreur') + '</span>'; return; }
+    $('#adm-vend-e').innerHTML = tt(`À l’écran : ${r.suivis_frais} encans (${r.suivis_fichier} gardés) · ${r.deals_vendeurs} deals`, `On screen: ${r.suivis_frais} auctions (${r.suivis_fichier} kept) · ${r.deals_vendeurs} deals`);
+    $('#adm-vend-r').innerHTML = `<div class="liste">${r.vendeurs.map(v => `<div class="rangee"><span class="milieu"><span class="nom">${esc(v.vendeur)}</span>
+      <span class="det">${v.erreur ? '<span style="color:var(--rouge)">' + esc(v.erreur) + '</span>' : `${v.encans} ${tt('encans', 'auctions')} · ${v.prix_fixe} ${tt('prix fixe', 'fixed')}${Object.keys(v.raisons).length ? ' · ' + Object.entries(v.raisons).sort((a, b) => b[1] - a[1]).map(([k, n]) => n + ' ' + (LIB_R[k] || k)).join(', ') : ''}`}
+      ${v.exemples.length ? '<br><small>' + v.exemples.map(esc).join(' · ') + '</small>' : ''}</span></span>
+      <span class="droite"><b style="color:${v.gardes ? 'var(--vert)' : v.erreur || !v.encans ? 'var(--rouge)' : 'var(--doux)'}">${v.gardes}</b></span></div>`).join('')}</div>`;
+  };
   const bv = $('#adm-vend-ok'); if (bv) bv.onclick = async () => { const v = await essai(API.deals_vendeurs(val('adm-vend-l')), tt('Enregistré', 'Saved')); if (v && v.ok) $('#adm-vend-l').value = v.vendeurs.join(', '); };
 }
 // 29 oct 2026 (Mathieu : « refresh comme ma page d'accueil Instagram : quand tu tires avec ton pouce vers le bas… c'est

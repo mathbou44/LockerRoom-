@@ -785,6 +785,13 @@ class Api:
         import deals as _d
         return {**_d.chasser_vedettes(), "etat": self.deals_etat()}
 
+    def deals_tester_vendeurs(self):
+        """29 oct 2026 - admin : ce qu'eBay renvoie maintenant pour chaque vendeur suivi, et pourquoi un encan est garde."""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import deals as _d
+        return _d.tester_vendeurs()
+
     def deals_etat(self):
         if not self._est_admin():
             return {"ok": False, "erreur": "Réservé à l'administrateur"}
