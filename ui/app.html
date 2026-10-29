@@ -249,6 +249,12 @@ details.reglage summary::-webkit-details-marker{display:none}
 .d-sec{grid-column:1/-1; margin:14px 2px 2px; font:700 13px 'Barlow Condensed',sans-serif; letter-spacing:.2em; text-transform:uppercase; color:var(--doux); display:flex; align-items:center; gap:8px}
 .d-sec span{font-size:12px; letter-spacing:0; padding:1px 8px; border-radius:999px; background:var(--carte2); color:var(--texte)}
 .d-sec::after{content:''; flex:1; height:1px; background:var(--ligne)}
+.fd-ram{display:flex; align-items:center; gap:12px; width:100%; margin:10px 0 4px; padding:11px 14px; border-radius:14px; background:var(--carte2); border:1px solid var(--ligne); color:var(--texte); font:inherit; text-align:left; cursor:pointer}
+.fd-ram > span:nth-child(2){flex:1; display:flex; flex-direction:column; gap:2px; min-width:0} .fd-ram b{font-size:15px; font-weight:600} .fd-ram small{font-size:12.5px; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.fd-ram i{font-style:normal; color:var(--doux); font-size:20px} .sd-ram{color:var(--vert); font-weight:600}
+.md-l{display:flex; flex-direction:column; gap:6px; margin-top:12px; font-size:14px; color:var(--doux)}
+.md-b{display:grid; grid-template-columns:1fr auto 1fr; gap:8px; align-items:center} .md-b span{color:var(--doux)}
+.sd-fav{color:var(--or)}
 .d-ent{display:flex; align-items:center; gap:8px; margin-left:auto} .d-chips{display:flex; align-items:center; flex-wrap:nowrap; gap:7px} .d-chips .aide-q{margin-left:auto} .d-chips .chip{padding-left:11px; padding-right:11px}
 .fd-w{flex-wrap:wrap !important; overflow:visible !important} .fd-s{display:flex; flex-direction:column; gap:8px}
 .fd-l{align-items:center; padding:10px 0} .fd-l > span{display:flex; flex-direction:column; gap:2px} .fd-l small{font-size:13px; color:var(--doux)}
@@ -1629,6 +1635,7 @@ body.pro .onglets a.on{color:var(--acc)}
 .conseils-ph li{display:flex; align-items:center; gap:12px; font-size:15px; color:var(--texte2); background:var(--carte); border:1px solid var(--ligne); border-radius:var(--r-ctl); padding:10px 12px}
 .conseils-ph b{width:24px; height:24px; border-radius:var(--r-pas); background:var(--acc-fonce); color:var(--acc); display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0}
 .btn.gros.prise{height:60px; font-size:18px; cursor:pointer} .btn.prise svg{width:24px; height:24px}
+.prise-2{display:grid; grid-template-columns:1fr 1fr; gap:10px} .prise-2 .btn.gros.prise{height:auto; min-height:76px; flex-direction:column; gap:6px; font-size:15.5px; padding:12px 8px; line-height:1.15; text-align:center}
 .photo-controle{position:relative; align-self:center; width:min(260px, 70vw)}
 .photo-controle img{width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:var(--r-slab); border:1px solid var(--ligne); display:block}
 .pc-etat{position:absolute; right:-10px; bottom:-10px; width:46px; height:46px; border-radius:50%; background:var(--carte2); border:1px solid var(--ligne-fort); display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700}
@@ -3354,6 +3361,7 @@ async function vueVendre(arg){
   etapePhoto(0);
 }
 // une etape photo : 0 = devant, 1 = dos
+const ICO_BIBLIO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-4.5-4.5L6 21"/></svg>';
 async function etapePhoto(i){
   V2.photos = V2.photos || [];
   const st = i === 0 ? await API.photo_statut().catch(() => ({})) : {};
@@ -3370,15 +3378,19 @@ async function etapePhoto(i){
       <li><b>1</b>${tt('Fond uni, sans motif', 'Plain background, no pattern')}</li>
       <li><b>2</b>${tt('Bonne lumière, pas de flash', 'Good light, no flash')}</li>
       <li><b>3</b>${tt('Toute la carte dans la photo', 'The whole card in the photo')}</li></ul>
-    <label class="btn gros prise">${ICONES.photo}<span>${dev ? tt('Prendre la photo du devant', 'Take the front photo') : tt('Prendre la photo du dos', 'Take the back photo')}</span>
-      <input type="file" accept="image/*" capture="environment" id="as-cam" hidden></label>
-    ${dev ? `<label class="plus">${tt('Choisir dans mes photos', 'Pick from my photos')}<input type="file" accept="image/*" multiple id="as-gal" hidden></label>
-      <div class="pastilles" style="justify-content:center">${pastilleQuota('annonces_mois')}${st.limite != null ? capsule(tt(st.reste + ' lecture' + (st.reste > 1 ? 's' : '') + ' de photo ce mois', st.reste + ' photo read' + (st.reste > 1 ? 's' : '') + ' left this month'), st.reste ? 'acc' : 'rouge') : ''}</div>
+    <div class="prise-2">
+      <label class="btn gros prise">${ICONES.photo}<span>${tt('Prendre une photo', 'Take a photo')}</span>
+        <input type="file" accept="image/*" capture="environment" id="as-cam" hidden></label>
+      <label class="btn gros prise ghost">${ICO_BIBLIO}<span>${tt('Ma photothèque', 'My photos')}</span>
+        <input type="file" accept="image/*" ${dev ? 'multiple' : ''} id="as-gal" hidden></label></div>
+    ${dev ? `<div class="pastilles" style="justify-content:center">${pastilleQuota('annonces_mois')}${st.limite != null ? capsule(tt(st.reste + ' lecture' + (st.reste > 1 ? 's' : '') + ' de photo ce mois', st.reste + ' photo read' + (st.reste > 1 ? 's' : '') + ' left this month'), st.reste ? 'acc' : 'rouge') : ''}</div>
       <a class="carte-lot" href="#vendre/${V2.but === 'collection' ? 'collection-lot' : 'lot'}"><b>${tt('Plusieurs cartes ? Vends en lot', 'Several cards? Sell in a batch')}</b><span>${tt('Tes photos de la photothèque, devant puis dos : jusqu’à 20 cartes d’un coup', 'Photos from your library, front then back: up to 20 cards at once')}</span><i>›</i></a>
       <button class="plus" id="vd-main">${tt('Remplir à la main', 'Fill in by hand')}</button>`
       : `<button class="plus" id="as-sans">${tt('Continuer sans le dos', 'Continue without the back')}</button>`}
   </section>`;
   $('#as-cam').onchange = async (e) => { const f = e.target.files && e.target.files[0]; if (f) verifierPrise(i, f); };
+  // 30 oct 2026 (Mathieu : « splitter le gros bouton en deux : prendre une photo ou la bibliotheque ») : deux boutons egaux
+  if (!dev) $('#as-gal').onchange = async (e) => { const f = e.target.files && e.target.files[0]; if (f) verifierPrise(i, f); };
   if (dev) {
     $('#as-gal').onchange = async (e) => {
       const l = [...(e.target.files || [])].slice(0, 12); if (!l.length) return;
@@ -4227,6 +4239,7 @@ function feuilleFiltresDeals(){
     <div class="fd-s"><div class="r-titre">${tt('Trier par', 'Sort by')}</div>
       <div class="chips fd-w" id="fd-tri">${[['rabais', tt('Meilleur deal', 'Best deal')], ['fin', tt('Finit bientôt', 'Ending soon')], ['prix', tt('Prix bas', 'Lowest price')]].map(([k, t]) => `<button class="chip ${tri === k ? 'on' : ''}" data-tri="${k}">${t}</button>`).join('')}</div></div>
     <label class="bascule fd-l"><span><b>${tt('Seulement les gros vendeurs', 'Top sellers only')}</b><small>${tt('Les vendeurs de hockey qu’on suit de près', 'The hockey sellers we follow closely')}</small></span><input type="checkbox" id="fd-vend" ${F.vendeurs ? 'checked' : ''}></label>
+    <button class="fd-ram" id="fd-ram"><span>📍</span><span><b>${tt('Je ramasse sur place', 'I pick up locally')}</b><small id="fd-ram-s">${tt('Le port ne compte pas chez ces vendeurs', 'Shipping doesn’t count with these sellers')}</small></span><i>›</i></button>
     <div class="fd-s"><div class="r-titre">${tt('Sorte de carte', 'Card type')}</div>
       <div class="chips fd-w" id="fd-so">${SORTES.map(([k, t]) => `<button class="chip ${so.has(k) ? 'on' : ''}" data-so="${k}">${t}</button>`).join('')}</div></div>
     <div class="fd-s"><div class="r-titre">${tt('Rabais minimum', 'Minimum discount')}</div>
@@ -4249,7 +4262,44 @@ function feuilleFiltresDeals(){
       joueurs: val('fd-j').split(',').map(x => x.trim()).filter(Boolean), avec_mise: $('#fd-mise').checked, vendeurs: $('#fd-vend').checked});
     sauverDealsF(); fermerFeuille(); chargerDeals();
   };
+  API.deals_vendeurs_liste().then(r => { const e = $('#fd-ram-s'); if (e && r && r.ok && r.ramassage.length) e.textContent = r.ramassage.join(', '); }).catch(() => {});
+  $('#fd-ram').onclick = () => feuilleRamassage(() => { fermerFeuille(); chargerDeals(); });
   $('#fd-raz').onclick = () => { Object.assign(F, {sortes:[], rabais_min:null, prix_min:null, prix_max:null, gain_min:null, joueurs:[], avec_mise:false, vendeurs:false, tri:'rabais'}); sauverDealsF(); fermerFeuille(); chargerDeals(); };
+}
+// 30 oct 2026 (Mathieu : « Remi, Savage et CF31, je peux aller pick up sur place ») : le port ne compte pas chez eux
+async function feuilleRamassage(apres){
+  const r = await API.deals_vendeurs_liste().catch(() => null); if (!r || !r.ok) return;
+  const on = new Set(r.ramassage);
+  ouvrirFeuille(`<h3>${tt('Je ramasse sur place', 'I pick up locally')}</h3>
+    <div class="sous" style="margin-bottom:12px">${tt('Chez ces vendeurs, tes deals sont calculés sans la livraison : prix, rabais et mise max.', 'With these sellers, your deals are figured without shipping: price, discount and max bid.')}</div>
+    <div class="chips fd-w" id="ra-l">${r.vendeurs.map(v => `<button class="chip ${on.has(v.toLowerCase()) ? 'on' : ''}" data-ra="${esc(v.toLowerCase())}">${esc(v)}</button>`).join('')}</div>
+    <button class="btn" id="ra-ok" style="margin-top:16px">${tt('Enregistrer', 'Save')}</button>`);
+  $$('#ra-l [data-ra]').forEach(b => b.onclick = () => { const k = b.dataset.ra; on.has(k) ? on.delete(k) : on.add(k); b.classList.toggle('on', on.has(k)); vibrer(); });
+  $('#ra-ok').onclick = async () => { if (await essai(API.deals_ramassage([...on]), tt('Ramassage enregistré', 'Pickup saved'))) { MEMO.clear(); if (apres) apres(); else fermerFeuille(); } };
+}
+// 30 oct 2026 (Mathieu : « la personne qui a le profil doit pouvoir personnaliser ses deals un peu » ; « dans les
+// reglages, simple, tres simple, pas lourd visuellement ») : 4 lignes, vide = tout
+async function feuilleMesDeals(){
+  const p = await API.deals_profil_lire().catch(() => null); if (!p || !p.ok) return;
+  const co = new Set(p.collectionne || []);
+  const enDev = (v) => v == null || v === '' ? '' : Math.round(convertir(v));
+  const C = [['recrues', tt('Recrues', 'Rookies')], ['veterans', tt('Vétérans', 'Veterans')], ['legendes', tt('Légendes', 'Legends')], ['hits', 'Hits'], ['gradees', tt('Gradées', 'Graded')]];
+  ouvrirFeuille(`<h3>${tt('Mes deals', 'My deals')}</h3>
+    <div class="sous" style="margin-bottom:6px">${tt('Laisse vide pour tout voir.', 'Leave empty to see everything.')}</div>
+    <div class="fd-s"><div class="r-titre">${tt('Je collectionne', 'I collect')}</div>
+      <div class="chips fd-w" id="md-c">${C.map(([k, t]) => `<button class="chip ${co.has(k) ? 'on' : ''}" data-c="${k}">${t}</button>`).join('')}</div></div>
+    <label class="md-l">${tt('Mes favoris', 'My favorites')}<input class="champ" id="md-f" value="${esc((p.favoris || []).join(', '))}" placeholder="${esc(tt('Canadiens, Bedard, Crosby', 'Canadiens, Bedard, Crosby'))}"></label>
+    <div class="md-l">${tt('Budget par carte', 'Budget per card')} (${symDevise()})<div class="md-b"><input class="champ" id="md-min" type="number" inputmode="decimal" value="${enDev(p.prix_min)}" placeholder="min"><span>–</span><input class="champ" id="md-max" type="number" inputmode="decimal" value="${enDev(p.prix_max)}" placeholder="max"></div></div>
+    <label class="md-l">${tt(`Mes vendeurs eBay (${p.vendeurs_max} max)`, `My eBay sellers (${p.vendeurs_max} max)`)}${p.pro ? '' : ' <span class="badge-f pro">✦ PRO</span>'}<input class="champ" id="md-v" value="${esc((p.vendeurs || []).join(', '))}" placeholder="${esc(tt('pseudo eBay exact', 'exact eBay username'))}" ${p.pro ? '' : 'disabled'} autocapitalize="off" autocorrect="off"></label>
+    <button class="btn" id="md-ok" style="margin-top:14px">${tt('Enregistrer', 'Save')}</button>`);
+  $$('#md-c [data-c]').forEach(b => b.onclick = () => { const k = b.dataset.c; co.has(k) ? co.delete(k) : co.add(k); b.classList.toggle('on', co.has(k)); vibrer(); });
+  $('#md-ok').onclick = async () => {
+    const cad = (id) => { const v = nb(val(id)); return v ? Math.round(versCAD(v) * 100) / 100 : null; };
+    const d = {collectionne: [...co], favoris: val('md-f'), prix_min: cad('md-min'), prix_max: cad('md-max')};
+    if (p.pro) d.vendeurs = val('md-v');
+    const r = await essai(API.deals_profil_regler(d), tt('Tes deals sont à ton goût', 'Your deals, your way'));
+    if (r && r.ok) { MEMO.clear(); fermerFeuille(); }
+  };
 }
 function finDans(fin){
   const ms = Date.parse(fin || '') - Date.now(); if (!isFinite(ms)) return '';
@@ -4380,9 +4430,9 @@ function tuileDeal(x){
   return `<div class="tuile-deal slab-deal ${x.pres ? 'pres' : ''} ${x.suivi && !(x.valeur && x.rabais > 0) ? 'suivi' : ''}" data-id="${esc(x.item_id)}" ${attrsAnnonce(x)} role="button" tabindex="0">
     <div class="sd-slab"><div class="sd-lab"><b class="sd-rab">${x.suivi && !(x.valeur && x.rabais > 0) ? tt('Encan', 'Auction') : '−' + x.rabais + ' %'}</b>${encan ? `<span class="sd-fin">⏱ ${finDans(x.fin)}</span>` : `<span class="sd-fin">${tt('Achat imm.', 'Buy now')}</span>`}</div>
       <div class="sd-ph">${SVG_CARTE}${x.photo ? `<img src="${esc(photoNet(x.photo))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}${boutonWatch(x)}</div></div>
-    <div class="sd-bas"><div class="sd-t">${esc(titreCourt(x.titre))}</div>
+    <div class="sd-bas"><div class="sd-t">${x.favori ? '<span class="sd-fav">★</span> ' : ''}${esc(titreCourt(x.titre))}</div>
       <div class="sd-px"><b>${argent(x.total, 0)}</b>${x.gain > 0 ? `<span class="g">+${argentCourt(x.gain)}</span>` : ''}</div>
-      <small>${x.valeur ? `${tt('vaut', 'worth')} ${argentCourt(x.valeur)}` : tt('Valeur à vérifier', 'Value to check')}</small></div></div>`;
+      <small>${x.valeur ? `${tt('vaut', 'worth')} ${argentCourt(x.valeur)}` : tt('Valeur à vérifier', 'Value to check')}${x.ramassage ? ` · <span class="sd-ram">📍 ${tt('ramassage', 'pickup')}</span>` : ''}</small></div></div>`;
 }
 // 26 oct 2026 (Mathieu : « encore pas un deal ... une option : l'annonce disparaît et ça nous laisse savoir quoi
 // modifier ») : un tap, une raison (facultative) ; l'annonce part, l'admin reçoit tout le calcul, l'agent l'analyse.
@@ -5906,7 +5956,7 @@ const IC_PIL = {
   ebay:'<path d="M3 4h2l2.5 12h11L21 8H7"/><circle cx="10" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/>',
   palette:'<path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-1 2-2 0-1.5-1-2-1-3s1-2 3-2h2a3 3 0 0 0 3-3c0-4.5-4-8-9-8z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/>',
   sport:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
-  boutique:'<path d="M4 9l1.5-5h13L20 9"/><path d="M4 9h16v11H4z"/><path d="M9 20v-6h6v6"/>', photo:'<path d="M14.5 4h-5L7 7H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1h-3z"/><circle cx="12" cy="13" r="3.5"/>', frais:'<path d="M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+  boutique:'<path d="M4 9l1.5-5h13L20 9"/><path d="M4 9h16v11H4z"/><path d="M9 20v-6h6v6"/>', photo:'<path d="M14.5 4h-5L7 7H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1h-3z"/><circle cx="12" cy="13" r="3.5"/>', deals:'<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>', frais:'<path d="M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
   aide:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1 1-1 1.7M12 17h.01"/>', profil:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/>',
   guide:'<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/>', idee:'<path d="M4 5h16v11H8l-4 4z"/>'};
 const pilAcc = (id, ic, lib, n, cl) => `<button class="acc-pil" id="${id}"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL[ic]}</svg></span>
@@ -8073,6 +8123,7 @@ async function vueReglages(arg){
       <div class="r-ligne fixe"><span class="t"><b>Vendre sur eBay</b><span>Inventaire, prix, annonces, profit</span></span><span class="interrupteur on"><i></i></span></div>
       ${ligneAct('breaks', 'Breaks', 'Prix des places, tirage, envois')}${ligneAct('magasin', 'Magasin / comptoir', 'Ventes en personne, rachats, consignation')}</div>
     <div class="r-bloc" ${S.forfait && S.forfait.communaute ? '' : 'hidden'}><button class="r-ligne" id="g-partage"><span class="t"><b>${tt('Partager mes ventes (anonymes)', 'Share my sales (anonymous)')}</b><span>${tt('Tes prix vendus, sans ton nom ni l’acheteur, aident les prix « vendues » de tout le monde', 'Your sold prices, without your name or the buyer’s, power everyone’s “sold” prices')}</span></span><span class="interrupteur ${(S.reglages || {}).partage_ventes === true ? 'on' : ''}"><i></i></span></button></div>
+    <button class="r-bloc r-idee" id="g-deals"><span class="aaj-n">★</span><span><b>${tt('Mes deals', 'My deals')}</b><small>${tt('Ce que je collectionne, mes favoris, mon budget', 'What I collect, my favorites, my budget')}</small></span></button>
     <button class="r-bloc r-idee" id="g-profil"><span class="aaj-n">◎</span><span><b>${tt('Mon profil', 'My profile')}</b><small>${tt('Niveau, but, budget : pour des conseils à ta mesure', 'Level, goal, budget: tips made for you')}</small></span><span class="fl">›</span></button>
     <a class="r-bloc r-idee" href="#guide"><span class="aaj-n">★</span><span><b>${tt('Guide du hobby', 'Hobby guide')}</b><small>${tt('Produits, sortes de cartes, budget : tout pour bien acheter', 'Products, card types, budget: buy smart')}</small></span><span class="fl">›</span></a>
     <button class="r-bloc r-idee" id="g-idee"><span class="aaj-n">?</span><span><b>${tt('Une idée ? Un problème ?', 'An idea? A problem?')}</b><small>${tt('Écris-nous, on répond ici dans l’app', 'Write to us, we reply here in the app')}</small></span><span class="fl">›</span></button>
@@ -8146,6 +8197,7 @@ async function vueReglages(arg){
     if (await essai(API.reglages_sauver({activites:n}))) { appliquerActivites(n); toast(n[b.dataset.act] ? 'Onglet ajouté' : 'Onglet masqué'); vueReglages(); }
   });
   if ($('#g-idee')) $('#g-idee').onclick = feuilleIdee;
+  if ($('#g-deals')) $('#g-deals').onclick = feuilleMesDeals;
   if ($('#g-profil')) $('#g-profil').onclick = () => questionnaireProfil(() => toast(tt('Profil enregistré', 'Profile saved')), true);
   if ($('#g-partage')) $('#g-partage').onclick = async () => {
     const on = !($('#g-partage .interrupteur').classList.contains('on'));
@@ -8200,7 +8252,7 @@ function pastillerReglages(){
   const res = document.createElement('div'); res.className = 'acc-reserve'; res.id = 'g-reserve';
   const pils = document.createElement('div'); pils.className = 'acc-pils'; pils.id = 'g-pils';
   const titreDe = (b) => b.id === 'g-ebay' ? tt('Compte eBay', 'eBay account') : ((b.querySelector('.r-titre') || b.querySelector('b') || {}).textContent || '').trim();
-  const icone = (t) => /photo/i.test(t) ? 'photo' : /ebay/i.test(t) ? 'ebay' : /palette/i.test(t) ? 'palette' : /sport/i.test(t) ? 'sport' : /boutique|shop/i.test(t) ? 'boutique'
+  const icone = (t) => /photo/i.test(t) ? 'photo' : /^(mes deals|my deals)$/i.test(t) ? 'deals' : /ebay/i.test(t) ? 'ebay' : /palette/i.test(t) ? 'palette' : /sport/i.test(t) ? 'sport' : /boutique|shop/i.test(t) ? 'boutique'
     : /frais|fees/i.test(t) ? 'frais' : /avanc|advanced/i.test(t) ? 'admin' : /aide|help/i.test(t) ? 'aide' : /profil/i.test(t) ? 'profil' : /guide/i.test(t) ? 'guide'
     : /idée|idea/i.test(t) ? 'idee' : /partag|share/i.test(t) ? 'news' : 'faire';
   const formulaire = (b) => !!b.querySelector('#g-nom, #g-ep, #g-desc');
@@ -8212,7 +8264,7 @@ function pastillerReglages(){
   const gf = $('#g-forfait'); if (gf) res.appendChild(gf);
   $$('.profil-tete [data-pro-ouvrir]').forEach(b => b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); vibrer();
     const g = $('#g-forfait'); if (g && !g.hidden && g.innerHTML.trim()) { g.hidden = false; feuilleBloc(g); } else feuillePro(); });
-  const ordre = (t) => ['ebay', 'profil', 'faire', 'photo', 'boutique', 'frais', 'palette', 'sport', 'guide', 'idee', 'news', 'admin', 'aide'].indexOf(icone(t));
+  const ordre = (t) => ['ebay', 'profil', 'deals', 'faire', 'photo', 'boutique', 'frais', 'palette', 'sport', 'guide', 'idee', 'news', 'admin', 'aide'].indexOf(icone(t));
   blocs.map(b => ({b, t: titreDe(b)})).filter(x => x.t).sort((x, y) => ordre(x.t) - ordre(y.t)).forEach(({b, t}, i) => {
     res.appendChild(b);
     const id = 'gp-' + i;

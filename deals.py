@@ -808,7 +808,8 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
                            "n": n_a, "valeur_source": source_a, "vendues": ventes_a or ventes_requete or [],
                            # 27 oct 2026 : encan - la mise maximale pour que ca reste un deal (70 % de la valeur, port compris)
                            "port": a.get("port_cad"), "mise_max": round(med_a * RATIO_DEAL - (a.get("port_cad") or 0), 2) if a.get("encan") else None,
-                           "comps": comps or [], "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION}
+                           "comps": comps or [], "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION,
+                           "vendeur": a.get("vendeur")}
 
 
 SUIVIS_MAX = 400                 # 29 oct 2026 : encans de veterans / legendes des vendeurs suivis gardes pour l'ecran
@@ -1003,8 +1004,9 @@ def _sauver(d, deals, maint, st, **champs):
             vieux = {str(x.get("item_id")): x for x in d2.get("suivis") or [] if encore_ouvert(x, maint)
                      and str(x.get("vu_le") or "") >= (maint - timedelta(hours=FRAICHEUR_EBAY_H)).isoformat()}
             vieux.update(nouveaux_suivis)
+            # 30 oct 2026 : la limite garde d'abord Savage, Remi, CF31 et Slab Sharks (Slab Sharks a enormement d'encans)
             d2["suivis"] = sorted((x for k, x in vieux.items() if k not in ids and str(k) not in retires),
-                                  key=lambda x: str(x.get("fin")))[:SUIVIS_MAX]
+                                  key=lambda x: (rang_vendeur(x.get("vendeur")), str(x.get("fin"))))[:SUIVIS_MAX]
         _diag(d2, **st)
         _ecrire(d2)
     return garde_
@@ -1155,8 +1157,28 @@ def flux_hits(curseur):
 # 29 oct 2026 (Mathieu : « on doit passer toutes les cartes de ces vendeurs et des autres gros vendeurs de cartes de hockey,
 # ensuite on analyse le reste ») : pseudos verifies sur eBay le 29 oct. CF31 = « cf31_sports_cards » (pas « cf_31 »).
 # Groupe 1 : les specialistes du hockey ; groupe 2 : les mega-vendeurs multi-sports (leurs cartes de hockey seulement).
-VENDEURS_DEFAUT = ["savage.cards", "remi-card-trader", "cf31_sports_cards", "wests01", "ultsportscards",     # hockey
-                   "rakesecret", "sforget76", "slabsharksinc", "dcsports87", "probstein123"]                 # + mega-vendeurs
+VENDEURS_DEFAUT = ["savage.cards", "remi-card-trader", "cf31_sports_cards", "slabsharksinc", "wests01",     # hockey
+                   "ultsportscards", "rakesecret", "sforget76", "dcsports87", "probstein123"]                 # + mega-vendeurs
+# 30 oct 2026 (Mathieu : « toujours passer le scan avec Savage en premier, ensuite Remi, ensuite CF31, Slab Sharks et le
+# reste ») : ces 4 vendeurs sont cherches SEULS (chacun ses pages d'encans, jamais noyes dans un groupe), dans cet ordre,
+# avant tous les autres ; leurs deals et leurs encans passent aussi devant a l'ecran, dans le meme ordre.
+VENDEURS_PRIORITE = ["savage.cards", "remi-card-trader", "cf31_sports_cards", "slabsharksinc"]
+
+
+def rang_vendeur(v):
+    """0 Savage, 1 Remi, 2 CF31, 3 Slab Sharks, 4 les autres vendeurs suivis, 5 le reste."""
+    v = str(v or "").lower()
+    if v in VENDEURS_PRIORITE:
+        return VENDEURS_PRIORITE.index(v)
+    return 4 if v and v in {x.lower() for x in vendeurs_suivis()} else 5
+
+
+def groupes_vendeurs(vs=None):
+    """Les recherches de vendeurs, dans l'ordre : chaque prioritaire seul, puis les autres par groupes de 5."""
+    vs = list(vs if vs is not None else vendeurs_suivis())
+    prio = [v for p in VENDEURS_PRIORITE for v in vs if v.lower() == p]
+    autres = [v for v in vs if v.lower() not in VENDEURS_PRIORITE]
+    return [[v] for v in prio] + [autres[k:k + VENDEURS_PAR_APPEL] for k in range(0, len(autres), VENDEURS_PAR_APPEL)]
 VENDEURS_PAR_APPEL = 5                   # 5 vendeurs par recherche : chaque groupe a ses 10 pages d'encans (2 000)
 VENDEURS_V = 2
 
@@ -1214,6 +1236,49 @@ def tester_vendeurs(rechercher=None, maint=None):
             "deals_vendeurs": sum(1 for y in d.get("deals") or [] if y.get("flux") == "vendeurs")}
 
 
+VENDEURS_PERSO_MAX = 3            # 30 oct 2026 : « mes vendeurs a moi » (Pro), par compte
+VENDEURS_PERSO_TOTAL = 30         # tous comptes confondus : le budget eBay du chasseur
+
+
+def regler_vendeurs_perso(compte, liste):
+    """Les vendeurs ajoutes par un compte : chasses avec les vendeurs suivis (apres eux). -> la liste gardee."""
+    l = []
+    for x in liste or []:
+        x = re.sub(r"[^A-Za-z0-9._-]", "", str(x).strip().lstrip("@"))[:64].lower()
+        if x and x not in l:
+            l.append(x)
+    l = l[:VENDEURS_PERSO_MAX]
+    with _verrou:
+        d = lire()
+        p = d.get("vendeurs_perso") if isinstance(d.get("vendeurs_perso"), dict) else {}
+        if l:
+            p[str(compte)] = l
+        else:
+            p.pop(str(compte), None)
+        d["vendeurs_perso"] = p
+        _ecrire(d)
+    return l
+
+
+def vendeurs_perso():
+    """Les vendeurs ajoutes par les comptes (sans les suivis), les plus demandes d'abord, 30 au plus."""
+    p = lire_vite().get("vendeurs_perso") or {}
+    suivis = {v.lower() for v in vendeurs_suivis()}
+    compte = {}
+    for l in p.values():
+        for v in l or []:
+            if v.lower() not in suivis:
+                compte[v.lower()] = compte.get(v.lower(), 0) + 1
+    return [v for v, _n in sorted(compte.items(), key=lambda kv: -kv[1])][:VENDEURS_PERSO_TOTAL]
+
+
+def groupes_chasse():
+    """Toutes les recherches de vendeurs d'un tour : les suivis (prioritaires seuls d'abord), puis les vendeurs ajoutes
+    par les comptes, en leurs propres groupes de 5."""
+    pv = vendeurs_perso()
+    return groupes_vendeurs(vendeurs_suivis()) + [pv[k:k + VENDEURS_PAR_APPEL] for k in range(0, len(pv), VENDEURS_PAR_APPEL)]
+
+
 def regler_vendeurs(liste):
     l = []
     for x in liste or []:
@@ -1253,9 +1318,9 @@ def flux(rechercher=None, bassin=None):
     # 29 oct : les vendeurs suivis d'abord (leurs encans et leurs nouvelles annonces), par groupes de 10 vendeurs par appel
     vs = vendeurs_suivis()
     limite_suivi = (maint + timedelta(hours=ENCAN_SUIVI_H)).isoformat().replace("+00:00", "Z")
-    for k in range(0, len(vs), VENDEURS_PAR_APPEL):
-        grp = vs[k:k + VENDEURS_PAR_APPEL]
-        _progres(detail=f"vendeurs:{min(k + VENDEURS_PAR_APPEL, len(vs))}/{len(vs)}")
+    grps = groupes_chasse()
+    for i_g, grp in enumerate(grps):
+        _progres(detail=f"vendeurs:{i_g + 1}/{len(grps)}")
         rv = {"q": None, "flux": "vendeurs", "sport": None, "joueur": None, "suivi": True}
         for ench, page in [(False, 0)] + [(True, j) for j in range(max(pages, PAGES_SUIVIS))]:
             try:

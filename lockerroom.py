@@ -61,7 +61,11 @@ CATEGORIE_CARTES = "261328"   # eBay : Sports Trading Card Singles
 REGLAGES_DEFAUT = {
     "prix_auto": {},                                            # 27 oct 2026 : mode Auto des prix eBay (voir prix_auto_regler)
     "watch": {},                                                # 29 oct 2026 : alarmes de la watchlist (voir watchlist.regler)
-    "photo_studio": True,                                       # 29 oct 2026 : photo studio (fond clair) ou les photos telles quelles
+    "photo_studio": True,
+    "ramassage": [],
+    # 30 oct 2026 (Mathieu : « la personne qui a le profil doit pouvoir personnaliser ses deals un peu ») :
+    # collectionne : recrues | veterans | legendes | hits | gradees (vide = tout) ; favoris : joueurs ou equipes
+    "deals_profil": {},                                            # 30 oct 2026 : vendeurs ou l'acheteur ramasse sur place (pas de port)                                       # 29 oct 2026 : photo studio (fond clair) ou les photos telles quelles
     "alarmes": {},                                              # 29 oct 2026 : les alertes cochees (voir alarmes.py)
     "nom_boutique": "Ma boutique",
     "equipe_fav": "",                                           # 26 oct 2026 : les accents de l'app aux couleurs de cette equipe
@@ -773,6 +777,100 @@ class Api:
                 liste = re.split(r"[\s,;]+", liste)
             return {"ok": True, "vendeurs": _d.regler_vendeurs(liste)}
         return {"ok": True, "vendeurs": _d.vendeurs_suivis()}
+
+    def deals_vendeurs_liste(self):
+        """30 oct 2026 - pour tous : les gros vendeurs suivis (prioritaires d'abord) et ceux ou l'utilisateur ramasse."""
+        import deals as _d
+        vs = sorted(_d.vendeurs_suivis(), key=lambda v: _d.rang_vendeur(v))
+        return {"ok": True, "vendeurs": vs, "ramassage": sorted(self._chez_ramassage())}
+
+    def deals_ramassage(self, liste):
+        """Les vendeurs ou l'utilisateur ramasse sur place : le port ne compte pas dans ses deals."""
+        l = [re.sub(r"[^A-Za-z0-9._-]", "", str(v))[:64].lower() for v in (liste or [])][:40]
+        self.reglages_sauver({"ramassage": [v for v in l if v]})
+        return self.deals_vendeurs_liste()
+
+    PROFIL_COLL = ("recrues", "veterans", "legendes", "hits", "gradees")
+
+    def deals_profil_lire(self):
+        import deals as _d
+        import comptes
+        import forfaits
+        p = self.reglages_lire().get("deals_profil")
+        p = p if isinstance(p, dict) else {}
+        perso = ((_d.lire_vite().get("vendeurs_perso") or {}).get(str(comptes.courant() if comptes.MULTI else "local")) or [])
+        return {"ok": True, "collectionne": [x for x in p.get("collectionne") or [] if x in self.PROFIL_COLL],
+                "favoris": p.get("favoris") or [], "prix_min": p.get("prix_min"), "prix_max": p.get("prix_max"),
+                "vendeurs": perso, "pro": forfaits.est_pro(), "vendeurs_max": _d.VENDEURS_PERSO_MAX}
+
+    def deals_profil_regler(self, d):
+        import deals as _d
+        import comptes
+        import forfaits
+        d = d or {}
+        fav = d.get("favoris")
+        if isinstance(fav, str):
+            fav = re.split(r"[,;\n]+", fav)
+        fav = [re.sub(r"\s+", " ", str(x)).strip()[:40] for x in (fav or []) if str(x).strip()][:20]
+        p = {"collectionne": [x for x in d.get("collectionne") or [] if x in self.PROFIL_COLL], "favoris": fav,
+             "prix_min": _float(d.get("prix_min")) or None, "prix_max": _float(d.get("prix_max")) or None}
+        if p["prix_min"] and p["prix_max"] and p["prix_min"] > p["prix_max"]:
+            p["prix_min"], p["prix_max"] = p["prix_max"], p["prix_min"]
+        self.reglages_sauver({"deals_profil": p})
+        if "vendeurs" in d:
+            v = d.get("vendeurs")
+            if isinstance(v, str):
+                v = re.split(r"[\s,;]+", v)
+            if v and not forfaits.est_pro():
+                return {**self.deals_profil_lire(), "ok": False, "erreur": "Tes vendeurs à toi font partie de Pro", "pro_requis": True}
+            _d.regler_vendeurs_perso(comptes.courant() if comptes.MULTI else "local", v or [])
+        return self.deals_profil_lire()
+
+    def _profil_deals(self):
+        """Le profil de deals du compte, pret a appliquer (None = rien de regle)."""
+        p = self.reglages_lire().get("deals_profil")
+        if not isinstance(p, dict) or not any(p.get(k) for k in ("collectionne", "favoris", "prix_min", "prix_max")):
+            return None
+        return p
+
+    @staticmethod
+    def _norm_fav(t):
+        t = unicodedata.normalize("NFKD", str(t or "").lower())
+        return " " + re.sub(r"[^a-z0-9]+", " ", "".join(c for c in t if not unicodedata.combining(c))).strip() + " "
+
+    def _appliquer_profil(self, lst, p):
+        """Ce que je collectionne (filtre), mon budget par carte (filtre), mes favoris (devant, avec une etoile)."""
+        if not p:
+            return lst
+        import cartes_match
+        import deals as _d
+        coll = set(p.get("collectionne") or [])
+        epoques, sortes = coll & {"recrues", "veterans", "legendes"}, coll & {"hits", "gradees"}
+        pmin, pmax = p.get("prix_min"), p.get("prix_max")
+        favs = [self._norm_fav(f) for f in p.get("favoris") or [] if len(str(f).strip()) >= 3]
+        out = []
+        for x in lst:
+            t = x.get("titre") or ""
+            if pmin and (x.get("total") or 0) < pmin or pmax and (x.get("total") or 0) > pmax:
+                continue
+            if coll:
+                c = cartes_match._decoder_memo(t)
+                an = c.get("annee")
+                ep = "recrues" if _d.est_recrue(t) else ("legendes" if an and int(an) < 1995 else "veterans")
+                if epoques and ep not in epoques:
+                    continue
+                if sortes:
+                    hit = bool(c.get("auto") or c.get("patch") or (c.get("serie") is not None and int(c.get("serie")) <= 99))
+                    if not (("hits" in sortes and hit) or ("gradees" in sortes and c.get("grade"))):
+                        continue
+            if favs:
+                n = self._norm_fav(t + " " + str(x.get("joueur") or ""))
+                if any(f in n for f in favs):
+                    x = dict(x, favori=True)
+            out.append(x)
+        if favs:
+            out = [x for x in out if x.get("favori")] + [x for x in out if not x.get("favori")]
+        return out
 
     def deals_recharger(self):
         """28 oct 2026 - admin : un tour du chasseur de deals tout de suite."""
@@ -3648,6 +3746,25 @@ class Api:
                 "maintenant": datetime.now().isoformat(timespec="seconds")}
 
     # -- deals (24 oct 2026) : les tiens (rachats de ce que tu as vendu) + ceux du chasseur partage (deals.py) --
+    @staticmethod
+    def _ramasser(x, chez):
+        """30 oct 2026 (Mathieu : « Remi, Savage et CF31, je peux aller pick up sur place ») : chez un vendeur ou
+        l'utilisateur ramasse, le port ne compte pas : prix, rabais et mise max sans livraison."""
+        if not chez or str(x.get("vendeur") or "").lower() not in chez:
+            return x
+        port = float(x.get("port") or 0)
+        y = dict(x, ramassage=True, port=0.0)
+        if port:
+            y["total"] = round(max(0.0, (x.get("total") or 0) - port), 2)
+            if y.get("valeur"):
+                y["ratio"] = round(y["total"] / y["valeur"], 3)
+            if y.get("mise_max") is not None:
+                y["mise_max"] = round(y["mise_max"] + port, 2)
+        return y
+
+    def _chez_ramassage(self):
+        return {str(v).strip().lower() for v in (self.reglages_lire().get("ramassage") or []) if str(v).strip()}
+
     def _deals_fusion(self):
         import deals
         try:
@@ -3682,9 +3799,11 @@ class Api:
                 continue
             out.setdefault(g["item_id"], {**g, "source": "marche"})
         lst = []
+        chez = self._chez_ramassage()
         for x in out.values():
             if x["item_id"] in masques:
                 continue
+            x = self._ramasser(x, chez)
             # 26 oct 2026 : « −96 % » sur une carte a prix fixe = presque toujours une autre carte (pas la meme parallele,
             # pas le patch) : trop beau pour etre vrai, on ne le montre pas
             if not x.get("encan") and (x.get("ratio") or 1) < 0.15:
@@ -3776,13 +3895,16 @@ class Api:
             lst = _dl.melanger(lst)                # 28 oct 2026 : pas un mur de Young Guns
         if tri == "rabais":
             # 29 oct 2026 (Mathieu : « as-tu priorise les vendeurs qu'on a mentionnes, et apres le reste ? ») : leurs deals d'abord
-            lst = [x for x in lst if x.get("flux") == "vendeurs"] + [x for x in lst if x.get("flux") != "vendeurs"]
+            # 30 oct 2026 : Savage, Remi, CF31, Slab Sharks, puis les autres vendeurs suivis, puis le reste
+            lst = sorted(lst, key=lambda x: _dl.rang_vendeur(x.get("vendeur")) if x.get("flux") == "vendeurs" else 6)
         for x in lst:
             x["recrue"] = _dl.est_recrue(x.get("titre"))
         if tri == "rabais" and not f.get("sortes"):
             # 29 oct 2026 (Mathieu : « encore que des caliss de rookies dans tes deals ») : veterans, legendes et jeunes de
             # 2e a 4e annee d'abord (hits compris) ; les recrues de l'annee ensuite (le chip « Recrues » les montre seules)
             lst = [x for x in lst if not x["recrue"]] + [x for x in lst if x["recrue"]]
+        prof = self._profil_deals()                      # 30 oct 2026 : mon profil de deals (Reglages)
+        lst = self._appliquer_profil(lst, prof)
         n = len(lst)
         pro = forfaits.est_pro()
         if not pro:
@@ -3814,24 +3936,25 @@ class Api:
             y = dict(x, source="marche", gain=round((x.get("valeur") or 0) * (1 - fp_) - ff_ - (x.get("total") or 0), 2),
                      rabais=round(100 * (1 - (x.get("ratio") or 1))))
             pres.append(y)
-        pres = [x for x in self._deals_filtrer(pres, f) if not f.get("sports") or (x.get("sport") or "hockey") in f["sports"]][:24 if pro else 6]
+        pres = self._appliquer_profil([x for x in self._deals_filtrer(pres, f) if not f.get("sports") or (x.get("sport") or "hockey") in f["sports"]], prof)[:24 if pro else 6]
         # 29 oct 2026 (Mathieu : « je ne vois toujours pas les cartes non rookie ») : les encans de veterans et de legendes
         # des vendeurs suivis (Savage, Remi, Slab Sharks...), meme sans valeur verifiee ; jamais montres comme un deal
         ids_d = {str(x.get("item_id")) for x in lst}
         lim_s = (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat()
-        suivis = []
+        suivis, chez_s = [], self._chez_ramassage()
         for x in dd.get("suivis") or []:
             if str(x.get("item_id")) in ids_d or str(x.get("item_id")) in ret_p or str(x.get("item_id")) in _d._bannis() \
                     or not _d.encore_ouvert(x) or str(x.get("vu_le") or "") < lim_s:
                 continue
-            y = dict(x, source="marche", recrue=False)
+            y = self._ramasser(dict(x, source="marche", recrue=False), chez_s)
             if y.get("valeur"):
                 y["gain"] = round(y["valeur"] * (1 - fp_) - ff_ - (y.get("total") or 0), 2)
                 y["rabais"] = round(100 * (1 - (y.get("total") or 0) / y["valeur"]))
             suivis.append(y)
         f_s = {k: v for k, v in f.items() if k in ("joueurs", "sortes", "prix_min", "prix_max")}
         suivis = [x for x in self._deals_filtrer(suivis, f_s) if not f.get("sports") or (x.get("sport") or "hockey") in f["sports"]]
-        suivis.sort(key=lambda x: (0 if (x.get("sport") or "hockey") == "hockey" else 1, str(x.get("fin"))))   # 29 oct : le hockey d'abord
+        suivis.sort(key=lambda x: (0 if (x.get("sport") or "hockey") == "hockey" else 1, _dl.rang_vendeur(x.get("vendeur")), str(x.get("fin"))))
+        suivis = self._appliquer_profil(suivis, prof)
         suivis = suivis[:120 if pro else 6]
         return {"ok": True, "deals": lst[:240], "n": n, "pro": pro, "limite": None if pro else forfaits.LIMITES["deals"],
                 "suivis": suivis,
