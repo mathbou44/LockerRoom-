@@ -425,6 +425,9 @@ details.reglage summary::-webkit-details-marker{display:none}
 .mi-go.off{opacity:.45; pointer-events:none} .mi-go{display:flex; align-items:center; justify-content:center; text-decoration:none; margin:6px 0 8px} .mi-nav{display:flex; justify-content:space-between; gap:8px; margin-top:12px}
 .px-liste{display:flex; flex-direction:column; gap:4px} .px-l{display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; background:var(--carte2); color:inherit; text-decoration:none; font-size:13px}
 .px-d{flex:none; width:54px; color:var(--doux)} .px-t{flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--doux)} .px-l b{flex:none; font:700 15px var(--f-cond)}
+.retour-geste{position:fixed; left:0; top:0; z-index:200; width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .15s;
+  background:conic-gradient(from 210deg, var(--h1,#9FE6D2), var(--h2,#B9BEFF), var(--h3,#F2B3D6), var(--h4,#F1D58E), var(--h1,#9FE6D2))}
+.retour-geste::before{content:''; position:absolute; inset:2px; border-radius:50%; background:var(--carte)} .retour-geste svg{position:relative; width:20px; height:20px; fill:none; stroke:var(--texte); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round}
 .w-pils{margin-top:14px} .w-rang .ap-t{display:flex; flex-direction:column; gap:2px} .w-rang .ap-t b{font-size:15.5px; font-weight:600} .w-rang .ap-t small{font-size:12.5px; color:var(--doux); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .ic-h{width:1.05em; height:1.05em; flex-shrink:0; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; vertical-align:-.15em; margin-right:4px}
 .w-reg-i svg{width:18px; height:18px; fill:none; stroke:var(--texte); stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round}
@@ -2558,6 +2561,21 @@ if (NATIF) {
     let u; try { u = new URL(a.getAttribute('href'), location.href); } catch (x) { return; }
     if (u.origin !== location.origin && /^https?:$/.test(u.protocol)) { e.preventDefault(); ouvrirExterne(u.href); }
   });
+  // 31 oct 2026 (Mathieu : « je ne peux pas revenir en arriere ? ») : comme partout sur iPhone, glisser le doigt depuis le
+  // bord gauche revient en arriere (ferme la fenetre ouverte d'abord) ; une petite fleche ronde suit le doigt
+  (() => {
+    let x0 = null, y0 = 0, dx = 0, fl = null;
+    const fleche = () => { if (!fl) { fl = document.createElement('div'); fl.className = 'retour-geste'; fl.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>'; document.body.appendChild(fl); } return fl; };
+    document.addEventListener('touchstart', (e) => { const t = e.touches[0]; x0 = t.clientX < 24 && e.touches.length === 1 ? t.clientX : null; y0 = t.clientY; dx = 0; }, {passive:true});
+    document.addEventListener('touchmove', (e) => { if (x0 === null) return; const t = e.touches[0]; dx = t.clientX - x0;
+      if (Math.abs(t.clientY - y0) > 50 && dx < 30) { x0 = null; fleche().style.opacity = 0; return; }
+      const f = fleche(), k = Math.min(1, Math.max(0, dx) / 90); f.style.opacity = k; f.style.transform = `translate(${Math.min(dx, 90) - 44}px, ${y0 - 22}px) scale(${0.7 + 0.3 * k})`; }, {passive:true});
+    document.addEventListener('touchend', () => { if (x0 === null) return; x0 = null; if (fl) fl.style.opacity = 0;
+      if (dx < 90) return;
+      vibrer();
+      if (!$('#fond-feuille').hidden) { fermerFeuille(); return; }
+      if (history.length > 1) history.back(); else location.hash = '#accueil'; }, {passive:true});
+  })();
   const ouvrirFen = window.open;
   window.open = (url, ...r) => { if (url) { ouvrirExterne(new URL(url, location.href).href); return null; } return ouvrirFen ? ouvrirFen.call(window, url, ...r) : null; };
   if (PLUG().Share) navigator.share = (d) => PLUG().Share.share({title:d.title, text:d.text, url:d.url, dialogTitle:d.title});
@@ -5135,13 +5153,15 @@ async function feuilleGixen(montants){
     b.disabled = true; b.textContent = tt('Envoi…', 'Sending…');
     const res = await API.gixen_envoyer(x.item_id, x.mise_max).catch(e => ({ok:false, erreur:e.message}));
     if (res && res.ok) { b.textContent = '✓ ' + tt('Chez Gixen', 'At Gixen') + ' · ' + m(x); b.classList.add('gx-ok'); return true; }
+    if (res && res.api_coupee) { toast(res.erreur, 7000); feuilleGixen(montants); return false; }     // 31 oct : API fermee chez Gixen -> copier-coller
     b.disabled = false; b.textContent = tt('Réessayer', 'Try again') + ' · ' + m(x); toast((res && res.erreur) || 'Gixen', 6000); return false;
   };
   $$('[data-gx]').forEach(b => b.onclick = () => { vibrer(); const x = L.find(y => y.item_id === b.dataset.gx); if (x) envoyer(x, b); });
   const tout = $('#gx-env-tout'); if (tout) { let pret = false; tout.onclick = async () => {
     if (!pret) { pret = true; vibrer(); tout.textContent = tt(`Confirmer : ${bons.length} mises chez Gixen`, `Confirm: ${bons.length} bids to Gixen`); tout.classList.add('gx-conf'); return; }
     tout.disabled = true; let ok = 0;
-    for (const x of bons) { const b = $(`[data-gx="${CSS.escape(x.item_id)}"]`); if (b && !b.classList.contains('gx-ok') && await envoyer(x, b)) ok++; }
+    for (const x of bons) { const b = $(`[data-gx="${CSS.escape(x.item_id)}"]`); if (!b) break; if (!b.classList.contains('gx-ok') && await envoyer(x, b)) ok++; }
+    if (!$('#gx-env-tout')) return;
     tout.textContent = tt(`${ok} / ${bons.length} chez Gixen`, `${ok} / ${bons.length} at Gixen`); vibrer(); }; }
 }
 function feuilleMiseMax(x, W){

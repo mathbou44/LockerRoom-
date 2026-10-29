@@ -761,7 +761,18 @@ def cible_titre(titre, joueur=None):
     # perdait -> « valeur a verifier ». Maintenant : sans set connu, les 2 premiers mots qui disent QUELLE carte c'est
     # entrent dans la recherche (pas dans les mots obligatoires : le tri garde sa tolerance d'un tiers)
     c["q_plus"] = []
-    if c["ident"]:
+    # 31 oct 2026 (Mathieu : « un auto-learn pour les cartes non reconnues ») : d'abord les noms de produits et d'inserts
+    # appris tout seuls (catalogue, calendrier des sorties, annonces du chasseur : voir produits_appris.py)
+    try:
+        import produits_appris
+        deja = set(c["mots"]) | set(j.split())
+        for ph in produits_appris.dans(norm(titre), exclure=deja):
+            for w in ph.split():
+                if w not in deja and w not in c["q_plus"] and w not in VIDES and len(c["q_plus"]) < 2:
+                    c["q_plus"].append(w)
+    except Exception:
+        pass
+    if not c["q_plus"] and c["ident"]:
         ordre = norm(titre).split()
         set_mots = set(" ".join(sets).split())
         bons = [w for w in c["ident"] if w.isalpha() and len(w) >= 3 and w not in GENERIQUES and w not in c["mots"] and w not in set_mots]

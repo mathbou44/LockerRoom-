@@ -1117,7 +1117,7 @@ def _sauver(d, deals, maint, st, **champs):
                 vieux[str(k)] = _fusion_suivi(vieux.get(str(k)), x)
             # 30 oct 2026 : la limite garde d'abord Savage, Remi, CF31 et Slab Sharks (Slab Sharks a enormement d'encans)
             d2["suivis"] = sorted((x for k, x in vieux.items() if k not in ids and str(k) not in retires),
-                                  key=lambda x: (rang_vendeur(x.get("vendeur")), str(x.get("fin"))))[:SUIVIS_MAX]
+                                  key=lambda x: (rang_vendeur(x.get("vendeur")), str(x.get("fin"))))[:_env_int("LR_SUIVIS_MAX", SUIVIS_MAX)]
         _diag(d2, **st)
         _ecrire(d2)
     return garde_
@@ -1157,7 +1157,7 @@ def _publier(d, deals, maint, st, force=False):
             for k, x in ns.items():
                 vieux[str(k)] = _fusion_suivi(vieux.get(str(k)), x)
             d2["suivis"] = sorted((x for k, x in vieux.items() if k not in ids and k not in retires),
-                                  key=lambda x: (rang_vendeur(x.get("vendeur")), str(x.get("fin"))))[:SUIVIS_MAX]
+                                  key=lambda x: (rang_vendeur(x.get("vendeur")), str(x.get("fin"))))[:_env_int("LR_SUIVIS_MAX", SUIVIS_MAX)]
         _ecrire(d2)
     return True
 
@@ -1471,6 +1471,7 @@ def flux(rechercher=None, bassin=None):
     vs = vendeurs_suivis()
     limite_suivi = (maint + timedelta(hours=ENCAN_SUIVI_H)).isoformat().replace("+00:00", "Z")
     grps = groupes_chasse()
+    titres_vus = []                                   # 31 oct 2026 : pour apprendre les produits et inserts (produits_appris)
     for i_g, grp in enumerate(grps):
         _progres(detail=f"vendeurs:{i_g + 1}/{len(grps)}")
         rv = {"q": None, "flux": "vendeurs", "sport": None, "joueur": None, "suivi": True}
@@ -1488,6 +1489,7 @@ def flux(rechercher=None, bassin=None):
             st["requetes_flux"] = st.get("requetes_flux", 0) + 1
             st["vendeurs_annonces"] = st.get("vendeurs_annonces", 0) + len(l)
             l = [a for a in l if cartes_match.est_carte(a.get("titre") or "")]
+            titres_vus.extend(a.get("titre") or "" for a in l)
             for a in l:
                 st.pop("_res", None)
                 _juger(a, rv, [], [] if ench else l, maint, deals, st, bassin=bassin, verif=verif)
@@ -1528,12 +1530,18 @@ def flux(rechercher=None, bassin=None):
                 break
             st["requetes_flux"] = st.get("requetes_flux", 0) + 1
             l = [a for a in l if cartes_match.est_carte(a.get("titre") or "")]
+            titres_vus.extend(a.get("titre") or "" for a in l)
             for a in l:
                 _juger(a, r, [], [] if ench else l, maint, deals, st, bassin=bassin, verif=verif)
             _publier(d, deals, maint, st)
             if ench and (len(l) < 150 or not l or str(l[-1].get("fin") or "9") > limite_fin):
                 break                                   # derniere page, ou on depasse 48 h
     _verifier_tard(st, deals, maint, bassin, verif, d)
+    try:
+        import produits_appris
+        st["produits_appris"] = produits_appris.apprendre(titres_vus)
+    except Exception as e:
+        print("Produits appris : " + repr(e), flush=True)
     garde_ = _sauver(d, deals, maint, st, curseur_h=curseur_h, tour_n=tour_n + 1)
     return {"ok": True, "deals": len(garde_), "stats": st}
 
@@ -1793,8 +1801,16 @@ VALO_PAS_S = 600
 VALO_PAR_PASSE = 40
 
 
+def _env_int(k, d):
+    """31 oct 2026 (Mathieu : « on fait une exception aujourd'hui et on roule le maximum ») : reglable dans Render."""
+    try:
+        return max(1, int(os.environ.get(k) or d))
+    except ValueError:
+        return d
+
+
 def valoriser_suivis_si_besoin(attendre=False):
-    if _ETAT.get("en_cours") or _ETAT.get("valo") or time.time() - _ETAT.get("valo_le", 0) < VALO_PAS_S:
+    if _ETAT.get("en_cours") or _ETAT.get("valo") or time.time() - _ETAT.get("valo_le", 0) < _env_int("LR_VALO_PAS_S", VALO_PAS_S):
         return False
     _ETAT["valo"], _ETAT["valo_le"] = True, time.time()
 
@@ -1812,12 +1828,13 @@ def valoriser_suivis_si_besoin(attendre=False):
     return True
 
 
-def valoriser_suivis(rechercher=None, n_max=VALO_PAR_PASSE):
+def valoriser_suivis(rechercher=None, n_max=None):
     import cartes_match
     import vendues
     rechercher = rechercher or vendues.rechercher
     d = lire()
     maint = datetime.now(timezone.utc)
+    n_max = n_max or _env_int("LR_VALO_PAR_PASSE", VALO_PAR_PASSE)
     a_faire = [x for x in d.get("suivis") or [] if not x.get("valeur") and _prio(x) and encore_ouvert(x)]
     a_faire.sort(key=lambda x: (rang_vendeur(x.get("vendeur")), str(x.get("fin") or "")))
     jour, heure = _jour_mtl()

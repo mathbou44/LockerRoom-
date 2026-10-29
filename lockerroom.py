@@ -4229,7 +4229,7 @@ class Api:
         suivis = [x for x in self._deals_filtrer(suivis, f_s) if not f.get("sports") or (x.get("sport") or "hockey") in f["sports"]]
         suivis.sort(key=lambda x: (0 if (x.get("sport") or "hockey") == "hockey" else 1, _dl.rang_vendeur(x.get("vendeur")), str(x.get("fin"))))
         suivis = self._appliquer_profil(suivis, prof)
-        suivis = suivis[:300 if pro else 6]
+        suivis = suivis[:_dl._env_int("LR_SUIVIS_ECRAN", 300) if pro else 6]
         # 30 oct 2026 (Mathieu : « l'etiquette du deal : le nom du joueur en haut, son % sous la mediane des dernieres ventes
         # et le prix actuel, comme ces slabs ») : le joueur et la carte, separes, pour l'etiquette
         for x in [*lst[:240], *suivis, *pres]:

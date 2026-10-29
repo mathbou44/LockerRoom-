@@ -18,7 +18,16 @@ URL = "https://www.gixen.com/api.php"
 DECALAGES = (3, 6, 8, 10, 15)               # secondes avant la fin (Gixen)
 
 
+_ETAT = {"coupee_le": 0.0}
+COUPEE_S = 6 * 3600
+
+
 def actif():
+    """Identifiants dans Render ET l'API pas refusee par Gixen depuis 6 h (« ERROR (501): API DISABLED » : l'API n'est pas
+    ouverte sur ce compte Gixen -> l'app repasse au copier-coller, puis reessaie plus tard)."""
+    import time
+    if time.time() - _ETAT["coupee_le"] < COUPEE_S:
+        return False
     return bool(os.environ.get("GIXEN_UTILISATEUR", "").strip() and os.environ.get("GIXEN_MOT_DE_PASSE", ""))
 
 
@@ -39,7 +48,7 @@ def _appel(params, lire=None):
 
 def ajouter(item_id, mise, decalage=6, lire=None):
     """{ok, item_id, mise} ou {ok: False, erreur} (le message de Gixen tel quel)."""
-    if not actif():
+    if not (os.environ.get("GIXEN_UTILISATEUR", "").strip() and os.environ.get("GIXEN_MOT_DE_PASSE", "")):
         return {"ok": False, "erreur": "Ajoute GIXEN_UTILISATEUR et GIXEN_MOT_DE_PASSE dans Render pour envoyer à Gixen"}
     item_id = str(item_id or "").strip()
     if not re.fullmatch(r"\d{9,15}", item_id):
@@ -56,4 +65,10 @@ def ajouter(item_id, mise, decalage=6, lire=None):
         return {"ok": True, "item_id": item_id, "mise": mise, "decalage": d}
     m = re.search(r"ERROR\s*\(([^)]*)\)\s*:?\s*(.*)", rep or "", re.S)
     msg = re.sub(r"<[^>]+>", " ", (m.group(2) if m else rep or "")).strip()[:200] or "réponse inattendue"
+    if (m and m.group(1).strip() == "501") or "API DISABLED" in msg.upper():
+        import time
+        _ETAT["coupee_le"] = time.time()
+        return {"ok": False, "code": "501", "api_coupee": True,
+                "erreur": "Gixen n’a pas ouvert son API sur ton compte (API DISABLED) : retour au copier-coller. "
+                          "Demande à Gixen d’activer l’accès API (Mirror) pour ton compte."}
     return {"ok": False, "erreur": "Gixen : " + msg, "code": m.group(1) if m else None}
