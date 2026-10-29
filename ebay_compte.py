@@ -610,7 +610,7 @@ def jeton_application():
         return j2["app_token"]
 
 
-def rechercher(q, categorie=None, prix_max=None, recentes=False, limite=50, fond=True, encheres=False, flux=False, offset=0, vendeurs=None):
+def rechercher(q, categorie=None, prix_max=None, recentes=False, limite=50, fond=True, encheres=False, flux=False, offset=0, vendeurs=None, frais=False):
     """Annonces actives a prix fixe semblables : [{item_id, titre, prix_cad, url, photo}].
     Cache partage (24 h ; 6 h pour les nouveautes) et compteur d'appels (appels_ebay).
     24 oct 2026 - encheres=True : les encans qui finissent le plus tot (prix = mise actuelle, fin, nb de mises)."""
@@ -619,7 +619,8 @@ def rechercher(q, categorie=None, prix_max=None, recentes=False, limite=50, fond
                                      **({"encheres": True} if encheres else {}), **({"flux": True} if flux else {}), **({"offset": int(offset)} if offset else {}),
                                      **({"vendeurs": "|".join(sorted(vendeurs))} if vendeurs else {}))
     # 26 oct 2026 (Mathieu : « on doit trouver le maximum ») : flux = les nouvelles annonces chaque heure (cache 50 min)
-    deja = appels_ebay.cache_lire(cle, "flux" if flux else "encheres" if encheres else "recentes" if recentes else "marche")
+    # 31 oct 2026 : frais=True (encans qui finissent bientot chez les gros vendeurs, aux 15 min) : jamais le cache
+    deja = None if frais else appels_ebay.cache_lire(cle, "flux" if flux else "encheres" if encheres else "recentes" if recentes else "marche")
     if deja is not None:
         return deja
     appels_ebay.exiger("browse", fond)

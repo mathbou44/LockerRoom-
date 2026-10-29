@@ -51,7 +51,7 @@ class TestCanada(unittest.TestCase):
 
     def test_budget_garde_pour_les_verifications(self):
         """28 oct 2026 : les autres taches de fond ont au plus 35 % ; les verifications de deals gardent le reste (70 %)."""
-        u = {None: 40, "verif": 4}
+        u = {None: 40, "verif": 4, "prio": 0}
         with mock.patch.object(vendues, "utilises_aujourdhui", side_effect=lambda usage=None: u[usage]), \
              mock.patch.object(vendues, "plafond_jour", return_value=100):
             self.assertFalse(vendues._budget_ok(True, None))          # autres : 36 >= 35

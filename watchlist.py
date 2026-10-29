@@ -29,11 +29,15 @@ def _cx(api):
         c.execute("ALTER TABLE watchlist ADD COLUMN mise_perso INTEGER DEFAULT 0")
     except Exception:
         pass
+    try:                                         # 31 oct 2026 : quand la carte a ete envoyee dans la watchlist eBay
+        c.execute("ALTER TABLE watchlist ADD COLUMN ebay_le TEXT")
+    except Exception:
+        pass
     return c
 
 
 # 29 oct 2026 (Mathieu : « laisser l'utilisateur choisir les valeurs, mais laisser celles-ci par defaut pour les alarmes »)
-DEFAUT = {"fin_min": FIN_MIN, "ratio_pct": int(RATIO * 100), "alerte_fin": True, "alerte_seuil": True}
+DEFAUT = {"fin_min": FIN_MIN, "ratio_pct": int(RATIO * 100), "alerte_fin": True, "alerte_seuil": True, "ebay_auto": False}
 CHOIX_FIN = (5, 10, 15, 30, 60)
 
 
@@ -47,7 +51,7 @@ def reglages(api):
         out["ratio_pct"] = max(30, min(100, int(r.get("ratio_pct", out["ratio_pct"]))))
     except (TypeError, ValueError):
         pass
-    for k in ("alerte_fin", "alerte_seuil"):
+    for k in ("alerte_fin", "alerte_seuil", "ebay_auto"):
         if k in r:
             out[k] = bool(r[k])
     return out
@@ -70,7 +74,7 @@ def regler(api, d):
             cfg["ratio_pct"] = max(30, min(100, int(d["ratio_pct"])))
         except (TypeError, ValueError):
             pass
-    for k in ("alerte_fin", "alerte_seuil"):
+    for k in ("alerte_fin", "alerte_seuil", "ebay_auto"):
         if k in d:
             cfg[k] = bool(d[k])
     api.reglages_sauver({"watch": cfg})
@@ -142,17 +146,118 @@ def ajouter(api, x):
         c.commit()
     finally:
         c.close()
-    return {"ok": True, "ids": ids(api)}
+    out = {"ok": True, "ids": ids(api)}
+    if reglages(api).get("ebay_auto"):                   # l'utilisateur a choisi « aussi sur eBay a chaque etoile »
+        try:
+            r = vers_ebay(api, [iid])
+            out["ebay"] = bool(r.get("ajoutees") or r.get("deja"))
+            if r.get("erreurs"):
+                out["ebay_erreur"] = r["erreurs"][0]["erreur"]
+        except Exception as e:
+            out["ebay"], out["ebay_erreur"] = False, str(e)[:160]
+    return out
 
 
 def retirer(api, item_id):
+    iid = str(item_id or "")
     c = _cx(api)
     try:
-        c.execute("DELETE FROM watchlist WHERE item_id=?", (str(item_id or ""),))
+        r = c.execute("SELECT ebay_le FROM watchlist WHERE item_id=?", (iid,)).fetchone()
+        c.execute("DELETE FROM watchlist WHERE item_id=?", (iid,))
         c.commit()
     finally:
         c.close()
-    return {"ok": True, "ids": ids(api)}
+    out = {"ok": True, "ids": ids(api)}
+    if r and r[0] and reglages(api).get("ebay_auto"):    # envoyee par nous : on la retire aussi d'eBay
+        try:
+            _appel_ebay("RemoveFromWatchList", [iid])
+            out["ebay"] = True
+        except Exception as e:
+            out["ebay"], out["ebay_erreur"] = False, str(e)[:160]
+    return out
+
+
+# -- 31 oct 2026 (Mathieu : « que la watchlist sur mon app ait l'option de la televerser dans la watchlist eBay ») --------
+# Trading API AddToWatchList / RemoveFromWatchList, avec le compte eBay connecte de l'utilisateur. Toujours sur un geste
+# de l'utilisateur (le bouton, ou l'option « a chaque etoile » qu'il a activee). eBay : 400 cartes au plus par watchlist.
+PAR_APPEL = 10
+_DEJA = ("already", "déjà", "deja")
+_FINIE = ("ended", "not active", "no longer", "terminé", "invalid item", "does not exist", "not found")
+
+
+def _appel_ebay(appel, item_ids):
+    import ebay_compte
+    from xml.sax.saxutils import escape
+    corps = (f'<?xml version="1.0" encoding="utf-8"?><{appel}Request xmlns="urn:ebay:apis:eBLBaseComponents">'
+             + "".join(f"<ItemID>{escape(str(i))}</ItemID>" for i in item_ids) + f"</{appel}Request>")
+    r = ebay_compte.trading(appel, corps)
+    return {"n": ebay_compte._txt(r, "e:WatchListCount"), "max": ebay_compte._txt(r, "e:WatchListMaximum")}
+
+
+def vers_ebay(api, ids_=None, appel=None):
+    """Envoie les cartes de la watchlist (encore en vente) dans la watchlist eBay du compte connecte.
+    {ok, ajoutees, deja, finies, erreurs:[{item_id, erreur}], total_ebay, max_ebay}"""
+    import ebay_compte
+    if not ebay_compte.statut().get("connecte"):
+        return {"ok": False, "erreur": "Connecte ton compte eBay (Réglages) pour envoyer ta watchlist"}
+    appel = appel or _appel_ebay
+    c = _cx(api)
+    try:
+        lst = [dict(r) for r in c.execute("SELECT * FROM watchlist")]
+    finally:
+        c.close()
+    maint = _maint()
+    voulus = {str(i) for i in ids_} if ids_ else None
+    a_envoyer = [x["item_id"] for x in lst if (voulus is None or str(x["item_id"]) in voulus) and _etat(x, maint) != "fini"]
+    out = {"ok": True, "ajoutees": 0, "deja": 0, "finies": len([x for x in lst if (voulus is None or str(x["item_id"]) in voulus)]) - len(a_envoyer),
+           "erreurs": [], "total_ebay": None, "max_ebay": None}
+    reussies = []
+
+    def noter(rep):
+        if rep and rep.get("n"):
+            out["total_ebay"], out["max_ebay"] = rep["n"], rep.get("max")
+
+    for k in range(0, len(a_envoyer), PAR_APPEL):
+        lot = a_envoyer[k:k + PAR_APPEL]
+        try:
+            noter(appel("AddToWatchList", lot))
+            reussies += lot
+            out["ajoutees"] += len(lot)
+            continue
+        except Exception as e:
+            if len(lot) == 1:
+                lot_err = {lot[0]: str(e)}
+            else:
+                lot_err = {}
+                for iid in lot:                          # une carte refusee ne bloque pas les autres
+                    try:
+                        noter(appel("AddToWatchList", [iid]))
+                        reussies.append(iid)
+                        out["ajoutees"] += 1
+                    except Exception as e1:
+                        lot_err[iid] = str(e1)
+        for iid, m in lot_err.items():
+            b = m.lower()
+            if any(t in b for t in _DEJA):
+                out["deja"] += 1
+                reussies.append(iid)
+            elif any(t in b for t in _FINIE):
+                out["finies"] += 1
+            else:
+                out["erreurs"].append({"item_id": iid, "erreur": m.replace("eBay a refusé : ", "")[:160]})
+                if "limite quotidienne" in b or "400" in b and "watch" in b:
+                    break
+    if reussies:
+        c = _cx(api)
+        try:
+            c.executemany("UPDATE watchlist SET ebay_le=? WHERE item_id=?", [(maint.isoformat(timespec="seconds"), i) for i in reussies])
+            c.commit()
+        finally:
+            c.close()
+    if out["erreurs"] and not reussies:
+        out["ok"] = False
+        out["erreur"] = out["erreurs"][0]["erreur"]
+    return out
 
 
 def ids(api):

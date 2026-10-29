@@ -3395,6 +3395,11 @@ class Api:
         import watchlist
         return watchlist.regler(self, d)
 
+    def watch_vers_ebay(self, ids=None):
+        """31 oct 2026 : envoie la watchlist de l'app dans la watchlist eBay du compte connecte (un geste de l'utilisateur)."""
+        import watchlist
+        return watchlist.vers_ebay(self, ids)
+
     def watch_mise_max(self, item_id, valeur=None):
         import watchlist
         return watchlist.mise_max(self, item_id, valeur)

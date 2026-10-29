@@ -400,6 +400,8 @@ details.reglage summary::-webkit-details-marker{display:none}
 .w-reg > span:nth-child(2){flex:1; display:flex; flex-direction:column; gap:2px} .w-reg b{font-size:15px; font-weight:600} .w-reg small{font-size:13px; color:var(--doux)}
 .w-reg-i{width:34px; height:34px; border-radius:11px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.05); font-size:16px}
 .w-reg i{font-style:normal; color:var(--doux); font-size:20px}
+.w-reg-i svg{width:18px; height:18px; fill:none; stroke:var(--texte); stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round}
+.w-eb{position:absolute; left:0; right:0; bottom:0; padding:2px 0; text-align:center; font:700 9.5px/1.2 var(--f-cond); letter-spacing:.04em; color:#0B0B0E; background:var(--holo)}
 .lien-t{background:none; border:0; padding:0; color:var(--acc); font:inherit; text-decoration:underline; cursor:pointer}
 .w-note{font-size:12.5px; color:var(--pale); margin:14px 2px 0; line-height:1.4}
 /* 29 oct 2026 (Mathieu : « refresh comme ma page d'accueil Instagram… notre logo qui tourne ») : tirer pour actualiser */
@@ -4833,7 +4835,9 @@ document.addEventListener('click', async (e) => {
       const t = b.closest('[data-annonce]'), x = (S.dealsParId || {})[id] || {};
       r = await API.watch_ajouter({item_id:id, titre:x.titre || (t && t.dataset.titre), photo:x.photo || (t && t.dataset.photo), url:x.url || (t && t.dataset.url),
         valeur:x.valeur, mise_max:x.mise_max, total:x.total ?? (t && nb(t.dataset.total)), port:x.port, encan:x.encan, fin:x.fin});
-      if (r && r.ok) toast(x.encan ? tt('★ Dans ta watchlist : alerte 15 min avant la fin', '★ In your watchlist: alert 15 min before the end') : tt('★ Dans ta watchlist', '★ In your watchlist'), 2000);
+      if (r && r.ok) toast(r.ebay_erreur ? tt('★ Dans ta watchlist (pas sur eBay : ', '★ In your watchlist (not on eBay: ') + r.ebay_erreur + ')'
+        : r.ebay ? tt('★ Dans ta watchlist et sur eBay', '★ In your watchlist and on eBay')
+        : x.encan ? tt('★ Dans ta watchlist : alerte 15 min avant la fin', '★ In your watchlist: alert 15 min before the end') : tt('★ Dans ta watchlist', '★ In your watchlist'), r.ebay_erreur ? 4000 : 2000);
     } else r = await API.watch_retirer(id);
     if (!r || !r.ok) throw new Error((r && r.erreur) || 'Erreur');
     if (r.ids) { S.watch = new Set(r.ids.map(String)); majNbWatch(); }
@@ -4856,7 +4860,7 @@ async function chargerWatch(){
       : x.etat === 'depasse' ? `<span class="w-pil rouge">${tt('Dépassée', 'Over max')}</span><span class="w-px">${cur} <i>›</i> ${mx}</span>`
       : `${x.encan ? `<span class="w-pil ${x.reste_min != null && x.reste_min <= 60 ? 'or' : ''}">⏱ ${finCourt(x.reste_min)}</span>` : `<span class="w-pil">${tt('Achat imm.', 'Buy now')}</span>`}<span class="w-px"><b>${cur}</b> · ${mx}</span>`;
     return `<div class="w-ligne e-${x.etat}" ${attrsAnnonce(x)} role="button" tabindex="0">
-      <div class="w-ph">${SVG_CARTE}${x.photo ? `<img src="${esc(photoNet(x.photo))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}</div>
+      <div class="w-ph">${SVG_CARTE}${x.photo ? `<img src="${esc(photoNet(x.photo))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}${x.ebay_le && x.etat !== 'fini' ? `<span class="w-eb" title="${esc(tt('Aussi dans ta watchlist eBay', 'Also in your eBay watchlist'))}">✓ eBay</span>` : ''}</div>
       <div class="w-mil"><div class="w-t">${esc(titreCourt(x.titre))}</div><div class="w-l">${etat}</div></div>
       <div class="w-dr">${x.etat === 'ok' && x.url ? `<a class="w-go" href="${esc(lienAchat(x.url, 'watch'))}" target="_blank" rel="noopener">${x.encan ? tt('Miser', 'Bid') : tt('Acheter', 'Buy')}</a>` : ''}
         <button class="sd-et on w-et" data-watch="${esc(x.item_id)}" aria-pressed="true" aria-label="${esc(tt('Retirer de la watchlist', 'Remove from watchlist'))}">${ICO_ETOILE}</button></div></div>`;
@@ -4864,8 +4868,11 @@ async function chargerWatch(){
   z.innerHTML = `<div class="w-liste">${L.map(ligne).join('')}</div>
     <button class="w-reg" id="w-reg"><span class="w-reg-i">🔔</span><span><b>${tt('Mes alertes', 'My alerts')}</b>
       <small>${[W.alerte_fin ? tt(`${W.fin_min} min avant la fin`, `${W.fin_min} min before the end`) : '', W.alerte_seuil ? tt(`mise max ${W.ratio_pct} % de la valeur`, `max bid ${W.ratio_pct}% of value`) : ''].filter(Boolean).join(' · ') || tt('Aucune alerte', 'No alerts')}</small></span><i>›</i></button>
+    <button class="w-reg" id="w-eb"><span class="w-reg-i"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg></span><span><b>${tt('Envoyer dans ma watchlist eBay', 'Send to my eBay watchlist')}</b>
+      <small>${(() => { const n = L.filter(x => x.ebay_le && x.etat !== 'fini').length; return (n ? tt(`${n} déjà sur eBay`, `${n} already on eBay`) : tt('Tes cartes suivies, aussi sur eBay', 'Your followed cards, also on eBay')) + (W.ebay_auto ? tt(' · auto à chaque ★', ' · auto on each ★') : ''); })()}</small></span><i>›</i></button>
     <p class="w-note">${tt('Touche « max » pour choisir ta mise max d’une carte. Tu mises toi-même sur eBay.', 'Tap “max” to set a card’s max bid. You bid yourself on eBay.')}</p>`;
   $('#w-reg').onclick = () => feuilleAlertesWatch(W);
+  $('#w-eb').onclick = () => { vibrer(); feuilleWatchEbay(L, W); };
   $$('[data-wmax]', z).forEach(b => b.onclick = (e) => { e.stopPropagation(); const x = L.find(y => String(y.item_id) === b.dataset.wmax); if (x) feuilleMiseMax(x, W); });
   clearInterval(S.tDeals);
   S.tDeals = setInterval(() => { if (!$('.w-liste')) { clearInterval(S.tDeals); return; } chargerWatch(); }, 60000);
@@ -4892,6 +4899,28 @@ function feuilleAlertesWatch(W){
   };
   const garderF = (f) => { const y = $('#feuille') ? $('#feuille').scrollTop : 0; f(); $('#feuille').scrollTop = y; };
   peindre();
+}
+// 31 oct 2026 (Mathieu : « que la watchlist sur mon app ait l'option de la televerser dans la watchlist eBay »)
+function feuilleWatchEbay(L, W){
+  const act = L.filter(x => x.etat !== 'fini'), n = act.length, deja = act.filter(x => x.ebay_le).length;
+  let auto = !!W.ebay_auto;
+  ouvrirFeuille(`<h3>${tt('Ma watchlist eBay', 'My eBay watchlist')}</h3>
+    <div class="sous" style="margin-bottom:14px">${tt('Tes cartes suivies apparaissent aussi dans « Watchlist » sur eBay (app et site), avec ton compte eBay connecté.', 'Your followed cards also show up in “Watchlist” on eBay (app and site), with your connected eBay account.')}</div>
+    <button class="btn" id="we-go" ${n ? '' : 'disabled'}>${n ? tt(`Envoyer ${n} carte${n > 1 ? 's' : ''} sur eBay`, `Send ${n} card${n > 1 ? 's' : ''} to eBay`) : tt('Aucune carte en vente', 'No card for sale')}</button>
+    ${deja ? `<div class="sous" style="margin-top:8px;text-align:center">${tt(`${deja} déjà sur eBay : elles restent comme elles sont`, `${deja} already on eBay: they stay as they are`)}</div>` : ''}
+    <label class="bascule fd-l" style="margin-top:18px"><span><b>${tt('Aussi à chaque étoile', 'Also on each star')}</b><small>${tt('★ ajoute sur eBay, retirer l’étoile l’enlève d’eBay', '★ adds it on eBay, removing the star removes it from eBay')}</small></span><input type="checkbox" id="we-auto" ${auto ? 'checked' : ''}></label>
+    <div class="sous" style="margin-top:12px">${tt('Les encans terminés ne sont pas envoyés. eBay garde 400 cartes au plus.', 'Ended auctions are not sent. eBay keeps 400 cards at most.')}</div>`);
+  $('#we-auto').onchange = async (e) => { auto = e.target.checked; vibrer();
+    const r = await essai(API.watch_regler({ebay_auto: auto}), auto ? tt('Chaque ★ ira aussi sur eBay', 'Each ★ will also go to eBay') : tt('Les ★ restent dans l’app', 'Stars stay in the app'));
+    if (!r) e.target.checked = auto = !auto; else W.ebay_auto = auto; };
+  $('#we-go').onclick = async () => {
+    const b = $('#we-go'); b.disabled = true; b.textContent = tt('Envoi…', 'Sending…');
+    const r = await API.watch_vers_ebay().catch(e => ({ok:false, erreur:e.message}));
+    if (!r || r.ok === false) { toast((r && r.erreur) || 'Erreur', 4500); b.disabled = false; b.textContent = tt('Réessayer', 'Try again'); return; }
+    const bouts = [r.ajoutees ? tt(`${r.ajoutees} ajoutée${r.ajoutees > 1 ? 's' : ''}`, `${r.ajoutees} added`) : '', r.deja ? tt(`${r.deja} déjà là`, `${r.deja} already there`) : '',
+      r.erreurs && r.erreurs.length ? tt(`${r.erreurs.length} refusée${r.erreurs.length > 1 ? 's' : ''}`, `${r.erreurs.length} refused`) : ''].filter(Boolean);
+    toast('✓ eBay : ' + (bouts.join(' · ') || tt('rien à envoyer', 'nothing to send')) + (r.total_ebay ? tt(` (${r.total_ebay}/${r.max_ebay || 400} sur eBay)`, ` (${r.total_ebay}/${r.max_ebay || 400} on eBay)`) : ''), 3500);
+    fermerFeuille(); chargerWatch(); };
 }
 function feuilleMiseMax(x, W){
   const defaut = x.valeur ? Math.round((x.valeur * W.ratio_pct / 100 - (x.port || 0)) * 100) / 100 : null;

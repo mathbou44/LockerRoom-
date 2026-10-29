@@ -41,7 +41,7 @@ class TestRythme(unittest.TestCase):
         with mock.patch.object(deals.threading, "Thread") as T:
             T.return_value.start.side_effect = lambda: lances.append(1)
             deals._ETAT.update(en_cours=False, essai_le=__import__("time").time(), rapide=True,
-                               valo_le=__import__("time").time())       # 30 oct : pas la passe des valeurs entre deux tours
+                               valo_le=__import__("time").time(), proches_le=__import__("time").time())       # 30 oct : pas la passe des valeurs entre deux tours
             self.assertFalse(deals.chasser_si_besoin())                # essai il y a 0 s : pas de tour
             r = deals.recharger()
         self.assertTrue(r["lance"])
