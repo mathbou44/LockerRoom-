@@ -256,6 +256,10 @@ details.reglage summary::-webkit-details-marker{display:none}
 .md-b{display:grid; grid-template-columns:1fr auto 1fr; gap:8px; align-items:center} .md-b span{color:var(--doux)}
 .sd-fav{color:var(--or)}
 .cf-ph{margin:12px 0; border-radius:16px; overflow:hidden; background:#111115; border:1px solid var(--ligne)} .cf-ph img{display:block; width:100%; max-height:40vh; object-fit:contain}
+.cf-niv{display:flex; align-items:center; gap:10px; margin-top:10px} .cf-niv > span{font-size:13px; font-weight:600; color:var(--doux)} .cf-niv .seg{flex:1}
+.vp-src{margin-top:10px; font-size:13px; color:var(--doux)}
+.vp-v{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px} .vp-l{display:flex; flex-direction:column; align-items:center; gap:1px; padding:6px 10px; border-radius:10px; background:var(--carte2); border:1px solid var(--ligne); text-decoration:none; color:var(--texte)}
+.vp-l b{font:700 15px 'Barlow Condensed',sans-serif} .vp-l span{font-size:11px; color:var(--doux)} .vp-pol{margin:4px 0 10px; font-size:12.5px}
 .d-ent{display:flex; align-items:center; gap:8px; margin-left:auto} .d-chips{display:flex; align-items:center; flex-wrap:nowrap; gap:7px} .d-chips .aide-q{margin-left:auto} .d-chips .chip{padding-left:11px; padding-right:11px}
 .fd-w{flex-wrap:wrap !important; overflow:visible !important} .fd-s{display:flex; flex-direction:column; gap:8px}
 .fd-l{align-items:center; padding:10px 0} .fd-l > span{display:flex; flex-direction:column; gap:2px} .fd-l small{font-size:13px; color:var(--doux)}
@@ -2605,7 +2609,8 @@ const coche = (id) => { const e = $('#' + id); return e ? e.checked : false; };
 const S = { reglages:null, equipes:null, produits:null, ongletBreaks:'calc', ongletBreak:'places', ongletComptoir:'vente',
   filtreInv:'tous', rechInv:'', calc:{}, panier:[], rachat:[], clients:null, mois:null };
 async function reglages(force){ if (!S.reglages || force) { S.reglages = await API.reglages_lire(); appliquerMarque();
-    if (S.reglages && typeof S.reglages.photo_studio === 'boolean') MODE_STUDIO = S.reglages.photo_studio; } return S.reglages; }
+    if (S.reglages && typeof S.reglages.photo_studio === 'boolean') MODE_STUDIO = S.reglages.photo_studio;
+    if (S.reglages && [1, 2, 3].includes(+S.reglages.flou_niveau)) FLOU = +S.reglages.flou_niveau; } return S.reglages; }
 // 23 oct 2026 (Mathieu : « l'utilisateur doit pouvoir mettre son logo et le nom de sa boutique pour personnaliser
 // son interface ») - logo + nom dans le menu, l'accueil et l'onglet du navigateur. Le logo est garde sur le serveur ;
 // ce navigateur en garde une copie pour l'afficher sans attendre.
@@ -3280,11 +3285,24 @@ function _nettoyerCoins(out, O, od, W, H, fond){
 // recadre. La carte + 1 mm autour restent les pixels d'origine ; tout le reste est flou et assombri (comme Teams).
 // 30 oct 2026 (« ne pixelise pas trop, le user doit quand meme voir derriere que c'est un support ») : un flou doux,
 // assez pour que le support et la table ne distraient pas, pas assez pour cacher ce que c'est
+const FLOU_NIV = {1: {r: 0.005, sombre: 0.18}, 2: {r: 0.009, sombre: 0.32}, 3: {r: 0.016, sombre: 0.5}};
+let FLOU = 2; try { FLOU = +(localStorage.getItem('lr_flou') || 2) || 2; } catch (e) {}
+const segFlou = (id) => segV(id, [['1', tt('Léger', 'Light')], ['2', tt('Moyen', 'Medium')], ['3', tt('Fort', 'Strong')]], String(FLOU));
+async function changerFlou(n){
+  FLOU = n; try { localStorage.setItem('lr_flou', String(n)); } catch (e) {}
+  API.reglages_sauver({flou_niveau: n}).then(r => { S.reglages = r; }).catch(() => {});
+  // les photos deja faites sont refaites avec les memes coins (dans le telephone, sans credit)
+  const refaire = async (src, st) => (st && st.coins && src) ? await photoStudio(src, st.coins, {affiner: false}).catch(() => st) : st;
+  if (V2.loc) for (let j = 0; j < V2.loc.length; j++) V2.loc[j] = await refaire(V2.originales && V2.originales[j] || V2.photos[j], V2.loc[j]);
+  if (V2.studio && V2.originales) { for (let j = 0; j < V2.studio.length; j++) V2.studio[j] = await refaire(V2.originales[j], V2.studio[j]); syncPhotos(); }
+}
 const _FILTRE_OK = (() => { try { const g = document.createElement('canvas').getContext('2d'); g.filter = 'blur(2px)'; return g.filter === 'blur(2px)'; } catch (e) { return false; } })();
 function _flouImage(img, W, H){
   const out = document.createElement('canvas'); out.width = W; out.height = H;
   const g = out.getContext('2d'); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
-  const r = Math.max(4, Math.round(Math.min(W, H) * 0.008));             // ~12 px sur une photo de 1 500 px
+  // 30 oct 2026 (« un bouton pour que j'ajuste moi-meme le flou : light, medium, darker ») : 3 niveaux, garde au compte
+  const N = FLOU_NIV[FLOU] || FLOU_NIV[2];
+  const r = Math.max(3, Math.round(Math.min(W, H) * N.r));
   if (_FILTRE_OK) { g.filter = `blur(${r}px)`; g.drawImage(img, -2 * r, -2 * r, W + 4 * r, H + 4 * r); g.filter = 'none'; }   // deborde : pas de bord sombre
   else {
     // Safari sans ctx.filter : reduction douce (1/4) + moyenne de voisins, puis agrandissement lisse (pas de pixels)
@@ -3299,7 +3317,7 @@ function _flouImage(img, W, H){
     }
     g.drawImage(a, 0, 0, W, H);
   }
-  g.fillStyle = 'rgba(6,6,10,.32)'; g.fillRect(0, 0, W, H);
+  g.fillStyle = `rgba(6,6,10,${N.sombre})`; g.fillRect(0, 0, W, H);
   return out;
 }
 function poserFlou(img, q){
@@ -3508,9 +3526,12 @@ async function choixFond(i, ph, suite){
       <div class="titre">${tt('Ton fond', 'Your background')}</div>
       <div class="sous">${tt('La carte et 1 mm autour restent nettes : l’acheteur voit son état. Le reste est flou.', 'The card and 1 mm around it stay sharp: the buyer sees its condition. The rest is blurred.')}</div>
       ${segV('cf-mode', [['1', tt('Fond flou', 'Blurred background')], ['0', tt('Photo originale', 'Original photo')]], MODE_STUDIO ? '1' : '0')}
+      ${MODE_STUDIO ? `<div class="cf-niv"><span>${tt('Flou', 'Blur')}</span>${segFlou('cf-niv')}</div>` : ''}
       <div class="cf-ph"><img src="${esc(MODE_STUDIO ? st.photo : ph)}" alt=""></div>
       <button class="btn" id="cf-ok" style="margin-top:14px">${tt('Continuer', 'Continue')}</button></section>`;
     $$('#cf-mode button').forEach(b => b.onclick = () => { MODE_STUDIO = b.dataset.v === '1'; try { localStorage.setItem('lr_studio', MODE_STUDIO ? '1' : '0'); } catch (e) {} vibrer(); peindre(); });
+    $$('#cf-niv button').forEach(b => b.onclick = async () => { vibrer(); FLOU = +b.dataset.v; st = await photoStudio(ph, st.coins, {affiner: false}).catch(() => st);
+      V2.loc[i] = st; try { localStorage.setItem('lr_flou', String(FLOU)); } catch (e) {} API.reglages_sauver({flou_niveau: FLOU}).then(r => { S.reglages = r; }).catch(() => {}); peindre(); });
     $('#cf-ok').onclick = () => { API.reglages_sauver({photo_studio: MODE_STUDIO}).then(r => { S.reglages = r; }).catch(() => {}); suite(); };
   };
   peindre();
@@ -3582,12 +3603,14 @@ function feuillePhotosVente(apres, cadrer){
     ouvrirFeuille(`<h3>${tt('Les photos de ton annonce', 'Your listing photos')}</h3>
       <div class="sous" style="margin-bottom:10px">${tt('Exactement ce qui partira chez eBay.', 'Exactly what will go to eBay.')}</div>
       ${aStudio ? segV('pv-studio', [['0', tt('Mes photos telles quelles', 'My photos as they are')], ['1', tt('Fond flou', 'Blurred background')]], MODE_STUDIO ? '1' : '0') : ''}
+      ${aStudio && MODE_STUDIO ? `<div class="cf-niv" style="margin-top:10px"><span>${tt('Flou', 'Blur')}</span>${segFlou('pv-niv')}</div>` : ''}
       <div class="pv-liste">${ph.map((u, i) => `<figure class="pv-f ${MODE_STUDIO && aStudio && V2.studio[i] ? 'studio' : ''}"><img src="${esc(u)}" alt="">
         <figcaption>${i === 0 ? tt('Devant', 'Front') : i === 1 ? tt('Dos', 'Back') : tt('Photo ', 'Photo ') + (i + 1)}${cadrer && aStudio && MODE_STUDIO && V2.studio[i] ? ` · <button class="lien-t" data-pv-cadre="${i}">${tt('ajuster le cadrage', 'adjust the crop')}</button>` : ''}</figcaption></figure>`).join('')}</div>
       <button class="btn" id="pv-ok" style="margin-top:14px">OK</button>`);
     $$('#pv-studio button').forEach(b => b.onclick = () => { MODE_STUDIO = b.dataset.v === '1'; try { localStorage.setItem('lr_studio', MODE_STUDIO ? '1' : '0'); } catch (e) {}
       API.reglages_sauver({photo_studio: MODE_STUDIO}).then(r => { S.reglages = r; }).catch(() => {}); syncPhotos(); vibrer(); peindre(); });
     $$('[data-pv-cadre]').forEach(b => b.onclick = () => feuilleCadrage(+b.dataset.pvCadre));
+    $$('#pv-niv button').forEach(b => b.onclick = async () => { vibrer(); $$('#pv-niv button').forEach(x => x.classList.toggle('on', x === b)); await changerFlou(+b.dataset.v); peindre(); });
     $('#pv-ok').onclick = () => { fermerFeuille(); if (apres) apres(); };
   };
   peindre();
@@ -3679,13 +3702,13 @@ async function garderCollection(){
 }
 async function garderVente(){
   const b = $('#v2-garde'); if (b) { b.disabled = true; b.textContent = tt('Enregistrement…', 'Saving…'); }
-  const r = await API.carte_garder({carte: lireChampsVente(), titre: $('#v2-titre').value.trim(), prix: V2.prix, cout: val('v2-cout'),
+  const r = await API.carte_garder({carte: {...lireChampsVente(), emplacement: 'Collection', valeur: (V2.prep && V2.prep.prix && V2.prep.prix.marche) || null}, titre: $('#v2-titre').value.trim(), prix: V2.prix, cout: val('v2-cout'),
     photos: V2.photos, cid: V2.cid}).catch(e => ({ok:false, erreur:e.message}));
-  if (!r || !r.ok) { if (b) { b.disabled = false; b.innerHTML = `<b>${tt('Garder', 'Keep')}</b><small>${tt('dans l’inventaire', 'in inventory')}</small>`; } toast((r && r.erreur) || tt('Erreur', 'Error'), 5000); return; }
+  if (!r || !r.ok) { if (b) { b.disabled = false; b.innerHTML = `<b>${tt('Garder', 'Keep')}</b><small>${tt('dans ma collection', 'in my collection')}</small>`; } toast((r && r.erreur) || tt('Erreur', 'Error'), 5000); return; }
   for (const k in V2) delete V2[k];
-  V().innerHTML = `<section class="ecran vendre fini"><div class="gros-ok">✓</div><div class="titre">${tt('Gardée dans ton inventaire', 'Kept in your inventory')}</div>
-    <div class="sous" style="text-align:center">${tt('Photos, titre et prix sont prêts : tu la publies quand tu veux, d’un tap (Inventaire › la carte › Vendre).', 'Photos, title and price are ready: publish it whenever you want, in one tap (Inventory › the card › Sell).')}</div>
-    <a class="btn" href="#inventaire">${tt('Voir mon inventaire', 'See my inventory')}</a>
+  V().innerHTML = `<section class="ecran vendre fini"><div class="gros-ok">✓</div><div class="titre">${tt('Dans ta collection', 'In your collection')}</div>
+    <div class="sous" style="text-align:center">${tt('Photos, titre et prix sont prêts : tu la mets en vente quand tu veux, d’un tap (Ma collection › la carte › Vendre).', 'Photos, title and price are ready: list it whenever you want, in one tap (My collection › the card › Sell).')}</div>
+    <a class="btn" href="#inventaire" onclick="S.filtreInv='collection'">${tt('Voir ma collection', 'See my collection')}</a>
     <button class="btn ghost" id="v2-encore">${tt('Vendre une autre carte', 'Sell another card')}</button></section>`;
   $('#v2-encore').onclick = () => { location.hash = '#vendre/nouvelle'; };
 }
@@ -3831,6 +3854,9 @@ function segV(id, choix, actuel){
 }
 function rendreVente2(){
   const p = V2.prep, o = V2.opts, c = {...(p.carte || {}), ...(V2.champs || {})};
+  // 30 oct 2026 (Mathieu : « retirer l'option lettre : une carte de plus de 30 $ en lettre, c'est risque »)
+  const lettreOk = !(nb(V2.prix) > 30);
+  if (!lettreOk && o.expedition === 'lettre') o.expedition = 'suivi';
   const pr = p.prix, fp = (p.frais_pct || 0) / 100, ff = p.frais_fixe || 0;
   const net = (x) => Math.max(0, (nb(x) || 0) * (1 - fp) - ff);
   const gradee = /^(psa|bgs|sgc|cgc|tag|beckett)/i.test(String(c.grade || ''));
@@ -3854,6 +3880,11 @@ function rendreVente2(){
           ${pr ? segV('v2-pp', [[pr.vite, argent(pr.vite, 2), tt('Vendre vite', 'Sell fast')], [pr.marche, argent(pr.marche, 2), tt('Prix du marché ★', 'Market price ★')], [pr.haut, argent(pr.haut, 2), tt('Plus haut', 'Higher')]], V2.prix) : ''}
           <div class="ligne-prix"><label>${tt('Ton prix', 'Your price')} ($ CA)<input class="champ gros" id="v2-prix" type="number" inputmode="decimal" step="0.01" value="${esc(V2.prix ?? '')}"></label>
             <div class="recois"><span>${tt('Tu reçois ≈', 'You get ≈')}</span><b id="v2-net">${argent(net(V2.prix), 2)}</b><small>${tt('après frais eBay', 'after eBay fees')} (${p.frais_pct} %)</small></div></div>
+          ${p.source_prix ? `<div class="vp-src">${p.source_prix === 'annonces' ? tt(`Aucune vente récente trouvée : prix d’après ${p.n} annonce${p.n > 1 ? 's' : ''} de la même carte en vente.`, `No recent sale found: price from ${p.n} listing${p.n > 1 ? 's' : ''} of the same card.`)
+            : p.source_prix === 'vendues_peu' ? tt(`D’après ${p.n} vente${p.n > 1 ? 's' : ''} réelle${p.n > 1 ? 's' : ''} (peu de ventes : vérifie).`, `From ${p.n} real sale${p.n > 1 ? 's' : ''} (few sales: double-check).`)
+            : tt(`D’après ${p.n} ventes réelles de la même carte.`, `From ${p.n} real sales of the same card.`)}</div>` : ''}
+          ${(p.vendues || []).length ? `<div class="vp-v">${p.vendues.slice(0, 5).map(v => `<a class="vp-l" ${v.url ? `href="${esc(v.url)}" target="_blank" rel="noopener"` : ''}><b>${argent(v.prix, 0)}</b><span>${esc(dateCourte(v.le) || '')}</span></a>`).join('')}</div>` : ''}
+          ${!pr && !(p.vendues || []).length ? `<div class="vp-src">${tt('Aucune vente ni annonce de cette carte pour l’instant : choisis ton prix.', 'No sale or listing of this card yet: pick your price.')}</div>` : ''}
 </div>
 
     <div class="vs-etape"><span class="vs-n">2</span><b>${tt('Déjà réglé pour toi', 'Already set for you')}</b><span class="sous">${tt('touche pour changer', 'tap to change')}</span></div>
@@ -3889,14 +3920,15 @@ function rendreVente2(){
             <div class="deux">${segV('v2-om', [[80, '80 %'], [70, '70 %'], [60, '60 %']], o.offre_min_pct)}<span class="lib-s">${tt('refuser sous', 'decline under')} <b>${argent((nb(V2.prix) || 0) * o.offre_min_pct / 100, 0)}</b></span></div>` : ''}</div>
 </div>
       <div id="vs-b-livr"><div class="bloc-v"><div class="bloc-t">${tt('Livraison', 'Shipping')}</div>
-          ${segV('v2-exp', [['lettre', tt('Enveloppe', 'Envelope'), argent(o.cout_lettre, 2)], ['suivi', tt('Suivi', 'Tracked'), argent(o.cout_suivi, 2)], ['gratuit', tt('Gratuite', 'Free'), tt('suivi inclus', 'tracked included')]], o.expedition)}
-          <div class="deux"><label class="bascule">${tt('Aussi aux États-Unis', 'Also to the U.S.')}<input type="checkbox" id="v2-us" ${o.us ? 'checked' : ''}></label>
-            ${o.us ? `<span class="lib-s">${argent(o.expedition === 'lettre' ? o.us_cout_lettre : o.us_cout_suivi, 2)} ${tt('vers les É.-U.', 'to the U.S.')}</span>` : ''}</div>
+          <div id="v2-pol"></div><div id="v2-livr-app" ${o.politique_exp ? 'hidden' : ''}>
+          ${segV('v2-exp', [...(lettreOk ? [['lettre', tt('Enveloppe', 'Envelope'), tt('sans suivi', 'no tracking')]] : []), ['suivi', tt('Suivi', 'Tracked'), tt('avec suivi', 'with tracking')], ['gratuit', tt('Gratuite', 'Free'), tt('suivi inclus', 'tracked included')]], o.expedition)}
+          ${lettreOk ? '' : `<div class="sous vp-pol">${tt('Plus de 30 $ : envoi suivi seulement (l’enveloppe n’a ni suivi ni protection).', 'Over $30: tracked shipping only (an envelope has no tracking or protection).')}</div>`}
+          ${o.expedition !== 'gratuit' ? `<div class="grille-champs">${champ('v2-cship', tt('Prix de la livraison ($ CA)', 'Shipping price ($ CA)'), o.expedition === 'lettre' ? o.cout_lettre : o.cout_suivi, 'number', 'inputmode="decimal" step="0.01"')}
+            ${o.us ? champ('v2-cus', tt('Vers les É.-U. ($ CA)', 'To the U.S. ($ CA)'), o.expedition === 'lettre' ? o.us_cout_lettre : o.us_cout_suivi, 'number', 'inputmode="decimal" step="0.01"') : ''}</div>` : ''}
+          <div class="deux"><label class="bascule">${tt('Aussi aux États-Unis', 'Also to the U.S.')}<input type="checkbox" id="v2-us" ${o.us ? 'checked' : ''}></label></div>
           <div class="deux">${segV('v2-del', [[1, tt('1 jour', '1 day')], [2, tt('2 jours', '2 days')], [3, tt('3 jours', '3 days')]], o.delai)}<span class="lib-s">${tt('pour expédier', 'to ship')}</span></div>
-          <details class="avance"><summary>${tt('Coûts et colis', 'Costs and package')}</summary><div class="grille-champs">
-            ${champ('v2-cl', tt('Enveloppe $ CA', 'Envelope $ CA'), o.cout_lettre, 'number')}${champ('v2-cs', tt('Suivi $ CA', 'Tracked $ CA'), o.cout_suivi, 'number')}
-            ${champ('v2-ul', tt('É.-U. enveloppe $ CA', 'U.S. envelope $ CA'), o.us_cout_lettre, 'number')}${champ('v2-us2', tt('É.-U. suivi $ CA', 'U.S. tracked $ CA'), o.us_cout_suivi, 'number')}
-            ${champ('v2-pds', tt('Poids (g)', 'Weight (g)'), o.poids_g, 'number')}</div></details></div>
+          <details class="avance"><summary>${tt('Colis', 'Package')}</summary><div class="grille-champs">
+            ${champ('v2-pds', tt('Poids (g)', 'Weight (g)'), o.poids_g, 'number')}</div></details></div></div>
 </div>
       <div id="vs-b-ret"><div class="bloc-v"><div class="bloc-t">${tt('Retours', 'Returns')}</div>
           ${segV('v2-ret', [['non', tt('Pas de retours', 'No returns'), tt('vente finale', 'final sale')], ['30_acheteur', tt('30 jours', '30 days'), tt('l’acheteur paie', 'buyer pays')], ['30_gratuit', tt('30 jours', '30 days'), tt('retour gratuit', 'free return')]], o.retours)}</div>
@@ -3935,7 +3967,7 @@ function rendreVente2(){
 </div>
     </div>
     <div class="barre-publier vs-barre"><div class="resume-p"><b id="v2-rp">${argent(V2.prix, 2)}</b><span>${esc([o.format === 'encan' ? tt('Encan 7 j', 'Auction 7 d') : tt('Prix fixe', 'Buy It Now'), {lettre: tt('Enveloppe', 'Envelope'), suivi: tt('Suivi', 'Tracked'), gratuit: tt('Livraison gratuite', 'Free shipping')}[o.expedition], o.offres && o.format !== 'encan' ? tt('Offres', 'Offers') : '', o.promotion ? tt('Promo ', 'Promo ') + o.promotion + ' %' : '', o.retours === 'non' ? tt('Sans retours', 'No returns') : tt('Retours 30 j', '30-day returns'), V2.debut ? '⏱ ' + dateProg(V2.debut) : ''].filter(Boolean).join(' · '))}</span></div>
-      <span class="bp-actions"><button class="btn ghost duo" id="v2-garde"><b>${tt('Garder', 'Keep')}</b><small>${tt('dans l’inventaire', 'in inventory')}</small></button><button class="btn" id="v2-pub">${V2.debut ? tt('Programmer sur eBay', 'Schedule on eBay') : tt('Publier sur eBay', 'Publish on eBay')}</button></span></div>
+      <span class="bp-actions"><button class="btn ghost duo" id="v2-garde"><b>${tt('Garder', 'Keep')}</b><small>${tt('dans ma collection', 'in my collection')}</small></button><button class="btn" id="v2-pub">${V2.debut ? tt('Programmer sur eBay', 'Schedule on eBay') : tt('Publier sur eBay', 'Publish on eBay')}</button></span></div>
   </section>`;
   brancherVente2();
   const ouvrir = (k) => { S.v2Feuille = k; const el = $('#vs-b-' + k); if (!el) return;
@@ -3974,12 +4006,26 @@ function lireChampsVente(){
   return c;
 }
 function brancherVente2(){
-  const o = V2.opts, re = () => { V2.champs = lireChampsVente(); V2.titre = $('#v2-titre').value; V2.description = $('#v2-desc').value; V2.cout = val('v2-cout'); rendreVente2(); };
+  // 30 oct 2026 : re-rendre APRES l'evenement en cours (un « change » declenche par un blur ne doit pas retirer le champ
+  // pendant que le navigateur s'en occupe) ; plusieurs demandes dans le meme instant = un seul rendu
+  const o = V2.opts, re = () => { V2.champs = lireChampsVente(); V2.titre = $('#v2-titre').value; V2.description = $('#v2-desc').value; V2.cout = val('v2-cout');
+    if (S.v2Re) return; S.v2Re = setTimeout(() => { S.v2Re = null; rendreVente2(); }, 0); };
   const seg = (id, f) => $$('#' + id + ' button').forEach(b => b.onclick = () => { f(b.dataset.v); re(); });
   seg('v2-pp', v => { V2.prix = v; });
   seg('v2-fmt', v => { o.format = v; });
   seg('v2-oa', v => { o.offre_auto_pct = +v; }); seg('v2-om', v => { o.offre_min_pct = +v; });
   seg('v2-exp', v => { o.expedition = v; }); seg('v2-del', v => { o.delai = +v; });
+  // 30 oct 2026 (Mathieu : « comment as-tu sette le shipping pour etre sur que ca fonctionne ? ») : ta politique d'expedition
+  // eBay (celle de tes autres annonces) en premier choix ; sinon nos reglages. eBay verifie l'annonce avant de la publier.
+  API.ebay_politiques().then(pol => { const z = $('#v2-pol'); if (!z || !pol || !pol.ok || !(pol.expedition || []).length) return;
+    z.innerHTML = `<label class="large">${tt('Ta politique d’expédition eBay', 'Your eBay shipping policy')}<select class="champ" id="v2-pexp"><option value="">${tt('Aucune : les réglages ci-dessous', 'None: the settings below')}</option>${pol.expedition.map(x => `<option value="${esc(x.id)}" ${String(x.id) === String(o.politique_exp || '') ? 'selected' : ''}>${esc(x.nom)}${x.defaut ? ' ★' : ''}</option>`).join('')}</select></label>
+      <div class="sous vp-pol" id="v2-pexp-r">${esc(((pol.expedition.find(x => String(x.id) === String(o.politique_exp || '')) || {}).resume) || '')}</div>`;
+    $('#v2-pexp').onchange = (e) => { o.politique_exp = e.target.value || null;
+      o.politique_ret = o.politique_exp && pol.retours && pol.retours[0] ? (pol.retours.find(x => x.defaut) || pol.retours[0]).id : null;
+      o.politique_pai = o.politique_exp && pol.paiement && pol.paiement[0] ? (pol.paiement.find(x => x.defaut) || pol.paiement[0]).id : null;
+      const r = $('#v2-pexp-r'); if (r) r.textContent = ((pol.expedition.find(x => String(x.id) === String(o.politique_exp || '')) || {}).resume) || '';
+      const ap = $('#v2-livr-app'); if (ap) ap.hidden = !!o.politique_exp; };
+  }).catch(() => {});
   seg('v2-ret', v => { o.retours = v; }); seg('v2-pro', v => { o.promotion = +v; }); seg('v2-etat', v => { o.etat = v; });
   // 29 oct 2026 (Mathieu : « une date a laquelle l'annonce va etre publiee ») : par defaut, ce soir 19 h (ou demain)
   seg('v2-quand', v => { V2.debut = v ? (V2.debut || soir19h()) : null; });
@@ -3998,8 +4044,11 @@ function brancherVente2(){
     V2.psa = r; re();
     toast(tt('Certificat vérifié chez PSA : touche « Refaire le titre et le prix » si la carte a changé', 'Cert verified with PSA: tap “Redo the title and price” if the card changed'), 4500);
   };
-  ch('v2-cl', e => { o.cout_lettre = nb(e.value) ?? o.cout_lettre; }); ch('v2-cs', e => { o.cout_suivi = nb(e.value) ?? o.cout_suivi; });
-  ch('v2-ul', e => { o.us_cout_lettre = nb(e.value) ?? o.us_cout_lettre; }); ch('v2-us2', e => { o.us_cout_suivi = nb(e.value) ?? o.us_cout_suivi; });
+  // 30 oct 2026 (Mathieu : « l'utilisateur doit pouvoir entrer son prix ») : le prix de la livraison choisie, tape directement
+  // (sans re-rendre a chaque frappe : le « OK » de la feuille rafraichit l'ecran)
+  const chS = (id, f) => { const e = $('#' + id); if (e) e.oninput = e.onchange = () => { const v = nb(e.value); if (v != null) f(v); }; };
+  chS('v2-cship', v => { if (o.expedition === 'lettre') o.cout_lettre = v; else o.cout_suivi = v; });
+  chS('v2-cus', v => { if (o.expedition === 'lettre') o.us_cout_lettre = v; else o.us_cout_suivi = v; });
   ch('v2-pds', e => { o.poids_g = nb(e.value) ?? o.poids_g; });
   const fp = (V2.prep.frais_pct || 0) / 100, ff = V2.prep.frais_fixe || 0;
   $('#v2-prix').oninput = (e) => { V2.prix = e.target.value; const n = $('#v2-net'); if (n) n.textContent = argent(Math.max(0, (nb(V2.prix) || 0) * (1 - fp) - ff), 2);
