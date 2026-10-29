@@ -4162,7 +4162,8 @@ class Api:
             lst = sorted(lst, key=lambda x: _dl.rang_vendeur(x.get("vendeur")) if x.get("flux") == "vendeurs" else 6)
         for x in lst:
             x["recrue"] = _dl.est_recrue(x.get("titre"))
-        if tri == "rabais" and not f.get("sortes"):
+        if tri in ("rabais", "gain", "prix") and not f.get("sortes"):
+            # 31 oct 2026 (« encore juste des Young Guns et des Future Watch ») : aussi en « plus gros profit » et « prix »
             # 29 oct 2026 (Mathieu : « encore que des caliss de rookies dans tes deals ») : veterans, legendes et jeunes de
             # 2e a 4e annee d'abord (hits compris) ; les recrues de l'annee ensuite (le chip « Recrues » les montre seules)
             lst = [x for x in lst if not x["recrue"]] + [x for x in lst if x["recrue"]]

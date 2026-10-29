@@ -617,10 +617,15 @@ def _deux_noms(t):
     return False
 
 
+# 31 oct 2026 : les surnoms d'equipes que les vendeurs ecrivent (« Sens », « Habs ») ne font pas une autre carte
+SURNOMS_EQUIPES = set("""sens habs leafs bolts canes pens caps avs hawks isles nucks preds jackets yotes wings knights
+oilers flames jets bruins sabres kings ducks sharks stars blues wild devils rangers flyers kraken canucks""".split())
+
+
 def _mots_equipes():
     try:
         import sports
-        out = set()
+        out = set(SURNOMS_EQUIPES)
         for d in sports.SPORTS.values():
             for v in d["equipes"].values():
                 nom = v[0] if isinstance(v, (list, tuple)) else str(v)

@@ -6083,7 +6083,7 @@ async function chargerDeals(frais){
     ${L.length || SU.length ? `<div class="grille-c" id="d-grille">${(() => {
       // 31 oct 2026 (Mathieu : « quand je scroll mon feed de deals ca lag ») : 30 tuiles d'abord, les autres en arrivant
       // pres du bas (jusqu'a 400 tuiles avec photos, c'etait beaucoup pour le telephone)
-      const defaut = (F.tri || 'rabais') === 'rabais' && !(F.sortes || []).length;
+      const defaut = ['rabais', 'gain', 'prix'].includes(F.tri || 'rabais') && !(F.sortes || []).length;     // 31 oct : vétérans d'abord aussi en « profit »
       let m;
       if (!defaut) m = [...L, ...SU].map(tuileDeal);
       else {
