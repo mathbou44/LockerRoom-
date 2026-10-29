@@ -291,6 +291,7 @@ details.reglage summary::-webkit-details-marker{display:none}
 .adm-cov{margin:2px 0 10px; padding:10px 12px; border-radius:14px; background:var(--carte2)} .adm-cov-t{display:flex; justify-content:space-between; gap:8px; font-size:14px} .adm-cov-t span{color:var(--doux)}
 .adm-cov-b{height:6px; border-radius:99px; background:var(--ligne); margin:8px 0 6px; overflow:hidden} .adm-cov-b i{display:block; height:100%; background:var(--holo); border-radius:99px}
 .adm-cov small{font-size:12px; color:var(--doux)}
+.adm-occ{opacity:.75; box-shadow:inset 0 3px 8px rgba(0,0,0,.35) !important; transform:translateY(1px)}
 .adm-ks{display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin:10px 0}
 .adm-k{display:flex; flex-direction:column; gap:2px; padding:10px 12px; border-radius:14px; background:var(--carte2); border:1px solid var(--ligne)}
 .adm-k b{font:700 22px 'Barlow Condensed',sans-serif; color:var(--texte)} .adm-k span{font-size:12px; color:var(--doux); line-height:1.25}
@@ -8538,7 +8539,13 @@ async function adminServeur(){
     <div class="r-titre" style="margin-top:14px">${tt('Erreurs récentes', 'Recent errors')}</div>
     ${d.erreurs.length ? `<div class="bloc"><div class="liste">${d.erreurs.map(e => `<div class="rangee"><span class="milieu"><span class="nom">${esc(e.ou)}</span><span class="det">${esc(e.erreur)}</span></span><span class="droite"><span class="sous">${ilYa(e.le)}</span></span></div>`).join('')}</div></div>`
       : `<div class="vide">${tt('Aucune erreur ✓', 'No errors ✓')}</div>`}`;
-  const etatDeals = (e) => { const el = $('#adm-deals-e'); if (!el || !e || !e.ok) return;
+  // 31 oct 2026 (Mathieu : « je peux cliquer sur ce piton a l'infini ; je change de page, je reviens, il redevient bleu ») :
+  // le bouton suit l'etat REEL du serveur (a chaque affichage et aux 10 s) : enfonce tant que la chasse tourne
+  const boutonChasse = (t) => { const b = $('#adm-deals-ok'); if (!b) return; t = t || {};
+    const lib = t.en_cours ? tt('Chasse en cours…', 'Hunt in progress…') : t.demande ? tt('Tour demandé… il part bientôt', 'Run requested… starting soon')
+      : t.passe ? tt('Analyse des encans en cours…', 'Analyzing auctions…') : tt('Relancer le chasseur', 'Run the hunter now');
+    b.disabled = !!(t.en_cours || t.demande || t.passe); b.textContent = lib; b.classList.toggle('adm-occ', b.disabled); };
+  const etatDeals = (e) => { const el = $('#adm-deals-e'); if (!el || !e || !e.ok) return; boutonChasse(e.tour);
     // 30 oct 2026 (Mathieu : « enormement trop d'info en petit ; pourquoi 2 boutons ? ») : 4 chiffres, les alertes en rouge
     // seulement s'il y a un probleme, le detail replie
     const sc = e.soldcomps || {}, kp = (v, l, rouge) => `<div class="adm-k ${rouge ? 'rouge' : ''}"><b>${v}</b><span>${l}</span></div>`;
@@ -8571,20 +8578,15 @@ async function adminServeur(){
     journalChasse(e.journal); };
   API.deals_etat().then(etatDeals).catch(() => {});
   clearInterval(S.tAdmTour);              // 29 oct : la ligne du tour se met a jour toute seule (30 s)
-  S.tAdmTour = setInterval(async () => { if (!$('#adm-deals-e')) { clearInterval(S.tAdmTour); return; } etatDeals(await API.deals_etat().catch(() => null)); }, 30000);
+  S.tAdmTour = setInterval(async () => { if (!$('#adm-deals-e')) { clearInterval(S.tAdmTour); return; } etatDeals(await API.deals_etat().catch(() => null)); }, 10000);
   const bd = $('#adm-deals-ok'); if (bd) bd.onclick = async () => {
-    const lib = bd.textContent; bd.disabled = true; bd.textContent = tt('Tour en cours…', 'Run in progress…');
+    if (bd.disabled) return;
+    bd.disabled = true; bd.classList.add('adm-occ'); bd.textContent = tt('Chasse en cours…', 'Hunt in progress…');
     const r = await API.deals_recharger().catch(e => ({ok:false, erreur:e.message}));
-    if (!r || r.ok === false) { toast((r && r.erreur) || 'Erreur', 4000); bd.disabled = false; bd.textContent = lib; return; }
-    toast(r.deja ? tt('Un tour est déjà en cours', 'A run is already in progress') : r.attente ? tt('Tour demandé : il part dès que l’analyse des encans en cours finit', 'Run requested: it starts as soon as the auction analysis ends')
-      : tt('Tour lancé : les deals arrivent au fur et à mesure', 'Run started: deals arrive as they’re found'), 3500);
-    if (r.etat) etatDeals(r.etat);
-    // le bouton reste « en cours » tant que le tour tourne ou attend (avant : il redevenait actif apres 15 s)
-    let k = 0, vu = false; const suivre = setInterval(async () => { k++; const e = await API.deals_etat().catch(() => null); etatDeals(e);
-      const t = (e && e.tour) || {}; if (t.en_cours) vu = true;
-      const fini = e && !t.en_cours && !t.demande && (vu || k >= 3);
-      if (fini || k > 120 || !document.body.contains(bd)) { clearInterval(suivre); bd.disabled = false; bd.textContent = lib;
-        if (fini && vu) toast(tt('Tour terminé', 'Run finished'), 2500); } }, 10000); };
+    if (!r || r.ok === false) { toast((r && r.erreur) || 'Erreur', 4000); }
+    else toast(r.deja ? tt('La chasse tourne déjà', 'The hunt is already running') : r.attente ? tt('Tour demandé : il part dès que l’analyse des encans en cours finit', 'Run requested: it starts as soon as the auction analysis ends')
+      : tt('Chasse lancée : les deals arrivent au fur et à mesure', 'Hunt started: deals arrive as they’re found'), 3500);
+    etatDeals(await API.deals_etat().catch(() => null)); };
   API.deals_vendeurs().then(v => { const t = $('#adm-vend-l'); if (t && v && v.ok) t.value = v.vendeurs.join(', '); }).catch(() => {});
   // 29 oct 2026 (Mathieu : « Top vendeurs : toujours rien ») : ce qu'eBay renvoie MAINTENANT, vendeur par vendeur
   const LIB_R = {ok: tt('gardés', 'kept'), recrue: tt('recrues de l’année', 'this year’s rookies'), ordinaire: tt('cartes ordinaires', 'common cards'),

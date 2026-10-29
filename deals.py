@@ -1609,6 +1609,8 @@ def recharger():
     import appels_ebay
     if _ETAT["en_cours"]:
         return {"ok": True, "deja": True}
+    if _ETAT.get("tour_demande"):
+        return {"ok": True, "deja": True, "attente": True}          # 31 oct 2026 : un seul tour demande a la fois
     appels_ebay.liberer(900)
     if chasser_si_besoin(force=True):
         return {"ok": True, "lance": True}
