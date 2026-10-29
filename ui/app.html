@@ -260,6 +260,10 @@ details.reglage summary::-webkit-details-marker{display:none}
 .vp-src{margin-top:10px; font-size:13px; color:var(--doux)}
 .vp-v{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px} .vp-l{display:flex; flex-direction:column; align-items:center; gap:1px; padding:6px 10px; border-radius:10px; background:var(--carte2); border:1px solid var(--ligne); text-decoration:none; color:var(--texte)}
 .vp-l b{font:700 15px 'Barlow Condensed',sans-serif} .vp-l span{font-size:11px; color:var(--doux)} .vp-pol{margin:4px 0 10px; font-size:12.5px}
+.cb-choix{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:6px}
+.cb-c{display:flex; flex-direction:column; align-items:center; gap:6px; padding:18px 10px; border-radius:18px; background:var(--carte2); border:1px solid var(--ligne); color:var(--texte); font:inherit; cursor:pointer; text-align:center}
+.cb-c:active{transform:scale(.98)} .cb-i{width:46px; height:46px; border-radius:14px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.05); color:var(--acc)}
+.cb-i svg{width:24px; height:24px} .cb-c b{font:700 19px 'Barlow Condensed',sans-serif} .cb-c small{font-size:12.5px; color:var(--doux); line-height:1.3}
 .d-ent{display:flex; align-items:center; gap:8px; margin-left:auto} .d-chips{display:flex; align-items:center; flex-wrap:nowrap; gap:7px} .d-chips .aide-q{margin-left:auto} .d-chips .chip{padding-left:11px; padding-right:11px}
 .fd-w{flex-wrap:wrap !important; overflow:visible !important} .fd-s{display:flex; flex-direction:column; gap:8px}
 .fd-l{align-items:center; padding:10px 0} .fd-l > span{display:flex; flex-direction:column; gap:2px} .fd-l small{font-size:13px; color:var(--doux)}
@@ -2917,8 +2921,7 @@ function feuilleAjout(){
   const coll = [['collection', ICONES.photo, tt('Scanner une carte', 'Scan a card'), tt('La caméra la lit en direct, montre sa valeur et l’ajoute', 'The camera reads it live, shows its value and adds it')],
     ['collection-lot', ICO_LOT, tt('Plusieurs cartes d’un coup', 'Several cards at once'), tt('Depuis ta photothèque, devant puis dos', 'From your photo library, front then back')],
     ['main', ICONES.plus, tt('À la main', 'By hand'), tt('Sans photo : joueur, année, set, prix payé', 'No photo: player, year, set, price paid')]];
-  const vente = [['nouvelle', ICO_EBAY_TAG, tt('Créer une annonce eBay', 'Create an eBay listing'), tt('Une photo : titre, prix et annonce complète', 'One photo: title, price and full listing')],
-    ['lot', ICO_LOT, tt('Plusieurs annonces d’un coup', 'Several listings at once'), tt('Tes photos en lot, prêtes à publier', 'Your photos in a batch, ready to publish')]];
+  const vente = [['nouvelle', ICO_EBAY_TAG, tt('Créer des annonces eBay', 'Create eBay listings'), tt('Une carte ou plusieurs : titre, prix et annonce complète', 'One card or several: title, price and full listing')]];
   const bloc = (t, d, l) => `<div class="aj-bloc"><div class="aj-t"><b>${t}</b><span>${d}</span></div><div class="liste-ajout">${l.map(([k, ic, n, x]) => `<button class="r-ligne" data-aj2="${k}"><span class="aj-ico">${ic}</span><span class="t"><b>${n}</b><span>${x}</span></span>${ICONES.chevron || '›'}</button>`).join('')}</div></div>`;
   const bC = bloc(tt('Dans ma collection', 'To my collection'), tt('Rien ne va sur eBay. Tu la mets en vente plus tard si tu veux.', 'Nothing goes to eBay. List it later if you want.'), coll);
   const bV = vend ? bloc(tt('Pour vendre', 'To sell'), tt('L’annonce eBay, prête en une photo.', 'The eBay listing, ready in one photo.'), vente) : '';
@@ -3437,7 +3440,7 @@ const MSG_PHOTO = {
 };
 async function vueVendre(arg){
   if (arg === 'lot' || arg === 'collection-lot') { const but = arg === 'lot' ? 'vente' : 'collection'; if (LOT.l && !LOT.fini && LOT.but === but) rendreLot(); else vueLot(but); return; }
-  if (arg === 'collection') { for (const k in V2) delete V2[k]; V2.but = 'collection'; etapePhoto(0); return; }
+  if (arg === 'collection') { for (const k in V2) delete V2[k]; V2.but = 'collection'; await etapePhoto(0); demanderCombien('collection'); return; }
   if (arg === 'programmer') { const e = await API.serie_etat().catch(() => ({})); if (e.en_cours) suivrePG(); else vueProgrammer(); return; }
   if (arg === 'nouvelle') { for (const k in V2) delete V2[k]; history.replaceState(null, '', '#vendre'); }
   if (arg && /^\d+$/.test(arg) && V2.cid !== +arg) {          // depuis l'inventaire : la fiche de la carte (et ses photos gardees)
@@ -3451,7 +3454,20 @@ async function vueVendre(arg){
     }
   }
   if (V2.prep) { rendreVente2(); return; }
-  etapePhoto(0);
+  const neuf = !(V2.photos && V2.photos.length);
+  await etapePhoto(0);
+  if (neuf) demanderCombien('vente');
+}
+// 30 oct 2026 (Mathieu : « comment on le demande, batch ou single : une question pop-up et non un onglet, moi-meme je
+// l'avais pas vu ») : au depart, une question, deux grosses reponses
+function demanderCombien(but){
+  const lot = but === 'collection' ? 'collection-lot' : 'lot';
+  ouvrirFeuille(`<h3>${but === 'collection' ? tt('Combien de cartes ajoutes-tu ?', 'How many cards are you adding?') : tt('Combien de cartes vends-tu ?', 'How many cards are you selling?')}</h3>
+    <div class="cb-choix">
+      <button class="cb-c" id="cb-une"><span class="cb-i">${ICONES.photo}</span><b>${tt('Une carte', 'One card')}</b><small>${tt('Photo du devant, puis du dos', 'Front photo, then back')}</small></button>
+      <button class="cb-c" id="cb-lot"><span class="cb-i">${ICO_LOT}</span><b>${tt('Plusieurs cartes', 'Several cards')}</b><small>${tt(`Jusqu’à ${LOT_MAX}, depuis ta photothèque`, `Up to ${LOT_MAX}, from your photo library`)}</small></button></div>`);
+  $('#cb-une').onclick = () => { vibrer(); fermerFeuille(); };
+  $('#cb-lot').onclick = () => { vibrer(); fermerFeuille(); location.hash = '#vendre/' + lot; };
 }
 // une etape photo : 0 = devant, 1 = dos
 const ICO_BIBLIO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-4.5-4.5L6 21"/></svg>';
@@ -3477,7 +3493,7 @@ async function etapePhoto(i){
       <label class="btn gros prise ghost">${ICO_BIBLIO}<span>${tt('Ma photothèque', 'My photos')}</span>
         <input type="file" accept="image/*" ${dev ? 'multiple' : ''} id="as-gal" hidden></label></div>
     ${dev ? `<div class="pastilles" style="justify-content:center">${pastilleQuota('annonces_mois')}${st.limite != null ? capsule(tt(st.reste + ' lecture' + (st.reste > 1 ? 's' : '') + ' de photo ce mois', st.reste + ' photo read' + (st.reste > 1 ? 's' : '') + ' left this month'), st.reste ? 'acc' : 'rouge') : ''}</div>
-      <a class="carte-lot" href="#vendre/${V2.but === 'collection' ? 'collection-lot' : 'lot'}"><b>${tt('Plusieurs cartes ? Vends en lot', 'Several cards? Sell in a batch')}</b><span>${tt('Tes photos de la photothèque, devant puis dos : jusqu’à 20 cartes d’un coup', 'Photos from your library, front then back: up to 20 cards at once')}</span><i>›</i></a>
+      <a class="plus" href="#vendre/${V2.but === 'collection' ? 'collection-lot' : 'lot'}">${tt('Plusieurs cartes ? En lot ›', 'Several cards? As a batch ›')}</a>
       <button class="plus" id="vd-main">${tt('Remplir à la main', 'Fill in by hand')}</button>`
       : `<button class="plus" id="as-sans">${tt('Continuer sans le dos', 'Continue without the back')}</button>`}
   </section>`;
