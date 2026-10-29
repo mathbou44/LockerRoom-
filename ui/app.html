@@ -362,6 +362,19 @@ body.mode-acheteur{--acc:#8FE3CF; --acc-fonce:#11302A; --acc-texte:#04201A}
 .barre-mode{position:sticky; top:0; z-index:30; display:flex; align-items:center; justify-content:space-between; gap:10px;
   padding:calc(var(--haut) + 4px) 18px 8px; background:rgba(11,11,14,.9); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-bottom:1px solid var(--sep)}
 body.sandbox .barre-mode{top:25px; padding-top:8px}
+/* 29 oct 2026 (Mathieu : « pour le Pro, changer le fond de l'entete ; subtil, juste assez pour une impression d'exclusivite ») :
+   un fond or tres sombre, un filet or qui s'estompe sur les cotes, un reflet lent ; « PRO » sous la cloche */
+.haut-cloche{position:relative}
+.haut-pro{display:none; position:absolute; left:50%; bottom:-7px; transform:translateX(-50%); padding:1px 5px; border-radius:6px;
+  font:700 9px/1.2 var(--f-cond); letter-spacing:.12em; color:#1A150C; background:linear-gradient(135deg, #F3E2B3, #D9B866 55%, #A88A45)}
+body.pro .haut-pro{display:block}
+body.pro .barre-mode{background:linear-gradient(180deg, rgba(38,31,17,.94), rgba(17,15,11,.92)); border-bottom-color:transparent}
+body.pro .barre-mode::after{content:''; position:absolute; left:0; right:0; bottom:0; height:1px; pointer-events:none;
+  background:linear-gradient(90deg, transparent, rgba(168,138,69,.7) 25%, #F3E2B3 50%, rgba(168,138,69,.7) 75%, transparent)}
+body.pro .barre-mode::before{content:''; position:absolute; inset:0; pointer-events:none; opacity:.07;
+  background:linear-gradient(105deg, transparent 35%, #F3E2B3 50%, transparent 65%); background-size:250% 100%; animation:pro-reflet 9s ease-in-out infinite}
+@keyframes pro-reflet{0%{background-position:120% 0} 60%,100%{background-position:-30% 0}}
+@media (prefers-reduced-motion:reduce){ body.pro .barre-mode::before{animation:none} }
 body.avec-barre .ecran{padding-top:14px}
 .barre-mode .rond{width:40px; height:40px}
 .rond svg{width:22px; height:22px; display:block}
@@ -1443,7 +1456,9 @@ body.pro .onglets a.on{color:var(--acc)}
 .profil-av img{width:100%; height:100%; border-radius:50%; object-fit:cover; background:var(--carte); box-shadow:0 0 0 3px var(--fond)}
 .profil-n{min-width:0; display:flex; flex-direction:column; gap:4px}
 .profil-b{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:4px}
-.profil-rac{display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:8px}
+.profil-rac{display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); gap:6px}
+.profil-rac .pr-r{padding:10px 2px; gap:5px; font-size:11px; letter-spacing:.04em; min-width:0; overflow:hidden}
+.profil-rac .pr-r .pr-i, .profil-rac .pr-r .pr-i svg{width:22px; height:22px}
 .pr-r{display:flex; flex-direction:column; align-items:center; gap:6px; padding:12px 6px; border-radius:var(--r-slab); border:1px solid var(--ligne);
   background:var(--carte); color:var(--texte); font:600 13px var(--f-cond); letter-spacing:.1em; text-transform:uppercase; cursor:pointer;
   box-shadow:inset 0 0 0 3px var(--carte), inset 0 0 0 4px var(--cadre)}
@@ -2799,7 +2814,7 @@ function majBarreMode(){
     b.innerHTML = voir ? `<button class="rond haut-plus" id="h-plus" aria-label="${esc(tt('Ajouter', 'Add'))}">${ICONES.plus}</button>
       <div class="haut-nom" id="h-nom"><span class="haut-ligne">${perso && S.logo ? `<img class="haut-logo" src="${esc(S.logo)}" alt="">` : LOGO_HOLO('haut-logo')}<span class="haut-mot">${perso ? esc(nomMarque()) : '<b>slab</b>coach'}</span></span>
         <span class="haut-bascule" role="tablist" aria-label="${esc(tt('Volet', 'Mode'))}">${['acheteur', 'vendeur'].map(m => `<button role="tab" aria-selected="${S.mode === m}" data-mode-choix="${m}" class="${S.mode === m ? 'on' : ''}">${m === 'acheteur' ? tt('Acheteur', 'Buyer') : tt('Vendeur', 'Seller')}</button>`).join('')}</span></div>
-      <button class="rond haut-cloche" data-alertes aria-label="${esc(tt('Alertes', 'Alerts'))}">${ICO_CLOCHE}<i class="pt" id="h-pt" hidden></i></button>` : '';
+      <button class="rond haut-cloche" data-alertes aria-label="${esc(tt('Alertes', 'Alerts'))}">${ICO_CLOCHE}<i class="pt" id="h-pt" hidden></i><span class="haut-pro" aria-hidden="true">PRO</span></button>` : '';
     const hp = $('#h-plus', b); if (hp) hp.onclick = feuilleAjouter;
     brancherSwitchMode(b);            // 28 oct 2026 (Mathieu : « passer d'acheteur a vendeur en un clic ») : les deux volets, visibles, un tap
     if (voir) majCloche();
@@ -7771,7 +7786,6 @@ async function vueReglages(arg){
       ...(S.forfait && S.forfait.admin ? [['#admin', '✦', 'Admin']] : []),
     ].map(([h, ic, t]) => h === 'alertes' ? `<button class="pr-r" data-alertes><span class="pr-i">${ic}</span>${t}</button>` : `<a class="pr-r" href="${h}"><span class="pr-i">${ic}</span>${t}</a>`).join('')}</div>
     <div class="section">${tt('Réglages', 'Settings')}</div>
-    ${S.forfait && S.forfait.admin ? `<a class="bandeau-aaj" href="#admin"><span class="aaj-n">✦</span><span><b>${tt('Console admin', 'Admin console')}</b><small>${tt('Abonnés, demandes, catalogue, serveur', 'Subscribers, requests, catalogue, server')}</small></span><span class="fl">›</span></a>` : ''}
     <div class="r-bloc" id="g-ebay">${roue}</div>
     <div class="r-bloc" id="g-forfait" hidden></div>
     <div class="r-bloc" ${S.mode === 'acheteur' ? 'hidden' : ''}><div class="r-titre">Ce que je fais</div>
@@ -7899,9 +7913,14 @@ function pastillerReglages(){
     : /frais|fees/i.test(t) ? 'frais' : /avanc|advanced/i.test(t) ? 'admin' : /aide|help/i.test(t) ? 'aide' : /profil/i.test(t) ? 'profil' : /guide/i.test(t) ? 'guide'
     : /idée|idea/i.test(t) ? 'idee' : /partag|share/i.test(t) ? 'news' : 'faire';
   const formulaire = (b) => !!b.querySelector('#g-nom, #g-ep, #g-desc');
-  const blocs = [...ec.children].filter(b => b.classList.contains('r-bloc') && b.id !== 'g-forfait' && !b.hidden);
+  const guide = [...ec.children].find(b => b.classList.contains('r-bloc') && b.getAttribute('href') === '#guide'); if (guide) res.appendChild(guide);   // deja un raccourci
+  const blocs = [...ec.children].filter(b => b.classList.contains('r-bloc') && b.id !== 'g-forfait' && !b.hidden && b.getAttribute('href') !== '#guide');
   ec.querySelector('.section') && (ec.querySelector('.section').hidden = true);
   const ok = $('#g-ok'); if (ok) res.appendChild(ok);
+  // 29 oct 2026 (« redondance ») : le forfait n'a plus son bloc dans la page : la pastille « Pro » du haut l'ouvre
+  const gf = $('#g-forfait'); if (gf) res.appendChild(gf);
+  $$('.profil-tete [data-pro-ouvrir]').forEach(b => b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); vibrer();
+    const g = $('#g-forfait'); if (g && !g.hidden && g.innerHTML.trim()) { g.hidden = false; feuilleBloc(g); } else feuillePro(); });
   const ordre = (t) => ['ebay', 'profil', 'faire', 'boutique', 'frais', 'palette', 'sport', 'guide', 'idee', 'news', 'admin', 'aide'].indexOf(icone(t));
   blocs.map(b => ({b, t: titreDe(b)})).filter(x => x.t).sort((x, y) => ordre(x.t) - ordre(y.t)).forEach(({b, t}, i) => {
     res.appendChild(b);
