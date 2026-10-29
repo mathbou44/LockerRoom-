@@ -257,6 +257,29 @@ details.reglage summary::-webkit-details-marker{display:none}
 .sd-fav{color:var(--or)}
 .cf-ph{margin:12px 0; border-radius:16px; overflow:hidden; background:#111115; border:1px solid var(--ligne)} .cf-ph img{display:block; width:100%; max-height:40vh; object-fit:contain}
 .cf-niv{display:flex; align-items:center; gap:10px; margin-top:10px} .cf-niv > span{font-size:13px; font-weight:600; color:var(--doux)} .cf-niv .seg{flex:1}
+.vp{gap:10px; padding:12px 14px}
+.vp-sug{display:grid; grid-template-columns:repeat(3,1fr); gap:6px}
+.vp-sug button{display:flex; flex-direction:column; align-items:center; gap:0; padding:6px 4px; border-radius:12px; background:transparent; border:1px solid var(--ligne); color:var(--texte); font:inherit; cursor:pointer}
+.vp-sug button b{font:700 18px 'Barlow Condensed',sans-serif} .vp-sug button span{font-size:11px; color:var(--doux)}
+.vp-sug button.on{background:var(--carte2); border-color:var(--acc)} .vp-sug button.on span{color:var(--texte)}
+.vp-ligne{display:flex; align-items:center; gap:12px}
+.vp-in{position:relative; flex:0 0 46%} .vp-in .champ.gros{height:48px; width:100%; padding-right:48px} .vp-in span{position:absolute; right:12px; top:50%; transform:translateY(-50%); font-size:12px; color:var(--doux)}
+.vp-net{display:flex; flex-direction:column; font-size:12px; color:var(--doux)} .vp-net b{font:700 22px 'Barlow Condensed',sans-serif; color:var(--vert); line-height:1.1}
+.vp-m{display:flex; flex-wrap:wrap; gap:6px; align-items:center} .vp-m.vide{font-size:13px; color:var(--doux); justify-content:space-between}
+.vp-mi{display:inline-flex; align-items:baseline; gap:5px; padding:4px 10px; border-radius:99px; background:var(--carte2); border:1px solid var(--ligne); color:var(--texte); font:inherit; cursor:pointer}
+.vp-mi span{font-size:11.5px; color:var(--doux)} .vp-mi b{font:700 15px 'Barlow Condensed',sans-serif}
+.fl-ctl{display:flex; align-items:center; gap:12px; flex:1; min-width:0; margin:8px 0}
+.fl-sw{display:inline-flex; align-items:center; gap:8px; background:none; border:0; padding:4px 0; color:var(--texte); font:600 13px inherit; font-family:inherit; cursor:pointer; white-space:nowrap}
+.fl-sw i{width:34px; height:20px; border-radius:99px; background:var(--ligne); position:relative; transition:background .2s}
+.fl-sw i::after{content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:#fff; transition:transform .2s}
+.fl-sw.on i{background:var(--acc)} .fl-sw.on i::after{transform:translateX(14px)}
+.fl-ctl input[type=range]{flex:1; min-width:90px; -webkit-appearance:none; appearance:none; height:4px; border-radius:99px; background:linear-gradient(90deg, var(--acc) var(--v,50%), var(--ligne) var(--v,50%)); outline:none}
+.fl-ctl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:22px; height:22px; border-radius:50%; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.4); cursor:pointer}
+.fl-ctl input[type=range]::-moz-range-thumb{width:22px; height:22px; border:0; border-radius:50%; background:#fff}
+.fl-ctl input[type=range]:disabled{opacity:.5}
+.vendre.vs .photo-princ.vs-ph{width:auto; max-width:100%; aspect-ratio:auto; height:min(40vh, 380px); margin:0 auto; background:none; border:0; overflow:hidden}
+.vendre.vs .photo-princ.vs-ph img{height:100%; width:auto; max-width:100%; object-fit:contain; border-radius:16px; display:block}
+.vendre.vs .studio-bar{gap:4px 12px}
 .vm-tit{margin-top:12px; font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--doux)}
 .vm{display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:6px}
 .vm-t{display:flex; flex-direction:column; align-items:center; gap:1px; padding:8px 4px; border-radius:12px; background:var(--carte2); border:1px solid var(--ligne); color:var(--texte); font:inherit; cursor:pointer}
@@ -2622,7 +2645,7 @@ const S = { reglages:null, equipes:null, produits:null, ongletBreaks:'calc', ong
   filtreInv:'tous', rechInv:'', calc:{}, panier:[], rachat:[], clients:null, mois:null };
 async function reglages(force){ if (!S.reglages || force) { S.reglages = await API.reglages_lire(); appliquerMarque();
     if (S.reglages && typeof S.reglages.photo_studio === 'boolean') MODE_STUDIO = S.reglages.photo_studio;
-    if (S.reglages && [1, 2, 3].includes(+S.reglages.flou_niveau)) FLOU = +S.reglages.flou_niveau; } return S.reglages; }
+    if (S.reglages && S.reglages.flou_niveau != null) FLOU = flouNorm(S.reglages.flou_niveau); } return S.reglages; }
 // 23 oct 2026 (Mathieu : « l'utilisateur doit pouvoir mettre son logo et le nom de sa boutique pour personnaliser
 // son interface ») - logo + nom dans le menu, l'accueil et l'onglet du navigateur. Le logo est garde sur le serveur ;
 // ce navigateur en garde une copie pour l'afficher sans attendre.
@@ -3296,12 +3319,26 @@ function _nettoyerCoins(out, O, od, W, H, fond){
 // recadre. La carte + 1 mm autour restent les pixels d'origine ; tout le reste est flou et assombri (comme Teams).
 // 30 oct 2026 (« ne pixelise pas trop, le user doit quand meme voir derriere que c'est un support ») : un flou doux,
 // assez pour que le support et la table ne distraient pas, pas assez pour cacher ce que c'est
-const FLOU_NIV = {1: {r: 0.005, sombre: 0.18}, 2: {r: 0.009, sombre: 0.32}, 3: {r: 0.016, sombre: 0.5}};
-let FLOU = 2; try { FLOU = +(localStorage.getItem('lr_flou') || 2) || 2; } catch (e) {}
-const segFlou = (id) => segV(id, [['1', tt('Léger', 'Light')], ['2', tt('Moyen', 'Medium')], ['3', tt('Fort', 'Strong')]], String(FLOU));
+// 30 oct 2026 (Mathieu : « pas de gros boutons ; une barre avec un bouton glissoire pour l'intensite ») : intensite 0..100
+// (les anciens niveaux 1/2/3 deviennent 25/50/85). Un petit interrupteur « Fond flou » + une glissiere, c'est tout.
+const flouNorm = (v) => { v = +v; if ([1, 2, 3].includes(v)) return {1: 25, 2: 50, 3: 85}[v]; return isFinite(v) && v >= 0 && v <= 100 ? Math.round(v) : 50; };
+let FLOU = 50; try { FLOU = flouNorm(localStorage.getItem('lr_flou') || 50); } catch (e) {}
+function ctlFlou(id, aStudio){
+  return `<div class="fl-ctl" id="${id}">${aStudio === false ? '' : `<button class="fl-sw ${MODE_STUDIO ? 'on' : ''}" role="switch" aria-checked="${MODE_STUDIO}"><i></i>${tt('Fond flou', 'Blur background')}</button>`}
+    ${MODE_STUDIO ? `<input type="range" min="0" max="100" step="1" value="${FLOU}" aria-label="${esc(tt('Intensité du flou', 'Blur strength'))}" style="--v:${FLOU}%">` : ''}</div>`;
+}
+// onMode(bool) : interrupteur ; onNiv() : apres que FLOU a change (au lacher de la glissiere)
+function brancherFlou(id, onMode, onNiv){
+  const z = $('#' + id); if (!z) return;
+  const sw = z.querySelector('.fl-sw'); if (sw) sw.onclick = () => { vibrer(); MODE_STUDIO = !MODE_STUDIO; try { localStorage.setItem('lr_studio', MODE_STUDIO ? '1' : '0'); } catch (e) {}
+    API.reglages_sauver({photo_studio: MODE_STUDIO}).then(r => { S.reglages = r; }).catch(() => {}); onMode(MODE_STUDIO); };
+  const r = z.querySelector('input[type=range]'); if (!r) return;
+  r.oninput = () => r.style.setProperty('--v', r.value + '%');
+  r.onchange = async () => { r.disabled = true; await changerFlou(+r.value); r.disabled = false; onNiv(); };
+}
 async function changerFlou(n){
-  FLOU = n; try { localStorage.setItem('lr_flou', String(n)); } catch (e) {}
-  API.reglages_sauver({flou_niveau: n}).then(r => { S.reglages = r; }).catch(() => {});
+  FLOU = flouNorm(n); try { localStorage.setItem('lr_flou', String(FLOU)); } catch (e) {}
+  API.reglages_sauver({flou_niveau: FLOU}).then(r => { S.reglages = r; }).catch(() => {});
   // les photos deja faites sont refaites avec les memes coins (dans le telephone, sans credit)
   const refaire = async (src, st) => (st && st.coins && src) ? await photoStudio(src, st.coins, {affiner: false}).catch(() => st) : st;
   if (V2.loc) for (let j = 0; j < V2.loc.length; j++) V2.loc[j] = await refaire(V2.originales && V2.originales[j] || V2.photos[j], V2.loc[j]);
@@ -3312,21 +3349,26 @@ function _flouImage(img, W, H){
   const out = document.createElement('canvas'); out.width = W; out.height = H;
   const g = out.getContext('2d'); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
   // 30 oct 2026 (« un bouton pour que j'ajuste moi-meme le flou : light, medium, darker ») : 3 niveaux, garde au compte
-  const N = FLOU_NIV[FLOU] || FLOU_NIV[2];
-  const r = Math.max(3, Math.round(Math.min(W, H) * N.r));
-  if (_FILTRE_OK) { g.filter = `blur(${r}px)`; g.drawImage(img, -2 * r, -2 * r, W + 4 * r, H + 4 * r); g.filter = 'none'; }   // deborde : pas de bord sombre
+  const t = flouNorm(FLOU) / 100, N = {r: 0.002 + 0.02 * t, sombre: 0.06 + 0.46 * t};
+  const r = Math.max(2, Math.round(Math.min(W, H) * N.r));
+  if (_FILTRE_OK && !window.__repliFlou) { g.filter = `blur(${r}px)`; g.drawImage(img, -2 * r, -2 * r, W + 4 * r, H + 4 * r); g.filter = 'none'; }   // deborde : pas de bord sombre
   else {
-    // Safari sans ctx.filter : reduction douce (1/4) + moyenne de voisins, puis agrandissement lisse (pas de pixels)
-    const w = Math.max(1, Math.round(W / 4)), h = Math.max(1, Math.round(H / 4));
-    let a = document.createElement('canvas'); a.width = w; a.height = h;
-    let ga = a.getContext('2d'); ga.imageSmoothingQuality = 'high'; ga.drawImage(img, 0, 0, w, h);
-    for (let k = 0; k < 3; k++) {
-      const b = document.createElement('canvas'); b.width = w; b.height = h; const gb = b.getContext('2d');
-      gb.drawImage(a, 0, 0); gb.globalAlpha = 0.5;
-      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) gb.drawImage(a, dx, dy);
+    // 30 oct 2026 : iPhone (pas de ctx.filter). Avant, le repli floutait toujours a peu pres pareil (1/4 + 3 passes de 1 px) :
+    // sur une photo de 12 Mpx le fond restait presque net, peu importe le niveau. Maintenant on reduit selon le rayon
+    // (le flou fait ~2 px a petite taille), 4 passes de moyenne, puis on regrandit par etapes (lisse, sans pixels).
+    const k = Math.max(1, r / 2), w = Math.max(8, Math.round(W / k)), h = Math.max(8, Math.round(H / k)), m = 3;
+    let a = document.createElement('canvas'); a.width = w + 2 * m; a.height = h + 2 * m;
+    let ga = a.getContext('2d'); ga.imageSmoothingQuality = 'high'; ga.drawImage(img, 0, 0, a.width, a.height);   // marge : pas de bord sombre
+    for (let p = 0; p < 4; p++) {
+      const b = document.createElement('canvas'); b.width = a.width; b.height = a.height; const gb = b.getContext('2d');
+      gb.drawImage(a, 0, 0); let n = 1;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [2, 0], [-2, 0], [0, 2], [0, -2]]) { n++; gb.globalAlpha = 1 / n; gb.drawImage(a, dx, dy); }
       a = b;
     }
-    g.drawImage(a, 0, 0, W, H);
+    let cw = a.width, ch = a.height, src = a;
+    while (cw * 2 < W) { const c = document.createElement('canvas'); c.width = cw * 2; c.height = ch * 2; const gc = c.getContext('2d'); gc.imageSmoothingQuality = 'high'; gc.drawImage(src, 0, 0, c.width, c.height); src = c; cw = c.width; ch = c.height; }
+    const sx = m * cw / a.width, sy = m * ch / a.height;
+    g.drawImage(src, sx, sy, cw - 2 * sx, ch - 2 * sy, 0, 0, W, H);
   }
   g.fillStyle = `rgba(6,6,10,${N.sombre})`; g.fillRect(0, 0, W, H);
   return out;
@@ -3346,8 +3388,73 @@ function poserFlou(img, q){
 }
 // la carte sans l'IA (avant de depenser une lecture) : la plus grande zone qui se detache du fond, au centre, puis les
 // coins colles aux vrais bords (affinerCoins). -> coins 0..1000, ou null si rien de sur
+// 30 oct 2026 (Mathieu : « le cropping est epouvantable ») : sur une carte au haut sombre devant un fond noir, l'ancienne
+// methode (« ce qui differe du fond ») ne voyait que le bas blanc de la carte + la table grise -> la zone nette prenait
+// toute la largeur et le haut de la carte etait floute. Maintenant on cherche d'abord le rectangle au format d'une carte
+// (ou d'un slab) dont les 4 cotes suivent des bords francs dans la photo ; l'ancienne methode reste en secours.
+function coinsBords(G){
+  const w = G.w, h = G.h, d = G.rgba;
+  const ex = new Float32Array(w * h), ey = new Float32Array(w * h);
+  for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+    const i = (y * w + x) * 4; let mx = 0, my = 0;
+    for (let c = 0; c < 3; c++) { mx = Math.max(mx, Math.abs(d[i + 4 + c] - d[i - 4 + c])); my = Math.max(my, Math.abs(d[i + w * 4 + c] - d[i - w * 4 + c])); }
+    ex[y * w + x] = mx; ey[y * w + x] = my;
+  }
+  // bord vertical : le plus fort sur x-1..x+1 (un bord pas tout a fait droit) ; cumuls pour des sommes en O(1)
+  const cx = new Float32Array((w) * (h + 1)), cy = new Float32Array((h) * (w + 1));
+  for (let x = 1; x < w - 1; x++) for (let y = 0; y < h; y++) cx[x * (h + 1) + y + 1] = cx[x * (h + 1) + y] + Math.max(ex[y * w + x - 1], ex[y * w + x], ex[y * w + x + 1]);
+  for (let y = 1; y < h - 1; y++) for (let x = 0; x < w; x++) cy[y * (w + 1) + x + 1] = cy[y * (w + 1) + x] + Math.max(ey[(y - 1) * w + x], ey[y * w + x], ey[(y + 1) * w + x]);
+  const V = (x, y0, y1) => (cx[x * (h + 1) + y1] - cx[x * (h + 1) + y0]) / (y1 - y0);
+  const H = (y, x0, x1) => (cy[y * (w + 1) + x1] - cy[y * (w + 1) + x0]) / (x1 - x0);
+  // 4 cotes : la moyenne geometrique (les 4 doivent etre francs) ; un peu de bonus a la taille (le contour plutot qu'un
+  // detail imprime dans la carte)
+  const m = Math.max(2, Math.round(Math.min(w, h) * 0.015)), pas = 3;
+  const chercher = (RATIOS) => {
+    let best = null, bs = 0;
+    // couchee : un peu moins probable (et le panneau d'autographe d'une carte debout est couche : on ne veut pas lui)
+    const essai = (x0, x1, y0, y1, f) => {
+      const a = V(x0, y0, y1), b = V(x1, y0, y1), c = H(y0, x0, x1), e = H(y1, x0, x1);
+      const sc = Math.sqrt(Math.sqrt(a * b * c * e)) * Math.pow((x1 - x0) * (y1 - y0) / (w * h), 0.2) * (f || 1);
+      if (sc > bs) { bs = sc; best = [x0, x1, y0, y1]; }
+    };
+    for (let x0 = m; x0 < w - m; x0 += pas) for (let x1 = x0 + Math.round(w * 0.15); x1 < w - m; x1 += pas) {   // debout
+      const cw = x1 - x0;
+      for (const r of RATIOS) { const ch = Math.round(cw * r); if (ch > h - 2 * m) continue;
+        for (let y0 = m; y0 + ch < h - m; y0 += pas) essai(x0, x1, y0, y0 + ch); }
+    }
+    for (let y0 = m; y0 < h - m; y0 += pas) for (let y1 = y0 + Math.round(h * 0.15); y1 < h - m; y1 += pas) {   // couchee
+      const ch = y1 - y0;
+      for (const r of RATIOS) { const cw = Math.round(ch * r); if (cw > w - 2 * m) continue;
+        for (let x0 = m; x0 + cw < w - m; x0 += pas) essai(x0, x0 + cw, y0, y1, 0.85); }
+    }
+    return {best, bs};
+  };
+  // une carte (1,40, toploader compris) d'abord ; un slab (~1,7) seulement s'il est nettement plus franc : sinon le format
+  // allonge attrape le bas de la table ou les pattes du support sous la carte
+  let r = chercher([1.3, 1.36, 1.42, 1.5]);
+  const sl = chercher([1.62, 1.7, 1.78]);
+  if (sl.bs > 1.25 * r.bs) r = sl;
+  if (!r.best || r.bs < 9) return null;
+  // le meilleur est couche ? c'est souvent le panneau blanc d'autographe d'une carte debout au haut sombre : si une carte
+  // debout le contient avec des bords encore francs (>= 60 %), c'est elle
+  if (r.best[1] - r.best[0] > r.best[3] - r.best[2]) {
+    const [b0, b1, b2, b3] = r.best, t = 3 * pas; let mieux = null, ms = 0.6 * r.bs;
+    for (let x0 = m; x0 <= b0 + t; x0 += pas) for (let x1 = Math.max(x0 + 8, b1 - t); x1 < w - m; x1 += pas) {
+      if (x1 - x0 > 1.25 * (b1 - b0)) continue;
+      for (const k of [1.3, 1.36, 1.42, 1.5]) { const ch = Math.round((x1 - x0) * k);
+        for (let y0 = Math.max(m, b3 - t - ch); y0 <= b2 + t && y0 + ch < h - m; y0 += pas) { const y1 = y0 + ch; if (y1 < b3 - t) continue;
+          const sc = Math.sqrt(Math.sqrt(V(x0, y0, y1) * V(x1, y0, y1) * H(y0, x0, x1) * H(y1, x0, x1))) * Math.pow((x1 - x0) * ch / (w * h), 0.2);
+          if (sc > ms) { ms = sc; mieux = [x0, x1, y0, y1]; } } }
+    }
+    if (mieux) r = {best: mieux, bs: ms};
+  }
+  const [x0, x1, y0, y1] = r.best, bs = r.bs;
+  return {q: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], score: bs};
+}
 function coinsLocaux(img){
   const G = grisLisse(img, 360), w = G.w, h = G.h, d = G.rgba;
+  const cb = coinsBords(G);
+  if (cb) { const r = affinerCoins(G, cb.q); return r.coins.map(([x, y]) => [Math.round(x / w * 1000), Math.round(y / h * 1000)]); }
   const bord = [], B = Math.max(2, Math.round(Math.min(w, h) * 0.04));
   for (let y = 0; y < h; y += 2) for (let x = 0; x < w; x += 2) if (x < B || y < B || x >= w - B || y >= h - B) { const j = (y * w + x) * 4; bord.push([d[j], d[j + 1], d[j + 2]]); }
   const med = (k) => bord.map(p => p[k]).sort((a, b) => a - b)[bord.length >> 1];
@@ -3389,6 +3496,7 @@ function coinsLocaux(img){
     if (s1 < tl[0]) tl = [s1, x, y]; if (s1 > br[0]) br = [s1, x, y]; if (s2 > tr[0]) tr = [s2, x, y]; if (s2 < bl[0]) bl = [s2, x, y]; }
   let q = [[tl[1], tl[2]], [tr[1], tr[2]], [br[1], br[2]], [bl[1], bl[2]]];
   if (!_convexe(q)) return null;
+  if (q.some(([x, y]) => x < w * 0.02 || y < h * 0.02 || x > w * 0.98 || y > h * 0.98)) return null;   // colle au bord : c'est le fond
   const {ar} = _format(q);
   if (!(ar > 0.5 && ar < 2)) return null;
   const r = affinerCoins(G, q);
@@ -3550,13 +3658,10 @@ async function choixFond(i, ph, suite){
     V().innerHTML = `<section class="ecran vendre assist">${filAssistant(i)}
       <div class="titre">${tt('Ton fond', 'Your background')}</div>
       <div class="sous">${tt('La carte et 1 mm autour restent nettes : l’acheteur voit son état. Le reste est flou.', 'The card and 1 mm around it stay sharp: the buyer sees its condition. The rest is blurred.')}</div>
-      ${segV('cf-mode', [['1', tt('Fond flou', 'Blurred background')], ['0', tt('Photo originale', 'Original photo')]], MODE_STUDIO ? '1' : '0')}
-      ${MODE_STUDIO ? `<div class="cf-niv"><span>${tt('Flou', 'Blur')}</span>${segFlou('cf-niv')}</div>` : ''}
+      ${ctlFlou('cf-fl')}
       <div class="cf-ph"><img src="${esc(MODE_STUDIO ? st.photo : ph)}" alt=""></div>
       <button class="btn" id="cf-ok" style="margin-top:14px">${tt('Continuer', 'Continue')}</button></section>`;
-    $$('#cf-mode button').forEach(b => b.onclick = () => { MODE_STUDIO = b.dataset.v === '1'; try { localStorage.setItem('lr_studio', MODE_STUDIO ? '1' : '0'); } catch (e) {} vibrer(); peindre(); });
-    $$('#cf-niv button').forEach(b => b.onclick = async () => { vibrer(); FLOU = +b.dataset.v; st = await photoStudio(ph, st.coins, {affiner: false}).catch(() => st);
-      V2.loc[i] = st; try { localStorage.setItem('lr_flou', String(FLOU)); } catch (e) {} API.reglages_sauver({flou_niveau: FLOU}).then(r => { S.reglages = r; }).catch(() => {}); peindre(); });
+    brancherFlou('cf-fl', peindre, async () => { st = await photoStudio(ph, st.coins, {affiner: false}).catch(() => st); V2.loc[i] = st; peindre(); });
     $('#cf-ok').onclick = () => { API.reglages_sauver({photo_studio: MODE_STUDIO}).then(r => { S.reglages = r; }).catch(() => {}); suite(); };
   };
   peindre();
@@ -3637,15 +3742,12 @@ function feuillePhotosVente(apres, cadrer){
   const peindre = () => { const ph = V2.photos || [];
     ouvrirFeuille(`<h3>${tt('Les photos de ton annonce', 'Your listing photos')}</h3>
       <div class="sous" style="margin-bottom:10px">${tt('Exactement ce qui partira chez eBay.', 'Exactly what will go to eBay.')}</div>
-      ${aStudio ? segV('pv-studio', [['0', tt('Mes photos telles quelles', 'My photos as they are')], ['1', tt('Fond flou', 'Blurred background')]], MODE_STUDIO ? '1' : '0') : ''}
-      ${aStudio && MODE_STUDIO ? `<div class="cf-niv" style="margin-top:10px"><span>${tt('Flou', 'Blur')}</span>${segFlou('pv-niv')}</div>` : ''}
+      ${aStudio ? ctlFlou('pv-fl') : ''}
       <div class="pv-liste">${ph.map((u, i) => `<figure class="pv-f ${MODE_STUDIO && aStudio && V2.studio[i] ? 'studio' : ''}"><img src="${esc(u)}" alt="">
         <figcaption>${i === 0 ? tt('Devant', 'Front') : i === 1 ? tt('Dos', 'Back') : tt('Photo ', 'Photo ') + (i + 1)}${cadrer && aStudio && MODE_STUDIO && V2.studio[i] ? ` · <button class="lien-t" data-pv-cadre="${i}">${tt('ajuster le cadrage', 'adjust the crop')}</button>` : ''}</figcaption></figure>`).join('')}</div>
       <button class="btn" id="pv-ok" style="margin-top:14px">OK</button>`);
-    $$('#pv-studio button').forEach(b => b.onclick = () => { MODE_STUDIO = b.dataset.v === '1'; try { localStorage.setItem('lr_studio', MODE_STUDIO ? '1' : '0'); } catch (e) {}
-      API.reglages_sauver({photo_studio: MODE_STUDIO}).then(r => { S.reglages = r; }).catch(() => {}); syncPhotos(); vibrer(); peindre(); });
+    brancherFlou('pv-fl', () => { syncPhotos(); peindre(); }, peindre);
     $$('[data-pv-cadre]').forEach(b => b.onclick = () => feuilleCadrage(+b.dataset.pvCadre));
-    $$('#pv-niv button').forEach(b => b.onclick = async () => { vibrer(); $$('#pv-niv button').forEach(x => x.classList.toggle('on', x === b)); await changerFlou(+b.dataset.v); peindre(); });
     $('#pv-ok').onclick = () => { fermerFeuille(); if (apres) apres(); };
   };
   peindre();
@@ -3905,19 +4007,18 @@ function rendreVente2(){
       <button class="pilule" id="v2-neuf">${tt('+ Autre carte', '+ Another card')}</button></div>
 
     <div class="vs-photo">
-        <div class="photo-princ ${aStudio && MODE_STUDIO ? 'studio-on' : ''}" style="${photos[0] ? `background-image:url('${esc(photos[0])}')` : ''}">${photos[0] ? '' : SVG_CARTE}</div>
-        ${cadrable ? `<div class="studio-bar">${aStudio ? segV('v2-studio', [['1', tt('Fond flou', 'Blurred background')], ['0', tt('Originale', 'Original')]], MODE_STUDIO ? '1' : '0') : ''}
-          ${aStudio && MODE_STUDIO ? `<div class="cf-niv" style="flex-basis:100%"><span>${tt('Flou', 'Blur')}</span>${segFlou('v2-niv')}</div>` : ''}
-          <button class="pilule" id="v2-cadre">${aStudio ? tt('Ajuster le cadrage', 'Adjust the crop') : '✦ ' + tt('Photo studio', 'Studio photo')}</button></div>` : ''}
+        <div class="photo-princ ${photos[0] ? 'vs-ph' : ''} ${aStudio && MODE_STUDIO ? 'studio-on' : ''}">${photos[0] ? `<img src="${esc(photos[0])}" alt="">` : SVG_CARTE}</div>
+        ${cadrable ? `<div class="studio-bar">${aStudio ? ctlFlou('v2-fl') : ''}
+          <button class="lien-t" id="v2-cadre">${aStudio ? tt('Recadrer', 'Re-crop') : '✦ ' + tt('Fond flou', 'Blur background')}</button></div>` : ''}
         <div class="vignettes">${photos.map((ph, i) => `<button class="vg ${i === 0 ? 'on' : ''}" data-ph="${i}" style="background-image:url('${esc(ph)}')" aria-label="photo ${i + 1}"></button>`).join('')}
           ${photos.length < 12 ? `<label class="vg plus-ph" title="${esc(tt('Ajouter une photo', 'Add a photo'))}">+<input type="file" accept="image/*" multiple id="v2-ph" hidden></label>` : ''}</div>
     </div>
     <button class="vs-titre" id="vs-titre"><span>${esc(V2.titre || '')}</span><i>✎</i></button>
     <div class="vs-etape"><span class="vs-n">1</span><b>${tt('Ton prix', 'Your price')}</b><button class="aide-q" id="vs-aide-prix" aria-label="${esc(tt('Comment choisir le prix', 'How to pick the price'))}">?</button></div>
-    <div class="bloc-v"><div class="bloc-t">${tt('Prix', 'Price')}</div>
-          ${pr ? segV('v2-pp', [[pr.vite, argent(pr.vite, 2), tt('Vendre vite', 'Sell fast')], [pr.marche, argent(pr.marche, 2), tt('Prix du marché ★', 'Market price ★')], [pr.haut, argent(pr.haut, 2), tt('Plus haut', 'Higher')]], V2.prix) : ''}
-          <div class="ligne-prix"><label>${tt('Ton prix', 'Your price')} ($ CA)<input class="champ gros" id="v2-prix" type="number" inputmode="decimal" step="0.01" value="${esc(V2.prix ?? '')}"></label>
-            <div class="recois"><span>${tt('Tu reçois ≈', 'You get ≈')}</span><b id="v2-net">${argent(net(V2.prix), 2)}</b><small>${tt('après frais eBay', 'after eBay fees')} (${p.frais_pct} %)</small></div></div>
+    <div class="bloc-v vp">
+          ${pr ? `<div class="vp-sug" id="v2-pp">${[[pr.vite, tt('Vite', 'Fast')], [pr.marche, tt('Marché ★', 'Market ★')], [pr.haut, tt('Haut', 'High')]].map(([v, l]) => `<button data-v="${esc(v)}" class="${String(v) === String(V2.prix) ? 'on' : ''}"><b>${argent(v, 0)}</b><span>${l}</span></button>`).join('')}</div>` : ''}
+          <div class="vp-ligne"><label class="vp-in"><input class="champ gros" id="v2-prix" type="number" inputmode="decimal" step="0.01" value="${esc(V2.prix ?? '')}" aria-label="${esc(tt('Ton prix', 'Your price'))}"><span>$ CA</span></label>
+            <div class="vp-net">${tt('Tu reçois', 'You get')}<b id="v2-net">${argent(net(V2.prix), 2)}</b></div></div>
           ${blocMarcheVente(p, pr)}
 </div>
 
@@ -4014,7 +4115,7 @@ function rendreVente2(){
   $$('[data-vm]').forEach(b => b.onclick = () => { vibrer(); V2.prix = b.dataset.vm; rendreVente2(); });
   const ct = $('#vm-tips'); if (ct) ct.onclick = () => feuilleConseilsPrix(V2.titre);
   // rien trouve : les conseils s'ouvrent seuls une fois par carte
-  if (ct && !(S.conseilsVus || (S.conseilsVus = {}))[V2.titre || '?']) { S.conseilsVus[V2.titre || '?'] = 1; setTimeout(() => { if ($('#vm-tips') && $('#fond-feuille').hidden) feuilleConseilsPrix(V2.titre); }, 500); }
+  if (ct && !(V2.prep && V2.prep.prix) && !(S.conseilsVus || (S.conseilsVus = {}))[V2.titre || '?']) { S.conseilsVus[V2.titre || '?'] = 1; setTimeout(() => { if ($('#vm-tips') && $('#fond-feuille').hidden) feuilleConseilsPrix(V2.titre); }, 500); }
   if (S.v2Feuille && !$('#fond-feuille').hidden && $('#f-bloc')) ouvrir(S.v2Feuille); else S.v2Feuille = null;
 }
 // 29 oct 2026 (Mathieu : « montrer la médiane des prix affichés pour la même carte, le prix le plus bas et la médiane des last
@@ -4022,16 +4123,9 @@ function rendreVente2(){
 // trois tuiles « Le marché » ; un tap sur une tuile met ce prix
 function blocMarcheVente(p, pr){
   const v = p.vendu || null, a = p.affiche || null;
-  if (!(v && v.mediane) && !(a && a.mediane) && !pr) return `<div class="vm-vide"><b>${tt('Aucune carte identique trouvée', 'No identical card found')}</b>
-    <span>${tt('Ni vendue, ni en vente. Choisis ton prix.', 'Not sold, not listed. Pick your price.')}</span>
-    <button class="pilule" id="vm-tips">💡 ${tt('Conseils', 'Tips')}</button></div>`;
-  const t = (val, lab, sous) => `<button class="vm-t ${val ? '' : 'nul'}" ${val ? `data-vm="${esc(rond5(val))}"` : 'disabled'}><b>${val ? argent(val, 0) : '—'}</b><span>${lab}</span><small>${sous}</small></button>`;
-  const nv = v && v.n || 0, na = a && a.n || 0;
-  return `<div class="vm-tit">${tt('Le marché', 'The market')}</div><div class="vm">
-    ${t(v && v.mediane, tt('Vendues', 'Sold'), nv ? (nv + ' ' + tt(nv > 1 ? 'ventes' : 'vente', nv > 1 ? 'sales' : 'sale') + (v.sure ? '' : ' · ' + tt('peu', 'few'))) : tt('aucune', 'none'))}
-    ${t(a && a.mediane, tt('En vente', 'Listed'), na ? na + ' ' + tt(na > 1 ? 'annonces' : 'annonce', na > 1 ? 'listings' : 'listing') : tt('aucune', 'none'))}
-    ${t(a && a.bas, tt('Plus bas', 'Lowest'), tt('en vente', 'listed'))}</div>
-    ${(p.vendues || []).length ? `<div class="vp-v">${p.vendues.slice(0, 5).map(x => `<a class="vp-l" ${x.url ? `href="${esc(x.url)}" target="_blank" rel="noopener"` : ''}><b>${argent(x.prix, 0)}</b><span>${esc(dateCourte(x.le) || '')}</span></a>`).join('')}</div>` : ''}`;
+  const it = [[v && v.mediane, tt('Vendues', 'Sold')], [a && a.mediane, tt('En vente', 'Listed')], [a && a.bas, tt('Plus bas', 'Lowest')]].filter(x => x[0]);
+  if (!it.length) return `<div class="vp-m vide"><span>${pr ? '' : tt('Aucune carte identique trouvée', 'No identical card found')}</span><button class="lien-t" id="vm-tips">💡 ${tt('Conseils', 'Tips')}</button></div>`;
+  return `<div class="vp-m">${it.map(([x, l]) => `<button class="vp-mi" data-vm="${esc(rond5(x))}"><span>${l}</span><b>${argent(x, 0)}</b></button>`).join('')}</div>`;
 }
 function feuilleConseilsPrix(titre){
   const q = encodeURIComponent(String(titre || '').replace(/\b(psa|bgs|sgc|cgc)\s*\d+(\.\d)?\b/ig, '').trim());
@@ -4132,11 +4226,8 @@ function brancherVente2(){
     V2.hebergees = null; re();
   });
   const ph = $('#v2-ph'); if (ph) ph.onchange = async (e) => { for (const f of [...(e.target.files || [])].slice(0, 12 - V2.photos.length)) { try { const x = await reduirePhoto(f); V2.photos.push(x); if (V2.originales) V2.originales.push(x); } catch (x) {} } V2.hebergees = null; re(); };
-  $$('#v2-niv button').forEach(b => b.onclick = async () => { vibrer(); $$('#v2-niv button').forEach(x => x.classList.toggle('on', x === b));
-    V2.champs = lireChampsVente(); V2.titre = $('#v2-titre').value; V2.description = $('#v2-desc').value; V2.cout = val('v2-cout');
-    await changerFlou(+b.dataset.v); rendreVente2(); });
-  $$('#v2-studio button').forEach(b => b.onclick = () => { MODE_STUDIO = b.dataset.v === '1'; try { localStorage.setItem('lr_studio', MODE_STUDIO ? '1' : '0'); } catch (e) {}
-    API.reglages_sauver({photo_studio: MODE_STUDIO}).then(r => { S.reglages = r; }).catch(() => {}); syncPhotos(); re(); });
+  const garderSaisie = () => { V2.champs = lireChampsVente(); V2.titre = $('#v2-titre').value; V2.description = $('#v2-desc').value; V2.cout = val('v2-cout'); };
+  brancherFlou('v2-fl', () => { garderSaisie(); syncPhotos(); rendreVente2(); }, () => { garderSaisie(); rendreVente2(); });
   const pp = $('.vs-photo .photo-princ'); if (pp && (V2.photos || []).length) { pp.style.cursor = 'zoom-in'; pp.onclick = () => { V2.champs = lireChampsVente(); V2.titre = $('#v2-titre').value; V2.description = $('#v2-desc').value; V2.cout = val('v2-cout'); feuillePhotosVente(rendreVente2, true); }; }
   const bc = $('#v2-cadre'); if (bc) bc.onclick = () => { V2.champs = lireChampsVente(); V2.titre = $('#v2-titre').value; V2.description = $('#v2-desc').value; V2.cout = val('v2-cout'); feuilleCadrage(0); };
   $('#v2-garde').onclick = garderVente;
