@@ -4235,7 +4235,10 @@ class Api:
         for x in [*lst[:240], *suivis, *pres]:
             if "joueur_n" not in x:
                 x["joueur_n"], x["carte_n"] = self._etiquette_deal(x.get("titre") or "")
-        return {"ok": True, "deals": lst[:240], "n": n, "pro": pro, "limite": None if pro else forfaits.LIMITES["deals"],
+        # 31 oct 2026 (Mathieu : « les deals n'apparaissent pas au fur et a mesure, ca reste a 35 ») : un encan d'un gros vendeur
+        # qui vient de recevoir sa valeur et qui est a 70 % ou moins de celle-ci est un deal : il compte dans le nombre
+        n_su = sum(1 for x in suivis if x.get("valeur") and (x.get("total") or 0) <= x["valeur"] * _dl.RATIO_DEAL)
+        return {"ok": True, "deals": lst[:240], "n": n + n_su, "n_encans_valorises": n_su, "pro": pro, "limite": None if pro else forfaits.LIMITES["deals"],
                 "suivis": suivis,
                 "pres": pres, "secours": secours, "secours_le": (dd.get("secours") or {}).get("le") if secours else None,
                 "sports": par_sport, "maj": dd.get("maj"), "ebay": ebay_compte.statut().get("cles_ok"),
@@ -4425,7 +4428,14 @@ class Api:
         depense = round(sum(a["cout"] or 0 for a in achats) + (dep or 0), 2)
         valeur = round(sum((a.get("valeur") or a.get("prix_demande") or 0) for a in achats), 2)
         # 28 oct 2026 (vitesse) : l'accueil en montre au plus 24 ; avant, les ~800 deals partaient a chaque ouverture (1,6 Mo)
-        return {"mois": m0, "deals": deals[:24], "nb_deals": len(deals), "gain_deals": round(sum(max(0, d["gain"]) for d in deals), 2),
+        try:                                          # 31 oct 2026 : + les encans des gros vendeurs valorises sous 70 %
+            import deals as _dv
+            ids_ = {str(x.get("item_id")) for x in deals}
+            n_su = sum(1 for x in (_dv.lire_vite().get("suivis") or []) if x.get("valeur") and str(x.get("item_id")) not in ids_
+                       and _dv.encore_ouvert(x) and (x.get("total") or 0) <= x["valeur"] * _dv.RATIO_DEAL)
+        except Exception:
+            n_su = 0
+        return {"mois": m0, "deals": deals[:24], "nb_deals": len(deals) + n_su, "gain_deals": round(sum(max(0, d["gain"]) for d in deals), 2),
                 "achats": {"n": len(achats), "depense": depense, "valeur": valeur,
                            "latent": round(sum(((a.get("valeur") or a.get("prix_demande") or 0) * (1 - fp) - ff - (a["cout"] or 0))
                                              for a in achats if a.get("valeur") or a.get("prix_demande")), 2)},

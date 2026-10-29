@@ -1610,7 +1610,21 @@ def recharger():
     if _ETAT["en_cours"]:
         return {"ok": True, "deja": True}
     appels_ebay.liberer(900)
-    return {"ok": True, "lance": bool(chasser_si_besoin(force=True))}
+    if chasser_si_besoin(force=True):
+        return {"ok": True, "lance": True}
+    _ETAT["tour_demande"] = True                     # 31 oct 2026 : la passe des encans finit, puis le tour part
+    if not _ETAT.get("proches"):
+        def attendre():
+            for _ in range(60):                      # au plus 5 min : un autre processus tient peut-etre le verrou
+                time.sleep(5)
+                if not _ETAT.get("tour_demande"):
+                    return
+                if chasser_si_besoin(force=True):
+                    _ETAT.pop("tour_demande", None)
+                    return
+            _ETAT.pop("tour_demande", None)
+        threading.Thread(target=attendre, daemon=True, name="deals-attente").start()
+    return {"ok": True, "lance": False, "attente": True}
 
 
 VEDETTES_PAR_CHASSE = 40         # 29 oct 2026 : admin « Chasser veterans maintenant » : 40 recherches prix fixe + 40 encans
@@ -1665,7 +1679,8 @@ def tour(d=None):
     base = max(m, _ETAT.get("essai_le", 0))
     prochain = max(base + FRAICHEUR_S, time.time())
     return {"en_cours": False, "prochain": datetime.fromtimestamp(prochain, timezone.utc).isoformat(timespec="seconds"),
-            "dernier": der or None}
+            "dernier": der or None, "demande": bool(_ETAT.get("tour_demande")),
+            "passe": "proches" if _ETAT.get("proches") else "valo" if _ETAT.get("valo") else None}
 
 
 def journal(n=80):
@@ -1868,13 +1883,23 @@ def valoriser_suivis(rechercher=None, n_max=None):
             va = valeur_annonce(y, v, [], cib=c2)
             if va:
                 trouves[str(y.get("item_id"))] = va
-    if trouves:
+    # 31 oct 2026 (Mathieu : « la barre ne bouge pas ») : les encans dont les ventes ont ete cherchees comptent comme analyses
+    analyses = [str(y.get("item_id")) for y in a_faire
+                if (cartes_match.requete_ebay(cartes_match.cible_titre(y.get("titre") or "")) or "").strip() in faites]
+    if trouves or analyses:
         with _verrou:
             d = lire()
             for g in d.get("suivis") or []:
                 va = trouves.get(str(g.get("item_id")))
                 if va and not g.get("valeur"):
                     g.update(valeur=va[0], n=va[2], vendues=va[3], mise_max=round(va[0] * RATIO_DEAL - (g.get("port") or 0), 2))
+            cov = d.get("prio_couverture")
+            if cov and analyses:
+                deja = set(cov.get("ids_valo") or [])
+                nv = [i for i in analyses if i not in deja]
+                cov["faites"] = min(cov.get("total") or 0, (cov.get("faites") or 0) + len(nv))
+                cov["ids_valo"] = list(deja | set(nv))[-5000:]
+                cov["le"] = datetime.now(timezone.utc).isoformat(timespec="minutes")
             _ecrire(d)
     return {"verifies": n, "valeurs": len(trouves), "a_faire": len(a_faire)}
 
@@ -1896,13 +1921,25 @@ def proches_si_besoin(attendre=False):
         try:
             if _prendre_tour():                      # jamais pendant un tour (meme dans un autre processus)
                 try:
-                    proches_prio()
+                    proches_prio(valoriser=False)
                 finally:
                     _rendre_tour()
         except Exception as e:
             print("Deals (encans proches) : " + repr(e), flush=True)
         finally:
             _ETAT["proches"] = False
+        # 31 oct 2026 (Mathieu : « le bouton redevient bleu avant que ca finisse ») : la valorisation (longue avec un gros
+        # budget) se fait HORS du verrou du tour : « Relancer le chasseur » n'est plus refuse en silence pendant ce temps
+        if _ETAT.pop("tour_demande", False):
+            chasser_si_besoin(force=True)
+        elif not _ETAT.get("en_cours") and not _ETAT.get("valo"):
+            _ETAT["valo"], _ETAT["valo_le"] = True, time.time()
+            try:
+                valoriser_suivis()
+            except Exception as e:
+                print("Deals (valeurs des encans proches) : " + repr(e), flush=True)
+            finally:
+                _ETAT["valo"] = False
     if attendre:
         tache()
     else:
@@ -1910,7 +1947,7 @@ def proches_si_besoin(attendre=False):
     return True
 
 
-def proches_prio(rechercher=None, bassin=None, maint=None):
+def proches_prio(rechercher=None, bassin=None, maint=None, valoriser=True):
     import cartes_match
     import ebay_compte
     rechercher = rechercher or ebay_compte.rechercher
@@ -1956,7 +1993,8 @@ def proches_prio(rechercher=None, bassin=None, maint=None):
         _diag(d2, **{k: v for k, v in st.items() if not k.startswith("_") and isinstance(v, (int, float))})
         _ecrire(d2)
     try:
-        valoriser_suivis()                           # les nouveaux encans sans valeur : la reserve « prio »
+        if valoriser:
+            valoriser_suivis()                       # les nouveaux encans sans valeur : la reserve « prio »
     except Exception as e:
         print("Deals (valeurs des encans proches) : " + repr(e), flush=True)
     return {"ok": True, "vus": vus, "stats": {k: v for k, v in st.items() if not k.startswith("_")}}

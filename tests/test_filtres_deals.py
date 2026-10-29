@@ -38,4 +38,14 @@ a.deals_profil_regler({"collectionne": ["veterans"]})                           
 assert "s4" not in ids({}), ids({})
 a.deals_profil_regler({"collectionne": [], "prix_min": 25})
 assert ids({}) == {"s2", "s3"}, ids({})
+# 31 oct 2026 : un encan valorise sous 70 % compte dans le nombre de deals (s2 et s4 ; pas s3 a 75 %, pas s1 sans valeur)
+a.deals_profil_regler({"collectionne": [], "prix_min": None})
+r = a.deals_liste({})
+assert r["n_encans_valorises"] == 2 and r["n"] >= 2, (r["n"], r.get("n_encans_valorises"))
+# « Relancer le chasseur » pendant une passe : le tour est demande (et le dit), pas refuse en silence
+deals.chasser_si_besoin = lambda force=False: False
+deals._ETAT["proches"] = True
+x = deals.recharger()
+assert x["attente"] and not x["lance"] and deals.tour()["demande"], x
+deals._ETAT.pop("tour_demande", None); deals._ETAT["proches"] = False
 print("ok : filtres des deals")
