@@ -3880,6 +3880,34 @@ class Api:
 
     # -- deals (24 oct 2026) : les tiens (rachats de ce que tu as vendu) + ceux du chasseur partage (deals.py) --
     _ETIQ = {}
+    _VAL_CACHE = {}
+
+    @classmethod
+    def _valeur_en_cache(cls, x):
+        """30 oct 2026 (Mathieu : « les cartes de Savage n'ont pas de % ni de comps ») : un encan garde sans valeur prend
+        celle des ventes deja connues de LA MEME carte (le cache des ventes : 3 jours, aucun credit). -> (valeur, n) | None.
+        Garde 15 min par annonce."""
+        import deals as _dl
+        import vendues
+        k = str(x.get("item_id"))
+        e = cls._VAL_CACHE.get(k)
+        if e and time.time() - e[0] < 900:
+            return e[1]
+        r = None
+        try:
+            cib = cartes_match.cible_titre(x.get("titre") or "")
+            q = (cartes_match.requete_ebay(cib) or "").strip()
+            v = vendues.en_cache(q) if q else None
+            if v:
+                va = _dl.valeur_annonce({"titre": x.get("titre"), "item_id": k}, v, [], cib=cib)
+                if va:
+                    r = (va[0], va[2])
+        except Exception:
+            r = None
+        if len(cls._VAL_CACHE) > 5000:
+            cls._VAL_CACHE.clear()
+        cls._VAL_CACHE[k] = (time.time(), r)
+        return r
 
     @classmethod
     def _etiquette_deal(cls, titre):
@@ -4106,6 +4134,10 @@ class Api:
             if str(x.get("item_id")) in ids_d or str(x.get("item_id")) in ret_p or str(x.get("item_id")) in _d._bannis() \
                     or not _d.encore_ouvert(x) or str(x.get("vu_le") or "") < lim_s:
                 continue
+            if not x.get("valeur"):
+                vc = self._valeur_en_cache(x)
+                if vc:
+                    x = dict(x, valeur=vc[0], n=vc[1], mise_max=round(vc[0] * _dl.RATIO_DEAL - (x.get("port") or 0), 2))
             y = self._ramasser(dict(x, source="marche", recrue=False), chez_s)
             if y.get("valeur"):
                 y["gain"] = round(y["valeur"] * (1 - fp_) - ff_ - (y.get("total") or 0), 2)

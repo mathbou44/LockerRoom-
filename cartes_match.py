@@ -719,8 +719,17 @@ def identite(titre, joueur=""):
         w = w.strip("-'")
         if len(w) < 3 or w in jm or w in VIDES or w in REMPLISSAGE or w in _MOTS_CARTE or w in par or w in _EQUIPES_MOTS["t"]:
             continue
+        if w in DESCRIPTIFS:
+            continue
         (marques if w in MARQUES else out).add(w)
     return out, marques
+
+
+# 30 oct 2026 : les mots qui, apres le nom du set, font une AUTRE carte (Young Guns Renewed, Retro...) ; un mot descriptif
+# (« Horizontal ») ne l'est pas : les vendeurs l'ecrivent rarement (Premier Horizontal Rookie Auto Patch = Premier RPA)
+SUITES_SET = {"renewed", "retro", "throwback", "flashback", "rewind", "remastered", "reimagined", "outburst", "achievements"}
+# mots du titre qui decrivent la carte sans en faire une autre (jamais exiges dans les ventes)
+DESCRIPTIFS = {"horizontal", "vertical", "landscape", "portrait", "acetate", "jumbo", "oversized", "short", "print"}
 
 
 def cible_titre(titre, joueur=None):
@@ -742,7 +751,7 @@ def cible_titre(titre, joueur=None):
     suite = []
     for s_ in sets:
         m_ = re.search(r"\b" + re.escape(s_) + r"\s+([a-z]{4,})\b", t)
-        if m_ and m_.group(1) in c["ident"] and m_.group(1) not in VIDES and m_.group(1) not in suite:
+        if m_ and m_.group(1) in SUITES_SET and m_.group(1) in c["ident"] and m_.group(1) not in suite:
             suite.append(m_.group(1))
     c["mots"] = [m for m in (j.split() + " ".join(sets).split() + suite) if m not in VIDES]
     return c

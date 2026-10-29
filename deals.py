@@ -140,6 +140,15 @@ def corriger(item_id, valeur, gain, total):
     ventes, ou plus sous 70 % de la valeur, ou pas de profit -> retiree ; sinon sa valeur est mise a jour."""
     iid = str(item_id)
     d = lire()
+    # 30 oct 2026 (Mathieu : « Stankoven : il y a des comps mais le dashboard ne le montre pas ») : l'encan d'un vendeur
+    # suivi, garde sans valeur, prend la valeur que la fenetre vient de trouver (ventes reelles de la meme carte)
+    if valeur and any(str(g.get("item_id")) == iid and not g.get("valeur") for g in d.get("suivis") or []):
+        with _verrou:
+            d = lire()
+            for g in d.get("suivis") or []:
+                if str(g.get("item_id")) == iid:
+                    g.update(valeur=valeur, mise_max=round(valeur * RATIO_DEAL - (g.get("port") or 0), 2))
+            _ecrire(d)
     l = d.get("deals") or []
     x = next((g for g in l if str(g.get("item_id")) == iid), None)
     if not x:
