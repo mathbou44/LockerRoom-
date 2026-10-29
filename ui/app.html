@@ -3345,32 +3345,34 @@ async function changerFlou(n){
   if (V2.studio && V2.originales) { for (let j = 0; j < V2.studio.length; j++) V2.studio[j] = await refaire(V2.originales[j], V2.studio[j]); syncPhotos(); }
 }
 const _FILTRE_OK = (() => { try { const g = document.createElement('canvas').getContext('2d'); g.filter = 'blur(2px)'; return g.filter === 'blur(2px)'; } catch (e) { return false; } })();
+// 30 oct 2026 (Mathieu : « pourquoi l'image derriere le blur change autour de la carte ? je veux un blur super simple ») :
+// avant, le fond flou etait (1) legerement agrandi pour cacher les bords sombres du flou -> il ne s'alignait plus avec la
+// photo (le support et la table « bougeaient » autour de la carte), et (2) assombri -> le 1 mm net autour de la carte
+// faisait un cadre plus clair. Maintenant : la meme photo, au meme endroit, juste floue. Rien d'autre.
+// Les bords : la photo est posee sur une marge remplie d'elle-meme, floutee, puis on reprend exactement la zone d'origine.
 function _flouImage(img, W, H){
   const out = document.createElement('canvas'); out.width = W; out.height = H;
   const g = out.getContext('2d'); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
-  // 30 oct 2026 (« un bouton pour que j'ajuste moi-meme le flou : light, medium, darker ») : 3 niveaux, garde au compte
-  const t = flouNorm(FLOU) / 100, N = {r: 0.002 + 0.02 * t, sombre: 0.06 + 0.46 * t};
-  const r = Math.max(2, Math.round(Math.min(W, H) * N.r));
-  if (_FILTRE_OK && !window.__repliFlou) { g.filter = `blur(${r}px)`; g.drawImage(img, -2 * r, -2 * r, W + 4 * r, H + 4 * r); g.filter = 'none'; }   // deborde : pas de bord sombre
-  else {
-    // 30 oct 2026 : iPhone (pas de ctx.filter). Avant, le repli floutait toujours a peu pres pareil (1/4 + 3 passes de 1 px) :
-    // sur une photo de 12 Mpx le fond restait presque net, peu importe le niveau. Maintenant on reduit selon le rayon
-    // (le flou fait ~2 px a petite taille), 4 passes de moyenne, puis on regrandit par etapes (lisse, sans pixels).
-    const k = Math.max(1, r / 2), w = Math.max(8, Math.round(W / k)), h = Math.max(8, Math.round(H / k)), m = 3;
-    let a = document.createElement('canvas'); a.width = w + 2 * m; a.height = h + 2 * m;
-    let ga = a.getContext('2d'); ga.imageSmoothingQuality = 'high'; ga.drawImage(img, 0, 0, a.width, a.height);   // marge : pas de bord sombre
-    for (let p = 0; p < 4; p++) {
-      const b = document.createElement('canvas'); b.width = a.width; b.height = a.height; const gb = b.getContext('2d');
-      gb.drawImage(a, 0, 0); let n = 1;
-      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [2, 0], [-2, 0], [0, 2], [0, -2]]) { n++; gb.globalAlpha = 1 / n; gb.drawImage(a, dx, dy); }
-      a = b;
-    }
-    let cw = a.width, ch = a.height, src = a;
-    while (cw * 2 < W) { const c = document.createElement('canvas'); c.width = cw * 2; c.height = ch * 2; const gc = c.getContext('2d'); gc.imageSmoothingQuality = 'high'; gc.drawImage(src, 0, 0, c.width, c.height); src = c; cw = c.width; ch = c.height; }
-    const sx = m * cw / a.width, sy = m * ch / a.height;
-    g.drawImage(src, sx, sy, cw - 2 * sx, ch - 2 * sy, 0, 0, W, H);
+  const t = flouNorm(FLOU) / 100;
+  const r = Math.max(2, Math.round(Math.min(W, H) * (0.002 + 0.02 * t)));
+  if (_FILTRE_OK && !window.__repliFlou) {
+    const p = 3 * r, pad = document.createElement('canvas'); pad.width = W + 2 * p; pad.height = H + 2 * p;
+    const gp = pad.getContext('2d'); gp.drawImage(img, 0, 0, pad.width, pad.height); gp.drawImage(img, p, p, W, H);
+    g.filter = `blur(${r}px)`; g.drawImage(pad, -p, -p); g.filter = 'none';
+  } else {
+    // iPhone (pas de ctx.filter) : flou « mipmap » : on reduit de moitie en moitie (chaque etape fait la moyenne de 2x2)
+    // jusqu'a la taille ou le rayon fait ~1 px, puis on regrandit de double en double (lisse). Pas de passes en
+    // transparence : elles assombrissaient la photo (arrondis). La marge (la photo etiree dessous) est retiree exactement.
+    const m = Math.max(4, 2 * r), pad = document.createElement('canvas'); pad.width = W + 2 * m; pad.height = H + 2 * m;
+    const gp = pad.getContext('2d'); gp.drawImage(img, 0, 0, pad.width, pad.height); gp.drawImage(img, m, m, W, H);
+    const etape = (src, w, h) => { const c = document.createElement('canvas'); c.width = Math.max(2, Math.round(w)); c.height = Math.max(2, Math.round(h));
+      const gc = c.getContext('2d'); gc.imageSmoothingEnabled = true; gc.imageSmoothingQuality = 'high'; gc.drawImage(src, 0, 0, c.width, c.height); return c; };
+    let c = pad, n = 0; const fin = Math.max(1, r * 1.5);
+    while (pad.width / c.width < fin && c.width > 8 && c.height > 8) { c = etape(c, c.width / 2, c.height / 2); n++; }
+    for (let i = 0; i < n; i++) c = etape(c, c.width * 2, c.height * 2);
+    const fx = c.width / pad.width, fy = c.height / pad.height;
+    g.drawImage(c, m * fx, m * fy, W * fx, H * fy, 0, 0, W, H);
   }
-  g.fillStyle = `rgba(6,6,10,${N.sombre})`; g.fillRect(0, 0, W, H);
   return out;
 }
 function poserFlou(img, q){
