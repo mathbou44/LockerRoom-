@@ -324,6 +324,7 @@ details.reglage summary::-webkit-details-marker{display:none}
 .d-rond:active .ap-ic{transform:scale(.94)}
 .d-choix{display:flex; flex-direction:column; gap:6px}
 .d-ch{display:flex; justify-content:space-between; align-items:center; padding:13px 14px; border-radius:14px; background:var(--carte2); border:1px solid var(--ligne); color:var(--texte); font:inherit; font-size:15px; font-weight:600; cursor:pointer}
+.d-ch .d-chi{display:inline-flex; align-items:center; gap:12px} .d-ch .d-chi svg{width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round}
 .d-ch small{color:var(--doux); font-weight:500} .d-ch.on{border-color:var(--acc); box-shadow:inset 0 0 0 1px var(--acc)}
 .slab-deal .sd-slab{border:1.5px solid transparent; background:linear-gradient(180deg,#2B2A33,#141419) padding-box, var(--holo) border-box}
 .slab-deal .sd-lab{height:auto; flex-direction:column; align-items:stretch; justify-content:flex-start; padding:7px 9px 6px; gap:2px}
@@ -336,6 +337,19 @@ details.reglage summary::-webkit-details-marker{display:none}
 .sd-bas small .g{color:var(--vert); font-weight:700}
 .d-nv{position:sticky; top:calc(env(safe-area-inset-top, 0px) + 74px); z-index:30; display:block; margin:0 auto 10px; padding:9px 16px; border-radius:99px; border:0;
   background:var(--acc); color:var(--acc-texte); font:700 14px inherit; font-family:inherit; box-shadow:0 8px 22px rgba(0,0,0,.45); cursor:pointer}
+#lance{position:fixed; inset:0; z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:26px; padding:24px;
+  background:var(--fond, #0B0B0E); transition:opacity .4s ease, transform .4s ease}
+#lance.fini{opacity:0; transform:scale(1.04); pointer-events:none}
+#lance .la-c{position:relative; width:104px; height:104px; filter:drop-shadow(0 0 22px color-mix(in srgb, var(--h2,#B9BEFF) 35%, transparent))}
+#lance .la-c img{position:absolute; inset:0; width:100%; height:100%; display:block}
+#lance .la-anneau{animation:tourne 2.4s cubic-bezier(.55,.1,.45,.9) infinite}
+#lance .la-tip{max-width:320px; min-height:3em; text-align:center; font:600 16px/1.45 inherit; font-family:inherit;
+  background:var(--holo, linear-gradient(100deg,#9FE6D2,#B9BEFF,#F2B3D6,#F1D58E)); -webkit-background-clip:text; background-clip:text; color:transparent;
+  transition:opacity .28s ease, transform .28s ease}
+#lance .la-tip.sort{opacity:0; transform:translateY(6px)}
+#lance .la-barre{width:140px; height:3px; border-radius:99px; background:rgba(255,255,255,.08); overflow:hidden}
+#lance .la-barre i{display:block; height:100%; width:0; border-radius:99px; background:var(--holo, linear-gradient(90deg,#9FE6D2,#B9BEFF,#F2B3D6,#F1D58E)); transition:width .3s ease}
+@media (prefers-reduced-motion: reduce){ #lance .la-anneau{animation:none} }
 .vm-tit{margin-top:12px; font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--doux)}
 .vm{display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:6px}
 .vm-t{display:flex; flex-direction:column; align-items:center; gap:1px; padding:8px 4px; border-radius:12px; background:var(--carte2); border:1px solid var(--ligne); color:var(--texte); font:inherit; cursor:pointer}
@@ -2394,6 +2408,39 @@ function lectureFraiche(nom, corps){
   MEMO.set(cle, {...(m || {}), p});
   p.finally(() => { const x = MEMO.get(cle); if (x && x.p === p) { delete x.p; if (!('v' in x)) MEMO.delete(cle); } }).catch(() => {});
   return p;
+}
+// 30 oct 2026 (Mathieu : « quand on ouvre l'app, la faire loader un peu plus longtemps en faisant tourner le C, avec des
+// tips en dessous en couleur prisme ; quand il rentre dans l'app, toutes les pages sont deja prechargees ») : l'ecran
+// d'ouverture prend les memes lectures que la derniere visite de chaque onglet (4 a la fois), au moins 1,4 s, au plus 5 s
+const TIPS_LANCE = () => [
+  tt('Un deal, c’est une carte à 70 % ou moins de ce qu’elle s’est vraiment vendue.', 'A deal is a card at 70% or less of what it really sold for.'),
+  tt('Touche l’étoile d’un deal : on t’avertit 15 min avant la fin de l’encan.', 'Tap a deal’s star: we alert you 15 min before the auction ends.'),
+  tt('Savage, Remi, CF31 et Slab Sharks passent en premier dans tes deals.', 'Savage, Remi, CF31 and Slab Sharks come first in your deals.'),
+  tt('Fond flou : la carte et 1 mm autour restent nettes, l’acheteur voit son état.', 'Blurred background: the card and 1 mm around it stay sharp.'),
+  tt('Tes achats eBay donnent leur coût à tes cartes, tout seuls.', 'Your eBay purchases give your cards their cost, automatically.'),
+  tt('Glisse une fiche vers le bas pour la fermer.', 'Swipe a sheet down to close it.'),
+  tt('Series 1, 2 et Extended : les recrues sont classées en premier.', 'Series 1, 2 and Extended: rookies are ranked first.'),
+  tt('Au-dessus de 30 $, l’envoi est toujours suivi : jamais en lettre.', 'Over $30, shipping is always tracked: never a letter.'),
+  tt('Le prix suggéré suit les dernières ventes de la même carte.', 'The suggested price follows the latest sales of the same card.'),
+  tt('Garde une carte dans ta collection : sa valeur est suivie chaque semaine.', 'Keep a card in your collection: its value is tracked weekly.')];
+async function ecranLancement(){
+  if (document.getElementById('lance') || navigator.webdriver) return;           // pas pour les tests automatises
+  const el = document.createElement('div'); el.id = 'lance'; el.setAttribute('aria-hidden', 'true');
+  const tips = TIPS_LANCE().sort(() => Math.random() - .5);
+  el.innerHTML = `<div class="la-c"><img class="la-anneau" src="/logo_sc_c.svg" alt=""><img class="la-s" src="/logo_sc_s.svg" alt=""></div><div class="la-tip" id="la-tip">${esc(tips[0])}</div><div class="la-barre"><i id="la-p"></i></div>`;
+  document.body.appendChild(el);
+  let it = 0;
+  const tTip = setInterval(() => { const t = document.getElementById('la-tip'); if (!t) return; t.classList.add('sort');
+    setTimeout(() => { t.textContent = tips[++it % tips.length]; t.classList.remove('sort'); }, 280); }, 1800);
+  const vus = new Set(), l = Object.values(RECETTES).flat().filter(([n, c]) => { const k = n + c; if (vus.has(k) || MEMO.has(k)) return false; vus.add(k); return true; });
+  const total = Math.max(1, l.length); let fait = 0, i = 0;
+  const barre = () => { const b = document.getElementById('la-p'); if (b) b.style.width = Math.round(100 * fait / total) + '%'; };
+  const ouvrier = async () => { while (i < l.length) { const [n, c] = l[i++]; await lectureFraiche(n, c).catch(() => {}); fait++; barre(); } };
+  const attendre = (ms) => new Promise(r => setTimeout(r, ms));
+  await Promise.race([Promise.all([Promise.all([ouvrier(), ouvrier(), ouvrier(), ouvrier()]), attendre(1400)]), attendre(5000)]);
+  fait = total; barre(); clearInterval(tTip);
+  await attendre(180);
+  el.classList.add('fini'); setTimeout(() => el.remove(), 450);
 }
 function prechargerOnglets(){
   const l = Object.values(RECETTES).flat(); let i = 0;
@@ -5676,19 +5723,30 @@ function feuilleAideDeals(){
 // 30 oct 2026 (Mathieu : « les tuiles a selectionner : des ronds comme dans les autres menus, avec des petits icones ; tu
 // cliques et un menu s'ouvre : sports, reglages des deals, ordre du tri, filtres. Plus doux a l'oeil »)
 const TRIS_DEALS = () => [['rabais', tt('Meilleur deal', 'Best deal')], ['fin', tt('Finit bientôt', 'Ending soon')], ['gain', tt('Plus gros profit', 'Biggest profit')], ['prix', tt('Prix bas', 'Lowest price')], ['recent', tt('Nouveaux', 'Newest')]];
+const IC_SP = {
+  hockey: '<path d="M15.5 3 8.4 17.6a2 2 0 0 1-1.8 1.1H3"/><ellipse cx="17.5" cy="17.6" rx="3.5" ry="1.5"/><path d="M14 17.6v1.3c0 .8 1.6 1.5 3.5 1.5s3.5-.7 3.5-1.5v-1.3"/>',
+  baseball: '<circle cx="12" cy="12" r="9"/><path d="M7.2 4.4c1.7 2 2.5 4.7 2.5 7.6s-.8 5.6-2.5 7.6M16.8 4.4c-1.7 2-2.5 4.7-2.5 7.6s.8 5.6 2.5 7.6"/>',
+  basketball: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18M5.8 5.5c1.8 1.7 2.8 4 2.8 6.5s-1 4.8-2.8 6.5M18.2 5.5c-1.8 1.7-2.8 4-2.8 6.5s1 4.8 2.8 6.5"/>',
+  football: '<ellipse cx="12" cy="12" rx="10" ry="5.6" transform="rotate(-45 12 12)"/><path d="M9.3 14.7l5.4-5.4M10.2 11.4l2.4 2.4M11.8 9.8l2.4 2.4"/>'
+};
+// « tous » : les 4 sports en petit, en carre (2 x 2)
+IC_SP.tous = [['hockey', 0, 0], ['baseball', 12.4, 0], ['basketball', 0, 12.4], ['football', 12.4, 12.4]]
+  .map(([k, x, y]) => `<g transform="translate(${x} ${y}) scale(.48)" style="stroke-width:3.3">${IC_SP[k]}</g>`).join('');
+const icSport = (k) => IC_SP[k] || IC_SP.tous;
 const IC_D = {tri: '<path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/>', filtre: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>'};
 function rondsDeals(F, sp){
   const r = (id, svg, lib, n) => `<button class="d-rond" id="${id}"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${svg}</svg>${n ? `<em>${n}</em>` : ''}</span><small>${lib}</small></button>`;
-  const spL = F.sports.length === 1 ? nomSport(F.sports[0]) : F.sports.length > 1 ? F.sports.length + ' ' + tt('sports', 'sports') : tt('Tous', 'All');
+  const un = F.sports.length === 1 ? F.sports[0] : '';
+  const spL = un ? nomSport(un) : tt('Sports', 'Sports');
   const triL = (TRIS_DEALS().find(t => t[0] === F.tri) || TRIS_DEALS()[0])[1] + (F.type === 'encan' ? ' · ⏱' : F.type === 'fixe' ? ' · $' : '');
   const nf = nbFiltresDeals(F) + (F.vendeurs ? 1 : 0);
-  return `<div class="d-ronds">${sp.length > 1 ? r('dr-sp', IC_PIL.sport, spL, F.sports.length) : ''}${r('dr-tri', IC_D.tri, triL)}${r('dr-fil', IC_D.filtre, tt('Filtres', 'Filters'), nf)}${r('dr-reg', IC_PIL.admin, tt('Mes deals', 'My deals'))}</div>`;
+  return `<div class="d-ronds">${sp.length > 1 ? r('dr-sp', icSport(un), spL) : ''}${r('dr-tri', IC_D.tri, triL)}${r('dr-fil', IC_D.filtre, tt('Filtres', 'Filters'), nf)}${r('dr-reg', IC_PIL.admin, tt('Mes deals', 'My deals'))}</div>`;
 }
 function brancherRondsDeals(F, sp){
   const go = () => { sauverDealsF(); fermerFeuille(); chargerDeals(); };
   const s_ = $('#dr-sp'); if (s_) s_.onclick = () => { vibrer();
     ouvrirFeuille(`<h3>${tt('Sports', 'Sports')}</h3><div class="d-choix">${[['', tt('Tous les sports', 'All sports'), sp.reduce((t, x) => t + x[1], 0)], ...sp.map(([k, n]) => [k, nomSport(k), n])].map(([k, l, n]) =>
-      `<button class="d-ch ${(!k && !F.sports.length) || F.sports.includes(k) && k ? 'on' : ''}" data-dsp="${k}"><span>${esc(l)}</span><small>${n}</small></button>`).join('')}</div>`);
+      `<button class="d-ch ${(!k && !F.sports.length) || F.sports.includes(k) && k ? 'on' : ''}" data-dsp="${k}"><span class="d-chi"><svg viewBox="0 0 24 24" aria-hidden="true">${icSport(k)}</svg>${esc(l)}</span><small>${n}</small></button>`).join('')}</div>`);
     $$('[data-dsp]').forEach(b => b.onclick = () => { const k = b.dataset.dsp; F.sports = k ? [k] : []; go(); }); };
   $('#dr-tri').onclick = () => { vibrer();
     ouvrirFeuille(`<h3>${tt('Ordre', 'Order')}</h3><div class="d-choix">${TRIS_DEALS().map(([k, l]) => `<button class="d-ch ${F.tri === k ? 'on' : ''}" data-dtri="${k}"><span>${l}</span></button>`).join('')}</div>
@@ -9074,6 +9132,7 @@ document.addEventListener('click', (e) => {
 }, true);
 // ============================================================
 reglages().then(() => equipes()).catch(() => {});
+ecranLancement();
 route();
 prechargerOnglets();
 /* I18N APP DEBUT */
