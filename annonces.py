@@ -222,9 +222,14 @@ def _xml_colis(d):
     dims = colis_dims(d, lettre)
     if lettre:
         g = min(g, 30)                      # une lettre (Lettermail) : une carte et son enveloppe, pas 250 g
+    # 30 oct 2026 (Mathieu : « eBay a refuse : Invalid <ShippingPackage> », avec ou sans sa politique) : eBay.ca ne
+    # prend pas « PackageThickEnvelope ». Le type de colis est facultatif : on ne l'envoie que pour une lettre ; poids et
+    # dimensions restent (eBay Labels s'en sert). Si eBay refuse encore le colis, publier() reessaie sans (_sans_colis).
+    if d.get("_sans_colis"):
+        return ""
     return ("<ShippingPackageDetails><MeasurementUnit>Metric</MeasurementUnit>"
-            f"<ShippingPackage>{'Letter' if lettre else 'PackageThickEnvelope'}</ShippingPackage>"
-            f'<WeightMajor unit="kg">{g // 1000}</WeightMajor><WeightMinor unit="gm">{g % 1000}</WeightMinor>'
+            + ("<ShippingPackage>Letter</ShippingPackage>" if lettre and not d.get("_sans_type") else "")
+            + f'<WeightMajor unit="kg">{g // 1000}</WeightMajor><WeightMinor unit="gm">{g % 1000}</WeightMinor>'
             f'<PackageLength unit="cm">{dims[0]}</PackageLength><PackageWidth unit="cm">{dims[1]}</PackageWidth>'
             f'<PackageDepth unit="cm">{dims[2]}</PackageDepth></ShippingPackageDetails>')
 
@@ -389,9 +394,18 @@ def publier(d, photos_hebergees, code_postal, verifier_seulement=False):
         return ebay_moderne.publier(d, photos_hebergees, code_postal, verifier_seulement)
     encan = d.get("format") == "encan"
     appel = "AddItem" if encan else "AddFixedPriceItem"
-    item = xml_item(d, photos_hebergees, code_postal)
-    req = lambda a: f'<?xml version="1.0" encoding="utf-8"?><{a}Request xmlns="{NS}">{item}</{a}Request>'
-    v = ebay_compte.trading("Verify" + appel, req("Verify" + appel))
+    d = dict(d)
+    req = lambda a: f'<?xml version="1.0" encoding="utf-8"?><{a}Request xmlns="{NS}">{xml_item(d, photos_hebergees, code_postal)}</{a}Request>'
+    # le colis refuse (type, puis tout le bloc) : on reessaie sans, une etape a la fois
+    for essai in ("", "_sans_type", "_sans_colis"):
+        if essai:
+            d[essai] = True
+        try:
+            v = ebay_compte.trading("Verify" + appel, req("Verify" + appel))
+            break
+        except Exception as e:
+            if "ShippingPackage" not in str(e) and "PackageDepth" not in str(e) and "PackageLength" not in str(e) or essai == "_sans_colis":
+                raise
     frais = ebay_ecriture._frais(v)
     if verifier_seulement:
         return {"ok": True, "verifie": True, "frais": frais, "avertissements": ebay_compte.avertissements(v)}
