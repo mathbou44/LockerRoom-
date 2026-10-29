@@ -2790,6 +2790,7 @@ class Api:
         modele = {**annonces.MODELE_DEFAUT, **(r.get("modele_annonce") or {})}
         fp, ff = (r["frais_ebay_pct"] or 0) / 100, r["frais_ebay_fixe"] or 0
         prix, comps, n, note, source, vendues_l = None, [], 0, None, None, []
+        vendu, affiche = None, None             # 30 oct 2026 : les 2 reperes montres au vendeur (ventes et annonces)
         # 30 oct 2026 (Mathieu : « proposer un prix selon les last sold ») : d'abord les VENTES reelles de la meme carte
         # (SoldComps, cache 3 jours : souvent gratuit) ; les annonces en vente seulement s'il n'y a aucune vente
         if titre and ebay_prix_actif():
@@ -2799,6 +2800,8 @@ class Api:
                 ventes = [v for v in vs.get("ventes") or [] if v.get("prix")]
                 vendues_l = [{"titre": v.get("titre"), "prix": v.get("prix"), "le": v.get("le"), "url": v.get("url")} for v in ventes[:6]]
                 base = vs.get("mediane") or (cartes_match.mediane_robuste([v["prix"] for v in ventes[:5]])[0] if ventes else None)
+                if ventes:
+                    vendu = {"mediane": round(base, 2) if base else None, "n": len(ventes), "sure": bool(vs.get("mediane"))}
                 if base:
                     m_ = sante.prix_rond(base)
                     prix = {"marche": m_, "vite": max(5.0, sante.prix_rond(base * 0.90, plafond=m_)), "haut": max(m_ + 5, sante.prix_rond(base * 1.10)),
@@ -2813,6 +2816,8 @@ class Api:
                 _c, gardees, _e = cartes_match.filtrer_carte(titre, res, c.get("joueur"))
                 tot = [round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2) for x in gardees if x.get("prix_cad")]
                 med, garde = cartes_match.mediane_robuste(tot)
+                if med:
+                    affiche = {"mediane": round(med, 2), "bas": round(min(tot), 2), "n": len(tot)}
                 if med and not prix:                    # aucune vente : les memes cartes en vente
                     n = len(garde)
                     m_ = sante.prix_rond(med)
@@ -2830,7 +2835,7 @@ class Api:
         if not ebay_prix_actif():                # interrupteur : pas de prix suggere pour une annonce eBay
             prix, n, comps, note = None, 0, [], "Choisis ton prix"
         return {"ok": True, "titre": titre, "carte": c, "prix": prix, "n": n, "comps": comps, "note": note, "description": desc,
-                "source_prix": source, "vendues": vendues_l,
+                "source_prix": source, "vendues": vendues_l, "vendu": vendu, "affiche": affiche,
                 "specifiques": annonces.specifiques(c), "modele": modele, "frais_pct": r["frais_ebay_pct"], "frais_fixe": ff,
                 "etats": {k: v[2] if franco else v[1] for k, v in annonces.ETATS_BRUTS.items()},
                 "net_marche": round(prix["marche"] * (1 - fp) - ff, 2) if prix else None,

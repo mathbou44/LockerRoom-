@@ -686,6 +686,9 @@ def identite(titre, joueur=""):
     t = _RE_NUM.sub(" ", t)
     t = _RE_ANNEE.sub(" ", t)
     t = re.sub(r"(?<![a-z0-9])[a-z]{1,6}-?\d{1,4}[a-z]?(?![a-z0-9])", " ", t)     # numeros de carte sans # (NHCD-6, FW-12)
+    # 30 oct 2026 (Mathieu : « je vois pas de prix suggere ») : les codes de carte en lettres (#BYA-DA, SS-AM) ne sont presque
+    # jamais dans les titres des ventes : ils ne servent pas a dire quelle carte c'est (sinon aucune vente n'est gardee)
+    t = re.sub(r"(?<![a-z0-9])[a-z]{2,4}-[a-z]{1,3}(?![a-z0-9])", " ", t)
     for x in EQUIPES_COULEUR:
         t = t.replace(x, " ")
     if _EQUIPES_MOTS["t"] is None:

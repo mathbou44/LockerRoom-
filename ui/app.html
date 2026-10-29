@@ -257,6 +257,14 @@ details.reglage summary::-webkit-details-marker{display:none}
 .sd-fav{color:var(--or)}
 .cf-ph{margin:12px 0; border-radius:16px; overflow:hidden; background:#111115; border:1px solid var(--ligne)} .cf-ph img{display:block; width:100%; max-height:40vh; object-fit:contain}
 .cf-niv{display:flex; align-items:center; gap:10px; margin-top:10px} .cf-niv > span{font-size:13px; font-weight:600; color:var(--doux)} .cf-niv .seg{flex:1}
+.vm-tit{margin-top:12px; font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--doux)}
+.vm{display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:6px}
+.vm-t{display:flex; flex-direction:column; align-items:center; gap:1px; padding:8px 4px; border-radius:12px; background:var(--carte2); border:1px solid var(--ligne); color:var(--texte); font:inherit; cursor:pointer}
+.vm-t b{font:700 19px 'Barlow Condensed',sans-serif} .vm-t span{font-size:12px; font-weight:600} .vm-t small{font-size:10.5px; color:var(--doux)}
+.vm-t.nul{opacity:.5; cursor:default} .vm-t:not(.nul):active{transform:scale(.97)}
+.vm-vide{margin-top:12px; padding:12px; border-radius:12px; border:1px dashed var(--ligne); display:flex; flex-direction:column; gap:4px; align-items:flex-start}
+.vm-vide span{font-size:13px; color:var(--doux)} .vm-vide .pilule{margin-top:6px}
+.vm-ul{margin:0; padding-left:18px; display:flex; flex-direction:column; gap:8px; font-size:14px; line-height:1.35}
 .vp-src{margin-top:10px; font-size:13px; color:var(--doux)}
 .vp-v{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px} .vp-l{display:flex; flex-direction:column; align-items:center; gap:1px; padding:6px 10px; border-radius:10px; background:var(--carte2); border:1px solid var(--ligne); text-decoration:none; color:var(--texte)}
 .vp-l b{font:700 15px 'Barlow Condensed',sans-serif} .vp-l span{font-size:11px; color:var(--doux)} .vp-pol{margin:4px 0 10px; font-size:12.5px}
@@ -3450,6 +3458,7 @@ async function vueVendre(arg){
       let ph = []; try { ph = JSON.parse(c.photos || '[]'); } catch (e) {}
       V2.cid = c.id; V2.photos = ph.length ? ph : (c.photo ? [c.photo] : []); V2.champs = c; V2.cout = c.cout;
       if (c.prix_demande) V2.prix = c.prix_demande; if (c.titre) V2.titre = c.titre;
+      await fondsLocaux();
       await preparerVente(); return;
     }
   }
@@ -3606,6 +3615,16 @@ async function studioPhotos(ph){
   }
   syncPhotos();
 }
+// les photos gardees (originales) d'une carte de l'inventaire : la carte trouvee dans le telephone, le fond flou refait
+async function fondsLocaux(){
+  const ph = (V2.photos || []).filter(u => /^(data:|\/mes-photos\/)/.test(u));
+  if (!ph.length) return;
+  V2.originales = V2.photos.slice(); V2.studio = [];
+  for (let j = 0; j < Math.min(2, V2.photos.length); j++) {
+    try { const img = await chargerImage(V2.photos[j]); const c = coinsLocaux(img); if (c) V2.studio[j] = await photoStudio(V2.photos[j], c, {affiner: false}); } catch (e) {}
+  }
+  syncPhotos();
+}
 function syncPhotos(){
   if (!V2.originales) return;
   V2.photos = V2.originales.map((o, j) => (MODE_STUDIO && V2.studio && V2.studio[j]) ? V2.studio[j].photo : o);
@@ -3704,7 +3723,7 @@ async function garderCollection(){
   const b = $('#vf-ok'); if (b) { b.disabled = true; b.textContent = tt('Estimation de la valeur…', 'Estimating the value…'); }
   const p = await API.annonce_preparer(V2.champs || {}, typeof LANGUE !== 'undefined' ? LANGUE : 'fr').catch(() => ({ok:false}));
   const valeur = p && p.ok && p.prix ? p.prix.marche : null, titre = (p && p.ok && p.titre) || (V2.champs || {}).titre || '';
-  const r = await API.carte_garder({carte: {...(V2.champs || {}), emplacement: 'Collection', valeur}, titre, prix: null, cout: V2.cout, photos: V2.photos || []})
+  const r = await API.carte_garder({carte: {...(V2.champs || {}), emplacement: 'Collection', valeur}, titre, prix: null, cout: V2.cout, photos: V2.originales || V2.photos || []})
     .catch(e => ({ok:false, erreur:e.message}));
   if (!r || !r.ok) { if (b) { b.disabled = false; b.textContent = tt('Ajouter à ma collection', 'Add to my collection'); } toast((r && r.erreur) || tt('Erreur', 'Error'), 5000); return; }
   const ph = (V2.photos || [])[0];
@@ -3719,7 +3738,7 @@ async function garderCollection(){
 async function garderVente(){
   const b = $('#v2-garde'); if (b) { b.disabled = true; b.textContent = tt('Enregistrement…', 'Saving…'); }
   const r = await API.carte_garder({carte: {...lireChampsVente(), emplacement: 'Collection', valeur: (V2.prep && V2.prep.prix && V2.prep.prix.marche) || null}, titre: $('#v2-titre').value.trim(), prix: V2.prix, cout: val('v2-cout'),
-    photos: V2.photos, cid: V2.cid}).catch(e => ({ok:false, erreur:e.message}));
+    photos: V2.originales || V2.photos, cid: V2.cid}).catch(e => ({ok:false, erreur:e.message}));
   if (!r || !r.ok) { if (b) { b.disabled = false; b.innerHTML = `<b>${tt('Garder', 'Keep')}</b><small>${tt('dans ma collection', 'in my collection')}</small>`; } toast((r && r.erreur) || tt('Erreur', 'Error'), 5000); return; }
   for (const k in V2) delete V2[k];
   V().innerHTML = `<section class="ecran vendre fini"><div class="gros-ok">✓</div><div class="titre">${tt('Dans ta collection', 'In your collection')}</div>
@@ -3813,7 +3832,9 @@ async function traiterCarteLot(c){
   if (dt.length) champs.note = tt('À vérifier : ', 'To check: ') + dt.join(', ');
   const C = LOT.but === 'collection';
   if (C) { champs.emplacement = 'Collection'; champs.valeur = prix || null; }        // collection : la valeur estimee, pas de prix de vente
-  const g = await API.carte_garder({carte: champs, titre, prix: C ? null : prix, photos}).catch(e => ({ok:false, erreur:e.message}));
+  // 30 oct 2026 (Mathieu : « je peux pas selectionner mon niveau de flou », dans un lot) : l'inventaire garde les photos
+  // ORIGINALES ; le fond flou (et son niveau) se fait au moment de vendre, dans le telephone, sans credit
+  const g = await API.carte_garder({carte: champs, titre, prix: C ? null : prix, photos: c.ph}).catch(e => ({ok:false, erreur:e.message}));
   if (!g || !g.ok) { c.etat = 'revoir'; c.raison = (g && g.erreur) || tt('Pas enregistrée', 'Not saved'); return; }
   Object.assign(c, {etat: dt.length ? 'verifier' : 'ok', id: g.id, titre, prix, vig: photos[0], douteux: dt});
   c.ph = null;
@@ -3877,7 +3898,7 @@ function rendreVente2(){
   const net = (x) => Math.max(0, (nb(x) || 0) * (1 - fp) - ff);
   const gradee = /^(psa|bgs|sgc|cgc|tag|beckett)/i.test(String(c.grade || ''));
   const photos = V2.photos || [];
-  const cadrable = photos[0] && /^data:/.test((V2.originales && V2.originales[0]) || photos[0]);
+  const cadrable = photos[0] && /^(data:|\/mes-photos\/)/.test((V2.originales && V2.originales[0]) || photos[0]);
   const aStudio = !!(V2.studio && V2.studio.some(Boolean));
   V().innerHTML = `<section class="ecran large vendre vs">${V2.assist ? filAssistant(4) : ''}
     <div class="entete"><div><div class="titre">${tt('Vendre ma carte', 'Sell my card')}</div></div>
@@ -3886,6 +3907,7 @@ function rendreVente2(){
     <div class="vs-photo">
         <div class="photo-princ ${aStudio && MODE_STUDIO ? 'studio-on' : ''}" style="${photos[0] ? `background-image:url('${esc(photos[0])}')` : ''}">${photos[0] ? '' : SVG_CARTE}</div>
         ${cadrable ? `<div class="studio-bar">${aStudio ? segV('v2-studio', [['1', tt('Fond flou', 'Blurred background')], ['0', tt('Originale', 'Original')]], MODE_STUDIO ? '1' : '0') : ''}
+          ${aStudio && MODE_STUDIO ? `<div class="cf-niv" style="flex-basis:100%"><span>${tt('Flou', 'Blur')}</span>${segFlou('v2-niv')}</div>` : ''}
           <button class="pilule" id="v2-cadre">${aStudio ? tt('Ajuster le cadrage', 'Adjust the crop') : '✦ ' + tt('Photo studio', 'Studio photo')}</button></div>` : ''}
         <div class="vignettes">${photos.map((ph, i) => `<button class="vg ${i === 0 ? 'on' : ''}" data-ph="${i}" style="background-image:url('${esc(ph)}')" aria-label="photo ${i + 1}"></button>`).join('')}
           ${photos.length < 12 ? `<label class="vg plus-ph" title="${esc(tt('Ajouter une photo', 'Add a photo'))}">+<input type="file" accept="image/*" multiple id="v2-ph" hidden></label>` : ''}</div>
@@ -3896,11 +3918,7 @@ function rendreVente2(){
           ${pr ? segV('v2-pp', [[pr.vite, argent(pr.vite, 2), tt('Vendre vite', 'Sell fast')], [pr.marche, argent(pr.marche, 2), tt('Prix du marché ★', 'Market price ★')], [pr.haut, argent(pr.haut, 2), tt('Plus haut', 'Higher')]], V2.prix) : ''}
           <div class="ligne-prix"><label>${tt('Ton prix', 'Your price')} ($ CA)<input class="champ gros" id="v2-prix" type="number" inputmode="decimal" step="0.01" value="${esc(V2.prix ?? '')}"></label>
             <div class="recois"><span>${tt('Tu reçois ≈', 'You get ≈')}</span><b id="v2-net">${argent(net(V2.prix), 2)}</b><small>${tt('après frais eBay', 'after eBay fees')} (${p.frais_pct} %)</small></div></div>
-          ${p.source_prix ? `<div class="vp-src">${p.source_prix === 'annonces' ? tt(`Aucune vente récente trouvée : prix d’après ${p.n} annonce${p.n > 1 ? 's' : ''} de la même carte en vente.`, `No recent sale found: price from ${p.n} listing${p.n > 1 ? 's' : ''} of the same card.`)
-            : p.source_prix === 'vendues_peu' ? tt(`D’après ${p.n} vente${p.n > 1 ? 's' : ''} réelle${p.n > 1 ? 's' : ''} (peu de ventes : vérifie).`, `From ${p.n} real sale${p.n > 1 ? 's' : ''} (few sales: double-check).`)
-            : tt(`D’après ${p.n} ventes réelles de la même carte.`, `From ${p.n} real sales of the same card.`)}</div>` : ''}
-          ${(p.vendues || []).length ? `<div class="vp-v">${p.vendues.slice(0, 5).map(v => `<a class="vp-l" ${v.url ? `href="${esc(v.url)}" target="_blank" rel="noopener"` : ''}><b>${argent(v.prix, 0)}</b><span>${esc(dateCourte(v.le) || '')}</span></a>`).join('')}</div>` : ''}
-          ${!pr && !(p.vendues || []).length ? `<div class="vp-src">${tt('Aucune vente ni annonce de cette carte pour l’instant : choisis ton prix.', 'No sale or listing of this card yet: pick your price.')}</div>` : ''}
+          ${blocMarcheVente(p, pr)}
 </div>
 
     <div class="vs-etape"><span class="vs-n">2</span><b>${tt('Déjà réglé pour toi', 'Already set for you')}</b><span class="sous">${tt('touche pour changer', 'tap to change')}</span></div>
@@ -3993,7 +4011,41 @@ function rendreVente2(){
   $$('[data-vs]').forEach(b => b.onclick = () => { vibrer(); ouvrir(b.dataset.vs); });
   const vt = $('#vs-titre'); if (vt) vt.onclick = () => ouvrir('titre');
   const ap = $('#vs-aide-prix'); if (ap) ap.onclick = () => ouvrir('marche');
+  $$('[data-vm]').forEach(b => b.onclick = () => { vibrer(); V2.prix = b.dataset.vm; rendreVente2(); });
+  const ct = $('#vm-tips'); if (ct) ct.onclick = () => feuilleConseilsPrix(V2.titre);
+  // rien trouve : les conseils s'ouvrent seuls une fois par carte
+  if (ct && !(S.conseilsVus || (S.conseilsVus = {}))[V2.titre || '?']) { S.conseilsVus[V2.titre || '?'] = 1; setTimeout(() => { if ($('#vm-tips') && $('#fond-feuille').hidden) feuilleConseilsPrix(V2.titre); }, 500); }
   if (S.v2Feuille && !$('#fond-feuille').hidden && $('#f-bloc')) ouvrir(S.v2Feuille); else S.v2Feuille = null;
+}
+// 29 oct 2026 (Mathieu : « montrer la médiane des prix affichés pour la même carte, le prix le plus bas et la médiane des last
+// sold pour l'aider à choisir ; si rien du tout, on marque qu'aucune carte identique n'a été trouvée + un tips en pop-up ») :
+// trois tuiles « Le marché » ; un tap sur une tuile met ce prix
+function blocMarcheVente(p, pr){
+  const v = p.vendu || null, a = p.affiche || null;
+  if (!(v && v.mediane) && !(a && a.mediane) && !pr) return `<div class="vm-vide"><b>${tt('Aucune carte identique trouvée', 'No identical card found')}</b>
+    <span>${tt('Ni vendue, ni en vente. Choisis ton prix.', 'Not sold, not listed. Pick your price.')}</span>
+    <button class="pilule" id="vm-tips">💡 ${tt('Conseils', 'Tips')}</button></div>`;
+  const t = (val, lab, sous) => `<button class="vm-t ${val ? '' : 'nul'}" ${val ? `data-vm="${esc(rond5(val))}"` : 'disabled'}><b>${val ? argent(val, 0) : '—'}</b><span>${lab}</span><small>${sous}</small></button>`;
+  const nv = v && v.n || 0, na = a && a.n || 0;
+  return `<div class="vm-tit">${tt('Le marché', 'The market')}</div><div class="vm">
+    ${t(v && v.mediane, tt('Vendues', 'Sold'), nv ? (nv + ' ' + tt(nv > 1 ? 'ventes' : 'vente', nv > 1 ? 'sales' : 'sale') + (v.sure ? '' : ' · ' + tt('peu', 'few'))) : tt('aucune', 'none'))}
+    ${t(a && a.mediane, tt('En vente', 'Listed'), na ? na + ' ' + tt(na > 1 ? 'annonces' : 'annonce', na > 1 ? 'listings' : 'listing') : tt('aucune', 'none'))}
+    ${t(a && a.bas, tt('Plus bas', 'Lowest'), tt('en vente', 'listed'))}</div>
+    ${(p.vendues || []).length ? `<div class="vp-v">${p.vendues.slice(0, 5).map(x => `<a class="vp-l" ${x.url ? `href="${esc(x.url)}" target="_blank" rel="noopener"` : ''}><b>${argent(x.prix, 0)}</b><span>${esc(dateCourte(x.le) || '')}</span></a>`).join('')}</div>` : ''}`;
+}
+function feuilleConseilsPrix(titre){
+  const q = encodeURIComponent(String(titre || '').replace(/\b(psa|bgs|sgc|cgc)\s*\d+(\.\d)?\b/ig, '').trim());
+  ouvrirFeuille(`<h3>💡 ${tt('Trouver le bon prix', 'Find the right price')}</h3>
+    <div class="sous" style="margin-bottom:12px">${tt('Aucune carte identique trouvée. Quelques trucs :', 'No identical card found. A few tricks:')}</div>
+    <ul class="vm-ul">
+      <li><b>${tt('Une carte proche', 'A close card')}</b> ${tt('même joueur, même année, autre parallèle : ça donne un ordre de prix.', 'same player, same year, other parallel: gives a ballpark.')}</li>
+      <li><b>${tt('Rare = plus cher', 'Rare = pricier')}</b> ${tt('numérotée /99 ou moins, recrue, autographe, patch.', 'numbered /99 or less, rookie, auto, patch.')}</li>
+      <li><b>${tt('Pas sûr ?', 'Not sure?')}</b> ${tt('Encan 7 jours : les acheteurs fixent le prix.', '7-day auction: buyers set the price.')}</li>
+      <li><b>${tt('Prix fixe', 'Buy It Now')}</b> ${tt('mets un peu haut et accepte les offres.', 'aim a bit high and accept offers.')}</li>
+    </ul>
+    ${q ? `<a class="btn ghost" style="margin-top:14px" href="https://www.ebay.ca/sch/i.html?_nkw=${q}&LH_Sold=1&LH_Complete=1" target="_blank" rel="noopener">${tt('Voir les vendues sur eBay', 'See sold on eBay')} ↗</a>` : ''}
+    <button class="btn" id="vm-ok" style="margin-top:10px">${tt('Compris', 'Got it')}</button>`);
+  $('#vm-ok').onclick = fermerFeuille;
 }
 // 27 oct 2026 (Mathieu : « l'API publique de PSA ») : un tap verifie le certificat et remplit la carte (note, joueur, numero...)
 function htmlPsa(r){
@@ -4080,6 +4132,9 @@ function brancherVente2(){
     V2.hebergees = null; re();
   });
   const ph = $('#v2-ph'); if (ph) ph.onchange = async (e) => { for (const f of [...(e.target.files || [])].slice(0, 12 - V2.photos.length)) { try { const x = await reduirePhoto(f); V2.photos.push(x); if (V2.originales) V2.originales.push(x); } catch (x) {} } V2.hebergees = null; re(); };
+  $$('#v2-niv button').forEach(b => b.onclick = async () => { vibrer(); $$('#v2-niv button').forEach(x => x.classList.toggle('on', x === b));
+    V2.champs = lireChampsVente(); V2.titre = $('#v2-titre').value; V2.description = $('#v2-desc').value; V2.cout = val('v2-cout');
+    await changerFlou(+b.dataset.v); rendreVente2(); });
   $$('#v2-studio button').forEach(b => b.onclick = () => { MODE_STUDIO = b.dataset.v === '1'; try { localStorage.setItem('lr_studio', MODE_STUDIO ? '1' : '0'); } catch (e) {}
     API.reglages_sauver({photo_studio: MODE_STUDIO}).then(r => { S.reglages = r; }).catch(() => {}); syncPhotos(); re(); });
   const pp = $('.vs-photo .photo-princ'); if (pp && (V2.photos || []).length) { pp.style.cursor = 'zoom-in'; pp.onclick = () => { V2.champs = lireChampsVente(); V2.titre = $('#v2-titre').value; V2.description = $('#v2-desc').value; V2.cout = val('v2-cout'); feuillePhotosVente(rendreVente2, true); }; }
