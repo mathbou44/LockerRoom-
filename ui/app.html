@@ -203,7 +203,9 @@ details.reglage summary::-webkit-details-marker{display:none}
 .d-car::-webkit-scrollbar{display:none} .d-car .tuile-deal{flex:0 0 150px; scroll-snap-align:start}
 .d-nb{min-width:20px; height:20px; padding:0 6px; border-radius:10px; background:var(--acc); color:#15141A; font:700 12px/20px var(--f-cond); text-align:center}
 .ecran.large > .entete:has(+ .d-onglets){margin-bottom:6px}
-.d-chips{display:flex; align-items:center; flex-wrap:nowrap; gap:8px} .d-chips .aide-q{margin-left:auto}
+.d-ent{display:flex; align-items:center; gap:8px; margin-left:auto} .d-chips{display:flex; align-items:center; flex-wrap:nowrap; gap:7px} .d-chips .aide-q{margin-left:auto} .d-chips .chip{padding-left:11px; padding-right:11px}
+.fd-w{flex-wrap:wrap !important; overflow:visible !important} .fd-s{display:flex; flex-direction:column; gap:8px}
+.fd-l{align-items:center; padding:10px 0} .fd-l > span{display:flex; flex-direction:column; gap:2px} .fd-l small{font-size:13px; color:var(--doux)}
 .filtres-d{margin-bottom:12px}
 .d-onglets{display:flex; gap:4px; margin:0 0 12px; padding:4px; border-radius:999px; background:var(--carte); width:100%}
 .d-onglets a{flex:1; justify-content:center}
@@ -2715,7 +2717,8 @@ function signe(v){ const n = nb(v) || 0; return (n > 0 ? '+' : n < 0 ? '−' : '
 function ilYa(d){
   const t = Date.parse(d || ''); if (!isFinite(t)) return '';
   const min = Math.round((Date.now() - t) / 60000);
-  return min < 60 ? `il y a ${Math.max(1, min)} min` : min < 1440 ? `il y a ${Math.round(min / 60)} h` : `il y a ${Math.round(min / 1440)} j`;
+  const v = min < 60 ? Math.max(1, min) + ' min' : min < 1440 ? Math.round(min / 60) + ' h' : Math.round(min / 1440) + tt(' j', ' d');
+  return tt('il y a ' + v, v + ' ago');
 }
 function courbeProfit(h){
   const a = h.courbe || [], b = h.courbe_passe || [], n = Math.max(b.length, 28, a.length);
@@ -4138,38 +4141,39 @@ try { Object.assign(S.dealsF, JSON.parse(localStorage.getItem('lr_deals_f') || '
 const sauverDealsF = () => { try { localStorage.setItem('lr_deals_f', JSON.stringify(S.dealsF)); } catch (e) {} };
 const nbFiltresDeals = (F) => ['prix_min', 'prix_max', 'rabais_min', 'gain_min'].filter(k => F[k] != null && F[k] !== '').length + (F.sortes || []).length + ((F.joueurs || []).length ? 1 : 0) + (F.avec_mise ? 1 : 0);
 function feuilleFiltresDeals(){
+  // 29 oct 2026 (Mathieu : « revoir cette page ; meilleur deal = plus gros profit, redondance ») : 3 tris, tout tient sans
+  // glisser, un seul prix (le budget max), les gros vendeurs en un interrupteur
   const F = S.dealsF, so = new Set(F.sortes || []);
   const enDev = (v) => v == null || v === '' ? '' : Math.round(convertir(v));
   const SORTES = [['recrue', tt('Recrue', 'Rookie')], ['auto', 'Auto'], ['patch', 'Patch'], ['numerotee', tt('Numérotée', 'Numbered')], ['gradee', tt('Gradée', 'Graded')], ['brute', tt('Non gradée', 'Raw')]];
-  ouvrirFeuille(`<h3>${tt('Mes filtres de deals', 'My deal filters')}</h3>
-    <div class="r-titre">${tt('Trier par', 'Sort by')}</div>
-    <div class="chips" id="fd-tri">${[['rabais', tt('Meilleur deal', 'Best deal')], ['fin', tt('Finit bientôt', 'Ending soon')], ['gain', tt('Plus gros profit', 'Biggest profit')], ['prix', tt('Prix', 'Price')], ['recent', tt('Nouveaux', 'New')]].map(([k, t]) => `<button class="chip ${(F.tri || 'rabais') === k ? 'on' : ''}" data-tri="${k}">${t}</button>`).join('')}</div>
-    <div class="r-titre" style="margin-top:12px">${tt('Sorte de carte', 'Card type')}</div>
-    <div class="chips" id="fd-so">${SORTES.map(([k, t]) => `<button class="chip ${so.has(k) ? 'on' : ''}" data-so="${k}">${t}</button>`).join('')}</div>
-    <div class="r-titre" style="margin-top:12px">${tt('Rabais minimum', 'Minimum discount')}</div>
-    <div class="chips" id="fd-rb">${[['', tt('Tous', 'Any')], [40, '40 %'], [50, '50 %'], [60, '60 %'], [75, '75 %']].map(([k, t]) => `<button class="chip ${String(F.rabais_min ?? '') === String(k) ? 'on' : ''}" data-rb="${k}">${t}</button>`).join('')}</div>
-    <div class="grille-champs" style="margin-top:12px">
-      <label>${tt('Prix min', 'Min price')} (${symDevise()})<input class="champ" type="number" inputmode="decimal" id="fd-pmin" value="${enDev(F.prix_min)}"></label>
-      <label>${tt('Prix max', 'Max price')} (${symDevise()})<input class="champ" type="number" inputmode="decimal" id="fd-pmax" value="${enDev(F.prix_max)}"></label>
-      <label>${tt('Profit min', 'Min profit')} (${symDevise()})<input class="champ" type="number" inputmode="decimal" id="fd-gmin" value="${enDev(F.gain_min)}"></label>
-      <label class="large">${tt('Joueurs (séparés par des virgules)', 'Players (comma separated)')}<input class="champ" id="fd-j" value="${esc((F.joueurs || []).join(', '))}" placeholder="Bedard, Celebrini, Schaefer"></label></div>
-    <label class="bascule" style="margin-top:6px"><span>${tt('Encans : seulement avec au moins une mise', 'Auctions: only with at least one bid')}</span><input type="checkbox" id="fd-mise" ${F.avec_mise ? 'checked' : ''}></label>
-    <div class="fen-btns" style="margin-top:14px"><button class="btn" id="fd-ok">${tt('Voir les deals', 'Show deals')}</button><button class="btn ghost" id="fd-raz">${tt('Tout effacer', 'Clear all')}</button></div>`);
+  let tri = ['rabais', 'fin', 'prix'].includes(F.tri) ? F.tri : 'rabais';
+  ouvrirFeuille(`<h3>${tt('Trier et filtrer', 'Sort and filter')}</h3>
+    <div class="fd-s"><div class="r-titre">${tt('Trier par', 'Sort by')}</div>
+      <div class="chips fd-w" id="fd-tri">${[['rabais', tt('Meilleur deal', 'Best deal')], ['fin', tt('Finit bientôt', 'Ending soon')], ['prix', tt('Prix bas', 'Lowest price')]].map(([k, t]) => `<button class="chip ${tri === k ? 'on' : ''}" data-tri="${k}">${t}</button>`).join('')}</div></div>
+    <label class="bascule fd-l"><span><b>${tt('Seulement les gros vendeurs', 'Top sellers only')}</b><small>${tt('Les vendeurs de hockey qu’on suit de près', 'The hockey sellers we follow closely')}</small></span><input type="checkbox" id="fd-vend" ${F.vendeurs ? 'checked' : ''}></label>
+    <div class="fd-s"><div class="r-titre">${tt('Sorte de carte', 'Card type')}</div>
+      <div class="chips fd-w" id="fd-so">${SORTES.map(([k, t]) => `<button class="chip ${so.has(k) ? 'on' : ''}" data-so="${k}">${t}</button>`).join('')}</div></div>
+    <div class="fd-s"><div class="r-titre">${tt('Rabais minimum', 'Minimum discount')}</div>
+      <div class="chips fd-w" id="fd-rb">${[['', tt('Tous', 'Any')], [40, '40 %'], [50, '50 %'], [60, '60 %'], [75, '75 %']].map(([k, t]) => `<button class="chip ${String(F.rabais_min ?? '') === String(k) ? 'on' : ''}" data-rb="${k}">${t}</button>`).join('')}</div></div>
+    <div class="grille-champs">
+      <label>${tt('Budget max', 'Max budget')} (${symDevise()})<input class="champ" type="number" inputmode="decimal" id="fd-pmax" value="${enDev(F.prix_max)}" placeholder="${tt('aucun', 'none')}"></label>
+      <label>${tt('Joueurs', 'Players')}<input class="champ" id="fd-j" value="${esc((F.joueurs || []).join(', '))}" placeholder="Bedard, Celebrini"></label></div>
+    <label class="bascule fd-l"><span>${tt('Encans : seulement avec au moins une mise', 'Auctions: only with at least one bid')}</span><input type="checkbox" id="fd-mise" ${F.avec_mise ? 'checked' : ''}></label>
+    <div class="fen-btns"><button class="btn" id="fd-ok">${tt('Voir les deals', 'Show deals')}</button><button class="btn ghost" id="fd-raz">${tt('Tout effacer', 'Clear all')}</button></div>`);
   $$('#fd-so [data-so]').forEach(b => b.onclick = () => { const k = b.dataset.so;
     if (so.has(k)) so.delete(k); else { so.add(k); if (k === 'gradee') so.delete('brute'); if (k === 'brute') so.delete('gradee'); }
     $$('#fd-so [data-so]').forEach(x => x.classList.toggle('on', so.has(x.dataset.so))); });
   let rb = F.rabais_min ?? '';
   $$('#fd-rb [data-rb]').forEach(b => b.onclick = () => { rb = b.dataset.rb; $$('#fd-rb [data-rb]').forEach(x => x.classList.toggle('on', x === b)); });
   const cad = (id) => { const v = nb(val(id)); return v ? Math.round(versCAD(v) * 100) / 100 : null; };
-  let tri = F.tri || 'rabais';
   $$('#fd-tri [data-tri]').forEach(b => b.onclick = () => { tri = b.dataset.tri; $$('#fd-tri [data-tri]').forEach(x => x.classList.toggle('on', x === b)); });
   $('#fd-ok').onclick = () => {
     F.tri = tri;
-    Object.assign(F, {sortes:[...so], rabais_min: rb === '' ? null : +rb, prix_min:cad('fd-pmin'), prix_max:cad('fd-pmax'), gain_min:cad('fd-gmin'),
-      joueurs: val('fd-j').split(',').map(x => x.trim()).filter(Boolean), avec_mise: $('#fd-mise').checked});
+    Object.assign(F, {sortes:[...so], rabais_min: rb === '' ? null : +rb, prix_min:null, prix_max:cad('fd-pmax'), gain_min:null,
+      joueurs: val('fd-j').split(',').map(x => x.trim()).filter(Boolean), avec_mise: $('#fd-mise').checked, vendeurs: $('#fd-vend').checked});
     sauverDealsF(); fermerFeuille(); chargerDeals();
   };
-  $('#fd-raz').onclick = () => { Object.assign(F, {sortes:[], rabais_min:null, prix_min:null, prix_max:null, gain_min:null, joueurs:[], avec_mise:false}); sauverDealsF(); fermerFeuille(); chargerDeals(); };
+  $('#fd-raz').onclick = () => { Object.assign(F, {sortes:[], rabais_min:null, prix_min:null, prix_max:null, gain_min:null, joueurs:[], avec_mise:false, vendeurs:false, tri:'rabais'}); sauverDealsF(); fermerFeuille(); chargerDeals(); };
 }
 function finDans(fin){
   const ms = Date.parse(fin || '') - Date.now(); if (!isFinite(ms)) return '';
@@ -4224,7 +4228,7 @@ document.addEventListener('click', async (e) => {
     if (r.ids) { S.watch = new Set(r.ids.map(String)); majNbWatch(); }
   } catch (err) { poser(!on); toast(err.message); }
 }, true);
-function finCourt(m){ return m == null ? '' : m < 60 ? m + ' min' : m < 1440 ? Math.floor(m / 60) + ' h ' + String(m % 60).padStart(2, '0') : Math.floor(m / 1440) + ' j ' + Math.floor(m % 1440 / 60) + ' h'; }
+function finCourt(m){ return m == null ? '' : m < 60 ? m + ' min' : m < 1440 ? Math.floor(m / 60) + ' h ' + String(m % 60).padStart(2, '0') : Math.floor(m / 1440) + tt(' j ', ' d ') + Math.floor(m % 1440 / 60) + ' h'; }
 async function chargerWatch(){
   const z = $('#d-res'); if (!z) return;
   const r = await API.watch_liste().catch(e => ({ok:false, erreur:e.message}));
@@ -4928,7 +4932,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document
 async function vueDeals(arg){
   const w = arg === 'watch';
   V().innerHTML = `<section class="ecran large">
-    <div class="entete"><div class="titre">Deals</div>${w ? '' : pastilleQuota('deals')}</div>
+    <div class="entete"><div class="titre">Deals</div>${w ? '' : `<span class="d-ent">${pastilleQuota('deals')}<button class="aide-q" id="d-aide" aria-label="${esc(tt('Comment lire un deal', 'How to read a deal'))}">?</button></span>`}</div>
     <div class="d-onglets" role="tablist"><a role="tab" href="#deals" aria-selected="${!w}" class="${w ? '' : 'on'}">${tt('Deals', 'Deals')}<span class="d-nb" id="d-nb" hidden></span></a>
       <a role="tab" href="#deals/watch" aria-selected="${w}" class="${w ? 'on' : ''}">${ICO_ETOILE}${tt('Watchlist', 'Watchlist')}<span class="w-nb" hidden></span></a></div>
     <form class="recherche pas-tel" id="v-form" role="search">${ICONES.loupe}<input id="v-q" type="search" enterkeyhint="search" placeholder="${esc(tt('Combien vaut une carte ? (ex. Bedard Young Guns)', 'What is a card worth? (e.g. Bedard Young Guns)'))}"></form>
@@ -5016,10 +5020,10 @@ async function chargerDeals(frais){
       ${sp.length > 1 ? `<div class="chips" id="d-sp"><button class="chip ${F.sports.length ? '' : 'on'}" data-sp="">${tt('Tous sports', 'All sports')}</button>${sp.map(([k, n]) => `<button class="chip ${F.sports.includes(k) ? 'on' : ''}" data-sp="${k}">${nomSport(k)} ${n}</button>`).join('')}</div>` : ''}
       <div class="deux pas-tel">${segD('d-tri', [['rabais', tt('Meilleur deal', 'Best deal')], ['fin', tt('Finit bientôt', 'Ending soon')], ['gain', tt('Plus gros profit', 'Biggest profit')], ['prix', tt('Prix', 'Price')], ['recent', tt('Nouveaux', 'New')]], F.tri)}
         ${segD('d-type', [['', tt('Tous', 'All')], ['fixe', tt('Prix fixe', 'Buy It Now')], ['encan', tt('Encans', 'Auctions')]], F.type)}</div>
-      <div class="chips d-chips"><button class="chip filtre-d ${nbFiltresDeals(F) ? 'on' : ''}" id="d-filtres">⚙<span class="pas-tel"> ${tt('Filtres', 'Filters')}</span><span class="tel-seul"> ${tt('Trier', 'Sort')}</span>${nbFiltresDeals(F) ? ' · ' + nbFiltresDeals(F) : ''}</button>
+      <div class="chips d-chips"><button class="chip filtre-d ${nbFiltresDeals(F) ? 'on' : ''}" id="d-filtres" aria-label="${esc(tt('Trier et filtrer', 'Sort and filter'))}">⚙<span class="pas-tel"> ${tt('Filtres', 'Filters')}</span>${nbFiltresDeals(F) ? ' ' + nbFiltresDeals(F) : ''}</button>
         <button class="chip tel-seul ${F.type === 'encan' ? 'on' : ''}" data-type-t="encan">⏱ ${tt('Encans', 'Auctions')}</button>
         <button class="chip ${(F.sortes || []).includes('recrue') ? 'on' : ''}" data-sorte="recrue">${tt('Recrues', 'Rookies')}</button>
-        <button class="aide-q" id="d-aide" aria-label="${esc(tt('Comment lire un deal', 'How to read a deal'))}">?</button></div></div>
+        <button class="chip ${F.vendeurs ? 'on' : ''}" id="d-vend">${tt('Top vendeurs', 'Top sellers')}</button></div></div>
     ${L.length || SU.length ? `<div class="grille-c">${[...L, ...SU].map(tuileDeal).join('')}
         ${d.limite && d.n > L.length && !NATIF ? `<button class="tuile-c tuile-pro" data-pro-deals><span class="badge-f pro grand">✦ PRO</span><b>+${d.n - L.length} ${tt('deals de plus', 'more deals')}</b><span>${tt('avec filtres et comps', 'with filters and comps')}</span></button>` : ''}</div>`
       : `<div class="vide">${P.length ? tt('Pas de deal sous 70 % de la valeur en ce moment : voici les meilleurs prix à surveiller.', 'No deal under 70% of value right now: here are the best prices to watch.') : tt('Aucun deal pour ces filtres pour l’instant. Le chasseur regarde eBay chaque heure.', 'No deal for these filters right now. The hunter checks eBay every hour.')}</div>`}
@@ -5033,6 +5037,8 @@ async function chargerDeals(frais){
   $$('[data-type-t]', z).forEach(b => b.onclick = () => { const on = F.type !== 'encan'; F.type = on ? 'encan' : ''; if (on && F.tri === 'rabais') F.tri = 'fin'; if (!on && F.tri === 'fin') F.tri = 'rabais'; sauverDealsF(); chargerDeals(); });
   $('#d-filtres').onclick = feuilleFiltresDeals;
   const da = $('#d-aide'); if (da) da.onclick = feuilleAideDeals;
+  // 29 oct 2026 (Mathieu : « je veux voir tous les deals des gros vendeurs ») : un tap
+  const dv = $('#d-vend'); if (dv) dv.onclick = () => { F.vendeurs = !F.vendeurs; sauverDealsF(); chargerDeals(); };
   // 28 oct 2026 (Mathieu : « encore que des rookies ») : deux raccourcis, un tap
   $$('[data-sorte]', z).forEach(b => b.onclick = () => { const k = b.dataset.sorte, l = F.sortes || [];
     F.sortes = l.includes(k) ? l.filter(x => x !== k) : [...l, k]; sauverDealsF(); chargerDeals(); });
@@ -5859,10 +5865,11 @@ function fraicheur(t){
   return age <= t.freq_min * 1.5 ? 'vert' : age <= t.freq_min * 4 ? 'or' : 'rouge';
 }
 function prochain(t){
-  const d = Date.parse(t.dernier || ''); if (!isFinite(d)) return t.note || 'bientôt';
+  const d = Date.parse(t.dernier || ''); if (!isFinite(d)) return t.note || tt('bientôt', 'soon');
   const m = Math.round((d + t.freq_min * 60000 - Date.now()) / 60000);
-  if (m <= 0) return 'en retard';
-  return m < 60 ? `prochaine dans ${m} min` : m < 24 * 60 ? `prochaine vers ${new Date(d + t.freq_min * 60000).toLocaleTimeString(LOC(), {hour:'2-digit', minute:'2-digit'})}` : (t.note || '');
+  if (m <= 0) return tt('en retard', 'late');
+  const h = new Date(d + t.freq_min * 60000).toLocaleTimeString(LOC(), {hour:'2-digit', minute:'2-digit'});
+  return m < 60 ? tt(`prochaine dans ${m} min`, `next in ${m} min`) : m < 24 * 60 ? tt(`prochaine vers ${h}`, `next around ${h}`) : (t.note || '');
 }
 const COUL_POULS = {vert:'var(--vert)', or:'var(--or)', rouge:'var(--rouge)', vide:'#34333D'};
 function htmlPouls(L){

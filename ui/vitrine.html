@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0B0B0E">
 <title>SlabCoach · L’app des cartes de sport</title>
-<meta name="description" content="SlabCoach : deals eBay sous la valeur, vraies valeurs des cartes, chances de breaks, inventaire et ventes. Gratuit, avec 14 jours de Pro offerts.">
+<meta name="description" content="SlabCoach : l’outil parfait pour les collectionneurs de cartes de tous les niveaux. Comprendre, gérer, acheter et vendre au meilleur prix, en confiance. Gratuit, 14 jours de Pro offerts.">
 <link rel="canonical" href="https://slabcoach.com/">
 <meta property="og:title" content="SlabCoach · Joue tes cartes comme un pro">
 <meta property="og:description" content="Deals sous la valeur, vraies valeurs, chances de breaks, inventaire et ventes. Gratuit, 14 jours de Pro offerts.">
@@ -153,6 +153,37 @@ footer{border-top:1px solid rgba(255,255,255,.06); padding:28px 0 calc(28px + en
 footer .conteneur{display:flex; flex-wrap:wrap; gap:14px 24px; align-items:center; justify-content:space-between}
 footer nav{display:flex; gap:18px} footer a{color:var(--doux); text-decoration:none} footer a:hover{color:var(--texte)}
 footer .mention{flex-basis:100%; font-size:12.5px}
+/* 29 oct 2026 - le positionnement (Mathieu : « le parfait outil pour un collectionneur ou hobbyiste de tous les niveaux.
+   Aide a comprendre, gerer, acquerir et se departir pour la meilleure valeur et avec confiance ») + le tableau comparatif */
+.sous-titre b{color:var(--texte); font-weight:600}
+.piliers{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-top:34px}
+@media (max-width:900px){ .piliers{grid-template-columns:repeat(2,minmax(0,1fr))} }
+.pilier{position:relative; padding:20px 18px; border-radius:20px; background:var(--carte); border:1px solid var(--ligne); overflow:hidden}
+.pilier::after{content:''; position:absolute; left:18px; right:18px; top:0; height:2px; border-radius:2px; background:var(--holo); opacity:.7}
+.pilier .n{font:700 12px 'Barlow Condensed',sans-serif; letter-spacing:.24em; color:var(--pale)}
+.pilier h3{font:700 26px/1 'Barlow Condensed',sans-serif; margin:8px 0 0; letter-spacing:-.01em}
+.pilier p{margin:8px 0 0; color:var(--doux); font-size:14.5px; line-height:1.45}
+@media (max-width:480px){ .pilier{padding:16px 14px} .pilier h3{font-size:22px} .pilier p{font-size:13.5px} }
+.compare{margin-top:34px; border-radius:22px; border:1px solid var(--ligne); background:var(--carte); overflow:hidden}
+.compare table{width:100%; border-collapse:collapse; table-layout:fixed}
+.compare th, .compare td{padding:14px 10px; text-align:center; border-bottom:1px solid rgba(255,255,255,.05); vertical-align:middle}
+.compare tr:last-child td{border-bottom:0}
+.compare th{font:700 13px/1.15 'Barlow Condensed',sans-serif; letter-spacing:.04em; text-transform:uppercase; color:var(--doux); padding-top:18px; padding-bottom:16px}
+.compare th:first-child, .compare td:first-child{text-align:left; padding-left:20px; width:40%}
+.compare td:first-child{font-size:15px; color:#DCD9E2; line-height:1.35}
+.compare td:first-child small{display:block; color:var(--pale); font-size:12.5px; margin-top:2px}
+.compare .sc{background:linear-gradient(180deg, rgba(185,190,255,.09), rgba(185,190,255,.04))}
+.compare th.sc{color:var(--texte)} .compare th.sc span{display:block}
+.compare th.sc .mini{width:22px; height:22px; display:block; margin:0 auto 6px}
+.m{display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; font:800 14px/1 'Barlow',sans-serif}
+.m.oui{color:#0F2418; background:var(--vert)} .m.part{box-shadow:inset 0 0 0 2px rgba(233,207,142,.75); background:linear-gradient(90deg, rgba(233,207,142,.75) 50%, transparent 50%)}
+.m.non{color:#5A5763; font-size:18px}
+.compare .sc .m.oui{background:linear-gradient(100deg,#9FE6D2,#B9BEFF 50%,#F2B3D6); color:#12111A}
+.legende{display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:14px; font-size:13px; color:var(--pale)}
+.legende span{display:inline-flex; align-items:center; gap:7px} .legende .m{width:20px; height:20px; font-size:11px}
+@media (max-width:600px){ .compare th, .compare td{padding:12px 4px} .compare th{font-size:11px; letter-spacing:.02em}
+  .compare th:first-child, .compare td:first-child{padding-left:12px; width:44%} .compare td:first-child{font-size:13.5px} .compare td:first-child small{display:none}
+  .m{width:22px; height:22px; font-size:12px} }
 @media (prefers-reduced-motion:reduce){ .tuile .img::after{animation:none} html{scroll-behavior:auto} }
 </style>
 </head>
@@ -160,6 +191,7 @@ footer .mention{flex-basis:100%; font-size:12.5px}
 <header class="haut"><div class="conteneur">
   <a class="marque" href="/" aria-label="SlabCoach"><img class="logo-sc" src="/logo_sc_prizm.svg" alt=""><span class="mot-sc"><b>slab</b>coach<sup>™</sup><span class="tag">SPORTS CARDS</span></span></a>
   <nav class="nav">
+    <a class="lien" href="#comparer"><span class="fr">Comparer</span><span class="en">Compare</span></a>
     <a class="lien" href="#pourquoi"><span class="fr">Pourquoi nous</span><span class="en">Why us</span></a>
     <a class="lien" href="#forfaits"><span class="fr">Forfaits</span><span class="en">Pricing</span></a>
     <a class="lien" href="/connexion"><span class="fr">Se connecter</span><span class="en">Sign in</span></a>
@@ -170,9 +202,9 @@ footer .mention{flex-basis:100%; font-size:12.5px}
 <main>
 <div class="hero"><div class="conteneur">
   <div>
-    <span class="surtitre"><i></i><span class="fr">Pour les collectionneurs, les vendeurs et les breakers</span><span class="en">For collectors, sellers and breakers</span></span>
+    <span class="surtitre"><i></i><span class="fr">Pour les collectionneurs de tous les niveaux</span><span class="en">For collectors of every level</span></span>
     <h1><span class="fr">Joue tes cartes <span class="holo-t">comme un pro.</span></span><span class="en">Play your cards <span class="holo-t">like a pro.</span></span></h1>
-    <p class="sous-titre"><span class="fr">Les deals sous la valeur, la vraie valeur de tes cartes, les chances de ton break, ton inventaire et tes ventes : tout au même endroit.</span><span class="en">Deals under value, the real value of your cards, your break odds, your inventory and your sales: all in one place.</span></p>
+    <p class="sous-titre"><span class="fr">L’outil parfait du collectionneur, débutant ou expert. SlabCoach t’aide à <b>comprendre</b>, <b>gérer</b>, <b>acheter</b> et <b>vendre</b> tes cartes au meilleur prix, en confiance.</span><span class="en">The perfect tool for every collector, beginner or expert. SlabCoach helps you <b>understand</b>, <b>manage</b>, <b>buy</b> and <b>sell</b> your cards for the best value, with confidence.</span></p>
     <div class="actions">
       <a class="btn holo" href="/connexion"><span class="fr">Commencer gratuitement</span><span class="en">Start for free</span></a>
       <a class="btn ghost" href="#forfaits"><span class="fr">Voir les forfaits</span><span class="en">See pricing</span></a>
@@ -188,6 +220,43 @@ footer .mention{flex-basis:100%; font-size:12.5px}
       <div class="prix">$31</div><div class="est"><small class="holo-t"><span class="fr">Estimation SlabCoach</span><span class="en">SlabCoach estimate</span></small><span class="fr">vaut <b>$50</b></span><span class="en">worth <b>$50</b></span></div></div>
   </div>
 </div></div>
+
+<section id="niveaux" style="padding-top:24px"><div class="conteneur">
+  <p class="kicker holo-t"><span class="fr">Tous les niveaux</span><span class="en">Every level</span></p>
+  <h2><span class="fr">Ta première carte ou ta millième : un seul outil.</span><span class="en">Your first card or your thousandth: one tool.</span></h2>
+  <div class="piliers">
+    <div class="pilier"><span class="n">01</span><h3><span class="fr">Comprendre</span><span class="en">Understand</span></h3><p><span class="fr">Ce que vaut vraiment ta carte, et pourquoi.</span><span class="en">What your card is really worth, and why.</span></p></div>
+    <div class="pilier"><span class="n">02</span><h3><span class="fr">Gérer</span><span class="en">Manage</span></h3><p><span class="fr">Ta collection, sa valeur et tes profits, à jour tout seuls.</span><span class="en">Your collection, its value and your profit, always current.</span></p></div>
+    <div class="pilier"><span class="n">03</span><h3><span class="fr">Acheter</span><span class="en">Buy</span></h3><p><span class="fr">Les bons deals, avec la mise max pour ne jamais trop payer.</span><span class="en">The right deals, with the max bid so you never overpay.</span></p></div>
+    <div class="pilier"><span class="n">04</span><h3><span class="fr">Vendre</span><span class="en">Sell</span></h3><p><span class="fr">Au meilleur prix, en une photo, au bon moment.</span><span class="en">For the best price, from one photo, at the right time.</span></p></div>
+  </div>
+</div></section>
+
+<section id="comparer"><div class="conteneur">
+  <p class="kicker holo-t"><span class="fr">Comparer</span><span class="en">Compare</span></p>
+  <h2><span class="fr">Tout ce qu’il te faut, au même endroit.</span><span class="en">Everything you need, in one place.</span></h2>
+  <p class="intro"><span class="fr">Sans SlabCoach, il faut chercher les ventes sur eBay, tenir un tableur et payer une app de prix. Avec SlabCoach, c’est fait.</span><span class="en">Without SlabCoach, you dig through eBay sales, keep a spreadsheet and pay for a price app. With SlabCoach, it’s done.</span></p>
+  <div class="compare"><table>
+    <thead><tr><th scope="col"><span class="fr">Ce que tu veux</span><span class="en">What you want</span></th>
+      <th scope="col" class="sc"><img class="mini logo-sc" src="/logo_sc_prizm.svg" alt=""><span>SlabCoach</span></th>
+      <th scope="col"><span class="fr">eBay seul</span><span class="en">eBay alone</span></th>
+      <th scope="col"><span class="fr">Un tableur</span><span class="en">A spread&shy;sheet</span></th>
+      <th scope="col"><span class="fr">Apps de prix</span><span class="en">Price apps</span></th></tr></thead>
+    <tbody>
+      <tr><td><span class="fr">La vraie valeur de ta carte<small>ventes réelles de la même carte</small></span><span class="en">The real value of your card<small>real sales of the same card</small></span></td><td class="sc"><span class="m oui" aria-label="oui">✓</span></td><td><span class="m part" aria-label="en partie"></span></td><td><span class="m non" aria-label="non">–</span></td><td><span class="m oui" aria-label="oui">✓</span></td></tr>
+      <tr><td><span class="fr">Les deals trouvés pour toi<small>chaque heure, sous la valeur</small></span><span class="en">Deals found for you<small>every hour, under value</small></span></td><td class="sc"><span class="m oui" aria-label="oui">✓</span></td><td><span class="m non" aria-label="non">–</span></td><td><span class="m non" aria-label="non">–</span></td><td><span class="m non" aria-label="non">–</span></td></tr>
+      <tr><td><span class="fr">Ta mise max pour rester gagnant<small>frais et livraison compris</small></span><span class="en">Your max bid to stay ahead<small>fees and shipping included</small></span></td><td class="sc"><span class="m oui" aria-label="oui">✓</span></td><td><span class="m non" aria-label="non">–</span></td><td><span class="m non" aria-label="non">–</span></td><td><span class="m non" aria-label="non">–</span></td></tr>
+      <tr><td><span class="fr">Scan de ta carte, recto verso<small>l’app la reconnaît</small></span><span class="en">Scan your card, front and back<small>the app recognizes it</small></span></td><td class="sc"><span class="m oui" aria-label="oui">✓</span></td><td><span class="m non" aria-label="non">–</span></td><td><span class="m non" aria-label="non">–</span></td><td><span class="m part" aria-label="en partie"></span></td></tr>
+      <tr><td><span class="fr">Ta collection et sa valeur<small>alerte si elle monte ou baisse</small></span><span class="en">Your collection and its value<small>alert when it goes up or down</small></span></td><td class="sc"><span class="m oui" aria-label="oui">✓</span></td><td><span class="m non" aria-label="non">–</span></td><td><span class="m part" aria-label="en partie"></span></td><td><span class="m part" aria-label="en partie"></span></td></tr>
+      <tr><td><span class="fr">Ton profit réel<small>après frais eBay et livraison</small></span><span class="en">Your real profit<small>after eBay fees and shipping</small></span></td><td class="sc"><span class="m oui" aria-label="oui">✓</span></td><td><span class="m part" aria-label="en partie"></span></td><td><span class="m part" aria-label="en partie"></span></td><td><span class="m non" aria-label="non">–</span></td></tr>
+      <tr><td><span class="fr">Une annonce eBay en une photo<small>prix, titre, livraison réglés</small></span><span class="en">An eBay listing from one photo<small>price, title, shipping set</small></span></td><td class="sc"><span class="m oui" aria-label="oui">✓</span></td><td><span class="m part" aria-label="en partie"></span></td><td><span class="m non" aria-label="non">–</span></td><td><span class="m non" aria-label="non">–</span></td></tr>
+      <tr><td><span class="fr">Les chances de ton break<small>le prix juste de chaque place</small></span><span class="en">Your break odds<small>the fair price of each spot</small></span></td><td class="sc"><span class="m oui" aria-label="oui">✓</span></td><td><span class="m non" aria-label="non">–</span></td><td><span class="m non" aria-label="non">–</span></td><td><span class="m non" aria-label="non">–</span></td></tr>
+      <tr><td><span class="fr">Simple pour un débutant<small>en français et en anglais, en $ CA</small></span><span class="en">Simple for a beginner<small>in English and French, in CAD</small></span></td><td class="sc"><span class="m oui" aria-label="oui">✓</span></td><td><span class="m part" aria-label="en partie"></span></td><td><span class="m non" aria-label="non">–</span></td><td><span class="m part" aria-label="en partie"></span></td></tr>
+    </tbody></table></div>
+  <div class="legende"><span><i class="m oui">✓</i><span class="fr">Fait pour toi</span><span class="en">Done for you</span></span><span><i class="m part"></i><span class="fr">En partie ou à la main</span><span class="en">Partly, or by hand</span></span><span><i class="m non">–</i><span class="fr">Non</span><span class="en">No</span></span></div>
+  <p class="note"><span class="fr">Comparaison générale en octobre 2026. Les autres outils peuvent offrir d’autres choses ; les valeurs de SlabCoach sont des estimations.</span><span class="en">General comparison as of October 2026. Other tools may offer other things; SlabCoach values are estimates.</span></p>
+  <div class="actions"><a class="btn holo" href="/connexion"><span class="fr">Essayer gratuitement</span><span class="en">Try it free</span></a></div>
+</div></section>
 
 <section id="pourquoi"><div class="conteneur">
   <p class="kicker holo-t"><span class="fr">Pourquoi SlabCoach</span><span class="en">Why SlabCoach</span></p>

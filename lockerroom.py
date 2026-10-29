@@ -3699,6 +3699,8 @@ class Api:
             lst = [x for x in lst if x.get("encan")]
         # 25 oct 2026 (Mathieu : « une option de tri/filtre pour que l'utilisateur puisse customizer ses deals »)
         lst = self._deals_filtrer(lst, f)
+        if f.get("vendeurs"):                     # 29 oct 2026 : « tous les deals des gros vendeurs »
+            lst = [x for x in lst if x.get("flux") == "vendeurs"]
         tri = f.get("tri") or "rabais"
         # 26 oct 2026 (Mathieu : « ca ne fonctionne pas quand je selectionne biggest profit, price, ending soon ») : un
         # commentaire avalait les tris « prix » et « gain » (tout retombait sur « meilleur deal »)
