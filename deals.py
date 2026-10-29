@@ -525,7 +525,8 @@ def _verificateur(d, st, bassin):
         faites.add(q)
         r = vendues.rechercher(q, fond=True, usage="verif")
         if r.get("erreur"):
-            st["erreurs_ventes"] = st.get("erreurs_ventes", 0) + 1
+            k = _cle_erreur(r["erreur"])
+            st[k] = st.get(k, 0) + 1
             return None
         if not r.get("cache"):
             v["n"] += 1
@@ -824,6 +825,12 @@ def _q_deal(r):
     return None if r.get("vedette") else r.get("q")
 
 
+def _cle_erreur(err):
+    """29 oct 2026 (Mathieu : « 31 000 refusées ?! ») : le plafond du jour de SlabCoach (aucun appel, aucun credit) n'est pas
+    une erreur de SoldComps ; les deux sont comptes a part dans l'admin."""
+    return "verif_plafond" if str(err) in ("plafond du jour", "inactif") else "erreurs_ventes"
+
+
 def _ventes(q, cache_seul=False):
     """Les ventes SoldComps d'une recherche (3 jours en cache). cache_seul : jamais d'appel (passe des encans)."""
     import cartes_match
@@ -977,7 +984,8 @@ def chasser(n=PAR_TOUR, rechercher=None, bassin=None, vedettes=False):
         # (credits perdus). Les vedettes : ventes en cache seulement ; chaque carte a sa verification ciblee au besoin
         brut_v, err = _ventes(r["q"], cache_seul=bool(r.get("vedette")))
         if err:
-            st["erreurs_ventes"] = st.get("erreurs_ventes", 0) + 1
+            k = _cle_erreur(err)
+            st[k] = st.get(k, 0) + 1
         bassin.ajouter(brut_v)
         med = cartes_match.mediane_robuste([_total(x) for x in memes])[0] if memes else None
         comps = sorted(({"titre": x["titre"], "total": _total(x), "photo": x.get("photo"), "url": x.get("url")} for x in memes),
@@ -1303,7 +1311,8 @@ def etat():
         rep[sorte(x.get("titre"))] += 1
     return {"ok": True, "en_cours": _ETAT["en_cours"], "maj": d.get("maj"), "repartition": rep,
             "hits_24h": {"vus": g.get("hits_vus", 0), "verifies": g.get("hits_verifies", 0), "deals": g.get("hits_deals", 0),
-                         "refus_budget": g.get("verif_budget", 0), "erreurs_ventes": g.get("erreurs_ventes", 0), "sans_ventes": g.get("sans_ventes", 0)},
+                         "refus_budget": g.get("verif_budget", 0), "erreurs_ventes": g.get("erreurs_ventes", 0), "sans_ventes": g.get("sans_ventes", 0),
+                         "plafond": g.get("verif_plafond", 0)},
             "soldcomps": _etat_soldcomps(), "journal": journal(),
             "vedettes_24h": {"verifiees": g.get("vedettes_verifiees", 0), "deals": g.get("vedettes_deals", 0),
                              "refus_recrues": g.get("verif_budget_recrues", 0)},

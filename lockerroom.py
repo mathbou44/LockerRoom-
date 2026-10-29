@@ -2978,6 +2978,34 @@ class Api:
                     c.close()
         return r
 
+    def ebay_prix_lot(self, items):
+        """29 oct 2026 (Mathieu : « un moyen rapide de corriger le prix des annonces sur eBay, tres rapide et efficace ») :
+        plusieurs prix changes d'un geste (l'ecran « Corriger mes prix »), 4 a la fois. Seul le prix change ; une annonce
+        programmee (pas encore en ligne) passe par la revision. -> {ok, faits, resultats:[{item_number, ok, prix, erreur}]}"""
+        import contextvars
+        from concurrent.futures import ThreadPoolExecutor
+        lst = []
+        for x in (items or [])[:60]:
+            if not isinstance(x, dict):
+                continue
+            iid, p = str(x.get("item_number") or "").strip(), _float(x.get("prix"))
+            if iid and p:
+                lst.append((iid, round(p, 2), x.get("id") if x.get("programmee") else None))
+        if not lst:
+            return {"ok": False, "erreur": "Aucun prix à changer", "faits": 0, "resultats": []}
+
+        def un(t):
+            iid, p, cid = t
+            try:
+                r = self.annonce_reviser(cid, {"prix": p}) if cid else self.ebay_changer_prix(iid, p)
+            except Exception as e:                       # jamais une erreur muette
+                r = {"ok": False, "erreur": f"{type(e).__name__} : {e}"}
+            return {"item_number": iid, "ok": bool(r.get("ok")), "prix": p, "erreur": None if r.get("ok") else str(r.get("erreur") or "eBay")[:160]}
+        with ThreadPoolExecutor(max_workers=4) as ex:     # chaque appel garde le compte de l'utilisateur (contexte copie)
+            taches = [(contextvars.copy_context(), t) for t in lst]          # copie faite ICI (fil de la requete)
+            res = list(ex.map(lambda j: j[0].run(un, j[1]), taches))
+        return {"ok": True, "faits": sum(1 for r in res if r["ok"]), "resultats": res}
+
     def ebay_miser(self, item_id, montant):
         """Mise MAXIMUM sur une enchere. Un tap = une mise ; jamais programmee ni automatique."""
         return self._ecrire_ebay("miser", item_id, montant)

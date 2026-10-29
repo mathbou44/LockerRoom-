@@ -203,6 +203,31 @@ details.reglage summary::-webkit-details-marker{display:none}
 .d-car::-webkit-scrollbar{display:none} .d-car .tuile-deal{flex:0 0 150px; scroll-snap-align:start}
 .d-nb{min-width:20px; height:20px; padding:0 6px; border-radius:10px; background:var(--acc); color:#15141A; font:700 12px/20px var(--f-cond); text-align:center}
 .ecran.large > .entete:has(+ .d-onglets){margin-bottom:6px}
+.kpi-b{font:inherit; color:inherit; text-align:left; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:transform .12s}
+.kpi-b:active:not([disabled]){transform:scale(.97)} .kpi-b[disabled]{cursor:default}
+.kpi-b:not([disabled]) .s{color:var(--texte); font-weight:600}
+.ir-fix{cursor:pointer}
+/* 29 oct 2026 : Corriger mes prix */
+.pr-aide{margin:2px 0 12px}
+.pr-liste{display:flex; flex-direction:column; gap:8px}
+.pr-l{display:grid; grid-template-columns:28px 44px minmax(0,1fr) auto; align-items:center; gap:10px; padding:10px 12px 10px 10px; border-radius:16px; background:var(--carte2); border:1px solid var(--ligne); transition:opacity .2s, border-color .2s}
+.pr-l.off{opacity:.45} .pr-l.ok{border-color:rgba(143,212,164,.45)}
+.pr-c{width:26px; height:26px; border-radius:50%; border:1.5px solid var(--ligne); background:none; color:#0F2418; font:800 14px/1 'Barlow',sans-serif; display:flex; align-items:center; justify-content:center; padding:0}
+.pr-l:not(.off) .pr-c{background:var(--vert); border-color:var(--vert)}
+.pr-v{width:44px; height:58px; border-radius:8px; overflow:hidden; background:var(--carte); display:flex; align-items:center; justify-content:center; font:700 13px 'Barlow Condensed',sans-serif; color:var(--doux)}
+.pr-v{position:relative} .pr-v img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+.pr-n{min-width:0; display:flex; flex-direction:column; gap:2px} .pr-n b{font-size:15px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.pr-n small{font-size:12.5px; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis} .pr-n em{font-style:normal; color:var(--or)} .pr-n em.err{color:var(--rouge)}
+.pr-p{display:flex; flex-direction:column; align-items:flex-end; gap:3px} .pr-p s{font-size:12.5px; color:var(--pale)}
+.pr-p i{font-style:normal; font:700 11.5px 'Barlow Condensed',sans-serif; letter-spacing:.03em} .pr-p i.bas{color:var(--vert)} .pr-p i.haut{color:var(--acc)}
+.pr-np{font:700 19px/1 'Barlow Condensed',sans-serif; color:var(--texte); background:rgba(255,255,255,.04); border:1px dashed rgba(255,255,255,.22); border-radius:10px; padding:6px 9px}
+.pr-np[disabled]{border-style:solid; border-color:transparent; background:none}
+.pr-in{width:92px; font:700 19px 'Barlow Condensed',sans-serif; text-align:right; color:var(--texte); background:var(--carte); border:1.5px solid var(--acc); border-radius:10px; padding:5px 8px}
+.pr-pro{margin-top:10px; width:100%; background:none; border:1px dashed var(--ligne); border-radius:14px; padding:10px; color:var(--or); font:600 14px 'Barlow',sans-serif}
+.pr-bas{position:sticky; bottom:calc(-1 * env(safe-area-inset-bottom)); margin:14px -4px 0; padding:10px 4px calc(6px + env(safe-area-inset-bottom)); background:linear-gradient(transparent, var(--carte) 30%)}
+.pr-bas .btn{width:100%} #pr-go.arme{background:linear-gradient(110deg,#F3E0A6,#D9B866) !important; color:#2A1F05; box-shadow:0 0 0 4px rgba(233,207,142,.18)}
+.pr-roue{display:inline-block; width:15px; height:15px; margin-right:8px; vertical-align:-2px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:pr-tour .7s linear infinite}
+@keyframes pr-tour{to{transform:rotate(360deg)}}
 .d-ent{display:flex; align-items:center; gap:8px; margin-left:auto} .d-chips{display:flex; align-items:center; flex-wrap:nowrap; gap:7px} .d-chips .aide-q{margin-left:auto} .d-chips .chip{padding-left:11px; padding-right:11px}
 .fd-w{flex-wrap:wrap !important; overflow:visible !important} .fd-s{display:flex; flex-direction:column; gap:8px}
 .fd-l{align-items:center; padding:10px 0} .fd-l > span{display:flex; flex-direction:column; gap:2px} .fd-l small{font-size:13px; color:var(--doux)}
@@ -6648,27 +6673,88 @@ async function chargerInventaire(){
   const vendues = S.filtreInv === 'vendue';
   const valeur = l.reduce((s, c) => s + (nb(vendues ? c.prix_vendu : (c.valeur ?? c.prix_demande)) || 0), 0);
   const rep = l.map(repere).filter(Boolean), bien = rep.filter(r => r.cl === 'vert').length, cher = rep.filter(r => r.cl === 'rouge' || r.cl === 'or').length, bas = rep.filter(r => r.cl === 'acc').length;
-  S.parSportInv = parSport;
+  S.parSportInv = parSport; S.invL = l;
   const fz = $('.i-filtres'); if (fz) { fz.innerHTML = filtresBarreInv(); brancherFiltresInv(); }
   const puces = '' && Object.keys(parSport).length > 1 ? `<div class="chips" id="i-sports" style="margin-bottom:12px"><button class="chip ${S.sportInv ? '' : 'on'}" data-sp="">${tt('Tous sports', 'All sports')}</button>${Object.entries(parSport).sort((a, b) => b[1] - a[1]).map(([k, n]) => `<button class="chip ${S.sportInv === k ? 'on' : ''}" data-sp="${k}">${nomSport(k)} ${n}</button>`).join('')}</div>` : '';
   const kpis = l.length ? `<div class="hero-l" style="margin-bottom:14px">
       <div class="kpi"><span class="lib">${vendues ? tt('Vendues', 'Sold') : tt('Articles', 'Items')}</span><span class="v">${l.length}</span><span class="s">${argentCourt(valeur)}</span></div>
       ${vendues ? `<div class="kpi vert"><span class="lib">${tt('Profit', 'Profit')}</span><span class="v">${argentCourt(l.reduce((s, c) => s + (nb(c.profit) || 0), 0))}</span><span class="s">${tt('sur les ventes avec coût', 'on sales with a cost')}</span></div>`
         : `<div class="kpi vert"><span class="lib">${tt('Bien placées', 'Well priced')}</span><span class="v">${bien}</span><span class="s">${tt('au prix du marché', 'at market price')}</span></div>
-      <div class="kpi or"><span class="lib">${tt('Trop chères', 'Too expensive')}</span><span class="v">${cher}</span><span class="s">${tt('au-dessus des mêmes cartes', 'above the same cards')}</span></div>
-      <div class="kpi acc"><span class="lib">${tt('Sous le marché', 'Below market')}</span><span class="v">${bas}</span><span class="s">${tt('tu peux monter', 'room to raise')}</span></div>`}</div>` : '';
+      <button class="kpi or kpi-b" data-fix="baisser" ${cher ? '' : 'disabled'}><span class="lib">${tt('Trop chères', 'Too expensive')}</span><span class="v">${cher}</span><span class="s">${cher ? tt('Corriger ›', 'Fix ›') : tt('au-dessus des mêmes cartes', 'above the same cards')}</span></button>
+      <button class="kpi acc kpi-b" data-fix="monter" ${bas ? '' : 'disabled'}><span class="lib">${tt('Sous le marché', 'Below market')}</span><span class="v">${bas}</span><span class="s">${bas ? tt('Monter ›', 'Raise ›') : tt('tu peux monter', 'room to raise')}</span></button>`}</div>` : '';
   const note = vendues ? `<div class="bandeau info" style="margin-bottom:12px">${tt('À la connexion eBay, SlabCoach importe tes ventes des <b>90 derniers jours</b>. Ensuite, chaque nouvelle vente s’ajoute toute seule, toutes les heures.', 'When you connect eBay, SlabCoach imports your sales from the <b>last 90 days</b>. After that, every new sale is added automatically, every hour.')}</div>` : '';
   // 29 oct 2026 (« le moins chargé possible ») : un seul resume d'une ligne ; la courbe et le detail des prix en feuille
   const ik = $('#i-kpis'); if (ik) ik.innerHTML = kpis ? `<h3>${tt('Mes prix', 'My prices')}</h3>` + kpis : '';
   const resume = l.length ? `<button class="inv-res" id="i-res"><span class="ir-n"><b>${l.length}</b> ${vendues ? tt('vendues', 'sold') : tt('cartes', 'cards')}</span><b class="ir-v">${argentCourt(valeur)}</b>
-      ${!vendues && cher ? `<span class="capsule or petit">${cher} ${tt('trop chères', 'too pricey')}</span>` : ''}<i>›</i></button>` : '';
+      ${!vendues && cher ? `<span class="capsule or petit ir-fix" data-fix="baisser">${cher} ${tt('trop chères', 'too pricey')}</span>` : ''}<i>›</i></button>` : '';
   z.innerHTML = puces + note + resume + (l.length ? `<div class="grille-c">${l.map(tuileInv).join('')}</div>`
     : `<div class="vide">${S.filtreInv === 'collection' ? tt('Ta collection est vide', 'Your collection is empty') : tt('Rien ici', 'Nothing here')}<button class="pilule" id="i-vide">${tt('Ajouter des cartes', 'Add cards')}</button></div>`);
   $$('#i-sports [data-sp]').forEach(b => b.onclick = () => { S.sportInv = b.dataset.sp || null; chargerInventaire(); });
   $$('#i-liste .tuile-inv').forEach(r => r.onclick = () => { const c = l.find(x => x.id === +r.dataset.id); if (c && c.emplacement === 'Collection' && c.statut === 'En stock') ficheCollection(c); else feuilleCarte(c); });
   $$('#i-liste [data-pro]').forEach(b => b.onclick = (e) => { e.stopPropagation(); feuillePro(b.dataset.pro); });
-  const ir = $('#i-res'); if (ir) ir.onclick = () => { vibrer(); feuilleBloc($('#i-b-res')); };
+  const ir = $('#i-res'); if (ir) ir.onclick = (e) => { vibrer(); const fx = e.target.closest('[data-fix]'); if (fx) return feuillePrixRapide(fx.dataset.fix); feuilleBloc($('#i-b-res')); };
+  $$('#i-kpis [data-fix]').forEach(b => b.onclick = () => { vibrer(); feuillePrixRapide(b.dataset.fix); });
   const v = $('#i-vide'); if (v) v.onclick = () => feuilleAjout();   // 29 oct (Mathieu : « Ajouter un article t'envoie a la page d'accueil ») : #vendre est ferme a l'acheteur
+}
+// 29 oct 2026 (Mathieu : « il faut un moyen rapide de corriger le prix des annonces sur eBay, très rapide et efficace ») :
+// une feuille, toutes les annonces à corriger déjà au prix du marché. Un tap sur un prix pour l'ajuster, un tap sur une ligne
+// pour la garder telle quelle, puis UN bouton (touché deux fois : on confirme) : tout part dans eBay, 4 à la fois.
+function feuillePrixRapide(verdict){
+  verdict = verdict === 'monter' ? 'monter' : 'baisser';
+  const L = S.invL || [];
+  const cl = (c) => { const r = repere(c); return r && r.cl; };
+  const prend = (v) => (c) => c.statut === 'Listée' && c.item_number && c.marche && nb(c.marche.suggestion) && (v === 'baisser' ? ['rouge', 'or'].includes(cl(c)) : cl(c) === 'acc');
+  const nB = L.filter(prend('baisser')).length, nM = L.filter(prend('monter')).length, verrou = L.filter(c => c.statut === 'Listée' && c.marche_pro).length;
+  const items = L.filter(prend(verdict)).map(c => ({c, avant: nb(c.prix_demande), prix: Math.round(nb(c.marche.suggestion) * 100) / 100, on: true, etat: ''}))
+    .sort((a, b) => Math.abs(b.avant - b.prix) - Math.abs(a.avant - a.prix));
+  let arme = 0, fini = false;
+  const choisis = () => items.filter(x => x.on && !x.etat);
+  const ecart = () => choisis().reduce((t, x) => t + (x.prix - x.avant), 0);
+  const vig = (c) => `<span>${esc(initiales(c))}</span>${photoOk(c.photo) ? `<img src="${esc(photoNet(c.photo))}" alt="" loading="lazy" onerror="this.remove()">` : ''}`;
+  const ligne = (x, i) => { const c = x.c, avant = x.avant, pct = Math.round((x.prix / avant - 1) * 100), cout = nb(c.cout);
+    return `<div class="pr-l ${x.on ? '' : 'off'} ${x.etat}" data-i="${i}">
+      <button class="pr-c" data-tg="${i}" aria-label="${esc(tt('Inclure', 'Include'))}">${x.etat === 'ok' || x.on ? '✓' : ''}</button>
+      <span class="pr-v">${vig(c)}</span>
+      <span class="pr-n"><b>${esc(c.joueur || titreCourt(c.titre) || '')}</b><small>${x.err && !x.etat ? `<em class="err">${esc(x.err)}</em>` : x.etat === 'ok' ? tt('Changé sur eBay', 'Changed on eBay')
+        : `${tt('marché', 'market')} ${argentCourt(c.marche.mediane)}${cout && x.prix < cout ? ` · <em>${tt('sous ton coût', 'below your cost')}</em>` : ''}`}</small></span>
+      <span class="pr-p"><s>${argent(avant, 0)}</s><button class="pr-np" data-ed="${i}" ${x.etat === 'ok' || fini ? 'disabled' : ''}>${argent(x.prix, 2)}</button><i class="${pct < 0 ? 'bas' : 'haut'}">${pct > 0 ? '+' : ''}${pct} %</i></span></div>`; };
+  const peindre = () => {
+    const n = choisis().length, faits = items.filter(x => x.etat === 'ok').length;
+    ouvrirFeuille(`<h3>${tt('Corriger mes prix', 'Fix my prices')}</h3>
+      ${nB && nM ? `<div class="seg petit" id="pr-seg"><button data-v="baisser" class="${verdict === 'baisser' ? 'on' : ''}">${tt('Trop chères', 'Too high')} ${nB}</button><button data-v="monter" class="${verdict === 'monter' ? 'on' : ''}">${tt('Sous le marché', 'Too low')} ${nM}</button></div>` : ''}
+      <div class="sous pr-aide">${items.length ? tt('Déjà au prix des mêmes cartes en vente. Touche un prix pour l’ajuster.', 'Already set to the price of the same cards listed. Tap a price to adjust it.') : tt('Rien à corriger ✓', 'Nothing to fix ✓')}</div>
+      <div class="pr-liste">${items.map(ligne).join('')}</div>
+      ${verrou ? `<button class="pr-pro" data-pro-f>🔒 ${tt(`${verrou} autres annonces : prix conseillé avec Pro`, `${verrou} more listings: suggested price with Pro`)}</button>` : ''}
+      ${items.length ? `<div class="pr-bas">${fini ? `<button class="btn" id="pr-fin">${tt(`✓ ${faits} prix changé${faits > 1 ? 's' : ''} · OK`, `✓ ${faits} price${faits > 1 ? 's' : ''} changed · OK`)}</button>`
+        : `<button class="btn ${arme ? 'arme' : ''}" id="pr-go" ${n ? '' : 'disabled'}>${arme ? tt(`Touche encore : ${n} prix sur eBay`, `Tap again: ${n} prices to eBay`)
+          : tt(`Mettre ${n} prix à jour · ${signe(ecart())}`, `Update ${n} price${n > 1 ? 's' : ''} · ${signe(ecart())}`)}</button>`}</div>` : ''}`);
+    $$('[data-tg]').forEach(b => b.onclick = () => { const x = items[+b.dataset.tg]; if (x.etat || fini) return; vibrer(); x.on = !x.on; arme = 0; garder(peindre); });
+    $$('[data-ed]').forEach(b => b.onclick = () => { const i = +b.dataset.ed, x = items[i];
+      b.outerHTML = `<input class="pr-in" id="pr-in" type="number" inputmode="decimal" step="0.01" min="0.99" value="${dev2(x.prix)}">`;
+      const inp = $('#pr-in'); inp.focus(); inp.select();
+      const ok = () => { const v = nb(inp.value); if (v && v >= 0.99) { x.prix = Math.round(versCAD(v) * 100) / 100; x.on = true; } arme = 0; garder(peindre); };
+      inp.onblur = ok; inp.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); } }; });
+    const sg = $('#pr-seg'); if (sg) $$('button', sg).forEach(b => b.onclick = () => feuillePrixRapide(b.dataset.v));
+    const pp = $('[data-pro-f]'); if (pp) pp.onclick = () => feuillePro('repere');
+    const fn = $('#pr-fin'); if (fn) fn.onclick = () => { fermerFeuille(); chargerInventaire(); };
+    const go = $('#pr-go'); if (go) go.onclick = async () => {
+      if (!arme) { vibrer(); arme = setTimeout(() => { arme = 0; if ($('#pr-go')) garder(peindre); }, 4000); return garder(peindre); }
+      clearTimeout(arme); arme = 0;
+      const t = choisis(); go.disabled = true; go.innerHTML = `<span class="pr-roue"></span>${tt(`Envoi de ${t.length} prix à eBay…`, `Sending ${t.length} prices to eBay…`)}`;
+      const r = await API.ebay_prix_lot(t.map(x => ({item_number: x.c.item_number, prix: x.prix, id: x.c.id,
+        programmee: !!(x.c.debut && Date.parse(x.c.debut) > Date.now())}))).catch(e => ({ok:false, erreur:e.message}));
+      const par = {}; ((r && r.resultats) || []).forEach(y => par[y.item_number] = y);
+      t.forEach(x => { const y = par[x.c.item_number];
+        if (y && y.ok) { x.etat = 'ok'; x.err = ''; x.c.prix_demande = x.prix; } else x.err = (y && y.erreur) || (r && r.erreur) || 'eBay'; });
+      const ko = t.filter(x => x.etat !== 'ok');
+      fini = !choisis().length;
+      MEMO.clear(); vibrer(); garder(peindre);
+      toast(ko.length ? tt(`${ko.length} prix refusé${ko.length > 1 ? 's' : ''} par eBay : ${ko[0].err}`, `${ko.length} price${ko.length > 1 ? 's' : ''} refused by eBay: ${ko[0].err}`)
+        : tt('Prix changés sur eBay', 'Prices changed on eBay'), ko.length ? 5000 : 2600);
+    };
+  };
+  const garder = (f) => { const fe = $('#feuille'), y = fe ? fe.scrollTop : 0; f(); const g = $('#feuille'); if (g) g.scrollTop = y; };
+  peindre();
 }
 function initiales(c){
   const e = String(c.equipe || '').trim();
@@ -7234,7 +7320,10 @@ async function adminServeur(){
       eBay ${e.ebay} / ${e.ebay_plafond} ${tt('(rythme du jour : ', '(today’s pace: ')}${e.ebay_rythme}) · ${tt('vérifications', 'checks')} ${e.verif} / ${e.verif_max}${e.verif >= e.verif_max ? ' · <span style="color:var(--rouge)">' + tt('épuisées pour aujourd’hui', 'used up for today') + '</span>' : ''}
       ${e.repartition ? '<br>' + tt('En ligne : ', 'Live: ') + e.repartition.hits + ' hits · ' + e.repartition.veterans + tt(' vétérans/légendes · ', ' veterans/legends · ') + e.repartition.recrues + tt(' autres recrues · ', ' other rookies · ') + e.repartition.young_guns + ' Young Guns' : ''}
       ${e.hits_24h ? '<br>' + tt('Hits (24 h) : ', 'Hits (24 h): ') + e.hits_24h.vus + tt(' vus · ', ' seen · ') + e.hits_24h.verifies + tt(' vérifiés · ', ' checked · ') + e.hits_24h.deals + ' deals'
-        + '<br><small>' + tt('Bloqués (24 h) : budget ', 'Blocked (24 h): budget ') + (e.hits_24h.refus_budget || 0) + tt(' · refusées par SoldComps (budget atteint, sans frais) ', ' · refused by SoldComps (budget reached, no charge) ') + (e.hits_24h.erreurs_ventes || 0) + tt(' · sans ventes ', ' · no sales ') + (e.hits_24h.sans_ventes || 0) + '</small>' : ''}
+        + '<br><small>' + tt('Pas vérifiées (24 h, aucun crédit) : budget des deals ', 'Not checked (24 h, no credit): deal budget ') + (e.hits_24h.refus_budget || 0)
+          + tt(' · plafond SoldComps du jour atteint (aucun appel) ', ' · SoldComps daily cap reached (no call) ') + (e.hits_24h.plafond || 0)
+          + tt(' · erreurs SoldComps ', ' · SoldComps errors ') + (e.hits_24h.erreurs_ventes || 0)
+          + tt(' · annonces sans ventes connues ', ' · listings with no known sales ') + (e.hits_24h.sans_ventes || 0) + '</small>' : ''}
       ${e.soldcomps && e.soldcomps.epuise ? '<br><b style="color:var(--rouge)">' + tt('Budget SoldComps du jour atteint : aucune vérification (ni crédit) jusqu’à ', 'SoldComps daily budget reached: no checks (and no credits) until ') + heureCourte(e.soldcomps.reprise) + '</b>' : ''}
       ${e.soldcomps ? '<br>SoldComps : ' + (e.soldcomps.jour ?? '?') + ' / ' + (e.soldcomps.fond ?? '?') + tt(' aujourd’hui (tâches de fond)', ' today (background)')
         + (e.soldcomps.verif != null ? tt(' · vérifs de deals ', ' · deal checks ') + e.soldcomps.verif + tt(' · autres ', ' · other ') + ((e.soldcomps.jour || 0) - e.soldcomps.verif) + ' / ' + e.soldcomps.autres_max : '') + (e.soldcomps.erreur ? ' · <span style="color:var(--rouge)">' + esc(e.soldcomps.erreur) + '</span>' : '') : ''}
