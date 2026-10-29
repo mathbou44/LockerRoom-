@@ -119,6 +119,10 @@ def completer(champs, douteux, image):
         return champs, douteux, None
     out, reste = dict(champs or {}), set(douteux or [])
     for k, v in r["champs"].items():
+        # 29 oct 2026 (Mathieu : « encore PSA 10 » sur une carte raw) : CardSight ne donne JAMAIS une note a une carte
+        # que la lecture n'a pas vue dans un slab ; il peut seulement completer le certificat d'une carte gradee
+        if k == "grade" or (k == "cert" and not out.get("grade")):
+            continue
         if k == "tirage":
             try:
                 v = int(v)

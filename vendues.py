@@ -21,7 +21,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta
 
 URL_API = "https://api.sold-comps.com"
 CATEGORIE_CARTES = "261328"
@@ -59,7 +59,29 @@ def _cx():
     c = sqlite3.connect(os.path.join(comptes.DONNEES, "cache_vendues.sqlite"), timeout=30)
     c.execute("CREATE TABLE IF NOT EXISTS cache (q TEXT PRIMARY KEY, le REAL, ventes TEXT)")
     c.execute("CREATE TABLE IF NOT EXISTS compteur (jour TEXT PRIMARY KEY, n INTEGER)")
+    if not _MIGRE:
+        _migrer(c)
     return c
+
+
+_MIGRE = []
+
+
+def _migrer(c):
+    """29 oct 2026 : passage du jour UTC au jour de Montreal. Une seule fois : les credits deja depenses aujourd'hui
+    (compteur UTC du moment) sont repris dans le jour de Montreal, pour que le changement ne redonne pas un budget neuf."""
+    try:
+        if not c.execute("SELECT 1 FROM compteur WHERE jour='mtl:migre'").fetchone():
+            j_utc, j = datetime.utcnow().strftime("%Y-%m-%d"), jour()
+            for suf in ("", ":verif"):
+                r = c.execute("SELECT n FROM compteur WHERE jour=?", (j_utc + suf,)).fetchone()
+                if r and r[0]:
+                    c.execute("INSERT INTO compteur VALUES (?, ?) ON CONFLICT(jour) DO UPDATE SET n = MAX(n, excluded.n)", (j + suf, int(r[0])))
+            c.execute("INSERT OR IGNORE INTO compteur VALUES ('mtl:migre', 1)")
+            c.commit()
+        _MIGRE.append(1)
+    except sqlite3.Error:
+        pass
 
 
 def _cache_lire(q):
@@ -86,24 +108,39 @@ def _cache_ecrire(q, ventes):
             c.close()
 
 
-def utilises_aujourdhui(usage=None):
-    """Requetes SoldComps du jour ; usage="verif" : celles des verifications de deals seulement."""
+def jour():
+    """29 oct 2026 : le jour du budget est celui de Montreal (minuit), comme l'admin et le chasseur (avant : le jour du
+    serveur, en UTC : le compteur repartait a 20 h et les deux budgets ne parlaient pas du meme jour)."""
     try:
-        c = _cx()
+        from zoneinfo import ZoneInfo
+        j = datetime.now(ZoneInfo("America/Toronto")).strftime("%Y-%m-%d")
+    except Exception:
+        j = (datetime.utcnow() - timedelta(hours=4)).strftime("%Y-%m-%d")
+    return "mtl:" + j                          # cle distincte des anciens jours UTC (sinon demain partirait a 706)
+
+
+def utilises_aujourdhui(usage=None):
+    """Requetes SoldComps du jour ; usage="verif" : celles des verifications de deals seulement.
+    29 oct 2026 (Mathieu : « il ne faut plus que cela arrive ») : si le compteur ne peut pas etre lu, on fait comme si le
+    budget etait epuise (avant : 0, donc aucune limite). Jamais de credits depenses a l'aveugle."""
+    for essai in range(3):
         try:
-            r = c.execute("SELECT n FROM compteur WHERE jour=?", (datetime.now().strftime("%Y-%m-%d") + (":" + usage if usage else ""),)).fetchone()
-        finally:
-            c.close()
-        return int(r[0]) if r else 0
-    except sqlite3.Error:
-        return 0
+            c = _cx()
+            try:
+                r = c.execute("SELECT n FROM compteur WHERE jour=?", (jour() + (":" + usage if usage else ""),)).fetchone()
+            finally:
+                c.close()
+            return int(r[0]) if r else 0
+        except sqlite3.Error:
+            time.sleep(0.2 * (essai + 1))
+    return 10 ** 9
 
 
 def _compter(usage=None):
     with _verrou:
         c = _cx()
         try:
-            j = datetime.now().strftime("%Y-%m-%d")
+            j = jour()
             c.execute("INSERT INTO compteur VALUES (?, 1) ON CONFLICT(jour) DO UPDATE SET n = n + 1", (j,))
             if usage:
                 c.execute("INSERT INTO compteur VALUES (?, 1) ON CONFLICT(jour) DO UPDATE SET n = n + 1", (j + ":" + usage,))

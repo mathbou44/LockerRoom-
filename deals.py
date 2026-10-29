@@ -51,6 +51,40 @@ def _chemin():
     return os.path.join(comptes.DONNEES, "deals_globaux.json")
 
 
+_VERROU_F = {}
+
+
+def _prendre_tour():
+    """29 oct 2026 (« il ne faut plus que cela arrive ») : un seul chasseur a la fois sur le disque, meme si deux
+    processus tournent (mise a jour Render : l'ancien et le nouveau serveur se chevauchent quelques minutes)."""
+    try:
+        import fcntl
+    except ImportError:                       # Windows (PC) : un seul processus
+        return True
+    try:
+        f = open(_chemin() + ".verrou", "a+")
+        fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        try:
+            f.close()
+        except Exception:
+            pass
+        return False
+    _VERROU_F["f"] = f
+    return True
+
+
+def _rendre_tour():
+    f = _VERROU_F.pop("f", None)
+    if f:
+        try:
+            import fcntl
+            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+        except Exception:
+            pass
+        f.close()
+
+
 def lire():
     try:
         with open(_chemin(), encoding="utf-8") as f:
@@ -476,6 +510,16 @@ VERIF_JOUR = 40                  # recherches SoldComps ciblees par jour pour co
 PART_HITS = 0.85                 # 28 oct 2026 : la part gardee pour les hits (0,6 -> 0,85 : « encore juste des Young Guns » ; les YG ont deja leurs ventes connues)
 
 
+def _minuit_mtl():
+    """Le prochain minuit a Montreal (le budget SoldComps repart), en ISO."""
+    try:
+        from zoneinfo import ZoneInfo
+        m = datetime.now(ZoneInfo("America/Toronto"))
+    except Exception:
+        return (datetime.now(timezone.utc) + timedelta(days=1)).replace(hour=4, minute=0, second=0, microsecond=0).isoformat()
+    return (m + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+
+
 def _jour_mtl():
     """(jour, heure decimale) a Montreal : le budget de verification suit la journee des acheteurs."""
     try:
@@ -518,7 +562,11 @@ def _verificateur(d, st, bassin):
             bassin.ajouter(deja)
             st["_dern_verif"] = {"q": q, "n": len(deja), "cache": True}
             return deja
-        if v["n"] >= max_ or v["n"] >= rythme:
+        # 29 oct 2026 (Mathieu : « il ne faut plus que cela arrive », SoldComps 706 credits en 3 h) : le budget se compte
+        # sur le compteur PERSISTANT de SoldComps (credits reels, partage, survit aux redemarrages et aux mises a jour),
+        # plus sur un compteur en memoire qu'un redemarrage effacait
+        n_reel = vendues.utilises_aujourdhui("verif")
+        if n_reel >= max_ or n_reel >= rythme:
             st["verif_budget"] = st.get("verif_budget", 0) + 1
             return None
         # 28 oct 2026 : 60 % du budget du jour est garde pour les hits (autos, patchs, /99) : les Young Guns ont deja
@@ -1324,7 +1372,7 @@ def chasser_vedettes():
     (eBay et SoldComps) tient toujours."""
     import appels_ebay
     with _verrou:
-        if _ETAT["en_cours"]:
+        if _ETAT["en_cours"] or not _prendre_tour():
             return {"ok": True, "deja": True}
         _ETAT["en_cours"] = True
         _ETAT["essai_le"] = time.time()
@@ -1341,6 +1389,7 @@ def chasser_vedettes():
                     print("Deals (vedettes) : " + repr(e), flush=True)
         finally:
             _ETAT.update(en_cours=False, etape=None, detail=None)
+            _rendre_tour()
     threading.Thread(target=tache, daemon=True, name="deals-vedettes").start()
     return {"ok": True, "lance": True}
 
@@ -1386,6 +1435,7 @@ def journal(n=80):
 def etat():
     """Pour l'admin : ou en est le chasseur (deals affiches, budget eBay et budget de verification du jour)."""
     import appels_ebay
+    import vendues
     d = lire_vite()
     try:
         vmax = int(os.environ.get("LR_DEALS_VERIF_JOUR") or VERIF_JOUR)
@@ -1412,7 +1462,7 @@ def etat():
             "deals": sum(1 for x in d.get("deals") or [] if valide(x) and encore_ouvert(x)),
             "ebay": utilises_ebay(), "ebay_rythme": round(appels_ebay.rythme("browse")),
             "ebay_plafond": round(appels_ebay.limite("browse") * (1 - appels_ebay.RESERVE_GESTES)),
-            "verif": v.get("n", 0) if v.get("jour") == jour else 0, "verif_max": vmax}
+            "verif": vendues.utilises_aujourdhui("verif"), "verif_max": vmax}
 
 
 _SORTES = {}
@@ -1442,6 +1492,22 @@ def _sorte(titre):
     return "recrues"
 
 
+_RECRUES = {}
+
+
+def est_recrue(titre):
+    """29 oct 2026 (Mathieu : « encore que des rookies dans tes deals ») : une carte de recrue de l'annee (Young Guns,
+    Future Watch, RC, rookie patch...), hit ou pas. Le reste (veterans, legendes, jeunes de 2e a 4e annee) passe devant."""
+    r = _RECRUES.get(titre)
+    if r is None:
+        import cartes_match
+        if len(_RECRUES) > 20000:
+            _RECRUES.clear()
+        c = cartes_match._decoder_memo(titre or "")
+        r = _RECRUES[titre] = bool(recrue_recente(cartes_match.norm(titre or ""), c.get("rc"), c.get("annee")))
+    return r
+
+
 def melanger(lst, ratio=2):
     """28 oct 2026 (« encore juste des Young Guns ») : l'ecran Deals par defaut alterne : 2 deals d'autres cartes (hits,
     veterans, legendes, autres recrues) pour 1 Young Guns, dans leur ordre ; les Young Guns restants a la fin."""
@@ -1467,7 +1533,7 @@ def _etat_soldcomps():
                 "erreur": e.get("erreur") if e and time.time() - e.get("le", 0) < 6 * 3600 else None, "sites": vendues.sites(),
                 # 29 oct 2026 : budget du jour atteint -> quand ca repart (le compteur suit le jour du serveur, UTC)
                 "epuise": vendues.utilises_aujourdhui() >= int(vendues.plafond_jour() * 0.7),
-                "reprise": (datetime.now(timezone.utc) + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()}
+                "reprise": _minuit_mtl()}
     except Exception as x:
         return {"erreur": repr(x)}
 
@@ -1495,6 +1561,8 @@ def chasser_si_besoin(force=False):
     with _verrou:
         if _ETAT["en_cours"]:
             return False
+        if not _prendre_tour():
+            return False                             # un autre processus chasse deja
         _ETAT["en_cours"] = True
         _ETAT["essai_le"] = time.time()
 
@@ -1523,5 +1591,6 @@ def chasser_si_besoin(force=False):
                 _ecrire(d)
         finally:
             _ETAT.update(en_cours=False, etape=None, detail=None)
+            _rendre_tour()
     threading.Thread(target=tache, daemon=True, name="deals").start()
     return True

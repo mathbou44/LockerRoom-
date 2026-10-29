@@ -9,6 +9,8 @@ os.environ["LOCKERROOM_DONNEES"] = tempfile.mkdtemp()
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import lockerroom  # noqa: E402
 import suivi_valeur  # noqa: E402
+import alarmes  # noqa: E402
+alarmes._heure_locale = lambda m=None: 14          # le jour : les alertes de nuit attendent le matin
 
 a = lockerroom.Api(os.path.join(tempfile.mkdtemp(), "a.db"))
 pushs = []

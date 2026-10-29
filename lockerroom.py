@@ -3777,6 +3777,12 @@ class Api:
         if tri == "rabais":
             # 29 oct 2026 (Mathieu : « as-tu priorise les vendeurs qu'on a mentionnes, et apres le reste ? ») : leurs deals d'abord
             lst = [x for x in lst if x.get("flux") == "vendeurs"] + [x for x in lst if x.get("flux") != "vendeurs"]
+        for x in lst:
+            x["recrue"] = _dl.est_recrue(x.get("titre"))
+        if tri == "rabais" and not f.get("sortes"):
+            # 29 oct 2026 (Mathieu : « encore que des caliss de rookies dans tes deals ») : veterans, legendes et jeunes de
+            # 2e a 4e annee d'abord (hits compris) ; les recrues de l'annee ensuite (le chip « Recrues » les montre seules)
+            lst = [x for x in lst if not x["recrue"]] + [x for x in lst if x["recrue"]]
         n = len(lst)
         pro = forfaits.est_pro()
         if not pro:
@@ -3818,7 +3824,7 @@ class Api:
             if str(x.get("item_id")) in ids_d or str(x.get("item_id")) in ret_p or str(x.get("item_id")) in _d._bannis() \
                     or not _d.encore_ouvert(x) or str(x.get("vu_le") or "") < lim_s:
                 continue
-            y = dict(x, source="marche")
+            y = dict(x, source="marche", recrue=False)
             if y.get("valeur"):
                 y["gain"] = round(y["valeur"] * (1 - fp_) - ff_ - (y.get("total") or 0), 2)
                 y["rabais"] = round(100 * (1 - (y.get("total") or 0) / y["valeur"]))

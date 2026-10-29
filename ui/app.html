@@ -241,6 +241,14 @@ details.reglage summary::-webkit-details-marker{display:none}
 .fc-px{font:700 30px/1 'Barlow Condensed',sans-serif; margin-top:4px} .fc-st{margin-top:2px}
 .fc-lien{font-size:13.5px; font-weight:600; color:var(--acc); text-decoration:none; margin-top:4px}
 .fc-marche{margin-top:16px} .fc-note{margin:4px 0 10px; font-size:13px}
+.verif-ph{display:flex; flex-direction:column; gap:6px; background:none; border:0; padding:0; cursor:zoom-in; font:inherit; color:var(--acc); text-align:center}
+.verif-ph span{font-size:13px; font-weight:600}
+.pv-liste{display:flex; flex-direction:column; gap:14px; margin-top:12px}
+.pv-f{margin:0; display:flex; flex-direction:column; gap:6px} .pv-f img{width:100%; max-height:62vh; object-fit:contain; border-radius:14px; background:#111115; border:1px solid var(--ligne)}
+.pv-f.studio img{background:#ECECE9} .pv-f figcaption{font-size:13px; color:var(--doux); text-align:center}
+.d-sec{grid-column:1/-1; margin:14px 2px 2px; font:700 13px 'Barlow Condensed',sans-serif; letter-spacing:.2em; text-transform:uppercase; color:var(--doux); display:flex; align-items:center; gap:8px}
+.d-sec span{font-size:12px; letter-spacing:0; padding:1px 8px; border-radius:999px; background:var(--carte2); color:var(--texte)}
+.d-sec::after{content:''; flex:1; height:1px; background:var(--ligne)}
 .d-ent{display:flex; align-items:center; gap:8px; margin-left:auto} .d-chips{display:flex; align-items:center; flex-wrap:nowrap; gap:7px} .d-chips .aide-q{margin-left:auto} .d-chips .chip{padding-left:11px; padding-right:11px}
 .fd-w{flex-wrap:wrap !important; overflow:visible !important} .fd-s{display:flex; flex-direction:column; gap:8px}
 .fd-l{align-items:center; padding:10px 0} .fd-l > span{display:flex; flex-direction:column; gap:2px} .fd-l small{font-size:13px; color:var(--doux)}
@@ -3456,6 +3464,24 @@ function syncPhotos(){
   V2.photos = V2.originales.map((o, j) => (MODE_STUDIO && V2.studio && V2.studio[j]) ? V2.studio[j].photo : o);
   V2.hebergees = null;
 }
+// 29 oct 2026 (Mathieu : « je peux pas verifier les photos modifiees ») : un tap sur la photo -> toutes les photos qui
+// partiront chez eBay, en grand ; Studio ou Originale (le choix suit le compte) ; recadrer depuis l'ecran Vendre
+function feuillePhotosVente(apres, cadrer){
+  const aStudio = !!(V2.studio && V2.studio.some(Boolean));
+  const peindre = () => { const ph = V2.photos || [];
+    ouvrirFeuille(`<h3>${tt('Les photos de ton annonce', 'Your listing photos')}</h3>
+      <div class="sous" style="margin-bottom:10px">${tt('Exactement ce qui partira chez eBay.', 'Exactly what will go to eBay.')}</div>
+      ${aStudio ? segV('pv-studio', [['0', tt('Mes photos telles quelles', 'My photos as they are')], ['1', tt('Studio SlabCoach', 'SlabCoach studio')]], MODE_STUDIO ? '1' : '0') : ''}
+      <div class="pv-liste">${ph.map((u, i) => `<figure class="pv-f ${MODE_STUDIO && aStudio && V2.studio[i] ? 'studio' : ''}"><img src="${esc(u)}" alt="">
+        <figcaption>${i === 0 ? tt('Devant', 'Front') : i === 1 ? tt('Dos', 'Back') : tt('Photo ', 'Photo ') + (i + 1)}${cadrer && aStudio && MODE_STUDIO && V2.studio[i] ? ` · <button class="lien-t" data-pv-cadre="${i}">${tt('ajuster le cadrage', 'adjust the crop')}</button>` : ''}</figcaption></figure>`).join('')}</div>
+      <button class="btn" id="pv-ok" style="margin-top:14px">OK</button>`);
+    $$('#pv-studio button').forEach(b => b.onclick = () => { MODE_STUDIO = b.dataset.v === '1'; try { localStorage.setItem('lr_studio', MODE_STUDIO ? '1' : '0'); } catch (e) {}
+      API.reglages_sauver({photo_studio: MODE_STUDIO}).then(r => { S.reglages = r; }).catch(() => {}); syncPhotos(); vibrer(); peindre(); });
+    $$('[data-pv-cadre]').forEach(b => b.onclick = () => feuilleCadrage(+b.dataset.pvCadre));
+    $('#pv-ok').onclick = () => { fermerFeuille(); if (apres) apres(); };
+  };
+  peindre();
+}
 // Verifier : les champs lus, les douteux en premier et en or ; corriger ici refait le titre et le prix
 const CHAMPS_VERIF = () => [['joueur', tt('Joueur', 'Player')], ['annee', tt('Saison', 'Season')], ['marque', tt('Marque', 'Brand')], ['set_nom', 'Set'],
   ['parallele', tt('Variante / insert', 'Parallel / insert')], ['numero', tt('N° de carte', 'Card #')], ['tirage', tt('Numérotée /', 'Numbered /')],
@@ -3468,7 +3494,7 @@ function etapeVerifier(){
     <div class="sous">${dt.size ? tt(`${dt.size} détail${dt.size > 1 ? 's' : ''} à confirmer, en or. Le titre et le prix en dépendent.`, `${dt.size} detail${dt.size > 1 ? 's' : ''} to confirm, in gold. The title and price depend on them.`)
       : tt('Tout a été lu clairement. Un coup d’œil, puis on fait l’annonce.', 'Everything was read clearly. A quick look, then we build the listing.')}</div>
     <div class="verif-v">
-      <div class="verif-ph"><img src="${esc(V2.photos[0] || '')}" alt=""></div>
+      <button class="verif-ph" id="vf-ph"><img src="${esc(V2.photos[0] || '')}" alt=""><span>${tt(`Voir mes ${(V2.photos || []).length > 1 ? (V2.photos || []).length + ' ' : ''}photos`, `See my ${(V2.photos || []).length > 1 ? (V2.photos || []).length + ' ' : ''}photos`)} ›</span></button>
       <div class="verif-ch">${l.map(([k, t]) => `<label class="vc ${dt.has(k) ? 'douteux' : ''}"><span>${t}${dt.has(k) ? ` <em>${tt('à vérifier', 'check')}</em>` : ''}</span>
         <input class="champ" id="vf-${k}" value="${esc(c[k] ?? '')}" ${k === 'tirage' ? 'inputmode="numeric"' : ''} ${k === 'grade' ? 'placeholder="PSA 10"' : ''}></label>`).join('')}
         <div class="vc-bas"><label class="bascule">Auto<input type="checkbox" id="vf-auto" ${c.auto ? 'checked' : ''}></label>
@@ -3477,6 +3503,8 @@ function etapeVerifier(){
     ${(V2.notes || []).length ? `<div class="bandeau info">${V2.notes.slice(0, 3).map(esc).join('<br>')}</div>` : ''}
     ${V2.but === 'collection' ? `<label class="vc"><span>${tt('Prix payé (optionnel)', 'Price paid (optional)')}</span><input class="champ" id="vf-cout" inputmode="decimal" placeholder="0,00" value="${esc(V2.cout ?? '')}"></label>` : ''}
     <button class="btn" id="vf-ok">${V2.but === 'collection' ? tt('Ajouter à ma collection', 'Add to my collection') : tt('C’est bon : faire l’annonce', 'Looks good: build the listing')}</button></section>`;
+  $('#vf-ph').onclick = () => { vibrer(); feuillePhotosVente(() => { const y = window.scrollY; const vals = {}; CHAMPS_VERIF().forEach(([k]) => { const e = $('#vf-' + k); if (e) vals[k] = e.value; });
+    etapeVerifier(); Object.entries(vals).forEach(([k, v]) => { const e = $('#vf-' + k); if (e) e.value = v; }); window.scrollTo(0, y); }); };
   $('#vf-ok').onclick = async () => {
     const n = {...(V2.champs || {})};
     for (const [k] of CHAMPS_VERIF()) { const v = val('vf-' + k).trim(); if (v !== String(n[k] ?? '')) { n[k] = k === 'tirage' ? (nb(v) || '') : v; if (k !== 'titre') delete n.titre; } }
@@ -3879,6 +3907,7 @@ function brancherVente2(){
   const ph = $('#v2-ph'); if (ph) ph.onchange = async (e) => { for (const f of [...(e.target.files || [])].slice(0, 12 - V2.photos.length)) { try { const x = await reduirePhoto(f); V2.photos.push(x); if (V2.originales) V2.originales.push(x); } catch (x) {} } V2.hebergees = null; re(); };
   $$('#v2-studio button').forEach(b => b.onclick = () => { MODE_STUDIO = b.dataset.v === '1'; try { localStorage.setItem('lr_studio', MODE_STUDIO ? '1' : '0'); } catch (e) {}
     API.reglages_sauver({photo_studio: MODE_STUDIO}).then(r => { S.reglages = r; }).catch(() => {}); syncPhotos(); re(); });
+  const pp = $('.vs-photo .photo-princ'); if (pp && (V2.photos || []).length) { pp.style.cursor = 'zoom-in'; pp.onclick = () => { V2.champs = lireChampsVente(); V2.titre = $('#v2-titre').value; V2.description = $('#v2-desc').value; V2.cout = val('v2-cout'); feuillePhotosVente(rendreVente2, true); }; }
   const bc = $('#v2-cadre'); if (bc) bc.onclick = () => { V2.champs = lireChampsVente(); V2.titre = $('#v2-titre').value; V2.description = $('#v2-desc').value; V2.cout = val('v2-cout'); feuilleCadrage(0); };
   $('#v2-garde').onclick = garderVente;
   $('#v2-recalc').onclick = async () => { V2.champs = lireChampsVente(); V2.titre = null; V2.prix = null; await preparerVente(); };
@@ -5122,7 +5151,14 @@ async function chargerDeals(frais){
         <button class="chip tel-seul ${F.type === 'encan' ? 'on' : ''}" data-type-t="encan">⏱ ${tt('Encans', 'Auctions')}</button>
         <button class="chip ${(F.sortes || []).includes('recrue') ? 'on' : ''}" data-sorte="recrue">${tt('Recrues', 'Rookies')}</button>
         <button class="chip ${F.vendeurs ? 'on' : ''}" id="d-vend">${tt('Top vendeurs', 'Top sellers')}</button></div></div>
-    ${L.length || SU.length ? `<div class="grille-c">${[...L, ...SU].map(tuileDeal).join('')}
+    ${L.length || SU.length ? `<div class="grille-c">${(() => {
+      // 29 oct 2026 (Mathieu : « encore que des rookies ») : veterans, legendes et hits d'abord, puis les encans des gros
+      // vendeurs, puis les recrues de l'annee (sous leur titre) ; le chip « Recrues » les montre seules
+      const defaut = (F.tri || 'rabais') === 'rabais' && !(F.sortes || []).length;
+      if (!defaut) return [...L, ...SU].map(tuileDeal).join('');
+      const vet = L.filter(x => !x.recrue), rec = L.filter(x => x.recrue);
+      return [...vet, ...SU].map(tuileDeal).join('') + (rec.length ? `<div class="d-sec">${tt('Recrues de l’année', 'This year’s rookies')} <span>${rec.length}</span></div>` + rec.map(tuileDeal).join('') : '');
+    })()}
         ${d.limite && d.n > L.length && !NATIF ? `<button class="tuile-c tuile-pro" data-pro-deals><span class="badge-f pro grand">✦ PRO</span><b>+${d.n - L.length} ${tt('deals de plus', 'more deals')}</b><span>${tt('avec filtres et comps', 'with filters and comps')}</span></button>` : ''}</div>`
       : `<div class="vide">${P.length ? tt('Pas de deal sous 70 % de la valeur en ce moment : voici les meilleurs prix à surveiller.', 'No deal under 70% of value right now: here are the best prices to watch.') : tt('Aucun deal pour ces filtres pour l’instant. Le chasseur regarde eBay chaque heure.', 'No deal for these filters right now. The hunter checks eBay every hour.')}</div>`}
     ${d.secours ? `<div class="sous" style="margin-top:8px">${tt('Dernière liste vérifiée', 'Last checked list')} · ${new Date(d.secours_le).toLocaleTimeString(LOC(), {hour:'2-digit', minute:'2-digit'})} · ${tt('le chasseur prépare la nouvelle', 'the hunter is preparing the new one')}</div>` : ''}
