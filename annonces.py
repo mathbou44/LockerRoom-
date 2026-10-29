@@ -143,6 +143,23 @@ def _nom_grader(cie):
             "TAG": "Technical Authentication & Grading (TAG)"}.get(str(cie).upper(), str(cie).upper())
 
 
+def texte_html(t):
+    """30 oct 2026 : le vendeur voit et corrige du texte (pas du HTML) ; eBay recoit des paragraphes propres.
+    Une ligne vide = un paragraphe ; un retour simple = <br>. Du HTML deja fait reste tel quel."""
+    t = str(t or "").strip()
+    if not t or re.search(r"<(p|br|h[1-6]|b|hr|div|ul)\b", t, re.I):
+        return t
+    blocs = [b.strip() for b in re.split(r"\n\s*\n", t.replace("\r", "")) if b.strip()]
+    def bloc(b):
+        if re.fullmatch(r"[—–-]{3,}", b):
+            return "<hr>"
+        ls = b.split("\n")
+        if all(re.match(r"\s*[•\-*]\s+", l) for l in ls):         # une liste a puces
+            return "<ul>" + "".join("<li>" + escape(re.sub(r"^\s*[•\-*]\s+", "", l)) + "</li>" for l in ls) + "</ul>"
+        return "<p>" + "<br>".join(escape(l) for l in ls) + "</p>"
+    return "".join(bloc(b) for b in blocs)
+
+
 def description(c, titre, francophone=True, etat="nm", boutique=None, retours="non", expedition="lettre"):
     """HTML simple et propre (mobile) : ce que c'est, l'etat, l'envoi. Bilingue pour un vendeur francophone."""
     e = ETATS_BRUTS.get(etat, ETATS_BRUTS["nm"])
@@ -150,24 +167,44 @@ def description(c, titre, francophone=True, etat="nm", boutique=None, retours="n
     etat_en = f"Graded {grade}" if grade and grade.lower() != "raw" else f"Raw — {e[1]} (see photos)"
     etat_fr = f"Gradée {grade}" if grade and grade.lower() != "raw" else f"Brute — {e[2]} (voir les photos)"
     envoi_en = {"lettre": "Ships in a penny sleeve + top loader, in a rigid envelope.",
+                "politique": "Ships protected in a penny sleeve + top loader.",
                 "suivi": "Ships tracked, in a penny sleeve + top loader, bubble mailer.",
                 "gratuit": "Free tracked shipping, penny sleeve + top loader, bubble mailer."}.get(expedition, "")
     envoi_fr = {"lettre": "Envoi en pochette + top loader, dans une enveloppe rigide.",
+                "politique": "Envoi protégé en pochette + top loader.",
                 "suivi": "Envoi suivi, en pochette + top loader, enveloppe à bulles.",
                 "gratuit": "Livraison suivie gratuite, pochette + top loader, enveloppe à bulles."}.get(expedition, "")
     ret_en = "Returns accepted within 30 days." if retours != "non" else "All sales final — please ask any question before buying."
     ret_fr = "Retours acceptés sous 30 jours." if retours != "non" else "Vente finale — pose tes questions avant d'acheter."
     det = " · ".join(x for x in [c.get("annee"), c.get("marque"), c.get("set_nom"), c.get("parallele"),
                                  f"#{c['numero']}" if c.get("numero") else None, f"/{c['tirage']}" if c.get("tirage") else None,
-                                 "Auto" if c.get("auto") else None, "Rookie" if c.get("recrue") else None] if x)
-    s = boutique or "SlabCoach"
+                                 "Auto" if c.get("auto") else None, "Patch" if c.get("relique") else None,
+                                 "Rookie" if c.get("recrue") else None] if x)
+    # 30 oct 2026 (Mathieu : « c'est quoi ca comme description ? ») : pas de « Ma boutique » (le nom par defaut) en signature
+    s = str(boutique or "").strip()
+    s = "" if s.lower() in ("ma boutique", "my shop", "my store") else s
+    # 30 oct 2026 (Mathieu : « nos conditions : on ne peut pas garantir un Gem Mint 10 sur nos raw ; frais de douane
+    # possibles aux USA ») : les conditions de vente, courtes, a la fin
+    gradee = bool(grade and grade.lower() != "raw")
+    cond_en = (["Grade is the grading company's opinion; the holder may show light wear from handling."] if gradee else
+               ["Raw card, sold as is: judge the condition from the photos (corners, edges, surface, centering).",
+                "No grade is guaranteed (PSA, BGS, SGC or other): a Gem Mint 10 or any other grade cannot be promised."]) + [
+               "Ships from Canada. Buyers outside Canada (including the U.S.): import duties, taxes or brokerage fees may apply and are the buyer's responsibility."]
+    cond_fr = (["La note est l'avis de la compagnie de gradation ; le boîtier peut montrer une légère usure de manipulation."] if gradee else
+               ["Carte brute, vendue telle quelle : juge l'état sur les photos (coins, bords, surface, centrage).",
+                "Aucune note n'est garantie (PSA, BGS, SGC ou autre) : un Gem Mint 10, ou toute autre note, ne peut être promis."]) + [
+               "Expédiée du Canada. Hors Canada (y compris les États-Unis) : des droits de douane, taxes ou frais de courtage peuvent s'appliquer, à la charge de l'acheteur."]
     en = (f"<h2>{escape(titre)}</h2><p><b>Card:</b> {escape(det)}</p><p><b>Condition:</b> {escape(etat_en)}. "
           "The card in the photos is the exact card you will receive.</p>"
-          f"<p>{escape(envoi_en)} Combined shipping available.</p><p>{escape(ret_en)}</p><p>Thank you! — {escape(s)}</p>")
+          f"<p>{escape(envoi_en)} Combined shipping available.</p><p>{escape(ret_en)}</p>"
+          "<p><b>Terms:</b></p><ul>" + "".join(f"<li>{escape(x)}</li>" for x in cond_en) + "</ul>"
+          f"<p>Thank you!{(" — " + escape(s)) if s else ""}</p>")
     if not francophone:
         return en
     fr = (f"<hr><p><b>Carte :</b> {escape(det)}</p><p><b>État :</b> {escape(etat_fr)}. La carte des photos est celle que tu recevras.</p>"
-          f"<p>{escape(envoi_fr)} Envoi combiné possible.</p><p>{escape(ret_fr)}</p><p>Merci ! — {escape(s)}</p>")
+          f"<p>{escape(envoi_fr)} Envoi combiné possible.</p><p>{escape(ret_fr)}</p>"
+          "<p><b>Conditions :</b></p><ul>" + "".join(f"<li>{escape(x)}</li>" for x in cond_fr) + "</ul>"
+          f"<p>Merci !{(" — " + escape(s)) if s else ""}</p>")
     return en + fr
 
 

@@ -2837,10 +2837,13 @@ class Api:
                 note = str(e)
         franco = (langue or r.get("langue") or "fr") != "en"
         desc = annonces.description(c, titre, franco, modele["etat"], r.get("nom_boutique"), modele["retours"], modele["expedition"])
+        # 30 oct 2026 : une description par livraison (l'ecran montre celle qui partira vraiment : politique eBay, suivi > 30 $...)
+        descs = {k: annonces.description(c, titre, franco, modele["etat"], r.get("nom_boutique"), modele["retours"], k)
+                 for k in ("lettre", "suivi", "gratuit", "politique")}
         jetons = ebay_compte._lire(ebay_compte.chemin_jetons())
         if not ebay_prix_actif():                # interrupteur : pas de prix suggere pour une annonce eBay
             prix, n, comps, note = None, 0, [], "Choisis ton prix"
-        return {"ok": True, "titre": titre, "carte": c, "prix": prix, "n": n, "comps": comps, "note": note, "description": desc,
+        return {"ok": True, "titre": titre, "carte": c, "prix": prix, "n": n, "comps": comps, "note": note, "description": desc, "descriptions": descs,
                 "source_prix": source, "vendues": vendues_l, "vendu": vendu, "affiche": affiche,
                 "specifiques": annonces.specifiques(c), "modele": modele, "frais_pct": r["frais_ebay_pct"], "frais_fixe": ff,
                 "etats": {k: v[2] if franco else v[1] for k, v in annonces.ETATS_BRUTS.items()},
@@ -2885,7 +2888,7 @@ class Api:
             debut_utc = annonces.debut_programme(d.get("debut"))
         except ValueError as e:
             return {"ok": False, "erreur": str(e)}
-        donnees = {**opts, "carte": carte, "titre": titre, "prix": prix, "description": d.get("description") or titre, "sku": sku,
+        donnees = {**opts, "carte": carte, "titre": titre, "prix": prix, "description": annonces.texte_html(d.get("description")) or titre, "sku": sku,
                    "debut_utc": debut_utc}
         r = self._ecrire_ebay("annonces.publier", donnees, photos, cp, verifier_seulement=bool(verifier))
         r["photos"] = photos                          # deja chez eBay : renvoyees au 2e tap (pas televersees deux fois)

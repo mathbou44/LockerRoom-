@@ -4001,7 +4001,7 @@ async function preparerVente(){
   if (!$('.vendre .lecture')) V().innerHTML = `<section class="ecran vendre">${roue}</section>`;
   const p = await API.annonce_preparer(V2.champs || {}, typeof LANGUE !== 'undefined' ? LANGUE : 'fr').catch(e => ({ok:false, erreur:e.message}));
   if (!p.ok) { V().innerHTML = `<section class="ecran"><div class="vide">${esc(p.erreur || 'Erreur')}</div></section>`; return; }
-  V2.prep = p; V2.titre = V2.titre || p.titre; V2.description = p.description; V2.opts = {...p.modele};
+  V2.prep = p; V2.titre = V2.titre || p.titre; V2.description = htmlTexte(p.description); V2.descMod = false; V2.opts = {...p.modele};
   V2.prix = V2.prix || (p.prix ? p.prix.marche : (V2.champs && V2.champs.prix_demande) || '');
   rendreVente2();
 }
@@ -4041,6 +4041,21 @@ document.addEventListener('click', (e) => { const q = e.target.closest('[data-po
 function segV(id, choix, actuel){
   return `<div class="seg gros" id="${id}">${choix.map(([v, lib, sous]) => `<button data-v="${esc(v)}" class="${String(v) === String(actuel) ? 'on' : ''}">${esc(lib)}${sous ? `<small>${esc(sous)}</small>` : ''}</button>`).join('')}</div>`;
 }
+// 30 oct 2026 (Mathieu : « c'est quoi ca comme description ? ») : on montrait le HTML brut (<p>, <b>…). Le vendeur voit
+// maintenant du texte simple ; le serveur le remet en paragraphes pour eBay. Tant qu'il n'y touche pas, le texte suit la
+// livraison choisie (politique eBay, suivi au-dela de 30 $, gratuite).
+function htmlTexte(h){
+  return String(h || '').replace(/<hr\s*\/?>/gi, '\n———\n').replace(/<br\s*\/?>/gi, '\n').replace(/<li[^>]*>/gi, '• ').replace(/<\/li>/gi, '\n')
+    .replace(/<\/ul>/gi, '\n').replace(/<\/(p|h\d|div)>/gi, '\n\n')
+    .replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+function descAuto(){
+  const p = V2.prep || {}, o = V2.opts || {}, D = p.descriptions;
+  if (!D) return htmlTexte(p.description);
+  const k = o.politique_exp ? 'politique' : (o.expedition === 'lettre' && nb(V2.prix) > 30) ? 'suivi' : (o.expedition || 'lettre');
+  return htmlTexte(D[k] || p.description);
+}
 function rendreVente2(){
   const p = V2.prep, o = V2.opts, c = {...(p.carte || {}), ...(V2.champs || {})};
   // 30 oct 2026 (Mathieu : « retirer l'option lettre : une carte de plus de 30 $ en lettre, c'est risque »)
@@ -4052,6 +4067,7 @@ function rendreVente2(){
   const photos = V2.photos || [];
   const cadrable = photos[0] && /^(data:|\/mes-photos\/)/.test((V2.originales && V2.originales[0]) || photos[0]);
   const aStudio = !!(V2.studio && V2.studio.some(Boolean));
+  if (!V2.descMod) V2.description = descAuto();
   V().innerHTML = `<section class="ecran large vendre vs">${V2.assist ? filAssistant(4) : ''}
     <div class="entete"><div><div class="titre">${tt('Vendre ma carte', 'Sell my card')}</div></div>
       <button class="pilule" id="v2-neuf">${tt('+ Autre carte', '+ Another card')}</button></div>
@@ -4143,8 +4159,9 @@ function rendreVente2(){
             <label class="bascule">${tt('Recrue (RC)', 'Rookie (RC)')}<input type="checkbox" id="v2-rc" ${c.recrue ? 'checked' : ''}></label>
             <label class="bascule">Patch / relique<input type="checkbox" id="v2-re" ${c.relique ? 'checked' : ''}></label>
           </div><button class="btn ghost petit" id="v2-recalc">${tt('Refaire le titre et le prix', 'Redo the title and price')}</button></details>
-<details class="bloc-v"><summary class="bloc-t">${tt('Description', 'Description')} <span class="sous">${tt('prête, bilingue si tu es francophone', 'ready')}</span></summary>
-          <textarea class="champ" id="v2-desc" rows="8">${esc(V2.description || '')}</textarea></details>
+<details class="bloc-v"><summary class="bloc-t">${tt('Description', 'Description')} <span class="sous">${V2.descMod ? tt('modifiée', 'edited') : tt('prête', 'ready')}</span></summary>
+          <textarea class="champ" id="v2-desc" rows="10">${esc(V2.description || '')}</textarea>
+          ${V2.descMod ? `<button class="lien-t" id="v2-desc-auto">↺ ${tt('Revenir au texte de l’app', 'Back to the app’s text')}</button>` : ''}</details>
 </div>
       <div id="vs-b-cout"><div class="bloc-v"><div class="bloc-t">${tt('Mon coût', 'My cost')} <span class="sous">${tt('optionnel : ton vrai profit', 'optional: your real profit')}</span></div>
           <input class="champ" id="v2-cout" type="number" inputmode="decimal" step="0.01" value="${esc(V2.cout ?? '')}" placeholder="0,00"></div>
@@ -4280,7 +4297,8 @@ function brancherVente2(){
     const rp = $('#v2-rp'); if (rp) rp.textContent = argent(V2.prix, 2); $$('#v2-pp button').forEach(b => b.classList.toggle('on', b.dataset.v === String(V2.prix))); };
   $('#v2-prix').onchange = re;
   $('#v2-titre').oninput = (e) => { V2.titre = e.target.value; $('#v2-n').textContent = e.target.value.length + '/80'; };
-  $('#v2-desc').oninput = (e) => { V2.description = e.target.value; };
+  $('#v2-desc').oninput = (e) => { V2.description = e.target.value; V2.descMod = true; };
+  const da = $('#v2-desc-auto'); if (da) da.onclick = () => { V2.descMod = false; const t = $('#v2-desc'); V2.description = descAuto(); if (t) t.value = V2.description; da.remove(); };
   $('#v2-cout').oninput = (e) => { V2.cout = e.target.value; };
   $$('[data-ph]').forEach(b => b.onclick = () => {
     const i = +b.dataset.ph, mv = (t) => { if (t && t.length > i) t.unshift(t.splice(i, 1)[0]); };
