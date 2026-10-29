@@ -66,7 +66,12 @@ OUTIL = {
             "relique": {"type": "boolean", "description": "Morceau de chandail, baton, patch."},
             "recrue": {"type": "boolean", "description": "Carte recrue (RC, Young Guns, Rated Rookie, 1st Bowman...)."},
             "equipe": {"type": "string", "description": "Equipe imprimee sur la carte (nom complet anglais)."},
-            "grade": {"type": "string", "description": "Carte gradee : compagnie + note, ex. « PSA 10 », « BGS 9.5 » ; brute : vide."},
+            # 29 oct 2026 (Mathieu : « pourquoi c'est marque PSA 10 quand y'a meme pas de slab dans la photo ? c'est raw »)
+            "slab": {"type": "boolean", "description": "true SEULEMENT si la carte est dans un boitier de gradation scelle (slab) avec l'etiquette "
+                                                       "de la compagnie (PSA, BGS, SGC, CGC...) visible sur la photo. Un toploader, un one-touch "
+                                                       "magnetique, une pochette ou un support : false."},
+            "grade": {"type": "string", "description": "Seulement si slab = true : la compagnie + la note LUES sur l'etiquette, ex. « PSA 10 ». "
+                                                        "Carte brute (raw) : vide. Ne devine jamais une note."},
             "cert": {"type": "string", "description": "Numero de certificat de l'etiquette de gradation, sinon vide."},
             "titre_ebay": {"type": "string", "description": "Titre eBay <= 80 caracteres : annee marque set joueur parallele #numero /tirage RC Auto grade."},
             "confiance": {"type": "object", "description": "Pour CHAQUE champ rempli : confiance de 0 a 1 (lu clairement = 0.95+).",
@@ -105,8 +110,13 @@ Regles :
   La couleur change beaucoup le prix. Si tu n'es pas sur du nom exact de la couleur, ecris la couleur que tu vois et mets
   « parallele » dans a_verifier.
 - Recrue : RC imprime, Young Guns, Rated Rookie, 1st Bowman, Rookie Ticket...
+- Gradation : une carte est gradee SEULEMENT si on voit le slab scelle et son etiquette (PSA, BGS, SGC, CGC...). Dans un
+  toploader, un one-touch ou sur un support, elle est brute (raw) : grade et cert vides, et jamais de note dans le titre.
 - photos : pour chaque image, les 4 coins exterieurs de la carte (ou de son etui / slab), le plus precis possible, et si la photo est a reprendre (coin coupe, floue, reflet sur le texte).
 - Reponds uniquement avec l'outil « carte »."""
+
+
+_NOTE = re.compile(r"\b(PSA|BGS|SGC|CGC|CSG|TAG|BCCG|KSA|HGA|ISA|GMA)\s*(GEM\s*(MINT|MT)\s*)?\d{1,2}(\.5)?\b", re.I)
 
 
 class Erreur(Exception):
@@ -202,7 +212,7 @@ def _chemin_cache():
 
 
 def _empreinte(images):
-    h = hashlib.sha256()
+    h = hashlib.sha256(b"v2-slab")              # 29 oct 2026 : nouvelle regle de gradation -> les anciennes lectures sont refaites
     for b in images:
         h.update(hashlib.sha256(b).digest())
     return h.hexdigest()
@@ -364,6 +374,12 @@ def _nettoyer(f):
         out.pop("sport")
     if f.get("titre_ebay"):
         out["titre"] = str(f["titre_ebay"]).strip()[:80]
+    # 29 oct 2026 : pas de slab vu = carte brute. Une note devinee (« PSA 10 » sur une carte raw) est retiree partout.
+    if f.get("slab") is not True:
+        out.pop("grade", None)
+        out.pop("cert", None)
+        if out.get("titre"):
+            out["titre"] = re.sub(r"\s+", " ", _NOTE.sub("", out["titre"])).strip()
     douteux = sorted(k for k in out if k in conf and conf[k] < SEUIL_CONFIANCE)
     return {"champs": out, "a_verifier": douteux, "notes": [str(x) for x in (f.get("a_verifier") or [])][:6],
             "conseil_photo": str(f.get("conseil_photo") or "").strip(), "confiance": conf, "photos": _photos(f.get("photos"))}

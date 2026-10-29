@@ -233,6 +233,14 @@ details.reglage summary::-webkit-details-marker{display:none}
 .d-tour b{color:var(--texte); font-weight:600} .d-tour i{font-style:normal; position:absolute; right:12px; top:50%; transform:translateY(-50%); color:var(--or)} .d-tour-a{margin-right:6px} .d-tour .roue{width:13px; height:13px; display:inline-block; vertical-align:-2px}
 .d-tour-a{font:700 10.5px 'Barlow Condensed',sans-serif; letter-spacing:.12em; text-transform:uppercase; color:var(--or)}
 .adm-tour{margin-bottom:6px; color:var(--texte)} .adm-tour .roue{width:13px; height:13px; vertical-align:-2px}
+.fc-heros{display:grid; grid-template-columns:104px minmax(0,1fr); gap:14px; align-items:start; margin:4px 0 14px}
+.fc-ph{position:relative; width:104px; aspect-ratio:3/4; border-radius:12px; overflow:hidden; background:var(--carte2); display:flex; align-items:center; justify-content:center}
+.fc-ph svg{width:40%; opacity:.4} .fc-ph img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+.fc-inf{display:flex; flex-direction:column; gap:4px; min-width:0}
+.fc-nom{font:700 22px/1.1 'Barlow Condensed',sans-serif} .fc-det{font-size:13px; color:var(--doux); line-height:1.35}
+.fc-px{font:700 30px/1 'Barlow Condensed',sans-serif; margin-top:4px} .fc-st{margin-top:2px}
+.fc-lien{font-size:13.5px; font-weight:600; color:var(--acc); text-decoration:none; margin-top:4px}
+.fc-marche{margin-top:16px} .fc-note{margin:4px 0 10px; font-size:13px}
 .d-ent{display:flex; align-items:center; gap:8px; margin-left:auto} .d-chips{display:flex; align-items:center; flex-wrap:nowrap; gap:7px} .d-chips .aide-q{margin-left:auto} .d-chips .chip{padding-left:11px; padding-right:11px}
 .fd-w{flex-wrap:wrap !important; overflow:visible !important} .fd-s{display:flex; flex-direction:column; gap:8px}
 .fd-l{align-items:center; padding:10px 0} .fd-l > span{display:flex; flex-direction:column; gap:2px} .fd-l small{font-size:13px; color:var(--doux)}
@@ -2579,7 +2587,8 @@ const coche = (id) => { const e = $('#' + id); return e ? e.checked : false; };
 // ============================================================
 const S = { reglages:null, equipes:null, produits:null, ongletBreaks:'calc', ongletBreak:'places', ongletComptoir:'vente',
   filtreInv:'tous', rechInv:'', calc:{}, panier:[], rachat:[], clients:null, mois:null };
-async function reglages(force){ if (!S.reglages || force) { S.reglages = await API.reglages_lire(); appliquerMarque(); } return S.reglages; }
+async function reglages(force){ if (!S.reglages || force) { S.reglages = await API.reglages_lire(); appliquerMarque();
+    if (S.reglages && typeof S.reglages.photo_studio === 'boolean') MODE_STUDIO = S.reglages.photo_studio; } return S.reglages; }
 // 23 oct 2026 (Mathieu : « l'utilisateur doit pouvoir mettre son logo et le nom de sa boutique pour personnaliser
 // son interface ») - logo + nom dans le menu, l'accueil et l'onglet du navigateur. Le logo est garde sur le serveur ;
 // ce navigateur en garde une copie pour l'afficher sans attendre.
@@ -3868,7 +3877,8 @@ function brancherVente2(){
     V2.hebergees = null; re();
   });
   const ph = $('#v2-ph'); if (ph) ph.onchange = async (e) => { for (const f of [...(e.target.files || [])].slice(0, 12 - V2.photos.length)) { try { const x = await reduirePhoto(f); V2.photos.push(x); if (V2.originales) V2.originales.push(x); } catch (x) {} } V2.hebergees = null; re(); };
-  $$('#v2-studio button').forEach(b => b.onclick = () => { MODE_STUDIO = b.dataset.v === '1'; try { localStorage.setItem('lr_studio', MODE_STUDIO ? '1' : '0'); } catch (e) {} syncPhotos(); re(); });
+  $$('#v2-studio button').forEach(b => b.onclick = () => { MODE_STUDIO = b.dataset.v === '1'; try { localStorage.setItem('lr_studio', MODE_STUDIO ? '1' : '0'); } catch (e) {}
+    API.reglages_sauver({photo_studio: MODE_STUDIO}).then(r => { S.reglages = r; }).catch(() => {}); syncPhotos(); re(); });
   const bc = $('#v2-cadre'); if (bc) bc.onclick = () => { V2.champs = lireChampsVente(); V2.titre = $('#v2-titre').value; V2.description = $('#v2-desc').value; V2.cout = val('v2-cout'); feuilleCadrage(0); };
   $('#v2-garde').onclick = garderVente;
   $('#v2-recalc').onclick = async () => { V2.champs = lireChampsVente(); V2.titre = null; V2.prix = null; await preparerVente(); };
@@ -5860,7 +5870,7 @@ const IC_PIL = {
   ebay:'<path d="M3 4h2l2.5 12h11L21 8H7"/><circle cx="10" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/>',
   palette:'<path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-1 2-2 0-1.5-1-2-1-3s1-2 3-2h2a3 3 0 0 0 3-3c0-4.5-4-8-9-8z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/>',
   sport:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
-  boutique:'<path d="M4 9l1.5-5h13L20 9"/><path d="M4 9h16v11H4z"/><path d="M9 20v-6h6v6"/>', frais:'<path d="M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+  boutique:'<path d="M4 9l1.5-5h13L20 9"/><path d="M4 9h16v11H4z"/><path d="M9 20v-6h6v6"/>', photo:'<path d="M14.5 4h-5L7 7H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1h-3z"/><circle cx="12" cy="13" r="3.5"/>', frais:'<path d="M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
   aide:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1 1-1 1.7M12 17h.01"/>', profil:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/>',
   guide:'<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/>', idee:'<path d="M4 5h16v11H8l-4 4z"/>'};
 const pilAcc = (id, ic, lib, n, cl) => `<button class="acc-pil" id="${id}"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL[ic]}</svg></span>
@@ -6932,14 +6942,24 @@ function vendreDepuisCollection(id){
 function feuilleCarte(c){
   const vendue = c.statut === 'Vendue', carte = !!(c.joueur || c.set_nom || c.parallele);
   const douteux = (c._douteux || []).filter(k => NOMS_CHAMPS[k]);
-  ouvrirFeuille(`<h3>${c.id ? esc(c.titre || 'Article') : c._photo ? 'Vérifie et enregistre' : 'Nouvel article'}</h3>
+  // 29 oct 2026 (Mathieu : « quand je clique sur ma carte dans l'inventaire, c'est meme pas la bonne annonce... reorganiser
+  // comment l'info est presentee ») : en haut, TA carte (ta photo, ton prix, ou elle est, ton annonce eBay) ; le marche ensuite
+  const heros = c.id ? (() => { const nom = c.joueur || titreCourt(c.titre) || tt('Article', 'Item');
+    const det = [c.annee, c.set_nom, c.parallele, c.tirage ? '/' + c.tirage : '', c.auto ? 'Auto' : '', c.grade].filter(Boolean).join(' · ');
+    const prog = c.debut && Date.parse(c.debut) > Date.now();
+    const etat = vendue ? tt('Vendue', 'Sold') : prog ? '⏱ ' + dateProg(c.debut) : c.statut === 'Listée' ? tt('Sur eBay', 'On eBay') : (c.emplacement || tt('En stock', 'In stock'));
+    return `<div class="fc-heros"><div class="fc-ph">${SVG_CARTE}${photoOk(c.photo) ? `<img src="${esc(photoNet(c.photo))}" alt="" onerror="this.remove()">` : ''}</div>
+      <div class="fc-inf"><b class="fc-nom">${esc(nom)}</b>${det ? `<span class="fc-det">${esc(det)}</span>` : ''}
+        <span class="fc-px">${argent(vendue ? c.prix_vendu : (c.prix_demande ?? c.valeur), 0)}</span>
+        <span class="fc-st">${capsule(etat, vendue ? 'petit' : c.statut === 'Listée' ? 'acc petit' : 'petit')}</span>
+        ${c.item_number && !vendue ? `<a class="fc-lien" href="${esc((S.ebaySite || 'https://www.ebay.ca') + '/itm/' + c.item_number)}" target="_blank" rel="noopener">${tt('Voir mon annonce eBay', 'See my eBay listing')} ↗</a>` : ''}</div></div>` })() : '';
+  ouvrirFeuille(`${c.id ? '' : `<h3>${c._photo ? 'Vérifie et enregistre' : 'Nouvel article'}</h3>`}${heros}
     ${(c._photos || []).length ? `<div class="photos-prises">${c._photos.map(p => `<img src="${p}" alt="">`).join('')}</div>` : ''}
     ${c._photo ? (douteux.length || (c._notes || []).length
       ? `<div class="bandeau info"><b>À vérifier${douteux.length ? ' : ' + douteux.map(k => NOMS_CHAMPS[k]).join(', ') : ''}</b>${(c._notes || []).map(n => '<br>' + esc(n)).join('')}</div>`
       : `<div class="pastilles">${tag('Carte reconnue', 'vert')}${tag('Tout est lisible')}</div>`) : ''}
     ${vendue ? `<div class="pastilles">${tag('Vendue ' + dateCourte(c.vendu_le))}${tag(c.canal || '')}${tag(argent(c.prix_vendu))}${tag('Profit ' + argent(c.profit), c.profit >= 0 ? 'vert' : 'rouge')}</div>` : ''}
-    ${c.item_number && !vendue ? '<div id="c-comps"></div>' : ''}
-    ${c.item_number && !vendue ? (() => { const prog = c.debut && Date.parse(c.debut) > Date.now(); const z = (n) => String(n).padStart(2, '0'), d = prog ? new Date(c.debut) : null;
+    ${c.item_number && !vendue && c.debut && Date.parse(c.debut) > Date.now() ? (() => { const prog = c.debut && Date.parse(c.debut) > Date.now(); const z = (n) => String(n).padStart(2, '0'), d = prog ? new Date(c.debut) : null;
       return `<div class="bandeau info fc-ebay"><b>${prog ? '⏱ ' + tt('Programmée : en ligne ', 'Scheduled: live ') + esc(dateProg(c.debut)) : tt('En vente sur eBay', 'Listed on eBay')}</b>
         ${prog ? `<label class="large">${tt('Mise en ligne', 'Goes live')}<input class="champ" type="datetime-local" id="c-debut" value="${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}" min="${esc(heureLocaleInput(15))}" max="${esc(heureLocaleInput(21 * 1440))}"></label>` : ''}
         <small>${tt('Change le prix ou le titre plus bas puis touche Enregistrer : eBay est mis à jour aussi.', 'Change the price or title below, then tap Save: eBay is updated too.')}</small></div>`; })() : ''}
@@ -6963,9 +6983,11 @@ function feuilleCarte(c){
       ${champ('c-sku', 'SKU', c.sku || '')}${champ('c-item', 'N° annonce eBay', c.item_number || '')}
     </div></details>
     <datalist id="c-el">${(S.equipes || []).map(e => `<option value="${esc(e.nom)}">`).join('')}</datalist>
-    <button class="btn" id="c-ok">Enregistrer</button>
+    ${c.item_number && !vendue ? `<div class="sous fc-note">${tt('Prix ou titre changé : ton annonce eBay est mise à jour aussi.', 'Price or title changed: your eBay listing is updated too.')}</div>` : ''}
+    <button class="btn" id="c-ok">${tt('Enregistrer', 'Save')}</button>
     ${c.id && !vendue && !c.item_number ? `<button class="btn" id="c-ebay">Mettre en vente sur eBay</button>` : ''}
     ${c.id && !vendue ? `<button class="btn ghost" id="c-vendre">Vendre</button>` : ''}
+    ${c.item_number && !vendue ? '<div id="c-comps" class="fc-marche"></div>' : ''}
     ${c.id ? `<button class="plus" id="c-suppr" style="color:var(--rouge)">Supprimer</button>` : ''}`);
   if (c.item_number && !vendue) chargerCompsCarte(c);
   let sportChoisi = c._photo && c.sport ? c.sport : null;
@@ -7022,7 +7044,10 @@ async function chargerCompsCarte(c){
   if (r && r.a_rafraichir) { z.innerHTML = `<div class="sous" style="font-size:14px">${tt('Les annonces comparées datent de plus de 6 h : elles reviennent à la prochaine analyse.', 'Compared listings are over 6 h old: they come back at the next check.')}</div>`; return; }
   if (!r || !r.comps || !r.comps.length) { z.innerHTML = `<div class="sous" style="font-size:14px">${tt('Pas encore comparée aux mêmes cartes (chaque heure, quelques annonces à la fois).', 'Not compared to the same cards yet (every hour, a few listings at a time).')}</div>`; return; }
   const rep = repere(c), sugg = c.marche && c.marche.suggestion ? rond5(nb(c.marche.suggestion), nb(c.marche.suggestion) < nb(c.prix_demande) ? nb(c.prix_demande) : null) : null;
-  z.innerHTML = `<div class="bloc-v"><div class="bloc-t">${tt('Les mêmes cartes en vente', 'The same cards listed')} <span class="sous">${r.n} · ${tt('médiane ', 'median ')}${argentCourt(r.mediane)}</span></div>
+  r.comps = r.comps.filter(x => String(x.item_id || (String(x.url || '').match(/itm\/(\d+)/) || [])[1] || '') !== String(c.item_number));
+  if (!r.comps.length) { z.innerHTML = ''; return; }
+  const nC = Math.max(r.n || 0, r.comps.length);
+  z.innerHTML = `<div class="bloc-v"><div class="bloc-t">${tt('Le marché : les autres vendeurs', 'The market: other sellers')} <span class="sous">${nC} ${nC > 1 ? tt('annonces', 'listings') : tt('annonce', 'listing')}${r.mediane ? ' · ' + tt('médiane ', 'median ') + argentCourt(r.mediane) : ''}</span></div>
     ${rep ? `<div class="repere ${rep.cl}"><b>${esc(rep.court)}</b><span>${tt('ton prix ', 'your price ')}${argentCourt(c.prix_demande)} · ${esc(rep.long)}</span></div>` : ''}
     <div class="comps-l">${r.comps.map(x => `<a class="comp-m" href="${esc(x.url)}" target="_blank" rel="noopener" ${attrsAnnonce({...x, item_id: x.item_id || (String(x.url || '').match(/itm\/(\d+)/) || [])[1]})}><span style="${x.photo ? `background-image:url('${esc(photoNet(x.photo))}')` : ''}"></span><b>${argentCourt(x.total)}</b></a>`).join('')}</div>
     ${sugg && Math.abs(sugg - (nb(c.prix_demande) || 0)) >= 1 ? `<button class="btn petit" id="c-aumarche">${tt('Mettre au prix du marché', 'Set to market price')} · ${argent(sugg, 2)}</button>` : ''}</div>`;
@@ -8020,6 +8045,9 @@ async function vueReglages(arg){
       <div class="th-grille" id="g-palette">${PALETTES.map(p => `<button class="th-eq th-pal ${clePalette(r.palette) === p.k ? 'on' : ''}" data-pal="${p.k}"><span class="pas" style="--p1:${p.c[0]};--p2:${p.c[1]};--p3:${p.c[2]};--p4:${p.c[3]}"></span><span>${esc(tt(p.fr, p.en))}<small>${esc(tt(p.dfr, p.den))}</small></span></button>`).join('')}</div></div>
     <div class="r-bloc"><div class="r-titre">Mon sport principal</div>${puceSports(r.sport || 'hockey', 'g-sport')}
       <div class="r-note">L'app devine le sport de chaque carte ; sinon, elle prend celui-ci.</div></div>
+    <div class="r-bloc" ${S.mode === 'acheteur' ? 'hidden' : ''}><div class="r-titre">${tt('Photos de mes annonces', 'My listing photos')}</div>
+      ${segV('g-studio', [['0', tt('Mes photos telles quelles', 'My photos as they are')], ['1', tt('Studio SlabCoach', 'SlabCoach studio')]], r.photo_studio === false ? '0' : '1')}
+      <div class="r-note">${tt('Telles quelles : exactement comme tes autres annonces eBay (ton fond, ton logo). Studio : la carte recadrée sur un fond clair.', 'As they are: exactly like your other eBay listings (your background, your logo). Studio: the card cropped on a light background.')}</div></div>
     <div class="r-bloc" ${S.mode === 'acheteur' ? 'hidden' : ''}><div class="r-titre">Ma boutique</div>
       <div class="r-logo"><img class="apercu" id="g-logo-img" src="${esc(S.logo || '/icone.png')}" alt="Logo">
         <div class="t"><b>Ton logo</b><span>Il remplace celui de SlabCoach dans ton app</span>
@@ -8064,6 +8092,13 @@ async function vueReglages(arg){
     $$('#g-palette [data-pal]').forEach(x => x.classList.toggle('on', x === b));
     const p = PALETTES.find(x => x.k === b.dataset.pal);
     const res = await essai(API.reglages_sauver({palette:b.dataset.pal}), tt('Palette ', 'Palette ') + tt(p.fr, p.en));
+    if (res) S.reglages = res;
+  });
+  // 29 oct 2026 (Mathieu : « pour mon compte, les photos doivent etre comme les autres sur ma page eBay ») : le choix suit le compte
+  $$('#g-studio button').forEach(b => b.onclick = async () => {
+    const on = b.dataset.v === '1'; $$('#g-studio button').forEach(x => x.classList.toggle('on', x === b));
+    MODE_STUDIO = on; try { localStorage.setItem('lr_studio', on ? '1' : '0'); } catch (e) {}
+    const res = await essai(API.reglages_sauver({photo_studio: on}), on ? tt('Photo studio', 'Studio photo') : tt('Tes photos telles quelles', 'Your photos as they are'));
     if (res) S.reglages = res;
   });
   $$('#g-sport [data-sport]').forEach(b => b.onclick = async () => {
@@ -8129,7 +8164,7 @@ function pastillerReglages(){
   const res = document.createElement('div'); res.className = 'acc-reserve'; res.id = 'g-reserve';
   const pils = document.createElement('div'); pils.className = 'acc-pils'; pils.id = 'g-pils';
   const titreDe = (b) => b.id === 'g-ebay' ? tt('Compte eBay', 'eBay account') : ((b.querySelector('.r-titre') || b.querySelector('b') || {}).textContent || '').trim();
-  const icone = (t) => /ebay/i.test(t) ? 'ebay' : /palette/i.test(t) ? 'palette' : /sport/i.test(t) ? 'sport' : /boutique|shop/i.test(t) ? 'boutique'
+  const icone = (t) => /photo/i.test(t) ? 'photo' : /ebay/i.test(t) ? 'ebay' : /palette/i.test(t) ? 'palette' : /sport/i.test(t) ? 'sport' : /boutique|shop/i.test(t) ? 'boutique'
     : /frais|fees/i.test(t) ? 'frais' : /avanc|advanced/i.test(t) ? 'admin' : /aide|help/i.test(t) ? 'aide' : /profil/i.test(t) ? 'profil' : /guide/i.test(t) ? 'guide'
     : /idée|idea/i.test(t) ? 'idee' : /partag|share/i.test(t) ? 'news' : 'faire';
   const formulaire = (b) => !!b.querySelector('#g-nom, #g-ep, #g-desc');
@@ -8141,7 +8176,7 @@ function pastillerReglages(){
   const gf = $('#g-forfait'); if (gf) res.appendChild(gf);
   $$('.profil-tete [data-pro-ouvrir]').forEach(b => b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); vibrer();
     const g = $('#g-forfait'); if (g && !g.hidden && g.innerHTML.trim()) { g.hidden = false; feuilleBloc(g); } else feuillePro(); });
-  const ordre = (t) => ['ebay', 'profil', 'faire', 'boutique', 'frais', 'palette', 'sport', 'guide', 'idee', 'news', 'admin', 'aide'].indexOf(icone(t));
+  const ordre = (t) => ['ebay', 'profil', 'faire', 'photo', 'boutique', 'frais', 'palette', 'sport', 'guide', 'idee', 'news', 'admin', 'aide'].indexOf(icone(t));
   blocs.map(b => ({b, t: titreDe(b)})).filter(x => x.t).sort((x, y) => ordre(x.t) - ordre(y.t)).forEach(({b, t}, i) => {
     res.appendChild(b);
     const id = 'gp-' + i;

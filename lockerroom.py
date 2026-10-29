@@ -61,6 +61,7 @@ CATEGORIE_CARTES = "261328"   # eBay : Sports Trading Card Singles
 REGLAGES_DEFAUT = {
     "prix_auto": {},                                            # 27 oct 2026 : mode Auto des prix eBay (voir prix_auto_regler)
     "watch": {},                                                # 29 oct 2026 : alarmes de la watchlist (voir watchlist.regler)
+    "photo_studio": True,                                       # 29 oct 2026 : photo studio (fond clair) ou les photos telles quelles
     "alarmes": {},                                              # 29 oct 2026 : les alertes cochees (voir alarmes.py)
     "nom_boutique": "Ma boutique",
     "equipe_fav": "",                                           # 26 oct 2026 : les accents de l'app aux couleurs de cette equipe
