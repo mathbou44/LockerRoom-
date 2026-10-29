@@ -549,7 +549,7 @@ def _verificateur(d, st, bassin):
     rythme = max_ * min(1.0, (heure + 4) / 24)
     faites = set()
 
-    def f(cib):
+    def f(cib, prio=False):
         q = (cartes_match.requete_ebay(cib) or "").strip()
         if not q or q in faites:
             return None
@@ -565,6 +565,21 @@ def _verificateur(d, st, bassin):
         # 29 oct 2026 (Mathieu : « il ne faut plus que cela arrive », SoldComps 706 credits en 3 h) : le budget se compte
         # sur le compteur PERSISTANT de SoldComps (credits reels, partage, survit aux redemarrages et aux mises a jour),
         # plus sur un compteur en memoire qu'un redemarrage effacait
+        if prio:                                   # 30 oct 2026 : la reserve des 4 vendeurs prioritaires, etalee sur la journee
+            n_p = vendues.utilises_aujourdhui("prio")
+            if n_p >= prio_max() or n_p >= prio_max() * min(1.0, (heure + 6) / 24):
+                st["prio_budget"] = st.get("prio_budget", 0) + 1
+                return None
+            faites.add(q)
+            r = vendues.rechercher(q, fond=True, usage="prio")
+            if r.get("erreur"):
+                k = _cle_erreur(r["erreur"])
+                st[k] = st.get(k, 0) + 1
+                return None
+            st["prio_verifs"] = st.get("prio_verifs", 0) + 1
+            st["_dern_verif"] = {"q": q, "n": len(r.get("ventes") or []), "cache": bool(r.get("cache"))}
+            bassin.ajouter(r.get("ventes"))
+            return r.get("ventes") or []
         n_reel = vendues.utilises_aujourdhui("verif")
         if n_reel >= max_ or n_reel >= rythme:
             st["verif_budget"] = st.get("verif_budget", 0) + 1
@@ -606,6 +621,22 @@ def _verificateur(d, st, bassin):
 
 
 PART_HITS_RECRUES = 0.35         # 29 oct 2026 : hits de recrues (auto Future Watch, YG patch...) : 35 % du budget avant 18 h
+# 30 oct 2026 (Mathieu : « toutes les cartes de Savage n'ont pas de comp ») : une reserve de verifications SoldComps pour les
+# 4 vendeurs prioritaires (Savage, Remi, CF31, Slab Sharks), cartes de 10 $ et plus, en plus des 40 du chasseur. Toujours
+# sous le plafond total (LR_SOLDCOMPS_JOUR) ; compteur persistant a part (usage « prio »). LR_DEALS_VERIF_PRIO pour changer.
+PRIO_VERIF_JOUR = 250
+PRIO_MIN = 10.0
+
+
+def prio_max():
+    try:
+        return max(0, int(os.environ.get("LR_DEALS_VERIF_PRIO") or PRIO_VERIF_JOUR))
+    except ValueError:
+        return PRIO_VERIF_JOUR
+
+
+def _prio(a):
+    return rang_vendeur(a.get("vendeur")) < len(VENDEURS_PRIORITE)
 
 
 def saison_recrues():
@@ -767,6 +798,8 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
     # (auto, patch, /99) sans vente connue de sa carte etait toujours ecarte. Maintenant il est verifie en fin de tour
     # (apres les encans, avec le budget qui reste) s'il a l'air bas : 25 % sous les memes cartes en vente, ou une
     # vedette (veteran / legende) de 40 $ et plus.
+    elif not va and verif and r.get("suivi") and peu_ventes and _prio(a) and t >= PRIO_MIN:
+        st.setdefault("_tard", []).append((a, dict(r, prio=True), cib))     # 30 oct : reserve Savage, Remi, CF31, Slab Sharks
     elif not va and verif and r.get("suivi") and peu_ventes and (t >= HIT_MIN or (a.get("encan") and _precieuse(cib))):
         # 29 oct 2026 : un encan d'un vendeur suivi a 2 jours de la fin a souvent une mise de 5 $ : c'est la carte qui compte
         st.setdefault("_tard", []).append((a, r, cib))           # 29 oct : vendeur suivi, toutes ses cartes de 25 $ et plus
@@ -958,15 +991,29 @@ def _verifier_tard(st, deals, maint, bassin, verif):
     # suivis d'abord (encans puis prix fixe), ensuite le reste
     tard.sort(key=lambda x: (0 if x[1].get("suivi") else 1, 0, 1 if _recrue(x[2]) else 0, 0 if _precieuse(x[2]) else 1, str(x[0].get("fin")), 0)
               if x[0].get("encan") else (0 if x[1].get("suivi") else 1, 1, 1 if _recrue(x[2]) else 0, 0 if _precieuse(x[2]) else 1, "", -(_total(x[0]) or 0)))
+    tard.sort(key=lambda x: 0 if x[1].get("prio") else 1)                    # 30 oct : la reserve d'abord (tri stable)
+    tard.sort(key=lambda x: rang_vendeur(x[0].get("vendeur")) if x[1].get("prio") else 9)
+    fini = {"prio": False, "std": False}
     for a, r, cib in tard:
-        avant = st.get("verif_budget", 0)
+        k = "prio" if r.get("prio") else "std"
+        if fini[k]:
+            continue
+        cle_b = "prio_budget" if k == "prio" else "verif_budget"
+        avant = st.get(cle_b, 0)
         st.pop("_dern_verif", None)
-        nv = verif(cib)
-        if st.get("verif_budget", 0) > avant:
-            break                                        # budget du jour epuise
+        nv = verif(cib, prio=True) if k == "prio" else verif(cib)
+        if st.get(cle_b, 0) > avant:
+            fini[k] = True                               # ce budget du jour est epuise (l'autre continue)
+            continue
         dv = st.pop("_dern_verif", None)
         st["_vus"].discard(a.get("item_id"))
         _juger(a, r, nv or [], [], maint, deals, st, bassin=bassin, verif=None)
+        # 30 oct 2026 : l'encan d'un vendeur suivi, deja garde sans valeur, prend la valeur trouvee
+        s_ = (st.get("_suivis") or {}).get(str(a.get("item_id")))
+        if s_ is not None and not s_.get("valeur"):
+            va = valeur_annonce(a, (nv or []) + (bassin.candidats(cib) if bassin else []), [], cib=cib)
+            if va:
+                s_.update(valeur=va[0], n=va[2], vendues=va[3], mise_max=round(va[0] * RATIO_DEAL - (a.get("port_cad") or 0), 2))
         if dv:
             _noter_journal(st, a, r, cib, dv)
 
@@ -1527,7 +1574,8 @@ def etat():
             "deals": sum(1 for x in d.get("deals") or [] if valide(x) and encore_ouvert(x)),
             "ebay": utilises_ebay(), "ebay_rythme": round(appels_ebay.rythme("browse")),
             "ebay_plafond": round(appels_ebay.limite("browse") * (1 - appels_ebay.RESERVE_GESTES)),
-            "verif": vendues.utilises_aujourdhui("verif"), "verif_max": vmax}
+            "verif": vendues.utilises_aujourdhui("verif"), "verif_max": vmax,
+            "prio": vendues.utilises_aujourdhui("prio"), "prio_max": prio_max(), "prio_24h": {"verifs": g.get("prio_verifs", 0), "refus": g.get("prio_budget", 0)}}
 
 
 _SORTES = {}
@@ -1594,7 +1642,8 @@ def _etat_soldcomps():
     try:
         e = vendues.derniere_erreur()
         return {"jour": vendues.utilises_aujourdhui(), "plafond": vendues.plafond_jour(), "fond": int(vendues.plafond_jour() * 0.7),
-                "verif": vendues.utilises_aujourdhui("verif"), "autres_max": int(vendues.plafond_jour() * vendues.PART_AUTRES_FOND),
+                "verif": vendues.utilises_aujourdhui("verif"), "prio": vendues.utilises_aujourdhui("prio"), "prio_max": prio_max(),
+                "autres_max": int(vendues.plafond_jour() * vendues.PART_AUTRES_FOND),
                 "erreur": e.get("erreur") if e and time.time() - e.get("le", 0) < 6 * 3600 else None, "sites": vendues.sites(),
                 # 29 oct 2026 : budget du jour atteint -> quand ca repart (le compteur suit le jour du serveur, UTC)
                 "epuise": vendues.utilises_aujourdhui() >= int(vendues.plafond_jour() * 0.7),

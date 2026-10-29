@@ -199,7 +199,8 @@ def _budget_ok(fond, usage):
         return tot < pl
     if tot >= pl * 0.7:
         return False
-    return usage == "verif" or (tot - utilises_aujourdhui("verif")) < pl * PART_AUTRES_FOND
+    # 30 oct 2026 : « prio » = la reserve des 4 vendeurs prioritaires (deals.PRIO_VERIF_JOUR) : comme les verifications
+    return usage in ("verif", "prio") or (tot - utilises_aujourdhui("verif") - utilises_aujourdhui("prio")) < pl * PART_AUTRES_FOND
 
 
 def rechercher(q, fond=True, usage=None):
