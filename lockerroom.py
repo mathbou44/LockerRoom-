@@ -3482,6 +3482,81 @@ class Api:
                 c.close()
         return {"ok": True, **res}
 
+    # 30 oct 2026 (Mathieu : « relie a mon inventaire : j'ai des cartes d'inventaire reliees a mes achats ») : sur la fiche
+    # d'une carte, l'achat eBay qui lui est relie (date, cout, lien) ; sinon les achats non relies qui lui ressemblent, un
+    # tap pour relier (le cout paye devient le cout de la carte). Les achats : 90 jours (limite d'eBay), lus a la synchro.
+    _SQL_ACHATS = ("CREATE TABLE IF NOT EXISTS achats_ebay (item_id TEXT, n INTEGER, titre TEXT, cout REAL, devise TEXT, "
+                   "date TEXT, carte_id INTEGER, PRIMARY KEY (item_id, n))")
+
+    def achats_carte(self, carte_id):
+        import difflib
+        cid = int(carte_id or 0)
+        c = self._db()
+        try:
+            c.execute(self._SQL_ACHATS)
+            k = c.execute("SELECT id, titre, joueur FROM cartes WHERE id=?", (cid,)).fetchone()
+            vide = not c.execute("SELECT 1 FROM achats_ebay LIMIT 1").fetchone()
+        finally:
+            c.close()
+        if not k:
+            return {"ok": False, "erreur": "Carte introuvable"}
+        if vide and ebay_compte.statut().get("connecte"):
+            try:                                          # premiere fois : on lit les achats tout de suite (un appel Trading)
+                self.couts_depuis_achats()
+            except Exception:
+                pass
+        c = self._db()
+        try:
+            c.execute(self._SQL_ACHATS)
+            lie = _dicts(c.execute("SELECT item_id, n, titre, cout, date FROM achats_ebay WHERE carte_id=?", (cid,)))
+            libres = _dicts(c.execute("SELECT item_id, n, titre, cout, date FROM achats_ebay WHERE carte_id IS NULL ORDER BY date DESC"))
+            nb = c.execute("SELECT COUNT(*) FROM achats_ebay").fetchone()[0]
+        finally:
+            c.close()
+        t = cartes_match.norm(k[1] or "")
+        cib = cartes_match.cible_titre(k[1] or "", k[2] or None) if (k[1] or k[2]) else None
+        fam = (cartes_match.norm(k[2] or "") or (cib or {}).get("joueur") or "").split()[-1:] 
+        for a in libres:                                   # le meme joueur d'abord, puis la meme carte, puis le titre
+            ta = cartes_match.norm(a["titre"] or "")
+            a["score"] = round((0.5 if fam and re.search(r"\b" + re.escape(fam[0]) + r"\b", ta) else 0)
+                               + (0.3 if cib and not cartes_match.raisons_refus(cib, a["titre"] or "") else 0)
+                               + 0.2 * difflib.SequenceMatcher(None, t, ta).ratio(), 3)
+        libres.sort(key=lambda a: -a["score"])
+        return {"ok": True, "lie": lie[0] if lie else None, "suggestions": libres[:30], "nb_achats": nb,
+                "ebay": bool(ebay_compte.statut().get("connecte"))}
+
+    def achat_relier(self, carte_id, item_id, n=0):
+        cid = int(carte_id or 0)
+        with _verrou:
+            c = self._db()
+            try:
+                c.execute(self._SQL_ACHATS)
+                a = c.execute("SELECT cout, carte_id FROM achats_ebay WHERE item_id=? AND n=?", (str(item_id), int(n or 0))).fetchone()
+                if not a:
+                    return {"ok": False, "erreur": "Achat introuvable"}
+                if a[1] and a[1] != cid:
+                    return {"ok": False, "erreur": "Cet achat est déjà relié à une autre carte"}
+                if not c.execute("SELECT 1 FROM cartes WHERE id=?", (cid,)).fetchone():
+                    return {"ok": False, "erreur": "Carte introuvable"}
+                c.execute("UPDATE achats_ebay SET carte_id=NULL WHERE carte_id=?", (cid,))
+                c.execute("UPDATE achats_ebay SET carte_id=? WHERE item_id=? AND n=?", (cid, str(item_id), int(n or 0)))
+                c.execute("UPDATE cartes SET cout=? WHERE id=?", (a[0], cid))
+                c.commit()
+            finally:
+                c.close()
+        return {"ok": True, "cout": a[0]}
+
+    def achat_delier(self, carte_id):
+        with _verrou:
+            c = self._db()
+            try:
+                c.execute(self._SQL_ACHATS)
+                c.execute("UPDATE achats_ebay SET carte_id=NULL WHERE carte_id=?", (int(carte_id or 0),))
+                c.commit()
+            finally:
+                c.close()
+        return {"ok": True}
+
     # -- comptoir (boutique physique) -----------------------------------------------------------
     def comptoir_vente(self, d):
         """d : {lignes: [{carte_id?, description, prix}], paiement, client_id, taxes (bool), credit_utilise}"""
@@ -4061,7 +4136,11 @@ class Api:
         # 27 oct 2026 (Mathieu : « pas de faux deals ni de faux prix ») : une valeur SEULEMENT si les ventes reelles de
         # CETTE carte sont sures (deals.valeur_sure) ; les annonces ne font que la plafonner. Sinon : aucun « vaut ».
         import deals as _deals
-        vm = _deals.valeur_sure([x for x in (vc.get("ventes") or []) if x.get("prix")], t or "")[0] if nb_v >= 2 else None
+        # 30 oct 2026 (Mathieu : « les comps n'ont toujours pas update ») : on dit POURQUOI il n'y a pas de valeur (aucune
+        # vente trouvee, ventes trop vieilles, trop differentes...) au lieu d'un « pas assez de ventes » pour tout
+        vs_ = _deals.valeur_sure([x for x in (vc.get("ventes") or []) if x.get("prix")], t or "") if nb_v >= 2 else (None, "pas assez de ventes")
+        vm = vs_[0]
+        pourquoi = None if vm else (vc.get("erreur") or (vs_[1] if isinstance(vs_[1], str) else None))
         if vm and med and n >= 3 and vm > med:
             vm = min(vm, round(med * 0.85, 2))
         valeur = vm
@@ -4089,7 +4168,7 @@ class Api:
                 "points": vc.get("points") or [], "tendance": vc.get("tendance"), "autres_joueurs": autres,
                 "rabais": round(100 * (1 - total / valeur)) if total and valeur and juger else None,
                 "gain": round(valeur * (1 - fp) - ff - total, 2) if total and valeur and juger else None,
-                "peu_de_ventes": not juger}
+                "peu_de_ventes": not juger, "pourquoi": pourquoi if not juger else None, "nb_trouvees": nb_v}
 
     def _mes_ventes_pareilles(self, titre, item_id=None, n=8):
         """Les MEMES cartes deja vendues par ce compte (vraies ventes, avec photo) : {titre, prix, le, photo}."""

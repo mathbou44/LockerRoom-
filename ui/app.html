@@ -288,6 +288,18 @@ details.reglage summary::-webkit-details-marker{display:none}
 .colis-n{margin-top:6px; font-size:12px} .colis-n.att{color:var(--or)}
 .acc-pil .ap-v{flex:0 1 auto; min-width:0; max-width:58%; font-size:14.5px; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:right}
 .vs-rangs .ap-t{flex:1 1 auto; min-width:0}
+.adm-ks{display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin:10px 0}
+.adm-k{display:flex; flex-direction:column; gap:2px; padding:10px 12px; border-radius:14px; background:var(--carte2); border:1px solid var(--ligne)}
+.adm-k b{font:700 22px 'Barlow Condensed',sans-serif; color:var(--texte)} .adm-k span{font-size:12px; color:var(--doux); line-height:1.25}
+.adm-k.rouge b{color:var(--rouge)}
+.adm-al{margin:6px 0; padding:8px 12px; border-radius:12px; background:color-mix(in srgb, var(--rouge) 14%, transparent); color:var(--rouge); font-size:13.5px; font-weight:600}
+.adm-det{margin-top:8px} .adm-det summary{cursor:pointer; color:var(--acc); font-size:14px; font-weight:600} .adm-det > div{margin-top:8px; font-size:13px; line-height:1.5; color:var(--doux)}
+.fc-achat{margin:0 0 12px} .fc-ach{background:var(--carte2)} .fc-ach .ap-ic::before{background:var(--carte2)}
+.fc-ach .ap-t{display:flex; flex-direction:column; gap:2px; white-space:normal} .fc-ach .ap-t b{font-size:15px} .fc-ach .ap-t small{font-size:12.5px; color:var(--doux); font-weight:500}
+.fc-ach-l{display:flex; align-items:center; gap:12px; flex:1; min-width:0; color:inherit; text-decoration:none}
+.fc-ach-liste{display:flex; flex-direction:column; gap:6px; margin-top:8px}
+.fc-ach-r{display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:10px 12px; border-radius:12px; border:1px solid var(--ligne); background:var(--carte); color:var(--texte); font:inherit; text-align:left; cursor:pointer}
+.fc-ach-r span{font-size:14px; font-weight:600} .fc-ach-r small{font-size:12px; color:var(--doux)} .fc-ach-r:active{transform:scale(.98)}
 .vm-tit{margin-top:12px; font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--doux)}
 .vm{display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:6px}
 .vm-t{display:flex; flex-direction:column; align-items:center; gap:1px; padding:8px 4px; border-radius:12px; background:var(--carte2); border:1px solid var(--ligne); color:var(--texte); font:inherit; cursor:pointer}
@@ -5391,6 +5403,17 @@ document.addEventListener('click', (e) => {
   S.fenOrigine = a.getBoundingClientRect();          // 29 oct : la fiche s'ouvre depuis l'annonce touchee
   ouvrirAnnonce({item_id:a.dataset.annonce, titre:a.dataset.titre, photo:a.dataset.photo, total:nb(a.dataset.total), url:a.dataset.url, q:a.dataset.q || null});
 }, true);
+// 30 oct 2026 : pourquoi une carte n'a pas de valeur, en mots simples (avant : « pas assez de ventes » pour tout)
+function raisonSansValeur(d){
+  const n = d.nb_trouvees || 0, p = String(d.pourquoi || '');
+  if (/plafond/.test(p)) return tt('Recherche des ventes en pause pour aujourd’hui (budget du jour atteint).', 'Sales lookup paused for today (daily budget reached).');
+  if (p && !/vente|dispers|vieill/.test(p)) return tt('Les ventes n’ont pas pu être lues (', 'Sales could not be read (') + esc(p.slice(0, 60)) + ').';
+  if (/dispers|differentes/.test(p)) return tt(`${n} ventes trouvées, mais leurs prix sont trop différents pour dire ce qu’elle vaut.`, `${n} sales found, but their prices are too far apart to say what it’s worth.`);
+  if (/vieill/.test(p)) return tt(`${n} ventes trouvées, mais trop vieilles pour être sûres.`, `${n} sales found, but too old to be sure.`);
+  if (n === 1) return tt('Une seule vente de cette carte trouvée : pas assez pour dire ce qu’elle vaut.', 'Only one sale of this card found: not enough to say what it’s worth.');
+  if (n >= 2) return tt(`${n} ventes trouvées, mais pas assez récentes pour dire ce qu’elle vaut.`, `${n} sales found, but not recent enough to say what it’s worth.`);
+  return tt('Aucune vente de cette carte exacte trouvée.', 'No sale of this exact card found.');
+}
 async function ouvrirAnnonce(base){
   let f = $('#fen-annonce');
   if (!f) { f = document.createElement('div'); f.id = 'fen-annonce'; f.className = 'fen-fond'; document.body.appendChild(f);
@@ -5410,7 +5433,7 @@ async function ouvrirAnnonce(base){
           ${d.valeur ? `<div class="fen-res"><div><span>${tt('Vaut', 'Worth')}</span><b>${argent(d.valeur, 0)}</b></div>${d.gain != null ? `<div class="${d.gain > 0 ? 'vert' : 'rouge'}"><span>${d.gain > 0 ? tt('Tu gagnes', 'You make') : tt('Tu perds', 'You lose')}</span><b>${d.gain > 0 ? '+' : '−'}${argent(Math.abs(d.gain), 0)}</b></div>` : ''}</div>
             <div class="fen-base">${d.valeur_source === 'vendues' ? tt(`D’après ${d.nb_vendues} vente${d.nb_vendues > 1 ? 's' : ''} réelle${d.nb_vendues > 1 ? 's' : ''} de la même carte${d.gain != null ? ', après frais eBay' : ''}`, `From ${d.nb_vendues} real sale${d.nb_vendues > 1 ? 's' : ''} of the same card${d.gain != null ? ', after eBay fees' : ''}`) : tt('Estimé d’après les mêmes cartes en vente', 'Estimated from the same cards listed')}</div>`
             : d.chargement ? `<div class="lecture"><span class="roue"></span>${tt('On cherche ce qu’elle vaut…', 'Finding what it’s worth…')}</div>`
-            : d.peu_de_ventes ? `<div class="fen-base">${tt('Pas assez de ventes de cette carte pour dire ce qu’elle vaut.', 'Not enough sales of this card to say what it’s worth.')}</div>` : ''}
+            : d.peu_de_ventes ? `<div class="fen-base">${raisonSansValeur(d)}</div>` : ''}
           ${S.budget && S.budget.budget && total && total > S.budget.reste ? `<div class="fen-budget rouge">${tt('Au-dessus de ton budget du mois', 'Over your monthly budget')}</div>` : ''}
           ${a.encan && d.suggere && S.mode === 'acheteur' ? `<div class="fen-mise">${tt('Ne mise pas plus que', 'Don’t bid more than')} <b>${argent(d.suggere.achat_max, 0)}</b></div>` : ''}
           <div class="fen-btns un"><a class="btn" href="${esc(url)}" target="_blank" rel="noopener">${tt('Voir sur eBay', 'View on eBay')}</a></div>
@@ -7424,6 +7447,41 @@ function vendreDepuisCollection(id){
   }
   location.hash = '#vendre/' + id;
 }
+// 30 oct 2026 (Mathieu : « relie a mon inventaire : j'ai des cartes d'inventaire reliees a mes achats ») : sur la fiche,
+// l'achat eBay de la carte (date, cout paye, lien) ; sinon « Relier à un achat eBay » : les achats qui lui ressemblent,
+// un tap relie et le cout paye devient le cout de la carte
+async function achatCarte(c){
+  const z = $('#c-achat'); if (!z) return;
+  const r = await API.achats_carte(c.id).catch(() => null);
+  if (!$('#c-achat') || !r || !r.ok || (!r.lie && !r.suggestions.length)) { if (z) z.innerHTML = ''; return; }
+  const ic = `<span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.ebay}</svg></span>`;
+  const lienE = (a) => `${S.ebaySite || 'https://www.ebay.ca'}/itm/${encodeURIComponent(a.item_id)}`;
+  if (r.lie) {
+    const a = r.lie;
+    z.innerHTML = `<div class="acc-pil fc-ach"><a class="fc-ach-l" href="${esc(lienE(a))}" target="_blank" rel="noopener">${ic}<span class="ap-t"><b>${tt('Achetée sur eBay', 'Bought on eBay')}</b>
+      <small>${esc(dateCourte(a.date) || '')} · ${argent(a.cout, 2)} ${tt('payé', 'paid')}</small></span><i aria-hidden="true">↗</i></a>
+      <button class="lien-t" id="c-ach-x">${tt('Délier', 'Unlink')}</button></div>`;
+    $('#c-ach-x').onclick = async () => { if (await essai(API.achat_delier(c.id), tt('Achat délié', 'Purchase unlinked'))) achatCarte(c); };
+    return;
+  }
+  let tous = false;
+  const peindre = (ouvert) => {
+    const l = r.suggestions.filter(a => tous || a.score >= 0.5).slice(0, tous ? 30 : 6);
+    z.innerHTML = `<button class="acc-pil fc-ach" id="c-ach-o">${ic}<span class="ap-t"><b>${tt('Relier à un achat eBay', 'Link to an eBay purchase')}</b>
+      <small>${tt('Le coût payé devient le coût de la carte', 'The price paid becomes the card’s cost')}</small></span><i aria-hidden="true">${ouvert ? '⌄' : '›'}</i></button>
+      ${ouvert ? `<div class="fc-ach-liste">${l.length ? l.map(a => `<button class="fc-ach-r" data-ach="${esc(a.item_id)}" data-n="${a.n}"><span>${esc(titreCourt(a.titre))}</span><small>${esc(dateCourte(a.date) || '')} · ${argent(a.cout, 2)}</small></button>`).join('')
+        : `<div class="sous">${tt('Aucun achat qui ressemble à cette carte.', 'No purchase looks like this card.')}</div>`}
+        ${!tous && r.suggestions.length > l.length ? `<button class="lien-t" id="c-ach-tous">${tt('Voir tous mes achats', 'See all my purchases')} (${r.suggestions.length})</button>` : ''}
+        <div class="sous">${tt('Tes achats eBay des 90 derniers jours (limite d’eBay).', 'Your eBay purchases from the last 90 days (eBay’s limit).')}</div></div>` : ''}`;
+    $('#c-ach-o').onclick = () => { vibrer(); peindre(!ouvert); };
+    const t_ = $('#c-ach-tous'); if (t_) t_.onclick = () => { tous = true; peindre(true); };
+    $$('[data-ach]').forEach(b => b.onclick = async () => {
+      vibrer(); const x = await essai(API.achat_relier(c.id, b.dataset.ach, +b.dataset.n), tt('Achat relié · coût mis à jour', 'Purchase linked · cost updated'));
+      if (x && x.ok) { const ci = $('#c-cout'); if (ci) ci.value = dev2(x.cout); c.cout = x.cout; achatCarte(c); }
+    });
+  };
+  peindre(false);
+}
 function feuilleCarte(c){
   const vendue = c.statut === 'Vendue', carte = !!(c.joueur || c.set_nom || c.parallele);
   const douteux = (c._douteux || []).filter(k => NOMS_CHAMPS[k]);
@@ -7439,6 +7497,7 @@ function feuilleCarte(c){
         <span class="fc-st">${capsule(etat, vendue ? 'petit' : c.statut === 'Listée' ? 'acc petit' : 'petit')}</span>
         ${c.item_number && !vendue ? `<a class="fc-lien" href="${esc((S.ebaySite || 'https://www.ebay.ca') + '/itm/' + c.item_number)}" target="_blank" rel="noopener">${tt('Voir mon annonce eBay', 'See my eBay listing')} ↗</a>` : ''}</div></div>` })() : '';
   ouvrirFeuille(`${c.id ? '' : `<h3>${c._photo ? 'Vérifie et enregistre' : 'Nouvel article'}</h3>`}${heros}
+    ${c.id ? '<div id="c-achat" class="fc-achat"></div>' : ''}
     ${(c._photos || []).length ? `<div class="photos-prises">${c._photos.map(p => `<img src="${p}" alt="">`).join('')}</div>` : ''}
     ${c._photo ? (douteux.length || (c._notes || []).length
       ? `<div class="bandeau info"><b>À vérifier${douteux.length ? ' : ' + douteux.map(k => NOMS_CHAMPS[k]).join(', ') : ''}</b>${(c._notes || []).map(n => '<br>' + esc(n)).join('')}</div>`
@@ -7475,6 +7534,7 @@ function feuilleCarte(c){
     ${c.item_number && !vendue ? '<div id="c-comps" class="fc-marche"></div>' : ''}
     ${c.id ? `<button class="plus" id="c-suppr" style="color:var(--rouge)">Supprimer</button>` : ''}`);
   if (c.item_number && !vendue) chargerCompsCarte(c);
+  if (c.id) achatCarte(c);
   let sportChoisi = c._photo && c.sport ? c.sport : null;
   douteux.forEach(k => { const e = $('#' + (CHAMP_ID[k] || '_')); if (e) e.classList.add('douteux'); });
   const majEquipes = async (sp) => { try { const l = await equipes(sp); const dl = $('#c-el'); if (dl) dl.innerHTML = l.map(e => `<option value="${esc(e.nom)}">`).join(''); } catch (e) {} };
@@ -7909,8 +7969,7 @@ async function adminServeur(){
   const t = d.taches || {};
   z.innerHTML = `<div class="bloc" id="adm-deals" style="margin-bottom:14px"><div class="r-titre">${tt('Chasseur de deals', 'Deal hunter')}</div>
     <div class="sous" id="adm-deals-e">…</div>
-    <div class="ligne-btn"><button class="btn petit" id="adm-deals-ok" style="width:auto">${tt('Recharger les deals', 'Reload deals')}</button>
-      <button class="btn petit ghost" id="adm-deals-ved" style="width:auto">${tt('Chasser vétérans et légendes', 'Hunt veterans & legends')}</button></div>
+    <button class="btn" id="adm-deals-ok" style="margin-top:12px">${tt('Relancer le chasseur', 'Run the hunter now')}</button>
     <div id="adm-journal"></div></div>
     <div class="bloc" id="adm-vend" style="margin-bottom:14px"><div class="r-titre">${tt('Vendeurs suivis (deals)', 'Followed sellers (deals)')}</div>
     <div class="sous">${tt('Pseudos eBay exacts, séparés par des virgules. Leurs encans (5 jours) et nouvelles annonces sont analysés chaque heure.', 'Exact eBay usernames, comma-separated. Their auctions (5 days) and new listings are checked every hour.')}</div>
@@ -7933,7 +7992,13 @@ async function adminServeur(){
     ${d.erreurs.length ? `<div class="bloc"><div class="liste">${d.erreurs.map(e => `<div class="rangee"><span class="milieu"><span class="nom">${esc(e.ou)}</span><span class="det">${esc(e.erreur)}</span></span><span class="droite"><span class="sous">${ilYa(e.le)}</span></span></div>`).join('')}</div></div>`
       : `<div class="vide">${tt('Aucune erreur ✓', 'No errors ✓')}</div>`}`;
   const etatDeals = (e) => { const el = $('#adm-deals-e'); if (!el || !e || !e.ok) return;
-    el.innerHTML = `<div class="adm-tour">${ligneTour(e.tour)}</div><b>${e.deals}</b> ${tt('deals en ligne', 'live deals')} · ${tt('mis à jour', 'updated')} ${e.maj ? heureCourte(e.maj) : '—'}<br>
+    // 30 oct 2026 (Mathieu : « enormement trop d'info en petit ; pourquoi 2 boutons ? ») : 4 chiffres, les alertes en rouge
+    // seulement s'il y a un probleme, le detail replie
+    const sc = e.soldcomps || {}, kp = (v, l, rouge) => `<div class="adm-k ${rouge ? 'rouge' : ''}"><b>${v}</b><span>${l}</span></div>`;
+    const alertes = [sc.epuise ? tt('Budget SoldComps du jour atteint : reprise à ', 'SoldComps daily budget reached: resumes at ') + heureCourte(sc.reprise) : '',
+      sc.erreur ? 'SoldComps : ' + esc(sc.erreur) : '', e.vendeurs_24h && e.vendeurs_24h.erreurs ? e.vendeurs_24h.erreurs + tt(' erreurs eBay (vendeurs suivis)', ' eBay errors (followed sellers)') : '',
+      e.vision_erreur ? tt('Reconnaissance photo : HTTP ', 'Photo recognition: HTTP ') + esc(e.vision_erreur.code) : ''].filter(Boolean);
+    const det = `<b>${e.deals}</b> ${tt('deals en ligne', 'live deals')} · ${tt('mis à jour', 'updated')} ${e.maj ? heureCourte(e.maj) : '—'}<br>
       eBay ${e.ebay} / ${e.ebay_plafond} ${tt('(rythme du jour : ', '(today’s pace: ')}${e.ebay_rythme}) · ${tt('vérifications', 'checks')} ${e.verif} / ${e.verif_max}${e.verif >= e.verif_max ? ' · <span style="color:var(--rouge)">' + tt('épuisées pour aujourd’hui', 'used up for today') + '</span>' : ''}
       ${e.repartition ? '<br>' + tt('En ligne : ', 'Live: ') + e.repartition.hits + ' hits · ' + e.repartition.veterans + tt(' vétérans/légendes · ', ' veterans/legends · ') + e.repartition.recrues + tt(' autres recrues · ', ' other rookies · ') + e.repartition.young_guns + ' Young Guns' : ''}
       ${e.hits_24h ? '<br>' + tt('Hits (24 h) : ', 'Hits (24 h): ') + e.hits_24h.vus + tt(' vus · ', ' seen · ') + e.hits_24h.verifies + tt(' vérifiés · ', ' checked · ') + e.hits_24h.deals + ' deals'
@@ -7946,6 +8011,11 @@ async function adminServeur(){
       ${e.soldcomps ? '<br>SoldComps : ' + (e.soldcomps.jour ?? '?') + ' / ' + (e.soldcomps.fond ?? '?') + tt(' aujourd’hui (tâches de fond)', ' today (background)')
         + (e.soldcomps.verif != null ? tt(' · vérifs de deals ', ' · deal checks ') + e.soldcomps.verif + (e.soldcomps.prio != null ? tt(' · Savage, Remi, CF31, Slab Sharks ', ' · Savage, Remi, CF31, Slab Sharks ') + e.soldcomps.prio + ' / ' + e.soldcomps.prio_max : '') + tt(' · autres ', ' · other ') + ((e.soldcomps.jour || 0) - e.soldcomps.verif - (e.soldcomps.prio || 0)) + ' / ' + e.soldcomps.autres_max : '') + (e.soldcomps.erreur ? ' · <span style="color:var(--rouge)">' + esc(e.soldcomps.erreur) + '</span>' : '') : ''}
       <br>${tt('Reconnaissance photo', 'Photo recognition')} : ${esc(e.vision_modele || '—')}${e.vision_erreur ? ' · <span style="color:var(--rouge)">' + tt('dernière erreur', 'last error') + ' HTTP ' + esc(e.vision_erreur.code) + ' ' + esc((e.vision_erreur.detail || '').slice(0, 140)) + '</span>' : ''}`;
+    el.innerHTML = `<div class="adm-tour">${ligneTour(e.tour)}</div>
+      <div class="adm-ks">${kp(e.deals, tt('deals en ligne', 'live deals'))}${kp((sc.jour ?? '?') + ' / ' + (sc.plafond ?? '?'), 'SoldComps', sc.epuise)}
+        ${kp((sc.prio ?? 0) + ' / ' + (sc.prio_max ?? 0), 'Savage, Remi, CF31, Slab Sharks')}${kp(e.verif + ' / ' + e.verif_max, tt('vérifs de deals', 'deal checks'), e.verif >= e.verif_max)}</div>
+      ${alertes.map(x => `<div class="adm-al">${x}</div>`).join('')}
+      <details class="adm-det"><summary>${tt('Détails', 'Details')}</summary><div>${det}</div></details>`;
     journalChasse(e.journal); };
   API.deals_etat().then(etatDeals).catch(() => {});
   clearInterval(S.tAdmTour);              // 29 oct : la ligne du tour se met a jour toute seule (30 s)
@@ -7955,11 +8025,6 @@ async function adminServeur(){
     if (r) etatDeals(r.etat);
     let k = 0; const suivre = setInterval(async () => { k++; const e = await API.deals_etat().catch(() => null); etatDeals(e);
       if (!e || !e.en_cours || k > 40 || !document.body.contains(bd)) { clearInterval(suivre); bd.disabled = false; } }, 15000); };
-  const bvd = $('#adm-deals-ved'); if (bvd) bvd.onclick = async () => {
-    bvd.disabled = true; const r = await essai(API.deals_chasser_vedettes(), tt('Chasse lancée : vétérans, légendes et jeunes de 2e à 4e année', 'Hunt started: veterans, legends and 2nd–4th year players'));
-    if (r) etatDeals(r.etat);
-    let k = 0; const suivre = setInterval(async () => { k++; const e = await API.deals_etat().catch(() => null); etatDeals(e);
-      if (!e || !e.en_cours || k > 40 || !document.body.contains(bvd)) { clearInterval(suivre); bvd.disabled = false; } }, 15000); };
   API.deals_vendeurs().then(v => { const t = $('#adm-vend-l'); if (t && v && v.ok) t.value = v.vendeurs.join(', '); }).catch(() => {});
   // 29 oct 2026 (Mathieu : « Top vendeurs : toujours rien ») : ce qu'eBay renvoie MAINTENANT, vendeur par vendeur
   const LIB_R = {ok: tt('gardés', 'kept'), recrue: tt('recrues de l’année', 'this year’s rookies'), ordinaire: tt('cartes ordinaires', 'common cards'),
