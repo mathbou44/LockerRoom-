@@ -383,3 +383,61 @@ def verifier(api, proches=False, lire_article=None, maint=None):
         c.close()
     alarmes._ecrire(etat_a)
     return envoyees
+
+
+# -- 31 oct 2026 (Mathieu : « comment accelerer mes mises sur plusieurs cartes ? j'utilise Gixen » ; « le garder pour moi
+# (admin) ») : les encans suivis, prets a coller dans Gixen : numero eBay + mise max DANS LA DEVISE DE L'ANNONCE (une
+# annonce americaine se mise en USD : 54 $ CA = 39 $ US). Rien n'est mise par SlabCoach : c'est l'admin qui colle.
+# eBay : le pas minimum entre deux mises (meme grille en $ US et en $ CA)
+PAS_MISE = ((1, 0.05), (5, 0.25), (25, 0.50), (100, 1.00), (250, 2.50), (500, 5.00), (1000, 10.00), (2500, 25.00), (5000, 50.00))
+
+
+def mise_minimum(prix, mises):
+    """La plus petite mise qu'eBay accepte : le prix de depart sans mise, sinon la mise du moment + le pas."""
+    if prix is None:
+        return None
+    if not mises:
+        return round(float(prix), 2)
+    pas = next((p for lim, p in PAS_MISE if prix < lim), 100.0)
+    return round(float(prix) + pas, 2)
+
+
+def gixen(api, lire_article=None):
+    return preparer(api, lire_article)
+
+
+def preparer(api, lire_article=None):
+    """31 oct 2026 : les encans suivis, prets a miser : mise max dans la devise de l'annonce, mise minimum d'eBay."""
+    import ebay_compte
+    lire_article = lire_article or (lambda i: ebay_compte.article(i, fond=False, frais=True))
+    maint = _maint()
+    out = []
+    for x in liste(api)["cartes"]:
+        if not x.get("encan") or x.get("etat") == "fini" or x.get("mise_max") is None:
+            continue
+        y = {"item_id": str(x["item_id"]), "titre": x.get("titre"), "url": x.get("url"), "photo": x.get("photo"),
+             "reste_min": x.get("reste_min"), "fin": x.get("fin"), "mise_max_cad": x["mise_max"], "total_cad": x.get("total"),
+             "etat": x.get("etat"), "devise": "CAD", "mise_max": x["mise_max"], "mise_actuelle": None, "taux": 1.0,
+             "mise_min": None, "mises": None, "valeur_cad": x.get("valeur"), "mise_perso": bool(x.get("mise_perso"))}
+        try:
+            a = lire_article(y["item_id"])
+            dev = a.get("devise") or "CAD"
+            t = ebay_compte._taux_vers_cad(dev) or 0
+            if t:
+                y["devise"] = dev
+                # arrondi vers le bas, au dollar (une mise de 39,73 $ US -> 39 $ US) : jamais au-dessus de la mise max
+                y["mise_max"] = float(int(x["mise_max"] / t)) if dev != "CAD" else float(int(x["mise_max"]))
+                y["mise_actuelle"] = a.get("prix_devise") or (a.get("prix_cad") / t if a.get("prix_cad") else None)
+                y["taux"], y["mises"] = t, a.get("mises")
+                y["mise_min"] = mise_minimum(y["mise_actuelle"], a.get("mises"))
+            if a.get("fin"):
+                y["fin"] = a["fin"]
+                f = _dt(a["fin"])
+                y["reste_min"] = int((f - maint).total_seconds() // 60) if f else y["reste_min"]
+        except Exception as e:
+            y["erreur"] = str(e)[:120]
+        y["trop_bas"] = (y["mise_actuelle"] is not None and y["mise_actuelle"] >= y["mise_max"]) or \
+            (y["mise_min"] is not None and y["mise_min"] > y["mise_max"])
+        out.append(y)
+    out.sort(key=lambda z: z["reste_min"] if z["reste_min"] is not None else 10 ** 7)
+    return {"ok": True, "cartes": out, "texte": "\n".join(f"{z['item_id']} {z['mise_max']:.2f}" for z in out if not z["trop_bas"])}

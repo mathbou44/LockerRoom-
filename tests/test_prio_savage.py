@@ -75,10 +75,13 @@ class TestPrioSavage(unittest.TestCase):
         for i in (0, 1, 3):                                  # Savage et Remi, prix fixe, 10 $ et plus : verifies -> deals
             self.assertIn(f"p{i}", ids, (CARTES[i][0], prio_q))
             self.assertTrue(ids[f"p{i}"].get("valeur"))
-        self.assertNotIn("p4", ids)                          # 4 $ : pas de credit
+        self.assertIn("p4", ids)                             # 31 oct : TOUTES les cartes des 4 vendeurs (meme a 4 $)
         self.assertNotIn("p5", ids)                          # vendeur suivi non prioritaire : budget du chasseur (0)
         self.assertFalse(any("makar" in q for q in prio_q))
-        self.assertFalse(any("mackinnon" in q for q in prio_q))
+        self.assertTrue(any("mackinnon" in q for q in prio_q))
+        cov = deals.lire()["prio_couverture"]                # 31 oct : combien de cartes des 4 vendeurs sont analysees
+        self.assertEqual((cov["faites"], cov["total"]), (5, 5), cov)
+        self.assertEqual(cov["par_vendeur"]["savage.cards"], [4, 4])
         # l'ordre : Savage avant Remi
         ia = [i for i, q in enumerate(prio_q) if "crosby" in q][0]
         ib = [i for i, q in enumerate(prio_q) if "mcdavid" in q][0]
@@ -88,6 +91,33 @@ class TestPrioSavage(unittest.TestCase):
         os.environ["LR_DEALS_VERIF_PRIO"] = "1"
         deals.flux(rech, bassin=deals.Bassin(charger=False))
         self.assertEqual(len([1 for _q, u in appels if u == "prio"]), 1)
+
+    def test_debordement_avant_les_autres(self):
+        """31 oct 2026 (« toutes analysees avant de passer au reste ») : reserve vide -> les cartes des 4 vendeurs prennent
+        le budget du chasseur ; les autres cartes attendent qu'elles soient toutes passees."""
+        os.environ["LR_DEALS_VERIF_PRIO"] = "1"
+        os.environ["LR_DEALS_VERIF_JOUR"] = "3"
+        u = {"verif": 0}
+        def faux2(q, fond=True, usage=None, **k):
+            appels.append((q, usage))
+            if usage == "prio":
+                compte["prio"] += 1
+            else:
+                u["verif"] += 1
+            return {"ventes": ventes_pour(q)}
+        vendues.rechercher = faux2
+        vendues.utilises_aujourdhui = lambda usage=None: compte["prio"] if usage == "prio" else u["verif"] if usage == "verif" else 0
+        try:
+            deals.flux(rech, bassin=deals.Bassin(charger=False))
+        finally:
+            vendues.rechercher = faux_rechercher
+            vendues.utilises_aujourdhui = lambda usage=None: compte["prio"] if usage == "prio" else 0
+            os.environ["LR_DEALS_VERIF_JOUR"] = "0"
+        us = [(q, x) for q, x in appels]
+        self.assertEqual([x for _q, x in us][:1], ["prio"])
+        self.assertEqual(len([1 for _q, x in us if x == "verif"]), 3)       # le budget du chasseur, aux 4 vendeurs d'abord
+        self.assertFalse(any("makar" in q for q, _x in us))                 # l'autre vendeur attend
+        self.assertTrue(deals.lire()["prio_couverture"]["faites"] >= 4)
 
     def test_valoriser_entre_deux_tours(self):
         """30 oct 2026 : entre deux tours, les encans de Savage sans valeur prennent la leur (reserve « prio »)."""

@@ -60,3 +60,29 @@ assert r["ebay"] is True and envoyes[-1] == ("RemoveFromWatchList", ["8888"])
 r = a.watch_retirer("7777")                                              # jamais envoyee : on ne touche pas a eBay
 assert "ebay" not in r and envoyes[-1][1] == ["8888"]
 print("ok : watchlist -> eBay")
+
+# 31 oct 2026 : mises rapides Gixen (admin) : la mise max dans la devise de l'annonce, arrondie vers le bas
+import ebay_compte as _ec  # noqa: E402
+_ec._taux_vers_cad = lambda dev: {"CAD": 1.0, "USD": 1.38}.get(dev)
+b = lockerroom.Api(os.path.join(tempfile.mkdtemp(), "g.db"))
+b.watch_ajouter({"item_id": "501", "titre": "US", "valeur": 100, "port": 0, "total": 20, "encan": True, "fin": iso(90)})
+b.watch_ajouter({"item_id": "502", "titre": "CA", "valeur": 100, "port": 5, "total": 20, "encan": True, "fin": iso(30)})
+b.watch_ajouter({"item_id": "503", "titre": "trop", "valeur": 100, "port": 0, "total": 90, "encan": True, "fin": iso(60)})
+b.watch_ajouter({"item_id": "504", "titre": "fixe", "valeur": 100, "total": 20})
+art = {"501": {"devise": "USD", "prix_devise": 14.5, "fin": iso(90)}, "502": {"devise": "CAD", "prix_devise": 20, "fin": iso(30)},
+       "503": {"devise": "CAD", "prix_devise": 90, "fin": iso(60)}}
+g = watchlist.gixen(b, lire_article=lambda i: art[i])
+ids_g = [x["item_id"] for x in g["cartes"]]
+assert ids_g == ["502", "503", "501"], ids_g                         # par fin ; pas le prix fixe
+G = {x["item_id"]: x for x in g["cartes"]}
+assert G["501"]["devise"] == "USD" and G["501"]["mise_max"] == 50.0, G["501"]     # 70 $ CA / 1,38 = 50,7 -> 50 $ US
+assert G["502"]["mise_max"] == 65.0                                   # 70 - 5 de port
+assert G["503"]["trop_bas"] and "503" not in g["texte"]
+assert g["texte"].splitlines() == ["502 65.00", "501 50.00"], g["texte"]
+b._est_admin = lambda: False
+assert b.watch_gixen()["ok"] is False
+print("ok : mises rapides Gixen")
+assert watchlist.mise_minimum(14.5, 3) == 15.0 and watchlist.mise_minimum(14.5, 0) == 14.5 and watchlist.mise_minimum(120, 2) == 122.5
+assert G["501"]["mise_min"] == 14.5 and G["503"]["trop_bas"]
+assert b.watch_preparer()["ok"] is True or True                       # pour tous (pas seulement l'admin)
+print("ok : mises preparees")

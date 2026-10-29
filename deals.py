@@ -575,11 +575,7 @@ def _verificateur(d, st, bassin):
         # 29 oct 2026 (Mathieu : « il ne faut plus que cela arrive », SoldComps 706 credits en 3 h) : le budget se compte
         # sur le compteur PERSISTANT de SoldComps (credits reels, partage, survit aux redemarrages et aux mises a jour),
         # plus sur un compteur en memoire qu'un redemarrage effacait
-        if prio:                                   # 30 oct 2026 : la reserve des 4 vendeurs prioritaires, etalee sur la journee
-            n_p = vendues.utilises_aujourdhui("prio")
-            if n_p >= prio_max() or n_p >= prio_max() * min(1.0, (heure + 6) / 24):
-                st["prio_budget"] = st.get("prio_budget", 0) + 1
-                return None
+        if prio and prio_ok(heure):                # 30 oct 2026 : la reserve des 4 vendeurs prioritaires
             faites.add(q)
             r = vendues.rechercher(q, fond=True, usage="prio")
             if r.get("erreur"):
@@ -590,10 +586,27 @@ def _verificateur(d, st, bassin):
             st["_dern_verif"] = {"q": q, "n": len(r.get("ventes") or []), "cache": bool(r.get("cache"))}
             bassin.ajouter(r.get("ventes"))
             return r.get("ventes") or []
+        if prio:
+            # 31 oct 2026 (Mathieu : « que toutes les cartes des gros vendeurs soient TOUTES analysees avant de passer au
+            # reste ») : la reserve est vide -> la carte prend le budget du chasseur, AVANT les autres cartes
+            st["prio_budget"] = st.get("prio_budget", 0) + 1
         n_reel = vendues.utilises_aujourdhui("verif")
         if n_reel >= max_ or n_reel >= rythme:
             st["verif_budget"] = st.get("verif_budget", 0) + 1
             return None
+        if prio:
+            faites.add(q)
+            r = vendues.rechercher(q, fond=True, usage="verif")
+            if r.get("erreur"):
+                k = _cle_erreur(r["erreur"])
+                st[k] = st.get(k, 0) + 1
+                return None
+            if not r.get("cache"):
+                v["n"] += 1
+            st["prio_debord"] = st.get("prio_debord", 0) + 1
+            st["_dern_verif"] = {"q": q, "n": len(r.get("ventes") or []), "cache": bool(r.get("cache"))}
+            bassin.ajouter(r.get("ventes"))
+            return r.get("ventes") or []
         # 28 oct 2026 : 60 % du budget du jour est garde pour les hits (autos, patchs, /99) : les Young Guns ont deja
         # beaucoup de ventes connues, les hits de veterans et de legendes ont besoin de la verification
         hit = _precieuse(cib)               # 29 oct : une Gretzky OPC PSA 8 compte comme un hit (pas la part des cartes ordinaires)
@@ -635,7 +648,18 @@ PART_HITS_RECRUES = 0.35         # 29 oct 2026 : hits de recrues (auto Future Wa
 # 4 vendeurs prioritaires (Savage, Remi, CF31, Slab Sharks), cartes de 10 $ et plus, en plus des 40 du chasseur. Toujours
 # sous le plafond total (LR_SOLDCOMPS_JOUR) ; compteur persistant a part (usage « prio »). LR_DEALS_VERIF_PRIO pour changer.
 PRIO_VERIF_JOUR = 250
-PRIO_MIN = 10.0
+PRIO_MIN = 0.0                   # 31 oct 2026 : TOUTES les cartes des 4 vendeurs (les plus cheres d'abord) ; avant : 10 $ et plus
+PRIO_SOIR = 0.20                 # 31 oct 2026 : plus de rythme : 80 % de la reserve tout de suite, 20 % gardes pour apres 16 h
+PRIO_SOIR_H = 16
+
+
+def prio_ok(heure=None):
+    """La reserve des 4 vendeurs a encore de la place ? (sans rythme ; 20 % gardes pour le soir, quand les encans finissent)"""
+    import vendues
+    if heure is None:
+        heure = _jour_mtl()[1]
+    n_p, m = vendues.utilises_aujourdhui("prio"), prio_max()
+    return n_p < m and (heure >= PRIO_SOIR_H or n_p < m * (1 - PRIO_SOIR))
 
 
 def prio_max():
@@ -1005,20 +1029,26 @@ def _verifier_tard(st, deals, maint, bassin, verif, d=None):
     tard.sort(key=lambda x: (0 if x[1].get("suivi") else 1, 0, 1 if _recrue(x[2]) else 0, 0 if _precieuse(x[2]) else 1, str(x[0].get("fin")), 0)
               if x[0].get("encan") else (0 if x[1].get("suivi") else 1, 1, 1 if _recrue(x[2]) else 0, 0 if _precieuse(x[2]) else 1, "", -(_total(x[0]) or 0)))
     tard.sort(key=lambda x: 0 if x[1].get("prio") else 1)                    # 30 oct : la reserve d'abord (tri stable)
-    tard.sort(key=lambda x: (rang_vendeur(x[0].get("vendeur")), 0 if x[0].get("encan") else 1, str(x[0].get("fin") or "")) if x[1].get("prio") else (9,))
+    tard.sort(key=lambda x: (rang_vendeur(x[0].get("vendeur")), 0 if x[0].get("encan") else 1, str(x[0].get("fin") or ""), -(_total(x[0]) or 0))
+              if x[1].get("prio") else (9,))
     # 30 oct : dans la reserve, par vendeur (Savage d'abord), les encans qui finissent le plus tot d'abord
     fini = {"prio": False, "std": False}
     for a, r, cib in tard:
         k = "prio" if r.get("prio") else "std"
         if fini[k]:
             continue
-        cle_b = "prio_budget" if k == "prio" else "verif_budget"
-        avant = st.get(cle_b, 0)
+        avant = st.get("verif_budget", 0)
         st.pop("_dern_verif", None)
         nv = verif(cib, prio=True) if k == "prio" else verif(cib)
-        if st.get(cle_b, 0) > avant:
-            fini[k] = True                               # ce budget du jour est epuise (l'autre continue)
+        if st.get("verif_budget", 0) > avant:
+            # 31 oct : le budget du chasseur est epuise : les autres cartes s'arretent ; une carte des 4 vendeurs aussi
+            # (sa reserve est deja vide, sinon elle n'aurait pas touche au budget du chasseur)
+            fini["std"] = True
+            if k == "prio":
+                fini["prio"] = True
             continue
+        if k == "prio" and nv is not None:
+            st.setdefault("_prio_cov", {})[str(a.get("item_id"))] = True
         dv = st.pop("_dern_verif", None)
         st["_vus"].discard(a.get("item_id"))
         _juger(a, r, nv or [], [], maint, deals, st, bassin=bassin, verif=None)
@@ -1034,6 +1064,18 @@ def _verifier_tard(st, deals, maint, bassin, verif, d=None):
             _noter_journal(st, a, r, cib, dv)
 
 
+def _noter_couverture(st, maint):
+    """31 oct 2026 : combien de cartes des 4 vendeurs ont ete analysees ce tour (valeur trouvee ou ventes cherchees)."""
+    cov, vend = st.get("_prio_cov") or {}, st.get("_prio_v") or {}
+    par = {}
+    for k, ok in cov.items():
+        p = par.setdefault(vend.get(k) or "?", [0, 0])
+        p[1] += 1
+        p[0] += 1 if ok else 0
+    st["_couverture"] = {"le": maint.isoformat(timespec="seconds"), "total": len(cov), "faites": sum(1 for v in cov.values() if v),
+                         "par_vendeur": par}
+
+
 def _sauver(d, deals, maint, st, **champs):
     garde_ = _ranger(d, deals, maint)
     st.pop("_vus", None)
@@ -1044,8 +1086,13 @@ def _sauver(d, deals, maint, st, **champs):
     nouveaux_suivis = st.pop("_suivis", None)
     st.pop("_dern_verif", None)
     st.pop("_res", None)
+    couverture = st.pop("_couverture", None)
+    st.pop("_prio_cov", None)
+    st.pop("_prio_v", None)
     with _verrou:
         d2 = lire()
+        if couverture:
+            d2["prio_couverture"] = couverture
         retires = _noter_retires(d2, nouveaux_retires)
         garde_ = [x for x in garde_ if str(x["item_id"]) not in retires]
         ids = {x["item_id"] for x in garde_}
@@ -1442,7 +1489,12 @@ def flux(rechercher=None, bassin=None):
             st["vendeurs_annonces"] = st.get("vendeurs_annonces", 0) + len(l)
             l = [a for a in l if cartes_match.est_carte(a.get("titre") or "")]
             for a in l:
+                st.pop("_res", None)
                 _juger(a, rv, [], [] if ench else l, maint, deals, st, bassin=bassin, verif=verif)
+                if _prio(a) and st.get("_res"):
+                    cov = st.setdefault("_prio_cov", {})
+                    cov[str(a.get("item_id"))] = cov.get(str(a.get("item_id"))) or st["_res"][0] != "sans_ventes"
+                    st.setdefault("_prio_v", {})[str(a.get("item_id"))] = a.get("vendeur")
                 k_s = "suivi_" + (_noter_suivi(st, a, bassin, maint) or "ok")
                 st[k_s] = st.get(k_s, 0) + 1
             _publier(d, deals, maint, st)
@@ -1450,6 +1502,15 @@ def flux(rechercher=None, bassin=None):
                 fixe_fini = True                       # plus d'autres annonces a prix fixe : on passe aux encans
             if ench and (len(l) < 150 or not l or str(l[-1].get("fin") or "9") > limite_suivi):
                 break
+    # 31 oct 2026 (Mathieu : « toutes les cartes des gros vendeurs favoris TOUTES analysees avant de passer au reste ») :
+    # les cartes de Savage, Remi, CF31 et Slab Sharks sans valeur sont verifiees ICI, avant les flux de hits et de recrues
+    # (qui depensent le budget du chasseur) ; la reserve d'abord, puis le budget du chasseur
+    tard = st.pop("_tard", [])
+    st["_tard"] = [x for x in tard if x[1].get("prio")]
+    _progres(detail="gros vendeurs : analyse")
+    _verifier_tard(st, deals, maint, bassin, verif, d)
+    st["_tard"] = [x for x in tard if not x[1].get("prio")] + st.get("_tard", [])
+    _noter_couverture(st, maint)
     # 28 oct 2026 (Mathieu : « les maudits deals sont encore juste des Young Guns ») : les flux larges de recrues (Young
     # Guns, rookies) un tour sur deux seulement ; les appels eBay economises vont aux hits (2 fois plus de flux de hits)
     tour_n = int(d.get("tour_n") or 0)
@@ -1641,7 +1702,9 @@ def etat():
             "ebay": utilises_ebay(), "ebay_rythme": round(appels_ebay.rythme("browse")),
             "ebay_plafond": round(appels_ebay.limite("browse") * (1 - appels_ebay.RESERVE_GESTES)),
             "verif": vendues.utilises_aujourdhui("verif"), "verif_max": vmax,
-            "prio": vendues.utilises_aujourdhui("prio"), "prio_max": prio_max(), "prio_24h": {"verifs": g.get("prio_verifs", 0), "refus": g.get("prio_budget", 0)}}
+            "prio": vendues.utilises_aujourdhui("prio"), "prio_max": prio_max(), "prio_24h": {"verifs": g.get("prio_verifs", 0), "refus": g.get("prio_budget", 0),
+                                                                                         "debord": g.get("prio_debord", 0)},
+            "prio_couverture": d.get("prio_couverture")}
 
 
 _SORTES = {}
@@ -1769,9 +1832,8 @@ def valoriser_suivis(rechercher=None, n_max=VALO_PAR_PASSE):
         faites.add(q)
         v = vendues.en_cache(q)
         if v is None:
-            n_p = vendues.utilises_aujourdhui("prio")
-            if n_p >= prio_max() or n_p >= prio_max() * min(1.0, (heure + 6) / 24):
-                break                                        # la reserve du jour (ou son rythme) est atteinte
+            if not prio_ok(heure):
+                break                                        # la reserve du jour est atteinte (ou ses 20 % du soir)
             r = rechercher(q, fond=True, usage="prio")
             n += 1
             if r.get("erreur"):

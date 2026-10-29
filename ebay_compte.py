@@ -694,7 +694,10 @@ def article(item_id, fond=False, frais=False):
            "vendeur": vend.get("username") or "", "vendeur_pct": vend.get("feedbackPercentage"), "vendeur_score": vend.get("feedbackScore"),
            "fin": d.get("itemEndDate"), "mises": d.get("bidCount"), "encan": "AUCTION" in (d.get("buyingOptions") or []),
            "lieu": ((d.get("itemLocation") or {}).get("country") or ""), "service": opt.get("shippingServiceCode") or "",
-           "retours": bool((d.get("returnTerms") or {}).get("returnsAccepted"))}
+           "retours": bool((d.get("returnTerms") or {}).get("returnsAccepted")),
+           # 31 oct 2026 (mises rapides Gixen) : la devise de l'ANNONCE (une mise se fait dans cette devise, pas en CAD)
+           "devise": pr.get("convertedFromCurrency") or dev,
+           "prix_devise": float(pr.get("convertedFromValue") or pr.get("value") or 0)}
     appels_ebay.cache_ecrire(cle, res)
     return res
 

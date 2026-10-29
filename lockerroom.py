@@ -60,6 +60,7 @@ CATEGORIE_CARTES = "261328"   # eBay : Sports Trading Card Singles
 
 REGLAGES_DEFAUT = {
     "prix_auto": {},                                            # 27 oct 2026 : mode Auto des prix eBay (voir prix_auto_regler)
+    "tuto_vendeur": 0, "tuto_acheteur": 0,                      # 31 oct 2026 : le tour de l'app deja vu (par compte)
     "watch": {},                                                # 29 oct 2026 : alarmes de la watchlist (voir watchlist.regler)
     "photo_studio": True,
     "flou_niveau": 2,                                           # 30 oct 2026 : fond flou 1 leger, 2 moyen, 3 fort
@@ -2946,6 +2947,8 @@ class Api:
                 r["promotion"] = p.get("promotion") if p.get("ok") else None
                 if not p.get("ok"):
                     r.setdefault("avertissements", []).append(p.get("erreur"))
+                elif p.get("avertissement"):
+                    r.setdefault("avertissements", []).append(p["avertissement"])
             if d.get("memoriser", True):
                 self.reglages_sauver({"modele_annonce": {k: opts[k] for k in annonces.MODELE_DEFAUT}})
         return r
@@ -3109,6 +3112,52 @@ class Api:
         with open(p + ".tmp", "w", encoding="utf-8") as f:
             json.dump(e, f, ensure_ascii=False)
         os.replace(p + ".tmp", p)
+
+    # -- 31 oct 2026 (Mathieu : « la promotion de 2 % pour eBay n'a pas fonctionne pour Mercer ») --------------------
+    def annonce_promotion(self, cid, pct=None):
+        """La promotion eBay d'une carte en vente : son etat chez eBay (pct=None), ou la promouvoir au % choisi."""
+        import annonces
+        c = self._db()
+        try:
+            r = c.execute("SELECT item_number, debut FROM cartes WHERE id=?", (int(cid),)).fetchone()
+        finally:
+            c.close()
+        if not r or not r[0]:
+            return {"ok": False, "erreur": "Cette carte n'est pas en vente sur eBay"}
+        item_id = str(r[0])
+        if not ebay_compte.statut().get("connecte"):
+            return {"ok": False, "erreur": "Compte eBay non connecté"}
+        attente = None
+        c = self._db()
+        try:
+            c.execute(self._PROMOS)
+            a = c.execute("SELECT pct, debut, essais FROM promos_attente WHERE item_id=?", (item_id,)).fetchone()
+            attente = {"pct": a[0], "debut": a[1], "essais": a[2]} if a else None
+        finally:
+            c.close()
+        if pct is not None:
+            pct = _float(pct) or 0
+            if r[1] and str(r[1]) > datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S"):
+                self._promo_attente(item_id, pct, r[1])                   # pas encore en ligne : au moment de la mise en ligne
+                return {"ok": True, "item_id": item_id, "attente": {"pct": pct, "debut": r[1], "essais": 0}, "promue": False}
+            p = self._ecrire_ebay("annonces.promouvoir", item_id, pct)
+            if not p.get("ok"):
+                return {"ok": False, "erreur": p.get("erreur") or "Promotion refusée par eBay"}
+            c = self._db()
+            try:
+                c.execute(self._PROMOS)
+                c.execute("DELETE FROM promos_attente WHERE item_id=?", (item_id,))
+                c.commit()
+            finally:
+                c.close()
+            attente = None
+        s_ = self._ecrire_ebay("annonces.promo_statut", item_id)
+        if not s_.get("ok"):
+            return {"ok": False, "erreur": s_.get("erreur") or "eBay injoignable"}
+        s_["attente"] = attente
+        if pct is not None and p.get("avertissement"):
+            s_["avertissement"] = p["avertissement"]
+        return s_
 
     _PROMOS = "CREATE TABLE IF NOT EXISTS promos_attente (item_id TEXT PRIMARY KEY, pct REAL, debut TEXT, essais INTEGER DEFAULT 0)"
 
@@ -3399,6 +3448,19 @@ class Api:
         """31 oct 2026 : envoie la watchlist de l'app dans la watchlist eBay du compte connecte (un geste de l'utilisateur)."""
         import watchlist
         return watchlist.vers_ebay(self, ids)
+
+    def watch_gixen(self):
+        """31 oct 2026 : les mises rapides (Gixen), pour l'admin seulement."""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'admin"}
+        import watchlist
+        return watchlist.gixen(self)
+
+    def watch_preparer(self):
+        """31 oct 2026 (Mathieu : « SlabCoach prepare la mise ; l'utilisateur entre son montant, ca ouvre eBay ; il lui
+        reste juste a dire oui ») : les encans de la watchlist prets a miser (pour tous ; rien n'est mise par SlabCoach)."""
+        import watchlist
+        return watchlist.preparer(self)
 
     def watch_mise_max(self, item_id, valeur=None):
         import watchlist

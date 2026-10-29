@@ -475,44 +475,128 @@ def _base_marketing():
     return ebay_compte.url("recherche").split("/buy/")[0] + "/sell/marketing/v1"
 
 
-def promouvoir(item_id, pct):
-    """Ajoute l'annonce a la campagne « SlabCoach » (creee au besoin) au taux choisi."""
+class ErreurPromo(RuntimeError):
+    def __init__(self, code, message, ids=()):
+        super().__init__(message)
+        self.code, self.ids = code, tuple(ids)
+
+
+def _mkt(meth, chemin, corps=None):
+    """Appel de la Marketing API -> (json, en-tetes). Erreur eBay : ErreurPromo avec SON message (pas un code muet)."""
     import json
     import urllib.request
+    req = urllib.request.Request(_base_marketing() + chemin, data=json.dumps(corps).encode() if corps is not None else None, method=meth, headers={
+        "Authorization": "Bearer " + ebay_compte.jeton(), "Content-Type": "application/json", "Accept": "application/json",
+        "X-EBAY-C-MARKETPLACE-ID": "EBAY_CA"})
+    import appels_ebay
+    appels_ebay.compter("autre")
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            brut = r.read()
+            return (json.loads(brut) if brut else {}), r.headers
+    except urllib.error.HTTPError as e:
+        texte = e.read().decode("utf-8", "ignore")
+        if e.code in (401, 403):
+            raise ErreurPromo(e.code, "Promotion : reconnecte eBay (Réglages) pour autoriser la publicité")
+        try:
+            errs = json.loads(texte).get("errors") or []
+        except ValueError:
+            errs = []
+        msg = " · ".join(str(x.get("longMessage") or x.get("message") or "") for x in errs if x) or texte[:200]
+        raise ErreurPromo(e.code, f"eBay ({e.code}) : {msg[:240]}", [x.get("errorId") for x in errs if x])
+
+
+_STATUTS_VIVANTS = ("RUNNING", "SCHEDULED", "PAUSED", "SYSTEM_PAUSED")
+
+
+def _campagne(pct):
+    """31 oct 2026 (Mathieu : « la promotion de 2 % n'a pas fonctionne pour Mercer ») : la campagne « SlabCoach » est
+    cherchee dans TOUTES les campagnes vivantes (avant : seulement « RUNNING » ; une campagne qui commence ou en pause
+    etait ignoree et on en recreait une du meme nom, refusee par eBay). En pause : on la relance."""
+    from datetime import timedelta
+    camps, _h = _mkt("GET", "/ad_campaign?limit=500")
+    for x in camps.get("campaigns") or []:
+        if x.get("campaignName") in ("SlabCoach", "LockerRoom") and (x.get("fundingStrategy") or {}).get("fundingModel") == "COST_PER_SALE" \
+                and x.get("campaignStatus") in _STATUTS_VIVANTS:
+            if x.get("campaignStatus") == "PAUSED":
+                try:
+                    _mkt("POST", f"/ad_campaign/{x['campaignId']}/resume")
+                except ErreurPromo:
+                    pass
+            return x["campaignId"]
+    noms = {x.get("campaignName") for x in camps.get("campaigns") or []}
+    nom = "SlabCoach" if "SlabCoach" not in noms else "SlabCoach " + datetime.now().strftime("%Y-%m-%d")   # l'ancienne est terminee
+    for decal in (0, 5):                                   # une date de debut « dans le passe » refusee : 5 min plus tard
+        debut = (datetime.now(timezone.utc) + timedelta(minutes=decal)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        try:
+            _r, h = _mkt("POST", "/ad_campaign", {"campaignName": nom, "marketplaceId": "EBAY_CA", "startDate": debut,
+                                                  "fundingStrategy": {"fundingModel": "COST_PER_SALE", "bidPercentage": str(pct)}})
+        except ErreurPromo as e:
+            if decal == 0 and "date" in str(e).lower():
+                continue
+            raise
+        cid = str(h.get("Location") or "").rstrip("/").split("/")[-1]
+        if cid:
+            return cid
+    raise RuntimeError("Promotion : campagne non créée par eBay")
+
+
+def campagnes_de(item_id):
+    """Les campagnes ou l'annonce est deja : [{campagne, nom, statut, pct, ad_statut}]."""
+    try:
+        r, _h = _mkt("GET", f"/ad_campaign/find_campaign_by_ad_reference?listing_id={str(item_id)}")
+    except ErreurPromo as e:
+        if e.code == 404:
+            return []
+        raise
+    out = []
+    for c in r.get("campaigns") or []:
+        x = {"campagne": c.get("campaignId"), "nom": c.get("campaignName"), "statut": c.get("campaignStatus"), "pct": None, "ad_statut": None}
+        try:
+            a, _h = _mkt("GET", f"/ad_campaign/{c.get('campaignId')}/ad?listing_ids={str(item_id)}")
+            ad = (a.get("ads") or [{}])[0]
+            x["pct"] = float(ad["bidPercentage"]) if ad.get("bidPercentage") else None
+            x["ad_statut"] = ad.get("adStatus")
+            x["ad"] = ad.get("adId")
+        except (ErreurPromo, ValueError, KeyError):
+            pass
+        out.append(x)
+    return out
+
+
+def promo_statut(item_id):
+    item_id = str(item_id or "").strip()
+    if not re.fullmatch(r"\d{9,15}", item_id):
+        return {"ok": False, "erreur": "Annonce eBay inconnue"}
+    c = campagnes_de(item_id)
+    actives = [x for x in c if x.get("statut") in ("RUNNING", "SCHEDULED") and x.get("ad_statut") in (None, "ACTIVE")]
+    return {"ok": True, "item_id": item_id, "promue": bool(actives), "pct": (actives[0].get("pct") if actives else None), "campagnes": c}
+
+
+def promouvoir(item_id, pct):
+    """Ajoute l'annonce a la campagne « SlabCoach » (creee au besoin) au taux choisi. Deja dans une campagne : on le
+    dit (et, dans la notre, on ajuste le taux) au lieu d'echouer sans explication."""
     pct = round(float(pct), 1)
     if pct <= 0:
         return {"ok": True, "promotion": 0}
     if pct < 2 or pct > 100:
         raise ValueError("Promotion : entre 2 et 100 %")
-    base = _base_marketing()
-
-    def appel(meth, chemin, corps=None):
-        req = urllib.request.Request(base + chemin, data=json.dumps(corps).encode() if corps is not None else None, method=meth, headers={
-            "Authorization": "Bearer " + ebay_compte.jeton(), "Content-Type": "application/json", "Accept": "application/json",
-            "X-EBAY-C-MARKETPLACE-ID": "EBAY_CA"})
-        import appels_ebay
-        appels_ebay.compter("autre")
-        try:
-            with urllib.request.urlopen(req, timeout=30) as r:
-                brut = r.read()
-                return (json.loads(brut) if brut else {}), r.headers
-        except urllib.error.HTTPError as e:
-            texte = e.read().decode("utf-8", "ignore")
-            if e.code in (401, 403):
-                raise RuntimeError("Promotion : reconnecte eBay (Réglages) pour autoriser la publicité")
-            raise RuntimeError(f"Promotion refusée par eBay ({e.code}) : {texte[:160]}")
-
-    camps, _h = appel("GET", "/ad_campaign?campaign_status=RUNNING&limit=100")
-    camp = next((x for x in camps.get("campaigns") or [] if x.get("campaignName") in ("SlabCoach", "LockerRoom")
-                 and (x.get("fundingStrategy") or {}).get("fundingModel") == "COST_PER_SALE"), None)
-    if camp:
-        cid = camp["campaignId"]
-    else:
-        debut = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        _r, h = appel("POST", "/ad_campaign", {"campaignName": "SlabCoach", "marketplaceId": "EBAY_CA", "startDate": debut,
-                                                "fundingStrategy": {"fundingModel": "COST_PER_SALE", "bidPercentage": str(pct)}})
-        cid = str(h.get("Location") or "").rstrip("/").split("/")[-1]
-        if not cid:
-            raise RuntimeError("Promotion : campagne non créée")
-    appel("POST", f"/ad_campaign/{cid}/ad", {"listingId": str(item_id), "bidPercentage": str(pct)})
+    item_id = str(item_id or "").strip()
+    if not re.fullmatch(r"\d{9,15}", item_id):
+        raise ValueError("Promotion : numéro d'annonce eBay invalide")
+    cid = _campagne(pct)
+    try:
+        _mkt("POST", f"/ad_campaign/{cid}/ad", {"listingId": item_id, "bidPercentage": str(pct)})
+    except ErreurPromo as e:
+        deja = [x for x in campagnes_de(item_id) if x.get("statut") in _STATUTS_VIVANTS]
+        if not deja:
+            raise RuntimeError("Promotion refusée par " + str(e))
+        x = next((y for y in deja if str(y.get("campagne")) == str(cid)), deja[0])
+        if str(x.get("campagne")) == str(cid) and x.get("ad") and x.get("pct") != pct:
+            _mkt("POST", f"/ad_campaign/{cid}/ad/{x['ad']}/update_bid", {"bidPercentage": str(pct)})
+            return {"ok": True, "promotion": pct, "campagne": cid}
+        if str(x.get("campagne")) == str(cid):
+            return {"ok": True, "promotion": x.get("pct") or pct, "campagne": cid, "deja": True}
+        return {"ok": True, "promotion": x.get("pct"), "campagne": x.get("campagne"), "deja": True,
+                "avertissement": f"Déjà promue dans ta campagne eBay « {x.get('nom')} »" + (f" à {x['pct']:g} %" if x.get("pct") else "")}
     return {"ok": True, "promotion": pct, "campagne": cid}
