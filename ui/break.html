@@ -73,7 +73,7 @@ async function charger(){
   const parPlace = Object.fromEntries(d.places.map(p => [p.id, p]));
   const modes = {equipes:T('Équipes', 'Teams'), divisions:'Divisions', joueurs:T('Joueurs', 'Players'), aleatoire:T('Équipes aléatoires', 'Random teams')};
   document.getElementById('vue').innerHTML = `
-    <div class="marque"><img src="/logo_sc_prizm.svg" alt="">SlabCoach · ${T('page publique du break', 'public break page')}</div>
+    <div class="marque"><img src="/logo_sc_liquide.svg" alt="">SlabCoach · ${T('page publique du break', 'public break page')}</div>
     <h1>${esc(d.nom)}</h1>
     <div class="pastilles">${d.produit ? tag(d.produit.nom, 'acc') + tag(d.boites + ' × ' + d.produit.format) : ''}${tag(modes[d.mode] || d.mode)}${tag(vendues + '/' + d.places.length + ' ' + T('places vendues', 'spots sold'))}
       ${t.resultat ? tag(T('Tirage fait ', 'Draw done ') + heure(t.le), 'vert') : t.engage ? tag(T('Tirage engagé', 'Draw committed'), 'or') : ''}</div>

@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<!-- 30 oct 2026 (Mathieu : « animer le nouveau style de prism comme un liquide dans le C ») : le C est un film prism
+     ou les couleurs coulent comme un liquide (des gouttes floues qui se melangent), le S reste net. Anime dans le
+     fichier lui-meme : marche dans une balise img, sur le site, dans l'app et dans les courriels qui affichent le SVG. -->
+<defs>
+  <mask id="c" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="200">
+    <path d="M160.94 154.87 A82 82 0 1 1 160.94 45.13" fill="none" stroke="#fff" stroke-width="17" stroke-linecap="butt"/>
+  </mask>
+  <linearGradient id="base" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#E86BD0"/><stop offset=".33" stop-color="#7F8CFF"/><stop offset=".66" stop-color="#3FD0E6"/><stop offset="1" stop-color="#F6C85A"/>
+  </linearGradient>
+  <radialGradient id="g1"><stop offset="0" stop-color="#FF4FCF"/><stop offset=".6" stop-color="#FF4FCF" stop-opacity=".55"/><stop offset="1" stop-color="#FF4FCF" stop-opacity="0"/></radialGradient>
+  <radialGradient id="g2"><stop offset="0" stop-color="#55C8FF"/><stop offset=".6" stop-color="#55C8FF" stop-opacity=".55"/><stop offset="1" stop-color="#55C8FF" stop-opacity="0"/></radialGradient>
+  <radialGradient id="g3"><stop offset="0" stop-color="#FFD66B"/><stop offset=".6" stop-color="#FFD66B" stop-opacity=".55"/><stop offset="1" stop-color="#FFD66B" stop-opacity="0"/></radialGradient>
+  <radialGradient id="g4"><stop offset="0" stop-color="#8E7BFF"/><stop offset=".6" stop-color="#8E7BFF" stop-opacity=".55"/><stop offset="1" stop-color="#8E7BFF" stop-opacity="0"/></radialGradient>
+  <radialGradient id="g5"><stop offset="0" stop-color="#7DF2C8"/><stop offset=".6" stop-color="#7DF2C8" stop-opacity=".5"/><stop offset="1" stop-color="#7DF2C8" stop-opacity="0"/></radialGradient>
+  <radialGradient id="reflet" cx=".35" cy=".3" r=".7"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset=".35" stop-color="#fff" stop-opacity=".04"/><stop offset="1" stop-color="#000" stop-opacity=".12"/></radialGradient>
+  <filter id="fondu" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="5"/></filter>
+</defs>
+<g mask="url(#c)">
+  <rect width="200" height="200" fill="url(#base)">
+    <animate attributeName="opacity" values="1;.85;1" dur="9s" repeatCount="indefinite"/>
+  </rect>
+  <g filter="url(#fondu)">
+    <circle r="62" fill="url(#g1)"><animateMotion dur="7.5s" repeatCount="indefinite" path="M40 60 C 120 0, 200 80, 150 150 S 20 190, 40 60 Z"/></circle>
+    <circle r="58" fill="url(#g2)"><animateMotion dur="9.5s" repeatCount="indefinite" path="M170 50 C 90 20, 10 110, 60 170 S 200 150, 170 50 Z"/></circle>
+    <circle r="54" fill="url(#g3)"><animateMotion dur="11s" repeatCount="indefinite" path="M100 190 C 0 150, 30 20, 110 30 S 220 140, 100 190 Z"/></circle>
+    <circle r="56" fill="url(#g4)"><animateMotion dur="8.5s" repeatCount="indefinite" path="M20 120 C 60 200, 190 190, 180 100 S 60 0, 20 120 Z"/></circle>
+    <circle r="46" fill="url(#g5)"><animateMotion dur="13s" repeatCount="indefinite" path="M100 10 C 200 30, 190 170, 100 190 S 0 60, 100 10 Z"/></circle>
+  </g>
+  <rect width="200" height="200" fill="url(#reflet)"/>
+</g>
+<path d="M60.230452674897116 137.72839506172838Q60.230452674897116 130.35390946502056 62.337448559670776 122.38683127572016Q64.44444444444444 114.41975308641975 67.34156378600822 114.41975308641975Q67.86831275720164 114.41975308641975 78.2716049382716 117.9753086419753Q88.67489711934155 121.53086419753086 93.94238683127571 121.53086419753086Q99.20987654320987 121.53086419753086 100.79012345679013 120.41152263374485Q102.37037037037037 119.29218106995884 102.37037037037037 117.18518518518518Q102.37037037037037 115.07818930041151 99.47325102880657 113.43209876543209Q96.57613168724279 111.78600823045267 92.23045267489712 110.53497942386831Q87.88477366255144 109.28395061728395 82.81481481481481 106.91358024691357Q77.74485596707818 104.5432098765432 73.3991769547325 101.64609053497941Q69.05349794238683 98.74897119341563 66.15637860082305 93.4156378600823Q63.25925925925925 88.08230452674897 63.25925925925925 81.23456790123456Q63.25925925925925 51.999999999999986 98.15637860082305 51.999999999999986Q111.19341563786008 51.999999999999986 120.67489711934157 53.64609053497941Q130.15637860082305 55.29218106995883 134.0411522633745 57.333333333333314Q137.92592592592592 59.3744855967078 137.92592592592592 61.34979423868312Q137.92592592592592 68.19753086419752 134.69958847736626 76.09876543209876Q131.4732510288066 84.0 128.44444444444446 84.0Q127.91769547325103 84.0 125.02057613168724 82.81481481481481Q116.32921810699588 78.99588477366254 110.60082304526749 78.99588477366254Q104.8724279835391 78.99588477366254 102.83127572016461 80.04938271604937Q100.79012345679013 81.1028806584362 100.79012345679013 83.27572016460906Q100.79012345679013 85.44855967078189 103.6872427983539 86.8312757201646Q106.58436213991769 88.2139917695473 110.86419753086419 89.33333333333331Q115.14403292181069 90.45267489711932 120.21399176954732 92.75720164609052Q125.28395061728395 95.06172839506172 129.62962962962962 98.15637860082303Q133.9753086419753 101.25102880658434 136.87242798353907 106.91358024691357Q139.76954732510288 112.57613168724279 139.76954732510288 120.08230452674897Q139.76954732510288 127.9835390946502 135.6872427983539 134.43621399176953Q133.1851851851852 138.38683127572017 129.23456790123458 141.28395061728395Q125.28395061728395 144.18106995884773 118.23868312757202 146.09053497942386Q111.19341563786008 148.0 100.06584362139918 148.0Q88.93827160493827 148.0 78.93004115226337 146.15637860082305Q68.92181069958848 144.3127572016461 64.57613168724279 142.07407407407408Q60.230452674897116 139.83539094650206 60.230452674897116 137.72839506172838Z" fill="#F4F1EA"/>
+</svg>
