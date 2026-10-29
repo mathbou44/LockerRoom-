@@ -168,8 +168,16 @@ def description(c, titre, francophone=True, etat="nm", boutique=None, retours="n
 
 
 # -- l'annonce eBay -------------------------------------------------------------------------------
+LETTRE_MAX = 30.0               # 30 oct 2026 (Mathieu) : au-dessus de 30 $, jamais en lettre (pas de suivi ni de protection)
+
+
 def _xml_livraison(d):
     m = d.get("expedition") or "lettre"
+    try:
+        if m == "lettre" and float(d.get("prix") or 0) > LETTRE_MAX:
+            m = "suivi"
+    except (TypeError, ValueError):
+        pass
     gratuit = m == "gratuit"
     s_ca = service("suivi" if m == "gratuit" else m, "ca")
     cout = 0.0 if gratuit else float(d.get("cout_suivi" if m == "suivi" else "cout_lettre") or 0)
@@ -190,7 +198,11 @@ def _xml_livraison(d):
 
 def _xml_colis(d):
     g = max(10, int(float(d.get("poids_g") or 30)))
-    lettre = (d.get("expedition") or "lettre") == "lettre" and not d.get("politique_exp")
+    try:
+        cher = float(d.get("prix") or 0) > LETTRE_MAX
+    except (TypeError, ValueError):
+        cher = False
+    lettre = (d.get("expedition") or "lettre") == "lettre" and not d.get("politique_exp") and not cher
     dims = [int(round(float(d.get(k) or 0))) for k in ("longueur_cm", "largeur_cm", "hauteur_cm")]
     if not all(x > 0 for x in dims):
         dims = [16, 11, 1] if lettre else [20, 15, 2]
