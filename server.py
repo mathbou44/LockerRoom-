@@ -972,11 +972,24 @@ def demarrer_taches():
 
 
 def _revalider_deals():
-    """31 oct 2026 : une fois apres une mise a jour des regles de comparables (deals.revalider_produits)."""
-    time.sleep(30)
+    """31 oct 2026 : une fois apres une mise a jour des regles de comparables (deals.revalider_produits). Puis
+    rechauffe : au demarrage (chaque deploiement), les deals sont juges et les encans suivis valorises en arriere-plan,
+    pour que le premier ecran Deals de la journee s'ouvre aussi vite que les suivants (serveur Standard : on a la marge)."""
+    time.sleep(20)
     try:
         import deals
         deals.revalider_produits()
+        d = deals.lire_vite()
+        for i, g in enumerate(d.get("deals") or []):
+            deals.valide(g)
+            if i % 50 == 0:
+                time.sleep(0.01)
+        import lockerroom
+        for x in d.get("suivis") or []:
+            if not x.get("valeur") and deals.encore_ouvert(x):
+                lockerroom.Api._valeur_en_cache(x)
+                time.sleep(0.005)
+        print("Demarrage : deals et encans suivis prets", flush=True)
     except Exception as e:
         print("Revalidation des deals : " + repr(e), flush=True)
 

@@ -516,7 +516,7 @@ class Bassin:
     SoldComps des 3 derniers jours), indexees par mot. La valeur d'une annonce se cherche dans toutes ces ventes, pas
     seulement dans celles de sa recherche : beaucoup plus d'annonces ont leurs 2 ventes de la meme carte, sans appel de plus.
     Memoire bornee : les MAX ventes les plus recentes des `jours` derniers jours, en tuples compacts."""
-    MAX = 150000
+    MAX = 250000                     # 31 oct 2026 : serveur Standard (2 Go) : 250 000 ventes connues (~70 Mo)
 
     def __init__(self, jours=90, charger=True):
         self.par_mot, self.vus, self.n = {}, set(), 0
@@ -969,7 +969,7 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
                            "vendeur": a.get("vendeur")}
 
 
-SUIVIS_MAX = 400                 # 29 oct 2026 : encans de veterans / legendes des vendeurs suivis gardes pour l'ecran
+SUIVIS_MAX = 1000                # 29 oct 2026 : encans de veterans / legendes des vendeurs suivis gardes pour l'ecran
 
 
 _HORS_SPORTS = re.compile(r"\b(world cup|fifa|uefa|premier league|serie a|la liga|bundesliga|ligue 1|mls|soccer|futbol|tennis|atp|wta|golf|pga|"

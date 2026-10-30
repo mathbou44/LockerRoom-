@@ -3973,7 +3973,7 @@ class Api:
                     r = (va[0], va[2])
         except Exception:
             r = None
-        if len(cls._VAL_CACHE) > 8000:
+        if len(cls._VAL_CACHE) > 20000:
             cls._VAL_CACHE.clear()
         cls._VAL_CACHE[k] = (time.time(), r)
         return r
@@ -3983,7 +3983,7 @@ class Api:
     # et la requete tombait. Maintenant : au plus VAL_BUDGET_S de calcul par requete ; le reste se calcule en arriere-plan
     # (un seul fil, doucement) et apparait a la prochaine ouverture. Les valeurs sont gardees 1 h (ventes en cache : 3 jours).
     VAL_CACHE_S = 3600
-    VAL_BUDGET_S = 0.35
+    VAL_BUDGET_S = 0.6
     _VAL_FIL = {"en_cours": False}
 
     @classmethod
