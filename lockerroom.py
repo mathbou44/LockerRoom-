@@ -3950,7 +3950,7 @@ class Api:
     _VAL_CACHE = {}
 
     @classmethod
-    def _valeur_en_cache(cls, x):
+    def _valeur_en_cache(cls, x, calculer=True):
         """30 oct 2026 (Mathieu : « les cartes de Savage n'ont pas de % ni de comps ») : un encan garde sans valeur prend
         celle des ventes deja connues de LA MEME carte (le cache des ventes : 3 jours, aucun credit). -> (valeur, n) | None.
         Garde 15 min par annonce."""
@@ -3958,8 +3958,10 @@ class Api:
         import vendues
         k = str(x.get("item_id"))
         e = cls._VAL_CACHE.get(k)
-        if e and time.time() - e[0] < 900:
+        if e and time.time() - e[0] < cls.VAL_CACHE_S:
             return e[1]
+        if not calculer:
+            return None
         r = None
         try:
             cib = cartes_match.cible_titre(x.get("titre") or "")
@@ -3971,10 +3973,33 @@ class Api:
                     r = (va[0], va[2])
         except Exception:
             r = None
-        if len(cls._VAL_CACHE) > 5000:
+        if len(cls._VAL_CACHE) > 8000:
             cls._VAL_CACHE.clear()
         cls._VAL_CACHE[k] = (time.time(), r)
         return r
+
+    # 31 oct 2026 (Mathieu : « Server error » sur Deals, « tres tres lent ») : l'ecran Deals calculait la valeur de CHAQUE encan
+    # suivi sans valeur (jusqu'a 2 500) pendant la requete : 18 s sur un ordinateur rapide, plus d'une minute sur Render,
+    # et la requete tombait. Maintenant : au plus VAL_BUDGET_S de calcul par requete ; le reste se calcule en arriere-plan
+    # (un seul fil, doucement) et apparait a la prochaine ouverture. Les valeurs sont gardees 1 h (ventes en cache : 3 jours).
+    VAL_CACHE_S = 3600
+    VAL_BUDGET_S = 0.35
+    _VAL_FIL = {"en_cours": False}
+
+    @classmethod
+    def _valeurs_en_fond(cls, items):
+        if cls._VAL_FIL["en_cours"] or not items:
+            return
+        cls._VAL_FIL["en_cours"] = True
+
+        def tache():
+            try:
+                for x in items:
+                    cls._valeur_en_cache(x)
+                    time.sleep(0.01)                     # laisse passer les ecrans des utilisateurs
+            finally:
+                cls._VAL_FIL["en_cours"] = False
+        threading.Thread(target=tache, daemon=True, name="valeurs-suivis").start()
 
     @classmethod
     def _etiquette_deal(cls, titre):
@@ -4198,12 +4223,15 @@ class Api:
         ids_d = {str(x.get("item_id")) for x in lst}
         lim_s = (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat()
         suivis, chez_s = [], self._chez_ramassage()
+        fin_calcul, plus_tard = time.time() + self.VAL_BUDGET_S, []
         for x in dd.get("suivis") or []:
             if str(x.get("item_id")) in ids_d or str(x.get("item_id")) in ret_p or str(x.get("item_id")) in _d._bannis() \
                     or not _d.encore_ouvert(x) or str(x.get("vu_le") or "") < lim_s:
                 continue
             if not x.get("valeur"):
-                vc = self._valeur_en_cache(x)
+                vc = self._valeur_en_cache(x, calculer=time.time() < fin_calcul)
+                if vc is None and str(x.get("item_id")) not in self._VAL_CACHE:
+                    plus_tard.append(x)
                 if vc:
                     x = dict(x, valeur=vc[0], n=vc[1], mise_max=round(vc[0] * _dl.RATIO_DEAL - (x.get("port") or 0), 2))
             y = self._ramasser(dict(x, source="marche", recrue=bool(x.get("recrue"))), chez_s)
@@ -4215,6 +4243,7 @@ class Api:
                 if (y.get("total") or 0) > y["valeur"] * _dl.RATIO_DEAL:
                     continue
             suivis.append(y)
+        self._valeurs_en_fond(plus_tard)
         # 31 oct 2026 (Mathieu : « assure-toi que le filtre fonctionne lorsqu'applique ») : TOUS les filtres s'appliquent aussi
         # aux encans des gros vendeurs : rabais minimum (un encan sans valeur verifiee n'a pas de rabais -> cache), une mise
         # au moins, prix fixe seulement (-> aucun encan)

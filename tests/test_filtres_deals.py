@@ -25,7 +25,7 @@ d["suivis"] = [S("s1", "2020-21 Upper Deck Tim Hortons NHL Signatures Brady Tkac
                S("s4", "2025-26 Upper Deck Young Guns Ivan Demidov", 20, val=60, mises=0)]               # recrue, sans mise
 deals._ecrire(d)
 a = lockerroom.Api(os.path.join(tempfile.mkdtemp(), "a.db"))
-a._valeur_en_cache = lambda x: None
+a._valeur_en_cache = lambda x, calculer=True: None
 ids = lambda f: {x["item_id"] for x in a.deals_liste(f).get("suivis") or []}
 assert ids({}) == {"s1", "s2", "s4"}, ids({})          # 31 oct : s3 (75 % de sa valeur) n'est pas un deal : hors ecran
 assert ids({"rabais_min": 50}) == {"s2", "s4"}, ids({"rabais_min": 50})        # sans valeur ou -25 % : caches
