@@ -206,6 +206,60 @@ def bannir(item_id):
     return {"ok": True}
 
 
+REVALIDE_V = 1
+
+
+def _revalider_un(x):
+    """La valeur d'un deal / encan suivi, refaite avec ses ventes gardees de LA MEME carte seulement. -> x (mis a jour),
+    ou None si ce n'est plus un deal (deals) / x sans valeur (suivis)."""
+    import cartes_match
+    vs = [v for v in x.get("vendues") or [] if v.get("prix")]
+    if not vs:
+        return x
+    cib = cartes_match.cible_titre(x.get("titre") or "")
+    bons = [v for v in vs if not cartes_match.raisons_refus(cib, v.get("titre") or "")]
+    if len(bons) == len(vs):
+        return x
+    m, _pv = valeur_sure(bons, x.get("titre") or "")
+    if not m or not x.get("total") or x["total"] > m * RATIO_DEAL:
+        return None
+    x.update(valeur=m, vendues=bons, ratio=round(x["total"] / m, 3))
+    if x.get("encan"):
+        x["mise_max"] = round(m * RATIO_DEAL - (x.get("port") or 0), 2)
+    return x
+
+
+def revalider_produits():
+    """31 oct 2026 (une Bedard « 08-09 UD Retro » PSA 10 a -59 %, « vaut 908 $ » = les ventes de SA Young Guns de base ;
+    la fiche, elle, disait 282 $) : une seule fois apres la mise a jour, les deals et les encans suivis gardes sont rejuges
+    avec la regle « meme produit » (cartes_match.raisons_refus). Les faux deals disparaissent tout de suite."""
+    with _verrou:
+        d = lire()
+        if d.get("revalide_v") == REVALIDE_V:
+            return {"fait": False}
+        n_d, n_s = 0, 0
+        garde_ = []
+        for x in d.get("deals") or []:
+            y = _revalider_un(x)
+            if y is None:
+                n_d += 1
+            else:
+                garde_.append(y)
+        d["deals"] = garde_
+        if (d.get("secours") or {}).get("deals"):
+            d["secours"]["deals"] = [y for y in (_revalider_un(x) for x in d["secours"]["deals"]) if y is not None]
+        for x in d.get("suivis") or []:
+            if x.get("valeur") and _revalider_un(x) is None:
+                for k in ("valeur", "n", "vendues", "mise_max"):
+                    x.pop(k, None)
+                n_s += 1
+        d["revalide_v"] = REVALIDE_V
+        _ecrire(d)
+    _VALIDES.clear()
+    print(f"Deals : revalides (meme produit) : {n_d} deals retires, {n_s} encans suivis sans valeur", flush=True)
+    return {"fait": True, "deals_retires": n_d, "suivis": n_s}
+
+
 def _rejuger(x):
     """27 oct 2026 (Mathieu : « les users doivent TOUJOURS voir quelque chose ») : un deal d'une version d'avant n'est
     plus efface d'un coup ; il est rejuge avec les regles d'aujourd'hui sur ses ventes gardees. S'il passe, il reste."""

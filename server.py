@@ -968,6 +968,17 @@ def demarrer_taches():
     threading.Thread(target=_valeurs_auto, daemon=True).start()
     threading.Thread(target=_ebay_auto, daemon=True).start()
     threading.Thread(target=_watch_boucle, daemon=True, name="watchlist").start()
+    threading.Thread(target=_revalider_deals, daemon=True, name="revalider").start()
+
+
+def _revalider_deals():
+    """31 oct 2026 : une fois apres une mise a jour des regles de comparables (deals.revalider_produits)."""
+    time.sleep(30)
+    try:
+        import deals
+        deals.revalider_produits()
+    except Exception as e:
+        print("Revalidation des deals : " + repr(e), flush=True)
 
 
 if HEBERGE and os.environ.get("LOCKERROOM_TACHES", "1") == "1":

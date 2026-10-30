@@ -277,6 +277,12 @@ def raisons_refus(c, titre, appris=None):
     absents = {p for p in voulus if p not in a["paralleles"] and p not in c["produits"]}
     if absents:
         r.append("pas la variante " + ", ".join(sorted(absents)))
+    # 31 oct 2026 (Mathieu : une Bedard « 08-09 UD Retro » PSA 10 valait 908 $ = le prix de SA Young Guns de base) : le
+    # produit nomme par la carte (Retro, Chrome, Prizm, Ice...) doit aussi etre dans la vente. Avant, seule la recherche
+    # eBay l'exigeait ; le bassin de toutes les ventes connues, lui, donnait la Young Guns de base comme comparable
+    manque_p = sorted(p for p in c.get("produits") or () if not _a_mot(t, p))
+    if manque_p:
+        r.append("pas le produit " + ", ".join(manque_p[:2]))
     if en_trop:
         r.append("variante " + ", ".join(sorted(en_trop)[:2]))
     # 26 oct 2026 : le meme produit / insert (comparables d'une annonce seulement : cible_titre)

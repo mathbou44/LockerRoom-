@@ -5086,7 +5086,7 @@ document.addEventListener('click', async (e) => {
   poser(on); vibrer();
   if (on) { b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); }
   const ligne = !on && b.closest('.w-ligne');
-  if (ligne) { ligne.classList.add('part'); setTimeout(() => { ligne.remove(); if (!$('.w-ligne') && $('#d-res')) chargerWatch(); }, 260); }
+  if (ligne) { ligne.classList.add('part'); setTimeout(() => { ligne.remove(); if (!$('.w-ligne') && zoneDeals('watch')) chargerWatch(); }, 260); }
   try {
     let r;
     if (on) {
@@ -5102,10 +5102,14 @@ document.addEventListener('click', async (e) => {
   } catch (err) { poser(!on); toast(err.message); }
 }, true);
 function finCourt(m){ return m == null ? '' : m < 60 ? m + ' min' : m < 1440 ? Math.floor(m / 60) + ' h ' + String(m % 60).padStart(2, '0') : Math.floor(m / 1440) + tt(' j ', ' d ') + Math.floor(m % 1440 / 60) + ' h'; }
+// 31 oct 2026 (Mathieu : « la page Deals dans Watchlist et Watchlist dans Deals, selon comment je vais vite ») : chaque
+// chargement ecrit seulement dans SA zone (la meme qu'au depart, encore a l'ecran, du bon onglet) ; une reponse lente
+// d'un onglet quitte ne peut plus remplir l'autre
+const zoneDeals = (vue) => { const z = $('#d-res'); return z && z.dataset.vue === vue ? z : null; };
 async function chargerWatch(){
-  const z = $('#d-res'); if (!z) return;
+  const z = zoneDeals('watch'); if (!z) return;
   const r = await API.watch_liste().catch(e => ({ok:false, erreur:e.message}));
-  if (!$('#d-res')) return;
+  if (!z.isConnected) return;
   if (!r.ok) { z.innerHTML = `<div class="vide">${esc(r.erreur || 'Erreur')}</div>`; return; }
   const L = r.cartes || [], W = r.reglages || {fin_min: 15, ratio_pct: 70, alerte_fin: true, alerte_seuil: true};
   S.watch = new Set(L.map(x => String(x.item_id))); majNbWatch();
@@ -6156,12 +6160,12 @@ async function vueDeals(arg){
       <a role="tab" href="#deals/watch" aria-selected="${w}" class="${w ? 'on' : ''}">${ICO_ETOILE}${tt('Watchlist', 'Watchlist')}<span class="w-nb" hidden></span></a></div>
     <form class="recherche pas-tel" id="v-form" role="search">${ICONES.loupe}<input id="v-q" type="search" enterkeyhint="search" placeholder="${esc(tt('Combien vaut une carte ? (ex. Bedard Young Guns)', 'What is a card worth? (e.g. Bedard Young Guns)'))}"></form>
     ${!w && S.forfait && S.forfait.admin ? '<a class="d-tour" id="d-tour" href="#admin/serveur"></a>' : ''}
-    <div id="d-res">${roue}</div>
+    <div id="d-res" data-vue="${w ? 'watch' : 'deals'}">${roue}</div>
     <p class="mention-epn">${tt('Les liens vers eBay peuvent être des liens affiliés (eBay Partner Network) : SlabCoach peut toucher une commission, sans frais pour toi. SlabCoach n’est pas affilié à eBay. Les estimations sont celles de SlabCoach, pas d’eBay.', 'Links to eBay may be affiliate links (eBay Partner Network): SlabCoach may earn a commission at no cost to you. SlabCoach is not affiliated with eBay. Estimates are SlabCoach’s, not eBay’s.')}</p></section>`;
   brancherSwitchMode(V()); brancherQuota(V());
   $('#v-form').onsubmit = (e) => { e.preventDefault(); const q = $('#v-q').value.trim(); if (q) location.hash = '#valeur/' + encodeURIComponent(q); };
   majNbWatch();
-  if (w) { await chargerWatch(); return; }
+  if (w) { clearInterval(S.tDealsNv); clearInterval(S.tDeals); await chargerWatch(); return; }
   majTourDeals();
   await chargerDeals();
 }
@@ -6245,7 +6249,7 @@ function brancherRondsDeals(F, sp){
 
 }
 async function chargerDeals(frais){
-  const z = $('#d-res'); if (!z) return;
+  const z = zoneDeals('deals'); if (!z) return;
   const F = S.dealsF;
   if ((F.sortes || []).some(k => k === 'veteran' || k === 'hit')) { F.sortes = F.sortes.filter(k => k !== 'veteran' && k !== 'hit'); sauverDealsF(); }
   if (frais) for (const k of [...MEMO.keys()]) if (k.startsWith('deals_liste')) MEMO.delete(k);     // tirer pour actualiser : jamais la memoire
@@ -6253,7 +6257,7 @@ async function chargerDeals(frais){
   S.dealsProfil = pf || {};
   S.dealsMaj = d && d.maj;
   if (d && d.watch) { S.watch = new Set(d.watch.map(String)); majNbWatch(); }
-  if (!$('#d-res')) return;
+  if (!z.isConnected) return;
   if (!d.ok) { z.innerHTML = `<div class="vide">${esc(d.erreur || 'Erreur')}</div>`; return; }
   if (d.coupe) {                                  // 27 oct 2026 : interrupteur du serveur (fonctions de prix sur les annonces eBay)
     z.innerHTML = `<div class="vide">${tt('Les deals sont en pause pour le moment. La valeur des cartes, les tendances et les breaks restent là.', 'Deals are paused for now. Card values, trends and breaks are still here.')}<br><a class="btn petit" href="#valeur" style="margin-top:12px">${tt('Voir la valeur d’une carte', 'Check a card’s value')}</a></div>`;
@@ -6327,10 +6331,10 @@ async function chargerDeals(frais){
   // regarde aux 45 s ; les nouveaux deals (et les encans qui viennent de recevoir leur valeur) : une pastille, un tap
   clearInterval(S.tDealsNv);
   S.tDealsNv = setInterval(async () => {
-    if (!$('#d-res')) { clearInterval(S.tDealsNv); return; }
+    if (!z.isConnected) { clearInterval(S.tDealsNv); return; }
     if (document.hidden || !$('#fond-feuille').hidden) return;
     for (const k of [...MEMO.keys()]) if (k.startsWith('deals_liste')) MEMO.delete(k);
-    const n = await API.deals_liste(F).catch(() => null); if (!n || !n.ok || !$('#d-res')) return;
+    const n = await API.deals_liste(F).catch(() => null); if (!n || !n.ok || !z.isConnected) return;
     const avant = S.dealsParId || {};
     // 31 oct 2026 (Mathieu : « les 2 dernieres heures, le prix change et ca peut vite devenir un faux deal ; il doit se faire
     // retirer du dashboard ») : le prix du moment sur chaque tuile ; une annonce qui n'est plus un deal s'efface
@@ -6343,11 +6347,11 @@ async function chargerDeals(frais){
     const nv = [...(n.deals || []), ...(n.suivis || [])].filter(x => { const a = avant[String(x.item_id)]; return !a || (x.valeur && !a.valeur); }).length;
     let p = $('#d-nv');
     if (!nv) { if (p) p.remove(); return; }
-    if (!p) { p = document.createElement('button'); p.id = 'd-nv'; p.className = 'd-nv'; $('#d-res').prepend(p); }
+    if (!p) { p = document.createElement('button'); p.id = 'd-nv'; p.className = 'd-nv'; z.prepend(p); }
     p.textContent = '✦ ' + nv + ' ' + tt(nv > 1 ? 'nouveaux deals · voir' : 'nouveau deal · voir', nv > 1 ? 'new deals · show' : 'new deal · show');
-    p.onclick = () => { vibrer(); window.scrollTo({top: 0, behavior: 'smooth'}); chargerDeals(true); };
+    p.onclick = () => { vibrer(); if (!z.isConnected) return; window.scrollTo({top: 0, behavior: 'smooth'}); chargerDeals(true); };
   }, 45000);
-  S.tDeals = setInterval(() => { if (!$('#d-res')) { clearInterval(S.tDeals); return; } const par = S.dealsParId || {}; $$('.tuile-deal .sd-fin').forEach(c => { const t = c.closest('.tuile-deal'), x = par[String(t.dataset.id)]; if (x && x.encan && c) c.innerHTML = icH() + finDans(x.fin); }); }, 30000);
+  S.tDeals = setInterval(() => { if (!z.isConnected) { clearInterval(S.tDeals); return; } const par = S.dealsParId || {}; $$('.tuile-deal .sd-fin').forEach(c => { const t = c.closest('.tuile-deal'), x = par[String(t.dataset.id)]; if (x && x.encan && c) c.innerHTML = icH() + finDans(x.fin); }); }, 30000);
 }
 // 25 oct 2026 (Mathieu : « où sont tous les last sold comp ? ») : les vraies ventes de la communauté SlabCoach
 function blocVendues(v, titre){
@@ -8894,7 +8898,7 @@ const PTR_SEUIL = 72, PTR_MAX = 120;
     if (d < PTR_SEUIL) { placer(0, el); el.style.opacity = 0; return; }
     occupe = true; placer(60, el); el.classList.add('charge');
     const t0 = Date.now();
-    try { if ($('.w-liste, .w-vide')) await chargerWatch(); else await chargerDeals(true); } catch (e) {}
+    try { if (zoneDeals('watch')) await chargerWatch(); else await chargerDeals(true); } catch (e) {}
     await new Promise(r => setTimeout(r, Math.max(0, 650 - (Date.now() - t0))));    // le logo a le temps de tourner
     el.classList.remove('charge');
     el.querySelector('.ptr-ok').textContent = '✓ ' + tt('À jour', 'Up to date') + (S.dealsMaj && !$('.w-liste, .w-vide') ? ' · ' + tt('chasse ', 'hunt ') + ilYa(S.dealsMaj) : '');
