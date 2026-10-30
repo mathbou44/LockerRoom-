@@ -809,7 +809,12 @@ class Api:
         perso = ((_d.lire_vite().get("vendeurs_perso") or {}).get(str(comptes.courant() if comptes.MULTI else "local")) or [])
         return {"ok": True, "collectionne": [x for x in p.get("collectionne") or [] if x in self.PROFIL_COLL],
                 "favoris": p.get("favoris") or [], "prix_min": p.get("prix_min"), "prix_max": p.get("prix_max"),
-                "vendeurs": perso, "pro": forfaits.est_pro(), "vendeurs_max": _d.VENDEURS_PERSO_MAX}
+                "vendeurs": perso, "pro": forfaits.est_pro(), "vendeurs_max": _d.VENDEURS_PERSO_MAX,
+                "favoris_max": self.FAVORIS_MAX_PRO if forfaits.est_pro() else self.FAVORIS_MAX,
+                "favoris_max_pro": self.FAVORIS_MAX_PRO}
+
+    FAVORIS_MAX = 3
+    FAVORIS_MAX_PRO = 10
 
     def deals_profil_regler(self, d):
         import deals as _d
@@ -819,12 +824,20 @@ class Api:
         fav = d.get("favoris")
         if isinstance(fav, str):
             fav = re.split(r"[,;\n]+", fav)
-        fav = [re.sub(r"\s+", " ", str(x)).strip()[:40] for x in (fav or []) if str(x).strip()][:20]
+        fav = list(dict.fromkeys(re.sub(r"\s+", " ", str(x)).strip()[:40] for x in (fav or []) if str(x).strip()))
+        # 31 oct 2026 (Mathieu : « 3 pour le compte gratuit et au moins 10 pour les payants ») : mes joueurs suivis
+        fmax = self.FAVORIS_MAX_PRO if forfaits.est_pro() else self.FAVORIS_MAX
+        coupes = fav[fmax:]
+        fav = fav[:fmax]
         p = {"collectionne": [x for x in d.get("collectionne") or [] if x in self.PROFIL_COLL], "favoris": fav,
              "prix_min": _float(d.get("prix_min")) or None, "prix_max": _float(d.get("prix_max")) or None}
         if p["prix_min"] and p["prix_max"] and p["prix_min"] > p["prix_max"]:
             p["prix_min"], p["prix_max"] = p["prix_max"], p["prix_min"]
         self.reglages_sauver({"deals_profil": p})
+        if coupes:
+            return {**self.deals_profil_lire(), "ok": False, "pro_requis": not forfaits.est_pro(),
+                    "erreur": (f"{fmax} joueurs suivis au plus" + (" (10 avec Pro)" if not forfaits.est_pro() else "")
+                               + " : " + ", ".join(coupes) + " pas ajouté" + ("s" if len(coupes) > 1 else ""))}
         if "vendeurs" in d:
             v = d.get("vendeurs")
             if isinstance(v, str):
@@ -3381,6 +3394,10 @@ class Api:
         import alarmes
         return {"ok": True, "alarmes": alarmes.regler(self, d or {})}
 
+    def alarmes_mes_joueurs(self):
+        import alarmes
+        return {"ok": True, "envoyees": alarmes.mes_joueurs(self)}
+
     def alarmes_verifier(self):
         import alarmes
         r = {"ok": True, "envoyees": alarmes.verifier(self)}
@@ -4179,8 +4196,9 @@ class Api:
             lst = sorted(lst, key=lambda x: _dl.rang_vendeur(x.get("vendeur")) if x.get("flux") == "vendeurs" else 6)
         for x in lst:
             x["recrue"] = _dl.est_recrue(x.get("titre"))
-        if tri in ("rabais", "gain", "prix") and not f.get("sortes"):
-            # 31 oct 2026 (« encore juste des Young Guns et des Future Watch ») : aussi en « plus gros profit » et « prix »
+        if tri == "rabais" and not f.get("sortes"):
+            # 31 oct 2026 (Mathieu : « je mets plus gros profit et je me retrouve avec des gros profits dans le bas ») :
+            # en « profit » et en « prix », un seul classement, tout melange ; les veterans d'abord : le tri par defaut seulement
             # 29 oct 2026 (Mathieu : « encore que des caliss de rookies dans tes deals ») : veterans, legendes et jeunes de
             # 2e a 4e annee d'abord (hits compris) ; les recrues de l'annee ensuite (le chip « Recrues » les montre seules)
             lst = [x for x in lst if not x["recrue"]] + [x for x in lst if x["recrue"]]

@@ -122,6 +122,28 @@ SPORTS = {
                           1: ["topps", "topps chrome", "topps now"]},
                  "alias": {"oakland athletics": "ATH", "a's": "ATH", "sacramento athletics": "ATH", "yanks": "NYY",
                            "jays": "TOR", "dbacks": "ARI", "d-backs": "ARI", "sox": None}},
+    # 31 oct 2026 (Mathieu : « tu detectes aussi les cartes de F1 ? il y en a des fois chez Savage ») : Topps Chrome F1,
+    # Turbo Attax, Paddock Pass, Topps Now F1... Les ecuries ne servent qu'aux mots exacts (alias) : « Williams » ou
+    # « Martin » tout seuls sont aussi des noms de joueurs (Caleb Williams) et ne doivent pas faire un pilote de F1.
+    "f1": {"nom": "F1", "ligue": "Formula 1", "ebay_sport": "Auto Racing", "index_manuel": True,
+           "equipes": {"MCL": ("McLaren", "F1"), "FER": ("Ferrari", "F1"), "RBR": ("Red Bull Racing", "F1"),
+                       "MER": ("Mercedes", "F1"), "AST": ("Aston Martin", "F1"), "ALP": ("Alpine", "F1"),
+                       "WIL": ("Williams", "F1"), "RB": ("Racing Bulls", "F1"), "HAS": ("Haas", "F1"),
+                       "AUD": ("Audi", "F1"), "CAD": ("Cadillac", "F1")},
+           "mots": {6: ["formula 1", "formula one", "f1", "grand prix", "turbo attax", "paddock pass", "topps chrome f1",
+                        "topps f1", "formula 1 racing", "f1 racing", "dynasty f1", "eccellenza", "scuderia ferrari",
+                        "red bull racing", "mclaren f1", "mercedes amg", "aston martin aramco", "haas f1", "williams racing",
+                        "kick sauber", "racing bulls", "visa cash app",
+                        # les pilotes (nom complet quand le nom de famille existe ailleurs : Hamilton, Norris, Perez, Alonso)
+                        "verstappen", "leclerc", "piastri", "lando norris", "lewis hamilton", "george russell", "carlos sainz",
+                        "fernando alonso", "sergio perez", "checo perez", "gasly", "esteban ocon", "alex albon", "alexander albon",
+                        "lance stroll", "hulkenberg", "bottas", "tsunoda", "antonelli", "oliver bearman", "colapinto", "hadjar",
+                        "bortoleto", "liam lawson", "ricciardo", "vettel", "raikkonen", "ayrton senna", "michael schumacher",
+                        "mick schumacher", "niki lauda", "zhou guanyu", "guanyu zhou", "logan sargeant"]},
+           "alias": {"mclaren": "MCL", "scuderia ferrari": "FER", "ferrari": "FER", "red bull racing": "RBR", "oracle red bull": "RBR",
+                     "mercedes amg": "MER", "mercedes": "MER", "aston martin": "AST", "alpine f1": "ALP", "bwt alpine": "ALP",
+                     "williams racing": "WIL", "racing bulls": "RB", "visa cash app": "RB", "alphatauri": "RB", "haas f1": "HAS",
+                     "haas": "HAS", "kick sauber": "AUD", "sauber": "AUD", "audi f1": "AUD", "cadillac f1": "CAD"}},
 }
 DEFAUT = "hockey"
 
@@ -141,6 +163,13 @@ _UNIQUES = {}     # texte normalise -> sport, pour les noms qui n'existent que d
 for _s, _d in SPORTS.items():
     idx = {}
     villes = {}
+    if _d.get("index_manuel"):                  # F1 : seulement les codes et les alias exacts
+        for code in _d["equipes"]:
+            idx[_n(code)] = code
+        for a, code in _d.get("alias", {}).items():
+            idx[_n(a)] = code
+        _INDEX[_s] = idx
+        continue
     for code, (nom, _div) in _d["equipes"].items():
         mots = nom.split()
         idx[_n(code)] = code
@@ -221,9 +250,19 @@ def scores(*textes):
     return out
 
 
+# 31 oct 2026 (Mathieu : une « 2026 Bowman Chrome U Auto 1st Cam Cook » classee baseball : « c'est du foot ») : Bowman U /
+# Bowman University = les universites americaines (football, et basketball quand le titre le dit) ; jamais le baseball
+_RE_UNIV = re.compile(r"\bbowman (chrome |best |sterling )?(u|university)\b|\bbowman u (chrome|best)\b|\bncaa\b|\bcollege (football|basketball)\b"
+                      r"|\b(running back|quarterback|wide receiver|tight end|linebacker|heisman)\b")
+_RE_UNIV_BASKET = re.compile(r"\b(basketball|hoops|ncaab|march madness|college basketball)\b")
+
+
 def detecter(*textes, defaut=None, bonus=None):
     """Sport le plus probable ; `defaut` (sport principal) quand rien ne tranche.
     `bonus` = {sport: points} (ex. joueur connu de la base de valeurs hockey)."""
+    t = " ".join(_n(x) for x in textes if x)
+    if _RE_UNIV.search(t):
+        return "basketball" if _RE_UNIV_BASKET.search(t) else "football"
     sc = scores(*textes)
     for k, v in (bonus or {}).items():
         if k in sc:

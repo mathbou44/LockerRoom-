@@ -18,9 +18,10 @@ import os
 import time
 from datetime import datetime, timedelta
 
-TYPES = ["prix_cible", "gros_deal", "encan_fin", "en_feu", "acheteurs", "vendu"]
+TYPES = ["prix_cible", "gros_deal", "encan_fin", "en_feu", "acheteurs", "vendu", "mes_joueurs"]
 # 28 oct 2026 (audit Apple 4.5.4) : les alertes « promotionnelles » (deals, joueur en feu) seulement si l'utilisateur les coche
-DEFAUT = {"prix_cible": True, "gros_deal": False, "encan_fin": True, "en_feu": False, "acheteurs": True, "vendu": True, "seuil_deal": 40}
+DEFAUT = {"prix_cible": True, "gros_deal": False, "encan_fin": True, "en_feu": False, "acheteurs": True, "vendu": True,
+          "mes_joueurs": False, "seuil_deal": 40}
 MAX_JOUR = 3
 NUIT = (22, 8)
 
@@ -229,6 +230,52 @@ def verifier(api, maint=None):
                 faits["vendu"] = faits.get("vendu", 0) + 1
     _ecrire(etat)
     return faits
+
+
+def mes_joueurs(api, maint=None):
+    """31 oct 2026 (Mathieu : « avertir l'utilisateur que ses joueurs suivis ont pop dans les deals ») : aux 5 min, un deal
+    (ou un encan d'un gros vendeur a 70 % ou moins de sa valeur) sur un des joueurs / equipes suivis -> une alerte, une
+    seule fois par annonce. Au plus 3 par passage. -> nombre envoye."""
+    if not reglages(api).get("mes_joueurs"):
+        return 0
+    p = api.reglages_lire().get("deals_profil") or {}
+    favs = [(f, api._norm_fav(f)) for f in (p.get("favoris") or []) if len(str(f).strip()) >= 3]
+    if not favs:
+        return 0
+    import deals as _d
+    d = _d.lire_vite()
+    cands = [x for x in d.get("deals") or [] if _d.valide(x) and _d.encore_ouvert(x)]
+    cands += [x for x in d.get("suivis") or [] if x.get("valeur") and _d.encore_ouvert(x)
+              and (x.get("total") or 0) <= x["valeur"] * _d.RATIO_DEAL]
+    etat = _lire()
+    n = 0
+    for x in sorted(cands, key=lambda y: (y.get("total") or 0) / (y.get("valeur") or 1)):
+        t = api._norm_fav((x.get("titre") or "") + " " + str(x.get("joueur") or ""))
+        f = next((nom for nom, k in favs if k in t), None)
+        if not f or "fav:" + str(x.get("item_id")) in (etat.get("vus") or {}):
+            continue
+        rab = round(100 * (1 - (x.get("total") or 0) / x["valeur"])) if x.get("valeur") else None
+        quoi = tt_fin(x)
+        if _notifier(api, etat, "fav:" + str(x["item_id"]), f"{f} : deal{f' −{rab} %' if rab else ''}",
+                     f"{cartes_match_titre(x)} · {x.get('total', 0):.0f} $" + quoi, "#deals", x.get("total"), x.get("photo"), maint):
+            n += 1
+        if n >= 3:
+            break
+    _ecrire(etat)
+    return n
+
+
+def tt_fin(x):
+    if not x.get("encan") or not x.get("fin"):
+        return ""
+    try:
+        from datetime import timezone
+        m = int((datetime.fromisoformat(str(x["fin"]).replace("Z", "+00:00")) - datetime.now(timezone.utc)).total_seconds() // 60)
+    except ValueError:
+        return ""
+    if m <= 0:
+        return ""
+    return f" · finit dans {m // 60} h {m % 60:02d}" if m >= 60 else f" · finit dans {m} min"
 
 
 def cartes_match_titre(x):

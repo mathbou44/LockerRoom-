@@ -253,6 +253,11 @@ details.reglage summary::-webkit-details-marker{display:none}
 .fd-ram b{font-size:15px; font-weight:600} .fd-ram small{font-size:12.5px; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .sd-ram{color:var(--vert); font-weight:600}
 .md-l{display:flex; flex-direction:column; gap:6px; margin-top:12px; font-size:14px; color:var(--doux)}
+.fv-l{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:2px 0 10px}
+.fv-p{display:inline-flex; align-items:center; gap:2px; height:34px; padding:0 4px 0 14px; border-radius:17px; background:var(--carte2); border:1px solid var(--ligne); font-weight:600; font-size:14px}
+.fv-p button{width:28px; height:28px; border:0; background:none; color:var(--doux); font-size:18px; cursor:pointer}
+.fv-n{margin-left:auto; font:700 12px var(--f-cond); letter-spacing:.06em; color:var(--doux)}
+.fv-aj{display:grid; grid-template-columns:1fr auto; gap:8px} .fv-aj .btn{height:46px}
 .md-b{display:grid; grid-template-columns:1fr auto 1fr; gap:8px; align-items:center} .md-b span{color:var(--doux)}
 .sd-fav{color:var(--or)}
 .cf-ph{margin:12px 0; border-radius:16px; overflow:hidden; background:#111115; border:1px solid var(--ligne)} .cf-ph img{display:block; width:100%; max-height:40vh; object-fit:contain}
@@ -3045,10 +3050,10 @@ async function reduireLogo(fichier, cote = 256){
   } finally { URL.revokeObjectURL(url); }
 }
 // 23 oct 2026 - plusieurs sports : equipes de la ligue du contexte (break, carte) ; sans sport = le sport principal
-const SPORTS = {hockey:['Hockey', 'NHL', 32], football:['Football', 'NFL', 32], basketball:['Basket', 'NBA', 30], baseball:['Baseball', 'MLB', 30]};
+const SPORTS = {hockey:['Hockey', 'NHL', 32], football:['Football', 'NFL', 32], basketball:['Basket', 'NBA', 30], baseball:['Baseball', 'MLB', 30], f1:['F1', 'Formula 1', 11]};
 const sportPrincipal = () => (S.reglages && S.reglages.sport) || 'hockey';
 const nomSport = (s) => (SPORTS[s] || SPORTS.hockey)[0];
-const puceSports = (choisi, id) => `<div class="pastilles" id="${id}" style="margin:8px 0">${Object.entries(SPORTS).map(([k, [n, l]]) => `<button type="button" class="chip ${k === choisi ? 'on' : ''}" data-sport="${k}">${n} <span style="opacity:.6">${l}</span></button>`).join('')}</div>`;
+const puceSports = (choisi, id) => `<div class="pastilles" id="${id}" style="margin:8px 0">${Object.entries(SPORTS).filter(([k]) => k !== 'f1').map(([k, [n, l]]) => `<button type="button" class="chip ${k === choisi ? 'on' : ''}" data-sport="${k}">${n} <span style="opacity:.6">${l}</span></button>`).join('')}</div>`;
 S.equipesPar = {};
 async function equipes(sport){
   const s = SPORTS[sport] ? sport : sportPrincipal();
@@ -4961,7 +4966,11 @@ const nbFiltresDeals = (F) => ['prix_min', 'prix_max', 'rabais_min', 'gain_min']
 // collectionne, mon budget, mes joueurs, mes vendeurs) est garde sur le compte ; le reste sur le telephone.
 async function feuilleFiltresDeals(){
   const F = S.dealsF;
-  const p = (await API.deals_profil_lire().catch(() => null)) || {};
+  const [p0, al0] = await Promise.all([API.deals_profil_lire().catch(() => null), API.alarmes_lire().catch(() => null)]);
+  const p = p0 || {}, avert0 = !!(((al0 || {}).alarmes || {}).mes_joueurs);
+  // 31 oct 2026 (Mathieu : « revoir l'interface pour ajouter des joueurs suivis : 3 pour le compte gratuit, 10 pour les
+  // payants ; m'avertir quand ils pop dans les deals ») : des pastilles (× pour retirer), un champ + Ajouter, le compteur
+  const FAV = [...((p.favoris || []).length ? p.favoris : (F.joueurs || []))], FMAX = p.favoris_max || 3;
   const enDev = (v) => v == null || v === '' ? '' : Math.round(convertir(v));
   const ep = new Set((p.collectionne || []).filter(k => ['recrues', 'veterans', 'legendes'].includes(k)));
   const so = new Set((F.sortes || []).filter(k => ['auto', 'patch', 'numerotee', 'gradee', 'brute'].includes(k)));
@@ -4980,7 +4989,9 @@ async function feuilleFiltresDeals(){
     <div class="fd-s"><div class="r-titre"><b class="fd-n">3</b>${tt('Mon budget par carte', 'My budget per card')} (${symDevise()})</div>
       <div class="md-b"><input class="champ" id="fd-pmin" type="number" inputmode="decimal" value="${enDev(pmin0)}" placeholder="min"><span>–</span><input class="champ" id="fd-pmax" type="number" inputmode="decimal" value="${enDev(pmax0)}" placeholder="max"></div></div>
     <div class="fd-s"><div class="r-titre"><b class="fd-n">4</b>${tt('Mes joueurs et équipes', 'My players and teams')}</div>
-      <input class="champ" id="fd-j" value="${esc(((p.favoris || []).length ? p.favoris : (F.joueurs || [])).join(', '))}" placeholder="Bedard, Canadiens, Crosby">
+      <div class="fv-l" id="fv-l"></div>
+      <form class="fv-aj" id="fv-aj"><input class="champ" id="fv-in" enterkeyhint="done" autocomplete="off" placeholder="${esc(tt('Joueur ou équipe', 'Player or team'))}"><button class="btn petit" id="fv-ok">${tt('Ajouter', 'Add')}</button></form>
+      <label class="bascule fd-l"><span>${tt('M’avertir quand ils sont en deal', 'Alert me when they’re on deal')}</span><input type="checkbox" id="fd-avert" ${avert0 ? 'checked' : ''}></label>
       <label class="bascule fd-l"><span>${tt('Seulement eux', 'Only them')}<small>${tt('Sinon : ils passent en premier, avec une ★', 'Otherwise: they come first, with a ★')}</small></span><input type="checkbox" id="fd-seul" ${seul ? 'checked' : ''}></label></div>
     <details class="fd-plus"><summary>${tt('Vendeurs et encans', 'Sellers and auctions')}</summary>
       <label class="bascule fd-l"><span><b>${tt('Seulement les gros vendeurs', 'Top sellers only')}</b><small>Savage, Remi, CF31, Slab Sharks…</small></span><input type="checkbox" id="fd-vend" ${F.vendeurs ? 'checked' : ''}></label>
@@ -4988,6 +4999,20 @@ async function feuilleFiltresDeals(){
       <button class="acc-pil fd-ram" id="fd-ram"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.pin}</svg></span><span class="ap-t"><b>${tt('Je ramasse sur place', 'I pick up locally')}</b><small id="fd-ram-s">${tt('Le port ne compte pas chez ces vendeurs', 'Shipping doesn’t count with these sellers')}</small></span><i aria-hidden="true">›</i></button>
       ${p.vendeurs_max ? `<label class="md-l">${tt(`Mes vendeurs eBay (${p.vendeurs_max} max)`, `My eBay sellers (${p.vendeurs_max} max)`)}${p.pro ? '' : ' <span class="badge-f pro">✦ PRO</span>'}<input class="champ" id="fd-v" value="${esc((p.vendeurs || []).join(', '))}" placeholder="${esc(tt('pseudo eBay exact', 'exact eBay username'))}" ${p.pro ? '' : 'disabled'}></label>` : ''}</details>
     <div class="fen-btns"><button class="btn" id="fd-ok">${tt('Voir les deals', 'Show deals')}</button><button class="btn ghost" id="fd-raz">${tt('Tout effacer', 'Clear all')}</button></div>`);
+  const peindreFav = () => {
+    $('#fv-l').innerHTML = FAV.map((n, i) => `<span class="fv-p">${esc(n)}<button data-fvx="${i}" aria-label="${esc(tt('Retirer', 'Remove'))}">×</button></span>`).join('')
+      + `<span class="fv-n">${FAV.length} / ${FMAX}</span>`;
+    const plein = FAV.length >= FMAX;
+    $('#fv-in').disabled = plein; $('#fv-ok').disabled = plein;
+    $('#fv-in').placeholder = plein ? (p.pro ? tt('Liste pleine', 'List full') : tt('Liste pleine · 10 avec Pro', 'List full · 10 with Pro')) : tt('Joueur ou équipe', 'Player or team');
+    $$('[data-fvx]').forEach(b => b.onclick = () => { FAV.splice(+b.dataset.fvx, 1); vibrer(); peindreFav(); });
+  };
+  $('#fv-aj').onsubmit = (e) => { e.preventDefault(); const v = $('#fv-in').value.trim().replace(/\s+/g, ' ');
+    if (v.length < 3 || FAV.length >= FMAX) return;
+    if (!FAV.some(x => x.toLowerCase() === v.toLowerCase())) FAV.push(v.slice(0, 40));
+    $('#fv-in').value = ''; vibrer(); peindreFav(); };
+  peindreFav();
+  $('#fd-avert').onchange = (e) => { if (e.target.checked) demanderNotifications(); };
   $$('#fd-ep [data-ep]').forEach(b => b.onclick = () => { const k = b.dataset.ep; ep.has(k) ? ep.delete(k) : ep.add(k); b.classList.toggle('on', ep.has(k)); vibrer(); });
   $$('#fd-so [data-so]').forEach(b => b.onclick = () => { const k = b.dataset.so; vibrer();
     if (so.has(k)) so.delete(k); else { so.add(k); if (k === 'gradee') so.delete('brute'); if (k === 'brute') so.delete('gradee'); }
@@ -4995,12 +5020,15 @@ async function feuilleFiltresDeals(){
   $$('#fd-rb [data-rb]').forEach(b => b.onclick = () => { rb = b.dataset.rb; vibrer(); $$('#fd-rb [data-rb]').forEach(x => x.classList.toggle('on', x === b)); });
   const cad = (id) => { const v = nb(val(id)); return v ? Math.round(versCAD(v) * 100) / 100 : null; };
   const appliquer = async (raz) => {
-    const noms = raz ? [] : val('fd-j').split(',').map(x => x.trim()).filter(Boolean);
+    const enCours = $('#fv-in').value.trim();                          // un nom tape sans toucher « Ajouter » compte aussi
+    if (!raz && enCours.length >= 3 && FAV.length < FMAX && !FAV.some(x => x.toLowerCase() === enCours.toLowerCase())) FAV.push(enCours.slice(0, 40));
+    const noms = raz ? [] : [...FAV];
+    if (!raz && $('#fd-avert').checked !== avert0) API.alarmes_regler({mes_joueurs: $('#fd-avert').checked}).catch(() => {});
     Object.assign(F, raz ? {sortes:[], rabais_min:null, prix_min:null, prix_max:null, gain_min:null, joueurs:[], avec_mise:false, vendeurs:false}
       : {sortes:[...so], rabais_min: rb === '' ? null : +rb, prix_min:null, prix_max:null, gain_min:null,       // le budget : sur le compte
          joueurs: $('#fd-seul').checked ? noms : [], avec_mise: $('#fd-mise').checked, vendeurs: $('#fd-vend').checked});
     const d = raz ? {collectionne: [], favoris: [], prix_min: null, prix_max: null}
-      : {collectionne: [...ep], favoris: noms.join(', '), prix_min: cad('fd-pmin'), prix_max: cad('fd-pmax')};
+      : {collectionne: [...ep], favoris: noms, prix_min: cad('fd-pmin'), prix_max: cad('fd-pmax')};
     const v = $('#fd-v'); if (!raz && v && p.pro) d.vendeurs = v.value;
     const r = await API.deals_profil_regler(d).catch(e => ({ok:false, erreur:e.message}));
     if (r && r.ok === false) { toast(r.erreur || 'Erreur', 4000); return; }
@@ -6219,7 +6247,9 @@ const IC_SP = {
   hockey: '<path d="M15.5 3 8.4 17.6a2 2 0 0 1-1.8 1.1H3"/><ellipse cx="17.5" cy="17.6" rx="3.5" ry="1.5"/><path d="M14 17.6v1.3c0 .8 1.6 1.5 3.5 1.5s3.5-.7 3.5-1.5v-1.3"/>',
   baseball: '<circle cx="12" cy="12" r="9"/><path d="M7.2 4.4c1.7 2 2.5 4.7 2.5 7.6s-.8 5.6-2.5 7.6M16.8 4.4c-1.7 2-2.5 4.7-2.5 7.6s.8 5.6 2.5 7.6"/>',
   basketball: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18M5.8 5.5c1.8 1.7 2.8 4 2.8 6.5s-1 4.8-2.8 6.5M18.2 5.5c-1.8 1.7-2.8 4-2.8 6.5s1 4.8 2.8 6.5"/>',
-  football: '<ellipse cx="12" cy="12" rx="10" ry="5.6" transform="rotate(-45 12 12)"/><path d="M9.3 14.7l5.4-5.4M10.2 11.4l2.4 2.4M11.8 9.8l2.4 2.4"/>'
+  football: '<ellipse cx="12" cy="12" rx="10" ry="5.6" transform="rotate(-45 12 12)"/><path d="M9.3 14.7l5.4-5.4M10.2 11.4l2.4 2.4M11.8 9.8l2.4 2.4"/>',
+  // 31 oct 2026 : F1, un drapeau a damier au trait
+  f1: '<path d="M5 21V4"/><path d="M5 4h14v10H5"/><path d="M9.7 4v10M14.3 4v10M5 9h14"/>'
 };
 // « tous » : les 4 sports en petit, en carre (2 x 2)
 IC_SP.tous = [['hockey', 0, 0], ['baseball', 12.4, 0], ['basketball', 0, 12.4], ['football', 12.4, 12.4]]
@@ -6290,9 +6320,18 @@ async function chargerDeals(frais){
     ${L.length || SU.length ? `<div class="grille-c" id="d-grille">${(() => {
       // 31 oct 2026 (Mathieu : « quand je scroll mon feed de deals ca lag ») : 30 tuiles d'abord, les autres en arrivant
       // pres du bas (jusqu'a 400 tuiles avec photos, c'etait beaucoup pour le telephone)
-      const defaut = ['rabais', 'gain', 'prix'].includes(F.tri || 'rabais') && !(F.sortes || []).length;     // 31 oct : vétérans d'abord aussi en « profit »
+      // 31 oct 2026 (Mathieu : « en plus gros profit, des gros profits dans le bas ») : la section « Recrues de l'année »
+      // seulement pour le tri par defaut ; en profit, prix ou fin, un seul classement, tout melange
+      const defaut = (F.tri || 'rabais') === 'rabais' && !(F.sortes || []).length;
       let m;
-      if (!defaut) m = [...L, ...SU].map(tuileDeal);
+      if (!defaut) {
+        // les encans des gros vendeurs et les autres deals dans UN seul classement (avant : les encans a la fin)
+        const t = F.tri || 'rabais', T = [...L, ...SU];
+        const cle = t === 'gain' ? (x => x.gain != null ? -x.gain : 1e9) : t === 'prix' ? (x => x.total || 0)
+          : t === 'fin' ? (x => x.encan && x.fin ? Date.parse(x.fin) : 9e15) : null;
+        if (cle) T.sort((a, b) => cle(a) - cle(b));
+        m = T.map(tuileDeal);
+      }
       else {
         // 30 oct 2026 (« rookie pas rookie ») : les recrues des gros vendeurs aussi, sous les veterans
         const vet = L.filter(x => !x.recrue), rec = [...L.filter(x => x.recrue), ...SU.filter(x => x.recrue)];
@@ -9131,6 +9170,7 @@ function demanderNotifications(){
 // 29 oct 2026 (Mathieu : « regler ses alarmes de maniere simple et efficace » ; « il peut les cocher ») : les 6 alertes
 // cochables en haut de la cloche ; un seul reglage (le rabais d'un gros deal). 3 notifications par jour au plus, rien la nuit.
 const ALARMES = () => [
+  ['mes_joueurs', 'cible', tt('Mes joueurs suivis', 'My tracked players'), tt('Un de tes joueurs suivis est en deal', 'One of your tracked players is on deal')],
   ['gros_deal', 'feu', tt('Gros deal', 'Big deal'), tt('Un deal sur tes joueurs ou dans ton budget', 'A deal on your players or in your budget')],
   ['encan_fin', 'horloge', tt('Encan qui finit', 'Auction ending'), tt('Un deal sur tes joueurs finit dans l’heure', 'A deal on your players ends within the hour')],
   ['en_feu', 'graphe', tt('Joueur en feu', 'Player on fire'), tt('Un joueur de tes cartes enchaîne les points', 'A player from your cards is on a streak')],

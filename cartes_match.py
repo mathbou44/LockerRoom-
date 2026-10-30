@@ -46,6 +46,7 @@ PARALLELES = [
     "variation", "photo variation", "ssp", "short print", "die cut", "color", "dazzle", "glossy", "chrome",
     "french", "emerald", "ruby", "bronze", "copper", "mini", "acetate", "achievements", "rookie redemption",
     "artist proof", "premier", "jumbo", "fluorescent", "galactic", "nebula", "ice",
+    "checklist",                 # 31 oct 2026 : la « Young Guns Checklist » Schaefer / Misa (15 $) n'est pas sa Young Guns (222 $)
 ]
 # mots qui ressemblent a une variante mais sont le NOM d'un produit (le chercher les exige quand meme)
 PRODUITS = ["prizm", "optic", "mosaic", "select", "chrome", "ice", "platinum", "black diamond", "retro", "sapphire",

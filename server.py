@@ -898,6 +898,12 @@ def _watch_boucle():
                         print("Watchlist :", cid or "", r["envoyees"], flush=True)
                 except Exception as e:
                     print("Watchlist : " + str(e), flush=True)
+                try:                             # 31 oct 2026 : mes joueurs suivis dans les deals (si coche)
+                    rj = api.alarmes_mes_joueurs()
+                    if rj.get("envoyees"):
+                        print("Mes joueurs :", cid or "", rj["envoyees"], flush=True)
+                except Exception as e:
+                    print("Mes joueurs : " + str(e), flush=True)
         time.sleep(300)
 
 

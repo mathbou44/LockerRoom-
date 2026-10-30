@@ -206,7 +206,7 @@ def bannir(item_id):
     return {"ok": True}
 
 
-REVALIDE_V = 1
+REVALIDE_V = 4                   # 2 : « checklist » ; 3 : Bowman U = football ; 4 : la F1
 
 
 def _revalider_un(x):
@@ -253,6 +253,11 @@ def revalider_produits():
                 for k in ("valeur", "n", "vendues", "mise_max"):
                     x.pop(k, None)
                 n_s += 1
+        import sports
+        for l in (d.get("deals") or [], d.get("suivis") or [], d.get("pres") or []):
+            for x in l:
+                if sports._RE_UNIV.search(sports._n(x.get("titre") or "")) or sports.scores(x.get("titre") or "").get("f1"):
+                    x["sport"] = sports.detecter(x.get("titre") or "", defaut=x.get("sport"))
         d["revalide_v"] = REVALIDE_V
         _ecrire(d)
     _VALIDES.clear()

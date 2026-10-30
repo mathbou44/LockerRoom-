@@ -148,6 +148,8 @@ def detecter(rechercher=None, maint=None):
     vus = {}
     appels = 0
     for sport in sports.SPORTS:
+        if sport == "f1":                       # 31 oct 2026 : la F1 sert aux deals ; pas de produits F1 au catalogue
+            continue
         for s in saisons(sport, maint):
             q = f"{s} {sport} hobby box"
             try:
