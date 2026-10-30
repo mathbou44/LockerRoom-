@@ -80,17 +80,15 @@ def _specifiques(carte):
 
 
 def _etat(carte):
-    """ConditionID + descripteurs obligatoires des cartes (gradee : graduateur + note ; brute : etat)."""
-    g = str(carte.get("grade") or "").strip()
-    m = re.match(r"([A-Za-z]+)\s*([\d.]+)", g)
-    if m and m.group(1).upper() in ebay_csv.GRADEURS:
-        idg = re.search(r"ID: (\d+)", ebay_csv.GRADEURS[m.group(1).upper()] or "")
-        idn = re.search(r"ID: (\d+)", ebay_csv.NOTES.get(m.group(2), ""))
-        desc = ""
-        if idg:
-            desc += f"<ConditionDescriptor><Name>27501</Name><Value>{idg.group(1)}</Value></ConditionDescriptor>"
-        if idn:
-            desc += f"<ConditionDescriptor><Name>27502</Name><Value>{idn.group(1)}</Value></ConditionDescriptor>"
+    """ConditionID + descripteurs obligatoires des cartes (gradee : graduateur + note + no de certificat ; brute : etat).
+    30 oct 2026 : toutes les notes d'eBay (1 a 10, Authentic) ; avant, une PSA 6 partait sans note et eBay refusait."""
+    g = ebay_csv.lire_grade(carte.get("grade"))
+    if g:
+        desc = (f"<ConditionDescriptor><Name>27501</Name><Value>{ebay_csv.id_gradeur(g[0])}</Value></ConditionDescriptor>"
+                f"<ConditionDescriptor><Name>27502</Name><Value>{ebay_csv.id_note(g[1])}</Value></ConditionDescriptor>")
+        cert = re.sub(r"[^A-Za-z0-9-]", "", str(carte.get("cert") or ""))[:30]
+        if cert:
+            desc += f"<ConditionDescriptor><Name>27503</Name><AdditionalInfo>{cert}</AdditionalInfo></ConditionDescriptor>"
         return ebay_csv.CONDITION_GRADEE, desc
     return ebay_csv.CONDITION_NON_GRADEE, "<ConditionDescriptor><Name>40001</Name><Value>400010</Value></ConditionDescriptor>"
 

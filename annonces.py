@@ -116,7 +116,7 @@ def specifiques(c):
     """Caracteristiques eBay (Item Specifics) : plus il y en a, mieux l'annonce sort dans les filtres."""
     import sports
     asp = sports.aspects_ebay(c.get("sport") or sports.detecter(c.get("titre"), c.get("equipe"), defaut="hockey"))
-    g = re.match(r"([A-Za-z]+)\s*([\d.]+)", str(c.get("grade") or ""))
+    g = ebay_csv.lire_grade(c.get("grade"))
     traits = [x for x, ok in (("Rookie", c.get("recrue")), ("Serial Numbered", c.get("tirage")), ("Parallel/Variety", c.get("parallele")),
                               ("Short Print", re.search(r"\bssp?\b|short print", str(c.get("parallele") or ""), re.I)),
                               ("Autograph", c.get("auto")), ("Patch", c.get("relique"))) if ok]
@@ -128,8 +128,8 @@ def specifiques(c):
               ("Print Run", str(c["tirage"]) if c.get("tirage") else None),
               ("Autographed", "Yes" if c.get("auto") else "No"),
               ("Autograph Authentication", "Manufacturer" if c.get("auto") else None),
-              ("Graded", "Yes" if g else "No"), ("Professional Grader", _nom_grader(g.group(1)) if g else None),
-              ("Grade", g.group(2) if g else None), ("Certification Number", c.get("cert")),
+              ("Graded", "Yes" if g else "No"), ("Professional Grader", _nom_grader(g[0]) if g else None),
+              ("Grade", g[1] if g else None), ("Certification Number", c.get("cert")),
               ("Memorabilia", "Patch" if c.get("relique") else None),
               ("Type", "Sports Trading Card"), ("Original/Licensed Reprint", "Original"), ("Card Size", "Standard"),
               ("Language", "English"),
@@ -138,9 +138,8 @@ def specifiques(c):
 
 
 def _nom_grader(cie):
-    return {"PSA": "Professional Sports Authenticator (PSA)", "BGS": "Beckett Grading Services (BGS)",
-            "SGC": "Sportscard Guaranty Corporation (SGC)", "CGC": "Certified Guaranty Company (CGC)",
-            "TAG": "Technical Authentication & Grading (TAG)"}.get(str(cie).upper(), str(cie).upper())
+    v = ebay_csv.GRADEURS.get(str(cie).upper()) or ebay_csv.GRADEUR_AUTRE
+    return v.split(" - (ID")[0]
 
 
 def texte_html(t):
@@ -322,10 +321,12 @@ def _xml_retours(mode):
 
 
 def _xml_etat(c, etat):
+    if ebay_csv.lire_grade(c.get("grade")):
+        return ebay_ecriture._etat(c)
     g = str(c.get("grade") or "").strip()
-    if re.match(r"([A-Za-z]+)\s*([\d.]+)", g) and g.lower() != "raw":
-        cond, desc = ebay_ecriture._etat(c)
-        return cond, desc
+    if g and g.lower() not in ("raw", "brute", "non gradee", "ungraded") and re.search(r"\d", g):
+        # une gradation qu'on ne sait pas lire : on le dit ici plutot que de laisser eBay refuser (« Grade (27502) »)
+        raise ValueError(f"Gradation « {g} » pas reconnue : écris-la comme « PSA 6 » ou « BGS 9.5 ».")
     code = ETATS_BRUTS.get(etat, ETATS_BRUTS["nm"])[0]
     return ebay_csv.CONDITION_NON_GRADEE, f"<ConditionDescriptor><Name>40001</Name><Value>{code}</Value></ConditionDescriptor>"
 

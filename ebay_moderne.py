@@ -259,6 +259,7 @@ def etat_structure(c, etat):
     import ebay_csv
     cond_id, desc_xml = annonces._xml_etat(c, etat)
     descs = [{"name": n, "values": [v]} for n, v in re.findall(r"<Name>(\d+)</Name><Value>(\d+)</Value>", desc_xml)]
+    descs += [{"name": n, "additionalInfo": v} for n, v in re.findall(r"<Name>(\d+)</Name><AdditionalInfo>([^<]+)</AdditionalInfo>", desc_xml)]
     # Inventory API : etats en mots ; 2750 (gradee) = LIKE_NEW, 4000 (non gradee) = USED_VERY_GOOD (categorie cartes)
     cond = "LIKE_NEW" if str(cond_id) == str(ebay_csv.CONDITION_GRADEE) else "USED_VERY_GOOD"
     return cond, descs

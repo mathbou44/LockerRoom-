@@ -15,15 +15,67 @@ import re
 CATEGORY_ID = 261328
 CONDITION_GRADEE = 2750
 CONDITION_NON_GRADEE = 4000
+# 30 oct 2026 (« Grade (27502) is a required field » pour une PSA 6) : tables completes d'eBay, categorie 261328
+# (developer.ebay.com, « Condition Descriptor IDs for Trading Cards »). Avant, les notes s'arretaient a 7.
 GRADEURS = {
     "PSA": "Professional Sports Authenticator (PSA) - (ID: 275010)",
+    "BCCG": "Beckett Collectors Club Grading (BCCG) - (ID: 275011)",
+    "BVG": "Beckett Vintage Grading (BVG) - (ID: 275012)",
     "BGS": "Beckett Grading Services (BGS) - (ID: 275013)",
-    "SGC": "Sportscard Guaranty Corporation (SGC) - (ID: 275016)",
+    "CSG": "Certified Sports Guaranty (CSG) - (ID: 275014)",
     "CGC": "Certified Guaranty Company (CGC) - (ID: 275015)",
-    "TAG": "", "MNT": "",
+    "SGC": "Sportscard Guaranty Corporation (SGC) - (ID: 275016)",
+    "KSA": "K Sportscard Authentication (KSA) - (ID: 275017)",
+    "GMA": "Gem Mint Authentication (GMA) - (ID: 275018)",
+    "HGA": "Hybrid Grading Approach (HGA) - (ID: 275019)",
+    "ISA": "International Sports Authentication (ISA) - (ID: 2750110)",
+    "GSG": "Gold Standard Grading (GSG) - (ID: 2750112)",
+    "PGS": "Platin Grading Service (PGS) - (ID: 2750113)",
+    "MNT": "MNT Grading (MNT) - (ID: 2750114)",
+    "TAG": "Technical Authentication & Grading (TAG) - (ID: 2750115)",
+    "RARE": "Rare Edition (Rare) - (ID: 2750116)",
+    "RCG": "Revolution Card Grading (RCG) - (ID: 2750117)",
+    "CGA": "Card Grading Australia (CGA) - (ID: 2750120)",
 }
-NOTES = {"10": "10 - (ID: 275020)", "9.5": "9.5 - (ID: 275021)", "9": "9 - (ID: 275022)", "8.5": "8.5 - (ID: 275023)",
-         "8": "8 - (ID: 275024)", "7.5": "7.5 - (ID: 275025)", "7": "7 - (ID: 275026)"}
+GRADEUR_AUTRE = "Other - (ID: 2750123)"
+BECKETT = "BGS"                                            # « Beckett 9.5 » = BGS
+_NOTES_ID = {"10": 275020, "9.5": 275021, "9": 275022, "8.5": 275023, "8": 275024, "7.5": 275025, "7": 275026,
+             "6.5": 275027, "6": 275028, "5.5": 275029, "5": 2750210, "4.5": 2750211, "4": 2750212, "3.5": 2750213,
+             "3": 2750214, "2.5": 2750215, "2": 2750216, "1.5": 2750217, "1": 2750218, "Authentic": 2750219}
+NOTES = {k: f"{k} - (ID: {v})" for k, v in _NOTES_ID.items()}
+_RE_GRADE = re.compile(r"\b([A-Za-z]{2,7})(?![A-Za-z])\s*(?:GEM\s*(?:MINT|MT)\s*|MINT\s*|NM-?MT\s*\+?\s*)?"
+                       r"(10|[1-9](?:\.[05])?|AUTH(?:ENTIC)?)\b", re.I)
+
+
+def lire_grade(g):
+    """« PSA 6 », « psa6 », « BGS 9.5 », « Beckett 9.5 », « PSA 6.0 », « PSA Authentic » -> ("PSA", "6") ; sinon None.
+    Le graduateur inconnu -> « AUTRE » (eBay accepte « Other »)."""
+    m = _RE_GRADE.search(str(g or ""))
+    if not m:
+        return None
+    qui = m.group(1).upper()
+    if qui in ("RAW", "UNGRADED"):
+        return None
+    if qui == "BECKETT":
+        qui = BECKETT
+    n = m.group(2).upper()
+    if n.startswith("A"):
+        n = "Authentic"
+    else:
+        n = ("%g" % float(n))
+    if n not in _NOTES_ID:
+        return None
+    return (qui if qui in GRADEURS else "AUTRE"), n
+
+
+def id_gradeur(qui):
+    return re.search(r"ID: (\d+)", GRADEURS.get(qui) or GRADEUR_AUTRE).group(1)
+
+
+def id_note(n):
+    return str(_NOTES_ID[n]) if n in _NOTES_ID else None
+
+
 ETAT_NM = "Near Mint or Better - (ID: 400010)"
 COLONNES_DRAFT = [
     "Action(SiteID=Canada|Country=CA|Currency=CAD|Version=1193|CC=UTF-8)",
@@ -143,8 +195,7 @@ def fichier_brouillons(cartes, description=""):
     w.writerow(["#INFO"])
     w.writerow(COLONNES_DRAFT)
     for c in cartes:
-        g = str(c.get("grade") or "").strip()
-        m = re.match(r"([A-Za-z]+)\s*([\d.]+)", g)
+        m = lire_grade(c.get("grade"))
         ligne = {k: "" for k in COLONNES_DRAFT}
         ligne[COLONNES_DRAFT[0]] = "Draft"
         ligne["Custom label (SKU)"] = c.get("sku") or f"LR-{c.get('id')}"
@@ -156,8 +207,9 @@ def fichier_brouillons(cartes, description=""):
         ligne["Description"] = description
         ligne["Format"] = "FixedPrice"
         if m:
-            ligne["CD:Professional Grader - (ID: 27501)"] = GRADEURS.get(m.group(1).upper(), "")
-            ligne["CD:Grade - (ID: 27502)"] = NOTES.get(m.group(2), "")
+            ligne["CD:Professional Grader - (ID: 27501)"] = GRADEURS.get(m[0]) or GRADEUR_AUTRE
+            ligne["CD:Grade - (ID: 27502)"] = NOTES[m[1]]
+            ligne["CDA:Certification Number - (ID: 27503)"] = str(c.get("cert") or "").strip()[:30]
         else:
             ligne["CD:Card Condition - (ID: 40001)"] = ETAT_NM
         import sports                               # 23 oct 2026 - NHL, NFL, NBA, MLB

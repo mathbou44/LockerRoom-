@@ -435,6 +435,21 @@ html[lang=en] .w-ligne::after{content:'Remove'}
   background:conic-gradient(from 210deg, var(--h1,#9FE6D2), var(--h2,#B9BEFF), var(--h3,#F2B3D6), var(--h4,#F1D58E), var(--h1,#9FE6D2))}
 .retour-geste::before{content:''; position:absolute; inset:2px; border-radius:50%; background:var(--carte)} .retour-geste svg{position:relative; width:20px; height:20px; fill:none; stroke:var(--texte); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round}
 .w-pils{margin-top:14px}
+/* 31 oct 2026 : la page Tendances, legere */
+.tend .td-sous{margin:-4px 0 12px}
+.td-chauds{display:flex; gap:8px; overflow-x:auto; scrollbar-width:none; margin:0 -18px 12px; padding:0 18px}
+.td-chauds::-webkit-scrollbar{display:none}
+.td-chaud{flex:none; display:inline-flex; align-items:center; gap:8px; padding:5px 14px 5px 5px; border-radius:99px; background:var(--carte); color:var(--texte); text-decoration:none; font-size:14px; font-weight:600}
+.td-chaud .ap-ic{position:relative; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:conic-gradient(from 210deg, var(--h1,#9FE6D2), var(--h2,#B9BEFF), var(--h3,#F2B3D6), var(--h4,#F1D58E), var(--h1,#9FE6D2))}
+.td-chaud .ap-ic::before{content:''; position:absolute; inset:2px; border-radius:50%; background:var(--carte)}
+.td-chaud .ap-ic svg{position:relative; width:15px; height:15px; fill:none; stroke:var(--or); stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+.td-faits{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; margin-bottom:14px}
+.td-fait{display:flex; flex-direction:column; gap:3px; text-align:left; padding:10px 12px; border-radius:14px; border:1px solid var(--ligne); background:var(--carte); color:var(--texte); cursor:pointer; font:inherit; min-width:0}
+.td-fait b{font:700 26px/1 var(--f-cond); background:var(--holo); -webkit-background-clip:text; background-clip:text; color:transparent}
+.td-fait span{font-size:12.5px; line-height:1.3; color:var(--doux); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.td-ong{margin-bottom:8px}
+.td-liste .td-l .t-mini{width:56px; height:22px; flex:none}
+.td-pct{font:700 18px var(--f-cond)} .td-pct.vert{color:var(--vert)} .td-pct.rouge{color:var(--rouge)}
 /* 31 oct 2026 : la ligne lean */
 .w-liste .w-ligne{padding:8px 10px 8px 8px; gap:10px; align-items:stretch}
 .w-liste .w-ph{width:58px; height:auto; min-height:80px; align-self:stretch; border-radius:8px}
@@ -3021,7 +3036,7 @@ function route(){
   if (!$('#fond-feuille').hidden) fermerFeuille();
   navDebut(S.ecranCourant === ecran && !!arg);              // meme ecran, autre onglet (Admin, Breaks, Sante...) : navigation douce
   S.ecranCourant = ecran;
-  const vues = {analyse:vueAnalyse, vendre:vueVendre, deals:vueDeals, valeur:vueValeur, accueil:vueAccueil, sante:vueSante, breaks:vueBreaks, break:vueBreak, inventaire:vueInventaire, comptoir:vueComptoir, bilan:vueBilan, reglages:vueReglages, admin:vueAdmin, guide:vueGuide, joueur:vueJoueur, calendrier:vueCalendrier, idees:vueIdees, pouls:vuePouls, offres:vueOffres};
+  const vues = {analyse:vueAnalyse, vendre:vueVendre, deals:vueDeals, valeur:vueValeur, accueil:vueAccueil, sante:vueSante, breaks:vueBreaks, break:vueBreak, inventaire:vueInventaire, comptoir:vueComptoir, bilan:vueBilan, reglages:vueReglages, admin:vueAdmin, guide:vueGuide, joueur:vueJoueur, calendrier:vueCalendrier, idees:vueIdees, pouls:vuePouls, tendances:vueTendances, offres:vueOffres};
   (vues[ecran] || vueAccueil)(arg);
   if (ecran === 'alertes') setTimeout(() => { try { feuilleAlertes(); } catch (e) {} }, 300);
 }
@@ -7037,6 +7052,7 @@ function pastillesAccueil(d, a, gestes, admin){
   z.innerHTML = [
     pilAcc('pil-faire', 'faire', tt('À faire', 'To do'), rien ? '✓' : gestes.length, rien ? 'vert' : gestes.length > 2 ? 'or' : ''),
     pilAcc('pil-conseils', 'conseils', tt('Conseils pour toi', 'Tips for you'), ''),
+    pilAcc('pil-tend', 'graphe', tt('Tendances', 'Trending'), ''),
     brk ? pilAcc('pil-breaks', 'breaks', tt('Breaks en cours', 'Breaks in progress'), d.breaks_ouverts.length) : '',
     $('#acc-b-coups') ? pilAcc('pil-coups', 'coups', tt('Meilleurs coups · 30 j', 'Best flips · 30 d'), (d.coups || []).length) : '',
     admin ? pilAcc('pil-admin', 'admin', tt('À surveiller · admin', 'To monitor · admin'), '') : '',
@@ -7052,6 +7068,7 @@ function pastillesAccueil(d, a, gestes, admin){
   o('pil-coups', () => feuilleBloc($('#acc-b-coups')));
   o('pil-admin', () => feuilleBloc($('#acc-admin')));
   o('pil-pouls', () => feuilleBloc(blocParent('#acc-pouls')));
+  o('pil-tend', () => { location.hash = '#tendances'; });
   rendreTicker();
   const tp = $('#t-profit'); if (tp && $('#acc-b-profit')) tp.onclick = (e) => { e.preventDefault(); feuilleBloc($('#acc-b-profit'), `<a class="btn ghost petit" href="#bilan" style="align-self:flex-start">${tt('Bilan complet', 'Full report')} ›</a>`); };
 }
@@ -7399,6 +7416,46 @@ async function vueOffres(){
 // 27 oct 2026 (Mathieu : « ou est la grosse popularite du hobby en ce moment ? donner un indice, sans lui dire que c'est ca »)
 const NIV_POULS = (n) => n == null ? [tt('En mesure', 'Measuring'), 'm'] : n >= 3 ? [tt('Ça chauffe', 'Heating up'), 'c3'] : n === 2 ? [tt('Ça monte', 'Rising'), 'c2']
   : n === 1 ? [tt('Ça bouge', 'Moving'), 'c1'] : n < 0 ? [tt('Ça ralentit', 'Cooling'), 'f'] : [tt('Calme', 'Steady'), 'c0'];
+// 31 oct 2026 (Mathieu : « les belles statistiques des tips (joueurs populaires...) : une page Trending ? simple et
+// visuellement leger ») : ce qui chauffe (le pouls), les chiffres du moment (tips calcules sur les ventes reelles), puis
+// en hausse / en baisse / plus vendues, un a la fois
+async function vueTendances(){
+  V().innerHTML = `<section class="ecran tend"><div class="titre">${tt('Tendances', 'Trending')}</div><div id="td-z">${roue}</div></section>`;
+  const L = typeof LANGUE !== 'undefined' ? LANGUE : null;
+  const [t, p, a] = await Promise.all([API.tendances().catch(() => null), API.pouls(L).catch(() => null), API.astuces(false, L).catch(() => null)]);
+  const z = $('#td-z'); if (!z) return;
+  const chauds = ((p && p.segments) || []).filter(x => (x.chaleur || 0) >= 1);
+  const faits = ((a && a.astuces) || []).filter(x => x.calcule && x.chiffre && ['en_feu', 'marche_hausse', 'marche_baisse', 'marche_prime', 'psa10', 'pouls'].includes(x.id)).slice(0, 4);
+  S.newsSlides = faits;                                   // « Voir les ventes » d'une nouvelle du marche
+  const r = t || {hausses: [], baisses: [], plus_vendues: []};
+  const ONG = [['hausses', tt('En hausse', 'Rising')], ['baisses', tt('En baisse', 'Falling')], ['plus_vendues', tt('Plus vendues', 'Most sold')]];
+  let actif = S.tendOng || 'hausses';
+  const mini = (pts, cl) => { const v = (pts || []).map(q => +q[1]).filter(isFinite); if (v.length < 3) return '';
+    const mn = Math.min(...v), mx = Math.max(...v), e = (mx - mn) || 1;
+    return `<svg class="t-mini ${cl}" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><path d="${v.map((y, i) => `${i ? 'L' : 'M'}${(i / (v.length - 1) * 100).toFixed(1)},${(28 - (y - mn) / e * 24).toFixed(1)}`).join('')}"/></svg>`; };
+  const ligne = (x) => `<a class="rangee t-l td-l" href="#joueur/${encodeURIComponent(x.joueur)}">${vignetteJoueur(x.joueur)}
+    <span class="milieu"><span class="nom">${esc(x.joueur)}${x.recrue ? ' ' + tag('RC', 'acc') : ''}</span><span class="det">${esc(typeCourt(x))}</span></span>
+    ${mini(x.points, actif === 'baisses' ? 'rouge' : actif === 'hausses' ? 'vert' : '')}
+    <span class="droite">${actif === 'plus_vendues' ? `<b class="t-prix">${argentCourt(x.mediane)}</b><span class="sous">${x.n_7j || x.n} ${tt('ventes', 'sales')}</span>`
+      : `<b class="td-pct ${x.pct > 0 ? 'vert' : 'rouge'}">${x.pct > 0 ? '+' : ''}${x.pct} %</b><span class="sous">${argentCourt(x.recent)}</span>`}</span></a>`;
+  const peindre = () => {
+    const l = unParJoueur(r[actif] || []).slice(0, 12);
+    z.innerHTML = `<div class="sous td-sous">${tt('Mesuré sur les ventes eBay réelles. Un indice, pas une prédiction.', 'Measured on real eBay sales. A hint, not a prediction.')}</div>
+      ${chauds.length ? `<div class="td-chauds">${chauds.map(x => `<a class="td-chaud c${Math.max(1, Math.min(3, x.chaleur))}" href="#pouls/${encodeURIComponent(x.cle)}"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.feu}</svg></span>${esc(x.nom.charAt(0).toUpperCase() + x.nom.slice(1))}</a>`).join('')}</div>` : ''}
+      ${faits.length ? `<div class="td-faits">${faits.map((x, k) => `<button class="td-fait" data-fait="${k}"><b>${esc(x.chiffre)}</b><span>${esc(x.titre)}</span></button>`).join('')}</div>` : ''}
+      <div class="seg td-ong">${ONG.map(([k, lib]) => `<button data-to="${k}" class="${k === actif ? 'on' : ''}">${lib}</button>`).join('')}</div>
+      <div class="liste td-liste">${l.map(ligne).join('') || `<div class="vide t-vide">${tt('Rien à signaler cette semaine', 'Nothing to report this week')}</div>`}</div>
+      ${r.nb_ventes ? `<div class="t-legal">${(r.nb_ventes || 0).toLocaleString(LOC())} ${tt('ventes réelles analysées', 'real sales analyzed')}</div>` : ''}`;
+    remplirPortraits(z);
+    $$('[data-to]', z).forEach(b => b.onclick = () => { actif = S.tendOng = b.dataset.to; vibrer(); peindre(); });
+    $$('[data-fait]', z).forEach(b => b.onclick = () => { const x = faits[+b.dataset.fait]; if (!x) return; vibrer();
+      ouvrirFeuille(`<h3>${esc(x.titre)}</h3><div class="sous" style="margin-bottom:10px">${esc(x.texte || '')}</div>
+        ${x.truc ? `<div class="as-truc"><b>${x.marche ? tt('À savoir', 'Good to know') : tt('Le truc', 'The tip')}</b> ${esc(x.truc)}</div>` : ''}
+        ${x.marche && (x.preuve || []).length ? `<button class="btn" data-preuve="${+b.dataset.fait}" style="margin-top:12px">${tt('Voir les ventes', 'See the sales')}</button>` : ''}
+        <div class="sous" style="margin-top:10px">${esc(x.source || '')}</div>`); });
+  };
+  peindre();
+}
 async function vuePouls(arg){
   V().innerHTML = `<section class="ecran">${roue}</section>`;
   const r = await API.pouls(typeof LANGUE !== 'undefined' ? LANGUE : null).catch(() => null);
@@ -9174,7 +9231,7 @@ async function blocMarche(z){
       <button class="lien-doux mc-tout" id="mc-tout">${tt('Toutes les tendances', 'All trends')} ›</button></div>`;
     remplirPortraits(z);
     $$('[data-mc]', z).forEach(b => b.onclick = () => { actif = S.marcheOng = b.dataset.mc; rendre(); });
-    $('#mc-tout', z).onclick = () => { ouvrirFeuille(`<div id="mc-feuille"><div class="charge-logo"><span class="roue"></span></div></div>`); blocTendances($('#mc-feuille')); };
+    $('#mc-tout', z).onclick = () => { location.hash = '#tendances'; };
     $$('[data-ind-info]', z).forEach(b => b.onclick = (e) => { e.preventDefault(); feuilleIndice(); });
   };
   rendre();
