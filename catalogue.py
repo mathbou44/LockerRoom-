@@ -321,10 +321,17 @@ def poids_cartes(s, liste_c):
     Carte non numerotee dans un sous-ensemble ou d'autres le sont : au moins 100 et au moins le plus gros tirage connu."""
     tirs = [c.get("tirage") or s.get("tirage") for c in liste_c]
     connus = [float(x) for x in tirs if x]
+    # 31 oct 2026 (Stature 2025-26 : McDavid, Gretzky, Bedard... « SSP » dans les autos) : une carte marquee SP sort environ
+    # 2,5 fois moins que les autres du meme sous-ensemble, une SSP environ 7 fois moins (estimation : Upper Deck ne publie
+    # pas le ratio). Sans marque : 1.
+    rare = [SP_POIDS.get(str(c.get("sp") or "").upper(), 1.0) for c in liste_c]
     if not connus or len(set(connus)) == 1 and len(connus) == len(tirs):
-        return [1.0] * len(liste_c)
+        return rare
     defaut = max(100.0, max(connus))
-    return [float(x) if x else defaut for x in tirs]
+    return [(float(x) if x else defaut) * r for x, r in zip(tirs, rare)]
+
+
+SP_POIDS = {"SP": 0.4, "SSP": 0.15}
 
 
 def joueurs(prod):

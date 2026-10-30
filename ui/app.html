@@ -258,6 +258,13 @@ details.reglage summary::-webkit-details-marker{display:none}
 .fv-p button{width:28px; height:28px; border:0; background:none; color:var(--doux); font-size:18px; cursor:pointer}
 .fv-n{margin-left:auto; font:700 12px var(--f-cond); letter-spacing:.06em; color:var(--doux)}
 .fv-aj{display:grid; grid-template-columns:1fr auto; gap:8px} .fv-aj .btn{height:46px}
+.ck-rap{margin:10px 0 4px; padding:10px 12px; border-radius:12px; background:var(--carte2); font-size:13.5px; line-height:1.45}
+.ck-rap-t{font:700 12px var(--f-cond); letter-spacing:.08em; text-transform:uppercase; margin-bottom:4px} .ck-rap-t.vert{color:var(--vert)} .ck-rap-t.or{color:var(--or)}
+.i-tab{margin:2px 0 14px} .i-tab:empty{display:none} .i-tab .t-acc.on{box-shadow:inset 0 0 0 2px var(--or)}
+.ecran:has(.i-tab:not(:empty)) .inv-res{display:none} .i-tab .t-acc{font:inherit; text-align:left; border:0; cursor:pointer}
+.i-tab .t-acc .s{font-size:12.5px; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis} .i-tab .t-acc b small{font-size:16px; color:var(--doux)}
+.sd-des{font-weight:700; color:var(--acc)}
+.ckr-ok{color:var(--doux)} .ckr-al{display:flex; gap:6px; align-items:flex-start; color:var(--texte); margin-top:4px} .ckr-al svg{width:16px; height:16px; flex:none; color:var(--or); margin-top:2px}
 .md-b{display:grid; grid-template-columns:1fr auto 1fr; gap:8px; align-items:center} .md-b span{color:var(--doux)}
 .sd-fav{color:var(--or)}
 .cf-ph{margin:12px 0; border-radius:16px; overflow:hidden; background:#111115; border:1px solid var(--ligne)} .cf-ph img{display:block; width:100%; max-height:40vh; object-fit:contain}
@@ -4960,7 +4967,7 @@ S.dealsF = {sports:[], tri:'rabais', type:''};
 // 25 oct 2026 (Mathieu : « une option de tri/filtre pour que l'utilisateur puisse customizer ses deals ») : gardes sur cet appareil
 try { Object.assign(S.dealsF, JSON.parse(localStorage.getItem('lr_deals_f') || '{}')); } catch (e) {}
 const sauverDealsF = () => { try { localStorage.setItem('lr_deals_f', JSON.stringify(S.dealsF)); } catch (e) {} };
-const nbFiltresDeals = (F) => ['prix_min', 'prix_max', 'rabais_min', 'gain_min'].filter(k => F[k] != null && F[k] !== '').length + (F.sortes || []).length + ((F.joueurs || []).length ? 1 : 0) + (F.avec_mise ? 1 : 0);
+const nbFiltresDeals = (F) => ['prix_min', 'prix_max', 'rabais_min', 'gain_min'].filter(k => F[k] != null && F[k] !== '').length + (F.sortes || []).length + ((F.joueurs || []).length ? 1 : 0) + (F.avec_mise ? 1 : 0) + (F.objectif ? 1 : 0);
 // 31 oct 2026 (Mathieu : « la zone Mes deals et Filtres dans Deals, c'est la meme chose : moins complique ; et assure-toi
 // que le filtre fonctionne quand il est applique ») : UNE seule fenetre, 4 questions simples. Ce qui dure (ce que je
 // collectionne, mon budget, mes joueurs, mes vendeurs) est garde sur le compte ; le reste sur le telephone.
@@ -4980,6 +4987,9 @@ async function feuilleFiltresDeals(){
   const chips = (id, L, on, attr) => `<div class="chips fd-w" id="${id}">${L.map(([k, t]) => `<button class="chip ${on(k) ? 'on' : ''}" data-${attr}="${k}">${t}</button>`).join('')}</div>`;
   ouvrirFeuille(`<h3>${tt('Filtres', 'Filters')}</h3>
     <div class="sous" style="margin-bottom:4px">${tt('Rien de choisi = tout voir.', 'Nothing chosen = see everything.')}</div>
+    <div class="fd-s"><div class="r-titre">${tt('Mon objectif', 'My goal')}</div>
+      ${chips('fd-obj', [['', tt('Tout', 'All')], ['revente', tt('Revendre vite', 'Quick flip')], ['collection', tt('Collection', 'Collection')]], k => (F.objectif || '') === k, 'obj')}
+      <small class="fd-aide" id="fd-obj-aide"></small></div>
     <div class="fd-s"><div class="r-titre"><b class="fd-n">1</b>${tt('Quelles cartes ?', 'Which cards?')}</div>
       ${chips('fd-ep', [['recrues', tt('Recrues', 'Rookies')], ['veterans', tt('Vétérans', 'Veterans')], ['legendes', tt('Légendes', 'Legends')]], k => ep.has(k), 'ep')}
       ${chips('fd-so', [['auto', 'Auto'], ['patch', 'Patch'], ['numerotee', tt('Numérotée', 'Numbered')], ['gradee', tt('Gradée', 'Graded')], ['brute', tt('Non gradée', 'Raw')]], k => so.has(k), 'so')}</div>
@@ -5013,6 +5023,14 @@ async function feuilleFiltresDeals(){
     $('#fv-in').value = ''; vibrer(); peindreFav(); };
   peindreFav();
   $('#fd-avert').onchange = (e) => { if (e.target.checked) demanderNotifications(); };
+  // 31 oct 2026 (Mathieu : « un inventaire a vendre rapidement et un inventaire de collection : une autre mentalite ») :
+  // revente = ce qui se revend vite, le plus gros profit d'abord ; collection = ce qui est rare et recherche
+  let obj = F.objectif || '';
+  const aideObj = () => { $('#fd-obj-aide').textContent = obj === 'revente' ? tt('Les cartes qui se vendent souvent (4 ventes réelles et plus), le plus gros profit d’abord.', 'Cards that sell often (4+ real sales), biggest profit first.')
+    : obj === 'collection' ? tt('Les cartes rares et recherchées (rareté 45/100 et plus : numérotées basses, autos, SSP, rarement en vente, vedettes), les plus désirables d’abord.', 'Rare, sought-after cards (rarity 45/100+: low numbered, autos, SSP, rarely for sale, stars), most desirable first.')
+    : tt('Tous les deals.', 'All deals.'); };
+  aideObj();
+  $$('#fd-obj [data-obj]').forEach(b => b.onclick = () => { obj = b.dataset.obj; vibrer(); $$('#fd-obj [data-obj]').forEach(x => x.classList.toggle('on', x === b)); aideObj(); });
   $$('#fd-ep [data-ep]').forEach(b => b.onclick = () => { const k = b.dataset.ep; ep.has(k) ? ep.delete(k) : ep.add(k); b.classList.toggle('on', ep.has(k)); vibrer(); });
   $$('#fd-so [data-so]').forEach(b => b.onclick = () => { const k = b.dataset.so; vibrer();
     if (so.has(k)) so.delete(k); else { so.add(k); if (k === 'gradee') so.delete('brute'); if (k === 'brute') so.delete('gradee'); }
@@ -5024,8 +5042,8 @@ async function feuilleFiltresDeals(){
     if (!raz && enCours.length >= 3 && FAV.length < FMAX && !FAV.some(x => x.toLowerCase() === enCours.toLowerCase())) FAV.push(enCours.slice(0, 40));
     const noms = raz ? [] : [...FAV];
     if (!raz && $('#fd-avert').checked !== avert0) API.alarmes_regler({mes_joueurs: $('#fd-avert').checked}).catch(() => {});
-    Object.assign(F, raz ? {sortes:[], rabais_min:null, prix_min:null, prix_max:null, gain_min:null, joueurs:[], avec_mise:false, vendeurs:false}
-      : {sortes:[...so], rabais_min: rb === '' ? null : +rb, prix_min:null, prix_max:null, gain_min:null,       // le budget : sur le compte
+    Object.assign(F, raz ? {sortes:[], rabais_min:null, prix_min:null, prix_max:null, gain_min:null, joueurs:[], avec_mise:false, vendeurs:false, objectif:''}
+      : {objectif: obj, sortes:[...so], rabais_min: rb === '' ? null : +rb, prix_min:null, prix_max:null, gain_min:null,       // le budget : sur le compte
          joueurs: $('#fd-seul').checked ? noms : [], avec_mise: $('#fd-mise').checked, vendeurs: $('#fd-vend').checked});
     const d = raz ? {collectionne: [], favoris: [], prix_min: null, prix_max: null}
       : {collectionne: [...ep], favoris: noms, prix_min: cad('fd-pmin'), prix_max: cad('fd-pmax')};
@@ -5418,7 +5436,7 @@ function tuileDeal(x){
         <span class="sd-l2"><b class="sd-rab">${sansV ? tt('Encan', 'Auction') : '−' + x.rabais + ' %'}</b><b class="sd-pr">${argent(x.total, 0)}</b></span></div>
       <div class="sd-ph">${SVG_CARTE}${x.photo ? `<img src="${esc(photoNet(x.photo, 400))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}${boutonWatch(x)}
         ${encan ? `<span class="sd-fin">${icH()}${finDans(x.fin)}</span>` : ''}</div></div>
-    <div class="sd-bas"><small>${x.valeur ? `${tt('vaut', 'worth')} ${argentCourt(x.valeur)}${x.gain > 0 ? ` · <b class="g">+${argentCourt(x.gain)}</b>` : ''}` : tt('Valeur à vérifier', 'Value to check')}${x.ramassage ? ` · <span class="sd-ram">${icPin()}${tt('ramassage', 'pickup')}</span>` : ''}</small></div></div>`;
+    <div class="sd-bas"><small>${S.dealsF && S.dealsF.objectif === 'collection' && x.desir != null ? `<span class="sd-des" title="${esc((x.desir_raisons || []).join(' · '))}">${tt('Rareté', 'Rarity')} ${x.desir}</span> · ` : ''}${x.valeur ? `${tt('vaut', 'worth')} ${argentCourt(x.valeur)}${x.gain > 0 ? ` · <b class="g">+${argentCourt(x.gain)}</b>` : ''}` : tt('Valeur à vérifier', 'Value to check')}${x.ramassage ? ` · <span class="sd-ram">${icPin()}${tt('ramassage', 'pickup')}</span>` : ''}</small></div></div>`;
 }
 // 26 oct 2026 (Mathieu : « encore pas un deal ... une option : l'annonce disparaît et ça nous laisse savoir quoi
 // modifier ») : un tap, une raison (facultative) ; l'annonce part, l'admin reçoit tout le calcul, l'agent l'analyse.
@@ -5556,6 +5574,14 @@ async function feuilleAAjouter(produits){
 }
 // 25 oct 2026 (Mathieu : « essaie d'aller chercher toutes les checklists comme celle-ci » + « c'est l'admin qui les
 // télécharge ») : la liste de gogts.net, « Importer » = le serveur prend l'Excel et l'ajoute pour tous les comptes.
+// 31 oct 2026 (Mathieu : « pourquoi ca bug a chaque fois ? il va falloir que je passe par toi ? ») : apres chaque import,
+// l'app verifie elle-meme le fichier et le dit en mots simples : ce qui est bon (vert), ce qui merite un coup d'oeil (or)
+function rapportImport(v){
+  if (!v || !((v.ok || []).length || (v.alertes || []).length)) return '';
+  const al = v.alertes || [];
+  return `<div class="ck-rap"><div class="ck-rap-t ${al.length ? 'or' : 'vert'}">${al.length ? tt('Vérifié · à regarder', 'Checked · worth a look') : tt('Vérifié · tout est bon', 'Checked · all good')}</div>
+    ${(v.ok || []).map(x => `<div class="ckr-ok">✓ ${esc(x)}</div>`).join('')}${al.map(x => `<div class="ckr-al">${icN('attention')}${esc(x)}</div>`).join('')}</div>`;
+}
 async function importerGTS(b, url){
   const rangee = b.closest('.rangee'); b.disabled = true; b.innerHTML = '<span class="roue"></span>';
   const r = await API.gts_importer(url).catch(x => ({ok:false, erreur:x.message}));
@@ -5672,6 +5698,7 @@ function feuilleChecklist(pid, produits, nomInit, sportInit){
       for (const [i, f] of fs.entries()) {
         const r = await API.catalogue_importer({fichier:await lire(f), nom_fichier:f.name, ...(nomInit && fs.length === 1 ? {nom: nomInit} : {}), ...(sportInit ? {sport: sportInit} : {})}).catch(x => ({ok:false, erreur:x.message}));
         const l = $('#ck-l' + i); if (!l) return;
+        if (r.ok) l.insertAdjacentHTML('afterend', rapportImport(r.verification));
         l.querySelector('.milieu').innerHTML = r.ok
           ? `<span class="nom">✓ ${esc(r.nom)} <small>${r.nouveau ? tt('· nouveau produit', '· new product') : tt('· mis à jour', '· updated')}</small></span><span class="sous">${r.nb_cartes} ${tt('cartes', 'cards')} · ${(r.manquantes || []).length ? (r.manquantes || []).length + tt(' cotes manquantes', ' missing odds') : tt('cotes complètes', 'odds complete')}${(r.estimees || []).length ? ' · ' + r.estimees.length + tt(' estimées', ' estimated') : ''}${r.modele ? ' · ' + tt('cotes de ', 'odds from ') + esc(r.modele) : ''}</span>`
           : `<span class="nom">${esc(f.name)}</span><span class="sous" style="color:var(--rouge)">${esc(r.erreur)}</span>`;
@@ -5686,11 +5713,12 @@ function feuilleChecklist(pid, produits, nomInit, sportInit){
     $('#ck-res').innerHTML = `<div class="lecture"><span class="roue"></span>${tt('Lecture de la checklist…', 'Reading the checklist…')}</div>`;
     const r = await API.catalogue_importer({fichier:data, nom_fichier:f.name, produit_id:$('#ck-p').value || null, nom:val('ck-nom')}).catch(x => ({ok:false, erreur:x.message}));
     if (!r.ok) { $('#ck-res').innerHTML = `<div class="bandeau">${esc(r.erreur)}</div>`; return; }
+    const rapport = rapportImport(r.verification);
     const cles = r.sous_ensembles.filter(x => ['auto', 'memo', 'auto_memo'].includes(x.groupe) || (['recrue', 'base'].includes(x.groupe) && !x.tirage)).slice(0, 16);
     $('#ck-res').innerHTML = `<div class="bandeau info"><b>${esc(r.nom)}</b> · ${r.nb_cartes} ${tt('cartes', 'cards')} · ${r.sous_ensembles.length} ${tt('sous-ensembles', 'subsets')}${r.modele ? ' · ' + tt('cotes reprises de ', 'odds from ') + esc(r.modele) : ''}</div>
       <div class="sous" style="font-size:14px">${tt('Combien par boîte ? (sur l’emballage ou la page GTS : « Young Guns : 6 », « Auto : 1 »). Laisse vide si tu ne sais pas.', 'How many per box? (on the box or GTS page: “Young Guns: 6”, “Auto: 1”). Leave empty if unknown.')}</div>
       <div class="grille-champs">${cles.map(x => `<label>${esc(x.nom)}<input class="champ" type="number" inputmode="decimal" step="any" data-cote="${esc(x.nom)}" value="${x.par_boite ?? ''}" placeholder="${x.taux ? x.taux : ''}"></label>`).join('')}
-        <label>${tt('Boîtes par caisse', 'Boxes per case')}<input class="champ" type="number" id="ck-bpc" value="12"></label></div>
+        <label>${tt('Boîtes par caisse', 'Boxes per case')}<input class="champ" type="number" id="ck-bpc" value="12"></label></div>${rapport}
       <button class="btn" id="ck-ok">${tt('Enregistrer', 'Save')}</button>`;
     $('#ck-ok').onclick = async () => {
       const cotes = {}; $$('[data-cote]').forEach(i => { if (i.value !== '') cotes[i.dataset.cote] = i.value; });
@@ -7970,8 +7998,38 @@ function filtresBarreInv(){
   return ['tous', 'collection', 'listee'].map(k => `<button class="chip ${f === k ? 'on' : ''}" data-f="${k}">${LIB_FILTRE(k)}</button>`).join('')
     + `<button class="chip ${autre || sp ? 'on' : ''}" id="i-plus-f">${autre ? LIB_FILTRE(f) : sp ? nomSport(sp) : tt('Filtrer', 'Filter')} ▾</button>`;
 }
+// 31 oct 2026 (Mathieu : « a vendre rapidement ou collection : deux mentalites ; simple, beau, l'info en quelques secondes ») :
+// 3 tuiles en haut de l'inventaire, comme l'accueil. Collection : ce qu'elle vaut et comment elle bouge, sa rarete, la
+// carte qui monte le plus. A vendre : combien, le temps reel pour vendre, ce qui dort (un tap : la liste).
+async function tableauInv(){
+  const z = $('#i-tab'); if (!z) return;
+  const r = await API.inventaire_tableaux().catch(() => null);
+  if (!r || !r.ok || !$('#i-tab')) { if (z) z.innerHTML = ''; return; }
+  const t = (lib, val, sous, cl, id) => `<button class="t-acc" ${id ? `id="${id}"` : ''}><span class="l">${lib}</span><b class="${cl || ''}">${val}</b><span class="s">${sous}</span></button>`;
+  const coll = (S.filtreInv || 'tous') === 'collection';
+  if (coll) {
+    const c = r.collection, v = c.variation || {}, k = v['12m'] != null ? '12m' : v['6m'] != null ? '6m' : v['3m'] != null ? '3m' : null;
+    const per = {['3m']: tt('3 mois', '3 months'), ['6m']: tt('6 mois', '6 months'), ['12m']: tt('12 mois', '12 months')};
+    const h = (c.hausses || [])[0], top = (c.top || [])[0];
+    z.innerHTML = !c.n ? '' : t(tt('Ma collection', 'My collection'), argentKpi(c.valeur), k ? `${v[k] >= 0 ? '+' : '−'}${Math.abs(v[k]).toLocaleString(LOC())} % · ${per[k]}` : `${c.n} ${tt('cartes', 'cards')}`, k ? (v[k] >= 0 ? 'vert' : 'rouge') : '')
+      + t(tt('Rareté', 'Rarity'), c.desir_moyen != null ? c.desir_moyen + '<small>/100</small>' : '—', top ? tt('plus rare : ', 'rarest: ') + esc(String(top.joueur || '').split(' ').slice(-1)[0]) : tt('moyenne', 'average'), '', 'it-rare')
+      + (h ? t(tt('Monte le plus', 'Rising most'), '+' + h.pct + ' %', esc(h.joueur || ''), 'vert', 'it-h') : t(tt('Cartes', 'Cards'), String(c.n), tt('en collection', 'in collection')));
+    const ouvrir = (id) => { const b = $(`#i-liste .tuile-inv[data-id="${id}"]`); if (b) b.click(); };
+    const rr = $('#it-rare'); if (rr && top) rr.onclick = () => ouvrir(top.id);
+    const hh = $('#it-h'); if (hh && h) hh.onclick = () => ouvrir(h.id);
+    const p0 = z.querySelector('.t-acc'); if (p0) p0.onclick = () => { const b = $('#i-res'); if (b) b.click(); };
+  } else {
+    const v = r.vente;
+    z.innerHTML = !v.n ? '' : t(tt('À vendre', 'For sale'), argentKpi(v.valeur), `${v.n} ${tt('cartes', 'cards')}`)
+      + t(tt('Se vend en', 'Sells in'), v.delai_median != null ? '~' + v.delai_median + tt(' j', ' d') : '—', v.delai_median != null ? tt('tes ventes · 6 mois', 'your sales · 6 months') : tt('pas assez de ventes', 'not enough sales'))
+      + t(tt('Dorment', 'Sleeping'), String(v.dorment), tt('plus de 60 jours', 'over 60 days'), v.dorment ? 'or' : '', 'it-dort');
+    const d = $('#it-dort'); if (d) { d.classList.toggle('on', !!S.dortIds);
+      if (v.dorment) d.onclick = () => { vibrer(); S.dortIds = S.dortIds ? null : v.dorment_ids; d.classList.toggle('on', !!S.dortIds); chargerInventaire(); }; }
+    const p0 = z.querySelector('.t-acc'); if (p0) p0.onclick = () => { const b = $('#i-res'); if (b) b.click(); };
+  }
+}
 function brancherFiltresInv(){
-  $$('.i-filtres [data-f]').forEach(c => c.onclick = () => { S.filtreInv = c.dataset.f; $('.i-filtres').innerHTML = filtresBarreInv(); brancherFiltresInv(); chargerInventaire(); });
+  $$('.i-filtres [data-f]').forEach(c => c.onclick = () => { S.filtreInv = c.dataset.f; S.dortIds = null; $('.i-filtres').innerHTML = filtresBarreInv(); brancherFiltresInv(); chargerInventaire(); tableauInv(); });
   const p = $('#i-plus-f'); if (p) p.onclick = () => {
     const ps = S.parSportInv || {}, sports = Object.entries(ps).sort((a, b) => b[1] - a[1]);
     ouvrirFeuille(`<h3>${tt('Filtrer', 'Filter')}</h3><div class="menu-f">${filtresInv().map(([k]) => `<button class="choix-f ${S.filtreInv === k ? 'on' : ''}" data-ff="${k}">${LIB_FILTRE(k)}${S.filtreInv === k ? ' ✓' : ''}</button>`).join('')}</div>
@@ -7994,10 +8052,12 @@ async function vueInventaire(arg){
       <button class="rond acc" id="i-plus" aria-label="${esc(tt('Ajouter', 'Add'))}">${ICONES.plus}</button></div></div>
     <div class="recherche">${ICONES.loupe}<input id="i-q" placeholder="${esc(tt('Rechercher un joueur, un set…', 'Search a player, a set…'))}" value="${esc(S.rechInv)}"></div>
     <div class="chips i-filtres">${filtresBarreInv()}</div>
+    <div class="acc-tuiles i-tab" id="i-tab"></div>
     <div class="acc-reserve"><div id="i-b-res"><div id="i-coll"></div><div id="i-kpis"></div></div></div>
     <div id="i-liste">${roue}</div></section>`;
   blocCollection($('#i-coll'));
   brancherFiltresInv();
+  tableauInv();
   let t; $('#i-q').oninput = (e) => { clearTimeout(t); t = setTimeout(() => { S.rechInv = e.target.value.trim(); chargerInventaire(); }, 250); };
   $('#i-plus').onclick = () => feuilleAjout();
   $('#i-menu').onclick = () => { vibrer(); ouvrirFeuille(`<h3>${tt('Inventaire', 'Inventory')}</h3><div class="menu-f">
@@ -8051,7 +8111,8 @@ async function chargerInventaire(){
   // 23 oct 2026 - plusieurs sports dans l'inventaire : un toucher pour n'en voir qu'un (rien si un seul sport)
   const parSport = {}; tout.forEach(c => { const k = c.sport || sportPrincipal(); parSport[k] = (parSport[k] || 0) + 1; });
   if (S.sportInv && !parSport[S.sportInv]) S.sportInv = null;
-  const l = S.sportInv ? tout.filter(c => (c.sport || sportPrincipal()) === S.sportInv) : tout;
+  let l = S.sportInv ? tout.filter(c => (c.sport || sportPrincipal()) === S.sportInv) : tout;
+  if (S.dortIds) l = l.filter(c => S.dortIds.includes(c.id));          // 31 oct 2026 : la tuile « Dorment »
   S.inv = l;
   const z = $('#i-liste'); if (!z) return;
   const vendues = S.filtreInv === 'vendue';

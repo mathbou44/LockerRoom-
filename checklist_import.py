@@ -115,6 +115,11 @@ def lire(brut, nom_fichier="checklist.xlsx", sport=None):
     """-> {"sous_ensembles": [...], "cartes": [...], "lignes": n} (format catalogue/SCHEMA.md)."""
     import sports
     rangs = _rangs_xlsx(brut) if str(nom_fichier).lower().endswith((".xlsx", ".xlsm")) else _rangs_csv(brut)
+    # 31 oct 2026 (Premier 2025-26 : 7 onglets, dont « Master Card List » en tableau et 5 resumes en texte libre) : quand un
+    # onglet a une vraie ligne d'en-tete (Set Name, Card, Description...), SEULS les onglets en tableau sont lus. Avant, les
+    # resumes etaient lus aussi : chaque carte 2 ou 3 fois, et des « sous-ensembles » comme « 57 cards » ou « Platinum 1/1 »
+    rangs = list(rangs)
+    tableau = any(_colonnes(cells) for _f, cells in rangs)
     cartes, idx, titre = [], None, None
     feuille_prec = None
     titre_doc = None                    # 30 oct 2026 : « 2025-26 Upper Deck Series 2 Hockey Checklist » en haut du fichier
@@ -143,9 +148,12 @@ def lire(brut, nom_fichier="checklist.xlsx", sport=None):
                 continue
             notes = " ".join([g("notes")] + [c for i, c in enumerate(cells) if i not in idx.values()])
         else:
+            if tableau:                     # un onglet sans en-tete dans un fichier en tableau : resume, pas des cartes
+                continue
             # mise en page 2 : titre de sous-ensemble seul sur sa ligne, puis « numero joueur equipe »
             if len(pleines) == 1 and not _est_numero(pleines[0]):
-                titre = pleines[0]
+                if not est_bruit(pleines[0]):
+                    titre = pleines[0]
                 continue
             if not _est_numero(pleines[0]) or len(pleines) < 2:
                 continue
@@ -163,6 +171,11 @@ def lire(brut, nom_fichier="checklist.xlsx", sport=None):
         rc = bool(re.search(r"\bRC\b|rookie", notes + " " + joueur + " " + str(g("equipe") or ""), re.I)) or bool(str(g("recrue") or "").strip())
         tech, sp, cote_txt = str(g("tech") or "").strip(), str(g("sp") or "").strip().upper(), str(g("cotes") or "").strip()
         joueur = re.sub(r"\s*\bRC\b\s*", " ", joueur).strip(" ,")
+        # 31 oct 2026 : une inscription (Celebrini « I Like Fishing », Leonard « Hi Mom ») : le meme joueur (sa valeur, son
+        # equipe), la carte marquee « inscription » (plus rare)
+        insc = re.search(r"\s*[\"“”«]([^\"“”»]{1,40})[\"“”»]\s*", joueur)
+        if insc:
+            joueur = (joueur[:insc.start()] + " " + joueur[insc.end():]).strip(" ,")
         se = re.sub(r"\s+", " ", str(se)).strip()
         tir = 1 if re.search(r"\bplate", tech + " " + se, re.I) else (_tirage_colonne(g("tirage") if idx else "") or tirage_de(notes, se))
         carte = {"numero": str(num).strip(), "joueur": joueur, "equipe": "/".join(c for c in codes if c) or str(equipe_txt).strip(),
@@ -171,9 +184,25 @@ def lire(brut, nom_fichier="checklist.xlsx", sport=None):
                  "memo": groupe_de(se) in ("memo", "auto_memo"), "tirage": tir}
         if sp in ("SP", "SSP"):
             carte["sp"] = sp
+        if insc:
+            carte["inscription"] = insc.group(1).strip()
+            carte.setdefault("sp", "SSP")              # une inscription sort beaucoup moins que la signature seule
         if cote_txt:
             carte["_cotes"] = cote_txt
         cartes.append(carte)
+    # 31 oct 2026 (Mathieu : « pourquoi ca bug a chaque fois ? il va falloir que je passe par toi ? ») : nettoyage automatique
+    # des lignes qui ne sont pas des cartes (resumes « 57 cards », « Gold /15 », cotes) et des doublons exacts
+    n0 = len(cartes)
+    cartes = [c for c in cartes if not est_bruit(c["sous_ensemble"])]
+    bruit = n0 - len(cartes)
+    vus, uniques = set(), []
+    for c in cartes:
+        k = (c["sous_ensemble"], c["numero"], _n(c["joueur"]), c.get("inscription"))
+        if k not in vus:
+            vus.add(k)
+            uniques.append(c)
+    doublons = len(cartes) - len(uniques)
+    cartes = uniques
     noms = []
     for c in cartes:
         if c["sous_ensemble"] not in noms:
@@ -194,7 +223,92 @@ def lire(brut, nom_fichier="checklist.xlsx", sport=None):
             s["cote_hobby"] = ch
         sous.append(s)
     _paralleles(sous, cartes)
-    return {"sous_ensembles": sous, "cartes": cartes, "lignes": len(cartes), "titre_doc": titre_doc}
+    _paralleles_famille(sous, cartes)
+    return {"sous_ensembles": sous, "cartes": cartes, "lignes": len(cartes), "titre_doc": titre_doc,
+            "nettoye": {"bruit": bruit, "doublons": doublons}, "annonces": annonces_resumes(rangs) if tableau else {}}
+
+
+_RE_BRUIT = {"rx": None}
+
+
+def _rx_bruit():
+    if _RE_BRUIT["rx"] is None:
+        _RE_BRUIT["rx"] = re.compile(r"^\s*(\d+\s+cards?|parallels?|base|checklist|\d+\s*:\s*\d+.*|.*\bpacks?\b.*|.*\bnot listed\b.*"
+                                     r"|.*\bor fewer\b.*|.*\bsee list\b.*|(" + _COULEURS + r"|crest patch|patch|tag|chest patch|premium patch)"
+                                     r"[a-z ]*\s*(/\s*\d+|1/1)\s*|(veterans|legends|rookies)\s*:.*)$", re.I)
+    return _RE_BRUIT["rx"]
+
+
+def est_bruit(nom):
+    """Un « sous-ensemble » qui est en fait du texte de resume : « 57 cards », « Gold /15 », « 1:18 packs », « Parallels »."""
+    return bool(_rx_bruit().match(str(nom or "")))
+
+
+def annonces_resumes(rangs):
+    """Les onglets de resume (texte libre) : « Auto Parallel » puis « 60 cards » -> {« Auto Parallel »: 60}."""
+    out, dernier = {}, None
+    for _f, cells in rangs:
+        pleines = [c for c in cells if c]
+        if len(pleines) != 1:
+            if len(pleines) > 1:
+                dernier = None
+            continue
+        t = pleines[0].strip()
+        m = re.fullmatch(r"(\d+)\s+cards?", t, re.I)
+        if m and dernier:
+            out.setdefault(dernier, int(m.group(1)))
+            dernier = None
+        elif not est_bruit(t) and not _est_numero(t) and len(t) > 3:
+            dernier = t
+    return out
+
+
+def verifier(lu):
+    """Le rapport montre a l'importation (31 oct 2026) : ce qui est bon, et ce qui merite un coup d'oeil, en mots simples.
+    -> {"ok": [...], "alertes": [...]}"""
+    sous, cartes = lu["sous_ensembles"], lu["cartes"]
+    nums = {}
+    for c in cartes:                       # une inscription est une carte de plus (Celebrini « I Like Fishing »)
+        nums.setdefault(c["sous_ensemble"], set()).add((c["numero"], c.get("inscription")))
+    enfants = {}
+    for s in sous:
+        if s.get("parallele_de"):
+            enfants.setdefault(s["parallele_de"], []).append(s["nom"])
+    ok = [f"{len(cartes)} cartes lues dans {len(sous)} sets",
+          f"{sum(1 for s in sous if s.get('parallele_de'))} parallèles reliées à leur carte de base"]
+    rares = sum(1 for c in cartes if c.get("sp")) + sum(1 for c in cartes if c.get("inscription"))
+    if rares:
+        ok.append(f"{rares} cartes SP, SSP ou à inscription (comptées plus rares)")
+    alertes = []
+    ne = lu.get("nettoye") or {}
+    if ne.get("bruit"):
+        ok.append(f"{ne['bruit']} lignes de résumé ignorées (pas des cartes)")
+    if ne.get("doublons"):
+        ok.append(f"{ne['doublons']} doublons retirés")
+    # ce que le fichier annonce (« 60 cards ») contre ce qu'on a trouve (la carte de base + les joueurs seulement numerotes)
+    exacts = {_n(s["nom"]): s["nom"] for s in sous}
+    cles = {cle_sous(s["nom"]): s["nom"] for s in sous}
+    for nom_a, n in (lu.get("annonces") or {}).items():
+        nom = exacts.get(_n(nom_a)) or cles.get(cle_sous(nom_a))
+        if not nom:
+            continue
+        # « Base Set : 150 cards » couvre aussi « Base Set - Legends » et « Base Set - Rookies »
+        groupe = [nom] + [s["nom"] for s in sous if _n(s["nom"]).startswith(_n(nom) + " - ")]
+        trouves = set()
+        for g in groupe:
+            trouves |= {(g2, k) for g2 in [g] for k in nums.get(g) or set()}
+            for e in enfants.get(g, []):
+                trouves |= {(g, k) for k in nums.get(e) or set()}
+        if len(trouves) < n:
+            alertes.append(f"{nom} : {n} cartes annoncées, {len(trouves)} trouvées (il en manque {n - len(trouves)} dans le fichier)")
+    seules = [s["nom"] for s in sous if re.search(r"\bparallel", s["nom"], re.I) and not s.get("parallele_de")
+              and s.get("groupe") in ("base", "recrue", "insert")]
+    if seules:
+        alertes.append(f"{len(seules)} parallèle(s) sans carte de base reconnue, évaluée(s) à part : " + ", ".join(seules[:3]) + ("…" if len(seules) > 3 else ""))
+    sans_equipe = sum(1 for c in cartes if not c.get("equipe"))
+    if sans_equipe > len(cartes) * 0.2:
+        alertes.append(f"{sans_equipe} cartes sans équipe reconnue : la vue par équipe sera incomplète")
+    return {"ok": ok, "alertes": alertes[:8]}
 
 
 def cote_hobby(txt):
@@ -206,19 +320,75 @@ def cote_hobby(txt):
     return round(b / a, 4) if a > 0 and b > 0 else None
 
 
+_COULEURS = r"green|red|orange|blue|gold|purple|black|silver|pink|yellow|white|bronze|copper|teal|aqua|emerald|ruby|sapphire|platinum"
+
+
 def _paralleles(sous, cartes):
-    """« Green Foil Parallel » = parallele de « Base Set » : meme liste de numeros, sous-ensemble non parallele avant lui."""
+    """« Green Foil Parallel » = parallele de « Base Set » : meme liste de numeros, sous-ensemble non parallele avant lui.
+    31 oct 2026 (Stature 2025-26) : « Green Auto Parallel - Rookies » = parallele de « Auto Parallel - Rookies » (le meme nom
+    sans la couleur), meme si le parent s'appelle lui aussi « Parallel » et qu'il manque des joueurs dans certaines couleurs
+    (les vedettes SSP ne commencent qu'aux petits tirages)."""
     nums = {}
     for c in cartes:
         nums.setdefault(c["sous_ensemble"], set()).add(c["numero"])
+    par_nom = {_n(s["nom"]): s for s in sous}
+    for s in sous:
+        m = re.match(rf"^(.*?\b)?({_COULEURS})\s+(.+)$", s["nom"].strip(), re.I)
+        if not m:
+            continue
+        base = _n(((m.group(1) or "") + m.group(3)).strip())
+        p = par_nom.get(base)
+        if p and p is not s and not p.get("parallele_de") and (nums.get(s["nom"], set()) & nums.get(p["nom"], set())):
+            s["parallele_de"] = p["nom"]
+            if s["groupe"] == "insert":
+                s["groupe"] = p["groupe"]
     for i, s in enumerate(sous):
-        if not re.search(r"\bparallel", s["nom"], re.I):
+        if s.get("parallele_de") or not re.search(r"\bparallel", s["nom"], re.I):
             continue
         for p in sous[:i]:
             if not re.search(r"\bparallel", p["nom"], re.I) and nums.get(p["nom"]) == nums.get(s["nom"]):
                 s["parallele_de"] = p["nom"]
                 if s["groupe"] == "insert":
                     s["groupe"] = p["groupe"]
+                break
+
+
+_DESCRIPTEURS = set("""parallel parallels chest crest tag logo logos shoulder sleeve number numbers commemorative premium jumbo
+spectrum the and of""".split())
+_MEMO_MOTS = set("jersey jerseys patch patches memorabilia relic relics nameplate swatch fabric fabrics material".split())
+
+
+def _cle_famille(nom):
+    """« Premier Rookie Auto Patch Parallel » et « Premier Rookie Auto Jersey » -> la meme cle (premier rookie auto + memo)."""
+    t = re.sub(r"\(.*?\)", " ", _n(nom))
+    mots = {"memo"} if re.search(r"\b(shoulder|sleeve|chest|crest|tag|nameplate)\b", t) else set()
+    for w in re.split(r"[^a-z0-9]+", t):
+        if not w or re.fullmatch(_COULEURS, w) or w in _DESCRIPTEURS:
+            continue
+        mots.add("memo" if w in _MEMO_MOTS else w)
+    return frozenset(mots)
+
+
+def _paralleles_famille(sous, cartes):
+    """31 oct 2026 (Premier 2025-26) : « Acetate Patch Auto Gold Parallel » -> « Acetate Patch Auto », « Premier Rookie Auto
+    Patch Parallel » -> « Premier Rookie Auto Jersey », « Nameplate Parallel » -> « Jersey Parallel » : meme famille (memes
+    mots, sans la couleur ni la sorte de patch) et la plupart des memes numeros."""
+    nums = {}
+    for c in cartes:
+        nums.setdefault(c["sous_ensemble"], set()).add(c["numero"])
+    for i, s in enumerate(sous):
+        if s.get("parallele_de") or not re.search(r"\bparallel", s["nom"], re.I):
+            continue
+        k = _cle_famille(s["nom"])
+        if len(k) < 1 or k == frozenset(["memo"]) and not re.search(r"jersey|memorabilia|nameplate|patch", s["nom"], re.I):
+            continue
+        ns = nums.get(s["nom"]) or set()
+        for p in sous:
+            if p is s or p.get("parallele_de") or _cle_famille(p["nom"]) != k:
+                continue
+            np_ = nums.get(p["nom"]) or set()
+            if ns and len(ns & np_) >= 0.5 * len(ns) and (sous.index(p) < i or not re.search(r"\bparallel", p["nom"], re.I)):
+                s["parallele_de"] = p["nom"]
                 break
 
 

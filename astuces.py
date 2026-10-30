@@ -459,8 +459,161 @@ def marche_prime(api=None, langue="fr"):
     return nouvelles_donnees.nouvelle_prime(langue)
 
 
+# == 31 oct 2026 (Mathieu : « des tips plus avances, que meme du monde avance trouve interessants ; trouves sur Internet,
+# dans des forums ; et bases sur nos donnees ; valider que tout ce qu'on sort est vrai ») ===============================
+# Chaque fait SOURCE a ete relu a la source le 31 oct 2026 (lien affiche). Chaque fait CALCULE ne sort que s'il y a assez de
+# ventes pour l'affirmer (sinon l'astuce ne s'affiche pas).
+
+def centrage_psa(api=None, langue="fr"):
+    t = T(langue)
+    return {"id": "centrage", "niveau": "avance", "genre": "vendre",
+            "titre": t("PSA 10 : 60/40 au plus devant, 75/25 au dos", "PSA 10: 60/40 at most on front, 75/25 on back"),
+            "chiffre": "60/40",
+            "texte": t("Les normes de PSA demandent, pour un 10, un centrage d’environ 55/45 à 60/40 sur le devant et 75/25 au dos ; "
+                       "pour un 9, environ 60/40 à 65/35 devant et 90/10 au dos. Une carte parfaite mais décentrée à 65/35 ne peut pas avoir 10.",
+                       "PSA’s standards ask, for a 10, about 55/45 to 60/40 centering on the front and 75/25 on the back; for a 9, about "
+                       "60/40 to 65/35 front and 90/10 back. A flawless card centered 65/35 can’t get a 10."),
+            "truc": t("Avant d’envoyer : mesure les bordures gauche/droite et haut/bas (une règle suffit). Au-delà de 60/40 devant, "
+                      "compte sur un 9 au mieux et refais le calcul de rentabilité avec le prix d’un 9.",
+                      "Before submitting: measure left/right and top/bottom borders (a ruler is enough). Past 60/40 on the front, "
+                      "expect a 9 at best and redo the math with a 9’s price."),
+            "source": "PSA, Card Grading Standards", "url": "https://www.psacard.com/resources/cardgradingstandards",
+            "lien": "#valeur", "calcule": False}
+
+
+def pop_bedard(api=None, langue="fr"):
+    t = T(langue)
+    return {"id": "pop", "niveau": "avance", "genre": "acheter",
+            "titre": t("Bedard YG : 6 000 PSA 9 et 10 en 12 semaines", "Bedard YG: 6,000 PSA 9s and 10s in 12 weeks"),
+            "chiffre": "6 000+",
+            "texte": t("Entre la sortie (6 mars 2024) et la fin mai, plus de 6 000 Young Guns de Bedard ont reçu un PSA 9 ou 10, environ "
+                       "75 par jour. Quand la population est aussi haute, les vendeurs se font concurrence : The Hockey News note qu’ils "
+                       "peuvent accepter 80 à 90 % des dernières ventes.",
+                       "Between release (March 6, 2024) and late May, over 6,000 Bedard Young Guns got a PSA 9 or 10, about 75 a day. "
+                       "With a population that high, sellers compete: The Hockey News notes they may settle for 80 to 90% of recent sales."),
+            "truc": t("Carte à grosse population (une recrue vedette gradée) : fais une offre sous les dernières ventes, il y aura une autre "
+                      "copie demain. Petite population : le vendeur a le gros bout du bâton, compare plus large avant de payer.",
+                      "High-population card (a graded star rookie): offer under recent sales, there’ll be another copy tomorrow. "
+                      "Low population: the seller holds the cards, compare more widely before paying."),
+            "source": "The Hockey News, 2024-05-27",
+            "url": "https://thehockeynews.com/collectibles/card-market/sports-card-investing-population-count-explained-and-what-it-means-to-you",
+            "lien": "#deals", "calcule": False}
+
+
+def echange(api=None, langue="fr"):
+    t = T(langue)
+    return {"id": "echange", "niveau": "avance", "genre": "vendre",
+            "titre": t("Un échange : la YG d’O’Reilly de 10 $ à 25-30 $ en une nuit", "A trade: O’Reilly’s YG went from $10 to $25-30 overnight"),
+            "chiffre": "×2,5",
+            "texte": t("Quand Ryan O’Reilly a été échangé de St. Louis à Toronto (février 2023), sa Young Guns brute est passée d’environ "
+                       "10 $ à 25-30 $ du jour au lendemain ; le dimanche suivant, des marchands l’affichaient à 40 $. Un nouveau marché "
+                       "amène de nouveaux acheteurs.",
+                       "When Ryan O’Reilly was traded from St. Louis to Toronto (February 2023), his raw Young Guns jumped from about $10 "
+                       "to $25-30 overnight; the next Sunday, dealers had it at $40. A new market brings new buyers."),
+            "truc": t("Avant la date limite des échanges, regarde les joueurs cités dans les rumeurs vers un gros marché ou un aspirant : "
+                      "vends dans les jours qui suivent l’échange, ou garde jusqu’aux séries si la nouvelle équipe va loin. Les marqueurs gardent mieux leur valeur que "
+                      "les défenseurs et les gardiens.",
+                      "Before the trade deadline, watch players rumored to a big market or a contender: sell in the days after the trade, "
+                      "or hold through the playoffs if the new team goes deep. Scorers hold value better than defensemen and goalies."),
+            "source": "The Hockey News, 2024-02-28",
+            "url": "https://thehockeynews.com/collectibles/tips-tuesday-strategizing-the-hockey-card-market-ahead-of-the-nhl-trade-deadline",
+            "lien": "#deals", "calcule": False}
+
+
+def cotes_s2(api=None, langue="fr"):
+    t = T(langue)
+    return {"id": "cotes_s2", "niveau": "avance", "genre": "break",
+            "titre": t("Clear Cut Young Guns : 1 paquet sur 144, une par 12 boîtes", "Clear Cut Young Guns: 1 in 144 packs, one per 12 boxes"),
+            "chiffre": "1:144",
+            "texte": t("Dans 2025-26 Upper Deck Series 2 (12 paquets par boîte hobby) : 6 Young Guns par boîte (1:2 paquets), une Canvas "
+                       "Young Guns par 2 boîtes (1:24), une Outburst Silver Young Guns par 5 boîtes (1:60), une Clear Cut Young Guns par "
+                       "12 boîtes (1:144). Et la recrue que tu veux n’est qu’une parmi des dizaines.",
+                       "In 2025-26 Upper Deck Series 2 (12 packs per hobby box): 6 Young Guns per box (1:2 packs), one Canvas Young Guns "
+                       "per 2 boxes (1:24), one Outburst Silver Young Guns per 5 boxes (1:60), one Clear Cut Young Guns per 12 boxes "
+                       "(1:144). And the rookie you want is just one of dozens."),
+            "truc": t("Pour UNE parallèle d’UN joueur, divise : (paquets par carte × nombre de recrues) ÷ 12 = boîtes à ouvrir en moyenne. "
+                      "Compare avec son prix à l’unité : c’est souvent moins cher de l’acheter seule.",
+                      "For ONE parallel of ONE player, divide: (packs per card × number of rookies) ÷ 12 = boxes to open on average. "
+                      "Compare with its single price: buying it alone is often cheaper."),
+            "source": "Cardboard Connection (cotes Upper Deck)",
+            "url": "https://www.cardboardconnection.com/2025-26-upper-deck-series-2-hockey-hobby-box-set-review-and-checklist",
+            "lien": "#analyse", "calcule": False}
+
+
+def _ratio_variante(suffixe_haut, suffixe_bas="", jours=60, min_ventes=3, min_cartes=4):
+    """Pour les cartes suivies : mediane(prix de la version « haut ») / mediane(prix de la version « bas ») sur les ventes
+    reelles des `jours` derniers jours, la MEME carte (cartes_match). -> (mediane des rapports, rapports) ou None."""
+    import base_ventes
+    import cartes_match
+    try:
+        c = base_ventes._cx()
+        try:
+            plan = c.execute("SELECT q, cible FROM plan WHERE fait_le IS NOT NULL").fetchall()
+            ventes = {}
+            for q, titre, prix in c.execute("SELECT q, titre, prix FROM ventes WHERE le >= ?", ((datetime.now() - timedelta(days=jours)).strftime("%Y-%m-%d"),)):
+                ventes.setdefault(q, []).append((titre, prix))
+        finally:
+            c.close()
+    except Exception:
+        return None
+    r = []
+    for q, full in plan:
+        ch = cartes_match.cible((full + " " + suffixe_haut).strip())
+        cb = cartes_match.cible((full + " " + suffixe_bas).strip())
+        h = [p for ti, p in ventes.get(q) or [] if p and not cartes_match.raisons_refus(ch, ti)]
+        b = [p for ti, p in ventes.get(q) or [] if p and not cartes_match.raisons_refus(cb, ti)]
+        if len(h) >= min_ventes and len(b) >= min_ventes and _med(b):
+            r.append(_med(h) / _med(b))
+    if len(r) < min_cartes:
+        return None
+    return _med(r), r
+
+
+def bgs_vs_psa(api=None, langue="fr"):
+    t = T(langue)
+    x = _ratio_variante("bgs 9.5", "psa 10")
+    if not x:
+        return None
+    m, r = x
+    pct = round(100 * m)
+    return {"id": "bgs_psa", "niveau": "avance", "genre": "vendre",
+            "titre": t(f"Une BGS 9.5 se vend {pct} % du prix d’une PSA 10", f"A BGS 9.5 sells for {pct}% of a PSA 10"),
+            "chiffre": f"{pct} %",
+            "texte": t(f"Mesuré sur {len(r)} cartes suivies dans SlabCoach, vendues dans les deux gradations dans les 60 derniers jours : "
+                       f"médiane {pct} % (de {round(100 * min(r))} à {round(100 * max(r))} %).",
+                       f"Measured on {len(r)} cards tracked in SlabCoach, sold in both grades in the last 60 days: median {pct}% "
+                       f"(from {round(100 * min(r))} to {round(100 * max(r))}%)."),
+            "truc": t("Pas pareil d’une compagnie à l’autre : ne compare jamais une BGS 9.5 aux ventes de PSA 10 (ni l’inverse). "
+                      "Dans Valeur, écris la gradation exacte.",
+                      "Not the same from one grader to another: never compare a BGS 9.5 to PSA 10 sales (or the reverse). In Value, "
+                      "type the exact grade."),
+            "source": t("Ventes eBay réelles (SoldComps), calcul SlabCoach", "Real eBay sales (SoldComps), SlabCoach math"),
+            "lien": "#valeur", "calcule": True}
+
+
+def prime_exclusives(api=None, langue="fr"):
+    t = T(langue)
+    x = _ratio_variante("exclusives /100", "")
+    if not x:
+        return None
+    m, r = x
+    return {"id": "exclusives", "niveau": "avance", "genre": "acheter",
+            "titre": t(f"Une Exclusives /100 vaut {m:.1f} fois la Young Guns de base", f"An Exclusives /100 is worth {m:.1f}× the base Young Guns"),
+            "chiffre": f"×{m:.1f}",
+            "texte": t(f"Mesuré sur {len(r)} recrues suivies dans SlabCoach, vendues dans les deux versions dans les 60 derniers jours : "
+                       f"médiane ×{m:.1f} (de ×{min(r):.1f} à ×{max(r):.1f}).",
+                       f"Measured on {len(r)} rookies tracked in SlabCoach, sold in both versions in the last 60 days: median "
+                       f"×{m:.1f} (from ×{min(r):.1f} to ×{max(r):.1f})."),
+            "truc": t("Une Exclusives sous ce multiple de sa Young Guns est souvent une aubaine ; au-dessus, tu paies la rareté du "
+                      "joueur, vérifie ses ventes à lui.",
+                      "An Exclusives under this multiple of its Young Guns is often a bargain; above it, you pay for the player’s "
+                      "scarcity, check his own sales."),
+            "source": t("Ventes eBay réelles (SoldComps), calcul SlabCoach", "Real eBay sales (SoldComps), SlabCoach math"),
+            "lien": "#valeur", "calcule": True}
+
+
 GENERATEURS = [pouls_hobby, joueur_en_feu, marche_hausse, marche_baisse, marche_prime, chute_sortie, bedard, frais, numerotation, gradation, prime_psa10, offres, jours, chance_boite, ouvrir,
-               hobby_seulement, yg_canvas, demande_vs_vendu]
+               hobby_seulement, yg_canvas, demande_vs_vendu, centrage_psa, pop_bedard, echange, cotes_s2, bgs_vs_psa, prime_exclusives]
 
 
 def liste(api, niveau=None, force=False, langue="fr"):

@@ -16,6 +16,7 @@ import os
 import re
 import secrets
 import sqlite3
+import statistics
 import threading
 import unicodedata
 import time
@@ -1144,7 +1145,12 @@ class Api:
         p2 = catalogue.charger(prod["id"]) or prod
         taux = p2.get("_taux") or {}
         e_c = catalogue.etat_cotes(p2)
+        try:
+            verif = checklist_import.verifier(lu)
+        except Exception:
+            verif = {"ok": [], "alertes": []}
         return {"ok": True, "id": prod["id"], "nom": prod["nom"], "nb_cartes": len(prod["cartes"]), "nouveau": not existant, "modele": modele,
+                "verification": verif,
                 "manquantes": e_c["manquantes"], "estimees": e_c["estimees"], "non_publiees": e_c["non_publiees"],
                 "cotes_lues": n_cotes,
                 "sous_ensembles": [{"nom": x["nom"], "groupe": x.get("groupe"), "nb_cartes": x.get("nb_cartes"), "tirage": x.get("tirage"),
@@ -4212,6 +4218,7 @@ class Api:
             lst = [x for x in lst if not x["recrue"]] + [x for x in lst if x["recrue"]]
         prof = self._profil_deals()                      # 30 oct 2026 : mon profil de deals (Reglages)
         lst = self._appliquer_profil(lst, prof)
+        lst = self._objectif_deals(lst, f)
         n = len(lst)
         pro = forfaits.est_pro()
         if not pro:
@@ -4281,6 +4288,7 @@ class Api:
         suivis = [x for x in self._deals_filtrer(suivis, f_s) if not f.get("sports") or (x.get("sport") or "hockey") in f["sports"]]
         suivis.sort(key=lambda x: (0 if (x.get("sport") or "hockey") == "hockey" else 1, _dl.rang_vendeur(x.get("vendeur")), str(x.get("fin"))))
         suivis = self._appliquer_profil(suivis, prof)
+        suivis = self._objectif_deals(suivis, f)
         suivis = suivis[:_dl._env_int("LR_SUIVIS_ECRAN", 300) if pro else 6]
         # 30 oct 2026 (Mathieu : « l'etiquette du deal : le nom du joueur en haut, son % sous la mediane des dernieres ventes
         # et le prix actuel, comme ces slabs ») : le joueur et la carte, separes, pour l'etiquette
@@ -4296,6 +4304,96 @@ class Api:
                 "sports": par_sport, "maj": dd.get("maj"), "ebay": ebay_compte.statut().get("cles_ok"),
                 "diag": _d.diagnostic(dd), "total": len(tout), "bassin": dd.get("bassin"), "nb_flux": len(_d.flux_liste()),
                 "watch": self._watch_ids()}
+
+    DESIR_COLLECTION = 45            # en mode collection : la carte doit etre au moins « recherchee » (score 45/100)
+    REVENTE_VENTES_MIN = 4           # en mode revente : au moins 4 ventes reelles de la meme carte (elle se vend souvent)
+
+    def _objectif_deals(self, lst, f):
+        """31 oct 2026 (Mathieu : « la difference entre un inventaire a vendre rapidement et un inventaire de collection ») :
+        revente = ce qui se revend vite (assez de ventes de la meme carte), le plus gros profit d'abord ;
+        collection = ce qui est rare et recherche (score de desirabilite), le plus desirable d'abord. Sans objectif : tout,
+        avec le score affiche."""
+        import desirabilite
+        obj = (f or {}).get("objectif") or ""
+        out = []
+        for x in lst:
+            # le nombre de ventes de la meme carte qui ont servi a sa valeur (le chasseur les a deja comptees : rien a relire)
+            nv = x.get("n") or len(x.get("vendues") or [])
+            d = desirabilite.score(x.get("titre") or "", valeur=x.get("valeur"), ventes=nv if x.get("valeur") else None)
+            y = dict(x, desir=d["score"], desir_raisons=d["raisons"])
+            if obj == "collection" and d["score"] < self.DESIR_COLLECTION:
+                continue
+            if obj == "revente" and x.get("valeur") and (x.get("n") or 0) < self.REVENTE_VENTES_MIN:
+                continue
+            out.append(y)
+        tri = (f or {}).get("tri") or "rabais"
+        if obj == "collection" and tri == "rabais":
+            out.sort(key=lambda x: -x["desir"])
+        elif obj == "revente" and tri == "rabais":
+            out.sort(key=lambda x: -(x.get("gain") or 0))
+        return out
+
+    def inventaire_tableaux(self):
+        """31 oct 2026 : deux tableaux, deux facons de penser.
+        A vendre : combien, ce que ca vaut, le temps reel pour vendre (tes ventes des 6 derniers mois), ce qui dort (60 j+).
+        Collection : la valeur et son evolution (3, 6, 12 mois quand l'historique les couvre), les cartes les plus desirables,
+        les plus fortes hausses (suivi de valeur)."""
+        import desirabilite
+        maint = datetime.now()
+        with _verrou:
+            c = self._db()
+            try:
+                dispo = _dicts(c.execute("SELECT * FROM cartes WHERE statut IN ('En stock','Listée')"))
+                vendues = _dicts(c.execute("SELECT cree_le, vendu_le FROM cartes WHERE statut='Vendue' AND vendu_le >= ?",
+                                           ((maint - timedelta(days=183)).strftime("%Y-%m-%d"),)))
+                try:
+                    hist = _dicts(c.execute("SELECT jour, valeur FROM valeur_historique ORDER BY jour"))
+                except Exception:
+                    hist = []
+                try:
+                    suivis = _dicts(c.execute("SELECT carte_id, reference, derniere FROM suivi_valeur WHERE actif=1 AND reference > 0 AND derniere > 0"))
+                except Exception:
+                    suivis = []
+            finally:
+                c.close()
+        coll = [x for x in dispo if (x.get("emplacement") or "") == "Collection"]
+        av = [x for x in dispo if (x.get("emplacement") or "") not in ("Collection",)]
+        jours = []
+        for x in vendues:
+            try:
+                d = (datetime.fromisoformat(str(x["vendu_le"])[:19]) - datetime.fromisoformat(str(x["cree_le"])[:19])).days
+                if d >= 0:
+                    jours.append(d)
+            except (TypeError, ValueError):
+                continue
+        lim = (maint - timedelta(days=60)).isoformat()
+        dorment = sorted((x for x in av if x.get("cree_le") and str(x["cree_le"]) < lim), key=lambda x: str(x["cree_le"]))
+        vente = {"n": len(av), "valeur": round(sum((x.get("prix_demande") or x.get("valeur") or 0) for x in av), 2),
+                 "delai_median": round(statistics.median(jours)) if len(jours) >= 3 else None, "n_vendues": len(jours),
+                 "dorment": len(dorment), "dorment_ids": [x["id"] for x in dorment[:30]]}
+        var = {}
+        if hist:
+            der = hist[-1]
+            for k, j in (("3m", 91), ("6m", 182), ("12m", 365)):
+                ref = next((h for h in hist if h["jour"] >= (maint - timedelta(days=j)).strftime("%Y-%m-%d")), None)
+                if ref and ref["valeur"] and (datetime.fromisoformat(der["jour"]) - datetime.fromisoformat(ref["jour"])).days >= j * 0.8:
+                    var[k] = round(100 * (der["valeur"] / ref["valeur"] - 1), 1)
+        scores = []
+        for x in coll:
+            vc = desirabilite.ventes_connues(x.get("titre") or "") if len(coll) <= 300 else None
+            d = desirabilite.score(x.get("titre") or "", carte=x, ventes=vc[0] if vc else None, jours=vc[1] if vc else None)
+            scores.append({"id": x["id"], "joueur": x.get("joueur") or x.get("titre"), "score": d["score"], "raisons": d["raisons"],
+                           "valeur": x.get("valeur"), "photo": None})
+        scores.sort(key=lambda s: -s["score"])
+        par_id = {x["id"]: x for x in coll}
+        hausses = sorted(({"id": s["carte_id"], "joueur": (par_id.get(s["carte_id"]) or {}).get("joueur"),
+                           "pct": round(100 * (s["derniere"] / s["reference"] - 1))} for s in suivis if s["carte_id"] in par_id),
+                         key=lambda h: -h["pct"])
+        collection = {"n": len(coll), "valeur": round(sum((x.get("valeur") or 0) for x in coll), 2),
+                      "cout": round(sum((x.get("cout") or 0) for x in coll), 2), "variation": var,
+                      "desir_moyen": round(statistics.mean([s["score"] for s in scores])) if scores else None,
+                      "top": scores[:3], "hausses": [h for h in hausses if h["pct"] > 0][:3]}
+        return {"ok": True, "vente": vente, "collection": collection}
 
     def _watch_ids(self):
         try:
