@@ -19,7 +19,7 @@ import time
 from datetime import datetime
 
 FRAICHEUR_S = 7 * 86400
-MAX_SOUS = 5                    # sous-ensembles mesures par produit (les plus importants)
+MAX_SOUS = 8                    # sous-ensembles mesures par produit (les plus importants)
 _verrou = threading.Lock()
 _EN_COURS = set()
 
@@ -137,11 +137,17 @@ _RE_PAS_BASE = re.compile(r"exclusives?|high gloss|canvas|oversized|retro|outbur
 
 
 def sous_yg(prod):
-    """Le sous-ensemble Young Guns de base (pas une parallele, pas Canvas / Oversized) ou None."""
-    for s in prod.get("sous_ensembles") or []:
+    """La carte de recrue PRINCIPALE du produit : les Young Guns de base chez Upper Deck ; ailleurs (31 oct 2026, Mathieu :
+    « les nouveaux produits aussi ») le sous-ensemble de recrues de base le plus frequent (Rated Rookie, Rookie Ticket,
+    RC de base...), sans parallele, sans numerotation, ni Canvas, Oversized ou printing plate. None s'il n'y en a pas."""
+    se = prod.get("sous_ensembles") or []
+    for s in se:
         if re.fullmatch(r"\s*young guns\s*", s.get("nom") or "", re.I) and not s.get("parallele_de"):
             return s["nom"]
-    return None
+    cand = [s for s in se if s.get("groupe") == "recrue" and not s.get("parallele_de") and not s.get("tirage")
+            and not re.search(r"oversized|canvas|printing plate|1/1|auto|patch|jersey", s.get("nom") or "", re.I)]
+    cand.sort(key=lambda s: -(s.get("par_boite") or 0))
+    return cand[0]["nom"] if cand else None
 
 
 def yg_annonces(prod, chercher=None):
@@ -158,10 +164,12 @@ def yg_annonces(prod, chercher=None):
     chercher = chercher or (lambda q: ebay_compte.rechercher(q, categorie="261328", limite=50, fond=True))
     joueurs = sorted({c["joueur"] for c in prod.get("cartes") or [] if c.get("sous_ensemble") == nom and c.get("joueur")
                       and "/" not in c["joueur"]})
+    mots_sous = [w for w in cartes_match.norm(nom).split() if len(w) >= 3 and w not in ("rookie", "rookies", "base", "the")] or ["rc"]
+    _sm, marque = _court(prod)
     out = {}
     for j in joueurs:
         try:
-            res = chercher(f"{saison} young guns {j}") or []
+            res = chercher(f"{saison} {'' if 'young guns' in nom.lower() else marque + ' '}{nom} {j}".replace("  ", " ")) or []
         except (RuntimeError, OSError):
             break
         fam = cartes_match.norm(j).split()[-1]
@@ -169,7 +177,7 @@ def yg_annonces(prod, chercher=None):
         for a in res:
             t = a.get("titre") or ""
             tn = cartes_match.norm(t)
-            if fam not in tn.split() or "young guns" not in tn or saison.split("-")[0] not in t:
+            if fam not in tn.split() or not all(w in tn.split() for w in mots_sous) or saison.split("-")[0] not in t:
                 continue
             if _RE_GRADEE.search(t) or _RE_PAS_BASE.search(t) or cartes_match.decoder(t).get("exclu"):
                 continue
@@ -181,6 +189,30 @@ def yg_annonces(prod, chercher=None):
     return out
 
 
+JOUEURS_MESURES_MAX = 120
+
+
+def joueurs_a_mesurer(prod):
+    """31 oct 2026 (Mathieu : « les nouveaux produits doivent etre evalues en fonction des joueurs presents, la chance d'avoir
+    une numerotee, un patch, une auto ou une SSP, et leur valeur sur le marche ») : les joueurs que l'indice ne connait pas
+    (nouvelles recrues, espoirs, joueurs d'un nouveau produit), dans les recrues ET dans les sets de hits (autos, patchs,
+    numerotees, SSP) ; ceux qui ont le plus de hits d'abord. Leur cote se lit dans leurs annonces eBay (gratuit)."""
+    import calcul
+    import valeurs
+    se = {s["nom"]: s for s in prod.get("sous_ensembles") or []}
+    poids = {}
+    for c in prod.get("cartes") or []:
+        j = c.get("joueur")
+        s = se.get(c.get("sous_ensemble")) or {}
+        if not j or "/" in j or s.get("parallele_de"):
+            continue
+        hit = bool(calcul.categories_carte(c, s))
+        if hit or s.get("groupe") == "recrue" or c.get("recrue"):
+            poids[j] = poids.get(j, 0) + (2 if hit else 1)
+    l = [j for j in sorted(poids, key=lambda k: -poids[k]) if not valeurs.connu(j)]
+    return l[:JOUEURS_MESURES_MAX]
+
+
 def annonces_recrues(prod, chercher=None):
     """26 oct 2026 (Mathieu : « dans les Series 1, 2, Extended, on cherche les rookies : Boston (Hagens) devrait etre
     parmi les plus chers avec Chicago, Philadelphie, Washington ») - une recrue toute neuve n'a encore aucune vente :
@@ -190,9 +222,7 @@ def annonces_recrues(prod, chercher=None):
     import valeurs
     chercher = chercher or (lambda q: ebay_compte.rechercher(q, categorie="261328", limite=50, fond=True))
     out = {}
-    for j in recrues_du_produit(prod):
-        if valeurs.connu(j):
-            continue
+    for j in joueurs_a_mesurer(prod):
         try:
             x = _annonces_joueur(j, chercher)
         except (RuntimeError, OSError):

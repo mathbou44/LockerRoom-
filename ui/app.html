@@ -2588,7 +2588,7 @@ function lectureFraiche(nom, corps){
 const TIPS_LANCE = () => [
   tt('Un deal, c’est une carte à 70 % ou moins de ce qu’elle s’est vraiment vendue.', 'A deal is a card at 70% or less of what it really sold for.'),
   tt('Touche l’étoile d’un deal : on t’avertit 15 min avant la fin de l’encan.', 'Tap a deal’s star: we alert you 15 min before the auction ends.'),
-  tt('Savage, Remi, CF31 et Slab Sharks passent en premier dans tes deals.', 'Savage, Remi, CF31 and Slab Sharks come first in your deals.'),
+  tt('Suis tes joueurs dans Filtres : leurs deals passent en premier, avec une étoile.', 'Track your players in Filters: their deals come first, with a star.'),
   tt('Fond flou : la carte et 1 mm autour restent nettes, l’acheteur voit son état.', 'Blurred background: the card and 1 mm around it stay sharp.'),
   tt('Tes achats eBay donnent leur coût à tes cartes, tout seuls.', 'Your eBay purchases give your cards their cost, automatically.'),
   tt('Glisse une fiche vers le bas pour la fermer.', 'Swipe a sheet down to close it.'),
@@ -3357,7 +3357,7 @@ const TUTO = {
     ['faire', tt('Ton accueil', 'Your home'), tt('« À faire », ton profit du mois, les nouvelles du hobby et des conseils pour toi.', '“To do”, your month’s profit, hobby news and tips for you.')]],
   acheteur: () => [
     ['logo', tt('Bienvenue sur SlabCoach', 'Welcome to SlabCoach'), tt('Ton coach pour trouver les bonnes cartes au bon prix. Voici ce que tu peux faire, en 1 minute.', 'Your coach to find the right cards at the right price. Here’s what you can do, in 1 minute.')],
-    ['deals', tt('Les deals', 'Deals'), tt('Les cartes en vente sous leur vraie valeur (les ventes réelles de la même carte), chez les gros vendeurs d’abord.', 'Cards for sale under their real value (real sales of the same card), from the big sellers first.')],
+    ['deals', tt('Les deals', 'Deals'), tt('Les cartes en vente sous leur vraie valeur (les ventes réelles de la même carte).', 'Cards for sale under their real value (real sales of the same card).')],
     ['etoile', tt('Ta watchlist', 'Your watchlist'), tt('Touche l’étoile d’une carte : on t’avertit avant la fin de l’encan et si la mise devient trop haute.', 'Tap a card’s star: we alert you before the auction ends and if the bid gets too high.')],
     ['lot', tt('Miser en lot', 'Bid in a batch'), tt('Tes montants sont prêts. Un tap ouvre la mise sur eBay, tu confirmes, et la carte suivante arrive.', 'Your amounts are ready. One tap opens the bid on eBay, you confirm, and the next card comes.')],
     ['loupe', tt('Combien vaut ma carte ?', 'What is my card worth?'), tt('Tape la carte : seulement les ventes de la même carte (variante, note, auto…).', 'Type the card: only sales of the same card (parallel, grade, auto…).')],
@@ -4994,7 +4994,7 @@ async function feuilleFiltresDeals(){
       <label class="bascule fd-l"><span>${tt('M’avertir quand ils sont en deal', 'Alert me when they’re on deal')}</span><input type="checkbox" id="fd-avert" ${avert0 ? 'checked' : ''}></label>
       <label class="bascule fd-l"><span>${tt('Seulement eux', 'Only them')}<small>${tt('Sinon : ils passent en premier, avec une ★', 'Otherwise: they come first, with a ★')}</small></span><input type="checkbox" id="fd-seul" ${seul ? 'checked' : ''}></label></div>
     <details class="fd-plus"><summary>${tt('Vendeurs et encans', 'Sellers and auctions')}</summary>
-      <label class="bascule fd-l"><span><b>${tt('Seulement les gros vendeurs', 'Top sellers only')}</b><small>Savage, Remi, CF31, Slab Sharks…</small></span><input type="checkbox" id="fd-vend" ${F.vendeurs ? 'checked' : ''}></label>
+      <label class="bascule fd-l"><span><b>${tt('Seulement les boutiques suivies', 'Followed shops only')}</b><small>${tt('Les boutiques de cartes que SlabCoach suit, et les tiennes', 'Card shops SlabCoach follows, and yours')}</small></span><input type="checkbox" id="fd-vend" ${F.vendeurs ? 'checked' : ''}></label>
       <label class="bascule fd-l"><span>${tt('Encans : seulement avec au moins une mise', 'Auctions: only with at least one bid')}</span><input type="checkbox" id="fd-mise" ${F.avec_mise ? 'checked' : ''}></label>
       <button class="acc-pil fd-ram" id="fd-ram"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.pin}</svg></span><span class="ap-t"><b>${tt('Je ramasse sur place', 'I pick up locally')}</b><small id="fd-ram-s">${tt('Le port ne compte pas chez ces vendeurs', 'Shipping doesn’t count with these sellers')}</small></span><i aria-hidden="true">›</i></button>
       ${p.vendeurs_max ? `<label class="md-l">${tt(`Mes vendeurs eBay (${p.vendeurs_max} max)`, `My eBay sellers (${p.vendeurs_max} max)`)}${p.pro ? '' : ' <span class="badge-f pro">✦ PRO</span>'}<input class="champ" id="fd-v" value="${esc((p.vendeurs || []).join(', '))}" placeholder="${esc(tt('pseudo eBay exact', 'exact eBay username'))}" ${p.pro ? '' : 'disabled'}></label>` : ''}</details>
@@ -5843,7 +5843,7 @@ function explicationPlace(x, vue, r, nbListe){
 const TIERS = (s) => s >= 80 ? ['vert', tt('Top choix', 'Top pick')] : s >= 55 ? ['acc', tt('Bon choix', 'Good pick')] : s >= 30 ? ['or', tt('Correct', 'Fair')] : ['rouge', tt('À éviter', 'Avoid')];
 // 29 oct 2026 : les classements, en termes clairs et professionnels
 const TRIS_ANA = () => [
-  ['place', tt('Carte qui couvre la place', 'Card covering the spot'), tt('Probabilité qu’une seule carte vaille au moins le prix de la place.', 'Probability that a single card is worth at least the spot price.')],
+  ['place', tt('Carte qui couvre la place', 'Card covering the spot'), tt('Chance qu’une seule carte vaille au moins le prix moyen d’une place (ou le prix du breaker, si tu l’as entré).', 'Chance that a single card is worth at least the average spot price (or the breaker’s price, if you entered it).')],
   ['hits', tt('Probabilité de hit', 'Hit probability'), tt('Probabilité d’obtenir au moins un hit : numérotée, autographe, relique ou SSP.', 'Probability of at least one hit: numbered, autograph, relic or SSP.')],
   // 30 oct 2026 (Mathieu : « mettre l'option rookie »)
   ['recrue', tt('Probabilité de recrue', 'Rookie probability'), tt('Probabilité d’obtenir au moins une carte recrue (Young Guns et autres RC).', 'Probability of at least one rookie card (Young Guns and other RCs).')],

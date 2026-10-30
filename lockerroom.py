@@ -1314,8 +1314,14 @@ class Api:
         res["decote"] = round(decote * 100, 1)
         demandes = {str(k): _float(v) for k, v in (p.get("prix_demandes") or {}).items() if _float(v)}
         stats = self._stats_checklist(prod, mode, sport)
+        # 31 oct 2026 (Mathieu : « pas normal que Boston soit dans les derniers avec Hagens », vue acheteur) : sans prix du
+        # breaker, la barre « une carte qui vaut ta place » etait le prix ESTIME de chaque place, lui-meme proportionnel a
+        # la valeur : les equipes cheres (celles des grosses recrues) devaient franchir une barre plus haute et tombaient en
+        # bas, les equipes pas cheres montaient. Maintenant la barre est la MEME pour toutes : le prix moyen d'une place.
+        # Avec le prix du breaker entre pour une equipe, c'est ce prix-la (le vrai rapport qualite-prix).
+        barre = round(total / n, 2) if n else None
         for pl in res["places"]:
-            self._noter_place(pl, demandes.get(pl["cle"]), stats.get(pl["cle"]))
+            self._noter_place(pl, demandes.get(pl["cle"]), stats.get(pl["cle"]), barre)
         self._scores_relatifs(res["places"])
         # 25 oct 2026 (Mathieu : acheteur = « des scores », joueurs ET equipes) : la meme chose, place par joueur
         joueurs = None
@@ -1326,7 +1332,7 @@ class Api:
             joueurs = [pl for pl in rj["places"] if (pl.get("part_brute") or pl["ev"]) > 0]   # 29 oct : la part exacte (l'ev arrondi cachait des joueurs a 1 boite)
             for pl in joueurs:
                 pl["prix"] = calcul.arrondi_rond(pl["prix"] / max(0.4, 1 - decote), arrondi)
-                self._noter_place(pl, dj.get(pl["cle"]), sj.get(pl["cle"]))
+                self._noter_place(pl, dj.get(pl["cle"]), sj.get(pl["cle"]), barre)
                 pl["equipe"] = (sj.get(pl["cle"]) or {}).get("equipe")
             self._scores_relatifs(joueurs)
             joueurs.sort(key=lambda x: -x["score"])
@@ -1341,7 +1347,7 @@ class Api:
                             "preliminaire": bool(prod.get("preliminaire"))}}
 
     @staticmethod
-    def _noter_place(pl, demande, stats):
+    def _noter_place(pl, demande, stats, barre=None):
         """Score d'une place pour l'acheteur (0-100) : la chance de rembourser son prix (au moins une carte qui vaut
         le prix paye) et la valeur attendue / prix. Sans prix demande : le prix estime d'un breaker."""
         prix = demande or pl["prix"] or 0
@@ -1354,8 +1360,10 @@ class Api:
         # 29 oct 2026 (Mathieu : « les rookies sont de loin les plus presents, explique ta logique » ; choix : « un hit qui
         # vaut ta place ») : la chance de tirer AU MOINS UNE carte qui vaut, a elle seule, le prix de la place
         import math as _m2
-        n_bonnes = sum(float(n) for v, n in dist if prix and float(v) >= prix)
-        pl["p_carte_prix"] = round(1 - _m2.exp(-n_bonnes), 6) if prix else 0
+        seuil = demande or barre or prix
+        pl["barre"] = round(seuil, 2) if seuil else None
+        n_bonnes = sum(float(n) for v, n in dist if seuil and float(v) >= seuil)
+        pl["p_carte_prix"] = round(1 - _m2.exp(-n_bonnes), 6) if seuil else 0
         # 26 oct 2026 (Mathieu : « la chance de tomber sur une numerotee, patch, auto, auto-patch, SSP, pas la chance de
         # rembourser la mise ») : le score = 50 % la chance d'au moins un hit + 50 % la valeur attendue / le prix
         # (score provisoire : _scores_relatifs le refait sur la liste entiere)

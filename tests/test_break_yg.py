@@ -43,3 +43,11 @@ for eq in ("PHI", "CHI", "BOS"):
 px = {p["cle"]: p["prix"] for p in r["places"]}
 assert px["PHI"] >= px["NYI"] and px["CHI"] >= px["CGY"], px
 print("OK test_break_yg", rang[:8])
+# vue acheteur : sans prix de breaker, Boston (Hagens), Philadelphie (Martone) et Chicago (Frondell) en haut aussi
+ra = a.analyse_break({"produit_id": prod["id"], "boites": 12, "cout_boite": 150, "mode": "equipes", "acheteur": True})
+ordre = [p["cle"] for p in sorted(ra["places"], key=lambda x: -x["score"])]
+for eq in ("PHI", "CHI", "BOS"):
+    assert eq in ordre[:5], (eq, ordre[:10])
+jo = [x["nom"] for x in ra["joueurs"][:6]]
+assert {"James Hagens", "Porter Martone", "Anton Frondell"} <= set(jo), jo
+print("OK acheteur", ordre[:6], jo[:4])
