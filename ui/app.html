@@ -462,11 +462,12 @@ html[lang=en] .w-ligne::after{content:'Remove'}
 .w-pr2 small{font:700 9.5px var(--f-cond); letter-spacing:.08em; text-transform:uppercase; color:var(--doux); white-space:nowrap}
 .w-pr2 b{font:700 22px/1 var(--f-cond); color:var(--texte); white-space:nowrap}
 .w-pr2 .rouge b{color:var(--rouge)}
+.w-pr2 .w-pro{background:none; padding-left:4px; padding-right:2px} .w-pro.vert b{color:var(--vert)} .w-pro b{font-size:20px}
 .w-max2{border:1px solid color-mix(in srgb, var(--vert) 45%, transparent); cursor:pointer; font:inherit; color:inherit}
 .w-max2 b{color:var(--vert) !important} .w-max2.perso{background:color-mix(in srgb, var(--vert) 12%, var(--carte2))}
 .w-dep{font:700 11px var(--f-cond); letter-spacing:.06em; text-transform:uppercase; color:var(--rouge)}
 .w-liste .w-dr{display:flex; flex-direction:column; align-items:center; justify-content:space-between; gap:6px; flex:none}
-.w-liste .w-et{width:30px; height:30px} .w-liste .w-go{height:34px; padding:0 14px}
+.w-liste .w-et{width:30px; height:30px} .w-liste .w-go{height:44px; min-width:76px; justify-content:center; padding:0 18px; font-size:17px; font-weight:800}
 .tuile-deal.part{opacity:0; transform:scale(.96); transition:opacity .3s, transform .3s}
 .w-ligne.e-depasse{box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--rouge) 70%, transparent); background:color-mix(in srgb, var(--rouge) 7%, var(--carte))}
 .w-ronds{margin:2px 0 14px}
@@ -5128,8 +5129,8 @@ async function chargerWatch(){
         <span class="w-tps ${!fini && x.encan && x.reste_min != null && x.reste_min <= 60 ? 'bientot' : ''}">${x.encan && !fini ? icH() : ''}${temps}</span>
         ${x.ebay_le && !fini ? `<span class="w-eb">✓ eBay</span>` : ''}</div>
       <div class="w-mil"><div class="w-t">${esc(titreCourt(x.titre))}</div>
-        ${fini ? '' : `<div class="w-pr2"><div class="${dep ? 'rouge' : ''}"><small>${x.encan ? tt('Mise actuelle', 'Current bid') : tt('Prix', 'Price')}</small><b>${cur}</b></div>
-          <button class="w-max2 ${x.mise_perso ? 'perso' : ''}" data-wmax="${esc(x.item_id)}"><small>${x.encan ? tt('Ta mise max', 'Your max bid') : tt('Paie au plus', 'Pay at most')} ✎</small><b>${x.mise_max != null ? argent(x.mise_max, 0) : '—'}</b></button></div>`}
+        ${fini ? '' : `<div class="w-pr2"><div class="${dep ? 'rouge' : ''}"><small>${x.encan ? tt('Mise', 'Bid') : tt('Prix', 'Price')}</small><b>${cur}</b></div>
+          <button class="w-max2 ${x.mise_perso ? 'perso' : ''}" data-wmax="${esc(x.item_id)}"><small>${x.encan ? tt('Ta mise max', 'Your max bid') : tt('Paie au plus', 'Pay at most')} ✎</small><b>${x.mise_max != null ? argent(x.mise_max, 0) : '—'}</b></button>${x.profit != null ? `<div class="w-pro ${x.profit > 0 ? 'vert' : 'rouge'}"><small>${tt('Profit', 'Profit')}</small><b>${x.profit > 0 ? '+' : '−'}${argent(Math.abs(x.profit), 0)}</b></div>` : ''}</div>`}
         ${dep ? `<div class="w-dep">${tt('Dépasse ta mise max', 'Over your max bid')}</div>` : ''}</div>
       <div class="w-dr">${x.etat === 'ok' && x.url ? (x.encan ? `<button class="w-go" data-wmiser="${esc(x.item_id)}">${tt('Miser', 'Bid')}</button>` : `<a class="w-go" href="${esc(lienAchat(x.url, 'watch'))}" target="_blank" rel="noopener">${tt('Acheter', 'Buy')}</a>`) : ''}
         <button class="sd-et on w-et" data-watch="${esc(x.item_id)}" aria-pressed="true" aria-label="${esc(tt('Retirer de la watchlist', 'Remove from watchlist'))}">${ICO_ETOILE}</button></div></div>`;
@@ -5140,8 +5141,7 @@ async function chargerWatch(){
   const rond = (id, ic, lib, n) => `<button class="d-rond" id="${id}"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${ic}</svg>${n ? `<em>${n}</em>` : ''}</span><small>${lib}</small></button>`;
   z.innerHTML = `<div class="d-ronds w-ronds">${rond('w-reg', IC_PIL.cloche, tt('Alertes', 'Alerts'))}${rond('w-eb', IC_PIL.envoi, tt('Vers eBay', 'To eBay'), nEb)}
       ${nEnc >= 2 ? rond('w-lot', IC_PIL.lot, tt('Miser en lot', 'Bid in a batch'), nEnc) : ''}${S.forfait && S.forfait.admin && L.some(x => x.encan && x.etat !== 'fini') ? rond('w-gx', IC_PIL.horloge, 'Gixen') : ''}</div>
-    <div class="w-liste">${L.map(ligne).join('')}</div>
-    <p class="w-note">${tt('Touche ta mise max (✎) pour la changer. Tu mises toi-même sur eBay.', 'Tap your max bid (✎) to change it. You bid yourself on eBay.')}</p>`;
+    <div class="w-liste">${L.map(ligne).join('')}</div>`;
   $('#w-reg').onclick = () => feuilleAlertesWatch(W);
   $('#w-eb').onclick = () => { vibrer(); feuilleWatchEbay(L, W); };
   const gx = $('#w-gx'); if (gx) gx.onclick = () => { vibrer(); feuilleGixen(); };

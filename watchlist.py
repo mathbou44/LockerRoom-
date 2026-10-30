@@ -334,6 +334,17 @@ def liste(api):
         c.close()
     _du_chasseur(lst)
     maint = _maint()
+    # 31 oct 2026 (Mathieu : « il reste de la place : le profit calcule, qui s'ajuste en live avec le nouveau prix de
+    # l'encan ») : ce que la carte rapporte si tu l'as au prix du moment = valeur revendue, moins les frais eBay, moins
+    # ce que tu paies (mise ou prix + port). Le prix du moment vient du chasseur et des relectures eBay (2 dernieres h)
+    try:
+        r = api.reglages_lire()
+        fp, ff = (r.get("frais_ebay_pct") or 0) / 100, r.get("frais_ebay_fixe") or 0
+    except Exception:
+        fp, ff = 0.1325, 0.40
+    for x in lst:
+        if x.get("valeur") and x.get("total") is not None:
+            x["profit"] = round(x["valeur"] * (1 - fp) - ff - x["total"], 2)
     for x in lst:
         x["encan"] = bool(x.get("encan"))
         x["etat"] = _etat(x, maint)
