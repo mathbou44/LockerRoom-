@@ -60,7 +60,7 @@ with mock.patch.object(alarmes, "_heure_locale", lambda m=None: 23):
 assert a_maj >= 1 and len(pushs) > n0, (a_maj, pushs[n0:])
 
 # 29 oct 2026 : les reglages de l'utilisateur (defaut 15 min / 70 %), et une mise max a la main pour une carte
-assert a.watch_liste()["reglages"] == {"fin_min": 15, "ratio_pct": 70, "alerte_fin": True, "alerte_seuil": True, "ebay_auto": False}
+assert a.watch_liste()["reglages"] == {"fin_min": 15, "ratio_pct": 70, "alerte_fin": True, "alerte_seuil": True, "ebay_auto": False, "garder_h": 12}
 a.watch_ajouter({"item_id": "555", "titre": "Crosby YG", "valeur": 1000, "port": 0, "total": 300, "encan": True, "fin": iso(25)})
 a.watch_ajouter({"item_id": "666", "titre": "Ovechkin YG", "valeur": 1000, "port": 0, "total": 300, "encan": True, "fin": iso(25)})
 a.watch_mise_max("666", 450)

@@ -37,8 +37,12 @@ def _cx(api):
 
 
 # 29 oct 2026 (Mathieu : « laisser l'utilisateur choisir les valeurs, mais laisser celles-ci par defaut pour les alarmes »)
-DEFAUT = {"fin_min": FIN_MIN, "ratio_pct": int(RATIO * 100), "alerte_fin": True, "alerte_seuil": True, "ebay_auto": False}
+DEFAUT = {"fin_min": FIN_MIN, "ratio_pct": int(RATIO * 100), "alerte_fin": True, "alerte_seuil": True, "ebay_auto": False,
+          "garder_h": 12}
 CHOIX_FIN = (5, 10, 15, 30, 60)
+# 31 oct 2026 (Mathieu : « qu'elles disparaissent apres un certain temps, par defaut ») : un encan termine reste visible
+# quelques heures (le temps de voir s'il est gagne), puis sort tout seul de la watchlist ; 0 = tout de suite
+CHOIX_GARDER = (0, 1, 12, 24, 72)
 
 
 def reglages(api):
@@ -54,6 +58,8 @@ def reglages(api):
     for k in ("alerte_fin", "alerte_seuil", "ebay_auto"):
         if k in r:
             out[k] = bool(r[k])
+    if r.get("garder_h") in CHOIX_GARDER:
+        out["garder_h"] = int(r["garder_h"])
     return out
 
 
@@ -77,6 +83,11 @@ def regler(api, d):
     for k in ("alerte_fin", "alerte_seuil", "ebay_auto"):
         if k in d:
             cfg[k] = bool(d[k])
+    try:
+        if d.get("garder_h") is not None and int(d["garder_h"]) in CHOIX_GARDER:
+            cfg["garder_h"] = int(d["garder_h"])
+    except (TypeError, ValueError):
+        pass
     api.reglages_sauver({"watch": cfg})
     if cfg["ratio_pct"] != ancien:
         c = _cx(api)
@@ -295,7 +306,27 @@ def _du_chasseur(lst):
                 x["port"] = y["port"]
 
 
+def purger(api, maint=None):
+    """Les encans termines depuis plus de « garder_h » heures sortent de la watchlist (jamais un prix fixe)."""
+    maint = maint or _maint()
+    lim = maint - timedelta(hours=reglages(api).get("garder_h", 12))
+    c = _cx(api)
+    try:
+        vieux = [r[0] for r in c.execute("SELECT item_id, fin FROM watchlist WHERE encan=1").fetchall()
+                 if (lambda f: f is not None and f < lim)(_dt(r[1]))]
+        if vieux:
+            c.executemany("DELETE FROM watchlist WHERE item_id=?", [(i,) for i in vieux])
+            c.commit()
+    finally:
+        c.close()
+    return len(vieux)
+
+
 def liste(api):
+    try:
+        purger(api)
+    except Exception:
+        pass
     c = _cx(api)
     try:
         lst = [dict(r) for r in c.execute("SELECT * FROM watchlist")]

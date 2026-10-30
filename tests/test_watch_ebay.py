@@ -85,4 +85,12 @@ print("ok : mises rapides Gixen")
 assert watchlist.mise_minimum(14.5, 3) == 15.0 and watchlist.mise_minimum(14.5, 0) == 14.5 and watchlist.mise_minimum(120, 2) == 122.5
 assert G["501"]["mise_min"] == 14.5 and G["503"]["trop_bas"]
 assert b.watch_preparer()["ok"] is True or True                       # pour tous (pas seulement l'admin)
+# 31 oct 2026 : un encan termine depuis plus de 12 h (par defaut) sort tout seul ; un prix fixe, jamais
+c = lockerroom.Api(os.path.join(tempfile.mkdtemp(), "p.db"))
+c.watch_ajouter({"item_id": "701", "titre": "vieux", "valeur": 100, "total": 20, "encan": True, "fin": iso(-13 * 60)})
+c.watch_ajouter({"item_id": "702", "titre": "recent", "valeur": 100, "total": 20, "encan": True, "fin": iso(-60)})
+c.watch_ajouter({"item_id": "703", "titre": "fixe", "valeur": 100, "total": 20})
+assert sorted(x["item_id"] for x in c.watch_liste()["cartes"]) == ["702", "703"]
+c.watch_regler({"garder_h": 0})
+assert [x["item_id"] for x in c.watch_liste()["cartes"]] == ["703"]
 print("ok : mises preparees")

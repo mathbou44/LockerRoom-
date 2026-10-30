@@ -699,9 +699,18 @@ _MOTS_CARTE = {"auto", "patch", "jersey", "relic", "game", "used", "worn", "swat
                "print", "variation", "insert", "on", "sticker"}
 
 
+# 31 oct 2026 (Mathieu : « impossible, pas de comp » : Eichel YG BGS 9.5 « (TomBon) », Kaprizov YG PSA 10 « (MicMas) ») :
+# le code du consignataire entre parentheses n'est pas la carte ; il entrait dans la recherche -> zero vente trouvee
+_RE_CODE_VENDEUR = re.compile(r"\(\s*(?:[A-Z][a-z]+[A-Z][A-Za-z]*|[A-Z]{2,5}\d{0,3}|[A-Za-z]{2,4}\d{2,6})\s*\)")
+
+
+def sans_code_vendeur(titre):
+    return _RE_CODE_VENDEUR.sub(" ", str(titre or ""))
+
+
 def identite(titre, joueur=""):
     """Les mots qui disent QUELLE carte c'est (produit, insert, sous-ensemble) -> (mots, marques)."""
-    t = norm(titre)
+    t = norm(sans_code_vendeur(titre))
     t = _RE_GRADE.sub(" ", t)
     t = _RE_SERIE.sub(" ", t)
     t = _RE_NUM.sub(" ", t)
@@ -771,18 +780,19 @@ def cible_titre(titre, joueur=None):
     try:
         import produits_appris
         deja = set(c["mots"]) | set(j.split())
-        for ph in produits_appris.dans(norm(titre), exclure=deja):
+        for ph in produits_appris.dans(norm(sans_code_vendeur(titre)), exclure=deja):
             for w in ph.split():
                 if w not in deja and w not in c["q_plus"] and w not in VIDES and len(c["q_plus"]) < 2:
                     c["q_plus"].append(w)
     except Exception:
         pass
-    if not c["q_plus"] and c["ident"]:
-        ordre = norm(titre).split()
-        set_mots = set(" ".join(sets).split())
-        bons = [w for w in c["ident"] if w.isalpha() and len(w) >= 3 and w not in GENERIQUES and w not in c["mots"] and w not in set_mots]
-        bons.sort(key=lambda w: ordre.index(w) if w in ordre else 99)
-        c["q_plus"] = bons[:1 if sets else 2]            # set connu : 1 mot de l'insert (Premieres, Cranked) ; sinon 2
+    # sans nom appris : les mots du titre, SEULEMENT quand le produit est inconnu (un set connu suffit a la recherche :
+    # un mot de plus pris au hasard du titre peut vider la recherche)
+    if not c["q_plus"] and c["ident"] and not sets:
+        ordre = norm(sans_code_vendeur(titre)).split()
+        bons = [w for w in c["ident"] if w.isalpha() and len(w) >= 3 and w not in GENERIQUES and w not in c["mots"] and w in ordre]
+        bons.sort(key=lambda w: ordre.index(w))
+        c["q_plus"] = bons[:2]
     return c
 
 

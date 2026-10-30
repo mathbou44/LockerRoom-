@@ -383,7 +383,12 @@ details.reglage summary::-webkit-details-marker{display:none}
 .d-onglets svg{width:15px; height:15px; fill:var(--or)}
 .w-nb{min-width:20px; height:20px; padding:0 6px; border-radius:10px; background:var(--or); color:#16151A; font:700 12px/20px var(--f-cond); text-align:center}
 .w-liste{display:flex; flex-direction:column; gap:10px}
-.w-ligne{display:flex; align-items:center; gap:12px; padding:10px; border-radius:16px; background:var(--carte); cursor:pointer; transition:opacity .25s, transform .25s}
+.w-ligne{display:flex; align-items:center; gap:12px; padding:10px; border-radius:16px; background:var(--carte); cursor:pointer; transition:opacity .25s, transform .25s; position:relative}
+.w-liste{overflow-x:hidden; overflow-y:visible}
+.w-ligne::after{content:'Retirer'; position:absolute; top:0; bottom:0; left:calc(100% + 10px); width:110px; border-radius:16px; display:flex; align-items:center; justify-content:center;
+  background:color-mix(in srgb, var(--rouge) 30%, var(--carte)); color:var(--rouge); font:700 14px var(--f-cond); letter-spacing:.08em; text-transform:uppercase; transition:background .15s}
+.w-ligne.w-sup-pret::after{background:var(--rouge); color:#1A0B0D}
+html[lang=en] .w-ligne::after{content:'Remove'}
 .w-ligne.part{opacity:0; transform:translateX(30px)}
 .w-ligne.e-fini{opacity:.55}
 .w-ph{position:relative; width:52px; height:70px; flex-shrink:0; border-radius:6px; overflow:hidden; background:#101014; display:flex; align-items:center; justify-content:center; color:#34333D}
@@ -430,6 +435,23 @@ details.reglage summary::-webkit-details-marker{display:none}
   background:conic-gradient(from 210deg, var(--h1,#9FE6D2), var(--h2,#B9BEFF), var(--h3,#F2B3D6), var(--h4,#F1D58E), var(--h1,#9FE6D2))}
 .retour-geste::before{content:''; position:absolute; inset:2px; border-radius:50%; background:var(--carte)} .retour-geste svg{position:relative; width:20px; height:20px; fill:none; stroke:var(--texte); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round}
 .w-pils{margin-top:14px}
+/* 31 oct 2026 : la ligne lean */
+.w-liste .w-ligne{padding:8px 10px 8px 8px; gap:10px; align-items:stretch}
+.w-liste .w-ph{width:58px; height:auto; min-height:80px; align-self:stretch; border-radius:8px}
+.w-tps{position:absolute; left:3px; right:3px; top:3px; z-index:2; display:flex; align-items:center; justify-content:center; padding:2px 0; border-radius:99px; background:rgba(10,10,14,.85); color:#F4F2F8; font:700 11px/1.1 var(--f-cond); letter-spacing:.03em; white-space:nowrap}
+.w-tps .ic-h{width:10px; height:10px; margin-right:2px} .w-tps.bientot{background:var(--or); color:#15141A}
+.w-liste .w-mil{display:flex; flex-direction:column; justify-content:center; gap:6px; min-width:0}
+.w-liste .w-t{font-size:13.5px; line-height:1.25; -webkit-line-clamp:2}
+.w-pr2{display:flex; gap:6px}
+.w-pr2 > *{display:flex; flex-direction:column; gap:1px; min-width:0; padding:4px 8px; border-radius:10px; background:var(--carte2); text-align:left}
+.w-pr2 small{font:700 9.5px var(--f-cond); letter-spacing:.08em; text-transform:uppercase; color:var(--doux); white-space:nowrap}
+.w-pr2 b{font:700 22px/1 var(--f-cond); color:var(--texte); white-space:nowrap}
+.w-pr2 .rouge b{color:var(--rouge)}
+.w-max2{border:1px solid color-mix(in srgb, var(--vert) 45%, transparent); cursor:pointer; font:inherit; color:inherit}
+.w-max2 b{color:var(--vert) !important} .w-max2.perso{background:color-mix(in srgb, var(--vert) 12%, var(--carte2))}
+.w-dep{font:700 11px var(--f-cond); letter-spacing:.06em; text-transform:uppercase; color:var(--rouge)}
+.w-liste .w-dr{display:flex; flex-direction:column; align-items:center; justify-content:space-between; gap:6px; flex:none}
+.w-liste .w-et{width:30px; height:30px} .w-liste .w-go{height:34px; padding:0 14px}
 .tuile-deal.part{opacity:0; transform:scale(.96); transition:opacity .3s, transform .3s}
 .w-ligne.e-depasse{box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--rouge) 70%, transparent); background:color-mix(in srgb, var(--rouge) 7%, var(--carte))}
 .w-ronds{margin:2px 0 14px}
@@ -1086,7 +1108,7 @@ body.fen-ouverte{overflow:hidden}
 @media (max-width:600px){ .fen-img{aspect-ratio:4/3 !important; max-height:42vh !important} }
 .fen-img{aspect-ratio:1/1; max-height:62vh; border-radius:20px; background:#111115; border:1px solid var(--ligne); display:flex; align-items:center; justify-content:center; overflow:hidden; color:#34333D}
 .fen-img img{width:100%; height:100%; object-fit:contain; transition:transform .25s ease}
-.fen-img{position:relative; cursor:zoom-in} .fen-img.zoom{cursor:zoom-out} .fen-img.zoom img{transform:scale(2.6)}
+.fen-img{position:relative; cursor:zoom-in} .fen-img.zoom{cursor:zoom-out; touch-action:none} .fen-img.zoom img{transform:scale(2.6)} .fen-img img{transition:transform .2s ease}
 .loupe{position:absolute; pointer-events:none; opacity:0; border-radius:50%; border:3px solid rgba(255,255,255,.85); box-shadow:0 10px 30px rgba(0,0,0,.55), inset 0 0 0 1px rgba(0,0,0,.3); background:#111115 no-repeat; transition:opacity .12s; z-index:3}
 .fen-img.zoom .loupe{display:none}
 .fen-sug{display:grid; grid-template-columns:1fr 1fr; gap:10px}
@@ -5039,23 +5061,25 @@ async function chargerWatch(){
     <a class="btn petit" href="#deals">${tt('Voir les deals', 'See deals')}</a></div>`; return; }
   // 31 oct 2026 (Mathieu : « "max" dans la watchlist, ce n'est pas clair : le prix de la carte en ce moment et le prix que
   // moi je devrais miser ; mets des deux-points, il faut que ce soit clair entre les deux ») : deux lignes nommees
+  // 31 oct 2026 (Mathieu : « beaucoup d'espace perdu, grossir les prix ; le plus lean possible, simple et clair ») :
+  // une ligne compacte : la photo (temps et eBay dessus), le titre, puis les DEUX prix en gros, chacun nomme
   const ligne = (x) => {
-    const cur = argent((x.total || 0) - (x.port || 0), 0);
-    const mx = `<button class="w-max ${x.mise_perso ? 'perso' : ''}" data-wmax="${esc(x.item_id)}" aria-label="${esc(tt('Changer ma mise max', 'Change my max bid'))}">${x.mise_max != null ? argent(x.mise_max, 0) : '—'}<i>✎</i></button>`;
-    const pil = x.etat === 'fini' ? `<span class="w-pil gris">${tt('Terminé', 'Ended')}</span>`
-      : x.etat === 'depasse' ? `<span class="w-pil rouge">${tt('Dépasse ta mise max', 'Over your max')}</span>`
-      : x.encan ? `<span class="w-pil ${x.reste_min != null && x.reste_min <= 60 ? 'or' : ''}">${icH()}${finCourt(x.reste_min)}</span>` : `<span class="w-pil">${tt('Achat immédiat', 'Buy now')}</span>`;
-    const prix = x.etat === 'fini' ? '' : `<div class="w-pr"><span>${x.encan ? tt('Mise actuelle', 'Current bid') : tt('Prix', 'Price')} : <b class="${x.etat === 'depasse' ? 'rouge' : ''}">${cur}</b></span>
-      <span>${x.encan ? tt('Ta mise max', 'Your max bid') : tt('Paie au plus', 'Pay at most')} : ${mx}</span></div>`;
+    const cur = argent((x.total || 0) - (x.port || 0), 0), fini = x.etat === 'fini', dep = x.etat === 'depasse';
+    const temps = fini ? tt('Terminé', 'Ended') : x.encan ? finCourt(x.reste_min) : tt('Achat imm.', 'Buy now');
     return `<div class="w-ligne e-${x.etat}" ${attrsAnnonce(x)} role="button" tabindex="0">
-      <div class="w-ph">${SVG_CARTE}${x.photo ? `<img src="${esc(photoNet(x.photo))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}${x.ebay_le && x.etat !== 'fini' ? `<span class="w-eb" title="${esc(tt('Aussi dans ta watchlist eBay', 'Also in your eBay watchlist'))}">✓ eBay</span>` : ''}</div>
-      <div class="w-mil"><div class="w-t">${esc(titreCourt(x.titre))}</div><div class="w-l">${pil}</div>${prix}</div>
+      <div class="w-ph">${SVG_CARTE}${x.photo ? `<img src="${esc(photoNet(x.photo))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}
+        <span class="w-tps ${!fini && x.encan && x.reste_min != null && x.reste_min <= 60 ? 'bientot' : ''}">${x.encan && !fini ? icH() : ''}${temps}</span>
+        ${x.ebay_le && !fini ? `<span class="w-eb">✓ eBay</span>` : ''}</div>
+      <div class="w-mil"><div class="w-t">${esc(titreCourt(x.titre))}</div>
+        ${fini ? '' : `<div class="w-pr2"><div class="${dep ? 'rouge' : ''}"><small>${x.encan ? tt('Mise actuelle', 'Current bid') : tt('Prix', 'Price')}</small><b>${cur}</b></div>
+          <button class="w-max2 ${x.mise_perso ? 'perso' : ''}" data-wmax="${esc(x.item_id)}"><small>${x.encan ? tt('Ta mise max', 'Your max bid') : tt('Paie au plus', 'Pay at most')} ✎</small><b>${x.mise_max != null ? argent(x.mise_max, 0) : '—'}</b></button></div>`}
+        ${dep ? `<div class="w-dep">${tt('Dépasse ta mise max', 'Over your max bid')}</div>` : ''}</div>
       <div class="w-dr">${x.etat === 'ok' && x.url ? (x.encan ? `<button class="w-go" data-wmiser="${esc(x.item_id)}">${tt('Miser', 'Bid')}</button>` : `<a class="w-go" href="${esc(lienAchat(x.url, 'watch'))}" target="_blank" rel="noopener">${tt('Acheter', 'Buy')}</a>`) : ''}
         <button class="sd-et on w-et" data-watch="${esc(x.item_id)}" aria-pressed="true" aria-label="${esc(tt('Retirer de la watchlist', 'Remove from watchlist'))}">${ICO_ETOILE}</button></div></div>`;
   };
   // 31 oct 2026 (Mathieu : « les options pour envoyer vers eBay et Gixen en haut de la watchlist, c'est plus naturel ») :
   // des ronds avec icone, comme dans Deals ; chacun ouvre sa fenetre
-  const nEnc = L.filter(x => x.encan && x.etat === 'ok').length, nEb = L.filter(x => x.ebay_le && x.etat !== 'fini').length;
+  const nEnc = L.filter(x => x.encan && x.etat === 'ok').length, nEb = L.filter(x => !x.ebay_le && x.etat !== 'fini').length;     // a ajouter sur eBay
   const rond = (id, ic, lib, n) => `<button class="d-rond" id="${id}"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${ic}</svg>${n ? `<em>${n}</em>` : ''}</span><small>${lib}</small></button>`;
   z.innerHTML = `<div class="d-ronds w-ronds">${rond('w-reg', IC_PIL.cloche, tt('Alertes', 'Alerts'))}${rond('w-eb', IC_PIL.envoi, tt('Vers eBay', 'To eBay'), nEb)}
       ${nEnc >= 2 ? rond('w-lot', IC_PIL.lot, tt('Miser en lot', 'Bid in a batch'), nEnc) : ''}${S.forfait && S.forfait.admin && L.some(x => x.encan && x.etat !== 'fini') ? rond('w-gx', IC_PIL.horloge, 'Gixen') : ''}</div>
@@ -5067,6 +5091,25 @@ async function chargerWatch(){
   const lot = $('#w-lot'); if (lot) lot.onclick = () => { vibrer(); feuilleMiser(null, true); };
   $$('[data-wmiser]', z).forEach(b => b.onclick = (e) => { e.stopPropagation(); vibrer(); feuilleMiser(b.dataset.wmiser, false); });
   $$('[data-wmax]', z).forEach(b => b.onclick = (e) => { e.stopPropagation(); const x = L.find(y => String(y.item_id) === b.dataset.wmax); if (x) feuilleMiseMax(x, W); });
+  // 31 oct 2026 (Mathieu : « etre capable de les supprimer en glissant vers la gauche ») : comme Mail sur iPhone
+  $$('.w-ligne', z).forEach(el => {
+    const id = el.dataset.annonce; let x0 = null, y0 = 0, dx = 0, h = false;
+    el.addEventListener('touchstart', (e) => { const t = e.touches[0]; x0 = t.clientX; y0 = t.clientY; dx = 0; h = false; el.style.transition = 'none'; }, {passive:true});
+    el.addEventListener('touchmove', (e) => { if (x0 === null) return; const t = e.touches[0], ddx = t.clientX - x0, ddy = t.clientY - y0;
+      if (!h && Math.abs(ddy) > 12 && Math.abs(ddy) > Math.abs(ddx)) { x0 = null; return; }
+      if (Math.abs(ddx) > 8) h = true;
+      if (!h) return;
+      dx = Math.min(0, ddx); el.style.transform = `translateX(${dx}px)`; el.classList.toggle('w-sup-pret', dx < -110); }, {passive:true});
+    el.addEventListener('touchend', async () => { if (x0 === null) return; x0 = null; el.style.transition = '';
+      if (!h) return;
+      el.dataset.glisse = '1'; setTimeout(() => { delete el.dataset.glisse; }, 350);
+      if (dx > -110) { el.style.transform = ''; el.classList.remove('w-sup-pret'); return; }
+      vibrer(); el.style.transform = 'translateX(-110%)'; el.style.opacity = '0';
+      const r = await API.watch_retirer(id).catch(() => null);
+      if (r && r.ok) { if (r.ids) { S.watch = new Set(r.ids.map(String)); majNbWatch(); } setTimeout(() => { el.remove(); if (!$('.w-ligne')) chargerWatch(); }, 260); toast(tt('Retirée de ta watchlist', 'Removed from your watchlist'), 1500); }
+      else { el.style.transform = ''; el.style.opacity = ''; el.classList.remove('w-sup-pret'); toast(tt('Pas retirée, réessaie', 'Not removed, try again')); } });
+    el.addEventListener('click', (e) => { if (el.dataset.glisse) { e.preventDefault(); e.stopPropagation(); } }, true);
+  });
   clearInterval(S.tDeals);
   S.tDeals = setInterval(() => { if (!$('.w-liste')) { clearInterval(S.tDeals); return; } chargerWatch(); }, 60000);
 }
@@ -5080,14 +5123,17 @@ function feuilleAlertesWatch(W){
     <label class="bascule fd-l" style="margin-top:14px"><span><b>${tt('Si la mise dépasse ma mise max', 'If the bid goes over my max')}</b><small>${tt('La carte n’est plus rentable', 'The card is no longer worth it')}</small></span><input type="checkbox" id="wa-seuil" ${C.alerte_seuil ? 'checked' : ''}></label>
     <div class="fd-s" style="margin-top:14px">${tt('Ma mise max par défaut', 'My default max bid')} <small>${tt('% de la valeur, port compris', '% of value, shipping included')}</small></div>
     ${seg('wa-ratio', [50, 60, 70, 80, 90], C.ratio_pct, ' %')}
-    <div class="sous" style="margin-top:12px">${tt('Par défaut : 15 min et 70 %.', 'Default: 15 min and 70%.')} <button class="lien-t" id="wa-def">${tt('Remettre', 'Reset')}</button></div>
+    <div class="fd-s" style="margin-top:14px">${tt('Retirer les encans terminés après', 'Remove ended auctions after')}</div>
+    <div class="seg petit" id="wa-garder">${[[0, tt('Tout de suite', 'Right away')], [1, '1 h'], [12, '12 h'], [24, '24 h'], [72, tt('3 j', '3 d')]].map(([k, l]) => `<button data-v="${k}" class="${+k === +(C.garder_h ?? 12) ? 'on' : ''}">${l}</button>`).join('')}</div>
+    <div class="sous" style="margin-top:12px">${tt('Par défaut : 15 min, 70 % et 12 h. Glisse une carte vers la gauche pour la retirer.', 'Default: 15 min, 70% and 12 h. Swipe a card left to remove it.')} <button class="lien-t" id="wa-def">${tt('Remettre', 'Reset')}</button></div>
     <button class="btn" id="wa-ok" style="margin-top:16px">OK</button>`);
     const ch = (k, v) => { C[k] = v; vibrer(); garderF(peindre); };
     $('#wa-fin').onchange = (e) => ch('alerte_fin', e.target.checked);
     $('#wa-seuil').onchange = (e) => ch('alerte_seuil', e.target.checked);
     $$('#wa-min button').forEach(b => b.onclick = () => ch('fin_min', +b.dataset.v));
     $$('#wa-ratio button').forEach(b => b.onclick = () => ch('ratio_pct', +b.dataset.v));
-    $('#wa-def').onclick = () => { Object.assign(C, {fin_min: 15, ratio_pct: 70, alerte_fin: true, alerte_seuil: true}); vibrer(); garderF(peindre); };
+    $$('#wa-garder button').forEach(b => b.onclick = () => ch('garder_h', +b.dataset.v));
+    $('#wa-def').onclick = () => { Object.assign(C, {fin_min: 15, ratio_pct: 70, alerte_fin: true, alerte_seuil: true, garder_h: 12}); vibrer(); garderF(peindre); };
     $('#wa-ok').onclick = async () => { const r = await essai(API.watch_regler(C), tt('Alertes enregistrées', 'Alerts saved')); if (r) { fermerFeuille(); chargerWatch(); } };
   };
   const garderF = (f) => { const y = $('#feuille') ? $('#feuille').scrollTop : 0; f(); $('#feuille').scrollTop = y; };
@@ -5095,12 +5141,13 @@ function feuilleAlertesWatch(W){
 }
 // 31 oct 2026 (Mathieu : « que la watchlist sur mon app ait l'option de la televerser dans la watchlist eBay »)
 function feuilleWatchEbay(L, W){
-  const act = L.filter(x => x.etat !== 'fini'), n = act.length, deja = act.filter(x => x.ebay_le).length;
+  // 31 oct 2026 (Mathieu : « au lieu du nombre total, seulement le nombre de nouvelles a ajouter ») : seulement celles qui
+  // ne sont pas encore sur eBay
+  const act = L.filter(x => x.etat !== 'fini'), nouv = act.filter(x => !x.ebay_le), n = nouv.length;
   let auto = !!W.ebay_auto;
   ouvrirFeuille(`<h3>${tt('Ma watchlist eBay', 'My eBay watchlist')}</h3>
     <div class="sous" style="margin-bottom:14px">${tt('Tes cartes suivies apparaissent aussi dans « Watchlist » sur eBay (app et site), avec ton compte eBay connecté.', 'Your followed cards also show up in “Watchlist” on eBay (app and site), with your connected eBay account.')}</div>
-    <button class="btn" id="we-go" ${n ? '' : 'disabled'}>${n ? tt(`Envoyer ${n} carte${n > 1 ? 's' : ''} sur eBay`, `Send ${n} card${n > 1 ? 's' : ''} to eBay`) : tt('Aucune carte en vente', 'No card for sale')}</button>
-    ${deja ? `<div class="sous" style="margin-top:8px;text-align:center">${tt(`${deja} déjà sur eBay : elles restent comme elles sont`, `${deja} already on eBay: they stay as they are`)}</div>` : ''}
+    <button class="btn" id="we-go" ${n ? '' : 'disabled'}>${n ? tt(`Ajouter ${n} nouvelle${n > 1 ? 's' : ''} carte${n > 1 ? 's' : ''} sur eBay`, `Add ${n} new card${n > 1 ? 's' : ''} to eBay`) : tt('✓ Tout est déjà sur eBay', '✓ Everything is already on eBay')}</button>
     <label class="bascule fd-l" style="margin-top:18px"><span><b>${tt('Aussi à chaque étoile', 'Also on each star')}</b><small>${tt('★ ajoute sur eBay, retirer l’étoile l’enlève d’eBay', '★ adds it on eBay, removing the star removes it from eBay')}</small></span><input type="checkbox" id="we-auto" ${auto ? 'checked' : ''}></label>
     <div class="sous" style="margin-top:12px">${tt('Les encans terminés ne sont pas envoyés. eBay garde 400 cartes au plus.', 'Ended auctions are not sent. eBay keeps 400 cards at most.')}</div>`);
   $('#we-auto').onchange = async (e) => { auto = e.target.checked; vibrer();
@@ -5108,7 +5155,7 @@ function feuilleWatchEbay(L, W){
     if (!r) e.target.checked = auto = !auto; else W.ebay_auto = auto; };
   $('#we-go').onclick = async () => {
     const b = $('#we-go'); b.disabled = true; b.textContent = tt('Envoi…', 'Sending…');
-    const r = await API.watch_vers_ebay().catch(e => ({ok:false, erreur:e.message}));
+    const r = await API.watch_vers_ebay(nouv.map(x => String(x.item_id))).catch(e => ({ok:false, erreur:e.message}));
     if (!r || r.ok === false) { toast((r && r.erreur) || 'Erreur', 4500); b.disabled = false; b.textContent = tt('Réessayer', 'Try again'); return; }
     const bouts = [r.ajoutees ? tt(`${r.ajoutees} ajoutée${r.ajoutees > 1 ? 's' : ''}`, `${r.ajoutees} added`) : '', r.deja ? tt(`${r.deja} déjà là`, `${r.deja} already there`) : '',
       r.erreurs && r.erreurs.length ? tt(`${r.erreurs.length} refusée${r.erreurs.length > 1 ? 's' : ''}`, `${r.erreurs.length} refused`) : ''].filter(Boolean);
@@ -5913,6 +5960,7 @@ async function rendreAnalyse(){
 const attrsAnnonce = (x) => x && x.item_id ? `data-annonce="${esc(x.item_id)}" data-titre="${esc(x.titre || '')}" data-photo="${esc(x.photo || '')}" data-total="${esc(x.total ?? '')}" data-url="${esc(x.url || '')}"${x.q ? ` data-q="${esc(x.q)}"` : ''}` : '';
 document.addEventListener('click', (e) => {
   const a = e.target.closest('[data-annonce]'); if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return;
+  if (a.dataset.glisse) { e.preventDefault(); e.stopPropagation(); return; }      // 31 oct : un glissement n'ouvre pas la fiche
   if (e.target.closest('[data-masquer], [data-refus], [data-bonne], [data-comps], [data-pasdeal], [data-watch], [data-wmax], [data-wmiser], .w-go, .x')) return;
   e.preventDefault(); e.stopPropagation();
   S.fenOrigine = a.getBoundingClientRect();          // 29 oct : la fiche s'ouvre depuis l'annonce touchee
@@ -6012,17 +6060,35 @@ function brancherLoupe(box){
     const r = box.getBoundingClientRect(), nw = img.naturalWidth || 1, nh = img.naturalHeight || 1, k = Math.min(r.width / nw, r.height / nh);
     return {r, w:nw * k, h:nh * k, ox:(r.width - nw * k) / 2, oy:(r.height - nh * k) / 2};
   };
-  box.onpointermove = (e) => {
-    if (e.pointerType !== 'mouse') return;
+  const moveSouris = (e) => {
     const c = cadre(), x = e.clientX - c.r.left - c.ox, y = e.clientY - c.r.top - c.oy;
     if (x < 0 || y < 0 || x > c.w || y > c.h) { loupe.style.opacity = 0; return; }
     Object.assign(loupe.style, {opacity:1, width:L + 'px', height:L + 'px', left:(x + c.ox - L / 2) + 'px', top:(y + c.oy - L / 2) + 'px',
       backgroundImage:`url("${img.src}")`, backgroundSize:`${c.w * Z}px ${c.h * Z}px`, backgroundPosition:`${-(x * Z - L / 2)}px ${-(y * Z - L / 2)}px`});
   };
-  box.onpointerleave = () => { loupe.style.opacity = 0; };
-  box.onclick = (e) => {             // tactile (et clic) : zoom a l'endroit touche
-    const r = box.getBoundingClientRect();
-    if (box.classList.toggle('zoom')) img.style.transformOrigin = `${100 * (e.clientX - r.left) / r.width}% ${100 * (e.clientY - r.top) / r.height}%`;
+  box.onpointerleave = (e) => { if (e.pointerType === 'mouse') loupe.style.opacity = 0; };
+  // 31 oct 2026 (Mathieu : « je clique pour zoomer et deplacer avec mon doigt : impossible, elle reste zoomee ») :
+  // un tap zoome a cet endroit ; zoomee, le doigt DEPLACE la photo ; un tap sans glisser revient
+  const orig = (x, y) => { const r = box.getBoundingClientRect();
+    img.style.transformOrigin = `${Math.max(0, Math.min(100, 100 * (x - r.left) / r.width))}% ${Math.max(0, Math.min(100, 100 * (y - r.top) / r.height))}%`; };
+  let p0 = null, bouge = false, o0 = null;
+  box.onpointerdown = (e) => { if (e.pointerType === 'mouse') return; p0 = {x: e.clientX, y: e.clientY}; bouge = false;
+    const m = /([\d.]+)% ([\d.]+)%/.exec(img.style.transformOrigin || ''); o0 = m ? {x: +m[1], y: +m[2]} : {x: 50, y: 50};
+    if (box.classList.contains('zoom')) { try { box.setPointerCapture(e.pointerId); } catch (x) {} } };
+  box.onpointermove = (e) => {
+    if (e.pointerType === 'mouse') { moveSouris(e); return; }
+    if (!p0 || !box.classList.contains('zoom')) return;
+    const dx = e.clientX - p0.x, dy = e.clientY - p0.y; if (Math.abs(dx) + Math.abs(dy) > 6) bouge = true;
+    const r = box.getBoundingClientRect(), k = 1.6;                 // le doigt « tire » la photo (sens naturel)
+    img.style.transformOrigin = `${Math.max(0, Math.min(100, o0.x - k * 100 * dx / r.width))}% ${Math.max(0, Math.min(100, o0.y - k * 100 * dy / r.height))}%`; };
+  box.onpointerup = (e) => { if (e.pointerType === 'mouse' || !p0) return;
+    if (!bouge) { if (box.classList.toggle('zoom')) orig(e.clientX, e.clientY); }
+    p0 = null; loupe.style.opacity = 0; toucheLe = Date.now(); };
+  box.onpointercancel = () => { p0 = null; };
+  let toucheLe = 0;
+  box.onclick = (e) => {             // souris : un clic zoome / dezoome (le doigt est deja traite au pointerup)
+    if (Date.now() - toucheLe < 700 || (e.pointerType && e.pointerType !== 'mouse')) return;
+    if (box.classList.toggle('zoom')) orig(e.clientX, e.clientY);
     loupe.style.opacity = 0;
   };
 }
