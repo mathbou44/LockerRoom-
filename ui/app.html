@@ -350,7 +350,7 @@ details.reglage summary::-webkit-details-marker{display:none}
 #lance .la-anneau{animation:tourne 2.4s cubic-bezier(.55,.1,.45,.9) infinite}
 #lance .la-tip{max-width:320px; min-height:3em; text-align:center; font:600 16px/1.45 inherit; font-family:inherit;
   background:var(--holo, linear-gradient(100deg,#9FE6D2,#B9BEFF,#F2B3D6,#F1D58E)); -webkit-background-clip:text; background-clip:text; color:transparent;
-  transition:opacity .28s ease, transform .28s ease}
+  transition:opacity .4s ease, transform .4s ease}
 #lance .la-tip.sort{opacity:0; transform:translateY(6px)}
 #lance .la-barre{width:140px; height:3px; border-radius:99px; background:rgba(255,255,255,.08); overflow:hidden}
 #lance .la-barre i{display:block; height:100%; width:0; border-radius:99px; background:var(--holo, linear-gradient(90deg,#9FE6D2,#B9BEFF,#F2B3D6,#F1D58E)); transition:width .3s ease}
@@ -2563,10 +2563,14 @@ async function appelServeur(nom, corps, essai2){
   if (!r.ok) { const e = await r.json().catch(() => ({erreur:r.statusText})); throw new Error(e.erreur || 'Erreur serveur'); }
   return r.json();
 }
+const GARDES = new Set(['accueil', 'acheteur_accueil', 'deals_liste']), GARDE_MAX_MS = 36 * 3600 * 1000;
+function gardeLire(cle){ try { const g = JSON.parse(localStorage.getItem('lr_g_' + cle) || 'null'); return g && Date.now() - g.t < GARDE_MAX_MS ? g : null; } catch (e) { return null; } }
+function gardeEcrire(cle, v){ try { const j = JSON.stringify(v); if (j.length < 400000) localStorage.setItem('lr_g_' + cle, JSON.stringify({t: Date.now(), j})); } catch (e) {} }
+function gardesVider(){ try { Object.keys(localStorage).filter(k => k.startsWith('lr_g_')).forEach(k => localStorage.removeItem(k)); } catch (e) {} }
 function lectureFraiche(nom, corps){
   const cle = nom + corps, m = MEMO.get(cle);
   if (m && m.p) return m.p;                                   // deja en route : on attend le meme appel
-  const p = appelServeur(nom, corps).then(v => { if (v && v.ok !== false) MEMO.set(cle, {t:Date.now(), v}); else MEMO.delete(cle); return v; },
+  const p = appelServeur(nom, corps).then(v => { if (v && v.ok !== false) { MEMO.set(cle, {t:Date.now(), v}); if (GARDES.has(nom)) gardeEcrire(cle, v); } else MEMO.delete(cle); return v; },
     e => { MEMO.delete(cle); throw e; });
   MEMO.set(cle, {...(m || {}), p});
   p.finally(() => { const x = MEMO.get(cle); if (x && x.p === p) { delete x.p; if (!('v' in x)) MEMO.delete(cle); } }).catch(() => {});
@@ -2592,17 +2596,28 @@ async function ecranLancement(){
   const tips = TIPS_LANCE().sort(() => Math.random() - .5);
   el.innerHTML = `<div class="la-c"><img class="la-anneau" src="/logo_sc_c.svg" alt=""><img class="la-s" src="/logo_sc_s.svg" alt=""></div><div class="la-tip" id="la-tip">${esc(tips[0])}</div><div class="la-barre"><i id="la-p"></i></div>`;
   document.body.appendChild(el);
+  // 31 oct 2026 (Mathieu : « l'app devrait lisser plus longtemps avant d'ouvrir et les tips plus lents ; ca ouvre mais la
+  // moitie des pages doivent encore loader ») : un tip aux 3,6 s, et l'ecran reste jusqu'a ce que les onglets soient lus,
+  // l'accueil affiche (plus de roue) et ses photos chargees ; au moins 3 s, au plus 14 s
   let it = 0;
   const tTip = setInterval(() => { const t = document.getElementById('la-tip'); if (!t) return; t.classList.add('sort');
-    setTimeout(() => { t.textContent = tips[++it % tips.length]; t.classList.remove('sort'); }, 280); }, 1800);
+    setTimeout(() => { t.textContent = tips[++it % tips.length]; t.classList.remove('sort'); }, 420); }, 3600);
   const vus = new Set(), l = Object.values(RECETTES).flat().filter(([n, c]) => { const k = n + c; if (vus.has(k) || MEMO.has(k)) return false; vus.add(k); return true; });
-  const total = Math.max(1, l.length); let fait = 0, i = 0;
-  const barre = () => { const b = document.getElementById('la-p'); if (b) b.style.width = Math.round(100 * fait / total) + '%'; };
+  const total = l.length + 2; let fait = 0, i = 0;
+  const barre = () => { const b = document.getElementById('la-p'); if (b) b.style.width = Math.min(100, Math.round(100 * fait / total)) + '%'; };
   const ouvrier = async () => { while (i < l.length) { const [n, c] = l[i++]; await lectureFraiche(n, c).catch(() => {}); fait++; barre(); } };
   const attendre = (ms) => new Promise(r => setTimeout(r, ms));
-  await Promise.race([Promise.all([Promise.all([ouvrier(), ouvrier(), ouvrier(), ouvrier()]), attendre(1400)]), attendre(5000)]);
-  fait = total; barre(); clearInterval(tTip);
-  await attendre(180);
+  let clos = false;
+  const ecranPret = async () => {                         // l'ecran d'arrivee : rendu (sans roue), puis ses photos
+    while (!clos) { const v = document.getElementById('vue'); if (v && v.children.length && !v.querySelector('.roue')) break; await attendre(150); }
+    fait++; barre();
+    const imgs = [...document.querySelectorAll('#vue img')].filter(im => !im.complete).slice(0, 16);
+    await Promise.all(imgs.map(im => new Promise(r => { im.addEventListener('load', r, {once:true}); im.addEventListener('error', r, {once:true}); })));
+    fait++; barre();
+  };
+  await Promise.race([Promise.all([ouvrier(), ouvrier(), ouvrier(), ouvrier(), ouvrier(), ouvrier(), ecranPret(), attendre(3000)]), attendre(14000)]);
+  clos = true; fait = total; barre(); clearInterval(tTip);
+  await attendre(260);
   el.classList.add('fini'); setTimeout(() => el.remove(), 450);
 }
 function prechargerOnglets(){
@@ -2616,12 +2631,23 @@ function fabriquerApi(){
     const corps = JSON.stringify(args);
     if (LECTURES.has(nom)) {
       noterRecette(nom, corps);
+      // 31 oct 2026 (Mathieu : « doit faire 1 min que ca load ») : l'accueil s'ouvre tout de suite avec ce qu'on avait la
+      // derniere fois (gardé sur le telephone) ; la version fraiche arrive derriere et l'ecran se redessine en douceur
+      if (!MEMO.has(nom + corps) && GARDES.has(nom)) {
+        const g = gardeLire(nom + corps);
+        if (g) {
+          const ecran0 = location.hash.split('/')[0];
+          lectureFraiche(nom, corps).then(v => { if (v && JSON.stringify(v) !== g.j && location.hash.split('/')[0] === ecran0) route(); }).catch(() => {});
+          return JSON.parse(g.j);
+        }
+      }
       const m = MEMO.get(nom + corps);
       if (m && 'v' in m && Date.now() - m.t < MEMO_MAX_MS) {
         if (Date.now() - m.t > 4000 && !m.p) lectureFraiche(nom, corps).catch(() => {});   // la version fraiche, pour la prochaine fois
         return JSON.parse(JSON.stringify(m.v));
       }
-      return JSON.parse(JSON.stringify(await lectureFraiche(nom, corps)));
+      try { return JSON.parse(JSON.stringify(await lectureFraiche(nom, corps))); }
+      catch (e) { const g = GARDES.has(nom) && gardeLire(nom + corps); if (g) return JSON.parse(g.j); throw e; }   // serveur occupe : la derniere version
     }
     if (!SANS_EFFET.has(nom)) MEMO.clear();                    // un geste qui modifie : plus rien de perime
     return appelServeur(nom, corps);
@@ -2664,16 +2690,28 @@ function heure(d){ const t = Date.parse(d || ''); return isFinite(t) ? new Date(
 // Rien à acheter dans l'app (règle d'Apple au Canada) : le forfait Pro se gère sur le site.
 // ============================================================
 // 31 oct 2026 : dans le cadre de l'ordinateur, une navigation de page entiere (connexion, eBay, deconnexion) se fait en haut
-const allerA = (u) => { try { if (window.top !== window) { window.top.postMessage({lrAller: String(u)}, location.origin); return; } } catch (e) {} location.href = u; };
+const allerA = (u) => { if (/deconnexion/.test(String(u))) gardesVider(); try { if (window.top !== window) { window.top.postMessage({lrAller: String(u)}, location.origin); return; } } catch (e) {} location.href = u; };
 const NATIF = /LockerRoomiOS/.test(navigator.userAgent) || !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 const PLUG = () => (window.Capacitor && window.Capacitor.Plugins) || {};
+// 31 oct 2026 (Mathieu : « quand on clique Miser et que l'app eBay est dans le cell, ca devrait passer par l'app et non
+// internet ») : une annonce eBay (/itm/) est remise a iOS (lien universel) : l'app eBay si elle est installee (deja
+// connectee), sinon Safari. Il faut l'app SlabCoach avec le module AppLauncher (build Codemagic du 31 oct) ; avant, false.
+const annonceEbay = (u) => { try { u = new URL(u, location.href); } catch (e) { return false; }
+  return /(^|\.)ebay\.[a-z.]+$/.test(u.hostname) && !/^(signin|auth)/.test(u.hostname) && /^\/itm\//.test(u.pathname); };
+function ouvrirEbayApp(url){
+  const C = window.Capacitor, L = NATIF && PLUG().AppLauncher;
+  if (!L || !L.openUrl || (C && C.isPluginAvailable && !C.isPluginAvailable('AppLauncher'))) return false;
+  const repli = () => { const B = PLUG().Browser; if (B) B.open({url, presentationStyle:'popover', toolbarColor:'#0B0B0E'}); else location.href = url; };
+  L.openUrl({url}).then(r => { if (r && r.completed === false) repli(); }).catch(repli);
+  return true;
+}
 if (NATIF) {
   document.documentElement.classList.add('natif');
   const ouvrirExterne = (url) => { const B = PLUG().Browser; if (B) B.open({url, presentationStyle:'popover', toolbarColor:'#0B0B0E'}); else location.href = url; };
   document.addEventListener('click', (e) => {
     const a = e.target.closest('a[href]'); if (!a || e.defaultPrevented) return;
     let u; try { u = new URL(a.getAttribute('href'), location.href); } catch (x) { return; }
-    if (u.origin !== location.origin && /^https?:$/.test(u.protocol)) { e.preventDefault(); ouvrirExterne(u.href); }
+    if (u.origin !== location.origin && /^https?:$/.test(u.protocol)) { e.preventDefault(); if (!(annonceEbay(u) && ouvrirEbayApp(u.href))) ouvrirExterne(u.href); }
   });
   // 31 oct 2026 (Mathieu : « je ne peux pas revenir en arriere ? ») : comme partout sur iPhone, glisser le doigt depuis le
   // bord gauche revient en arriere (ferme la fenetre ouverte d'abord) ; une petite fleche ronde suit le doigt
@@ -2691,7 +2729,7 @@ if (NATIF) {
       if (history.length > 1) history.back(); else location.hash = '#accueil'; }, {passive:true});
   })();
   const ouvrirFen = window.open;
-  window.open = (url, ...r) => { if (url) { ouvrirExterne(new URL(url, location.href).href); return null; } return ouvrirFen ? ouvrirFen.call(window, url, ...r) : null; };
+  window.open = (url, ...r) => { if (url) { const h = new URL(url, location.href).href; if (!(annonceEbay(h) && ouvrirEbayApp(h))) ouvrirExterne(h); return null; } return ouvrirFen ? ouvrirFen.call(window, url, ...r) : null; };
   window.__partageWeb = navigator.share ? navigator.share.bind(navigator) : null;     // 31 oct 2026 : partager un fichier (CSV Gixen)
   if (PLUG().Share) navigator.share = (d) => PLUG().Share.share({title:d.title, text:d.text, url:d.url, dialogTitle:d.title});
   const P = PLUG().PushNotifications;
@@ -5190,6 +5228,7 @@ const lienMise = (x) => { let o = 'https://www.ebay.ca'; try { o = new URL(x.url
 function ouvrirMiseEbay(x){
   if (!NATIF) return false;
   const web = lienMise(x);
+  if (ouvrirEbayApp(web)) return true;                                        // l'app eBay par iOS (lien universel)
   let parti = false;
   const vu = () => { if (document.hidden) parti = true; };
   document.addEventListener('visibilitychange', vu);

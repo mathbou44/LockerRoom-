@@ -111,10 +111,19 @@ def lire_vite():
 
 
 def _ecrire(d):
+    """31 oct 2026 (Mathieu : « doit faire 1 min que ca load », « Server error ») : le fichier (plusieurs Mo) est reecrit
+    aux 30 s pendant un tour ; chaque ecran le relisait alors en entier (lire_vite voyait un fichier change) et le petit
+    serveur saturait. Maintenant ce qu'on vient d'ecrire devient tout de suite la copie en memoire : aucune relecture.
+    Ecriture compacte (sans espaces) : un fichier plus petit, plus vite ecrit et lu."""
     tmp = _chemin() + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(d, f, ensure_ascii=False)
+        json.dump(d, f, ensure_ascii=False, separators=(",", ":"))
     os.replace(tmp, _chemin())
+    try:
+        st = os.stat(_chemin())
+        _LU.update(cle=(st.st_mtime_ns, st.st_size), d=d)
+    except OSError:
+        pass
 
 
 _VALIDES = {}
@@ -429,6 +438,25 @@ def diagnostic(d=None):
     return tot
 
 
+_BASSIN = {"b": None, "le": 0.0}
+_verrou_bassin = threading.Lock()
+BASSIN_PARTAGE_S = 90 * 60
+
+
+def bassin_partage(neuf=False):
+    """31 oct 2026 (Mathieu : « doit faire 1 min que ca load », « Server error ») : UN seul bassin en memoire pour tout le
+    processus. Avant, chaque etape (tour, encans aux 15 min, fin d'encan...) rebatissait le sien : 150 000 ventes relues
+    et indexees a chaque fois, parfois deux a la fois, et le petit serveur Render saturait (memoire et calcul).
+    neuf=True (debut d'un tour) : rebati ; sinon celui de moins de 90 min sert."""
+    with _verrou_bassin:
+        b = _BASSIN["b"]
+        if neuf or b is None or time.time() - _BASSIN["le"] > BASSIN_PARTAGE_S:
+            _BASSIN["b"] = None                          # l'ancien libere avant de batir le nouveau (memoire)
+            b = Bassin()
+            _BASSIN.update(b=b, le=time.time())
+        return b
+
+
 class Bassin:
     """26 oct 2026 (Mathieu : « on doit trouver le maximum ») : TOUTES les ventes deja connues (base des ventes + cache
     SoldComps des 3 derniers jours), indexees par mot. La valeur d'une annonce se cherche dans toutes ces ventes, pas
@@ -452,8 +480,8 @@ class Bassin:
                 continue
             self.vus.add(k)
             self.n += 1
-            if self.n % 2000 == 0:
-                time.sleep(0.003)            # 28 oct 2026 (vitesse) : laisse respirer les requetes des utilisateurs (meme processus)
+            if self.n % 500 == 0:
+                time.sleep(0.004)            # 31 oct 2026 : plus souvent (les ecrans passent entre deux paquets)            # 28 oct 2026 (vitesse) : laisse respirer les requetes des utilisateurs (meme processus)
             tl = cartes_match._norm(v["titre"])     # sans la memoire de norm() : 150 000 titres vus une seule fois
             e = (" " + tl + " ", v["titre"], float(v["prix"]), v.get("le"), v.get("photo"), v.get("url"))
             for w in set(tl.split()):
@@ -466,7 +494,11 @@ class Bassin:
             import vendues
             c = vendues._cx()
             try:
-                for (brut,) in c.execute("SELECT ventes FROM cache ORDER BY le DESC"):
+                # 31 oct 2026 : les 3 derniers jours seulement (comme dit plus haut), et on arrete une fois plein. Avant, TOUT
+                # le cache etait relu (des milliers de lignes apres une grosse soiree) : minutes de calcul, serveur sature
+                for (brut,) in c.execute("SELECT ventes FROM cache WHERE le >= ? ORDER BY le DESC", (time.time() - 3 * 86400,)):
+                    if self.n >= self.MAX:
+                        break
                     try:
                         self.ajouter(json.loads(brut))
                     except ValueError:
@@ -1182,7 +1214,7 @@ def chasser(n=PAR_TOUR, rechercher=None, bassin=None, vedettes=False):
     import cartes_match
     import ebay_compte
     rechercher = rechercher or ebay_compte.rechercher
-    bassin = bassin if bassin is not None else Bassin()
+    bassin = bassin if bassin is not None else bassin_partage()
     d = lire()
     reqs = requetes()
     cle = "curseur"
@@ -1233,7 +1265,7 @@ def encans(n=PAR_TOUR_ENCANS, rechercher=None, bassin=None, vedettes=False):
     import cartes_match
     import ebay_compte
     rechercher = rechercher or ebay_compte.rechercher
-    bassin = bassin if bassin is not None else Bassin()
+    bassin = bassin if bassin is not None else bassin_partage()
     d = lire()
     reqs = requetes()
     cle = "curseur_e"
@@ -1457,7 +1489,7 @@ def flux(rechercher=None, bassin=None):
     import cartes_match
     import ebay_compte
     rechercher = rechercher or ebay_compte.rechercher
-    bassin = bassin if bassin is not None else Bassin()
+    bassin = bassin if bassin is not None else bassin_partage()
     d = lire()
     maint = datetime.now(timezone.utc)
     deals = {x["item_id"]: x for x in d.get("deals") or []}
@@ -1728,7 +1760,7 @@ def chasser_vedettes():
     def tache():
         _ETAT.update(debut=time.time(), etape="vedettes", detail=None)
         try:
-            b = Bassin()
+            b = bassin_partage()
             for f in (chasser, encans):
                 try:
                     f(VEDETTES_PAR_CHASSE, bassin=b, vedettes=True)
@@ -2037,7 +2069,7 @@ def proches_prio(rechercher=None, bassin=None, maint=None, valoriser=True):
     d = lire()
     maint = maint or datetime.now(timezone.utc)
     limite = (maint + timedelta(hours=PROCHES_H)).isoformat().replace("+00:00", "Z")
-    bassin = bassin if bassin is not None else Bassin()
+    bassin = bassin if bassin is not None else bassin_partage()
     deals = {x["item_id"]: x for x in d.get("deals") or []}
     st = {}
     verif = _verificateur(d, st, bassin)
@@ -2114,7 +2146,7 @@ def chasser_si_besoin(force=False):
         debut = time.time()
         _ETAT.update(debut=debut, etape="revue", detail=None)
         try:
-            b = Bassin()                                 # une fois par tour : toutes les ventes connues
+            b = bassin_partage(neuf=True)                # une fois par tour : toutes les ventes connues (partage ensuite)
             try:
                 reverifier()                             # d'abord : les deals deja affiches, revus sur eBay
             except Exception as e:

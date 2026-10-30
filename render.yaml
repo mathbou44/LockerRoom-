@@ -7,7 +7,7 @@ services:
     runtime: python
     plan: starter
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn -w 1 --threads 8 -b 0.0.0.0:$PORT server:app
+    startCommand: gunicorn -w 1 --threads 8 --timeout 120 --graceful-timeout 30 -b 0.0.0.0:$PORT server:app
     healthCheckPath: /confidentialite
     disk:
       name: donnees
