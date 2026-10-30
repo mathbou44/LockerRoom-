@@ -3449,20 +3449,12 @@ class Api:
         import watchlist
         return watchlist.vers_ebay(self, ids)
 
-    def gixen_envoyer(self, item_id, mise, decalage=6):
-        """31 oct 2026 : la mise part chez Gixen (API), un tap de l'admin ; admin seulement."""
-        if not self._est_admin():
-            return {"ok": False, "erreur": "Réservé à l'admin"}
-        import gixen
-        return gixen.ajouter(item_id, mise, decalage)
-
     def watch_gixen(self):
         """31 oct 2026 : les mises rapides (Gixen), pour l'admin seulement."""
         if not self._est_admin():
             return {"ok": False, "erreur": "Réservé à l'admin"}
-        import gixen
         import watchlist
-        return {**watchlist.gixen(self), "gixen_api": gixen.actif()}
+        return watchlist.gixen(self)
 
     def watch_preparer(self):
         """31 oct 2026 (Mathieu : « SlabCoach prepare la mise ; l'utilisateur entre son montant, ca ouvre eBay ; il lui
@@ -4218,6 +4210,10 @@ class Api:
             if y.get("valeur"):
                 y["gain"] = round(y["valeur"] * (1 - fp_) - ff_ - (y.get("total") or 0), 2)
                 y["rabais"] = round(100 * (1 - (y.get("total") or 0) / y["valeur"]))
+                # 31 oct 2026 (Mathieu : « se faire retirer du dashboard si ce n'est plus un deal ») : valeur connue et mise
+                # au-dessus de 70 % de celle-ci -> pas un deal : hors de l'ecran Deals (la watchlist, elle, le montre en rouge)
+                if (y.get("total") or 0) > y["valeur"] * _dl.RATIO_DEAL:
+                    continue
             suivis.append(y)
         # 31 oct 2026 (Mathieu : « assure-toi que le filtre fonctionne lorsqu'applique ») : TOUS les filtres s'appliquent aussi
         # aux encans des gros vendeurs : rabais minimum (un encan sans valeur verifiee n'a pas de rabais -> cache), une mise

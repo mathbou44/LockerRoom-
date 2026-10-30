@@ -1603,6 +1603,87 @@ def reverifier(lire_article=None, max_=None):
     return {"ok": True, "deals": len(garde_), "stats": st}
 
 
+# 31 oct 2026 (Mathieu : « les cartes qui arrivent a la fin, les 2 dernieres heures : rafraichir le prix eBay assez souvent,
+# le deal change et peut rapidement devenir un faux deal » ; « se faire retirer du dashboard si ce n'est plus un deal ») :
+# aux 5 min, les encans (deals et encans des gros vendeurs) qui finissent dans 2 h sont relus sur eBay, 20 par appel
+# (getItems, jamais le cache). Mise du moment au-dessus de 70 % de la valeur -> il sort des deals ; fini -> il sort.
+FIN_PROCHE_H = 2
+FIN_PROCHE_PAS_S = 300
+FIN_PROCHE_APPELS = 8                      # au plus 160 annonces par passe
+
+
+def fin_proche_si_besoin():
+    if _ETAT.get("fin_proche") or time.time() - _ETAT.get("fin_proche_le", 0) < FIN_PROCHE_PAS_S:
+        return None
+    _ETAT["fin_proche"], _ETAT["fin_proche_le"] = True, time.time()
+    try:
+        return fin_proche()
+    except Exception as e:
+        print("Deals (fin proche) : " + repr(e), flush=True)
+        return None
+    finally:
+        _ETAT["fin_proche"] = False
+
+
+def fin_proche(lire_lot=None, maint=None):
+    import ebay_compte
+    lire_lot = lire_lot or (lambda ids: ebay_compte.articles_lot(ids, fond=True))
+    maint = maint or datetime.now(timezone.utc)
+    lim = (maint + timedelta(hours=FIN_PROCHE_H)).isoformat().replace("+00:00", "Z")
+    d = lire_vite()
+    a_lire = {}
+    for x in (d.get("deals") or []) + (d.get("suivis") or []):
+        if x.get("encan") and encore_ouvert(x, maint) and str(x.get("fin") or "9") <= lim:
+            a_lire.setdefault(str(x["item_id"]), str(x.get("fin")))
+    ids = sorted(a_lire, key=lambda i: a_lire[i])[:20 * FIN_PROCHE_APPELS]          # ceux qui finissent le plus tot d'abord
+    lus, demandes = {}, set()
+    for k in range(0, len(ids), 20):
+        lot = ids[k:k + 20]
+        try:
+            lus.update(lire_lot(lot))
+            demandes.update(lot)
+        except (RuntimeError, OSError) as e:
+            print("Deals (fin proche) : " + repr(e), flush=True)
+            break
+    if not demandes:
+        return {"ok": True, "lus": 0, "sortis": 0}
+    vu = maint.isoformat(timespec="seconds")
+    sortis = []
+
+    def maj(x):
+        """True = garder ; False = sortir (fini, ou plus un deal)."""
+        iid = str(x.get("item_id"))
+        if iid not in demandes:
+            return True
+        a = lus.get(iid)
+        if a is None:                                  # absent de la reponse : fini ou retire... si la fin est passee
+            return encore_ouvert(x, maint)
+        t = _total(a)
+        if a.get("fin"):
+            x["fin"] = a["fin"]
+        if not t or not encore_ouvert(x, maint):
+            return False
+        x.update(total=t, mises=a.get("mises", x.get("mises")), port=a.get("port_cad", x.get("port")), vu_le=vu)
+        if x.get("valeur"):
+            x["ratio"] = round(t / x["valeur"], 3)
+        return True
+
+    with _verrou:
+        d2 = lire()
+        garde = []
+        for x in d2.get("deals") or []:
+            ok = maj(x)
+            if ok and x.get("valeur") and str(x.get("item_id")) in demandes and (x.get("total") or 0) > x["valeur"] * RATIO_DEAL:
+                ok = False                                 # la mise a monte : plus un deal
+            (garde if ok else sortis).append(x)
+        d2["deals"] = garde
+        d2["suivis"] = [x for x in d2.get("suivis") or [] if maj(x)]
+        d2["fin_proche"] = {"le": vu, "lus": len(demandes), "sortis": len(sortis)}
+        _ecrire(d2)
+    _LU["cle"] = None
+    return {"ok": True, "lus": len(demandes), "sortis": len(sortis)}
+
+
 def recharger():
     """28 oct 2026 (Mathieu : « on doit recharger les deals ») : un tour complet tout de suite (admin), sans attendre
     l'heure et sans le rythme du budget eBay (le plafond du jour, lui, tient toujours)."""

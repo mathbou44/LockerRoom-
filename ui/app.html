@@ -411,7 +411,7 @@ details.reglage summary::-webkit-details-marker{display:none}
 .gx-l{display:flex; flex-direction:column; gap:8px; padding:10px 12px; border-radius:14px; background:var(--carte2)} .gx-l.gx-off{opacity:.55}
 .gx-t{display:flex; flex-direction:column; gap:2px; min-width:0} .gx-t b{font-size:14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis} .gx-t small{font-size:12.5px; color:var(--doux)}
 .gx-c{display:flex; gap:8px} .gx-b{flex:1; height:40px; border-radius:12px; border:1px solid var(--ligne); background:var(--carte); color:var(--texte); font:600 15px/1 var(--f-cond); letter-spacing:.04em; cursor:pointer}
-.gx-b.gx-m{flex:0 0 38%; color:var(--vert); border-color:color-mix(in srgb, var(--vert) 40%, transparent)} .gx-b.copie{box-shadow:inset 0 0 0 1.5px var(--acc)} .gx-env{width:100%; margin:0} .gx-env.gx-ok{background:var(--carte); color:var(--vert); box-shadow:inset 0 0 0 1.5px var(--vert)} #gx-env-tout.gx-conf{background:var(--or); color:#15141A} .gx-b:disabled{opacity:.5}
+.gx-b.gx-m{flex:0 0 38%; color:var(--vert); border-color:color-mix(in srgb, var(--vert) 40%, transparent)} .gx-b.copie{box-shadow:inset 0 0 0 1.5px var(--acc)} .gx-b:disabled{opacity:.5}
 .mi-etapes{display:flex; gap:6px; margin:-2px 0 12px} .mi-etapes span{flex:1; display:flex; align-items:center; gap:6px; font-size:12px; color:var(--doux); padding:6px 8px; border-radius:99px; background:var(--carte2); white-space:nowrap}
 .mi-etapes b{width:18px; height:18px; flex:none; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--holo); color:#0B0B0E; font-size:11px}
 .mi-haut{display:flex; gap:8px; margin-bottom:12px; align-items:stretch} .mi-haut .btn{width:auto; margin:0} .mi-haut #ml-go{flex:1 1 auto} .mi-haut #ml-gx{flex:0 0 auto; padding:0 18px} .mi-lst{display:flex; flex-direction:column; gap:8px}
@@ -429,7 +429,14 @@ details.reglage summary::-webkit-details-marker{display:none}
 .retour-geste{position:fixed; left:0; top:0; z-index:200; width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .15s;
   background:conic-gradient(from 210deg, var(--h1,#9FE6D2), var(--h2,#B9BEFF), var(--h3,#F2B3D6), var(--h4,#F1D58E), var(--h1,#9FE6D2))}
 .retour-geste::before{content:''; position:absolute; inset:2px; border-radius:50%; background:var(--carte)} .retour-geste svg{position:relative; width:20px; height:20px; fill:none; stroke:var(--texte); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round}
-.w-pils{margin-top:14px} .w-rang .ap-t{display:flex; flex-direction:column; gap:2px} .w-rang .ap-t b{font-size:15.5px; font-weight:600} .w-rang .ap-t small{font-size:12.5px; color:var(--doux); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.w-pils{margin-top:14px}
+.tuile-deal.part{opacity:0; transform:scale(.96); transition:opacity .3s, transform .3s}
+.w-ligne.e-depasse{box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--rouge) 70%, transparent); background:color-mix(in srgb, var(--rouge) 7%, var(--carte))}
+.w-ronds{margin:2px 0 14px}
+.w-pr{display:flex; flex-direction:column; gap:3px; margin-top:6px; font-size:13.5px; color:var(--doux)}
+.w-pr b{font:700 16px var(--f-cond); color:var(--texte)} .w-pr b.rouge{color:var(--rouge)}
+.w-pr .w-max{display:inline-flex; align-items:center; gap:4px; padding:1px 8px; border-radius:99px; border:1px solid color-mix(in srgb, var(--vert) 45%, transparent); background:none; color:var(--vert); font:700 16px var(--f-cond); cursor:pointer; text-decoration:none}
+.w-pr .w-max i{font-style:normal; font-size:12px; opacity:.8} .w-pr .w-max.perso{border-style:solid; background:color-mix(in srgb, var(--vert) 12%, transparent)} .w-rang .ap-t{display:flex; flex-direction:column; gap:2px} .w-rang .ap-t b{font-size:15.5px; font-weight:600} .w-rang .ap-t small{font-size:12.5px; color:var(--doux); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .ic-h{width:1.05em; height:1.05em; flex-shrink:0; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; vertical-align:-.15em; margin-right:4px}
 .w-reg-i svg{width:18px; height:18px; fill:none; stroke:var(--texte); stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round}
 .w-eb{position:absolute; left:0; right:0; bottom:0; padding:2px 0; text-align:center; font:700 9.5px/1.2 var(--f-cond); letter-spacing:.04em; color:#0B0B0E; background:var(--holo)}
@@ -2060,6 +2067,33 @@ body.en-defil .logo-lr::after, body.en-defil #nav-logo-nom, body.en-defil .titre
   .fen-btns{bottom:10px !important}
 }
 .fen-vendues{display:flex; flex-direction:column; gap:10px}
+/* 31 oct 2026 : la fiche d'une annonce tient dans l'ecran (photo, titre, 3 chiffres, ventes en bande, eBay) */
+.fen-fond:has(.fen.fa){align-items:center !important; overflow:hidden !important; padding:max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom)) !important}
+.fen.fa{width:min(560px, 100%) !important; height:calc(100dvh - 20px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); max-height:940px; padding:12px !important; gap:10px !important; overflow:hidden; display:flex; flex-direction:column}
+.fen.fa .fen-x{position:absolute !important; top:20px !important; right:20px !important; margin:0 !important; z-index:6; width:38px; height:38px; background:rgba(14,14,18,.8) !important; border:1px solid rgba(255,255,255,.14) !important}
+.fa-photo{position:relative; flex:1 1 auto; min-height:120px; display:flex}
+.fen.fa .fen-img{flex:1; height:auto !important; max-height:none !important; aspect-ratio:auto !important; border-radius:16px; background:#0E0E12}
+.fen.fa .fen-img img{width:100%; height:100%; object-fit:contain}
+.fa-fin{position:absolute; left:10px; top:10px; z-index:3; display:inline-flex; align-items:center; padding:5px 10px; border-radius:99px; background:rgba(10,10,14,.86); color:#F4F2F8; font:700 14px/1 var(--f-cond); letter-spacing:.04em}
+.fa-vigs{position:absolute; left:8px; bottom:8px; right:8px; margin:0 !important; z-index:3; gap:6px !important}
+.fa-vigs button{width:38px !important; height:38px !important; border-radius:8px; border:2px solid rgba(255,255,255,.18); background-size:cover; background-position:center; flex:none}
+.fa-vigs button.on{border-color:var(--acc)}
+.fa-t{flex:none; font-size:15px; font-weight:600; line-height:1.25; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere}
+.fa-3{flex:none; display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px}
+.fa-k{display:flex; flex-direction:column; gap:2px; padding:9px 10px; border-radius:14px; background:var(--carte); border:1px solid var(--ligne); min-width:0}
+.fa-k span{font:700 11px var(--f-cond); letter-spacing:.1em; text-transform:uppercase; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.fa-k b{font:700 26px/1.05 var(--f-cond); color:var(--texte); white-space:nowrap} .fa-k small{font-size:11.5px; color:var(--pale); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.fa-k.fa-v b{color:var(--acc)} .fa-k.fa-m{border-color:color-mix(in srgb, var(--vert) 45%, var(--ligne))} .fa-k.fa-m b{color:var(--vert)}
+.fa-k .roue{width:18px; height:18px}
+.fa-pils{flex:none; display:flex; flex-wrap:wrap; gap:6px}
+.fa-ventes{flex:none; min-height:0}
+.fa-vt{font-size:14px; font-weight:700; margin-bottom:6px} .fa-vt small{font-weight:500; color:var(--doux); font-size:12px; margin-left:4px}
+.fa-car{margin:0 !important; padding:0 0 2px !important; gap:8px !important}
+.fa-car .fv{flex:0 0 21.5%; min-width:64px} .fa-car .fv-ph{border-radius:9px} .fa-car .fv b{font-size:17px; margin-top:2px} .fa-car .fv small{font-size:11px}
+.fa-vide{font-size:13px; color:var(--doux); padding:8px 10px; border-radius:12px; background:var(--carte)}
+.fa-btns{flex:none; display:flex; gap:8px; align-items:center} .fa-btns .btn{flex:1; margin:0} .fa-btns .sd-et{width:50px; height:50px; flex:none}
+.fa-bas{flex:none; display:flex; justify-content:space-between; align-items:center; font-size:13px} .fa-bas a{color:var(--doux); text-decoration:none} .fa-bas .pas-deal{margin:0; padding:0; font-size:13px}
+@media (max-height:700px){ .fa-k b{font-size:22px} .fa-k{padding:7px 8px} }
 .fv-t{display:flex; flex-direction:column; gap:1px} .fv-t b{font-size:17px} .fv-t span{font-size:13px; color:var(--doux)}
 .fv-car{display:flex; gap:10px; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; margin:0 -12px; padding:2px 12px 4px; overscroll-behavior-x:contain}
 .fv-car::-webkit-scrollbar{display:none}
@@ -5003,28 +5037,30 @@ async function chargerWatch(){
   if (!L.length) { z.innerHTML = `<div class="w-vide"><span class="w-vide-et">${ICO_ETOILE}</span><b>${tt('Ta watchlist est vide', 'Your watchlist is empty')}</b>
     <span>${tt('Touche l’étoile d’un deal pour le suivre. On t’avertit 15 min avant la fin d’un encan, et si la mise dépasse ta mise max.', 'Tap a deal’s star to follow it. We alert you 15 min before an auction ends, and if the bid goes over your max bid.')}</span>
     <a class="btn petit" href="#deals">${tt('Voir les deals', 'See deals')}</a></div>`; return; }
+  // 31 oct 2026 (Mathieu : « "max" dans la watchlist, ce n'est pas clair : le prix de la carte en ce moment et le prix que
+  // moi je devrais miser ; mets des deux-points, il faut que ce soit clair entre les deux ») : deux lignes nommees
   const ligne = (x) => {
-    const mx = `<button class="w-max ${x.mise_perso ? 'perso' : ''}" data-wmax="${esc(x.item_id)}">max ${x.mise_max != null ? argent(x.mise_max, 0) : '—'}</button>`, cur = argent((x.total || 0) - (x.port || 0), 0);
-    const etat = x.etat === 'fini' ? `<span class="w-pil gris">${tt('Terminé', 'Ended')}</span>`
-      : x.etat === 'depasse' ? `<span class="w-pil rouge">${tt('Dépassée', 'Over max')}</span><span class="w-px">${cur} <i>›</i> ${mx}</span>`
-      : `${x.encan ? `<span class="w-pil ${x.reste_min != null && x.reste_min <= 60 ? 'or' : ''}">${icH()}${finCourt(x.reste_min)}</span>` : `<span class="w-pil">${tt('Achat imm.', 'Buy now')}</span>`}<span class="w-px"><b>${cur}</b> · ${mx}</span>`;
+    const cur = argent((x.total || 0) - (x.port || 0), 0);
+    const mx = `<button class="w-max ${x.mise_perso ? 'perso' : ''}" data-wmax="${esc(x.item_id)}" aria-label="${esc(tt('Changer ma mise max', 'Change my max bid'))}">${x.mise_max != null ? argent(x.mise_max, 0) : '—'}<i>✎</i></button>`;
+    const pil = x.etat === 'fini' ? `<span class="w-pil gris">${tt('Terminé', 'Ended')}</span>`
+      : x.etat === 'depasse' ? `<span class="w-pil rouge">${tt('Dépasse ta mise max', 'Over your max')}</span>`
+      : x.encan ? `<span class="w-pil ${x.reste_min != null && x.reste_min <= 60 ? 'or' : ''}">${icH()}${finCourt(x.reste_min)}</span>` : `<span class="w-pil">${tt('Achat immédiat', 'Buy now')}</span>`;
+    const prix = x.etat === 'fini' ? '' : `<div class="w-pr"><span>${x.encan ? tt('Mise actuelle', 'Current bid') : tt('Prix', 'Price')} : <b class="${x.etat === 'depasse' ? 'rouge' : ''}">${cur}</b></span>
+      <span>${x.encan ? tt('Ta mise max', 'Your max bid') : tt('Paie au plus', 'Pay at most')} : ${mx}</span></div>`;
     return `<div class="w-ligne e-${x.etat}" ${attrsAnnonce(x)} role="button" tabindex="0">
       <div class="w-ph">${SVG_CARTE}${x.photo ? `<img src="${esc(photoNet(x.photo))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}${x.ebay_le && x.etat !== 'fini' ? `<span class="w-eb" title="${esc(tt('Aussi dans ta watchlist eBay', 'Also in your eBay watchlist'))}">✓ eBay</span>` : ''}</div>
-      <div class="w-mil"><div class="w-t">${esc(titreCourt(x.titre))}</div><div class="w-l">${etat}</div></div>
+      <div class="w-mil"><div class="w-t">${esc(titreCourt(x.titre))}</div><div class="w-l">${pil}</div>${prix}</div>
       <div class="w-dr">${x.etat === 'ok' && x.url ? (x.encan ? `<button class="w-go" data-wmiser="${esc(x.item_id)}">${tt('Miser', 'Bid')}</button>` : `<a class="w-go" href="${esc(lienAchat(x.url, 'watch'))}" target="_blank" rel="noopener">${tt('Acheter', 'Buy')}</a>`) : ''}
         <button class="sd-et on w-et" data-watch="${esc(x.item_id)}" aria-pressed="true" aria-label="${esc(tt('Retirer de la watchlist', 'Remove from watchlist'))}">${ICO_ETOILE}</button></div></div>`;
   };
-  z.innerHTML = `<div class="w-liste">${L.map(ligne).join('')}</div>
-    <div class="acc-pils w-pils">
-    <button class="acc-pil w-rang" id="w-reg"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.cloche}</svg></span><span class="ap-t"><b>${tt('Mes alertes', 'My alerts')}</b>
-      <small>${[W.alerte_fin ? tt(`${W.fin_min} min avant la fin`, `${W.fin_min} min before the end`) : '', W.alerte_seuil ? tt(`mise max ${W.ratio_pct} % de la valeur`, `max bid ${W.ratio_pct}% of value`) : ''].filter(Boolean).join(' · ') || tt('Aucune alerte', 'No alerts')}</small></span><i aria-hidden="true">›</i></button>
-    <button class="acc-pil w-rang" id="w-eb"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.envoi}</svg></span><span class="ap-t"><b>${tt('Envoyer dans ma watchlist eBay', 'Send to my eBay watchlist')}</b>
-      <small>${(() => { const n = L.filter(x => x.ebay_le && x.etat !== 'fini').length; return (n ? tt(`${n} déjà sur eBay`, `${n} already on eBay`) : tt('Tes cartes suivies, aussi sur eBay', 'Your followed cards, also on eBay')) + (W.ebay_auto ? tt(' · auto', ' · auto') : ''); })()}</small></span><i aria-hidden="true">›</i></button>
-    ${L.filter(x => x.encan && x.etat === 'ok').length >= 2 ? `<button class="acc-pil w-rang" id="w-lot"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.lot}</svg></span><span class="ap-t"><b>${tt('Miser en lot', 'Bid in a batch')}</b>
-      <small>${tt(`${L.filter(x => x.encan && x.etat === 'ok').length} encans, un après l’autre, montants prêts`, `${L.filter(x => x.encan && x.etat === 'ok').length} auctions, one after another, amounts ready`)}</small></span><i aria-hidden="true">›</i></button>` : ''}
-    ${S.forfait && S.forfait.admin && L.some(x => x.encan && x.etat !== 'fini') ? `<button class="acc-pil w-rang" id="w-gx"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.horloge}</svg></span><span class="ap-t"><b>${tt('Mises rapides · Gixen', 'Quick bids · Gixen')} <span class="tag or">admin</span></b>
-      <small>${tt('Numéro + mise max, prêts à coller', 'Item number + max bid, ready to paste')}</small></span><i aria-hidden="true">›</i></button>` : ''}</div>
-    <p class="w-note">${tt('Touche « max » pour choisir ta mise max d’une carte. Tu mises toi-même sur eBay.', 'Tap “max” to set a card’s max bid. You bid yourself on eBay.')}</p>`;
+  // 31 oct 2026 (Mathieu : « les options pour envoyer vers eBay et Gixen en haut de la watchlist, c'est plus naturel ») :
+  // des ronds avec icone, comme dans Deals ; chacun ouvre sa fenetre
+  const nEnc = L.filter(x => x.encan && x.etat === 'ok').length, nEb = L.filter(x => x.ebay_le && x.etat !== 'fini').length;
+  const rond = (id, ic, lib, n) => `<button class="d-rond" id="${id}"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${ic}</svg>${n ? `<em>${n}</em>` : ''}</span><small>${lib}</small></button>`;
+  z.innerHTML = `<div class="d-ronds w-ronds">${rond('w-reg', IC_PIL.cloche, tt('Alertes', 'Alerts'))}${rond('w-eb', IC_PIL.envoi, tt('Vers eBay', 'To eBay'), nEb)}
+      ${nEnc >= 2 ? rond('w-lot', IC_PIL.lot, tt('Miser en lot', 'Bid in a batch'), nEnc) : ''}${S.forfait && S.forfait.admin && L.some(x => x.encan && x.etat !== 'fini') ? rond('w-gx', IC_PIL.horloge, 'Gixen') : ''}</div>
+    <div class="w-liste">${L.map(ligne).join('')}</div>
+    <p class="w-note">${tt('Touche ta mise max (✎) pour la changer. Tu mises toi-même sur eBay.', 'Tap your max bid (✎) to change it. You bid yourself on eBay.')}</p>`;
   $('#w-reg').onclick = () => feuilleAlertesWatch(W);
   $('#w-eb').onclick = () => { vibrer(); feuilleWatchEbay(L, W); };
   const gx = $('#w-gx'); if (gx) gx.onclick = () => { vibrer(); feuilleGixen(); };
@@ -5190,44 +5226,24 @@ async function exporterGixen(L){
   toast(tt(`${lignes.length} mises exportées : importe le fichier dans Gixen`, `${lignes.length} bids exported: import the file in Gixen`), 3500);
 }
 async function feuilleGixen(montants){
-  ouvrirFeuille(`<h3>${tt('Mises rapides · Gixen', 'Quick bids · Gixen')}</h3><div class="sous">${tt('Lecture des encans chez eBay…', 'Reading auctions on eBay…')}</div>`);
+  // 31 oct 2026 : Gixen n'ouvre plus son API -> le fichier a importer (Mirror), ou le copier-coller carte par carte
+  ouvrirFeuille(`<h3>Gixen</h3><div class="sous">${tt('Lecture des encans chez eBay…', 'Reading auctions on eBay…')}</div>`);
   const r = await API.watch_gixen().catch(e => ({ok:false, erreur:e.message}));
   if (!$('#feuille') || $('#fond-feuille').hidden) return;
-  if (!r.ok) { ouvrirFeuille(`<h3>${tt('Mises rapides · Gixen', 'Quick bids · Gixen')}</h3><div class="vide">${esc(r.erreur || 'Erreur')}</div>`); return; }
+  if (!r.ok) { ouvrirFeuille(`<h3>Gixen</h3><div class="vide">${esc(r.erreur || 'Erreur')}</div>`); return; }
   let L = r.cartes || [];
-  if (montants) { L = L.filter(x => montants[x.item_id] != null).map(x => ({...x, mise_max: +montants[x.item_id], trop_bas: false}));
-    r.texte = L.map(x => `${x.item_id} ${x.mise_max.toFixed(2)}`).join('\n'); }
-  const bons = L.filter(x => !x.trop_bas), api = !!r.gixen_api;
+  if (montants) L = L.filter(x => montants[x.item_id] != null).map(x => ({...x, mise_max: +montants[x.item_id], trop_bas: false}));
+  const bons = L.filter(x => !x.trop_bas);
   const m = (x) => `${x.mise_max.toFixed(0)} $${x.devise === 'CAD' ? '' : ' ' + (x.devise === 'USD' ? 'US' : x.devise)}`;
-  // 31 oct 2026 (Mathieu : « pour Gixen, y'a rien de plus rapide ? ») : avec ses identifiants Gixen dans Render, la mise
-  // part chez Gixen en un tap (API de Gixen) ; sinon, copier-coller comme avant
-  const ligne = (x) => `<div class="gx-l ${x.trop_bas ? 'gx-off' : ''}" data-gxl="${esc(x.item_id)}">
-      <div class="gx-t"><b>${esc(titreCourt(x.titre))}</b><small>${icH()}${finCourt(x.reste_min)}${x.mise_actuelle != null ? ' · ' + tt('mise ', 'bid ') + Math.round(x.mise_actuelle) + ' $' + (x.devise === 'USD' ? ' US' : '') : ''}${x.trop_bas ? ' · ' + tt('déjà au-dessus de ta mise max', 'already over your max') : ''}${x.erreur ? ' · ' + esc(x.erreur) : ''}</small></div>
-      ${api ? `<button class="btn petit gx-env" data-gx="${esc(x.item_id)}" ${x.trop_bas ? 'disabled' : ''}>${tt('Envoyer à Gixen', 'Send to Gixen')} · ${m(x)}</button>`
-        : `<div class="gx-c"><button class="gx-b" data-cp="${esc(x.item_id)}">${esc(x.item_id)}</button><button class="gx-b gx-m" data-cp="${x.mise_max.toFixed(2)}" ${x.trop_bas ? 'disabled' : ''}>${m(x)}</button></div>`}</div>`;
-  ouvrirFeuille(`<h3>${tt('Mises rapides · Gixen', 'Quick bids · Gixen')}</h3>
-    <div class="sous" style="margin-bottom:10px">${api ? tt('Un tap : la mise part chez Gixen, qui mise dans les dernières secondes. Montant dans la devise de l’annonce.', 'One tap: the bid goes to Gixen, which bids in the last seconds. Amount in the listing’s currency.')
-      : tt('Le plus rapide : « Envoyer dans ma watchlist eBay », puis importe ta watchlist dans l’app Gixen et tape les montants ci-dessous. Sinon : touche le numéro, colle-le dans Gixen ; touche la mise, colle-la.', 'Fastest: “Send to my eBay watchlist”, then import your watchlist in the Gixen app and type the amounts below. Otherwise: tap the number, paste it in Gixen; tap the bid, paste it.')}</div>
-    <div class="gx-actions">${api ? (bons.length > 1 ? `<button class="btn petit" id="gx-env-tout">${tt(`Tout envoyer à Gixen (${bons.length})`, `Send all to Gixen (${bons.length})`)}</button>` : '') + `<a class="btn ghost petit" href="https://www.gixen.com/main/home_2.php" target="_blank" rel="noopener">${tt('Mes snipes', 'My snipes')}</a>`
-      : `${bons.length ? `<button class="btn petit" id="gx-csv">${tt(`Exporter pour Gixen (${bons.length})`, `Export for Gixen (${bons.length})`)}</button>` : ''}<a class="btn ghost petit" href="https://www.gixen.com/main/settings.php" target="_blank" rel="noopener">${tt('Importer dans Gixen', 'Import in Gixen')}</a>`}</div>
-    ${api ? '' : `<div class="sous gx-aide">${tt('Le fichier (Excel / CSV) contient le numéro et la mise max de chaque carte. Dans Gixen : Settings › « Import your snipes from a CSV file » (Mirror).', 'The file (Excel / CSV) has each card’s number and max bid. In Gixen: Settings › “Import your snipes from a CSV file” (Mirror).')}</div>`}
-    <div class="gx-liste">${L.map(ligne).join('') || `<div class="vide">${tt('Aucun encan en cours dans ta watchlist', 'No live auction in your watchlist')}</div>`}</div>`);
+  ouvrirFeuille(`<h3>Gixen</h3>
+    <div class="mi-etapes"><span><b>1</b>${tt('Exporter', 'Export')}</span><span><b>2</b>${tt('Importer dans Gixen', 'Import in Gixen')}</span></div>
+    <div class="gx-actions">${bons.length ? `<button class="btn petit" id="gx-csv">${tt(`Exporter (${bons.length})`, `Export (${bons.length})`)}</button>` : ''}<a class="btn ghost petit" href="https://www.gixen.com/main/settings.php" target="_blank" rel="noopener">${tt('Importer dans Gixen', 'Import in Gixen')}</a></div>
+    <div class="sous gx-aide">${tt('Le fichier (Excel / CSV) : le numéro et la mise max de chaque carte, dans la devise de l’annonce. Dans Gixen : Settings › « Import your snipes from a CSV file ». Ou touche un numéro et une mise pour les copier.', 'The file (Excel / CSV): each card’s number and max bid, in the listing’s currency. In Gixen: Settings › “Import your snipes from a CSV file”. Or tap a number and a bid to copy them.')}</div>
+    <div class="gx-liste">${L.map(x => `<div class="gx-l ${x.trop_bas ? 'gx-off' : ''}">
+      <div class="gx-t"><b>${esc(titreCourt(x.titre))}</b><small>${icH()}${finCourt(x.reste_min)}${x.mise_actuelle != null ? ' · ' + tt('mise actuelle : ', 'current bid: ') + Math.round(x.mise_actuelle) + ' $' + (x.devise === 'USD' ? ' US' : '') : ''}${x.trop_bas ? ' · ' + tt('déjà au-dessus de ta mise max', 'already over your max') : ''}</small></div>
+      <div class="gx-c"><button class="gx-b" data-cp="${esc(x.item_id)}">${esc(x.item_id)}</button><button class="gx-b gx-m" data-cp="${x.mise_max.toFixed(2)}" ${x.trop_bas ? 'disabled' : ''}>${m(x)}</button></div></div>`).join('') || `<div class="vide">${tt('Aucun encan en cours dans ta watchlist', 'No live auction in your watchlist')}</div>`}</div>`);
   $$('[data-cp]').forEach(b => b.onclick = async () => { if (await copier(b.dataset.cp)) { vibrer(); b.classList.add('copie'); toast(tt('Copié : ', 'Copied: ') + b.dataset.cp, 1400); } });
   const cx = $('#gx-csv'); if (cx) cx.onclick = () => { vibrer(); exporterGixen(bons); };
-  const envoyer = async (x, b) => {
-    b.disabled = true; b.textContent = tt('Envoi…', 'Sending…');
-    const res = await API.gixen_envoyer(x.item_id, x.mise_max).catch(e => ({ok:false, erreur:e.message}));
-    if (res && res.ok) { b.textContent = '✓ ' + tt('Chez Gixen', 'At Gixen') + ' · ' + m(x); b.classList.add('gx-ok'); return true; }
-    if (res && res.api_coupee) { toast(res.erreur, 7000); feuilleGixen(montants); return false; }     // 31 oct : API fermee chez Gixen -> copier-coller
-    b.disabled = false; b.textContent = tt('Réessayer', 'Try again') + ' · ' + m(x); toast((res && res.erreur) || 'Gixen', 6000); return false;
-  };
-  $$('[data-gx]').forEach(b => b.onclick = () => { vibrer(); const x = L.find(y => y.item_id === b.dataset.gx); if (x) envoyer(x, b); });
-  const tout = $('#gx-env-tout'); if (tout) { let pret = false; tout.onclick = async () => {
-    if (!pret) { pret = true; vibrer(); tout.textContent = tt(`Confirmer : ${bons.length} mises chez Gixen`, `Confirm: ${bons.length} bids to Gixen`); tout.classList.add('gx-conf'); return; }
-    tout.disabled = true; let ok = 0;
-    for (const x of bons) { const b = $(`[data-gx="${CSS.escape(x.item_id)}"]`); if (!b) break; if (!b.classList.contains('gx-ok') && await envoyer(x, b)) ok++; }
-    if (!$('#gx-env-tout')) return;
-    tout.textContent = tt(`${ok} / ${bons.length} chez Gixen`, `${ok} / ${bons.length} at Gixen`); vibrer(); }; }
 }
 function feuilleMiseMax(x, W){
   const defaut = x.valeur ? Math.round((x.valeur * W.ratio_pct / 100 - (x.port || 0)) * 100) / 100 : null;
@@ -5921,35 +5937,37 @@ async function ouvrirAnnonce(base){
   const montrer = (d) => {
     const a = d.article || base, photos = (a.photos && a.photos.length ? a.photos : [a.photo || base.photo]).filter(Boolean).map(photoHD);
     const total = a.total ?? base.total, url = lienAchat(a.url || base.url, 'fenetre');
-    f.innerHTML = `<div class="fen" role="dialog" aria-modal="true"><button class="fen-x" aria-label="${esc(tt('Fermer', 'Close'))}">✕</button>
-      <div class="fen-haut">
-        <div class="fen-photos"><div class="fen-img" id="fen-img">${photos[0] ? `<img src="${esc(photos[0])}" alt="">` : SVG_CARTE}</div>
-          ${photos.length > 1 ? `<div class="fen-vigs">${photos.map((p, i) => `<button class="${i ? '' : 'on'}" data-ph="${esc(p)}" style="background-image:url('${esc(p)}')" aria-label="photo ${i + 1}"></button>`).join('')}</div>` : ''}</div>
-        <div class="fen-info">
-          <div class="pastilles">${d.rabais != null && d.rabais >= 30 ? capsule('Deal −' + d.rabais + ' %', 'vert') : d.rabais != null && d.rabais > 0 ? capsule(tt('Bon prix', 'Good price') + ' −' + d.rabais + ' %', 'acc') : d.rabais != null && d.rabais < -15 ? capsule(tt('Trop cher', 'Too expensive') + ' +' + (-d.rabais) + ' %', 'rouge') : ''}${a.encan ? `<span class="capsule or">${icH()}${esc(finDans(a.fin))}</span>` : ''}</div>
-          <h3>${esc(a.titre || base.titre || '')}</h3>
-          <div class="fen-prix"><b>${total ? argent(total, 0) : '—'}</b><span>${a.port_cad != null ? (a.port_cad ? tt('port compris', 'shipping incl.') : tt('livraison gratuite', 'free shipping')) : ''}</span></div>
-          ${d.valeur ? `<div class="fen-res"><div><span>${tt('Vaut', 'Worth')}</span><b>${argent(d.valeur, 0)}</b></div>${d.gain != null ? `<div class="${d.gain > 0 ? 'vert' : 'rouge'}"><span>${d.gain > 0 ? tt('Tu gagnes', 'You make') : tt('Tu perds', 'You lose')}</span><b>${d.gain > 0 ? '+' : '−'}${argent(Math.abs(d.gain), 0)}</b></div>` : ''}</div>
-            <div class="fen-base">${d.valeur_source === 'vendues' ? tt(`D’après ${d.nb_vendues} vente${d.nb_vendues > 1 ? 's' : ''} réelle${d.nb_vendues > 1 ? 's' : ''} de la même carte${d.gain != null ? ', après frais eBay' : ''}`, `From ${d.nb_vendues} real sale${d.nb_vendues > 1 ? 's' : ''} of the same card${d.gain != null ? ', after eBay fees' : ''}`) : tt('Estimé d’après les mêmes cartes en vente', 'Estimated from the same cards listed')}</div>`
-            : d.chargement ? `<div class="lecture"><span class="roue"></span>${tt('On cherche ce qu’elle vaut…', 'Finding what it’s worth…')}</div>`
-            : d.peu_de_ventes ? `<div class="fen-base">${raisonSansValeur(d)}</div>` : ''}
-          ${S.budget && S.budget.budget && total && total > S.budget.reste ? `<div class="fen-budget rouge">${tt('Au-dessus de ton budget du mois', 'Over your monthly budget')}</div>` : ''}
-          ${a.encan && d.suggere && S.mode === 'acheteur' ? `<div class="fen-mise">${tt('Ne mise pas plus que', 'Don’t bid more than')} <b>${argent(d.suggere.achat_max, 0)}</b></div>` : ''}
-          <div class="fen-btns un"><a class="btn" href="${esc(url)}" target="_blank" rel="noopener">${tt('Voir sur eBay', 'View on eBay')}</a></div>
-          ${(S.dealsParId || {})[String(base.item_id)] ? `<button class="pas-deal" id="fen-pasdeal">${tt('Pas un deal ? Dis-le-nous', 'Not a deal? Tell us')}</button>` : ''}
-        </div></div>
-      ${(d.ventes || []).length ? `<div class="fen-vendues"><div class="fv-t"><b>${tt('Vendues récemment', 'Recently sold')}</b><span>${tt('ventes réelles de la même carte', 'real sales of the same card')}</span></div>
-        <div class="fv-car">${d.ventes.slice(0, 12).map(k => `<a class="fv" ${k.url ? `href="${esc(k.url)}" target="_blank" rel="noopener"` : ''}><div class="fv-ph">${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo))}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
-          <b>${argent(k.prix, 0)}</b><small>${k.le ? tt('vendue ', 'sold ') + dateCourte(k.le) : tt('vendue', 'sold')}</small></a>`).join('')}</div></div>`
-        : d.ventes_attente ? `<div class="lecture"><span class="roue"></span>${tt('Les ventes réelles arrivent…', 'Real sales are loading…')}</div>` : ''}
-      ${d.chargement ? '' : `<details class="fen-plus" ${S.fenPlus ? 'open' : ''}><summary>${tt('Plus : la courbe et les cartes pareilles en vente', 'More: the chart and similar cards for sale')}</summary>
-      ${(d.points || []).length >= 3 ? `<div class="fen-courbe">${flecheTendance(d.tendance)}${courbeVentes(d.points, {h:90})}</div>` : ''}
-      ${(d.comps || []).length ? `<div class="fen-comps"><div class="bloc-t">${tt('Les mêmes cartes en vente', 'The same cards listed')}</div>
-        <div class="grille-c">${d.comps.map(k => `<div class="tuile-c" ${attrsAnnonce(k)}><div class="img">${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo))}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
-          <div class="corps"><div class="t">${esc(k.titre)}</div><div class="ligne-b"><span class="p">${argent(k.total, 0)}</span></div></div></div>`).join('')}</div></div>` : ''}
-      ${a.vendeur ? `<div class="fen-vend">${tt('Vendeur', 'Seller')} : ${esc(a.vendeur)}${a.vendeur_pct ? ' · ' + esc(a.vendeur_pct) + ' % ' + tt('positif', 'positive') : ''}</div>` : ''}
-      <a class="plus" href="#valeur/${encodeURIComponent(a.titre || base.titre || '')}" data-fermer>${tt('Combien vaut cette carte ? Toutes ses ventes ›', 'What is this card worth? All its sales ›')}</a>
-      </details>`}</div>`;
+    // 31 oct 2026 (Mathieu : « revoir le format : les comps sont trop bas, on doit les glisser de gauche a droite et tout
+    // mettre dans l'ecran sans defiler ; enlever le superflu ; l'acheteur doit savoir combien elle est, combien elle se
+    // vend et combien il doit la payer ») : une seule page qui tient dans l'ecran : la photo, le titre, 3 chiffres, les
+    // ventes reelles en bande qu'on glisse, eBay
+    const encan = !!(a.encan || (base.fin && !a.prix_fixe)), port = a.port_cad || 0;
+    const sm = d.suggere || null, maxT = sm && sm.achat_max ? sm.achat_max : null;
+    const maxA = maxT == null ? null : encan ? Math.max(0, maxT - port) : maxT;
+    const vt = d.rabais != null && d.rabais >= 30 ? ['vert', tt('Deal', 'Deal') + ' −' + d.rabais + ' %'] : d.rabais != null && d.rabais > 0 ? ['acc', tt('Bon prix', 'Good price') + ' −' + d.rabais + ' %']
+      : d.rabais != null && d.rabais < -15 ? ['rouge', tt('Trop cher', 'Too expensive') + ' +' + (-d.rabais) + ' %'] : null;
+    const budget = S.budget && S.budget.budget && total && total > S.budget.reste;
+    const ventes = (d.ventes || []).slice(0, 14);
+    f.innerHTML = `<div class="fen fa" role="dialog" aria-modal="true"><button class="fen-x" aria-label="${esc(tt('Fermer', 'Close'))}">✕</button>
+      <div class="fa-photo"><div class="fen-img" id="fen-img">${photos[0] ? `<img src="${esc(photos[0])}" alt="">` : SVG_CARTE}</div>
+        ${a.fin && encan ? `<span class="fa-fin">${icH()}${esc(finDans(a.fin))}</span>` : ''}
+        ${photos.length > 1 ? `<div class="fen-vigs fa-vigs">${photos.slice(0, 6).map((p, i) => `<button class="${i ? '' : 'on'}" data-ph="${esc(p)}" style="background-image:url('${esc(p)}')" aria-label="photo ${i + 1}"></button>`).join('')}</div>` : ''}</div>
+      <div class="fa-t">${esc(a.titre || base.titre || '')}</div>
+      <div class="fa-3">
+        <div class="fa-k"><span>${encan ? tt('Mise actuelle', 'Current bid') : tt('Prix', 'Price')}</span><b>${total ? argent(total, 0) : '—'}</b><small>${a.port_cad != null ? (a.port_cad ? tt('port compris', 'shipping incl.') : tt('livraison gratuite', 'free shipping')) : '&nbsp;'}</small></div>
+        <div class="fa-k fa-v"><span>${tt('Se vend', 'Sells for')}</span>${d.valeur ? `<b>${argent(d.valeur, 0)}</b><small>${d.valeur_source === 'vendues' ? tt(`médiane · ${d.nb_vendues} vente${d.nb_vendues > 1 ? 's' : ''}`, `median · ${d.nb_vendues} sale${d.nb_vendues > 1 ? 's' : ''}`) : tt('mêmes cartes en vente', 'same cards listed')}</small>`
+          : d.chargement || d.ventes_attente ? `<b><span class="roue"></span></b><small>${tt('on cherche…', 'searching…')}</small>` : `<b>—</b><small>${tt('pas assez de ventes', 'not enough sales')}</small>`}</div>
+        <div class="fa-k fa-m"><span>${encan ? tt('Ta mise max', 'Your max bid') : tt('Paie au plus', 'Pay at most')}</span>${maxA != null ? `<b>${argent(maxA, 0)}</b><small>${tt('pour ~20 % de profit', 'for ~20% profit')}</small>` : `<b>—</b><small>&nbsp;</small>`}</div>
+      </div>
+      ${vt || budget ? `<div class="fa-pils">${vt ? `<span class="capsule ${vt[0]}">${esc(vt[1])}</span>` : ''}${d.gain != null && d.gain > 0 ? `<span class="capsule vert">+${argent(d.gain, 0)} ${tt('après frais', 'after fees')}</span>` : ''}${budget ? `<span class="capsule rouge">${tt('Au-dessus de ton budget', 'Over your budget')}</span>` : ''}</div>` : ''}
+      <div class="fa-ventes">${ventes.length ? `<div class="fa-vt">${tt('Vendues récemment', 'Recently sold')} <small>${tt('même carte · glisse ›', 'same card · swipe ›')}</small></div>
+        <div class="fv-car fa-car">${ventes.map(k => `<a class="fv" ${k.url ? `href="${esc(k.url)}" target="_blank" rel="noopener"` : ''}><div class="fv-ph">${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo, 300))}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
+          <b>${argent(k.prix, 0)}</b><small>${k.le ? dateCourte(k.le) : ''}</small></a>`).join('')}</div>`
+        : d.chargement || d.ventes_attente ? `<div class="lecture"><span class="roue"></span>${tt('Les ventes réelles arrivent…', 'Real sales are loading…')}</div>`
+        : `<div class="fa-vide">${d.peu_de_ventes ? raisonSansValeur(d) : tt('Aucune vente de cette carte exacte trouvée.', 'No sale of this exact card found.')}</div>`}</div>
+      <div class="fa-btns"><a class="btn" href="${esc(url)}" target="_blank" rel="noopener">${encan ? tt('Miser sur eBay', 'Bid on eBay') : tt('Voir sur eBay', 'View on eBay')}</a>${boutonWatch({item_id: base.item_id})}</div>
+      <div class="fa-bas"><a href="#valeur/${encodeURIComponent(a.titre || base.titre || '')}" data-fermer>${tt('Toutes ses ventes ›', 'All its sales ›')}</a>
+        ${(S.dealsParId || {})[String(base.item_id)] ? `<button class="pas-deal" id="fen-pasdeal">${tt('Pas un deal ?', 'Not a deal?')}</button>` : ''}</div></div>`;
     $$('.fen-vigs [data-ph]', f).forEach(b => b.onclick = () => { $('#fen-img', f).innerHTML = `<img src="${esc(b.dataset.ph)}" alt="">`; $$('.fen-vigs button', f).forEach(x => x.classList.toggle('on', x === b)); brancherLoupe($('#fen-img', f)); });
     brancherLoupe($('#fen-img', f));
     $$('[data-fermer]', f).forEach(b => b.addEventListener('click', fermerAnnonce));
@@ -6194,6 +6212,14 @@ async function chargerDeals(frais){
     for (const k of [...MEMO.keys()]) if (k.startsWith('deals_liste')) MEMO.delete(k);
     const n = await API.deals_liste(F).catch(() => null); if (!n || !n.ok || !$('#d-res')) return;
     const avant = S.dealsParId || {};
+    // 31 oct 2026 (Mathieu : « les 2 dernieres heures, le prix change et ca peut vite devenir un faux deal ; il doit se faire
+    // retirer du dashboard ») : le prix du moment sur chaque tuile ; une annonce qui n'est plus un deal s'efface
+    const par = Object.fromEntries([...(n.deals || []), ...(n.suivis || [])].map(x => [String(x.item_id), x]));
+    $$('#d-grille .tuile-deal[data-id]').forEach(t => { const x = par[String(t.dataset.id)];
+      if (!x) { if (avant[String(t.dataset.id)]) { t.classList.add('part'); setTimeout(() => t.remove(), 320); } return; }
+      const pr = t.querySelector('.sd-pr'); if (pr && x.total) pr.textContent = argent(x.total, 0);
+      const rb = t.querySelector('.sd-rab'); if (rb && x.valeur && x.rabais != null) rb.textContent = '−' + x.rabais + ' %'; });
+    S.dealsReste = (S.dealsReste || []).filter(h => { const m = /data-id="([^"]+)"/.exec(h); return !m || par[m[1]]; });
     const nv = [...(n.deals || []), ...(n.suivis || [])].filter(x => { const a = avant[String(x.item_id)]; return !a || (x.valeur && !a.valeur); }).length;
     let p = $('#d-nv');
     if (!nv) { if (p) p.remove(); return; }

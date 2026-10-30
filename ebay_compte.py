@@ -659,6 +659,27 @@ def rechercher(q, categorie=None, prix_max=None, recentes=False, limite=50, fond
     return res
 
 
+def _lire_article(d, item_id):
+    """Une annonce Browse (getItem / getItems) -> le dict de SlabCoach (prix en $ CA, port, fin, mises...)."""
+    pr = d.get("currentBidPrice") or d.get("price") or {}
+    dev = pr.get("currency") or "CAD"
+    t = _taux_vers_cad(dev) or 0.0              # devise inconnue : prix 0 -> l'annonce n'est pas jugee
+    opt = (d.get("shippingOptions") or [{}])[0]
+    port = (opt.get("shippingCost") or {}).get("value")
+    imgs = [x.get("imageUrl") for x in [d.get("image") or {}] + (d.get("additionalImages") or []) if x.get("imageUrl")]
+    vend = d.get("seller") or {}
+    return {"item_id": item_id, "titre": d.get("title") or "", "prix_cad": round(float(pr.get("value") or 0) * t, 2),
+           "port_cad": round(float(port) * t, 2) if port not in (None, "") else None, "photos": imgs[:12],
+           "photo": imgs[0] if imgs else "", "url": d.get("itemWebUrl") or "", "etat": d.get("condition") or "",
+           "vendeur": vend.get("username") or "", "vendeur_pct": vend.get("feedbackPercentage"), "vendeur_score": vend.get("feedbackScore"),
+           "fin": d.get("itemEndDate"), "mises": d.get("bidCount"), "encan": "AUCTION" in (d.get("buyingOptions") or []),
+           "lieu": ((d.get("itemLocation") or {}).get("country") or ""), "service": opt.get("shippingServiceCode") or "",
+           "retours": bool((d.get("returnTerms") or {}).get("returnsAccepted")),
+           # 31 oct 2026 (mises rapides Gixen) : la devise de l'ANNONCE (une mise se fait dans cette devise, pas en CAD)
+           "devise": pr.get("convertedFromCurrency") or dev,
+           "prix_devise": float(pr.get("convertedFromValue") or pr.get("value") or 0)}
+
+
 def article(item_id, fond=False, frais=False):
     """24 oct 2026 - une annonce eBay complete (toutes ses photos, vendeur, livraison, fin) : Browse getItem,
     jeton d'application (aucune donnee de compte). Cache 1 h."""
@@ -681,23 +702,7 @@ def article(item_id, fond=False, frais=False):
             d = json.loads(r.read())
     except urllib.error.HTTPError as e:
         raise RuntimeError(f"eBay HTTP {e.code} : {e.read().decode('utf-8', 'ignore')[:160]}")
-    pr = d.get("currentBidPrice") or d.get("price") or {}
-    dev = pr.get("currency") or "CAD"
-    t = _taux_vers_cad(dev) or 0.0              # devise inconnue : prix 0 -> l'annonce n'est pas jugee
-    opt = (d.get("shippingOptions") or [{}])[0]
-    port = (opt.get("shippingCost") or {}).get("value")
-    imgs = [x.get("imageUrl") for x in [d.get("image") or {}] + (d.get("additionalImages") or []) if x.get("imageUrl")]
-    vend = d.get("seller") or {}
-    res = {"item_id": item_id, "titre": d.get("title") or "", "prix_cad": round(float(pr.get("value") or 0) * t, 2),
-           "port_cad": round(float(port) * t, 2) if port not in (None, "") else None, "photos": imgs[:12],
-           "photo": imgs[0] if imgs else "", "url": d.get("itemWebUrl") or "", "etat": d.get("condition") or "",
-           "vendeur": vend.get("username") or "", "vendeur_pct": vend.get("feedbackPercentage"), "vendeur_score": vend.get("feedbackScore"),
-           "fin": d.get("itemEndDate"), "mises": d.get("bidCount"), "encan": "AUCTION" in (d.get("buyingOptions") or []),
-           "lieu": ((d.get("itemLocation") or {}).get("country") or ""), "service": opt.get("shippingServiceCode") or "",
-           "retours": bool((d.get("returnTerms") or {}).get("returnsAccepted")),
-           # 31 oct 2026 (mises rapides Gixen) : la devise de l'ANNONCE (une mise se fait dans cette devise, pas en CAD)
-           "devise": pr.get("convertedFromCurrency") or dev,
-           "prix_devise": float(pr.get("convertedFromValue") or pr.get("value") or 0)}
+    res = _lire_article(d, item_id)
     appels_ebay.cache_ecrire(cle, res)
     return res
 
@@ -770,3 +775,31 @@ def post_json(adresse, corps, marketplace="EBAY_CA"):
             raise RuntimeError("eBay refuse cet accès (" + str(e.code) + ") : " + (msg or "permission manquante")
                                + (" — en production, les mises demandent l'approbation d'eBay (API Offer)" if "/bidding" in adresse else ""))
         raise RuntimeError(f"eBay HTTP {e.code} : {msg}")
+
+
+def articles_lot(item_ids, fond=True):
+    """31 oct 2026 (Mathieu : « les cartes qui arrivent a la fin, 2 dernieres heures : rafraichir le prix eBay souvent, le
+    deal change et peut vite devenir un faux deal ») : jusqu'a 20 annonces en UN appel (Browse getItems), jamais le cache.
+    -> {item_id: article} ; une annonce absente de la reponse (finie, retiree) n'y est pas."""
+    ids = [str(i).strip() for i in item_ids if re.fullmatch(r"\d{9,15}", str(i).strip())][:20]
+    if not ids:
+        return {}
+    appels_ebay.exiger("browse", fond)
+    adresse = url("recherche").split("/item_summary/")[0] + "/item/?" + urllib.parse.urlencode({"item_ids": ",".join(f"v1|{i}|0" for i in ids)})
+    req = urllib.request.Request(adresse, headers={"Authorization": "Bearer " + jeton_application(), "Accept": "application/json",
+                                               "X-EBAY-C-MARKETPLACE-ID": "EBAY_CA", "X-EBAY-C-ENDUSERCTX": "contextualLocation=country%3DCA"})
+    appels_ebay.compter("browse")
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            d = json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        raise RuntimeError(f"eBay HTTP {e.code} : {e.read().decode('utf-8', 'ignore')[:160]}")
+    out = {}
+    for it in d.get("items") or []:
+        iid = str(it.get("legacyItemId") or "").strip()
+        if not iid and it.get("itemId"):
+            parts = str(it["itemId"]).split("|")
+            iid = parts[1] if len(parts) > 1 else ""
+        if iid:
+            out[iid] = _lire_article(it, iid)
+    return out

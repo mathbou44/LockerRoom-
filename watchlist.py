@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS watchlist (item_id TEXT PRIMARY KEY, titre TEXT, phot
 """
 MAX = 60                        # cartes suivies par compte
 FIN_MIN = 15                    # « finit dans 15 min : place ta mise »
-PROCHE_MIN = 75                 # la boucle de 5 min relit sur eBay les encans qui finissent dans 75 min
+PROCHE_MIN = 120                # la boucle de 5 min relit sur eBay les encans qui finissent dans 2 h (31 oct 2026 : 75 -> 120)
 RATIO = 0.70                    # la mise max : 70 % de la valeur (comme les deals), port compris
 
 
@@ -308,8 +308,9 @@ def liste(api):
         x["etat"] = _etat(x, maint)
         f = _dt(x.get("fin"))
         x["reste_min"] = int((f - maint).total_seconds() // 60) if f and x["encan"] else None
-    rang = {"ok": 0, "depasse": 1, "fini": 2}
-    lst.sort(key=lambda x: (rang[x["etat"]], x["reste_min"] if x["reste_min"] is not None else 10 ** 7))
+    # 31 oct 2026 (Mathieu : « trier par defaut ceux qui finissent en premier vers les derniers ») : par heure de fin
+    # seulement (une mise depassee reste a sa place) ; les prix fixes ensuite, les encans termines a la fin
+    lst.sort(key=lambda x: (1 if x["etat"] == "fini" else 0, x["reste_min"] if x["reste_min"] is not None else 10 ** 7))
     return {"ok": True, "cartes": lst, "n": len(lst), "reglages": reglages(api)}
 
 
