@@ -131,6 +131,56 @@ def _etalons(prod):
     return out
 
 
+_RE_GRADEE = re.compile(r"\b(psa|bgs|sgc|cgc|graded|beckett|tag\s*\d|hga|ksa|gma|isa)\b", re.I)
+_RE_PAS_BASE = re.compile(r"exclusives?|high gloss|canvas|oversized|retro|outburst|clear cut|french|deluxe|green foil|"
+                          r"printing plate|/\s*\d+|\b1/1\b|dazzlers?|variation|auto|signed|patch|jersey|lot\b", re.I)
+
+
+def sous_yg(prod):
+    """Le sous-ensemble Young Guns de base (pas une parallele, pas Canvas / Oversized) ou None."""
+    for s in prod.get("sous_ensembles") or []:
+        if re.fullmatch(r"\s*young guns\s*", s.get("nom") or "", re.I) and not s.get("parallele_de"):
+            return s["nom"]
+    return None
+
+
+def yg_annonces(prod, chercher=None):
+    """31 oct 2026 (Mathieu : « Porter Martone pour les Flyers vaut cher, Frondell pour les Blackhawks aussi ; bref, la
+    valeur des equipes est en fonction de la valeur des Young Guns RAW de cette equipe ») : pour chaque recrue, le prix de
+    SA Young Guns de base, non gradee, en vente sur eBay (API Browse, gratuite) -> {joueur: {m, n}}. Ses paralleles
+    (Exclusives, High Gloss...) en decoulent (valeurs.valeur_carte remonte a la Young Guns)."""
+    import cartes_match
+    import ebay_compte
+    nom = sous_yg(prod)
+    if not nom:
+        return {}
+    saison, _m = _court(prod)
+    chercher = chercher or (lambda q: ebay_compte.rechercher(q, categorie="261328", limite=50, fond=True))
+    joueurs = sorted({c["joueur"] for c in prod.get("cartes") or [] if c.get("sous_ensemble") == nom and c.get("joueur")
+                      and "/" not in c["joueur"]})
+    out = {}
+    for j in joueurs:
+        try:
+            res = chercher(f"{saison} young guns {j}") or []
+        except (RuntimeError, OSError):
+            break
+        fam = cartes_match.norm(j).split()[-1]
+        prix = []
+        for a in res:
+            t = a.get("titre") or ""
+            tn = cartes_match.norm(t)
+            if fam not in tn.split() or "young guns" not in tn or saison.split("-")[0] not in t:
+                continue
+            if _RE_GRADEE.search(t) or _RE_PAS_BASE.search(t) or cartes_match.decoder(t).get("exclu"):
+                continue
+            if (a.get("prix_cad") or 0) > 0:
+                prix.append(round((a.get("prix_cad") or 0) + (a.get("port_cad") or 0), 2))
+        if len(prix) >= 3:
+            out[j] = {"m": round(cartes_match.mediane_robuste(prix)[0] if len(prix) >= 4 else statistics.median(prix), 2),
+                      "n": len(prix)}
+    return out
+
+
 def annonces_recrues(prod, chercher=None):
     """26 oct 2026 (Mathieu : « dans les Series 1, 2, Extended, on cherche les rookies : Boston (Hagens) devrait etre
     parmi les plus chers avec Chicago, Philadelphie, Washington ») - une recrue toute neuve n'a encore aucune vente :
@@ -175,6 +225,13 @@ def demande_recrue(prod, joueur):
     l'echelle vient des recrues connues (etalons) : meme prix d'annonces que Demidov -> meme demande que Demidov.
     None si on ne sait pas."""
     e = de(prod["id"])
+    yg = e.get("yg_annonces") or {}
+    if joueur in yg and len(yg) >= 5:
+        # 31 oct 2026 : sa Young Guns raw comparee a la mediane de TOUTE la classe de recrues du produit (surtout des
+        # joueurs ordinaires = 0,6) : les vedettes montent d'elles-memes (Martone, Frondell, Hagens...)
+        ref = statistics.median(x["m"] for x in yg.values())
+        if ref:
+            return round(max(0.2, min(15.0, 0.6 * yg[joueur]["m"] / ref)), 2)
     a = e.get("annonces_recrues") or {}
     j = a.get(joueur)
     if not j:
@@ -196,6 +253,10 @@ def mesurer(prod, rechercher=None, chercher_annonces=None):
     rechercher = rechercher or vendues.rechercher
     saison, marque = _court(prod)
     out = {"maj": datetime.now().isoformat(timespec="seconds"), "sous": {}, "boite": None}
+    try:
+        out["yg_annonces"] = yg_annonces(prod, chercher_annonces)
+    except Exception as e:
+        out["erreur_yg"] = type(e).__name__
     try:
         out["annonces_recrues"] = annonces_recrues(prod, chercher_annonces)
         if out["annonces_recrues"]:
@@ -267,7 +328,8 @@ def mesurer_si_besoin(prod, attendre=False):
         age = 1e9
     # 31 oct 2026 : une mesure d'avant les etalons (nouvelles recrues sans echelle) est refaite tout de suite
     sans_etalons = bool(e.get("annonces_recrues")) and "annonces_etalons" not in e
-    if age < FRAICHEUR_S and not e.get("erreur") and not sans_etalons:
+    sans_yg = bool(sous_yg(prod)) and "yg_annonces" not in e        # 31 oct 2026 : les Young Guns raw de chaque recrue
+    if age < FRAICHEUR_S and not e.get("erreur") and not sans_etalons and not sans_yg:
         return e
     if attendre:
         return mesurer(prod)
@@ -287,15 +349,34 @@ def mesurer_si_besoin(prod, attendre=False):
     return e
 
 
+def sous_yg_nom(_e, prod):
+    k = prod.get("id")
+    if k not in _YG_NOM:
+        _YG_NOM[k] = sous_yg(prod)
+    return _YG_NOM[k]
+
+
+_YG_NOM = {}
+
+
 def valeur(prod, nom_sous, joueur, defaut):
     """La valeur d'UNE carte (sous-ensemble, joueur) : sa mediane vendue si mesuree ; sinon la mediane du
     sous-ensemble x la demande relative du joueur (s'il est connu) ; sinon `defaut` (le modele d'avant)."""
-    e = (de(prod["id"]).get("sous") or {}).get(nom_sous)
-    if not e:
-        return defaut, False
-    j = (e.get("joueurs") or {}).get(joueur)
+    tout = de(prod["id"])
+    e = (tout.get("sous") or {}).get(nom_sous)
+    j = ((e or {}).get("joueurs") or {}).get(joueur)
     if j and j.get("n", 0) >= 2:
         return j["m"], True
+    # 31 oct 2026 : sa Young Guns raw en vente (les annonces demandent un peu plus que les ventes : ramenees a l'echelle
+    # des ventes par le rapport mesure sur les recrues qui ont les deux ; 0,85 sinon)
+    yg = tout.get("yg_annonces") or {}
+    if joueur in yg and nom_sous == sous_yg_nom(tout, prod):
+        vend = (e or {}).get("joueurs") or {}
+        r = [vend[k]["m"] / yg[k]["m"] for k in yg if k in vend and vend[k].get("n", 0) >= 2 and yg[k]["m"]]
+        k = max(0.5, min(1.1, statistics.median(r))) if len(r) >= 3 else 0.85
+        return round(yg[joueur]["m"] * k, 2), True
+    if not e:
+        return defaut, False
     if e.get("mediane"):
         if j:                                            # une seule vente : a mi-chemin avec la mediane
             return round((j["m"] + e["mediane"]) / 2, 2), True
