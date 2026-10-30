@@ -88,12 +88,54 @@ def recrues_du_produit(prod):
                    and not (se.get(c.get("sous_ensemble")) or {}).get("parallele_de")})
 
 
+def _annonces_joueur(j, chercher):
+    """Les annonces eBay a son nom (API Browse, gratuite) -> {m: mediane, h: 3e quartile, n} ou None."""
+    import cartes_match
+    res = chercher(f"{j} hockey card") or []
+    fam = cartes_match.norm(j).split()[-1]
+    prix = sorted(round((a.get("prix_cad") or 0) + (a.get("port_cad") or 0), 2) for a in res
+                  if fam in cartes_match.norm(a.get("titre") or "").split() and not cartes_match.decoder(a.get("titre") or "").get("exclu")
+                  and (a.get("prix_cad") or 0) > 0)
+    if len(prix) < 3:
+        return None
+    h = statistics.quantiles(prix, n=4)[2] if len(prix) >= 4 else prix[-1]
+    return {"m": round(statistics.median(prix), 2), "h": round(h, 2), "n": len(prix)}
+
+
+ETALONS_MAX = 8
+
+
+def _etalons(prod):
+    """Des recrues que l'indice connait deja (demande mesuree sur leurs ventes) : celles du produit d'abord, sinon celles
+    des autres produits du catalogue. Elles servent d'etalon pour mettre les nouvelles sur la MEME echelle."""
+    import catalogue
+    import valeurs
+    vus, out = set(), []
+    prods = [prod] + [p for p in (catalogue.liste() or []) if p.get("id") != prod.get("id")]
+    for p in prods:
+        try:
+            pp = p if p.get("cartes") is not None else catalogue.charger(p["id"])
+        except Exception:
+            continue
+        for j in recrues_du_produit(pp or {}):
+            if j not in vus and valeurs.connu(j):
+                vus.add(j)
+                out.append(j)
+        if len(out) >= ETALONS_MAX * 2:
+            break
+    # des forts et des moyens : l'etalon couvre toute l'echelle
+    out.sort(key=lambda j: -valeurs.demande(j))
+    if len(out) > ETALONS_MAX:
+        pas = len(out) / ETALONS_MAX
+        out = [out[int(k * pas)] for k in range(ETALONS_MAX)]
+    return out
+
+
 def annonces_recrues(prod, chercher=None):
     """26 oct 2026 (Mathieu : « dans les Series 1, 2, Extended, on cherche les rookies : Boston (Hagens) devrait etre
     parmi les plus chers avec Chicago, Philadelphie, Washington ») - une recrue toute neuve n'a encore aucune vente :
-    sa cote se lit dans ses cartes deja en vente (prospect, junior, autres produits). Mediane des annonces eBay
-    a son nom (API Browse, gratuite) -> {joueur: mediane $ CA}. Seulement les recrues que l'indice ne connait pas."""
-    import cartes_match
+    sa cote se lit dans ses cartes deja en vente (prospect, junior, autres produits). -> {joueur: {m, h, n}}.
+    Seulement les recrues que l'indice ne connait pas ; plus (31 oct 2026) quelques recrues connues, les etalons."""
     import ebay_compte
     import valeurs
     chercher = chercher or (lambda q: ebay_compte.rechercher(q, categorie="261328", limite=50, fond=True))
@@ -102,25 +144,46 @@ def annonces_recrues(prod, chercher=None):
         if valeurs.connu(j):
             continue
         try:
-            res = chercher(f"{j} hockey card") or []
+            x = _annonces_joueur(j, chercher)
         except (RuntimeError, OSError):
             break
-        fam = cartes_match.norm(j).split()[-1]
-        prix = [round((a.get("prix_cad") or 0) + (a.get("port_cad") or 0), 2) for a in res
-                if fam in cartes_match.norm(a.get("titre") or "").split() and not cartes_match.decoder(a.get("titre") or "").get("exclu")
-                and (a.get("prix_cad") or 0) > 0]
-        if len(prix) >= 3:
-            out[j] = {"m": round(statistics.median(prix), 2), "n": len(prix)}
+        if x:
+            out[j] = x
+    return out
+
+
+def annonces_etalons(prod, chercher=None):
+    import ebay_compte
+    import valeurs
+    chercher = chercher or (lambda q: ebay_compte.rechercher(q, categorie="261328", limite=50, fond=True))
+    out = {}
+    for j in _etalons(prod):
+        try:
+            x = _annonces_joueur(j, chercher)
+        except (RuntimeError, OSError):
+            break
+        if x:
+            out[j] = dict(x, d=valeurs.demande(j))
     return out
 
 
 def demande_recrue(prod, joueur):
-    """Demande relative d'une recrue sans ventes (meme echelle que valeurs.demande : ~0,6 = un joueur ordinaire),
-    d'apres ses annonces comparees aux autres recrues du produit. None si on ne sait pas."""
-    a = (de(prod["id"]).get("annonces_recrues") or {})
+    """Demande relative d'une recrue sans ventes (meme echelle que valeurs.demande : ~0,6 = un joueur ordinaire).
+    31 oct 2026 (Mathieu : « les Bruins (Hagens), les Flyers (Martone), les Blackhawks avec Frondell valent tous autant
+    ou presque ») : avant, une nouvelle recrue etait comparee aux AUTRES nouvelles seulement (la mediane = 0,6) : quand
+    toutes sont des vedettes, chacune tombait a « joueur ordinaire », loin de Schaefer (10,8) ou Demidov (6,5). Maintenant
+    l'echelle vient des recrues connues (etalons) : meme prix d'annonces que Demidov -> meme demande que Demidov.
+    None si on ne sait pas."""
+    e = de(prod["id"])
+    a = e.get("annonces_recrues") or {}
     j = a.get(joueur)
     if not j:
         return None
+    et = [x for x in (e.get("annonces_etalons") or {}).values() if x.get("d") and x.get("h")]
+    if len(et) >= 3:
+        import math
+        k = statistics.median(math.log(x["d"]) - math.log(x["h"]) for x in et)
+        return round(max(0.2, min(15.0, math.exp(k) * (j.get("h") or j["m"]))), 2)
     ref = statistics.median([x["m"] for x in a.values()]) if a else None
     if not ref:
         return None
@@ -135,6 +198,8 @@ def mesurer(prod, rechercher=None, chercher_annonces=None):
     out = {"maj": datetime.now().isoformat(timespec="seconds"), "sous": {}, "boite": None}
     try:
         out["annonces_recrues"] = annonces_recrues(prod, chercher_annonces)
+        if out["annonces_recrues"]:
+            out["annonces_etalons"] = annonces_etalons(prod, chercher_annonces)
     except Exception as e:
         out["erreur_annonces"] = type(e).__name__
     for s in (_importants(prod) if (vendues.actif() or rechercher is not vendues.rechercher) else []):
@@ -200,7 +265,9 @@ def mesurer_si_besoin(prod, attendre=False):
         age = time.time() - datetime.fromisoformat(str(e.get("maj"))).timestamp()
     except ValueError:
         age = 1e9
-    if age < FRAICHEUR_S and not e.get("erreur"):
+    # 31 oct 2026 : une mesure d'avant les etalons (nouvelles recrues sans echelle) est refaite tout de suite
+    sans_etalons = bool(e.get("annonces_recrues")) and "annonces_etalons" not in e
+    if age < FRAICHEUR_S and not e.get("erreur") and not sans_etalons:
         return e
     if attendre:
         return mesurer(prod)

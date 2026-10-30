@@ -212,7 +212,7 @@ def _decoder_memo(titre):
     """decoder() garde en memoire (lecture seule) : une vente est comparee a des centaines d'annonces par heure."""
     a = _DEC.get(titre)
     if a is None:
-        if len(_DEC) > 60000:
+        if len(_DEC) > 60000:                # ~1 Ko chacun : 60 Mo au plus (serveur Standard, 2 Go)
             _DEC.clear()
         a = _DEC[titre] = decoder(titre)
     return a
