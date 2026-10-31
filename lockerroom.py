@@ -2337,6 +2337,34 @@ class Api:
                 pass
         return {"ok": True, "photo": nouv[0], "photos": nouv}
 
+    def carte_photos_studio(self, cid, photos):
+        """31 oct 2026 (Mathieu : « la photo est pas centree ») : les cartes gardees AVANT la photo studio en collection.
+        L'ecran recadre la photo dans le telephone (carte trouvee, redressee, centree) et l'envoie ici, une seule fois :
+        la photo studio est montree, l'originale est gardee a cote (rien n'est perdu)."""
+        import photos_cartes
+        carte = self.carte_lire(cid)
+        if not carte:
+            return {"ok": False, "erreur": "Carte introuvable"}
+        if carte.get("photos_orig"):
+            return {"ok": True, "deja": True}
+        try:
+            avant = json.loads(carte.get("photos") or "[]")
+        except ValueError:
+            avant = []
+        avant = avant if isinstance(avant, list) and avant else ([carte["photo"]] if carte.get("photo") else [])
+        photos = list(photos or [])[:len(avant)]
+        if not avant or not photos:
+            return {"ok": False, "erreur": "Aucune photo"}
+        try:
+            refs = photos_cartes.sauver(photos)
+        except ValueError as e:
+            return {"ok": False, "erreur": str(e)}
+        if len(refs) != len(photos):
+            return {"ok": False, "erreur": "Photo illisible"}
+        refs += avant[len(refs):]
+        self.carte_sauver({"id": cid, "photo": refs[0], "photos": json.dumps(refs), "photos_orig": json.dumps(avant)})
+        return {"ok": True, "photos": refs}
+
     def carte_supprimer(self, cid):
         import photos_cartes
         refs = []

@@ -46,3 +46,23 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+def test_double_joueur():
+    """31 oct 2026 : Demidov / Fowler Dual Rookie Patch-Taculars /25 : ses propres ventes ne sont plus refusees."""
+    import cartes_match as cm
+    c = cm.cible_titre("2025-26 Upper Deck Premier Dual Rookie Patch-Taculars Ivan Demidov Jacob Fowler /25 #DRPT-DF")
+    assert c["autres_joueurs"] == ["jacob fowler"] and "fowler" in cm.requete_ebay(c)
+    for v in ["2025-26 Upper Deck Premier Ivan Demidov Jacob Fowler Dual Rookie Patch-Taculars /25 Canadiens",
+              "2025-26 UD Premier Demidov Fowler Dual Rookie Patch 12/25 RPA",
+              "2025 Upper Deck Premier Ivan Demidov Jacob Fowler Dual Rookie Patchtaculars 17/25 Montreal"]:
+        assert cm.raisons_refus(c, v) == [], (v, cm.raisons_refus(c, v))
+    for v in ["2025-26 Upper Deck Premier Ivan Demidov Rookie Patch-Taculars /25",
+              "2025-26 Premier Dual Rookie Patch-Taculars Lane Hutson Ivan Demidov /25",
+              "2025-26 Premier Ivan Demidov Jacob Fowler Dual Rookie Patch Auto /25"]:
+        assert cm.raisons_refus(c, v), v
+
+
+if __name__ == "__main__":
+    test_double_joueur()
+    print("ok double joueur")

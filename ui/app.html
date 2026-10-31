@@ -3755,7 +3755,29 @@ function poserFlou(img, q){
   const e = q.map(([x, y]) => { const vx = x - c[0], vy = y - c[1], n = Math.hypot(vx, vy) || 1; return [x + vx / n * m * 1.41, y + vy / n * m * 1.41]; });
   g.save(); g.beginPath(); e.forEach(([x, y], k) => k ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); g.clip();
   g.drawImage(img, 0, 0); g.restore();
-  return cv.toDataURL('image/jpeg', STUDIO.qualite);
+  return centrerCarte(cv, q).toDataURL('image/jpeg', STUDIO.qualite);
+}
+// 31 oct 2026 (Mathieu : « la photo est pas centrée ») : la carte au CENTRE de la photo. On recadre autour d'elle (meme
+// format que la photo, la carte ~80 % de la hauteur ou de la largeur) ; s'il manque de la photo d'un cote, ce bout est
+// rempli par le fond flou etire (jamais de bande vide)
+function centrerCarte(cv, q){
+  const W = cv.width, H = cv.height, A = W / H;
+  const xs = q.map(p => p[0]), ys = q.map(p => p[1]);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const bw = x1 - x0, bh = y1 - y0, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  if (bw < 20 || bh < 20) return cv;
+  let cw = Math.max(bw * 1.25, bh * 1.25 * A);                      // le plus petit cadre qui garde de l'air autour
+  const dedans = Math.min(2 * Math.min(cx, W - cx), 2 * Math.min(cy, H - cy) * A);   // le plus grand cadre centre DANS la photo
+  if (dedans > cw) cw = Math.min(dedans, W);
+  const ch = cw / A;
+  if (Math.abs(cx - W / 2) < W * 0.02 && Math.abs(cy - H / 2) < H * 0.02 && cw >= W * 0.98) return cv;   // deja centree
+  const ow = Math.round(Math.min(cw, STUDIO.cote * Math.min(1, A))), oh = Math.round(ow / A);
+  const out = document.createElement('canvas'); out.width = ow; out.height = oh;
+  const g = out.getContext('2d'); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+  const sx = cx - cw / 2, sy = cy - ch / 2;
+  if (sx < 0 || sy < 0 || sx + cw > W || sy + ch > H) g.drawImage(_flouImage(cv, W, H), 0, 0, ow, oh);   // fond pour les bouts manquants
+  g.drawImage(cv, sx, sy, cw, ch, 0, 0, ow, oh);
+  return out;
 }
 // la carte sans l'IA (avant de depenser une lecture) : la plus grande zone qui se detache du fond, au centre, puis les
 // coins colles aux vrais bords (affinerCoins). -> coins 0..1000, ou null si rien de sur
@@ -8327,6 +8349,22 @@ function ficheCollection(c){
       <div class="sous" style="text-align:center">${tt('L’annonce se fait avec ce que l’app sait déjà : photos, titre, prix. Tu vérifies avant de publier.', 'The listing uses what the app already knows: photos, title, price. You check before publishing.')}</div>
       <div class="fc-liens"><button class="plus" id="fc-photo">${ICONES.photo}${tt('Changer la photo', 'Change the photo')}</button><button class="plus" id="fc-modif">${tt('Modifier', 'Edit')}</button></div></div>`);
   $('#fc-vendre').onclick = () => { fermerFeuille(); vendreDepuisCollection(c.id); };
+  // 31 oct 2026 (Mathieu : « la photo est pas centrée ») : une carte gardée AVANT la photo studio en collection : on la
+  // recadre ici (carte trouvée, redressée, centrée), une seule fois ; l'originale reste gardée à côté
+  if (c.id && !c.photos_orig && MODE_STUDIO && phs.length && phs.every(u => /^\/mes-photos\//.test(u))) (async () => {
+    const out = []; let un = false;
+    for (const u of phs) {
+      try { const im = await chargerImage(u); const q = coinsLocaux(im);
+        if (q) { const st = await photoStudio(u, q, {affiner: false}); out.push(st.photo); un = true; continue; } } catch (e) {}
+      out.push(u);
+    }
+    if (!un) return;
+    const r = await API.carte_photos_studio(c.id, out).catch(() => null);
+    if (!r || !r.ok || !r.photos) return;
+    c.photos = JSON.stringify(r.photos); c.photos_orig = '1'; c.photo = r.photos[0];
+    $$('#fc-imgs img').forEach((im, j) => { if (out[j] && out[j] !== phs[j]) im.src = out[j]; });
+    const t_ = $(`#i-liste .tuile-inv[data-id="${c.id}"] .img img`); if (t_) t_.src = photoNet(r.photos[0]);
+  })();
   const zi = $('#fc-imgs'), pts = $('#fc-pts');
   if (zi && pts) zi.onscroll = () => { const k = Math.round(zi.scrollLeft / zi.clientWidth); $$('i', pts).forEach((e, j) => e.classList.toggle('on', j === k)); };
   // la valeur = la mediane de ses ventes reelles (meme carte), recalculee a l'ouverture (cache 3 jours cote serveur)

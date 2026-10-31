@@ -73,7 +73,7 @@ _RE_GRADE = re.compile(r"\b(psa|bgs|sgc|cgc|tag|ksa|hga|beckett|bccg|csg|gma|isa
 _RE_SERIE = re.compile(r"(?:#\s*)?(?:\b\d{1,4}\s*)?/\s*0*(\d{1,4})\b|\b(\d{1,4})\s+of\s+(\d{1,4})\b|\b1\s*/\s*1\b|\bone of one\b")
 _RE_NUM = re.compile(r"(?:#|\bno\.?\s*|\bcard\s*)\s*([a-z]{0,4}-?\d{1,4}[a-z]?)\b")
 _RE_AUTO = re.compile(r"(?<!non )(?<!non-)(?<!no )(?<!not )\bauto\b|\bon card\b|\bsticker auto\b")
-_RE_PATCH = re.compile(r"\bpatch\b|(?<!new )\bjerseys?\b|\brelics?\b|\bgame (used|worn)\b|\bswatch(es)?\b|\brpa\b|\bmemorabilia\b|\bgu\b|\bfabrics?\b|\bmaterials?\b|\bstick\b")
+_RE_PATCH = re.compile(r"\bpatch\b|\bpatch-?taculars?\b|(?<!new )\bjerseys?\b|\brelics?\b|\bgame (used|worn)\b|\bswatch(es)?\b|\brpa\b|\bmemorabilia\b|\bgu\b|\bfabrics?\b|\bmaterials?\b|\bstick\b")
 _RE_RC = re.compile(r"\brc\b|\byoung guns\b|\brated rc\b|\b1st bowman\b|\bbowman 1st\b|\bfuture watch\b|\bcanvas rc\b")
 VIDES = set("the a an of and with for in on card cards hockey nhl nba nfl mlb football basketball baseball new mint nm nmmt "
             "near ex excellent sharp clean look hot invest investment beautiful rare ssp sp lot free shipping ship ships "
@@ -243,7 +243,7 @@ def raisons_refus(c, titre, appris=None):
             autres = [fam[w] for w in dict.fromkeys(t.split()) if w in fam and w not in c["mots"] and not _a_mot(c["texte"], w)]
         if autres:
             r.append("autre joueur (" + autres[0] + ")")
-        elif "/" not in c["texte"] and _deux_noms(t):
+        elif "/" not in c["texte"] and not c.get("autres_joueurs") and _deux_noms(t):
             r.append("plusieurs joueurs")
     if c["annee"] and a["annee"] and a["annee"] != c["annee"]:
         r.append("autre année")
@@ -288,14 +288,15 @@ def raisons_refus(c, titre, appris=None):
         r.append("variante " + ", ".join(sorted(en_trop)[:2]))
     # 26 oct 2026 : le meme produit / insert (comparables d'une annonce seulement : cible_titre)
     if "ident" in c and not r:
-        ia, ma = identite(titre, c.get("joueur") or "")
+        ia, ma = identite(titre, " ".join([c.get("joueur") or ""] + list(c.get("autres_joueurs") or [])))
         autres_j = {w for n in _noms_dans(t) for w in n.split()}
         ia -= autres_j
         en_plus = ia - c["ident"]
         manque_i = c["ident"] - ia
         if en_plus:
             r.append("autre carte (" + " ".join(sorted(en_plus)[:3]) + ")")
-        elif len(manque_i) > len(c["ident"]) // 3:
+        elif len(manque_i) > max(len(c["ident"]) // 3, 1 if c.get("autres_joueurs") else 0):
+            # 2 joueurs + le produit + la numerotation : la carte est deja reconnue ; un mot d'insert peut manquer
             r.append("autre carte (" + " ".join(sorted(manque_i)[:3]) + " absent)")
         elif c["marques"] and ma and not (c["marques"] & ma):
             r.append("autre marque")
@@ -736,7 +737,8 @@ def identite(titre, joueur=""):
         t = t.replace(x, " ")
     if _EQUIPES_MOTS["t"] is None:
         _EQUIPES_MOTS["t"] = _mots_equipes()
-    mots = re.findall(r"[a-z][a-z'\-]*", t)
+    t = re.sub(r"\bpatch[\s-]+taculars?\b|\bpatchtacular\b", "patchtaculars", t)        # 31 oct 2026 : 3 facons de l'ecrire
+    mots = [w.replace("-", "") if re.fullmatch(r"[a-z]{3,}-[a-z]{3,}", w.strip("-'")) else w for w in re.findall(r"[a-z][a-z'\-]*", t)]
     if len(str(titre or "")) >= 76 and mots:
         mots = mots[:-1]                               # titre eBay coupe a 80 caracteres : dernier mot peut-etre tronque
     jm = set(norm(joueur).split())
@@ -771,7 +773,22 @@ def cible_titre(titre, joueur=None):
         if len(sets) >= 2:
             break
     c["joueur"] = j
-    c["ident"], c["marques"] = identite(titre, j)
+    # 31 oct 2026 (Mathieu : « pourquoi aucune valeur ? y'a 4-5 last sold » : Demidov / Fowler Dual Rookie Patch-Taculars /25) :
+    # une carte a deux joueurs (ou plus). Avant, le 2e joueur faisait refuser TOUTES ses propres ventes (« autre joueur »).
+    # Maintenant : le nom de famille de chaque joueur est exige dans la vente, et aucun ne compte comme « autre joueur »
+    jm_ = set(j.split())
+    autres_j = []
+    for n in _noms_dans(t):
+        if n.split()[-1] not in jm_ and n not in autres_j and n.split()[-1] not in {a.split()[-1] for a in autres_j}:
+            autres_j.append(n)
+    if not autres_j and "/" in re.sub(r"/\s*\d+", " ", t):              # « Demidov / Fowler » : le nom apres la barre
+        fam = _noms_famille()
+        for seg in re.split(r"\s*/\s*", re.sub(r"/\s*\d+", " ", t))[1:]:
+            w = next((x for x in seg.split() if x in fam and x not in jm_), None)
+            if w:
+                autres_j.append(fam[w])
+    c["autres_joueurs"] = autres_j[:3]
+    c["ident"], c["marques"] = identite(titre, " ".join([j] + c["autres_joueurs"]))
     # 30 oct 2026 (Mathieu : « impossible qu'il n'y ait pas de comp » : Crosby Young Guns RENEWED) : le mot qui suit le set
     # (Renewed, Retro, Throwback...) fait partie de la carte : dans la recherche eBay ET obligatoire dans les ventes ;
     # sinon eBay renvoie surtout la vraie Young Guns 2005-06 et les Renewed se perdent
@@ -780,7 +797,7 @@ def cible_titre(titre, joueur=None):
         m_ = re.search(r"\b" + re.escape(s_) + r"\s+([a-z]{4,})\b", t)
         if m_ and m_.group(1) in SUITES_SET and m_.group(1) in c["ident"] and m_.group(1) not in suite:
             suite.append(m_.group(1))
-    c["mots"] = [m for m in (j.split() + " ".join(sets).split() + suite) if m not in VIDES]
+    c["mots"] = [m for m in (j.split() + [a.split()[-1] for a in c["autres_joueurs"]] + " ".join(sets).split() + suite) if m not in VIDES]
     # 31 oct 2026 (Mathieu : « valide les comps de toutes les cartes de Savage et Remi, on capte rien ») : un produit qu'on ne
     # connait pas par son nom (Tim Hortons NHL Signatures, SP Rookie Authentics, Debut Ticket Access...) donnait une recherche
     # « brady tkachuk auto » : eBay renvoyait les 200 dernieres autos de Tkachuk (The Cup, SPA...) et la bonne carte se
