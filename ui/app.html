@@ -262,6 +262,8 @@ details.reglage summary::-webkit-details-marker{display:none}
 .ck-rap-t{font:700 12px var(--f-cond); letter-spacing:.08em; text-transform:uppercase; margin-bottom:4px} .ck-rap-t.vert{color:var(--vert)} .ck-rap-t.or{color:var(--or)}
 .i-tab{margin:2px 0 14px} .i-tab:empty{display:none} .i-tab .t-acc.on{box-shadow:inset 0 0 0 2px var(--or)}
 .ecran:has(.i-tab:not(:empty)) .inv-res{display:none} .i-tab .t-acc{font:inherit; text-align:left; border:0; cursor:pointer}
+.i-tab .it-note{grid-column:1/-1; font-size:13px; color:var(--doux); text-decoration:none; padding:2px 4px}
+.tuile-c .int-c{font-size:12.5px; color:var(--doux); margin-top:2px}
 .i-tab .t-acc .s{font-size:12.5px; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis} .i-tab .t-acc b small{font-size:16px; color:var(--doux)}
 .sd-des{font-weight:700; color:var(--acc)}
 .ckr-ok{color:var(--doux)} .ckr-al{display:flex; gap:6px; align-items:flex-start; color:var(--texte); margin-top:4px} .ckr-al svg{width:16px; height:16px; flex:none; color:var(--or); margin-top:2px}
@@ -5874,7 +5876,9 @@ const TRIS_ANA = () => [
   ['place', tt('Carte qui couvre la place', 'Card covering the spot'), tt('Chance qu’une seule carte vaille au moins le prix moyen d’une place (ou le prix du breaker, si tu l’as entré).', 'Chance that a single card is worth at least the average spot price (or the breaker’s price, if you entered it).')],
   ['hits', tt('Probabilité de hit', 'Hit probability'), tt('Probabilité d’obtenir au moins un hit : numérotée, autographe, relique ou SSP.', 'Probability of at least one hit: numbered, autograph, relic or SSP.')],
   // 30 oct 2026 (Mathieu : « mettre l'option rookie »)
-  ['recrue', tt('Probabilité de recrue', 'Rookie probability'), tt('Probabilité d’obtenir au moins une carte recrue (Young Guns et autres RC).', 'Probability of at least one rookie card (Young Guns and other RCs).')],
+  // 31 oct 2026 (Mathieu : « Hagens, Frondell, Martone, les plus recherches ») : la VALEUR des recrues, pas seulement la chance
+  ['recrue', tt('Recrues', 'Rookies'), tt('Ce que valent en moyenne les recrues que tu peux tirer (Young Guns et autres RC), selon leurs ventes réelles. Avec le prix du breaker : par dollar.', 'Average worth of the rookies you can pull (Young Guns and other RCs), from real sales. With the breaker’s price: per dollar.')],
+  ['valeur', tt('Valeur de la place', 'Spot value'), tt('Ce que la place rapporte en moyenne, toutes cartes comprises. Avec le prix du breaker : par dollar.', 'What the spot returns on average, all cards included. With the breaker’s price: per dollar.')],
   ['argent', tt('Hits par dollar', 'Hits per dollar'), tt('Nombre de hits espérés pour chaque dollar investi.', 'Expected hits for each dollar spent.')],
   ['rentab', tt('Seuil de rentabilité', 'Break-even'), tt('Probabilité que l’ensemble des cartes couvre le prix de la place.', 'Probability that all cards together cover the spot price.')]];
 // la feuille des reglages d'une analyse : on choisit, on applique, elle se referme
@@ -5967,7 +5971,8 @@ async function rendreAnalyse(){
     const TRIS = TRIS_ANA();
     const tri = TRIS.some(t => t[0] === A.tri) ? A.tri : 'place';
     const pH = (x) => ((x.chances || {}).hit || {}).p || 0;
-    const crit = {place: (x) => x.p_carte_prix || 0, hits: pH, rentab: (x) => x.p_rembourse || 0, recrue: (x) => x.p_recrue || 0,
+    const crit = {place: (x) => x.p_carte_prix || 0, hits: pH, rentab: (x) => x.p_rembourse || 0, recrue: (x) => x.ev_recrue != null ? x.ev_recrue / (x.demande || 1) : (x.p_recrue || 0),
+      valeur: (x) => (x.ev || 0) / (x.demande || 1),
       argent: (x) => { const p = Math.min(.999999, pH(x)), px = x.demande || x.part_brute || x.prix_compare || x.prix || 0; return px > 0 ? -Math.log(1 - p) / px : 0; }}[tri];   // part exacte : le meme ordre avec 1 ou 32 boites
     const mxv = Math.max(1e-12, ...liste.map(crit));
     liste.forEach(x => { x.rel = Math.round(100 * crit(x) / mxv); x.vtri = crit(x); });
@@ -5988,7 +5993,8 @@ async function rendreAnalyse(){
         ${vue === 'equipes' ? ecussonEquipe(x.cle) : vignetteJoueur(x.cle, x.equipe)}
         <span class="sl-n"><b>${esc(x.nom)}</b><span>${esc(vue === 'equipes' ? (x.vedettes || []).slice(0, 2).join(' · ') : (x.equipe || ''))} · ${
           tri === 'place' ? tt('couvre la place : ', 'covers the spot: ') + chanceTxt(x.p_carte_prix || 0) : tri === 'rentab' ? tt('rentable : ', 'break even: ') + chanceTxt(x.p_rembourse || 0)
-          : tri === 'recrue' ? tt('recrue : ', 'rookie: ') + chanceTxt(x.p_recrue || 0)
+          : tri === 'recrue' ? (x.ev_recrue != null ? tt('recrues : ~', 'rookies: ~') + argentCourt(x.ev_recrue) : tt('recrue : ', 'rookie: ') + chanceTxt(x.p_recrue || 0))
+          : tri === 'valeur' ? tt('vaut ~', 'worth ~') + argentCourt(x.ev || 0)
           : tri === 'argent' ? tt('hit : ', 'hit: ') + chanceTxt(ph) + ' · ' + argentCourt(x.prix_compare || x.prix || 0) : tt('hit : ', 'hit: ') + chanceTxt(ph)}</span></span>
         <span class="score ${cl}"><b>${x.rel}</b><small>${lib}</small></span></button>
         <div class="exp-z" id="exp-${i}" hidden>
@@ -8019,17 +8025,26 @@ async function tableauInv(){
     const hh = $('#it-h'); if (hh && h) hh.onclick = () => ouvrir(h.id);
     const p0 = z.querySelector('.t-acc'); if (p0) p0.onclick = () => { const b = $('#i-res'); if (b) b.click(); };
   } else {
-    const v = r.vente;
-    z.innerHTML = !v.n ? '' : t(tt('À vendre', 'For sale'), argentKpi(v.valeur), `${v.n} ${tt('cartes', 'cards')}`)
-      + t(tt('Se vend en', 'Sells in'), v.delai_median != null ? '~' + v.delai_median + tt(' j', ' d') : '—', v.delai_median != null ? tt('tes ventes · 6 mois', 'your sales · 6 months') : tt('pas assez de ventes', 'not enough sales'))
-      + t(tt('Dorment', 'Sleeping'), String(v.dorment), tt('plus de 60 jours', 'over 60 days'), v.dorment ? 'or' : '', 'it-dort');
-    const d = $('#it-dort'); if (d) { d.classList.toggle('on', !!S.dortIds);
-      if (v.dorment) d.onclick = () => { vibrer(); S.dortIds = S.dortIds ? null : v.dorment_ids; d.classList.toggle('on', !!S.dortIds); chargerInventaire(); }; }
+    // 31 oct 2026 (Mathieu : « les vues et les likes de l'annonce : les plus populaires, et celles a liquider, sans rendre ca lourd »)
+    const v = r.vente, enLigne = v.populaires != null;
+    const nomC = (x) => esc(String((x && x.joueur) || '').split(' ').slice(-1)[0]);
+    const sousPop = v.top ? [nomC(v.top), v.top.watchers ? v.top.watchers + ' ' + tt('suivis', 'watchers') : (v.top.vues || 0) + ' ' + tt('vues', 'views')].filter(Boolean).join(' · ') : tt('aucun suivi encore', 'no watchers yet');
+    z.innerHTML = !v.n ? '' : t(tt('À vendre', 'For sale'), argentKpi(v.valeur), v.delai_median != null ? tt('se vend en ~', 'sells in ~') + v.delai_median + tt(' j', ' d') : `${v.n} ${tt('cartes', 'cards')}`)
+      + (enLigne ? t(tt('Populaires', 'Popular'), String(v.populaires), sousPop, v.populaires ? 'vert' : '', 'it-pop')
+                 : t(tt('Se vend en', 'Sells in'), v.delai_median != null ? '~' + v.delai_median + tt(' j', ' d') : '—', v.delai_median != null ? tt('tes ventes · 6 mois', 'your sales · 6 months') : tt('pas assez de ventes', 'not enough sales')))
+      + (enLigne ? t(tt('À liquider', 'To clear'), String(v.liquider), tt('30 j+ sans intérêt', '30 d+ no interest'), v.liquider ? 'or' : '', 'it-liq')
+                 : t(tt('Dorment', 'Sleeping'), String(v.dorment), tt('plus de 60 jours', 'over 60 days'), v.dorment ? 'or' : '', 'it-dort'));
+    const filtre = (id, cle, ids) => { const d = $('#' + id); if (!d) return; d.classList.toggle('on', S.filtreCle === cle);
+      if (ids && ids.length) d.onclick = () => { vibrer(); const on = S.filtreCle !== cle; S.filtreCle = on ? cle : null; S.dortIds = on ? ids : null;
+        $$('#i-tab .t-acc').forEach(b => b.classList.remove('on')); d.classList.toggle('on', on); chargerInventaire(); }; };
+    filtre('it-pop', 'pop', v.populaires_ids); filtre('it-liq', 'liq', v.liquider_ids); filtre('it-dort', 'dort', v.dorment_ids);
     const p0 = z.querySelector('.t-acc'); if (p0) p0.onclick = () => { const b = $('#i-res'); if (b) b.click(); };
+    // les vues demandent l'acces « statistiques » d'eBay : une ligne discrete tant qu'il manque (les suivis marchent deja)
+    if (enLigne && !v.analytics) z.insertAdjacentHTML('beforeend', `<a class="it-note" href="#reglages">${tt('Reconnecte eBay dans Réglages pour voir les vues', 'Reconnect eBay in Settings to see views')} ›</a>`);
   }
 }
 function brancherFiltresInv(){
-  $$('.i-filtres [data-f]').forEach(c => c.onclick = () => { S.filtreInv = c.dataset.f; S.dortIds = null; $('.i-filtres').innerHTML = filtresBarreInv(); brancherFiltresInv(); chargerInventaire(); tableauInv(); });
+  $$('.i-filtres [data-f]').forEach(c => c.onclick = () => { S.filtreInv = c.dataset.f; S.dortIds = null; S.filtreCle = null; $('.i-filtres').innerHTML = filtresBarreInv(); brancherFiltresInv(); chargerInventaire(); tableauInv(); });
   const p = $('#i-plus-f'); if (p) p.onclick = () => {
     const ps = S.parSportInv || {}, sports = Object.entries(ps).sort((a, b) => b[1] - a[1]);
     ouvrirFeuille(`<h3>${tt('Filtrer', 'Filter')}</h3><div class="menu-f">${filtresInv().map(([k]) => `<button class="choix-f ${S.filtreInv === k ? 'on' : ''}" data-ff="${k}">${LIB_FILTRE(k)}${S.filtreInv === k ? ' ✓' : ''}</button>`).join('')}</div>
@@ -8096,6 +8111,7 @@ function tuileInv(c){
     <div class="corps"><div class="t">${esc(nom)}</div>${det ? `<div class="det-c">${esc(det)}</div>` : ''}
       ${c.marche_pro ? `<div class="repere verrou" data-pro="repere"><b>${icN('cadenas')}${tt('Repère prix', 'Price check')}</b><span>${tt('ton prix vs le marché : Pro', 'your price vs market: Pro')}</span></div>` : ''}
       ${r ? `<div class="repere ${r.cl}"><b>${esc(r.court)}</b><span>${esc(r.long)}${m.bas ? ' · ' + tt('plus bas ', 'lowest ') + argentCourt(m.bas) : ''} · ${m.n} ${tt('ventes réelles', 'real sales')}</span></div>` : ''}
+      ${!vendue && c.statut === 'Listée' && (c.vues != null || c.watchers) ? `<div class="int-c">${[c.vues != null ? c.vues + ' ' + tt(c.vues === 1 ? 'vue' : 'vues', c.vues === 1 ? 'view' : 'views') : '', (c.watchers || 0) + ' ' + tt(c.watchers === 1 ? 'suivi' : 'suivis', c.watchers === 1 ? 'watcher' : 'watchers')].filter(Boolean).join(' · ')}</div>` : ''}
       <div class="ligne-b">${bas}</div></div></button>`;
 }
 async function consignataires(force){ if (!S.consig || force) S.consig = await API.consignataires_liste(); return S.consig; }
@@ -8112,7 +8128,8 @@ async function chargerInventaire(){
   const parSport = {}; tout.forEach(c => { const k = c.sport || sportPrincipal(); parSport[k] = (parSport[k] || 0) + 1; });
   if (S.sportInv && !parSport[S.sportInv]) S.sportInv = null;
   let l = S.sportInv ? tout.filter(c => (c.sport || sportPrincipal()) === S.sportInv) : tout;
-  if (S.dortIds) l = l.filter(c => S.dortIds.includes(c.id));          // 31 oct 2026 : la tuile « Dorment »
+  if (S.dortIds) l = l.filter(c => S.dortIds.includes(c.id));          // 31 oct 2026 : les tuiles Populaires / À liquider / Dorment
+  if (S.dortIds) { const o = new Map(S.dortIds.map((id, i) => [id, i])); l = l.slice().sort((a, b) => o.get(a.id) - o.get(b.id)); }
   S.inv = l;
   const z = $('#i-liste'); if (!z) return;
   const vendues = S.filtreInv === 'vendue';

@@ -151,7 +151,8 @@ def _connecter(chemin=None):
     # 18 oct 2026 - sante de l'inventaire (tous les articles eBay)
     cols = {r[1] for r in c.execute("PRAGMA table_info(cartes)")}
     for col, typ in (("debut", "TEXT"), ("watchers", "INTEGER"), ("categorie_ebay", "TEXT"), ("photo", "TEXT"), ("vu_actif_le", "TEXT"),
-                     ("sport", "TEXT"), ("recrue", "INTEGER"), ("relique", "INTEGER"), ("cert", "TEXT"), ("photos", "TEXT")):
+                     ("sport", "TEXT"), ("recrue", "INTEGER"), ("relique", "INTEGER"), ("cert", "TEXT"), ("photos", "TEXT"),
+                     ("vues", "INTEGER"), ("impressions", "INTEGER"), ("trafic_le", "TEXT")):   # 31 oct 2026 - vues des annonces
         if col not in cols:
             c.execute(f"ALTER TABLE cartes ADD COLUMN {col} {typ}")
     # 23 oct 2026 - autres sports : le sport du produit et du break (equipes de sa ligue)
@@ -257,6 +258,39 @@ def _niveau(resume, info):
     return "gold" if (resume or {}).get("pro") else "bronze"
 
 LIER = {}          # 28 oct 2026 : jetons a usage unique pour relier eBay depuis l'app iPhone (jeton -> (compte, le))
+
+def popularite(cartes, maint=None):
+    """31 oct 2026 - l'interet des acheteurs pour TES annonces eBay : les suivis (« j'aime » / watchers) et les vues (30 j).
+    Populaires : 2 suivis et plus, ou deux fois plus de vues que tes annonces typiques (30 vues minimum).
+    A liquider : en ligne depuis 30 jours ou plus, 0 suivi, et peu de vues (moins de la moitie du typique) ou vues inconnues.
+    Aucune annonce en ligne : None (l'ecran garde « Se vend en » et « Dorment »)."""
+    maint = maint or datetime.now()
+    l = [x for x in cartes if x.get("statut") == "Listée" and x.get("item_number")
+         and not (x.get("debut") and str(x["debut"])[:19] > maint.isoformat()[:19])]
+    if not l:
+        return {"populaires": None, "liquider": None, "populaires_ids": [], "liquider_ids": []}
+    vues = sorted(int(x["vues"]) for x in l if x.get("vues") is not None)
+    med = statistics.median(vues) if len(vues) >= 3 else None
+    def age(x):
+        try:
+            return (maint - datetime.fromisoformat(str(x.get("debut") or x.get("cree_le"))[:19].replace("Z", ""))).days
+        except (TypeError, ValueError):
+            return None
+    def pop(x):
+        w, v = int(x.get("watchers") or 0), x.get("vues")
+        return w >= 2 or (v is not None and med is not None and v >= 30 and v >= 2 * med)
+    pops = sorted((x for x in l if pop(x)), key=lambda x: (-(int(x.get("watchers") or 0)), -(int(x.get("vues") or 0))))
+    def froid(x):
+        a, v = age(x), x.get("vues")
+        if a is None or a < 30 or int(x.get("watchers") or 0) > 0:
+            return False
+        return v is None or med is None or v < max(10, med / 2)
+    liq = sorted((x for x in l if froid(x)), key=lambda x: -(age(x) or 0))
+    return {"populaires": len(pops), "liquider": len(liq), "populaires_ids": [x["id"] for x in pops[:40]],
+            "liquider_ids": [x["id"] for x in liq[:40]], "vues_mediane": med,
+            "top": ({"id": pops[0]["id"], "joueur": pops[0].get("joueur"),
+                     "watchers": int(pops[0].get("watchers") or 0), "vues": pops[0].get("vues")} if pops else None)}
+
 
 class Api:
     def __init__(self, chemin_db=None):
@@ -1370,6 +1404,16 @@ class Api:
         pl["barre"] = round(seuil, 2) if seuil else None
         n_bonnes = sum(float(n) for v, n in dist if seuil and float(v) >= seuil)
         pl["p_carte_prix"] = round(1 - _m2.exp(-n_bonnes), 6) if seuil else 0
+        # 31 oct 2026 (vue acheteur, « chance recrue » : Florida 2e avec Benning et Alscher, Boston absent) : une recrue
+        # ordinaire a 1 $ comptait autant que la Young Guns de Hagens. Maintenant : la chance d'au moins UNE recrue qui
+        # vaut, a elle seule, la meme barre (le prix moyen d'une place, ou le prix du breaker)
+        dist_r = pl.pop("_dist_r", [])
+        n_rec = sum(float(n) for v, n in dist_r if seuil and float(v) >= seuil)
+        pl["p_recrue_prix"] = round(1 - _m2.exp(-n_rec), 6) if seuil else 0
+        # 31 oct 2026 (Mathieu : « Hagens, Frondell et Martone sont les trois plus recherches ») : une chance (« au moins une
+        # recrue qui vaut X ») met a egalite une Young Guns de 90 $ et une de 16 $. La valeur esperee des recrues, elle, suit
+        # leur vrai prix : c'est elle qui classe les places pour les recrues
+        pl["ev_recrue"] = round(sum(float(v) * float(n) for v, n in dist_r), 2)
         # 26 oct 2026 (Mathieu : « la chance de tomber sur une numerotee, patch, auto, auto-patch, SSP, pas la chance de
         # rembourser la mise ») : le score = 50 % la chance d'au moins un hit + 50 % la valeur attendue / le prix
         # (score provisoire : _scores_relatifs le refait sur la liste entiere)
@@ -2308,6 +2352,24 @@ class Api:
             finally:
                 c.close()
         return {"ok": True, "crees": crees, "maj": maj, "lues": len(annonces)}
+
+    def _maj_trafic(self, item_ids):
+        """31 oct 2026 (Mathieu : « le nombre de vues et de likes de l'annonce : les plus populaires, et celles a liquider »).
+        Les vues des 30 derniers jours (API Analytics d'eBay). Rien si le compte n'a pas donne l'acces : on garde les suivis."""
+        t = ebay_compte.trafic(item_ids, 30)
+        if not t:
+            return 0
+        with _verrou:
+            c = self._db()
+            try:
+                le = _maintenant()
+                for i, d in t.items():
+                    c.execute("UPDATE cartes SET vues=?, impressions=?, trafic_le=? WHERE item_number=?",
+                              (d.get("vues"), d.get("impressions"), le, str(i)))
+                c.commit()
+            finally:
+                c.close()
+        return len(t)
 
     def importer_ventes_ebay(self, texte):
         """Rapport « Orders » : marque les cartes vendues (par numero d'item),
@@ -3333,6 +3395,10 @@ class Api:
         except (RuntimeError, OSError, ValueError) as e:
             print(f"[synchro] ventes Trading ignorees : {e}", flush=True)
         a = self._maj_annonces(annonces)
+        try:                                     # 31 oct 2026 - les vues de chaque annonce (30 j), si le compte a donne l'acces
+            self._maj_trafic([x["item_number"] for x in annonces if x.get("item_number")])
+        except Exception as e:
+            print(f"[synchro] vues des annonces : {e}", flush=True)
         v = self._maj_ventes(ventes)
         try:                                     # 25 oct 2026 - le cout d'achat : les achats eBay du compte
             cx = self.couts_depuis_achats()
@@ -4371,6 +4437,11 @@ class Api:
         vente = {"n": len(av), "valeur": round(sum((x.get("prix_demande") or x.get("valeur") or 0) for x in av), 2),
                  "delai_median": round(statistics.median(jours)) if len(jours) >= 3 else None, "n_vendues": len(jours),
                  "dorment": len(dorment), "dorment_ids": [x["id"] for x in dorment[:30]]}
+        vente.update(popularite(av, maint))
+        try:
+            vente["analytics"] = ebay_compte.a_analytics()
+        except Exception:
+            vente["analytics"] = False
         var = {}
         if hist:
             der = hist[-1]

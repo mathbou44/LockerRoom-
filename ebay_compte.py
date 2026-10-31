@@ -107,6 +107,9 @@ SCOPES = [
     "https://api.ebay.com/oauth/api_scope/commerce.identity.readonly",
 ]
 SCOPE_ECRITURE = "https://api.ebay.com/oauth/api_scope/sell.inventory"      # mettre en vente, changer un prix
+# 31 oct 2026 (Mathieu : « le nombre de vues et de likes de l'annonce : les plus populaires, et celles a liquider ») : les vues
+# de SES annonces (API Analytics, lecture seule). Les comptes connectes avant doivent reconnecter eBay pour la donner.
+SCOPE_ANALYTICS = "https://api.ebay.com/oauth/api_scope/sell.analytics.readonly"
 SCOPE_MARKETING = "https://api.ebay.com/oauth/api_scope/sell.marketing"  # promouvoir une annonce (% choisi par le vendeur)
 SCOPE_MISES = "https://api.ebay.com/oauth/api_scope/buy.offer.auction"      # miser (API Offer : sandbox, ou production approuvee)
 
@@ -116,6 +119,8 @@ def scopes_demandes():
     if os.environ.get("LOCKERROOM_MISES_APPROUVEES") == "1":
         c["mises_approuvees"] = True
     out = list(SCOPES) + [SCOPE_ECRITURE, SCOPE_MARKETING]       # 24 oct 2026 - promotion des annonces (Promoted Listings)
+    if os.environ.get("LR_SCOPE_ANALYTICS", "1") != "0":         # 31 oct 2026 : les vues des annonces (0 = coupe)
+        out.append(SCOPE_ANALYTICS)
     import ebay_moderne                                           # 27 oct 2026 : politiques d'affaires (mode inventaire)
     out += [s for s in ebay_moderne.scopes_en_plus() if s not in out]
     # 21 oct 2026 - buy.offer.auction est en « Limited Release » : un scope que le jeu de cles
@@ -383,6 +388,36 @@ def _get_json(url):
             return json.loads(r.read())
     except urllib.error.HTTPError as e:
         raise RuntimeError(f"eBay HTTP {e.code} : {e.read().decode('utf-8', 'ignore')[:200]}")
+
+
+def a_analytics():
+    return SCOPE_ANALYTICS in (_lire(chemin_jetons()).get("scopes") or [])
+
+
+def trafic(item_ids, jours=30):
+    """Les vues et les impressions de SES annonces sur `jours` jours (API Analytics, getTrafficReport, dimension LISTING).
+    -> {item_id: {"vues": n, "impressions": n}} ; {} si le compte n'a pas donne l'acces (reconnecter eBay)."""
+    from datetime import datetime, timedelta
+    ids = [str(i) for i in item_ids if str(i).strip().isdigit()]
+    if not ids or not a_analytics():
+        return {}
+    base = _env()["api"] + "/sell/analytics/v1/traffic_report"
+    fin = datetime.utcnow().date() - timedelta(days=1)      # dates du Pacifique chez eBay : hier est toujours permis
+    deb = fin - timedelta(days=max(1, int(jours)) - 1)
+    out = {}
+    for k in range(0, len(ids), 50):
+        lot = ids[k:k + 50]
+        filtre = ("marketplace_ids:{EBAY_CA},listing_ids:{" + "|".join(lot) + "},date_range:["
+                  + deb.strftime("%Y%m%d") + ".." + fin.strftime("%Y%m%d") + "]")
+        q = urllib.parse.urlencode({"dimension": "LISTING", "filter": filtre, "metric": "LISTING_VIEWS_TOTAL,LISTING_IMPRESSION_TOTAL"})
+        d = _get_json(base + "?" + q)
+        cles = [m.get("key") for m in ((d.get("header") or {}).get("metrics") or [])]
+        for rec in d.get("records") or []:
+            dv = (rec.get("dimensionValues") or [{}])[0].get("value")
+            vals = {cles[i]: (mv.get("value") if mv.get("applicable", True) else None) for i, mv in enumerate(rec.get("metricValues") or []) if i < len(cles)}
+            if dv:
+                out[str(dv)] = {"vues": int(vals.get("LISTING_VIEWS_TOTAL") or 0), "impressions": int(vals.get("LISTING_IMPRESSION_TOTAL") or 0)}
+    return out
 
 
 def _num(el, chemin):

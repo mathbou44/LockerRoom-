@@ -51,3 +51,9 @@ for eq in ("PHI", "CHI", "BOS"):
 jo = [x["nom"] for x in ra["joueurs"][:6]]
 assert {"James Hagens", "Porter Martone", "Anton Frondell"} <= set(jo), jo
 print("OK acheteur", ordre[:6], jo[:4])
+# 31 oct 2026 : le classement « Recrues » suit la VALEUR des recrues (Hagens, Martone, Frondell en tete), pas la chance
+eq_r = [p["cle"] for p in sorted(ra["places"], key=lambda x: -(x.get("ev_recrue") or 0))]
+assert set(eq_r[:3]) == {"PHI", "BOS", "CHI"}, eq_r[:8]
+jr = [x["nom"] for x in sorted(ra["joueurs"], key=lambda x: -(x.get("ev_recrue") or 0))]
+assert set(jr[:3]) == {"James Hagens", "Porter Martone", "Anton Frondell"}, jr[:8]
+print("OK recrues", eq_r[:4], jr[:4])
