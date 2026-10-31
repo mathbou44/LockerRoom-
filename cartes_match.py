@@ -572,7 +572,12 @@ def _joueurs_connus():
                     continue
         except Exception:
             pass
-        _JOUEURS_CONNUS["t"] = sorted((n for n in noms if len(n.split()) >= 2), key=len, reverse=True)
+        # 31 oct 2026 (checklists O-Pee-Chee, Metal Universe : cartes d'equipe « San Jose Sharks ») : un nom fait seulement de
+        # mots d'equipes (ville + surnom) n'est pas un joueur
+        if _EQUIPES_MOTS["t"] is None:
+            _EQUIPES_MOTS["t"] = _mots_equipes()
+        eq = _EQUIPES_MOTS["t"]
+        _JOUEURS_CONNUS["t"] = sorted((n for n in noms if len(n.split()) >= 2 and not (eq and set(n.split()) <= eq)), key=len, reverse=True)
     return _JOUEURS_CONNUS["t"]
 
 

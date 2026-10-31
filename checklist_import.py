@@ -313,7 +313,16 @@ def verifier(lu):
 
 def cote_hobby(txt):
     """« 1:30 h, 1:90 b » -> 30 (1 carte tous les 30 paquets hobby) ; « 3:1 h » -> 0.333. None sans cote hobby."""
-    m = re.search(r"(\d[\d,]*)\s*:\s*(\d[\d,]*)\s*(?:h|hobby)\b", str(txt or ""), re.I)
+    t = str(txt or "").strip()
+    # 31 oct 2026 (fichiers Checklist Insider) : Excel a change « 1:16 » en heure (« 01:16:00 ») ; une cote sans canal
+    # (« 1:12 ») est celle de la boite hobby (produits hobby seulement : Clear Cut, Ice, Premier...). « Overall » = la cote
+    # d'un groupe entier, pas du sous-ensemble : ignoree.
+    mt = re.fullmatch(r"0?(\d{1,2}):(\d{2}):00", t)
+    if mt:
+        t = f"{int(mt.group(1))}:{int(mt.group(2))}"
+    if re.search(r"overall", t, re.I):
+        return None
+    m = re.search(r"(\d[\d,]*)\s*:\s*(\d[\d,]*(?:\.\d+)?)\s*(?:h|hobby)\b", t, re.I) or re.fullmatch(r"(\d[\d,]*)\s*:\s*(\d[\d,]*(?:\.\d+)?)", t)
     if not m:
         return None
     a, b = float(m.group(1).replace(",", "")), float(m.group(2).replace(",", ""))
@@ -414,7 +423,20 @@ def par_boite_depuis_cotes(prod):
         if s.get("par_boite") is None and s.get("cote_hobby"):
             s["par_boite"] = round(paquets / s["cote_hobby"], 3)
             n += 1
+        elif s.get("par_boite") is None:
+            # 31 oct 2026 (Checklist Insider) : « Two Base Cards per Pack », « Six to Seven Base per Pack » (le plus bas),
+            # « One Red 1-200 per Pack » ; jamais les paquets bonus (blaster)
+            m = re.search(rf"\b({_NOMBRES_RX}|\d+)\b(?:\s+to\s+(?:{_NOMBRES_RX}|\d+))?\b.*?\bper\s+pack\b", str(s.get("cotes") or ""), re.I)
+            if m and not re.search(r"bonus", str(s.get("cotes")), re.I):
+                k = _NOMBRES.get(m.group(1).lower()) or (int(m.group(1)) if m.group(1).isdigit() else 0)
+                if k:
+                    s["par_boite"] = float(k * paquets)
+                    n += 1
     return n
+
+
+_NOMBRES = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10}
+_NOMBRES_RX = "|".join(_NOMBRES)
 
 
 def fusionner(existant, lu):
@@ -467,12 +489,22 @@ _MOTS_FICHIER = r"\b(checklist|check list|hockey|baseball|basketball|football|so
 def nom_devine(nom_fichier):
     """« 2025-26-Upper-Deck-Series-2-Hockey-Checklist.xlsx » -> « 2025-26 Upper Deck Series 2 »."""
     n = re.sub(r"\.(xlsx|xlsm|xls|csv)$", "", str(nom_fichier or ""), flags=re.I)
+    # 31 oct 2026 (fichiers Checklist Insider : « ...-Hockey-Checklist-Downloads-Excel-spreadsheet-Checklist-Insider-2 ») :
+    # le nom du produit est toujours AVANT le mot « Checklist » ; ce qui suit (site, format, copie « -2 ») est jete
+    m = re.search(r"[-_ .]check[-_ ]?list", n, re.I)
+    if m and re.search(r"(19|20)\d{2}", n[:m.start()]):
+        n = n[:m.start()]
     n = re.sub(r"(?<=\d{4})[-_ ](?=\d{2}\b)", "§", n)            # garde le tiret de la saison 2025-26
     n = re.sub(r"[-_.]+", " ", n).replace("§", "-")
-    n = re.sub(_MOTS_FICHIER, " ", n, flags=re.I)
+    n = re.sub(r"\bbox[-_ ]set\b", "Boxzzqset", n, flags=re.I)        # « Star Rookies Box Set » : un coffret, le mot reste
+    n = re.sub(_MOTS_FICHIER, " ", n, flags=re.I).replace("Boxzzqset", "Box Set")
     n = re.sub(r"\(\d+\)", " ", n)
     n = re.sub(r"\s+", " ", n).strip()
-    return " ".join(w if (w.isupper() or any(ch.isdigit() for ch in w)) else w.capitalize() for w in n.split())
+    n = " ".join(w if (w.isupper() or any(ch.isdigit() for ch in w)) else w.capitalize() for w in n.split())
+    for a, b in ((r"\bSpx\b", "SPx"), (r"\bSp\b", "SP"), (r"\bO Pee Chee\b", "O-Pee-Chee"), (r"\bOpc\b", "OPC"), (r"\bMvp\b", "MVP"),
+                 (r"\bUd\b", "UD"), (r"\bItg\b", "ITG"), (r"\bSkybox\b", "SkyBox")):
+        n = re.sub(a, b, n)
+    return n
 
 
 def _mots_ligne(nom):
@@ -552,6 +584,8 @@ def produit_semblable(nom, produits):
         if mots == m2:
             return p
         petit, grand = (mots, m2) if len(mots) <= len(m2) else (m2, mots)
-        if petit <= grand and (len(petit) >= 2 or grand - petit <= {"series", "edition", "set"}) and len(grand - petit) <= 2:
+        # 31 oct 2026 : « O-Pee-Chee » n'est PAS « O-Pee-Chee Platinum » : un mot de plus qui nomme une autre ligne de produit
+        # (Platinum, Update, Champions, Extended...) les separe ; seuls les mots generiques peuvent manquer
+        if petit <= grand and grand - petit <= {"series", "edition", "set", "hockey", "box", "hobby", "cards"}:
             meilleur = meilleur or p
     return meilleur

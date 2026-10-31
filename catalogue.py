@@ -11,6 +11,7 @@ combien de chaque sorte sortent par boite, et calcule la liste de prix.
                           attendus dans N boites
 """
 import json
+from datetime import datetime
 import os
 import re
 
@@ -31,7 +32,16 @@ def _fichiers():
         try:
             for f in os.listdir(d):
                 if f.endswith(".json"):
-                    out[f] = os.path.join(d, f)
+                    ch = os.path.join(d, f)
+                    # 31 oct 2026 : le meme produit livre avec l'app ET importe : le plus recent gagne (« maj »). Un import
+                    # sans « maj » (avant cette date) cede la place a une version livree plus complete (cotes, formats, sortie).
+                    if f in out and d == dossier_ajouts():
+                        try:
+                            if str(_lire(out[f]).get("maj") or "") > str(_lire(ch).get("maj") or ""):
+                                continue
+                        except (OSError, ValueError):
+                            pass
+                    out[f] = ch
         except OSError:
             continue
     return [out[k] for k in sorted(out)]
@@ -52,7 +62,8 @@ def enregistrer_ajout(prod):
     chemin = os.path.join(dossier_ajouts(), prod["id"] + ".json")
     tmp = chemin + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
-        json.dump({k: v for k, v in prod.items() if not k.startswith("_")}, f, ensure_ascii=False, indent=1)
+        json.dump({**{k: v for k, v in prod.items() if not k.startswith("_")}, "maj": datetime.now().isoformat(timespec="seconds")},
+                  f, ensure_ascii=False, indent=1)
     os.replace(tmp, chemin)
     _CACHE.pop(chemin, None)
     return chemin

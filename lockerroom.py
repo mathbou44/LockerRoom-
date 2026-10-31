@@ -152,7 +152,7 @@ def _connecter(chemin=None):
     cols = {r[1] for r in c.execute("PRAGMA table_info(cartes)")}
     for col, typ in (("debut", "TEXT"), ("watchers", "INTEGER"), ("categorie_ebay", "TEXT"), ("photo", "TEXT"), ("vu_actif_le", "TEXT"),
                      ("sport", "TEXT"), ("recrue", "INTEGER"), ("relique", "INTEGER"), ("cert", "TEXT"), ("photos", "TEXT"),
-                     ("vues", "INTEGER"), ("impressions", "INTEGER"), ("trafic_le", "TEXT")):   # 31 oct 2026 - vues des annonces
+                     ("vues", "INTEGER"), ("impressions", "INTEGER"), ("trafic_le", "TEXT"), ("photos_orig", "TEXT")):   # 31 oct 2026 - vues des annonces
         if col not in cols:
             c.execute(f"ALTER TABLE cartes ADD COLUMN {col} {typ}")
     # 23 oct 2026 - autres sports : le sport du produit et du break (equipes de sa ligue)
@@ -1009,6 +1009,30 @@ class Api:
         import admin
         return {"ok": True, **admin.catalogue_etat()}
 
+    def admin_contributions(self):
+        """31 oct 2026 : les checklists des utilisateurs en attente (la validation automatique a trouve quelque chose)."""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import comptes
+        import contributions
+        l = contributions.liste_attente()
+        for x in l:
+            e = comptes.info(x.get("compte")) or {} if comptes.MULTI else {}
+            x["par"] = e.get("ebay_username") or e.get("username") or None
+        return {"ok": True, "attente": l}
+
+    def admin_contribution(self, pid, action):
+        """action : publier | refuser (en attente) | retirer (publie par un utilisateur). Rien n'est efface."""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import contributions
+        f = {"publier": contributions.publier, "refuser": contributions.refuser, "retirer": contributions.retirer}.get(str(action))
+        if not f:
+            return {"ok": False, "erreur": "Action inconnue"}
+        r = f(pid)
+        self._EV_CACHE.clear()
+        return r
+
     def admin_remettre(self, cle):
         if not self._est_admin():
             return {"ok": False, "erreur": "Réservé à l'administrateur"}
@@ -1109,9 +1133,18 @@ class Api:
         """d : {fichier (data URL ou base64), nom_fichier, produit_id (produit existant) | nom, saison, marque, sport}."""
         import base64
         import checklist_import
-        d = d or {}
-        if not self._est_admin():
-            return {"ok": False, "erreur": "Les produits sont ajoutés par SlabCoach pour tout le monde"}
+        import comptes
+        import contributions
+        d = dict(d or {})
+        # 31 oct 2026 (Mathieu : « si un breaker veut un produit, il upload l'Excel ; notre programme s'occupe du reste, le
+        # publie pour les autres utilisateurs et le valide aussi ») : tout le monde peut envoyer une checklist. Un utilisateur
+        # ne remplace jamais un produit existant ; la validation automatique decide : publie, ou en attente pour l'admin.
+        admin = self._est_admin()
+        compte = (comptes.courant() if comptes.MULTI else "local") or "?"
+        if not admin:
+            d.pop("produit_id", None)
+            if not contributions.quota_prendre(compte):
+                return {"ok": False, "erreur": f"{contributions.MAX_JOUR} fichiers par jour au plus : réessaie demain"}
         brut_txt = str(d.get("fichier") or "")
         brut_txt = brut_txt.split(",", 1)[1] if brut_txt.startswith("data:") else brut_txt
         try:
@@ -1159,6 +1192,19 @@ class Api:
                     "formats": [{"format": "Boîte hobby", "paquets": None, "cartes_par_paquet": None, "boites_par_caisse": 12}],
                     "sous_ensembles": lu["sous_ensembles"], "groupes_boite": [], "cartes": lu["cartes"],
                     "notes": ["Checklist importée (" + nom_f + ") : cotes par boîte à compléter"], "sources": []}
+            if existant and not admin:                # un utilisateur ne remplace jamais un produit du catalogue
+                if len(existant.get("cartes") or []) >= len(lu["cartes"]) * 0.9:
+                    return {"ok": True, "deja": True, "id": existant["id"], "nom": existant["nom"], "nb_cartes": len(existant.get("cartes") or [])}
+                prod = checklist_import.fusionner(existant, lu)       # plus complet que le notre : l'admin decide
+                try:
+                    verif = checklist_import.verifier(lu)
+                except Exception:
+                    verif = {"ok": [], "alertes": []}
+                contributions.mettre_en_attente(prod, compte, ["Mise à jour d’un produit déjà au catalogue : " + str(len(lu["cartes"]))
+                                                               + " cartes lues, " + str(len(existant.get("cartes") or [])) + " chez nous"],
+                                                nom_f, maj_de=existant["id"], verif=verif)
+                return {"ok": True, "attente": True, "id": prod["id"], "nom": prod["nom"], "nb_cartes": len(prod["cartes"]),
+                        "raisons": ["Ce produit est déjà au catalogue : SlabCoach compare ta version et l’ajoute si elle est plus complète"]}
             if existant:
                 prod = checklist_import.fusionner(existant, lu)
             else:
@@ -1174,16 +1220,22 @@ class Api:
         src = "gogts.net" if re.search(r"gts|stated odds", nom_f + " " + json.dumps([x.get("cotes") for x in lu["sous_ensembles"]][:3]), re.I) \
             or any(x.get("cote_hobby") for x in lu["sous_ensembles"]) else "beckett.com"
         prod["sources"] = list(dict.fromkeys((prod.get("sources") or []) + [src + " (" + nom_f + ")"]))
+        try:
+            verif = checklist_import.verifier(lu)
+        except Exception:
+            verif = {"ok": [], "alertes": []}
+        if not admin:
+            raisons = contributions.valider(prod, verif, sport)
+            if raisons:
+                contributions.mettre_en_attente(prod, compte, raisons, nom_f, verif=verif)
+                return {"ok": True, "attente": True, "id": prod["id"], "nom": prod["nom"], "nb_cartes": len(prod["cartes"]), "raisons": raisons}
+            prod["contribue"] = {"compte": compte, "le": datetime.now().isoformat(timespec="seconds")}
         catalogue.enregistrer_ajout(prod)
         self._EV_CACHE.clear()
         p2 = catalogue.charger(prod["id"]) or prod
         taux = p2.get("_taux") or {}
         e_c = catalogue.etat_cotes(p2)
-        try:
-            verif = checklist_import.verifier(lu)
-        except Exception:
-            verif = {"ok": [], "alertes": []}
-        return {"ok": True, "id": prod["id"], "nom": prod["nom"], "nb_cartes": len(prod["cartes"]), "nouveau": not existant, "modele": modele,
+        return {"ok": True, "publie": not admin, "id": prod["id"], "nom": prod["nom"], "nb_cartes": len(prod["cartes"]), "nouveau": not existant, "modele": modele,
                 "verification": verif,
                 "manquantes": e_c["manquantes"], "estimees": e_c["estimees"], "non_publiees": e_c["non_publiees"],
                 "cotes_lues": n_cotes,
@@ -2066,7 +2118,7 @@ class Api:
     # -- inventaire -------------------------------------------------------------------------------
     CHAMPS_CARTE = ("titre", "joueur", "annee", "marque", "set_nom", "numero", "parallele", "tirage", "auto", "grade", "equipe",
                     "cout", "valeur", "prix_demande", "emplacement", "statut", "item_number", "sku", "consignataire_id", "source",
-                    "note", "client_id", "sport", "recrue", "relique", "cert", "photo", "photos")
+                    "note", "client_id", "sport", "recrue", "relique", "cert", "photo", "photos", "photos_orig")
 
     def inventaire_liste(self, filtres=None):
         f = filtres or {}
@@ -2224,14 +2276,19 @@ class Api:
         studio) entre dans l'inventaire (En stock), prete a publier plus tard d'un tap. Rien ne part chez eBay."""
         import photos_cartes
         d = dict(d or {})
-        carte = {k: v for k, v in (d.get("carte") or {}).items() if k in self.CHAMPS_CARTE and k not in ("id", "photo", "photos", "statut")}
+        carte = {k: v for k, v in (d.get("carte") or {}).items() if k in self.CHAMPS_CARTE and k not in ("id", "photo", "photos", "photos_orig", "statut")}
         try:
             refs = photos_cartes.sauver(d.get("photos") or [])
+            # 31 oct 2026 (Mathieu : « les photos pas deja modifiees comme dans seller ») : on montre la photo studio ;
+            # l'originale est gardee a cote pour refaire le fond (et son niveau de flou) au moment de vendre
+            orig = d.get("originales") or []
+            refs_o = photos_cartes.sauver(orig) if orig and list(orig) != list(d.get("photos") or []) else []
         except ValueError as e:
             return {"ok": False, "erreur": str(e)}
         titre = re.sub(r"\s+", " ", str(d.get("titre") or "")).strip()[:80]
         champs = {**carte, "titre": titre or None, "prix_demande": _float(d.get("prix")), "cout": _float(d.get("cout")),
-                  "photo": refs[0] if refs else None, "photos": json.dumps(refs) if refs else None}
+                  "photo": refs[0] if refs else None, "photos": json.dumps(refs) if refs else None,
+                  "photos_orig": json.dumps(refs_o) if refs_o else None}
         if d.get("cid"):
             champs["id"] = d["cid"]
         else:
@@ -2260,7 +2317,19 @@ class Api:
         if not avant and carte.get("photo"):
             avant = [carte["photo"]]
         nouv = refs[:1] + avant[1:]
-        self.carte_sauver({"id": cid, "photo": nouv[0], "photos": json.dumps(nouv)})
+        maj = {"id": cid, "photo": nouv[0], "photos": json.dumps(nouv)}
+        try:
+            orig = json.loads(carte.get("photos_orig") or "[]")
+        except ValueError:
+            orig = []
+        if isinstance(orig, list) and orig:                  # la nouvelle photo devient aussi l'originale du devant
+            if orig[0] not in nouv:
+                try:
+                    photos_cartes.supprimer([orig[0]])
+                except Exception:
+                    pass
+            maj["photos_orig"] = json.dumps(refs[:1] + orig[1:])
+        self.carte_sauver(maj)
         if avant and avant[0] not in nouv:
             try:
                 photos_cartes.supprimer([avant[0]])
@@ -2270,11 +2339,14 @@ class Api:
 
     def carte_supprimer(self, cid):
         import photos_cartes
-        try:
-            refs = json.loads((self.carte_lire(cid) or {}).get("photos") or "[]")
-        except ValueError:
-            refs = []
-        photos_cartes.supprimer(refs if isinstance(refs, list) else [])
+        refs = []
+        for k in ("photos", "photos_orig"):
+            try:
+                x = json.loads((self.carte_lire(cid) or {}).get(k) or "[]")
+            except ValueError:
+                x = []
+            refs += [r for r in (x if isinstance(x, list) else []) if r not in refs]
+        photos_cartes.supprimer(refs)
         with _verrou:
             c = self._db()
             try:
@@ -3507,6 +3579,31 @@ class Api:
             import threading                          # pas encore de valeur : la premiere, tout de suite, en arriere-plan
             threading.Thread(target=lambda: self._suivi_premier(cid), daemon=True).start()
         return r
+
+    def carte_valeur(self, cid):
+        """31 oct 2026 (Mathieu : « pourquoi on voit pas la valeur de ma carte (mediane des last sold) ») : la valeur d'une
+        carte de la collection = ses ventes reelles (la meme carte : meme parallele, meme numerotation). Valeur sure (2 ventes
+        et plus qui se tiennent) sinon la mediane de ce qu'on a, en disant combien de ventes. Gardee si la carte n'en avait pas."""
+        import suivi_valeur
+        carte = self.carte_lire(cid)
+        if not carte:
+            return {"ok": False, "erreur": "Carte introuvable"}
+        t = suivi_valeur._titre(carte)
+        if len(t) < 6:
+            return {"ok": True, "valeur": None, "n": 0}
+        try:
+            r = vendues.memes_annonce(t, n=24)
+        except Exception as e:
+            return {"ok": False, "erreur": str(e)}
+        vs = [v for v in (r.get("ventes") or []) if v.get("prix")]
+        if not vs:
+            return {"ok": True, "valeur": carte.get("valeur"), "n": 0}
+        sure, _pv = deals.valeur_sure(vs, t)
+        val = sure if sure else round(statistics.median(float(v["prix"]) for v in vs), 2)
+        if sure or carte.get("valeur") is None:
+            self.carte_sauver({"id": cid, "valeur": val})
+        recentes = sorted(vs, key=lambda v: str(v.get("le") or ""), reverse=True)
+        return {"ok": True, "valeur": val, "n": len(vs), "sure": bool(sure), "derniere": (recentes[0].get("le") or "")[:10] or None}
 
     def _suivi_premier(self, cid):
         import suivi_valeur

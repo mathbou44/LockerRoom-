@@ -2256,6 +2256,10 @@ button.an-attente{width:100%; text-align:left; color:var(--texte); cursor:pointe
 .fc{display:flex; flex-direction:column; gap:12px} .fc h3{margin:0}
 .fc-img{border-radius:16px; overflow:hidden; background:#111115; aspect-ratio:4/5; max-height:46vh; display:flex; align-items:center; justify-content:center}
 .fc-img img{width:100%; height:100%; object-fit:contain}
+.fc-img.fc-2{display:flex; justify-content:flex-start; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none} .fc-img.fc-2::-webkit-scrollbar{display:none}
+.fc-img.fc-2 img{flex:0 0 100%; scroll-snap-align:center}
+.fc-pts{display:flex; justify-content:center; gap:6px; margin-top:-4px} .fc-pts i{width:6px; height:6px; border-radius:50%; background:var(--ligne)} .fc-pts i.on{background:var(--texte, #F4F2EE)}
+.fc-chiffres small{font-size:12px; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .fc-chiffres{display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); gap:8px}
 .fc-chiffres div{display:flex; flex-direction:column; gap:2px; padding:10px 12px; border-radius:14px; background:var(--carte); border:1px solid var(--ligne)}
 .fc-chiffres span{font:700 11px var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--doux)} .fc-chiffres b{font:700 24px/1.05 var(--f-cond)}
@@ -3290,7 +3294,7 @@ function feuilleModes(){
 function feuilleAjout(){
   const vend = S.mode !== 'acheteur';
   const coll = [['collection', ICONES.photo, tt('Scanner une carte', 'Scan a card'), tt('La caméra la lit en direct, montre sa valeur et l’ajoute', 'The camera reads it live, shows its value and adds it')],
-    ['collection-lot', ICO_LOT, tt('Plusieurs cartes d’un coup', 'Several cards at once'), tt('Depuis ta photothèque, devant puis dos', 'From your photo library, front then back')],
+    ['collection-lot', ICO_BIBLIO.replace('<svg ', '<svg width="22" height="22" '), tt('Depuis ma photothèque', 'From the library'), tt(`Jusqu’à ${LOT_MAX} cartes · devant puis dos`, `Up to ${LOT_MAX} cards · front then back`)],
     ['main', ICONES.plus, tt('À la main', 'By hand'), tt('Sans photo : joueur, année, set, prix payé', 'No photo: player, year, set, price paid')]];
   const vente = [['nouvelle', ICO_EBAY_TAG, tt('Créer des annonces eBay', 'Create eBay listings'), tt('Une carte ou plusieurs : titre, prix et annonce complète', 'One card or several: title, price and full listing')]];
   const bloc = (t, d, l) => `<div class="aj-bloc"><div class="aj-t"><b>${t}</b><span>${d}</span></div><div class="liste-ajout">${l.map(([k, ic, n, x]) => `<button class="r-ligne" data-aj2="${k}"><span class="aj-ico">${ic}</span><span class="t"><b>${n}</b><span>${x}</span></span>${ICONES.chevron || '›'}</button>`).join('')}</div></div>`;
@@ -3930,7 +3934,7 @@ async function vueVendre(arg){
     for (const k in V2) delete V2[k];
     const c = await API.carte_lire(+arg).catch(() => null);
     if (c && c.id) {
-      let ph = []; try { ph = JSON.parse(c.photos || '[]'); } catch (e) {}
+      let ph = []; try { ph = JSON.parse(c.photos_orig || c.photos || '[]'); } catch (e) {}
       V2.cid = c.id; V2.photos = ph.length ? ph : (c.photo ? [c.photo] : []); V2.champs = c; V2.cout = c.cout;
       if (c.prix_demande) V2.prix = c.prix_demande; if (c.titre) V2.titre = c.titre;
       await fondsLocaux();
@@ -4192,9 +4196,10 @@ async function garderCollection(){
   const b = $('#vf-ok'); if (b) { b.disabled = true; b.textContent = tt('Estimation de la valeur…', 'Estimating the value…'); }
   const p = await API.annonce_preparer(V2.champs || {}, typeof LANGUE !== 'undefined' ? LANGUE : 'fr').catch(() => ({ok:false}));
   const valeur = p && p.ok && p.prix ? p.prix.marche : null, titre = (p && p.ok && p.titre) || (V2.champs || {}).titre || '';
-  const r = await API.carte_garder({carte: {...(V2.champs || {}), emplacement: 'Collection', valeur}, titre, prix: null, cout: V2.cout, photos: V2.originales || V2.photos || []})
+  const r = await API.carte_garder({carte: {...(V2.champs || {}), emplacement: 'Collection', valeur}, titre, prix: null, cout: V2.cout, photos: V2.photos || [], originales: V2.originales || null})
     .catch(e => ({ok:false, erreur:e.message}));
   if (!r || !r.ok) { if (b) { b.disabled = false; b.textContent = tt('Ajouter à ma collection', 'Add to my collection'); } toast((r && r.erreur) || tt('Erreur', 'Error'), 5000); return; }
+  if (!valeur) API.carte_valeur(r.id).catch(() => {});
   const ph = (V2.photos || [])[0];
   for (const k in V2) delete V2[k];
   V().innerHTML = `<section class="ecran vendre fini">${ph ? `<div class="photos-prises"><img src="${esc(ph)}" alt=""></div>` : '<div class="gros-ok">✓</div>'}
@@ -4207,7 +4212,7 @@ async function garderCollection(){
 async function garderVente(){
   const b = $('#v2-garde'); if (b) { b.disabled = true; b.textContent = tt('Enregistrement…', 'Saving…'); }
   const r = await API.carte_garder({carte: {...lireChampsVente(), emplacement: 'Collection', valeur: (V2.prep && V2.prep.prix && V2.prep.prix.marche) || null}, titre: $('#v2-titre').value.trim(), prix: V2.prix, cout: val('v2-cout'),
-    photos: V2.originales || V2.photos, cid: V2.cid}).catch(e => ({ok:false, erreur:e.message}));
+    photos: V2.photos, originales: V2.originales || null, cid: V2.cid}).catch(e => ({ok:false, erreur:e.message}));
   if (!r || !r.ok) { if (b) { b.disabled = false; b.innerHTML = `<b>${tt('Garder', 'Keep')}</b><small>${tt('dans ma collection', 'in my collection')}</small>`; } toast((r && r.erreur) || tt('Erreur', 'Error'), 5000); return; }
   for (const k in V2) delete V2[k];
   V().innerHTML = `<section class="ecran vendre fini"><div class="gros-ok">✓</div><div class="titre">${tt('Dans ta collection', 'In your collection')}</div>
@@ -4303,8 +4308,10 @@ async function traiterCarteLot(c){
   if (C) { champs.emplacement = 'Collection'; champs.valeur = prix || null; }        // collection : la valeur estimee, pas de prix de vente
   // 30 oct 2026 (Mathieu : « je peux pas selectionner mon niveau de flou », dans un lot) : l'inventaire garde les photos
   // ORIGINALES ; le fond flou (et son niveau) se fait au moment de vendre, dans le telephone, sans credit
-  const g = await API.carte_garder({carte: champs, titre, prix: C ? null : prix, photos: c.ph}).catch(e => ({ok:false, erreur:e.message}));
+  // 31 oct 2026 (Mathieu : « les photos pas deja modifiees comme dans seller ») : la photo studio est montree, l'originale gardee
+  const g = await API.carte_garder({carte: champs, titre, prix: C ? null : prix, photos, originales: c.ph}).catch(e => ({ok:false, erreur:e.message}));
   if (!g || !g.ok) { c.etat = 'revoir'; c.raison = (g && g.erreur) || tt('Pas enregistrée', 'Not saved'); return; }
+  if (C && !prix) API.carte_valeur(g.id).catch(() => {});         // la valeur par ses ventes reelles, sans bloquer le lot
   Object.assign(c, {etat: dt.length ? 'verifier' : 'ok', id: g.id, titre, prix, vig: photos[0], douteux: dt});
   c.ph = null;
 }
@@ -5525,7 +5532,7 @@ async function choisirProduitAnalyse(){
         : S.forfait && S.forfait.admin ? `<span class="ck-lib or">${p.cotes_manquantes} ${tt('cote' + (p.cotes_manquantes > 1 ? 's' : '') + ' à compléter', 'odd' + (p.cotes_manquantes > 1 ? 's' : '') + ' to fill in')}</span>`
         : `<span class="ck-lib">${p.nb_cartes} ${tt('cartes', 'cards')}</span>`}</div></div></button>`).join('')}</div>
     <div class="sous" style="margin-top:10px">${tt('« Ouvrir » : la valeur revendable des cartes d’une boîte dépasse son prix de vente scellée. « Garder scellée » : mieux vaut revendre la boîte. ', '“Open”: the resale value of a box’s cards beats its sealed price. “Keep sealed”: better to resell the box. ')}<a href="#calendrier">${tt('Calendrier des sorties ›', 'Release calendar ›')}</a></div>`;
-  if (!(S.forfait && S.forfait.admin)) z.querySelector('.grille-c').insertAdjacentHTML('beforeend', `<button class="tuile-c tuile-ajout" id="an-demande"><span class="plus-g">?</span><b>${tt('Il manque un produit ?', 'Missing a product?')}</b><span>${tt('Dis-le-nous, on l’ajoute pour tout le monde', 'Tell us, we’ll add it for everyone')}</span></button>`);
+  if (!(S.forfait && S.forfait.admin)) z.querySelector('.grille-c').insertAdjacentHTML('beforeend', `<button class="tuile-c tuile-ajout" id="an-demande"><span class="plus-g">?</span><b>${tt('Il manque un produit ?', 'Missing a product?')}</b><span>${tt('Envoie sa checklist Excel : il est ajouté pour tout le monde', 'Send its Excel checklist: it’s added for everyone')}</span></button>`);
   if (S.forfait && S.forfait.admin) z.querySelector('.grille-c').insertAdjacentHTML('beforeend', `<button class="tuile-c tuile-ajout" id="an-import"><span class="plus-g">+</span><b>${tt('Ajouter des produits', 'Add products')}</b><span>${tt('checklists GTS en un geste', 'GTS checklists in one tap')}</span></button>`);
   brancherQuota(z);
   $$('[data-p]', z).forEach(b => b.onclick = () => { anaCharger(b.dataset.p); S.ana.demandes = {}; location.hash = '#analyse/' + encodeURIComponent(b.dataset.p); });
@@ -5543,11 +5550,13 @@ async function choisirProduitAnalyse(){
 // 24 oct 2026 (Mathieu : « comment on s'y prend pour être sûr de tout avoir les nouveaux produits ? ») :
 // eBay chaque semaine + demandes des utilisateurs -> une liste pour l'admin ; un geste par produit.
 function feuilleDemandeProduit(){
+  // 31 oct 2026 (Mathieu : « un breaker upload l'Excel de la checklist ; notre programme le valide et le publie pour les autres »)
   ouvrirFeuille(`<h3>${tt('Il manque un produit ?', 'Missing a product?')}</h3>
-    <div class="sous" style="font-size:15px">${tt('Écris son nom : on l’ajoute avec sa checklist, pour tout le monde.', 'Type its name: we’ll add it with its checklist, for everyone.')}</div>
+    <button class="r-ligne" id="dp-xl"><span class="aj-ico">${ICONES.import}</span><span class="t"><b>${tt('J’ai la checklist Excel', 'I have the Excel checklist')}</b><span>${tt('SlabCoach la vérifie et l’ajoute pour tout le monde', 'SlabCoach checks it and adds it for everyone')}</span></span>${ICONES.chevron || '›'}</button>
+    <div class="sous" style="font-size:15px;margin-top:14px">${tt('Pas de fichier ? Écris son nom : on l’ajoute bientôt.', 'No file? Type its name: we’ll add it soon.')}</div>
     <label>${tt('Produit', 'Product')}<input class="champ" id="dp-nom" placeholder="2026-27 Upper Deck Series 1"></label>
     <button class="btn" id="dp-ok">${tt('Envoyer', 'Send')}</button>`);
-  setTimeout(() => $('#dp-nom') && $('#dp-nom').focus(), 50);
+  $('#dp-xl').onclick = () => feuilleChecklist(null, []);
   $('#dp-ok').onclick = async () => {
     const r = await essai(API.produit_demander(val('dp-nom'))); if (!r) return;
     fermerFeuille(); toast(r.deja ? tt('Il est déjà là : cherche-le dans la liste', 'It’s already there: look for it in the list') : tt('Merci ! On l’ajoute bientôt', 'Thanks! We’ll add it soon'), 3500);
@@ -5673,18 +5682,21 @@ function feuilleProduitAdmin(p, produits){
     ${np.length ? `<details class="ap-d"><summary>${np.length} ${tt('non publiées par le fabricant', 'not published by the maker')}</summary>
       <div class="sous">${tt('Laissées hors du calcul : il reste prudent (jamais gonflé).', 'Left out of the calculation: it stays conservative (never inflated).')}</div>${lst(np, n => `<li>${esc(n)}</li>`)}</details>` : ''}
     <button class="btn" id="ap-maj" style="margin-top:14px">${tt('Mettre à jour la checklist (Excel)', 'Update the checklist (Excel)')}</button>
-    <button class="btn ghost" id="ap-ana">${tt('Voir l’analyse', 'See the analysis')}</button>`);
+    <button class="btn ghost" id="ap-ana">${tt('Voir l’analyse', 'See the analysis')}</button>
+    ${p.contribue ? `<button class="plus" id="ap-ret" style="color:var(--rouge)">${tt('Retirer (ajouté par un utilisateur)', 'Remove (added by a user)')}</button>` : ''}`);
+  if ($('#ap-ret')) $('#ap-ret').onclick = async () => { if (await essai(API.admin_contribution(p.id, 'retirer'), tt('Retiré du catalogue', 'Removed from the catalogue'))) { fermerFeuille(); if ($('#adm-z')) adminCatalogue(); } };
   $('#ap-maj').onclick = () => feuilleChecklist(p.id, produits);
   $('#ap-ana').onclick = () => { fermerFeuille(); location.hash = '#analyse/' + encodeURIComponent(p.id); };
 }
 function feuilleChecklist(pid, produits, nomInit, sportInit){
   const choisi = (produits || []).find(p => p.id === pid);
   ouvrirFeuille(`<h3>${choisi ? tt('Mettre à jour la checklist', 'Update the checklist') : nomInit ? esc(nomInit) : tt('Ajouter un produit', 'Add a product')}</h3>
-    <input type="hidden" id="ck-p" value="${esc(pid || '')}">${choisi ? `<div class="sous">${esc(choisi.nom)}</div>` : `<div class="sous">${tt('Le produit est reconnu tout seul (titre du fichier) : un produit déjà au catalogue est mis à jour, sinon il est créé.', 'The product is recognized on its own (file title): a product already in the catalogue is updated, otherwise it is created.')}</div>`}
+    <input type="hidden" id="ck-p" value="${esc(pid || '')}">${choisi ? `<div class="sous">${esc(choisi.nom)}</div>` : !(S.forfait && S.forfait.admin) ? '' : `<div class="sous">${tt('Le produit est reconnu tout seul (titre du fichier) : un produit déjà au catalogue est mis à jour, sinon il est créé.', 'The product is recognized on its own (file title): a product already in the catalogue is updated, otherwise it is created.')}</div>`}
     <input type="hidden" id="ck-nom" value="">
     <div class="etapes-ck"><div><b>1</b>${tt('Ouvre la page GTS (ou Beckett) du produit et touche « EXCEL Checklist ».', 'Open the product’s GTS (or Beckett) page and tap “EXCEL Checklist”.')}</div>
       <a class="btn ghost petit" id="ck-beckett" target="_blank" rel="noopener">${tt('Trouver sur GTS', 'Find on GTS')} ↗</a>
-      <div><b>2</b>${tt('Dépose un ou plusieurs fichiers : chaque produit apparaît pour tous les utilisateurs.', 'Drop one or more files: each product shows up for every user.')}</div>
+      <div><b>2</b>${S.forfait && S.forfait.admin ? tt('Dépose un ou plusieurs fichiers : chaque produit apparaît pour tous les utilisateurs.', 'Drop one or more files: each product shows up for every user.')
+        : tt('Dépose le fichier : SlabCoach le vérifie. S’il est complet, le produit apparaît tout de suite pour tous.', 'Drop the file: SlabCoach checks it. If it’s complete, the product shows up for everyone right away.')}</div>
       <label class="photo-grand" style="min-height:110px">${ICONES.import}<b>${tt('Choisir les fichiers', 'Choose the files')}</b><span id="ck-f-nom">.xlsx · .csv</span><input type="file" accept=".xlsx,.xlsm,.csv" id="ck-f" multiple hidden></label></div>
     <div id="ck-res"></div>`);
   if (nomInit) $('#ck-nom').value = nomInit;
@@ -5700,8 +5712,14 @@ function feuilleChecklist(pid, produits, nomInit, sportInit){
       for (const [i, f] of fs.entries()) {
         const r = await API.catalogue_importer({fichier:await lire(f), nom_fichier:f.name, ...(nomInit && fs.length === 1 ? {nom: nomInit} : {}), ...(sportInit ? {sport: sportInit} : {})}).catch(x => ({ok:false, erreur:x.message}));
         const l = $('#ck-l' + i); if (!l) return;
-        if (r.ok) l.insertAdjacentHTML('afterend', rapportImport(r.verification));
-        l.querySelector('.milieu').innerHTML = r.ok
+        if (r.ok && r.verification && !r.publie) l.insertAdjacentHTML('afterend', rapportImport(r.verification));
+        l.querySelector('.milieu').innerHTML = r.ok && r.deja
+          ? `<span class="nom">${esc(r.nom)} <small>${tt('· déjà au catalogue', '· already in the catalogue')}</small></span><span class="sous">${r.nb_cartes} ${tt('cartes', 'cards')} · ${tt('choisis-le dans la liste', 'pick it from the list')}</span>`
+          : r.ok && r.attente
+          ? `<span class="nom">${esc(r.nom)} <small>${tt('· reçu', '· received')}</small></span><span class="sous">${tt('SlabCoach le vérifie avant de le publier : ', 'SlabCoach checks it before publishing: ')}${esc((r.raisons || [])[0] || '')}</span>`
+          : r.ok && r.publie
+          ? `<span class="nom">✓ ${esc(r.nom)} <small>${tt('· publié pour tous', '· published for everyone')}</small></span><span class="sous">${r.nb_cartes} ${tt('cartes', 'cards')} · ${tt('vérifié', 'checked')}</span>`
+          : r.ok
           ? `<span class="nom">✓ ${esc(r.nom)} <small>${r.nouveau ? tt('· nouveau produit', '· new product') : tt('· mis à jour', '· updated')}</small></span><span class="sous">${r.nb_cartes} ${tt('cartes', 'cards')} · ${(r.manquantes || []).length ? (r.manquantes || []).length + tt(' cotes manquantes', ' missing odds') : tt('cotes complètes', 'odds complete')}${(r.estimees || []).length ? ' · ' + r.estimees.length + tt(' estimées', ' estimated') : ''}${r.modele ? ' · ' + tt('cotes de ', 'odds from ') + esc(r.modele) : ''}</span>`
           : `<span class="nom">${esc(f.name)}</span><span class="sous" style="color:var(--rouge)">${esc(r.erreur)}</span>`;
       }
@@ -6719,7 +6737,8 @@ async function scanGarder(){
   const c = SCAN.champs || {};
   const p = await API.annonce_preparer(c, typeof LANGUE !== 'undefined' ? LANGUE : 'fr').catch(() => ({ok:false}));
   const valeur = SCAN.valeur || (p && p.ok && p.prix ? p.prix.marche : null), titre = (p && p.ok && p.titre) || c.titre || '';
-  const r = await API.carte_garder({carte:{...c, emplacement:'Collection', valeur}, titre, prix:null, photos: SCAN.studio ? [SCAN.studio, SCAN.ph] : [SCAN.ph]}).catch(e => ({ok:false, erreur:e.message}));
+  const r = await API.carte_garder({carte:{...c, emplacement:'Collection', valeur}, titre, prix:null, photos: [SCAN.studio || SCAN.ph], originales: SCAN.studio ? [SCAN.ph] : null}).catch(e => ({ok:false, erreur:e.message}));
+  if (r && r.ok && !valeur) API.carte_valeur(r.id).catch(() => {});
   if (!r || !r.ok) { b.disabled = false; b.textContent = tt('Ajouter à ma collection', 'Add to my collection'); toast((r && r.erreur) || tt('Erreur', 'Error'), 5000); return; }
   // en serie (collection) : la suivante d'un tap ; sinon, voir la collection
   b.outerHTML = SCAN.opts.but === 'collection'
@@ -8293,9 +8312,12 @@ function ficheCollection(c){
   let ph = []; try { ph = JSON.parse(c.photos || '[]'); } catch (e) {}
   const img = ph[0] || c.photo, val_ = nb(c.valeur), cout = nb(c.cout), gain = val_ != null && cout != null ? val_ - cout : null;
   const det = [c.annee, c.set_nom, c.parallele, c.numero ? '#' + c.numero : '', c.tirage ? '/' + c.tirage : '', c.grade].filter(Boolean).join(' · ');
-  ouvrirFeuille(`<div class="fc">${img && photoOk(img) ? `<div class="fc-img"><img src="${esc(photoNet(img, 1600))}" alt=""></div>` : ''}
+  // 31 oct 2026 (Mathieu : « pourquoi on ne voit pas les deux photos ») : devant et dos, on glisse ; deux points dessous
+  const phs = (ph.length ? ph : [img]).filter(u => u && photoOk(u)).slice(0, 2);
+  ouvrirFeuille(`<div class="fc">${phs.length ? `<div class="fc-img ${phs.length > 1 ? 'fc-2' : ''}" id="fc-imgs">${phs.map(u => `<img src="${esc(photoNet(u, 1600))}" alt="">`).join('')}</div>
+      ${phs.length > 1 ? `<div class="fc-pts" id="fc-pts"><i class="on"></i><i></i></div>` : ''}` : ''}
       <h3>${esc(c.joueur || titreCourt(c.titre) || tt('Carte', 'Card'))}</h3>${det ? `<div class="sous">${esc(det)}</div>` : ''}
-      <div class="fc-chiffres"><div><span>${tt('Valeur', 'Value')}</span><b>${val_ != null ? argent(val_, 0) : '—'}</b></div>
+      <div class="fc-chiffres"><div><span>${tt('Valeur', 'Value')}</span><b id="fc-val">${val_ != null ? argent(val_, 0) : '—'}</b><small id="fc-val-s">${tt('ventes réelles…', 'real sales…')}</small></div>
         <div><span>${tt('Payée', 'Paid')}</span><b>${cout != null ? argent(cout, 0) : '—'}</b></div>
         ${gain != null ? `<div><span>${tt('Gain', 'Gain')}</span><b class="${gain >= 0 ? 'vert' : 'rouge'}">${gain >= 0 ? '+' : '−'}${argent(Math.abs(gain), 0)}</b></div>` : ''}</div>
       <button class="fc-alerte" id="fc-al" role="switch" aria-checked="false" ${c.id ? '' : 'hidden'}>
@@ -8305,6 +8327,15 @@ function ficheCollection(c){
       <div class="sous" style="text-align:center">${tt('L’annonce se fait avec ce que l’app sait déjà : photos, titre, prix. Tu vérifies avant de publier.', 'The listing uses what the app already knows: photos, title, price. You check before publishing.')}</div>
       <div class="fc-liens"><button class="plus" id="fc-photo">${ICONES.photo}${tt('Changer la photo', 'Change the photo')}</button><button class="plus" id="fc-modif">${tt('Modifier', 'Edit')}</button></div></div>`);
   $('#fc-vendre').onclick = () => { fermerFeuille(); vendreDepuisCollection(c.id); };
+  const zi = $('#fc-imgs'), pts = $('#fc-pts');
+  if (zi && pts) zi.onscroll = () => { const k = Math.round(zi.scrollLeft / zi.clientWidth); $$('i', pts).forEach((e, j) => e.classList.toggle('on', j === k)); };
+  // la valeur = la mediane de ses ventes reelles (meme carte), recalculee a l'ouverture (cache 3 jours cote serveur)
+  if (c.id) API.carte_valeur(c.id).then(v => {
+    const b_ = $('#fc-val'), s_ = $('#fc-val-s'); if (!b_ || !v || !v.ok) { if (s_) s_.textContent = ''; return; }
+    if (v.valeur != null) { b_.textContent = argent(v.valeur, 0); c.valeur = v.valeur; }
+    s_.textContent = v.n ? tt('médiane · ', 'median · ') + v.n + ' ' + tt(v.n > 1 ? 'ventes' : 'vente', v.n > 1 ? 'sales' : 'sale') : tt('aucune vente récente', 'no recent sale');
+    const t_ = $(`#i-liste .tuile-inv[data-id="${c.id}"] .p`); if (t_ && v.valeur != null) t_.textContent = argent(v.valeur, 0);
+  }).catch(() => { const s_ = $('#fc-val-s'); if (s_) s_.textContent = ''; });
   // 29 oct 2026 (Mathieu : « une alarme quand la carte prend de la valeur ou descend… refresh aux semaines ») : un tap
   const al = $('#fc-al'), montrerAl = (e) => { if (!al || !e || !e.ok) return; al.setAttribute('aria-checked', e.actif); $('#fc-al-i').classList.toggle('on', !!e.actif);
     const s_ = $('#fc-al-s'); if (!s_) return;
@@ -8853,7 +8884,7 @@ function feuilleDemande(x){
 async function adminCatalogue(){
   const z = $('#adm-z'); const [d, c] = await Promise.all([API.admin_catalogue().catch(e => ({ok:false, erreur:e.message})), API.catalogue_liste().catch(() => ({produits:[]})), imagesProduits()]);
   if (!d.ok) { z.innerHTML = `<div class="vide">${esc(d.erreur)}</div>`; return; }
-  z.innerHTML = `<div class="pastilles" style="margin-bottom:10px"><button class="pilule" id="ac-pop">★ ${tt('Produits populaires', 'Popular products')}</button><button class="pilule" id="ac-aaj">${tt('Produits à ajouter', 'Products to add')} · ${d.a_ajouter.length}</button><button class="pilule" id="ac-imp">${ICONES.plus} ${tt('Importer des Excel', 'Import Excel files')}</button>
+  z.innerHTML = `<div class="pastilles" style="margin-bottom:10px"><button class="pilule" id="ac-pop">★ ${tt('Produits populaires', 'Popular products')}</button><button class="pilule" id="ac-aaj">${tt('Produits à ajouter', 'Products to add')} · ${d.a_ajouter.length}</button><button class="pilule" id="ac-imp">${ICONES.plus} ${tt('Importer des Excel', 'Import Excel files')}</button>${d.attente ? `<button class="pilule or" id="ac-att">${tt('À valider', 'To review')} · ${d.attente}</button>` : ''}
       ${tag(tt('Recherche eBay : ', 'eBay search: ') + (d.maj_recherche ? ilYa(d.maj_recherche) : tt('jamais', 'never')))}</div>
     <div class="bloc"><div class="liste">${d.produits.map(p => `<button class="rangee ac-prod" data-prod="${esc(p.id)}"><span class="vig vig-boite">${imgProduit(p.id) || ICONES.boite}</span>
       <span class="milieu"><span class="nom">${esc(p.nom)}</span><span class="pastilles">${p.sport !== 'hockey' ? tag(nomSport(p.sport), 'or') : ''}${tag(p.nb_cartes + ' ' + tt('cartes', 'cards'))}${p.complete ? tag('✓ ' + tt('Cotes complètes', 'Odds complete'), 'vert') : tag(p.sans_cote + ' ' + tt('cotes manquantes', 'missing odds'), 'rouge')}${(p.estimees || []).length ? tag((p.estimees || []).length + ' ' + tt('estimées', 'estimated'), 'or') : ''}</span></span>
@@ -8862,8 +8893,23 @@ async function adminCatalogue(){
   $('#ac-aaj').onclick = () => feuilleAAjouter(c.produits || []);
   $('#ac-pop').onclick = () => feuillePopulaires(c.produits || []);
   $('#ac-imp').onclick = () => feuilleChecklist(null, c.produits || []);
+  if ($('#ac-att')) $('#ac-att').onclick = feuilleAValider;
   $$('[data-prod]', z).forEach(b => b.onclick = () => { vibrer(); feuilleProduitAdmin(d.produits.find(p => p.id === b.dataset.prod), c.produits || []); });
   $$('[data-rm]', z).forEach(b => b.onclick = async () => { if (await essai(API.admin_remettre(b.dataset.rm))) adminCatalogue(); });
+}
+// 31 oct 2026 : les checklists envoyees par les utilisateurs que la validation automatique n'a pas publiees seule
+async function feuilleAValider(){
+  const r = await API.admin_contributions().catch(e => ({ok:false, erreur:e.message}));
+  if (!r.ok) { toast(r.erreur || 'Erreur'); return; }
+  ouvrirFeuille(`<h3>${tt('Checklists à valider', 'Checklists to review')}</h3>
+    <div class="liste">${(r.attente || []).map(x => `<div class="rangee" data-c="${esc(x.id)}"><span class="milieu"><span class="nom">${esc(x.nom)}</span>
+      <span class="sous">${x.nb_cartes} ${tt('cartes', 'cards')}${x.par ? ' · ' + esc(x.par) : ''} · ${esc(String(x.le || '').slice(0, 10))}${x.maj_de ? ' · ' + tt('mise à jour', 'update') : ''}</span>
+      <span class="sous" style="color:var(--or)">${(x.raisons || []).map(esc).join(' · ')}</span></span>
+      <span class="aaj-act"><button class="pilule vert" data-pub="${esc(x.id)}">${tt('Publier', 'Publish')}</button><button class="pilule" data-ref="${esc(x.id)}">${tt('Refuser', 'Reject')}</button></span></div>`).join('')
+      || `<div class="vide" style="padding:16px">${tt('Rien à valider.', 'Nothing to review.')}</div>`}</div>`);
+  const agir = async (b, act) => { b.disabled = true; if (await essai(API.admin_contribution(b.dataset.pub || b.dataset.ref, act), act === 'publier' ? tt('Publié pour tous', 'Published for everyone') : tt('Refusé', 'Rejected'))) { const z = b.closest('.rangee'); if (z) z.remove(); } else b.disabled = false; };
+  $$('[data-pub]').forEach(b => b.onclick = () => agir(b, 'publier'));
+  $$('[data-ref]').forEach(b => b.onclick = () => agir(b, 'refuser'));
 }
 // 29 oct 2026 (Mathieu : « quand je vais voir mes deals a jour ? c'est un probleme de pas savoir, pour l'admin »)
 function ligneTour(t, court){

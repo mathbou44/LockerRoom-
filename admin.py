@@ -188,9 +188,12 @@ def catalogue_etat():
                                       for n in catalogue.etat_cotes(pr)["estimees"]][:40],
                          "non_publiees": catalogue.etat_cotes(pr)["non_publiees"][:20],
                          "importe": os.path.exists(os.path.join(catalogue.dossier_ajouts(), p["id"] + ".json")),
+                         "contribue": bool(pr.get("contribue")),
                          "sources": pr.get("sources") or []})
     d = nouveaux_produits.lire()
+    import contributions
     return {"produits": produits, "a_ajouter": nouveaux_produits.liste(), "maj_recherche": d.get("maj"),
+            "attente": len(contributions.liste_attente()),
             "ignores": [{"cle": k, "nom": (d["detectes"].get(k) or d["demandes"].get(k) or {}).get("nom") or k} for k in d.get("ignores") or []]}
 
 

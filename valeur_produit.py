@@ -209,7 +209,9 @@ def joueurs_a_mesurer(prod):
         hit = bool(calcul.categories_carte(c, s))
         if hit or s.get("groupe") == "recrue" or c.get("recrue"):
             poids[j] = poids.get(j, 0) + (2 if hit else 1)
-    l = [j for j in sorted(poids, key=lambda k: -poids[k]) if not valeurs.connu(j)]
+    import cartes_match
+    eq = cartes_match._mots_equipes()                    # cartes d'equipe (« San Jose Sharks ») : pas un joueur a mesurer
+    l = [j for j in sorted(poids, key=lambda k: -poids[k]) if not valeurs.connu(j) and not (eq and set(cartes_match.norm(j).split()) <= eq)]
     return l[:JOUEURS_MESURES_MAX]
 
 
