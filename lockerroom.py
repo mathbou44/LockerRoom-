@@ -125,7 +125,7 @@ CREATE TABLE IF NOT EXISTS ventes_comptoir (id INTEGER PRIMARY KEY, le TEXT, sou
 CREATE TABLE IF NOT EXISTS rachats (id INTEGER PRIMARY KEY, le TEXT, client_id INTEGER, valeur REAL, offre REAL, mode TEXT, lignes TEXT);
 CREATE TABLE IF NOT EXISTS depenses (id INTEGER PRIMARY KEY, le TEXT, categorie TEXT, montant REAL, note TEXT);
 CREATE TABLE IF NOT EXISTS soumissions (id INTEGER PRIMARY KEY, compagnie TEXT, service TEXT, numero TEXT, envoyee_le TEXT,
-    retour_prevu TEXT, cout_carte REAL, statut TEXT, cree_le TEXT, revenue_le TEXT, valeurs TEXT);
+    retour_prevu TEXT, cout_carte REAL, statut TEXT, cree_le TEXT, revenue_le TEXT, valeurs TEXT, suivi TEXT, mode TEXT);
 """
 
 
@@ -158,6 +158,11 @@ def _connecter(chemin=None):
                      ("etat_json", "TEXT"), ("etat_le", "TEXT"), ("envoi_json", "TEXT"), ("soumission_id", "INTEGER")):            # 1er nov 2026 - l'etat estime (pre-gradation)   # 31 oct 2026 - vues des annonces
         if col not in cols:
             c.execute(f"ALTER TABLE cartes ADD COLUMN {col} {typ}")
+    # 1er nov 2026 - soumissions : les colonnes ajoutees apres coup
+    so_cols = {r[1] for r in c.execute("PRAGMA table_info(soumissions)")}
+    for col in ("valeurs", "suivi", "mode"):
+        if so_cols and col not in so_cols:
+            c.execute(f"ALTER TABLE soumissions ADD COLUMN {col} TEXT")
     # 23 oct 2026 - autres sports : le sport du produit et du break (equipes de sa ligue)
     for table in ("produits", "breaks"):
         if "sport" not in {r[1] for r in c.execute(f"PRAGMA table_info({table})")}:
@@ -2164,6 +2169,16 @@ class Api:
             finally:
                 c.close()
         for r in out:
+            # 1er nov 2026 (Mathieu : « dans la vue collection, chaque carte comme dans un slab, le score = celui calcule par
+            # l'IA ») : la note estimee seulement (min, max), pas tout l'examen (lourd)
+            ej = r.pop("etat_json", None)
+            if ej:
+                try:
+                    e = json.loads(ej) or {}
+                except ValueError:
+                    e = {}
+                if e.get("note_min") is not None:
+                    r["note_ia"] = {"min": e.get("note_min"), "max": e.get("note_max") if e.get("note_max") is not None else e.get("note_min")}
             if not r.get("sport"):
                 r["sport"] = sports.detecter(r.get("titre"), r.get("equipe"), r.get("set_nom"), r.get("marque"), defaut=defaut)
             m = marche.get(r.get("item_number")) if r.get("statut") != "Vendue" else None
@@ -2380,16 +2395,19 @@ class Api:
                 pass
         return {"ok": True, "photos": refs}
 
-    def carte_etat(self, cid, forcer=False, langue=None):
-        """1er nov 2026 (Mathieu : « les cartes de la collection, on peut les noter et dire les defauts trouves ? centrage,
-        coins et bords ») : l'etat estime d'apres SES photos (celles montrees : les defauts se placent dessus). Garde avec la
-        carte ; refait seulement sur demande ou si les photos ont change. Une lecture de photo (meme quota)."""
+    def carte_etat(self, cid, forcer=False, langue=None, d=None):
+        """L'etat estime d'une carte (pre-gradation). d (facultatif) = {photos: [devant, dos] (data URL : les photos
+        d'EXAMEN prises pour l'occasion), quads: [coins devant, coins dos] (0..1000, trouves dans le telephone), rasante:
+        data URL}. Sans photos : celles de la fiche (les originales : la photo studio met un halo qui cache les aretes).
+        1er nov 2026 (Mathieu : « je veux qu'on soit PARFAIT ») : zooms des coins et des bords, centrage mesure, regles de
+        coherence, calibration sur les vraies notes revenues de PSA, et ce que les utilisateurs ont confirme ou rejete."""
         import base64
+        import etat_verite
         import photos_cartes
+        d = dict(d or {})
         carte = self.carte_lire(cid)
         if not carte:
             return {"ok": False, "erreur": "Carte introuvable"}
-        # 1er nov 2026 : les ORIGINALES (la photo studio met un halo autour de la carte : « la lumiere cache les bords »)
         try:
             refs = json.loads(carte.get("photos_orig") or "[]") or json.loads(carte.get("photos") or "[]") or ([carte["photo"]] if carte.get("photo") else [])
         except ValueError:
@@ -2399,28 +2417,43 @@ class Api:
             garde = json.loads(carte.get("etat_json") or "null")
         except ValueError:
             garde = None
-        if garde and not forcer and garde.get("photos") == refs:
-            return {"ok": True, **garde, "le": carte.get("etat_le")}
+        precision = etat_verite.precision()
         if forcer is None:                     # lecture seule (l'ecran demande ce qui est garde, sans payer une analyse)
+            if garde and (garde.get("examen") or garde.get("photos") == refs):
+                return {"ok": True, **garde, "le": carte.get("etat_le"), "precision": precision}
             try:
                 q = vision.statut_etat()
             except Exception:
                 q = {}
-            return {"ok": True, "aucun": True, "photos_changees": bool(garde), "quota": q}
-        if not refs:
-            return {"ok": False, "erreur": "Ajoute une photo de la carte (devant, et dos si possible)"}
+            return {"ok": True, "aucun": True, "photos_changees": bool(garde), "quota": q, "precision": precision}
         if not self.reglages_lire().get("ia_photos_ok"):
             return {"ok": False, "erreur": "Permission de lecture par l’IA requise", "consentement_requis": True}
-        photos = []
-        for r in refs:
-            with open(photos_cartes.chemin(r), "rb") as f:
-                photos.append("data:image/jpeg;base64," + base64.b64encode(f.read()).decode())
+        examen_ = bool(d.get("photos"))
+        if examen_:                            # photos d'examen : gardees a part (les photos de la fiche ne changent pas)
+            try:
+                refs = photos_cartes.sauver(list(d["photos"])[:2])
+                ras_ref = photos_cartes.sauver([d["rasante"]]) if d.get("rasante") else []
+            except ValueError as e:
+                return {"ok": False, "erreur": str(e)}
+        else:
+            ras_ref = []
+        if not refs:
+            return {"ok": False, "erreur": "Ajoute une photo de la carte (devant, et dos si possible)"}
+        lire_b64 = lambda r: "data:image/jpeg;base64," + base64.b64encode(open(photos_cartes.chemin(r), "rb").read()).decode()
+        photos = [lire_b64(r) for r in refs]
+        quads = [q if isinstance(q, list) and len(q) == 4 else None for q in (d.get("quads") or [])][:2]
         try:
-            res = vision.etat(photos, langue or self.reglages_lire().get("langue") or "fr")
+            res = vision.etat(photos, langue or self.reglages_lire().get("langue") or "fr", quads=quads,
+                              rasante=lire_b64(ras_ref[0]) if ras_ref else None,
+                              calibration=etat_verite.calibration(), regles=etat_verite.regles())
         except vision.Erreur as e:
             return {"ok": False, "erreur": str(e)}
         res = {k: v for k, v in res.items() if k not in ("ok", "cache")}
-        res["photos"] = refs
+        res.update(photos=refs, quads=quads, examen=examen_, rasante=ras_ref[0] if ras_ref else None)
+        res["centrage_vue"] = self._centrage_vue(refs, quads)
+        anciens = [v.get("img") for v in ((garde or {}).get("centrage_vue") or {}).values() if v.get("img")]
+        if garde and garde.get("examen"):      # l'ancien examen : ses photos a lui ne servent plus
+            anciens += [x for x in (garde.get("photos") or []) + [garde.get("rasante")] if x and x not in refs]
         le = _maintenant()
         with _verrou:
             c = self._db()
@@ -2429,7 +2462,127 @@ class Api:
                 c.commit()
             finally:
                 c.close()
-        return {"ok": True, **res, "le": le}
+        if anciens:
+            try:
+                photos_cartes.supprimer(anciens)
+            except Exception:
+                pass
+        return {"ok": True, **res, "le": le, "precision": precision}
+
+    @staticmethod
+    def _centrage_vue(refs, quads):
+        """La carte redressee de chaque face (gardee) et ses bordures trouvees : l'ecran trace la grille de centrage dessus."""
+        import base64
+        import examen
+        import photos_cartes
+        out = {}
+        if not examen.disponible():
+            return out
+        for j, ref in enumerate(refs[:2]):
+            q = quads[j] if j < len(quads) else None
+            ch = photos_cartes.chemin(ref)
+            if not q or not ch:
+                continue
+            try:
+                with open(ch, "rb") as f:
+                    c = examen.redresser(examen.ouvrir(f.read()), q)
+                if c is None:
+                    continue
+                img = photos_cartes.sauver(["data:image/jpeg;base64," + base64.b64encode(examen.jpeg(c, 1200, 90)).decode()])
+                out["devant" if j == 0 else "dos"] = {"img": img[0] if img else None, "ratio": round(c.size[0] / c.size[1], 4),
+                                                      **(examen.centrage_detail(c) or {})}
+            except Exception as e:
+                print("Centrage (vue) : " + repr(e), flush=True)
+        return out
+
+    def carte_centrage(self, cid, face, d):
+        """1er nov 2026 : la grille de centrage ajustee a la main (les 4 lignes sur le cadre imprime, en fraction de la carte)
+        -> les ratios, la sous-note de centrage (tolerances PSA) et la fourchette, mis a jour."""
+        import examen
+        carte = self.carte_lire(cid)
+        try:
+            e = json.loads((carte or {}).get("etat_json") or "null")
+        except ValueError:
+            e = None
+        if not e or face not in ("devant", "dos"):
+            return {"ok": False, "erreur": "Aucun examen pour cette carte"}
+        vue = e.setdefault("centrage_vue", {}).setdefault(face, {})
+        if d is None:                                  # « remettre la mesure de l'app »
+            vue.pop("manuel", None)
+            for k in ("l", "r", "t", "b"):
+                vue[k] = vue.pop("auto_" + k, vue.get(k))
+        else:
+            for k in ("l", "r", "t", "b"):
+                v = _float((d or {}).get(k))
+                if v is None or not 0 <= v <= 0.45:
+                    return {"ok": False, "erreur": "Place les 4 lignes sur le cadre imprimé"}
+                if not vue.get("manuel"):
+                    vue["auto_" + k] = vue.get(k)
+                vue[k] = round(v, 4)
+            vue["manuel"] = True
+        rt = examen.ratios(vue.get("l"), vue.get("r"), vue.get("t"), vue.get("b"))
+        vue.update(rt)
+        dev, dos = (e["centrage_vue"].get("devant") or {}), (e["centrage_vue"].get("dos") or {})
+        n = examen.note_centrage({"gd": dev.get("gd"), "hb": dev.get("hb")} if dev.get("gd") or dev.get("hb") else None,
+                                 {"gd": dos.get("gd"), "hb": dos.get("hb")} if dos.get("gd") or dos.get("hb") else None)
+        if face == "devant":
+            e["centrage_gd"], e["centrage_hb"] = rt["gd"] or "", rt["hb"] or ""
+        else:
+            e["centrage_dos"] = rt["gd"] or rt["hb"] or ""
+        if n is not None:
+            notes = e.setdefault("notes", {})
+            notes["centrage"] = float(n)
+            e["centrage_mesure"] = True
+            qui = "ajusté par toi" if (dev.get("manuel") or dos.get("manuel")) else "mesuré par l’app"
+            e.setdefault("explications", {})["centrage"] = qui + " : " + " · ".join(x for x in (dev.get("gd"), dev.get("hb")) if x) + \
+                ((" · dos " + (dos.get("gd") or dos.get("hb"))) if (dos.get("gd") or dos.get("hb")) else "")
+            pire = min([v for v in notes.values() if v] or [10])
+            hi = min(float(e.get("note_max") or pire + 0.5), pire + 0.5)
+            hi = vision._psa(min(10.0, hi))
+            if e.get("defauts"):
+                hi = min(hi, 9.0)
+            e["note_max"] = hi
+            e["note_min"] = vision._psa(min(float(e.get("note_min") or hi), hi))
+        with _verrou:
+            c = self._db()
+            try:
+                c.execute("UPDATE cartes SET etat_json=? WHERE id=?", (json.dumps(e, ensure_ascii=False), cid))
+                c.commit()
+            finally:
+                c.close()
+        return {"ok": True, **e}
+
+    def carte_etat_avis(self, cid, i, vrai):
+        """Un defaut signale : l'utilisateur le voit (vrai) ou non (faux). Garde avec l'examen, et compte (sans photo, sans
+        nom) dans ce que l'analyseur apprend : les defauts « a verifier » souvent rejetes deviennent plus exigeants."""
+        import etat_verite
+        carte = self.carte_lire(cid)
+        try:
+            e = json.loads((carte or {}).get("etat_json") or "null")
+        except ValueError:
+            e = None
+        if not e:
+            return {"ok": False, "erreur": "Aucun examen pour cette carte"}
+        try:
+            d = (e.get("defauts") or [])[int(i)]
+        except (TypeError, ValueError, IndexError):
+            return {"ok": False, "erreur": "Défaut introuvable"}
+        avis = e.setdefault("avis", {})
+        avant = avis.get(str(i))
+        v = None if vrai is None else bool(vrai)
+        if v is None:
+            avis.pop(str(i), None)
+        else:
+            avis[str(i)] = v
+        etat_verite.avis(d, avant, v)
+        with _verrou:
+            c = self._db()
+            try:
+                c.execute("UPDATE cartes SET etat_json=? WHERE id=?", (json.dumps(e, ensure_ascii=False), cid))
+                c.commit()
+            finally:
+                c.close()
+        return {"ok": True, "avis": avis}
 
     # -- 1er nov 2026 (Mathieu : « les cartes de la collection qu'on envoie se faire grader, et celles qu'on envoie en
     # consignation : la carte va en encan, comme chez un consignataire ») : le SUIVI de l'envoi. La carte reste dans la
@@ -2453,6 +2606,11 @@ class Api:
             r = d.get("retour") or {}
             # revenue du gradage : le cout de gradation s'ajoute au cout de la carte ; la note lue (si donnee) va dans la fiche
             if avant.get("type") == "gradation":
+                try:                           # 1er nov 2026 : la vraie note, comparee a l'examen d'avant l'envoi
+                    import etat_verite
+                    etat_verite.noter(carte.get("etat_json"), r.get("grade"), avant.get("compagnie"))
+                except Exception:
+                    pass
                 if avant.get("cout") and r.get("garder_cout", True):
                     maj["cout"] = round((carte.get("cout") or 0) + float(avant["cout"]), 2)
                 g = txt(r.get("grade"), 20)
@@ -2495,7 +2653,8 @@ class Api:
     def _soumission_envoi(self, so, cid, valeur):
         return {"type": "gradation", "soumission_id": so["id"], "compagnie": so["compagnie"], "service": so.get("service"),
                 "soumission": so.get("numero"), "envoye_le": so.get("envoyee_le"), "retour_prevu": so.get("retour_prevu"),
-                "cout": so.get("cout_carte"), "valeur_declaree": valeur}
+                "cout": so.get("cout_carte"), "valeur_declaree": valeur, "suivi": so.get("suivi"),
+                "etape": "preparation" if so.get("statut") == "preparation" else None}
 
     def soumission_creer(self, d):
         d = dict(d or {})
@@ -2512,7 +2671,10 @@ class Api:
         txt = lambda v, n: re.sub(r"\s+", " ", str(v or "")).strip()[:n] or None
         so = {"compagnie": d.get("compagnie") if d.get("compagnie") in self.COMPAGNIES else "PSA", "service": txt(d.get("service"), 30),
               "numero": txt(d.get("numero"), 30), "envoyee_le": jour(d.get("envoyee_le")) or datetime.now().strftime("%Y-%m-%d"),
-              "retour_prevu": jour(d.get("retour_prevu")), "cout_carte": _float(d.get("cout_carte")), "statut": "envoyee"}
+              "retour_prevu": jour(d.get("retour_prevu")), "cout_carte": _float(d.get("cout_carte")),
+              "statut": "preparation" if d.get("preparation") else "envoyee", "mode": txt(d.get("mode"), 20)}
+        if so["statut"] == "preparation" and not d.get("envoyee_le"):
+            so["envoyee_le"] = None
         decl = d.get("valeurs") or {}
         with _verrou:
             c = self._db()
@@ -2522,9 +2684,9 @@ class Api:
                 pris = [i for i in ids if i in cartes and cartes[i]["statut"] != "Vendue" and not cartes[i]["envoi_json"]]
                 if not pris:
                     return {"ok": False, "erreur": "Ces cartes sont déjà envoyées ou vendues"}
-                cur = c.execute("INSERT INTO soumissions (compagnie, service, numero, envoyee_le, retour_prevu, cout_carte, statut, cree_le) "
-                                "VALUES (?,?,?,?,?,?,?,?)", (so["compagnie"], so["service"], so["numero"], so["envoyee_le"], so["retour_prevu"],
-                                                             so["cout_carte"], so["statut"], _maintenant()))
+                cur = c.execute("INSERT INTO soumissions (compagnie, service, numero, envoyee_le, retour_prevu, cout_carte, statut, cree_le, mode) "
+                                "VALUES (?,?,?,?,?,?,?,?,?)", (so["compagnie"], so["service"], so["numero"], so["envoyee_le"], so["retour_prevu"],
+                                                               so["cout_carte"], so["statut"], _maintenant(), so["mode"]))
                 so["id"] = cur.lastrowid
                 vals = {}
                 for i in pris:
@@ -2543,25 +2705,33 @@ class Api:
             c = self._db()
             try:
                 sos = _dicts(c.execute("SELECT * FROM soumissions ORDER BY id DESC LIMIT 60"))
-                cartes = _dicts(c.execute("SELECT id, joueur, titre, annee, marque, set_nom, numero, parallele, tirage, valeur, cout, grade, cert, "
-                                          "photo, soumission_id, envoi_json FROM cartes WHERE soumission_id IS NOT NULL"))
+                cartes = _dicts(c.execute("SELECT id, joueur, titre, annee, marque, set_nom, numero, parallele, tirage, auto, valeur, cout, grade, cert, "
+                                          "photo, soumission_id, envoi_json, etat_json FROM cartes WHERE soumission_id IS NOT NULL"))
             finally:
                 c.close()
         vals = {so["id"]: (json.loads(so.get("valeurs") or "{}") or {}) for so in sos}
         par = {}
         for x in cartes:
             sid = x["soumission_id"]
-            par.setdefault(sid, []).append({**{k: v for k, v in x.items() if k not in ("envoi_json", "soumission_id")},
-                                            "valeur_declaree": (vals.get(sid) or {}).get(str(x["id"])), "revenue": not x.get("envoi_json")})
+            try:
+                et = json.loads(x.get("etat_json") or "null") or {}
+            except ValueError:
+                et = {}
+            par.setdefault(sid, []).append({**{k: v for k, v in x.items() if k not in ("envoi_json", "soumission_id", "etat_json")},
+                                            "valeur_declaree": (vals.get(sid) or {}).get(str(x["id"])), "revenue": not x.get("envoi_json"),
+                                            "etat": {"min": et.get("note_min"), "max": et.get("note_max"), "n": len(et.get("defauts") or [])} if et.get("note_min") else None,
+                                            "texte": self._texte_soumission(x)})
         auj = datetime.now().strftime("%Y-%m-%d")
         out = []
         for so in sos:
             l = par.get(so["id"], [])
             if not l:
                 continue
+            if so["statut"] == "annulee":
+                continue
             out.append({**{k: v for k, v in so.items() if k != "valeurs"}, "cartes": l, "n": len(l), "valeur_declaree": round(sum(x.get("valeur_declaree") or 0 for x in l), 2),
                         "cout_total": round((so.get("cout_carte") or 0) * len(l), 2),
-                        "retard": bool(so["statut"] != "revenue" and so.get("retour_prevu") and so["retour_prevu"] < auj)})
+                        "retard": bool(so["statut"] == "envoyee" and so.get("retour_prevu") and so["retour_prevu"] < auj)})
         return {"ok": True, "soumissions": out}
 
     def soumission_maj(self, sid, d):
@@ -2577,21 +2747,80 @@ class Api:
               "numero": txt(d.get("numero"), 30) if "numero" in d else l.get("numero"),
               "envoyee_le": jour(d.get("envoyee_le")) or l.get("envoyee_le"),
               "retour_prevu": jour(d.get("retour_prevu")) if "retour_prevu" in d else l.get("retour_prevu"),
-              "cout_carte": _float(d.get("cout_carte")) if "cout_carte" in d else l.get("cout_carte")}
+              "cout_carte": _float(d.get("cout_carte")) if "cout_carte" in d else l.get("cout_carte"),
+              "suivi": txt(d.get("suivi"), 40) if "suivi" in d else l.get("suivi"),
+              "mode": txt(d.get("mode"), 20) if "mode" in d else l.get("mode"), "statut": l["statut"]}
+        if d.get("envoyer") and l["statut"] == "preparation":       # l'assistant : « c'est parti »
+            so["statut"] = "envoyee"
+            so["envoyee_le"] = jour(d.get("envoyee_le")) or datetime.now().strftime("%Y-%m-%d")
+        vals = {str(x["id"]): x.get("valeur_declaree") for x in l["cartes"]}
+        for k, v in (d.get("valeurs") or {}).items():
+            if str(k) in vals:
+                vals[str(k)] = _float(v)
         with _verrou:
             c = self._db()
             try:
-                c.execute("UPDATE soumissions SET compagnie=?, service=?, numero=?, envoyee_le=?, retour_prevu=?, cout_carte=? WHERE id=?",
-                          (so["compagnie"], so["service"], so["numero"], so["envoyee_le"], so["retour_prevu"], so["cout_carte"], so["id"]))
+                c.execute("UPDATE soumissions SET compagnie=?, service=?, numero=?, envoyee_le=?, retour_prevu=?, cout_carte=?, suivi=?, mode=?, "
+                          "statut=?, valeurs=? WHERE id=?",
+                          (so["compagnie"], so["service"], so["numero"], so["envoyee_le"], so["retour_prevu"], so["cout_carte"], so["suivi"],
+                           so["mode"], so["statut"], json.dumps(vals), so["id"]))
                 for x in l["cartes"]:
                     if x.get("revenue"):
                         continue
-                    e = {k: v for k, v in self._soumission_envoi(so, x["id"], x.get("valeur_declaree")).items() if v not in (None, "")}
+                    e = {k: v for k, v in self._soumission_envoi(so, x["id"], vals.get(str(x["id"]))).items() if v not in (None, "")}
                     c.execute("UPDATE cartes SET envoi_json=? WHERE id=? AND envoi_json IS NOT NULL", (json.dumps(e, ensure_ascii=False), x["id"]))
                 c.commit()
             finally:
                 c.close()
         return {"ok": True}
+
+    def soumission_annuler(self, sid):
+        """Une soumission en preparation (rien d'envoye) : les cartes redeviennent libres. La soumission reste, marquee annulee."""
+        l = next((x for x in self.soumissions_liste()["soumissions"] if x["id"] == int(sid)), None)
+        if not l or l["statut"] != "preparation":
+            return {"ok": False, "erreur": "Seule une soumission pas encore envoyée peut être annulée"}
+        with _verrou:
+            c = self._db()
+            try:
+                c.execute("UPDATE cartes SET envoi_json=NULL, soumission_id=NULL WHERE soumission_id=?", (int(sid),))
+                c.execute("UPDATE soumissions SET statut='annulee' WHERE id=?", (int(sid),))
+                c.commit()
+            finally:
+                c.close()
+        return {"ok": True}
+
+    @staticmethod
+    def _texte_soumission(x):
+        """La carte telle qu'on la cherche dans le formulaire de la compagnie : annee, marque, set, numero, joueur, variante."""
+        t = " ".join(str(v) for v in (x.get("annee"), x.get("marque"), x.get("set_nom"), ("#" + str(x["numero"])) if x.get("numero") else None,
+                                       x.get("joueur"), x.get("parallele"), ("/" + str(x["tirage"])) if x.get("tirage") else None,
+                                       "Auto" if x.get("auto") else None) if v)
+        return re.sub(r"\s+", " ", t).strip() or (x.get("titre") or "")
+
+    def valeur_gradee(self, cid, note=None, compagnie="PSA"):
+        """1er nov 2026 : PSA demande la valeur de la carte APRES gradation (« max insured value »). Les ventes reelles de la
+        meme carte gradee a la note visee (l'etat estime, sinon 9). -> {valeur, n, note} ; valeur None si pas assez de ventes."""
+        carte = self.carte_lire(cid)
+        if not carte:
+            return {"ok": False, "erreur": "Carte introuvable"}
+        try:
+            et = json.loads(carte.get("etat_json") or "null") or {}
+        except ValueError:
+            et = {}
+        n = _float(note) or et.get("note_max") or 9
+        n = 10 if n >= 9.75 else int(n) if float(n).is_integer() else n
+        cie = compagnie if compagnie in ("PSA", "BGS", "SGC", "CGC", "TAG") else "PSA"
+        import suivi_valeur
+        t = suivi_valeur._titre(carte)
+        if len(t) < 6:
+            return {"ok": True, "valeur": None, "n": 0, "note": n}
+        try:
+            r = vendues.memes(f"{t} {cie} {n}", requete=False, n=24)
+        except Exception as e:
+            return {"ok": False, "erreur": str(e)}
+        vs = [v for v in r.get("ventes") or [] if v.get("prix")]
+        val = r.get("mediane") or (round(statistics.median(float(v["prix"]) for v in vs), 2) if vs else None)
+        return {"ok": True, "valeur": val, "n": len(vs), "note": n, "compagnie": cie, "sure": bool(r.get("mediane"))}
 
     def soumission_retour(self, sid, notes=None):
         """Toute la soumission revient : chaque carte recoit sa note et son certificat (si donnes) ; le cout de gradation
@@ -2651,7 +2880,7 @@ class Api:
                 continue
             jours = (datetime.now() - datetime.fromisoformat(e.get("envoye_le") or auj)).days
             if e["type"] == "gradation":
-                retard = bool(e.get("retour_prevu") and e["retour_prevu"] < auj)
+                retard = bool(not e.get("etape") and e.get("retour_prevu") and e["retour_prevu"] < auj)
             else:
                 retard = bool((e.get("fin_encan") and e["fin_encan"] < auj) or (not e.get("fin_encan") and jours > int(e.get("alerte_jours") or 45)))
             out[e["type"]].append({**x, **e, "jours": jours, "retard": retard})
@@ -2668,6 +2897,10 @@ class Api:
         if g:
             out.append({"cle": "gradation", "n": len(g), "titre": "Gradation en retard", "montant": None,
                         "texte": "date de retour passée : vérifie la soumission", "lien": "#inventaire/collection", "ton": "or", "rang": 30})
+        p = {x.get("soumission_id") for x in e["gradation"] if x.get("etape") == "preparation"}
+        if p:
+            out.append({"cle": "a_soumettre", "n": len(p), "titre": "Soumission à finir", "montant": None,
+                        "texte": "l’assistant t’attend : valeurs, emballage, envoi", "lien": "#inventaire/collection", "ton": "acc", "rang": 20})
         a = [x for x in e["encan"] if x["retard"]]
         if a:
             out.append({"cle": "encan", "n": len(a), "titre": "Encan à suivre", "montant": None,

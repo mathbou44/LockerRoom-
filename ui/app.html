@@ -2275,6 +2275,14 @@ button.an-attente{width:100%; text-align:left; color:var(--texte); cursor:pointe
 .et-pil .ap-ic b{position:relative; font:700 15px var(--f-cond)} .et-pil .ap-t{display:flex; flex-direction:column; gap:1px} .et-pil .ap-t small{font-size:12.5px; color:var(--doux); font-weight:400}
 .et-pil.g-a-verifier .ap-t{opacity:.92} .et-pil.g-fort .ap-ic b{color:var(--rouge)} .et-pil.g-moyen .ap-ic b{color:var(--or)}
 .et-ok{font-size:14px; color:var(--vert)}
+.et-tag{font-size:12.5px; color:var(--vert)}
+.ex-p{display:flex; gap:12px; align-items:center; padding:10px 0; border-bottom:1px solid var(--ligne)}
+.ex-v{flex:0 0 64px; height:64px; border-radius:14px; overflow:hidden; display:grid; place-items:center; background:var(--carte2)} .ex-v img{width:100%; height:100%; object-fit:cover}
+.ex-t{flex:1; min-width:0; display:flex; flex-direction:column; gap:4px} .ex-t b small{font-weight:400; color:var(--doux); font-size:12px} .ex-t > small{color:var(--doux); font-size:13px}
+.ex-p.fait .ex-t > small{color:var(--vert)} .ex-t .pilule{cursor:pointer}
+.vd-q{margin-top:6px} .vd-av{margin-left:auto; display:flex; gap:6px; flex:0 0 auto}
+.vd-av button{width:34px; height:34px; border-radius:50%; border:1px solid var(--ligne); background:none; color:var(--doux); font-size:15px; cursor:pointer}
+.vd-av button.on[data-v="1"]{background:var(--vert); color:#06140f; border-color:transparent} .vd-av button.on[data-v="0"]{background:var(--rouge); color:#fff; border-color:transparent}
 .d-val{display:grid; place-items:center; text-decoration:none; margin-right:8px} .d-val svg{width:18px; height:18px}   /* 1er nov 2026 : la Valeur, depuis les Deals */
 .bk-mode{display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:5px; margin:0 0 14px; border-radius:999px; background:var(--carte); border:1px solid var(--ligne)}
 .bk-mode button{border:0; border-radius:999px; padding:11px 8px; background:none; color:var(--doux); font:700 14px var(--f-cond); letter-spacing:.06em; text-transform:uppercase; cursor:pointer}
@@ -2296,6 +2304,74 @@ button.an-attente{width:100%; text-align:left; color:var(--texte); cursor:pointe
 .cv-m b small{font-weight:400; color:var(--doux)}
 .so-ch .rangee{display:flex; align-items:center; gap:12px; cursor:pointer} .so-ch input{width:20px; height:20px; accent-color:var(--acc); flex:0 0 auto}
 .so-bas{position:sticky; bottom:0; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 10px 10px 16px; border-radius:18px; background:var(--fond-feuille, var(--carte))} .so-bas span{flex:1 1 auto; min-width:0; font-size:14px} .so-bas .btn{flex:0 0 auto; width:auto; margin:0; padding-inline:28px}
+.so-fil{margin:0 0 14px} .so-fil li{cursor:pointer}
+/* 1er nov 2026 - fenetre qui pop (formulaire en etapes) : centree, les points des etapes en bas, crochet vert anime a la fin */
+body.pop-ouverte{overflow:hidden}
+.pop-fond{position:fixed; inset:0; z-index:50; background:rgba(0,0,0,.62); display:flex; align-items:center; justify-content:center;
+  padding:calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 16px); animation:fondu .2s ease-out;
+  -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px)}
+.pop-fond.sort{opacity:0; transition:opacity .18s ease; pointer-events:none}
+.pop{position:relative; width:100%; max-width:520px; max-height:100%; display:flex; flex-direction:column; background:#16161B; border:1px solid var(--ligne);
+  border-radius:24px; box-shadow:0 24px 60px rgba(0,0,0,.55); overflow:hidden; animation:popEntre .32s cubic-bezier(.16,1,.3,1)}
+@keyframes popEntre{from{transform:translateY(14px) scale(.96); opacity:0}}
+.pop-x{position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:50%; border:1px solid var(--ligne); background:var(--carte); color:var(--texte);
+  display:grid; place-items:center; cursor:pointer; z-index:1; padding:0} .pop-x svg{width:16px; height:16px}
+.pop-tete{flex:0 0 auto; padding:18px 58px 6px 20px; display:flex; flex-direction:column; gap:3px}
+.pop-sur{font:700 11px/1.2 var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--doux)}
+.pop-tete h3{margin:0; font-size:22px; font-weight:700; line-height:1.15}
+.pop-corps{flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; padding:8px 20px 14px}
+.pop-corps > *{flex-shrink:0}
+.pop.change .pop-corps, .pop.change .pop-tete h3{animation:popPas .26s ease} .pop.change.arriere .pop-corps, .pop.change.arriere .pop-tete h3{animation-name:popPasR}
+@keyframes popPas{from{opacity:0; transform:translateX(16px)}} @keyframes popPasR{from{opacity:0; transform:translateX(-16px)}}
+.pop-pied{flex:0 0 auto; padding:12px 20px 14px; border-top:1px solid var(--sep); display:flex; flex-direction:column; gap:12px}
+.pop-pied .sa-nav{margin:0}
+.pop-pts{display:flex; justify-content:center; align-items:center; gap:9px; height:10px}
+.pop-pts button{position:relative; width:8px; height:8px; padding:0; border:0; border-radius:99px; background:var(--eteint); cursor:pointer; transition:width .25s ease, background .25s ease}
+.pop-pts button::before{content:''; position:absolute; inset:-9px -5px}
+.pop-pts button.on{width:22px; background:var(--texte)}
+.pop .so-bas{background:var(--carte)}
+.pop-fini{display:flex; flex-direction:column; align-items:center; text-align:center; gap:8px; padding:34px 22px 20px}
+.pop-fini h3{margin:8px 0 0; font-size:23px; font-weight:700} .pop-fini .sous{max-width:330px; line-height:1.4}
+.pop-fini .sa-nav{width:100%; margin-top:16px}
+.ok-anim{width:86px; height:86px; overflow:visible; animation:okPop .32s ease .82s}
+.ok-anim circle{fill:none; stroke:var(--vert); stroke-width:2.5; stroke-dasharray:145; stroke-dashoffset:145; animation:okTrace .55s cubic-bezier(.65,0,.45,1) forwards}
+.ok-anim path{fill:none; stroke:var(--vert); stroke-width:3.5; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:32; stroke-dashoffset:32; animation:okTrace .32s cubic-bezier(.65,0,.45,1) .5s forwards}
+@keyframes okTrace{to{stroke-dashoffset:0}} @keyframes okPop{50%{transform:scale(1.08)}}
+@media (prefers-reduced-motion:reduce){ .pop, .pop.change .pop-corps, .pop.change .pop-tete h3, .ok-anim{animation:none} .ok-anim circle, .ok-anim path{animation:none; stroke-dashoffset:0} }
+
+/* 1er nov 2026 - la collection en slabs : boitier transparent, etiquette ivoire (titre + note IA), la carte dans le puits */
+.grille-slab{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:14px}
+@media (min-width:900px){ .grille-slab{grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:18px} }
+.slab{position:relative; display:flex; flex-direction:column; gap:7px; padding:7px; border-radius:12px; cursor:pointer; font:inherit; color:inherit; text-align:left;
+  background:linear-gradient(165deg, rgba(255,255,255,.16), rgba(255,255,255,.05) 38%, rgba(255,255,255,.03) 62%, rgba(255,255,255,.10));
+  border:1px solid rgba(255,255,255,.26); box-shadow:inset 0 0 0 3px rgba(255,255,255,.04), inset 0 1px 0 rgba(255,255,255,.35), 0 10px 26px rgba(0,0,0,.4);
+  transition:transform .18s ease, box-shadow .18s ease; overflow:hidden}
+.slab::after{content:''; position:absolute; inset:0; pointer-events:none; border-radius:inherit;
+  background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.13) 44%, transparent 52%)}
+.slab:hover{transform:translateY(-3px)} .slab:active{transform:scale(.98)}
+.sl-lab{position:relative; display:flex; align-items:stretch; gap:6px; height:68px; padding:8px 7px 6px 8px; border-radius:5px; background:#F4F2EE; color:#15151A; overflow:hidden}
+.sl-lab::before{content:''; position:absolute; left:0; right:0; top:0; height:3px; background:var(--holo)}
+.sl-t{flex:1 1 auto; min-width:0; font:600 10.5px/1.22 'Barlow Condensed',sans-serif; letter-spacing:.02em; text-transform:uppercase;
+  display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; align-self:center}
+.sl-n{flex:0 0 auto; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-width:38px; padding-left:7px; border-left:1px solid rgba(0,0,0,.14)}
+.sl-n b{font:700 27px/1 'Barlow Condensed',sans-serif} .sl-n b.long{font-size:19px}
+.sl-n small{font:700 8px/1 'Barlow Condensed',sans-serif; letter-spacing:.1em; color:#6B6873; white-space:nowrap}
+.sl-n.aucune b{color:#A8A5AE}
+.sl-puits{position:relative; aspect-ratio:5/7; border-radius:5px; background:#0E0E12; display:grid; place-items:center; color:#34333D;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.10), inset 0 3px 12px rgba(0,0,0,.7); overflow:hidden}
+.sl-puits img{position:absolute; inset:5px; width:calc(100% - 10px); height:calc(100% - 10px); object-fit:contain}
+.sl-puits > svg{width:38%; height:38%}
+.sl-env{position:absolute; left:6px; bottom:6px; z-index:1}
+
+.sa-c{display:flex; flex-direction:column; gap:10px}
+.sa-mode .ap-t{display:flex; flex-direction:column; gap:2px; white-space:normal} .sa-mode .ap-t small{font-size:12.5px; color:var(--doux); font-weight:400; white-space:normal}
+.sa-mode .ap-ic b{position:relative; font:700 15px var(--f-cond)} .sa-mode.on{box-shadow:inset 0 0 0 2px var(--acc)} .sa-mode i{font-style:normal; color:var(--acc)}
+.sa-cp .nom, .sa-emb .nom{white-space:normal; overflow:visible; text-overflow:clip; line-height:1.3} .sa-nav{display:flex; gap:10px; margin-top:14px} .sa-nav .btn{flex:1; margin:0}
+.sa-v{gap:10px} .sa-in{display:flex; align-items:center; gap:4px; flex:0 0 112px; color:var(--doux)} .sa-in input{width:100%; padding:10px; border-radius:12px; border:1px solid var(--ligne); background:var(--carte2); color:var(--texte); font:700 16px var(--f-cond); text-align:right}
+.sa-cp .rangee, .sa-emb .rangee{gap:10px; align-items:center} .sa-copie{background:none; border:0; color:inherit; font:inherit; text-align:left; padding:0; cursor:pointer; flex:1; min-width:0}
+.sa-ck{flex:0 0 30px; height:30px; border-radius:50%; display:grid; place-items:center; border:1px solid var(--ligne); background:none; color:var(--doux); font:700 13px var(--f-cond); cursor:pointer}
+.sa-ck.on{background:var(--vert); color:#06140f; border-color:transparent} .sa-emb .rangee{background:none; border:0; border-bottom:1px solid var(--ligne); width:100%; color:inherit; font:inherit; text-align:left; cursor:pointer}
+.sa-cp .rangee.a .nom, .sa-emb .rangee.a .nom{color:var(--doux)}
 .so-ret{display:flex; flex-direction:column; gap:4px; padding:8px 0; border-bottom:1px solid var(--ligne)} .env-b .pilule{text-decoration:none}
 .env{display:flex; flex-direction:column; gap:10px; padding:14px; border-radius:18px; background:var(--carte); border:1px solid var(--ligne)} .env.retard{border-color:var(--or)}
 .env-t{display:flex; flex-direction:column; gap:2px} .env-t span{font:700 11px var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--doux)} .env-t b{font-size:17px}
@@ -2307,6 +2383,15 @@ button.an-attente{width:100%; text-align:left; color:var(--texte); cursor:pointe
 .vd{position:fixed; inset:0; z-index:9999; background:#08080a; overflow-y:auto; padding:calc(env(safe-area-inset-top) + 64px) 16px calc(env(safe-area-inset-bottom) + 32px); display:flex; flex-direction:column; gap:14px}
 .vd-x{position:fixed; top:calc(env(safe-area-inset-top) + 10px); right:14px; width:40px; height:40px; border-radius:50%; border:1px solid var(--ligne); background:var(--carte); color:#fff; display:grid; place-items:center; z-index:2}
 .vd-x svg{width:18px; height:18px} .vd-ph{position:relative; display:flex; justify-content:center} .vd-ph img{max-width:100%; max-height:78vh; border-radius:12px; display:block}
+.cg-h{margin:0} .cg-r{display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; font-size:14px; color:var(--doux)} .cg-r b{color:var(--texte); font:700 18px var(--f-cond)}
+.cg-n{margin-left:auto; padding:4px 12px; border-radius:99px; font:700 14px var(--f-cond); background:rgba(255,255,255,.08)} .cg-n.vert{color:var(--vert)} .cg-n.or{color:var(--or)} .cg-n.rouge{color:var(--rouge)}
+.cg-z{position:relative; width:100%; max-height:70vh; margin:0 auto; touch-action:none; user-select:none; border-radius:6px; outline:2px solid rgba(255,255,255,.55)}
+.cg-z img{position:absolute; inset:0; width:100%; height:100%; object-fit:fill; border-radius:6px; pointer-events:none}
+.cg-c{position:absolute; background:rgba(255,255,255,.35); pointer-events:none} .cg-c.v{left:50%; top:0; bottom:0; width:1px} .cg-c.h{top:50%; left:0; right:0; height:1px}
+.cg-l{position:absolute; z-index:2} .cg-l.v{top:0; bottom:0; width:28px; margin-left:-14px; cursor:ew-resize} .cg-l.h{left:0; right:0; height:28px; margin-top:-14px; cursor:ns-resize}
+.cg-l i{position:absolute; background:var(--acc); box-shadow:0 0 0 1px rgba(0,0,0,.6)} .cg-l.v i{left:13px; top:0; bottom:0; width:2px} .cg-l.h i{top:13px; left:0; right:0; height:2px}
+.cg-l i::after{content:''; position:absolute; width:16px; height:16px; border-radius:50%; background:var(--acc); box-shadow:0 0 0 2px rgba(0,0,0,.6)} .cg-l.v i::after{left:-7px; top:calc(50% - 8px)} .cg-l.h i::after{top:-7px; left:calc(50% - 8px)}
+.cg-l.actif i{background:#fff} .cg-m{position:absolute; transform:translate(-50%,-50%); padding:2px 6px; border-radius:8px; background:rgba(0,0,0,.72); color:#fff; font:700 12px var(--f-cond); pointer-events:none; z-index:3}
 .vd-l{margin-top:4px; list-style:none; padding:0; display:flex; flex-direction:column; gap:8px} .vd-l li{display:flex; align-items:center; gap:10px; font-size:14px; cursor:pointer}
 .vd-l i{flex:0 0 26px; height:26px; border-radius:50%; display:grid; place-items:center; font:700 12px var(--f-cond); font-style:normal; background:rgba(255,255,255,.08)} .et-c{font-size:14px} .et-p{font-size:12px; color:var(--doux)} .et-p .lien{background:none; border:0; color:var(--acc); font:inherit; padding:0; cursor:pointer}
 .fc-pts{display:flex; justify-content:center; gap:6px; margin-top:-4px} .fc-pts i{width:6px; height:6px; border-radius:50%; background:var(--ligne)} .fc-pts i.on{background:var(--texte, #F4F2EE)}
@@ -8242,7 +8327,7 @@ function tuileInv(c){
   const etat = vendue ? capsule(tt('Vendue', 'Sold') + (c.vendu_le ? ' · ' + dateCourte(c.vendu_le) : ''), 'petit')
     : c.statut === 'Listée' && c.debut && Date.parse(c.debut) > Date.now() ? `<span class="capsule or petit">${icH()}${esc(dateProg(c.debut))}</span>`
     : c.statut === 'Listée' ? capsule(tt('Sur eBay', 'On eBay'), 'acc petit')
-    : envoiDe(c) ? capsule(envoiDe(c).type === 'gradation' ? tt('Au gradage', 'At grading') + ' · ' + envoiDe(c).compagnie : tt('En encan', 'At auction'), (envoiRetard(envoiDe(c)) ? 'or' : 'acc') + ' petit')
+    : envoiDe(c) ? capsule(envoiDe(c).type === 'gradation' ? (envoiDe(c).etape ? tt('À soumettre', 'To submit') : tt('Au gradage', 'At grading')) + ' · ' + envoiDe(c).compagnie : tt('En encan', 'At auction'), (envoiRetard(envoiDe(c)) ? 'or' : 'acc') + ' petit')
     : capsule(c.emplacement || tt('En stock', 'In stock'), 'petit');
   const nom = c.joueur || titreCourt(c.titre) || tt('Article', 'Item');
   const det = [c.annee, c.set_nom, c.parallele, c.numero ? '#' + c.numero : '', c.tirage ? '/' + c.tirage : '', c.auto ? 'Auto' : '', c.grade].filter(Boolean).join(' · ');
@@ -8256,6 +8341,27 @@ function tuileInv(c){
       ${r ? `<div class="repere ${r.cl}"><b>${esc(r.court)}</b><span>${esc(r.long)}${m.bas ? ' · ' + tt('plus bas ', 'lowest ') + argentCourt(m.bas) : ''} · ${m.n} ${tt('ventes réelles', 'real sales')}</span></div>` : ''}
       ${!vendue && c.statut === 'Listée' && (c.vues != null || c.watchers) ? `<div class="int-c">${[c.vues != null ? c.vues + ' ' + tt(c.vues === 1 ? 'vue' : 'vues', c.vues === 1 ? 'view' : 'views') : '', (c.watchers || 0) + ' ' + tt(c.watchers === 1 ? 'suivi' : 'suivis', c.watchers === 1 ? 'watcher' : 'watchers')].filter(Boolean).join(' · ')}</div>` : ''}
       <div class="ligne-b">${bas}</div></div></button>`;
+}
+// 1er nov 2026 (Mathieu : « dans la vue collection, chaque carte comme dans un slab : la photo, le score du slab = celui
+// calcule par l'IA, le texte = le titre de la carte, pas de montant ») : un boitier transparent, l'etiquette en haut (titre a
+// gauche, note a droite), la carte dans le puits. Gradee pour vrai : sa vraie note. Sinon l'estimation de l'examen (« EST. IA »),
+// une fourchette si l'IA hesite ; pas encore examinee : un tiret. Aucun prix.
+function noteSlab(c){
+  const g = String(c.grade || '').match(/^\s*(psa|bgs|sgc|cgc|tag|beckett)\b\D*(\d+(?:[.,]\d)?)/i);
+  if (g) return {n: g[2].replace('.', ','), s: g[1].toUpperCase(), vraie: true};
+  const e = c.note_ia; if (!e || e.min == null) return null;
+  const f = (x) => String(x).replace('.', ',');
+  return {n: e.max != null && e.max !== e.min ? f(e.min) + '–' + f(e.max) : f(e.min), s: tt('EST. IA', 'AI EST.'), vraie: false};
+}
+function tuileSlab(c){
+  const n = noteSlab(c), env = envoiDe(c);
+  const titre = c.titre || [c.annee, c.set_nom, c.joueur, c.parallele, c.numero ? '#' + c.numero : '', c.tirage ? '/' + c.tirage : '', c.auto ? 'Auto' : ''].filter(Boolean).join(' ') || tt('Carte', 'Card');
+  return `<button class="slab tuile-inv" data-id="${c.id}" aria-label="${esc(titre)}">
+    <span class="sl-lab"><span class="sl-t">${esc(titre)}</span>
+      <span class="sl-n ${n ? (n.vraie ? 'vraie' : '') : 'aucune'}"><b class="${n && n.n.length > 3 ? 'long' : ''}">${n ? esc(n.n) : '—'}</b><small>${n ? esc(n.s) : tt('À NOTER', 'NOT RATED')}</small></span></span>
+    <span class="sl-puits">${photoOk(c.photo) ? `<img src="${esc(photoNet(c.photo))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : SVG_CARTE}
+      ${env ? `<span class="sl-env">${capsule(env.type === 'gradation' ? (env.etape ? tt('À soumettre', 'To submit') : tt('Au gradage', 'At grading')) : tt('En encan', 'At auction'), (envoiRetard(env) ? 'or' : 'acc') + ' petit')}</span>` : ''}</span>
+  </button>`;
 }
 async function consignataires(force){ if (!S.consig || force) S.consig = await API.consignataires_liste(); return S.consig; }
 async function chargerInventaire(){
@@ -8292,7 +8398,8 @@ async function chargerInventaire(){
   const ik = $('#i-kpis'); if (ik) ik.innerHTML = kpis ? `<h3>${tt('Mes prix', 'My prices')}</h3>` + kpis : '';
   const resume = l.length ? `<button class="inv-res" id="i-res"><span class="ir-n"><b>${l.length}</b> ${vendues ? tt('vendues', 'sold') : tt('cartes', 'cards')}</span><b class="ir-v">${argentCourt(valeur)}</b>
       ${!vendues && cher ? `<span class="capsule or petit ir-fix" data-fix="baisser">${cher} ${tt('trop chères', 'too pricey')}</span>` : ''}<i>›</i></button>` : '';
-  z.innerHTML = puces + note + resume + (l.length ? `<div class="grille-c">${l.map(tuileInv).join('')}</div>`
+  const slabs = S.filtreInv === 'collection';
+  z.innerHTML = puces + note + (slabs ? '' : resume) + (l.length ? (slabs ? `<div class="grille-slab">${l.map(tuileSlab).join('')}</div>` : `<div class="grille-c">${l.map(tuileInv).join('')}</div>`)
     : `<div class="vide">${S.filtreInv === 'collection' ? tt('Ta collection est vide', 'Your collection is empty') : tt('Rien ici', 'Nothing here')}<button class="pilule" id="i-vide">${tt('Ajouter des cartes', 'Add cards')}</button></div>`);
   $$('#i-sports [data-sp]').forEach(b => b.onclick = () => { S.sportInv = b.dataset.sp || null; chargerInventaire(); });
   $$('#i-liste .tuile-inv').forEach(r => r.onclick = () => { const c = l.find(x => x.id === +r.dataset.id); if (c && c.emplacement === 'Collection' && c.statut === 'En stock') ficheCollection(c); else feuilleCarte(c); });
@@ -8517,7 +8624,9 @@ function voirDefauts(e, k){
   const o = document.createElement('div'); o.className = 'vd';
   o.innerHTML = `<button class="vd-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
     ${refs.map((u, j) => `<div class="vd-ph" data-j="${j}"><img src="${esc(photoNet(u, 1600))}" alt=""></div>`).join('')}
-    <ol class="et-d vd-l">${def.map((d, i) => `<li data-d="${i}" class="g-${(d.gravite || '').replace(' ', '-')}"><i>${i + 1}</i><span>${esc(LIB_ZONE(d.zone))}${d.photo ? tt(' (dos)', ' (back)') : ''} · ${esc(LIB_DEFAUT(d.type))} ${esc(LIB_GRAV(d.gravite))}</span></li>`).join('')}</ol>`;
+    <div class="sous vd-q">${tt('Tu le vois aussi ? Ton avis rend l’analyseur plus précis pour tout le monde.', 'Do you see it too? Your answer makes the analyzer more accurate for everyone.')}</div>
+    <ol class="et-d vd-l">${def.map((d, i) => { const a = (e.avis || {})[i]; return `<li data-d="${i}" class="g-${(d.gravite || '').replace(' ', '-')}"><i>${i + 1}</i><span>${esc(LIB_ZONE(d.zone))}${d.photo ? tt(' (dos)', ' (back)') : ''} · ${esc(LIB_DEFAUT(d.type))} ${esc(LIB_GRAV(d.gravite))}</span>
+      ${e.cid ? `<span class="vd-av"><button class="${a === true ? 'on' : ''}" data-av="${i}" data-v="1" aria-label="${esc(tt('Je le vois', 'I see it'))}">✓</button><button class="${a === false ? 'on' : ''}" data-av="${i}" data-v="0" aria-label="${esc(tt('Pas de défaut', 'No flaw'))}">✕</button></span>` : ''}</li>`; }).join('')}</ol>`;
   document.body.appendChild(o);
   const fermer = () => o.remove();
   o.querySelector('.vd-x').onclick = fermer;
@@ -8526,7 +8635,8 @@ function voirDefauts(e, k){
   // surface reste ou l'IA l'a vue, ramenee dans la carte
   const quads = {};
   const quad = (j, im) => quads[j] || (quads[j] = (async () => {           // une seule detection par photo (promesse partagee)
-    try { const q = coinsLocaux(await chargerImage(im.currentSrc || im.src)); return q && q.length === 4 ? q : null; } catch (e) { return null; } })());
+    if (e.quads && e.quads[j] && e.quads[j].length === 4) return e.quads[j];                // les coins envoyes avec l'examen
+    try { const q = coinsLocaux(await chargerImage(im.currentSrc || im.src)); return q && q.length === 4 ? q : null; } catch (x) { return null; } })());
   const lerp = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
   const cl = (v) => Math.max(0.06, Math.min(0.94, v));
   const place = (d, q) => {
@@ -8554,17 +8664,23 @@ function voirDefauts(e, k){
   const montrer = (i) => { const d = def[i], w = d && o.querySelector(`.vd-ph[data-j="${d.photo}"]`); if (!w) return;
     w.scrollIntoView({behavior: 'smooth', block: 'center'});
     setTimeout(() => { const p = w.querySelector(`.fc-pt[data-d="${i}"]`); if (p) { p.classList.remove('flash'); void p.offsetWidth; p.classList.add('flash'); } }, 350); };
-  $$('.vd-l [data-d]', o).forEach(li => li.onclick = () => montrer(+li.dataset.d));
+  $$('.vd-l [data-d]', o).forEach(li => li.onclick = (ev) => { if (ev.target.closest('[data-av]')) return; montrer(+li.dataset.d); });
+  $$('[data-av]', o).forEach(b => b.onclick = async () => { vibrer(); const i = +b.dataset.av, v = b.dataset.v === '1', deja = (e.avis || {})[i] === v;
+    const r = await API.carte_etat_avis(e.cid, i, deja ? null : v).catch(() => null); if (!r || !r.ok) { toast(tt('Pas enregistré', 'Not saved')); return; }
+    e.avis = r.avis; $$(`[data-av="${i}"]`, o).forEach(x => x.classList.toggle('on', (r.avis || {})[i] === (x.dataset.v === '1'))); });
   if (k != null) setTimeout(() => montrer(k), 200);
 }
 async function blocEtat(c, forcer){
   const z = $('#fc-etat'); if (!z) return;
   const vide = (msg) => `<button class="fc-alerte" id="fc-et-go"><span class="fc-al-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></span>
     <span class="fc-al-t"><b>${tt('Évaluer l’état', 'Check the condition')}</b><small>${msg || tt('Centrage, coins, bords et surface d’après tes photos', 'Centering, corners, edges and surface from your photos')}</small></span><i class="fl">›</i></button>`;
+  // 1er nov 2026 (Mathieu : « je veux qu'on soit PARFAIT ») : l'examen guide (photos a plat, hors etui, + lumiere rasante),
+  // ou les photos de la fiche ; les 4 coins de la carte sont trouves ici et envoyes (zooms et centrage mesures au serveur)
   const lancer = async () => {
     if (!await okIA()) return;
-    z.innerHTML = `<div class="lecture"><span class="roue"></span>${tt('Examen des coins, des bords et du centrage…', 'Checking corners, edges and centering…')}</div>`;
-    const r = await API.carte_etat(c.id, true, typeof LANGUE !== 'undefined' ? LANGUE : 'fr').catch(e => ({ok:false, erreur:e.message}));
+    const d = await feuilleExamen(c); if (!d) return;
+    z.innerHTML = `<div class="lecture"><span class="roue"></span>${tt('Examen des coins, des bords et du centrage… (20 à 40 s)', 'Checking corners, edges and centering… (20 to 40 s)')}</div>`;
+    const r = await API.carte_etat(c.id, true, typeof LANGUE !== 'undefined' ? LANGUE : 'fr', d).catch(e => ({ok:false, erreur:e.message}));
     if (!r.ok) { z.innerHTML = vide(r.erreur); brancher(); return; }
     peindre(r);
   };
@@ -8595,11 +8711,16 @@ async function blocEtat(c, forcer){
           <span class="ap-t">${esc(LIB_ZONE(d.zone))}${d.photo ? tt(' (dos)', ' (back)') : ''}<small>${esc(LIB_DEFAUT(d.type))} · ${esc(LIB_GRAV(d.gravite))}</small></span><i aria-hidden="true">›</i></button>`).join('')}</div>
         <button class="pilule" id="fc-et-voir">${tt('Voir les défauts sur la photo', 'See the flaws on the photo')}</button>`
         : rien ? `<div class="et-ok">${tt('Aucun défaut visible sur les photos', 'No visible flaw on the photos')}</div>` : ''}
+      ${Object.keys(e.centrage_vue || {}).length ? `<button class="pilule" id="fc-et-cent">${tt('Voir la grille de centrage', 'See the centering grid')}</button>` : ''}
       ${e.conseil ? `<div class="et-c">${esc(e.conseil)}</div>` : ''}
+      ${e.centrage_mesure ? `<div class="et-tag">${tt('Centrage mesuré par l’app', 'Centering measured by the app')}${e.zooms ? ' · ' + tt('coins et bords vus en zoom', 'corners and edges zoomed') : ''}</div>` : e.zooms ? `<div class="et-tag">${tt('Coins et bords vus en zoom', 'Corners and edges zoomed')}</div>` : ''}
+      ${e.precision ? `<div class="et-tag">${tt(`Notre précision : ${e.precision.pct} % dans la fourchette, sur ${e.precision.n} cartes revenues du gradage`, `Our accuracy: ${e.precision.pct}% within range, on ${e.precision.n} cards back from grading`)}</div>` : ''}
       <div class="et-p">${(e.invisible || [])[0] ? tt('Pas vérifiable : ', 'Not checkable: ') + esc(e.invisible[0]) + ' · ' : ''}${tt('Estimation sur photo, pas une gradation.', 'Photo estimate, not a grade.')} <button class="lien" id="fc-et-re">${tt('Refaire', 'Redo')}</button></div></div></div>`;
     $('#fc-et-t').onclick = () => { vibrer(); const bx = z.querySelector('.et'), o = !bx.classList.contains('ouvert'); bx.classList.toggle('ouvert', o);
       $('#fc-et-t').setAttribute('aria-expanded', o); try { localStorage.setItem('lr_etat_ouvert', o ? '1' : '0'); } catch (x) {} };
     const re_ = $('#fc-et-re'); if (re_) re_.onclick = () => { vibrer(); lancer(); };
+    e.cid = c.id;
+    const vc = $('#fc-et-cent'); if (vc) vc.onclick = () => { vibrer(); voirCentrage(e, c.id, peindre); };
     const vo = $('#fc-et-voir'); if (vo) vo.onclick = () => { vibrer(); voirDefauts(e); };
     $$('#fc-etat [data-d]').forEach(li => li.onclick = () => { vibrer(); voirDefauts(e, +li.dataset.d); });
   };
@@ -8646,7 +8767,7 @@ function blocEnvoi(c){
       ${e.lien ? `<a class="pilule" href="${esc(e.lien)}" target="_blank" rel="noopener">${tt('Voir l’encan', 'See the auction')} ↗</a>` : ''}
       <button class="pilule" id="env-mod">${tt('Modifier', 'Edit')}</button></div></div>`;
   $('#env-mod').onclick = () => e.soumission_id ? (fermerFeuille(), feuilleSoumission(e.soumission_id)) : formEnvoi(c, e.type, e);
-  if (e.soumission_id) { const br = $('#env-ret'); if (br) { br.textContent = tt('Voir la soumission', 'See the submission'); br.id = 'env-voir'; br.onclick = () => { fermerFeuille(); feuilleSoumission(e.soumission_id); }; } }
+  if (e.soumission_id) { const br = $('#env-ret'); if (br) { br.textContent = e.etape ? tt('Continuer la soumission', 'Continue the submission') : tt('Voir le suivi', 'See tracking'); br.id = 'env-voir'; br.onclick = () => { fermerFeuille(); feuilleSoumission(e.soumission_id); }; } }
   const fini = (r) => { if (r && r.carte) { fermerFeuille(); chargerInventaire(); ficheCollection(r.carte); } };
   const bR = $('#env-ret'); if (bR) bR.onclick = () => {
     ouvrirFeuille(`<h3>${tt('Revenue du gradage', 'Back from grading')}</h3>
@@ -8684,8 +8805,8 @@ async function feuilleSoumissions(){
   ouvrirFeuille(`<h3>${tt('Soumissions de gradation', 'Grading submissions')}</h3>
     <button class="btn" id="so-new">${tt('Nouvelle soumission', 'New submission')}</button>
     <div class="liste" style="margin-top:12px">${l.map(x => `<button class="rangee so-l" data-so="${x.id}"><span class="milieu"><span class="nom">${esc(x.compagnie)}${x.service ? ' · ' + esc(x.service) : ''}${x.numero ? ' · #' + esc(x.numero) : ''}</span>
-      <span class="sous">${x.n} ${tt(x.n > 1 ? 'cartes' : 'carte', x.n > 1 ? 'cards' : 'card')} · ${tt('déclarée ', 'declared ')}${argent(x.valeur_declaree, 0)} · ${x.statut === 'revenue' ? tt('revenue', 'back') : x.retard ? tt('en retard', 'late') : tt('envoyée le ', 'sent ') + dateCourte(x.envoyee_le)}</span></span>
-      ${capsule(x.statut === 'revenue' ? tt('Revenue', 'Back') : x.retard ? tt('Retard', 'Late') : tt('Envoyée', 'Sent'), (x.statut === 'revenue' ? 'vert' : x.retard ? 'or' : 'acc') + ' petit')}</button>`).join('')
+      <span class="sous">${x.n} ${tt(x.n > 1 ? 'cartes' : 'carte', x.n > 1 ? 'cards' : 'card')} · ${tt('déclarée ', 'declared ')}${argent(x.valeur_declaree, 0)} · ${x.statut === 'preparation' ? tt('en préparation', 'being prepared') : x.statut === 'revenue' ? tt('revenue', 'back') : x.retard ? tt('en retard', 'late') : tt('envoyée le ', 'sent ') + dateCourte(x.envoyee_le)}</span></span>
+      ${capsule(x.statut === 'preparation' ? tt('À finir', 'To finish') : x.statut === 'revenue' ? tt('Revenue', 'Back') : x.retard ? tt('Retard', 'Late') : tt('Envoyée', 'Sent'), (x.statut === 'revenue' ? 'vert' : x.retard || x.statut === 'preparation' ? 'or' : 'acc') + ' petit')}</button>`).join('')
       || `<div class="vide" style="padding:16px">${tt('Aucune soumission : choisis les cartes de ta collection à envoyer.', 'No submission yet: pick the collection cards to send.')}</div>`}</div>`);
   $('#so-new').onclick = () => nouvelleSoumission();
   $$('[data-so]').forEach(b => b.onclick = () => feuilleSoumission(+b.dataset.so, l));
@@ -8705,7 +8826,9 @@ async function nouvelleSoumission(){
     $('#so-tot').textContent = sel.length + ' ' + tt(sel.length > 1 ? 'cartes' : 'carte', sel.length > 1 ? 'cards' : 'card') + (t ? ' · ' + tt('déclarée ', 'declared ') + argent(t, 0) : '');
     $('#so-suite').disabled = !sel.length; };
   $$('.so-ch [data-c]').forEach(i => i.onchange = () => { i.checked ? choix.add(+i.dataset.c) : choix.delete(+i.dataset.c); maj(); });
-  $('#so-suite').onclick = () => formSoumission([...choix]);
+  // 1er nov 2026 (Mathieu : « aider l'utilisateur a tout preparer d'avance pour PSA ») : l'assistant, etape par etape
+  $('#so-suite').onclick = async () => { const r = await essai(API.soumission_creer({compagnie: 'PSA', mode: 'assistee', cartes: [...choix], preparation: true}));
+    if (r) { chargerInventaire(); assistantSoumission(r.id, 0); } };
 }
 function formSoumission(ids, so){
   const e = so || {};
@@ -8730,6 +8853,7 @@ function formSoumission(ids, so){
 async function feuilleSoumission(id, liste){
   const l = liste || ((await API.soumissions_liste().catch(() => ({}))).soumissions || []);
   const x = l.find(s => s.id === id); if (!x) { toast(tt('Soumission introuvable', 'Submission not found')); return; }
+  if (x.statut === 'preparation') { assistantSoumission(id); return; }
   const rev = x.statut === 'revenue';
   ouvrirFeuille(`<h3>${esc(x.compagnie)}${x.service ? ' · ' + esc(x.service) : ''}</h3>
     <div class="env ${x.retard ? 'retard' : ''}"><ul>
@@ -8763,6 +8887,45 @@ async function feuilleSoumission(id, liste){
       if (await essai(API.soumission_retour(id, notes), tt('Soumission revenue dans ta collection', 'Submission back in your collection'))) { chargerInventaire(); feuilleSoumission(id); }
     };
   };
+}
+// -- 1er nov 2026 (Mathieu : « je veux qu'on soit PARFAIT ») : l'examen guide. Les photos de la fiche (souvent sur un
+// support, dans un toploader) cachent les aretes : on propose des photos d'examen (a plat, hors etui, fond uni fonce, puis une
+// photo inclinee en lumiere rasante pour la surface). Les 4 coins de la carte sont trouves ici, montres a la personne, et
+// envoyes avec les photos. -> {photos, quads, rasante} | {quads} (photos de la fiche) | null (annule)
+function feuilleExamen(c){
+  return new Promise(ok => {
+    let fini = false; const fin = (v) => { if (fini) return; fini = true; fermerFeuille(); ok(v); };
+    const P = {devant: null, dos: null, rasante: null, q: {}};
+    const peindre = () => {
+      const pas = (k, titre, sous, opt) => `<div class="ex-p ${P[k] ? 'fait' : ''}"><div class="ex-v" id="exv-${k}">${P[k] ? `<img src="${P[k]}" alt="">` : `<span class="fc-al-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="3"/><circle cx="12" cy="13" r="3.5"/></svg></span>`}</div>
+        <div class="ex-t"><b>${titre}${opt ? ` <small>${tt('facultatif', 'optional')}</small>` : ''}</b><small id="exs-${k}">${P[k] ? (k === 'rasante' || P.q[k] ? '✓ ' + tt('carte trouvée', 'card found') : tt('carte pas trouvée : reprends-la sur un fond uni foncé', 'card not found: retake on a plain dark background')) : sous}</small>
+          <span class="env-b"><label class="pilule">${tt('Photo', 'Photo')}<input type="file" accept="image/*" capture="environment" data-k="${k}" hidden></label><label class="pilule">${tt('Photothèque', 'Library')}<input type="file" accept="image/*" data-k="${k}" hidden></label></span></div></div>`;
+      ouvrirFeuille(`<h3>${tt('Examen de la carte', 'Card exam')}</h3>
+        <ul class="conseils-ph"><li><b>1</b>${tt('Sors-la du toploader ou de la pochette, à plat', 'Take it out of the toploader or sleeve, flat')}</li>
+          <li><b>2</b>${tt('Fond uni foncé, lumière douce, sans reflet', 'Plain dark background, soft light, no glare')}</li>
+          <li><b>3</b>${tt('Toute la carte, de près, bien droite', 'The whole card, close up, straight')}</li></ul>
+        ${pas('devant', tt('Le devant', 'The front'), tt('Le plus important', 'The most important'))}
+        ${pas('dos', tt('Le dos', 'The back'), tt('Coins et bords du dos', 'Back corners and edges'))}
+        ${pas('rasante', tt('La surface en lumière rasante', 'Surface in raking light'), tt('Incline la carte sous une lampe : les rayures ressortent', 'Tilt the card under a lamp: scratches show up'), true)}
+        <button class="btn" id="ex-go" ${P.devant ? '' : 'disabled'}>${tt('Analyser', 'Analyze')}</button>
+        <button class="btn ghost" id="ex-fiche">${tt('Utiliser les photos de la fiche', 'Use the card’s photos')}</button>
+        <div class="sous">${tt('Les photos d’examen restent avec l’examen ; les photos de ta fiche ne changent pas.', 'Exam photos stay with the exam; your card’s photos don’t change.')}</div>`);
+      $$('[data-k]').forEach(i => i.onchange = async (ev) => { const f = ev.target.files && ev.target.files[0], k = ev.target.dataset.k; if (!f) return;
+        $('#exs-' + k).textContent = tt('Lecture…', 'Reading…');
+        try { const ph = await reduirePhoto(f, 2400); const q0 = await qualitePhoto(ph).catch(() => ({ok: true}));
+          if (!q0.ok) { const [t, dd] = MSG_PHOTO[q0.raison] || MSG_PHOTO.floue; toast(t + ' : ' + dd, 5000); }
+          P[k] = ph; P.q[k] = k === 'rasante' ? null : coinsLocaux(await chargerImage(ph)); } catch (x) { toast(tt('Photo illisible : reprends-la', 'Unreadable photo: retake it')); }
+        peindre(); });
+      $('#ex-go').onclick = () => fin({photos: [P.devant, P.dos].filter(Boolean), quads: [P.q.devant || null, P.dos ? (P.q.dos || null) : null].slice(0, P.dos ? 2 : 1), rasante: P.rasante || null});
+      $('#ex-fiche').onclick = async () => {
+        let ph = []; try { ph = JSON.parse(c.photos_orig || c.photos || '[]'); } catch (x) {} if (!ph.length && c.photo) ph = [c.photo];
+        const qs = []; for (const u of ph.slice(0, 2)) { try { qs.push(coinsLocaux(await chargerImage(photoNet(u, 1600))) || null); } catch (x) { qs.push(null); } }
+        fin({quads: qs});
+      };
+    };
+    peindre();
+    const fond = $('#fond-feuille'); if (fond) { const obs = new MutationObserver(() => { if (fond.hidden) { obs.disconnect(); if (!fini) { fini = true; ok(null); } } }); obs.observe(fond, {attributes: true, attributeFilter: ['hidden']}); }
+  });
 }
 // -- 1er nov 2026 : la collection par sets (le % complete, les cartes qui manquent) --
 const barreSet = (pct) => `<span class="cs-b"><i style="width:${Math.max(2, Math.min(100, pct))}%"></i></span>`;
@@ -8844,6 +9007,219 @@ async function feuilleValeurColl(){
     ${!(r.hausses || []).length && !(r.baisses || []).length ? `<div class="sous">${tt('Ajoute le prix payé de tes cartes : l’app montrera ce qui monte et ce qui baisse.', 'Add what you paid for your cards: the app will show what goes up and down.')}</div>` : ''}
     <div class="sous" style="margin-top:10px">${tt('Valeurs : les ventes réelles de chaque carte, mises à jour quand tu ouvres sa fiche et chaque semaine avec l’alerte de valeur.', 'Values: each card’s real sales, refreshed when you open it and weekly with the value alert.')}</div>`;
   $$('.cv-m', z).forEach(b => b.onclick = async () => { const c = await API.carte_lire(+b.dataset.id).catch(() => null); if (c && c.id) ficheCollection(c); });
+}
+// -- 1er nov 2026 : l'assistant de soumission (PSA, TAG…). Ni PSA ni TAG n'ont d'API de soumission : l'app prepare TOUT
+// (valeurs declarees apres gradation, service, chaque carte prete a copier dans leur formulaire, emballage selon leurs regles,
+// bordereau dans l'ordre) ; la personne n'a plus qu'a recopier, emballer et envoyer.
+const PORTAILS = {PSA: 'https://www.psacard.com/en-CA', TAG: 'https://my.taggrading.com', SGC: 'https://gosgc.com', CGC: 'https://www.cgccards.com', BGS: 'https://www.beckett.com/grading'};
+// 1er nov 2026 - une fenetre qui pop au centre (formulaires en etapes). popOuvrir garde la meme fenetre d'une etape a l'autre :
+// seul le contenu glisse (anim > 0 : vers l'avant ; < 0 : vers l'arriere ; 0 : sans animation). surFermer : le X, le fond, Echap.
+function popOuvrir(html, surFermer, anim){
+  if (!$('#fond-feuille').hidden) fermerFeuille();
+  let f = $('#pop-fond');
+  const neuf = !f;
+  if (neuf) {
+    f = document.createElement('div'); f.id = 'pop-fond'; f.className = 'pop-fond';
+    f.innerHTML = '<div class="pop" role="dialog" aria-modal="true"></div>'; document.body.appendChild(f);
+    f.addEventListener('click', (e) => { if (e.target === f && f._fermer) f._fermer(); });
+    document.body.classList.add('pop-ouverte');
+  }
+  f._fermer = surFermer || popFermer;
+  const p = f.firstChild; p.innerHTML = html;
+  if (!neuf) { p.classList.remove('change'); if (anim) { void p.offsetWidth; p.classList.add('change'); } }
+  return p;
+}
+function popFermer(){
+  const f = $('#pop-fond'); if (!f) return;
+  f.removeAttribute('id'); f._fermer = null; document.body.classList.remove('pop-ouverte');
+  f.classList.add('sort'); setTimeout(() => f.remove(), 200);
+}
+document.addEventListener('keydown', (e) => { if (e.key !== 'Escape') return; const f = $('#pop-fond'); if (f && f._fermer) f._fermer(); });
+async function assistantSoumission(id, etape){
+  let k0 = 0; try { k0 = +(localStorage.getItem('lr_so_et_' + id) || 0); } catch (x) {}
+  let k = etape != null ? etape : k0;
+  const r = await API.soumissions_liste().catch(() => ({}));
+  const x = ((r && r.soumissions) || []).find(s => s.id === id); if (!x) { toast(tt('Soumission introuvable', 'Submission not found')); return; }
+  const coches = (() => { try { return JSON.parse(localStorage.getItem('lr_so_ck_' + id) || '{}'); } catch (e) { return {}; } })();
+  const garder = () => { try { localStorage.setItem('lr_so_ck_' + id, JSON.stringify(coches)); localStorage.setItem('lr_so_et_' + id, String(k)); } catch (e) {} };
+  const ETAPES = [tt('Valeurs', 'Values'), tt('Service', 'Service'), tt('Formulaire', 'Form'), tt('Emballage', 'Packing'), tt('Envoi', 'Shipping')];
+  const PSA = x.compagnie === 'PSA';
+  const total = () => x.cartes.reduce((a, c) => a + (nb(c.valeur_declaree) || 0), 0);
+  let dir = 0, fini = false;
+  const peindre = () => {
+    garder();
+    let corps = '';
+    if (k === 0) corps = `<div class="sous">${PSA ? tt('PSA demande la valeur de chaque carte APRÈS gradation (« valeur assurée »). Trop basse : PSA facture le bon niveau de service ou renvoie la carte non gradée.', 'PSA asks for each card’s value AFTER grading (“insured value”). Too low: PSA charges the right service level or returns the card ungraded.')
+        : tt('La valeur déclarée de chaque carte après gradation (assurance et niveau de service).', 'Each card’s declared value after grading (insurance and service level).')}</div>
+      <button class="pilule" id="sa-est">${tt('Estimer avec les ventes de cartes gradées', 'Estimate from graded card sales')}</button>
+      <div class="liste">${x.cartes.map((c, i) => `<div class="rangee sa-v"><span class="milieu"><span class="nom">${i + 1}. ${esc(c.joueur || titreCourt(c.titre) || '')}</span>
+        <span class="sous">${c.etat ? tt('état estimé ', 'estimated ') + String(c.etat.min).replace('.', ',') + (c.etat.max !== c.etat.min ? '–' + String(c.etat.max).replace('.', ',') : '') : `<a href="#" data-ex="${c.id}">${tt('pas encore examinée', 'not examined yet')}</a>`} · ${tt('raw ', 'raw ')}${c.valeur ? argentCourt(c.valeur) : '—'}<span id="sa-s${c.id}"></span></span></span>
+        <label class="sa-in">$<input type="number" inputmode="decimal" step="any" data-v="${c.id}" value="${c.valeur_declaree ?? ''}"></label></div>`).join('')}</div>
+      <div class="so-bas"><span>${tt('Total déclaré', 'Total declared')} <b id="sa-tot">${argent(total(), 0)}</b></span></div>`;
+    if (k === 1) corps = `<div class="sous">${tt('Compagnie', 'Company')}</div><div class="chips" id="sa-cie">${COMPAGNIES.filter(c => c !== 'Autre').map(c => `<button class="chip ${x.compagnie === c ? 'on' : ''}" data-v="${c}">${c}</button>`).join('')}</div>
+      ${PSA ? `<div class="sous">${tt('Façon de soumettre', 'How to submit')}</div><div class="liste">
+        <button class="acc-pil sa-mode ${x.mode !== 'classique' ? 'on' : ''}" data-mode="assistee"><span class="ap-ic"><b>A</b></span><span class="ap-t">${tt('Assistée (recommandé)', 'Assisted (recommended)')}<small>${tt('PSA choisit le niveau de chaque carte selon sa valeur : le plus simple', 'PSA picks each card’s level from its value: the simplest')}</small></span>${x.mode !== 'classique' ? '<i>✓</i>' : '<i></i>'}</button>
+        <button class="acc-pil sa-mode ${x.mode === 'classique' ? 'on' : ''}" data-mode="classique"><span class="ap-ic"><b>C</b></span><span class="ap-t">${tt('Classique', 'Classic')}<small>${tt('Tu choisis le niveau de service et la couverture', 'You pick the service level and coverage')}</small></span>${x.mode === 'classique' ? '<i>✓</i>' : '<i></i>'}</button></div>` : ''}
+      <label>${tt('Niveau de service', 'Service level')}<input class="champ" id="sa-serv" value="${esc(x.service || '')}" placeholder="${PSA && x.mode !== 'classique' ? tt('choisi par PSA', 'picked by PSA') : 'Value, Regular, Express…'}"></label>
+      <div class="grille-champs"><label>${tt('Coût par carte ($)', 'Cost per card ($)')}<input class="champ" id="sa-cout" type="number" inputmode="decimal" step="any" value="${x.cout_carte ?? ''}"></label>
+        <label>${tt('Retour prévu', 'Expected back')}<input class="champ" id="sa-ret" type="date" value="${esc(x.retour_prevu || '')}"></label></div>
+      <div class="sous">${tt('Les prix et les délais changent souvent : vérifie la grille actuelle sur le site de la compagnie.', 'Prices and turnaround change often: check the current chart on the company’s site.')}</div>`;
+    if (k === 2) corps = `<div class="sous">${tt(`Ouvre ${x.compagnie}, crée la soumission, puis ajoute les cartes DANS CET ORDRE. Touche une carte pour copier sa description, coche-la quand elle est entrée.`, `Open ${x.compagnie}, create the submission, then add the cards IN THIS ORDER. Tap a card to copy its description, tick it once entered.`)}</div>
+      ${PORTAILS[x.compagnie] ? `<a class="btn" href="${PORTAILS[x.compagnie]}" target="_blank" rel="noopener">${tt('Ouvrir ', 'Open ')}${esc(x.compagnie)} ↗</a>` : ''}
+      <div class="liste sa-cp">${x.cartes.map((c, i) => `<div class="rangee ${coches['f' + c.id] ? 'a' : ''}"><button class="sa-ck ${coches['f' + c.id] ? 'on' : ''}" data-ck="f${c.id}" aria-label="${esc(tt('Entrée', 'Entered'))}">${coches['f' + c.id] ? '✓' : i + 1}</button>
+        <button class="milieu sa-copie" data-cp="${i}"><span class="nom">${esc(c.texte || '')}</span><span class="sous">${tt('valeur ', 'value ')}${c.valeur_declaree ? argent(c.valeur_declaree, 0) : '—'} · ${tt('copier', 'copy')}</span></button></div>`).join('')}</div>
+      <button class="pilule" id="sa-tout">${tt('Tout copier', 'Copy all')}</button>
+      <label>${tt('Numéro de soumission', 'Submission number')}<input class="champ" id="sa-num" value="${esc(x.numero || '')}" placeholder="${esc(tt('donné par ' + x.compagnie, 'given by ' + x.compagnie))}"></label>`;
+    if (k === 3) { const L = PSA ? [
+        tt('Chaque carte dans une pochette souple transparente (penny sleeve)', 'Each card in a clear penny sleeve'),
+        tt('Puis dans un étui semi-rigide (Card Saver I) : pas de toploader, pas d’étui vissé', 'Then in a semi-rigid holder (Card Saver I): no toploader, no screw-down'),
+        tt('Rien sur les étuis : pas de ruban, d’étiquette ni de papillon', 'Nothing on the holders: no tape, labels or sticky notes'),
+        tt('Empile-les dans l’ordre du formulaire, la carte 1 sur le dessus (sinon PSA facture des frais)', 'Stack them in form order, card 1 on top (otherwise PSA charges a fee)'),
+        tt('Entre deux cartons rigides, 2 ou 3 élastiques, bien calé dans la boîte', 'Between two stiff cardboards, 2 or 3 rubber bands, snug in the box'),
+        tt('Le bordereau imprimé dans la boîte, le ruban seulement sur la boîte', 'Printed slip in the box, tape only on the box')]
+      : [tt('Suis les instructions d’emballage du courriel de confirmation de ', 'Follow the packing instructions in the confirmation email from ') + x.compagnie, tt('Empile les cartes dans l’ordre du formulaire', 'Stack the cards in form order'), tt('Le bordereau imprimé dans la boîte', 'Printed slip in the box')];
+      corps = `<div class="liste sa-emb">${L.map((t, i) => `<button class="rangee ${coches['e' + i] ? 'a' : ''}" data-ck="e${i}"><span class="sa-ck ${coches['e' + i] ? 'on' : ''}">${coches['e' + i] ? '✓' : ''}</span><span class="milieu"><span class="nom">${t}</span></span></button>`).join('')}</div>
+        <button class="pilule" id="sa-bord">${tt('Imprimer le bordereau', 'Print the packing slip')}</button>
+        ${PSA ? `<div class="sous">${tt('Règles d’emballage publiées par PSA ; en cas de doute, son guide d’expédition fait foi.', 'Packing rules published by PSA; when in doubt, its shipping guide applies.')}</div>` : ''}`; }
+    if (k === 4) corps = `<label>${tt('Numéro de soumission', 'Submission number')}<input class="champ" id="sa-num" value="${esc(x.numero || '')}"></label>
+      <label>${tt('Numéro de suivi du colis', 'Package tracking number')}<input class="champ" id="sa-suivi" value="${esc(x.suivi || '')}"></label>
+      <label>${tt('Envoyée le', 'Sent on')}<input class="champ" id="sa-env" type="date" value="${esc(auj())}"></label>
+      <div class="sous">${tt('Après l’envoi : l’app suit la soumission, t’avertit si le retour est en retard, et au retour tu entres les notes d’un coup.', 'After shipping: the app tracks the submission, warns you if it’s late, and when it’s back you enter all grades at once.')}</div>`;
+    // 1er nov 2026 (Mathieu : « un formulaire en etapes dans une fenetre qui pop, le nombre de pages en petits points en bas,
+    // le point fonce = ou on est ; a la fin un crochet vert anime ») : la fenetre centree, les points cliquables en bas
+    const pop = popOuvrir(`<button class="pop-x" id="sa-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
+      <div class="pop-tete"><span class="pop-sur">${tt('Soumission ', 'Submission ')}${esc(x.compagnie)} · ${x.n} ${tt(x.n > 1 ? 'cartes' : 'carte', x.n > 1 ? 'cards' : 'card')}</span><h3>${ETAPES[k]}</h3></div>
+      <div class="pop-corps sa-c">${corps}</div>
+      <div class="pop-pied"><div class="sa-nav">${k ? `<button class="btn ghost" id="sa-prec">${tt('Retour', 'Back')}</button>` : `<button class="btn ghost" id="sa-ann">${tt('Annuler', 'Cancel')}</button>`}
+        <button class="btn" id="sa-suiv">${k < 4 ? tt('Suivant', 'Next') : tt('C’est envoyé', 'It’s shipped')}</button></div>
+        <div class="pop-pts" role="tablist">${ETAPES.map((t, i) => `<button class="${i === k ? 'on' : ''}" data-et="${i}" role="tab" aria-selected="${i === k}" aria-label="${esc(tt('Étape ', 'Step ') + (i + 1) + ' : ' + t)}"></button>`).join('')}</div></div>`,
+      async () => { if (!fini) await sauver(collecter()); popFermer(); chargerInventaire(); }, dir);
+    pop.classList.toggle('arriere', dir < 0); dir = 0;
+    brancher();
+  };
+  const reussi = () => {
+    fini = true; vibrer();
+    popOuvrir(`<div class="pop-fini"><svg class="ok-anim" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="23"/><path d="M15.5 27.5l7 7 14-15"/></svg>
+      <h3>${tt('Soumission envoyée', 'Submission shipped')}</h3>
+      <p class="sous">${tt('On la suit pour toi : on t’avertit si le retour tarde. Au retour, tu entres les notes d’un coup.', 'We’re tracking it: we’ll warn you if it’s late. When it’s back, you enter all grades at once.')}</p>
+      <div class="sa-nav"><button class="btn ghost" id="sa-fermer">${tt('Fermer', 'Close')}</button><button class="btn" id="sa-voir">${tt('Voir le suivi', 'See tracking')}</button></div></div>`, popFermer, 1);
+    $('#sa-fermer').onclick = popFermer;
+    $('#sa-voir').onclick = () => { popFermer(); feuilleSoumission(id); };
+  };
+  const sauver = async (d) => { const rr = await API.soumission_maj(id, d).catch(e => ({ok:false, erreur:e.message})); if (!rr.ok) { toast(rr.erreur || 'Erreur'); return false; } return true; };
+  const collecter = () => {
+    const d = {};
+    if (k === 0) { d.valeurs = {}; $$('[data-v]').forEach(i => { d.valeurs[i.dataset.v] = i.value; const c = x.cartes.find(c => String(c.id) === i.dataset.v); if (c) c.valeur_declaree = nb(i.value); }); }
+    if (k === 1) { d.compagnie = x.compagnie; d.mode = x.mode || 'assistee'; d.service = val('sa-serv'); d.cout_carte = val('sa-cout'); d.retour_prevu = val('sa-ret'); Object.assign(x, {service: d.service, cout_carte: nb(d.cout_carte), retour_prevu: d.retour_prevu}); }
+    if (k === 2 || k === 4) { if ($('#sa-num')) { d.numero = val('sa-num'); x.numero = d.numero; } }
+    if (k === 4) { d.suivi = val('sa-suivi'); d.envoyee_le = val('sa-env'); d.envoyer = true; }
+    return d;
+  };
+  const brancher = () => {
+    $$('.pop-pts [data-et]').forEach(li => li.onclick = async () => { const n = +li.dataset.et; if (n === k) return; if (await sauver(collecter())) { dir = n > k ? 1 : -1; k = n; peindre(); } });
+    $('#sa-x').onclick = () => { const f = $('#pop-fond'); if (f && f._fermer) f._fermer(); };
+    const p = $('#sa-prec'); if (p) p.onclick = async () => { if (await sauver(collecter())) { dir = -1; k--; peindre(); } };
+    const a = $('#sa-ann'); if (a) a.onclick = async () => { if (await essai(API.soumission_annuler(id), tt('Soumission annulée', 'Submission cancelled'))) { fini = true; popFermer(); chargerInventaire(); feuilleSoumissions(); } };
+    $('#sa-suiv').onclick = async () => {
+      if (k === 4 && !val('sa-suivi') && !val('sa-num')) { toast(tt('Entre au moins le numéro de soumission ou de suivi', 'Enter at least the submission or tracking number')); return; }
+      if (!await sauver(collecter())) return;
+      if (k < 4) { dir = 1; k++; peindre(); return; }
+      try { localStorage.removeItem('lr_so_ck_' + id); localStorage.removeItem('lr_so_et_' + id); } catch (e) {}
+      chargerInventaire(); reussi();
+    };
+    $$('[data-v]').forEach(i => i.oninput = () => { const c = x.cartes.find(c => String(c.id) === i.dataset.v); if (c) c.valeur_declaree = nb(i.value); const t = $('#sa-tot'); if (t) t.textContent = argent(total(), 0); });
+    $$('[data-ex]').forEach(l => l.onclick = async (ev) => { ev.preventDefault(); await sauver(collecter()); const c = await API.carte_lire(+l.dataset.ex).catch(() => null); if (c && c.id) { fini = true; popFermer(); ficheCollection(c); } });
+    const es = $('#sa-est'); if (es) es.onclick = async () => { es.disabled = true; es.textContent = tt('Recherche des ventes gradées…', 'Looking up graded sales…');
+      for (const c of x.cartes) {
+        const n = c.etat ? c.etat.max : null, rr = await API.valeur_gradee(c.id, n, x.compagnie).catch(() => null), sp = $('#sa-s' + c.id), inp = $(`[data-v="${c.id}"]`);
+        if (rr && rr.ok && rr.valeur) { if (inp) inp.value = Math.round(rr.valeur); c.valeur_declaree = Math.round(rr.valeur); if (sp) sp.textContent = ` · ${x.compagnie} ${rr.note} : ${argentCourt(rr.valeur)} (${rr.n} ${tt('ventes', 'sales')})`; }
+        else if (sp) sp.textContent = ` · ${tt('pas assez de ventes gradées : garde ton estimation', 'not enough graded sales: keep your estimate')}`;
+      }
+      const t = $('#sa-tot'); if (t) t.textContent = argent(total(), 0); es.textContent = tt('Valeurs estimées', 'Values estimated'); };
+    $$('#sa-cie [data-v]').forEach(b => b.onclick = () => { x.compagnie = b.dataset.v; vibrer(); peindre(); });
+    $$('[data-mode]').forEach(b => b.onclick = () => { x.mode = b.dataset.mode; vibrer(); peindre(); });
+    $$('[data-ck]').forEach(b => b.onclick = () => { coches[b.dataset.ck] = !coches[b.dataset.ck]; vibrer(); peindre(); });
+    const copier = async (t) => { try { await navigator.clipboard.writeText(t); toast(tt('Copié', 'Copied'), 1200); } catch (e) { toast(tt('Copie impossible ici', 'Copy not possible here')); } };
+    $$('[data-cp]').forEach(b => b.onclick = () => { const c = x.cartes[+b.dataset.cp]; copier(c.texte || ''); coches['f' + c.id] = true; garder(); const bt = b.parentElement.querySelector('.sa-ck'); if (bt) { bt.classList.add('on'); bt.textContent = '✓'; } });
+    const tout = $('#sa-tout'); if (tout) tout.onclick = () => copier(x.cartes.map((c, i) => `${i + 1}. ${c.texte}${c.valeur_declaree ? ' — ' + Math.round(c.valeur_declaree) + ' $' : ''}`).join('\n'));
+    const bo = $('#sa-bord'); if (bo) bo.onclick = () => imprimerBordereau(x);
+  };
+  peindre();
+}
+// 1er nov 2026 (Mathieu : « une grille pour montrer comment le centering a ete evalue, comme un outil de centrage ») : la
+// carte redressee, ses aretes, les 4 lignes du cadre imprime trouvees par l'app, le ratio de chaque axe et la note PSA que ce
+// centrage permet. Les lignes se deplacent au doigt (carte sans bordure nette, ou pour verifier) ; l'ajustement est garde.
+const TOL_DEVANT = [[55, 10], [60, 9], [65, 8], [70, 7], [80, 6], [85, 5], [90, 4]], TOL_DOS = [[75, 10], [90, 9]];
+function voirCentrage(e, cid, apres){
+  const vues = e.centrage_vue || {}, faces = ['devant', 'dos'].filter(f => vues[f] && vues[f].img);
+  if (!faces.length) { toast(tt('Pas de vue redressée : refais l’examen', 'No straightened view: redo the exam')); return; }
+  let face = faces[0];
+  const o = document.createElement('div'); o.className = 'vd cg';
+  document.body.appendChild(o);
+  const fermer = () => o.remove();
+  const peindre = () => {
+    const v = vues[face], m = {l: v.l ?? 0.06, r: v.r ?? 0.06, t: v.t ?? 0.06, b: v.b ?? 0.06}, auto = v.l != null || v.t != null;
+    const tol = face === 'dos' ? TOL_DOS : TOL_DEVANT;
+    const rat = (a, c) => { const g = Math.round(100 * Math.max(a, c) / ((a + c) || 1)); return [g, 100 - g]; };
+    const note = (g) => (tol.find(([lim]) => g <= lim) || [0, face === 'dos' ? 8 : 3])[1];
+    const lab = () => { const x = rat(m.l, m.r), y = rat(m.t, m.b), n = Math.min(note(x[0]), note(y[0]));
+      return `<div class="cg-r"><span>${tt('Gauche / droite', 'Left / right')} <b>${x[0]}/${x[1]}</b></span><span>${tt('Haut / bas', 'Top / bottom')} <b>${y[0]}/${y[1]}</b></span>
+        <span class="cg-n ${n >= 10 ? 'vert' : n >= 9 ? 'or' : 'rouge'}">PSA ${n} ${tt('max', 'max')}</span></div>`; };
+    o.innerHTML = `<button class="vd-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
+      <h3 class="cg-h">${tt('Grille de centrage', 'Centering grid')}</h3>
+      ${faces.length > 1 ? `<div class="chips">${faces.map(f => `<button class="chip ${f === face ? 'on' : ''}" data-f="${f}">${f === 'devant' ? tt('Devant', 'Front') : tt('Dos', 'Back')}</button>`).join('')}</div>` : ''}
+      <div id="cg-lab">${lab()}</div>
+      <div class="cg-z" style="aspect-ratio:${v.ratio || 0.714}"><img src="${esc(photoNet(v.img, 1600))}" alt="">
+        <div class="cg-c v"></div><div class="cg-c h"></div>
+        <div class="cg-l v" data-k="l"><i></i></div><div class="cg-l v" data-k="r"><i></i></div><div class="cg-l h" data-k="t"><i></i></div><div class="cg-l h" data-k="b"><i></i></div>
+        <span class="cg-m" data-m="l"></span><span class="cg-m" data-m="r"></span><span class="cg-m" data-m="t"></span><span class="cg-m" data-m="b"></span></div>
+      <div class="sous">${!auto ? tt('Pas de bordure nette trouvée : glisse les 4 lignes sur le cadre imprimé de la carte.', 'No clear border found: drag the 4 lines onto the card’s printed frame.')
+        : v.manuel ? tt('Ajusté par toi. Les lignes doivent suivre le cadre imprimé.', 'Adjusted by you. The lines should follow the printed frame.')
+        : tt('Les 4 lignes : le cadre imprimé trouvé par l’app. Glisse-les pour vérifier ou corriger.', 'The 4 lines: the printed frame found by the app. Drag them to check or fix.')}
+        ${tt(face === 'dos' ? 'Dos : PSA 10 jusqu’à 75/25.' : 'Devant : PSA 10 jusqu’à 55/45, 9 jusqu’à 60/40, 8 jusqu’à 65/35.', face === 'dos' ? 'Back: PSA 10 up to 75/25.' : 'Front: PSA 10 up to 55/45, 9 up to 60/40, 8 up to 65/35.')}</div>
+      <div class="env-b"><button class="btn" id="cg-ok" hidden>${tt('Enregistrer', 'Save')}</button>${v.manuel ? `<button class="pilule" id="cg-auto">${tt('Remettre la mesure de l’app', 'Restore the app’s measure')}</button>` : ''}</div>`;
+    o.querySelector('.vd-x').onclick = fermer;
+    $$('[data-f]', o).forEach(b => b.onclick = () => { face = b.dataset.f; peindre(); });
+    const z = o.querySelector('.cg-z');
+    const poser = () => {
+      const L = {l: [m.l, 'left'], r: [1 - m.r, 'left'], t: [m.t, 'top'], b: [1 - m.b, 'top']};
+      for (const k in L) { const el = z.querySelector(`[data-k="${k}"]`); el.style[L[k][1]] = (L[k][0] * 100) + '%'; }
+      const mm = (k, txt, st) => { const el = z.querySelector(`[data-m="${k}"]`); el.textContent = txt; Object.assign(el.style, st); };
+      const tot = (a, c) => (a + c) || 1;
+      mm('l', Math.round(100 * m.l / tot(m.l, m.r)) + '%', {left: (m.l * 50) + '%', top: '50%'});
+      mm('r', Math.round(100 * m.r / tot(m.l, m.r)) + '%', {left: (100 - m.r * 50) + '%', top: '50%'});
+      mm('t', Math.round(100 * m.t / tot(m.t, m.b)) + '%', {left: '50%', top: (m.t * 50) + '%'});
+      mm('b', Math.round(100 * m.b / tot(m.t, m.b)) + '%', {left: '50%', top: (100 - m.b * 50) + '%'});
+      $('#cg-lab', o).innerHTML = lab();
+    };
+    poser();
+    let change = false;
+    $$('.cg-l', z).forEach(el => el.onpointerdown = (ev) => {
+      ev.preventDefault(); el.setPointerCapture(ev.pointerId); el.classList.add('actif');
+      const k = el.dataset.k;
+      el.onpointermove = (mv) => { const r = z.getBoundingClientRect();
+        let f = k === 'l' || k === 'r' ? (mv.clientX - r.left) / r.width : (mv.clientY - r.top) / r.height;
+        if (k === 'r' || k === 'b') f = 1 - f;
+        m[k] = Math.max(0, Math.min(0.45, f)); change = true; poser(); $('#cg-ok', o).hidden = false; };
+      el.onpointerup = () => { el.onpointermove = null; el.classList.remove('actif'); };
+    });
+    $('#cg-ok', o).onclick = async () => { const r = await essai(API.carte_centrage(cid, face, m), tt('Centrage enregistré', 'Centering saved'));
+      if (r) { Object.assign(e, r); Object.assign(vues, r.centrage_vue || {}); if (apres) apres(e); peindre(); } };
+    const ra = $('#cg-auto', o); if (ra) ra.onclick = async () => { const r = await essai(API.carte_centrage(cid, face, null));
+      if (r) { Object.assign(e, r); Object.assign(vues, r.centrage_vue || {}); if (apres) apres(e); peindre(); } };
+  };
+  peindre();
+}
+function imprimerBordereau(x){
+  const lignes = x.cartes.map((c, i) => `<tr><td>${i + 1}</td><td>${esc(c.texte || '')}</td><td class="d">${c.valeur_declaree ? Math.round(c.valeur_declaree) + ' $' : ''}</td></tr>`).join('');
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(x.compagnie)} ${esc(x.numero || '')}</title><style>body{font:12px -apple-system,Helvetica,Arial,sans-serif;margin:24px;color:#111}
+    h1{font-size:18px;margin:0 0 4px}p{margin:0 0 12px;color:#444}table{border-collapse:collapse;width:100%}td{padding:5px 6px;border-bottom:1px solid #ccc}td.d{text-align:right;white-space:nowrap}</style></head>
+    <body><h1>${esc(x.compagnie)}${x.numero ? ' · #' + esc(x.numero) : ''}${x.service ? ' · ' + esc(x.service) : ''}</h1>
+    <p>${x.n} ${tt('cartes', 'cards')} · ${tt('valeur déclarée', 'declared value')} ${Math.round(x.cartes.reduce((a, c) => a + (nb(c.valeur_declaree) || 0), 0))} $ · ${tt('dans l’ordre du formulaire, la carte 1 sur le dessus', 'in form order, card 1 on top')}</p>
+    <table>${lignes}</table></body></html>`;
+  const f = document.createElement('iframe'); f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+  document.body.appendChild(f); f.contentDocument.open(); f.contentDocument.write(html); f.contentDocument.close();
+  setTimeout(() => { try { f.contentWindow.focus(); f.contentWindow.print(); } catch (e) { toast(tt('Impression impossible ici', 'Printing not possible here')); } setTimeout(() => f.remove(), 60000); }, 300);
 }
 async function exporterCsv(texte, nom){
   try {

@@ -491,25 +491,29 @@ OUTIL_ETAT = {
         "required": ["evaluable", "notes", "note_min", "note_max", "defauts", "invisible"],
     },
 }
-SYSTEME_ETAT = """Tu es un pre-gradeur de cartes de sport, severe et honnete, comme PSA. Tu examines les photos (devant, puis dos).
+SYSTEME_ETAT = """Tu es un pre-gradeur de cartes de sport, severe, precis et honnete, comme un gradeur PSA experimente.
+Tu recois, dans l'ordre et chacune annoncee par une ligne de texte : la photo entiere du devant ; les ZOOMS de ses 4 coins (mosaique
+2 x 2 etiquetee, carte redressee, un peu de fond autour pour voir l'arete) ; les ZOOMS de ses 4 bords (bandes etiquetees) ; puis la
+meme chose pour le dos ; parfois une photo en lumiere rasante pour la surface. Les zooms sont la ou tu juges les coins et les bords.
 Regles :
-- Centrage : compare les bordures imprimees opposees (gauche/droite, haut/bas) et donne le ratio, le plus grand cote en premier
-  (50/50 parfait ; PSA 10 tolere environ 55/45 au devant et 75/25 au dos ; PSA 9 environ 60/40). Carte sans bordure
-  (pleine image, patch) : centrage vide et sous-note d'apres le cadre visible.
-- Coins : pointus et nets, ou blanchis, mous, plies. Bords : nets, ou blanchis, ebreches, entailles. Regarde les 4 coins et les 4 bords
-  de chaque photo, surtout sur les bordures foncees ou le blanchiment se voit.
-- Surface : rayures, lignes d'impression, taches, plis, bosses. Si un reflet, un etui ou la resolution empeche de juger : surface = null
-  et dis-le dans « invisible ».
-- Ne signale QUE ce que tu vois vraiment. Un defaut possible mais pas certain : mets-le quand meme dans « defauts » avec la gravite
-  « a verifier » et sa position exacte, pour que la personne sache OU regarder. Une carte dans un toploader ou une pochette :
-  dis que les bords et la surface sont partiellement caches.
-- CHAQUE sous-note sous 10 doit etre expliquee dans « explications » (pourquoi et ou) ET, si c'est un defaut, figurer dans
-  « defauts » avec sa position. Jamais une note basse sans raison.
-- x et y : la position du defaut dans l'IMAGE recue (0 a 1000), le plus precis possible, sur le coin ou le bord concerne.
-- Fourchette de note PSA prudente (ex. 8 a 9). Ne promets jamais un 10 : au mieux 9 a 10, quand rien n'est visible et que le centrage
-  est dans la tolerance du 10.
+- Centrage : si l'app te donne un CENTRAGE MESURE, utilise-le tel quel (ne le contredis pas) et note le centrage selon les tolerances
+  PSA (devant : 10 <= 55/45, 9 <= 60/40, 8 <= 65/35, 7 <= 70/30 ; dos : 10 <= 75/25, 9 <= 90/10). Sans mesure : estime-le d'apres les
+  bordures ; carte sans bordure (pleine image, patch) : centrage_gd et centrage_hb vides, et dis « non mesurable » dans l'explication.
+- Coins : dans les zooms, une pointe nette et carree = 10 ; le moindre point blanc ou arrondi sur une arete = 9 ; blanchiment visible
+  ou coin mou = 8 ; coin plie ou ecrase = 6-7. Regarde l'ARETE entre la carte et le fond.
+- Bords : dans les bandes, une arete continue = 10 ; petites taches blanches (ebrechures) = 9 ; ebrechures repetees ou entaille = 8 et moins.
+  Les bordures foncees montrent tout : sois plus severe la.
+- Surface : rayures, lignes d'impression, taches, plis, bosses (la photo rasante les revele). Si un reflet, un etui ou la resolution
+  empeche de juger : surface = null et dis-le dans « invisible ».
+- Defauts : chacun avec sa zone exacte. Utilise « a verifier » SEULEMENT si le zoom lui-meme est flou ou cache ; si le zoom est net,
+  decide (defaut ou pas). Une carte dans un toploader, une pochette ou sur un support : dis-le, les aretes sont en partie cachees.
+- COHERENCE (obligatoire) : chaque sous-note sous 10 est expliquee dans « explications » ET chaque defaut est dans « defauts ». Une
+  explication ne dit jamais « net » pour une categorie ou tu listes un defaut. La note globale ne depasse jamais la pire sous-note + 0,5.
+- Fourchette de note PSA prudente (ex. 8 a 9). Ne promets jamais un 10 : au mieux 9 a 10, quand les zooms sont nets, sans aucun
+  defaut, et le centrage dans la tolerance du 10.
+- x et y : la position du defaut dans la PHOTO ENTIERE de sa face (0 a 1000), pas dans les zooms.
 - Carte dans un slab de gradation : evaluable = false (elle est deja notee).
-- Textes courts (conseil : 25 mots max ; invisible : 12 mots max chacun).
+- Textes courts (explications : 14 mots max ; conseil : 25 mots max ; invisible : 12 mots max chacun).
 - Reponds uniquement avec l'outil « etat »."""
 
 
@@ -560,7 +564,22 @@ def _noter_etat(usage):
         _ecrire(serveur, d)
 
 
-def _nettoyer_etat(f):
+_PSA_ECHELLE = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 10]   # PSA : pas de 9,5
+_CAT_ZONE = lambda z: "coins" if z.startswith("coin") else "bords" if z.startswith("bord") else "surface" if z == "surface" else None
+_PLAFOND_GRAV = {"fort": 7.0, "moyen": 8.5, "leger": 9.0, "a verifier": 9.5}
+
+
+def _psa(v, haut=False):
+    """Une note sur l'echelle PSA (9,5 n'existe pas : vers le bas, ou 10 seulement si on arrondit vers le haut... jamais)."""
+    if v is None:
+        return None
+    return max(x for x in _PSA_ECHELLE if x <= v + 1e-9) if v < 10 else 10.0
+
+
+def _nettoyer_etat(f, centrage=None, calibration=None):
+    """La reponse du modele -> un examen COHERENT : sous-notes plafonnees par les defauts listes, centrage mesure par l'app
+    quand on l'a, note globale jamais au-dessus de la pire sous-note + 0,5, fourchette sur l'echelle PSA, calibration
+    (l'ecart moyen avec les vraies notes revenues de PSA) appliquee quand on en a assez."""
     def note(v):
         try:
             return max(1.0, min(10.0, round(float(v) * 2) / 2))
@@ -568,16 +587,6 @@ def _nettoyer_etat(f):
             return None
     n = f.get("notes") or {}
     notes = {k: note(n.get(k)) for k in ("centrage", "coins", "bords", "surface")}
-    lo, hi = note(f.get("note_min")), note(f.get("note_max"))
-    if lo and hi and hi < lo:
-        lo, hi = hi, lo
-    if lo and hi and hi - lo > 1:
-        hi = lo + 1
-    # jamais au-dessus de la pire sous-note + 1 (une carte aux coins a 7 n'est pas un 9)
-    pire = min([v for v in notes.values() if v] or [10])
-    if hi and hi > pire + 1:
-        hi = pire + 1
-        lo = min(lo or hi, hi)
     rat = lambda s: s if re.fullmatch(r"\d{2}/\d{2}", str(s or "").strip()) else ""
     defauts = []
     for d in (f.get("defauts") or [])[:12]:
@@ -589,46 +598,111 @@ def _nettoyer_etat(f):
             continue
         defauts.append({"photo": 1 if d.get("photo") == 1 else 0, "zone": d["zone"], "type": d["type"],
                         "gravite": d.get("gravite") if d.get("gravite") in ("a verifier", "leger", "moyen", "fort") else "leger", "x": x, "y": y})
+    ordre = {"fort": 0, "moyen": 1, "leger": 2, "a verifier": 3}
+    defauts.sort(key=lambda d: ordre.get(d["gravite"], 4))
+    # 1. chaque defaut plafonne la sous-note de sa categorie (un coin blanchi n'est pas un coin a 10)
+    for d in defauts:
+        k = _CAT_ZONE(d["zone"])
+        if k and notes.get(k) is not None:
+            notes[k] = min(notes[k], _PLAFOND_GRAV[d["gravite"]])
+    # 2. le centrage MESURE par l'app remplace l'estimation
+    cg, ch = rat(f.get("centrage_gd")), rat(f.get("centrage_hb"))
+    mesure = False
+    if centrage and centrage.get("devant"):
+        cg, ch = centrage["devant"].get("gd") or cg, centrage["devant"].get("hb") or ch
+        mesure = True
+    if centrage and centrage.get("note") is not None:
+        notes["centrage"] = float(centrage["note"])
+    # 3. la note globale : jamais au-dessus de la pire sous-note + 0,5 ; au plus 1 point d'ecart ; echelle PSA
+    lo, hi = note(f.get("note_min")), note(f.get("note_max"))
+    if lo and hi and hi < lo:
+        lo, hi = hi, lo
+    vals = [v for v in notes.values() if v]
+    pire = min(vals or [10])
+    if hi is None:
+        hi = pire
+    hi = min(hi, pire + 0.5)
+    lo = min(lo if lo is not None else hi - 1, hi)
+    lo = max(lo, hi - 1, pire - 1)
+    if calibration and calibration.get("n", 0) >= 15:
+        dec = max(-1.0, min(0.5, float(calibration.get("ecart") or 0)))
+        lo, hi = lo + dec, hi + dec
+    hi = _psa(min(10.0, hi))
+    lo = _psa(max(1.0, min(lo, hi)))
+    if defauts or pire < 9.5:                     # jamais « 10 » s'il reste un doute
+        hi = min(hi, 9.0)
+        lo = min(lo, hi)
+    # 4. les explications : chaque categorie avec des defauts renvoie a leurs numeros
     ex = f.get("explications") or {}
-    explications = {k: str(ex.get(k) or "").strip()[:120] for k in ("centrage", "coins", "bords", "surface")
-                    if str(ex.get(k) or "").strip() and (notes.get(k) or 10) < 10}
+    explications = {}
+    for k in ("centrage", "coins", "bords", "surface"):
+        t = str(ex.get(k) or "").strip()[:140]
+        nums = [str(i + 1) for i, d in enumerate(defauts) if _CAT_ZONE(d["zone"]) == k]
+        if nums:
+            t = (t + " " if t else "") + "(" + ("point " if len(nums) == 1 else "points ") + ", ".join(nums) + ")"
+        if k == "centrage" and mesure:
+            t = "mesuré par l’app : " + " · ".join(x for x in (cg, ch) if x) + ((" — " + t) if t else "")
+        if t and (notes.get(k) or 10) < 10:
+            explications[k] = t
     return {"evaluable": f.get("evaluable") is not False, "raison": str(f.get("raison") or "").strip()[:80],
-            "centrage_gd": rat(f.get("centrage_gd")), "centrage_hb": rat(f.get("centrage_hb")), "centrage_dos": rat(f.get("centrage_dos")),
-            "notes": notes, "note_min": lo, "note_max": hi, "defauts": defauts, "explications": explications,
-            "invisible": [str(x).strip()[:160] for x in (f.get("invisible") or [])][:4], "conseil": str(f.get("conseil") or "").strip()[:300]}
+            "centrage_gd": cg, "centrage_hb": ch, "centrage_dos": rat(f.get("centrage_dos")) or ((centrage or {}).get("dos") or {}).get("gd") or "",
+            "centrage_mesure": mesure, "notes": notes, "note_min": lo, "note_max": hi, "defauts": defauts, "explications": explications,
+            "invisible": [str(x).strip()[:160] for x in (f.get("invisible") or [])][:4], "conseil": str(f.get("conseil") or "").strip()[:300],
+            "calibre": bool(calibration and calibration.get("n", 0) >= 15)}
 
 
-def etat(photos, langue="fr"):
-    """photos : devant (et dos) -> l'etat estime. Son propre quota par mois (3 gratuit, 30 Pro), le meme plafond serveur.
-    Les photos ORIGINALES (la photo studio ajoute un fond flou et un halo autour de la carte : les bords y seraient caches)."""
+def etat(photos, langue="fr", quads=None, rasante=None, calibration=None, regles=None):
+    """photos : devant (et dos) en data URL ; quads : les 4 coins de la carte dans chaque photo (0..1000, trouves dans le
+    telephone) ; rasante : une photo en lumiere rasante (facultative). Son propre quota par mois (3 gratuit, 30 Pro)."""
+    import examen
     if not disponible():
         raise Erreur("Analyse photo pas encore activée sur ce serveur.")
-    photos = [p for p in (photos or []) if p][:MAX_PHOTOS]
+    photos = [p for p in (photos or []) if p][:2]
     if not photos:
         raise Erreur("Il faut au moins la photo du devant")
-    images = [_decoder(p) for p in photos]
+    brutes = [_decoder(p)[0] for p in photos]
+    ras = _decoder(rasante)[0] if rasante else None
     langue = "en" if str(langue or "").lower().startswith("en") else "fr"
-    h = hashlib.sha256(b"etat-v2-" + langue.encode())
-    for b, _t in images:
+    h = hashlib.sha256(b"etat-v3-" + langue.encode() + json.dumps(quads or [], sort_keys=True).encode()
+                       + json.dumps(calibration or {}, sort_keys=True).encode())
+    for b in brutes + ([ras] if ras else []):
         h.update(hashlib.sha256(b).digest())
     cle_cache = h.hexdigest()
     cache = _lire(_chemin_cache())
     if cle_cache in cache:
         return dict(cache[cle_cache], ok=True, cache=True)
     _verifier_etat()
+    if examen.disponible():
+        prep = examen.preparer(brutes, quads, ras)
+    else:
+        prep = {"images": [(("Photo 0 : le devant." if i == 0 else "Photo 1 : le dos."), b) for i, b in enumerate(brutes)], "centrage": None,
+                "note_centrage": None, "zooms": False}
     contenu = []
-    for i, (b, typ) in enumerate(images):
-        contenu.append({"type": "text", "text": "Photo 0 : le devant." if i == 0 else "Photo 1 : le dos."})
-        contenu.append({"type": "image", "source": {"type": "base64", "media_type": typ, "data": base64.b64encode(b).decode()}})
-    contenu.append({"type": "text", "text": "Evalue l'etat de cette carte : centrage, coins, bords, surface. "
+    for lib, b in prep["images"]:
+        contenu.append({"type": "text", "text": lib})
+        contenu.append({"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": base64.b64encode(b).decode()}})
+    c = prep.get("centrage") or {}
+    note_c = prep.get("note_centrage")
+    infos = []
+    if c.get("devant"):
+        infos.append("CENTRAGE MESURE par l'app (devant) : " + " ; ".join(f"{k} {v}" for k, v in (("gauche/droite", c["devant"].get("gd")),
+                                                                                                   ("haut/bas", c["devant"].get("hb"))) if v)
+                     + (f" ; dos {c['dos'].get('gd') or c['dos'].get('hb')}" if c.get("dos") else "") + (f" -> sous-note centrage {note_c}." if note_c else "."))
+    elif prep.get("zooms"):
+        infos.append("L'app n'a pas pu mesurer le centrage (pas de bordure nette) : estime-le, ou dis « non mesurable ».")
+    for r in (regles or [])[:4]:
+        infos.append(r)
+    contenu.append({"type": "text", "text": "Evalue l'etat de cette carte : centrage, coins, bords, surface. " + " ".join(infos) + " "
                     + ("Write every text field in plain English." if langue == "en" else "Ecris tous les textes en francais simple (dis « carte », jamais « card »).")})
-    r = _appeler({"model": MODELE, "max_tokens": 2200, "system": SYSTEME_ETAT, "tools": [OUTIL_ETAT],
-                  "tool_choice": {"type": "tool", "name": "etat"}, "messages": [{"role": "user", "content": contenu}]})
+    r = _appeler({"model": MODELE, "max_tokens": 2600, "system": SYSTEME_ETAT, "tools": [OUTIL_ETAT],
+                  "tool_choice": {"type": "tool", "name": "etat"}, "messages": [{"role": "user", "content": contenu}]}, timeout=95)
     _noter_etat(r.get("usage") or {})
     f = next((b.get("input") for b in r.get("content") or [] if b.get("type") == "tool_use"), None)
     if not f:
         raise Erreur("Analyse impossible : reprends la photo de plus près, sans reflet.")
-    res = _nettoyer_etat(f)
+    cent = dict(c, note=note_c) if c else None
+    res = _nettoyer_etat(f, cent, calibration)
+    res["zooms"] = bool(prep.get("zooms"))
     with _verrou:
         cache = _lire(_chemin_cache())
         cache[cle_cache] = res

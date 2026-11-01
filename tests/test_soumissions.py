@@ -31,3 +31,29 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+def test_preparation():
+    api = lockerroom.Api()
+    ids = [api.carte_sauver({"titre": f"2025-26 Upper Deck Series 1 Young Guns Prep {i} #20{i}", "joueur": f"Prep {i}", "annee": "2025-26",
+                             "marque": "Upper Deck", "set_nom": "Series 1", "parallele": "Young Guns", "numero": f"20{i}", "emplacement": "Collection",
+                             "statut": "En stock", "valeur": 40})["id"] for i in range(2)]
+    r = api.soumission_creer({"compagnie": "PSA", "cartes": ids, "preparation": True, "mode": "assistee"})
+    so = next(x for x in api.soumissions_liste()["soumissions"] if x["id"] == r["id"])
+    assert so["statut"] == "preparation" and not so["envoyee_le"] and not so["retard"]
+    assert "2025-26 Upper Deck Series 1 #200 Prep 0 Young Guns" == so["cartes"][0]["texte"], so["cartes"][0]["texte"]
+    assert json.loads(api.carte_lire(ids[0])["envoi_json"])["etape"] == "preparation"
+    assert any(a["cle"] == "a_soumettre" for a in api._actions_envois())
+    assert api.soumission_maj(r["id"], {"valeurs": {str(ids[0]): 150}, "numero": "555", "suivi": "1Z999", "envoyer": True})["ok"]
+    so = next(x for x in api.soumissions_liste()["soumissions"] if x["id"] == r["id"])
+    assert so["statut"] == "envoyee" and so["envoyee_le"] and so["valeur_declaree"] == 190 and so["suivi"] == "1Z999"
+    e = json.loads(api.carte_lire(ids[0])["envoi_json"])
+    assert "etape" not in e and e["valeur_declaree"] == 150
+    assert not api.soumission_annuler(r["id"])["ok"]
+    r2 = api.soumission_creer({"cartes": [api.carte_sauver({"titre": "x", "joueur": "Z", "emplacement": "Collection", "statut": "En stock"})["id"]], "preparation": True})
+    assert api.soumission_annuler(r2["id"])["ok"]
+    print("ok preparation")
+
+
+if __name__ == "__main__":
+    test_preparation()
