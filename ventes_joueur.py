@@ -121,7 +121,7 @@ def ventes(prod, joueur, rechercher=None):
     for v in brut:
         if not v.get("prix") or not de_ce_produit(prod, j, v.get("titre")):
             continue
-        if cartes_match._RE_GRADE.search(_plat(v.get("titre"))) and re.search(r"\b(psa|bgs|sgc|cgc|beckett)\b", _plat(v.get("titre"))):
+        if cartes_match.decoder(_plat(v.get("titre"))).get("grade"):     # 1er nov 2026 : « Beckett Sennecke » n'est pas gradee
             gradees += 1
             continue
         garde.append(v)

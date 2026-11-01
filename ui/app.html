@@ -2257,7 +2257,19 @@ button.an-attente{width:100%; text-align:left; color:var(--texte); cursor:pointe
 .fc-img{border-radius:16px; overflow:hidden; background:#111115; aspect-ratio:4/5; max-height:46vh; display:flex; align-items:center; justify-content:center; width:min(100%, calc(46vh * 0.8)); margin-inline:auto}
 .fc-img img{width:100%; height:100%; object-fit:contain}
 .fc-img.fc-2{display:flex; justify-content:flex-start; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none} .fc-img.fc-2::-webkit-scrollbar{display:none}
-.fc-img.fc-2 img{flex:0 0 100%; scroll-snap-align:center}
+.fc-img.fc-2 .fc-ph{flex:0 0 100%; scroll-snap-align:center}
+.fc-ph{position:relative; width:100%; height:100%} .fc-img .fc-ph img{width:100%; height:100%; object-fit:contain}
+.fc-pt{position:absolute; width:24px; height:24px; margin:-12px 0 0 -12px; border-radius:50%; display:grid; place-items:center; font:700 12px var(--f-cond);
+  color:#111; background:var(--or); box-shadow:0 0 0 2px rgba(0,0,0,.55), 0 0 0 5px rgba(255,255,255,.18)} .fc-pt.fort{background:var(--rouge); color:#fff} .fc-pt.leger{background:#e9e6df}
+.fc-pt.flash{animation:fcflash .9s ease 2} @keyframes fcflash{50%{transform:scale(1.6)}}
+.et{display:flex; flex-direction:column; gap:10px; padding:14px; border-radius:18px; background:var(--carte); border:1px solid var(--ligne)}
+.et-t{display:flex; align-items:baseline; gap:8px} .et-t span{font:700 11px var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--doux); flex:1}
+.et-t b{font:700 30px/1 var(--f-cond)} .et-t b.vert{color:var(--vert)} .et-t b.or{color:var(--or)} .et-t b.rouge{color:var(--rouge)} .et-t small{color:var(--doux); font-size:12px}
+.et-n{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px} .et-n div{display:flex; flex-direction:column; align-items:center; padding:8px 4px; border-radius:12px; background:rgba(255,255,255,.04)}
+.et-n span{font:700 10px var(--f-cond); letter-spacing:.1em; text-transform:uppercase; color:var(--doux)} .et-n b{font:700 20px var(--f-cond)} .et-n small{font-size:10.5px; color:var(--doux); white-space:nowrap}
+.et-d{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px} .et-d li{display:flex; align-items:center; gap:10px; font-size:14px; cursor:pointer}
+.et-d i{flex:0 0 22px; height:22px; border-radius:50%; display:grid; place-items:center; font:700 12px var(--f-cond); font-style:normal; background:rgba(255,255,255,.08)}
+.et-ok{font-size:14px; color:var(--vert)} .et-c{font-size:14px} .et-p{font-size:12px; color:var(--doux)} .et-p .lien{background:none; border:0; color:var(--acc); font:inherit; padding:0; cursor:pointer}
 .fc-pts{display:flex; justify-content:center; gap:6px; margin-top:-4px} .fc-pts i{width:6px; height:6px; border-radius:50%; background:var(--ligne)} .fc-pts i.on{background:var(--texte, #F4F2EE)}
 .fc-chiffres small{font-size:12px; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .fc-chiffres{display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); gap:8px}
@@ -8361,12 +8373,13 @@ function ficheCollection(c){
   const det = [c.annee, c.set_nom, c.parallele, c.numero ? '#' + c.numero : '', c.tirage ? '/' + c.tirage : '', c.grade].filter(Boolean).join(' · ');
   // 31 oct 2026 (Mathieu : « pourquoi on ne voit pas les deux photos ») : devant et dos, on glisse ; deux points dessous
   const phs = (ph.length ? ph : [img]).filter(u => u && photoOk(u)).slice(0, 2);
-  ouvrirFeuille(`<div class="fc">${phs.length ? `<div class="fc-img ${phs.length > 1 ? 'fc-2' : ''}" id="fc-imgs">${phs.map(u => `<img src="${esc(photoNet(u, 1600))}" alt="">`).join('')}</div>
+  ouvrirFeuille(`<div class="fc">${phs.length ? `<div class="fc-img ${phs.length > 1 ? 'fc-2' : ''}" id="fc-imgs">${phs.map((u, j) => `<div class="fc-ph" data-j="${j}"><img src="${esc(photoNet(u, 1600))}" alt=""></div>`).join('')}</div>
       ${phs.length > 1 ? `<div class="fc-pts" id="fc-pts"><i class="on"></i><i></i></div>` : ''}` : ''}
       <h3>${esc(c.joueur || titreCourt(c.titre) || tt('Carte', 'Card'))}</h3>${det ? `<div class="sous">${esc(det)}</div>` : ''}
       <div class="fc-chiffres"><div><span>${tt('Valeur', 'Value')}</span><b id="fc-val">${val_ != null ? argent(val_, 0) : '—'}</b><small id="fc-val-s">${tt('ventes réelles…', 'real sales…')}</small></div>
         <div><span>${tt('Payée', 'Paid')}</span><b>${cout != null ? argent(cout, 0) : '—'}</b></div>
         ${gain != null ? `<div><span>${tt('Gain', 'Gain')}</span><b class="${gain >= 0 ? 'vert' : 'rouge'}">${gain >= 0 ? '+' : '−'}${argent(Math.abs(gain), 0)}</b></div>` : ''}</div>
+      ${c.id && phs.length && !c.grade ? `<div id="fc-etat"></div>` : ''}
       <button class="fc-alerte" id="fc-al" role="switch" aria-checked="false" ${c.id ? '' : 'hidden'}>
         <span class="fc-al-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.cloche}</svg></span><span class="fc-al-t"><b>${tt('Alerte de valeur', 'Value alert')}</b><small id="fc-al-s">${tt('Chaque semaine : on t’avertit si elle monte ou baisse de 15 %', 'Weekly: we alert you if it goes up or down 15%')}</small></span>
         <span class="interrupteur" id="fc-al-i"><i></i></span></button>
@@ -8392,6 +8405,7 @@ function ficheCollection(c){
     $$('#fc-imgs img').forEach((im, j) => { if (out[j] && out[j] !== base[j]) im.src = out[j]; });
     const t_ = $(`#i-liste .tuile-inv[data-id="${c.id}"] .img img`); if (t_) t_.src = photoNet(r.photos[0]);
   })();
+  if ($('#fc-etat')) blocEtat(c);
   const zi = $('#fc-imgs'), pts = $('#fc-pts');
   if (zi && pts) zi.onscroll = () => { const k = Math.round(zi.scrollLeft / zi.clientWidth); $$('i', pts).forEach((e, j) => e.classList.toggle('on', j === k)); };
   // la valeur = la mediane de ses ventes reelles (meme carte), recalculee a l'ouverture (cache 3 jours cote serveur)
@@ -8416,6 +8430,61 @@ function ficheCollection(c){
   }
   $('#fc-photo').onclick = () => { fermerFeuille(); ouvrirScanner({but:'photo', cid:c.id}); };
   $('#fc-modif').onclick = () => feuilleCarte(c);
+}
+// 1er nov 2026 (Mathieu : « les cartes de la collection, on peut les noter et dire les défauts trouvés ? centrage, coins et
+// bords ») : l'état estimé d'après ses photos. Une fourchette (jamais une promesse de 10), 4 sous-notes, chaque défaut
+// numéroté sur la photo, et ce que la photo ne permet pas de voir. Gardé avec la carte.
+const LIB_ZONE = (z) => ({'coin haut-gauche': tt('Coin haut gauche', 'Top-left corner'), 'coin haut-droit': tt('Coin haut droit', 'Top-right corner'),
+  'coin bas-droit': tt('Coin bas droit', 'Bottom-right corner'), 'coin bas-gauche': tt('Coin bas gauche', 'Bottom-left corner'), 'bord haut': tt('Bord du haut', 'Top edge'),
+  'bord droit': tt('Bord droit', 'Right edge'), 'bord bas': tt('Bord du bas', 'Bottom edge'), 'bord gauche': tt('Bord gauche', 'Left edge'), surface: tt('Surface', 'Surface')})[z] || z;
+const LIB_DEFAUT = (d) => ({blanchiment: tt('blanchiment', 'whitening'), 'coin mou': tt('coin mou', 'soft corner'), 'coin plie': tt('coin plié', 'bent corner'),
+  ebrechure: tt('ébréchure', 'chipping'), entaille: tt('entaille', 'nick'), rayure: tt('rayure', 'scratch'), "ligne d'impression": tt('ligne d’impression', 'print line'),
+  tache: tt('tache', 'stain'), pli: tt('pli', 'crease'), bosse: tt('bosse', 'dent'), decentrage: tt('décentrage', 'off-center'), autre: tt('défaut', 'flaw')})[d] || d;
+const LIB_GRAV = (g) => ({leger: tt('léger', 'light'), moyen: tt('moyen', 'moderate'), fort: tt('marqué', 'heavy')})[g] || '';
+async function blocEtat(c, forcer){
+  const z = $('#fc-etat'); if (!z) return;
+  const vide = (msg) => `<button class="fc-alerte" id="fc-et-go"><span class="fc-al-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></span>
+    <span class="fc-al-t"><b>${tt('Évaluer l’état', 'Check the condition')}</b><small>${msg || tt('Centrage, coins, bords et surface d’après tes photos · 1 lecture photo', 'Centering, corners, edges and surface from your photos · 1 photo read')}</small></span><i class="fl">›</i></button>`;
+  const lancer = async () => {
+    if (!await okIA()) return;
+    z.innerHTML = `<div class="lecture"><span class="roue"></span>${tt('Examen des coins, des bords et du centrage…', 'Checking corners, edges and centering…')}</div>`;
+    const r = await API.carte_etat(c.id, true).catch(e => ({ok:false, erreur:e.message}));
+    if (!r.ok) { z.innerHTML = vide(r.erreur); brancher(); return; }
+    peindre(r);
+  };
+  const brancher = () => { const b = $('#fc-et-go'); if (b) b.onclick = () => { vibrer(); lancer(); }; };
+  const peindre = (e) => {
+    if (!e.evaluable) { z.innerHTML = vide(e.raison || tt('Photos pas assez nettes pour juger : reprends-les de plus près', 'Photos not sharp enough: retake them closer')); brancher(); return; }
+    const n = e.notes || {}, f = (v) => v == null ? '—' : String(v).replace('.', ',');
+    const cent = e.centrage_gd || e.centrage_hb ? [e.centrage_gd, e.centrage_hb].filter(Boolean).join(' · ') : '';
+    const fourch = e.note_min != null ? (e.note_max != null && e.note_max !== e.note_min ? f(e.note_min) + '–' + f(e.note_max) : f(e.note_min)) : '—';
+    const cl = (e.note_min || 0) >= 9 ? 'vert' : (e.note_min || 0) >= 7 ? 'or' : 'rouge';
+    const def = (e.defauts || []).slice(0, 6);
+    z.innerHTML = `<div class="et">
+      <div class="et-t"><span>${tt('État estimé', 'Estimated condition')}</span><b class="${cl}">${fourch}</b><small>${tt('sur 10 · photo', 'out of 10 · photo')}</small></div>
+      <div class="et-n">${[['centrage', tt('Centrage', 'Centering'), cent], ['coins', tt('Coins', 'Corners')], ['bords', tt('Bords', 'Edges')], ['surface', tt('Surface', 'Surface')]]
+        .map(([k, l, sous]) => `<div><span>${l}</span><b>${f(n[k])}</b>${sous ? `<small>${esc(sous)}</small>` : ''}</div>`).join('')}</div>
+      ${def.length ? `<ol class="et-d">${def.map((d, i) => `<li data-d="${i}"><i>${i + 1}</i><span>${esc(LIB_ZONE(d.zone))}${d.photo ? tt(' (dos)', ' (back)') : ''} · ${esc(LIB_DEFAUT(d.type))} ${esc(LIB_GRAV(d.gravite))}</span></li>`).join('')}</ol>`
+        : `<div class="et-ok">${tt('Aucun défaut visible sur les photos', 'No visible flaw on the photos')}</div>`}
+      ${e.conseil ? `<div class="et-c">${esc(e.conseil)}</div>` : ''}
+      <div class="et-p">${(e.invisible || [])[0] ? tt('Pas vérifiable : ', 'Not checkable: ') + esc(e.invisible[0]) + ' · ' : ''}${tt('Estimation sur photo, pas une gradation.', 'Photo estimate, not a grade.')} <button class="lien" id="fc-et-re">${tt('Refaire', 'Redo')}</button></div></div>`;
+    const re_ = $('#fc-et-re'); if (re_) re_.onclick = () => { vibrer(); lancer(); };
+    // les numeros sur les photos (memes photos que celles analysees)
+    $$('#fc-imgs .fc-pt').forEach(x => x.remove());
+    def.forEach((d, i) => {
+      const w = $(`#fc-imgs .fc-ph[data-j="${d.photo}"]`), im = w && w.querySelector('img'); if (!im) return;
+      const poser = () => { const W = w.clientWidth, H = w.clientHeight, nw = im.naturalWidth, nh = im.naturalHeight; if (!nw || !W) return;
+        const k = Math.min(W / nw, H / nh), ox = (W - nw * k) / 2, oy = (H - nh * k) / 2;
+        let p = w.querySelector(`.fc-pt[data-d="${i}"]`); if (!p) { p = document.createElement('span'); p.className = 'fc-pt ' + (d.gravite || ''); p.dataset.d = i; p.textContent = i + 1; w.appendChild(p); }
+        p.style.left = (ox + d.x / 1000 * nw * k) + 'px'; p.style.top = (oy + d.y / 1000 * nh * k) + 'px'; };
+      if (im.complete) poser(); else im.addEventListener('load', poser, {once: true});
+    });
+    $$('#fc-etat [data-d]').forEach(li => li.onclick = () => { const d = def[+li.dataset.d]; const zi = $('#fc-imgs'); if (zi && d) zi.scrollTo({left: d.photo * zi.clientWidth, behavior: 'smooth'});
+      const p = $(`#fc-imgs .fc-pt[data-d="${li.dataset.d}"]`); if (p) { p.classList.remove('flash'); void p.offsetWidth; p.classList.add('flash'); } });
+  };
+  const r = await API.carte_etat(c.id, null).catch(() => null);         // ce qui est garde, sans nouvelle analyse
+  if (r && r.ok && !r.aucun) peindre(r);
+  else { z.innerHTML = vide(r && r.photos_changees ? tt('Les photos ont changé : refais l’examen', 'Photos changed: check again') : ''); brancher(); }
 }
 function vendreDepuisCollection(id){
   if (S.mode !== 'vendeur') {                    // vendre = le volet vendeur ; on y passe tout seul

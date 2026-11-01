@@ -442,3 +442,133 @@ def identifier(photos):
             cache = dict(list(cache.items())[-1500:])
         _ecrire(_chemin_cache(), cache)
     return dict(res, ok=True, cache=False, cout_usd=cout)
+
+
+# -- 1er nov 2026 : l'ETAT d'une carte (pre-gradation) ---------------------------------------------------------------
+# Mathieu : « pour les cartes ajoutees a la collection, on peut les noter et dire les defauts trouves ? centrage, coins et
+# bords ? ». Une estimation sur photo, dite comme telle : une fourchette (jamais une promesse de 10), le centrage en
+# ratios, chaque defaut a sa place sur la photo, et ce que la photo ne permet pas de voir.
+_ZONES = ["coin haut-gauche", "coin haut-droit", "coin bas-droit", "coin bas-gauche", "bord haut", "bord droit", "bord bas",
+          "bord gauche", "surface"]
+_DEFAUTS = ["blanchiment", "coin mou", "coin plie", "ebrechure", "entaille", "rayure", "ligne d'impression", "tache",
+            "pli", "bosse", "decentrage", "autre"]
+OUTIL_ETAT = {
+    "name": "etat",
+    "description": "Etat physique d'une carte de sport vue sur les photos (pre-gradation).",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "evaluable": {"type": "boolean", "description": "false si les photos ne permettent pas de juger l'etat (floue, trop loin, slab, reflet partout)"},
+            "raison": {"type": "string", "description": "Si evaluable = false : pourquoi, en francais simple (8 mots max)."},
+            "centrage_gd": {"type": "string", "description": "Centrage gauche/droite du DEVANT, ex. « 55/45 » (le plus grand cote en premier), d'apres les bordures imprimees. Vide si la carte n'a pas de bordure mesurable."},
+            "centrage_hb": {"type": "string", "description": "Centrage haut/bas du DEVANT, meme format. Vide si pas mesurable."},
+            "centrage_dos": {"type": "string", "description": "Centrage du DOS (pire des deux axes), ex. « 60/40 », si le dos est fourni. Sinon vide."},
+            "notes": {"type": "object", "description": "Sous-notes sur 10 (echelle PSA/BGS, demi-points permis).",
+                      "properties": {"centrage": {"type": "number"}, "coins": {"type": "number"}, "bords": {"type": "number"},
+                                     "surface": {"type": ["number", "null"], "description": "null si la surface ne se juge pas sur ces photos"}},
+                      "required": ["centrage", "coins", "bords"]},
+            "note_min": {"type": "number", "description": "Bas de la fourchette de note globale (PSA) la plus probable."},
+            "note_max": {"type": "number", "description": "Haut de la fourchette (au plus 1 point au-dessus de note_min)."},
+            "defauts": {"type": "array", "description": "Chaque defaut VISIBLE, le plus grave d'abord. Aucun defaut invente.",
+                        "items": {"type": "object", "properties": {
+                            "photo": {"type": "integer", "description": "0 = devant, 1 = dos"},
+                            "zone": {"type": "string", "enum": _ZONES},
+                            "type": {"type": "string", "enum": _DEFAUTS},
+                            "gravite": {"type": "string", "enum": ["leger", "moyen", "fort"]},
+                            "x": {"type": "integer", "description": "Position du defaut dans l'image, 0 a 1000 (vers la droite)"},
+                            "y": {"type": "integer", "description": "Position du defaut dans l'image, 0 a 1000 (vers le bas)"}},
+                            "required": ["photo", "zone", "type", "gravite", "x", "y"]}},
+            "invisible": {"type": "array", "items": {"type": "string"},
+                          "description": "Ce que ces photos ne permettent PAS de verifier, en francais simple (ex. « fines rayures de surface : reflet »)."},
+            "conseil": {"type": "string", "description": "Une phrase : grader ou pas, et pourquoi (ex. « coins nets, centrage 55/45 : candidat au 9 »). Sans promesse."},
+        },
+        "required": ["evaluable", "notes", "note_min", "note_max", "defauts", "invisible"],
+    },
+}
+SYSTEME_ETAT = """Tu es un pre-gradeur de cartes de sport, severe et honnete, comme PSA. Tu examines les photos (devant, puis dos).
+Regles :
+- Centrage : compare les bordures imprimees opposees (gauche/droite, haut/bas) et donne le ratio, le plus grand cote en premier
+  (50/50 parfait ; PSA 10 tolere environ 55/45 au devant et 75/25 au dos ; PSA 9 environ 60/40). Carte sans bordure
+  (pleine image, patch) : centrage vide et sous-note d'apres le cadre visible.
+- Coins : pointus et nets, ou blanchis, mous, plies. Bords : nets, ou blanchis, ebreches, entailles. Regarde les 4 coins et les 4 bords
+  de chaque photo, surtout sur les bordures foncees ou le blanchiment se voit.
+- Surface : rayures, lignes d'impression, taches, plis, bosses. Si un reflet, un etui ou la resolution empeche de juger : surface = null
+  et dis-le dans « invisible ».
+- Ne signale QUE ce que tu vois vraiment ; un doute = « invisible », pas un defaut. Une carte dans un toploader ou une pochette :
+  dis que les bords et la surface sont partiellement caches.
+- Fourchette de note PSA prudente (ex. 8 a 9). Ne promets jamais un 10 : au mieux 9 a 10, quand rien n'est visible et que le centrage
+  est dans la tolerance du 10.
+- Carte dans un slab de gradation : evaluable = false (elle est deja notee).
+- Reponds uniquement avec l'outil « etat ». Textes en francais simple."""
+
+
+def _nettoyer_etat(f):
+    def note(v):
+        try:
+            return max(1.0, min(10.0, round(float(v) * 2) / 2))
+        except (TypeError, ValueError):
+            return None
+    n = f.get("notes") or {}
+    notes = {k: note(n.get(k)) for k in ("centrage", "coins", "bords", "surface")}
+    lo, hi = note(f.get("note_min")), note(f.get("note_max"))
+    if lo and hi and hi < lo:
+        lo, hi = hi, lo
+    if lo and hi and hi - lo > 1:
+        hi = lo + 1
+    # jamais au-dessus de la pire sous-note + 1 (une carte aux coins a 7 n'est pas un 9)
+    pire = min([v for v in notes.values() if v] or [10])
+    if hi and hi > pire + 1:
+        hi = pire + 1
+        lo = min(lo or hi, hi)
+    rat = lambda s: s if re.fullmatch(r"\d{2}/\d{2}", str(s or "").strip()) else ""
+    defauts = []
+    for d in (f.get("defauts") or [])[:12]:
+        if not isinstance(d, dict) or d.get("zone") not in _ZONES or d.get("type") not in _DEFAUTS:
+            continue
+        try:
+            x, y = max(0, min(1000, int(d.get("x")))), max(0, min(1000, int(d.get("y"))))
+        except (TypeError, ValueError):
+            continue
+        defauts.append({"photo": 1 if d.get("photo") == 1 else 0, "zone": d["zone"], "type": d["type"],
+                        "gravite": d.get("gravite") if d.get("gravite") in ("leger", "moyen", "fort") else "leger", "x": x, "y": y})
+    return {"evaluable": f.get("evaluable") is not False, "raison": str(f.get("raison") or "").strip()[:80],
+            "centrage_gd": rat(f.get("centrage_gd")), "centrage_hb": rat(f.get("centrage_hb")), "centrage_dos": rat(f.get("centrage_dos")),
+            "notes": notes, "note_min": lo, "note_max": hi, "defauts": defauts,
+            "invisible": [str(x).strip()[:90] for x in (f.get("invisible") or [])][:4], "conseil": str(f.get("conseil") or "").strip()[:160]}
+
+
+def etat(photos):
+    """photos : devant (et dos) -> l'etat estime. Compte comme une lecture de photo (meme quota, meme plafond, meme cache)."""
+    if not disponible():
+        raise Erreur("Analyse photo pas encore activée sur ce serveur.")
+    photos = [p for p in (photos or []) if p][:MAX_PHOTOS]
+    if not photos:
+        raise Erreur("Il faut au moins la photo du devant")
+    images = [_decoder(p) for p in photos]
+    h = hashlib.sha256(b"etat-v1")
+    for b, _t in images:
+        h.update(hashlib.sha256(b).digest())
+    cle_cache = h.hexdigest()
+    cache = _lire(_chemin_cache())
+    if cle_cache in cache:
+        return dict(cache[cle_cache], ok=True, cache=True)
+    _verifier_quotas()
+    contenu = []
+    for i, (b, typ) in enumerate(images):
+        contenu.append({"type": "text", "text": "Photo 0 : le devant." if i == 0 else "Photo 1 : le dos."})
+        contenu.append({"type": "image", "source": {"type": "base64", "media_type": typ, "data": base64.b64encode(b).decode()}})
+    contenu.append({"type": "text", "text": "Evalue l'etat de cette carte : centrage, coins, bords, surface."})
+    r = _appeler({"model": MODELE, "max_tokens": 1800, "system": SYSTEME_ETAT, "tools": [OUTIL_ETAT],
+                  "tool_choice": {"type": "tool", "name": "etat"}, "messages": [{"role": "user", "content": contenu}]})
+    _noter(r.get("usage") or {})
+    f = next((b.get("input") for b in r.get("content") or [] if b.get("type") == "tool_use"), None)
+    if not f:
+        raise Erreur("Analyse impossible : reprends la photo de plus près, sans reflet.")
+    res = _nettoyer_etat(f)
+    with _verrou:
+        cache = _lire(_chemin_cache())
+        cache[cle_cache] = res
+        if len(cache) > 2000:
+            cache = dict(list(cache.items())[-1500:])
+        _ecrire(_chemin_cache(), cache)
+    return dict(res, ok=True, cache=False)

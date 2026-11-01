@@ -57,3 +57,28 @@ assert set(eq_r[:3]) == {"PHI", "BOS", "CHI"}, eq_r[:8]
 jr = [x["nom"] for x in sorted(ra["joueurs"], key=lambda x: -(x.get("ev_recrue") or 0))]
 assert set(jr[:3]) == {"James Hagens", "Porter Martone", "Anton Frondell"}, jr[:8]
 print("OK recrues", eq_r[:4], jr[:4])
+
+
+def test_vedette_absente_des_ventes():
+    """1er nov 2026 (Mathieu : « Schaefer et Gridin sont de tres bons joueurs recherches ») : une vedette absente de
+    l'echantillon des ventes d'un sous-ensemble vaut selon sa demande, pas 0,6 x la mediane."""
+    import valeur_produit as vp, valeurs
+    vieux = (vp.de, valeurs.connu, valeurs.demande, vp.demande_recrue)
+    try:
+        prod = {"id": "t", "sous_ensembles": [{"nom": "Rookie X", "groupe": "recrue"}]}
+        vp.de = lambda pid: {"sous": {"Rookie X": {"mediane": 8.0, "joueurs": {"A B": {"m": 6, "n": 3}, "C D": {"m": 9, "n": 2},
+                                                                              "E F": {"m": 12, "n": 2}, "G H": {"m": 7, "n": 2}}}}}
+        D = {"matthew schaefer": 10.8, "a b": 0.5, "c d": 0.8, "e f": 1.5, "g h": 0.6, "joe ordinaire": 0.4}
+        valeurs.connu = lambda j: j.lower() in D
+        valeurs.demande = lambda j: D.get(j.lower(), 0.5)
+        vp.demande_recrue = lambda prod, j: None
+        assert vp.valeur(prod, "Rookie X", "Matthew Schaefer", None)[0] > 50
+        assert vp.valeur(prod, "Rookie X", "Joe Ordinaire", None)[0] < 8
+        assert vp.valeur(prod, "Rookie X", "A B", None)[0] == 6
+    finally:
+        vp.de, valeurs.connu, valeurs.demande, vp.demande_recrue = vieux
+
+
+if __name__ == "__main__":
+    test_vedette_absente_des_ventes()
+    print("ok vedette")

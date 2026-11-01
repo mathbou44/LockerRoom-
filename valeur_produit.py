@@ -131,7 +131,7 @@ def _etalons(prod):
     return out
 
 
-_RE_GRADEE = re.compile(r"\b(psa|bgs|sgc|cgc|graded|beckett|tag\s*\d|hga|ksa|gma|isa)\b", re.I)
+_RE_GRADEE = re.compile(r"\b(psa|bgs|sgc|cgc|graded|beckett\s*(?:\d|gem|graded|black)|tag\s*\d|hga|ksa|gma|isa\s*\d)\b", re.I)   # « Beckett Sennecke » : un prenom
 _RE_PAS_BASE = re.compile(r"exclusives?|high gloss|canvas|oversized|retro|outburst|clear cut|french|deluxe|green foil|"
                           r"printing plate|/\s*\d+|\b1/1\b|dazzlers?|variation|auto|signed|patch|jersey|lot\b", re.I)
 
@@ -410,7 +410,31 @@ def valeur(prod, nom_sous, joueur, defaut):
     if not e:
         return defaut, False
     if e.get("mediane"):
-        if j:                                            # une seule vente : a mi-chemin avec la mediane
-            return round((j["m"] + e["mediane"]) / 2, 2), True
-        return round(e["mediane"] * 0.6, 2), True        # joueur jamais vendu : sous la mediane (les vedettes se vendent)
+        rel = _rel_joueur(prod, nom_sous, joueur, e)
+        if j:                                            # une seule vente : a mi-chemin avec son estimation
+            return round((j["m"] + e["mediane"] * rel) / 2, 2), True
+        return round(e["mediane"] * rel, 2), True
     return defaut, False
+
+
+def _rel_joueur(prod, nom_sous, joueur, e):
+    """1er nov 2026 (Mathieu : « Schaefer et Gridin sont de tres bons joueurs recherches » : rookie ~5 $, ~9 $) : un joueur
+    absent des ventes mesurees d'un sous-ensemble valait 0,6 x la mediane, qu'il soit Schaefer ou un 4e trio. Les ventes
+    mesurees ne sont qu'un echantillon : une vedette peut y manquer. Maintenant : sa demande (l'indice SlabCoach, ou la
+    cote de ses annonces pour une recrue toute neuve) comparee a celle des joueurs vendus de ce sous-ensemble.
+    Base et inserts : a moitie (racine), comme le modele des valeurs ; recrues, autos, patchs : pleine."""
+    import valeurs
+    try:
+        d = valeurs.demande(joueur) if valeurs.connu(joueur) else demande_recrue(prod, joueur)
+    except Exception:
+        d = None
+    if not d:
+        return 0.6                                       # on ne sait rien : sous la mediane (comme avant)
+    vend = e.get("joueurs") or {}
+    refs = [valeurs.demande(k) for k in vend if valeurs.connu(k)]
+    ref = statistics.median(refs) if len(refs) >= 3 else 1.0
+    rel = d / ref if ref else d
+    g = next((x.get("groupe") for x in prod.get("sous_ensembles") or [] if x.get("nom") == nom_sous), None) or "base"
+    if g in ("base", "insert"):
+        rel = rel ** 0.5
+    return max(0.2, min(12.0, rel))

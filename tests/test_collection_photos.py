@@ -66,3 +66,19 @@ def test_double_joueur():
 if __name__ == "__main__":
     test_double_joueur()
     print("ok double joueur")
+
+
+def test_beckett_prenom():
+    """1er nov 2026 : « Beckett Sennecke » (prenom) n'est pas une gradation Beckett ; une raw ne se compare qu'a des raws."""
+    import cartes_match as cm
+    c = cm.cible_titre("2025-26 Upper Deck Beckett Sennecke Young Guns Anaheim Ducks")
+    assert c["grade"] is None and not c["veut_grade"] and "bgs" not in cm.requete_ebay(c)
+    assert cm.raisons_refus(c, "2025-26 Upper Deck Beckett Sennecke Young Guns BGS 9.5 Gem Mint #461") == ["gradée"]
+    assert cm.raisons_refus(c, "2025-26 UD Beckett Sennecke Young Guns PSA 10") == ["gradée"]
+    assert cm.raisons_refus(c, "2025-26 Upper Deck Young Guns Beckett Sennecke #461 RC Ducks") == []
+    assert cm.decoder("Bedard YG Beckett 9.5")["grade"] == {"cie": "bgs", "note": "9.5"}
+
+
+if __name__ == "__main__":
+    test_beckett_prenom()
+    print("ok beckett")

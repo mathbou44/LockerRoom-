@@ -129,14 +129,24 @@ def _annee(t):
     return 2000 + a if a < 50 else 1900 + a
 
 
+def _vrai_grade(m):
+    """1er nov 2026 (Mathieu : « dans les comps tu sors des gradees mais c'est une raw » : Beckett Sennecke Young Guns) :
+    « Beckett » est aussi un PRENOM. Sans note juste apres (Beckett 9.5), « beckett », « tag », « isa »... ne disent pas
+    qu'une carte est gradee ; « psa », « bgs », « sgc », « cgc » le disent toujours."""
+    return bool(m.group(3)) or m.group(1) in ("psa", "bgs", "sgc", "cgc")
+
+
+def _sans_grade(t):
+    return _RE_GRADE.sub(lambda m: " " if _vrai_grade(m) else m.group(0), t)
+
+
 def decoder(texte):
     """Ce que dit un titre (ou une recherche) sur la carte."""
     t = norm(texte)
-    g = _RE_GRADE.search(t)
+    g = next((m for m in _RE_GRADE.finditer(t) if _vrai_grade(m)), None)
     grade = None
     if g:
-        if g.group(3) or g.group(1) in ("psa", "bgs", "sgc", "beckett", "cgc"):
-            grade = {"cie": "bgs" if g.group(1) == "beckett" else g.group(1), "note": g.group(3)}
+        grade = {"cie": "bgs" if g.group(1) == "beckett" else g.group(1), "note": g.group(3)}
     serie = None
     for m in _RE_SERIE.finditer(t):
         txt = m.group(0)
@@ -152,7 +162,7 @@ def decoder(texte):
         if n and int(n) > 0:
             serie = int(n)
             break
-    t_sans_grade = _RE_GRADE.sub(" ", t)
+    t_sans_grade = _sans_grade(t)
     t_sans_serie = _RE_SERIE.sub(" ", t_sans_grade)
     num = None
     m = _RE_NUM.search(t_sans_serie)
@@ -177,7 +187,7 @@ def decoder(texte):
 def _mots_requis(d):
     """Les mots de la recherche qui doivent etre dans le titre (joueur, produit, insert)."""
     t = d["texte"]
-    t = _RE_GRADE.sub(" ", t)
+    t = _sans_grade(t)
     t = _RE_SERIE.sub(" ", t)
     t = _RE_NUM.sub(" ", t)
     t = _RE_ANNEE.sub(" ", t)
@@ -724,7 +734,7 @@ def sans_code_vendeur(titre):
 def identite(titre, joueur=""):
     """Les mots qui disent QUELLE carte c'est (produit, insert, sous-ensemble) -> (mots, marques)."""
     t = norm(sans_code_vendeur(titre))
-    t = _RE_GRADE.sub(" ", t)
+    t = _sans_grade(t)
     t = _RE_SERIE.sub(" ", t)
     t = _RE_NUM.sub(" ", t)
     t = _RE_ANNEE.sub(" ", t)

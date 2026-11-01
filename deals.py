@@ -206,7 +206,7 @@ def bannir(item_id):
     return {"ok": True}
 
 
-REVALIDE_V = 4                   # 2 : « checklist » ; 3 : Bowman U = football ; 4 : la F1
+REVALIDE_V = 5                   # 2 : « checklist » ; 3 : Bowman U = football ; 4 : la F1 ; 5 : « Beckett » prenom (pas gradee)
 
 
 def _revalider_un(x):

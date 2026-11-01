@@ -152,7 +152,8 @@ def _connecter(chemin=None):
     cols = {r[1] for r in c.execute("PRAGMA table_info(cartes)")}
     for col, typ in (("debut", "TEXT"), ("watchers", "INTEGER"), ("categorie_ebay", "TEXT"), ("photo", "TEXT"), ("vu_actif_le", "TEXT"),
                      ("sport", "TEXT"), ("recrue", "INTEGER"), ("relique", "INTEGER"), ("cert", "TEXT"), ("photos", "TEXT"),
-                     ("vues", "INTEGER"), ("impressions", "INTEGER"), ("trafic_le", "TEXT"), ("photos_orig", "TEXT"), ("studio_v", "INTEGER")):   # 31 oct 2026 - vues des annonces
+                     ("vues", "INTEGER"), ("impressions", "INTEGER"), ("trafic_le", "TEXT"), ("photos_orig", "TEXT"), ("studio_v", "INTEGER"),
+                     ("etat_json", "TEXT"), ("etat_le", "TEXT")):            # 1er nov 2026 - l'etat estime (pre-gradation)   # 31 oct 2026 - vues des annonces
         if col not in cols:
             c.execute(f"ALTER TABLE cartes ADD COLUMN {col} {typ}")
     # 23 oct 2026 - autres sports : le sport du produit et du break (equipes de sa ligue)
@@ -2376,6 +2377,52 @@ class Api:
             except Exception:
                 pass
         return {"ok": True, "photos": refs}
+
+    def carte_etat(self, cid, forcer=False):
+        """1er nov 2026 (Mathieu : « les cartes de la collection, on peut les noter et dire les defauts trouves ? centrage,
+        coins et bords ») : l'etat estime d'apres SES photos (celles montrees : les defauts se placent dessus). Garde avec la
+        carte ; refait seulement sur demande ou si les photos ont change. Une lecture de photo (meme quota)."""
+        import base64
+        import photos_cartes
+        carte = self.carte_lire(cid)
+        if not carte:
+            return {"ok": False, "erreur": "Carte introuvable"}
+        try:
+            refs = json.loads(carte.get("photos") or "[]") or ([carte["photo"]] if carte.get("photo") else [])
+        except ValueError:
+            refs = []
+        refs = [r for r in refs if photos_cartes.chemin(r)][:2]
+        try:
+            garde = json.loads(carte.get("etat_json") or "null")
+        except ValueError:
+            garde = None
+        if garde and not forcer and garde.get("photos") == refs:
+            return {"ok": True, **garde, "le": carte.get("etat_le")}
+        if forcer is None:                     # lecture seule (l'ecran demande ce qui est garde, sans payer une analyse)
+            return {"ok": True, "aucun": True, "photos_changees": bool(garde)}
+        if not refs:
+            return {"ok": False, "erreur": "Ajoute une photo de la carte (devant, et dos si possible)"}
+        if not self.reglages_lire().get("ia_photos_ok"):
+            return {"ok": False, "erreur": "Permission de lecture par l’IA requise", "consentement_requis": True}
+        photos = []
+        for r in refs:
+            with open(photos_cartes.chemin(r), "rb") as f:
+                photos.append("data:image/jpeg;base64," + base64.b64encode(f.read()).decode())
+        try:
+            res = vision.etat(photos)
+        except vision.Erreur as e:
+            return {"ok": False, "erreur": str(e)}
+        res = {k: v for k, v in res.items() if k not in ("ok", "cache")}
+        res["photos"] = refs
+        le = _maintenant()
+        with _verrou:
+            c = self._db()
+            try:
+                c.execute("UPDATE cartes SET etat_json=?, etat_le=? WHERE id=?", (json.dumps(res, ensure_ascii=False), le, cid))
+                c.commit()
+            finally:
+                c.close()
+        return {"ok": True, **res, "le": le}
 
     def carte_supprimer(self, cid):
         import photos_cartes
