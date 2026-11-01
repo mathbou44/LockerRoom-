@@ -152,7 +152,7 @@ def _connecter(chemin=None):
     cols = {r[1] for r in c.execute("PRAGMA table_info(cartes)")}
     for col, typ in (("debut", "TEXT"), ("watchers", "INTEGER"), ("categorie_ebay", "TEXT"), ("photo", "TEXT"), ("vu_actif_le", "TEXT"),
                      ("sport", "TEXT"), ("recrue", "INTEGER"), ("relique", "INTEGER"), ("cert", "TEXT"), ("photos", "TEXT"),
-                     ("vues", "INTEGER"), ("impressions", "INTEGER"), ("trafic_le", "TEXT"), ("photos_orig", "TEXT")):   # 31 oct 2026 - vues des annonces
+                     ("vues", "INTEGER"), ("impressions", "INTEGER"), ("trafic_le", "TEXT"), ("photos_orig", "TEXT"), ("studio_v", "INTEGER")):   # 31 oct 2026 - vues des annonces
         if col not in cols:
             c.execute(f"ALTER TABLE cartes ADD COLUMN {col} {typ}")
     # 23 oct 2026 - autres sports : le sport du produit et du break (equipes de sa ligue)
@@ -258,6 +258,9 @@ def _niveau(resume, info):
     return "gold" if (resume or {}).get("pro") else "bronze"
 
 LIER = {}          # 28 oct 2026 : jetons a usage unique pour relier eBay depuis l'app iPhone (jeton -> (compte, le))
+
+STUDIO_V = 2          # 31 oct 2026 : version du recadrage studio (2 : cartes couchees reconnues, carte centree)
+
 
 def popularite(cartes, maint=None):
     """31 oct 2026 - l'interet des acheteurs pour TES annonces eBay : les suivis (« j'aime » / watchers) et les vues (30 j).
@@ -2118,7 +2121,7 @@ class Api:
     # -- inventaire -------------------------------------------------------------------------------
     CHAMPS_CARTE = ("titre", "joueur", "annee", "marque", "set_nom", "numero", "parallele", "tirage", "auto", "grade", "equipe",
                     "cout", "valeur", "prix_demande", "emplacement", "statut", "item_number", "sku", "consignataire_id", "source",
-                    "note", "client_id", "sport", "recrue", "relique", "cert", "photo", "photos", "photos_orig")
+                    "note", "client_id", "sport", "recrue", "relique", "cert", "photo", "photos", "photos_orig", "studio_v")
 
     def inventaire_liste(self, filtres=None):
         f = filtres or {}
@@ -2276,7 +2279,7 @@ class Api:
         studio) entre dans l'inventaire (En stock), prete a publier plus tard d'un tap. Rien ne part chez eBay."""
         import photos_cartes
         d = dict(d or {})
-        carte = {k: v for k, v in (d.get("carte") or {}).items() if k in self.CHAMPS_CARTE and k not in ("id", "photo", "photos", "photos_orig", "statut")}
+        carte = {k: v for k, v in (d.get("carte") or {}).items() if k in self.CHAMPS_CARTE and k not in ("id", "photo", "photos", "photos_orig", "studio_v", "statut")}
         try:
             refs = photos_cartes.sauver(d.get("photos") or [])
             # 31 oct 2026 (Mathieu : « les photos pas deja modifiees comme dans seller ») : on montre la photo studio ;
@@ -2288,7 +2291,7 @@ class Api:
         titre = re.sub(r"\s+", " ", str(d.get("titre") or "")).strip()[:80]
         champs = {**carte, "titre": titre or None, "prix_demande": _float(d.get("prix")), "cout": _float(d.get("cout")),
                   "photo": refs[0] if refs else None, "photos": json.dumps(refs) if refs else None,
-                  "photos_orig": json.dumps(refs_o) if refs_o else None}
+                  "photos_orig": json.dumps(refs_o) if refs_o else None, "studio_v": STUDIO_V if refs_o else None}
         if d.get("cid"):
             champs["id"] = d["cid"]
         else:
@@ -2337,23 +2340,26 @@ class Api:
                 pass
         return {"ok": True, "photo": nouv[0], "photos": nouv}
 
-    def carte_photos_studio(self, cid, photos):
-        """31 oct 2026 (Mathieu : « la photo est pas centree ») : les cartes gardees AVANT la photo studio en collection.
-        L'ecran recadre la photo dans le telephone (carte trouvee, redressee, centree) et l'envoie ici, une seule fois :
-        la photo studio est montree, l'originale est gardee a cote (rien n'est perdu)."""
+    def carte_photos_studio(self, cid, photos, v=None):
+        """31 oct 2026 (Mathieu : « la photo est pas centree », puis « mauvais cropping de la photo de face ») : les cartes
+        gardees avant la photo studio, ou recadrees par une version plus ancienne du recadrage (studio_v). L'ecran recadre
+        dans le telephone A PARTIR DES ORIGINALES et envoie le resultat ici ; les originales restent gardees a cote."""
         import photos_cartes
+        v = int(v or 1)
         carte = self.carte_lire(cid)
         if not carte:
             return {"ok": False, "erreur": "Carte introuvable"}
-        if carte.get("photos_orig"):
+        if carte.get("photos_orig") and int(carte.get("studio_v") or 0) >= v:
             return {"ok": True, "deja": True}
+        lire = lambda k: (lambda x: x if isinstance(x, list) else [])(json.loads(carte.get(k) or "[]"))
         try:
-            avant = json.loads(carte.get("photos") or "[]")
+            avant, orig = lire("photos"), lire("photos_orig")
         except ValueError:
-            avant = []
-        avant = avant if isinstance(avant, list) and avant else ([carte["photo"]] if carte.get("photo") else [])
-        photos = list(photos or [])[:len(avant)]
-        if not avant or not photos:
+            avant, orig = [], []
+        avant = avant or ([carte["photo"]] if carte.get("photo") else [])
+        base = orig or avant
+        photos = list(photos or [])[:len(base)]
+        if not base or not photos:
             return {"ok": False, "erreur": "Aucune photo"}
         try:
             refs = photos_cartes.sauver(photos)
@@ -2361,8 +2367,14 @@ class Api:
             return {"ok": False, "erreur": str(e)}
         if len(refs) != len(photos):
             return {"ok": False, "erreur": "Photo illisible"}
-        refs += avant[len(refs):]
-        self.carte_sauver({"id": cid, "photo": refs[0], "photos": json.dumps(refs), "photos_orig": json.dumps(avant)})
+        refs += base[len(refs):]
+        self.carte_sauver({"id": cid, "photo": refs[0], "photos": json.dumps(refs), "photos_orig": json.dumps(base), "studio_v": v})
+        vieux = [x for x in avant if x not in refs and x not in base] if orig else []      # l'ancien recadrage seulement
+        if vieux:
+            try:
+                photos_cartes.supprimer(vieux)
+            except Exception:
+                pass
         return {"ok": True, "photos": refs}
 
     def carte_supprimer(self, cid):
@@ -3624,8 +3636,8 @@ class Api:
         except Exception as e:
             return {"ok": False, "erreur": str(e)}
         vs = [v for v in (r.get("ventes") or []) if v.get("prix")]
-        if not vs:
-            return {"ok": True, "valeur": carte.get("valeur"), "n": 0}
+        if not vs:                      # rien de neuf (ou recherche indisponible) : la derniere valeur connue reste, dite comme telle
+            return {"ok": True, "valeur": carte.get("valeur"), "n": 0, "gardee": carte.get("valeur") is not None, "erreur": r.get("erreur")}
         sure, _pv = deals.valeur_sure(vs, t)
         val = sure if sure else round(statistics.median(float(v["prix"]) for v in vs), 2)
         if sure or carte.get("valeur") is None:

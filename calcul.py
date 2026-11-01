@@ -338,6 +338,11 @@ def prix_catalogue(prod, boites=1, cout_boite=0.0, marge=0.25, frais_pct=0.109, 
             d.setdefault("dist", []).append((v1, n * part))         # 25 oct 2026 : valeur de chaque carte possible
             if g == "recrue" or c.get("recrue"):                    # 31 oct 2026 : les recrues seules (leur valeur compte)
                 d.setdefault("dist_r", []).append((v1, n * part))
+                # 31 oct 2026 (Mathieu : « les Young Guns de ces joueurs se vendent bien plus cher que ca ») : la carte recrue
+                # PRINCIPALE du joueur (la plus frequente : la Young Guns de base dans Series 1/2), son vrai prix
+                rp = d.get("rec_p")
+                if not rp or n * part > rp[2]:
+                    d["rec_p"] = (nom, round(v1 + SEUIL_REVENTE, 2), n * part)
             if garder_dist:                                         # 26 oct 2026 : « comment tu as calcule » (par sous-ensemble)
                 x = d.setdefault("detail", {}).setdefault(nom, [0.0, 0.0, 0.0, False])
                 x[0] += n * part
@@ -381,6 +386,8 @@ def prix_catalogue(prod, boites=1, cout_boite=0.0, marge=0.25, frais_pct=0.109, 
                        "p_carte": round(1 - math.exp(-d.get("n", 0.0)), 3), "p_recrue": round(1 - math.exp(-d["recrues"]), 3),
                        "p_hit": round(1 - math.exp(-d["hits"]), 3), "n_attendu": round(d.get("n", 0.0), 2),
                        "chances": _chances(d.get("cats") or {}),
+                       "recrue_nom": (d.get("rec_p") or (None,))[0], "recrue_prix": (d.get("rec_p") or (None, None))[1],
+                       "p_recrue_carte": round(1 - math.exp(-(d.get("rec_p") or (0, 0, 0.0))[2]), 4),
                        **({"_dist": d.get("dist") or [], "_dist_r": d.get("dist_r") or [], "_detail": d.get("detail") or {}} if garder_dist else {})})
     places.sort(key=lambda p: (-p["prix"], p["nom"]))
     total = round(sum(p["prix"] for p in places), 2)

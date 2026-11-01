@@ -2254,7 +2254,7 @@ button.an-attente{width:100%; text-align:left; color:var(--texte); cursor:pointe
 .fen-plus[open]{gap:16px} .fen-plus .fen-comps{margin-top:6px}
 /* 28 oct 2026 : fiche d'une carte de collection */
 .fc{display:flex; flex-direction:column; gap:12px} .fc h3{margin:0}
-.fc-img{border-radius:16px; overflow:hidden; background:#111115; aspect-ratio:4/5; max-height:46vh; display:flex; align-items:center; justify-content:center}
+.fc-img{border-radius:16px; overflow:hidden; background:#111115; aspect-ratio:4/5; max-height:46vh; display:flex; align-items:center; justify-content:center; width:min(100%, calc(46vh * 0.8)); margin-inline:auto}
 .fc-img img{width:100%; height:100%; object-fit:contain}
 .fc-img.fc-2{display:flex; justify-content:flex-start; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none} .fc-img.fc-2::-webkit-scrollbar{display:none}
 .fc-img.fc-2 img{flex:0 0 100%; scroll-snap-align:center}
@@ -3474,6 +3474,7 @@ function etapesVente(){
 // vrais bords de la photo. Tout se fait dans le telephone ; l'originale reste disponible d'un tap.
 // ============================================================
 const STUDIO = {cote: 1600, qualite: 0.92};
+const STUDIO_V = 2;                  // 31 oct 2026 : version du recadrage (2 : cartes couchees, carte centree) ; meme nombre que lockerroom.STUDIO_V
 function chargerImage(src){
   return new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = ko; i.src = src; });
 }
@@ -3766,7 +3767,7 @@ function centrerCarte(cv, q){
   const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
   const bw = x1 - x0, bh = y1 - y0, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
   if (bw < 20 || bh < 20) return cv;
-  let cw = Math.max(bw * 1.25, bh * 1.25 * A);                      // le plus petit cadre qui garde de l'air autour
+  let cw = Math.max(bw * 1.14, bh * 1.14 * A);                      // le plus petit cadre qui garde de l'air autour
   const dedans = Math.min(2 * Math.min(cx, W - cx), 2 * Math.min(cy, H - cy) * A);   // le plus grand cadre centre DANS la photo
   if (dedans > cw) cw = Math.min(dedans, W);
   const ch = cw / A;
@@ -3775,8 +3776,17 @@ function centrerCarte(cv, q){
   const out = document.createElement('canvas'); out.width = ow; out.height = oh;
   const g = out.getContext('2d'); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
   const sx = cx - cw / 2, sy = cy - ch / 2;
-  if (sx < 0 || sy < 0 || sx + cw > W || sy + ch > H) g.drawImage(_flouImage(cv, W, H), 0, 0, ow, oh);   // fond pour les bouts manquants
-  g.drawImage(cv, sx, sy, cw, ch, 0, 0, ow, oh);
+  const p = Math.ceil(Math.max(0, -sx, -sy, sx + cw - W, sy + ch - H));
+  if (!p) { g.drawImage(cv, sx, sy, cw, ch, 0, 0, ow, oh); return out; }
+  // la carte pres d'un bord : la photo est prolongee de ce cote (son fond flou etire dessous, aligne), sans couture
+  const P = document.createElement('canvas'); P.width = W + 2 * p; P.height = H + 2 * p;
+  const gp = P.getContext('2d'); gp.imageSmoothingEnabled = true; gp.imageSmoothingQuality = 'high';
+  const bl = _flouImage(cv, W, H), Wp = P.width, Hp = P.height;
+  gp.drawImage(bl, 0, 0, Wp, Hp);                                                         // coins (rarement vus)
+  gp.drawImage(bl, 0, 0, 2, H, 0, p, p, H); gp.drawImage(bl, W - 2, 0, 2, H, W + p, p, p, H);     // bords : la colonne etiree
+  gp.drawImage(bl, 0, 0, W, 2, p, 0, W, p); gp.drawImage(bl, 0, H - 2, W, 2, p, H + p, W, p);     // haut et bas : la ligne etiree
+  gp.drawImage(cv, p, p);
+  g.drawImage(P, sx + p, sy + p, cw, ch, 0, 0, ow, oh);
   return out;
 }
 // la carte sans l'IA (avant de depenser une lecture) : la plus grande zone qui se detache du fond, au centre, puis les
@@ -3840,6 +3850,20 @@ function coinsBords(G){
           if (sc > ms) { ms = sc; mieux = [x0, x1, y0, y1]; } } }
     }
     if (mieux) r = {best: mieux, bs: ms};
+  } else {
+    // 31 oct 2026 (Mathieu : Demidov / Fowler Dual Patch, carte COUCHEE : la photo studio ne gardait que la moitie gauche) :
+    // le meilleur est debout ? les cadres dores imprimes DANS une carte couchee font un rectangle debout aux bords francs.
+    // Si une carte couchee le contient avec des bords encore francs (>= 60 %), c'est elle (le contour gagne sur un detail)
+    const [b0, b1, b2, b3] = r.best, t = 3 * pas; let mieux = null, ms = 0.6 * r.bs;
+    for (let y0 = m; y0 <= b2 + t; y0 += pas) for (let y1 = Math.max(y0 + 8, b3 - t); y1 < h - m; y1 += pas) {
+      if (y1 - y0 > 1.25 * (b3 - b2)) continue;
+      for (const k of [1.3, 1.36, 1.42, 1.5]) { const cw = Math.round((y1 - y0) * k);
+        if (cw < 1.15 * (b1 - b0)) continue;
+        for (let x0 = Math.max(m, b1 - t - cw); x0 <= b0 + t && x0 + cw < w - m; x0 += pas) { const x1 = x0 + cw; if (x1 < b1 - t) continue;
+          const sc = Math.sqrt(Math.sqrt(V(x0, y0, y1) * V(x1, y0, y1) * H(y0, x0, x1) * H(y1, x0, x1))) * Math.pow(cw * (y1 - y0) / (w * h), 0.2);
+          if (sc > ms) { ms = sc; mieux = [x0, x1, y0, y1]; } } }
+    }
+    if (mieux) r = {best: mieux, bs: ms};
   }
   const [x0, x1, y0, y1] = r.best, bs = r.bs;
   return {q: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], score: bs};
@@ -3847,7 +3871,7 @@ function coinsBords(G){
 function coinsLocaux(img){
   const G = grisLisse(img, 360), w = G.w, h = G.h, d = G.rgba;
   const cb = coinsBords(G);
-  if (cb) { const r = affinerCoins(G, cb.q); return r.coins.map(([x, y]) => [Math.round(x / w * 1000), Math.round(y / h * 1000)]); }
+  if (cb) { const r = affinerCoins(G, cb.q); return r.coins.map(([x, y]) => [Math.max(0, Math.min(1000, Math.round(x / w * 1000))), Math.max(0, Math.min(1000, Math.round(y / h * 1000)))]); }
   const bord = [], B = Math.max(2, Math.round(Math.min(w, h) * 0.04));
   for (let y = 0; y < h; y += 2) for (let x = 0; x < w; x += 2) if (x < B || y < B || x >= w - B || y >= h - B) { const j = (y * w + x) * 4; bord.push([d[j], d[j + 1], d[j + 2]]); }
   const med = (k) => bord.map(p => p[k]).sort((a, b) => a - b)[bord.length >> 1];
@@ -5917,7 +5941,7 @@ const TRIS_ANA = () => [
   ['hits', tt('Probabilité de hit', 'Hit probability'), tt('Probabilité d’obtenir au moins un hit : numérotée, autographe, relique ou SSP.', 'Probability of at least one hit: numbered, autograph, relic or SSP.')],
   // 30 oct 2026 (Mathieu : « mettre l'option rookie »)
   // 31 oct 2026 (Mathieu : « Hagens, Frondell, Martone, les plus recherches ») : la VALEUR des recrues, pas seulement la chance
-  ['recrue', tt('Recrues', 'Rookies'), tt('Ce que valent en moyenne les recrues que tu peux tirer (Young Guns et autres RC), selon leurs ventes réelles. Avec le prix du breaker : par dollar.', 'Average worth of the rookies you can pull (Young Guns and other RCs), from real sales. With the breaker’s price: per dollar.')],
+  ['recrue', tt('Recrues', 'Rookies'), tt('Le prix de sa carte recrue (la Young Guns : ventes réelles) et ta chance de la tirer. Le classement combine les deux, et le prix du breaker si tu l’entres.', 'The price of their rookie card (the Young Guns: real sales) and your chance of pulling it. The ranking combines both, plus the breaker’s price if you enter it.')],
   ['valeur', tt('Valeur de la place', 'Spot value'), tt('Ce que la place rapporte en moyenne, toutes cartes comprises. Avec le prix du breaker : par dollar.', 'What the spot returns on average, all cards included. With the breaker’s price: per dollar.')],
   ['argent', tt('Hits par dollar', 'Hits per dollar'), tt('Nombre de hits espérés pour chaque dollar investi.', 'Expected hits for each dollar spent.')],
   ['rentab', tt('Seuil de rentabilité', 'Break-even'), tt('Probabilité que l’ensemble des cartes couvre le prix de la place.', 'Probability that all cards together cover the spot price.')]];
@@ -6033,7 +6057,8 @@ async function rendreAnalyse(){
         ${vue === 'equipes' ? ecussonEquipe(x.cle) : vignetteJoueur(x.cle, x.equipe)}
         <span class="sl-n"><b>${esc(x.nom)}</b><span>${esc(vue === 'equipes' ? (x.vedettes || []).slice(0, 2).join(' · ') : (x.equipe || ''))} · ${
           tri === 'place' ? tt('couvre la place : ', 'covers the spot: ') + chanceTxt(x.p_carte_prix || 0) : tri === 'rentab' ? tt('rentable : ', 'break even: ') + chanceTxt(x.p_rembourse || 0)
-          : tri === 'recrue' ? (x.ev_recrue != null ? tt('recrues : ~', 'rookies: ~') + argentCourt(x.ev_recrue) : tt('recrue : ', 'rookie: ') + chanceTxt(x.p_recrue || 0))
+          : tri === 'recrue' ? (x.recrue_prix ? (/young guns/i.test(x.recrue_nom || '') ? 'YG' : tt('recrue', 'rookie')) + ' ~' + argentCourt(x.recrue_prix) + ' · ' + chanceTxt(x.p_recrue_carte || 0)
+            : x.ev_recrue != null ? tt('recrues : ~', 'rookies: ~') + argentCourt(x.ev_recrue) : tt('recrue : ', 'rookie: ') + chanceTxt(x.p_recrue || 0))
           : tri === 'valeur' ? tt('vaut ~', 'worth ~') + argentCourt(x.ev || 0)
           : tri === 'argent' ? tt('hit : ', 'hit: ') + chanceTxt(ph) + ' · ' + argentCourt(x.prix_compare || x.prix || 0) : tt('hit : ', 'hit: ') + chanceTxt(ph)}</span></span>
         <span class="score ${cl}"><b>${x.rel}</b><small>${lib}</small></span></button>
@@ -8351,18 +8376,20 @@ function ficheCollection(c){
   $('#fc-vendre').onclick = () => { fermerFeuille(); vendreDepuisCollection(c.id); };
   // 31 oct 2026 (Mathieu : « la photo est pas centrée ») : une carte gardée AVANT la photo studio en collection : on la
   // recadre ici (carte trouvée, redressée, centrée), une seule fois ; l'originale reste gardée à côté
-  if (c.id && !c.photos_orig && MODE_STUDIO && phs.length && phs.every(u => /^\/mes-photos\//.test(u))) (async () => {
+  let orig = []; try { orig = JSON.parse(c.photos_orig || '[]'); } catch (e) {}
+  const base = (orig.length ? orig : phs).slice(0, 2);
+  if (c.id && (!orig.length || (c.studio_v || 0) < STUDIO_V) && MODE_STUDIO && base.length && base.every(u => /^\/mes-photos\//.test(u))) (async () => {
     const out = []; let un = false;
-    for (const u of phs) {
+    for (const u of base) {
       try { const im = await chargerImage(u); const q = coinsLocaux(im);
         if (q) { const st = await photoStudio(u, q, {affiner: false}); out.push(st.photo); un = true; continue; } } catch (e) {}
       out.push(u);
     }
     if (!un) return;
-    const r = await API.carte_photos_studio(c.id, out).catch(() => null);
+    const r = await API.carte_photos_studio(c.id, out, STUDIO_V).catch(() => null);
     if (!r || !r.ok || !r.photos) return;
-    c.photos = JSON.stringify(r.photos); c.photos_orig = '1'; c.photo = r.photos[0];
-    $$('#fc-imgs img').forEach((im, j) => { if (out[j] && out[j] !== phs[j]) im.src = out[j]; });
+    c.photos = JSON.stringify(r.photos); c.photos_orig = JSON.stringify(base); c.studio_v = STUDIO_V; c.photo = r.photos[0];
+    $$('#fc-imgs img').forEach((im, j) => { if (out[j] && out[j] !== base[j]) im.src = out[j]; });
     const t_ = $(`#i-liste .tuile-inv[data-id="${c.id}"] .img img`); if (t_) t_.src = photoNet(r.photos[0]);
   })();
   const zi = $('#fc-imgs'), pts = $('#fc-pts');
@@ -8371,7 +8398,8 @@ function ficheCollection(c){
   if (c.id) API.carte_valeur(c.id).then(v => {
     const b_ = $('#fc-val'), s_ = $('#fc-val-s'); if (!b_ || !v || !v.ok) { if (s_) s_.textContent = ''; return; }
     if (v.valeur != null) { b_.textContent = argent(v.valeur, 0); c.valeur = v.valeur; }
-    s_.textContent = v.n ? tt('médiane · ', 'median · ') + v.n + ' ' + tt(v.n > 1 ? 'ventes' : 'vente', v.n > 1 ? 'sales' : 'sale') : tt('aucune vente récente', 'no recent sale');
+    s_.textContent = v.n ? tt('médiane · ', 'median · ') + v.n + ' ' + tt(v.n > 1 ? 'ventes' : 'vente', v.n > 1 ? 'sales' : 'sale')
+      : v.gardee ? tt('dernière valeur connue', 'last known value') : v.erreur ? tt('ventes indisponibles pour l’instant', 'sales unavailable right now') : tt('aucune vente récente', 'no recent sale');
     const t_ = $(`#i-liste .tuile-inv[data-id="${c.id}"] .p`); if (t_ && v.valeur != null) t_.textContent = argent(v.valeur, 0);
   }).catch(() => { const s_ = $('#fc-val-s'); if (s_) s_.textContent = ''; });
   // 29 oct 2026 (Mathieu : « une alarme quand la carte prend de la valeur ou descend… refresh aux semaines ») : un tap
