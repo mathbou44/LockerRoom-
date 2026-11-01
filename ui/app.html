@@ -1771,8 +1771,8 @@ body.pro .onglets a.on{color:var(--acc)}
   .nav-moi.on .moi-av{background:var(--holo)}
   .moi-av img{width:100%; height:100%; border-radius:50%; object-fit:cover; background:var(--carte); box-shadow:0 0 0 2px #18181e}
   /* ordre de la barre : vendeur Accueil, Inventaire, Vendre, Breaks, Profil ; acheteur Accueil, Deals, Valeur, Collection, Profil */
-  .onglets [data-onglet="accueil"]{order:1} .onglets [data-onglet="inventaire"]{order:2} .onglets [data-onglet="vendre"]{order:3}
-  .onglets [data-onglet="breaks"]{order:4} .onglets .nav-moi{order:9}
+  .onglets [data-onglet="accueil"]{order:1} .onglets [data-onglet="deals"]{order:2} .onglets [data-onglet="vendre"]{order:3}
+  .onglets [data-onglet="inventaire"]{order:4} .onglets [data-onglet="breaks"]{order:5} .onglets .nav-moi{order:9}   /* 1er nov 2026 : une seule barre */
   body.mode-acheteur .onglets [data-onglet="deals"]{order:2} body.mode-acheteur .onglets [data-onglet="valeur"]{order:3} body.mode-acheteur .onglets [data-onglet="inventaire"]{order:4}
   /* accueil : salutation, cercles du jour, chiffres, fil */
   .ecran.acc{grid-template-areas:"salut" "hist" "tete" "fil" "cote" "news" "plus"; gap:14px}
@@ -2262,15 +2262,41 @@ button.an-attente{width:100%; text-align:left; color:var(--texte); cursor:pointe
 .fc-pt{position:absolute; width:24px; height:24px; margin:-12px 0 0 -12px; border-radius:50%; display:grid; place-items:center; font:700 12px var(--f-cond);
   color:#111; background:var(--or); box-shadow:0 0 0 2px rgba(0,0,0,.55), 0 0 0 5px rgba(255,255,255,.18)} .fc-pt.fort{background:var(--rouge); color:#fff} .fc-pt.leger{background:#e9e6df}
 .fc-pt.flash{animation:fcflash .9s ease 2} @keyframes fcflash{50%{transform:scale(1.6)}}
-.et{display:flex; flex-direction:column; gap:10px; padding:14px; border-radius:18px; background:var(--carte); border:1px solid var(--ligne)}
-.et-t{display:flex; align-items:baseline; gap:8px} .et-t span{font:700 11px var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--doux); flex:1}
-.et-t b{font:700 30px/1 var(--f-cond)} .et-t b.vert{color:var(--vert)} .et-t b.or{color:var(--or)} .et-t b.rouge{color:var(--rouge)} .et-t small{color:var(--doux); font-size:12px}
-.et-n{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px} .et-n div{display:flex; flex-direction:column; align-items:center; padding:8px 4px; border-radius:12px; background:rgba(255,255,255,.04)}
-.et-n span{font:700 10px var(--f-cond); letter-spacing:.1em; text-transform:uppercase; color:var(--doux)} .et-n b{font:700 20px var(--f-cond)} .et-n small{font-size:10.5px; color:var(--doux); white-space:nowrap}
-.et-d{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px} .et-d li{display:flex; align-items:center; gap:10px; font-size:14px; cursor:pointer}
-.et-d i{flex:0 0 22px; height:22px; border-radius:50%; display:grid; place-items:center; font:700 12px var(--f-cond); font-style:normal; background:rgba(255,255,255,.08)}
+.et{display:flex; flex-direction:column; border-radius:18px; background:var(--carte2); overflow:hidden}
+.et .et-tete{background:none; border-radius:0} .et-ch{font-style:normal; color:var(--doux); font-size:22px; transition:transform .2s} .et.ouvert .et-ch{transform:rotate(90deg)}
+.et-sur{font-size:12px; color:var(--doux); font-weight:400}
+.et-corps{display:none; flex-direction:column; gap:12px; padding:2px 14px 14px} .et.ouvert .et-corps{display:flex}
+.fc-al-ic.et-anneau{width:52px; height:52px} .fc-al-ic b{position:relative; font:700 15px var(--f-cond); letter-spacing:-.01em}
+.et-anneau.vert b, .et-rond.vert b{color:var(--vert)} .et-anneau.or b, .et-rond.or b{color:var(--or)} .et-anneau.rouge b, .et-rond.rouge b{color:var(--rouge)}
+.et-n{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px} .et-n > div{display:flex; flex-direction:column; align-items:center; gap:5px; text-align:center}
+.fc-al-ic.et-rond{width:50px; height:50px} .fc-al-ic.et-rond b{font-size:18px}
+.et-n > div > span:not(.fc-al-ic){font:700 10.5px var(--f-cond); letter-spacing:.1em; text-transform:uppercase; color:var(--doux)} .et-n small{font-size:10.5px; color:var(--doux); white-space:nowrap; margin-top:-3px}
+.et-d{display:flex; flex-direction:column; gap:8px}
+.et-pil .ap-ic b{position:relative; font:700 15px var(--f-cond)} .et-pil .ap-t{display:flex; flex-direction:column; gap:1px} .et-pil .ap-t small{font-size:12.5px; color:var(--doux); font-weight:400}
+.et-pil.g-a-verifier .ap-t{opacity:.92} .et-pil.g-fort .ap-ic b{color:var(--rouge)} .et-pil.g-moyen .ap-ic b{color:var(--or)}
 .et-ok{font-size:14px; color:var(--vert)}
-.env-b{display:flex; flex-wrap:wrap; gap:8px} .env-b .pilule{text-decoration:none}
+.d-val{display:grid; place-items:center; text-decoration:none; margin-right:8px} .d-val svg{width:18px; height:18px}   /* 1er nov 2026 : la Valeur, depuis les Deals */
+.bk-mode{display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:5px; margin:0 0 14px; border-radius:999px; background:var(--carte); border:1px solid var(--ligne)}
+.bk-mode button{border:0; border-radius:999px; padding:11px 8px; background:none; color:var(--doux); font:700 14px var(--f-cond); letter-spacing:.06em; text-transform:uppercase; cursor:pointer}
+.bk-mode button.on{background:var(--acc); color:var(--acc-texte)}
+.env-b{display:flex; flex-wrap:wrap; gap:8px}
+.coll-act{grid-column:1/-1; display:flex; flex-wrap:wrap; gap:8px; margin-top:2px}
+.cs-p{display:flex; flex-direction:column; gap:6px; width:100%; text-align:left; padding:14px; margin-bottom:10px; border-radius:18px; background:var(--carte); border:1px solid var(--ligne); color:inherit; font:inherit; position:relative; cursor:pointer}
+.cs-p .fl, .cs-s .fl{position:absolute; right:14px; top:14px; color:var(--doux); font-style:normal}
+.cs-t{display:flex; flex-direction:column} .cs-t b{font-size:16px} .cs-t small{color:var(--doux)}
+.cs-s{display:grid; grid-template-columns:1fr auto; gap:3px 10px; font-size:13.5px; align-items:center} .cs-s em{font-style:normal; color:var(--doux); font-size:12.5px}
+.cs-s.ligne{position:relative; padding:12px 30px 12px 0; border:0; border-bottom:1px solid var(--ligne); background:none; color:inherit; font:inherit; text-align:left; width:100%; cursor:pointer}
+.cs-s.ligne .fl{top:50%; transform:translateY(-50%); right:4px}
+.cs-s.gros{font-size:16px; font-weight:700; margin:6px 0 10px}
+.cs-b{grid-column:1/-1; height:6px; border-radius:99px; background:rgba(255,255,255,.08); overflow:hidden} .cs-b i{display:block; height:100%; border-radius:99px; background:var(--acc)}
+.ck-l .rangee{gap:10px} .ck-l .rangee.a .nom{color:var(--doux)} .ck-n{flex:0 0 52px; font:700 13px var(--f-cond); color:var(--doux)}
+.cv-t{display:flex; flex-direction:column; gap:2px; margin-bottom:10px} .cv-t b{font:700 34px/1 var(--f-cond)} .cv-t span{color:var(--doux); font-size:14px}
+.cv-g{width:100%; height:170px; display:block} .cv-g .ligne{fill:none; stroke:var(--acc); stroke-width:2.5; vector-effect:non-scaling-stroke} .cv-g .aire{fill:var(--acc); opacity:.12}
+.cv-ax{display:flex; justify-content:space-between; font-size:12px; color:var(--doux); margin:2px 0 14px} .cv-vide{padding:22px 0}
+.cv-m b small{font-weight:400; color:var(--doux)}
+.so-ch .rangee{display:flex; align-items:center; gap:12px; cursor:pointer} .so-ch input{width:20px; height:20px; accent-color:var(--acc); flex:0 0 auto}
+.so-bas{position:sticky; bottom:0; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 10px 10px 16px; border-radius:18px; background:var(--fond-feuille, var(--carte))} .so-bas span{flex:1 1 auto; min-width:0; font-size:14px} .so-bas .btn{flex:0 0 auto; width:auto; margin:0; padding-inline:28px}
+.so-ret{display:flex; flex-direction:column; gap:4px; padding:8px 0; border-bottom:1px solid var(--ligne)} .env-b .pilule{text-decoration:none}
 .env{display:flex; flex-direction:column; gap:10px; padding:14px; border-radius:18px; background:var(--carte); border:1px solid var(--ligne)} .env.retard{border-color:var(--or)}
 .env-t{display:flex; flex-direction:column; gap:2px} .env-t span{font:700 11px var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--doux)} .env-t b{font-size:17px}
 .env ul{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:4px; font-size:14px} .env li{display:flex; justify-content:space-between; gap:10px}
@@ -2278,10 +2304,11 @@ button.an-attente{width:100%; text-align:left; color:var(--texte); cursor:pointe
 .et-x{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:4px; font-size:13.5px} .et-x li{display:flex; gap:8px} .et-x b{flex:0 0 auto; font-weight:700} .et-x span{color:var(--doux)}
 .et-d li em{margin-left:auto; color:var(--doux); font-style:normal} .et-d li.g-a-verifier span{color:var(--doux)} .fc-pt.g-a-verifier{background:transparent; color:#fff; box-shadow:0 0 0 2px #fff, 0 0 0 4px rgba(0,0,0,.5)}
 .fc-pt.g-fort{background:var(--rouge); color:#fff} .fc-pt.g-moyen{background:var(--or)} .fc-pt.g-leger{background:#e9e6df}
-.vd{position:fixed; inset:0; z-index:9999; background:rgba(8,8,10,.97); overflow-y:auto; padding:56px 16px 32px; display:flex; flex-direction:column; gap:14px}
-.vd-x{position:fixed; top:14px; right:14px; width:40px; height:40px; border-radius:50%; border:1px solid var(--ligne); background:var(--carte); color:#fff; display:grid; place-items:center; z-index:2}
+.vd{position:fixed; inset:0; z-index:9999; background:#08080a; overflow-y:auto; padding:calc(env(safe-area-inset-top) + 64px) 16px calc(env(safe-area-inset-bottom) + 32px); display:flex; flex-direction:column; gap:14px}
+.vd-x{position:fixed; top:calc(env(safe-area-inset-top) + 10px); right:14px; width:40px; height:40px; border-radius:50%; border:1px solid var(--ligne); background:var(--carte); color:#fff; display:grid; place-items:center; z-index:2}
 .vd-x svg{width:18px; height:18px} .vd-ph{position:relative; display:flex; justify-content:center} .vd-ph img{max-width:100%; max-height:78vh; border-radius:12px; display:block}
-.vd-l{margin-top:4px} .et-c{font-size:14px} .et-p{font-size:12px; color:var(--doux)} .et-p .lien{background:none; border:0; color:var(--acc); font:inherit; padding:0; cursor:pointer}
+.vd-l{margin-top:4px; list-style:none; padding:0; display:flex; flex-direction:column; gap:8px} .vd-l li{display:flex; align-items:center; gap:10px; font-size:14px; cursor:pointer}
+.vd-l i{flex:0 0 26px; height:26px; border-radius:50%; display:grid; place-items:center; font:700 12px var(--f-cond); font-style:normal; background:rgba(255,255,255,.08)} .et-c{font-size:14px} .et-p{font-size:12px; color:var(--doux)} .et-p .lien{background:none; border:0; color:var(--acc); font:inherit; padding:0; cursor:pointer}
 .fc-pts{display:flex; justify-content:center; gap:6px; margin-top:-4px} .fc-pts i{width:6px; height:6px; border-radius:50%; background:var(--ligne)} .fc-pts i.on{background:var(--texte, #F4F2EE)}
 .fc-chiffres small{font-size:12px; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .fc-chiffres{display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); gap:8px}
@@ -2395,12 +2422,12 @@ html[lang=en] body.sandbox::before{content:'SANDBOX eBay · test data'}
   <a class="nav-logo" href="#accueil" aria-label="Accueil"><span class="logo-lr petit"><img src="/logo_sc_gold.png" alt="" id="nav-logo-img"></span><span id="nav-logo-nom" class="a-mot"><span class="mot-sc" role="img" aria-label="SlabCoach"><b>slab</b>coach<sup>™</sup><span class="sc-tag">SPORTS CARDS</span></span></span></a><div class="nav-pref" id="nav-pref"></div>
   <div class="nav-mode" id="nav-mode"></div>
   <a href="#accueil" data-onglet="accueil"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 11 12 4l9 7v9H3z"/></svg>Accueil</a>
-  <a href="#analyse" data-onglet="breaks" data-mode="vendeur"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 11h18M8 7V4h8v3"/></svg>Breaks<span class="pastille" id="pastille-breaks" hidden></span></a>
-  <a href="#deals" data-onglet="deals" data-mode="acheteur"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>Deals<span class="pastille" id="pastille-deals" hidden></span></a>
-  <a href="#valeur" data-onglet="valeur" data-mode="acheteur"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8.5 11h5M11 8.5v5"/></svg>Valeur</a>
-  <a href="#vendre" data-onglet="vendre" data-mode="vendeur"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="3"/><circle cx="12" cy="13" r="3.5"/><path d="M8 6l1.5-2.5h5L16 6"/></svg>Vendre</a>
-  <a href="#analyse" data-onglet="analyse" data-mode="acheteur"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 11h18M8 7V4h8v3"/></svg>Breaks</a>
+  <a href="#deals" data-onglet="deals"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>Deals<span class="pastille" id="pastille-deals" hidden></span></a>
+  <a href="#valeur" data-onglet="valeur" data-mode="cache" hidden><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8.5 11h5M11 8.5v5"/></svg>Valeur</a>
+  <a href="#vendre" data-onglet="vendre"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="3"/><circle cx="12" cy="13" r="3.5"/><path d="M8 6l1.5-2.5h5L16 6"/></svg>Vendre</a>
   <a href="#inventaire" data-onglet="inventaire"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="6" y="3" width="13" height="17" rx="2"/><path d="M3 7v12a2 2 0 0 0 2 2h10"/></svg>Inventaire</a>
+  <a href="#analyse" data-onglet="analyse" data-mode="cache" hidden><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 11h18M8 7V4h8v3"/></svg>Breaks</a>
+  <a href="#analyse" data-onglet="breaks"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 11h18M8 7V4h8v3"/></svg>Breaks<span class="pastille" id="pastille-breaks" hidden></span></a>
   <a href="#comptoir" data-onglet="comptoir" data-mode="vendeur"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9h18l-1.5 11h-15z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg>Comptoir</a>
   <a href="#bilan" data-onglet="bilan" data-mode="vendeur"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Bilan</a>
   <a href="#alertes" data-onglet="alertes" class="nav-alertes" data-alertes><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>Alertes<span class="cloche-n" hidden></span></a>
@@ -3107,12 +3134,10 @@ function route(){
   const h = (location.hash || '#accueil').slice(1);
   let [ecran, arg] = h.split('/');
   // 22 oct 2026 - deux volets : la 1re ouverture demande le volet ; « Accueil » d'un acheteur = ses deals
-  if (!S.mode && ecran !== 'reglages') { vueChoixMode(); return; }
-  if (S.mode === 'vendeur' && ['deals', 'valeur'].includes(ecran)) { ecran = 'accueil'; history.replaceState(null, '', '#accueil'); }
-  if (S.mode === 'acheteur' && ['vendre', 'comptoir', 'bilan'].includes(ecran) && !(ecran === 'vendre' && /^collection/.test(arg || ''))) { ecran = 'accueil'; history.replaceState(null, '', '#accueil'); }
+  // 1er nov 2026 : une seule app ; plus de redirection selon un volet
   $$('.onglets a').forEach(a => {
     const o = a.dataset.onglet;
-    a.classList.toggle('on', o === ecran || (o === 'breaks' && ['break', 'analyse'].includes(ecran)) || (o === 'analyse' && ecran === 'analyse') || (o === (S.mode === 'acheteur' ? 'deals' : 'accueil') && ecran === 'sante'));
+    a.classList.toggle('on', o === ecran || (o === 'breaks' && ['break', 'analyse'].includes(ecran)) || (o === 'analyse' && ecran === 'analyse') || (o === 'accueil' && ecran === 'sante') || (o === 'deals' && ecran === 'valeur'));
   });
   if (!$('#fond-feuille').hidden) fermerFeuille();
   navDebut(S.ecranCourant === ecran && !!arg);              // meme ecran, autre onglet (Admin, Breaks, Sante...) : navigation douce
@@ -3269,11 +3294,18 @@ API.activites().then(appliquerActivites).catch(() => {});
 const ICO_MODE = {
   vendeur:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M3 9h18l-1.5 11h-15z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg>',
   acheteur:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>'};
-try { S.mode = localStorage.getItem('lr_mode') || ''; } catch (e) { S.mode = ''; }
-reglages().then(r => {
-  const m = (r && r.mode) || '';
-  if (m !== S.mode) { S.mode = m; try { localStorage.setItem('lr_mode', m); } catch (e) {} appliquerActivites(); route(); }
-}).catch(() => {});
+// 1er nov 2026 (Mathieu : « l'onglet seller seulement dans les breaks, bien visible en haut : c'est la seule place que ca
+// change ») : UNE seule app. Plus de bouton Acheteur / Vendeur en haut ; tout est la (Deals, Vendre, Inventaire, Breaks).
+// Le choix « J'achete une place / Je fais un break » est en haut de l'onglet Breaks (S.breakMode).
+S.mode = 'vendeur';
+try { S.breakMode = localStorage.getItem('lr_break_mode') || (localStorage.getItem('lr_mode') === 'acheteur' ? 'acheteur' : 'breaker'); } catch (e) { S.breakMode = 'breaker'; }
+const breakVendeur = () => S.breakMode !== 'acheteur';
+function choisirBreakMode(m){
+  if (m === S.breakMode) return;
+  S.breakMode = m; try { localStorage.setItem('lr_break_mode', m); } catch (e) {}
+  if (!$('#fond-feuille').hidden) fermerFeuille();
+  vibrer(); vueAnalyse(S.ana && S.ana.produit ? encodeURIComponent(S.ana.produit) : undefined);
+}
 function switchMode(){
   return `<div class="mode-switch" role="tablist" aria-label="Volet">${['vendeur', 'acheteur'].map(m => `<button role="tab" data-mode-choix="${m}" class="${S.mode === m ? 'on' : ''}">${ICO_MODE[m]}${m === 'vendeur' ? 'Vendeur' : 'Acheteur'}</button>`).join('')}</div>`;
 }
@@ -3287,13 +3319,13 @@ function majBarreMode(){
     const perso = nomMarque() !== 'SlabCoach';
     b.innerHTML = voir ? `<button class="rond haut-plus" id="h-plus" aria-label="${esc(tt('Ajouter', 'Add'))}">${ICONES.plus}</button>
       <div class="haut-nom" id="h-nom"><span class="haut-ligne">${perso && S.logo ? `<img class="haut-logo" src="${esc(S.logo)}" alt="">` : LOGO_HOLO('haut-logo')}<span class="haut-mot">${perso ? esc(nomMarque()) : '<b>slab</b>coach'}</span></span>
-        <span class="haut-bascule" role="tablist" aria-label="${esc(tt('Volet', 'Mode'))}">${['acheteur', 'vendeur'].map(m => `<button role="tab" aria-selected="${S.mode === m}" data-mode-choix="${m}" class="${S.mode === m ? 'on' : ''}">${m === 'acheteur' ? tt('Acheteur', 'Buyer') : tt('Vendeur', 'Seller')}</button>`).join('')}</span></div>
+</div>
       <button class="rond haut-cloche" data-alertes aria-label="${esc(tt('Alertes', 'Alerts'))}">${ICO_CLOCHE}<i class="pt" id="h-pt" hidden></i><span class="haut-pro" aria-hidden="true">PRO</span></button>` : '';
     const hp = $('#h-plus', b); if (hp) hp.onclick = feuilleAjouter;
     brancherSwitchMode(b);            // 28 oct 2026 (Mathieu : « passer d'acheteur a vendeur en un clic ») : les deux volets, visibles, un tap
     if (voir) majCloche();
   }
-  if (n) { n.innerHTML = voir ? switchMode() : ''; brancherSwitchMode(n); }
+  if (n) n.innerHTML = '';
 }
 const ICO_CLOCHE = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9M10 20.5a2 2 0 0 0 4 0"/></svg>';
 // la cloche : un point quand une alerte a trouve quelque chose de pas encore vu (au plus une fois aux 5 min)
@@ -5581,19 +5613,21 @@ S.imgProd = null;
 async function imagesProduits(){ if (!S.imgProd) S.imgProd = await API.images_produits().catch(() => ({})); return S.imgProd; }
 const imgProduit = (id, nom) => { const u = (S.imgProd || {})[id]; return u ? `<img src="${esc(u)}" alt="" loading="lazy" onerror="this.remove()">` : ''; };
 async function vueAnalyse(arg){
-  const vendeur = S.mode !== 'acheteur', A = S.ana;
+  const vendeur = breakVendeur(), A = S.ana;
   if (arg && arg !== 'choisir' && A.produit !== decodeURIComponent(arg)) anaCharger(decodeURIComponent(arg));
-  V().innerHTML = `<section class="ecran large"><div class="entete"><div class="titre">${vendeur ? tt('Breaks', 'Breaks') : tt('Breaks', 'Breaks')}</div>
+  V().innerHTML = `<section class="ecran large"><div class="entete"><div class="titre">${tt('Breaks', 'Breaks')}</div>
       <div class="pastilles">${vendeur ? '<a class="pilule" href="#breaks/liste">' + tt('Mes breaks', 'My breaks') + '</a>' : ''}</div></div>
+    <div class="bk-mode" role="tablist" aria-label="${esc(tt('Je…', 'I…'))}">${[['acheteur', tt('J’achète une place', 'I buy a spot')], ['breaker', tt('Je fais un break', 'I run a break')]].map(([k, l]) =>
+      `<button role="tab" aria-selected="${S.breakMode === k}" class="${S.breakMode === k ? 'on' : ''}" data-bkm="${k}">${l}</button>`).join('')}</div>
     <div id="an-z">${roue}</div></section>`;
-  brancherSwitchMode(V());
+  $$('[data-bkm]').forEach(b => b.onclick = () => choisirBreakMode(b.dataset.bkm));
   if (!A.produit || arg === 'choisir') return choisirProduitAnalyse();
   rendreAnalyse();
 }
 async function choisirProduitAnalyse(){
   const z = $('#an-z'); const [c] = await Promise.all([API.catalogue_liste().catch(() => ({produits:[]})), imagesProduits()]);
   if (!$('#an-z')) return;
-  z.innerHTML = `<div class="entete" style="min-height:0;margin-bottom:12px"><div class="sous" style="font-size:16px">${S.mode !== 'acheteur' ? tt('Choisis le produit que tu vas ouvrir.', 'Pick the product you’ll open.') : tt('Choisis le produit du break.', 'Pick the break’s product.')}</div>${pastilleQuota('breaks_produits')}</div>
+  z.innerHTML = `<div class="entete" style="min-height:0;margin-bottom:12px"><div class="sous" style="font-size:16px">${breakVendeur() ? tt('Choisis le produit que tu vas ouvrir.', 'Pick the product you’ll open.') : tt('Choisis le produit du break.', 'Pick the break’s product.')}</div>${pastilleQuota('breaks_produits')}</div>
     <div class="grille-c">${(c.produits || []).map(p => `<button class="tuile-c tuile-prod" data-p="${esc(p.id)}">
       <div class="img visuel-prod">${imgProduit(p.id)}<span class="vp-saison">${esc(p.saison || '')}</span><span class="vp-nom">${esc(String(p.nom || '').replace(/^\d{4}-\d{2}\s+/, ''))}</span></div>
       ${p.ouvrir ? `<div class="coin">${capsule(p.ouvrir.verdict === 'ouvrir' ? tt('Ouvrir', 'Open') + ' +' + p.ouvrir.pct + ' %' : p.ouvrir.verdict === 'garder' ? tt('Garder scellée', 'Keep sealed') + ' ' + p.ouvrir.pct + ' %' : tt('Neutre', 'Even') + ' ' + (p.ouvrir.pct > 0 ? '+' : '') + p.ouvrir.pct + ' %', (p.ouvrir.verdict === 'ouvrir' ? 'vert' : p.ouvrir.verdict === 'garder' ? 'rouge' : 'or') + ' petit')}</div>` : ''}
@@ -6011,7 +6045,7 @@ function feuilleReglagesAna(r, vendeur){
   };
 }
 async function rendreAnalyse(){
-  const z = $('#an-z'), A = S.ana, vendeur = S.mode !== 'acheteur';
+  const z = $('#an-z'), A = S.ana, vendeur = breakVendeur();
   A.demandesJ = A.demandesJ || {};
   const args = (m) => ({produit_id:A.produit, boites:A.boites, mode: vendeur ? (m || A.mode) : 'equipes', cout_boite: vendeur ? A.cout : 0, marge:A.marge, decote:0,
     prix_demandes:A.demandes, prix_joueurs:A.demandesJ, acheteur: !vendeur});
@@ -6306,7 +6340,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document
 async function vueDeals(arg){
   const w = arg === 'watch';
   V().innerHTML = `<section class="ecran large">
-    <div class="entete"><div class="titre">Deals</div>${w ? '' : `<span class="d-ent"><button class="aide-q" id="d-aide" aria-label="${esc(tt('Comment lire un deal', 'How to read a deal'))}">?</button></span>`}</div>
+    <div class="entete"><div class="titre">Deals</div>${w ? '' : `<span class="d-ent"><a class="aide-q d-val" href="#valeur" aria-label="${esc(tt('Combien vaut une carte ?', 'What is a card worth?'))}">${ICONES.loupe}</a><button class="aide-q" id="d-aide" aria-label="${esc(tt('Comment lire un deal', 'How to read a deal'))}">?</button></span>`}</div>
     <div class="d-onglets" role="tablist"><a role="tab" href="#deals" aria-selected="${!w}" class="${w ? '' : 'on'}">${tt('Deals', 'Deals')}<span class="d-nb" id="d-nb" hidden></span></a>
       <a role="tab" href="#deals/watch" aria-selected="${w}" class="${w ? 'on' : ''}">${ICO_ETOILE}${tt('Watchlist', 'Watchlist')}<span class="w-nb" hidden></span></a></div>
     <form class="recherche pas-tel" id="v-form" role="search">${ICONES.loupe}<input id="v-q" type="search" enterkeyhint="search" placeholder="${esc(tt('Combien vaut une carte ? (ex. Bedard Young Guns)', 'What is a card worth? (e.g. Bedard Young Guns)'))}"></form>
@@ -7005,7 +7039,7 @@ async function vueAccueil(arg){
   $('#acc-tuiles').innerHTML = [
     S.mode === 'acheteur' ? `<a class="t-acc" href="#guide" id="t-budget"><span class="l">${tt('Budget du mois', 'Monthly budget')}</span><b>…</b><span class="s">${tt('touche pour le fixer', 'tap to set it')}</span></a>`
       : tuile('Profit', (h.profit < 0 ? '−' : '') + argentCourt(Math.abs(h.profit)), nomMois(h.mois) + (h.nb_ventes ? ` · ${h.nb_ventes} vente${h.nb_ventes > 1 ? 's' : ''}` : ''), h.profit > 0 ? 'vert' : h.profit < 0 ? 'rouge' : '', '#bilan" id="t-profit'),
-    tuile('Deals', a && a.gain_deals > 0 ? '+' + argentCourt(a.gain_deals) : String((a && a.nb_deals) || 0), a && a.nb_deals ? `${a.nb_deals} sous la valeur` : 'on cherche pour toi', a && a.gain_deals > 0 ? 'or' : '', S.mode === 'acheteur' ? '#deals' : '#sante/racheter'),
+    tuile('Deals', a && a.gain_deals > 0 ? '+' + argentCourt(a.gain_deals) : String((a && a.nb_deals) || 0), a && a.nb_deals ? `${a.nb_deals} sous la valeur` : 'on cherche pour toi', a && a.gain_deals > 0 ? 'or' : '', '#deals'),
     S.mode === 'acheteur' ? tuile(tt('Ma collection', 'My collection'), argentKpi(st.valeur), `${st.nb} carte${st.nb > 1 ? 's' : ''}`, '', '#inventaire" id="t-stock')
       : tuile('Stock', argentKpi(st.valeur), `${st.nb} carte${st.nb > 1 ? 's' : ''}${vi.delai_median != null ? ' · vend en ' + vi.delai_median + ' j' : ''}`, '', '#inventaire" id="t-stock'),
   ].join('');
@@ -7028,7 +7062,8 @@ async function vueAccueil(arg){
     t.onclick = (e) => { e.preventDefault(); feuilleBudget(); }; });
   // a faire : vendeur + acheteur ensemble, classe par argent
   const gestes = [...(d.actions || [])];
-  if (S.mode === 'acheteur') gestes.push({cle:'guide', n:'?', titre:tt('Nouveau dans le hobby ?', 'New to the hobby?'), texte:tt('Le guide : les produits, les sortes de cartes, ton budget', 'The guide: products, card types, your budget'), lien:'#guide', ton:'acc'});
+  let guideVu = false; try { guideVu = !!localStorage.getItem('lr_guide_vu'); } catch (e) {}
+  if (!guideVu) gestes.push({cle:'guide', n:'?', titre:tt('Nouveau dans le hobby ?', 'New to the hobby?'), texte:tt('Le guide : les produits, les sortes de cartes, ton budget', 'The guide: products, card types, your budget'), lien:'#guide', ton:'acc'});
   // 27 oct 2026 : un compte Apple / Google sans eBay -> eBay fortement recommande (en premier dans « A faire »)
   if (!d.cles || d.ebay === false) gestes.unshift({cle:'ebay', n:'!', titre:tt('Connecter eBay (recommandé)', 'Connect eBay (recommended)'), texte:tt('Ton inventaire et tes ventes arrivent seuls, et tes annonces se font en une photo', 'Your inventory and sales come in on their own, and listings take one photo'), lien:'#reglages', ton:'acc'});
   const r0 = S.reglages || {};
@@ -7099,7 +7134,7 @@ function histoiresDeals(a){
   // 28 oct 2026 (Mathieu : « les cercles en forme de slab, et le % dans la portion de gradation ») : chaque story est un
   // petit slab : l'etiquette en haut porte le rabais a la place de la note, la photo dans la fenetre
   const nb_ = (a && a.nb_deals) || L.length;
-  const tous = `<a class="hist hist-tous" role="listitem" href="#${S.mode === 'acheteur' ? 'deals' : 'sante/racheter'}"><span class="anneau slab neuf"><span class="slab-in">
+  const tous = `<a class="hist hist-tous" role="listitem" href="#deals"><span class="anneau slab neuf"><span class="slab-in">
       <span class="slab-lab"><small>DEALS</small><b>${nb_ > 99 ? '99+' : nb_}</b></span><span class="slab-ph ico">${ICO_MODE.acheteur}</span></span></span><span class="nom">${tt('Tous', 'All')}</span></a>`;
   return tous + tri.map(x => `<button class="hist hist-deal" role="listitem" data-vu-deal="${esc(x.item_id)}" ${attrsAnnonce(x)} aria-label="${esc(titreCourt(x.titre) + ' · −' + (x.rabais || 0) + ' %')}">
     <span class="anneau slab${vus[x.item_id] ? '' : ' neuf'}"><span class="slab-in">
@@ -7172,7 +7207,7 @@ function postDeals(deals){
       <button class="ic-act" id="pd-part" aria-label="${esc(tt('Partager', 'Share'))}">${ICO_POST.partager}</button>
       <a class="btn petit post-ebay" id="pd-ebay" target="_blank" rel="noopener">${tt('Voir sur eBay', 'View on eBay')}</a></div>
     <div class="post-info" id="pd-info"></div>
-    <a class="post-tous" href="#${S.mode === 'acheteur' ? 'deals' : 'sante/racheter'}">${tt('Tous les deals', 'All deals')} ›</a>
+    <a class="post-tous" href="#deals">${tt('Tous les deals', 'All deals')} ›</a>
   </article>`;
 }
 function brancherPostDeals(){
@@ -7226,6 +7261,7 @@ function demarrerAccueilLive(){
 const IC_CONSEIL = {acheter:'＋', vendre:'↗', prix:'$', budget:'◎', break:'▣', info:'✦'};
 // 29 oct 2026 : une pastille = un sujet, sur une ligne ; le detail s'ouvre dans une feuille fluide
 const IC_PIL = {
+  budget: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M16 14.5h2"/>',
   faire:'<path d="M5 12l4 4 10-10"/>', conseils:'<path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z"/>',
   breaks:'<rect x="4" y="7" width="16" height="13" rx="2"/><path d="M9 7V5h6v2M4 12h16"/>', news:'<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/>',
   admin:'<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>',
@@ -7259,6 +7295,7 @@ function pastillesAccueil(d, a, gestes, admin){
     pilAcc('pil-faire', 'faire', tt('À faire', 'To do'), rien ? '✓' : gestes.length, rien ? 'vert' : gestes.length > 2 ? 'or' : ''),
     pilAcc('pil-conseils', 'conseils', tt('Conseils pour toi', 'Tips for you'), ''),
     pilAcc('pil-tend', 'graphe', tt('Tendances', 'Trending'), ''),
+    pilAcc('pil-budget', 'budget', tt('Budget du mois', 'Monthly budget'), '…'),
     brk ? pilAcc('pil-breaks', 'breaks', tt('Breaks en cours', 'Breaks in progress'), d.breaks_ouverts.length) : '',
     $('#acc-b-coups') ? pilAcc('pil-coups', 'coups', tt('Meilleurs coups · 30 j', 'Best flips · 30 d'), (d.coups || []).length) : '',
     admin ? pilAcc('pil-admin', 'admin', tt('À surveiller · admin', 'To monitor · admin'), '') : '',
@@ -7275,6 +7312,11 @@ function pastillesAccueil(d, a, gestes, admin){
   o('pil-admin', () => feuilleBloc($('#acc-admin')));
   o('pil-pouls', () => feuilleBloc(blocParent('#acc-pouls')));
   o('pil-tend', () => { location.hash = '#tendances'; });
+  // 1er nov 2026 (Mathieu : « oui, remettre ») : le budget du mois de l'acheteur, dans l'accueil unique
+  o('pil-budget', () => feuilleBudget());
+  budgetEtat(true).then(b => { const n = $('#pil-budget .n'); if (!n) return;
+    if (!b || !b.budget) { n.textContent = tt('À fixer', 'Not set'); n.className = 'n capsule'; return; }
+    n.textContent = argentCourt(b.reste) + tt(' restants', ' left'); n.className = 'n capsule ' + (b.reste < 0 ? 'rouge' : b.pct > 80 ? 'or' : 'vert'); }).catch(() => {});
   rendreTicker();
   const tp = $('#t-profit'); if (tp && $('#acc-b-profit')) tp.onclick = (e) => { e.preventDefault(); feuilleBloc($('#acc-b-profit'), `<a class="btn ghost petit" href="#bilan" style="align-self:flex-start">${tt('Bilan complet', 'Full report')} ›</a>`); };
 }
@@ -8113,7 +8155,14 @@ async function tableauInv(){
     const ouvrir = (id) => { const b = $(`#i-liste .tuile-inv[data-id="${id}"]`); if (b) b.click(); };
     const rr = $('#it-rare'); if (rr && top) rr.onclick = () => ouvrir(top.id);
     const hh = $('#it-h'); if (hh && h) hh.onclick = () => ouvrir(h.id);
-    const p0 = z.querySelector('.t-acc'); if (p0) p0.onclick = () => { const b = $('#i-res'); if (b) b.click(); };
+    // 1er nov 2026 (Mathieu : « CollX et Collectr : on doit etre mieux ») : la valeur dans le temps, les sets, l'export
+    const p0 = z.querySelector('.t-acc'); if (p0) p0.onclick = () => { vibrer(); feuilleValeurColl(); };
+    if (c.n) {
+      z.insertAdjacentHTML('beforeend', `<div class="coll-act"><button class="pilule" id="ca-sets">${tt('Par sets', 'By sets')}</button><button class="pilule" id="ca-val">${tt('Valeur dans le temps', 'Value over time')}</button><button class="pilule" id="ca-csv">${tt('Exporter', 'Export')}</button></div>`);
+      $('#ca-sets').onclick = () => { vibrer(); feuilleSets(); };
+      $('#ca-val').onclick = () => { vibrer(); feuilleValeurColl(); };
+      $('#ca-csv').onclick = async () => { vibrer(); const r = await essai(API.collection_csv()); if (r) exporterCsv(r.csv, r.nom); };
+    }
   } else {
     // 31 oct 2026 (Mathieu : « les vues et les likes de l'annonce : les plus populaires, et celles a liquider, sans rendre ca lourd »)
     const v = r.vente, enLigne = v.populaires != null;
@@ -8168,9 +8217,11 @@ async function vueInventaire(arg){
   $('#i-menu').onclick = () => { vibrer(); ouvrirFeuille(`<h3>${tt('Inventaire', 'Inventory')}</h3><div class="menu-f">
       ${S.mode === 'vendeur' ? `<a class="acc-pil" href="#vendre/programmer"><span class="ap-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg></span><span class="ap-t">${tt('Programmer sur eBay', 'Schedule on eBay')}</span><i>›</i></a>` : ''}
       <button class="acc-pil" id="im-import"><span class="ap-ic"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg></span><span class="ap-t">${tt('Importer mes annonces eBay', 'Import my eBay listings')}</span><i>›</i></button>
-      <button class="acc-pil" id="im-brou"><span class="ap-ic"><svg viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M4 21h16"/></svg></span><span class="ap-t">${tt('Brouillons et export', 'Drafts and export')}</span><i>›</i></button></div>`);
+      <button class="acc-pil" id="im-brou"><span class="ap-ic"><svg viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M4 21h16"/></svg></span><span class="ap-t">${tt('Brouillons et export', 'Drafts and export')}</span><i>›</i></button>
+      <button class="acc-pil" id="im-soum"><span class="ap-ic"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></span><span class="ap-t">${tt('Soumissions de gradation', 'Grading submissions')}</span><i>›</i></button></div>`);
     $('#im-import').onclick = () => { fermerFeuille(); feuilleImportEbay(); };
-    $('#im-brou').onclick = () => { fermerFeuille(); feuilleBrouillons(); }; };
+    $('#im-brou').onclick = () => { fermerFeuille(); feuilleBrouillons(); };
+    $('#im-soum').onclick = () => { fermerFeuille(); feuilleSoumissions(); }; };
   await Promise.all([reglages(), consignataires()]).catch(() => {});
   await chargerInventaire();
   if (arg === 'import') feuilleImportEbay();
@@ -8470,11 +8521,34 @@ function voirDefauts(e, k){
   document.body.appendChild(o);
   const fermer = () => o.remove();
   o.querySelector('.vd-x').onclick = fermer;
+  // 1er nov 2026 (Mathieu : les numeros tombaient a cote de la carte) : la position donnee par l'IA est approximative. Les
+  // coins et les bords sont places sur la CARTE trouvee dans la photo (ses 4 coins, detectes dans le telephone) ; la
+  // surface reste ou l'IA l'a vue, ramenee dans la carte
+  const quads = {};
+  const quad = (j, im) => quads[j] || (quads[j] = (async () => {           // une seule detection par photo (promesse partagee)
+    try { const q = coinsLocaux(await chargerImage(im.currentSrc || im.src)); return q && q.length === 4 ? q : null; } catch (e) { return null; } })());
+  const lerp = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  const cl = (v) => Math.max(0.06, Math.min(0.94, v));
+  const place = (d, q) => {
+    if (!q) return [d.x, d.y];
+    const [tl, tr, br, bl] = q, ctr = [(tl[0] + tr[0] + br[0] + bl[0]) / 4, (tl[1] + tr[1] + br[1] + bl[1]) / 4];
+    const dedans = (p) => lerp(p, ctr, 0.05);                       // un peu vers l'interieur : le rond reste sur la carte
+    const coins = {'coin haut-gauche': tl, 'coin haut-droit': tr, 'coin bas-droit': br, 'coin bas-gauche': bl};
+    if (coins[d.zone]) return dedans(coins[d.zone]);
+    const t = (a, b, v, k) => cl((v - a[k]) / ((b[k] - a[k]) || 1));
+    if (d.zone === 'bord haut') return dedans(lerp(tl, tr, t(tl, tr, d.x, 0)));
+    if (d.zone === 'bord bas') return dedans(lerp(bl, br, t(bl, br, d.x, 0)));
+    if (d.zone === 'bord gauche') return dedans(lerp(tl, bl, t(tl, bl, d.y, 1)));
+    if (d.zone === 'bord droit') return dedans(lerp(tr, br, t(tr, br, d.y, 1)));
+    const xs = q.map(p => p[0]), ys = q.map(p => p[1]), bx = [Math.min(...xs), Math.max(...xs)], by = [Math.min(...ys), Math.max(...ys)];
+    return [Math.max(bx[0] + (bx[1] - bx[0]) * .08, Math.min(bx[1] - (bx[1] - bx[0]) * .08, d.x)), Math.max(by[0] + (by[1] - by[0]) * .08, Math.min(by[1] - (by[1] - by[0]) * .08, d.y))];
+  };
   def.forEach((d, i) => {
     const w = o.querySelector(`.vd-ph[data-j="${d.photo}"]`), im = w && w.querySelector('img'); if (!im) return;
-    const poser = () => { const W = im.clientWidth, H = im.clientHeight; if (!W) return;
+    const poser = async () => { const q = await quad(d.photo, im); const W = im.clientWidth, H = im.clientHeight; if (!W) return;
+      const [x, y] = place(d, q);
       let p = w.querySelector(`.fc-pt[data-d="${i}"]`); if (!p) { p = document.createElement('span'); p.className = 'fc-pt g-' + (d.gravite || '').replace(' ', '-'); p.dataset.d = i; p.textContent = i + 1; w.appendChild(p); }
-      p.style.left = (im.offsetLeft + d.x / 1000 * W) + 'px'; p.style.top = (im.offsetTop + d.y / 1000 * H) + 'px'; };
+      p.style.left = (im.offsetLeft + x / 1000 * W) + 'px'; p.style.top = (im.offsetTop + y / 1000 * H) + 'px'; };
     if (im.complete) poser(); else im.addEventListener('load', poser, {once: true});
   });
   const montrer = (i) => { const d = def[i], w = d && o.querySelector(`.vd-ph[data-j="${d.photo}"]`); if (!w) return;
@@ -8506,15 +8580,25 @@ async function blocEtat(c, forcer){
     // chaque sous-note sous 10 : pourquoi et où (Mathieu : « on doit expliquer les cotes »)
     const pourquoi = CATS.filter(([k]) => n[k] != null && n[k] < 10).map(([k, l]) => `<li><b>${l} ${f(n[k])}</b><span>${esc(ex[k] || (k === 'centrage' && cent ? cent : tt('raison non précisée : refais l’examen', 'no reason given: check again')))}</span></li>`);
     const rien = !def.length && !pourquoi.length;
-    z.innerHTML = `<div class="et">
-      <div class="et-t"><span>${tt('État estimé', 'Estimated condition')}</span><b class="${cl}">${fourch}</b><small>${tt('sur 10 · photo', 'out of 10 · photo')}</small></div>
-      <div class="et-n">${CATS.map(([k, l, sous]) => `<div><span>${l}</span><b>${f(n[k])}</b>${sous ? `<small>${esc(sous)}</small>` : ''}</div>`).join('')}</div>
+    // 1er nov 2026 (Mathieu : « plus sexy, nos pastilles rondes ; on doit pouvoir retrecir la fenetre ») : une pastille ronde
+    // (la note dans l'anneau) qui s'ouvre et se referme ; le choix est garde
+    let ouvert = false; try { ouvert = localStorage.getItem('lr_etat_ouvert') === '1'; } catch (x) {}
+    const nbv = def.length, resume = [nbv ? nbv + ' ' + tt(nbv > 1 ? 'points à vérifier' : 'point à vérifier', nbv > 1 ? 'points to check' : 'point to check') : tt('aucun défaut visible', 'no visible flaw'),
+      cent ? tt('centrage ', 'centering ') + cent.split(' · ')[0] : ''].filter(Boolean).join(' · ');
+    z.innerHTML = `<div class="et ${ouvert ? 'ouvert' : ''}">
+      <button class="fc-alerte et-tete" id="fc-et-t" aria-expanded="${ouvert}"><span class="fc-al-ic et-anneau ${cl}"><b>${fourch}</b></span>
+        <span class="fc-al-t"><b>${tt('État estimé', 'Estimated condition')} <small class="et-sur">/10</small></b><small>${esc(resume)}</small></span><i class="et-ch">›</i></button>
+      <div class="et-corps">
+      <div class="et-n">${CATS.map(([k, l, sous]) => `<div><span class="fc-al-ic et-rond ${n[k] == null ? '' : n[k] >= 9 ? 'vert' : n[k] >= 7 ? 'or' : 'rouge'}"><b>${f(n[k])}</b></span><span>${l}</span>${sous ? `<small>${esc(sous)}</small>` : ''}</div>`).join('')}</div>
       ${pourquoi.length ? `<ul class="et-x">${pourquoi.join('')}</ul>` : ''}
-      ${def.length ? `<ol class="et-d">${def.map((d, i) => `<li data-d="${i}" class="g-${(d.gravite || '').replace(' ', '-')}"><i>${i + 1}</i><span>${esc(LIB_ZONE(d.zone))}${d.photo ? tt(' (dos)', ' (back)') : ''} · ${esc(LIB_DEFAUT(d.type))} ${esc(LIB_GRAV(d.gravite))}</span><em>›</em></li>`).join('')}</ol>
+      ${def.length ? `<div class="et-d">${def.map((d, i) => `<button class="acc-pil et-pil g-${(d.gravite || '').replace(' ', '-')}" data-d="${i}"><span class="ap-ic"><b>${i + 1}</b></span>
+          <span class="ap-t">${esc(LIB_ZONE(d.zone))}${d.photo ? tt(' (dos)', ' (back)') : ''}<small>${esc(LIB_DEFAUT(d.type))} · ${esc(LIB_GRAV(d.gravite))}</small></span><i aria-hidden="true">›</i></button>`).join('')}</div>
         <button class="pilule" id="fc-et-voir">${tt('Voir les défauts sur la photo', 'See the flaws on the photo')}</button>`
         : rien ? `<div class="et-ok">${tt('Aucun défaut visible sur les photos', 'No visible flaw on the photos')}</div>` : ''}
       ${e.conseil ? `<div class="et-c">${esc(e.conseil)}</div>` : ''}
-      <div class="et-p">${(e.invisible || [])[0] ? tt('Pas vérifiable : ', 'Not checkable: ') + esc(e.invisible[0]) + ' · ' : ''}${tt('Estimation sur photo, pas une gradation.', 'Photo estimate, not a grade.')} <button class="lien" id="fc-et-re">${tt('Refaire', 'Redo')}</button></div></div>`;
+      <div class="et-p">${(e.invisible || [])[0] ? tt('Pas vérifiable : ', 'Not checkable: ') + esc(e.invisible[0]) + ' · ' : ''}${tt('Estimation sur photo, pas une gradation.', 'Photo estimate, not a grade.')} <button class="lien" id="fc-et-re">${tt('Refaire', 'Redo')}</button></div></div></div>`;
+    $('#fc-et-t').onclick = () => { vibrer(); const bx = z.querySelector('.et'), o = !bx.classList.contains('ouvert'); bx.classList.toggle('ouvert', o);
+      $('#fc-et-t').setAttribute('aria-expanded', o); try { localStorage.setItem('lr_etat_ouvert', o ? '1' : '0'); } catch (x) {} };
     const re_ = $('#fc-et-re'); if (re_) re_.onclick = () => { vibrer(); lancer(); };
     const vo = $('#fc-et-voir'); if (vo) vo.onclick = () => { vibrer(); voirDefauts(e); };
     $$('#fc-etat [data-d]').forEach(li => li.onclick = () => { vibrer(); voirDefauts(e, +li.dataset.d); });
@@ -8554,14 +8638,15 @@ function blocEnvoi(c){
       [tt('Fin de l’encan', 'Auction ends'), e.fin_encan ? dateCourte(e.fin_encan) + (ret ? tt(' · terminé', ' · ended') : '') : tt('pas encore en ligne', 'not listed yet'), !!e.fin_encan && ret],
       e.commission != null ? [tt('Commission', 'Fee'), String(e.commission).replace('.', ',') + ' %'] : null,
       e.reserve ? [tt('Prix minimum', 'Reserve'), argent(e.reserve, 0) + (e.commission != null ? ' · ' + tt('net ', 'net ') + argent(e.reserve * (1 - e.commission / 100), 0) : '')] : null];
-  z.innerHTML = `<div class="env ${ret ? 'retard' : ''}"><div class="env-t"><span>${e.type === 'gradation' ? tt('Au gradage', 'At grading') : tt('En consignation', 'Consigned')}</span>
+  z.innerHTML = `<div class="env ${ret ? 'retard' : ''}"><div class="env-t"><span>${e.type === 'gradation' ? tt('Au gradage', 'At grading') + (e.soumission_id ? ' · ' + tt('soumission groupée', 'group submission') : '') : tt('En consignation', 'Consigned')}</span>
       <b>${esc(e.type === 'gradation' ? e.compagnie + (e.service ? ' · ' + e.service : '') : e.chez)}</b></div>
     <ul>${lignes.filter(Boolean).map(([l, v, r]) => `<li class="${r ? 'or' : ''}"><span>${l}</span><b>${esc(v)}</b></li>`).join('')}</ul>
     <div class="env-b">${e.type === 'gradation' ? `<button class="pilule acc" id="env-ret">${tt('Revenue', 'Back')}</button>`
       : `<button class="pilule acc" id="env-vend">${tt('Vendue', 'Sold')}</button><button class="pilule" id="env-inv">${tt('Revenue invendue', 'Back unsold')}</button>`}
       ${e.lien ? `<a class="pilule" href="${esc(e.lien)}" target="_blank" rel="noopener">${tt('Voir l’encan', 'See the auction')} ↗</a>` : ''}
       <button class="pilule" id="env-mod">${tt('Modifier', 'Edit')}</button></div></div>`;
-  $('#env-mod').onclick = () => formEnvoi(c, e.type, e);
+  $('#env-mod').onclick = () => e.soumission_id ? (fermerFeuille(), feuilleSoumission(e.soumission_id)) : formEnvoi(c, e.type, e);
+  if (e.soumission_id) { const br = $('#env-ret'); if (br) { br.textContent = tt('Voir la soumission', 'See the submission'); br.id = 'env-voir'; br.onclick = () => { fermerFeuille(); feuilleSoumission(e.soumission_id); }; } }
   const fini = (r) => { if (r && r.carte) { fermerFeuille(); chargerInventaire(); ficheCollection(r.carte); } };
   const bR = $('#env-ret'); if (bR) bR.onclick = () => {
     ouvrirFeuille(`<h3>${tt('Revenue du gradage', 'Back from grading')}</h3>
@@ -8588,6 +8673,185 @@ function blocEnvoi(c){
       const r = await essai(API.carte_vendre(c.id, {canal: 'Encan', prix: p, frais: Math.round(p * k) / 100, date: auj()}), tt('Vente enregistrée', 'Sale recorded'));
       if (r) { await API.carte_envoi(c.id, null).catch(() => {}); fermerFeuille(); chargerInventaire(); } };
   };
+}
+// 1er nov 2026 (Mathieu : « app concurrente : preparation de soumissions PSA » -> « soumissions groupees ») : plusieurs cartes
+// de la collection -> une soumission ; la valeur declaree (assurance) = la valeur connue ; liste a recopier dans le formulaire
+// de la compagnie ; retour de toute la soumission d'un coup.
+async function feuilleSoumissions(){
+  const r = await API.soumissions_liste().catch(e => ({ok:false, erreur:e.message}));
+  if (!r.ok) { toast(r.erreur || 'Erreur'); return; }
+  const l = r.soumissions || [];
+  ouvrirFeuille(`<h3>${tt('Soumissions de gradation', 'Grading submissions')}</h3>
+    <button class="btn" id="so-new">${tt('Nouvelle soumission', 'New submission')}</button>
+    <div class="liste" style="margin-top:12px">${l.map(x => `<button class="rangee so-l" data-so="${x.id}"><span class="milieu"><span class="nom">${esc(x.compagnie)}${x.service ? ' · ' + esc(x.service) : ''}${x.numero ? ' · #' + esc(x.numero) : ''}</span>
+      <span class="sous">${x.n} ${tt(x.n > 1 ? 'cartes' : 'carte', x.n > 1 ? 'cards' : 'card')} · ${tt('déclarée ', 'declared ')}${argent(x.valeur_declaree, 0)} · ${x.statut === 'revenue' ? tt('revenue', 'back') : x.retard ? tt('en retard', 'late') : tt('envoyée le ', 'sent ') + dateCourte(x.envoyee_le)}</span></span>
+      ${capsule(x.statut === 'revenue' ? tt('Revenue', 'Back') : x.retard ? tt('Retard', 'Late') : tt('Envoyée', 'Sent'), (x.statut === 'revenue' ? 'vert' : x.retard ? 'or' : 'acc') + ' petit')}</button>`).join('')
+      || `<div class="vide" style="padding:16px">${tt('Aucune soumission : choisis les cartes de ta collection à envoyer.', 'No submission yet: pick the collection cards to send.')}</div>`}</div>`);
+  $('#so-new').onclick = () => nouvelleSoumission();
+  $$('[data-so]').forEach(b => b.onclick = () => feuilleSoumission(+b.dataset.so, l));
+}
+async function nouvelleSoumission(){
+  const tout = await API.inventaire_liste({dispo:1, emplacement:'Collection'}).catch(() => []);
+  const l = (Array.isArray(tout) ? tout : (tout && tout.cartes) || []).filter(c => !c.grade && !c.envoi_json && c.statut !== 'Vendue');
+  const choix = new Set();
+  const decl = (c) => nb(c.valeur) || nb(c.cout) || 0;
+  ouvrirFeuille(`<h3>${tt('Nouvelle soumission', 'New submission')}</h3>
+    <div class="sous">${tt('Choisis les cartes à envoyer (cartes brutes de ta collection).', 'Pick the cards to send (raw cards from your collection).')}</div>
+    <div class="liste so-ch">${l.map(c => `<label class="rangee"><input type="checkbox" data-c="${c.id}"><span class="milieu"><span class="nom">${esc(c.joueur || titreCourt(c.titre) || tt('Carte', 'Card'))}</span>
+      <span class="sous">${esc([c.annee, c.set_nom, c.parallele, c.tirage ? '/' + c.tirage : ''].filter(Boolean).join(' · '))}</span></span><b>${decl(c) ? argent(decl(c), 0) : '—'}</b></label>`).join('')
+      || `<div class="vide" style="padding:16px">${tt('Aucune carte brute dans ta collection.', 'No raw card in your collection.')}</div>`}</div>
+    <div class="so-bas"><span id="so-tot">${tt('0 carte', '0 cards')}</span><button class="btn" id="so-suite" disabled>${tt('Continuer', 'Continue')}</button></div>`);
+  const maj = () => { const sel = l.filter(c => choix.has(c.id)), t = sel.reduce((a, c) => a + decl(c), 0);
+    $('#so-tot').textContent = sel.length + ' ' + tt(sel.length > 1 ? 'cartes' : 'carte', sel.length > 1 ? 'cards' : 'card') + (t ? ' · ' + tt('déclarée ', 'declared ') + argent(t, 0) : '');
+    $('#so-suite').disabled = !sel.length; };
+  $$('.so-ch [data-c]').forEach(i => i.onchange = () => { i.checked ? choix.add(+i.dataset.c) : choix.delete(+i.dataset.c); maj(); });
+  $('#so-suite').onclick = () => formSoumission([...choix]);
+}
+function formSoumission(ids, so){
+  const e = so || {};
+  ouvrirFeuille(`<h3>${so ? tt('Modifier la soumission', 'Edit the submission') : tt('Soumission', 'Submission') + ' · ' + ids.length + ' ' + tt(ids.length > 1 ? 'cartes' : 'carte', ids.length > 1 ? 'cards' : 'card')}</h3>
+    <div class="sous">${tt('Compagnie', 'Company')}</div><div class="chips" id="fs-cie">${COMPAGNIES.map(x => `<button class="chip ${(e.compagnie || 'PSA') === x ? 'on' : ''}" data-v="${x}">${x}</button>`).join('')}</div>
+    <label>${tt('Niveau de service', 'Service level')}<input class="champ" id="fs-serv" value="${esc(e.service || '')}" placeholder="Value, Regular, Express…"></label>
+    <label>${tt('Numéro de soumission', 'Submission number')}<input class="champ" id="fs-num" value="${esc(e.numero || '')}"></label>
+    <div class="grille-champs"><label>${tt('Envoyée le', 'Sent on')}<input class="champ" id="fs-env" type="date" value="${esc(e.envoyee_le || auj())}"></label>
+      <label>${tt('Retour prévu', 'Expected back')}<input class="champ" id="fs-ret" type="date" value="${esc(e.retour_prevu || '')}"></label></div>
+    <label>${tt('Coût par carte ($)', 'Cost per card ($)')}<input class="champ" id="fs-cout" type="number" inputmode="decimal" step="any" value="${e.cout_carte ?? ''}"></label>
+    <div class="sous">${tt('La valeur déclarée de chaque carte (assurance) = sa valeur connue. Le coût de gradation s’ajoutera au coût de chaque carte à son retour.', 'Each card’s declared value (insurance) = its known value. The grading cost is added to each card’s cost when it comes back.')}</div>
+    <button class="btn" id="fs-ok">${tt('Enregistrer', 'Save')}</button><button class="btn ghost" id="fs-non">${tt('Annuler', 'Cancel')}</button>`);
+  let cie = e.compagnie || 'PSA';
+  $$('#fs-cie [data-v]').forEach(b => b.onclick = () => { cie = b.dataset.v; $$('#fs-cie .chip').forEach(x => x.classList.toggle('on', x === b)); });
+  $('#fs-non').onclick = () => so ? feuilleSoumission(so.id) : feuilleSoumissions();
+  $('#fs-ok').onclick = async () => {
+    const d = {compagnie: cie, service: val('fs-serv'), numero: val('fs-num'), envoyee_le: val('fs-env'), retour_prevu: val('fs-ret'), cout_carte: val('fs-cout')};
+    const r = await essai(so ? API.soumission_maj(so.id, d) : API.soumission_creer({...d, cartes: ids}), so ? tt('Soumission modifiée', 'Submission updated') : tt('Soumission créée', 'Submission created'));
+    if (r) { chargerInventaire(); feuilleSoumission(so ? so.id : r.id); }
+  };
+}
+async function feuilleSoumission(id, liste){
+  const l = liste || ((await API.soumissions_liste().catch(() => ({}))).soumissions || []);
+  const x = l.find(s => s.id === id); if (!x) { toast(tt('Soumission introuvable', 'Submission not found')); return; }
+  const rev = x.statut === 'revenue';
+  ouvrirFeuille(`<h3>${esc(x.compagnie)}${x.service ? ' · ' + esc(x.service) : ''}</h3>
+    <div class="env ${x.retard ? 'retard' : ''}"><ul>
+      ${x.numero ? `<li><span>${tt('Soumission', 'Submission')}</span><b>#${esc(x.numero)}</b></li>` : ''}
+      <li><span>${tt('Envoyée', 'Sent')}</span><b>${dateCourte(x.envoyee_le)} · ${joursDepuis(x.envoyee_le)}${tt(' j', ' d')}</b></li>
+      ${x.retour_prevu && !rev ? `<li class="${x.retard ? 'or' : ''}"><span>${tt('Retour prévu', 'Expected back')}</span><b>${dateCourte(x.retour_prevu)}${x.retard ? tt(' · en retard', ' · late') : ''}</b></li>` : ''}
+      ${rev ? `<li><span>${tt('Revenue', 'Back')}</span><b>${dateCourte(x.revenue_le)}</b></li>` : ''}
+      <li><span>${x.n} ${tt(x.n > 1 ? 'cartes' : 'carte', x.n > 1 ? 'cards' : 'card')} · ${tt('valeur déclarée', 'declared value')}</span><b>${argent(x.valeur_declaree, 0)}</b></li>
+      ${x.cout_total ? `<li><span>${tt('Coût total', 'Total cost')}</span><b>${argent(x.cout_total, 0)}</b></li>` : ''}</ul></div>
+    <div class="liste" style="margin:12px 0">${x.cartes.map((c, i) => `<div class="rangee"><span class="milieu"><span class="nom">${i + 1}. ${esc(c.joueur || titreCourt(c.titre) || '')}</span>
+      <span class="sous">${esc([c.annee, c.set_nom, c.numero ? '#' + c.numero : '', c.parallele].filter(Boolean).join(' · '))}</span></span>
+      ${c.grade ? capsule(c.grade, 'vert petit') : `<b>${c.valeur_declaree ? argent(c.valeur_declaree, 0) : '—'}</b>`}</div>`).join('')}</div>
+    <div class="env-b"><button class="pilule" id="so-csv">${tt('Exporter la liste', 'Export the list')}</button>
+      ${rev ? '' : `<button class="pilule acc" id="so-ret">${tt('Revenue', 'Back')}</button><button class="pilule" id="so-mod">${tt('Modifier', 'Edit')}</button>`}
+      <button class="pilule" id="so-tous">${tt('Toutes les soumissions', 'All submissions')}</button></div>`);
+  $('#so-tous').onclick = () => feuilleSoumissions();
+  $('#so-csv').onclick = async () => { const r = await essai(API.soumission_csv(id)); if (r) exporterCsv(r.csv, r.nom); };
+  const m = $('#so-mod'); if (m) m.onclick = () => formSoumission(x.cartes.map(c => c.id), x);
+  const rt = $('#so-ret'); if (rt) rt.onclick = () => {
+    const att = x.cartes.filter(c => !c.revenue);
+    ouvrirFeuille(`<h3>${tt('Retour de la soumission', 'Submission back')}</h3>
+      <div class="sous">${tt('La note et le certificat de chaque carte (laisse vide si tu ne les as pas encore).', 'Each card’s grade and cert (leave empty if you don’t have them yet).')}</div>
+      ${att.map(c => `<div class="so-ret"><b>${esc(c.joueur || titreCourt(c.titre) || '')}</b><div class="grille-champs">
+        <label>${tt('Note', 'Grade')}<input class="champ" data-g="${c.id}" placeholder="${esc(x.compagnie + ' 10')}"></label>
+        <label>${tt('Certificat', 'Cert')}<input class="champ" data-ce="${c.id}" inputmode="numeric"></label></div></div>`).join('')}
+      ${x.cout_carte ? `<div class="sous">${tt(`Le coût de gradation (${argent(x.cout_carte, 0)} par carte) s’ajoute au coût de chaque carte.`, `The grading cost (${argent(x.cout_carte, 0)} per card) is added to each card’s cost.`)}</div>` : ''}
+      <button class="btn" id="sr-ok">${tt('Tout est revenu', 'All back')}</button><button class="btn ghost" id="sr-non">${tt('Annuler', 'Cancel')}</button>`);
+    $('#sr-non').onclick = () => feuilleSoumission(id);
+    $('#sr-ok').onclick = async () => {
+      const notes = {}; att.forEach(c => { const g = (($(`[data-g="${c.id}"]`) || {}).value || '').trim(), ce = (($(`[data-ce="${c.id}"]`) || {}).value || '').trim(); if (g || ce) notes[c.id] = {grade: g, cert: ce}; });
+      if (await essai(API.soumission_retour(id, notes), tt('Soumission revenue dans ta collection', 'Submission back in your collection'))) { chargerInventaire(); feuilleSoumission(id); }
+    };
+  };
+}
+// -- 1er nov 2026 : la collection par sets (le % complete, les cartes qui manquent) --
+const barreSet = (pct) => `<span class="cs-b"><i style="width:${Math.max(2, Math.min(100, pct))}%"></i></span>`;
+async function feuilleSets(){
+  ouvrirFeuille(`<h3>${tt('Ma collection par sets', 'My collection by sets')}</h3><div id="cs-z">${roue}</div>`);
+  const r = await API.collection_sets().catch(e => ({ok:false, erreur:e.message}));
+  const z = $('#cs-z'); if (!z) return;
+  if (!r.ok) { z.innerHTML = `<div class="vide">${esc(r.erreur || 'Erreur')}</div>`; return; }
+  const l = r.produits || [];
+  z.innerHTML = (l.map((p, i) => `<button class="cs-p" data-i="${i}"><span class="cs-t"><b>${esc(p.nom)}</b><small>${p.n} ${tt(p.n > 1 ? 'cartes' : 'carte', p.n > 1 ? 'cards' : 'card')}${p.valeur ? ' · ' + argentCourt(p.valeur) : ''}</small></span>
+      ${p.sous.slice(0, 3).map(s => `<span class="cs-s"><span>${esc(s.nom)}</span><em>${s.possedees}/${s.total}</em>${barreSet(s.pct)}</span>`).join('')}<i class="fl">›</i></button>`).join('')
+    || `<div class="vide">${tt('Aucune carte reliée à une checklist du catalogue pour l’instant.', 'No card linked to a catalogue checklist yet.')}</div>`)
+    + (r.hors_checklist ? `<div class="sous" style="margin-top:10px">${r.hors_checklist} ${tt('carte(s) hors checklist : il manque l’année, le set ou le numéro, ou le produit n’est pas au catalogue.', 'card(s) not in a checklist: year, set or number missing, or the product isn’t in the catalogue.')}</div>` : '');
+  $$('.cs-p', z).forEach(b => b.onclick = () => feuilleSetProduit(l[+b.dataset.i]));
+}
+function feuilleSetProduit(p){
+  ouvrirFeuille(`<h3>${esc(p.nom)}</h3><div class="sous">${p.n} ${tt(p.n > 1 ? 'cartes' : 'carte', p.n > 1 ? 'cards' : 'card')}${p.valeur ? ' · ' + argent(p.valeur, 0) : ''}</div>
+    <div class="liste">${p.sous.map((s, i) => `<button class="cs-s ligne" data-i="${i}"><span>${esc(s.nom)}</span><em>${s.possedees}/${s.total} · ${s.pct} %</em>${barreSet(s.pct)}<i class="fl">›</i></button>`).join('')}</div>
+    <button class="btn ghost" id="cs-ret">${tt('Tous mes sets', 'All my sets')}</button>`);
+  $$('.cs-s.ligne').forEach(b => b.onclick = () => feuilleChecklistColl(p, p.sous[+b.dataset.i].nom));
+  $('#cs-ret').onclick = () => feuilleSets();
+}
+async function feuilleChecklistColl(p, sous){
+  ouvrirFeuille(`<h3>${esc(sous)}</h3><div class="sous">${esc(p.nom)}</div><div id="ck-z">${roue}</div>`);
+  const r = await API.collection_checklist(p.id, sous).catch(e => ({ok:false, erreur:e.message}));
+  const z = $('#ck-z'); if (!z) return;
+  if (!r.ok) { z.innerHTML = `<div class="vide">${esc(r.erreur || 'Erreur')}</div>`; return; }
+  let f = 'manque';
+  const peindre = () => {
+    const l = r.cartes.filter(x => f === 'tout' || (f === 'manque' ? !x.a : x.a));
+    z.innerHTML = `<div class="cs-s gros"><span>${r.possedees} / ${r.total}${r.tirage ? ' · /' + r.tirage : ''}</span><em>${Math.round(100 * r.possedees / (r.total || 1))} %</em>${barreSet(100 * r.possedees / (r.total || 1))}</div>
+      <div class="chips" id="ck-f">${[['manque', tt('Il me manque', 'Missing') + ' · ' + (r.total - r.possedees)], ['a', tt('Je les ai', 'I have') + ' · ' + r.possedees], ['tout', tt('Toutes', 'All')]]
+        .map(([k, lbl]) => `<button class="chip ${f === k ? 'on' : ''}" data-f="${k}">${lbl}</button>`).join('')}</div>
+      <div class="liste ck-l">${l.map(x => `<div class="rangee ${x.a ? 'a' : ''}"><span class="ck-n">#${esc(x.numero || '')}</span><span class="milieu"><span class="nom">${esc(x.joueur || '')}</span>${x.equipe ? `<span class="sous">${esc(x.equipe)}</span>` : ''}</span>${x.a ? '<b class="vert">✓</b>' : ''}</div>`).join('')
+        || `<div class="vide" style="padding:16px">${f === 'manque' ? tt('Set complet !', 'Set complete!') : '—'}</div>`}</div>
+      <div class="env-b"><button class="pilule" id="ck-part">${tt('Partager ce qui manque', 'Share what’s missing')}</button><button class="pilule" id="ck-imp">${tt('Imprimer la checklist', 'Print the checklist')}</button>
+        <button class="pilule" id="ck-ret">${tt('Retour', 'Back')}</button></div>`;
+    $$('#ck-f [data-f]').forEach(b => b.onclick = () => { f = b.dataset.f; peindre(); });
+    $('#ck-ret').onclick = () => feuilleSetProduit(p);
+    $('#ck-part').onclick = async () => {
+      const t = `${p.nom} · ${sous} — ${tt('il me manque', 'missing')} (${r.total - r.possedees}) :\n` + r.cartes.filter(x => !x.a).map(x => `#${x.numero} ${x.joueur || ''}`).join('\n');
+      try { if (navigator.share) { await navigator.share({title: sous, text: t}); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+      try { await navigator.clipboard.writeText(t); toast(tt('Liste copiée', 'List copied')); } catch (e) { toast(tt('Partage impossible ici', 'Sharing not possible here')); }
+    };
+    $('#ck-imp').onclick = () => imprimerChecklist(p.nom, sous, r);
+  };
+  peindre();
+}
+function imprimerChecklist(prod, sous, r){
+  const lignes = r.cartes.map(x => `<tr><td class="b">${x.a ? '☑' : '☐'}</td><td>#${esc(x.numero || '')}</td><td>${esc(x.joueur || '')}</td><td>${esc(x.equipe || '')}</td></tr>`).join('');
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(prod)} · ${esc(sous)}</title><style>body{font:12px -apple-system,Helvetica,Arial,sans-serif;margin:24px;color:#111}
+    h1{font-size:18px;margin:0 0 2px}p{margin:0 0 12px;color:#555}table{border-collapse:collapse;width:100%}td{padding:4px 6px;border-bottom:1px solid #ddd}td.b{width:18px;font-size:14px}</style></head>
+    <body><h1>${esc(prod)} · ${esc(sous)}</h1><p>${r.possedees} / ${r.total} · SlabCoach</p><table>${lignes}</table></body></html>`;
+  const f = document.createElement('iframe'); f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+  document.body.appendChild(f); f.contentDocument.open(); f.contentDocument.write(html); f.contentDocument.close();
+  setTimeout(() => { try { f.contentWindow.focus(); f.contentWindow.print(); } catch (e) { toast(tt('Impression impossible ici', 'Printing not possible here')); } setTimeout(() => f.remove(), 60000); }, 300);
+}
+// -- 1er nov 2026 : la valeur de la collection dans le temps, les plus fortes hausses et baisses (depuis l'achat) --
+async function feuilleValeurColl(){
+  ouvrirFeuille(`<h3>${tt('Valeur de ma collection', 'My collection’s value')}</h3><div id="cv-z">${roue}</div>`);
+  const r = await API.collection_valeur().catch(e => ({ok:false, erreur:e.message}));
+  const z = $('#cv-z'); if (!z) return;
+  if (!r.ok) { z.innerHTML = `<div class="vide">${esc(r.erreur || 'Erreur')}</div>`; return; }
+  const h = r.historique || [], gain = r.gain_connu;
+  const svg = (() => { if (h.length < 2) return `<div class="sous cv-vide">${tt('Le graphique se remplit tout seul : un point par jour.', 'The chart fills itself: one point per day.')}</div>`;
+    const W = 600, H = 170, vs = h.map(x => x.valeur), mi = Math.min(...vs), ma = Math.max(...vs), sp = (ma - mi) || 1;
+    const pts = h.map((x, i) => [i / (h.length - 1) * W, H - 12 - (x.valeur - mi) / sp * (H - 30)]);
+    const d = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+    return `<svg class="cv-g" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><path d="${d} L${W} ${H} L0 ${H} Z" class="aire"/><path d="${d}" class="ligne"/></svg>
+      <div class="cv-ax"><span>${dateCourte(h[0].jour)}</span><span>${dateCourte(h[h.length - 1].jour)}</span></div>`; })();
+  const v = (x) => x == null ? '' : `<span class="${x >= 0 ? 'vert' : 'rouge'}">${x >= 0 ? '+' : '−'}${argentCourt(Math.abs(x))}</span>`;
+  const ligne = (m) => `<button class="rangee cv-m" data-id="${m.id}"><span class="milieu"><span class="nom">${esc(m.joueur || '')}</span>
+      <span class="sous">${tt('payée ', 'paid ')}${argentCourt(m.cout)} · ${tt('vaut ', 'worth ')}${argentCourt(m.valeur)}${m.semaine != null ? ' · ' + (m.semaine >= 0 ? '+' : '') + m.semaine + tt(' % suivi', '% tracked') : ''}</span></span>
+      <b class="${m.gain >= 0 ? 'vert' : 'rouge'}">${m.gain >= 0 ? '+' : '−'}${argentCourt(Math.abs(m.gain))}${m.pct != null ? `<small> ${m.pct >= 0 ? '+' : ''}${m.pct} %</small>` : ''}</b></button>`;
+  z.innerHTML = `<div class="cv-t"><b>${argent(r.valeur, 0)}</b><span>${r.nb} ${tt(r.nb > 1 ? 'cartes' : 'carte', r.nb > 1 ? 'cards' : 'card')}${gain != null ? ' · ' + tt('gain ', 'gain ') + v(gain) + (r.n_prix_connu < r.nb ? ` <small>(${r.n_prix_connu} ${tt('au prix payé connu', 'with known cost')})</small>` : '') : ''}${r.var_30j != null ? ' · 30 j ' + v(r.var_30j) : ''}</span></div>
+    ${svg}
+    ${(r.hausses || []).length ? `<div class="r-titre">${tt('Plus fortes hausses', 'Biggest gains')} <small>${tt('depuis l’achat', 'since purchase')}</small></div><div class="liste">${r.hausses.map(ligne).join('')}</div>` : ''}
+    ${(r.baisses || []).length ? `<div class="r-titre">${tt('Plus fortes baisses', 'Biggest losses')} <small>${tt('depuis l’achat', 'since purchase')}</small></div><div class="liste">${r.baisses.map(ligne).join('')}</div>` : ''}
+    ${!(r.hausses || []).length && !(r.baisses || []).length ? `<div class="sous">${tt('Ajoute le prix payé de tes cartes : l’app montrera ce qui monte et ce qui baisse.', 'Add what you paid for your cards: the app will show what goes up and down.')}</div>` : ''}
+    <div class="sous" style="margin-top:10px">${tt('Valeurs : les ventes réelles de chaque carte, mises à jour quand tu ouvres sa fiche et chaque semaine avec l’alerte de valeur.', 'Values: each card’s real sales, refreshed when you open it and weekly with the value alert.')}</div>`;
+  $$('.cv-m', z).forEach(b => b.onclick = async () => { const c = await API.carte_lire(+b.dataset.id).catch(() => null); if (c && c.id) ficheCollection(c); });
+}
+async function exporterCsv(texte, nom){
+  try {
+    const f = new File([texte], nom, {type: 'text/csv'});
+    if (navigator.canShare && navigator.canShare({files: [f]})) { await navigator.share({files: [f], title: nom}); return; }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([texte], {type: 'text/csv'})); a.download = nom; document.body.appendChild(a); a.click(); a.remove(); }
+  catch (e) { try { await navigator.clipboard.writeText(texte); toast(tt('Liste copiée', 'List copied')); } catch (x) { toast(tt('Export impossible ici', 'Export not possible here')); } }
 }
 function formEnvoi(c, type, e0){
   const e = e0 || {}, G = type === 'gradation';
@@ -9435,6 +9699,7 @@ const GUIDE_PRODUITS = () => [
   [tt('Hobby ou Retail ?', 'Hobby or retail?'), tt('Hobby (boutique, en ligne) : meilleures chances de hits. Retail (blaster, tin en magasin) : moins cher, cotes plus faibles.', 'Hobby (card shops, online): better hit odds. Retail (blasters, tins in stores): cheaper, lower odds.'), ''],
 ];
 async function vueGuide(){
+  try { localStorage.setItem('lr_guide_vu', '1'); } catch (e) {}      // 1er nov 2026 : vu une fois -> plus dans « A faire »
   V().innerHTML = `<section class="ecran large guide">
     <div class="titre">${tt('Guide du hobby', 'Hobby guide')}</div>
     <div class="sous" style="font-size:16px">${tt('Tout ce qu’il faut savoir pour acheter malin, en 3 minutes.', 'Everything you need to buy smart, in 3 minutes.')}</div>
@@ -9823,7 +10088,7 @@ async function vueReglages(arg){
     <div class="profil-rac">${[
       ...(S.mode !== 'acheteur' ? [['#bilan', ICO_H.bilan, tt('Bilan', 'Report')]] : []),
       ...(S.mode !== 'acheteur' && act.magasin ? [['#comptoir', ICO_H.comptoir, tt('Comptoir', 'Counter')]] : []),
-      ['#' + (S.mode === 'acheteur' ? 'analyse' : 'breaks/liste'), ICO_H.breaks, 'Breaks'],
+      ['#breaks/liste', ICO_H.breaks, tt('Mes breaks', 'My breaks')],
       ['alertes', ICO_CLOCHE, tt('Alertes', 'Alerts')],
       ['#guide', ICO_H.guide, 'Guide'],
       ...(S.forfait && S.forfait.admin ? [['#admin', '✦', 'Admin']] : []),

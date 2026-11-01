@@ -124,6 +124,8 @@ CREATE TABLE IF NOT EXISTS ventes_comptoir (id INTEGER PRIMARY KEY, le TEXT, sou
     paiement TEXT, client_id INTEGER, lignes TEXT);
 CREATE TABLE IF NOT EXISTS rachats (id INTEGER PRIMARY KEY, le TEXT, client_id INTEGER, valeur REAL, offre REAL, mode TEXT, lignes TEXT);
 CREATE TABLE IF NOT EXISTS depenses (id INTEGER PRIMARY KEY, le TEXT, categorie TEXT, montant REAL, note TEXT);
+CREATE TABLE IF NOT EXISTS soumissions (id INTEGER PRIMARY KEY, compagnie TEXT, service TEXT, numero TEXT, envoyee_le TEXT,
+    retour_prevu TEXT, cout_carte REAL, statut TEXT, cree_le TEXT, revenue_le TEXT, valeurs TEXT);
 """
 
 
@@ -153,7 +155,7 @@ def _connecter(chemin=None):
     for col, typ in (("debut", "TEXT"), ("watchers", "INTEGER"), ("categorie_ebay", "TEXT"), ("photo", "TEXT"), ("vu_actif_le", "TEXT"),
                      ("sport", "TEXT"), ("recrue", "INTEGER"), ("relique", "INTEGER"), ("cert", "TEXT"), ("photos", "TEXT"),
                      ("vues", "INTEGER"), ("impressions", "INTEGER"), ("trafic_le", "TEXT"), ("photos_orig", "TEXT"), ("studio_v", "INTEGER"),
-                     ("etat_json", "TEXT"), ("etat_le", "TEXT"), ("envoi_json", "TEXT")):            # 1er nov 2026 - l'etat estime (pre-gradation)   # 31 oct 2026 - vues des annonces
+                     ("etat_json", "TEXT"), ("etat_le", "TEXT"), ("envoi_json", "TEXT"), ("soumission_id", "INTEGER")):            # 1er nov 2026 - l'etat estime (pre-gradation)   # 31 oct 2026 - vues des annonces
         if col not in cols:
             c.execute(f"ALTER TABLE cartes ADD COLUMN {col} {typ}")
     # 23 oct 2026 - autres sports : le sport du produit et du break (equipes de sa ligue)
@@ -2486,6 +2488,150 @@ class Api:
                 c.close()
         return {"ok": True, "carte": self.carte_lire(cid)}
 
+    # -- 1er nov 2026 (Mathieu : une app concurrente prepare les soumissions PSA ; « soumissions groupees ») : plusieurs
+    # cartes de la collection -> UNE soumission (compagnie, service, numero, dates, cout par carte). La valeur declaree
+    # (assurance) de chaque carte = sa valeur connue (sinon son cout). Liste exportable a recopier dans le formulaire de
+    # la compagnie ; retour de toute la soumission d'un coup (notes et certificats).
+    def _soumission_envoi(self, so, cid, valeur):
+        return {"type": "gradation", "soumission_id": so["id"], "compagnie": so["compagnie"], "service": so.get("service"),
+                "soumission": so.get("numero"), "envoye_le": so.get("envoyee_le"), "retour_prevu": so.get("retour_prevu"),
+                "cout": so.get("cout_carte"), "valeur_declaree": valeur}
+
+    def soumission_creer(self, d):
+        d = dict(d or {})
+        ids = []
+        for x in d.get("cartes") or []:
+            try:
+                ids.append(int(x))
+            except (TypeError, ValueError):
+                continue
+        ids = list(dict.fromkeys(ids))[:200]
+        if not ids:
+            return {"ok": False, "erreur": "Choisis au moins une carte"}
+        jour = lambda v: str(v)[:10] if re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(v or "")[:10]) else None
+        txt = lambda v, n: re.sub(r"\s+", " ", str(v or "")).strip()[:n] or None
+        so = {"compagnie": d.get("compagnie") if d.get("compagnie") in self.COMPAGNIES else "PSA", "service": txt(d.get("service"), 30),
+              "numero": txt(d.get("numero"), 30), "envoyee_le": jour(d.get("envoyee_le")) or datetime.now().strftime("%Y-%m-%d"),
+              "retour_prevu": jour(d.get("retour_prevu")), "cout_carte": _float(d.get("cout_carte")), "statut": "envoyee"}
+        decl = d.get("valeurs") or {}
+        with _verrou:
+            c = self._db()
+            try:
+                cartes = {r["id"]: dict(r) for r in c.execute("SELECT id, valeur, cout, statut, grade, envoi_json FROM cartes WHERE id IN (%s)"
+                                                              % ",".join("?" * len(ids)), ids)}
+                pris = [i for i in ids if i in cartes and cartes[i]["statut"] != "Vendue" and not cartes[i]["envoi_json"]]
+                if not pris:
+                    return {"ok": False, "erreur": "Ces cartes sont déjà envoyées ou vendues"}
+                cur = c.execute("INSERT INTO soumissions (compagnie, service, numero, envoyee_le, retour_prevu, cout_carte, statut, cree_le) "
+                                "VALUES (?,?,?,?,?,?,?,?)", (so["compagnie"], so["service"], so["numero"], so["envoyee_le"], so["retour_prevu"],
+                                                             so["cout_carte"], so["statut"], _maintenant()))
+                so["id"] = cur.lastrowid
+                vals = {}
+                for i in pris:
+                    v = _float(decl.get(str(i))) or cartes[i]["valeur"] or cartes[i]["cout"]
+                    vals[str(i)] = round(v, 2) if v else None
+                    e = {k: x for k, x in self._soumission_envoi(so, i, vals[str(i)]).items() if x not in (None, "")}
+                    c.execute("UPDATE cartes SET envoi_json=?, soumission_id=? WHERE id=?", (json.dumps(e, ensure_ascii=False), so["id"], i))
+                c.execute("UPDATE soumissions SET valeurs=? WHERE id=?", (json.dumps(vals), so["id"]))
+                c.commit()
+            finally:
+                c.close()
+        return {"ok": True, "id": so["id"], "n": len(pris), "ignorees": len(ids) - len(pris)}
+
+    def soumissions_liste(self):
+        with _verrou:
+            c = self._db()
+            try:
+                sos = _dicts(c.execute("SELECT * FROM soumissions ORDER BY id DESC LIMIT 60"))
+                cartes = _dicts(c.execute("SELECT id, joueur, titre, annee, marque, set_nom, numero, parallele, tirage, valeur, cout, grade, cert, "
+                                          "photo, soumission_id, envoi_json FROM cartes WHERE soumission_id IS NOT NULL"))
+            finally:
+                c.close()
+        vals = {so["id"]: (json.loads(so.get("valeurs") or "{}") or {}) for so in sos}
+        par = {}
+        for x in cartes:
+            sid = x["soumission_id"]
+            par.setdefault(sid, []).append({**{k: v for k, v in x.items() if k not in ("envoi_json", "soumission_id")},
+                                            "valeur_declaree": (vals.get(sid) or {}).get(str(x["id"])), "revenue": not x.get("envoi_json")})
+        auj = datetime.now().strftime("%Y-%m-%d")
+        out = []
+        for so in sos:
+            l = par.get(so["id"], [])
+            if not l:
+                continue
+            out.append({**{k: v for k, v in so.items() if k != "valeurs"}, "cartes": l, "n": len(l), "valeur_declaree": round(sum(x.get("valeur_declaree") or 0 for x in l), 2),
+                        "cout_total": round((so.get("cout_carte") or 0) * len(l), 2),
+                        "retard": bool(so["statut"] != "revenue" and so.get("retour_prevu") and so["retour_prevu"] < auj)})
+        return {"ok": True, "soumissions": out}
+
+    def soumission_maj(self, sid, d):
+        """Change le numero, le service, les dates ou le cout d'une soumission (et de ses cartes)."""
+        d = dict(d or {})
+        l = next((x for x in self.soumissions_liste()["soumissions"] if x["id"] == int(sid)), None)
+        if not l:
+            return {"ok": False, "erreur": "Soumission introuvable"}
+        jour = lambda v: str(v)[:10] if re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(v or "")[:10]) else None
+        txt = lambda v, n: re.sub(r"\s+", " ", str(v or "")).strip()[:n] or None
+        so = {"id": l["id"], "compagnie": d.get("compagnie") if d.get("compagnie") in self.COMPAGNIES else l["compagnie"],
+              "service": txt(d.get("service"), 30) if "service" in d else l.get("service"),
+              "numero": txt(d.get("numero"), 30) if "numero" in d else l.get("numero"),
+              "envoyee_le": jour(d.get("envoyee_le")) or l.get("envoyee_le"),
+              "retour_prevu": jour(d.get("retour_prevu")) if "retour_prevu" in d else l.get("retour_prevu"),
+              "cout_carte": _float(d.get("cout_carte")) if "cout_carte" in d else l.get("cout_carte")}
+        with _verrou:
+            c = self._db()
+            try:
+                c.execute("UPDATE soumissions SET compagnie=?, service=?, numero=?, envoyee_le=?, retour_prevu=?, cout_carte=? WHERE id=?",
+                          (so["compagnie"], so["service"], so["numero"], so["envoyee_le"], so["retour_prevu"], so["cout_carte"], so["id"]))
+                for x in l["cartes"]:
+                    if x.get("revenue"):
+                        continue
+                    e = {k: v for k, v in self._soumission_envoi(so, x["id"], x.get("valeur_declaree")).items() if v not in (None, "")}
+                    c.execute("UPDATE cartes SET envoi_json=? WHERE id=? AND envoi_json IS NOT NULL", (json.dumps(e, ensure_ascii=False), x["id"]))
+                c.commit()
+            finally:
+                c.close()
+        return {"ok": True}
+
+    def soumission_retour(self, sid, notes=None):
+        """Toute la soumission revient : chaque carte recoit sa note et son certificat (si donnes) ; le cout de gradation
+        s'ajoute a son cout. notes = {id_carte: {grade, cert}}."""
+        notes = notes or {}
+        l = next((x for x in self.soumissions_liste()["soumissions"] if x["id"] == int(sid)), None)
+        if not l:
+            return {"ok": False, "erreur": "Soumission introuvable"}
+        n = 0
+        for x in l["cartes"]:
+            if x.get("revenue"):
+                continue
+            r = notes.get(str(x["id"])) or {}
+            if self.carte_envoi(x["id"], {"retour": {"grade": r.get("grade"), "cert": r.get("cert")}}).get("ok"):
+                n += 1
+        with _verrou:
+            c = self._db()
+            try:
+                c.execute("UPDATE soumissions SET statut='revenue', revenue_le=? WHERE id=?", (_maintenant(), int(sid)))
+                c.commit()
+            finally:
+                c.close()
+        return {"ok": True, "n": n}
+
+    def soumission_csv(self, sid):
+        """La liste a recopier dans le formulaire de la compagnie (CSV)."""
+        import csv
+        import io
+        l = next((x for x in self.soumissions_liste()["soumissions"] if x["id"] == int(sid)), None)
+        if not l:
+            return {"ok": False, "erreur": "Soumission introuvable"}
+        f = io.StringIO()
+        w = csv.writer(f)
+        w.writerow(["#", "Year", "Brand", "Set", "Card #", "Player", "Variety / Parallel", "Serial", "Declared value (CAD)"])
+        for i, x in enumerate(l["cartes"], 1):
+            w.writerow([i, x.get("annee") or "", x.get("marque") or "", x.get("set_nom") or "", x.get("numero") or "", x.get("joueur") or x.get("titre") or "",
+                        x.get("parallele") or "", ("/" + str(x["tirage"])) if x.get("tirage") else "", x.get("valeur_declaree") or ""])
+        nom = f"soumission-{l['compagnie']}-{l.get('numero') or l['id']}.csv"
+        return {"ok": True, "csv": f.getvalue(), "nom": re.sub(r"[^A-Za-z0-9._-]+", "-", nom)}
+
     def envois_en_cours(self):
         """Les cartes au gradage ou en consignation, avec ce qui est en retard. -> {gradation: [...], encan: [...]}"""
         with _verrou:
@@ -3880,6 +4026,23 @@ class Api:
     def collection(self):
         return marche.collection(self)
 
+    # 1er nov 2026 (Mathieu : « CollX et Collectr, on doit etre mieux ») : la collection par sets, sa valeur dans le temps, l'export
+    def collection_sets(self):
+        import collection_sets
+        return collection_sets.sets(self)
+
+    def collection_checklist(self, pid, sous):
+        import collection_sets
+        return collection_sets.checklist(self, pid, sous)
+
+    def collection_valeur(self):
+        import collection_sets
+        return collection_sets.valeur(self)
+
+    def collection_csv(self):
+        import collection_sets
+        return collection_sets.csv_texte(self)
+
     def calendrier(self):
         return marche.calendrier()
 
@@ -5154,6 +5317,11 @@ class Api:
 
         try:                                     # 26 oct 2026 : la valeur de la collection, un point par jour
             marche.noter_collection(self, valeur, cout, len(stock))
+        except Exception:
+            pass
+        try:                                     # 1er nov 2026 : la valeur de la COLLECTION seule, un point par jour
+            import collection_sets
+            collection_sets.noter(self)
         except Exception:
             pass
         analysees = sum(1 for it in act if it in sante_)
