@@ -467,6 +467,11 @@ OUTIL_ETAT = {
                       "properties": {"centrage": {"type": "number"}, "coins": {"type": "number"}, "bords": {"type": "number"},
                                      "surface": {"type": ["number", "null"], "description": "null si la surface ne se juge pas sur ces photos"}},
                       "required": ["centrage", "coins", "bords"]},
+            # 1er nov 2026 (Mathieu : « on doit expliquer les cotes, ou est le defaut ») : chaque sous-note sous 10 dit POURQUOI
+            "explications": {"type": "object", "description": "Pour CHAQUE sous-note sous 10 : pourquoi, et OU sur la carte (12 mots max). "
+                                                              "Ex. « bord droit : leger blanchiment au milieu » ou « 60/40 : bordure gauche plus large ».",
+                             "properties": {"centrage": {"type": "string"}, "coins": {"type": "string"}, "bords": {"type": "string"},
+                                            "surface": {"type": "string"}}},
             "note_min": {"type": "number", "description": "Bas de la fourchette de note globale (PSA) la plus probable."},
             "note_max": {"type": "number", "description": "Haut de la fourchette (au plus 1 point au-dessus de note_min)."},
             "defauts": {"type": "array", "description": "Chaque defaut VISIBLE, le plus grave d'abord. Aucun defaut invente.",
@@ -474,7 +479,8 @@ OUTIL_ETAT = {
                             "photo": {"type": "integer", "description": "0 = devant, 1 = dos"},
                             "zone": {"type": "string", "enum": _ZONES},
                             "type": {"type": "string", "enum": _DEFAUTS},
-                            "gravite": {"type": "string", "enum": ["leger", "moyen", "fort"]},
+                            "gravite": {"type": "string", "enum": ["a verifier", "leger", "moyen", "fort"],
+                                        "description": "« a verifier » : possible mais pas certain sur la photo (dis ou regarder)"},
                             "x": {"type": "integer", "description": "Position du defaut dans l'image, 0 a 1000 (vers la droite)"},
                             "y": {"type": "integer", "description": "Position du defaut dans l'image, 0 a 1000 (vers le bas)"}},
                             "required": ["photo", "zone", "type", "gravite", "x", "y"]}},
@@ -494,12 +500,64 @@ Regles :
   de chaque photo, surtout sur les bordures foncees ou le blanchiment se voit.
 - Surface : rayures, lignes d'impression, taches, plis, bosses. Si un reflet, un etui ou la resolution empeche de juger : surface = null
   et dis-le dans « invisible ».
-- Ne signale QUE ce que tu vois vraiment ; un doute = « invisible », pas un defaut. Une carte dans un toploader ou une pochette :
+- Ne signale QUE ce que tu vois vraiment. Un defaut possible mais pas certain : mets-le quand meme dans « defauts » avec la gravite
+  « a verifier » et sa position exacte, pour que la personne sache OU regarder. Une carte dans un toploader ou une pochette :
   dis que les bords et la surface sont partiellement caches.
+- CHAQUE sous-note sous 10 doit etre expliquee dans « explications » (pourquoi et ou) ET, si c'est un defaut, figurer dans
+  « defauts » avec sa position. Jamais une note basse sans raison.
+- x et y : la position du defaut dans l'IMAGE recue (0 a 1000), le plus precis possible, sur le coin ou le bord concerne.
 - Fourchette de note PSA prudente (ex. 8 a 9). Ne promets jamais un 10 : au mieux 9 a 10, quand rien n'est visible et que le centrage
   est dans la tolerance du 10.
 - Carte dans un slab de gradation : evaluable = false (elle est deja notee).
-- Reponds uniquement avec l'outil « etat ». Textes en francais simple."""
+- Textes courts (conseil : 25 mots max ; invisible : 12 mots max chacun).
+- Reponds uniquement avec l'outil « etat »."""
+
+
+# 1er nov 2026 (Mathieu : « l'analyse de la carte : en Pro jusqu'a 30 cartes, en gratuit 3 ») : par mois, a part des lectures
+ETAT_GRATUIT = int(os.environ.get("LR_ETAT_GRATUIT") or 3)
+ETAT_PRO = int(os.environ.get("LR_ETAT_PRO") or 30)
+
+
+def _limite_etat():
+    import comptes
+    if not comptes.MULTI or not comptes.courant():
+        return None                                      # PC de Mathieu : illimite
+    import forfaits
+    return ETAT_PRO if forfaits.est_pro() else ETAT_GRATUIT
+
+
+def statut_etat():
+    perso, _s = _chemins()
+    n = (_lire(perso).get(_mois()) or {}).get("etat", 0)
+    lim = _limite_etat()
+    return {"ce_mois": n, "limite": lim, "reste": None if lim is None else max(0, lim - n)}
+
+
+def _verifier_etat():
+    st = statut_etat()
+    if st["limite"] is not None and st["reste"] <= 0:
+        import forfaits
+        raise Erreur(f"Tes {st['limite']} analyses d'état du mois sont utilisées" + ("" if forfaits.est_pro() else
+                     f" : passe au Pro pour en avoir {ETAT_PRO} par mois") + ".")
+    _s = _chemins()[1]
+    if (_lire(_s).get(_mois()) or {}).get("usd", 0) >= PLAFOND_SERVEUR_USD:
+        raise Erreur("L'analyse photo est en pause pour quelques heures : réessaie plus tard.")
+
+
+def _noter_etat(usage):
+    entree, sortie = int(usage.get("input_tokens") or 0), int(usage.get("output_tokens") or 0)
+    usd = entree / 1e6 * PRIX_ENTREE + sortie / 1e6 * PRIX_SORTIE
+    perso, serveur = _chemins()
+    with _verrou:
+        d = _lire(perso)
+        m = d.setdefault(_mois(), {"n": 0, "usd": 0.0})
+        m["etat"] = m.get("etat", 0) + 1
+        m["usd"] = round(m.get("usd", 0) + usd, 5)
+        _ecrire(perso, d)
+        d = _lire(serveur)
+        m = d.setdefault(_mois(), {"n": 0, "usd": 0.0})
+        m["usd"] = round(m.get("usd", 0) + usd, 5)
+        _ecrire(serveur, d)
 
 
 def _nettoyer_etat(f):
@@ -530,37 +588,43 @@ def _nettoyer_etat(f):
         except (TypeError, ValueError):
             continue
         defauts.append({"photo": 1 if d.get("photo") == 1 else 0, "zone": d["zone"], "type": d["type"],
-                        "gravite": d.get("gravite") if d.get("gravite") in ("leger", "moyen", "fort") else "leger", "x": x, "y": y})
+                        "gravite": d.get("gravite") if d.get("gravite") in ("a verifier", "leger", "moyen", "fort") else "leger", "x": x, "y": y})
+    ex = f.get("explications") or {}
+    explications = {k: str(ex.get(k) or "").strip()[:120] for k in ("centrage", "coins", "bords", "surface")
+                    if str(ex.get(k) or "").strip() and (notes.get(k) or 10) < 10}
     return {"evaluable": f.get("evaluable") is not False, "raison": str(f.get("raison") or "").strip()[:80],
             "centrage_gd": rat(f.get("centrage_gd")), "centrage_hb": rat(f.get("centrage_hb")), "centrage_dos": rat(f.get("centrage_dos")),
-            "notes": notes, "note_min": lo, "note_max": hi, "defauts": defauts,
-            "invisible": [str(x).strip()[:90] for x in (f.get("invisible") or [])][:4], "conseil": str(f.get("conseil") or "").strip()[:160]}
+            "notes": notes, "note_min": lo, "note_max": hi, "defauts": defauts, "explications": explications,
+            "invisible": [str(x).strip()[:160] for x in (f.get("invisible") or [])][:4], "conseil": str(f.get("conseil") or "").strip()[:300]}
 
 
-def etat(photos):
-    """photos : devant (et dos) -> l'etat estime. Compte comme une lecture de photo (meme quota, meme plafond, meme cache)."""
+def etat(photos, langue="fr"):
+    """photos : devant (et dos) -> l'etat estime. Son propre quota par mois (3 gratuit, 30 Pro), le meme plafond serveur.
+    Les photos ORIGINALES (la photo studio ajoute un fond flou et un halo autour de la carte : les bords y seraient caches)."""
     if not disponible():
         raise Erreur("Analyse photo pas encore activée sur ce serveur.")
     photos = [p for p in (photos or []) if p][:MAX_PHOTOS]
     if not photos:
         raise Erreur("Il faut au moins la photo du devant")
     images = [_decoder(p) for p in photos]
-    h = hashlib.sha256(b"etat-v1")
+    langue = "en" if str(langue or "").lower().startswith("en") else "fr"
+    h = hashlib.sha256(b"etat-v2-" + langue.encode())
     for b, _t in images:
         h.update(hashlib.sha256(b).digest())
     cle_cache = h.hexdigest()
     cache = _lire(_chemin_cache())
     if cle_cache in cache:
         return dict(cache[cle_cache], ok=True, cache=True)
-    _verifier_quotas()
+    _verifier_etat()
     contenu = []
     for i, (b, typ) in enumerate(images):
         contenu.append({"type": "text", "text": "Photo 0 : le devant." if i == 0 else "Photo 1 : le dos."})
         contenu.append({"type": "image", "source": {"type": "base64", "media_type": typ, "data": base64.b64encode(b).decode()}})
-    contenu.append({"type": "text", "text": "Evalue l'etat de cette carte : centrage, coins, bords, surface."})
-    r = _appeler({"model": MODELE, "max_tokens": 1800, "system": SYSTEME_ETAT, "tools": [OUTIL_ETAT],
+    contenu.append({"type": "text", "text": "Evalue l'etat de cette carte : centrage, coins, bords, surface. "
+                    + ("Write every text field in plain English." if langue == "en" else "Ecris tous les textes en francais simple (dis « carte », jamais « card »).")})
+    r = _appeler({"model": MODELE, "max_tokens": 2200, "system": SYSTEME_ETAT, "tools": [OUTIL_ETAT],
                   "tool_choice": {"type": "tool", "name": "etat"}, "messages": [{"role": "user", "content": contenu}]})
-    _noter(r.get("usage") or {})
+    _noter_etat(r.get("usage") or {})
     f = next((b.get("input") for b in r.get("content") or [] if b.get("type") == "tool_use"), None)
     if not f:
         raise Erreur("Analyse impossible : reprends la photo de plus près, sans reflet.")

@@ -2269,7 +2269,19 @@ button.an-attente{width:100%; text-align:left; color:var(--texte); cursor:pointe
 .et-n span{font:700 10px var(--f-cond); letter-spacing:.1em; text-transform:uppercase; color:var(--doux)} .et-n b{font:700 20px var(--f-cond)} .et-n small{font-size:10.5px; color:var(--doux); white-space:nowrap}
 .et-d{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px} .et-d li{display:flex; align-items:center; gap:10px; font-size:14px; cursor:pointer}
 .et-d i{flex:0 0 22px; height:22px; border-radius:50%; display:grid; place-items:center; font:700 12px var(--f-cond); font-style:normal; background:rgba(255,255,255,.08)}
-.et-ok{font-size:14px; color:var(--vert)} .et-c{font-size:14px} .et-p{font-size:12px; color:var(--doux)} .et-p .lien{background:none; border:0; color:var(--acc); font:inherit; padding:0; cursor:pointer}
+.et-ok{font-size:14px; color:var(--vert)}
+.env-b{display:flex; flex-wrap:wrap; gap:8px} .env-b .pilule{text-decoration:none}
+.env{display:flex; flex-direction:column; gap:10px; padding:14px; border-radius:18px; background:var(--carte); border:1px solid var(--ligne)} .env.retard{border-color:var(--or)}
+.env-t{display:flex; flex-direction:column; gap:2px} .env-t span{font:700 11px var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--doux)} .env-t b{font-size:17px}
+.env ul{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:4px; font-size:14px} .env li{display:flex; justify-content:space-between; gap:10px}
+.env li span{color:var(--doux)} .env li.or b{color:var(--or)}
+.et-x{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:4px; font-size:13.5px} .et-x li{display:flex; gap:8px} .et-x b{flex:0 0 auto; font-weight:700} .et-x span{color:var(--doux)}
+.et-d li em{margin-left:auto; color:var(--doux); font-style:normal} .et-d li.g-a-verifier span{color:var(--doux)} .fc-pt.g-a-verifier{background:transparent; color:#fff; box-shadow:0 0 0 2px #fff, 0 0 0 4px rgba(0,0,0,.5)}
+.fc-pt.g-fort{background:var(--rouge); color:#fff} .fc-pt.g-moyen{background:var(--or)} .fc-pt.g-leger{background:#e9e6df}
+.vd{position:fixed; inset:0; z-index:9999; background:rgba(8,8,10,.97); overflow-y:auto; padding:56px 16px 32px; display:flex; flex-direction:column; gap:14px}
+.vd-x{position:fixed; top:14px; right:14px; width:40px; height:40px; border-radius:50%; border:1px solid var(--ligne); background:var(--carte); color:#fff; display:grid; place-items:center; z-index:2}
+.vd-x svg{width:18px; height:18px} .vd-ph{position:relative; display:flex; justify-content:center} .vd-ph img{max-width:100%; max-height:78vh; border-radius:12px; display:block}
+.vd-l{margin-top:4px} .et-c{font-size:14px} .et-p{font-size:12px; color:var(--doux)} .et-p .lien{background:none; border:0; color:var(--acc); font:inherit; padding:0; cursor:pointer}
 .fc-pts{display:flex; justify-content:center; gap:6px; margin-top:-4px} .fc-pts i{width:6px; height:6px; border-radius:50%; background:var(--ligne)} .fc-pts i.on{background:var(--texte, #F4F2EE)}
 .fc-chiffres small{font-size:12px; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .fc-chiffres{display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); gap:8px}
@@ -8178,7 +8190,9 @@ function tuileInv(c){
   const vendue = c.statut === 'Vendue', r = !vendue ? repere(c) : null, m = c.marche;
   const etat = vendue ? capsule(tt('Vendue', 'Sold') + (c.vendu_le ? ' · ' + dateCourte(c.vendu_le) : ''), 'petit')
     : c.statut === 'Listée' && c.debut && Date.parse(c.debut) > Date.now() ? `<span class="capsule or petit">${icH()}${esc(dateProg(c.debut))}</span>`
-    : c.statut === 'Listée' ? capsule(tt('Sur eBay', 'On eBay'), 'acc petit') : capsule(c.emplacement || tt('En stock', 'In stock'), 'petit');
+    : c.statut === 'Listée' ? capsule(tt('Sur eBay', 'On eBay'), 'acc petit')
+    : envoiDe(c) ? capsule(envoiDe(c).type === 'gradation' ? tt('Au gradage', 'At grading') + ' · ' + envoiDe(c).compagnie : tt('En encan', 'At auction'), (envoiRetard(envoiDe(c)) ? 'or' : 'acc') + ' petit')
+    : capsule(c.emplacement || tt('En stock', 'In stock'), 'petit');
   const nom = c.joueur || titreCourt(c.titre) || tt('Article', 'Item');
   const det = [c.annee, c.set_nom, c.parallele, c.numero ? '#' + c.numero : '', c.tirage ? '/' + c.tirage : '', c.auto ? 'Auto' : '', c.grade].filter(Boolean).join(' · ');
   const img = `<div class="img">${c.joueur ? `<span class="ecusson gros">${esc(initiales(c))}</span>` : SVG_CARTE}${photoOk(c.photo) ? `<img src="${esc(photoNet(c.photo))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}</div>`;
@@ -8380,6 +8394,7 @@ function ficheCollection(c){
         <div><span>${tt('Payée', 'Paid')}</span><b>${cout != null ? argent(cout, 0) : '—'}</b></div>
         ${gain != null ? `<div><span>${tt('Gain', 'Gain')}</span><b class="${gain >= 0 ? 'vert' : 'rouge'}">${gain >= 0 ? '+' : '−'}${argent(Math.abs(gain), 0)}</b></div>` : ''}</div>
       ${c.id && phs.length && !c.grade ? `<div id="fc-etat"></div>` : ''}
+      ${c.id ? `<div id="fc-envoi"></div>` : ''}
       <button class="fc-alerte" id="fc-al" role="switch" aria-checked="false" ${c.id ? '' : 'hidden'}>
         <span class="fc-al-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.cloche}</svg></span><span class="fc-al-t"><b>${tt('Alerte de valeur', 'Value alert')}</b><small id="fc-al-s">${tt('Chaque semaine : on t’avertit si elle monte ou baisse de 15 %', 'Weekly: we alert you if it goes up or down 15%')}</small></span>
         <span class="interrupteur" id="fc-al-i"><i></i></span></button>
@@ -8406,6 +8421,8 @@ function ficheCollection(c){
     const t_ = $(`#i-liste .tuile-inv[data-id="${c.id}"] .img img`); if (t_) t_.src = photoNet(r.photos[0]);
   })();
   if ($('#fc-etat')) blocEtat(c);
+  if ($('#fc-envoi')) blocEnvoi(c);
+  if (envoiDe(c)) { const v = $('#fc-vendre'); if (v) { v.hidden = true; if (v.nextElementSibling) v.nextElementSibling.hidden = true; } }   // la carte n'est pas chez toi
   const zi = $('#fc-imgs'), pts = $('#fc-pts');
   if (zi && pts) zi.onscroll = () => { const k = Math.round(zi.scrollLeft / zi.clientWidth); $$('i', pts).forEach((e, j) => e.classList.toggle('on', j === k)); };
   // la valeur = la mediane de ses ventes reelles (meme carte), recalculee a l'ouverture (cache 3 jours cote serveur)
@@ -8440,15 +8457,40 @@ const LIB_ZONE = (z) => ({'coin haut-gauche': tt('Coin haut gauche', 'Top-left c
 const LIB_DEFAUT = (d) => ({blanchiment: tt('blanchiment', 'whitening'), 'coin mou': tt('coin mou', 'soft corner'), 'coin plie': tt('coin plié', 'bent corner'),
   ebrechure: tt('ébréchure', 'chipping'), entaille: tt('entaille', 'nick'), rayure: tt('rayure', 'scratch'), "ligne d'impression": tt('ligne d’impression', 'print line'),
   tache: tt('tache', 'stain'), pli: tt('pli', 'crease'), bosse: tt('bosse', 'dent'), decentrage: tt('décentrage', 'off-center'), autre: tt('défaut', 'flaw')})[d] || d;
-const LIB_GRAV = (g) => ({leger: tt('léger', 'light'), moyen: tt('moyen', 'moderate'), fort: tt('marqué', 'heavy')})[g] || '';
+const LIB_GRAV = (g) => ({leger: tt('léger', 'light'), moyen: tt('moyen', 'moderate'), fort: tt('marqué', 'heavy'), 'a verifier': tt('à vérifier', 'to check')})[g] || '';
+// 1er nov 2026 (Mathieu : « où est le défaut ») : les photos ANALYSÉES (les originales), plein écran, chaque défaut numéroté à
+// sa place ; un tap sur une ligne ouvre la photo et fait clignoter son numéro
+function voirDefauts(e, k){
+  const def = (e.defauts || []).slice(0, 8), refs = (e.photos || []).slice(0, 2);
+  if (!refs.length) return;
+  const o = document.createElement('div'); o.className = 'vd';
+  o.innerHTML = `<button class="vd-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
+    ${refs.map((u, j) => `<div class="vd-ph" data-j="${j}"><img src="${esc(photoNet(u, 1600))}" alt=""></div>`).join('')}
+    <ol class="et-d vd-l">${def.map((d, i) => `<li data-d="${i}" class="g-${(d.gravite || '').replace(' ', '-')}"><i>${i + 1}</i><span>${esc(LIB_ZONE(d.zone))}${d.photo ? tt(' (dos)', ' (back)') : ''} · ${esc(LIB_DEFAUT(d.type))} ${esc(LIB_GRAV(d.gravite))}</span></li>`).join('')}</ol>`;
+  document.body.appendChild(o);
+  const fermer = () => o.remove();
+  o.querySelector('.vd-x').onclick = fermer;
+  def.forEach((d, i) => {
+    const w = o.querySelector(`.vd-ph[data-j="${d.photo}"]`), im = w && w.querySelector('img'); if (!im) return;
+    const poser = () => { const W = im.clientWidth, H = im.clientHeight; if (!W) return;
+      let p = w.querySelector(`.fc-pt[data-d="${i}"]`); if (!p) { p = document.createElement('span'); p.className = 'fc-pt g-' + (d.gravite || '').replace(' ', '-'); p.dataset.d = i; p.textContent = i + 1; w.appendChild(p); }
+      p.style.left = (im.offsetLeft + d.x / 1000 * W) + 'px'; p.style.top = (im.offsetTop + d.y / 1000 * H) + 'px'; };
+    if (im.complete) poser(); else im.addEventListener('load', poser, {once: true});
+  });
+  const montrer = (i) => { const d = def[i], w = d && o.querySelector(`.vd-ph[data-j="${d.photo}"]`); if (!w) return;
+    w.scrollIntoView({behavior: 'smooth', block: 'center'});
+    setTimeout(() => { const p = w.querySelector(`.fc-pt[data-d="${i}"]`); if (p) { p.classList.remove('flash'); void p.offsetWidth; p.classList.add('flash'); } }, 350); };
+  $$('.vd-l [data-d]', o).forEach(li => li.onclick = () => montrer(+li.dataset.d));
+  if (k != null) setTimeout(() => montrer(k), 200);
+}
 async function blocEtat(c, forcer){
   const z = $('#fc-etat'); if (!z) return;
   const vide = (msg) => `<button class="fc-alerte" id="fc-et-go"><span class="fc-al-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></span>
-    <span class="fc-al-t"><b>${tt('Évaluer l’état', 'Check the condition')}</b><small>${msg || tt('Centrage, coins, bords et surface d’après tes photos · 1 lecture photo', 'Centering, corners, edges and surface from your photos · 1 photo read')}</small></span><i class="fl">›</i></button>`;
+    <span class="fc-al-t"><b>${tt('Évaluer l’état', 'Check the condition')}</b><small>${msg || tt('Centrage, coins, bords et surface d’après tes photos', 'Centering, corners, edges and surface from your photos')}</small></span><i class="fl">›</i></button>`;
   const lancer = async () => {
     if (!await okIA()) return;
     z.innerHTML = `<div class="lecture"><span class="roue"></span>${tt('Examen des coins, des bords et du centrage…', 'Checking corners, edges and centering…')}</div>`;
-    const r = await API.carte_etat(c.id, true).catch(e => ({ok:false, erreur:e.message}));
+    const r = await API.carte_etat(c.id, true, typeof LANGUE !== 'undefined' ? LANGUE : 'fr').catch(e => ({ok:false, erreur:e.message}));
     if (!r.ok) { z.innerHTML = vide(r.erreur); brancher(); return; }
     peindre(r);
   };
@@ -8459,32 +8501,121 @@ async function blocEtat(c, forcer){
     const cent = e.centrage_gd || e.centrage_hb ? [e.centrage_gd, e.centrage_hb].filter(Boolean).join(' · ') : '';
     const fourch = e.note_min != null ? (e.note_max != null && e.note_max !== e.note_min ? f(e.note_min) + '–' + f(e.note_max) : f(e.note_min)) : '—';
     const cl = (e.note_min || 0) >= 9 ? 'vert' : (e.note_min || 0) >= 7 ? 'or' : 'rouge';
-    const def = (e.defauts || []).slice(0, 6);
+    const def = (e.defauts || []).slice(0, 8), ex = e.explications || {};
+    const CATS = [['centrage', tt('Centrage', 'Centering'), cent], ['coins', tt('Coins', 'Corners')], ['bords', tt('Bords', 'Edges')], ['surface', tt('Surface', 'Surface')]];
+    // chaque sous-note sous 10 : pourquoi et où (Mathieu : « on doit expliquer les cotes »)
+    const pourquoi = CATS.filter(([k]) => n[k] != null && n[k] < 10).map(([k, l]) => `<li><b>${l} ${f(n[k])}</b><span>${esc(ex[k] || (k === 'centrage' && cent ? cent : tt('raison non précisée : refais l’examen', 'no reason given: check again')))}</span></li>`);
+    const rien = !def.length && !pourquoi.length;
     z.innerHTML = `<div class="et">
       <div class="et-t"><span>${tt('État estimé', 'Estimated condition')}</span><b class="${cl}">${fourch}</b><small>${tt('sur 10 · photo', 'out of 10 · photo')}</small></div>
-      <div class="et-n">${[['centrage', tt('Centrage', 'Centering'), cent], ['coins', tt('Coins', 'Corners')], ['bords', tt('Bords', 'Edges')], ['surface', tt('Surface', 'Surface')]]
-        .map(([k, l, sous]) => `<div><span>${l}</span><b>${f(n[k])}</b>${sous ? `<small>${esc(sous)}</small>` : ''}</div>`).join('')}</div>
-      ${def.length ? `<ol class="et-d">${def.map((d, i) => `<li data-d="${i}"><i>${i + 1}</i><span>${esc(LIB_ZONE(d.zone))}${d.photo ? tt(' (dos)', ' (back)') : ''} · ${esc(LIB_DEFAUT(d.type))} ${esc(LIB_GRAV(d.gravite))}</span></li>`).join('')}</ol>`
-        : `<div class="et-ok">${tt('Aucun défaut visible sur les photos', 'No visible flaw on the photos')}</div>`}
+      <div class="et-n">${CATS.map(([k, l, sous]) => `<div><span>${l}</span><b>${f(n[k])}</b>${sous ? `<small>${esc(sous)}</small>` : ''}</div>`).join('')}</div>
+      ${pourquoi.length ? `<ul class="et-x">${pourquoi.join('')}</ul>` : ''}
+      ${def.length ? `<ol class="et-d">${def.map((d, i) => `<li data-d="${i}" class="g-${(d.gravite || '').replace(' ', '-')}"><i>${i + 1}</i><span>${esc(LIB_ZONE(d.zone))}${d.photo ? tt(' (dos)', ' (back)') : ''} · ${esc(LIB_DEFAUT(d.type))} ${esc(LIB_GRAV(d.gravite))}</span><em>›</em></li>`).join('')}</ol>
+        <button class="pilule" id="fc-et-voir">${tt('Voir les défauts sur la photo', 'See the flaws on the photo')}</button>`
+        : rien ? `<div class="et-ok">${tt('Aucun défaut visible sur les photos', 'No visible flaw on the photos')}</div>` : ''}
       ${e.conseil ? `<div class="et-c">${esc(e.conseil)}</div>` : ''}
       <div class="et-p">${(e.invisible || [])[0] ? tt('Pas vérifiable : ', 'Not checkable: ') + esc(e.invisible[0]) + ' · ' : ''}${tt('Estimation sur photo, pas une gradation.', 'Photo estimate, not a grade.')} <button class="lien" id="fc-et-re">${tt('Refaire', 'Redo')}</button></div></div>`;
     const re_ = $('#fc-et-re'); if (re_) re_.onclick = () => { vibrer(); lancer(); };
-    // les numeros sur les photos (memes photos que celles analysees)
-    $$('#fc-imgs .fc-pt').forEach(x => x.remove());
-    def.forEach((d, i) => {
-      const w = $(`#fc-imgs .fc-ph[data-j="${d.photo}"]`), im = w && w.querySelector('img'); if (!im) return;
-      const poser = () => { const W = w.clientWidth, H = w.clientHeight, nw = im.naturalWidth, nh = im.naturalHeight; if (!nw || !W) return;
-        const k = Math.min(W / nw, H / nh), ox = (W - nw * k) / 2, oy = (H - nh * k) / 2;
-        let p = w.querySelector(`.fc-pt[data-d="${i}"]`); if (!p) { p = document.createElement('span'); p.className = 'fc-pt ' + (d.gravite || ''); p.dataset.d = i; p.textContent = i + 1; w.appendChild(p); }
-        p.style.left = (ox + d.x / 1000 * nw * k) + 'px'; p.style.top = (oy + d.y / 1000 * nh * k) + 'px'; };
-      if (im.complete) poser(); else im.addEventListener('load', poser, {once: true});
-    });
-    $$('#fc-etat [data-d]').forEach(li => li.onclick = () => { const d = def[+li.dataset.d]; const zi = $('#fc-imgs'); if (zi && d) zi.scrollTo({left: d.photo * zi.clientWidth, behavior: 'smooth'});
-      const p = $(`#fc-imgs .fc-pt[data-d="${li.dataset.d}"]`); if (p) { p.classList.remove('flash'); void p.offsetWidth; p.classList.add('flash'); } });
+    const vo = $('#fc-et-voir'); if (vo) vo.onclick = () => { vibrer(); voirDefauts(e); };
+    $$('#fc-etat [data-d]').forEach(li => li.onclick = () => { vibrer(); voirDefauts(e, +li.dataset.d); });
   };
   const r = await API.carte_etat(c.id, null).catch(() => null);         // ce qui est garde, sans nouvelle analyse
+  const q = (r && r.quota) || {};
+  const reste = q.limite != null ? ' · ' + tt(`reste ${q.reste} sur ${q.limite} ce mois`, `${q.reste} of ${q.limite} left this month`) : '';
   if (r && r.ok && !r.aucun) peindre(r);
-  else { z.innerHTML = vide(r && r.photos_changees ? tt('Les photos ont changé : refais l’examen', 'Photos changed: check again') : ''); brancher(); }
+  else { z.innerHTML = vide(r && r.photos_changees ? tt('Les photos ont changé : refais l’examen', 'Photos changed: check again') + reste
+      : tt('Centrage, coins, bords et surface d’après tes photos', 'Centering, corners, edges and surface from your photos') + reste); brancher(); }
+}
+// 1er nov 2026 (Mathieu : « les cartes qu'on envoie se faire grader » ; « en consignation : la carte va en encan, comme chez un
+// consignataire ») : le suivi de l'envoi. La carte reste dans la collection ; l'app avertit quand c'est en retard (À faire).
+const envoiDe = (c) => { try { return JSON.parse(c.envoi_json || 'null'); } catch (e) { return null; } };
+const auj = () => { const d = new Date(); return new Date(d - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); };
+const joursDepuis = (d) => d ? Math.max(0, Math.floor((Date.now() - Date.parse(String(d).slice(0, 10) + 'T00:00')) / 864e5)) : 0;
+const envoiRetard = (e) => !!e && (e.type === 'gradation' ? !!(e.retour_prevu && e.retour_prevu < auj())
+  : e.fin_encan ? e.fin_encan < auj() : joursDepuis(e.envoye_le) > (e.alerte_jours || 45));
+const COMPAGNIES = ['PSA', 'BGS', 'SGC', 'CGC', 'TAG', 'Autre'];
+function blocEnvoi(c){
+  const z = $('#fc-envoi'); if (!z) return;
+  const e = envoiDe(c);
+  if (!e) {
+    z.innerHTML = `<div class="env-b"><button class="pilule" id="env-g">${tt('Envoyer en gradation', 'Send for grading')}</button><button class="pilule" id="env-e">${tt('Envoyer en consignation', 'Consign to auction')}</button></div>`;
+    $('#env-g').onclick = () => formEnvoi(c, 'gradation');
+    $('#env-e').onclick = () => formEnvoi(c, 'encan');
+    return;
+  }
+  const ret = envoiRetard(e), j = joursDepuis(e.envoye_le);
+  const lignes = e.type === 'gradation' ? [
+      [tt('Envoyée', 'Sent'), dateCourte(e.envoye_le) + ' · ' + j + tt(' j', ' d')],
+      e.retour_prevu ? [tt('Retour prévu', 'Expected back'), dateCourte(e.retour_prevu) + (ret ? tt(' · en retard', ' · late') : ''), ret] : null,
+      e.soumission ? [tt('Soumission', 'Submission'), '#' + e.soumission] : null,
+      e.cout != null ? [tt('Coût', 'Cost'), argent(e.cout, 0)] : null]
+    : [
+      [tt('Envoyée', 'Sent'), dateCourte(e.envoye_le) + ' · ' + j + tt(' j', ' d'), !e.fin_encan && ret],
+      [tt('Fin de l’encan', 'Auction ends'), e.fin_encan ? dateCourte(e.fin_encan) + (ret ? tt(' · terminé', ' · ended') : '') : tt('pas encore en ligne', 'not listed yet'), !!e.fin_encan && ret],
+      e.commission != null ? [tt('Commission', 'Fee'), String(e.commission).replace('.', ',') + ' %'] : null,
+      e.reserve ? [tt('Prix minimum', 'Reserve'), argent(e.reserve, 0) + (e.commission != null ? ' · ' + tt('net ', 'net ') + argent(e.reserve * (1 - e.commission / 100), 0) : '')] : null];
+  z.innerHTML = `<div class="env ${ret ? 'retard' : ''}"><div class="env-t"><span>${e.type === 'gradation' ? tt('Au gradage', 'At grading') : tt('En consignation', 'Consigned')}</span>
+      <b>${esc(e.type === 'gradation' ? e.compagnie + (e.service ? ' · ' + e.service : '') : e.chez)}</b></div>
+    <ul>${lignes.filter(Boolean).map(([l, v, r]) => `<li class="${r ? 'or' : ''}"><span>${l}</span><b>${esc(v)}</b></li>`).join('')}</ul>
+    <div class="env-b">${e.type === 'gradation' ? `<button class="pilule acc" id="env-ret">${tt('Revenue', 'Back')}</button>`
+      : `<button class="pilule acc" id="env-vend">${tt('Vendue', 'Sold')}</button><button class="pilule" id="env-inv">${tt('Revenue invendue', 'Back unsold')}</button>`}
+      ${e.lien ? `<a class="pilule" href="${esc(e.lien)}" target="_blank" rel="noopener">${tt('Voir l’encan', 'See the auction')} ↗</a>` : ''}
+      <button class="pilule" id="env-mod">${tt('Modifier', 'Edit')}</button></div></div>`;
+  $('#env-mod').onclick = () => formEnvoi(c, e.type, e);
+  const fini = (r) => { if (r && r.carte) { fermerFeuille(); chargerInventaire(); ficheCollection(r.carte); } };
+  const bR = $('#env-ret'); if (bR) bR.onclick = () => {
+    ouvrirFeuille(`<h3>${tt('Revenue du gradage', 'Back from grading')}</h3>
+      <label>${tt('Note reçue', 'Grade received')}<input class="champ" id="er-g" placeholder="${esc(e.compagnie + ' 10')}"></label>
+      <label>${tt('Numéro de certificat', 'Cert number')}<input class="champ" id="er-c" inputmode="numeric"></label>
+      ${e.cout ? `<div class="sous">${tt(`Le coût de gradation (${argent(e.cout, 0)}) s’ajoute au coût de la carte.`, `The grading cost (${argent(e.cout, 0)}) is added to the card’s cost.`)}</div>` : ''}
+      <button class="btn" id="er-ok">${tt('Enregistrer', 'Save')}</button><button class="btn ghost" id="er-non">${tt('Annuler', 'Cancel')}</button>`);
+    $('#er-non').onclick = () => { fermerFeuille(); ficheCollection(c); };
+    $('#er-ok').onclick = async () => fini(await essai(API.carte_envoi(c.id, {retour: {grade: val('er-g'), cert: val('er-c')}}), tt('Revenue dans ta collection', 'Back in your collection')));
+  };
+  const bI = $('#env-inv'); if (bI) bI.onclick = async () => fini(await essai(API.carte_envoi(c.id, null), tt('Revenue dans ta collection', 'Back in your collection')));
+  const bV = $('#env-vend'); if (bV) bV.onclick = () => {
+    ouvrirFeuille(`<h3>${tt('Vendue à l’encan', 'Sold at auction')}</h3>
+      <label>${tt('Prix final (marteau)', 'Final price (hammer)')}<input class="champ" id="ev-p" type="number" inputmode="decimal" step="any"></label>
+      <label>${tt('Commission (%)', 'Fee (%)')}<input class="champ" id="ev-c" type="number" inputmode="decimal" step="any" value="${e.commission ?? ''}"></label>
+      <div class="sous" id="ev-net"></div>
+      <button class="btn" id="ev-ok">${tt('Enregistrer la vente', 'Record the sale')}</button><button class="btn ghost" id="ev-non">${tt('Annuler', 'Cancel')}</button>`);
+    const calc = () => { const p = nb(val('ev-p')) || 0, k = nb(val('ev-c')) || 0, net = p * (1 - k / 100);
+      $('#ev-net').textContent = p ? tt('Il te revient ', 'You get ') + argent(net, 0) + (c.cout != null ? ' · ' + tt('profit ', 'profit ') + argent(net - c.cout, 0) : '') : ''; };
+    $('#ev-p').oninput = calc; $('#ev-c').oninput = calc;
+    $('#ev-non').onclick = () => { fermerFeuille(); ficheCollection(c); };
+    $('#ev-ok').onclick = async () => { const p = nb(val('ev-p')); if (!p) { toast(tt('Entre le prix final', 'Enter the final price')); return; }
+      const k = nb(val('ev-c')) || 0;
+      const r = await essai(API.carte_vendre(c.id, {canal: 'Encan', prix: p, frais: Math.round(p * k) / 100, date: auj()}), tt('Vente enregistrée', 'Sale recorded'));
+      if (r) { await API.carte_envoi(c.id, null).catch(() => {}); fermerFeuille(); chargerInventaire(); } };
+  };
+}
+function formEnvoi(c, type, e0){
+  const e = e0 || {}, G = type === 'gradation';
+  ouvrirFeuille(`<h3>${G ? tt('Envoyer en gradation', 'Send for grading') : tt('Envoyer en consignation', 'Consign to auction')}</h3>
+    ${G ? `<div class="sous">${tt('Compagnie', 'Company')}</div><div class="chips" id="fe-cie">${COMPAGNIES.map(x => `<button class="chip ${(e.compagnie || 'PSA') === x ? 'on' : ''}" data-v="${x}">${x}</button>`).join('')}</div>
+      <label>${tt('Niveau de service', 'Service level')}<input class="champ" id="fe-serv" value="${esc(e.service || '')}" placeholder="Value, Regular, Express…"></label>
+      <label>${tt('Numéro de soumission', 'Submission number')}<input class="champ" id="fe-soum" value="${esc(e.soumission || '')}"></label>
+      <div class="grille-champs"><label>${tt('Envoyée le', 'Sent on')}<input class="champ" id="fe-env" type="date" value="${esc(e.envoye_le || auj())}"></label>
+        <label>${tt('Retour prévu', 'Expected back')}<input class="champ" id="fe-ret" type="date" value="${esc(e.retour_prevu || '')}"></label></div>
+      <label>${tt('Coût par carte ($)', 'Cost per card ($)')}<input class="champ" id="fe-cout" type="number" inputmode="decimal" step="any" value="${e.cout ?? ''}"></label>
+      <div class="sous">${tt('Retour prévu : la date estimée par la compagnie. Passé cette date, l’app te le rappelle.', 'Expected back: the company’s estimate. After that date, the app reminds you.')}</div>`
+    : `<label>${tt('Chez qui', 'Consignor')}<input class="champ" id="fe-chez" value="${esc(e.chez || '')}" placeholder="${esc(tt('Nom du consignataire', 'Consignor name'))}"></label>
+      <div class="grille-champs"><label>${tt('Envoyée le', 'Sent on')}<input class="champ" id="fe-env" type="date" value="${esc(e.envoye_le || auj())}"></label>
+        <label>${tt('Fin de l’encan', 'Auction ends')}<input class="champ" id="fe-fin" type="date" value="${esc(e.fin_encan || '')}"></label></div>
+      <div class="grille-champs"><label>${tt('Commission (%)', 'Fee (%)')}<input class="champ" id="fe-com" type="number" inputmode="decimal" step="any" value="${e.commission ?? ''}"></label>
+        <label>${tt('Prix minimum ($)', 'Reserve ($)')}<input class="champ" id="fe-res" type="number" inputmode="decimal" step="any" value="${e.reserve ?? ''}"></label></div>
+      <label>${tt('Lien de l’encan', 'Auction link')}<input class="champ" id="fe-lien" type="url" value="${esc(e.lien || '')}" placeholder="https://…"></label>
+      <label>${tt('M’avertir après (jours)', 'Remind me after (days)')}<input class="champ" id="fe-al" type="number" inputmode="numeric" value="${e.alerte_jours || 45}"></label>`}
+    <button class="btn" id="fe-ok">${tt('Enregistrer', 'Save')}</button><button class="btn ghost" id="fe-non">${tt('Annuler', 'Cancel')}</button>`);
+  let cie = e.compagnie || 'PSA';
+  $$('#fe-cie [data-v]').forEach(b => b.onclick = () => { cie = b.dataset.v; $$('#fe-cie .chip').forEach(x => x.classList.toggle('on', x === b)); });
+  $('#fe-non').onclick = () => { fermerFeuille(); ficheCollection(c); };
+  $('#fe-ok').onclick = async () => {
+    const d = G ? {type, compagnie: cie, service: val('fe-serv'), soumission: val('fe-soum'), envoye_le: val('fe-env'), retour_prevu: val('fe-ret'), cout: val('fe-cout')}
+      : {type, chez: val('fe-chez'), envoye_le: val('fe-env'), fin_encan: val('fe-fin'), commission: val('fe-com'), reserve: val('fe-res'), lien: val('fe-lien'), alerte_jours: val('fe-al')};
+    const r = await essai(API.carte_envoi(c.id, d), G ? tt('Suivi du gradage ajouté', 'Grading tracked') : tt('Consignation suivie', 'Consignment tracked'));
+    if (r && r.carte) { fermerFeuille(); chargerInventaire(); ficheCollection(r.carte); }
+  };
 }
 function vendreDepuisCollection(id){
   if (S.mode !== 'vendeur') {                    // vendre = le volet vendeur ; on y passe tout seul

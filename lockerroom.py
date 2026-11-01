@@ -153,7 +153,7 @@ def _connecter(chemin=None):
     for col, typ in (("debut", "TEXT"), ("watchers", "INTEGER"), ("categorie_ebay", "TEXT"), ("photo", "TEXT"), ("vu_actif_le", "TEXT"),
                      ("sport", "TEXT"), ("recrue", "INTEGER"), ("relique", "INTEGER"), ("cert", "TEXT"), ("photos", "TEXT"),
                      ("vues", "INTEGER"), ("impressions", "INTEGER"), ("trafic_le", "TEXT"), ("photos_orig", "TEXT"), ("studio_v", "INTEGER"),
-                     ("etat_json", "TEXT"), ("etat_le", "TEXT")):            # 1er nov 2026 - l'etat estime (pre-gradation)   # 31 oct 2026 - vues des annonces
+                     ("etat_json", "TEXT"), ("etat_le", "TEXT"), ("envoi_json", "TEXT")):            # 1er nov 2026 - l'etat estime (pre-gradation)   # 31 oct 2026 - vues des annonces
         if col not in cols:
             c.execute(f"ALTER TABLE cartes ADD COLUMN {col} {typ}")
     # 23 oct 2026 - autres sports : le sport du produit et du break (equipes de sa ligue)
@@ -2378,7 +2378,7 @@ class Api:
                 pass
         return {"ok": True, "photos": refs}
 
-    def carte_etat(self, cid, forcer=False):
+    def carte_etat(self, cid, forcer=False, langue=None):
         """1er nov 2026 (Mathieu : « les cartes de la collection, on peut les noter et dire les defauts trouves ? centrage,
         coins et bords ») : l'etat estime d'apres SES photos (celles montrees : les defauts se placent dessus). Garde avec la
         carte ; refait seulement sur demande ou si les photos ont change. Une lecture de photo (meme quota)."""
@@ -2387,8 +2387,9 @@ class Api:
         carte = self.carte_lire(cid)
         if not carte:
             return {"ok": False, "erreur": "Carte introuvable"}
+        # 1er nov 2026 : les ORIGINALES (la photo studio met un halo autour de la carte : « la lumiere cache les bords »)
         try:
-            refs = json.loads(carte.get("photos") or "[]") or ([carte["photo"]] if carte.get("photo") else [])
+            refs = json.loads(carte.get("photos_orig") or "[]") or json.loads(carte.get("photos") or "[]") or ([carte["photo"]] if carte.get("photo") else [])
         except ValueError:
             refs = []
         refs = [r for r in refs if photos_cartes.chemin(r)][:2]
@@ -2399,7 +2400,11 @@ class Api:
         if garde and not forcer and garde.get("photos") == refs:
             return {"ok": True, **garde, "le": carte.get("etat_le")}
         if forcer is None:                     # lecture seule (l'ecran demande ce qui est garde, sans payer une analyse)
-            return {"ok": True, "aucun": True, "photos_changees": bool(garde)}
+            try:
+                q = vision.statut_etat()
+            except Exception:
+                q = {}
+            return {"ok": True, "aucun": True, "photos_changees": bool(garde), "quota": q}
         if not refs:
             return {"ok": False, "erreur": "Ajoute une photo de la carte (devant, et dos si possible)"}
         if not self.reglages_lire().get("ia_photos_ok"):
@@ -2409,7 +2414,7 @@ class Api:
             with open(photos_cartes.chemin(r), "rb") as f:
                 photos.append("data:image/jpeg;base64," + base64.b64encode(f.read()).decode())
         try:
-            res = vision.etat(photos)
+            res = vision.etat(photos, langue or self.reglages_lire().get("langue") or "fr")
         except vision.Erreur as e:
             return {"ok": False, "erreur": str(e)}
         res = {k: v for k, v in res.items() if k not in ("ok", "cache")}
@@ -2423,6 +2428,105 @@ class Api:
             finally:
                 c.close()
         return {"ok": True, **res, "le": le}
+
+    # -- 1er nov 2026 (Mathieu : « les cartes de la collection qu'on envoie se faire grader, et celles qu'on envoie en
+    # consignation : la carte va en encan, comme chez un consignataire ») : le SUIVI de l'envoi. La carte reste dans la
+    # collection ; elle porte l'envoi (ou, quand, combien) et l'app avertit quand c'est en retard.
+    COMPAGNIES = ("PSA", "BGS", "SGC", "CGC", "TAG", "Autre")
+
+    def carte_envoi(self, cid, d=None):
+        """d = {type: 'gradation'|'encan', ...} pour envoyer ; d = None (ou {retour: ...}) pour la revenue."""
+        carte = self.carte_lire(cid)
+        if not carte:
+            return {"ok": False, "erreur": "Carte introuvable"}
+        d = dict(d or {})
+        jour = lambda v: str(v)[:10] if re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(v or "")[:10]) else None
+        txt = lambda v, n: re.sub(r"\s+", " ", str(v or "")).strip()[:n] or None
+        maj = {}
+        if not d or d.get("retour") is not None:
+            try:
+                avant = json.loads(carte.get("envoi_json") or "null") or {}
+            except ValueError:
+                avant = {}
+            r = d.get("retour") or {}
+            # revenue du gradage : le cout de gradation s'ajoute au cout de la carte ; la note lue (si donnee) va dans la fiche
+            if avant.get("type") == "gradation":
+                if avant.get("cout") and r.get("garder_cout", True):
+                    maj["cout"] = round((carte.get("cout") or 0) + float(avant["cout"]), 2)
+                g = txt(r.get("grade"), 20)
+                if g:
+                    maj["grade"] = g
+                    if r.get("cert"):
+                        maj["cert"] = txt(r.get("cert"), 20)
+            maj["envoi_json"] = None
+        else:
+            t = d.get("type")
+            if t == "gradation":
+                cie = d.get("compagnie") if d.get("compagnie") in self.COMPAGNIES else "PSA"
+                e = {"type": t, "compagnie": cie, "service": txt(d.get("service"), 30), "soumission": txt(d.get("soumission"), 30),
+                     "envoye_le": jour(d.get("envoye_le")) or datetime.now().strftime("%Y-%m-%d"), "retour_prevu": jour(d.get("retour_prevu")),
+                     "cout": _float(d.get("cout"))}
+            elif t == "encan":
+                if not txt(d.get("chez"), 40):
+                    return {"ok": False, "erreur": "Écris chez qui la carte est consignée"}
+                com = _float(d.get("commission"))
+                e = {"type": t, "chez": txt(d.get("chez"), 40), "envoye_le": jour(d.get("envoye_le")) or datetime.now().strftime("%Y-%m-%d"),
+                     "commission": max(0.0, min(60.0, com)) if com is not None else None, "reserve": _float(d.get("reserve")),
+                     "fin_encan": jour(d.get("fin_encan")), "lien": txt(d.get("lien"), 300) if str(d.get("lien") or "").startswith("https://") else None,
+                     "alerte_jours": int(_float(d.get("alerte_jours")) or 45)}
+            else:
+                return {"ok": False, "erreur": "Type d'envoi inconnu"}
+            maj["envoi_json"] = json.dumps({k: v for k, v in e.items() if v not in (None, "")}, ensure_ascii=False)
+        with _verrou:
+            c = self._db()
+            try:
+                c.execute("UPDATE cartes SET " + ", ".join(f"{k}=?" for k in maj) + " WHERE id=?", (*maj.values(), cid))
+                c.commit()
+            finally:
+                c.close()
+        return {"ok": True, "carte": self.carte_lire(cid)}
+
+    def envois_en_cours(self):
+        """Les cartes au gradage ou en consignation, avec ce qui est en retard. -> {gradation: [...], encan: [...]}"""
+        with _verrou:
+            c = self._db()
+            try:
+                l = _dicts(c.execute("SELECT id, joueur, titre, valeur, envoi_json FROM cartes WHERE envoi_json IS NOT NULL AND statut != 'Vendue'"))
+            finally:
+                c.close()
+        auj = datetime.now().strftime("%Y-%m-%d")
+        out = {"gradation": [], "encan": []}
+        for x in l:
+            try:
+                e = json.loads(x.pop("envoi_json") or "null") or {}
+            except ValueError:
+                continue
+            if e.get("type") not in out:
+                continue
+            jours = (datetime.now() - datetime.fromisoformat(e.get("envoye_le") or auj)).days
+            if e["type"] == "gradation":
+                retard = bool(e.get("retour_prevu") and e["retour_prevu"] < auj)
+            else:
+                retard = bool((e.get("fin_encan") and e["fin_encan"] < auj) or (not e.get("fin_encan") and jours > int(e.get("alerte_jours") or 45)))
+            out[e["type"]].append({**x, **e, "jours": jours, "retard": retard})
+        return {"ok": True, **out}
+
+    def _actions_envois(self):
+        """Pour « A faire » : les envois en retard (gradation passee la date prevue ; encan termine ou trop long)."""
+        try:
+            e = self.envois_en_cours()
+        except Exception:
+            return []
+        out = []
+        g = [x for x in e["gradation"] if x["retard"]]
+        if g:
+            out.append({"cle": "gradation", "n": len(g), "titre": "Gradation en retard", "montant": None,
+                        "texte": "date de retour passée : vérifie la soumission", "lien": "#inventaire/collection", "ton": "or", "rang": 30})
+        a = [x for x in e["encan"] if x["retard"]]
+        if a:
+            out.append({"cle": "encan", "n": len(a), "titre": "Encan à suivre", "montant": None,
+                        "texte": "terminé ou trop long : vérifie la vente et le paiement", "lien": "#inventaire/collection", "ton": "or", "rang": 30})
+        return out
 
     def carte_supprimer(self, cid):
         import photos_cartes
@@ -4845,7 +4949,7 @@ class Api:
                            "latent": round(sum(((a.get("valeur") or a.get("prix_demande") or 0) * (1 - fp) - ff - (a["cout"] or 0))
                                              for a in achats if a.get("valeur") or a.get("prix_demande")), 2)},
                 "cles": ebay_compte.statut().get("cles_ok"), "ebay": ebay_compte.statut().get("connecte"),
-                "nom_boutique": r["nom_boutique"]}
+                "nom_boutique": r["nom_boutique"], "actions": self._actions_envois()}
 
     def valeur_carte(self, q):
         """« Combien vaut cette carte ? » : annonces actives a prix fixe (eBay Browse, cache partage).
@@ -5035,6 +5139,7 @@ class Api:
                                 "texte": "envoie-leur une offre en un tap", "lien": "#offres", "ton": "vert", "rang": 50})
         except Exception:
             pass
+        actions += self._actions_envois()
         actions.sort(key=lambda a: -a["rang"])
 
         # -- meilleurs coups (30 j) : ce qui marche, pour en racheter
