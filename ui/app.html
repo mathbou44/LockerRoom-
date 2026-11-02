@@ -628,8 +628,9 @@ body.sandbox .barre-mode{top:25px; padding-top:8px}
 /* 29 oct 2026 (Mathieu : « pour le Pro, changer le fond de l'entete ; subtil, juste assez pour une impression d'exclusivite ») :
    un fond or tres sombre, un filet or qui s'estompe sur les cotes, un reflet lent ; « PRO » sous la cloche */
 .haut-cloche{position:relative}
-.haut-pro{display:none; position:absolute; left:50%; bottom:-7px; transform:translateX(-50%); padding:1px 5px; border-radius:6px;
-  font:700 9px/1.2 var(--f-cond); letter-spacing:.12em; color:#1A150C; background:linear-gradient(135deg, #F3E2B3, #D9B866 55%, #A88A45)}
+/* 2 nov 2026 (Mathieu : « l'icone Pro est trop bas ») : le badge PRO a gauche de la cloche, centre sur la meme ligne */
+.haut-pro{display:none; position:absolute; right:100%; top:50%; transform:translateY(-50%); margin-right:2px; padding:3px 7px; border-radius:99px; pointer-events:none;
+  font:700 10px/1.2 var(--f-cond); letter-spacing:.12em; color:#1A150C; background:linear-gradient(135deg, #F3E2B3, #D9B866 55%, #A88A45)}
 body.pro .haut-pro{display:block}
 body.pro .barre-mode{background:linear-gradient(180deg, rgba(38,31,17,.94), rgba(17,15,11,.92)); border-bottom-color:transparent}
 body.pro .barre-mode::after{content:''; position:absolute; left:0; right:0; bottom:0; height:1px; pointer-events:none;
