@@ -243,3 +243,64 @@ def statut():
             c.close()
     except sqlite3.Error:
         return {}
+
+
+# -- 3 nov 2026 (Mathieu : « on doit avoir plus de joueurs ; des veterans et des legendes, pas juste des recrues ; une mega
+# liste avec toutes nos donnees ») : TOUTES les recherches gardees (le plan, mais aussi chaque recherche des deals, des
+# fiches, des encans suivis : veterans et legendes compris), chacune = une carte exacte (ses ventes filtrees par
+# cartes_match). Pour tendance_stats : la tendance par joueur, avec son epoque (recrue, veteran, legende).
+def cartes_toutes(jours=42, n_min=4, max_q=12000):
+    import cartes_match
+    import time as _t
+    auj = datetime.now()
+    d0 = (auj - timedelta(days=jours)).strftime("%Y-%m-%d")
+    try:
+        c = _cx()
+        try:
+            plan = {q: (cible, j, carte, pid, rec) for cible, q, j, carte, pid, rec in
+                    c.execute("SELECT cible, q, joueur, carte, produit_id, recrue FROM plan")}
+            par_q = {}
+            for q, titre, prix, le in c.execute("SELECT q, titre, prix, le FROM ventes WHERE le >= ?", (d0,)):
+                par_q.setdefault(q, []).append((titre, prix, le))
+        finally:
+            c.close()
+    except sqlite3.Error:
+        return []
+    an_rec = None
+    try:
+        import deals
+        an_rec = deals.saison_recrues()
+    except Exception:
+        an_rec = auj.year - 1
+    out = []
+    qs = sorted((q for q, l in par_q.items() if len(l) >= n_min), key=lambda q: -len(par_q[q]))[:max_q]
+    for i, q in enumerate(qs):
+        if i % 200 == 0:
+            _t.sleep(0.002)                              # laisse respirer les autres requetes (un seul serveur)
+        try:
+            p = plan.get(q)
+            cib = cartes_match.cible(p[0] if p else q)
+            l = [(t, pr, le) for t, pr, le in par_q[q] if not cartes_match.raisons_refus(cib, t or "")]
+            if len(l) < n_min:
+                continue
+            if p:
+                j, carte, pid, rec = p[1], p[2], p[3], bool(p[4])
+            else:
+                j = cartes_match.joueur_du_titre(q)
+                if not j or len(j.split()) < 2:
+                    continue
+                j = " ".join(re.sub(r"^(Mc|O')([a-z])", lambda m: m.group(1) + m.group(2).upper(), w.capitalize()) for w in j.split())
+                carte, pid = q, "q:" + q
+                rec = False
+            an = cib.get("annee")
+            try:
+                an = int(str(an)[:4]) if an else None
+            except ValueError:
+                an = None
+            if not p:
+                rec = bool(cib.get("rc") or re.search(r"young guns|rookie|\brc\b|future watch", q)) and (an is None or an >= an_rec)
+            out.append({"joueur": j, "carte": carte, "produit_id": pid, "recrue": rec, "annee": an,
+                        "points": [[le, pr] for _t2, pr, le in l]})
+        except Exception:
+            continue
+    return out

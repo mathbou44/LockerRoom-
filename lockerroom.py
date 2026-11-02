@@ -2515,6 +2515,15 @@ class Api:
         if not e or e.get("bareme") or not e.get("notes"):
             return e
         notes = {k: (bareme.psa(v) if isinstance(v, (int, float)) else None) for k, v in (e.get("notes") or {}).items()}
+        # 3 nov 2026 : un centrage MESURE (ratios gardes) donne sa note par les tolerances PSA, pas l'estime de l'ancienne IA
+        import examen
+        ok_r = lambda r: r if re.fullmatch(r"\d{2}/\d{2}", str(r or "").strip()) else None
+        gd, hb, ds = ok_r(e.get("centrage_gd")), ok_r(e.get("centrage_hb")), ok_r(e.get("centrage_dos"))
+        if gd or hb:
+            big = lambda r: (lambda a, b: f"{max(a, b)}/{min(a, b)}")(*map(int, r.split("/"))) if r else None
+            nc = examen.note_centrage({"gd": big(gd), "hb": big(hb)}, {"gd": big(ds)} if ds else None)
+            if nc is not None:
+                notes["centrage"] = float(nc)
         vs = [v for v in notes.values() if v is not None]
         if not vs:
             return e
@@ -4494,22 +4503,39 @@ class Api:
         # requete : la derniere version est servie tout de suite et la nouvelle se calcule a cote, une seule a la fois
         import threading as _th
         import time as _t
+        import comptes as _cp
         T = Api._TENDANCES
-        if T["v"] is None:
+        ch = os.path.join(_cp.DONNEES, "tendances_cache.json")
+        if T["v"] is None:                                   # au demarrage : la derniere version gardee sur le disque
             with Api._TENDANCES_VERROU:
                 if T["v"] is None:
-                    T["v"], T["le"] = marche.tendances(), _t.time()
-        elif _t.time() - T["le"] > 900 and not T.get("calcul"):
+                    try:
+                        with open(ch, encoding="utf-8") as f:
+                            g = json.load(f)
+                        T["v"], T["le"] = g["v"], float(g.get("le") or 0)
+                    except (OSError, ValueError, KeyError, TypeError):
+                        pass
+        if (T["v"] is None or _t.time() - T["le"] > 900) and not T.get("calcul"):
             T["calcul"] = True
 
             def refaire():
                 try:
-                    T["v"], T["le"] = marche.tendances(), _t.time()
+                    v = marche.tendances()
+                    T["v"], T["le"] = v, _t.time()
+                    try:
+                        tmp = ch + ".tmp"
+                        with open(tmp, "w", encoding="utf-8") as f:
+                            json.dump({"le": T["le"], "v": v}, f, ensure_ascii=False)
+                        os.replace(tmp, ch)
+                    except (OSError, TypeError, ValueError):
+                        pass
                 except Exception as e:
                     print("Tendances : " + repr(e), flush=True)
                 finally:
                     T["calcul"] = False
             _th.Thread(target=refaire, daemon=True, name="tendances").start()
+        if T["v"] is None:                                   # le tout premier calcul : l'ecran dit d'attendre un peu
+            return {"ok": False, "hausses": [], "baisses": [], "plus_vendues": [], "records": [], "calcul": True}
         return T["v"]
 
     def pouls(self, langue=None):

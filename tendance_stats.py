@@ -20,6 +20,7 @@ La methode (ce que l'ampoule explique a l'ecran) :
   6. Plus vendues : le volume des 7 derniers jours (toutes les cartes du joueur), la mesure de liquidite du hobby.
 """
 import math
+import re
 import statistics
 from datetime import datetime, timedelta
 
@@ -32,6 +33,7 @@ P_FAIBLE = 0.30                 # « a confirmer »
 N_FAIBLE = 6
 K_SHRINK = 8.0
 BORNE_LR = math.log(4)
+ANNEE_LEGENDE = 2000             # 3 nov 2026 : une carte d'avant 2000 = une legende (Gretzky, Lemieux, Jordan...)
 
 
 def _d(s):
@@ -101,13 +103,21 @@ def par_joueur(cartes, auj=None):
     """cartes : [{joueur, recrue, points, ...}] (une entree par carte exacte). -> {joueur: mesure du joueur}."""
     auj = auj or datetime.now()
     sept = auj - timedelta(days=7)
+    an_rec = auj.year - 1 if auj.month >= 7 else auj.year - 2
     gr = {}
     for c in cartes or []:
         j = str(c.get("joueur") or "").strip()
         if not j or "/" in j:                         # une carte a 2 joueurs ne dit rien d'UN joueur
             continue
-        g = gr.setdefault(j, {"joueur": j, "recrue": False, "mes": [], "n_7j": 0, "n": 0, "pts": [], "cartes": set()})
-        g["recrue"] = g["recrue"] or bool(c.get("recrue"))
+        g = gr.setdefault(j.lower(), {"joueur": j, "recrue": False, "mes": [], "n_7j": 0, "n": 0, "pts": [], "cartes": set(), "an": None})
+        an_c = c.get("annee")
+        if not an_c:
+            m_ = re.match(r"(?:q:)?.*?\b((?:19|20)\d\d)", str(c.get("produit_id") or "") + " " + str(c.get("carte") or ""))
+            an_c = int(m_.group(1)) if m_ else None
+        # une recrue = une carte de recrue de la saison (une Young Guns de 2023 : c'est un joueur de 3e annee)
+        g["recrue"] = g["recrue"] or (bool(c.get("recrue")) and (an_c is None or an_c >= an_rec))
+        if an_c:                                         # 3 nov 2026 : l'annee de sa plus vieille carte (legende, veteran)
+            g["an"] = min(g["an"] or 9999, int(an_c))
         cle = (c.get("produit_id"), c.get("carte"))
         if cle in g["cartes"]:
             continue
@@ -129,7 +139,8 @@ def par_joueur(cartes, auj=None):
             continue
         mes = g["mes"]
         N = sum(m["n_av"] + m["n_re"] for m in mes)
-        res = {"joueur": j, "recrue": g["recrue"], "n": g["n"], "n_7j": g["n_7j"], "n_cartes": len(g["cartes"])}
+        ere = "recrue" if g["recrue"] else "legende" if g["an"] and g["an"] < ANNEE_LEGENDE else "veteran"
+        res = {"joueur": g["joueur"], "recrue": g["recrue"], "ere": ere, "n": g["n"], "n_7j": g["n_7j"], "n_cartes": len(g["cartes"])}
         if mes and N >= N_FAIBLE:
             w = [m["n_av"] + m["n_re"] for m in mes]
             lr = sum(m["lr"] * x for m, x in zip(mes, w)) / sum(w)
@@ -148,7 +159,7 @@ def par_joueur(cartes, auj=None):
     return out
 
 
-def listes(cartes, auj=None, n=12):
+def listes(cartes, auj=None, n=80):
     """-> {hausses, baisses, plus_vendues} par joueur."""
     pj = par_joueur(cartes, auj)
     # 2 nov 2026 (Mathieu : « juste eux comme rising ? ») : d'abord les tendances CONFIRMEES (p < 0,10) ; la liste se complete

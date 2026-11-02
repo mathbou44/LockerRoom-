@@ -294,8 +294,13 @@ def tendances():
     # 2 nov 2026 (Mathieu : « devrait juste etre le joueur ; se baser sur des techniques prouvees ») : la tendance PAR
     # JOUEUR (ventes repetees, medianes, shrinkage, test de Mann-Whitney : tendance_stats). La base des ventes d'abord.
     import tendance_stats
+    try:                                                 # 3 nov 2026 : TOUTES nos ventes (veterans et legendes compris)
+        toutes_q = base_ventes.cartes_toutes()
+    except Exception as e:
+        print("Tendances (toutes les ventes) : " + repr(e), flush=True)
+        toutes_q = []
     vus_c, cj = set(), []
-    for x in list(b.get("cartes") or []) + cartes_j:
+    for x in list(b.get("cartes") or []) + cartes_j + toutes_q:
         k = (str(x.get("joueur") or "").lower(), x.get("produit_id"), re.sub(r"[^a-z0-9]", "", str(x.get("carte") or "").lower()))
         if k not in vus_c:
             vus_c.add(k)
