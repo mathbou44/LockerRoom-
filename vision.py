@@ -505,6 +505,10 @@ Regles :
   Les bordures foncees montrent tout : sois plus severe la.
 - Surface : rayures, lignes d'impression, taches, plis, bosses (la photo rasante les revele). Si un reflet, un etui ou la resolution
   empeche de juger : surface = null et dis-le dans « invisible ».
+- MEMORABILIA ET AUTOGRAPHES (2 nov 2026 : une patch prise pour une rayure) : une patch, une relique (tissu de chandail, couture,
+  fils, ecusson brode, logo cousu, bord effiloche ou replie du tissu, morceau de baton), un autocollant d'autographe et la fenetre
+  decoupee qui les montre font partie de la carte. Leur texture, leurs lignes, leurs plis et leurs reflets ne sont JAMAIS des
+  defauts de surface. Ne juge la surface que sur le carton imprime autour (et les rebords de la fenetre s'ils sont abimes).
 - Defauts : chacun avec sa zone exacte. Utilise « a verifier » SEULEMENT si le zoom lui-meme est flou ou cache ; si le zoom est net,
   decide (defaut ou pas). Une carte dans un toploader, une pochette ou sur un support : dis-le, les aretes sont en partie cachees.
 - COHERENCE (obligatoire) : chaque sous-note sous 10 est expliquee dans « explications » ET chaque defaut est dans « defauts ». Une
@@ -663,7 +667,7 @@ def etat(photos, langue="fr", quads=None, rasante=None, calibration=None, regles
     brutes = [_decoder(p)[0] for p in photos]
     ras = _decoder(rasante)[0] if rasante else None
     langue = "en" if str(langue or "").lower().startswith("en") else "fr"
-    h = hashlib.sha256(b"etat-v3-" + langue.encode() + json.dumps(quads or [], sort_keys=True).encode()
+    h = hashlib.sha256(b"etat-v4-" + langue.encode() + json.dumps(quads or [], sort_keys=True).encode()
                        + json.dumps(calibration or {}, sort_keys=True).encode())
     for b in brutes + ([ras] if ras else []):
         h.update(hashlib.sha256(b).digest())

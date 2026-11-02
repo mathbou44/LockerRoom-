@@ -8830,16 +8830,17 @@ function voirDefauts(e, k, apres){
       if (x1 - x0 > 150 && y1 - y0 > 150) bx = [x0, y0, x1 - x0, y1 - y0]; }
     cad.style.aspectRatio = `${(bx[2] * W).toFixed(1)} / ${(bx[3] * H).toFixed(1)}`;
     Object.assign(sc.style, {width: (100000 / bx[2]) + '%', height: (100000 / bx[3]) + '%', left: (-100 * bx[0] / bx[2]) + '%', top: (-100 * bx[1] / bx[3]) + '%'});
-    const face = FACES[j], v = (e.centrage_vue || {})[face] || {}, aLignes = v.l != null && v.r != null && v.t != null && v.b != null;
+    const face = FACES[j], v = (e.centrage_vue || {})[face] || {}, aX = v.l != null && v.r != null, aY = v.t != null && v.b != null, aLignes = aX || aY;
     let h = '';
     if (q && (calque || edite === j)) {
       h += `<polygon class="vd-cont" points="${q.map(p => p.join(',')).join(' ')}"/>`;
-      if (aLignes && edite !== j) for (const [a, b] of [[[v.l, 0], [v.l, 1]], [[1 - v.r, 0], [1 - v.r, 1]], [[0, v.t], [1, v.t]], [[0, 1 - v.b], [1, 1 - v.b]]]) {
+      if (aLignes && edite !== j) for (const [a, b] of [...(aX ? [[[v.l, 0], [v.l, 1]], [[1 - v.r, 0], [1 - v.r, 1]]] : []), ...(aY ? [[[0, v.t], [1, v.t]], [[0, 1 - v.b], [1, 1 - v.b]]] : [])]) {
         const p = bil(q, a[0], a[1]), p2 = bil(q, b[0], b[1]); h += `<line class="vd-lg" x1="${p[0]}" y1="${p[1]}" x2="${p2[0]}" y2="${p2[1]}"/>`; }
     }
     svg.innerHTML = h;
-    if (calque && aLignes && edite !== j) { const x = rat(v.l, v.r), y = rat(v.t, v.b), tol = TOL(face), note = (g) => (tol.find(([lim]) => g <= lim) || [0, face === 'dos' ? 8 : 3])[1], n = Math.min(note(x[0]), note(y[0]));
-      lab.innerHTML = `<b>${tt('G/D', 'L/R')} ${x[0]}/${x[1]}</b><b>${tt('H/B', 'T/B')} ${y[0]}/${y[1]}</b><b class="${n >= 10 ? 'vert' : n >= 9 ? 'or' : 'rouge'}">PSA ${n} max</b>`; lab.hidden = false; }
+    if (calque && aLignes && edite !== j) { const tol = TOL(face), note = (g) => (tol.find(([lim]) => g <= lim) || [0, face === 'dos' ? 8 : 3])[1];
+      const x = aX ? rat(v.l, v.r) : null, y = aY ? rat(v.t, v.b) : null, n = Math.min(x ? note(x[0]) : 10, y ? note(y[0]) : 10);
+      lab.innerHTML = `${x ? `<b>${tt('G/D', 'L/R')} ${x[0]}/${x[1]}</b>` : ''}${y ? `<b>${tt('H/B', 'T/B')} ${y[0]}/${y[1]}</b>` : `<b>${tt('H/B : à ajuster', 'T/B: to adjust')}</b>`}<b class="${n >= 10 ? 'vert' : n >= 9 ? 'or' : 'rouge'}">PSA ${n} max</b>`; lab.hidden = false; }
     else if (calque && q && edite !== j) { lab.innerHTML = `<b>${tt('Contour de la carte', 'Card outline')}</b>${e.cid ? `<b>${tt('Cadre imprimé pas trouvé : « Ajuster le centrage »', 'Printed frame not found: “Fix the centering”')}</b>` : ''}`; lab.hidden = false; }
     else lab.hidden = true;
     $$('.fc-pt, .vd-poi', sc).forEach(x => x.remove());

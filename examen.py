@@ -56,6 +56,110 @@ def _quad_px(quad, w, h):
     return q
 
 
+# 2 nov 2026 (Mathieu : « ameliorer la detection des rebords ») : les 4 aretes de la carte, ajustees sur la photo pleine
+# resolution. Pour chaque cote : 40 points, le saut de luminosite le plus franc perpendiculairement au cote (+/- 4 % de la
+# carte), une droite ajustee par moindres carres en ecartant les points aberrants (3 passes, ecart > 2,5 x l'ecart median),
+# puis les coins = intersections des droites voisines. Methode classique (points d'arete + ajustement robuste de droites).
+def _droite(pts):
+    """Moindres carres totaux -> (cx, cy, dx, dy) (un point et la direction) ou None."""
+    n = len(pts)
+    if n < 2:
+        return None
+    cx, cy = sum(p[0] for p in pts) / n, sum(p[1] for p in pts) / n
+    sxx = sum((p[0] - cx) ** 2 for p in pts)
+    syy = sum((p[1] - cy) ** 2 for p in pts)
+    sxy = sum((p[0] - cx) * (p[1] - cy) for p in pts)
+    import math
+    a = 0.5 * math.atan2(2 * sxy, sxx - syy)
+    return cx, cy, math.cos(a), math.sin(a)
+
+
+def _dist(d, p):
+    cx, cy, dx, dy = d
+    return abs((p[0] - cx) * dy - (p[1] - cy) * dx)
+
+
+def _inter(d1, d2):
+    x1, y1, a1, b1 = d1
+    x2, y2, a2, b2 = d2
+    det = a1 * (-b2) - b1 * (-a2)
+    if abs(det) < 1e-9:
+        return None
+    t = ((x2 - x1) * (-b2) - (y2 - y1) * (-a2)) / det
+    return x1 + a1 * t, y1 + b1 * t
+
+
+def affiner_quad(im, quad, recherche=0.04):
+    """quad (0..1000) -> quad ajuste (0..1000), ou le meme si les aretes ne sont pas assez franches."""
+    import math
+    W0, H0 = im.size
+    q = _quad_px(quad, W0, H0)
+    if not q:
+        return quad
+    k = min(1.0, 1100 / max(W0, H0))
+    g = im.convert("L").resize((max(8, int(W0 * k)), max(8, int(H0 * k))), Image.BILINEAR)
+    W, H = g.size
+    px = g.load()
+    q = [(x * k, y * k) for x, y in q]
+    cote = max(math.dist(q[0], q[1]), math.dist(q[1], q[2]))
+    R = max(4, int(cote * recherche))
+    ctr = (sum(p[0] for p in q) / 4, sum(p[1] for p in q) / 4)
+
+    def lum(x, y):
+        xi, yi = int(x), int(y)
+        if xi < 0 or yi < 0 or xi >= W or yi >= H:
+            return None
+        return px[xi, yi]
+
+    lignes = []
+    for i in range(4):
+        a, b = q[i], q[(i + 1) % 4]
+        L = math.dist(a, b) or 1
+        tx, ty = (b[0] - a[0]) / L, (b[1] - a[1]) / L
+        nx, ny = -ty, tx                                   # normale ; orientee vers l'exterieur de la carte
+        m = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
+        if (m[0] - ctr[0]) * nx + (m[1] - ctr[1]) * ny < 0:
+            nx, ny = -nx, -ny
+        pts = []
+        for j in range(40):
+            t = 0.1 + 0.8 * j / 39
+            ox, oy = a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t
+            prof = []
+            for s_ in range(-R, R + 1):
+                v = lum(ox + nx * s_, oy + ny * s_)
+                prof.append(v)
+            best, bs = None, 0
+            for s_ in range(2, len(prof) - 2):
+                v1, v2 = prof[s_ - 2], prof[s_ + 2]
+                if v1 is None or v2 is None:
+                    continue
+                gr = abs(v2 - v1)
+                if gr > bs:
+                    bs, best = gr, s_ - R
+            if best is not None and bs >= 18:
+                pts.append((ox + nx * best, oy + ny * best))
+        if len(pts) < 12:
+            return quad
+        d = _droite(pts)
+        for _ in range(3):
+            ds = sorted(_dist(d, p) for p in pts)
+            seuil = max(1.0, 2.5 * ds[len(ds) // 2])
+            gard = [p for p in pts if _dist(d, p) <= seuil]
+            if len(gard) < 12:
+                return quad
+            d = _droite(gard)
+        if len(gard) < 0.5 * len(pts):
+            return quad
+        lignes.append(d)
+    coins = []
+    for i in range(4):
+        c = _inter(lignes[(i + 3) % 4], lignes[i])
+        if c is None or math.dist(c, q[i]) > 2.5 * R:
+            return quad                                     # un coin trop loin du depart : on garde le depart
+        coins.append(c)
+    return [[max(0, min(1000, round(x / W * 1000))), max(0, min(1000, round(y / H * 1000)))] for x, y in coins]
+
+
 def redresser(im, quad, marge=0.0):
     """La carte seule, a plat (transformation du quadrilatere en rectangle). marge : la part de fond gardee autour (les
     zooms de coins et de bords doivent montrer l'ARETE de la carte, donc un peu de fond). -> image ou None."""
@@ -139,12 +243,34 @@ def _bordure(profil, mini, maxi):
     return pic, g[pic], g[pic] / fond
 
 
+def _candidats(profil, mini, maxi):
+    """Les lignes franches d'un profil (maxima locaux du gradient, force >= 45 et >= 3,5 x le gradient median)."""
+    g = [0.0] * len(profil)
+    for i in range(2, len(profil) - 2):
+        g[i] = sum(abs(profil[i + 2][c] - profil[i - 2][c]) for c in range(3))
+    zone = g[mini:maxi]
+    if not zone:
+        return []
+    fond = sorted(zone)[len(zone) // 2] or 1
+    out = []
+    for i in range(max(mini, 1), min(maxi, len(g) - 1)):
+        if g[i] >= 45 and g[i] / fond >= 3.5 and g[i] >= g[i - 1] and g[i] >= g[i + 1]:
+            if out and i - out[-1] <= 2:
+                if g[i] > g[out[-1]]:
+                    out[-1] = i
+                continue
+            out.append(i)
+    return out
+
+
 def _cote(carte, cote):
-    """La largeur de la bordure d'un cote, mesuree sur 3 segments du bord (elle doit etre droite). -> px ou None."""
+    """La largeur de la bordure d'un cote : 2 nov 2026 - la ligne imprimee la plus a l'EXTERIEUR qui est droite sur les 3
+    segments du bord (avant : la plus forte, souvent une fenetre de patch ou un cadre interieur). -> px ou None."""
     W, H = carte.size
     long = W if cote in ("gauche", "droite") else H
     mini, maxi = max(3, int(long * 0.012)), int(long * 0.24)
-    pos = []
+    tol = max(3, long * 0.012)
+    segs = []
     for seg in ((0.22, 0.40), (0.41, 0.59), (0.60, 0.78)):
         if cote == "gauche":
             p = _profil(carte, "x", 0, maxi + 3, seg)
@@ -154,13 +280,28 @@ def _cote(carte, cote):
             p = _profil(carte, "y", 0, maxi + 3, seg)
         else:
             p = list(reversed(_profil(carte, "y", H - maxi - 3, H, seg)))
-        x, force, rel = _bordure(p, mini, maxi)
-        if x is None or force < 45 or rel < 3.5:
-            return None
-        pos.append(x)
-    if max(pos) - min(pos) > max(3, long * 0.012):       # pas une ligne droite : un motif de l'image, pas une bordure
+        segs.append(_candidats(p, mini, maxi))
+    if not all(segs):
         return None
-    return sorted(pos)[1]
+    for x in segs[0]:
+        trio = [x]
+        for autres in segs[1:]:
+            proche = [y for y in autres if abs(y - x) <= tol]
+            if not proche:
+                break
+            trio.append(min(proche, key=lambda y: abs(y - x)))
+        if len(trio) == 3:
+            return sorted(trio)[1]
+    return None
+
+
+def _couleur(carte, cote, px):
+    """La couleur moyenne de la bordure (entre l'arete et la ligne trouvee), au milieu du cote."""
+    W, H = carte.size
+    px = max(2, int(px))
+    box = {"gauche": (0, int(H * .3), px, int(H * .7)), "droite": (W - px, int(H * .3), W, int(H * .7)),
+           "haut": (int(W * .3), 0, int(W * .7), px), "bas": (int(W * .3), H - px, int(W * .7), H)}[cote]
+    return carte.crop(box).resize((1, 1), Image.BOX).getpixel((0, 0))
 
 
 def _ratio(a, b):
@@ -171,14 +312,84 @@ def _ratio(a, b):
     return f"{g}/{100 - g}"
 
 
+def _grad(profil):
+    g = [0.0] * len(profil)
+    for i in range(2, len(profil) - 2):
+        g[i] = sum(abs(profil[i + 2][c] - profil[i - 2][c]) for c in range(3))
+    return g
+
+
+def _droit(carte, cote, x, tol):
+    """La ligne a x px du bord est-elle droite (presente sur les 3 segments du cote) ?"""
+    W, H = carte.size
+    long = W if cote in ("gauche", "droite") else H
+    maxi = int(long * 0.26)
+    rates = 0
+    for seg in ((0.16, 0.30), (0.33, 0.47), (0.53, 0.67), (0.70, 0.84)):     # tout le long du cote (un texte, une arche : non)
+        if cote == "gauche":
+            p = _profil(carte, "x", 0, maxi + 3, seg)
+        elif cote == "droite":
+            p = list(reversed(_profil(carte, "x", W - maxi - 3, W, seg)))
+        elif cote == "haut":
+            p = _profil(carte, "y", 0, maxi + 3, seg)
+        else:
+            p = list(reversed(_profil(carte, "y", H - maxi - 3, H, seg)))
+        if not any(abs(c - x) <= tol for c in _candidats(p, max(2, int(x - tol - 2)), min(len(p) - 2, int(x + tol + 3)))):
+            rates += 1
+    return rates <= 1                                         # droite sur au moins 3 des 4 segments
+
+
+def _axe(carte, c1, c2):
+    """2 nov 2026 (Mathieu : « ameliorer la detection ») : le centrage d'un axe par SYMETRIE. Le profil d'un cote et celui
+    du cote oppose (lu de l'arete vers l'interieur) sont aligns par correlation croisee normalisee : le meme element
+    imprime (la bordure, ou le cadre d'une carte sans bordure) est trouve des deux cotes. On garde l'element commun le plus
+    a l'exterieur, s'il est droit des deux cotes. -> (px c1, px c2) ou None."""
+    import math
+    W, H = carte.size
+    long = W if c1 == "gauche" else H
+    mini, maxi = max(3, int(long * 0.012)), int(long * 0.26)
+    if c1 == "gauche":
+        p1, p2 = _profil(carte, "x", 0, maxi + 3), list(reversed(_profil(carte, "x", W - maxi - 3, W)))
+    else:
+        p1, p2 = _profil(carte, "y", 0, maxi + 3), list(reversed(_profil(carte, "y", H - maxi - 3, H)))
+    g1, g2 = _grad(p1), _grad(p2)
+    D = int(long * 0.08)
+    best, bd = -1.0, 0
+    for d in range(-D, D + 1):
+        xs = [(g1[i], g2[i + d]) for i in range(mini, maxi) if mini <= i + d < maxi]
+        if len(xs) < 10:
+            continue
+        a = [u for u, _v in xs]
+        b = [v for _u, v in xs]
+        ma, mb = sum(a) / len(a), sum(b) / len(b)
+        num = sum((u - ma) * (v - mb) for u, v in xs)
+        den = math.sqrt(sum((u - ma) ** 2 for u in a) * sum((v - mb) ** 2 for v in b)) or 1
+        if num / den > best:
+            best, bd = num / den, d
+    if best < 0.5:
+        return None
+    prod = [(g1[i] * g2[i + bd], i) for i in range(mini, maxi) if mini <= i + bd < maxi and g1[i] >= 45 and g2[i + bd] >= 45]
+    if not prod:
+        return None
+    top = max(v for v, _i in prod)
+    tol = max(3, long * 0.012)
+    for v, i in sorted(prod, key=lambda x: x[1]):            # le plus a l'exterieur d'abord
+        if v >= 0.35 * top and _droit(carte, c1, i, tol) and _droit(carte, c2, i + bd, tol):
+            return i, i + bd
+    return None
+
+
 def centrage_detail(carte):
     """1er nov 2026 (Mathieu : « une grille pour montrer comment le centering a ete evalue ») : les 4 bordures trouvees, en
-    fraction de la largeur / hauteur de la carte redressee (None = pas trouvee), et les ratios."""
+    fraction de la largeur / hauteur de la carte redressee (None = pas trouvee), et les ratios. 2 nov 2026 : par symetrie
+    (_axe), ce qui marche aussi pour les cartes sans bordure (le cadre interieur sert de repere)."""
     if carte is None:
         return None
     W, H = carte.size
-    l, r, t, b = _cote(carte, "gauche"), _cote(carte, "droite"), _cote(carte, "haut"), _cote(carte, "bas")
-    okx, oky = bool(l and r and l + r < 0.4 * W), bool(t and b and t + b < 0.4 * H)
+    x, y = _axe(carte, "gauche", "droite"), _axe(carte, "haut", "bas")
+    l, r = x if x else (None, None)
+    t, b = y if y else (None, None)
+    okx, oky = bool(x and l + r < 0.5 * W), bool(y and t + b < 0.5 * H)
     return {"l": round(l / W, 4) if okx else None, "r": round(r / W, 4) if okx else None, "t": round(t / H, 4) if oky else None,
             "b": round(b / H, 4) if oky else None, "gd": _ratio(l, r) if okx else None, "hb": _ratio(t, b) if oky else None}
 

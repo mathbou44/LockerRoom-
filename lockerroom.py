@@ -2420,6 +2420,7 @@ class Api:
         precision = etat_verite.precision()
         if forcer is None:                     # lecture seule (l'ecran demande ce qui est garde, sans payer une analyse)
             if garde and (garde.get("examen") or garde.get("photos") == refs):
+                garde = self._recentrer(cid, garde)       # 2 nov 2026 : aretes et centrage refaits une fois (sans IA)
                 return {"ok": True, **garde, "le": carte.get("etat_le"), "precision": precision}
             try:
                 q = vision.statut_etat()
@@ -2442,6 +2443,7 @@ class Api:
         lire_b64 = lambda r: "data:image/jpeg;base64," + base64.b64encode(open(photos_cartes.chemin(r), "rb").read()).decode()
         photos = [lire_b64(r) for r in refs]
         quads = [q if isinstance(q, list) and len(q) == 4 else None for q in (d.get("quads") or [])][:2]
+        quads = self._affiner_quads(refs, quads)         # 2 nov 2026 : les aretes ajustees sur la photo pleine resolution
         try:
             res = vision.etat(photos, langue or self.reglages_lire().get("langue") or "fr", quads=quads,
                               rasante=lire_b64(ras_ref[0]) if ras_ref else None,
@@ -2451,6 +2453,7 @@ class Api:
         res = {k: v for k, v in res.items() if k not in ("ok", "cache")}
         res.update(photos=refs, quads=quads, examen=examen_, rasante=ras_ref[0] if ras_ref else None)
         res["centrage_vue"] = self._centrage_vue(refs, quads)
+        res["centrage_algo"] = self.CENTRAGE_ALGO
         anciens = [v.get("img") for v in ((garde or {}).get("centrage_vue") or {}).values() if v.get("img")]
         if garde and garde.get("examen"):      # l'ancien examen : ses photos a lui ne servent plus
             anciens += [x for x in (garde.get("photos") or []) + [garde.get("rasante")] if x and x not in refs]
@@ -2468,6 +2471,67 @@ class Api:
             except Exception:
                 pass
         return {"ok": True, **res, "le": le, "precision": precision}
+
+    CENTRAGE_ALGO = 2
+
+    def _recentrer(self, cid, e):
+        """2 nov 2026 (Mathieu : « ameliorer la detection des rebords ») : un examen fait avec l'ancienne detection : les
+        aretes ajustees sur la photo et le centrage remesure par symetrie, une seule fois, sans repayer l'IA. Jamais si
+        l'utilisateur a deja ajuste le contour ou les lignes a la main."""
+        import photos_cartes
+        cv0 = e.get("centrage_vue") or {}
+        if e.get("centrage_algo") == self.CENTRAGE_ALGO or e.get("contour_manuel") or any(v.get("manuel") for v in cv0.values()) \
+                or not e.get("quads") or not e.get("photos"):
+            return e
+        try:
+            refs = list(e["photos"])
+            quads = self._affiner_quads(refs, list(e["quads"]))
+            cv = self._centrage_vue(refs, quads)
+        except Exception as x:
+            print("Centrage (refait) : " + repr(x), flush=True)
+            return e
+        anciens = [v.get("img") for v in cv0.values() if v.get("img")]
+        e = dict(e, quads=quads, centrage_vue=cv, centrage_algo=self.CENTRAGE_ALGO)
+        with _verrou:
+            c = self._db()
+            try:
+                c.execute("UPDATE cartes SET etat_json=? WHERE id=?", (json.dumps(e, ensure_ascii=False), cid))
+                c.commit()
+            finally:
+                c.close()
+        if anciens:
+            try:
+                photos_cartes.supprimer(anciens)
+            except Exception:
+                pass
+        for face in ("devant", "dos"):
+            if (cv.get(face) or {}).get("gd") or (cv.get(face) or {}).get("hb"):
+                r = self.carte_centrage(cid, face, None)
+                if r.get("ok"):
+                    e = {k: v for k, v in r.items() if k != "ok"}
+        return e
+
+    @staticmethod
+    def _affiner_quads(refs, quads, recherche=0.04):
+        """2 nov 2026 (Mathieu : « ameliorer la detection des rebords ») : chaque contour envoye par le telephone, ajuste sur
+        les vraies aretes de la photo (examen.affiner_quad). Un contour qu'on ne peut pas ameliorer reste tel quel."""
+        import examen
+        import photos_cartes
+        if not examen.disponible():
+            return quads
+        out = []
+        for j, q in enumerate(quads or []):
+            ch = photos_cartes.chemin(refs[j]) if j < len(refs) else None
+            if not q or not ch:
+                out.append(q)
+                continue
+            try:
+                with open(ch, "rb") as f:
+                    out.append(examen.affiner_quad(examen.ouvrir(f.read()), q, recherche))
+            except Exception as e:
+                print("Contour (ajuste) : " + repr(e), flush=True)
+                out.append(q)
+        return out
 
     @staticmethod
     def _centrage_vue(refs, quads):
@@ -2577,6 +2641,7 @@ class Api:
         aire = abs(sum(q[i][0] * q[(i + 1) % 4][1] - q[(i + 1) % 4][0] * q[i][1] for i in range(4))) / 2
         if aire < 40000:                                   # moins de 4 % de la photo : un clic de travers
             return {"ok": False, "erreur": "Le contour est trop petit : place les coins sur ceux de la carte"}
+        q = self._affiner_quads(refs[:j + 1], [None] * j + [q], 0.015)[j] or q      # colle aux aretes, a 1,5 % pres
         quads = list(e.get("quads") or [])
         while len(quads) <= j:
             quads.append(None)
