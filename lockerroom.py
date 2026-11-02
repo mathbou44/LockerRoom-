@@ -2423,6 +2423,7 @@ class Api:
             if garde and (garde.get("examen") or garde.get("photos") == refs):
                 garde = self._recentrer(cid, garde)       # 2 nov 2026 : aretes et centrage refaits une fois (sans IA)
                 garde = self._sans_texture_relique(carte, garde)
+                garde = self._coherent(garde)
                 return {"ok": True, **garde, "le": carte.get("etat_le"), "precision": precision}
             try:
                 q = vision.statut_etat()
@@ -2477,6 +2478,24 @@ class Api:
         return {"ok": True, **res, "le": le, "precision": precision}
 
     CENTRAGE_ALGO = 2
+
+    @staticmethod
+    def _coherent(e):
+        """2 nov 2026 (Mathieu : « comment la note finale est 8-9 avec juste des 9 et 9,5 ? ») : un examen d'avant le bareme
+        fixe : les sous-notes ramenees sur l'echelle PSA (pas de 9,5) et la note globale recalculee avec la meme regle que
+        les nouveaux (bareme.globale). On dit que c'est une ancienne analyse : la refaire donne les raisons precises."""
+        import bareme
+        if not e or e.get("bareme") or not e.get("notes"):
+            return e
+        notes = {k: (bareme.psa(v) if isinstance(v, (int, float)) else None) for k, v in (e.get("notes") or {}).items()}
+        vs = [v for v in notes.values() if v is not None]
+        if not vs:
+            return e
+        g = min(vs)                                # l'ancienne IA mettait 9 par prudence, pas pour un defaut vu
+        bas = g
+        if any(d.get("gravite") == "a verifier" and not d.get("masque") for d in e.get("defauts") or []):
+            bas = bareme.psa(g - 1)                # des points incertains : la note s'ils se confirment
+        return dict(e, notes=notes, note_max=g, note_min=bas, ancienne=True)
 
     @staticmethod
     def _sans_texture_relique(carte, e):

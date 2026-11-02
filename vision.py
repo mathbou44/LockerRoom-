@@ -609,9 +609,9 @@ def _psa(v, haut=False):
     return max(x for x in _PSA_ECHELLE if x <= v + 1e-9) if v < 10 else 10.0
 
 
-_LIB_ETAT = {"point_blanc": "petit point blanc", "effilochage_leger": "leger effilochage", "effilochage": "effilochage net",
-             "arrondi_leger": "pointe legerement arrondie", "arrondi": "coin arrondi", "plie": "coin plie", "quelques_points": "quelques points blancs",
-             "usure_legere": "legere usure", "encoche": "petite encoche", "ebrechures": "ebrechures", "usure": "usure nette"}
+_LIB_ETAT = {"point_blanc": "petit point blanc", "effilochage_leger": "léger effilochage", "effilochage": "effilochage net",
+             "arrondi_leger": "pointe légèrement arrondie", "arrondi": "coin arrondi", "plie": "coin plié", "quelques_points": "quelques points blancs",
+             "usure_legere": "légère usure", "encoche": "petite encoche", "ebrechures": "ébréchures", "usure": "usure nette"}
 _TYPE_COIN = {"point_blanc": "blanchiment", "effilochage_leger": "blanchiment", "effilochage": "blanchiment", "arrondi_leger": "coin mou",
               "arrondi": "coin mou", "plie": "coin plie"}
 _TYPE_BORD = {"point_blanc": "blanchiment", "quelques_points": "blanchiment", "usure_legere": "blanchiment", "encoche": "entaille",
@@ -728,19 +728,53 @@ def _noter_observations(f, centrage=None, calibration=None, quads=None):
     ordre = {"fort": 0, "moyen": 1, "leger": 2, "a verifier": 3}
     defauts.sort(key=lambda d: (ordre[d["gravite"]], d["note"]))
     defauts = defauts[:10]
-    # les explications : la pire observation de chaque categorie, avec ses numeros
+    # 2 nov 2026 (Mathieu : « sois plus precis dans les raisons ; une valeur precise qui sert reellement d'outil ») : chaque
+    # sous-note dit ce qui a ete regarde, combien sont nets, OU est chaque probleme, et la regle PSA qui donne la note
     fr = lambda v: str(v).replace(".0", "").replace(".", ",")
+    face_ = lambda ph: ("dos " if ph == 1 else "devant ") if nface > 1 else ""
+    def num_de(zone, ph):
+        return next((str(i + 1) for i, d in enumerate(defauts) if d["zone"] == zone and d["photo"] == ph), "")
     explications = {}
-    for k in ("coins", "bords", "surface"):
-        if hi.get(k) is not None and hi[k] < 10 or lo.get(k) is not None and lo[k] < 10:
-            nums = [str(i + 1) for i, d in enumerate(defauts) if _CAT_ZONE(d["zone"]) == k]
-            pire = next((d for d in defauts if _CAT_ZONE(d["zone"]) == k), None)
-            if pire:
-                explications[k] = (("devant · " if pire["photo"] == 0 and nface > 1 else "dos · " if pire["photo"] == 1 else "")
-                                   + pire["pourquoi"].split(" · ")[-1] + " (" + ("point " if len(nums) == 1 else "points ") + ", ".join(nums) + ")")
-    if hi["centrage"] is not None and hi["centrage"] < 10:
-        explications["centrage"] = ("mesuré par l’app : " if mesure else "estimé : ") + " · ".join(x for x in (cg, ch) if x) + \
-            (f" · dos {cd}" if cd else "") + f" → PSA {fr(hi['centrage'])} max"
+    for k, obs, etats, nomk, tot in (("coins", coins, _bar.ETATS_COIN, "coin", 4 * nface), ("bords", bords, _bar.ETATS_BORD, "bord", 4 * nface)):
+        if not obs:
+            continue
+        nets = sum(1 for o in obs.values() if o["etat"] == "net")
+        mal = sorted(((ph, z, o) for (ph, z), o in obs.items() if o["etat"] != "net"), key=lambda t: etats[t[2]["etat"]][0])
+        regle = {"coins": {9: "PSA 9 : un tout petit défaut", 8.5: "2-3 points blancs", 8: "PSA 8 : léger effilochage à 1-2 coins",
+                           7: "PSA 7 : effilochage à quelques coins", 6: "PSA 6", 5: "PSA 5 : coin légèrement arrondi", 4: "PSA 4 : coin arrondi", 3: "PSA 3 : coin plié"},
+                 "bords": {9: "PSA 9 : un tout petit point", 8.5: "points sur 2 bords", 8: "PSA 8 : quelques points blancs", 7.5: "usure sur plusieurs bords",
+                           7: "PSA 7 : légère usure", 6: "PSA 6 : petite encoche", 5: "PSA 5 : ébréchures", 4: "PSA 4 : usure nette"}}[k]
+        if not mal:
+            explications[k] = f"{tot} {nomk}s regardés au zoom : tous nets"
+            continue
+        parts = [f"{face_(ph)}{nomk} {z} : {_LIB_ETAT.get(o['etat'], o['etat'])}" + (" (à vérifier)" if inc(o) else "")
+                 + (f" [{num_de(nomk + ' ' + z, ph)}]" if num_de(nomk + " " + z, ph) else "") for ph, z, o in mal[:3]]
+        t = f"{nets}/{len(obs)} nets · " + " ; ".join(parts)
+        if hi.get(k) is not None and hi[k] < 10:
+            t += f" → {regle.get(hi[k], 'PSA ' + fr(hi[k]))}"
+        if lo.get(k) is not None and hi.get(k) is not None and lo[k] < hi[k]:
+            t += f" (→ {fr(lo[k])} si les points à vérifier se confirment)"
+        explications[k] = t
+    if sj:
+        if surf:
+            parts = [f"{face_(1 if o.get('photo') == 1 else 0)}{o['type']} " + {"rasante": "(lumière rasante seulement)", "de_pres": "(visible de près)", "visible": "(visible)"}.get(o.get("visibilite"), "")
+                     + (" (à vérifier)" if inc(o) else "") for o in surf[:3]]
+            explications["surface"] = " ; ".join(parts) + (f" → PSA {fr(hi['surface'])}" if hi.get("surface") is not None and hi["surface"] < 10 else "")
+        else:
+            explications["surface"] = "carton imprimé propre : aucune rayure, tache ni pli vus"
+    if hi["centrage"] is not None:
+        nomr = {r_["axe"] + str(r_["photo"]): r_["element"] for r_ in rep_ if r_.get("element")}
+        bouts = []
+        if cg:
+            bouts.append(f"G/D {cg}" + (f" ({nomr['gd0']})" if nomr.get("gd0") else ""))
+        if ch:
+            bouts.append(f"H/B {ch}" + (f" ({nomr['hb0']})" if nomr.get("hb0") else ""))
+        if cd:
+            bouts.append(f"dos {cd}")
+        lim = {10: "PSA 10 jusqu’à 60/40", 9: "PSA 9 jusqu’à 65/35", 8: "PSA 8 jusqu’à 70/30", 7: "PSA 7 jusqu’à 75/25"}.get(int(hi["centrage"]), f"PSA {fr(hi['centrage'])}")
+        explications["centrage"] = ("mesuré par l’app : " if mesure else "mesuré sur la règle : ") + " · ".join(bouts) + f" → {lim}"
+    elif not (cg or ch):
+        explications["centrage"] = "aucun repère symétrique sur cette carte : pas compté dans la note"
     notes = {k: hi[k] for k in ("centrage", "coins", "bords", "surface")}
     return {"evaluable": f.get("evaluable") is not False, "raison": str(f.get("raison") or "").strip()[:80],
             "centrage_gd": cg, "centrage_hb": ch, "centrage_dos": cd or ((centrage or {}).get("dos") or {}).get("gd") or "",

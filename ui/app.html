@@ -152,7 +152,7 @@ details.reglage summary::-webkit-details-marker{display:none}
 .roue::after{content:''; position:absolute; inset:25%; background:#F4F1EA; -webkit-mask:url(/logo_sc_s.svg) center/contain no-repeat; mask:url(/logo_sc_s.svg) center/contain no-repeat}
 .roue.grande{width:48px; height:48px}
 /* 29 oct 2026 : watchlist (etoile, onglet, liste) */
-.sd-ph .sd-et{position:absolute; top:6px; right:6px; z-index:2}
+.sd-ph .sd-et{position:absolute; top:6px; right:6px; z-index:2; width:40px; height:40px} .sd-ph .sd-et svg{width:21px; height:21px}
 .sd-et{width:34px; height:34px; border-radius:50%; border:none; padding:0; display:flex; align-items:center; justify-content:center; cursor:pointer;
   background:rgba(14,14,18,.74); -webkit-tap-highlight-color:transparent}      /* 31 oct 2026 : sans flou d'arriere-plan (defilement fluide) */
 .sd-et svg{width:18px; height:18px; fill:none; stroke:#F4F1EA; stroke-width:1.8; stroke-linejoin:round; transition:fill .15s, stroke .15s}
@@ -349,7 +349,14 @@ details.reglage summary::-webkit-details-marker{display:none}
 .slab-deal .sd-lab{height:auto; flex-direction:column; align-items:stretch; justify-content:flex-start; padding:7px 9px 6px; gap:2px}
 .sd-l2{display:flex; justify-content:space-between; align-items:baseline; gap:6px; margin-top:3px; padding-top:4px; border-top:1px solid rgba(255,255,255,.08)}
 .sd-j{font:700 17px/1.1 var(--f-cond); letter-spacing:.03em; text-transform:uppercase; color:#F4F2F8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-.sd-c{font-size:13px; line-height:1.25; color:#C9C6D2; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.sd-c{font-size:13px; line-height:1.25; color:#C9C6D2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+/* 2 nov 2026 : le slab au format PSA (3,3 x 5,3 po), 3 chiffres : mise, paie max, profit */
+.slab-deal .sd-slab{aspect-ratio:3.3 / 5.3} .slab-deal .sd-ph{aspect-ratio:auto; flex:1 1 auto; min-height:0}
+.sd-3{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:4px; margin-top:4px; padding-top:6px; border-top:1px solid rgba(255,255,255,.08)}
+.sd-k{display:flex; flex-direction:column; gap:1px; min-width:0} .sd-k:nth-child(2){align-items:center} .sd-k:nth-child(3){align-items:flex-end}
+.sd-k small{font:700 11.5px/1 var(--f-cond); letter-spacing:.06em; text-transform:uppercase; color:#A9A6B4}
+.sd-k b{font:700 19px/1.1 var(--f-cond); color:#F4F2F8; white-space:nowrap} .sd-k.mx b{color:var(--acc)} .sd-k.g b{color:var(--vert)}
+.sd-ph .sd-ramp{position:absolute; right:6px; bottom:6px; z-index:2; width:28px; height:28px; border-radius:50%; background:rgba(10,10,14,.86); display:grid; place-items:center; color:var(--vert)}
 /* 2 nov 2026 (Mathieu : « toute l'info d'une carte dans son slab ; eviter les mini ecritures ») : valeur et gain dans l'etiquette */
 .sd-l3, .sd-l4{display:flex; justify-content:space-between; align-items:baseline; gap:6px; font-size:13.5px; color:#C9C6D2}
 .sd-l3 b{color:#F4F2F8; font-weight:700} .sd-l3 .sd-g{font:700 17px/1 var(--f-cond); color:var(--vert)} .sd-l4 b{color:#F4F2F8}
@@ -2139,7 +2146,7 @@ body.en-defil .logo-lr::after, body.en-defil #nav-logo-nom, body.en-defil .titre
 .fa-k{display:flex; flex-direction:column; gap:2px; padding:9px 10px; border-radius:14px; background:var(--carte); border:1px solid var(--ligne); min-width:0}
 .fa-k span{font:700 11px var(--f-cond); letter-spacing:.1em; text-transform:uppercase; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .fa-k b{font:700 26px/1.05 var(--f-cond); color:var(--texte); white-space:nowrap} .fa-k small{font-size:11.5px; color:var(--pale); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-.fa-k.fa-v b{color:var(--acc)} .fa-k.fa-m{border-color:color-mix(in srgb, var(--vert) 45%, var(--ligne))} .fa-k.fa-m b{color:var(--vert)}
+.fa-k.fa-v b{color:var(--acc)} .fa-k.fa-m{border-color:color-mix(in srgb, var(--acc) 45%, var(--ligne))} .fa-k.fa-m b{color:var(--acc)}
 .fa-k .roue{width:18px; height:18px}
 .fa-pils{flex:none; display:flex; flex-wrap:wrap; gap:6px}
 .fa-ventes{flex:none; min-height:0}
@@ -2147,7 +2154,8 @@ body.en-defil .logo-lr::after, body.en-defil #nav-logo-nom, body.en-defil .titre
 .fa-car{margin:0 !important; padding:0 0 2px !important; gap:8px !important}
 .fa-car .fv{flex:0 0 21.5%; min-width:64px} .fa-car .fv-ph{border-radius:9px} .fa-car .fv b{font-size:17px; margin-top:2px} .fa-car .fv small{font-size:11px}
 .fa-vide{font-size:13px; color:var(--doux); padding:8px 10px; border-radius:12px; background:var(--carte)}
-.fa-btns{flex:none; display:flex; gap:8px; align-items:center} .fa-btns .btn{flex:1; margin:0} .fa-btns .sd-et{width:50px; height:50px; flex:none}
+.fa-btns{flex:none; display:flex; gap:10px; align-items:center} .fa-btns .btn{flex:1; margin:0} .fa-btns .sd-et{width:58px; height:58px; flex:none; background:var(--carte); box-shadow:inset 0 0 0 1px var(--ligne)}
+.fa-btns .sd-et svg{width:28px; height:28px} .fa-k.fa-g b{color:var(--vert)} .fa-k.fa-g b.neg{color:var(--rouge)} .fa-med{color:var(--acc)}
 .fa-bas{flex:none; display:flex; justify-content:space-between; align-items:center; font-size:13px} .fa-bas a{color:var(--doux); text-decoration:none} .fa-bas .pas-deal{margin:0; padding:0; font-size:13px}
 @media (max-height:700px){ .fa-k b{font-size:22px} .fa-k{padding:7px 8px} }
 .fv-t{display:flex; flex-direction:column; gap:1px} .fv-t b{font-size:17px} .fv-t span{font-size:13px; color:var(--doux)}
@@ -2425,7 +2433,9 @@ body.pop-ouverte{overflow:hidden}
 .vd-x svg{width:18px; height:18px}
 /* 2 nov 2026 - la photo cadree sur la carte, le calque (contour, cadre imprime, ratios), les coins a glisser */
 .vd-ph{position:relative; display:flex; flex-direction:column; align-items:center; gap:8px}
-.vd-cad{position:relative; width:100%; max-width:min(100%, calc(70vh * 1.6)); max-height:70vh; border-radius:12px; overflow:hidden; background:#111115; touch-action:none; user-select:none}
+.vd-cad{position:relative; width:100%; max-width:min(100%, calc(70vh * 1.6)); max-height:70vh; border-radius:12px; overflow:hidden; background:#111115; touch-action:pan-y; -webkit-user-select:none; user-select:none}
+.vd{overscroll-behavior:contain; -webkit-overflow-scrolling:touch} body.vd-ouverte{overflow:hidden} .vd img{-webkit-user-drag:none; -webkit-touch-callout:none}
+.vd-anc{padding:10px 12px; border-radius:14px; background:var(--or-fonce); color:var(--or); font-size:13.5px} .vd-anc .lien-t{font-size:13.5px}
 .vd-sc{position:absolute} .vd-sc img{position:absolute; inset:0; width:100%; height:100%; display:block}
 .vd-calque{position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible}
 .vd-cont{fill:none; stroke:rgba(255,255,255,.85); stroke-width:1.5; vector-effect:non-scaling-stroke; stroke-dasharray:6 4}
@@ -5726,16 +5736,19 @@ function tuileDeal(x){
   // 30 oct 2026 (Mathieu : « l'annonce du deal : le nom du joueur en haut, son % sous la mediane des dernieres ventes et le
   // prix actuel ; prends exemple sur ces slabs (PSA, TAG) ; un contour prisme mince ») : l'etiquette du slab porte le joueur
   // et la carte a gauche, le rabais et le prix a droite ; le temps d'un encan sur la photo
+  // 2 nov 2026 (Mathieu : « au premier balayage : le bid actuel, ce qu'on devrait payer et le profit ; le reste quand on
+  // clique ; le slab doit suivre le ratio ») : 3 chiffres seulement, un slab au format PSA
   const encan = x.encan, sansV = x.suivi && !(x.valeur && x.rabais > 0);
   const nom = x.joueur_n || titreCourt(x.titre), carte = x.joueur_n ? x.carte_n : '';
+  const prix = encan ? Math.max(0, (x.total || 0) - (x.port || 0)) : x.total;
+  const max = x.mise_max != null ? x.mise_max : x.valeur ? Math.round(x.valeur * 0.70 - (encan ? (x.port || 0) : 0)) : null;
+  const k3 = (lib, val, cl) => `<span class="sd-k ${cl || ''}"><small>${lib}</small><b>${val}</b></span>`;
   return `<div class="tuile-deal slab-deal ${x.pres ? 'pres' : ''} ${sansV ? 'suivi' : ''}" data-id="${esc(x.item_id)}" ${attrsAnnonce(x)} role="button" tabindex="0">
     <div class="sd-slab"><div class="sd-lab">
         <b class="sd-j">${x.favori ? '<i class="sd-fav">★</i> ' : ''}${esc(nom)}</b>${carte ? `<small class="sd-c">${esc(carte)}</small>` : ''}
-        <span class="sd-l2"><b class="sd-rab">${sansV ? tt('Encan', 'Auction') : '−' + x.rabais + ' %'}</b><b class="sd-pr">${argent(x.total, 0)}</b></span>
-        ${x.valeur || x.ramassage || (S.dealsF && S.dealsF.objectif === 'collection' && x.desir != null) ? `<span class="sd-l3">${x.valeur ? `<span>${tt('Vaut', 'Worth')} <b>${argentCourt(x.valeur)}</b></span>${x.gain > 0 ? `<b class="sd-g">+${argentCourt(x.gain)}</b>` : ''}` : `<span>${tt('Valeur à vérifier', 'Value to check')}</span>`}</span>` : ''}
-        ${x.ramassage || (S.dealsF && S.dealsF.objectif === 'collection' && x.desir != null) ? `<span class="sd-l4">${S.dealsF && S.dealsF.objectif === 'collection' && x.desir != null ? `<span>${tt('Rareté', 'Rarity')} <b>${x.desir}</b></span>` : ''}${x.ramassage ? `<span class="sd-ram">${icPin()}${tt('Ramassage', 'Pickup')}</span>` : ''}</span>` : ''}</div>
+        <span class="sd-3">${k3(encan ? tt('Mise', 'Bid') : tt('Prix', 'Price'), argentCourt(prix), 'pr')}${k3(tt('Paie max', 'Pay max'), max != null && !sansV ? argentCourt(max) : '—', 'mx')}${k3(tt('Profit', 'Profit'), x.gain > 0 ? '+' + argentCourt(x.gain) : '—', 'g')}</span></div>
       <div class="sd-ph">${SVG_CARTE}${x.photo ? `<img src="${esc(photoNet(x.photo, 400))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}${boutonWatch(x)}
-        ${encan ? `<span class="sd-fin">${icH()}${finDans(x.fin)}</span>` : ''}</div></div>
+        ${encan ? `<span class="sd-fin">${icH()}${finDans(x.fin)}</span>` : ''}${x.ramassage ? `<span class="sd-ramp">${icPin()}</span>` : ''}</div></div>
     </div>`;
 }
 // 26 oct 2026 (Mathieu : « encore pas un deal ... une option : l'annonce disparaît et ça nous laisse savoir quoi
@@ -6421,6 +6434,13 @@ function raisonSansValeur(d){
 }
 // 2 nov 2026 (Mathieu : « le prix doit updater dans les 2 affichages ») : le prix lu en direct par la fiche met a jour la
 // tuile du deal (prix, rabais, gain) ; plus un deal -> la tuile s'efface
+// les 3 chiffres d'une tuile de deal (mise, paie max, profit), mis a jour sur place
+function majChiffresTuile(t, x){
+  const b = (k) => t.querySelector(`.sd-k.${k} b`);
+  if (b('pr') && x.total) b('pr').textContent = argentCourt(x.encan ? Math.max(0, x.total - (x.port || 0)) : x.total);
+  if (b('mx') && x.mise_max != null) b('mx').textContent = argentCourt(x.mise_max);
+  if (b('g')) b('g').textContent = x.gain > 0 ? '+' + argentCourt(x.gain) : '—';
+}
 function majTuilePrix(id, d){
   const a = d && d.article, x = (S.dealsParId || {})[String(id)];
   if (!a || !a.total || !x) return;
@@ -6430,10 +6450,7 @@ function majTuilePrix(id, d){
     if (x.encan && !x.mise_perso) x.mise_max = Math.round((x.valeur * 0.70 - (x.port || 0)) * 100) / 100; }
   $$(`.tuile-deal[data-id="${CSS.escape(String(id))}"]`).forEach(t => {
     if (d.deal_retire) { t.classList.add('sort'); setTimeout(() => t.remove(), 300); return; }
-    const pr = t.querySelector('.sd-pr'), rb = t.querySelector('.sd-rab'), g = t.querySelector('.sd-g');
-    if (pr) pr.textContent = argent(x.total, 0);
-    if (rb && x.valeur && x.rabais != null) rb.textContent = '−' + x.rabais + ' %';
-    if (g) { if (x.gain > 0) g.textContent = '+' + argentCourt(x.gain); else g.remove(); }
+    majChiffresTuile(t, x);
   });
 }
 async function ouvrirAnnonce(base){
@@ -6474,12 +6491,12 @@ async function ouvrirAnnonce(base){
       <div class="fa-t">${esc(a.titre || base.titre || '')}</div>
       <div class="fa-3">
         <div class="fa-k"><span>${encan ? tt('Mise actuelle', 'Current bid') : tt('Prix', 'Price')}</span><b>${total ? argent(encan ? Math.max(0, total - port) : total, 0) : '—'}</b><small>${a.port_cad != null ? (a.port_cad ? (encan ? '+ ' + argent(port, 0) + tt(' de port', ' shipping') : tt('port compris', 'shipping incl.')) : tt('livraison gratuite', 'free shipping')) : '&nbsp;'}</small></div>
-        <div class="fa-k fa-v"><span>${tt('Se vend', 'Sells for')}</span>${d.valeur ? `<b>${argent(d.valeur, 0)}</b><small>${d.valeur_source === 'vendues' ? tt(`médiane · ${d.nb_vendues} vente${d.nb_vendues > 1 ? 's' : ''}`, `median · ${d.nb_vendues} sale${d.nb_vendues > 1 ? 's' : ''}`) : tt('mêmes cartes en vente', 'same cards listed')}</small>`
-          : d.chargement || d.ventes_attente ? `<b><span class="roue"></span></b><small>${tt('on cherche…', 'searching…')}</small>` : `<b>—</b><small>${tt('pas assez de ventes', 'not enough sales')}</small>`}</div>
-        <div class="fa-k fa-m"><span>${encan ? tt('Ta mise max', 'Your max bid') : tt('Paie au plus', 'Pay at most')}</span>${maxA != null ? `<b>${argent(maxA, 0)}</b><small>${conn && conn.mise_perso ? tt('choisie par toi', 'set by you') : encan && port ? tt('hors port · ~20 % de profit', 'excl. shipping · ~20% profit') : tt('pour ~20 % de profit', 'for ~20% profit')}</small>` : `<b>—</b><small>&nbsp;</small>`}</div>
+        <div class="fa-k fa-m"><span>${encan ? tt('Mise max', 'Max bid') : tt('Paie max', 'Pay max')}</span>${maxA != null ? `<b>${argent(maxA, 0)}</b><small>${conn && conn.mise_perso ? tt('choisie par toi', 'set by you') : encan && port ? tt('hors port', 'excl. shipping') : '&nbsp;'}</small>` : `<b>—</b><small>&nbsp;</small>`}</div>
+        <div class="fa-k fa-g"><span>${tt('Profit', 'Profit')}</span>${d.gain != null ? `<b class="${d.gain > 0 ? '' : 'neg'}">${d.gain > 0 ? '+' : '−'}${argent(Math.abs(d.gain), 0)}</b><small>${tt('après frais', 'after fees')}</small>`
+          : d.chargement || d.ventes_attente ? `<b><span class="roue"></span></b><small>&nbsp;</small>` : `<b>—</b><small>&nbsp;</small>`}</div>
       </div>
-      ${vt || budget ? `<div class="fa-pils">${vt ? `<span class="capsule ${vt[0]}">${esc(vt[1])}</span>` : ''}${d.gain != null && d.gain > 0 ? `<span class="capsule vert">+${argent(d.gain, 0)} ${tt('après frais', 'after fees')}</span>` : ''}${budget ? `<span class="capsule rouge">${tt('Au-dessus de ton budget', 'Over your budget')}</span>` : ''}</div>` : ''}
-      <div class="fa-ventes">${ventes.length ? `<div class="fa-vt">${tt('Vendues récemment', 'Recently sold')} <small>${tt('même carte · glisse ›', 'same card · swipe ›')}</small></div>
+      ${depasse || budget ? `<div class="fa-pils">${depasse ? `<span class="capsule rouge">${esc(vt[1])}</span>` : ''}${budget ? `<span class="capsule rouge">${tt('Au-dessus de ton budget', 'Over your budget')}</span>` : ''}</div>` : ''}
+      <div class="fa-ventes">${ventes.length ? `<div class="fa-vt">${d.valeur ? tt('Se vend ', 'Sells for ') + `<b class="fa-med">${argent(d.valeur, 0)}</b>` : tt('Vendues récemment', 'Recently sold')} <small>${d.valeur && d.nb_vendues ? tt(`médiane de ${d.nb_vendues} ventes · glisse ›`, `median of ${d.nb_vendues} sales · swipe ›`) : tt('même carte · glisse ›', 'same card · swipe ›')}</small></div>
         <div class="fv-car fa-car">${ventes.map(k => `<a class="fv" ${k.url ? `href="${esc(k.url)}" target="_blank" rel="noopener"` : ''}><div class="fv-ph">${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo, 300))}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
           <b>${argent(k.prix, 0)}</b><small>${k.le ? dateCourte(k.le) : ''}</small></a>`).join('')}</div>`
         : d.chargement || d.ventes_attente ? `<div class="lecture"><span class="roue"></span>${tt('Les ventes réelles arrivent…', 'Real sales are loading…')}</div>`
@@ -6766,8 +6783,7 @@ async function chargerDeals(frais){
     const par = Object.fromEntries([...(n.deals || []), ...(n.suivis || [])].map(x => [String(x.item_id), x]));
     $$('#d-grille .tuile-deal[data-id]').forEach(t => { const x = par[String(t.dataset.id)];
       if (!x) { if (avant[String(t.dataset.id)]) { t.classList.add('part'); setTimeout(() => t.remove(), 320); } return; }
-      const pr = t.querySelector('.sd-pr'); if (pr && x.total) pr.textContent = argent(x.total, 0);
-      const rb = t.querySelector('.sd-rab'); if (rb && x.valeur && x.rabais != null) rb.textContent = '−' + x.rabais + ' %'; });
+      majChiffresTuile(t, x); });
     S.dealsReste = (S.dealsReste || []).filter(h => { const m = /data-id="([^"]+)"/.exec(h); return !m || par[m[1]]; });
     const nv = [...(n.deals || []), ...(n.suivis || [])].filter(x => { const a = avant[String(x.item_id)]; return !a || (x.valeur && !a.valeur); }).length;
     let p = $('#d-nv');
@@ -8867,10 +8883,21 @@ function voirDefauts(e, k, apres, relancer){
     const n_ = e.notes || {}, fr_ = (v) => v == null ? '—' : String(v).replace('.', ','), ex_ = e.explications || {};
     const four = e.note_min != null ? (e.note_max != null && e.note_max !== e.note_min ? fr_(e.note_min) + '–' + fr_(e.note_max) : fr_(e.note_min)) : '—';
     const clg = (e.note_min || 0) >= 9 ? 'vert' : (e.note_min || 0) >= 7 ? 'or' : 'rouge', cln = (v) => v == null ? '' : v >= 9 ? 'vert' : v >= 7 ? 'or' : 'rouge';
+    // pourquoi CETTE note globale, en une phrase (la regle du bareme qui l'a donnee)
+    const pourquoiNote = () => {
+      const vs = ['centrage', 'coins', 'bords', 'surface'].map(k => n_[k]).filter(v => v != null), pire = vs.length ? Math.min(...vs) : null;
+      if (pire == null || e.note_max == null) return tt('Barème PSA, le même pour toutes les cartes', 'PSA scale, the same for every card');
+      const t = [];
+      if (e.note_max < pire) t.push(tt(`Plusieurs catégories à ${fr_(pire)} : PSA ${fr_(pire)} ne permet qu’un seul petit défaut → ${fr_(e.note_max)}`, `Several categories at ${fr_(pire)}: PSA ${fr_(pire)} allows only one minor flaw → ${fr_(e.note_max)}`));
+      else t.push(tt(`La pire catégorie fixe la note : ${fr_(e.note_max)}`, `The worst category sets the grade: ${fr_(e.note_max)}`));
+      if (e.note_min != null && e.note_min < e.note_max) t.push(tt(`${fr_(e.note_min)} si les points « à vérifier » se confirment`, `${fr_(e.note_min)} if the “to check” points are confirmed`));
+      return t.join(' · ');
+    };
     const CATS_ = [['centrage', tt('Centrage', 'Centering')], ['coins', tt('Coins', 'Corners')], ['bords', tt('Bords', 'Edges')], ['surface', tt('Surface', 'Surface')]];
     o.innerHTML = `<button class="vd-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
       <div class="vd-tete"><span class="fc-al-ic et-anneau ${clg}"><b>${four}</b></span><span><b>${tt('État estimé', 'Estimated condition')} <small>/10</small></b>
-        <small>${tt('Barème PSA, le même pour toutes les cartes', 'PSA scale, the same for every card')}</small></span></div>
+        <small>${esc(pourquoiNote())}</small></span></div>
+      ${e.ancienne ? `<div class="vd-anc">${tt('Ancienne analyse (avant le barème fixe) : les raisons sont moins précises.', 'Older analysis (before the fixed scale): reasons are less precise.')}${relancer ? ` <button class="lien-t" data-relancer>${tt('Refaire l’examen', 'Check again')}</button>` : ''}</div>` : ''}
       <div class="vd-sous">${CATS_.map(([k_, l_]) => `<div class="vd-s"><span class="vd-sn ${cln(n_[k_])}"><b>${fr_(n_[k_])}</b></span><span><b>${l_}</b><small>${esc(ex_[k_] || (n_[k_] == null ? tt('pas jugeable sur ces photos', 'not judgeable on these photos') : n_[k_] >= 10 ? tt('rien à signaler', 'nothing to report') : ''))}</small></span></div>`).join('')}</div>
       ${refs.map((u, j) => `<div class="vd-ph" data-j="${j}"><div class="vd-cad"><div class="vd-sc"><img src="${esc(photoNet(u, 1600))}" alt="">
           <svg class="vd-calque" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true"></svg></div></div><span class="vd-rat"></span>
@@ -8883,7 +8910,7 @@ function voirDefauts(e, k, apres, relancer){
       ${(e.invisible || []).length ? `<div class="sous">${tt('Pas vérifiable sur ces photos : ', 'Not checkable on these photos: ')}${esc(e.invisible.join(' · '))}</div>` : ''}
       <button class="lien-t vd-bar" data-bareme>${tt('Le barème utilisé : normes officielles PSA ›', 'The scale used: official PSA standards ›')}</button>
       <div class="sous vd-pied">${tt('Estimation sur photo, pas une gradation.', 'Photo estimate, not a grade.')}${relancer ? ` <button class="lien" data-relancer>${tt('Refaire l’examen', 'Check again')}</button>` : ''}</div>`;
-    o.querySelector('.vd-x').onclick = () => o.remove();
+    o.querySelector('.vd-x').onclick = () => { o.remove(); document.body.classList.remove('vd-ouverte'); };
     refs.forEach((u, j) => {
       const w = o.querySelector(`.vd-ph[data-j="${j}"]`), im = w.querySelector('img');
       const go = async () => {
@@ -8894,7 +8921,7 @@ function voirDefauts(e, k, apres, relancer){
       if (im.complete && im.naturalWidth) go(); else im.addEventListener('load', go, {once: true});
     });
     $$('[data-calque]', o).forEach(bc => bc.onclick = () => { calque = !calque; try { localStorage.setItem('lr_vd_calque', calque ? '1' : '0'); } catch (x) {} vibrer(); peindre(); });
-    const rl = o.querySelector('[data-relancer]'); if (rl) rl.onclick = () => { o.remove(); relancer(); };
+    $$('[data-relancer]', o).forEach(rl => rl.onclick = () => { o.remove(); document.body.classList.remove('vd-ouverte'); relancer(); });
     $$('[data-ed]', o).forEach(b => b.onclick = () => { const j = +b.dataset.ed; if (!Q[j]) Q[j] = [[100, 100], [900, 100], [900, 900], [100, 900]]; Q['av' + j] = Q[j].map(p => p.slice()); edite = j; vibrer(); peindre(); });
     $$('[data-ann]', o).forEach(b => b.onclick = () => { const j = +b.dataset.ann; Q[j] = Q['av' + j]; edite = -1; peindre(); });
     $$('[data-ok]', o).forEach(b => b.onclick = async () => { const j = +b.dataset.ok; b.disabled = true;
@@ -8962,7 +8989,7 @@ function voirDefauts(e, k, apres, relancer){
       if (ouvert === i) bulle(cad, sc, d, i, x, y);
     });
   };
-  document.body.appendChild(o);
+  document.body.appendChild(o); document.body.classList.add('vd-ouverte');      // la page dessous ne defile plus avec
   peindre();
   if (k != null) setTimeout(() => o._montrer && o._montrer(k), 300);
 }
