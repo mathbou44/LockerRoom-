@@ -2552,6 +2552,60 @@ class Api:
                 c.close()
         return {"ok": True, **e}
 
+    def carte_contour(self, cid, face, quad):
+        """2 nov 2026 (Mathieu : « les chiffres ne sont pas a la bonne place ») : le contour de la carte corrige a la main sur la
+        photo d'examen (4 coins, 0..1000, haut-gauche puis sens horaire) -> la carte redressee de nouveau, le centrage remesure
+        (sous-note et fourchette), les numeros replaces par l'ecran. Rien n'est repaye a l'IA."""
+        import photos_cartes
+        carte = self.carte_lire(cid)
+        try:
+            e = json.loads((carte or {}).get("etat_json") or "null")
+        except ValueError:
+            e = None
+        if not e or face not in ("devant", "dos"):
+            return {"ok": False, "erreur": "Aucun examen pour cette carte"}
+        j = 0 if face == "devant" else 1
+        refs = list(e.get("photos") or [])
+        if j >= len(refs):
+            return {"ok": False, "erreur": "Pas de photo pour ce côté"}
+        try:
+            q = [[max(0, min(1000, int(round(float(x))))), max(0, min(1000, int(round(float(y)))))] for x, y in quad][:4]
+        except (TypeError, ValueError):
+            q = []
+        if len(q) != 4:
+            return {"ok": False, "erreur": "Place les 4 coins sur la carte"}
+        aire = abs(sum(q[i][0] * q[(i + 1) % 4][1] - q[(i + 1) % 4][0] * q[i][1] for i in range(4))) / 2
+        if aire < 40000:                                   # moins de 4 % de la photo : un clic de travers
+            return {"ok": False, "erreur": "Le contour est trop petit : place les coins sur ceux de la carte"}
+        quads = list(e.get("quads") or [])
+        while len(quads) <= j:
+            quads.append(None)
+        quads[j] = q
+        e["quads"] = quads
+        vue = self._centrage_vue(refs[:j + 1], [None] * j + [q]).get(face)
+        ancienne = ((e.get("centrage_vue") or {}).get(face) or {}).get("img")
+        cv = e.setdefault("centrage_vue", {})
+        if vue:
+            cv[face] = vue
+        else:
+            cv.pop(face, None)
+        e["contour_manuel"] = sorted(set((e.get("contour_manuel") or []) + [face]))
+        with _verrou:
+            c = self._db()
+            try:
+                c.execute("UPDATE cartes SET etat_json=? WHERE id=?", (json.dumps(e, ensure_ascii=False), cid))
+                c.commit()
+            finally:
+                c.close()
+        if ancienne and ancienne != (vue or {}).get("img"):
+            try:
+                photos_cartes.supprimer([ancienne])
+            except Exception:
+                pass
+        if vue:
+            return self.carte_centrage(cid, face, None)       # ratios, sous-note de centrage et fourchette, remesures
+        return {"ok": True, **e}
+
     def carte_etat_avis(self, cid, i, vrai):
         """Un defaut signale : l'utilisateur le voit (vrai) ou non (faux). Garde avec l'examen, et compte (sans photo, sans
         nom) dans ce que l'analyseur apprend : les defauts « a verifier » souvent rejetes deviennent plus exigeants."""
@@ -4929,6 +4983,10 @@ class Api:
         # 27 oct 2026 (revue) : verifie AUSSI a la lecture (meme si le chasseur est en panne) : vu il y a 6 h au plus, encan pas fini
         lim_l = (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat()
         tout = [x for x in self._deals_fusion() if _dl.encore_ouvert(x) and (x.get("source") != "marche" or str(x.get("vu_le") or "") >= lim_l)]
+        # 2 nov 2026 (Mathieu : « quand le prix suggere est depasse par le bid actuel, ce n'est plus un deal, il ne devrait plus
+        # etre la ») : la mise du moment (hors port) au-dessus de la mise max -> hors des deals, tout de suite a la lecture
+        tout = [x for x in tout if not (x.get("encan") and x.get("mise_max") is not None and x.get("total")
+                                        and float(x["total"]) - float(x.get("port") or 0) > float(x["mise_max"]) + 0.5)]
         rg = self.reglages_lire()
         fp_, ff_ = (rg["frais_ebay_pct"] or 0) / 100, rg["frais_ebay_fixe"] or 0
         par_sport = {}
@@ -5189,6 +5247,14 @@ class Api:
             except (RuntimeError, OSError) as e:
                 a.setdefault("erreur_comps", str(e))
         total = round((a.get("prix_cad") or 0) + (a.get("port_cad") or 0), 2) if a.get("prix_cad") else None
+        # 2 nov 2026 (Mathieu : « le prix doit updater dans les 2 affichages ») : le prix lu en direct remplace celui du deal
+        maj_deal = None
+        if total and not a.get("erreur"):
+            try:
+                import deals as _dl0
+                maj_deal = _dl0.maj_prix(item_id, total, a.get("port_cad"), a.get("mises"), a.get("fin"))
+            except Exception as e:
+                print("Deals (prix fiche) : " + repr(e), flush=True)
         r = self.reglages_lire()
         fp, ff = (r["frais_ebay_pct"] or 0) / 100, r["frais_ebay_fixe"] or 0
         # 25 oct 2026 (Mathieu : « montre les last sold comps avec leurs photos aussi et le prix suggere »)
@@ -5228,7 +5294,8 @@ class Api:
             pv = sorted(x["prix"] for x in ventes if x.get("prix")) if vm else sorted(x["total"] for x in comps)
             vente = pv[max(0, int(len(pv) * 0.6) - 1)] if len(pv) >= 3 else valeur     # vendues : un peu au-dessus du milieu
             suggere = {"vente": round(vente if vm else min(vente, valeur), 2),
-                       "achat_max": round(max(0.0, (valeur * (1 - fp) - ff) / 1.20), 2), "source": "vendues" if vm else "annonces"}
+                       # 2 nov 2026 (« pourquoi le max bid change ? ») : la meme regle que les deals et la watchlist (70 %)
+                       "achat_max": round(max(0.0, valeur * _deals.RATIO_DEAL), 2), "source": "vendues" if vm else "annonces"}
         # 26 oct 2026 (Mathieu : « les deals sont pas bons avec les last sold ») : la fenetre a les ventes de CETTE carte ;
         # si elles disent que ce n'est pas un deal, l'annonce sort des deals de tout le monde (et sa valeur est corrigee)
         if not rapide and total:
@@ -5240,7 +5307,7 @@ class Api:
                 pass
         if not ebay_prix_actif():                # interrupteur : l'annonce seule, sans valeur ni rabais
             return {"ok": True, "article": {**a, "total": total}, "comps": [], "n": 0, "coupe": True}
-        return {"ok": True, "article": {**a, "total": total}, "comps": comps, "mediane": med, "n": n,
+        return {"ok": True, "article": {**a, "total": total}, "comps": comps, "mediane": med, "n": n, "deal_retire": bool(maj_deal and maj_deal.get("retire")),
                 "suggere": suggere, "ventes": ventes, "mediane_vendue": vc.get("mediane"), "nb_vendues": vc.get("nb") or len(ventes),
                 "valeur": valeur, "valeur_source": "vendues" if vm else "annonces", "ventes_attente": bool(vc.get("attente")),
                 "points": vc.get("points") or [], "tendance": vc.get("tendance"), "autres_joueurs": autres,

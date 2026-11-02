@@ -2255,7 +2255,7 @@ button.an-attente{width:100%; text-align:left; color:var(--texte); cursor:pointe
 .fen-plus[open]{gap:16px} .fen-plus .fen-comps{margin-top:6px}
 /* 28 oct 2026 : fiche d'une carte de collection */
 .fc{display:flex; flex-direction:column; gap:12px} .fc h3{margin:0}
-.fc-img{border-radius:16px; overflow:hidden; background:#111115; aspect-ratio:4/5; max-height:46vh; display:flex; align-items:center; justify-content:center; width:min(100%, calc(46vh * 0.8)); margin-inline:auto}
+.fc-img{border-radius:16px; overflow:hidden; background:#111115; aspect-ratio:4/5; max-height:40vh; display:flex; align-items:center; justify-content:center; width:min(100%, calc(40vh * 0.8)); margin-inline:auto}
 .fc-img img{width:100%; height:100%; object-fit:contain}
 .fc-img.fc-2{display:flex; justify-content:flex-start; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none} .fc-img.fc-2::-webkit-scrollbar{display:none}
 .fc-img.fc-2 .fc-ph{flex:0 0 100%; scroll-snap-align:center}
@@ -2306,6 +2306,13 @@ button.an-attente{width:100%; text-align:left; color:var(--texte); cursor:pointe
 .so-ch .rangee{display:flex; align-items:center; gap:12px; cursor:pointer} .so-ch input{width:20px; height:20px; accent-color:var(--acc); flex:0 0 auto}
 .so-bas{position:sticky; bottom:0; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 10px 10px 16px; border-radius:18px; background:var(--fond-feuille, var(--carte))} .so-bas span{flex:1 1 auto; min-width:0; font-size:14px} .so-bas .btn{flex:0 0 auto; width:auto; margin:0; padding-inline:28px}
 .so-fil{margin:0 0 14px} .so-fil li{cursor:pointer}
+/* 2 nov 2026 - l'ampoule des tendances et sa methode */
+.td-titre{display:flex; align-items:center; gap:10px} .td-amp{width:34px; height:34px; border-radius:50%; border:1px solid var(--ligne); background:var(--carte); color:var(--texte); display:grid; place-items:center; cursor:pointer; padding:0}
+.td-amp svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round}
+.td-meth{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:12px} .td-meth li{display:flex; gap:12px; align-items:flex-start}
+.td-meth i{flex:0 0 26px; height:26px; border-radius:50%; display:grid; place-items:center; font:700 13px var(--f-cond); font-style:normal; border:1px solid var(--ligne); color:var(--acc)}
+.td-meth span{display:flex; flex-direction:column; gap:2px; font-size:14px; color:var(--doux); line-height:1.4} .td-meth b{color:var(--texte); font-size:15px}
+.tuile-deal.sort{opacity:0; transform:scale(.96); transition:opacity .28s ease, transform .28s ease}
 /* 1er nov 2026 - fenetre qui pop (formulaire en etapes) : centree, les points des etapes en bas, crochet vert anime a la fin */
 body.pop-ouverte{overflow:hidden}
 .pop-fond{position:fixed; inset:0; z-index:50; background:rgba(0,0,0,.62); display:flex; align-items:center; justify-content:center;
@@ -2343,22 +2350,24 @@ body.pop-ouverte{overflow:hidden}
 /* 1er nov 2026 - la collection en slabs : boitier transparent, etiquette ivoire (titre + note IA), la carte dans le puits */
 .grille-slab{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:14px}
 @media (min-width:900px){ .grille-slab{grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:18px} }
-.slab{position:relative; display:flex; flex-direction:column; gap:7px; padding:7px; border-radius:12px; cursor:pointer; font:inherit; color:inherit; text-align:left;
+/* 2 nov 2026 (« respecter le ratio du slab ») : un slab PSA fait ~3,3 x 5,3 po */
+.slab{position:relative; display:flex; flex-direction:column; gap:7px; padding:7px; border-radius:12px; aspect-ratio:3.3 / 5.3; cursor:pointer; font:inherit; color:inherit; text-align:left;
   background:linear-gradient(165deg, rgba(255,255,255,.16), rgba(255,255,255,.05) 38%, rgba(255,255,255,.03) 62%, rgba(255,255,255,.10));
   border:1px solid rgba(255,255,255,.26); box-shadow:inset 0 0 0 3px rgba(255,255,255,.04), inset 0 1px 0 rgba(255,255,255,.35), 0 10px 26px rgba(0,0,0,.4);
   transition:transform .18s ease, box-shadow .18s ease; overflow:hidden}
 .slab::after{content:''; position:absolute; inset:0; pointer-events:none; border-radius:inherit;
   background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.13) 44%, transparent 52%)}
 .slab:hover{transform:translateY(-3px)} .slab:active{transform:scale(.98)}
-.sl-lab{position:relative; display:flex; align-items:stretch; gap:6px; height:68px; padding:8px 7px 6px 8px; border-radius:5px; background:#F4F2EE; color:#15151A; overflow:hidden}
+/* 2 nov 2026 (Mathieu : « j'aime pas le blanc, ca clash avec notre code couleur ») : etiquette sombre, filet refractor, texte ivoire */
+.sl-lab{position:relative; flex:0 0 auto; display:flex; align-items:stretch; gap:6px; height:68px; padding:9px 7px 6px 9px; border-radius:6px; background:linear-gradient(180deg, #24242D, #18181E); color:var(--texte2); overflow:hidden; box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
 .sl-lab::before{content:''; position:absolute; left:0; right:0; top:0; height:3px; background:var(--holo)}
 .sl-t{flex:1 1 auto; min-width:0; font:600 10.5px/1.22 'Barlow Condensed',sans-serif; letter-spacing:.02em; text-transform:uppercase;
   display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; align-self:center}
-.sl-n{flex:0 0 auto; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-width:38px; padding-left:7px; border-left:1px solid rgba(0,0,0,.14)}
-.sl-n b{font:700 27px/1 'Barlow Condensed',sans-serif} .sl-n b.long{font-size:19px}
-.sl-n small{font:700 8px/1 'Barlow Condensed',sans-serif; letter-spacing:.1em; color:#6B6873; white-space:nowrap}
-.sl-n.aucune b{color:#A8A5AE}
-.sl-puits{position:relative; aspect-ratio:5/7; border-radius:5px; background:#0E0E12; display:grid; place-items:center; color:#34333D;
+.sl-n{flex:0 0 auto; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-width:38px; padding-left:7px; border-left:1px solid rgba(255,255,255,.12)}
+.sl-n b{font:700 27px/1 'Barlow Condensed',sans-serif; color:var(--texte)} .sl-n.vraie b{color:var(--or-clair)} .sl-n b.long{font-size:19px}
+.sl-n small{font:700 8px/1 'Barlow Condensed',sans-serif; letter-spacing:.1em; color:var(--doux); white-space:nowrap}
+.sl-n.aucune b{color:var(--pale)}
+.sl-puits{position:relative; flex:1 1 auto; min-height:0; border-radius:5px; background:#0E0E12; display:grid; place-items:center; color:#34333D;
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.10), inset 0 3px 12px rgba(0,0,0,.7); overflow:hidden}
 .sl-puits img{position:absolute; inset:5px; width:calc(100% - 10px); height:calc(100% - 10px); object-fit:contain}
 .sl-puits > svg{width:38%; height:38%}
@@ -2383,7 +2392,21 @@ body.pop-ouverte{overflow:hidden}
 .fc-pt.g-fort{background:var(--rouge); color:#fff} .fc-pt.g-moyen{background:var(--or)} .fc-pt.g-leger{background:#e9e6df}
 .vd{position:fixed; inset:0; z-index:9999; background:#08080a; overflow-y:auto; padding:calc(env(safe-area-inset-top) + 64px) 16px calc(env(safe-area-inset-bottom) + 32px); display:flex; flex-direction:column; gap:14px}
 .vd-x{position:fixed; top:calc(env(safe-area-inset-top) + 10px); right:14px; width:40px; height:40px; border-radius:50%; border:1px solid var(--ligne); background:var(--carte); color:#fff; display:grid; place-items:center; z-index:2}
-.vd-x svg{width:18px; height:18px} .vd-ph{position:relative; display:flex; justify-content:center} .vd-ph img{max-width:100%; max-height:78vh; border-radius:12px; display:block}
+.vd-x svg{width:18px; height:18px}
+/* 2 nov 2026 - la photo cadree sur la carte, le calque (contour, cadre imprime, ratios), les coins a glisser */
+.vd-ph{position:relative; display:flex; flex-direction:column; align-items:center; gap:8px}
+.vd-cad{position:relative; width:100%; max-width:min(100%, calc(70vh * 1.6)); max-height:70vh; border-radius:12px; overflow:hidden; background:#111115; touch-action:none; user-select:none}
+.vd-sc{position:absolute} .vd-sc img{position:absolute; inset:0; width:100%; height:100%; display:block}
+.vd-calque{position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible}
+.vd-cont{fill:none; stroke:rgba(255,255,255,.85); stroke-width:1.5; vector-effect:non-scaling-stroke; stroke-dasharray:6 4}
+.vd-lg{stroke:var(--acc); stroke-width:2; vector-effect:non-scaling-stroke; filter:drop-shadow(0 0 1px rgba(0,0,0,.8))}
+.vd-rat{position:absolute; left:8px; top:8px; display:flex; flex-wrap:wrap; gap:4px; z-index:2; pointer-events:none}
+.vd-rat b{padding:3px 8px; border-radius:99px; background:rgba(11,11,14,.78); color:var(--texte); font:700 12px/1.2 var(--f-cond); letter-spacing:.04em}
+.vd-rat b.vert{color:var(--vert)} .vd-rat b.or{color:var(--or)} .vd-rat b.rouge{color:var(--rouge)}
+.vd-poi{position:absolute; width:34px; height:34px; margin:-17px 0 0 -17px; border-radius:50%; background:rgba(185,190,255,.25); border:2px solid var(--acc); box-shadow:0 0 0 2px rgba(0,0,0,.5); z-index:3; touch-action:none; cursor:grab}
+.vd-poi::after{content:''; position:absolute; left:50%; top:50%; width:6px; height:6px; margin:-3px 0 0 -3px; border-radius:50%; background:var(--acc)}
+.vd-outils{display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:8px} .vd-outils .sous{width:100%; text-align:center}
+.vd-sc .fc-pt{z-index:2}
 .cg-h{margin:0} .cg-r{display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; font-size:14px; color:var(--doux)} .cg-r b{color:var(--texte); font:700 18px var(--f-cond)}
 .cg-n{margin-left:auto; padding:4px 12px; border-radius:99px; font:700 14px var(--f-cond); background:rgba(255,255,255,.08)} .cg-n.vert{color:var(--vert)} .cg-n.or{color:var(--or)} .cg-n.rouge{color:var(--rouge)}
 .cg-z{position:relative; width:100%; max-height:70vh; margin:0 auto; touch-action:none; user-select:none; border-radius:6px; outline:2px solid rgba(255,255,255,.55)}
@@ -4061,6 +4084,54 @@ function coinsLocaux(img){
   const r = affinerCoins(G, q);
   q = r.coins;
   return q.map(([x, y]) => [Math.round(x / w * 1000), Math.round(y / h * 1000)]);
+}
+// 2 nov 2026 (Mathieu : « rapetisser ou cropper la portion de la photo sans carte » ; slabs) : le contour de la carte d'une
+// photo (garde dans le telephone, une detection par photo) et la photo recadree sur la carte (debout : une carte couchee
+// est tournee d'un quart de tour, comme dans un slab PSA)
+const _QC = new Map(), _CROP = new Map();
+function contourPhoto(url){
+  if (_QC.has(url)) return _QC.get(url);
+  let k = null; try { const v = localStorage.getItem('lr_q_' + url); if (v) k = JSON.parse(v); } catch (e) {}
+  const p = k ? Promise.resolve(k.length === 4 ? k : null) : (async () => {
+    try { const q = coinsLocaux(await chargerImage(url)); try { localStorage.setItem('lr_q_' + url, JSON.stringify(q || [0])); } catch (e) {} return q; }
+    catch (e) { return null; } })();
+  _QC.set(url, p); return p;
+}
+function photoCadree(url, o){
+  const marge = (o && o.marge) ?? 0.05, debout = !!(o && o.debout), cle = url + '|' + marge + '|' + debout;
+  if (_CROP.has(cle)) return _CROP.get(cle);
+  const p = (async () => {
+    const q = await contourPhoto(url); if (!q) return null;
+    const im = await chargerImage(url), W = im.naturalWidth, H = im.naturalHeight;
+    const xs = q.map(p => p[0] / 1000 * W), ys = q.map(p => p[1] / 1000 * H);
+    let x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+    if (x1 - x0 < W * 0.2 || y1 - y0 < H * 0.2) return null;
+    const fmt = Math.max(x1 - x0, y1 - y0) / Math.min(x1 - x0, y1 - y0);
+    if (fmt < 1.28 || fmt > 1.52) return null;                                // pas le format d'une carte : on ne coupe rien
+    const m = marge * Math.max(x1 - x0, y1 - y0);
+    x0 = Math.max(0, x0 - m); y0 = Math.max(0, y0 - m); x1 = Math.min(W, x1 + m); y1 = Math.min(H, y1 + m);
+    if ((x1 - x0) * (y1 - y0) > 0.93 * W * H) return null;                     // deja cadree : rien a gagner
+    const tourner = debout && (x1 - x0) > (y1 - y0) * 1.1;
+    const k = Math.min(1, 1400 / Math.max(x1 - x0, y1 - y0)), w = Math.round((x1 - x0) * k), h = Math.round((y1 - y0) * k);
+    const cv = document.createElement('canvas'); cv.width = tourner ? h : w; cv.height = tourner ? w : h;
+    const g = cv.getContext('2d');
+    if (tourner) { g.translate(h, 0); g.rotate(Math.PI / 2); }
+    g.drawImage(im, x0, y0, x1 - x0, y1 - y0, 0, 0, w, h);
+    return {src: cv.toDataURL('image/jpeg', 0.9), ratio: cv.width / cv.height, tourne: tourner};
+  })().catch(() => null);
+  _CROP.set(cle, p); return p;
+}
+// les slabs de la collection : une photo a la fois, quand le telephone a le temps
+function cadrerSlabs(z){
+  const l = [...z.querySelectorAll('.slab .sl-puits img')];
+  const suivant = async () => {
+    const im = l.shift(); if (!im) return;
+    if (im.isConnected && !im.dataset.cad) { im.dataset.cad = '1';
+      const r = await photoCadree(im.getAttribute('src'), {marge: 0.05, debout: true});
+      if (r && im.isConnected) { im.src = r.src; im.classList.add('cadree'); } }
+    (window.requestIdleCallback || ((f) => setTimeout(f, 30)))(suivant);
+  };
+  suivant();
 }
 // photo (data URL) + coins IA (0..1000, haut-gauche puis sens horaire) -> {photo studio, coins affines (0..1000)}
 async function photoStudio(src, coins1000, opts){
@@ -6075,7 +6146,7 @@ function explicationPlace(x, vue, r, nbListe){
         `For each category: its versions in the checklist, how many come out on average in ${r.boites} box${r.boites > 1 ? 'es' : ''} (maker odds × copies printed) and the chance to get at least one (Poisson law). “No odds”: the maker does not publish the odds, those versions are left out of the chance. Avg value = the value of one card in the category, weighted by its chance to come out. The same calculation for every player and every team.`)}</small></div></div>
     ${vue === 'joueurs' ? `<div class="ex-l"><span class="ex-n">5</span><div><b>${tt('Ses ventes réelles dans ce produit', 'His real sales in this product')}</b><div class="vj-z" data-vj-p="${esc(r.produit.id)}" data-vj-j="${esc(x.cle)}"></div></div></div>` : ''}
     <div class="ex-l"><span class="ex-n">${vue === 'joueurs' ? 6 : 5}</span><div><b>${tt('Chance de rentabiliser', 'Chance to break even')} : ${chanceTxt(x.p_rembourse || 0)}</b> ${tt(`la chance que les cartes que tu reçois valent ensemble ${argentCourt(x.prix_compare)} ou plus à la revente (ventes réelles, cartes sous ${argentCourt(x.seuil_revente || 1.5)} exclues). Calcul exact sur toutes ses versions possibles, vérifié par simulation.`, `the chance that the cards you get are together worth ${argentCourt(x.prix_compare)} or more on resale (real sales, cards under ${argentCourt(x.seuil_revente || 1.5)} left out). Exact calculation over all his possible versions, checked by simulation.`)}</div></div>
-    <div class="ex-l"><span class="ex-n">${vue === 'joueurs' ? 7 : 6}</span><div><b>Score : ${x.rel}</b> ${tt(`la chance d’au moins un hit pour ton argent (chance ÷ prix de la place), classée de 0 à 100 parmi les ${nbListe} ${vue === 'joueurs' ? 'joueurs' : 'équipes'} : 100 = le plus de chances de hit par dollar. Une carte à 2 joueurs compte pour moitié à chacun (elle ne va qu’à l’un des deux).`, `the chance of at least one hit for your money (chance ÷ spot price), ranked 0 to 100 among the ${nbListe} ${vue === 'joueurs' ? 'players' : 'teams'}: 100 = the most hit chances per dollar. A 2-player card counts half for each (it only goes to one of them).`)}</div></div>
+    <div class="ex-l"><span class="ex-n">${vue === 'joueurs' ? 7 : 6}</span><div><b>Score : ${x.rel}</b> ${tt(`la chance d’au moins un hit pour ton argent (chance ÷ prix de la place), classée de 0 à 100 parmi les ${nbListe} ${vue === 'joueurs' ? 'joueurs' : 'équipes'} : 100 = le plus de chances de hit par dollar. Une carte à 2 joueurs compte pour moitié à chacun (elle ne va qu’à l’un des deux). 0 = aucune carte recherchée (autographe, relique, parallèle, SSP).`, `the chance of at least one hit for your money (chance ÷ spot price), ranked 0 to 100 among the ${nbListe} ${vue === 'joueurs' ? 'players' : 'teams'}: 100 = the most hit chances per dollar. A 2-player card counts half for each (it only goes to one of them). 0 = no chase card (autograph, relic, parallel, SSP).`)}</div></div>
   </div>`;
 }
 const TIERS = (s) => s >= 80 ? ['vert', tt('Top choix', 'Top pick')] : s >= 55 ? ['acc', tt('Bon choix', 'Good pick')] : s >= 30 ? ['or', tt('Correct', 'Fair')] : ['rouge', tt('À éviter', 'Avoid')];
@@ -6183,7 +6254,17 @@ async function rendreAnalyse(){
       valeur: (x) => (x.ev || 0) / (x.demande || 1),
       argent: (x) => { const p = Math.min(.999999, pH(x)), px = x.demande || x.part_brute || x.prix_compare || x.prix || 0; return px > 0 ? -Math.log(1 - p) / px : 0; }}[tri];   // part exacte : le meme ordre avec 1 ou 32 boites
     const mxv = Math.max(1e-12, ...liste.map(crit));
-    liste.forEach(x => { x.rel = Math.round(100 * crit(x) / mxv); x.vtri = crit(x); });
+    // 2 nov 2026 (Mathieu : « les scores ne doivent pas etre 0, c'est trop bas : 0 = aucune signature, patch, parallele ou SSP
+    // de ce joueur ou equipe ») : une echelle en racine (un joueur a 1 % du premier vaut 10, pas 0) ; 0 seulement s'il n'a
+    // aucune carte recherchee ; sinon au moins 1
+    // Un joueur dont aucune carte ne couvre la place garde une note qui suit ses chances de hit (15 % du score) : plus de mur
+    // de « 1 » ; le classement suit le score.
+    const aDuChasse = (x) => (((x.chances || {}).hit || {}).p || 0) > 0 || (x.nb_versions || 0) > 1;
+    const hpd = pH;
+    const mxh = Math.max(1e-12, ...liste.map(hpd));
+    liste.forEach(x => { x.vtri = .85 * Math.max(0, crit(x)) / mxv + .15 * hpd(x) / mxh; });
+    const mxc = Math.max(1e-12, ...liste.map(x => x.vtri));
+    liste.forEach(x => { x.rel = !aDuChasse(x) ? 0 : Math.max(1, Math.round(100 * Math.sqrt(x.vtri / mxc))); });
     liste.sort((a, b) => b.vtri - a.vtri || b.ev - a.ev);
     const budget = A.budget || 0, maxHit = Math.max(1e-9, ...liste.map(x => ((x.chances || {}).hit || {}).p || 0));
     const ligne = (x, i) => {
@@ -6306,6 +6387,23 @@ function raisonSansValeur(d){
   if (n >= 2) return tt(`${n} ventes trouvées, mais pas assez récentes pour dire ce qu’elle vaut.`, `${n} sales found, but not recent enough to say what it’s worth.`);
   return tt('Aucune vente de cette carte exacte trouvée.', 'No sale of this exact card found.');
 }
+// 2 nov 2026 (Mathieu : « le prix doit updater dans les 2 affichages ») : le prix lu en direct par la fiche met a jour la
+// tuile du deal (prix, rabais, gain) ; plus un deal -> la tuile s'efface
+function majTuilePrix(id, d){
+  const a = d && d.article, x = (S.dealsParId || {})[String(id)];
+  if (!a || !a.total || !x) return;
+  const fp = 0.1325, ff = 0.40;
+  x.total = a.total; if (a.port_cad != null) x.port = a.port_cad;
+  if (x.valeur) { x.rabais = Math.round(100 * (1 - x.total / x.valeur)); x.gain = Math.round((x.valeur * (1 - fp) - ff - x.total) * 100) / 100;
+    if (x.encan && !x.mise_perso) x.mise_max = Math.round((x.valeur * 0.70 - (x.port || 0)) * 100) / 100; }
+  $$(`.tuile-deal[data-id="${CSS.escape(String(id))}"]`).forEach(t => {
+    if (d.deal_retire) { t.classList.add('sort'); setTimeout(() => t.remove(), 300); return; }
+    const pr = t.querySelector('.sd-pr'), rb = t.querySelector('.sd-rab'), g = t.querySelector('.sd-bas .g');
+    if (pr) pr.textContent = argent(x.total, 0);
+    if (rb && x.valeur && x.rabais != null) rb.textContent = '−' + x.rabais + ' %';
+    if (g) { if (x.gain > 0) g.textContent = '+' + argentCourt(x.gain); else g.remove(); }
+  });
+}
 async function ouvrirAnnonce(base){
   let f = $('#fen-annonce');
   if (!f) { f = document.createElement('div'); f.id = 'fen-annonce'; f.className = 'fen-fond'; document.body.appendChild(f);
@@ -6320,8 +6418,20 @@ async function ouvrirAnnonce(base){
     // ventes reelles en bande qu'on glisse, eBay
     const encan = !!(a.encan || (base.fin && !a.prix_fixe)), port = a.port_cad || 0;
     const sm = d.suggere || null, maxT = sm && sm.achat_max ? sm.achat_max : null;
-    const maxA = maxT == null ? null : encan ? Math.max(0, maxT - port) : maxT;
-    const vt = d.rabais != null && d.rabais >= 30 ? ['vert', tt('Deal', 'Deal') + ' −' + d.rabais + ' %'] : d.rabais != null && d.rabais > 0 ? ['acc', tt('Bon prix', 'Good price') + ' −' + d.rabais + ' %']
+    // 2 nov 2026 (Mathieu : « pourquoi le max bid change ? » : 66 $ sur la tuile, 53 $ dans la fiche) : une carte deja dans
+    // les deals ou la watchlist garde SES chiffres (la valeur et la mise max de la tuile) ; sinon la meme regle partout
+    // (70 % de la valeur, moins le port)
+    const conn = base && base.mise_max != null && base.valeur ? base : null;
+    if (conn && d.valeur !== conn.valeur && total) {
+      const fp = 0.1325, ff = 0.40;
+      d = Object.assign({}, d, {valeur: conn.valeur, nb_vendues: conn.n || d.nb_vendues, valeur_source: d.valeur_source || 'vendues',
+        rabais: Math.round(100 * (1 - total / conn.valeur)), gain: Math.round((conn.valeur * (1 - fp) - ff - total) * 100) / 100});
+    }
+    const maxA = conn ? conn.mise_max : maxT == null ? null : encan ? Math.max(0, maxT - port) : maxT;
+    // 2 nov 2026 (Mathieu : « quand le prix suggere est depasse par le bid actuel, ce n'est plus un deal ») : la mise actuelle et
+    // la mise max se comparent HORS port (la mise max est ce qu'on entre sur eBay) ; depassee -> « Plus un deal »
+    const depasse = maxA != null && total && (encan ? total - port : total) > maxA + 0.5;
+    const vt = depasse ? ['rouge', tt('Plus un deal : mise trop haute', 'No longer a deal: bid too high')] : d.rabais != null && d.rabais >= 30 ? ['vert', tt('Deal', 'Deal') + ' −' + d.rabais + ' %'] : d.rabais != null && d.rabais > 0 ? ['acc', tt('Bon prix', 'Good price') + ' −' + d.rabais + ' %']
       : d.rabais != null && d.rabais < -15 ? ['rouge', tt('Trop cher', 'Too expensive') + ' +' + (-d.rabais) + ' %'] : null;
     const budget = S.budget && S.budget.budget && total && total > S.budget.reste;
     const ventes = (d.ventes || []).slice(0, 14);
@@ -6331,10 +6441,10 @@ async function ouvrirAnnonce(base){
         ${photos.length > 1 ? `<div class="fen-vigs fa-vigs">${photos.slice(0, 6).map((p, i) => `<button class="${i ? '' : 'on'}" data-ph="${esc(p)}" style="background-image:url('${esc(p)}')" aria-label="photo ${i + 1}"></button>`).join('')}</div>` : ''}</div>
       <div class="fa-t">${esc(a.titre || base.titre || '')}</div>
       <div class="fa-3">
-        <div class="fa-k"><span>${encan ? tt('Mise actuelle', 'Current bid') : tt('Prix', 'Price')}</span><b>${total ? argent(total, 0) : '—'}</b><small>${a.port_cad != null ? (a.port_cad ? tt('port compris', 'shipping incl.') : tt('livraison gratuite', 'free shipping')) : '&nbsp;'}</small></div>
+        <div class="fa-k"><span>${encan ? tt('Mise actuelle', 'Current bid') : tt('Prix', 'Price')}</span><b>${total ? argent(encan ? Math.max(0, total - port) : total, 0) : '—'}</b><small>${a.port_cad != null ? (a.port_cad ? (encan ? '+ ' + argent(port, 0) + tt(' de port', ' shipping') : tt('port compris', 'shipping incl.')) : tt('livraison gratuite', 'free shipping')) : '&nbsp;'}</small></div>
         <div class="fa-k fa-v"><span>${tt('Se vend', 'Sells for')}</span>${d.valeur ? `<b>${argent(d.valeur, 0)}</b><small>${d.valeur_source === 'vendues' ? tt(`médiane · ${d.nb_vendues} vente${d.nb_vendues > 1 ? 's' : ''}`, `median · ${d.nb_vendues} sale${d.nb_vendues > 1 ? 's' : ''}`) : tt('mêmes cartes en vente', 'same cards listed')}</small>`
           : d.chargement || d.ventes_attente ? `<b><span class="roue"></span></b><small>${tt('on cherche…', 'searching…')}</small>` : `<b>—</b><small>${tt('pas assez de ventes', 'not enough sales')}</small>`}</div>
-        <div class="fa-k fa-m"><span>${encan ? tt('Ta mise max', 'Your max bid') : tt('Paie au plus', 'Pay at most')}</span>${maxA != null ? `<b>${argent(maxA, 0)}</b><small>${tt('pour ~20 % de profit', 'for ~20% profit')}</small>` : `<b>—</b><small>&nbsp;</small>`}</div>
+        <div class="fa-k fa-m"><span>${encan ? tt('Ta mise max', 'Your max bid') : tt('Paie au plus', 'Pay at most')}</span>${maxA != null ? `<b>${argent(maxA, 0)}</b><small>${conn && conn.mise_perso ? tt('choisie par toi', 'set by you') : encan && port ? tt('hors port · ~20 % de profit', 'excl. shipping · ~20% profit') : tt('pour ~20 % de profit', 'for ~20% profit')}</small>` : `<b>—</b><small>&nbsp;</small>`}</div>
       </div>
       ${vt || budget ? `<div class="fa-pils">${vt ? `<span class="capsule ${vt[0]}">${esc(vt[1])}</span>` : ''}${d.gain != null && d.gain > 0 ? `<span class="capsule vert">+${argent(d.gain, 0)} ${tt('après frais', 'after fees')}</span>` : ''}${budget ? `<span class="capsule rouge">${tt('Au-dessus de ton budget', 'Over your budget')}</span>` : ''}</div>` : ''}
       <div class="fa-ventes">${ventes.length ? `<div class="fa-vt">${tt('Vendues récemment', 'Recently sold')} <small>${tt('même carte · glisse ›', 'same card · swipe ›')}</small></div>
@@ -6366,6 +6476,7 @@ async function ouvrirAnnonce(base){
   const ouverte = () => $('#fen-annonce') && document.body.classList.contains('fen-ouverte') && S.fenId === base.item_id;
   if (S.mode === 'acheteur') budgetEtat().catch(() => null);
   const d1 = await API.annonce_detail(base.item_id, base.titre, true).catch(() => null);
+  if (d1) majTuilePrix(base.item_id, d1);
   if (d1 && ouverte()) montrer(d1);
   const d2 = await API.annonce_detail(base.item_id, base.titre, false, base.q || null).catch(() => null);
   if (d2 && ouverte()) montrer(d2);
@@ -7753,25 +7864,41 @@ const NIV_POULS = (n) => n == null ? [tt('En mesure', 'Measuring'), 'm'] : n >= 
 // 31 oct 2026 (Mathieu : « les belles statistiques des tips (joueurs populaires...) : une page Trending ? simple et
 // visuellement leger ») : ce qui chauffe (le pouls), les chiffres du moment (tips calcules sur les ventes reelles), puis
 // en hausse / en baisse / plus vendues, un a la fois
+function expliquerTendances(){
+  const l = [
+    [tt('Les vraies ventes', 'Real sales'), tt('Seulement des ventes eBay terminées, pas des prix demandés.', 'Only completed eBay sales, not asking prices.')],
+    [tt('Chaque carte contre elle-même', 'Each card against itself'), tt('Une carte est comparée seulement à la même carte (même set, même parallèle, raw ou gradée). C’est la méthode des « ventes répétées » des indices de prix : un joueur ne monte pas juste parce qu’une carte chère s’est vendue.', 'A card is only compared with the same card (same set, same parallel, raw or graded). It’s the “repeat sales” method used by price indexes: a player doesn’t rise just because one expensive card sold.')],
+    [tt('14 jours contre les 4 semaines d’avant', '14 days vs the 4 weeks before'), tt('Le prix du milieu (la médiane) de chaque période : une vente bizarre ne fait rien bouger.', 'The middle price (median) of each period: one odd sale doesn’t move anything.')],
+    [tt('Le joueur', 'The player'), tt('La moyenne de ses cartes ; une carte vendue souvent compte plus qu’une carte vendue 2 fois.', 'The average of his cards; a card that sells often counts more than one that sold twice.')],
+    [tt('Prudent avec peu de ventes', 'Careful with few sales'), tt('Avec peu de ventes, la variation est ramenée vers 0. Un test statistique (Mann-Whitney) garde seulement les vraies hausses et baisses, au moins 8 ventes, des cartes de 5 $ et plus.', 'With few sales, the change is pulled toward 0. A statistical test (Mann-Whitney) keeps only real rises and drops, at least 8 sales, cards of $5 and up.')],
+    [tt('Plus vendues', 'Most sold'), tt('Le nombre de ventes des 7 derniers jours, toutes ses cartes : ce que les acheteurs veulent.', 'Number of sales over the last 7 days, all his cards: what buyers want.')]];
+  ouvrirFeuille(`<h3>${tt('Comment on mesure les tendances', 'How we measure trends')}</h3>
+    <ol class="td-meth">${l.map(([t, x], i) => `<li><i>${i + 1}</i><span><b>${t}</b>${x}</span></li>`).join('')}</ol>
+    <div class="sous">${tt('Un indice, pas une prédiction ni un conseil financier.', 'A hint, not a prediction or financial advice.')}</div>`);
+}
 async function vueTendances(){
-  V().innerHTML = `<section class="ecran tend"><div class="titre">${tt('Tendances', 'Trending')}</div><div id="td-z">${roue}</div></section>`;
+  // 2 nov 2026 (Mathieu : « juste le joueur ; a cote de Trending une petite ampoule qui explique comment notre trend est
+  // analyse ; des techniques prouvees ») : la tendance par joueur (tendance_stats.py), l'ampoule explique la methode
+  V().innerHTML = `<section class="ecran tend"><div class="titre td-titre">${tt('Tendances', 'Trending')}<button class="td-amp" id="td-amp" aria-label="${esc(tt('Comment on calcule', 'How it’s calculated'))}"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.ampoule}</svg></button></div><div id="td-z">${roue}</div></section>`;
+  $('#td-amp').onclick = () => { vibrer(); expliquerTendances(); };
   const L = typeof LANGUE !== 'undefined' ? LANGUE : null;
   const [t, p, a] = await Promise.all([API.tendances().catch(() => null), API.pouls(L).catch(() => null), API.astuces(false, L).catch(() => null)]);
   const z = $('#td-z'); if (!z) return;
   const chauds = ((p && p.segments) || []).filter(x => (x.chaleur || 0) >= 1);
   const faits = ((a && a.astuces) || []).filter(x => x.calcule && x.chiffre && ['en_feu', 'marche_hausse', 'marche_baisse', 'marche_prime', 'psa10', 'pouls'].includes(x.id)).slice(0, 4);
   S.newsSlides = faits;                                   // « Voir les ventes » d'une nouvelle du marche
-  const r = t || {hausses: [], baisses: [], plus_vendues: []};
+  const r0 = t || {hausses: [], baisses: [], plus_vendues: []}, J = r0.joueurs;
+  const r = J ? {...r0, hausses: J.hausses || [], baisses: J.baisses || [], plus_vendues: J.plus_vendues || []} : r0;
   const ONG = [['hausses', tt('En hausse', 'Rising')], ['baisses', tt('En baisse', 'Falling')], ['plus_vendues', tt('Plus vendues', 'Most sold')]];
   let actif = S.tendOng || 'hausses';
   const mini = (pts, cl) => { const v = (pts || []).map(q => +q[1]).filter(isFinite); if (v.length < 3) return '';
     const mn = Math.min(...v), mx = Math.max(...v), e = (mx - mn) || 1;
     return `<svg class="t-mini ${cl}" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><path d="${v.map((y, i) => `${i ? 'L' : 'M'}${(i / (v.length - 1) * 100).toFixed(1)},${(28 - (y - mn) / e * 24).toFixed(1)}`).join('')}"/></svg>`; };
   const ligne = (x) => `<a class="rangee t-l td-l" href="#joueur/${encodeURIComponent(x.joueur)}">${vignetteJoueur(x.joueur)}
-    <span class="milieu"><span class="nom">${esc(x.joueur)}${x.recrue ? ' ' + tag('RC', 'acc') : ''}</span><span class="det">${esc(typeCourt(x))}</span></span>
+    <span class="milieu"><span class="nom">${esc(x.joueur)}${x.recrue ? ' ' + tag('RC', 'acc') : ''}</span><span class="det">${J ? (x.n_cartes ? x.n_cartes + ' ' + tt(x.n_cartes > 1 ? 'cartes' : 'carte', x.n_cartes > 1 ? 'cards' : 'card') : '') + (actif !== 'plus_vendues' && x.n_t ? ' · ' + x.n_t + ' ' + tt('ventes', 'sales') : '') : esc(typeCourt(x))}</span></span>
     ${mini(x.points, actif === 'baisses' ? 'rouge' : actif === 'hausses' ? 'vert' : '')}
-    <span class="droite">${actif === 'plus_vendues' ? `<b class="t-prix">${argentCourt(x.mediane)}</b><span class="sous">${x.n_7j || x.n} ${tt('ventes', 'sales')}</span>`
-      : `<b class="td-pct ${x.pct > 0 ? 'vert' : 'rouge'}">${x.pct > 0 ? '+' : ''}${x.pct} %</b><span class="sous">${argentCourt(x.recent)}</span>`}</span></a>`;
+    <span class="droite">${actif === 'plus_vendues' ? (J ? `<b class="t-prix">${x.n_7j}</b><span class="sous">${tt('ventes · 7 j', 'sales · 7 d')}</span>` : `<b class="t-prix">${argentCourt(x.mediane)}</b><span class="sous">${x.n_7j || x.n} ${tt('ventes', 'sales')}</span>`)
+      : `<b class="td-pct ${x.pct > 0 ? 'vert' : 'rouge'}">${x.pct > 0 ? '+' : ''}${x.pct} %</b><span class="sous">${J ? tt('14 j vs avant', '14 d vs before') : argentCourt(x.recent)}</span>`}</span></a>`;
   const peindre = () => {
     const l = unParJoueur(r[actif] || []).slice(0, 12);
     z.innerHTML = `<div class="sous td-sous">${tt('Mesuré sur les ventes eBay réelles. Un indice, pas une prédiction.', 'Measured on real eBay sales. A hint, not a prediction.')}</div>
@@ -8403,6 +8530,7 @@ async function chargerInventaire(){
   z.innerHTML = puces + note + (slabs ? '' : resume) + (l.length ? (slabs ? `<div class="grille-slab">${l.map(tuileSlab).join('')}</div>` : `<div class="grille-c">${l.map(tuileInv).join('')}</div>`)
     : `<div class="vide">${S.filtreInv === 'collection' ? tt('Ta collection est vide', 'Your collection is empty') : tt('Rien ici', 'Nothing here')}<button class="pilule" id="i-vide">${tt('Ajouter des cartes', 'Add cards')}</button></div>`);
   $$('#i-sports [data-sp]').forEach(b => b.onclick = () => { S.sportInv = b.dataset.sp || null; chargerInventaire(); });
+  if (slabs) cadrerSlabs(z);
   $$('#i-liste .tuile-inv').forEach(r => r.onclick = () => { const c = l.find(x => x.id === +r.dataset.id); if (c && c.emplacement === 'Collection' && c.statut === 'En stock') ficheCollection(c); else feuilleCarte(c); });
   $$('#i-liste [data-pro]').forEach(b => b.onclick = (e) => { e.stopPropagation(); feuillePro(b.dataset.pro); });
   const ir = $('#i-res'); if (ir) ir.onclick = (e) => { vibrer(); const fx = e.target.closest('[data-fix]'); if (fx) return feuillePrixRapide(fx.dataset.fix); feuilleBloc($('#i-b-res')); };
@@ -8579,6 +8707,11 @@ function ficheCollection(c){
     $$('#fc-imgs img').forEach((im, j) => { if (out[j] && out[j] !== base[j]) im.src = out[j]; });
     const t_ = $(`#i-liste .tuile-inv[data-id="${c.id}"] .img img`); if (t_) t_.src = photoNet(r.photos[0]);
   })();
+  // 2 nov 2026 (Mathieu : « rapetisser ou cropper la portion de la photo sans carte pour tout voir sans defiler ») : chaque
+  // photo recadree sur la carte ; la boite prend le format de la carte (couchee : beaucoup moins haute)
+  $$('#fc-imgs img').forEach((im, j) => photoCadree(im.getAttribute('src'), {marge: 0.04}).then(r => {
+    if (!r || !im.isConnected) return; im.src = r.src;
+    if (j === 0) { const zi = $('#fc-imgs'); if (zi) { const k = Math.max(0.62, Math.min(1.6, r.ratio)); zi.style.aspectRatio = String(k); zi.style.width = `min(100%, calc(40vh * ${k.toFixed(3)}))`; } } }));
   if ($('#fc-etat')) blocEtat(c);
   if ($('#fc-envoi')) blocEnvoi(c);
   if (envoiDe(c)) { const v = $('#fc-vendre'); if (v) { v.hidden = true; if (v.nextElementSibling) v.nextElementSibling.hidden = true; } }   // la carte n'est pas chez toi
@@ -8617,33 +8750,25 @@ const LIB_DEFAUT = (d) => ({blanchiment: tt('blanchiment', 'whitening'), 'coin m
   ebrechure: tt('ébréchure', 'chipping'), entaille: tt('entaille', 'nick'), rayure: tt('rayure', 'scratch'), "ligne d'impression": tt('ligne d’impression', 'print line'),
   tache: tt('tache', 'stain'), pli: tt('pli', 'crease'), bosse: tt('bosse', 'dent'), decentrage: tt('décentrage', 'off-center'), autre: tt('défaut', 'flaw')})[d] || d;
 const LIB_GRAV = (g) => ({leger: tt('léger', 'light'), moyen: tt('moyen', 'moderate'), fort: tt('marqué', 'heavy'), 'a verifier': tt('à vérifier', 'to check')})[g] || '';
-// 1er nov 2026 (Mathieu : « où est le défaut ») : les photos ANALYSÉES (les originales), plein écran, chaque défaut numéroté à
-// sa place ; un tap sur une ligne ouvre la photo et fait clignoter son numéro
-function voirDefauts(e, k){
+// 2 nov 2026 (Mathieu : « les chiffres pas a la bonne place, pas d'outil de centrage visible (un genre de layer) ») : chaque
+// photo est cadree sur la carte trouvee (moins de fond), avec un calque : le contour de la carte trouve par l'app, les 4
+// lignes du cadre imprime (centrage mesure) et les ratios. Contour faux ? « Ajuster le contour » : on glisse les 4 coins,
+// l'app remesure le centrage et replace les numeros.
+function voirDefauts(e, k, apres){
   const def = (e.defauts || []).slice(0, 8), refs = (e.photos || []).slice(0, 2);
   if (!refs.length) return;
+  const FACES = ['devant', 'dos'];
   const o = document.createElement('div'); o.className = 'vd';
-  o.innerHTML = `<button class="vd-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
-    ${refs.map((u, j) => `<div class="vd-ph" data-j="${j}"><img src="${esc(photoNet(u, 1600))}" alt=""></div>`).join('')}
-    <div class="sous vd-q">${tt('Tu le vois aussi ? Ton avis rend l’analyseur plus précis pour tout le monde.', 'Do you see it too? Your answer makes the analyzer more accurate for everyone.')}</div>
-    <ol class="et-d vd-l">${def.map((d, i) => { const a = (e.avis || {})[i]; return `<li data-d="${i}" class="g-${(d.gravite || '').replace(' ', '-')}"><i>${i + 1}</i><span>${esc(LIB_ZONE(d.zone))}${d.photo ? tt(' (dos)', ' (back)') : ''} · ${esc(LIB_DEFAUT(d.type))} ${esc(LIB_GRAV(d.gravite))}</span>
-      ${e.cid ? `<span class="vd-av"><button class="${a === true ? 'on' : ''}" data-av="${i}" data-v="1" aria-label="${esc(tt('Je le vois', 'I see it'))}">✓</button><button class="${a === false ? 'on' : ''}" data-av="${i}" data-v="0" aria-label="${esc(tt('Pas de défaut', 'No flaw'))}">✕</button></span>` : ''}</li>`; }).join('')}</ol>`;
-  document.body.appendChild(o);
-  const fermer = () => o.remove();
-  o.querySelector('.vd-x').onclick = fermer;
-  // 1er nov 2026 (Mathieu : les numeros tombaient a cote de la carte) : la position donnee par l'IA est approximative. Les
-  // coins et les bords sont places sur la CARTE trouvee dans la photo (ses 4 coins, detectes dans le telephone) ; la
-  // surface reste ou l'IA l'a vue, ramenee dans la carte
-  const quads = {};
-  const quad = (j, im) => quads[j] || (quads[j] = (async () => {           // une seule detection par photo (promesse partagee)
-    if (e.quads && e.quads[j] && e.quads[j].length === 4) return e.quads[j];                // les coins envoyes avec l'examen
-    try { const q = coinsLocaux(await chargerImage(im.currentSrc || im.src)); return q && q.length === 4 ? q : null; } catch (x) { return null; } })());
+  let calque = true, edite = -1;
+  try { calque = localStorage.getItem('lr_vd_calque') !== '0'; } catch (x) {}
+  const Q = {}, auto = {};                                  // les contours (0..1000) par photo ; auto : trouves ici
   const lerp = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  const bil = (q, u, v) => lerp(lerp(q[0], q[1], u), lerp(q[3], q[2], u), v);   // (u, v) de la carte -> point de la photo
   const cl = (v) => Math.max(0.06, Math.min(0.94, v));
   const place = (d, q) => {
     if (!q) return [d.x, d.y];
     const [tl, tr, br, bl] = q, ctr = [(tl[0] + tr[0] + br[0] + bl[0]) / 4, (tl[1] + tr[1] + br[1] + bl[1]) / 4];
-    const dedans = (p) => lerp(p, ctr, 0.05);                       // un peu vers l'interieur : le rond reste sur la carte
+    const dedans = (p) => lerp(p, ctr, 0.05);
     const coins = {'coin haut-gauche': tl, 'coin haut-droit': tr, 'coin bas-droit': br, 'coin bas-gauche': bl};
     if (coins[d.zone]) return dedans(coins[d.zone]);
     const t = (a, b, v, k) => cl((v - a[k]) / ((b[k] - a[k]) || 1));
@@ -8654,22 +8779,85 @@ function voirDefauts(e, k){
     const xs = q.map(p => p[0]), ys = q.map(p => p[1]), bx = [Math.min(...xs), Math.max(...xs)], by = [Math.min(...ys), Math.max(...ys)];
     return [Math.max(bx[0] + (bx[1] - bx[0]) * .08, Math.min(bx[1] - (bx[1] - bx[0]) * .08, d.x)), Math.max(by[0] + (by[1] - by[0]) * .08, Math.min(by[1] - (by[1] - by[0]) * .08, d.y))];
   };
-  def.forEach((d, i) => {
-    const w = o.querySelector(`.vd-ph[data-j="${d.photo}"]`), im = w && w.querySelector('img'); if (!im) return;
-    const poser = async () => { const q = await quad(d.photo, im); const W = im.clientWidth, H = im.clientHeight; if (!W) return;
-      const [x, y] = place(d, q);
-      let p = w.querySelector(`.fc-pt[data-d="${i}"]`); if (!p) { p = document.createElement('span'); p.className = 'fc-pt g-' + (d.gravite || '').replace(' ', '-'); p.dataset.d = i; p.textContent = i + 1; w.appendChild(p); }
-      p.style.left = (im.offsetLeft + x / 1000 * W) + 'px'; p.style.top = (im.offsetTop + y / 1000 * H) + 'px'; };
-    if (im.complete) poser(); else im.addEventListener('load', poser, {once: true});
-  });
-  const montrer = (i) => { const d = def[i], w = d && o.querySelector(`.vd-ph[data-j="${d.photo}"]`); if (!w) return;
-    w.scrollIntoView({behavior: 'smooth', block: 'center'});
-    setTimeout(() => { const p = w.querySelector(`.fc-pt[data-d="${i}"]`); if (p) { p.classList.remove('flash'); void p.offsetWidth; p.classList.add('flash'); } }, 350); };
-  $$('.vd-l [data-d]', o).forEach(li => li.onclick = (ev) => { if (ev.target.closest('[data-av]')) return; montrer(+li.dataset.d); });
-  $$('[data-av]', o).forEach(b => b.onclick = async () => { vibrer(); const i = +b.dataset.av, v = b.dataset.v === '1', deja = (e.avis || {})[i] === v;
-    const r = await API.carte_etat_avis(e.cid, i, deja ? null : v).catch(() => null); if (!r || !r.ok) { toast(tt('Pas enregistré', 'Not saved')); return; }
-    e.avis = r.avis; $$(`[data-av="${i}"]`, o).forEach(x => x.classList.toggle('on', (r.avis || {})[i] === (x.dataset.v === '1'))); });
-  if (k != null) setTimeout(() => montrer(k), 200);
+  const TOL = (f) => f === 'dos' ? TOL_DOS : TOL_DEVANT;
+  const rat = (a, c) => { const g = Math.round(100 * Math.max(a, c) / ((a + c) || 1)); return [g, 100 - g]; };
+  const peindre = () => {
+    o.innerHTML = `<button class="vd-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
+      ${refs.map((u, j) => `<div class="vd-ph" data-j="${j}"><div class="vd-cad"><div class="vd-sc"><img src="${esc(photoNet(u, 1600))}" alt="">
+          <svg class="vd-calque" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true"></svg></div><span class="vd-rat"></span></div>
+        <div class="vd-outils">${edite === j ? `<span class="sous">${tt('Glisse les 4 coins sur les coins de la carte', 'Drag the 4 handles onto the card’s corners')}</span>
+            <button class="pilule" data-ann="${j}">${tt('Annuler', 'Cancel')}</button><button class="btn petit" data-ok="${j}">${tt('Enregistrer', 'Save')}</button>`
+          : `<button class="chip ${calque ? 'on' : ''}" data-calque>${tt('Grille', 'Grid')}</button>${e.cid ? `<button class="chip" data-ed="${j}">${tt('Ajuster le contour', 'Fix the outline')}</button>` : ''}
+            ${e.cid && (e.centrage_vue || {})[FACES[j]] ? `<button class="chip" data-cent="${j}">${tt('Ajuster le centrage', 'Fix the centering')}</button>` : ''}`}</div></div>`).join('')}
+      <div class="sous vd-q">${tt('Tu le vois aussi ? Ton avis rend l’analyseur plus précis pour tout le monde.', 'Do you see it too? Your answer makes the analyzer more accurate for everyone.')}</div>
+      <ol class="et-d vd-l">${def.map((d, i) => { const a = (e.avis || {})[i]; return `<li data-d="${i}" class="g-${(d.gravite || '').replace(' ', '-')}"><i>${i + 1}</i><span>${esc(LIB_ZONE(d.zone))}${d.photo ? tt(' (dos)', ' (back)') : ''} · ${esc(LIB_DEFAUT(d.type))} ${esc(LIB_GRAV(d.gravite))}</span>
+        ${e.cid ? `<span class="vd-av"><button class="${a === true ? 'on' : ''}" data-av="${i}" data-v="1" aria-label="${esc(tt('Je le vois', 'I see it'))}">✓</button><button class="${a === false ? 'on' : ''}" data-av="${i}" data-v="0" aria-label="${esc(tt('Pas de défaut', 'No flaw'))}">✕</button></span>` : ''}</li>`; }).join('')}</ol>`;
+    o.querySelector('.vd-x').onclick = () => o.remove();
+    refs.forEach((u, j) => {
+      const w = o.querySelector(`.vd-ph[data-j="${j}"]`), im = w.querySelector('img');
+      const go = async () => {
+        if (!Q[j]) { const q0 = e.quads && e.quads[j] && e.quads[j].length === 4 ? e.quads[j] : null;
+          if (q0) Q[j] = q0.map(p => p.slice()); else { try { const q = coinsLocaux(await chargerImage(im.currentSrc || im.src)); if (q) { Q[j] = q; auto[j] = true; } } catch (x) {} } }
+        dessiner(j);
+      };
+      if (im.complete && im.naturalWidth) go(); else im.addEventListener('load', go, {once: true});
+    });
+    const bc = o.querySelector('[data-calque]'); if (bc) bc.onclick = () => { calque = !calque; try { localStorage.setItem('lr_vd_calque', calque ? '1' : '0'); } catch (x) {} vibrer(); peindre(); };
+    $$('[data-ed]', o).forEach(b => b.onclick = () => { const j = +b.dataset.ed; if (!Q[j]) Q[j] = [[100, 100], [900, 100], [900, 900], [100, 900]]; Q['av' + j] = Q[j].map(p => p.slice()); edite = j; vibrer(); peindre(); });
+    $$('[data-ann]', o).forEach(b => b.onclick = () => { const j = +b.dataset.ann; Q[j] = Q['av' + j]; edite = -1; peindre(); });
+    $$('[data-ok]', o).forEach(b => b.onclick = async () => { const j = +b.dataset.ok; b.disabled = true;
+      const r = await essai(API.carte_contour(e.cid, FACES[j], Q[j].map(p => p.map(Math.round))), tt('Contour corrigé : centrage remesuré', 'Outline fixed: centering re-measured'));
+      b.disabled = false; if (!r) return;
+      Object.assign(e, r); edite = -1; if (apres) apres(e); peindre(); });
+    $$('[data-cent]', o).forEach(b => b.onclick = () => voirCentrage(e, e.cid, (e2) => { if (apres) apres(e2); peindre(); }));
+    const montrer = (i) => { const d = def[i], w = d && o.querySelector(`.vd-ph[data-j="${d.photo || 0}"]`); if (!w) return;
+      w.scrollIntoView({behavior: 'smooth', block: 'center'});
+      setTimeout(() => { const p = w.querySelector(`.fc-pt[data-d="${i}"]`); if (p) { p.classList.remove('flash'); void p.offsetWidth; p.classList.add('flash'); } }, 350); };
+    $$('.vd-l [data-d]', o).forEach(li => li.onclick = (ev) => { if (ev.target.closest('[data-av]')) return; montrer(+li.dataset.d); });
+    $$('[data-av]', o).forEach(b => b.onclick = async () => { vibrer(); const i = +b.dataset.av, v = b.dataset.v === '1', deja = (e.avis || {})[i] === v;
+      const r = await API.carte_etat_avis(e.cid, i, deja ? null : v).catch(() => null); if (!r || !r.ok) { toast(tt('Pas enregistré', 'Not saved')); return; }
+      e.avis = r.avis; $$(`[data-av="${i}"]`, o).forEach(x => x.classList.toggle('on', (r.avis || {})[i] === (x.dataset.v === '1'))); });
+    o._montrer = montrer;
+  };
+  // une photo : le cadrage (la carte + 9 % autour ; la photo entiere pendant l'ajustement), le calque, les numeros
+  const dessiner = (j) => {
+    const w = o.querySelector(`.vd-ph[data-j="${j}"]`); if (!w) return;
+    const cad = w.querySelector('.vd-cad'), sc = w.querySelector('.vd-sc'), im = sc.querySelector('img'), svg = sc.querySelector('svg'), lab = w.querySelector('.vd-rat');
+    const W = im.naturalWidth || 1000, H = im.naturalHeight || 1000, q = Q[j];
+    let bx = [0, 0, 1000, 1000];
+    if (q && edite !== j) { const xs = q.map(p => p[0]), ys = q.map(p => p[1]), m = 0.09 * Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
+      const x0 = Math.max(0, Math.min(...xs) - m), x1 = Math.min(1000, Math.max(...xs) + m), y0 = Math.max(0, Math.min(...ys) - m * W / H), y1 = Math.min(1000, Math.max(...ys) + m * W / H);
+      if (x1 - x0 > 150 && y1 - y0 > 150) bx = [x0, y0, x1 - x0, y1 - y0]; }
+    cad.style.aspectRatio = `${(bx[2] * W).toFixed(1)} / ${(bx[3] * H).toFixed(1)}`;
+    Object.assign(sc.style, {width: (100000 / bx[2]) + '%', height: (100000 / bx[3]) + '%', left: (-100 * bx[0] / bx[2]) + '%', top: (-100 * bx[1] / bx[3]) + '%'});
+    const face = FACES[j], v = (e.centrage_vue || {})[face] || {}, aLignes = v.l != null && v.r != null && v.t != null && v.b != null;
+    let h = '';
+    if (q && (calque || edite === j)) {
+      h += `<polygon class="vd-cont" points="${q.map(p => p.join(',')).join(' ')}"/>`;
+      if (aLignes && edite !== j) for (const [a, b] of [[[v.l, 0], [v.l, 1]], [[1 - v.r, 0], [1 - v.r, 1]], [[0, v.t], [1, v.t]], [[0, 1 - v.b], [1, 1 - v.b]]]) {
+        const p = bil(q, a[0], a[1]), p2 = bil(q, b[0], b[1]); h += `<line class="vd-lg" x1="${p[0]}" y1="${p[1]}" x2="${p2[0]}" y2="${p2[1]}"/>`; }
+    }
+    svg.innerHTML = h;
+    if (calque && aLignes && edite !== j) { const x = rat(v.l, v.r), y = rat(v.t, v.b), tol = TOL(face), note = (g) => (tol.find(([lim]) => g <= lim) || [0, face === 'dos' ? 8 : 3])[1], n = Math.min(note(x[0]), note(y[0]));
+      lab.innerHTML = `<b>${tt('G/D', 'L/R')} ${x[0]}/${x[1]}</b><b>${tt('H/B', 'T/B')} ${y[0]}/${y[1]}</b><b class="${n >= 10 ? 'vert' : n >= 9 ? 'or' : 'rouge'}">PSA ${n} max</b>`; lab.hidden = false; }
+    else if (calque && q && edite !== j) { lab.innerHTML = `<b>${tt('Contour de la carte', 'Card outline')}</b>${e.cid ? `<b>${tt('Cadre imprimé pas trouvé : « Ajuster le centrage »', 'Printed frame not found: “Fix the centering”')}</b>` : ''}`; lab.hidden = false; }
+    else lab.hidden = true;
+    $$('.fc-pt, .vd-poi', sc).forEach(x => x.remove());
+    if (edite === j && q) q.forEach((p, c) => {
+      const el = document.createElement('span'); el.className = 'vd-poi'; el.style.left = p[0] / 10 + '%'; el.style.top = p[1] / 10 + '%'; sc.appendChild(el);
+      el.onpointerdown = (ev) => { ev.preventDefault(); el.setPointerCapture(ev.pointerId);
+        el.onpointermove = (mv) => { const r = sc.getBoundingClientRect(); q[c] = [Math.max(0, Math.min(1000, (mv.clientX - r.left) / r.width * 1000)), Math.max(0, Math.min(1000, (mv.clientY - r.top) / r.height * 1000))];
+          el.style.left = q[c][0] / 10 + '%'; el.style.top = q[c][1] / 10 + '%'; svg.innerHTML = `<polygon class="vd-cont" points="${q.map(p => p.join(',')).join(' ')}"/>`; };
+        el.onpointerup = () => { el.onpointermove = null; }; };
+    });
+    if (edite !== j) def.forEach((d, i) => { if ((d.photo || 0) !== j) return;
+      const [x, y] = place(d, q), p = document.createElement('span');
+      p.className = 'fc-pt g-' + (d.gravite || '').replace(' ', '-'); p.dataset.d = i; p.textContent = i + 1;
+      p.style.left = x / 10 + '%'; p.style.top = y / 10 + '%'; sc.appendChild(p); });
+  };
+  document.body.appendChild(o);
+  peindre();
+  if (k != null) setTimeout(() => o._montrer && o._montrer(k), 300);
 }
 async function blocEtat(c, forcer){
   const z = $('#fc-etat'); if (!z) return;
@@ -8722,8 +8910,8 @@ async function blocEtat(c, forcer){
     const re_ = $('#fc-et-re'); if (re_) re_.onclick = () => { vibrer(); lancer(); };
     e.cid = c.id;
     const vc = $('#fc-et-cent'); if (vc) vc.onclick = () => { vibrer(); voirCentrage(e, c.id, peindre); };
-    const vo = $('#fc-et-voir'); if (vo) vo.onclick = () => { vibrer(); voirDefauts(e); };
-    $$('#fc-etat [data-d]').forEach(li => li.onclick = () => { vibrer(); voirDefauts(e, +li.dataset.d); });
+    const vo = $('#fc-et-voir'); if (vo) vo.onclick = () => { vibrer(); voirDefauts(e, null, peindre); };
+    $$('#fc-etat [data-d]').forEach(li => li.onclick = () => { vibrer(); voirDefauts(e, +li.dataset.d, peindre); });
   };
   const r = await API.carte_etat(c.id, null).catch(() => null);         // ce qui est garde, sans nouvelle analyse
   const q = (r && r.quota) || {};

@@ -202,7 +202,7 @@ def tendances(jours=14):
             c.close()
     except sqlite3.Error:
         return None
-    hausses, baisses, vendues_7, records = [], [], [], []
+    hausses, baisses, vendues_7, records, cartes = [], [], [], [], []
     for q, full, j, carte, produit, pid, recrue in plan:
         cib = cartes_match.cible(full)
         l = [v for v in ventes.get(q) or [] if not cartes_match.raisons_refus(cib, v["titre"])]
@@ -215,6 +215,8 @@ def tendances(jours=14):
         base = {"joueur": j, "carte": carte, "produit": produit, "produit_id": pid, "recrue": bool(recrue), "n": len(l),
                 "n_7j": len(sem), "mediane": _med([v["prix"] for v in l[:30]]), "derniere": l[0]["le"],
                 "points": [[v["le"], v["prix"]] for v in l[:40]][::-1], "photo": next((v["photo"] for v in l if v.get("photo")), None)}
+        # 2 nov 2026 : chaque carte et ses ventes (la tendance PAR JOUEUR, tendance_stats)
+        cartes.append({"joueur": j, "carte": carte, "produit_id": pid, "recrue": bool(recrue), "points": [[v["le"], v["prix"]] for v in l[:120]]})
         if len(recent) >= 3 and len(avant) >= 3:
             a, b = _med(avant), _med(recent)
             if a:
@@ -228,7 +230,7 @@ def tendances(jours=14):
     return {"hausses": sorted(hausses, key=lambda x: -x["pct"])[:8], "baisses": sorted(baisses, key=lambda x: x["pct"])[:8],
             "plus_vendues": sorted(vendues_7, key=lambda x: (-x["n_7j"], -x["n"]))[:8],
             "records": sorted(records, key=lambda x: -x["prix"])[:8],
-            "nb_ventes": nb_total, "nb_cartes": len({x["joueur"] + x["carte"] for x in vendues_7 + hausses + baisses})}
+            "nb_ventes": nb_total, "nb_cartes": len({x["joueur"] + x["carte"] for x in vendues_7 + hausses + baisses}), "cartes": cartes}
 
 
 def statut():

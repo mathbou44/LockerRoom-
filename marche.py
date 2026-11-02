@@ -210,7 +210,7 @@ def tendances():
     ventes, le nombre de ventes et le prix d'avant / maintenant."""
     import catalogue
     import valeur_produit
-    tout, vendues = {}, []
+    tout, vendues, cartes_j = {}, [], []
     for p in catalogue.liste():
         e = valeur_produit.de(p["id"]).get("sous") or {}
         for sn, s in e.items():
@@ -220,6 +220,7 @@ def tendances():
                         "mediane": x.get("m"), "points": pts[::-1], "derniere": pts[0][0] if pts else None,
                         "recrue": bool(re.search(r"young guns|rookie|future watch|\brc\b", sn, re.I))}
                 vendues.append(base)
+                cartes_j.append({"joueur": j, "carte": sn, "produit_id": p["id"], "recrue": base["recrue"], "points": [pt for pt in (x.get("p") or []) if pt and pt[0]]})
                 t = x.get("t")
                 if not t or t.get("pct") is None or (t.get("n") or 0) < 4:
                     continue
@@ -290,7 +291,17 @@ def tendances():
             vus.add(k)
             toutes.append(x)
     ind = indice.marche(toutes, psa.stats_toutes() if idx else None)
-    return {"ok": True, "hausses": hausses, "baisses": baisses, "plus_vendues": plus, "records": records, "indice": ind,
+    # 2 nov 2026 (Mathieu : « devrait juste etre le joueur ; se baser sur des techniques prouvees ») : la tendance PAR
+    # JOUEUR (ventes repetees, medianes, shrinkage, test de Mann-Whitney : tendance_stats). La base des ventes d'abord.
+    import tendance_stats
+    vus_c, cj = set(), []
+    for x in list(b.get("cartes") or []) + cartes_j:
+        k = (str(x.get("joueur") or "").lower(), x.get("produit_id"), re.sub(r"[^a-z0-9]", "", str(x.get("carte") or "").lower()))
+        if k not in vus_c:
+            vus_c.add(k)
+            cj.append(x)
+    joueurs = tendance_stats.listes(cj)
+    return {"ok": True, "hausses": hausses, "baisses": baisses, "plus_vendues": plus, "records": records, "indice": ind, "joueurs": joueurs,
             "nb_cartes": max(len(vendues), b.get("nb_cartes") or 0), "nb_ventes": max(sum(x["n"] for x in vendues), b.get("nb_ventes") or 0),
             "maj": max((valeur_produit.de(p["id"]).get("maj") or "" for p in catalogue.liste()), default=None)}
 

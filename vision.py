@@ -710,3 +710,82 @@ def etat(photos, langue="fr", quads=None, rasante=None, calibration=None, regles
             cache = dict(list(cache.items())[-1500:])
         _ecrire(_chemin_cache(), cache)
     return dict(res, ok=True, cache=False)
+
+
+# -- 2 nov 2026 : la PHOTO d'un deal trop beau ---------------------------------------------------------------------------
+# Mathieu : un « Beckett Sennecke Young Guns #701 » a -83 % : la photo montre la Young Guns CHECKLIST Sennecke / Catton (#740),
+# le titre ne le dit pas. Un deal tres en dessous de sa valeur (le prix d'une autre carte ?) est verifie sur sa photo : la
+# meme carte que celle qu'on a valorisee ? Budget a part (LR_DEALS_PHOTO_JOUR, 40 par jour), une seule fois par annonce.
+DEALS_PHOTO_JOUR = 40
+_PROBLEMES_DEAL = ["aucun", "checklist", "autre joueur", "autre numero", "autre version", "gradee", "abimee", "reimpression", "pas visible"]
+OUTIL_DEAL = {
+    "name": "verdict",
+    "description": "Dis si la photo montre exactement la carte decrite.",
+    "input_schema": {"type": "object", "properties": {
+        "meme_carte": {"type": "boolean", "description": "true si la photo montre bien la carte decrite (ou si la photo ne permet pas de juger)"},
+        "probleme": {"type": "string", "enum": _PROBLEMES_DEAL},
+        "detail": {"type": "string", "description": "Une phrase courte : ce que la photo montre vraiment (ex. « Young Guns Checklist Sennecke / Catton #740 »)"}},
+        "required": ["meme_carte", "probleme"]}}
+SYSTEME_DEAL = """Tu verifies des annonces eBay de cartes de sport pour une app qui trouve des aubaines. Une annonce semble tres en
+dessous de la valeur de la carte que son titre decrit : souvent, c'est une AUTRE carte, moins chere. Regarde la photo et dis
+si c'est exactement la carte decrite. Pieges frequents :
+- une carte CHECKLIST : le mot « Checklist » imprime, ou deux joueurs cote a cote avec une plage de numeros (ex. « 701-750 ») ;
+- un autre joueur, un autre numero de carte, une autre version (base au lieu de Young Guns, Canvas, variante, parallele) ;
+- une carte gradee en boitier (slab) alors que le titre decrit une carte raw, ou l'inverse ;
+- une reimpression, une carte « custom », une carte abimee (pli, coin arrache).
+Si la photo est floue, partielle ou ne permet pas de juger : meme_carte = true et probleme = « pas visible ». N'invente rien."""
+
+
+def _deals_photo_compteur(ajout=0):
+    import comptes
+    ch = os.path.join(comptes.DONNEES, "vision_deals.json")
+    jour = datetime.now().strftime("%Y-%m-%d")
+    with _verrou:
+        d = _lire(ch)
+        n = int((d.get("jours") or {}).get(jour) or 0)
+        if ajout:
+            d["jours"] = {jour: n + ajout}
+            _ecrire(ch, d)
+    return n
+
+
+def verifier_deal(photo_url, titre, attendu=None):
+    """-> {"meme_carte", "probleme", "detail"} ou None (pas de cle, budget du jour atteint, erreur). Jamais d'exception."""
+    if not disponible() or not photo_url or not str(photo_url).startswith("https://"):
+        return None
+    try:
+        lim = int(os.environ.get("LR_DEALS_PHOTO_JOUR") or DEALS_PHOTO_JOUR)
+    except ValueError:
+        lim = DEALS_PHOTO_JOUR
+    if _deals_photo_compteur() >= lim:
+        return None
+    _, serveur = _chemins()
+    if (_lire(serveur).get(_mois()) or {}).get("usd", 0) >= PLAFOND_SERVEUR_USD:
+        return None
+    url = re.sub(r"/s-l\d+\.(jpg|jpeg|png|webp)", r"/s-l1600.\1", str(photo_url))
+    texte = f"Titre de l'annonce : {titre}\nLa carte qu'on a valorisee : {attendu or titre}\nEst-ce exactement cette carte ?"
+    try:
+        r = _appeler({"model": MODELE, "max_tokens": 300, "system": SYSTEME_DEAL, "tools": [OUTIL_DEAL],
+                      "tool_choice": {"type": "tool", "name": "verdict"},
+                      "messages": [{"role": "user", "content": [{"type": "image", "source": {"type": "url", "url": url}},
+                                                                 {"type": "text", "text": texte}]}]}, timeout=45)
+    except Exception as e:
+        print("Vision (deal) : " + repr(e), flush=True)
+        return None
+    _deals_photo_compteur(1)
+    try:
+        u = r.get("usage") or {}
+        usd = int(u.get("input_tokens") or 0) / 1e6 * PRIX_ENTREE + int(u.get("output_tokens") or 0) / 1e6 * PRIX_SORTIE
+        with _verrou:
+            d = _lire(serveur)
+            m = d.setdefault(_mois(), {"n": 0, "usd": 0.0})
+            m["usd"] = round(m["usd"] + usd, 5)
+            _ecrire(serveur, d)
+    except Exception:
+        pass
+    v = next((b.get("input") for b in r.get("content") or [] if b.get("type") == "tool_use"), None)
+    if not isinstance(v, dict):
+        return None
+    pb = v.get("probleme") if v.get("probleme") in _PROBLEMES_DEAL else "aucun"
+    meme = v.get("meme_carte") is not False or pb in ("aucun", "pas visible")
+    return {"meme_carte": bool(meme), "probleme": pb, "detail": str(v.get("detail") or "")[:140]}

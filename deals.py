@@ -206,6 +206,92 @@ def bannir(item_id):
     return {"ok": True}
 
 
+# 2 nov 2026 (Mathieu : « Beckett Sennecke Young Guns #701 » a -83 % : la photo montre la Young Guns CHECKLIST Sennecke /
+# Catton, le titre ne le dit pas) : un deal a 50 % de sa valeur ou moins est verifie sur sa PHOTO (vision), une seule fois par
+# annonce ; une autre carte (checklist, autre joueur, autre numero, autre version, gradee, reimpression, abimee) -> refuse.
+PHOTO_RATIO = 0.50
+_PHOTOS = {}
+
+
+def _chemin_photos():
+    return os.path.join(os.path.dirname(_chemin()), "deals_photos.json")
+
+
+def photo_refusee(item_id, photo, titre, attendu=None):
+    """True si la photo montre une autre carte. Pas de verdict (pas de cle, budget) -> False (le deal reste)."""
+    k = str(item_id or "")
+    if not k or not photo:
+        return False
+    with _verrou:
+        if not _PHOTOS:
+            try:
+                with open(_chemin_photos(), encoding="utf-8") as f:
+                    _PHOTOS.update(json.load(f) or {})
+            except (OSError, ValueError):
+                _PHOTOS["_"] = {}
+        v = _PHOTOS.get(k)
+    if v is None:
+        try:
+            import vision
+            v = vision.verifier_deal(photo, titre, attendu)
+        except Exception as e:
+            print("Deals (photo) : " + repr(e), flush=True)
+            v = None
+        if v is None:
+            return False
+        v["le"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        with _verrou:
+            _PHOTOS[k] = v
+            garder = dict(sorted(((a, b) for a, b in _PHOTOS.items() if a != "_"), key=lambda x: str(x[1].get("le") or ""))[-4000:])
+            try:
+                tmp = _chemin_photos() + ".tmp"
+                with open(tmp, "w", encoding="utf-8") as f:
+                    json.dump(garder, f, ensure_ascii=False)
+                os.replace(tmp, _chemin_photos())
+            except OSError:
+                pass
+        if not v.get("meme_carte"):
+            print(f"Deals : photo refusee {k} ({v.get('probleme')}) {v.get('detail')}", flush=True)
+    return not v.get("meme_carte", True)
+
+
+def maj_prix(item_id, total, port=None, mises=None, fin=None):
+    """2 nov 2026 (Mathieu : « le prix doit updater dans les 2 affichages ») : la fiche d'une annonce lit eBay en direct ; ce
+    prix remplace celui du deal garde (tuile et fiche disent la meme chose). Au-dessus de 70 % de la valeur -> il sort des
+    deals. -> {"deal": x mis a jour | None, "retire": bool}"""
+    k = str(item_id or "")
+    if not k or not total:
+        return {"deal": None, "retire": False}
+    maint = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    with _verrou:
+        d = lire()
+        x = next((y for y in d.get("deals") or [] if str(y.get("item_id")) == k), None)
+        sv = next((y for y in d.get("suivis") or [] if str(y.get("item_id")) == k), None)
+        if not x and not sv:
+            return {"deal": None, "retire": False}
+        retire = False
+        for y in (x, sv):
+            if not y:
+                continue
+            y.update(total=round(float(total), 2), vu_le=maint)
+            if port is not None:
+                y["port"] = port
+            if mises is not None:
+                y["mises"] = mises
+            if fin:
+                y["fin"] = fin
+            if y.get("valeur"):
+                y["ratio"] = round(y["total"] / y["valeur"], 3)
+                if y.get("encan"):
+                    y["mise_max"] = round(y["valeur"] * RATIO_DEAL - (y.get("port") or 0), 2)
+        if x and x.get("valeur") and x["total"] > x["valeur"] * RATIO_DEAL:
+            d["deals"] = [y for y in d.get("deals") or [] if str(y.get("item_id")) != k]
+            _noter_retires(d, [k])
+            retire = True
+        _ecrire(d)
+    return {"deal": None if retire else x, "retire": retire}
+
+
 REVALIDE_V = 5                   # 2 : « checklist » ; 3 : Bowman U = football ; 4 : la F1 ; 5 : « Beckett » prenom (pas gradee)
 
 
@@ -955,6 +1041,11 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
                                                          "vendues": ventes_a or [], "sport": r.get("sport") or "hockey",
                                                          "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION, "palier": "pres"}
         return
+    if t <= med_a * PHOTO_RATIO and photo_refusee(a.get("item_id"), a.get("photo"), a.get("titre"), _q_deal(r)):
+        st["_res"] = ("photo", round(t / med_a, 3))
+        st["photo_refus"] = st.get("photo_refus", 0) + 1
+        deals.pop(a["item_id"], None)
+        return
     st["_res"] = ("deal", round(t / med_a, 3))
     st["deals"] = st.get("deals", 0) + 1
     if est_hit:
@@ -1681,6 +1772,8 @@ def reverifier(lire_article=None, max_=None):
             fini = bool(a.get("fin")) and datetime.fromisoformat(str(a["fin"]).replace("Z", "+00:00")) < maint
         except ValueError:
             pass
+        if not fini and t and t <= (x.get("valeur") or 0) * PHOTO_RATIO and photo_refusee(x["item_id"], x.get("photo") or a.get("photo"), x.get("titre"), x.get("q")):
+            fini = True                                  # 2 nov 2026 : la photo montre une autre carte
         if fini or not t or cartes_match.abimee(a.get("titre") or "") or t > (x.get("valeur") or 0) * RATIO_DEAL:
             deals.pop(x["item_id"], None)
             st.setdefault("_retires", []).append(x["item_id"])
