@@ -109,7 +109,7 @@ app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", S
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024        # 23 oct 2026 - 2 photos (devant, dos) par requete
 # pages qui restent publiques : break partage, retour et avis eBay, pages legales, icones
 _PUBLIQUES = ("/b/", "/api/b/", "/api/ebay_retour", "/ebay/suppression-compte", "/confidentialite", "/conditions",
-              "/support", "/robots.txt", "/sitemap.xml", "/logo_sc_", "/syne-800.woff2", "/manrope-", "/barlow-", "/connexion", "/icone", "/favicon", "/manifest.json", "/stripe/webhook", "/apple/notifications")
+              "/support", "/robots.txt", "/sitemap.xml", "/logo_sc_", "/syne-800.woff2", "/manrope-", "/barlow-", "/connexion", "/icone", "/favicon", "/manifest.json", "/stripe/webhook", "/apple/notifications", "/sante")
 
 
 import comptes  # noqa: E402
@@ -117,9 +117,18 @@ import comptes  # noqa: E402
 _PUBLIQUES_MULTI = _PUBLIQUES + ("/auth/", "/deconnexion", "/demo")
 
 
+# 3 nov 2026 (Render : « HTTP health check failed, timed out after 5 seconds ») : une verification de sante qui ne fait RIEN
+# (ni compte, ni base, ni fichier) : elle repond meme quand le serveur est occupe. Render : Health Check Path = /sante
+@app.route("/sante")
+def sante_render():
+    return "ok", 200, {"Content-Type": "text/plain", "Cache-Control": "no-store"}
+
+
 @app.before_request
 def _garde():
     from flask import redirect, session
+    if request.path == "/sante":
+        return None
     comptes.activer(None)
     import lockerroom as _lr                       # 26 oct 2026 - requete venue de l'app iPhone ?
     _lr.marquer_ios("LockerRoomiOS" in (request.headers.get("User-Agent") or ""))

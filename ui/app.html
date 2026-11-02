@@ -2325,6 +2325,13 @@ button.an-attente{width:100%; text-align:left; color:var(--texte); cursor:pointe
 .so-ch .rangee{display:flex; align-items:center; gap:12px; cursor:pointer} .so-ch input{width:20px; height:20px; accent-color:var(--acc); flex:0 0 auto}
 .so-bas{position:sticky; bottom:0; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 10px 10px 16px; border-radius:18px; background:var(--fond-feuille, var(--carte))} .so-bas span{flex:1 1 auto; min-width:0; font-size:14px} .so-bas .btn{flex:0 0 auto; width:auto; margin:0; padding-inline:28px}
 .so-fil{margin:0 0 14px} .so-fil li{cursor:pointer}
+/* 3 nov 2026 - filtres des deals : nos pastilles rondes, la barre « Appliquer » qui apparait au premier changement */
+.fd-pils{display:flex; flex-wrap:wrap; gap:14px 6px; justify-content:flex-start; margin:4px 0 2px}
+.fd-p{min-width:76px} .fd-p .ap-ic{width:54px; height:54px; background:var(--ligne)} .fd-p .ap-ic b{position:relative; font:700 16px var(--f-cond); color:var(--texte)}
+.fd-p.on .ap-ic{background:conic-gradient(from 210deg, var(--h1,#9FE6D2), var(--h2,#B9BEFF), var(--h3,#F2B3D6), var(--h4,#F1D58E), var(--h1,#9FE6D2))}
+.fd-p.on .ap-ic::before{background:var(--acc-fonce)} .fd-p.on small{color:var(--texte); font-weight:600} .fd-p small{font-size:13px}
+.fd-app{position:sticky; bottom:0; margin:4px -18px -18px; padding:12px 18px calc(14px + var(--bas)); background:linear-gradient(180deg, rgba(19,19,23,0), #131317 30%); animation:popEntre .2s ease}
+.fd-app .btn{width:100%; margin:0} #fd-raz{margin-top:6px}
 .vd-tete{display:flex; align-items:center; gap:14px; margin-top:4px} .vd-tete .et-anneau{width:68px; height:68px; flex:0 0 68px} .vd-tete .et-anneau b{font-size:22px}
 .vd-tete > span:last-child{display:flex; flex-direction:column; gap:2px} .vd-tete b{font-size:18px} .vd-tete small{color:var(--doux); font-size:13px}
 .vd-sous{display:grid; grid-template-columns:1fr 1fr; gap:10px} .vd-s{display:flex; gap:10px; align-items:center; padding:10px; border-radius:16px; background:var(--carte)}
@@ -5325,31 +5332,43 @@ async function feuilleFiltresDeals(){
   let rb = F.rabais_min ?? '';
   const seul = !!(F.joueurs || []).length;
   const pmin0 = p.prix_min ?? F.prix_min, pmax0 = p.prix_max ?? F.prix_max;
-  const chips = (id, L, on, attr) => `<div class="chips fd-w" id="${id}">${L.map(([k, t]) => `<button class="chip ${on(k) ? 'on' : ''}" data-${attr}="${k}">${t}</button>`).join('')}</div>`;
+  // 3 nov 2026 (Mathieu : « je selectionne quelque chose et rien ne se passe ; un bouton Appliquer doit apparaitre ; moins de
+  // choix, nos pastilles ») : des pastilles rondes, 4 questions courtes, et une barre « Appliquer » qui apparait des qu'on change
+  const IC_F = {revente: IC_PIL.graphe, collection: IC_PIL.diamant, recrues: '<path d="M12 3l2.4 5 5.6.8-4 3.9.9 5.5L12 15.6 7.1 18.2l.9-5.5-4-3.9 5.6-.8z"/>',
+    veterans: IC_PIL.profil, legendes: '<path d="M5 18h14M6 18l-1.5-9 4.5 3.5L12 6l3 6.5 4.5-3.5L18 18"/>', auto: '<path d="M4 17c3-1 4-9 6-9s1 7 3 7 2-4 4-4 2 2 3 2"/>',
+    patch: '<rect x="5" y="5" width="14" height="14" rx="2"/><path d="M5 10h14M5 14h14M10 5v14M14 5v14"/>', gradee: '<rect x="6" y="3" width="12" height="18" rx="2"/><path d="M6 8h12"/>'};
+  const pils = (id, L, on, attr) => `<div class="fd-pils" id="${id}">${L.map(([k, t]) => `<button class="d-rond fd-p ${on(k) ? 'on' : ''}" data-${attr}="${k}"><span class="ap-ic">${IC_F[k] ? `<svg viewBox="0 0 24 24" aria-hidden="true">${IC_F[k]}</svg>` : `<b>${t}</b>`}</span>${IC_F[k] ? `<small>${t}</small>` : ''}</button>`).join('')}</div>`;
+  if (!['', '30', '50'].includes(String(rb))) rb = rb ? (+rb >= 50 ? '50' : '30') : '';
   ouvrirFeuille(`<h3>${tt('Filtres', 'Filters')}</h3>
-    <div class="sous" style="margin-bottom:4px">${tt('Rien de choisi = tout voir.', 'Nothing chosen = see everything.')}</div>
-    <div class="fd-s"><div class="r-titre">${tt('Mon objectif', 'My goal')}</div>
-      ${chips('fd-obj', [['', tt('Tout', 'All')], ['revente', tt('Revendre vite', 'Quick flip')], ['collection', tt('Collection', 'Collection')]], k => (F.objectif || '') === k, 'obj')}
+    <div class="fd-s"><div class="r-titre">${tt('Pour quoi ?', 'What for?')}</div>
+      ${pils('fd-obj', [['revente', tt('Revendre', 'Flip')], ['collection', tt('Collection', 'Collection')]], k => (F.objectif || '') === k, 'obj')}
       <small class="fd-aide" id="fd-obj-aide"></small></div>
-    <div class="fd-s"><div class="r-titre"><b class="fd-n">1</b>${tt('Quelles cartes ?', 'Which cards?')}</div>
-      ${chips('fd-ep', [['recrues', tt('Recrues', 'Rookies')], ['veterans', tt('Vétérans', 'Veterans')], ['legendes', tt('Légendes', 'Legends')]], k => ep.has(k), 'ep')}
-      ${chips('fd-so', [['auto', 'Auto'], ['patch', 'Patch'], ['numerotee', tt('Numérotée', 'Numbered')], ['gradee', tt('Gradée', 'Graded')], ['brute', tt('Non gradée', 'Raw')]], k => so.has(k), 'so')}</div>
-    <div class="fd-s"><div class="r-titre"><b class="fd-n">2</b>${tt('Quel rabais ?', 'What discount?')}</div>
-      ${chips('fd-rb', [['', tt('Tous', 'Any')], [30, '−30 %'], [40, '−40 %'], [50, '−50 %'], [60, '−60 %']], k => String(rb) === String(k), 'rb')}
-      <small class="fd-aide">${tt('Avec un rabais choisi, les encans sans valeur vérifiée sont cachés.', 'With a discount chosen, auctions without a checked value are hidden.')}</small></div>
-    <div class="fd-s"><div class="r-titre"><b class="fd-n">3</b>${tt('Mon budget par carte', 'My budget per card')} (${symDevise()})</div>
-      <div class="md-b"><input class="champ" id="fd-pmin" type="number" inputmode="decimal" value="${enDev(pmin0)}" placeholder="min"><span>–</span><input class="champ" id="fd-pmax" type="number" inputmode="decimal" value="${enDev(pmax0)}" placeholder="max"></div></div>
-    <div class="fd-s"><div class="r-titre"><b class="fd-n">4</b>${tt('Mes joueurs et équipes', 'My players and teams')}</div>
+    <div class="fd-s"><div class="r-titre">${tt('Quelles cartes ?', 'Which cards?')}</div>
+      ${pils('fd-ep', [['recrues', tt('Recrues', 'Rookies')], ['veterans', tt('Vétérans', 'Veterans')], ['legendes', tt('Légendes', 'Legends')]], k => ep.has(k), 'ep')}
+      ${pils('fd-so', [['auto', 'Autos'], ['patch', 'Patchs'], ['gradee', tt('Gradées', 'Graded')]], k => so.has(k), 'so')}</div>
+    <div class="fd-s"><div class="r-titre">${tt('Rabais minimum', 'Minimum discount')}</div>
+      ${pils('fd-rb', [['', tt('Tous', 'Any')], ['30', '−30%'], ['50', '−50%']], k => String(rb) === String(k), 'rb')}</div>
+    <div class="fd-s"><div class="r-titre">${tt('Budget max par carte', 'Max budget per card')} (${symDevise()})</div>
+      <input class="champ" id="fd-pmax" type="number" inputmode="decimal" value="${enDev(pmax0)}" placeholder="${esc(tt('aucun', 'none'))}"></div>
+    <div class="fd-s"><div class="r-titre">${tt('Mes joueurs', 'My players')} <small class="fd-aide">${tt('en premier, avec une ★', 'first, with a ★')}</small></div>
       <div class="fv-l" id="fv-l"></div>
       <form class="fv-aj" id="fv-aj"><input class="champ" id="fv-in" enterkeyhint="done" autocomplete="off" placeholder="${esc(tt('Joueur ou équipe', 'Player or team'))}"><button class="btn petit" id="fv-ok">${tt('Ajouter', 'Add')}</button></form>
-      <label class="bascule fd-l"><span>${tt('M’avertir quand ils sont en deal', 'Alert me when they’re on deal')}</span><input type="checkbox" id="fd-avert" ${avert0 ? 'checked' : ''}></label>
-      <label class="bascule fd-l"><span>${tt('Seulement eux', 'Only them')}<small>${tt('Sinon : ils passent en premier, avec une ★', 'Otherwise: they come first, with a ★')}</small></span><input type="checkbox" id="fd-seul" ${seul ? 'checked' : ''}></label></div>
-    <details class="fd-plus"><summary>${tt('Vendeurs et encans', 'Sellers and auctions')}</summary>
-      <label class="bascule fd-l"><span><b>${tt('Seulement les boutiques suivies', 'Followed shops only')}</b><small>${tt('Les boutiques de cartes que SlabCoach suit, et les tiennes', 'Card shops SlabCoach follows, and yours')}</small></span><input type="checkbox" id="fd-vend" ${F.vendeurs ? 'checked' : ''}></label>
-      <label class="bascule fd-l"><span>${tt('Encans : seulement avec au moins une mise', 'Auctions: only with at least one bid')}</span><input type="checkbox" id="fd-mise" ${F.avec_mise ? 'checked' : ''}></label>
+      <label class="bascule fd-l"><span>${tt('M’avertir quand ils sont en deal', 'Alert me when they’re on deal')}</span><input type="checkbox" id="fd-avert" ${avert0 ? 'checked' : ''}></label></div>
+    <details class="fd-plus"><summary>${tt('Plus d’options', 'More options')}</summary>
+      <label class="bascule fd-l"><span>${tt('Seulement mes joueurs', 'Only my players')}</span><input type="checkbox" id="fd-seul" ${seul ? 'checked' : ''}></label>
+      <label class="bascule fd-l"><span>${tt('Seulement les boutiques suivies', 'Followed shops only')}</span><input type="checkbox" id="fd-vend" ${F.vendeurs ? 'checked' : ''}></label>
+      <label class="bascule fd-l"><span>${tt('Encans avec au moins une mise', 'Auctions with at least one bid')}</span><input type="checkbox" id="fd-mise" ${F.avec_mise ? 'checked' : ''}></label>
       <button class="acc-pil fd-ram" id="fd-ram"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.pin}</svg></span><span class="ap-t"><b>${tt('Je ramasse sur place', 'I pick up locally')}</b><small id="fd-ram-s">${tt('Le port ne compte pas chez ces vendeurs', 'Shipping doesn’t count with these sellers')}</small></span><i aria-hidden="true">›</i></button>
-      ${p.vendeurs_max ? `<label class="md-l">${tt(`Mes vendeurs eBay (${p.vendeurs_max} max)`, `My eBay sellers (${p.vendeurs_max} max)`)}${p.pro ? '' : ' <span class="badge-f pro">✦ PRO</span>'}<input class="champ" id="fd-v" value="${esc((p.vendeurs || []).join(', '))}" placeholder="${esc(tt('pseudo eBay exact', 'exact eBay username'))}" ${p.pro ? '' : 'disabled'}></label>` : ''}</details>
-    <div class="fen-btns"><button class="btn" id="fd-ok">${tt('Voir les deals', 'Show deals')}</button><button class="btn ghost" id="fd-raz">${tt('Tout effacer', 'Clear all')}</button></div>`);
+      ${p.vendeurs_max ? `<label class="md-l">${tt(`Mes vendeurs eBay (${p.vendeurs_max} max)`, `My eBay sellers (${p.vendeurs_max} max)`)}${p.pro ? '' : ' <span class="badge-f pro">✦ PRO</span>'}<input class="champ" id="fd-v" value="${esc((p.vendeurs || []).join(', '))}" placeholder="${esc(tt('pseudo eBay exact', 'exact eBay username'))}" ${p.pro ? '' : 'disabled'}></label>` : ''}
+      <button class="lien-t" id="fd-raz">${tt('Tout effacer', 'Clear all')}</button></details>
+    <div class="fd-app" id="fd-app" hidden><button class="btn" id="fd-ok">${tt('Appliquer', 'Apply')} <span id="fd-app-n"></span></button></div>`);
+  // la barre « Appliquer » : visible des qu'un choix change (sinon on ne sait pas si ca a pris)
+  let change = 0;
+  const marquer = () => { change++; const a = $('#fd-app'); if (!a) return; a.hidden = false; $('#fd-app-n').textContent = change > 1 ? `(${change})` : ''; };
+  setTimeout(() => { const z = $('#feuille'); if (!z) return;
+    z.addEventListener('click', (e) => { if (e.target.closest('[data-obj], [data-ep], [data-so], [data-rb], [data-fvx], #fv-ok')) setTimeout(marquer, 0); });
+    z.addEventListener('input', (e) => { if (e.target.matches('#fd-pmax, #fd-v, input[type=checkbox]')) marquer(); });
+    z.addEventListener('change', (e) => { if (e.target.matches('input[type=checkbox]')) marquer(); }); }, 0);
   const peindreFav = () => {
     $('#fv-l').innerHTML = FAV.map((n, i) => `<span class="fv-p">${esc(n)}<button data-fvx="${i}" aria-label="${esc(tt('Retirer', 'Remove'))}">×</button></span>`).join('')
       + `<span class="fv-n">${FAV.length} / ${FMAX}</span>`;
@@ -5369,9 +5388,9 @@ async function feuilleFiltresDeals(){
   let obj = F.objectif || '';
   const aideObj = () => { $('#fd-obj-aide').textContent = obj === 'revente' ? tt('Les cartes qui se vendent souvent (4 ventes réelles et plus), le plus gros profit d’abord.', 'Cards that sell often (4+ real sales), biggest profit first.')
     : obj === 'collection' ? tt('Les cartes rares et recherchées (rareté 45/100 et plus : numérotées basses, autos, SSP, rarement en vente, vedettes), les plus désirables d’abord.', 'Rare, sought-after cards (rarity 45/100+: low numbered, autos, SSP, rarely for sale, stars), most desirable first.')
-    : tt('Tous les deals.', 'All deals.'); };
+    : tt('Rien de choisi : tous les deals.', 'Nothing chosen: all deals.'); };
   aideObj();
-  $$('#fd-obj [data-obj]').forEach(b => b.onclick = () => { obj = b.dataset.obj; vibrer(); $$('#fd-obj [data-obj]').forEach(x => x.classList.toggle('on', x === b)); aideObj(); });
+  $$('#fd-obj [data-obj]').forEach(b => b.onclick = () => { obj = obj === b.dataset.obj ? '' : b.dataset.obj; vibrer(); $$('#fd-obj [data-obj]').forEach(x => x.classList.toggle('on', x.dataset.obj === obj)); aideObj(); });
   $$('#fd-ep [data-ep]').forEach(b => b.onclick = () => { const k = b.dataset.ep; ep.has(k) ? ep.delete(k) : ep.add(k); b.classList.toggle('on', ep.has(k)); vibrer(); });
   $$('#fd-so [data-so]').forEach(b => b.onclick = () => { const k = b.dataset.so; vibrer();
     if (so.has(k)) so.delete(k); else { so.add(k); if (k === 'gradee') so.delete('brute'); if (k === 'brute') so.delete('gradee'); }
@@ -5385,16 +5404,20 @@ async function feuilleFiltresDeals(){
     if (!raz && $('#fd-avert').checked !== avert0) API.alarmes_regler({mes_joueurs: $('#fd-avert').checked}).catch(() => {});
     Object.assign(F, raz ? {sortes:[], rabais_min:null, prix_min:null, prix_max:null, gain_min:null, joueurs:[], avec_mise:false, vendeurs:false, objectif:''}
       : {objectif: obj, sortes:[...so], rabais_min: rb === '' ? null : +rb, prix_min:null, prix_max:null, gain_min:null,       // le budget : sur le compte
+         avec_mise: $('#fd-mise').checked,
          joueurs: $('#fd-seul').checked ? noms : [], avec_mise: $('#fd-mise').checked, vendeurs: $('#fd-vend').checked});
     const d = raz ? {collectionne: [], favoris: [], prix_min: null, prix_max: null}
-      : {collectionne: [...ep], favoris: noms, prix_min: cad('fd-pmin'), prix_max: cad('fd-pmax')};
+      : {collectionne: [...ep], favoris: noms, prix_min: null, prix_max: cad('fd-pmax')};
     const v = $('#fd-v'); if (!raz && v && p.pro) d.vendeurs = v.value;
     const r = await API.deals_profil_regler(d).catch(e => ({ok:false, erreur:e.message}));
     if (r && r.ok === false) { toast(r.erreur || 'Erreur', 4000); return; }
-    S.dealsProfil = r || null; sauverDealsF(); MEMO.clear(); fermerFeuille(); chargerDeals(true);
-    toast(raz ? tt('Filtres effacés : tous les deals', 'Filters cleared: all deals') : tt('Filtres appliqués', 'Filters applied'), 1600);
+    S.dealsProfil = r || null; sauverDealsF(); MEMO.clear(); fermerFeuille();
+    const zg = $('#d-grille') || $('#d-z'); if (zg) zg.innerHTML = `<div class="lecture"><span class="roue"></span>${tt('On applique tes filtres…', 'Applying your filters…')}</div>`;
+    await chargerDeals(true);
+    const n_ = (S.dealsParId ? Object.keys(S.dealsParId).length : null);
+    toast(raz ? tt('Filtres effacés : tous les deals', 'Filters cleared: all deals') : (n_ != null ? tt(`Filtres appliqués : ${n_} deals`, `Filters applied: ${n_} deals`) : tt('Filtres appliqués', 'Filters applied')), 2200);
   };
-  $('#fd-ok').onclick = () => appliquer(false);
+  $('#fd-ok').onclick = (e) => { e.currentTarget.disabled = true; e.currentTarget.innerHTML = `<span class="roue"></span>`; appliquer(false); };
   $('#fd-raz').onclick = () => appliquer(true);
   API.deals_vendeurs_liste().then(r => { const e = $('#fd-ram-s'); if (e && r && r.ok && r.ramassage.length) e.textContent = r.ramassage.join(', '); }).catch(() => {});
   $('#fd-ram').onclick = () => feuilleRamassage(() => { fermerFeuille(); chargerDeals(true); });
@@ -8790,9 +8813,18 @@ function ficheCollection(c){
   })();
   // 2 nov 2026 (Mathieu : « rapetisser ou cropper la portion de la photo sans carte pour tout voir sans defiler ») : chaque
   // photo recadree sur la carte ; la boite prend le format de la carte (couchee : beaucoup moins haute)
-  $$('#fc-imgs img').forEach((im, j) => photoCadree(im.getAttribute('src'), {marge: 0.04}).then(r => {
-    if (!r || !im.isConnected) return; im.src = r.src;
-    if (j === 0) { const zi = $('#fc-imgs'); if (zi) { const k = Math.max(0.62, Math.min(1.6, r.ratio)); zi.style.aspectRatio = String(k); zi.style.width = `min(100%, calc(40vh * ${k.toFixed(3)}))`; } } }));
+  // 3 nov 2026 (Mathieu : « pourquoi l'envers est croppe comme ca ? ») : devant et dos recoivent TOUJOURS le meme traitement :
+  // les deux recadres sur la carte (a partir des photos originales : le fond flou de la photo studio trompe la detection), ou
+  // aucun. La boite prend le format de la carte, et chaque photo y tient entiere.
+  (async () => {
+    const ims = $$('#fc-imgs img'); if (!ims.length) return;
+    let orig_ = []; try { orig_ = JSON.parse(c.photos_orig || '[]'); } catch (e) {}
+    const srcs = ims.map((im, j) => orig_[j] && photoOk(orig_[j]) ? photoNet(orig_[j], 1600) : im.getAttribute('src'));
+    const rs = await Promise.all(srcs.map(u => photoCadree(u, {marge: 0.04}).catch(() => null)));
+    if (rs.some(r => !r) || !ims[0].isConnected) return;
+    ims.forEach((im, j) => { im.src = rs[j].src; });
+    const zi = $('#fc-imgs'); if (zi) { const k = Math.max(0.62, Math.min(1.6, rs[0].ratio)); zi.style.aspectRatio = String(k); zi.style.width = `min(100%, calc(40vh * ${k.toFixed(3)}))`; }
+  })();
   if ($('#fc-etat')) blocEtat(c);
   if ($('#fc-envoi')) blocEnvoi(c);
   if (envoiDe(c)) { const v = $('#fc-vendre'); if (v) { v.hidden = true; if (v.nextElementSibling) v.nextElementSibling.hidden = true; } }   // la carte n'est pas chez toi

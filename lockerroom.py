@@ -4486,13 +4486,30 @@ class Api:
         return {"ok": True, "envoyees": watchlist.verifier(self, proches=True)}
 
     _TENDANCES = {"le": 0.0, "v": None}
+    _TENDANCES_VERROU = threading.Lock()
 
     def tendances(self):
         """28 oct 2026 (vitesse) : 2 a 6 s de calcul, le meme resultat pour tous les comptes : garde 15 min."""
+        # 3 nov 2026 (Render : « health check timed out ») : le calcul (plusieurs secondes, 1 seul serveur) ne bloque plus une
+        # requete : la derniere version est servie tout de suite et la nouvelle se calcule a cote, une seule a la fois
+        import threading as _th
         import time as _t
         T = Api._TENDANCES
-        if T["v"] is None or _t.time() - T["le"] > 900:
-            T["v"], T["le"] = marche.tendances(), _t.time()
+        if T["v"] is None:
+            with Api._TENDANCES_VERROU:
+                if T["v"] is None:
+                    T["v"], T["le"] = marche.tendances(), _t.time()
+        elif _t.time() - T["le"] > 900 and not T.get("calcul"):
+            T["calcul"] = True
+
+            def refaire():
+                try:
+                    T["v"], T["le"] = marche.tendances(), _t.time()
+                except Exception as e:
+                    print("Tendances : " + repr(e), flush=True)
+                finally:
+                    T["calcul"] = False
+            _th.Thread(target=refaire, daemon=True, name="tendances").start()
         return T["v"]
 
     def pouls(self, langue=None):
