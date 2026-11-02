@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SlabCoach">
@@ -351,7 +351,13 @@ details.reglage summary::-webkit-details-marker{display:none}
 .sd-j{font:700 17px/1.1 var(--f-cond); letter-spacing:.03em; text-transform:uppercase; color:#F4F2F8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .sd-c{font-size:13px; line-height:1.25; color:#C9C6D2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 /* 2 nov 2026 : le slab au format PSA (3,3 x 5,3 po), 3 chiffres : mise, paie max, profit */
-.slab-deal .sd-slab{aspect-ratio:3.3 / 5.3} .slab-deal .sd-ph{aspect-ratio:auto; flex:1 1 auto; min-height:0}
+/* 3 nov 2026 (Mathieu : « les tuiles s'empilent par-dessus l'autre ; on voit juste le coin de la photo en gros ») : une boite
+   a ratio prenait la largeur de son texte le plus long (min-width:auto) : elle debordait sur la voisine et la photo etait
+   agrandie. min-width:0 + overflow:hidden : la tuile garde la largeur de sa colonne ; la photo entiere (contain) */
+.slab-deal .sd-slab{aspect-ratio:3.3 / 5.3; width:100%; min-width:0; min-height:0; overflow:hidden}
+.slab-deal .sd-lab, .slab-deal .sd-3, .slab-deal .sd-k{min-width:0} .slab-deal .sd-j, .slab-deal .sd-c{max-width:100%}
+.slab-deal .sd-ph{aspect-ratio:auto; flex:1 1 0; min-height:0; min-width:0} .slab-deal .sd-ph img{object-fit:contain; background:#0E0E12}
+.slab-deal .sd-k b{font-size:clamp(13px, 4.1vw, 19px); overflow:hidden; text-overflow:clip} .slab-deal .sd-3{gap:8px}
 .sd-3{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:4px; margin-top:4px; padding-top:6px; border-top:1px solid rgba(255,255,255,.08)}
 .sd-k{display:flex; flex-direction:column; gap:1px; min-width:0} .sd-k:nth-child(2){align-items:center} .sd-k:nth-child(3){align-items:flex-end}
 .sd-k small{font:700 11.5px/1 var(--f-cond); letter-spacing:.06em; text-transform:uppercase; color:#A9A6B4}
@@ -864,7 +870,7 @@ details.r-plie summary .r-note{flex:1; text-align:right; white-space:nowrap; ove
 
 /* 24 oct 2026 - ecrans larges (ordi) et tuiles avec grande image : « maximiser l'ecran, toujours des images » */
 .ecran.large{max-width:1280px}
-.grille-c{display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px}
+.grille-c{display:grid; grid-template-columns:repeat(auto-fill,minmax(min(160px, 100%),1fr)); gap:12px} .grille-c > *{min-width:0}
 @media (min-width:900px){ .grille-c{grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:16px} }
 .tuile-c{position:relative; background:var(--carte); border:1px solid var(--ligne); border-radius:18px; overflow:hidden; display:flex; flex-direction:column;
   transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease; color:var(--texte)}
@@ -2167,6 +2173,8 @@ body.en-defil .logo-lr::after, body.en-defil #nav-logo-nom, body.en-defil .titre
 .fv b{font:700 20px/1.1 var(--f-cond); color:var(--vert); margin-top:3px} .fv small{font-size:12px; color:var(--doux)}
 /* 29 oct 2026 : les deals en slabs */
 .slab-deal{display:flex; flex-direction:column; gap:8px; cursor:pointer; min-width:0; -webkit-tap-highlight-color:transparent}
+/* 3 nov 2026 (Mathieu : « on ne devrait pas pouvoir zoomer sur cette page ») : pas de zoom a deux doigts ni au double tap */
+html, body{touch-action:pan-x pan-y} button, a, .slab-deal{touch-action:manipulation}
 .slab-deal:active .sd-slab{transform:scale(.97)}
 .sd-slab{border-radius:12px; padding:6px; display:flex; flex-direction:column; gap:5px; transition:transform .15s;
   background:linear-gradient(180deg,#2B2A33,#141419); box-shadow:inset 0 0 0 1px rgba(255,255,255,.08), 0 4px 10px rgba(0,0,0,.35)}
@@ -2751,7 +2759,8 @@ const LECTURES = new Set(['accueil', 'acheteur_accueil', 'activites', 'conseils'
   'reglages_lire', 'deals_liste', 'inventaire_liste', 'catalogue_liste', 'produits_liste', 'equipes', 'images_produits', 'images_joueurs',
   'budget_etat', 'alertes_liste', 'breaks_liste', 'bilan', 'tendances', 'calendrier', 'collection', 'offres_liste', 'analyse_break',
   'admin_resume', 'admin_abonnes', 'admin_demandes', 'admin_catalogue', 'admin_sante', 'valeurs_statut', 'portraits_joueurs',
-  'etoiles_lire', 'alarmes_lire', 'sante_liste', 'pouls', 'guide_donnees', 'consignataires_liste', 'ebay_avis_statut', 'ebay_appels']);
+  'etoiles_lire', 'alarmes_lire', 'sante_liste', 'pouls', 'guide_donnees', 'consignataires_liste', 'ebay_avis_statut', 'ebay_appels',
+  'inventaire_tableaux', 'watch_liste']);
 const SANS_EFFET = new Set(['deals_etat', 'accueil_live', 'annonce_detail', 'carte_comps', 'valeur_carte', 'joueur_fiche', 'checklist',
   'catalogue_checklist', 'break_detail', 'photo_statut', 'demandes_reponses', 'demandes_mes', 'ebay_environnement', 'logo_lire', 'prix_auto_lire',
   // 28 oct 2026 (vitesse) : ces appels ne changent rien a ce que les ecrans affichent : ils ne vident plus la memoire
@@ -2782,9 +2791,29 @@ async function appelServeur(nom, corps, essai2){
   if (!r.ok) { const e = await r.json().catch(() => ({erreur:r.statusText})); throw new Error(e.erreur || 'Erreur serveur'); }
   return r.json();
 }
-const GARDES = new Set(['accueil', 'acheteur_accueil', 'deals_liste']), GARDE_MAX_MS = 36 * 3600 * 1000;
+// 3 nov 2026 (Mathieu : « quand on ferme l'app et qu'on la rouvre, c'est tres, tres long d'avoir les deals, l'inventaire ») :
+// chaque onglet du bas s'ouvre tout de suite avec ce qu'on avait la derniere fois (garde sur le telephone, 36 h) ; la version
+// fraiche arrive derriere et l'ecran se redessine. Le telephone garde les plus recentes (environ 4 Mo) ; les vieilles partent.
+const GARDES = new Set(['accueil', 'acheteur_accueil', 'deals_liste', 'inventaire_liste', 'inventaire_tableaux', 'tendances', 'pouls',
+  'astuces', 'forfait', 'reglages_lire', 'alertes_liste', 'breaks_liste', 'catalogue_liste', 'collection', 'bilan', 'watch_liste', 'activites']),
+  GARDE_MAX_MS = 36 * 3600 * 1000;
+const GARDE_SAUTER = {oui: false};
 function gardeLire(cle){ try { const g = JSON.parse(localStorage.getItem('lr_g_' + cle) || 'null'); return g && Date.now() - g.t < GARDE_MAX_MS ? g : null; } catch (e) { return null; } }
-function gardeEcrire(cle, v){ try { const j = JSON.stringify(v); if (j.length < 400000) localStorage.setItem('lr_g_' + cle, JSON.stringify({t: Date.now(), j})); } catch (e) {} }
+function gardeEcrire(cle, v){
+  let j; try { j = JSON.stringify(v); } catch (e) { return; }
+  if (j.length > 1500000) return;
+  const val = JSON.stringify({t: Date.now(), j});
+  for (let essai_ = 0; essai_ < 6; essai_++) {
+    try { localStorage.setItem('lr_g_' + cle, val); return; }
+    catch (e) {                                   // plein : on enleve la plus vieille copie gardee et on reessaie
+      let vieux = null, tv = Infinity;
+      try { for (const k of Object.keys(localStorage)) { if (!k.startsWith('lr_g_') || k === 'lr_g_' + cle) continue;
+        const t = (JSON.parse(localStorage.getItem(k) || '{}') || {}).t || 0; if (t < tv) { tv = t; vieux = k; } } } catch (x) {}
+      if (!vieux) return;
+      try { localStorage.removeItem(vieux); } catch (x) { return; }
+    }
+  }
+}
 function gardesVider(){ try { Object.keys(localStorage).filter(k => k.startsWith('lr_g_')).forEach(k => localStorage.removeItem(k)); } catch (e) {} }
 function lectureFraiche(nom, corps){
   const cle = nom + corps, m = MEMO.get(cle);
@@ -2852,11 +2881,13 @@ function fabriquerApi(){
       noterRecette(nom, corps);
       // 31 oct 2026 (Mathieu : « doit faire 1 min que ca load ») : l'accueil s'ouvre tout de suite avec ce qu'on avait la
       // derniere fois (gardé sur le telephone) ; la version fraiche arrive derriere et l'ecran se redessine en douceur
-      if (!MEMO.has(nom + corps) && GARDES.has(nom)) {
+      if (!MEMO.has(nom + corps) && GARDES.has(nom) && !GARDE_SAUTER.oui) {
         const g = gardeLire(nom + corps);
         if (g) {
           const ecran0 = location.hash.split('/')[0];
-          lectureFraiche(nom, corps).then(v => { if (v && JSON.stringify(v) !== g.j && location.hash.split('/')[0] === ecran0) route(); }).catch(() => {});
+          // la version fraiche redessine l'ecran seulement si on est encore en haut (sinon : pour la prochaine visite)
+          lectureFraiche(nom, corps).then(v => { if (v && JSON.stringify(v) !== g.j && location.hash.split('/')[0] === ecran0 && scrollY < 240
+            && $('#fond-feuille').hidden && !document.querySelector('.vd, #pop-fond, .fen-ouverte')) route(); }).catch(() => {});
           return JSON.parse(g.j);
         }
       }
@@ -2868,7 +2899,7 @@ function fabriquerApi(){
       try { return JSON.parse(JSON.stringify(await lectureFraiche(nom, corps))); }
       catch (e) { const g = GARDES.has(nom) && gardeLire(nom + corps); if (g) return JSON.parse(g.j); throw e; }   // serveur occupe : la derniere version
     }
-    if (!SANS_EFFET.has(nom)) MEMO.clear();                    // un geste qui modifie : plus rien de perime
+    if (!SANS_EFFET.has(nom)) { MEMO.clear(); GARDE_SAUTER.oui = true; }   // un geste qui modifie : plus rien de perime (copies gardees comprises)
     return appelServeur(nom, corps);
   }; } });
 }
@@ -3044,6 +3075,8 @@ function anneau(taille, p, cls=''){
     + `<b>${Math.round(v * 100)}<small>%</small></b></span>`;
 }
 const V = () => $('#vue');
+// 3 nov 2026 : pas de zoom a deux doigts (iPhone : l'app et Safari ignorent parfois user-scalable)
+['gesturestart', 'gesturechange'].forEach(t => document.addEventListener(t, (e) => e.preventDefault(), {passive:false}));
 function ouvrirFeuille(html){
   if (S.feuilleRetour) { const f = S.feuilleRetour; S.feuilleRetour = null; try { f(); } catch (e) {} }   // un bloc emprunte a la page y retourne
   const fe = $('#feuille'), deja = !$('#fond-feuille').hidden;

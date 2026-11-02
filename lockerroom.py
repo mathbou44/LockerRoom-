@@ -268,6 +268,33 @@ def _niveau(resume, info):
 LIER = {}          # 28 oct 2026 : jetons a usage unique pour relier eBay depuis l'app iPhone (jeton -> (compte, le))
 
 STUDIO_V = 2
+# 3 nov 2026 (Mathieu : « COSMIC » et « BEAM » affiches comme joueurs) : des mots de sets et d'inserts qui ne sont jamais un nom
+_MOTS_INSERTS = set("""cosmic planetary pursuit sun moon chrome refractor prizm mosaic select optic sapphire update heritage stadium club
+team beam finest bowman draft topps panini donruss contenders certified spectra immaculate national treasures flawless obsidian
+phoenix revolution absolute elite prestige score leaf upper deck series signature signatures autograph autographs auto rookie
+rookies future watch young guns canvas exclusives high gloss clear cut black white borderless splendor allure ice metal universe
+platinum premier artifacts credentials tableau ultimate collection sp authentic spx parkhurst o-pee-chee opc fleer skybox
+galaxy galactic cosmos stars star legends legend inception dynasty archives gallery tribute museum diamond kings""".split())
+
+
+def _nom_majuscules(titre):
+    """Le premier « Prenom Nom » (2-3 mots qui commencent par une majuscule) qui n'est ni un set, ni un insert, ni une equipe."""
+    import cartes_match as _cm
+    if _cm._EQUIPES_MOTS["t"] is None:
+        _cm._EQUIPES_MOTS["t"] = _cm._mots_equipes()
+    exclus = _MOTS_INSERTS | _cm._EQUIPES_MOTS["t"] | set(getattr(_cm, "GENERIQUES", set())) | set(getattr(_cm, "VIDES", set())) | \
+        {"psa", "bgs", "sgc", "cgc", "tag", "rc", "gem", "mint", "nm", "mt", "ssp", "sp", "auto", "patch", "jersey", "lot"}
+    mots = re.findall(r"[A-Za-z][A-Za-z'.\-]*", str(titre or ""))
+    seq = []
+    for m in mots + ["."]:
+        ok = m[:1].isupper() and len(m) > 1 and m.lower().strip(".") not in exclus
+        if ok:
+            seq.append(m)
+            continue
+        if len(seq) >= 2:
+            return " ".join(seq[:3]).lower()
+        seq = []
+    return None
 _RE_RELIQUE = re.compile(r"patch|relic|jersey|memorabilia|swatch|game[- ]used|game[- ]worn|patch-?tacular|materials?\b|threads|fabric", re.I)          # 31 oct 2026 : version du recadrage studio (2 : cartes couchees reconnues, carte centree)
 
 
@@ -5012,7 +5039,9 @@ class Api:
         r = cls._ETIQ.get((titre, joueur))
         if r is None:
             j = cartes_match.joueur_du_titre(titre, joueur)
-            cap = lambda w: re.sub(r"^(Mc|Mac|O')([a-z])", lambda m: m.group(1) + m.group(2).upper(), w.capitalize()) if len(w) > 3 else w.capitalize()
+            if not joueur and j and (set(j.split()) & _MOTS_INSERTS or len(j.split()) < 2):
+                j = _nom_majuscules(titre) or j            # 3 nov 2026 : « COSMIC », « BEAM » : un nom d'insert, pas un joueur
+            cap = lambda w: re.sub(r"^(Mc|O')([a-z])", lambda m: m.group(1) + m.group(2).upper(), w.capitalize()) if len(w) > 3 else w.capitalize()
             nom = " ".join(cap(w) for w in j.split()) if j and len(j) < 40 else None
             reste = titre
             if nom:
