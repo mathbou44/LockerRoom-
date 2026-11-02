@@ -28,6 +28,8 @@ JOURS_AVANT = 28
 PRIX_MIN = 5.0
 N_MIN = 8
 P_MAX = 0.10
+P_FAIBLE = 0.30                 # « a confirmer »
+N_FAIBLE = 6
 K_SHRINK = 8.0
 BORNE_LR = math.log(4)
 
@@ -128,7 +130,7 @@ def par_joueur(cartes, auj=None):
         mes = g["mes"]
         N = sum(m["n_av"] + m["n_re"] for m in mes)
         res = {"joueur": j, "recrue": g["recrue"], "n": g["n"], "n_7j": g["n_7j"], "n_cartes": len(g["cartes"])}
-        if mes and N >= N_MIN:
+        if mes and N >= N_FAIBLE:
             w = [m["n_av"] + m["n_re"] for m in mes]
             lr = sum(m["lr"] * x for m, x in zip(mes, w)) / sum(w)
             lr_s = lr * N / (N + K_SHRINK)
@@ -139,7 +141,7 @@ def par_joueur(cartes, auj=None):
             for i in range(len(pts)):
                 f = [v for _d, v in pts[max(0, i - 4):i + 1]]
                 idx.append([pts[i][0], round(100 * math.exp(statistics.median(f)), 1)])
-            res.update(pct=round(100 * (math.exp(lr_s) - 1)), p=round(p, 3), n_t=N, significatif=p < P_MAX and abs(lr_s) >= math.log(1.05),
+            res.update(pct=round(100 * (math.exp(lr_s) - 1)), p=round(p, 3), n_t=N, significatif=p < P_MAX and N >= N_MIN and abs(lr_s) >= math.log(1.05),
                        points=idx[-40:], recent=round(statistics.median(m["re"] for m in mes), 2),
                        avant=round(statistics.median(m["av"] for m in mes), 2), n_mesurees=len(mes))
         out[j] = res
@@ -149,7 +151,16 @@ def par_joueur(cartes, auj=None):
 def listes(cartes, auj=None, n=12):
     """-> {hausses, baisses, plus_vendues} par joueur."""
     pj = par_joueur(cartes, auj)
+    # 2 nov 2026 (Mathieu : « juste eux comme rising ? ») : d'abord les tendances CONFIRMEES (p < 0,10) ; la liste se complete
+    # avec les tendances « a confirmer » (p < 0,30, au moins 6 ventes, au moins 5 %), marquees comme telles a l'ecran
+    for x in pj.values():
+        x["confirme"] = bool(x.get("significatif"))
+    faibles = [x for x in pj.values() if not x.get("significatif") and x.get("pct") is not None and x.get("p") is not None
+               and x["p"] < P_FAIBLE and (x.get("n_t") or 0) >= N_FAIBLE and abs(x["pct"]) >= 5]
     sig = [x for x in pj.values() if x.get("significatif")]
-    return {"hausses": sorted((x for x in sig if x["pct"] > 0), key=lambda x: (-x["pct"], x["p"]))[:n],
-            "baisses": sorted((x for x in sig if x["pct"] < 0), key=lambda x: (x["pct"], x["p"]))[:n],
+    def liste(signe):
+        a = sorted((x for x in sig if x["pct"] * signe > 0), key=lambda x: (-abs(x["pct"]), x["p"]))
+        b = sorted((x for x in faibles if x["pct"] * signe > 0), key=lambda x: (-abs(x["pct"]), x["p"]))
+        return (a + b)[:n]
+    return {"hausses": liste(1), "baisses": liste(-1),
             "plus_vendues": sorted((x for x in pj.values() if x["n_7j"]), key=lambda x: (-x["n_7j"], -x["n"]))[:n]}

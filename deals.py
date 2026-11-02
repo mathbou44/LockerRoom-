@@ -1062,7 +1062,7 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
                            # 27 oct 2026 : encan - la mise maximale pour que ca reste un deal (70 % de la valeur, port compris)
                            "port": a.get("port_cad"), "mise_max": round(med_a * RATIO_DEAL - (a.get("port_cad") or 0), 2) if a.get("encan") else None,
                            "comps": comps or [], "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION,
-                           "vendeur": a.get("vendeur")}
+                           "vendeur": a.get("vendeur"), "vendeur_score": a.get("vendeur_score")}
 
 
 SUIVIS_MAX = 1000                # 29 oct 2026 : encans de veterans / legendes des vendeurs suivis gardes pour l'ecran
@@ -1135,7 +1135,7 @@ def _noter_suivi(st, a, bassin, maint):
     va = valeur_annonce(a, bassin.candidats(cib) if bassin else [], [], cib=cib)
     st.setdefault("_suivis", {})[str(a["item_id"])] = {
         "item_id": str(a["item_id"]), "titre": a.get("titre"), "total": t, "photo": a.get("photo"), "url": a.get("url"),
-        "encan": True, "fin": f, "mises": a.get("mises"), "port": a.get("port_cad"), "vendeur": a.get("vendeur"),
+        "encan": True, "fin": f, "mises": a.get("mises"), "port": a.get("port_cad"), "vendeur": a.get("vendeur"), "vendeur_score": a.get("vendeur_score"),
         "valeur": va[0] if va else None, "n": va[2] if va else 0, "vendues": va[3] if va else [],
         "mise_max": round(va[0] * RATIO_DEAL - (a.get("port_cad") or 0), 2) if va else None,
         "sport": sport, "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION, "suivi": True, "recrue": rec}
@@ -1501,9 +1501,42 @@ VENDEURS_DEFAUT = ["savage.cards", "remi-card-trader", "cf31_sports_cards", "sla
 VENDEURS_PRIORITE = ["savage.cards", "remi-card-trader", "cf31_sports_cards", "slabsharksinc"]
 
 
+# 2 nov 2026 (Mathieu : « les pages comme Probstein et DC Sports : on les considere en dernier, si on n'a rien trouve
+# d'autre ; on doit favoriser les places honnetes et les petits vendeurs, c'est la que les deals sont ») : les maisons
+# d'encans a tres gros volume (consignation) passent en dernier. Raison : leurs encans finissent pres du prix du marche
+# (beaucoup d'acheteurs), et des accusations d'encheres gonflees ont circule dans le hobby (non prouvees). On ne les
+# montre jamais aux utilisateurs avec une etiquette : elles sont seulement classees apres tout le reste.
+# LR_DEALS_DERNIER (separes par ;) remplace la liste sans toucher au code.
+VENDEURS_DERNIER = ["probstein123", "dcsports87"]
+GROS_VENDEUR = 200_000                   # evaluations eBay : au-dela, une maison d'encans / de consignation
+PETIT_VENDEUR = 5_000                    # en dessous : un petit vendeur (la ou sont les deals)
+
+
+def vendeurs_dernier():
+    e = os.environ.get("LR_DEALS_DERNIER")
+    l = [x.strip() for x in e.split(";")] if e else VENDEURS_DERNIER
+    return {x.lower() for x in l if x}
+
+
+def rang_honnete(x):
+    """0 petit vendeur, 1 moyen ou inconnu, 2 tres gros vendeur, 3 dernier recours (maisons a volume)."""
+    v = str(x.get("vendeur") or "").lower()
+    if v and v in vendeurs_dernier():
+        return 3
+    try:
+        sc = int(x.get("vendeur_score")) if x.get("vendeur_score") not in (None, "") else None
+    except (TypeError, ValueError):
+        sc = None
+    if sc is None:
+        return 1
+    return 0 if sc < PETIT_VENDEUR else 2 if sc >= GROS_VENDEUR else 1
+
+
 def rang_vendeur(v):
-    """0 Savage, 1 Remi, 2 CF31, 3 Slab Sharks, 4 les autres vendeurs suivis, 5 le reste."""
+    """0 Savage, 1 Remi, 2 CF31, 3 Slab Sharks, 4 les autres vendeurs suivis, 5 le reste, 7 les maisons a volume."""
     v = str(v or "").lower()
+    if v in vendeurs_dernier():
+        return 7
     if v in VENDEURS_PRIORITE:
         return VENDEURS_PRIORITE.index(v)
     return 4 if v and v in {x.lower() for x in vendeurs_suivis()} else 5
@@ -1513,7 +1546,8 @@ def groupes_vendeurs(vs=None):
     """Les recherches de vendeurs, dans l'ordre : chaque prioritaire seul, puis les autres par groupes de 5."""
     vs = list(vs if vs is not None else vendeurs_suivis())
     prio = [v for p in VENDEURS_PRIORITE for v in vs if v.lower() == p]
-    autres = [v for v in vs if v.lower() not in VENDEURS_PRIORITE]
+    autres = [v for v in vs if v.lower() not in VENDEURS_PRIORITE and v.lower() not in vendeurs_dernier()] \
+        + [v for v in vs if v.lower() in vendeurs_dernier()]                   # 2 nov 2026 : les maisons a volume en dernier
     return [[v] for v in prio] + [autres[k:k + VENDEURS_PAR_APPEL] for k in range(0, len(autres), VENDEURS_PAR_APPEL)]
 VENDEURS_PAR_APPEL = 5                   # 5 vendeurs par recherche : chaque groupe a ses 10 pages d'encans (2 000)
 VENDEURS_V = 2

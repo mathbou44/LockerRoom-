@@ -348,10 +348,13 @@ details.reglage summary::-webkit-details-marker{display:none}
 .slab-deal .sd-slab{border:1.5px solid transparent; background:linear-gradient(180deg,#2B2A33,#141419) padding-box, var(--holo) border-box}
 .slab-deal .sd-lab{height:auto; flex-direction:column; align-items:stretch; justify-content:flex-start; padding:7px 9px 6px; gap:2px}
 .sd-l2{display:flex; justify-content:space-between; align-items:baseline; gap:6px; margin-top:3px; padding-top:4px; border-top:1px solid rgba(255,255,255,.08)}
-.sd-j{font:700 14.5px/1.1 var(--f-cond); letter-spacing:.03em; text-transform:uppercase; color:#F4F2F8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-.sd-c{font-size:10.5px; line-height:1.2; color:#A9A6B4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.sd-j{font:700 17px/1.1 var(--f-cond); letter-spacing:.03em; text-transform:uppercase; color:#F4F2F8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.sd-c{font-size:13px; line-height:1.25; color:#C9C6D2; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+/* 2 nov 2026 (Mathieu : « toute l'info d'une carte dans son slab ; eviter les mini ecritures ») : valeur et gain dans l'etiquette */
+.sd-l3, .sd-l4{display:flex; justify-content:space-between; align-items:baseline; gap:6px; font-size:13.5px; color:#C9C6D2}
+.sd-l3 b{color:#F4F2F8; font-weight:700} .sd-l3 .sd-g{font:700 17px/1 var(--f-cond); color:var(--vert)} .sd-l4 b{color:#F4F2F8}
 .sd-j .sd-fav{font-style:normal; color:var(--or)}
-.sd-l2 .sd-rab{font:700 19px/1 var(--f-cond)} .sd-pr{font:700 17px/1 var(--f-cond); color:#F4F2F8}
+.sd-l2 .sd-rab{font:700 22px/1 var(--f-cond)} .sd-pr{font:700 22px/1 var(--f-cond); color:#F4F2F8}
 .sd-ph .sd-fin{position:absolute; left:6px; bottom:6px; z-index:2; padding:3px 7px; border-radius:99px; background:rgba(10,10,14,.86); color:#F4F2F8; font:600 12px/1.2 var(--f-cond); letter-spacing:.04em; display:inline-flex; align-items:center}
 .sd-bas small .g{color:var(--vert); font-weight:700}
 .d-nv{position:sticky; top:calc(env(safe-area-inset-top, 0px) + 74px); z-index:30; display:block; margin:0 auto 10px; padding:9px 16px; border-radius:99px; border:0;
@@ -2306,6 +2309,17 @@ button.an-attente{width:100%; text-align:left; color:var(--texte); cursor:pointe
 .so-ch .rangee{display:flex; align-items:center; gap:12px; cursor:pointer} .so-ch input{width:20px; height:20px; accent-color:var(--acc); flex:0 0 auto}
 .so-bas{position:sticky; bottom:0; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 10px 10px 16px; border-radius:18px; background:var(--fond-feuille, var(--carte))} .so-bas span{flex:1 1 auto; min-width:0; font-size:14px} .so-bas .btn{flex:0 0 auto; width:auto; margin:0; padding-inline:28px}
 .so-fil{margin:0 0 14px} .so-fil li{cursor:pointer}
+.vd-tete{display:flex; align-items:center; gap:14px; margin-top:4px} .vd-tete .et-anneau{width:68px; height:68px; flex:0 0 68px} .vd-tete .et-anneau b{font-size:22px}
+.vd-tete > span:last-child{display:flex; flex-direction:column; gap:2px} .vd-tete b{font-size:18px} .vd-tete small{color:var(--doux); font-size:13px}
+.vd-sous{display:grid; grid-template-columns:1fr 1fr; gap:10px} .vd-s{display:flex; gap:10px; align-items:center; padding:10px; border-radius:16px; background:var(--carte)}
+.vd-sn{width:40px; height:40px; flex:0 0 40px; border-radius:12px; display:grid; place-items:center; background:var(--carte2); box-shadow:inset 0 0 0 1px var(--ligne)}
+.vd-sn b{font:700 19px var(--f-cond)} .vd-sn.vert{background:var(--vert-fond); box-shadow:inset 0 0 0 1px rgba(143,212,164,.45)} .vd-sn.vert b{color:var(--vert)}
+.vd-sn.or{background:var(--or-fonce); box-shadow:inset 0 0 0 1px var(--or-ligne)} .vd-sn.or b{color:var(--or)} .vd-sn.rouge{background:var(--rouge-fond); box-shadow:inset 0 0 0 1px rgba(255,179,179,.4)} .vd-sn.rouge b{color:var(--rouge)} .vd-s > span:last-child{display:flex; flex-direction:column; gap:2px; min-width:0} .vd-s b{font-size:14px}
+.vd-s small{font-size:12px; color:var(--doux); line-height:1.3} .vd-pied{text-align:center}
+.vd-tog i{width:10px; height:10px; border-radius:50%; border:1.5px solid currentColor; margin-right:6px; display:inline-block} .vd-tog.on i{background:var(--vert); border-color:var(--vert)}
+.vd-z{stroke-width:2.2; vector-effect:non-scaling-stroke; filter:drop-shadow(0 0 1px rgba(0,0,0,.9))}
+.vd-z.z10{stroke:#5FD08A} .vd-z.z9{stroke:#E9CF8E} .vd-z.z8{stroke:#F0A05A} .vd-z.z7{stroke:#FF7A7A}
+.vd-rat b em{font-style:normal; font-weight:500; color:var(--doux)}
 .cg-bandes{position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:1}
 .cg-bandes line{stroke-width:1.6; vector-effect:non-scaling-stroke; stroke-dasharray:5 4; filter:drop-shadow(0 0 1px rgba(0,0,0,.9))}
 .cg-bandes .z10{stroke:#5FD08A} .cg-bandes .z9{stroke:#E9CF8E} .cg-bandes .z8{stroke:#F0A05A} .cg-bandes .z7{stroke:#FF7A7A}
@@ -2416,7 +2430,7 @@ body.pop-ouverte{overflow:hidden}
 .vd-calque{position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible}
 .vd-cont{fill:none; stroke:rgba(255,255,255,.85); stroke-width:1.5; vector-effect:non-scaling-stroke; stroke-dasharray:6 4}
 .vd-lg{stroke:var(--acc); stroke-width:2; vector-effect:non-scaling-stroke; filter:drop-shadow(0 0 1px rgba(0,0,0,.8))}
-.vd-rat{position:absolute; left:8px; top:8px; display:flex; flex-wrap:wrap; gap:4px; z-index:2; pointer-events:none}
+.vd-rat{display:flex; flex-wrap:wrap; justify-content:center; gap:4px}
 .vd-rat b{padding:3px 8px; border-radius:99px; background:rgba(11,11,14,.78); color:var(--texte); font:700 12px/1.2 var(--f-cond); letter-spacing:.04em}
 .vd-rat b.vert{color:var(--vert)} .vd-rat b.or{color:var(--or)} .vd-rat b.rouge{color:var(--rouge)}
 .vd-poi{position:absolute; width:34px; height:34px; margin:-17px 0 0 -17px; border-radius:50%; background:rgba(185,190,255,.25); border:2px solid var(--acc); box-shadow:0 0 0 2px rgba(0,0,0,.5); z-index:3; touch-action:none; cursor:grab}
@@ -5717,10 +5731,12 @@ function tuileDeal(x){
   return `<div class="tuile-deal slab-deal ${x.pres ? 'pres' : ''} ${sansV ? 'suivi' : ''}" data-id="${esc(x.item_id)}" ${attrsAnnonce(x)} role="button" tabindex="0">
     <div class="sd-slab"><div class="sd-lab">
         <b class="sd-j">${x.favori ? '<i class="sd-fav">★</i> ' : ''}${esc(nom)}</b>${carte ? `<small class="sd-c">${esc(carte)}</small>` : ''}
-        <span class="sd-l2"><b class="sd-rab">${sansV ? tt('Encan', 'Auction') : '−' + x.rabais + ' %'}</b><b class="sd-pr">${argent(x.total, 0)}</b></span></div>
+        <span class="sd-l2"><b class="sd-rab">${sansV ? tt('Encan', 'Auction') : '−' + x.rabais + ' %'}</b><b class="sd-pr">${argent(x.total, 0)}</b></span>
+        ${x.valeur || x.ramassage || (S.dealsF && S.dealsF.objectif === 'collection' && x.desir != null) ? `<span class="sd-l3">${x.valeur ? `<span>${tt('Vaut', 'Worth')} <b>${argentCourt(x.valeur)}</b></span>${x.gain > 0 ? `<b class="sd-g">+${argentCourt(x.gain)}</b>` : ''}` : `<span>${tt('Valeur à vérifier', 'Value to check')}</span>`}</span>` : ''}
+        ${x.ramassage || (S.dealsF && S.dealsF.objectif === 'collection' && x.desir != null) ? `<span class="sd-l4">${S.dealsF && S.dealsF.objectif === 'collection' && x.desir != null ? `<span>${tt('Rareté', 'Rarity')} <b>${x.desir}</b></span>` : ''}${x.ramassage ? `<span class="sd-ram">${icPin()}${tt('Ramassage', 'Pickup')}</span>` : ''}</span>` : ''}</div>
       <div class="sd-ph">${SVG_CARTE}${x.photo ? `<img src="${esc(photoNet(x.photo, 400))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}${boutonWatch(x)}
         ${encan ? `<span class="sd-fin">${icH()}${finDans(x.fin)}</span>` : ''}</div></div>
-    <div class="sd-bas"><small>${S.dealsF && S.dealsF.objectif === 'collection' && x.desir != null ? `<span class="sd-des" title="${esc((x.desir_raisons || []).join(' · '))}">${tt('Rareté', 'Rarity')} ${x.desir}</span> · ` : ''}${x.valeur ? `${tt('vaut', 'worth')} ${argentCourt(x.valeur)}${x.gain > 0 ? ` · <b class="g">+${argentCourt(x.gain)}</b>` : ''}` : tt('Valeur à vérifier', 'Value to check')}${x.ramassage ? ` · <span class="sd-ram">${icPin()}${tt('ramassage', 'pickup')}</span>` : ''}</small></div></div>`;
+    </div>`;
 }
 // 26 oct 2026 (Mathieu : « encore pas un deal ... une option : l'annonce disparaît et ça nous laisse savoir quoi
 // modifier ») : un tap, une raison (facultative) ; l'annonce part, l'admin reçoit tout le calcul, l'agent l'analyse.
@@ -6414,7 +6430,7 @@ function majTuilePrix(id, d){
     if (x.encan && !x.mise_perso) x.mise_max = Math.round((x.valeur * 0.70 - (x.port || 0)) * 100) / 100; }
   $$(`.tuile-deal[data-id="${CSS.escape(String(id))}"]`).forEach(t => {
     if (d.deal_retire) { t.classList.add('sort'); setTimeout(() => t.remove(), 300); return; }
-    const pr = t.querySelector('.sd-pr'), rb = t.querySelector('.sd-rab'), g = t.querySelector('.sd-bas .g');
+    const pr = t.querySelector('.sd-pr'), rb = t.querySelector('.sd-rab'), g = t.querySelector('.sd-g');
     if (pr) pr.textContent = argent(x.total, 0);
     if (rb && x.valeur && x.rabais != null) rb.textContent = '−' + x.rabais + ' %';
     if (g) { if (x.gain > 0) g.textContent = '+' + argentCourt(x.gain); else g.remove(); }
@@ -7886,7 +7902,7 @@ function expliquerTendances(){
     [tt('Chaque carte contre elle-même', 'Each card against itself'), tt('Une carte est comparée seulement à la même carte (même set, même parallèle, raw ou gradée). C’est la méthode des « ventes répétées » des indices de prix : un joueur ne monte pas juste parce qu’une carte chère s’est vendue.', 'A card is only compared with the same card (same set, same parallel, raw or graded). It’s the “repeat sales” method used by price indexes: a player doesn’t rise just because one expensive card sold.')],
     [tt('14 jours contre les 4 semaines d’avant', '14 days vs the 4 weeks before'), tt('Le prix du milieu (la médiane) de chaque période : une vente bizarre ne fait rien bouger.', 'The middle price (median) of each period: one odd sale doesn’t move anything.')],
     [tt('Le joueur', 'The player'), tt('La moyenne de ses cartes ; une carte vendue souvent compte plus qu’une carte vendue 2 fois.', 'The average of his cards; a card that sells often counts more than one that sold twice.')],
-    [tt('Prudent avec peu de ventes', 'Careful with few sales'), tt('Avec peu de ventes, la variation est ramenée vers 0. Un test statistique (Mann-Whitney) garde seulement les vraies hausses et baisses, au moins 8 ventes, des cartes de 5 $ et plus.', 'With few sales, the change is pulled toward 0. A statistical test (Mann-Whitney) keeps only real rises and drops, at least 8 sales, cards of $5 and up.')],
+    [tt('Prudent avec peu de ventes', 'Careful with few sales'), tt('Avec peu de ventes, la variation est ramenée vers 0. Un test statistique (Mann-Whitney) sépare les vraies hausses et baisses (au moins 8 ventes, moins de 10 % de chances que ce soit le hasard) de celles « à confirmer » (moins de 30 %). Cartes de 5 $ et plus.', 'With few sales, the change is pulled toward 0. A statistical test (Mann-Whitney) separates real rises and drops (at least 8 sales, under 10% chance it’s random) from those “to confirm” (under 30%). Cards of $5 and up.')],
     [tt('Plus vendues', 'Most sold'), tt('Le nombre de ventes des 7 derniers jours, toutes ses cartes : ce que les acheteurs veulent.', 'Number of sales over the last 7 days, all his cards: what buyers want.')]];
   ouvrirFeuille(`<h3>${tt('Comment on mesure les tendances', 'How we measure trends')}</h3>
     <ol class="td-meth">${l.map(([t, x], i) => `<li><i>${i + 1}</i><span><b>${t}</b>${x}</span></li>`).join('')}</ol>
@@ -7914,7 +7930,7 @@ async function vueTendances(){
     <span class="milieu"><span class="nom">${esc(x.joueur)}${x.recrue ? ' ' + tag('RC', 'acc') : ''}</span><span class="det">${J ? (x.n_cartes ? x.n_cartes + ' ' + tt(x.n_cartes > 1 ? 'cartes' : 'carte', x.n_cartes > 1 ? 'cards' : 'card') : '') + (actif !== 'plus_vendues' && x.n_t ? ' · ' + x.n_t + ' ' + tt('ventes', 'sales') : '') : esc(typeCourt(x))}</span></span>
     ${mini(x.points, actif === 'baisses' ? 'rouge' : actif === 'hausses' ? 'vert' : '')}
     <span class="droite">${actif === 'plus_vendues' ? (J ? `<b class="t-prix">${x.n_7j}</b><span class="sous">${tt('ventes · 7 j', 'sales · 7 d')}</span>` : `<b class="t-prix">${argentCourt(x.mediane)}</b><span class="sous">${x.n_7j || x.n} ${tt('ventes', 'sales')}</span>`)
-      : `<b class="td-pct ${x.pct > 0 ? 'vert' : 'rouge'}">${x.pct > 0 ? '+' : ''}${x.pct} %</b><span class="sous">${J ? tt('14 j vs avant', '14 d vs before') : argentCourt(x.recent)}</span>`}</span></a>`;
+      : `<b class="td-pct ${x.pct > 0 ? 'vert' : 'rouge'}">${x.pct > 0 ? '+' : ''}${x.pct} %</b><span class="sous">${J ? (x.confirme === false ? tt('à confirmer', 'to confirm') : tt('14 j vs avant', '14 d vs before')) : argentCourt(x.recent)}</span>`}</span></a>`;
   const peindre = () => {
     const l = unParJoueur(r[actif] || []).slice(0, 12);
     z.innerHTML = `<div class="sous td-sous">${tt('Mesuré sur les ventes eBay réelles. Un indice, pas une prédiction.', 'Measured on real eBay sales. A hint, not a prediction.')}</div>
@@ -8798,7 +8814,7 @@ function baremePSA(){
     <div class="sous">${tt('PSA accorde environ 5 % de marge au centrage du devant jusqu’au 7 quand la carte est belle. Une estimation sur photo, pas une note PSA.', 'PSA allows about 5% leeway on front centering down to 7 when eye appeal is strong. A photo estimate, not a PSA grade.')}</div></div>`, popFermer);
   $('#bar-x').onclick = popFermer;
 }
-function voirDefauts(e, k, apres){
+function voirDefauts(e, k, apres, relancer){
   const def = (e.defauts || []).slice(0, 8), refs = (e.photos || []).slice(0, 2);
   if (!refs.length) return;
   const FACES = ['devant', 'dos'];
@@ -8846,15 +8862,27 @@ function voirDefauts(e, k, apres){
       if (!v && !deja) toast(tt('Merci : noté comme « pas un défaut »', 'Thanks: marked as “not a flaw”'), 2200); });
   };
   const peindre = () => {
+    // 2 nov 2026 (Mathieu : « cet affichage doit etre le SEUL qui explique les notes ; le calque de l'etude de centrage dans
+    // cette vue, on / off ») : en haut la note et les 4 sous-notes avec leur raison ; les photos avec les numeros et le calque
+    const n_ = e.notes || {}, fr_ = (v) => v == null ? '—' : String(v).replace('.', ','), ex_ = e.explications || {};
+    const four = e.note_min != null ? (e.note_max != null && e.note_max !== e.note_min ? fr_(e.note_min) + '–' + fr_(e.note_max) : fr_(e.note_min)) : '—';
+    const clg = (e.note_min || 0) >= 9 ? 'vert' : (e.note_min || 0) >= 7 ? 'or' : 'rouge', cln = (v) => v == null ? '' : v >= 9 ? 'vert' : v >= 7 ? 'or' : 'rouge';
+    const CATS_ = [['centrage', tt('Centrage', 'Centering')], ['coins', tt('Coins', 'Corners')], ['bords', tt('Bords', 'Edges')], ['surface', tt('Surface', 'Surface')]];
     o.innerHTML = `<button class="vd-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
+      <div class="vd-tete"><span class="fc-al-ic et-anneau ${clg}"><b>${four}</b></span><span><b>${tt('État estimé', 'Estimated condition')} <small>/10</small></b>
+        <small>${tt('Barème PSA, le même pour toutes les cartes', 'PSA scale, the same for every card')}</small></span></div>
+      <div class="vd-sous">${CATS_.map(([k_, l_]) => `<div class="vd-s"><span class="vd-sn ${cln(n_[k_])}"><b>${fr_(n_[k_])}</b></span><span><b>${l_}</b><small>${esc(ex_[k_] || (n_[k_] == null ? tt('pas jugeable sur ces photos', 'not judgeable on these photos') : n_[k_] >= 10 ? tt('rien à signaler', 'nothing to report') : ''))}</small></span></div>`).join('')}</div>
       ${refs.map((u, j) => `<div class="vd-ph" data-j="${j}"><div class="vd-cad"><div class="vd-sc"><img src="${esc(photoNet(u, 1600))}" alt="">
-          <svg class="vd-calque" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true"></svg></div><span class="vd-rat"></span></div>
+          <svg class="vd-calque" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true"></svg></div></div><span class="vd-rat"></span>
         <div class="vd-outils">${edite === j ? `<span class="sous">${tt('Glisse les 4 coins sur les coins de la carte', 'Drag the 4 handles onto the card’s corners')}</span>
             <button class="pilule" data-ann="${j}">${tt('Annuler', 'Cancel')}</button><button class="btn petit" data-ok="${j}">${tt('Enregistrer', 'Save')}</button>`
-          : `<button class="chip ${calque ? 'on' : ''}" data-calque>${tt('Grille', 'Grid')}</button>
-            ${e.cid && (e.centrage_vue || {})[FACES[j]] ? `<button class="chip" data-cent="${j}">${tt('Ajuster le centrage', 'Fix the centering')}</button>` : ''}`}</div></div>`).join('')}
+          : `<button class="chip vd-tog ${calque ? 'on' : ''}" data-calque><i></i>${tt('Étude du centrage', 'Centering study')}</button>`}</div>
+        ${calque ? `<div class="cg-leg">${(j ? [[75, 10, 'z10'], [90, 9, 'z9']] : [[60, 10, 'z10'], [65, 9, 'z9'], [70, 8, 'z8'], [75, 7, 'z7']]).map(([lim, nn, cl]) => `<span class="${cl}"><i></i>PSA ${nn} ≤ ${lim}/${100 - lim}</span>`).join('')}</div>` : ''}</div>`).join('')}
       <div class="sous vd-q">${def.some(d => !d.masque) ? tt('Touche un numéro : le défaut, le critère PSA, et ton avis (ça rend l’analyseur plus précis pour tout le monde).', 'Tap a number: the flaw, the PSA criterion, and your opinion (it makes the analyzer more accurate for everyone).') : tt('Aucun défaut repéré sur les photos.', 'No flaw found on the photos.')}</div>
-      <button class="lien-t vd-bar" data-bareme>${tt('Le barème utilisé : normes officielles PSA ›', 'The scale used: official PSA standards ›')}</button>`;
+      ${e.conseil ? `<div class="et-c">${esc(e.conseil)}</div>` : ''}
+      ${(e.invisible || []).length ? `<div class="sous">${tt('Pas vérifiable sur ces photos : ', 'Not checkable on these photos: ')}${esc(e.invisible.join(' · '))}</div>` : ''}
+      <button class="lien-t vd-bar" data-bareme>${tt('Le barème utilisé : normes officielles PSA ›', 'The scale used: official PSA standards ›')}</button>
+      <div class="sous vd-pied">${tt('Estimation sur photo, pas une gradation.', 'Photo estimate, not a grade.')}${relancer ? ` <button class="lien" data-relancer>${tt('Refaire l’examen', 'Check again')}</button>` : ''}</div>`;
     o.querySelector('.vd-x').onclick = () => o.remove();
     refs.forEach((u, j) => {
       const w = o.querySelector(`.vd-ph[data-j="${j}"]`), im = w.querySelector('img');
@@ -8865,7 +8893,8 @@ function voirDefauts(e, k, apres){
       };
       if (im.complete && im.naturalWidth) go(); else im.addEventListener('load', go, {once: true});
     });
-    const bc = o.querySelector('[data-calque]'); if (bc) bc.onclick = () => { calque = !calque; try { localStorage.setItem('lr_vd_calque', calque ? '1' : '0'); } catch (x) {} vibrer(); peindre(); };
+    $$('[data-calque]', o).forEach(bc => bc.onclick = () => { calque = !calque; try { localStorage.setItem('lr_vd_calque', calque ? '1' : '0'); } catch (x) {} vibrer(); peindre(); });
+    const rl = o.querySelector('[data-relancer]'); if (rl) rl.onclick = () => { o.remove(); relancer(); };
     $$('[data-ed]', o).forEach(b => b.onclick = () => { const j = +b.dataset.ed; if (!Q[j]) Q[j] = [[100, 100], [900, 100], [900, 900], [100, 900]]; Q['av' + j] = Q[j].map(p => p.slice()); edite = j; vibrer(); peindre(); });
     $$('[data-ann]', o).forEach(b => b.onclick = () => { const j = +b.dataset.ann; Q[j] = Q['av' + j]; edite = -1; peindre(); });
     $$('[data-ok]', o).forEach(b => b.onclick = async () => { const j = +b.dataset.ok; b.disabled = true;
@@ -8895,14 +8924,25 @@ function voirDefauts(e, k, apres){
     let h = '';
     if (q && (calque || edite === j)) {
       h += `<polygon class="vd-cont" points="${q.map(p => p.join(',')).join(' ')}"/>`;
-      if (aLignes && edite !== j) for (const [a, b] of [...(aX ? [[[v.l, 0], [v.l, 1]], [[1 - v.r, 0], [1 - v.r, 1]]] : []), ...(aY ? [[[0, v.t], [1, v.t]], [[0, 1 - v.b], [1, 1 - v.b]]] : [])]) {
-        const p = bil(q, a[0], a[1]), p2 = bil(q, b[0], b[1]); h += `<line class="vd-lg" x1="${p[0]}" y1="${p[1]}" x2="${p2[0]}" y2="${p2[1]}"/>`; }
+      const seg = (u1, v1, u2, v2, cl) => { const p = bil(q, u1, v1), p2 = bil(q, u2, v2); return `<line class="${cl}" x1="${p[0]}" y1="${p[1]}" x2="${p2[0]}" y2="${p2[1]}"/>`; };
+      // les limites PSA (comme l'outil transparent) : la ligne du repere doit tomber dans la zone verte pour un 10, etc.
+      if (aLignes && edite !== j) {
+        const Z = face === 'dos' ? [[90, 'z9'], [75, 'z10']] : [[75, 'z7'], [70, 'z8'], [65, 'z9'], [60, 'z10']];
+        const T = (v.l || 0) + (v.r || 0), Ty = (v.t || 0) + (v.b || 0);
+        for (const [lim, cl] of Z) { const pp = lim / 100;
+          // une petite regle au milieu de chaque cote (comme l'outil transparent) : la ligne du repere doit tomber dans le vert
+          if (aX) for (const u of [T * (1 - pp), T * pp, 1 - T * pp, 1 - T * (1 - pp)]) h += seg(u, 0.40, u, 0.60, 'vd-z ' + cl);
+          if (aY) for (const vv of [Ty * (1 - pp), Ty * pp, 1 - Ty * pp, 1 - Ty * (1 - pp)]) h += seg(0.40, vv, 0.60, vv, 'vd-z ' + cl); }
+        if (aX) h += seg(v.l, 0, v.l, 1, 'vd-lg') + seg(1 - v.r, 0, 1 - v.r, 1, 'vd-lg');
+        if (aY) h += seg(0, v.t, 1, v.t, 'vd-lg') + seg(0, 1 - v.b, 1, 1 - v.b, 'vd-lg');
+      }
     }
     svg.innerHTML = h;
     if (calque && aLignes && edite !== j) { const tol = TOL(face), note = (g) => (tol.find(([lim]) => g <= lim) || [0, face === 'dos' ? 8 : 3])[1];
       const x = aX ? rat(v.l, v.r) : null, y = aY ? rat(v.t, v.b) : null, n = Math.min(x ? note(x[0]) : 10, y ? note(y[0]) : 10);
-      lab.innerHTML = `${x ? `<b>${tt('G/D', 'L/R')} ${x[0]}/${x[1]}</b>` : ''}${y ? `<b>${tt('H/B', 'T/B')} ${y[0]}/${y[1]}</b>` : `<b>${tt('H/B : à ajuster', 'T/B: to adjust')}</b>`}<b class="${n >= 10 ? 'vert' : n >= 9 ? 'or' : 'rouge'}">PSA ${n} max</b>`; lab.hidden = false; }
-    else if (calque && q && edite !== j) { lab.innerHTML = `<b>${tt('Contour de la carte', 'Card outline')}</b>${e.cid ? `<b>${tt('Cadre imprimé pas trouvé : « Ajuster le centrage »', 'Printed frame not found: “Fix the centering”')}</b>` : ''}`; lab.hidden = false; }
+      const nom = (ax) => v['repere_' + ax] ? ` <em>· ${esc(v['repere_' + ax])}${v['source_' + ax] === 'ia' ? ' (IA)' : ''}</em>` : '';
+      lab.innerHTML = `${x ? `<b>${tt('G/D', 'L/R')} ${x[0]}/${x[1]}${nom('gd')}</b>` : `<b>${tt('G/D : aucun repère symétrique', 'L/R: no symmetric reference')}</b>`}${y ? `<b>${tt('H/B', 'T/B')} ${y[0]}/${y[1]}${nom('hb')}</b>` : `<b>${tt('H/B : aucun repère symétrique', 'T/B: no symmetric reference')}</b>`}<b class="${n >= 10 ? 'vert' : n >= 9 ? 'or' : 'rouge'}">PSA ${n} max</b>`; lab.hidden = false; }
+    else if (calque && q && edite !== j) { lab.innerHTML = `<b>${tt('Contour de la carte', 'Card outline')}</b><b>${tt('Aucun repère symétrique trouvé : refais l’examen', 'No symmetric reference found: check again')}</b>`; lab.hidden = false; }
     else lab.hidden = true;
     $$('.fc-pt, .vd-poi', sc).forEach(x => x.remove());
     if (edite === j && q) q.forEach((p, c) => {
@@ -8954,7 +8994,7 @@ async function blocEtat(c, forcer){
     const rien = !def.some(d => !d.masque) && !pourquoi.length;
     // 1er nov 2026 (Mathieu : « plus sexy, nos pastilles rondes ; on doit pouvoir retrecir la fenetre ») : une pastille ronde
     // (la note dans l'anneau) qui s'ouvre et se referme ; le choix est garde
-    let ouvert = false; try { ouvert = localStorage.getItem('lr_etat_ouvert') === '1'; } catch (x) {}
+    const ouvert = false;
     const nbv = def.filter(d => !d.masque).length, resume = [nbv ? nbv + ' ' + tt(nbv > 1 ? 'points à vérifier' : 'point à vérifier', nbv > 1 ? 'points to check' : 'point to check') : tt('aucun défaut visible', 'no visible flaw'),
       cent ? tt('centrage ', 'centering ') + cent.split(' · ')[0] : ''].filter(Boolean).join(' · ');
     z.innerHTML = `<div class="et ${ouvert ? 'ouvert' : ''}">
@@ -8972,13 +9012,13 @@ async function blocEtat(c, forcer){
       ${e.centrage_mesure ? `<div class="et-tag">${tt('Centrage mesuré par l’app', 'Centering measured by the app')}${e.zooms ? ' · ' + tt('coins et bords vus en zoom', 'corners and edges zoomed') : ''}</div>` : e.zooms ? `<div class="et-tag">${tt('Coins et bords vus en zoom', 'Corners and edges zoomed')}</div>` : ''}
       ${e.precision ? `<div class="et-tag">${tt(`Notre précision : ${e.precision.pct} % dans la fourchette, sur ${e.precision.n} cartes revenues du gradage`, `Our accuracy: ${e.precision.pct}% within range, on ${e.precision.n} cards back from grading`)}</div>` : ''}
       <div class="et-p">${(e.invisible || [])[0] ? tt('Pas vérifiable : ', 'Not checkable: ') + esc(e.invisible[0]) + ' · ' : ''}${tt('Estimation sur photo, pas une gradation.', 'Photo estimate, not a grade.')} <button class="lien" id="fc-et-re">${tt('Refaire', 'Redo')}</button></div></div></div>`;
-    $('#fc-et-t').onclick = () => { vibrer(); const bx = z.querySelector('.et'), o = !bx.classList.contains('ouvert'); bx.classList.toggle('ouvert', o);
-      $('#fc-et-t').setAttribute('aria-expanded', o); try { localStorage.setItem('lr_etat_ouvert', o ? '1' : '0'); } catch (x) {} };
+    // 2 nov 2026 (Mathieu : « un seul affichage explique les notes ») : la pastille ouvre l'analyse (photos, numeros, centrage)
+    $('#fc-et-t').onclick = () => { vibrer(); voirDefauts(e, null, peindre, lancer); };
     const re_ = $('#fc-et-re'); if (re_) re_.onclick = () => { vibrer(); lancer(); };
     e.cid = c.id;
     const vc = $('#fc-et-cent'); if (vc) vc.onclick = () => { vibrer(); voirCentrage(e, c.id, peindre); };
-    const vo = $('#fc-et-voir'); if (vo) vo.onclick = () => { vibrer(); voirDefauts(e, null, peindre); };
-    $$('#fc-etat [data-d]').forEach(li => li.onclick = () => { vibrer(); voirDefauts(e, +li.dataset.d, peindre); });
+    const vo = $('#fc-et-voir'); if (vo) vo.onclick = () => { vibrer(); voirDefauts(e, null, peindre, lancer); };
+    $$('#fc-etat [data-d]').forEach(li => li.onclick = () => { vibrer(); voirDefauts(e, +li.dataset.d, peindre, lancer); });
   };
   const r = await API.carte_etat(c.id, null).catch(() => null);         // ce qui est garde, sans nouvelle analyse
   const q = (r && r.quota) || {};

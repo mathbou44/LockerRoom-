@@ -491,6 +491,14 @@ OUTIL_ETAT = {
                                   "x": {"type": "integer", "description": "Position dans la PHOTO ENTIERE de sa face, 0 a 1000 (vers la droite)"},
                                   "y": {"type": "integer", "description": "Position dans la PHOTO ENTIERE, 0 a 1000 (vers le bas)"}},
                                   "required": ["photo", "type", "visibilite", "certitude", "x", "y"]}},
+            "centrage_reperes": {"type": "array", "description": "Pour chaque face et chaque axe : le repere imprime qui sert a mesurer le centrage, lu sur la REGLE 0-1000 de l'image redressee.",
+                                 "items": {"type": "object", "properties": {
+                                     "photo": {"type": "integer", "description": "0 = devant, 1 = dos"},
+                                     "axe": {"type": "string", "enum": ["gd", "hb"], "description": "gd = gauche/droite (regle du haut) ; hb = haut/bas (regle de gauche)"},
+                                     "element": {"type": "string", "description": "Le repere, 5 mots max (ex. « bordure imprimee », « bord des fenetres de patch », « cadre dore »)"},
+                                     "debut": {"type": "integer", "description": "Position du repere du cote gauche (ou haut) sur la regle, 0 a 1000"},
+                                     "fin": {"type": "integer", "description": "Position du MEME repere du cote droit (ou bas) sur la regle, 0 a 1000"}},
+                                     "required": ["photo", "axe", "element", "debut", "fin"]}},
             "surface_jugeable": {"type": "boolean", "description": "false si un reflet, un etui ou la resolution empeche de juger la surface"},
             "invisible": {"type": "array", "items": {"type": "string"},
                           "description": "Ce que ces photos ne permettent PAS de verifier, en francais simple (12 mots max chacun)."},
@@ -518,8 +526,11 @@ METHODE (dans cet ordre, sans sauter d'etape) :
    encoche (petit creux dans l'arete) ; ebrechures (eclats de couleur) ; usure (usure nette, entaille).
 3. La surface du carton imprime : rayures, lignes d'impression, taches, empreintes, perte de lustre, bosses, plis. Note la
    visibilite : rasante (seulement en lumiere rasante ou au zoom), de_pres, visible. Rien a signaler : liste vide.
-4. Le centrage : si l'app donne un CENTRAGE MESURE, n'en parle pas (laisse les champs vides). Sinon estime-le d'apres les
-   bordures imprimees ; carte sans bordure : vide et « non mesurable » dans invisible.
+4. Le centrage, dans l'image REDRESSEE avec la REGLE 0-1000 : pour chaque face et chaque axe, choisis UN repere imprime qui
+   existe des deux cotes et qui est symetrique par conception : la bordure imprimee d'abord ; sans bordure, le cadre interieur,
+   le bord des fenetres de patch, un bloc de texte aligne des deux cotes. Donne sa position a gauche (debut) et a droite (fin)
+   sur la regle du haut (axe gd), puis en haut et en bas sur la regle de gauche (axe hb). Lis la regle avec soin (a 5 pres).
+   Un axe sans repere symetrique (titre en haut, texte en bas) : ne le donne pas. Laisse centrage_gd / centrage_hb vides.
 
 REGLES :
 - N'invente rien. Un reflet, une poussiere sur l'etui, un grain de photo ne sont pas des defauts : si tu ne peux pas trancher,
@@ -651,6 +662,31 @@ def _noter_observations(f, centrage=None, calibration=None, quads=None):
         nc = float(centrage["note"])
     else:
         nc = examen.note_centrage({"gd": cg, "hb": ch} if (cg or ch) else None, {"gd": cd} if cd else None)
+    # 2 nov 2026 : les reperes nommes par l'IA (lus sur la regle de l'image redressee) completent ce que l'app n'a pas mesure
+    rep_ = []
+    for o in f.get("centrage_reperes") or []:
+        try:
+            ph, ax, a_, b_ = (1 if o.get("photo") == 1 else 0), o.get("axe"), int(o.get("debut")), int(o.get("fin"))
+        except (TypeError, ValueError, AttributeError):
+            continue
+        g1, g2 = a_, 1000 - b_
+        if ax not in ("gd", "hb") or not (0 < g1 <= 320 and 0 < g2 <= 320):
+            continue
+        rep_.append({"photo": ph, "axe": ax, "element": str(o.get("element") or "").strip()[:40], "debut": a_, "fin": b_,
+                     "ratio": examen._ratio(g1, g2)})
+    cent2 = {fc: dict((centrage or {}).get(fc) or {}) for fc in ("devant", "dos")}
+    ajoute = False
+    for r_ in rep_:
+        fc = "devant" if r_["photo"] == 0 else "dos"
+        if not cent2[fc].get(r_["axe"]):
+            cent2[fc][r_["axe"]] = r_["ratio"]
+            r_["utilise"] = True
+            ajoute = True
+    if ajoute:
+        nc = examen.note_centrage(cent2["devant"] if (cent2["devant"].get("gd") or cent2["devant"].get("hb")) else None,
+                                  cent2["dos"] if (cent2["dos"].get("gd") or cent2["dos"].get("hb")) else None)
+        cg, ch = cent2["devant"].get("gd") or cg, cent2["devant"].get("hb") or ch
+        cd = cent2["dos"].get("gd") or cent2["dos"].get("hb") or cd
     hi["centrage"] = lo["centrage"] = float(nc) if nc is not None else None
     g_hi, g_lo = _bar.globale(hi), _bar.globale(lo)
     if g_hi is None:
@@ -711,7 +747,7 @@ def _noter_observations(f, centrage=None, calibration=None, quads=None):
             "centrage_mesure": mesure, "notes": notes, "notes_bas": {k: lo[k] for k in ("coins", "bords", "surface")},
             "note_min": g_lo, "note_max": g_hi, "defauts": defauts, "explications": explications,
             "invisible": [str(x).strip()[:160] for x in (f.get("invisible") or [])][:4], "conseil": str(f.get("conseil") or "").strip()[:300],
-            "calibre": calibre, "bareme": "PSA-1",
+            "calibre": calibre, "bareme": "PSA-1", "centrage_reperes": rep_,
             "observations": {"coins": [dict(photo=k[0], coin=k[1], etat=o["etat"], certitude=o.get("certitude")) for k, o in coins.items()],
                              "bords": [dict(photo=k[0], bord=k[1], etat=o["etat"], certitude=o.get("certitude")) for k, o in bords.items()]}}
 
@@ -806,7 +842,7 @@ def etat(photos, langue="fr", quads=None, rasante=None, calibration=None, regles
     brutes = [_decoder(p)[0] for p in photos]
     ras = _decoder(rasante)[0] if rasante else None
     langue = "en" if str(langue or "").lower().startswith("en") else "fr"
-    h = hashlib.sha256(b"etat-v6-" + langue.encode() + json.dumps(quads or [], sort_keys=True).encode()
+    h = hashlib.sha256(b"etat-v7-" + langue.encode() + json.dumps(quads or [], sort_keys=True).encode()
                        + json.dumps(calibration or {}, sort_keys=True).encode())
     for b in brutes + ([ras] if ras else []):
         h.update(hashlib.sha256(b).digest())

@@ -12,7 +12,7 @@ import lockerroom  # noqa: E402
 g = deals.groupes_vendeurs(["wests01", "slabsharksinc", "probstein123", "cf31_sports_cards", "Remi-Card-Trader", "savage.cards"])
 assert g[:4] == [["savage.cards"], ["Remi-Card-Trader"], ["cf31_sports_cards"], ["slabsharksinc"]], g
 assert g[4] == ["wests01", "probstein123"], g
-assert [deals.rang_vendeur(v) for v in ("savage.cards", "remi-card-trader", "cf31_sports_cards", "slabsharksinc", "probstein123", "x")] == [0, 1, 2, 3, 4, 5]
+assert [deals.rang_vendeur(v) for v in ("savage.cards", "remi-card-trader", "cf31_sports_cards", "slabsharksinc", "wests01", "x", "probstein123")] == [0, 1, 2, 3, 4, 5, 7]   # 2 nov 2026 : maisons a volume en dernier
 
 a = lockerroom.Api(os.path.join(tempfile.mkdtemp(), "a.db"))
 assert a.deals_vendeurs_liste()["vendeurs"][:4] == ["savage.cards", "remi-card-trader", "cf31_sports_cards", "slabsharksinc"]
@@ -26,3 +26,7 @@ assert x["total"] == 70.0                                                    # l
 z = a._ramasser(dict(x, vendeur="slabsharksinc"), chez)
 assert z["total"] == 70.0 and not z.get("ramassage")
 print("RAMASSAGE OK")
+# 2 nov 2026 : les petits vendeurs d'abord, les maisons a volume en dernier
+assert [deals.rang_honnete(x) for x in ({"vendeur": "probstein123", "vendeur_score": 900000}, {"vendeur": "dcsports87"},
+        {"vendeur": "a", "vendeur_score": 300000}, {"vendeur": "b", "vendeur_score": 120}, {"vendeur": "c"})] == [3, 3, 2, 0, 1]
+print("HONNETE OK")

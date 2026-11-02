@@ -180,6 +180,29 @@ def redresser(im, quad, marge=0.0, cote=None):
     return im.transform((W, H), Image.QUAD, data, Image.BICUBIC)
 
 
+def regle(carte, face):
+    """2 nov 2026 (Mathieu : « on doit voir le centrage et tes points de repere : ecriture, bord de la patch ») : la carte
+    redressee entouree d'une regle 0-1000 (gauche->droite en haut, haut->bas a gauche) : l'IA y lit la position exacte des
+    reperes du centrage (bordure, cadre, fenetre de patch, texte). Les memes coordonnees que la grille de l'ecran."""
+    W, H = carte.size
+    M = 46
+    out = Image.new("RGB", (W + 2 * M, H + 2 * M), (24, 24, 28))
+    out.paste(carte, (M, M))
+    d = ImageDraw.Draw(out)
+    for k in range(0, 1001, 25):
+        x, y = M + k / 1000 * (W - 1), M + k / 1000 * (H - 1)
+        L = 16 if k % 100 == 0 else 9 if k % 50 == 0 else 5
+        for yy in (M - L, M + H):
+            d.line([(x, yy), (x, yy + L)], fill=(255, 220, 90), width=2 if k % 100 == 0 else 1)
+        for xx in (M - L, M + W):
+            d.line([(xx, y), (xx + L, y)], fill=(255, 220, 90), width=2 if k % 100 == 0 else 1)
+        if k % 100 == 0:
+            d.text((x - 10, 4), str(k), fill=(255, 255, 255))
+            d.text((4, y - 6), str(k), fill=(255, 255, 255))
+    d.text((M, H + M + 18), f"{face} - carte redressee, regle 0-1000", fill=(255, 255, 255))
+    return out
+
+
 def _etiquette(im, texte):
     d = ImageDraw.Draw(im)
     w = 8 + 7 * len(texte)
@@ -469,6 +492,8 @@ def preparer(photos_octets, quads=None, rasante=None):
             images.append((f"Zooms des bords gauche et droit du {face} (tournes a l'horizontale), chacun en deux moities.",
                            jpeg(mosaique_bords(z, face, ("gauche", "droite")), 1568, 90)))
         if c is not None:
+            images.append((f"Le {face} redresse, avec une REGLE 0-1000 tout autour (pour les reperes du centrage : lis les positions sur la regle).",
+                           jpeg(regle(c, face), 1568, 90)))
             m = centrage(c)
             if m:
                 cent[face] = m

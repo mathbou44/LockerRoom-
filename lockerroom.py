@@ -2456,7 +2456,7 @@ class Api:
             return {"ok": False, "erreur": str(e)}
         res = {k: v for k, v in res.items() if k not in ("ok", "cache")}
         res.update(photos=refs, quads=quads, examen=examen_, rasante=ras_ref[0] if ras_ref else None)
-        res["centrage_vue"] = self._centrage_vue(refs, quads)
+        res["centrage_vue"] = self._reperes_vue(self._centrage_vue(refs, quads), res.get("centrage_reperes"))
         res["centrage_algo"] = self.CENTRAGE_ALGO
         anciens = [v.get("img") for v in ((garde or {}).get("centrage_vue") or {}).values() if v.get("img")]
         if garde and garde.get("examen"):      # l'ancien examen : ses photos a lui ne servent plus
@@ -2529,6 +2529,36 @@ class Api:
                 if r.get("ok"):
                     e = {k: v for k, v in r.items() if k != "ok"}
         return e
+
+    @staticmethod
+    def _reperes_vue(cv, reperes):
+        """2 nov 2026 (Mathieu : « on doit voir le centrage et tes points de repere : ecriture, bord de la patch ») : chaque axe
+        de la grille porte le NOM de son repere. Mesure par l'app : le nom donne par l'IA si elle a vu le meme repere (a 3 %
+        pres), sinon « ligne imprimee ». Pas mesure par l'app : le repere de l'IA (lu sur la regle de la carte redressee)."""
+        import examen
+        cv = dict(cv or {})
+        for r in reperes or []:
+            face = "devant" if r.get("photo") == 0 else "dos"
+            v = dict(cv.get(face) or {})
+            if not v.get("img"):
+                continue
+            a, b = r["debut"] / 1000, 1 - r["fin"] / 1000
+            k1, k2 = ("l", "r") if r["axe"] == "gd" else ("t", "b")
+            if v.get(k1) is None or v.get(k2) is None:
+                v[k1], v[k2] = round(a, 4), round(b, 4)
+                v["source_" + r["axe"]] = "ia"
+                v["repere_" + r["axe"]] = r.get("element") or ""
+            elif abs(v[k1] - a) <= 0.03 and abs(v[k2] - b) <= 0.03:
+                v["repere_" + r["axe"]] = r.get("element") or ""
+            v.update(examen.ratios(v.get("l"), v.get("r"), v.get("t"), v.get("b")))
+            cv[face] = v
+        for v in cv.values():
+            for ax, k in (("gd", "l"), ("hb", "t")):
+                if v.get(k) is not None:
+                    v.setdefault("source_" + ax, "app")
+                    if not v.get("repere_" + ax):
+                        v["repere_" + ax] = "ligne imprimée"
+        return cv
 
     @staticmethod
     def _affiner_quads(refs, quads, recherche=0.04):
@@ -4957,12 +4987,12 @@ class Api:
         threading.Thread(target=tache, daemon=True, name="valeurs-suivis").start()
 
     @classmethod
-    def _etiquette_deal(cls, titre):
+    def _etiquette_deal(cls, titre, joueur=None):
         """« 2025-26 Tim Hortons Next Gen Phenoms Michael Misa #NG-7 San Jose » -> (« Michael Misa », « 2025-26 Tim Hortons
         Next Gen Phenoms »). Le joueur reconnu, sinon (None, titre)."""
-        r = cls._ETIQ.get(titre)
+        r = cls._ETIQ.get((titre, joueur))
         if r is None:
-            j = cartes_match.joueur_du_titre(titre)
+            j = cartes_match.joueur_du_titre(titre, joueur)
             cap = lambda w: re.sub(r"^(Mc|Mac|O')([a-z])", lambda m: m.group(1) + m.group(2).upper(), w.capitalize()) if len(w) > 3 else w.capitalize()
             nom = " ".join(cap(w) for w in j.split()) if j and len(j) < 40 else None
             reste = titre
@@ -4976,7 +5006,7 @@ class Api:
             while len(mots) > 2 and cartes_match.norm(mots[-1]) in eq:     # l'equipe en fin de titre (San Jose Sharks)
                 mots.pop()
             reste = " ".join(mots)
-            r = cls._ETIQ[titre] = (nom, reste[:60])
+            r = cls._ETIQ[(titre, joueur)] = (nom, reste[:60])
             if len(cls._ETIQ) > 20000:
                 cls._ETIQ.clear()
         return r
@@ -5136,6 +5166,13 @@ class Api:
             # 29 oct 2026 (Mathieu : « as-tu priorise les vendeurs qu'on a mentionnes, et apres le reste ? ») : leurs deals d'abord
             # 30 oct 2026 : Savage, Remi, CF31, Slab Sharks, puis les autres vendeurs suivis, puis le reste
             lst = sorted(lst, key=lambda x: _dl.rang_vendeur(x.get("vendeur")) if x.get("flux") == "vendeurs" else 6)
+        # 2 nov 2026 (Mathieu : « favoriser les places honnetes et les petits vendeurs ; Probstein et DC Sports en dernier ») :
+        # dans chaque tri, les petits vendeurs d'abord, les maisons a volume a la toute fin (l'ordre du tri est garde a
+        # l'interieur de chaque groupe)
+        if tri in ("rabais", "gain"):
+            lst = sorted(lst, key=lambda x: (_dl.rang_honnete(x) == 3, _dl.rang_honnete(x) if not (x.get("flux") == "vendeurs" and _dl.rang_vendeur(x.get("vendeur")) <= 3) else 0))
+        else:
+            lst = sorted(lst, key=lambda x: _dl.rang_honnete(x) == 3)
         for x in lst:
             x["recrue"] = _dl.est_recrue(x.get("titre"))
         if tri == "rabais" and not f.get("sortes"):
@@ -5222,7 +5259,9 @@ class Api:
         # et le prix actuel, comme ces slabs ») : le joueur et la carte, separes, pour l'etiquette
         for x in [*lst[:240], *suivis, *pres]:
             if "joueur_n" not in x:
-                x["joueur_n"], x["carte_n"] = self._etiquette_deal(x.get("titre") or "")
+                # 2 nov 2026 (« COSMIC » au lieu de LeBron James) : le joueur connu du deal d'abord, s'il est dans le titre
+                jd = str(x.get("joueur") or "").strip()
+                x["joueur_n"], x["carte_n"] = self._etiquette_deal(x.get("titre") or "", jd if jd and cartes_match.norm(jd) in cartes_match.norm(x.get("titre") or "") else None)
         # 31 oct 2026 (Mathieu : « les deals n'apparaissent pas au fur et a mesure, ca reste a 35 ») : un encan d'un gros vendeur
         # qui vient de recevoir sa valeur et qui est a 70 % ou moins de celle-ci est un deal : il compte dans le nombre
         n_su = sum(1 for x in suivis if x.get("valeur") and (x.get("total") or 0) <= x["valeur"] * _dl.RATIO_DEAL)
