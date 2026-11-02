@@ -452,75 +452,93 @@ _ZONES = ["coin haut-gauche", "coin haut-droit", "coin bas-droit", "coin bas-gau
           "bord gauche", "surface"]
 _DEFAUTS = ["blanchiment", "coin mou", "coin plie", "ebrechure", "entaille", "rayure", "ligne d'impression", "tache",
             "pli", "bosse", "decentrage", "autre"]
+# 2 nov 2026 (Mathieu : « les baremes doivent etre etablis pour que toutes les cartes soient evaluees selon les memes
+# criteres et la meme severite ») : l'IA DECRIT (chaque coin, chaque bord, chaque marque de surface, avec des etats fixes) ;
+# la note est CALCULEE par bareme.py, la meme table pour toutes les cartes (normes PSA).
+import bareme as _bar
+_OBS_COMMUN = {"photo": {"type": "integer", "description": "0 = devant, 1 = dos"},
+               "certitude": {"type": "string", "enum": list(_bar.CERTITUDES),
+                             "description": "« sure » : net dans le zoom ; « probable » ; « incertaine » : le zoom est flou ou cache"},
+               "pourquoi": {"type": "string", "description": "Ce que tu vois exactement, 12 mots max (ex. « 3 pixels blancs a la pointe »)"}}
 OUTIL_ETAT = {
     "name": "etat",
-    "description": "Etat physique d'une carte de sport vue sur les photos (pre-gradation).",
+    "description": "Observation detaillee de l'etat physique d'une carte de sport (pre-gradation). Tu decris ; l'app calcule la note.",
     "input_schema": {
         "type": "object",
         "properties": {
             "evaluable": {"type": "boolean", "description": "false si les photos ne permettent pas de juger l'etat (floue, trop loin, slab, reflet partout)"},
             "raison": {"type": "string", "description": "Si evaluable = false : pourquoi, en francais simple (8 mots max)."},
-            "centrage_gd": {"type": "string", "description": "Centrage gauche/droite du DEVANT, ex. « 55/45 » (le plus grand cote en premier), d'apres les bordures imprimees. Vide si la carte n'a pas de bordure mesurable."},
-            "centrage_hb": {"type": "string", "description": "Centrage haut/bas du DEVANT, meme format. Vide si pas mesurable."},
-            "centrage_dos": {"type": "string", "description": "Centrage du DOS (pire des deux axes), ex. « 60/40 », si le dos est fourni. Sinon vide."},
-            "notes": {"type": "object", "description": "Sous-notes sur 10 (echelle PSA/BGS, demi-points permis).",
-                      "properties": {"centrage": {"type": "number"}, "coins": {"type": "number"}, "bords": {"type": "number"},
-                                     "surface": {"type": ["number", "null"], "description": "null si la surface ne se juge pas sur ces photos"}},
-                      "required": ["centrage", "coins", "bords"]},
-            # 1er nov 2026 (Mathieu : « on doit expliquer les cotes, ou est le defaut ») : chaque sous-note sous 10 dit POURQUOI
-            "explications": {"type": "object", "description": "Pour CHAQUE sous-note sous 10 : pourquoi, et OU sur la carte (12 mots max). "
-                                                              "Ex. « bord droit : leger blanchiment au milieu » ou « 60/40 : bordure gauche plus large ».",
-                             "properties": {"centrage": {"type": "string"}, "coins": {"type": "string"}, "bords": {"type": "string"},
-                                            "surface": {"type": "string"}}},
-            "note_min": {"type": "number", "description": "Bas de la fourchette de note globale (PSA) la plus probable."},
-            "note_max": {"type": "number", "description": "Haut de la fourchette (au plus 1 point au-dessus de note_min)."},
-            "defauts": {"type": "array", "description": "Chaque defaut VISIBLE, le plus grave d'abord. Aucun defaut invente.",
-                        "items": {"type": "object", "properties": {
-                            "photo": {"type": "integer", "description": "0 = devant, 1 = dos"},
-                            "zone": {"type": "string", "enum": _ZONES},
-                            "type": {"type": "string", "enum": _DEFAUTS},
-                            "gravite": {"type": "string", "enum": ["a verifier", "leger", "moyen", "fort"],
-                                        "description": "« a verifier » : possible mais pas certain sur la photo (dis ou regarder)"},
-                            "x": {"type": "integer", "description": "Position du defaut dans l'image, 0 a 1000 (vers la droite)"},
-                            "y": {"type": "integer", "description": "Position du defaut dans l'image, 0 a 1000 (vers le bas)"}},
-                            "required": ["photo", "zone", "type", "gravite", "x", "y"]}},
+            "centrage_gd": {"type": "string", "description": "Centrage gauche/droite du DEVANT si tu dois l'estimer, ex. « 55/45 » (le plus grand cote en premier). Vide si l'app l'a mesure ou si pas mesurable."},
+            "centrage_hb": {"type": "string", "description": "Centrage haut/bas du DEVANT, meme format. Vide si mesure par l'app ou pas mesurable."},
+            "centrage_dos": {"type": "string", "description": "Centrage du DOS (pire des deux axes), si a estimer. Sinon vide."},
+            "coins": {"type": "array", "description": "EXACTEMENT 4 coins par face fournie (devant, puis dos), tels que vus dans les ZOOMS.",
+                      "items": {"type": "object", "properties": {**_OBS_COMMUN,
+                                "coin": {"type": "string", "enum": list(_bar.COINS)},
+                                "etat": {"type": "string", "enum": list(_bar.ETATS_COIN)}},
+                                "required": ["photo", "coin", "etat", "certitude"]}},
+            "bords": {"type": "array", "description": "EXACTEMENT 4 bords par face fournie, tels que vus dans les bandes de ZOOM.",
+                      "items": {"type": "object", "properties": {**_OBS_COMMUN,
+                                "bord": {"type": "string", "enum": list(_bar.BORDS)},
+                                "etat": {"type": "string", "enum": list(_bar.ETATS_BORD)},
+                                "position": {"type": "integer", "description": "Ou le long du bord est le pire endroit, 0 a 1000 (gauche->droite ou haut->bas)"}},
+                                "required": ["photo", "bord", "etat", "certitude"]}},
+            "surface": {"type": "array", "description": "Chaque marque de surface vue sur le CARTON IMPRIME (rien si la surface est propre).",
+                        "items": {"type": "object", "properties": {**_OBS_COMMUN,
+                                  "type": {"type": "string", "enum": list(_bar.SURFACE)},
+                                  "visibilite": {"type": "string", "enum": list(_bar.VISIBILITES),
+                                                 "description": "« rasante » : seulement en lumiere rasante ou au zoom ; « de_pres » : visible en regardant de pres ; « visible » : se voit tout de suite"},
+                                  "sur_relique": {"type": "boolean", "description": "true si c'est sur une patch, une relique (tissu, fils, coutures), un autocollant d'autographe ou dans sa fenetre : ce n'est alors PAS un defaut"},
+                                  "x": {"type": "integer", "description": "Position dans la PHOTO ENTIERE de sa face, 0 a 1000 (vers la droite)"},
+                                  "y": {"type": "integer", "description": "Position dans la PHOTO ENTIERE, 0 a 1000 (vers le bas)"}},
+                                  "required": ["photo", "type", "visibilite", "certitude", "x", "y"]}},
+            "surface_jugeable": {"type": "boolean", "description": "false si un reflet, un etui ou la resolution empeche de juger la surface"},
             "invisible": {"type": "array", "items": {"type": "string"},
-                          "description": "Ce que ces photos ne permettent PAS de verifier, en francais simple (ex. « fines rayures de surface : reflet »)."},
-            "conseil": {"type": "string", "description": "Une phrase : grader ou pas, et pourquoi (ex. « coins nets, centrage 55/45 : candidat au 9 »). Sans promesse."},
+                          "description": "Ce que ces photos ne permettent PAS de verifier, en francais simple (12 mots max chacun)."},
+            "conseil": {"type": "string", "description": "Une phrase : grader ou pas, et pourquoi. Sans promesse."},
         },
-        "required": ["evaluable", "notes", "note_min", "note_max", "defauts", "invisible"],
+        "required": ["evaluable", "coins", "bords", "surface", "invisible"],
     },
 }
-SYSTEME_ETAT = """Tu es un pre-gradeur de cartes de sport, severe, precis et honnete, comme un gradeur PSA experimente.
-Tu recois, dans l'ordre et chacune annoncee par une ligne de texte : la photo entiere du devant ; les ZOOMS de ses 4 coins (mosaique
-2 x 2 etiquetee, carte redressee, un peu de fond autour pour voir l'arete) ; les ZOOMS de ses 4 bords (bandes etiquetees) ; puis la
-meme chose pour le dos ; parfois une photo en lumiere rasante pour la surface. Les zooms sont la ou tu juges les coins et les bords.
-Regles :
-- Centrage : si l'app te donne un CENTRAGE MESURE, utilise-le tel quel (ne le contredis pas) et note le centrage selon les tolerances
-  PSA (devant : 10 <= 55/45, 9 <= 60/40, 8 <= 65/35, 7 <= 70/30 ; dos : 10 <= 75/25, 9 <= 90/10). Sans mesure : estime-le d'apres les
-  bordures ; carte sans bordure (pleine image, patch) : centrage_gd et centrage_hb vides, et dis « non mesurable » dans l'explication.
-- Coins : dans les zooms, une pointe nette et carree = 10 ; le moindre point blanc ou arrondi sur une arete = 9 ; blanchiment visible
-  ou coin mou = 8 ; coin plie ou ecrase = 6-7. Regarde l'ARETE entre la carte et le fond.
-- Bords : dans les bandes, une arete continue = 10 ; petites taches blanches (ebrechures) = 9 ; ebrechures repetees ou entaille = 8 et moins.
-  Les bordures foncees montrent tout : sois plus severe la.
-- Surface : rayures, lignes d'impression, taches, plis, bosses (la photo rasante les revele). Si un reflet, un etui ou la resolution
-  empeche de juger : surface = null et dis-le dans « invisible ».
-- MEMORABILIA ET AUTOGRAPHES (2 nov 2026 : une patch prise pour une rayure) : une patch, une relique (tissu de chandail, couture,
-  fils, ecusson brode, logo cousu, bord effiloche ou replie du tissu, morceau de baton), un autocollant d'autographe et la fenetre
-  decoupee qui les montre font partie de la carte. Leur texture, leurs lignes, leurs plis et leurs reflets ne sont JAMAIS des
-  defauts de surface. Ne juge la surface que sur le carton imprime autour (et les rebords de la fenetre s'ils sont abimes).
-- Defauts : chacun avec sa zone exacte. Utilise « a verifier » SEULEMENT si le zoom lui-meme est flou ou cache ; si le zoom est net,
-  decide (defaut ou pas). Une carte dans un toploader, une pochette ou sur un support : dis-le, les aretes sont en partie cachees.
-- COHERENCE (obligatoire) : chaque sous-note sous 10 est expliquee dans « explications » ET chaque defaut est dans « defauts ». Une
-  explication ne dit jamais « net » pour une categorie ou tu listes un defaut. La note globale ne depasse jamais la pire sous-note + 0,5.
-- Fourchette de note PSA prudente (ex. 8 a 9). Ne promets jamais un 10 : au mieux 9 a 10, quand les zooms sont nets, sans aucun
-  defaut, et le centrage dans la tolerance du 10.
-- x et y : la position du defaut dans la PHOTO ENTIERE de sa face (0 a 1000), pas dans les zooms.
-- Carte dans un slab de gradation : evaluable = false (elle est deja notee).
-- Textes courts (explications : 14 mots max ; conseil : 25 mots max ; invisible : 12 mots max chacun).
+SYSTEME_ETAT = """Tu es un inspecteur de cartes de sport pour un pre-gradage, avec les yeux d'un gradeur PSA experimente : severe,
+precis, constant. Tu ne donnes PAS de note : tu DECRIS l'etat avec des mots fixes ; l'app calcule la note avec un bareme unique
+(les normes officielles PSA), le meme pour toutes les cartes. Ta constance compte plus que tout : la meme carte doit toujours
+recevoir les memes observations.
+
+Tu recois, chacune annoncee par une ligne de texte : la photo entiere du devant ; les ZOOMS de ses 4 coins (carte redressee, en
+pleine resolution, un peu de fond autour pour voir l'arete) ; les ZOOMS de ses 4 bords (deux images : haut et bas, puis gauche et
+droite, chaque bord coupe en deux moities) ; puis la meme chose pour le dos ; parfois une photo en lumiere rasante.
+
+METHODE (dans cet ordre, sans sauter d'etape) :
+1. Les 8 coins (4 par face), un a un, dans les zooms. Regarde la POINTE et les deux aretes qui y arrivent, contre le fond.
+   net = pointe nette et carree, aucun blanc ; point_blanc = un tout petit point blanc ou une pointe a peine adoucie, visible
+   seulement au zoom ; effilochage_leger = un peu de blanc / de fibres a la pointe, vu de pres ; effilochage = blanc net, visible
+   sans zoom ; arrondi_leger = pointe tres legerement ronde ; arrondi = coin rond ; plie = coin plie, ecrase ou dechire.
+2. Les 8 bords, moitie par moitie. Une bordure foncee montre tout : la meme severite qu'une bordure claire, mais regarde mieux.
+   net ; point_blanc (un seul petit point) ; quelques_points (plusieurs petits points) ; usure_legere (fine usure continue) ;
+   encoche (petit creux dans l'arete) ; ebrechures (eclats de couleur) ; usure (usure nette, entaille).
+3. La surface du carton imprime : rayures, lignes d'impression, taches, empreintes, perte de lustre, bosses, plis. Note la
+   visibilite : rasante (seulement en lumiere rasante ou au zoom), de_pres, visible. Rien a signaler : liste vide.
+4. Le centrage : si l'app donne un CENTRAGE MESURE, n'en parle pas (laisse les champs vides). Sinon estime-le d'apres les
+   bordures imprimees ; carte sans bordure : vide et « non mesurable » dans invisible.
+
+REGLES :
+- N'invente rien. Un reflet, une poussiere sur l'etui, un grain de photo ne sont pas des defauts : si tu ne peux pas trancher,
+  certitude = « incertaine » (jamais pour un zoom net : la, decide).
+- PATCH, RELIQUE, AUTOGRAPHE : le tissu (fils, coutures, broderie, plis du tissu, bord effiloche du tissu), l'autocollant et la
+  fenetre decoupee font partie de la carte ; jamais un defaut de surface. Si tu en notes un par prudence : sur_relique = true.
+- Carte dans un toploader, une pochette ou sur un support : les aretes sont en partie cachees ; dis-le dans « invisible » et mets
+  « incertaine » la ou tu ne vois pas.
+- Carte dans un slab de gradation : evaluable = false.
+- x et y d'une marque de surface : sa position dans la PHOTO ENTIERE de sa face (0 a 1000), pas dans les zooms.
+- Textes courts : pourquoi 12 mots max, invisible 12 mots max, conseil 25 mots max.
 - Reponds uniquement avec l'outil « etat »."""
 
 
+MODELE_ETAT = os.environ.get("LR_ETAT_MODELE") or MODELE            # le plus avance (Opus) ; changeable sans code
+try:
+    REFLEXION_ETAT = int(os.environ.get("LR_ETAT_REFLEXION") or 8000)   # jetons de reflexion (0 = sans)
+except ValueError:
+    REFLEXION_ETAT = 8000
 # 1er nov 2026 (Mathieu : « l'analyse de la carte : en Pro jusqu'a 30 cartes, en gratuit 3 ») : par mois, a part des lectures
 ETAT_GRATUIT = int(os.environ.get("LR_ETAT_GRATUIT") or 3)
 ETAT_PRO = int(os.environ.get("LR_ETAT_PRO") or 30)
@@ -570,7 +588,7 @@ def _noter_etat(usage):
 
 _PSA_ECHELLE = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 10]   # PSA : pas de 9,5
 _CAT_ZONE = lambda z: "coins" if z.startswith("coin") else "bords" if z.startswith("bord") else "surface" if z == "surface" else None
-_PLAFOND_GRAV = {"fort": 7.0, "moyen": 8.5, "leger": 9.0, "a verifier": 9.5}
+_PLAFOND_GRAV = {"fort": 7.0, "moyen": 8.0, "leger": 9.0, "a verifier": 9.5}     # PSA : « leger effilochage a un coin » = 8
 
 
 def _psa(v, haut=False):
@@ -578,6 +596,124 @@ def _psa(v, haut=False):
     if v is None:
         return None
     return max(x for x in _PSA_ECHELLE if x <= v + 1e-9) if v < 10 else 10.0
+
+
+_LIB_ETAT = {"point_blanc": "petit point blanc", "effilochage_leger": "leger effilochage", "effilochage": "effilochage net",
+             "arrondi_leger": "pointe legerement arrondie", "arrondi": "coin arrondi", "plie": "coin plie", "quelques_points": "quelques points blancs",
+             "usure_legere": "legere usure", "encoche": "petite encoche", "ebrechures": "ebrechures", "usure": "usure nette"}
+_TYPE_COIN = {"point_blanc": "blanchiment", "effilochage_leger": "blanchiment", "effilochage": "blanchiment", "arrondi_leger": "coin mou",
+              "arrondi": "coin mou", "plie": "coin plie"}
+_TYPE_BORD = {"point_blanc": "blanchiment", "quelques_points": "blanchiment", "usure_legere": "blanchiment", "encoche": "entaille",
+              "ebrechures": "ebrechure", "usure": "entaille"}
+
+
+def _bil(q, u, v):
+    """(u, v) de la carte (0..1) -> point de la photo (0..1000), avec le contour q (haut-gauche puis sens horaire)."""
+    if not q or len(q) != 4:
+        return round(u * 1000), round(v * 1000)
+    a = [q[0][0] + (q[1][0] - q[0][0]) * u, q[0][1] + (q[1][1] - q[0][1]) * u]
+    b = [q[3][0] + (q[2][0] - q[3][0]) * u, q[3][1] + (q[2][1] - q[3][1]) * u]
+    return round(a[0] + (b[0] - a[0]) * v), round(a[1] + (b[1] - a[1]) * v)
+
+
+def _noter_observations(f, centrage=None, calibration=None, quads=None):
+    """2 nov 2026 : les observations de l'IA -> sous-notes, fourchette, defauts et explications, TOUJOURS avec le meme bareme
+    (bareme.py, normes PSA). Une observation « incertaine » n'abaisse que le bas de la fourchette."""
+    import examen
+    rat = lambda s_: s_ if re.fullmatch(r"\d{2}/\d{2}", str(s_ or "").strip()) else ""
+    quads = quads or []
+    nface = 2 if any(int(o.get("photo") or 0) == 1 for o in (f.get("coins") or []) + (f.get("bords") or []) if isinstance(o, dict)) else 1
+    coins, bords, surf = {}, {}, []
+    for o in f.get("coins") or []:
+        if isinstance(o, dict) and o.get("coin") in _bar.COINS and o.get("etat") in _bar.ETATS_COIN:
+            coins[(1 if o.get("photo") == 1 else 0, o["coin"])] = o
+    for o in f.get("bords") or []:
+        if isinstance(o, dict) and o.get("bord") in _bar.BORDS and o.get("etat") in _bar.ETATS_BORD:
+            bords[(1 if o.get("photo") == 1 else 0, o["bord"])] = o
+    for o in f.get("surface") or []:
+        if isinstance(o, dict) and o.get("type") in _bar.SURFACE and o.get("sur_relique") is not True:
+            surf.append(o)
+    inc = lambda o: o.get("certitude") == "incertaine"
+    lim = lambda l: [o for o in l if not inc(o)]
+    sj = f.get("surface_jugeable") is not False
+    hi = {"coins": _bar.note_coins([o["etat"] for o in lim(coins.values())]),
+          "bords": _bar.note_bords([o["etat"] for o in lim(bords.values())]),
+          "surface": _bar.note_surface([(o["type"], o.get("visibilite")) for o in lim(surf)]) if sj else None}
+    lo = {"coins": _bar.note_coins([o["etat"] for o in coins.values()]),
+          "bords": _bar.note_bords([o["etat"] for o in bords.values()]),
+          "surface": _bar.note_surface([(o["type"], o.get("visibilite")) for o in surf]) if sj else None}
+    # le centrage : mesure par l'app (tolerances PSA), sinon l'estimation de l'IA avec la meme table
+    cg, ch, cd = rat(f.get("centrage_gd")), rat(f.get("centrage_hb")), rat(f.get("centrage_dos"))
+    mesure = bool(centrage and centrage.get("devant"))
+    if mesure:
+        cg, ch = centrage["devant"].get("gd") or cg, centrage["devant"].get("hb") or ch
+    if centrage and centrage.get("note") is not None:
+        nc = float(centrage["note"])
+    else:
+        nc = examen.note_centrage({"gd": cg, "hb": ch} if (cg or ch) else None, {"gd": cd} if cd else None)
+    hi["centrage"] = lo["centrage"] = float(nc) if nc is not None else None
+    g_hi, g_lo = _bar.globale(hi), _bar.globale(lo)
+    if g_hi is None:
+        g_hi = g_lo = 9.0
+    g_lo = min(g_lo, g_hi)
+    calibre = bool(calibration and calibration.get("n", 0) >= 15)
+    if calibre:
+        dec = max(-1.0, min(0.5, float(calibration.get("ecart") or 0)))
+        g_hi, g_lo = _bar.psa(min(10.0, g_hi + dec)), _bar.psa(max(1.0, g_lo + dec))
+    # les defauts pour l'ecran (les numeros sur la photo), le pire d'abord
+    defauts = []
+    def ajouter(cat, o, note_, type_, zone, x, y, lib):
+        grav = "a verifier" if inc(o) else "leger" if note_ >= 9 else "moyen" if note_ >= 7 else "fort"
+        quoi = str(o.get("pourquoi") or "").strip()[:90]
+        defauts.append({"photo": 1 if o.get("photo") == 1 else 0, "zone": zone, "type": type_, "gravite": grav, "x": x, "y": y,
+                        "note": note_, "pourquoi": (quoi + " · " if quoi else "") + f"{lib} : PSA {str(note_).replace('.0', '')}"})
+    uv_coin = {"haut-gauche": (0.02, 0.02), "haut-droit": (0.98, 0.02), "bas-droit": (0.98, 0.98), "bas-gauche": (0.02, 0.98)}
+    for (ph, c), o in coins.items():
+        n_ = _bar.ETATS_COIN[o["etat"]][0]
+        if n_ < 10:
+            x, y = _bil(quads[ph] if ph < len(quads) else None, *uv_coin[c])
+            ajouter("coins", o, n_, _TYPE_COIN[o["etat"]], "coin " + c, x, y, _LIB_ETAT[o["etat"]])
+    for (ph, b), o in bords.items():
+        n_ = _bar.ETATS_BORD[o["etat"]][0]
+        if n_ < 10:
+            t = max(0.05, min(0.95, (o.get("position") if isinstance(o.get("position"), int) else 500) / 1000))
+            u, v = {"haut": (t, 0.01), "bas": (t, 0.99), "gauche": (0.01, t), "droit": (0.99, t)}[b]
+            x, y = _bil(quads[ph] if ph < len(quads) else None, u, v)
+            ajouter("bords", o, n_, _TYPE_BORD[o["etat"]], "bord " + b, x, y, _LIB_ETAT[o["etat"]])
+    for o in surf:
+        vis = o.get("visibilite") if o.get("visibilite") in _bar.VISIBILITES else "de_pres"
+        n_ = _bar.SURFACE[o["type"]][_bar.VISIBILITES.index(vis)]
+        try:
+            x, y = max(0, min(1000, int(o.get("x")))), max(0, min(1000, int(o.get("y"))))
+        except (TypeError, ValueError):
+            x, y = 500, 500
+        t_ = o["type"] if o["type"] in _DEFAUTS else "autre"
+        ajouter("surface", o, n_, t_, "surface", x, y, o["type"] + {"rasante": " (lumiere rasante)", "de_pres": " (de pres)", "visible": ""}[vis])
+    ordre = {"fort": 0, "moyen": 1, "leger": 2, "a verifier": 3}
+    defauts.sort(key=lambda d: (ordre[d["gravite"]], d["note"]))
+    defauts = defauts[:10]
+    # les explications : la pire observation de chaque categorie, avec ses numeros
+    fr = lambda v: str(v).replace(".0", "").replace(".", ",")
+    explications = {}
+    for k in ("coins", "bords", "surface"):
+        if hi.get(k) is not None and hi[k] < 10 or lo.get(k) is not None and lo[k] < 10:
+            nums = [str(i + 1) for i, d in enumerate(defauts) if _CAT_ZONE(d["zone"]) == k]
+            pire = next((d for d in defauts if _CAT_ZONE(d["zone"]) == k), None)
+            if pire:
+                explications[k] = (("devant · " if pire["photo"] == 0 and nface > 1 else "dos · " if pire["photo"] == 1 else "")
+                                   + pire["pourquoi"].split(" · ")[-1] + " (" + ("point " if len(nums) == 1 else "points ") + ", ".join(nums) + ")")
+    if hi["centrage"] is not None and hi["centrage"] < 10:
+        explications["centrage"] = ("mesuré par l’app : " if mesure else "estimé : ") + " · ".join(x for x in (cg, ch) if x) + \
+            (f" · dos {cd}" if cd else "") + f" → PSA {fr(hi['centrage'])} max"
+    notes = {k: hi[k] for k in ("centrage", "coins", "bords", "surface")}
+    return {"evaluable": f.get("evaluable") is not False, "raison": str(f.get("raison") or "").strip()[:80],
+            "centrage_gd": cg, "centrage_hb": ch, "centrage_dos": cd or ((centrage or {}).get("dos") or {}).get("gd") or "",
+            "centrage_mesure": mesure, "notes": notes, "notes_bas": {k: lo[k] for k in ("coins", "bords", "surface")},
+            "note_min": g_lo, "note_max": g_hi, "defauts": defauts, "explications": explications,
+            "invisible": [str(x).strip()[:160] for x in (f.get("invisible") or [])][:4], "conseil": str(f.get("conseil") or "").strip()[:300],
+            "calibre": calibre, "bareme": "PSA-1",
+            "observations": {"coins": [dict(photo=k[0], coin=k[1], etat=o["etat"], certitude=o.get("certitude")) for k, o in coins.items()],
+                             "bords": [dict(photo=k[0], bord=k[1], etat=o["etat"], certitude=o.get("certitude")) for k, o in bords.items()]}}
 
 
 def _nettoyer_etat(f, centrage=None, calibration=None):
@@ -600,8 +736,11 @@ def _nettoyer_etat(f, centrage=None, calibration=None):
             x, y = max(0, min(1000, int(d.get("x")))), max(0, min(1000, int(d.get("y"))))
         except (TypeError, ValueError):
             continue
+        if d.get("sur_relique") is True:                 # 2 nov 2026 : la texture d'une patch n'est pas une rayure
+            continue
         defauts.append({"photo": 1 if d.get("photo") == 1 else 0, "zone": d["zone"], "type": d["type"],
-                        "gravite": d.get("gravite") if d.get("gravite") in ("a verifier", "leger", "moyen", "fort") else "leger", "x": x, "y": y})
+                        "gravite": d.get("gravite") if d.get("gravite") in ("a verifier", "leger", "moyen", "fort") else "leger", "x": x, "y": y,
+                        "pourquoi": str(d.get("pourquoi") or "").strip()[:120]})
     ordre = {"fort": 0, "moyen": 1, "leger": 2, "a verifier": 3}
     defauts.sort(key=lambda d: ordre.get(d["gravite"], 4))
     # 1. chaque defaut plafonne la sous-note de sa categorie (un coin blanchi n'est pas un coin a 10)
@@ -655,7 +794,7 @@ def _nettoyer_etat(f, centrage=None, calibration=None):
             "calibre": bool(calibration and calibration.get("n", 0) >= 15)}
 
 
-def etat(photos, langue="fr", quads=None, rasante=None, calibration=None, regles=None):
+def etat(photos, langue="fr", quads=None, rasante=None, calibration=None, regles=None, contexte=None):
     """photos : devant (et dos) en data URL ; quads : les 4 coins de la carte dans chaque photo (0..1000, trouves dans le
     telephone) ; rasante : une photo en lumiere rasante (facultative). Son propre quota par mois (3 gratuit, 30 Pro)."""
     import examen
@@ -667,7 +806,7 @@ def etat(photos, langue="fr", quads=None, rasante=None, calibration=None, regles
     brutes = [_decoder(p)[0] for p in photos]
     ras = _decoder(rasante)[0] if rasante else None
     langue = "en" if str(langue or "").lower().startswith("en") else "fr"
-    h = hashlib.sha256(b"etat-v4-" + langue.encode() + json.dumps(quads or [], sort_keys=True).encode()
+    h = hashlib.sha256(b"etat-v6-" + langue.encode() + json.dumps(quads or [], sort_keys=True).encode()
                        + json.dumps(calibration or {}, sort_keys=True).encode())
     for b in brutes + ([ras] if ras else []):
         h.update(hashlib.sha256(b).digest())
@@ -696,16 +835,36 @@ def etat(photos, langue="fr", quads=None, rasante=None, calibration=None, regles
         infos.append("L'app n'a pas pu mesurer le centrage (pas de bordure nette) : estime-le, ou dis « non mesurable ».")
     for r in (regles or [])[:4]:
         infos.append(r)
+    cx = contexte or {}                                   # 2 nov 2026 : ce que l'app sait de la carte
+    if cx.get("titre"):
+        infos.append("La carte : " + str(cx["titre"])[:160] + ".")
+    if cx.get("relique"):
+        infos.append("CETTE CARTE A UNE PATCH / RELIQUE (tissu) : sa texture, ses fils, ses coutures et ses plis ne sont jamais des "
+                     "defauts ; marque sur_relique = true si tu hesites.")
+    if cx.get("auto"):
+        infos.append("Carte autographiee : l'encre et l'autocollant ne sont pas des defauts de surface.")
     contenu.append({"type": "text", "text": "Evalue l'etat de cette carte : centrage, coins, bords, surface. " + " ".join(infos) + " "
                     + ("Write every text field in plain English." if langue == "en" else "Ecris tous les textes en francais simple (dis « carte », jamais « card »).")})
-    r = _appeler({"model": MODELE, "max_tokens": 2600, "system": SYSTEME_ETAT, "tools": [OUTIL_ETAT],
-                  "tool_choice": {"type": "tool", "name": "etat"}, "messages": [{"role": "user", "content": contenu}]}, timeout=95)
+    # 2 nov 2026 (Mathieu : « l'analyse doit etre tres poussee, aussi parfaite que TAG ; le modele le plus avance s'il faut ») :
+    # le modele le plus avance (MODELE) AVEC reflexion : il examine chaque zoom et compare aux descriptions PSA avant de
+    # repondre. La reflexion demande tool_choice « auto ». Si l'API la refuse, la meme analyse sans reflexion.
+    corps = {"model": MODELE_ETAT, "max_tokens": 16000, "system": SYSTEME_ETAT, "tools": [OUTIL_ETAT],
+             "thinking": {"type": "enabled", "budget_tokens": REFLEXION_ETAT}, "tool_choice": {"type": "auto"},
+             "messages": [{"role": "user", "content": contenu + [{"type": "text", "text": "Examine chaque zoom un a un, puis reponds avec l'outil « etat »."}]}]}
+    try:
+        r = _appeler(corps, timeout=240) if REFLEXION_ETAT else None
+    except Erreur as e:
+        print("Vision (etat) : reflexion refusee, analyse sans : " + str(e), flush=True)
+        r = None
+    if not r or not any(b.get("type") == "tool_use" for b in r.get("content") or []):
+        r = _appeler({"model": MODELE_ETAT, "max_tokens": 3000, "system": SYSTEME_ETAT, "tools": [OUTIL_ETAT],
+                      "tool_choice": {"type": "tool", "name": "etat"}, "messages": [{"role": "user", "content": contenu}]}, timeout=120)
     _noter_etat(r.get("usage") or {})
     f = next((b.get("input") for b in r.get("content") or [] if b.get("type") == "tool_use"), None)
     if not f:
         raise Erreur("Analyse impossible : reprends la photo de plus près, sans reflet.")
     cent = dict(c, note=note_c) if c else None
-    res = _nettoyer_etat(f, cent, calibration)
+    res = _noter_observations(f, cent, calibration, quads) if isinstance(f.get("coins"), list) else _nettoyer_etat(f, cent, calibration)
     res["zooms"] = bool(prep.get("zooms"))
     with _verrou:
         cache = _lire(_chemin_cache())

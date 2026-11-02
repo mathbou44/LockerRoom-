@@ -661,7 +661,7 @@ body.avec-barre .ecran{padding-top:14px}
 .feuille .bloc{background:var(--carte)}
 @keyframes monte{from{transform:translateY(105%)}to{transform:none}}
 @media (min-width:700px){ @keyframes monte{from{transform:translateY(36px); opacity:0}to{transform:none; opacity:1}} }
-#toast{position:fixed; left:50%; bottom:calc(92px + var(--bas)); transform:translateX(-50%) translateY(20px); z-index:60; background:#F4F2EE; color:#0B0B0E; font-weight:600; font-size:14px; padding:11px 16px; border-radius:12px; max-width:calc(100% - 36px); opacity:0; pointer-events:none; transition:all .2s; text-align:center}
+#toast{position:fixed; left:50%; bottom:calc(92px + var(--bas)); transform:translateX(-50%) translateY(20px); z-index:10001; background:#F4F2EE; color:#0B0B0E; font-weight:600; font-size:14px; padding:11px 16px; border-radius:12px; max-width:calc(100% - 36px); opacity:0; pointer-events:none; transition:all .2s; text-align:center}
 #toast.vu{opacity:1; transform:translateX(-50%)}
 .table{width:100%; border-collapse:collapse; font-size:14px}
 .table td{padding:8px 4px; border-bottom:1px solid var(--sep)}
@@ -2306,6 +2306,22 @@ button.an-attente{width:100%; text-align:left; color:var(--texte); cursor:pointe
 .so-ch .rangee{display:flex; align-items:center; gap:12px; cursor:pointer} .so-ch input{width:20px; height:20px; accent-color:var(--acc); flex:0 0 auto}
 .so-bas{position:sticky; bottom:0; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 10px 10px 16px; border-radius:18px; background:var(--fond-feuille, var(--carte))} .so-bas span{flex:1 1 auto; min-width:0; font-size:14px} .so-bas .btn{flex:0 0 auto; width:auto; margin:0; padding-inline:28px}
 .so-fil{margin:0 0 14px} .so-fil li{cursor:pointer}
+.cg-bandes{position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:1}
+.cg-bandes line{stroke-width:1.6; vector-effect:non-scaling-stroke; stroke-dasharray:5 4; filter:drop-shadow(0 0 1px rgba(0,0,0,.9))}
+.cg-bandes .z10{stroke:#5FD08A} .cg-bandes .z9{stroke:#E9CF8E} .cg-bandes .z8{stroke:#F0A05A} .cg-bandes .z7{stroke:#FF7A7A}
+.cg-leg{display:flex; flex-wrap:wrap; justify-content:center; gap:6px 14px; font:700 12px var(--f-cond); letter-spacing:.04em; color:var(--doux)}
+.cg-leg span{display:flex; align-items:center; gap:6px} .cg-leg i{width:12px; height:12px; border-radius:3px}
+.cg-leg .z10 i{background:rgba(143,212,164,.8)} .cg-leg .z9 i{background:rgba(233,207,142,.8)} .cg-leg .z8 i{background:rgba(240,160,90,.8)} .cg-leg .z7 i{background:rgba(255,120,120,.8)}
+/* 2 nov 2026 - les numeros se touchent, la description s'ouvre sur la photo ; le bareme PSA */
+.vd-num{border:0; padding:0; cursor:pointer; z-index:3} .vd-num.on{transform:scale(1.25); box-shadow:0 0 0 2px #fff, 0 0 0 5px var(--acc)}
+.vd-bulle{position:absolute; z-index:4; display:flex; flex-direction:column; gap:4px; padding:12px 14px; border-radius:16px; background:rgba(16,16,21,.94);
+  border:1px solid var(--ligne); box-shadow:0 12px 30px rgba(0,0,0,.5); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); animation:popEntre .2s ease}
+.vd-bulle b{font-size:15px} .vd-bulle b em{font-style:normal; font-weight:500; color:var(--doux)} .vd-bulle span{font-size:13px; color:var(--doux)}
+.vd-bulle small{font-size:13px; line-height:1.35; color:var(--texte2)} .vd-bulle .vd-av{display:flex; align-items:center; gap:8px; margin:6px 0 0}
+.vd-bulle .vd-av span{flex:1} .vd-bar{margin:4px auto 0; display:block}
+.bar-t{width:100%; border-collapse:collapse; font-size:14px} .bar-t th{font:700 12px var(--f-cond); letter-spacing:.1em; text-transform:uppercase; color:var(--doux); text-align:left; padding:6px 4px}
+.bar-t td{padding:8px 4px; border-top:1px solid var(--ligne)} .bar-t td:first-child{width:56px}
+.ap-code{margin:14px 0 6px; text-align:center; font:700 46px/1 var(--f-cond); letter-spacing:.12em; color:var(--texte)} #g-appareils .btn{margin:6px 0 0} .ap-l .pilule{flex:0 0 auto}
 /* 2 nov 2026 - l'ampoule des tendances et sa methode */
 .td-titre{display:flex; align-items:center; gap:10px} .td-amp{width:34px; height:34px; border-radius:50%; border:1px solid var(--ligne); background:var(--carte); color:var(--texte); display:grid; place-items:center; cursor:pointer; padding:0}
 .td-amp svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round}
@@ -2315,7 +2331,7 @@ button.an-attente{width:100%; text-align:left; color:var(--texte); cursor:pointe
 .tuile-deal.sort{opacity:0; transform:scale(.96); transition:opacity .28s ease, transform .28s ease}
 /* 1er nov 2026 - fenetre qui pop (formulaire en etapes) : centree, les points des etapes en bas, crochet vert anime a la fin */
 body.pop-ouverte{overflow:hidden}
-.pop-fond{position:fixed; inset:0; z-index:50; background:rgba(0,0,0,.62); display:flex; align-items:center; justify-content:center;
+.pop-fond{position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,.62); display:flex; align-items:center; justify-content:center;
   padding:calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 16px); animation:fondu .2s ease-out;
   -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px)}
 .pop-fond.sort{opacity:0; transition:opacity .18s ease; pointer-events:none}
@@ -8754,10 +8770,39 @@ const LIB_GRAV = (g) => ({leger: tt('léger', 'light'), moyen: tt('moyen', 'mode
 // photo est cadree sur la carte trouvee (moins de fond), avec un calque : le contour de la carte trouve par l'app, les 4
 // lignes du cadre imprime (centrage mesure) et les ratios. Contour faux ? « Ajuster le contour » : on glisse les 4 coins,
 // l'app remesure le centrage et replace les numeros.
+// 2 nov 2026 (Mathieu : « on ne comprend pas ou tu as pris tes references ») : le bareme, avec sa source : les normes
+// officielles de PSA (Card Grading Standards). Les memes chiffres que l'app et l'IA utilisent.
+function baremePSA(){
+  const C = [['10', '55/45 – 60/40', '75/25'], ['9', '60/40 – 65/35', '90/10'], ['8', '65/35 – 70/30', '90/10'], ['7', '70/30 – 75/25', '90/10'],
+    ['6', '80/20', '90/10'], ['5 · 4', '85/15', '90/10'], ['3 – 1', '90/10', '90/10']];
+  // 2 nov 2026 : le bareme fixe (bareme.py) : chaque observation donne toujours la meme note, pour toutes les cartes
+  const CO = [[tt('Pointe nette et carrée', 'Sharp, square tip'), '10'], [tt('1 tout petit point blanc (au zoom)', '1 tiny white dot (zoomed)'), '9'],
+    [tt('2 ou 3 petits points blancs', '2 or 3 tiny white dots'), '8,5'], [tt('Léger effilochage, 1 ou 2 coins', 'Slight fraying, 1 or 2 corners'), '8'],
+    [tt('Léger effilochage, 3 ou 4 coins', 'Slight fraying, 3 or 4 corners'), '7'], [tt('Effilochage net (sans zoom)', 'Clear fraying (no zoom)'), '7 – 6'],
+    [tt('Pointe légèrement arrondie', 'Slightly rounded tip'), '5'], [tt('Coin arrondi', 'Rounded corner'), '4'], [tt('Coin plié ou écrasé', 'Bent or crushed corner'), '3']];
+  const BO = [[tt('Arête nette et continue', 'Clean, continuous edge'), '10'], [tt('1 tout petit point blanc', '1 tiny white dot'), '9'],
+    [tt('Quelques points blancs', 'A few white dots'), '8'], [tt('Légère usure, de près', 'Slight wear, up close'), '7'], [tt('Petite encoche', 'Small notch'), '6'],
+    [tt('Ébréchures', 'Chipping'), '5'], [tt('Usure nette, entaille', 'Clear wear, nick'), '4']];
+  const SU = [[tt('Ligne d’impression', 'Print line'), '10 · 9 · 8'], [tt('Tache, empreinte', 'Stain, fingerprint'), '9 · 8 · 6'], [tt('Rayure', 'Scratch'), '8 · 6 · 5'],
+    [tt('Perte de lustre, bosse', 'Gloss loss, dent'), '7 · 6 · 5'], [tt('Pli', 'Crease'), '5 · 4 · 3']];
+  const tab = (l, h) => `<table class="bar-t"><tr><th>${h}</th><th>PSA</th></tr>${l.map(([a, n]) => `<tr><td>${a}</td><td><b>${n}</b></td></tr>`).join('')}</table>`;
+  popOuvrir(`<button class="pop-x" id="bar-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
+    <div class="pop-tete"><span class="pop-sur">${tt('Barème', 'Scale')}</span><h3>${tt('Normes officielles PSA', 'Official PSA standards')}</h3></div>
+    <div class="pop-corps sa-c"><div class="sous">${tt('Centrage : le côté le plus large d’abord, le pire des deux axes. Ce sont les limites publiées par PSA ; l’app et l’IA utilisent exactement celles-ci.', 'Centering: the wider side first, the worse of both axes. These are PSA’s published limits; the app and the AI use exactly these.')}</div>
+    <table class="bar-t"><tr><th>PSA</th><th>${tt('Devant', 'Front')}</th><th>${tt('Dos', 'Back')}</th></tr>${C.map(([n, d, b]) => `<tr><td><b>${n}</b></td><td>${d}</td><td>${b}</td></tr>`).join('')}</table>
+    <div class="sous">${tt('Coins et bords : les 8 du devant et du dos comptent. L’IA décrit chaque coin et chaque bord avec ces mots ; l’app calcule la note avec cette table, la même pour toutes les cartes.', 'Corners and edges: all 8 on front and back count. The AI describes each corner and edge with these words; the app computes the grade with this table, the same for every card.')}</div>
+    ${tab(CO, tt('Coins (le pire)', 'Corners (worst)'))}${tab(BO, tt('Bords (le pire)', 'Edges (worst)'))}
+    ${tab(SU, tt('Surface : lumière rasante · de près · à l’œil', 'Surface: raking light · up close · plain view'))}
+    <div class="sous">${tt('Note globale : la pire catégorie (deux catégories à 9 : 8,5). Un point incertain n’abaisse que le bas de la fourchette.', 'Overall: the worst category (two categories at 9: 8.5). An uncertain point only lowers the bottom of the range.')}</div>
+    <a class="plus" href="https://www.psacard.com/resources/cardgradingstandards" target="_blank" rel="noopener">${tt('Source : psacard.com · Card Grading Standards ↗', 'Source: psacard.com · Card Grading Standards ↗')}</a>
+    <div class="sous">${tt('PSA accorde environ 5 % de marge au centrage du devant jusqu’au 7 quand la carte est belle. Une estimation sur photo, pas une note PSA.', 'PSA allows about 5% leeway on front centering down to 7 when eye appeal is strong. A photo estimate, not a PSA grade.')}</div></div>`, popFermer);
+  $('#bar-x').onclick = popFermer;
+}
 function voirDefauts(e, k, apres){
   const def = (e.defauts || []).slice(0, 8), refs = (e.photos || []).slice(0, 2);
   if (!refs.length) return;
   const FACES = ['devant', 'dos'];
+  let ouvert = k != null ? k : -1;                          // 2 nov 2026 : le numero touche ouvre sa description
   const o = document.createElement('div'); o.className = 'vd';
   let calque = true, edite = -1;
   try { calque = localStorage.getItem('lr_vd_calque') !== '0'; } catch (x) {}
@@ -8781,17 +8826,35 @@ function voirDefauts(e, k, apres){
   };
   const TOL = (f) => f === 'dos' ? TOL_DOS : TOL_DEVANT;
   const rat = (a, c) => { const g = Math.round(100 * Math.max(a, c) / ((a + c) || 1)); return [g, 100 - g]; };
+  // la description d'un defaut, ouverte sous (ou sur) son numero : quoi, ou, le critere PSA, et ton avis
+  const bulle = (cad, sc, d, i, x, y) => {
+    const a = (e.avis || {})[i], b = document.createElement('div');
+    b.className = 'vd-bulle'; b.dataset.d = i;
+    b.innerHTML = `<b>${i + 1}. ${esc(LIB_DEFAUT(d.type))} <em>${esc(LIB_GRAV(d.gravite))}</em></b>
+      <span>${esc(LIB_ZONE(d.zone))}${d.photo ? tt(' (dos)', ' (back)') : ''}</span>${d.pourquoi ? `<small>${esc(d.pourquoi)}</small>` : ''}
+      ${e.cid ? `<div class="vd-av"><span>${tt('Tu le vois ?', 'Do you see it?')}</span><button class="${a === true ? 'on' : ''}" data-av="${i}" data-v="1" aria-label="${esc(tt('Je le vois', 'I see it'))}">✓</button><button class="${a === false ? 'on' : ''}" data-av="${i}" data-v="0" aria-label="${esc(tt('Pas de défaut', 'No flaw'))}">✕</button></div>` : ''}`;
+    cad.appendChild(b);
+    // placee dans la photo cadree : sous le numero, ou au-dessus s'il est dans le bas
+    const r = sc.getBoundingClientRect(), rc = cad.getBoundingClientRect();
+    const px = r.left - rc.left + x / 1000 * r.width, py = r.top - rc.top + y / 1000 * r.height;
+    const w = Math.min(260, rc.width - 16), bas = py > rc.height * 0.55;
+    Object.assign(b.style, {width: w + 'px', left: Math.max(8, Math.min(rc.width - w - 8, px - w / 2)) + 'px'});
+    if (bas) b.style.bottom = (rc.height - py + 20) + 'px'; else b.style.top = (py + 20) + 'px';
+    $$('[data-av]', b).forEach(bt => bt.onclick = async (ev) => { ev.stopPropagation(); vibrer(); const v = bt.dataset.v === '1', deja = (e.avis || {})[i] === v;
+      const rr = await API.carte_etat_avis(e.cid, i, deja ? null : v).catch(() => null); if (!rr || !rr.ok) { toast(tt('Pas enregistré', 'Not saved')); return; }
+      e.avis = rr.avis; $$('[data-av]', b).forEach(z => z.classList.toggle('on', (rr.avis || {})[i] === (z.dataset.v === '1')));
+      if (!v && !deja) toast(tt('Merci : noté comme « pas un défaut »', 'Thanks: marked as “not a flaw”'), 2200); });
+  };
   const peindre = () => {
     o.innerHTML = `<button class="vd-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
       ${refs.map((u, j) => `<div class="vd-ph" data-j="${j}"><div class="vd-cad"><div class="vd-sc"><img src="${esc(photoNet(u, 1600))}" alt="">
           <svg class="vd-calque" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true"></svg></div><span class="vd-rat"></span></div>
         <div class="vd-outils">${edite === j ? `<span class="sous">${tt('Glisse les 4 coins sur les coins de la carte', 'Drag the 4 handles onto the card’s corners')}</span>
             <button class="pilule" data-ann="${j}">${tt('Annuler', 'Cancel')}</button><button class="btn petit" data-ok="${j}">${tt('Enregistrer', 'Save')}</button>`
-          : `<button class="chip ${calque ? 'on' : ''}" data-calque>${tt('Grille', 'Grid')}</button>${e.cid ? `<button class="chip" data-ed="${j}">${tt('Ajuster le contour', 'Fix the outline')}</button>` : ''}
+          : `<button class="chip ${calque ? 'on' : ''}" data-calque>${tt('Grille', 'Grid')}</button>
             ${e.cid && (e.centrage_vue || {})[FACES[j]] ? `<button class="chip" data-cent="${j}">${tt('Ajuster le centrage', 'Fix the centering')}</button>` : ''}`}</div></div>`).join('')}
-      <div class="sous vd-q">${tt('Tu le vois aussi ? Ton avis rend l’analyseur plus précis pour tout le monde.', 'Do you see it too? Your answer makes the analyzer more accurate for everyone.')}</div>
-      <ol class="et-d vd-l">${def.map((d, i) => { const a = (e.avis || {})[i]; return `<li data-d="${i}" class="g-${(d.gravite || '').replace(' ', '-')}"><i>${i + 1}</i><span>${esc(LIB_ZONE(d.zone))}${d.photo ? tt(' (dos)', ' (back)') : ''} · ${esc(LIB_DEFAUT(d.type))} ${esc(LIB_GRAV(d.gravite))}</span>
-        ${e.cid ? `<span class="vd-av"><button class="${a === true ? 'on' : ''}" data-av="${i}" data-v="1" aria-label="${esc(tt('Je le vois', 'I see it'))}">✓</button><button class="${a === false ? 'on' : ''}" data-av="${i}" data-v="0" aria-label="${esc(tt('Pas de défaut', 'No flaw'))}">✕</button></span>` : ''}</li>`; }).join('')}</ol>`;
+      <div class="sous vd-q">${def.some(d => !d.masque) ? tt('Touche un numéro : le défaut, le critère PSA, et ton avis (ça rend l’analyseur plus précis pour tout le monde).', 'Tap a number: the flaw, the PSA criterion, and your opinion (it makes the analyzer more accurate for everyone).') : tt('Aucun défaut repéré sur les photos.', 'No flaw found on the photos.')}</div>
+      <button class="lien-t vd-bar" data-bareme>${tt('Le barème utilisé : normes officielles PSA ›', 'The scale used: official PSA standards ›')}</button>`;
     o.querySelector('.vd-x').onclick = () => o.remove();
     refs.forEach((u, j) => {
       const w = o.querySelector(`.vd-ph[data-j="${j}"]`), im = w.querySelector('img');
@@ -8811,12 +8874,10 @@ function voirDefauts(e, k, apres){
       Object.assign(e, r); edite = -1; if (apres) apres(e); peindre(); });
     $$('[data-cent]', o).forEach(b => b.onclick = () => voirCentrage(e, e.cid, (e2) => { if (apres) apres(e2); peindre(); }));
     const montrer = (i) => { const d = def[i], w = d && o.querySelector(`.vd-ph[data-j="${d.photo || 0}"]`); if (!w) return;
-      w.scrollIntoView({behavior: 'smooth', block: 'center'});
-      setTimeout(() => { const p = w.querySelector(`.fc-pt[data-d="${i}"]`); if (p) { p.classList.remove('flash'); void p.offsetWidth; p.classList.add('flash'); } }, 350); };
-    $$('.vd-l [data-d]', o).forEach(li => li.onclick = (ev) => { if (ev.target.closest('[data-av]')) return; montrer(+li.dataset.d); });
-    $$('[data-av]', o).forEach(b => b.onclick = async () => { vibrer(); const i = +b.dataset.av, v = b.dataset.v === '1', deja = (e.avis || {})[i] === v;
-      const r = await API.carte_etat_avis(e.cid, i, deja ? null : v).catch(() => null); if (!r || !r.ok) { toast(tt('Pas enregistré', 'Not saved')); return; }
-      e.avis = r.avis; $$(`[data-av="${i}"]`, o).forEach(x => x.classList.toggle('on', (r.avis || {})[i] === (x.dataset.v === '1'))); });
+      ouvert = i; refs.forEach((_u, jj) => dessiner(jj));
+      w.scrollIntoView({behavior: 'smooth', block: 'center'}); };
+    o.onclick = (ev) => { if (ouvert >= 0 && !ev.target.closest('.vd-bulle, .vd-num')) { ouvert = -1; refs.forEach((_u, jj) => dessiner(jj)); } };
+    const bb = o.querySelector('[data-bareme]'); if (bb) bb.onclick = (ev) => { ev.stopPropagation(); baremePSA(); };
     o._montrer = montrer;
   };
   // une photo : le cadrage (la carte + 9 % autour ; la photo entiere pendant l'ajustement), le calque, les numeros
@@ -8851,10 +8912,15 @@ function voirDefauts(e, k, apres){
           el.style.left = q[c][0] / 10 + '%'; el.style.top = q[c][1] / 10 + '%'; svg.innerHTML = `<polygon class="vd-cont" points="${q.map(p => p.join(',')).join(' ')}"/>`; };
         el.onpointerup = () => { el.onpointermove = null; }; };
     });
-    if (edite !== j) def.forEach((d, i) => { if ((d.photo || 0) !== j) return;
-      const [x, y] = place(d, q), p = document.createElement('span');
-      p.className = 'fc-pt g-' + (d.gravite || '').replace(' ', '-'); p.dataset.d = i; p.textContent = i + 1;
-      p.style.left = x / 10 + '%'; p.style.top = y / 10 + '%'; sc.appendChild(p); });
+    $$('.vd-bulle', cad).forEach(x => x.remove());
+    if (edite !== j) def.forEach((d, i) => { if ((d.photo || 0) !== j || d.masque) return;
+      const [x, y] = place(d, q), p = document.createElement('button');
+      p.className = 'fc-pt vd-num g-' + (d.gravite || '').replace(' ', '-') + (ouvert === i ? ' on' : ''); p.dataset.d = i; p.textContent = i + 1;
+      p.setAttribute('aria-label', LIB_ZONE(d.zone) + ' · ' + LIB_DEFAUT(d.type));
+      p.style.left = x / 10 + '%'; p.style.top = y / 10 + '%'; sc.appendChild(p);
+      p.onclick = (ev) => { ev.stopPropagation(); vibrer(); ouvert = ouvert === i ? -1 : i; refs.forEach((_u, jj) => dessiner(jj)); };
+      if (ouvert === i) bulle(cad, sc, d, i, x, y);
+    });
   };
   document.body.appendChild(o);
   peindre();
@@ -8869,7 +8935,7 @@ async function blocEtat(c, forcer){
   const lancer = async () => {
     if (!await okIA()) return;
     const d = await feuilleExamen(c); if (!d) return;
-    z.innerHTML = `<div class="lecture"><span class="roue"></span>${tt('Examen des coins, des bords et du centrage… (20 à 40 s)', 'Checking corners, edges and centering… (20 to 40 s)')}</div>`;
+    z.innerHTML = `<div class="lecture"><span class="roue"></span>${tt('Examen des 8 coins, des 8 bords et de la surface… (1 à 2 min)', 'Checking 8 corners, 8 edges and the surface… (1 to 2 min)')}</div>`;
     const r = await API.carte_etat(c.id, true, typeof LANGUE !== 'undefined' ? LANGUE : 'fr', d).catch(e => ({ok:false, erreur:e.message}));
     if (!r.ok) { z.innerHTML = vide(r.erreur); brancher(); return; }
     peindre(r);
@@ -8885,11 +8951,11 @@ async function blocEtat(c, forcer){
     const CATS = [['centrage', tt('Centrage', 'Centering'), cent], ['coins', tt('Coins', 'Corners')], ['bords', tt('Bords', 'Edges')], ['surface', tt('Surface', 'Surface')]];
     // chaque sous-note sous 10 : pourquoi et où (Mathieu : « on doit expliquer les cotes »)
     const pourquoi = CATS.filter(([k]) => n[k] != null && n[k] < 10).map(([k, l]) => `<li><b>${l} ${f(n[k])}</b><span>${esc(ex[k] || (k === 'centrage' && cent ? cent : tt('raison non précisée : refais l’examen', 'no reason given: check again')))}</span></li>`);
-    const rien = !def.length && !pourquoi.length;
+    const rien = !def.some(d => !d.masque) && !pourquoi.length;
     // 1er nov 2026 (Mathieu : « plus sexy, nos pastilles rondes ; on doit pouvoir retrecir la fenetre ») : une pastille ronde
     // (la note dans l'anneau) qui s'ouvre et se referme ; le choix est garde
     let ouvert = false; try { ouvert = localStorage.getItem('lr_etat_ouvert') === '1'; } catch (x) {}
-    const nbv = def.length, resume = [nbv ? nbv + ' ' + tt(nbv > 1 ? 'points à vérifier' : 'point à vérifier', nbv > 1 ? 'points to check' : 'point to check') : tt('aucun défaut visible', 'no visible flaw'),
+    const nbv = def.filter(d => !d.masque).length, resume = [nbv ? nbv + ' ' + tt(nbv > 1 ? 'points à vérifier' : 'point à vérifier', nbv > 1 ? 'points to check' : 'point to check') : tt('aucun défaut visible', 'no visible flaw'),
       cent ? tt('centrage ', 'centering ') + cent.split(' · ')[0] : ''].filter(Boolean).join(' · ');
     z.innerHTML = `<div class="et ${ouvert ? 'ouvert' : ''}">
       <button class="fc-alerte et-tete" id="fc-et-t" aria-expanded="${ouvert}"><span class="fc-al-ic et-anneau ${cl}"><b>${fourch}</b></span>
@@ -8897,7 +8963,7 @@ async function blocEtat(c, forcer){
       <div class="et-corps">
       <div class="et-n">${CATS.map(([k, l, sous]) => `<div><span class="fc-al-ic et-rond ${n[k] == null ? '' : n[k] >= 9 ? 'vert' : n[k] >= 7 ? 'or' : 'rouge'}"><b>${f(n[k])}</b></span><span>${l}</span>${sous ? `<small>${esc(sous)}</small>` : ''}</div>`).join('')}</div>
       ${pourquoi.length ? `<ul class="et-x">${pourquoi.join('')}</ul>` : ''}
-      ${def.length ? `<div class="et-d">${def.map((d, i) => `<button class="acc-pil et-pil g-${(d.gravite || '').replace(' ', '-')}" data-d="${i}"><span class="ap-ic"><b>${i + 1}</b></span>
+      ${nbv ? `<div class="et-d">${def.map((d, i) => d.masque ? '' : `<button class="acc-pil et-pil g-${(d.gravite || '').replace(' ', '-')}" data-d="${i}"><span class="ap-ic"><b>${i + 1}</b></span>
           <span class="ap-t">${esc(LIB_ZONE(d.zone))}${d.photo ? tt(' (dos)', ' (back)') : ''}<small>${esc(LIB_DEFAUT(d.type))} · ${esc(LIB_GRAV(d.gravite))}</small></span><i aria-hidden="true">›</i></button>`).join('')}</div>
         <button class="pilule" id="fc-et-voir">${tt('Voir les défauts sur la photo', 'See the flaws on the photo')}</button>`
         : rien ? `<div class="et-ok">${tt('Aucun défaut visible sur les photos', 'No visible flaw on the photos')}</div>` : ''}
@@ -9102,7 +9168,7 @@ function feuilleExamen(c){
         <div class="sous">${tt('Les photos d’examen restent avec l’examen ; les photos de ta fiche ne changent pas.', 'Exam photos stay with the exam; your card’s photos don’t change.')}</div>`);
       $$('[data-k]').forEach(i => i.onchange = async (ev) => { const f = ev.target.files && ev.target.files[0], k = ev.target.dataset.k; if (!f) return;
         $('#exs-' + k).textContent = tt('Lecture…', 'Reading…');
-        try { const ph = await reduirePhoto(f, 2400); const q0 = await qualitePhoto(ph).catch(() => ({ok: true}));
+        try { const ph = await reduirePhoto(f, 3200); /* 2 nov 2026 : 3200 px, zooms en pleine resolution */ const q0 = await qualitePhoto(ph).catch(() => ({ok: true}));
           if (!q0.ok) { const [t, dd] = MSG_PHOTO[q0.raison] || MSG_PHOTO.floue; toast(t + ' : ' + dd, 5000); }
           P[k] = ph; P.q[k] = k === 'rasante' ? null : coinsLocaux(await chargerImage(ph)); } catch (x) { toast(tt('Photo illisible : reprends-la', 'Unreadable photo: retake it')); }
         peindre(); });
@@ -9339,7 +9405,9 @@ async function assistantSoumission(id, etape){
 // 1er nov 2026 (Mathieu : « une grille pour montrer comment le centering a ete evalue, comme un outil de centrage ») : la
 // carte redressee, ses aretes, les 4 lignes du cadre imprime trouvees par l'app, le ratio de chaque axe et la note PSA que ce
 // centrage permet. Les lignes se deplacent au doigt (carte sans bordure nette, ou pour verifier) ; l'ajustement est garde.
-const TOL_DEVANT = [[55, 10], [60, 9], [65, 8], [70, 7], [80, 6], [85, 5], [90, 4]], TOL_DOS = [[75, 10], [90, 9]];
+// 2 nov 2026 : les normes officielles PSA (Card Grading Standards) : devant 10 = 55/45 a 60/40, 9 = 65/35, 8 = 70/30, 7 = 75/25,
+// 6 = 80/20, 5-4 = 85/15, 3-1 = 90/10 ; dos 10 = 75/25, 9 a 1 = 90/10 (voir baremePSA)
+const TOL_DEVANT = [[60, 10], [65, 9], [70, 8], [75, 7], [80, 6], [85, 5], [90, 3]], TOL_DOS = [[75, 10], [90, 9]];
 function voirCentrage(e, cid, apres){
   const vues = e.centrage_vue || {}, faces = ['devant', 'dos'].filter(f => vues[f] && vues[f].img);
   if (!faces.length) { toast(tt('Pas de vue redressée : refais l’examen', 'No straightened view: redo the exam')); return; }
@@ -9349,38 +9417,57 @@ function voirCentrage(e, cid, apres){
   const fermer = () => o.remove();
   const peindre = () => {
     const v = vues[face], m = {l: v.l ?? 0.06, r: v.r ?? 0.06, t: v.t ?? 0.06, b: v.b ?? 0.06}, auto = v.l != null || v.t != null;
+    let vx = v.l != null || !!v.manuel, vy = v.t != null || !!v.manuel;      // 2 nov 2026 : un axe pas mesure n'affiche pas « 50/50 »
     const tol = face === 'dos' ? TOL_DOS : TOL_DEVANT;
     const rat = (a, c) => { const g = Math.round(100 * Math.max(a, c) / ((a + c) || 1)); return [g, 100 - g]; };
     const note = (g) => (tol.find(([lim]) => g <= lim) || [0, face === 'dos' ? 8 : 3])[1];
-    const lab = () => { const x = rat(m.l, m.r), y = rat(m.t, m.b), n = Math.min(note(x[0]), note(y[0]));
-      return `<div class="cg-r"><span>${tt('Gauche / droite', 'Left / right')} <b>${x[0]}/${x[1]}</b></span><span>${tt('Haut / bas', 'Top / bottom')} <b>${y[0]}/${y[1]}</b></span>
+    const lab = () => { const x = rat(m.l, m.r), y = rat(m.t, m.b), n = Math.min(vx ? note(x[0]) : 10, vy ? note(y[0]) : 10);
+      return `<div class="cg-r"><span>${tt('Gauche / droite', 'Left / right')} <b>${vx ? x[0] + '/' + x[1] : tt('à placer', 'to place')}</b></span><span>${tt('Haut / bas', 'Top / bottom')} <b>${vy ? y[0] + '/' + y[1] : tt('à placer', 'to place')}</b></span>
         <span class="cg-n ${n >= 10 ? 'vert' : n >= 9 ? 'or' : 'rouge'}">PSA ${n} ${tt('max', 'max')}</span></div>`; };
     o.innerHTML = `<button class="vd-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
       <h3 class="cg-h">${tt('Grille de centrage', 'Centering grid')}</h3>
       ${faces.length > 1 ? `<div class="chips">${faces.map(f => `<button class="chip ${f === face ? 'on' : ''}" data-f="${f}">${f === 'devant' ? tt('Devant', 'Front') : tt('Dos', 'Back')}</button>`).join('')}</div>` : ''}
       <div id="cg-lab">${lab()}</div>
       <div class="cg-z" style="aspect-ratio:${v.ratio || 0.714}"><img src="${esc(photoNet(v.img, 1600))}" alt="">
+        <svg class="cg-bandes" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true"></svg>
         <div class="cg-c v"></div><div class="cg-c h"></div>
         <div class="cg-l v" data-k="l"><i></i></div><div class="cg-l v" data-k="r"><i></i></div><div class="cg-l h" data-k="t"><i></i></div><div class="cg-l h" data-k="b"><i></i></div>
         <span class="cg-m" data-m="l"></span><span class="cg-m" data-m="r"></span><span class="cg-m" data-m="t"></span><span class="cg-m" data-m="b"></span></div>
+      <div class="cg-leg" id="cg-leg"></div>
       <div class="sous">${!auto ? tt('Pas de bordure nette trouvée : glisse les 4 lignes sur le cadre imprimé de la carte.', 'No clear border found: drag the 4 lines onto the card’s printed frame.')
         : v.manuel ? tt('Ajusté par toi. Les lignes doivent suivre le cadre imprimé.', 'Adjusted by you. The lines should follow the printed frame.')
         : tt('Les 4 lignes : le cadre imprimé trouvé par l’app. Glisse-les pour vérifier ou corriger.', 'The 4 lines: the printed frame found by the app. Drag them to check or fix.')}
-        ${tt(face === 'dos' ? 'Dos : PSA 10 jusqu’à 75/25.' : 'Devant : PSA 10 jusqu’à 55/45, 9 jusqu’à 60/40, 8 jusqu’à 65/35.', face === 'dos' ? 'Back: PSA 10 up to 75/25.' : 'Front: PSA 10 up to 55/45, 9 up to 60/40, 8 up to 65/35.')}</div>
+        ${tt(face === 'dos' ? 'Dos (normes PSA) : 10 jusqu’à 75/25, 9 et moins jusqu’à 90/10.' : 'Devant (normes PSA) : 10 jusqu’à 55/45 – 60/40, 9 jusqu’à 65/35, 8 jusqu’à 70/30, 7 jusqu’à 75/25.', face === 'dos' ? 'Back (PSA standards): 10 up to 75/25, 9 and below up to 90/10.' : 'Front (PSA standards): 10 up to 55/45 – 60/40, 9 up to 65/35, 8 up to 70/30, 7 up to 75/25.')} <a href="#" data-bareme-cg>${tt('Barème', 'Scale')}</a></div>
       <div class="env-b"><button class="btn" id="cg-ok" hidden>${tt('Enregistrer', 'Save')}</button>${v.manuel ? `<button class="pilule" id="cg-auto">${tt('Remettre la mesure de l’app', 'Restore the app’s measure')}</button>` : ''}</div>`;
     o.querySelector('.vd-x').onclick = fermer;
+    const bc_ = o.querySelector('[data-bareme-cg]'); if (bc_) bc_.onclick = (ev) => { ev.preventDefault(); baremePSA(); };
     $$('[data-f]', o).forEach(b => b.onclick = () => { face = b.dataset.f; peindre(); });
     const z = o.querySelector('.cg-z');
     const poser = () => {
       const L = {l: [m.l, 'left'], r: [1 - m.r, 'left'], t: [m.t, 'top'], b: [1 - m.b, 'top']};
       for (const k in L) { const el = z.querySelector(`[data-k="${k}"]`); el.style[L[k][1]] = (L[k][0] * 100) + '%'; }
-      const mm = (k, txt, st) => { const el = z.querySelector(`[data-m="${k}"]`); el.textContent = txt; Object.assign(el.style, st); };
+      const mm = (k, txt, st) => { const el = z.querySelector(`[data-m="${k}"]`); el.textContent = txt; Object.assign(el.style, st); el.hidden = (k === 'l' || k === 'r') ? !vx : !vy; };
       const tot = (a, c) => (a + c) || 1;
       mm('l', Math.round(100 * m.l / tot(m.l, m.r)) + '%', {left: (m.l * 50) + '%', top: '50%'});
       mm('r', Math.round(100 * m.r / tot(m.l, m.r)) + '%', {left: (100 - m.r * 50) + '%', top: '50%'});
       mm('t', Math.round(100 * m.t / tot(m.t, m.b)) + '%', {left: '50%', top: (m.t * 50) + '%'});
       mm('b', Math.round(100 * m.b / tot(m.t, m.b)) + '%', {left: '50%', top: (100 - m.b * 50) + '%'});
       $('#cg-lab', o).innerHTML = lab();
+      // 2 nov 2026 (Mathieu : les outils de centrage transparents, « The Center Tool ») : les zones de chaque note PSA. Pour
+      // la largeur totale des bordures d'un axe, la ligne du cadre doit tomber dans la zone verte pour un 10 (55/45 a 60/40),
+      // or pour un 9 (65/35), orange pour un 8 (70/30), rouge pour un 7 (75/25). Elles bougent avec les lignes.
+      const Z = face === 'dos' ? [[90, 9, 'z9'], [75, 10, 'z10']] : [[75, 7, 'z7'], [70, 8, 'z8'], [65, 9, 'z9'], [60, 10, 'z10']];
+      const T = m.l + m.r, Ty = m.t + m.b;
+      let h = '';
+      for (const [lim, n, cl] of Z) {
+        const p = lim / 100, a = T * (1 - p) * 1000, b = T * p * 1000, c = Ty * (1 - p) * 1000, d = Ty * p * 1000;
+        // comme l'outil transparent : les limites de chaque note, en traits fins de sa couleur, le chiffre au bout
+        const L_ = (x1, y1, x2, y2) => `<line class="${cl}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+        if (vx) for (const x of [a, b, 1000 - a, 1000 - b]) h += L_(x, 0, x, 1000);
+        if (vy) for (const y of [c, d, 1000 - c, 1000 - d]) h += L_(0, y, 1000, y);
+      }
+      const bz = z.querySelector('.cg-bandes'); if (bz) bz.innerHTML = h;
+      const lg = $('#cg-leg', o); if (lg) lg.innerHTML = Z.slice().reverse().map(([lim, n, cl]) => `<span class="${cl}"><i></i>PSA ${n} ≤ ${lim}/${100 - lim}</span>`).join('');
     };
     poser();
     let change = false;
@@ -9390,7 +9477,7 @@ function voirCentrage(e, cid, apres){
       el.onpointermove = (mv) => { const r = z.getBoundingClientRect();
         let f = k === 'l' || k === 'r' ? (mv.clientX - r.left) / r.width : (mv.clientY - r.top) / r.height;
         if (k === 'r' || k === 'b') f = 1 - f;
-        m[k] = Math.max(0, Math.min(0.45, f)); change = true; poser(); $('#cg-ok', o).hidden = false; };
+        m[k] = Math.max(0, Math.min(0.45, f)); change = true; if (k === 'l' || k === 'r') vx = true; else vy = true; poser(); $('#cg-ok', o).hidden = false; };
       el.onpointerup = () => { el.onpointermove = null; el.classList.remove('actif'); };
     });
     $('#cg-ok', o).onclick = async () => { const r = await essai(API.carte_centrage(cid, face, m), tt('Centrage enregistré', 'Centering saved'));
@@ -10627,12 +10714,57 @@ function feuilleDepense(){
 // ============================================================
 // Reglages
 // ============================================================
+// 2 nov 2026 (Mathieu : « un utilisateur doit voir la meme chose sur son ordi que sur son cell ») : un compte, tous les
+// appareils. Le code d'appareil (6 chiffres, 10 min) ouvre CE compte sur l'ordi ; Apple, Google et eBay peuvent tous
+// ouvrir le meme compte (« Ajouter » relie une connexion a ce compte-ci)
+async function blocAppareils(){
+  const z = $('#g-appareils'); if (!z) return;
+  const r = await API.connexions().catch(() => null);
+  if (!r || !r.ok || !$('#g-appareils')) { z.hidden = true; return; }
+  const NOMS = {apple: 'Apple', google: 'Google', ebay: 'eBay'};
+  const ligne = (k) => `<div class="r-ligne fixe ap-l"><span class="t"><b>${NOMS[k]}</b><span>${r[k] ? tt('Ouvre ce compte', 'Opens this account') : tt('Pas encore reliée', 'Not linked yet')}</span></span>
+    ${r[k] ? `<span class="capsule vert petit">✓</span>` : k === 'ebay' ? `<a class="pilule" href="#reglages" data-relier-ebay>${tt('Relier', 'Link')}</a>` : (r.offerts || []).includes(k) ? `<button class="pilule" data-lier="${k}">${tt('Ajouter', 'Add')}</button>` : ''}</div>`;
+  z.innerHTML = `<div class="r-titre">${tt('Mes appareils', 'My devices')}</div>
+    <div class="r-note">${tt('Ton compte est le même partout. Sur un ordi ou une tablette : ouvre slabcoach.com et entre le code.', 'Your account is the same everywhere. On a computer or tablet: open slabcoach.com and enter the code.')}</div>
+    <button class="btn" id="ap-code">${tt('Ouvrir sur un autre appareil', 'Open on another device')}</button>
+    <div class="r-titre" style="margin-top:14px">${tt('Façons de me connecter', 'Ways to sign in')}</div>
+    <div class="r-note">${tt('Toutes celles qui ont un ✓ ouvrent ce même compte. Ajoute celle que tu utilises sur ton ordi.', 'Every one with a ✓ opens this same account. Add the one you use on your computer.')}</div>
+    ${['apple', 'google', 'ebay'].filter(k => r[k] || k === 'ebay' || (r.offerts || []).includes(k)).map(ligne).join('')}`;
+  $('#ap-code').onclick = async () => {
+    const c = await essai(API.code_appareil()); if (!c) return; vibrer();
+    const fin = Date.now() + (c.expire_s || 600) * 1000;
+    popOuvrir(`<button class="pop-x" id="ap-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
+      <div class="pop-tete"><span class="pop-sur">${tt('Code d’appareil', 'Device code')}</span><h3>${tt('Ouvre ton compte sur l’ordi', 'Open your account on the computer')}</h3></div>
+      <div class="pop-corps"><ol class="td-meth"><li><i>1</i><span>${tt('Sur l’ordi, va sur', 'On the computer, go to')} <b>slabcoach.com/auth/code</b></span></li>
+        <li><i>2</i><span>${tt('Entre ce code :', 'Enter this code:')}</span></li></ol>
+        <div class="ap-code">${c.code.slice(0, 3)} ${c.code.slice(3)}</div>
+        <div class="sous" id="ap-reste" style="text-align:center"></div></div>
+      <div class="pop-pied"><button class="btn" id="ap-ok">${tt('C’est fait', 'Done')}</button></div>`, popFermer);
+    $('#ap-x').onclick = popFermer; $('#ap-ok').onclick = popFermer;
+    const t = setInterval(() => { const e = $('#ap-reste'); if (!e) { clearInterval(t); return; } const s_ = Math.max(0, Math.round((fin - Date.now()) / 1000));
+      e.textContent = s_ ? tt(`Valide encore ${Math.floor(s_ / 60)} min ${String(s_ % 60).padStart(2, '0')} s · un seul usage`, `Valid for ${Math.floor(s_ / 60)} min ${String(s_ % 60).padStart(2, '0')} s · single use`) : tt('Code expiré : demandes-en un autre', 'Code expired: get a new one');
+      if (!s_) clearInterval(t); }, 1000);
+  };
+  $$('[data-lier]', z).forEach(b => b.onclick = async () => {
+    const f = b.dataset.lier, j = await essai(API.connexion_jeton_lier(f)); if (!j) return;
+    if (FLUX_AUTH) {                              // app iPhone : le navigateur securise d'iOS, retour par slabcoachauth://
+      const rr = new Uint8Array(32); crypto.getRandomValues(rr);
+      const v = btoa(String.fromCharCode.apply(null, rr)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      try { localStorage.setItem('sc_v', v); } catch (e) {}
+      const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(v));
+      const h = Array.from(new Uint8Array(d)).map(x => x.toString(16).padStart(2, '0')).join('');
+      CAP.Browser.open({url: location.origin + j.url + '&app=' + h, presentationStyle: 'popover', toolbarColor: '#0B0B0E'});
+    } else allerA(j.url);
+  });
+  $$('[data-relier-ebay]', z).forEach(a => a.onclick = (e) => { e.preventDefault(); const g = $('#g-ebay'); if (g) g.scrollIntoView({behavior: 'smooth', block: 'center'}); });
+}
 async function vueReglages(arg){
   V().innerHTML = `<section class="ecran">${roue}</section>`;
   if (arg === 'ebay-ok') { history.replaceState(null, '', '#reglages');
     setTimeout(() => toast(tt('eBay connecté : on importe tes annonces et tes ventes…', 'eBay connected: importing your listings and sales…'), 4500), 300);
     suivrePremiereSynchro(); }
   if (arg === 'ebay-erreur') setTimeout(() => toast('Connexion eBay refusée : recommence ou colle l’adresse', 4500), 300);
+  if (arg === 'connexion-ok') { history.replaceState(null, '', '#reglages'); setTimeout(() => toast(tt('Connexion ajoutée : elle ouvre maintenant ce compte-ci', 'Sign-in added: it now opens this account'), 4500), 300); }
   let r, act;
   try {
     [r, act] = await Promise.all([reglages(true), API.activites().catch(() => ({breaks:true, magasin:true}))]);
@@ -10662,6 +10794,7 @@ async function vueReglages(arg){
     <div class="section">${tt('Réglages', 'Settings')}</div>
     <div class="r-bloc" id="g-ebay">${roue}</div>
     <div class="r-bloc" id="g-forfait" hidden></div>
+    ${(S.forfait || {}).multi ? `<div class="r-bloc" id="g-appareils"><div class="r-titre">${tt('Mes appareils', 'My devices')}</div>${roue}</div>` : ''}
     <div class="r-bloc" ${S.mode === 'acheteur' ? 'hidden' : ''}><div class="r-titre">Ce que je fais</div>
       <div class="r-ligne fixe"><span class="t"><b>Vendre sur eBay</b><span>Inventaire, prix, annonces, profit</span></span><span class="interrupteur on"><i></i></span></div>
       ${ligneAct('breaks', 'Breaks', 'Prix des places, tirage, envois')}${ligneAct('magasin', 'Magasin / comptoir', 'Ventes en personne, rachats, consignation')}</div>
@@ -10780,7 +10913,7 @@ async function vueReglages(arg){
     ? `${v.nb_joueurs} joueurs · ${v.nb_mesures} cartes mesurées · ${(v.nb_ventes || 0).toLocaleString(LOC())} ventes${v.maj ? ' · mis à jour ' + ilYa(v.maj) : ''}`
     : 'Valeurs par défaut (pas encore de mise à jour)'; };
   API.valeurs_statut().then(afficherVal).catch(() => afficherVal(null));
-  rendreBlocEbay(); rendreForfait(arg === 'pro-ok');
+  rendreBlocEbay(); rendreForfait(arg === 'pro-ok'); blocAppareils();
   pastillerReglages();
   $('#g-val-maj').onclick = async () => {
     const b = $('#g-val-maj'); b.disabled = true; b.innerHTML = '<span class="roue" style="width:18px;height:18px"></span> Calcul…';
@@ -10799,7 +10932,7 @@ function pastillerReglages(){
   const titreDe = (b) => b.id === 'g-ebay' ? tt('Compte eBay', 'eBay account') : ((b.querySelector('.r-titre') || b.querySelector('b') || {}).textContent || '').trim();
   const icone = (t) => /photo/i.test(t) ? 'photo' : /^(mes deals|my deals)$/i.test(t) ? 'deals' : /ebay/i.test(t) ? 'ebay' : /palette/i.test(t) ? 'palette' : /sport/i.test(t) ? 'sport' : /boutique|shop/i.test(t) ? 'boutique'
     : /frais|fees/i.test(t) ? 'frais' : /avanc|advanced/i.test(t) ? 'admin' : /aide|help/i.test(t) ? 'aide' : /profil/i.test(t) ? 'profil' : /guide/i.test(t) ? 'guide'
-    : /idée|idea/i.test(t) ? 'idee' : /partag|share/i.test(t) ? 'news' : 'faire';
+    : /idée|idea/i.test(t) ? 'idee' : /partag|share/i.test(t) ? 'news' : /appareil|device/i.test(t) ? 'profil' : 'faire';
   const formulaire = (b) => !!b.querySelector('#g-nom, #g-ep, #g-desc');
   const guide = [...ec.children].find(b => b.classList.contains('r-bloc') && b.getAttribute('href') === '#guide'); if (guide) res.appendChild(guide);   // deja un raccourci
   const blocs = [...ec.children].filter(b => b.classList.contains('r-bloc') && b.id !== 'g-forfait' && !b.hidden && b.getAttribute('href') !== '#guide');

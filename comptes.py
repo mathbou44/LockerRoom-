@@ -182,3 +182,117 @@ def dechiffrer(texte):
 
 def nouvel_etat():
     return secrets.token_urlsafe(16)
+
+
+# -- 2 nov 2026 (Mathieu : « un utilisateur doit voir la meme chose sur son ordi que sur son cell ») ------------------------
+# Un compte = une personne, peu importe comment elle se connecte (eBay, Apple, Google) :
+#   1. chaque compte garde ses « identites » (fournisseur:sub) ; une identite reliee ouvre toujours CE compte ;
+#   2. une nouvelle connexion avec un courriel VERIFIE deja connu ouvre le compte de ce courriel (pas un 2e compte vide) ;
+#   3. un code d'appareil a 6 chiffres (10 min, un seul usage) ouvre le meme compte sur un autre appareil ;
+#   4. un ancien compte relie a un autre garde ses donnees (rien n'est efface) et renvoie vers le compte choisi.
+CHEMIN_CODES = os.path.join(DOSSIER_COMPTES, "codes_appareil.json")
+_RELAIS = re.compile(r"@privaterelay\.appleid\.com$", re.I)
+
+
+def resoudre(compte_id):
+    """Le compte ou une session doit aller (suit les renvois d'un ancien compte relie)."""
+    ix = _index()
+    cid, vus = compte_id, set()
+    while cid in ix and ix[cid].get("renvoi") and cid not in vus and len(vus) < 4:
+        vus.add(cid)
+        nxt = ix[cid]["renvoi"]
+        if nxt not in ix:
+            break
+        cid = nxt
+    return cid
+
+
+def par_identite(cle):
+    return next((cid for cid, e in _index().items() if cle in (e.get("identites") or []) and not e.get("renvoi")), None)
+
+
+def lier_identite(compte_id, cle, env=None):
+    """Relie une identite (fournisseur:sub) a ce compte. L'ancien compte de cette identite (s'il existe) renvoie ici ; ses
+    donnees restent sur le disque."""
+    ancien = id_pour(cle, env) if env else None
+    with _verrou:
+        ix = _index()
+        if compte_id not in ix:
+            return False
+        ids = ix[compte_id].setdefault("identites", [])
+        if cle not in ids:
+            ids.append(cle)
+        for cid, e in ix.items():                      # une identite n'appartient qu'a un compte
+            if cid != compte_id and cle in (e.get("identites") or []):
+                e["identites"] = [x for x in e["identites"] if x != cle]
+        if ancien and ancien != compte_id and ancien in ix and not ix[ancien].get("renvoi"):
+            ix[ancien]["renvoi"] = compte_id
+            ix[ancien]["relie_le"] = datetime.now().isoformat(timespec="seconds")
+        _ecrire_index(ix)
+    return True
+
+
+def courriel_utilisable(courriel):
+    c = str(courriel or "").strip().lower()
+    return c if c and "@" in c and not _RELAIS.search(c) else None
+
+
+def trouver_connexion(cle, nom, env, courriel=None):
+    """Connexion Apple / Google : le compte de cette personne. -> (compte_id, nouveau)."""
+    cid = par_identite(cle)
+    if cid:
+        return cid, False
+    defaut = id_pour(cle, env)
+    ix = _index()
+    if defaut in ix:
+        return resoudre(defaut), False
+    c = courriel_utilisable(courriel)
+    if c:
+        memes = [k for k, e in ix.items() if courriel_utilisable(e.get("courriel")) == c and not e.get("renvoi")]
+        if memes:
+            cible = sorted(memes, key=lambda k: str(ix[k].get("cree_le") or ""))[0]       # le plus ancien
+            lier_identite(cible, cle)
+            return cible, False
+    cid, nouveau = trouver_ou_creer(cle, nom, env)
+    lier_identite(cid, cle)
+    return cid, nouveau
+
+
+def code_creer(compte_id, ttl=600):
+    """Un code a 6 chiffres qui ouvre CE compte sur un autre appareil (10 min, un seul usage)."""
+    import time
+    with _verrou:
+        d = {}
+        try:
+            with open(CHEMIN_CODES, encoding="utf-8") as f:
+                d = json.load(f) or {}
+        except (OSError, ValueError):
+            pass
+        m = time.time()
+        d = {k: v for k, v in d.items() if v[1] > m and v[0] != compte_id}
+        while True:
+            code = f"{secrets.randbelow(10 ** 6):06d}"
+            if code not in d:
+                break
+        d[code] = [compte_id, m + ttl]
+        os.makedirs(DOSSIER_COMPTES, exist_ok=True)
+        _ecrire_json(CHEMIN_CODES, d)
+    return code
+
+
+def code_utiliser(code):
+    import time
+    code = re.sub(r"\D", "", str(code or ""))
+    if len(code) != 6:
+        return None
+    with _verrou:
+        try:
+            with open(CHEMIN_CODES, encoding="utf-8") as f:
+                d = json.load(f) or {}
+        except (OSError, ValueError):
+            return None
+        v = d.pop(code, None)
+        _ecrire_json(CHEMIN_CODES, {k: x for k, x in d.items() if x[1] > time.time()})
+    if not v or v[1] < time.time() or v[0] not in _index():
+        return None
+    return resoudre(v[0])

@@ -299,6 +299,7 @@ def connexion_compte(texte, etat=None):
         return {"ok": False, "erreur": "eBay n'a pas confirmé ton identité : recommence"}
     relie = next(iter(comptes.par_champ("ebay_user_id", u["userId"])), None)   # 27 oct 2026 : deja relie a un compte Apple / Google
     cid, nouveau = (relie, False) if relie else comptes.trouver_ou_creer(u["userId"], u.get("username"), environnement())
+    cid = comptes.resoudre(cid)                    # 2 nov 2026 : un ancien compte relie a un autre -> le compte choisi
     comptes.maj(cid, ebay_user_id=u["userId"], ebay_username=u.get("username"))   # identite confirmee par eBay
     maintenant = time.time()
     with comptes.utiliser(cid):

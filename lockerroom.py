@@ -267,7 +267,8 @@ def _niveau(resume, info):
 
 LIER = {}          # 28 oct 2026 : jetons a usage unique pour relier eBay depuis l'app iPhone (jeton -> (compte, le))
 
-STUDIO_V = 2          # 31 oct 2026 : version du recadrage studio (2 : cartes couchees reconnues, carte centree)
+STUDIO_V = 2
+_RE_RELIQUE = re.compile(r"patch|relic|jersey|memorabilia|swatch|game[- ]used|game[- ]worn|patch-?tacular|materials?\b|threads|fabric", re.I)          # 31 oct 2026 : version du recadrage studio (2 : cartes couchees reconnues, carte centree)
 
 
 def popularite(cartes, maint=None):
@@ -2421,6 +2422,7 @@ class Api:
         if forcer is None:                     # lecture seule (l'ecran demande ce qui est garde, sans payer une analyse)
             if garde and (garde.get("examen") or garde.get("photos") == refs):
                 garde = self._recentrer(cid, garde)       # 2 nov 2026 : aretes et centrage refaits une fois (sans IA)
+                garde = self._sans_texture_relique(carte, garde)
                 return {"ok": True, **garde, "le": carte.get("etat_le"), "precision": precision}
             try:
                 q = vision.statut_etat()
@@ -2447,7 +2449,9 @@ class Api:
         try:
             res = vision.etat(photos, langue or self.reglages_lire().get("langue") or "fr", quads=quads,
                               rasante=lire_b64(ras_ref[0]) if ras_ref else None,
-                              calibration=etat_verite.calibration(), regles=etat_verite.regles())
+                              calibration=etat_verite.calibration(), regles=etat_verite.regles(),
+                              contexte={"titre": carte.get("titre"), "relique": bool(carte.get("relique")) or bool(_RE_RELIQUE.search(str(carte.get("titre") or "") + " " + str(carte.get("parallele") or ""))),
+                                        "auto": bool(carte.get("auto"))})
         except vision.Erreur as e:
             return {"ok": False, "erreur": str(e)}
         res = {k: v for k, v in res.items() if k not in ("ok", "cache")}
@@ -2473,6 +2477,21 @@ class Api:
         return {"ok": True, **res, "le": le, "precision": precision}
 
     CENTRAGE_ALGO = 2
+
+    @staticmethod
+    def _sans_texture_relique(carte, e):
+        """2 nov 2026 (Mathieu : « ce n'est pas une scratch de surface, c'est une patch ») : un ancien examen d'une carte a
+        patch : les « rayures / taches / autres » de surface incertaines ou legeres (la texture du tissu, d'avant la regle)
+        ne sont plus montrees. Le prochain examen les classe lui-meme (sur_relique)."""
+        if not e or not e.get("defauts") or e.get("regle_relique"):
+            return e
+        if not (carte.get("relique") or _RE_RELIQUE.search(str(carte.get("titre") or "") + " " + str(carte.get("parallele") or ""))):
+            return e
+        tex = lambda d: d.get("zone") == "surface" and d.get("type") in ("rayure", "tache", "autre", "ligne d'impression") \
+            and d.get("gravite") in ("a verifier", "leger")
+        if not any(tex(d) for d in e["defauts"]):
+            return e
+        return dict(e, defauts=[dict(d, masque=True) if tex(d) else d for d in e["defauts"]])     # les numeros (avis) restent
 
     def _recentrer(self, cid, e):
         """2 nov 2026 (Mathieu : « ameliorer la detection des rebords ») : un examen fait avec l'ancienne detection : les
@@ -3561,6 +3580,42 @@ class Api:
             return ebay_compte.url_connexion()
         except RuntimeError as e:
             return {"ok": False, "erreur": str(e)}
+
+    # 2 nov 2026 (Mathieu : « un utilisateur doit voir la meme chose sur son ordi que sur son cell ») ------------------------
+    def code_appareil(self):
+        """Un code a 6 chiffres (10 min) qui ouvre CE compte sur un autre appareil (slabcoach.com/auth/code)."""
+        cid = comptes.courant()
+        if not cid or not comptes.MULTI:
+            return {"ok": False, "erreur": "Connexion requise"}
+        return {"ok": True, "code": comptes.code_creer(cid), "expire_s": 600}
+
+    def connexions(self):
+        """Les facons d'ouvrir ce compte : Apple, Google, eBay (sans rien montrer d'autre que oui / non et le courriel)."""
+        cid = comptes.courant()
+        if not cid:
+            return {"ok": False, "erreur": "Connexion requise"}
+        e = comptes.info(cid)
+        ids = set(e.get("identites") or [])
+        env = str(e.get("env") or "")
+        out = {"apple": env == "apple" or any(x.startswith("apple:") for x in ids),
+               "google": env == "google" or any(x.startswith("google:") for x in ids),
+               "ebay": bool(e.get("ebay_user_id")) or env in ("production", "sandbox"),
+               "courriel": e.get("courriel") or None}
+        try:
+            import auth_tiers
+            out["offerts"] = [f for f in ("apple", "google") if f in auth_tiers.actifs()]
+        except Exception:
+            out["offerts"] = []
+        return {"ok": True, **out}
+
+    def connexion_jeton_lier(self, fournisseur):
+        """Un jeton a usage unique (10 min) pour relier Apple ou Google a CE compte (/auth/<fournisseur>?lier=...)."""
+        if fournisseur not in ("apple", "google"):
+            return {"ok": False, "erreur": "Connexion inconnue"}
+        r = self.ebay_jeton_lier()
+        if not r.get("ok"):
+            return r
+        return {"ok": True, "jeton": r["jeton"], "url": f"/auth/{fournisseur}?lier={r['jeton']}"}
 
     def ebay_jeton_lier(self):
         """28 oct 2026 : un jeton a usage unique (10 min) pour relier eBay dans le navigateur securise de l'iPhone."""

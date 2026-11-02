@@ -25,10 +25,10 @@ def carte_test(g, d, h, b):
 def main():
     b, q = carte_test(40, 60, 50, 50)
     r = examen.preparer([b], [q])
-    assert r["zooms"] and len(r["images"]) == 3
+    assert r["zooms"] and len(r["images"]) == 4          # photo, coins, bords haut-bas, bords gauche-droite
     c = r["centrage"]["devant"]
     assert c["gd"] in ("59/41", "60/40", "61/39") and c["hb"] in ("50/50", "51/49", "52/48"), c
-    assert r["note_centrage"] in (8, 9)
+    assert r["note_centrage"] in (9, 10)          # normes PSA : 10 jusqu'a 60/40, 9 jusqu'a 65/35
     b2, q2 = carte_test(50, 50, 52, 48)
     assert examen.preparer([b2], [q2])["note_centrage"] == 10
     # coherence : un coin blanchi plafonne les coins ; la globale ne depasse pas la pire + 0,5 ; pas de 9,5 PSA ; jamais 10 avec un defaut
@@ -36,7 +36,7 @@ def main():
          "defauts": [{"photo": 0, "zone": "coin bas-gauche", "type": "blanchiment", "gravite": "moyen", "x": 10, "y": 900}],
          "explications": {"coins": "coins nets"}, "invisible": []}
     e = vision._nettoyer_etat(f, {"devant": {"gd": "60/40", "hb": "52/48"}, "note": 9})
-    assert e["notes"]["coins"] == 8.5 and e["notes"]["centrage"] == 9 and e["note_max"] <= 9 and e["note_min"] >= 7.5, e
+    assert e["notes"]["coins"] == 8 and e["notes"]["centrage"] == 9 and e["note_max"] <= 9 and e["note_min"] >= 7.5, e
     assert e["centrage_mesure"] and e["centrage_gd"] == "60/40" and "(point 1)" in e["explications"]["coins"]
     e2 = vision._nettoyer_etat({"notes": {"centrage": 10, "coins": 10, "bords": 10, "surface": 10}, "note_min": 9.5, "note_max": 10, "defauts": []})
     assert e2["note_max"] == 10 and e2["note_min"] == 9, e2

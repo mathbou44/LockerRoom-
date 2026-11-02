@@ -129,6 +129,9 @@ def _garde():
     if comptes.MULTI:
         cid = session.get("compte")
         if cid and cid in comptes.lister():
+            cid2 = comptes.resoudre(cid)                             # 2 nov 2026 : ancien compte relie -> le compte choisi
+            if cid2 != cid:
+                session["compte"] = cid = cid2
             comptes.activer(cid)                                     # cette requete ne voit que ce compte
         elif request.path == "/" and not CODE_ACCES:
             if "LockerRoomiOS" in (request.headers.get("User-Agent") or ""):
@@ -279,7 +282,24 @@ def auth_tiers(fournisseur):
     except RuntimeError:
         return redirect("/connexion?erreur=2")
     _noter_app(u)
+    # 2 nov 2026 : « Ajouter Google / Apple » depuis Profil : un jeton a usage unique (lie au compte, 10 min) -> au retour,
+    # cette identite est reliee a CE compte au lieu d'en ouvrir un autre
+    j = request.args.get("lier") or ""
+    if j:
+        import time as _t
+        import urllib.parse
+        import lockerroom as _lrm
+        v = _lrm.LIER.pop(j, None)
+        if v and _t.time() - v[1] <= 600 and v[0] in comptes.lister():
+            etat = (urllib.parse.parse_qs(urllib.parse.urlparse(u).query).get("state") or [""])[0]
+            for k in [k for k, x in _LIER_TIERS.items() if _t.time() - x[1] > 900]:
+                _LIER_TIERS.pop(k, None)
+            if etat:
+                _LIER_TIERS[etat] = (v[0], _t.time())
     return _lier_navigateur(redirect(u), u)
+
+
+_LIER_TIERS = {}      # etat OAuth -> (compte qui relie Apple / Google, le)
 
 
 @app.route("/auth/<fournisseur>/retour", methods=["GET", "POST"])
@@ -300,13 +320,27 @@ def auth_tiers_retour(fournisseur):
         app.logger.warning("Connexion %s refusee : %s", fournisseur, r.get("erreur"))
         print(f"Connexion {fournisseur} refusee : {r.get('erreur')}", flush=True)
         return redirect("/connexion?erreur=3&r=" + ("expire" if "expir" in str(r.get("erreur")) else "jeton"))
-    cid, nouveau = comptes.trouver_ou_creer(fournisseur + ":" + r["sub"], r.get("nom"), fournisseur)
-    champs = {"connexion": fournisseur}
-    if r.get("courriel"):
+    cle = fournisseur + ":" + r["sub"]
+    lien = _LIER_TIERS.pop(v.get("state") or "", None)
+    if lien and lien[0] in comptes.lister():                 # « Ajouter Google / Apple » depuis Profil
+        cid, nouveau = lien[0], False
+        comptes.lier_identite(cid, cle, fournisseur)
+        champs = {}
+        if r.get("courriel") and not comptes.info(cid).get("courriel"):
+            champs["courriel"] = r["courriel"]
+        if r.get("jeton_apple"):
+            champs["apple_rt"] = comptes.chiffrer(r["jeton_apple"])
+        if champs:
+            comptes.maj(cid, **champs)
+        return _billet(cid, "/#reglages/connexion-ok", v.get("state"))
+    cid, nouveau = comptes.trouver_connexion(cle, r.get("nom"), fournisseur, r.get("courriel"))
+    champs = {"connexion": fournisseur} if nouveau or not comptes.info(cid).get("connexion") else {}
+    if r.get("courriel") and (nouveau or not comptes.info(cid).get("courriel")):
         champs["courriel"] = r["courriel"]
     if r.get("jeton_apple"):                 # pour le retirer chez Apple si le compte est supprime (chiffre)
         champs["apple_rt"] = comptes.chiffrer(r["jeton_apple"])
-    comptes.maj(cid, **champs)
+    if champs:
+        comptes.maj(cid, **champs)
     # 28 oct 2026 : Apple revient en POST depuis SON site. Safari (et l'app iPhone) n'enregistre pas un temoin
     # SameSite=Lax dans la reponse a un POST venu d'un autre site : la session etait perdue -> boucle vers la connexion.
     # Billet a usage unique (2 min) : une petite page repart chez nous en GET, ou la session s'ouvre (voir _billet).
@@ -530,6 +564,42 @@ def _page_langue(html):
     return r
 
 
+# 2 nov 2026 (Mathieu : « un utilisateur doit voir la meme chose sur son ordi que sur son cell ») : le code d'appareil.
+# Sur le telephone (Profil > Ouvrir sur un autre appareil) : 6 chiffres, 10 min. Ici, sur l'ordi : on l'entre et la session
+# s'ouvre sur le MEME compte, peu importe comment on s'est connecte la premiere fois.
+@app.route("/auth/code", methods=["GET", "POST"])
+def auth_code():
+    from flask import redirect, session
+    if not comptes.MULTI:
+        return redirect("/")
+    msg = ""
+    if request.method == "POST":
+        if _trop_d_essais():
+            msg = "Trop d’essais : réessaie dans 15 minutes"
+        else:
+            cid = comptes.code_utiliser(request.form.get("code"))
+            if cid:
+                session.permanent = True
+                session["compte"] = cid
+                return redirect("/#accueil")
+            _noter_echec()
+            msg = "Code invalide ou expiré : demande un nouveau code sur ton téléphone"
+    return _page_langue("""<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SlabCoach · Code d’appareil</title><link rel="icon" href="/favicon.ico?v=2">
+<style>@font-face{font-family:'Barlow';font-weight:600;src:url(/barlow-600.woff2) format('woff2')}
+@font-face{font-family:'Barlow Condensed';font-weight:700;src:url(/barlow-cond-700.woff2) format('woff2')}
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0B0B0E;color:#F4F2EE;font-family:'Barlow',system-ui,sans-serif;padding:16px}
+form{width:min(380px,100%);display:grid;gap:14px;text-align:center}h1{margin:12px 0 0;font-size:26px}p{margin:0;color:#A9A6B1;line-height:1.45}
+input{font:700 40px 'Barlow Condensed',sans-serif;letter-spacing:.35em;text-align:center;padding:14px 0 14px .35em;border-radius:16px;border:1px solid #393845;background:#1C1C24;color:#F4F2EE;width:100%;box-sizing:border-box}
+button{padding:16px;border-radius:14px;border:0;font:700 18px 'Barlow Condensed',sans-serif;letter-spacing:.06em;text-transform:uppercase;background:#B9BEFF;color:#0E1026;cursor:pointer}
+.err{color:#FFB3B3}a{color:#A9A6B1;font-size:14px}</style>
+<form method="post"><img src="/logo_sc_gold_poli.png" width="64" style="margin:auto" alt="">
+<h1>Ouvrir mon compte ici</h1>
+<p>Sur ton téléphone : <b>Profil › Ouvrir sur un autre appareil</b>. Entre le code à 6 chiffres affiché.</p>
+<input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="7" pattern="[0-9 ]*" placeholder="000000" autofocus required>
+""" + (f"<p class='err'>{msg}</p>" if msg else "") + """<button type="submit">Ouvrir</button><a href="/connexion">‹ Autres façons de se connecter</a></form></html>""")
+
+
 @app.route("/connexion", methods=["GET", "POST"])
 def connexion():
     import hmac
@@ -553,6 +623,8 @@ def connexion():
             page = page.replace('<a href="/">‹ Retour au site</a>', "")
         if not autres:
             page = page.replace('<div class="ou">ou</div>', "")
+        if "LockerRoomiOS" not in (request.headers.get("User-Agent") or ""):     # 2 nov 2026 : ouvrir le compte du telephone
+            page = page.replace("</div></main>", "<a class='demo' href='/auth/code'>Déjà un compte sur ton téléphone ? Entre le code d’appareil</a></div></main>", 1)
         if os.environ.get("LOCKERROOM_DEMO_CODE") and "LockerRoomiOS" in (request.headers.get("User-Agent") or ""):
             page = page.replace("</div></main>", "<a class='demo' href='/demo'>Code de démonstration</a></div></main>")
         return _page_langue(page)

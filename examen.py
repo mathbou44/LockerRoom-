@@ -19,8 +19,9 @@ except ImportError:                       # serveur sans Pillow : l'examen march
 
 COTE_ENVOI = 1568                         # la plus grande image utile pour le modele
 COTE_REDRESSE = 1400                      # le grand cote de la carte redressee
-COIN = 0.16                               # un zoom de coin : 16 % du petit cote (avec la marge de fond)
-BORD = 0.09                               # un zoom de bord : la bande de 9 % le long du bord (avec la marge de fond)
+COIN = 0.13                               # un zoom de coin : 13 % du petit cote (avec la marge de fond) ; 2 nov : plus serre
+BORD = 0.075                              # un zoom de bord : la bande de 7,5 % le long du bord (avec la marge de fond)
+COTE_ZOOM = 3600                          # 2 nov 2026 : les zooms sortent de la photo en PLEINE resolution (avant : 1400 px)
 
 
 def disponible():
@@ -160,7 +161,7 @@ def affiner_quad(im, quad, recherche=0.04):
     return [[max(0, min(1000, round(x / W * 1000))), max(0, min(1000, round(y / H * 1000)))] for x, y in coins]
 
 
-def redresser(im, quad, marge=0.0):
+def redresser(im, quad, marge=0.0, cote=None):
     """La carte seule, a plat (transformation du quadrilatere en rectangle). marge : la part de fond gardee autour (les
     zooms de coins et de bords doivent montrer l'ARETE de la carte, donc un peu de fond). -> image ou None."""
     q = _quad_px(quad, *im.size)
@@ -171,7 +172,8 @@ def redresser(im, quad, marge=0.0):
         q = [(cx + (x - cx) * (1 + 2 * marge), cy + (y - cy) * (1 + 2 * marge)) for x, y in q]
     larg = (((q[1][0] - q[0][0]) ** 2 + (q[1][1] - q[0][1]) ** 2) ** .5 + ((q[2][0] - q[3][0]) ** 2 + (q[2][1] - q[3][1]) ** 2) ** .5) / 2
     haut = (((q[3][0] - q[0][0]) ** 2 + (q[3][1] - q[0][1]) ** 2) ** .5 + ((q[2][0] - q[1][0]) ** 2 + (q[2][1] - q[1][1]) ** 2) ** .5) / 2
-    k = min(1.6, COTE_REDRESSE / max(larg, haut))     # jamais plus de 1,6 x (on n'invente pas de detail)
+    # cote=None : 1400 px (le centrage) ; les zooms : la pleine resolution de la photo (jamais agrandie : pas de detail invente)
+    k = min(1.6, COTE_REDRESSE / max(larg, haut)) if cote is None else min(1.0, cote / max(larg, haut))
     W, H = max(50, int(larg * k)), max(50, int(haut * k))
     # Image.QUAD : coins source dans l'ordre haut-gauche, bas-gauche, bas-droit, haut-droit
     data = (q[0][0], q[0][1], q[3][0], q[3][1], q[2][0], q[2][1], q[1][0], q[1][1])
@@ -190,7 +192,7 @@ def mosaique_coins(carte, face):
     """Les 4 coins (20 % du petit cote, agrandis a 480 px) en 2 x 2, etiquetes."""
     W, H = carte.size
     c = int(min(W, H) * COIN)
-    T = 480
+    T = 640
     out = Image.new("RGB", (2 * T + 6, 2 * T + 6), (40, 40, 40))
     pos = {"haut-gauche": (0, 0), "haut-droit": (W - c, 0), "bas-gauche": (0, H - c), "bas-droit": (W - c, H - c)}
     for i, (nom, (x, y)) in enumerate(pos.items()):
@@ -199,21 +201,34 @@ def mosaique_coins(carte, face):
     return out
 
 
-def mosaique_bords(carte, face):
-    """Les 4 bords en bandes (le haut et le bas tels quels, la gauche et la droite tournees a l'horizontale)."""
+def mosaique_bords(carte, face, paire=("haut", "bas")):
+    """2 nov 2026 : deux bords opposes, chacun coupe en deux moities (plus de grossissement), en bandes etiquetees. Les bords
+    gauche et droit sont tournes a l'horizontale."""
     W, H = carte.size
     e = max(8, int(min(W, H) * BORD))
-    L = 1400
-    bandes = [("bord haut", carte.crop((0, 0, W, e))), ("bord bas", carte.crop((0, H - e, W, H))),
-              ("bord gauche", carte.crop((0, 0, e, H)).rotate(-90, expand=True)), ("bord droit", carte.crop((W - e, 0, W, H)).rotate(90, expand=True))]
+    L = 1500
+    bandes = []
+    for nom in paire:
+        if nom == "haut":
+            b = carte.crop((0, 0, W, e))
+        elif nom == "bas":
+            b = carte.crop((0, H - e, W, H))
+        elif nom == "gauche":
+            b = carte.crop((0, 0, e, H)).rotate(-90, expand=True)
+        else:
+            b = carte.crop((W - e, 0, W, H)).rotate(90, expand=True)
+        bw = b.size[0]
+        m = bw // 2
+        for lib, x0, x1 in (("1re moitie", 0, m + e // 2), ("2e moitie", m - e // 2, bw)):
+            bandes.append((f"{face} - bord {nom}, {lib}", b.crop((x0, 0, x1, b.size[1]))))
     hs = []
     for nom, b in bandes:
         k = L / b.size[0]
         hs.append((nom, b.resize((L, max(20, int(b.size[1] * k))), Image.LANCZOS)))
-    out = Image.new("RGB", (L, sum(b.size[1] for _n, b in hs) + 6 * 3), (40, 40, 40))
+    out = Image.new("RGB", (L, sum(b.size[1] for _n, b in hs) + 6 * (len(hs) - 1)), (40, 40, 40))
     y = 0
     for nom, b in hs:
-        out.paste(_etiquette(b, f"{face} - {nom}"), (0, y))
+        out.paste(_etiquette(b, nom), (0, y))
         y += b.size[1] + 6
     return out
 
@@ -410,7 +425,11 @@ def centrage(carte):
 
 
 # Tolerances de centrage publiees par PSA (devant / dos) -> la plus haute note permise par le centrage
-_PSA_DEVANT = ((55, 10), (60, 9), (65, 8), (70, 7), (80, 6), (85, 5), (90, 4))
+# 2 nov 2026 (Mathieu : « on ne comprend pas ou tu as pris tes references pour le centering ») : les normes officielles PSA
+# (psacard.com, Card Grading Standards) : le grade le plus haut que permet le centrage. Devant : 10 = environ 55/45 a
+# 60/40 ; 9 = 60/40 a 65/35 ; 8 = 65/35 a 70/30 ; 7 = 70/30 a 75/25 ; 6 = 80/20 ; 5 et 4 = 85/15 ; 3 a 1 = 90/10.
+# Dos : 10 = 75/25 ; 9 a 1 = 90/10. (Avant : un cran trop severe, 10 jusqu'a 55/45 seulement.)
+_PSA_DEVANT = ((60, 10), (65, 9), (70, 8), (75, 7), (80, 6), (85, 5), (90, 3))
 _PSA_DOS = ((75, 10), (90, 9))
 
 
@@ -440,12 +459,15 @@ def preparer(photos_octets, quads=None, rasante=None):
         images.append((f"Photo {j} : le {face} (photo entiere).", jpeg(im)))
         q = quads[j] if j < len(quads) and quads[j] else None
         c = redresser(im, q) if q else None                 # exacte : pour le centrage
-        z = redresser(im, q, 0.03) if q else None           # avec un peu de fond : pour voir l'arete des coins et des bords
+        z = redresser(im, q, 0.03, COTE_ZOOM) if q else None   # pleine resolution, un peu de fond : l'arete des coins et des bords
         cartes.append(c)
         if z is not None:
             images.append((f"Zooms des 4 coins du {face} (pleine resolution, carte redressee ; le fond autour montre l'arete).",
-                           jpeg(mosaique_coins(z, face), 1100)))
-            images.append((f"Zooms des 4 bords du {face} (le fond autour montre l'arete).", jpeg(mosaique_bords(z, face), 1400)))
+                           jpeg(mosaique_coins(z, face), 1290, 90)))
+            images.append((f"Zooms des bords haut et bas du {face}, chacun en deux moities (le fond autour montre l'arete).",
+                           jpeg(mosaique_bords(z, face, ("haut", "bas")), 1568, 90)))
+            images.append((f"Zooms des bords gauche et droit du {face} (tournes a l'horizontale), chacun en deux moities.",
+                           jpeg(mosaique_bords(z, face, ("gauche", "droite")), 1568, 90)))
         if c is not None:
             m = centrage(c)
             if m:
