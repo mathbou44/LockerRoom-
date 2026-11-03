@@ -249,23 +249,32 @@ def statut():
 # liste avec toutes nos donnees ») : TOUTES les recherches gardees (le plan, mais aussi chaque recherche des deals, des
 # fiches, des encans suivis : veterans et legendes compris), chacune = une carte exacte (ses ventes filtrees par
 # cartes_match). Pour tendance_stats : la tendance par joueur, avec son epoque (recrue, veteran, legende).
+NOUVELLES_MAX = 15000            # 3 nov 2026 : ventes nouvelles triees par passe (le reste a la passe suivante)
+
+
 def cartes_toutes(jours=42, n_min=4, max_q=12000):
     import cartes_match
     import time as _t
     auj = datetime.now()
     d0 = (auj - timedelta(days=jours)).strftime("%Y-%m-%d")
+    # 3 nov 2026 (Mathieu : « 5 min de loading ») : le tri des ventes (cartes_match, ~100 000 titres) refait aux 15 min
+    # bloquait le serveur et vidait la memoire de cartes_match (les deals devenaient lents aussi). Le verdict de chaque vente
+    # est maintenant GARDE (table accepte) : chaque calcul ne trie que les ventes nouvelles, au plus NOUVELLES_MAX par passe.
     try:
         c = _cx()
         try:
+            c.execute("CREATE TABLE IF NOT EXISTS accepte (q TEXT, cle TEXT, ok INTEGER, PRIMARY KEY (q, cle))")
             plan = {q: (cible, j, carte, pid, rec) for cible, q, j, carte, pid, rec in
                     c.execute("SELECT cible, q, joueur, carte, produit_id, recrue FROM plan")}
             par_q = {}
-            for q, titre, prix, le in c.execute("SELECT q, titre, prix, le FROM ventes WHERE le >= ?", (d0,)):
-                par_q.setdefault(q, []).append((titre, prix, le))
+            for q, cle, titre, prix, le, ok in c.execute("SELECT v.q, v.cle, v.titre, v.prix, v.le, a.ok FROM ventes v LEFT JOIN accepte a "
+                                                         "ON a.q = v.q AND a.cle = v.cle WHERE v.le >= ?", (d0,)):
+                par_q.setdefault(q, []).append((titre, prix, le, cle, ok))
         finally:
             c.close()
     except sqlite3.Error:
         return []
+    nouveaux, budget = [], [NOUVELLES_MAX]
     an_rec = None
     try:
         import deals
@@ -275,12 +284,21 @@ def cartes_toutes(jours=42, n_min=4, max_q=12000):
     out = []
     qs = sorted((q for q, l in par_q.items() if len(l) >= n_min), key=lambda q: -len(par_q[q]))[:max_q]
     for i, q in enumerate(qs):
-        if i % 200 == 0:
-            _t.sleep(0.002)                              # laisse respirer les autres requetes (un seul serveur)
+        if i % 25 == 0:
+            _t.sleep(0.02)                               # 3 nov 2026 : laisse vraiment passer les requetes de l'app (un seul serveur)
         try:
             p = plan.get(q)
             cib = cartes_match.cible(p[0] if p else q)
-            l = [(t, pr, le) for t, pr, le in par_q[q] if not cartes_match.raisons_refus(cib, t or "")]
+            l = []
+            for t, pr, le, cle, ok in par_q[q]:
+                if ok is None:
+                    if budget[0] <= 0:
+                        continue                         # triee a la prochaine passe
+                    budget[0] -= 1
+                    ok = 0 if cartes_match.raisons_refus(cib, t or "") else 1
+                    nouveaux.append((q, cle, ok))
+                if ok:
+                    l.append((t, pr, le))
             if len(l) < n_min:
                 continue
             if p:
@@ -303,4 +321,15 @@ def cartes_toutes(jours=42, n_min=4, max_q=12000):
                         "points": [[le, pr] for _t2, pr, le in l]})
         except Exception:
             continue
+    if nouveaux:
+        try:
+            with _verrou:
+                c = _cx()
+                try:
+                    c.executemany("INSERT OR REPLACE INTO accepte VALUES (?,?,?)", nouveaux)
+                    c.commit()
+                finally:
+                    c.close()
+        except sqlite3.Error:
+            pass
     return out

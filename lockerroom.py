@@ -2463,7 +2463,7 @@ class Api:
         if examen_:                            # photos d'examen : gardees a part (les photos de la fiche ne changent pas)
             try:
                 refs = photos_cartes.sauver(list(d["photos"])[:2])
-                ras_ref = photos_cartes.sauver([d["rasante"]]) if d.get("rasante") else []
+                ras_ref = photos_cartes.sauver([d["rasante"]] + ([d["rasante2"]] if d.get("rasante2") else [])) if d.get("rasante") else []
             except ValueError as e:
                 return {"ok": False, "erreur": str(e)}
         else:
@@ -2477,18 +2477,31 @@ class Api:
         try:
             res = vision.etat(photos, langue or self.reglages_lire().get("langue") or "fr", quads=quads,
                               rasante=lire_b64(ras_ref[0]) if ras_ref else None,
+                              rasante2=lire_b64(ras_ref[1]) if len(ras_ref) > 1 else None,
                               calibration=etat_verite.calibration(), regles=etat_verite.regles(),
                               contexte={"titre": carte.get("titre"), "relique": bool(carte.get("relique")) or bool(_RE_RELIQUE.search(str(carte.get("titre") or "") + " " + str(carte.get("parallele") or ""))),
                                         "auto": bool(carte.get("auto"))})
         except vision.Erreur as e:
             return {"ok": False, "erreur": str(e)}
         res = {k: v for k, v in res.items() if k not in ("ok", "cache")}
-        res.update(photos=refs, quads=quads, examen=examen_, rasante=ras_ref[0] if ras_ref else None)
+        res.update(photos=refs, quads=quads, examen=examen_, rasante=ras_ref[0] if ras_ref else None, rasante2=ras_ref[1] if len(ras_ref) > 1 else None)
+        # 3 nov 2026 : l'image du RELIEF (une photo rasante, ou la difference de deux eclairages), gardee pour l'ecran
+        if ras_ref:
+            try:
+                import examen as _ex
+                import mesures as _mz
+                ims = [_ex.ouvrir(open(photos_cartes.chemin(r), "rb").read()) for r in ras_ref[:2]]
+                rl = _mz.difference_eclairages(ims[0], ims[1]) if len(ims) > 1 else {"image": _mz.relief(ims[0])}
+                if rl and rl.get("image") is not None:
+                    res["relief_img"] = photos_cartes.sauver(["data:image/jpeg;base64," + base64.b64encode(_ex.jpeg(rl["image"], 1200, 85)).decode()])[0]
+                    res["relief_deux"] = len(ims) > 1
+            except Exception as x:
+                print("Relief : " + repr(x), flush=True)
         res["centrage_vue"] = self._reperes_vue(self._centrage_vue(refs, quads), res.get("centrage_reperes"))
         res["centrage_algo"] = self.CENTRAGE_ALGO
         anciens = [v.get("img") for v in ((garde or {}).get("centrage_vue") or {}).values() if v.get("img")]
         if garde and garde.get("examen"):      # l'ancien examen : ses photos a lui ne servent plus
-            anciens += [x for x in (garde.get("photos") or []) + [garde.get("rasante")] if x and x not in refs]
+            anciens += [x for x in (garde.get("photos") or []) + [garde.get("rasante"), garde.get("rasante2"), garde.get("relief_img")] if x and x not in refs]
         le = _maintenant()
         with _verrou:
             c = self._db()
@@ -2504,7 +2517,7 @@ class Api:
                 pass
         return {"ok": True, **res, "le": le, "precision": precision}
 
-    CENTRAGE_ALGO = 2
+    CENTRAGE_ALGO = 3                 # 3 nov 2026 : + les paires en miroir (mesures.py) et les mesures de l'app
 
     @staticmethod
     def _coherent(e):
@@ -2566,6 +2579,10 @@ class Api:
             return e
         anciens = [v.get("img") for v in cv0.values() if v.get("img")]
         e = dict(e, quads=quads, centrage_vue=cv, centrage_algo=self.CENTRAGE_ALGO)
+        if not e.get("mesures"):                           # 3 nov 2026 : les mesures de l'app, sans repayer l'IA
+            m = self._mesures_photos(refs, quads)
+            if m:
+                e["mesures"] = m
         with _verrou:
             c = self._db()
             try:
@@ -2584,6 +2601,31 @@ class Api:
                 if r.get("ok"):
                     e = {k: v for k, v in r.items() if k != "ok"}
         return e
+
+    @staticmethod
+    def _mesures_photos(refs, quads):
+        """Les mesures de mesures.py (blanc aux coins et aux bords, qualite de la photo) d'apres les photos gardees."""
+        import examen
+        import photos_cartes
+        out = {}
+        for j, ref in enumerate(refs[:2]):
+            q = quads[j] if j < len(quads) else None
+            ch = photos_cartes.chemin(ref)
+            if not q or not ch:
+                continue
+            try:
+                with open(ch, "rb") as f:
+                    im = examen.ouvrir(f.read())
+                c = examen.redresser(im, q)
+                z = examen.redresser(im, q, 0.03, examen.COTE_ZOOM)
+                m = examen._mesurer(im, q, c, z) or {}
+                u = m.get("usure") or {}
+                out["devant" if j == 0 else "dos"] = {"coins": u.get("coins") or {}, "bords": u.get("bords") or {},
+                                                      "px_mm": (m.get("qualite") or {}).get("px_mm"), "qualite": m.get("qualite"),
+                                                      "silhouette": m.get("silhouette")}
+            except Exception as e:
+                print("Mesures (photos) : " + repr(e), flush=True)
+        return out
 
     @staticmethod
     def _reperes_vue(cv, reperes):
@@ -2657,8 +2699,33 @@ class Api:
                 if c is None:
                     continue
                 img = photos_cartes.sauver(["data:image/jpeg;base64," + base64.b64encode(examen.jpeg(c, 1200, 90)).decode()])
-                out["devant" if j == 0 else "dos"] = {"img": img[0] if img else None, "ratio": round(c.size[0] / c.size[1], 4),
-                                                      **(examen.centrage_detail(c) or {})}
+                det = dict(examen.centrage_detail(c) or {})
+                # 3 nov 2026 (Mathieu : « les evaluations doivent etre plus precises ») : un axe sans bordure symetrique est
+                # mesure par les paires d'elements imprimes en miroir (fiables, et pas un decentrage de design a verifier)
+                try:
+                    import mesures
+                    mp = mesures.centrage(c) or {}
+                    for ax, k1, k2, s1, s2 in (("gd", "l", "r", "l", "r"), ("hb", "t", "b", "t", "b_")):
+                        x = mp.get(ax)
+                        # 3 nov 2026 (pratique, Suzuki Orange Checkers : la symetrie lisait 62/38 en haut/bas, la carte est
+                        # a ~52/48) : 2 paires ou plus d'accord l'emportent sur la symetrie ; sinon, seulement si rien d'autre
+                        if not x or x.get("a_verifier") or x.get("fiabilite") not in ("haute", "moyenne"):
+                            continue
+                        if det.get(ax) and x.get("fiabilite") != "haute":
+                            continue
+                        det[k1], det[k2], det[ax] = round(x[s1], 4), round(x[s2], 4), x["ratio"]
+                        det["source_" + ax] = "paires"
+                    # un fort decentrage (> 60/40) mesure sur un element de design, pas sur une bordure unie : peut-etre le
+                    # dessin de la carte -> pas compte dans la note, montre « a verifier »
+                    for ax, k1, k2 in (("gd", "l", "r"), ("hb", "t", "b")):
+                        g_ = det.get(ax)
+                        if g_ and int(str(g_).split("/")[0]) > 60 and det.get("source_" + ax) != "paires" \
+                                and not mesures.bordure_unie(c, ax, det.get(k1), det.get(k2)):
+                            det["verifier_" + ax] = g_
+                            det[ax] = det[k1] = det[k2] = None
+                except Exception as e2:
+                    print("Centrage (paires) : " + repr(e2), flush=True)
+                out["devant" if j == 0 else "dos"] = {"img": img[0] if img else None, "ratio": round(c.size[0] / c.size[1], 4), **det}
             except Exception as e:
                 print("Centrage (vue) : " + repr(e), flush=True)
         return out
@@ -4522,6 +4589,7 @@ class Api:
         return {"ok": True, "envoyees": watchlist.verifier(self, proches=True)}
 
     _TENDANCES = {"le": 0.0, "v": None}
+    _DEMARRE = time.time()                                  # 3 nov 2026 : le demarrage du serveur (le calme des 3 premieres minutes)
     _TENDANCES_VERROU = threading.Lock()
 
     def tendances(self):
@@ -4542,7 +4610,11 @@ class Api:
                         T["v"], T["le"] = g["v"], float(g.get("le") or 0)
                     except (OSError, ValueError, KeyError, TypeError):
                         pass
-        if (T["v"] is None or _t.time() - T["le"] > 900) and not T.get("calcul"):
+        # 3 nov 2026 (Mathieu : « tellement long apres une mise a jour ») : le calcul complet (toute la base des ventes) est
+        # lourd ; aux 60 min (une tendance sur 14 jours ne bouge pas en 15 min), et jamais dans les 3 minutes apres un
+        # demarrage si une version est deja gardee
+        calme = T["v"] is not None and _t.time() - Api._DEMARRE < deals.CALME_S
+        if (T["v"] is None or _t.time() - T["le"] > 3600) and not T.get("calcul") and not calme:
             T["calcul"] = True
 
             def refaire():
@@ -5299,6 +5371,20 @@ class Api:
             # 29 oct 2026 (Mathieu : « encore que des caliss de rookies dans tes deals ») : veterans, legendes et jeunes de
             # 2e a 4e annee d'abord (hits compris) ; les recrues de l'annee ensuite (le chip « Recrues » les montre seules)
             lst = [x for x in lst if not x["recrue"]] + [x for x in lst if x["recrue"]]
+        elif not f.get("sortes") and not f.get("joueurs"):
+            # 3 nov 2026 (Mathieu : « que des rookies ou Young Guns dans les deals... ENCORE », en « Finit bientot ») : dans les
+            # autres tris aussi, une recrue de l'annee n'en suit jamais une autre tant qu'il reste un veteran ou une legende
+            # (l'ordre du tri est garde dans chaque groupe ; les maisons a volume restent a la fin)
+            def entrelacer(l):
+                v, r, out = [x for x in l if not x["recrue"]], [x for x in l if x["recrue"]], []
+                while v or r:
+                    if v:
+                        out.append(v.pop(0))
+                    if r:
+                        out.append(r.pop(0))
+                return out
+            fin = [x for x in lst if _dl.rang_honnete(x) == 3]
+            lst = entrelacer([x for x in lst if _dl.rang_honnete(x) != 3]) + entrelacer(fin)
         prof = self._profil_deals()                      # 30 oct 2026 : mon profil de deals (Reglages)
         lst = self._appliquer_profil(lst, prof)
         lst = self._objectif_deals(lst, f)

@@ -2386,8 +2386,15 @@ def proches_prio(rechercher=None, bassin=None, maint=None, valoriser=True):
     return {"ok": True, "vus": vus, "stats": {k: v for k, v in st.items() if not k.startswith("_")}}
 
 
+_DEMARRE = time.time()
+CALME_S = int(os.environ.get("LR_CALME_DEMARRAGE_S") or 180)
+
+
 def chasser_si_besoin(force=False):
     """En arriere-plan, au plus une fois par heure, jamais deux a la fois."""
+    # 3 nov 2026 : les 3 premieres minutes apres un deploiement, l'ecran Deals lit ce qu'on a deja, sans lancer de tour
+    if not force and time.time() - _DEMARRE < CALME_S:
+        return False
     d = lire_vite()                  # 28 oct 2026 (vitesse) : appele a chaque ecran Deals / Accueil : lecture en cache
     try:
         age = time.time() - datetime.fromisoformat(str(d.get("maj"))).timestamp()

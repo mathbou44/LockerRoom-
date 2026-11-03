@@ -904,6 +904,9 @@ def _valeurs_auto():
     valeurs deja la (ou celles par defaut) restent."""
     import valeurs
     import valeurs_maj
+    # 3 nov 2026 (Mathieu : « c'est tellement long a charger l'app apres une mise a jour ») : apres un deploiement, les
+    # 3 premieres minutes servent l'app (les gens rouvrent tous l'app en meme temps) ; les gros calculs attendent
+    time.sleep(CALME_DEMARRAGE_S)
     while True:
         try:
             age = time.time() - os.path.getmtime(valeurs.CHEMIN) if os.path.exists(valeurs.CHEMIN) else 1e9
@@ -1061,19 +1064,22 @@ def demarrer_taches():
     threading.Thread(target=_revalider_deals, daemon=True, name="revalider").start()
 
 
+CALME_DEMARRAGE_S = int(os.environ.get("LR_CALME_DEMARRAGE_S") or 180)
+
+
 def _revalider_deals():
     """31 oct 2026 : une fois apres une mise a jour des regles de comparables (deals.revalider_produits). Puis
     rechauffe : au demarrage (chaque deploiement), les deals sont juges et les encans suivis valorises en arriere-plan,
     pour que le premier ecran Deals de la journee s'ouvre aussi vite que les suivants (serveur Standard : on a la marge)."""
-    time.sleep(20)
+    time.sleep(CALME_DEMARRAGE_S + 30)
     try:
         import deals
         deals.revalider_produits()
         d = deals.lire_vite()
         for i, g in enumerate(d.get("deals") or []):
             deals.valide(g)
-            if i % 50 == 0:
-                time.sleep(0.01)
+            if i % 20 == 0:
+                time.sleep(0.02)                 # laisse passer les requetes de l'app
         import lockerroom
         for x in d.get("suivis") or []:
             if not x.get("valeur") and deals.encore_ouvert(x):

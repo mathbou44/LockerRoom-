@@ -884,8 +884,21 @@ def _infos_mesures(prep):
                 bouts.append(f"bord {nom} {x['blanc_mm']} mm de blanc en {x['points']} point(s)")
         if bouts:
             out.append(f"MESURE de l'app ({face}) : " + " ; ".join(bouts) + ". Verifie chacun sur les zooms : vrai blanchiment, ou reflet / fond ?")
-        elif u.get("coins"):
-            out.append(f"MESURE de l'app ({face}) : aucun pixel blanc mesure aux coins et aux bords (bordure foncee) : un « net » est attendu sauf si tu vois autre chose.")
+        elif any(x.get("mesurable") for x in list((u.get("coins") or {}).values()) + list((u.get("bords") or {}).values())):
+            out.append(f"MESURE de l'app ({face}) : aucun blanc mesure la ou la bordure est foncee ou coloree : un « net » est attendu sauf si tu vois autre chose.")
+        sil = m.get("silhouette") or {}
+        sb = []
+        for nom, x in (sil.get("coins") or {}).items():
+            if x.get("mesurable") and (x.get("relatif") or 0) >= 0.25:
+                sb.append(f"coin {nom} : {x['manque_mm2']} mm2 de carton manquant (plus rond que les autres coins)")
+        for nom, x in (sil.get("cotes") or {}).items():
+            for e_ in (x.get("encoches") or [])[:2] if x.get("mesurable") else []:
+                if e_["profondeur_mm"] >= 0.2 and e_["longueur_mm"] >= 0.3:
+                    sb.append(f"bord {nom} : creux de {e_['profondeur_mm']} mm sur {e_['longueur_mm']} mm, a {e_['pos_mm']} mm du coin")
+        if sb:
+            out.append(f"FORME de la carte mesuree par l'app ({face}, la silhouette sur le fond) : " + " ; ".join(sb) + ". Confirme sur les zooms : encoche / coin use, ou ombre / reflet ?")
+        elif sil.get("coins") or sil.get("cotes"):
+            out.append(f"FORME de la carte ({face}) : aretes droites et coins nets a la mesure de l'app (la ou le fond permet de lire).")
         if q.get("reflets"):
             out.append(f"Reflets ({face}) sur : {', '.join(q['reflets'])} : ce qui est sous un reflet n'est pas jugeable (dis-le dans « invisible »).")
         if q and not q.get("assez_grande"):
@@ -908,8 +921,9 @@ def _ajouter_mesures(res, mes, quads):
     for face, m in mes.items():
         ph = 0 if face == "devant" else 1
         u, q = m.get("usure") or {}, m.get("qualite") or {}
+        sil = m.get("silhouette") or {}
         res["mesures"][face] = {"coins": u.get("coins") or {}, "bords": u.get("bords") or {}, "px_mm": (q or {}).get("px_mm") or u.get("px_mm"),
-                                "qualite": q or None,
+                                "qualite": q or None, "silhouette": sil or None,
                                 "centrage": {ax: ({k: v for k, v in x.items() if k in ("ratio", "paires", "fiabilite", "a_verifier", "reperes", "bordure")} if x else None)
                                              for ax, x in (m.get("centrage") or {}).items()}}
         reprendre += [f"{face} : {t}" for t in (q or {}).get("a_reprendre") or []]
@@ -924,10 +938,44 @@ def _ajouter_mesures(res, mes, quads):
                 res.setdefault("defauts", []).append({"photo": ph, "zone": "coin " + nom, "type": "blanchiment", "gravite": "a verifier",
                                                       "x": xy[0], "y": xy[1], "note": 8 if x["blanc_mm2"] >= 0.6 else 9, "mesure": True,
                                                       "pourquoi": f"mesuré par l'app : {str(x['blanc_mm2']).replace('.', ',')} mm² de blanc à l'arête, à confirmer sur le zoom"})
+    for face, m in mes.items():
+        ph = 0 if face == "devant" else 1
+        sil = m.get("silhouette") or {}
+        q_ = quads[ph] if quads and ph < len(quads) else None
+        deja = {(d.get("photo"), d.get("zone")) for d in res.get("defauts") or []}
+        px = sil.get("px_mm") or 0
+        for nom, x in (sil.get("coins") or {}).items():
+            if x.get("mesurable") and (x.get("relatif") or 0) >= 0.3 and (ph, "coin " + nom) not in deja:
+                uv = {"haut-gauche": (0.02, 0.02), "haut-droit": (0.98, 0.02), "bas-droit": (0.98, 0.98), "bas-gauche": (0.02, 0.98)}[nom]
+                xy = _bil(q_, *uv)
+                res.setdefault("defauts", []).append({"photo": ph, "zone": "coin " + nom, "type": "coin mou", "gravite": "a verifier", "x": xy[0], "y": xy[1],
+                                                      "note": 8 if x["relatif"] >= 0.8 else 9, "mesure": True,
+                                                      "pourquoi": f"mesuré par l'app : {str(x['manque_mm2']).replace('.', ',')} mm² de carton en moins à la pointe (plus rond que les autres coins), à confirmer sur le zoom"})
+        if not px:
+            continue
+        for nom, x in (sil.get("cotes") or {}).items():
+            if not x.get("mesurable"):
+                continue
+            for e_ in [e_ for e_ in x.get("encoches") or [] if e_["profondeur_mm"] >= 0.2 and e_["longueur_mm"] >= 0.3][:2]:
+                if (ph, "bord " + nom) in deja:
+                    break
+                t = e_["pos_mm"]
+                # la carte peut etre couchee : la longueur du cote en mm vient de la silhouette elle-meme
+                cote_mm = (sil.get("dims_mm") or {}).get(nom) or (63.5 if nom in ("haut", "bas") else 88.9)
+                f = max(0.03, min(0.97, t / cote_mm))
+                uv = {"haut": (f, 0.01), "bas": (f, 0.99), "gauche": (0.01, f), "droit": (0.99, f)}[nom]
+                xy = _bil(q_, *uv)
+                res.setdefault("defauts", []).append({"photo": ph, "zone": "bord " + nom, "type": "entaille", "gravite": "a verifier", "x": xy[0], "y": xy[1],
+                                                      "note": 8 if e_["profondeur_mm"] >= 0.4 else 9, "mesure": True,
+                                                      "pourquoi": f"mesuré par l'app : l'arête rentre de {str(e_['profondeur_mm']).replace('.', ',')} mm sur {str(e_['longueur_mm']).replace('.', ',')} mm, à confirmer sur le zoom"})
+                deja.add((ph, "bord " + nom))
     ajoutes = [d for d in res.get("defauts") or [] if d.get("mesure")]
     if ajoutes and res.get("notes"):
         bas = dict(res.get("notes_bas") or {})
-        bas["coins"] = min([v for v in (bas.get("coins"), (res["notes"] or {}).get("coins")) if v is not None] + [min(d["note"] for d in ajoutes)])
+        for cat, zone in (("coins", "coin"), ("bords", "bord")):
+            l_ = [d["note"] for d in ajoutes if str(d.get("zone", "")).startswith(zone)]
+            if l_:
+                bas[cat] = min([v for v in (bas.get(cat), (res["notes"] or {}).get(cat)) if v is not None] + l_)
         tout = {k: (bas.get(k) if bas.get(k) is not None else v) for k, v in res["notes"].items()}
         g = _bar.globale(tout)
         res["notes_bas"] = bas
@@ -937,7 +985,7 @@ def _ajouter_mesures(res, mes, quads):
         res["a_reprendre"] = reprendre[:4]
 
 
-def etat(photos, langue="fr", quads=None, rasante=None, calibration=None, regles=None, contexte=None):
+def etat(photos, langue="fr", quads=None, rasante=None, calibration=None, regles=None, contexte=None, rasante2=None):
     """photos : devant (et dos) en data URL ; quads : les 4 coins de la carte dans chaque photo (0..1000, trouves dans le
     telephone) ; rasante : une photo en lumiere rasante (facultative). Son propre quota par mois (3 gratuit, 30 Pro)."""
     import examen
@@ -948,10 +996,11 @@ def etat(photos, langue="fr", quads=None, rasante=None, calibration=None, regles
         raise Erreur("Il faut au moins la photo du devant")
     brutes = [_decoder(p)[0] for p in photos]
     ras = _decoder(rasante)[0] if rasante else None
+    ras2 = _decoder(rasante2)[0] if (rasante and rasante2) else None
     langue = "en" if str(langue or "").lower().startswith("en") else "fr"
     h = hashlib.sha256(b"etat-v8-" + langue.encode() + json.dumps(quads or [], sort_keys=True).encode()
                        + json.dumps(calibration or {}, sort_keys=True).encode())
-    for b in brutes + ([ras] if ras else []):
+    for b in brutes + ([ras] if ras else []) + ([ras2] if ras2 else []):
         h.update(hashlib.sha256(b).digest())
     cle_cache = h.hexdigest()
     cache = _lire(_chemin_cache())
@@ -959,7 +1008,7 @@ def etat(photos, langue="fr", quads=None, rasante=None, calibration=None, regles
         return dict(cache[cle_cache], ok=True, cache=True)
     _verifier_etat()
     if examen.disponible():
-        prep = examen.preparer(brutes, quads, ras)
+        prep = examen.preparer(brutes, quads, ras, ras2)
     else:
         prep = {"images": [(("Photo 0 : le devant." if i == 0 else "Photo 1 : le dos."), b) for i, b in enumerate(brutes)], "centrage": None,
                 "note_centrage": None, "zooms": False}
@@ -969,7 +1018,18 @@ def etat(photos, langue="fr", quads=None, rasante=None, calibration=None, regles
         contenu.append({"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": base64.b64encode(b).decode()}})
     c = prep.get("centrage") or {}
     note_c = prep.get("note_centrage")
+    # 3 nov 2026 : un axe « a verifier » (fort decentrage lu sur un element du dessin) n'est pas une mesure : on le retire
+    # du centrage mesure et on le dit a part
+    verif_c = prep.get("centrage_verifier") or {}
+    c = {f: {ax: (None if ax in verif_c.get(f, []) else v) for ax, v in d.items()} for f, d in c.items()}
+    c = {f: d for f, d in c.items() if any(d.values())}
     infos = []
+    for f, axes in verif_c.items():
+        for ax in axes:
+            v_ = ((prep.get("centrage") or {}).get(f) or {}).get(ax)
+            if v_:
+                infos.append(f"Centrage {f} {'gauche/droite' if ax == 'gd' else 'haut/bas'} : l'app lit {v_}, mais sur un element du DESSIN "
+                             f"(logo, titre), pas sur une bordure : peut-etre imprime ainsi. Dis dans centrage_reperes ce que tu vois.")
     if c.get("devant"):
         infos.append("CENTRAGE MESURE par l'app (devant) : " + " ; ".join(f"{k} {v}" for k, v in (("gauche/droite", c["devant"].get("gd")),
                                                                                                    ("haut/bas", c["devant"].get("hb"))) if v)

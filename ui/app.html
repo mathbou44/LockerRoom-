@@ -2363,6 +2363,20 @@ button.vd-cz > span{border-bottom:1px solid var(--ligne); padding-bottom:2px} .v
 .ag-3{display:grid; grid-template-columns:repeat(3,1fr); gap:8px} .ag-3 div{display:flex; flex-direction:column; gap:2px; padding:10px; border-radius:14px; background:var(--carte2)} .ag-3 span{font-size:12px; color:var(--doux)} .ag-3 b{font:700 18px var(--f-cond)}
 .ag-sv{display:flex; flex-direction:column; gap:4px; padding:16px; border-radius:18px; background:var(--carte2)} .ag-sv b{font:700 22px var(--f-cond)} .ag-sv span{font-size:14px; color:var(--doux)}
 .ag-ck{margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:6px} .ag-ck li{display:flex; justify-content:space-between; padding:10px 12px; border-radius:12px; background:var(--carte2); font-size:14px}
+.vd-zm{position:relative; display:block; flex:0 0 auto; width:56px; height:56px; border-radius:12px; background-color:#000; background-repeat:no-repeat; box-shadow:inset 0 0 0 1px var(--ligne)}
+.vd-zm i{position:absolute; left:50%; top:50%; width:44%; height:44%; transform:translate(-50%,-50%); border-radius:50%; box-shadow:0 0 0 2px rgba(255,255,255,.9), 0 0 0 4px rgba(0,0,0,.45)}
+.vd-zm.grand{width:100%; height:auto; aspect-ratio:1; max-height:220px; margin-bottom:8px; border-radius:14px} .vd-zm.grand i{width:30%; height:30%}
+.vd-czz{position:relative; flex:0 0 auto} .vd-czz .vd-ci{position:absolute; right:-6px; top:-6px; width:20px; height:20px; flex-basis:20px; font-size:11px}
+.vd-sec{font:700 15px var(--f-cond); letter-spacing:.06em; text-transform:uppercase; color:var(--doux); margin-top:6px}
+.vd-gab{display:flex; flex-direction:column; gap:8px; padding:12px; border-radius:18px; background:var(--carte)} .vd-gab-t{display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-size:14px} .vd-gab-t b{font-family:var(--f-cond); font-size:16px}
+.vd-gab-c{position:relative; width:min(100%, 340px); margin:0 auto; border-radius:6px; overflow:hidden; box-shadow:0 0 0 2px #fff}
+.vd-gab-c img{position:absolute; inset:0; width:100%; height:100%; object-fit:fill; opacity:.85}
+.vd-gab-c .gl{position:absolute; background:#3ee0d0; box-shadow:0 0 0 1px rgba(0,0,0,.5)} .vd-gab-c .gl.v{top:0; bottom:0; width:2px; margin-left:-1px} .vd-gab-c .gl.hz{left:0; right:0; height:2px; margin-top:-1px}
+.vd-gab-c .gm{position:absolute; display:flex; align-items:center; justify-content:center; font:700 12px var(--f-cond); color:#111; pointer-events:none}
+.vd-gab-c .gm.h{height:22px; margin-top:-11px; background:linear-gradient(#3ee0d0,#3ee0d0) center/100% 2px no-repeat} .vd-gab-c .gm.vt{width:34px; margin-left:-17px; background:linear-gradient(#3ee0d0,#3ee0d0) center/2px 100% no-repeat}
+.vd-gab-c .gm em{font-style:normal; background:#3ee0d0; color:#0b0b0e; padding:1px 5px; border-radius:8px; white-space:nowrap}
+.vd-rel{aspect-ratio:auto} .vd-rel img{position:static; width:100%; height:auto; opacity:1}
+.vd-gab small{font-size:12px; color:var(--doux); line-height:1.35}
 .vd-mes{display:block; margin-top:4px; color:var(--acc); font-size:12px}
 .vd-anc{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap} .vd-anc .btn{flex:0 0 auto}
 .vd-rep{display:flex; flex-direction:column; gap:4px; padding:12px 14px; border-radius:16px; background:var(--or-fonce); box-shadow:inset 0 0 0 1px var(--or-ligne)} .vd-rep b{color:var(--or); font-size:14px} .vd-rep small{font-size:13px; color:var(--texte, #F4F2EE)}
@@ -2477,6 +2491,7 @@ body.pop-ouverte{overflow:hidden}
 /* 2 nov 2026 - la photo cadree sur la carte, le calque (contour, cadre imprime, ratios), les coins a glisser */
 .vd-ph{position:relative; display:flex; flex-direction:column; align-items:center; gap:8px}
 .vd-cad{position:relative; width:100%; max-width:min(100%, calc(70vh * 1.6)); max-height:70vh; border-radius:12px; overflow:hidden; background:#111115; touch-action:pan-y; -webkit-user-select:none; user-select:none}
+body.vd-ouverte::before{content:''; position:fixed; top:0; left:0; right:0; height:env(safe-area-inset-top); background:#08080a; z-index:10000; pointer-events:none}
 .vd{overscroll-behavior:contain; -webkit-overflow-scrolling:touch} body.vd-ouverte{overflow:hidden} .vd img{-webkit-user-drag:none; -webkit-touch-callout:none}
 .vd-anc{padding:10px 12px; border-radius:14px; background:var(--or-fonce); color:var(--or); font-size:13.5px} .vd-anc .lien-t{font-size:13.5px}
 .vd-sc{position:absolute} .vd-sc img{position:absolute; inset:0; width:100%; height:100%; display:block}
@@ -2794,7 +2809,7 @@ const LECTURES = new Set(['accueil', 'acheteur_accueil', 'activites', 'conseils'
   'reglages_lire', 'deals_liste', 'inventaire_liste', 'catalogue_liste', 'produits_liste', 'equipes', 'images_produits', 'images_joueurs',
   'budget_etat', 'alertes_liste', 'breaks_liste', 'bilan', 'tendances', 'calendrier', 'collection', 'offres_liste', 'analyse_break',
   'admin_resume', 'admin_abonnes', 'admin_demandes', 'admin_catalogue', 'admin_sante', 'valeurs_statut', 'portraits_joueurs',
-  'etoiles_lire', 'alarmes_lire', 'sante_liste', 'pouls', 'guide_donnees', 'consignataires_liste', 'ebay_avis_statut', 'ebay_appels',
+  'etoiles_lire', 'alarmes_lire', 'deals_profil_lire', 'sante_liste', 'pouls', 'guide_donnees', 'consignataires_liste', 'ebay_avis_statut', 'ebay_appels',
   'inventaire_tableaux', 'watch_liste']);
 const SANS_EFFET = new Set(['deals_etat', 'accueil_live', 'annonce_detail', 'carte_comps', 'valeur_carte', 'joueur_fiche', 'checklist',
   'catalogue_checklist', 'break_detail', 'photo_statut', 'demandes_reponses', 'demandes_mes', 'ebay_environnement', 'logo_lire', 'prix_auto_lire',
@@ -2829,7 +2844,7 @@ async function appelServeur(nom, corps, essai2){
 // 3 nov 2026 (Mathieu : « quand on ferme l'app et qu'on la rouvre, c'est tres, tres long d'avoir les deals, l'inventaire ») :
 // chaque onglet du bas s'ouvre tout de suite avec ce qu'on avait la derniere fois (garde sur le telephone, 36 h) ; la version
 // fraiche arrive derriere et l'ecran se redessine. Le telephone garde les plus recentes (environ 4 Mo) ; les vieilles partent.
-const GARDES = new Set(['accueil', 'acheteur_accueil', 'deals_liste', 'inventaire_liste', 'inventaire_tableaux', 'tendances', 'pouls',
+const GARDES = new Set(['deals_profil_lire', 'alarmes_lire', 'accueil', 'acheteur_accueil', 'deals_liste', 'inventaire_liste', 'inventaire_tableaux', 'tendances', 'pouls',
   'astuces', 'forfait', 'reglages_lire', 'alertes_liste', 'breaks_liste', 'catalogue_liste', 'collection', 'bilan', 'watch_liste', 'activites']),
   GARDE_MAX_MS = 36 * 3600 * 1000;
 const GARDE_SAUTER = {oui: false};
@@ -5349,7 +5364,13 @@ const nbFiltresDeals = (F) => ['prix_min', 'prix_max', 'rabais_min', 'gain_min']
 // collectionne, mon budget, mes joueurs, mes vendeurs) est garde sur le compte ; le reste sur le telephone.
 async function feuilleFiltresDeals(){
   const F = S.dealsF;
+  // 3 nov 2026 (Mathieu : « quand je clique sur les filtres, rien ne se passe ») : le serveur lent, la feuille attendait son
+  // profil avant de s'ouvrir. Elle s'ouvre tout de suite (« On charge tes filtres… ») ; le profil est garde sur le telephone
+  let pret = false;
+  const att = setTimeout(() => { if (!pret) ouvrirFeuille(`<h3>${tt('Filtres', 'Filters')}</h3><div class="lecture"><span class="roue"></span>${tt('On charge tes filtres…', 'Loading your filters…')}</div>`); }, 120);
   const [p0, al0] = await Promise.all([API.deals_profil_lire().catch(() => null), API.alarmes_lire().catch(() => null)]);
+  pret = true; clearTimeout(att);
+  if (!p0) { fermerFeuille(); toast(tt('Le serveur est occupé : réessaie dans un instant', 'The server is busy: try again in a moment')); return; }
   const p = p0 || {}, avert0 = !!(((al0 || {}).alarmes || {}).mes_joueurs);
   // 31 oct 2026 (Mathieu : « revoir l'interface pour ajouter des joueurs suivis : 3 pour le compte gratuit, 10 pour les
   // payants ; m'avertir quand ils pop dans les deals ») : des pastilles (× pour retirer), un champ + Ajouter, le compteur
@@ -8974,11 +8995,14 @@ function voirDefauts(e, k, apres, relancer){
   };
   const TOL = (f) => f === 'dos' ? TOL_DOS : TOL_DEVANT;
   const rat = (a, c) => { const g = Math.round(100 * Math.max(a, c) / ((a + c) || 1)); return [g, 100 - g]; };
+  const zoomDef = (d) => { const u = refs[d.photo || 0]; if (!u) return ''; const Z = 6, x = (d.x || 500) / 1000, y = (d.y || 500) / 1000;
+    const pos = (t) => Math.max(0, Math.min(100, (t * Z - 0.5) / (Z - 1) * 100)).toFixed(2);
+    return `<span class="vd-zm grand" style="background-image:url('${esc(photoNet(u, 1600))}');background-size:${Z * 100}% ${Z * 100}%;background-position:${pos(x)}% ${pos(y)}%"><i></i></span>`; };
   // la description d'un defaut, ouverte sous (ou sur) son numero : quoi, ou, le critere PSA, et ton avis
   const bulle = (cad, sc, d, i, x, y) => {
     const a = (e.avis || {})[i], b = document.createElement('div');
     b.className = 'vd-bulle'; b.dataset.d = i;
-    b.innerHTML = `<b>${i + 1}. ${esc(LIB_DEFAUT(d.type))} <em>${esc(LIB_GRAV(d.gravite))}</em></b>
+    b.innerHTML = `${zoomDef(d)}<b>${i + 1}. ${esc(LIB_DEFAUT(d.type))} <em>${esc(LIB_GRAV(d.gravite))}</em></b>
       <span>${esc(LIB_ZONE(d.zone))}${d.photo ? tt(' (dos)', ' (back)') : ''}</span>${d.pourquoi ? `<small>${esc(d.pourquoi)}</small>` : ''}
       ${e.cid ? `<div class="vd-av"><span>${tt('Tu le vois ?', 'Do you see it?')}</span><button class="${a === true ? 'on' : ''}" data-av="${i}" data-v="1" aria-label="${esc(tt('Je le vois', 'I see it'))}">✓</button><button class="${a === false ? 'on' : ''}" data-av="${i}" data-v="0" aria-label="${esc(tt('Pas de défaut', 'No flaw'))}">✕</button></div>` : ''}`;
     cad.appendChild(b);
@@ -9029,8 +9053,14 @@ function voirDefauts(e, k, apres, relancer){
         const val = k === 'coins' ? x.blanc_mm2 : x.blanc_mm;
         if (val >= (k === 'coins' ? 0.05 : 0.3)) l.push(`${nf_(val)} ${k === 'coins' ? 'mm²' : 'mm'} ${LIB_ZONE((k === 'coins' ? 'coin ' : 'bord ') + z).toLowerCase()}${face === 'dos' ? tt(' (dos)', ' (back)') : ''}`);
       }));
-      if (!n) return '';
-      return `<small class="vd-mes">${esc(l.length ? tt('Mesuré : blanc ', 'Measured: white ') + l.slice(0, 2).join(' · ') : (k === 'coins' ? tt('Mesuré : aucun blanc aux coins', 'Measured: no white at the corners') : tt('Mesuré : aucun blanc aux bords', 'Measured: no white on the edges')))}</small>`;
+      // 3 nov 2026 : la FORME (silhouette sur le fond) : coins plus ronds que les autres, creux le long des aretes
+      let nf = 0; const lf = [];
+      Object.entries(mes_).forEach(([face, m]) => { const si = (m || {}).silhouette || {};
+        if (k === 'coins') Object.entries(si.coins || {}).forEach(([z, x]) => { if (!x || !x.mesurable) return; nf++; if ((x.relatif || 0) >= 0.3) lf.push(`${LIB_ZONE('coin ' + z).toLowerCase()} ${tt('plus rond', 'rounder')} (${nf_(x.manque_mm2)} mm²)`); });
+        if (k === 'bords') Object.entries(si.cotes || {}).forEach(([z, x]) => { if (!x || !x.mesurable) return; nf++; const e_ = (x.encoches || []).find(e => e.profondeur_mm >= 0.2 && e.longueur_mm >= 0.3); if (e_) lf.push(`${LIB_ZONE('bord ' + z).toLowerCase()} : ${tt('creux', 'dip')} ${nf_(e_.profondeur_mm)} mm`); }); });
+      const forme = nf ? `<small class="vd-mes">${esc(lf.length ? tt('Forme : ', 'Shape: ') + lf.slice(0, 2).join(' · ') : (k === 'coins' ? tt('Forme : coins nets (mesurés sur le fond)', 'Shape: sharp corners (measured on the background)') : tt('Forme : arêtes droites (mesurées sur le fond)', 'Shape: straight edges (measured on the background)')))}</small>` : '';
+      if (!n) return forme;
+      return `<small class="vd-mes">${esc(l.length ? tt('Mesuré : blanc ', 'Measured: white ') + l.slice(0, 2).join(' · ') : (k === 'coins' ? tt('Mesuré : aucun blanc aux coins', 'Measured: no white at the corners') : tt('Mesuré : aucun blanc aux bords', 'Measured: no white on the edges')))}</small>` + forme;
     };
     const cause = (k) => cause0(k) + mesure(k);
     const cause0 = (k) => {
@@ -9050,12 +9080,38 @@ function voirDefauts(e, k, apres, relancer){
       const cle = pool.filter(({d}) => (d.note != null ? d.note : 9 - (ORD_G[d.gravite] != null ? 3 - ORD_G[d.gravite] : 0)) === pire).slice(0, 2);
       if (cle.length) {
         const plus = pool.length - cle.length;
-        return cle.map(({d, i}) => `<button class="vd-cz" data-voir="${i}"><i class="vd-ci g-${(d.gravite || '').replace(' ', '-')}">${i + 1}</i><span>${esc(maj1(LIB_DEFAUT(d.type)))}<br><em>${esc([d.zone === 'surface' ? (d.photo ? tt('Dos', 'Back') : tt('Devant', 'Front')) : LIB_ZONE(d.zone) + (d.photo ? tt(' · dos', ' · back') : ''), d.gravite === 'a verifier' ? tt('à vérifier', 'to check') : ''].filter(Boolean).join(' · '))}</em></span></button>`).join('')
+        return cle.map(({d, i}) => `<button class="vd-cz" data-voir="${i}"><span class="vd-czz">${zoom(d)}<i class="vd-ci g-${(d.gravite || '').replace(' ', '-')}">${i + 1}</i></span><span>${esc(maj1(LIB_DEFAUT(d.type)))}<br><em>${esc([d.zone === 'surface' ? (d.photo ? tt('Dos', 'Back') : tt('Devant', 'Front')) : LIB_ZONE(d.zone) + (d.photo ? tt(' · dos', ' · back') : ''), d.gravite === 'a verifier' ? tt('à vérifier', 'to check') : ''].filter(Boolean).join(' · '))}</em></span></button>`).join('')
           + (plus > 0 ? `<small>${esc(tt(`+ ${plus} autre${plus > 1 ? 's' : ''} sur la photo`, `+ ${plus} more on the photo`))}</small>` : '') + rg;
       }
       // pas de defaut localise (ancienne analyse, centrage estime) : on le dit franchement
       return `<span class="vd-cz vd-cz-v"><i class="vd-ci g-a-verifier">?</i><span>${esc(k === 'centrage' ? tt('Pas mesuré : estimé à l’œil', 'Not measured: estimated by eye') : tt('Rien de précis vu : note prudente', 'Nothing specific seen: cautious grade'))}</span></span>${e.ancienne ? `<small>${esc(tt('Refais l’examen pour une raison précise', 'Check again for a precise reason'))}</small>` : rg}`;
     };
+    // 3 nov 2026 (Mathieu : « une vue close-up du defaut quand on clique sur le chiffre, pour que l'utilisateur voie bien
+    // ton jugement ») : le defaut agrandi (la photo pleine resolution, centree sur le point, une mire autour)
+    const zoom = (d, cls) => { const u = refs[d.photo || 0]; if (!u) return ''; const Z = 6, x = (d.x || 500) / 1000, y = (d.y || 500) / 1000;
+      const pos = (t) => Math.max(0, Math.min(100, (t * Z - 0.5) / (Z - 1) * 100)).toFixed(2);
+      return `<span class="vd-zm ${cls || ''}" style="background-image:url('${esc(photoNet(u, 1600))}');background-size:${Z * 100}% ${Z * 100}%;background-position:${pos(x)}% ${pos(y)}%"><i></i></span>`; };
+    // 3 nov 2026 (Mathieu : « le gabarit physique avec les lignes de delimitation, comment tu l'as pris pour le centering ») :
+    // la carte A PLAT, ses aretes, les lignes du cadre retenues, la largeur de chaque bordure en mm et le ratio
+    const gabarit = () => FACES.map(face => {
+      const v = (e.centrage_vue || {})[face]; if (!v || !v.img) return '';
+      const debout = (v.ratio || 0.71) < 1, MW = debout ? 63.5 : 88.9, MH = debout ? 88.9 : 63.5, mm = (f, M) => String(Math.round(f * M * 10) / 10).replace('.', ',');
+      const aX = v.l != null && v.r != null, aY = v.t != null && v.b != null;
+      const pc = (f) => (100 * f).toFixed(2) + '%';
+      const src = (ax) => v['source_' + ax] === 'ia' ? tt('repère lu par l’IA', 'reference read by the AI') : v['source_' + ax] === 'paires' ? tt('éléments imprimés en miroir', 'mirrored printed elements') : v.manuel ? tt('ajusté à la main', 'adjusted by hand') : tt('cadre imprimé mesuré', 'measured printed frame');
+      const ratio = (a, b) => { const g = Math.round(100 * Math.max(a, b) / ((a + b) || 1)); return g + '/' + (100 - g); };
+      return `<div class="vd-gab"><div class="vd-gab-t"><b>${face === 'dos' ? tt('Dos', 'Back') : tt('Devant', 'Front')}</b>
+          <span>${aX ? `${tt('G/D', 'L/R')} <b>${ratio(v.l, v.r)}</b>` : v.verifier_gd ? `${tt('G/D', 'L/R')} <b>${esc(v.verifier_gd)}</b> ${tt('à vérifier', 'to check')}` : tt('G/D : pas de repère', 'L/R: no reference')} · ${aY ? `${tt('H/B', 'T/B')} <b>${ratio(v.t, v.b)}</b>` : v.verifier_hb ? `${tt('H/B', 'T/B')} <b>${esc(v.verifier_hb)}</b> ${tt('à vérifier', 'to check')}` : tt('H/B : pas de repère', 'T/B: no reference')}</span></div>
+        <div class="vd-gab-c" style="aspect-ratio:${(v.ratio || 0.714).toFixed(4)}"><img src="${esc(v.img)}" alt="">
+          ${aX ? `<i class="gl v" style="left:${pc(v.l)}"></i><i class="gl v" style="left:${pc(1 - v.r)}"></i>
+            <span class="gm h" style="left:0;width:${pc(v.l)};top:50%"><em>${mm(v.l, MW)}</em></span><span class="gm h" style="right:0;width:${pc(v.r)};top:50%"><em>${mm(v.r, MW)}</em></span>` : ''}
+          ${aY ? `<i class="gl hz" style="top:${pc(v.t)}"></i><i class="gl hz" style="top:${pc(1 - v.b)}"></i>
+            <span class="gm vt" style="top:0;height:${pc(v.t)};left:50%"><em>${mm(v.t, MH)}</em></span><span class="gm vt" style="bottom:0;height:${pc(v.b)};left:50%"><em>${mm(v.b, MH)}</em></span>` : ''}
+        </div>
+        <small>${[aX ? tt('G/D : ', 'L/R: ') + src('gd') + (v.repere_gd ? ' (' + esc(v.repere_gd) + ')' : '') : '', aY ? tt('H/B : ', 'T/B: ') + src('hb') + (v.repere_hb ? ' (' + esc(v.repere_hb) + ')' : '') : '',
+          (v.verifier_gd || v.verifier_hb) ? tt('« à vérifier » : l’écart vient d’un élément du dessin (logo, titre), peut-être imprimé ainsi ; pas compté dans la note', '“to check”: the gap comes from a design element (logo, title), maybe printed that way; not counted in the grade') : '',
+          tt('largeurs en mm (carte 63,5 × 88,9 mm) ; PSA juge le pire point', 'widths in mm (card 63.5 × 88.9 mm); PSA judges the worst point')].filter(Boolean).join(' · ')}</small></div>`;
+    }).join('');
     const CATS_ = [['centrage', tt('Centrage', 'Centering')], ['coins', tt('Coins', 'Corners')], ['bords', tt('Bords', 'Edges')], ['surface', tt('Surface', 'Surface')]];
     o.innerHTML = `<button class="vd-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
       <div class="vd-tete"><span class="fc-al-ic et-anneau ${clg}"><b>${four}</b></span><span><b>${tt('État estimé', 'Estimated condition')} <small>/10</small></b>
@@ -9069,6 +9125,9 @@ function voirDefauts(e, k, apres, relancer){
             <button class="pilule" data-ann="${j}">${tt('Annuler', 'Cancel')}</button><button class="btn petit" data-ok="${j}">${tt('Enregistrer', 'Save')}</button>`
           : `<button class="chip vd-tog ${calque ? 'on' : ''}" data-calque><i></i>${tt('Étude du centrage', 'Centering study')}</button>`}</div>
         ${calque ? `<div class="cg-leg">${(j ? [[75, 10, 'z10'], [90, 9, 'z9']] : [[60, 10, 'z10'], [65, 9, 'z9'], [70, 8, 'z8'], [75, 7, 'z7']]).map(([lim, nn, cl]) => `<span class="${cl}"><i></i>PSA ${nn} ≤ ${lim}/${100 - lim}</span>`).join('')}</div>` : ''}</div>`).join('')}
+      ${e.relief_img ? `<div class="vd-sec">${e.relief_deux ? tt('Relief de la surface (2 éclairages)', 'Surface relief (2 lights)') : tt('Relief de la surface', 'Surface relief')}</div>
+        <div class="vd-gab"><div class="vd-gab-c vd-rel"><img src="${esc(e.relief_img)}" alt=""></div><small>${e.relief_deux ? tt('La différence entre tes deux photos : l’impression s’efface, ce qui reste en clair ou en foncé est du relief (ligne fine = rayure, tache ronde = bosse ou empreinte).', 'The difference between your two photos: the print fades, what stays light or dark is relief (thin line = scratch, round spot = dent or fingerprint).') : tt('Ta photo rasante, éclairage lissé et contraste renforcé : les rayures et les bosses ressortent (l’impression aussi).', 'Your raking photo, lighting evened out and contrast boosted: scratches and dents stand out (so does the print).')}</small></div>` : ''}
+      ${(e.centrage_vue && Object.values(e.centrage_vue).some(v => v && v.img)) ? `<div class="vd-sec">${tt('Gabarit du centrage', 'Centering template')}</div>${gabarit()}` : ''}
       <div class="sous vd-q">${def.some(d => !d.masque) ? tt('Touche un numéro : le défaut, le critère PSA, et ton avis (ça rend l’analyseur plus précis pour tout le monde).', 'Tap a number: the flaw, the PSA criterion, and your opinion (it makes the analyzer more accurate for everyone).') : tt('Aucun défaut repéré sur les photos.', 'No flaw found on the photos.')}</div>
       ${e.conseil ? `<div class="et-c">${esc(e.conseil)}</div>` : ''}
       ${(e.invisible || []).length ? `<div class="sous">${tt('Pas vérifiable sur ces photos : ', 'Not checkable on these photos: ')}${esc(e.invisible.join(' · '))}</div>` : ''}
@@ -9383,10 +9442,10 @@ async function feuilleSoumission(id, liste){
 function feuilleExamen(c){
   return new Promise(ok => {
     let fini = false; const fin = (v) => { if (fini) return; fini = true; fermerFeuille(); ok(v); };
-    const P = {devant: null, dos: null, rasante: null, q: {}};
+    const P = {devant: null, dos: null, rasante: null, rasante2: null, q: {}};
     const peindre = () => {
       const pas = (k, titre, sous, opt) => `<div class="ex-p ${P[k] ? 'fait' : ''}"><div class="ex-v" id="exv-${k}">${P[k] ? `<img src="${P[k]}" alt="">` : `<span class="fc-al-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="3"/><circle cx="12" cy="13" r="3.5"/></svg></span>`}</div>
-        <div class="ex-t"><b>${titre}${opt ? ` <small>${tt('facultatif', 'optional')}</small>` : ''}</b><small id="exs-${k}">${P[k] ? (k === 'rasante' || P.q[k] ? '✓ ' + tt('carte trouvée', 'card found') : tt('carte pas trouvée : reprends-la sur un fond uni foncé', 'card not found: retake on a plain dark background')) : sous}</small>
+        <div class="ex-t"><b>${titre}${opt ? ` <small>${tt('facultatif', 'optional')}</small>` : ''}</b><small id="exs-${k}">${P[k] ? (k.startsWith('rasante') || P.q[k] ? '✓ ' + tt('carte trouvée', 'card found') : tt('carte pas trouvée : reprends-la sur un fond uni foncé', 'card not found: retake on a plain dark background')) : sous}</small>
           <span class="env-b"><label class="pilule">${tt('Photo', 'Photo')}<input type="file" accept="image/*" capture="environment" data-k="${k}" hidden></label><label class="pilule">${tt('Photothèque', 'Library')}<input type="file" accept="image/*" data-k="${k}" hidden></label></span></div></div>`;
       ouvrirFeuille(`<h3>${tt('Examen de la carte', 'Card exam')}</h3>
         <ul class="conseils-ph"><li><b>1</b>${tt('Sors-la du toploader ou de la pochette, à plat', 'Take it out of the toploader or sleeve, flat')}</li>
@@ -9394,7 +9453,8 @@ function feuilleExamen(c){
           <li><b>3</b>${tt('Toute la carte, de près, bien droite', 'The whole card, close up, straight')}</li></ul>
         ${pas('devant', tt('Le devant', 'The front'), tt('Le plus important', 'The most important'))}
         ${pas('dos', tt('Le dos', 'The back'), tt('Coins et bords du dos', 'Back corners and edges'))}
-        ${pas('rasante', tt('La surface en lumière rasante', 'Surface in raking light'), tt('Incline la carte sous une lampe : les rayures ressortent', 'Tilt the card under a lamp: scratches show up'), true)}
+        ${pas('rasante', tt('La surface en lumière rasante', 'Surface in raking light'), tt('Lampe basse, sur le côté, carte à plat sur le fond : les rayures ressortent', 'Low lamp from the side, card flat on the background: scratches show up'), true)}
+        ${P.rasante ? pas('rasante2', tt('La même, lampe de l’autre côté', 'Same, lamp on the other side'), tt('Sans bouger la carte, mets la lampe de l’autre côté : l’app compare les 2 photos, l’impression s’efface et le relief (rayure, bosse, pli) ressort', 'Without moving the card, put the lamp on the other side: the app compares both photos, the print fades and the relief (scratch, dent, crease) stands out'), true) : ''}
         <button class="btn" id="ex-go" ${P.devant ? '' : 'disabled'}>${tt('Analyser', 'Analyze')}</button>
         <button class="btn ghost" id="ex-fiche">${tt('Utiliser les photos de la fiche', 'Use the card’s photos')}</button>
         <div class="sous">${tt('Les photos d’examen restent avec l’examen ; les photos de ta fiche ne changent pas.', 'Exam photos stay with the exam; your card’s photos don’t change.')}</div>`);
@@ -9402,9 +9462,9 @@ function feuilleExamen(c){
         $('#exs-' + k).textContent = tt('Lecture…', 'Reading…');
         try { const ph = await reduirePhoto(f, 3200); /* 2 nov 2026 : 3200 px, zooms en pleine resolution */ const q0 = await qualitePhoto(ph).catch(() => ({ok: true}));
           if (!q0.ok) { const [t, dd] = MSG_PHOTO[q0.raison] || MSG_PHOTO.floue; toast(t + ' : ' + dd, 5000); }
-          P[k] = ph; P.q[k] = k === 'rasante' ? null : coinsLocaux(await chargerImage(ph)); } catch (x) { toast(tt('Photo illisible : reprends-la', 'Unreadable photo: retake it')); }
+          P[k] = ph; P.q[k] = k.startsWith('rasante') ? null : coinsLocaux(await chargerImage(ph)); } catch (x) { toast(tt('Photo illisible : reprends-la', 'Unreadable photo: retake it')); }
         peindre(); });
-      $('#ex-go').onclick = () => fin({photos: [P.devant, P.dos].filter(Boolean), quads: [P.q.devant || null, P.dos ? (P.q.dos || null) : null].slice(0, P.dos ? 2 : 1), rasante: P.rasante || null});
+      $('#ex-go').onclick = () => fin({photos: [P.devant, P.dos].filter(Boolean), quads: [P.q.devant || null, P.dos ? (P.q.dos || null) : null].slice(0, P.dos ? 2 : 1), rasante: P.rasante || null, rasante2: P.rasante ? (P.rasante2 || null) : null});
       $('#ex-fiche').onclick = async () => {
         let ph = []; try { ph = JSON.parse(c.photos_orig || c.photos || '[]'); } catch (x) {} if (!ph.length && c.photo) ph = [c.photo];
         const qs = []; for (const u of ph.slice(0, 2)) { try { qs.push(coinsLocaux(await chargerImage(photoNet(u, 1600))) || null); } catch (x) { qs.push(null); } }

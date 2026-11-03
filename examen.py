@@ -471,7 +471,7 @@ def note_centrage(devant, dos=None):
     return n
 
 
-def preparer(photos_octets, quads=None, rasante=None):
+def preparer(photos_octets, quads=None, rasante=None, rasante2=None):
     """photos_octets : [devant, dos?] (octets) ; quads : [quad_devant, quad_dos] en 0..1000 ; rasante : octets ou None.
     -> {"images": [(libelle, octets_jpeg)], "centrage": {...}, "note_centrage": n|None, "zooms": bool}"""
     quads = list(quads or [])
@@ -481,6 +481,14 @@ def preparer(photos_octets, quads=None, rasante=None):
         im = ouvrir(b)
         images.append((f"Photo {j} : le {face} (photo entiere).", jpeg(im)))
         q = quads[j] if j < len(quads) and quads[j] else None
+        if not q:                                           # 3 nov 2026 : pas de contour du telephone -> l'app trouve la carte
+            try:
+                import mesures
+                q0 = mesures.trouver_carte(im)
+                q = affiner_quad(im, q0, 0.03) if q0 else None
+            except Exception as e:
+                print("Examen (carte trouvee) : " + repr(e), flush=True)
+                q = None
         c = redresser(im, q) if q else None                 # exacte : pour le centrage
         z = redresser(im, q, 0.03, COTE_ZOOM) if q else None   # pleine resolution, un peu de fond : l'arete des coins et des bords
         cartes.append(c)
@@ -504,14 +512,43 @@ def preparer(photos_octets, quads=None, rasante=None):
                 cp = mz.get("centrage") or {}
                 for ax in ("gd", "hb"):
                     x = cp.get(ax)
-                    if not m.get(ax) and x and x.get("fiabilite") in ("haute", "moyenne"):
+                    if x and ((not m.get(ax) and x.get("fiabilite") in ("haute", "moyenne")) or (x.get("fiabilite") == "haute" and not x.get("a_verifier"))):
                         m[ax] = x["ratio"]
                         if x.get("a_verifier"):
                             verif.setdefault(face, []).append(ax)
+                # la symetrie : un fort decentrage sans bordure unie -> a verifier (le bas de la fourchette seulement)
+                try:
+                    import mesures
+                    det = centrage_detail(c) or {}
+                    for ax, k1, k2 in (("gd", "l", "r"), ("hb", "t", "b")):
+                        if m.get(ax) and m.get(ax) == det.get(ax) and int(str(m[ax]).split("/")[0]) > 60 \
+                                and not mesures.bordure_unie(c, ax, det.get(k1), det.get(k2)) and ax not in verif.get(face, []):
+                            verif.setdefault(face, []).append(ax)
+                except Exception as e:
+                    print("Examen (bordure) : " + repr(e), flush=True)
             if m.get("gd") or m.get("hb"):
                 cent[face] = {"gd": m.get("gd"), "hb": m.get("hb")}
     if rasante:
         images.append(("Photo en lumiere rasante (inclinee) : pour les rayures, les plis et les bosses de surface.", jpeg(ouvrir(rasante))))
+        # 3 nov 2026 : le relief, calcule par l'app (l'impression s'efface, les rayures et les bosses ressortent)
+        try:
+            import mesures
+            if rasante2:
+                images.append(("Photo en lumiere rasante, la lampe de l'AUTRE cote.", jpeg(ouvrir(rasante2))))
+                d = mesures.difference_eclairages(ouvrir(rasante), ouvrir(rasante2))
+                if d:
+                    images.append(("DIFFERENCE entre les deux eclairages, calculee par l'app (la carte a plat) : l'impression s'efface ; ce qui "
+                                   "reste en clair ou en fonce est du RELIEF (rayure, bosse, pli, empreinte). Une ligne fine = rayure ; une tache "
+                                   "ronde = bosse ou empreinte ; une ligne nette sur toute la carte = pli. Le contour de la carte et les reflets "
+                                   "du vernis holo peuvent aussi ressortir : ne les compte pas.", jpeg(d["image"], 1568, 88)))
+            else:
+                rl = mesures.relief(ouvrir(rasante))
+                if rl is not None:
+                    images.append(("RELIEF de la photo rasante, calcule par l'app (eclairage lent enleve, contraste local x4) : les rayures et les "
+                                   "bosses ressortent en lignes ou taches claires / foncees ; les motifs imprimes restent aussi, compare avec la photo.",
+                                   jpeg(rl, 1568, 88)))
+        except Exception as e:
+            print("Examen (relief) : " + repr(e), flush=True)
     # la note du centrage : les axes « a verifier » (un decentrage fort mesure sur un element de design, peut-etre dessine
     # ainsi) n'abaissent que le BAS de la fourchette
     sur = {f: {ax: v for ax, v in d.items() if ax not in verif.get(f, [])} for f, d in cent.items()}
@@ -533,7 +570,7 @@ def _mesurer(im, q, c, z):
             cotes = [((px[i][0] - px[(i + 1) % 4][0]) ** 2 + (px[i][1] - px[(i + 1) % 4][1]) ** 2) ** 0.5 for i in range(4)]
             natif = min((cotes[0] + cotes[2]) / 2, (cotes[1] + cotes[3]) / 2) / mesures.MM_COURT
         return {"centrage": mesures.centrage(c), "usure": mesures.usure(z, 0.03) if z is not None else None,
-                "qualite": mesures.qualite(c, natif)}
+                "silhouette": mesures.silhouette(z, 0.03) if z is not None else None, "qualite": mesures.qualite(c, natif)}
     except Exception as e:
         print("Examen (mesures) : " + repr(e), flush=True)
         return None

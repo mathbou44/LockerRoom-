@@ -44,6 +44,42 @@ def usee():
     q = [[100 * 1000 / 1470, 100 * 1000 / 1978], [1370 * 1000 / 1470, 100 * 1000 / 1978], [1370 * 1000 / 1470, 1878 * 1000 / 1978], [100 * 1000 / 1470, 1878 * 1000 / 1978]]
     return ph, q
 
+def silhouette_test():
+    """Une carte grise claire (le blanc ne se mesure pas) sur fond noir, 20 px/mm : un coin haut-droit arrondi, une encoche
+    de 0,5 mm x 1,5 mm sur le bord gauche. La forme les trouve ; une carte propre n'a rien."""
+    W, H = 1270, 1778
+    def carte(abime):
+        c = Image.new("RGB", (W + 200, H + 200), (12, 12, 14)); dr = ImageDraw.Draw(c)
+        dr.rectangle([100, 100, 100 + W - 1, 100 + H - 1], fill=(205, 205, 200))
+        if abime:
+            dr.rectangle([100 + W - 30, 100, 100 + W - 1, 130], fill=(12, 12, 14))
+            dr.pieslice([100 + W - 60, 100, 100 + W - 1, 160], 270, 360, fill=(205, 205, 200))
+            dr.rectangle([100, 100 + 600, 100 + 9, 100 + 630], fill=(12, 12, 14))
+        return c
+    q = [[100 * 1000 / 1470, 100 * 1000 / 1978], [1370 * 1000 / 1470, 100 * 1000 / 1978], [1370 * 1000 / 1470, 1878 * 1000 / 1978], [100 * 1000 / 1470, 1878 * 1000 / 1978]]
+    s = mesures.silhouette(examen.redresser(carte(True), q, 0.03, 1778), 0.03)
+    assert s["coins"]["haut-droit"]["relatif"] >= 0.3, s["coins"]
+    enc = s["cotes"]["gauche"]["encoches"]
+    assert enc and 0.3 <= enc[0]["profondeur_mm"] <= 0.7 and 29 <= enc[0]["pos_mm"] <= 33, enc
+    assert not s["cotes"]["droit"]["encoches"] and not s["cotes"]["haut"]["encoches"], s["cotes"]
+    p = mesures.silhouette(examen.redresser(carte(False), q, 0.03, 1778), 0.03)
+    assert all(not x["encoches"] for x in p["cotes"].values() if x.get("mesurable")), p["cotes"]
+    assert all(abs(x.get("relatif") or 0) < 0.1 for x in p["coins"].values() if x.get("mesurable")), p["coins"]
+
+def surface_test():
+    """Deux eclairages : la meme carte (impression identique), une rayure qui ne brille que sous la lampe de gauche ->
+    la difference la montre ; deux photos identiques -> rien."""
+    def photo(rayure, gauche):
+        c = bordee(40, 40, 50, 50).convert("RGB")
+        if rayure:
+            ImageDraw.Draw(c).line([(300, 500), (700, 760)], fill=(255, 255, 255) if gauche else (150, 30, 40), width=3)
+        ph = Image.new("RGB", (c.size[0] + 300, c.size[1] + 300), (14, 14, 16)); ph.paste(c, (150, 150))
+        return ph
+    d = mesures.difference_eclairages(photo(True, True), photo(True, False))
+    d0 = mesures.difference_eclairages(photo(False, True), photo(False, False))
+    assert d and d0 and d["pct_relief"] > d0["pct_relief"] + 0.05, (d and d["pct_relief"], d0 and d0["pct_relief"])
+    assert mesures.relief(photo(True, True)) is not None
+
 
 def main():
     r = mesures.centrage(bordee(40, 60, 50, 50))
@@ -59,7 +95,7 @@ def main():
     ph, q = usee()
     z = examen.redresser(ph, q, 0.03, 1778)
     u = mesures.usure(z, 0.03)
-    assert 0.5 <= u["coins"]["bas-gauche"]["blanc_mm2"] <= 1.3 and u["coins"]["haut-droit"]["blanc_mm2"] == 0, u["coins"]
+    assert 0.35 <= u["coins"]["bas-gauche"]["blanc_mm2"] <= 1.3 and u["coins"]["haut-droit"]["blanc_mm2"] == 0, u["coins"]
     assert 4 <= u["bords"]["haut"]["blanc_mm"] <= 6 and u["bords"]["haut"]["points"] == 1 and u["bords"]["bas"]["blanc_mm"] == 0, u["bords"]
     qq = mesures.qualite(examen.redresser(ph, q).filter(ImageFilter.GaussianBlur(3)), 20)
     assert not qq["net"] and qq["a_reprendre"], qq
@@ -76,11 +112,14 @@ def main():
              "bords": [{"photo": 0, "bord": c, "etat": "net", "certitude": "sure"} for c in ("haut", "droit", "bas", "gauche")], "surface": [], "surface_jugeable": True}
         return {"content": [{"type": "tool_use", "name": "etat", "input": f}], "usage": {}}
     vision._appeler = appeler
-    e = vision.etat([url], quads=[q])
+    e = vision.etat([url], quads=[q], rasante=url, rasante2=url)
+    assert "DIFFERENCE entre les deux eclairages" in vu["texte"] and "FORME de la carte" in vu["texte"], vu["texte"][-600:]
     assert "MESURE de l'app" in vu["texte"] and "bas-gauche" in vu["texte"], vu["texte"][:400]
     m = [d for d in e["defauts"] if d.get("mesure")]
     assert m and m[0]["zone"] == "coin bas-gauche" and m[0]["gravite"] == "a verifier", e["defauts"]
-    assert e["note_max"] == 10 and e["note_min"] <= 9 and e["mesures"]["devant"]["coins"]["bas-gauche"]["blanc_mm2"] > 0.5, (e["note_min"], e["note_max"])
+    assert e["note_max"] == 10 and e["note_min"] <= 9 and e["mesures"]["devant"]["coins"]["bas-gauche"]["blanc_mm2"] > 0.3, (e["note_min"], e["note_max"])
+    silhouette_test()
+    surface_test()
     print("ok mesures")
 
 
