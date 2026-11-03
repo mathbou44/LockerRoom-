@@ -2779,7 +2779,7 @@ function ouvrirPref(b){
       }
     };
     for (const f of Array.from(document.styleSheets)) { let rs = null; try { rs = f.cssRules; } catch (e) {} if (rs) passer(rs); }
-    document.addEventListener('DOMContentLoaded', () => { const l = document.createElement('a'); l.id = 'cadre-large'; l.href = '?bureau=1'; l.textContent = 'Version large'; document.body.appendChild(l); });
+    document.addEventListener('DOMContentLoaded', () => { const l = document.createElement('a'); l.id = 'cadre-large'; l.href = '?bureau=1'; l.textContent = (document.documentElement.lang || navigator.language || 'fr').startsWith('en') ? 'Computer version' : 'Version ordinateur'; document.body.appendChild(l); });
   } catch (e) {}
 })();
 </script>
@@ -2792,6 +2792,11 @@ html.tel-large .onglets{left:50% !important; right:auto !important; transform:tr
 html.tel-large .ecran, html.tel-large .ecran.large{max-width:none !important; width:100%; padding-left:clamp(18px, 3vw, 48px) !important; padding-right:clamp(18px, 3vw, 48px) !important}
 html.tel-large .grille-c{grid-template-columns:repeat(auto-fill, minmax(220px, 1fr))}
 html.tel-large .fond-feuille .feuille{max-width:620px; margin:0 auto}
+/* 3 nov 2026 (Mathieu : « on ne voit pas toute la fenetre, elle est trop grosse pour le cadre ») : l'ordinateur agrandit tout
+   de 12 % (zoom) ; les hauteurs en vh / dvh se calculent AVANT ce zoom : on les ramene pour que les fenetres tiennent */
+html.tel-large .fen.fa{height:calc((100dvh - 20px) / 1.12) !important; max-height:calc(940px / 1.12)}
+html.tel-large .feuille{max-height:calc(86vh / 1.12) !important}
+html.tel-large .fen.fa .fen-img{max-height:calc(46vh / 1.12) !important}
 </style>
 <script>
 

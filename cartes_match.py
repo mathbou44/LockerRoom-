@@ -27,6 +27,9 @@ _verrou = threading.Lock()
 
 # -- mots ---------------------------------------------------------------------------------------
 SYNONYMES = [                       # forme courte -> forme longue (dans la recherche ET les titres)
+    # 3 nov 2026 (Mathieu : une Topps Signature Class #102 Chrome Refractor comparee a une AUTO) : « Signature Class » est le
+    # NOM du produit, pas un autographe ; le mot reste a part avant la regle signature -> auto
+    (r"\bsignature class\b", "signatureclass"),
     (r"\byg\b", "young guns"), (r"\bud\b", "upper deck"), (r"\bopc\b", "o-pee-chee"), (r"\bo pee chee\b", "o-pee-chee"),
     (r"\bspa\b", "sp authentic"), (r"\bfw\b", "future watch"), (r"\brr\b", "rated rookie"),
     (r"\bautograph(ed|s)?\b", "auto"), (r"\bsigned\b", "auto"), (r"\bsignature(s)?\b", "auto"), (r"\bautos\b", "auto"),
@@ -558,7 +561,7 @@ stadium club update hoops flawless spectra obsidian certified absolute phoenix r
 auto patch jersey relic numbered parallel base insert sticker hockey nhl nba nfl mlb football basketball baseball sharks rangers
 lot short print sp ssp variation retro french canvas exclusives gloss clear cut outburst redemption sealed graded raw psa bgs
 sgc cgc gem mint near rookies 1st edition set team prospects prospect draft picks pick stars star legends legend
-future signatures materials premium rookie debut""".split())
+future signatures materials premium rookie debut signatureclass class""".split())
 _JOUEURS_CONNUS = {"t": None}
 
 
