@@ -2353,6 +2353,19 @@ button.vd-cz > span{border-bottom:1px solid var(--ligne); padding-bottom:2px} .v
 .vd-cz b{font:700 15px var(--f-cond)} .vd-cz-v{color:var(--doux)}
 .vd-ci{flex:0 0 22px; width:22px; height:22px; border-radius:50%; display:grid; place-items:center; font:700 12px var(--f-cond); font-style:normal; color:#111; background:var(--or)}
 .vd-ci.g-fort{background:var(--rouge); color:#fff} .vd-ci.g-leger{background:#e9e6df} .vd-ci.g-a-verifier{background:transparent; color:#fff; box-shadow:inset 0 0 0 2px var(--doux)}
+.ag{display:flex; flex-direction:column; gap:12px}
+.ag-v{display:flex; flex-direction:column; align-items:center; gap:4px; padding:16px; border-radius:18px; background:var(--carte2); text-align:center} .ag-v b{font:700 20px var(--f-cond); letter-spacing:.02em}
+.ag-v small{color:var(--doux); font-size:13px} .ag-g{font:700 34px var(--f-cond)} .ag-v.vert{background:var(--vert-fond)} .ag-v.vert b, .ag-v.vert .ag-g{color:var(--vert)}
+.ag-v.rouge{background:var(--rouge-fond)} .ag-v.rouge b, .ag-v.rouge .ag-g{color:var(--rouge)} .ag-v.or{background:var(--or-fonce)} .ag-v.or b, .ag-v.or .ag-g{color:var(--or)}
+.ag-l{display:flex; flex-direction:column; gap:8px} .ag-r{display:grid; grid-template-columns:64px 1fr 44px 86px; align-items:center; gap:8px}
+.ag-n{font:700 15px var(--f-cond)} .ag-b{height:8px; border-radius:8px; background:var(--carte2); overflow:hidden} .ag-b i{display:block; height:100%; border-radius:8px; background:var(--acc)}
+.ag-p{font-size:13px; color:var(--doux); text-align:right} .ag-val{display:flex; flex-direction:column; align-items:flex-end; font:700 16px var(--f-cond)} .ag-val small{font:400 11px 'Barlow',sans-serif; color:var(--doux)}
+.ag-3{display:grid; grid-template-columns:repeat(3,1fr); gap:8px} .ag-3 div{display:flex; flex-direction:column; gap:2px; padding:10px; border-radius:14px; background:var(--carte2)} .ag-3 span{font-size:12px; color:var(--doux)} .ag-3 b{font:700 18px var(--f-cond)}
+.ag-sv{display:flex; flex-direction:column; gap:4px; padding:16px; border-radius:18px; background:var(--carte2)} .ag-sv b{font:700 22px var(--f-cond)} .ag-sv span{font-size:14px; color:var(--doux)}
+.ag-ck{margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:6px} .ag-ck li{display:flex; justify-content:space-between; padding:10px 12px; border-radius:12px; background:var(--carte2); font-size:14px}
+.vd-mes{display:block; margin-top:4px; color:var(--acc); font-size:12px}
+.vd-anc{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap} .vd-anc .btn{flex:0 0 auto}
+.vd-rep{display:flex; flex-direction:column; gap:4px; padding:12px 14px; border-radius:16px; background:var(--or-fonce); box-shadow:inset 0 0 0 1px var(--or-ligne)} .vd-rep b{color:var(--or); font-size:14px} .vd-rep small{font-size:13px; color:var(--texte, #F4F2EE)}
 .vd-ok{display:flex; align-items:center; gap:6px; margin-top:4px; color:var(--vert); font-size:13px; font-weight:600} .vd-ok svg{width:16px; height:16px} .vd-pied{text-align:center}
 .vd-tog i{width:10px; height:10px; border-radius:50%; border:1.5px solid currentColor; margin-right:6px; display:inline-block} .vd-tog.on i{background:var(--vert); border-color:var(--vert)}
 .vd-z{stroke-width:2.2; vector-effect:non-scaling-stroke; filter:drop-shadow(0 0 1px rgba(0,0,0,.9))}
@@ -6529,11 +6542,12 @@ function majTuilePrix(id, d){
   if (x.valeur) { x.rabais = Math.round(100 * (1 - x.total / x.valeur)); x.gain = Math.round((x.valeur * (1 - fp) - ff - x.total) * 100) / 100;
     if (x.encan && !x.mise_perso) x.mise_max = Math.round((x.valeur * 0.70 - (x.port || 0)) * 100) / 100; }
   $$(`.tuile-deal[data-id="${CSS.escape(String(id))}"]`).forEach(t => {
-    if (d.deal_retire) { t.classList.add('sort'); setTimeout(() => t.remove(), 300); return; }
+    if (d.deal_retire) { t.classList.add('sort'); setTimeout(() => t.remove(), 300); MEMO.clear(); GARDE_SAUTER.oui = true; return; }
     majChiffresTuile(t, x);
   });
 }
 async function ouvrirAnnonce(base){
+  const total0 = base && base.total;                       // le prix de la tuile (avant la lecture en direct)
   let f = $('#fen-annonce');
   if (!f) { f = document.createElement('div'); f.id = 'fen-annonce'; f.className = 'fen-fond'; document.body.appendChild(f);
     f.addEventListener('click', (e) => { if (e.target === f || e.target.closest('.fen-x')) fermerAnnonce(); }); }
@@ -6560,7 +6574,12 @@ async function ouvrirAnnonce(base){
     // 2 nov 2026 (Mathieu : « quand le prix suggere est depasse par le bid actuel, ce n'est plus un deal ») : la mise actuelle et
     // la mise max se comparent HORS port (la mise max est ce qu'on entre sur eBay) ; depassee -> « Plus un deal »
     const depasse = maxA != null && total && (encan ? total - port : total) > maxA + 0.5;
-    const vt = depasse ? ['rouge', tt('Plus un deal : mise trop haute', 'No longer a deal: bid too high')] : d.rabais != null && d.rabais >= 30 ? ['vert', tt('Deal', 'Deal') + ' −' + d.rabais + ' %'] : d.rabais != null && d.rabais > 0 ? ['acc', tt('Bon prix', 'Good price') + ' −' + d.rabais + ' %']
+    // 3 nov 2026 (Mathieu : « pas un deal ca », Bedard YG a 620 $ montree comme deal) : un prix fixe n'a pas de « mise » ;
+    // le prix lu en direct a monte -> on le dit avec l'ancien prix, et la carte sort de tes deals
+    const avant = total0 && total && Math.abs(total0 - total) >= 1 ? total0 : null;
+    const vt = depasse ? ['rouge', encan ? tt('Plus un deal : mise trop haute', 'No longer a deal: bid too high')
+        : avant ? tt(`Plus un deal : le prix est passé de ${argent(avant, 0)} à ${argent(total, 0)}`, `No longer a deal: price went from ${argent(avant, 0)} to ${argent(total, 0)}`)
+        : tt('Plus un deal : prix trop haut', 'No longer a deal: price too high')] : d.rabais != null && d.rabais >= 30 ? ['vert', tt('Deal', 'Deal') + ' −' + d.rabais + ' %'] : d.rabais != null && d.rabais > 0 ? ['acc', tt('Bon prix', 'Good price') + ' −' + d.rabais + ' %']
       : d.rabais != null && d.rabais < -15 ? ['rouge', tt('Trop cher', 'Too expensive') + ' +' + (-d.rabais) + ' %'] : null;
     const budget = S.budget && S.budget.budget && total && total > S.budget.reste;
     const ventes = (d.ventes || []).slice(0, 14);
@@ -6575,7 +6594,7 @@ async function ouvrirAnnonce(base){
         <div class="fa-k fa-g"><span>${tt('Profit', 'Profit')}</span>${d.gain != null ? `<b class="${d.gain > 0 ? '' : 'neg'}">${d.gain > 0 ? '+' : '−'}${argent(Math.abs(d.gain), 0)}</b><small>${tt('après frais', 'after fees')}</small>`
           : d.chargement || d.ventes_attente ? `<b><span class="roue"></span></b><small>&nbsp;</small>` : `<b>—</b><small>&nbsp;</small>`}</div>
       </div>
-      ${depasse || budget ? `<div class="fa-pils">${depasse ? `<span class="capsule rouge">${esc(vt[1])}</span>` : ''}${budget ? `<span class="capsule rouge">${tt('Au-dessus de ton budget', 'Over your budget')}</span>` : ''}</div>` : ''}
+      ${depasse || budget ? `<div class="fa-pils">${depasse ? `<span class="capsule rouge">${esc(vt[1])}</span>` : ''}${depasse && d.deal_retire ? `<span class="capsule">${tt('Retiré de tes deals', 'Removed from your deals')}</span>` : ''}${budget ? `<span class="capsule rouge">${tt('Au-dessus de ton budget', 'Over your budget')}</span>` : ''}</div>` : ''}
       <div class="fa-ventes">${ventes.length ? `<div class="fa-vt">${d.valeur ? tt('Se vend ', 'Sells for ') + `<b class="fa-med">${argent(d.valeur, 0)}</b>` : tt('Vendues récemment', 'Recently sold')} <small>${d.valeur && d.nb_vendues ? tt(`médiane de ${d.nb_vendues} ventes · glisse ›`, `median of ${d.nb_vendues} sales · swipe ›`) : tt('même carte · glisse ›', 'same card · swipe ›')}</small></div>
         <div class="fv-car fa-car">${ventes.map(k => `<a class="fv" ${k.url ? `href="${esc(k.url)}" target="_blank" rel="noopener"` : ''}><div class="fv-ph">${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo, 300))}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
           <b>${argent(k.prix, 0)}</b><small>${k.le ? dateCourte(k.le) : ''}</small></a>`).join('')}</div>`
@@ -8998,7 +9017,23 @@ function voirDefauts(e, k, apres, relancer){
     const regleDe = (k) => { const t = String(ex_[k] || ''), i = t.indexOf('→'); return i >= 0 ? t.slice(i + 1).replace(/\(→.*$/, '').trim() : ''; };
     const axeNote = (r, tol) => { const m = /^(\d{2})\/(\d{2})$/.exec(String(r || '').trim()); if (!m) return null;
       const g = Math.max(+m[1], +m[2]); const t = tol.find(([lim]) => g <= lim); return {r: g + '/' + (100 - g), n: t ? t[1] : 2}; };
-    const cause = (k) => {
+    // 3 nov 2026 (Mathieu : « on doit etre meilleur que tout ») : ce que l'app a MESURE elle-meme (blanc en mm2 aux coins,
+    // en mm le long des bords), sous la raison de la note
+    const mes_ = e.mesures || {}, nf_ = (v) => String(Math.round(v * 10) / 10).replace('.', ',');
+    const mesure = (k) => {
+      if (k !== 'coins' && k !== 'bords') return '';
+      const l = [];
+      let n = 0;
+      Object.entries(mes_).forEach(([face, m]) => Object.entries((m || {})[k] || {}).forEach(([z, x]) => {
+        if (!x || !x.mesurable) return; n++;
+        const val = k === 'coins' ? x.blanc_mm2 : x.blanc_mm;
+        if (val >= (k === 'coins' ? 0.05 : 0.3)) l.push(`${nf_(val)} ${k === 'coins' ? 'mm²' : 'mm'} ${LIB_ZONE((k === 'coins' ? 'coin ' : 'bord ') + z).toLowerCase()}${face === 'dos' ? tt(' (dos)', ' (back)') : ''}`);
+      }));
+      if (!n) return '';
+      return `<small class="vd-mes">${esc(l.length ? tt('Mesuré : blanc ', 'Measured: white ') + l.slice(0, 2).join(' · ') : (k === 'coins' ? tt('Mesuré : aucun blanc aux coins', 'Measured: no white at the corners') : tt('Mesuré : aucun blanc aux bords', 'Measured: no white on the edges')))}</small>`;
+    };
+    const cause = (k) => cause0(k) + mesure(k);
+    const cause0 = (k) => {
       const v = n_[k];
       if (v == null) return `<small>${esc(k === 'centrage' ? tt('Pas de repère symétrique : pas compté dans la note', 'No symmetric reference: not counted in the grade') : tt('Pas jugeable sur ces photos', 'Not judgeable on these photos'))}</small>`;
       if (v >= 10) return `<span class="vd-ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>${esc(tt('Aucun défaut', 'No flaw'))}</span>`;
@@ -9025,7 +9060,8 @@ function voirDefauts(e, k, apres, relancer){
     o.innerHTML = `<button class="vd-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
       <div class="vd-tete"><span class="fc-al-ic et-anneau ${clg}"><b>${four}</b></span><span><b>${tt('État estimé', 'Estimated condition')} <small>/10</small></b>
         <small>${esc(pourquoiNote())}</small></span></div>
-      ${e.ancienne ? `<div class="vd-anc">${tt('Ancienne analyse (avant le barème fixe) : les raisons sont moins précises.', 'Older analysis (before the fixed scale): reasons are less precise.')}${relancer ? ` <button class="lien-t" data-relancer>${tt('Refaire l’examen', 'Check again')}</button>` : ''}</div>` : ''}
+      ${e.ancienne ? `<div class="vd-anc"><span>${tt('Ancienne analyse : sans les mesures de l’app ni le barème fixe.', 'Older analysis: without the app’s measurements or the fixed scale.')}</span>${relancer ? `<button class="btn petit" data-relancer>${tt('Refaire l’examen', 'Check again')}</button>` : ''}</div>` : ''}
+      ${(e.a_reprendre || []).length ? `<div class="vd-rep"><b>${tt('Pour une note plus sûre, reprends la photo', 'For a surer grade, retake the photo')}</b>${e.a_reprendre.map(t => `<small>${esc(t)}</small>`).join('')}</div>` : ''}
       <div class="vd-sous">${CATS_.map(([k_, l_]) => `<div class="vd-s"><span class="vd-sn ${cln(n_[k_])}"><b>${fr_(n_[k_])}</b></span><span><b>${l_}</b>${cause(k_)}</span></div>`).join('')}</div>
       ${refs.map((u, j) => `<div class="vd-ph" data-j="${j}"><div class="vd-cad"><div class="vd-sc"><img src="${esc(photoNet(u, 1600))}" alt="">
           <svg class="vd-calque" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true"></svg></div></div><span class="vd-rat"></span>
@@ -9196,7 +9232,7 @@ function blocEnvoi(c){
   const e = envoiDe(c);
   if (!e) {
     z.innerHTML = `<div class="env-b"><button class="pilule" id="env-g">${tt('Envoyer en gradation', 'Send for grading')}</button><button class="pilule" id="env-e">${tt('Envoyer en consignation', 'Consign to auction')}</button></div>`;
-    $('#env-g').onclick = () => formEnvoi(c, 'gradation');
+    $('#env-g').onclick = () => assistantGradation(c);
     $('#env-e').onclick = () => formEnvoi(c, 'encan');
     return;
   }
@@ -9487,6 +9523,72 @@ function popFermer(){
   f.classList.add('sort'); setTimeout(() => f.remove(), 200);
 }
 document.addEventListener('keydown', (e) => { if (e.key !== 'Escape') return; const f = $('#pop-fond'); if (f && f._fermer) f._fermer(); });
+// 3 nov 2026 (Mathieu : « on peut juste faire ca pour assister l'utilisateur pour grader avec PSA ? C'est pas assez ») :
+// AVANT le formulaire : est-ce que ça vaut la peine ? (les chances de chaque note d'après l'examen, la vraie valeur de la
+// carte gradée à chaque note, le coût réel), puis le bon niveau de service (la valeur déclarée l'impose), puis la
+// préparation (l'assistant de soumission : formulaire, emballage, envoi, suivi)
+async function assistantGradation(c, k0){
+  let k = k0 || 0, r = null, cie = 'PSA', choix = null, port = null, dir = 0;
+  const VERD = {oui: ['vert', tt('Ça vaut la peine', 'Worth grading')], non: ['rouge', tt('Pas rentable', 'Not worth it')],
+    juste: ['or', tt('À l’équilibre', 'Break-even')], pari_10: ['or', tt('Rentable seulement en PSA 10', 'Only pays off at PSA 10')],
+    pas_assez: ['', tt('Pas assez de ventes gradées pour trancher', 'Not enough graded sales to decide')], sans_raw: ['', tt('Valeur raw inconnue', 'Raw value unknown')]};
+  const f1 = (v) => String(v).replace('.', ',');
+  const charger = async () => { r = null; peindre(); r = await API.gradation_rentabilite(c.id, cie, port).catch(e => ({ok: false, erreur: e.message})); if (r && r.service && !choix) choix = r.service.nom; peindre(); };
+  const peindre = () => {
+    let corps = '';
+    if (k === 0) {
+      if (!r) corps = `<div class="lecture"><span class="roue"></span>${tt('On lit les ventes de la carte gradée à chaque note…', 'Reading graded sales at each grade…')}</div>`;
+      else if (!r.ok) corps = `<div class="vide">${esc(r.erreur || 'Erreur')}</div>`;
+      else if (r.verdict === 'examiner') corps = `<div class="ag-v"><b>${tt('Examine d’abord la carte', 'Check the card first')}</b><small>${tt('Sans l’état (centrage, coins, bords, surface), impossible de savoir quelle note viser.', 'Without the condition (centering, corners, edges, surface), there’s no way to know which grade to expect.')}</small></div>
+        <button class="btn" id="ag-ex">${tt('Évaluer l’état', 'Check the condition')}</button>`;
+      else {
+        const v = VERD[r.verdict] || VERD.pas_assez, g = r.gain;
+        const max = Math.max(...(r.lignes || []).map(l => l.chance), 0.01);
+        corps = `<div class="ag-v ${v[0]}"><b>${v[1]}</b>${g != null ? `<span class="ag-g">${g >= 0 ? '+' : '−'}${argent(Math.abs(g), 0)}</span><small>${tt('gain attendu après les frais et le coût de gradation', 'expected gain after fees and grading cost')}</small>` : ''}</div>
+          <div class="ag-l">${(r.lignes || []).map(l => `<div class="ag-r"><span class="ag-n">PSA ${l.note}</span><span class="ag-b"><i style="width:${Math.round(100 * l.chance / max)}%"></i></span><span class="ag-p">${Math.round(100 * l.chance)} %</span>
+            <span class="ag-val">${l.valeur ? argent(l.valeur, 0) : '—'}<small>${l.valeur ? l.n + ' ' + tt('ventes', 'sales') : tt('pas de ventes', 'no sales')}</small></span></div>`).join('')}</div>
+          <div class="ag-3"><div><span>${tt('Raw', 'Raw')}</span><b>${r.valeur_raw ? argent(r.valeur_raw, 0) : '—'}</b></div><div><span>${tt('Gradée (espérée)', 'Graded (expected)')}</span><b>${r.valeur_esperee ? argent(r.valeur_esperee, 0) : '—'}</b></div><div><span>${tt('Coût', 'Cost')}</span><b>${argent(r.cout, 0)}</b></div></div>
+          ${r.seuil ? `<div class="sous">${tt(`Rentable à partir de PSA ${r.seuil}.`, `Pays off from PSA ${r.seuil}.`)}</div>` : ''}
+          <div class="sous">${tt(`Chances d’après ton examen (état ${f1(r.bas)}–${f1(r.haut)}) ; valeurs : les ventes réelles de cette carte gradée.`, `Odds from your check (condition ${f1(r.bas)}–${f1(r.haut)}); values: real sales of this graded card.`)}${r.ancienne ? ' ' + tt('Ancien examen : refais-le pour des chances plus justes.', 'Older check: redo it for more accurate odds.') : ''}</div>`;
+      }
+    }
+    if (k === 1 && r && r.service) {
+      const T = (r.tarifs || []), sv = r.service;
+      corps = `<div class="ag-sv"><b>${esc(sv.nom)}</b><span>${f1(sv.prix_usd)} US$ ${tt('par carte', 'per card')} · ${tt('jusqu’à', 'up to')} ${sv.max_usd} US$ ${tt('de valeur', 'in value')}</span>
+          <span>${sv.jours[0]}–${sv.jours[1]} ${tt('jours ouvrables', 'business days')} · ${tt('retour vers le ', 'back around ')}${r.retour_prevu ? dateCourte(r.retour_prevu) : '—'}</span></div>
+        <div class="sous">${tt('La valeur déclarée = la valeur de la carte APRÈS gradation (la note visée). Trop basse, PSA facture la différence de niveau.', 'Declared value = the card’s value AFTER grading (the expected grade). Too low, PSA bills the tier difference.')}</div>
+        <label>${tt('Port aller-retour estimé ($)', 'Estimated round-trip shipping ($)')}<input class="champ" id="ag-port" type="number" inputmode="decimal" step="any" value="${r.port ?? ''}"></label>
+        <div class="sous">${tt(`Tarifs PSA relevés le ${dateCourte(r.tarifs_date)} : ils changent souvent, confirme sur psacard.com.`, `PSA prices as of ${dateCourte(r.tarifs_date)}: they change often, confirm on psacard.com.`)}</div>
+        <a class="pilule" href="${PORTAILS.PSA}" target="_blank" rel="noopener">${tt('Voir la grille sur PSA', 'See PSA’s chart')} ↗</a>`;
+    }
+    if (k === 2) corps = `<div class="ag-v"><b>${tt('On prépare ta soumission', 'Let’s prepare your submission')}</b><small>${tt('Le formulaire PSA carte par carte, l’emballage (pochette + Card Saver I), l’envoi assuré, puis le suivi et le rappel si le retour tarde.', 'The PSA form card by card, packing (sleeve + Card Saver I), insured shipping, then tracking and a reminder if it’s late.')}</small></div>
+      <ul class="ag-ck"><li>${tt('Valeur déclarée', 'Declared value')} <b>${r && r.lignes && r.lignes[0] && r.lignes[0].valeur ? argent(r.lignes[0].valeur, 0) + (r.frais_usd_cad ? ` (≈ ${Math.round(r.lignes[0].valeur / r.frais_usd_cad)} US$)` : '') : '—'}</b></li><li>${tt('Service', 'Service')} <b>${esc((r && r.service && r.service.nom) || '—')}</b></li><li>${tt('Coût par carte', 'Cost per card')} <b>${r ? argent(r.cout, 0) : '—'}</b></li></ul>
+      <button class="lien-t" id="ag-deja">${tt('Déjà envoyée ? Juste la suivre', 'Already shipped? Just track it')}</button>`;
+    const ok = k < 2 ? (k === 0 ? r && r.ok && r.verdict !== 'examiner' : true) : true;
+    const pop = popOuvrir(`<button class="pop-x" id="ag-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
+      <div class="pop-tete"><span class="pop-sur">${tt('Gradation PSA · ', 'PSA grading · ')}${esc(c.joueur || titreCourt(c.titre) || '')}</span><h3>${[tt('Ça vaut la peine ?', 'Worth it?'), tt('Le bon service', 'The right service'), tt('Préparer l’envoi', 'Prepare shipping')][k]}</h3></div>
+      <div class="pop-corps ag">${corps}</div>
+      <div class="pop-pied"><div class="sa-nav">${k ? `<button class="btn ghost" id="ag-prec">${tt('Retour', 'Back')}</button>` : `<button class="btn ghost" id="ag-ann">${tt('Annuler', 'Cancel')}</button>`}
+        <button class="btn" id="ag-suiv" ${ok ? '' : 'disabled'}>${k < 2 ? tt('Suivant', 'Next') : tt('Préparer la soumission', 'Prepare the submission')}</button></div>
+        <div class="pop-pts">${[0, 1, 2].map(i => `<button class="${i === k ? 'on' : ''}" data-et="${i}" aria-label="${i + 1}"></button>`).join('')}</div></div>`, popFermer, dir);
+    pop.classList.toggle('arriere', dir < 0); dir = 0;
+    const b = (id) => pop.querySelector('#' + id);
+    b('ag-x').onclick = popFermer; if (b('ag-ann')) b('ag-ann').onclick = popFermer;
+    if (b('ag-prec')) b('ag-prec').onclick = () => { k--; dir = -1; peindre(); };
+    $$('[data-et]', pop).forEach(x => x.onclick = () => { const n = +x.dataset.et; if (n === k || !r || !r.ok || r.verdict === 'examiner') return; dir = n > k ? 1 : -1; k = n; peindre(); });
+    if (b('ag-ex')) b('ag-ex').onclick = () => { popFermer(); const g = $('#fc-et-go'); if (g) { g.scrollIntoView({behavior: 'smooth', block: 'center'}); g.click(); } };
+    const pi = b('ag-port'); if (pi) pi.onchange = () => { port = nb(pi.value); charger().then(() => { k = 1; peindre(); }); };
+    if (b('ag-deja')) b('ag-deja').onclick = () => { popFermer(); formEnvoi(c, 'gradation'); };
+    b('ag-suiv').onclick = async () => {
+      if (k < 2) { k++; dir = 1; vibrer(); peindre(); return; }
+      const decl = r && r.lignes && r.lignes[0] && r.lignes[0].valeur ? Math.round(r.lignes[0].valeur) : null;
+      const rr = await essai(API.soumission_creer({cartes: [c.id], compagnie: 'PSA', service: r && r.service ? r.service.nom : null, cout_carte: r ? r.cout : null,
+        retour_prevu: r ? r.retour_prevu : null, preparation: true, mode: 'classique', valeurs: decl ? {[c.id]: decl} : {}}), null);
+      if (rr && rr.ok) { popFermer(); assistantSoumission(rr.id, 2); }
+    };
+  };
+  await charger();
+}
 async function assistantSoumission(id, etape){
   let k0 = 0; try { k0 = +(localStorage.getItem('lr_so_et_' + id) || 0); } catch (x) {}
   let k = etape != null ? etape : k0;
