@@ -475,7 +475,7 @@ def preparer(photos_octets, quads=None, rasante=None):
     """photos_octets : [devant, dos?] (octets) ; quads : [quad_devant, quad_dos] en 0..1000 ; rasante : octets ou None.
     -> {"images": [(libelle, octets_jpeg)], "centrage": {...}, "note_centrage": n|None, "zooms": bool}"""
     quads = list(quads or [])
-    images, cent, cartes = [], {}, []
+    images, cent, cartes, mes, verif = [], {}, [], {}, {}
     for j, b in enumerate(photos_octets[:2]):
         face = "devant" if j == 0 else "dos"
         im = ouvrir(b)
@@ -494,13 +494,49 @@ def preparer(photos_octets, quads=None, rasante=None):
         if c is not None:
             images.append((f"Le {face} redresse, avec une REGLE 0-1000 tout autour (pour les reperes du centrage : lis les positions sur la regle).",
                            jpeg(regle(c, face), 1568, 90)))
-            m = centrage(c)
-            if m:
-                cent[face] = m
+            m = centrage(c) or {}
+            # 3 nov 2026 (Mathieu : « on doit etre meilleur que tout ce qui existe ») : les mesures de l'app (mesures.py) : le
+            # centrage par paires d'elements imprimes en miroir complete la symetrie ; le blanchiment des coins et des bords
+            # en mm ; la qualite de la photo (resolution native, nettete, reflets)
+            mz = _mesurer(im, q, c, z)
+            if mz:
+                mes[face] = mz
+                cp = mz.get("centrage") or {}
+                for ax in ("gd", "hb"):
+                    x = cp.get(ax)
+                    if not m.get(ax) and x and x.get("fiabilite") in ("haute", "moyenne"):
+                        m[ax] = x["ratio"]
+                        if x.get("a_verifier"):
+                            verif.setdefault(face, []).append(ax)
+            if m.get("gd") or m.get("hb"):
+                cent[face] = {"gd": m.get("gd"), "hb": m.get("hb")}
     if rasante:
         images.append(("Photo en lumiere rasante (inclinee) : pour les rayures, les plis et les bosses de surface.", jpeg(ouvrir(rasante))))
-    return {"images": images, "centrage": cent or None, "note_centrage": note_centrage(cent.get("devant"), cent.get("dos")) if cent else None,
-            "zooms": any(c is not None for c in cartes)}
+    # la note du centrage : les axes « a verifier » (un decentrage fort mesure sur un element de design, peut-etre dessine
+    # ainsi) n'abaissent que le BAS de la fourchette
+    sur = {f: {ax: v for ax, v in d.items() if ax not in verif.get(f, [])} for f, d in cent.items()}
+    n_haut = note_centrage(sur.get("devant"), sur.get("dos")) if cent else None
+    n_bas = note_centrage(cent.get("devant"), cent.get("dos")) if cent else None
+    return {"images": images, "centrage": cent or None, "note_centrage": n_haut if n_haut is not None else (n_bas if not verif else None),
+            "note_centrage_bas": n_bas, "centrage_verifier": verif, "mesures": mes, "zooms": any(c is not None for c in cartes)}
+
+
+def _mesurer(im, q, c, z):
+    """Les mesures de mesures.py pour une face (jamais d'exception : une mesure ratee n'empeche pas l'examen)."""
+    try:
+        import mesures
+        if not mesures.disponible():
+            return None
+        px = _quad_px(q, *im.size) if q else None
+        natif = None
+        if px:
+            cotes = [((px[i][0] - px[(i + 1) % 4][0]) ** 2 + (px[i][1] - px[(i + 1) % 4][1]) ** 2) ** 0.5 for i in range(4)]
+            natif = min((cotes[0] + cotes[2]) / 2, (cotes[1] + cotes[3]) / 2) / mesures.MM_COURT
+        return {"centrage": mesures.centrage(c), "usure": mesures.usure(z, 0.03) if z is not None else None,
+                "qualite": mesures.qualite(c, natif)}
+    except Exception as e:
+        print("Examen (mesures) : " + repr(e), flush=True)
+        return None
 
 
 def data_url_octets(p):

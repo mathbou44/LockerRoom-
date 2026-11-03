@@ -688,6 +688,9 @@ def _noter_observations(f, centrage=None, calibration=None, quads=None):
         cg, ch = cent2["devant"].get("gd") or cg, cent2["devant"].get("hb") or ch
         cd = cent2["dos"].get("gd") or cent2["dos"].get("hb") or cd
     hi["centrage"] = lo["centrage"] = float(nc) if nc is not None else None
+    # 3 nov 2026 : un decentrage fort mesure sur un element de design (peut-etre dessine ainsi) : le bas de la fourchette
+    if centrage and centrage.get("note_bas") is not None and (lo["centrage"] is None or centrage["note_bas"] < lo["centrage"]):
+        lo["centrage"] = float(centrage["note_bas"])
     g_hi, g_lo = _bar.globale(hi), _bar.globale(lo)
     if g_hi is None:
         g_hi = g_lo = 9.0
@@ -864,6 +867,76 @@ def _nettoyer_etat(f, centrage=None, calibration=None):
             "calibre": bool(calibration and calibration.get("n", 0) >= 15)}
 
 
+_FACES = ("devant", "dos")
+
+
+def _infos_mesures(prep):
+    """3 nov 2026 : les MESURES de l'app, dites au modele (il les confirme ou les corrige sur les zooms)."""
+    out = []
+    for face, m in (prep.get("mesures") or {}).items():
+        u, q, cp = m.get("usure") or {}, m.get("qualite") or {}, m.get("centrage") or {}
+        bouts = []
+        for nom, x in (u.get("coins") or {}).items():
+            if x.get("mesurable") and x.get("blanc_mm2", 0) >= 0.05:
+                bouts.append(f"coin {nom} {x['blanc_mm2']} mm2 de pixels blancs a l'arete")
+        for nom, x in (u.get("bords") or {}).items():
+            if x.get("mesurable") and x.get("blanc_mm", 0) >= 0.3:
+                bouts.append(f"bord {nom} {x['blanc_mm']} mm de blanc en {x['points']} point(s)")
+        if bouts:
+            out.append(f"MESURE de l'app ({face}) : " + " ; ".join(bouts) + ". Verifie chacun sur les zooms : vrai blanchiment, ou reflet / fond ?")
+        elif u.get("coins"):
+            out.append(f"MESURE de l'app ({face}) : aucun pixel blanc mesure aux coins et aux bords (bordure foncee) : un « net » est attendu sauf si tu vois autre chose.")
+        if q.get("reflets"):
+            out.append(f"Reflets ({face}) sur : {', '.join(q['reflets'])} : ce qui est sous un reflet n'est pas jugeable (dis-le dans « invisible »).")
+        if q and not q.get("assez_grande"):
+            out.append(f"La photo ({face}) est petite ({q.get('px_mm')} px par mm) : les tout petits points blancs ne sont pas visibles ; certitude « incertaine » pour eux.")
+        for ax, nom in (("gd", "gauche/droite"), ("hb", "haut/bas")):
+            x = cp.get(ax)
+            if x and x.get("fiabilite") in ("haute", "moyenne"):
+                out.append(f"Centrage {face} {nom} : l'app trouve {x['paires']} paire(s) d'elements imprimes en miroir, {x['ratio']} au pire point"
+                           + (" ; DECENTRAGE FORT sur un element de design : dis dans centrage_reperes si cet element est dessine ainsi (asymetrique) ou si la coupe est decentree." if x.get("a_verifier") else "."))
+    return out
+
+
+def _ajouter_mesures(res, mes, quads):
+    """Les mesures dans le resultat (l'ecran les montre) ; un blanchiment MESURE que le modele n'a pas vu devient un point
+    « a verifier » (il n'abaisse que le bas de la fourchette), jamais sous un reflet."""
+    if not mes:
+        return
+    res["mesures"] = {}
+    reprendre = []
+    for face, m in mes.items():
+        ph = 0 if face == "devant" else 1
+        u, q = m.get("usure") or {}, m.get("qualite") or {}
+        res["mesures"][face] = {"coins": u.get("coins") or {}, "bords": u.get("bords") or {}, "px_mm": (q or {}).get("px_mm") or u.get("px_mm"),
+                                "qualite": q or None,
+                                "centrage": {ax: ({k: v for k, v in x.items() if k in ("ratio", "paires", "fiabilite", "a_verifier", "reperes", "bordure")} if x else None)
+                                             for ax, x in (m.get("centrage") or {}).items()}}
+        reprendre += [f"{face} : {t}" for t in (q or {}).get("a_reprendre") or []]
+        reflets = set((q or {}).get("reflets") or [])
+        if not (q or {}).get("assez_grande", True):
+            continue
+        deja = {(d.get("photo"), d.get("zone")) for d in res.get("defauts") or []}
+        for nom, x in (u.get("coins") or {}).items():
+            if x.get("mesurable") and x.get("blanc_mm2", 0) >= 0.25 and nom not in reflets and (ph, "coin " + nom) not in deja:
+                xy = _bil(quads[ph] if quads and ph < len(quads) else None, *{"haut-gauche": (0.02, 0.02), "haut-droit": (0.98, 0.02),
+                                                                             "bas-droit": (0.98, 0.98), "bas-gauche": (0.02, 0.98)}[nom])
+                res.setdefault("defauts", []).append({"photo": ph, "zone": "coin " + nom, "type": "blanchiment", "gravite": "a verifier",
+                                                      "x": xy[0], "y": xy[1], "note": 8 if x["blanc_mm2"] >= 0.6 else 9, "mesure": True,
+                                                      "pourquoi": f"mesuré par l'app : {str(x['blanc_mm2']).replace('.', ',')} mm² de blanc à l'arête, à confirmer sur le zoom"})
+    ajoutes = [d for d in res.get("defauts") or [] if d.get("mesure")]
+    if ajoutes and res.get("notes"):
+        bas = dict(res.get("notes_bas") or {})
+        bas["coins"] = min([v for v in (bas.get("coins"), (res["notes"] or {}).get("coins")) if v is not None] + [min(d["note"] for d in ajoutes)])
+        tout = {k: (bas.get(k) if bas.get(k) is not None else v) for k, v in res["notes"].items()}
+        g = _bar.globale(tout)
+        res["notes_bas"] = bas
+        if g is not None and res.get("note_min") is not None:
+            res["note_min"] = min(res["note_min"], g)
+    if reprendre:
+        res["a_reprendre"] = reprendre[:4]
+
+
 def etat(photos, langue="fr", quads=None, rasante=None, calibration=None, regles=None, contexte=None):
     """photos : devant (et dos) en data URL ; quads : les 4 coins de la carte dans chaque photo (0..1000, trouves dans le
     telephone) ; rasante : une photo en lumiere rasante (facultative). Son propre quota par mois (3 gratuit, 30 Pro)."""
@@ -876,7 +949,7 @@ def etat(photos, langue="fr", quads=None, rasante=None, calibration=None, regles
     brutes = [_decoder(p)[0] for p in photos]
     ras = _decoder(rasante)[0] if rasante else None
     langue = "en" if str(langue or "").lower().startswith("en") else "fr"
-    h = hashlib.sha256(b"etat-v7-" + langue.encode() + json.dumps(quads or [], sort_keys=True).encode()
+    h = hashlib.sha256(b"etat-v8-" + langue.encode() + json.dumps(quads or [], sort_keys=True).encode()
                        + json.dumps(calibration or {}, sort_keys=True).encode())
     for b in brutes + ([ras] if ras else []):
         h.update(hashlib.sha256(b).digest())
@@ -903,6 +976,7 @@ def etat(photos, langue="fr", quads=None, rasante=None, calibration=None, regles
                      + (f" ; dos {c['dos'].get('gd') or c['dos'].get('hb')}" if c.get("dos") else "") + (f" -> sous-note centrage {note_c}." if note_c else "."))
     elif prep.get("zooms"):
         infos.append("L'app n'a pas pu mesurer le centrage (pas de bordure nette) : estime-le, ou dis « non mesurable ».")
+    infos += _infos_mesures(prep)
     for r in (regles or [])[:4]:
         infos.append(r)
     cx = contexte or {}                                   # 2 nov 2026 : ce que l'app sait de la carte
@@ -933,9 +1007,10 @@ def etat(photos, langue="fr", quads=None, rasante=None, calibration=None, regles
     f = next((b.get("input") for b in r.get("content") or [] if b.get("type") == "tool_use"), None)
     if not f:
         raise Erreur("Analyse impossible : reprends la photo de plus près, sans reflet.")
-    cent = dict(c, note=note_c) if c else None
+    cent = dict(c, note=note_c, note_bas=prep.get("note_centrage_bas"), verifier=prep.get("centrage_verifier") or {}) if c else None
     res = _noter_observations(f, cent, calibration, quads) if isinstance(f.get("coins"), list) else _nettoyer_etat(f, cent, calibration)
     res["zooms"] = bool(prep.get("zooms"))
+    _ajouter_mesures(res, prep.get("mesures") or {}, quads)
     with _verrou:
         cache = _lire(_chemin_cache())
         cache[cle_cache] = res

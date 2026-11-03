@@ -3045,6 +3045,33 @@ class Api:
         val = r.get("mediane") or (round(statistics.median(float(v["prix"]) for v in vs), 2) if vs else None)
         return {"ok": True, "valeur": val, "n": len(vs), "note": n, "compagnie": cie, "sure": bool(r.get("mediane"))}
 
+    def gradation_rentabilite(self, cid, compagnie="PSA", port=None):
+        """3 nov 2026 (Mathieu : « on peut juste faire ca pour assister l'utilisateur pour grader avec PSA ? C'est pas
+        assez ») : est-ce que ca vaut la peine de grader CETTE carte ? (gradation.py). Les ventes gradees de 2 a 4 notes,
+        lues en parallele."""
+        import gradation
+        from concurrent.futures import ThreadPoolExecutor
+        carte = self.carte_lire(cid)
+        if not carte:
+            return {"ok": False, "erreur": "Carte introuvable"}
+        try:
+            et = json.loads(carte.get("etat_json") or "null") or {}
+        except ValueError:
+            et = {}
+        bas, haut = et.get("note_min"), et.get("note_max")
+        if haut is None:
+            return {"ok": True, "verdict": "examiner", "valeur_raw": carte.get("valeur")}
+        notes = sorted(gradation.probas(bas, haut))
+        with ThreadPoolExecutor(max_workers=4) as ex:
+            res = dict(zip(notes, ex.map(lambda g: self.valeur_gradee(cid, g, compagnie), notes)))
+        vals = {g: {"valeur": r.get("valeur"), "n": r.get("n", 0)} for g, r in res.items() if r and r.get("ok")}
+        rg = self.reglages_lire()
+        taux = ebay_compte._taux_vers_cad("USD") or 1.38
+        out = gradation.calculer(_float(carte.get("valeur")), vals, bas, haut, taux, (rg["frais_ebay_pct"] or 0) / 100,
+                                 rg["frais_ebay_fixe"] or 0, 1, _float(port))
+        out.update(valeur_raw=_float(carte.get("valeur")), bas=bas, haut=haut, compagnie=compagnie, ancienne=bool(et.get("ancienne") or not et.get("bareme")))
+        return out
+
     def soumission_retour(self, sid, notes=None):
         """Toute la soumission revient : chaque carte recoit sa note et son certificat (si donnes) ; le cout de gradation
         s'ajoute a son cout. notes = {id_carte: {grade, cert}}."""
