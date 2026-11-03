@@ -62,4 +62,22 @@ r = deals.fin_proche(lire_lot=lot)
 dd = {x["item_id"]: x for x in deals.lire()["deals"]}
 assert r["sortis"] == 1 and "d1" not in dd and dd["d2"]["total"] == 40.0 and dd["d3"]["total"] == 20, (r, dd)
 assert all("d3" not in l for l in lus)                                  # finit dans 30 h : pas relu
+# 3 nov 2026 (Mathieu : la YG Bedard a 620 $ montree comme deal) : les prix fixes relus sur eBay ; prix monte -> sortie ;
+# vendue (absente) -> sortie ; prix pareil -> gardee ; un encan n'est pas touche par cette passe
+d = deals.lire()
+d["deals"] = [{"item_id": "f1", "titre": "Bedard YG", "total": 150, "valeur": 273, "ratio": .55, "encan": False, "vu_le": vu},
+              {"item_id": "f2", "titre": "a", "total": 30, "valeur": 100, "ratio": .3, "encan": False, "vu_le": vu},
+              {"item_id": "f3", "titre": "b", "total": 30, "valeur": 100, "ratio": .3, "encan": False, "vu_le": vu},
+              {"item_id": "e1", "titre": "c", "total": 20, "valeur": 100, "ratio": .2, "encan": True, "fin": iso(3), "vu_le": vu}]
+deals._ecrire(d)
+lus = []
+def lot2(ids):
+    lus.append(list(ids))
+    return {"f1": {"prix_cad": 620.0, "port_cad": 0.0}, "f2": {"prix_cad": 28.0, "port_cad": 2.0}}
+r = deals.prix_fixes(lire_lot=lot2)
+dd = {x["item_id"]: x for x in deals.lire()["deals"]}
+assert r["sortis"] == 2 and set(dd) == {"f2", "e1"} and dd["f2"].get("prix_lu_le"), (r, dd)
+assert all("e1" not in l for l in lus) and "f1" in deals.lire()["retires"], lus
+r = deals.prix_fixes(lire_lot=lot2)                                      # relue il y a moins de 30 min : pas relue
+assert r["lus"] == 0, r
 print("ok : filtres des deals")

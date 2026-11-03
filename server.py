@@ -969,6 +969,9 @@ def _watch_boucle():
             rf = deals.fin_proche_si_besoin()
             if rf and rf.get("sortis"):
                 print("Deals (fin proche) :", rf, flush=True)
+            rp = deals.prix_fixes_si_besoin()            # 3 nov 2026 : les prix fixes aussi, aux 20 min
+            if rp and rp.get("sortis"):
+                print("Deals (prix fixes) :", rp, flush=True)
         except Exception as e:
             print("Deals (fin proche) : " + str(e), flush=True)
         for cid in (_c.lister() if _c.MULTI else [None]):

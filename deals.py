@@ -273,7 +273,7 @@ def maj_prix(item_id, total, port=None, mises=None, fin=None):
         for y in (x, sv):
             if not y:
                 continue
-            y.update(total=round(float(total), 2), vu_le=maint)
+            y.update(total=round(float(total), 2), vu_le=maint, prix_lu_le=maint)
             if port is not None:
                 y["port"] = port
             if mises is not None:
@@ -1900,6 +1900,91 @@ def fin_proche(lire_lot=None, maint=None):
         _ecrire(d2)
     _LU["cle"] = None
     return {"ok": True, "lus": len(demandes), "sortis": len(sortis)}
+
+
+# 3 nov 2026 (Mathieu, une Young Guns Bedard montree comme deal, vendue 620 $ sur eBay : « pas un deal ca ») : les prix fixes
+# aussi sont relus sur eBay, 20 par appel (getItems, jamais le cache) : un vendeur qui monte son prix, une annonce vendue ou
+# retiree sort des deals en moins de 30 min, avant qu'on la montre. Au plus PRIX_FIXE_APPELS appels par passe, aux 20 min.
+PRIX_FIXE_PAS_S = 1200
+PRIX_FIXE_AGE_S = 1800                     # une annonce relue il y a moins de 30 min n'est pas relue
+PRIX_FIXE_APPELS = 6                       # au plus 120 annonces par passe (72 passes x 6 = 432 appels / jour au maximum)
+
+
+def prix_fixes_si_besoin():
+    if _ETAT.get("prix_fixes") or time.time() - _ETAT.get("prix_fixes_le", 0) < PRIX_FIXE_PAS_S:
+        return None
+    _ETAT["prix_fixes"], _ETAT["prix_fixes_le"] = True, time.time()
+    try:
+        return prix_fixes()
+    except Exception as e:
+        print("Deals (prix fixes) : " + repr(e), flush=True)
+        return None
+    finally:
+        _ETAT["prix_fixes"] = False
+
+
+def prix_fixes(lire_lot=None, maint=None):
+    import ebay_compte
+    lire_lot = lire_lot or (lambda ids: ebay_compte.articles_lot(ids, fond=True))
+    maint = maint or datetime.now(timezone.utc)
+    lim = (maint - timedelta(seconds=PRIX_FIXE_AGE_S)).isoformat(timespec="seconds")
+    d = lire_vite()
+    vus = {}
+    for x in (d.get("deals") or []) + ((d.get("secours") or {}).get("deals") or []):
+        if not x.get("encan") and str(x.get("prix_lu_le") or "") < lim:
+            vus.setdefault(str(x["item_id"]), x)
+    # les plus profitables d'abord (ceux qu'on montre en haut), puis les plus vieilles lectures
+    ids = sorted(vus, key=lambda i: (str(vus[i].get("prix_lu_le") or ""), -((vus[i].get("valeur") or 0) - (vus[i].get("total") or 0))))
+    ids = ids[:20 * PRIX_FIXE_APPELS]
+    lus, demandes = {}, set()
+    for k in range(0, len(ids), 20):
+        lot = ids[k:k + 20]
+        try:
+            r = lire_lot(lot)
+        except (RuntimeError, OSError) as e:
+            print("Deals (prix fixes) : " + repr(e), flush=True)
+            break
+        if not r:                                  # reponse vide : on ne conclut rien (panne, limite) ; on ne sort personne
+            continue
+        lus.update(r)
+        demandes.update(lot)
+    if not demandes:
+        return {"ok": True, "lus": 0, "sortis": 0}
+    vu = maint.isoformat(timespec="seconds")
+    sortis = []
+
+    def maj(x):
+        """True = garder ; False = sortir (vendue / retiree, ou plus un deal)."""
+        iid = str(x.get("item_id"))
+        if x.get("encan") or iid not in demandes:
+            return True
+        a = lus.get(iid)
+        if a is None or a.get("encan"):            # absente : vendue ou retiree ; devenue un encan : plus le meme deal
+            return False
+        t = _total(a)
+        if not t:
+            return False
+        x.update(total=t, port=a.get("port_cad", x.get("port")), vu_le=vu, prix_lu_le=vu)
+        if x.get("valeur"):
+            x["ratio"] = round(t / x["valeur"], 3)
+            if t > x["valeur"] * RATIO_DEAL:       # le prix a monte : plus un deal
+                return False
+        return True
+
+    with _verrou:
+        d2 = lire()
+        garde = []
+        for x in d2.get("deals") or []:
+            (garde if maj(x) else sortis).append(x)
+        d2["deals"] = garde
+        if d2.get("secours"):
+            d2["secours"]["deals"] = [x for x in d2["secours"].get("deals") or [] if maj(x)]
+        if sortis:
+            _noter_retires(d2, [x["item_id"] for x in sortis])
+        d2["prix_fixes"] = {"le": vu, "lus": len(demandes), "sortis": len(sortis)}
+        _ecrire(d2)
+    _LU["cle"] = None
+    return {"ok": True, "lus": len(demandes), "sortis": len(sortis), "ids_sortis": [str(x["item_id"]) for x in sortis][:20]}
 
 
 def recharger():
