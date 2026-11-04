@@ -47,11 +47,53 @@ def actif():
     return bool(_cle())
 
 
+# 3 nov 2026 (Mathieu : « le jeudi, beaucoup d'encheres finissent ; on pourrait modifier la limite pour cette journee ? ») :
+# le budget du jour suit le jour de la semaine (Montreal), SANS changer le total de la semaine : le jeudi recoit plus, le
+# mercredi un peu plus (les encans du jeudi se verifient la veille aussi), les autres jours un peu moins. LR_POIDS_JOURS
+# (Render) pour changer, ex. « jeu:1.6,mer:1.2,dim:1.2 » : les jours non nommes se partagent le reste (total = 7 jours).
+JOURS = ("lun", "mar", "mer", "jeu", "ven", "sam", "dim")
+POIDS_DEFAUT = "jeu:1.6,mer:1.2"
+
+
+def poids_jours():
+    """-> {jour: poids}, moyenne 1 sur la semaine."""
+    explicites = {}
+    for x in str(os.environ.get("LR_POIDS_JOURS") or POIDS_DEFAUT).split(","):
+        k, _s, v = x.strip().partition(":")
+        try:
+            if k.strip()[:3].lower() in JOURS:
+                explicites[k.strip()[:3].lower()] = max(0.3, min(3.0, float(v)))
+        except ValueError:
+            pass
+    reste = [j for j in JOURS if j not in explicites]
+    autre = max(0.3, (7 - sum(explicites.values())) / len(reste)) if reste else 1.0
+    p = {j: explicites.get(j, autre) for j in JOURS}
+    tot = sum(p.values())
+    return {j: round(v * 7 / tot, 3) for j, v in p.items()}
+
+
+def poids_aujourdhui():
+    try:
+        from zoneinfo import ZoneInfo
+        wd = datetime.now(ZoneInfo("America/Toronto")).weekday()
+    except Exception:
+        wd = (datetime.utcnow() - timedelta(hours=4)).weekday()
+    return poids_jours()[JOURS[wd]]
+
+
+def budget_du_jour(base):
+    """Un budget par jour (SoldComps, verifications) ajuste au jour de la semaine ; meme total sur 7 jours."""
+    if not base or base <= 0:
+        return 0                                   # un budget a zero reste a zero (aucun appel)
+    return max(1, int(round(base * poids_aujourdhui())))
+
+
 def plafond_jour():
     try:
-        return int(os.environ.get("LR_SOLDCOMPS_JOUR") or 150)
+        base = int(os.environ.get("LR_SOLDCOMPS_JOUR") or 150)
     except ValueError:
-        return 150
+        base = 150
+    return budget_du_jour(base)
 
 
 def _cx():
@@ -84,25 +126,26 @@ def _migrer(c):
         pass
 
 
-def _cache_lire(q):
+def _cache_lire(q, age_max=None):
     try:
         c = _cx()
         try:
             r = c.execute("SELECT le, ventes FROM cache WHERE q=?", (q,)).fetchone()
         finally:
             c.close()
-        if r and time.time() - r[0] < CACHE_S:
+        if r and time.time() - r[0] < (CACHE_S if age_max is None else age_max):
             return json.loads(r[1])
     except (sqlite3.Error, ValueError):
         pass
     return None
 
 
-def _cache_ecrire(q, ventes):
+def _cache_ecrire(q, ventes, age=0):
+    """age : le resultat compte comme vieux de `age` secondes (un resultat partiel : 10 minutes de cache)."""
     with _verrou:
         c = _cx()
         try:
-            c.execute("INSERT OR REPLACE INTO cache VALUES (?,?,?)", (q, time.time(), json.dumps(ventes)))
+            c.execute("INSERT OR REPLACE INTO cache VALUES (?,?,?)", (q, time.time() - age, json.dumps(ventes)))
             c.commit()
         finally:
             c.close()
@@ -117,6 +160,23 @@ def jour():
     except Exception:
         j = (datetime.utcnow() - timedelta(hours=4)).strftime("%Y-%m-%d")
     return "mtl:" + j                          # cle distincte des anciens jours UTC (sinon demain partirait a 706)
+
+
+def _compte_cle():
+    """Le compte de la requete (multi-comptes), pour sa part du budget du jour : « c:<empreinte> »."""
+    import hashlib
+    import comptes
+    cid = comptes.courant() if comptes.MULTI else None
+    return ("c:" + hashlib.sha256(str(cid).encode()).hexdigest()[:12]) if cid else None
+
+
+def part_compte():
+    """Ce qu'un compte peut depenser par jour en recherches (20 % du budget du jour, 20 au moins ; LR_SOLDCOMPS_COMPTE)."""
+    try:
+        v = int(os.environ.get("LR_SOLDCOMPS_COMPTE") or 0)
+    except ValueError:
+        v = 0
+    return v or max(20, int(plafond_jour() * 0.20))
 
 
 def utilises_aujourdhui(usage=None):
@@ -136,12 +196,14 @@ def utilises_aujourdhui(usage=None):
     return 10 ** 9
 
 
-def _compter(usage=None):
+def _compter(usage=None, cpt=None):
     with _verrou:
         c = _cx()
         try:
             j = jour()
             c.execute("INSERT INTO compteur VALUES (?, 1) ON CONFLICT(jour) DO UPDATE SET n = n + 1", (j,))
+            if cpt:
+                c.execute("INSERT INTO compteur VALUES (?, 1) ON CONFLICT(jour) DO UPDATE SET n = n + 1", (j + ":" + cpt,))
             if usage:
                 c.execute("INSERT INTO compteur VALUES (?, 1) ON CONFLICT(jour) DO UPDATE SET n = n + 1", (j + ":" + usage,))
             c.commit()
@@ -215,8 +277,22 @@ def rechercher(q, fond=True, usage=None):
         return {"ventes": [], "erreur": "inactif"}
     if not _budget_ok(fond, usage):                 # les taps passent avant les taches de fond
         return {"ventes": [], "erreur": "plafond du jour"}
+    cpt = _compte_cle() if not fond else None
+    if cpt and utilises_aujourdhui(cpt) >= part_compte():
+        # 3 nov 2026 (revue de securite) : un seul compte ne vide pas le budget de tout le monde (titres inventes, en boucle)
+        return {"ventes": [], "erreur": "plafond du jour"}
+    # 3 nov 2026 (revue) : SoldComps en panne -> les taches de fond attendent 2 minutes au lieu de bruler des credits
+    # (chaque essai compte avant l'appel) sur d'autres cartes ; les gestes de l'utilisateur essaient quand meme
+    if fond and time.time() < _PANNE[0]:
+        vieux = _cache_lire(q.lower(), age_max=45 * 86400)
+        return {"ventes": vieux, "erreur": None, "cache": True, "vieux_cache": True} if vieux else {"ventes": [], "erreur": "SoldComps injoignable (panne)"}
     e = _ERREURS.get(q.lower())
-    if e and time.time() - e[0] < 600:          # 27 oct 2026 (revue) : une recherche en erreur n'est pas refaite avant 10 min
+    if e and not fond and "injoignable" in str(e[1]) and time.time() - (e[0] + 540) > 15:
+        e = None                                # 3 nov 2026 : « Reessayer » apres une panne passagere : on reessaie vraiment
+    if e and time.time() - e[0] < 600:
+        vieux = _cache_lire(q.lower(), age_max=45 * 86400)          # 3 nov 2026 (revue) : les ventes deja lues, en secours
+        if vieux:
+            return {"ventes": vieux, "erreur": None, "cache": True, "vieux_cache": True}          # 27 oct 2026 (revue) : une recherche en erreur n'est pas refaite avant 10 min
         return {"ventes": [], "erreur": e[1]}
     taux = _taux_usd_cad()
     ventes, vus, erreur = [], {}, None
@@ -227,7 +303,7 @@ def rechercher(q, fond=True, usage=None):
         # apres l'autre, ~1 s d'attente en plus) ; les taches de fond gardent le rythme d'un appel par seconde
         from concurrent.futures import ThreadPoolExecutor
         with ThreadPoolExecutor(max_workers=len(les_sites)) as ex:
-            pre = dict(zip(les_sites, ex.map(lambda st: _appel(q, st, attendre=False, usage=usage), les_sites)))
+            pre = dict(zip(les_sites, ex.map(lambda st: _appel(q, st, attendre=False, usage=usage, compte=cpt), les_sites)))
     for i, site in enumerate(les_sites):
         if site not in pre and i and not _budget_ok(fond, usage):
             break                                   # le budget du jour : le site principal d'abord
@@ -235,11 +311,16 @@ def rechercher(q, fond=True, usage=None):
         # seulement si eBay.com n'a pas deja 3 ventes : 1 credit au lieu de 2 la plupart du temps
         if site not in pre and i and usage == "verif" and len(ventes) >= 3:
             break
-        d, err = pre[site] if site in pre else _appel(q, site, usage=usage)
+        d, err = pre[site] if site in pre else _appel(q, site, usage=usage, compte=cpt)
         if err:
             erreur = erreur or err
-            if i == 0:
+            # 3 nov 2026 (Mathieu, Jordan Beam Team : « pourquoi ca sort rien ? », SoldComps TimeoutError) : eBay.com en
+            # panne mais eBay.ca lu en meme temps -> on garde eBay.ca au lieu de tout jeter
+            if i == 0 and not any(not e2 for s2, (d2, e2) in pre.items() if s2 != site):
                 _noter_erreur(q, err)
+                vieux = _cache_lire(q.lower(), age_max=45 * 86400)        # les ventes lues dans les 45 derniers jours
+                if vieux:
+                    return {"ventes": vieux, "erreur": None, "cache": True, "vieux_cache": True}
                 return {"ventes": [], "erreur": err}
             continue
         for v in (_vers_vente(it, taux) for it in (d or {}).get("items") or []):
@@ -252,13 +333,22 @@ def rechercher(q, fond=True, usage=None):
             if k:
                 vus[k] = True
             ventes.append(v)
-    _cache_ecrire(q.lower(), ventes)
+    # 3 nov 2026 (revue) : un resultat PARTIEL (un site en panne) n'est pas garde 3 jours et n'ecrase pas des ventes deja lues
+    if not erreur:
+        _cache_ecrire(q.lower(), ventes)
+    elif ventes and not _cache_lire(q.lower(), age_max=45 * 86400):
+        _cache_ecrire(q.lower(), ventes, age=CACHE_S - 600)
     try:                                       # 26 oct 2026 - la base des ventes (tendances) garde tout, sans appel de plus
         import base_ventes
         base_ventes.noter(q, ventes)
     except Exception:
         pass
-    return {"ventes": ventes, "erreur": None}
+    # un site en panne et l'autre sans vente : on ne sait pas (pas « aucune vente ») ; les ventes deja lues en secours
+    if erreur and not ventes:
+        vieux = _cache_lire(q.lower(), age_max=45 * 86400)
+        if vieux:
+            return {"ventes": vieux, "erreur": None, "cache": True, "vieux_cache": True}
+    return {"ventes": ventes, "erreur": erreur if (erreur and not ventes) else None, "partiel": bool(erreur)}
 
 
 def sites():
@@ -277,7 +367,7 @@ def _id_vente(v):
     return m.group(1) if m else None
 
 
-def _appel(q, site, attendre=True, usage=None):
+def _appel(q, site, attendre=True, usage=None, compte=None):
     """Une requete SoldComps (compte au budget AVANT l'appel). -> (donnees, erreur)"""
     url = URL_API + "/v1/scrape?" + urllib.parse.urlencode({"keyword": q, "categoryId": CATEGORIE_CARTES, "count": NB_PAR_REQUETE,
                                                             "ebaySite": site, "hydrateBoa": "true"})
@@ -288,7 +378,7 @@ def _appel(q, site, attendre=True, usage=None):
                 time.sleep(attente)
             _DERNIER[0] = time.time()
     req = urllib.request.Request(url, headers={"Authorization": "Bearer " + _cle(), "Accept": "application/json"})
-    _compter(usage)                             # 27 oct 2026 (revue) : compte AVANT l'appel (un echec coute aussi au budget)
+    _compter(usage, compte)                     # 27 oct 2026 (revue) : compte AVANT l'appel (un echec coute aussi au budget)
     try:
         with urllib.request.urlopen(req, timeout=25) as r:
             return json.loads(r.read().decode("utf-8")), None
@@ -300,6 +390,7 @@ def _appel(q, site, attendre=True, usage=None):
 
 _ERREURS = {}
 _DERNIERE = {}
+_PANNE = [0.0]                   # SoldComps ne repond pas : les taches de fond attendent jusqu'a cette heure
 
 
 def derniere_erreur():
@@ -310,7 +401,10 @@ def derniere_erreur():
 def _noter_erreur(q, err):
     if len(_ERREURS) > 2000:
         _ERREURS.clear()
-    _ERREURS[q.lower()] = (time.time(), err)
+    # 3 nov 2026 : une panne passagere (delai depasse) n'est bloquee qu'une minute ; un refus (cle, quota) 10 minutes
+    _ERREURS[q.lower()] = (time.time() - (540 if "injoignable" in str(err) else 0), err)
+    if "injoignable" in str(err) or "quota" in str(err):
+        _PANNE[0] = time.time() + 120
     _DERNIERE.update(erreur=err, le=time.time())
 
 
@@ -336,7 +430,8 @@ def memes(texte, requete=True, n=24, fond=False, exclure_titre=None):
     if not isinstance(med, (int, float)):
         med = None
     return {"ventes": tout[:n], "mediane": med, "valeur_sure": med is not None, "nb": len(tout), "derniere": tout[0]["le"] if tout else None,
-            "ebay": len(ebay), "communaute": len(comm), "erreur": r.get("erreur") if not tout else None,
+            "ebay": len(ebay), "communaute": len(comm), "erreur": r.get("erreur") if not tout else None, "vieux_cache": bool(r.get("vieux_cache")),
+            "erreur_ebay": r.get("erreur"),
             "points": [[v.get("le"), v["prix"]] for v in tout[:200] if v.get("le") and v.get("prix")],
             "tendance": tendance(tout)}
 
@@ -411,4 +506,5 @@ def tendance(ventes, jours=30):
 
 
 def statut():
-    return {"actif": actif(), "aujourdhui": utilises_aujourdhui(), "plafond": plafond_jour()}
+    return {"actif": actif(), "aujourdhui": utilises_aujourdhui(), "plafond": plafond_jour(), "poids_jour": poids_aujourdhui(),
+            "poids_semaine": poids_jours()}

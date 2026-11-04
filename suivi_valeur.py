@@ -40,7 +40,10 @@ def valeur_actuelle(carte, fond=True):
     t = _titre(carte)
     if len(t) < 6:
         return None
-    vs = [v for v in (vendues.memes_annonce(t, fond=fond).get("ventes") or []) if v.get("prix")]
+    r = vendues.memes_annonce(t, fond=fond)
+    if r.get("erreur_ebay") or (r.get("erreur") and not r.get("ventes")):
+        raise RuntimeError(r.get("erreur_ebay") or r.get("erreur"))      # 3 nov 2026 (revue) : pas lu -> reessaye l'heure suivante
+    vs = [v for v in (r.get("ventes") or []) if v.get("prix")]
     return round(deals.valeur_sure(vs, t)[0], 2) if len(vs) >= 2 and deals.valeur_sure(vs, t)[0] else None
 
 

@@ -7,6 +7,7 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 os.environ.setdefault("LOCKERROOM_DONNEES", tempfile.mkdtemp())
+os.environ.setdefault("LR_POIDS_JOURS", "jeu:1")              # 3 nov 2026 : budgets egaux tous les jours (le test compte en dur)
 import deals  # noqa: E402
 import vendues  # noqa: E402
 

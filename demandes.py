@@ -60,6 +60,20 @@ def lire():
     return d
 
 
+def retirer_compte(compte):
+    """3 nov 2026 (revue de securite) : le compte supprime : ses messages partent avec lui (texte, pseudo, identifiant)."""
+    qui = str(compte or "")
+    if not qui:
+        return 0
+    with _verrou:
+        d = lire()
+        avant = len(d["items"])
+        d["items"] = [x for x in d["items"] if x.get("compte") != qui]
+        if len(d["items"]) != avant:
+            _ecrire(d)
+    return avant - len(d["items"])
+
+
 def _ecrire(d):
     tmp = _chemin() + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:

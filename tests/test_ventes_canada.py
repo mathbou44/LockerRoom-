@@ -18,7 +18,7 @@ def it(i, prix, dev, site):
 class TestCanada(unittest.TestCase):
     def test_deux_sites_fusionnes_sans_doublon(self):
         appels = []
-        def appel(q, site, attendre=True, usage=None):
+        def appel(q, site, attendre=True, usage=None, **k):
             appels.append(site)
             if site == "ebay.com":
                 return {"items": [it(111111111111, 100, "USD", site), it(222222222222, 80, "USD", site)]}, None
@@ -41,7 +41,7 @@ class TestCanada(unittest.TestCase):
         self.assertEqual(vendues.sites(), ["ebay.com", "ebay.ca"])
 
     def test_erreur_du_site_canadien_garde_les_ventes_us(self):
-        def appel(q, site, attendre=True, usage=None):
+        def appel(q, site, attendre=True, usage=None, **k):
             return ({"items": [it(444444444444, 50, "USD", site)]}, None) if site == "ebay.com" else (None, "SoldComps HTTP 500")
         with mock.patch.object(vendues, "_appel", side_effect=appel), mock.patch.object(vendues, "actif", return_value=True), \
              mock.patch.object(vendues, "_taux_usd_cad", return_value=1.4), mock.patch.object(vendues, "utilises_aujourdhui", return_value=0):
@@ -62,7 +62,7 @@ class TestCanada(unittest.TestCase):
 
     def test_taches_de_fond_un_seul_site(self):
         appels = []
-        def appel(q, site, attendre=True, usage=None):
+        def appel(q, site, attendre=True, usage=None, **k):
             appels.append(site)
             return {"items": [it(555555555555, 50, "USD", site)]}, None
         with mock.patch.object(vendues, "_appel", side_effect=appel), mock.patch.object(vendues, "actif", return_value=True), \
@@ -75,7 +75,7 @@ class TestCanada(unittest.TestCase):
     def test_verif_un_seul_credit_si_assez_de_ventes(self):
         """29 oct 2026 : une verification de deal n'interroge eBay.ca que si eBay.com n'a pas deja 3 ventes."""
         appels = []
-        def appel(q, site, attendre=True, usage=None):
+        def appel(q, site, attendre=True, usage=None, **k):
             appels.append(site)
             n = 3 if "beaucoup" in q else 1
             return {"items": [{"title": f"{q} {site} {k}", "soldPrice": "50", "soldDate": "2026-10-20", "url": f"https://www.ebay.com/itm/{site[-2:]}{k}12345678"} for k in range(n)]}, None

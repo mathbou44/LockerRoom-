@@ -14,6 +14,10 @@ import io
 
 try:
     from PIL import Image, ImageDraw, ImageOps
+    # 3 nov 2026 (revue de securite) : une « bombe » (petit fichier, image geante) est refusee au lieu de remplir la memoire
+    import warnings as _w
+    Image.MAX_IMAGE_PIXELS = 40_000_000
+    _w.simplefilter("error", Image.DecompressionBombWarning)
 except ImportError:                       # serveur sans Pillow : l'examen marche comme avant (photos entieres seulement)
     Image = None
 
@@ -471,11 +475,12 @@ def note_centrage(devant, dos=None):
     return n
 
 
-def preparer(photos_octets, quads=None, rasante=None, rasante2=None):
+def preparer(photos_octets, quads=None, rasante=None, rasante2=None, gros_plans=None):
     """photos_octets : [devant, dos?] (octets) ; quads : [quad_devant, quad_dos] en 0..1000 ; rasante : octets ou None.
     -> {"images": [(libelle, octets_jpeg)], "centrage": {...}, "note_centrage": n|None, "zooms": bool}"""
     quads = list(quads or [])
     images, cent, cartes, mes, verif = [], {}, [], {}, {}
+    utilises = []                                          # 3 nov 2026 (revue) : le contour vraiment utilise, rendu a l'appelant
     for j, b in enumerate(photos_octets[:2]):
         face = "devant" if j == 0 else "dos"
         im = ouvrir(b)
@@ -489,6 +494,7 @@ def preparer(photos_octets, quads=None, rasante=None, rasante2=None):
             except Exception as e:
                 print("Examen (carte trouvee) : " + repr(e), flush=True)
                 q = None
+        utilises.append(q)
         c = redresser(im, q) if q else None                 # exacte : pour le centrage
         z = redresser(im, q, 0.03, COTE_ZOOM) if q else None   # pleine resolution, un peu de fond : l'arete des coins et des bords
         cartes.append(c)
@@ -528,6 +534,26 @@ def preparer(photos_octets, quads=None, rasante=None, rasante2=None):
                     print("Examen (bordure) : " + repr(e), flush=True)
             if m.get("gd") or m.get("hb"):
                 cent[face] = {"gd": m.get("gd"), "hb": m.get("hb")}
+    # 3 nov 2026 (Mathieu : « une IA d'analyse parfaite ») : les GROS PLANS des coins, pris expres de tout pres. Une photo
+    # entiere donne ~16 px/mm ; un coin se juge a 40 px/mm et plus (le blanchiment fait 0,1 mm). Envoyes en pleine
+    # resolution (1568 px) : le modele juge chaque coin d'abord sur son gros plan.
+    gp_info = []
+    for g in (gros_plans or [])[:8]:
+        try:
+            im = ouvrir(g["octets"])
+        except Exception as e:
+            print("Examen (gros plan) : " + repr(e), flush=True)
+            continue
+        try:
+            import mesures
+            q = mesures.nettete_gros_plan(im)
+        except Exception:
+            q = None
+        face, coin = g.get("face") or "devant", g.get("coin") or "?"
+        gp_info.append({"face": face, "coin": coin, **(q or {})})
+        images.append((f"GROS PLAN du coin {coin} du {face.upper()} (photo rapprochee prise expres, bien plus nette que les zooms ; "
+                       f"tenue droite, ce coin vers le {coin}). Juge ce coin D'ABORD ici : la pointe, les 2 aretes, le blanc."
+                       + (" Cette photo est un peu floue : confirme avec le zoom." if q and not q.get("net") else ""), jpeg(im, 1568, 90)))
     if rasante:
         images.append(("Photo en lumiere rasante (inclinee) : pour les rayures, les plis et les bosses de surface.", jpeg(ouvrir(rasante))))
         # 3 nov 2026 : le relief, calcule par l'app (l'impression s'efface, les rayures et les bosses ressortent)
@@ -555,7 +581,8 @@ def preparer(photos_octets, quads=None, rasante=None, rasante2=None):
     n_haut = note_centrage(sur.get("devant"), sur.get("dos")) if cent else None
     n_bas = note_centrage(cent.get("devant"), cent.get("dos")) if cent else None
     return {"images": images, "centrage": cent or None, "note_centrage": n_haut if n_haut is not None else (n_bas if not verif else None),
-            "note_centrage_bas": n_bas, "centrage_verifier": verif, "mesures": mes, "zooms": any(c is not None for c in cartes)}
+            "note_centrage_bas": n_bas, "centrage_verifier": verif, "mesures": mes, "zooms": any(c is not None for c in cartes),
+            "gros_plans": gp_info, "quads": utilises}
 
 
 def _mesurer(im, q, c, z):

@@ -361,6 +361,21 @@ def qualite(carte, px_mm=None):
             "net": nettete >= 40, "assez_grande": px_mm >= 14, "a_reprendre": msgs}
 
 
+def nettete_gros_plan(im):
+    """3 nov 2026 : un gros plan de coin est-il net ? Le contraste des aretes les plus franches (99,5e centile du
+    gradient, image ramenee a 1200 px) : ~50-70 net, ~20 et moins = flou ou agrandi. -> {nettete, net}"""
+    if np is None or im is None:
+        return None
+    p = im.convert("L")
+    p.thumbnail((1200, 1200))
+    L = np.asarray(p, dtype=np.float32)
+    if min(L.shape) < 40:
+        return None
+    g = np.hypot(np.abs(np.diff(L, axis=1))[:-1], np.abs(np.diff(L, axis=0))[:, :-1])
+    v = float(np.percentile(g, 99.5))
+    return {"nettete": round(v, 1), "net": v >= 20}
+
+
 # -- 4. trouver la carte dans la photo (sans contour du telephone) ------------------------------------------------------
 def trouver_carte(im):
     """La carte sur un fond (tapis, presentoir) : chaque rangee est comparee a son propre fond (les 4 % de gauche et de
@@ -689,3 +704,64 @@ def difference_eclairages(im1, im2):
     d = g1 - g2
     fort = float((np.abs(d) > 3.5).mean()) * 100
     return {"image": _vers_image(d * 18, 1.0), "pct_relief": round(fort, 2)}
+
+
+def score_contour(im, quad):
+    """La qualite d'un contour (0..1000) : le saut de couleur moyen le long des 4 cotes, entre juste dehors et juste dedans.
+    Un contour pose sur la vraie arete tranche fort ; un contour decale (sur le fond ou dans l'image) tranche peu."""
+    if np is None or not quad or len(quad) != 4:
+        return 0.0
+    k = 900 / max(im.size)
+    p = im.convert("RGB").resize((max(1, int(im.size[0] * k)), max(1, int(im.size[1] * k))))
+    a = _arr(p)
+    H, W, _ = a.shape
+    q = [(x / 1000 * W, y / 1000 * H) for x, y in quad]
+    ctr = (sum(x for x, _ in q) / 4, sum(y for _, y in q) / 4)
+    tot, n = 0.0, 0
+    for i in range(4):
+        (x1, y1), (x2, y2) = q[i], q[(i + 1) % 4]
+        for t in np.linspace(0.1, 0.9, 25):
+            x, y = x1 + (x2 - x1) * t, y1 + (y2 - y1) * t
+            dx, dy = ctr[0] - x, ctr[1] - y
+            nrm = (dx * dx + dy * dy) ** 0.5 or 1
+            ux, uy = dx / nrm * 4, dy / nrm * 4
+            xi, yi, xo, yo = int(round(x + ux)), int(round(y + uy)), int(round(x - ux)), int(round(y - uy))
+            if 0 <= xi < W and 0 <= yi < H and 0 <= xo < W and 0 <= yo < H:
+                tot += float(np.abs(a[yi, xi] - a[yo, xo]).sum())
+                n += 1
+    return tot / n if n else 0.0
+
+
+def meilleur_contour(im, quad):
+    """Le contour du telephone, ou celui que l'app trouve elle-meme s'il tranche nettement mieux (un ancien contour decale)."""
+    import examen
+    try:
+        q0 = trouver_carte(im)
+        cands = [q0, examen.affiner_quad(im, q0, 0.03)] if q0 else []
+    except Exception:
+        cands = []
+    if not cands:
+        return quad
+    # 3 nov 2026 (Scoot Henderson PSA 9 en slab) : la fenetre du slab tranchait mieux que la carte -> un candidat doit avoir
+    # la forme d'une carte (88,9 x 63,5, perspective toleree) et la meme orientation que le contour du telephone
+    W, H = im.size
+    def forme(q):
+        p = [(x / 1000 * W, y / 1000 * H) for x, y in q]
+        cote = lambda a, b: math.hypot(p[a][0] - p[b][0], p[a][1] - p[b][1])
+        larg, haut = (cote(0, 1) + cote(3, 2)) / 2, (cote(0, 3) + cote(1, 2)) / 2
+        return (haut / larg if larg else 0), larg * haut
+    def carte_ok(q):
+        r, _a = forme(q)
+        r = max(r, 1 / r) if r else 0
+        return 1.30 <= r <= 1.52
+    cands = [q for q in cands if q and carte_ok(q)]
+    if quad and carte_ok(quad):
+        r0, a0 = forme(quad)
+        cands = [q for q in cands if (forme(q)[0] > 1) == (r0 > 1) and 0.75 <= forme(q)[1] / a0 <= 1.33]
+    if not cands:
+        return quad
+    q2 = max(cands, key=lambda q: score_contour(im, q))
+    if not quad:
+        return q2
+    s1, s2 = score_contour(im, quad), score_contour(im, q2)
+    return q2 if s2 > 1.25 * s1 + 5 else quad

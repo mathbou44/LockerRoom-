@@ -277,7 +277,8 @@ def politiques(force=False):
     """29 oct 2026 : les politiques d'expedition, de retours et de paiement du vendeur chez eBay (Business Policies,
     Trading GetUserPreferences). -> {ok, expedition:[{id, nom, resume, defaut}], retours:[...], paiement:[...]}"""
     import time
-    env = ebay_compte.environnement()
+    import comptes                     # 3 nov 2026 (revue de securite) : la cle porte le COMPTE (ses politiques a lui)
+    env = (ebay_compte.environnement(), comptes.courant())
     c = _cache_pol.get(env)
     if c and not force and time.time() - c[0] < 600:
         return c[1]

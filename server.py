@@ -45,6 +45,13 @@ def _prendre_verrou():
 from flask import Flask, abort, jsonify, request, send_from_directory  # noqa: E402
 
 import lockerroom  # noqa: E402
+try:                                        # 3 nov 2026 (revue de securite) : aucune image geante decodee, partout dans l'app
+    import warnings as _w
+    from PIL import Image as _Img
+    _Img.MAX_IMAGE_PIXELS = 40_000_000
+    _w.simplefilter("error", _Img.DecompressionBombWarning)
+except ImportError:
+    pass
 
 DOSSIER_UI = os.path.join(DOSSIER, "ui")
 app = Flask(__name__, static_folder=None)
@@ -96,6 +103,28 @@ def _compresser(rep):
         pass
     return rep
 
+# 3 nov 2026 (revue de securite) : les en-tetes de securite. La CSP bloque tout script, toute connexion et tout cadre venant
+# d'un autre site (une faille d'affichage ne peut ni charger un script ailleurs ni envoyer les donnees ailleurs) ; les
+# images restent permises partout (photos eBay). Les scripts de nos pages sont dans la page (« unsafe-inline »).
+CSP = ("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+       "font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https: http:; media-src 'self' data: blob:; "
+       "connect-src 'self' data: blob:; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self'; "
+       "frame-ancestors 'self'")
+
+
+@app.after_request
+def _entetes_securite(rep):
+    h = rep.headers
+    h.setdefault("Content-Security-Policy", os.environ.get("LR_CSP") or CSP)
+    h.setdefault("X-Content-Type-Options", "nosniff")
+    h.setdefault("X-Frame-Options", "SAMEORIGIN")
+    h.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    h.setdefault("Permissions-Policy", "geolocation=(), microphone=(), payment=()")
+    if HEBERGE:
+        h.setdefault("Strict-Transport-Security", "max-age=31536000")
+    return rep
+
+
 api = lockerroom.Api()
 
 # -- 21 oct 2026 : version hebergee (demo publique) -------------------------------------------
@@ -106,7 +135,7 @@ HEBERGE = os.environ.get("LOCKERROOM_HEBERGE") == "1"
 CODE_ACCES = os.environ.get("LOCKERROOM_CODE") or ""
 app.secret_key = os.environ.get("LOCKERROOM_SECRET") or os.urandom(32)
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_SECURE=HEBERGE)
-app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024        # 23 oct 2026 - 2 photos (devant, dos) par requete
+app.config["MAX_CONTENT_LENGTH"] = 32 * 1024 * 1024        # 23 oct 2026 - 2 photos ; 3 nov 2026 : + rasantes et 8 gros plans des coins
 # pages qui restent publiques : break partage, retour et avis eBay, pages legales, icones
 _PUBLIQUES = ("/b/", "/api/b/", "/api/ebay_retour", "/ebay/suppression-compte", "/confidentialite", "/conditions",
               "/support", "/robots.txt", "/sitemap.xml", "/logo_sc_", "/syne-800.woff2", "/manrope-", "/barlow-", "/connexion", "/icone", "/favicon", "/manifest.json", "/stripe/webhook", "/apple/notifications", "/sante")
@@ -115,6 +144,36 @@ _PUBLIQUES = ("/b/", "/api/b/", "/api/ebay_retour", "/ebay/suppression-compte", 
 import comptes  # noqa: E402
 
 _PUBLIQUES_MULTI = _PUBLIQUES + ("/auth/", "/deconnexion", "/demo")
+
+
+def _ouvrir_session(cid, garder_ok=False):
+    """3 nov 2026 (revue de securite) : une connexion = une NOUVELLE session (l'ancienne est videe : pas de fixation), avec un
+    identifiant que « Se deconnecter » peut revoquer (le temoin copie ne sert plus apres la deconnexion)."""
+    import secrets as _s
+    from flask import session
+    ok = session.get("ok") if garder_ok else None
+    session.clear()
+    session.permanent = True
+    session["compte"] = cid
+    session["sid"] = _s.token_urlsafe(16)
+    if ok:
+        session["ok"] = ok
+
+
+# 3 nov 2026 (revue de securite) : les formulaires POST de connexion n'acceptent que notre propre site (pas de « login CSRF »
+# depuis un autre site) ; les retours des fournisseurs (Apple poste depuis son site) et les avis signes sont exemptes.
+_POST_EXEMPTES = ("/auth/apple/retour", "/auth/google/retour", "/stripe/webhook", "/apple/notifications", "/ebay/suppression-compte", "/api/")
+
+
+def _meme_site():
+    import urllib.parse
+    o = request.headers.get("Origin")
+    if o:
+        return o != "null" and urllib.parse.urlparse(o).netloc.lower() == request.host.lower()
+    r = request.headers.get("Referer")
+    if r:
+        return urllib.parse.urlparse(r).netloc.lower() == request.host.lower()
+    return not comptes.MULTI                        # aucun en-tete : refuse en ligne (les navigateurs envoient Origin en POST)
 
 
 # 3 nov 2026 (Render : « HTTP health check failed, timed out after 5 seconds ») : une verification de sante qui ne fait RIEN
@@ -129,6 +188,8 @@ def _garde():
     from flask import redirect, session
     if request.path == "/sante":
         return None
+    if request.method == "POST" and not request.path.startswith(_POST_EXEMPTES) and not _meme_site():
+        return ("Requête refusée (autre site)", 403)
     comptes.activer(None)
     import lockerroom as _lr                       # 26 oct 2026 - requete venue de l'app iPhone ?
     _lr.marquer_ios("LockerRoomiOS" in (request.headers.get("User-Agent") or ""))
@@ -137,6 +198,9 @@ def _garde():
         return (jsonify({"erreur": "Connexion requise"}), 401) if request.path.startswith("/api/") else redirect("/connexion")
     if comptes.MULTI:
         cid = session.get("compte")
+        if cid and session.get("sid") and comptes.session_revoquee(cid, session.get("sid")):
+            session.clear()                                          # 3 nov 2026 : session fermee par « Se deconnecter »
+            cid = None
         if cid and cid in comptes.lister():
             cid2 = comptes.resoudre(cid)                             # 2 nov 2026 : ancien compte relie -> le compte choisi
             if cid2 != cid:
@@ -156,7 +220,21 @@ def _garde():
 # l'app iPhone. Dans la vue web, « Continuer avec Google » d'eBay partait dans Safari et ne revenait jamais. Maintenant :
 # l'app demande un jeton a usage unique (lie a SON compte, 10 min), ouvre le navigateur securise d'iOS sur
 # /auth/ebay-lier, et le retour d'eBay ramene un billet a l'app (slabcoachauth://retour), comme la connexion.
-_LIER_ETATS = {}      # etat OAuth -> (compte, le) ; les jetons a usage unique : lockerroom.LIER
+_LIER_ETATS = {}      # etat OAuth -> (compte, le, app) ; les jetons a usage unique : lockerroom.LIER
+
+
+def _lier_permis(cid):
+    """3 nov 2026 (revue de securite : un lien « relier » envoye a quelqu'un d'autre lui faisait relier SON eBay / Google au
+    compte de l'envoyeur) : on relie seulement (a) depuis l'app iPhone : l'empreinte de son secret part avec, et rien n'est
+    relie avant que l'app rende le billet avec ce secret ; ou (b) dans un navigateur deja connecte a CE compte. -> app|"" ou None"""
+    import re
+    from flask import session
+    h = (request.args.get("app") or "").strip().lower()
+    if re.fullmatch(r"[0-9a-f]{64}", h):
+        return h
+    if not comptes.MULTI or session.get("compte") == cid:
+        return ""
+    return None
 
 
 @app.route("/auth/ebay-lier")
@@ -167,6 +245,9 @@ def auth_ebay_lier():
     v = _lrm.LIER.pop(request.args.get("t") or "", None)
     if not v or _t.time() - v[1] > 600 or v[0] not in comptes.lister():
         return redirect("/connexion?erreur=3&r=expire")
+    app_h = _lier_permis(v[0])
+    if app_h is None:
+        return redirect("/connexion?erreur=3&r=lien")
     comptes.activer(v[0])
     r = api.ebay_url_connexion()
     if not r.get("ok"):
@@ -175,7 +256,7 @@ def auth_ebay_lier():
     etat = (urllib.parse.parse_qs(urllib.parse.urlparse(r["url"]).query).get("state") or [""])[0]
     for k in [k for k, x in _LIER_ETATS.items() if _t.time() - x[1] > 900]:
         _LIER_ETATS.pop(k, None)
-    _LIER_ETATS[etat] = (v[0], _t.time())
+    _LIER_ETATS[etat] = (v[0], _t.time(), app_h)
     _noter_app(r["url"])
     return _lier_navigateur(redirect(r["url"]), r["url"])
 
@@ -245,8 +326,9 @@ def _noter_app(url):
         _APP_ETATS[etat] = (h, time.time())
 
 
-def _billet(cid, cible, etat):
-    """Ouvre la session ici (navigateur normal) ou, pour l'app iPhone, prepare le billet. -> reponse Flask."""
+def _billet(cid, cible, etat, attente=None):
+    """Ouvre la session ici (navigateur normal) ou, pour l'app iPhone, prepare le billet. -> reponse Flask.
+    attente (3 nov 2026) : ce qui doit se faire seulement quand l'app rend le billet avec son secret (relier eBay / Google)."""
     from flask import redirect, session
     import secrets as _s
     import time as _t
@@ -255,17 +337,21 @@ def _billet(cid, cible, etat):
         _BILLETS.pop(k, None)
     b = _s.token_urlsafe(32)
     if app_h:
-        _BILLETS[b] = (cid, cible, _t.time(), "", app_h)
+        _BILLETS[b] = (cid, cible, _t.time(), "", app_h, attente)
         dest = SCHEMA_APP + "?b=" + b
         return (f"<!doctype html><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
                 f"<body style='margin:0;background:#0B0B0E;color:#F4F2EE;font-family:-apple-system,sans-serif;display:grid;place-items:center;height:100vh'>"
                 f"<a href='{dest}' style='padding:16px 26px;border-radius:14px;background:#B9BEFF;color:#0E1026;font-weight:700;text-decoration:none'>"
                 f"Revenir à SlabCoach</a><script>location.replace({json.dumps(dest)})</script>", 200, {"Content-Type": "text/html; charset=utf-8"})
+    if attente and request.method == "GET":   # un lien sans l'app : seulement dans le navigateur deja connecte a ce compte
+        if comptes.MULTI and session.get("compte") != cid:
+            return redirect("/connexion?erreur=3&r=lien")
+        if not _faire_attente(cid, attente):
+            cible = "/#reglages/ebay-erreur" if attente[0] == "ebay" else "/#reglages"
     if request.method == "GET":
-        session.permanent = True
-        session["compte"] = cid
+        _ouvrir_session(cid, garder_ok=True)
         return redirect(cible)
-    _BILLETS[b] = (cid, cible, _t.time(), request.cookies.get(_TEMOIN_LIEN) or "", None)
+    _BILLETS[b] = (cid, cible, _t.time(), request.cookies.get(_TEMOIN_LIEN) or "", None, attente)
     suite = "/auth/terminer?b=" + b
     return (f"<!doctype html><meta charset='utf-8'><meta name='referrer' content='no-referrer'>"
             f"<meta http-equiv='refresh' content='0;url={suite}'>"
@@ -299,12 +385,14 @@ def auth_tiers(fournisseur):
         import urllib.parse
         import lockerroom as _lrm
         v = _lrm.LIER.pop(j, None)
+        if v and _lier_permis(v[0]) is None:
+            return redirect("/connexion?erreur=3&r=lien")
         if v and _t.time() - v[1] <= 600 and v[0] in comptes.lister():
             etat = (urllib.parse.parse_qs(urllib.parse.urlparse(u).query).get("state") or [""])[0]
             for k in [k for k, x in _LIER_TIERS.items() if _t.time() - x[1] > 900]:
                 _LIER_TIERS.pop(k, None)
             if etat:
-                _LIER_TIERS[etat] = (v[0], _t.time())
+                _LIER_TIERS[etat] = (v[0], _t.time(), _lier_permis(v[0]))
     return _lier_navigateur(redirect(u), u)
 
 
@@ -332,16 +420,13 @@ def auth_tiers_retour(fournisseur):
     cle = fournisseur + ":" + r["sub"]
     lien = _LIER_TIERS.pop(v.get("state") or "", None)
     if lien and lien[0] in comptes.lister():                 # « Ajouter Google / Apple » depuis Profil
-        cid, nouveau = lien[0], False
-        comptes.lier_identite(cid, cle, fournisseur)
         champs = {}
-        if r.get("courriel") and not comptes.info(cid).get("courriel"):
+        if r.get("courriel"):
             champs["courriel"] = r["courriel"]
         if r.get("jeton_apple"):
             champs["apple_rt"] = comptes.chiffrer(r["jeton_apple"])
-        if champs:
-            comptes.maj(cid, **champs)
-        return _billet(cid, "/#reglages/connexion-ok", v.get("state"))
+        # 3 nov 2026 (revue) : relie seulement quand l'app rend le billet (ou dans le navigateur connecte a ce compte)
+        return _billet(lien[0], "/#reglages/connexion-ok", v.get("state"), attente=("tiers", cle, fournisseur, champs))
     cid, nouveau = comptes.trouver_connexion(cle, r.get("nom"), fournisseur, r.get("courriel"))
     champs = {"connexion": fournisseur} if nouveau or not comptes.info(cid).get("connexion") else {}
     if r.get("courriel") and (nouveau or not comptes.info(cid).get("courriel")):
@@ -359,6 +444,28 @@ def auth_tiers_retour(fournisseur):
 _BILLETS = {}
 
 
+def _faire_attente(cid, attente):
+    """Relier ce qui attendait le billet : ("ebay", url de retour, etat) ou ("tiers", cle, fournisseur, champs). -> bool"""
+    try:
+        comptes.activer(cid)
+        if attente[0] == "ebay":
+            r = api.ebay_terminer(attente[1], attente[2])
+            if r.get("ok"):
+                _premiere_synchro(cid)
+            return bool(r.get("ok"))
+        if attente[0] == "tiers":
+            comptes.lier_identite(cid, attente[1], attente[2])
+            champs = dict(attente[3] or {})
+            if champs.get("courriel") and comptes.info(cid).get("courriel"):
+                champs.pop("courriel")
+            if champs:
+                comptes.maj(cid, **champs)
+            return True
+    except Exception as e:
+        print("Relier (billet) : " + repr(e), flush=True)
+    return False
+
+
 @app.route("/auth/terminer")
 def auth_terminer():
     """2e moitie du retour d'Apple : meme site, en GET -> le temoin de session s'enregistre (Safari compris)."""
@@ -369,7 +476,7 @@ def auth_terminer():
     v = _BILLETS.pop(b, None)
     if not v or _t.time() - v[2] > 120:
         return redirect("/connexion?erreur=3")
-    cid, cible, _le, lien, app_h = v
+    cid, cible, _le, lien, app_h, attente = (tuple(v) + (None,))[:6]
     if app_h:                                  # app iPhone : le secret garde par l'app doit correspondre
         import hashlib
         if not hmac.compare_digest(app_h, hashlib.sha256((request.args.get("v") or "").encode()).hexdigest()):
@@ -378,8 +485,13 @@ def auth_terminer():
         return redirect("/connexion?erreur=3")
     if cid not in comptes.lister():
         return redirect("/connexion?erreur=3")
-    session.permanent = True
-    session["compte"] = cid
+    if attente and not app_h and comptes.MULTI and session.get("compte") != cid:
+        return redirect("/connexion?erreur=3&r=lien")           # navigateur : il doit deja etre connecte a ce compte
+    if attente:                                # 3 nov 2026 : relier eBay / Google seulement maintenant (billet + secret)
+        ok = _faire_attente(cid, attente)
+        if not ok:
+            cible = "/#reglages/ebay-erreur" if attente[0] == "ebay" else "/#reglages"
+    _ouvrir_session(cid, garder_ok=True)
     r = redirect(cible)
     r.delete_cookie(_TEMOIN_LIEN, path="/")
     return r
@@ -390,8 +502,19 @@ _ECHECS = {}
 
 
 def _ip():
-    return (request.headers.get("X-Forwarded-For") or request.remote_addr or "").split(",")[0].strip() if HEBERGE \
+    # 3 nov 2026 (revue de securite) : la DERNIERE adresse de X-Forwarded-For (celle que Render ajoute) ; la premiere est
+    # ecrite par le client (une nouvelle a chaque essai contournait la limite d'essais)
+    return (request.headers.get("X-Forwarded-For") or request.remote_addr or "").split(",")[-1].strip() if HEBERGE \
         else (request.remote_addr or "")
+
+
+def _reseau(ip):
+    import ipaddress
+    try:
+        a = ipaddress.ip_address(ip)
+        return str(ipaddress.ip_network(f"{ip}/{24 if a.version == 4 else 64}", strict=False))
+    except ValueError:
+        return ip
 
 
 def _trop_d_essais():
@@ -399,7 +522,13 @@ def _trop_d_essais():
     m = time.time()
     for k in [k for k, v in _ECHECS.items() if m - v[-1] > 900]:
         _ECHECS.pop(k, None)
-    return len([t for t in _ECHECS.get(_ip(), []) if m - t < 900]) >= 8
+    # 3 nov 2026 (revue de securite) : pas de limite pour tout le serveur (n'importe qui pouvait bloquer tout le monde) ; a la
+    # place : 8 essais par adresse, 40 par reseau (/24 en IPv4, /64 en IPv6), et des codes d'appareil a 8 chiffres
+    ip = _ip()
+    if len([t for t in _ECHECS.get(ip, []) if m - t < 900]) >= 8:
+        return True
+    res = _reseau(ip)
+    return len([t for k, v in _ECHECS.items() if _reseau(k) == res for t in v if m - t < 900]) >= 40
 
 
 def _noter_echec():
@@ -428,9 +557,8 @@ def demo():
         if hmac.compare_digest(str(request.form.get("code") or "").strip(), code):
             cid, nouveau = comptes.trouver_ou_creer(_DEMO_EBAY_ID, "Demo", "demo")
             comptes.maj(cid, pro_offert=None, essai_bonus_jours=-30, demo=True)
-            session.permanent = True
+            _ouvrir_session(cid)
             session["ok"] = True
-            session["compte"] = cid
             if nouveau:
                 with comptes.utiliser(cid):
                     _remplir_demo()
@@ -465,6 +593,8 @@ def _remplir_demo():
 @app.route("/deconnexion")
 def deconnexion():
     from flask import redirect, session
+    if session.get("compte") and session.get("sid"):
+        comptes.revoquer_session(session["compte"], session["sid"])
     session.clear()
     return redirect("/connexion")
 
@@ -574,7 +704,7 @@ def _page_langue(html):
 
 
 # 2 nov 2026 (Mathieu : « un utilisateur doit voir la meme chose sur son ordi que sur son cell ») : le code d'appareil.
-# Sur le telephone (Profil > Ouvrir sur un autre appareil) : 6 chiffres, 10 min. Ici, sur l'ordi : on l'entre et la session
+# Sur le telephone (Profil > Ouvrir sur un autre appareil) : 8 chiffres (6 avant le 3 nov 2026), 10 min. Ici, sur l'ordi : on l'entre et la session
 # s'ouvre sur le MEME compte, peu importe comment on s'est connecte la premiere fois.
 @app.route("/auth/code", methods=["GET", "POST"])
 def auth_code():
@@ -588,8 +718,7 @@ def auth_code():
         else:
             cid = comptes.code_utiliser(request.form.get("code"))
             if cid:
-                session.permanent = True
-                session["compte"] = cid
+                _ouvrir_session(cid, garder_ok=True)
                 return redirect("/#accueil")
             _noter_echec()
             msg = "Code invalide ou expiré : demande un nouveau code sur ton téléphone"
@@ -604,8 +733,8 @@ button{padding:16px;border-radius:14px;border:0;font:700 18px 'Barlow Condensed'
 .err{color:#FFB3B3}a{color:#A9A6B1;font-size:14px}</style>
 <form method="post"><img src="/logo_sc_gold_poli.png" width="64" style="margin:auto" alt="">
 <h1>Ouvrir mon compte ici</h1>
-<p>Sur ton téléphone : <b>Profil › Ouvrir sur un autre appareil</b>. Entre le code à 6 chiffres affiché.</p>
-<input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="7" pattern="[0-9 ]*" placeholder="000000" autofocus required>
+<p>Sur ton téléphone : <b>Profil › Ouvrir sur un autre appareil</b>. Entre le code à 8 chiffres affiché.</p>
+<input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" pattern="[0-9 ]*" placeholder="0000 0000" autofocus required>
 """ + (f"<p class='err'>{msg}</p>" if msg else "") + """<button type="submit">Ouvrir</button><a href="/connexion">‹ Autres façons de se connecter</a></form></html>""")
 
 
@@ -761,11 +890,9 @@ def ebay_retour():
         return redirect("/connexion?erreur=1" if not comptes.courant() else "/#reglages/ebay-erreur")
     lie = _LIER_ETATS.pop(request.args.get("state") or "", None)
     if lie and lie[0] in comptes.lister():            # 28 oct 2026 : eBay relie depuis l'app (navigateur securise)
-        comptes.activer(lie[0])
-        r = api.ebay_terminer(request.url, request.args.get("state"))
-        if r.get("ok"):
-            _premiere_synchro(lie[0])
-        return _billet(lie[0], "/#reglages/" + ("ebay-ok" if r.get("ok") else "ebay-erreur"), request.args.get("state"))
+        # 3 nov 2026 (revue) : rien n'est relie ici ; seulement quand l'app rend le billet avec son secret (ou dans le
+        # navigateur deja connecte a ce compte)
+        return _billet(lie[0], "/#reglages/ebay-ok", request.args.get("state"), attente=("ebay", request.url, request.args.get("state")))
     if comptes.MULTI and not comptes.courant():
         import ebay_compte
         r = ebay_compte.connexion_compte(request.url, request.args.get("state"))
@@ -826,6 +953,29 @@ def mes_photos(nom):
     return send_from_directory(os.path.dirname(f), os.path.basename(f), mimetype="image/jpeg", max_age=30 * 86400)
 
 
+@app.route("/admin/entrainement.zip")
+def admin_entrainement_zip():
+    """3 nov 2026 : l'export de la banque d'entrainement (dataset.jsonl + photos), pour l'admin seulement."""
+    from flask import send_file
+    import entrainement
+    if not api._est_admin():
+        abort(403)
+    ch, nom = entrainement.exporter()
+    f = open(ch, "rb")
+    rep = send_file(f, mimetype="application/zip", as_attachment=True, download_name=nom, max_age=0)
+    try:
+        os.remove(ch)                      # Linux (Render) : le fichier ouvert reste lisible, rien ne traine sur le disque
+    except OSError:                        # 3 nov 2026 (revue) : Windows refuse : on l'efface apres l'envoi
+        def _effacer():
+            try:
+                f.close()
+                os.remove(ch)
+            except OSError:
+                pass
+        rep.call_on_close(_effacer)
+    return rep
+
+
 @app.route("/<path:nom>")
 def statiques(nom):
     return send_from_directory(DOSSIER_UI, nom)
@@ -840,15 +990,36 @@ _ECRITURES_EBAY = {"ebay_publier", "annonce_publier", "ebay_changer_prix", "ebay
                    "prix_auto_appliquer", "prix_auto_regler", "offres_envoyer", "ebay_prix_lot", "annonce_reviser", "watch_vers_ebay", "annonce_promotion"}
 
 
+def _hote_local_ok():
+    """3 nov 2026 (revue de securite) : sur le PC, l'API ne repond qu'a une adresse de la machine ou du reseau local
+    (contre le « DNS rebinding » : un site qui se fait passer pour 127.0.0.1)."""
+    import ipaddress
+    h = (request.host or "").rsplit(":", 1)[0].strip("[]").lower()
+    if h in ("localhost", "127.0.0.1", "::1") or h.endswith(".localhost"):
+        return True
+    try:
+        ip = ipaddress.ip_address(h)
+        return ip.is_private or ip.is_loopback or ip.is_link_local
+    except ValueError:
+        import socket
+        return h in {socket.gethostname().lower(), socket.getfqdn().lower(), socket.gethostname().lower() + ".local"}
+
+
 @app.route("/api/<nom>", methods=["POST"])
 def dispatcher(nom):
     if nom.startswith("_"):
         return jsonify({"erreur": "méthode non autorisée"}), 403
     o = request.headers.get("Origin")
-    if o and o != "null":                    # 27 oct 2026 : appels venus d'un autre site refuses (en plus de SameSite)
+    if o:                                    # 27 oct 2026 : appels venus d'un autre site refuses (en plus de SameSite)
         import urllib.parse
-        if urllib.parse.urlparse(o).netloc.lower() != request.host.lower():
+        # 3 nov 2026 (revue de securite) : « Origin: null » (iframe isolee, page locale) aussi refuse
+        if o == "null" or urllib.parse.urlparse(o).netloc.lower() != request.host.lower():
             return jsonify({"erreur": "Origine refusée"}), 403
+    # 3 nov 2026 (revue) : du JSON seulement (un formulaire d'un autre site ne peut pas l'envoyer sans permission du navigateur)
+    if request.mimetype != "application/json":
+        return jsonify({"erreur": "Requête refusée"}), 415
+    if not comptes.MULTI and not _hote_local_ok():
+        return jsonify({"erreur": "Hôte refusé"}), 403
     if comptes.MULTI and nom in _RESERVEES_SERVEUR:
         return jsonify({"erreur": "Réglage du serveur : non modifiable ici"}), 403
     if not comptes.MULTI and not CODE_ACCES and nom in _ECRITURES_EBAY and request.remote_addr not in ("127.0.0.1", "::1"):

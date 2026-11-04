@@ -1,7 +1,9 @@
-flask>=2.2
-gunicorn>=21.2
-cryptography>=42
+# 3 nov 2026 (revue de securite) : versions minimales sans les failles connues (Flask, Werkzeug, gunicorn, Pillow, cryptography)
+flask>=3.0.3
+werkzeug>=3.0.6
+gunicorn>=23.0.0
+cryptography>=44.0.1
 openpyxl>=3.1
 httpx[http2]>=0.27           # 26 oct 2026 : notifications de l'app iPhone (Apple exige HTTP/2)
-Pillow>=10                   # 1er nov 2026 : examen de l etat (zooms des coins et des bords, centrage mesure)
+Pillow>=10.3.0               # 1er nov 2026 : examen de l etat (zooms des coins et des bords, centrage mesure)
 numpy>=1.26                  # 3 nov 2026 : mesures de l examen (centrage par paires, blanchiment en mm, qualite photo)

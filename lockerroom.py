@@ -74,6 +74,7 @@ REGLAGES_DEFAUT = {
     "equipe_fav": "",                                           # 26 oct 2026 : les accents de l'app aux couleurs de cette equipe
     "palette": "refractor",                                     # 27 oct 2026 : refractor + 5 paralleles
     "ia_photos_ok": False,                                      # 27 oct 2026 : permission explicite (Apple 5.1.2(i))
+    "ia_entrainement_ok": False,                                # 3 nov 2026 : photos d'examen gardees pour entrainer l'IA (OUI explicite)
     "frais_ebay_pct": 13.25, "frais_ebay_fixe": 0.40,           # eBay Canada, cartes (a ajuster a ton compte)
     "frais_break_pct": 10.9, "frais_break_fixe": 0.30,          # plateforme de live (ex. commission + paiement)
     "taxes_pct": 14.975,                                        # TPS + TVQ (Quebec)
@@ -138,9 +139,10 @@ _BASES_PRETES = set()      # 28 oct 2026 (vitesse) : schema et migrations verifi
 
 def _connecter(chemin=None):
     p = chemin or CHEMIN_DB
-    c = sqlite3.connect(p, timeout=30)
+    existe = os.path.exists(p)                 # 3 nov 2026 (revue) : AVANT connect (qui cree le fichier vide) : un compte
+    c = sqlite3.connect(p, timeout=30)         # supprime puis recree dans le meme processus n'avait plus de tables
     c.row_factory = sqlite3.Row
-    if p in _BASES_PRETES and os.path.exists(p):
+    if p in _BASES_PRETES and existe:
         return c
     c.executescript(SCHEMA)
     # 28 oct 2026 (vitesse) : index des places et frappes (la liste des breaks faisait 4 sous-requetes par break)
@@ -331,6 +333,53 @@ def popularite(cartes, maint=None):
                      "watchers": int(pops[0].get("watchers") or 0), "vues": pops[0].get("vues")} if pops else None)}
 
 
+
+def effacer_compte(cid):
+    """3 nov 2026 (revue de securite) : TOUT ce qui part avec un compte, quel que soit le chemin (dans l'app, avis eBay) :
+    l'abonnement Stripe annule, l'acces Apple retire, ses exemples d'entrainement, puis son dossier et ceux des anciens
+    comptes relies qui renvoyaient vers lui (sinon une reconnexion les rouvrait)."""
+    import comptes
+    import paiements
+    ix = {c: (comptes.info(c) or {}) for c in comptes.lister()}
+    groupe = [cid] + [c for c in ix if c != cid and comptes.resoudre(c) == cid]
+    for c in groupe:
+        info = ix.get(c) or {}
+        if info.get("stripe_abonnement"):        # 3 nov 2026 (revue) : meme impaye ou incomplet, on l'annule
+            try:
+                paiements._appel("DELETE", "subscriptions/" + str(info["stripe_abonnement"]))
+            except Exception as e:
+                try:
+                    import admin
+                    admin.noter_erreur("compte_supprimer stripe", e)
+                except Exception:
+                    pass
+        if info.get("apple_rt"):                 # 27 oct 2026 : Sign in with Apple -> acces retire chez Apple aussi
+            try:
+                import auth_tiers
+                auth_tiers.revoquer_apple(comptes.dechiffrer(info["apple_rt"]))
+            except Exception as e:
+                try:
+                    import admin
+                    admin.noter_erreur("compte_supprimer apple", e)
+                except Exception:
+                    pass
+        try:                                       # 3 nov 2026 : ses exemples de la banque d'entrainement aussi
+            import entrainement
+            entrainement.retirer_compte(c)
+        except Exception as e:
+            print("Entrainement (compte supprime) : " + repr(e), flush=True)
+        # 3 nov 2026 (revue de securite) : ce qu'il a laisse dans les fichiers partages (messages, vendeurs perso, votes)
+        for nom, f in (("demandes", lambda: __import__("demandes").retirer_compte(c)),
+                       ("vendeurs perso", lambda: __import__("deals").regler_vendeurs_perso(c, [])),
+                       ("votes", lambda: __import__("cartes_match").retirer_votant(c))):
+            try:
+                f()
+            except Exception as e:
+                print(f"Compte supprime ({nom}) : " + repr(e), flush=True)
+    for c in groupe[1:] + [cid]:
+        comptes.supprimer(c)
+    return groupe
+
 class Api:
     def __init__(self, chemin_db=None):
         self._chemin_fixe = chemin_db            # tests : base imposee
@@ -485,27 +534,7 @@ class Api:
             return {"ok": False, "erreur": "Rien à supprimer sur ce PC"}
         if str(confirmation or "").strip().upper() not in ("SUPPRIMER", "DELETE"):
             return {"ok": False, "erreur": "Écris SUPPRIMER pour confirmer"}
-        info = comptes.info(cid) or {}
-        if info.get("stripe_abonnement") and (info.get("forfait") == "pro"):
-            try:
-                paiements._appel("DELETE", "subscriptions/" + str(info["stripe_abonnement"]))
-            except Exception as e:
-                try:
-                    import admin
-                    admin.noter_erreur("compte_supprimer stripe", e)
-                except Exception:
-                    pass
-        if info.get("apple_rt"):                 # 27 oct 2026 : Sign in with Apple -> acces retire chez Apple aussi
-            try:
-                import auth_tiers
-                auth_tiers.revoquer_apple(comptes.dechiffrer(info["apple_rt"]))
-            except Exception as e:
-                try:
-                    import admin
-                    admin.noter_erreur("compte_supprimer apple", e)
-                except Exception:
-                    pass
-        comptes.supprimer(cid)
+        effacer_compte(cid)
         return {"ok": True, "deconnecter": True}
 
     def abonnement_payer(self):
@@ -621,6 +650,12 @@ class Api:
         return self.reglages_lire()
 
     def reglages_sauver(self, nouveaux):
+        if (nouveaux or {}).get("ia_entrainement_ok") is False and self.reglages_lire().get("ia_entrainement_ok"):
+            try:                                   # 3 nov 2026 : le OUI retire -> ses exemples quittent la banque sur-le-champ
+                import entrainement
+                entrainement.retirer_moi()
+            except Exception as e:
+                print("Entrainement (retrait) : " + repr(e), flush=True)
         with _verrou:
             c = self._db()
             try:
@@ -1035,6 +1070,21 @@ class Api:
             return {"ok": False, "erreur": "Réservé à l'administrateur"}
         import admin
         return admin.prolonger_essai(str(cid), int(_float(jours) or 7))
+
+    def admin_entrainement(self):
+        """3 nov 2026 : la banque d'entrainement de l'analyseur (combien d'exemples, avec vraie note, sous-notes, gros plans)."""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import entrainement
+        return {"ok": True, **entrainement.stats(), "export": "/admin/entrainement.zip"}
+
+    def admin_reference_ajouter(self, d):
+        """3 nov 2026 : une carte gradee de reference (photos, note, defaut connu) dans la banque d'entrainement."""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import entrainement
+        r = entrainement.ajouter_reference(d or {})
+        return {**r, **({"stats": entrainement.stats()} if r.get("ok") else {})}
 
     def admin_sante(self):
         if not self._est_admin():
@@ -2188,6 +2238,15 @@ class Api:
             finally:
                 c.close()
         defaut = self.reglages_lire().get("sport") or sports.DEFAUT
+        try:                                     # 3 nov 2026 : la variation du prix de chaque carte (7, 30, 90 jours)
+            import tendance_cartes
+            tend = tendance_cartes.lire(self)
+        except Exception as e:
+            print("Tendance des cartes (lecture) : " + repr(e), flush=True)
+            tend = {}
+        for r_ in out:
+            if r_.get("statut") != "Vendue" and r_.get("id") in tend:
+                r_["tendance"] = tend[r_["id"]]
         # 24 oct 2026 - repere prix : ton prix face aux memes cartes en vente (sante : mediane, plus bas, nombre)
         with _verrou:
             c = self._db()
@@ -2459,15 +2518,37 @@ class Api:
             return {"ok": True, "aucun": True, "photos_changees": bool(garde), "quota": q, "precision": precision}
         if not self.reglages_lire().get("ia_photos_ok"):
             return {"ok": False, "erreur": "Permission de lecture par l’IA requise", "consentement_requis": True}
+        try:                                   # 3 nov 2026 (revue de securite) : le quota AVANT tout travail sur les images
+            if vision.disponible():
+                vision._verifier_etat()
+        except vision.Erreur as e:
+            return {"ok": False, "erreur": str(e)}
         examen_ = bool(d.get("photos"))
+        nouveaux = []                          # 3 nov 2026 (revue) : les photos gardees par CET appel (effacees s'il echoue)
+        _entrees = {str(x) for x in (d.get("photos") or []) + [d.get("rasante"), d.get("rasante2")]
+                    + [g.get("photo") for g in (d.get("gros_plans") or []) if isinstance(g, dict)] if x}
+        _neufs = lambda: [r for r in nouveaux if str(r).startswith("/mes-photos/") and str(r) not in _entrees]   # jamais une photo deja gardee
         if examen_:                            # photos d'examen : gardees a part (les photos de la fiche ne changent pas)
             try:
                 refs = photos_cartes.sauver(list(d["photos"])[:2])
+                nouveaux += [r for r in refs if r not in (garde or {}).get("photos", [])]
                 ras_ref = photos_cartes.sauver([d["rasante"]] + ([d["rasante2"]] if d.get("rasante2") else [])) if d.get("rasante") else []
+                nouveaux += ras_ref
+                # 3 nov 2026 : les gros plans des coins (facultatifs), gardes avec l'examen
+                import bareme as _b
+                gps = []
+                for g in (d.get("gros_plans") or [])[:8]:
+                    if isinstance(g, dict) and g.get("photo") and g.get("coin") in _b.COINS and g.get("face") in ("devant", "dos") \
+                            and not any(x["face"] == g["face"] and x["coin"] == g["coin"] for x in gps):
+                        rr = photos_cartes.sauver([g["photo"]])
+                        nouveaux += rr
+                        if rr:
+                            gps.append({"face": g["face"], "coin": g["coin"], "ref": rr[0]})
             except ValueError as e:
+                photos_cartes.supprimer(_neufs())
                 return {"ok": False, "erreur": str(e)}
         else:
-            ras_ref = []
+            ras_ref, gps = [], []
         if not refs:
             return {"ok": False, "erreur": "Ajoute une photo de la carte (devant, et dos si possible)"}
         lire_b64 = lambda r: "data:image/jpeg;base64," + base64.b64encode(open(photos_cartes.chemin(r), "rb").read()).decode()
@@ -2478,13 +2559,25 @@ class Api:
             res = vision.etat(photos, langue or self.reglages_lire().get("langue") or "fr", quads=quads,
                               rasante=lire_b64(ras_ref[0]) if ras_ref else None,
                               rasante2=lire_b64(ras_ref[1]) if len(ras_ref) > 1 else None,
+                              gros_plans=[{"face": g["face"], "coin": g["coin"], "photo": lire_b64(g["ref"])} for g in gps],
                               calibration=etat_verite.calibration(), regles=etat_verite.regles(),
                               contexte={"titre": carte.get("titre"), "relique": bool(carte.get("relique")) or bool(_RE_RELIQUE.search(str(carte.get("titre") or "") + " " + str(carte.get("parallele") or ""))),
-                                        "auto": bool(carte.get("auto"))})
+                                        "auto": bool(carte.get("auto")), "slab": bool(d.get("slab"))})
         except vision.Erreur as e:
+            photos_cartes.supprimer(_neufs())
             return {"ok": False, "erreur": str(e)}
+        except Exception:
+            photos_cartes.supprimer(_neufs())
+            raise
         res = {k: v for k, v in res.items() if k not in ("ok", "cache")}
+        qu = res.pop("quads_utilises", None) or []          # 3 nov 2026 (revue) : le contour trouve par l'app, s'il n'y en avait pas
+        quads = [q if q else (qu[i] if i < len(qu) else None) for i, q in enumerate(quads + [None] * (len(refs) - len(quads)))][:len(refs)]
         res.update(photos=refs, quads=quads, examen=examen_, rasante=ras_ref[0] if ras_ref else None, rasante2=ras_ref[1] if len(ras_ref) > 1 else None)
+        if gps:
+            q_ = {(g.get("face"), g.get("coin")): g for g in res.pop("gros_plans_q", None) or []}
+            res["gros_plans"] = [dict(g, net=(q_.get((g["face"], g["coin"])) or {}).get("net")) for g in gps]
+        else:
+            res.pop("gros_plans_q", None)
         # 3 nov 2026 : l'image du RELIEF (une photo rasante, ou la difference de deux eclairages), gardee pour l'ecran
         if ras_ref:
             try:
@@ -2501,7 +2594,8 @@ class Api:
         res["centrage_algo"] = self.CENTRAGE_ALGO
         anciens = [v.get("img") for v in ((garde or {}).get("centrage_vue") or {}).values() if v.get("img")]
         if garde and garde.get("examen"):      # l'ancien examen : ses photos a lui ne servent plus
-            anciens += [x for x in (garde.get("photos") or []) + [garde.get("rasante"), garde.get("rasante2"), garde.get("relief_img")] if x and x not in refs]
+            anciens += [x for x in (garde.get("photos") or []) + [garde.get("rasante"), garde.get("rasante2"), garde.get("relief_img")]
+                        + [g.get("ref") for g in garde.get("gros_plans") or []] if x and x not in refs]
         le = _maintenant()
         with _verrou:
             c = self._db()
@@ -2517,7 +2611,7 @@ class Api:
                 pass
         return {"ok": True, **res, "le": le, "precision": precision}
 
-    CENTRAGE_ALGO = 3                 # 3 nov 2026 : + les paires en miroir (mesures.py) et les mesures de l'app
+    CENTRAGE_ALGO = 4                 # 3 nov 2026 : + les paires en miroir (mesures.py) et les mesures de l'app
 
     @staticmethod
     def _coherent(e):
@@ -2658,7 +2752,7 @@ class Api:
         return cv
 
     @staticmethod
-    def _affiner_quads(refs, quads, recherche=0.04):
+    def _affiner_quads(refs, quads, recherche=0.04, manuel=False):
         """2 nov 2026 (Mathieu : « ameliorer la detection des rebords ») : chaque contour envoye par le telephone, ajuste sur
         les vraies aretes de la photo (examen.affiner_quad). Un contour qu'on ne peut pas ameliorer reste tel quel."""
         import examen
@@ -2673,7 +2767,17 @@ class Api:
                 continue
             try:
                 with open(ch, "rb") as f:
-                    out.append(examen.affiner_quad(examen.ouvrir(f.read()), q, recherche))
+                    im_ = examen.ouvrir(f.read())
+                qa = examen.affiner_quad(im_, q, recherche)
+                # 3 nov 2026 (Mathieu : le gros plan d'un coin montrait le fond) : si l'app trouve un contour qui tranche
+                # nettement mieux (un vieux contour decale), elle le garde
+                try:
+                    import mesures
+                    if not manuel:                   # 3 nov 2026 (revue) : un contour place a la main n'est jamais remplace
+                        qa = mesures.meilleur_contour(im_, qa)
+                except Exception as e2:
+                    print("Contour (meilleur) : " + repr(e2), flush=True)
+                out.append(qa)
             except Exception as e:
                 print("Contour (ajuste) : " + repr(e), flush=True)
                 out.append(q)
@@ -2771,13 +2875,18 @@ class Api:
             qui = "ajusté par toi" if (dev.get("manuel") or dos.get("manuel")) else "mesuré par l’app"
             e.setdefault("explications", {})["centrage"] = qui + " : " + " · ".join(x for x in (dev.get("gd"), dev.get("hb")) if x) + \
                 ((" · dos " + (dos.get("gd") or dos.get("hb"))) if (dos.get("gd") or dos.get("hb")) else "")
-            pire = min([v for v in notes.values() if v] or [10])
-            hi = min(float(e.get("note_max") or pire + 0.5), pire + 0.5)
-            hi = vision._psa(min(10.0, hi))
-            if e.get("defauts"):
+            # 3 nov 2026 (revue) : la fourchette refaite avec le bareme (la pire sous-note), pas seulement rabaissee : un
+            # centrage corrige a la main peut aussi la remonter
+            import bareme as _bar
+            hi = _bar.globale(notes) or 9.0
+            if any(d_.get("gravite") not in ("a verifier",) and not d_.get("masque") for d_ in e.get("defauts") or []):
                 hi = min(hi, 9.0)
+            bas_ = {**notes, **{k: v for k, v in (e.get("notes_bas") or {}).items() if v is not None}}
+            lo = _bar.globale(bas_) or hi
+            if not e.get("notes_bas") and any(d_.get("gravite") == "a verifier" and not d_.get("masque") for d_ in e.get("defauts") or []):
+                lo = min(lo, _bar.psa(hi - 1))           # ancien examen sans bas de fourchette par categorie : la regle de _coherent
             e["note_max"] = hi
-            e["note_min"] = vision._psa(min(float(e.get("note_min") or hi), hi))
+            e["note_min"] = min(lo, hi)
         with _verrou:
             c = self._db()
             try:
@@ -2812,7 +2921,7 @@ class Api:
         aire = abs(sum(q[i][0] * q[(i + 1) % 4][1] - q[(i + 1) % 4][0] * q[i][1] for i in range(4))) / 2
         if aire < 40000:                                   # moins de 4 % de la photo : un clic de travers
             return {"ok": False, "erreur": "Le contour est trop petit : place les coins sur ceux de la carte"}
-        q = self._affiner_quads(refs[:j + 1], [None] * j + [q], 0.015)[j] or q      # colle aux aretes, a 1,5 % pres
+        q = self._affiner_quads(refs[:j + 1], [None] * j + [q], 0.015, manuel=True)[j] or q      # colle aux aretes, a 1,5 % pres
         quads = list(e.get("quads") or [])
         while len(quads) <= j:
             quads.append(None)
@@ -2872,6 +2981,12 @@ class Api:
                 c.commit()
             finally:
                 c.close()
+        if v is not None and self.reglages_lire().get("ia_entrainement_ok"):
+            try:                                   # 3 nov 2026 : un defaut confirme / rejete = une etiquette pour l'entrainement
+                import entrainement
+                entrainement.ajouter(carte, e, raison="avis")
+            except Exception as x:
+                print("Entrainement (avis) : " + repr(x), flush=True)
         return {"ok": True, "avis": avis}
 
     # -- 1er nov 2026 (Mathieu : « les cartes de la collection qu'on envoie se faire grader, et celles qu'on envoie en
@@ -2898,9 +3013,16 @@ class Api:
             if avant.get("type") == "gradation":
                 try:                           # 1er nov 2026 : la vraie note, comparee a l'examen d'avant l'envoi
                     import etat_verite
-                    etat_verite.noter(carte.get("etat_json"), r.get("grade"), avant.get("compagnie"))
+                    etat_verite.noter(carte.get("etat_json"), r.get("grade"), avant.get("compagnie"), r.get("sous_notes"))
                 except Exception:
                     pass
+                # 3 nov 2026 : la banque d'entrainement (seulement avec le OUI) : photos d'examen + mesures + vraie note
+                if (r.get("grade") or r.get("sous_notes")) and self.reglages_lire().get("ia_entrainement_ok"):
+                    try:
+                        import entrainement
+                        entrainement.ajouter(carte, carte.get("etat_json"), {**r, "compagnie": avant.get("compagnie")})
+                    except Exception as e:
+                        print("Entrainement (retour) : " + repr(e), flush=True)
                 if avant.get("cout") and r.get("garder_cout", True):
                     maj["cout"] = round((carte.get("cout") or 0) + float(avant["cout"]), 2)
                 g = txt(r.get("grade"), 20)
@@ -3109,7 +3231,7 @@ class Api:
         except Exception as e:
             return {"ok": False, "erreur": str(e)}
         vs = [v for v in r.get("ventes") or [] if v.get("prix")]
-        val = r.get("mediane") or (round(statistics.median(float(v["prix"]) for v in vs), 2) if vs else None)
+        val = r.get("mediane")                   # 3 nov 2026 (revue) : seulement une valeur SURE (jamais la mediane d'une vente)
         return {"ok": True, "valeur": val, "n": len(vs), "note": n, "compagnie": cie, "sure": bool(r.get("mediane"))}
 
     def gradation_rentabilite(self, cid, compagnie="PSA", port=None):
@@ -3130,14 +3252,51 @@ class Api:
             return {"ok": True, "verdict": "examiner", "valeur_raw": carte.get("valeur")}
         notes = sorted(gradation.probas(bas, haut))
         with ThreadPoolExecutor(max_workers=4) as ex:
-            res = dict(zip(notes, ex.map(lambda g: self.valeur_gradee(cid, g, compagnie), notes)))
+            # 3 nov 2026 (revue) : chaque fil garde le compte de la requete (sinon : la base du serveur, multi-comptes)
+            import contextvars
+            ctxs = {g: contextvars.copy_context() for g in notes}          # copies faites ICI (fil de la requete)
+            res = dict(zip(notes, ex.map(lambda g: ctxs[g].run(self.valeur_gradee, cid, g, compagnie), notes)))
         vals = {g: {"valeur": r.get("valeur"), "n": r.get("n", 0)} for g, r in res.items() if r and r.get("ok")}
         rg = self.reglages_lire()
         taux = ebay_compte._taux_vers_cad("USD") or 1.38
+        cie = "TAG" if str(compagnie or "").upper() == "TAG" else "PSA"
         out = gradation.calculer(_float(carte.get("valeur")), vals, bas, haut, taux, (rg["frais_ebay_pct"] or 0) / 100,
-                                 rg["frais_ebay_fixe"] or 0, 1, _float(port))
-        out.update(valeur_raw=_float(carte.get("valeur")), bas=bas, haut=haut, compagnie=compagnie, ancienne=bool(et.get("ancienne") or not et.get("bareme")))
+                                 rg["frais_ebay_fixe"] or 0, 1, _float(port), compagnie=cie, taxes_pct=_float(rg.get("taxes_pct")) or 0)
+        out.update(valeur_raw=_float(carte.get("valeur")), bas=bas, haut=haut, compagnie=cie, ancienne=bool(et.get("ancienne") or not et.get("bareme")))
         return out
+
+    def gradation_comparer(self, cid):
+        """3 nov 2026 (Mathieu : « TAG aussi ; l'utilisateur choisit au debut ; un moyen leger de l'informer sur la meilleure
+        decision ») : PSA et TAG cote a cote pour CETTE carte : gain attendu, cout, delai, et combien de ventes gradees
+        appuient le calcul. Le meilleur choix : le plus gros gain attendu, a condition d'avoir assez de ventes."""
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=2) as ex:
+            import contextvars
+            ctx = [contextvars.copy_context(), contextvars.copy_context()]
+            r = dict(zip(("PSA", "TAG"), ex.map(lambda i_c: ctx[i_c[0]].run(self.gradation_rentabilite, cid, i_c[1]), enumerate(("PSA", "TAG")))))
+        out = {}
+        for c, x in r.items():
+            if not x or not x.get("ok"):
+                out[c] = {"ok": False}
+                continue
+            sv = x.get("service") or {}
+            out[c] = {"ok": True, "verdict": x.get("verdict"), "gain": x.get("gain"), "cout": x.get("cout"), "service": sv.get("nom"),
+                      "jours": sv.get("jours"), "valeur_esperee": x.get("valeur_esperee"), "ventes": sum(l.get("n") or 0 for l in x.get("lignes") or []),
+                      "retour_prevu": x.get("retour_prevu")}
+        ok = {c: v for c, v in out.items() if v.get("ok") and v.get("gain") is not None and v.get("verdict") not in ("pas_assez", "examiner")}
+        meilleur = max(ok, key=lambda c: ok[c]["gain"]) if ok else None
+        raison = None
+        if meilleur and len(ok) == 2:
+            autre = "TAG" if meilleur == "PSA" else "PSA"
+            d = ok[meilleur]["gain"] - ok[autre]["gain"]
+            raison = "gain" if d >= 15 else "egal"
+            if raison == "egal":                       # a gain egal : la revente la plus sure (plus de ventes) ou le plus rapide
+                meilleur = max(ok, key=lambda c: (ok[c]["ventes"], -((ok[c]["jours"] or [999])[0])))
+                raison = "ventes"
+        elif meilleur:
+            raison = "seul"                            # l'autre n'a pas assez de ventes pour juger : revente moins sure
+        return {"ok": True, "examiner": all(v.get("verdict") == "examiner" for v in out.values() if v.get("ok")), "compagnies": out,
+                "meilleur": meilleur, "raison": raison, "valeur_raw": _float((self.carte_lire(cid) or {}).get("valeur"))}
 
     def soumission_retour(self, sid, notes=None):
         """Toute la soumission revient : chaque carte recoit sa note et son certificat (si donnes) ; le cout de gradation
@@ -3151,7 +3310,8 @@ class Api:
             if x.get("revenue"):
                 continue
             r = notes.get(str(x["id"])) or {}
-            if self.carte_envoi(x["id"], {"retour": {"grade": r.get("grade"), "cert": r.get("cert")}}).get("ok"):
+            if self.carte_envoi(x["id"], {"retour": {"grade": r.get("grade"), "cert": r.get("cert"), "sous_notes": r.get("sous_notes"),
+                                                     "lien": r.get("lien")}}).get("ok"):
                 n += 1
         with _verrou:
             c = self._db()
@@ -3233,6 +3393,13 @@ class Api:
             except ValueError:
                 x = []
             refs += [r for r in (x if isinstance(x, list) else []) if r not in refs]
+        try:                                       # 3 nov 2026 : les photos de l'examen aussi (rasantes, relief, gros plans, gabarits)
+            e = json.loads((self.carte_lire(cid) or {}).get("etat_json") or "null") or {}
+            refs += [r for r in (e.get("photos") or []) + [e.get("rasante"), e.get("rasante2"), e.get("relief_img")]
+                     + [g.get("ref") for g in e.get("gros_plans") or []] + [v.get("img") for v in (e.get("centrage_vue") or {}).values() if isinstance(v, dict)]
+                     if r and str(r).startswith("/mes-photos/") and r not in refs]
+        except (ValueError, AttributeError):
+            pass
         photos_cartes.supprimer(refs)
         with _verrou:
             c = self._db()
@@ -4349,12 +4516,21 @@ class Api:
 
     def ebay_donnees_test(self, n=20):
         """Lance la creation en arriere-plan (une seule a la fois) ; suivre avec ebay_donnees_test_etat."""
-        e = getattr(self, "_test_etat", None)
+        # 3 nov 2026 (revue de securite) : l'etat de la tache est celui du COMPTE (pas de l'objet partage par tous), et la
+        # tache garde le compte (contexte copie)
+        import contextvars
+        etats = self.__dict__.setdefault("_test_etats", {})
+        k = comptes.courant() or "local"
+        e = etats.get(k)
         if e and e.get("actif"):
             return {"ok": True, "deja": True, **e}
-        self._test_etat = e = {"actif": True, "faits": 0, "total": int(n or 20), "creees": 0, "erreurs": []}
+        etats[k] = e = {"actif": True, "faits": 0, "total": int(n or 20), "creees": 0, "erreurs": []}
+        ctx = contextvars.copy_context()
 
         def tache():
+            ctx.run(_tache)
+
+        def _tache():
             try:
                 def prog(i, total):
                     e.update(faits=i, total=total)
@@ -4374,7 +4550,7 @@ class Api:
         return self._ecrire_ebay("livraison_us_tests")
 
     def ebay_donnees_test_etat(self):
-        return dict(getattr(self, "_test_etat", None) or {"actif": False})
+        return dict((self.__dict__.get("_test_etats") or {}).get(comptes.courant() or "local") or {"actif": False})
 
     def ebay_synchroniser(self, jours=90):
         """Annonces actives + ventes des `jours` derniers jours, avec les frais reels."""
@@ -4490,6 +4666,11 @@ class Api:
             r["valeur"] = suivi_valeur.verifier(self)
         except Exception as e:
             print("Suivi valeur : " + repr(e), flush=True)
+        try:                                    # 3 nov 2026 : la variation du prix de chaque carte (une fois par jour, sans credit)
+            import tendance_cartes
+            r["tendances"] = tendance_cartes.maj(self)
+        except Exception as e:
+            print("Tendance des cartes : " + repr(e), flush=True)
         return r
 
     # -- 29 oct 2026 (Mathieu : « une alarme quand la carte de ma collection prend ou perd de la valeur ») --
@@ -4500,7 +4681,9 @@ class Api:
         r = suivi_valeur.regler(self, cid, bool(actif))
         if actif and r.get("ok") and not r.get("reference"):
             import threading                          # pas encore de valeur : la premiere, tout de suite, en arriere-plan
-            threading.Thread(target=lambda: self._suivi_premier(cid), daemon=True).start()
+            import contextvars
+            ctx_ = contextvars.copy_context()                    # 3 nov 2026 (revue) : le fil garde le compte
+            threading.Thread(target=lambda: ctx_.run(self._suivi_premier, cid), daemon=True).start()
         return r
 
     def carte_valeur(self, cid):
@@ -5371,9 +5554,9 @@ class Api:
             # 29 oct 2026 (Mathieu : « encore que des caliss de rookies dans tes deals ») : veterans, legendes et jeunes de
             # 2e a 4e annee d'abord (hits compris) ; les recrues de l'annee ensuite (le chip « Recrues » les montre seules)
             lst = [x for x in lst if not x["recrue"]] + [x for x in lst if x["recrue"]]
-        elif not f.get("sortes") and not f.get("joueurs"):
-            # 3 nov 2026 (Mathieu : « que des rookies ou Young Guns dans les deals... ENCORE », en « Finit bientot ») : dans les
-            # autres tris aussi, une recrue de l'annee n'en suit jamais une autre tant qu'il reste un veteran ou une legende
+        elif tri in ("fin", "recent") and not f.get("sortes") and not f.get("joueurs"):
+            # 3 nov 2026 (Mathieu : « que des rookies ou Young Guns dans les deals... ENCORE », en « Finit bientot ») : en
+            # « finit bientot » et « nouveaux » aussi (pas en profit ni en prix : la, un seul classement, comme demande), une recrue de l'annee n'en suit jamais une autre tant qu'il reste un veteran ou une legende
             # (l'ordre du tri est garde dans chaque groupe ; les maisons a volume restent a la fin)
             def entrelacer(l):
                 v, r, out = [x for x in l if not x["recrue"]], [x for x in l if x["recrue"]], []
@@ -5384,7 +5567,9 @@ class Api:
                         out.append(r.pop(0))
                 return out
             fin = [x for x in lst if _dl.rang_honnete(x) == 3]
-            lst = entrelacer([x for x in lst if _dl.rang_honnete(x) != 3]) + entrelacer(fin)
+            # 3 nov 2026 (revue) : en « finit bientot », les encans restent devant les prix fixes (entrelaces chacun de son cote)
+            par = (lambda l: entrelacer([x for x in l if x.get("encan")]) + entrelacer([x for x in l if not x.get("encan")])) if tri == "fin" else entrelacer
+            lst = par([x for x in lst if _dl.rang_honnete(x) != 3]) + par(fin)
         prof = self._profil_deals()                      # 30 oct 2026 : mon profil de deals (Reglages)
         lst = self._appliquer_profil(lst, prof)
         lst = self._objectif_deals(lst, f)
@@ -5435,7 +5620,7 @@ class Api:
                 if vc is None and str(x.get("item_id")) not in self._VAL_CACHE:
                     plus_tard.append(x)
                 if vc:
-                    x = dict(x, valeur=vc[0], n=vc[1], mise_max=round(vc[0] * _dl.RATIO_DEAL - (x.get("port") or 0), 2))
+                    x = dict(x, valeur=vc[0], n=vc[1], mise_max=round(vc[0] * _dl.RATIO_DEAL - _dl.port_eff(x.get("port")), 2))
             y = self._ramasser(dict(x, source="marche", recrue=bool(x.get("recrue"))), chez_s)
             if y.get("valeur"):
                 y["gain"] = round(y["valeur"] * (1 - fp_) - ff_ - (y.get("total") or 0), 2)
@@ -5590,6 +5775,9 @@ class Api:
         except (RuntimeError, OSError) as e:
             a = {"item_id": str(item_id), "titre": titre or "", "photos": [], "erreur": str(e)}
         t = a.get("titre") or titre or ""
+        if a.get("prix_cad") and a.get("port_cad") is None:     # 3 nov 2026 (revue) : port pas affiche -> estime, comme les deals
+            import deals as _dlp
+            a["port_cad"], a["port_estime"] = _dlp.PORT_INCONNU, True
         comps, med, n = [], None, 0
         if t:
             try:
@@ -5648,7 +5836,7 @@ class Api:
         vs_ = _deals.valeur_sure([x for x in (vc.get("ventes") or []) if x.get("prix")], t or "") if nb_v >= 2 else (None, "pas assez de ventes")
         vm = vs_[0]
         pourquoi = None if vm else (vc.get("erreur") or (vs_[1] if isinstance(vs_[1], str) else None))
-        if vm and med and n >= 3 and vm > med:
+        if vm and med and n >= 3:                 # 3 nov 2026 (revue) : le meme plafond que le chasseur (deals.valeur_annonce)
             vm = min(vm, round(med * 0.85, 2))
         valeur = vm
         juger = bool(vm)
@@ -5661,7 +5849,21 @@ class Api:
                        "achat_max": round(max(0.0, valeur * _deals.RATIO_DEAL), 2), "source": "vendues" if vm else "annonces"}
         # 26 oct 2026 (Mathieu : « les deals sont pas bons avec les last sold ») : la fenetre a les ventes de CETTE carte ;
         # si elles disent que ce n'est pas un deal, l'annonce sort des deals de tout le monde (et sa valeur est corrigee)
-        if not rapide and total:
+        # 3 nov 2026 : ventes PAS LUES (SoldComps en panne, budget du jour) : on ne corrige rien (avant : le deal etait retire
+        # pour tout le monde a la moindre panne) ; et la fiche reprend la valeur que le chasseur avait trouvee avec les ventes
+        panne = bool(vc.get("erreur_ebay") or vc.get("erreur"))        # eBay pas lu (meme avec une vente SlabCoach)
+        chasseur = None
+        if panne and not juger:
+            try:
+                import deals as _dl1
+                x_ = next((g for g in (_dl1.lire().get("deals") or []) if str(g.get("item_id")) == str(item_id) and g.get("valeur")), None)
+                if x_:
+                    chasseur = {"valeur": x_["valeur"], "le": x_.get("vu_le")}
+                    valeur, juger = x_["valeur"], True
+                    suggere = {"vente": valeur, "achat_max": round(max(0.0, valeur * _deals.RATIO_DEAL), 2), "source": "chasseur"}
+            except Exception as e:
+                print("Deals (valeur du chasseur) : " + repr(e), flush=True)
+        if not rapide and total and not panne:
             try:
                 import deals as _dl
                 gain_v = round(valeur * (1 - fp) - ff - total, 2) if valeur and juger else None
@@ -5672,7 +5874,8 @@ class Api:
             return {"ok": True, "article": {**a, "total": total}, "comps": [], "n": 0, "coupe": True}
         return {"ok": True, "article": {**a, "total": total}, "comps": comps, "mediane": med, "n": n, "deal_retire": bool(maj_deal and maj_deal.get("retire")),
                 "suggere": suggere, "ventes": ventes, "mediane_vendue": vc.get("mediane"), "nb_vendues": vc.get("nb") or len(ventes),
-                "valeur": valeur, "valeur_source": "vendues" if vm else "annonces", "ventes_attente": bool(vc.get("attente")),
+                "valeur": valeur, "valeur_source": "chasseur" if chasseur else "vendues" if vm else "annonces", "ventes_attente": bool(vc.get("attente")),
+                "valeur_chasseur": chasseur, "ventes_panne": panne, "vieux_cache": bool(vc.get("vieux_cache")),
                 "points": vc.get("points") or [], "tendance": vc.get("tendance"), "autres_joueurs": autres,
                 "rabais": round(100 * (1 - total / valeur)) if total and valeur and juger else None,
                 "gain": round(valeur * (1 - fp) - ff - total, 2) if total and valeur and juger else None,
@@ -5725,7 +5928,7 @@ class Api:
         g = next((x for x in deals.lire_vite().get("deals") or [] if str(x.get("item_id")) == iid), {})
         ctx = {"item_id": iid, "titre": d.get("titre") or g.get("titre"), "prix": d.get("total") or g.get("total"),
                "valeur_calculee": d.get("valeur") or g.get("valeur"), "source_valeur": d.get("valeur_source") or g.get("valeur_source"),
-               "nb": d.get("n") or g.get("n"), "recherche": g.get("q") or d.get("q"), "url": d.get("url") or g.get("url"),
+               "nb": d.get("n") or g.get("n"), "recherche": g.get("q") or d.get("q"), "url": (d.get("url") if re.match(r"https://([a-z0-9-]+\.)*ebay\.[a-z.]+/", str(d.get("url") or "")) else None) or g.get("url"),
                "ventes": [{k: v.get(k) for k in ("titre", "prix", "le")} for v in (d.get("ventes") or g.get("vendues") or [])[:8]],
                "annonces": [{k: v.get(k) for k in ("titre", "total")} for v in (d.get("comps") or g.get("comps") or [])[:8]]}
         raison = str(d.get("raison") or "").strip()[:300]

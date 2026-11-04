@@ -23,7 +23,7 @@ assert comptes.resoudre(o) == r and comptes.info(o).get("renvoi") == r and o in 
 assert comptes.trouver_connexion("google:autre", "X", "google", None)[0] == r
 # 4. code d'appareil : 6 chiffres, un seul usage, ouvre le bon compte
 c = comptes.code_creer(a)
-assert len(c) == 6 and c.isdigit()
+assert len(c) == 8 and c.isdigit()          # 3 nov 2026 : 8 chiffres
 assert comptes.code_utiliser("12") is None
 assert comptes.code_utiliser(c[:3] + " " + c[3:]) == a
 assert comptes.code_utiliser(c) is None                     # deja utilise
@@ -31,11 +31,11 @@ assert comptes.code_utiliser(c) is None                     # deja utilise
 import server
 cl = server.app.test_client()
 c2 = comptes.code_creer(a)
-rep = cl.post("/auth/code", data={"code": c2})
+rep = cl.post("/auth/code", data={"code": c2}, headers={"Origin": "http://localhost"})
 assert rep.status_code == 302 and rep.headers["Location"].endswith("/#accueil"), rep.status_code
 with cl.session_transaction() as s:
     assert s["compte"] == a
-assert "Code invalide" in cl.post("/auth/code", data={"code": "000000"}).get_data(as_text=True)
+assert "Code invalide" in cl.post("/auth/code", data={"code": "000000"}, headers={"Origin": "http://localhost"}).get_data(as_text=True)
 # 6. une session ouverte sur un ancien compte relie passe au compte choisi
 cl2 = server.app.test_client()
 with cl2.session_transaction() as s:

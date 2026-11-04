@@ -41,7 +41,7 @@ SCRIPT = textwrap.dedent('''
     f = c.post("/api/forfait", json=[]).get_json()
     assert f["multi"] and f["forfait"] == "gratuit" and f["paiements"] and f["mode_paiement"] == "test", f
     # 24 oct 2026 : nouveau compte = essai Pro de 14 jours (photos illimitees), puis 25 photos par mois
-    assert f["prix"] == {"montant": 1.0, "devise": "CAD", "intervalle": "month"} and f["essai"] and f["photos_limite"] is None, f
+    assert f["prix"] == {"montant": 1.0, "devise": "CAD", "intervalle": "month"} and f["essai"] and f["photos_limite"] == 150, f      # 3 nov 2026 : un plafond d'usage pendant l'essai
     comptes.maj(cid, cree_le="2026-01-01T00:00:00")
     f = c.post("/api/forfait", json=[]).get_json()
     assert not f["essai"] and not f["pro"] and f["photos_limite"] == 25, f
@@ -72,7 +72,7 @@ SCRIPT = textwrap.dedent('''
     assert i["forfait"] == "pro" and i["stripe_client"] == "cus_1" and i["forfait_fin"] == 1790000000, i
     assert envoyer(paye).get_json()["recu"] == "déjà traité"
     f = c.post("/api/forfait", json=[]).get_json()
-    assert f["forfait"] == "pro" and f["photos_limite"] is None and f["client"], f
+    assert f["forfait"] == "pro" and f["photos_limite"] == 800 and f["client"], f      # 3 nov 2026 : plafond d'usage Pro
     assert c.post("/api/abonnement_gerer", json=[]).get_json()["url"].startswith("https://billing.stripe.com")
 
     # annulation demandee : Pro jusqu'a la fin de la periode, puis gratuit
@@ -120,8 +120,8 @@ SCRIPT = textwrap.dedent('''
     assert c.get("/demo").status_code == 404
     os.environ["LOCKERROOM_DEMO_CODE"] = "DEMO-2026"
     c2 = server.app.test_client()
-    assert c2.post("/demo", data={"code": "mauvais"}).status_code == 200
-    r = c2.post("/demo", data={"code": "DEMO-2026"})
+    assert c2.post("/demo", data={"code": "mauvais"}, headers={"Origin": "http://localhost"}).status_code == 200
+    r = c2.post("/demo", data={"code": "DEMO-2026"}, headers={"Origin": "http://localhost"})
     assert r.status_code == 302
     f = c2.post("/api/forfait", json=[]).get_json()
     assert f["demo"] and not f["pro"], f          # 28 oct 2026 : compte demo GRATUIT (Apple doit voir l achat integre)

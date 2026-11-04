@@ -492,12 +492,21 @@ def apprendre(recherche, item_id, titre, bonne, votant=None, confiance=True):
             if len(d["attente"]) > 2000:
                 d["attente"] = dict(list(d["attente"].items())[-1500:])
         elif bonne:
-            if str(item_id) in lst:
-                lst.remove(str(item_id))
-            oui = d["oui"].setdefault(sig, [])
-            if str(item_id) not in oui:
-                oui.append(str(item_id))
-                d["oui"][sig] = oui[-200:]
+            # 3 nov 2026 (revue de securite) : « c'est la bonne carte » sert a tout le monde (l'annonce passe tous les
+            # filtres) : il faut 2 comptes (ou l'admin), et seul l'admin annule un refus vote par d'autres
+            att = d.setdefault("attente_oui", {}).setdefault(cle_att, [])
+            if qui not in att:
+                att.append(qui)
+            if confiance or len(att) >= 2:
+                if confiance and str(item_id) in lst:
+                    lst.remove(str(item_id))
+                oui = d["oui"].setdefault(sig, [])
+                if str(item_id) not in oui and str(item_id) not in lst:
+                    oui.append(str(item_id))
+                    d["oui"][sig] = oui[-200:]
+                d["attente_oui"].pop(cle_att, None)
+            if len(d["attente_oui"]) > 2000:
+                d["attente_oui"] = dict(list(d["attente_oui"].items())[-1500:])
         cpt = d["refus"] if not bonne else d["bons"]
         for m in mots_t:
             cpt[m] = cpt.get(m, 0) + 1
@@ -511,6 +520,27 @@ def apprendre(recherche, item_id, titre, bonne, votant=None, confiance=True):
             json.dump(d, f, ensure_ascii=False)
         os.replace(tmp, _chemin())
     return {"ok": True}
+
+
+def retirer_votant(votant):
+    """3 nov 2026 (revue de securite) : le compte supprime : ses votes en attente et son empreinte sortent des listes."""
+    import hashlib
+    qui = hashlib.sha256(str(votant or "local").encode()).hexdigest()[:10]
+    with _verrou:
+        d = _lire()
+        for cle in ("attente", "attente_oui", "votants"):
+            for k, v in list((d.get(cle) or {}).items()):
+                if isinstance(v, list) and qui in v:
+                    v = [x for x in v if x != qui]
+                    if v:
+                        d[cle][k] = v
+                    else:
+                        d[cle].pop(k, None)
+        d["jour"] = {k: v for k, v in (d.get("jour") or {}).items() if not k.endswith(qui)}
+        tmp = _chemin() + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(d, f, ensure_ascii=False)
+        os.replace(tmp, _chemin())
 
 
 def appris(recherche=None):

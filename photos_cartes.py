@@ -34,6 +34,35 @@ def chemin(ref):
     return f if os.path.isfile(f) else None
 
 
+MAX_PIXELS = 40_000_000                 # 3 nov 2026 (revue de securite) : 8000 x 5000 au plus (une photo de 48 Mpx passe)
+QUOTA_MO = float(os.environ.get("LR_PHOTOS_QUOTA_MO") or 1500)     # par compte (un abus ne remplit pas le disque partage)
+
+
+def _taille_ok(brut):
+    """Les dimensions lues dans l'en-tete, sans decoder l'image (une petite image geante = une bombe)."""
+    try:
+        import io
+        from PIL import Image
+        with Image.open(io.BytesIO(brut)) as im:
+            w, h = im.size
+    except ImportError:
+        return
+    except Exception:
+        return                          # pas une image lisible : rien a decoder plus tard non plus (pas de bombe)
+    if w * h > MAX_PIXELS or max(w, h) > 12000:
+        raise ValueError("Photo trop grande : reprends-la")
+
+
+def _quota_ok(n):
+    d = dossier()
+    try:
+        tot = sum(e.stat().st_size for e in os.scandir(d) if e.is_file())
+    except OSError:
+        return
+    if tot + n > QUOTA_MO * 1e6:
+        raise ValueError("Espace photos plein : supprime des cartes ou d’anciennes photos")
+
+
 def sauver(photos):
     """Liste de photos (data URL, URL https d'eBay ou /mes-photos/ deja gardee) -> liste de references."""
     out = []
@@ -53,6 +82,8 @@ def sauver(photos):
             raise ValueError("Photo trop lourde ou illisible : reprends-la")
         if not (brut[:3] == b"\xff\xd8\xff" or brut[:8] == b"\x89PNG\r\n\x1a\n" or (brut[:4] == b"RIFF" and brut[8:12] == b"WEBP")):
             raise ValueError("Format de photo non pris en charge")
+        _taille_ok(brut)
+        _quota_ok(len(brut))
         nom = secrets.token_hex(8) + ".jpg"
         with open(os.path.join(dossier(), nom), "wb") as f:
             f.write(brut)

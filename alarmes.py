@@ -98,7 +98,11 @@ def _notifier(api, etat, cle, titre, texte, lien, total=None, photo=None, maint=
         c.commit()
     finally:
         c.close()
-    jour = datetime.now().strftime("%Y-%m-%d")
+    try:                                                 # 3 nov 2026 (revue) : le jour de Montreal (le serveur est en UTC)
+        from zoneinfo import ZoneInfo
+        jour = datetime.now(ZoneInfo("America/Toronto")).strftime("%Y-%m-%d")
+    except Exception:
+        jour = datetime.now().strftime("%Y-%m-%d")
     q = etat.setdefault("push", {})
     if q.get("jour") != jour:
         q.clear()

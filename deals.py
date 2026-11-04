@@ -157,7 +157,7 @@ def corriger(item_id, valeur, gain, total):
             d = lire()
             for g in d.get("suivis") or []:
                 if str(g.get("item_id")) == iid:
-                    g.update(valeur=valeur, mise_max=round(valeur * RATIO_DEAL - (g.get("port") or 0), 2))
+                    g.update(valeur=valeur, mise_max=round(valeur * RATIO_DEAL - port_eff(g.get("port")), 2))
             _ecrire(d)
     l = d.get("deals") or []
     x = next((g for g in l if str(g.get("item_id")) == iid), None)
@@ -170,9 +170,10 @@ def corriger(item_id, valeur, gain, total):
         if not retirer:
             for g in l:
                 if str(g.get("item_id")) == iid:
-                    g.update(valeur=valeur, ratio=round(total / valeur, 3) if total else g.get("ratio"))
+                    g.update(valeur=valeur, ratio=round(total / valeur, 3) if total else g.get("ratio"),
+                             corrige_le=datetime.now(timezone.utc).isoformat(timespec="seconds"))
                     if g.get("encan"):          # 27 oct 2026 (revue) : la mise max suit la nouvelle valeur
-                        g["mise_max"] = round(valeur * RATIO_DEAL - (g.get("port") or 0), 2)
+                        g["mise_max"] = round(valeur * RATIO_DEAL - port_eff(g.get("port")), 2)
                         if g["mise_max"] <= (g.get("total") or 0) - (g.get("port") or 0):
                             retirer = True
         if retirer:
@@ -283,7 +284,7 @@ def maj_prix(item_id, total, port=None, mises=None, fin=None):
             if y.get("valeur"):
                 y["ratio"] = round(y["total"] / y["valeur"], 3)
                 if y.get("encan"):
-                    y["mise_max"] = round(y["valeur"] * RATIO_DEAL - (y.get("port") or 0), 2)
+                    y["mise_max"] = round(y["valeur"] * RATIO_DEAL - port_eff(y.get("port")), 2)
         if x and x.get("valeur") and x["total"] > x["valeur"] * RATIO_DEAL:
             d["deals"] = [y for y in d.get("deals") or [] if str(y.get("item_id")) != k]
             _noter_retires(d, [k])
@@ -311,7 +312,7 @@ def _revalider_un(x):
         return None
     x.update(valeur=m, vendues=bons, ratio=round(x["total"] / m, 3))
     if x.get("encan"):
-        x["mise_max"] = round(m * RATIO_DEAL - (x.get("port") or 0), 2)
+        x["mise_max"] = round(m * RATIO_DEAL - port_eff(x.get("port")), 2)
     return x
 
 
@@ -362,7 +363,7 @@ def _rejuger(x):
         return False
     x.update(valeur=m, ratio=round(x["total"] / m, 3), v=VERSION)
     if x.get("encan"):
-        x["mise_max"] = round(m * RATIO_DEAL - (x.get("port") or 0), 2)
+        x["mise_max"] = round(m * RATIO_DEAL - port_eff(x.get("port")), 2)
     return True
 
 
@@ -458,6 +459,12 @@ VEDETTES = _intercaler(_VEDETTES_28, _JEUNES_29, _LEGENDES_29, _ETOILES_29)
 
 
 PORT_INCONNU = 15.0              # 27 oct 2026 : port non affiche (calcule a l'adresse) -> on compte 15 $ pour ne pas surestimer le deal
+
+
+def port_eff(port):
+    """3 nov 2026 (revue) : le port pour les calculs : inconnu -> PORT_INCONNU, comme le total (avant : 0 dans la mise max,
+    15 $ dans le total : la mise max etait surestimee de 15 $ quand le port n'etait pas affiche)."""
+    return PORT_INCONNU if port is None else (port or 0)
 
 
 def _total(a):
@@ -726,6 +733,7 @@ def _verificateur(d, st, bassin):
         max_ = int(os.environ.get("LR_DEALS_VERIF_JOUR") or VERIF_JOUR)
     except ValueError:
         max_ = VERIF_JOUR
+    max_ = vendues.budget_du_jour(max_)                # 3 nov 2026 : plus le jeudi (beaucoup d'encans finissent), meme total/semaine
     jour, heure = _jour_mtl()
     v = d.setdefault("verif", {})
     if v.get("jour") != jour:
@@ -840,10 +848,12 @@ def prio_ok(heure=None):
 
 
 def prio_max():
+    import vendues
     try:
-        return max(0, int(os.environ.get("LR_DEALS_VERIF_PRIO") or PRIO_VERIF_JOUR))
+        b = max(0, int(os.environ.get("LR_DEALS_VERIF_PRIO") or PRIO_VERIF_JOUR))
     except ValueError:
-        return PRIO_VERIF_JOUR
+        b = PRIO_VERIF_JOUR
+    return vendues.budget_du_jour(b) if b else 0
 
 
 def _prio(a):
@@ -1060,7 +1070,7 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
                            "mises": a.get("mises"), "sport": sport, "joueur": joueur, "q": _q_deal(r), "vedette": bool(r.get("vedette")), "flux": r.get("flux"),
                            "n": n_a, "valeur_source": source_a, "vendues": ventes_a or ventes_requete or [],
                            # 27 oct 2026 : encan - la mise maximale pour que ca reste un deal (70 % de la valeur, port compris)
-                           "port": a.get("port_cad"), "mise_max": round(med_a * RATIO_DEAL - (a.get("port_cad") or 0), 2) if a.get("encan") else None,
+                           "port": a.get("port_cad"), "mise_max": round(med_a * RATIO_DEAL - port_eff(a.get("port_cad")), 2) if a.get("encan") else None,
                            "comps": comps or [], "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION,
                            "vendeur": a.get("vendeur"), "vendeur_score": a.get("vendeur_score")}
 
@@ -1137,7 +1147,7 @@ def _noter_suivi(st, a, bassin, maint):
         "item_id": str(a["item_id"]), "titre": a.get("titre"), "total": t, "photo": a.get("photo"), "url": a.get("url"),
         "encan": True, "fin": f, "mises": a.get("mises"), "port": a.get("port_cad"), "vendeur": a.get("vendeur"), "vendeur_score": a.get("vendeur_score"),
         "valeur": va[0] if va else None, "n": va[2] if va else 0, "vendues": va[3] if va else [],
-        "mise_max": round(va[0] * RATIO_DEAL - (a.get("port_cad") or 0), 2) if va else None,
+        "mise_max": round(va[0] * RATIO_DEAL - port_eff(a.get("port_cad")), 2) if va else None,
         "sport": sport, "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION, "suivi": True, "recrue": rec}
     return "ok_recrue" if rec else "ok"
 
@@ -1243,7 +1253,7 @@ def _verifier_tard(st, deals, maint, bassin, verif, d=None):
         if s_ is not None and not s_.get("valeur"):
             va = valeur_annonce(a, (nv or []) + (bassin.candidats(cib) if bassin else []), [], cib=cib)
             if va:
-                s_.update(valeur=va[0], n=va[2], vendues=va[3], mise_max=round(va[0] * RATIO_DEAL - (a.get("port_cad") or 0), 2))
+                s_.update(valeur=va[0], n=va[2], vendues=va[3], mise_max=round(va[0] * RATIO_DEAL - port_eff(a.get("port_cad")), 2))
         if dv:
             _noter_journal(st, a, r, cib, dv)
 
@@ -1278,7 +1288,7 @@ def _sauver(d, deals, maint, st, **champs):
         if couverture:
             d2["prio_couverture"] = couverture
         retires = _noter_retires(d2, nouveaux_retires)
-        garde_ = [x for x in garde_ if str(x["item_id"]) not in retires]
+        garde_ = [x for x in _garder_lu(d2, garde_) if str(x["item_id"]) not in retires]
         ids = {x["item_id"] for x in garde_}
         pres = {x["item_id"]: x for x in d2.get("pres") or []}
         pres.update(nouveaux_pres)
@@ -1310,6 +1320,27 @@ def _sauver(d, deals, maint, st, **champs):
 PUBLIER_S = 30
 
 
+def _garder_lu(d2, garde_):
+    """3 nov 2026 (revue) : pendant un tour du chasseur (sa copie date du debut), une fiche a pu lire le prix en direct
+    (maj_prix) ou corriger la valeur (corriger) : ces chiffres plus recents ne sont pas ecrases par la copie du chasseur."""
+    frais = {str(y.get("item_id")): y for y in d2.get("deals") or []}
+    for x in garde_:
+        y = frais.get(str(x.get("item_id")))
+        if not y:
+            continue
+        if y.get("prix_lu_le") and str(y["prix_lu_le"]) >= str(x.get("vu_le") or "") and y.get("prix_lu_le") != x.get("prix_lu_le"):
+            for k in ("total", "port", "mises", "fin", "prix_lu_le"):
+                if y.get(k) is not None:
+                    x[k] = y[k]
+        if y.get("corrige_le") and str(y["corrige_le"]) >= str(x.get("vu_le") or "") and y.get("valeur"):
+            x.update(valeur=y["valeur"], corrige_le=y["corrige_le"])
+        if x.get("valeur") and (y.get("prix_lu_le") or y.get("corrige_le")):
+            x["ratio"] = round((x.get("total") or 0) / x["valeur"], 3)
+            if x.get("encan") and not x.get("mise_perso"):
+                x["mise_max"] = round(x["valeur"] * RATIO_DEAL - port_eff(x.get("port")), 2)
+    return garde_
+
+
 def _fusion_suivi(vieux, x):
     """31 oct 2026 : un encan suivi deja valorise (entre deux tours) garde sa valeur, mais prend la mise, le port et la fin
     du moment (avant : la nouvelle mise etait ignoree, ou la valeur effacee a la fin du tour)."""
@@ -1317,7 +1348,7 @@ def _fusion_suivi(vieux, x):
         y = dict(x)
         for k in ("valeur", "n", "vendues"):
             y[k] = vieux.get(k)
-        y["mise_max"] = round(vieux["valeur"] * RATIO_DEAL - (x.get("port") or 0), 2)
+        y["mise_max"] = round(vieux["valeur"] * RATIO_DEAL - port_eff(x.get("port")), 2)
         return y
     return x
 
@@ -1334,7 +1365,7 @@ def _publier(d, deals, maint, st, force=False):
     with _verrou:
         d2 = lire()
         retires = {str(k) for k in (d2.get("retires") or {})}
-        d2["deals"] = [x for x in garde_ if str(x["item_id"]) not in retires]
+        d2["deals"] = [x for x in _garder_lu(d2, garde_) if str(x["item_id"]) not in retires]
         if ns:
             ids = {str(x["item_id"]) for x in d2["deals"]}
             vieux = {str(x.get("item_id")): x for x in d2.get("suivis") or [] if encore_ouvert(x, maint)}
@@ -1816,7 +1847,7 @@ def reverifier(lire_article=None, max_=None):
         x.update(total=t, ratio=round(t / x["valeur"], 3), mises=a.get("mises", x.get("mises")), fin=a.get("fin") or x.get("fin"),
                  port=a.get("port_cad"), vu_le=maint.isoformat(timespec="seconds"))
         if x.get("encan"):
-            x["mise_max"] = round(x["valeur"] * RATIO_DEAL - (a.get("port_cad") or 0), 2)
+            x["mise_max"] = round(x["valeur"] * RATIO_DEAL - port_eff(a.get("port_cad")), 2)
     garde_ = _sauver(d, deals, maint, st)
     return {"ok": True, "deals": len(garde_), "stats": st}
 
@@ -2092,6 +2123,7 @@ def etat():
         vmax = int(os.environ.get("LR_DEALS_VERIF_JOUR") or VERIF_JOUR)
     except ValueError:
         vmax = VERIF_JOUR
+    vmax = vendues.budget_du_jour(vmax)
     v = d.get("verif") or {}
     jour = _jour_mtl()[0]
     g = diagnostic(d)
@@ -2278,7 +2310,7 @@ def valoriser_suivis(rechercher=None, n_max=None):
             for g in d.get("suivis") or []:
                 va = trouves.get(str(g.get("item_id")))
                 if va and not g.get("valeur"):
-                    g.update(valeur=va[0], n=va[2], vendues=va[3], mise_max=round(va[0] * RATIO_DEAL - (g.get("port") or 0), 2))
+                    g.update(valeur=va[0], n=va[2], vendues=va[3], mise_max=round(va[0] * RATIO_DEAL - port_eff(g.get("port")), 2))
             cov = d.get("prio_couverture")
             if cov and analyses:
                 deja = set(cov.get("ids_valo") or [])

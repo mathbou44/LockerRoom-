@@ -40,6 +40,11 @@ SEUIL_CONFIANCE = 0.85
 MAX_PHOTOS = 2
 MAX_OCTETS_PHOTO = 4_500_000          # apres decodage ; l'ecran reduit deja a ~1600 px
 QUOTA_GRATUIT = int(os.environ.get("LR_VISION_GRATUIT") or 25)        # photos / mois / compte gratuit
+# 3 nov 2026 (revue de securite) : un plafond d'usage raisonnable aussi pour le Pro et l'essai (sinon un seul compte, ou des
+# comptes d'essai crees en serie, epuisaient le plafond du serveur pour tout le monde)
+QUOTA_PRO = int(os.environ.get("LR_VISION_PRO") or 800)              # photos / mois / compte Pro
+QUOTA_ESSAI = int(os.environ.get("LR_VISION_ESSAI") or 150)          # photos / mois pendant l'essai gratuit
+_EN_COURS = {}                                                        # appels payants en cours, par compte (contre les rafales)
 PLAFOND_SERVEUR_USD = float(os.environ.get("LR_VISION_PLAFOND_USD") or 50)
 _verrou = threading.Lock()
 
@@ -170,7 +175,10 @@ def _limite_compte():
     if not comptes.MULTI or not comptes.courant():
         return None
     import forfaits                       # 24 oct 2026 - l'essai Pro (14 jours) compte comme Pro
-    return None if forfaits.est_pro() else QUOTA_GRATUIT
+    f = forfaits.etat()
+    if not f.get("pro"):
+        return QUOTA_GRATUIT
+    return QUOTA_ESSAI if f.get("essai") else QUOTA_PRO
 
 
 def statut():
@@ -182,12 +190,31 @@ def statut():
             "reste": None if lim is None else max(0, lim - u.get("n", 0)), "modele": "avancé"}
 
 
+def _reserver(cle, n_deja, lim):
+    """3 nov 2026 (revue) : compte les appels en cours (20 requetes en meme temps ne passent plus toutes sur 1 photo restante)."""
+    import comptes
+    k = (comptes.courant() or "local", cle)
+    with _verrou:
+        if lim is not None and n_deja + _EN_COURS.get(k, 0) >= lim:
+            return None
+        _EN_COURS[k] = _EN_COURS.get(k, 0) + 1
+    return k
+
+
+def _liberer(k):
+    if k:
+        with _verrou:
+            _EN_COURS[k] = max(0, _EN_COURS.get(k, 0) - 1)
+
+
 def _verifier_quotas():
     perso, serveur = _chemins()
     lim = _limite_compte()
     n = (_lire(perso).get(_mois()) or {}).get("n", 0)
-    if lim is not None and n >= lim:
-        raise Erreur(f"Tes {lim} photos gratuites du mois sont utilisées : passe au forfait Pro pour continuer.")
+    if lim is not None and n + _EN_COURS.get(((__import__("comptes").courant() or "local"), "photo"), 0) >= lim:
+        if lim == QUOTA_GRATUIT:
+            raise Erreur(f"Tes {lim} photos gratuites du mois sont utilisées : passe au forfait Pro pour continuer.")
+        raise Erreur(f"Tu as utilisé tes {lim} lectures de photos de ce mois : remplis la fiche à la main jusqu’au mois prochain.")
     if (_lire(serveur).get(_mois()) or {}).get("usd", 0) >= PLAFOND_SERVEUR_USD:
         raise Erreur("La reconnaissance photo est en pause pour quelques heures : remplis la fiche à la main.")
 
@@ -421,6 +448,17 @@ def identifier(photos):
     if cle_cache in cache:
         return dict(cache[cle_cache], ok=True, cache=True, cout_usd=0)
     _verifier_quotas()
+    lim_ = _limite_compte()
+    res_ = _reserver("photo", (_lire(_chemins()[0]).get(_mois()) or {}).get("n", 0), lim_)
+    if res_ is None:
+        raise Erreur(f"Tes {lim_} photos du mois sont utilisées.")
+    try:
+        return _identifier_appel(images, cle_cache)
+    finally:
+        _liberer(res_)
+
+
+def _identifier_appel(images, cle_cache):
     contenu = []
     for i, (b, typ) in enumerate(images):
         contenu.append({"type": "text", "text": "Devant de la carte :" if i == 0 else "Dos de la carte :"})
@@ -451,7 +489,7 @@ def identifier(photos):
 _ZONES = ["coin haut-gauche", "coin haut-droit", "coin bas-droit", "coin bas-gauche", "bord haut", "bord droit", "bord bas",
           "bord gauche", "surface"]
 _DEFAUTS = ["blanchiment", "coin mou", "coin plie", "ebrechure", "entaille", "rayure", "ligne d'impression", "tache",
-            "pli", "bosse", "decentrage", "autre"]
+            "pli", "bosse", "marque d'ecriture", "decentrage", "autre"]
 # 2 nov 2026 (Mathieu : « les baremes doivent etre etablis pour que toutes les cartes soient evaluees selon les memes
 # criteres et la meme severite ») : l'IA DECRIT (chaque coin, chaque bord, chaque marque de surface, avec des etats fixes) ;
 # la note est CALCULEE par bareme.py, la meme table pour toutes les cartes (normes PSA).
@@ -526,6 +564,9 @@ METHODE (dans cet ordre, sans sauter d'etape) :
    encoche (petit creux dans l'arete) ; ebrechures (eclats de couleur) ; usure (usure nette, entaille).
 3. La surface du carton imprime : rayures, lignes d'impression, taches, empreintes, perte de lustre, bosses, plis. Note la
    visibilite : rasante (seulement en lumiere rasante ou au zoom), de_pres, visible. Rien a signaler : liste vide.
+   marque d'ecriture = un chiffre, une lettre ou un trait CREUSE dans le carton (quelqu'un a ecrit sur une feuille posee sur
+   la carte) : invisible de face, il ressort en lumiere rasante et dans la DIFFERENCE des deux eclairages comme un trace en
+   creux qui ne suit pas l'image. Cherche-le partout, surtout dans les zones unies et sur les visages. PSA : 6 au mieux.
 4. Le centrage, dans l'image REDRESSEE avec la REGLE 0-1000 : pour chaque face et chaque axe, choisis UN repere imprime qui
    existe des deux cotes et qui est symetrique par conception : la bordure imprimee d'abord ; sans bordure, le cadre interieur,
    le bord des fenetres de patch, un bloc de texte aligne des deux cotes. Donne sa position a gauche (debut) et a droite (fin)
@@ -985,7 +1026,20 @@ def _ajouter_mesures(res, mes, quads):
         res["a_reprendre"] = reprendre[:4]
 
 
-def etat(photos, langue="fr", quads=None, rasante=None, calibration=None, regles=None, contexte=None, rasante2=None):
+def etat(*a, **k):
+    """3 nov 2026 (revue de securite) : un examen a la fois par compte, compte dans le quota PENDANT l'appel (une rafale de
+    requetes ne depasse plus le quota du mois)."""
+    st = statut_etat()
+    r_ = _reserver("etat", st["ce_mois"], st["limite"])
+    if r_ is None:
+        raise Erreur(f"Tes {st['limite']} analyses d'état du mois sont utilisées (ou un examen est déjà en cours).")
+    try:
+        return _etat(*a, **k)
+    finally:
+        _liberer(r_)
+
+
+def _etat(photos, langue="fr", quads=None, rasante=None, calibration=None, regles=None, contexte=None, rasante2=None, gros_plans=None):
     """photos : devant (et dos) en data URL ; quads : les 4 coins de la carte dans chaque photo (0..1000, trouves dans le
     telephone) ; rasante : une photo en lumiere rasante (facultative). Son propre quota par mois (3 gratuit, 30 Pro)."""
     import examen
@@ -997,18 +1051,30 @@ def etat(photos, langue="fr", quads=None, rasante=None, calibration=None, regles
     brutes = [_decoder(p)[0] for p in photos]
     ras = _decoder(rasante)[0] if rasante else None
     ras2 = _decoder(rasante2)[0] if (rasante and rasante2) else None
+    # 3 nov 2026 : les gros plans des coins [{face, coin, photo (data URL)}]
+    gps = []
+    for g in (gros_plans or [])[:8]:
+        if isinstance(g, dict) and g.get("photo") and g.get("coin") in _bar.COINS and g.get("face") in ("devant", "dos"):
+            try:
+                gps.append({"face": g["face"], "coin": g["coin"], "octets": _decoder(g["photo"])[0]})
+            except Exception:
+                pass
     langue = "en" if str(langue or "").lower().startswith("en") else "fr"
-    h = hashlib.sha256(b"etat-v8-" + langue.encode() + json.dumps(quads or [], sort_keys=True).encode()
-                       + json.dumps(calibration or {}, sort_keys=True).encode())
-    for b in brutes + ([ras] if ras else []) + ([ras2] if ras2 else []):
-        h.update(hashlib.sha256(b).digest())
+    # 3 nov 2026 (revue) : la cle porte aussi le contexte (slab, patch, auto), les regles apprises et le ROLE de chaque photo
+    h = hashlib.sha256(b"etat-v9-" + langue.encode() + json.dumps(quads or [], sort_keys=True).encode()
+                       + json.dumps(calibration or {}, sort_keys=True).encode() + json.dumps(contexte or {}, sort_keys=True, default=str).encode()
+                       + json.dumps(list(regles or []), ensure_ascii=False).encode())
+    for role, b in [(b"dev", brutes[0])] + ([(b"dos", brutes[1])] if len(brutes) > 1 else []) + ([(b"ras", ras)] if ras else []) + ([(b"ras2", ras2)] if ras2 else []):
+        h.update(role + hashlib.sha256(b).digest())
+    for g in gps:
+        h.update((g["face"] + g["coin"]).encode() + hashlib.sha256(g["octets"]).digest())
     cle_cache = h.hexdigest()
     cache = _lire(_chemin_cache())
     if cle_cache in cache:
         return dict(cache[cle_cache], ok=True, cache=True)
     _verifier_etat()
     if examen.disponible():
-        prep = examen.preparer(brutes, quads, ras, ras2)
+        prep = examen.preparer(brutes, quads, ras, ras2, gros_plans=gps)
     else:
         prep = {"images": [(("Photo 0 : le devant." if i == 0 else "Photo 1 : le dos."), b) for i, b in enumerate(brutes)], "centrage": None,
                 "note_centrage": None, "zooms": False}
@@ -1037,7 +1103,11 @@ def etat(photos, langue="fr", quads=None, rasante=None, calibration=None, regles
     elif prep.get("zooms"):
         infos.append("L'app n'a pas pu mesurer le centrage (pas de bordure nette) : estime-le, ou dis « non mesurable ».")
     infos += _infos_mesures(prep)
-    for r in (regles or [])[:4]:
+    if prep.get("gros_plans"):
+        infos.append("GROS PLANS fournis pour : " + ", ".join(f"{g['face']} {g['coin']}" for g in prep["gros_plans"]) + ". Pour CES coins, "
+                     "l'etat et la certitude viennent du gros plan (un blanc de 0,1 mm s'y voit) ; le zoom sert seulement a confirmer. "
+                     "Un defaut vu seulement sur un gros plan : mets-le au coin correspondant, x / y = ce coin dans la photo entiere.")
+    for r in (regles or [])[:6]:
         infos.append(r)
     cx = contexte or {}                                   # 2 nov 2026 : ce que l'app sait de la carte
     if cx.get("titre"):
@@ -1045,6 +1115,9 @@ def etat(photos, langue="fr", quads=None, rasante=None, calibration=None, regles
     if cx.get("relique"):
         infos.append("CETTE CARTE A UNE PATCH / RELIQUE (tissu) : sa texture, ses fils, ses coutures et ses plis ne sont jamais des "
                      "defauts ; marque sur_relique = true si tu hesites.")
+    if cx.get("slab"):                                    # 3 nov 2026 : photographiee dans son slab (PSA, BGS...)
+        infos.append("LA CARTE EST DANS UN SLAB (etui de gradation) : les reflets, les rayures et la poussiere du PLASTIQUE ne sont pas "
+                     "des defauts de la carte ; l'arete se voit contre le bord interieur de l'etui. Dans le doute, certitude « incertaine ».")
     if cx.get("auto"):
         infos.append("Carte autographiee : l'encre et l'autocollant ne sont pas des defauts de surface.")
     contenu.append({"type": "text", "text": "Evalue l'etat de cette carte : centrage, coins, bords, surface. " + " ".join(infos) + " "
@@ -1067,10 +1140,19 @@ def etat(photos, langue="fr", quads=None, rasante=None, calibration=None, regles
     f = next((b.get("input") for b in r.get("content") or [] if b.get("type") == "tool_use"), None)
     if not f:
         raise Erreur("Analyse impossible : reprends la photo de plus près, sans reflet.")
-    cent = dict(c, note=note_c, note_bas=prep.get("note_centrage_bas"), verifier=prep.get("centrage_verifier") or {}) if c else None
+    # 3 nov 2026 (revue) : un seul axe mesure, « a verifier » (retire de c) : son bas de fourchette compte quand meme
+    cent = dict(c, note=note_c, note_bas=prep.get("note_centrage_bas"), verifier=prep.get("centrage_verifier") or {}) \
+        if (c or prep.get("note_centrage_bas") is not None) else None
     res = _noter_observations(f, cent, calibration, quads) if isinstance(f.get("coins"), list) else _nettoyer_etat(f, cent, calibration)
     res["zooms"] = bool(prep.get("zooms"))
     _ajouter_mesures(res, prep.get("mesures") or {}, quads)
+    if prep.get("quads") and any(prep["quads"]):
+        res["quads_utilises"] = [[[round(float(x), 1), round(float(y), 1)] for x, y in q] if q else None for q in prep["quads"]]
+    if prep.get("gros_plans"):
+        res["gros_plans_q"] = [{k: g.get(k) for k in ("face", "coin", "nettete", "net")} for g in prep["gros_plans"]]
+        flous = [f"{g['face']} {g['coin']}" for g in prep["gros_plans"] if g.get("net") is False]
+        if flous:
+            res["a_reprendre"] = (res.get("a_reprendre") or []) + ["gros plan flou (" + ", ".join(flous) + ") : approche-toi moins, touche le coin à l'écran pour le focus"]
     with _verrou:
         cache = _lire(_chemin_cache())
         cache[cle_cache] = res

@@ -168,6 +168,9 @@ def _fernet():
 
 def chiffrer(texte):
     f = _fernet()
+    if not f and MULTI and os.environ.get("LOCKERROOM_HEBERGE") == "1":
+        # 3 nov 2026 (revue de securite) : en ligne, jamais un jeton en clair sur le disque (la cle manque : on refuse)
+        raise RuntimeError("LOCKERROOM_CLE manquante : impossible de garder ce jeton de façon sûre")
     return ("LRC1:" + f.encrypt(texte.encode()).decode()) if f else texte
 
 
@@ -192,6 +195,22 @@ def nouvel_etat():
 #   4. un ancien compte relie a un autre garde ses donnees (rien n'est efface) et renvoie vers le compte choisi.
 CHEMIN_CODES = os.path.join(DOSSIER_COMPTES, "codes_appareil.json")
 _RELAIS = re.compile(r"@privaterelay\.appleid\.com$", re.I)
+
+
+def revoquer_session(compte_id, sid):
+    """3 nov 2026 (revue de securite) : « Se deconnecter » ferme CETTE session pour de bon (les 200 dernieres gardees)."""
+    with _verrou:
+        ix = _index()
+        if compte_id not in ix or not sid:
+            return False
+        l = [x for x in ix[compte_id].get("sessions_revoquees") or [] if x != sid] + [str(sid)[:40]]
+        ix[compte_id]["sessions_revoquees"] = l[-200:]
+        _ecrire_index(ix)
+    return True
+
+
+def session_revoquee(compte_id, sid):
+    return str(sid) in ((_index().get(compte_id) or {}).get("sessions_revoquees") or [])
 
 
 def resoudre(compte_id):
@@ -271,7 +290,7 @@ def code_creer(compte_id, ttl=600):
         m = time.time()
         d = {k: v for k, v in d.items() if v[1] > m and v[0] != compte_id}
         while True:
-            code = f"{secrets.randbelow(10 ** 6):06d}"
+            code = f"{secrets.randbelow(10 ** 8):08d}"          # 3 nov 2026 (revue de securite) : 8 chiffres (100 millions)
             if code not in d:
                 break
         d[code] = [compte_id, m + ttl]
@@ -283,7 +302,7 @@ def code_creer(compte_id, ttl=600):
 def code_utiliser(code):
     import time
     code = re.sub(r"\D", "", str(code or ""))
-    if len(code) != 6:
+    if len(code) not in (6, 8):                       # 6 : un code demande avant la mise a jour (10 min au plus)
         return None
     with _verrou:
         try:

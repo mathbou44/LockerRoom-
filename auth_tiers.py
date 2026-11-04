@@ -219,7 +219,7 @@ def terminer(f, code, etat, base, utilisateur_json=None):
         except ValueError:
             pass
     return {"ok": True, "jeton_apple": rep.get("refresh_token") if f == "apple" else None,
-            "sub": str(claims["sub"]), "courriel": claims.get("email") if claims.get("email_verified") in (True, "true", None) else None,
+            "sub": str(claims["sub"]), "courriel": claims.get("email") if claims.get("email_verified") in (True, "true") else None,  # 3 nov 2026 : verifie seulement
             "nom": nom or (str(claims.get("email") or "").split("@")[0]) or FOURNISSEURS[f]["nom"]}
 
 

@@ -151,8 +151,10 @@ def recevoir(corps, entete=None, lire_cle=None):
     if comptes.MULTI and uid:                # multi-comptes : tout le dossier du client disparait
         ix = set(comptes.lister())
         cids = set(comptes.par_champ("ebay_user_id", uid)) | {c for c in (comptes.id_pour(uid, e) for e in ebay_compte.ENVIRONNEMENTS) if c in ix}
+        import lockerroom
         for cid in cids:                     # aussi un compte Apple / Google relie a ce compte eBay
-            comptes.supprimer(cid)
+            if cid in comptes.lister():      # 3 nov 2026 (revue) : le meme menage que « Supprimer mon compte »
+                lockerroom.effacer_compte(cid)
         trouves = len(cids)
         if cids:
             try:

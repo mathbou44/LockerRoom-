@@ -2297,6 +2297,41 @@ button.an-attente{width:100%; text-align:left; color:var(--texte); cursor:pointe
 .et-ok{font-size:14px; color:var(--vert)}
 .et-tag{font-size:12.5px; color:var(--vert)}
 .ex-p{display:flex; gap:12px; align-items:center; padding:10px 0; border-bottom:1px solid var(--ligne)}
+.er-sous{margin:6px 0 2px} .er-sous summary{cursor:pointer; font-size:15px; padding:8px 0} .er-sous summary small{color:var(--doux); font-size:12.5px; font-weight:400}
+.ag-cies{display:flex; flex-direction:column; gap:10px}
+.ag-cie{position:relative; display:grid; grid-template-columns:1fr auto; gap:4px 12px; text-align:left; padding:14px; border-radius:18px; background:var(--carte); border:0; color:var(--texte); box-shadow:inset 0 0 0 1px var(--ligne)}
+.ag-cie.on{box-shadow:inset 0 0 0 2px var(--acc)} .ag-cie-n{display:flex; flex-direction:column; gap:2px} .ag-cie-n b{font:700 20px var(--f-cond)} .ag-cie-n small{font-size:13px; color:var(--doux); line-height:1.3}
+.ag-cie-v{display:flex; flex-direction:column; align-items:flex-end; font:700 20px var(--f-cond)} .ag-cie-v small{font:400 12px var(--f, inherit); color:var(--doux); max-width:120px; text-align:right} .ag-cie-v.vert{color:var(--vert)} .ag-cie-v.rouge{color:var(--rouge)} .ag-cie-v.or{color:var(--or)}
+.ag-cie-d{grid-column:1 / -1; font-size:12.5px; color:var(--doux)}
+.ag-top{position:absolute; top:-9px; right:14px; font:700 11px var(--f-cond); letter-spacing:.06em; text-transform:uppercase; background:var(--acc); color:var(--acc-texte, #0b0b0e); padding:2px 8px; border-radius:10px}
+.ag-pc{margin-top:10px} .ag-pc summary{cursor:pointer; font-size:14px; padding:6px 0} .ag-pc-c{display:flex; flex-direction:column; gap:3px; padding:8px 0; border-top:1px solid var(--ligne); font-size:13.5px} .ag-pc-c b{font:700 15px var(--f-cond)}
+.ag-pc-c .p, .ag-voie .p{color:var(--vert)} .ag-pc-c .m, .ag-voie .m{color:var(--doux)}
+.ag-voies{display:grid; grid-template-columns:1fr 1fr; gap:10px} .ag-voie{position:relative; display:flex; flex-direction:column; gap:4px; text-align:left; padding:14px 12px; border-radius:18px; background:var(--carte); border:0; color:var(--texte); font-size:13px; line-height:1.3; box-shadow:inset 0 0 0 1px var(--ligne)}
+.ag-voie.on{box-shadow:inset 0 0 0 2px var(--acc)} .ag-voie b{font-size:15px; margin-bottom:2px}
+@media (max-width:380px){ .ag-voies{grid-template-columns:1fr} }
+.tdc{display:inline-flex; align-items:baseline; gap:3px; margin-left:8px; padding:2px 8px; border-radius:10px; font:700 12.5px var(--f-cond); letter-spacing:.02em; background:var(--carte2); color:var(--doux); white-space:nowrap}
+.tdc small{font:500 10.5px var(--f-cond); opacity:.8} .tdc.haut{background:var(--vert-fond); color:var(--vert)} .tdc.bas{background:var(--rouge-fond); color:var(--rouge)}
+.sl-tend{position:absolute; left:6px; bottom:6px; margin:0; box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.fc-tend{display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin:10px 0 4px} .fc-tend > div{display:flex; flex-direction:column; align-items:center; gap:2px; padding:8px 4px; border-radius:14px; background:var(--carte2)}
+.fc-tend span{font-size:12px; color:var(--doux)} .fc-tend b{font:700 18px var(--f-cond)} .fc-tend b.vert{color:var(--vert)} .fc-tend b.rouge{color:var(--rouge)} .fc-tend small{grid-column:1 / -1; font-size:12px; color:var(--doux); line-height:1.35}
+.ex-fil{display:flex; gap:3px; margin:4px 0 12px} .ex-fil i{flex:1; height:4px; border-radius:2px; background:var(--carte2)} .ex-fil i.fait{background:var(--vert)} .ex-fil i.passe{background:var(--ligne)} .ex-fil i.on{background:var(--acc)}
+.ex-tete{display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--doux)} .ex-tete .lien-t{font-size:14px; text-decoration:none}
+.ex-et{display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px} .ex-et h3{margin:0} .ex-et h3 small{font-weight:400; font-size:13px; color:var(--doux)}
+.ex-ill{width:150px; height:150px; border-radius:24px; background:var(--carte2); display:grid; place-items:center; overflow:hidden} .ex-ill.photo{width:min(78vw, 300px); height:auto; aspect-ratio:3/4; background:#000} .ex-ill img{width:100%; height:100%; object-fit:contain}
+.ex-ill svg{width:120px; height:120px; fill:none; stroke-linecap:round; stroke-linejoin:round} .ex-ill .i-c{stroke:var(--texte); stroke-width:2.5} .ex-ill .i-t{stroke:var(--doux); stroke-width:2.5} .ex-ill .i-v{stroke:var(--acc); stroke-width:3} .ex-ill .i-sol{stroke:var(--ligne); stroke-width:2} .ex-ill .i-r{stroke:var(--or); stroke-width:2; stroke-dasharray:4 4}
+.ex-aide{font-size:15px; line-height:1.45; color:var(--texte); max-width:34ch}
+.ex-ok{display:flex; flex-direction:column; gap:3px; padding:10px 14px; border-radius:16px; background:var(--vert-fond); box-shadow:inset 0 0 0 1px var(--vert)} .ex-ok b{color:var(--vert); font-size:15px} .ex-ok span{font-size:13px; color:var(--texte)}
+.ex-ko{display:flex; flex-direction:column; gap:8px; width:100%; text-align:left} .ex-ko > div{display:flex; flex-direction:column; gap:2px; padding:10px 14px; border-radius:16px; background:var(--rouge-fond); box-shadow:inset 0 0 0 1px rgba(255,179,179,.4)} .ex-ko b{color:var(--rouge); font-size:15px} .ex-ko span{font-size:13.5px; line-height:1.4}
+.ex-bt{display:flex; flex-direction:column; gap:8px; margin-top:14px; align-items:stretch} .ex-prise{display:grid; grid-template-columns:1fr 1fr; gap:8px} .ex-prise .btn{margin:0; text-align:center} .ex-bt > .lien-t{align-self:center; font-size:14px; padding:6px}
+.ex-res{list-style:none; padding:0; margin:6px 0 12px; display:flex; flex-direction:column; gap:6px} .ex-res li{display:flex; gap:10px; align-items:center; font-size:15px; color:var(--doux)} .ex-res li i{width:24px; height:24px; border-radius:50%; display:grid; place-items:center; font-style:normal; background:var(--carte2)} .ex-res li.ok{color:var(--texte)} .ex-res li.ok i{background:var(--vert-fond); color:var(--vert)}
+.ex-rg{margin:6px 0} .rg-ph ol{padding-left:20px; display:flex; flex-direction:column; gap:10px; font-size:14.5px; line-height:1.45; margin:12px 0}
+.ex-gp{display:flex; flex-direction:column; gap:6px; padding:12px 0; border-bottom:1px solid var(--ligne)} .ex-gp > b small{font-weight:400; color:var(--doux); font-size:12px} .ex-gp > small{color:var(--doux); font-size:13px}
+.gp-face{display:flex; flex-direction:column; gap:6px; margin-top:4px} .gp-face > span{font-size:12px; color:var(--doux); text-transform:uppercase; letter-spacing:.06em}
+.gp-g{display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:8px}
+.gp-t{position:relative; aspect-ratio:1; border-radius:14px; background:var(--carte2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; overflow:hidden; cursor:pointer; box-shadow:inset 0 0 0 1px var(--ligne)}
+.gp-t svg{width:26px; height:26px; fill:none; stroke:var(--acc); stroke-width:1.8; stroke-linecap:round} .gp-t small{font-size:11px; color:var(--doux); text-align:center; line-height:1.15}
+.gp-t.fait{box-shadow:inset 0 0 0 2px var(--vert)} .gp-t img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover} .gp-t.fait small{position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,.55); color:#fff; padding:2px 0}
+.ex-ia{align-items:flex-start; padding:12px 0} .ex-ia > span{display:flex; flex-direction:column; gap:3px} .ex-ia b{font-size:15px} .ex-ia small{font-size:12.5px; color:var(--doux); line-height:1.35} .ex-ia input{margin-top:4px; width:22px; height:22px; flex-shrink:0; accent-color:var(--acc)}
 .ex-v{flex:0 0 64px; height:64px; border-radius:14px; overflow:hidden; display:grid; place-items:center; background:var(--carte2)} .ex-v img{width:100%; height:100%; object-fit:cover}
 .ex-t{flex:1; min-width:0; display:flex; flex-direction:column; gap:4px} .ex-t b small{font-weight:400; color:var(--doux); font-size:12px} .ex-t > small{color:var(--doux); font-size:13px}
 .ex-p.fait .ex-t > small{color:var(--vert)} .ex-t .pilule{cursor:pointer}
@@ -2361,6 +2396,9 @@ button.vd-cz > span{border-bottom:1px solid var(--ligne); padding-bottom:2px} .v
 .ag-n{font:700 15px var(--f-cond)} .ag-b{height:8px; border-radius:8px; background:var(--carte2); overflow:hidden} .ag-b i{display:block; height:100%; border-radius:8px; background:var(--acc)}
 .ag-p{font-size:13px; color:var(--doux); text-align:right} .ag-val{display:flex; flex-direction:column; align-items:flex-end; font:700 16px var(--f-cond)} .ag-val small{font:400 11px 'Barlow',sans-serif; color:var(--doux)}
 .ag-3{display:grid; grid-template-columns:repeat(3,1fr); gap:8px} .ag-3 div{display:flex; flex-direction:column; gap:2px; padding:10px; border-radius:14px; background:var(--carte2)} .ag-3 span{font-size:12px; color:var(--doux)} .ag-3 b{font:700 18px var(--f-cond)}
+.ag-niv{display:flex; flex-direction:column; gap:8px} .ag-n1{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:12px 14px; border-radius:16px; background:var(--carte2); border:1px solid var(--ligne); color:var(--texte, #F4F2EE); text-align:left; font:inherit; cursor:pointer}
+.ag-n1.on{border-color:var(--acc); box-shadow:inset 0 0 0 1px var(--acc)} .ag-n1.non{opacity:.45; cursor:default} .ag-n1-t, .ag-n1-p{display:flex; flex-direction:column; gap:2px} .ag-n1-p{align-items:flex-end}
+.ag-n1 b{font:700 17px var(--f-cond)} .ag-n1 small{font-size:12px; color:var(--doux)}
 .ag-sv{display:flex; flex-direction:column; gap:4px; padding:16px; border-radius:18px; background:var(--carte2)} .ag-sv b{font:700 22px var(--f-cond)} .ag-sv span{font-size:14px; color:var(--doux)}
 .ag-ck{margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:6px} .ag-ck li{display:flex; justify-content:space-between; padding:10px 12px; border-radius:12px; background:var(--carte2); font-size:14px}
 .vd-zm{position:relative; display:block; flex:0 0 auto; width:56px; height:56px; border-radius:12px; background-color:#000; background-repeat:no-repeat; box-shadow:inset 0 0 0 1px var(--ligne)}
@@ -2368,6 +2406,11 @@ button.vd-cz > span{border-bottom:1px solid var(--ligne); padding-bottom:2px} .v
 .vd-zm.grand{width:100%; height:auto; aspect-ratio:1; max-height:220px; margin-bottom:8px; border-radius:14px} .vd-zm.grand i{width:30%; height:30%}
 .vd-czz{position:relative; flex:0 0 auto} .vd-czz .vd-ci{position:absolute; right:-6px; top:-6px; width:20px; height:20px; flex-basis:20px; font-size:11px}
 .vd-sec{font:700 15px var(--f-cond); letter-spacing:.06em; text-transform:uppercase; color:var(--doux); margin-top:6px}
+.vd-zm-gp small{position:absolute; left:6px; bottom:6px; font-size:11px; background:rgba(0,0,0,.6); color:#fff; padding:1px 6px; border-radius:8px}
+.vd-gp{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px}
+.vd-gp-t{display:flex; flex-direction:column; border-radius:16px; overflow:hidden; background:var(--carte); color:var(--texte); text-decoration:none}
+.vd-gp-t img{width:100%; aspect-ratio:1; object-fit:cover; display:block} .vd-gp-t > span{display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:8px 10px} .vd-gp-t b{font-size:13px; flex:1 0 100%}
+.vd-gp-t em{font-style:normal; font-size:12px; font-weight:700; padding:2px 8px; border-radius:10px; background:var(--carte2)} .vd-gp-t em.vert{color:var(--vert)} .vd-gp-t em.or{color:var(--or)} .vd-gp-t em.rouge{color:var(--rouge)} .vd-gp-t small{font-size:11.5px; color:var(--doux)}
 .vd-gab{display:flex; flex-direction:column; gap:8px; padding:12px; border-radius:18px; background:var(--carte)} .vd-gab-t{display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-size:14px} .vd-gab-t b{font-family:var(--f-cond); font-size:16px}
 .vd-gab-c{position:relative; width:min(100%, 340px); margin:0 auto; border-radius:6px; overflow:hidden; box-shadow:0 0 0 2px #fff}
 .vd-gab-c img{position:absolute; inset:0; width:100%; height:100%; object-fit:fill; opacity:.85}
@@ -2813,7 +2856,7 @@ html.tel-large .fen.fa .fen-img{max-height:calc(46vh / 1.12) !important}
 const LECTURES = new Set(['accueil', 'acheteur_accueil', 'activites', 'conseils', 'astuces', 'forfait', 'ebay_statut', 'taux_change',
   'reglages_lire', 'deals_liste', 'inventaire_liste', 'catalogue_liste', 'produits_liste', 'equipes', 'images_produits', 'images_joueurs',
   'budget_etat', 'alertes_liste', 'breaks_liste', 'bilan', 'tendances', 'calendrier', 'collection', 'offres_liste', 'analyse_break',
-  'admin_resume', 'admin_abonnes', 'admin_demandes', 'admin_catalogue', 'admin_sante', 'valeurs_statut', 'portraits_joueurs',
+  'admin_resume', 'admin_abonnes', 'admin_demandes', 'admin_catalogue', 'admin_sante', 'admin_entrainement', 'valeurs_statut', 'portraits_joueurs',
   'etoiles_lire', 'alarmes_lire', 'deals_profil_lire', 'sante_liste', 'pouls', 'guide_donnees', 'consignataires_liste', 'ebay_avis_statut', 'ebay_appels',
   'inventaire_tableaux', 'watch_liste']);
 const SANS_EFFET = new Set(['deals_etat', 'accueil_live', 'annonce_detail', 'carte_comps', 'valeur_carte', 'joueur_fiche', 'checklist',
@@ -3427,12 +3470,13 @@ function lienAchat(url, sousId){
   try {
     const u = new URL(url), camp = String((S.reglages || {}).epn_campid || '').trim();
     const dom = u.hostname.replace(/^www\./, '');
+    if (!/^https?:$/.test(u.protocol)) return '#';             // 3 nov 2026 (revue de securite) : jamais javascript:
     if (!camp || !EPN_ROTATION[dom]) return url;
     u.searchParams.set('mkevt', '1'); u.searchParams.set('mkcid', '1'); u.searchParams.set('mkrid', EPN_ROTATION[dom]);
     u.searchParams.set('campid', camp); u.searchParams.set('toolid', '10001');
     if (sousId) u.searchParams.set('customid', String(sousId).slice(0, 40));
     return u.toString();
-  } catch (e) { return url; }
+  } catch (e) { return /^(https?:\/\/|#|\/)/i.test(String(url || '')) ? url : '#'; }
 }
 // 21 oct 2026 - mode sandbox bien visible partout
 function marquerEnv(st){ document.body.classList.toggle('sandbox', !!st && st.env === 'sandbox'); }
@@ -4820,7 +4864,7 @@ function rendreVente2(){
         <div class="photo-princ ${photos[0] ? 'vs-ph' : ''} ${aStudio && MODE_STUDIO ? 'studio-on' : ''}">${photos[0] ? `<img src="${esc(photos[0])}" alt="">` : SVG_CARTE}</div>
         ${cadrable ? `<div class="studio-bar">${aStudio ? ctlFlou('v2-fl') : ''}
           <button class="lien-t" id="v2-cadre">${aStudio ? tt('Recadrer', 'Re-crop') : '✦ ' + tt('Fond flou', 'Blur background')}</button></div>` : ''}
-        <div class="vignettes">${photos.map((ph, i) => `<button class="vg ${i === 0 ? 'on' : ''}" data-ph="${i}" style="background-image:url('${esc(ph)}')" aria-label="photo ${i + 1}"></button>`).join('')}
+        <div class="vignettes">${photos.map((ph, i) => `<button class="vg ${i === 0 ? 'on' : ''}" data-ph="${i}" style="background-image:${cssUrl(ph)}" aria-label="photo ${i + 1}"></button>`).join('')}
           ${photos.length < 12 ? `<label class="vg plus-ph" title="${esc(tt('Ajouter une photo', 'Add a photo'))}">+<input type="file" accept="image/*" multiple id="v2-ph" hidden></label>` : ''}</div>
     </div>
     <button class="vs-titre" id="vs-titre"><span>${esc(V2.titre || '')}</span><i>✎</i></button>
@@ -4853,7 +4897,7 @@ function rendreVente2(){
 </div>
       <div id="vs-b-marche"><h3>${tt('Comment on choisit le prix', 'How we pick the price')}</h3><div class="sous">${tt('On regarde les mêmes cartes en vente sur eBay. « Prix du marché » = le prix du milieu. Plus bas, ça part plus vite.', 'We look at the same cards for sale on eBay. “Market price” = the middle price. Lower sells faster.')}</div>        <div class="kpi acc"><span class="lib">${tt('Prix du marché', 'Market price')}</span><span class="v">${pr ? argent(pr.mediane, 0) : '—'}</span>
           <span class="s">${pr ? tt(p.n + ' même' + (p.n > 1 ? 's' : '') + ' carte' + (p.n > 1 ? 's' : '') + ' en vente · ' + argentCourt(pr.bas) + ' à ' + argentCourt(pr.max), p.n + ' same card' + (p.n > 1 ? 's' : '') + ' listed · ' + argentCourt(pr.bas) + ' to ' + argentCourt(pr.max)) : esc(p.note || tt('Pas assez d’annonces pareilles : choisis ton prix', 'Not enough same listings: pick your price'))}</span></div>
-        ${p.comps && p.comps.length ? `<div class="comps-l">${p.comps.map(x => `<a class="comp-m" href="${esc(x.url)}" target="_blank" rel="noopener"><span style="${x.photo ? `background-image:url('${esc(photoNet(x.photo))}')` : ''}"></span><b>${argentCourt(x.total)}</b></a>`).join('')}</div>` : ''}
+        ${p.comps && p.comps.length ? `<div class="comps-l">${p.comps.map(x => `<a class="comp-m" href="${esc(urlSure(x.url))}" target="_blank" rel="noopener"><span style="${x.photo ? `background-image:${cssUrl(photoNet(x.photo))}` : ''}"></span><b>${argentCourt(x.total)}</b></a>`).join('')}</div>` : ''}
 </div>
       <div id="vs-b-fmt"><div class="bloc-v"><div class="bloc-t">${tt('Façon de vendre', 'How to sell')}</div>
           ${segV('v2-fmt', [['fixe', tt('Prix fixe', 'Buy It Now'), tt('jusqu’à la vente', 'until sold')], ['encan', tt('Encan', 'Auction'), tt('7 jours', '7 days')]], o.format)}
@@ -5530,9 +5574,9 @@ function finDans(fin){
 function compsHtml(x){
   const c = x.comps || [], v = x.vendues || [];
   if (v.length) return `<div class="pop-t">${tt('Vendues récemment', 'Recently sold')}<span>${x.n || v.length} · ${tt('médiane ', 'median ')}${argentCourt(x.valeur)}</span></div>
-    <div class="pop-g">${v.slice(0, 8).map(k => `<a href="${esc(k.url || '#')}" target="_blank" rel="noopener" class="pop-c vendue"><span style="${k.photo ? `background-image:url('${esc(photoNet(k.photo))}')` : ''}"></span><b>${argentCourt(k.prix)}</b></a>`).join('')}</div>`;
+    <div class="pop-g">${v.slice(0, 8).map(k => `<a href="${esc(urlSure(k.url || '#'))}" target="_blank" rel="noopener" class="pop-c vendue"><span style="${k.photo ? `background-image:${cssUrl(photoNet(k.photo))}` : ''}"></span><b>${argentCourt(k.prix)}</b></a>`).join('')}</div>`;
   return `<div class="pop-t">${tt('Les mêmes cartes en vente', 'The same cards listed')}<span>${x.n || c.length} · ${tt('médiane ', 'median ')}${argentCourt(x.valeur)}</span></div>
-    ${c.length ? `<div class="pop-g">${c.slice(0, 8).map(k => `<a href="${esc(k.url || '#')}" target="_blank" rel="noopener" class="pop-c" ${attrsAnnonce(k)}><span style="${k.photo ? `background-image:url('${esc(photoNet(k.photo))}')` : ''}"></span><b>${argentCourt(k.total)}</b></a>`).join('')}</div>`
+    ${c.length ? `<div class="pop-g">${c.slice(0, 8).map(k => `<a href="${esc(urlSure(k.url || '#'))}" target="_blank" rel="noopener" class="pop-c" ${attrsAnnonce(k)}><span style="${k.photo ? `background-image:${cssUrl(photoNet(k.photo))}` : ''}"></span><b>${argentCourt(k.total)}</b></a>`).join('')}</div>`
       : `<div class="sous">${x.ref_titre ? tt('Comparé à ta vente : ', 'Compared to your sale: ') + esc(x.ref_titre) : ''}</div>`}`;
 }
 // 27 oct 2026 (Mathieu : « Colton pas de comp, mais on peut montrer des ventes de joueurs de la même carte ») :
@@ -5541,7 +5585,7 @@ function autresJoueursHtml(a){
   if (!a || !(a.ventes || []).length) return '';
   return `<div class="fen-comps autres-j"><div class="bloc-t">${tt('Même carte, autres joueurs', 'Same card, other players')} <span class="sous">${a.nb} ${tt('ventes', 'sales')} · ${a.joueurs} ${tt('joueurs', 'players')} · ${argentCourt(a.min)} ${tt('à', 'to')} ${argentCourt(a.max)} · ${tt('médiane ', 'median ')}${argentCourt(a.mediane)}</span></div>
     <div class="sous">${tt('Un repère, pas la valeur de cette carte : le prix dépend surtout du joueur.', 'A reference, not this card\'s value: the price depends mostly on the player.')}</div>
-    <div class="grille-c">${a.ventes.map(k => `<a class="tuile-c" href="${esc(k.url || '#')}" target="_blank" rel="noopener"><div class="img">${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo, 640))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}</div>
+    <div class="grille-c">${a.ventes.map(k => `<a class="tuile-c" href="${esc(urlSure(k.url || '#'))}" target="_blank" rel="noopener"><div class="img">${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo, 640))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}</div>
       <div class="coin">${capsule(tt('Vendue', 'Sold') + (k.le ? ' · ' + dateCourte(k.le) : ''), 'petit')}</div>
       <div class="corps"><div class="t">${esc(k.joueur || k.titre)}</div><div class="ligne-b"><span class="p">${argent(k.prix, 0)}</span></div></div></a>`).join('')}</div></div>`;
 }
@@ -5860,12 +5904,13 @@ function tuileDeal(x){
   const encan = x.encan, sansV = x.suivi && !(x.valeur && x.rabais > 0);
   const nom = x.joueur_n || titreCourt(x.titre), carte = x.joueur_n ? x.carte_n : '';
   const prix = encan ? Math.max(0, (x.total || 0) - (x.port || 0)) : x.total;
-  const max = x.mise_max != null ? x.mise_max : x.valeur ? Math.round(x.valeur * 0.70 - (encan ? (x.port || 0) : 0)) : null;
+  const max = x.mise_max != null ? x.mise_max : x.valeur ? Math.round(x.valeur * 0.70 - (encan ? portEff(x.port) : 0)) : null;
   const k3 = (lib, val, cl) => `<span class="sd-k ${cl || ''}"><small>${lib}</small><b>${val}</b></span>`;
+  const g = encan && max != null && x.valeur ? profitA(x.valeur, max + portEff(x.port)) : x.gain;          // encan : a la mise max
   return `<div class="tuile-deal slab-deal ${x.pres ? 'pres' : ''} ${sansV ? 'suivi' : ''}" data-id="${esc(x.item_id)}" ${attrsAnnonce(x)} role="button" tabindex="0">
     <div class="sd-slab"><div class="sd-lab">
         <b class="sd-j">${x.favori ? '<i class="sd-fav">★</i> ' : ''}${esc(nom)}</b>${carte ? `<small class="sd-c">${esc(carte)}</small>` : ''}
-        <span class="sd-3">${k3(encan ? tt('Mise', 'Bid') : tt('Prix', 'Price'), argentCourt(prix), 'pr')}${k3(tt('Paie max', 'Pay max'), max != null && !sansV ? argentCourt(max) : '—', 'mx')}${k3(tt('Profit', 'Profit'), x.gain > 0 ? '+' + argentCourt(x.gain) : '—', 'g')}</span></div>
+        <span class="sd-3">${k3(encan ? tt('Mise', 'Bid') : tt('Prix', 'Price'), argentCourt(prix), 'pr')}${k3(tt('Paie max', 'Pay max'), max != null && !sansV ? argentCourt(max) : '—', 'mx')}${k3(tt('Profit', 'Profit'), g > 0 && !sansV ? '+' + argentCourt(g) : '—', 'g')}</span></div>
       <div class="sd-ph">${SVG_CARTE}${x.photo ? `<img src="${esc(photoNet(x.photo, 400))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}${boutonWatch(x)}
         ${encan ? `<span class="sd-fin">${icH()}${finDans(x.fin)}</span>` : ''}${x.ramassage ? `<span class="sd-ramp">${icPin()}</span>` : ''}</div></div>
     </div>`;
@@ -6037,7 +6082,7 @@ async function feuilleGTS(produits, force){
     ${r.ok === false ? `<div class="bandeau">${esc(r.erreur || '')}</div>` : ''}
     ${nouveaux.length ? `<button class="btn" id="gts-tout">${ICONES.import} ${tt('Importer les ' + nouveaux.length + ' nouveaux', 'Import the ' + nouveaux.length + ' new ones')}</button>` : ''}
     <div class="liste" id="gts-l">${l.map(x => `<div class="rangee"><span class="milieu"><span class="nom">${esc(x.nom)}</span><span class="pastilles">${x.au_catalogue ? tag('✓ ' + tt('Au catalogue', 'In catalogue'), 'vert') : tag(tt('Nouveau', 'New'), 'or')}${x.ligue ? tag(x.ligue) : ''}</span></span>
-      <span class="aaj-act"><a class="ix" href="${esc(x.url)}" target="_blank" rel="noopener" aria-label="GTS">↗</a><button class="pilule ${x.au_catalogue ? '' : 'or'}" data-gts="${esc(x.url)}" ${x.au_catalogue ? '' : 'data-nouveau="1"'}>${ICONES.import} ${x.au_catalogue ? tt('Mettre à jour', 'Update') : tt('Importer', 'Import')}</button></span></div>`).join('')
+      <span class="aaj-act"><a class="ix" href="${esc(urlSure(x.url))}" target="_blank" rel="noopener" aria-label="GTS">↗</a><button class="pilule ${x.au_catalogue ? '' : 'or'}" data-gts="${esc(x.url)}" ${x.au_catalogue ? '' : 'data-nouveau="1"'}>${ICONES.import} ${x.au_catalogue ? tt('Mettre à jour', 'Update') : tt('Importer', 'Import')}</button></span></div>`).join('')
       || `<div class="vide" style="padding:16px">${tt('Aucune checklist trouvée.', 'No checklist found.')}</div>`}</div>
     <div class="ligne-btn"><button class="btn ghost" id="gts-maj">${tt('Actualiser', 'Refresh')}</button><button class="btn ghost" id="gts-fichier">${tt('Déposer un Excel', 'Drop an Excel')}</button></div>
     <div class="sous" style="font-size:13px">${r.maj ? tt('Liste lue le ', 'List read on ') + esc(String(r.maj).replace('T', ' ')) + ' · ' : ''}${tt('les nouveautés arrivent aussi dans « Produits à ajouter » chaque jour', 'new releases also show up in “Products to add” daily')}</div>`);
@@ -6290,7 +6335,7 @@ async function ventesJoueurBreak(el, produit, joueur){
     <div class="tot">${l(tt('Toutes ses cartes', 'All his cards'), v).replace(/^<div>|<\/div>$/g, '')}</div></div>
     <small>${tt(`${v.n} ventes eBay non gradées de ses cartes de ce produit`, `${v.n} raw eBay sales of his cards from this product`)}${v.depuis ? ' · ' + dateCourte(v.depuis) + ' – ' + dateCourte(v.jusqu) : ''}${v.gradees ? ' · ' + v.gradees + tt(' gradées exclues', ' graded excluded') : ''}.
       ${tt('Même règle pour chaque joueur : son nom, la bonne saison, ce produit seulement, pas de lots. Une vente auto-patch /25 compte dans Numérotée, Auto, Patch et Auto-patch.', 'Same rule for every player: his name, the right season, this product only, no lots. An auto-patch /25 sale counts in Numbered, Auto, Patch and Auto-patch.')}</small>
-    ${(v.exemples || []).length ? `<div class="vj-ex">${v.exemples.slice(0, 6).map(e => `<a href="${esc(e.url || '#')}" target="_blank" rel="noopener"><span style="${e.photo ? `background-image:url('${esc(e.photo)}')` : ''}"></span><b>${argentCourt(e.prix)}</b><small>${dateCourte(e.le)}</small></a>`).join('')}</div>` : ''}`;
+    ${(v.exemples || []).length ? `<div class="vj-ex">${v.exemples.slice(0, 6).map(e => `<a href="${esc(urlSure(e.url || '#'))}" target="_blank" rel="noopener"><span style="${e.photo ? `background-image:${cssUrl(e.photo)}` : ''}"></span><b>${argentCourt(e.prix)}</b><small>${dateCourte(e.le)}</small></a>`).join('')}</div>` : ''}`;
 }
 function explicationPlace(x, vue, r, nbListe){
   const qui = vue === 'joueurs' ? esc(x.nom) : esc(x.nom), cp = x.cartes_possibles || [];
@@ -6540,11 +6585,21 @@ document.addEventListener('click', (e) => {
   S.fenOrigine = a.getBoundingClientRect();          // 29 oct : la fiche s'ouvre depuis l'annonce touchee
   ouvrirAnnonce({item_id:a.dataset.annonce, titre:a.dataset.titre, photo:a.dataset.photo, total:nb(a.dataset.total), url:a.dataset.url, q:a.dataset.q || null});
 }, true);
+// 3 nov 2026 (Mathieu, Gridin /49 : « en la payant 121 et en la vendant 173, je peux faire 65 $ apres les frais ? ca ne fait
+// pas de sens ») : le profit d'un ENCAN se calcule a la mise max (ce qu'on paiera si on gagne au plus haut), pas a la mise
+// actuelle qui va monter. Les frais : ceux des Reglages (eBay 13,25 % + 0,40 $ par defaut).
+const portEff = (p) => p == null ? 15 : (p || 0);          // port pas affiche : 15 $ estimes, comme le serveur (deals.PORT_INCONNU)
+const fraisVente = () => { const r = S.reglages || {}; return [r.frais_ebay_pct != null ? r.frais_ebay_pct / 100 : 0.1325, r.frais_ebay_fixe != null ? r.frais_ebay_fixe : 0.40]; };
+const profitA = (valeur, paye) => { if (!valeur || paye == null) return null; const [fp, ff] = fraisVente(); return Math.round((valeur * (1 - fp) - ff - paye) * 100) / 100; };
 // 30 oct 2026 : pourquoi une carte n'a pas de valeur, en mots simples (avant : « pas assez de ventes » pour tout)
 function raisonSansValeur(d){
   const n = d.nb_trouvees || 0, p = String(d.pourquoi || '');
   if (/plafond/.test(p)) return tt('Recherche des ventes en pause pour aujourd’hui (budget du jour atteint).', 'Sales lookup paused for today (daily budget reached).');
-  if (p && !/vente|dispers|vieill/.test(p)) return tt('Les ventes n’ont pas pu être lues (', 'Sales could not be read (') + esc(p.slice(0, 60)) + ').';
+  // 3 nov 2026 (Mathieu, Jordan Beam Team : « pourquoi ca sort rien ? » : « SoldComps injoignable (TimeoutError) ») : une
+  // panne passagere se dit en mots simples, sans le nom du fournisseur, avec « Reessayer »
+  if (/injoignable|HTTP|refus|quota|inactif/.test(p)) return tt('Les ventes eBay n’ont pas pu être lues pour l’instant (le service a mis trop de temps).', 'eBay sales could not be read right now (the service took too long).')
+    + ` <button class="lien-t" id="fa-reessai">${tt('Réessayer', 'Retry')}</button>`;
+  if (p && !/vente|dispers|vieill/.test(p)) return tt('Les ventes n’ont pas pu être lues.', 'Sales could not be read.') + ` <button class="lien-t" id="fa-reessai">${tt('Réessayer', 'Retry')}</button>`;
   if (/dispers|differentes/.test(p)) return tt(`${n} ventes trouvées, mais leurs prix sont trop différents pour dire ce qu’elle vaut.`, `${n} sales found, but their prices are too far apart to say what it’s worth.`);
   if (/vieill/.test(p)) return tt(`${n} ventes trouvées, mais trop vieilles pour être sûres.`, `${n} sales found, but too old to be sure.`);
   if (n === 1) return tt('Une seule vente de cette carte trouvée : pas assez pour dire ce qu’elle vaut.', 'Only one sale of this card found: not enough to say what it’s worth.');
@@ -6556,17 +6611,19 @@ function raisonSansValeur(d){
 // les 3 chiffres d'une tuile de deal (mise, paie max, profit), mis a jour sur place
 function majChiffresTuile(t, x){
   const b = (k) => t.querySelector(`.sd-k.${k} b`);
+  if (t.classList.contains('suivi')) { if (b('pr') && x.total) b('pr').textContent = argentCourt(x.encan ? Math.max(0, x.total - (x.port || 0)) : x.total); return; }
   if (b('pr') && x.total) b('pr').textContent = argentCourt(x.encan ? Math.max(0, x.total - (x.port || 0)) : x.total);
   if (b('mx') && x.mise_max != null) b('mx').textContent = argentCourt(x.mise_max);
-  if (b('g')) b('g').textContent = x.gain > 0 ? '+' + argentCourt(x.gain) : '—';
+  const g = x.encan && x.mise_max != null && x.valeur ? profitA(x.valeur, x.mise_max + portEff(x.port)) : x.gain;
+  if (b('g')) b('g').textContent = g > 0 ? '+' + argentCourt(g) : '—';
 }
 function majTuilePrix(id, d){
   const a = d && d.article, x = (S.dealsParId || {})[String(id)];
   if (!a || !a.total || !x) return;
-  const fp = 0.1325, ff = 0.40;
+  const [fp, ff] = fraisVente();
   x.total = a.total; if (a.port_cad != null) x.port = a.port_cad;
   if (x.valeur) { x.rabais = Math.round(100 * (1 - x.total / x.valeur)); x.gain = Math.round((x.valeur * (1 - fp) - ff - x.total) * 100) / 100;
-    if (x.encan && !x.mise_perso) x.mise_max = Math.round((x.valeur * 0.70 - (x.port || 0)) * 100) / 100; }
+    if (x.encan && !x.mise_perso) x.mise_max = Math.round((x.valeur * 0.70 - portEff(x.port)) * 100) / 100; }
   $$(`.tuile-deal[data-id="${CSS.escape(String(id))}"]`).forEach(t => {
     if (d.deal_retire) { t.classList.add('sort'); setTimeout(() => t.remove(), 300); MEMO.clear(); GARDE_SAUTER.oui = true; return; }
     majChiffresTuile(t, x);
@@ -6590,13 +6647,16 @@ async function ouvrirAnnonce(base){
     // 2 nov 2026 (Mathieu : « pourquoi le max bid change ? » : 66 $ sur la tuile, 53 $ dans la fiche) : une carte deja dans
     // les deals ou la watchlist garde SES chiffres (la valeur et la mise max de la tuile) ; sinon la meme regle partout
     // (70 % de la valeur, moins le port)
-    const conn = base && base.mise_max != null && base.valeur ? base : null;
+    // 3 nov 2026 (revue) : la tuile ne passe que l'id, le titre et le prix : ses chiffres a elle viennent de S.dealsParId
+    const x0 = (S.dealsParId || {})[String(base && base.item_id)] || base;
+    const conn = x0 && x0.mise_max != null && x0.valeur ? x0 : null;
     if (conn && d.valeur !== conn.valeur && total) {
-      const fp = 0.1325, ff = 0.40;
+      const [fp, ff] = fraisVente();
       d = Object.assign({}, d, {valeur: conn.valeur, nb_vendues: conn.n || d.nb_vendues, valeur_source: d.valeur_source || 'vendues',
         rabais: Math.round(100 * (1 - total / conn.valeur)), gain: Math.round((conn.valeur * (1 - fp) - ff - total) * 100) / 100});
     }
     const maxA = conn ? conn.mise_max : maxT == null ? null : encan ? Math.max(0, maxT - port) : maxT;
+    const gainAff = encan && maxA != null && d.valeur ? profitA(d.valeur, maxA + port) : d.gain;      // encan : a la mise max
     // 2 nov 2026 (Mathieu : « quand le prix suggere est depasse par le bid actuel, ce n'est plus un deal ») : la mise actuelle et
     // la mise max se comparent HORS port (la mise max est ce qu'on entre sur eBay) ; depassee -> « Plus un deal »
     const depasse = maxA != null && total && (encan ? total - port : total) > maxA + 0.5;
@@ -6612,19 +6672,20 @@ async function ouvrirAnnonce(base){
     f.innerHTML = `<div class="fen fa" role="dialog" aria-modal="true"><button class="fen-x" aria-label="${esc(tt('Fermer', 'Close'))}">✕</button>
       <div class="fa-photo"><div class="fen-img" id="fen-img">${photos[0] ? `<img src="${esc(photos[0])}" alt="">` : SVG_CARTE}</div>
         ${a.fin && encan ? `<span class="fa-fin">${icH()}${esc(finDans(a.fin))}</span>` : ''}
-        ${photos.length > 1 ? `<div class="fen-vigs fa-vigs">${photos.slice(0, 6).map((p, i) => `<button class="${i ? '' : 'on'}" data-ph="${esc(p)}" style="background-image:url('${esc(p)}')" aria-label="photo ${i + 1}"></button>`).join('')}</div>` : ''}</div>
+        ${photos.length > 1 ? `<div class="fen-vigs fa-vigs">${photos.slice(0, 6).map((p, i) => `<button class="${i ? '' : 'on'}" data-ph="${esc(p)}" style="background-image:${cssUrl(p)}" aria-label="photo ${i + 1}"></button>`).join('')}</div>` : ''}</div>
       <div class="fa-t">${esc(a.titre || base.titre || '')}</div>
       <div class="fa-3">
-        <div class="fa-k"><span>${encan ? tt('Mise actuelle', 'Current bid') : tt('Prix', 'Price')}</span><b>${total ? argent(encan ? Math.max(0, total - port) : total, 0) : '—'}</b><small>${a.port_cad != null ? (a.port_cad ? (encan ? '+ ' + argent(port, 0) + tt(' de port', ' shipping') : tt('port compris', 'shipping incl.')) : tt('livraison gratuite', 'free shipping')) : '&nbsp;'}</small></div>
+        <div class="fa-k"><span>${encan ? tt('Mise actuelle', 'Current bid') : tt('Prix', 'Price')}</span><b>${total ? argent(encan ? Math.max(0, total - port) : total, 0) : '—'}</b><small>${a.port_cad != null ? (a.port_cad ? (encan ? '+ ' + argent(port, 0) + (a.port_estime ? tt(' de port (estimé)', ' shipping (est.)') : tt(' de port', ' shipping')) : a.port_estime ? tt('port estimé compris', 'est. shipping incl.') : tt('port compris', 'shipping incl.')) : tt('livraison gratuite', 'free shipping')) : '&nbsp;'}</small></div>
         <div class="fa-k fa-m"><span>${encan ? tt('Mise max', 'Max bid') : tt('Paie max', 'Pay max')}</span>${maxA != null ? `<b>${argent(maxA, 0)}</b><small>${conn && conn.mise_perso ? tt('choisie par toi', 'set by you') : encan && port ? tt('hors port', 'excl. shipping') : '&nbsp;'}</small>` : `<b>—</b><small>&nbsp;</small>`}</div>
-        <div class="fa-k fa-g"><span>${tt('Profit', 'Profit')}</span>${d.gain != null ? `<b class="${d.gain > 0 ? '' : 'neg'}">${d.gain > 0 ? '+' : '−'}${argent(Math.abs(d.gain), 0)}</b><small>${tt('après frais', 'after fees')}</small>`
+        <div class="fa-k fa-g"><span>${tt('Profit', 'Profit')}</span>${gainAff != null ? `<b class="${gainAff > 0 ? '' : 'neg'}">${gainAff > 0 ? '+' : '−'}${argent(Math.abs(gainAff), 0)}</b><small>${encan && maxA != null && d.valeur ? tt('à ta mise max', 'at your max bid') : tt('après frais', 'after fees')}</small>`
           : d.chargement || d.ventes_attente ? `<b><span class="roue"></span></b><small>&nbsp;</small>` : `<b>—</b><small>&nbsp;</small>`}</div>
       </div>
       ${depasse || budget ? `<div class="fa-pils">${depasse ? `<span class="capsule rouge">${esc(vt[1])}</span>` : ''}${depasse && d.deal_retire ? `<span class="capsule">${tt('Retiré de tes deals', 'Removed from your deals')}</span>` : ''}${budget ? `<span class="capsule rouge">${tt('Au-dessus de ton budget', 'Over your budget')}</span>` : ''}</div>` : ''}
       <div class="fa-ventes">${ventes.length ? `<div class="fa-vt">${d.valeur ? tt('Se vend ', 'Sells for ') + `<b class="fa-med">${argent(d.valeur, 0)}</b>` : tt('Vendues récemment', 'Recently sold')} <small>${d.valeur && d.nb_vendues ? tt(`médiane de ${d.nb_vendues} ventes · glisse ›`, `median of ${d.nb_vendues} sales · swipe ›`) : tt('même carte · glisse ›', 'same card · swipe ›')}</small></div>
-        <div class="fv-car fa-car">${ventes.map(k => `<a class="fv" ${k.url ? `href="${esc(k.url)}" target="_blank" rel="noopener"` : ''}><div class="fv-ph">${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo, 300))}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
+        <div class="fv-car fa-car">${ventes.map(k => `<a class="fv" ${k.url ? `href="${esc(urlSure(k.url))}" target="_blank" rel="noopener"` : ''}><div class="fv-ph">${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo, 300))}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
           <b>${argent(k.prix, 0)}</b><small>${k.le ? dateCourte(k.le) : ''}</small></a>`).join('')}</div>`
         : d.chargement || d.ventes_attente ? `<div class="lecture"><span class="roue"></span>${tt('Les ventes réelles arrivent…', 'Real sales are loading…')}</div>`
+        : d.valeur_chasseur ? `<div class="fa-vide">${tt('Se vend ', 'Sells for ')}<b>${argent(d.valeur_chasseur.valeur, 0)}</b> ${tt('d’après les ventes lues par le chasseur de deals', 'from the sales read by the deal hunter')}${d.valeur_chasseur.le ? ' (' + esc(ilYa(d.valeur_chasseur.le)) + ')' : ''}. ${tt('Les ventes en direct n’ont pas pu être lues.', 'Live sales could not be read.')} <button class="lien-t" id="fa-reessai">${tt('Réessayer', 'Retry')}</button></div>`
         : `<div class="fa-vide">${d.peu_de_ventes ? raisonSansValeur(d) : tt('Aucune vente de cette carte exacte trouvée.', 'No sale of this exact card found.')}</div>`}</div>
       <div class="fa-btns"><a class="btn" href="${esc(url)}" target="_blank" rel="noopener">${encan ? tt('Miser sur eBay', 'Bid on eBay') : tt('Voir sur eBay', 'View on eBay')}</a>${boutonWatch({item_id: base.item_id})}</div>
       <div class="fa-bas"><a href="#valeur/${encodeURIComponent(a.titre || base.titre || '')}" data-fermer>${tt('Toutes ses ventes ›', 'All its sales ›')}</a>
@@ -6632,6 +6693,7 @@ async function ouvrirAnnonce(base){
     $$('.fen-vigs [data-ph]', f).forEach(b => b.onclick = () => { $('#fen-img', f).innerHTML = `<img src="${esc(b.dataset.ph)}" alt="">`; $$('.fen-vigs button', f).forEach(x => x.classList.toggle('on', x === b)); brancherLoupe($('#fen-img', f)); });
     brancherLoupe($('#fen-img', f));
     $$('[data-fermer]', f).forEach(b => b.addEventListener('click', fermerAnnonce));
+    const re_ = $('#fa-reessai', f); if (re_) re_.onclick = () => { vibrer(); ouvrirAnnonce({...base}); };
     const fp = $('.fen-plus', f); if (fp) fp.ontoggle = () => { S.fenPlus = fp.open; };
     const fe = $('.fen', f);
     if (fe && S.fenEntree) {                          // 29 oct 2026 : la fiche grandit depuis l'annonce touchee
@@ -7194,7 +7256,7 @@ async function scanResultat(c, q){
   SCAN.valeur = r && r.valeur;
   $('#sr-val').innerHTML = `${r && r.valeur ? `<div class="sr-chiffre"><span>${tt('Vaut', 'Worth')}</span><b>${argent(r.valeur, 0)}</b><small>${tt('médiane de ventes réelles', 'median of real sales')}</small></div>`
       : `<div class="sous">${(r && r.erreur) || tt('Pas assez de ventes sûres de cette carte pour donner une valeur.', 'Not enough reliable sales of this card to give a value.')}</div>`}
-    ${ventes.length ? `<div class="fv-car">${ventes.slice(0, 12).map(k => `<a class="fv" ${k.url ? `href="${esc(k.url)}" target="_blank" rel="noopener"` : ''}><div class="fv-ph">${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo))}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
+    ${ventes.length ? `<div class="fv-car">${ventes.slice(0, 12).map(k => `<a class="fv" ${k.url ? `href="${esc(urlSure(k.url))}" target="_blank" rel="noopener"` : ''}><div class="fv-ph">${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo))}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
       <b>${argent(k.prix, 0)}</b><small>${k.le ? tt('vendue ', 'sold ') + dateCourte(k.le) : tt('vendue', 'sold')}</small></a>`).join('')}</div>` : ''}`;
 }
 function scanRecommencer(){
@@ -7472,7 +7534,7 @@ async function vueAccueil(arg){
       ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>', tt('Demandes', 'Requests'), String((rA.demandes || {}).nouvelles || 0), `${(rA.demandes || {}).ouvertes || 0} ${tt('ouvertes', 'open')}`, '#admin/demandes', (rA.demandes || {}).nouvelles ? 'or' : ''],
       ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>', tt('Produits à ajouter', 'Products to add'), String(rA.a_ajouter || 0), tt('repérés sur eBay ou demandés', 'spotted or requested'), '#admin/catalogue', rA.a_ajouter ? 'or' : ''],
       ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 21h20z"/><path d="M12 10v5M12 18h.01"/></svg>', tt('Erreurs 24 h', 'Errors 24 h'), String(rA.erreurs_24h || 0), tt('serveur', 'server'), '#admin/serveur', rA.erreurs_24h ? 'rouge' : 'vert'],
-      ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>', 'SoldComps', v.actif ? `${v.aujourdhui || 0} / ${v.plafond || 0}` : tt('inactif', 'off'), tt('recherches aujourd’hui', 'searches today'), '#admin/serveur', !v.actif ? 'rouge' : pc(v.aujourdhui, v.plafond) > 80 ? 'or' : ''],
+      ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>', 'SoldComps', v.actif ? `${v.aujourdhui || 0} / ${v.plafond || 0}` : tt('inactif', 'off'), tt('recherches aujourd’hui', 'searches today') + (v.poids_jour && Math.abs(v.poids_jour - 1) > 0.01 ? ' · ×' + String(v.poids_jour).replace('.', ',') + tt(' ce jour-là', ' this weekday') : ''), '#admin/serveur', !v.actif ? 'rouge' : pc(v.aujourdhui, v.plafond) > 80 ? 'or' : ''],
       ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.5 12h11L21 8H7"/><circle cx="10" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/></svg>', tt('Appels eBay', 'eBay calls'), br ? pc(br.utilises, br.limite) + ' %' : '—', tt('de la limite du jour', 'of today’s limit'), '#admin/serveur', br && pc(br.utilises, br.limite) > 80 ? 'rouge' : ''],
       ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="3"/><circle cx="12" cy="13.5" r="3.5"/><path d="M8 7l1.5-3h5L16 7"/></svg>', tt('Photos IA', 'AI photos'), ph.ce_mois != null ? String(ph.ce_mois) : '—', ph.usd != null ? `${Math.round(ph.usd * 100) / 100} $ US / ${ph.plafond_usd} $` : '', '#admin/serveur', ph.usd > (ph.plafond_usd || 50) * 0.8 ? 'rouge' : ''],
       ...(dq ? [['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 3v6h10V3M7 21v-7h10v7"/></svg>', tt('Disque', 'Disk'), pc(dq.total_go - dq.libre_go, dq.total_go) + ' %', `${dq.libre_go} Go ${tt('libres', 'free')}`, '#admin/serveur', pc(dq.total_go - dq.libre_go, dq.total_go) > 85 ? 'rouge' : '']] : [])];
@@ -7806,7 +7868,7 @@ document.addEventListener('click', (e) => {
   vibrer();
   ouvrirFeuille(`<h3>${esc(n.titre)}</h3><div class="sous" style="margin-bottom:10px">${esc(n.texte)}</div>
     ${n.preuve.map(g => `<div class="r-titre" style="margin:12px 0 6px">${esc(g.titre)} <span class="sous">· ${g.ventes.length} ${tt('ventes', 'sales')}</span></div>
-      <div class="px-liste">${g.ventes.map(v => `<a class="px-l" ${v.url ? `href="${esc(v.url)}" target="_blank" rel="noopener"` : ''}><span class="px-d">${esc(dateCourte(v.le))}</span><span class="px-t">${esc(v.titre)}</span><b>${argent(v.prix, 0)}</b></a>`).join('')}</div>`).join('')}
+      <div class="px-liste">${g.ventes.map(v => `<a class="px-l" ${v.url ? `href="${esc(urlSure(v.url))}" target="_blank" rel="noopener"` : ''}><span class="px-d">${esc(dateCourte(v.le))}</span><span class="px-t">${esc(v.titre)}</span><b>${argent(v.prix, 0)}</b></a>`).join('')}</div>`).join('')}
     <div class="sous" style="margin-top:12px">${esc(n.source || '')}. ${tt('Même carte et même condition seulement ; prix aberrants retirés ; une vente comptée une fois.', 'Same card and same condition only; outlier prices removed; each sale counted once.')}</div>`);
 }, true);
 function rendreNouvelles(items){
@@ -7843,7 +7905,7 @@ function rendreNouvelles(items){
           <div class="as-truc"><b>${n.marche ? tt('À savoir', 'Good to know') : tt('Le truc', 'The tip')}</b> ${esc(n.truc)}</div>
           ${n.marche && (n.preuve || []).length ? `<button class="as-lien" data-preuve="${k}">${tt(`Voir les ${(n.preuve || []).reduce((t, g) => t + g.ventes.length, 0)} ventes`, `See the ${(n.preuve || []).reduce((t, g) => t + g.ventes.length, 0)} sales`)} ›</button>` : ''}
           ${['pouls', 'en_feu'].includes(n.id) && /^#/.test(n.lien || '') ? `<a class="as-lien" href="${esc(n.lien.replace(/^(#joueur\/)(.*)$/, (m, a, b) => a + encodeURIComponent(b)))}">${tt('Va jeter un œil', 'Take a look')} ›</a>` : ''}
-          <div class="slide-src">${n.url ? `<a href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.source)} ↗</a>` : esc(n.source || '')}${n.calcule ? ' · ' + tt('chiffre du jour', 'today’s figure') : ''}</div></div></div>`;
+          <div class="slide-src">${n.url ? `<a href="${esc(urlSure(n.url))}" target="_blank" rel="noopener">${esc(n.source)} ↗</a>` : esc(n.source || '')}${n.calcule ? ' · ' + tt('chiffre du jour', 'today’s figure') : ''}</div></div></div>`;
     const cl = n.impact > 0 ? 'vert' : n.impact < 0 ? 'rouge' : n.genre === 'hobby' ? 'or' : 'acc';
     return `<div class="slide"><div class="visuel-pile">${visuelSport(n)}${n.image ? `<img class="visuel-img" src="${esc(n.image)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}</div>
       <div class="texte"><div class="haut-n"><span class="capsule ${cl}">${esc(n.libelle || nomSport(n.sport))}${n.joueur ? ' · ' + esc(n.joueur) : ''}</span>${pts(k)}</div>
@@ -8113,7 +8175,7 @@ async function vuePouls(arg){
         return `<button class="pl-l ${x === sel ? 'on' : ''}" data-pl="${esc(x.cle)}"><span class="pl-n">${esc(x.nom.charAt(0).toUpperCase() + x.nom.slice(1))}</span>${barres(x.chaleur)}<span class="pl-t ${c}">${t}</span></button>`; }).join('')}</div>` : `<div class="vide">${tt('Le pouls se mesure : reviens dans quelques jours.', 'The pulse is being measured: come back in a few days.')}</div>`}
       ${sel && sel.exemples.length ? `<div class="r-titre" style="margin-top:6px">${tt('Ventes récentes', 'Recent sales')} · ${esc(sel.nom)}</div>
         <div class="pl-ex">${sel.exemples.map(v => `<a class="pl-e" href="${esc(lienAchat(v.url || '#', 'pouls'))}" target="_blank" rel="noopener">
-          <span class="pl-img" style="${v.photo ? `background-image:url('${esc(v.photo)}')` : ''}"></span><b>${argentCourt(v.prix)}</b><small>${esc(v.titre || '')}</small></a>`).join('')}</div>` : ''}
+          <span class="pl-img" style="${v.photo ? `background-image:${cssUrl(v.photo)}` : ''}"></span><b>${argentCourt(v.prix)}</b><small>${esc(v.titre || '')}</small></a>`).join('')}</div>` : ''}
       <div class="t-legal">${tt('Mesuré par SlabCoach sur des ventes eBay réelles (SoldComps). À titre informatif seulement : ce n’est pas un conseil financier.', 'Measured by SlabCoach on real eBay sales (SoldComps). For information only: this is not financial advice.')}</div>
     </section>`;
     $$('[data-pl]').forEach(b => b.onclick = () => { sel = l.find(x => x.cle === b.dataset.pl); peindre(); });
@@ -8630,6 +8692,20 @@ function repere(c){
   if (e > 0) return {cl: e > 0.25 ? 'rouge' : 'or', court: tt(`+${pct} % vs marché`, `+${pct}% vs market`), long: tt('marché ', 'market ') + argentCourt(m.mediane)};
   return {cl:'acc', court: tt(`−${pct} % : tu peux monter`, `−${pct}%: room to raise`), long: tt('marché ', 'market ') + argentCourt(m.mediane)};
 }
+// 3 nov 2026 (Mathieu : « un indice de variation de prix, genre +5 % depuis la semaine passee et +10 % depuis le mois
+// passe ») : la pastille d'une carte (30 jours, sinon 7 jours, sinon 90 jours) ; rien si SlabCoach n'a pas assez de ventes
+const tendDe = (c) => { const t = c && c.tendance; if (!t) return null; for (const [k, j] of [['t30', 30], ['t7', 7], ['t90', 90]]) if (t[k] != null) return {pct: t[k], j}; return null; };
+// 3 nov 2026 (revue de securite) : une adresse d'image dans un style (url(...)) : les caracteres qui pourraient sortir de
+// url() ou de l'attribut sont encodes ; un schema autre que http(s), data:image ou /chemin -> aucune image
+const cssUrl = (u) => { u = String(u || ''); if (!/^(https?:|data:image\/|\/)/i.test(u)) return 'none';
+  return esc('url(' + u.replace(/["'()\\\s<>]/g, c => '%' + c.charCodeAt(0).toString(16).padStart(2, '0')) + ')'); };
+// un lien vers l'exterieur : http(s) seulement (jamais javascript:)
+const urlSure = (u) => /^https?:\/\//i.test(String(u || '')) ? String(u) : '#';
+const fPct = (v) => { const r = Math.round(v); return (r > 0 ? '+' : r < 0 ? '−' : '') + Math.abs(r) + ' %'; };
+function pastilleTend(c, cls){
+  const t = tendDe(c); if (!t || Math.abs(t.pct) < 1) return t ? `<span class="tdc plat ${cls || ''}">= ${t.j} ${tt('j', 'd')}</span>` : '';
+  return `<span class="tdc ${t.pct > 0 ? 'haut' : 'bas'} ${cls || ''}" title="${esc(tt(`sur ${t.j} jours`, `over ${t.j} days`))}">${t.pct > 0 ? '▲' : '▼'} ${fPct(t.pct).replace(/^[+−]/, '')} <small>${t.j} ${tt('j', 'd')}</small></span>`;
+}
 const photoOk = (u) => u && u !== '-' && /^(https?:|data:|\/mes-photos\/)/.test(u);   // 28 oct : les photos gardees (/mes-photos/) aussi
 function tuileInv(c){
   const vendue = c.statut === 'Vendue', r = !vendue ? repere(c) : null, m = c.marche;
@@ -8643,7 +8719,7 @@ function tuileInv(c){
   const img = `<div class="img">${c.joueur ? `<span class="ecusson gros">${esc(initiales(c))}</span>` : SVG_CARTE}${photoOk(c.photo) ? `<img src="${esc(photoNet(c.photo))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}</div>`;
   const bas = vendue
     ? `<span class="p">${argent(c.prix_vendu, 0)}</span>${c.profit != null ? capsule((c.profit >= 0 ? '+' : '') + argentCourt(c.profit), (c.profit >= 0 ? 'vert' : 'rouge') + ' petit') : ''}`
-    : `<span class="p">${argent(c.prix_demande ?? c.valeur, 0)}</span>`;
+    : `<span class="p">${argent(c.prix_demande ?? c.valeur, 0)}</span>${pastilleTend(c)}`;
   return `<button class="tuile-c tuile-inv" data-id="${c.id}">${img}<div class="coin">${etat}</div>
     <div class="corps"><div class="t">${esc(nom)}</div>${det ? `<div class="det-c">${esc(det)}</div>` : ''}
       ${c.marche_pro ? `<div class="repere verrou" data-pro="repere"><b>${icN('cadenas')}${tt('Repère prix', 'Price check')}</b><span>${tt('ton prix vs le marché : Pro', 'your price vs market: Pro')}</span></div>` : ''}
@@ -8669,7 +8745,7 @@ function tuileSlab(c){
     <span class="sl-lab"><span class="sl-t">${esc(titre)}</span>
       <span class="sl-n ${n ? (n.vraie ? 'vraie' : '') : 'aucune'}"><b class="${n && n.n.length > 3 ? 'long' : ''}">${n ? esc(n.n) : '—'}</b><small>${n ? esc(n.s) : tt('À NOTER', 'NOT RATED')}</small></span></span>
     <span class="sl-puits">${photoOk(c.photo) ? `<img src="${esc(photoNet(c.photo))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : SVG_CARTE}
-      ${env ? `<span class="sl-env">${capsule(env.type === 'gradation' ? (env.etape ? tt('À soumettre', 'To submit') : tt('Au gradage', 'At grading')) : tt('En encan', 'At auction'), (envoiRetard(env) ? 'or' : 'acc') + ' petit')}</span>` : ''}</span>
+      ${pastilleTend(c, 'sl-tend')}${env ? `<span class="sl-env">${capsule(env.type === 'gradation' ? (env.etape ? tt('À soumettre', 'To submit') : tt('Au gradage', 'At grading')) : tt('En encan', 'At auction'), (envoiRetard(env) ? 'or' : 'acc') + ' petit')}</span>` : ''}</span>
   </button>`;
 }
 async function consignataires(force){ if (!S.consig || force) S.consig = await API.consignataires_liste(); return S.consig; }
@@ -8849,7 +8925,7 @@ const NOMS_CHAMPS = {titre:'titre', joueur:'joueur', equipe:'équipe', annee:'sa
 // 28 oct 2026 (Mathieu : « l'acheteur veut voir sa collection sans necessairement vendre ; dans la meme page, l'option de la
 // vendre sur eBay avec l'info deja presente ») : la fiche d'une carte de collection, simple : photo, valeur, ce que tu as paye,
 // et un seul bouton pour la vendre (l'annonce se fait avec ce que l'app sait deja). Modifier ouvre le formulaire complet.
-function ficheCollection(c){
+function ficheCollection(c, opts){
   let ph = []; try { ph = JSON.parse(c.photos || '[]'); } catch (e) {}
   const img = ph[0] || c.photo, val_ = nb(c.valeur), cout = nb(c.cout), gain = val_ != null && cout != null ? val_ - cout : null;
   const det = [c.annee, c.set_nom, c.parallele, c.numero ? '#' + c.numero : '', c.tirage ? '/' + c.tirage : '', c.grade].filter(Boolean).join(' · ');
@@ -8861,6 +8937,10 @@ function ficheCollection(c){
       <div class="fc-chiffres"><div><span>${tt('Valeur', 'Value')}</span><b id="fc-val">${val_ != null ? argent(val_, 0) : '—'}</b><small id="fc-val-s">${tt('ventes réelles…', 'real sales…')}</small></div>
         <div><span>${tt('Payée', 'Paid')}</span><b>${cout != null ? argent(cout, 0) : '—'}</b></div>
         ${gain != null ? `<div><span>${tt('Gain', 'Gain')}</span><b class="${gain >= 0 ? 'vert' : 'rouge'}">${gain >= 0 ? '+' : '−'}${argent(Math.abs(gain), 0)}</b></div>` : ''}</div>
+      ${c.tendance ? `<div class="fc-tend">${[['t7', tt('7 jours', '7 days')], ['t30', tt('30 jours', '30 days')], ['t90', tt('90 jours', '90 days')]].map(([k, l]) => { const v = c.tendance[k];
+          return `<div><span>${l}</span><b class="${v == null ? '' : v >= 1 ? 'vert' : v <= -1 ? 'rouge' : ''}">${v == null ? '—' : fPct(v)}</b></div>`; }).join('')}
+        <small>${c.tendance.source === 'ventes' ? tt(`Variation du prix : les ventes réelles de cette carte (${c.tendance.n} connues). « — » : pas assez de ventes pour comparer.`, `Price change: real sales of this card (${c.tendance.n} known). “—”: not enough sales to compare.`)
+          : tt('Variation de sa valeur dans ton inventaire (mises à jour avec les ventes réelles).', 'Change of its value in your inventory (updated from real sales).')}</small></div>` : ''}
       ${c.id && phs.length && !c.grade ? `<div id="fc-etat"></div>` : ''}
       ${c.id ? `<div id="fc-envoi"></div>` : ''}
       <button class="fc-alerte" id="fc-al" role="switch" aria-checked="false" ${c.id ? '' : 'hidden'}>
@@ -8902,7 +8982,7 @@ function ficheCollection(c){
     ims.forEach((im, j) => { im.src = rs[j].src; });
     const zi = $('#fc-imgs'); if (zi) { const k = Math.max(0.62, Math.min(1.6, rs[0].ratio)); zi.style.aspectRatio = String(k); zi.style.width = `min(100%, calc(40vh * ${k.toFixed(3)}))`; }
   })();
-  if ($('#fc-etat')) blocEtat(c);
+  if ($('#fc-etat')) blocEtat(c, false, opts);
   if ($('#fc-envoi')) blocEnvoi(c);
   if (envoiDe(c)) { const v = $('#fc-vendre'); if (v) { v.hidden = true; if (v.nextElementSibling) v.nextElementSibling.hidden = true; } }   // la carte n'est pas chez toi
   const zi = $('#fc-imgs'), pts = $('#fc-pts');
@@ -8938,7 +9018,8 @@ const LIB_ZONE = (z) => ({'coin haut-gauche': tt('Coin haut gauche', 'Top-left c
   'bord droit': tt('Bord droit', 'Right edge'), 'bord bas': tt('Bord du bas', 'Bottom edge'), 'bord gauche': tt('Bord gauche', 'Left edge'), surface: tt('Surface', 'Surface')})[z] || z;
 const LIB_DEFAUT = (d) => ({blanchiment: tt('blanchiment', 'whitening'), 'coin mou': tt('coin mou', 'soft corner'), 'coin plie': tt('coin plié', 'bent corner'),
   ebrechure: tt('ébréchure', 'chipping'), entaille: tt('entaille', 'nick'), rayure: tt('rayure', 'scratch'), "ligne d'impression": tt('ligne d’impression', 'print line'),
-  tache: tt('tache', 'stain'), pli: tt('pli', 'crease'), bosse: tt('bosse', 'dent'), decentrage: tt('décentrage', 'off-center'), autre: tt('défaut', 'flaw')})[d] || d;
+  tache: tt('tache', 'stain'), pli: tt('pli', 'crease'), bosse: tt('bosse', 'dent'), "marque d'ecriture": tt('marque d’écriture', 'writing indent'), decentrage: tt('décentrage', 'off-center'), autre: tt('défaut', 'flaw')})[d] || d;
+const gCls = (g) => String(g || '').replace(/[^a-z]+/gi, '-');      // 3 nov 2026 (revue) : jamais de texte brut dans une classe
 const LIB_GRAV = (g) => ({leger: tt('léger', 'light'), moyen: tt('moyen', 'moderate'), fort: tt('marqué', 'heavy'), 'a verifier': tt('à vérifier', 'to check')})[g] || '';
 // 2 nov 2026 (Mathieu : « les chiffres pas a la bonne place, pas d'outil de centrage visible (un genre de layer) ») : chaque
 // photo est cadree sur la carte trouvee (moins de fond), avec un calque : le contour de la carte trouve par l'app, les 4
@@ -8958,7 +9039,7 @@ function baremePSA(){
     [tt('Quelques points blancs', 'A few white dots'), '8'], [tt('Légère usure, de près', 'Slight wear, up close'), '7'], [tt('Petite encoche', 'Small notch'), '6'],
     [tt('Ébréchures', 'Chipping'), '5'], [tt('Usure nette, entaille', 'Clear wear, nick'), '4']];
   const SU = [[tt('Ligne d’impression', 'Print line'), '10 · 9 · 8'], [tt('Tache, empreinte', 'Stain, fingerprint'), '9 · 8 · 6'], [tt('Rayure', 'Scratch'), '8 · 6 · 5'],
-    [tt('Perte de lustre, bosse', 'Gloss loss, dent'), '7 · 6 · 5'], [tt('Pli', 'Crease'), '5 · 4 · 3']];
+    [tt('Perte de lustre, bosse', 'Gloss loss, dent'), '7 · 6 · 5'], [tt('Marque d’écriture (chiffre creusé)', 'Writing indent'), '6 · 6 · 5'], [tt('Pli', 'Crease'), '5 · 4 · 3']];
   const tab = (l, h) => `<table class="bar-t"><tr><th>${h}</th><th>PSA</th></tr>${l.map(([a, n]) => `<tr><td>${a}</td><td><b>${n}</b></td></tr>`).join('')}</table>`;
   popOuvrir(`<button class="pop-x" id="bar-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
     <div class="pop-tete"><span class="pop-sur">${tt('Barème', 'Scale')}</span><h3>${tt('Normes officielles PSA', 'Official PSA standards')}</h3></div>
@@ -9000,9 +9081,19 @@ function voirDefauts(e, k, apres, relancer){
   };
   const TOL = (f) => f === 'dos' ? TOL_DOS : TOL_DEVANT;
   const rat = (a, c) => { const g = Math.round(100 * Math.max(a, c) / ((a + c) || 1)); return [g, 100 - g]; };
-  const zoomDef = (d) => { const u = refs[d.photo || 0]; if (!u) return ''; const Z = 6, x = (d.x || 500) / 1000, y = (d.y || 500) / 1000;
+  // 3 nov 2026 (Mathieu : « un gros plan, c'est meme pas la carte ») : le point d'un coin ou d'un bord est recalcule sur le
+  // contour de la carte (comme le numero sur la photo), pas pris tel que l'ancienne analyse l'avait note
+  const ptZoom = (d) => { const q = (Q && Q[d.photo || 0]) || (e.quads && e.quads[d.photo || 0] && e.quads[d.photo || 0].length === 4 ? e.quads[d.photo || 0] : null);
+    let p = place(d, q);
+    if (q && /^coin /.test(d.zone || '')) { const k = {'coin haut-gauche': 0, 'coin haut-droit': 1, 'coin bas-droit': 2, 'coin bas-gauche': 3}[d.zone];
+      if (k != null) { const ctr = [(q[0][0] + q[1][0] + q[2][0] + q[3][0]) / 4, (q[0][1] + q[1][1] + q[2][1] + q[3][1]) / 4]; p = lerp(q[k], ctr, 0.012); } }
+    return [Math.max(0, Math.min(1000, p[0])) / 1000, Math.max(0, Math.min(1000, p[1])) / 1000]; };
+  const gpDe = (d) => /^coin /.test(d.zone || '') && (e.gros_plans || []).find(g => g.face === FACES[d.photo || 0] && 'coin ' + g.coin === d.zone);
+  const zoomDef = (d) => { const u = refs[d.photo || 0]; if (!u) return ''; const gp = gpDe(d);
+    if (gp) return `<span class="vd-zm grand vd-zm-gp" style="background-image:${cssUrl(gp.ref)};background-size:cover;background-position:center"><small>${tt('ton gros plan', 'your close-up')}</small></span>`;
+    const Z = 6, [x, y] = ptZoom(d);
     const pos = (t) => Math.max(0, Math.min(100, (t * Z - 0.5) / (Z - 1) * 100)).toFixed(2);
-    return `<span class="vd-zm grand" style="background-image:url('${esc(photoNet(u, 1600))}');background-size:${Z * 100}% ${Z * 100}%;background-position:${pos(x)}% ${pos(y)}%"><i></i></span>`; };
+    return `<span class="vd-zm grand" style="background-image:${cssUrl(photoNet(u, 1600))};background-size:${Z * 100}% ${Z * 100}%;background-position:${pos(x)}% ${pos(y)}%"><i></i></span>`; };
   // la description d'un defaut, ouverte sous (ou sur) son numero : quoi, ou, le critere PSA, et ton avis
   const bulle = (cad, sc, d, i, x, y) => {
     const a = (e.avis || {})[i], b = document.createElement('div');
@@ -9075,8 +9166,10 @@ function voirDefauts(e, k, apres, relancer){
       const regle = regleDe(k), rg = regle ? `<small>${esc(regle)}</small>` : '';
       if (k === 'centrage') {
         const ax = [[e.centrage_gd, TOL_DEVANT, tt('Gauche / droite', 'Left / right')], [e.centrage_hb, TOL_DEVANT, tt('Haut / bas', 'Top / bottom')], [e.centrage_dos, TOL_DOS, tt('Dos', 'Back')]]
-          .map(([r, tol, l]) => ({...(axeNote(r, tol) || {}), l})).filter(a => a.r).sort((a, b) => a.n - b.n);
-        if (ax.length) return `<span class="vd-cz"><i class="vd-ci g-moyen">↔</i><span>${esc(ax[0].l)} <b>${esc(ax[0].r)}</b></span></span>${rg || `<small>${esc(tt(`PSA ${ax[0].n} : jusqu’à ${(TOL_DEVANT.find(t => t[1] === ax[0].n) || [65])[0]}/${100 - (TOL_DEVANT.find(t => t[1] === ax[0].n) || [65])[0]}`, `PSA ${ax[0].n}: up to ${(TOL_DEVANT.find(t => t[1] === ax[0].n) || [65])[0]}/${100 - (TOL_DEVANT.find(t => t[1] === ax[0].n) || [65])[0]}`))}</small>`}`;
+          .map(([r, tol, l]) => ({...(axeNote(r, tol) || {}), l, tol})).filter(a => a.r).sort((a, b) => a.n - b.n);
+        // 3 nov 2026 (revue) : la limite de la table de CET axe (le dos : 90/10 pour un 9), pas toujours celle du devant
+        const lim = ax.length ? (ax[0].tol.find(t => t[1] === ax[0].n) || null) : null;
+        if (ax.length) return `<span class="vd-cz"><i class="vd-ci g-moyen">↔</i><span>${esc(ax[0].l)} <b>${esc(ax[0].r)}</b></span></span>${rg || (lim ? `<small>${esc(tt(`PSA ${ax[0].n} : jusqu’à ${lim[0]}/${100 - lim[0]}`, `PSA ${ax[0].n}: up to ${lim[0]}/${100 - lim[0]}`))}</small>` : '')}`;
       }
       const ds = def.map((d, i) => ({d, i})).filter(({d}) => !d.masque && catDe(d) === k);
       const surs = ds.filter(({d}) => d.gravite !== 'a verifier');
@@ -9085,7 +9178,7 @@ function voirDefauts(e, k, apres, relancer){
       const cle = pool.filter(({d}) => (d.note != null ? d.note : 9 - (ORD_G[d.gravite] != null ? 3 - ORD_G[d.gravite] : 0)) === pire).slice(0, 2);
       if (cle.length) {
         const plus = pool.length - cle.length;
-        return cle.map(({d, i}) => `<button class="vd-cz" data-voir="${i}"><span class="vd-czz">${zoom(d)}<i class="vd-ci g-${(d.gravite || '').replace(' ', '-')}">${i + 1}</i></span><span>${esc(maj1(LIB_DEFAUT(d.type)))}<br><em>${esc([d.zone === 'surface' ? (d.photo ? tt('Dos', 'Back') : tt('Devant', 'Front')) : LIB_ZONE(d.zone) + (d.photo ? tt(' · dos', ' · back') : ''), d.gravite === 'a verifier' ? tt('à vérifier', 'to check') : ''].filter(Boolean).join(' · '))}</em></span></button>`).join('')
+        return cle.map(({d, i}) => `<button class="vd-cz" data-voir="${i}"><span class="vd-czz">${zoom(d)}<i class="vd-ci g-${gCls(d.gravite)}">${i + 1}</i></span><span>${esc(maj1(LIB_DEFAUT(d.type)))}<br><em>${esc([d.zone === 'surface' ? (d.photo ? tt('Dos', 'Back') : tt('Devant', 'Front')) : LIB_ZONE(d.zone) + (d.photo ? tt(' · dos', ' · back') : ''), d.gravite === 'a verifier' ? tt('à vérifier', 'to check') : ''].filter(Boolean).join(' · '))}</em></span></button>`).join('')
           + (plus > 0 ? `<small>${esc(tt(`+ ${plus} autre${plus > 1 ? 's' : ''} sur la photo`, `+ ${plus} more on the photo`))}</small>` : '') + rg;
       }
       // pas de defaut localise (ancienne analyse, centrage estime) : on le dit franchement
@@ -9093,9 +9186,12 @@ function voirDefauts(e, k, apres, relancer){
     };
     // 3 nov 2026 (Mathieu : « une vue close-up du defaut quand on clique sur le chiffre, pour que l'utilisateur voie bien
     // ton jugement ») : le defaut agrandi (la photo pleine resolution, centree sur le point, une mire autour)
-    const zoom = (d, cls) => { const u = refs[d.photo || 0]; if (!u) return ''; const Z = 6, x = (d.x || 500) / 1000, y = (d.y || 500) / 1000;
+    const zoom = (d, cls) => { const u = refs[d.photo || 0]; if (!u) return '';
+      const gp = gpDe(d);
+      if (gp) return `<span class="vd-zm vd-zm-gp ${cls || ''}" style="background-image:${cssUrl(gp.ref)};background-size:cover;background-position:center"></span>`;
+      const Z = 6, [x, y] = ptZoom(d);
       const pos = (t) => Math.max(0, Math.min(100, (t * Z - 0.5) / (Z - 1) * 100)).toFixed(2);
-      return `<span class="vd-zm ${cls || ''}" style="background-image:url('${esc(photoNet(u, 1600))}');background-size:${Z * 100}% ${Z * 100}%;background-position:${pos(x)}% ${pos(y)}%"><i></i></span>`; };
+      return `<span class="vd-zm ${cls || ''}" style="background-image:${cssUrl(photoNet(u, 1600))};background-size:${Z * 100}% ${Z * 100}%;background-position:${pos(x)}% ${pos(y)}%"><i></i></span>`; };
     // 3 nov 2026 (Mathieu : « le gabarit physique avec les lignes de delimitation, comment tu l'as pris pour le centering ») :
     // la carte A PLAT, ses aretes, les lignes du cadre retenues, la largeur de chaque bordure en mm et le ratio
     const gabarit = () => FACES.map(face => {
@@ -9117,6 +9213,15 @@ function voirDefauts(e, k, apres, relancer){
           (v.verifier_gd || v.verifier_hb) ? tt('« à vérifier » : l’écart vient d’un élément du dessin (logo, titre), peut-être imprimé ainsi ; pas compté dans la note', '“to check”: the gap comes from a design element (logo, title), maybe printed that way; not counted in the grade') : '',
           tt('largeurs en mm (carte 63,5 × 88,9 mm) ; PSA juge le pire point', 'widths in mm (card 63.5 × 88.9 mm); PSA judges the worst point')].filter(Boolean).join(' · ')}</small></div>`;
     }).join('');
+    // 3 nov 2026 : les gros plans des coins, chacun avec ce que l'analyse y a vu (l'etat du coin, sur le bareme PSA)
+    const ETAT_C = {net: [tt('Net', 'Sharp'), 'vert'], point_blanc: [tt('Point blanc', 'White dot'), 'or'], effilochage_leger: [tt('Léger blanchi', 'Light wear'), 'or'],
+      effilochage: [tt('Blanchi', 'Worn'), 'rouge'], arrondi_leger: [tt('Un peu arrondi', 'Slightly round'), 'rouge'], arrondi: [tt('Arrondi', 'Rounded'), 'rouge'], plie: [tt('Plié', 'Bent'), 'rouge']};
+    const NOM_C = {'haut-gauche': tt('Haut gauche', 'Top left'), 'haut-droit': tt('Haut droit', 'Top right'), 'bas-gauche': tt('Bas gauche', 'Bottom left'), 'bas-droit': tt('Bas droit', 'Bottom right')};
+    const ORD_GP = ['devant|haut-gauche', 'devant|haut-droit', 'devant|bas-gauche', 'devant|bas-droit', 'dos|haut-gauche', 'dos|haut-droit', 'dos|bas-gauche', 'dos|bas-droit'];
+    const grosPlans = () => (e.gros_plans || []).slice().sort((a, b) => ORD_GP.indexOf(a.face + '|' + a.coin) - ORD_GP.indexOf(b.face + '|' + b.coin)).map(g => { const ob = ((e.observations || {}).coins || []).find(x => (x.photo === 1 ? 'dos' : 'devant') === g.face && x.coin === g.coin);
+      const [lib, cl] = (ob && ETAT_C[ob.etat]) || ['', ''];
+      return `<a class="vd-gp-t" href="${esc(g.ref)}" target="_blank" rel="noopener"><img src="${esc(g.ref)}" alt="" loading="lazy">
+        <span><b>${g.face === 'dos' ? tt('Dos', 'Back') : tt('Devant', 'Front')} · ${NOM_C[g.coin] || esc(g.coin)}</b>${lib ? `<em class="${cl}">${lib}</em>` : ''}${g.net === false ? `<small>${tt('un peu flou', 'a bit blurry')}</small>` : ''}</span></a>`; }).join('');
     const CATS_ = [['centrage', tt('Centrage', 'Centering')], ['coins', tt('Coins', 'Corners')], ['bords', tt('Bords', 'Edges')], ['surface', tt('Surface', 'Surface')]];
     o.innerHTML = `<button class="vd-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
       <div class="vd-tete"><span class="fc-al-ic et-anneau ${clg}"><b>${four}</b></span><span><b>${tt('État estimé', 'Estimated condition')} <small>/10</small></b>
@@ -9132,6 +9237,7 @@ function voirDefauts(e, k, apres, relancer){
         ${calque ? `<div class="cg-leg">${(j ? [[75, 10, 'z10'], [90, 9, 'z9']] : [[60, 10, 'z10'], [65, 9, 'z9'], [70, 8, 'z8'], [75, 7, 'z7']]).map(([lim, nn, cl]) => `<span class="${cl}"><i></i>PSA ${nn} ≤ ${lim}/${100 - lim}</span>`).join('')}</div>` : ''}</div>`).join('')}
       ${e.relief_img ? `<div class="vd-sec">${e.relief_deux ? tt('Relief de la surface (2 éclairages)', 'Surface relief (2 lights)') : tt('Relief de la surface', 'Surface relief')}</div>
         <div class="vd-gab"><div class="vd-gab-c vd-rel"><img src="${esc(e.relief_img)}" alt=""></div><small>${e.relief_deux ? tt('La différence entre tes deux photos : l’impression s’efface, ce qui reste en clair ou en foncé est du relief (ligne fine = rayure, tache ronde = bosse ou empreinte).', 'The difference between your two photos: the print fades, what stays light or dark is relief (thin line = scratch, round spot = dent or fingerprint).') : tt('Ta photo rasante, éclairage lissé et contraste renforcé : les rayures et les bosses ressortent (l’impression aussi).', 'Your raking photo, lighting evened out and contrast boosted: scratches and dents stand out (so does the print).')}</small></div>` : ''}
+      ${(e.gros_plans || []).length ? `<div class="vd-sec">${tt('Gros plans des coins', 'Corner close-ups')}</div><div class="vd-gp">${grosPlans()}</div>` : ''}
       ${(e.centrage_vue && Object.values(e.centrage_vue).some(v => v && v.img)) ? `<div class="vd-sec">${tt('Gabarit du centrage', 'Centering template')}</div>${gabarit()}` : ''}
       <div class="sous vd-q">${def.some(d => !d.masque) ? tt('Touche un numéro : le défaut, le critère PSA, et ton avis (ça rend l’analyseur plus précis pour tout le monde).', 'Tap a number: the flaw, the PSA criterion, and your opinion (it makes the analyzer more accurate for everyone).') : tt('Aucun défaut repéré sur les photos.', 'No flaw found on the photos.')}</div>
       ${e.conseil ? `<div class="et-c">${esc(e.conseil)}</div>` : ''}
@@ -9196,7 +9302,7 @@ function voirDefauts(e, k, apres, relancer){
     svg.innerHTML = h;
     if (calque && aLignes && edite !== j) { const tol = TOL(face), note = (g) => (tol.find(([lim]) => g <= lim) || [0, face === 'dos' ? 8 : 3])[1];
       const x = aX ? rat(v.l, v.r) : null, y = aY ? rat(v.t, v.b) : null, n = Math.min(x ? note(x[0]) : 10, y ? note(y[0]) : 10);
-      const nom = (ax) => v['repere_' + ax] ? ` <em>· ${esc(v['repere_' + ax])}${v['source_' + ax] === 'ia' ? ' (IA)' : ''}</em>` : '';
+      const nom = (ax) => v['repere_' + ax] ? ` <em>· ${esc(v['repere_' + ax])}${v['source_' + ax] === 'ia' ? tt(' (IA)', ' (AI)') : ''}</em>` : '';
       lab.innerHTML = `${x ? `<b>${tt('G/D', 'L/R')} ${x[0]}/${x[1]}${nom('gd')}</b>` : `<b>${tt('G/D : aucun repère symétrique', 'L/R: no symmetric reference')}</b>`}${y ? `<b>${tt('H/B', 'T/B')} ${y[0]}/${y[1]}${nom('hb')}</b>` : `<b>${tt('H/B : aucun repère symétrique', 'T/B: no symmetric reference')}</b>`}<b class="${n >= 10 ? 'vert' : n >= 9 ? 'or' : 'rouge'}">PSA ${n} max</b>`; lab.hidden = false; }
     else if (calque && q && edite !== j) { lab.innerHTML = `<b>${tt('Contour de la carte', 'Card outline')}</b><b>${tt('Aucun repère symétrique trouvé : refais l’examen', 'No symmetric reference found: check again')}</b>`; lab.hidden = false; }
     else lab.hidden = true;
@@ -9211,7 +9317,7 @@ function voirDefauts(e, k, apres, relancer){
     $$('.vd-bulle', cad).forEach(x => x.remove());
     if (edite !== j) def.forEach((d, i) => { if ((d.photo || 0) !== j || d.masque) return;
       const [x, y] = place(d, q), p = document.createElement('button');
-      p.className = 'fc-pt vd-num g-' + (d.gravite || '').replace(' ', '-') + (ouvert === i ? ' on' : ''); p.dataset.d = i; p.textContent = i + 1;
+      p.className = 'fc-pt vd-num g-' + gCls(d.gravite) + (ouvert === i ? ' on' : ''); p.dataset.d = i; p.textContent = i + 1;
       p.setAttribute('aria-label', LIB_ZONE(d.zone) + ' · ' + LIB_DEFAUT(d.type));
       p.style.left = x / 10 + '%'; p.style.top = y / 10 + '%'; sc.appendChild(p);
       p.onclick = (ev) => { ev.stopPropagation(); vibrer(); ouvert = ouvert === i ? -1 : i; refs.forEach((_u, jj) => dessiner(jj)); };
@@ -9222,22 +9328,31 @@ function voirDefauts(e, k, apres, relancer){
   peindre();
   if (k != null) setTimeout(() => o._montrer && o._montrer(k), 300);
 }
-async function blocEtat(c, forcer){
+async function blocEtat(c, forcer, opts){
+  opts = opts || {};
   const z = $('#fc-etat'); if (!z) return;
   const vide = (msg) => `<button class="fc-alerte" id="fc-et-go"><span class="fc-al-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></span>
-    <span class="fc-al-t"><b>${tt('Évaluer l’état', 'Check the condition')}</b><small>${msg || tt('Centrage, coins, bords et surface d’après tes photos', 'Centering, corners, edges and surface from your photos')}</small></span><i class="fl">›</i></button>`;
+    <span class="fc-al-t"><b>${tt('Évaluer l’état', 'Check the condition')}</b><small>${esc(msg || tt('Centrage, coins, bords et surface d’après tes photos', 'Centering, corners, edges and surface from your photos'))}</small></span><i class="fl">›</i></button>`;
   // 1er nov 2026 (Mathieu : « je veux qu'on soit PARFAIT ») : l'examen guide (photos a plat, hors etui, + lumiere rasante),
   // ou les photos de la fiche ; les 4 coins de la carte sont trouves ici et envoyes (zooms et centrage mesures au serveur)
+  // 3 nov 2026 (revue) : l'examen guide remplace la fiche (feuilles) : la fiche est rouverte, puis l'analyse s'y affiche
+  // (avant : le resultat s'ecrivait dans une fiche disparue)
   const lancer = async () => {
     if (!await okIA()) return;
     const d = await feuilleExamen(c); if (!d) return;
+    if (!document.body.contains(z)) { ficheCollection(c, {examen: d}); return; }
+    analyser(d);
+  };
+  const analyser = async (d) => {
     z.innerHTML = `<div class="lecture"><span class="roue"></span>${tt('Examen des 8 coins, des 8 bords et de la surface… (1 à 2 min)', 'Checking 8 corners, 8 edges and the surface… (1 to 2 min)')}</div>`;
     const r = await API.carte_etat(c.id, true, typeof LANGUE !== 'undefined' ? LANGUE : 'fr', d).catch(e => ({ok:false, erreur:e.message}));
+    if (!document.body.contains(z)) return;
     if (!r.ok) { z.innerHTML = vide(r.erreur); brancher(); return; }
     peindre(r);
   };
   const brancher = () => { const b = $('#fc-et-go'); if (b) b.onclick = () => { vibrer(); lancer(); }; };
   const peindre = (e) => {
+    if (!document.body.contains(z)) return;
     if (!e.evaluable) { z.innerHTML = vide(e.raison || tt('Photos pas assez nettes pour juger : reprends-les de plus près', 'Photos not sharp enough: retake them closer')); brancher(); return; }
     const n = e.notes || {}, f = (v) => v == null ? '—' : String(v).replace('.', ',');
     const cent = e.centrage_gd || e.centrage_hb ? [e.centrage_gd, e.centrage_hb].filter(Boolean).join(' · ') : '';
@@ -9259,7 +9374,7 @@ async function blocEtat(c, forcer){
       <div class="et-corps">
       <div class="et-n">${CATS.map(([k, l, sous]) => `<div><span class="fc-al-ic et-rond ${n[k] == null ? '' : n[k] >= 9 ? 'vert' : n[k] >= 7 ? 'or' : 'rouge'}"><b>${f(n[k])}</b></span><span>${l}</span>${sous ? `<small>${esc(sous)}</small>` : ''}</div>`).join('')}</div>
       ${pourquoi.length ? `<ul class="et-x">${pourquoi.join('')}</ul>` : ''}
-      ${nbv ? `<div class="et-d">${def.map((d, i) => d.masque ? '' : `<button class="acc-pil et-pil g-${(d.gravite || '').replace(' ', '-')}" data-d="${i}"><span class="ap-ic"><b>${i + 1}</b></span>
+      ${nbv ? `<div class="et-d">${def.map((d, i) => d.masque ? '' : `<button class="acc-pil et-pil g-${gCls(d.gravite)}" data-d="${i}"><span class="ap-ic"><b>${i + 1}</b></span>
           <span class="ap-t">${esc(LIB_ZONE(d.zone))}${d.photo ? tt(' (dos)', ' (back)') : ''}<small>${esc(LIB_DEFAUT(d.type))} · ${esc(LIB_GRAV(d.gravite))}</small></span><i aria-hidden="true">›</i></button>`).join('')}</div>
         <button class="pilule" id="fc-et-voir">${tt('Voir les défauts sur la photo', 'See the flaws on the photo')}</button>`
         : rien ? `<div class="et-ok">${tt('Aucun défaut visible sur les photos', 'No visible flaw on the photos')}</div>` : ''}
@@ -9276,6 +9391,8 @@ async function blocEtat(c, forcer){
     const vo = $('#fc-et-voir'); if (vo) vo.onclick = () => { vibrer(); voirDefauts(e, null, peindre, lancer); };
     $$('#fc-etat [data-d]').forEach(li => li.onclick = () => { vibrer(); voirDefauts(e, +li.dataset.d, peindre, lancer); });
   };
+  if (opts.examen) { analyser(opts.examen); return; }
+  if (opts.lancer) { lancer(); }
   const r = await API.carte_etat(c.id, null).catch(() => null);         // ce qui est garde, sans nouvelle analyse
   const q = (r && r.quota) || {};
   const reste = q.limite != null ? ' · ' + tt(`reste ${q.reste} sur ${q.limite} ce mois`, `${q.reste} of ${q.limite} left this month`) : '';
@@ -9325,10 +9442,26 @@ function blocEnvoi(c){
     ouvrirFeuille(`<h3>${tt('Revenue du gradage', 'Back from grading')}</h3>
       <label>${tt('Note reçue', 'Grade received')}<input class="champ" id="er-g" placeholder="${esc(e.compagnie + ' 10')}"></label>
       <label>${tt('Numéro de certificat', 'Cert number')}<input class="champ" id="er-c" inputmode="numeric"></label>
+      <details class="er-sous" ${['TAG', 'BGS'].includes(e.compagnie) ? 'open' : ''}><summary>${tt('Sous-notes', 'Subgrades')} <small>${tt('TAG, BGS… : elles disent à l’IA où elle s’est trompée', 'TAG, BGS…: they tell the AI where it was wrong')}</small></summary>
+        <div class="grille-champs">${[['centrage', tt('Centrage', 'Centering')], ['coins', tt('Coins', 'Corners')], ['bords', tt('Bords', 'Edges')], ['surface', tt('Surface', 'Surface')]]
+          .map(([k, n]) => `<label>${n}<input class="champ" id="er-s-${k}" type="number" inputmode="decimal" step="0.5" min="1" max="10" placeholder="9.5"></label>`).join('')}</div>
+        ${e.compagnie === 'TAG' ? `<label>${tt('Lien du rapport TAG (facultatif)', 'TAG report link (optional)')}<input class="champ" id="er-l" inputmode="url" placeholder="https://"></label>` : ''}</details>
+      ${!(S.reglages || {}).ia_entrainement_ok ? `<label class="bascule ex-ia"><span><b>${tt('Aider à entraîner l’IA de SlabCoach', 'Help train SlabCoach’s AI')}</b><small>${tt('Garde l’examen de cette carte (photos, mesures) avec sa vraie note, sans mon nom ni mes prix. Vaut aussi pour mes prochains retours ; retirable dans Réglages.', 'Keep this card’s exam (photos, measurements) with its real grade, without my name or prices. Also applies to my next returns; withdraw in Settings.')}</small></span><input type="checkbox" id="er-ia"></label>` : ''}
       ${e.cout ? `<div class="sous">${tt(`Le coût de gradation (${argent(e.cout, 0)}) s’ajoute au coût de la carte.`, `The grading cost (${argent(e.cout, 0)}) is added to the card’s cost.`)}</div>` : ''}
       <button class="btn" id="er-ok">${tt('Enregistrer', 'Save')}</button><button class="btn ghost" id="er-non">${tt('Annuler', 'Cancel')}</button>`);
     $('#er-non').onclick = () => { fermerFeuille(); ficheCollection(c); };
-    $('#er-ok').onclick = async () => fini(await essai(API.carte_envoi(c.id, {retour: {grade: val('er-g'), cert: val('er-c')}}), tt('Revenue dans ta collection', 'Back in your collection')));
+    $('#er-ok').onclick = async (ev) => {
+      const bt = ev.currentTarget; if (bt.disabled) return;
+      if (!val('er-g').trim() && !confirm_vide()) return;
+      bt.disabled = true;                          // 3 nov 2026 (revue) : un double toucher n'enregistre pas deux fois
+      try { await retourGradage(); } finally { bt.disabled = false; }
+    };
+    const confirm_vide = () => { toast(tt('Écris la note reçue (ex. ', 'Enter the grade received (e.g. ') + (e.compagnie || 'PSA') + ' 10)'); return false; };
+    const retourGradage = async () => {
+      if ($('#er-ia') && $('#er-ia').checked) { const x = await API.reglages_sauver({ia_entrainement_ok: true}).catch(() => null); if (x) S.reglages = x; }
+      const sous = {}; ['centrage', 'coins', 'bords', 'surface'].forEach(k => { const v = nb(val('er-s-' + k)); if (v != null && v >= 1 && v <= 10) sous[k] = v; });
+      fini(await essai(API.carte_envoi(c.id, {retour: {grade: val('er-g'), cert: val('er-c'), sous_notes: Object.keys(sous).length ? sous : null, lien: $('#er-l') ? val('er-l').trim() || null : null}}), tt('Revenue dans ta collection', 'Back in your collection')));
+    };
   };
   const bI = $('#env-inv'); if (bI) bI.onclick = async () => fini(await essai(API.carte_envoi(c.id, null), tt('Revenue dans ta collection', 'Back in your collection')));
   const bV = $('#env-vend'); if (bV) bV.onclick = () => {
@@ -9444,37 +9577,191 @@ async function feuilleSoumission(id, liste){
 // support, dans un toploader) cachent les aretes : on propose des photos d'examen (a plat, hors etui, fond uni fonce, puis une
 // photo inclinee en lumiere rasante pour la surface). Les 4 coins de la carte sont trouves ici, montres a la personne, et
 // envoyes avec les photos. -> {photos, quads, rasante} | {quads} (photos de la fiche) | null (annule)
-function feuilleExamen(c){
+// 3 nov 2026 (Mathieu : « guider l'utilisateur photo par photo comme le guide d'envoi PSA, lui dire de reprendre si ca ne
+// convient pas, et comment regler son iPhone ou son Android pour le maximum de megapixels ») : l'examen devient un guide,
+// une photo a la fois. Chaque photo est verifiee tout de suite dans le telephone (nette, assez de lumiere, sans reflet,
+// carte entiere et bien droite, assez proche, gros plan vraiment de pres, carte immobile entre les 2 eclairages) ; si ca ne
+// va pas : quoi faire, et « Reprendre ». opts.slab : la carte est dans un slab (cartes gradees de reference).
+const COINS_EX = [['haut-gauche', tt('haut gauche', 'top left'), 'M4 4h7M4 4v7'], ['haut-droit', tt('haut droit', 'top right'), 'M20 4h-7M20 4v7'],
+  ['bas-droit', tt('bas droit', 'bottom right'), 'M20 20h-7M20 20v-7'], ['bas-gauche', tt('bas gauche', 'bottom left'), 'M4 20h7M4 20v-7']];
+const ILL_EX = {
+  carte: (dos) => `<svg viewBox="0 0 120 120" aria-hidden="true"><rect x="10" y="96" width="100" height="10" rx="3" class="i-sol"/><rect x="38" y="14" width="44" height="62" rx="4" class="i-c"/>${dos ? '<path d="M46 30h28M46 38h28M46 46h20" class="i-t"/>' : '<circle cx="60" cy="40" r="10" class="i-t"/>'}<path d="M30 8v-2h-4M90 8v-2h4M30 82v2h-4M90 82v2h4" class="i-v"/></svg>`,
+  gp: (d) => `<svg viewBox="0 0 120 120" aria-hidden="true"><rect x="22" y="18" width="76" height="84" rx="5" class="i-c" opacity=".35"/><g transform="translate(22 18) scale(3.17 3.5)"><path d="${d}" class="i-v" stroke-width=".7"/></g></svg>`,
+  ras: (droite) => `<svg viewBox="0 0 120 120" aria-hidden="true"><rect x="20" y="78" width="80" height="12" rx="2" class="i-c"/><path d="${droite ? 'M104 40l-14 6M108 52l-16 2' : 'M16 40l14 6M12 52l16 2'}" class="i-t"/><circle cx="${droite ? 108 : 12}" cy="34" r="7" class="i-v"/><path d="${droite ? 'M100 44L64 78' : 'M20 44l36 34'}" class="i-r"/></svg>`,
+};
+function etapesExamen(P){
+  const l = [{k: 'devant', t: 'carte', titre: tt('Le devant', 'The front'), aide: tt('Hors du toploader, à plat sur un fond uni foncé. Toute la carte dans l’écran, qui la remplit presque. Le téléphone bien parallèle, sans flash.', 'Out of the toploader, flat on a plain dark background. The whole card on screen, nearly filling it. Phone parallel to the card, no flash.')},
+    {k: 'dos', t: 'carte', opt: true, titre: tt('Le dos', 'The back'), aide: tt('Retourne la carte au même endroit. Même cadrage que le devant.', 'Flip the card in the same spot. Same framing as the front.')}];
+  const faces = P.dos ? ['devant', 'dos'] : ['devant'];
+  faces.forEach(f => COINS_EX.forEach(([c, n, d]) => l.push({k: 'gp:' + f + '|' + c, t: 'gp', opt: true, face: f, coin: c, d,
+    titre: tt('Gros plan · coin ', 'Close-up · ') + n + (f === 'dos' ? tt(' (dos)', ' corner (back)') : tt(' (devant)', ' corner (front)')),
+    aide: tt('Le téléphone à 5–8 cm : ce coin remplit l’écran. Touche le coin pour le focus. La carte reste droite, comme sur la photo entière.', 'Phone 5–8 cm away: this corner fills the screen. Tap the corner to focus. Keep the card upright, as in the full photo.')})));
+  l.push({k: 'rasante', t: 'ras', opt: true, titre: tt('La surface en lumière rasante', 'Surface in raking light'),
+    aide: tt('Éteins le plafonnier. Une seule lampe, basse, sur le côté gauche, presque au niveau de la carte. Photo de haut : les rayures et les creux ressortent.', 'Turn off the ceiling light. One lamp, low, on the left side, almost level with the card. Photo from above: scratches and dents stand out.')});
+  if (P.rasante) l.push({k: 'rasante2', t: 'ras2', opt: true, titre: tt('La même, lampe à droite', 'Same, lamp on the right'),
+    aide: tt('Sans bouger la carte ni le téléphone : la lampe passe à droite. L’app compare les 2 photos : l’impression s’efface, le relief reste (rayure, bosse, chiffre creusé).', 'Without moving the card or the phone: the lamp goes to the right. The app compares both photos: the print fades, the relief stays (scratch, dent, indented writing).')});
+  return l;
+}
+// un coin touche le bord de la photo ET la carte y deborde vraiment (le bord de l'image, pres de ce coin, n'est pas le
+// fond) : sinon c'est le contour trouve qui est imprecis, pas la photo qui est coupee
+function coinCoupe(img, q){
+  const pres = q.filter(([x, y]) => x < 10 || y < 10 || x > 990 || y > 990); if (!pres.length) return false;
+  const G = grisLisse(img, 360), w = G.w, h = G.h, d = G.rgba, px = (x, y) => { const j = (y * w + x) * 4; return [d[j], d[j + 1], d[j + 2]]; };
+  const bord = []; for (let x = 0; x < w; x += 3) { bord.push(px(x, 0), px(x, h - 1)); } for (let y = 0; y < h; y += 3) { bord.push(px(0, y), px(w - 1, y)); }
+  const med = (k) => bord.map(p => p[k]).sort((a, b) => a - b)[bord.length >> 1], f = [med(0), med(1), med(2)];
+  const diff = (p) => Math.hypot(p[0] - f[0], p[1] - f[1], p[2] - f[2]) > 45;
+  return pres.some(([qx, qy]) => {
+    const cx = Math.round(qx / 1000 * (w - 1)), cy = Math.round(qy / 1000 * (h - 1)), R = Math.round(Math.min(w, h) * 0.06), l = [];
+    for (let t = -R; t <= R; t++) {
+      if (qx < 10 || qx > 990) { const y = Math.max(0, Math.min(h - 1, cy + t)); l.push(px(qx < 10 ? 0 : w - 1, y)); }
+      if (qy < 10 || qy > 990) { const x = Math.max(0, Math.min(w - 1, cx + t)); l.push(px(x, qy < 10 ? 0 : h - 1)); }
+    }
+    return l.filter(diff).length > l.length * 0.3;
+  });
+}
+// la verification d'une photo, tout de suite : -> {ok, pbs: [[titre, quoi faire]], chips: [texte], q (contour 0..1000)}
+async function verifierPhotoExamen(e, ph, P){
+  const pbs = [], chips = []; let q = null;
+  const q0 = await qualitePhoto(ph).catch(() => ({ok: true}));
+  const img = await chargerImage(ph), W = img.naturalWidth, H = img.naturalHeight;
+  const garder = (r) => { if (r && MSG_PHOTO[r]) pbs.push(MSG_PHOTO[r]); };
+  if (!q0.ok && !(e.t.startsWith('ras') && q0.raison !== 'floue')) garder(q0.raison);   // rasante : sombre et reflets permis
+  if (q0.ok || q0.raison !== 'floue') chips.push(tt('Nette', 'Sharp'));
+  const forme = (q) => { const p = q.map(([x, y]) => [x / 1000 * W, y / 1000 * H]), L = (a, b) => Math.hypot(p[a][0] - p[b][0], p[a][1] - p[b][1]);
+    const aire = Math.abs(p.reduce((s, [x, y], i) => { const [x2, y2] = p[(i + 1) % 4]; return s + x * y2 - x2 * y; }, 0)) / 2;
+    return {haut: L(0, 1), bas: L(3, 2), g: L(0, 3), d: L(1, 2), part: aire / (W * H)}; };
+  if (e.t === 'carte') {
+    try { q = coinsLocaux(img); } catch (x) { q = null; }
+    if (!q) pbs.push([tt('Carte pas trouvée', 'Card not found'), tt('Pose-la sur un fond uni plus foncé que la carte, et que les 4 coins soient dans l’écran.', 'Put it on a plain background darker than the card, with all 4 corners on screen.')]);
+    else {
+      const f = forme(q), court = Math.min((f.haut + f.bas) / 2, (f.g + f.d) / 2), pxmm = court / 63.5;
+      if (coinCoupe(img, q)) garder('coupee');
+      else if (f.part >= 0.28 && pxmm < 14) pbs.push([tt('Résolution trop basse', 'Resolution too low'), tt('La photo est trop petite pour juger les coins. Prends-la avec l’appareil photo du téléphone (pas une capture d’écran), au maximum de mégapixels : voir « Régler ton téléphone ».', 'The photo is too small to judge corners. Shoot it with the phone camera (not a screenshot), at max megapixels: see “Set up your phone”.')]);
+      else if (f.part < 0.28) { const k = pbs.indexOf(MSG_PHOTO.floue); if (k >= 0) pbs.splice(k, 1); pbs.push([tt('Trop loin', 'Too far'), tt('Approche le téléphone : la carte doit remplir presque tout l’écran (sans zoom, au 1×).', 'Move the phone closer: the card should nearly fill the screen (no zoom, at 1×).')]); }
+      else chips.push(tt('Cadrage', 'Framing') + ' · ' + Math.round(pxmm) + ' px/mm');
+      if (Math.max(f.haut, f.bas) / Math.min(f.haut, f.bas) > 1.07 || Math.max(f.g, f.d) / Math.min(f.g, f.d) > 1.07)
+        pbs.push([tt('Photo en angle', 'Photo at an angle'), tt('Tiens le téléphone bien parallèle à la carte, juste au-dessus : en angle, le centrage est faussé.', 'Hold the phone parallel to the card, right above it: at an angle, the centering is off.')]);
+      else if (q) chips.push(tt('Bien droite', 'Straight'));
+    }
+  } else if (e.t === 'gp') {
+    if (Math.min(W, H) < 1200) pbs.push(MSG_PHOTO.petite);
+    let qq = null; try { qq = coinsLocaux(img); } catch (x) {}
+    const fq = qq && forme(qq), rq = fq && Math.max((fq.g + fq.d) / (fq.haut + fq.bas), (fq.haut + fq.bas) / (fq.g + fq.d));
+    if (fq && fq.part < 0.9 && rq >= 1.3 && rq <= 1.52 && !qq.some(([x, y]) => x < 8 || y < 8 || x > 992 || y > 992))      // une carte entiere dans la photo
+      pbs.push([tt('Pas assez près', 'Not close enough'), tt('On voit toute la carte : approche-toi jusqu’à ce que le coin remplisse l’écran (5–8 cm).', 'The whole card shows: get closer until the corner fills the screen (5–8 cm).')]);
+    else chips.push(tt('De près', 'Close up'));
+  } else if (e.t === 'ras2' && P.q.rasante) {
+    try { q = coinsLocaux(img); } catch (x) {}
+    if (q && Math.max(...q.map((p, i) => Math.hypot(p[0] - P.q.rasante[i][0], p[1] - P.q.rasante[i][1]))) > 25)
+      pbs.push([tt('La carte a bougé', 'The card moved'), tt('Remets la carte et le téléphone comme sur la 1re photo : seule la lampe change de côté.', 'Put the card and phone back as in the 1st photo: only the lamp changes side.')]);
+    else chips.push(tt('Même position', 'Same position'));
+  } else if (e.t === 'ras') { try { q = coinsLocaux(img); } catch (x) {} }
+  return {ok: !pbs.length, pbs, chips, q};
+}
+function htmlReglagesPhoto(){
+  const l = (t) => `<li>${t}</li>`;
+  return `<div class="rg-ph"><div class="seg" id="rg-os"><button data-os="ios" class="${/iPhone|iPad/.test(navigator.userAgent) || !/Android/.test(navigator.userAgent) ? 'on' : ''}">iPhone</button><button data-os="android" class="${/Android/.test(navigator.userAgent) ? 'on' : ''}">Android</button></div>
+    <div data-pour="ios"><ol>${[
+      tt('<b>Le plus important</b> : la carte remplit l’écran, le focus est fait (touche la carte), bonne lumière sans flash. Les mégapixels viennent après.', '<b>Most important</b>: the card fills the screen, focus is set (tap the card), good light without flash. Megapixels come after.'),
+      tt('iPhone 14 Pro et plus récents : <b>Réglages › Appareil photo › Formats</b>, active <b>Contrôle de la résolution</b> (ou choisis <b>48 Mpx</b>). Dans l’Appareil photo, touche <b>48 MP</b> en haut avant la photo.', 'iPhone 14 Pro and newer: <b>Settings › Camera › Formats</b>, turn on <b>Resolution Control</b> (or pick <b>48 MP</b>). In Camera, tap <b>48 MP</b> at the top before shooting.'),
+      tt('Le bouton « Photo » de SlabCoach ouvre l’appareil photo simple de l’iPhone (12 Mpx). Pour le maximum : prends la photo avec l’app <b>Appareil photo</b>, puis choisis-la avec <b>Photothèque</b>.', 'SlabCoach’s “Photo” button opens the iPhone’s basic camera (12 MP). For the max: shoot with the <b>Camera</b> app, then pick it with <b>Library</b>.'),
+      tt('Reste au <b>1×</b> (le 2× donne 12 Mpx), flash éteint, mode Nuit et Live éteints.', 'Stay at <b>1×</b> (2× gives 12 MP), flash off, Night mode and Live off.'),
+      tt('Gros plans : si une fleur jaune (macro) apparaît, c’est correct. Maintiens le doigt sur le coin : <b>Verrouillage AE/AF</b> garde le focus.', 'Close-ups: if a yellow flower (macro) shows up, that’s fine. Hold your finger on the corner: <b>AE/AF Lock</b> keeps the focus.')].map(l).join('')}</ol></div>
+    <div data-pour="android" hidden><ol>${[
+      tt('<b>Le plus important</b> : la carte remplit l’écran, le focus est fait (touche la carte), bonne lumière sans flash.', '<b>Most important</b>: the card fills the screen, focus is set (tap the card), good light without flash.'),
+      tt('Samsung Galaxy : dans l’app Appareil photo, mode <b>Photo</b>, touche le bouton du format en haut (<b>3:4</b>) et choisis <b>3:4 50MP</b> ou <b>3:4 200MP</b>.', 'Samsung Galaxy: in the Camera app, <b>Photo</b> mode, tap the ratio button at the top (<b>3:4</b>) and pick <b>3:4 50MP</b> or <b>3:4 200MP</b>.'),
+      tt('Pixel (modèles Pro) : réglages de l’appareil photo › <b>Résolution</b> › <b>50 Mpx</b>. Autres téléphones : réglages de l’appareil photo › taille de l’image › la plus grande.', 'Pixel (Pro models): camera settings › <b>Resolution</b> › <b>50 MP</b>. Other phones: camera settings › picture size › the largest.'),
+      tt('Prends la photo avec l’app de l’appareil photo, puis choisis-la avec <b>Photothèque</b> dans SlabCoach.', 'Shoot with the camera app, then pick it with <b>Library</b> in SlabCoach.'),
+      tt('Reste au <b>1×</b>, flash éteint, sans filtre ni mode beauté.', 'Stay at <b>1×</b>, flash off, no filter or beauty mode.')].map(l).join('')}</ol></div></div>`;
+}
+function feuilleExamen(c, opts){
+  opts = opts || {};
   return new Promise(ok => {
     let fini = false; const fin = (v) => { if (fini) return; fini = true; fermerFeuille(); ok(v); };
-    const P = {devant: null, dos: null, rasante: null, rasante2: null, q: {}};
+    const P = {devant: null, dos: null, rasante: null, rasante2: null, q: {}, gp: {}, v: {}, slab: !!opts.slab};
+    let i = -1, vue = 'etape';                                  // -1 : la preparation ; etapes().length : le resume
+    const etapes = () => etapesExamen(P);
+    const val_ = (e) => e.t === 'gp' ? P.gp[e.face + '|' + e.coin] : P[e.k];
+    const ill = (e) => e.t === 'gp' ? ILL_EX.gp(e.d) : e.t === 'carte' ? ILL_EX.carte(e.k === 'dos') : ILL_EX.ras(e.t === 'ras2');
+    const fil = () => { const l = etapes(); return `<div class="ex-fil" aria-label="${esc(tt('Progression', 'Progress'))}">${l.map((e, j) => `<i class="${j < i ? (val_(e) ? 'fait' : 'passe') : j === i ? 'on' : ''}"></i>`).join('')}</div>`; };
     const peindre = () => {
-      const pas = (k, titre, sous, opt) => `<div class="ex-p ${P[k] ? 'fait' : ''}"><div class="ex-v" id="exv-${k}">${P[k] ? `<img src="${P[k]}" alt="">` : `<span class="fc-al-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="3"/><circle cx="12" cy="13" r="3.5"/></svg></span>`}</div>
-        <div class="ex-t"><b>${titre}${opt ? ` <small>${tt('facultatif', 'optional')}</small>` : ''}</b><small id="exs-${k}">${P[k] ? (k.startsWith('rasante') || P.q[k] ? '✓ ' + tt('carte trouvée', 'card found') : tt('carte pas trouvée : reprends-la sur un fond uni foncé', 'card not found: retake on a plain dark background')) : sous}</small>
-          <span class="env-b"><label class="pilule">${tt('Photo', 'Photo')}<input type="file" accept="image/*" capture="environment" data-k="${k}" hidden></label><label class="pilule">${tt('Photothèque', 'Library')}<input type="file" accept="image/*" data-k="${k}" hidden></label></span></div></div>`;
-      ouvrirFeuille(`<h3>${tt('Examen de la carte', 'Card exam')}</h3>
-        <ul class="conseils-ph"><li><b>1</b>${tt('Sors-la du toploader ou de la pochette, à plat', 'Take it out of the toploader or sleeve, flat')}</li>
-          <li><b>2</b>${tt('Fond uni foncé, lumière douce, sans reflet', 'Plain dark background, soft light, no glare')}</li>
-          <li><b>3</b>${tt('Toute la carte, de près, bien droite', 'The whole card, close up, straight')}</li></ul>
-        ${pas('devant', tt('Le devant', 'The front'), tt('Le plus important', 'The most important'))}
-        ${pas('dos', tt('Le dos', 'The back'), tt('Coins et bords du dos', 'Back corners and edges'))}
-        ${pas('rasante', tt('La surface en lumière rasante', 'Surface in raking light'), tt('Lampe basse, sur le côté, carte à plat sur le fond : les rayures ressortent', 'Low lamp from the side, card flat on the background: scratches show up'), true)}
-        ${P.rasante ? pas('rasante2', tt('La même, lampe de l’autre côté', 'Same, lamp on the other side'), tt('Sans bouger la carte, mets la lampe de l’autre côté : l’app compare les 2 photos, l’impression s’efface et le relief (rayure, bosse, pli) ressort', 'Without moving the card, put the lamp on the other side: the app compares both photos, the print fades and the relief (scratch, dent, crease) stands out'), true) : ''}
-        <button class="btn" id="ex-go" ${P.devant ? '' : 'disabled'}>${tt('Analyser', 'Analyze')}</button>
-        <button class="btn ghost" id="ex-fiche">${tt('Utiliser les photos de la fiche', 'Use the card’s photos')}</button>
-        <div class="sous">${tt('Les photos d’examen restent avec l’examen ; les photos de ta fiche ne changent pas.', 'Exam photos stay with the exam; your card’s photos don’t change.')}</div>`);
-      $$('[data-k]').forEach(i => i.onchange = async (ev) => { const f = ev.target.files && ev.target.files[0], k = ev.target.dataset.k; if (!f) return;
-        $('#exs-' + k).textContent = tt('Lecture…', 'Reading…');
-        try { const ph = await reduirePhoto(f, 3200); /* 2 nov 2026 : 3200 px, zooms en pleine resolution */ const q0 = await qualitePhoto(ph).catch(() => ({ok: true}));
-          if (!q0.ok) { const [t, dd] = MSG_PHOTO[q0.raison] || MSG_PHOTO.floue; toast(t + ' : ' + dd, 5000); }
-          P[k] = ph; P.q[k] = k.startsWith('rasante') ? null : coinsLocaux(await chargerImage(ph)); } catch (x) { toast(tt('Photo illisible : reprends-la', 'Unreadable photo: retake it')); }
-        peindre(); });
-      $('#ex-go').onclick = () => fin({photos: [P.devant, P.dos].filter(Boolean), quads: [P.q.devant || null, P.dos ? (P.q.dos || null) : null].slice(0, P.dos ? 2 : 1), rasante: P.rasante || null, rasante2: P.rasante ? (P.rasante2 || null) : null});
-      $('#ex-fiche').onclick = async () => {
-        let ph = []; try { ph = JSON.parse(c.photos_orig || c.photos || '[]'); } catch (x) {} if (!ph.length && c.photo) ph = [c.photo];
-        const qs = []; for (const u of ph.slice(0, 2)) { try { qs.push(coinsLocaux(await chargerImage(photoNet(u, 1600))) || null); } catch (x) { qs.push(null); } }
-        fin({quads: qs});
-      };
+      const l = etapes();
+      if (vue === 'reglages') {
+        ouvrirFeuille(`<h3>${tt('Régler ton téléphone', 'Set up your phone')}</h3>${htmlReglagesPhoto()}<button class="btn" id="ex-rg-ok">${tt('Compris', 'Got it')}</button>`);
+        $$('#rg-os [data-os]').forEach(b => b.onclick = () => { $$('#rg-os [data-os]').forEach(x => x.classList.toggle('on', x === b)); $$('[data-pour]').forEach(z => z.hidden = z.dataset.pour !== b.dataset.os); });
+        const on = $('#rg-os .on'); if (on) on.click();
+        $('#ex-rg-ok').onclick = () => { vue = 'etape'; peindre(); };
+        return;
+      }
+      if (i < 0) {                                              // la preparation
+        ouvrirFeuille(`<h3>${opts.titre || tt('Examen de la carte', 'Card exam')}</h3>
+          <div class="sous">${tt('Une photo à la fois : l’app vérifie chacune et te dit quoi reprendre. Environ 3 minutes.', 'One photo at a time: the app checks each one and tells you what to retake. About 3 minutes.')}</div>
+          <ul class="conseils-ph"><li><b>1</b>${P.slab ? tt('Essuie le slab ; incline-le un peu si la lumière s’y reflète', 'Wipe the slab; tilt it a little if light reflects on it') : tt('Sors-la du toploader ou de la pochette, à plat', 'Take it out of the toploader or sleeve, flat')}</li>
+            <li><b>2</b>${tt('Fond uni foncé, lumière douce de côté, pas de flash', 'Plain dark background, soft side light, no flash')}</li>
+            <li><b>3</b>${tt('Téléphone au 1×, parallèle à la carte', 'Phone at 1×, parallel to the card')}</li></ul>
+          <button class="r-ligne ex-rg" id="ex-rg"><span class="aj-ico">${ICONES.photo || ''}</span><span class="t"><b>${tt('Régler ton téléphone', 'Set up your phone')}</b><span>${tt('48 Mpx sur iPhone, 50–200 Mpx sur Android, focus, zoom', '48 MP on iPhone, 50–200 MP on Android, focus, zoom')}</span></span>${ICONES.chevron || '›'}</button>
+          ${opts.reference ? '' : `<label class="bascule ex-ia"><span><b>${tt('Ma carte est dans un slab', 'My card is in a slab')}</b><small>${tt('PSA, BGS… : les reflets du plastique sont pris en compte', 'PSA, BGS…: plastic glare is taken into account')}</small></span><input type="checkbox" id="ex-slab" ${P.slab ? 'checked' : ''}></label>`}
+          <button class="btn" id="ex-commencer">${tt('Commencer', 'Start')}</button>
+          ${opts.reference ? '' : `<button class="btn ghost" id="ex-fiche">${tt('Utiliser les photos de la fiche', 'Use the card’s photos')}</button>`}`);
+        $('#ex-rg').onclick = () => { vue = 'reglages'; peindre(); };
+        const sl = $('#ex-slab'); if (sl) sl.onchange = () => { P.slab = sl.checked; };
+        $('#ex-commencer').onclick = () => { i = 0; peindre(); };
+        const fi = $('#ex-fiche'); if (fi) fi.onclick = async () => {
+          let ph = []; try { ph = JSON.parse(c.photos_orig || c.photos || '[]'); } catch (x) {} if (!ph.length && c.photo) ph = [c.photo];
+          const qs = []; for (const u of ph.slice(0, 2)) { try { qs.push(coinsLocaux(await chargerImage(photoNet(u, 1600))) || null); } catch (x) { qs.push(null); } }
+          fin({quads: qs});
+        };
+        return;
+      }
+      if (i >= l.length) {                                      // le resume
+        const nGp = Object.keys(P.gp).filter(k => P.dos || k.startsWith('devant|')).length, avert = l.filter(e => val_(e) && P.v[e.k] && !P.v[e.k].ok).length;
+        const ligne = (ok_, t) => `<li class="${ok_ ? 'ok' : ''}"><i>${ok_ ? '✓' : '–'}</i>${t}</li>`;
+        ouvrirFeuille(`<h3>${tt('Prêt à analyser', 'Ready to analyze')}</h3>${fil()}
+          <ul class="ex-res">${ligne(P.devant, tt('Devant', 'Front'))}${ligne(P.dos, tt('Dos', 'Back'))}${ligne(nGp, tt(`Gros plans des coins : ${nGp} / ${P.dos ? 8 : 4}`, `Corner close-ups: ${nGp} / ${P.dos ? 8 : 4}`))}${ligne(P.rasante, tt('Lumière rasante', 'Raking light') + (P.rasante2 ? tt(' · 2 éclairages', ' · 2 lights') : ''))}</ul>
+          ${avert ? `<div class="vd-rep"><b>${tt(`${avert} photo(s) gardée(s) malgré un problème`, `${avert} photo(s) kept despite an issue`)}</b><small>${tt('L’analyse sera moins sûre sur ces points.', 'The analysis will be less sure on those points.')}</small></div>` : ''}
+          ${opts.reference ? '' : `<label class="bascule ex-ia"><span><b>${tt('Aider à entraîner l’IA de SlabCoach', 'Help train SlabCoach’s AI')}</b><small>${tt('Garde mes photos d’examen et la vraie note au retour du gradage, sans mon nom ni mes prix. Retirable dans Réglages (tout est effacé).', 'Keep my exam photos and the real grade when the card comes back, without my name or prices. Withdraw in Settings (everything is erased).')}</small></span><input type="checkbox" id="ex-ia" ${(S.reglages || {}).ia_entrainement_ok ? 'checked' : ''}></label>`}
+          <button class="btn" id="ex-go" ${P.devant ? '' : 'disabled'}>${opts.reference ? tt('Continuer', 'Continue') : tt('Analyser', 'Analyze')}</button>
+          <button class="btn ghost" id="ex-ret">${tt('Revenir aux photos', 'Back to the photos')}</button>`);
+        const ia = $('#ex-ia'); if (ia) ia.onchange = async (ev) => { const on = ev.target.checked; const x = await API.reglages_sauver({ia_entrainement_ok: on}).catch(() => null);
+          if (x) { S.reglages = x; toast(on ? tt('Merci : tes examens aideront l’IA', 'Thanks: your exams will help the AI') : tt('Retiré : tes exemples sont effacés', 'Withdrawn: your examples are erased')); } else ev.target.checked = !on; };
+        $('#ex-ret').onclick = () => { i = 0; peindre(); };
+        $('#ex-go').onclick = () => fin({photos: [P.devant, P.dos].filter(Boolean), quads: [P.q.devant || null, P.dos ? (P.q.dos || null) : null].slice(0, P.dos ? 2 : 1),
+          rasante: P.rasante || null, rasante2: P.rasante ? (P.rasante2 || null) : null, slab: P.slab,
+          gros_plans: Object.entries(P.gp).filter(([k]) => P.dos || k.startsWith('devant|')).map(([k, photo]) => ({face: k.split('|')[0], coin: k.split('|')[1], photo}))});
+        return;
+      }
+      const e = l[i], ph = val_(e), v = P.v[e.k];
+      ouvrirFeuille(`<div class="ex-tete"><button class="lien-t" id="ex-prec">‹ ${tt('Retour', 'Back')}</button><span>${i + 1} / ${l.length}</span></div>${fil()}
+        <div class="ex-et"><div class="ex-ill ${ph ? 'photo' : ''}">${ph ? `<img src="${ph}" alt="">` : ill(e)}</div>
+          <h3>${e.titre}${e.opt ? ` <small>${tt('facultatif', 'optional')}</small>` : ''}</h3>
+          ${v ? (v.ok ? `<div class="ex-ok"><b>✓ ${tt('Bonne photo', 'Good photo')}</b><span>${v.chips.map(esc).join(' · ')}</span></div>`
+            : `<div class="ex-ko">${v.pbs.map(([t, d]) => `<div><b>${esc(t)}</b><span>${esc(d)}</span></div>`).join('')}</div>`)
+            : `<div class="ex-aide">${e.aide}</div>`}</div>
+        <div class="ex-bt">${ph && v && v.ok ? `<button class="btn" id="ex-suiv">${tt('Continuer', 'Continue')}</button>` : ''}
+          <div class="ex-prise"><label class="btn ${ph && v && v.ok ? 'ghost' : ''}">${ph ? tt('Reprendre', 'Retake') : tt('Prendre la photo', 'Take the photo')}<input type="file" accept="image/*" capture="environment" id="ex-f" hidden></label>
+            <label class="btn ghost">${tt('Photothèque', 'Library')}<input type="file" accept="image/*" id="ex-f2" hidden></label></div>
+          ${ph && v && !v.ok ? `<button class="lien-t" id="ex-quand">${tt('Garder quand même', 'Keep it anyway')}</button>` : ''}
+          ${!ph && e.opt ? `<button class="lien-t" id="ex-passer">${e.t === 'gp' && e.coin === 'haut-gauche' ? tt('Passer les gros plans', 'Skip the close-ups') : tt('Passer', 'Skip')}</button>` : ''}
+          ${i === 0 && !ph ? `<button class="lien-t" id="ex-rg2">${tt('Régler ton téléphone', 'Set up your phone')} ›</button>` : ''}</div>`);
+      const prendre = async (ev) => { const f = ev.target.files && ev.target.files[0]; if (!f) return;
+        const z = $('.ex-ill'); if (z) z.innerHTML = `<span class="roue"></span>`;
+        try {
+          const p = await reduirePhoto(f, e.t === 'gp' ? 2400 : 3200);
+          const r = await verifierPhotoExamen(e, p, P);
+          if (e.t === 'gp') P.gp[e.face + '|' + e.coin] = p; else P[e.k] = p;
+          if (e.t !== 'gp') P.q[e.k] = r.q || null;
+          P.v[e.k] = r; vibrer();
+        } catch (x) { toast(tt('Photo illisible : reprends-la', 'Unreadable photo: retake it')); }
+        peindre(); };
+      $('#ex-f').onchange = prendre; $('#ex-f2').onchange = prendre;
+      $('#ex-prec').onclick = () => { i -= 1; peindre(); };
+      const s = $('#ex-suiv'); if (s) s.onclick = () => { i += 1; peindre(); };
+      const qd = $('#ex-quand'); if (qd) qd.onclick = () => { i += 1; peindre(); };
+      const pa = $('#ex-passer'); if (pa) pa.onclick = () => {
+        if (e.t === 'gp' && e.coin === 'haut-gauche') { const k = etapes().findIndex((x, j) => j > i && !(x.t === 'gp' && x.face === e.face)); i = k < 0 ? etapes().length : k; }
+        else i += 1;
+        peindre(); };
+      const r2 = $('#ex-rg2'); if (r2) r2.onclick = () => { vue = 'reglages'; peindre(); };
     };
     peindre();
     const fond = $('#fond-feuille'); if (fond) { const obs = new MutationObserver(() => { if (fond.hidden) { obs.disconnect(); if (!fini) { fini = true; ok(null); } } }); obs.observe(fond, {attributes: true, attributeFilter: ['hidden']}); }
@@ -9592,67 +9879,141 @@ document.addEventListener('keydown', (e) => { if (e.key !== 'Escape') return; co
 // AVANT le formulaire : est-ce que ça vaut la peine ? (les chances de chaque note d'après l'examen, la vraie valeur de la
 // carte gradée à chaque note, le coût réel), puis le bon niveau de service (la valeur déclarée l'impose), puis la
 // préparation (l'assistant de soumission : formulaire, emballage, envoi, suivi)
+// 3 nov 2026 (Mathieu : « ajouter TAG, pas juste PSA, l'utilisateur choisit au debut ; le mettre en confiance s'il hesite a
+// envoyer lui-meme ou par un intermediaire, avec les pour et contre ; un moyen leger de l'informer sur la meilleure
+// decision ») : 1 Avec qui (PSA et TAG cote a cote pour CETTE carte, le meilleur choix marque) ; 2 Ca vaut la peine ;
+// 3 Le service ; 4 Comment l'envoyer (moi-meme ou un intermediaire, ce que l'app conseille et pourquoi) ; 5 Preparer.
+const CIES_G = {
+  PSA: {pitch: () => tt('La plus reconnue : la revente la plus forte et la plus facile.', 'The best known: the strongest, easiest resale.'),
+    pour: () => [tt('Les meilleurs prix de revente, surtout en 10', 'The best resale prices, especially in 10'), tt('PSA Canada (Mississauga) : pas de douane', 'PSA Canada (Mississauga): no customs')],
+    contre: () => [tt('Une note sans détail (pas de sous-notes)', 'A grade without detail (no subgrades)'), tt('Délais longs aux niveaux les moins chers', 'Long waits at the cheapest tiers')]},
+  TAG: {pitch: () => tt('Une note sur 1000 et un rapport photo de chaque défaut.', 'A 1000-point score and a photo report of every flaw.'),
+    pour: () => [tt('Tu sais POURQUOI la carte a sa note', 'You know WHY the card got its grade'), tt('Souvent plus rapide que PSA', 'Often faster than PSA')],
+    contre: () => [tt('Revente en général sous PSA, moins de ventes pour comparer', 'Resale usually below PSA, fewer sales to compare'), tt('Depuis le Canada, la marche change souvent', 'From Canada, the process changes often')]},
+};
 async function assistantGradation(c, k0){
-  let k = k0 || 0, r = null, cie = 'PSA', choix = null, port = null, dir = 0;
+  let k = k0 || 0, r = null, cmp = null, cie = null, choix = null, port = null, dir = 0, voie = null;
   const VERD = {oui: ['vert', tt('Ça vaut la peine', 'Worth grading')], non: ['rouge', tt('Pas rentable', 'Not worth it')],
-    juste: ['or', tt('À l’équilibre', 'Break-even')], pari_10: ['or', tt('Rentable seulement en PSA 10', 'Only pays off at PSA 10')],
+    juste: ['or', tt('À l’équilibre', 'Break-even')], pari_10: ['or', tt('Rentable seulement en 10', 'Only pays off at 10')],
     pas_assez: ['', tt('Pas assez de ventes gradées pour trancher', 'Not enough graded sales to decide')], sans_raw: ['', tt('Valeur raw inconnue', 'Raw value unknown')]};
   const f1 = (v) => String(v).replace('.', ',');
-  const charger = async () => { r = null; peindre(); r = await API.gradation_rentabilite(c.id, cie, port).catch(e => ({ok: false, erreur: e.message})); if (r && r.service && !choix) choix = r.service.nom; peindre(); };
+  const niv = () => { if (!r) return null; const N = r.niveaux || []; return N.find(x => x.nom === choix && x.permis) || N.find(x => x.nom === (r.service || {}).nom)
+    || (r.service ? {nom: r.service.nom, cout: r.cout, retour_prevu: r.retour_prevu} : null); };
+  const charger = async () => { r = null; peindre(); r = await API.gradation_rentabilite(c.id, cie, port).catch(e => ({ok: false, erreur: e.message})); if (r && r.service) choix = (r.niveaux || []).some(x => x.nom === choix && x.permis) ? choix : r.service.nom; peindre(); };
+  // ce que l'app conseille pour l'envoi : une carte de valeur, on la garde en main jusqu'a la compagnie ; une petite carte
+  // seule, le port aller-retour pese trop : un intermediaire (ou attendre d'en avoir 5)
+  const conseilVoie = () => { const decl = (r && r.valeur_declaree_usd) || 0; return decl >= 500 ? 'moi' : 'inter'; };
   const peindre = () => {
     let corps = '';
+    const NC = cie || 'PSA';
     if (k === 0) {
+      if (!cmp) corps = `<div class="lecture"><span class="roue"></span>${tt('On compare PSA et TAG pour cette carte…', 'Comparing PSA and TAG for this card…')}</div>`;
+      else if (cmp.examiner) corps = `<div class="ag-v"><b>${tt('Examine d’abord la carte', 'Check the card first')}</b><small>${tt('Sans l’état (centrage, coins, bords, surface), impossible de savoir quelle note viser, ni chez qui.', 'Without the condition (centering, corners, edges, surface), there’s no way to know which grade to expect, or where.')}</small></div>
+        <button class="btn" id="ag-ex">${tt('Évaluer l’état', 'Check the condition')}</button>`;
+      else {
+        const m = cmp.meilleur, R = {gain: tt('rapporte le plus pour cette carte', 'pays the most for this card'), ventes: tt('même gain, revente plus sûre (plus de ventes)', 'same gain, safer resale (more sales)'),
+          seul: tt('l’autre n’a pas assez de ventes pour juger', 'the other doesn’t have enough sales to judge')};
+        corps = `<div class="ag-cies">${['PSA', 'TAG'].map(n => { const x = cmp.compagnies[n] || {}, v = VERD[x.verdict] || VERD.pas_assez;
+          return `<button class="ag-cie ${cie === n ? 'on' : ''} ${m === n ? 'top' : ''}" data-cie="${n}">
+            ${m === n ? `<span class="ag-top">${tt('Meilleur choix', 'Best choice')}</span>` : ''}
+            <span class="ag-cie-n"><b>${n}</b><small>${CIES_G[n].pitch()}</small></span>
+            <span class="ag-cie-v ${v[0]}">${x.gain != null && x.verdict !== 'pas_assez' ? `${x.gain >= 0 ? '+' : '−'}${argent(Math.abs(x.gain), 0)}` : '—'}<small>${esc(v[1])}</small></span>
+            <span class="ag-cie-d">${x.cout ? argent(x.cout, 0) + ' · ' : ''}${x.jours ? x.jours[0] + (x.jours[1] !== x.jours[0] ? '–' + x.jours[1] : '') + ' ' + tt('j. ouvr.', 'bus. days') : ''}${' · ' + (x.ventes || 0) + ' ' + tt('ventes', 'sales')}</span></button>`; }).join('')}</div>
+          ${m ? `<div class="sous">${tt(`${m} : ${R[cmp.raison] || ''}.`, `${m}: ${R[cmp.raison] || ''}.`)}</div>` : `<div class="sous">${tt('Pas assez de ventes gradées pour comparer : PSA reste le choix le plus sûr pour revendre.', 'Not enough graded sales to compare: PSA stays the safest for resale.')}</div>`}
+          <details class="ag-pc"><summary>${tt('PSA ou TAG : les pour et les contre', 'PSA or TAG: pros and cons')}</summary>${['PSA', 'TAG'].map(n => `<div class="ag-pc-c"><b>${n}</b>
+            ${CIES_G[n].pour().map(t => `<span class="p">+ ${t}</span>`).join('')}${CIES_G[n].contre().map(t => `<span class="m">− ${t}</span>`).join('')}</div>`).join('')}</details>`;
+      }
+    }
+    if (k === 1) {
       if (!r) corps = `<div class="lecture"><span class="roue"></span>${tt('On lit les ventes de la carte gradée à chaque note…', 'Reading graded sales at each grade…')}</div>`;
       else if (!r.ok) corps = `<div class="vide">${esc(r.erreur || 'Erreur')}</div>`;
-      else if (r.verdict === 'examiner') corps = `<div class="ag-v"><b>${tt('Examine d’abord la carte', 'Check the card first')}</b><small>${tt('Sans l’état (centrage, coins, bords, surface), impossible de savoir quelle note viser.', 'Without the condition (centering, corners, edges, surface), there’s no way to know which grade to expect.')}</small></div>
-        <button class="btn" id="ag-ex">${tt('Évaluer l’état', 'Check the condition')}</button>`;
       else {
         const v = VERD[r.verdict] || VERD.pas_assez, g = r.gain;
         const max = Math.max(...(r.lignes || []).map(l => l.chance), 0.01);
         corps = `<div class="ag-v ${v[0]}"><b>${v[1]}</b>${g != null ? `<span class="ag-g">${g >= 0 ? '+' : '−'}${argent(Math.abs(g), 0)}</span><small>${tt('gain attendu après les frais et le coût de gradation', 'expected gain after fees and grading cost')}</small>` : ''}</div>
-          <div class="ag-l">${(r.lignes || []).map(l => `<div class="ag-r"><span class="ag-n">PSA ${l.note}</span><span class="ag-b"><i style="width:${Math.round(100 * l.chance / max)}%"></i></span><span class="ag-p">${Math.round(100 * l.chance)} %</span>
+          <div class="ag-l">${(r.lignes || []).map(l => `<div class="ag-r"><span class="ag-n">${NC} ${l.note}</span><span class="ag-b"><i style="width:${Math.round(100 * l.chance / max)}%"></i></span><span class="ag-p">${Math.round(100 * l.chance)} %</span>
             <span class="ag-val">${l.valeur ? argent(l.valeur, 0) : '—'}<small>${l.valeur ? l.n + ' ' + tt('ventes', 'sales') : tt('pas de ventes', 'no sales')}</small></span></div>`).join('')}</div>
           <div class="ag-3"><div><span>${tt('Raw', 'Raw')}</span><b>${r.valeur_raw ? argent(r.valeur_raw, 0) : '—'}</b></div><div><span>${tt('Gradée (espérée)', 'Graded (expected)')}</span><b>${r.valeur_esperee ? argent(r.valeur_esperee, 0) : '—'}</b></div><div><span>${tt('Coût', 'Cost')}</span><b>${argent(r.cout, 0)}</b></div></div>
-          ${r.seuil ? `<div class="sous">${tt(`Rentable à partir de PSA ${r.seuil}.`, `Pays off from PSA ${r.seuil}.`)}</div>` : ''}
-          <div class="sous">${tt(`Chances d’après ton examen (état ${f1(r.bas)}–${f1(r.haut)}) ; valeurs : les ventes réelles de cette carte gradée.`, `Odds from your check (condition ${f1(r.bas)}–${f1(r.haut)}); values: real sales of this graded card.`)}${r.ancienne ? ' ' + tt('Ancien examen : refais-le pour des chances plus justes.', 'Older check: redo it for more accurate odds.') : ''}</div>`;
+          ${r.seuil ? `<div class="sous">${tt(`Rentable à partir de ${NC} ${r.seuil}.`, `Pays off from ${NC} ${r.seuil}.`)}</div>` : ''}
+          <div class="sous">${tt(`Chances d’après ton examen (état ${f1(r.bas)}–${f1(r.haut)}) ; valeurs : les ventes réelles de cette carte gradée ${NC}.`, `Odds from your check (condition ${f1(r.bas)}–${f1(r.haut)}); values: real sales of this card graded by ${NC}.`)}${r.ancienne ? ' ' + tt('Ancien examen : refais-le pour des chances plus justes.', 'Older check: redo it for more accurate odds.') : ''}</div>`;
       }
     }
-    if (k === 1 && r && r.service) {
-      const T = (r.tarifs || []), sv = r.service;
-      corps = `<div class="ag-sv"><b>${esc(sv.nom)}</b><span>${f1(sv.prix_usd)} US$ ${tt('par carte', 'per card')} · ${tt('jusqu’à', 'up to')} ${sv.max_usd} US$ ${tt('de valeur', 'in value')}</span>
-          <span>${sv.jours[0]}–${sv.jours[1]} ${tt('jours ouvrables', 'business days')} · ${tt('retour vers le ', 'back around ')}${r.retour_prevu ? dateCourte(r.retour_prevu) : '—'}</span></div>
-        <div class="sous">${tt('La valeur déclarée = la valeur de la carte APRÈS gradation (la note visée). Trop basse, PSA facture la différence de niveau.', 'Declared value = the card’s value AFTER grading (the expected grade). Too low, PSA bills the tier difference.')}</div>
+    if (k === 2 && r && r.service) {
+      const N = r.niveaux || [], ch = N.find(x => x.nom === choix) || N.find(x => x.nom === r.service.nom) || r.service;
+      const pourquoi = (x) => x.raison === 'minimum' ? tt(`minimum ${x.minimum} cartes par commande`, `minimum ${x.minimum} cards per order`) : tt(`jusqu’à ${x.max_usd} US$ : ta carte gradée vaut plus`, `up to ${x.max_usd} US$: your graded card is worth more`);
+      corps = `<div class="sous">${r.plafond ? tt(`Valeur déclarée : environ ${r.valeur_declaree_usd} US$ (la carte gradée à la note visée). PSA n’accepte une carte que dans un niveau qui couvre cette valeur.`, `Declared value: about ${r.valeur_declaree_usd} US$ (the card graded at the expected grade). PSA only takes a card in a tier that covers that value.`)
+          : tt(`Valeur de la carte gradée : environ ${r.valeur_declaree_usd} US$. Chez TAG, chaque niveau assure la carte jusqu’à un montant ; au-delà, ajoute la protection en plus.`, `Graded card value: about ${r.valeur_declaree_usd} US$. At TAG, each tier insures the card up to an amount; above it, add the extra protection.`)}</div>
+        <div class="ag-niv">${N.map(x => `<button class="ag-n1 ${x.nom === ch.nom ? 'on' : ''} ${x.permis ? '' : 'non'}" data-niv="${esc(x.nom)}" ${x.permis ? '' : 'disabled'}>
+          <span class="ag-n1-t"><b>${esc(x.nom)}</b><small>${x.permis ? `${x.jours[0]}${x.jours[1] !== x.jours[0] ? '–' + x.jours[1] : ''} ${tt('jours ouvrables', 'business days')} · ${tt('retour vers le ', 'back ~')}${dateCourte(x.retour_prevu)}${x.assure_moins ? ' · ' + tt(`assurée jusqu’à ${x.max_usd} US$`, `insured up to ${x.max_usd} US$`) : ''}` : pourquoi(x)}</small></span>
+          <span class="ag-n1-p"><b>${f1(x.prix_usd)} US$</b><small>${r.plafond ? tt('jusqu’à', 'up to') : tt('assurée', 'insured')} ${x.max_usd} US$</small></span></button>`).join('')}</div>
         <label>${tt('Port aller-retour estimé ($)', 'Estimated round-trip shipping ($)')}<input class="champ" id="ag-port" type="number" inputmode="decimal" step="any" value="${r.port ?? ''}"></label>
-        <div class="sous">${tt(`Tarifs PSA relevés le ${dateCourte(r.tarifs_date)} : ils changent souvent, confirme sur psacard.com.`, `PSA prices as of ${dateCourte(r.tarifs_date)}: they change often, confirm on psacard.com.`)}</div>
-        <a class="pilule" href="${PORTAILS.PSA}" target="_blank" rel="noopener">${tt('Voir la grille sur PSA', 'See PSA’s chart')} ↗</a>`;
+        <div class="sous">${tt(`Tarifs ${NC} relevés le ${dateCourte(r.tarifs_date)}${r.taxes_incluses ? ', taxes sur les frais incluses' : ''} : ils changent souvent, confirme chez ${NC}.`, `${NC} prices as of ${dateCourte(r.tarifs_date)}${r.taxes_incluses ? ', tax on fees included' : ''}: they change often, confirm with ${NC}.`)}</div>
+        <a class="pilule" href="${PORTAILS[NC]}" target="_blank" rel="noopener">${tt(`Voir la grille sur ${NC}`, `See ${NC}’s chart`)} ↗</a>`;
     }
-    if (k === 2) corps = `<div class="ag-v"><b>${tt('On prépare ta soumission', 'Let’s prepare your submission')}</b><small>${tt('Le formulaire PSA carte par carte, l’emballage (pochette + Card Saver I), l’envoi assuré, puis le suivi et le rappel si le retour tarde.', 'The PSA form card by card, packing (sleeve + Card Saver I), insured shipping, then tracking and a reminder if it’s late.')}</small></div>
-      <ul class="ag-ck"><li>${tt('Valeur déclarée', 'Declared value')} <b>${r && r.lignes && r.lignes[0] && r.lignes[0].valeur ? argent(r.lignes[0].valeur, 0) + (r.frais_usd_cad ? ` (≈ ${Math.round(r.lignes[0].valeur / r.frais_usd_cad)} US$)` : '') : '—'}</b></li><li>${tt('Service', 'Service')} <b>${esc((r && r.service && r.service.nom) || '—')}</b></li><li>${tt('Coût par carte', 'Cost per card')} <b>${r ? argent(r.cout, 0) : '—'}</b></li></ul>
-      <button class="lien-t" id="ag-deja">${tt('Déjà envoyée ? Juste la suivre', 'Already shipped? Just track it')}</button>`;
-    const ok = k < 2 ? (k === 0 ? r && r.ok && r.verdict !== 'examiner' : true) : true;
+    if (k === 3) {
+      const rec = conseilVoie(); voie = voie || rec;
+      const OU = {PSA: {moi: tt('PSA Canada, à Mississauga : par la poste (suivi, assuré) ou sur place. PSA s’occupe de la douane.', 'PSA Canada, in Mississauga: by mail (tracked, insured) or in person. PSA handles customs.'),
+          inter: tt('Une boutique de cartes qui fait des soumissions groupées, un groupe de soumission connu, ou un EB Games participant.', 'A card shop running group submissions, a known submission group, or a participating EB Games.')},
+        TAG: {moi: tt('TAG Canada (la marche à suivre est sur taggrading.com, version Canada).', 'TAG Canada (steps on taggrading.com, Canada version).'),
+          inter: tt('Un partenaire autorisé de TAG au Canada (liste sur taggrading.com).', 'An authorized TAG partner in Canada (list on taggrading.com).')}};
+      const opt = (k_, t, pour, contre) => `<button class="ag-voie ${voie === k_ ? 'on' : ''}" data-voie="${k_}">${rec === k_ ? `<span class="ag-top">${tt('Conseillé', 'Advised')}</span>` : ''}<b>${t}</b>
+        ${pour.map(x => `<span class="p">+ ${x}</span>`).join('')}${contre.map(x => `<span class="m">− ${x}</span>`).join('')}</button>`;
+      corps = `<div class="ag-voies">${opt('moi', tt('Je l’envoie moi-même', 'I send it myself'),
+          [tt('Le moins cher par carte dès 3–5 cartes', 'Cheapest per card from 3–5 cards'), tt('Tu choisis le niveau et l’assurance, tu suis le colis', 'You pick the tier and insurance, you track the parcel')],
+          [tt(`Le port aller-retour (~${argent(r ? r.port : 45, 0)}) pèse lourd pour 1 seule carte`, `Round-trip shipping (~${argent(r ? r.port : 45, 0)}) weighs a lot for 1 card`), tt('Un compte et un formulaire (SlabCoach te guide)', 'An account and a form (SlabCoach guides you)')])}
+        ${opt('inter', tt('Par un intermédiaire', 'Through a middleman'),
+          [tt('Aucun formulaire ni emballage', 'No form, no packing'), tt('Le port se partage : bon pour 1–3 cartes', 'Shipping is shared: good for 1–3 cards')],
+          [tt('Un supplément par carte et souvent un mois d’attente de plus', 'A per-card fee and often a month more of waiting'), tt('Ta carte passe par d’autres mains', 'Your card goes through other hands')])}</div>
+        <div class="ag-v"><small>${voie === 'moi' ? (rec === 'moi' ? tt('Carte de valeur : garde-la en main jusqu’à la compagnie, assurée à ton nom, avec le suivi. ', 'Valuable card: keep it in your hands up to the company, insured in your name, tracked. ') : '')
+            + tt('C’est plus simple qu’il n’y paraît : SlabCoach te guide pour le formulaire, l’emballage, l’envoi assuré, puis le suivi et le rappel si ça tarde.', 'It’s simpler than it looks: SlabCoach guides you through the form, packing, insured shipping, then tracking and a reminder if it’s late.')
+          : (rec === 'inter' ? tt('Pour une carte de moins de 500 US$, un intermédiaire coûte souvent moins que le port pour une seule carte. Ou attends d’avoir 5 cartes et envoie-les toi-même. ', 'For a card under 500 US$, a middleman often costs less than shipping a single card. Or wait until you have 5 cards and send them yourself. ') : '')
+            + tt('Choisis quelqu’un de connu, demande le numéro de commande pour suivre ta carte, et garde ton examen SlabCoach (les photos d’avant).', 'Pick someone known, ask for the order number to track your card, and keep your SlabCoach exam (the before photos).')}</small></div>
+        <div class="sous"><b>${tt('Où', 'Where')} :</b> ${OU[NC][voie]} ${tt('(infos du 3 nov. 2026 : ça change souvent)', '(as of Nov 3, 2026: it changes often)')}</div>`;
+    }
+    if (k === 4) corps = voie === 'inter'
+      ? `<div class="ag-v"><b>${tt('Avant de la confier', 'Before handing it over')}</b><small>${tt('Ce qui te protège, et ce qui te permet de suivre ta carte jusqu’au retour.', 'What protects you, and lets you track your card until it’s back.')}</small></div>
+        <ul class="ag-ck"><li>${tt('Examen SlabCoach fait (tes photos d’avant)', 'SlabCoach exam done (your before photos)')} <b>${c.etat_le || (r && r.haut != null) ? '✓' : '—'}</b></li>
+          <li>${tt('Valeur déclarée', 'Declared value')} <b>${r && r.lignes && r.lignes[0] && r.lignes[0].valeur ? argent(r.lignes[0].valeur, 0) : '—'}</b></li>
+          <li>${tt('Demande le numéro de commande', 'Ask for the order number')} <b>${NC}</b></li></ul>`
+      : `<div class="ag-v"><b>${tt('On prépare ta soumission', 'Let’s prepare your submission')}</b><small>${tt(`Le formulaire ${NC} carte par carte, l’emballage (pochette + Card Saver I), l’envoi assuré, puis le suivi et le rappel si le retour tarde.`, `The ${NC} form card by card, packing (sleeve + Card Saver I), insured shipping, then tracking and a reminder if it’s late.`)}</small></div>
+        <ul class="ag-ck"><li>${tt('Valeur déclarée', 'Declared value')} <b>${r && r.lignes && r.lignes[0] && r.lignes[0].valeur ? argent(r.lignes[0].valeur, 0) + (r.frais_usd_cad ? ` (≈ ${Math.round(r.lignes[0].valeur / r.frais_usd_cad)} US$)` : '') : '—'}</b></li><li>${tt('Service', 'Service')} <b>${esc(niv() ? niv().nom : '—')}</b></li><li>${tt('Coût par carte', 'Cost per card')} <b>${niv() ? argent(niv().cout, 0) : '—'}</b></li></ul>
+        <button class="lien-t" id="ag-deja">${tt('Déjà envoyée ? Juste la suivre', 'Already shipped? Just track it')}</button>`;
+    const ok = k === 0 ? !!(cmp && !cmp.examiner && cie) : k === 1 ? !!(r && r.ok && r.verdict !== 'examiner') : true;
+    const TITRES = [tt('Avec qui ?', 'With whom?'), tt('Ça vaut la peine ?', 'Worth it?'), tt('Le bon service', 'The right service'), tt('Comment l’envoyer ?', 'How to send it?'), tt('Préparer l’envoi', 'Prepare shipping')];
     const pop = popOuvrir(`<button class="pop-x" id="ag-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
-      <div class="pop-tete"><span class="pop-sur">${tt('Gradation PSA · ', 'PSA grading · ')}${esc(c.joueur || titreCourt(c.titre) || '')}</span><h3>${[tt('Ça vaut la peine ?', 'Worth it?'), tt('Le bon service', 'The right service'), tt('Préparer l’envoi', 'Prepare shipping')][k]}</h3></div>
+      <div class="pop-tete"><span class="pop-sur">${tt('Gradation', 'Grading')}${cie ? ' ' + cie : ''} · ${esc(c.joueur || titreCourt(c.titre) || '')}</span><h3>${TITRES[k]}</h3></div>
       <div class="pop-corps ag">${corps}</div>
       <div class="pop-pied"><div class="sa-nav">${k ? `<button class="btn ghost" id="ag-prec">${tt('Retour', 'Back')}</button>` : `<button class="btn ghost" id="ag-ann">${tt('Annuler', 'Cancel')}</button>`}
-        <button class="btn" id="ag-suiv" ${ok ? '' : 'disabled'}>${k < 2 ? tt('Suivant', 'Next') : tt('Préparer la soumission', 'Prepare the submission')}</button></div>
-        <div class="pop-pts">${[0, 1, 2].map(i => `<button class="${i === k ? 'on' : ''}" data-et="${i}" aria-label="${i + 1}"></button>`).join('')}</div></div>`, popFermer, dir);
+        <button class="btn" id="ag-suiv" ${ok ? '' : 'disabled'}>${k < 4 ? (k === 0 && !cie ? tt('Choisis une compagnie', 'Pick a company') : tt('Suivant', 'Next')) : voie === 'inter' ? tt('Suivre l’envoi', 'Track the shipment') : tt('Préparer la soumission', 'Prepare the submission')}</button></div>
+        <div class="pop-pts">${[0, 1, 2, 3, 4].map(i => `<button class="${i === k ? 'on' : ''}" data-et="${i}" aria-label="${i + 1}"></button>`).join('')}</div></div>`, popFermer, dir);
     pop.classList.toggle('arriere', dir < 0); dir = 0;
     const b = (id) => pop.querySelector('#' + id);
     b('ag-x').onclick = popFermer; if (b('ag-ann')) b('ag-ann').onclick = popFermer;
     if (b('ag-prec')) b('ag-prec').onclick = () => { k--; dir = -1; peindre(); };
-    $$('[data-et]', pop).forEach(x => x.onclick = () => { const n = +x.dataset.et; if (n === k || !r || !r.ok || r.verdict === 'examiner') return; dir = n > k ? 1 : -1; k = n; peindre(); });
-    if (b('ag-ex')) b('ag-ex').onclick = () => { popFermer(); const g = $('#fc-et-go'); if (g) { g.scrollIntoView({behavior: 'smooth', block: 'center'}); g.click(); } };
-    const pi = b('ag-port'); if (pi) pi.onchange = () => { port = nb(pi.value); charger().then(() => { k = 1; peindre(); }); };
-    if (b('ag-deja')) b('ag-deja').onclick = () => { popFermer(); formEnvoi(c, 'gradation'); };
+    $$('[data-et]', pop).forEach(x => x.onclick = () => { const n = +x.dataset.et; if (n === k || !cie || !r || !r.ok || r.verdict === 'examiner') return; dir = n > k ? 1 : -1; k = n; peindre(); });
+    if (b('ag-ex')) b('ag-ex').onclick = () => { popFermer(); ficheCollection(c, {lancer: true}); };      // 3 nov 2026 (revue) : la fiche, puis l'examen
+    $$('[data-cie]', pop).forEach(x => x.onclick = () => { if (cie !== x.dataset.cie) { cie = x.dataset.cie; r = null; choix = null; port = null; } vibrer(); peindre(); });
+    $$('[data-voie]', pop).forEach(x => x.onclick = () => { voie = x.dataset.voie; vibrer(); peindre(); });
+    const pi = b('ag-port'); if (pi) pi.onchange = () => { port = nb(pi.value); charger().then(() => { k = 2; peindre(); }); };
+    if (b('ag-deja')) b('ag-deja').onclick = () => { popFermer(); formEnvoi(c, 'gradation', {compagnie: cie}); };
+    $$('[data-niv]', pop).forEach(x => x.onclick = () => { const n = (r.niveaux || []).find(v => v.nom === x.dataset.niv); if (!n || !n.permis) return;
+      choix = n.nom; vibrer(); peindre(); });
     b('ag-suiv').onclick = async () => {
-      if (k < 2) { k++; dir = 1; vibrer(); peindre(); return; }
+      if (k === 0) { k = 1; dir = 1; vibrer(); if (!r) await charger(); else peindre(); return; }
+      if (k < 4) { k++; dir = 1; vibrer(); peindre(); return; }
       const decl = r && r.lignes && r.lignes[0] && r.lignes[0].valeur ? Math.round(r.lignes[0].valeur) : null;
-      const rr = await essai(API.soumission_creer({cartes: [c.id], compagnie: 'PSA', service: r && r.service ? r.service.nom : null, cout_carte: r ? r.cout : null,
-        retour_prevu: r ? r.retour_prevu : null, preparation: true, mode: 'classique', valeurs: decl ? {[c.id]: decl} : {}}), null);
+      const nv = niv();
+      if (voie === 'inter') { popFermer(); formEnvoi(c, 'gradation', {compagnie: cie, service: nv ? nv.nom : '', cout: nv ? nv.cout : null, retour_prevu: nv ? nv.retour_prevu : ''}); return; }
+      const rr = await essai(API.soumission_creer({cartes: [c.id], compagnie: cie, service: nv ? nv.nom : null, cout_carte: nv ? nv.cout : null,
+        retour_prevu: nv ? nv.retour_prevu : (r ? r.retour_prevu : null), preparation: true, mode: 'classique', valeurs: decl ? {[c.id]: decl} : {}}), null);
       if (rr && rr.ok) { popFermer(); assistantSoumission(rr.id, 2); }
     };
   };
-  await charger();
+  peindre();
+  cmp = await API.gradation_comparer(c.id).catch(() => ({ok: false, compagnies: {}}));
+  if (cmp && cmp.meilleur && !cie) cie = cmp.meilleur;          // le meilleur choix est pre-choisi ; un toucher change
+  else if (cmp && !cmp.examiner && !cie) cie = 'PSA';
+  peindre();
 }
 async function assistantSoumission(id, etape){
   let k0 = 0; try { k0 = +(localStorage.getItem('lr_so_et_' + id) || 0); } catch (x) {}
@@ -10086,7 +10447,7 @@ async function chargerCompsCarte(c){
   const nC = Math.max(r.n || 0, r.comps.length);
   z.innerHTML = `<div class="bloc-v"><div class="bloc-t">${tt('Le marché : les autres vendeurs', 'The market: other sellers')} <span class="sous">${nC} ${nC > 1 ? tt('annonces', 'listings') : tt('annonce', 'listing')}${r.mediane ? ' · ' + tt('médiane ', 'median ') + argentCourt(r.mediane) : ''}</span></div>
     ${rep ? `<div class="repere ${rep.cl}"><b>${esc(rep.court)}</b><span>${tt('ton prix ', 'your price ')}${argentCourt(c.prix_demande)} · ${esc(rep.long)}</span></div>` : ''}
-    <div class="comps-l">${r.comps.map(x => `<a class="comp-m" href="${esc(x.url)}" target="_blank" rel="noopener" ${attrsAnnonce({...x, item_id: x.item_id || (String(x.url || '').match(/itm\/(\d+)/) || [])[1]})}><span style="${x.photo ? `background-image:url('${esc(photoNet(x.photo))}')` : ''}"></span><b>${argentCourt(x.total)}</b></a>`).join('')}</div>
+    <div class="comps-l">${r.comps.map(x => `<a class="comp-m" href="${esc(urlSure(x.url))}" target="_blank" rel="noopener" ${attrsAnnonce({...x, item_id: x.item_id || (String(x.url || '').match(/itm\/(\d+)/) || [])[1]})}><span style="${x.photo ? `background-image:${cssUrl(photoNet(x.photo))}` : ''}"></span><b>${argentCourt(x.total)}</b></a>`).join('')}</div>
     ${sugg && Math.abs(sugg - (nb(c.prix_demande) || 0)) >= 1 ? `<button class="btn petit" id="c-aumarche">${tt('Mettre au prix du marché', 'Set to market price')} · ${argent(sugg, 2)}</button>` : ''}</div>`;
   const b = $('#c-aumarche'); if (b) b.onclick = async () => {
     if (!await confirmer(tt('Changer le prix sur eBay ?', 'Change the price on eBay?'), argentCourt(c.prix_demande) + ' → ' + argent(sugg, 2), tt('Changer', 'Change'))) return;
@@ -10415,7 +10776,7 @@ function feuilleDemande(x){
   ouvrirFeuille(`<h3>${esc(ia.resume || tt('Demande', 'Request'))}</h3>
     <div class="pastilles">${tag(c[0], c[1])}${ia.priorite ? tag(tt('Priorité ', 'Priority ') + ia.priorite, ia.priorite === 1 ? 'rouge' : '') : ''}${tag(x.username || x.compte)}${tag(x.langue === 'en' ? 'EN' : 'FR')}${x.page ? tag('#' + x.page) : ''}${tag(ilYa(x.le))}</div>
     <div class="dm-texte" data-nt>${esc(x.texte)}</div>
-    ${x.contexte ? `<div class="bloc dm-ctx">${x.contexte.url ? `<a class="pilule" href="${esc(x.contexte.url)}" target="_blank" rel="noopener">${tt('Voir l’annonce', 'See listing')} ↗</a>` : ''}
+    ${x.contexte ? `<div class="bloc dm-ctx">${x.contexte.url ? `<a class="pilule" href="${esc(urlSure(x.contexte.url))}" target="_blank" rel="noopener">${tt('Voir l’annonce', 'See listing')} ↗</a>` : ''}
       ${(x.contexte.ventes || []).length ? `<div class="r-titre">${tt('Ventes utilisées', 'Sales used')}</div>${x.contexte.ventes.map(v => `<div class="sous" data-nt>${argentCourt(v.prix)} · ${esc(v.titre || '')} · ${esc(v.le || '')}</div>`).join('')}` : `<div class="sous">${tt('Aucune vente : valeur tirée des annonces', 'No sales: value from listings')}</div>`}
       ${(x.contexte.annonces || []).length ? `<div class="r-titre">${tt('Annonces comparées', 'Listings compared')}</div>${x.contexte.annonces.map(v => `<div class="sous" data-nt>${argentCourt(v.total)} · ${esc(v.titre || '')}</div>`).join('')}` : ''}</div>` : ''}
     ${ia.a_faire ? `<div class="bandeau info"><b>${tt('À faire', 'To do')} :</b> ${esc(ia.a_faire)}</div>` : ''}
@@ -10474,13 +10835,54 @@ function ligneTour(t, court){
   const passe = t.passe ? ` · <span class="roue"></span> ${tt('analyse des encans des gros vendeurs en cours', 'top sellers’ auctions being analyzed')}` : '';
   return `${tt('Prochain tour vers ', 'Next run around ')}<b>${heureCourte(t.prochain)}</b> (${tt('dans ', 'in ')}${dans(t.prochain)})${passe}${der && !court ? ' · ' + der : ''}`;
 }
+// 3 nov 2026 (Mathieu, ses slabs PSA 9 et PSA 6) : une carte GRADEE de reference : ses photos, sa note, et la raison connue
+// de la note. Le banc d'essai de l'analyseur (et des exemples etiquetes pour l'entrainer).
+async function feuilleReference(){
+  const d = await feuilleExamen({}, {slab: true, reference: true, titre: tt('Carte gradée de référence', 'Graded reference card')}); if (!d || !(d.photos || []).length) return;
+  const TYPES = [['', tt('Défaut connu (facultatif)', 'Known flaw (optional)')], ["marque d'ecriture", tt('Marque d’écriture (chiffre creusé)', 'Writing indent')], ['rayure', tt('Rayure', 'Scratch')], ['bosse', tt('Bosse', 'Dent')],
+    ['pli', tt('Pli', 'Crease')], ['tache', tt('Tache', 'Stain')], ["ligne d'impression", tt('Ligne d’impression', 'Print line')], ['blanchiment', tt('Blanchiment', 'Whitening')], ['decentrage', tt('Décentrage', 'Off-center')], ['autre', tt('Autre', 'Other')]];
+  const ZONES = [['surface', tt('Surface', 'Surface')], ['coin', tt('Un coin', 'A corner')], ['bord', tt('Un bord', 'An edge')], ['centrage', tt('Centrage', 'Centering')]];
+  const n = (d.photos || []).length + (d.gros_plans || []).length + (d.rasante ? 1 : 0) + (d.rasante2 ? 1 : 0);
+  ouvrirFeuille(`<h3>${tt('Carte gradée de référence', 'Graded reference card')}</h3>
+    <div class="sous">${tt(`${n} photo(s) prêtes. La note reçue, et pourquoi si tu le sais : c’est la raison qui apprend le plus à l’IA.`, `${n} photo(s) ready. The grade, and why if you know: the reason teaches the AI the most.`)}</div>
+    <div class="grille-champs"><label>${tt('Compagnie', 'Company')}<select class="champ" id="rf-cie">${['PSA', 'BGS', 'TAG', 'SGC', 'CGC'].map(x => `<option>${x}</option>`).join('')}</select></label>
+      <label>${tt('Note', 'Grade')}<input class="champ" id="rf-g" inputmode="decimal" placeholder="9"></label>
+      <label class="large">${tt('Carte', 'Card')}<input class="champ" id="rf-c" placeholder="2024-25 Hoops Scoot Henderson Green /99 #13"></label>
+      <label>${tt('Certificat', 'Cert')}<input class="champ" id="rf-cert" inputmode="numeric"></label>
+      <label>${tt('Où', 'Where')}<select class="champ" id="rf-z">${ZONES.map(([k, nn]) => `<option value="${k}">${nn}</option>`).join('')}</select></label>
+      <label class="large"><select class="champ" id="rf-t">${TYPES.map(([k, nn]) => `<option value="${esc(k)}">${nn}</option>`).join('')}</select></label>
+      <label class="large">${tt('Ce que tu as vu', 'What you saw')}<input class="champ" id="rf-x" placeholder="${esc(tt('ex. un 8 creusé près de la tête, visible en lumière rasante', 'e.g. an 8 indented near the head, visible in raking light'))}"></label></div>
+    <details class="er-sous" id="rf-sous"><summary>${tt('Sous-notes', 'Subgrades')} <small>${tt('sur l’étiquette BGS ou le rapport TAG', 'on the BGS label or the TAG report')}</small></summary>
+      <div class="grille-champs">${[['centrage', tt('Centrage', 'Centering')], ['coins', tt('Coins', 'Corners')], ['bords', tt('Bords', 'Edges')], ['surface', tt('Surface', 'Surface')]]
+        .map(([k, nn]) => `<label>${nn}<input class="champ" id="rf-s-${k}" type="number" inputmode="decimal" step="0.5" min="1" max="10" placeholder="9.5"></label>`).join('')}</div></details>
+    <button class="btn" id="rf-ok">${tt('Ajouter à la banque', 'Add to the bank')}</button>`);
+  $('#rf-cie').onchange = () => { const o = ['BGS', 'TAG'].includes($('#rf-cie').value); $('#rf-sous').open = o; };
+  $('#rf-ok').onclick = async (ev) => {
+    if (!nb(val('rf-g'))) { toast(tt('Écris la note reçue (ex. 9)', 'Enter the grade received (e.g. 9)')); return; }
+    const bt = ev.currentTarget; if (bt.disabled) return; bt.disabled = true; setTimeout(() => { bt.disabled = false; }, 4000);
+    const t = $('#rf-t').value, x = val('rf-x').trim(), sous = {};
+    ['centrage', 'coins', 'bords', 'surface'].forEach(k => { const v = nb(val('rf-s-' + k)); if (v != null && v >= 1 && v <= 10) sous[k] = v; });
+    const r = await essai(API.admin_reference_ajouter({...d, compagnie: $('#rf-cie').value, grade: $('#rf-cie').value + ' ' + val('rf-g'), cert: val('rf-cert'),
+      carte: {titre: val('rf-c')}, sous_notes: Object.keys(sous).length ? sous : null, defauts: (t || x) ? [{zone: $('#rf-z').value, type: t || 'autre', texte: x}] : []}), tt('Ajoutée à la banque', 'Added to the bank'));
+    if (r) { fermerFeuille(); adminServeur(); }
+  };
+}
 async function adminServeur(){
   const z = $('#adm-z'); const d = await API.admin_sante().catch(e => ({ok:false, erreur:e.message}));
   if (!d.ok) { z.innerHTML = `<div class="vide">${esc(d.erreur)}</div>`; return; }
   const ap = (d.ebay && d.ebay.appels) || {};
+  // 3 nov 2026 : la banque d'entrainement (examens + vraies notes des comptes qui ont dit OUI), et son export
+  API.admin_entrainement().then(b => { const ze = $('#adm-entr-e'); if (!ze || !b.ok) return;
+    ze.innerHTML = `<div class="pastilles">${tag(b.exemples + ' ' + tt('examens', 'exams'), 'acc')}${tag(b.avec_note + ' ' + tt('avec vraie note', 'with real grade'), b.avec_note ? 'vert' : '')}${tag(b.avec_sous_notes + ' ' + tt('avec sous-notes', 'with subgrades'))}${tag(b.avec_gros_plans + ' ' + tt('avec gros plans', 'with close-ups'))}${tag(b.avec_avis + ' ' + tt('avec avis ✓/✕', 'with ✓/✕ feedback'))}</div>
+      <div class="sous" style="margin-top:6px">${b.avec_note ? tt(`${b.dans_fourchette} / ${b.avec_note} dans la fourchette estimée`, `${b.dans_fourchette} / ${b.avec_note} within the estimated range`) + ' · ' : ''}${b.comptes} ${tt('compte(s)', 'account(s)')} · ${String(b.mo).replace('.', ',')} / ${b.max_mo} Mo</div>
+      <div class="env-b" style="margin-top:10px"><button class="pilule acc" id="adm-ref">${tt('Ajouter une carte gradée', 'Add a graded card')}</button>
+      ${b.exemples ? `<a class="pilule" href="${esc(b.export)}" download>${tt('Exporter (zip)', 'Export (zip)')}</a>` : ''}</div>
+      ${b.references ? `<div class="sous" style="margin-top:6px">${b.references} ${tt('carte(s) gradée(s) de référence', 'graded reference card(s)')}</div>` : ''}`;
+    $('#adm-ref').onclick = feuilleReference; }).catch(() => {});
   const barre = (n, max) => { const p = max ? Math.min(100, Math.round(100 * n / max)) : 0; return `<div class="adm-barre"><i style="width:${p}%" class="${p > 80 ? 'rouge' : ''}"></i></div><span class="sous">${n} / ${max} · ${p} %</span>`; };
   const t = d.taches || {};
-  z.innerHTML = `<div class="bloc" id="adm-deals" style="margin-bottom:14px"><div class="r-titre">${tt('Chasseur de deals', 'Deal hunter')}</div>
+  z.innerHTML = `<div class="bloc" id="adm-entr" style="margin-bottom:14px"><div class="r-titre">${tt('Banque d’entraînement de l’IA', 'AI training bank')}</div><div class="sous" id="adm-entr-e">…</div></div>
+    <div class="bloc" id="adm-deals" style="margin-bottom:14px"><div class="r-titre">${tt('Chasseur de deals', 'Deal hunter')}</div>
     <div class="sous" id="adm-deals-e">…</div>
     <button class="btn" id="adm-deals-ok" style="margin-top:12px">${tt('Relancer le chasseur', 'Run the hunter now')}</button>
     <div id="adm-journal"></div></div>
@@ -10852,7 +11254,7 @@ async function feuilleAlertes(){
   const [r, ra] = await Promise.all([API.alertes_liste().catch(() => ({alertes:[], notifications:[]})), API.alarmes_lire().catch(() => null)]);
   const al = (ra && ra.alarmes) || {};
   const ligneNotif = (n) => n.alerte_id == null && /^#/.test(n.url || '')
-    ? `<a class="rangee ${n.lu ? '' : 'nouvelle'}" href="${esc(n.url)}" data-fermer-f>${n.photo ? vignette(n.photo, n.titre) : ''}<span class="milieu"><span class="nom">${esc(n.titre)}</span><span class="det">${ilYa(n.le)}</span></span>${n.total ? `<span class="droite"><span class="prix">${argent(n.total, 0)}</span></span>` : ''}</a>`
+    ? `<a class="rangee ${n.lu ? '' : 'nouvelle'}" href="${esc(urlSure(n.url))}" data-fermer-f>${n.photo ? vignette(n.photo, n.titre) : ''}<span class="milieu"><span class="nom">${esc(n.titre)}</span><span class="det">${ilYa(n.le)}</span></span>${n.total ? `<span class="droite"><span class="prix">${argent(n.total, 0)}</span></span>` : ''}</a>`
     : `<div class="rangee ${n.lu ? '' : 'nouvelle'}" ${attrsAnnonce({item_id:n.item_id, titre:n.titre, photo:n.photo, total:n.total, url:n.url})}>${vignette(n.photo, n.titre)}
       <span class="milieu"><span class="nom">${esc(n.titre)}</span><span class="det">${ilYa(n.le)}</span></span><span class="droite"><span class="prix">${argent(n.total, 0)}</span></span></div>`;
   ouvrirFeuille(`<h3>${tt('Mes alertes', 'My alerts')}</h3>
@@ -11078,7 +11480,7 @@ function feuilleDepense(){
 // Reglages
 // ============================================================
 // 2 nov 2026 (Mathieu : « un utilisateur doit voir la meme chose sur son ordi que sur son cell ») : un compte, tous les
-// appareils. Le code d'appareil (6 chiffres, 10 min) ouvre CE compte sur l'ordi ; Apple, Google et eBay peuvent tous
+// appareils. Le code d'appareil (8 chiffres depuis le 3 nov 2026, 10 min) ouvre CE compte sur l'ordi ; Apple, Google et eBay peuvent tous
 // ouvrir le meme compte (« Ajouter » relie une connexion a ce compte-ci)
 async function blocAppareils(){
   const z = $('#g-appareils'); if (!z) return;
@@ -11100,7 +11502,7 @@ async function blocAppareils(){
       <div class="pop-tete"><span class="pop-sur">${tt('Code d’appareil', 'Device code')}</span><h3>${tt('Ouvre ton compte sur l’ordi', 'Open your account on the computer')}</h3></div>
       <div class="pop-corps"><ol class="td-meth"><li><i>1</i><span>${tt('Sur l’ordi, va sur', 'On the computer, go to')} <b>slabcoach.com/auth/code</b></span></li>
         <li><i>2</i><span>${tt('Entre ce code :', 'Enter this code:')}</span></li></ol>
-        <div class="ap-code">${c.code.slice(0, 3)} ${c.code.slice(3)}</div>
+        <div class="ap-code">${c.code.length === 8 ? c.code.slice(0, 4) + ' ' + c.code.slice(4) : c.code.slice(0, 3) + ' ' + c.code.slice(3)}</div>
         <div class="sous" id="ap-reste" style="text-align:center"></div></div>
       <div class="pop-pied"><button class="btn" id="ap-ok">${tt('C’est fait', 'Done')}</button></div>`, popFermer);
     $('#ap-x').onclick = popFermer; $('#ap-ok').onclick = popFermer;
@@ -11126,7 +11528,7 @@ async function vueReglages(arg){
   if (arg === 'ebay-ok') { history.replaceState(null, '', '#reglages');
     setTimeout(() => toast(tt('eBay connecté : on importe tes annonces et tes ventes…', 'eBay connected: importing your listings and sales…'), 4500), 300);
     suivrePremiereSynchro(); }
-  if (arg === 'ebay-erreur') setTimeout(() => toast('Connexion eBay refusée : recommence ou colle l’adresse', 4500), 300);
+  if (arg === 'ebay-erreur') setTimeout(() => toast(tt('Connexion eBay refusée : recommence ou colle l’adresse', 'eBay connection refused: try again or paste the address'), 4500), 300);
   if (arg === 'connexion-ok') { history.replaceState(null, '', '#reglages'); setTimeout(() => toast(tt('Connexion ajoutée : elle ouvre maintenant ce compte-ci', 'Sign-in added: it now opens this account'), 4500), 300); }
   let r, act;
   try {
@@ -11162,6 +11564,7 @@ async function vueReglages(arg){
       <div class="r-ligne fixe"><span class="t"><b>Vendre sur eBay</b><span>Inventaire, prix, annonces, profit</span></span><span class="interrupteur on"><i></i></span></div>
       ${ligneAct('breaks', 'Breaks', 'Prix des places, tirage, envois')}${ligneAct('magasin', 'Magasin / comptoir', 'Ventes en personne, rachats, consignation')}</div>
     <div class="r-bloc" ${S.forfait && S.forfait.communaute ? '' : 'hidden'}><button class="r-ligne" id="g-partage"><span class="t"><b>${tt('Partager mes ventes (anonymes)', 'Share my sales (anonymous)')}</b><span>${tt('Tes prix vendus, sans ton nom ni l’acheteur, aident les prix « vendues » de tout le monde', 'Your sold prices, without your name or the buyer’s, power everyone’s “sold” prices')}</span></span><span class="interrupteur ${(S.reglages || {}).partage_ventes === true ? 'on' : ''}"><i></i></span></button></div>
+    <div class="r-bloc"><div class="r-titre">${tt('Entraînement de l’IA', 'AI training')}</div><button class="r-ligne" id="g-entr"><span class="t"><b>${tt('Aider à entraîner l’IA de SlabCoach', 'Help train SlabCoach’s AI')}</b><span>${tt('Quand une carte examinée revient du gradage (ou que tu confirmes un défaut), SlabCoach garde ses photos d’examen, les mesures et la vraie note pour entraîner son analyseur. Sans ton nom, ton pseudo ni tes prix. Retirer efface tes exemples.', 'When an examined card comes back from grading (or you confirm a defect), SlabCoach keeps its exam photos, measurements and real grade to train its analyzer. Without your name, username or prices. Withdrawing erases your examples.')}</span></span><span class="interrupteur ${(S.reglages || {}).ia_entrainement_ok ? 'on' : ''}"><i></i></span></button></div>
     <button class="r-bloc r-idee" id="g-deals"><span class="aaj-n">★</span><span><b>${tt('Mes deals', 'My deals')}</b><small>${tt('Ce que je collectionne, mes favoris, mon budget', 'What I collect, my favorites, my budget')}</small></span></button>
     <button class="r-bloc r-idee" id="g-profil"><span class="aaj-n">◎</span><span><b>${tt('Mon profil', 'My profile')}</b><small>${tt('Niveau, but, budget : pour des conseils à ta mesure', 'Level, goal, budget: tips made for you')}</small></span><span class="fl">›</span></button>
     <button class="r-bloc r-idee" id="g-tour"><span class="aaj-n">▶</span><span><b>${tt('Le tour de l’app', 'App tour')}</b><small>${tt('Tout ce que tu peux faire, en 1 minute', 'Everything you can do, in 1 minute')}</small></span><span class="fl">›</span></button>
@@ -11182,7 +11585,7 @@ async function vueReglages(arg){
         <input type="file" accept="image/png,image/jpeg,image/webp" id="g-logo-f" hidden></div>
       <div class="grille-champs"><label class="large">Nom de ta boutique<input class="champ" id="g-nom" value="${esc(r.nom_boutique === 'Ma boutique' ? '' : r.nom_boutique)}" placeholder="ex. Cartes du Nord" maxlength="40"></label>
       ${champ('g-tx', 'Taxes de vente %', r.taxes_pct, 'number')}</div></div>
-    <details class="r-bloc r-plie" ${S.mode === 'acheteur' ? 'hidden' : ''}><summary><span class="r-titre">Frais et marges</span><span class="r-note">eBay ${r.frais_ebay_pct} %${act.breaks ? ' · breaks ' + r.marge_break + ' % de marge' : ''}</span></summary>
+    <details class="r-bloc r-plie" ${S.mode === 'acheteur' ? 'hidden' : ''}><summary><span class="r-titre">Frais et marges</span><span class="r-note">eBay ${r.frais_ebay_pct} %${act.breaks ? ' · breaks ' + r.marge_break + tt(' % de marge', '% margin') : ''}</span></summary>
       <div class="r-sous">Frais eBay</div><div class="grille-champs">${champ('g-ep', '% sur prix + port', r.frais_ebay_pct, 'number')}${champ('g-ef', '$ par commande', r.frais_ebay_fixe, 'number')}</div>
       <div ${act.breaks ? '' : 'hidden'}><div class="r-sous">Breaks</div><div class="grille-champs">
         ${champ('g-bp', 'Frais plateforme %', r.frais_break_pct, 'number')}${champ('g-bf', '$ par place', r.frais_break_fixe, 'number')}
@@ -11229,17 +11632,22 @@ async function vueReglages(arg){
     if (res) S.reglages = res;
   });
   $$('#g-sport [data-sport]').forEach(b => b.onclick = async () => {
-    const res = await essai(API.reglages_sauver({sport:b.dataset.sport}), nomSport(b.dataset.sport) + ' : sport principal');
+    const res = await essai(API.reglages_sauver({sport:b.dataset.sport}), nomSport(b.dataset.sport) + tt(' : sport principal', ': main sport'));
     if (res) { S.reglages = res; S.equipes = null; $$('#g-sport [data-sport]').forEach(x => x.classList.toggle('on', x === b)); }
   });
   $$('.reglages [data-act]').forEach(b => b.onclick = async () => {
     const n = Object.assign({}, act, {[b.dataset.act]: !act[b.dataset.act]});
-    if (await essai(API.reglages_sauver({activites:n}))) { appliquerActivites(n); toast(n[b.dataset.act] ? 'Onglet ajouté' : 'Onglet masqué'); vueReglages(); }
+    if (await essai(API.reglages_sauver({activites:n}))) { appliquerActivites(n); toast(n[b.dataset.act] ? tt('Onglet ajouté', 'Tab added') : tt('Onglet masqué', 'Tab hidden')); vueReglages(); }
   });
   if ($('#g-idee')) $('#g-idee').onclick = feuilleIdee;
   if ($('#g-deals')) $('#g-deals').onclick = () => { location.hash = '#deals'; setTimeout(() => { if (S.dealsF) feuilleFiltresDeals(); }, 700); };
   if ($('#g-profil')) $('#g-profil').onclick = () => questionnaireProfil(() => toast(tt('Profil enregistré', 'Profile saved')), true);
   if ($('#g-tour')) $('#g-tour').onclick = () => tutoriel(S.mode === 'acheteur' ? 'acheteur' : 'vendeur', true);
+  if ($('#g-entr')) $('#g-entr').onclick = async () => {
+    const on = !($('#g-entr .interrupteur').classList.contains('on'));
+    const res = await essai(API.reglages_sauver({ia_entrainement_ok: on}), on ? tt('Merci : tes examens aideront l’IA', 'Thanks: your exams will help the AI') : tt('Retiré : tes exemples sont effacés', 'Withdrawn: your examples are erased'));
+    if (res) { S.reglages = res; $('#g-entr .interrupteur').classList.toggle('on', on); }
+  };
   if ($('#g-partage')) $('#g-partage').onclick = async () => {
     const on = !($('#g-partage .interrupteur').classList.contains('on'));
     const res = await essai(API.reglages_sauver({partage_ventes: on}), on ? tt('Merci : tes ventes aident la communauté', 'Thanks: your sales help the community') : tt('Tes ventes ne sont plus partagées', 'Your sales are no longer shared'));
@@ -11252,12 +11660,12 @@ async function vueReglages(arg){
       frais_ebay_pct:n('g-ep', r.frais_ebay_pct), frais_ebay_fixe:n('g-ef', r.frais_ebay_fixe), frais_break_pct:n('g-bp', r.frais_break_pct),
       frais_break_fixe:n('g-bf', r.frais_break_fixe), marge_break:n('g-bm', r.marge_break), plancher_place:n('g-bpl', r.plancher_place),
       arrondi_place:n('g-ba', r.arrondi_place), bonus_credit:n('g-bc', r.bonus_credit), pct_consignation:n('g-pc', r.pct_consignation),
-      paliers_rachat:paliers, description_ebay:$('#g-desc').value, epn_campid:val('g-epn').replace(/\D/g, '')}), 'Réglages enregistrés');
+      paliers_rachat:paliers, description_ebay:$('#g-desc').value, epn_campid:val('g-epn').replace(/\D/g, '')}), tt('Réglages enregistrés', 'Settings saved'));
     if (res) { S.reglages = res; S.calc = {}; appliquerMarque(); }
   };
   // nom et logo : enregistres tout de suite (pas besoin de « Enregistrer »)
   $('#g-nom').onchange = async () => {
-    const res = await essai(API.reglages_sauver({nom_boutique:val('g-nom').trim() || 'Ma boutique'}), 'Nom enregistré');
+    const res = await essai(API.reglages_sauver({nom_boutique:val('g-nom').trim() || 'Ma boutique'}), tt('Nom enregistré', 'Name saved'));
     if (res) { S.reglages = res; appliquerMarque(); }
   };
   $('#g-logo-img').onclick = () => $('#g-logo-f').click();
@@ -11282,7 +11690,7 @@ async function vueReglages(arg){
     const b = $('#g-val-maj'); b.disabled = true; b.innerHTML = '<span class="roue" style="width:18px;height:18px"></span> Calcul…';
     const res = await essai(API.valeurs_maj());
     b.disabled = false; b.textContent = 'Mettre à jour maintenant';
-    if (res) { toast(res.joueurs + ' joueurs · ' + res.ventes.toLocaleString(LOC()) + ' ventes'); S.cat = null; S.calc.res = null; afficherVal(await API.valeurs_statut()); }
+    if (res) { toast(res.joueurs + tt(' joueurs · ', ' players · ') + res.ventes.toLocaleString(LOC()) + tt(' ventes', ' sales')); S.cat = null; S.calc.res = null; afficherVal(await API.valeurs_statut()); }
   };
 }
 
@@ -11293,7 +11701,7 @@ function pastillerReglages(){
   const res = document.createElement('div'); res.className = 'acc-reserve'; res.id = 'g-reserve';
   const pils = document.createElement('div'); pils.className = 'acc-pils'; pils.id = 'g-pils';
   const titreDe = (b) => b.id === 'g-ebay' ? tt('Compte eBay', 'eBay account') : ((b.querySelector('.r-titre') || b.querySelector('b') || {}).textContent || '').trim();
-  const icone = (t) => /photo/i.test(t) ? 'photo' : /^(mes deals|my deals)$/i.test(t) ? 'deals' : /ebay/i.test(t) ? 'ebay' : /palette/i.test(t) ? 'palette' : /sport/i.test(t) ? 'sport' : /boutique|shop/i.test(t) ? 'boutique'
+  const icone = (t) => /photo|entra[iî]nement|training/i.test(t) ? 'photo' : /^(mes deals|my deals)$/i.test(t) ? 'deals' : /ebay/i.test(t) ? 'ebay' : /palette/i.test(t) ? 'palette' : /sport/i.test(t) ? 'sport' : /boutique|shop/i.test(t) ? 'boutique'
     : /frais|fees/i.test(t) ? 'frais' : /avanc|advanced/i.test(t) ? 'admin' : /aide|help/i.test(t) ? 'aide' : /profil/i.test(t) ? 'profil' : /guide/i.test(t) ? 'guide'
     : /idée|idea/i.test(t) ? 'idee' : /partag|share/i.test(t) ? 'news' : /appareil|device/i.test(t) ? 'profil' : 'faire';
   const formulaire = (b) => !!b.querySelector('#g-nom, #g-ep, #g-desc');

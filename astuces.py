@@ -617,7 +617,8 @@ GENERATEURS = [pouls_hobby, joueur_en_feu, marche_hausse, marche_baisse, marche_
 
 
 def liste(api, niveau=None, force=False, langue="fr"):
-    cle = (niveau, langue)
+    import comptes                     # 3 nov 2026 (revue de securite) : certaines astuces utilisent les reglages du compte
+    cle = (niveau, langue, comptes.courant())
     if not force and _CACHE["cle"] == cle and time.time() - _CACHE["le"] < FRAICHEUR_S:
         return _CACHE["l"]
     out = []

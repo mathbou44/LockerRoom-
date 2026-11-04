@@ -41,6 +41,9 @@ SURFACE = {
     "rayure": (8, 6, 5),
     "perte de lustre": (7, 6, 5),
     "bosse": (7, 6, 5),
+    # 3 nov 2026 (Will Smith YG #701, PSA 6 : un « 8 » ecrit sur une feuille posee dessus, enfonce pres de la tete) : une
+    # MARQUE D'ECRITURE (chiffre, lettre, trait creuse dans le carton) ; PSA la paie cher, meme vue seulement en rasante
+    "marque d'ecriture": (6, 6, 5),
     "pli": (5, 4, 3),
     "autre": (9, 8, 6),
 }
