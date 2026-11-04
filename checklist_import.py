@@ -443,6 +443,9 @@ def fusionner(existant, lu):
     """Produit deja au catalogue : on remplace les cartes des sous-ensembles lus et on GARDE leurs cotes par boite."""
     if not existant:
         return None
+    import copy                        # 4 nov 2026 (revue) : le produit en memoire (partage par le catalogue) n'est plus modifie
+    existant = {k: v for k, v in existant.items() if not k.startswith("_")}
+    existant["sous_ensembles"] = copy.deepcopy(existant.get("sous_ensembles") or [])
     se_old = {s["nom"]: s for s in existant.get("sous_ensembles") or []}
     # « BASE SET » (Beckett) = « Base » (catalogue) : meme sous-ensemble, on garde son nom et ses cotes
     cle = cle_sous

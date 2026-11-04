@@ -98,15 +98,20 @@ def plafond_jour():
 
 def _cx():
     import comptes
-    c = sqlite3.connect(os.path.join(comptes.DONNEES, "cache_vendues.sqlite"), timeout=30)
-    c.execute("CREATE TABLE IF NOT EXISTS cache (q TEXT PRIMARY KEY, le REAL, ventes TEXT)")
-    c.execute("CREATE TABLE IF NOT EXISTS compteur (jour TEXT PRIMARY KEY, n INTEGER)")
+    ch = os.path.join(comptes.DONNEES, "cache_vendues.sqlite")
+    neuf = ch not in _FAITES or not os.path.exists(ch)
+    c = sqlite3.connect(ch, timeout=30)
+    if neuf:     # 4 nov 2026 (vitesse) : les tables une fois par processus
+        c.execute("CREATE TABLE IF NOT EXISTS cache (q TEXT PRIMARY KEY, le REAL, ventes TEXT)")
+        c.execute("CREATE TABLE IF NOT EXISTS compteur (jour TEXT PRIMARY KEY, n INTEGER)")
+        _FAITES.add(ch)
     if not _MIGRE:
         _migrer(c)
     return c
 
 
 _MIGRE = []
+_FAITES = set()
 
 
 def _migrer(c):

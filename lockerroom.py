@@ -420,17 +420,10 @@ class Api:
         return r
 
     # -- taux de change du jour (24 oct 2026) : Banque du Canada, garde 12 h ; repli 0,70 ---------------
-    def taux_change(self):
-        """{"usd": 0.70, "date": "2026-10-23", "source": "Banque du Canada"} : 1 $ CA = usd $ US."""
-        import comptes
-        chemin = os.path.join(comptes.DONNEES, "taux_change.json")
-        try:
-            with open(chemin, encoding="utf-8") as f:
-                c = json.load(f)
-            if datetime.now().timestamp() - float(c.get("lu", 0)) < 12 * 3600:
-                return c
-        except (OSError, ValueError):
-            c = None
+    _TAUX = {"c": None, "lu": 0.0, "fond": False}
+
+    @staticmethod
+    def _taux_lire_bdc(chemin, ancien):
         try:
             import urllib.request
             req = urllib.request.Request("https://www.bankofcanada.ca/valet/observations/FXUSDCAD/json?recent=1",
@@ -441,11 +434,50 @@ class Api:
             usd_cad = float(obs["FXUSDCAD"]["v"])                    # 1 $ US = x $ CA
             c = {"usd": round(1 / usd_cad, 4), "date": obs.get("d"), "source": "Banque du Canada",
                  "lu": datetime.now().timestamp()}
-            with open(chemin, "w", encoding="utf-8") as f:
-                json.dump(c, f)
-            return c
         except Exception:
-            return c or {"usd": 0.70, "date": None, "source": "approximatif"}
+            # 4 nov 2026 (vitesse) : en panne, on garde l'ancien taux et on reessaie dans une heure (plus 8 s a chaque appel)
+            c = dict(ancien or {"usd": 0.70, "date": None, "source": "approximatif"}, lu=datetime.now().timestamp() - 11 * 3600)
+        try:
+            tmp = chemin + ".%d.tmp" % os.getpid()
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(c, f)
+            os.replace(tmp, chemin)
+        except OSError:
+            pass
+        return c
+
+    def taux_change(self):
+        """{"usd": 0.70, "date": "2026-10-23", "source": "Banque du Canada"} : 1 $ CA = usd $ US.
+        4 nov 2026 (vitesse) : garde en memoire ; perime -> l'ancien tout de suite et la Banque du Canada relue en fond."""
+        import comptes
+        T = Api._TAUX
+        chemin = os.path.join(comptes.DONNEES, "taux_change.json")
+        maint = datetime.now().timestamp()
+        c = T["c"] if T["c"] and maint - T["lu"] < 300 else None
+        if c is None:
+            try:
+                with open(chemin, encoding="utf-8") as f:
+                    c = json.load(f)
+            except (OSError, ValueError):
+                c = None
+            if c:
+                T.update(c=c, lu=maint)
+        if c and maint - float(c.get("lu", 0)) < 12 * 3600:
+            return c
+        if c:                                                         # perime : relu en fond, l'ancien en attendant
+            if not T["fond"]:
+                T["fond"] = True
+
+                def fond():
+                    try:
+                        T.update(c=Api._taux_lire_bdc(chemin, c), lu=datetime.now().timestamp())
+                    finally:
+                        T["fond"] = False
+                threading.Thread(target=fond, daemon=True).start()
+            return c
+        c = Api._taux_lire_bdc(chemin, None)
+        T.update(c=c, lu=maint)
+        return c
 
     # -- forfait et abonnement Pro (24 oct 2026, Stripe : voir paiements.py) --------------------
     def forfait(self):
@@ -872,14 +904,18 @@ class Api:
             cle = cle + (os.path.getmtime(valeur_produit._chemin()),)
         except OSError:
             pass
+        if getattr(self, "_EV_CLE", None) != cle:                  # 4 nov 2026 : les anciennes cles ne s'empilent plus
+            Api._EV_CLE = cle
+            self._EV_CACHE.clear()
         out = []
         for p in catalogue.liste():
             k = (cle, p["id"])
-            if k not in self._EV_CACHE:
-                prod = catalogue.charger(p["id"])
-                self._EV_CACHE[k] = calcul.prix_catalogue(prod, boites=1)["ev_par_boite"]
+            ev = self._EV_CACHE.get(k)                 # 4 nov 2026 : lu une fois (un autre fil peut vider le cache entre-temps)
+            if ev is None:
+                ev = calcul.prix_catalogue(catalogue.charger(p["id"]), boites=1)["ev_par_boite"]
+                self._EV_CACHE[k] = ev
             boite = valeur_produit.de(p["id"]).get("boite")       # 26 oct 2026 : vaut-il la peine d'ouvrir ?
-            out.append(dict(p, ev_par_boite=self._EV_CACHE[k], prix_boite=boite, ouvrir=marche.verdict_ouvrir(self._EV_CACHE[k], boite)))
+            out.append(dict(p, ev_par_boite=ev, prix_boite=boite, ouvrir=marche.verdict_ouvrir(ev, boite)))
         return {"produits": out, "valeurs": valeurs.statut()}
 
     # -- 24 oct 2026 : checklists Excel de Beckett (telechargees par l'utilisateur, deposees dans l'app) -----------
@@ -2011,6 +2047,18 @@ class Api:
         with _verrou:
             c = self._db()
             try:
+                # 4 nov 2026 (revue) : un tirage fait n'est jamais efface ; une empreinte deja publiee reste la meme
+                b = c.execute("SELECT empreinte, tirage FROM breaks WHERE id=?", (bid,)).fetchone()
+                if not b:
+                    return {"ok": False, "erreur": "Break introuvable"}
+                try:
+                    t = json.loads(b["tirage"] or "null") or {}
+                except ValueError:
+                    t = {}
+                if t.get("resultat"):
+                    return {"ok": False, "erreur": "Le tirage est déjà fait"}
+                if b["empreinte"] and t.get("graine_secrete"):
+                    return {"ok": True, "empreinte": b["empreinte"]}
                 c.execute("UPDATE breaks SET empreinte=?, tirage=? WHERE id=?",
                           (hashlib.sha256(graine.encode()).hexdigest(), json.dumps({"graine_secrete": graine}), bid))
                 c.commit()
@@ -2229,12 +2277,22 @@ class Api:
         if f.get("q"):
             sql += " AND (titre LIKE ? OR joueur LIKE ? OR set_nom LIKE ? OR sku LIKE ?)"
             args += [f"%{f['q']}%"] * 4
+        if f.get("sport"):                           # 4 nov 2026 (revue) : avant la limite (le sport devine est refiltre plus bas)
+            sql += " AND (sport=? OR sport IS NULL OR sport='')"
+            args.append(f["sport"])
         sql += " ORDER BY id DESC LIMIT ?"
-        args.append(int(f.get("limite") or 500))
+        args.append(max(1, min(5000, int(f.get("limite") or 2000))))      # 4 nov 2026 : 500 cachait le reste d'un gros inventaire
         with _verrou:
             c = self._db()
             try:
-                out = _dicts(c.execute(sql, args))
+                # 4 nov 2026 (vitesse) : sans l'examen complet de chaque carte (des dizaines de Ko) : la note seulement
+                cols = [r[1] for r in c.execute("PRAGMA table_info(cartes)") if r[1] != "etat_json"]
+                sel = ", ".join('"%s"' % k for k in cols) + (", json_extract(etat_json, '$.note_min') AS _nmin, json_extract(etat_json, '$.note_max') AS _nmax"
+                                                              if len(cols) < len([1 for _ in c.execute("PRAGMA table_info(cartes)")]) else "")
+                try:
+                    out = _dicts(c.execute(sql.replace("SELECT *", "SELECT " + sel, 1), args))
+                except sqlite3.OperationalError:       # etat_json pas en JSON valide quelque part : l'ancienne lecture
+                    out = _dicts(c.execute(sql, args))
             finally:
                 c.close()
         defaut = self.reglages_lire().get("sport") or sports.DEFAUT
@@ -2258,6 +2316,9 @@ class Api:
         for r in out:
             # 1er nov 2026 (Mathieu : « dans la vue collection, chaque carte comme dans un slab, le score = celui calcule par
             # l'IA ») : la note estimee seulement (min, max), pas tout l'examen (lourd)
+            nmin, nmax = r.pop("_nmin", None), r.pop("_nmax", None)
+            if nmin is not None:
+                r["note_ia"] = {"min": nmin, "max": nmax if nmax is not None else nmin}
             ej = r.pop("etat_json", None)
             if ej:
                 try:
@@ -2346,8 +2407,13 @@ class Api:
                 d[k] = _float(d[k])
         if "tirage" in d:
             d["tirage"] = _int(d["tirage"])
-        if not d.get("titre"):
-            d["titre"] = ebay_csv.titre_annonce(d)
+        # 4 nov 2026 (revue) : une mise a jour partielle (statut, prix...) n'efface plus le titre ; vide expres -> refait
+        # avec toute la fiche
+        if not d.get("id"):
+            if not d.get("titre"):
+                d["titre"] = ebay_csv.titre_annonce(d)
+        elif "titre" in d and not d.get("titre"):
+            d["titre"] = ebay_csv.titre_annonce(dict(self.carte_lire(d["id"]) or {}, **{k: v for k, v in d.items() if k != "titre"}))
         # 23 oct 2026 - sport devine (titre, equipe, produit, joueur connu), sinon le sport principal
         if d.get("sport"):
             d["sport"] = sports.valide(d["sport"])
@@ -2359,6 +2425,9 @@ class Api:
                 if d.get("id"):
                     cid = d.pop("id")
                     if d:
+                        if "item_number" in d:       # 4 nov 2026 : une NOUVELLE annonce n'a pas encore ete vue chez eBay
+                            c.execute("UPDATE cartes SET vu_actif_le=NULL WHERE id=? AND COALESCE(item_number,'')<>?",
+                                      (cid, str(d.get("item_number") or "")))
                         c.execute(f"UPDATE cartes SET {', '.join(k + '=?' for k in d)} WHERE id=?", list(d.values()) + [cid])
                 else:
                     d.setdefault("statut", "En stock")
@@ -3431,9 +3500,7 @@ class Api:
                     pv = {"frais": frais, "net": net, "profit": round(net - (carte["cout"] or 0), 2)}
                 if carte["consignataire_id"]:
                     # carte en consignation : le profit de la boutique est sa commission
-                    cons = c.execute("SELECT pct_boutique FROM consignataires WHERE id=?", (carte["consignataire_id"],)).fetchone()
-                    pct = (cons["pct_boutique"] if cons else r["pct_consignation"]) / 100
-                    pv["profit"] = round(pv["net"] * pct, 2)
+                    pv["profit"] = round(pv["net"] * self._pct_boutique(c, carte["consignataire_id"], r), 2)
                 c.execute("UPDATE cartes SET statut='Vendue', canal=?, prix_vendu=?, frais=?, port_paye=?, port_charge=?, profit=?, "
                           "vendu_le=?, client_id=? WHERE id=?",
                           (canal, prix, pv["frais"], _float(d.get("port_paye")) or 0, _float(d.get("port_charge")) or 0, pv["profit"],
@@ -3477,7 +3544,29 @@ class Api:
                 c.commit()
             finally:
                 c.close()
-        return {"ok": True, "crees": crees, "maj": maj, "lues": len(annonces)}
+        return {"ok": True, "crees": crees, "maj": maj, "lues": len(annonces), "vu": vu}
+
+    def _annonces_terminees(self, vu, n_lues):
+        """4 nov 2026 (revue) : une annonce terminee sans vente (plus dans les annonces actives d'eBay) restait « Listée »
+        pour toujours. Apres une synchro complete : vue avant, plus vue maintenant, pas vendue -> de retour En stock.
+        Prudent : rien en sandbox, rien si eBay n'a rendu aucune annonce (panne), ni s'il en manquerait plus que d'actives."""
+        if not vu or ebay_compte.environnement() != "production":     # sandbox / donnees de test : jamais
+            return 0
+        with _verrou:
+            c = self._db()
+            try:
+                # absente depuis plus de 24 h seulement : une vente met du temps a arriver dans les commandes d'eBay
+                lim = (datetime.fromisoformat(str(vu)[:19]) - timedelta(hours=24)).isoformat(timespec="seconds")
+                l = [r[0] for r in c.execute("SELECT id FROM cartes WHERE statut='Listée' AND item_number IS NOT NULL "
+                                             "AND vu_actif_le IS NOT NULL AND vu_actif_le < ?", (lim,))]
+                if not l or not n_lues or len(l) > max(2, n_lues):
+                    return 0
+                # le numero d'annonce reste (une vente en retard la retrouve) ; « Mettre en vente » accepte une carte En stock
+                c.executemany("UPDATE cartes SET statut='En stock', emplacement='Réserve' WHERE id=? AND statut='Listée'", [(i,) for i in l])
+                c.commit()
+                return len(l)
+            finally:
+                c.close()
 
     def _maj_trafic(self, item_ids):
         """31 oct 2026 (Mathieu : « le nombre de vues et de likes de l'annonce : les plus populaires, et celles a liquider »).
@@ -3506,6 +3595,13 @@ class Api:
             return {"ok": False, "erreur": str(e)}
         return self._maj_ventes(ventes)
 
+    @staticmethod
+    def _pct_boutique(c, cons_id, r):
+        """La part de la boutique sur une carte en consignation (0..1) : celle du consignataire, sinon celle des reglages."""
+        cons = c.execute("SELECT pct_boutique FROM consignataires WHERE id=?", (cons_id,)).fetchone()
+        p = cons["pct_boutique"] if cons and cons["pct_boutique"] is not None else r.get("pct_consignation")
+        return (_float(p) or 0) / 100
+
     def _maj_ventes(self, ventes):
         r = self.reglages_lire()
         nouvelles = deja = sans_fiche = 0
@@ -3527,8 +3623,9 @@ class Api:
                                        - datetime.fromisoformat((v["date"] or _maintenant())[:10])).days) <= 7:
                             if v.get("frais_reels") is not None:
                                 net = round((v["prix"] or 0) + (v["port_charge"] or 0) - v["frais_reels"], 2)
-                                c.execute("UPDATE cartes SET frais=?, profit=? WHERE id=?",
-                                          (v["frais_reels"], round(net - (dv["cout"] or 0), 2), dv["id"]))
+                                pr = round(net * self._pct_boutique(c, dv["consignataire_id"], r), 2) if dv["consignataire_id"] \
+                                    else round(net - (dv["cout"] or 0), 2)
+                                c.execute("UPDATE cartes SET frais=?, profit=? WHERE id=?", (v["frais_reels"], pr, dv["id"]))
                             c.execute("INSERT INTO ventes_ebay_vues VALUES (?)", (v["transaction_id"],))
                             deja += 1
                             continue
@@ -3537,6 +3634,8 @@ class Api:
                     if v.get("frais_reels") is not None:          # frais exacts d'eBay (API)
                         net = round((v["prix"] or 0) + (v["port_charge"] or 0) - v["frais_reels"], 2)
                         pv = {"frais": v["frais_reels"], "net": net, "profit": round(net - ((carte["cout"] if carte else 0) or 0), 2)}
+                    if carte and carte["consignataire_id"]:      # 4 nov 2026 (revue) : synchro eBay / CSV aussi : la commission
+                        pv["profit"] = round(pv["net"] * self._pct_boutique(c, carte["consignataire_id"], r), 2)
                     if carte:
                         c.execute("UPDATE cartes SET statut='Vendue', canal='eBay', prix_vendu=?, port_charge=?, frais=?, profit=?, "
                                   "vendu_le=? WHERE id=?", (v["prix"], v["port_charge"] or 0, pv["frais"], pv["profit"],
@@ -3873,12 +3972,16 @@ class Api:
                 sante_ = {x["item_number"]: x for x in _dicts(c.execute("SELECT item_number, verdict, suggestion, mediane FROM sante"))}
             finally:
                 c.close()
+        rg = self.reglages_lire()
+        fp, ff = (rg.get("frais_ebay_pct") or 0) / 100, rg.get("frais_ebay_fixe") or 0
         items = []
         for i in ids:
             a = actives.get(i)
             if not a or i in recents:
                 continue
-            prix, cout = _float(a.get("prix_demande")), _float(a.get("cout"))
+            prix, cout0 = _float(a.get("prix_demande")), _float(a.get("cout"))
+            # 4 nov 2026 (revue) : « jamais sous le cout » apres les frais eBay (le prix qu'il faut pour recuperer le cout)
+            cout = round((cout0 + ff) / (1 - fp), 2) if cout0 and fp < 1 else cout0
             s_ = sante_.get(i) or {}
             pct = 10.0
             if prix and _float(s_.get("suggestion")) and s_["suggestion"] < prix:
@@ -3886,7 +3989,7 @@ class Api:
             if prix and cout and prix * (1 - pct / 100) < cout:
                 pct = max(5.0, int(1000 * (1 - cout / prix)) / 10) if cout < prix * 0.95 else None
             items.append({"item_number": i, "titre": a.get("titre"), "prix": prix, "photo": a.get("photo"), "watchers": a.get("watchers"),
-                          "cout": cout, "carte_id": a.get("id"), "pct": pct, "mediane": s_.get("mediane"),
+                          "cout": cout0, "carte_id": a.get("id"), "pct": pct, "mediane": s_.get("mediane"),
                           "sous_cout": pct is None})
         items.sort(key=lambda x: (x["sous_cout"], -(x.get("watchers") or 0), -(x.get("prix") or 0)))
         return {"ok": True, "items": items, "marche": r.get("marche"), "le": r.get("le"), "n_ebay": len(ids)}
@@ -4030,7 +4133,7 @@ class Api:
         if not carte:
             return {"ok": False, "erreur": "Carte introuvable"}
         carte = dict(carte)
-        if carte.get("item_number"):
+        if carte.get("item_number") and carte.get("statut") == "Listée":   # 4 nov 2026 : une annonce terminee se remet en vente
             return {"ok": False, "erreur": "Déjà sur eBay"}
         prix = _float(prix) or carte.get("prix_demande") or carte.get("valeur")
         if not prix:
@@ -4046,7 +4149,7 @@ class Api:
             with _verrou:
                 c = self._db()
                 try:
-                    c.execute("UPDATE cartes SET item_number=?, sku=?, statut='Listée', prix_demande=?, debut=? WHERE id=?",
+                    c.execute("UPDATE cartes SET item_number=?, sku=?, statut='Listée', prix_demande=?, debut=?, vu_actif_le=NULL WHERE id=?",
                               (r["item_id"], sku, prix, _maintenant(), cid))
                     c.commit()
                 finally:
@@ -4561,9 +4664,11 @@ class Api:
             return {"ok": False, "erreur": str(e)}
         # 22 oct 2026 - 2e source (API Trading) : une vente que la nouvelle API n'a pas encore transmise
         # arrive quand meme ; les doublons entre les deux sources sont ecartes dans _maj_ventes.
+        trading_ok = True
         try:
             ventes += [v for v in ebay_compte.ventes_trading(min(30, int(jours or 30))) if not v.get("annulee")]
         except (RuntimeError, OSError, ValueError) as e:
+            trading_ok = False
             print(f"[synchro] ventes Trading ignorees : {e}", flush=True)
         a = self._maj_annonces(annonces)
         try:                                     # 31 oct 2026 - les vues de chaque annonce (30 j), si le compte a donne l'acces
@@ -4571,6 +4676,10 @@ class Api:
         except Exception as e:
             print(f"[synchro] vues des annonces : {e}", flush=True)
         v = self._maj_ventes(ventes)
+        try:
+            a["terminees"] = self._annonces_terminees(a.get("vu"), len(annonces)) if trading_ok else 0
+        except Exception as e:
+            print(f"[synchro] annonces terminees : {e}", flush=True)
         try:                                     # 25 oct 2026 - le cout d'achat : les achats eBay du compte
             cx = self.couts_depuis_achats()
         except Exception as e:
@@ -5015,10 +5124,14 @@ class Api:
         sous_total = round(sum(_float(l["prix"]) for l in lignes), 2)
         taxes = round(sous_total * r["taxes_pct"] / 100, 2) if d.get("taxes", True) else 0.0
         total = round(sous_total + taxes, 2)
-        credit = min(_float(d.get("credit_utilise")) or 0, total)
+        credit = max(0.0, min(_float(d.get("credit_utilise")) or 0, total))
         with _verrou:
             c = self._db()
             try:
+                # 4 nov 2026 (revue) : le credit utilise ne depasse pas celui du client (et il faut un client)
+                if credit:
+                    cl = c.execute("SELECT credit FROM clients WHERE id=?", (d.get("client_id"),)).fetchone() if d.get("client_id") else None
+                    credit = round(min(credit, max(0.0, (cl["credit"] or 0) if cl else 0.0)), 2)
                 vid = c.execute("INSERT INTO ventes_comptoir (le, sous_total, taxes, total, paiement, client_id, lignes) VALUES (?,?,?,?,?,?,?)",
                                 (_maintenant(), sous_total, taxes, total, d.get("paiement") or "Comptant", d.get("client_id"),
                                  json.dumps(lignes))).lastrowid
@@ -5044,6 +5157,8 @@ class Api:
         lignes = d.get("lignes") or []
         offre = self.rachat_calculer([l.get("valeur") for l in lignes])
         credit = d.get("mode") == "credit"
+        if credit and not d.get("client_id"):            # 4 nov 2026 (revue) : un credit va a quelqu'un
+            return {"ok": False, "erreur": "Choisis le client qui reçoit le crédit"}
         facteur = (offre["credit"] / offre["comptant"]) if (credit and offre["comptant"]) else 1.0
         with _verrou:
             c = self._db()
@@ -5190,6 +5305,15 @@ class Api:
             try:
                 for v in c.execute("SELECT * FROM cartes WHERE statut='Vendue' AND substr(vendu_le,1,7)=? ORDER BY vendu_le", (mois,)):
                     w.writerow([v["vendu_le"][:10], v["canal"], v["titre"], v["prix_vendu"], v["frais"], v["cout"], v["profit"]])
+                # 4 nov 2026 (revue) : les ventes au comptoir sans fiche (une ligne ecrite a la main) comptent aussi
+                for vc in c.execute("SELECT le, lignes FROM ventes_comptoir WHERE substr(le,1,7)=? ORDER BY le", (mois,)):
+                    try:
+                        lg = json.loads(vc["lignes"] or "[]")
+                    except ValueError:
+                        lg = []
+                    for l in lg:
+                        if not l.get("carte_id") and _float(l.get("prix")) is not None:
+                            w.writerow([str(vc["le"])[:10], "Magasin", l.get("description") or "Vente au comptoir", _float(l["prix"]), 0, "", _float(l["prix"])])
                 for d in c.execute("SELECT * FROM depenses WHERE substr(le,1,7)=?", (mois,)):
                     w.writerow([d["le"], "Dépense", f"{d['categorie']} {d['note'] or ''}".strip(), "", "", d["montant"], -d["montant"]])
             finally:
@@ -5317,7 +5441,8 @@ class Api:
         if e and time.time() - e[0] < cls.VAL_CACHE_S:
             return e[1]
         if not calculer:
-            return None
+            # 4 nov 2026 (vitesse) : perimee -> l'ancienne valeur tout de suite (recalculee en fond par l'appelant)
+            return e[1] if e else None
         r = None
         try:
             cib = cartes_match.cible_titre(x.get("titre") or "")
@@ -5329,8 +5454,9 @@ class Api:
                     r = (va[0], va[2])
         except Exception:
             r = None
-        if len(cls._VAL_CACHE) > 20000:
-            cls._VAL_CACHE.clear()
+        if len(cls._VAL_CACHE) > 20000:                  # la plus vieille moitie, pas tout d'un coup
+            for z in list(cls._VAL_CACHE)[:10000]:
+                cls._VAL_CACHE.pop(z, None)
         cls._VAL_CACHE[k] = (time.time(), r)
         return r
 
@@ -5339,7 +5465,7 @@ class Api:
     # et la requete tombait. Maintenant : au plus VAL_BUDGET_S de calcul par requete ; le reste se calcule en arriere-plan
     # (un seul fil, doucement) et apparait a la prochaine ouverture. Les valeurs sont gardees 1 h (ventes en cache : 3 jours).
     VAL_CACHE_S = 3600
-    VAL_BUDGET_S = 0.6
+    VAL_BUDGET_S = 0.2                 # 4 nov 2026 (vitesse) : le reste se calcule en fond
     _VAL_FIL = {"en_cours": False}
 
     @classmethod
@@ -5617,7 +5743,8 @@ class Api:
                 continue
             if not x.get("valeur"):
                 vc = self._valeur_en_cache(x, calculer=time.time() < fin_calcul)
-                if vc is None and str(x.get("item_id")) not in self._VAL_CACHE:
+                e_ = self._VAL_CACHE.get(str(x.get("item_id")))
+                if not e_ or time.time() - e_[0] >= self.VAL_CACHE_S:      # absente ou perimee : en fond
                     plus_tard.append(x)
                 if vc:
                     x = dict(x, valeur=vc[0], n=vc[1], mise_max=round(vc[0] * _dl.RATIO_DEAL - _dl.port_eff(x.get("port")), 2))

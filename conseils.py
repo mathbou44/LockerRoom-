@@ -110,8 +110,11 @@ def contexte(api, mode, langue):
            "stock": acc.get("stock"), "profit_mois": (acc.get("hero") or {}).get("profit"),
            "ventes_mois": (acc.get("hero") or {}).get("nb_ventes"), "meilleurs_coups": [{k: c.get(k) for k in ("titre", "profit", "roi")} for c in acc.get("coups") or []]}
     try:
-        dl = api.deals_liste({"tri": "rabais"}).get("deals") or []
-        ctx["deals"] = [{k: x.get(k) for k in ("titre", "total", "valeur", "rabais", "gain", "encan")} for x in dl if not x.get("encan")][:6]
+        # 4 nov 2026 (vitesse) : les memes deals que l'ecran Deals (filtres, faux deals, masques), sans tout l'ecran
+        import lockerroom as _lr
+        dl = [x for x in api._deals_fusion() if not x.get("encan")] if _lr.ebay_prix_actif() else []
+        dl.sort(key=lambda x: -(x.get("gain") or 0))
+        ctx["deals"] = [{k: x.get(k) for k in ("titre", "total", "valeur", "rabais", "gain")} for x in dl][:6]
     except Exception:
         ctx["deals"] = []
     try:

@@ -41,8 +41,8 @@ r = a.offres_liste()
 assert r["ok"] and r["marche"] == "EBAY_US" and r["n_ebay"] == 4, r          # CA refuse -> US retenu
 it = {x["item_number"]: x for x in r["items"]}
 assert set(it) == {"111", "222", "333"}                                         # 999 : pas une annonce active connue
-assert it["111"]["pct"] == 15 and it["222"]["pct"] == 6.0 and it["333"]["sous_cout"] and it["333"]["pct"] is None, it
-assert r["items"][-1]["item_number"] == "333"                                   # sous le cout : a la fin
+assert it["111"]["pct"] == 15 and it["222"]["sous_cout"] and it["333"]["sous_cout"] and it["333"]["pct"] is None, it   # 4 nov 2026 : 47 $ apres frais = sous le cout
+assert r["items"][-1]["sous_cout"] and not r["items"][0]["sous_cout"]            # sous le cout : a la fin
 # garde 1 h : pas de 2e appel
 n = len(APPELS); a.offres_liste(); assert len(APPELS) == n
 # envoi : corps conforme aux regles d'eBay

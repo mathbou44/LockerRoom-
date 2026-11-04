@@ -64,12 +64,27 @@ def dossier(compte_id=None):
     return d
 
 
-def _index():
+_IX = {"cle": None, "ix": {}}
+
+
+def _index(frais=False):
+    """4 nov 2026 (tournee vitesse) : relu seulement quand le fichier change (date + taille), pas 3 fois par requete.
+    Les lecteurs recoivent l'objet partage (ne pas le modifier) ; ceux qui ecrivent demandent frais=True (copie du disque)."""
+    try:
+        st = os.stat(CHEMIN_INDEX)
+        cle = (st.st_mtime_ns, st.st_ctime_ns, st.st_size, st.st_ino)
+    except OSError:
+        return {}
+    if not frais and _IX["cle"] == cle:
+        return _IX["ix"]
     try:
         with open(CHEMIN_INDEX, encoding="utf-8") as f:
-            return json.load(f) or {}
+            ix = json.load(f) or {}
     except (OSError, ValueError):
         return {}
+    if not frais:
+        _IX.update(cle=cle, ix=ix)
+    return ix
 
 
 def _ecrire_index(ix):
@@ -78,6 +93,7 @@ def _ecrire_index(ix):
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(ix, f)
     os.replace(tmp, CHEMIN_INDEX)
+    _IX["cle"] = None
 
 
 def id_pour(ebay_user_id, env):
@@ -88,7 +104,7 @@ def id_pour(ebay_user_id, env):
 def trouver_ou_creer(ebay_user_id, username, env):
     cid = id_pour(ebay_user_id, env)
     with _verrou:
-        ix = _index()
+        ix = _index(True)
         nouveau = cid not in ix
         # 27 oct 2026 (revue) : un compte supprime puis recree garde sa date de creation (pas un 2e essai gratuit)
         e = ix.setdefault(cid, {"cree_le": _anciens().get(cid) or datetime.now().isoformat(timespec="seconds"), "env": env})
@@ -101,7 +117,7 @@ def trouver_ou_creer(ebay_user_id, username, env):
 def maj(compte_id, **champs):
     """Champs du compte ecrits par le SERVEUR seulement (ex. forfait venu de Stripe)."""
     with _verrou:
-        ix = _index()
+        ix = _index(True)
         if compte_id not in ix:
             return False
         ix[compte_id].update({k: v for k, v in champs.items()})
@@ -118,7 +134,7 @@ def lister():
 
 
 def info(compte_id):
-    return _index().get(compte_id) or {}
+    return dict(_index().get(compte_id) or {})
 
 
 def par_username(username):
@@ -131,7 +147,7 @@ def supprimer(compte_id):
     import shutil
     d = os.path.join(DOSSIER_COMPTES, compte_id)
     with _verrou:
-        ix = _index()
+        ix = _index(True)
         e = ix.pop(compte_id, None) or {}
         _ecrire_index(ix)
         if e.get("cree_le"):                # seulement l'identifiant opaque et la date : rien d'autre ne reste
@@ -200,7 +216,7 @@ _RELAIS = re.compile(r"@privaterelay\.appleid\.com$", re.I)
 def revoquer_session(compte_id, sid):
     """3 nov 2026 (revue de securite) : « Se deconnecter » ferme CETTE session pour de bon (les 200 dernieres gardees)."""
     with _verrou:
-        ix = _index()
+        ix = _index(True)
         if compte_id not in ix or not sid:
             return False
         l = [x for x in ix[compte_id].get("sessions_revoquees") or [] if x != sid] + [str(sid)[:40]]
@@ -235,7 +251,7 @@ def lier_identite(compte_id, cle, env=None):
     donnees restent sur le disque."""
     ancien = id_pour(cle, env) if env else None
     with _verrou:
-        ix = _index()
+        ix = _index(True)
         if compte_id not in ix:
             return False
         ids = ix[compte_id].setdefault("identites", [])

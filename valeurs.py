@@ -27,6 +27,7 @@ CHEMIN = CHEMIN_DONNEES if os.path.exists(CHEMIN_DONNEES) else CHEMIN_CODE
 def chemin_ecriture():
     global CHEMIN
     CHEMIN = CHEMIN_DONNEES
+    _ETAT["vu"] = 0                    # 4 nov 2026 : une ecriture s'en vient : la prochaine lecture regarde le fichier
     return CHEMIN_DONNEES
 DEMANDE_INCONNUE = 0.5            # joueur sans ventes mesurees : un peu sous la mediane (0,59)
 # $ CA pour un joueur a 1,0 - quand aucune vente ne mesure le sous-ensemble
@@ -57,6 +58,11 @@ def _norm_nom(n):
 
 
 def _charger():
+    # 4 nov 2026 (vitesse) : la date du fichier relue au plus aux 2 s (87 000 fois par calcul du catalogue)
+    import time as _t
+    if _ETAT.get("vu") and _t.time() - _ETAT["vu"] < 2 and _ETAT["mtime"] is not None and _ETAT.get("ch") == CHEMIN:
+        return _ETAT["data"]
+    _ETAT["vu"], _ETAT["ch"] = _t.time(), CHEMIN
     try:
         mt = os.path.getmtime(CHEMIN)
     except OSError:

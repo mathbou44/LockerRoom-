@@ -34,9 +34,16 @@ def par_jour():
         return 60
 
 
+_FAITES = set()
+
+
 def _cx():
     import comptes
-    c = sqlite3.connect(os.path.join(comptes.DONNEES, "base_ventes.sqlite"), timeout=30)
+    ch = os.path.join(comptes.DONNEES, "base_ventes.sqlite")
+    deja = ch in _FAITES and os.path.exists(ch)
+    c = sqlite3.connect(ch, timeout=30)
+    if deja:                    # 4 nov 2026 (vitesse) : les tables une fois par processus
+        return c
     c.execute("CREATE TABLE IF NOT EXISTS ventes (q TEXT, cle TEXT, titre TEXT, prix REAL, le TEXT, photo TEXT, url TEXT, "
               "offre INTEGER, vu_le TEXT, PRIMARY KEY (q, cle))")
     c.execute("CREATE INDEX IF NOT EXISTS ventes_le ON ventes (le)")
@@ -45,6 +52,7 @@ def _cx():
     c.execute("CREATE TABLE IF NOT EXISTS plan (cible TEXT PRIMARY KEY, q TEXT, joueur TEXT, carte TEXT, produit TEXT, produit_id TEXT, "
               "recrue INTEGER, poids REAL, fait_le TEXT, nb INTEGER)")
     c.execute("CREATE INDEX IF NOT EXISTS plan_q ON plan (q)")
+    _FAITES.add(ch)                      # apres les tables (un echec les refait au prochain appel)
     return c
 
 

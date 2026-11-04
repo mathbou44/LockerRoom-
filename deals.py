@@ -372,12 +372,18 @@ def valide(x):
     import cartes_match
     if str(x.get("item_id")) in _bannis():
         return False
-    if int(x.get("v") or 0) < VERSION and not _rejuger(x):
-        return False
     k = (x.get("item_id"), x.get("q"), x.get("titre"))
+    if int(x.get("v") or 0) < VERSION:
+        kr = ("rejuge",) + k                   # 4 nov 2026 (vitesse) : un refus n'est plus recalcule a chaque ecran
+        if _VALIDES.get(kr) is False:
+            return False
+        if not _rejuger(x):
+            _VALIDES[kr] = False
+            return False
     if k not in _VALIDES:
-        if len(_VALIDES) > 5000:
-            _VALIDES.clear()
+        if len(_VALIDES) > 8000:               # la plus vieille moitie, pas tout d'un coup
+            for z in list(_VALIDES)[:4000]:
+                _VALIDES.pop(z, None)
         _VALIDES[k] = not x.get("q") or not cartes_match.raisons_refus(cartes_match.cible(x["q"]), x.get("titre") or "")
     return _VALIDES[k]
 

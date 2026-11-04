@@ -485,9 +485,26 @@ def lire_commandes(payload):
             out.append({"transaction_id": f"api:{o.get('orderId')}:{l.get('lineItemId')}", "item_number": str(l.get("legacyItemId") or ""),
                         "titre": l.get("title") or "", "sku": l.get("sku") or "", "prix": prix, "port_charge": port,
                         "frais_reels": round(frais_cmd * prix / base_tot, 2) if frais_cmd else None,
-                        "date": str(o.get("creationDate") or "")[:10], "acheteur": (o.get("buyer") or {}).get("username") or "",
+                        "date": _jour_local(o.get("creationDate")), "acheteur": (o.get("buyer") or {}).get("username") or "",
                         "statut_paiement": o.get("orderPaymentStatus"), "annulee": (o.get("cancelStatus") or {}).get("cancelState") == "CANCELED"})
     return out
+
+
+def _jour_local(iso):
+    """4 nov 2026 (revue) : la date d'une vente au jour de Montreal (eBay la donne en UTC : une vente a 21 h tombait le lendemain)."""
+    t = str(iso or "")
+    if len(t) < 19:
+        return t[:10]
+    try:
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        d = datetime.fromisoformat(t.replace("Z", "+00:00")[:32])
+        if d.tzinfo is None:
+            from datetime import timezone
+            d = d.replace(tzinfo=timezone.utc)
+        return d.astimezone(ZoneInfo("America/Toronto")).strftime("%Y-%m-%d")
+    except Exception:
+        return t[:10]
 
 
 def lire_transactions_xml(brut):
@@ -506,7 +523,7 @@ def lire_transactions_xml(brut):
                     "titre": _txt(t, "e:Item/e:Title") or "", "sku": _txt(t, "e:Item/e:SKU") or "",
                     "prix": _num(t, "e:TransactionPrice") or 0.0,
                     "port_charge": _num(t, "e:ShippingServiceSelected/e:ShippingServiceCost") or 0.0,
-                    "frais_reels": None, "date": (_txt(t, "e:CreatedDate") or "")[:10],
+                    "frais_reels": None, "date": _jour_local(_txt(t, "e:CreatedDate")),
                     "acheteur": _txt(t, "e:Buyer/e:UserID") or "",
                     "statut_paiement": "PAID" if _txt(t, "e:PaidTime") else "PENDING",
                     "annulee": statut.lower() == "canceled" or bool(_txt(t, "e:ContainingOrder/e:CancelStatus") == "CancelComplete"),

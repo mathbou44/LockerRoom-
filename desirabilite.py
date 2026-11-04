@@ -93,7 +93,25 @@ def _marche(n, jours=None):
     return 0, "se vend souvent"
 
 
+_VC = {}
+
+
 def ventes_connues(titre):
+    """4 nov 2026 (vitesse) : memorise 30 min (le tableau de l'inventaire le demandait pour chaque carte a chaque ouverture)."""
+    import time as _t
+    k = str(titre or "")
+    v = _VC.get(k)
+    if v and _t.time() - v[0] < 1800:
+        return v[1]
+    r = _ventes_connues(k)
+    if len(_VC) > 5000:
+        for x in list(_VC)[:2500]:
+            _VC.pop(x, None)
+    _VC[k] = (_t.time(), r)
+    return r
+
+
+def _ventes_connues(titre):
     """Les ventes de CETTE carte que SlabCoach connait sans rien payer : la base des ventes (gardee depuis son debut) et le
     cache des recherches (3 jours). -> (nombre, jours couverts) ou None si on n'a aucune donnee pour cette carte."""
     import base_ventes

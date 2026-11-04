@@ -17,6 +17,7 @@ import unicodedata
 
 # -- equipes : voir sports.py (23 oct 2026 - NHL, NFL, NBA, MLB) -------------------------
 import sports
+_RE_NATIONALE = re.compile(r"(?i)^(team\s|equipe\s|tbd(\s+tbd)?$|na(\s+na)?$)")   # nationales et cases vides
 
 EQUIPES_LNH = sports.equipes("hockey")
 
@@ -200,9 +201,13 @@ def prix_places(checklist, boites=1, cout_boite=0.0, marge=0.25, frais_pct=0.109
             if j:
                 d["vedettes"][j] = d["vedettes"].get(j, 0) + valeur
     if mode == "equipes":                       # les 32 equipes, meme sans carte
-        for code in sports.equipes(sport):
+        ligue = sports.equipes(sport)
+        for code in ligue:
             cles.setdefault(code, {"cle": code, "ev": 0.0, "nb": 0, "recrues": 0, "autos": 0, "numerotees": 0, "vedettes": {}})
-        cles.pop("?", None)
+        # 4 nov 2026 (revue) : une carte d'equipe nationale (« Team Canada ») n'est pas une place du break en equipes ;
+        # les anciennes equipes (Whalers, Nordiques...) restent une place, comme avant
+        for k in [k for k in cles if ligue and k not in ligue and _RE_NATIONALE.match(str(k))] + ["?"]:
+            cles.pop(k, None)
     cout = round(float(cout_boite) * boites, 2)
     n = len(cles) or 1
     cible = (cout * (1 + float(marge)) + float(frais_fixe) * n) / max(0.01, 1 - float(frais_pct))
@@ -367,9 +372,11 @@ def prix_catalogue(prod, boites=1, cout_boite=0.0, marge=0.25, frais_pct=0.109, 
             if j and "/" not in j:                    # vedettes : joueurs seuls (pas les cartes doubles)
                 d["vedettes"][j] = d["vedettes"].get(j, 0.0) + ev * part
     if mode == "equipes":
-        for code in sports.equipes(sport):
+        ligue = sports.equipes(sport)
+        for code in ligue:
             cles.setdefault(code, {"cle": code, "ev": 0.0, "recrues": 0.0, "hits": 0.0, "numerotees": 0.0, "vedettes": {}, "n": 0.0})
-        cles.pop("?", None)
+        for k in [k for k in cles if ligue and k not in ligue and _RE_NATIONALE.match(str(k))] + ["?"]:   # equipes nationales
+            cles.pop(k, None)
     cout = round(float(cout_boite) * boites, 2)
     n = len(cles) or 1
     cible = (cout * (1 + float(marge)) + float(frais_fixe) * n) / max(0.01, 1 - float(frais_pct))

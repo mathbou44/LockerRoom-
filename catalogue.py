@@ -279,9 +279,27 @@ def charger(pid):
     return None
 
 
+_LISTE = {"cle": None, "l": []}
+
+
 def liste():
+    """4 nov 2026 (vitesse) : refaite seulement quand un fichier du catalogue change (la copie de chaque ligne est rendue)."""
+    fs = _fichiers()
+    try:
+        cle = tuple((f, os.path.getmtime(f if os.path.isabs(f) else os.path.join(DOSSIER, f))) for f in fs)
+    except OSError:
+        cle = None
+    if cle is not None and _LISTE["cle"] == cle:
+        return [dict(x) for x in _LISTE["l"]]
+    out = _liste(fs)
+    if cle is not None:
+        _LISTE.update(cle=cle, l=out)
+    return [dict(x) for x in out]
+
+
+def _liste(fs):
     out = []
-    for f in _fichiers():
+    for f in fs:
         d = _lire(f)
         if not d.get("cartes"):
             continue

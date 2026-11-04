@@ -978,7 +978,14 @@ def admin_entrainement_zip():
 
 @app.route("/<path:nom>")
 def statiques(nom):
-    return send_from_directory(DOSSIER_UI, nom)
+    # 4 nov 2026 (vitesse) : les polices ne changent jamais (30 jours, immuables) ; images et logos : 1 jour (noms fixes,
+    # une nouvelle version arrive le lendemain au pire) ; le reste (js, css, html) : revalide a chaque fois (ETag)
+    ext = nom.rsplit(".", 1)[-1].lower() if "." in nom else ""
+    age = 30 * 86400 if ext in ("woff2", "woff", "ttf", "otf") else 86400 if ext in ("svg", "png", "jpg", "jpeg", "webp", "ico", "gif") else None
+    rep = send_from_directory(DOSSIER_UI, nom, max_age=age)
+    if ext in ("woff2", "woff", "ttf", "otf"):
+        rep.headers["Cache-Control"] = "public, max-age=%d, immutable" % (30 * 86400)
+    return rep
 
 
 # multi-comptes : ce qui touche le serveur entier (nos cles, l'environnement, les avis) n'est pas aux clients
@@ -1043,10 +1050,11 @@ def dispatcher(nom):
             admin.noter_erreur("api " + nom, e)
         except Exception:
             pass
-        if HEBERGE:
-            app.logger.exception("Erreur API %s", nom)
-            return jsonify({"erreur": "Erreur du serveur : réessaie dans un instant"}), 500
-        return jsonify({"erreur": f"{type(e).__name__} : {e}"}), 500
+        app.logger.exception("Erreur API %s", nom)
+        # 4 nov 2026 (revue) : sur le PC aussi, un message propre a l'ecran (le detail : la console et Admin > Erreurs)
+        if not HEBERGE and os.environ.get("LR_DEBUG"):
+            return jsonify({"erreur": f"{type(e).__name__} : {e}"}), 500
+        return jsonify({"erreur": "Erreur du serveur : réessaie dans un instant"}), 500
 
 
 # -- redemarrage automatique quand le code change (la boucle du .bat relance) --
@@ -1233,6 +1241,22 @@ def demarrer_taches():
     threading.Thread(target=_ebay_auto, daemon=True).start()
     threading.Thread(target=_watch_boucle, daemon=True, name="watchlist").start()
     threading.Thread(target=_revalider_deals, daemon=True, name="revalider").start()
+    threading.Thread(target=_rechauffer, daemon=True, name="rechauffer").start()
+
+
+def _rechauffer():
+    """4 nov 2026 (vitesse) : apres un deploiement, le premier ecran Deals (1,5 s) et le catalogue (1 s) payaient le calcul
+    a froid. 20 s apres le demarrage, doucement en fond : le jugement des deals et la valeur des boites du catalogue."""
+    time.sleep(int(os.environ.get("LR_RECHAUFFER_S") or 20))
+    try:
+        import deals
+        for i, g in enumerate((deals.lire_vite() or {}).get("deals") or []):
+            deals.valide(g)
+            if i % 20 == 0:
+                time.sleep(0.02)                 # laisse passer les requetes de l'app
+        api.catalogue_liste()
+    except Exception as e:
+        print("Rechauffage : " + repr(e), flush=True)
 
 
 CALME_DEMARRAGE_S = int(os.environ.get("LR_CALME_DEMARRAGE_S") or 180)

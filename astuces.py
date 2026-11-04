@@ -20,7 +20,6 @@ import time
 from datetime import datetime, timedelta
 
 FRAICHEUR_S = 6 * 3600
-_CACHE = {"le": 0.0, "cle": None, "l": []}
 
 
 def _med(l):
@@ -616,26 +615,60 @@ GENERATEURS = [pouls_hobby, joueur_en_feu, marche_hausse, marche_baisse, marche_
                hobby_seulement, yg_canvas, demande_vs_vendu, centrage_psa, pop_bedard, echange, cotes_s2, bgs_vs_psa, prime_exclusives]
 
 
-def liste(api, niveau=None, force=False, langue="fr"):
-    import comptes                     # 3 nov 2026 (revue de securite) : certaines astuces utilisent les reglages du compte
-    cle = (niveau, langue, comptes.courant())
-    if not force and _CACHE["cle"] == cle and time.time() - _CACHE["le"] < FRAICHEUR_S:
-        return _CACHE["l"]
+_PAR_COMPTE = {"frais"}                 # les seules astuces qui lisent les reglages du compte
+_GLOBAL = {}                           # langue -> {"le", "l"} : le reste est le meme pour tout le monde
+_VERROU = __import__("threading").Lock()
+_EN_COURS = set()
+
+
+def _calculer(api, langue, gens):
     out = []
-    for g in GENERATEURS:
+    for g in gens:
         try:
             x = g(api, langue)
         except Exception as e:
             print("Astuce " + g.__name__ + " : " + repr(e), flush=True)
             x = None
         if x:
-            if langue != "en":                         # 3,94 $ et ×2,1 en francais
+            if langue != "en":                         # 3,94 $ et x2,1 en francais
                 for k in ("titre", "chiffre", "texte"):
                     x[k] = re.sub(r"(?<=\d)\.(?=\d)", ",", str(x.get(k) or ""))
-            out.append(x)
+            out.append((g.__name__, x))
+    return out
+
+
+def _globales(api, langue, force=False):
+    """4 nov 2026 (tournee vitesse) : les astuces communes sont calculees une fois pour tous (10 a 20 s), pas par compte ;
+    perimees -> on rend les anciennes tout de suite et on recalcule en fond."""
+    gens = [g for g in GENERATEURS if g.__name__ not in _PAR_COMPTE]
+    c = _GLOBAL.get(langue)
+    if c and not force:
+        if time.time() - c["le"] >= FRAICHEUR_S:
+            with _VERROU:
+                lance = langue not in _EN_COURS
+                _EN_COURS.add(langue)
+            if lance:
+                import contextvars, threading
+                ctx = contextvars.copy_context()
+
+                def fond():
+                    try:
+                        _GLOBAL[langue] = {"le": time.time(), "l": _calculer(api, langue, gens)}
+                    finally:
+                        _EN_COURS.discard(langue)
+                threading.Thread(target=lambda: ctx.run(fond), daemon=True).start()
+        return c["l"]
+    l = _calculer(api, langue, gens)
+    _GLOBAL[langue] = {"le": time.time(), "l": l}
+    return l
+
+
+def liste(api, niveau=None, force=False, langue="fr"):
+    par = dict(_globales(api, langue, force))
+    par.update(_calculer(api, langue, [g for g in GENERATEURS if g.__name__ in _PAR_COMPTE]))
+    out = [dict(par[g.__name__]) for g in GENERATEURS if g.__name__ in par]
     # debutant / retour : d'abord les bases ; avance : d'abord les chiffres
     ordre = {"debutant": ["debutant", "tous", "avance"], "retour": ["debutant", "tous", "avance"],
              "expert": ["avance", "tous", "debutant"]}.get(niveau or "", ["tous", "debutant", "avance"])
     out.sort(key=lambda x: (ordre.index(x["niveau"]) if x["niveau"] in ordre else 9, not x.get("calcule")))
-    _CACHE.update(le=time.time(), cle=cle, l=out)
     return out

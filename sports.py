@@ -203,8 +203,9 @@ def equipes(sport=None):
     return SPORTS[valide(sport)]["equipes"]
 
 
+@__import__("functools").lru_cache(maxsize=8192)
 def code_equipe(texte, sport=None):
-    """« Montréal Canadiens », « MTL », « Canadiens » -> « MTL » (dans la ligue du sport) ; inconnu -> le texte."""
+    """4 nov 2026 (vitesse) : memorise (42 000 appels par calcul du catalogue). « Montréal Canadiens », « MTL », « Canadiens » -> « MTL » (dans la ligue du sport) ; inconnu -> le texte."""
     idx = _INDEX[valide(sport)]
     t = _n(texte)
     if not t:
@@ -257,9 +258,27 @@ _RE_UNIV = re.compile(r"\bbowman (chrome |best |sterling )?(u|university)\b|\bbo
 _RE_UNIV_BASKET = re.compile(r"\b(basketball|hoops|ncaab|march madness|college basketball)\b")
 
 
+_DET = {}
+
+
 def detecter(*textes, defaut=None, bonus=None):
     """Sport le plus probable ; `defaut` (sport principal) quand rien ne tranche.
-    `bonus` = {sport: points} (ex. joueur connu de la base de valeurs hockey)."""
+    `bonus` = {sport: points} (ex. joueur connu de la base de valeurs hockey).
+    4 nov 2026 (vitesse) : memorise (1 500 cartes a chaque accueil) ; borne, videe par moitie."""
+    if bonus:
+        return _detecter(textes, defaut, bonus)
+    k = (tuple(str(x) for x in textes if x), defaut)
+    r = _DET.get(k)
+    if r is None:
+        r = _detecter(textes, defaut, None)
+        if len(_DET) > 20000:
+            for x in list(_DET)[:10000]:
+                _DET.pop(x, None)
+        _DET[k] = r
+    return r
+
+
+def _detecter(textes, defaut, bonus):
     t = " ".join(_n(x) for x in textes if x)
     if _RE_UNIV.search(t):
         return "basketball" if _RE_UNIV_BASKET.search(t) else "football"
