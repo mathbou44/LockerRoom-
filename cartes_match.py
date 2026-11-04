@@ -30,6 +30,10 @@ SYNONYMES = [                       # forme courte -> forme longue (dans la rech
     # 3 nov 2026 (Mathieu : une Topps Signature Class #102 Chrome Refractor comparee a une AUTO) : « Signature Class » est le
     # NOM du produit, pas un autographe ; le mot reste a part avant la regle signature -> auto
     (r"\bsignature class\b", "signatureclass"),
+    # 4 nov 2026 (Mathieu : une The Cup Signature Materials comparee aux Rookie Auto Patch) : « Signature Materials »,
+    # « Signature Patches », « Signature Swatches » sont des INSERTS a part (pas « auto + patch ») ; le nom reste entier
+    (r"\bsignature materials?\b", "sigmaterials auto materials"), (r"\bsignature patch(es)?\b", "sigpatches auto patch"),
+    (r"\bsignature swatch(es)?\b", "sigswatches auto swatch"),
     (r"\byg\b", "young guns"), (r"\bud\b", "upper deck"), (r"\bopc\b", "o-pee-chee"), (r"\bo pee chee\b", "o-pee-chee"),
     (r"\bspa\b", "sp authentic"), (r"\bfw\b", "future watch"), (r"\brr\b", "rated rookie"),
     (r"\bautograph(ed|s)?\b", "auto"), (r"\bsigned\b", "auto"), (r"\bsignature(s)?\b", "auto"), (r"\bautos\b", "auto"),
@@ -349,6 +353,10 @@ def requete_ebay(c):
     hors de la recherche (eBay exige TOUS les mots ; trop de vendeurs les ecrivent autrement) : le tri les verifie."""
     m = list(c["mots"])
     m += [w for w in c.get("q_plus") or [] if w not in m]
+    # 4 nov 2026 : un insert « Signature ... » se cherche avec son vrai nom (sinon eBay rend surtout les Rookie Auto Patch)
+    for k, q in (("sigmaterials", "signature materials"), ("sigpatches", "signature patches"), ("sigswatches", "signature swatches")):
+        if k in (c.get("ident") or ()) and q not in m:
+            m.append(q)
     m += sorted(p for p in c["paralleles"] if p not in m)
     if c["auto"]:
         m.append("auto")

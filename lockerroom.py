@@ -2259,6 +2259,10 @@ class Api:
 
     def inventaire_liste(self, filtres=None):
         f = filtres or {}
+        try:
+            self._reparer_soumissions()
+        except Exception as e:
+            print("Soumissions (reparation) : " + repr(e), flush=True)
         sql, args = "SELECT * FROM cartes WHERE 1=1", []
         if f.get("statut"):
             sql += " AND statut=?"
@@ -3181,7 +3185,37 @@ class Api:
                 c.close()
         return {"ok": True, "id": so["id"], "n": len(pris), "ignorees": len(ids) - len(pris)}
 
+    def _reparer_soumissions(self):
+        """4 nov 2026 (Mathieu : « ca dit At grading mais j'ai rien rentre ») : fermer l'assistant a la derniere etape
+        envoyait la soumission. Une soumission « envoyee » sans numero ni suivi n'a jamais ete envoyee : elle redevient
+        « a soumettre » (et ses cartes aussi). Le bouton « C'est envoye » exige l'un des deux depuis toujours. Seulement les
+        soumissions de l'assistant (mode choisi) : le formulaire simple peut enregistrer un envoi sans numero, expres."""
+        with _verrou:
+            c = self._db()
+            try:
+                try:
+                    sos = _dicts(c.execute("SELECT * FROM soumissions WHERE statut='envoyee' AND COALESCE(numero,'')='' AND COALESCE(suivi,'')='' "
+                                           "AND COALESCE(mode,'')<>''"))
+                except sqlite3.OperationalError:
+                    return 0
+                for so in sos:
+                    so = dict(so, statut="preparation", envoyee_le=None)
+                    c.execute("UPDATE soumissions SET statut='preparation', envoyee_le=NULL WHERE id=?", (so["id"],))
+                    try:
+                        vals = json.loads(so.get("valeurs") or "{}") or {}
+                    except ValueError:
+                        vals = {}
+                    for (cid,) in c.execute("SELECT id FROM cartes WHERE soumission_id=? AND envoi_json IS NOT NULL", (so["id"],)).fetchall():
+                        e = {k: v for k, v in self._soumission_envoi(so, cid, vals.get(str(cid))).items() if v not in (None, "")}
+                        c.execute("UPDATE cartes SET envoi_json=? WHERE id=?", (json.dumps(e, ensure_ascii=False), cid))
+                if sos:
+                    c.commit()
+                return len(sos)
+            finally:
+                c.close()
+
     def soumissions_liste(self):
+        self._reparer_soumissions()
         with _verrou:
             c = self._db()
             try:
@@ -3232,6 +3266,8 @@ class Api:
               "suivi": txt(d.get("suivi"), 40) if "suivi" in d else l.get("suivi"),
               "mode": txt(d.get("mode"), 20) if "mode" in d else l.get("mode"), "statut": l["statut"]}
         if d.get("envoyer") and l["statut"] == "preparation":       # l'assistant : « c'est parti »
+            if not so.get("numero") and not so.get("suivi"):          # 4 nov 2026 : rien d'entre -> pas envoyee
+                return {"ok": False, "erreur": "Entre au moins le numéro de soumission ou de suivi"}
             so["statut"] = "envoyee"
             so["envoyee_le"] = jour(d.get("envoyee_le")) or datetime.now().strftime("%Y-%m-%d")
         vals = {str(x["id"]): x.get("valeur_declaree") for x in l["cartes"]}

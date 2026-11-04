@@ -99,6 +99,9 @@ def mesure_carte(points, auj=None):
             "norm_av": [math.log(p) - lm for p in av], "norm_re": [math.log(p) - lm for p in re]}
 
 
+_SP_PROD = {}
+
+
 def par_joueur(cartes, auj=None):
     """cartes : [{joueur, recrue, points, ...}] (une entree par carte exacte). -> {joueur: mesure du joueur}."""
     auj = auj or datetime.now()
@@ -109,7 +112,21 @@ def par_joueur(cartes, auj=None):
         j = str(c.get("joueur") or "").strip()
         if not j or "/" in j:                         # une carte a 2 joueurs ne dit rien d'UN joueur
             continue
-        g = gr.setdefault(j.lower(), {"joueur": j, "recrue": False, "mes": [], "n_7j": 0, "n": 0, "pts": [], "cartes": set(), "an": None})
+        g = gr.setdefault(j.lower(), {"joueur": j, "recrue": False, "mes": [], "n_7j": 0, "n": 0, "pts": [], "cartes": set(), "an": None, "sp": {}})
+        try:                                             # 4 nov 2026 (Mathieu : « choisir le ou les sports ») : le sport de la carte
+            import sports
+            pid = str(c.get("produit_id") or "")
+            if not c.get("sport") and pid and not pid.startswith("q:") and pid not in _SP_PROD:
+                try:
+                    import catalogue
+                    _SP_PROD[pid] = (catalogue.charger(pid) or {}).get("sport")
+                except Exception:
+                    _SP_PROD[pid] = None
+            sp = c.get("sport") or _SP_PROD.get(pid) or sports.detecter(str(c.get("carte") or ""), str(c.get("produit") or ""),
+                                                   str(c.get("produit_id") or "").replace("q:", "").replace("-", " "), defaut="hockey")
+            g["sp"][sp] = g["sp"].get(sp, 0) + 1
+        except Exception:
+            pass
         an_c = c.get("annee")
         if not an_c:
             m_ = re.match(r"(?:q:)?.*?\b((?:19|20)\d\d)", str(c.get("produit_id") or "") + " " + str(c.get("carte") or ""))
@@ -140,7 +157,8 @@ def par_joueur(cartes, auj=None):
         mes = g["mes"]
         N = sum(m["n_av"] + m["n_re"] for m in mes)
         ere = "recrue" if g["recrue"] else "legende" if g["an"] and g["an"] < ANNEE_LEGENDE else "veteran"
-        res = {"joueur": g["joueur"], "recrue": g["recrue"], "ere": ere, "n": g["n"], "n_7j": g["n_7j"], "n_cartes": len(g["cartes"])}
+        res = {"joueur": g["joueur"], "recrue": g["recrue"], "ere": ere, "n": g["n"], "n_7j": g["n_7j"], "n_cartes": len(g["cartes"]),
+               "sport": max(g["sp"], key=g["sp"].get) if g["sp"] else "hockey"}
         if mes and N >= N_FAIBLE:
             w = [m["n_av"] + m["n_re"] for m in mes]
             lr = sum(m["lr"] * x for m, x in zip(mes, w)) / sum(w)

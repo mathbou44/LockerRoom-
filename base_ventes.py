@@ -325,7 +325,12 @@ def cartes_toutes(jours=42, n_min=4, max_q=12000):
                 an = None
             if not p:
                 rec = bool(cib.get("rc") or re.search(r"young guns|rookie|\brc\b|future watch", q)) and (an is None or an >= an_rec)
-            out.append({"joueur": j, "carte": carte, "produit_id": pid, "recrue": rec, "annee": an,
+            try:                                         # 4 nov 2026 : le sport, d'apres les titres vendus (equipes, ligues)
+                import sports
+                sp = sports.detecter(" ".join(str(t2 or "") for t2, _p, _l in l[:8]), q, defaut="hockey")
+            except Exception:
+                sp = None
+            out.append({"joueur": j, "carte": carte, "produit_id": pid, "recrue": rec, "annee": an, "sport": sp,
                         "points": [[le, pr] for _t2, pr, le in l]})
         except Exception:
             continue
