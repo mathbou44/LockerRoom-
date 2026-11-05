@@ -312,6 +312,20 @@ details.reglage summary::-webkit-details-marker{display:none}
 .adm-k.rouge b{color:var(--rouge)}
 .adm-al{margin:6px 0; padding:8px 12px; border-radius:12px; background:color-mix(in srgb, var(--rouge) 14%, transparent); color:var(--rouge); font-size:13.5px; font-weight:600}
 .adm-det{margin-top:8px} .adm-det summary{cursor:pointer; color:var(--acc); font-size:14px; font-weight:600} .adm-det > div{margin-top:8px; font-size:13px; line-height:1.5; color:var(--doux)}
+.q-ach{background:var(--carte); border:1px solid color-mix(in srgb, var(--acc) 45%, var(--ligne)); border-radius:16px; padding:12px 14px; margin:0 0 12px; display:flex; flex-direction:column; gap:10px}
+.q-ach.ok{border-color:color-mix(in srgb, var(--vert) 45%, var(--ligne))} .q-ach-t{display:flex; align-items:center; gap:8px; font-size:15.5px} .q-ach-t svg{width:20px; height:20px}
+.q-ach-a{display:flex; gap:10px; align-items:center} .q-ach-a img{width:44px; height:60px; object-fit:cover; border-radius:6px; flex:none} .q-ach-a span{display:flex; flex-direction:column; gap:2px; min-width:0}
+.q-ach-a small{color:var(--doux); font-size:13px} .q-ach-b{display:flex; gap:8px; align-items:center; flex-wrap:wrap} .q-ach .vert{color:var(--vert)} .q-ach .rouge{color:var(--rouge)}
+.cout-c{font-size:13px; color:var(--doux); margin-top:4px; line-height:1.35} .cout-c b{color:var(--texte, #fff); font-weight:700} .cout-c b.vert{color:var(--vert)} .cout-c b.rouge{color:var(--rouge)} .cout-c .or{color:var(--or); font-weight:600} .cout-c small{font-size:12px}
+.vt-grp .vt-l{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:9px 0; border-top:1px solid var(--ligne)} .vt-grp .vt-l:first-of-type{border-top:0}
+.vt-n,.vt-p{display:flex; flex-direction:column; gap:2px; font-weight:600} .vt-n small,.vt-p small,.vt-t small{font-size:12.5px; color:var(--doux); font-weight:500}
+.vt-p{text-align:right; font:700 18px var(--f-cond); white-space:nowrap} .vt-p.vert{color:var(--vert)} .vt-p.rouge{color:var(--rouge)} .vt-p small{font-family:inherit}
+.vt-liste{display:flex; flex-direction:column} .vt-v{display:flex; align-items:center; gap:10px; padding:10px 0; border:0; border-radius:0; border-top:1px solid var(--ligne); box-shadow:none; background:none; color:inherit; text-align:left; width:100%}
+.vt-v img,.vt-ph{width:40px; height:56px; border-radius:6px; object-fit:cover; flex:none; background:var(--carte2)} .vt-t{flex:1; min-width:0; display:flex; flex-direction:column; gap:1px} .vt-t b,.vt-t small{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.vt-sc{font-style:normal; color:var(--or)} .vt-liste .vt-v:first-child{border-top:0} .vt-band{display:block; width:100%; text-align:left; margin-bottom:10px}
+.vt-mois{display:flex; gap:4px; align-items:flex-end; height:130px; margin-top:8px} .vt-m{flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; min-width:0}
+.vt-b{position:relative; width:100%; height:110px; display:flex; align-items:flex-end; justify-content:center; gap:2px} .vt-b i{width:42%; border-radius:4px 4px 0 0; min-height:2px}
+.vt-b i.r{background:color-mix(in srgb, var(--acc) 45%, transparent)} .vt-b i.p{background:var(--vert)} .vt-b i.p.neg{background:var(--rouge)} .vt-m small{font-size:11px; color:var(--doux)}
 .fc-achat{margin:0 0 12px} .fc-ach{background:var(--carte2)} .fc-ach .ap-ic::before{background:var(--carte2)}
 .fc-ach .ap-t{display:flex; flex-direction:column; gap:2px; white-space:normal} .fc-ach .ap-t b{font-size:15px} .fc-ach .ap-t small{font-size:12.5px; color:var(--doux); font-weight:500}
 .fc-ach-l{display:flex; align-items:center; gap:12px; flex:1; min-width:0; color:inherit; text-decoration:none}
@@ -2868,7 +2882,7 @@ const LECTURES = new Set(['accueil', 'acheteur_accueil', 'activites', 'conseils'
   'budget_etat', 'alertes_liste', 'breaks_liste', 'bilan', 'tendances', 'calendrier', 'collection', 'offres_liste', 'analyse_break',
   'admin_resume', 'admin_abonnes', 'admin_demandes', 'admin_catalogue', 'admin_sante', 'admin_entrainement', 'valeurs_statut', 'portraits_joueurs',
   'etoiles_lire', 'alarmes_lire', 'deals_profil_lire', 'sante_liste', 'pouls', 'guide_donnees', 'consignataires_liste', 'ebay_avis_statut', 'ebay_appels',
-  'inventaire_tableaux', 'watch_liste']);
+  'inventaire_tableaux', 'watch_liste', 'ventes_analyse']);
 const SANS_EFFET = new Set(['deals_etat', 'accueil_live', 'annonce_detail', 'carte_comps', 'valeur_carte', 'joueur_fiche', 'checklist',
   'catalogue_checklist', 'break_detail', 'photo_statut', 'demandes_reponses', 'demandes_mes', 'ebay_environnement', 'logo_lire', 'prix_auto_lire',
   // 28 oct 2026 (vitesse) : ces appels ne changent rien a ce que les ecrans affichent : ils ne vident plus la memoire
@@ -3444,7 +3458,7 @@ function route(){
   if (!$('#fond-feuille').hidden) fermerFeuille();
   navDebut(S.ecranCourant === ecran && !!arg);              // meme ecran, autre onglet (Admin, Breaks, Sante...) : navigation douce
   S.ecranCourant = ecran;
-  const vues = {analyse:vueAnalyse, vendre:vueVendre, deals:vueDeals, valeur:vueValeur, accueil:vueAccueil, sante:vueSante, breaks:vueBreaks, break:vueBreak, inventaire:vueInventaire, comptoir:vueComptoir, bilan:vueBilan, reglages:vueReglages, admin:vueAdmin, guide:vueGuide, joueur:vueJoueur, calendrier:vueCalendrier, idees:vueIdees, pouls:vuePouls, tendances:vueTendances, offres:vueOffres};
+  const vues = {analyse:vueAnalyse, vendre:vueVendre, deals:vueDeals, valeur:vueValeur, accueil:vueAccueil, sante:vueSante, breaks:vueBreaks, break:vueBreak, inventaire:vueInventaire, comptoir:vueComptoir, bilan:vueBilan, ventes:vueVentes, reglages:vueReglages, admin:vueAdmin, guide:vueGuide, joueur:vueJoueur, calendrier:vueCalendrier, idees:vueIdees, pouls:vuePouls, tendances:vueTendances, offres:vueOffres};
   (vues[ecran] || vueAccueil)(arg);
   if (ecran === 'alertes') setTimeout(() => { try { feuilleAlertes(); } catch (e) {} }, 300);
 }
@@ -4907,6 +4921,7 @@ function rendreVente2(){
           ${blocMarcheVente(p, pr)}
 </div>
 
+    <div id="v2-q-achat"></div>
     <div class="vs-etape"><span class="vs-n">2</span><b>${tt('Déjà réglé pour toi', 'Already set for you')}</b><span class="sous">${tt('touche pour changer', 'tap to change')}</span></div>
     <div class="acc-pils vs-rangs">
       ${rangVs('fmt', 'etiquette', tt('Format', 'Format'), o.format === 'encan' ? tt('Encan 7 j', 'Auction 7 d') : tt('Prix fixe', 'Buy It Now'))}
@@ -4917,7 +4932,7 @@ function rendreVente2(){
       ${rangVs('quand', 'horloge', tt('Mise en ligne', 'Goes live'), V2.debut ? dateProg(V2.debut) : tt('Maintenant', 'Now'))}
       ${gradee ? '' : rangVs('etat', 'carte', tt('État', 'Condition'), esc((p.etats || {})[o.etat] || ''))}
       ${rangVs('det', 'news', tt('Détails et description', 'Details and description'), '')}
-      ${rangVs('cout', 'dollar', tt('Mon coût', 'My cost'), nb(V2.cout) ? argent(V2.cout, 0) : tt('optionnel', 'optional'))}
+      ${rangVs('cout', 'dollar', tt('Mon coût', 'My cost'), nb(V2.cout) ? argent(V2.cout, 0) + (nb(V2.prix) ? ' · ' + tt('profit ', 'profit ') + argent(profitA(nb(V2.prix), nb(V2.cout)), 0) : '') : tt('optionnel', 'optional'))}
     </div>
     <div class="vs-etape"><span class="vs-n">3</span><b>${tt('Publie !', 'Publish!')}</b></div>
     <div class="acc-reserve" id="vs-reserve">
@@ -4991,6 +5006,7 @@ function rendreVente2(){
   </section>`;
   brancherVente2();
   achatsVente();
+  questionAchatVente();
   const ouvrir = (k) => { S.v2Feuille = k; const el = $('#vs-b-' + k); if (!el) return;
     if (k === 'det') el.querySelectorAll('details').forEach(d => d.open = true);
     feuilleBloc(el, '', `<button class="btn" id="vs-fini">${tt('OK', 'OK')}</button>`); const f = $('#vs-fini'); if (f) f.onclick = () => { S.v2Feuille = null; fermerFeuille();
@@ -7731,7 +7747,7 @@ function histoiresAccueil(d, a){
     ['envoyer', n(A.envoyer), tt('À envoyer', 'To ship'), tt('envois', 'orders'), '#breaks/liste'],
     ['prix', n(A.baisser) + n(A.monter), tt('Prix', 'Prices'), tt('à revoir', 'to fix'), '#sante'],
     ['deals', A.racheter ? n(A.racheter) : ((a && a.nb_deals) || 0), 'Deals', tt('à racheter', 'to flip'), A.racheter ? A.racheter.lien : '#sante'],
-    ['ventes', h.nb_ventes || 0, tt('Ventes', 'Sales'), tt('ce mois', 'this month'), '#bilan'],
+    ['ventes', h.nb_ventes || 0, tt('Ventes', 'Sales'), tt('ce mois', 'this month'), '#ventes'],
     ...(act.breaks !== false ? [['breaks', (d.breaks_ouverts || []).length, 'Breaks', tt('en cours', 'open'), '#breaks/liste']] : []),
     ...(act.magasin ? [['comptoir', null, tt('Comptoir', 'Counter'), '', '#comptoir']] : []),
     ['bilan', null, tt('Bilan', 'Report'), '', '#bilan'],
@@ -8850,11 +8866,15 @@ async function vueInventaire(arg){
 // le repere prix : ton prix face a la mediane des memes cartes en vente (et le plus bas de la concurrence)
 function repere(c){
   const m = c.marche, prix = nb(c.prix_demande);
-  if (!m || !m.mediane || !prix || (m.n || 0) < 3) return null;
-  const e = prix / m.mediane - 1, pct = Math.round(Math.abs(e) * 100);
-  if (Math.abs(e) <= 0.10) return {cl:'vert', court: tt('Bien placé', 'Well priced'), long: tt('marché ', 'market ') + argentCourt(m.mediane)};
-  if (e > 0) return {cl: e > 0.25 ? 'rouge' : 'or', court: tt(`+${pct} % vs marché`, `+${pct}% vs market`), long: tt('marché ', 'market ') + argentCourt(m.mediane)};
-  return {cl:'acc', court: tt(`−${pct} % : tu peux monter`, `−${pct}%: room to raise`), long: tt('marché ', 'market ') + argentCourt(m.mediane)};
+  // 5 nov 2026 (Mathieu : « on doit voir si notre prix de vente est bon dans cette vue ») : sans 3 ventes reelles, la valeur
+  // estimee de la carte sert de repere (dit comme tel)
+  const ref = m && m.mediane && (m.n || 0) >= 3 ? m.mediane : (nb(c.valeur) && nb(c.valeur) !== prix ? nb(c.valeur) : null);
+  if (!ref || !prix) return null;
+  const parVentes = ref === (m && m.mediane), lib = parVentes ? tt('marché ', 'market ') : tt('valeur estimée ', 'est. value ');
+  const e = prix / ref - 1, pct = Math.round(Math.abs(e) * 100), long = lib + argentCourt(ref);
+  if (Math.abs(e) <= 0.10) return {cl:'vert', court: tt('Bien placé', 'Well priced'), long, ventes: parVentes};
+  if (e > 0) return {cl: e > 0.25 ? 'rouge' : 'or', court: parVentes ? tt(`+${pct} % vs marché`, `+${pct}% vs market`) : tt(`+${pct} % vs valeur`, `+${pct}% vs value`), long, ventes: parVentes};
+  return {cl:'acc', court: tt(`−${pct} % : tu peux monter`, `−${pct}%: room to raise`), long, ventes: parVentes};
 }
 // 3 nov 2026 (Mathieu : « un indice de variation de prix, genre +5 % depuis la semaine passee et +10 % depuis le mois
 // passe ») : la pastille d'une carte (30 jours, sinon 7 jours, sinon 90 jours) ; rien si SlabCoach n'a pas assez de ventes
@@ -8871,6 +8891,14 @@ function pastilleTend(c, cls){
   return `<span class="tdc ${t.pct > 0 ? 'haut' : 'bas'} ${cls || ''}" title="${esc(tt(`sur ${t.j} jours`, `over ${t.j} days`))}">${t.pct > 0 ? '▲' : '▼'} ${fPct(t.pct).replace(/^[+−]/, '')} <small>${t.j} ${tt('j', 'd')}</small></span>`;
 }
 const photoOk = (u) => u && u !== '-' && /^(https?:|data:|\/mes-photos\/)/.test(u);   // 28 oct : les photos gardees (/mes-photos/) aussi
+// 5 nov 2026 (Mathieu : « on doit voir le cout paye ») : ce que la carte a coute et ce qu'elle laisse a ce prix, apres frais
+function coutTuile(c){
+  if (c.statut === 'Vendue') return '';
+  const cout = nb(c.cout), prix = nb(c.prix_demande ?? c.valeur);
+  if (cout == null) return `<div class="cout-c"><span class="or">${tt('Coût payé ?', 'Cost paid?')}</span></div>`;
+  const g = prix ? profitA(prix, cout) : null;
+  return `<div class="cout-c">${tt('Payé ', 'Paid ')}<b>${argent(cout, 0)}</b>${g != null ? ` · <b class="${g >= 0 ? 'vert' : 'rouge'}">${g >= 0 ? '+' : '−'}${argentCourt(Math.abs(g))}</b> <small>${g >= 0 ? tt('net à ce prix', 'net at this price') : tt('sous ton coût', 'below your cost')}</small>` : ''}</div>`;
+}
 function tuileInv(c){
   const vendue = c.statut === 'Vendue', r = !vendue ? repere(c) : null, m = c.marche;
   const etat = vendue ? capsule(tt('Vendue', 'Sold') + (c.vendu_le ? ' · ' + dateCourte(c.vendu_le) : ''), 'petit')
@@ -8888,7 +8916,8 @@ function tuileInv(c){
   return `<button class="tuile-c tuile-inv" data-id="${c.id}">${img}<div class="coin">${etat}</div>
     <div class="corps"><div class="t">${esc(nom)}</div>${det ? `<div class="det-c">${esc(det)}</div>` : ''}
       ${c.marche_pro ? `<div class="repere verrou" data-pro="repere"><b>${icN('cadenas')}${tt('Repère prix', 'Price check')}</b><span>${tt('ton prix vs le marché : Pro', 'your price vs market: Pro')}</span></div>` : ''}
-      ${r ? `<div class="repere ${r.cl}"><b>${esc(r.court)}</b><span>${esc(r.long)}${m.bas ? ' · ' + tt('plus bas ', 'lowest ') + argentCourt(m.bas) : ''} · ${m.n} ${tt('ventes réelles', 'real sales')}</span></div>` : ''}
+      ${r ? `<div class="repere ${r.cl}"><b>${esc(r.court)}</b><span>${esc(r.long)}${r.ventes && m.bas ? ' · ' + tt('plus bas ', 'lowest ') + argentCourt(m.bas) : ''}${r.ventes ? ' · ' + m.n + ' ' + tt('ventes réelles', 'real sales') : ''}</span></div>` : ''}
+      ${coutTuile(c)}
       ${!vendue && c.statut === 'Listée' && (c.vues != null || c.watchers) ? `<div class="int-c">${[c.vues != null ? c.vues + ' ' + tt(c.vues === 1 ? 'vue' : 'vues', c.vues === 1 ? 'view' : 'views') : '', (c.watchers || 0) + ' ' + tt(c.watchers === 1 ? 'suivi' : 'suivis', c.watchers === 1 ? 'watcher' : 'watchers')].filter(Boolean).join(' · ')}</div>` : ''}
       <div class="ligne-b">${bas}</div></div></button>`;
 }
@@ -10521,6 +10550,21 @@ async function feuilleAchats(){
   peindre();
 }
 // a la vente : les achats eBay qui ressemblent a la carte ; un tap relie l'achat (le prix paye devient le cout)
+async function questionAchatVente(){
+  const z = $('#v2-q-achat'); if (!z || V2.achat || nb(V2.cout) != null) { if (z) z.innerHTML = ''; return; }
+  let l = [];
+  if (V2.cid) { const r = await API.achats_carte(V2.cid).catch(() => null); if (!r || !r.ok || r.lie) return; l = r.suggestions; }
+  else { const r = await API.achats_suggerer(($('#v2-titre') || {}).value || V2.titre || '').catch(() => null); if (!r || !r.ok) return; l = r.achats; }
+  if (!$('#v2-q-achat')) return;
+  questionAchat(z, l, V2.cid, nb(V2.prix), async (a) => {
+    if (V2.cid) { const x = await essai(API.achat_relier(V2.cid, a.item_id, a.n)); if (!x || !x.ok) return; V2.cout = x.cout; }
+    else { V2.achat = {item_id: a.item_id, n: a.n}; V2.cout = a.cout; }
+    const ci = $('#v2-cout'); if (ci) ci.value = dev2(V2.cout);
+    const g = nb(V2.prix) ? profitA(nb(V2.prix), +V2.cout) : null;
+    z.innerHTML = `<div class="q-ach ok"><div class="q-ach-t">✓ <b>${tt('Achat relié', 'Purchase linked')}</b></div><div class="sous">${tt('Coût ', 'Cost ')}${argent(V2.cout, 2)}${g != null ? ' · ' + tt('profit à ', 'profit at ') + argent(V2.prix, 0) + ` : <b class="${g >= 0 ? 'vert' : 'rouge'}">${argent(g, 2)}</b> ` + tt('après frais', 'after fees') : ''}</div></div>`;
+    const rc = document.querySelector('[data-vs="cout"] .ap-v'); if (rc) rc.textContent = argent(V2.cout, 0);
+  });
+}
 async function achatsVente(){
   const z = $('#v2-achats'); if (!z) return;
   const t = ($('#v2-titre') || {}).value || V2.titre || '';
@@ -10540,6 +10584,27 @@ async function achatsVente(){
   };
   peindre();
 }
+// 5 nov 2026 (Mathieu : « quand j'affiche une carte ou cree une annonce, l'app doit reconnaitre si la carte a deja ete
+// achetee et demander de la matcher, pour le prix d'achat et le profit ») : un achat eBay de la MEME carte (meme joueur,
+// aucune raison de refus) et pas encore de cout : l'app pose la question. « Non » n'est plus redemande pour cet achat.
+const NON_ACH = () => { try { return JSON.parse(localStorage.getItem('lr_ach_non') || '[]'); } catch (e) { return []; } };
+const nonAchat = (k) => { try { const l = NON_ACH(); if (!l.includes(k)) l.push(k); localStorage.setItem('lr_ach_non', JSON.stringify(l.slice(-400))); } catch (e) {} };
+const cleAch = (a, cid) => (cid || 'v') + ':' + a.item_id + ':' + a.n;
+function questionAchat(z, l, cid, prix, oui){
+  const non = NON_ACH(), cands = l.filter(a => a.meme_carte && !non.includes(cleAch(a, cid)));
+  if (!cands.length) { z.innerHTML = ''; return false; }
+  let i = 0;
+  const peindre = () => { const a = cands[i];
+    z.innerHTML = `<div class="q-ach"><div class="q-ach-t">${icN('dollar')}<b>${tt('Tu as acheté cette carte sur eBay ?', 'Did you buy this card on eBay?')}</b></div>
+      <div class="q-ach-a">${a.photo ? `<img src="${esc(a.photo)}" alt="" loading="lazy">` : ''}<span><b>${esc(titreCourt(a.titre))}</b><small>${esc(dateCourte(a.date) || '')} · ${argent(a.cout, 2)} ${tt('payé', 'paid')}${prix ? ' · ' + tt('profit à ', 'profit at ') + argent(prix, 0) + ' : ' + argent(profitA(prix, a.cout), 0) : ''}</small></span></div>
+      <div class="q-ach-b"><button class="btn petit" id="qa-oui">${tt('Oui, c’est elle', 'Yes, that’s it')}</button><button class="btn ghost petit" id="qa-non">${tt('Non', 'No')}</button>
+        ${cands.length > 1 ? `<button class="lien-t" id="qa-autre">${tt('Un autre achat', 'Another purchase')} (${i + 1}/${cands.length})</button>` : ''}</div></div>`;
+    $('#qa-oui', z).onclick = async () => { vibrer(); $('#qa-oui', z).disabled = true; await oui(a); };
+    $('#qa-non', z).onclick = () => { vibrer(); nonAchat(cleAch(a, cid)); cands.splice(i, 1); if (!cands.length) { z.innerHTML = ''; return; } i = i % cands.length; peindre(); };
+    const au = $('#qa-autre', z); if (au) au.onclick = () => { i = (i + 1) % cands.length; peindre(); };
+  };
+  peindre(); return true;
+}
 async function achatCarte(c){
   const z = $('#c-achat'); if (!z) return;
   const r = await API.achats_carte(c.id).catch(() => null);
@@ -10554,6 +10619,11 @@ async function achatCarte(c){
     $('#c-ach-x').onclick = async () => { if (await essai(API.achat_delier(c.id), tt('Achat délié', 'Purchase unlinked'))) achatCarte(c); };
     return;
   }
+  if (nb(c.cout) == null && questionAchat(z, r.suggestions, c.id, nb(c.prix_demande) || nb(c.prix_vendu) || nb(c.valeur), async (a) => {
+    const x = await essai(API.achat_relier(c.id, a.item_id, a.n), tt('Achat relié · coût mis à jour', 'Purchase linked · cost updated'));
+    if (x && x.ok) { const ci = $('#c-cout'); if (ci) ci.value = dev2(x.cout); c.cout = x.cout; achatCarte(c);
+      const p = nb(c.prix_demande) || nb(c.prix_vendu) || nb(c.valeur); if (p) toast(tt('Profit à ', 'Profit at ') + argent(p, 0) + ' : ' + argent(profitA(p, x.cout), 2), 4000); }
+  })) return;
   let tous = false;
   const peindre = (ouvert) => {
     const l = r.suggestions.filter(a => tous || a.score >= 0.5).slice(0, tous ? 30 : 6);
@@ -11687,6 +11757,7 @@ async function vueBilan(){
   S.mois = S.mois || new Date().toISOString().slice(0, 7);
   V().innerHTML = `<section class="ecran">
     <div class="entete"><div class="titre">Bilan</div><input class="champ" type="month" id="b-mois" value="${S.mois}" style="width:170px"></div>
+    <a class="acc-pil" href="#ventes" style="margin-bottom:12px"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.dollar}</svg></span><span class="ap-t">${tt('Mes ventes et mon profit', 'My sales and profit')}</span><i aria-hidden="true">›</i></a>
     <div id="b-corps">${roue}</div></section>`;
   $('#b-mois').onchange = (e) => { S.mois = e.target.value || S.mois; vueBilan(); };
   const b = await essai(API.bilan(S.mois)); if (!b || !$('#b-corps')) return;   // parti ailleurs entre-temps
@@ -11704,6 +11775,56 @@ async function vueBilan(){
     <div class="boutons" style="margin-top:12px"><button class="btn ghost" id="b-dep">${ICONES.plus} Dépense</button><button class="btn" id="b-csv">${ICONES.export} CSV</button></div>`;
   $('#b-dep').onclick = feuilleDepense;
   $('#b-csv').onclick = async () => { const r = await essai(API.bilan_csv(S.mois)); if (r) telecharger(r.nom, r.csv); };
+}
+// 5 nov 2026 (Mathieu : « une section pour mes solds et faire une analyse profit ») : les ventes d'une periode, ce
+// qu'elles ont rapporte (le profit ne compte que les ventes avec un cout : les autres sont a relier a leur achat eBay)
+const PERIODES_V = () => [['30', tt('30 j', '30 d')], ['90', tt('90 j', '90 d')], ['365', tt('12 mois', '12 mo')], ['tout', tt('Tout', 'All')]];
+async function vueVentes(arg){
+  S.perV = arg && /^(30|90|365|tout|\d{4}-\d{2})$/.test(arg) ? arg : (S.perV || '90');
+  S.filtreV = S.filtreV || 'toutes';
+  V().innerHTML = `<section class="ecran">
+    <div class="entete"><div class="titre">${tt('Mes ventes', 'My sales')}</div></div>
+    <div class="seg" id="vt-per" style="margin-bottom:14px">${PERIODES_V().map(([k, t]) => `<button class="${S.perV === k ? 'on' : ''}" data-p="${k}">${t}</button>`).join('')}</div>
+    <div id="vt-corps">${roue}</div></section>`;
+  $$('#vt-per [data-p]').forEach(b => b.onclick = () => { vibrer(); S.perV = b.dataset.p; vueVentes(S.perV); });
+  const r = await essai(API.ventes_analyse(S.perV)); const z = $('#vt-corps'); if (!r || !z) return;
+  const k = r.kpis, pc = (x) => x == null ? '–' : decFr(x) + ' %', cl = (x) => x == null ? '' : x >= 0 ? 'vert' : 'rouge';
+  if (!k.nb) { z.innerHTML = `<div class="vide">${tt('Aucune vente sur cette période.', 'No sales in this period.')}<br><small>${tt('Tes ventes eBay arrivent toutes seules, toutes les heures.', 'Your eBay sales come in automatically, every hour.')}</small></div>`; return; }
+  const mx = Math.max(1, ...r.par_mois.map(m => Math.max(m.revenus, Math.abs(m.profit))));
+  const grp = (titre, l) => l.length ? `<div class="bloc vt-grp"><div class="bloc-t">${titre}</div>${l.map(g => `<div class="vt-l"><span class="vt-n">${esc(g.nom === 'Gradée' ? tt('Gradées', 'Graded') : g.nom === 'Raw' ? 'Raw' : g.nom === 'Autre' ? tt('Autre', 'Other') : (SPORTS[g.nom] ? nomSport(g.nom) : g.nom))}<small>${g.nb} ${tt(g.nb > 1 ? 'ventes' : 'vente', g.nb > 1 ? 'sales' : 'sale')} · ${argentCourt(g.revenus)}</small></span>
+      <span class="vt-p ${g.avec_cout ? cl(g.profit) : ''}">${g.avec_cout ? argentCourt(g.profit) : '–'}<small>${g.marge != null ? tt('marge ', 'margin ') + pc(g.marge) : tt('sans coût', 'no cost')}</small></span></div>`).join('')}</div>` : '';
+  const ligne = (v) => `<button class="vt-v" data-cid="${v.id}">${v.photo ? `<img src="${esc(photoNet(v.photo, 160))}" alt="" loading="lazy">` : '<i class="vt-ph"></i>'}
+      <span class="vt-t"><b>${esc(v.joueur || titreCourt(v.titre) || '')}</b><small>${esc([v.annee, v.set_nom, v.parallele, v.grade].filter(Boolean).join(' · ') || titreCourt(v.titre) || '')}</small>
+        <small>${esc(dateCourte(v.vendu_le))}${v.jours != null ? ' · ' + tt(`vendue en ${v.jours} j`, `sold in ${v.jours} d`) : ''}</small></span>
+      <span class="vt-p ${cl(v.profit)}">${argent(v.prix_vendu, 0)}<small>${v.sans_cout ? `<em class="vt-sc">${tt('coût ?', 'cost?')}</em>` : (v.profit >= 0 ? '+' : '−') + argent(Math.abs(v.profit), 0)}</small></span></button>`;
+  const filtres = [['toutes', tt('Toutes', 'All'), r.liste], ['sans', tt('Sans coût', 'No cost') + (k.sans_cout ? ' · ' + k.sans_cout : ''), r.liste.filter(v => v.sans_cout)],
+    ['pertes', tt('Pertes', 'Losses') + (k.pertes ? ' · ' + k.pertes : ''), r.liste.filter(v => !v.sans_cout && v.profit < 0)]];
+  const peindreListe = () => { const f = filtres.find(x => x[0] === S.filtreV) || filtres[0];
+    $('#vt-l').innerHTML = f[2].length ? f[2].map(ligne).join('') : `<div class="vide">${tt('Rien ici.', 'Nothing here.')}</div>`;
+    $$('#vt-f [data-f]').forEach(b => b.classList.toggle('on', b.dataset.f === f[0]));
+    $$('#vt-l [data-cid]').forEach(b => b.onclick = async () => { const c = await API.carte_lire(+b.dataset.cid).catch(() => null); if (c && c.id) feuilleCarte(c); }); };
+  z.innerHTML = `<div class="hero-l" style="margin-bottom:12px">
+      <div class="kpi"><span class="lib">${tt('Revenus', 'Revenue')}</span><span class="v">${argentCourt(k.revenus)}</span><span class="s">${k.nb} ${tt(k.nb > 1 ? 'ventes' : 'vente', k.nb > 1 ? 'sales' : 'sale')}</span></div>
+      <div class="kpi ${cl(k.profit)}"><span class="lib">${tt('Profit', 'Profit')}</span><span class="v">${argentCourt(k.profit)}</span><span class="s">${tt('après frais et coût', 'after fees and cost')}</span></div>
+      <div class="kpi"><span class="lib">${tt('Marge', 'Margin')}</span><span class="v">${pc(k.marge)}</span><span class="s">${tt('retour sur coût ', 'return on cost ')}${pc(k.roi)}</span></div>
+      <div class="kpi"><span class="lib">${tt('Par vente', 'Per sale')}</span><span class="v">${k.profit_moyen != null ? argentCourt(k.profit_moyen) : '–'}</span><span class="s">${k.jours_median != null ? tt(`vendue en ${k.jours_median} j (médiane)`, `sold in ${k.jours_median} d (median)`) : tt('profit moyen', 'average profit')}</span></div></div>
+    ${k.sans_cout ? `<button class="bandeau info vt-band" id="vt-sc">${tt(`<b>${k.sans_cout} ${k.sans_cout > 1 ? 'ventes' : 'vente'} sans coût</b> (${argentCourt(k.revenus_sans_cout)}) : leur profit n’est pas compté. Touche une vente pour la relier à ton achat eBay.`, `<b>${k.sans_cout} ${k.sans_cout > 1 ? 'sales' : 'sale'} with no cost</b> (${argentCourt(k.revenus_sans_cout)}): their profit isn’t counted. Tap a sale to link it to your eBay purchase.`)}</button>` : ''}
+    <div class="pastilles defile" style="margin:4px 0 12px">${tag(tt('Frais eBay ', 'eBay fees ') + argentCourt(k.frais))}${tag(tt('Coût des cartes ', 'Cards cost ') + argentCourt(k.cout))}${k.pertes ? tag(k.pertes + ' ' + tt(k.pertes > 1 ? 'pertes' : 'perte', k.pertes > 1 ? 'losses' : 'loss'), 'rouge') : ''}</div>
+    ${r.par_mois.length > 1 ? `<div class="bloc"><div class="bloc-t">${tt('12 derniers mois', 'Last 12 months')} <span class="sous">${tt('revenus · profit', 'revenue · profit')}</span></div>
+      <div class="vt-mois">${r.par_mois.map(m => `<div class="vt-m" title="${esc(m.mois)}"><div class="vt-b"><i class="r" style="height:${(100 * m.revenus / mx).toFixed(1)}%"></i><i class="p ${m.profit < 0 ? 'neg' : ''}" style="height:${(100 * Math.abs(m.profit) / mx).toFixed(1)}%"></i></div><small>${esc(nomMois(m.mois).slice(0, 3))}</small></div>`).join('')}</div></div>` : ''}
+    ${grp(tt('Gradées ou raw', 'Graded or raw'), r.par_type)}
+    ${r.par_sport.length > 1 ? grp(tt('Par sport', 'By sport'), r.par_sport) : ''}
+    ${grp(tt('Joueurs les plus payants', 'Most profitable players'), r.par_joueur.filter(g => g.avec_cout).slice(0, 6))}
+    ${r.par_canal.length > 1 ? grp(tt('Par canal', 'By channel'), r.par_canal) : ''}
+    ${r.meilleures.length ? `<div class="bloc"><div class="bloc-t">${tt('Meilleures ventes', 'Best sales')}</div><div class="vt-liste">${r.meilleures.map(ligne).join('')}</div></div>` : ''}
+    <div class="bloc"><div class="bloc-t">${tt('Toutes les ventes', 'All sales')} ${r.total_liste > r.liste.length ? `<span class="sous">${r.liste.length} / ${r.total_liste}</span>` : ''}</div>
+      <div class="chips" id="vt-f">${filtres.map(([f, t]) => `<button class="chip" data-f="${f}">${t}</button>`).join('')}</div>
+      <div class="vt-liste" id="vt-l"></div></div>
+    <a class="acc-pil" href="#bilan"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.news}</svg></span><span class="ap-t">${tt('Bilan du mois (dépenses, taxes, CSV)', 'Monthly report (expenses, taxes, CSV)')}</span><i aria-hidden="true">›</i></a>`;
+  $$('#vt-f [data-f]').forEach(b => b.onclick = () => { S.filtreV = b.dataset.f; peindreListe(); });
+  const sc = $('#vt-sc'); if (sc) sc.onclick = () => { S.filtreV = 'sans'; peindreListe(); $('#vt-l').scrollIntoView({behavior: 'smooth', block: 'start'}); };
+  $$('.vt-liste [data-cid]').forEach(b => b.onclick = async () => { const c = await API.carte_lire(+b.dataset.cid).catch(() => null); if (c && c.id) feuilleCarte(c); });
+  peindreListe();
 }
 function feuilleDepense(){
   ouvrirFeuille(`<h3>Dépense</h3><div class="grille-champs">

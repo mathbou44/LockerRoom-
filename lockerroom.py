@@ -5132,9 +5132,9 @@ class Api:
                 pass
         c = self._db()
         try:
-            c.execute(self._SQL_ACHATS)
-            lie = _dicts(c.execute("SELECT item_id, n, titre, cout, date FROM achats_ebay WHERE carte_id=?", (cid,)))
-            libres = _dicts(c.execute("SELECT item_id, n, titre, cout, date FROM achats_ebay WHERE carte_id IS NULL ORDER BY date DESC"))
+            self._achats_table(c)
+            lie = _dicts(c.execute("SELECT item_id, n, titre, cout, date, photo FROM achats_ebay WHERE carte_id=?", (cid,)))
+            libres = _dicts(c.execute("SELECT item_id, n, titre, cout, date, photo FROM achats_ebay WHERE carte_id IS NULL ORDER BY date DESC"))
             nb = c.execute("SELECT COUNT(*) FROM achats_ebay").fetchone()[0]
         finally:
             c.close()
@@ -5143,8 +5143,13 @@ class Api:
         fam = (cartes_match.norm(k[2] or "") or (cib or {}).get("joueur") or "").split()[-1:] 
         for a in libres:                                   # le meme joueur d'abord, puis la meme carte, puis le titre
             ta = cartes_match.norm(a["titre"] or "")
-            a["score"] = round((0.5 if fam and re.search(r"\b" + re.escape(fam[0]) + r"\b", ta) else 0)
-                               + (0.3 if cib and not cartes_match.raisons_refus(cib, a["titre"] or "") else 0)
+            joueur_ = bool(fam and re.search(r"\b" + re.escape(fam[0]) + r"\b", ta))
+            # 5 nov 2026 (Mathieu : « l'app doit reconnaitre si la carte a deja ete achetee et demander de la matcher ») :
+            # la MEME carte (meme joueur et aucune raison de refus) : l'app pose la question elle-meme
+            a["meme_carte"] = bool(joueur_ and cib and not cartes_match.raisons_refus(cib, a["titre"] or ""))
+            a["photo"] = a["photo"] if a.get("photo") and a["photo"] != "-" else None
+            a["score"] = round((0.5 if joueur_ else 0)
+                               + (0.3 if a["meme_carte"] else 0)
                                + 0.2 * difflib.SequenceMatcher(None, t, ta).ratio(), 3)
         libres.sort(key=lambda a: -a["score"])
         return {"ok": True, "lie": lie[0] if lie else None, "suggestions": libres[:30], "nb_achats": nb,
@@ -5292,7 +5297,7 @@ class Api:
         c = self._db()
         try:
             self._achats_table(c)
-            libres = _dicts(c.execute("SELECT item_id, n, titre, cout, date FROM achats_ebay WHERE carte_id IS NULL ORDER BY date DESC LIMIT 400"))
+            libres = _dicts(c.execute("SELECT item_id, n, titre, cout, date, photo FROM achats_ebay WHERE carte_id IS NULL ORDER BY date DESC LIMIT 400"))
         finally:
             c.close()
         cib = cartes_match.cible_titre(t)
@@ -5304,6 +5309,7 @@ class Api:
                 continue                                 # pas le meme joueur : jamais propose
             meme = not cartes_match.raisons_refus(cib, a["titre"] or "")
             a["meme_carte"] = meme
+            a["photo"] = a["photo"] if a.get("photo") and a["photo"] != "-" else None
             a["score"] = round((0.6 if meme else 0) + 0.4 * difflib.SequenceMatcher(None, cartes_match.norm(t), ta).ratio(), 3)
             out.append(a)
         out.sort(key=lambda a: -a["score"])
@@ -5490,6 +5496,88 @@ class Api:
         out["revenus"] = round(sum(v["revenus"] for v in out["canaux"].values()), 2)
         out["profit"] = round(sum(v["profit"] for v in out["canaux"].values()) - out["depenses"], 2)
         return out
+
+    def ventes_analyse(self, periode="90"):
+        """5 nov 2026 (Mathieu : « une section pour mes solds et faire une analyse profit ») : les cartes vendues sur une
+        periode (« 30 », « 90 », « 365 », « tout » ou « AAAA-MM ») : revenus, profit, marge, retour sur le cout, delai de
+        vente, profit par mois (12 mois), par type (gradee / raw), sport, canal, joueur ; meilleures ventes et pertes.
+        Le profit ne compte que les ventes dont le cout est connu (les autres sont comptees a part : a relier)."""
+        p = str(periode or "90").strip()
+        if re.fullmatch(r"\d{4}-\d{2}", p):
+            cond, args = "substr(vendu_le,1,7)=?", [p]
+        elif p == "tout":
+            cond, args = "1=1", []
+        else:
+            j = int(p) if p.isdigit() and 0 < int(p) <= 3650 else 90
+            p = str(j)
+            cond, args = "date(substr(vendu_le,1,10)) >= date('now', ?)", [f"-{j} days"]
+        c = self._db()
+        try:
+            self._achats_table(c)
+            cols = {r[1] for r in c.execute("PRAGMA table_info(cartes)")}
+            sp = "sport" if "sport" in cols else "NULL AS sport"
+            sel = (f"SELECT id, titre, joueur, annee, set_nom, parallele, tirage, auto, grade, {sp}, cout, prix_vendu, frais, profit, canal, "
+                   "cree_le, vendu_le, photo, (SELECT MIN(date) FROM achats_ebay a WHERE a.carte_id=cartes.id) AS achete_le "
+                   "FROM cartes WHERE statut='Vendue' AND vendu_le IS NOT NULL")
+            l = _dicts(c.execute(sel + f" AND {cond} ORDER BY vendu_le DESC", args))
+            douze = _dicts(c.execute("SELECT substr(vendu_le,1,7) AS m, COUNT(*) AS nb, SUM(prix_vendu) AS rev, "
+                                     "SUM(CASE WHEN cout IS NOT NULL THEN profit END) AS prof FROM cartes WHERE statut='Vendue' "
+                                     "AND date(substr(vendu_le,1,10)) >= date('now','start of month','-11 months') GROUP BY m ORDER BY m"))
+        finally:
+            c.close()
+
+        def jour(x):
+            try:
+                return datetime.fromisoformat(str(x)[:10])
+            except (TypeError, ValueError):
+                return None
+        for v in l:
+            v["sans_cout"] = v.get("cout") is None
+            if v["sans_cout"]:
+                v["profit"] = None
+            d0, d1 = jour(v.get("achete_le") or v.get("cree_le")), jour(v.get("vendu_le"))
+            v["jours"] = (d1 - d0).days if d0 and d1 and d1 >= d0 else None
+
+        def resume(g):
+            ac = [v for v in g if not v["sans_cout"]]
+            rev = round(sum(_float(v.get("prix_vendu")) or 0 for v in g), 2)
+            rev_c = sum(_float(v.get("prix_vendu")) or 0 for v in ac)
+            cout = sum(_float(v.get("cout")) or 0 for v in ac)
+            prof = round(sum(_float(v.get("profit")) or 0 for v in ac), 2)
+            return {"nb": len(g), "revenus": rev, "profit": prof, "avec_cout": len(ac),
+                    "marge": round(100 * prof / rev_c, 1) if rev_c > 0 else None,
+                    "roi": round(100 * prof / cout, 1) if cout > 0 else None}
+
+        def par(cle, n=8):
+            grp = {}
+            for v in l:
+                grp.setdefault(cle(v) or "Autre", []).append(v)
+            out = [{"nom": k, **resume(g)} for k, g in grp.items()]
+            out.sort(key=lambda x: (-(x["profit"] or 0), -x["revenus"]))
+            return out[:n]
+        k = resume(l)
+        ac = [v for v in l if not v["sans_cout"]]
+        js = sorted(v["jours"] for v in l if v["jours"] is not None)
+        k.update(frais=round(sum(_float(v.get("frais")) or 0 for v in l), 2),
+                 cout=round(sum(_float(v.get("cout")) or 0 for v in ac), 2),
+                 profit_moyen=round(k["profit"] / len(ac), 2) if ac else None,
+                 jours_median=js[len(js) // 2] if js else None,
+                 sans_cout=sum(1 for v in l if v["sans_cout"]),
+                 revenus_sans_cout=round(sum(_float(v.get("prix_vendu")) or 0 for v in l if v["sans_cout"]), 2),
+                 pertes=sum(1 for v in ac if (_float(v.get("profit")) or 0) < 0))
+        champs = ("id", "titre", "joueur", "annee", "set_nom", "parallele", "grade", "sport", "cout", "prix_vendu", "frais", "profit",
+                  "canal", "vendu_le", "photo", "jours", "sans_cout")
+        court = lambda v: {x: v.get(x) for x in champs}
+        tri = sorted(ac, key=lambda v: -(_float(v.get("profit")) or 0))
+        return {"ok": True, "periode": p, "kpis": k,
+                "par_mois": [{"mois": m["m"], "nb": m["nb"], "revenus": round(m["rev"] or 0, 2), "profit": round(m["prof"] or 0, 2)} for m in douze],
+                "par_type": par(lambda v: "Gradée" if str(v.get("grade") or "").strip() else "Raw", 2),
+                "par_sport": par(lambda v: v.get("sport")),
+                "par_canal": par(lambda v: v.get("canal")),
+                "par_joueur": [x for x in par(lambda v: v.get("joueur"), 40) if x["nom"] != "Autre"][:8],
+                "meilleures": [court(v) for v in tri[:5] if (_float(v.get("profit")) or 0) > 0],
+                "pertes": [court(v) for v in reversed(tri[-5:]) if (_float(v.get("profit")) or 0) < 0],
+                "liste": [court(v) for v in l[:500]], "total_liste": len(l)}
 
     def bilan_csv(self, mois=None):
         mois = mois or datetime.now().strftime("%Y-%m")
