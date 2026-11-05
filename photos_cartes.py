@@ -91,6 +91,45 @@ def sauver(photos):
     return out
 
 
+def alleger(fichiers, cote=2400, qualite=85, min_octets=1_300_000):
+    """5 nov 2026 (Mathieu : « une fois la photo evaluee, on peut reduire la qualite pour prendre moins de place ») : une
+    photo deja examinee (les zooms en pleine resolution ont ete faits) est gardee en 2400 px, JPEG 85 (~0,6-1 Mo au lieu
+    de 5-6 Mo). Meme nom de fichier (les references restent bonnes) ; les contours 0..1000 ne changent pas (meme cadrage).
+    fichiers : les CHEMINS (resolus par l'appelant : dossier() depend du compte courant). -> octets gagnes"""
+    try:
+        from PIL import Image
+    except ImportError:
+        return 0
+    gagne = 0
+    for f in fichiers or []:
+        try:
+            if not f or not os.path.isfile(f) or os.path.getsize(f) < min_octets:
+                continue
+            avant = os.path.getsize(f)
+            with Image.open(f) as im:
+                o = (im.getexif() or {}).get(0x0112, 1)
+                if o not in (None, 1):          # une orientation EXIF : on n'y touche pas (les contours seraient tournes)
+                    continue
+                im = im.convert("RGB")
+                k = min(1.0, cote / max(im.size))
+                if k < 1.0:
+                    im = im.resize((max(1, round(im.size[0] * k)), max(1, round(im.size[1] * k))), Image.LANCZOS)
+                tmp = f + ".allege"
+                im.save(tmp, "JPEG", quality=qualite, optimize=True)
+            if os.path.getsize(tmp) < avant:
+                os.replace(tmp, f)
+                gagne += avant - os.path.getsize(f)
+            else:
+                os.remove(tmp)
+        except Exception as e:
+            print("Photo allegee : " + repr(e), flush=True)
+            try:
+                os.remove(f + ".allege")
+            except OSError:
+                pass
+    return gagne
+
+
 def supprimer(refs):
     for r in refs or []:
         f = chemin(r)

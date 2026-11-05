@@ -2706,6 +2706,14 @@ class Api:
                 photos_cartes.supprimer(anciens)
             except Exception:
                 pass
+        # 5 nov 2026 (Mathieu : « une fois la photo evaluee, reduire la qualite pour prendre moins de place ») : l'examen est
+        # fait (zooms pleine resolution envoyes a l'IA) : les photos sont allegees en arriere-plan (2400 px ; gros plans 1800)
+        try:
+            f_ = [photos_cartes.chemin(r) for r in list(refs) + list(ras_ref)]
+            g_ = [photos_cartes.chemin(g["ref"]) for g in gps]
+            threading.Thread(target=lambda: (photos_cartes.alleger(f_), photos_cartes.alleger(g_, cote=1800)), daemon=True).start()
+        except Exception as x:
+            print("Allegement : " + repr(x), flush=True)
         return {"ok": True, **res, "le": le, "precision": precision}
 
     CENTRAGE_ALGO = 4                 # 3 nov 2026 : + les paires en miroir (mesures.py) et les mesures de l'app
