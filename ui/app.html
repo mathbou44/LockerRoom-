@@ -312,11 +312,19 @@ details.reglage summary::-webkit-details-marker{display:none}
 .adm-k.rouge b{color:var(--rouge)}
 .adm-al{margin:6px 0; padding:8px 12px; border-radius:12px; background:color-mix(in srgb, var(--rouge) 14%, transparent); color:var(--rouge); font-size:13.5px; font-weight:600}
 .adm-det{margin-top:8px} .adm-det summary{cursor:pointer; color:var(--acc); font-size:14px; font-weight:600} .adm-det > div{margin-top:8px; font-size:13px; line-height:1.5; color:var(--doux)}
+.fa-note{display:flex; flex-direction:column; gap:4px; margin:6px 0 2px; font-size:13px; color:var(--doux)} .fa-note span{display:flex; align-items:center; gap:6px} .fa-note svg{width:15px; height:15px; flex:none}
 .q-ach{background:var(--carte); border:1px solid color-mix(in srgb, var(--acc) 45%, var(--ligne)); border-radius:16px; padding:12px 14px; margin:0 0 12px; display:flex; flex-direction:column; gap:10px}
 .q-ach.ok{border-color:color-mix(in srgb, var(--vert) 45%, var(--ligne))} .q-ach-t{display:flex; align-items:center; gap:8px; font-size:15.5px} .q-ach-t svg{width:20px; height:20px}
 .q-ach-a{display:flex; gap:10px; align-items:center} .q-ach-a img{width:44px; height:60px; object-fit:cover; border-radius:6px; flex:none} .q-ach-a span{display:flex; flex-direction:column; gap:2px; min-width:0}
 .q-ach-a small{color:var(--doux); font-size:13px} .q-ach-b{display:flex; gap:8px; align-items:center; flex-wrap:wrap} .q-ach .vert{color:var(--vert)} .q-ach .rouge{color:var(--rouge)}
 .cout-c{font-size:13px; color:var(--doux); margin-top:4px; line-height:1.35} .cout-c b{color:var(--texte, #fff); font-weight:700} .cout-c b.vert{color:var(--vert)} .cout-c b.rouge{color:var(--rouge)} .cout-c .or{color:var(--or); font-weight:600} .cout-c small{font-size:12px}
+.ind-b .bloc-t{display:flex; align-items:center; justify-content:space-between} .ind-v{display:flex; gap:18px; margin:8px 0 6px} .ind-v span{display:flex; flex-direction:column}
+.ind-v small{font-size:12px; color:var(--doux)} .ind-v b{font:700 22px var(--f-cond)} .ind-v b.vert,.ind-hv.vert{color:var(--vert)} .ind-v b.rouge,.ind-hv.rouge{color:var(--rouge)}
+.ci{width:100%; height:auto; display:block} .ci-l{fill:none; stroke-width:2.5; vector-effect:non-scaling-stroke} .ci.vert .ci-l{stroke:var(--vert)} .ci.rouge .ci-l{stroke:var(--rouge)}
+.ci-b{stroke:var(--ligne); stroke-dasharray:4 4; vector-effect:non-scaling-stroke} .ind-n{margin-top:4px; font-size:12px}
+.ind-h{display:flex; align-items:center; gap:12px; width:100%; padding:12px 14px; margin:0 0 12px; border-radius:16px; background:var(--carte); border:1px solid var(--ligne); color:inherit; text-align:left}
+.ind-ht{display:flex; flex-direction:column; gap:2px; flex:none} .ind-ht small{font-size:12px; color:var(--doux)} .ind-h .ci{flex:1; min-width:0; height:36px} .ind-hv{font:700 20px var(--f-cond); flex:none} .ind-h > i{color:var(--doux); font-style:normal}
+.ind-s .ci{width:90px; height:30px; flex:none} .ind-s .vt-n{flex:1; min-width:0}
 .vt-grp .vt-l{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:9px 0; border-top:1px solid var(--ligne)} .vt-grp .vt-l:first-of-type{border-top:0}
 .vt-n,.vt-p{display:flex; flex-direction:column; gap:2px; font-weight:600} .vt-n small,.vt-p small,.vt-t small{font-size:12.5px; color:var(--doux); font-weight:500}
 .vt-p{text-align:right; font:700 18px var(--f-cond); white-space:nowrap} .vt-p.vert{color:var(--vert)} .vt-p.rouge{color:var(--rouge)} .vt-p small{font-family:inherit}
@@ -4813,9 +4821,11 @@ function rendreLot(){
     <div class="sous">${LOT.fini ? (rev ? tt(`${rev} à reprendre : elles ne respectent pas nos règles photo (rien n’a été gardé pour elles).`, `${rev} to redo: they don’t meet our photo rules (nothing was saved for them).`) : (C ? tt('Tout est dans ta collection. Rien n’est allé sur eBay.', 'Everything is in your collection. Nothing went to eBay.') : tt('Tout est dans ton inventaire, prêt à publier.', 'Everything is in your inventory, ready to publish.')))
       : tt('Garde l’app ouverte pendant le lot. Tu peux regarder ailleurs dans l’app : le lot continue.', 'Keep the app open during the batch. You can look around the app: the batch keeps going.')}</div>
     <div class="liste lot-l">${l.map(ligne).join('')}</div>
-    ${LOT.fini ? `<a class="btn" href="#inventaire" id="lot-inv">${C ? tt('Voir ma collection', 'See my collection') : tt('Voir mon inventaire', 'See my inventory')}</a>
+    ${LOT.fini && !C && prets ? `<a class="btn" href="#vendre/programmer" id="lot-pg">${icH()}${tt(`Programmer ces ${prets} cartes sur eBay`, `Schedule these ${prets} cards on eBay`)}</a>` : ''}
+    ${LOT.fini ? `<a class="btn ${!C && prets ? 'ghost' : ''}" href="#inventaire" id="lot-inv">${C ? tt('Voir ma collection', 'See my collection') : tt('Voir mon inventaire', 'See my inventory')}</a>
       <a class="btn ghost" href="#vendre/${C ? 'collection-lot' : 'lot'}" id="lot-encore">${tt('Faire un autre lot', 'Do another batch')}</a>` : ''}</section>`;
   const bi = $('#lot-inv'); if (bi) bi.onclick = () => { S.filtreInv = C ? 'collection' : 'tous'; };
+  const bp = $('#lot-pg'); if (bp) bp.onclick = () => { S.pgPre = l.filter(c => (c.etat === 'ok' || c.etat === 'verifier') && c.id).map(c => +c.id); for (const k in PG) delete PG[k]; };
   const be = $('#lot-encore'); if (be) be.onclick = (e) => { e.preventDefault(); vueLot(LOT.but); };
   $$('[data-lot-r]').forEach(b => b.onclick = () => corrigerLot(LOT.l[+b.dataset.lotR]));
 }
@@ -5198,7 +5208,8 @@ async function vueProgrammer(){
     const [c, p] = await Promise.all([API.serie_candidates().catch(e => ({ok:false, erreur:e.message})), API.ebay_politiques().catch(() => ({ok:false}))]);
     if (!c.ok) { V().innerHTML = `<section class="ecran vendre pg"><div class="vide">${esc(c.erreur || 'Erreur')}</div></section>`; return; }
     Object.assign(PG, {etape: 1, vu: 1, cartes: c.cartes, choisis: new Set(c.cartes.filter(x => !x.manque.length).slice(0, PG_MAX).map(x => x.id)),
-      mod: {...c.modele}, pol: p && p.ok ? p : null, debut: soir19h(), ecart: 24});
+      mod: {...c.modele}, pol: p && p.ok ? p : null, debut: soir19h(), ecart: 0});
+    if (S.pgPre && S.pgPre.length) { const pre = new Set(S.pgPre); PG.choisis = new Set(c.cartes.filter(x => pre.has(x.id) && !x.manque.length).slice(0, PG_MAX).map(x => x.id)); S.pgPre = null; }
     if (PG.pol && !PG.mod.politique_exp && PG.pol.expedition[0]) PG.mod.politique_exp = PG.pol.expedition[0].id;
     if (PG.pol && !PG.mod.politique_pai && PG.pol.paiement[0]) PG.mod.politique_pai = PG.pol.paiement[0].id;
     if (PG.pol && !PG.mod.politique_ret && PG.pol.retours[0] && PG.mod.politique_exp) PG.mod.politique_ret = PG.pol.retours[0].id;
@@ -5206,7 +5217,29 @@ async function vueProgrammer(){
   rendrePG();
 }
 function pgListe(){ return PG.cartes.filter(x => PG.choisis.has(x.id)); }
-function pgDates(){ const t0 = new Date(PG.debut).getTime(); return pgListe().map((x, i) => new Date(t0 + i * PG.ecart * 3600000)); }
+// 5 nov 2026 (Mathieu : « une journee entre chaque carte ; au maximum de jours d'eBay, on recommence au debut, ca fera deux
+// une journee ») : « Etaler » = une carte par jour a l'heure choisie, sur tous les jours que permet eBay (21) ; s'il en
+// reste, un 2e tour repart du 2e jour, quelques heures plus tot (puis un 3e...), entre 10 h et l'heure choisie. Les
+// annonces restent ainsi le plus longtemps possible « nouvelles » dans les recherches, sans deux a la meme heure.
+const PG_MAX_J = 21;
+function planEtale(t0, n, maint = Date.now()){
+  const H = 3600000, lim = maint + PG_MAX_J * 24 * H - 10 * 60000, min = maint + 15 * 60000;
+  const D = Math.max(1, Math.floor((lim - t0) / (24 * H)) + 1);
+  if (n <= D) return Array.from({length: n}, (_, i) => new Date(t0 + i * 24 * H));
+  const h0 = new Date(t0).getHours() + new Date(t0).getMinutes() / 60, span = Math.max(3, Math.min(9, h0 - 10));
+  let R = 2; while (D + (R - 1) * D < n && R < 12) R++;
+  const out = [];
+  for (let k = 0; k < R && out.length < n; k++) {
+    const off = k ? Math.round(k * span / (R - 1) * 4) / 4 : 0;          // au quart d'heure
+    for (let d = k ? 1 : 0; d < D + (k ? 1 : 0) && out.length < n; d++) {
+      const t = t0 + ((d % D) * 24 - off) * H;
+      if (t >= min && t <= lim) out.push(new Date(t));
+    }
+  }
+  while (out.length < n) out.push(new Date(Math.min(lim, t0 + out.length * H)));   // (jamais en pratique : 60 cartes au plus)
+  return out;
+}
+function pgDates(){ const t0 = new Date(PG.debut).getTime(); return PG.ecart === 0 ? planEtale(t0, pgListe().length) : pgListe().map((x, i) => new Date(t0 + i * PG.ecart * 3600000)); }
 function rendrePG(){
   const n = PG.choisis.size, e = PG.etape, L = pgListe(), o = PG.mod, pol = PG.pol;
   const pill = (k) => `<button class="pg-pt ${k === e ? 'on' : ''} ${k < e ? 'fait' : ''}" data-et="${k}" ${k > PG.vu ? 'disabled' : ''}><i>${k < e ? '✓' : k}</i><span>${PG_ETAPES()[k - 1]}</span></button>`;
@@ -5243,13 +5276,16 @@ function rendrePG(){
     <div class="bloc-v"><div class="bloc-t">${tt('Retours', 'Returns')}</div>
       ${pol && pol.retours.length && o.politique_exp ? sel('pg-pret', pol.retours, o.politique_ret, tt('Pas de retours (réglage de l’app)', 'No returns (app setting)'))
         : segV('pg-ret', [['non', tt('Pas de retours', 'No returns')], ['30_acheteur', tt('30 j · acheteur paie', '30 d · buyer pays')]], o.retours)}</div>`;
-  if (e === 5) { const D = pgDates(), fin = D[D.length - 1], trop = fin && fin.getTime() > Date.now() + 21 * 86400000;
+  if (e === 5) { const D = pgDates(), fin = new Date(Math.max(...D.map(d => d.getTime()))), trop = D.length && fin.getTime() > Date.now() + 21 * 86400000;
     corps = `<div class="pg-q">${tt('Calendrier', 'Schedule')}</div><div class="pg-sous">${tt('Une annonce après l’autre, pour ne pas toutes les mettre en même temps.', 'One listing after the other, so they don’t all go up at once.')}</div>
     <div class="bloc-v"><label class="bloc-t" for="pg-d">${tt('Première annonce', 'First listing')}</label><input class="champ" type="datetime-local" id="pg-d" value="${esc(PG.debut)}" min="${esc(heureLocaleInput(15))}" max="${esc(heureLocaleInput(21 * 1440))}"></div>
-    <div class="bloc-v"><div class="bloc-t">${tt('Puis une toutes les', 'Then one every')}</div>${segV('pg-ec', [[24, tt('24 h', '24 h'), tt('1 par jour', '1 a day')], [12, '12 h'], [6, '6 h'], [2, '2 h']], PG.ecart)}</div>
-    <div class="pg-plan">${L.slice(0, 4).map((x, i) => `<div><span>${esc(dateProg(D[i]))}</span><b>${esc(titreCourt(x.titre))}</b></div>`).join('')}
-      ${L.length > 5 ? `<div class="pg-etc">… ${L.length - 5} ${tt('autres', 'more')} …</div>` : ''}
-      ${L.length > 4 ? `<div><span>${esc(dateProg(fin))}</span><b>${esc(titreCourt(L[L.length - 1].titre))}</b></div>` : ''}</div>
+    <div class="bloc-v"><div class="bloc-t">${tt('Puis une toutes les', 'Then one every')}</div>${segV('pg-ec', [[0, tt('Étaler', 'Spread'), tt('21 jours', '21 days')], [24, tt('24 h', '24 h'), tt('1 par jour', '1 a day')], [12, '12 h'], [6, '6 h'], [2, '2 h']], PG.ecart)}
+      ${PG.ecart === 0 ? (() => { const jours = new Set(D.map(d => d.toDateString())).size, parJ = Math.ceil(L.length / Math.max(1, jours));
+        return `<div class="pg-sous">${tt(`Une carte par jour à ${heureCourte(D[0])}, sur ${jours} jour${jours > 1 ? 's' : ''}`, `One card a day at ${heureCourte(D[0])}, over ${jours} day${jours > 1 ? 's' : ''}`)}${parJ > 1 ? tt(` ; au bout des ${jours} jours, on recommence au 2e jour, un peu plus tôt dans la journée (jusqu’à ${parJ} par jour).`, `; after ${jours} days it starts over from day 2, a bit earlier in the day (up to ${parJ} a day).`) : '.'} ${tt('Tes annonces restent nouvelles le plus longtemps possible.', 'Your listings stay fresh as long as possible.')}</div>`; })() : ''}</div>
+    ${(() => { const P_ = L.map((x, i) => [D[i], x]).sort((a, b) => a[0] - b[0]), der = P_[P_.length - 1];
+      return `<div class="pg-plan">${P_.slice(0, 4).map(([d, x]) => `<div><span>${esc(dateProg(d))}</span><b>${esc(titreCourt(x.titre))}</b></div>`).join('')}
+      ${P_.length > 5 ? `<div class="pg-etc">… ${P_.length - 5} ${tt('autres', 'more')} …</div>` : ''}
+      ${P_.length > 4 ? `<div><span>${esc(dateProg(der[0]))}</span><b>${esc(titreCourt(der[1].titre))}</b></div>` : ''}</div>`; })()}
     ${trop ? `<div class="bandeau">${tt('eBay permet de programmer 21 jours d’avance au plus : choisis un écart plus court ou moins de cartes.', 'eBay allows scheduling 21 days ahead at most: pick a shorter gap or fewer cards.')}</div>` : ''}`; }
   V().innerHTML = `<section class="ecran vendre pg">
     <div class="pg-tete"><a class="retour" href="#inventaire">‹ ${tt('Inventaire', 'Inventory')}</a><div class="titre">${tt('Programmer sur eBay', 'Schedule on eBay')}</div></div>
@@ -5292,13 +5328,14 @@ function brancherPG(){
 async function lancerPG(){
   pgLire();
   const L = pgListe(), D = pgDates();
-  if (D[D.length - 1].getTime() > Date.now() + 21 * 86400000) { toast(tt('Trop loin pour eBay : 21 jours au plus', 'Too far for eBay: 21 days max')); return; }
+  const tMax = Math.max(...D.map(d => d.getTime())), tMin = Math.min(...D.map(d => d.getTime()));
+  if (tMax > Date.now() + 21 * 86400000) { toast(tt('Trop loin pour eBay : 21 jours au plus', 'Too far for eBay: 21 days max')); return; }
   const ok = await confirmer(tt(`Programmer ${L.length} annonce${L.length > 1 ? 's' : ''} ?`, `Schedule ${L.length} listing${L.length > 1 ? 's' : ''}?`),
-    tt(`De ${dateProg(D[0])} à ${dateProg(D[D.length - 1])}. Tu pourras modifier chaque annonce dans l’inventaire.`, `From ${dateProg(D[0])} to ${dateProg(D[D.length - 1])}. You can edit each listing in inventory.`), tt('Programmer', 'Schedule'));
+    tt(`De ${dateProg(new Date(tMin))} à ${dateProg(new Date(tMax))}. Tu pourras modifier chaque annonce dans l’inventaire.`, `From ${dateProg(new Date(tMin))} to ${dateProg(new Date(tMax))}. You can edit each listing in inventory.`), tt('Programmer', 'Schedule'));
   if (!ok) return;
   const g = $('#pg-go'); g.disabled = true; g.textContent = tt('Envoi…', 'Sending…');
   for (const x of L.filter(k => k.modif)) await API.carte_sauver({id: x.id, titre: x.titre, prix_demande: x.prix}).catch(() => {});
-  const r = await API.serie_programmer(L.map(x => x.id), new Date(PG.debut).toISOString(), PG.ecart, PG.mod).catch(e => ({ok:false, erreur:e.message}));
+  const r = await API.serie_programmer(L.map(x => x.id), new Date(PG.debut).toISOString(), PG.ecart || 24, PG.mod, D.map(d => d.toISOString())).catch(e => ({ok:false, erreur:e.message}));
   if (!r.ok) { g.disabled = false; g.textContent = tt('Programmer', 'Schedule'); toast(r.erreur || 'eBay', 7000); return; }
   for (const k in PG) delete PG[k];
   suivrePG();
@@ -6731,7 +6768,8 @@ async function ouvrirAnnonce(base){
         <div class="fa-k fa-g"><span>${tt('Profit', 'Profit')}</span>${gainAff != null ? `<b class="${gainAff > 0 ? '' : 'neg'}">${gainAff > 0 ? '+' : '−'}${argent(Math.abs(gainAff), 0)}</b><small>${encan && maxA != null && d.valeur ? tt('à ta mise max', 'at your max bid') : tt('après frais', 'after fees')}</small>`
           : d.chargement || d.ventes_attente ? `<b><span class="roue"></span></b><small>&nbsp;</small>` : `<b>—</b><small>&nbsp;</small>`}</div>
       </div>
-      ${depasse || budget || suspect ? `<div class="fa-pils">${suspect ? `<span class="capsule or">${tt('Prix très bas : vérifie que c’est la même carte', 'Very low price: check it’s the same card')}</span>` : ''}${depasse ? `<span class="capsule rouge">${esc(vt[1])}</span>` : ''}${depasse && d.deal_retire ? `<span class="capsule">${tt('Retiré de tes deals', 'Removed from your deals')}</span>` : ''}${budget ? `<span class="capsule rouge">${tt('Au-dessus de ton budget', 'Over your budget')}</span>` : ''}</div>` : ''}
+      ${depasse || budget || suspect ? `<div class="fa-pils">${suspect ? `<span class="capsule or">${tt('Prix très bas : vérifie que c’est la même carte', 'Very low price: check it’s the same card')}</span>` : ''}${depasse ? `<span class="capsule rouge">${esc(vt[1])}</span>` : ''}${depasse && d.deal_retire ? `<span class="capsule">${tt('Retiré de tes deals', 'Removed from your deals')}</span>` : ''}${budget ? `<span class="capsule rouge">${S.budget.reste <= 0 ? tt('Budget du mois atteint', 'Monthly budget reached') : tt('Au-dessus de ton budget', 'Over your budget')}</span>` : ''}</div>` : ''}
+      ${(x0 || {}).faute || (encan && (x0 || {}).chance && (x0 || {}).chance.niveau !== 'tous') ? `<div class="fa-note">${(x0 || {}).faute ? `<span>${icN('oeil')}${tt('Nom mal écrit sur eBay', 'Name misspelled on eBay')} (« ${esc((x0 || {}).faute)} ») : ${tt('peu d’acheteurs la trouvent.', 'few buyers find it.')}</span>` : ''}${encan && (x0 || {}).chance && (x0 || {}).chance.niveau !== 'tous' ? `<span>${tt(`Ce genre d’encan finit sous ton pay max environ ${Math.max(1, Math.round((x0 || {}).chance.p * 10))} fois sur 10.`, `This kind of auction ends under your pay max about ${Math.max(1, Math.round((x0 || {}).chance.p * 10))} times out of 10.`)}</span>` : ''}</div>` : ''}
       <div class="fa-ventes">${ventes.length ? `<div class="fa-vt">${d.valeur ? tt('Se vend ', 'Sells for ') + `<b class="fa-med">${argent(d.valeur, 0)}</b>` : tt('Vendues récemment', 'Recently sold')} <small>${d.valeur && d.nb_vendues ? tt(`médiane de ${d.nb_vendues} ventes · glisse ›`, `median of ${d.nb_vendues} sales · swipe ›`) : tt('même carte · glisse ›', 'same card · swipe ›')}</small></div>
         <div class="fv-car fa-car">${ventes.map(k => `<a class="fv" ${k.url ? `href="${esc(urlSure(k.url))}" target="_blank" rel="noopener"` : ''}><div class="fv-ph">${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo, 300))}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
           <b>${argent(k.prix, 0)}</b><small>${k.le ? dateCourte(k.le) : ''}</small></a>`).join('')}</div>`
@@ -8267,6 +8305,51 @@ function expliquerTendances(){
     <ol class="td-meth">${l.map(([t, x], i) => `<li><i>${i + 1}</i><span><b>${t}</b>${x}</span></li>`).join('')}</ol>
     <div class="sous">${tt('Un indice, pas une prédiction ni un conseil financier.', 'A hint, not a prediction or financial advice.')}</div>`);
 }
+// 5 nov 2026 (Mathieu : « comment Card Ladder calcule le trending ; ameliorer notre algo ») : un indice de ventes
+// repetees (indices.py), base 1 000 : la courbe par semaine et ses variations sur 4 semaines, 3 mois et 1 an
+function courbeIndice(pts, h = 110){
+  const P = (pts || []).map(p => [Date.parse(p[0] + 'T12:00'), +p[1]]).filter(p => isFinite(p[0]) && isFinite(p[1]));
+  if (P.length < 3) return '';
+  const W = 600, ys = P.map(p => p[1]), lo = Math.min(...ys, 1000), hi = Math.max(...ys, 1000), e = (hi - lo) || 1, t0 = P[0][0], t1 = P[P.length - 1][0];
+  const X = (t) => 6 + (W - 12) * (t - t0) / Math.max(1, t1 - t0), Y = (v) => 6 + (h - 12) * (1 - (v - lo) / e);
+  const hausse = ys[ys.length - 1] >= ys[0];
+  return `<svg class="ci ${hausse ? 'vert' : 'rouge'}" viewBox="0 0 ${W} ${h}" preserveAspectRatio="none" aria-hidden="true">
+    <line x1="0" x2="${W}" y1="${Y(1000).toFixed(1)}" y2="${Y(1000).toFixed(1)}" class="ci-b"/>
+    <path class="ci-l" d="${P.map((p, i) => (i ? 'L' : 'M') + X(p[0]).toFixed(1) + ',' + Y(p[1]).toFixed(1)).join('')}"/></svg>`;
+}
+const pctIndice = (v) => v == null ? '–' : (v > 0 ? '+' : v < 0 ? '−' : '') + decFr(Math.abs(Math.round(v * 10) / 10)) + ' %';
+function blocIndice(i, titre, sous){
+  if (!i || !(i.points || []).length) return '';
+  const c = (v) => v == null ? '' : v > 0 ? 'vert' : v < 0 ? 'rouge' : '';
+  const v = [[tt('4 sem.', '4 wk'), i.v4], [tt('3 mois', '3 mo'), i.v13], [tt('1 an', '1 yr'), i.v52]].filter(x => x[1] != null);
+  return `<div class="bloc ind-b"><div class="bloc-t">${titre}<button class="aide-q" data-ind-aide aria-label="${esc(tt('Comment on calcule', 'How it’s calculated'))}">?</button></div>
+    ${sous ? `<div class="sous">${sous}</div>` : ''}
+    <div class="ind-v">${v.map(([k, x]) => `<span><small>${k}</small><b class="${c(x)}">${pctIndice(x)}</b></span>`).join('') || `<span><small>${tt('depuis le début', 'since start')}</small><b>${pctIndice(i.points[i.points.length - 1][1] / 10 - 100)}</b></span>`}</div>
+    ${courbeIndice(i.points)}
+    <div class="sous ind-n">${tt(`${i.n_paires} paires de ventes de la même carte · base 1 000 au ${dateCourte(i.points[0][0])}`, `${i.n_paires} pairs of sales of the same card · base 1,000 on ${dateCourte(i.points[0][0])}`)}</div></div>`;
+}
+function expliquerIndice(){
+  const l = [
+    [tt('La même carte, d’une vente à l’autre', 'The same card, sale to sale'), tt('Chaque carte exacte (même set, parallèle, numéro ; raw et gradées à part) est comparée à ELLE-MÊME, d’une semaine où elle s’est vendue à la suivante. C’est la méthode des ventes répétées (Case-Shiller).', 'Each exact card (same set, parallel, number; raw and graded apart) is compared with ITSELF, from one week it sold to the next. This is the repeat-sales method (Case-Shiller).')],
+    [tt('Une vente folle ne fait rien', 'A crazy sale does nothing'), tt('La médiane de la semaine ; un écart plafonné à ×3 ; les cartes de moins de 5 $ ne comptent pas.', 'The week’s median; a move capped at ×3; cards under $5 don’t count.')],
+    [tt('Pas une carte chère qui décide', 'No single pricey card decides'), tt('Chez Card Ladder, une carte chère qui se vend fait bouger tout l’indice. Ici, chaque carte pèse selon son nombre de ventes, pas son prix (la version « argent » du hobby, elle, pèse par le prix).', 'At Card Ladder, a pricey card that sells moves the whole index. Here each card weighs by its number of sales, not its price (the hobby’s “money” version weighs by price).')],
+    [tt('Une courbe lisse', 'A smooth curve'), tt('Toutes les paires sont combinées (moindres carrés), sans dents de scie ; une semaine sans vente est interpolée. Base 1 000.', 'All pairs are combined (least squares), no zigzags; a week without sales is interpolated. Base 1,000.')],
+    [tt('La valeur de tes cartes', 'Your cards’ value'), tt('Une carte sans vente depuis plus de 14 jours : sa dernière valeur suit l’indice du joueur depuis (comme la CL Value), au plus ×2 ou ÷2.', 'A card with no sale for over 14 days: its last value follows the player’s index since then (like CL Value), at most ×2 or ÷2.')]];
+  ouvrirFeuille(`<h3>${tt('L’indice SlabCoach', 'The SlabCoach index')}</h3>
+    <ol class="td-meth">${l.map(([t, x], i) => `<li><i>${i + 1}</i><span><b>${t}</b>${x}</span></li>`).join('')}</ol>
+    <div class="sous">${tt('Mesuré sur les ventes eBay réelles. Un indice, pas une prédiction ni un conseil financier.', 'Measured on real eBay sales. A hint, not a prediction or financial advice.')}</div>`);
+}
+const nomSegment = (s) => s.cle.startsWith('sport:') ? nomSport(s.cle.slice(6)) : (typeof LANGUE !== 'undefined' && LANGUE === 'en' ? s.en : s.fr) || s.cle;
+function feuilleIndices(ind){
+  const h = ind.hobby || {}, seg = (ind.segments || []).slice().sort((a, b) => (b.v4 ?? -999) - (a.v4 ?? -999));
+  ouvrirFeuille(`<h3>${tt('Le hobby, semaine par semaine', 'The hobby, week by week')}</h3>
+    ${blocIndice(h.egal, tt('Toutes les cartes', 'All cards'), tt('La carte « typique » : chaque carte compte selon ses ventes.', 'The “typical” card: each card counts by its sales.'))}
+    ${blocIndice(h.valeur, tt('Ce que fait l’argent', 'Where the money goes'), tt('Pondéré par le prix : les grosses cartes pèsent plus.', 'Price-weighted: big cards weigh more.'))}
+    ${seg.length ? `<div class="bloc vt-grp"><div class="bloc-t">${tt('Par segment', 'By segment')} <span class="sous">${tt('4 semaines', '4 weeks')}</span></div>
+      ${seg.map(x => `<div class="vt-l ind-s"><span class="vt-n">${esc(nomSegment(x))}<small>${x.n_cartes} ${tt('cartes', 'cards')} · ${x.n_paires} ${tt('paires', 'pairs')}</small></span>
+        ${courbeIndice(x.points, 40)}<span class="vt-p ${x.v4 > 0 ? 'vert' : x.v4 < 0 ? 'rouge' : ''}">${pctIndice(x.v4)}<small>${x.v13 != null ? tt('3 mois ', '3 mo ') + pctIndice(x.v13) : ''}</small></span></div>`).join('')}</div>` : ''}`);
+  $$('[data-ind-aide]').forEach(b => b.onclick = expliquerIndice);
+}
 async function vueTendances(){
   // 2 nov 2026 (Mathieu : « juste le joueur ; a cote de Trending une petite ampoule qui explique comment notre trend est
   // analyse ; des techniques prouvees ») : la tendance par joueur (tendance_stats.py), l'ampoule explique la methode
@@ -8301,7 +8384,9 @@ async function vueTendances(){
     const tous = unParJoueur(r[actif] || []).filter(x => (!ere || (x.ere || (x.recrue ? 'recrue' : 'veteran')) === ere)
       && (!sportsT.length || sportsT.includes(x.sport || 'hockey'))), l = tous.slice(0, nVoir);
     const ERES = [['', tt('Tous', 'All')], ['recrue', tt('Recrues', 'Rookies')], ['veteran', tt('Vétérans', 'Veterans')], ['legende', tt('Légendes', 'Legends')]];
+    const ih = r0.indices && r0.indices.hobby && r0.indices.hobby.egal;
     z.innerHTML = `<div class="sous td-sous">${tt('Mesuré sur les ventes eBay réelles. Un indice, pas une prédiction.', 'Measured on real eBay sales. A hint, not a prediction.')}</div>
+      ${ih ? `<button class="ind-h" id="td-ind"><span class="ind-ht"><b>${tt('Indice du hobby', 'Hobby index')}</b><small>${tt('4 semaines', '4 weeks')} · ${ih.n_cartes} ${tt('cartes', 'cards')}</small></span>${courbeIndice(ih.points.slice(-26), 36)}<b class="ind-hv ${ih.v4 > 0 ? 'vert' : ih.v4 < 0 ? 'rouge' : ''}">${pctIndice(ih.v4)}</b><i aria-hidden="true">›</i></button>` : ''}
       ${chauds.length ? `<div class="td-chauds">${chauds.map(x => `<a class="td-chaud c${Math.max(1, Math.min(3, x.chaleur))}" href="#pouls/${encodeURIComponent(x.cle)}"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.feu}</svg></span>${esc(x.nom.charAt(0).toUpperCase() + x.nom.slice(1))}</a>`).join('')}</div>` : ''}
       ${faits.length ? `<div class="td-faits">${faits.map((x, k) => `<button class="td-fait" data-fait="${k}"><b>${esc(x.chiffre)}</b><span>${esc(x.titre)}</span></button>`).join('')}</div>` : ''}
       <div class="seg td-ong">${ONG.map(([k, lib]) => `<button data-to="${k}" class="${k === actif ? 'on' : ''}">${lib}</button>`).join('')}</div>
@@ -8311,6 +8396,7 @@ async function vueTendances(){
       ${tous.length > l.length ? `<button class="pilule td-plus" id="td-plus">${tt(`Voir plus (${tous.length - l.length})`, `See more (${tous.length - l.length})`)}</button>` : ''}
       ${r.nb_ventes ? `<div class="t-legal">${(r.nb_ventes || 0).toLocaleString(LOC())} ${tt('ventes réelles analysées', 'real sales analyzed')}</div>` : ''}`;
     remplirPortraits(z);
+    const ti = $('#td-ind', z); if (ti) ti.onclick = () => { vibrer(); feuilleIndices(r0.indices); };
     $$('[data-to]', z).forEach(b => b.onclick = () => { actif = S.tendOng = b.dataset.to; nVoir = 25; vibrer(); peindre(); });
     $$('[data-ere]', z).forEach(b => b.onclick = () => { ere = S.tendEre = b.dataset.ere; nVoir = 25; vibrer(); peindre(); });
     $$('[data-tsp]', z).forEach(b => b.onclick = () => { const k = b.dataset.tsp;          // plusieurs a la fois ; « Tous » vide le choix
@@ -9186,7 +9272,8 @@ function ficheCollection(c, opts){
     const b_ = $('#fc-val'), s_ = $('#fc-val-s'); if (!b_ || !v || !v.ok) { if (s_) s_.textContent = ''; return; }
     if (v.valeur != null) { b_.textContent = argent(v.valeur, 0); c.valeur = v.valeur; }
     s_.textContent = v.n ? tt('médiane · ', 'median · ') + v.n + ' ' + tt(v.n > 1 ? 'ventes' : 'vente', v.n > 1 ? 'sales' : 'sale')
-      : v.gardee ? tt('dernière valeur connue', 'last known value') : v.erreur ? tt('ventes indisponibles pour l’instant', 'sales unavailable right now') : tt('aucune vente récente', 'no recent sale');
+      : v.gardee ? tt('dernière valeur connue', 'last known value') : v.erreur ? tt('ventes indisponibles pour l’instant', 'sales unavailable right now') : tt('aucune vente récente', 'no recent sale')
+    if (v.ajustee) s_.textContent += ' · ' + tt(`ajustée ${pctIndice(v.ajustee.pct)} selon l’indice ${v.ajustee.source === 'joueur' ? 'du joueur' : v.ajustee.source === 'sport' ? 'du sport' : 'du hobby'} depuis le ${dateCourte(v.ajustee.depuis)}`, `adjusted ${pctIndice(v.ajustee.pct)} by the ${v.ajustee.source === 'joueur' ? 'player' : v.ajustee.source === 'sport' ? 'sport' : 'hobby'} index since ${dateCourte(v.ajustee.depuis)}`);
     const t_ = $(`#i-liste .tuile-inv[data-id="${c.id}"] .p`); if (t_ && v.valeur != null) t_.textContent = argent(v.valeur, 0);
   }).catch(() => { const s_ = $('#fc-val-s'); if (s_) s_.textContent = ''; });
   // 29 oct 2026 (Mathieu : « une alarme quand la carte prend de la valeur ou descend… refresh aux semaines ») : un tap
@@ -11509,6 +11596,7 @@ async function vueJoueur(arg){
     <div class="v-hero">
       <div class="vh-g"><span>${tt('Sa carte vaut', 'His card is worth')}</span><b class="${r.mediane ? 'vert' : ''}">${r.mediane ? argent(r.mediane, 0) : '—'}</b><small>${esc(r.requete)}</small></div>
       <div class="vh-d"><div><span>${tt('30 jours', '30 days')}</span><b class="${t && t.pct > 0 ? 'vert' : t && t.pct < 0 ? 'rouge' : ''}">${t && t.pct != null ? (t.pct > 0 ? '+' : '') + t.pct + ' %' : '—'}</b></div></div></div>
+    ${r.indice_rs ? blocIndice(r.indice_rs, tt('Son indice, semaine par semaine', 'His index, week by week'), tt(`${r.indice_rs.n_cartes} cartes, chacune comparée à elle-même`, `${r.indice_rs.n_cartes} cards, each compared with itself`)) : ''}
     <div class="v-actions">${(r.points || []).length >= 3 ? `<button class="pilule" id="j-histo">${icN('graphe')}${tt('Ses ventes', 'His sales')}</button>` : ''}
       ${r.cartes.length ? `<button class="pilule" id="j-cartes">🃏 ${tt('Ses cartes', 'His cards')} · ${r.cartes.length}</button>` : ''}
       ${r.alertes.length ? `<button class="pilule" id="j-al">${icN('cloche')}${r.alertes.length} ${tt('alerte', 'alert')}${r.alertes.length > 1 ? 's' : ''}</button>` : ''}</div>
@@ -11527,6 +11615,7 @@ async function vueJoueur(arg){
   </section>`;
   for (const [b, bl] of [['j-histo', 'j-b-histo'], ['j-cartes', 'j-b-cartes'], ['j-tout-v', 'j-b-vend'], ['j-al', 'j-b-al']]) { const x = $('#' + b); if (x) x.onclick = () => feuilleBloc($('#' + bl)); }
   $('#j-alerte').onclick = () => feuilleAlerte(r.requete, r.mediane ? Math.round(r.mediane * 0.8) : '');
+  $$('[data-ind-aide]').forEach(b => b.onclick = expliquerIndice);
   remplirPortraits(V());
 }
 // les portraits (LNH si activé) sinon la carte du joueur

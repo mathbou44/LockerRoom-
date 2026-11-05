@@ -110,8 +110,14 @@ class TestVendeursSuivis(unittest.TestCase):
         import lockerroom
         a = lockerroom.Api(os.path.join(tempfile.mkdtemp(), "a.db"))
         lockerroom.ebay_prix_actif = lambda: True
+        # 5 nov 2026 (« il doit toujours y avoir une analyse si elle est dans les deals ») : sans valeur, pas montres ;
+        # leur valeur se calcule en fond et ils arrivent des qu'elle est connue
+        a._valeur_en_cache = lambda x, calculer=True: None
+        self.assertEqual(a.deals_liste({"sortes": ["veteran"]})["suivis"], [])
+        a._valeur_en_cache = lambda x, calculer=True: (1000.0, 4)
         r = a.deals_liste({"sortes": ["veteran"]})
         self.assertGreaterEqual(len(r["suivis"]), 5, r.get("suivis"))
+        self.assertTrue(all(x.get("valeur") for x in r["suivis"]))
 
 
     def test_pas_de_soccer_ni_tennis(self):

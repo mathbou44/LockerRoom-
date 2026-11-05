@@ -4408,7 +4408,7 @@ class Api:
                         "manque": [m for m, ok in (("prix", bool(prix)), ("photo", bool(ph)), ("titre", len(str(c.get("titre") or "")) >= 10)) if not ok]})
         return {"ok": True, "cartes": out, "modele": {**__import__("annonces").MODELE_DEFAUT, **(self.reglages_lire().get("modele_annonce") or {})}}
 
-    def serie_programmer(self, ids, debut, ecart_h=24, modele=None):
+    def serie_programmer(self, ids, debut, ecart_h=24, modele=None, debuts=None):
         """Programme les cartes choisies sur eBay, une apres l'autre : la 1re a « debut », puis une toutes les ecart_h
         heures. Chaque annonce : titre, prix, photos, description, details, politiques eBay, colis, offres, promotion
         (le modele d'annonce). Tout se fait en arriere-plan ; serie_etat() suit l'avancement."""
@@ -4433,9 +4433,25 @@ class Api:
         if t0.tzinfo is None:
             t0 = t0.replace(tzinfo=_tz.utc)
         heures = [t0 + _td(hours=ecart * i) for i in range(len(ids))]
+        # 5 nov 2026 (Mathieu : « une journee entre chaque carte et, au bout du maximum d'eBay, on recommence au debut ») :
+        # le calendrier « etale » est calcule dans l'app (une carte par jour sur les 21 jours, puis un 2e tour plus tot
+        # dans la journee...) ; ici on verifie chaque heure
+        if debuts:
+            try:
+                hs = [_dt.fromisoformat(str(x).replace("Z", "+00:00")) for x in list(debuts)[:len(ids)]]
+            except (TypeError, ValueError):
+                return {"ok": False, "erreur": "Calendrier invalide"}
+            if len(hs) != len(ids):
+                return {"ok": False, "erreur": "Calendrier incomplet"}
+            heures = [h if h.tzinfo else h.replace(tzinfo=_tz.utc) for h in hs]
+            try:
+                for h in heures:
+                    annonces.debut_programme(h.isoformat())
+            except ValueError as x:
+                return {"ok": False, "erreur": str(x)}
         try:
-            annonces.debut_programme(heures[0].isoformat())
-            annonces.debut_programme(heures[-1].isoformat())
+            annonces.debut_programme(min(heures).isoformat())
+            annonces.debut_programme(max(heures).isoformat())
         except ValueError as x:
             n_ok = int((_dt.now(_tz.utc) + _td(days=annonces.PROGRAMME_MAX_J) - t0).total_seconds() // (ecart * 3600)) + 1
             return {"ok": False, "erreur": str(x) + (f" : à ce rythme, {max(0, n_ok)} cartes au plus dans cette série" if n_ok < len(ids) else "")}
@@ -4794,7 +4810,15 @@ class Api:
 
     # -- 26 oct 2026 : fiche joueur, alertes, tendances, collection, calendrier (marche.py) ---------------------------
     def joueur_fiche(self, nom):
-        return marche.fiche_joueur(self, nom)
+        r = marche.fiche_joueur(self, nom)
+        try:                                            # 5 nov 2026 : son indice de ventes repetees (indices.py)
+            import indices
+            i = indices.joueur((r or {}).get("joueur") or nom) if isinstance(r, dict) and r.get("ok") else None
+            if i:
+                r["indice_rs"] = {**{k: i[k] for k in ("v4", "v13", "v52", "n_paires", "n_cartes", "fin", "confiance")}, "points": i["points"][-53:]}
+        except Exception as e:
+            print("Indice joueur : " + repr(e), flush=True)
+        return r
 
     def alerte_ajouter(self, q, prix_max):
         return marche.alerte_ajouter(self, q, prix_max)
@@ -4884,10 +4908,26 @@ class Api:
             return {"ok": True, "valeur": carte.get("valeur"), "n": 0, "gardee": carte.get("valeur") is not None, "erreur": r.get("erreur")}
         sure, _pv = deals.valeur_sure(vs, t)
         val = sure if sure else round(statistics.median(float(v["prix"]) for v in vs), 2)
+        # 5 nov 2026 (comme la CL Value) : des ventes qui datent -> la valeur suit l'indice du joueur depuis (indices.py)
+        val, ajust = self._valeur_vieillie(val, _pv if sure and isinstance(_pv, list) else vs, carte)
         if sure or carte.get("valeur") is None:
             self.carte_sauver({"id": cid, "valeur": val})
         recentes = sorted(vs, key=lambda v: str(v.get("le") or ""), reverse=True)
-        return {"ok": True, "valeur": val, "n": len(vs), "sure": bool(sure), "derniere": (recentes[0].get("le") or "")[:10] or None}
+        return {"ok": True, "valeur": val, "n": len(vs), "sure": bool(sure), "derniere": (recentes[0].get("le") or "")[:10] or None,
+                "ajustee": ajust}
+
+    @staticmethod
+    def _valeur_vieillie(val, ventes, carte):
+        """La valeur des ventes, ajustee par l'indice du joueur si ces ventes datent (mediane des dates > 14 jours)."""
+        try:
+            import indices
+            ds = sorted(str(v.get("le") or "")[:10] for v in ventes or [] if v.get("le"))
+            if not ds or not val:
+                return val, None
+            return indices.ajuster(val, ds[len(ds) // 2], (carte or {}).get("joueur"), (carte or {}).get("sport"))
+        except Exception as e:
+            print("Valeur vieillie : " + repr(e), flush=True)
+            return val, None
 
     def _suivi_premier(self, cid):
         import suivi_valeur
@@ -5946,6 +5986,7 @@ class Api:
             lst = [x for x in lst if x.get("encan")]
         # 25 oct 2026 (Mathieu : « une option de tri/filtre pour que l'utilisateur puisse customizer ses deals »)
         lst = self._deals_filtrer(lst, f)
+        lst = self._avec_chances(lst)
         if f.get("vendeurs"):                     # 29 oct 2026 : « tous les deals des gros vendeurs »
             lst = [x for x in lst if x.get("flux") == "vendeurs"]
         tri = f.get("tri") or "rabais"
@@ -6047,6 +6088,10 @@ class Api:
                 if vc:
                     x = dict(x, valeur=vc[0], n=vc[1], mise_max=round(vc[0] * _dl.RATIO_DEAL - _dl.port_eff(x.get("port")), 2))
             y = self._ramasser(dict(x, source="marche", recrue=bool(x.get("recrue"))), chez_s)
+            # 5 nov 2026 (Mathieu : « il doit toujours y avoir une analyse si elle est dans les deals ») : un encan sans valeur
+            # (ses ventes se calculent en fond) n'est pas montre ; il arrive dans les deals des que sa valeur est connue
+            if not y.get("valeur"):
+                continue
             if y.get("valeur"):
                 y["gain"] = round(y["valeur"] * (1 - fp_) - ff_ - (y.get("total") or 0), 2)
                 y["rabais"] = round(100 * (1 - (y.get("total") or 0) / y["valeur"]))
@@ -6065,6 +6110,7 @@ class Api:
         if f.get("type") == "fixe":
             suivis = []
         suivis = [x for x in self._deals_filtrer(suivis, f_s) if not f.get("sports") or (x.get("sport") or "hockey") in f["sports"]]
+        suivis = self._avec_chances(suivis)
         suivis.sort(key=lambda x: (0 if (x.get("sport") or "hockey") == "hockey" else 1, _dl.rang_vendeur(x.get("vendeur")), str(x.get("fin"))))
         suivis = self._appliquer_profil(suivis, prof)
         suivis = self._objectif_deals(suivis, f)
@@ -6085,6 +6131,26 @@ class Api:
                 "sports": par_sport, "maj": dd.get("maj"), "ebay": ebay_compte.statut().get("cles_ok"),
                 "diag": _d.diagnostic(dd), "total": len(tout), "bassin": dd.get("bassin"), "nb_flux": len(_d.flux_liste()),
                 "watch": self._watch_ids()}
+
+    @staticmethod
+    def _avec_chances(lst):
+        """5 nov 2026 (Mathieu : « je perds mon temps a miser sur des cartes qui montent en fou ; subtilement ») : un encan
+        dont le genre finit presque toujours au-dessus de la mise max n'est pas montre ; les autres gardent leur chance
+        (une ligne dans la fiche). Rien ne change tant qu'on n'a pas assez d'encans finis (chances.py)."""
+        try:
+            import chances
+        except Exception:
+            return lst
+        out = []
+        for x in lst:
+            if x.get("encan") and x.get("mise_max") is not None:
+                c = chances.chance(x)
+                if chances.a_cacher(x, c):
+                    continue
+                if c:
+                    x = dict(x, chance={"p": c[0], "n": c[1], "niveau": c[2]})
+            out.append(x)
+        return out
 
     DESIR_COLLECTION = 45            # en mode collection : la carte doit etre au moins « recherchee » (score 45/100)
     REVENTE_VENTES_MIN = 4           # en mode revente : au moins 4 ventes reelles de la meme carte (elle se vend souvent)

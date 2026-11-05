@@ -84,3 +84,12 @@ r3 = a.annonce_reviser(ids[0], {"titre": "1985-86 O-Pee-Chee Wayne Gretzky PSA 8
 assert r3["ok"] and rv[0][0] == "annonces.reviser" and rv[0][1][2] == 1450, rv
 assert a.carte_lire(ids[0])["prix_demande"] == 1450
 print("PROGRAMMER OK")
+
+# 5 nov 2026 : un calendrier « etale » fourni par l'app (heures explicites) ; une heure hors limite est refusee
+from datetime import datetime as _d2, timedelta as _t2, timezone as _z2
+a._serie_ecrire({"en_cours": False})
+hs = [(_d2.now(_z2.utc) + _t2(days=1 + i % 21, hours=-3 * (i // 21))).isoformat() for i in range(3)]
+mauvais = hs[:2] + [(_d2.now(_z2.utc) + _t2(days=25)).isoformat()]
+r3 = a.serie_programmer([1, 2, 3], hs[0], 24, None, mauvais)
+assert not r3["ok"], r3
+print("ok programmer etale")

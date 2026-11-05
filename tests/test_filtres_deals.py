@@ -27,13 +27,13 @@ deals._ecrire(d)
 a = lockerroom.Api(os.path.join(tempfile.mkdtemp(), "a.db"))
 a._valeur_en_cache = lambda x, calculer=True: None
 ids = lambda f: {x["item_id"] for x in a.deals_liste(f).get("suivis") or []}
-assert ids({}) == {"s1", "s2", "s4"}, ids({})          # 31 oct : s3 (75 % de sa valeur) n'est pas un deal : hors ecran
+assert ids({}) == {"s2", "s4"}, ids({})          # 31 oct : s3 (75 %) hors ecran ; 5 nov : s1 sans valeur (pas d'analyse) aussi
 assert ids({"rabais_min": 50}) == {"s2", "s4"}, ids({"rabais_min": 50})        # sans valeur ou -25 % : caches
-assert ids({"avec_mise": True}) == {"s1", "s2"}
+assert ids({"avec_mise": True}) == {"s2"}
 assert ids({"type": "fixe"}) == set()
 assert ids({"sortes": ["patch"]}) == {"s2"}
 assert ids({"joueurs": ["Sakic"]}) == {"s2"}
-assert ids({"prix_max": 25}) == {"s1", "s4"}
+assert ids({"prix_max": 25}) == {"s4"}
 a.deals_profil_regler({"collectionne": ["veterans"]})                           # ce que je collectionne : pas de recrues
 assert "s4" not in ids({}), ids({})
 a.deals_profil_regler({"collectionne": [], "prix_min": 25})

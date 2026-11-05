@@ -295,10 +295,17 @@ def tendances():
     # JOUEUR (ventes repetees, medianes, shrinkage, test de Mann-Whitney : tendance_stats). La base des ventes d'abord.
     import tendance_stats
     try:                                                 # 3 nov 2026 : TOUTES nos ventes (veterans et legendes compris)
-        toutes_q = base_ventes.cartes_toutes()
+        # 5 nov 2026 : tout l'historique (les indices de ventes repetees : 1 an) ; la tendance de 14 jours garde ses 42 jours
+        toutes_long = base_ventes.cartes_toutes(jours=400, n_min=3)
     except Exception as e:
         print("Tendances (toutes les ventes) : " + repr(e), flush=True)
-        toutes_q = []
+        toutes_long = []
+    d42 = (datetime.now() - timedelta(days=42)).strftime("%Y-%m-%d")
+    toutes_q = []
+    for x in toutes_long:
+        p42 = [pt for pt in x.get("points") or [] if str(pt[0])[:10] >= d42]
+        if len(p42) >= 4:
+            toutes_q.append({**x, "points": p42})
     vus_c, cj = set(), []
     for x in list(b.get("cartes") or []) + cartes_j + toutes_q:
         k = (str(x.get("joueur") or "").lower(), x.get("produit_id"), re.sub(r"[^a-z0-9]", "", str(x.get("carte") or "").lower()))
@@ -306,7 +313,33 @@ def tendances():
             vus_c.add(k)
             cj.append(x)
     joueurs = tendance_stats.listes(cj)
+    # 5 nov 2026 (Mathieu : « comment Card Ladder calcule le trending ; ameliorer notre algo ») : les indices de ventes
+    # repetees (indices.py) : le hobby, ses segments, chaque joueur ; gardes pour faire vieillir les valeurs des cartes
+    ind_rs = None
+    try:
+        import indices
+        vus_l, cl = set(), []
+        for x in toutes_long + cartes_j + list(b.get("cartes") or []):
+            k = (str(x.get("joueur") or "").lower(), x.get("produit_id"), re.sub(r"[^a-z0-9]", "", str(x.get("carte") or "").lower()))
+            if k not in vus_l:
+                vus_l.add(k)
+                cl.append(x)
+        ind_rs = indices.calculer(cl)
+        indices.garder(ind_rs)
+        for l_ in joueurs.values():
+            for x in l_:
+                i_ = ind_rs["joueurs"].get(str(x.get("joueur") or "").lower())
+                if i_ and i_.get("confiance") != "faible":
+                    x["indice_rs"] = {"v4": i_["v4"], "v13": i_["v13"], "v52": i_["v52"], "n_paires": i_["n_paires"]}
+    except Exception as e:
+        print("Indices : " + repr(e), flush=True)
+    ind_court = None
+    if ind_rs:
+        ind_court = {"hobby": {k: {**{x: v[x] for x in ("v4", "v13", "v52", "n_paires", "n_cartes", "fin")}, "points": v["points"][-53:]} if v else None
+                               for k, v in (ind_rs.get("hobby") or {}).items()},
+                     "segments": ind_rs.get("segments") or [], "methode": ind_rs.get("methode")}
     return {"ok": True, "hausses": hausses, "baisses": baisses, "plus_vendues": plus, "records": records, "indice": ind, "joueurs": joueurs,
+            "indices": ind_court,
             "nb_cartes": max(len(vendues), b.get("nb_cartes") or 0), "nb_ventes": max(sum(x["n"] for x in vendues), b.get("nb_ventes") or 0),
             "maj": max((valeur_produit.de(p["id"]).get("maj") or "" for p in catalogue.liste()), default=None)}
 

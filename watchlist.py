@@ -295,11 +295,15 @@ def _du_chasseur(lst):
     try:
         import deals as _d
         dd = _d.lire_vite()
-        par = {str(x.get("item_id")): x for x in (dd.get("deals") or []) + (dd.get("pres") or [])}
+        par = {str(x.get("item_id")): x for x in (dd.get("suivis") or []) + (dd.get("deals") or []) + (dd.get("pres") or [])}
     except Exception:
         return
     for x in lst:
         y = par.get(str(x["item_id"]))
+        # 5 nov 2026 (Mathieu : « pourquoi il n'y a aucune mise max ? il faut que ca refresh ») : une carte ajoutee sans
+        # valeur prend celle que le chasseur lui a trouvee depuis
+        if y and not x.get("valeur") and y.get("valeur"):
+            x["_valeur_neuve"] = float(y["valeur"])
         if y and str(y.get("vu_le") or "") > str(x.get("maj_le") or ""):
             x.update(total=y.get("total", x.get("total")), fin=y.get("fin") or x.get("fin"), maj_le=y.get("vu_le"))
             if y.get("port") is not None:
@@ -322,6 +326,47 @@ def purger(api, maint=None):
     return len(vieux)
 
 
+def _valeurs_manquantes(api, lst):
+    """Les cartes de la watchlist encore sans valeur : celle du chasseur, sinon les ventes deja connues de LA MEME carte
+    (le cache des ventes, aucun credit) ; le reste se calcule en fond et arrive a la prochaine ouverture. La mise max
+    suit (70 % de la valeur moins le port), sauf si tu l'as ecrite toi-meme."""
+    ratio = reglages(api)["ratio_pct"] / 100
+    manque, neuves = [], []
+    for x in lst:
+        if x.get("valeur") or x.get("statut") == "fini":
+            continue
+        v = x.pop("_valeur_neuve", None)
+        if v is None:
+            try:
+                vc = api._valeur_en_cache(x, calculer=False)
+            except Exception:
+                vc = None
+            if vc:
+                v = float(vc[0])
+            else:
+                manque.append(x)
+                continue
+        x["valeur"] = round(v, 2)
+        if not x.get("mise_perso"):
+            x["mise_max"] = round(v * ratio - (x.get("port") or 0), 2)
+        neuves.append(x)
+    if neuves:
+        c = _cx(api)
+        try:
+            for x in neuves:
+                c.execute("UPDATE watchlist SET valeur=?, mise_max=? WHERE item_id=? AND valeur IS NULL",
+                          (x["valeur"], x.get("mise_max"), x["item_id"]))
+            c.commit()
+        finally:
+            c.close()
+    if manque:
+        try:
+            api._valeurs_en_fond([{"item_id": x["item_id"], "titre": x.get("titre")} for x in manque])
+        except Exception:
+            pass
+    return len(neuves)
+
+
 def liste(api):
     try:
         purger(api)
@@ -333,6 +378,7 @@ def liste(api):
     finally:
         c.close()
     _du_chasseur(lst)
+    _valeurs_manquantes(api, lst)
     maint = _maint()
     # 31 oct 2026 (Mathieu : « il reste de la place : le profit calcule, qui s'ajuste en live avec le nouveau prix de
     # l'encan ») : ce que la carte rapporte si tu l'as au prix du moment = valeur revendue, moins les frais eBay, moins
@@ -375,6 +421,10 @@ def verifier(api, proches=False, lire_article=None, maint=None):
     if not lst:
         return 0
     _du_chasseur(lst)
+    try:
+        _valeurs_manquantes(api, lst)                    # 5 nov 2026 : la mise max arrive aussi sans ouvrir l'ecran
+    except Exception as e:
+        print("Watchlist (valeurs) : " + repr(e), flush=True)
     etat_a = alarmes._lire()
     n_ebay, envoyees = 0, 0
     for x in lst:

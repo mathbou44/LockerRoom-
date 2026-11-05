@@ -1078,7 +1078,9 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
                            # 27 oct 2026 : encan - la mise maximale pour que ca reste un deal (70 % de la valeur, port compris)
                            "port": a.get("port_cad"), "mise_max": round(med_a * RATIO_DEAL - port_eff(a.get("port_cad")), 2) if a.get("encan") else None,
                            "comps": comps or [], "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION,
-                           "vendeur": a.get("vendeur"), "vendeur_score": a.get("vendeur_score")}
+                           "vendeur": a.get("vendeur"), "vendeur_score": a.get("vendeur_score"),
+                           # 5 nov 2026 : une pepite (nom mal ecrit sur eBay) : la faute et le titre tel qu'ecrit
+                           **({"faute": r["faute"], "titre_ebay": a.get("titre_ebay")} if r.get("faute") else {})}
 
 
 SUIVIS_MAX = 1000                # 29 oct 2026 : encans de veterans / legendes des vendeurs suivis gardes pour l'ecran
@@ -1320,6 +1322,11 @@ def _sauver(d, deals, maint, st, **champs):
                                   key=lambda x: (rang_vendeur(x.get("vendeur")), str(x.get("fin"))))[:_env_int("LR_SUIVIS_MAX", SUIVIS_MAX)]
         _diag(d2, **st)
         _ecrire(d2)
+    try:                                                 # 5 nov 2026 : les encans suivis, pour apprendre la chance de les gagner
+        import chances
+        chances.archiver([x for x in garde_ if x.get("encan")] + [x for x in d2.get("suivis") or [] if x.get("valeur")])
+    except Exception as e:
+        print("Chances (archive) : " + repr(e), flush=True)
     return garde_
 
 
@@ -1799,6 +1806,52 @@ def flux(rechercher=None, bassin=None):
     except Exception as e:
         print("Produits appris : " + repr(e), flush=True)
     garde_ = _sauver(d, deals, maint, st, curseur_h=curseur_h, tour_n=tour_n + 1)
+    return {"ok": True, "deals": len(garde_), "stats": st}
+
+
+FAUTES_PAR_TOUR = 4             # 5 nov 2026 : recherches de noms mal ecrits par tour (2 appels eBay chacune)
+
+
+def pepites(rechercher=None, bassin=None, n=None):
+    """5 nov 2026 (Mathieu : « trouver les encheres avec de grosses cartes sans visibilite (erreur de titre) ») : les
+    annonces des vedettes dont le nom est mal ecrit (fautes.py) ne sortent pas quand les acheteurs cherchent le joueur.
+    On les cherche (encans qui finissent bientot + nouvelles annonces a prix fixe), puis on les juge avec le nom CORRIGE.
+    Une annonce bien ecrite que la recherche renvoie quand meme est ignoree (elle, tout le monde la voit)."""
+    import cartes_match
+    import ebay_compte
+    import fautes
+    rechercher = rechercher or ebay_compte.rechercher
+    bassin = bassin if bassin is not None else bassin_partage()
+    qs = fautes.requetes(VEDETTES)
+    if not qs or os.environ.get("LR_DEALS_FLUX"):
+        return {"ok": True}
+    d = lire()
+    i0 = int(d.get("curseur_f") or 0) % len(qs)
+    lot = (qs[i0:] + qs[:i0])[:_env_int("LR_FAUTES_PAR_TOUR", n or FAUTES_PAR_TOUR)]
+    maint = datetime.now(timezone.utc)
+    deals = {x["item_id"]: x for x in d.get("deals") or []}
+    st = {}
+    verif = _verificateur(d, st, bassin)
+    for i_q, (faute, nom) in enumerate(lot):
+        _progres(detail=f"fautes:{i_q + 1}/{len(lot)}")
+        r = {"q": None, "flux": "fautes", "sport": None, "joueur": nom, "faute": faute}
+        for ench in (True, False):
+            try:
+                l = rechercher(faute, categorie="261328", limite=100, fond=True, encheres=ench, recentes=not ench, flux=True)
+            except (RuntimeError, OSError):
+                st["erreurs_ebay"] = st.get("erreurs_ebay", 0) + 1
+                break
+            st["requetes_fautes"] = st.get("requetes_fautes", 0) + 1
+            for a in l:
+                t2 = fautes.corriger(a.get("titre"), faute, nom)
+                if not t2 or not cartes_match.est_carte(t2):
+                    continue
+                st["fautes_vues"] = st.get("fautes_vues", 0) + 1
+                a2 = dict(a, titre=t2, titre_ebay=a.get("titre"))
+                _juger(a2, r, [], [], maint, deals, st, bassin=bassin, verif=verif)
+            _publier(d, deals, maint, st)
+    _verifier_tard(st, deals, maint, bassin, verif, d)
+    garde_ = _sauver(d, deals, maint, st, curseur_f=(i0 + len(lot)) % len(qs))
     return {"ok": True, "deals": len(garde_), "stats": st}
 
 
@@ -2469,12 +2522,17 @@ def chasser_si_besoin(force=False):
                 print("Deals (revue) : " + repr(e), flush=True)
             # 28 oct 2026 : les flux d'abord (hits, vendeurs suivis, encans larges) : ce sont eux qui trouvent le plus ;
             # si le rythme du budget eBay coupe le tour, il coupe les recherches par joueur
-            for f in (flux, encans, chasser):
+            for f in (flux, pepites, encans, chasser):
                 _progres(f.__name__)
                 try:
                     f(bassin=b)
                 except Exception as e:
                     print("Deals : " + repr(e), flush=True)
+            try:                                         # 5 nov 2026 : le prix final des encans finis (chances.py)
+                import chances
+                chances.resoudre()
+            except Exception as e:
+                print("Chances : " + repr(e), flush=True)
             with _verrou:
                 d = lire()
                 d["bassin"] = b.n
