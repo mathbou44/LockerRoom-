@@ -165,6 +165,77 @@ def affiner_quad(im, quad, recherche=0.04):
     return [[max(0, min(1000, round(x / W * 1000))), max(0, min(1000, round(y / H * 1000)))] for x, y in coins]
 
 
+CARTE_RAPPORT = 63.5 / 88.9
+
+
+def carte_dans_slab(im, quad):
+    """5 nov 2026 (Landeskog BGS 9.5, centrage 10 : l'app lisait 81/19 parce qu'elle mesurait le SLAB) : dans un slab, la
+    carte est le rectangle aux proportions d'une carte (63,5 x 88,9 mm), sous l'etiquette, entre 60 et 82 % de la largeur
+    du slab. On cherche ses 4 aretes (les plus franches qui forment ce rectangle) dans le slab redresse.
+    quad : le slab (0..1000) ou None (toute la photo). -> quad de la carte (0..1000) ou None."""
+    try:
+        import numpy as np
+    except ImportError:
+        return None
+    q = quad or [[0, 0], [1000, 0], [1000, 1000], [0, 1000]]
+    z = redresser(im, q, 0.0, 1000)
+    if z is None:
+        return None
+    g = np.asarray(z.convert("L"), dtype=np.float32)
+    H, W = g.shape
+    if W < 200 or H < 200:
+        return None
+    gx = np.abs(np.diff(g, axis=1))
+    gy = np.abs(np.diff(g, axis=0))
+    px = gx[int(H * .15):int(H * .97)].mean(axis=0)
+    py = gy[:, int(W * .04):int(W * .96)].mean(axis=1)
+
+    def pics(v, n, ecart):
+        idx = list(np.argsort(v)[::-1])
+        out = []
+        for i in idx:
+            if all(abs(int(i) - j) > ecart for j in out):
+                out.append(int(i))
+            if len(out) >= n:
+                break
+        return out
+    cols, rows = pics(px, 26, 3), pics(py, 26, 3)
+    fondx, fondy = float(np.median(gx)) + 1e-3, float(np.median(gy)) + 1e-3
+    cands = []
+    for L in cols:
+        for R in cols:
+            if not (0.60 * W <= R - L <= 0.82 * W):
+                continue
+            for T in rows:
+                if T < 0.12 * H:
+                    continue
+                for B in rows:
+                    h = B - T
+                    if h <= 0 or abs(((R - L) / h) / CARTE_RAPPORT - 1) > 0.022:
+                        continue
+                    # la force des 4 aretes, chacune sur sa longueur (relative au bruit de la photo)
+                    s = (gx[T:B, L].mean() / fondx + gx[T:B, min(R, gx.shape[1] - 1)].mean() / fondx
+                         + gy[min(T, gy.shape[0] - 1), L:R].mean() / fondy + gy[min(B, gy.shape[0] - 1), L:R].mean() / fondy) / 4
+                    cands.append((s, (L, R, T, B)))
+    if not cands:
+        return None
+    bs = max(c[0] for c in cands)
+    if bs < 3:
+        return None
+    # l'etui interieur (le cadre noir d'un BGS) forme aussi un rectangle presque aux memes proportions, un peu plus grand :
+    # parmi les rectangles presque aussi francs, la carte est le plus petit
+    L, R, T, B = min((c for c in cands if c[0] >= 0.8 * bs), key=lambda c: (c[1][1] - c[1][0]) * (c[1][3] - c[1][2]))[1]
+    p = _quad_px(q, *im.size)
+    if not p:
+        return None
+
+    def bil(u, v):                                   # le point (u, v) du slab redresse -> la photo (bilineaire)
+        x = (1 - u) * (1 - v) * p[0][0] + u * (1 - v) * p[1][0] + u * v * p[2][0] + (1 - u) * v * p[3][0]
+        y = (1 - u) * (1 - v) * p[0][1] + u * (1 - v) * p[1][1] + u * v * p[2][1] + (1 - u) * v * p[3][1]
+        return [int(round(x / im.size[0] * 1000)), int(round(y / im.size[1] * 1000))]
+    return [bil(L / W, T / H), bil((R + 1) / W, T / H), bil((R + 1) / W, (B + 1) / H), bil(L / W, (B + 1) / H)]
+
+
 def redresser(im, quad, marge=0.0, cote=None):
     """La carte seule, a plat (transformation du quadrilatere en rectangle). marge : la part de fond gardee autour (les
     zooms de coins et de bords doivent montrer l'ARETE de la carte, donc un peu de fond). -> image ou None."""
@@ -475,7 +546,7 @@ def note_centrage(devant, dos=None):
     return n
 
 
-def preparer(photos_octets, quads=None, rasante=None, rasante2=None, gros_plans=None):
+def preparer(photos_octets, quads=None, rasante=None, rasante2=None, gros_plans=None, slab=False):
     """photos_octets : [devant, dos?] (octets) ; quads : [quad_devant, quad_dos] en 0..1000 ; rasante : octets ou None.
     -> {"images": [(libelle, octets_jpeg)], "centrage": {...}, "note_centrage": n|None, "zooms": bool}"""
     quads = list(quads or [])
@@ -494,6 +565,11 @@ def preparer(photos_octets, quads=None, rasante=None, rasante2=None, gros_plans=
             except Exception as e:
                 print("Examen (carte trouvee) : " + repr(e), flush=True)
                 q = None
+        if slab:                                            # 5 nov 2026 : dans un slab, la carte (pas l'etui) : sinon le centrage est faux
+            try:
+                q = carte_dans_slab(im, q) or carte_dans_slab(im, None) or q
+            except Exception as e:
+                print("Examen (carte dans le slab) : " + repr(e), flush=True)
         utilises.append(q)
         c = redresser(im, q) if q else None                 # exacte : pour le centrage
         z = redresser(im, q, 0.03, COTE_ZOOM) if q else None   # pleine resolution, un peu de fond : l'arete des coins et des bords

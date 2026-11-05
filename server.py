@@ -135,7 +135,8 @@ HEBERGE = os.environ.get("LOCKERROOM_HEBERGE") == "1"
 CODE_ACCES = os.environ.get("LOCKERROOM_CODE") or ""
 app.secret_key = os.environ.get("LOCKERROOM_SECRET") or os.urandom(32)
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_SECURE=HEBERGE)
-app.config["MAX_CONTENT_LENGTH"] = 32 * 1024 * 1024        # 23 oct 2026 - 2 photos ; 3 nov 2026 : + rasantes et 8 gros plans des coins
+app.config["MAX_CONTENT_LENGTH"] = 64 * 1024 * 1024        # 5 nov 2026 : photos HD natives (carte jusqu'a 7,5 Mo)
+#        # 23 oct 2026 - 2 photos ; 3 nov 2026 : + rasantes et 8 gros plans des coins
 # pages qui restent publiques : break partage, retour et avis eBay, pages legales, icones
 _PUBLIQUES = ("/b/", "/api/b/", "/api/ebay_retour", "/ebay/suppression-compte", "/confidentialite", "/conditions",
               "/support", "/robots.txt", "/sitemap.xml", "/logo_sc_", "/syne-800.woff2", "/manrope-", "/barlow-", "/connexion", "/icone", "/favicon", "/manifest.json", "/stripe/webhook", "/apple/notifications", "/sante")

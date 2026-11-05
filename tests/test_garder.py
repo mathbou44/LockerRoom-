@@ -37,7 +37,7 @@ ebay_ecriture.televerser_photo = lambda chemin, nom: vus.append(chemin) or "http
 assert annonces.photos_ebay([refs[0], "https://i.ebayimg.com/y.jpg"]) == ["https://i.ebayimg.com/ok.jpg", "https://i.ebayimg.com/y.jpg"]
 assert vus == [f]
 # trop lourd -> refuse proprement
-big = "data:image/jpeg;base64," + base64.b64encode(b"\xff\xd8\xff" + b"0" * 4_600_000).decode()
+big = "data:image/jpeg;base64," + base64.b64encode(b"\xff\xd8\xff" + b"0" * 8_100_000).decode()
 assert not a.carte_garder({"carte": {"joueur": "X"}, "photos": [big]})["ok"]
 # supprimer la carte supprime ses photos
 a.carte_supprimer(r["id"])

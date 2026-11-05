@@ -13,7 +13,7 @@ import secrets
 
 import comptes
 
-MAX_OCTETS = 4_500_000
+MAX_OCTETS = 8_000_000                  # 5 nov 2026 : les originales de la camera native HD (jusqu'a 5000 px)
 MAX_PHOTOS = 12
 PREFIXE = "/mes-photos/"
 _NOM = re.compile(r"[a-f0-9]{16}\.jpg")

@@ -1465,6 +1465,7 @@ body.scan-ouvert{overflow:hidden}
 .scan-bas small{color:rgba(255,255,255,.78); font-size:13.5px; text-align:center}
 .scan-declic{width:72px; height:72px; border-radius:50%; border:4px solid rgba(255,255,255,.9); background:rgba(255,255,255,.22); padding:0}
 .scan-declic:active{transform:scale(.94)}
+.scan.natif video,.scan.natif .scan-bas,.scan.natif .scan-cadre i,.scan.natif .scan-fil{display:none} .scan.natif{background:#000}
 .scan-declic.pret{border-color:#7ee2a8; background:rgba(126,226,168,.35); box-shadow:0 0 0 6px rgba(126,226,168,.3); transition:all .15s}
 .scan.fige .scan-bas, .scan.fige .scan-cadre i{opacity:0; transition:opacity .2s}
 .scan video{transition:filter .4s} .scan.fige video{filter:blur(16px) brightness(.5)} .scan.fige .scan-cadre{box-shadow:0 0 0 200vmax transparent}
@@ -7074,18 +7075,9 @@ function scannerSecours(opts){
     else scannerCarte(f); };
   i.click();
 }
-async function ouvrirScanner(opts = {}){
-  if (opts.but !== 'photo' && !await okIA()) { toast(tt('Sans l’IA : cherche la carte par son nom', 'Without AI: search the card by name'), 4000); return; }
-  if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) return scannerSecours(opts);
-  let flux;
-  try { // 5 nov 2026 (Mathieu : « les photos doivent etre de haute qualite pour la pre-evaluation PSA ») : la camera au plus
-    // haut qu'elle donne (4K sur un iPhone recent) ; l'analyse en direct, elle, travaille sur une petite image
-    flux = await navigator.mediaDevices.getUserMedia({audio:false, video:{facingMode:{ideal:'environment'}, width:{ideal:3840}, height:{ideal:2880}}}); }
-  catch (e) { return scannerSecours(opts); }
-  scanFermer();
-  Object.assign(SCAN, {flux, opts, actif:true, essais:0, stable:0, avant:null, debut:Date.now(), etat:'cherche'});
-  const photo = opts.but === 'photo';
-  document.body.insertAdjacentHTML('beforeend', `<div id="scan" class="scan" role="dialog" aria-modal="true">
+// le cadre du scanner (camera web) ; natif : l'ecran d'analyse apres la camera native HD (pas de video)
+function scanHtml(photo, natif){
+  return `<div id="scan" class="scan${natif ? ' natif' : ''}" role="dialog" aria-modal="true">
     <video playsinline muted autoplay></video>
     <div class="scan-cadre" id="scan-cadre"><i></i><i></i><i></i><i></i><span class="scan-fil"></span></div>
     <div class="scan-haut"><button class="scan-x" id="scan-x" aria-label="${esc(tt('Fermer', 'Close'))}">✕</button>
@@ -7095,7 +7087,73 @@ async function ouvrirScanner(opts = {}){
       <small id="scan-sous">${tt('Touche le bouton quand le cadre est vert', 'Tap the button when the frame turns green')}</small>
       <button class="scan-passer" id="scan-passer" hidden>${tt('Passer le dos', 'Skip the back')}</button></div>
     <img class="scan-fige" id="scan-fige" alt="" hidden>
-    <div class="scan-res" id="scan-res" hidden></div></div>`);
+    <div class="scan-res" id="scan-res" hidden></div></div>`;
+}
+// 5 nov 2026 (Mathieu : « la meilleure qualite possible pour la pre-evaluation avec notre IA ») : dans l'app iPhone a jour,
+// la camera NATIVE (48 Mpx, priorite qualite, l'objectif qui donne le plus de detail) ; la vue web ne donne que la video
+let CAM_HD = null;
+async function cameraHD(){
+  if (CAM_HD !== null) return CAM_HD;
+  CAM_HD = false;
+  try {
+    const C = window.Capacitor; if (!NATIF || !C) return false;
+    const P = (C.Plugins && C.Plugins.CameraHD) || (C.registerPlugin ? C.registerPlugin('CameraHD') : null);
+    if (!P || !P.infos) return false;
+    const r = await Promise.race([P.infos(), new Promise((_, ko) => setTimeout(() => ko(new Error('delai')), 2500))]);
+    if (r && r.ok) CAM_HD = {P, mpx: r.mpx, objectif: r.objectif, pxmm: r.pxmm};
+  } catch (e) {}
+  return CAM_HD;
+}
+if (NATIF) setTimeout(() => { cameraHD(); }, 1500);       // pret avant le premier examen
+const TEXTES_HD = () => ({passer: tt('Passer le dos', 'Skip the back'), fermer: tt('Fermer', 'Close'), focus: tt('Mise au point…', 'Focusing…'),
+  traitement: tt('Photo en pleine résolution…', 'Full-resolution photo…'), erreur: tt('Photo ratée : reprends-la', 'Photo failed: retake it'), declic: tt('Prendre la photo', 'Take the photo')});
+// -> [{url (data URL JPEG), w, h, cadre, mpx}] | null (annule)
+async function prendreHD(mode, etapes, aides){
+  const hd = await cameraHD(); if (!hd) return undefined;
+  const r = await hd.P.prendre({mode, etapes, aides, textes: TEXTES_HD()}).catch(() => null);
+  if (!r || r.annule || !(r.photos || []).length) {
+    if (r && r.refus) toast(tt('Autorise la caméra : Réglages › SlabCoach › Appareil photo', 'Allow the camera: Settings › SlabCoach › Camera'), 5000);
+    return null;
+  }
+  return r.photos.map(p => ({url: 'data:image/jpeg;base64,' + p.data, w: p.w, h: p.h, cadre: p.cadre || null, mpx: p.mpx}));
+}
+async function petitePhoto(u, cote = 1150){
+  const im = await chargerImage(u), k = Math.min(1, cote / Math.max(im.naturalWidth, im.naturalHeight));
+  const cv = document.createElement('canvas'); cv.width = Math.round(im.naturalWidth * k); cv.height = Math.round(im.naturalHeight * k);
+  const g = cv.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(im, 0, 0, cv.width, cv.height);
+  return cv.toDataURL('image/jpeg', 0.86);
+}
+async function scanNatif(opts){
+  const photo = opts.but === 'photo';
+  const l = await prendreHD('carte',
+    photo ? [tt('Place la carte dans le cadre', 'Place the card in the frame')] : [tt('Le devant', 'The front'), tt('Le dos', 'The back')],
+    photo ? [tt('Touche la carte pour la mise au point', 'Tap the card to focus')]
+      : [tt('La carte remplit le cadre, sans reflet. Touche-la pour la mise au point.', 'The card fills the frame, no glare. Tap it to focus.'),
+         tt('Retourne la carte, même cadrage', 'Flip the card, same framing')]);
+  if (!l) return;
+  const ph = await petitePhoto(l[0].url), dos = l[1] ? await petitePhoto(l[1].url) : null;
+  scanFermer();
+  Object.assign(SCAN, {opts, actif: true, natif: true, etat: 'lecture', essais: 1, devant: ph, devantHD: l[0].url, dosHD: l[1] ? l[1].url : null,
+    quadDevant: l[0].cadre, quadDos: l[1] ? l[1].cadre : null, quadPhoto: l[0].cadre, derniereHD: l[0].url, mpx: l[0].mpx});
+  document.body.insertAdjacentHTML('beforeend', scanHtml(photo, true));
+  document.body.classList.add('scan-ouvert');
+  $('#scan-x').onclick = scanFermer;
+  if (photo) { SCAN.etat = 'fige'; scanFiger(ph); SCAN.ph = ph; const st = await scanStudio(ph); return scanConfirmerPhoto(st || l[0].url); }
+  return scanIdentifier(dos ? [ph, dos] : [ph], ph, dos);
+}
+async function ouvrirScanner(opts = {}){
+  if (opts.but !== 'photo' && !await okIA()) { toast(tt('Sans l’IA : cherche la carte par son nom', 'Without AI: search the card by name'), 4000); return; }
+  if (await cameraHD()) return scanNatif(opts);
+  if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) return scannerSecours(opts);
+  let flux;
+  try { // 5 nov 2026 (Mathieu : « les photos doivent etre de haute qualite pour la pre-evaluation PSA ») : la camera au plus
+    // haut qu'elle donne (4K sur un iPhone recent) ; l'analyse en direct, elle, travaille sur une petite image
+    flux = await navigator.mediaDevices.getUserMedia({audio:false, video:{facingMode:{ideal:'environment'}, width:{ideal:3840}, height:{ideal:2880}}}); }
+  catch (e) { return scannerSecours(opts); }
+  scanFermer();
+  Object.assign(SCAN, {flux, opts, actif:true, essais:0, stable:0, avant:null, debut:Date.now(), etat:'cherche'});
+  const photo = opts.but === 'photo';
+  document.body.insertAdjacentHTML('beforeend', scanHtml(photo, false));
   document.body.classList.add('scan-ouvert');
   const v = $('#scan video'); v.srcObject = flux; v.play().catch(() => {});
   $('#scan-x').onclick = scanFermer;
@@ -7236,6 +7294,7 @@ async function scanIdentifier(photos, ph, dos){
     .filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
   if (!r || !r.ok || !q) {
     if (r && r.detail && r.detail.code) toast('Admin · Anthropic HTTP ' + r.detail.code + ' : ' + (r.detail.detail || '').slice(0, 160), 9000);
+    if (SCAN.natif) { scanFermer(); toast((r && r.erreur) || tt('Carte pas reconnue : rapproche-toi, sans reflet', 'Card not recognized: closer, no glare'), 4500); return; }
     scanRecommencer();
     scanAide((r && r.erreur) || tt('Carte pas reconnue : rapproche-toi, sans reflet', 'Card not recognized: closer, no glare'), 'or');
     return;
@@ -7311,6 +7370,7 @@ async function scanResultat(c, q){
       <b>${argent(k.prix, 0)}</b><small>${k.le ? tt('vendue ', 'sold ') + dateCourte(k.le) : tt('vendue', 'sold')}</small></a>`).join('')}</div>` : ''}`;
 }
 function scanRecommencer(){
+  if (SCAN.natif) { const o = SCAN.opts; scanFermer(); setTimeout(() => ouvrirScanner(o), 260); return; }
   const z = $('#scan-res'); z.classList.remove('ouvert'); setTimeout(() => { z.hidden = true; }, 260);
   const im = $('#scan-fige'); im.hidden = true; im.classList.remove('reduit'); $('#scan').classList.remove('fige');
   const v = $('#scan video'); if (v) v.play().catch(() => {});
@@ -9820,22 +9880,29 @@ function feuilleExamen(c, opts){
             : `<div class="ex-ko">${v.pbs.map(([t, d]) => `<div><b>${esc(t)}</b><span>${esc(d)}</span></div>`).join('')}</div>`)
             : `<div class="ex-aide">${e.aide}</div>`}</div>
         <div class="ex-bt">${ph && v && v.ok ? `<button class="btn" id="ex-suiv">${tt('Continuer', 'Continue')}</button>` : ''}
-          <div class="ex-prise"><label class="btn ${ph && v && v.ok ? 'ghost' : ''}">${ph ? tt('Reprendre', 'Retake') : tt('Prendre la photo', 'Take the photo')}<input type="file" accept="image/*" capture="environment" id="ex-f" hidden></label>
+          <div class="ex-prise">${CAM_HD ? `<button class="btn ${ph && v && v.ok ? 'ghost' : ''}" id="ex-hd">${ph ? tt('Reprendre', 'Retake') : tt('Prendre la photo', 'Take the photo')}</button>`
+            : `<label class="btn ${ph && v && v.ok ? 'ghost' : ''}">${ph ? tt('Reprendre', 'Retake') : tt('Prendre la photo', 'Take the photo')}<input type="file" accept="image/*" capture="environment" id="ex-f" hidden></label>`}
             <label class="btn ghost">${tt('Photothèque', 'Library')}<input type="file" accept="image/*" id="ex-f2" hidden></label></div>
           ${ph && v && !v.ok ? `<button class="lien-t" id="ex-quand">${tt('Garder quand même', 'Keep it anyway')}</button>` : ''}
           ${!ph && e.opt ? `<button class="lien-t" id="ex-passer">${e.t === 'gp' && e.coin === 'haut-gauche' ? tt('Passer les gros plans', 'Skip the close-ups') : tt('Passer', 'Skip')}</button>` : ''}
           ${i === 0 && !ph ? `<button class="lien-t" id="ex-rg2">${tt('Régler ton téléphone', 'Set up your phone')} ›</button>` : ''}</div>`);
-      const prendre = async (ev) => { const f = ev.target.files && ev.target.files[0]; if (!f) return;
+      // 5 nov 2026 : la camera native HD (photo non reduite : jusqu'a 5000 px pour la carte) ; sinon un fichier reduit
+      const traiter = async (source) => {
         const z = $('.ex-ill'); if (z) z.innerHTML = `<span class="roue"></span>`;
         try {
-          const p = await reduirePhoto(f, e.t === 'gp' ? 2400 : 3200);
+          const p = typeof source === 'string' ? source : await reduirePhoto(source, e.t === 'gp' ? 2400 : 3200);
           const r = await verifierPhotoExamen(e, p, P);
           if (e.t === 'gp') P.gp[e.face + '|' + e.coin] = p; else P[e.k] = p;
           if (e.t !== 'gp') P.q[e.k] = r.q || null;
           P.v[e.k] = r; vibrer();
         } catch (x) { toast(tt('Photo illisible : reprends-la', 'Unreadable photo: retake it')); }
         peindre(); };
-      $('#ex-f').onchange = prendre; $('#ex-f2').onchange = prendre;
+      const prendre = (ev) => { const f = ev.target.files && ev.target.files[0]; if (f) traiter(f); };
+      const fi = $('#ex-f'); if (fi) fi.onchange = prendre; $('#ex-f2').onchange = prendre;
+      const bh = $('#ex-hd'); if (bh) bh.onclick = async () => {
+        const mode = e.t === 'carte' ? 'carte' : e.t === 'gp' ? 'coin' : 'surface';
+        const l = await prendreHD(mode, [e.titre.replace(/<[^>]+>/g, '')], [e.aide.replace(/<[^>]+>/g, '')]);
+        if (l && l[0]) traiter(l[0].url); };
       $('#ex-prec').onclick = () => { i -= 1; peindre(); };
       const s = $('#ex-suiv'); if (s) s.onclick = () => { i += 1; peindre(); };
       const qd = $('#ex-quand'); if (qd) qd.onclick = () => { i += 1; peindre(); };

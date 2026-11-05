@@ -38,7 +38,8 @@ MODELE = os.environ.get("LR_VISION_MODELE") or "claude-opus-5-5"
 PRIX_ENTREE, PRIX_SORTIE = 4.0, 20.0
 SEUIL_CONFIANCE = 0.85
 MAX_PHOTOS = 2
-MAX_OCTETS_PHOTO = 4_500_000          # apres decodage ; l'ecran reduit deja a ~1600 px
+MAX_OCTETS_PHOTO = 4_500_000          # apres decodage ; l'ecran reduit deja a ~1600 px (envoyee telle quelle a l'IA : < 5 Mo)
+MAX_OCTETS_EXAMEN = 8_000_000         # 5 nov 2026 : la camera native HD (jusqu'a 5000 px) ; l'examen re-encode avant l'IA
 QUOTA_GRATUIT = int(os.environ.get("LR_VISION_GRATUIT") or 25)        # photos / mois / compte gratuit
 # 3 nov 2026 (revue de securite) : un plafond d'usage raisonnable aussi pour le Pro et l'essai (sinon un seul compte, ou des
 # comptes d'essai crees en serie, epuisaient le plafond du serveur pour tout le monde)
@@ -247,7 +248,7 @@ def _empreinte(images):
 
 
 # -- photos ----------------------------------------------------------------------------------
-def _decoder(photo):
+def _decoder(photo, max_octets=None):
     """data:image/jpeg;base64,... ou base64 brut -> (octets, type)."""
     s = str(photo or "")
     m = re.match(r"data:(image/(?:jpeg|png|webp|gif));base64,(.*)$", s, re.S)
@@ -258,7 +259,7 @@ def _decoder(photo):
         raise Erreur("Photo illisible : reprends-la")
     if len(b) < 2000:
         raise Erreur("Photo trop petite : reprends-la")
-    if len(b) > MAX_OCTETS_PHOTO:
+    if len(b) > (max_octets or MAX_OCTETS_PHOTO):
         raise Erreur("Photo trop lourde : reprends-la")
     if b[:3] == b"\xff\xd8\xff":
         typ = "image/jpeg"
@@ -1048,15 +1049,15 @@ def _etat(photos, langue="fr", quads=None, rasante=None, calibration=None, regle
     photos = [p for p in (photos or []) if p][:2]
     if not photos:
         raise Erreur("Il faut au moins la photo du devant")
-    brutes = [_decoder(p)[0] for p in photos]
-    ras = _decoder(rasante)[0] if rasante else None
-    ras2 = _decoder(rasante2)[0] if (rasante and rasante2) else None
+    brutes = [_decoder(p, MAX_OCTETS_EXAMEN)[0] for p in photos]
+    ras = _decoder(rasante, MAX_OCTETS_EXAMEN)[0] if rasante else None
+    ras2 = _decoder(rasante2, MAX_OCTETS_EXAMEN)[0] if (rasante and rasante2) else None
     # 3 nov 2026 : les gros plans des coins [{face, coin, photo (data URL)}]
     gps = []
     for g in (gros_plans or [])[:8]:
         if isinstance(g, dict) and g.get("photo") and g.get("coin") in _bar.COINS and g.get("face") in ("devant", "dos"):
             try:
-                gps.append({"face": g["face"], "coin": g["coin"], "octets": _decoder(g["photo"])[0]})
+                gps.append({"face": g["face"], "coin": g["coin"], "octets": _decoder(g["photo"], MAX_OCTETS_EXAMEN)[0]})
             except Exception:
                 pass
     langue = "en" if str(langue or "").lower().startswith("en") else "fr"
@@ -1074,7 +1075,7 @@ def _etat(photos, langue="fr", quads=None, rasante=None, calibration=None, regle
         return dict(cache[cle_cache], ok=True, cache=True)
     _verifier_etat()
     if examen.disponible():
-        prep = examen.preparer(brutes, quads, ras, ras2, gros_plans=gps)
+        prep = examen.preparer(brutes, quads, ras, ras2, gros_plans=gps, slab=bool((contexte or {}).get("slab")))
     else:
         prep = {"images": [(("Photo 0 : le devant." if i == 0 else "Photo 1 : le dos."), b) for i, b in enumerate(brutes)], "centrage": None,
                 "note_centrage": None, "zooms": False}
