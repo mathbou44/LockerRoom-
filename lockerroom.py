@@ -380,6 +380,9 @@ def effacer_compte(cid):
         comptes.supprimer(c)
     return groupe
 
+AFFICHER_APRES_J = 90                  # 5 nov 2026 : en stock depuis plus de 3 mois -> « A mettre sur eBay »
+
+
 class Api:
     def __init__(self, chemin_db=None):
         self._chemin_fixe = chemin_db            # tests : base imposee
@@ -2348,6 +2351,27 @@ class Api:
                     if vus > forfaits.LIMITES["repere"]:
                         r.pop("marche")
                         r["marche_pro"] = True
+        # 5 nov 2026 (Mathieu : « les cartes achetees il y a plus de 3 mois : un tag pour les afficher sur eBay ») : une carte
+        # en stock, pas sur eBay, ni en collection ni en envoi, achetee (achat eBay relie, sinon entree dans l'app) il y a
+        # plus de 90 jours -> « A mettre sur eBay »
+        try:
+            with _verrou:
+                c = self._db()
+                try:
+                    c.execute(self._SQL_ACHATS)
+                    achat_le = {r[0]: r[1] for r in c.execute("SELECT carte_id, MIN(date) FROM achats_ebay WHERE carte_id IS NOT NULL GROUP BY carte_id")}
+                finally:
+                    c.close()
+        except Exception:
+            achat_le = {}
+        lim90 = (datetime.now() - timedelta(days=AFFICHER_APRES_J)).strftime("%Y-%m-%d")
+        for r in out:
+            le = str(achat_le.get(r.get("id")) or r.get("cree_le") or "")[:10]
+            r["achete_le"] = le or None
+            r["a_afficher"] = bool(le and le <= lim90 and r.get("statut") == "En stock"
+                                   and (r.get("emplacement") or "") not in ("Collection", "eBay") and not r.get("envoi_json"))
+        if f.get("a_afficher"):
+            out = [r for r in out if r.get("a_afficher")]
         if f.get("sport"):
             out = [r for r in out if r["sport"] == f["sport"]]
         return out
@@ -2475,7 +2499,7 @@ class Api:
         else:
             champs["statut"] = "En stock"
         r = self.carte_sauver({k: v for k, v in champs.items() if v not in (None, "")})
-        return {"ok": True, "id": r["id"], "photos": refs}
+        return {"ok": True, "id": r["id"], "photos": refs, "achat_lie": self._lier_achat_choisi(r["id"], d.get("achat"))}
 
     def carte_photo_changer(self, cid, photo):
         """28 oct 2026 (Mathieu : « en tout temps il peut modifier la photo associee a la carte dans sa collection pour
@@ -4316,7 +4340,8 @@ class Api:
                       "photo": photos[0], "cout": _float(d.get("cout"))}
             if d.get("cid"):
                 champs["id"] = d["cid"]
-            self.carte_sauver({k: v for k, v in champs.items() if v not in (None, "")})
+            rs_ = self.carte_sauver({k: v for k, v in champs.items() if v not in (None, "")})
+            r["achat_lie"] = self._lier_achat_choisi(rs_.get("id"), d.get("achat"))
             with _verrou:
                 c = self._db()
                 try:
@@ -5149,6 +5174,133 @@ class Api:
                 c.close()
         return {"ok": True}
 
+    # 5 nov 2026 (Mathieu : « quand je gagne des cartes, elles devraient se retrouver dans une zone achats de l'inventaire ;
+    # quand je mets en ligne une carte achetee avant, elle est reliee directement ») : la liste des achats eBay (90 jours,
+    # lus a chaque synchro), un tap pour en faire une carte de l'inventaire (cout = le vrai prix paye) ; et a la vente,
+    # les achats qui ressemblent a la carte, un tap pour les relier.
+    def _lier_achat_choisi(self, cid, achat):
+        if not cid or not isinstance(achat, dict) or not achat.get("item_id"):
+            return None
+        r = self.achat_relier(cid, achat.get("item_id"), achat.get("n") or 0)
+        return {"cout": r.get("cout")} if r.get("ok") else None
+
+    def _achats_photos(self, l, n=12):
+        """Les photos des achats qui n'en ont pas (GetItem, en fond, quelques-unes a la fois)."""
+        manque = [a for a in l if not a.get("photo")][:n]
+        if not manque or not ebay_compte.statut().get("connecte"):
+            return
+        import contextvars
+        ctx = contextvars.copy_context()
+
+        def tache():
+            for a in manque:
+                try:
+                    ph = ebay_compte.photo_item(a["item_id"]) or "-"
+                except Exception:
+                    ph = "-"
+                with _verrou:
+                    c = self._db()
+                    try:
+                        c.execute("UPDATE achats_ebay SET photo=? WHERE item_id=?", (ph if isinstance(ph, str) else (ph[0] if ph else "-"), str(a["item_id"])))
+                        c.commit()
+                    finally:
+                        c.close()
+        threading.Thread(target=lambda: ctx.run(tache), daemon=True, name="photos-achats").start()
+
+    def _achats_table(self, c):
+        c.execute(self._SQL_ACHATS)
+        if "photo" not in {r[1] for r in c.execute("PRAGMA table_info(achats_ebay)")}:
+            c.execute("ALTER TABLE achats_ebay ADD COLUMN photo TEXT")
+
+    def achats_liste(self, force=False):
+        """-> {achats: [{item_id, n, titre, cout, date, photo, carte_id, carte_titre, carte_statut}], a_ajouter, ebay, maj}"""
+        if force and ebay_compte.statut().get("connecte"):
+            try:
+                self.couts_depuis_achats()
+            except Exception as e:
+                print("Achats eBay : " + repr(e), flush=True)
+        with _verrou:
+            c = self._db()
+            try:
+                self._achats_table(c)
+                vide = not c.execute("SELECT 1 FROM achats_ebay LIMIT 1").fetchone()
+            finally:
+                c.close()
+        if vide and not force and ebay_compte.statut().get("connecte"):
+            return self.achats_liste(True)
+        c = self._db()
+        try:
+            self._achats_table(c)
+            l = _dicts(c.execute("SELECT a.item_id, a.n, a.titre, a.cout, a.date, a.photo, a.carte_id, k.titre AS carte_titre, "
+                                 "k.statut AS carte_statut FROM achats_ebay a LEFT JOIN cartes k ON k.id = a.carte_id "
+                                 "ORDER BY (a.carte_id IS NOT NULL), a.date DESC LIMIT 400"))
+        finally:
+            c.close()
+        for a in l:
+            if a.get("carte_id") and not a.get("carte_titre"):
+                a["carte_id"] = None                    # la carte a ete effacee : l'achat redevient libre
+            if a.get("photo") == "-":
+                a["photo"] = None
+        self._achats_photos([a for a in l if not a.get("carte_id")])
+        return {"ok": True, "achats": l, "a_ajouter": sum(1 for a in l if not a.get("carte_id")),
+                "ebay": bool(ebay_compte.statut().get("connecte"))}
+
+    def achat_vers_inventaire(self, item_id, n=0, emplacement=None):
+        """Un achat eBay -> une carte de l'inventaire (En stock), cout = le prix paye, titre et photo de l'annonce."""
+        with _verrou:
+            c = self._db()
+            try:
+                self._achats_table(c)
+                a = c.execute("SELECT titre, cout, date, photo, carte_id FROM achats_ebay WHERE item_id=? AND n=?",
+                              (str(item_id), int(n or 0))).fetchone()
+            finally:
+                c.close()
+        if not a:
+            return {"ok": False, "erreur": "Achat introuvable"}
+        if a["carte_id"] and self.carte_lire(a["carte_id"]):
+            return {"ok": True, "id": a["carte_id"], "deja": True}
+        titre = re.sub(r"\s+", " ", str(a["titre"] or "")).strip()[:80] or "Carte achetée sur eBay"
+        d = {"titre": titre, "cout": a["cout"], "statut": "En stock", "source": "achat eBay",
+             "emplacement": emplacement if emplacement in ("Collection", "Réserve", "Magasin") else "Réserve",
+             "joueur": cartes_match.joueur_du_titre(titre) or None, "note": f"Achat eBay #{item_id} ({a['date'] or ''})".strip()}
+        if a["photo"] and a["photo"] != "-" and str(a["photo"]).startswith("https://"):
+            d["photo"] = a["photo"]
+        r = self.carte_sauver({k: v for k, v in d.items() if v not in (None, "")})
+        with _verrou:
+            c = self._db()
+            try:
+                c.execute("UPDATE achats_ebay SET carte_id=? WHERE item_id=? AND n=?", (r["id"], str(item_id), int(n or 0)))
+                c.commit()
+            finally:
+                c.close()
+        return {"ok": True, "id": r["id"]}
+
+    def achats_suggerer(self, titre):
+        """A la vente : les achats pas encore relies qui ressemblent a ce titre (meme carte d'abord). -> {achats: [...]}"""
+        import difflib
+        t = str(titre or "").strip()
+        if len(t) < 6:
+            return {"ok": True, "achats": []}
+        c = self._db()
+        try:
+            self._achats_table(c)
+            libres = _dicts(c.execute("SELECT item_id, n, titre, cout, date FROM achats_ebay WHERE carte_id IS NULL ORDER BY date DESC LIMIT 400"))
+        finally:
+            c.close()
+        cib = cartes_match.cible_titre(t)
+        nom = (cib.get("joueur") or "").split()[-1:]
+        out = []
+        for a in libres:
+            ta = cartes_match.norm(a["titre"] or "")
+            if nom and not re.search(r"\b" + re.escape(nom[0]) + r"\b", ta):
+                continue                                 # pas le meme joueur : jamais propose
+            meme = not cartes_match.raisons_refus(cib, a["titre"] or "")
+            a["meme_carte"] = meme
+            a["score"] = round((0.6 if meme else 0) + 0.4 * difflib.SequenceMatcher(None, cartes_match.norm(t), ta).ratio(), 3)
+            out.append(a)
+        out.sort(key=lambda a: -a["score"])
+        return {"ok": True, "achats": out[:4]}
+
     # -- comptoir (boutique physique) -----------------------------------------------------------
     def comptoir_vente(self, d):
         """d : {lignes: [{carte_id?, description, prix}], paiement, client_id, taxes (bool), credit_utilise}"""
@@ -5606,8 +5758,9 @@ class Api:
             x = self._ramasser(x, chez)
             # 26 oct 2026 : « −96 % » sur une carte a prix fixe = presque toujours une autre carte (pas la meme parallele,
             # pas le patch) : trop beau pour etre vrai, on ne le montre pas
-            if not x.get("encan") and (x.get("ratio") or 1) < 0.15:
-                continue
+            if not x.get("encan") and (x.get("ratio") or 1) < (0.25 if (x.get("valeur") or 0) >= 400 else 0.15):
+                continue                     # 5 nov 2026 (Fantilli Signature Materials a 253 $ « vaut 1 393 $ ») : une carte de 400 $+
+                                             # a prix fixe sous 25 % de sa valeur, c'est presque toujours une autre carte
             x["gain"] = round((x.get("valeur") or 0) * (1 - fp) - ff - (x.get("total") or 0), 2)
             if not x.get("encan") and x["gain"] <= 1:          # 26 oct 2026 : pas de profit apres les frais : pas un deal
                 continue

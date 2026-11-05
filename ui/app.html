@@ -2367,7 +2367,7 @@ button.an-attente{width:100%; text-align:left; color:var(--texte); cursor:pointe
 .fd-p.on .ap-ic::before{background:var(--acc-fonce)} .fd-p.on small{color:var(--texte); font-weight:600} .fd-p small{font-size:13px}
 .fd-app{position:sticky; bottom:0; margin:4px -18px -18px; padding:12px 18px calc(14px + var(--bas)); background:linear-gradient(180deg, rgba(19,19,23,0), #131317 30%); animation:popEntre .2s ease}
 .fd-app .btn{width:100%; margin:0} #fd-raz{margin-top:6px}
-.td-eres{margin:4px 0 6px} .td-sports{margin:10px 0 2px; flex-wrap:wrap; overflow:visible} .td-plus{display:block; margin:10px auto 0}
+.td-eres{margin:4px 0 6px} .i-ach{margin:0 0 12px} .fa-l .vig img{width:100%;height:100%;object-fit:cover;border-radius:6px} .fa-sug{display:flex;flex-wrap:wrap;gap:6px} .fa-aj{background:var(--acc);color:#14141a;border-color:transparent;flex:none} .fa-l .milieu{min-width:0} .td-sports{margin:10px 0 2px; flex-wrap:wrap; overflow:visible} .td-plus{display:block; margin:10px auto 0}
 .fd-pt{display:flex; align-items:center; justify-content:space-between; gap:10px} .fd-pm{width:auto} .fd-pm button{min-width:52px; padding:8px 14px}
 .fd-pv{display:block; margin:6px 0 2px; font:700 22px var(--f-cond); color:var(--vert)}
 .fd-r{-webkit-appearance:none; appearance:none; width:100%; height:8px; border-radius:99px; margin:14px 0 6px;
@@ -2871,7 +2871,7 @@ const SANS_EFFET = new Set(['deals_etat', 'accueil_live', 'annonce_detail', 'car
   // 28 oct 2026 (vitesse) : ces appels ne changent rien a ce que les ecrans affichent : ils ne vident plus la memoire
   'push_enregistrer', 'calculer_prix', 'calculer_catalogue', 'carte_lire', 'rachat_calculer', 'clients_liste', 'break_ventes_joueur',
   'apple_achat_info', 'bilan_csv', 'break_envois', 'psa_cert', 'ebay_jeton_lier', 'deals_etat',
-  'deals_tour', 'ebay_politiques']);        // 4 nov 2026 : des lectures qui vidaient la memoire
+  'deals_tour', 'ebay_politiques', 'achats_suggerer']);        // 4 nov 2026 : des lectures qui vidaient la memoire
 // une lecture selon ses arguments : valeur_suivi(cid) lit, valeur_suivi(cid, oui) regle ; carte_etat(cid) lit le dernier examen
 const sansEffet = (nom, a) => SANS_EFFET.has(nom) || (nom === 'valeur_suivi' && a.length < 2) || (nom === 'carte_etat' && a[1] === null);
 // 4 nov 2026 (revue) : la virgule decimale seulement en francais (« PSA 8.5 » en anglais)
@@ -4662,7 +4662,7 @@ async function garderCollection(){
 async function garderVente(){
   const b = $('#v2-garde'); if (b) { b.disabled = true; b.textContent = tt('Enregistrement…', 'Saving…'); }
   const r = await API.carte_garder({carte: {...lireChampsVente(), emplacement: 'Collection', valeur: (V2.prep && V2.prep.prix && V2.prep.prix.marche) || null}, titre: $('#v2-titre').value.trim(), prix: V2.prix, cout: val('v2-cout'),
-    photos: V2.photos, originales: V2.originales || null, cid: V2.cid}).catch(e => ({ok:false, erreur:e.message}));
+    photos: V2.photos, originales: V2.originales || null, cid: V2.cid, achat: V2.achat || null}).catch(e => ({ok:false, erreur:e.message}));
   if (!r || !r.ok) { if (b) { b.disabled = false; b.innerHTML = `<b>${tt('Garder', 'Keep')}</b><small>${tt('dans ma collection', 'in my collection')}</small>`; } toast((r && r.erreur) || tt('Erreur', 'Error'), 5000); return; }
   for (const k in V2) delete V2[k];
   V().innerHTML = `<section class="ecran vendre fini"><div class="gros-ok">✓</div><div class="titre">${tt('Dans ta collection', 'In your collection')}</div>
@@ -4971,13 +4971,14 @@ function rendreVente2(){
           ${V2.descMod ? `<button class="lien-t" id="v2-desc-auto">↺ ${tt('Revenir au texte de l’app', 'Back to the app’s text')}</button>` : ''}</details>
 </div>
       <div id="vs-b-cout"><div class="bloc-v"><div class="bloc-t">${tt('Mon coût', 'My cost')} <span class="sous">${tt('optionnel : ton vrai profit', 'optional: your real profit')}</span></div>
-          <input class="champ" id="v2-cout" type="number" inputmode="decimal" step="0.01" value="${esc(V2.cout ?? '')}" placeholder="0,00"></div>
+          <input class="champ" id="v2-cout" type="number" inputmode="decimal" step="0.01" value="${esc(V2.cout ?? '')}" placeholder="0,00"><div id="v2-achats"></div></div>
 </div>
     </div>
     <div class="barre-publier vs-barre"><div class="resume-p"><b id="v2-rp">${argent(V2.prix, 2)}</b><span>${esc([o.format === 'encan' ? tt('Encan 7 j', 'Auction 7 d') : tt('Prix fixe', 'Buy It Now'), {lettre: tt('Enveloppe', 'Envelope'), suivi: tt('Suivi', 'Tracked'), gratuit: tt('Livraison gratuite', 'Free shipping')}[o.expedition], o.offres && o.format !== 'encan' ? tt('Offres', 'Offers') : '', o.promotion ? tt('Promo ', 'Promo ') + o.promotion + ' %' : '', o.retours === 'non' ? tt('Sans retours', 'No returns') : tt('Retours 30 j', '30-day returns'), V2.debut ? tt('Programmée ', 'Scheduled ') + dateProg(V2.debut) : ''].filter(Boolean).join(' · '))}</span></div>
       <span class="bp-actions"><button class="btn ghost duo" id="v2-garde"><b>${tt('Garder', 'Keep')}</b><small>${tt('dans ma collection', 'in my collection')}</small></button><button class="btn" id="v2-pub">${V2.debut ? tt('Programmer sur eBay', 'Schedule on eBay') : tt('Publier sur eBay', 'Publish on eBay')}</button></span></div>
   </section>`;
   brancherVente2();
+  achatsVente();
   const ouvrir = (k) => { S.v2Feuille = k; const el = $('#vs-b-' + k); if (!el) return;
     if (k === 'det') el.querySelectorAll('details').forEach(d => d.open = true);
     feuilleBloc(el, '', `<button class="btn" id="vs-fini">${tt('OK', 'OK')}</button>`); const f = $('#vs-fini'); if (f) f.onclick = () => { S.v2Feuille = null; fermerFeuille();
@@ -5126,7 +5127,7 @@ function brancherVente2(){
 async function publierVente2(){
   const b = $('#v2-pub');
   const corps = () => ({carte: lireChampsVente(), titre: $('#v2-titre').value.trim(), prix: V2.prix, description: $('#v2-desc').value,
-    photos: V2.hebergees || V2.photos, cout: val('v2-cout'), cid: V2.cid, sku: V2.sku, ...V2.opts,
+    photos: V2.hebergees || V2.photos, cout: val('v2-cout'), cid: V2.cid, sku: V2.sku, achat: V2.achat || null, ...V2.opts,
     debut: V2.debut ? new Date(V2.debut).toISOString() : null});
   const lib = V2.debut ? tt('Programmer sur eBay', 'Schedule on eBay') : tt('Publier sur eBay', 'Publish on eBay');
   if (!nb(V2.prix)) { toast(tt('Indique un prix', 'Enter a price')); $('#v2-prix').focus(); return; }
@@ -6687,6 +6688,9 @@ async function ouvrirAnnonce(base){
         : tt('Plus un deal : prix trop haut', 'No longer a deal: price too high')] : d.rabais != null && d.rabais >= 30 ? ['vert', tt('Deal', 'Deal') + ' −' + d.rabais + ' %'] : d.rabais != null && d.rabais > 0 ? ['acc', tt('Bon prix', 'Good price') + ' −' + d.rabais + ' %']
       : d.rabais != null && d.rabais < -15 ? ['rouge', tt('Trop cher', 'Too expensive') + ' +' + (-d.rabais) + ' %'] : null;
     const budget = S.budget && S.budget.budget && total && total > S.budget.reste;
+    // 5 nov 2026 (Fantilli : une Signature Materials comparee aux Rookie Auto Patch) : un prix fixe sous 30 % de la valeur
+    // est presque toujours une autre carte ; on le dit au lieu de promettre le profit
+    const suspect = !encan && d.valeur && total && total < d.valeur * 0.3;
     const ventes = (d.ventes || []).slice(0, 14);
     f.innerHTML = `<div class="fen fa" role="dialog" aria-modal="true"><button class="fen-x" aria-label="${esc(tt('Fermer', 'Close'))}">✕</button>
       <div class="fa-photo"><div class="fen-img" id="fen-img">${photos[0] ? `<img src="${esc(photos[0])}" alt="">` : SVG_CARTE}</div>
@@ -6699,7 +6703,7 @@ async function ouvrirAnnonce(base){
         <div class="fa-k fa-g"><span>${tt('Profit', 'Profit')}</span>${gainAff != null ? `<b class="${gainAff > 0 ? '' : 'neg'}">${gainAff > 0 ? '+' : '−'}${argent(Math.abs(gainAff), 0)}</b><small>${encan && maxA != null && d.valeur ? tt('à ta mise max', 'at your max bid') : tt('après frais', 'after fees')}</small>`
           : d.chargement || d.ventes_attente ? `<b><span class="roue"></span></b><small>&nbsp;</small>` : `<b>—</b><small>&nbsp;</small>`}</div>
       </div>
-      ${depasse || budget ? `<div class="fa-pils">${depasse ? `<span class="capsule rouge">${esc(vt[1])}</span>` : ''}${depasse && d.deal_retire ? `<span class="capsule">${tt('Retiré de tes deals', 'Removed from your deals')}</span>` : ''}${budget ? `<span class="capsule rouge">${tt('Au-dessus de ton budget', 'Over your budget')}</span>` : ''}</div>` : ''}
+      ${depasse || budget || suspect ? `<div class="fa-pils">${suspect ? `<span class="capsule or">${tt('Prix très bas : vérifie que c’est la même carte', 'Very low price: check it’s the same card')}</span>` : ''}${depasse ? `<span class="capsule rouge">${esc(vt[1])}</span>` : ''}${depasse && d.deal_retire ? `<span class="capsule">${tt('Retiré de tes deals', 'Removed from your deals')}</span>` : ''}${budget ? `<span class="capsule rouge">${tt('Au-dessus de ton budget', 'Over your budget')}</span>` : ''}</div>` : ''}
       <div class="fa-ventes">${ventes.length ? `<div class="fa-vt">${d.valeur ? tt('Se vend ', 'Sells for ') + `<b class="fa-med">${argent(d.valeur, 0)}</b>` : tt('Vendues récemment', 'Recently sold')} <small>${d.valeur && d.nb_vendues ? tt(`médiane de ${d.nb_vendues} ventes · glisse ›`, `median of ${d.nb_vendues} sales · swipe ›`) : tt('même carte · glisse ›', 'same card · swipe ›')}</small></div>
         <div class="fv-car fa-car">${ventes.map(k => `<a class="fv" ${k.url ? `href="${esc(urlSure(k.url))}" target="_blank" rel="noopener"` : ''}><div class="fv-ph">${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo, 300))}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
           <b>${argent(k.prix, 0)}</b><small>${k.le ? dateCourte(k.le) : ''}</small></a>`).join('')}</div>`
@@ -8614,9 +8618,10 @@ async function rechargerBreakSilencieux(){ const d = await API.break_detail(S.br
 // ============================================================
 const FILTRES_INV = [['tous','Tous',{dispo:1}],['collection','Ma collection',{dispo:1, emplacement:'Collection'}],   // 28 oct (Mathieu) : plus de filtre « À lister »
   ['listee','Sur eBay',{statut:'Listée'}],
+  ['afficher','À mettre sur eBay',{dispo:1, a_afficher:1}],                // 5 nov 2026 : en stock depuis 3 mois et plus
   ['sans-cout','Sans coût',{sans_cout:1}],['magasin','Magasin',{dispo:1, emplacement:'Magasin'}],['consig','Consignation',{dispo:1, consignation:1}],['vendue','Vendues',{statut:'Vendue'}]];
 // 29 oct 2026 (Mathieu : « trop d'options et je dois swiper ») : 3 filtres visibles, le reste (et les sports) dans « Filtrer »
-const LIB_FILTRE = (k) => ({tous: tt('Tout', 'All'), collection: tt('Collection', 'Collection'), listee: tt('Sur eBay', 'On eBay'), 'sans-cout': tt('Sans coût', 'No cost'),
+const LIB_FILTRE = (k) => ({tous: tt('Tout', 'All'), collection: tt('Collection', 'Collection'), listee: tt('Sur eBay', 'On eBay'), afficher: tt('À mettre sur eBay', 'To list on eBay'), 'sans-cout': tt('Sans coût', 'No cost'),
   magasin: tt('Magasin', 'Store'), consig: tt('Consignation', 'Consignment'), vendue: tt('Vendues', 'Sold')})[k] || k;
 function filtresBarreInv(){
   const f = S.filtreInv || 'tous', autre = !['tous', 'collection', 'listee'].includes(f), sp = S.sportInv;
@@ -8695,6 +8700,7 @@ async function vueInventaire(arg){
     <div class="chips i-filtres">${filtresBarreInv()}</div>
     <div class="acc-tuiles i-tab" id="i-tab"></div>
     <div class="acc-reserve"><div id="i-b-res"><div id="i-coll"></div><div id="i-kpis"></div></div></div>
+    <div id="i-achats"></div>
     <div id="i-liste">${roue}</div></section>`;
   blocCollection($('#i-coll'));
   brancherFiltresInv();
@@ -8705,10 +8711,12 @@ async function vueInventaire(arg){
       ${S.mode === 'vendeur' ? `<a class="acc-pil" href="#vendre/programmer"><span class="ap-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg></span><span class="ap-t">${tt('Programmer sur eBay', 'Schedule on eBay')}</span><i>›</i></a>` : ''}
       <button class="acc-pil" id="im-import"><span class="ap-ic"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg></span><span class="ap-t">${tt('Importer mes annonces eBay', 'Import my eBay listings')}</span><i>›</i></button>
       <button class="acc-pil" id="im-brou"><span class="ap-ic"><svg viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M4 21h16"/></svg></span><span class="ap-t">${tt('Brouillons et export', 'Drafts and export')}</span><i>›</i></button>
-      <button class="acc-pil" id="im-soum"><span class="ap-ic"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></span><span class="ap-t">${tt('Soumissions de gradation', 'Grading submissions')}</span><i>›</i></button></div>`);
+      <button class="acc-pil" id="im-soum"><span class="ap-ic"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></span><span class="ap-t">${tt('Soumissions de gradation', 'Grading submissions')}</span><i>›</i></button>
+      <button class="acc-pil" id="im-ach"><span class="ap-ic"><svg viewBox="0 0 24 24"><path d="M6 7h12l-1 13H7L6 7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg></span><span class="ap-t">${tt('Mes achats eBay', 'My eBay purchases')}</span><i>›</i></button></div>`);
     $('#im-import').onclick = () => { fermerFeuille(); feuilleImportEbay(); };
     $('#im-brou').onclick = () => { fermerFeuille(); feuilleBrouillons(); };
-    $('#im-soum').onclick = () => { fermerFeuille(); feuilleSoumissions(); }; };
+    $('#im-soum').onclick = () => { fermerFeuille(); feuilleSoumissions(); };
+    $('#im-ach').onclick = () => { fermerFeuille(); feuilleAchats(); }; };
   // 4 nov 2026 (vitesse) : la liste part en meme temps que les reglages (le meme appel est repris par chargerInventaire)
   const fInv = Object.assign({}, (FILTRES_INV.find(x => x[0] === S.filtreInv) || FILTRES_INV[0])[2], {q:S.rechInv});
   // (seulement sans copie gardee sur le telephone : sinon l'inventaire s'ouvre deja tout de suite avec elle)
@@ -8716,7 +8724,9 @@ async function vueInventaire(arg){
   const pre = !MEMO.has(kInv) && !gardeLire(kInv) ? API.inventaire_liste(fInv).catch(() => {}) : null;
   await Promise.all([Promise.all([reglages(), consignataires()]).catch(() => {}), pre]);
   await chargerInventaire();
+  banniereAchats();
   if (arg === 'import') feuilleImportEbay();
+  if (arg === 'achats') feuilleAchats();
   if (arg === 'ajout') feuilleAjout();
 }
 // le repere prix : ton prix face a la mediane des memes cartes en vente (et le plus bas de la concurrence)
@@ -8749,6 +8759,7 @@ function tuileInv(c){
     : c.statut === 'Listée' && c.debut && Date.parse(c.debut) > Date.now() ? `<span class="capsule or petit">${icH()}${esc(dateProg(c.debut))}</span>`
     : c.statut === 'Listée' ? capsule(tt('Sur eBay', 'On eBay'), 'acc petit')
     : envoiDe(c) ? capsule(envoiDe(c).type === 'gradation' ? (envoiDe(c).etape ? tt('À soumettre', 'To submit') : tt('Au gradage', 'At grading')) + ' · ' + envoiDe(c).compagnie : tt('En encan', 'At auction'), (envoiRetard(envoiDe(c)) ? 'or' : 'acc') + ' petit')
+    : c.a_afficher ? capsule(tt('À mettre sur eBay', 'List on eBay'), 'or petit')
     : capsule(c.emplacement || tt('En stock', 'In stock'), 'petit');
   const nom = c.joueur || titreCourt(c.titre) || tt('Article', 'Item');
   const det = [c.annee, c.set_nom, c.parallele, c.numero ? '#' + c.numero : '', c.tirage ? '/' + c.tirage : '', c.auto ? 'Auto' : '', c.grade].filter(Boolean).join(' · ');
@@ -8781,7 +8792,7 @@ function tuileSlab(c){
     <span class="sl-lab"><span class="sl-t">${esc(titre)}</span>
       <span class="sl-n ${n ? (n.vraie ? 'vraie' : '') : 'aucune'}"><b class="${n && n.n.length > 3 ? 'long' : ''}">${n ? esc(n.n) : '—'}</b><small>${n ? esc(n.s) : tt('À NOTER', 'NOT RATED')}</small></span></span>
     <span class="sl-puits">${photoOk(c.photo) ? `<img src="${esc(photoNet(c.photo))}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : SVG_CARTE}
-      ${pastilleTend(c, 'sl-tend')}${env ? `<span class="sl-env">${capsule(env.type === 'gradation' ? (env.etape ? tt('À soumettre', 'To submit') : tt('Au gradage', 'At grading')) : tt('En encan', 'At auction'), (envoiRetard(env) ? 'or' : 'acc') + ' petit')}</span>` : ''}</span>
+      ${pastilleTend(c, 'sl-tend')}${!env && c.a_afficher ? `<span class="sl-env">${capsule(tt('À mettre sur eBay', 'List on eBay'), 'or petit')}</span>` : ''}${env ? `<span class="sl-env">${capsule(env.type === 'gradation' ? (env.etape ? tt('À soumettre', 'To submit') : tt('Au gradage', 'At grading')) : tt('En encan', 'At auction'), (envoiRetard(env) ? 'or' : 'acc') + ' petit')}</span>` : ''}</span>
   </button>`;
 }
 async function consignataires(force){ if (!S.consig || force) S.consig = await API.consignataires_liste(); return S.consig; }
@@ -10344,6 +10355,63 @@ async function promoCarte(c, r){
   };
   peindre(r);
   if (!r) peindre(await API.annonce_promotion(c.id).catch(e => ({ok:false, erreur:e.message})));
+}
+// 5 nov 2026 (Mathieu : « quand je gagne des cartes, elles devraient se retrouver dans une zone achats de l'inventaire ») :
+// les achats et encans gagnes sur eBay (90 jours), un tap pour les mettre dans l'inventaire avec le vrai prix paye
+async function banniereAchats(){
+  const z = $('#i-achats'); if (!z) return;
+  const r = await API.achats_liste().catch(() => null);
+  if (!$('#i-achats') || !r || !r.ok || !r.a_ajouter) { if (z) z.innerHTML = ''; return; }
+  z.innerHTML = `<button class="acc-pil i-ach" id="i-ach-b"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12l-1 13H7L6 7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg></span>
+    <span class="ap-t"><b>${r.a_ajouter} ${tt(r.a_ajouter > 1 ? 'achats eBay à ajouter' : 'achat eBay à ajouter', r.a_ajouter > 1 ? 'eBay purchases to add' : 'eBay purchase to add')}</b>
+    <small>${tt('Ajoute-les : le prix payé devient leur coût', 'Add them: the price paid becomes their cost')}</small></span><i aria-hidden="true">›</i></button>`;
+  $('#i-ach-b').onclick = () => { vibrer(); feuilleAchats(); };
+}
+async function feuilleAchats(){
+  ouvrirFeuille(`<h3>${tt('Mes achats eBay', 'My eBay purchases')}</h3><div id="fa-z">${roue}</div>`);
+  let r = await API.achats_liste(true).catch(e => ({ok:false, erreur:e.message}));
+  const z = $('#fa-z'); if (!z) return;
+  const lienE = (a) => `${S.ebaySite || 'https://www.ebay.ca'}/itm/${encodeURIComponent(a.item_id)}`;
+  const peindre = () => {
+    if (!r || !r.ok) { z.innerHTML = `<div class="vide">${esc((r && r.erreur) || tt('Achats pas chargés', 'Purchases not loaded'))}</div>`; return; }
+    const libres = r.achats.filter(a => !a.carte_id), lies = r.achats.filter(a => a.carte_id);
+    const lig = (a) => `<div class="rangee fa-l">${photoOk(a.photo) ? `<span class="vig"><img src="${esc(photoNet(a.photo, 140))}" alt="" loading="lazy" onerror="this.remove()"></span>` : `<span class="vig">${SVG_CARTE}</span>`}
+      <span class="milieu"><a class="nom" href="${esc(lienE(a))}" target="_blank" rel="noopener">${esc(titreCourt(a.titre))}</a>
+        <span class="sous">${esc(dateCourte(a.date) || '')} · ${argent(a.cout, 2)} ${tt('payé', 'paid')}</span></span>
+      ${a.carte_id ? `<button class="pilule" data-voir="${a.carte_id}">${tt('Voir', 'View')}</button>` : `<button class="pilule fa-aj" data-aj="${esc(a.item_id)}" data-n="${a.n}">${tt('Ajouter', 'Add')}</button>`}</div>`;
+    z.innerHTML = !r.achats.length ? `<div class="vide">${r.ebay ? tt('Aucun achat eBay dans les 90 derniers jours.', 'No eBay purchases in the last 90 days.') : tt('Connecte ton compte eBay pour voir tes achats.', 'Connect your eBay account to see your purchases.')}</div>`
+      : `<div class="sous" style="margin-bottom:10px">${tt('Tes achats et encans gagnés sur eBay (90 derniers jours, la limite d’eBay). Ajoutés à l’inventaire avec le vrai prix payé (port et taxes compris) : ton profit est juste quand tu revends.', 'Your eBay purchases and won auctions (last 90 days, eBay’s limit). Added to inventory with the real price paid (shipping and taxes included): your profit is right when you resell.')}</div>
+        ${libres.length ? `<div class="r-titre">${tt('À ajouter', 'To add')} · ${libres.length}${libres.length > 1 ? `<button class="lien-t" id="fa-tout" style="float:right">${tt('Tout ajouter', 'Add all')}</button>` : ''}</div><div class="liste">${libres.map(lig).join('')}</div>` : ''}
+        ${lies.length ? `<div class="r-titre" style="margin-top:14px">${tt('Déjà dans ton inventaire', 'Already in your inventory')} · ${lies.length}</div><div class="liste">${lies.slice(0, 60).map(lig).join('')}</div>` : ''}`;
+    $$('[data-aj]', z).forEach(b => b.onclick = async () => { b.disabled = true; vibrer();
+      const x = await essai(API.achat_vers_inventaire(b.dataset.aj, +b.dataset.n), tt('Ajoutée à l’inventaire', 'Added to inventory'));
+      if (x && x.ok) { const a = r.achats.find(y => y.item_id === b.dataset.aj && String(y.n) === b.dataset.n); if (a) a.carte_id = x.id; peindre(); chargerInventaire(); banniereAchats(); } else b.disabled = false; });
+    const t_ = $('#fa-tout', z); if (t_) t_.onclick = async () => { t_.disabled = true; vibrer(); let n = 0;
+      for (const a of r.achats.filter(y => !y.carte_id)) { const x = await API.achat_vers_inventaire(a.item_id, a.n).catch(() => null); if (x && x.ok) { a.carte_id = x.id; n++; } }
+      toast(tt(`${n} cartes ajoutées à l’inventaire`, `${n} cards added to inventory`)); peindre(); chargerInventaire(); banniereAchats(); };
+    $$('[data-voir]', z).forEach(b => b.onclick = async () => { const c = await API.carte_lire(+b.dataset.voir).catch(() => null); if (c && c.id) { fermerFeuille(); feuilleCarte(c); } });
+  };
+  peindre();
+}
+// a la vente : les achats eBay qui ressemblent a la carte ; un tap relie l'achat (le prix paye devient le cout)
+async function achatsVente(){
+  const z = $('#v2-achats'); if (!z) return;
+  const t = ($('#v2-titre') || {}).value || V2.titre || '';
+  if (V2.cid) { z.innerHTML = ''; return; }                 // une carte de l'inventaire : son achat se relie sur sa fiche
+  const r = await API.achats_suggerer(t).catch(() => null);
+  if (!$('#v2-achats') || !r || !r.ok || !r.achats.length) { if ($('#v2-achats')) z.innerHTML = ''; return; }
+  const peindre = () => {
+    z.innerHTML = `<div class="sous" style="margin:8px 0 6px">${tt('Achetée sur eBay ? Touche l’achat pour le relier :', 'Bought on eBay? Tap the purchase to link it:')}</div>
+      <div class="fa-sug">${r.achats.map(a => { const on = V2.achat && V2.achat.item_id === a.item_id && V2.achat.n === a.n;
+        return `<button class="chip ${on ? 'on' : ''}" data-va="${esc(a.item_id)}" data-n="${a.n}">${argent(a.cout, 2)} · ${esc(dateCourte(a.date) || '')}${a.meme_carte ? '' : ' · ' + esc(titreCourt(a.titre).slice(0, 26))}</button>`; }).join('')}</div>`;
+    $$('[data-va]', z).forEach(b => b.onclick = () => { vibrer();
+      const a = r.achats.find(y => y.item_id === b.dataset.va && String(y.n) === b.dataset.n); if (!a) return;
+      const deja = V2.achat && V2.achat.item_id === a.item_id && V2.achat.n === a.n;
+      V2.achat = deja ? null : {item_id: a.item_id, n: a.n};
+      const ci = $('#v2-cout'); if (ci && !deja) { ci.value = dev2(a.cout); V2.cout = ci.value; }
+      peindre(); });
+  };
+  peindre();
 }
 async function achatCarte(c){
   const z = $('#c-achat'); if (!z) return;
