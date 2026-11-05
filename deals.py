@@ -293,7 +293,7 @@ def maj_prix(item_id, total, port=None, mises=None, fin=None):
     return {"deal": None if retire else x, "retire": retire}
 
 
-REVALIDE_V = 6                   # 2 : « checklist » ; 3 : Bowman U = football ; 4 : la F1 ; 5 : « Beckett » prenom (pas gradee) ; 6 : Signature Materials (4 nov)
+REVALIDE_V = 8                   # 2 : « checklist » ; 3 : Bowman U = football ; 4 : la F1 ; 5 : « Beckett » prenom (pas gradee) ; 6 : Signature Materials ; 7 : « Draft » ; 8 : « Beam Team » (4 nov)
 
 
 def _revalider_un(x):

@@ -6,6 +6,7 @@ import os, sys, tempfile, unittest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ["LOCKERROOM_DONNEES"] = tempfile.mkdtemp()
 os.environ["LR_DEALS_VERIF_JOUR"] = "0"
+os.environ.setdefault("LR_POIDS_JOURS", "jeu:1")              # 4 nov 2026 : budgets egaux tous les jours (le test compte en dur)
 from datetime import datetime, timedelta, timezone
 import deals, vendues, cartes_match
 maint = datetime.now(timezone.utc)

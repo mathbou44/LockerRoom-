@@ -428,6 +428,8 @@ def memes(texte, requete=True, n=24, fond=False, exclure_titre=None):
     except Exception:
         comm = []
     tout = ebay + [{**v, "source": "SlabCoach"} for v in comm]
+    if not requete:                             # 4 nov 2026 : la fiche d'une annonce (une seule carte precise)
+        tout = _sans_aberrants(tout)
     tout.sort(key=lambda v: str(v.get("le") or ""), reverse=True)
     # 27 oct 2026 (revue) : la valeur affichee passe par les MEMES garde-fous que les deals (valeur_sure) : sinon aucune
     import deals
@@ -441,6 +443,17 @@ def memes(texte, requete=True, n=24, fond=False, exclure_titre=None):
             "tendance": tendance(tout)}
 
 
+def _sans_aberrants(l, facteur=4.0):
+    """4 nov 2026 (Mathieu : une Jordan Beam Team a 2 000 $ montree avec des ventes a 3 $ et 24 $ : « pas toute la bonne
+    carte ») : avec 4 ventes et plus, une vente 4 fois sous ou au-dessus de la mediane n'est pas la meme carte."""
+    if len(l) < 4:
+        return l
+    m = statistics.median(v["prix"] for v in l if v.get("prix")) if any(v.get("prix") for v in l) else None
+    if not m:
+        return l
+    return [v for v in l if v.get("prix") and m / facteur <= v["prix"] <= m * facteur]
+
+
 def memes_annonce(titre, q=None, n=24, fond=False):
     """26 oct 2026 - les ventes de la MEME carte qu'une annonce. Avec q (la recherche du chasseur de deals, deja en
     cache) : ses ventes filtrees par le titre de l'annonce (meme parallele, meme numero) ; s'il y en a moins de 3,
@@ -451,7 +464,7 @@ def memes_annonce(titre, q=None, n=24, fond=False):
             cib_q = cartes_match.cible(q)
             r = rechercher(cartes_match.requete_ebay(cib_q) or q, fond=fond)
             cib = cartes_match.cible_titre(titre)
-            l = [v for v in r.get("ventes") or [] if not cartes_match.raisons_refus(cib, v["titre"])]
+            l = _sans_aberrants([v for v in r.get("ventes") or [] if not cartes_match.raisons_refus(cib, v["titre"])])
             if len(l) >= 3:
                 l.sort(key=lambda v: str(v.get("le") or ""), reverse=True)
                 prix = [v["prix"] for v in l]

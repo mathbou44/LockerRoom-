@@ -81,3 +81,19 @@ assert all("e1" not in l for l in lus) and "f1" in deals.lire()["retires"], lus
 r = deals.prix_fixes(lire_lot=lot2)                                      # relue il y a moins de 30 min : pas relue
 assert r["lus"] == 0, r
 print("ok : filtres des deals")
+
+
+def test_profit_min_encan():
+    """4 nov 2026 (Mathieu : « pourquoi je vois encore les cartes en bas du montant du filtre ») : le profit minimum d'un encan
+    se compare au profit affiche (a la mise max), pas a celui de la mise du moment."""
+    import lockerroom
+    A = lockerroom.Api
+    l = [{"encan": True, "valeur": 43, "mise_max": 30, "port": 0, "gain": 36, "total": 1, "titre": "Robertson YG"},
+         {"encan": False, "valeur": 100, "gain": 40, "total": 45, "titre": "Demidov YG"}]
+    r = A._deals_filtrer(l, {"gain_min": 30, "_fp": .1325, "_ff": .4})
+    assert [x["titre"] for x in r] == ["Demidov YG"], r
+    print("ok : profit minimum des encans")
+
+
+if __name__ == "__main__":
+    test_profit_min_encan()

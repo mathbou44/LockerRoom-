@@ -310,8 +310,15 @@ def raisons_refus(c, titre, appris=None):
         ia -= autres_j
         en_plus = ia - c["ident"]
         manque_i = c["ident"] - ia
+        # 4 nov 2026 (Mathieu : une Sennecke « Rookie Draft Outburst » comparee aux Young Guns Outburst) : certains mots
+        # font toujours une autre carte ; ils ne peuvent pas manquer, meme quand le reste du titre correspond
+        forts = (c["ident"] & MOTS_FORTS) - ia
+        if re.search(r"draft(ed)?\s*picks?|overall|draft\s*day|draft\s*class|\b(1st|first|#?\s*1)\s*(round\s*)?draft", c.get("texte") or ""):
+            forts.discard("draft")              # « #1 Draft Pick » : une description du joueur, pas le nom de la carte
         if en_plus:
             r.append("autre carte (" + " ".join(sorted(en_plus)[:3]) + ")")
+        elif forts:
+            r.append("autre carte (" + " ".join(sorted(forts)[:2]) + " absent)")
         elif len(manque_i) > max(len(c["ident"]) // 3, 1 if c.get("autres_joueurs") else 0):
             # 2 joueurs + le produit + la numerotation : la carte est deja reconnue ; un mot d'insert peut manquer
             r.append("autre carte (" + " ".join(sorted(manque_i)[:3]) + " absent)")
@@ -804,6 +811,9 @@ def identite(titre, joueur=""):
         (marques if w in MARQUES else out).add(w)
     return out, marques
 
+
+# 4 nov 2026 : les mots d'insert qui ne manquent jamais dans une vente de la meme carte
+MOTS_FORTS = {"draft", "beam"}          # « Beam Team » : un insert, pas la carte de base (4 nov 2026, Jordan Stadium Club)
 
 # 30 oct 2026 : les mots qui, apres le nom du set, font une AUTRE carte (Young Guns Renewed, Retro...) ; un mot descriptif
 # (« Horizontal ») ne l'est pas : les vendeurs l'ecrivent rarement (Premier Horizontal Rookie Auto Patch = Premier RPA)

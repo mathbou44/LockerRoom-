@@ -5616,6 +5616,14 @@ class Api:
         return lst
 
     @staticmethod
+    def _gain_affiche(x, fp=None, ff=None):
+        """Le profit que l'ecran affiche : un encan, a la mise max (port compris) ; un prix fixe, au prix demande."""
+        if x.get("encan") and x.get("mise_max") is not None and x.get("valeur") and fp is not None:
+            import deals as _dlg
+            return x["valeur"] * (1 - fp) - (ff or 0) - (float(x["mise_max"]) + _dlg.port_eff(x.get("port")))
+        return x.get("gain") or 0
+
+    @staticmethod
     def _deals_filtrer(lst, f):
         """prix_min / prix_max (total, $ CA), rabais_min (%), gain_min ($), valeur_min ($), joueurs [..] (un des noms),
         sortes [recrue, auto, patch, numerotee, gradee, brute] (toutes demandees), avec_mise (encans avec au moins 1 mise)."""
@@ -5627,7 +5635,9 @@ class Api:
         for x in lst:
             if pmin is not None and (x.get("total") or 0) < pmin or pmax is not None and (x.get("total") or 0) > pmax:
                 continue
-            if rmin is not None and (x.get("rabais") or 0) < rmin or gmin is not None and (x.get("gain") or 0) < gmin:
+            if rmin is not None and (x.get("rabais") or 0) < rmin:
+                continue
+            if gmin is not None and Api._gain_affiche(x, f.get("_fp"), f.get("_ff")) < gmin:
                 continue
             if vmin is not None and (x.get("valeur") or 0) < vmin:
                 continue
@@ -5674,6 +5684,9 @@ class Api:
                                         and float(x["total"]) - float(x.get("port") or 0) > float(x["mise_max"]) + 0.5)]
         rg = self.reglages_lire()
         fp_, ff_ = (rg["frais_ebay_pct"] or 0) / 100, rg["frais_ebay_fixe"] or 0
+        # 4 nov 2026 (Mathieu : « pourquoi je vois encore les cartes en bas du montant du filtre ») : le profit minimum d'un
+        # encan se compare au profit AFFICHE (a la mise max), pas a celui de la mise du moment (1 $ : toujours enorme)
+        f = dict(f, _fp=fp_, _ff=ff_)
         par_sport = {}
         for x in tout:
             par_sport[x.get("sport") or "hockey"] = par_sport.get(x.get("sport") or "hockey", 0) + 1
@@ -5691,7 +5704,7 @@ class Api:
         # commentaire avalait les tris « prix » et « gain » (tout retombait sur « meilleur deal »)
         cles = {"rabais": lambda x: (1 if x.get("encan") else 0, x.get("ratio") or 1),     # prix fixe d'abord : la mise d'un encan monte
                 "prix": lambda x: (x.get("total") or 0, x.get("ratio") or 1),
-                "gain": lambda x: (-(x.get("gain") or 0), x.get("ratio") or 1),
+                "gain": lambda x: (-Api._gain_affiche(x, fp_, ff_), x.get("ratio") or 1),       # le profit affiche
                 "recent": lambda x: str(x.get("vu_le") or ""),
                 "fin": lambda x: (0, str(x.get("fin")), 0) if x.get("encan") else (1, "", -_ts(x.get("vu_le")))}
         lst.sort(key=cles.get(tri, cles["rabais"]), reverse=(tri == "recent"))
@@ -5797,7 +5810,7 @@ class Api:
         # 31 oct 2026 (Mathieu : « assure-toi que le filtre fonctionne lorsqu'applique ») : TOUS les filtres s'appliquent aussi
         # aux encans des gros vendeurs : rabais minimum (un encan sans valeur verifiee n'a pas de rabais -> cache), une mise
         # au moins, prix fixe seulement (-> aucun encan)
-        f_s = {k: v for k, v in f.items() if k in ("joueurs", "sortes", "prix_min", "prix_max", "rabais_min", "avec_mise", "gain_min")}
+        f_s = {k: v for k, v in f.items() if k in ("joueurs", "sortes", "prix_min", "prix_max", "rabais_min", "avec_mise", "gain_min", "_fp", "_ff")}
         if _float(f.get("rabais_min")) or _float(f.get("gain_min")):
             suivis = [x for x in suivis if x.get("valeur")]
         if f.get("type") == "fixe":
