@@ -1465,6 +1465,7 @@ body.scan-ouvert{overflow:hidden}
 .scan-bas small{color:rgba(255,255,255,.78); font-size:13.5px; text-align:center}
 .scan-declic{width:72px; height:72px; border-radius:50%; border:4px solid rgba(255,255,255,.9); background:rgba(255,255,255,.22); padding:0}
 .scan-declic:active{transform:scale(.94)}
+.scan-declic.pret{border-color:#7ee2a8; background:rgba(126,226,168,.35); box-shadow:0 0 0 6px rgba(126,226,168,.3); transition:all .15s}
 .scan.fige .scan-bas, .scan.fige .scan-cadre i{opacity:0; transition:opacity .2s}
 .scan video{transition:filter .4s} .scan.fige video{filter:blur(16px) brightness(.5)} .scan.fige .scan-cadre{box-shadow:0 0 0 200vmax transparent}
 .scan-fige{position:fixed; z-index:2; object-fit:cover; border-radius:16px; transform-origin:0 0; box-shadow:0 18px 50px rgba(0,0,0,.6);
@@ -2367,7 +2368,7 @@ button.an-attente{width:100%; text-align:left; color:var(--texte); cursor:pointe
 .fd-p.on .ap-ic::before{background:var(--acc-fonce)} .fd-p.on small{color:var(--texte); font-weight:600} .fd-p small{font-size:13px}
 .fd-app{position:sticky; bottom:0; margin:4px -18px -18px; padding:12px 18px calc(14px + var(--bas)); background:linear-gradient(180deg, rgba(19,19,23,0), #131317 30%); animation:popEntre .2s ease}
 .fd-app .btn{width:100%; margin:0} #fd-raz{margin-top:6px}
-.td-eres{margin:4px 0 6px} .i-ach{margin:0 0 12px} .fa-l .vig img{width:100%;height:100%;object-fit:cover;border-radius:6px} .fa-sug{display:flex;flex-wrap:wrap;gap:6px} .fa-aj{background:var(--acc);color:#14141a;border-color:transparent;flex:none} .fa-l .milieu{min-width:0} .td-sports{margin:10px 0 2px; flex-wrap:wrap; overflow:visible} .td-plus{display:block; margin:10px auto 0}
+.td-eres{margin:4px 0 6px} .i-ach{margin:0 0 12px} .i-ach .ap-t{display:flex; flex-direction:column; gap:2px; white-space:normal} .i-ach .ap-t small{font-size:12.5px; color:var(--doux); font-weight:500} .i-ach-n{font-style:normal; display:inline-block; min-width:22px; padding:1px 7px; margin-left:6px; border-radius:11px; background:var(--acc); color:#14141a; font-size:12.5px; text-align:center; vertical-align:2px} .fa-l .vig img{width:100%;height:100%;object-fit:cover;border-radius:6px} .fa-sug{display:flex;flex-wrap:wrap;gap:6px} .fa-aj{background:var(--acc);color:#14141a;border-color:transparent;flex:none} .fa-l .milieu{min-width:0} .td-sports{margin:10px 0 2px; flex-wrap:wrap; overflow:visible} .td-plus{display:block; margin:10px auto 0}
 .fd-pt{display:flex; align-items:center; justify-content:space-between; gap:10px} .fd-pm{width:auto} .fd-pm button{min-width:52px; padding:8px 14px}
 .fd-pv{display:block; margin:6px 0 2px; font:700 22px var(--f-cond); color:var(--vert)}
 .fd-r{-webkit-appearance:none; appearance:none; width:100%; height:8px; border-radius:99px; margin:14px 0 6px;
@@ -7068,7 +7069,9 @@ async function ouvrirScanner(opts = {}){
   if (opts.but !== 'photo' && !await okIA()) { toast(tt('Sans l’IA : cherche la carte par son nom', 'Without AI: search the card by name'), 4000); return; }
   if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) return scannerSecours(opts);
   let flux;
-  try { flux = await navigator.mediaDevices.getUserMedia({audio:false, video:{facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1440}}}); }
+  try { // 5 nov 2026 (Mathieu : « les photos doivent etre de haute qualite pour la pre-evaluation PSA ») : la camera au plus
+    // haut qu'elle donne (4K sur un iPhone recent) ; l'analyse en direct, elle, travaille sur une petite image
+    flux = await navigator.mediaDevices.getUserMedia({audio:false, video:{facingMode:{ideal:'environment'}, width:{ideal:3840}, height:{ideal:2880}}}); }
   catch (e) { return scannerSecours(opts); }
   scanFermer();
   Object.assign(SCAN, {flux, opts, actif:true, essais:0, stable:0, avant:null, debut:Date.now(), etat:'cherche'});
@@ -7080,7 +7083,7 @@ async function ouvrirScanner(opts = {}){
       <span class="scan-aide" id="scan-aide">${photo ? tt('Place la carte dans le cadre', 'Place the card in the frame') : tt('Le devant de la carte dans le cadre', 'The front of the card in the frame')}</span>
       ${photo ? '' : `<span class="scan-etape" id="scan-etape"><i class="on"></i><i></i>${tt('Devant', 'Front')}</span>`}</div>
     <div class="scan-bas"><button class="scan-declic" id="scan-declic" aria-label="${esc(tt('Prendre la photo', 'Take the photo'))}"></button>
-      <small id="scan-sous">${photo ? tt('La photo se prend toute seule quand c’est net', 'The photo takes itself when it’s sharp') : tt('Le devant, puis le dos : chaque photo se prend toute seule', 'Front, then back: each photo takes itself')}</small>
+      <small id="scan-sous">${tt('Touche le bouton quand le cadre est vert', 'Tap the button when the frame turns green')}</small>
       <button class="scan-passer" id="scan-passer" hidden>${tt('Passer le dos', 'Skip the back')}</button></div>
     <img class="scan-fige" id="scan-fige" alt="" hidden>
     <div class="scan-res" id="scan-res" hidden></div></div>`);
@@ -7156,12 +7159,13 @@ function scanAnalyser(){
   else if (net < 5) scanAide(tt('Rapproche-toi un peu', 'Move a little closer'));
   else if (!angle.ok) scanAide(angle.raison === 'penche' ? tt('Redresse la carte : elle est penchée', 'Straighten the card: it’s tilted') : tt('Remplis le cadre avec la carte', 'Fill the frame with the card'));
   else if (!dosPret) scanAide(tt('Retourne la carte : le dos', 'Flip the card: the back'));
-  else { ok = true; scanAide(tt('Parfait, ne bouge plus…', 'Perfect, hold still…'), 'vert'); }
+  else { ok = true; scanAide(tt('Parfait : appuie sur le bouton', 'Perfect: tap the button'), 'vert'); }
   $('#scan-cadre').classList.toggle('pret', ok);
   SCAN.stable = ok ? SCAN.stable + 1 : 0;
-  // net et stable pendant ~0,6 s : on prend la photo. Apres 6 s sans y arriver (lumiere juste, etc.) : on essaie quand meme
-  const tard = dosPret && Date.now() - SCAN.debut > 6000 && moy >= 45 && ecart >= 14 && bouge <= 9;
-  if (SCAN.stable >= 4 || tard) scanCapturer(false);
+  // 5 nov 2026 (Mathieu : « il prend une photo de n'importe quoi pour l'arriere ; c'est nous qui devrions prendre la photo,
+  // le devant et le derriere ») : plus aucune photo automatique. L'app guide (lumiere, reflet, angle) et le cadre devient
+  // vert ; c'est toi qui appuies.
+  const dc = $('#scan-declic'); if (dc) dc.classList.toggle('pret', ok);
 }
 function scanPhoto(){
   const z = scanZone(); if (!z) return null;
@@ -7170,6 +7174,15 @@ function scanPhoto(){
   const r = Math.min(1, 1150 / Math.max(z.w, z.h)), cv = document.createElement('canvas');
   cv.width = Math.round(z.w * r); cv.height = Math.round(z.h * r);
   cv.getContext('2d').drawImage(z.v, z.x, z.y, z.w, z.h, 0, 0, cv.width, cv.height);
+  // 5 nov 2026 : la meme photo en pleine resolution (jusqu'a 3000 px), gardee pour la collection et la pre-evaluation
+  const rh = Math.min(1, 3000 / Math.max(z.w, z.h)), hd = document.createElement('canvas');
+  hd.width = Math.round(z.w * rh); hd.height = Math.round(z.h * rh);
+  hd.getContext('2d').drawImage(z.v, z.x, z.y, z.w, z.h, 0, 0, hd.width, hd.height);
+  // le serveur refuse au-dela de 4,5 Mo : on baisse la qualite au besoin (base64 = 4/3 des octets)
+  let hdu = hd.toDataURL('image/jpeg', 0.93);
+  if (hdu.length > 5.6e6) hdu = hd.toDataURL('image/jpeg', 0.85);
+  if (hdu.length > 5.6e6) hdu = hd.toDataURL('image/jpeg', 0.75);
+  SCAN.derniereHD = hdu;
   return cv.toDataURL('image/jpeg', 0.86);
 }
 async function scanCapturer(manuel){
@@ -7180,23 +7193,23 @@ async function scanCapturer(manuel){
   // 29 oct 2026 (Mathieu : « ca devrait demander le devant, puis le derriere ; le programme analyse les deux cotes pour
   // tout avoir : parallele, annee, serial, auto… et la carte est prete pour eBay et la collection, sans reprendre de photos »)
   if (!SCAN.devant) {
-    SCAN.devant = ph; SCAN.quadDevant = SCAN.quadPhoto; SCAN.grisDevant = SCAN.avant; SCAN.etat = 'retourne'; vibrer();
+    SCAN.devant = ph; SCAN.devantHD = SCAN.derniereHD; SCAN.quadDevant = SCAN.quadPhoto; SCAN.grisDevant = SCAN.avant; SCAN.etat = 'retourne'; vibrer();
     scanFiger(ph, false); $('#scan').classList.add('flash');
-    scanAide('✓ ' + tt('Devant · retourne la carte', 'Front · flip the card'), 'vert');
+    scanAide('✓ ' + tt('Devant pris · retourne la carte', 'Front taken · flip the card'), 'vert');
     setTimeout(() => {
       if (!SCAN.actif) return;
       const im = $('#scan-fige'); if (im) im.hidden = true; $('#scan').classList.remove('fige', 'flash');
       const v = $('#scan video'); if (v) v.play().catch(() => {});
       Object.assign(SCAN, {etat:'cherche', face:'dos', aBouge:false, stable:0, avant:null, debut:Date.now(), angle:null});
       const e = $('#scan-etape'); if (e) e.innerHTML = `<i class="fait"></i><i class="on"></i>${tt('Dos', 'Back')}`;
-      const so = $('#scan-sous'); if (so) so.textContent = tt('Le dos donne l’année, le numéro et le parallèle', 'The back gives the year, number and parallel');
+      const so = $('#scan-sous'); if (so) so.textContent = tt('Retourne la carte, puis touche le bouton pour le dos', 'Flip the card, then tap the button for the back');
       const ps = $('#scan-passer'); if (ps) ps.hidden = false;
       scanAide(tt('Retourne la carte : le dos', 'Flip the card: the back'));
     }, 650);
     return;
   }
   SCAN.etat = 'lecture'; SCAN.essais++;
-  SCAN.quadDos = SCAN.quadPhoto;
+  SCAN.quadDos = SCAN.quadPhoto; SCAN.dosHD = SCAN.derniereHD;
   return scanIdentifier([SCAN.devant, ph], SCAN.devant, ph);
 }
 async function scanIdentifier(photos, ph, dos){
@@ -7287,7 +7300,7 @@ function scanRecommencer(){
   const im = $('#scan-fige'); im.hidden = true; im.classList.remove('reduit'); $('#scan').classList.remove('fige');
   const v = $('#scan video'); if (v) v.play().catch(() => {});
   Object.assign(SCAN, {etat:'cherche', essais:0, stable:0, avant:null, debut:Date.now(), ph:null, champs:null, q:null, valeur:null,
-    devant:null, face:null, aBouge:false, quadDevant:null, quadDos:null, grisDevant:null});
+    devant:null, face:null, aBouge:false, quadDevant:null, quadDos:null, grisDevant:null, devantHD:null, dosHD:null});
   const e = $('#scan-etape'); if (e) e.innerHTML = `<i class="on"></i><i></i>${tt('Devant', 'Front')}`;
   const ps = $('#scan-passer'); if (ps) ps.hidden = true;
   scanAide(SCAN.opts && SCAN.opts.but === 'photo' ? tt('Place la carte dans le cadre', 'Place the card in the frame') : tt('Le devant de la carte dans le cadre', 'The front of the card in the frame'));
@@ -7297,13 +7310,19 @@ async function scanGarder(){
   const c = SCAN.champs || {};
   const p = await API.annonce_preparer(c, typeof LANGUE !== 'undefined' ? LANGUE : 'fr').catch(() => ({ok:false}));
   const valeur = SCAN.valeur || (p && p.ok && p.prix ? p.prix.marche : null), titre = (p && p.ok && p.titre) || c.titre || '';
-  const r = await API.carte_garder({carte:{...c, emplacement:'Collection', valeur}, titre, prix:null, photos: [SCAN.studio || SCAN.ph], originales: SCAN.studio ? [SCAN.ph] : null}).catch(e => ({ok:false, erreur:e.message}));
+  // 5 nov 2026 : le devant ET le dos, en pleine resolution (les originales servent a la pre-evaluation de l'etat)
+  const hdD = SCAN.devantHD || SCAN.ph, hdB = SCAN.dosHD || null;
+  const r = await API.carte_garder({carte:{...c, emplacement:'Collection', valeur}, titre, prix:null,
+    photos: [SCAN.studio || hdD, hdB].filter(Boolean), originales: [hdD, hdB].filter(Boolean)}).catch(e => ({ok:false, erreur:e.message}));
   if (r && r.ok && !valeur) API.carte_valeur(r.id).catch(() => {});
   if (!r || !r.ok) { b.disabled = false; b.textContent = tt('Ajouter à ma collection', 'Add to my collection'); toast((r && r.erreur) || tt('Erreur', 'Error'), 5000); return; }
   // en serie (collection) : la suivante d'un tap ; sinon, voir la collection
-  b.outerHTML = SCAN.opts.but === 'collection'
+  b.outerHTML = (SCAN.opts.but === 'collection'
     ? `<button class="btn" id="sr-suiv">✓ ${tt('Ajoutée · scanner la suivante', 'Added · scan the next one')}</button><a class="plus" href="#inventaire" id="sr-voir" style="text-align:center">${tt('Voir ma collection', 'See my collection')}</a>`
-    : `<a class="btn" href="#inventaire" id="sr-voir">✓ ${tt('Dans ta collection · voir', 'In your collection · view')}</a>`;
+    : `<a class="btn" href="#inventaire" id="sr-voir">✓ ${tt('Dans ta collection · voir', 'In your collection · view')}</a>`)
+    // 5 nov 2026 : la pre-evaluation PSA demande ses propres photos (a plat, hors etui, lumiere rasante) : l'examen guide
+    + `<button class="pilule" id="sr-exam" style="margin-top:8px">${tt('Pré-évaluation PSA de cette carte', 'PSA pre-grade this card')}</button>`;
+  const ex_ = $('#sr-exam'); if (ex_) ex_.onclick = async () => { const k = await API.carte_lire(r.id).catch(() => null); if (!k || !k.id) return; scanFermer(); ficheCollection(k, {lancer: true}); };
   $('#sr-voir').onclick = () => { S.filtreInv = 'collection'; scanFermer(); if ((location.hash || '').startsWith('#inventaire')) vueInventaire(); };
   const su = $('#sr-suiv'); if (su) su.onclick = scanRecommencer;
   toast(tt('Ajoutée à ta collection. Tu pourras changer la photo en tout temps.', 'Added to your collection. You can change the photo anytime.'), 3500);
@@ -8678,11 +8697,12 @@ function brancherFiltresInv(){
   $$('.i-filtres [data-f]').forEach(c => c.onclick = () => { S.filtreInv = c.dataset.f; S.dortIds = null; S.filtreCle = null; $('.i-filtres').innerHTML = filtresBarreInv(); brancherFiltresInv(); chargerInventaire(); tableauInv(); });
   const p = $('#i-plus-f'); if (p) p.onclick = () => {
     const ps = S.parSportInv || {}, sports = Object.entries(ps).sort((a, b) => b[1] - a[1]);
-    ouvrirFeuille(`<h3>${tt('Filtrer', 'Filter')}</h3><div class="menu-f">${filtresInv().map(([k]) => `<button class="choix-f ${S.filtreInv === k ? 'on' : ''}" data-ff="${k}">${LIB_FILTRE(k)}${S.filtreInv === k ? ' ✓' : ''}</button>`).join('')}</div>
+    ouvrirFeuille(`<h3>${tt('Filtrer', 'Filter')}</h3><div class="menu-f">${filtresInv().map(([k]) => `<button class="choix-f ${S.filtreInv === k ? 'on' : ''}" data-ff="${k}">${LIB_FILTRE(k)}${S.filtreInv === k ? ' ✓' : ''}</button>`).join('')}<button class="choix-f" id="ff-ach">${tt('Mes achats eBay', 'My eBay purchases')} ›</button></div>
       ${sports.length > 1 ? `<div class="sous">${tt('Sport', 'Sport')}</div><div class="menu-f"><button class="choix-f ${S.sportInv ? '' : 'on'}" data-fs="">${tt('Tous les sports', 'All sports')}${S.sportInv ? '' : ' ✓'}</button>${sports.map(([k, n]) => `<button class="choix-f ${S.sportInv === k ? 'on' : ''}" data-fs="${k}">${nomSport(k)} · ${n}${S.sportInv === k ? ' ✓' : ''}</button>`).join('')}</div>` : ''}`);
     const fin = () => { fermerFeuille(); const z = $('.i-filtres'); if (z) { z.innerHTML = filtresBarreInv(); brancherFiltresInv(); } chargerInventaire(); };
     $$('[data-ff]').forEach(b => b.onclick = () => { S.filtreInv = b.dataset.ff; fin(); });
     $$('[data-fs]').forEach(b => b.onclick = () => { S.sportInv = b.dataset.fs || null; fin(); });
+    const fa = $('#ff-ach'); if (fa) fa.onclick = () => { fermerFeuille(); feuilleAchats(); };
   };
 }
 // 22 oct 2026 - pas de magasin : pas de filtres magasin (moins de choix = plus vite)
@@ -10361,10 +10381,12 @@ async function promoCarte(c, r){
 async function banniereAchats(){
   const z = $('#i-achats'); if (!z) return;
   const r = await API.achats_liste().catch(() => null);
-  if (!$('#i-achats') || !r || !r.ok || !r.a_ajouter) { if (z) z.innerHTML = ''; return; }
+  // 5 nov 2026 (Mathieu : « ou est l'onglet achat ebay ? ») : la zone a un nom clair et reste visible meme quand tout est ajoute
+  if (!$('#i-achats') || !r || !r.ok || !(r.achats || []).length) { if (z) z.innerHTML = ''; return; }
+  const n = r.a_ajouter || 0;
   z.innerHTML = `<button class="acc-pil i-ach" id="i-ach-b"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12l-1 13H7L6 7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg></span>
-    <span class="ap-t"><b>${r.a_ajouter} ${tt(r.a_ajouter > 1 ? 'achats eBay à ajouter' : 'achat eBay à ajouter', r.a_ajouter > 1 ? 'eBay purchases to add' : 'eBay purchase to add')}</b>
-    <small>${tt('Ajoute-les : le prix payé devient leur coût', 'Add them: the price paid becomes their cost')}</small></span><i aria-hidden="true">›</i></button>`;
+    <span class="ap-t"><b>${tt('Mes achats eBay', 'My eBay purchases')}${n ? ` <em class="i-ach-n">${n}</em>` : ''}</b>
+    <small>${n ? tt(`${n} à ajouter : le prix payé devient leur coût`, `${n} to add: the price paid becomes their cost`) : tt('Tout est dans ton inventaire', 'All in your inventory')}</small></span><i aria-hidden="true">›</i></button>`;
   $('#i-ach-b').onclick = () => { vibrer(); feuilleAchats(); };
 }
 async function feuilleAchats(){
