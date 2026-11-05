@@ -3873,10 +3873,13 @@ const _dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 // coins approximatifs (pixels de G) -> coins colles aux vrais bords. Pour chaque cote, on essaie les droites voisines
 // (decalage a chaque bout) et on garde celle ou le contraste a le MEME sens tout le long (carte / fond) : les motifs
 // holo ou le texte a l'interieur s'annulent, le vrai bord ressort.
-function affinerCoins(G, q){
+function affinerCoins(G, q, o){
   const c = [q.reduce((s, p) => s + p[0], 0) / 4, q.reduce((s, p) => s + p[1], 0) / 4];
   const diag = Math.max(_dist(q[0], q[2]), _dist(q[1], q[3]));
   const d = Math.max(8, Math.round(0.055 * diag)), N = 40;
+  // 5 nov 2026 (Mathieu : « mauvais crop », le bord droit de la carte coupe) : au scan, un bord ne rentre presque pas
+  // dans la carte (les lignes du dessin, a l'interieur, ressemblent a un bord) ; trop large vaut mieux que couper
+  const din = (o && o.dedans != null) ? -Math.max(2, o.dedans * diag) : -Infinity;
   const lignes = [], cotes = [];
   for (let i = 0; i < 4; i++) {
     const a = q[i], b = q[(i + 1) % 4], L = _dist(a, b);
@@ -3897,6 +3900,7 @@ function affinerCoins(G, q){
     let best = -1, ba = 0, bb = 0, brut = 0;
     const grille = [];
     for (let oa = -d; oa <= d; oa += 2) for (let ob = -d; ob <= d; ob += 2) {
+      if (oa < din || ob < din) continue;
       const r = score(oa, ob), sc = r * Math.exp(-((oa * oa + ob * ob) / 2) / ((1.6 * d) ** 2));
       grille.push([oa, ob, r]);
       if (sc > best) { best = sc; ba = oa; bb = ob; brut = r; }
@@ -3907,6 +3911,7 @@ function affinerCoins(G, q){
       .sort((x, y) => (y[0] + y[1]) - (x[0] + x[1]))[0];
     if (ext) { ba = ext[0]; bb = ext[1]; best = ext[2] * Math.exp(-((ba * ba + bb * bb) / 2) / ((1.6 * d) ** 2)); }
     for (let oa = ba - 2; oa <= ba + 2; oa += 0.5) for (let ob = bb - 2; ob <= bb + 2; ob += 0.5) {
+      if (oa < din || ob < din) continue;
       const sc = score(oa, ob) * Math.exp(-((oa * oa + ob * ob) / 2) / ((1.6 * d) ** 2));
       if (sc > best) { best = sc; ba = oa; bb = ob; }
     }
@@ -4102,23 +4107,23 @@ function _flouImage(img, W, H){
   }
   return out;
 }
-function poserFlou(img, q){
+function poserFlou(img, q, o){
   const W = img.naturalWidth || img.width, H = img.naturalHeight || img.height;
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const g = cv.getContext('2d');
   g.drawImage(_flouImage(img, W, H), 0, 0);
   // 1 mm : une carte fait 63,5 mm de large (le petit cote du quadrilatere)
   const cote = Math.min(_dist(q[0], q[1]), _dist(q[1], q[2]), _dist(q[2], q[3]), _dist(q[3], q[0]));
-  const m = Math.max(3, cote / 63.5), c = [q.reduce((s, p) => s + p[0], 0) / 4, q.reduce((s, p) => s + p[1], 0) / 4];
+  const m = Math.max(3, cote / 63.5) * ((o && o.marge) || 1), c = [q.reduce((s, p) => s + p[0], 0) / 4, q.reduce((s, p) => s + p[1], 0) / 4];
   const e = q.map(([x, y]) => { const vx = x - c[0], vy = y - c[1], n = Math.hypot(vx, vy) || 1; return [x + vx / n * m * 1.41, y + vy / n * m * 1.41]; });
   g.save(); g.beginPath(); e.forEach(([x, y], k) => k ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); g.clip();
   g.drawImage(img, 0, 0); g.restore();
-  return centrerCarte(cv, q).toDataURL('image/jpeg', STUDIO.qualite);
+  return centrerCarte(cv, q, o && o.cote).toDataURL('image/jpeg', STUDIO.qualite);
 }
 // 31 oct 2026 (Mathieu : « la photo est pas centrée ») : la carte au CENTRE de la photo. On recadre autour d'elle (meme
 // format que la photo, la carte ~80 % de la hauteur ou de la largeur) ; s'il manque de la photo d'un cote, ce bout est
 // rempli par le fond flou etire (jamais de bande vide)
-function centrerCarte(cv, q){
+function centrerCarte(cv, q, coteMax){
   const W = cv.width, H = cv.height, A = W / H;
   const xs = q.map(p => p[0]), ys = q.map(p => p[1]);
   const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
@@ -4129,7 +4134,7 @@ function centrerCarte(cv, q){
   if (dedans > cw) cw = Math.min(dedans, W);
   const ch = cw / A;
   if (Math.abs(cx - W / 2) < W * 0.02 && Math.abs(cy - H / 2) < H * 0.02 && cw >= W * 0.98) return cv;   // deja centree
-  const ow = Math.round(Math.min(cw, STUDIO.cote * Math.min(1, A))), oh = Math.round(ow / A);
+  const ow = Math.round(Math.min(cw, (coteMax || STUDIO.cote) * Math.min(1, A))), oh = Math.round(ow / A);
   const out = document.createElement('canvas'); out.width = ow; out.height = oh;
   const g = out.getContext('2d'); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
   const sx = cx - cw / 2, sy = cy - ch / 2;
@@ -4331,9 +4336,13 @@ async function photoStudio(src, coins1000, opts){
   const W = img.naturalWidth, H = img.naturalHeight;
   const G = grisLisse(img, 900);
   const qG = coins1000.map(([x, y]) => [x / 1000 * G.w, y / 1000 * G.h]);
-  const r = (opts && opts.affiner === false) ? {coins: qG, affine: false} : affinerCoins(G, qG);
+  const r = (opts && opts.affiner === false) ? {coins: qG, affine: false} : affinerCoins(G, qG, opts);
+  if (opts && opts.sur) {
+    const f = _format(r.coins), proche = FORMATS.some(x => Math.abs(f.ar / x - 1) < 0.05);
+    if (!r.affine || !r.cotes || r.cotes.some(x => !x) || !proche) throw new Error('bords incertains');
+  }
   const q = r.coins.map(([x, y]) => [x / G.k, y / G.k]);
-  return {photo: poserFlou(img, q), coins: r.coins.map(([x, y]) => [Math.round(x / G.w * 1000), Math.round(y / G.h * 1000)]), affine: r.affine, W, H};
+  return {photo: poserFlou(img, q, opts), coins: r.coins.map(([x, y]) => [Math.round(x / G.w * 1000), Math.round(y / G.h * 1000)]), affine: r.affine, W, H};
 }
 // controle de la photo, tout de suite apres la prise : floue, sombre, reflet, trop petite
 async function qualitePhoto(src){
@@ -7240,13 +7249,19 @@ async function scanIdentifier(photos, ph, dos){
   const coinsD = ((r.photos || [])[1] || {}).coins, quadD = SCAN.quadDos;
   scanFermer();
   location.hash = '#valeur/' + encodeURIComponent(q);
-  photoStudio(ph, (coins && coins.length === 4) ? coins : quad).then(st => { sr.studio = st.photo;
+  // 5 nov 2026 (Mathieu : « mauvaise qualite et mauvais crop ») : la photo pleine resolution (meme cadrage, donc memes
+  // coins 0..1000), un bord qui ne rentre pas dans la carte, 2,5 mm d'air, et si un bord est douteux : la vraie photo
+  sr.hd = SCAN.devantHD || null; sr.hdDos = SCAN.dosHD || null;
+  sr.ph = sr.hd || ph; if (dos) sr.dos = sr.hdDos || dos;
+  const im0 = $('.scan-tete img.st-devant'); if (im0 && sr.hd) im0.src = sr.hd;
+  photoStudio(sr.ph, (coins && coins.length === 4) ? coins : quad, STUDIO_SCAN).then(st => { sr.studio = st.photo;
     const im = $('.scan-tete img.st-devant'); if (im) im.src = st.photo; }).catch(() => {});
-  if (dos && ((coinsD && coinsD.length === 4) || quadD)) photoStudio(dos, (coinsD && coinsD.length === 4) ? coinsD : quadD).then(st => { sr.studioDos = st.photo;
+  if (dos && ((coinsD && coinsD.length === 4) || quadD)) photoStudio(sr.dos, (coinsD && coinsD.length === 4) ? coinsD : quadD, STUDIO_SCAN).then(st => { sr.studioDos = st.photo;
     const im = $('.scan-tete img.st-dos'); if (im) im.src = st.photo; }).catch(() => {});
 }
 // 29 oct 2026 : les photos d'une carte scannee (devant puis dos, arrangees en studio si possible) : pour la collection et eBay
 const photosScan = (sr) => [sr.studio || sr.ph, sr.dos ? (sr.studioDos || sr.dos) : null].filter(Boolean);
+const STUDIO_SCAN = {dedans: 0.012, marge: 2.5, cote: 2600, sur: true};
 // 28 oct 2026 (Mathieu : « l'app arrange la photo pour qu'elle soit parfaite, pour une annonce ou pour une super photo
 // en collection ») : la carte est detouree sur ses vrais bords, redressee et posee sur le fond studio (comme les annonces).
 // L'originale est gardee en 2e photo. Coins : ceux de l'IA, sinon ceux trouves en direct par le scanner.
@@ -7254,7 +7269,7 @@ async function scanStudio(ph, coinsIA){
   const coins = (coinsIA && coinsIA.length === 4) ? coinsIA : SCAN.quadPhoto;
   if (!coins) return null;
   try {
-    const st = await photoStudio(ph, coins);
+    const st = await photoStudio(SCAN.derniereHD || ph, coins, STUDIO_SCAN);
     if (!SCAN.actif) return null;
     SCAN.studio = st.photo;
     const im = $('#scan-fige'); if (im) { im.classList.add('studio'); im.src = st.photo; }
@@ -7431,7 +7446,7 @@ async function vueValeur(arg){
       const b = $('#st-garder', z); b.disabled = true; b.textContent = tt('Ajout…', 'Adding…');
       const p = await API.annonce_preparer(c, typeof LANGUE !== 'undefined' ? LANGUE : 'fr').catch(() => ({ok:false}));
       const g = await API.carte_garder({carte:{...c, emplacement:'Collection', valeur: r.valeur || (p && p.ok && p.prix ? p.prix.marche : null)},
-        titre:(p && p.ok && p.titre) || c.titre || '', prix:null, photos: photosScan(sr)}).catch(e => ({ok:false, erreur:e.message}));
+        titre:(p && p.ok && p.titre) || c.titre || '', prix:null, photos: photosScan(sr), originales: [sr.ph, sr.dos].filter(Boolean)}).catch(e => ({ok:false, erreur:e.message}));
       if (!g || !g.ok) { b.disabled = false; b.textContent = tt('Ajouter à ma collection', 'Add to my collection'); toast((g && g.erreur) || tt('Erreur', 'Error'), 5000); return; }
       b.outerHTML = `<a class="btn petit" href="#inventaire" id="st-voir">✓ ${tt('Dans ta collection · voir', 'In your collection · view')}</a>`;
       $('#st-voir', z).onclick = () => { S.filtreInv = 'collection'; };
