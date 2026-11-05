@@ -1465,6 +1465,7 @@ body.scan-ouvert{overflow:hidden}
 .scan-bas small{color:rgba(255,255,255,.78); font-size:13.5px; text-align:center}
 .scan-declic{width:72px; height:72px; border-radius:50%; border:4px solid rgba(255,255,255,.9); background:rgba(255,255,255,.22); padding:0}
 .scan-declic:active{transform:scale(.94)}
+.scan-res-cam{position:absolute; right:14px; top:calc(env(safe-area-inset-top) + 54px); font-size:11px; color:rgba(255,255,255,.7)}
 .scan.natif video,.scan.natif .scan-bas,.scan.natif .scan-cadre i,.scan.natif .scan-fil{display:none} .scan.natif{background:#000}
 .scan-declic.pret{border-color:#7ee2a8; background:rgba(126,226,168,.35); box-shadow:0 0 0 6px rgba(126,226,168,.3); transition:all .15s}
 .scan.fige .scan-bas, .scan.fige .scan-cadre i{opacity:0; transition:opacity .2s}
@@ -7148,7 +7149,7 @@ async function ouvrirScanner(opts = {}){
   let flux;
   try { // 5 nov 2026 (Mathieu : « les photos doivent etre de haute qualite pour la pre-evaluation PSA ») : la camera au plus
     // haut qu'elle donne (4K sur un iPhone recent) ; l'analyse en direct, elle, travaille sur une petite image
-    flux = await navigator.mediaDevices.getUserMedia({audio:false, video:{facingMode:{ideal:'environment'}, width:{ideal:3840}, height:{ideal:2880}}}); }
+    flux = await navigator.mediaDevices.getUserMedia({audio:false, video:{facingMode:{ideal:'environment'}, width:{ideal:3840}, height:{ideal:2160}}}); }
   catch (e) { return scannerSecours(opts); }
   scanFermer();
   Object.assign(SCAN, {flux, opts, actif:true, essais:0, stable:0, avant:null, debut:Date.now(), etat:'cherche'});
@@ -7157,6 +7158,8 @@ async function ouvrirScanner(opts = {}){
   document.body.classList.add('scan-ouvert');
   const v = $('#scan video'); v.srcObject = flux; v.play().catch(() => {});
   $('#scan-x').onclick = scanFermer;
+  try { const st = flux.getVideoTracks()[0].getSettings(); SCAN.res = st.width && st.height ? st.width + '×' + st.height : null;
+    if (SCAN.res) $('#scan .scan-haut').insertAdjacentHTML('beforeend', `<span class="scan-res-cam">${esc(tt('Caméra ', 'Camera ') + SCAN.res)}</span>`); } catch (e) {}
   $('#scan-declic').onclick = () => { if (SCAN.etat === 'cherche') scanCapturer(true); };
   $('#scan-passer').onclick = () => { if (SCAN.devant && SCAN.etat === 'cherche') { SCAN.etat = 'lecture'; scanIdentifier([SCAN.devant], SCAN.devant, null); } };
   SCAN.petit = document.createElement('canvas'); SCAN.petit.width = 72; SCAN.petit.height = 100;
@@ -7313,14 +7316,34 @@ async function scanIdentifier(photos, ph, dos){
   sr.hd = SCAN.devantHD || null; sr.hdDos = SCAN.dosHD || null;
   sr.ph = sr.hd || ph; if (dos) sr.dos = sr.hdDos || dos;
   const im0 = $('.scan-tete img.st-devant'); if (im0 && sr.hd) im0.src = sr.hd;
-  photoStudio(sr.ph, (coins && coins.length === 4) ? coins : quad, STUDIO_SCAN).then(st => { sr.studio = st.photo;
+  recadrageNet(sr.ph, (coins && coins.length === 4) ? coins : quad).then(st => { sr.studio = st.photo;
     const im = $('.scan-tete img.st-devant'); if (im) im.src = st.photo; }).catch(() => {});
-  if (dos && ((coinsD && coinsD.length === 4) || quadD)) photoStudio(sr.dos, (coinsD && coinsD.length === 4) ? coinsD : quadD, STUDIO_SCAN).then(st => { sr.studioDos = st.photo;
+  if (dos && ((coinsD && coinsD.length === 4) || quadD)) recadrageNet(sr.dos, (coinsD && coinsD.length === 4) ? coinsD : quadD).then(st => { sr.studioDos = st.photo;
     const im = $('.scan-tete img.st-dos'); if (im) im.src = st.photo; }).catch(() => {});
 }
 // 29 oct 2026 : les photos d'une carte scannee (devant puis dos, arrangees en studio si possible) : pour la collection et eBay
 const photosScan = (sr) => [sr.studio || sr.ph, sr.dos ? (sr.studioDos || sr.dos) : null].filter(Boolean);
 const STUDIO_SCAN = {dedans: 0.012, marge: 2.5, cote: 2600, sur: true};
+// 5 nov 2026 (Mathieu : « encore de la qualite de marde », « mal cropper ») : au scan, plus de fond flou ni de carte
+// redressee : la VRAIE photo, recadree droit autour de la carte (4 % d'air), en pleine resolution. Si les 4 bords ne sont
+// pas trouves nettement ou si les proportions ne sont pas celles d'une carte (2 %), on garde le cadre entier : jamais coupee.
+async function recadrageNet(src, coins1000){
+  const img = await chargerImage(src), W = img.naturalWidth, H = img.naturalHeight;
+  const G = grisLisse(img, 900);
+  const r = affinerCoins(G, coins1000.map(([x, y]) => [x / 1000 * G.w, y / 1000 * G.h]), {dedans: 0.012});
+  const f = _format(r.coins);
+  if (!r.affine || !r.cotes || r.cotes.some(x => !x) || !FORMATS.some(x => Math.abs(f.ar / x - 1) < 0.02)) throw new Error('bords incertains');
+  const q = r.coins.map(([x, y]) => [x / G.k, y / G.k]), xs = q.map(p => p[0]), ys = q.map(p => p[1]);
+  const m = 0.04 * Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
+  const x0 = Math.max(0, Math.floor(Math.min(...xs) - m)), y0 = Math.max(0, Math.floor(Math.min(...ys) - m));
+  const x1 = Math.min(W, Math.ceil(Math.max(...xs) + m)), y1 = Math.min(H, Math.ceil(Math.max(...ys) + m));
+  if (x1 - x0 < W * 0.4 || y1 - y0 < H * 0.4) throw new Error('trop petit');
+  const cv = document.createElement('canvas'); cv.width = x1 - x0; cv.height = y1 - y0;
+  cv.getContext('2d').drawImage(img, x0, y0, cv.width, cv.height, 0, 0, cv.width, cv.height);
+  let u = cv.toDataURL('image/jpeg', 0.93);
+  if (u.length > 8.6e6) u = cv.toDataURL('image/jpeg', 0.85);
+  return {photo: u};
+}
 // 28 oct 2026 (Mathieu : « l'app arrange la photo pour qu'elle soit parfaite, pour une annonce ou pour une super photo
 // en collection ») : la carte est detouree sur ses vrais bords, redressee et posee sur le fond studio (comme les annonces).
 // L'originale est gardee en 2e photo. Coins : ceux de l'IA, sinon ceux trouves en direct par le scanner.
@@ -7328,7 +7351,7 @@ async function scanStudio(ph, coinsIA){
   const coins = (coinsIA && coinsIA.length === 4) ? coinsIA : SCAN.quadPhoto;
   if (!coins) return null;
   try {
-    const st = await photoStudio(SCAN.derniereHD || ph, coins, STUDIO_SCAN);
+    const st = await recadrageNet(SCAN.derniereHD || ph, coins);
     if (!SCAN.actif) return null;
     SCAN.studio = st.photo;
     const im = $('#scan-fige'); if (im) { im.classList.add('studio'); im.src = st.photo; }
@@ -11092,7 +11115,7 @@ async function adminServeur(){
   // 3 nov 2026 : la banque d'entrainement (examens + vraies notes des comptes qui ont dit OUI), et son export
   API.admin_entrainement().then(b => { const ze = $('#adm-entr-e'); if (!ze || !b.ok) return;
     ze.innerHTML = `<div class="pastilles">${tag(b.exemples + ' ' + tt('examens', 'exams'), 'acc')}${tag(b.avec_note + ' ' + tt('avec vraie note', 'with real grade'), b.avec_note ? 'vert' : '')}${tag(b.avec_sous_notes + ' ' + tt('avec sous-notes', 'with subgrades'))}${tag(b.avec_gros_plans + ' ' + tt('avec gros plans', 'with close-ups'))}${tag(b.avec_avis + ' ' + tt('avec avis ✓/✕', 'with ✓/✕ feedback'))}</div>
-      <div class="sous" style="margin-top:6px">${b.avec_note ? tt(`${b.dans_fourchette} / ${b.avec_note} dans la fourchette estimée`, `${b.dans_fourchette} / ${b.avec_note} within the estimated range`) + ' · ' : ''}${b.comptes} ${tt('compte(s)', 'account(s)')} · ${decFr(b.mo)} / ${b.max_mo} Mo</div>
+      <div class="sous" style="margin-top:6px">${b.avec_note ? tt(`${b.dans_fourchette} / ${b.avec_note} dans la fourchette estimée`, `${b.dans_fourchette} / ${b.avec_note} within the estimated range`) + ' · ' : ''}${b.comptes} ${tt('compte(s)', 'account(s)')} · ${decFr(b.mo)} / ${b.max_mo} Mo${b.disque_total_mo ? ' · ' + tt('disque du serveur : ', 'server disk: ') + Math.round(b.disque_libre_mo) + ' / ' + Math.round(b.disque_total_mo) + tt(' Mo libres', ' MB free') : ''}</div>
       <div class="env-b" style="margin-top:10px"><button class="pilule acc" id="adm-ref">${tt('Ajouter une carte gradée', 'Add a graded card')}</button>
       ${b.exemples ? `<a class="pilule" href="${esc(b.export)}" download>${tt('Exporter (zip)', 'Export (zip)')}</a>` : ''}</div>
       ${b.references ? `<div class="sous" style="margin-top:6px">${b.references} ${tt('carte(s) gradée(s) de référence', 'graded reference card(s)')}</div>` : ''}`;

@@ -27,7 +27,9 @@ from datetime import datetime
 
 _verrou = threading.RLock()          # 3 nov 2026 (revue) : la copie des photos et le journal sous le meme verrou que le retrait
 MAX_MO = float(os.environ.get("LR_ENTRAINEMENT_MAX_MO") or 4000)     # la banque ne depasse jamais ca
-LIBRE_MIN_MO = 800                                                  # ni ne remplit le disque
+LIBRE_MIN_MO = 800                                                  # ni ne remplit le disque (grand disque)
+# 5 nov 2026 (Mathieu : « bank full » avec 17 Mo dans la banque) : le disque Render fait 1 Go ; 800 Mo libres exiges, c'etait
+# toujours « pleine ». La reserve suit la taille du disque : 8 %, au moins 80 Mo, au plus 800 Mo.
 SOUS = ("centrage", "coins", "bords", "surface")
 
 
@@ -78,12 +80,21 @@ def _taille_mo():
     return t / 1e6
 
 
-def _place_ok():
+def _disque():
     try:
-        libre = shutil.disk_usage(dossier()).free / 1e6
+        u = shutil.disk_usage(dossier())
+        return u.free / 1e6, u.total / 1e6
     except OSError:
-        libre = 1e9
-    return libre > LIBRE_MIN_MO and _taille_mo() < MAX_MO
+        return 1e9, 1e9
+
+
+def _reserve_mo(total):
+    return max(80.0, min(LIBRE_MIN_MO, 0.08 * total))
+
+
+def _place_ok(besoin_mo=0.0):
+    libre, total = _disque()
+    return libre - besoin_mo > _reserve_mo(total) and _taille_mo() + besoin_mo < MAX_MO
 
 
 def _copier(ref):
@@ -230,7 +241,9 @@ def _ajouter_reference(d):
     if note is None:
         return {"ok": False, "erreur": "Écris la note (ex. PSA 9)"}
     if not _place_ok():
-        return {"ok": False, "erreur": "Banque pleine"}
+        libre, total = _disque()
+        return {"ok": False, "erreur": f"Disque du serveur presque plein ({round(libre)} Mo libres sur {round(total)} Mo) : "
+                                      "agrandis le disque dans Render (Disks) ou libère de la place"}
     import bareme
     defauts = []
     for x in (d.get("defauts") or [])[:6]:
@@ -313,7 +326,7 @@ def stats():
     return {"exemples": len(l), "avec_note": len(v), "references": sum(1 for r in l if r.get("raison") == "reference"), "avec_sous_notes": sum(1 for r in v if r["verite"].get("sous_notes")),
             "avec_gros_plans": sum(1 for r in l if (r.get("photos") or {}).get("gros_plans")),
             "avec_avis": sum(1 for r in l if (r.get("examen") or {}).get("avis")),
-            "comptes": len({r.get("compte") for r in l}), "dans_fourchette": sum(1 for x in ecarts if x == 0), "mo": round(_taille_mo(), 1),
+            "comptes": len({r.get("compte") for r in l}), "disque_libre_mo": round(_disque()[0]), "disque_total_mo": round(_disque()[1]), "dans_fourchette": sum(1 for x in ecarts if x == 0), "mo": round(_taille_mo(), 1),
             "max_mo": MAX_MO, "compagnies": {c: sum(1 for r in v if r["verite"]["compagnie"] == c) for c in sorted({r["verite"]["compagnie"] for r in v})}}
 
 
