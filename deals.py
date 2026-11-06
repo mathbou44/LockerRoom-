@@ -376,7 +376,7 @@ def maj_prix(item_id, total, port=None, mises=None, fin=None):
     return {"deal": None if retire else x, "retire": retire}
 
 
-REVALIDE_V = 15                  # 15 (7 nov) : saisons voisines, Exquisite, hits 365 j ; 14 (7 nov) : inscriptions a part ; 13 (7 nov) : port 10 $ / 20 $ ; 12 (7 nov) : frais reels (14,9 % de prix + port) ; 11 (7 nov) : 15 $ de profit au moins, taxes de l'achat ; 10 (6 nov) : mises max refaites sur TOUS les deals gardes ; 9 (6 nov) : prix max a 30 % de profit net (avant : 70 % de la valeur) ; 2 : « checklist » ; 3 : Bowman U = football ; 4 : la F1 ; 5 : « Beckett » prenom (pas gradee) ; 6 : Signature Materials ; 7 : « Draft » ; 8 : « Beam Team » (4 nov)
+REVALIDE_V = 15                  # (approx : cartes similaires, 7 nov) 15 (7 nov) : saisons voisines, Exquisite, hits 365 j ; 14 (7 nov) : inscriptions a part ; 13 (7 nov) : port 10 $ / 20 $ ; 12 (7 nov) : frais reels (14,9 % de prix + port) ; 11 (7 nov) : 15 $ de profit au moins, taxes de l'achat ; 10 (6 nov) : mises max refaites sur TOUS les deals gardes ; 9 (6 nov) : prix max a 30 % de profit net (avant : 70 % de la valeur) ; 2 : « checklist » ; 3 : Bowman U = football ; 4 : la F1 ; 5 : « Beckett » prenom (pas gradee) ; 6 : Signature Materials ; 7 : « Draft » ; 8 : « Beam Team » (4 nov)
 
 
 def _revalider_un(x):
@@ -745,9 +745,85 @@ def valeur_autre_saison(a, ventes, cib=None):
             [{k: v.get(k) for k in ("titre", "prix", "le", "photo", "url", "saison")} for v in pv[:6]])
 
 
+RABAIS_APPROX = 0.75             # 7 nov 2026 : une carte SIMILAIRE n'est pas la carte : 25 % de prudence
+_REFUS_DURS = ("autre joueur", "plusieurs joueurs", "lot", "checklist", "gradée", "pas gradée", "autre gradation", "autographe",
+               "sans autographe", "patch", "sans patch", "inscription", "sans inscription", "pas le produit", "écartée")
+
+
+def _mots_carte(cib):
+    """Les mots qui disent quelle carte c'est (produit, insert, parallele), sans le joueur."""
+    j = set((cib.get("joueur") or "").split())
+    m = set(cib.get("ident") or ()) | {w for x in cib.get("mots") or [] for w in x.split()} | {w for x in cib.get("paralleles") or () for w in x.split()}
+    return {w for w in m - j if len(w) >= 3 and not w.isdigit()}
+
+
+def cible_large(cib):
+    """La recherche des cartes SIMILAIRES : le joueur, le produit / l'insert, auto, patch, inscription ; sans l'annee, la
+    numerotation ni le parallele (« ron francis clear cut auto »)."""
+    j = [w for w in (cib.get("joueur") or "").split() if w]
+    prod = [w for w in (cib.get("mots") or []) if w not in j][:2] or sorted(_mots_carte(cib))[:2]
+    return dict(cib, mots=j + prod, paralleles=set(), serie=None, veut_serie=False, q_plus=[], ident=set(cib.get("ident") or ()))
+
+
+def valeur_approx(a, ventes, cib=None):
+    """7 nov 2026 (Mathieu : « regarde tous les no sales : on doit analyser les cartes similaires et donner un prix
+    approximatif ») : aucune vente de LA carte (ni de ses saisons voisines) -> les ventes du MEME joueur, meme produit /
+    insert, memes auto, patch, inscription et gradation, dont l'annee, la numerotation ou le parallele different. Le prix
+    de chaque vente est ramene a la numerotation de la carte (plus rare : plus cher, borne), puis la mediane des plus
+    ressemblantes, moins 25 %. Jamais pour une carte de base (un hit, une vedette ou une vintage seulement).
+    -> (valeur, « approx », n, ventes) ou None."""
+    import cartes_match
+    cib = cib or cartes_match.cible_titre(a.get("titre") or "")
+    j = (cib.get("joueur") or "").split()
+    if not j or not _precieuse(cib) or cib.get("exclu"):
+        return None
+    toks = _mots_carte(cib)
+    if not toks:
+        return None
+    s0 = cib.get("serie")
+    out, vus = [], set()
+    for v in ventes or []:
+        t = v.get("titre") or ""
+        k = v.get("url") or f"{t}|{v.get('le')}|{v.get('prix')}"
+        if not v.get("prix") or k in vus:
+            continue
+        vus.add(k)
+        nt = cartes_match.norm(t)
+        if not cartes_match._a_mot(nt, j[-1]) or cartes_match.abimee(t) or _jours(v) > JOURS_MAX_HITS:
+            continue
+        r = cartes_match.raisons_refus(cib, t)
+        if any(x.startswith(_REFUS_DURS) for x in r):
+            continue
+        dv = cartes_match._decoder_memo(t)
+        sim = len(toks & set(nt.split())) / len(toks)
+        if sim < 0.5:
+            continue
+        s1 = dv.get("serie")
+        f = 1.0
+        if s0 and s1:
+            f = min(1.8, max(0.6, (s1 / s0) ** 0.3))           # /25 vs une vente /99 : x 1,5
+        elif s0 and not s1:
+            f = 1.3
+        elif s1 and not s0:
+            f = 0.8
+        note = " · ".join(x for x in ((f"/{s1}" if s1 else ""), (saison(dv.get("annee")) if dv.get("annee") and dv.get("annee") != cib.get("annee") else "")) if x)
+        out.append((sim, float(v["prix"]) * f, dict(v, similaire=True, note=note or None, prix_ramene=round(float(v["prix"]) * f, 2))))
+    if len(out) < 2:
+        return None
+    best = max(x[0] for x in out)
+    sel = [x for x in out if x[0] >= best - 0.15]
+    if len(sel) < 2:
+        sel = sorted(out, key=lambda x: -x[0])[:2]
+    prix = sorted(x[1] for x in sel)
+    m = cartes_match.mediane_robuste(prix)[0] if len(prix) >= 3 else statistics.median(prix)
+    ventes_s = sorted((x[2] for x in sel), key=lambda v: str(v.get("le") or ""), reverse=True)
+    return (round(m * RABAIS_APPROX, 2), "approx", len(sel),
+            [{k: v.get(k) for k in ("titre", "prix", "le", "photo", "url", "note", "similaire")} for v in ventes_s[:6]])
+
+
 def valeur_ou_saison(a, ventes, actives, cib=None):
     """La valeur de la carte (ses propres ventes) ; sinon celle des saisons voisines (valeur_autre_saison), dite comme telle."""
-    return valeur_annonce(a, ventes, actives, cib=cib) or valeur_autre_saison(a, ventes, cib=cib)
+    return valeur_annonce(a, ventes, actives, cib=cib) or valeur_autre_saison(a, ventes, cib=cib) or valeur_approx(a, ventes, cib=cib)
 
 
 def _diag(d, **k):
@@ -1181,13 +1257,14 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
         st["hits_vus"] = st.get("hits_vus", 0) + 1
     tout_v = list(brut_v or []) + (bassin.candidats(cib) if bassin else [])
     va = valeur_annonce(a, tout_v, actives, cib=cib)
-    nv_ = []
+    nv_, verifiee = [], False
     if not va and verif:
         pv = memes_ventes(cib, tout_v)
         pa = [_total(x) for x in actives or [] if x.get("item_id") != a.get("item_id")
               and not cartes_match.raisons_refus(cib, x.get("titre") or "")]
         if _prometteuse(a, t, pv, pa, maint, cib):
             nv = verif(cib)
+            verifiee = nv is not None                   # la recherche a vraiment eu lieu (pas refusee par le budget)
             if nv:
                 nv_ = list(nv)
                 va = valeur_annonce(a, tout_v + nv, actives, cib=cib)
@@ -1221,6 +1298,12 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
             st.setdefault("_tard", []).append((a, r, cib))
     if not va:                                        # 7 nov 2026 : sans ventes de SA saison : les saisons voisines
         va = valeur_autre_saison(a, tout_v + nv_, cib)
+    if not va:                                        # 7 nov 2026 : puis les cartes similaires (prix approximatif)
+        va = valeur_approx(a, tout_v + nv_, cib)
+        if not va and verifiee and verif and _hit(cib) and t >= 10:
+            nl = verif(cible_large(cib))              # la recherche large (joueur + produit + auto), une fois par carte
+            if nl:
+                va = valeur_approx(a, tout_v + nv_ + list(nl), cib)
     if not va:
         st["_res"] = ("sans_ventes", None)
         st["sans_ventes"] = st.get("sans_ventes", 0) + 1
@@ -1460,6 +1543,11 @@ def _verifier_tard(st, deals, maint, bassin, verif, d=None):
             if k == "prio":
                 fini["prio"] = True
             continue
+        # 7 nov 2026 (« regarde tous les no sales ») : aucune vente de LA carte -> la recherche des cartes similaires
+        if nv is not None and _hit(cib) and not valeur_ou_saison(a, list(nv) + (bassin.candidats(cib) if bassin else []), [], cib=cib):
+            nl = verif(cible_large(cib), prio=True) if k == "prio" else verif(cible_large(cib))
+            if nl:
+                nv = list(nv) + list(nl)
         if k == "prio" and nv is not None:
             st.setdefault("_prio_cov", {})[str(a.get("item_id"))] = True
         dv = st.pop("_dern_verif", None)

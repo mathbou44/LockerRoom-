@@ -532,6 +532,22 @@ def autres_saisons(titre, fond=False):
     return deals.valeur_autre_saison({"titre": titre}, [v for v in r.get("ventes") or [] if v.get("prix")], cib)
 
 
+def similaires(titre, fond=False):
+    """7 nov 2026 (Mathieu : « les no sales : analyser les cartes similaires et donner un prix approximatif ») : les ventes du
+    meme joueur, meme produit / insert (recherche large : sans annee, numerotation ni parallele), puis deals.valeur_approx.
+    -> (valeur, « approx », n, ventes) ou None."""
+    import cartes_match
+    import deals
+    cib = cartes_match.cible_titre(titre)
+    if cib.get("exclu") or not cib.get("joueur"):
+        return None
+    l = []
+    for q in dict.fromkeys(x for x in (cartes_match.requete_ebay(cib), cartes_match.requete_ebay(deals.cible_large(cib))) if x):
+        l += [v for v in rechercher(q, fond=fond).get("ventes") or [] if v.get("prix")]
+    l += archives(dict(cib, annee=None, serie=None, veut_serie=False, paralleles=set()), max_=200)
+    return deals.valeur_approx({"titre": titre}, l, cib)
+
+
 def autres_joueurs(titre, n=12, fond=False):
     """27 oct 2026 (Mathieu : « Colton Parayko pas de comp, mais on peut montrer des ventes de joueurs de la meme carte ») :
     les ventes de la MEME carte (meme produit, insert, parallele, numerotation, auto, patch) par D'AUTRES joueurs.
