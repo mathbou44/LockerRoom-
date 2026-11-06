@@ -88,9 +88,9 @@ struct ChoixCamera {
 
     static func meilleur(mode: String) -> ChoixCamera? {
         var l: [ChoixCamera] = []
-        let types: [(AVCaptureDevice.DeviceType, String)] = mode == "surface"
-            ? [(.builtInWideAngleCamera, "grand-angle")]
-            : [(.builtInWideAngleCamera, "grand-angle"), (.builtInUltraWideCamera, "ultra grand-angle")]
+        // 7 nov 2026 (Mathieu : « la camera ouvre en fish eye, ne devrait pas ; on est trop proche ») : toujours l'objectif
+        // principal (grand-angle, 48 Mpx) ; l'ultra grand-angle deformait la carte (fish eye) et forcait a coller le telephone
+        let types: [(AVCaptureDevice.DeviceType, String)] = [(.builtInWideAngleCamera, "grand-angle")]
         for (type, nom) in types {
             guard let d = AVCaptureDevice.default(type, for: .video, position: .back) else { continue }
             // le format qui donne la plus grande photo (a egalite : celui qui accepte la meilleure qualite photo)
@@ -158,6 +158,12 @@ final class CameraHDVC: UIViewController, AVCapturePhotoCaptureDelegate {
     private let passer = UIButton(type: .system)
     private let vignette = UIImageView()
     private let roue = UIActivityIndicatorView(style: .large)
+    // 7 nov 2026 (« on devrait avoir l'option de zoomer ou non ») : 1x par defaut, 1,5x, 2x, ou en pincant (1x a 3x)
+    private var zoom: CGFloat = 1
+    private var zoomDepart: CGFloat = 1
+    private let zooms: [CGFloat] = [1, 1.5, 2]
+    private var boutonsZoom: [UIButton] = []
+    private let rangeeZoom = UIStackView()
 
     init(choix: ChoixCamera, mode: String, etapes: [String], aides: [String], textes: [String: String]) {
         self.choix = choix; self.mode = mode; self.etapes = etapes; self.aides = aides; self.textes = textes
@@ -188,6 +194,45 @@ final class CameraHDVC: UIViewController, AVCapturePhotoCaptureDelegate {
         configurer()
         let tap = UITapGestureRecognizer(target: self, action: #selector(toucher(_:)))
         view.addGestureRecognizer(tap)
+        let pince = UIPinchGestureRecognizer(target: self, action: #selector(pincer(_:)))
+        view.addGestureRecognizer(pince)
+    }
+
+    private func zoomMax() -> CGFloat {
+        return min(3, max(1, choix.device.activeFormat.videoMaxZoomFactor))
+    }
+
+    private func appliquerZoom(_ z: CGFloat) {
+        let d = choix.device
+        let z2 = max(1, min(z, zoomMax()))
+        do {
+            try d.lockForConfiguration()
+            d.videoZoomFactor = z2
+            d.unlockForConfiguration()
+        } catch { return }
+        zoom = z2
+        placerCadre()
+        majBoutonsZoom()
+    }
+
+    private func majBoutonsZoom() {
+        for (k, b) in boutonsZoom.enumerated() {
+            let on = abs(zooms[k] - zoom) < 0.05
+            b.backgroundColor = on ? UIColor.white.withAlphaComponent(0.9) : UIColor.black.withAlphaComponent(0.45)
+            b.setTitleColor(on ? .black : .white, for: .normal)
+            b.isHidden = zooms[k] > zoomMax() + 0.01
+        }
+    }
+
+    @objc private func choisirZoom(_ b: UIButton) {
+        guard b.tag >= 0, b.tag < zooms.count else { return }
+        UISelectionFeedbackGenerator().selectionChanged()
+        appliquerZoom(zooms[b.tag])
+    }
+
+    @objc private func pincer(_ g: UIPinchGestureRecognizer) {
+        if g.state == .began { zoomDepart = zoom }
+        if g.state == .changed || g.state == .ended { appliquerZoom(zoomDepart * g.scale) }
     }
 
     private func construireUI() {
@@ -240,6 +285,24 @@ final class CameraHDVC: UIViewController, AVCapturePhotoCaptureDelegate {
         roue.hidesWhenStopped = true
         view.addSubview(roue)
 
+        rangeeZoom.axis = .horizontal
+        rangeeZoom.spacing = 10
+        rangeeZoom.translatesAutoresizingMaskIntoConstraints = false
+        for (k, z) in zooms.enumerated() {
+            let b = UIButton(type: .custom)
+            b.tag = k
+            b.setTitle(z == 1 ? "1×" : z == 2 ? "2×" : "1,5×", for: .normal)
+            b.titleLabel?.font = .systemFont(ofSize: 14, weight: .bold)
+            b.layer.cornerRadius = 19
+            b.translatesAutoresizingMaskIntoConstraints = false
+            b.widthAnchor.constraint(equalToConstant: 50).isActive = true
+            b.heightAnchor.constraint(equalToConstant: 38).isActive = true
+            b.addTarget(self, action: #selector(choisirZoom(_:)), for: .touchUpInside)
+            boutonsZoom.append(b)
+            rangeeZoom.addArrangedSubview(b)
+        }
+        view.addSubview(rangeeZoom)
+
         let g = view.safeAreaLayoutGuide
         NSLayoutConstraint.activate([
             fermer.topAnchor.constraint(equalTo: g.topAnchor, constant: 8),
@@ -254,7 +317,9 @@ final class CameraHDVC: UIViewController, AVCapturePhotoCaptureDelegate {
             declic.bottomAnchor.constraint(equalTo: g.bottomAnchor, constant: -22),
             declic.centerXAnchor.constraint(equalTo: g.centerXAnchor),
             declic.widthAnchor.constraint(equalToConstant: 76), declic.heightAnchor.constraint(equalToConstant: 76),
-            etat.bottomAnchor.constraint(equalTo: declic.topAnchor, constant: -12),
+            rangeeZoom.bottomAnchor.constraint(equalTo: declic.topAnchor, constant: -14),
+            rangeeZoom.centerXAnchor.constraint(equalTo: g.centerXAnchor),
+            etat.bottomAnchor.constraint(equalTo: rangeeZoom.topAnchor, constant: -10),
             etat.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 20),
             etat.trailingAnchor.constraint(equalTo: g.trailingAnchor, constant: -20),
             passer.centerYAnchor.constraint(equalTo: declic.centerYAnchor),
@@ -266,6 +331,7 @@ final class CameraHDVC: UIViewController, AVCapturePhotoCaptureDelegate {
             roue.centerYAnchor.constraint(equalTo: view.centerYAnchor)
         ])
         majTextes()
+        majBoutonsZoom()
     }
 
     private func majTextes() {
@@ -324,13 +390,14 @@ final class CameraHDVC: UIViewController, AVCapturePhotoCaptureDelegate {
         super.viewDidLayoutSubviews()
         apercu.frame = view.bounds
         placerCadre()
+        majBoutonsZoom()
     }
 
     // le cadre : la carte en portrait. Sa largeur suit le petit cote du capteur (y du capteur), sa hauteur le grand (x)
     private func placerCadre() {
         guard mode == "carte" else { cadreCalque.path = nil; ombre.path = nil; return }
         let rapportCapteur = Double(choix.hauteur) / Double(choix.largeur)        // 0,75 en 4:3
-        let fy = choix.fraction
+        let fy = min(0.8, choix.fraction * Double(zoom))            // le zoom agrandit la carte dans le cadre
         let fx = min(0.94, fy * (88.9 / 63.5) * rapportCapteur)
         cadreNorm = CGRect(x: 0.5 - fx / 2, y: 0.5 - fy / 2, width: fx, height: fy)
         let r = apercu.layerRectConverted(fromMetadataOutputRect: cadreNorm)
