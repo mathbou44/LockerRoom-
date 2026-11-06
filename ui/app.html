@@ -312,6 +312,7 @@ details.reglage summary::-webkit-details-marker{display:none}
 .adm-k.rouge b{color:var(--rouge)}
 .adm-al{margin:6px 0; padding:8px 12px; border-radius:12px; background:color-mix(in srgb, var(--rouge) 14%, transparent); color:var(--rouge); font-size:13.5px; font-weight:600}
 .adm-det{margin-top:8px} .adm-det summary{cursor:pointer; color:var(--acc); font-size:14px; font-weight:600} .adm-det > div{margin-top:8px; font-size:13px; line-height:1.5; color:var(--doux)}
+.w-sc{font-size:14px !important; color:var(--or) !important; font-family:inherit !important}
 .fa-note{display:flex; flex-direction:column; gap:4px; margin:6px 0 2px; font-size:13px; color:var(--doux)} .fa-note span{display:flex; align-items:center; gap:6px} .fa-note svg{width:15px; height:15px; flex:none}
 .q-ach{background:var(--carte); border:1px solid color-mix(in srgb, var(--acc) 45%, var(--ligne)); border-radius:16px; padding:12px 14px; margin:0 0 12px; display:flex; flex-direction:column; gap:10px}
 .q-ach.ok{border-color:color-mix(in srgb, var(--vert) 45%, var(--ligne))} .q-ach-t{display:flex; align-items:center; gap:8px; font-size:15.5px} .q-ach-t svg{width:20px; height:20px}
@@ -5732,7 +5733,7 @@ async function chargerWatch(){
         ${x.ebay_le && !fini ? `<span class="w-eb">✓ eBay</span>` : ''}</div>
       <div class="w-mil"><div class="w-t">${esc(titreCourt(x.titre))}</div>
         ${fini ? '' : `<div class="w-pr2"><div class="${dep ? 'rouge' : ''}"><small>${x.encan ? tt('Mise', 'Bid') : tt('Prix', 'Price')}</small><b>${cur}</b></div>
-          <button class="w-max2 ${x.mise_perso ? 'perso' : ''}" data-wmax="${esc(x.item_id)}"><small>${x.encan ? tt('Ta mise max', 'Your max bid') : tt('Paie au plus', 'Pay at most')} ✎</small><b>${x.mise_max != null ? argent(x.mise_max, 0) : '—'}</b></button>${x.profit != null ? `<div class="w-pro ${x.profit > 0 ? 'vert' : 'rouge'}"><small>${tt('Profit', 'Profit')}</small><b>${x.profit > 0 ? '+' : '−'}${argent(Math.abs(x.profit), 0)}</b></div>` : ''}</div>`}
+          <button class="w-max2 ${x.mise_perso ? 'perso' : ''}" data-wmax="${esc(x.item_id)}"><small>${x.encan ? tt('Ta mise max', 'Your max bid') : tt('Paie au plus', 'Pay at most')} ✎</small><b class="${x.mise_max == null && x.sans_comps ? 'w-sc' : ''}">${x.mise_max != null ? argent(x.mise_max, 0) : x.sans_comps ? tt('Pas de comps', 'No comps') : '—'}</b></button>${x.profit != null ? `<div class="w-pro ${x.profit > 0 ? 'vert' : 'rouge'}"><small>${tt('Profit', 'Profit')}</small><b>${x.profit > 0 ? '+' : '−'}${argent(Math.abs(x.profit), 0)}</b></div>` : ''}</div>`}
         ${dep ? `<div class="w-dep">${tt('Dépasse ta mise max', 'Over your max bid')}</div>` : ''}</div>
       <div class="w-dr">${x.etat === 'ok' && x.url ? (x.encan ? `<button class="w-go" data-wmiser="${esc(x.item_id)}">${tt('Miser', 'Bid')}</button>` : `<a class="w-go" href="${esc(lienAchat(x.url, 'watch'))}" target="_blank" rel="noopener">${tt('Acheter', 'Buy')}</a>`) : ''}
         <button class="sd-et on w-et" data-watch="${esc(x.item_id)}" aria-pressed="true" aria-label="${esc(tt('Retirer de la watchlist', 'Remove from watchlist'))}">${ICO_ETOILE}</button></div></div>`;

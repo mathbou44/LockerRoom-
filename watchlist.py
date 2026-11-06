@@ -33,6 +33,10 @@ def _cx(api):
         c.execute("ALTER TABLE watchlist ADD COLUMN ebay_le TEXT")
     except Exception:
         pass
+    try:                                         # 5 nov 2026 : cherchee sans trouver assez de ventes sures (pas de comps)
+        c.execute("ALTER TABLE watchlist ADD COLUMN sans_comps_le TEXT")
+    except Exception:
+        pass
     return c
 
 
@@ -332,10 +336,11 @@ def _valeurs_manquantes(api, lst):
     suit (70 % de la valeur moins le port), sauf si tu l'as ecrite toi-meme."""
     ratio = reglages(api)["ratio_pct"] / 100
     manque, neuves = [], []
+    hier = (datetime.now() - timedelta(hours=24)).isoformat()
     for x in lst:
+        v = x.pop("_valeur_neuve", None)
         if x.get("valeur") or x.get("statut") == "fini":
             continue
-        v = x.pop("_valeur_neuve", None)
         if v is None:
             try:
                 vc = api._valeur_en_cache(x, calculer=False)
@@ -344,7 +349,8 @@ def _valeurs_manquantes(api, lst):
             if vc:
                 v = float(vc[0])
             else:
-                manque.append(x)
+                if str(x.get("sans_comps_le") or "") < hier:          # deja cherchee hier sans succes : pas avant demain
+                    manque.append(x)
                 continue
         x["valeur"] = round(v, 2)
         if not x.get("mise_perso"):
@@ -360,11 +366,67 @@ def _valeurs_manquantes(api, lst):
         finally:
             c.close()
     if manque:
-        try:
-            api._valeurs_en_fond([{"item_id": x["item_id"], "titre": x.get("titre")} for x in manque])
-        except Exception:
-            pass
+        _chercher_en_fond(api, manque)
     return len(neuves)
+
+
+_FOND = {"en_cours": False}
+FOND_MAX = 8                     # recherches de ventes par passe (budget de fond de SoldComps : jamais au-dela)
+
+
+def valeur_trouvee(api, item_id, valeur):
+    """Une valeur sure trouvee ailleurs (la fiche de l'annonce, une recherche de fond) : gardee si la carte n'en avait pas."""
+    v = _f(valeur)
+    if not v:
+        return False
+    ratio = reglages(api)["ratio_pct"] / 100
+    c = _cx(api)
+    try:
+        n = c.execute("UPDATE watchlist SET valeur=?, mise_max=CASE WHEN COALESCE(mise_perso,0)=1 THEN mise_max "
+                      "ELSE ROUND(?*?-COALESCE(port,0),2) END WHERE item_id=? AND valeur IS NULL", (v, v, ratio, str(item_id))).rowcount
+        c.commit()
+    finally:
+        c.close()
+    return bool(n)
+
+
+def _chercher_en_fond(api, items):
+    """5 nov 2026 (« encore pas de comp / your max bid ») : le cache seul ne suffit pas (une carte jamais cherchee n'a rien).
+    Les cartes que TU suis sans valeur : une vraie recherche de ses ventes (budget de fond, protege), quelques-unes a la
+    fois ; leur valeur et leur mise max arrivent a la prochaine ouverture."""
+    if _FOND["en_cours"] or not items:
+        return
+    import threading
+    import comptes
+    _FOND["en_cours"] = True
+    compte = comptes.courant()
+    lot = [{"item_id": x["item_id"], "titre": x.get("titre")} for x in items if x.get("titre")][:FOND_MAX]
+
+    def tache():
+        try:
+            import deals
+            import vendues
+            with comptes.utiliser(compte):
+                for x in lot:
+                    try:
+                        r = vendues.memes_annonce(x["titre"], n=24, fond=True)
+                        vs = [v for v in (r.get("ventes") or []) if v.get("prix")]
+                        v = deals.valeur_sure(vs, x["titre"])[0] if len(vs) >= 2 else None
+                        if v:
+                            valeur_trouvee(api, x["item_id"], v)
+                        elif not r.get("erreur") and not r.get("erreur_ebay"):     # lue, mais pas assez de ventes sures
+                            c = _cx(api)
+                            try:
+                                c.execute("UPDATE watchlist SET sans_comps_le=? WHERE item_id=? AND valeur IS NULL",
+                                          (datetime.now().isoformat(timespec="seconds"), x["item_id"]))
+                                c.commit()
+                            finally:
+                                c.close()
+                    except Exception as e:
+                        print("Watchlist (ventes) : " + repr(e), flush=True)
+        finally:
+            _FOND["en_cours"] = False
+    threading.Thread(target=tache, daemon=True, name="watch-valeurs").start()
 
 
 def liste(api):
@@ -392,6 +454,7 @@ def liste(api):
         if x.get("valeur") and x.get("total") is not None:
             x["profit"] = round(x["valeur"] * (1 - fp) - ff - x["total"], 2)
     for x in lst:
+        x["sans_comps"] = bool(not x.get("valeur") and x.get("sans_comps_le"))
         x["encan"] = bool(x.get("encan"))
         x["etat"] = _etat(x, maint)
         f = _dt(x.get("fin"))

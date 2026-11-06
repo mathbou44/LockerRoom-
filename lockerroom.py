@@ -6361,6 +6361,12 @@ class Api:
                 _dl.corriger(item_id, valeur if juger else None, gain_v, total)
             except Exception:
                 pass
+        if valeur and juger:                     # 5 nov 2026 : la valeur trouvee ici sert aussi a la watchlist (sa mise max)
+            try:
+                import watchlist as _wl
+                _wl.valeur_trouvee(self, item_id, valeur)
+            except Exception as e:
+                print("Watchlist (valeur de la fiche) : " + repr(e), flush=True)
         if not ebay_prix_actif():                # interrupteur : l'annonce seule, sans valeur ni rabais
             return {"ok": True, "article": {**a, "total": total}, "comps": [], "n": 0, "coupe": True}
         return {"ok": True, "article": {**a, "total": total}, "comps": comps, "mediane": med, "n": n, "deal_retire": bool(maj_deal and maj_deal.get("retire")),
