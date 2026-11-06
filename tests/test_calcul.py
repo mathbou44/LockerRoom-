@@ -471,7 +471,7 @@ class VoletAcheteur(unittest.TestCase):
             deals.lire, deals.chasser_si_besoin = lire_avant, chasser_avant
         self.assertEqual(d["nb_deals"], 1)
         self.assertEqual(d["deals"][0]["rabais"], 60)
-        self.assertGreater(d["deals"][0]["gain"], 40)
+        self.assertGreater(d["deals"][0]["gain"], 35)              # 7 nov : taxes de l'achat comprises (38,86 $)
         self.assertEqual(a.reglages_sauver({"mode": "acheteur"})["mode"], "acheteur")
 
 

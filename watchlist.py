@@ -44,9 +44,11 @@ def _cx(api):
 # 6 nov 2026 (Mathieu : « minimum 25-30 % de profit apres tous les frais ») : la mise max par defaut laisse « profit_pct »
 # de profit sur ce que tu paies, apres les frais eBay de la revente et le materiel d'envoi (deals.prix_max) ; avant : un %
 # de la valeur (70 %, environ 16 % de profit)
-DEFAUT = {"fin_min": FIN_MIN, "profit_pct": 30, "alerte_fin": True, "alerte_seuil": True, "ebay_auto": False,
+# 7 nov 2026 (« 8 $ sur une carte a 27 $ ce n'est pas assez ») : et au moins « profit_min_d » dollars (taxes de l'achat comprises)
+DEFAUT = {"fin_min": FIN_MIN, "profit_pct": 30, "profit_min_d": 15, "alerte_fin": True, "alerte_seuil": True, "ebay_auto": False,
           "garder_h": 12}
 CHOIX_PROFIT = (20, 25, 30, 40, 50)
+CHOIX_PROFIT_D = (0, 10, 15, 20, 25)
 CHOIX_FIN = (5, 10, 15, 30, 60)
 # 31 oct 2026 (Mathieu : « qu'elles disparaissent apres un certain temps, par defaut ») : un encan termine reste visible
 # quelques heures (le temps de voir s'il est gagne), puis sort tout seul de la watchlist ; 0 = tout de suite
@@ -62,6 +64,11 @@ def reglages(api):
     try:
         if int(r.get("profit_pct", -1)) in CHOIX_PROFIT:
             out["profit_pct"] = int(r["profit_pct"])
+    except (TypeError, ValueError):
+        pass
+    try:
+        if int(r.get("profit_min_d", -1)) in CHOIX_PROFIT_D:
+            out["profit_min_d"] = int(r["profit_min_d"])
     except (TypeError, ValueError):
         pass
     for k in ("alerte_fin", "alerte_seuil", "ebay_auto"):
@@ -83,13 +90,14 @@ def regler(api, d):
                 cfg["fin_min"] = int(d["fin_min"])
         except (TypeError, ValueError):
             pass
-    ancien = cfg["profit_pct"]
-    if d.get("profit_pct") is not None:
-        try:
-            if int(d["profit_pct"]) in CHOIX_PROFIT:
-                cfg["profit_pct"] = int(d["profit_pct"])
-        except (TypeError, ValueError):
-            pass
+    ancien = (cfg["profit_pct"], cfg["profit_min_d"])
+    for k, choix in (("profit_pct", CHOIX_PROFIT), ("profit_min_d", CHOIX_PROFIT_D)):
+        if d.get(k) is not None:
+            try:
+                if int(d[k]) in choix:
+                    cfg[k] = int(d[k])
+            except (TypeError, ValueError):
+                pass
     for k in ("alerte_fin", "alerte_seuil", "ebay_auto"):
         if k in d:
             cfg[k] = bool(d[k])
@@ -99,18 +107,19 @@ def regler(api, d):
     except (TypeError, ValueError):
         pass
     api.reglages_sauver({"watch": cfg})
-    if cfg["profit_pct"] != ancien:
+    if (cfg["profit_pct"], cfg["profit_min_d"]) != ancien:
         _refaire_mises(api, cfg)
     return {"ok": True, **cfg}
 
 
 def mise_auto(cfg, valeur, port):
-    """La mise max par defaut : ce qui laisse cfg['profit_pct'] de profit net (deals.prix_max), moins le port."""
+    """La mise max par defaut : ce qui laisse cfg['profit_pct'] de profit net, et au moins cfg['profit_min_d'] dollars
+    (deals.prix_max : frais eBay, envoi, taxes de l'achat), moins le port."""
     import deals
     v = _f(valeur)
     if not v:
         return None
-    return round(max(0.0, deals.prix_max(v, cfg["profit_pct"] / 100) - deals.port_eff(_f(port))), 2)
+    return round(max(0.0, deals.prix_max(v, cfg["profit_pct"] / 100, cfg.get("profit_min_d", deals.PROFIT_MIN_D)) - deals.port_eff(_f(port))), 2)
 
 
 def _refaire_mises(api, cfg=None, item_id=None):
@@ -511,7 +520,8 @@ def liste(api):
         fp, ff = 0.1325, 0.40
     for x in lst:
         if x.get("valeur") and x.get("total") is not None:
-            x["profit"] = round(x["valeur"] * (1 - fp) - ff - 1.50 - x["total"], 2)       # 6 nov : + le materiel d'envoi
+            import deals as _dp                                   # 6 nov : + le materiel d'envoi ; 7 nov : + les taxes de l'achat
+            x["profit"] = round(x["valeur"] * (1 - fp) - ff - _dp.ENVOI_NET - _dp.cout_achat(x["total"]), 2)
     for x in lst:
         x["sans_comps"] = bool(not x.get("valeur") and x.get("sans_comps_le"))
         x["encan"] = bool(x.get("encan"))

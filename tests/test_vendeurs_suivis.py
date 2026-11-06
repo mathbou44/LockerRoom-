@@ -72,7 +72,7 @@ class TestVendeursSuivis(unittest.TestCase):
         ids = {x["item_id"]: x for x in deals.lire().get("deals") or []}
         for i, (t, m, v, h) in enumerate(CARTES):
             with self.subTest(t=t):
-                if "Base #1" in t or (h or 0) > deals.ENCAN_SUIVI_H:
+                if "Base #1" in t or "Sanderson" in t or (h or 0) > deals.ENCAN_SUIVI_H:   # 7 nov : 45 $ pour 70 $, plus assez
                     self.assertNotIn(f"s{i}", ids)          # carte ordinaire, ou finit dans plus de 5 jours
                 else:
                     self.assertIn(f"s{i}", ids)

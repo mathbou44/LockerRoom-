@@ -2965,7 +2965,7 @@ function lectureFraiche(nom, corps){
 // tips en dessous en couleur prisme ; quand il rentre dans l'app, toutes les pages sont deja prechargees ») : l'ecran
 // d'ouverture prend les memes lectures que la derniere visite de chaque onglet (4 a la fois), au moins 1,4 s, au plus 5 s
 const TIPS_LANCE = () => [
-  tt('Un deal, c’est une carte qui te laisse au moins 30 % de profit, tous frais payés, d’après ce qu’elle s’est vraiment vendue.', 'A deal is a card that leaves you at least 30% profit, all fees paid, based on what it really sold for.'),
+  tt('Un deal, c’est une carte qui te laisse au moins 30 % de profit (et 15 $), tous frais et taxes payés, d’après ce qu’elle s’est vraiment vendue.', 'A deal is a card that leaves you at least 30% profit (and $15), all fees and tax paid, based on what it really sold for.'),
   tt('Touche l’étoile d’un deal : on t’avertit 15 min avant la fin de l’encan.', 'Tap a deal’s star: we alert you 15 min before the auction ends.'),
   tt('Suis tes joueurs dans Filtres : leurs deals passent en premier, avec une étoile.', 'Track your players in Filters: their deals come first, with a star.'),
   tt('Fond flou : la carte et 1 mm autour restent nettes, l’acheteur voit son état.', 'Blurred background: the card and 1 mm around it stay sharp.'),
@@ -5783,17 +5783,20 @@ function feuilleAlertesWatch(W){
     <label class="bascule fd-l" style="margin-top:14px"><span><b>${tt('Si la mise dépasse ma mise max', 'If the bid goes over my max')}</b><small>${tt('La carte n’est plus rentable', 'The card is no longer worth it')}</small></span><input type="checkbox" id="wa-seuil" ${C.alerte_seuil ? 'checked' : ''}></label>
     <div class="fd-s" style="margin-top:14px">${tt('Profit minimum', 'Minimum profit')} <small>${tt('sur ce que tu paies, après les frais eBay et l’envoi : ta mise max suit', 'on what you pay, after eBay fees and shipping supplies: your max bid follows')}</small></div>
     ${seg('wa-profit', [20, 25, 30, 40, 50], C.profit_pct ?? 30, ' %')}
+    <div class="fd-s" style="margin-top:12px">${tt('Et au moins', 'And at least')} <small>${tt('par carte, taxes de l’achat comprises : protège les petites cartes', 'per card, purchase tax included: protects cheaper cards')}</small></div>
+    ${seg('wa-profitd', [0, 10, 15, 20, 25], C.profit_min_d ?? 15, ' $')}
     <div class="fd-s" style="margin-top:14px">${tt('Retirer les encans terminés après', 'Remove ended auctions after')}</div>
     <div class="seg petit" id="wa-garder">${[[0, tt('Tout de suite', 'Right away')], [1, '1 h'], [12, '12 h'], [24, '24 h'], [72, tt('3 j', '3 d')]].map(([k, l]) => `<button data-v="${k}" class="${+k === +(C.garder_h ?? 12) ? 'on' : ''}">${l}</button>`).join('')}</div>
-    <div class="sous" style="margin-top:12px">${tt('Par défaut : 15 min, 30 % de profit et 12 h. Glisse une carte vers la gauche pour la retirer.', 'Default: 15 min, 30% profit and 12 h. Swipe a card left to remove it.')} <button class="lien-t" id="wa-def">${tt('Remettre', 'Reset')}</button></div>
+    <div class="sous" style="margin-top:12px">${tt('Par défaut : 15 min, 30 % de profit (15 $ au moins) et 12 h. Glisse une carte vers la gauche pour la retirer.', 'Default: 15 min, 30% profit (at least $15) and 12 h. Swipe a card left to remove it.')} <button class="lien-t" id="wa-def">${tt('Remettre', 'Reset')}</button></div>
     <button class="btn" id="wa-ok" style="margin-top:16px">OK</button>`);
     const ch = (k, v) => { C[k] = v; vibrer(); garderF(peindre); };
     $('#wa-fin').onchange = (e) => ch('alerte_fin', e.target.checked);
     $('#wa-seuil').onchange = (e) => ch('alerte_seuil', e.target.checked);
     $$('#wa-min button').forEach(b => b.onclick = () => ch('fin_min', +b.dataset.v));
     $$('#wa-profit button').forEach(b => b.onclick = () => ch('profit_pct', +b.dataset.v));
+    $$('#wa-profitd button').forEach(b => b.onclick = () => ch('profit_min_d', +b.dataset.v));
     $$('#wa-garder button').forEach(b => b.onclick = () => ch('garder_h', +b.dataset.v));
-    $('#wa-def').onclick = () => { Object.assign(C, {fin_min: 15, profit_pct: 30, alerte_fin: true, alerte_seuil: true, garder_h: 12}); vibrer(); garderF(peindre); };
+    $('#wa-def').onclick = () => { Object.assign(C, {fin_min: 15, profit_pct: 30, profit_min_d: 15, alerte_fin: true, alerte_seuil: true, garder_h: 12}); vibrer(); garderF(peindre); };
     $('#wa-ok').onclick = async () => { const r = await essai(API.watch_regler(C), tt('Alertes enregistrées', 'Alerts saved')); if (r) { fermerFeuille(); chargerWatch(); } };
   };
   const garderF = (f) => { const y = $('#feuille') ? $('#feuille').scrollTop : 0; f(); $('#feuille').scrollTop = y; };
@@ -5954,11 +5957,11 @@ async function feuilleGixen(montants){
   const cx = $('#gx-csv'); if (cx) cx.onclick = () => { vibrer(); exporterGixen(bons); };
 }
 function feuilleMiseMax(x, W){
-  const defaut = x.valeur ? Math.round(Math.max(0, prixMaxDeal(x.valeur, (W.profit_pct ?? 30) / 100) - (x.port || 0)) * 100) / 100 : null;
+  const defaut = x.valeur ? Math.round(Math.max(0, prixMaxDeal(x.valeur, (W.profit_pct ?? 30) / 100, W.profit_min_d ?? 15) - portEff(x.port)) * 100) / 100 : null;
   ouvrirFeuille(`<h3>${tt('Ma mise max', 'My max bid')}</h3>
     <div class="sous" style="margin-bottom:12px">${esc(titreCourt(x.titre))}${x.valeur ? ' · ' + tt('vaut ', 'worth ') + argentCourt(x.valeur) : ''}</div>
     <label class="large">${tt('Mise max', 'Max bid')} ${symDevise()}<input class="champ" id="wm-v" type="number" inputmode="decimal" step="1" min="1" value="${dev2(x.mise_max)}"></label>
-    ${defaut != null ? `<div class="sous" style="margin-top:8px">${tt(`Par défaut : ${argent(defaut, 0)} (${W.profit_pct ?? 30} % de profit après frais, port compris)`, `Default: ${argent(defaut, 0)} (${W.profit_pct ?? 30}% profit after fees, shipping included)`)}</div>` : ''}
+    ${defaut != null ? `<div class="sous" style="margin-top:8px">${tt(`Par défaut : ${argent(defaut, 0)} (${W.profit_pct ?? 30} % de profit et ${W.profit_min_d ?? 15} $ au moins, après frais et taxes, port compris)`, `Default: ${argent(defaut, 0)} (${W.profit_pct ?? 30}% profit and at least $${W.profit_min_d ?? 15}, after fees and tax, shipping included)`)}</div>` : ''}
     <button class="btn" id="wm-ok" style="margin-top:16px">${tt('Enregistrer', 'Save')}</button>
     ${x.mise_perso && defaut != null ? `<button class="plus" id="wm-def">${tt('Revenir au défaut', 'Back to default')}</button>` : ''}`);
   const i = $('#wm-v'); setTimeout(() => { i.focus(); i.select(); }, 250);
@@ -5992,7 +5995,7 @@ function tuileDeal(x){
   const prix = encan ? Math.max(0, (x.total || 0) - (x.port || 0)) : x.total;
   const max = x.mise_max != null ? x.mise_max : x.valeur ? Math.round(prixMaxDeal(x.valeur) - (encan ? portEff(x.port) : 0)) : null;
   const k3 = (lib, val, cl) => `<span class="sd-k ${cl || ''}"><small>${lib}</small><b>${val}</b></span>`;
-  const g = encan && max != null && x.valeur ? profitA(x.valeur, max + portEff(x.port)) : x.gain;          // encan : a la mise max
+  const g = encan && max != null && x.valeur ? profitDeal(x.valeur, max + portEff(x.port)) : x.gain;          // encan : a la mise max
   return `<div class="tuile-deal slab-deal ${x.pres ? 'pres' : ''} ${sansV ? 'suivi' : ''}" data-id="${esc(x.item_id)}" ${attrsAnnonce(x)} role="button" tabindex="0">
     <div class="sd-slab"><div class="sd-lab">
         <b class="sd-j">${x.favori ? '<i class="sd-fav">★</i> ' : ''}${esc(nom)}</b>${carte ? `<small class="sd-c">${esc(carte)}</small>` : ''}
@@ -6678,9 +6681,13 @@ const portEff = (p) => p == null ? 15 : (p || 0);          // port pas affiche :
 const fraisVente = () => { const r = S.reglages || {}; return [r.frais_ebay_pct != null ? r.frais_ebay_pct / 100 : 0.1325, r.frais_ebay_fixe != null ? r.frais_ebay_fixe : 0.40]; };
 // 6 nov 2026 (Mathieu : « minimum 25-30 % de profit apres tous les frais ») : le profit compte aussi le materiel d'envoi
 // (1,50 $ : le port de la revente est paye par l'acheteur) ; le prix max d'un deal laisse 30 % de profit net (deals.prix_max)
-const ENVOI_NET = 1.50, PROFIT_MIN_DEAL = 0.30;
+// 7 nov 2026 (Mathieu : « 8 $ sur une carte a 27 $ ce n'est pas assez ; la Alex Bump, pas plus que 20 $ avec les taxes ») :
+// au moins 15 $ de profit (le % ne decide que pour les cartes de 80 $ et plus) et ce que tu paies compte les taxes de l'achat
+const ENVOI_NET = 1.50, PROFIT_MIN_DEAL = 0.30, PROFIT_MIN_D = 15, TAXE_ACHAT = 0.14975;
 const profitA = (valeur, paye) => { if (!valeur || paye == null) return null; const [fp, ff] = fraisVente(); return Math.round((valeur * (1 - fp) - ff - ENVOI_NET - paye) * 100) / 100; };
-const prixMaxDeal = (valeur, p = PROFIT_MIN_DEAL) => { if (!valeur) return 0; const [fp, ff] = fraisVente(); return Math.max(0, (valeur * (1 - fp) - ff - ENVOI_NET) / (1 + p)); };
+// un deal : ce que tu paierais (mise ou prix + port) avec les taxes de l'achat (le cout de l'inventaire, lui, les a deja)
+const profitDeal = (valeur, paye) => paye == null ? null : profitA(valeur, paye * (1 + TAXE_ACHAT));
+const prixMaxDeal = (valeur, p = PROFIT_MIN_DEAL, d = PROFIT_MIN_D) => { if (!valeur) return 0; const [fp, ff] = fraisVente(); const net = valeur * (1 - fp) - ff - ENVOI_NET; return Math.max(0, Math.min(net / (1 + p), net - d) / (1 + TAXE_ACHAT)); };
 // 30 oct 2026 : pourquoi une carte n'a pas de valeur, en mots simples (avant : « pas assez de ventes » pour tout)
 function raisonSansValeur(d){
   const n = d.nb_trouvees || 0, p = String(d.pourquoi || '');
@@ -6704,7 +6711,7 @@ function majChiffresTuile(t, x){
   if (t.classList.contains('suivi')) { if (b('pr') && x.total) b('pr').textContent = argentCourt(x.encan ? Math.max(0, x.total - (x.port || 0)) : x.total); return; }
   if (b('pr') && x.total) b('pr').textContent = argentCourt(x.encan ? Math.max(0, x.total - (x.port || 0)) : x.total);
   if (b('mx') && x.mise_max != null) b('mx').textContent = argentCourt(x.mise_max);
-  const g = x.encan && x.mise_max != null && x.valeur ? profitA(x.valeur, x.mise_max + portEff(x.port)) : x.gain;
+  const g = x.encan && x.mise_max != null && x.valeur ? profitDeal(x.valeur, x.mise_max + portEff(x.port)) : x.gain;
   if (b('g')) b('g').textContent = g > 0 ? '+' + argentCourt(g) : '—';
 }
 function majTuilePrix(id, d){
@@ -6745,13 +6752,12 @@ async function ouvrirAnnonce(base){
     const frais_ = !!(d.valeur && d.valeur_source === 'vendues' && !d.ventes_panne && !d.ventes_attente);
     const conn = !frais_ && x0 && x0.mise_max != null && x0.valeur ? x0 : null;
     if (conn && d.valeur !== conn.valeur && total) {
-      const [fp, ff] = fraisVente();
       d = Object.assign({}, d, {valeur: conn.valeur, nb_vendues: conn.n || d.nb_vendues, valeur_source: d.valeur_source || 'vendues',
-        rabais: Math.round(100 * (1 - total / conn.valeur)), gain: Math.round((conn.valeur * (1 - fp) - ff - total) * 100) / 100});
+        rabais: Math.round(100 * (1 - total / conn.valeur)), gain: profitDeal(conn.valeur, total)});
     }
     const maxA = conn ? conn.mise_max : maxT == null ? null : encan ? Math.max(0, maxT - port) : maxT;
     if (frais_ && x0 && x0.item_id && maxA != null && (x0.valeur !== d.valeur || x0.mise_max !== maxA)) { x0.valeur = d.valeur; x0.mise_max = Math.round(maxA * 100) / 100; }
-    const gainAff = encan && maxA != null && d.valeur ? profitA(d.valeur, maxA + port) : d.gain;      // encan : a la mise max
+    const gainAff = encan && maxA != null && d.valeur ? profitDeal(d.valeur, maxA + port) : d.gain;      // encan : a la mise max
     // 2 nov 2026 (Mathieu : « quand le prix suggere est depasse par le bid actuel, ce n'est plus un deal ») : la mise actuelle et
     // la mise max se comparent HORS port (la mise max est ce qu'on entre sur eBay) ; depassee -> « Plus un deal »
     const depasse = maxA != null && total && (encan ? total - port : total) > maxA + 0.5;
@@ -6915,7 +6921,7 @@ function preuveDeals(d){
       <div class="vert"><b>${n('deals')}</b><span>${tt('deals trouvés (avant le filtre de profit)', 'deals found (before the profit filter)')}</span></div>
       ${g.erreurs_ventes || g.erreurs_ebay ? `<div class="rouge"><b>${n('erreurs_ventes') !== '0' ? n('erreurs_ventes') : n('erreurs_ebay')}</b><span>${g.erreurs_ventes ? tt('recherches de ventes refusées (limite SoldComps du jour)', 'sales lookups refused (SoldComps daily limit)') : tt('recherches eBay en erreur', 'eBay searches failed')}</span></div>` : ''}
     </div>
-    <small>${tt('Un deal = une annonce qui te laisse au moins 30 % de profit sur ce que tu paies (port compris), après les frais eBay de la revente et le matériel d’envoi, d’après les ventes de LA MÊME carte (2 au moins). Encans : tous ceux qui finissent dans 48 h et moins ; ta mise max garde ces 30 % (revus à chaque passage : retirés si la mise dépasse ta mise max).', 'A deal = a listing that leaves you at least 30% profit on what you pay (shipping included), after eBay resale fees and shipping supplies, based on sales of THE SAME card (at least 2). Auctions: every one ending within 48 h; your max bid keeps that 30% (re-checked on every pass: removed if the bid goes over your max bid).')}</small></details>`;
+    <small>${tt('Un deal = une annonce qui te laisse au moins 30 % de profit sur ce que tu paies (port et taxes de l’achat compris), et au moins 15 $, après les frais eBay de la revente et le matériel d’envoi, d’après les ventes de LA MÊME carte (2 au moins). Encans : tous ceux qui finissent dans 48 h et moins ; ta mise max garde ces 30 % (revus à chaque passage : retirés si la mise dépasse ta mise max).', 'A deal = a listing that leaves you at least 30% profit on what you pay (shipping and purchase tax included), and at least $15, after eBay resale fees and shipping supplies, based on sales of THE SAME card (at least 2). Auctions: every one ending within 48 h; your max bid keeps that 30% (re-checked on every pass: removed if the bid goes over your max bid).')}</small></details>`;
 }
 // 29 oct 2026 (Mathieu : « quelqu'un qui ne connait rien aux cartes doit tout comprendre rapidement ») : lire un deal, en 4 lignes
 function feuilleAideDeals(){
@@ -6925,7 +6931,7 @@ function feuilleAideDeals(){
     ['☆', tt('Touche l’étoile pour la suivre : on t’avertit 15 min avant la fin.', 'Tap the star to follow it: we alert you 15 min before the end.'), 'or']];
   ouvrirFeuille(`<h3>${tt('Comment lire un deal', 'How to read a deal')}</h3>
     <div class="aide-l">${L.map(([k, t, c]) => `<div><b class="${c}">${k}</b><span>${t}</span></div>`).join('')}</div>
-    <div class="sous">${tt('Un deal, c’est une carte qui te laisse au moins 30 % de profit, tous frais payés. Touche une carte pour voir l’annonce et ses ventes récentes.', 'A deal is a card that leaves you at least 30% profit, all fees paid. Tap a card to see the listing and its recent sales.')}</div>
+    <div class="sous">${tt('Un deal, c’est une carte qui te laisse au moins 30 % de profit (et 15 $), tous frais et taxes payés. Touche une carte pour voir l’annonce et ses ventes récentes.', 'A deal is a card that leaves you at least 30% profit (and $15), all fees and tax paid. Tap a card to see the listing and its recent sales.')}</div>
     <button class="btn" id="aide-ok">${tt('Compris', 'Got it')}</button>`);
   $('#aide-ok').onclick = fermerFeuille;
 }

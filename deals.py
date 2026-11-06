@@ -29,8 +29,28 @@ FRAIS_FIXE = 0.40
 ENVOI_NET = 1.50
 
 
-def prix_max(valeur, profit_min=None):
-    """Le plus a payer (port compris) pour une carte qui se revend « valeur » et garder profit_min de profit."""
+# 7 nov 2026 (Mathieu : « pour les cartes a plus bas prix il faut augmenter la marge : 20 % sur une grosse carte c'est
+# interessant, mais 8 $ sur une carte a 27 $ ce n'est pas assez ; la Alex Bump Clear Cut, je ne voudrais pas payer plus que
+# 20 $ avec les taxes ») : le profit est AU MOINS PROFIT_MIN_D dollars (le % ne joue que sur les cartes de 80 $ et plus) et
+# ce que tu paies compte les taxes sur l'achat (eBay percoit la TPS + TVQ : 14,975 % au Quebec)
+PROFIT_MIN_D = 15.0
+try:
+    TAXE_ACHAT = float(os.environ.get("LR_TAXE_ACHAT", "14.975")) / 100
+except ValueError:
+    TAXE_ACHAT = 0.14975
+
+
+def cout_achat(total):
+    """Ce que tu paies vraiment pour un total (mise ou prix + port) : les taxes sur l'achat comprises."""
+    try:
+        return round(float(total or 0) * (1 + TAXE_ACHAT), 2)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def prix_max(valeur, profit_min=None, min_dollars=None):
+    """Le plus a payer (port compris, AVANT les taxes de l'achat) pour une carte qui se revend « valeur » et garder
+    profit_min de profit (sur ce que tu paies, taxes comprises), et au moins min_dollars, apres les frais eBay et l'envoi."""
     try:
         v = float(valeur or 0)
     except (TypeError, ValueError):
@@ -38,7 +58,9 @@ def prix_max(valeur, profit_min=None):
     if v <= 0:
         return 0.0
     p = PROFIT_MIN if profit_min is None else float(profit_min)
-    return max(0.0, (v * (1 - FRAIS_PCT) - FRAIS_FIXE - ENVOI_NET) / (1 + p))
+    dm = PROFIT_MIN_D if min_dollars is None else float(min_dollars)
+    net = v * (1 - FRAIS_PCT) - FRAIS_FIXE - ENVOI_NET
+    return max(0.0, min(net / (1 + p), net - dm) / (1 + TAXE_ACHAT))
 RATIO_PRES = 0.85                # 27 oct 2026 : « a surveiller » = 70 a 85 % de la valeur (jamais affiche comme un deal)
 PAR_TOUR_ENCANS = 30             # 26 oct 2026 (Mathieu : « aucune enchere se terminant ? ») : 30 recherches d encans par heure
 VERSION = 4                      # 27 oct 2026 : valeur SURE (numeros speciaux, recence, coherence), vendeur, etat (v4)
@@ -314,7 +336,7 @@ def maj_prix(item_id, total, port=None, mises=None, fin=None):
     return {"deal": None if retire else x, "retire": retire}
 
 
-REVALIDE_V = 10                  # 10 (6 nov) : mises max refaites sur TOUS les deals gardes ; 9 (6 nov) : prix max a 30 % de profit net (avant : 70 % de la valeur) ; 2 : « checklist » ; 3 : Bowman U = football ; 4 : la F1 ; 5 : « Beckett » prenom (pas gradee) ; 6 : Signature Materials ; 7 : « Draft » ; 8 : « Beam Team » (4 nov)
+REVALIDE_V = 11                  # 11 (7 nov) : 15 $ de profit au moins, taxes de l'achat ; 10 (6 nov) : mises max refaites sur TOUS les deals gardes ; 9 (6 nov) : prix max a 30 % de profit net (avant : 70 % de la valeur) ; 2 : « checklist » ; 3 : Bowman U = football ; 4 : la F1 ; 5 : « Beckett » prenom (pas gradee) ; 6 : Signature Materials ; 7 : « Draft » ; 8 : « Beam Team » (4 nov)
 
 
 def _revalider_un(x):

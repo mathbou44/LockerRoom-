@@ -136,6 +136,12 @@ def _envoi_net():
     return _d.ENVOI_NET
 
 
+def _paye(total):
+    """7 nov 2026 : ce que tu paies vraiment (mise ou prix + port, taxes de l'achat comprises : deals.cout_achat)."""
+    import deals as _d
+    return _d.cout_achat(total)
+
+
 def _maintenant():
     return datetime.now().isoformat(timespec="seconds")
 
@@ -3778,8 +3784,8 @@ class Api:
             if carte:
                 _c, semblables, _e = cartes_match.filtrer_carte(titre_c, res, a.get("joueur"), exclure_id=a["item_number"])
                 # 27 oct 2026 (Mathieu : « pas de faux prix ») : le marche d'une carte = ses ventes reelles SURES, pas les prix demandes
-                try:
-                    vs = [v for v in (vendues.memes_annonce(titre_c, fond=True).get("ventes") or []) if v.get("prix")]
+                try:                         # 6 nov 2026 : 90 derniers jours, sans tes achats (comme l'inventaire)
+                    vs = self._ventes_inventaire([v for v in (vendues.memes_annonce(titre_c, fond=True).get("ventes") or []) if v.get("prix")])
                 except Exception:
                     vs = []
                 sure = _deals.valeur_sure(vs, titre_c)[0] if len(vs) >= 2 else None
@@ -4909,7 +4915,7 @@ class Api:
             r = vendues.memes_annonce(t, n=24)
         except Exception as e:
             return {"ok": False, "erreur": str(e)}
-        vs = [v for v in (r.get("ventes") or []) if v.get("prix")]
+        vs = self._ventes_inventaire([v for v in (r.get("ventes") or []) if v.get("prix")], carte)
         if not vs:                      # rien de neuf (ou recherche indisponible) : la derniere valeur connue reste, dite comme telle
             return {"ok": True, "valeur": carte.get("valeur"), "n": 0, "gardee": carte.get("valeur") is not None, "erreur": r.get("erreur")}
         sure, _pv = deals.valeur_sure(vs, t)
@@ -4921,6 +4927,46 @@ class Api:
         recentes = sorted(vs, key=lambda v: str(v.get("le") or ""), reverse=True)
         return {"ok": True, "valeur": val, "n": len(vs), "sure": bool(sure), "derniere": (recentes[0].get("le") or "")[:10] or None,
                 "ajustee": ajust}
+
+    JOURS_INVENTAIRE = 90
+
+    def _ventes_inventaire(self, vs, carte=None, jours=None):
+        """6 nov 2026 (Mathieu : « pour eviter de prendre mes achats en consideration et etre pres du marche actuel, prendre
+        seulement les ventes des 3 derniers mois pour l'ajustement du prix des cartes dans l'inventaire ») : les ventes qui
+        servent a la valeur d'une carte de l'inventaire : 90 jours au plus (meme un hit), et jamais un de tes achats eBay
+        (son numero d'annonce ; pour la carte elle-meme, aussi la vente au prix paye, a 2 jours de son achat)."""
+        jours = jours or self.JOURS_INVENTAIRE
+        ids, propres = set(), []
+        try:
+            c = self._db()
+            try:
+                c.execute(self._SQL_ACHATS)
+                for iid, cout, date, cid in c.execute("SELECT item_id, cout, date, carte_id FROM achats_ebay"):
+                    if iid:
+                        ids.add(str(iid))
+                    if carte and cid is not None and cid == carte.get("id") and cout and date:
+                        propres.append((str(date)[:10], float(cout)))
+            finally:
+                c.close()
+        except Exception as e:
+            print("Ventes inventaire (achats) : " + repr(e), flush=True)
+
+        def mon_achat(v):
+            iv = str(v.get("item_id") or "") or vendues._id_vente(v) or ""
+            if iv and iv in ids:
+                return True
+            try:
+                p, d = float(v.get("prix")), datetime.fromisoformat(str(v.get("le"))[:10])
+            except (TypeError, ValueError):
+                return False
+            for da, cout in propres:
+                try:
+                    if abs((d - datetime.fromisoformat(da)).days) <= 2 and abs(p - cout) <= max(1.0, 0.05 * cout):
+                        return True
+                except ValueError:
+                    pass
+            return False
+        return [v for v in vs or [] if deals._jours(v) <= jours and not mon_achat(v)]
 
     @staticmethod
     def _valeur_vieillie(val, ventes, carte):
@@ -4939,7 +4985,7 @@ class Api:
         import suivi_valeur
         try:
             carte = self.carte_lire(cid)
-            v = suivi_valeur.valeur_actuelle(carte) if carte else None
+            v = suivi_valeur.valeur_actuelle(carte, api=self) if carte else None
             if v:
                 suivi_valeur._maj(self, cid, reference=v, derniere=v, verifie_le=datetime.now().isoformat(timespec="seconds"))
                 c = self._db()
@@ -5903,7 +5949,7 @@ class Api:
             if not x.get("encan") and (x.get("ratio") or 1) < (0.25 if (x.get("valeur") or 0) >= 400 else 0.15):
                 continue                     # 5 nov 2026 (Fantilli Signature Materials a 253 $ « vaut 1 393 $ ») : une carte de 400 $+
                                              # a prix fixe sous 25 % de sa valeur, c'est presque toujours une autre carte
-            x["gain"] = round((x.get("valeur") or 0) * (1 - fp) - ff - _envoi_net() - (x.get("total") or 0), 2)
+            x["gain"] = round((x.get("valeur") or 0) * (1 - fp) - ff - _envoi_net() - _paye(x.get("total") or 0), 2)
             if not x.get("encan") and x["gain"] <= 1:          # 26 oct 2026 : pas de profit apres les frais : pas un deal
                 continue
             x["rabais"] = round(100 * (1 - (x.get("ratio") or 1)))
@@ -5915,7 +5961,7 @@ class Api:
         """Le profit que l'ecran affiche : un encan, a la mise max (port compris) ; un prix fixe, au prix demande."""
         if x.get("encan") and x.get("mise_max") is not None and x.get("valeur") and fp is not None:
             import deals as _dlg
-            return x["valeur"] * (1 - fp) - (ff or 0) - _envoi_net() - (float(x["mise_max"]) + _dlg.port_eff(x.get("port")))
+            return x["valeur"] * (1 - fp) - (ff or 0) - _envoi_net() - _paye(float(x["mise_max"]) + _dlg.port_eff(x.get("port")))
         return x.get("gain") or 0
 
     @staticmethod
@@ -5988,7 +6034,7 @@ class Api:
         f = dict(f, _fp=fp_, _ff=ff_)
         for x in tout:
             if x.get("valeur") and x.get("total") is not None:
-                x["gain"] = round(x["valeur"] * (1 - fp_) - ff_ - _envoi_net() - (x.get("total") or 0), 2)
+                x["gain"] = round(x["valeur"] * (1 - fp_) - ff_ - _envoi_net() - _paye(x.get("total") or 0), 2)
                 x["rabais"] = round(100 * (1 - (x.get("total") or 0) / x["valeur"]))
         par_sport = {}
         for x in tout:
@@ -6068,7 +6114,7 @@ class Api:
             sec = [dict(x, source="marche") for x in dd["secours"]["deals"] if str(x.get("vu_le") or "") >= lim6 and _d.valide(x)
                    and str(x.get("item_id")) not in ret and _d.encore_ouvert(x)]
             for x in sec:
-                x["gain"] = round((x.get("valeur") or 0) * (1 - fp_) - ff_ - _envoi_net() - (x.get("total") or 0), 2)
+                x["gain"] = round((x.get("valeur") or 0) * (1 - fp_) - ff_ - _envoi_net() - _paye(x.get("total") or 0), 2)
                 x["rabais"] = round(100 * (1 - (x.get("ratio") or 1)))
             sec = [x for x in self._deals_filtrer(sec, f) if x.get("encan") or x["gain"] > 1]
             if sec:
@@ -6081,7 +6127,7 @@ class Api:
             if str(x.get("item_id")) in _d._bannis() or str(x.get("item_id")) in ret_p or not _d.encore_ouvert(x):
                 continue
             x = _dl.a_jour(x)
-            y = dict(x, source="marche", gain=round((x.get("valeur") or 0) * (1 - fp_) - ff_ - _envoi_net() - (x.get("total") or 0), 2),
+            y = dict(x, source="marche", gain=round((x.get("valeur") or 0) * (1 - fp_) - ff_ - _envoi_net() - _paye(x.get("total") or 0), 2),
                      rabais=round(100 * (1 - (x.get("ratio") or 1))))
             pres.append(y)
         pres = self._appliquer_profil([x for x in self._deals_filtrer(pres, f) if not f.get("sports") or (x.get("sport") or "hockey") in f["sports"]], prof)[:24 if pro else 6]
@@ -6108,7 +6154,7 @@ class Api:
             if not y.get("valeur"):
                 continue
             if y.get("valeur"):
-                y["gain"] = round(y["valeur"] * (1 - fp_) - ff_ - _envoi_net() - (y.get("total") or 0), 2)
+                y["gain"] = round(y["valeur"] * (1 - fp_) - ff_ - _envoi_net() - _paye(y.get("total") or 0), 2)
                 y["rabais"] = round(100 * (1 - (y.get("total") or 0) / y["valeur"]))
                 # 31 oct 2026 (Mathieu : « se faire retirer du dashboard si ce n'est plus un deal ») : valeur connue et mise
                 # au-dessus de 70 % de celle-ci -> pas un deal : hors de l'ecran Deals (la watchlist, elle, le montre en rouge)
@@ -6372,7 +6418,7 @@ class Api:
         if not rapide and total and not panne:
             try:
                 import deals as _dl
-                gain_v = round(valeur * (1 - fp) - ff - _envoi_net() - total, 2) if valeur and juger else None
+                gain_v = round(valeur * (1 - fp) - ff - _envoi_net() - _paye(total), 2) if valeur and juger else None
                 _dl.corriger(item_id, valeur if juger else None, gain_v, total)
             except Exception:
                 pass
@@ -6392,7 +6438,7 @@ class Api:
                 "valeur_chasseur": chasseur, "ventes_panne": panne, "vieux_cache": bool(vc.get("vieux_cache")),
                 "points": vc.get("points") or [], "tendance": vc.get("tendance"), "autres_joueurs": autres,
                 "rabais": round(100 * (1 - total / valeur)) if total and valeur and juger else None,
-                "gain": round(valeur * (1 - fp) - ff - _envoi_net() - total, 2) if total and valeur and juger else None,
+                "gain": round(valeur * (1 - fp) - ff - _envoi_net() - _paye(total), 2) if total and valeur and juger else None,
                 "peu_de_ventes": not juger, "pourquoi": pourquoi if not juger else None, "nb_trouvees": nb_v}
 
     def _mes_ventes_pareilles(self, titre, item_id=None, n=8):
@@ -6550,7 +6596,7 @@ class Api:
         for x in gardees:
             x["deal"] = bool(bon) and x["total"] <= bon
             x["bon"] = bool(valeur) and (not x["deal"]) and x["total"] <= valeur          # « bon prix » : sous la valeur vendue
-            x["gain"] = round(valeur * (1 - fp) - ff - _envoi_net() - x["total"], 2) if valeur else None
+            x["gain"] = round(valeur * (1 - fp) - ff - _envoi_net() - _paye(x["total"]), 2) if valeur else None
             x["hors_norme"] = x["total"] not in garde
         return {**base, "n": len(gardees), "mediane": med, "valeur": valeur, "valeur_source": "vendues" if vm else None,
                 "bon_prix": bon, "min": garde[0], "max": garde[-1], "annonces": gardees[:40]}

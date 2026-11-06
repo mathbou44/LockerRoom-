@@ -45,10 +45,10 @@ class TestDealsSurs(unittest.TestCase):
 
     def test_reverifier(self):
         vieux = (datetime.now(timezone.utc) - timedelta(hours=3)).isoformat(timespec="seconds")
-        base = {"total": 20, "valeur": 40, "ratio": .5, "encan": False, "vu_le": vieux, "v": deals.VERSION, "titre": "t", "q": None}
+        base = {"total": 20, "valeur": 80, "ratio": .25, "encan": False, "vu_le": vieux, "v": deals.VERSION, "titre": "t", "q": None}
         deals._ecrire({"deals": [dict(base, item_id="111111111"), dict(base, item_id="222222222"), dict(base, item_id="333333333")]})
         reponses = {"111111111": {"prix_cad": 22, "port_cad": 2, "titre": "t"},            # toujours un deal
-                    "222222222": {"prix_cad": 39, "port_cad": 2, "titre": "t"}}            # le prix a monte
+                    "222222222": {"prix_cad": 55, "port_cad": 2, "titre": "t"}}            # le prix a monte (7 nov : 15 $ et taxes)
         def lire_article(i):
             if i not in reponses:
                 raise RuntimeError("eBay HTTP 404 : fini")
@@ -78,7 +78,7 @@ class TestToujoursQuelqueChose(unittest.TestCase):
     def test_continuite_et_a_surveiller(self):
         maint = datetime.now(timezone.utc).isoformat(timespec="seconds")
         ventes = [{"titre": "Young Guns Demidov", "prix": p, "le": j(d)} for p, d in [(40, 3), (42, 5), (41, 8)]]
-        vieux = {"item_id": "555555555", "titre": "Young Guns Demidov", "total": 20, "valeur": 45, "ratio": .44, "encan": False,
+        vieux = {"item_id": "555555555", "titre": "Young Guns Demidov", "total": 12, "valeur": 45, "ratio": .27, "encan": False,
                  "vu_le": maint, "v": deals.VERSION - 1, "vendues": ventes}
         self.assertTrue(deals.valide(dict(vieux)))                    # rejuge, pas efface
         trop = dict(vieux, item_id="666666666", total=35)

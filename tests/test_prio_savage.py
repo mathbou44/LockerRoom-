@@ -79,7 +79,7 @@ class TestPrioSavage(unittest.TestCase):
         for i in (0, 1, 3):                                  # Savage et Remi, leurs encans : verifies -> deals
             self.assertIn(f"p{i}", ids, (CARTES[i][0], prio_q))
             self.assertTrue(ids[f"p{i}"].get("valeur"))
-        self.assertIn("p4", ids)                             # 31 oct : TOUTES les cartes des 4 vendeurs (meme a 4 $)
+        self.assertNotIn("p4", ids)                          # 7 nov : analysee (couverture), mais 12 $ : moins de 15 $ de profit possible
         self.assertNotIn("p5", ids)                          # vendeur suivi non prioritaire : budget du chasseur (0)
         self.assertFalse(any("makar" in q for q in prio_q))
         self.assertTrue(any("mackinnon" in q for q in prio_q))

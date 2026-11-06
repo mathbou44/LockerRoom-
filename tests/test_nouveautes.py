@@ -121,7 +121,7 @@ class Deals(unittest.TestCase):
                      "fin": (maint + timedelta(hours=2)).isoformat().replace("+00:00", "Z") if encheres else None} for i in range(6)]
         import vendues
         vrai, vrai_c = vendues.rechercher, vendues.en_cache
-        ventes = lambda q: [{"titre": f"2025-26 Upper Deck {q} #201 RC", "prix": p, "le": "2026-10-20"} for p in (24, 26, 25, 27)]
+        ventes = lambda q: [{"titre": f"2025-26 Upper Deck {q} #201 RC", "prix": p, "le": "2026-10-20"} for p in (64, 66, 65, 67)]   # 7 nov : 15 $ de profit au moins, taxes
         vendues.rechercher = lambda q, fond=True, **k: {"ventes": ventes(q), "erreur": None}
         vendues.en_cache = ventes
         try:
@@ -148,7 +148,7 @@ class Deals(unittest.TestCase):
 
         def rech(q, categorie=None, limite=50, fond=True, encheres=False, **k):
             if encheres:
-                return [{"item_id": "e1", "titre": T, "prix_cad": 20.0, "port_cad": 2, "encan": True, "url": "u",
+                return [{"item_id": "e1", "titre": T, "prix_cad": 10.0, "port_cad": 2, "encan": True, "url": "u",
                          "fin": (maint + timedelta(hours=1)).isoformat().replace("+00:00", "Z")}]
             return [{"item_id": "f1", "titre": T, "prix_cad": 30.0, "port_cad": 2, "url": "u"},          # 32 > 70 % de 40 : non
                     {"item_id": "f2", "titre": T, "prix_cad": 12.0, "port_cad": 2, "url": "u"},          # deal (bassin)
@@ -192,13 +192,13 @@ class Deals(unittest.TestCase):
         def rech(q, categorie=None, limite=50, fond=True, encheres=False, **k):
             if not encheres:
                 return []
-            return [{"item_id": "s1", "titre": T, "prix_cad": 68.42, "port_cad": 23.03, "encan": True, "url": "u", "fin": fin(2)},
+            return [{"item_id": "s1", "titre": T, "prix_cad": 50.0, "port_cad": 23.03, "encan": True, "url": "u", "fin": fin(2)},
                     {"item_id": "s2", "titre": T.replace("34/99", "12/99"), "prix_cad": 30.0, "port_cad": 2, "encan": True,
                      "url": "u", "fin": fin(30)},                                   # finit dans 30 h : pas de verification
                     {"item_id": "s3", "titre": "2023-24 Upper Deck Tim Stutzle #120", "prix_cad": 5.0, "port_cad": 2,
                      "encan": True, "url": "u", "fin": fin(1)},                     # base a 7 $ : pas un hit, rien
                     {"item_id": "s4", "titre": "MATT SAVOIE 2022-23 UD SP GAME USED ROOKIE DRAFT DAY MARKS PATCH AUTO /35",
-                     "prix_cad": 44.75, "port_cad": 6.0, "encan": True, "url": "u", "fin": fin(25)},   # verifie en fin de tour
+                     "prix_cad": 38.0, "port_cad": 6.0, "encan": True, "url": "u", "fin": fin(25)},   # verifie en fin de tour
                     {"item_id": "s5", "titre": "2022-23 SP Game Used Draft Day Marks Wyatt Johnston Patch Auto /35",
                      "prix_cad": 40.0, "port_cad": 6.0, "encan": True, "url": "u", "fin": fin(40)}]    # 40 h : trop loin
         appels = []
@@ -229,7 +229,7 @@ class Deals(unittest.TestCase):
         self.assertGreater(ids["s1"]["valeur"], 140)
         self.assertNotIn("s3", ids)
         self.assertEqual(len(appels), 2)                          # s1 (finit dans 2 h), puis s4 en fin de tour
-        self.assertIn("s4", ids)                                  # Savoie : 50,75 $ pour ~86 $ (6 nov : 30 % net)
+        self.assertIn("s4", ids)                                  # Savoie : 44 $ pour ~86 $ (7 nov : 30 % net, taxes de l'achat)
         self.assertAlmostEqual(ids["s4"]["mise_max"], round(deals.prix_max(ids["s4"]["valeur"]) - 6.0, 2))   # 6 nov : 30 % de profit net
         self.assertNotIn("s5", ids)
         n = min(deals.HITS_PAR_TOUR, 7)

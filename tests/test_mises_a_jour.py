@@ -17,7 +17,7 @@ ventes = [{"titre": "2019-20 Upper Deck Young Guns Jack Hughes #201", "prix": p,
 x = {"item_id": "9", "titre": "2019-20 Upper Deck Young Guns Jack Hughes #201", "encan": True, "valeur": 120.0, "port": 12.0, "total": 50.0, "mise_max": 74.0, "vendues": ventes}
 y = deals.a_jour(x)
 assert y["valeur"] == 84.0, y["valeur"]                                    # mediane de 87, 84, 73
-assert y["mise_max"] == round(deals.prix_max(84.0) - 12.0, 2) == 42.59, y["mise_max"]
+assert y["mise_max"] == round(deals.prix_max(84.0) - 12.0, 2) == 35.48, y["mise_max"]
 assert x["mise_max"] == 74.0                                               # une copie : la liste gardee n'est pas touchee
 z = deals.a_jour({"item_id": "8", "encan": True, "valeur": 80.0, "port": None, "total": 20.0, "mise_max": 60.0, "vendues": ventes[:2]})
 assert z["valeur"] == 80.0 and z["mise_max"] == round(deals.prix_max(80.0) - deals.PORT_INCONNU, 2), z
@@ -32,7 +32,7 @@ deals._ecrire(d)
 deals.revalider_produits()
 d = deals.lire()
 par = {g["item_id"]: g for g in d["deals"] + d["suivis"]}
-assert par["9"]["mise_max"] == 42.59 and par["9"].get("corrige_le"), par["9"]
+assert par["9"]["mise_max"] == 35.48 and par["9"].get("corrige_le"), par["9"]
 assert "5" not in par                                                      # 70 $ pour 100 $ : moins de 30 % de profit
 assert par["6"]["mise_max"] == round(deals.prix_max(100.0), 2), par["6"]
 
@@ -45,9 +45,9 @@ watchlist.ajouter(a, {"item_id": "2", "titre": "Young Guns Zeev Buium", "valeur"
 watchlist.mise_max(a, "2", 80)                                             # ecrite a la main
 c = watchlist._cx(a); c.execute("UPDATE watchlist SET mise_max=88 WHERE item_id='1'"); c.commit(); c.close()   # une vieille
 L = {x["item_id"]: x for x in watchlist.liste(a)["cartes"]}
-assert L["1"]["mise_max"] == watchlist.mise_auto(watchlist.reglages(a), 84, 12) == 42.59, L["1"]
+assert L["1"]["mise_max"] == watchlist.mise_auto(watchlist.reglages(a), 84, 12) == 35.48, L["1"]
 assert L["2"]["mise_max"] == 80 and L["2"]["mise_perso"], L["2"]
-c = watchlist._cx(a); assert c.execute("SELECT mise_max FROM watchlist WHERE item_id='1'").fetchone()[0] == 42.59; c.close()
+c = watchlist._cx(a); assert c.execute("SELECT mise_max FROM watchlist WHERE item_id='1'").fetchone()[0] == 35.48; c.close()
 g = {z["item_id"]: z for z in watchlist.preparer(a, lire_article=lambda i: {})["cartes"]}
-assert g["1"]["mise_max"] == 42.0, g["1"]                                  # Gixen : au dollar, vers le bas
+assert g["1"]["mise_max"] == 35.0, g["1"]                                  # Gixen : au dollar, vers le bas
 print("MISES A JOUR OK")

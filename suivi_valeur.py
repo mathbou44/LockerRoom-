@@ -33,8 +33,9 @@ def _titre(carte):
     return t
 
 
-def valeur_actuelle(carte, fond=True):
-    """La valeur de la carte selon ses ventes reelles sures (None si pas assez de ventes)."""
+def valeur_actuelle(carte, fond=True, api=None):
+    """La valeur de la carte selon ses ventes reelles sures (None si pas assez de ventes). 6 nov 2026 : les 90 derniers
+    jours seulement, sans tes achats eBay (api._ventes_inventaire)."""
     import deals
     import vendues
     t = _titre(carte)
@@ -44,6 +45,7 @@ def valeur_actuelle(carte, fond=True):
     if r.get("erreur_ebay") or (r.get("erreur") and not r.get("ventes")):
         raise RuntimeError(r.get("erreur_ebay") or r.get("erreur"))      # 3 nov 2026 (revue) : pas lu -> reessaye l'heure suivante
     vs = [v for v in (r.get("ventes") or []) if v.get("prix")]
+    vs = api._ventes_inventaire(vs, carte) if api is not None else [v for v in vs if deals._jours(v) <= 90]
     return round(deals.valeur_sure(vs, t)[0], 2) if len(vs) >= 2 and deals.valeur_sure(vs, t)[0] else None
 
 
@@ -91,7 +93,7 @@ def verifier(api, maint=None, valeur=None):
     """Chaque heure (boucle du serveur) : les cartes suivies pas verifiees depuis 7 jours (12 au plus). -> alertes envoyees."""
     import alarmes
     maint = maint or datetime.now()
-    valeur = valeur or valeur_actuelle
+    valeur = valeur or (lambda carte: valeur_actuelle(carte, api=api))
     lim = (maint - timedelta(days=JOURS)).isoformat(timespec="seconds")
     c = _cx(api)
     try:
