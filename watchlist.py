@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS watchlist (item_id TEXT PRIMARY KEY, titre TEXT, phot
 MAX = 60                        # cartes suivies par compte
 FIN_MIN = 15                    # « finit dans 15 min : place ta mise »
 PROCHE_MIN = 120                # la boucle de 5 min relit sur eBay les encans qui finissent dans 2 h (31 oct 2026 : 75 -> 120)
-RATIO = 0.70                    # la mise max : 70 % de la valeur (comme les deals), port compris
+RATIO = 0.70                    # (ancien, garde pour les statistiques) la mise max suit maintenant deals.prix_max
 
 
 def _cx(api):
@@ -110,7 +110,7 @@ def mise_auto(cfg, valeur, port):
     v = _f(valeur)
     if not v:
         return None
-    return round(max(0.0, deals.prix_max(v, cfg["profit_pct"] / 100) - (_f(port) or 0)), 2)
+    return round(max(0.0, deals.prix_max(v, cfg["profit_pct"] / 100) - deals.port_eff(_f(port))), 2)
 
 
 def _refaire_mises(api, cfg=None, item_id=None):
@@ -168,9 +168,8 @@ def ajouter(api, x):
     if not iid or len(iid) > 20:
         return {"ok": False, "erreur": "Annonce inconnue"}
     valeur, port = _f(x.get("valeur")), _f(x.get("port"))
-    mm = _f(x.get("mise_max"))
-    if mm is None and valeur:
-        mm = mise_auto(reglages(api), valeur, port)
+    # 6 nov 2026 : la mise max vient toujours de la valeur et de la regle d'aujourd'hui (celle de la tuile pouvait etre vieille)
+    mm = mise_auto(reglages(api), valeur, port) if valeur else _f(x.get("mise_max"))
     c = _cx(api)
     try:
         if c.execute("SELECT COUNT(*) FROM watchlist").fetchone()[0] >= MAX and not c.execute(
@@ -465,6 +464,29 @@ def _chercher_en_fond(api, items):
     threading.Thread(target=tache, daemon=True, name="watch-valeurs").start()
 
 
+def _mises_a_jour(api, lst, cfg=None):
+    """6 nov 2026 (Mathieu : « mettre a jour les max bid dans ma watchlist au plus vite ») : a chaque lecture, la mise max
+    par defaut (pas celle ecrite a la main) refaite avec la valeur, le port du moment et le profit voulu ; gardee si elle
+    a change (son alerte « depasse » repart)."""
+    cfg = cfg or reglages(api)
+    maj = []
+    for x in lst:
+        if x.get("mise_perso") or not x.get("valeur"):
+            continue
+        m = mise_auto(cfg, x["valeur"], x.get("port"))
+        if m is not None and (x.get("mise_max") is None or abs(float(x["mise_max"]) - m) >= 0.5):
+            x["mise_max"] = m
+            maj.append((m, str(x["item_id"])))
+    if maj:
+        c = _cx(api)
+        try:
+            c.executemany("UPDATE watchlist SET mise_max=?, notif_seuil=0 WHERE item_id=?", maj)
+            c.commit()
+        finally:
+            c.close()
+    return len(maj)
+
+
 def liste(api):
     try:
         purger(api)
@@ -477,6 +499,7 @@ def liste(api):
         c.close()
     _du_chasseur(lst)
     _valeurs_manquantes(api, lst)
+    _mises_a_jour(api, lst)
     maint = _maint()
     # 31 oct 2026 (Mathieu : « il reste de la place : le profit calcule, qui s'ajuste en live avec le nouveau prix de
     # l'encan ») : ce que la carte rapporte si tu l'as au prix du moment = valeur revendue, moins les frais eBay, moins
@@ -522,6 +545,7 @@ def verifier(api, proches=False, lire_article=None, maint=None):
     _du_chasseur(lst)
     try:
         _valeurs_manquantes(api, lst)                    # 5 nov 2026 : la mise max arrive aussi sans ouvrir l'ecran
+        _mises_a_jour(api, lst, cfg)                     # 6 nov 2026 : et suit la regle d'aujourd'hui
     except Exception as e:
         print("Watchlist (valeurs) : " + repr(e), flush=True)
     etat_a = alarmes._lire()

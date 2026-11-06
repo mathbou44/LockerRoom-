@@ -314,7 +314,7 @@ def maj_prix(item_id, total, port=None, mises=None, fin=None):
     return {"deal": None if retire else x, "retire": retire}
 
 
-REVALIDE_V = 9                   # 9 (6 nov) : prix max a 30 % de profit net (avant : 70 % de la valeur) ; 2 : « checklist » ; 3 : Bowman U = football ; 4 : la F1 ; 5 : « Beckett » prenom (pas gradee) ; 6 : Signature Materials ; 7 : « Draft » ; 8 : « Beam Team » (4 nov)
+REVALIDE_V = 10                  # 10 (6 nov) : mises max refaites sur TOUS les deals gardes ; 9 (6 nov) : prix max a 30 % de profit net (avant : 70 % de la valeur) ; 2 : « checklist » ; 3 : Bowman U = football ; 4 : la F1 ; 5 : « Beckett » prenom (pas gradee) ; 6 : Signature Materials ; 7 : « Draft » ; 8 : « Beam Team » (4 nov)
 
 
 def _revalider_un(x):
@@ -335,6 +335,29 @@ def _revalider_un(x):
     if x.get("encan"):
         x["mise_max"] = round(prix_max(m) - port_eff(x.get("port")), 2)
     return x
+
+
+def a_jour(x):
+    """6 nov 2026 (Mathieu : « mettre a jour les max bid dans ma watchlist au plus vite et dans les deals », une Hughes
+    Young Guns a 74 $ de mise max sur la tuile, 43 $ dans sa fiche) : un deal garde avant la regle des 30 % gardait sa
+    vieille mise max. -> une copie avec la valeur jamais au-dessus de la mediane des 3 dernieres ventes gardees (la meme
+    regle que valeur_sure) et la mise max refaite avec la regle d'aujourd'hui (prix_max, moins le port)."""
+    if not x.get("valeur"):
+        return x
+    y = dict(x)
+    vs = sorted([v for v in y.get("vendues") or [] if v.get("prix")], key=lambda v: str(v.get("le") or ""), reverse=True)[:3]
+    if len(vs) == 3:
+        try:
+            m3 = statistics.median(float(v["prix"]) for v in vs)
+        except (TypeError, ValueError):
+            m3 = None
+        if m3 and m3 < float(y["valeur"]) - 0.5:
+            y["valeur"] = round(m3, 2)
+            if y.get("total"):
+                y["ratio"] = round(float(y["total"]) / y["valeur"], 3)
+    if y.get("encan"):
+        y["mise_max"] = round(prix_max(y["valeur"]) - port_eff(y.get("port")), 2)
+    return y
 
 
 def revalider_produits():
@@ -361,6 +384,20 @@ def revalider_produits():
                 for k in ("valeur", "n", "vendues", "mise_max"):
                     x.pop(k, None)
                 n_s += 1
+        # 6 nov 2026 : la valeur et la mise max refaites avec la regle des 30 % (une valeur changee est datee : la
+        # watchlist la reprend) ; un prix fixe qui ne laisse plus ce profit sort des deals
+        maint_ = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        for cle in ("deals", "suivis", "pres"):
+            l2 = []
+            for x in d.get(cle) or []:
+                y = a_jour(x)
+                if y.get("valeur") and x.get("valeur") and abs(float(y["valeur"]) - float(x["valeur"])) >= 0.5:
+                    y["corrige_le"] = maint_
+                if cle == "deals" and not y.get("encan") and y.get("total") and y.get("valeur") and y["total"] > prix_max(y["valeur"]):
+                    n_d += 1
+                    continue
+                l2.append(y)
+            d[cle] = l2
         import sports
         for l in (d.get("deals") or [], d.get("suivis") or [], d.get("pres") or []):
             for x in l:

@@ -5973,6 +5973,10 @@ class Api:
         # 27 oct 2026 (revue) : verifie AUSSI a la lecture (meme si le chasseur est en panne) : vu il y a 6 h au plus, encan pas fini
         lim_l = (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat()
         tout = [x for x in self._deals_fusion() if _dl.encore_ouvert(x) and (x.get("source") != "marche" or str(x.get("vu_le") or "") >= lim_l)]
+        # 6 nov 2026 (Mathieu : « mettre a jour les max bid au plus vite ») : la mise max de chaque deal refaite a la lecture
+        # avec la regle d'aujourd'hui (30 % de profit net) ; un prix fixe qui ne laisse plus ce profit n'est plus un deal
+        tout = [_dl.a_jour(x) for x in tout]
+        tout = [x for x in tout if x.get("encan") or not (x.get("valeur") and x.get("total") and x["total"] > _dl.prix_max(x["valeur"]))]
         # 2 nov 2026 (Mathieu : « quand le prix suggere est depasse par le bid actuel, ce n'est plus un deal, il ne devrait plus
         # etre la ») : la mise du moment (hors port) au-dessus de la mise max -> hors des deals, tout de suite a la lecture
         tout = [x for x in tout if not (x.get("encan") and x.get("mise_max") is not None and x.get("total")
@@ -5982,6 +5986,10 @@ class Api:
         # 4 nov 2026 (Mathieu : « pourquoi je vois encore les cartes en bas du montant du filtre ») : le profit minimum d'un
         # encan se compare au profit AFFICHE (a la mise max), pas a celui de la mise du moment (1 $ : toujours enorme)
         f = dict(f, _fp=fp_, _ff=ff_)
+        for x in tout:
+            if x.get("valeur") and x.get("total") is not None:
+                x["gain"] = round(x["valeur"] * (1 - fp_) - ff_ - _envoi_net() - (x.get("total") or 0), 2)
+                x["rabais"] = round(100 * (1 - (x.get("total") or 0) / x["valeur"]))
         par_sport = {}
         for x in tout:
             par_sport[x.get("sport") or "hockey"] = par_sport.get(x.get("sport") or "hockey", 0) + 1
@@ -6072,6 +6080,7 @@ class Api:
         for x in dd.get("pres") or []:
             if str(x.get("item_id")) in _d._bannis() or str(x.get("item_id")) in ret_p or not _d.encore_ouvert(x):
                 continue
+            x = _dl.a_jour(x)
             y = dict(x, source="marche", gain=round((x.get("valeur") or 0) * (1 - fp_) - ff_ - _envoi_net() - (x.get("total") or 0), 2),
                      rabais=round(100 * (1 - (x.get("ratio") or 1))))
             pres.append(y)
@@ -6093,7 +6102,7 @@ class Api:
                     plus_tard.append(x)
                 if vc:
                     x = dict(x, valeur=vc[0], n=vc[1], mise_max=round(_dl.prix_max(vc[0]) - _dl.port_eff(x.get("port")), 2))
-            y = self._ramasser(dict(x, source="marche", recrue=bool(x.get("recrue"))), chez_s)
+            y = self._ramasser(dict(_dl.a_jour(x), source="marche", recrue=bool(x.get("recrue"))), chez_s)
             # 5 nov 2026 (Mathieu : « il doit toujours y avoir une analyse si elle est dans les deals ») : un encan sans valeur
             # (ses ventes se calculent en fond) n'est pas montre ; il arrive dans les deals des que sa valeur est connue
             if not y.get("valeur"):

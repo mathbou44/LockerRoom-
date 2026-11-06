@@ -7,7 +7,7 @@ os.environ["LOCKERROOM_DONNEES"] = tempfile.mkdtemp()
 import comptes
 comptes.DONNEES = os.environ["LOCKERROOM_DONNEES"]
 import lockerroom, watchlist, deals
-M = lambda v: watchlist.mise_auto({"profit_pct": 30}, v, 0)      # 6 nov : 30 % de profit net
+M = lambda v: watchlist.mise_auto({"profit_pct": 30}, v, None)      # 6 nov : 30 % de profit net ; port inconnu : 15 $
 
 a = lockerroom.Api(os.path.join(tempfile.mkdtemp(), "w.db"))
 fin = (datetime.now(timezone.utc) + timedelta(hours=3)).isoformat()
