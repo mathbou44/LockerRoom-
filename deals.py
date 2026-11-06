@@ -376,7 +376,7 @@ def maj_prix(item_id, total, port=None, mises=None, fin=None):
     return {"deal": None if retire else x, "retire": retire}
 
 
-REVALIDE_V = 14                  # 14 (7 nov) : inscriptions a part ; 13 (7 nov) : port 10 $ / 20 $ ; 12 (7 nov) : frais reels (14,9 % de prix + port) ; 11 (7 nov) : 15 $ de profit au moins, taxes de l'achat ; 10 (6 nov) : mises max refaites sur TOUS les deals gardes ; 9 (6 nov) : prix max a 30 % de profit net (avant : 70 % de la valeur) ; 2 : « checklist » ; 3 : Bowman U = football ; 4 : la F1 ; 5 : « Beckett » prenom (pas gradee) ; 6 : Signature Materials ; 7 : « Draft » ; 8 : « Beam Team » (4 nov)
+REVALIDE_V = 15                  # 15 (7 nov) : saisons voisines, Exquisite, hits 365 j ; 14 (7 nov) : inscriptions a part ; 13 (7 nov) : port 10 $ / 20 $ ; 12 (7 nov) : frais reels (14,9 % de prix + port) ; 11 (7 nov) : 15 $ de profit au moins, taxes de l'achat ; 10 (6 nov) : mises max refaites sur TOUS les deals gardes ; 9 (6 nov) : prix max a 30 % de profit net (avant : 70 % de la valeur) ; 2 : « checklist » ; 3 : Bowman U = football ; 4 : la F1 ; 5 : « Beckett » prenom (pas gradee) ; 6 : Signature Materials ; 7 : « Draft » ; 8 : « Beam Team » (4 nov)
 
 
 def _revalider_un(x):
@@ -693,6 +693,58 @@ def valeur_annonce(a, ventes, actives, cib=None):
         m = min(m, cartes_match.mediane_robuste(pa)[0] * 0.85)
     pv.sort(key=lambda v: str(v.get("le") or ""), reverse=True)
     return round(m, 2), "vendues", len(pv), [{k: v.get(k) for k in ("titre", "prix", "le", "photo", "url")} for v in pv[:6]]
+
+
+SAISONS_ECART = 2                # 7 nov 2026 : les saisons voisines (2 de chaque cote) pour une carte sans ventes
+RABAIS_SAISON = 0.80             # une autre saison n'est pas la meme carte : 20 % de prudence
+
+
+def saison(an):
+    """2024 -> « 2024-25 »."""
+    try:
+        a = int(an)
+    except (TypeError, ValueError):
+        return None
+    return f"{a}-{(a + 1) % 100:02d}"
+
+
+def valeur_autre_saison(a, ventes, cib=None):
+    """7 nov 2026 (Mathieu : la Ron Francis « 2024-25 UD Clear Cut Outburst Auto /25 », aucune vente ; seulement la 2023-24 :
+    « mettre les annees a cote pour la meme carte, montrer les cartes similaires, mais dire a l'utilisateur qu'il n'y a pas
+    de comp ») : la meme carte des saisons voisines (2 de chaque cote), jamais pour une recrue (la recrue d'une autre annee
+    est une autre carte), seulement pour un hit, une vedette ou une vintage. Valeur prudente : la plus basse des medianes
+    (de toutes ces ventes et des 3 dernieres), moins 20 %. -> (valeur, « autre_saison », n, ventes) ou None."""
+    import cartes_match
+    cib = cib or cartes_match.cible_titre(a.get("titre") or "")
+    an = cib.get("annee")
+    if not an or cib.get("rc") or cib.get("yg") or not _precieuse(cib):
+        return None
+    sans_an = dict(cib, annee=None)
+    pv = []
+    for v in memes_ventes(sans_an, ventes):
+        av = cartes_match._decoder_memo(v.get("titre") or "")["annee"]
+        if av and av != an and abs(int(av) - int(an)) <= SAISONS_ECART:
+            pv.append(dict(v, saison=saison(av)))
+    titre = a.get("titre") or ""
+    if not cartes_match.serie_speciale(titre):
+        pv = [v for v in pv if not cartes_match.serie_speciale(v.get("titre") or "")]
+    pv = [v for v in pv if not cartes_match.abimee(v.get("titre") or "") and _jours(v) <= JOURS_MAX_HITS]
+    if not pv:
+        return None
+    prix = sorted(float(v["prix"]) for v in pv)
+    m = statistics.median(prix)
+    if len(prix) >= 3:
+        m = min(cartes_match.mediane_robuste(prix)[0] or m, m)
+        dern = sorted(pv, key=lambda v: str(v.get("le") or ""), reverse=True)[:3]
+        m = min(m, statistics.median(float(v["prix"]) for v in dern))
+    pv.sort(key=lambda v: str(v.get("le") or ""), reverse=True)
+    return (round(m * RABAIS_SAISON, 2), "autre_saison", len(pv),
+            [{k: v.get(k) for k in ("titre", "prix", "le", "photo", "url", "saison")} for v in pv[:6]])
+
+
+def valeur_ou_saison(a, ventes, actives, cib=None):
+    """La valeur de la carte (ses propres ventes) ; sinon celle des saisons voisines (valeur_autre_saison), dite comme telle."""
+    return valeur_annonce(a, ventes, actives, cib=cib) or valeur_autre_saison(a, ventes, cib=cib)
 
 
 def _diag(d, **k):
@@ -1126,6 +1178,7 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
         st["hits_vus"] = st.get("hits_vus", 0) + 1
     tout_v = list(brut_v or []) + (bassin.candidats(cib) if bassin else [])
     va = valeur_annonce(a, tout_v, actives, cib=cib)
+    nv_ = []
     if not va and verif:
         pv = memes_ventes(cib, tout_v)
         pa = [_total(x) for x in actives or [] if x.get("item_id") != a.get("item_id")
@@ -1133,6 +1186,7 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
         if _prometteuse(a, t, pv, pa, maint, cib):
             nv = verif(cib)
             if nv:
+                nv_ = list(nv)
                 va = valeur_annonce(a, tout_v + nv, actives, cib=cib)
     # 28 oct 2026 (Mathieu : « les deals affichent toujours la meme cochonnerie » ; admin : 7 407 hits vus, 14 verifies) :
     # un hit avec 1 ou 2 ventes connues (pas assez pour une valeur sure) n'etait JAMAIS verifie ; maintenant oui
@@ -1162,6 +1216,8 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
         bas = bool(pa2) and t <= (cartes_match.mediane_robuste(pa2)[0] or 0) * 0.75
         if bas or (r.get("vedette") and t >= 40) or t >= 60:     # 28 oct : tout hit de 60 $ et plus (le budget est plus gros)
             st.setdefault("_tard", []).append((a, r, cib))
+    if not va:                                        # 7 nov 2026 : sans ventes de SA saison : les saisons voisines
+        va = valeur_autre_saison(a, tout_v + nv_, cib)
     if not va:
         st["_res"] = ("sans_ventes", None)
         st["sans_ventes"] = st.get("sans_ventes", 0) + 1
@@ -1197,6 +1253,8 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
                            "valeur": med_a, "ratio": round(t / med_a, 3), "encan": bool(a.get("encan")), "fin": fin,
                            "mises": a.get("mises"), "sport": sport, "joueur": joueur, "q": _q_deal(r), "vedette": bool(r.get("vedette")), "flux": r.get("flux"),
                            "n": n_a, "valeur_source": source_a, "vendues": ventes_a or ventes_requete or [],
+                           # 7 nov 2026 : valeur des saisons voisines (pas de comps de SA saison) : dit a l'utilisateur
+                           **({"saisons": sorted({v.get("saison") for v in ventes_a or [] if v.get("saison")})} if source_a == "autre_saison" else {}),
                            # 27 oct 2026 : encan - la mise maximale pour que ca reste un deal (70 % de la valeur, port compris)
                            "port": a.get("port_cad"), "mise_max": round(prix_max(med_a) - port_eff(a.get("port_cad")), 2) if a.get("encan") else None,
                            "comps": comps or [], "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION,
@@ -1272,7 +1330,7 @@ def _noter_suivi(st, a, bassin, maint):
     an = cib.get("annee")
     if not (_hit(cib) or cib.get("grade") or (an and int(an) < 1995) or t >= 20):
         return "base"                                # une carte de base d'une vedette a 3 $ : pas un encan a montrer
-    va = valeur_annonce(a, bassin.candidats(cib) if bassin else [], [], cib=cib)
+    va = valeur_ou_saison(a, bassin.candidats(cib) if bassin else [], [], cib=cib)
     st.setdefault("_suivis", {})[str(a["item_id"])] = {
         "item_id": str(a["item_id"]), "titre": a.get("titre"), "total": t, "photo": a.get("photo"), "url": a.get("url"),
         "encan": True, "fin": f, "mises": a.get("mises"), "port": a.get("port_cad"), "vendeur": a.get("vendeur"), "vendeur_score": a.get("vendeur_score"),
@@ -1409,7 +1467,7 @@ def _verifier_tard(st, deals, maint, bassin, verif, d=None):
         # 30 oct 2026 : l'encan d'un vendeur suivi, deja garde sans valeur, prend la valeur trouvee
         s_ = (st.get("_suivis") or {}).get(str(a.get("item_id")))
         if s_ is not None and not s_.get("valeur"):
-            va = valeur_annonce(a, (nv or []) + (bassin.candidats(cib) if bassin else []), [], cib=cib)
+            va = valeur_ou_saison(a, (nv or []) + (bassin.candidats(cib) if bassin else []), [], cib=cib)
             if va:
                 s_.update(valeur=va[0], n=va[2], vendues=va[3], mise_max=round(prix_max(va[0]) - port_eff(a.get("port_cad")), 2))
         if dv:
@@ -2583,7 +2641,7 @@ def valoriser_suivis(rechercher=None, n_max=None):
             c2 = cartes_match.cible_titre(y.get("titre") or "")
             if (cartes_match.requete_ebay(c2) or "").strip() != q:
                 continue
-            va = valeur_annonce(y, v, [], cib=c2)
+            va = valeur_ou_saison(y, v, [], cib=c2)
             if va:
                 trouves[str(y.get("item_id"))] = va
     # 31 oct 2026 (Mathieu : « la barre ne bouge pas ») : les encans dont les ventes ont ete cherchees comptent comme analyses

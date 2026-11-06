@@ -476,6 +476,23 @@ def memes_annonce(titre, q=None, n=24, fond=False):
     return memes(titre, requete=False, n=n, fond=fond)
 
 
+def autres_saisons(titre, fond=False):
+    """7 nov 2026 (Mathieu : la Ron Francis 2024-25 Clear Cut Outburst Auto /25 sans aucune vente : « mettre les annees a
+    cote pour la meme carte, montrer les cartes similaires, mais dire qu'il n'y a pas de comp ») : les ventes de la meme
+    carte des saisons voisines (la recherche des ventes ne contient jamais l'annee : le meme appel, deja en cache).
+    -> deals.valeur_autre_saison (valeur, « autre_saison », n, ventes avec leur « saison ») ou None."""
+    import cartes_match
+    import deals
+    cib = cartes_match.cible_titre(titre)
+    if cib.get("exclu") or not cib.get("joueur") or not cib.get("annee"):
+        return None
+    q = cartes_match.requete_ebay(cib)
+    if not q:
+        return None
+    r = rechercher(q, fond=fond)
+    return deals.valeur_autre_saison({"titre": titre}, [v for v in r.get("ventes") or [] if v.get("prix")], cib)
+
+
 def autres_joueurs(titre, n=12, fond=False):
     """27 oct 2026 (Mathieu : « Colton Parayko pas de comp, mais on peut montrer des ventes de joueurs de la meme carte ») :
     les ventes de la MEME carte (meme produit, insert, parallele, numerotation, auto, patch) par D'AUTRES joueurs.

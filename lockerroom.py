@@ -5831,7 +5831,7 @@ class Api:
             q = (cartes_match.requete_ebay(cib) or "").strip()
             v = vendues.en_cache(q) if q else None
             if v:
-                va = _dl.valeur_annonce({"titre": x.get("titre"), "item_id": k}, v, [], cib=cib)
+                va = _dl.valeur_ou_saison({"titre": x.get("titre"), "item_id": k}, v, [], cib=cib)
                 if va:
                     r = (va[0], va[2])
         except Exception:
@@ -6397,8 +6397,22 @@ class Api:
             vm = min(vm, round(med * 0.85, 2))
         valeur = vm
         juger = bool(vm)
+        # 7 nov 2026 (Mathieu : « la Ron Francis : mettre les annees a cote pour la meme carte, montrer les cartes similaires
+        # mais dire a l'utilisateur qu'il n'y a pas de comp ») : aucune vente sure de SA saison -> les saisons voisines
+        saison_v = None
+        if not vm and not rapide and t and not (vc.get("erreur_ebay") or vc.get("erreur")):
+            try:
+                saison_v = vendues.autres_saisons(t)
+            except Exception as e:
+                print("Ventes (autres saisons) : " + repr(e), flush=True)
+            if saison_v:
+                valeur, juger = saison_v[0], True
+                ventes = saison_v[3]
+                pourquoi = None
         suggere = None
-        if valeur and (vm or n >= 3):
+        if saison_v:
+            suggere = {"vente": valeur, "achat_max": round(max(0.0, _deals.prix_max(valeur)), 2), "source": "autre_saison"}
+        elif valeur and (vm or n >= 3):
             pv = sorted(x["prix"] for x in ventes if x.get("prix")) if vm else sorted(x["total"] for x in comps)
             vente = pv[max(0, int(len(pv) * 0.6) - 1)] if len(pv) >= 3 else valeur     # vendues : un peu au-dessus du milieu
             suggere = {"vente": round(vente if vm else min(vente, valeur), 2),
@@ -6438,8 +6452,12 @@ class Api:
         if not ebay_prix_actif():                # interrupteur : l'annonce seule, sans valeur ni rabais
             return {"ok": True, "article": {**a, "total": total}, "comps": [], "n": 0, "coupe": True}
         return {"ok": True, "article": {**a, "total": total}, "comps": comps, "mediane": med, "n": n, "deal_retire": bool(maj_deal and maj_deal.get("retire")),
-                "suggere": suggere, "ventes": ventes, "mediane_vendue": vc.get("mediane"), "nb_vendues": vc.get("nb") or len(ventes),
-                "valeur": valeur, "valeur_source": "chasseur" if chasseur else "vendues" if vm else "annonces", "ventes_attente": bool(vc.get("attente")),
+                "suggere": suggere, "ventes": ventes, "mediane_vendue": None if saison_v else vc.get("mediane"),
+                "nb_vendues": len(ventes) if saison_v else vc.get("nb") or len(ventes),
+                "valeur": valeur, "valeur_source": "chasseur" if chasseur else "vendues" if vm else "autre_saison" if saison_v else "annonces",
+                "saisons": sorted({v.get("saison") for v in (saison_v or [0, 0, 0, []])[3] if v.get("saison")}) or None,
+                "saison_carte": _deals.saison(cartes_match.cible_titre(t or "").get("annee")) if saison_v else None,
+                "ventes_attente": bool(vc.get("attente")),
                 "valeur_chasseur": chasseur, "ventes_panne": panne, "vieux_cache": bool(vc.get("vieux_cache")),
                 "points": vc.get("points") or [], "tendance": vc.get("tendance"), "autres_joueurs": autres,
                 "rabais": round(100 * (1 - total / valeur)) if total and valeur and juger else None,
