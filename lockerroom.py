@@ -6331,7 +6331,9 @@ class Api:
         t0_ = time.time()
         a = None
         try:
-            a = ebay_compte.article(item_id)
+            # 7 nov 2026 (Mathieu : « pourquoi les prix ne se mettent pas a jour quand je refresh ? ») : la fiche ouverte par
+            # l'utilisateur relit l'annonce sur eBay (cache de 3 min au lieu d'une heure : la mise d'un encan bouge)
+            a = ebay_compte.article(item_id, frais=True)
         except (RuntimeError, OSError) as e:
             a = {"item_id": str(item_id), "titre": titre or "", "photos": [], "erreur": str(e)}
         t = a.get("titre") or titre or ""

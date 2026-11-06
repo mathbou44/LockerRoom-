@@ -50,7 +50,7 @@ assert len(appels) > n0 and not r["erreur"] and r["ventes"], r
 import deals, lockerroom, ebay_compte
 deals._ecrire({"deals": [{"item_id": "999", "titre": "1993-94 Topps Stadium Club Beam Team Michael Jordan #4", "total": 211, "valeur": 420,
                           "ratio": 0.5, "encan": True, "port": 26, "mise_max": 268, "vu_le": "2026-11-03T10:00:00+00:00", "v": deals.VERSION}]})
-ebay_compte.article = lambda iid, fond=False: {"item_id": iid, "titre": "1993-94 Topps Stadium Club Beam Team Michael Jordan #4 Bulls",
+ebay_compte.article = lambda iid, fond=False, frais=False: {"item_id": iid, "titre": "1993-94 Topps Stadium Club Beam Team Michael Jordan #4 Bulls",
                                                "prix_cad": 185, "port_cad": 26, "encan": True, "mises": 3, "fin": None, "photos": []}
 ebay_compte.rechercher = lambda *a, **k: []
 vendues.memes_annonce = lambda *a, **k: {"ventes": [], "nb": 0, "erreur": "SoldComps injoignable (TimeoutError)"}
