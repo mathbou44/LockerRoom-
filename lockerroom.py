@@ -4258,7 +4258,7 @@ class Api:
         c["sport"] = c.get("sport") or self.sport_de(c)
         titre = annonces.titre_optimise(c) if (c.get("joueur") or c.get("set_nom")) else str(c.get("titre") or "")[:80]
         r = self.reglages_lire()
-        modele = {**annonces.MODELE_DEFAUT, **(r.get("modele_annonce") or {})}
+        modele = annonces.modele(r.get("modele_annonce"))
         fp, ff = (r["frais_ebay_pct"] or 0) / 100, r["frais_ebay_fixe"] or 0
         prix, comps, n, note, source, vendues_l = None, [], 0, None, None, []
         vendu, affiche = None, None             # 30 oct 2026 : les 2 reperes montres au vendeur (ventes et annonces)
@@ -4424,7 +4424,7 @@ class Api:
             out.append({"id": c["id"], "titre": c.get("titre") or ebay_csv.titre_annonce(c), "prix": prix, "photo": c.get("photo"),
                         "nb_photos": len(ph), "emplacement": c.get("emplacement"),
                         "manque": [m for m, ok in (("prix", bool(prix)), ("photo", bool(ph)), ("titre", len(str(c.get("titre") or "")) >= 10)) if not ok]})
-        return {"ok": True, "cartes": out, "modele": {**__import__("annonces").MODELE_DEFAUT, **(self.reglages_lire().get("modele_annonce") or {})}}
+        return {"ok": True, "cartes": out, "modele": __import__("annonces").modele(self.reglages_lire().get("modele_annonce"))}
 
     def serie_programmer(self, ids, debut, ecart_h=24, modele=None, debuts=None):
         """Programme les cartes choisies sur eBay, une apres l'autre : la 1re a « debut », puis une toutes les ecart_h
@@ -4474,7 +4474,7 @@ class Api:
             n_ok = int((_dt.now(_tz.utc) + _td(days=annonces.PROGRAMME_MAX_J) - t0).total_seconds() // (ecart * 3600)) + 1
             return {"ok": False, "erreur": str(x) + (f" : à ce rythme, {max(0, n_ok)} cartes au plus dans cette série" if n_ok < len(ids) else "")}
         r_ = self.reglages_lire()
-        mod = {**annonces.MODELE_DEFAUT, **(r_.get("modele_annonce") or {}), **{k: v for k, v in (modele or {}).items() if k in annonces.MODELE_DEFAUT}}
+        mod = annonces.modele(r_.get("modele_annonce"), modele)
         if modele:
             self.reglages_sauver({"modele_annonce": {k: mod[k] for k in annonces.MODELE_DEFAUT}})
         plan = [{"id": i, "debut": h.astimezone(_tz.utc).isoformat()} for i, h in zip(ids, heures)]

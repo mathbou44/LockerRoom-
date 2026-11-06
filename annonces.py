@@ -27,7 +27,8 @@ NS = ebay_ecriture.NS
 MODELE_DEFAUT = {
     "format": "fixe",                       # fixe (Bon prix, jusqu'a la vente) | encan (7 jours)
     "expedition": "lettre",                 # lettre | suivi | gratuit
-    "cout_lettre": 2.50, "cout_suivi": 12.00, "us": True, "us_cout_lettre": 6.50, "us_cout_suivi": 22.00,
+    # 7 nov 2026 (Mathieu : « 10 $ pour les envois au Canada et 20 $ pour les USA ») : avant 12 $ et 22 $
+    "cout_lettre": 2.50, "cout_suivi": 10.00, "us": True, "us_cout_lettre": 6.50, "us_cout_suivi": 20.00,
     "delai": 2, "poids_g": 250,             # 30 oct 2026 : le maximum de Postes Canada Expedited Lite (eBay Labels)
     "retours": "non",                       # non | 30_acheteur | 30_gratuit
     "offres": True, "offre_auto_pct": 0, "offre_min_pct": 70,       # 27 oct 2026 : 0 = jamais accepte tout seul (choix du vendeur)
@@ -209,6 +210,22 @@ def description(c, titre, francophone=True, etat="nm", boutique=None, retours="n
 
 # -- l'annonce eBay -------------------------------------------------------------------------------
 LETTRE_MAX = 30.0               # 30 oct 2026 (Mathieu) : au-dessus de 30 $, jamais en lettre (pas de suivi ni de protection)
+
+
+_ANCIENS_PORTS = {"cout_suivi": (12.0, 10.0), "us_cout_suivi": (22.0, 20.0)}
+
+
+def modele(garde=None, extra=None):
+    """Le modele d'annonce : les choix gardes par-dessus MODELE_DEFAUT. 7 nov 2026 : un port suivi reste a l'ancien
+    defaut (12 $ / 22 $, jamais choisi) -> le nouveau (10 $ / 20 $)."""
+    g = dict(garde or {})
+    for k, (vieux, neuf) in _ANCIENS_PORTS.items():
+        try:
+            if k in g and abs(float(g[k]) - vieux) < 0.01:
+                g[k] = neuf
+        except (TypeError, ValueError):
+            pass
+    return {**MODELE_DEFAUT, **g, **{k: v for k, v in (extra or {}).items() if k in MODELE_DEFAUT}}
 
 
 def _xml_livraison(d):

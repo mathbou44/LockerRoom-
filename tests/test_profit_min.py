@@ -6,8 +6,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import deals, watchlist
 
 # 1. la vraie vente : les frais de revente sur prix + port
-assert abs(deals.frais_revente(35) - 7.75) < 0.05, deals.frais_revente(35)
-assert abs((35 + 17 - deals.frais_revente(35)) - 44.25) < 0.05
+assert abs(deals.frais_revente(35, 17) - 7.75) < 0.05, deals.frais_revente(35, 17)
+assert abs((35 + 17 - deals.frais_revente(35, 17)) - 44.25) < 0.05
+assert deals.PORT_REVENTE == 15.0                              # 10 $ au Canada, 20 $ aux USA : la moyenne
 # 2. la Alex Bump (vaut 42 $, port 3 $) : 15 $ de profit au moins, taxes de l'achat comprises
 mise = round(deals.prix_max(42) - 3, 2)
 paye = deals.cout_achat(mise + 3)

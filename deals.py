@@ -37,17 +37,22 @@ def _env_f(nom, defaut):
 
 FRAIS_PCT = _env_f("LR_FRAIS_REVENTE_PCT", 14.9) / 100      # transaction (12,8 %) + pub (2,1 %), taxe de l'acheteur comprise
 FRAIS_FIXE = _env_f("LR_FRAIS_REVENTE_FIXE", 0.0)
-PORT_REVENTE = _env_f("LR_PORT_REVENTE", 17.0)              # le port charge a l'acheteur (les frais s'y appliquent aussi)
+# 7 nov 2026 (Mathieu : « 10 $ pour les envois au Canada et 20 $ pour les USA ») : le port charge a l'acheteur (les frais
+# s'y appliquent aussi), la moyenne des deux (PART_USA des ventes vers les USA)
+PORT_CANADA = _env_f("LR_PORT_CANADA", 10.0)
+PORT_USA = _env_f("LR_PORT_USA", 20.0)
+PART_USA = min(1.0, max(0.0, _env_f("LR_PART_USA", 0.5)))
+PORT_REVENTE = round(PORT_CANADA * (1 - PART_USA) + PORT_USA * PART_USA, 2)
 ENVOI_NET = 1.50
 
 
-def frais_revente(valeur):
+def frais_revente(valeur, port=None):
     """Les frais eBay de la revente d'une carte qui se vend « valeur » (frais de transaction et pub, sur prix + port)."""
     try:
         v = float(valeur or 0)
     except (TypeError, ValueError):
         return 0.0
-    return round(FRAIS_PCT * (v + PORT_REVENTE) + FRAIS_FIXE, 2) if v > 0 else 0.0
+    return round(FRAIS_PCT * (v + (PORT_REVENTE if port is None else port)) + FRAIS_FIXE, 2) if v > 0 else 0.0
 
 
 def net_revente(valeur):
@@ -366,7 +371,7 @@ def maj_prix(item_id, total, port=None, mises=None, fin=None):
     return {"deal": None if retire else x, "retire": retire}
 
 
-REVALIDE_V = 12                  # 12 (7 nov) : frais reels (14,9 % de prix + port) ; 11 (7 nov) : 15 $ de profit au moins, taxes de l'achat ; 10 (6 nov) : mises max refaites sur TOUS les deals gardes ; 9 (6 nov) : prix max a 30 % de profit net (avant : 70 % de la valeur) ; 2 : « checklist » ; 3 : Bowman U = football ; 4 : la F1 ; 5 : « Beckett » prenom (pas gradee) ; 6 : Signature Materials ; 7 : « Draft » ; 8 : « Beam Team » (4 nov)
+REVALIDE_V = 13                  # 13 (7 nov) : port 10 $ / 20 $ ; 12 (7 nov) : frais reels (14,9 % de prix + port) ; 11 (7 nov) : 15 $ de profit au moins, taxes de l'achat ; 10 (6 nov) : mises max refaites sur TOUS les deals gardes ; 9 (6 nov) : prix max a 30 % de profit net (avant : 70 % de la valeur) ; 2 : « checklist » ; 3 : Bowman U = football ; 4 : la F1 ; 5 : « Beckett » prenom (pas gradee) ; 6 : Signature Materials ; 7 : « Draft » ; 8 : « Beam Team » (4 nov)
 
 
 def _revalider_un(x):
