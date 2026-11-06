@@ -2761,6 +2761,20 @@ def valoriser_suivis(rechercher=None, n_max=None):
             va = valeur_ou_saison(y, v, [], cib=c2)
             if va:
                 trouves[str(y.get("item_id"))] = va
+        # 7 nov 2026 (Mathieu : « enclenche le tout rapidement, plusieurs encheres finissent bientot ») : un hit qui finit
+        # dans 12 h, toujours sans valeur avec les 90 jours d'eBay -> l'historique d'un an (CompSniper, budget du jour)
+        if str(x.get("item_id")) not in trouves and _hit(cib):
+            try:
+                f_ = datetime.fromisoformat(str(x.get("fin")).replace("Z", "+00:00"))
+                import historique
+                if historique.actif() and f_ - maint <= timedelta(hours=12):
+                    hv = historique.carte(cib, chasseur=True)
+                    if hv:
+                        va = valeur_ou_saison(x, list(v) + hv, [], cib=cib)
+                        if va:
+                            trouves[str(x.get("item_id"))] = va
+            except Exception as e:
+                print("Historique (encans proches) : " + repr(e), flush=True)
     # 31 oct 2026 (Mathieu : « la barre ne bouge pas ») : les encans dont les ventes ont ete cherchees comptent comme analyses
     analyses = [str(y.get("item_id")) for y in a_faire
                 if (cartes_match.requete_ebay(cartes_match.cible_titre(y.get("titre") or "")) or "").strip() in faites]

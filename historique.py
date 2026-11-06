@@ -45,7 +45,15 @@ def budget_mois():
 
 
 def budget_jour():
-    return _env_int("LR_HISTORIQUE_JOUR", 3)           # le chasseur de deals, par jour (les fiches ouvertes : le mois)
+    """Le chasseur de deals, par jour : LR_HISTORIQUE_JOUR, sinon ce qui reste du mois reparti sur les jours qui restent
+    (x 2 : les encans finissent surtout certains soirs), 3 au moins. Les fiches ouvertes, elles, n'ont que le plafond du mois."""
+    if os.environ.get("LR_HISTORIQUE_JOUR"):
+        return _env_int("LR_HISTORIQUE_JOUR", 3)
+    import calendar
+    m = datetime.now(timezone.utc)
+    reste_j = calendar.monthrange(m.year, m.month)[1] - m.day + 1
+    reste = max(0, budget_mois() - utilises()["mois"])
+    return max(3, min(reste, 2 * reste // max(1, reste_j)))
 
 
 def _cx():
