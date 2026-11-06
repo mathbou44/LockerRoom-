@@ -91,6 +91,24 @@ def sauver(photos):
     return out
 
 
+DISQUE_MIN_MO = float(os.environ.get("LR_PHOTOS_DISQUE_MIN_MO") or 350)
+
+
+def disque_libre_mo():
+    import shutil
+    try:
+        return shutil.disk_usage(dossier()).free / 1e6
+    except OSError:
+        return 0.0
+
+
+def garder_hd():
+    """7 nov 2026 (Mathieu : « on devrait pouvoir cliquer sur la photo, zoomer et voir tous les defauts en 48 Mpx ») : les
+    photos de la carte (devant, dos) restent en pleine resolution, tant que le disque du serveur a de la place
+    (DISQUE_MIN_MO) ; sous ce seuil, elles sont allegees comme avant (2400 px) pour ne jamais remplir le disque."""
+    return disque_libre_mo() >= DISQUE_MIN_MO
+
+
 def alleger(fichiers, cote=2400, qualite=85, min_octets=1_300_000):
     """5 nov 2026 (Mathieu : « une fois la photo evaluee, on peut reduire la qualite pour prendre moins de place ») : une
     photo deja examinee (les zooms en pleine resolution ont ete faits) est gardee en 2400 px, JPEG 85 (~0,6-1 Mo au lieu

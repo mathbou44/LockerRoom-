@@ -2729,7 +2729,9 @@ class Api:
         try:
             f_ = [photos_cartes.chemin(r) for r in list(refs) + list(ras_ref)]
             g_ = [photos_cartes.chemin(g["ref"]) for g in gps]
-            threading.Thread(target=lambda: (photos_cartes.alleger(f_), photos_cartes.alleger(g_, cote=1800)), daemon=True).start()
+            # 7 nov 2026 : le devant et le dos restent en pleine resolution (le zoom de la fiche) tant que le disque a de la place
+            hd = photos_cartes.garder_hd()
+            threading.Thread(target=lambda: ((None if hd else photos_cartes.alleger(f_)), photos_cartes.alleger(g_, cote=1800)), daemon=True).start()
         except Exception as x:
             print("Allegement : " + repr(x), flush=True)
         return {"ok": True, **res, "le": le, "precision": precision}
