@@ -24,9 +24,39 @@ RATIO_DEAL = 0.70                # (ancien seuil, garde pour les statistiques) ;
 # le materiel d'envoi (toploader, enveloppe : le port de la revente est paye par l'acheteur). Avant : 70 % de la valeur
 # (environ 16 % de profit).
 PROFIT_MIN = 0.30
-FRAIS_PCT = 0.1325
-FRAIS_FIXE = 0.40
+# 7 nov 2026 (Mathieu, une vraie vente : 35 $ + 17 $ de port + 3,89 $ de taxe -> frais de transaction 6,67 $, annonce
+# promotionnelle 1,08 $, gains 44,25 $) : eBay prend ses frais sur TOUT (la carte, le port, la taxe de l'acheteur), et la
+# pub aussi : 7,75 $ sur 52 $ = 14,9 % de (prix + port). Le port charge a l'acheteur paie l'etiquette, mais ses frais
+# restent a toi. -> frais de revente = FRAIS_PCT x (prix + PORT_REVENTE) + FRAIS_FIXE (avant : 13,25 % du prix + 0,40 $)
+def _env_f(nom, defaut):
+    try:
+        return float(os.environ.get(nom, defaut))
+    except ValueError:
+        return float(defaut)
+
+
+FRAIS_PCT = _env_f("LR_FRAIS_REVENTE_PCT", 14.9) / 100      # transaction (12,8 %) + pub (2,1 %), taxe de l'acheteur comprise
+FRAIS_FIXE = _env_f("LR_FRAIS_REVENTE_FIXE", 0.0)
+PORT_REVENTE = _env_f("LR_PORT_REVENTE", 17.0)              # le port charge a l'acheteur (les frais s'y appliquent aussi)
 ENVOI_NET = 1.50
+
+
+def frais_revente(valeur):
+    """Les frais eBay de la revente d'une carte qui se vend « valeur » (frais de transaction et pub, sur prix + port)."""
+    try:
+        v = float(valeur or 0)
+    except (TypeError, ValueError):
+        return 0.0
+    return round(FRAIS_PCT * (v + PORT_REVENTE) + FRAIS_FIXE, 2) if v > 0 else 0.0
+
+
+def net_revente(valeur):
+    """Ce qui te reste de la revente : le prix, moins les frais eBay (sur prix + port) et le materiel d'envoi."""
+    try:
+        v = float(valeur or 0)
+    except (TypeError, ValueError):
+        return 0.0
+    return v - FRAIS_PCT * (v + PORT_REVENTE) - FRAIS_FIXE - ENVOI_NET if v > 0 else 0.0
 
 
 # 7 nov 2026 (Mathieu : « pour les cartes a plus bas prix il faut augmenter la marge : 20 % sur une grosse carte c'est
@@ -59,7 +89,7 @@ def prix_max(valeur, profit_min=None, min_dollars=None):
         return 0.0
     p = PROFIT_MIN if profit_min is None else float(profit_min)
     dm = PROFIT_MIN_D if min_dollars is None else float(min_dollars)
-    net = v * (1 - FRAIS_PCT) - FRAIS_FIXE - ENVOI_NET
+    net = net_revente(v)
     return max(0.0, min(net / (1 + p), net - dm) / (1 + TAXE_ACHAT))
 RATIO_PRES = 0.85                # 27 oct 2026 : « a surveiller » = 70 a 85 % de la valeur (jamais affiche comme un deal)
 PAR_TOUR_ENCANS = 30             # 26 oct 2026 (Mathieu : « aucune enchere se terminant ? ») : 30 recherches d encans par heure
@@ -336,7 +366,7 @@ def maj_prix(item_id, total, port=None, mises=None, fin=None):
     return {"deal": None if retire else x, "retire": retire}
 
 
-REVALIDE_V = 11                  # 11 (7 nov) : 15 $ de profit au moins, taxes de l'achat ; 10 (6 nov) : mises max refaites sur TOUS les deals gardes ; 9 (6 nov) : prix max a 30 % de profit net (avant : 70 % de la valeur) ; 2 : « checklist » ; 3 : Bowman U = football ; 4 : la F1 ; 5 : « Beckett » prenom (pas gradee) ; 6 : Signature Materials ; 7 : « Draft » ; 8 : « Beam Team » (4 nov)
+REVALIDE_V = 12                  # 12 (7 nov) : frais reels (14,9 % de prix + port) ; 11 (7 nov) : 15 $ de profit au moins, taxes de l'achat ; 10 (6 nov) : mises max refaites sur TOUS les deals gardes ; 9 (6 nov) : prix max a 30 % de profit net (avant : 70 % de la valeur) ; 2 : « checklist » ; 3 : Bowman U = football ; 4 : la F1 ; 5 : « Beckett » prenom (pas gradee) ; 6 : Signature Materials ; 7 : « Draft » ; 8 : « Beam Team » (4 nov)
 
 
 def _revalider_un(x):

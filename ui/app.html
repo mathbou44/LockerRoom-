@@ -6686,8 +6686,12 @@ const fraisVente = () => { const r = S.reglages || {}; return [r.frais_ebay_pct 
 const ENVOI_NET = 1.50, PROFIT_MIN_DEAL = 0.30, PROFIT_MIN_D = 15, TAXE_ACHAT = 0.14975;
 const profitA = (valeur, paye) => { if (!valeur || paye == null) return null; const [fp, ff] = fraisVente(); return Math.round((valeur * (1 - fp) - ff - ENVOI_NET - paye) * 100) / 100; };
 // un deal : ce que tu paierais (mise ou prix + port) avec les taxes de l'achat (le cout de l'inventaire, lui, les a deja)
-const profitDeal = (valeur, paye) => paye == null ? null : profitA(valeur, paye * (1 + TAXE_ACHAT));
-const prixMaxDeal = (valeur, p = PROFIT_MIN_DEAL, d = PROFIT_MIN_D) => { if (!valeur) return 0; const [fp, ff] = fraisVente(); const net = valeur * (1 - fp) - ff - ENVOI_NET; return Math.max(0, Math.min(net / (1 + p), net - d) / (1 + TAXE_ACHAT)); };
+const profitDeal = (valeur, paye) => paye == null || !valeur ? null : Math.round((netDeal(valeur) - paye * (1 + TAXE_ACHAT)) * 100) / 100;
+// 7 nov 2026 (une vraie vente de Mathieu : 7,75 $ de frais et de pub sur 35 $ + 17 $ de port) : la revente d'un deal paie
+// 14,9 % de (prix + port charge), comme le serveur (deals.net_revente)
+const FRAIS_DEAL = 0.149, PORT_REVENTE = 17;
+const netDeal = (valeur) => valeur > 0 ? valeur - FRAIS_DEAL * (valeur + PORT_REVENTE) - ENVOI_NET : 0;
+const prixMaxDeal = (valeur, p = PROFIT_MIN_DEAL, d = PROFIT_MIN_D) => { if (!valeur) return 0; const net = netDeal(valeur); return Math.max(0, Math.min(net / (1 + p), net - d) / (1 + TAXE_ACHAT)); };
 // 30 oct 2026 : pourquoi une carte n'a pas de valeur, en mots simples (avant : « pas assez de ventes » pour tout)
 function raisonSansValeur(d){
   const n = d.nb_trouvees || 0, p = String(d.pourquoi || '');

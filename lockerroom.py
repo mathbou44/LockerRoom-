@@ -136,6 +136,12 @@ def _envoi_net():
     return _d.ENVOI_NET
 
 
+def _net_rev(valeur):
+    """7 nov 2026 : ce qui reste de la revente d'un deal (deals.net_revente : frais eBay sur prix + port, pub, envoi)."""
+    import deals as _d
+    return _d.net_revente(valeur)
+
+
 def _paye(total):
     """7 nov 2026 : ce que tu paies vraiment (mise ou prix + port, taxes de l'achat comprises : deals.cout_achat)."""
     import deals as _d
@@ -5949,7 +5955,7 @@ class Api:
             if not x.get("encan") and (x.get("ratio") or 1) < (0.25 if (x.get("valeur") or 0) >= 400 else 0.15):
                 continue                     # 5 nov 2026 (Fantilli Signature Materials a 253 $ « vaut 1 393 $ ») : une carte de 400 $+
                                              # a prix fixe sous 25 % de sa valeur, c'est presque toujours une autre carte
-            x["gain"] = round((x.get("valeur") or 0) * (1 - fp) - ff - _envoi_net() - _paye(x.get("total") or 0), 2)
+            x["gain"] = round(_net_rev(x.get("valeur") or 0) - _paye(x.get("total") or 0), 2)
             if not x.get("encan") and x["gain"] <= 1:          # 26 oct 2026 : pas de profit apres les frais : pas un deal
                 continue
             x["rabais"] = round(100 * (1 - (x.get("ratio") or 1)))
@@ -5961,7 +5967,7 @@ class Api:
         """Le profit que l'ecran affiche : un encan, a la mise max (port compris) ; un prix fixe, au prix demande."""
         if x.get("encan") and x.get("mise_max") is not None and x.get("valeur") and fp is not None:
             import deals as _dlg
-            return x["valeur"] * (1 - fp) - (ff or 0) - _envoi_net() - _paye(float(x["mise_max"]) + _dlg.port_eff(x.get("port")))
+            return _net_rev(x["valeur"]) - _paye(float(x["mise_max"]) + _dlg.port_eff(x.get("port")))
         return x.get("gain") or 0
 
     @staticmethod
@@ -6034,7 +6040,7 @@ class Api:
         f = dict(f, _fp=fp_, _ff=ff_)
         for x in tout:
             if x.get("valeur") and x.get("total") is not None:
-                x["gain"] = round(x["valeur"] * (1 - fp_) - ff_ - _envoi_net() - _paye(x.get("total") or 0), 2)
+                x["gain"] = round(_net_rev(x["valeur"]) - _paye(x.get("total") or 0), 2)
                 x["rabais"] = round(100 * (1 - (x.get("total") or 0) / x["valeur"]))
         par_sport = {}
         for x in tout:
@@ -6114,7 +6120,7 @@ class Api:
             sec = [dict(x, source="marche") for x in dd["secours"]["deals"] if str(x.get("vu_le") or "") >= lim6 and _d.valide(x)
                    and str(x.get("item_id")) not in ret and _d.encore_ouvert(x)]
             for x in sec:
-                x["gain"] = round((x.get("valeur") or 0) * (1 - fp_) - ff_ - _envoi_net() - _paye(x.get("total") or 0), 2)
+                x["gain"] = round(_net_rev(x.get("valeur") or 0) - _paye(x.get("total") or 0), 2)
                 x["rabais"] = round(100 * (1 - (x.get("ratio") or 1)))
             sec = [x for x in self._deals_filtrer(sec, f) if x.get("encan") or x["gain"] > 1]
             if sec:
@@ -6127,7 +6133,7 @@ class Api:
             if str(x.get("item_id")) in _d._bannis() or str(x.get("item_id")) in ret_p or not _d.encore_ouvert(x):
                 continue
             x = _dl.a_jour(x)
-            y = dict(x, source="marche", gain=round((x.get("valeur") or 0) * (1 - fp_) - ff_ - _envoi_net() - _paye(x.get("total") or 0), 2),
+            y = dict(x, source="marche", gain=round(_net_rev(x.get("valeur") or 0) - _paye(x.get("total") or 0), 2),
                      rabais=round(100 * (1 - (x.get("ratio") or 1))))
             pres.append(y)
         pres = self._appliquer_profil([x for x in self._deals_filtrer(pres, f) if not f.get("sports") or (x.get("sport") or "hockey") in f["sports"]], prof)[:24 if pro else 6]
@@ -6154,7 +6160,7 @@ class Api:
             if not y.get("valeur"):
                 continue
             if y.get("valeur"):
-                y["gain"] = round(y["valeur"] * (1 - fp_) - ff_ - _envoi_net() - _paye(y.get("total") or 0), 2)
+                y["gain"] = round(_net_rev(y["valeur"]) - _paye(y.get("total") or 0), 2)
                 y["rabais"] = round(100 * (1 - (y.get("total") or 0) / y["valeur"]))
                 # 31 oct 2026 (Mathieu : « se faire retirer du dashboard si ce n'est plus un deal ») : valeur connue et mise
                 # au-dessus de 70 % de celle-ci -> pas un deal : hors de l'ecran Deals (la watchlist, elle, le montre en rouge)
@@ -6418,7 +6424,7 @@ class Api:
         if not rapide and total and not panne:
             try:
                 import deals as _dl
-                gain_v = round(valeur * (1 - fp) - ff - _envoi_net() - _paye(total), 2) if valeur and juger else None
+                gain_v = round(_net_rev(valeur) - _paye(total), 2) if valeur and juger else None
                 _dl.corriger(item_id, valeur if juger else None, gain_v, total)
             except Exception:
                 pass
@@ -6438,7 +6444,7 @@ class Api:
                 "valeur_chasseur": chasseur, "ventes_panne": panne, "vieux_cache": bool(vc.get("vieux_cache")),
                 "points": vc.get("points") or [], "tendance": vc.get("tendance"), "autres_joueurs": autres,
                 "rabais": round(100 * (1 - total / valeur)) if total and valeur and juger else None,
-                "gain": round(valeur * (1 - fp) - ff - _envoi_net() - _paye(total), 2) if total and valeur and juger else None,
+                "gain": round(_net_rev(valeur) - _paye(total), 2) if total and valeur and juger else None,
                 "peu_de_ventes": not juger, "pourquoi": pourquoi if not juger else None, "nb_trouvees": nb_v}
 
     def _mes_ventes_pareilles(self, titre, item_id=None, n=8):
@@ -6596,7 +6602,7 @@ class Api:
         for x in gardees:
             x["deal"] = bool(bon) and x["total"] <= bon
             x["bon"] = bool(valeur) and (not x["deal"]) and x["total"] <= valeur          # « bon prix » : sous la valeur vendue
-            x["gain"] = round(valeur * (1 - fp) - ff - _envoi_net() - _paye(x["total"]), 2) if valeur else None
+            x["gain"] = round(_net_rev(valeur) - _paye(x["total"]), 2) if valeur else None
             x["hors_norme"] = x["total"] not in garde
         return {**base, "n": len(gardees), "mediane": med, "valeur": valeur, "valeur_source": "vendues" if vm else None,
                 "bon_prix": bon, "min": garde[0], "max": garde[-1], "annonces": gardees[:40]}

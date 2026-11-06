@@ -521,7 +521,7 @@ def liste(api):
     for x in lst:
         if x.get("valeur") and x.get("total") is not None:
             import deals as _dp                                   # 6 nov : + le materiel d'envoi ; 7 nov : + les taxes de l'achat
-            x["profit"] = round(x["valeur"] * (1 - fp) - ff - _dp.ENVOI_NET - _dp.cout_achat(x["total"]), 2)
+            x["profit"] = round(_dp.net_revente(x["valeur"]) - _dp.cout_achat(x["total"]), 2)      # 7 nov : frais sur prix + port
     for x in lst:
         x["sans_comps"] = bool(not x.get("valeur") and x.get("sans_comps_le"))
         x["encan"] = bool(x.get("encan"))

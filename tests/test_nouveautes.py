@@ -151,7 +151,7 @@ class Deals(unittest.TestCase):
                 return [{"item_id": "e1", "titre": T, "prix_cad": 10.0, "port_cad": 2, "encan": True, "url": "u",
                          "fin": (maint + timedelta(hours=1)).isoformat().replace("+00:00", "Z")}]
             return [{"item_id": "f1", "titre": T, "prix_cad": 30.0, "port_cad": 2, "url": "u"},          # 32 > 70 % de 40 : non
-                    {"item_id": "f2", "titre": T, "prix_cad": 12.0, "port_cad": 2, "url": "u"},          # deal (bassin)
+                    {"item_id": "f2", "titre": T, "prix_cad": 9.0, "port_cad": 2, "url": "u"},          # deal (bassin)
                     {"item_id": "f3", "titre": T2, "prix_cad": 8.0, "port_cad": 2, "url": "u"},          # deal apres verification
                     {"item_id": "f4", "titre": "Lot of 5 2024-25 Upper Deck Young Guns", "prix_cad": 5.0, "url": "u"}]
         b = deals.Bassin(charger=False)
