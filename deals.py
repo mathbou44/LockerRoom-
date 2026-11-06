@@ -2483,6 +2483,9 @@ def etat():
             "soldcomps": _etat_soldcomps(), "journal": journal(), "tour": tour(d),
             "vendeurs_24h": {"annonces": g.get("vendeurs_annonces", 0), "gardes": g.get("suivi_ok", 0) + g.get("suivi_ok_recrue", 0), "erreurs": g.get("vendeurs_erreurs", 0),
                              "suivis": len(d.get("suivis") or []), "deals": sum(1 for x in d.get("deals") or [] if x.get("flux") == "vendeurs")},
+            # 7 nov 2026 : le balayage des petits vendeurs (toute la categorie hockey)
+            "petits_24h": {"annonces": g.get("balayage_fixe", 0) + g.get("balayage_encans", 0), "petits": g.get("balayage_petits", 0),
+                           "deals": sum(1 for x in d.get("deals") or [] if x.get("flux") == "petits vendeurs" and valide(x) and encore_ouvert(x))},
             "vedettes_24h": {"verifiees": g.get("vedettes_verifiees", 0), "deals": g.get("vedettes_deals", 0),
                              "refus_recrues": g.get("verif_budget_recrues", 0)},
             "deals": sum(1 for x in d.get("deals") or [] if valide(x) and encore_ouvert(x)),
