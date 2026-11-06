@@ -25,3 +25,13 @@ assert deals.valeur_approx({"titre": T}, V[:1], c) is None
 B = "2024-25 Upper Deck Jesper Wallstedt Base #45"
 assert deals.valeur_approx({"titre": B}, [{"titre": "2023-24 Upper Deck Jesper Wallstedt Base #12", "prix": 2, "le": jr(3)}] * 3) is None
 print("APPROX OK")
+
+# 7 nov 2026 (« de comment no comp ? ce sont les memes cartes ») : #4NN-MC et « 4 Nations Face-Off » / « Four Nations »
+T2 = "2025-26 SP Game Used 4 Nations Net Cord Charlie McAvoy #4NN-MC 24/35 (MicMas)"
+c2 = cm.cible_titre(T2)
+for s in ("2025-26 SP Game Used 4 Nations Face-Off Net Cord Charlie McAvoy 02/35",
+          "2025-26 Upper Deck SP Game Used 4 Nations Face Off Net Cord #4NN-MC Charlie McAvoy /35",
+          "2025-26 SP Game Used Four Nations Net Cord Charlie McAvoy 13/35 USA Bruins"):
+    assert not cm.raisons_refus(c2, s), (s, cm.raisons_refus(c2, s))
+assert cm.raisons_refus(c2, "2025-26 SP Game Used Charlie McAvoy Jersey 13/35")
+print("MEME CARTE OK")

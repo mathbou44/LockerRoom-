@@ -6486,6 +6486,14 @@ class Api:
                 _wl.valeur_trouvee(self, item_id, valeur, remplacer=bool(vm) and not panne)
             except Exception as e:
                 print("Watchlist (valeur de la fiche) : " + repr(e), flush=True)
+        # 7 nov 2026 (Mathieu : « pourquoi il prend en consideration le shipping ? c'est CF31 ») : chez un vendeur ou tu
+        # ramasses (Reglages des deals), la fiche compte comme la tuile : sans le port (prix, rabais, profit, mise max).
+        # Le deal partage (corriger, maj_prix) garde le vrai port : les autres comptes ne ramassent pas.
+        ram = bool(a.get("vendeur")) and str(a.get("vendeur")).lower() in self._chez_ramassage()
+        if ram and total:
+            port_r = float(a.get("port_cad") or 0)
+            a = dict(a, port_cad=0.0, port_estime=False, ramassage=True, port_reel=port_r)
+            total = round(max(0.0, total - port_r), 2)
         if not ebay_prix_actif():                # interrupteur : l'annonce seule, sans valeur ni rabais
             return {"ok": True, "article": {**a, "total": total}, "comps": [], "n": 0, "coupe": True}
         return {"ok": True, "article": {**a, "total": total}, "comps": comps, "mediane": med, "n": n, "deal_retire": bool(maj_deal and maj_deal.get("retire")),

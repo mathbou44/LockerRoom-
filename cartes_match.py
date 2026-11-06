@@ -811,6 +811,11 @@ def identite(titre, joueur=""):
     # 30 oct 2026 (Mathieu : « je vois pas de prix suggere ») : les codes de carte en lettres (#BYA-DA, SS-AM) ne sont presque
     # jamais dans les titres des ventes : ils ne servent pas a dire quelle carte c'est (sinon aucune vente n'est gardee)
     t = re.sub(r"(?<![a-z0-9])[a-z]{2,4}-[a-z]{1,3}(?![a-z0-9])", " ", t)
+    # 7 nov 2026 (Mathieu : « de comment no comp ? ce sont les memes cartes », McAvoy 4 Nations Net Cord /35) : un code qui
+    # commence par un chiffre (#4NN-MC) et les facons d'ecrire « 4 Nations Face-Off » (Four Nations, Face Off, Faceoff)
+    t = re.sub(r"(?<![a-z0-9])\d{1,2}[a-z]{1,4}-[a-z0-9]{1,4}(?![a-z0-9])", " ", t)
+    t = re.sub(r"\bfour[\s-]+nations\b", "4 nations", t)
+    t = re.sub(r"\bface[\s-]?off\b", " ", t)
     t = re.sub(r"\bseries\s*(one|two|1|2|i{1,2})?\b", " ", t)        # 30 oct 2026 : « Series 2 » = le produit, pas une autre carte
     t = _RE_INSCR.sub(" ", t)                      # 7 nov 2026 : l'inscription se compare a part (decoder « inscr »)
     for x in EQUIPES_COULEUR:
