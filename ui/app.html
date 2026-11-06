@@ -4452,7 +4452,36 @@ async function photoStudio(src, coins1000, opts){
     if (!r.affine || !r.cotes || r.cotes.some(x => !x) || !proche) throw new Error('bords incertains');
   }
   const q = r.coins.map(([x, y]) => [x / G.k, y / G.k]);
-  return {photo: poserFlou(img, q, opts), coins: r.coins.map(([x, y]) => [Math.round(x / G.w * 1000), Math.round(y / G.h * 1000)]), affine: r.affine, W, H};
+  // 7 nov 2026 (Mathieu : « est-ce que l'app remet les photos a niveau ? rotate jusqu'a ce que le bord du bas soit
+  // completement parallele au frame, ensuite brouille legerement le fond, toujours ») : la photo est tournee autour de la
+  // carte jusqu'a ce que son bord du BAS soit horizontal (un leger zoom couvre les coins), puis le fond flou
+  const n = niveler(img, q);
+  return {photo: poserFlou(n.img, n.q, opts), coins: r.coins.map(([x, y]) => [Math.round(x / G.w * 1000), Math.round(y / G.h * 1000)]), affine: r.affine, W, H,
+          angle: n.angle};
+}
+// le bord du bas de la carte (les 2 coins les plus bas) -> son angle ; la photo tournee de -angle autour du centre de la
+// carte, agrandie juste assez pour que les coins de la photo restent pleins. -> {img (canvas), q (coins tournes), angle}
+function niveler(img, q){
+  const W = img.naturalWidth || img.width, H = img.naturalHeight || img.height;
+  const t = [...q].sort((a, b) => a[1] - b[1]), [bg, bd] = t.slice(2).sort((a, b) => a[0] - b[0]);
+  const th = Math.atan2(bd[1] - bg[1], bd[0] - bg[0]);
+  if (!isFinite(th) || Math.abs(th) < 0.15 * Math.PI / 180 || Math.abs(th) > 15 * Math.PI / 180) return {img, q, angle: 0};
+  const c = [q.reduce((s_, p) => s_ + p[0], 0) / 4, q.reduce((s_, p) => s_ + p[1], 0) / 4];
+  // le zoom qui couvre toute la photo apres la rotation, autour du centre de la carte (pire cas : le coin le plus loin)
+  const co = Math.cos(-th), si = Math.sin(-th);
+  let k = 1;
+  for (const [x, y] of [[0, 0], [W, 0], [W, H], [0, H]]) {
+    // le coin de la sortie, ramene dans la photo d'origine : il doit y tomber (sinon : plus de zoom)
+    const dx = x - c[0], dy = y - c[1], ux = dx * co + dy * si, uy = -dx * si + dy * co;      // rotation inverse
+    const lim = Math.max(Math.abs(ux) / Math.max(1, ux > 0 ? W - c[0] : c[0]), Math.abs(uy) / Math.max(1, uy > 0 ? H - c[1] : c[1]));
+    k = Math.max(k, lim);
+  }
+  k = Math.min(k, 1.35);
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const g = cv.getContext('2d'); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+  g.translate(c[0], c[1]); g.rotate(-th); g.scale(k, k); g.translate(-c[0], -c[1]); g.drawImage(img, 0, 0);
+  const q2 = q.map(([x, y]) => { const dx = (x - c[0]) * k, dy = (y - c[1]) * k; return [c[0] + dx * co - dy * si, c[1] + dx * si + dy * co]; });
+  return {img: cv, q: q2, angle: th * 180 / Math.PI};
 }
 // controle de la photo, tout de suite apres la prise : floue, sombre, reflet, trop petite
 async function qualitePhoto(src){

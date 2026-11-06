@@ -161,7 +161,10 @@ final class CameraHDVC: UIViewController, AVCapturePhotoCaptureDelegate {
     // 7 nov 2026 (« on devrait avoir l'option de zoomer ou non ») : 1x par defaut, 1,5x, 2x, ou en pincant (1x a 3x)
     private var zoom: CGFloat = 1
     private var zoomDepart: CGFloat = 1
-    private let zooms: [CGFloat] = [1, 1.5, 2]
+    private let zooms: [CGFloat] = [1, 2, 3]
+    // 7 nov 2026 (« le cadre est trop petit, il s'agrandit et retrecit ») : un cadre FIXE (75 % de l'image) ; c'est le zoom
+    // qui grossit la carte, comme l'appareil photo de l'iPhone
+    private let cadreFixe: Double = 0.75
     private var boutonsZoom: [UIButton] = []
     private let rangeeZoom = UIStackView()
 
@@ -199,7 +202,7 @@ final class CameraHDVC: UIViewController, AVCapturePhotoCaptureDelegate {
     }
 
     private func zoomMax() -> CGFloat {
-        return min(3, max(1, choix.device.activeFormat.videoMaxZoomFactor))
+        return min(3.5, max(1, choix.device.activeFormat.videoMaxZoomFactor))
     }
 
     private func appliquerZoom(_ z: CGFloat) {
@@ -216,8 +219,9 @@ final class CameraHDVC: UIViewController, AVCapturePhotoCaptureDelegate {
     }
 
     private func majBoutonsZoom() {
+        let proche = zooms.indices.min { abs(zooms[$0] - zoom) < abs(zooms[$1] - zoom) } ?? 0
         for (k, b) in boutonsZoom.enumerated() {
-            let on = abs(zooms[k] - zoom) < 0.05
+            let on = k == proche                                   // le bouton le plus proche du zoom (pince ou auto)
             b.backgroundColor = on ? UIColor.white.withAlphaComponent(0.9) : UIColor.black.withAlphaComponent(0.45)
             b.setTitleColor(on ? .black : .white, for: .normal)
             b.isHidden = zooms[k] > zoomMax() + 0.01
@@ -291,7 +295,7 @@ final class CameraHDVC: UIViewController, AVCapturePhotoCaptureDelegate {
         for (k, z) in zooms.enumerated() {
             let b = UIButton(type: .custom)
             b.tag = k
-            b.setTitle(z == 1 ? "1×" : z == 2 ? "2×" : "1,5×", for: .normal)
+            b.setTitle(z == 1 ? "1×" : z == 2 ? "2×" : "3×", for: .normal)
             b.titleLabel?.font = .systemFont(ofSize: 14, weight: .bold)
             b.layer.cornerRadius = 19
             b.translatesAutoresizingMaskIntoConstraints = false
@@ -377,9 +381,8 @@ final class CameraHDVC: UIViewController, AVCapturePhotoCaptureDelegate {
                 // 7 nov 2026 (« ca marche tres mal ») : a la distance de mise au point, la carte ne remplit qu'une petite
                 // partie de l'image en 1x ; le zoom de depart la fait remplir le cadre (2x au plus), sans s'approcher
                 if let s = self, s.mode == "carte" {
-                    let z0 = CGFloat(min(2.0, max(1.0, 0.62 / max(0.05, s.choix.fraction))))
-                    let proche = s.zooms.min { abs($0 - z0) < abs($1 - z0) } ?? 1
-                    s.appliquerZoom(proche)
+                    // le zoom qui fait remplir le cadre a la carte, a la distance ou la mise au point est nette
+                    s.appliquerZoom(CGFloat(max(1.0, s.cadreFixe / max(0.05, s.choix.fraction))))
                 }
                 self?.view.setNeedsLayout()
             }
@@ -406,7 +409,7 @@ final class CameraHDVC: UIViewController, AVCapturePhotoCaptureDelegate {
     private func placerCadre() {
         guard mode == "carte" else { cadreCalque.path = nil; ombre.path = nil; return }
         let rapportCapteur = Double(choix.hauteur) / Double(choix.largeur)        // 0,75 en 4:3
-        let fy = min(0.8, choix.fraction * Double(zoom))            // le zoom agrandit la carte dans le cadre
+        let fy = cadreFixe                                          // 7 nov 2026 : fixe ; le zoom grossit la carte
         let fx = min(0.94, fy * (88.9 / 63.5) * rapportCapteur)
         cadreNorm = CGRect(x: 0.5 - fx / 2, y: 0.5 - fy / 2, width: fx, height: fy)
         let r = apercu.layerRectConverted(fromMetadataOutputRect: cadreNorm)
