@@ -6884,6 +6884,7 @@ async function ouvrirAnnonce(base){
       <div class="fa-ventes">${ventes.length ? `<div class="fa-vt">${d.valeur_source === 'autre_saison' && d.valeur ? tt('Estimé ', 'Estimated ') + `<b class="fa-med">${argent(d.valeur, 0)}</b>` : d.valeur ? tt('Se vend ', 'Sells for ') + `<b class="fa-med">${argent(d.valeur, 0)}</b>` : tt('Vendues récemment', 'Recently sold')} <small>${d.valeur_source === 'autre_saison' ? tt(`cartes similaires · ${d.nb_vendues} vente${d.nb_vendues > 1 ? 's' : ''}, −20 % · glisse ›`, `similar cards · ${d.nb_vendues} sale${d.nb_vendues > 1 ? 's' : ''}, −20% · swipe ›`) : d.valeur && d.nb_vendues ? tt(`médiane de ${d.nb_vendues} ventes · glisse ›`, `median of ${d.nb_vendues} sales · swipe ›`) : tt('même carte · glisse ›', 'same card · swipe ›')}</small></div>
         <div class="fv-car fa-car">${ventes.map(k => `<a class="fv" ${k.url ? `href="${esc(urlSure(k.url))}" target="_blank" rel="noopener"` : ''}><div class="fv-ph">${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo, 300))}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
           <b>${argent(k.prix, 0)}</b><small>${k.saison ? esc(k.saison) + ' · ' : ''}${k.le ? dateCourte(k.le) : ''}</small></a>`).join('')}</div>`
+        : d.ventes_lentes ? `<div class="fa-vide">${tt('Les ventes réelles ne répondent pas pour l’instant (le chasseur de deals est peut-être en plein tour).', 'Real sales are not responding right now (the deal hunter may be mid-run).')} <button class="lien-t" id="fa-reessai">${tt('Réessayer', 'Retry')}</button></div>`
         : d.chargement || d.ventes_attente ? `<div class="lecture"><span class="roue"></span>${tt('Les ventes réelles arrivent…', 'Real sales are loading…')}</div>`
         : d.valeur_chasseur ? `<div class="fa-vide">${tt('Se vend ', 'Sells for ')}<b>${argent(d.valeur_chasseur.valeur, 0)}</b> ${tt('d’après les ventes lues par le chasseur de deals', 'from the sales read by the deal hunter')}${d.valeur_chasseur.le ? ' (' + esc(ilYa(d.valeur_chasseur.le)) + ')' : ''}. ${tt('Les ventes en direct n’ont pas pu être lues.', 'Live sales could not be read.')} <button class="lien-t" id="fa-reessai">${tt('Réessayer', 'Retry')}</button></div>`
         : `<div class="fa-vide">${d.peu_de_ventes ? raisonSansValeur(d) : tt('Aucune vente de cette carte exacte trouvée.', 'No sale of this exact card found.')}</div>`}</div>
@@ -6914,8 +6915,17 @@ async function ouvrirAnnonce(base){
   const d1 = await API.annonce_detail(base.item_id, base.titre, true).catch(() => null);
   if (d1) majTuilePrix(base.item_id, d1);
   if (d1 && ouverte()) montrer(d1);
-  const d2 = await API.annonce_detail(base.item_id, base.titre, false, base.q || null).catch(() => null);
-  if (d2 && ouverte()) montrer(d2);
+  // 7 nov 2026 (Mathieu : « pourquoi ca reste comme ca ? ») : les ventes reelles ont 45 s ; sinon on le dit, avec « Reessayer »
+  // (avant : la roue tournait pour toujours si la reponse n'arrivait pas)
+  const complet = async () => {
+    const d2 = await Promise.race([API.annonce_detail(base.item_id, base.titre, false, base.q || null).catch(() => null),
+                                   new Promise(ok => setTimeout(() => ok(null), 45000))]);
+    if (!ouverte()) return;
+    if (d2) { montrer(d2); return; }
+    montrer({...(d1 || {article: base}), ventes_attente: false, ventes_lentes: true});
+    const b_ = $('#fa-reessai'); if (b_) b_.onclick = () => { montrer({...(d1 || {article: base}), ventes_attente: true}); complet(); };
+  };
+  await complet();
 }
 // 25 oct 2026 (Mathieu : « les photos en HD, quand tu passes la souris sur la photo ça fait une genre de loupe ») :
 // photos eBay en 1600 px ; souris : loupe ronde x3 ; doigt : un tap zoome a cet endroit, un autre tap revient.

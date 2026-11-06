@@ -424,9 +424,14 @@ def archives(cib, jours=365, max_=400):
         return []
     depuis = (datetime.now() - timedelta(days=jours)).strftime("%Y-%m-%d")
     try:
-        c = base_ventes._cx()
+        import comptes
+        ch = os.path.join(comptes.DONNEES, "base_ventes.sqlite")
+        if not os.path.exists(ch):
+            return []
+        base_ventes._cx().close()                           # les tables (une fois par processus)
+        c = sqlite3.connect(ch, timeout=3)                  # une lecture : jamais 30 s d'attente derriere une ecriture du chasseur
         try:
-            l = c.execute("SELECT titre, prix, le, photo, url, offre FROM ventes WHERE le >= ? AND lower(titre) LIKE ? "
+            l = c.execute("SELECT titre, prix, le, photo, url, offre FROM ventes WHERE le >= ? AND titre LIKE ? "
                           "ORDER BY le DESC LIMIT ?", (depuis, "%" + nom[-1].lower() + "%", max_ * 5)).fetchall()
         finally:
             c.close()

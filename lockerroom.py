@@ -6328,6 +6328,7 @@ class Api:
         """24 oct 2026 (Mathieu : « comme Hall of Cardz, une fenetre dans l'app qui ouvre avec l'annonce eBay et les comps
         sous celle-ci avec leurs images ») : l'annonce (photos, prix, vendeur, fin) + les MEMES cartes en vente."""
         import cartes_match
+        t0_ = time.time()
         a = None
         try:
             a = ebay_compte.article(item_id)
@@ -6382,7 +6383,9 @@ class Api:
         nb_v = vc.get("nb") or 0
         # 27 oct 2026 : pas (ou presque pas) de ventes de CETTE carte : celles de la meme carte par d'autres joueurs, en repere
         autres = None
-        if not rapide and t and nb_v < 2:
+        # 7 nov 2026 (la fiche qui « reste a charger ») : les ventes d'autres joueurs (une recherche de plus) seulement s'il
+        # reste du temps : la fiche doit revenir en moins de 30 s
+        if not rapide and t and nb_v < 2 and time.time() - t0_ < 20:
             try:
                 autres = vendues.autres_joueurs(t)
             except Exception:
@@ -6402,7 +6405,7 @@ class Api:
         # 7 nov 2026 (Mathieu : « la Ron Francis : mettre les annees a cote pour la meme carte, montrer les cartes similaires
         # mais dire a l'utilisateur qu'il n'y a pas de comp ») : aucune vente sure de SA saison -> les saisons voisines
         saison_v = None
-        if not vm and not rapide and t and not (vc.get("erreur_ebay") or vc.get("erreur")):
+        if not vm and not rapide and t and not (vc.get("erreur_ebay") or vc.get("erreur")) and time.time() - t0_ < 30:
             try:
                 saison_v = vendues.autres_saisons(t)
             except Exception as e:
