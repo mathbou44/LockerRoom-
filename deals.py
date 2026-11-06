@@ -658,9 +658,12 @@ def valeur_sure(pv, titre_annonce=""):
         return None, "pas assez de ventes"
     prix = sorted(float(v["prix"]) for v in pv)
     if len(pv) == 2:
-        if prix[1] > prix[0] * 1.35 or any(_jours(v) > 45 for v in pv):
+        # 7 nov 2026 (une Nazar Future Watch Auto Inscribed : 2 ventes a 500 $ il y a 7 mois) : un hit se vend rarement ;
+        # ses 2 ventes d'un an comptent, la plus basse moins 10 % si elles ont plus de 45 jours
+        vieilles = any(_jours(v) > 45 for v in pv)
+        if prix[1] > prix[0] * 1.35 or (vieilles and jm != JOURS_MAX_HITS):
             return None, "2 ventes trop differentes ou trop vieilles"
-        return round(prix[0], 2), pv                         # 2 ventes : la plus basse
+        return round(prix[0] * (0.9 if vieilles else 1), 2), pv          # 2 ventes : la plus basse
     m, garde = cartes_match.mediane_robuste(prix)
     if len(garde) < MIN_VENTES_SURES:
         return None, "ventes trop dispersees"
@@ -796,7 +799,7 @@ class Bassin:
     Memoire bornee : les MAX ventes les plus recentes des `jours` derniers jours, en tuples compacts."""
     MAX = 250000                     # 31 oct 2026 : serveur Standard (2 Go) : 250 000 ventes connues (~70 Mo)
 
-    def __init__(self, jours=90, charger=True):
+    def __init__(self, jours=365, charger=True):     # 7 nov 2026 : un an (les hits ; toujours borne a MAX, les plus recentes d'abord)
         self.par_mot, self.vus, self.n = {}, set(), 0
         self.depuis = (datetime.now() - timedelta(days=jours)).strftime("%Y-%m-%d")
         if charger:

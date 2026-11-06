@@ -413,6 +413,37 @@ def _noter_erreur(q, err):
     _DERNIERE.update(erreur=err, le=time.time())
 
 
+def archives(cib, jours=365, max_=400):
+    """7 nov 2026 (Mathieu : une Nazar Future Watch Auto Inscribed « aucune vente trouvee », 130point en a 6 : eBay et
+    SoldComps ne montrent que les 90 derniers jours de ventes) : les ventes de la MEME carte gardees dans nos archives
+    (base_ventes : chaque recherche y depose toutes ses ventes), jusqu'a un an. Rien n'est appele : aucun credit."""
+    import cartes_match
+    import base_ventes
+    nom = [w for w in (cib.get("joueur") or "").split() if len(w) >= 3]
+    if not nom:
+        return []
+    depuis = (datetime.now() - timedelta(days=jours)).strftime("%Y-%m-%d")
+    try:
+        c = base_ventes._cx()
+        try:
+            l = c.execute("SELECT titre, prix, le, photo, url, offre FROM ventes WHERE le >= ? AND lower(titre) LIKE ? "
+                          "ORDER BY le DESC LIMIT ?", (depuis, "%" + nom[-1].lower() + "%", max_ * 5)).fetchall()
+        finally:
+            c.close()
+    except Exception:
+        return []
+    out, vus = [], set()
+    for t, p, le, ph, u, of in l:
+        k = u or f"{t}|{le}|{p}"
+        if k in vus or not p or cartes_match.raisons_refus(cib, t or ""):
+            continue
+        vus.add(k)
+        out.append({"titre": t, "prix": p, "le": le, "photo": ph, "url": u, "offre": bool(of), "source": "archives"})
+        if len(out) >= max_:
+            break
+    return out
+
+
 def memes(texte, requete=True, n=24, fond=False, exclure_titre=None):
     """Les MEMES cartes vendues (eBay via SoldComps + communaute SlabCoach), les plus recentes d'abord.
     texte = ce que l'utilisateur a tape (requete=True) ou le titre d'une annonce (requete=False).
@@ -428,6 +459,9 @@ def memes(texte, requete=True, n=24, fond=False, exclure_titre=None):
     except Exception:
         comm = []
     tout = ebay + [{**v, "source": "SlabCoach"} for v in comm]
+    if not requete:                             # 7 nov 2026 : + nos propres archives (eBay ne montre que 90 jours de ventes)
+        vus_u = {str(v.get("url") or "") for v in tout if v.get("url")}
+        tout += [v for v in archives(cib) if str(v.get("url") or "") not in vus_u]
     if not requete:                             # 4 nov 2026 : la fiche d'une annonce (une seule carte precise)
         tout = _sans_aberrants(tout)
     tout.sort(key=lambda v: str(v.get("le") or ""), reverse=True)
