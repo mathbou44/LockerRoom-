@@ -7,6 +7,7 @@ os.environ["LOCKERROOM_DONNEES"] = tempfile.mkdtemp()
 import comptes
 comptes.DONNEES = os.environ["LOCKERROOM_DONNEES"]
 import lockerroom, watchlist, deals
+M = lambda v: watchlist.mise_auto({"profit_pct": 30}, v, 0)      # 6 nov : 30 % de profit net
 
 a = lockerroom.Api(os.path.join(tempfile.mkdtemp(), "w.db"))
 fin = (datetime.now(timezone.utc) + timedelta(hours=3)).isoformat()
@@ -18,14 +19,14 @@ fond = []
 vrai_fond = watchlist._chercher_en_fond
 watchlist._chercher_en_fond = lambda api, items: fond.extend(x["item_id"] for x in items)
 L = {x["item_id"]: x for x in watchlist.liste(a)["cartes"]}
-assert L["1"]["valeur"] == 100.0 and L["1"]["mise_max"] == 70.0, L["1"]
-assert L["2"]["valeur"] == 60.0 and L["2"]["mise_max"] == 42.0, L["2"]
+assert L["1"]["valeur"] == 100.0 and L["1"]["mise_max"] == M(100), L["1"]
+assert L["2"]["valeur"] == 60.0 and L["2"]["mise_max"] == M(60), L["2"]
 assert L["3"].get("valeur") is None and fond == ["3"], (L["3"], fond)
 # garde : la prochaine lecture les a deja (sans chasseur ni cache)
 d = deals.lire(); d["suivis"] = []; deals._ecrire(d)
 a._valeur_en_cache = lambda x, calculer=True: None
 L = {x["item_id"]: x for x in watchlist.liste(a)["cartes"]}
-assert L["1"]["mise_max"] == 70.0 and L["2"]["mise_max"] == 42.0
+assert L["1"]["mise_max"] == M(100) and L["2"]["mise_max"] == M(60)
 # une mise ecrite a la main n'est jamais remplacee
 watchlist.ajouter(a, {"item_id": "4", "titre": "x carte", "total": 10, "encan": True, "fin": fin, "mise_max": 25})
 watchlist.mise_max(a, "4", 25)
@@ -43,7 +44,7 @@ for _ in range(50):
         break
     time.sleep(0.1)
 L = {x["item_id"]: x for x in watchlist.liste(a)["cartes"]}
-assert L["3"]["valeur"] and abs(L["3"]["mise_max"] - L["3"]["valeur"] * 0.7) < 0.02, L["3"]
+assert L["3"]["valeur"] and abs(L["3"]["mise_max"] - M(L["3"]["valeur"])) < 0.02, L["3"]
 # aucune vente sure : « Pas de comps », pas recherchee de nouveau avant 24 h
 a._valeur_en_cache = lambda x, calculer=True: None
 watchlist.ajouter(a, {"item_id": "6", "titre": "Premier Focus Auto Patch Shea Theodore /15", "total": 37, "encan": True, "fin": fin})
@@ -62,3 +63,17 @@ watchlist._chercher_en_fond = vrai_fond
 watchlist.ajouter(a, {"item_id": "5", "titre": "y carte", "total": 10, "encan": True, "fin": fin})
 assert watchlist.valeur_trouvee(a, "5", 80) and not watchlist.valeur_trouvee(a, "5", 999)
 print("WATCH VALEURS OK")
+# 6 nov 2026 : des ventes relues a l'instant (la fiche) remplacent une vieille valeur plus haute ; la mise max suit
+watchlist.ajouter(a, {"item_id": "7", "titre": "z carte", "total": 10, "encan": True, "fin": fin, "valeur": 260})
+assert {x["item_id"]: x for x in watchlist.liste(a)["cartes"]}["7"]["mise_max"] == M(260)
+assert watchlist.valeur_trouvee(a, "7", 150, remplacer=True)
+assert {x["item_id"]: x for x in watchlist.liste(a)["cartes"]}["7"]["mise_max"] == M(150)
+print("WATCH REMPLACER OK")
+# la valeur REVUE par le chasseur depuis l'ajout remplace l'ancienne ; une plus vieille que l'ajout, non
+watchlist.valeur_trouvee(a, "7", 260, remplacer=True)
+d = deals.lire(); d["suivis"] = [{"item_id": "7", "valeur": 150.0, "vu_le": "2000-01-01", "corrige_le": "2099-01-01T00:00:00+00:00"}]; deals._ecrire(d)
+assert {x["item_id"]: x for x in watchlist.liste(a)["cartes"]}["7"]["mise_max"] == M(150)
+watchlist.valeur_trouvee(a, "7", 260, remplacer=True)
+d = deals.lire(); d["suivis"] = [{"item_id": "7", "valeur": 150.0, "vu_le": "2000-01-01"}]; deals._ecrire(d)
+assert {x["item_id"]: x for x in watchlist.liste(a)["cartes"]}["7"]["mise_max"] == M(260)
+print("WATCH CHASSEUR OK")

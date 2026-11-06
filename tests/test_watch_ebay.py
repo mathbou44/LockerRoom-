@@ -75,10 +75,10 @@ g = watchlist.gixen(b, lire_article=lambda i: art[i])
 ids_g = [x["item_id"] for x in g["cartes"]]
 assert ids_g == ["502", "503", "501"], ids_g                         # par fin ; pas le prix fixe
 G = {x["item_id"]: x for x in g["cartes"]}
-assert G["501"]["devise"] == "USD" and G["501"]["mise_max"] == 50.0, G["501"]     # 70 $ CA / 1,38 = 50,7 -> 50 $ US
-assert G["502"]["mise_max"] == 65.0                                   # 70 - 5 de port
+assert G["501"]["devise"] == "USD" and G["501"]["mise_max"] == 47.0, G["501"]     # 6 nov : 65,27 $ CA (30 % net) / 1,38 = 47,3 -> 47 $ US
+assert G["502"]["mise_max"] == 60.0                                   # 65,27 - 5 de port -> 60
 assert G["503"]["trop_bas"] and "503" not in g["texte"]
-assert g["texte"].splitlines() == ["502 65.00", "501 50.00"], g["texte"]
+assert g["texte"].splitlines() == ["502 60.00", "501 47.00"], g["texte"]
 b._est_admin = lambda: False
 assert b.watch_gixen()["ok"] is False
 print("ok : mises rapides Gixen")

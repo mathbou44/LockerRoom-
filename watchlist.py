@@ -41,8 +41,12 @@ def _cx(api):
 
 
 # 29 oct 2026 (Mathieu : « laisser l'utilisateur choisir les valeurs, mais laisser celles-ci par defaut pour les alarmes »)
-DEFAUT = {"fin_min": FIN_MIN, "ratio_pct": int(RATIO * 100), "alerte_fin": True, "alerte_seuil": True, "ebay_auto": False,
+# 6 nov 2026 (Mathieu : « minimum 25-30 % de profit apres tous les frais ») : la mise max par defaut laisse « profit_pct »
+# de profit sur ce que tu paies, apres les frais eBay de la revente et le materiel d'envoi (deals.prix_max) ; avant : un %
+# de la valeur (70 %, environ 16 % de profit)
+DEFAUT = {"fin_min": FIN_MIN, "profit_pct": 30, "alerte_fin": True, "alerte_seuil": True, "ebay_auto": False,
           "garder_h": 12}
+CHOIX_PROFIT = (20, 25, 30, 40, 50)
 CHOIX_FIN = (5, 10, 15, 30, 60)
 # 31 oct 2026 (Mathieu : « qu'elles disparaissent apres un certain temps, par defaut ») : un encan termine reste visible
 # quelques heures (le temps de voir s'il est gagne), puis sort tout seul de la watchlist ; 0 = tout de suite
@@ -56,7 +60,8 @@ def reglages(api):
     if r.get("fin_min") in CHOIX_FIN:
         out["fin_min"] = int(r["fin_min"])
     try:
-        out["ratio_pct"] = max(30, min(100, int(r.get("ratio_pct", out["ratio_pct"]))))
+        if int(r.get("profit_pct", -1)) in CHOIX_PROFIT:
+            out["profit_pct"] = int(r["profit_pct"])
     except (TypeError, ValueError):
         pass
     for k in ("alerte_fin", "alerte_seuil", "ebay_auto"):
@@ -78,10 +83,11 @@ def regler(api, d):
                 cfg["fin_min"] = int(d["fin_min"])
         except (TypeError, ValueError):
             pass
-    ancien = cfg["ratio_pct"]
-    if d.get("ratio_pct") is not None:
+    ancien = cfg["profit_pct"]
+    if d.get("profit_pct") is not None:
         try:
-            cfg["ratio_pct"] = max(30, min(100, int(d["ratio_pct"])))
+            if int(d["profit_pct"]) in CHOIX_PROFIT:
+                cfg["profit_pct"] = int(d["profit_pct"])
         except (TypeError, ValueError):
             pass
     for k in ("alerte_fin", "alerte_seuil", "ebay_auto"):
@@ -93,15 +99,31 @@ def regler(api, d):
     except (TypeError, ValueError):
         pass
     api.reglages_sauver({"watch": cfg})
-    if cfg["ratio_pct"] != ancien:
-        c = _cx(api)
-        try:
-            c.execute("UPDATE watchlist SET mise_max=ROUND(valeur*?-COALESCE(port,0),2), notif_seuil=0 "
-                      "WHERE COALESCE(mise_perso,0)=0 AND valeur IS NOT NULL", (cfg["ratio_pct"] / 100,))
-            c.commit()
-        finally:
-            c.close()
+    if cfg["profit_pct"] != ancien:
+        _refaire_mises(api, cfg)
     return {"ok": True, **cfg}
+
+
+def mise_auto(cfg, valeur, port):
+    """La mise max par defaut : ce qui laisse cfg['profit_pct'] de profit net (deals.prix_max), moins le port."""
+    import deals
+    v = _f(valeur)
+    if not v:
+        return None
+    return round(max(0.0, deals.prix_max(v, cfg["profit_pct"] / 100) - (_f(port) or 0)), 2)
+
+
+def _refaire_mises(api, cfg=None, item_id=None):
+    """Les mises max par defaut (pas celles ecrites a la main) refaites avec le profit voulu ; leur alerte repart."""
+    cfg = cfg or reglages(api)
+    c = _cx(api)
+    try:
+        q = "SELECT item_id, valeur, port FROM watchlist WHERE COALESCE(mise_perso,0)=0 AND valeur IS NOT NULL"
+        rows = c.execute(q + (" AND item_id=?" if item_id else ""), ((str(item_id),) if item_id else ())).fetchall()
+        c.executemany("UPDATE watchlist SET mise_max=?, notif_seuil=0 WHERE item_id=?", [(mise_auto(cfg, v, p), i) for i, v, p in rows])
+        c.commit()
+    finally:
+        c.close()
 
 
 def mise_max(api, item_id, valeur):
@@ -113,11 +135,12 @@ def mise_max(api, item_id, valeur):
         if v and v > 0:
             c.execute("UPDATE watchlist SET mise_max=?, mise_perso=1, notif_seuil=0 WHERE item_id=?", (v, str(item_id)))
         else:
-            c.execute("UPDATE watchlist SET mise_max=ROUND(valeur*?-COALESCE(port,0),2), mise_perso=0, notif_seuil=0 "
-                      "WHERE item_id=? AND valeur IS NOT NULL", (cfg["ratio_pct"] / 100, str(item_id)))
+            c.execute("UPDATE watchlist SET mise_perso=0 WHERE item_id=?", (str(item_id),))
         c.commit()
     finally:
         c.close()
+    if not (v and v > 0):
+        _refaire_mises(api, cfg, item_id)
     return liste(api)
 
 
@@ -147,7 +170,7 @@ def ajouter(api, x):
     valeur, port = _f(x.get("valeur")), _f(x.get("port"))
     mm = _f(x.get("mise_max"))
     if mm is None and valeur:
-        mm = round(valeur * reglages(api)["ratio_pct"] / 100 - (port or 0), 2)
+        mm = mise_auto(reglages(api), valeur, port)
     c = _cx(api)
     try:
         if c.execute("SELECT COUNT(*) FROM watchlist").fetchone()[0] >= MAX and not c.execute(
@@ -306,7 +329,9 @@ def _du_chasseur(lst):
         y = par.get(str(x["item_id"]))
         # 5 nov 2026 (Mathieu : « pourquoi il n'y a aucune mise max ? il faut que ca refresh ») : une carte ajoutee sans
         # valeur prend celle que le chasseur lui a trouvee depuis
-        if y and not x.get("valeur") and y.get("valeur"):
+        if y and y.get("valeur") and (not x.get("valeur") or (abs(float(y["valeur"]) - float(x["valeur"])) >= 0.5
+                                                               and str(y.get("corrige_le") or y.get("vu_le") or "") > str(x.get("ajoute_le") or ""))):
+            # 6 nov 2026 : et la valeur que le chasseur a REVUE depuis l'ajout (ventes relues) remplace l'ancienne
             x["_valeur_neuve"] = float(y["valeur"])
         if y and str(y.get("vu_le") or "") > str(x.get("maj_le") or ""):
             x.update(total=y.get("total", x.get("total")), fin=y.get("fin") or x.get("fin"), maj_le=y.get("vu_le"))
@@ -334,11 +359,18 @@ def _valeurs_manquantes(api, lst):
     """Les cartes de la watchlist encore sans valeur : celle du chasseur, sinon les ventes deja connues de LA MEME carte
     (le cache des ventes, aucun credit) ; le reste se calcule en fond et arrive a la prochaine ouverture. La mise max
     suit (70 % de la valeur moins le port), sauf si tu l'as ecrite toi-meme."""
-    ratio = reglages(api)["ratio_pct"] / 100
+    cfg = reglages(api)
     manque, neuves = [], []
     hier = (datetime.now() - timedelta(hours=24)).isoformat()
+    remplacees = []
     for x in lst:
         v = x.pop("_valeur_neuve", None)
+        if x.get("valeur") and v and x.get("statut") != "fini":
+            x["valeur"] = round(v, 2)
+            if not x.get("mise_perso"):
+                x["mise_max"] = mise_auto(cfg, v, x.get("port"))
+            remplacees.append(x)
+            continue
         if x.get("valeur") or x.get("statut") == "fini":
             continue
         if v is None:
@@ -354,7 +386,7 @@ def _valeurs_manquantes(api, lst):
                 continue
         x["valeur"] = round(v, 2)
         if not x.get("mise_perso"):
-            x["mise_max"] = round(v * ratio - (x.get("port") or 0), 2)
+            x["mise_max"] = mise_auto(cfg, v, x.get("port"))
         neuves.append(x)
     if neuves:
         c = _cx(api)
@@ -365,28 +397,32 @@ def _valeurs_manquantes(api, lst):
             c.commit()
         finally:
             c.close()
+    for x in remplacees:
+        valeur_trouvee(api, x["item_id"], x["valeur"], remplacer=True)
     if manque:
         _chercher_en_fond(api, manque)
-    return len(neuves)
+    return len(neuves) + len(remplacees)
 
 
 _FOND = {"en_cours": False}
 FOND_MAX = 8                     # recherches de ventes par passe (budget de fond de SoldComps : jamais au-dela)
 
 
-def valeur_trouvee(api, item_id, valeur):
-    """Une valeur sure trouvee ailleurs (la fiche de l'annonce, une recherche de fond) : gardee si la carte n'en avait pas."""
+def valeur_trouvee(api, item_id, valeur, remplacer=False):
+    """Une valeur sure trouvee ailleurs (la fiche de l'annonce, une recherche de fond) : gardee si la carte n'en avait pas.
+    remplacer : les ventes viennent d'etre relues (la fiche) : elles remplacent l'ancienne valeur (la mise max suit, sauf
+    une mise ecrite a la main)."""
     v = _f(valeur)
     if not v:
         return False
-    ratio = reglages(api)["ratio_pct"] / 100
     c = _cx(api)
     try:
-        n = c.execute("UPDATE watchlist SET valeur=?, mise_max=CASE WHEN COALESCE(mise_perso,0)=1 THEN mise_max "
-                      "ELSE ROUND(?*?-COALESCE(port,0),2) END WHERE item_id=? AND valeur IS NULL", (v, v, ratio, str(item_id))).rowcount
+        n = c.execute("UPDATE watchlist SET valeur=? WHERE item_id=?" + ("" if remplacer else " AND valeur IS NULL"), (v, str(item_id))).rowcount
         c.commit()
     finally:
         c.close()
+    if n:
+        _refaire_mises(api, None, item_id)
     return bool(n)
 
 
@@ -452,7 +488,7 @@ def liste(api):
         fp, ff = 0.1325, 0.40
     for x in lst:
         if x.get("valeur") and x.get("total") is not None:
-            x["profit"] = round(x["valeur"] * (1 - fp) - ff - x["total"], 2)
+            x["profit"] = round(x["valeur"] * (1 - fp) - ff - 1.50 - x["total"], 2)       # 6 nov : + le materiel d'envoi
     for x in lst:
         x["sans_comps"] = bool(not x.get("valeur") and x.get("sans_comps_le"))
         x["encan"] = bool(x.get("encan"))

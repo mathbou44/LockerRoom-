@@ -18,7 +18,27 @@ import threading
 import time
 from datetime import datetime, timedelta, timezone
 
-RATIO_DEAL = 0.70
+RATIO_DEAL = 0.70                # (ancien seuil, garde pour les statistiques) ; le prix max d'un deal : prix_max()
+# 6 nov 2026 (Mathieu : « on devrait avoir minimum 25-30 % de profit apres tous les frais ») : le plus qu'on peut payer
+# (port compris) laisse PROFIT_MIN de profit sur ce qu'on paie, apres les frais eBay de la revente (13,25 % + 0,40 $) et
+# le materiel d'envoi (toploader, enveloppe : le port de la revente est paye par l'acheteur). Avant : 70 % de la valeur
+# (environ 16 % de profit).
+PROFIT_MIN = 0.30
+FRAIS_PCT = 0.1325
+FRAIS_FIXE = 0.40
+ENVOI_NET = 1.50
+
+
+def prix_max(valeur, profit_min=None):
+    """Le plus a payer (port compris) pour une carte qui se revend « valeur » et garder profit_min de profit."""
+    try:
+        v = float(valeur or 0)
+    except (TypeError, ValueError):
+        return 0.0
+    if v <= 0:
+        return 0.0
+    p = PROFIT_MIN if profit_min is None else float(profit_min)
+    return max(0.0, (v * (1 - FRAIS_PCT) - FRAIS_FIXE - ENVOI_NET) / (1 + p))
 RATIO_PRES = 0.85                # 27 oct 2026 : « a surveiller » = 70 a 85 % de la valeur (jamais affiche comme un deal)
 PAR_TOUR_ENCANS = 30             # 26 oct 2026 (Mathieu : « aucune enchere se terminant ? ») : 30 recherches d encans par heure
 VERSION = 4                      # 27 oct 2026 : valeur SURE (numeros speciaux, recence, coherence), vendeur, etat (v4)
@@ -152,12 +172,13 @@ def corriger(item_id, valeur, gain, total):
     d = lire()
     # 30 oct 2026 (Mathieu : « Stankoven : il y a des comps mais le dashboard ne le montre pas ») : l'encan d'un vendeur
     # suivi, garde sans valeur, prend la valeur que la fenetre vient de trouver (ventes reelles de la meme carte)
-    if valeur and any(str(g.get("item_id")) == iid and not g.get("valeur") for g in d.get("suivis") or []):
+    # 6 nov 2026 (« les mises sont hautes vis-a-vis la mediane des last sold ») : et celui qui en avait une plus vieille
+    if valeur and any(str(g.get("item_id")) == iid and g.get("valeur") != valeur for g in d.get("suivis") or []):
         with _verrou:
             d = lire()
             for g in d.get("suivis") or []:
                 if str(g.get("item_id")) == iid:
-                    g.update(valeur=valeur, mise_max=round(valeur * RATIO_DEAL - port_eff(g.get("port")), 2))
+                    g.update(valeur=valeur, mise_max=round(prix_max(valeur) - port_eff(g.get("port")), 2))
             _ecrire(d)
     l = d.get("deals") or []
     x = next((g for g in l if str(g.get("item_id")) == iid), None)
@@ -166,14 +187,14 @@ def corriger(item_id, valeur, gain, total):
     with _verrou:
         d = lire()
         l = d.get("deals") or []
-        retirer = not valeur or (gain is not None and gain <= 1) or (total and total > valeur * RATIO_DEAL and not x.get("encan"))
+        retirer = not valeur or (gain is not None and gain <= 1) or (total and total > prix_max(valeur) and not x.get("encan"))
         if not retirer:
             for g in l:
                 if str(g.get("item_id")) == iid:
                     g.update(valeur=valeur, ratio=round(total / valeur, 3) if total else g.get("ratio"),
                              corrige_le=datetime.now(timezone.utc).isoformat(timespec="seconds"))
                     if g.get("encan"):          # 27 oct 2026 (revue) : la mise max suit la nouvelle valeur
-                        g["mise_max"] = round(valeur * RATIO_DEAL - port_eff(g.get("port")), 2)
+                        g["mise_max"] = round(prix_max(valeur) - port_eff(g.get("port")), 2)
                         if g["mise_max"] <= (g.get("total") or 0) - (g.get("port") or 0):
                             retirer = True
         if retirer:
@@ -284,8 +305,8 @@ def maj_prix(item_id, total, port=None, mises=None, fin=None):
             if y.get("valeur"):
                 y["ratio"] = round(y["total"] / y["valeur"], 3)
                 if y.get("encan"):
-                    y["mise_max"] = round(y["valeur"] * RATIO_DEAL - port_eff(y.get("port")), 2)
-        if x and x.get("valeur") and x["total"] > x["valeur"] * RATIO_DEAL:
+                    y["mise_max"] = round(prix_max(y["valeur"]) - port_eff(y.get("port")), 2)
+        if x and x.get("valeur") and x["total"] > prix_max(x["valeur"]):
             d["deals"] = [y for y in d.get("deals") or [] if str(y.get("item_id")) != k]
             _noter_retires(d, [k])
             retire = True
@@ -293,7 +314,7 @@ def maj_prix(item_id, total, port=None, mises=None, fin=None):
     return {"deal": None if retire else x, "retire": retire}
 
 
-REVALIDE_V = 8                   # 2 : « checklist » ; 3 : Bowman U = football ; 4 : la F1 ; 5 : « Beckett » prenom (pas gradee) ; 6 : Signature Materials ; 7 : « Draft » ; 8 : « Beam Team » (4 nov)
+REVALIDE_V = 9                   # 9 (6 nov) : prix max a 30 % de profit net (avant : 70 % de la valeur) ; 2 : « checklist » ; 3 : Bowman U = football ; 4 : la F1 ; 5 : « Beckett » prenom (pas gradee) ; 6 : Signature Materials ; 7 : « Draft » ; 8 : « Beam Team » (4 nov)
 
 
 def _revalider_un(x):
@@ -308,11 +329,11 @@ def _revalider_un(x):
     if len(bons) == len(vs):
         return x
     m, _pv = valeur_sure(bons, x.get("titre") or "")
-    if not m or not x.get("total") or x["total"] > m * RATIO_DEAL:
+    if not m or not x.get("total") or x["total"] > prix_max(m):
         return None
     x.update(valeur=m, vendues=bons, ratio=round(x["total"] / m, 3))
     if x.get("encan"):
-        x["mise_max"] = round(m * RATIO_DEAL - port_eff(x.get("port")), 2)
+        x["mise_max"] = round(prix_max(m) - port_eff(x.get("port")), 2)
     return x
 
 
@@ -359,11 +380,11 @@ def _rejuger(x):
     if cartes_match.abimee(x.get("titre") or ""):
         return False
     m, _pv = valeur_sure([v for v in x.get("vendues") or [] if v.get("prix")], x.get("titre") or "")
-    if not m or not x.get("total") or x["total"] > m * RATIO_DEAL:
+    if not m or not x.get("total") or x["total"] > prix_max(m):
         return False
     x.update(valeur=m, ratio=round(x["total"] / m, 3), v=VERSION)
     if x.get("encan"):
-        x["mise_max"] = round(m * RATIO_DEAL - port_eff(x.get("port")), 2)
+        x["mise_max"] = round(prix_max(m) - port_eff(x.get("port")), 2)
     return True
 
 
@@ -931,7 +952,7 @@ def _prometteuse(a, t, pv, pa, maint, cib=None):
                 return False
         except ValueError:
             return False
-    if len(pv) == 1 and t <= pv[0]["prix"] * RATIO_DEAL:
+    if len(pv) == 1 and t <= prix_max(pv[0]["prix"]):
         return True
     if a.get("encan") and not pv and cib and _hit(cib) and t >= HIT_MIN:
         return True
@@ -1046,7 +1067,7 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
         deals.pop(a["item_id"], None)                 # revue : plus un deal (encan dont la mise a monte...)
         return
     med_a, source_a, n_a, ventes_a = va
-    if t > med_a * RATIO_DEAL:
+    if t > prix_max(med_a):
         st["_res"] = ("pres" if t <= med_a * RATIO_PRES and not a.get("encan") else "trop_cher", round(t / med_a, 3))
         st["trop_cher"] = st.get("trop_cher", 0) + 1
         deals.pop(a["item_id"], None)
@@ -1076,7 +1097,7 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
                            "mises": a.get("mises"), "sport": sport, "joueur": joueur, "q": _q_deal(r), "vedette": bool(r.get("vedette")), "flux": r.get("flux"),
                            "n": n_a, "valeur_source": source_a, "vendues": ventes_a or ventes_requete or [],
                            # 27 oct 2026 : encan - la mise maximale pour que ca reste un deal (70 % de la valeur, port compris)
-                           "port": a.get("port_cad"), "mise_max": round(med_a * RATIO_DEAL - port_eff(a.get("port_cad")), 2) if a.get("encan") else None,
+                           "port": a.get("port_cad"), "mise_max": round(prix_max(med_a) - port_eff(a.get("port_cad")), 2) if a.get("encan") else None,
                            "comps": comps or [], "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION,
                            "vendeur": a.get("vendeur"), "vendeur_score": a.get("vendeur_score"),
                            # 5 nov 2026 : une pepite (nom mal ecrit sur eBay) : la faute et le titre tel qu'ecrit
@@ -1155,7 +1176,7 @@ def _noter_suivi(st, a, bassin, maint):
         "item_id": str(a["item_id"]), "titre": a.get("titre"), "total": t, "photo": a.get("photo"), "url": a.get("url"),
         "encan": True, "fin": f, "mises": a.get("mises"), "port": a.get("port_cad"), "vendeur": a.get("vendeur"), "vendeur_score": a.get("vendeur_score"),
         "valeur": va[0] if va else None, "n": va[2] if va else 0, "vendues": va[3] if va else [],
-        "mise_max": round(va[0] * RATIO_DEAL - port_eff(a.get("port_cad")), 2) if va else None,
+        "mise_max": round(prix_max(va[0]) - port_eff(a.get("port_cad")), 2) if va else None,
         "sport": sport, "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION, "suivi": True, "recrue": rec}
     return "ok_recrue" if rec else "ok"
 
@@ -1261,7 +1282,7 @@ def _verifier_tard(st, deals, maint, bassin, verif, d=None):
         if s_ is not None and not s_.get("valeur"):
             va = valeur_annonce(a, (nv or []) + (bassin.candidats(cib) if bassin else []), [], cib=cib)
             if va:
-                s_.update(valeur=va[0], n=va[2], vendues=va[3], mise_max=round(va[0] * RATIO_DEAL - port_eff(a.get("port_cad")), 2))
+                s_.update(valeur=va[0], n=va[2], vendues=va[3], mise_max=round(prix_max(va[0]) - port_eff(a.get("port_cad")), 2))
         if dv:
             _noter_journal(st, a, r, cib, dv)
 
@@ -1350,7 +1371,7 @@ def _garder_lu(d2, garde_):
         if x.get("valeur") and (y.get("prix_lu_le") or y.get("corrige_le")):
             x["ratio"] = round((x.get("total") or 0) / x["valeur"], 3)
             if x.get("encan") and not x.get("mise_perso"):
-                x["mise_max"] = round(x["valeur"] * RATIO_DEAL - port_eff(x.get("port")), 2)
+                x["mise_max"] = round(prix_max(x["valeur"]) - port_eff(x.get("port")), 2)
     return garde_
 
 
@@ -1361,7 +1382,7 @@ def _fusion_suivi(vieux, x):
         y = dict(x)
         for k in ("valeur", "n", "vendues"):
             y[k] = vieux.get(k)
-        y["mise_max"] = round(vieux["valeur"] * RATIO_DEAL - port_eff(x.get("port")), 2)
+        y["mise_max"] = round(prix_max(vieux["valeur"]) - port_eff(x.get("port")), 2)
         return y
     return x
 
@@ -1898,7 +1919,7 @@ def reverifier(lire_article=None, max_=None):
             pass
         if not fini and t and t <= (x.get("valeur") or 0) * PHOTO_RATIO and photo_refusee(x["item_id"], x.get("photo") or a.get("photo"), x.get("titre"), x.get("q")):
             fini = True                                  # 2 nov 2026 : la photo montre une autre carte
-        if fini or not t or cartes_match.abimee(a.get("titre") or "") or t > (x.get("valeur") or 0) * RATIO_DEAL:
+        if fini or not t or cartes_match.abimee(a.get("titre") or "") or t > prix_max((x.get("valeur") or 0)):
             deals.pop(x["item_id"], None)
             st.setdefault("_retires", []).append(x["item_id"])
             st["reverif_retires"] = st.get("reverif_retires", 0) + 1
@@ -1906,7 +1927,7 @@ def reverifier(lire_article=None, max_=None):
         x.update(total=t, ratio=round(t / x["valeur"], 3), mises=a.get("mises", x.get("mises")), fin=a.get("fin") or x.get("fin"),
                  port=a.get("port_cad"), vu_le=maint.isoformat(timespec="seconds"))
         if x.get("encan"):
-            x["mise_max"] = round(x["valeur"] * RATIO_DEAL - port_eff(a.get("port_cad")), 2)
+            x["mise_max"] = round(prix_max(x["valeur"]) - port_eff(a.get("port_cad")), 2)
     garde_ = _sauver(d, deals, maint, st)
     return {"ok": True, "deals": len(garde_), "stats": st}
 
@@ -1981,7 +2002,7 @@ def fin_proche(lire_lot=None, maint=None):
         garde = []
         for x in d2.get("deals") or []:
             ok = maj(x)
-            if ok and x.get("valeur") and str(x.get("item_id")) in demandes and (x.get("total") or 0) > x["valeur"] * RATIO_DEAL:
+            if ok and x.get("valeur") and str(x.get("item_id")) in demandes and (x.get("total") or 0) > prix_max(x["valeur"]):
                 ok = False                                 # la mise a monte : plus un deal
             (garde if ok else sortis).append(x)
         d2["deals"] = garde
@@ -2057,7 +2078,7 @@ def prix_fixes(lire_lot=None, maint=None):
         x.update(total=t, port=a.get("port_cad", x.get("port")), vu_le=vu, prix_lu_le=vu)
         if x.get("valeur"):
             x["ratio"] = round(t / x["valeur"], 3)
-            if t > x["valeur"] * RATIO_DEAL:       # le prix a monte : plus un deal
+            if t > prix_max(x["valeur"]):       # le prix a monte : plus un deal
                 return False
         return True
 
@@ -2369,7 +2390,7 @@ def valoriser_suivis(rechercher=None, n_max=None):
             for g in d.get("suivis") or []:
                 va = trouves.get(str(g.get("item_id")))
                 if va and not g.get("valeur"):
-                    g.update(valeur=va[0], n=va[2], vendues=va[3], mise_max=round(va[0] * RATIO_DEAL - port_eff(g.get("port")), 2))
+                    g.update(valeur=va[0], n=va[2], vendues=va[3], mise_max=round(prix_max(va[0]) - port_eff(g.get("port")), 2))
             cov = d.get("prio_couverture")
             if cov and analyses:
                 deja = set(cov.get("ids_valo") or [])

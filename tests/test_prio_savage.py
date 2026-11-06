@@ -18,7 +18,7 @@ CARTES = [
  ("2025-26 Upper Deck Young Guns Outburst Otto Stenberg #711 St. Louis Blues", 12, 45, 25, "savage.cards"),
  ("2023-24 Upper Deck Canvas Auston Matthews #C70 Toronto Maple Leafs", 11, 40, 30, "savage.cards"),
  ("2022-23 Upper Deck Clear Cut Connor McDavid #CC-1 Edmonton Oilers", 18, 70, 28, "remi-card-trader"),
- ("2021-22 Upper Deck Ice Nathan MacKinnon #20 Colorado Avalanche", 4, 6, 40, "savage.cards"),             # encan a 4 $
+ ("2021-22 Upper Deck Ice Nathan MacKinnon #20 Colorado Avalanche", 4, 12, 40, "savage.cards"),            # encan a 4 $ (vaut 12 $)
  ("2023-24 Upper Deck Canvas Cale Makar #C120 Colorado Avalanche", 12, 45, 22, "dcsports87"),            # pas prioritaire
  ("2022-23 Upper Deck Ice Jack Hughes #10 New Jersey Devils", 15, 60, None, "savage.cards"),             # prix fixe : jamais
 ]

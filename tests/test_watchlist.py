@@ -27,7 +27,7 @@ a.watch_ajouter({"item_id": "333", "titre": "Lemieux OPC RC BGS 8.5", "valeur": 
 a.watch_ajouter({"item_id": "444", "titre": "x", "valeur": 100, "total": 50})
 assert sorted(a.watch_retirer("444")["ids"]) == ["111", "222", "333"]
 L = {x["item_id"]: x for x in a.watch_liste()["cartes"]}
-assert L["111"]["mise_max"] == 960.0 and L["111"]["etat"] == "ok" and 55 <= L["111"]["reste_min"] <= 60
+assert L["111"]["mise_max"] == watchlist.mise_auto({"profit_pct": 30}, 1400, 20) and L["111"]["etat"] == "ok" and 55 <= L["111"]["reste_min"] <= 60
 assert L["333"]["etat"] == "fini"
 assert [x["item_id"] for x in a.watch_liste()["cartes"]][-1] == "333"          # les finies a la fin
 
@@ -60,14 +60,14 @@ with mock.patch.object(alarmes, "_heure_locale", lambda m=None: 23):
 assert a_maj >= 1 and len(pushs) > n0, (a_maj, pushs[n0:])
 
 # 29 oct 2026 : les reglages de l'utilisateur (defaut 15 min / 70 %), et une mise max a la main pour une carte
-assert a.watch_liste()["reglages"] == {"fin_min": 15, "ratio_pct": 70, "alerte_fin": True, "alerte_seuil": True, "ebay_auto": False, "garder_h": 12}
+assert a.watch_liste()["reglages"] == {"fin_min": 15, "profit_pct": 30, "alerte_fin": True, "alerte_seuil": True, "ebay_auto": False, "garder_h": 12}
 a.watch_ajouter({"item_id": "555", "titre": "Crosby YG", "valeur": 1000, "port": 0, "total": 300, "encan": True, "fin": iso(25)})
 a.watch_ajouter({"item_id": "666", "titre": "Ovechkin YG", "valeur": 1000, "port": 0, "total": 300, "encan": True, "fin": iso(25)})
 a.watch_mise_max("666", 450)
-r = a.watch_regler({"ratio_pct": 60, "fin_min": 30, "alerte_seuil": False})
-assert r["ratio_pct"] == 60 and r["fin_min"] == 30 and r["alerte_seuil"] is False
+r = a.watch_regler({"profit_pct": 40, "fin_min": 30, "alerte_seuil": False})
+assert r["profit_pct"] == 40 and r["fin_min"] == 30 and r["alerte_seuil"] is False
 L = {x["item_id"]: x for x in a.watch_liste()["cartes"]}
-assert L["555"]["mise_max"] == 600.0 and L["666"]["mise_max"] == 450.0, (L["555"]["mise_max"], L["666"]["mise_max"])
+assert L["555"]["mise_max"] == watchlist.mise_auto({"profit_pct": 40}, 1000, 0) and L["666"]["mise_max"] == 450.0, (L["555"]["mise_max"], L["666"]["mise_max"])
 assert a.watch_regler({"fin_min": 7})["fin_min"] == 30                         # seulement les choix offerts
 n0 = len(pushs)
 watchlist.verifier(a, proches=True, lire_article=lambda i: {"prix_cad": 300.0, "port_cad": 0.0, "fin": iso(25)}, maint=maint)
@@ -77,5 +77,5 @@ a.watch_ajouter({"item_id": "777", "titre": "McDavid YG", "valeur": 1000, "total
 n0 = len(pushs)
 watchlist.verifier(a, proches=True, lire_article=lambda i: {"prix_cad": 300.0, "port_cad": 0.0, "fin": iso(20)}, maint=maint)
 assert not any("777" in str(x) or "McDavid" in str(x) for x in pushs[n0:]), pushs[n0:]
-assert {x["item_id"]: x for x in a.watch_mise_max("666", None)["cartes"]}["666"]["mise_max"] == 600.0
+assert {x["item_id"]: x for x in a.watch_mise_max("666", None)["cartes"]}["666"]["mise_max"] == watchlist.mise_auto({"profit_pct": 40}, 1000, 0)
 print("WATCHLIST OK")
