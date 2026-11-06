@@ -373,7 +373,16 @@ final class CameraHDVC: UIViewController, AVCapturePhotoCaptureDelegate {
         }
         file.async { [weak self] in
             self?.session.startRunning()
-            DispatchQueue.main.async { self?.view.setNeedsLayout() }
+            DispatchQueue.main.async {
+                // 7 nov 2026 (« ca marche tres mal ») : a la distance de mise au point, la carte ne remplit qu'une petite
+                // partie de l'image en 1x ; le zoom de depart la fait remplir le cadre (2x au plus), sans s'approcher
+                if let s = self, s.mode == "carte" {
+                    let z0 = CGFloat(min(2.0, max(1.0, 0.62 / max(0.05, s.choix.fraction))))
+                    let proche = s.zooms.min { abs($0 - z0) < abs($1 - z0) } ?? 1
+                    s.appliquerZoom(proche)
+                }
+                self?.view.setNeedsLayout()
+            }
         }
     }
 
@@ -510,9 +519,10 @@ final class CameraHDVC: UIViewController, AVCapturePhotoCaptureDelegate {
         var image = cg
         var quad: [[Int]] = []
         if mode == "carte" && cadre.width > 0 {
-            // la marge : 12 % de chaque cote, moins si le cadre est pres du bord du capteur
-            let mx = max(0, min(0.12, cadre.minX / cadre.width, (1 - cadre.maxX) / cadre.width))
-            let my = max(0, min(0.12, cadre.minY / cadre.height, (1 - cadre.maxY) / cadre.height))
+            // la marge : 25 % de chaque cote (7 nov 2026 : une carte plus grande que le cadre n'est jamais coupee ; l'app
+            // recadre ensuite sur ses vrais bords), moins si le cadre est pres du bord du capteur
+            let mx = max(0, min(0.25, cadre.minX / cadre.width, (1 - cadre.maxX) / cadre.width))
+            let my = max(0, min(0.25, cadre.minY / cadre.height, (1 - cadre.maxY) / cadre.height))
             let n = cadre.insetBy(dx: -cadre.width * mx, dy: -cadre.height * my)
             // le capteur en paysage (le cas normal) ; sinon l'image est deja tournee d'un quart de tour
             let rp: CGRect = W >= H

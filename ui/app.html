@@ -7525,7 +7525,11 @@ async function scanStudio(ph, coinsIA){
   const coins = (coinsIA && coinsIA.length === 4) ? coinsIA : SCAN.quadPhoto;
   if (!coins) return null;
   try {
-    const st = await recadrageNet(SCAN.derniereHD || ph, coins);
+    // 7 nov 2026 : le cadre de la camera d'abord ; si la carte n'y est pas exactement (plus grande, decalee), ses bords
+    // sont cherches dans toute la photo
+    const src_ = SCAN.derniereHD || ph;
+    const st = await recadrageNet(src_, coins).catch(async () => {
+      const d = await photoDroite(src_, {maxCote: 6000}); if (!d) throw new Error('pas de carte'); return {photo: d.src}; });
     if (!SCAN.actif) return null;
     SCAN.studio = st.photo;
     const im = $('#scan-fige'); if (im) { im.classList.add('studio'); im.src = st.photo; }
