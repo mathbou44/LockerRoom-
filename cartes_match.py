@@ -80,6 +80,9 @@ _RE_GRADE = re.compile(r"\b(psa|bgs|sgc|cgc|tag|ksa|hga|beckett|bccg|csg|gma|isa
 _RE_SERIE = re.compile(r"(?:#\s*)?(?:\b\d{1,4}\s*)?/\s*0*(\d{1,4})\b|\b(\d{1,4})\s+of\s+(\d{1,4})\b|\b1\s*/\s*1\b|\bone of one\b")
 _RE_NUM = re.compile(r"(?:#|\bno\.?\s*|\bcard\s*)\s*([a-z]{0,4}-?\d{1,4}[a-z]?)\b")
 _RE_AUTO = re.compile(r"(?<!non )(?<!non-)(?<!no )(?<!not )\bauto\b|\bon card\b|\bsticker auto\b")
+# 7 nov 2026 (Mathieu : « attention, les inscribed valent beaucoup plus », une Nazar Future Watch Auto « Inscribed » comparee
+# aux Future Watch Auto ordinaires) : une inscription (date, surnom, statistique ecrite par le joueur) fait une autre carte
+_RE_INSCR = re.compile(r"\binscri(bed|ption|ptions|be)\b|\binscr\b|\binsc\b")
 _RE_PATCH = re.compile(r"\bpatch\b|\bpatch-?taculars?\b|(?<!new )\bjerseys?\b|\brelics?\b|\bgame (used|worn)\b|\bswatch(es)?\b|\brpa\b|\bmemorabilia\b|\bgu\b|\bfabrics?\b|\bmaterials?\b|\bstick\b")
 _RE_RC = re.compile(r"\brc\b|\byoung guns\b|\brated rc\b|\b1st bowman\b|\bbowman 1st\b|\bfuture watch\b|\bcanvas rc\b")
 VIDES = set("the a an of and with for in on card cards hockey nhl nba nfl mlb football basketball baseball new mint nm nmmt "
@@ -188,6 +191,7 @@ def decoder(texte):
     exclu = any(rx.search(t) for rx in _EXCLUS_RE)
     return {"texte": t, "annee": _annee(t), "num": num, "serie": serie, "grade": grade,
             "auto": bool(_RE_AUTO.search(t)), "patch": bool(_RE_PATCH.search(t)), "rc": bool(_RE_RC.search(t)),
+            "inscr": bool(_RE_INSCR.search(t)),
             "paralleles": par, "exclu": exclu}
 
 
@@ -202,6 +206,7 @@ def _mots_requis(d):
         if p not in PRODUITS:
             t = re.sub(r"(?<![a-z0-9])" + re.escape(p) + r"(?![a-z0-9])", " ", t)
     t = re.sub(r"\b(auto|patch|jersey|relic|rc|raw|ungraded|graded|numbered|serial|base|card|parallel)\b", " ", t)
+    t = _RE_INSCR.sub(" ", t)                      # 7 nov 2026 : l'inscription se compare a part (inscribed = inscription)
     mots = [m for m in t.split() if m not in VIDES and len(m) > 1]
     return mots
 
@@ -234,6 +239,10 @@ def _decoder_memo(titre):
             _DEC.clear()
         a = _DEC[titre] = decoder(titre)
     return a
+
+
+# des produits vendus DANS un autre : leur nom peut etre dans le titre ou pas (Exquisite Collection est dans The Cup)
+IMPLIQUES = {"exquisite": {"cup"}}
 
 
 def raisons_refus(c, titre, appris=None):
@@ -280,6 +289,8 @@ def raisons_refus(c, titre, appris=None):
         r.append("autographe" if a["auto"] else "sans autographe")
     if c["patch"] != a["patch"]:
         r.append("patch / relique" if a["patch"] else "sans patch")
+    if c.get("inscr", False) != a.get("inscr", False):
+        r.append("inscription" if a.get("inscr") else "sans inscription")
     # numerotation
     if c["serie"] is not None:
         if a["serie"] != c["serie"]:
@@ -308,6 +319,10 @@ def raisons_refus(c, titre, appris=None):
         ia, ma = identite(titre, " ".join([c.get("joueur") or ""] + list(c.get("autres_joueurs") or [])))
         autres_j = {w for n in _noms_dans(t) for w in n.split()}
         ia -= autres_j
+        # 7 nov 2026 : « The Cup Exquisite Endorsements » = « Exquisite Endorsements » (Exquisite est dans The Cup)
+        for mot, parents in IMPLIQUES.items():
+            if mot in ia and mot in c["ident"]:
+                ia = ia - parents
         en_plus = ia - c["ident"]
         manque_i = c["ident"] - ia
         # 4 nov 2026 (Mathieu : une Sennecke « Rookie Draft Outburst » comparee aux Young Guns Outburst) : certains mots
@@ -348,6 +363,8 @@ def resume(c):
         p.append("Auto")
     if c["patch"]:
         p.append("Patch")
+    if c.get("inscr"):
+        p.append("Inscription")
     if c["grade"]:
         p.append((c["grade"]["cie"].upper() + " " + (c["grade"]["note"] or "")).strip())
     else:
@@ -367,8 +384,12 @@ def requete_ebay(c):
     m += sorted(p for p in c["paralleles"] if p not in m)
     if c["auto"]:
         m.append("auto")
-    if c["patch"]:
+    # 7 nov 2026 (« Endorsements Relics ... Auto 30/50 » : la recherche ajoutait « patch », absent de la moitie des ventes) :
+    # « patch » seulement si la carte le dit ; « relics », « jersey », « materials » restent verifies par le tri
+    if c["patch"] and _a_mot(c["texte"], "patch"):
         m.append("patch")
+    if c.get("inscr"):
+        m.append("inscribed")
     if c["grade"]:
         m.append((c["grade"]["cie"] + " " + (c["grade"]["note"] or "")).strip())
     return " ".join(m)[:100]
@@ -791,6 +812,7 @@ def identite(titre, joueur=""):
     # jamais dans les titres des ventes : ils ne servent pas a dire quelle carte c'est (sinon aucune vente n'est gardee)
     t = re.sub(r"(?<![a-z0-9])[a-z]{2,4}-[a-z]{1,3}(?![a-z0-9])", " ", t)
     t = re.sub(r"\bseries\s*(one|two|1|2|i{1,2})?\b", " ", t)        # 30 oct 2026 : « Series 2 » = le produit, pas une autre carte
+    t = _RE_INSCR.sub(" ", t)                      # 7 nov 2026 : l'inscription se compare a part (decoder « inscr »)
     for x in EQUIPES_COULEUR:
         t = t.replace(x, " ")
     if _EQUIPES_MOTS["t"] is None:

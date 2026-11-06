@@ -5940,9 +5940,8 @@ class Api:
         for g in deals.lire_vite().get("deals") or []:
             if not deals.valide(g):
                 continue
-            if g.get("encan") and not (maint_utc < str(g.get("fin") or "").replace("Z", "") <
-                                       (datetime.utcnow() + timedelta(hours=deals.ENCAN_H)).isoformat()):   # fini, ou trop loin
-                continue
+            if g.get("encan") and not (maint_utc < str(g.get("fin") or "").replace("Z", "") and deals.encan_admis(g)):
+                continue                       # fini, trop loin (7 nov : 24 h, 5 jours chez Savage, Remi, CF31) ou sans mise
             out.setdefault(g["item_id"], {**g, "source": "marche"})
         lst = []
         chez = self._chez_ramassage()
@@ -6027,7 +6026,7 @@ class Api:
         tout = [x for x in self._deals_fusion() if _dl.encore_ouvert(x) and (x.get("source") != "marche" or str(x.get("vu_le") or "") >= lim_l)]
         # 6 nov 2026 (Mathieu : « mettre a jour les max bid au plus vite ») : la mise max de chaque deal refaite a la lecture
         # avec la regle d'aujourd'hui (30 % de profit net) ; un prix fixe qui ne laisse plus ce profit n'est plus un deal
-        tout = [_dl.a_jour(x) for x in tout]
+        tout = [_dl.a_jour(x) for x in tout if _dl.encan_admis(x)]        # 7 nov : 24 h et une mise (sauf Savage, Remi, CF31)
         tout = [x for x in tout if x.get("encan") or not (x.get("valeur") and x.get("total") and x["total"] > _dl.prix_max(x["valeur"]))]
         # 2 nov 2026 (Mathieu : « quand le prix suggere est depasse par le bid actuel, ce n'est plus un deal, il ne devrait plus
         # etre la ») : la mise du moment (hors port) au-dessus de la mise max -> hors des deals, tout de suite a la lecture
@@ -6130,7 +6129,7 @@ class Api:
         pres = []
         ret_p = dd.get("retires") or {}
         for x in dd.get("pres") or []:
-            if str(x.get("item_id")) in _d._bannis() or str(x.get("item_id")) in ret_p or not _d.encore_ouvert(x):
+            if str(x.get("item_id")) in _d._bannis() or str(x.get("item_id")) in ret_p or not _d.encore_ouvert(x) or not _d.encan_admis(x):
                 continue
             x = _dl.a_jour(x)
             y = dict(x, source="marche", gain=round(_net_rev(x.get("valeur") or 0) - _paye(x.get("total") or 0), 2),
@@ -6145,7 +6144,7 @@ class Api:
         fin_calcul, plus_tard = time.time() + self.VAL_BUDGET_S, []
         for x in dd.get("suivis") or []:
             if str(x.get("item_id")) in ids_d or str(x.get("item_id")) in ret_p or str(x.get("item_id")) in _d._bannis() \
-                    or not _d.encore_ouvert(x) or str(x.get("vu_le") or "") < lim_s:
+                    or not _d.encore_ouvert(x) or not _d.encan_admis(x) or str(x.get("vu_le") or "") < lim_s:
                 continue
             if not x.get("valeur"):
                 vc = self._valeur_en_cache(x, calculer=time.time() < fin_calcul)

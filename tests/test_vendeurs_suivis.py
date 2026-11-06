@@ -54,7 +54,7 @@ def rech(q, **k):
         if bool(k.get("encheres")) != (h is not None):
             continue
         a = {"item_id": f"s{i}", "titre": t, "prix_cad": float(m), "port_cad": 5.0, "url": f"https://www.ebay.com/itm/s{i}",
-             "vendeur_pct": "100", "vendeur_score": 50000}
+             "vendeur": "remi-card-trader", "vendeur_pct": "100", "vendeur_score": 50000}     # 7 nov : 5 jours chez Remi
         if h is not None:
             a.update(encan=True, fin=fin(h), mises=3)
         l.append(a)
@@ -88,6 +88,7 @@ class TestVendeursSuivis(unittest.TestCase):
         avant = deals.FLUX, deals.FLUX_HITS, os.environ.get("LR_DEALS_VERIF_JOUR")
         deals.FLUX, deals.FLUX_HITS = [], []
         os.environ["LR_DEALS_VERIF_JOUR"] = "0"
+        os.environ["LR_DEALS_VERIF_PRIO"] = "0"          # 7 nov : les cartes sont chez Remi (reserve des gros vendeurs) : a zero aussi
         d0 = deals.lire()
         d0["deals"], d0["suivis"] = [], []
         deals._ecrire(d0)
@@ -96,6 +97,7 @@ class TestVendeursSuivis(unittest.TestCase):
         finally:
             deals.FLUX, deals.FLUX_HITS = avant[0], avant[1]
             os.environ["LR_DEALS_VERIF_JOUR"] = avant[2] or "400"
+            os.environ.pop("LR_DEALS_VERIF_PRIO", None)
         d = deals.lire()
         su = {x["titre"]: x for x in d.get("suivis") or []}
         self.assertIn("1979-80 O-Pee-Chee Wayne Gretzky #18 Rookie PSA 7", su)

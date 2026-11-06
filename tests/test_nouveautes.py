@@ -117,7 +117,7 @@ class Deals(unittest.TestCase):
 
         def rech(q, categorie=None, limite=50, fond=True, encheres=False, **k):
             return [{"item_id": f"{i}{int(encheres)}", "titre": f"2025-26 Upper Deck {q} #201 RC", "prix_cad": 9.0 if i == 0 else 25.0 + i,
-                     "port_cad": 1, "url": "u", "photo": None, "encan": encheres,
+                     "port_cad": 1, "url": "u", "photo": None, "encan": encheres, "mises": 1,
                      "fin": (maint + timedelta(hours=2)).isoformat().replace("+00:00", "Z") if encheres else None} for i in range(6)]
         import vendues
         vrai, vrai_c = vendues.rechercher, vendues.en_cache
@@ -148,7 +148,7 @@ class Deals(unittest.TestCase):
 
         def rech(q, categorie=None, limite=50, fond=True, encheres=False, **k):
             if encheres:
-                return [{"item_id": "e1", "titre": T, "prix_cad": 10.0, "port_cad": 2, "encan": True, "url": "u",
+                return [{"item_id": "e1", "titre": T, "prix_cad": 10.0, "port_cad": 2, "encan": True, "mises": 1, "url": "u",
                          "fin": (maint + timedelta(hours=1)).isoformat().replace("+00:00", "Z")}]
             return [{"item_id": "f1", "titre": T, "prix_cad": 30.0, "port_cad": 2, "url": "u"},          # 32 > 70 % de 40 : non
                     {"item_id": "f2", "titre": T, "prix_cad": 9.0, "port_cad": 2, "url": "u"},          # deal (bassin)
@@ -175,9 +175,9 @@ class Deals(unittest.TestCase):
         self.assertTrue({"f2", "f3", "e1"} <= ids, ids)
         self.assertFalse({"f1", "f4"} & ids)
         self.assertEqual(len(appels), 1)                         # une seule verification (Demidov Canvas)
-        self.assertEqual(r["stats"].get("requetes_flux"), 2)          # 1 prix fixe + 1 page d'encans (derniere page)
+        self.assertEqual(r["stats"].get("requetes_flux"), 4)          # 1 prix fixe + 1 page d'encans (derniere page) + le balayage (7 nov)
         import deals as D
-        self.assertEqual(D.ENCAN_H, 48)                               # 26 oct 2026 : encans de 48 h et moins
+        self.assertEqual(D.ENCAN_H, 24)                               # 7 nov 2026 : 24 h et moins (Savage, Remi, CF31 : 5 jours)
 
     def test_hits_autres_produits(self):
         """27 oct 2026 (Mathieu : « pourquoi c'est juste des Young Guns ? ») : un encan de hit d'un autre produit, sans
@@ -192,15 +192,15 @@ class Deals(unittest.TestCase):
         def rech(q, categorie=None, limite=50, fond=True, encheres=False, **k):
             if not encheres:
                 return []
-            return [{"item_id": "s1", "titre": T, "prix_cad": 50.0, "port_cad": 23.03, "encan": True, "url": "u", "fin": fin(2)},
+            return [{"item_id": "s1", "titre": T, "prix_cad": 50.0, "port_cad": 23.03, "encan": True, "mises": 1, "url": "u", "fin": fin(2)},
                     {"item_id": "s2", "titre": T.replace("34/99", "12/99"), "prix_cad": 30.0, "port_cad": 2, "encan": True,
                      "url": "u", "fin": fin(30)},                                   # finit dans 30 h : pas de verification
                     {"item_id": "s3", "titre": "2023-24 Upper Deck Tim Stutzle #120", "prix_cad": 5.0, "port_cad": 2,
-                     "encan": True, "url": "u", "fin": fin(1)},                     # base a 7 $ : pas un hit, rien
+                     "encan": True, "mises": 1, "url": "u", "fin": fin(1)},                     # base a 7 $ : pas un hit, rien
                     {"item_id": "s4", "titre": "MATT SAVOIE 2022-23 UD SP GAME USED ROOKIE DRAFT DAY MARKS PATCH AUTO /35",
-                     "prix_cad": 38.0, "port_cad": 6.0, "encan": True, "url": "u", "fin": fin(25)},   # verifie en fin de tour
+                     "prix_cad": 38.0, "port_cad": 6.0, "encan": True, "mises": 1, "url": "u", "fin": fin(20)},   # verifie en fin de tour
                     {"item_id": "s5", "titre": "2022-23 SP Game Used Draft Day Marks Wyatt Johnston Patch Auto /35",
-                     "prix_cad": 40.0, "port_cad": 6.0, "encan": True, "url": "u", "fin": fin(40)}]    # 40 h : trop loin
+                     "prix_cad": 40.0, "port_cad": 6.0, "encan": True, "mises": 1, "url": "u", "fin": fin(40)}]    # 40 h : trop loin
         appels = []
 
         def rech_v(q, fond=True, **k):
@@ -234,7 +234,7 @@ class Deals(unittest.TestCase):
         self.assertNotIn("s5", ids)
         n = min(deals.HITS_PAR_TOUR, 7)
         self.assertEqual((int(d0 or 0) + deals.HITS_PAR_TOUR) % 7, d1)   # HITS_PAR_TOUR flux de hits par tour, en rotation
-        self.assertEqual(r["stats"].get("requetes_flux"), 2 * n)   # n flux x (prix fixe + 1 page d'encans)
+        self.assertEqual(r["stats"].get("requetes_flux"), 2 * n + 2)   # n flux x (prix fixe + 1 page d'encans) + le balayage (7 nov)
 
     def test_autres_joueurs(self):
         """27 oct 2026 : la meme carte vendue par d'autres joueurs (repere), sans le meme joueur ni une autre carte."""

@@ -103,7 +103,12 @@ ENCAN_SUIVI_H = 120              # 29 oct 2026 (Mathieu : « deux jours avant le
                                  # DC Sports… plusieurs cartes sont supposees sortir dans les deals ») : leurs encans de 5 jours et moins
 PAGES_FIXE_SUIVIS = 3
 PAGES_SUIVIS = 10                # et jusqu'a 10 pages de 200 encans par groupe de vendeurs (2 000)
-ENCAN_H = 48                     # 26 oct 2026 (Mathieu : « tous les deals d'encheres de 48 h et moins ») ; avant : 6 h
+# 7 nov 2026 (Mathieu : « pour les deals on peut reduire a 24 h pour les autres places que Remi, CF31 et Savage ; aussi il
+# faut au moins que la carte ait une enchere pour etre consideree a 24 h et moins ») : les encans de ces 3 vendeurs : 5 jours
+# (ENCAN_SUIVI_H), sans condition ; tous les autres (Slab Sharks compris) : 24 h et moins, avec au moins une mise
+ENCAN_H = 24                     # avant : 48 h (26 oct) ; 6 h au tout debut
+VENDEURS_LONGS = ("savage.cards", "remi-card-trader", "cf31_sports_cards")
+MISES_MIN = 1
 ENCAN_VERIF_H = 6                # une recherche de ventes ciblee pour un encan : seulement s'il finit dans 6 h (la mise monte)
 PAGES_ENCANS = 3                 # flux d'encans : jusqu'a 3 pages de 200 (les plus proches de la fin d'abord)
 PAR_TOUR = 20                    # requetes prix fixe par tour (les plus recentes d'abord) : la liste entiere en 6 h
@@ -371,7 +376,7 @@ def maj_prix(item_id, total, port=None, mises=None, fin=None):
     return {"deal": None if retire else x, "retire": retire}
 
 
-REVALIDE_V = 13                  # 13 (7 nov) : port 10 $ / 20 $ ; 12 (7 nov) : frais reels (14,9 % de prix + port) ; 11 (7 nov) : 15 $ de profit au moins, taxes de l'achat ; 10 (6 nov) : mises max refaites sur TOUS les deals gardes ; 9 (6 nov) : prix max a 30 % de profit net (avant : 70 % de la valeur) ; 2 : « checklist » ; 3 : Bowman U = football ; 4 : la F1 ; 5 : « Beckett » prenom (pas gradee) ; 6 : Signature Materials ; 7 : « Draft » ; 8 : « Beam Team » (4 nov)
+REVALIDE_V = 14                  # 14 (7 nov) : inscriptions a part ; 13 (7 nov) : port 10 $ / 20 $ ; 12 (7 nov) : frais reels (14,9 % de prix + port) ; 11 (7 nov) : 15 $ de profit au moins, taxes de l'achat ; 10 (6 nov) : mises max refaites sur TOUS les deals gardes ; 9 (6 nov) : prix max a 30 % de profit net (avant : 70 % de la valeur) ; 2 : « checklist » ; 3 : Bowman U = football ; 4 : la F1 ; 5 : « Beckett » prenom (pas gradee) ; 6 : Signature Materials ; 7 : « Draft » ; 8 : « Beam Team » (4 nov)
 
 
 def _revalider_un(x):
@@ -619,7 +624,9 @@ def memes_ventes(cib, ventes):
 MIN_VENTES_SURES = 3
 JOURS_RECENTS = 60
 JOURS_MAX = 90                   # 27 oct 2026 : comme le dit la page Support (« les 90 derniers jours »)
-JOURS_MAX_HITS = 180
+JOURS_MAX_HITS = 365              # 7 nov 2026 (une Reinhart Exquisite Endorsements Auto /50 a 19 $ chez CF31, sans valeur : une
+                                 # seule vente en 180 jours) : un hit (auto, patch, /99 et moins) se vend rarement ; ses ventes
+                                 # d'un an comptent (la valeur reste la plus basse : mediane, puis les 3 dernieres) ; avant : 180
 
 
 def _jours(v, maint=None):
@@ -1100,7 +1107,7 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
             fin_dt = datetime.fromisoformat(str(fin).replace("Z", "+00:00"))
         except ValueError:
             return
-        if fin_dt - maint > timedelta(hours=ENCAN_SUIVI_H if r.get("suivi") else ENCAN_H) or fin_dt < maint:   # 48 h (vendeurs suivis : 5 jours)
+        if fin_dt < maint or not encan_admis(a, maint):      # 7 nov : Savage, Remi, CF31 : 5 jours ; les autres : 24 h et une mise
             return
     cib = cartes_match.cible_titre(a.get("titre") or "")
     if cib.get("exclu") or not cib.get("joueur"):
@@ -1259,8 +1266,8 @@ def _noter_suivi(st, a, bassin, maint):
         fd = datetime.fromisoformat(str(f).replace("Z", "+00:00"))
     except ValueError:
         return "fin"
-    if fd < maint or fd - maint > timedelta(hours=ENCAN_SUIVI_H):
-        return "fin"
+    if fd < maint or fd - maint > timedelta(hours=ENCAN_SUIVI_H) or not encan_admis(a, maint):
+        return "fin"                                 # 7 nov : les autres vendeurs : 24 h et au moins une mise
     t = _total(a)
     an = cib.get("annee")
     if not (_hit(cib) or cib.get("grade") or (an and int(an) < 1995) or t >= 20):
@@ -1323,6 +1330,34 @@ def _ranger(d, deals, maint):
         garde_.append(x)
     garde_.sort(key=lambda x: x["ratio"])
     return garde_[:800]
+
+
+def vendeur_long(x):
+    """Savage, Remi, CF31 : leurs encans comptent 5 jours avant la fin, meme sans mise."""
+    return str((x or {}).get("vendeur") or "").lower() in VENDEURS_LONGS
+
+
+def encan_admis(x, maint=None):
+    """7 nov 2026 : un encan peut-il etre un deal ? Savage, Remi, CF31 : fin dans 5 jours et moins ; les autres : fin dans
+    24 h et moins ET au moins une mise (MISES_MIN). Un prix fixe : toujours."""
+    if not (x or {}).get("encan"):
+        return True
+    maint = maint or datetime.now(timezone.utc)
+    try:
+        f = datetime.fromisoformat(str(x.get("fin")).replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if f.tzinfo is None:
+        f = f.replace(tzinfo=timezone.utc)
+    if f < maint:
+        return False
+    if vendeur_long(x):
+        return f - maint <= timedelta(hours=ENCAN_SUIVI_H)
+    try:
+        mises = int(x.get("mises") or 0)
+    except (TypeError, ValueError):
+        mises = 0
+    return f - maint <= timedelta(hours=ENCAN_H) and mises >= MISES_MIN
 
 
 def encore_ouvert(x, maint=None):
@@ -1390,7 +1425,22 @@ def _noter_couverture(st, maint):
         p[1] += 1
         p[0] += 1 if ok else 0
     st["_couverture"] = {"le": maint.isoformat(timespec="seconds"), "total": len(cov), "faites": sum(1 for v in cov.values() if v),
-                         "par_vendeur": par}
+                         "par_vendeur": par, "ids": {k: [vend.get(k) or "?", bool(ok)] for k, ok in cov.items()}}
+
+
+def _recompter_couverture(cov):
+    """7 nov 2026 (« 442 / 442 · 100 % » en haut, « cf31 291/321 · remi 97/104 » dessous) : le total et le detail par
+    vendeur se refont des memes cartes (ids), jamais comptees deux fois."""
+    ids = cov.get("ids") or {}
+    if not ids:
+        return cov
+    par = {}
+    for v, ok in ids.values():
+        p = par.setdefault(v or "?", [0, 0])
+        p[1] += 1
+        p[0] += 1 if ok else 0
+    cov.update(total=len(ids), faites=sum(1 for _v, ok in ids.values() if ok), par_vendeur=par)
+    return cov
 
 
 def _sauver(d, deals, maint, st, **champs):
@@ -1822,6 +1872,59 @@ def regler_vendeurs(liste):
     return l[:40]
 
 
+# 7 nov 2026 (Mathieu : « on doit s'assurer de capter toutes les ventes fixes et encheres des petits vendeurs eBay, les deals
+# sont surtout la ») : chaque tour, un BALAYAGE de toute la categorie hockey (sans mot-cle), apres Savage, Remi et CF31 et
+# avant les flux de recrues et de hits : les nouvelles annonces a prix fixe depuis le dernier tour (jusqu'a
+# BALAYAGE_PAGES_FIXE pages de 200) et les encans qui finissent le plus tot (BALAYAGE_PAGES_ENCANS pages de 200, 24 h et
+# moins). Les maisons a volume et les tres gros vendeurs sont sautes (deja couverts ailleurs).
+BALAYAGE_PAGES_FIXE = 5
+BALAYAGE_PAGES_ENCANS = 5
+BALAYAGE_ASPECT = "Sport:{Ice Hockey}"
+
+
+def petit_ou_moyen(a):
+    """Un vendeur qui n'est ni une maison a volume, ni un tres gros vendeur (200 000 evaluations et plus)."""
+    return rang_honnete(a) < 2
+
+
+def balayer(rechercher, bassin, d, deals, st, maint, verif):
+    """Le balayage des petits vendeurs (prix fixe recents + encans qui finissent). -> nombre d'annonces jugees."""
+    import cartes_match
+    r = {"q": None, "flux": "petits vendeurs", "sport": "hockey", "joueur": None}
+    dernier = str(d.get("balayage_le") or "")
+    limite_fin = (maint + timedelta(hours=ENCAN_H)).isoformat().replace("+00:00", "Z")
+    n = 0
+    pf, pe = _env_int("LR_BALAYAGE_FIXE", BALAYAGE_PAGES_FIXE), _env_int("LR_BALAYAGE_ENCANS", BALAYAGE_PAGES_ENCANS)
+    for ench, page in [(False, k) for k in range(pf)] + [(True, k) for k in range(pe)]:
+        if ench is False and st.get("_bal_fixe_fini"):
+            continue
+        try:
+            l = rechercher("", categorie="261328", limite=200, fond=True, encheres=ench, recentes=not ench, flux=True,
+                           offset=200 * page, aspects=BALAYAGE_ASPECT)
+        except (RuntimeError, OSError, TypeError):
+            st["erreurs_ebay"] = st.get("erreurs_ebay", 0) + 1
+            if ench:
+                break
+            st["_bal_fixe_fini"] = True
+            continue
+        st["requetes_flux"] = st.get("requetes_flux", 0) + 1
+        st["balayage_" + ("encans" if ench else "fixe")] = st.get("balayage_" + ("encans" if ench else "fixe"), 0) + len(l)
+        bons = [a for a in l if cartes_match.est_carte(a.get("titre") or "") and petit_ou_moyen(a)]
+        st["balayage_petits"] = st.get("balayage_petits", 0) + len(bons)
+        for a in bons:
+            _juger(a, r, [], [] if ench else bons, maint, deals, st, bassin=bassin, verif=verif)
+            n += 1
+        _publier(d, deals, maint, st)
+        if not ench:
+            plus_vieille = min((str(a.get("cree") or "") for a in l if a.get("cree")), default="")
+            if len(l) < 150 or (dernier and plus_vieille and plus_vieille.replace("Z", "+00:00") < dernier):
+                st["_bal_fixe_fini"] = True          # on a rejoint le dernier balayage (ou plus d'annonces)
+        elif len(l) < 150 or not l or str(l[-1].get("fin") or "9") > limite_fin:
+            break                                    # au-dela de 24 h
+    st.pop("_bal_fixe_fini", None)
+    return n
+
+
 def flux_liste():
     e = os.environ.get("LR_DEALS_FLUX")                 # « young guns;canvas » pour remplacer la liste
     return [(x.strip(), None) for x in e.split(";") if x.strip()] if e else FLUX
@@ -1891,6 +1994,13 @@ def flux(rechercher=None, bassin=None):
     _verifier_tard(st, deals, maint, bassin, verif, d)
     st["_tard"] = [x for x in tard if not x[1].get("prio")] + st.get("_tard", [])
     _noter_couverture(st, maint)
+    # 7 nov 2026 (« les deals sont surtout chez les petits vendeurs ») : le balayage de toute la categorie hockey
+    _progres(detail="petits vendeurs")
+    try:
+        st["balayage_juges"] = balayer(rechercher, bassin, d, deals, st, maint, verif)
+        st["_balayage_le"] = maint.isoformat(timespec="seconds")
+    except Exception as e:
+        print("Balayage des petits vendeurs : " + repr(e), flush=True)
     # 28 oct 2026 (Mathieu : « les maudits deals sont encore juste des Young Guns ») : les flux larges de recrues (Young
     # Guns, rookies) un tour sur deux seulement ; les appels eBay economises vont aux hits (2 fois plus de flux de hits)
     tour_n = int(d.get("tour_n") or 0)
@@ -1920,7 +2030,8 @@ def flux(rechercher=None, bassin=None):
         st["produits_appris"] = produits_appris.apprendre(titres_vus)
     except Exception as e:
         print("Produits appris : " + repr(e), flush=True)
-    garde_ = _sauver(d, deals, maint, st, curseur_h=curseur_h, tour_n=tour_n + 1)
+    bal = {"balayage_le": st.pop("_balayage_le")} if st.get("_balayage_le") else {}
+    garde_ = _sauver(d, deals, maint, st, curseur_h=curseur_h, tour_n=tour_n + 1, **bal)
     return {"ok": True, "deals": len(garde_), "stats": st}
 
 
@@ -2322,7 +2433,7 @@ def etat():
             "verif": vendues.utilises_aujourdhui("verif"), "verif_max": vmax,
             "prio": vendues.utilises_aujourdhui("prio"), "prio_max": prio_max(), "prio_24h": {"verifs": g.get("prio_verifs", 0), "refus": g.get("prio_budget", 0),
                                                                                          "debord": g.get("prio_debord", 0)},
-            "prio_couverture": d.get("prio_couverture")}
+            "prio_couverture": {k: v for k, v in (d.get("prio_couverture") or {}).items() if k not in ("ids", "ids_valo")} or None}
 
 
 _SORTES = {}
@@ -2487,10 +2598,16 @@ def valoriser_suivis(rechercher=None, n_max=None):
                     g.update(valeur=va[0], n=va[2], vendues=va[3], mise_max=round(prix_max(va[0]) - port_eff(g.get("port")), 2))
             cov = d.get("prio_couverture")
             if cov and analyses:
-                deja = set(cov.get("ids_valo") or [])
-                nv = [i for i in analyses if i not in deja]
-                cov["faites"] = min(cov.get("total") or 0, (cov.get("faites") or 0) + len(nv))
-                cov["ids_valo"] = list(deja | set(nv))[-5000:]
+                if cov.get("ids"):                  # 7 nov : chaque carte comptee une fois, le detail par vendeur suit
+                    for i in analyses:
+                        if i in cov["ids"]:
+                            cov["ids"][i][1] = True
+                    _recompter_couverture(cov)
+                else:
+                    deja = set(cov.get("ids_valo") or [])
+                    nv = [i for i in analyses if i not in deja]
+                    cov["faites"] = min(cov.get("total") or 0, (cov.get("faites") or 0) + len(nv))
+                    cov["ids_valo"] = list(deja | set(nv))[-5000:]
                 cov["le"] = datetime.now(timezone.utc).isoformat(timespec="minutes")
             _ecrire(d)
     return {"verifies": n, "valeurs": len(trouves), "a_faire": len(a_faire)}

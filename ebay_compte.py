@@ -663,14 +663,16 @@ def jeton_application():
         return j2["app_token"]
 
 
-def rechercher(q, categorie=None, prix_max=None, recentes=False, limite=50, fond=True, encheres=False, flux=False, offset=0, vendeurs=None, frais=False):
+def rechercher(q, categorie=None, prix_max=None, recentes=False, limite=50, fond=True, encheres=False, flux=False, offset=0, vendeurs=None, frais=False,
+               aspects=None):
     """Annonces actives a prix fixe semblables : [{item_id, titre, prix_cad, url, photo}].
     Cache partage (24 h ; 6 h pour les nouveautes) et compteur d'appels (appels_ebay).
     24 oct 2026 - encheres=True : les encans qui finissent le plus tot (prix = mise actuelle, fin, nb de mises)."""
     cle = appels_ebay.cle_recherche(environnement(), q=q[:100], categorie=categorie,
                                      prix_max=round(float(prix_max), 2) if prix_max else None, recentes=bool(recentes), limite=int(limite),
                                      **({"encheres": True} if encheres else {}), **({"flux": True} if flux else {}), **({"offset": int(offset)} if offset else {}),
-                                     **({"vendeurs": "|".join(sorted(vendeurs))} if vendeurs else {}))
+                                     **({"vendeurs": "|".join(sorted(vendeurs))} if vendeurs else {}),
+                                     **({"aspects": str(aspects)} if aspects else {}))
     # 26 oct 2026 (Mathieu : « on doit trouver le maximum ») : flux = les nouvelles annonces chaque heure (cache 50 min)
     # 31 oct 2026 : frais=True (encans qui finissent bientot chez les gros vendeurs, aux 15 min) : jamais le cache
     deja = None if frais else appels_ebay.cache_lire(cle, "flux" if flux else "encheres" if encheres else "recentes" if recentes else "marche")
@@ -692,6 +694,8 @@ def rechercher(q, categorie=None, prix_max=None, recentes=False, limite=50, fond
         p["offset"] = int(offset)
     if categorie:
         p["category_ids"] = categorie
+        if aspects:                     # 7 nov 2026 : ex. « Sport:{Ice Hockey} » (le balayage des petits vendeurs)
+            p["aspect_filter"] = f"categoryId:{categorie},{aspects}"
     if recentes:
         p["sort"] = "newlyListed"
     if encheres:
@@ -775,7 +779,7 @@ def lire_recherche(d):
                     "vendeur": (it.get("seller") or {}).get("username") or "",
                     "vendeur_pct": (it.get("seller") or {}).get("feedbackPercentage"),
                     "vendeur_score": (it.get("seller") or {}).get("feedbackScore"),
-                    "fin": it.get("itemEndDate"), "mises": it.get("bidCount"),
+                    "fin": it.get("itemEndDate"), "mises": it.get("bidCount"), "cree": it.get("itemCreationDate"),
                     "encan": "AUCTION" in (it.get("buyingOptions") or [])})
     return out
 
