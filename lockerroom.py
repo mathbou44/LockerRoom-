@@ -4271,7 +4271,7 @@ class Api:
                 import vendues
                 vs = vendues.memes(titre, requete=False, fond=False, n=24)
                 ventes = [v for v in vs.get("ventes") or [] if v.get("prix")]
-                vendues_l = [{"titre": v.get("titre"), "prix": v.get("prix"), "le": v.get("le"), "url": v.get("url")} for v in ventes[:6]]
+                vendues_l = [{"titre": v.get("titre"), "prix": v.get("prix"), "le": v.get("le"), "url": v.get("url"), "photo": v.get("photo")} for v in ventes[:10]]
                 base = vs.get("mediane") or (cartes_match.mediane_robuste([v["prix"] for v in ventes[:5]])[0] if ventes else None)
                 if ventes:
                     vendu = {"mediane": round(base, 2) if base else None, "n": len(ventes), "sure": bool(vs.get("mediane"))}

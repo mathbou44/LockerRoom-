@@ -35,7 +35,7 @@ SYNONYMES = [                       # forme courte -> forme longue (dans la rech
     (r"\bsignature materials?\b", "sigmaterials auto materials"), (r"\bsignature patch(es)?\b", "sigpatches auto patch"),
     (r"\bsignature swatch(es)?\b", "sigswatches auto swatch"),
     (r"\byg\b", "young guns"), (r"\bud\b", "upper deck"), (r"\bopc\b", "o-pee-chee"), (r"\bo pee chee\b", "o-pee-chee"),
-    (r"\bspa\b", "sp authentic"), (r"\bfw\b", "future watch"), (r"\brr\b", "rated rookie"),
+    (r"(?<!#)\bspa\b(?!-)", "sp authentic"), (r"(?<!#)\bfw\b(?!-)", "future watch"),   # pas le code #FW-JD (r"\brr\b", "rated rookie"),
     (r"\bautograph(ed|s)?\b", "auto"), (r"\bsigned\b", "auto"), (r"\bsignature(s)?\b", "auto"), (r"\bautos\b", "auto"),
     (r"\brookie\b", "rc"), (r"\brookies\b", "rc"), (r"\bjsy\b", "jersey"), (r"\bmem\b", "relic"),
     (r"\bx-?fractor\b", "xfractor"), (r"\brefractors\b", "refractor"), (r"\bpatches\b", "patch"),
@@ -242,7 +242,9 @@ def _decoder_memo(titre):
 
 
 # des produits vendus DANS un autre : leur nom peut etre dans le titre ou pas (Exquisite Collection est dans The Cup)
-IMPLIQUES = {"exquisite": {"cup"}}
+# 6 nov 2026 (Mathieu : une Dobes « Future Watch Auto /999 » sans « SP Authentic » : ses 5 ventes etaient refusees, la carte
+# passait pour « sans comps » a -25 %) : Future Watch est l'insert des recrues de SP Authentic
+IMPLIQUES = {"exquisite": {"cup"}, "watch": {"authentic"}}
 
 
 def raisons_refus(c, titre, appris=None):
@@ -257,6 +259,9 @@ def raisons_refus(c, titre, appris=None):
     jp = (c.get("joueur") or "").split()
     if len(jp) >= 2 and _a_mot(t, jp[-1]) and _nom_unique(jp[-1], " ".join(jp)):
         manque = [m for m in manque if m not in jp[:-1]]
+    for mot, parents in IMPLIQUES.items():         # « Future Watch » sans « SP Authentic » : la meme carte
+        if _a_mot(c["texte"], mot) and _a_mot(t, mot):
+            manque = [m for m in manque if m not in parents]
     if manque:
         r.append("autre carte (" + " ".join(manque[:3]) + " absent)")
     # 24 oct 2026 - « Will Smith / Lekkerimaki checklist » n'est pas la Young Guns de Will Smith
@@ -320,11 +325,12 @@ def raisons_refus(c, titre, appris=None):
         autres_j = {w for n in _noms_dans(t) for w in n.split()}
         ia -= autres_j
         # 7 nov 2026 : « The Cup Exquisite Endorsements » = « Exquisite Endorsements » (Exquisite est dans The Cup)
+        ci = c["ident"]
         for mot, parents in IMPLIQUES.items():
-            if mot in ia and mot in c["ident"]:
-                ia = ia - parents
-        en_plus = ia - c["ident"]
-        manque_i = c["ident"] - ia
+            if mot in ia and mot in ci:                  # dans les deux sens : le parent peut manquer d'un cote ou de l'autre
+                ia, ci = ia - parents, ci - parents
+        en_plus = ia - ci
+        manque_i = ci - ia
         # 4 nov 2026 (Mathieu : une Sennecke « Rookie Draft Outburst » comparee aux Young Guns Outburst) : certains mots
         # font toujours une autre carte ; ils ne peuvent pas manquer, meme quand le reste du titre correspond
         forts = (c["ident"] & MOTS_FORTS) - ia
@@ -334,7 +340,7 @@ def raisons_refus(c, titre, appris=None):
             r.append("autre carte (" + " ".join(sorted(en_plus)[:3]) + ")")
         elif forts:
             r.append("autre carte (" + " ".join(sorted(forts)[:2]) + " absent)")
-        elif len(manque_i) > max(len(c["ident"]) // 3, 1 if c.get("autres_joueurs") else 0):
+        elif len(manque_i) > max(len(ci) // 3, 1 if c.get("autres_joueurs") else 0):
             # 2 joueurs + le produit + la numerotation : la carte est deja reconnue ; un mot d'insert peut manquer
             r.append("autre carte (" + " ".join(sorted(manque_i)[:3]) + " absent)")
         elif c["marques"] and ma and not (c["marques"] & ma):

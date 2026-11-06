@@ -282,6 +282,9 @@ details.reglage summary::-webkit-details-marker{display:none}
 .vp-m{display:flex; flex-wrap:wrap; gap:6px; align-items:center} .vp-m.vide{font-size:13px; color:var(--doux); justify-content:space-between}
 .vp-mi{display:inline-flex; align-items:baseline; gap:5px; padding:4px 10px; border-radius:99px; background:var(--carte2); border:1px solid var(--ligne); color:var(--texte); font:inherit; cursor:pointer}
 .vp-mi span{font-size:11.5px; color:var(--doux)} .vp-mi b{font:700 15px 'Barlow Condensed',sans-serif}
+.vp-comps{margin-top:14px} .vp-ct{display:flex; justify-content:space-between; font-size:13px; font-weight:700; color:var(--doux); margin-bottom:8px}
+.vp-ct span{font-weight:500} .vp-comps .comp-m span{display:flex; align-items:center; justify-content:center} .vp-comps .comp-m span svg{width:40%; opacity:.35}
+.vp-comps .comp-m small{font-size:11.5px; color:var(--doux); margin-top:-3px}
 .fl-ctl{display:flex; align-items:center; gap:12px; flex:1; min-width:0; margin:8px 0}
 .fl-sw{display:inline-flex; align-items:center; gap:8px; background:none; border:0; padding:4px 0; color:var(--texte); font:600 13px inherit; font-family:inherit; cursor:pointer; white-space:nowrap}
 .fl-sw i{width:34px; height:20px; border-radius:99px; background:var(--ligne); position:relative; transition:background .2s}
@@ -5152,7 +5155,15 @@ function blocMarcheVente(p, pr){
   const v = p.vendu || null, a = p.affiche || null;
   const it = [[v && v.mediane, tt('Vendues', 'Sold')], [a && a.mediane, tt('En vente', 'Listed')], [a && a.bas, tt('Plus bas', 'Lowest')]].filter(x => x[0]);
   if (!it.length) return `<div class="vp-m vide"><span>${pr ? '' : tt('Aucune carte identique trouvée', 'No identical card found')}</span><button class="lien-t" id="vm-tips">${icN('ampoule')}${tt('Conseils', 'Tips')}</button></div>`;
-  return `<div class="vp-m">${it.map(([x, l]) => `<button class="vp-mi" data-vm="${esc(rond5(x))}"><span>${l}</span><b>${argent(x, 0)}</b></button>`).join('')}</div>`;
+  return `<div class="vp-m">${it.map(([x, l]) => `<button class="vp-mi" data-vm="${esc(rond5(x))}"><span>${l}</span><b>${argent(x, 0)}</b></button>`).join('')}</div>${compsVente(p)}`;
+}
+// 6 nov 2026 (Mathieu : « ou sont les comps ») : les ventes et les annonces de la meme carte, sous le prix (un tap : eBay)
+function compsVente(p){
+  const v = (p.vendues || []).filter(k => k.prix), a = (p.comps || []).filter(k => k.total);
+  const tuile = (k, prix, date) => `<a class="comp-m" href="${esc(urlSure(k.url || '#'))}" target="_blank" rel="noopener"><span style="${k.photo ? `background-image:${cssUrl(photoNet(k.photo))}` : ''}">${k.photo ? '' : SVG_CARTE}</span><b>${argentCourt(prix)}</b>${date ? `<small>${esc(date)}</small>` : ''}</a>`;
+  const bloc = (t, n, l) => `<div class="vp-comps"><div class="vp-ct">${t}<span>${n}</span></div><div class="comps-l">${l}</div></div>`;
+  return (v.length ? bloc(tt('Vendues récemment', 'Recently sold'), v.length, v.map(k => tuile(k, k.prix, k.le ? dateCourte(k.le) : '')).join('')) : '')
+    + (a.length ? bloc(tt('En vente maintenant', 'Listed now'), a.length, [...a].sort((x, y) => x.total - y.total).map(k => tuile(k, k.total, '')).join('')) : '');
 }
 function feuilleConseilsPrix(titre){
   const q = encodeURIComponent(String(titre || '').replace(/\b(psa|bgs|sgc|cgc)\s*\d+(\.\d)?\b/ig, '').trim());
