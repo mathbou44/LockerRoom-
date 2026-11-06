@@ -1543,6 +1543,21 @@ def _verifier_tard(st, deals, maint, bassin, verif, d=None):
             if k == "prio":
                 fini["prio"] = True
             continue
+        # 7 nov 2026 (« utiliser l'API seulement pour les cartes sans comps de 3 mois ») : un hit des gros vendeurs (ou de 25 $
+        # et plus) sans valeur sure dans les 90 jours d'eBay -> l'historique d'un an (CompSniper, quelques-unes par jour)
+        if nv is not None and _hit(cib) and not valeur_annonce(a, list(nv) + (bassin.candidats(cib) if bassin else []), [], cib=cib) \
+                and (k == "prio" or (_total(a) or 0) >= 25):
+            try:
+                import historique
+                if historique.actif():
+                    hv = historique.carte(cib, chasseur=True)
+                    if hv:
+                        nv = list(nv) + hv
+                        if bassin:
+                            bassin.ajouter(hv)
+                        st["historique"] = st.get("historique", 0) + 1
+            except Exception as e:
+                print("Historique (chasseur) : " + repr(e), flush=True)
         # 7 nov 2026 (« regarde tous les no sales ») : aucune vente de LA carte -> la recherche des cartes similaires
         if nv is not None and _hit(cib) and not valeur_ou_saison(a, list(nv) + (bassin.candidats(cib) if bassin else []), [], cib=cib):
             nl = verif(cible_large(cib), prio=True) if k == "prio" else verif(cible_large(cib))
@@ -2571,7 +2586,7 @@ def etat():
             "hits_24h": {"vus": g.get("hits_vus", 0), "verifies": g.get("hits_verifies", 0), "deals": g.get("hits_deals", 0),
                          "refus_budget": g.get("verif_budget", 0), "erreurs_ventes": g.get("erreurs_ventes", 0), "sans_ventes": g.get("sans_ventes", 0),
                          "plafond": g.get("verif_plafond", 0)},
-            "soldcomps": _etat_soldcomps(), "journal": journal(), "tour": tour(d),
+            "soldcomps": _etat_soldcomps(), "journal": journal(), "tour": tour(d), "historique": _etat_historique(),
             "vendeurs_24h": {"annonces": g.get("vendeurs_annonces", 0), "gardes": g.get("suivi_ok", 0) + g.get("suivi_ok_recrue", 0), "erreurs": g.get("vendeurs_erreurs", 0),
                              "suivis": len(d.get("suivis") or []), "deals": sum(1 for x in d.get("deals") or [] if x.get("flux") == "vendeurs")},
             # 7 nov 2026 : le balayage des petits vendeurs (toute la categorie hockey)
@@ -2645,6 +2660,14 @@ def melanger(lst, ratio=2):
         if j < len(yg):
             out.append(yg[j]); j += 1
     return out
+
+
+def _etat_historique():
+    try:
+        import historique
+        return historique.etat()
+    except Exception as e:
+        return {"actif": False, "erreur": repr(e)[:120]}
 
 
 def _etat_soldcomps():

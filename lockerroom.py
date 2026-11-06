@@ -6399,6 +6399,25 @@ class Api:
         # vente trouvee, ventes trop vieilles, trop differentes...) au lieu d'un « pas assez de ventes » pour tout
         vs_ = _deals.valeur_sure([x for x in (vc.get("ventes") or []) if x.get("prix")], t or "") if nb_v >= 2 else (None, "pas assez de ventes")
         vm = vs_[0]
+        # 7 nov 2026 (Mathieu : « utiliser l'API seulement pour les cartes sans comps de 3 mois ») : pas de valeur sure avec les
+        # 90 jours d'eBay -> l'historique d'un an (CompSniper, budget du mois), une seule fois par carte (cache 14 jours)
+        hist_ = []
+        if not vm and not rapide and t and time.time() - t0_ < 25:
+            try:
+                import historique
+                if historique.actif():
+                    hist_ = historique.carte(t)
+                    cib_h = cartes_match.cible_titre(t)
+                    memes_h = [x for x in hist_ if x.get("prix") and not cartes_match.raisons_refus(cib_h, x.get("titre") or "")]
+                    if memes_h:
+                        vus_h = {str(x.get("url") or "") for x in ventes if x.get("url")}
+                        tout_h = [x for x in (vc.get("ventes") or []) if x.get("prix")] + [x for x in memes_h if str(x.get("url") or "") not in vus_h]
+                        vs_ = _deals.valeur_sure(tout_h, t)
+                        vm = vs_[0]
+                        ventes = sorted(tout_h, key=lambda x: str(x.get("le") or ""), reverse=True)[:16]
+                        nb_v = len(tout_h)
+            except Exception as e:
+                print("Historique (fiche) : " + repr(e), flush=True)
         pourquoi = None if vm else (vc.get("erreur") or (vs_[1] if isinstance(vs_[1], str) else None))
         if vm and med and n >= 3:                 # 3 nov 2026 (revue) : le meme plafond que le chasseur (deals.valeur_annonce)
             vm = min(vm, round(med * 0.85, 2))
@@ -6409,7 +6428,7 @@ class Api:
         saison_v = None
         if not vm and not rapide and t and not (vc.get("erreur_ebay") or vc.get("erreur")) and time.time() - t0_ < 30:
             try:
-                saison_v = vendues.autres_saisons(t)
+                saison_v = vendues.autres_saisons(t, extra=hist_)
             except Exception as e:
                 print("Ventes (autres saisons) : " + repr(e), flush=True)
             if saison_v:
@@ -6420,7 +6439,7 @@ class Api:
         # similaires du meme joueur (meme produit, autre numerotation / annee / parallele)
         if not vm and not saison_v and not rapide and t and not (vc.get("erreur_ebay") or vc.get("erreur")) and time.time() - t0_ < 30:
             try:
-                saison_v = vendues.similaires(t)
+                saison_v = vendues.similaires(t, extra=hist_)
             except Exception as e:
                 print("Ventes (similaires) : " + repr(e), flush=True)
             if saison_v:

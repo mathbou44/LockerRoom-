@@ -515,7 +515,7 @@ def memes_annonce(titre, q=None, n=24, fond=False):
     return memes(titre, requete=False, n=n, fond=fond)
 
 
-def autres_saisons(titre, fond=False):
+def autres_saisons(titre, fond=False, extra=None):
     """7 nov 2026 (Mathieu : la Ron Francis 2024-25 Clear Cut Outburst Auto /25 sans aucune vente : « mettre les annees a
     cote pour la meme carte, montrer les cartes similaires, mais dire qu'il n'y a pas de comp ») : les ventes de la meme
     carte des saisons voisines (la recherche des ventes ne contient jamais l'annee : le meme appel, deja en cache).
@@ -529,10 +529,10 @@ def autres_saisons(titre, fond=False):
     if not q:
         return None
     r = rechercher(q, fond=fond)
-    return deals.valeur_autre_saison({"titre": titre}, [v for v in r.get("ventes") or [] if v.get("prix")], cib)
+    return deals.valeur_autre_saison({"titre": titre}, [v for v in (r.get("ventes") or []) + list(extra or []) if v.get("prix")], cib)
 
 
-def similaires(titre, fond=False):
+def similaires(titre, fond=False, extra=None):
     """7 nov 2026 (Mathieu : « les no sales : analyser les cartes similaires et donner un prix approximatif ») : les ventes du
     meme joueur, meme produit / insert (recherche large : sans annee, numerotation ni parallele), puis deals.valeur_approx.
     -> (valeur, « approx », n, ventes) ou None."""
@@ -545,6 +545,7 @@ def similaires(titre, fond=False):
     for q in dict.fromkeys(x for x in (cartes_match.requete_ebay(cib), cartes_match.requete_ebay(deals.cible_large(cib))) if x):
         l += [v for v in rechercher(q, fond=fond).get("ventes") or [] if v.get("prix")]
     l += archives(dict(cib, annee=None, serie=None, veut_serie=False, paralleles=set()), max_=200)
+    l += [v for v in extra or [] if v.get("prix")]
     return deals.valeur_approx({"titre": titre}, l, cib)
 
 
