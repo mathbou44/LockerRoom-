@@ -32,6 +32,9 @@ MODELE_DEFAUT = {
     "delai": 2, "poids_g": 250,             # 30 oct 2026 : le maximum de Postes Canada Expedited Lite (eBay Labels)
     "retours": "non",                       # non | 30_acheteur | 30_gratuit
     "offres": True, "offre_auto_pct": 0, "offre_min_pct": 70,       # 27 oct 2026 : 0 = jamais accepte tout seul (choix du vendeur)
+    # 8 nov 2026 (Mathieu : « mettre un % de plus, genre 10-15 %, pour la nego ») : prix fixe avec offres : le prix suggere
+    # monte de nego_pct (0, 10, 15, 20) au-dessus du marche
+    "nego_pct": 15,
     "promotion": 0,                         # % Promoted Listings (0 = pas de promotion)
     "etat": "nm",                           # carte brute : nm | ex | vg | p
     # 29 oct 2026 (Mathieu : « le bon shipping policy ; le poids, c'est toujours 250 g, 16 x 23 x 3 cm ») : les politiques

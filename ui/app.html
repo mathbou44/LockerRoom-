@@ -283,6 +283,7 @@ details.reglage summary::-webkit-details-marker{display:none}
 .vp-mi{display:inline-flex; align-items:baseline; gap:5px; padding:4px 10px; border-radius:99px; background:var(--carte2); border:1px solid var(--ligne); color:var(--texte); font:inherit; cursor:pointer}
 .vp-mi span{font-size:11.5px; color:var(--doux)} .vp-mi b{font:700 15px 'Barlow Condensed',sans-serif}
 .fa-g small b.fa-g2{font:inherit; font-weight:700; color:var(--vert)}
+.vp-nego{display:flex; align-items:center; justify-content:space-between; gap:8px; margin:-2px 0 10px; font-size:12.5px; color:var(--doux)}
 .vp-comps{margin-top:14px} .vp-ct{display:flex; justify-content:space-between; font-size:13px; font-weight:700; color:var(--doux); margin-bottom:8px}
 .vp-ct span{font-weight:500} .vp-comps .comp-m span{display:flex; align-items:center; justify-content:center} .vp-comps .comp-m span svg{width:40%; opacity:.35}
 .vp-comps .comp-m small{font-size:11.5px; color:var(--doux); margin-top:-3px}
@@ -4959,12 +4960,32 @@ function corrigerLot(c){
   if (c.qj != null) { aReprendre(c.qj, c.ph[c.qj], c.raison, c.detail || '', () => lireVente(), () => lireVente()); return; }
   lireVente();
 }
+// 8 nov 2026 (Mathieu : « pour le prix suggere de nos cartes a mettre sur eBay : mettre un % de plus, genre 10-15 %, pour
+// la nego ») : prix fixe avec offres -> les 3 prix suggeres montent de « nego_pct » (15 % par defaut, multiples de 5 vers le
+// haut) ; l'encan et le prix fixe sans offres gardent le prix du marche
+const negoPct = (o) => o && o.format !== 'encan' && o.offres ? (+o.nego_pct || 0) : 0;
+function prixSugg(pr, o){
+  if (!pr) return null;
+  const n = negoPct(o) / 100;
+  if (!n || !pr.mediane) return {vite: pr.vite, marche: pr.marche, haut: pr.haut, nego: 0};
+  const haut5 = (v) => Math.max(5, Math.ceil(v / 5) * 5);
+  const marche = Math.max(nb(pr.marche), haut5(pr.mediane * (1 + n)));      // le multiple de 5 au-dessus (+0 a +5 $ de plus)
+  let vite = haut5(pr.mediane * 0.9 * (1 + n));
+  if (vite >= marche) vite = Math.min(nb(pr.vite) || marche - 5, marche - 5);
+  return {vite: Math.max(5, vite), marche, haut: Math.max(marche + 5, haut5(pr.mediane * 1.1 * (1 + n))), nego: Math.round(n * 100)};
+}
+// le prix choisi suit les reglages (offres, format, marge) tant qu'il vient d'une suggestion (pas tape a la main)
+function suivreSugg(){
+  if (!V2.tier || !V2.prep || !V2.prep.prix) return;
+  const ps = prixSugg(V2.prep.prix, V2.opts); if (ps && ps[V2.tier]) V2.prix = ps[V2.tier];
+}
 async function preparerVente(){
   if (!$('.vendre .lecture')) V().innerHTML = `<section class="ecran vendre">${roue}</section>`;
   const p = await API.annonce_preparer(V2.champs || {}, typeof LANGUE !== 'undefined' ? LANGUE : 'fr').catch(e => ({ok:false, erreur:e.message}));
   if (!p.ok) { V().innerHTML = `<section class="ecran"><div class="vide">${esc(p.erreur || 'Erreur')}</div></section>`; return; }
   V2.prep = p; V2.titre = V2.titre || p.titre; V2.description = htmlTexte(p.description); V2.descMod = false; V2.opts = {...p.modele};
-  V2.prix = V2.prix || (p.prix ? p.prix.marche : (V2.champs && V2.champs.prix_demande) || '');
+  if (!V2.prix && p.prix) { V2.tier = 'marche'; V2.prix = prixSugg(p.prix, V2.opts).marche; }
+  V2.prix = V2.prix || (V2.champs && V2.champs.prix_demande) || '';
   rendreVente2();
 }
 // 30 oct 2026 (Mathieu : « par defaut, le maximum permis par Expedited Lite ») : Postes Canada Expedited Lite (eBay Labels) :
@@ -5044,7 +5065,8 @@ function rendreVente2(){
     <button class="vs-titre" id="vs-titre"><span>${esc(V2.titre || '')}</span><i>✎</i></button>
     <div class="vs-etape"><span class="vs-n">1</span><b>${tt('Ton prix', 'Your price')}</b><button class="aide-q" id="vs-aide-prix" aria-label="${esc(tt('Comment choisir le prix', 'How to pick the price'))}">?</button></div>
     <div class="bloc-v vp">
-          ${pr ? `<div class="vp-sug" id="v2-pp">${[[pr.vite, tt('Vite', 'Fast')], [pr.marche, tt('Marché ★', 'Market ★')], [pr.haut, tt('Haut', 'High')]].map(([v, l]) => `<button data-v="${esc(v)}" class="${String(v) === String(V2.prix) ? 'on' : ''}"><b>${argent(v, 0)}</b><span>${l}</span></button>`).join('')}</div>` : ''}
+          ${pr ? `<div class="vp-sug" id="v2-pp">${(ps => [[ps.vite, tt('Vite', 'Fast'), 'vite'], [ps.marche, tt('Marché ★', 'Market ★'), 'marche'], [ps.haut, tt('Haut', 'High'), 'haut']])(prixSugg(pr, o)).map(([v, l, k]) => `<button data-v="${esc(v)}" class="${String(v) === String(V2.prix) ? 'on' : ''}"><b>${argent(v, 0)}</b><span>${l}</span></button>`).join('')}</div>` : ''}
+          ${pr && negoPct(o) ? `<div class="vp-nego">${tt(`+${negoPct(o)} % pour la négo (offres activées) · marché ${argent(pr.mediane, 0)}`, `+${negoPct(o)}% for negotiation (offers on) · market ${argent(pr.mediane, 0)}`)}<button class="lien-t" id="vs-nego">${tt('Changer', 'Change')}</button></div>` : ''}
           <div class="vp-ligne"><label class="vp-in"><input class="champ gros" id="v2-prix" type="number" inputmode="decimal" step="0.01" value="${esc(V2.prix ?? '')}" aria-label="${esc(tt('Ton prix', 'Your price'))}"><span>$ CA</span></label>
             <div class="vp-net">${tt('Tu reçois', 'You get')}<b id="v2-net">${argent(net(V2.prix), 2)}</b></div></div>
           ${blocMarcheVente(p, pr)}
@@ -5081,6 +5103,7 @@ function rendreVente2(){
       <div id="vs-b-offres"><div class="bloc-v ${o.format === 'encan' ? 'gris' : ''}"><div class="bloc-t">${tt('Offres', 'Offers')}<label class="bascule"><input type="checkbox" id="v2-off" ${o.offres && o.format !== 'encan' ? 'checked' : ''} ${o.format === 'encan' ? 'disabled' : ''}></label></div>
           <div class="sous" style="font-size:14px">${tt('Les acheteurs te font une offre ; l’app accepte ou refuse toute seule selon tes seuils.', 'Buyers make you an offer; the app accepts or declines on its own with your thresholds.')}</div>
           ${o.offres && o.format !== 'encan' ? `<div class="deux">${segV('v2-oa', [[0, tt('Jamais', 'Never')], [95, '95 %'], [90, '90 %'], [85, '85 %']], +o.offre_auto_pct || 0)}<span class="lib-s">${+o.offre_auto_pct ? `${tt('accepter tout seul dès', 'auto-accept from')} <b>${argent((nb(V2.prix) || 0) * o.offre_auto_pct / 100, 0)}</b>` : tt('tu décides de chaque offre', 'you decide on every offer')}</span></div>
+            <div class="deux">${segV('v2-nego', [[0, '0 %'], [10, '+10 %'], [15, '+15 %'], [20, '+20 %']], +o.nego_pct || 0)}<span class="lib-s">${tt('marge de négo sur le prix suggéré', 'negotiation margin on the suggested price')}</span></div>
             <div class="deux">${segV('v2-om', [[80, '80 %'], [70, '70 %'], [60, '60 %']], o.offre_min_pct)}<span class="lib-s">${tt('refuser sous', 'decline under')} <b>${argent((nb(V2.prix) || 0) * o.offre_min_pct / 100, 0)}</b></span></div>` : ''}</div>
 </div>
       <div id="vs-b-livr"><div class="bloc-v"><div class="bloc-t">${tt('Livraison', 'Shipping')}</div>
@@ -5143,7 +5166,8 @@ function rendreVente2(){
   $$('[data-vs]').forEach(b => b.onclick = () => { vibrer(); ouvrir(b.dataset.vs); });
   const vt = $('#vs-titre'); if (vt) vt.onclick = () => ouvrir('titre');
   const ap = $('#vs-aide-prix'); if (ap) ap.onclick = () => ouvrir('marche');
-  $$('[data-vm]').forEach(b => b.onclick = () => { vibrer(); V2.prix = b.dataset.vm; rendreVente2(); });
+  const ng = $('#vs-nego'); if (ng) ng.onclick = () => ouvrir('offres');
+  $$('[data-vm]').forEach(b => b.onclick = () => { vibrer(); V2.prix = b.dataset.vm; V2.tier = null; rendreVente2(); });
   const ct = $('#vm-tips'); if (ct) ct.onclick = () => feuilleConseilsPrix(V2.titre);
   // rien trouve : les conseils s'ouvrent seuls une fois par carte
   if (ct && !(V2.prep && V2.prep.prix) && !(S.conseilsVus || (S.conseilsVus = {}))[V2.titre || '?']) { S.conseilsVus[V2.titre || '?'] = 1; setTimeout(() => { if ($('#vm-tips') && $('#fond-feuille').hidden) feuilleConseilsPrix(V2.titre); }, 500); }
@@ -5212,8 +5236,9 @@ function brancherVente2(){
   const o = V2.opts, re = () => { V2.champs = lireChampsVente(); V2.titre = $('#v2-titre').value; V2.description = $('#v2-desc').value; V2.cout = val('v2-cout');
     if (S.v2Re) return; S.v2Re = setTimeout(() => { S.v2Re = null; rendreVente2(); }, 0); };
   const seg = (id, f) => $$('#' + id + ' button').forEach(b => b.onclick = () => { f(b.dataset.v); re(); });
-  seg('v2-pp', v => { V2.prix = v; });
-  seg('v2-fmt', v => { o.format = v; });
+  seg('v2-pp', v => { V2.prix = v; const ps = prixSugg(V2.prep.prix, o) || {}; V2.tier = ['vite', 'marche', 'haut'].find(k => String(ps[k]) === String(v)) || null; });
+  seg('v2-nego', v => { o.nego_pct = +v; suivreSugg(); });
+  seg('v2-fmt', v => { o.format = v; suivreSugg(); });
   seg('v2-oa', v => { o.offre_auto_pct = +v; }); seg('v2-om', v => { o.offre_min_pct = +v; });
   seg('v2-exp', v => { o.expedition = v; }); seg('v2-del', v => { o.delai = +v; });
   // 30 oct 2026 (Mathieu : « comment as-tu sette le shipping pour etre sur que ca fonctionne ? ») : ta politique d'expedition
@@ -5241,7 +5266,7 @@ function brancherVente2(){
   seg('v2-quand', v => { V2.debut = v ? (V2.debut || soir19h()) : null; });
   const dbt = $('#v2-debut'); if (dbt) dbt.onchange = () => { V2.debut = dbt.value || V2.debut; re(); };
   const ch = (id, f) => { const e = $('#' + id); if (e) e.onchange = () => { f(e); re(); }; };
-  ch('v2-off', e => { o.offres = e.checked; }); ch('v2-us', e => { o.us = e.checked; });
+  ch('v2-off', e => { o.offres = e.checked; suivreSugg(); }); ch('v2-us', e => { o.us = e.checked; });
   const bpsa = $('#v2-psa');
   if (bpsa) bpsa.onclick = async () => {
     const z = $('#v2-psa-r'); bpsa.disabled = true; z.innerHTML = roue;
@@ -5266,7 +5291,7 @@ function brancherVente2(){
         : tt('Trop gros pour Expedited Lite (max 250 g, 41 cm, 3 220 cm³) : tarif Expedited Parcel', 'Too big for Expedited Lite (max 250 g, 41 cm, 3,220 cm³): Expedited Parcel rate'); } };
   }
   const fp = (V2.prep.frais_pct || 0) / 100, ff = V2.prep.frais_fixe || 0;
-  $('#v2-prix').oninput = (e) => { V2.prix = e.target.value; const n = $('#v2-net'); if (n) n.textContent = argent(Math.max(0, (nb(V2.prix) || 0) * (1 - fp) - ff), 2);
+  $('#v2-prix').oninput = (e) => { V2.prix = e.target.value; V2.tier = null; const n = $('#v2-net'); if (n) n.textContent = argent(Math.max(0, (nb(V2.prix) || 0) * (1 - fp) - ff), 2);
     const rp = $('#v2-rp'); if (rp) rp.textContent = argent(V2.prix, 2); $$('#v2-pp button').forEach(b => b.classList.toggle('on', b.dataset.v === String(V2.prix))); };
   $('#v2-prix').onchange = re;
   $('#v2-titre').oninput = (e) => { V2.titre = e.target.value; $('#v2-n').textContent = e.target.value.length + '/80'; };
@@ -5285,7 +5310,7 @@ function brancherVente2(){
   const pp = $('.vs-photo .photo-princ'); if (pp && (V2.photos || []).length) { pp.style.cursor = 'zoom-in'; pp.onclick = () => { V2.champs = lireChampsVente(); V2.titre = $('#v2-titre').value; V2.description = $('#v2-desc').value; V2.cout = val('v2-cout'); feuillePhotosVente(rendreVente2, true); }; }
   const bc = $('#v2-cadre'); if (bc) bc.onclick = () => { V2.champs = lireChampsVente(); V2.titre = $('#v2-titre').value; V2.description = $('#v2-desc').value; V2.cout = val('v2-cout'); feuilleCadrage(0); };
   $('#v2-garde').onclick = garderVente;
-  $('#v2-recalc').onclick = async () => { V2.champs = lireChampsVente(); V2.titre = null; V2.prix = null; await preparerVente(); };
+  $('#v2-recalc').onclick = async () => { V2.champs = lireChampsVente(); V2.titre = null; V2.prix = null; V2.tier = null; await preparerVente(); };
   $('#v2-neuf').onclick = () => { location.hash = '#vendre/nouvelle'; };
   $('#v2-pub').onclick = publierVente2;
 }
