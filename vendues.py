@@ -542,7 +542,9 @@ def similaires(titre, fond=False, extra=None):
     if cib.get("exclu") or not cib.get("joueur"):
         return None
     l = []
-    for q in dict.fromkeys(x for x in (cartes_match.requete_ebay(cib), cartes_match.requete_ebay(deals.cible_large(cib))) if x):
+    # 8 nov 2026 : une inscription : aussi la meme carte sans le mot « inscribed » (le plancher de deals.valeur_inscr_plancher)
+    sans_i = (cartes_match.requete_ebay(dict(cib, inscr=False)),) if cib.get("inscr") else ()
+    for q in dict.fromkeys(x for x in (cartes_match.requete_ebay(cib), cartes_match.requete_ebay(deals.cible_large(cib))) + sans_i if x):
         l += [v for v in rechercher(q, fond=fond).get("ventes") or [] if v.get("prix")]
     l += archives(dict(cib, annee=None, serie=None, veut_serie=False, paralleles=set()), max_=200)
     l += [v for v in extra or [] if v.get("prix")]

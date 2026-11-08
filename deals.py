@@ -833,6 +833,36 @@ def cible_large(cib):
     return dict(cib, mots=j + prod, paralleles=set(), serie=None, veut_serie=False, q_plus=[], ident=set(cib.get("ident") or ()))
 
 
+def valeur_inscr_plancher(a, ventes, cib=None):
+    """8 nov 2026 (Mathieu : « la Poitras aurait du sortir », une SP Authentic Future Watch Auto INSCRIBED /999, 15 mises ;
+    « les inscribed valent beaucoup plus ») : une carte avec inscription sans aucune vente avec inscription n'avait AUCUNE
+    valeur (les ventes sans inscription etaient refusees, meme comme cartes similaires) -> pas un deal. Maintenant : les
+    ventes de LA MEME carte sans inscription (seule difference) donnent un plancher (une inscription vaut plus, jamais
+    moins), sans rabais. -> (valeur, « inscr_plancher », n, ventes) ou None."""
+    import cartes_match
+    cib = cib or cartes_match.cible_titre(a.get("titre") or "")
+    if not cib.get("inscr") or cib.get("exclu") or not cib.get("joueur"):
+        return None
+    gard, vus = [], set()
+    for v in ventes or []:
+        t = v.get("titre") or ""
+        k = v.get("url") or f"{t}|{v.get('le')}|{v.get('prix')}"
+        if not v.get("prix") or k in vus or cartes_match.abimee(t) or _jours(v) > JOURS_MAX_HITS:
+            continue
+        vus.add(k)
+        if cartes_match.raisons_refus(cib, t) == ["sans inscription"]:
+            gard.append(v)
+    if len(gard) < 2:
+        return None
+    gard.sort(key=lambda v: str(v.get("le") or ""), reverse=True)
+    prix = [float(v["prix"]) for v in gard[:9]]
+    m = cartes_match.mediane_robuste(prix)[0] if len(prix) >= 3 else statistics.median(prix)
+    if not m:
+        return None
+    return (round(m, 2), "inscr_plancher", len(gard),
+            [{**{k: v.get(k) for k in ("titre", "prix", "le", "photo", "url")}, "note": "sans inscription", "similaire": True} for v in gard[:6]])
+
+
 def valeur_approx(a, ventes, cib=None):
     """7 nov 2026 (Mathieu : « regarde tous les no sales : on doit analyser les cartes similaires et donner un prix
     approximatif ») : aucune vente de LA carte (ni de ses saisons voisines) -> les ventes du MEME joueur, meme produit /
@@ -842,6 +872,9 @@ def valeur_approx(a, ventes, cib=None):
     -> (valeur, « approx », n, ventes) ou None."""
     import cartes_match
     cib = cib or cartes_match.cible_titre(a.get("titre") or "")
+    pl = valeur_inscr_plancher(a, ventes, cib)          # 8 nov 2026 : une inscription sans ses ventes : la carte sans inscription
+    if pl:
+        return pl
     j = (cib.get("joueur") or "").split()
     if not j or not _precieuse(cib) or cib.get("exclu"):
         return None
@@ -1369,7 +1402,9 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
     if not va:                                        # 7 nov 2026 : puis les cartes similaires (prix approximatif)
         va = valeur_approx(a, tout_v + nv_, cib)
         if not va and verifiee and verif and _hit(cib) and t >= 10:
-            nl = verif(cible_large(cib))              # la recherche large (joueur + produit + auto), une fois par carte
+            # la recherche large (joueur + produit + auto), une fois par carte ; une inscription : sans le mot « inscribed »
+            # (8 nov 2026 : les ventes de la meme carte sans inscription, le plancher)
+            nl = verif(cible_large(dict(cib, inscr=False) if cib.get("inscr") else cib))
             if nl:
                 va = valeur_approx(a, tout_v + nv_ + list(nl), cib)
     if not va:
