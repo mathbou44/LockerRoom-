@@ -284,6 +284,12 @@ details.reglage summary::-webkit-details-marker{display:none}
 .vp-mi span{font-size:11.5px; color:var(--doux)} .vp-mi b{font:700 15px 'Barlow Condensed',sans-serif}
 .fa-g small b.fa-g2{font:inherit; font-weight:700; color:var(--vert)}
 .vp-nego{display:flex; align-items:center; justify-content:space-between; gap:8px; margin:-2px 0 10px; font-size:12.5px; color:var(--doux)}
+.inv-selb{display:flex; justify-content:flex-end; margin:-4px 0 10px}
+.tuile-inv.choisie{outline:2px solid var(--acc); outline-offset:2px; position:relative}
+.tuile-inv.choisie::after{content:'✓'; position:absolute; top:8px; right:8px; width:26px; height:26px; border-radius:50%; background:var(--acc); color:#0b0b0e; font-weight:800; display:flex; align-items:center; justify-content:center}
+.sel-barre{position:fixed; left:12px; right:12px; bottom:calc(96px + env(safe-area-inset-bottom)); z-index:35; display:flex; align-items:center; gap:8px; padding:10px 12px; border-radius:18px; background:var(--carte2); border:1px solid var(--ligne); box-shadow:0 10px 30px rgba(0,0,0,.45)}
+.sel-barre .sb-t{flex:1; display:flex; flex-direction:column; font-size:14px} .sel-barre .sb-t small{color:var(--doux); font-size:12px}
+.sel-barre .pilule.rouge{background:var(--rouge); color:#fff; border-color:transparent} .sel-barre .pilule[disabled]{opacity:.4}
 .vp-comps{margin-top:14px} .vp-ct{display:flex; justify-content:space-between; font-size:13px; font-weight:700; color:var(--doux); margin-bottom:8px}
 .vp-ct span{font-weight:500} .vp-comps .comp-m span{display:flex; align-items:center; justify-content:center} .vp-comps .comp-m span svg{width:40%; opacity:.35}
 .vp-comps .comp-m small{font-size:11.5px; color:var(--doux); margin-top:-3px}
@@ -3468,6 +3474,7 @@ const nomEquipe = (code) => ((S.equipes || []).find(e => e.code === code) || {})
 // ============================================================
 function route(){
   const h = (location.hash || '#accueil').slice(1);
+  if (!h.startsWith('inventaire')) { S.selInv = null; const sb = document.getElementById('sel-inv'); if (sb) sb.remove(); }   // 8 nov : la barre de selection
   let [ecran, arg] = h.split('/');
   // 22 oct 2026 - deux volets : la 1re ouverture demande le volet ; « Accueil » d'un acheteur = ses deals
   // 1er nov 2026 : une seule app ; plus de redirection selon un volet
@@ -9223,6 +9230,39 @@ function tuileSlab(c){
   </button>`;
 }
 async function consignataires(force){ if (!S.consig || force) S.consig = await API.consignataires_liste(); return S.consig; }
+// 8 nov 2026 (Mathieu : « les cartes a retirer de mon inventaire devraient aussi se supprimer dans eBay, et je peux les
+// selectionner dans l'app ») : « Selectionner » -> un toucher choisit les cartes ; la barre du bas les retire. Une carte en
+// vente sur eBay voit son annonce terminee d'abord (si eBay refuse, la carte reste dans l'inventaire)
+function barreSelInv(){
+  let b = $('#sel-inv');
+  if (!S.selInv || !$('#i-liste')) { if (b) b.remove(); return; }
+  if (!b) { b = document.createElement('div'); b.id = 'sel-inv'; b.className = 'sel-barre'; document.body.appendChild(b); }
+  const n = S.selInv.size, l = S.invL || [];
+  const ebayN = l.filter(c => S.selInv.has(c.id) && c.item_number && c.statut === 'Listée').length;
+  b.innerHTML = `<div class="sb-t"><b>${n}</b> ${n > 1 ? tt('cartes', 'cards') : tt('carte', 'card')}${ebayN ? `<small>${ebayN} ${tt('sur eBay', 'on eBay')}</small>` : ''}</div>
+    <button class="pilule" id="sb-tout">${n === l.length ? tt('Aucune', 'None') : tt('Toutes', 'All')}</button>
+    <button class="pilule rouge" id="sb-ret" ${n ? '' : 'disabled'}>${tt('Retirer', 'Remove')}</button>
+    <button class="pilule" id="sb-x" aria-label="${esc(tt('Annuler', 'Cancel'))}">✕</button>`;
+  $('#sb-tout').onclick = () => { S.selInv = n === l.length ? new Set() : new Set(l.map(c => c.id)); chargerInventaire(); };
+  $('#sb-x').onclick = () => { S.selInv = null; chargerInventaire(); };
+  $('#sb-ret').onclick = async () => { if (await retirerCartes(l.filter(c => S.selInv.has(c.id)))) { S.selInv = null; chargerInventaire(); } };
+}
+async function retirerCartes(cartes){
+  if (!cartes.length) return false;
+  const ebayN = cartes.filter(c => c.item_number && c.statut === 'Listée').length, n = cartes.length;
+  const titre = n > 1 ? tt(`Retirer ${n} cartes de l’inventaire ?`, `Remove ${n} cards from inventory?`) : tt('Retirer cette carte de l’inventaire ?', 'Remove this card from inventory?');
+  const texte = ebayN ? tt(`${ebayN === n ? (n > 1 ? 'Elles sont' : 'Elle est') : ebayN + (ebayN > 1 ? ' sont' : ' est')} en vente sur eBay : ${ebayN > 1 ? 'leurs annonces seront terminées' : 'son annonce sera terminée'} aussi.`,
+      `${ebayN === n ? (n > 1 ? 'They are' : 'It is') : ebayN + (ebayN > 1 ? ' are' : ' is')} listed on eBay: ${ebayN > 1 ? 'those listings' : 'the listing'} will be ended too.`)
+    : tt('Elles ne sont pas en vente sur eBay.', 'Not listed on eBay.');
+  if (!await confirmer(titre, texte, tt('Retirer', 'Remove'), true)) return false;
+  const r = await essai(API.cartes_retirer(cartes.map(c => c.id), true));
+  if (!r) return false;
+  const err = r.erreurs || [];
+  toast(tt(`${r.retirees} retirée${r.retirees > 1 ? 's' : ''}`, `${r.retirees} removed`) + (r.terminees ? tt(` · ${r.terminees} annonce${r.terminees > 1 ? 's' : ''} eBay terminée${r.terminees > 1 ? 's' : ''}`, ` · ${r.terminees} eBay listing${r.terminees > 1 ? 's' : ''} ended`) : '')
+    + (err.length ? tt(` · ${err.length} gardée${err.length > 1 ? 's' : ''} : ${err[0].erreur}`, ` · ${err.length} kept: ${err[0].erreur}`) : ''), err.length ? 6000 : 2500);
+  chargerInventaire();
+  return true;
+}
 async function chargerInventaire(){
   const f = Object.assign({}, (FILTRES_INV.find(x => x[0] === S.filtreInv) || FILTRES_INV[0])[2], {q:S.rechInv});
   let tout;
@@ -9258,11 +9298,17 @@ async function chargerInventaire(){
   const resume = l.length ? `<button class="inv-res" id="i-res"><span class="ir-n"><b>${l.length}</b> ${vendues ? tt('vendues', 'sold') : tt('cartes', 'cards')}</span><b class="ir-v">${argentCourt(valeur)}</b>
       ${!vendues && cher ? `<span class="capsule or petit ir-fix" data-fix="baisser">${cher} ${tt('trop chères', 'too pricey')}</span>` : ''}<i>›</i></button>` : '';
   const slabs = S.filtreInv === 'collection';
-  z.innerHTML = puces + note + (slabs ? '' : resume) + (l.length ? (slabs ? `<div class="grille-slab">${l.map(tuileSlab).join('')}</div>` : `<div class="grille-c">${l.map(tuileInv).join('')}</div>`)
+  const selB = l.length && !vendues ? `<div class="inv-selb"><button class="pilule ${S.selInv ? 'acc' : ''}" id="i-sel">${S.selInv ? tt('Terminer la sélection', 'Done selecting') : tt('Sélectionner', 'Select')}</button></div>` : '';
+  z.innerHTML = puces + note + (slabs ? '' : resume) + selB + (l.length ? (slabs ? `<div class="grille-slab">${l.map(tuileSlab).join('')}</div>` : `<div class="grille-c">${l.map(tuileInv).join('')}</div>`)
     : `<div class="vide">${S.filtreInv === 'collection' ? tt('Ta collection est vide', 'Your collection is empty') : tt('Rien ici', 'Nothing here')}<button class="pilule" id="i-vide">${tt('Ajouter des cartes', 'Add cards')}</button></div>`);
   $$('#i-sports [data-sp]').forEach(b => b.onclick = () => { S.sportInv = b.dataset.sp || null; chargerInventaire(); });
   if (slabs) cadrerSlabs(z);
-  $$('#i-liste .tuile-inv').forEach(r => r.onclick = () => { const c = l.find(x => x.id === +r.dataset.id); if (c && c.emplacement === 'Collection' && c.statut === 'En stock') ficheCollection(c); else feuilleCarte(c); });
+  $$('#i-liste .tuile-inv').forEach(r => r.onclick = () => { const c = l.find(x => x.id === +r.dataset.id);
+    if (S.selInv) { vibrer(); S.selInv.has(c.id) ? S.selInv.delete(c.id) : S.selInv.add(c.id); r.classList.toggle('choisie', S.selInv.has(c.id)); barreSelInv(); return; }
+    if (c && c.emplacement === 'Collection' && c.statut === 'En stock') ficheCollection(c); else feuilleCarte(c); });
+  if (S.selInv) { S.selInv = new Set([...S.selInv].filter(id => l.some(c => c.id === id))); $$('#i-liste .tuile-inv').forEach(r => r.classList.toggle('choisie', S.selInv.has(+r.dataset.id))); }
+  const bs = $('#i-sel'); if (bs) bs.onclick = () => { vibrer(); S.selInv = S.selInv ? null : new Set(); chargerInventaire(); };
+  barreSelInv();
   $$('#i-liste [data-pro]').forEach(b => b.onclick = (e) => { e.stopPropagation(); feuillePro(b.dataset.pro); });
   const ir = $('#i-res'); if (ir) ir.onclick = (e) => { vibrer(); const fx = e.target.closest('[data-fix]'); if (fx) return feuillePrixRapide(fx.dataset.fix); feuilleBloc($('#i-b-res')); };
   $$('#i-kpis [data-fix]').forEach(b => b.onclick = () => { vibrer(); feuillePrixRapide(b.dataset.fix); });
@@ -11032,7 +11078,7 @@ function feuilleCarte(c){
   };
   const v = $('#c-vendre'); if (v) v.onclick = () => feuilleVente(c);
   const pe = $('#c-ebay'); if (pe) pe.onclick = () => { fermerFeuille(); vendreDepuisCollection(c.id); };   // passe en mode Vendeur au besoin
-  const s = $('#c-suppr'); if (s) s.onclick = async () => { if (await confirmer('Supprimer cet article ?', 'Supprimer', true) && await essai(API.carte_supprimer(c.id), 'Supprimée')) chargerInventaire(); };
+  const s = $('#c-suppr'); if (s) s.onclick = async () => { if (await retirerCartes([c])) fermerFeuille(); };
 }
 // 24 oct 2026 - dans la fiche : les memes cartes en vente (comps) et un tap pour se mettre au prix du marche
 async function chargerCompsCarte(c){

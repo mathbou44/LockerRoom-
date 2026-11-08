@@ -3568,6 +3568,27 @@ class Api:
                 c.close()
         return {"ok": True}
 
+    def cartes_retirer(self, ids, ebay=True):
+        """8 nov 2026 (Mathieu : « les cartes a retirer de mon inventaire devraient aussi se supprimer dans eBay, et je peux
+        les selectionner dans l'app ») : retire une ou plusieurs cartes ; celles en vente sur eBay voient leur annonce
+        terminee d'abord. Si eBay refuse, la carte RESTE (on ne perd pas la trace d'une annonce encore active).
+        -> {ok, retirees, terminees, erreurs: [{id, titre, erreur}]}"""
+        out = {"ok": True, "retirees": 0, "terminees": 0, "erreurs": []}
+        for cid in list(dict.fromkeys(int(i) for i in (ids or []) if str(i).strip().lstrip("-").isdigit()))[:200]:
+            c = self.carte_lire(cid)
+            if not c:
+                continue
+            if ebay and c.get("item_number") and c.get("statut") == "Listée":
+                r = self._ecrire_ebay("terminer", c["item_number"])
+                if not r.get("ok"):
+                    out["erreurs"].append({"id": cid, "titre": c.get("titre"), "erreur": r.get("erreur") or "eBay a refusé"})
+                    continue
+                out["terminees"] += 1
+            self.carte_supprimer(cid)
+            out["retirees"] += 1
+        out["ok"] = not out["erreurs"] or out["retirees"] > 0
+        return out
+
     def carte_vendre(self, cid, d):
         """d : {canal: 'eBay'|'Magasin'|'Break'|'Autre', prix, port_paye, port_charge, frais (optionnel), date, client_id}"""
         d = d or {}

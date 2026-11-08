@@ -175,6 +175,35 @@ def changer_prix(item_id, prix):
     return {"ok": True, "item_id": item_id, "prix": round(prix, 2), "avertissements": ebay_compte.avertissements(r)}
 
 
+# 8 nov 2026 (Mathieu : « les cartes a retirer de mon inventaire devraient aussi se supprimer dans eBay ») : terminer une
+# annonce (Inventory API : withdraw ; sinon Trading EndItem). Une annonce deja terminee ou vendue n'est pas une erreur.
+_DEJA_FINIE = ("1047", "already been closed", "already ended", "has been closed", "is no longer available", "not active")
+
+
+def terminer(item_id):
+    item_id = str(item_id or "").strip()
+    if not re.fullmatch(r"\d{9,15}", item_id):
+        raise ValueError("Numéro d'annonce eBay invalide")
+    import ebay_moderne
+    try:
+        r = ebay_moderne.retirer(item_id)
+        if r:
+            return r
+    except RuntimeError as e:
+        if not any(x in str(e).lower() for x in _DEJA_FINIE):
+            raise
+        return {"ok": True, "item_id": item_id, "deja": True}
+    corps = (f'<?xml version="1.0" encoding="utf-8"?><EndItemRequest xmlns="{NS}">'
+             f"<ItemID>{item_id}</ItemID><EndingReason>NotAvailable</EndingReason></EndItemRequest>")
+    try:
+        ebay_compte.trading("EndItem", corps)
+    except RuntimeError as e:
+        if any(x in str(e).lower() for x in _DEJA_FINIE):
+            return {"ok": True, "item_id": item_id, "deja": True}
+        raise
+    return {"ok": True, "item_id": item_id}
+
+
 def id_rest(item_id):
     """« 1234567890 » (numero d'annonce) -> « v1|1234567890|0 » (format des API Buy)."""
     s = str(item_id or "").strip()
