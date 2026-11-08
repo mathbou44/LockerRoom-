@@ -110,6 +110,8 @@ def _norm(t):
     t = t.replace("&", " and ").replace("’", "'")
     t = re.sub(r"[^a-z0-9#/.\- ]+", " ", t)
     t = re.sub(r"(?<![a-z0-9])\.|\.(?![0-9])", " ", t)      # points isoles (garde 9.5)
+    # 8 nov 2026 (une Poitras Future Watch « Inscribed 6/11/23 » /999 lue /23) : une date inscrite n'est pas une numerotation
+    t = re.sub(r"(?<![\d/])\d{1,2}\s*/\s*\d{1,2}\s*/\s*(?:19|20)?\d{2}(?![\d/])", " ", t)
     for rx, rempl in _SYN_RE:
         t = rx.sub(rempl, t)
     return re.sub(r"\s+", " ", t).strip()

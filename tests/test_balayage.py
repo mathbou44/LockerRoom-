@@ -22,8 +22,11 @@ assert deals.encan_admis({"encan": False})
 # 2. le balayage : toute la categorie hockey, les petits et moyens vendeurs, prix fixe puis encans
 appels = []
 T = "2024-25 Upper Deck Young Guns Ivan Demidov #451 RC"
+prix_min_vus = []
 def rech(q, categorie=None, limite=50, fond=True, encheres=False, recentes=False, flux=False, offset=0, aspects=None, **k):
     appels.append((q, categorie, encheres, offset, aspects))
+    if k.get("prix_min"):
+        prix_min_vus.append(k["prix_min"])
     if encheres:
         return [{"item_id": "e1", "titre": T, "prix_cad": 20.0, "port_cad": 2, "encan": True, "mises": 2, "fin": fin(3),
                  "vendeur": "petit", "vendeur_score": 120, "url": "u"},
@@ -42,5 +45,6 @@ finally:
 assert n == 2 and sorted(i for i, _ in vus) == ["e1", "f1"], vus                 # le tres gros vendeur est saute
 assert all(f == "petits vendeurs" for _, f in vus)
 assert all(q == "" and c == "261328" and a == deals.BALAYAGE_ASPECT for q, c, _e, _o, a in appels), appels
-assert [e for _q, _c, e, _o, _a in appels] == [False, True]                      # moins de 150 annonces : une page chacun
+assert [e for _q, _c, e, _o, _a in appels] == [False, True, True]                # moins de 150 annonces : une page chacun (+ 30 $ et plus)
+assert prix_min_vus == [deals.BALAYAGE_PRIX_MIN]                                 # 8 nov : 2e passage, les encans de 30 $ et plus
 print("BALAYAGE OK")

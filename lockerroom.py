@@ -142,10 +142,11 @@ def _net_rev(valeur):
     return _d.net_revente(valeur)
 
 
-def _paye(total):
-    """7 nov 2026 : ce que tu paies vraiment (mise ou prix + port, taxes de l'achat comprises : deals.cout_achat)."""
+def _paye(total, x=None):
+    """7 nov 2026 : ce que tu paies vraiment (mise ou prix + port, taxes de l'achat comprises : deals.cout_achat) ;
+    8 nov : hors Canada, les frais d'importation de l'annonce x (deals.taxe_de)."""
     import deals as _d
-    return _d.cout_achat(total)
+    return _d.cout_achat(total, _d.taxe_de(x) if x is not None else None)
 
 
 def _maintenant():
@@ -5956,7 +5957,8 @@ class Api:
             if not x.get("encan") and (x.get("ratio") or 1) < (0.25 if (x.get("valeur") or 0) >= 400 else 0.15):
                 continue                     # 5 nov 2026 (Fantilli Signature Materials a 253 $ « vaut 1 393 $ ») : une carte de 400 $+
                                              # a prix fixe sous 25 % de sa valeur, c'est presque toujours une autre carte
-            x["gain"] = round(_net_rev(x.get("valeur") or 0) - _paye(x.get("total") or 0), 2)
+            x["gain"] = round(_net_rev(x.get("valeur") or 0) - _paye(x.get("total") or 0, x), 2)
+            x["taxe_achat"] = deals.taxe_de(x)                 # 8 nov 2026 : l'ecran compte les memes frais (importation)
             if not x.get("encan") and x["gain"] <= 1:          # 26 oct 2026 : pas de profit apres les frais : pas un deal
                 continue
             x["rabais"] = round(100 * (1 - (x.get("ratio") or 1)))
@@ -5968,7 +5970,7 @@ class Api:
         """Le profit que l'ecran affiche : un encan, a la mise max (port compris) ; un prix fixe, au prix demande."""
         if x.get("encan") and x.get("mise_max") is not None and x.get("valeur") and fp is not None:
             import deals as _dlg
-            return _net_rev(x["valeur"]) - _paye(float(x["mise_max"]) + _dlg.port_eff(x.get("port")))
+            return _net_rev(x["valeur"]) - _paye(float(x["mise_max"]) + _dlg.port_eff(x.get("port")), x)
         return x.get("gain") or 0
 
     @staticmethod
@@ -6029,7 +6031,7 @@ class Api:
         # 6 nov 2026 (Mathieu : « mettre a jour les max bid au plus vite ») : la mise max de chaque deal refaite a la lecture
         # avec la regle d'aujourd'hui (30 % de profit net) ; un prix fixe qui ne laisse plus ce profit n'est plus un deal
         tout = [_dl.a_jour(x) for x in tout if _dl.encan_admis(x)]        # 7 nov : 24 h et une mise (sauf Savage, Remi, CF31)
-        tout = [x for x in tout if x.get("encan") or not (x.get("valeur") and x.get("total") and x["total"] > _dl.prix_max(x["valeur"]))]
+        tout = [x for x in tout if x.get("encan") or not (x.get("valeur") and x.get("total") and x["total"] > _dl.prix_max(x["valeur"], taxe=_dl.taxe_de(x)))]
         # 2 nov 2026 (Mathieu : « quand le prix suggere est depasse par le bid actuel, ce n'est plus un deal, il ne devrait plus
         # etre la ») : la mise du moment (hors port) au-dessus de la mise max -> hors des deals, tout de suite a la lecture
         tout = [x for x in tout if not (x.get("encan") and x.get("mise_max") is not None and x.get("total")
@@ -6041,7 +6043,7 @@ class Api:
         f = dict(f, _fp=fp_, _ff=ff_)
         for x in tout:
             if x.get("valeur") and x.get("total") is not None:
-                x["gain"] = round(_net_rev(x["valeur"]) - _paye(x.get("total") or 0), 2)
+                x["gain"] = round(_net_rev(x["valeur"]) - _paye(x.get("total") or 0, x), 2)
                 x["rabais"] = round(100 * (1 - (x.get("total") or 0) / x["valeur"]))
         par_sport = {}
         for x in tout:
@@ -6121,7 +6123,7 @@ class Api:
             sec = [dict(x, source="marche") for x in dd["secours"]["deals"] if str(x.get("vu_le") or "") >= lim6 and _d.valide(x)
                    and str(x.get("item_id")) not in ret and _d.encore_ouvert(x)]
             for x in sec:
-                x["gain"] = round(_net_rev(x.get("valeur") or 0) - _paye(x.get("total") or 0), 2)
+                x["gain"] = round(_net_rev(x.get("valeur") or 0) - _paye(x.get("total") or 0, x), 2)
                 x["rabais"] = round(100 * (1 - (x.get("ratio") or 1)))
             sec = [x for x in self._deals_filtrer(sec, f) if x.get("encan") or x["gain"] > 1]
             if sec:
@@ -6134,7 +6136,7 @@ class Api:
             if str(x.get("item_id")) in _d._bannis() or str(x.get("item_id")) in ret_p or not _d.encore_ouvert(x) or not _d.encan_admis(x):
                 continue
             x = _dl.a_jour(x)
-            y = dict(x, source="marche", gain=round(_net_rev(x.get("valeur") or 0) - _paye(x.get("total") or 0), 2),
+            y = dict(x, source="marche", gain=round(_net_rev(x.get("valeur") or 0) - _paye(x.get("total") or 0, x), 2),
                      rabais=round(100 * (1 - (x.get("ratio") or 1))))
             pres.append(y)
         pres = self._appliquer_profil([x for x in self._deals_filtrer(pres, f) if not f.get("sports") or (x.get("sport") or "hockey") in f["sports"]], prof)[:24 if pro else 6]
@@ -6154,18 +6156,19 @@ class Api:
                 if not e_ or time.time() - e_[0] >= self.VAL_CACHE_S:      # absente ou perimee : en fond
                     plus_tard.append(x)
                 if vc:
-                    x = dict(x, valeur=vc[0], n=vc[1], mise_max=round(_dl.prix_max(vc[0]) - _dl.port_eff(x.get("port")), 2))
+                    x = dict(x, valeur=vc[0], n=vc[1], mise_max=round(_dl.prix_max(vc[0], taxe=_dl.taxe_de(x)) - _dl.port_eff(x.get("port")), 2))
             y = self._ramasser(dict(_dl.a_jour(x), source="marche", recrue=bool(x.get("recrue"))), chez_s)
             # 5 nov 2026 (Mathieu : « il doit toujours y avoir une analyse si elle est dans les deals ») : un encan sans valeur
             # (ses ventes se calculent en fond) n'est pas montre ; il arrive dans les deals des que sa valeur est connue
             if not y.get("valeur"):
                 continue
             if y.get("valeur"):
-                y["gain"] = round(_net_rev(y["valeur"]) - _paye(y.get("total") or 0), 2)
+                y["gain"] = round(_net_rev(y["valeur"]) - _paye(y.get("total") or 0, y), 2)
+                y["taxe_achat"] = _dl.taxe_de(y)
                 y["rabais"] = round(100 * (1 - (y.get("total") or 0) / y["valeur"]))
                 # 31 oct 2026 (Mathieu : « se faire retirer du dashboard si ce n'est plus un deal ») : valeur connue et mise
                 # au-dessus de 70 % de celle-ci -> pas un deal : hors de l'ecran Deals (la watchlist, elle, le montre en rouge)
-                if (y.get("total") or 0) > _dl.prix_max(y["valeur"]):
+                if (y.get("total") or 0) > _dl.prix_max(y["valeur"], taxe=_dl.taxe_de(y)):
                     continue
             suivis.append(y)
         self._valeurs_en_fond(plus_tard)
@@ -6192,7 +6195,7 @@ class Api:
                 x["joueur_n"], x["carte_n"] = self._etiquette_deal(x.get("titre") or "", jd if jd and cartes_match.norm(jd) in cartes_match.norm(x.get("titre") or "") else None)
         # 31 oct 2026 (Mathieu : « les deals n'apparaissent pas au fur et a mesure, ca reste a 35 ») : un encan d'un gros vendeur
         # qui vient de recevoir sa valeur et qui est a 70 % ou moins de celle-ci est un deal : il compte dans le nombre
-        n_su = sum(1 for x in suivis if x.get("valeur") and (x.get("total") or 0) <= _dl.prix_max(x["valeur"]))
+        n_su = sum(1 for x in suivis if x.get("valeur") and (x.get("total") or 0) <= _dl.prix_max(x["valeur"], taxe=_dl.taxe_de(x)))
         return {"ok": True, "deals": lst[:240], "n": n + n_su, "n_encans_valorises": n_su, "pro": pro, "limite": None if pro else forfaits.LIMITES["deals"],
                 "suivis": suivis,
                 "pres": pres, "secours": secours, "secours_le": (dd.get("secours") or {}).get("le") if secours else None,
@@ -6365,7 +6368,7 @@ class Api:
         if total and not a.get("erreur"):
             try:
                 import deals as _dl0
-                maj_deal = _dl0.maj_prix(item_id, total, a.get("port_cad"), a.get("mises"), a.get("fin"))
+                maj_deal = _dl0.maj_prix(item_id, total, a.get("port_cad"), a.get("mises"), a.get("fin"), achat_=_dl0.achat(a))
             except Exception as e:
                 print("Deals (prix fiche) : " + repr(e), flush=True)
         r = self.reglages_lire()
@@ -6448,13 +6451,13 @@ class Api:
                 pourquoi = None
         suggere = None
         if saison_v:
-            suggere = {"vente": valeur, "achat_max": round(max(0.0, _deals.prix_max(valeur)), 2), "source": saison_v[1]}
+            suggere = {"vente": valeur, "achat_max": round(max(0.0, _deals.prix_max(valeur, taxe=_deals.taxe_de(a))), 2), "source": saison_v[1]}
         elif valeur and (vm or n >= 3):
             pv = sorted(x["prix"] for x in ventes if x.get("prix")) if vm else sorted(x["total"] for x in comps)
             vente = pv[max(0, int(len(pv) * 0.6) - 1)] if len(pv) >= 3 else valeur     # vendues : un peu au-dessus du milieu
             suggere = {"vente": round(vente if vm else min(vente, valeur), 2),
                        # 2 nov 2026 (« pourquoi le max bid change ? ») : la meme regle que les deals et la watchlist (70 %)
-                       "achat_max": round(max(0.0, _deals.prix_max(valeur)), 2), "source": "vendues" if vm else "annonces"}
+                       "achat_max": round(max(0.0, _deals.prix_max(valeur, taxe=_deals.taxe_de(a))), 2), "source": "vendues" if vm else "annonces"}
         # 26 oct 2026 (Mathieu : « les deals sont pas bons avec les last sold ») : la fenetre a les ventes de CETTE carte ;
         # si elles disent que ce n'est pas un deal, l'annonce sort des deals de tout le monde (et sa valeur est corrigee)
         # 3 nov 2026 : ventes PAS LUES (SoldComps en panne, budget du jour) : on ne corrige rien (avant : le deal etait retire
@@ -6468,13 +6471,13 @@ class Api:
                 if x_:
                     chasseur = {"valeur": x_["valeur"], "le": x_.get("vu_le")}
                     valeur, juger = x_["valeur"], True
-                    suggere = {"vente": valeur, "achat_max": round(max(0.0, _deals.prix_max(valeur)), 2), "source": "chasseur"}
+                    suggere = {"vente": valeur, "achat_max": round(max(0.0, _deals.prix_max(valeur, taxe=_deals.taxe_de(a))), 2), "source": "chasseur"}
             except Exception as e:
                 print("Deals (valeur du chasseur) : " + repr(e), flush=True)
         if not rapide and total and not panne:
             try:
                 import deals as _dl
-                gain_v = round(_net_rev(valeur) - _paye(total), 2) if valeur and juger else None
+                gain_v = round(_net_rev(valeur) - _paye(total, a), 2) if valeur and juger else None
                 _dl.corriger(item_id, valeur if juger else None, gain_v, total)
             except Exception:
                 pass
@@ -6506,7 +6509,8 @@ class Api:
                 "valeur_chasseur": chasseur, "ventes_panne": panne, "vieux_cache": bool(vc.get("vieux_cache")),
                 "points": vc.get("points") or [], "tendance": vc.get("tendance"), "autres_joueurs": autres,
                 "rabais": round(100 * (1 - total / valeur)) if total and valeur and juger else None,
-                "gain": round(_net_rev(valeur) - _paye(total), 2) if total and valeur and juger else None,
+                "taxe_achat": _deals.taxe_de(a), "etranger": _deals.etranger(a),
+                "gain": round(_net_rev(valeur) - _paye(total, a), 2) if total and valeur and juger else None,
                 "peu_de_ventes": not juger, "pourquoi": pourquoi if not juger else None, "nb_trouvees": nb_v}
 
     def _mes_ventes_pareilles(self, titre, item_id=None, n=8):
@@ -6598,7 +6602,7 @@ class Api:
             import deals as _dv
             ids_ = {str(x.get("item_id")) for x in deals}
             n_su = sum(1 for x in (_dv.lire_vite().get("suivis") or []) if x.get("valeur") and str(x.get("item_id")) not in ids_
-                       and _dv.encore_ouvert(x) and (x.get("total") or 0) <= _dv.prix_max(x["valeur"]))
+                       and _dv.encore_ouvert(x) and (x.get("total") or 0) <= _dv.prix_max(x["valeur"], taxe=_dv.taxe_de(x)))
         except Exception:
             n_su = 0
         return {"mois": m0, "deals": deals[:24], "nb_deals": len(deals) + n_su, "gain_deals": round(sum(max(0, d["gain"]) for d in deals), 2),
@@ -6664,7 +6668,7 @@ class Api:
         for x in gardees:
             x["deal"] = bool(bon) and x["total"] <= bon
             x["bon"] = bool(valeur) and (not x["deal"]) and x["total"] <= valeur          # « bon prix » : sous la valeur vendue
-            x["gain"] = round(_net_rev(valeur) - _paye(x["total"]), 2) if valeur else None
+            x["gain"] = round(_net_rev(valeur) - _paye(x["total"], x), 2) if valeur else None
             x["hors_norme"] = x["total"] not in garde
         return {**base, "n": len(gardees), "mediane": med, "valeur": valeur, "valeur_source": "vendues" if vm else None,
                 "bon_prix": bon, "min": garde[0], "max": garde[-1], "annonces": gardees[:40]}

@@ -241,13 +241,22 @@ for _cle, _s in _UNIQUES.items():
 _MOTIF = re.compile(r"(?<![a-z0-9])(" + "|".join(re.escape(m) for m in sorted(_POIDS_MOT, key=len, reverse=True)) + r")(?![a-z0-9])")
 
 
+# 7 nov 2026 (Mathieu : « Ace Bailey n'est pas un joueur de hockey », une Topps Chrome « Future Stars » Auto du Jazz) : des noms
+# d'inserts contiennent un nom d'equipe (Future STARS = Dallas Stars) ; ils ne disent rien du sport
+_RE_INSERTS = re.compile(r"\b(future|rising|shining|rookie|all|young|super|future all)[\s-]+stars?\b|\ball[\s-]?stars?\b|\bsuperstars?\b")
+# Topps a la licence NBA depuis 2025-26 (pas la LNH : Upper Deck) ; une saison « 2025-26 » ou plus tard chez Topps = du basketball
+_RE_SAISON = re.compile(r"\b20(2[5-9]|[3-9]\d)-\d\d\b")          # avant 2025 : Topps faisait aussi du hockey (vintage)
+
+
 def scores(*textes):
     """{sport: score} d'apres les mots du titre, de l'equipe, du produit."""
-    t = " ".join(_n(x) for x in textes if x)
+    t = _RE_INSERTS.sub(" ", " ".join(_n(x) for x in textes if x))
     out = {s: 0 for s in SPORTS}
     for m in set(_MOTIF.findall(t)):
         for s, p in _POIDS_MOT[m]:
             out[s] += p
+    if _RE_SAISON.search(t) and _mot_present("topps", t) and not _mot_present("upper deck", t):
+        out["basketball"] += 4
     return out
 
 

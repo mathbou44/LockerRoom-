@@ -37,6 +37,14 @@ def _cx(api):
         c.execute("ALTER TABLE watchlist ADD COLUMN sans_comps_le TEXT")
     except Exception:
         pass
+    try:                                         # 7 nov 2026 : le vendeur (ramassage sur place : sans port)
+        c.execute("ALTER TABLE watchlist ADD COLUMN vendeur TEXT")
+    except Exception:
+        pass
+    try:                                         # 8 nov 2026 : taxes et frais d'importation de l'achat (deals.taxe_de)
+        c.execute("ALTER TABLE watchlist ADD COLUMN taxe REAL")
+    except Exception:
+        pass
     return c
 
 
@@ -112,14 +120,14 @@ def regler(api, d):
     return {"ok": True, **cfg}
 
 
-def mise_auto(cfg, valeur, port):
+def mise_auto(cfg, valeur, port, taxe=None):
     """La mise max par defaut : ce qui laisse cfg['profit_pct'] de profit net, et au moins cfg['profit_min_d'] dollars
     (deals.prix_max : frais eBay, envoi, taxes de l'achat), moins le port."""
     import deals
     v = _f(valeur)
     if not v:
         return None
-    return round(max(0.0, deals.prix_max(v, cfg["profit_pct"] / 100, cfg.get("profit_min_d", deals.PROFIT_MIN_D)) - deals.port_eff(_f(port))), 2)
+    return round(max(0.0, deals.prix_max(v, cfg["profit_pct"] / 100, cfg.get("profit_min_d", deals.PROFIT_MIN_D), taxe=_tx(taxe)) - deals.port_eff(_f(port))), 2)
 
 
 def _refaire_mises(api, cfg=None, item_id=None):
@@ -127,9 +135,10 @@ def _refaire_mises(api, cfg=None, item_id=None):
     cfg = cfg or reglages(api)
     c = _cx(api)
     try:
-        q = "SELECT item_id, valeur, port FROM watchlist WHERE COALESCE(mise_perso,0)=0 AND valeur IS NOT NULL"
+        q = "SELECT item_id, valeur, port, vendeur, taxe FROM watchlist WHERE COALESCE(mise_perso,0)=0 AND valeur IS NOT NULL"
         rows = c.execute(q + (" AND item_id=?" if item_id else ""), ((str(item_id),) if item_id else ())).fetchall()
-        c.executemany("UPDATE watchlist SET mise_max=?, notif_seuil=0 WHERE item_id=?", [(mise_auto(cfg, v, p), i) for i, v, p in rows])
+        c.executemany("UPDATE watchlist SET mise_max=?, notif_seuil=0 WHERE item_id=?",
+                      [(mise_auto(cfg, v, 0.0 if _ramasse(api, vd) else p, tx), i) for i, v, p, vd, tx in rows])
         c.commit()
     finally:
         c.close()
@@ -160,6 +169,14 @@ def _f(v):
         return None
 
 
+def _tx(v):
+    """Une fraction de taxe (0,14975) : sans arrondi."""
+    try:
+        return float(v) if v not in (None, "") else None
+    except (TypeError, ValueError):
+        return None
+
+
 def _maint():
     return datetime.now(timezone.utc)
 
@@ -177,8 +194,10 @@ def ajouter(api, x):
     if not iid or len(iid) > 20:
         return {"ok": False, "erreur": "Annonce inconnue"}
     valeur, port = _f(x.get("valeur")), _f(x.get("port"))
+    vendeur = str(x.get("vendeur") or "")[:80] or None
+    taxe = _tx(x.get("taxe_achat"))
     # 6 nov 2026 : la mise max vient toujours de la valeur et de la regle d'aujourd'hui (celle de la tuile pouvait etre vieille)
-    mm = mise_auto(reglages(api), valeur, port) if valeur else _f(x.get("mise_max"))
+    mm = mise_auto(reglages(api), valeur, _port_achat({"port": port, "ramassage": _ramasse(api, vendeur)}), taxe) if valeur else _f(x.get("mise_max"))
     c = _cx(api)
     try:
         if c.execute("SELECT COUNT(*) FROM watchlist").fetchone()[0] >= MAX and not c.execute(
@@ -186,9 +205,9 @@ def ajouter(api, x):
             return {"ok": False, "erreur": f"{MAX} cartes au plus dans ta watchlist"}
         maint = _maint().isoformat(timespec="seconds")
         c.execute("INSERT OR REPLACE INTO watchlist (item_id, titre, photo, url, valeur, mise_max, total, port, encan, fin, ajoute_le, "
-                  "maj_le, statut, notif_fin, notif_seuil) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,'ok',0,0)",
+                  "maj_le, statut, notif_fin, notif_seuil, vendeur, taxe) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,'ok',0,0,?,?)",
                   (iid, str(x.get("titre") or "")[:200], str(x.get("photo") or "")[:600], str(x.get("url") or "")[:600], valeur, mm,
-                   _f(x.get("total")), port, 1 if x.get("encan") else 0, x.get("fin"), maint, maint))
+                   _f(x.get("total")), port, 1 if x.get("encan") else 0, x.get("fin"), maint, maint, vendeur, taxe))
         c.commit()
     finally:
         c.close()
@@ -314,6 +333,30 @@ def ids(api):
         c.close()
 
 
+# 7 nov 2026 (Mathieu : « le prix de la vue generale n'est jamais le meme que dans la fiche », Snuggerud chez Remi : mise
+# max 104 $ dans la watchlist, 113 $ dans la fiche) : chez un vendeur ou tu ramasses (Reglages des deals), la watchlist
+# compte comme la fiche et les deals : sans le port (mise max et profit). Le port garde en base reste le vrai.
+def _ramasse(api, vendeur):
+    try:
+        return bool(vendeur) and str(vendeur).strip().lower() in api._chez_ramassage()
+    except Exception:
+        return False
+
+
+def _port_achat(x):
+    """Le port que TU paies : 0 si tu ramasses, sinon celui de l'annonce (None = inconnu)."""
+    return 0.0 if x.get("ramassage") else x.get("port")
+
+
+def _ramassage(api, lst):
+    try:
+        chez = api._chez_ramassage()
+    except Exception:
+        chez = set()
+    for x in lst:
+        x["ramassage"] = bool(chez) and str(x.get("vendeur") or "").strip().lower() in chez
+
+
 def _etat(x, maint=None):
     """ok (encore rentable) | depasse (au-dessus de la mise max) | fini."""
     maint = maint or _maint()
@@ -341,6 +384,10 @@ def _du_chasseur(lst):
                                                                and str(y.get("corrige_le") or y.get("vu_le") or "") > str(x.get("ajoute_le") or ""))):
             # 6 nov 2026 : et la valeur que le chasseur a REVUE depuis l'ajout (ventes relues) remplace l'ancienne
             x["_valeur_neuve"] = float(y["valeur"])
+        if y and y.get("vendeur") and not x.get("vendeur"):
+            x["vendeur"] = y["vendeur"]
+        if y and (y.get("lieu") or y.get("taxe") is not None):
+            x["taxe"] = _d.taxe_de(y)                   # 8 nov 2026 : frais d'importation (achat hors Canada)
         if y and str(y.get("vu_le") or "") > str(x.get("maj_le") or ""):
             x.update(total=y.get("total", x.get("total")), fin=y.get("fin") or x.get("fin"), maj_le=y.get("vu_le"))
             if y.get("port") is not None:
@@ -376,7 +423,7 @@ def _valeurs_manquantes(api, lst):
         if x.get("valeur") and v and x.get("statut") != "fini":
             x["valeur"] = round(v, 2)
             if not x.get("mise_perso"):
-                x["mise_max"] = mise_auto(cfg, v, x.get("port"))
+                x["mise_max"] = mise_auto(cfg, v, _port_achat(x), x.get("taxe"))
             remplacees.append(x)
             continue
         if x.get("valeur") or x.get("statut") == "fini":
@@ -394,7 +441,7 @@ def _valeurs_manquantes(api, lst):
                 continue
         x["valeur"] = round(v, 2)
         if not x.get("mise_perso"):
-            x["mise_max"] = mise_auto(cfg, v, x.get("port"))
+            x["mise_max"] = mise_auto(cfg, v, _port_achat(x), x.get("taxe"))
         neuves.append(x)
     if neuves:
         c = _cx(api)
@@ -482,7 +529,7 @@ def _mises_a_jour(api, lst, cfg=None):
     for x in lst:
         if x.get("mise_perso") or not x.get("valeur"):
             continue
-        m = mise_auto(cfg, x["valeur"], x.get("port"))
+        m = mise_auto(cfg, x["valeur"], _port_achat(x), x.get("taxe"))
         if m is not None and (x.get("mise_max") is None or abs(float(x["mise_max"]) - m) >= 0.5):
             x["mise_max"] = m
             maj.append((m, str(x["item_id"])))
@@ -507,6 +554,7 @@ def liste(api):
     finally:
         c.close()
     _du_chasseur(lst)
+    _ramassage(api, lst)
     _valeurs_manquantes(api, lst)
     _mises_a_jour(api, lst)
     maint = _maint()
@@ -521,7 +569,8 @@ def liste(api):
     for x in lst:
         if x.get("valeur") and x.get("total") is not None:
             import deals as _dp                                   # 6 nov : + le materiel d'envoi ; 7 nov : + les taxes de l'achat
-            x["profit"] = round(_dp.net_revente(x["valeur"]) - _dp.cout_achat(x["total"]), 2)      # 7 nov : frais sur prix + port
+            paye = x["total"] - ((x.get("port") or 0) if x.get("ramassage") else 0)                   # ramassage : sans port
+            x["profit"] = round(_dp.net_revente(x["valeur"]) - _dp.cout_achat(paye, _tx(x.get("taxe"))), 2)      # 7 nov : frais sur prix + port
     for x in lst:
         x["sans_comps"] = bool(not x.get("valeur") and x.get("sans_comps_le"))
         x["encan"] = bool(x.get("encan"))
@@ -553,6 +602,7 @@ def verifier(api, proches=False, lire_article=None, maint=None):
     if not lst:
         return 0
     _du_chasseur(lst)
+    _ramassage(api, lst)
     try:
         _valeurs_manquantes(api, lst)                    # 5 nov 2026 : la mise max arrive aussi sans ouvrir l'ecran
         _mises_a_jour(api, lst, cfg)                     # 6 nov 2026 : et suit la regle d'aujourd'hui

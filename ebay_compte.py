@@ -664,7 +664,7 @@ def jeton_application():
 
 
 def rechercher(q, categorie=None, prix_max=None, recentes=False, limite=50, fond=True, encheres=False, flux=False, offset=0, vendeurs=None, frais=False,
-               aspects=None):
+               aspects=None, prix_min=None):
     """Annonces actives a prix fixe semblables : [{item_id, titre, prix_cad, url, photo}].
     Cache partage (24 h ; 6 h pour les nouveautes) et compteur d'appels (appels_ebay).
     24 oct 2026 - encheres=True : les encans qui finissent le plus tot (prix = mise actuelle, fin, nb de mises)."""
@@ -672,7 +672,8 @@ def rechercher(q, categorie=None, prix_max=None, recentes=False, limite=50, fond
                                      prix_max=round(float(prix_max), 2) if prix_max else None, recentes=bool(recentes), limite=int(limite),
                                      **({"encheres": True} if encheres else {}), **({"flux": True} if flux else {}), **({"offset": int(offset)} if offset else {}),
                                      **({"vendeurs": "|".join(sorted(vendeurs))} if vendeurs else {}),
-                                     **({"aspects": str(aspects)} if aspects else {}))
+                                     **({"aspects": str(aspects)} if aspects else {}),
+                                     **({"prix_min": round(float(prix_min), 2)} if prix_min else {}))
     # 26 oct 2026 (Mathieu : « on doit trouver le maximum ») : flux = les nouvelles annonces chaque heure (cache 50 min)
     # 31 oct 2026 : frais=True (encans qui finissent bientot chez les gros vendeurs, aux 15 min) : jamais le cache
     deja = None if frais else appels_ebay.cache_lire(cle, "flux" if flux else "encheres" if encheres else "recentes" if recentes else "marche")
@@ -680,8 +681,10 @@ def rechercher(q, categorie=None, prix_max=None, recentes=False, limite=50, fond
         return deja
     appels_ebay.exiger("browse", fond)
     filtres = ["buyingOptions:{AUCTION}" if encheres else "buyingOptions:{FIXED_PRICE}"]
-    if prix_max:
-        filtres.append(f"price:[..{float(prix_max):.2f}]")
+    # 8 nov 2026 : prix_min (le balayage des encans de 30 $ et plus : il va plus loin dans le temps)
+    if prix_max or prix_min:
+        filtres.append(f"price:[{float(prix_min):.2f}.." if prix_min else "price:[..")
+        filtres[-1] += (f"{float(prix_max):.2f}]" if prix_max else "]")
         filtres.append("priceCurrency:CAD")
     # 29 oct 2026 (Mathieu : « les encans de savage, remi, cf_31, dc sports 87, slab shark… je les veux TOUS ») : les annonces
     # de vendeurs precis (filtre officiel « sellers » de la Browse API) ; sans mot-cle, la categorie suffit
@@ -725,7 +728,15 @@ def _lire_article(d, item_id):
     port = (opt.get("shippingCost") or {}).get("value")
     imgs = [x.get("imageUrl") for x in [d.get("image") or {}] + (d.get("additionalImages") or []) if x.get("imageUrl")]
     vend = d.get("seller") or {}
+    # 8 nov 2026 (Mathieu : « frais d'importation a considerer ») : vers le Canada, eBay calcule les frais d'importation d'une
+    # annonce envoyee par eBay International Shipping (droits, taxes, frais) ; absents = le vendeur expedie lui-meme
+    imp = opt.get("importCharges") or {}
+    try:
+        imp_cad = round(float(imp.get("value")) * (_taux_vers_cad(imp.get("currency") or dev) or t), 2) if imp.get("value") not in (None, "") else 0.0
+    except (TypeError, ValueError):
+        imp_cad = 0.0
     return {"item_id": item_id, "titre": d.get("title") or "", "prix_cad": round(float(pr.get("value") or 0) * t, 2),
+           "import_cad": imp_cad, "import_lu": True,
            "port_cad": round(float(port) * t, 2) if port not in (None, "") else None, "photos": imgs[:12],
            "photo": imgs[0] if imgs else "", "url": d.get("itemWebUrl") or "", "etat": d.get("condition") or "",
            "vendeur": vend.get("username") or "", "vendeur_pct": vend.get("feedbackPercentage"), "vendeur_score": vend.get("feedbackScore"),
@@ -780,6 +791,7 @@ def lire_recherche(d):
                     "vendeur_pct": (it.get("seller") or {}).get("feedbackPercentage"),
                     "vendeur_score": (it.get("seller") or {}).get("feedbackScore"),
                     "fin": it.get("itemEndDate"), "mises": it.get("bidCount"), "cree": it.get("itemCreationDate"),
+                    "lieu": ((it.get("itemLocation") or {}).get("country") or ""),          # 8 nov 2026 : achat hors Canada
                     "encan": "AUCTION" in (it.get("buyingOptions") or [])})
     return out
 

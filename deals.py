@@ -75,15 +75,82 @@ except ValueError:
     TAXE_ACHAT = 0.14975
 
 
-def cout_achat(total):
-    """Ce que tu paies vraiment pour un total (mise ou prix + port) : les taxes sur l'achat comprises."""
+# 8 nov 2026 (Mathieu : « frais d'importation a considerer », sa commande d'une carte aux USA par le programme eBay
+# International Shipping : 106,17 $ US + 18,58 $ de port, puis 8,89 $ de TPS/TVH et 53,09 $ de FRAIS D'IMPORTATION, soit
+# +49,7 % au lieu de +14,975 % au Canada) : ce que coute un achat hors Canada.
+#  - l'annonce relue (getItem) donne ses frais d'importation (eBay les calcule pour le Canada) : on prend ceux-la, + la taxe
+#    percue a part (TAXE_IMPORT, 7,13 % dans sa commande) ;
+#  - relue sans frais d'importation (le vendeur expedie lui-meme) : les taxes comme au Canada ;
+#  - pas encore relue (resultat de recherche seulement) : IMPORT_DEFAUT, prudent (sa commande).
+def _env_pct(nom, defaut):
     try:
-        return round(float(total or 0) * (1 + TAXE_ACHAT), 2)
+        return float(os.environ.get(nom, defaut)) / 100
+    except ValueError:
+        return float(defaut) / 100
+
+
+TAXE_IMPORT = _env_pct("LR_TAXE_IMPORT", "7.13")
+IMPORT_DEFAUT = _env_pct("LR_IMPORT_DEFAUT", "49.7")
+
+
+def etranger(x):
+    lieu = str((x or {}).get("lieu") or "").strip().upper()
+    return bool(lieu) and lieu != "CA"
+
+
+def taxe_de(x):
+    """Les taxes et frais sur l'achat d'une annonce (fraction du prix + port) : 14,975 % au Canada ; hors Canada, les frais
+    d'importation d'eBay. Un chiffre deja calcule (« taxe ») est garde."""
+    x = x or {}
+    if x.get("taxe") is not None:
+        try:
+            return float(x["taxe"])
+        except (TypeError, ValueError):
+            pass
+    if not etranger(x):
+        return TAXE_ACHAT
+    if x.get("import_lu"):
+        pct = _pct_import(x)
+        return round(pct + TAXE_IMPORT, 4) if pct > 0 else TAXE_ACHAT
+    return IMPORT_DEFAUT
+
+
+def _pct_import(a):
+    """Les frais d'importation en fraction de (prix + port), au moment de la lecture (ils suivent le prix)."""
+    if a.get("import_pct") is not None:
+        try:
+            return float(a["import_pct"])
+        except (TypeError, ValueError):
+            return 0.0
+    try:
+        imp = float(a.get("import_cad") or 0)
+        sub = float(a.get("total") or ((a.get("prix_cad") or 0) + (a.get("port_cad") or a.get("port") or 0)))
+    except (TypeError, ValueError):
+        return 0.0
+    return round(imp / sub, 4) if imp > 0 and sub > 0 else 0.0
+
+
+def achat(a):
+    """Ce qu'une annonce lue dit de l'achat (lieu, frais d'importation) : a garder avec le deal. Les frais d'une annonce
+    relue (getItem) ne sont pas effaces par un simple resultat de recherche (qui ne les donne pas)."""
+    a = a or {}
+    out = {}
+    if a.get("lieu"):
+        out["lieu"] = a["lieu"]
+    if a.get("import_lu"):
+        out.update(import_lu=True, import_cad=a.get("import_cad"), import_pct=_pct_import(a), taxe=None)
+    return out
+
+
+def cout_achat(total, taxe=None):
+    """Ce que tu paies vraiment pour un total (mise ou prix + port) : les taxes (et frais d'importation) comprises."""
+    try:
+        return round(float(total or 0) * (1 + (TAXE_ACHAT if taxe is None else float(taxe))), 2)
     except (TypeError, ValueError):
         return 0.0
 
 
-def prix_max(valeur, profit_min=None, min_dollars=None):
+def prix_max(valeur, profit_min=None, min_dollars=None, taxe=None):
     """Le plus a payer (port compris, AVANT les taxes de l'achat) pour une carte qui se revend « valeur » et garder
     profit_min de profit (sur ce que tu paies, taxes comprises), et au moins min_dollars, apres les frais eBay et l'envoi."""
     try:
@@ -95,7 +162,7 @@ def prix_max(valeur, profit_min=None, min_dollars=None):
     p = PROFIT_MIN if profit_min is None else float(profit_min)
     dm = PROFIT_MIN_D if min_dollars is None else float(min_dollars)
     net = net_revente(v)
-    return max(0.0, min(net / (1 + p), net - dm) / (1 + TAXE_ACHAT))
+    return max(0.0, min(net / (1 + p), net - dm) / (1 + (TAXE_ACHAT if taxe is None else float(taxe))))
 RATIO_PRES = 0.85                # 27 oct 2026 : « a surveiller » = 70 a 85 % de la valeur (jamais affiche comme un deal)
 PAR_TOUR_ENCANS = 30             # 26 oct 2026 (Mathieu : « aucune enchere se terminant ? ») : 30 recherches d encans par heure
 VERSION = 4                      # 27 oct 2026 : valeur SURE (numeros speciaux, recence, coherence), vendeur, etat (v4)
@@ -240,7 +307,7 @@ def corriger(item_id, valeur, gain, total):
             d = lire()
             for g in d.get("suivis") or []:
                 if str(g.get("item_id")) == iid:
-                    g.update(valeur=valeur, mise_max=round(prix_max(valeur) - port_eff(g.get("port")), 2))
+                    g.update(valeur=valeur, mise_max=round(prix_max(valeur, taxe=taxe_de(g)) - port_eff(g.get("port")), 2))
             _ecrire(d)
     l = d.get("deals") or []
     x = next((g for g in l if str(g.get("item_id")) == iid), None)
@@ -249,14 +316,14 @@ def corriger(item_id, valeur, gain, total):
     with _verrou:
         d = lire()
         l = d.get("deals") or []
-        retirer = not valeur or (gain is not None and gain <= 1) or (total and total > prix_max(valeur) and not x.get("encan"))
+        retirer = not valeur or (gain is not None and gain <= 1) or (total and total > prix_max(valeur, taxe=taxe_de(x)) and not x.get("encan"))
         if not retirer:
             for g in l:
                 if str(g.get("item_id")) == iid:
                     g.update(valeur=valeur, ratio=round(total / valeur, 3) if total else g.get("ratio"),
                              corrige_le=datetime.now(timezone.utc).isoformat(timespec="seconds"))
                     if g.get("encan"):          # 27 oct 2026 (revue) : la mise max suit la nouvelle valeur
-                        g["mise_max"] = round(prix_max(valeur) - port_eff(g.get("port")), 2)
+                        g["mise_max"] = round(prix_max(valeur, taxe=taxe_de(g)) - port_eff(g.get("port")), 2)
                         if g["mise_max"] <= (g.get("total") or 0) - (g.get("port") or 0):
                             retirer = True
         if retirer:
@@ -339,7 +406,7 @@ def photo_refusee(item_id, photo, titre, attendu=None):
     return not v.get("meme_carte", True)
 
 
-def maj_prix(item_id, total, port=None, mises=None, fin=None):
+def maj_prix(item_id, total, port=None, mises=None, fin=None, achat_=None):
     """2 nov 2026 (Mathieu : « le prix doit updater dans les 2 affichages ») : la fiche d'une annonce lit eBay en direct ; ce
     prix remplace celui du deal garde (tuile et fiche disent la meme chose). Au-dessus de 70 % de la valeur -> il sort des
     deals. -> {"deal": x mis a jour | None, "retire": bool}"""
@@ -364,11 +431,13 @@ def maj_prix(item_id, total, port=None, mises=None, fin=None):
                 y["mises"] = mises
             if fin:
                 y["fin"] = fin
+            if achat_:
+                y.update(achat_)                         # 8 nov 2026 : lieu et frais d'importation lus par la fiche
             if y.get("valeur"):
                 y["ratio"] = round(y["total"] / y["valeur"], 3)
                 if y.get("encan"):
-                    y["mise_max"] = round(prix_max(y["valeur"]) - port_eff(y.get("port")), 2)
-        if x and x.get("valeur") and x["total"] > prix_max(x["valeur"]):
+                    y["mise_max"] = round(prix_max(y["valeur"], taxe=taxe_de(y)) - port_eff(y.get("port")), 2)
+        if x and x.get("valeur") and x["total"] > prix_max(x["valeur"], taxe=taxe_de(x)):
             d["deals"] = [y for y in d.get("deals") or [] if str(y.get("item_id")) != k]
             _noter_retires(d, [k])
             retire = True
@@ -376,7 +445,7 @@ def maj_prix(item_id, total, port=None, mises=None, fin=None):
     return {"deal": None if retire else x, "retire": retire}
 
 
-REVALIDE_V = 15                  # (approx : cartes similaires, 7 nov) 15 (7 nov) : saisons voisines, Exquisite, hits 365 j ; 14 (7 nov) : inscriptions a part ; 13 (7 nov) : port 10 $ / 20 $ ; 12 (7 nov) : frais reels (14,9 % de prix + port) ; 11 (7 nov) : 15 $ de profit au moins, taxes de l'achat ; 10 (6 nov) : mises max refaites sur TOUS les deals gardes ; 9 (6 nov) : prix max a 30 % de profit net (avant : 70 % de la valeur) ; 2 : « checklist » ; 3 : Bowman U = football ; 4 : la F1 ; 5 : « Beckett » prenom (pas gradee) ; 6 : Signature Materials ; 7 : « Draft » ; 8 : « Beam Team » (4 nov)
+REVALIDE_V = 16                  # 16 (7 nov) : le sport de tous les deals refait (Ace Bailey « hockey ») ; (approx : cartes similaires, 7 nov) 15 (7 nov) : saisons voisines, Exquisite, hits 365 j ; 14 (7 nov) : inscriptions a part ; 13 (7 nov) : port 10 $ / 20 $ ; 12 (7 nov) : frais reels (14,9 % de prix + port) ; 11 (7 nov) : 15 $ de profit au moins, taxes de l'achat ; 10 (6 nov) : mises max refaites sur TOUS les deals gardes ; 9 (6 nov) : prix max a 30 % de profit net (avant : 70 % de la valeur) ; 2 : « checklist » ; 3 : Bowman U = football ; 4 : la F1 ; 5 : « Beckett » prenom (pas gradee) ; 6 : Signature Materials ; 7 : « Draft » ; 8 : « Beam Team » (4 nov)
 
 
 def _revalider_un(x):
@@ -391,11 +460,11 @@ def _revalider_un(x):
     if len(bons) == len(vs):
         return x
     m, _pv = valeur_sure(bons, x.get("titre") or "")
-    if not m or not x.get("total") or x["total"] > prix_max(m):
+    if not m or not x.get("total") or x["total"] > prix_max(m, taxe=taxe_de(x)):
         return None
     x.update(valeur=m, vendues=bons, ratio=round(x["total"] / m, 3))
     if x.get("encan"):
-        x["mise_max"] = round(prix_max(m) - port_eff(x.get("port")), 2)
+        x["mise_max"] = round(prix_max(m, taxe=taxe_de(x)) - port_eff(x.get("port")), 2)
     return x
 
 
@@ -418,7 +487,7 @@ def a_jour(x):
             if y.get("total"):
                 y["ratio"] = round(float(y["total"]) / y["valeur"], 3)
     if y.get("encan"):
-        y["mise_max"] = round(prix_max(y["valeur"]) - port_eff(y.get("port")), 2)
+        y["mise_max"] = round(prix_max(y["valeur"], taxe=taxe_de(y)) - port_eff(y.get("port")), 2)
     return y
 
 
@@ -455,7 +524,7 @@ def revalider_produits():
                 y = a_jour(x)
                 if y.get("valeur") and x.get("valeur") and abs(float(y["valeur"]) - float(x["valeur"])) >= 0.5:
                     y["corrige_le"] = maint_
-                if cle == "deals" and not y.get("encan") and y.get("total") and y.get("valeur") and y["total"] > prix_max(y["valeur"]):
+                if cle == "deals" and not y.get("encan") and y.get("total") and y.get("valeur") and y["total"] > prix_max(y["valeur"], taxe=taxe_de(y)):
                     n_d += 1
                     continue
                 l2.append(y)
@@ -463,8 +532,7 @@ def revalider_produits():
         import sports
         for l in (d.get("deals") or [], d.get("suivis") or [], d.get("pres") or []):
             for x in l:
-                if sports._RE_UNIV.search(sports._n(x.get("titre") or "")) or sports.scores(x.get("titre") or "").get("f1"):
-                    x["sport"] = sports.detecter(x.get("titre") or "", defaut=x.get("sport"))
+                x["sport"] = sports.detecter(x.get("titre") or "", defaut=x.get("sport"))       # 7 nov : tous (Ace Bailey)
         d["revalide_v"] = REVALIDE_V
         _ecrire(d)
     _VALIDES.clear()
@@ -479,11 +547,11 @@ def _rejuger(x):
     if cartes_match.abimee(x.get("titre") or ""):
         return False
     m, _pv = valeur_sure([v for v in x.get("vendues") or [] if v.get("prix")], x.get("titre") or "")
-    if not m or not x.get("total") or x["total"] > prix_max(m):
+    if not m or not x.get("total") or x["total"] > prix_max(m, taxe=taxe_de(x)):
         return False
     x.update(valeur=m, ratio=round(x["total"] / m, 3), v=VERSION)
     if x.get("encan"):
-        x["mise_max"] = round(prix_max(m) - port_eff(x.get("port")), 2)
+        x["mise_max"] = round(prix_max(m, taxe=taxe_de(x)) - port_eff(x.get("port")), 2)
     return True
 
 
@@ -1184,7 +1252,7 @@ def _prometteuse(a, t, pv, pa, maint, cib=None):
                 return False
         except ValueError:
             return False
-    if len(pv) == 1 and t <= prix_max(pv[0]["prix"]):
+    if len(pv) == 1 and t <= prix_max(pv[0]["prix"], taxe=taxe_de(a)):
         return True
     if a.get("encan") and not pv and cib and _hit(cib) and t >= HIT_MIN:
         return True
@@ -1310,7 +1378,7 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
         deals.pop(a["item_id"], None)                 # revue : plus un deal (encan dont la mise a monte...)
         return
     med_a, source_a, n_a, ventes_a = va
-    if t > prix_max(med_a):
+    if t > prix_max(med_a, taxe=taxe_de(a)):
         st["_res"] = ("pres" if t <= med_a * RATIO_PRES and not a.get("encan") else "trop_cher", round(t / med_a, 3))
         st["trop_cher"] = st.get("trop_cher", 0) + 1
         deals.pop(a["item_id"], None)
@@ -1318,7 +1386,7 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
             st.setdefault("_pres", {})[a["item_id"]] = {"item_id": a["item_id"], "titre": a["titre"], "total": t, "photo": a.get("photo"),
                                                          "url": a.get("url"), "valeur": med_a, "ratio": round(t / med_a, 3), "encan": False,
                                                          "joueur": r.get("joueur"), "q": _q_deal(r), "vedette": bool(r.get("vedette")), "flux": r.get("flux"), "n": n_a,
-                                                         "vendues": ventes_a or [], "sport": r.get("sport") or "hockey",
+                                                         "vendues": ventes_a or [], "sport": _sport_titre(a.get("titre"), r.get("sport")),
                                                          "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION, "palier": "pres"}
         return
     if t <= med_a * PHOTO_RATIO and photo_refusee(a.get("item_id"), a.get("photo"), a.get("titre"), _q_deal(r)):
@@ -1334,7 +1402,8 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
             st["vedettes_deals"] = st.get("vedettes_deals", 0) + 1
     import sports
     joueur = r.get("joueur") or " ".join(w.capitalize() for w in cib["joueur"].split())
-    sport = r.get("sport") or (sport_carte(a.get("titre"), cib) if r.get("suivi") else None) or sports.detecter(a.get("titre") or "", defaut="hockey")
+    sport = (_sport_titre(a.get("titre"), r.get("sport")) if r.get("sport") else None) or (sport_carte(a.get("titre"), cib) if r.get("suivi") else None) \
+        or sports.detecter(a.get("titre") or "", defaut="hockey")
     deals[a["item_id"]] = {"item_id": a["item_id"], "titre": a["titre"], "total": t, "photo": a.get("photo"), "url": a.get("url"),
                            "valeur": med_a, "ratio": round(t / med_a, 3), "encan": bool(a.get("encan")), "fin": fin,
                            "mises": a.get("mises"), "sport": sport, "joueur": joueur, "q": _q_deal(r), "vedette": bool(r.get("vedette")), "flux": r.get("flux"),
@@ -1342,9 +1411,9 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
                            # 7 nov 2026 : valeur des saisons voisines (pas de comps de SA saison) : dit a l'utilisateur
                            **({"saisons": sorted({v.get("saison") for v in ventes_a or [] if v.get("saison")})} if source_a == "autre_saison" else {}),
                            # 27 oct 2026 : encan - la mise maximale pour que ca reste un deal (70 % de la valeur, port compris)
-                           "port": a.get("port_cad"), "mise_max": round(prix_max(med_a) - port_eff(a.get("port_cad")), 2) if a.get("encan") else None,
+                           "port": a.get("port_cad"), "mise_max": round(prix_max(med_a, taxe=taxe_de(a)) - port_eff(a.get("port_cad")), 2) if a.get("encan") else None,
                            "comps": comps or [], "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION,
-                           "vendeur": a.get("vendeur"), "vendeur_score": a.get("vendeur_score"),
+                           "vendeur": a.get("vendeur"), "vendeur_score": a.get("vendeur_score"), **achat(a),
                            # 5 nov 2026 : une pepite (nom mal ecrit sur eBay) : la faute et le titre tel qu'ecrit
                            **({"faute": r["faute"], "titre_ebay": a.get("titre_ebay")} if r.get("faute") else {})}
 
@@ -1355,6 +1424,14 @@ SUIVIS_MAX = 1000                # 29 oct 2026 : encans de veterans / legendes d
 _HORS_SPORTS = re.compile(r"\b(world cup|fifa|uefa|premier league|serie a|la liga|bundesliga|ligue 1|mls|soccer|futbol|tennis|atp|wta|golf|pga|"
                           r"formula 1|\bf1\b|ufc|mma|wwe|wrestling|boxing|nascar|pok[eé]mon|yu-?gi-?oh|magic the gathering|one piece|lorcana)\b", re.I)
 _JOUEURS_HOCKEY = None
+
+
+def _sport_titre(titre, sport):
+    """7 nov 2026 (Mathieu : « Ace Bailey n'est pas un joueur de hockey ») : le sport de la recherche (le balayage des petits
+    vendeurs cherche « Ice Hockey », mais des vendeurs classent mal leurs cartes) ; le titre gagne s'il dit nettement un
+    autre sport (equipe NBA, Topps 2025-26...)."""
+    import sports
+    return sports.detecter(titre or "", defaut=sport or "hockey")
 
 
 def sport_carte(titre, cib=None):
@@ -1419,9 +1496,9 @@ def _noter_suivi(st, a, bassin, maint):
     va = valeur_ou_saison(a, bassin.candidats(cib) if bassin else [], [], cib=cib)
     st.setdefault("_suivis", {})[str(a["item_id"])] = {
         "item_id": str(a["item_id"]), "titre": a.get("titre"), "total": t, "photo": a.get("photo"), "url": a.get("url"),
-        "encan": True, "fin": f, "mises": a.get("mises"), "port": a.get("port_cad"), "vendeur": a.get("vendeur"), "vendeur_score": a.get("vendeur_score"),
+        "encan": True, "fin": f, "mises": a.get("mises"), "port": a.get("port_cad"), "vendeur": a.get("vendeur"), "vendeur_score": a.get("vendeur_score"), **achat(a),
         "valeur": va[0] if va else None, "n": va[2] if va else 0, "vendues": va[3] if va else [],
-        "mise_max": round(prix_max(va[0]) - port_eff(a.get("port_cad")), 2) if va else None,
+        "mise_max": round(prix_max(va[0], taxe=taxe_de(a)) - port_eff(a.get("port_cad")), 2) if va else None,
         "sport": sport, "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION, "suivi": True, "recrue": rec}
     return "ok_recrue" if rec else "ok"
 
@@ -1575,7 +1652,7 @@ def _verifier_tard(st, deals, maint, bassin, verif, d=None):
         if s_ is not None and not s_.get("valeur"):
             va = valeur_ou_saison(a, (nv or []) + (bassin.candidats(cib) if bassin else []), [], cib=cib)
             if va:
-                s_.update(valeur=va[0], n=va[2], vendues=va[3], mise_max=round(prix_max(va[0]) - port_eff(a.get("port_cad")), 2))
+                s_.update(valeur=va[0], n=va[2], vendues=va[3], mise_max=round(prix_max(va[0], taxe=taxe_de(a)) - port_eff(a.get("port_cad")), 2))
         if dv:
             _noter_journal(st, a, r, cib, dv)
 
@@ -1679,7 +1756,7 @@ def _garder_lu(d2, garde_):
         if x.get("valeur") and (y.get("prix_lu_le") or y.get("corrige_le")):
             x["ratio"] = round((x.get("total") or 0) / x["valeur"], 3)
             if x.get("encan") and not x.get("mise_perso"):
-                x["mise_max"] = round(prix_max(x["valeur"]) - port_eff(x.get("port")), 2)
+                x["mise_max"] = round(prix_max(x["valeur"], taxe=taxe_de(x)) - port_eff(x.get("port")), 2)
     return garde_
 
 
@@ -1690,7 +1767,7 @@ def _fusion_suivi(vieux, x):
         y = dict(x)
         for k in ("valeur", "n", "vendues"):
             y[k] = vieux.get(k)
-        y["mise_max"] = round(prix_max(vieux["valeur"]) - port_eff(x.get("port")), 2)
+        y["mise_max"] = round(prix_max(vieux["valeur"], taxe=taxe_de(x)) - port_eff(x.get("port")), 2)
         return y
     return x
 
@@ -2044,6 +2121,11 @@ def regler_vendeurs(liste):
 BALAYAGE_PAGES_FIXE = 5
 BALAYAGE_PAGES_ENCANS = 5
 BALAYAGE_ASPECT = "Sport:{Ice Hockey}"
+# 8 nov 2026 (Mathieu : « on devrait l'avoir cette carte », une Poitras Future Watch Auto Inscribed /999 a 19 h de la fin,
+# 15 mises) : les 1 000 encans hockey qui finissent le plus tot ne couvrent que quelques heures (des milliers de cartes a 1 $).
+# Un 2e passage, les encans dont la mise est deja de 30 $ et plus, couvre les 24 h entieres (les cartes qui comptent)
+BALAYAGE_PRIX_MIN = 30
+BALAYAGE_PAGES_GROS = 5
 
 
 def petit_ou_moyen(a):
@@ -2055,6 +2137,7 @@ def balayer(rechercher, bassin, d, deals, st, maint, verif):
     """Le balayage des petits vendeurs (prix fixe recents + encans qui finissent). -> nombre d'annonces jugees."""
     import cartes_match
     r = {"q": None, "flux": "petits vendeurs", "sport": "hockey", "joueur": None}
+    juges = set()
     dernier = str(d.get("balayage_le") or "")
     limite_fin = (maint + timedelta(hours=ENCAN_H)).isoformat().replace("+00:00", "Z")
     n = 0
@@ -2077,6 +2160,7 @@ def balayer(rechercher, bassin, d, deals, st, maint, verif):
         st["balayage_petits"] = st.get("balayage_petits", 0) + len(bons)
         for a in bons:
             _juger(a, r, [], [] if ench else bons, maint, deals, st, bassin=bassin, verif=verif)
+            juges.add(a.get("item_id"))
             n += 1
         _publier(d, deals, maint, st)
         if not ench:
@@ -2086,6 +2170,25 @@ def balayer(rechercher, bassin, d, deals, st, maint, verif):
         elif len(l) < 150 or not l or str(l[-1].get("fin") or "9") > limite_fin:
             break                                    # au-dela de 24 h
     st.pop("_bal_fixe_fini", None)
+    pm, pg = _env_int("LR_BALAYAGE_PRIX_MIN", BALAYAGE_PRIX_MIN), _env_int("LR_BALAYAGE_GROS", BALAYAGE_PAGES_GROS)
+    vus = set(st.get("_vus") or ()) | juges
+    for page in range(pg if pm else 0):
+        try:
+            l = rechercher("", categorie="261328", limite=200, fond=True, encheres=True, flux=True, offset=200 * page,
+                           aspects=BALAYAGE_ASPECT, prix_min=pm)
+        except (RuntimeError, OSError, TypeError):
+            st["erreurs_ebay"] = st.get("erreurs_ebay", 0) + 1
+            break
+        st["requetes_flux"] = st.get("requetes_flux", 0) + 1
+        st["balayage_gros"] = st.get("balayage_gros", 0) + len(l)
+        bons = [a for a in l if a.get("item_id") not in vus and cartes_match.est_carte(a.get("titre") or "") and petit_ou_moyen(a)]
+        st["balayage_petits"] = st.get("balayage_petits", 0) + len(bons)
+        for a in bons:
+            _juger(a, r, [], [], maint, deals, st, bassin=bassin, verif=verif)
+            n += 1
+        _publier(d, deals, maint, st)
+        if len(l) < 150 or not l or str(l[-1].get("fin") or "9") > limite_fin:
+            break                                    # au-dela de 24 h
     return n
 
 
@@ -2288,15 +2391,15 @@ def reverifier(lire_article=None, max_=None):
             pass
         if not fini and t and t <= (x.get("valeur") or 0) * PHOTO_RATIO and photo_refusee(x["item_id"], x.get("photo") or a.get("photo"), x.get("titre"), x.get("q")):
             fini = True                                  # 2 nov 2026 : la photo montre une autre carte
-        if fini or not t or cartes_match.abimee(a.get("titre") or "") or t > prix_max((x.get("valeur") or 0)):
+        if fini or not t or cartes_match.abimee(a.get("titre") or "") or t > prix_max((x.get("valeur") or 0), taxe=taxe_de(dict(x, **achat(a)))):
             deals.pop(x["item_id"], None)
             st.setdefault("_retires", []).append(x["item_id"])
             st["reverif_retires"] = st.get("reverif_retires", 0) + 1
             continue
         x.update(total=t, ratio=round(t / x["valeur"], 3), mises=a.get("mises", x.get("mises")), fin=a.get("fin") or x.get("fin"),
-                 port=a.get("port_cad"), vu_le=maint.isoformat(timespec="seconds"))
+                 port=a.get("port_cad"), vu_le=maint.isoformat(timespec="seconds"), **achat(a))
         if x.get("encan"):
-            x["mise_max"] = round(prix_max(x["valeur"]) - port_eff(a.get("port_cad")), 2)
+            x["mise_max"] = round(prix_max(x["valeur"], taxe=taxe_de(x)) - port_eff(a.get("port_cad")), 2)
     garde_ = _sauver(d, deals, maint, st)
     return {"ok": True, "deals": len(garde_), "stats": st}
 
@@ -2371,7 +2474,7 @@ def fin_proche(lire_lot=None, maint=None):
         garde = []
         for x in d2.get("deals") or []:
             ok = maj(x)
-            if ok and x.get("valeur") and str(x.get("item_id")) in demandes and (x.get("total") or 0) > prix_max(x["valeur"]):
+            if ok and x.get("valeur") and str(x.get("item_id")) in demandes and (x.get("total") or 0) > prix_max(x["valeur"], taxe=taxe_de(x)):
                 ok = False                                 # la mise a monte : plus un deal
             (garde if ok else sortis).append(x)
         d2["deals"] = garde
@@ -2444,10 +2547,10 @@ def prix_fixes(lire_lot=None, maint=None):
         t = _total(a)
         if not t:
             return False
-        x.update(total=t, port=a.get("port_cad", x.get("port")), vu_le=vu, prix_lu_le=vu)
+        x.update(total=t, port=a.get("port_cad", x.get("port")), vu_le=vu, prix_lu_le=vu, **achat(a))
         if x.get("valeur"):
             x["ratio"] = round(t / x["valeur"], 3)
-            if t > prix_max(x["valeur"]):       # le prix a monte : plus un deal
+            if t > prix_max(x["valeur"], taxe=taxe_de(x)):       # le prix a monte : plus un deal
                 return False
         return True
 
@@ -2784,7 +2887,7 @@ def valoriser_suivis(rechercher=None, n_max=None):
             for g in d.get("suivis") or []:
                 va = trouves.get(str(g.get("item_id")))
                 if va and not g.get("valeur"):
-                    g.update(valeur=va[0], n=va[2], vendues=va[3], mise_max=round(prix_max(va[0]) - port_eff(g.get("port")), 2))
+                    g.update(valeur=va[0], n=va[2], vendues=va[3], mise_max=round(prix_max(va[0], taxe=taxe_de(g)) - port_eff(g.get("port")), 2))
             cov = d.get("prio_couverture")
             if cov and analyses:
                 if cov.get("ids"):                  # 7 nov : chaque carte comptee une fois, le detail par vendeur suit

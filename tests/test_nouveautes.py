@@ -175,7 +175,7 @@ class Deals(unittest.TestCase):
         self.assertTrue({"f2", "f3", "e1"} <= ids, ids)
         self.assertFalse({"f1", "f4"} & ids)
         self.assertEqual(len(appels), 1)                         # une seule verification (Demidov Canvas)
-        self.assertEqual(r["stats"].get("requetes_flux"), 4)          # 1 prix fixe + 1 page d'encans (derniere page) + le balayage (7 nov)
+        self.assertEqual(r["stats"].get("requetes_flux"), 5)          # 1 prix fixe + 1 page d'encans (derniere page) + le balayage (7 nov) + encans 30 $+ (8 nov)
         import deals as D
         self.assertEqual(D.ENCAN_H, 24)                               # 7 nov 2026 : 24 h et moins (Savage, Remi, CF31 : 5 jours)
 
@@ -234,7 +234,7 @@ class Deals(unittest.TestCase):
         self.assertNotIn("s5", ids)
         n = min(deals.HITS_PAR_TOUR, 7)
         self.assertEqual((int(d0 or 0) + deals.HITS_PAR_TOUR) % 7, d1)   # HITS_PAR_TOUR flux de hits par tour, en rotation
-        self.assertEqual(r["stats"].get("requetes_flux"), 2 * n + 2)   # n flux x (prix fixe + 1 page d'encans) + le balayage (7 nov)
+        self.assertEqual(r["stats"].get("requetes_flux"), 2 * n + 3)   # n flux x (prix fixe + 1 page d'encans) + le balayage (7 nov) + encans 30 $+ (8 nov)
 
     def test_autres_joueurs(self):
         """27 oct 2026 : la meme carte vendue par d'autres joueurs (repere), sans le meme joueur ni une autre carte."""

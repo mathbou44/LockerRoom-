@@ -282,6 +282,7 @@ details.reglage summary::-webkit-details-marker{display:none}
 .vp-m{display:flex; flex-wrap:wrap; gap:6px; align-items:center} .vp-m.vide{font-size:13px; color:var(--doux); justify-content:space-between}
 .vp-mi{display:inline-flex; align-items:baseline; gap:5px; padding:4px 10px; border-radius:99px; background:var(--carte2); border:1px solid var(--ligne); color:var(--texte); font:inherit; cursor:pointer}
 .vp-mi span{font-size:11.5px; color:var(--doux)} .vp-mi b{font:700 15px 'Barlow Condensed',sans-serif}
+.fa-g small b.fa-g2{font:inherit; font-weight:700; color:var(--vert)}
 .vp-comps{margin-top:14px} .vp-ct{display:flex; justify-content:space-between; font-size:13px; font-weight:700; color:var(--doux); margin-bottom:8px}
 .vp-ct span{font-weight:500} .vp-comps .comp-m span{display:flex; align-items:center; justify-content:center} .vp-comps .comp-m span svg{width:40%; opacity:.35}
 .vp-comps .comp-m small{font-size:11.5px; color:var(--doux); margin-top:-3px}
@@ -5821,7 +5822,7 @@ document.addEventListener('click', async (e) => {
     if (on) {
       const t = b.closest('[data-annonce]'), x = (S.dealsParId || {})[id] || {};
       r = await API.watch_ajouter({item_id:id, titre:x.titre || (t && t.dataset.titre), photo:x.photo || (t && t.dataset.photo), url:x.url || (t && t.dataset.url),
-        valeur:x.valeur, mise_max:x.mise_max, total:x.total ?? (t && nb(t.dataset.total)), port:x.port, encan:x.encan, fin:x.fin});
+        valeur:x.valeur, mise_max:x.mise_max, total:x.total ?? (t && nb(t.dataset.total)), port:x.port, encan:x.encan, fin:x.fin, vendeur:x.vendeur, taxe_achat:x.taxe_achat});
       if (r && r.ok) toast(r.ebay_erreur ? tt('★ Dans ta watchlist (pas sur eBay : ', '★ In your watchlist (not on eBay: ') + r.ebay_erreur + ')'
         : r.ebay ? tt('★ Dans ta watchlist et sur eBay', '★ In your watchlist and on eBay')
         : x.encan ? tt('★ Dans ta watchlist : alerte 15 min avant la fin', '★ In your watchlist: alert 15 min before the end') : tt('★ Dans ta watchlist', '★ In your watchlist'), r.ebay_erreur ? 4000 : 2000);
@@ -5858,7 +5859,7 @@ async function chargerWatch(){
         ${x.ebay_le && !fini ? `<span class="w-eb">✓ eBay</span>` : ''}</div>
       <div class="w-mil"><div class="w-t">${esc(titreCourt(x.titre))}</div>
         ${fini ? '' : `<div class="w-pr2"><div class="${dep ? 'rouge' : ''}"><small>${x.encan ? tt('Mise', 'Bid') : tt('Prix', 'Price')}</small><b>${cur}</b></div>
-          <button class="w-max2 ${x.mise_perso ? 'perso' : ''}" data-wmax="${esc(x.item_id)}"><small>${x.encan ? tt('Ta mise max', 'Your max bid') : tt('Paie au plus', 'Pay at most')} ✎</small><b class="${(x.mise_max == null && x.sans_comps) || (x.mise_max != null && x.mise_max < 1 && !x.mise_perso) ? 'w-sc' : ''}">${x.mise_max != null && x.mise_max < 1 && !x.mise_perso && x.valeur ? tt('Trop petite', 'Too small') : x.mise_max != null ? argent(x.mise_max, 0) : x.sans_comps ? tt('Pas de comps', 'No comps') : '—'}</b></button>${x.profit != null ? `<div class="w-pro ${x.profit > 0 ? 'vert' : 'rouge'}"><small>${tt('Profit', 'Profit')}</small><b>${x.profit > 0 ? '+' : '−'}${argent(Math.abs(x.profit), 0)}</b></div>` : ''}</div>`}
+          <button class="w-max2 ${x.mise_perso ? 'perso' : ''}" data-wmax="${esc(x.item_id)}"><small>${x.encan ? tt('Ta mise max', 'Your max bid') : tt('Paie au plus', 'Pay at most')} ✎</small><b class="${(x.mise_max == null && x.sans_comps) || (x.mise_max != null && x.mise_max < 1 && !x.mise_perso) ? 'w-sc' : ''}">${x.mise_max != null && x.mise_max < 1 && !x.mise_perso && x.valeur ? tt('Trop petite', 'Too small') : x.mise_max != null ? argent(x.mise_max, 0) : x.sans_comps ? tt('Pas de comps', 'No comps') : '—'}</b></button>${x.profit != null ? `<div class="w-pro ${x.profit > 0 ? 'vert' : 'rouge'}"><small>${x.encan ? tt('Profit actuel', 'Profit now') : tt('Profit', 'Profit')}</small><b>${x.profit > 0 ? '+' : '−'}${argent(Math.abs(x.profit), 0)}</b></div>` : ''}</div>`}
         ${dep ? `<div class="w-dep">${tt('Dépasse ta mise max', 'Over your max bid')}</div>` : ''}</div>
       <div class="w-dr">${x.etat === 'ok' && x.url ? (x.encan ? `<button class="w-go" data-wmiser="${esc(x.item_id)}">${tt('Miser', 'Bid')}</button>` : `<a class="w-go" href="${esc(lienAchat(x.url, 'watch'))}" target="_blank" rel="noopener">${tt('Acheter', 'Buy')}</a>`) : ''}
         <button class="sd-et on w-et" data-watch="${esc(x.item_id)}" aria-pressed="true" aria-label="${esc(tt('Retirer de la watchlist', 'Remove from watchlist'))}">${ICO_ETOILE}</button></div></div>`;
@@ -6082,7 +6083,7 @@ async function feuilleGixen(montants){
   const cx = $('#gx-csv'); if (cx) cx.onclick = () => { vibrer(); exporterGixen(bons); };
 }
 function feuilleMiseMax(x, W){
-  const defaut = x.valeur ? Math.round(Math.max(0, prixMaxDeal(x.valeur, (W.profit_pct ?? 30) / 100, W.profit_min_d ?? 15) - portEff(x.port)) * 100) / 100 : null;
+  const defaut = x.valeur ? Math.round(Math.max(0, prixMaxDeal(x.valeur, (W.profit_pct ?? 30) / 100, W.profit_min_d ?? 15, x.taxe) - portEff(x.port)) * 100) / 100 : null;
   ouvrirFeuille(`<h3>${tt('Ma mise max', 'My max bid')}</h3>
     <div class="sous" style="margin-bottom:12px">${esc(titreCourt(x.titre))}${x.valeur ? ' · ' + tt('vaut ', 'worth ') + argentCourt(x.valeur) : ''}</div>
     <label class="large">${tt('Mise max', 'Max bid')} ${symDevise()}<input class="champ" id="wm-v" type="number" inputmode="decimal" step="1" min="1" value="${dev2(x.mise_max)}"></label>
@@ -6118,9 +6119,9 @@ function tuileDeal(x){
   const encan = x.encan, sansV = x.suivi && !(x.valeur && x.rabais > 0);
   const nom = x.joueur_n || titreCourt(x.titre), carte = x.joueur_n ? x.carte_n : '';
   const prix = encan ? Math.max(0, (x.total || 0) - (x.port || 0)) : x.total;
-  const max = x.mise_max != null ? x.mise_max : x.valeur ? Math.round(prixMaxDeal(x.valeur) - (encan ? portEff(x.port) : 0)) : null;
+  const max = x.mise_max != null ? x.mise_max : x.valeur ? Math.round(prixMaxDeal(x.valeur, undefined, undefined, x.taxe_achat) - (encan ? portEff(x.port) : 0)) : null;
   const k3 = (lib, val, cl) => `<span class="sd-k ${cl || ''}"><small>${lib}</small><b>${val}</b></span>`;
-  const g = encan && max != null && x.valeur ? profitDeal(x.valeur, max + portEff(x.port)) : x.gain;          // encan : a la mise max
+  const g = encan && max != null && x.valeur ? profitDeal(x.valeur, max + portEff(x.port), x.taxe_achat) : x.gain;          // encan : a la mise max
   return `<div class="tuile-deal slab-deal ${x.pres ? 'pres' : ''} ${sansV ? 'suivi' : ''}" data-id="${esc(x.item_id)}" ${attrsAnnonce(x)} role="button" tabindex="0">
     <div class="sd-slab"><div class="sd-lab">
         <b class="sd-j">${x.favori ? '<i class="sd-fav">★</i> ' : ''}${esc(nom)}</b>${carte ? `<small class="sd-c">${esc(carte)}</small>` : ''}
@@ -6811,13 +6812,15 @@ const fraisVente = () => { const r = S.reglages || {}; return [r.frais_ebay_pct 
 const ENVOI_NET = 1.50, PROFIT_MIN_DEAL = 0.30, PROFIT_MIN_D = 15, TAXE_ACHAT = 0.14975;
 const profitA = (valeur, paye) => { if (!valeur || paye == null) return null; const [fp, ff] = fraisVente(); return Math.round((valeur * (1 - fp) - ff - ENVOI_NET - paye) * 100) / 100; };
 // un deal : ce que tu paierais (mise ou prix + port) avec les taxes de l'achat (le cout de l'inventaire, lui, les a deja)
-const profitDeal = (valeur, paye) => paye == null || !valeur ? null : Math.round((netDeal(valeur) - paye * (1 + TAXE_ACHAT)) * 100) / 100;
+// 8 nov 2026 (« frais d'importation a considerer ») : taxe = les taxes et frais d'importation de L'ANNONCE (serveur : taxe_achat)
+const txA = (t) => t == null || !isFinite(+t) ? TAXE_ACHAT : +t;
+const profitDeal = (valeur, paye, taxe) => paye == null || !valeur ? null : Math.round((netDeal(valeur) - paye * (1 + txA(taxe))) * 100) / 100;
 // 7 nov 2026 (une vraie vente de Mathieu : 7,75 $ de frais et de pub sur 35 $ + 17 $ de port) : la revente d'un deal paie
 // 14,9 % de (prix + port charge), comme le serveur (deals.net_revente)
 // 7 nov : le port charge a l'acheteur, moyenne de 10 $ (Canada) et 20 $ (USA), comme deals.PORT_REVENTE
 const FRAIS_DEAL = 0.149, PORT_REVENTE = 15;
 const netDeal = (valeur) => valeur > 0 ? valeur - FRAIS_DEAL * (valeur + PORT_REVENTE) - ENVOI_NET : 0;
-const prixMaxDeal = (valeur, p = PROFIT_MIN_DEAL, d = PROFIT_MIN_D) => { if (!valeur) return 0; const net = netDeal(valeur); return Math.max(0, Math.min(net / (1 + p), net - d) / (1 + TAXE_ACHAT)); };
+const prixMaxDeal = (valeur, p = PROFIT_MIN_DEAL, d = PROFIT_MIN_D, taxe) => { if (!valeur) return 0; const net = netDeal(valeur); return Math.max(0, Math.min(net / (1 + p), net - d) / (1 + txA(taxe))); };
 // 30 oct 2026 : pourquoi une carte n'a pas de valeur, en mots simples (avant : « pas assez de ventes » pour tout)
 function raisonSansValeur(d){
   const n = d.nb_trouvees || 0, p = String(d.pourquoi || '');
@@ -6841,7 +6844,7 @@ function majChiffresTuile(t, x){
   if (t.classList.contains('suivi')) { if (b('pr') && x.total) b('pr').textContent = argentCourt(x.encan ? Math.max(0, x.total - (x.port || 0)) : x.total); return; }
   if (b('pr') && x.total) b('pr').textContent = argentCourt(x.encan ? Math.max(0, x.total - (x.port || 0)) : x.total);
   if (b('mx') && x.mise_max != null) b('mx').textContent = argentCourt(x.mise_max);
-  const g = x.encan && x.mise_max != null && x.valeur ? profitDeal(x.valeur, x.mise_max + portEff(x.port)) : x.gain;
+  const g = x.encan && x.mise_max != null && x.valeur ? profitDeal(x.valeur, x.mise_max + portEff(x.port), x.taxe_achat) : x.gain;
   if (b('g')) b('g').textContent = g > 0 ? '+' + argentCourt(g) : '—';
 }
 function majTuilePrix(id, d){
@@ -6850,7 +6853,7 @@ function majTuilePrix(id, d){
   const [fp, ff] = fraisVente();
   x.total = a.total; if (a.port_cad != null) x.port = a.port_cad;
   if (x.valeur) { x.rabais = Math.round(100 * (1 - x.total / x.valeur)); x.gain = Math.round((x.valeur * (1 - fp) - ff - x.total) * 100) / 100;
-    if (x.encan && !x.mise_perso) x.mise_max = Math.round((prixMaxDeal(x.valeur) - portEff(x.port)) * 100) / 100; }
+    if (x.encan && !x.mise_perso) x.mise_max = Math.round((prixMaxDeal(x.valeur, undefined, undefined, x.taxe_achat) - portEff(x.port)) * 100) / 100; }
   $$(`.tuile-deal[data-id="${CSS.escape(String(id))}"]`).forEach(t => {
     if (d.deal_retire) { t.classList.add('sort'); setTimeout(() => t.remove(), 300); MEMO.clear(); GARDE_SAUTER.t = Date.now(); return; }
     majChiffresTuile(t, x);
@@ -6883,14 +6886,14 @@ async function ouvrirAnnonce(base){
     const conn = !frais_ && x0 && x0.mise_max != null && x0.valeur ? x0 : null;
     if (conn && d.valeur !== conn.valeur && total) {
       d = Object.assign({}, d, {valeur: conn.valeur, nb_vendues: conn.n || d.nb_vendues, valeur_source: d.valeur_source || 'vendues',
-        rabais: Math.round(100 * (1 - total / conn.valeur)), gain: profitDeal(conn.valeur, total)});
+        rabais: Math.round(100 * (1 - total / conn.valeur)), gain: profitDeal(conn.valeur, total, d.taxe_achat)});
     }
     const maxA = conn ? conn.mise_max : maxT == null ? null : encan ? Math.max(0, maxT - port) : maxT;
     if (frais_ && x0 && x0.item_id && maxA != null && (x0.valeur !== d.valeur || x0.mise_max !== maxA)) { x0.valeur = d.valeur; x0.mise_max = Math.round(maxA * 100) / 100; }
     // 7 nov 2026 (Mathieu : « de comment 0 $ ? », une Perry Young Guns qui vaut 27 $) : une carte trop petite pour laisser le
     // profit minimum (15 $) apres les frais n'a pas de mise max : on le dit, sans afficher 0 $ ni un profit
     const tropPetite = maxA != null && d.valeur && maxA < 1;
-    const gainAff = tropPetite ? null : encan && maxA != null && d.valeur ? profitDeal(d.valeur, maxA + port) : d.gain;      // encan : a la mise max
+    const gainAff = tropPetite ? null : encan && maxA != null && d.valeur ? profitDeal(d.valeur, maxA + port, d.taxe_achat) : d.gain;      // encan : a la mise max
     // 2 nov 2026 (Mathieu : « quand le prix suggere est depasse par le bid actuel, ce n'est plus un deal ») : la mise actuelle et
     // la mise max se comparent HORS port (la mise max est ce qu'on entre sur eBay) ; depassee -> « Plus un deal »
     const depasse = tropPetite || (maxA != null && total && (encan ? total - port : total) > maxA + 0.5);
@@ -6915,14 +6918,15 @@ async function ouvrirAnnonce(base){
       <div class="fa-3">
         <div class="fa-k"><span>${encan ? tt('Mise actuelle', 'Current bid') : tt('Prix', 'Price')}</span><b>${total ? argent(encan ? Math.max(0, total - port) : total, 0) : '—'}</b><small>${a.ramassage ? tt('ramassage · sans port', 'pickup · no shipping') : a.port_cad != null ? (a.port_cad ? (encan ? '+ ' + argent(port, 0) + (a.port_estime ? tt(' de port (estimé)', ' shipping (est.)') : tt(' de port', ' shipping')) : a.port_estime ? tt('port estimé compris', 'est. shipping incl.') : tt('port compris', 'shipping incl.')) : tt('livraison gratuite', 'free shipping')) : '&nbsp;'}</small></div>
         <div class="fa-k fa-m"><span>${encan ? tt('Mise max', 'Max bid') : tt('Paie max', 'Pay max')}</span>${maxA != null && !tropPetite ? `<b>${argent(maxA, 0)}</b><small>${conn && conn.mise_perso ? tt('choisie par toi', 'set by you') : encan && port ? tt('hors port', 'excl. shipping') : '&nbsp;'}</small>` : `<b>—</b><small>&nbsp;</small>`}</div>
-        <div class="fa-k fa-g"><span>${tt('Profit', 'Profit')}</span>${gainAff != null ? `<b class="${gainAff > 0 ? '' : 'neg'}">${gainAff > 0 ? '+' : '−'}${argent(Math.abs(gainAff), 0)}</b><small>${encan && maxA != null && d.valeur ? tt('à ta mise max', 'at your max bid') : tt('après frais', 'after fees')}</small>`
+        <div class="fa-k fa-g"><span>${tt('Profit', 'Profit')}</span>${gainAff != null ? `<b class="${gainAff > 0 ? '' : 'neg'}">${gainAff > 0 ? '+' : '−'}${argent(Math.abs(gainAff), 0)}</b><small>${encan && maxA != null && d.valeur ? tt('à ta mise max', 'at your max bid') + (d.gain != null && d.gain - gainAff >= 1 ? `<br>${tt('actuel ', 'now ')}<b class="fa-g2">+${argentCourt(d.gain)}</b>` : '') : tt('après frais', 'after fees')}</small>`
           : d.chargement || d.ventes_attente ? `<b><span class="roue"></span></b><small>&nbsp;</small>` : `<b>—</b><small>&nbsp;</small>`}</div>
       </div>
       ${depasse || budget || suspect ? `<div class="fa-pils">${suspect ? `<span class="capsule or">${tt('Prix très bas : vérifie que c’est la même carte', 'Very low price: check it’s the same card')}</span>` : ''}${depasse ? `<span class="capsule rouge">${esc(vt[1])}</span>` : ''}${depasse && d.deal_retire ? `<span class="capsule">${tt('Retiré de tes deals', 'Removed from your deals')}</span>` : ''}${budget ? `<span class="capsule rouge">${S.budget.reste <= 0 ? tt('Budget du mois atteint', 'Monthly budget reached') : tt('Au-dessus de ton budget', 'Over your budget')}</span>` : ''}</div>` : ''}
       ${(x0 || {}).faute || (encan && (x0 || {}).chance && (x0 || {}).chance.niveau !== 'tous') ? `<div class="fa-note">${(x0 || {}).faute ? `<span>${icN('oeil')}${tt('Nom mal écrit sur eBay', 'Name misspelled on eBay')} (« ${esc((x0 || {}).faute)} ») : ${tt('peu d’acheteurs la trouvent.', 'few buyers find it.')}</span>` : ''}${encan && (x0 || {}).chance && (x0 || {}).chance.niveau !== 'tous' ? `<span>${tt(`Ce genre d’encan finit sous ton pay max environ ${Math.max(1, Math.round((x0 || {}).chance.p * 10))} fois sur 10.`, `This kind of auction ends under your pay max about ${Math.max(1, Math.round((x0 || {}).chance.p * 10))} times out of 10.`)}</span>` : ''}</div>` : ''}
+      ${d.etranger && d.taxe_achat > TAXE_ACHAT + 0.001 ? `<div class="fa-pils"><span class="capsule or" style="white-space:normal; line-height:1.3">${tt(`Hors Canada : +${Math.round(d.taxe_achat * 100)} % de taxes et frais d’importation, déjà comptés dans la mise max`, `Outside Canada: +${Math.round(d.taxe_achat * 100)}% taxes and import fees, already counted in the max bid`)}</span></div>` : ''}
       ${d.valeur_source === 'approx' ? `<div class="fa-pils"><span class="capsule or" style="white-space:normal; line-height:1.3">${tt('Pas de comps : prix approximatif (cartes similaires du joueur)', 'No comps: approximate price (similar cards of the player)')}</span></div>` : ''}
       ${d.valeur_source === 'autre_saison' ? `<div class="fa-pils"><span class="capsule or" style="white-space:normal; line-height:1.3">${tt(`Pas de comps pour la ${esc(d.saison_carte || 'saison')} : estimé avec ${esc((d.saisons || []).join(', '))}`, `No comps for the ${esc(d.saison_carte || 'season')}: estimated from ${esc((d.saisons || []).join(', '))}`)}</span></div>` : ''}
-      <div class="fa-ventes">${ventes.length ? `<div class="fa-vt">${(d.valeur_source === 'autre_saison' || d.valeur_source === 'approx') && d.valeur ? tt('Estimé ', 'Estimated ') + `<b class="fa-med">${argent(d.valeur, 0)}</b>` : d.valeur ? tt('Se vend ', 'Sells for ') + `<b class="fa-med">${argent(d.valeur, 0)}</b>` : tt('Vendues récemment', 'Recently sold')} <small>${d.valeur_source === 'approx' ? tt(`≈ cartes similaires · ${d.nb_vendues} ventes, −25 % · glisse ›`, `≈ similar cards · ${d.nb_vendues} sales, −25% · swipe ›`) : d.valeur_source === 'autre_saison' ? tt(`cartes similaires · ${d.nb_vendues} vente${d.nb_vendues > 1 ? 's' : ''}, −20 % · glisse ›`, `similar cards · ${d.nb_vendues} sale${d.nb_vendues > 1 ? 's' : ''}, −20% · swipe ›`) : d.valeur && d.nb_vendues ? tt(`médiane de ${d.nb_vendues} ventes · glisse ›`, `median of ${d.nb_vendues} sales · swipe ›`) : tt('même carte · glisse ›', 'same card · swipe ›')}</small></div>
+      <div class="fa-ventes">${ventes.length ? `<div class="fa-vt">${(d.valeur_source === 'autre_saison' || d.valeur_source === 'approx') && d.valeur ? tt('Estimé ', 'Estimated ') + `<b class="fa-med">${argent(d.valeur, 0)}</b>` : d.valeur ? tt('Se vend ', 'Sells for ') + `<b class="fa-med">${argent(d.valeur, 0)}</b>` : tt('Vendues récemment', 'Recently sold')} <small>${d.valeur_source === 'approx' ? tt(`≈ cartes similaires · ${d.nb_vendues} ventes, −25 % · glisse ›`, `≈ similar cards · ${d.nb_vendues} sales, −25% · swipe ›`) : d.valeur_source === 'autre_saison' ? tt(`cartes similaires · ${d.nb_vendues} vente${d.nb_vendues > 1 ? 's' : ''}, −20 % · glisse ›`, `similar cards · ${d.nb_vendues} sale${d.nb_vendues > 1 ? 's' : ''}, −20% · swipe ›`) : d.valeur && ventes.length && ventes.every(v => !v.prix || v.prix > d.valeur * 1.02) ? tt(`${d.nb_vendues || ventes.length} ventes seulement : −10 % sur la plus basse · glisse ›`, `only ${d.nb_vendues || ventes.length} sales: −10% off the lowest · swipe ›`) : d.valeur && d.nb_vendues ? tt(`médiane de ${d.nb_vendues} ventes · glisse ›`, `median of ${d.nb_vendues} sales · swipe ›`) : tt('même carte · glisse ›', 'same card · swipe ›')}</small></div>
         <div class="fv-car fa-car">${ventes.map(k => `<a class="fv" ${k.url ? `href="${esc(urlSure(k.url))}" target="_blank" rel="noopener"` : ''}><div class="fv-ph">${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo, 300))}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>
           <b>${argent(k.prix, 0)}</b><small>${k.saison ? esc(k.saison) + ' · ' : ''}${k.note ? esc(k.note) + ' · ' : ''}${k.le ? dateCourte(k.le) : ''}</small></a>`).join('')}</div>`
         : d.ventes_lentes ? `<div class="fa-vide">${tt('Les ventes réelles ne répondent pas pour l’instant (le chasseur de deals est peut-être en plein tour).', 'Real sales are not responding right now (the deal hunter may be mid-run).')} <button class="lien-t" id="fa-reessai">${tt('Réessayer', 'Retry')}</button></div>`
