@@ -263,6 +263,8 @@ def symetrie_gd(carte):
     if gauche <= 0.004 or droite <= 0.004:
         return None
     g_ = round(100 * max(gauche, droite) / (gauche + droite))
+    if g_ > 80:
+        return None                                                     # trop fort pour etre vrai : un mauvais cadre
     return {"ratio": f"{g_}/{100 - g_}", "a": round(gauche * carte.width), "b": round(droite * carte.width), "paires": 1, "contredit": 0,
             "fiabilite": "moyenne", "bordure": False, "a_verifier": False, "methode": "symetrie",
             "reperes": [{"a": round(gauche, 4), "b": round(1 - droite, 4)}], "l": round(gauche, 4), "r": round(droite, 4)}   # l, r : largeurs (comme _axe)

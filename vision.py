@@ -1197,14 +1197,14 @@ def _gros_plan_verif(z, c):
     elif c["nom"] == "bas":
         bande = z.crop((0, H - ep, W, H)).rotate(180, expand=True)
     elif c["nom"] == "gauche":
-        bande = z.crop((0, 0, ep, H)).rotate(-90, expand=True)
+        bande = z.crop((0, 0, ep, H)).rotate(90, expand=True)     # le haut de la carte a gauche (comme le bord droit)
     else:
         bande = z.crop((W - ep, 0, W, H)).rotate(90, expand=True)
     L, E = bande.size
     if c.get("position") is not None:
         t = max(0.0, min(1.0, c["position"] / 1000))
-        if c["nom"] in ("bas", "gauche"):
-            t = 1 - t                                     # la bande a ete tournee : le sens de lecture s'inverse
+        if c["nom"] == "bas":
+            t = 1 - t                                     # la bande du bas est retournee : le sens de lecture s'inverse
         lg = int(L * 0.4)
         x0 = int(max(0, min(L - lg, t * L - lg / 2)))
         im = bande.crop((x0, 0, x0 + lg, E))
@@ -1231,7 +1231,7 @@ def _contre_verifier(cands, zimgs, langue="fr"):
     for i, c in enumerate(cands, 1):
         face = "devant" if c["ph"] == 0 else "dos"
         lib = _LIB_ETAT.get(c["etat"], c["etat"])
-        ou = f"le {c['sorte']} {c['nom']} du {face}" + ("" if c["sorte"] == "coin" else " (la bande montre ce bord a l'horizontale, l'arete en haut" + (")" if c.get("position") is not None
+        ou = f"le {c['sorte']} {c['nom']} du {face}" + ("" if c["sorte"] == "coin" else " (la bande montre ce bord a l'horizontale" + (", le haut de la carte a gauche" if c["nom"] in ("gauche", "droit") else "") + (")" if c.get("position") is not None
                                                                                        else " ; tout le bord, en deux moities l'une sous l'autre)"))
         contenu += [{"type": "text", "text": f"#{i} : {ou}. Le premier examen dit : {lib}" + (f" — « {c['vu']} »" if c.get("vu") else "") + "."},
                     {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg",

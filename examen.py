@@ -318,7 +318,9 @@ def mosaique_bords(carte, face, paire=("haut", "bas")):
         elif nom == "bas":
             b = carte.crop((0, H - e, W, H))
         elif nom == "gauche":
-            b = carte.crop((0, 0, e, H)).rotate(-90, expand=True)
+            # 9 nov 2026 (la Marchand : « points blancs en haut » place en bas) : tourne comme le droit, le HAUT de la carte a
+            # gauche de la bande (avant : a droite, la position lue par l'IA etait inversee)
+            b = carte.crop((0, 0, e, H)).rotate(90, expand=True)
         else:
             b = carte.crop((W - e, 0, W, H)).rotate(90, expand=True)
         bw = b.size[0]
@@ -596,7 +598,8 @@ def preparer(photos_octets, quads=None, rasante=None, rasante2=None, gros_plans=
                            jpeg(mosaique_coins(z, face), 1290, 90)))
             images.append((f"Zooms des bords haut et bas du {face}, chacun en deux moities (le fond autour montre l'arete).",
                            jpeg(mosaique_bords(z, face, ("haut", "bas")), 1568, 90)))
-            images.append((f"Zooms des bords gauche et droit du {face} (tournes a l'horizontale), chacun en deux moities.",
+            images.append((f"Zooms des bords gauche et droit du {face} (tournes a l'horizontale, le HAUT de la carte a gauche de chaque bande : "
+                           f"la 1re moitie est la moitie du haut), chacun en deux moities.",
                            jpeg(mosaique_bords(z, face, ("gauche", "droite")), 1568, 90)))
         if c is not None:
             images.append((f"Le {face} redresse, avec une REGLE 0-1000 tout autour (pour les reperes du centrage : lis les positions sur la regle).",
@@ -622,6 +625,11 @@ def preparer(photos_octets, quads=None, rasante=None, rasante2=None, gros_plans=
                     for ax, k1, k2 in (("gd", "l", "r"), ("hb", "t", "b")):
                         if m.get(ax) and m.get(ax) == det.get(ax) and int(str(m[ax]).split("/")[0]) > 60 \
                                 and not mesures.bordure_unie(c, ax, det.get(k1), det.get(k2)) and ax not in verif.get(face, []):
+                            verif.setdefault(face, []).append(ax)
+                    # 9 nov 2026 (la Marchand : « 88/12 » au dos, impossible a l'oeil) : au-dela de 80/20, une coupe aussi ratee se
+                    # verrait tout de suite ; c'est presque toujours un mauvais repere : a verifier, pas compte
+                    for ax in ("gd", "hb"):
+                        if m.get(ax) and int(str(m[ax]).split("/")[0]) > 80 and ax not in verif.get(face, []):
                             verif.setdefault(face, []).append(ax)
                 except Exception as e:
                     print("Examen (bordure) : " + repr(e), flush=True)

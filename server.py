@@ -1151,6 +1151,11 @@ def dispatcher(nom):
     if not isinstance(args, list):
         args = [args]
     try:
+        try:                                 # 9 nov 2026 : l'activite anonyme (le nom de la fonction, jamais ses donnees)
+            import activite
+            activite.noter_api(nom, comptes.courant())
+        except Exception:
+            pass
         res = m(*args)
         if nom == "ebay_url_connexion" and isinstance(res, dict) and res.get("url"):
             return _lier_navigateur(jsonify(res), res["url"])

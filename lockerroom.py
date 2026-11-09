@@ -1081,6 +1081,51 @@ class Api:
             out = [x for x in out if x.get("favori")] + [x for x in out if not x.get("favori")]
         return out
 
+    def _joueurs_a_moi(self):
+        """Les joueurs de MON inventaire (normalises), pour mettre leurs deals un peu plus haut."""
+        try:
+            c = self._db()
+            try:
+                l = [r[0] for r in c.execute("SELECT DISTINCT joueur FROM cartes WHERE joueur IS NOT NULL AND joueur != '' LIMIT 300")]
+            finally:
+                c.close()
+        except Exception:
+            return []
+        return [self._norm_fav(j) for j in l if len(str(j).strip()) >= 4]
+
+    def _varier_deals(self, lst, bloc=6):
+        """9 nov 2026 (Mathieu : « adapter les deals aux preferences, pour que tout le monde n'ait pas les memes cartes, les
+        memes deals ») : l'ordre du « meilleur deal » reste le meme a grands traits (favoris d'abord, puis par paquets de
+        qualite semblable), mais DANS chaque paquet de 6, l'ordre change d'un compte a l'autre (et d'un jour a l'autre) :
+        deux personnes ne voient pas les memes deals en tete au meme moment. Les joueurs de mon inventaire montent en tete
+        de leur paquet (x["a_moi"]). Les groupes (recrue ou non, de mon pays ou non, gros vendeur ou non) ne se melangent pas."""
+        import comptes
+        import deals as _d
+        if len(lst) < 3:
+            return lst
+        cle = f"{comptes.courant() if comptes.MULTI else 'local'}|{datetime.now():%Y-%m-%d}"
+        mes = self._joueurs_a_moi()
+        h = lambda x: hashlib.sha256(f"{cle}|{x.get('item_id') or x.get('titre')}".encode()).hexdigest()
+        for i, x in enumerate(lst):
+            if mes and not x.get("favori"):
+                n = self._norm_fav(str(x.get("titre") or "") + " " + str(x.get("joueur") or ""))
+                if any(j in n for j in mes):
+                    lst[i] = dict(x, a_moi=True)
+        favs = [x for x in lst if x.get("favori")]
+        reste = [x for x in lst if not x.get("favori")]
+        groupe = lambda x: (bool(x.get("recrue")), bool(x.get("etranger")), _d.rang_honnete(x) == 3, bool(x.get("encan")))
+        out, run = [], []
+        def vider():
+            for k in range(0, len(run), bloc):
+                out.extend(sorted(run[k:k + bloc], key=lambda x: (not x.get("a_moi"), h(x))))
+            run.clear()
+        for x in reste:
+            if run and groupe(run[-1]) != groupe(x):
+                vider()
+            run.append(x)
+        vider()
+        return favs + out
+
     def deals_recharger(self):
         """28 oct 2026 - admin : un tour du chasseur de deals tout de suite."""
         if not self._est_admin():
@@ -1296,6 +1341,53 @@ class Api:
             return {"ok": False, "erreur": "Réservé à l'administrateur"}
         import admin
         return admin.remettre(str(cle or ""))
+
+    def activite_page(self, page):
+        """9 nov 2026 : l'app dit quel ecran est ouvert (la route seulement), pour le tableau d'activite de l'admin."""
+        try:
+            import activite
+            import comptes
+            activite.noter_page(page, comptes.courant())
+        except Exception:
+            pass
+        return {"ok": True}
+
+    def admin_activite(self, jours=30):
+        """9 nov 2026 (Mathieu : « un statsboard : l'activite, les pages les plus utilisees, les fonctions les moins
+        utilisees, tous les commentaires regroupes par categorie, ce qui est a faire »)."""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import activite
+        import admin
+        import demandes
+        try:
+            jours = max(1, min(90, int(jours or 30)))
+        except (TypeError, ValueError):
+            jours = 30
+        fonctions = [n for n in dir(type(self)) if not n.startswith("_") and callable(getattr(type(self), n, None))]
+        act = activite.resume(jours, fonctions)
+        a = admin.abonnes()
+        # les commentaires (demandes), regroupes par categorie de l'agent, avec ce qui est a faire
+        items = demandes.lire().get("items") or []
+        lim = (datetime.now() - timedelta(days=jours)).isoformat()
+        cats = {}
+        for x in items:
+            if str(x.get("le") or "") < lim:
+                continue
+            ia = x.get("ia") or {}
+            c = ia.get("categorie") or "a_trier"
+            g = cats.setdefault(c, {"categorie": c, "n": 0, "ouvertes": 0, "a_faire": []})
+            g["n"] += 1
+            if x.get("statut") in ("nouveau", "en_cours"):
+                g["ouvertes"] += 1
+                if ia.get("a_faire") and not ia.get("pareil_que"):
+                    g["a_faire"].append({"id": x["id"], "priorite": ia.get("priorite") or 3, "resume": ia.get("resume") or str(x.get("texte") or "")[:120],
+                                         "a_faire": ia.get("a_faire"), "le": x.get("le")})
+        for g in cats.values():
+            g["a_faire"].sort(key=lambda y: (y["priorite"], str(y["le"])))
+            g["a_faire"] = g["a_faire"][:12]
+        return {"ok": True, **act, "abonnes": {k: v for k, v in a.items() if k != "comptes"},
+                "commentaires": sorted(cats.values(), key=lambda g: (-g["ouvertes"], -g["n"]))}
 
     def admin_demandes(self, statut="ouvertes"):
         if not self._est_admin():
@@ -2895,7 +2987,10 @@ class Api:
             raise
         res = {k: v for k, v in res.items() if k not in ("ok", "cache")}
         qu = res.pop("quads_utilises", None) or []          # 3 nov 2026 (revue) : le contour trouve par l'app, s'il n'y en avait pas
-        quads = [q if q else (qu[i] if i < len(qu) else None) for i, q in enumerate(quads + [None] * (len(refs) - len(quads)))][:len(refs)]
+        # 9 nov 2026 (Mathieu : « le cercle encercle rien ; c'est le coin qu'il faut encercler ») : le contour AFFINE par
+        # l'examen (celui que l'IA a vu, aretes trouvees sur la photo pleine resolution) passe avant le contour approximatif du
+        # telephone : les zooms des defauts tombent sur la vraie arete
+        quads = [(qu[i] if i < len(qu) and qu[i] else q) for i, q in enumerate(quads + [None] * (len(refs) - len(quads)))][:len(refs)]
         res.update(photos=refs, quads=quads, examen=examen_, rasante=ras_ref[0] if ras_ref else None, rasante2=ras_ref[1] if len(ras_ref) > 1 else None)
         if gps:
             q_ = {(g.get("face"), g.get("coin")): g for g in res.pop("gros_plans_q", None) or []}
@@ -2945,7 +3040,7 @@ class Api:
             print("Allegement : " + repr(x), flush=True)
         return {"ok": True, **res, "le": le, "precision": precision}
 
-    CENTRAGE_ALGO = 5                 # 9 nov 2026 : + l axe de symetrie (cartes sans bordure unie), largeurs l / r corrigees
+    CENTRAGE_ALGO = 6                 # 9 nov 2026 : + l axe de symetrie, largeurs l / r corrigees, > 80/20 a verifier
 
     @staticmethod
     def _coherent(e):
@@ -3157,8 +3252,9 @@ class Api:
                     # dessin de la carte -> pas compte dans la note, montre « a verifier »
                     for ax, k1, k2 in (("gd", "l", "r"), ("hb", "t", "b")):
                         g_ = det.get(ax)
-                        if g_ and int(str(g_).split("/")[0]) > 60 and det.get("source_" + ax) != "paires" \
-                                and not mesures.bordure_unie(c, ax, det.get(k1), det.get(k2)):
+                        # 9 nov 2026 : au-dela de 80/20, toujours a verifier (un mauvais repere, presque toujours)
+                        if g_ and int(str(g_).split("/")[0]) > 60 and (int(str(g_).split("/")[0]) > 80 or (det.get("source_" + ax) != "paires"
+                                and not mesures.bordure_unie(c, ax, det.get(k1), det.get(k2)))):
                             det["verifier_" + ax] = g_
                             det[ax] = det[k1] = det[k2] = None
                 except Exception as e2:
@@ -6450,6 +6546,8 @@ class Api:
             lst = [x for x in lst if not x.get("etranger")] + [x for x in lst if x.get("etranger")]    # 8 nov : son pays d'abord
         prof = self._profil_deals()                      # 30 oct 2026 : mon profil de deals (Reglages)
         lst = self._appliquer_profil(lst, prof)
+        if tri == "rabais":
+            lst = self._varier_deals(lst)                # 9 nov 2026 : chacun son ordre (et ses joueurs a lui d'abord)
         lst = self._objectif_deals(lst, f)
         n = len(lst)
         pro = forfaits.est_pro()

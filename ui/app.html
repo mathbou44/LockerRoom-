@@ -2750,6 +2750,18 @@ body.pop-ouverte{overflow:hidden}
 .dp-b > button:disabled{opacity:.3} .dp-b > button svg{width:18px; height:18px} .dp-b > button.prec svg{transform:rotate(180deg)}
 .dp-pts{display:flex; gap:7px} .dp-pts i{width:7px; height:7px; border-radius:50%; background:var(--ligne)} .dp-pts i.on{background:var(--or); width:20px; border-radius:4px}
 .dp-pied{color:var(--doux); font-size:12.5px}
+/* 9 nov 2026 - l'onglet Activite de l'admin */
+.act-bloc{padding:12px 14px; margin-top:10px}
+#adm-o{overflow-x:auto; scrollbar-width:none} #adm-o::-webkit-scrollbar{display:none} #adm-o button{flex:0 0 auto; padding-inline:14px}
+.act-l{display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto; align-items:center; gap:10px; padding:4px 0; font-size:13.5px}
+.act-n{overflow:hidden; text-overflow:ellipsis; white-space:nowrap} .act-l b{font:600 13px var(--f-cond); min-width:28px; text-align:right}
+.act-b{height:8px; border-radius:4px; background:var(--carte2); overflow:hidden} .act-b i{display:block; height:100%; border-radius:4px; background:var(--or)}
+.act-g{width:100%; height:auto; display:block; margin-top:8px} .act-g rect{fill:var(--or)} .act-g text{fill:var(--doux); font-size:9px}
+.act-cat{display:flex; justify-content:space-between; align-items:baseline; gap:10px}
+.act-faire{list-style:none; padding:0; margin:8px 0 0; display:flex; flex-direction:column; gap:8px}
+.act-faire li{display:flex; gap:10px; align-items:flex-start} .act-faire li > span{display:flex; flex-direction:column; gap:2px; min-width:0} .act-faire small{color:var(--doux); font-size:12.5px}
+.act-faire i{flex:none; width:22px; height:22px; border-radius:50%; display:grid; place-items:center; font:700 11px var(--f-cond); font-style:normal; border:1.5px solid var(--ligne)}
+.act-faire i.p1{border-color:var(--rouge); color:var(--rouge)} .act-faire i.p2{border-color:var(--or); color:var(--or)}
 body.vd-ouverte::before{content:''; position:fixed; top:0; left:0; right:0; height:env(safe-area-inset-top); background:#08080a; z-index:10000; pointer-events:none}
 .vd{overscroll-behavior:contain; -webkit-overflow-scrolling:touch} body.vd-ouverte{overflow:hidden} .vd img{-webkit-user-drag:none; -webkit-touch-callout:none}
 .vd-anc{padding:10px 12px; border-radius:14px; background:var(--or-fonce); color:var(--or); font-size:13.5px} .vd-anc .lien-t{font-size:13.5px}
@@ -3690,6 +3702,8 @@ function route(){
   if (!h.startsWith('inventaire')) { S.selInv = null; const sb = document.getElementById('sel-inv'); if (sb) sb.remove(); }   // 8 nov : la barre de selection
   setTimeout(pgBulle, 600);                                                     // 8 nov : « reprendre ta mise en vente »
   let [ecran, arg] = h.split('/');
+  // 9 nov 2026 : l'ecran ouvert, compte (anonyme) pour le tableau d'activite de l'admin ; une fois par changement d'ecran
+  if (ecran && ecran !== S.pageVue && typeof API !== 'undefined') { S.pageVue = ecran; API.activite_page(ecran).catch(() => {}); }
   // 22 oct 2026 - deux volets : la 1re ouverture demande le volet ; « Accueil » d'un acheteur = ses deals
   // 1er nov 2026 : une seule app ; plus de redirection selon un volet
   $$('.onglets a').forEach(a => {
@@ -6201,26 +6215,32 @@ async function feuilleRamassage(apres){
 }
 // 30 oct 2026 (Mathieu : « la personne qui a le profil doit pouvoir personnaliser ses deals un peu » ; « dans les
 // reglages, simple, tres simple, pas lourd visuellement ») : 4 lignes, vide = tout
-async function feuilleMesDeals(){
+async function feuilleMesDeals(o){
+  o = o || {};
   const p = await API.deals_profil_lire().catch(() => null); if (!p || !p.ok) return;
   const co = new Set(p.collectionne || []);
   const enDev = (v) => v == null || v === '' ? '' : Math.round(convertir(v));
   const C = [['recrues', tt('Recrues', 'Rookies')], ['veterans', tt('Vétérans', 'Veterans')], ['legendes', tt('Légendes', 'Legends')], ['hits', 'Hits'], ['gradees', tt('Gradées', 'Graded')]];
-  ouvrirFeuille(`<h3>${tt('Mes deals', 'My deals')}</h3>
-    <div class="sous" style="margin-bottom:6px">${tt('Laisse vide pour tout voir.', 'Leave empty to see everything.')}</div>
+  // 9 nov 2026 (Mathieu : « adapter les deals par preference des utilisateurs, au debut quand ils ouvrent l'app ») : la
+  // 1re ouverture des Deals pose ces questions une fois (« Plus tard » possible ; toujours dans Reglages ensuite)
+  ouvrirFeuille(`<h3>${o.accueil ? tt('Tes deals, à ta façon', 'Your deals, your way') : tt('Mes deals', 'My deals')}</h3>
+    <div class="sous" style="margin-bottom:6px">${o.accueil ? tt('Trois petites questions pour que tes deals te ressemblent. Laisse vide pour tout voir ; ça se change dans Réglages.', 'Three quick questions so your deals fit you. Leave empty to see everything; change it anytime in Settings.') : tt('Laisse vide pour tout voir.', 'Leave empty to see everything.')}</div>
     <div class="fd-s"><div class="r-titre">${tt('Je collectionne', 'I collect')}</div>
       <div class="chips fd-w" id="md-c">${C.map(([k, t]) => `<button class="chip ${co.has(k) ? 'on' : ''}" data-c="${k}">${t}</button>`).join('')}</div></div>
     <label class="md-l">${tt('Mes favoris', 'My favorites')}<input class="champ" id="md-f" value="${esc((p.favoris || []).join(', '))}" placeholder="${esc(tt('Canadiens, Bedard, Crosby', 'Canadiens, Bedard, Crosby'))}"></label>
     <div class="md-l">${tt('Budget par carte', 'Budget per card')} (${symDevise()})<div class="md-b"><input class="champ" id="md-min" type="number" inputmode="decimal" value="${enDev(p.prix_min)}" placeholder="min"><span>–</span><input class="champ" id="md-max" type="number" inputmode="decimal" value="${enDev(p.prix_max)}" placeholder="max"></div></div>
     <label class="md-l">${tt(`Mes vendeurs eBay (${p.vendeurs_max} max)`, `My eBay sellers (${p.vendeurs_max} max)`)}${p.pro ? '' : ' <span class="badge-f pro">✦ PRO</span>'}<input class="champ" id="md-v" value="${esc((p.vendeurs || []).join(', '))}" placeholder="${esc(tt('pseudo eBay exact', 'exact eBay username'))}" ${p.pro ? '' : 'disabled'} autocapitalize="off" autocorrect="off"></label>
-    <button class="btn" id="md-ok" style="margin-top:14px">${tt('Enregistrer', 'Save')}</button>`);
+    <button class="btn" id="md-ok" style="margin-top:14px">${tt('Enregistrer', 'Save')}</button>
+    ${o.accueil ? `<button class="btn ghost" id="md-plus-tard">${tt('Plus tard', 'Later')}</button>` : ''}`);
+  const vu_ = () => { if (o.accueil) try { localStorage.setItem('lr_deals_accueil', '1'); } catch (x) {} };
+  const pt = $('#md-plus-tard'); if (pt) pt.onclick = () => { vu_(); fermerFeuille(); };
   $$('#md-c [data-c]').forEach(b => b.onclick = () => { const k = b.dataset.c; co.has(k) ? co.delete(k) : co.add(k); b.classList.toggle('on', co.has(k)); vibrer(); });
   $('#md-ok').onclick = async () => {
     const cad = (id) => { const v = nb(val(id)); return v ? Math.round(versCAD(v) * 100) / 100 : null; };
     const d = {collectionne: [...co], favoris: val('md-f'), prix_min: cad('md-min'), prix_max: cad('md-max')};
     if (p.pro) d.vendeurs = val('md-v');
     const r = await essai(API.deals_profil_regler(d), tt('Tes deals sont à ton goût', 'Your deals, your way'));
-    if (r && r.ok) { MEMO.clear(); fermerFeuille(); }
+    if (r && r.ok) { vu_(); MEMO.clear(); fermerFeuille(); if (o.apres) o.apres(); }
   };
 }
 function finDans(fin){
@@ -7604,6 +7624,13 @@ async function chargerDeals(frais){
   const [d, pf] = await Promise.all([API.deals_liste(F).catch(e => ({ok:false, erreur:e.message})), S.dealsProfil ? S.dealsProfil : API.deals_profil_lire().catch(() => ({}))]);
   S.dealsProfil = pf || {};
   S.dealsMaj = d && d.maj;
+  if (pf && pf.ok && !(pf.collectionne || []).length && !(pf.favoris || []).length && !pf.prix_min && !pf.prix_max) {
+    let vu = false; try { vu = localStorage.getItem('lr_deals_accueil') === '1'; } catch (x) {}
+    // la question reste due tant que la personne n'a pas repondu (Enregistrer ou Plus tard) : une feuille fermee par un
+    // changement d'ecran revient a la prochaine visite
+    if (!vu && !S.onbDeals) { S.onbDeals = true;
+      setTimeout(() => { S.onbDeals = false; if (location.hash.startsWith('#deals') && $('#fond-feuille').hidden) feuilleMesDeals({accueil: true, apres: () => { S.dealsProfil = null; route(); }}); }, 1500); }
+  }
   if (d && d.watch) { S.watch = new Set(d.watch.map(String)); majNbWatch(); }
   if (!z.isConnected) return;
   if (!d.ok) { z.innerHTML = `<div class="vide">${esc(d.erreur || 'Erreur')}</div>`; return; }
@@ -10142,7 +10169,69 @@ async function dessinerZoom(cv, url, q, d, entier){
   if (entier) { const c = Math.min(W, H); g.drawImage(im, (W - c) / 2, (H - c) / 2, c, c, 0, 0, T, T); return; }
   const [x, y] = ptDefaut(d, q), larg = q && q.length === 4 ? Math.hypot((q[1][0] - q[0][0]) * W / 1000, (q[1][1] - q[0][1]) * H / 1000) : W * 0.8;
   const r = Math.max(24, larg * (/^coin /.test(d.zone || '') ? 0.075 : d.zone === 'surface' ? 0.14 : 0.07));
-  g.drawImage(im, x / 1000 * W - r, y / 1000 * H - r, 2 * r, 2 * r, 0, 0, T, T);
+  let [cx, cy] = [x / 1000 * W, y / 1000 * H];
+  try { const p = calerSurArete(im, cx, cy, r, d.zone); if (p) [cx, cy] = p; } catch (x_) {}
+  g.drawImage(im, cx - r, cy - r, 2 * r, 2 * r, 0, 0, T, T);
+}
+// 9 nov 2026 (Mathieu : « le cercle encercle rien ; c'est le coin qu'il faut encercler ») : le contour peut etre 1-2 mm a
+// l'interieur de la carte. Le zoom d'un coin ou d'un bord est recale sur la VRAIE arete, trouvee dans la photo autour du
+// point : la carte tranche avec le fond (tapis fonce ou clair). Coin : le point de la carte le plus loin dans la direction
+// du coin ; bord : la ligne ou la carte s'arrete. Rien si l'arete n'est pas nette (le point reste ou il etait).
+function calerSurArete(im, cx, cy, r, zone){
+  const dirs = {'coin haut-gauche': [-1, -1], 'coin haut-droit': [1, -1], 'coin bas-droit': [1, 1], 'coin bas-gauche': [-1, 1],
+                'bord haut': [0, -1], 'bord bas': [0, 1], 'bord gauche': [-1, 0], 'bord droit': [1, 0]};
+  const dv = dirs[zone]; if (!dv) return null;
+  const R = 2 * r, N = 160, cv = document.createElement('canvas'); cv.width = cv.height = N;
+  const g = cv.getContext('2d', {willReadFrequently: true}); g.fillStyle = '#808080'; g.fillRect(0, 0, N, N);
+  g.drawImage(im, cx - R, cy - R, 2 * R, 2 * R, 0, 0, N, N);
+  const px = g.getImageData(0, 0, N, N).data, L = new Float32Array(N * N), W = im.naturalWidth, H = im.naturalHeight;
+  for (let i = 0; i < N * N; i++) L[i] = 0.299 * px[4 * i] + 0.587 * px[4 * i + 1] + 0.114 * px[4 * i + 2];
+  // hors de la photo (la carte touche le bord de la photo) : ni carte ni fond
+  const dedans = (x, y) => { const sx = cx - R + (x + 0.5) / N * 2 * R, sy = cy - R + (y + 0.5) / N * 2 * R; return sx >= 0 && sy >= 0 && sx < W && sy < H; };
+  // carte ou fond : deux groupes de luminosite (k-moyennes) parmi les pixels de la photo ; le fond est le groupe le plus
+  // vers l'exterieur (la direction du coin ou du bord). La carte peut toucher le bord de la photo : on ne lit que la photo.
+  const c0 = N / 2, vals = [], proj = [];
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (dedans(x, y)) { vals.push(L[y * N + x]); proj.push([y * N + x, dv[0] * (x - c0) + dv[1] * (y - c0)]); }
+  if (vals.length < N * N * 0.2) return null;
+  const tri = vals.slice().sort((a, b) => a - b);
+  let m1 = tri[Math.floor(tri.length * 0.1)], m2 = tri[Math.floor(tri.length * 0.9)];
+  for (let it = 0; it < 8; it++) { let s1 = 0, n1 = 0, s2 = 0, n2 = 0; for (const v of vals) { if (Math.abs(v - m1) <= Math.abs(v - m2)) { s1 += v; n1++; } else { s2 += v; n2++; } }
+    if (!n1 || !n2) return null; m1 = s1 / n1; m2 = s2 / n2; }
+  if (Math.abs(m2 - m1) < 30) return null;                       // pas de contraste carte / fond
+  let p1 = 0, k1 = 0, p2 = 0, k2 = 0;
+  for (const [i, pr] of proj) { if (Math.abs(L[i] - m1) <= Math.abs(L[i] - m2)) { p1 += pr; k1++; } else { p2 += pr; k2++; } }
+  const fondM = (k1 ? p1 / k1 : 0) > (k2 ? p2 / k2 : 0) ? m1 : m2, carteM = fondM === m1 ? m2 : m1;
+  let carte = (i) => dedans(i % N, (i / N) | 0) && Math.abs(L[i] - carteM) < Math.abs(L[i] - fondM);
+  // mieux : la COULEUR du fond, lue sur la bande la plus a l'exterieur si elle est uniforme (un bord rouge sur un tapis noir
+  // ne se confond pas avec le fond, meme s'il est sombre)
+  const pmax = Math.max(...proj.map(p_ => p_[1])), bandeExt = proj.filter(p_ => p_[1] >= pmax - N * 0.08).map(p_ => p_[0]);
+  if (bandeExt.length >= 40) {
+    const med = (k) => { const v = bandeExt.map(i => px[4 * i + k]).sort((a, b) => a - b); return v[v.length >> 1]; };
+    const f = [med(0), med(1), med(2)], dist = (i) => Math.hypot(px[4 * i] - f[0], px[4 * i + 1] - f[1], px[4 * i + 2] - f[2]);
+    const ds = bandeExt.map(dist).sort((a, b) => a - b);
+    if (ds[Math.floor(ds.length * 0.8)] < 28) carte = (i) => dedans(i % N, (i / N) | 0) && dist(i) > 45;
+  }
+
+  if (dv[0] && dv[1]) {                                         // un coin : le point de carte le plus loin vers le coin
+    const sc = []; for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (carte(y * N + x)) sc.push([dv[0] * (x - c0) + dv[1] * (y - c0), x, y]);
+    if (sc.length < N * N * 0.08) return null;
+    sc.sort((a, b) => b[0] - a[0]); const top = sc.slice(0, Math.max(3, Math.round(sc.length * 0.002)));
+    const mx = top.reduce((s_, p) => s_ + p[1], 0) / top.length, my = top.reduce((s_, p) => s_ + p[2], 0) / top.length;
+    const nx = cx + (mx - c0) / N * 2 * R - dv[0] * r * 0.06, ny = cy + (my - c0) / N * 2 * R - dv[1] * r * 0.06;
+    return Math.hypot(nx - cx, ny - cy) <= 1.2 * r ? [nx, ny] : null;
+  }
+  // un bord : le long de la normale, la derniere ligne (vers l'exterieur) ou la carte occupe la bande du milieu
+  const horiz = !!dv[1], bande = [Math.round(N * 0.3), Math.round(N * 0.7)];
+  let bord = null;
+  for (let k = 0; k < N; k++) {
+    const t = dv[0] + dv[1] > 0 ? N - 1 - k : k;                // de l'exterieur vers l'interieur
+    let n = 0; for (let u = bande[0]; u < bande[1]; u++) if (carte(horiz ? t * N + u : u * N + t)) n++;
+    if (n >= (bande[1] - bande[0]) * 0.6) { bord = t; break; }
+  }
+  if (bord == null) return null;
+  const dec = (bord - c0) / N * 2 * R - (horiz ? dv[1] : dv[0]) * r * 0.04;
+  if (Math.abs(dec) > 1.2 * r) return null;
+  return horiz ? [cx, cy + dec] : [cx + dec, cy];
 }
 function diapoEtat(e, depart, apres, relancer){
   // 9 nov 2026 (Mathieu, sur une ancienne analyse : « on voit rien ? ») : une analyse d'avant la contre-verification ne
@@ -10182,23 +10271,36 @@ function diapoEtat(e, depart, apres, relancer){
     ${d.note != null ? `<span class="dp-cout">${tt('À lui seul : ', 'On its own: ')}${f(d.note)}/10</span>` : ''}
     ${e.cid ? `<div class="dp-av"><span>${tt('Tu le vois ?', 'Do you see it?')}</span><button class="${(e.avis || {})[e.defauts.indexOf(d)] === true ? 'on' : ''}" data-av="${e.defauts.indexOf(d)}" data-v="1" aria-label="${esc(tt('Je le vois', 'I see it'))}">✓</button><button class="${(e.avis || {})[e.defauts.indexOf(d)] === false ? 'on' : ''}" data-av="${e.defauts.indexOf(d)}" data-v="0" aria-label="${esc(tt('Pas de défaut', 'No flaw'))}">✕</button></div>` : ''}</div>`);
   // le centrage : un schema par face (la carte et son cadre imprime, decale comme mesure), le ratio et la note PSA
-  const schema = (face) => { const v = (e.centrage_vue || {})[face] || {};
-    const r = face === 'devant' ? cDev.join(' · ') : (e.centrage_dos || '');
+  // 9 nov 2026 (Mathieu : « on ne sait pas trop ce que ca veut dire ») : le schema montre le VRAI decalage (l'ampleur vient du
+  // ratio, le cote vient des bordures mesurees), une face sans repere le dit en mots, et la phrase dit de quel cote ca penche
+  const rat_ = (s_) => { const m = /^(\d{2})\/(\d{2})$/.exec(String(s_ || '')); return m ? Math.max(+m[1], +m[2]) / 100 : null; };
+  const cote_ = (a, b) => a != null && b != null && Math.abs(a - b) > 0.002 ? (a > b ? 1 : -1) : 0;   // 1 : 1re bordure plus large
+  const faceC = (face) => { const v = (e.centrage_vue || {})[face] || {};
     const gd = face === 'devant' ? e.centrage_gd : e.centrage_dos, hb = face === 'devant' ? e.centrage_hb : null;
-    const part = (a, b, s_) => { if (a != null && b != null && a + b > 0) return a / (a + b);
-      const m = /^(\d{2})\/(\d{2})$/.exec(String(s_ || '')); return m ? +m[1] / 100 : 0.5; };
-    const px = part(v.l, v.r, gd), py = part(v.t, v.b, hb), W = 100, H = 140, bx = 22, by = 28;
-    const nt = Math.min(...[noteR(gd, face), noteR(hb, face)].filter(x => x != null).concat([10]));
-    const mesure = !!(gd || hb);
+    return {v, gd, hb, sx: cote_(v.l, v.r), sy: cote_(v.t, v.b), nt: Math.min(...[noteR(gd, face), noteR(hb, face)].filter(x => x != null).concat([10]))}; };
+  const schema = (face) => { const {gd, hb, sx, sy, nt} = faceC(face), W = 100, H = 140, bx = 32, by = 40;
+    const mesure = !!(gd || hb), nom = face === 'devant' ? tt('Devant', 'Front') : tt('Dos', 'Back');
+    if (!mesure) return `<div class="dp-cent"><svg viewBox="-4 -4 ${W + 8} ${H + 8}" aria-hidden="true"><rect class="cad" x="0" y="0" width="${W}" height="${H}" rx="5"/></svg>
+      <small>${nom}</small><b>—</b><small>${tt('Image jusqu’au bord : rien à mesurer', 'Full-bleed image: nothing to measure')}</small></div>`;
+    // la part de la bordure de gauche (ou du haut) : 0,5 = centre ; le cote vient des bordures, l'ampleur du ratio
+    const fx = rat_(gd) == null ? 0.5 : (sx >= 0 ? rat_(gd) : 1 - rat_(gd)), fy = rat_(hb) == null ? 0.5 : (sy >= 0 ? rat_(hb) : 1 - rat_(hb));
+    const r = [gd, hb].filter(Boolean).join(' · ');
     return `<div class="dp-cent"><svg viewBox="-4 -4 ${W + 8} ${H + 8}" aria-hidden="true"><rect class="cad" x="0" y="0" width="${W}" height="${H}" rx="5"/>
-      <rect class="imp ${mesure ? cl(nt) : 'nd'}" x="${(bx * px).toFixed(1)}" y="${(by * py).toFixed(1)}" width="${W - bx}" height="${H - by}" rx="3"/></svg>
-      <small>${face === 'devant' ? tt('Devant', 'Front') : tt('Dos', 'Back')}</small><b>${esc(r || '—')}</b>
-      <small>${mesure ? nt + '/10' + (nt < 10 ? ' · ' + tt('10 jusqu’à ', '10 up to ') + (face === 'devant' ? '55/45' : '75/25') : '') : tt('pas de repère', 'no reference')}</small></div>`; };
+      <rect class="imp ${cl(nt)}" x="${(bx * fx).toFixed(1)}" y="${(by * fy).toFixed(1)}" width="${W - bx}" height="${H - by}" rx="3"/></svg>
+      <small>${nom}</small><b>${esc(r)}</b>
+      <small>${nt + '/10' + (nt < 10 ? ' · ' + tt('10 jusqu’à ', '10 up to ') + (face === 'devant' ? '55/45' : '75/25') : '')}</small></div>`; };
   const aCent = cDev.length || e.centrage_dos;
+  const phraseC = (face) => { const {gd, hb, sx, sy} = faceC(face); if (!gd && !hb) return '';
+    const nom = face === 'devant' ? tt('Devant', 'Front') : tt('Dos', 'Back'), g = rat_(gd), h = rat_(hb);
+    const ok = (g == null || g <= 0.55) && (h == null || h <= 0.55);
+    if (ok) return `${nom} : ${tt('bien centré', 'well centered')}.`;
+    const bouts = [];
+    if (g != null && g > 0.55) bouts.push(sx > 0 ? tt('vers la droite', 'to the right') : sx < 0 ? tt('vers la gauche', 'to the left') : tt('de côté', 'sideways'));
+    if (h != null && h > 0.55) bouts.push(sy > 0 ? tt('vers le bas', 'down') : sy < 0 ? tt('vers le haut', 'up') : tt('en hauteur', 'vertically'));
+    return `${nom} : ${tt('le dessin est décalé ', 'the design is shifted ')}${bouts.join(tt(' et ', ' and '))}.`; };
   const dc = aCent ? `<div class="dp-d"><span class="dp-sur">${tt('Centrage', 'Centering')}</span>
     <div class="dp-cents">${schema('devant')}${refs.length > 1 ? schema('dos') : ''}</div>
-    <p class="dp-ligne">${n.centrage != null && n.centrage >= 10 ? tt('Bien centrée : le cadre imprimé est au milieu de la carte.', 'Well centered: the printed frame sits in the middle of the card.')
-      : tt('Le cadre imprimé n’est pas au milieu : la bordure la plus large donne le ratio.', 'The printed frame is off-center: the wider border sets the ratio.')}</p>
+    <p class="dp-ligne">${[phraseC('devant'), refs.length > 1 ? phraseC('dos') : ''].filter(Boolean).join(' ')} ${tt('Le cadre vert est le dessin imprimé ; le gris, le bord de la carte.', 'The green frame is the printed design; the grey one, the card’s edge.')}</p>
     ${Object.keys(e.centrage_vue || {}).length ? `<button class="pilule" data-dpcent>${tt('Voir sur ma photo', 'See it on my photo')}</button>` : ''}</div>` : '';
   const rep = (e.a_reprendre || []).slice(0, 4);
   const dr = rep.length ? `<div class="dp-d"><span class="dp-sur">${tt('Pour une note plus sûre', 'For a surer grade')}</span>
@@ -10281,13 +10383,15 @@ function voirDefauts(e, k, apres, relancer){
   // (canevas) depuis la photo pleine resolution : centre exactement sur le point meme au bord de la photo (fond noir au-dela),
   // sans deformation (l'ancien fond CSS etirait l'image et se calait sur le bord de la photo)
   const zmCanvas = (d, cls) => { const [x, y] = ptZoom(d);
-    return `<span class="vd-zm ${cls || ''}"><canvas data-zj="${d.photo || 0}" data-zx="${x}" data-zy="${y}" data-zc="${/^coin /.test(d.zone || '') ? 1 : 0}"></canvas><i></i></span>`; };
+    return `<span class="vd-zm ${cls || ''}"><canvas data-zj="${d.photo || 0}" data-zx="${x}" data-zy="${y}" data-zc="${/^coin /.test(d.zone || '') ? 1 : 0}" data-zz="${esc(d.zone || '')}"></canvas><i></i></span>`; };
   const peindreZm = (root) => $$('canvas[data-zj]', root).forEach(cv => {
     const j = +cv.dataset.zj, im = o.querySelector(`.vd-ph[data-j="${j}"] img`); if (!im) return;
     const go = () => { const W = im.naturalWidth, H = im.naturalHeight; if (!W) return;
       const q = (Q && Q[j]) || (e.quads && e.quads[j] && e.quads[j].length === 4 ? e.quads[j] : null);
       const larg = q ? Math.hypot((q[1][0] - q[0][0]) * W / 1000, (q[1][1] - q[0][1]) * H / 1000) : W * 0.8;
-      const r = Math.max(24, larg * (cv.dataset.zc === '1' ? 0.075 : 0.1)), cx = +cv.dataset.zx * W, cy = +cv.dataset.zy * H;
+      const r = Math.max(24, larg * (cv.dataset.zc === '1' ? 0.075 : 0.1));
+      let cx = +cv.dataset.zx * W, cy = +cv.dataset.zy * H;
+      try { const p_ = calerSurArete(im, cx, cy, r, cv.dataset.zz); if (p_) [cx, cy] = p_; } catch (x_) {}
       const T = Math.round(Math.min(900, Math.max(240, 2 * r * 2))); cv.width = cv.height = T;
       const g = cv.getContext('2d'); g.fillStyle = '#000'; g.fillRect(0, 0, T, T); g.imageSmoothingQuality = 'high';
       g.drawImage(im, cx - r, cy - r, 2 * r, 2 * r, 0, 0, T, T); };
@@ -12063,10 +12167,10 @@ async function vueAdmin(onglet){
       <div class="kpi"><span class="lib">${tt('Actifs 7 jours', 'Active 7 days')}</span><span class="v">${a.actifs_7j}</span><span class="s">${a.total ? Math.round(100 * a.actifs_7j / a.total) : 0} %</span></div>
       <div class="kpi ${r.erreurs_24h ? 'rouge' : ''}"><span class="lib">${tt('Serveur', 'Server')}</span><span class="v">${r.erreurs_24h ? r.erreurs_24h + ' ' + tt('erreurs', 'errors') : 'OK'}</span><span class="s">eBay ${br ? Math.round(100 * br.utilises / br.limite) : 0} % ${tt('du jour', 'today')}</span></div></div>
     <div id="adm-sorties"></div>
-    <div class="seg" id="adm-o" style="margin:14px 0">${[['abonnes', tt('Abonnés', 'Subscribers')], ['demandes', tt('Demandes', 'Requests') + pastille(r.demandes.nouvelles)], ['catalogue', 'Catalogue' + pastille(r.a_ajouter)], ['serveur', tt('Serveur', 'Server')]].map(([k, t]) => `<button data-v="${k}" class="${o === k ? 'on' : ''}">${t}</button>`).join('')}</div>
+    <div class="seg" id="adm-o" style="margin:14px 0">${[['activite', tt('Activité', 'Activity')], ['abonnes', tt('Abonnés', 'Subscribers')], ['demandes', tt('Demandes', 'Requests') + pastille(r.demandes.nouvelles)], ['catalogue', 'Catalogue' + pastille(r.a_ajouter)], ['serveur', tt('Serveur', 'Server')]].map(([k, t]) => `<button data-v="${k}" class="${o === k ? 'on' : ''}">${t}</button>`).join('')}</div>
     <div id="adm-z"><div class="lecture"><span class="roue"></span></div></div></section>`;
   blocSorties();
-  const sous = {abonnes:adminAbonnes, demandes:adminDemandes, catalogue:adminCatalogue, serveur:adminServeur};
+  const sous = {activite:adminActivite, abonnes:adminAbonnes, demandes:adminDemandes, catalogue:adminCatalogue, serveur:adminServeur};
   // 28 oct 2026 (« saccadé ») : un onglet se change sur place ; le contenu d'avant reste (estompe) jusqu'a l'arrivee du nouveau
   $$('#adm-o button').forEach(b => b.onclick = async () => {
     if (b.classList.contains('on')) return;
@@ -12076,6 +12180,41 @@ async function vueAdmin(onglet){
     try { await (sous[b.dataset.v] || adminAbonnes)(); } finally { z.classList.remove('charge'); setTimeout(() => { z.style.minHeight = ''; }, 400); }
   });
   (sous[o] || adminAbonnes)();
+}
+// 9 nov 2026 (Mathieu : « un statsboard pour l'administrateur : toute l'activite, les utilisateurs, les pages les plus
+// utilisees, les fonctions les moins utilisees, tous les commentaires regroupes par categorie, ce qui est a faire ») :
+// l'onglet Activite. Anonyme : des compteurs par jour, jamais qui a fait quoi.
+const LIB_CAT_DEM = {bug: ['Bogues', 'Bugs'], idee: ['Idées', 'Ideas'], produit: ['Produits manquants', 'Missing products'], question: ['Questions', 'Questions'],
+  abonnement: ['Abonnement', 'Subscription'], deal: ['Deals', 'Deals'], autre: ['Autres', 'Other'], a_trier: ['Pas encore triés', 'Not sorted yet']};
+async function adminActivite(){
+  const z = $('#adm-z'), j = S.jAct || 30;
+  const d = await API.admin_activite(j).catch(e => ({ok:false, erreur:e.message}));
+  if (!d.ok) { z.innerHTML = `<div class="vide">${esc(d.erreur)}</div>`; return; }
+  const nomF = (k) => String(k).replace(/_/g, ' ');
+  const barres = (l, max) => l.map(([k, n]) => `<div class="act-l"><span class="act-n">${esc(nomF(k))}</span><span class="act-b"><i style="width:${Math.max(3, Math.round(100 * n / (max || 1)))}%"></i></span><b>${n}</b></div>`).join('');
+  const mx = Math.max(1, ...d.serie.map(x => x.actifs));
+  const W = 300, H = 70, bw = W / d.serie.length;
+  const graphe = `<svg class="act-g" viewBox="0 0 ${W} ${H + 14}" role="img" aria-label="${esc(tt('Personnes actives par jour', 'Active people per day'))}">
+    ${d.serie.map((x, i) => `<rect x="${(i * bw + 0.5).toFixed(1)}" y="${(H - H * x.actifs / mx).toFixed(1)}" width="${Math.max(1, bw - 1.5).toFixed(1)}" height="${(H * x.actifs / mx).toFixed(1)}" rx="1.5"><title>${x.jour} : ${x.actifs}</title></rect>`).join('')}
+    <text x="0" y="${H + 12}">${esc(dateCourte(d.serie[0].jour))}</text><text x="${W}" y="${H + 12}" text-anchor="end">${tt('aujourd’hui', 'today')}</text></svg>`;
+  const a = d.abonnes || {};
+  const coms = d.commentaires || [];
+  z.innerHTML = `<div class="pastilles" style="margin-bottom:10px">${[7, 30, 90].map(n => `<button class="pilule ${n === j ? 'on' : ''}" data-j="${n}">${n} ${tt('jours', 'days')}</button>`).join('')}</div>
+    <div class="hero-l adm-kpi">
+      <div class="kpi acc"><span class="lib">${tt('Actifs aujourd’hui', 'Active today')}</span><span class="v">${d.actifs_auj}</span><span class="s">${tt('moyenne 7 j : ', '7-day avg: ')}${decFr(d.actifs_7j_moy)}</span></div>
+      <div class="kpi"><span class="lib">${tt('Comptes', 'Accounts')}</span><span class="v">${a.total ?? '—'}</span><span class="s">+${a.nouveaux_7j ?? 0} ${tt('cette semaine', 'this week')}</span></div>
+      <div class="kpi"><span class="lib">${tt('Actions', 'Actions')}</span><span class="v">${d.appels}</span><span class="s">${j} ${tt('jours', 'days')}</span></div></div>
+    <div class="bloc act-bloc"><div class="r-titre">${tt('Personnes actives par jour', 'Active people per day')}</div>${graphe}</div>
+    <div class="bloc act-bloc"><div class="r-titre">${tt('Écrans les plus visités', 'Most visited screens')}</div>${d.pages.length ? barres(d.pages, d.pages[0][1]) : `<div class="sous">${tt('Rien encore : les visites se comptent depuis cette version.', 'Nothing yet: visits are counted from this version on.')}</div>`}</div>
+    <div class="bloc act-bloc"><div class="r-titre">${tt('Fonctions les plus utilisées', 'Most used features')}</div>${d.fonctions_top.length ? barres(d.fonctions_top.slice(0, 12), d.fonctions_top[0][1]) : `<div class="sous">${tt('Rien encore.', 'Nothing yet.')}</div>`}</div>
+    <div class="bloc act-bloc"><div class="r-titre">${tt('Les moins utilisées', 'Least used')}</div>${d.fonctions_moins.length ? barres(d.fonctions_moins.slice(0, 10), Math.max(...d.fonctions_moins.map(x => x[1]))) : ''}
+      ${d.jamais.length ? `<div class="sous" style="margin-top:8px">${tt('Jamais utilisées sur la période : ', 'Never used in this period: ')}${d.jamais.slice(0, 40).map(k => esc(nomF(k))).join(' · ')}</div>` : ''}</div>
+    <div class="r-titre" style="margin-top:16px">${tt('Commentaires par catégorie', 'Feedback by category')}</div>
+    ${coms.length ? coms.map(g => `<div class="bloc act-bloc"><div class="act-cat"><b>${esc(tt(...(LIB_CAT_DEM[g.categorie] || [g.categorie, g.categorie])))}</b><span class="sous">${g.n} · ${g.ouvertes} ${tt('ouvert(s)', 'open')}</span></div>
+      ${g.a_faire.length ? `<ul class="act-faire">${g.a_faire.map(x => `<li><i class="p${x.priorite}">${x.priorite}</i><span><b>${esc(x.resume)}</b><small>${esc(x.a_faire)}</small></span></li>`).join('')}</ul>` : `<div class="sous">${tt('Rien à faire d’ouvert.', 'Nothing open to do.')}</div>`}</div>`).join('')
+      : `<div class="vide">${tt('Aucun commentaire sur la période.', 'No feedback in this period.')}</div>`}
+    <div class="sous" style="margin-top:12px">${tt('Anonyme : des compteurs par jour (écrans, fonctions, nombre de personnes), jamais qui a fait quoi. Gardés 90 jours.', 'Anonymous: daily counters (screens, features, number of people), never who did what. Kept 90 days.')}</div>`;
+  $$('[data-j]', z).forEach(b => b.onclick = () => { S.jAct = +b.dataset.j; adminActivite(); });
 }
 async function adminAbonnes(){
   const z = $('#adm-z'); const d = await API.admin_abonnes().catch(e => ({ok:false, erreur:e.message}));
