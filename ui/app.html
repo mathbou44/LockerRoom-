@@ -2798,6 +2798,13 @@ body.vd-ouverte::before{content:''; position:fixed; top:0; left:0; right:0; heig
 .cg-l{position:absolute; z-index:2} .cg-l.v{top:0; bottom:0; width:28px; margin-left:-14px; cursor:ew-resize} .cg-l.h{left:0; right:0; height:28px; margin-top:-14px; cursor:ns-resize}
 .cg-l i{position:absolute; background:var(--acc); box-shadow:0 0 0 1px rgba(0,0,0,.6)} .cg-l.v i{left:13px; top:0; bottom:0; width:2px} .cg-l.h i{top:13px; left:0; right:0; height:2px}
 .cg-l i::after{content:''; position:absolute; width:16px; height:16px; border-radius:50%; background:var(--acc); box-shadow:0 0 0 2px rgba(0,0,0,.6)} .cg-l.v i::after{left:-7px; top:calc(50% - 8px)} .cg-l.h i::after{top:-7px; left:calc(50% - 8px)}
+.cg-doigt{position:absolute; left:var(--dx,1%); top:50%; z-index:4; pointer-events:none; display:flex; flex-direction:column; align-items:center; gap:2px; margin:-4px 0 0 -15px}
+.cg-doigt svg{width:40px; height:40px; fill:rgba(0,0,0,.35); stroke:#fff; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 1px 2px rgba(0,0,0,.8))}
+.cg-doigt span{padding:2px 8px; border-radius:999px; background:rgba(0,0,0,.72); color:#fff; font:700 11px var(--f-cond); letter-spacing:.04em}
+.cg-montre .cg-doigt{animation:cg-doigt 2.4s ease-in-out .6s infinite} .cg-montre .cg-l[data-k="l"]{animation:cg-glisse 2.4s ease-in-out .6s infinite}
+@keyframes cg-doigt{0%,12%{transform:translateX(0)} 18%{transform:translateX(0) scale(.92)} 55%,70%{transform:translateX(56px) scale(.92)} 80%{transform:translateX(56px)} 100%{transform:translateX(0)}}
+@keyframes cg-glisse{0%,18%{transform:translateX(0)} 55%,70%{transform:translateX(56px)} 92%,100%{transform:translateX(0)}}
+@media (prefers-reduced-motion:reduce){ .cg-montre .cg-doigt, .cg-montre .cg-l[data-k="l"]{animation:none} }
 .cg-l.actif i{background:#fff} .cg-m{position:absolute; transform:translate(-50%,-50%); padding:2px 6px; border-radius:8px; background:rgba(0,0,0,.72); color:#fff; font:700 12px var(--f-cond); pointer-events:none; z-index:3}
 .vd-l{margin-top:4px; list-style:none; padding:0; display:flex; flex-direction:column; gap:8px} .vd-l li{display:flex; align-items:center; gap:10px; font-size:14px; cursor:pointer}
 .vd-l i{flex:0 0 26px; height:26px; border-radius:50%; display:grid; place-items:center; font:700 12px var(--f-cond); font-style:normal; background:rgba(255,255,255,.08)} .et-c{font-size:14px} .et-p{font-size:12px; color:var(--doux)} .et-p .lien{background:none; border:0; color:var(--acc); font:inherit; padding:0; cursor:pointer}
@@ -11592,18 +11599,26 @@ function voirCentrage(e, cid, apres){
   const vues = e.centrage_vue || {}, faces = ['devant', 'dos'].filter(f => vues[f] && vues[f].img);
   if (!faces.length) { toast(tt('Pas de vue redressée : refais l’examen', 'No straightened view: redo the exam')); return; }
   let face = faces[0];
+  // 9 nov 2026 (Mathieu : « un genre de doigt anime montrant qu'on peut faire ca, je ne savais meme pas ») : tant qu'on n'a
+  // jamais glisse une ligne, un doigt montre le geste
+  let doigt = true; try { doigt = !localStorage.getItem('lr_cg_glisse'); } catch (x) {}
   const o = document.createElement('div'); o.className = 'vd cg';
   document.body.appendChild(o);
   const fermer = () => o.remove();
   const peindre = () => {
-    const v = vues[face], m = {l: v.l ?? 0.06, r: v.r ?? 0.06, t: v.t ?? 0.06, b: v.b ?? 0.06}, auto = v.l != null || v.t != null;
-    let vx = v.l != null || !!v.manuel, vy = v.t != null || !!v.manuel;      // 2 nov 2026 : un axe pas mesure n'affiche pas « 50/50 »
+    const v = vues[face];
+    // 9 nov 2026 (Mathieu : « les pointilles devraient partir du bord ») : un axe pas mesure (ou au-dela de 80/20, un mauvais
+    // repere) : ses 2 lignes partent du bord de la carte, a placer ; aucun ratio ni note tant qu'on ne les a pas bougees
+    const ok80 = (a, c) => a != null && c != null && (a + c) > 0 && 100 * Math.max(a, c) / (a + c) <= 80;
+    const okx = !!v.manuel || ok80(v.l, v.r), oky = !!v.manuel || ok80(v.t, v.b);
+    const m = {l: okx ? v.l : 0.01, r: okx ? v.r : 0.01, t: oky ? v.t : 0.01, b: oky ? v.b : 0.01}, auto = okx || oky;
+    let vx = okx, vy = oky;      // 2 nov 2026 : un axe pas mesure n'affiche pas « 50/50 »
     const tol = face === 'dos' ? TOL_DOS : TOL_DEVANT;
     const rat = (a, c) => { const g = Math.round(100 * Math.max(a, c) / ((a + c) || 1)); return [g, 100 - g]; };
     const note = (g) => (tol.find(([lim]) => g <= lim) || [0, face === 'dos' ? 8 : 3])[1];
     const lab = () => { const x = rat(m.l, m.r), y = rat(m.t, m.b), n = Math.min(vx ? note(x[0]) : 10, vy ? note(y[0]) : 10);
       return `<div class="cg-r"><span>${tt('Gauche / droite', 'Left / right')} <b>${vx ? x[0] + '/' + x[1] : tt('à placer', 'to place')}</b></span><span>${tt('Haut / bas', 'Top / bottom')} <b>${vy ? y[0] + '/' + y[1] : tt('à placer', 'to place')}</b></span>
-        <span class="cg-n ${n >= 10 ? 'vert' : n >= 9 ? 'or' : 'rouge'}">${n}/10 ${tt('max', 'max')}</span></div>`; };
+        ${vx || vy ? `<span class="cg-n ${n >= 10 ? 'vert' : n >= 9 ? 'or' : 'rouge'}">${n}/10 ${tt('max', 'max')}</span>` : ''}</div>`; };
     o.innerHTML = `<button class="vd-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
       <h3 class="cg-h">${tt('Grille de centrage', 'Centering grid')}</h3>
       ${faces.length > 1 ? `<div class="chips">${faces.map(f => `<button class="chip ${f === face ? 'on' : ''}" data-f="${f}">${f === 'devant' ? tt('Devant', 'Front') : tt('Dos', 'Back')}</button>`).join('')}</div>` : ''}
@@ -11612,9 +11627,10 @@ function voirCentrage(e, cid, apres){
         <svg class="cg-bandes" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true"></svg>
         <div class="cg-c v"></div><div class="cg-c h"></div>
         <div class="cg-l v" data-k="l"><i></i></div><div class="cg-l v" data-k="r"><i></i></div><div class="cg-l h" data-k="t"><i></i></div><div class="cg-l h" data-k="b"><i></i></div>
-        <span class="cg-m" data-m="l"></span><span class="cg-m" data-m="r"></span><span class="cg-m" data-m="t"></span><span class="cg-m" data-m="b"></span></div>
+        <span class="cg-m" data-m="l"></span><span class="cg-m" data-m="r"></span><span class="cg-m" data-m="t"></span><span class="cg-m" data-m="b"></span>
+        ${doigt ? `<div class="cg-doigt" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10 9.5V4a2 2 0 0 0-4 0v10"/><path d="M14 10V9a2 2 0 0 0-4 0v1"/><path d="M18 11v-1a2 2 0 0 0-4 0"/><path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-6-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg><span>${tt('Glisse', 'Drag')}</span></div>` : ''}</div>
       <div class="cg-leg" id="cg-leg"></div>
-      <div class="sous">${!auto ? tt('Pas de bordure nette trouvée : glisse les 4 lignes sur le cadre imprimé de la carte.', 'No clear border found: drag the 4 lines onto the card’s printed frame.')
+      <div class="sous">${!auto ? tt('Pas de bordure nette trouvée : les 4 lignes partent du bord de la carte. Glisse chacune vers l’intérieur jusqu’au cadre imprimé.', 'No clear border found: the 4 lines start at the card’s edge. Drag each one inward to the printed frame.')
         : v.manuel ? tt('Ajusté par toi. Les lignes doivent suivre le cadre imprimé.', 'Adjusted by you. The lines should follow the printed frame.')
         : tt('Les 4 lignes : le cadre imprimé trouvé par l’app. Glisse-les pour vérifier ou corriger.', 'The 4 lines: the printed frame found by the app. Drag them to check or fix.')}
         ${tt(face === 'dos' ? 'Dos (normes PSA) : 10 jusqu’à 75/25, 9 et moins jusqu’à 90/10.' : 'Devant (normes PSA) : 10 jusqu’à 55/45, 9 jusqu’à 60/40, 8 jusqu’à 65/35, 7 jusqu’à 70/30.', face === 'dos' ? 'Back (PSA standards): 10 up to 75/25, 9 and below up to 90/10.' : 'Front (PSA standards): 10 up to 55/45, 9 up to 60/40, 8 up to 65/35, 7 up to 70/30.')} <a href="#" data-bareme-cg>${tt('Barème', 'Scale')}</a></div>
@@ -11633,6 +11649,7 @@ function voirCentrage(e, cid, apres){
       mm('t', Math.round(100 * m.t / tot(m.t, m.b)) + '%', {left: '50%', top: (m.t * 50) + '%'});
       mm('b', Math.round(100 * m.b / tot(m.t, m.b)) + '%', {left: '50%', top: (100 - m.b * 50) + '%'});
       $('#cg-lab', o).innerHTML = lab();
+      z.style.setProperty('--dx', (m.l * 100) + '%');
       // 2 nov 2026 (Mathieu : les outils de centrage transparents, « The Center Tool ») : les zones de chaque note PSA. Pour
       // la largeur totale des bordures d'un axe, la ligne du cadre doit tomber dans la zone verte pour un 10 (55/45 au plus),
       // or pour un 9 (60/40), orange pour un 8 (65/35), rouge pour un 7 (70/30). Elles bougent avec les lignes.
@@ -11650,14 +11667,17 @@ function voirCentrage(e, cid, apres){
       const lg = $('#cg-leg', o); if (lg) lg.innerHTML = Z.slice().reverse().map(([lim, n, cl]) => `<span class="${cl}"><i></i>${n} ≤ ${lim}/${100 - lim}</span>`).join('');
     };
     poser();
-    let change = false;
+    if (doigt) z.classList.add('cg-montre');                 // le doigt anime glisse la ligne de gauche, puis la remet
+    let change = false; const bouge = {l: vx, r: vx, t: vy, b: vy};
     $$('.cg-l', z).forEach(el => el.onpointerdown = (ev) => {
       ev.preventDefault(); el.setPointerCapture(ev.pointerId); el.classList.add('actif');
+      if (doigt) { doigt = false; z.classList.remove('cg-montre'); const d_ = z.querySelector('.cg-doigt'); if (d_) d_.remove(); try { localStorage.setItem('lr_cg_glisse', '1'); } catch (x) {} }
       const k = el.dataset.k;
       el.onpointermove = (mv) => { const r = z.getBoundingClientRect();
         let f = k === 'l' || k === 'r' ? (mv.clientX - r.left) / r.width : (mv.clientY - r.top) / r.height;
         if (k === 'r' || k === 'b') f = 1 - f;
-        m[k] = Math.max(0, Math.min(0.45, f)); change = true; if (k === 'l' || k === 'r') vx = true; else vy = true; poser(); $('#cg-ok', o).hidden = false; };
+        m[k] = Math.max(0, Math.min(0.45, f)); change = true; bouge[k] = true;
+        if (bouge.l && bouge.r) vx = true; if (bouge.t && bouge.b) vy = true; poser(); $('#cg-ok', o).hidden = !(vx || vy); };   // un axe se lit quand ses 2 lignes sont placees
       el.onpointerup = () => { el.onpointermove = null; el.classList.remove('actif'); };
     });
     $('#cg-ok', o).onclick = async () => { const r = await essai(API.carte_centrage(cid, face, m), tt('Centrage enregistré', 'Centering saved'));

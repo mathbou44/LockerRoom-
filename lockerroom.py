@@ -3142,22 +3142,30 @@ class Api:
         import photos_cartes
         import vision
         ds = e.get("defauts") or []
-        if not e.get("contre_verif") or not any(str(d.get("zone") or "").startswith(("coin ", "bord ")) and not d.get("cale") for d in ds):
+        a_caler = any(str(d.get("zone") or "").startswith(("coin ", "bord ")) and d.get("cale") is not True and d.get("cale_v") != 2 for d in ds)
+        if not e.get("contre_verif") or (not a_caler and e.get("centrage_assaini")):
             return e
-        refs, quads = list(e.get("photos") or []), list(e.get("quads") or [])
-        if not refs or not quads:
+        refs = list(e.get("photos") or [])
+        quads = list(e.get("quads") or []) + [None] * max(0, len(refs) - len(e.get("quads") or []))
+        if not refs:
             return e
         e = json.loads(json.dumps(e))
-        if not e.get("bandes_v2"):
-            for d in e["defauts"]:
-                q = quads[1 if d.get("photo") == 1 else 0] if quads else None
-                if d.get("zone") == "bord gauche" and q and len(q) == 4 and not d.get("cale"):
-                    # la position le long du bord gauche, de haut en bas (0..1) -> son miroir
-                    y0, y1 = q[0][1], q[3][1]
-                    t = (float(d.get("y") or 0) - y0) / ((y1 - y0) or 1)
-                    t = 1 - max(0.0, min(1.0, t))
-                    d["x"], d["y"] = vision._bil(q, 0.01, t)
-            e["bandes_v2"] = True
+        # 9 nov 2026 (« Dos 88/12 » sur la Willander) : un centrage enregistre au-dela de 80/20 est un mauvais repere : retire
+        # (montre « a verifier » dans la grille), jamais affiche comme une mesure
+        r80 = lambda r_: bool(re.fullmatch(r"\d{2}/\d{2}", str(r_ or ""))) and max(int(v) for v in str(r_).split("/")) > 80
+        for k in ("centrage_gd", "centrage_hb", "centrage_dos"):
+            if r80(e.get(k)):
+                e[k] = ""
+        for fc, v in (e.get("centrage_vue") or {}).items():
+            if not isinstance(v, dict) or v.get("manuel"):
+                continue
+            for ax, k1, k2 in (("gd", "l", "r"), ("hb", "t", "b")):
+                a_, b_ = v.get(k1), v.get(k2)
+                if a_ is not None and b_ is not None and (a_ + b_) > 0 and 100 * max(a_, b_) / (a_ + b_) > 80:
+                    g_ = round(100 * max(a_, b_) / (a_ + b_))
+                    v["verifier_" + ax] = f"{g_}/{100 - g_}"
+                    v[k1] = v[k2] = v[ax] = None
+        e["centrage_assaini"] = True
         ims = []
         for r in refs[:2]:
             ch = photos_cartes.chemin(r)
@@ -3166,10 +3174,34 @@ class Api:
                     ims.append(examen.ouvrir(f.read()))
             except Exception:
                 ims.append(None)
-        vision.caler_defauts(e, ims, quads)
-        for d in e["defauts"]:                               # meme sans calage possible : une seule tentative
-            if str(d.get("zone") or "").startswith(("coin ", "bord ")):
-                d["cale"] = d.get("cale") or "essaye"
+        for j_, im_ in enumerate(ims):                       # pas de contour garde : l'app le trouve sur la photo
+            if im_ is not None and j_ < len(quads) and not quads[j_]:
+                try:
+                    import mesures
+                    q0 = mesures.trouver_carte(im_)
+                    quads[j_] = examen.affiner_quad(im_, q0, 0.03) if q0 else None
+                except Exception:
+                    pass
+        if not e.get("bandes_v2"):
+            for d in e["defauts"]:
+                q = quads[1 if d.get("photo") == 1 else 0] if quads else None
+                if d.get("zone") == "bord gauche" and q and len(q) == 4:
+                    # la position le long du bord gauche, de haut en bas (0..1) -> son miroir
+                    y0, y1 = q[0][1], q[3][1]
+                    t = (float(d.get("y") or 0) - y0) / ((y1 - y0) or 1)
+                    t = 1 - max(0.0, min(1.0, t))
+                    d["x"], d["y"] = vision._bil(q, 0.01, t)
+                    d.pop("cale", None)
+                    d.pop("cale_v", None)
+                    a_caler = True
+            e["bandes_v2"] = True
+        if a_caler:
+            vision.caler_defauts(e, ims, quads)
+            if any(quads) and not any(e.get("quads") or []):
+                e["quads"] = quads
+            for d in e["defauts"]:                           # meme sans calage possible : une seule tentative (v2)
+                if str(d.get("zone") or "").startswith(("coin ", "bord ")):
+                    d["cale_v"] = 2
         c = self._db()
         try:
             c.execute("UPDATE cartes SET etat_json=? WHERE id=?", (json.dumps(e, ensure_ascii=False), cid))

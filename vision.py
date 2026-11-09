@@ -1310,13 +1310,25 @@ def caler_defauts(res, images, quads):
     import examen
     for d in res.get("defauts") or []:
         z = str(d.get("zone") or "")
-        if d.get("cale") or not (z.startswith("coin ") or z.startswith("bord ")):
+        if d.get("cale") is True or not (z.startswith("coin ") or z.startswith("bord ")):
             continue
         ph = 1 if d.get("photo") == 1 else 0
-        if ph >= len(images or []) or images[ph] is None or not quads or ph >= len(quads) or not quads[ph]:
+        if ph >= len(images or []) or images[ph] is None:
+            continue
+        q = quads[ph] if quads and ph < len(quads) and quads[ph] else None
+        if not q:                                          # pas de contour garde : l'app le trouve sur la photo
+            try:
+                import mesures
+                q0 = mesures.trouver_carte(images[ph])
+                q = examen.affiner_quad(images[ph], q0, 0.03) if q0 else None
+            except Exception:
+                q = None
+            if q and quads is not None and ph < len(quads):
+                quads[ph] = q
+        if not q:
             continue
         try:
-            p = examen.caler_point(images[ph], quads[ph], z, float(d.get("x") or 0), float(d.get("y") or 0))
+            p = examen.caler_point(images[ph], q, z, float(d.get("x") or 0), float(d.get("y") or 0))
         except Exception as e:
             print("Defaut (calage) : " + repr(e), flush=True)
             p = None
