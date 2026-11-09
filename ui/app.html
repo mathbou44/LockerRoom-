@@ -318,6 +318,29 @@ details.reglage summary::-webkit-details-marker{display:none}
   background:linear-gradient(90deg, var(--h1,#9FE6D2), var(--h2,#B9BEFF), var(--h3,#F2B3D6)); animation:pv-av 25s cubic-bezier(.15,.7,.25,1) forwards}
 .prog-v.mince{margin:4px 0 8px} .prog-v.mince .pv-t{font-size:12px; margin-bottom:5px} .prog-v.mince .pv-b{height:3px}
 @keyframes pv-av{from{transform:scaleX(.03)} to{transform:scaleX(1)}}
+button.lien{background:none; border:0; color:var(--acc); font:inherit; padding:0; cursor:pointer; text-decoration:underline}
+#adm-veille .ligne-lien{display:flex; gap:8px; align-items:center; padding:8px 0; border-top:1px solid var(--ligne, rgba(255,255,255,.08)); color:inherit; text-decoration:none; font-size:14px}
+#adm-veille .ligne-lien small{margin-left:auto; color:var(--doux); white-space:nowrap}
+.notifs .nt-bloc{background:var(--carte); border:1px solid var(--ligne); border-radius:18px; padding:14px; margin-bottom:12px}
+.notifs .nt-t{display:flex; align-items:center; gap:8px; font-weight:700; font-size:17px; margin-bottom:10px} .notifs .nt-t .fv-n{margin-left:auto}
+.gg-s{display:block; font-size:12.5px; font-weight:400; color:var(--doux); margin-top:1px}
+.notifs .nt-vide{padding:4px 0}
+.nt-f{margin:-2px 0 6px} .nt-jour{font:700 12px var(--f-cond); letter-spacing:.08em; text-transform:uppercase; color:var(--doux); margin:12px 0 4px}
+.nt-l{position:relative; display:flex; align-items:center; gap:12px; padding:10px 2px; border-top:1px solid var(--ligne); color:inherit; text-decoration:none; cursor:pointer}
+.nt-jour + .nt-l{border-top:0}
+.nt-ic{flex:none; width:38px; height:38px; border-radius:50%; display:grid; place-items:center; border:1.5px solid currentColor; color:var(--doux)}
+.nt-ic svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round}
+.nt-ic.vert, .nt-k.vert{color:var(--vert)} .nt-ic.or, .nt-k.or{color:var(--or, #F1D58E)} .nt-ic.rouge, .nt-k.rouge{color:var(--rouge)} .nt-ic.acc, .nt-k.acc{color:var(--acc)}
+.nt-m{flex:1; min-width:0; display:flex; flex-direction:column; gap:1px}
+.nt-k{font:700 11.5px var(--f-cond); letter-spacing:.07em; text-transform:uppercase; color:var(--doux)} .nt-k i{font-style:normal; color:var(--doux); margin-left:5px; letter-spacing:.03em; text-transform:none}
+.nt-m b{font-size:15px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.nt-d{font-size:13px; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.nt-ph{flex:none; width:40px; height:52px; border-radius:6px; object-fit:cover; background:#101014}
+.nt-pt{position:absolute; left:-6px; top:50%; width:7px; height:7px; margin-top:-3.5px; border-radius:50%; background:var(--acc)} .notifs .pr-pro{width:100%}
+.adm-pil-act{display:flex; gap:8px; margin-top:12px} .adm-pil-act .btn{flex:1; text-align:center}
+.adm-pil-note{margin-top:10px; font-size:13px}
+.av-z{display:flex; gap:8px; margin-top:12px} .av-z .champ{flex:1; font-size:20px; letter-spacing:.2em; text-align:center}
+.sd-pays{display:inline-flex; align-items:center; margin-left:6px; padding:2px 7px; border-radius:99px; background:rgba(0,0,0,.55); color:#fff; font:700 11px var(--f-cond); letter-spacing:.06em}
 .vp-comps{margin-top:14px} .vp-ct{display:flex; justify-content:space-between; font-size:13px; font-weight:700; color:var(--doux); margin-bottom:8px}
 .vp-ct span{font-weight:500} .vp-comps .comp-m span{display:flex; align-items:center; justify-content:center} .vp-comps .comp-m span svg{width:40%; opacity:.35}
 .vp-comps .comp-m small{font-size:11.5px; color:var(--doux); margin-top:-3px}
@@ -3555,9 +3578,8 @@ function route(){
   if (!$('#fond-feuille').hidden) fermerFeuille();
   navDebut(S.ecranCourant === ecran && !!arg);              // meme ecran, autre onglet (Admin, Breaks, Sante...) : navigation douce
   S.ecranCourant = ecran;
-  const vues = {analyse:vueAnalyse, vendre:vueVendre, deals:vueDeals, valeur:vueValeur, accueil:vueAccueil, sante:vueSante, breaks:vueBreaks, break:vueBreak, inventaire:vueInventaire, comptoir:vueComptoir, bilan:vueBilan, ventes:vueVentes, reglages:vueReglages, admin:vueAdmin, guide:vueGuide, joueur:vueJoueur, calendrier:vueCalendrier, idees:vueIdees, pouls:vuePouls, tendances:vueTendances, offres:vueOffres};
+  const vues = {analyse:vueAnalyse, vendre:vueVendre, deals:vueDeals, valeur:vueValeur, accueil:vueAccueil, sante:vueSante, breaks:vueBreaks, break:vueBreak, inventaire:vueInventaire, comptoir:vueComptoir, bilan:vueBilan, ventes:vueVentes, reglages:vueReglages, admin:vueAdmin, guide:vueGuide, joueur:vueJoueur, calendrier:vueCalendrier, idees:vueIdees, pouls:vuePouls, tendances:vueTendances, offres:vueOffres, notifs:vueNotifs, alertes:vueNotifs};
   (vues[ecran] || vueAccueil)(arg);
-  if (ecran === 'alertes') setTimeout(() => { try { feuilleAlertes(); } catch (e) {} }, 300);
 }
 window.addEventListener('hashchange', route);
 // 28 oct 2026 (Mathieu : « manque de fluidité, très saccadé et bug entre chaque section ») : avant, la page sautait en
@@ -5856,6 +5878,7 @@ async function feuilleFiltresDeals(){
       <label class="bascule fd-l"><span>${tt('Seulement mes joueurs', 'Only my players')}</span><input type="checkbox" id="fd-seul" ${seul ? 'checked' : ''}></label>
       <label class="bascule fd-l"><span>${tt('Seulement les boutiques suivies', 'Followed shops only')}</span><input type="checkbox" id="fd-vend" ${F.vendeurs ? 'checked' : ''}></label>
       <label class="bascule fd-l"><span>${tt('Encans avec au moins une mise', 'Auctions with at least one bid')}</span><input type="checkbox" id="fd-mise" ${F.avec_mise ? 'checked' : ''}></label>
+      <button class="acc-pil fd-ram" id="fd-pays"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.envoi || IC_PIL.pin}</svg></span><span class="ap-t"><b>${tt('J’achète depuis', 'I buy from')} ${(S.reglages || {}).pays === 'US' ? tt('les États-Unis', 'the United States') : tt('le Canada', 'Canada')}</b><small>${tt('Taxes et douanes de ton pays ; ses deals d’abord', 'Your country’s taxes and customs; its deals first')}</small></span><i aria-hidden="true">›</i></button>
       <button class="acc-pil fd-ram" id="fd-ram"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.pin}</svg></span><span class="ap-t"><b>${tt('Je ramasse sur place', 'I pick up locally')}</b><small id="fd-ram-s">${tt('Le port ne compte pas chez ces vendeurs', 'Shipping doesn’t count with these sellers')}</small></span><i aria-hidden="true">›</i></button>
       ${p.vendeurs_max ? `<label class="md-l">${tt(`Mes vendeurs eBay (${p.vendeurs_max} max)`, `My eBay sellers (${p.vendeurs_max} max)`)}${p.pro ? '' : ' <span class="badge-f pro">✦ PRO</span>'}<input class="champ" id="fd-v" value="${esc((p.vendeurs || []).join(', '))}" placeholder="${esc(tt('pseudo eBay exact', 'exact eBay username'))}" ${p.pro ? '' : 'disabled'}></label>` : ''}
       <button class="lien-t" id="fd-raz">${tt('Tout effacer', 'Clear all')}</button></details>
@@ -5872,7 +5895,7 @@ async function feuilleFiltresDeals(){
       + `<span class="fv-n">${FAV.length} / ${FMAX}</span>`;
     const plein = FAV.length >= FMAX;
     $('#fv-in').disabled = plein; $('#fv-ok').disabled = plein;
-    $('#fv-in').placeholder = plein ? (p.pro ? tt('Liste pleine', 'List full') : tt('Liste pleine · 10 avec Pro', 'List full · 10 with Pro')) : tt('Joueur ou équipe', 'Player or team');
+    $('#fv-in').placeholder = plein ? (p.pro ? tt('Liste pleine', 'List full') : tt(`Liste pleine · ${p.favoris_max_pro || 20} avec Pro`, `List full · ${p.favoris_max_pro || 20} with Pro`)) : tt('Joueur ou équipe', 'Player or team');
     $$('[data-fvx]').forEach(b => b.onclick = () => { FAV.splice(+b.dataset.fvx, 1); vibrer(); peindreFav(); });
   };
   $('#fv-aj').onsubmit = (e) => { e.preventDefault(); const v = $('#fv-in').value.trim().replace(/\s+/g, ' ');
@@ -5923,6 +5946,12 @@ async function feuilleFiltresDeals(){
   $('#fd-raz').onclick = () => appliquer(true);
   API.deals_vendeurs_liste().then(r => { const e = $('#fd-ram-s'); if (e && r && r.ok && r.ramassage.length) e.textContent = r.ramassage.join(', '); }).catch(() => {});
   $('#fd-ram').onclick = () => feuilleRamassage(() => { fermerFeuille(); chargerDeals(true); });
+  // 8 nov 2026 (Mathieu : « prioriser les deals canadiens pour un Canadien et americains pour un Americain ») : le pays d'achat
+  $('#fd-pays').onclick = () => { vibrer(); const pa = (S.reglages || {}).pays === 'US' ? 'US' : 'CA';
+    ouvrirFeuille(`<h3>${tt('Tu achètes depuis', 'You buy from')}</h3><div class="sous" style="margin-bottom:10px">${tt('Les taxes, les frais d’importation et la mise max suivent ton pays. Les deals de ton pays passent en premier : pas de douane.', 'Taxes, import fees and the max bid follow your country. Deals from your country come first: no customs.')}</div>
+      <div class="d-choix">${[['CA', tt('Canada', 'Canada')], ['US', tt('États-Unis', 'United States')]].map(([k, l]) => `<button class="d-ch ${pa === k ? 'on' : ''}" data-pays="${k}"><span>${l}</span></button>`).join('')}</div>`);
+    $$('[data-pays]').forEach(b => b.onclick = async () => { const r = await essai(API.reglages_sauver({pays: b.dataset.pays}), tt('Enregistré', 'Saved'));
+      if (r) { S.reglages = r; MEMO.clear(); fermerFeuille(); chargerDeals(true); } }); };
 }
 // 30 oct 2026 (Mathieu : « Remi, Savage et CF31, je peux aller pick up sur place ») : le port ne compte pas chez eux
 async function feuilleRamassage(apres){
@@ -6310,7 +6339,7 @@ function tuileDeal(x){
         <b class="sd-j">${x.favori ? '<i class="sd-fav">★</i> ' : ''}${esc(nom)}</b>${carte ? `<small class="sd-c">${esc(carte)}</small>` : ''}
         <span class="sd-3">${k3(encan ? tt('Mise', 'Bid') : tt('Prix', 'Price'), argentCourt(prix), 'pr')}${k3(tt('Paie max', 'Pay max'), max != null && !sansV ? (x.valeur_source === 'autre_saison' || x.valeur_source === 'approx' ? '≈' : '') + argentCourt(max) : '—', 'mx')}${k3(tt('Profit', 'Profit'), g > 0 && !sansV ? '+' + argentCourt(g) : '—', 'g')}</span></div>
       <div class="sd-ph">${SVG_CARTE}${x.photo ? `<img src="${esc(photoNet(x.photo, 400))}" alt="" loading="lazy" decoding="async" data-oe="rm">` : ''}${boutonWatch(x)}
-        ${encan ? `<span class="sd-fin">${icH()}${finDans(x.fin)}</span>` : ''}${x.ramassage ? `<span class="sd-ramp">${icPin()}</span>` : ''}</div></div>
+        ${encan ? `<span class="sd-fin">${icH()}${finDans(x.fin)}</span>` : ''}${x.ramassage ? `<span class="sd-ramp">${icPin()}</span>` : ''}${x.etranger && x.lieu ? `<span class="sd-pays">${esc(String(x.lieu).toUpperCase().slice(0, 2))}</span>` : ''}</div></div>
     </div>`;
 }
 // 26 oct 2026 (Mathieu : « encore pas un deal ... une option : l'annonce disparaît et ça nous laisse savoir quoi
@@ -7106,7 +7135,7 @@ async function ouvrirAnnonce(base){
       </div>
       ${depasse || budget || suspect ? `<div class="fa-pils">${suspect ? `<span class="capsule or">${tt('Prix très bas : vérifie que c’est la même carte', 'Very low price: check it’s the same card')}</span>` : ''}${depasse ? `<span class="capsule rouge">${esc(vt[1])}</span>` : ''}${depasse && d.deal_retire ? `<span class="capsule">${tt('Retiré de tes deals', 'Removed from your deals')}</span>` : ''}${budget ? `<span class="capsule rouge">${S.budget.reste <= 0 ? tt('Budget du mois atteint', 'Monthly budget reached') : tt('Au-dessus de ton budget', 'Over your budget')}</span>` : ''}</div>` : ''}
       ${(x0 || {}).faute || (encan && (x0 || {}).chance && (x0 || {}).chance.niveau !== 'tous') ? `<div class="fa-note">${(x0 || {}).faute ? `<span>${icN('oeil')}${tt('Nom mal écrit sur eBay', 'Name misspelled on eBay')} (« ${esc((x0 || {}).faute)} ») : ${tt('peu d’acheteurs la trouvent.', 'few buyers find it.')}</span>` : ''}${encan && (x0 || {}).chance && (x0 || {}).chance.niveau !== 'tous' ? `<span>${tt(`Ce genre d’encan finit sous ton pay max environ ${Math.max(1, Math.round((x0 || {}).chance.p * 10))} fois sur 10.`, `This kind of auction ends under your pay max about ${Math.max(1, Math.round((x0 || {}).chance.p * 10))} times out of 10.`)}</span>` : ''}</div>` : ''}
-      ${d.etranger && d.taxe_achat > TAXE_ACHAT + 0.001 ? `<div class="fa-pils"><span class="capsule or" style="white-space:normal; line-height:1.3">${tt(`Hors Canada : +${Math.round(d.taxe_achat * 100)} % de taxes et frais d’importation, déjà comptés dans la mise max`, `Outside Canada: +${Math.round(d.taxe_achat * 100)}% taxes and import fees, already counted in the max bid`)}</span></div>` : ''}
+      ${d.etranger && d.taxe_achat > ((S.reglages || {}).pays === 'US' ? 0.07 : TAXE_ACHAT) + 0.001 ? `<div class="fa-pils"><span class="capsule or" style="white-space:normal; line-height:1.3">${(S.reglages || {}).pays === 'US' ? tt(`Hors États-Unis : +${Math.round(d.taxe_achat * 100)} % de taxes et douanes (estimé), déjà comptés dans la mise max`, `Outside the US: +${Math.round(d.taxe_achat * 100)}% taxes and customs (estimate), already counted in the max bid`) : tt(`Hors Canada : +${Math.round(d.taxe_achat * 100)} % de taxes et frais d’importation, déjà comptés dans la mise max`, `Outside Canada: +${Math.round(d.taxe_achat * 100)}% taxes and import fees, already counted in the max bid`)}</span></div>` : ''}
       ${d.valeur_source === 'inscr_plancher' ? `<div class="fa-pils"><span class="capsule or" style="white-space:normal; line-height:1.3">${tt('Aucune vente avec inscription : valeur de la même carte sans inscription (un plancher, l’inscription vaut plus)', 'No inscribed sales: value of the same card without inscription (a floor, the inscription is worth more)')}</span></div>` : ''}
       ${d.valeur_source === 'approx' ? `<div class="fa-pils"><span class="capsule or" style="white-space:normal; line-height:1.3">${tt('Pas de comps : prix approximatif (cartes similaires du joueur)', 'No comps: approximate price (similar cards of the player)')}</span></div>` : ''}
       ${d.valeur_source === 'autre_saison' ? `<div class="fa-pils"><span class="capsule or" style="white-space:normal; line-height:1.3">${tt(`Pas de comps pour la ${esc(d.saison_carte || 'saison')} : estimé avec ${esc((d.saisons || []).join(', '))}`, `No comps for the ${esc(d.saison_carte || 'season')}: estimated from ${esc((d.saisons || []).join(', '))}`)}</span></div>` : ''}
@@ -8086,6 +8115,8 @@ async function vueAccueil(arg){
       ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>', 'SoldComps', v.actif ? `${v.aujourdhui || 0} / ${v.plafond || 0}` : tt('inactif', 'off'), tt('recherches aujourd’hui', 'searches today') + (v.poids_jour && Math.abs(v.poids_jour - 1) > 0.01 ? ' · ×' + decFr(v.poids_jour) + tt(' ce jour-là', ' this weekday') : ''), '#admin/serveur', !v.actif ? 'rouge' : pc(v.aujourdhui, v.plafond) > 80 ? 'or' : ''],
       ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.5 12h11L21 8H7"/><circle cx="10" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/></svg>', tt('Appels eBay', 'eBay calls'), br ? pc(br.utilises, br.limite) + ' %' : '—', tt('de la limite du jour', 'of today’s limit'), '#admin/serveur', br && pc(br.utilises, br.limite) > 80 ? 'rouge' : ''],
       ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="3"/><circle cx="12" cy="13.5" r="3.5"/><path d="M8 7l1.5-3h5L16 7"/></svg>', tt('Photos IA', 'AI photos'), ph.ce_mois != null ? String(ph.ce_mois) : '—', ph.usd != null ? `${Math.round(ph.usd * 100) / 100} $ US / ${ph.plafond_usd} $` : '', '#admin/serveur', ph.usd > (ph.plafond_usd || 50) * 0.8 ? 'rouge' : ''],
+      ...(rA.veille && !rA.veille.erreur ? [(() => { const vv = rA.veille, sem = (vv.nouveautes || []).filter(n => n.sorte !== 'autre' && String(n.le) > new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 19)).length, er = Object.values(vv.sources || {}).some(x => x.erreur);
+        return ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>', tt('Veille eBay', 'eBay watch'), sem ? String(sem) : vv.le ? 'OK' : '—', sem ? tt('changement(s) frais ou règles · 7 j', 'fee or rule change(s) · 7 d') : vv.le ? tt('frais et règles à jour', 'fees and rules up to date') : tt('1re vérification sous 1 h', '1st check within 1 h'), '#admin/serveur', er ? 'rouge' : sem ? 'or' : vv.le ? 'vert' : '']; })()] : []),
       ...(dq ? [['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 3v6h10V3M7 21v-7h10v7"/></svg>', tt('Disque', 'Disk'), pc(dq.total_go - dq.libre_go, dq.total_go) + ' %', `${dq.libre_go} Go ${tt('libres', 'free')}`, '#admin/serveur', pc(dq.total_go - dq.libre_go, dq.total_go) > 85 ? 'rouge' : '']] : [])];
     z.innerHTML = `<div class="adm-grille">${L.map(([ic, t, val, sous, href, cl]) => `<a class="adm-t ${cl}" href="${href}"><span class="ic">${ic}</span><span class="t">${esc(t)}</span><b>${esc(val)}</b><small>${esc(sous)}</small></a>`).join('')}</div>`;
   }).catch(() => {});
@@ -8273,14 +8304,15 @@ function pastillesAccueil(d, a, gestes, admin){
   const z = $('#acc-pils'); if (!z) return;
   const brk = (d.breaks_ouverts || []).length && d.activites.breaks, rien = !gestes.length;
   z.innerHTML = [
+    pilAcc('pil-notifs', 'cloche', tt('Notifications', 'Notifications'), S.nonLues ? S.nonLues : '', S.nonLues ? 'or' : ''),
     pilAcc('pil-faire', 'faire', tt('À faire', 'To do'), rien ? '✓' : gestes.length, rien ? 'vert' : gestes.length > 2 ? 'or' : ''),
     pilAcc('pil-conseils', 'conseils', tt('Conseils pour toi', 'Tips for you'), ''),
     pilAcc('pil-tend', 'graphe', tt('Tendances', 'Trending'), ''),
     pilAcc('pil-budget', 'budget', tt('Budget du mois', 'Monthly budget'), '…'),
     brk ? pilAcc('pil-breaks', 'breaks', tt('Breaks en cours', 'Breaks in progress'), d.breaks_ouverts.length) : '',
     $('#acc-b-coups') ? pilAcc('pil-coups', 'coups', tt('Meilleurs coups · 30 j', 'Best flips · 30 d'), (d.coups || []).length) : '',
-    admin ? pilAcc('pil-admin', 'admin', tt('À surveiller · admin', 'To monitor · admin'), '') : '',
-    admin ? pilAcc('pil-pouls', 'pouls', tt('Mises à jour', 'Updates'), '') : '',
+    // 9 nov 2026 (Mathieu : « et pour le regroupage ») : une seule pastille Admin (à surveiller + mises à jour + console)
+    admin ? pilAcc('pil-admin', 'admin', 'Admin', '') : (S.forfait && S.forfait.admin_a_verifier) ? pilAcc('pil-admin', 'cadenas', tt('Admin · à confirmer', 'Admin · confirm'), '!', 'or') : '',
   ].join('');
   const p = $('#pil-conseils'), nC = $$('#acc-conseils .conseil').length;
   if (p) { p.hidden = !nC; const nn = p.querySelector('.n'); if (nn && nC) { nn.hidden = false; nn.className = 'n capsule'; nn.textContent = nC; } }
@@ -8290,9 +8322,16 @@ function pastillesAccueil(d, a, gestes, admin){
   o('pil-conseils', () => feuilleBloc(blocParent('#acc-conseils')));
   o('pil-breaks', () => feuilleBloc($('#acc-b-brk')));
   o('pil-coups', () => feuilleBloc($('#acc-b-coups')));
-  o('pil-admin', () => feuilleBloc($('#acc-admin')));
-  o('pil-pouls', () => feuilleBloc(blocParent('#acc-pouls')));
+  o('pil-admin', () => {
+    if (!admin) { feuilleVerifAdmin(); return; }
+    const sansVerif = S.forfait && S.forfait.multi && !S.forfait.admin_verif_active;
+    feuilleBloc($('#acc-admin'), '', `<div class="adm-pil-act"><button class="btn ghost" id="fa-pouls">${tt('Mises à jour', 'Updates')}</button><a class="btn" href="#admin">${tt('Console admin', 'Admin console')} ›</a></div>
+      ${sansVerif ? `<div class="sous adm-pil-note">${tt('Vérification par iPhone inactive : autorise les notifications de SlabCoach sur ton iPhone (ou ajoute LOCKERROOM_ADMIN_CODE dans Render).', 'iPhone check inactive: allow SlabCoach notifications on your iPhone (or add LOCKERROOM_ADMIN_CODE in Render).')}</div>` : ''}`);
+    const fp = $('#fa-pouls'); if (fp) fp.onclick = () => { vibrer(); feuilleBloc(blocParent('#acc-pouls')); };
+    const fa = $('#feuille a[href="#admin"]'); if (fa) fa.onclick = () => fermerFeuille();
+  });
   o('pil-tend', () => { location.hash = '#tendances'; });
+  o('pil-notifs', () => { location.hash = '#notifs'; });
   // 1er nov 2026 (Mathieu : « oui, remettre ») : le budget du mois de l'acheteur, dans l'accueil unique
   o('pil-budget', () => feuilleBudget());
   budgetEtat(true).then(b => { const n = $('#pil-budget .n'); if (!n) return;
@@ -11519,6 +11558,9 @@ function feuilleConsignataire(k){
 const ST_AB = {pro:['Pro', 'or'], offert:[tt('Pro offert', 'Gifted Pro'), 'or'], essai:[tt('Essai', 'Trial'), 'acc'], gratuit:[tt('Gratuit', 'Free'), '']};
 const CAT_DM = {bug:[tt('Problème', 'Bug'), 'rouge'], idee:[tt('Idée', 'Idea'), 'acc'], produit:[tt('Produit', 'Product'), 'or'], question:['Question', ''], abonnement:[tt('Abonnement', 'Billing'), 'or'], autre:[tt('Autre', 'Other'), ''], deal:[tt('Pas un deal', 'Not a deal'), 'rouge'], pas_deal:[tt('Pas un deal', 'Not a deal'), 'rouge'], amelioration:[tt('Amélioration', 'Improvement'), 'acc']};
 async function vueAdmin(onglet){
+  if (S.forfait && !S.forfait.admin && S.forfait.admin_a_verifier) {
+    V().innerHTML = `<section class="ecran"><div class="vide">${tt('Confirme que c’est toi pour ouvrir l’admin.', 'Confirm it’s you to open admin.')}<br><button class="btn" id="av-ouvrir" style="margin-top:12px">${tt('Recevoir le code', 'Get the code')}</button></div></section>`;
+    $('#av-ouvrir').onclick = () => feuilleVerifAdmin(() => vueAdmin(onglet)); feuilleVerifAdmin(() => vueAdmin(onglet)); return; }
   if (!(S.forfait && S.forfait.admin)) { location.hash = '#accueil'; return; }
   const r = await API.admin_resume().catch(e => ({ok:false, erreur:e.message}));
   if (!r.ok) { V().innerHTML = `<section class="ecran"><div class="vide">${esc(r.erreur)}</div></section>`; return; }
@@ -11711,9 +11753,23 @@ async function adminServeur(){
       ${b.exemples ? `<a class="pilule" href="${esc(b.export)}" download>${tt('Exporter (zip)', 'Export (zip)')}</a>` : ''}</div>
       ${b.references ? `<div class="sous" style="margin-top:6px">${b.references} ${tt('carte(s) gradée(s) de référence', 'graded reference card(s)')}</div>` : ''}`;
     $('#adm-ref').onclick = feuilleReference; }).catch(() => {});
+  // 9 nov 2026 (Mathieu : « fetch automatiquement tous les updates eBay financiers ou légaux, à tous les jours ») 
+  const rendreVeille = (v) => { const ze = $('#adm-veille-e'); if (!ze) return; v = v || {};
+    const src = Object.values(v.sources || {}), err = src.find(x => x.erreur);
+    ze.innerHTML = `<div class="pastilles">${tag(tt('Vérifié ', 'Checked ') + (v.le ? new Date(v.le).toLocaleString(LOC(), {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}) : '—'), v.le ? 'vert' : '')}
+        ${tag(tt('Import vers le Canada ', 'Import to Canada ') + v.import_defaut + ' %' + (v.import_n ? ' · ' + v.import_n + tt(' annonces', ' listings') : ''))}
+        ${tag(tt('Douanes vers les É.-U. ', 'Customs to US ') + v.import_us + ' %' + (v.import_us_le ? '' : tt(' (estimé)', ' (estimate)')))}${err ? tag(esc(err.erreur), 'rouge') : ''}</div>
+      ${(v.nouveautes || []).length ? `<div class="liste" style="margin-top:8px">${v.nouveautes.map(n => `<a class="ligne-lien" href="${esc(n.url)}" target="_blank" rel="noopener"><span class="capsule ${n.sorte === 'frais' ? 'or' : n.sorte === 'legal' ? 'acc' : ''}">${n.sorte === 'frais' ? tt('Frais', 'Fees') : n.sorte === 'legal' ? tt('Règles', 'Rules') : 'Info'}</span> ${esc(n.titre)}${n.taux_cartes ? ' · ' + tt('cartes ', 'cards ') + n.taux_cartes + ' %' : ''} <small>${esc(String(n.le || '').slice(0, 10))}</small></a>`).join('')}</div>`
+        : `<div style="margin-top:6px">${tt('Aucun changement eBay depuis la mise en place. Chaque jour : la page officielle des mises à jour vendeurs d’eBay Canada.', 'No eBay change since setup. Daily: eBay Canada’s official seller updates page.')}</div>`}`; };
+  API.admin_resume().then(r => rendreVeille(r && r.veille)).catch(() => {});
+  setTimeout(() => { const b = $('#adm-veille-ok'); if (b) b.onclick = async () => { b.disabled = true;
+    const r = await API.veille_ebay_maintenant().catch(e => ({ok:false, erreur:e.message})); b.disabled = false;
+    if (r.ok) { rendreVeille(r.veille); toast(r.nouveautes ? r.nouveautes + tt(' nouveauté(s)', ' new item(s)') : tt('À jour', 'Up to date')); } else toast(r.erreur || 'Erreur'); }; }, 0);
   const barre = (n, max) => { const p = max ? Math.min(100, Math.round(100 * n / max)) : 0; return `<div class="adm-barre"><i style="width:${p}%" class="${p > 80 ? 'rouge' : ''}"></i></div><span class="sous">${n} / ${max} · ${p} %</span>`; };
   const t = d.taches || {};
-  z.innerHTML = `<div class="bloc" id="adm-entr" style="margin-bottom:14px"><div class="r-titre">${tt('Banque d’entraînement de l’IA', 'AI training bank')}</div><div class="sous" id="adm-entr-e">…</div></div>
+  z.innerHTML = `<div class="bloc" id="adm-veille" style="margin-bottom:14px"><div class="r-titre">${tt('Veille eBay · frais, règles, douanes', 'eBay watch · fees, rules, customs')}</div><div id="adm-veille-e" class="sous">…</div>
+    <button class="btn petit ghost" id="adm-veille-ok" style="width:auto;margin-top:10px">${tt('Vérifier maintenant', 'Check now')}</button></div>
+    <div class="bloc" id="adm-entr" style="margin-bottom:14px"><div class="r-titre">${tt('Banque d’entraînement de l’IA', 'AI training bank')}</div><div class="sous" id="adm-entr-e">…</div></div>
     <div class="bloc" id="adm-deals" style="margin-bottom:14px"><div class="r-titre">${tt('Chasseur de deals', 'Deal hunter')}</div>
     <div class="sous" id="adm-deals-e">…</div>
     <button class="btn" id="adm-deals-ok" style="margin-top:12px">${tt('Relancer le chasseur', 'Run the hunter now')}</button>
@@ -11996,6 +12052,37 @@ async function vueGuide(){
     <div><div class="bloc-t">${tt('Les joueurs les plus recherchés', 'Most wanted players')}</div><div class="bloc"><div class="liste">${d.joueurs.map((j, i) => `<a class="rangee" href="#joueur/${encodeURIComponent(j.joueur)}"><span class="rang">${i + 1}</span><span class="milieu"><span class="nom">${esc(j.joueur)}</span></span><span class="droite">${capsule(tt('demande ', 'demand ') + '×' + j.demande, 'or petit')}</span></a>`).join('')}</div></div></div>
     <div><div class="bloc-t">${tt('Les recrues de la saison', 'This season’s rookies')} <span class="sous">${esc(d.produit || '')}</span></div><div class="bloc"><div class="liste">${d.recrues.map((j, i) => `<a class="rangee" href="#joueur/${encodeURIComponent(j.joueur)}"><span class="rang">${i + 1}</span><span class="milieu"><span class="nom">${esc(j.joueur)}</span><span class="det">${esc(j.equipe)} · ${esc(j.carte)}</span></span><span class="droite">${j.mesuree ? `<span class="prix">${argent(j.valeur, 0)}</span>` : capsule(tt('voir la valeur', 'see value'), 'petit')}</span></a>`).join('')}</div></div></div></div>`;
 }
+// 9 nov 2026 (Mathieu : « ultra sécurisé », « oui pour la validation cell ») : la console admin demande, une fois par
+// 30 jours et par appareil, un code à 6 chiffres envoyé sur l'iPhone de l'admin
+function feuilleVerifAdmin(apres){
+  ouvrirFeuille(`<h3>${tt('Confirme que c’est toi', 'Confirm it’s you')}</h3>
+    <div class="sous" style="font-size:15px">${tt('Pour ouvrir l’admin, SlabCoach envoie un code à 6 chiffres sur ton iPhone. Une fois par mois sur cet appareil.', 'To open admin, SlabCoach sends a 6-digit code to your iPhone. Once a month on this device.')}</div>
+    <button class="btn" id="av-env">${tt('Envoyer le code sur mon iPhone', 'Send the code to my iPhone')}</button>
+    <div id="av-z" class="av-z" hidden><input class="champ" id="av-code" inputmode="numeric" autocomplete="one-time-code" maxlength="64" placeholder="123456" aria-label="Code">
+      <button class="btn" id="av-ok">${tt('Confirmer', 'Confirm')}</button></div>
+    <div class="sous" id="av-msg" role="status"></div>`);
+  const msg = (t) => { const m = $('#av-msg'); if (m) m.textContent = t; };
+  $('#av-env').onclick = async () => {
+    const b = $('#av-env'); b.disabled = true;
+    const r = await API.admin_verif_envoyer().catch(e => ({ok:false, erreur:e.message}));
+    b.disabled = false; b.textContent = tt('Renvoyer le code', 'Send again'); b.classList.add('ghost');
+    if (!r.ok) { msg(r.erreur || tt('Envoi impossible', 'Could not send')); return; }
+    $('#av-z').hidden = false; $('#av-code').focus();
+    msg(r.envoye ? tt('Code envoyé : regarde les notifications de ton iPhone (valide 5 min).', 'Code sent: check your iPhone notifications (valid 5 min).')
+      : r.secours ? tt('Aucun iPhone joignable : entre ton code de secours.', 'No iPhone reachable: enter your backup code.')
+      : tt('Aucun iPhone joignable pour le moment.', 'No iPhone reachable right now.'));
+  };
+  const ok = async () => {
+    const c = val('av-code'); if (!c) return;
+    const r = await API.admin_verif_valider(c).catch(e => ({ok:false, erreur:e.message}));
+    if (!r.ok) { msg(r.erreur || tt('Code invalide', 'Invalid code')); $('#av-code').select(); return; }
+    S.forfait = await API.forfait().catch(() => S.forfait);
+    fermerFeuille(); toast(tt('Admin confirmé', 'Admin confirmed'));
+    if (apres) apres(); else if ((location.hash || '#accueil').startsWith('#accueil')) vueAccueil();
+  };
+  $('#av-ok').onclick = ok;
+  $('#av-code').onkeydown = (e) => { if (e.key === 'Enter') ok(); };
+}
 function feuilleBudget(){
   const r = S.reglages || {};
   ouvrirFeuille(`<h3>${tt('Mon budget du mois', 'My monthly budget')}</h3>
@@ -12160,6 +12247,103 @@ const ALARMES = () => [
   ['prix_cible', 'cible', tt('Prix cible', 'Target price'), tt('Une carte que tu suis passe sous ton prix', 'A card you watch drops under your price')],
   ['acheteurs', 'oeil', tt('Acheteurs intéressés', 'Interested buyers'), tt('Des acheteurs surveillent tes annonces eBay', 'Buyers are watching your eBay listings')],
   ['vendu', 'dollar', tt('Vendu', 'Sold'), tt('Une de tes cartes vient de se vendre', 'One of your cards just sold')]];
+// 9 nov 2026 (Mathieu : « un onglet sur la page principale, genre centre de notifications : l'utilisateur coche quel genre
+// de notifs il veut et met les joueurs qu'il veut tracker ; max 5 en non pro et 20 en pro ») : une seule page, trois blocs
+// simples (Nouveautés · Mes joueurs suivis · Ce que je reçois) ; la cloche du haut y mène aussi
+async function vueNotifs(){
+  V().innerHTML = `<section class="ecran notifs"><div class="titre">${tt('Notifications', 'Notifications')}</div><div id="nt-z"><div class="lecture"><span class="roue"></span></div></div></section>`;
+  const [r, ra, p] = await Promise.all([API.alertes_liste().catch(() => ({alertes:[], notifications:[]})), API.alarmes_lire().catch(() => null), API.deals_profil_lire().catch(() => ({favoris:[], favoris_max:5}))]);
+  const z = $('#nt-z'); if (!z) return;
+  const al = (ra && ra.alarmes) || {}, FAV = [...(p.favoris || [])], FMAX = p.favoris_max || 5, FPRO = p.favoris_max_pro || 20;
+  // 9 nov 2026 (Mathieu : « lourd a l'oeil, on ne distingue pas facilement le but de la notif ») : une pastille et un mot par
+  // sorte, le sujet en gras, le pourquoi dessous ; par jour ; « des acheteurs regardent » une seule fois (la plus recente)
+  let vuAch = false;
+  const notifs = (r.notifications || []).filter(n => n.sorte !== 'acheteurs' || (!vuAch && (vuAch = true)));
+  const SORTE = {vente:[tt('Vendue', 'Sold'), 'dollar', 'vert'], acheteurs:[tt('Acheteurs', 'Buyers'), 'oeil', 'acc'], deal:['Deal', 'deals', 'or'],
+    encan:[tt('Encan', 'Auction'), 'horloge', 'or'], trop_cher:[tt('Trop cher', 'Too pricey'), 'attention', 'rouge'], joueur:[tt('En feu', 'On fire'), 'feu', 'or'],
+    valeur:[tt('Valeur', 'Value'), 'graphe', 'acc'], prix:[tt('Prix cible', 'Target price'), 'cible', 'vert'], info:['Info', 'cloche', '']};
+  const FILTRES = [['tout', tt('Tout', 'All')], ['deal', 'Deals'], ['encan', tt('Encans', 'Auctions')], ['vente', tt('Ventes', 'Sales')], ['prix', tt('Prix', 'Prices')]];
+  const groupe = (k) => k === 'trop_cher' ? 'encan' : k === 'acheteurs' ? 'vente' : k === 'joueur' || k === 'valeur' ? 'deal' : k;
+  let filtre = 'tout';
+  const heure = (le) => { const d = new Date(le); return isNaN(d) ? '' : d.toLocaleTimeString(LOC(), {hour:'2-digit', minute:'2-digit'}); };
+  const jourDe = (le) => { const d = new Date(le), a = new Date(); a.setHours(0, 0, 0, 0); const h = new Date(a - 864e5);
+    return isNaN(d) ? '' : d >= a ? tt('Aujourd’hui', 'Today') : d >= h ? tt('Hier', 'Yesterday') : tt('Plus tôt', 'Earlier'); };
+  const ligne = (n) => {
+    const [lib, ic, cl] = SORTE[n.sorte] || SORTE.info, cle = String(n.item_id || ''), id = (cle.match(/^(?:deal|fav|fin|watch-fin|watch-seuil):(\d{9,15})$/) || [])[1] || (n.alerte_id != null ? cle : '');
+    let sujet = /^\d{4}/.test(n.sujet || '') ? titreCourt(n.sujet) : (n.sujet || n.titre || '');
+    if (sujet.length > 8 && sujet === sujet.toUpperCase()) sujet = sujet.toLowerCase().replace(/(^|[\s\-/])([a-zà-ÿ])/g, (m, a, b) => a + b.toUpperCase());   // TITRE EN MAJUSCULES -> Titre Normal
+    const corps = `<span class="nt-ic ${cl}"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL[ic] || IC_PIL.cloche}</svg></span>
+      <span class="nt-m"><span class="nt-k ${cl}">${lib}<i>· ${n.le && jourDe(n.le) === tt('Plus tôt', 'Earlier') ? ilYa(n.le) : heure(n.le)}</i></span><b>${esc(sujet)}</b>${n.detail ? `<span class="nt-d">${esc(n.detail)}</span>` : ''}</span>
+      ${n.photo ? `<img class="nt-ph" src="${esc(n.photo)}" alt="" loading="lazy">` : ''}${n.lu ? '' : '<span class="nt-pt" aria-label="' + esc(tt('Nouvelle', 'New')) + '"></span>'}`;
+    return id ? `<div class="nt-l" ${attrsAnnonce({item_id:id, titre:n.sujet || n.titre, photo:n.photo, total:n.total, url:n.url && /^https?:/.test(n.url) ? n.url : 'https://www.ebay.ca/itm/' + id})}>${corps}</div>`
+      : `<a class="nt-l" href="${esc(urlSure(/^#/.test(n.url || '') ? n.url : '#notifs'))}">${corps}</a>`;
+  };
+  const peindreListe = (tout) => {
+    const l = notifs.filter(n => filtre === 'tout' || groupe(n.sorte) === filtre), max = tout ? 60 : 10;
+    let j0 = '', h = '';
+    for (const n of l.slice(0, max)) { const j = jourDe(n.le); if (j !== j0) { h += `<div class="nt-jour">${j}</div>`; j0 = j; } h += ligne(n); }
+    $('#nt-liste').innerHTML = h || `<div class="sous nt-vide">${filtre === 'tout' ? tt('Rien de nouveau pour l’instant. Ajoute des joueurs plus bas : on te prévient quand ils sont en deal.', 'Nothing new yet. Add players below: we’ll tell you when they’re on deal.') : tt('Rien dans cette catégorie.', 'Nothing in this category.')}</div>`;
+    const pl = $('#nt-plus'); if (pl) pl.hidden = tout || l.length <= max;
+  };
+  const presents = new Set(notifs.map(n => groupe(n.sorte)));
+  const autres = ALARMES().filter(([k]) => k !== 'mes_joueurs');
+  const permis = (() => { try { return !('Notification' in window) || NATIF || Notification.permission !== 'default'; } catch (e) { return true; } })();
+  z.innerHTML = `
+    <div class="nt-bloc"><div class="nt-t">${tt('Nouveautés', 'What’s new')}${r.non_lues ? ` <span class="capsule">${r.non_lues}</span>` : ''}</div>
+      ${presents.size > 1 ? `<div class="pastilles defile nt-f">${FILTRES.filter(([k]) => k === 'tout' || presents.has(k)).map(([k, t]) => `<button class="chip ${k === 'tout' ? 'on' : ''}" data-ntf="${k}">${t}</button>`).join('')}</div>` : ''}
+      <div id="nt-liste"></div><button class="btn ghost petit" id="nt-plus" hidden style="margin-top:8px">${tt('Voir plus', 'See more')}</button></div>
+    <div class="nt-bloc"><div class="nt-t">${tt('Mes joueurs suivis', 'My tracked players')} <span class="fv-n" id="nt-n"></span></div>
+      <div class="sous" style="margin-bottom:10px">${tt('Joueurs ou équipes. Ils passent aussi en premier dans tes deals (★).', 'Players or teams. They also come first in your deals (★).')}</div>
+      <div class="fv-l" id="nt-fav"></div>
+      <form class="fv-aj" id="nt-aj"><input class="champ" id="nt-in" enterkeyhint="done" autocomplete="off" maxlength="40" placeholder="${esc(tt('Ex. : Lane Hutson', 'E.g. Lane Hutson'))}"><button class="btn petit" id="nt-ok">${tt('Ajouter', 'Add')}</button></form>
+      <div id="nt-pro"></div>
+      <label class="al-case" style="margin-top:10px"><span class="al-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.cloche}</svg></span><span class="t"><b>${tt('M’avertir quand ils sont en deal', 'Alert me when they’re on deal')}</b><span>${tt('Une notification par deal, jamais deux fois', 'One notification per deal, never twice')}</span></span><input type="checkbox" data-nt="mes_joueurs" ${al.mes_joueurs ? 'checked' : ''}></label></div>
+    <div class="nt-bloc"><div class="nt-t">${tt('Ce que je reçois', 'What I get')}</div>
+      <div class="al-cases">${autres.map(([k, ic, t, d]) => `<label class="al-case"><span class="al-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL[ic] || ''}</svg></span><span class="t"><b>${t}</b><span>${d}</span></span><input type="checkbox" data-nt="${k}" ${al[k] ? 'checked' : ''}></label>`).join('')}</div>
+      <div class="al-seuil" id="nt-seuil" ${al.gros_deal ? '' : 'hidden'}><span>${tt('Gros deal à partir de', 'Big deal from')}</span>${[30, 40, 50, 60].map(v => `<button class="chip ${+al.seuil_deal === v ? 'on' : ''}" data-seuil="${v}">−${v} %</button>`).join('')}</div>
+      <div class="sous" style="margin-top:8px">${tt('Au plus 3 notifications par jour, rien entre 22 h et 8 h : le reste t’attend ici.', 'At most 3 notifications a day, none between 10 pm and 8 am: the rest waits here.')}</div>
+      ${permis ? '' : `<button class="btn" id="nt-perm" style="margin-top:10px">${tt('Activer les notifications sur cet appareil', 'Turn on notifications on this device')}</button>`}</div>
+    <div class="nt-bloc"><div class="nt-t">${tt('Mes alertes de prix', 'My price alerts')}</div>
+      ${(r.alertes || []).length ? `<div class="liste">${r.alertes.map(a => `<div class="rangee"><span class="milieu"><span class="nom">${esc(a.q)}</span><span class="det">≤ ${argent(a.prix_max, 0)}</span></span><button class="ix" data-alx="${a.id}" aria-label="${esc(tt('Retirer', 'Remove'))}">${ICONES.x}</button></div>`).join('')}</div>`
+        : `<div class="sous">${tt('Aucune. Choisis une carte et un prix : on te prévient quand elle passe en dessous.', 'None. Pick a card and a price: we’ll tell you when it drops below.')}</div>`}
+      <button class="btn ghost" id="nt-nv" style="margin-top:10px">${ICONES.plus} ${tt('Nouvelle alerte de prix', 'New price alert')}</button></div>`;
+  // les joueurs suivis : enregistres tout de suite (pas de bouton « Enregistrer »)
+  const sauverFav = async () => {
+    const res = await API.deals_profil_regler({collectionne: p.collectionne || [], favoris: FAV, prix_min: p.prix_min, prix_max: p.prix_max}).catch(e => ({ok:false, erreur:e.message}));
+    if (res && res.ok === false) toast(res.erreur || tt('Non enregistré', 'Not saved'));
+    MEMO.clear();
+  };
+  const peindre = () => {
+    $('#nt-fav').innerHTML = FAV.length ? FAV.map((n, i) => `<span class="fv-p">${esc(n)}<button data-ntx="${i}" aria-label="${esc(tt('Retirer', 'Remove'))}">×</button></span>`).join('') : '';
+    $('#nt-n').textContent = `${FAV.length} / ${FMAX}`;
+    const plein = FAV.length >= FMAX;
+    $('#nt-in').disabled = plein; $('#nt-ok').disabled = plein;
+    $('#nt-in').placeholder = plein ? tt('Liste pleine', 'List full') : tt('Ex. : Lane Hutson', 'E.g. Lane Hutson');
+    $('#nt-pro').innerHTML = plein && !p.pro ? `<button class="pr-pro" data-nt-pro style="margin-top:8px">${icN('cadenas')}${tt(`Jusqu’à ${FPRO} joueurs avec Pro`, `Up to ${FPRO} players with Pro`)}</button>` : '';
+    const bp = $('[data-nt-pro]'); if (bp) bp.onclick = () => feuillePro('joueurs');
+    $$('[data-ntx]').forEach(b => b.onclick = () => { FAV.splice(+b.dataset.ntx, 1); vibrer(); peindre(); sauverFav(); });
+  };
+  $('#nt-aj').onsubmit = (e) => { e.preventDefault(); const v = $('#nt-in').value.trim().replace(/\s+/g, ' ');
+    if (v.length < 3) { toast(tt('Au moins 3 lettres', 'At least 3 letters')); return; }
+    if (FAV.length >= FMAX) return;
+    if (!FAV.some(x => x.toLowerCase() === v.toLowerCase())) FAV.push(v.slice(0, 40));
+    $('#nt-in').value = ''; vibrer(); peindre(); sauverFav();
+    // ajouter un joueur ici = vouloir etre averti : la case s'allume (une seule fois ; on peut la decocher)
+    const c = $('[data-nt="mes_joueurs"]'); if (c && !c.checked && FAV.length === 1) { c.checked = true; c.dispatchEvent(new Event('change')); } };
+  peindre();
+  $$('[data-nt]').forEach(c => c.onchange = () => {
+    if (c.checked) demanderNotifications();
+    if (c.dataset.nt === 'gros_deal') $('#nt-seuil').hidden = !c.checked;
+    API.alarmes_regler({[c.dataset.nt]: c.checked}).then(() => toast(c.checked ? tt('Activée', 'On') : tt('Coupée', 'Off'), 1200)).catch(() => {}); });
+  $$('[data-seuil]').forEach(b => b.onclick = () => { $$('[data-seuil]').forEach(x => x.classList.toggle('on', x === b)); API.alarmes_regler({seuil_deal: +b.dataset.seuil}).catch(() => {}); });
+  $$('[data-alx]').forEach(b => b.onclick = async () => { await API.alerte_supprimer(+b.dataset.alx).catch(() => {}); b.closest('.rangee').remove(); });
+  const pm = $('#nt-perm'); if (pm) pm.onclick = () => { demanderNotifications(); pm.remove(); };
+  peindreListe(false);
+  $('#nt-plus').onclick = () => peindreListe(true);
+  $$('[data-ntf]').forEach(b => b.onclick = () => { filtre = b.dataset.ntf; vibrer(); $$('[data-ntf]').forEach(x => x.classList.toggle('on', x === b)); peindreListe(false); });
+  $('#nt-nv').onclick = () => feuilleAlerte('', '');
+  if (r.non_lues) { API.notifications_lues().catch(() => {}); majCloche(0); }
+}
 async function feuilleAlertes(){
   const [r, ra] = await Promise.all([API.alertes_liste().catch(() => ({alertes:[], notifications:[]})), API.alarmes_lire().catch(() => null)]);
   const al = (ra && ra.alarmes) || {};
@@ -12184,8 +12368,10 @@ async function feuilleAlertes(){
   $('#al-nv').onclick = () => feuilleAlerte('', '');
   if (r.non_lues) { API.notifications_lues().catch(() => {}); majCloche(0); }
 }
-document.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('[data-alertes]'); if (b) { e.preventDefault(); feuilleAlertes(); } }, true);
-function majCloche(n){ $$('.cloche-n').forEach(e => { e.hidden = !n; e.textContent = n || ''; }); }
+document.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('[data-alertes]'); if (b) { e.preventDefault(); if (!$('#fond-feuille').hidden) fermerFeuille(); location.hash = '#notifs'; } }, true);
+function majCloche(n){ $$('.cloche-n').forEach(e => { e.hidden = !n; e.textContent = n || ''; });
+  // 9 nov 2026 : la pastille « Notifications » de l'accueil montre aussi les non lues
+  S.nonLues = n || 0; const q = $('#pil-notifs .n'); if (q) { q.hidden = !S.nonLues; q.className = 'n capsule' + (S.nonLues ? ' or' : ''); q.textContent = S.nonLues || ''; } }
 async function verifierAlertesEcran(){
   const r = await API.alertes_liste().catch(() => null); if (!r) return;
   majCloche(r.non_lues);
@@ -12513,7 +12699,6 @@ async function vueReglages(arg){
       ...(S.mode !== 'acheteur' ? [['#bilan', ICO_H.bilan, tt('Bilan', 'Report')]] : []),
       ...(S.mode !== 'acheteur' && act.magasin ? [['#comptoir', ICO_H.comptoir, tt('Comptoir', 'Counter')]] : []),
       ['#breaks/liste', ICO_H.breaks, tt('Mes breaks', 'My breaks')],
-      ['alertes', ICO_CLOCHE, tt('Alertes', 'Alerts')],
       ['#guide', ICO_H.guide, 'Guide'],
       ...(S.forfait && S.forfait.admin ? [['#admin', '✦', 'Admin']] : []),
     ].map(([h, ic, t]) => h === 'alertes' ? `<button class="pr-r" data-alertes><span class="pr-i">${ic}</span>${t}</button>` : `<a class="pr-r" href="${h}"><span class="pr-i">${ic}</span>${t}</a>`).join('')}</div>
@@ -12548,6 +12733,7 @@ async function vueReglages(arg){
       ${champ('g-tx', 'Taxes de vente %', r.taxes_pct, 'number')}</div></div>
     <details class="r-bloc r-plie" ${S.mode === 'acheteur' ? 'hidden' : ''}><summary><span class="r-titre">Frais et marges</span><span class="r-note">eBay ${r.frais_ebay_pct} %${act.breaks ? ' · breaks ' + r.marge_break + tt(' % de marge', '% margin') : ''}</span></summary>
       <div class="r-sous">Frais eBay</div><div class="grille-champs">${champ('g-ep', '% sur prix + port', r.frais_ebay_pct, 'number')}${champ('g-ef', '$ par commande', r.frais_ebay_fixe, 'number')}</div>
+      <div class="sous" style="margin:4px 0 8px">${r.frais_auto !== false ? tt('Ajusté chaque jour selon les frais réellement facturés par eBay sur tes ventes.', 'Adjusted daily from the fees eBay actually charged on your sales.') : `${tt('Fixé à la main.', 'Set by hand.')} <button class="lien" id="g-ep-auto" type="button">${tt('Remettre en automatique', 'Back to automatic')}</button>`}</div>
       <div ${act.breaks ? '' : 'hidden'}><div class="r-sous">Breaks</div><div class="grille-champs">
         ${champ('g-bp', 'Frais plateforme %', r.frais_break_pct, 'number')}${champ('g-bf', '$ par place', r.frais_break_fixe, 'number')}
         ${champ('g-bm', 'Marge visée %', r.marge_break, 'number')}${champ('g-bpl', 'Prix minimum $ CA', r.plancher_place, 'number')}
@@ -12624,6 +12810,8 @@ async function vueReglages(arg){
       paliers_rachat:paliers, description_ebay:$('#g-desc').value, epn_campid:val('g-epn').replace(/\D/g, '')}), tt('Réglages enregistrés', 'Settings saved'));
     if (res) { S.reglages = res; S.calc = {}; appliquerMarque(); }
   };
+  const gea = $('#g-ep-auto'); if (gea) gea.onclick = async () => { const res = await essai(API.reglages_sauver({frais_auto: true}), tt('Frais eBay en automatique', 'eBay fees on automatic'));
+    if (res) { S.reglages = res; const z = gea.parentNode; if (z) z.textContent = tt('Ajusté chaque jour selon les frais réellement facturés par eBay sur tes ventes.', 'Adjusted daily from the fees eBay actually charged on your sales.'); } };
   // nom et logo : enregistres tout de suite (pas besoin de « Enregistrer »)
   $('#g-nom').onchange = async () => {
     const res = await essai(API.reglages_sauver({nom_boutique:val('g-nom').trim() || 'Ma boutique'}), tt('Nom enregistré', 'Name saved'));
@@ -12675,16 +12863,36 @@ function pastillerReglages(){
   $$('.profil-tete [data-pro-ouvrir]').forEach(b => b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); vibrer();
     const g = $('#g-forfait'); if (g && !g.hidden && g.innerHTML.trim()) { g.hidden = false; feuilleBloc(g); } else feuillePro(); });
   const ordre = (t) => ['ebay', 'profil', 'deals', 'faire', 'photo', 'boutique', 'frais', 'palette', 'sport', 'guide', 'idee', 'news', 'admin', 'aide'].indexOf(icone(t));
-  blocs.map(b => ({b, t: titreDe(b)})).filter(x => x.t).sort((x, y) => ordre(x.t) - ordre(y.t)).forEach(({b, t}, i) => {
+  const items = blocs.map(b => ({b, t: titreDe(b)})).filter(x => x.t).sort((x, y) => ordre(x.t) - ordre(y.t)).map(({b, t}) => {
     res.appendChild(b);
-    const id = 'gp-' + i;
-    pils.insertAdjacentHTML('beforeend', pilAcc(id, icone(t), esc(t), ''));
-    pils.lastElementChild.onclick = () => {
-      vibrer();
-      if (b.matches('button, a')) { b.click(); return; }                 // Mon profil, Guide, Une idée : leur action
+    return {t, ic: icone(t), ouvrir: () => {
+      if (b.matches('button, a')) { fermerFeuille(); b.click(); return; }   // Mon profil, Le tour, Une idée : leur action
       if (b.tagName === 'DETAILS') b.open = true;
       feuilleBloc(b, '', formulaire(b) ? `<button class="btn" id="g-ok-f">${tt('Enregistrer', 'Save')}</button>` : '');
       const f = $('#g-ok-f'); if (f) f.onclick = async () => { await $('#g-ok').onclick(); fermerFeuille(); };
+    }};
+  });
+  // 9 nov 2026 (Mathieu : « on pourrait pas regrouper quelques onglets ? ca fait beaucoup ») : 16 lignes -> 6 groupes ;
+  // un groupe s'ouvre dans une feuille avec ses reglages ; un groupe d'un seul reglage l'ouvre directement
+  const GROUPES = [
+    ['compte', tt('Mon compte', 'My account'), 'profil', tt('eBay, appareils, aide', 'eBay, devices, help'), /ebay|appareil|device|compte et aide|account and help/i],
+    ['prefs', tt('Mes préférences', 'My preferences'), 'palette', tt('Profil, deals, sport, couleurs', 'Profile, deals, sport, colors'), null],
+    ['notifs', tt('Notifications', 'Notifications'), 'cloche', tt('Ce que je reçois, mes joueurs', 'What I get, my players'), 'lien'],
+    ['boutique', tt('Ma boutique', 'My store'), 'boutique', tt('Logo, photos, frais', 'Logo, photos, fees'), /boutique|store|photos de mes annonces|listing photos|frais|fees/i],
+    ['aide', tt('Aide et idées', 'Help and ideas'), 'aide', tt('Le tour de l’app, nous écrire', 'App tour, write to us'), /tour|idée|idea/i],
+    ['donnees', tt('Données et avancé', 'Data and advanced'), 'admin', tt('IA, partage, réglages techniques', 'AI, sharing, technical settings'), /entra[iî]nement|training|partag|share|avanc|advanced/i]];
+  const dans = (it) => (GROUPES.find(([k, , , , re]) => re instanceof RegExp && re.test(it.t)) || GROUPES[1])[0];
+  GROUPES.forEach(([k, titre, ic, sous]) => {
+    const membres = items.filter(it => dans(it) === k);
+    if (k !== 'notifs' && !membres.length) return;
+    pils.insertAdjacentHTML('beforeend', pilAcc('gg-' + k, ic, `${esc(titre)}<small class="gg-s">${esc(sous)}</small>`, ''));
+    pils.lastElementChild.onclick = () => {
+      vibrer();
+      if (k === 'notifs') { location.hash = '#notifs'; return; }
+      if (membres.length === 1) { membres[0].ouvrir(); return; }
+      ouvrirFeuille(`<h3>${esc(titre)}</h3><div class="acc-pils" id="gg-sous"></div>`);
+      membres.forEach((it, i) => { $('#gg-sous').insertAdjacentHTML('beforeend', pilAcc('ggs-' + i, it.ic, esc(it.t), ''));
+        $('#gg-sous').lastElementChild.onclick = () => { vibrer(); it.ouvrir(); }; });
     };
   });
   ec.appendChild(pils); ec.appendChild(res);

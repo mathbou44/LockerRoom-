@@ -26,9 +26,18 @@ CREATE TABLE IF NOT EXISTS valeur_historique (jour TEXT PRIMARY KEY, valeur REAL
 """
 
 
+_TEXTE_OK = set()
+
+
 def _cx(api):
     c = api._db()
     c.executescript(SCHEMA)
+    p = getattr(api, "chemin_db", None)
+    if p not in _TEXTE_OK:                       # 9 nov 2026 : le detail de chaque notification (colonne ajoutee)
+        if "texte" not in {r[1] for r in c.execute("PRAGMA table_info(notifications)")}:
+            c.execute("ALTER TABLE notifications ADD COLUMN texte TEXT")
+            c.commit()
+        _TEXTE_OK.add(p)
     return c
 
 
@@ -122,10 +131,56 @@ def alertes_liste(api):
     c = _cx(api)
     try:
         al = _dicts(c.execute("SELECT id, q, prix_max, cree_le, verifie_le FROM alertes WHERE actif=1 ORDER BY id DESC"))
-        no = _dicts(c.execute("SELECT * FROM notifications ORDER BY id DESC LIMIT 40"))
+        no = _dicts(c.execute("SELECT * FROM notifications ORDER BY id DESC LIMIT 60"))
     finally:
         c.close()
+    for n in no:
+        n.update(decrire(n))
     return {"ok": True, "alertes": al, "notifications": no, "non_lues": sum(1 for x in no if not x["lu"])}
+
+
+# 9 nov 2026 (Mathieu : « lourd a l'oeil, on ne distingue pas facilement le but de la notif ») : chaque notification
+# a une sorte (pastille et mot de l'app), un sujet (la carte, le joueur) et un detail (pourquoi), sans emoji
+_SYMB = re.compile(r"^[^\w$+\-−(]+", re.UNICODE)
+
+
+def decrire(n):
+    cle = str(n.get("item_id") or "")
+    pre = cle.split(":", 1)[0] if ":" in cle else ""
+    t = _SYMB.sub("", str(n.get("titre") or "")).strip()
+    tx = str(n.get("texte") or "").strip()
+    tot = n.get("total")
+    prix = f"{tot:.0f} $" if isinstance(tot, (int, float)) and tot else ""
+    def apres(motif):
+        m = re.match(motif, t)
+        return (t[m.end():].strip(), m) if m else (t, None)
+    if n.get("alerte_id") is not None:
+        return {"sorte": "prix", "sujet": t, "detail": ("À " + prix + " : sous ton prix cible") if prix else "Sous ton prix cible"}
+    if pre == "vendu":
+        s, _ = apres(r"Vendue\s*:\s*")
+        return {"sorte": "vente", "sujet": s, "detail": tx or ("Vendue " + prix if prix else "Vendue")}
+    if pre == "ach":
+        return {"sorte": "acheteurs", "sujet": "Des acheteurs regardent tes annonces", "detail": tx or "Envoie-leur une offre en un tap"}
+    if pre == "deal":
+        s, m = apres(r"Deal\s*(−?\d+\s*%)?\s*:\s*")
+        return {"sorte": "deal", "sujet": s, "detail": ((m.group(1) + " sous sa valeur") if m and m.group(1) else "Sous sa valeur") + (" · " + prix if prix else "")}
+    if pre == "fav":
+        return {"sorte": "deal", "sujet": tx.split(" · ")[0] if tx else t, "detail": t.replace(" : deal", " en deal") + (" · " + prix if prix else "")}
+    if pre in ("fin", "watch-fin"):
+        if pre == "fin":
+            s, m = apres(r"Finit dans\s*(\d+)\s*min\s*:\s*")
+            return {"sorte": "encan", "sujet": s, "detail": (f"Finit dans {m.group(1)} min" if m else "Finit bientôt") + " : place ta mise"}
+        return {"sorte": "encan", "sujet": tx.split(" · ")[0] if tx else "Encan de ta watchlist", "detail": t}
+    if pre == "watch-seuil":
+        s, _ = apres(r"Mise max dépassée\s*:\s*")
+        return {"sorte": "trop_cher", "sujet": s, "detail": "Dépasse ta mise max : plus rentable"}
+    if pre == "feu":
+        s, _ = apres(r"")
+        return {"sorte": "joueur", "sujet": re.sub(r"\s+est en feu$", "", s), "detail": tx or "En feu cette semaine"}
+    if pre == "valeur":
+        m = re.match(r"(.+?)\s+([+−-]\d+\s*%.*)$", t)
+        return {"sorte": "valeur", "sujet": m.group(1) if m else t, "detail": (m.group(2) if m else tx) or "Sa valeur a changé"}
+    return {"sorte": "info", "sujet": t, "detail": tx}
 
 
 def alerte_supprimer(api, aid):
@@ -186,7 +241,7 @@ def verifier_alertes(api, rechercher=None):
             x = min(nouv_a, key=lambda y: (y.get("prix_cad") or 0) + (y.get("port_cad") or 0))
             tot = round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2)
             try:
-                api._push(f"🔔 {a['q']} : {tot:.2f} $", (x.get("titre") or "")[:140] + (f" (+{len(nouv_a) - 1})" if len(nouv_a) > 1 else ""),
+                api._push(f"Prix cible : {a['q']} à {tot:.2f} $", (x.get("titre") or "")[:140] + (f" (+{len(nouv_a) - 1})" if len(nouv_a) > 1 else ""),
                           {"lien": "#alertes"})
             except Exception as e:
                 print("Push : " + repr(e), flush=True)

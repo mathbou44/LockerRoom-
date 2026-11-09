@@ -635,7 +635,7 @@ def verifier(api, proches=False, lire_article=None, maint=None):
         titre = alarmes.cartes_match_titre(x)
         mm = x.get("mise_max")
         if e == "depasse" and not x.get("notif_seuil") and cfg["alerte_seuil"]:
-            if alarmes._notifier(api, etat_a, "watch-seuil:" + x["item_id"], f"📈 {titre}",
+            if alarmes._notifier(api, etat_a, "watch-seuil:" + x["item_id"], f"Mise max dépassée : {titre}",
                                  f"{'La mise' if x.get('encan') else 'Le prix'} ({(x.get('total') or 0):.0f} $) dépasse ta mise max ({(mm or 0):.0f} $) : plus rentable.",
                                  "#deals/watch", x.get("total"), x.get("photo"), force=True):
                 envoyees += 1
@@ -643,7 +643,7 @@ def verifier(api, proches=False, lire_article=None, maint=None):
         if e == "ok" and x.get("encan") and reste is not None and timedelta(0) < reste <= timedelta(minutes=fin_min) and not x.get("notif_fin") \
                 and cfg["alerte_fin"]:
             mn = max(1, int(reste.total_seconds() // 60))
-            if alarmes._notifier(api, etat_a, "watch-fin:" + x["item_id"], f"⏱ {mn} min : place ta mise",
+            if alarmes._notifier(api, etat_a, "watch-fin:" + x["item_id"], f"{mn} min : place ta mise",
                                  f"{titre} · mise {(x.get('total') or 0):.0f} $ · ta mise max {(mm or 0):.0f} $",
                                  "#deals/watch", x.get("total"), x.get("photo"), force=True):
                 envoyees += 1

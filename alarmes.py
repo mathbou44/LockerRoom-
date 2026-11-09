@@ -93,8 +93,9 @@ def _notifier(api, etat, cle, titre, texte, lien, total=None, photo=None, maint=
     import marche
     c = marche._cx(api)
     try:
-        c.execute("INSERT INTO notifications (alerte_id, item_id, titre, total, photo, url, le) VALUES (?,?,?,?,?,?,?)",
-                  (None, cle, titre, total, photo, lien, datetime.now().isoformat(timespec="seconds")))
+        # 9 nov 2026 (« on distingue pas le but de la notif ») : le detail est garde aussi (2e ligne dans l'app)
+        c.execute("INSERT INTO notifications (alerte_id, item_id, titre, total, photo, url, le, texte) VALUES (?,?,?,?,?,?,?,?)",
+                  (None, cle, titre, total, photo, lien, datetime.now().isoformat(timespec="seconds"), str(texte or "")[:240]))
         c.commit()
     finally:
         c.close()
@@ -168,7 +169,7 @@ def verifier(api, maint=None):
                                                                        or (not mes and budget is None))]
             for x in sorted(bons, key=lambda y: y.get("ratio") or 1)[:2]:
                 rab = round(100 * (1 - (x.get("ratio") or 1)))
-                if _notifier(api, etat, "deal:" + str(x["item_id"]), f"🔥 Deal −{rab} % : {cartes_match_titre(x)}",
+                if _notifier(api, etat, "deal:" + str(x["item_id"]), f"Deal −{rab} % : {cartes_match_titre(x)}",
                              f"{x.get('total', 0):.0f} $ pour une carte qui vaut ~{x.get('valeur', 0):.0f} $", "#deals",
                              x.get("total"), x.get("photo"), maint):
                     faits["gros_deal"] = faits.get("gros_deal", 0) + 1
@@ -188,7 +189,7 @@ def verifier(api, maint=None):
                 if not suivie:
                     continue
                 mn = int(reste.total_seconds() // 60)
-                if _notifier(api, etat, "fin:" + str(x["item_id"]), f"⏱ Finit dans {mn} min : {cartes_match_titre(x)}",
+                if _notifier(api, etat, "fin:" + str(x["item_id"]), f"Finit dans {mn} min : {cartes_match_titre(x)}",
                              f"Mise actuelle {x.get('total', 0):.0f} $, vaut ~{x.get('valeur', 0):.0f} $", "#deals", x.get("total"), x.get("photo"), maint):
                     faits["encan_fin"] = faits.get("encan_fin", 0) + 1
 
@@ -200,7 +201,7 @@ def verifier(api, maint=None):
             for f in nhl.chauds():
                 n = mes.get(cartes_match.norm(f["joueur"]))
                 if n:
-                    if _notifier(api, etat, f"feu:{cartes_match.norm(f['joueur'])}:{semaine}", f"🔥 {f['joueur']} est en feu",
+                    if _notifier(api, etat, f"feu:{cartes_match.norm(f['joueur'])}:{semaine}", f"{f['joueur']} est en feu",
                                  f"{f['points']} points en {f['matchs']} matchs · tu as {n} de ses cartes", "#joueur/" + f["joueur"], maint=maint):
                         faits["en_feu"] = faits.get("en_feu", 0) + 1
                     break
@@ -217,7 +218,7 @@ def verifier(api, maint=None):
             if neufs:
                 for i in neufs[1:]:
                     etat.setdefault("vus", {})["ach:" + str(i)] = time.time()
-                if _notifier(api, etat, "ach:" + str(neufs[0]), "👀 Des acheteurs surveillent tes cartes",
+                if _notifier(api, etat, "ach:" + str(neufs[0]), "Des acheteurs surveillent tes cartes",
                              f"{len(ids)} annonce{'s' if len(ids) > 1 else ''} : envoie-leur une offre en un tap", "#offres", maint=maint):
                     faits["acheteurs"] = 1
         except Exception as e:
@@ -228,7 +229,7 @@ def verifier(api, maint=None):
             if str(k.get("vendu_le") or "") < lim:
                 continue
             nom = k.get("joueur") or k.get("titre") or "Ta carte"
-            if _notifier(api, etat, "vendu:" + str(k.get("id")), f"💰 Vendue : {nom}",
+            if _notifier(api, etat, "vendu:" + str(k.get("id")), f"Vendue : {nom}",
                          f"{(k.get('prix_vendu') or 0):.0f} $" + (f" · profit {k['profit']:+.0f} $" if k.get("profit") is not None else ""),
                          "#inventaire", k.get("prix_vendu"), k.get("photo"), maint):
                 faits["vendu"] = faits.get("vendu", 0) + 1

@@ -705,9 +705,9 @@ def rechercher(q, categorie=None, prix_max=None, recentes=False, limite=50, fond
         p["sort"] = "endingSoonest"
     adresse = url("recherche") + "?" + urllib.parse.urlencode(p, quote_via=urllib.parse.quote)
     req = urllib.request.Request(adresse, headers={"Authorization": "Bearer " + jeton_application(), "Accept": "application/json",
-                                               "X-EBAY-C-MARKETPLACE-ID": "EBAY_CA",
+                                               "X-EBAY-C-MARKETPLACE-ID": "EBAY_" + pays,
                                                # 27 oct 2026 : le port affiche = le port vers le Canada (pas de faux prix)
-                                               "X-EBAY-C-ENDUSERCTX": "contextualLocation=country%3DCA"})
+                                               "X-EBAY-C-ENDUSERCTX": "contextualLocation=country%3D" + pays})
     appels_ebay.compter("browse")
     try:
         with urllib.request.urlopen(req, timeout=30) as r:
@@ -748,22 +748,23 @@ def _lire_article(d, item_id):
            "prix_devise": float(pr.get("convertedFromValue") or pr.get("value") or 0)}
 
 
-def article(item_id, fond=False, frais=False):
+def article(item_id, fond=False, frais=False, pays="CA"):
     """24 oct 2026 - une annonce eBay complete (toutes ses photos, vendeur, livraison, fin) : Browse getItem,
     jeton d'application (aucune donnee de compte). Cache 1 h."""
     item_id = str(item_id or "").strip()
     if not re.fullmatch(r"\d{9,15}", item_id):
         raise RuntimeError("Numéro d'annonce eBay invalide")
-    cle = appels_ebay.cle_recherche(environnement(), article=item_id)
+    pays = "US" if str(pays).upper() == "US" else "CA"          # 9 nov 2026 : US = vu par un acheteur americain (veille des douanes)
+    cle = appels_ebay.cle_recherche(environnement(), article=item_id + ("" if pays == "CA" else ":US"))
     deja = appels_ebay.cache_lire(cle, "article_frais" if frais else "encheres")     # 29 oct : watchlist, fin d'encan : 3 min
     if deja is not None:
         return deja
     appels_ebay.exiger("browse", fond)
     adresse = url("recherche").split("/item_summary/")[0] + "/item/get_item_by_legacy_id?" + urllib.parse.urlencode({"legacy_item_id": item_id})
     req = urllib.request.Request(adresse, headers={"Authorization": "Bearer " + jeton_application(), "Accept": "application/json",
-                                               "X-EBAY-C-MARKETPLACE-ID": "EBAY_CA",
+                                               "X-EBAY-C-MARKETPLACE-ID": "EBAY_" + pays,
                                                # 27 oct 2026 : le port affiche = le port vers le Canada (pas de faux prix)
-                                               "X-EBAY-C-ENDUSERCTX": "contextualLocation=country%3DCA"})
+                                               "X-EBAY-C-ENDUSERCTX": "contextualLocation=country%3D" + pays})
     appels_ebay.compter("browse")
     try:
         with urllib.request.urlopen(req, timeout=30) as r:

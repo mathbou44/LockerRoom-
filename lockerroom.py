@@ -66,6 +66,7 @@ REGLAGES_DEFAUT = {
     "photo_studio": True,
     "flou_niveau": 2,                                           # 30 oct 2026 : fond flou 1 leger, 2 moyen, 3 fort
     "ramassage": [],
+    "pays": "CA",                # 8 nov 2026 : d'ou l'utilisateur achete (CA | US) : taxes, douanes et deals de son pays d'abord
     # 30 oct 2026 (Mathieu : « la personne qui a le profil doit pouvoir personnaliser ses deals un peu ») :
     # collectionne : recrues | veterans | legendes | hits | gradees (vide = tout) ; favoris : joueurs ou equipes
     "deals_profil": {},                                            # 30 oct 2026 : vendeurs ou l'acheteur ramasse sur place (pas de port)                                       # 29 oct 2026 : photo studio (fond clair) ou les photos telles quelles
@@ -76,6 +77,7 @@ REGLAGES_DEFAUT = {
     "ia_photos_ok": False,                                      # 27 oct 2026 : permission explicite (Apple 5.1.2(i))
     "ia_entrainement_ok": False,                                # 3 nov 2026 : photos d'examen gardees pour entrainer l'IA (OUI explicite)
     "frais_ebay_pct": 13.25, "frais_ebay_fixe": 0.40,           # eBay Canada, cartes (a ajuster a ton compte)
+    "frais_auto": True,                                          # 9 nov 2026 : le % suit les frais reels de tes ventes eBay
     "frais_break_pct": 10.9, "frais_break_fixe": 0.30,          # plateforme de live (ex. commission + paiement)
     "taxes_pct": 14.975,                                        # TPS + TVQ (Quebec)
     "marge_break": 25, "plancher_place": 1, "arrondi_place": 1,
@@ -118,6 +120,7 @@ CREATE TABLE IF NOT EXISTS cartes (id INTEGER PRIMARY KEY, titre TEXT, joueur TE
     canal TEXT, prix_vendu REAL, frais REAL, port_paye REAL, port_charge REAL, profit REAL, client_id INTEGER,
     cree_le TEXT, vendu_le TEXT, note TEXT, consignation_payee INTEGER DEFAULT 0);
 CREATE TABLE IF NOT EXISTS ventes_ebay_vues (transaction_id TEXT PRIMARY KEY);
+CREATE TABLE IF NOT EXISTS frais_observes (transaction_id TEXT PRIMARY KEY, le TEXT, base REAL, frais REAL);
 CREATE TABLE IF NOT EXISTS clients (id INTEGER PRIMARY KEY, nom TEXT, contact TEXT, credit REAL DEFAULT 0, note TEXT, cree_le TEXT);
 CREATE TABLE IF NOT EXISTS consignataires (id INTEGER PRIMARY KEY, nom TEXT, contact TEXT, pct_boutique REAL, cree_le TEXT);
 CREATE TABLE IF NOT EXISTS paiements_consignation (id INTEGER PRIMARY KEY, consignataire_id INTEGER, montant REAL, le TEXT, note TEXT);
@@ -521,7 +524,9 @@ class Api:
             prix = None
         import forfaits
         import ventes_communaute
-        return {**forfaits.resume(), "multi": multi, "admin": self._est_admin(), "communaute": ventes_communaute.actif(),
+        adm_c = self._est_admin_compte()
+        return {**forfaits.resume(), "multi": multi, "admin": self._est_admin(), "admin_a_verifier": adm_c and not self._est_admin(),
+                "admin_verif_active": adm_c and comptes.MULTI and self._admin_verif_possible(), "communaute": ventes_communaute.actif(),
                 # 27 oct 2026 - revue legale : logos et photos de la LNH = marques et contenu de la LNH (conditions : usage
                 # non commercial) -> coupes par defaut ; seulement avec une licence (LOCKERROOM_LOGOS_LNH=1)
                 "logos_lnh": os.environ.get("LOCKERROOM_LOGOS_LNH") == "1",
@@ -551,6 +556,12 @@ class Api:
                 c.commit()
             finally:
                 c.close()
+        try:                                       # un iPhone ajoute depuis une session admin confirmee devient de confiance
+            import comptes
+            if comptes.MULTI and self._est_admin_compte() and self._admin_verifie():
+                self._jetons_admin(ajouter=jeton)
+        except Exception:
+            pass
         return {"ok": True}
 
     def _push(self, titre, texte, donnees=None):
@@ -713,6 +724,13 @@ class Api:
                 entrainement.retirer_moi()
             except Exception as e:
                 print("Entrainement (retrait) : " + repr(e), flush=True)
+        nouveaux = dict(nouveaux or {})
+        if "frais_ebay_pct" in nouveaux and "frais_auto" not in nouveaux:
+            try:                                   # 9 nov 2026 : un % change a la main -> l'ajustement automatique s'arrete
+                if abs(float(nouveaux["frais_ebay_pct"]) - float(self.reglages_lire()["frais_ebay_pct"])) > 0.001:
+                    nouveaux["frais_auto"] = False
+            except (TypeError, ValueError):
+                pass
         with _verrou:
             c = self._db()
             try:
@@ -983,8 +1001,8 @@ class Api:
                 "favoris_max": self.FAVORIS_MAX_PRO if forfaits.est_pro() else self.FAVORIS_MAX,
                 "favoris_max_pro": self.FAVORIS_MAX_PRO}
 
-    FAVORIS_MAX = 3
-    FAVORIS_MAX_PRO = 10
+    FAVORIS_MAX = 5                       # 9 nov 2026 (Mathieu : « max de 5 en non pro et 20 en pro »)
+    FAVORIS_MAX_PRO = 20
 
     def deals_profil_regler(self, d):
         import deals as _d
@@ -1006,7 +1024,7 @@ class Api:
         self.reglages_sauver({"deals_profil": p})
         if coupes:
             return {**self.deals_profil_lire(), "ok": False, "pro_requis": not forfaits.est_pro(),
-                    "erreur": (f"{fmax} joueurs suivis au plus" + (" (10 avec Pro)" if not forfaits.est_pro() else "")
+                    "erreur": (f"{fmax} joueurs suivis au plus" + (f" ({self.FAVORIS_MAX_PRO} avec Pro)" if not forfaits.est_pro() else "")
                                + " : " + ", ".join(coupes) + " pas ajouté" + ("s" if len(coupes) > 1 else ""))}
         if "vendeurs" in d:
             v = d.get("vendeurs")
@@ -1112,7 +1130,23 @@ class Api:
                 "demandes": {"ouvertes": dm["ouvertes"], "nouvelles": dm["nouvelles"]},
                 "a_ajouter": len(nouveaux_produits.liste()), "erreurs_24h": sum(1 for e in s["erreurs"] if str(e["le"]) > (datetime.now() - timedelta(days=1)).isoformat()),
                 "ebay": s["ebay"], "version": s["version"], "vendues": vendues.statut(), "photos": s.get("photos"),
-                "taches": s.get("taches"), "disque": s.get("disque")}
+                "taches": s.get("taches"), "disque": s.get("disque"), "veille": self._veille_resume()}
+
+    @staticmethod
+    def _veille_resume():
+        try:
+            import veille_ebay
+            return veille_ebay.resume()
+        except Exception as e:
+            return {"erreur": str(e)[:120]}
+
+    def veille_ebay_maintenant(self):
+        """Admin : refaire la veille eBay tout de suite (frais, regles, douanes)."""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import veille_ebay
+        r = veille_ebay.rafraichir()
+        return dict(r, veille=veille_ebay.resume())
 
     def deals_pourquoi(self, lien, titre=None, prix=None):
         """8 nov 2026 (Mathieu : « on aurait du capter ca », une Martone Young Guns vendue 28 $) : POURQUOI une annonce n'est
@@ -1336,6 +1370,103 @@ class Api:
         return nouveaux_produits.demander(nom, sport or self.reglages_lire().get("sport"), comptes.courant() if comptes.MULTI else "local")
 
     def _est_admin(self):
+        """L'admin, pour de vrai : un compte admin (_est_admin_compte) ET, en ligne, la 2e verification de CETTE session.
+        8 nov 2026 (Mathieu : « ultra securise », « oui pour la validation cell ») : un compte admin vole (temoin de session
+        copie, telephone emprunte...) n'ouvre pas la console : il faut le code envoye sur l'iPhone de l'admin (ou le code
+        de secours LOCKERROOM_ADMIN_CODE de Render). Sans iPhone relie ni code de secours, la verification ne peut pas
+        avoir lieu : l'admin garde l'acces (jamais bloque dehors) et la console lui demande d'en activer une."""
+        if not self._est_admin_compte():
+            return False
+        import comptes
+        if not comptes.MULTI:
+            return True
+        return self._admin_verifie() or not self._admin_verif_possible()
+
+    _ADMIN_CODES = {}
+    ADMIN_VERIF_S = 30 * 86400            # une session confirmee le reste 30 jours
+
+    def _admin_verifie(self):
+        try:
+            from flask import has_request_context, session
+            if not has_request_context():
+                return True                    # taches de fond (pas une requete d'un navigateur)
+            return time.time() - float(session.get("admin2_le") or 0) < self.ADMIN_VERIF_S
+        except Exception:
+            return False
+
+    def _jetons_admin(self, ajouter=None):
+        """Les iPhone de CONFIANCE pour le code admin. Un temoin de session vole pourrait enregistrer SON telephone
+        (push_enregistrer) puis recevoir le code : seuls comptent les jetons deja la au premier usage (l'iPhone de
+        l'admin) et ceux enregistres depuis une session admin deja confirmee."""
+        try:
+            with _verrou:
+                c = self._db()
+                try:
+                    c.execute("CREATE TABLE IF NOT EXISTS push_jetons (jeton TEXT PRIMARY KEY, plateforme TEXT, le TEXT)")
+                    c.execute("CREATE TABLE IF NOT EXISTS push_admin (jeton TEXT PRIMARY KEY, le TEXT)")
+                    if not c.execute("SELECT 1 FROM push_admin WHERE jeton='*init*'").fetchone() and \
+                            c.execute("SELECT 1 FROM push_jetons LIMIT 1").fetchone():     # le 1er iPhone relie : celui de l'admin
+                        c.execute("INSERT OR IGNORE INTO push_admin VALUES ('*init*', ?)", (_maintenant(),))
+                        c.execute("INSERT OR IGNORE INTO push_admin SELECT jeton, ? FROM push_jetons", (_maintenant(),))
+                    if ajouter:
+                        c.execute("INSERT OR IGNORE INTO push_admin VALUES (?, ?)", (ajouter, _maintenant()))
+                    c.commit()
+                    return [r[0] for r in c.execute("SELECT a.jeton FROM push_admin a JOIN push_jetons j ON j.jeton = a.jeton")]
+                finally:
+                    c.close()
+        except Exception:
+            return []
+
+    def _admin_verif_possible(self):
+        import apns
+        return bool(os.environ.get("LOCKERROOM_ADMIN_CODE")) or (apns.actif() and bool(self._jetons_admin()))
+
+    def admin_verif_envoyer(self):
+        """Envoie un code a 6 chiffres (5 min) sur l'iPhone de l'admin (notification)."""
+        import apns
+        import comptes
+        import secrets as _s
+        if not self._est_admin_compte():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        cid = comptes.courant() or "local"
+        code = f"{_s.randbelow(10 ** 6):06d}"
+        self._ADMIN_CODES[cid] = {"h": hashlib.sha256(code.encode()).hexdigest(), "fin": time.time() + 300, "essais": 0}
+        n = 0
+        if apns.actif():
+            for j in self._jetons_admin():
+                if apns.envoyer(j, "SlabCoach · code admin", f"Ton code : {code} (5 min). Si ce n'est pas toi, ignore ce message.") == "ok":
+                    n += 1
+        return {"ok": True, "envoye": n, "secours": bool(os.environ.get("LOCKERROOM_ADMIN_CODE"))}
+
+    def admin_verif_valider(self, code):
+        import comptes
+        import hmac as _h
+        from flask import session
+        if not self._est_admin_compte():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        cid = comptes.courant() or "local"
+        brut = str(code or "").strip()
+        e = self._ADMIN_CODES.get(cid)
+        ok = False
+        if e and time.time() < e["fin"] and e["essais"] < 5:
+            e["essais"] += 1
+            ok = _h.compare_digest(hashlib.sha256(re.sub(r"\D", "", brut).encode()).hexdigest(), e["h"])
+        secours = os.environ.get("LOCKERROOM_ADMIN_CODE") or ""
+        if not ok and secours and len(secours) >= 8:
+            k = ("secours", cid)
+            n = self._ADMIN_CODES.setdefault(k, {"essais": 0, "le": time.time()})
+            if time.time() - n["le"] > 900:
+                n.update(essais=0, le=time.time())
+            if n["essais"] < 5:
+                n["essais"] += 1
+                ok = _h.compare_digest(brut, secours)
+        if not ok:
+            return {"ok": False, "erreur": "Code invalide ou expiré"}
+        self._ADMIN_CODES.pop(cid, None)
+        session["admin2_le"] = time.time()
+        return {"ok": True}
+
+    def _est_admin_compte(self):
         """Qui ajoute les produits au catalogue (pour TOUS les comptes) : le PC de Mathieu, et en ligne les comptes eBay
         listes dans LOCKERROOM_ADMINS (Render). Les utilisateurs n'ont jamais de fichier a telecharger."""
         import comptes
@@ -3789,6 +3920,34 @@ class Api:
         p = cons["pct_boutique"] if cons and cons["pct_boutique"] is not None else r.get("pct_consignation")
         return (_float(p) or 0) / 100
 
+    def frais_calibrer(self):
+        """9 nov 2026 (Mathieu : « toujours etre a jour sur les tarifs eBay, a tous les jours ») : le % des frais eBay de ce
+        compte suit ce qu'eBay lui a VRAIMENT facture (frais de chaque commande, 120 derniers jours, 5 ventes au moins) :
+        (frais - frais par commande) / (prix + port). Un % change a la main (Reglages) n'est plus touche (frais_auto)."""
+        r = self.reglages_lire()
+        lim = (datetime.now() - timedelta(days=120)).strftime("%Y-%m-%d")
+        with _verrou:
+            c = self._db()
+            try:
+                lignes = c.execute("SELECT base, frais FROM frais_observes WHERE le >= ? AND base > 0", (lim,)).fetchall()
+            finally:
+                c.close()
+        fixe = float(r.get("frais_ebay_fixe") or 0.40)
+        pcts = [(f - (fixe if b > 10 else 0.30)) / b for b, f in lignes if b <= 7500 and f is not None]
+        pcts = [p for p in pcts if 0.03 <= p <= 0.30]
+        if len(pcts) < 5:
+            return {"ok": True, "n": len(pcts), "change": False}
+        import statistics as _st
+        pct = round(_st.median(pcts) * 100, 2)
+        if not 5 <= pct <= 25:
+            return {"ok": True, "n": len(pcts), "change": False, "suggere": pct}
+        if not r.get("frais_auto", True):
+            return {"ok": True, "n": len(pcts), "change": False, "suggere": pct, "manuel": True}
+        if abs(pct - float(r.get("frais_ebay_pct") or 0)) < 0.1:
+            return {"ok": True, "n": len(pcts), "change": False, "pct": pct}
+        self.reglages_sauver({"frais_ebay_pct": pct, "frais_auto": True})
+        return {"ok": True, "n": len(pcts), "change": True, "avant": r.get("frais_ebay_pct"), "pct": pct}
+
     def _maj_ventes(self, ventes):
         r = self.reglages_lire()
         nouvelles = deja = sans_fiche = 0
@@ -3796,6 +3955,10 @@ class Api:
             c = self._db()
             try:
                 for v in ventes:
+                    if v.get("frais_reels") is not None and (v.get("prix") or 0) > 0 and not v.get("annulee"):
+                        # 9 nov 2026 : les frais REELS d'eBay de chaque commande (pour suivre ses tarifs : frais_calibrer)
+                        c.execute("INSERT OR IGNORE INTO frais_observes VALUES (?,?,?,?)", (v["transaction_id"], (v.get("date") or _maintenant())[:10],
+                                  round((v["prix"] or 0) + (v.get("port_charge") or 0), 2), v["frais_reels"]))
                     if c.execute("SELECT 1 FROM ventes_ebay_vues WHERE transaction_id=?", (v["transaction_id"],)).fetchone():
                         deja += 1
                         continue
@@ -6031,6 +6194,8 @@ class Api:
             pass
         r = self.reglages_lire()
         fp, ff = (r["frais_ebay_pct"] or 0) / 100, r["frais_ebay_fixe"] or 0
+        pays = str(r.get("pays") or "CA").upper()
+        pays = pays if pays in deals.PAYS else "CA"
         limite = (datetime.now() - timedelta(days=4)).isoformat()
         with _verrou:
             c = self._db()
@@ -6061,6 +6226,7 @@ class Api:
             if x["item_id"] in masques:
                 continue
             x = self._ramasser(x, chez)
+            x["_pays"] = pays                     # 9 nov 2026 : taxes et douanes du pays de l'acheteur
             # 26 oct 2026 : « −96 % » sur une carte a prix fixe = presque toujours une autre carte (pas la meme parallele,
             # pas le patch) : trop beau pour etre vrai, on ne le montre pas
             if not x.get("encan") and (x.get("ratio") or 1) < (0.25 if (x.get("valeur") or 0) >= 400 else 0.15):
@@ -6140,16 +6306,26 @@ class Api:
         # 6 nov 2026 (Mathieu : « mettre a jour les max bid au plus vite ») : la mise max de chaque deal refaite a la lecture
         # avec la regle d'aujourd'hui (30 % de profit net) ; un prix fixe qui ne laisse plus ce profit n'est plus un deal
         tout = [_dl.a_jour(x) for x in tout if _dl.encan_admis(x)]        # 7 nov : 24 h et une mise (sauf Savage, Remi, CF31)
+        rg = self.reglages_lire()
+        pays = str(rg.get("pays") or "CA").upper()
+        pays = pays if pays in _dl.PAYS else "CA"
         tout = [x for x in tout if x.get("encan") or not (x.get("valeur") and x.get("total") and x["total"] > _dl.prix_max(x["valeur"], taxe=_dl.taxe_de(x)))]
         # 2 nov 2026 (Mathieu : « quand le prix suggere est depasse par le bid actuel, ce n'est plus un deal, il ne devrait plus
         # etre la ») : la mise du moment (hors port) au-dessus de la mise max -> hors des deals, tout de suite a la lecture
         tout = [x for x in tout if not (x.get("encan") and x.get("mise_max") is not None and x.get("total")
                                         and float(x["total"]) - float(x.get("port") or 0) > float(x["mise_max"]) + 0.5)]
-        rg = self.reglages_lire()
         fp_, ff_ = (rg["frais_ebay_pct"] or 0) / 100, rg["frais_ebay_fixe"] or 0
         # 4 nov 2026 (Mathieu : « pourquoi je vois encore les cartes en bas du montant du filtre ») : le profit minimum d'un
         # encan se compare au profit AFFICHE (a la mise max), pas a celui de la mise du moment (1 $ : toujours enorme)
         f = dict(f, _fp=fp_, _ff=ff_)
+        # 8 nov 2026 (Mathieu : « prioriser les deals canadiens pour un Canadien et americains pour un Americain, a cause des
+        # tarifs douaniers ») : les taxes et frais d'importation de SON pays, et la mise max qui va avec
+        for x in tout:
+            x["_pays"] = pays
+            x["etranger"] = _dl.etranger(x)
+            if pays != "CA" and x.get("encan") and x.get("valeur") and not x.get("mise_perso"):
+                x["mise_max"] = round(_dl.prix_max(x["valeur"], taxe=_dl.taxe_de(x)) - _dl.port_eff(x.get("port")), 2)
+            x["taxe_achat"] = _dl.taxe_de(x)
         for x in tout:
             if x.get("valeur") and x.get("total") is not None:
                 x["gain"] = round(_net_rev(x["valeur"]) - _paye(x.get("total") or 0, x), 2)
@@ -6213,6 +6389,8 @@ class Api:
             # 3 nov 2026 (revue) : en « finit bientot », les encans restent devant les prix fixes (entrelaces chacun de son cote)
             par = (lambda l: entrelacer([x for x in l if x.get("encan")]) + entrelacer([x for x in l if not x.get("encan")])) if tri == "fin" else entrelacer
             lst = par([x for x in lst if _dl.rang_honnete(x) != 3]) + par(fin)
+        if tri in ("rabais", "gain", "recent"):
+            lst = [x for x in lst if not x.get("etranger")] + [x for x in lst if x.get("etranger")]    # 8 nov : son pays d'abord
         prof = self._profil_deals()                      # 30 oct 2026 : mon profil de deals (Reglages)
         lst = self._appliquer_profil(lst, prof)
         lst = self._objectif_deals(lst, f)
@@ -6482,6 +6660,8 @@ class Api:
                 print("Deals (prix fiche) : " + repr(e), flush=True)
         r = self.reglages_lire()
         fp, ff = (r["frais_ebay_pct"] or 0) / 100, r["frais_ebay_fixe"] or 0
+        if isinstance(a, dict) and str(r.get("pays") or "CA").upper() == "US":
+            a = dict(a, _pays="US")                    # 9 nov 2026 : un acheteur aux Etats-Unis (taxes et douanes de son pays)
         # 25 oct 2026 (Mathieu : « montre les last sold comps avec leurs photos aussi et le prix suggere »)
         try:
             if rapide:

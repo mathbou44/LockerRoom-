@@ -93,15 +93,29 @@ TAXE_IMPORT = _env_pct("LR_TAXE_IMPORT", "7.13")
 IMPORT_DEFAUT = _env_pct("LR_IMPORT_DEFAUT", "49.7")
 
 
-def etranger(x):
-    lieu = str((x or {}).get("lieu") or "").strip().upper()
-    return bool(lieu) and lieu != "CA"
-
-
-def taxe_de(x):
-    """Les taxes et frais sur l'achat d'une annonce (fraction du prix + port) : 14,975 % au Canada ; hors Canada, les frais
-    d'importation d'eBay. Un chiffre deja calcule (« taxe ») est garde."""
+def etranger(x, pays=None):
+    """Hors du pays de l'acheteur (Canada par defaut ; « _pays » : celui de l'acheteur, pose par l'ecran Deals)."""
     x = x or {}
+    lieu = str(x.get("lieu") or "").strip().upper()
+    return bool(lieu) and lieu != str(pays or x.get("_pays") or "CA").upper()
+
+
+# 8 nov 2026 (Mathieu : « prioriser les deals canadiens pour un Canadien et americains pour un Americain, a cause des tarifs
+# douaniers ») : un acheteur aux Etats-Unis paie la taxe de vente de son Etat (environ 7 %) sur un achat americain, et des
+# frais d'importation sur une carte venue du Canada (estimes : eBay ne nous les donne que pour un acheteur canadien)
+TAXE_US = _env_pct("LR_TAXE_US", "7")
+IMPORT_US = _env_pct("LR_IMPORT_US", "15")
+PAYS = ("CA", "US")
+
+
+def taxe_de(x, pays=None):
+    """Les taxes et frais sur l'achat d'une annonce (fraction du prix + port) pour un acheteur au Canada (14,975 % ; hors
+    Canada, les frais d'importation d'eBay) ou aux Etats-Unis (pays="US"). Un chiffre deja calcule (« taxe ») est garde."""
+    x = x or {}
+    pays = pays or x.get("_pays")
+    if pays and str(pays).upper() == "US":
+        lieu = str(x.get("lieu") or "").strip().upper()
+        return TAXE_US if not lieu or lieu == "US" else round(TAXE_US + IMPORT_US, 4)
     if x.get("taxe") is not None:
         try:
             return float(x["taxe"])

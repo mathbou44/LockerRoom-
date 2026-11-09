@@ -1297,6 +1297,12 @@ def _ebay_auto():
                     if st.get("connecte"):
                         r = api.ebay_synchroniser(30)
                         print("Synchro eBay :", cid or "", {k: r.get(k) for k in ("ok", "annonces", "ventes", "erreur")}, flush=True)
+                    try:                         # 9 nov 2026 : le % des frais eBay suit les frais reels de ses ventes
+                        rf = api.frais_calibrer()
+                        if rf.get("change"):
+                            print("Frais eBay :", cid or "", rf, flush=True)
+                    except Exception as e:
+                        print("Frais eBay : " + str(e), flush=True)
                     try:                         # 26 oct 2026 : les alertes de prix de chaque compte
                         ra = api.alertes_verifier()
                         if ra.get("nouvelles"):
@@ -1329,6 +1335,13 @@ def _ebay_auto():
                             pouls.rafraichir_si_besoin()
                         except Exception as e:
                             print("Pouls : " + str(e), flush=True)
+                        try:                     # 9 nov 2026 : veille eBay (frais, regles, douanes), une fois par jour
+                            import veille_ebay
+                            rv = veille_ebay.rafraichir_si_besoin(_alerter_admins)
+                            if rv:
+                                print("Veille eBay :", rv, flush=True)
+                        except Exception as e:
+                            print("Veille eBay : " + str(e), flush=True)
                         try:                     # 28 oct 2026 : la forme des joueurs des tendances (LNH)
                             import nhl
                             nhl.rafraichir_si_besoin()
@@ -1337,6 +1350,18 @@ def _ebay_auto():
                 except Exception as e:
                     print("Synchro eBay : " + str(e), flush=True)
         time.sleep(3600)
+
+
+def _alerter_admins(titre, texte):
+    """9 nov 2026 : une notification aux iPhone des comptes admin (veille eBay)."""
+    import comptes as _c
+    for cid in (_c.lister() if _c.MULTI else [None]):
+        with _c.utiliser(cid):
+            try:
+                if api._est_admin_compte():
+                    api._push(titre, texte, {"lien": "#admin/serveur"})
+            except Exception as e:
+                print("Alerte admin : " + str(e), flush=True)
 
 
 def _verifier_secrets():
@@ -1348,6 +1373,11 @@ def _verifier_secrets():
 
 def demarrer_taches():
     _verifier_secrets()
+    try:                                     # 9 nov 2026 : les frais d'importation appris la veille, des le demarrage
+        import veille_ebay
+        veille_ebay.appliquer()
+    except Exception as e:
+        print("Veille eBay : " + str(e), flush=True)
     threading.Thread(target=_valeurs_auto, daemon=True).start()
     threading.Thread(target=_ebay_auto, daemon=True).start()
     threading.Thread(target=_watch_boucle, daemon=True, name="watchlist").start()

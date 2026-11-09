@@ -126,7 +126,7 @@ def verifier(api, maint=None, valeur=None):
                 nom = carte.get("joueur") or alarmes.cartes_match_titre(carte)
                 haut = pct > 0
                 if alarmes._notifier(api, etat_a, f"valeur:{s['carte_id']}:{maint.strftime('%Y-%m-%d')}",
-                                     f"{'📈' if haut else '📉'} {nom} {'+' if haut else '−'}{abs(pct)} % : vaut {v:.0f} $",
+                                     f"{nom} {'+' if haut else '−'}{abs(pct)} % : vaut {v:.0f} $",
                                      f"Était {ref:.0f} $ · ventes réelles de la semaine. "
                                      + ("Bon moment pour la vendre ?" if haut else "Garde-la ou vends-la : à toi de voir."),
                                      "#inventaire", v, carte.get("photo"), maint=None):
