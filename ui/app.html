@@ -143,7 +143,8 @@ details.reglage summary::-webkit-details-marker{display:none}
 .logo-holo .lh-c i:nth-child(1){background:conic-gradient(from 0deg,#FF8AD8,#A58BFF,#6FD8FF,#9FF2D8,#FFE08A,#FF8AD8); animation:tourne 30s linear infinite}
 .logo-holo .lh-c i:nth-child(2){background:radial-gradient(40% 40% at 30% 30%,rgba(255,255,255,.55),transparent 70%),radial-gradient(35% 35% at 75% 70%,rgba(255,95,210,.5),transparent 70%);
   animation:tourne 44s linear infinite reverse}
-.logo-holo b{position:absolute; left:27%; top:23%; width:46%; height:54%; background:#F4F1EA;
+/* 9 nov 2026 (« pourquoi le S est mini ») : logo_sc_s.svg a le meme cadre 200 x 200 que le C : il couvre toute la pastille */
+.logo-holo b{position:absolute; inset:0; width:100%; height:100%; background:#F4F1EA;
   -webkit-mask:url(/logo_sc_s.svg) center/contain no-repeat; mask:url(/logo_sc_s.svg) center/contain no-repeat}
 .logo-holo > img{position:absolute; inset:0; width:100%; height:100%; display:block} .moi-av .logo-holo{width:100%; height:100%} .profil-av .logo-holo{width:100%; height:100%} .choix-tete .logo-holo{width:72px; height:72px}
 @media (prefers-reduced-motion:reduce){ .logo-holo .lh-c i{animation:none} }
@@ -4821,7 +4822,13 @@ async function photoStudio(src, coins1000, opts){
   // 7 nov 2026 (Mathieu : « est-ce que l'app remet les photos a niveau ? rotate jusqu'a ce que le bord du bas soit
   // completement parallele au frame, ensuite brouille legerement le fond, toujours ») : la photo est tournee autour de la
   // carte jusqu'a ce que son bord du BAS soit horizontal (un leger zoom couvre les coins), puis le fond flou
-  const n = niveler(img, q);
+  // 9 nov 2026 (les tuiles « VAN », « PIT » sans photo) : sur iPhone, un canvas de plus de ~16 Mpx sort vide. La photo
+  // studio (flou, nivelage : 3 a 4 canvas de la taille de la photo) se fait donc a 12 Mpx au plus ; l'originale pleine
+  // resolution reste gardee a cote pour le pre-grade
+  let src_ = img, q_ = q;
+  if (W * H > 12e6) { const k = Math.sqrt(12e6 / (W * H)), cv = document.createElement('canvas'); cv.width = Math.round(W * k); cv.height = Math.round(H * k);
+    const g_ = cv.getContext('2d'); g_.imageSmoothingQuality = 'high'; g_.drawImage(img, 0, 0, cv.width, cv.height); src_ = cv; q_ = q.map(([x, y]) => [x * k, y * k]); }
+  const n = niveler(src_, q_);
   return {photo: poserFlou(n.img, n.q, opts), coins: r.coins.map(([x, y]) => [Math.round(x / G.w * 1000), Math.round(y / G.h * 1000)]), affine: r.affine, W, H,
           angle: n.angle};
 }
