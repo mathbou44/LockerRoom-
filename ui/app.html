@@ -10127,7 +10127,10 @@ async function dessinerZoom(cv, url, q, d, entier){
   g.drawImage(im, x / 1000 * W - r, y / 1000 * H - r, 2 * r, 2 * r, 0, 0, T, T);
 }
 function diapoEtat(e, depart, apres, relancer){
-  const FACES = ['devant', 'dos'], refs = e.photos || [], def = (e.defauts || []).filter(d => !d.masque).slice(0, 8);
+  // 9 nov 2026 (Mathieu, sur une ancienne analyse : « on voit rien ? ») : une analyse d'avant la contre-verification ne
+  // montre plus ses defauts (ils n'ont pas ete reverifies) ; un point « a verifier » n'est jamais montre
+  const ancienne = !e.contre_verif;
+  const FACES = ['devant', 'dos'], refs = e.photos || [], def = ancienne ? [] : (e.defauts || []).filter(d => !d.masque && d.gravite !== 'a verifier').slice(0, 8);
   const n = e.notes || {}, f = (v) => v == null ? '—' : decFr(v);
   const fourch = e.note_min != null ? (e.note_max != null && e.note_max !== e.note_min ? f(e.note_min) + '–' + f(e.note_max) : f(e.note_min)) : '—';
   const cl = (v) => (v || 0) >= 9 ? 'vert' : (v || 0) >= 7 ? 'or' : 'rouge';
@@ -10147,11 +10150,10 @@ function diapoEtat(e, depart, apres, relancer){
   const t_ = e.tag;
   // 9 nov 2026 (Mathieu : « on ne peut pas mettre PSA 8 ou TAG 10, c'est le pre-grade SlabCoach ») : notre note, sur 10,
   // jamais presentee comme une note PSA ou TAG
-  const ancienne = !e.contre_verif;
   const d1 = `<div class="dp-d"><span class="dp-sur">${tt('Pré-grade SlabCoach', 'SlabCoach pre-grade')}</span>
     <div class="dp-note"><span class="dp-anneau ${cl(e.note_min)}"><b>${fourch}</b><small>/10</small></span></div>
-    ${ancienne && relancer ? `<div class="vd-anc">${tt('Analyse faite avant la contre-vérification des défauts. ', 'Analysis made before flaws were double-checked. ')}<button class="lien-t" data-dpre>${tt('Refaire l’examen', 'Check again')}</button></div>` : ''}
-    <p class="dp-phrase">${phrase}</p>
+    ${ancienne ? `<div class="vd-anc">${tt('Cette analyse date d’avant la nouvelle version : ses défauts n’ont pas été revérifiés sur gros plan, alors on ne les montre plus. Refais l’examen avec de nouvelles photos pour une note fiable.', 'This analysis predates the new version: its flaws were not double-checked on close-ups, so they are no longer shown. Check again with new photos for a reliable grade.')}${relancer ? ` <button class="lien-t" data-dpre>${tt('Refaire l’examen', 'Check again')}</button>` : ''}</div>` : ''}
+    ${ancienne ? '' : `<p class="dp-phrase">${phrase}</p>`}
     ${def.length ? `<div class="dp-zm petit${gpDe(def[0]) ? ' gp' : ''}"><canvas data-dz="0"></canvas><i></i></div>` : ''}
     ${def.length > 1 || (def.length && (cDev.length || e.centrage_dos)) ? `<span class="dp-pied">${tt('Glisse pour voir le détail ›', 'Swipe for the details ›')}</span>` : ''}</div>`;
   const dd = def.map((d, i) => `<div class="dp-d"><span class="dp-sur">${tt('Défaut', 'Flaw')} ${i + 1} / ${def.length}</span>
@@ -10545,7 +10547,7 @@ async function blocEtat(c, forcer, opts){
     // 1er nov 2026 (Mathieu : « plus sexy, nos pastilles rondes ; on doit pouvoir retrecir la fenetre ») : une pastille ronde
     // (la note dans l'anneau) qui s'ouvre et se referme ; le choix est garde
     const ouvert = false;
-    const nbv = def.filter(d => !d.masque).length, resume = [nbv ? nbv + ' ' + tt(nbv > 1 ? 'points à vérifier' : 'point à vérifier', nbv > 1 ? 'points to check' : 'point to check') : tt('aucun défaut visible', 'no visible flaw'),
+    const nbv = def.filter(d => !d.masque).length, resume = !e.contre_verif ? tt('Ancienne analyse : refais l’examen', 'Old analysis: check again') : [nbv ? nbv + ' ' + tt(nbv > 1 ? 'défauts vus' : 'défaut vu', nbv > 1 ? 'flaws seen' : 'flaw seen') : tt('aucun défaut visible', 'no visible flaw'),
       cent ? tt('centrage ', 'centering ') + cent.split(' · ')[0] : ''].filter(Boolean).join(' · ');
     z.innerHTML = `<div class="et ${ouvert ? 'ouvert' : ''}">
       <button class="fc-alerte et-tete" id="fc-et-t" aria-expanded="${ouvert}"><span class="fc-al-ic et-anneau ${cl}"><b>${fourch}</b></span>
