@@ -413,7 +413,7 @@ def _noter_erreur(q, err):
     _DERNIERE.update(erreur=err, le=time.time())
 
 
-def archives(cib, jours=365, max_=400):
+def archives(cib, jours=365, max_=400, ignorer=()):
     """7 nov 2026 (Mathieu : une Nazar Future Watch Auto Inscribed « aucune vente trouvee », 130point en a 6 : eBay et
     SoldComps ne montrent que les 90 derniers jours de ventes) : les ventes de la MEME carte gardees dans nos archives
     (base_ventes : chaque recherche y depose toutes ses ventes), jusqu'a un an. Rien n'est appele : aucun credit."""
@@ -440,13 +440,58 @@ def archives(cib, jours=365, max_=400):
     out, vus = [], set()
     for t, p, le, ph, u, of in l:
         k = u or f"{t}|{le}|{p}"
-        if k in vus or not p or cartes_match.raisons_refus(cib, t or ""):
+        if k in vus or not p or [x for x in cartes_match.raisons_refus(cib, t or "") if x not in ignorer]:
             continue
         vus.add(k)
         out.append({"titre": t, "prix": p, "le": le, "photo": ph, "url": u, "offre": bool(of), "source": "archives"})
         if len(out) >= max_:
             break
     return out
+
+
+# 8 nov 2026 (Mathieu, une analyse de Sports Card Investor : « up 53 % en PSA 9, 41 % en PSA 8 ») : la MEME carte, chaque
+# gradation a part (brute, PSA 10, PSA 9...), pour la courbe de variation en % de la fiche
+_GRADES = ("gradée", "pas gradée", "autre gradation")
+
+
+def par_gradation(texte, requete=True, fond=False, jours=365):
+    """-> {ok, series: [{cle, nom, n, points: [[date, prix]], derniere: {prix, le}}], carte}. Une recherche SoldComps (cache
+    partage), plus nos archives (jusqu'a un an). Les 4 gradations les plus vendues (3 ventes au moins chacune)."""
+    import cartes_match
+    cib = cartes_match.cible(texte) if requete else cartes_match.cible_titre(texte)
+    if cib.get("exclu") or not (cib.get("joueur") or cib.get("mots")):
+        return {"ok": False, "erreur": "Carte pas reconnue"}
+    c0 = dict(cib, grade=None, veut_grade=False)
+    q = cartes_match.requete_ebay(c0) or texte
+    r = rechercher(q, fond=fond) if q else {"ventes": []}
+    l = [v for v in r.get("ventes") or [] if v.get("prix") and not [x for x in cartes_match.raisons_refus(c0, v.get("titre") or "") if x not in _GRADES]]
+    l += archives(c0, jours=jours, max_=600, ignorer=_GRADES)
+    groupes, vus = {}, set()
+    for v in l:
+        k = v.get("url") or f"{v.get('titre')}|{v.get('le')}|{v.get('prix')}"
+        if k in vus or not v.get("le") or cartes_match.abimee(v.get("titre") or ""):
+            continue
+        vus.add(k)
+        g = cartes_match.decoder(v.get("titre") or "").get("grade")
+        if g and not g.get("note"):
+            continue                                     # « PSA » sans note : on ne sait pas laquelle
+        cle = f"{g['cie']} {g['note']}" if g else "brute"
+        groupes.setdefault(cle, []).append([str(v["le"])[:10], round(float(v["prix"]), 2)])
+    nom = lambda k: "Brute" if k == "brute" else k.upper().replace("BECKETT", "BGS")
+    def rang(k):
+        if k == "brute":
+            return (0, 0)
+        try:
+            return (1, -float(k.split()[-1]))
+        except ValueError:
+            return (2, 0)
+    gs = sorted(((k, v) for k, v in groupes.items() if len(v) >= 3), key=lambda kv: -len(kv[1]))[:4]
+    series = []
+    for k, pts in sorted(gs, key=lambda kv: rang(kv[0])):
+        pts.sort(key=lambda p: p[0])
+        series.append({"cle": k, "nom": nom(k), "n": len(pts), "points": pts[-300:], "derniere": {"prix": pts[-1][1], "le": pts[-1][0]}})
+    return {"ok": True, "series": series, "carte": cartes_match.resume(c0),
+            "erreur": r.get("erreur")}
 
 
 def memes(texte, requete=True, n=24, fond=False, exclure_titre=None):
@@ -513,6 +558,41 @@ def memes_annonce(titre, q=None, n=24, fond=False):
         except Exception:
             pass
     return memes(titre, requete=False, n=n, fond=fond)
+
+
+def memes_cache(titre, q=None, n=16, age_max=14 * 86400):
+    """8 nov 2026 (Mathieu : « accelerer la vitesse a laquelle on voit les comps ») : les ventes de la MEME carte deja connues,
+    SANS aucun appel (le cache des recherches, souvent rempli par le chasseur de deals, et nos archives) : la fiche les
+    montre tout de suite, pendant que la vraie recherche se fait. -> {ventes, mediane, nb} (ventes vides si rien)."""
+    import cartes_match
+    cib = cartes_match.cible_titre(titre)
+    if cib.get("exclu") or not cib.get("joueur"):
+        return {"ventes": [], "nb": 0}
+    qs = []
+    if q:
+        qs.append(cartes_match.requete_ebay(cartes_match.cible(q)) or q)
+    qs.append(cartes_match.requete_ebay(cib))
+    l, vus = [], set()
+    for qq in qs:
+        qq = " ".join(str(qq or "").split())[:120].lower()
+        for v in (_cache_lire(qq, age_max=age_max) if qq else None) or []:
+            k = v.get("url") or f"{v.get('titre')}|{v.get('le')}|{v.get('prix')}"
+            if v.get("prix") and k not in vus and not cartes_match.raisons_refus(cib, v.get("titre") or ""):
+                vus.add(k)
+                l.append(v)
+    for v in archives(cib, jours=120, max_=60):
+        k = v.get("url") or f"{v.get('titre')}|{v.get('le')}|{v.get('prix')}"
+        if k not in vus:
+            vus.add(k)
+            l.append(v)
+    l = _sans_aberrants(l)
+    l.sort(key=lambda v: str(v.get("le") or ""), reverse=True)
+    if not l:
+        return {"ventes": [], "nb": 0}
+    prix = [v["prix"] for v in l]
+    med = cartes_match.mediane_robuste(prix)[0] if len(prix) >= 4 else round(statistics.median(prix), 2)
+    return {"ventes": l[:n], "mediane": med, "nb": len(l), "derniere": l[0].get("le"), "provisoire": True,
+            "points": [[v.get("le"), v["prix"]] for v in l[:200] if v.get("le")]}
 
 
 def autres_saisons(titre, fond=False, extra=None):

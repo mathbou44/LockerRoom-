@@ -318,7 +318,7 @@ def code_creer(compte_id, ttl=600):
 def code_utiliser(code):
     import time
     code = re.sub(r"\D", "", str(code or ""))
-    if len(code) not in (6, 8):                       # 6 : un code demande avant la mise a jour (10 min au plus)
+    if len(code) != 8:                                # 8 nov 2026 : les vieux codes a 6 chiffres (avant le 3 nov) ne passent plus
         return None
     with _verrou:
         try:

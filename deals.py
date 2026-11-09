@@ -2159,8 +2159,9 @@ BALAYAGE_ASPECT = "Sport:{Ice Hockey}"
 # 8 nov 2026 (Mathieu : « on devrait l'avoir cette carte », une Poitras Future Watch Auto Inscribed /999 a 19 h de la fin,
 # 15 mises) : les 1 000 encans hockey qui finissent le plus tot ne couvrent que quelques heures (des milliers de cartes a 1 $).
 # Un 2e passage, les encans dont la mise est deja de 30 $ et plus, couvre les 24 h entieres (les cartes qui comptent)
-BALAYAGE_PRIX_MIN = 30
-BALAYAGE_PAGES_GROS = 5
+# 8 nov 2026 (une Martone Young Guns finie a 28 $, 2 mises, pas vue) : 15 $ et plus, jusqu'a 10 pages (2 000 encans)
+BALAYAGE_PRIX_MIN = 15
+BALAYAGE_PAGES_GROS = 10
 
 
 def petit_ou_moyen(a):

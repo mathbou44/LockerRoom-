@@ -100,10 +100,41 @@ def budget_ok(api, fond=True):
     return True
 
 
+# 8 nov 2026 (2e revue de securite, OWASP API4 « consommation sans limite ») : les recherches eBay sont PARTAGEES par tous
+# les comptes (5 000 par jour). Un seul compte (un script qui ouvre des milliers de fiches) pouvait les vider et arreter les
+# deals de tout le monde. Chaque compte a maintenant sa part des gestes : 25 % de la limite du jour (LR_EBAY_PART_COMPTE).
+_PAR_COMPTE = {}
+
+
+def _part_compte_ok(api):
+    try:
+        import comptes
+        cid = comptes.courant() if comptes.MULTI else None
+    except Exception:
+        cid = None
+    if not cid:
+        return True
+    try:
+        part = float(os.environ.get("LR_EBAY_PART_COMPTE") or 25) / 100
+    except ValueError:
+        part = 0.25
+    jour = time.strftime("%Y-%m-%d")
+    with _verrou:
+        for k in [k for k in _PAR_COMPTE if k[0] != jour]:
+            _PAR_COMPTE.pop(k, None)
+        k = (jour, cid, api)
+        if _PAR_COMPTE.get(k, 0) >= max(50, int(limite(api) * part)):
+            return False
+        _PAR_COMPTE[k] = _PAR_COMPTE.get(k, 0) + 1
+    return True
+
+
 def exiger(api, fond=True):
     if not budget_ok(api, fond):
         raise RuntimeError("Limite quotidienne d'appels eBay presque atteinte : reprise automatique demain"
                            if fond else "Limite quotidienne d'appels eBay atteinte : réessaie demain")
+    if not fond and api == "browse" and not _part_compte_ok(api):
+        raise RuntimeError("Ton compte a fait beaucoup de recherches eBay aujourd'hui : réessaie demain")
 
 
 def resume():

@@ -109,19 +109,91 @@ def _compresser(rep):
 CSP = ("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
        "font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https: http:; media-src 'self' data: blob:; "
        "connect-src 'self' data: blob:; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self'; "
-       "frame-ancestors 'self'")
+       "frame-ancestors 'self'; form-action 'self'")       # 8 nov 2026 : un formulaire injecte ne peut rien envoyer ailleurs
+
+
+# 8 nov 2026 (Mathieu : « le CSP, si ca vaut la peine, go » ; 2e revue de securite) : plus de « unsafe-inline » pour les
+# scripts. Seuls passent les scripts de NOS pages, reconnus par leur empreinte (sha256 de chaque <script> du fichier) : un
+# script injecte par une faille d'affichage (titre d'annonce, nom...) ne s'execute plus, meme dans l'app iPhone. Les
+# attributs onclick / onerror sont aussi bloques (l'app n'en a plus : data-act / data-oe). Les violations sont notees
+# (/csp-rapport) pour l'admin. LR_CSP_SOUPLE=1 remet l'ancienne regle d'un geste si une page casse.
+import base64 as _b64  # noqa: E402
+import hashlib as _hl  # noqa: E402
+import re as _re  # noqa: E402
+_RE_SCRIPT = _re.compile(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>", _re.S | _re.I)
+_EMPREINTES = {"mt": None, "h": set()}
+
+
+def _empreintes_texte(html):
+    return {"'sha256-" + _b64.b64encode(_hl.sha256(m.encode("utf-8")).digest()).decode() + "'" for m in _RE_SCRIPT.findall(html or "")}
+
+
+def _empreintes_ui():
+    """Les scripts des pages de ui/ (app.html, break.html, connexion.html...), relues si un fichier change."""
+    try:
+        fs = sorted(f for f in os.listdir(DOSSIER_UI) if f.endswith(".html"))
+        mt = tuple(os.path.getmtime(os.path.join(DOSSIER_UI, f)) for f in fs)
+    except OSError:
+        return _EMPREINTES["h"]
+    if _EMPREINTES["mt"] != mt:
+        h = set()
+        for f in fs:
+            try:
+                with open(os.path.join(DOSSIER_UI, f), encoding="utf-8") as fo:
+                    h |= _empreintes_texte(fo.read())
+            except OSError:
+                pass
+        _EMPREINTES.update(mt=mt, h=h)
+    return _EMPREINTES["h"]
+
+
+def _csp(rep):
+    if os.environ.get("LR_CSP"):
+        return os.environ["LR_CSP"]
+    if os.environ.get("LR_CSP_SOUPLE") == "1":
+        return CSP
+    h = set(_empreintes_ui())
+    if (rep.mimetype or "") == "text/html" and not rep.direct_passthrough and "Content-Encoding" not in rep.headers:
+        try:
+            h |= _empreintes_texte(rep.get_data(as_text=True))          # pages faites par le serveur (retours de connexion)
+        except Exception:
+            pass
+    return CSP.replace("script-src 'self' 'unsafe-inline'", "script-src 'self' " + " ".join(sorted(h))) + "; report-uri /csp-rapport"
+
+
+@app.route("/csp-rapport", methods=["POST"])
+def csp_rapport():
+    """Le navigateur signale ce que la CSP a bloque : note dans les erreurs de l'admin (sans donnees du compte)."""
+    if not _rythme_ok("csp"):
+        return ("", 204)
+    try:
+        d = (request.get_json(force=True, silent=True) or {}).get("csp-report") or {}
+        import admin
+        admin.noter_erreur("csp", RuntimeError(f"{d.get('violated-directive') or d.get('effective-directive')} : "
+                                               f"{str(d.get('blocked-uri') or '')[:80]} @ {str(d.get('document-uri') or '').split('?')[0][-60:]}"
+                                               f" l.{d.get('line-number')}"))
+    except Exception:
+        pass
+    return ("", 204)
 
 
 @app.after_request
 def _entetes_securite(rep):
     h = rep.headers
-    h.setdefault("Content-Security-Policy", os.environ.get("LR_CSP") or CSP)
+    h.setdefault("Content-Security-Policy", _csp(rep))
     h.setdefault("X-Content-Type-Options", "nosniff")
     h.setdefault("X-Frame-Options", "SAMEORIGIN")
     h.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
     h.setdefault("Permissions-Policy", "geolocation=(), microphone=(), payment=()")
     if HEBERGE:
         h.setdefault("Strict-Transport-Security", "max-age=31536000")
+    # 8 nov 2026 (2e revue de securite) : les reponses de l'API et des pages de connexion contiennent des donnees du compte :
+    # jamais gardees par un cache (proxy, navigateur partage, appareil prete)
+    if request.path.startswith(("/api/", "/auth/", "/connexion", "/deconnexion", "/mes-photos/")) and request.path != "/api/b/":
+        if request.path.startswith("/mes-photos/"):
+            h["Cache-Control"] = "private, max-age=2592000"
+        else:
+            h["Cache-Control"] = "no-store"
     return rep
 
 
@@ -139,7 +211,7 @@ app.config["MAX_CONTENT_LENGTH"] = 64 * 1024 * 1024        # 5 nov 2026 : photos
 #        # 23 oct 2026 - 2 photos ; 3 nov 2026 : + rasantes et 8 gros plans des coins
 # pages qui restent publiques : break partage, retour et avis eBay, pages legales, icones
 _PUBLIQUES = ("/b/", "/api/b/", "/api/ebay_retour", "/ebay/suppression-compte", "/confidentialite", "/conditions",
-              "/support", "/robots.txt", "/sitemap.xml", "/logo_sc_", "/syne-800.woff2", "/manrope-", "/barlow-", "/connexion", "/icone", "/favicon", "/manifest.json", "/stripe/webhook", "/apple/notifications", "/sante")
+              "/support", "/robots.txt", "/sitemap.xml", "/logo_sc_", "/syne-800.woff2", "/manrope-", "/barlow-", "/connexion", "/icone", "/favicon", "/manifest.json", "/stripe/webhook", "/apple/notifications", "/sante", "/csp-rapport")
 
 
 import comptes  # noqa: E402
@@ -163,7 +235,7 @@ def _ouvrir_session(cid, garder_ok=False):
 
 # 3 nov 2026 (revue de securite) : les formulaires POST de connexion n'acceptent que notre propre site (pas de « login CSRF »
 # depuis un autre site) ; les retours des fournisseurs (Apple poste depuis son site) et les avis signes sont exemptes.
-_POST_EXEMPTES = ("/auth/apple/retour", "/auth/google/retour", "/stripe/webhook", "/apple/notifications", "/ebay/suppression-compte", "/api/")
+_POST_EXEMPTES = ("/auth/apple/retour", "/auth/google/retour", "/stripe/webhook", "/apple/notifications", "/ebay/suppression-compte", "/api/", "/csp-rapport")
 
 
 def _meme_site():
@@ -999,6 +1071,41 @@ _ECRITURES_EBAY = {"ebay_publier", "annonce_publier", "ebay_changer_prix", "ebay
                    "cartes_retirer"}
 
 
+# 8 nov 2026 (Mathieu : « je veux que l'app soit ultra securisee ») : un rythme maximum par compte (et par adresse sans
+# compte) sur l'API : un script ou un compte vole ne peut pas marteler le serveur, vider les quotas partages (eBay,
+# SoldComps, IA) ni ralentir les autres. Les gestes couteux ont leur propre plafond, plus bas. Bien au-dessus d'un usage
+# normal (l'ouverture de l'app fait une trentaine d'appels).
+_RYTHME_MAX = int(os.environ.get("LR_API_PAR_MIN") or 300)
+_RYTHME_LOURD_MAX = int(os.environ.get("LR_API_LOURD_PAR_MIN") or 40)
+_LOURDS = {"photo_identifier", "annonce_detail", "valeur_carte", "carte_gradations", "annonce_preparer", "carte_comps", "joueur_fiche",
+           "deals_pourquoi", "ebay_publier", "annonce_publier", "cartes_retirer", "serie_programmer", "ebay_prix_lot", "offres_envoyer",
+           "carte_photos_studio", "carte_etat", "demande_envoyer", "code_appareil", "ebay_jeton_lier", "connexion_jeton_lier"}
+_RYTHME = {}
+_RYTHME_VERROU = threading.Lock()
+
+
+def _rythme_ok(nom):
+    import collections
+    qui = comptes.courant() or ("ip:" + _ip())
+    m = time.time()
+    with _RYTHME_VERROU:
+        if len(_RYTHME) > 20000:                               # menage : les cles silencieuses depuis 2 min
+            for k in [k for k, q in _RYTHME.items() if not q or m - q[-1] > 120]:
+                _RYTHME.pop(k, None)
+        ok = True
+        for k, lim in (((qui, "*"), _RYTHME_MAX),) + ((((qui, "lourd"), _RYTHME_LOURD_MAX),) if nom in _LOURDS else ()):
+            q = _RYTHME.setdefault(k, collections.deque())
+            while q and m - q[0] > 60:
+                q.popleft()
+            if len(q) >= lim:
+                ok = False
+        if ok:
+            _RYTHME[(qui, "*")].append(m)
+            if nom in _LOURDS:
+                _RYTHME[(qui, "lourd")].append(m)
+    return ok
+
+
 def _hote_local_ok():
     """3 nov 2026 (revue de securite) : sur le PC, l'API ne repond qu'a une adresse de la machine ou du reseau local
     (contre le « DNS rebinding » : un site qui se fait passer pour 127.0.0.1)."""
@@ -1036,6 +1143,8 @@ def dispatcher(nom):
     m = getattr(api, nom, None)
     if m is None or not callable(m):
         return jsonify({"erreur": f"méthode inconnue : {nom}"}), 404
+    if comptes.MULTI and not _rythme_ok(nom):
+        return jsonify({"erreur": "Trop de demandes d’un coup : attends une minute"}), 429
     args = request.get_json(silent=True)
     if args is None:
         args = []

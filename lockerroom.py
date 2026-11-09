@@ -402,6 +402,9 @@ def effacer_compte(cid):
 AFFICHER_APRES_J = 90                  # 5 nov 2026 : en stock depuis plus de 3 mois -> « A mettre sur eBay »
 
 
+RABAIS_ANNONCES = 0.10          # 8 nov 2026 : sans vente, le prix suggere = la mediane des annonces pareilles moins 10 %
+
+
 class Api:
     def __init__(self, chemin_db=None):
         self._chemin_fixe = chemin_db            # tests : base imposee
@@ -1110,6 +1113,80 @@ class Api:
                 "a_ajouter": len(nouveaux_produits.liste()), "erreurs_24h": sum(1 for e in s["erreurs"] if str(e["le"]) > (datetime.now() - timedelta(days=1)).isoformat()),
                 "ebay": s["ebay"], "version": s["version"], "vendues": vendues.statut(), "photos": s.get("photos"),
                 "taches": s.get("taches"), "disque": s.get("disque")}
+
+    def deals_pourquoi(self, lien, titre=None, prix=None):
+        """8 nov 2026 (Mathieu : « on aurait du capter ca », une Martone Young Guns vendue 28 $) : POURQUOI une annonce n'est
+        pas sortie dans les deals, etape par etape (admin). lien = lien ou numero eBay ; une annonce terminee ne se relit plus
+        chez eBay : son titre et son prix suffisent (titre, prix). Ventes : le cache, sinon UNE recherche (geste de l'admin).
+        -> {ok, etapes: [{ok, quoi, detail}], verdict}"""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import cartes_match
+        import deals as _d
+        import re as _re
+        et = []
+        add = lambda ok, quoi, det="": et.append({"ok": ok, "quoi": quoi, "detail": det})
+        m = _re.search(r"(?<!\d)(\d{9,15})(?!\d)", str(lien or ""))
+        a = None
+        if m:
+            try:
+                a = ebay_compte.article(m.group(1), fond=False, frais=True)
+            except Exception as e:
+                add(None, "Annonce eBay", "pas relue (" + str(e)[:80] + ") : terminée ? Le titre et le prix tapés servent")
+        if a is None:
+            if not titre:
+                return {"ok": False, "erreur": "Annonce terminée ou introuvable : entre aussi son titre et son prix"}
+            a = {"titre": titre, "prix_cad": _float(prix) or 0, "port_cad": None, "encan": True, "item_id": m.group(1) if m else ""}
+        t = a.get("titre") or ""
+        total = _d._total(a)
+        maint = datetime.now(timezone.utc)
+        if a.get("vendeur") is not None and a.get("fin"):
+            add(True, "Annonce", f"{'encan' if a.get('encan') else 'prix fixe'} · {a.get('mises') or 0} mise(s) · {round(total or 0, 2)} $ port compris · vendeur {a.get('vendeur')} ({a.get('vendeur_score')})")
+            if a.get("encan"):
+                ok = _d.encan_admis(a, maint)
+                add(ok, "Fenêtre des encans", "dans la fenêtre (24 h et au moins 1 mise ; 5 j chez Savage, Remi, CF31)" if ok else
+                    "hors fenêtre : finie, plus de 24 h avant la fin, ou aucune mise")
+            pm = _d.petit_ou_moyen(a)
+            add(pm, "Balayage des petits vendeurs", "petit ou moyen vendeur : balayé" if pm else "très gros vendeur : pas dans le balayage (seulement les recherches de cartes)")
+            if a.get("encan") and total:
+                add(None, "Couverture", ("encans hockey de " + str(_d.BALAYAGE_PRIX_MIN) + " $ et plus : couverts sur 24 h") if total >= _d.BALAYAGE_PRIX_MIN
+                    else "mise sous " + str(_d.BALAYAGE_PRIX_MIN) + " $ : vue seulement dans les dernières heures (les milliers d'encans à 1 $ passent avant)")
+            if _d.vendeur_risque(a):
+                add(False, "Vendeur", "écarté : vendeur à risque (peu d'évaluations ou trop de négatives)")
+        cib = cartes_match.cible_titre(t)
+        if cib.get("exclu") or not cib.get("joueur"):
+            add(False, "Carte reconnue", "lot ou joueur non reconnu dans le titre")
+            return {"ok": True, "etapes": et, "verdict": "Pas jugée : le titre ne dit pas assez quelle carte c'est.", "titre": t}
+        add(not cartes_match.abimee(t), "Carte reconnue", f"{cib.get('joueur')} · recherche « {cartes_match.requete_ebay(cib)} »" + (" · ABÎMÉE : écartée" if cartes_match.abimee(t) else ""))
+        ventes = []
+        try:
+            vs = vendues.memes(t, requete=False, fond=False)
+            ventes = [v for v in vs.get("ventes") or [] if v.get("prix")]
+            if vs.get("erreur"):
+                add(None, "Ventes (SoldComps)", str(vs["erreur"]))
+        except Exception as e:
+            add(None, "Ventes (SoldComps)", str(e)[:100])
+        try:
+            cand = _d.bassin_partage().candidats(cib)
+        except Exception:
+            cand = []
+        va = _d.valeur_ou_saison(a, ventes + cand, [], cib=cib)
+        memes = _d.memes_ventes(cib, ventes + cand)
+        if not va:
+            add(False, "Valeur", f"aucune valeur sûre : {len(memes)} vente(s) de la même carte (il en faut 3, ou 2 pour un hit ancien)")
+            return {"ok": True, "etapes": et, "verdict": "Pas un deal : pas assez de ventes de cette carte pour une valeur sûre.", "titre": t}
+        v, src, n = va[0], va[1], va[2]
+        add(True, "Valeur", f"{round(v)} $ · {n} vente(s) · source {src}")
+        tx = _d.taxe_de(a)
+        pmx = _d.prix_max(v, taxe=tx)
+        port = a.get("port_cad")
+        mise_max = round(pmx - _d.port_eff(port), 2)
+        mise = round((total or 0) - (port or 0), 2)
+        okp = bool(total) and total <= pmx
+        add(okp, "Prix", f"{'mise' if a.get('encan') else 'prix'} {mise} $ · mise max {mise_max} $ (30 % et 15 $ de profit au moins, taxes {round(tx * 100)} % et port compris)")
+        verdict = ("C'est un deal à ce prix : il aurait dû sortir si l'annonce était dans la fenêtre et balayée." if okp
+                   else f"Pas un deal à ce prix : il fallait {mise_max} $ ou moins (la carte vaut environ {round(v)} $).")
+        return {"ok": True, "etapes": et, "verdict": verdict, "titre": t, "valeur": v, "mise_max": mise_max}
 
     def admin_abonnes(self):
         if not self._est_admin():
@@ -4292,16 +4369,24 @@ class Api:
             try:
                 import vendues
                 vs = vendues.memes(titre, requete=False, fond=False, n=24)
-                ventes = [v for v in vs.get("ventes") or [] if v.get("prix")]
+                brutes = [v for v in vs.get("ventes") or [] if v.get("prix")]
+                # 8 nov 2026 (Mathieu : « le 25 $ de ma Anders Lee, c'est MA carte ») : jamais tes propres achats eBay (ni la
+                # vente au prix paye pour cette carte), et les 90 derniers jours seulement, comme la valeur de l'inventaire
+                try:
+                    carte_i = self.carte_lire(int(c["id"])) if str(c.get("id") or "").isdigit() else None
+                except Exception:
+                    carte_i = None
+                ventes = self._ventes_inventaire(brutes, carte_i or None)
                 vendues_l = [{"titre": v.get("titre"), "prix": v.get("prix"), "le": v.get("le"), "url": v.get("url"), "photo": v.get("photo")} for v in ventes[:10]]
-                base = vs.get("mediane") or (cartes_match.mediane_robuste([v["prix"] for v in ventes[:5]])[0] if ventes else None)
+                sure = len(ventes) >= 3 and len(ventes) == len(brutes) and bool(vs.get("mediane"))
+                base = (vs.get("mediane") if sure else None) or (cartes_match.mediane_robuste([v["prix"] for v in ventes[:5]])[0] if ventes else None)
                 if ventes:
-                    vendu = {"mediane": round(base, 2) if base else None, "n": len(ventes), "sure": bool(vs.get("mediane"))}
+                    vendu = {"mediane": round(base, 2) if base else None, "n": len(ventes), "sure": sure}
                 if base:
                     m_ = sante.prix_rond(base)
                     prix = {"marche": m_, "vite": max(5.0, sante.prix_rond(base * 0.90, plafond=m_)), "haut": max(m_ + 5, sante.prix_rond(base * 1.10)),
                             "mediane": round(base, 2), "bas": min(v["prix"] for v in ventes[:12]), "max": max(v["prix"] for v in ventes[:12])}
-                    n, source = len(ventes), ("vendues" if vs.get("mediane") else "vendues_peu")
+                    n, source = len(ventes), ("vendues" if sure else "vendues_peu")
             except Exception as e:
                 note = str(e)[:120]
         if titre:
@@ -4314,10 +4399,13 @@ class Api:
                 if med:
                     affiche = {"mediane": round(med, 2), "bas": round(min(tot), 2), "n": len(tot)}
                 if med and not prix:                    # aucune vente : les memes cartes en vente
+                    # 8 nov 2026 (Mathieu : « si aucun autre comp, mettre 10 % moins cher que la mediane des memes cartes
+                    # affichees ») : les annonces demandent souvent trop ; le marche = leur mediane moins 10 %
                     n = len(garde)
-                    m_ = sante.prix_rond(med)
-                    prix = {"marche": m_, "vite": max(5.0, sante.prix_rond(med * 0.90, plafond=m_)), "haut": max(m_ + 5, sante.prix_rond(med * 1.10)),
-                            "mediane": med, "bas": garde[0], "max": garde[-1]}
+                    b_ = round(med * (1 - RABAIS_ANNONCES), 2)
+                    m_ = sante.prix_rond(b_)
+                    prix = {"marche": m_, "vite": max(5.0, sante.prix_rond(b_ * 0.90, plafond=m_)), "haut": max(m_ + 5, sante.prix_rond(b_ * 1.10)),
+                            "mediane": b_, "bas": garde[0], "max": garde[-1], "annonces_mediane": round(med, 2)}
                     source = "annonces"
                 comps = sorted(({"titre": x["titre"], "total": round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2),
                                  "photo": x.get("photo"), "url": x.get("url")} for x in gardees if x.get("prix_cad")),
@@ -6397,7 +6485,9 @@ class Api:
         # 25 oct 2026 (Mathieu : « montre les last sold comps avec leurs photos aussi et le prix suggere »)
         try:
             if rapide:
-                vc = {"ventes": [], "attente": True}
+                # 8 nov 2026 (« accelerer la vitesse a laquelle on voit les comps ») : les ventes deja connues tout de suite
+                # (cache et archives, aucun appel) ; la recherche fraiche suit et les remplace
+                vc = dict(vendues.memes_cache(t, q=q) if t else {"ventes": []}, attente=True)
             else:                                          # 26 oct 2026 : les ventes de CETTE carte (pas de toute la recherche)
                 vc = vendues.memes_annonce(t, q=q, n=16) if t else {"ventes": []}
         except Exception:
@@ -6632,6 +6722,16 @@ class Api:
                                              for a in achats if a.get("valeur") or a.get("prix_demande")), 2)},
                 "cles": ebay_compte.statut().get("cles_ok"), "ebay": ebay_compte.statut().get("connecte"),
                 "nom_boutique": r["nom_boutique"], "actions": self._actions_envois()}
+
+    def carte_gradations(self, texte, requete=True):
+        """8 nov 2026 : la variation de prix en % de la MEME carte, par gradation (brute, PSA 10, 9, 8...), pour la fiche."""
+        texte = re.sub(r"\s+", " ", str(texte or "")).strip()[:200]
+        if len(texte) < 3:
+            return {"ok": False, "erreur": "Carte inconnue"}
+        try:
+            return vendues.par_gradation(texte, requete=bool(requete), fond=False)
+        except Exception as e:
+            return {"ok": False, "erreur": type(e).__name__}
 
     def valeur_carte(self, q):
         """« Combien vaut cette carte ? » : annonces actives a prix fixe (eBay Browse, cache partage).
