@@ -792,7 +792,7 @@ def _noter_observations(f, centrage=None, calibration=None, quads=None, langue="
         grav = "a verifier" if inc(o) else "leger" if note_ >= 9 else "moyen" if note_ >= 7 else "fort"
         quoi = str(o.get("pourquoi") or "").strip()[:90]
         defauts.append({"photo": 1 if o.get("photo") == 1 else 0, "zone": zone, "type": type_, "gravite": grav, "x": x, "y": y,
-                        "note": note_, "pourquoi": (quoi + " · " if quoi else "") + f"{lib} : PSA {str(note_).replace('.0', '')}"})
+                        "note": note_, "pourquoi": (quoi + " · " if quoi else "") + f"{lib} : {str(note_).replace('.0', '')}/10"})
     uv_coin = {"haut-gauche": (0.02, 0.02), "haut-droit": (0.98, 0.02), "bas-droit": (0.98, 0.98), "bas-gauche": (0.02, 0.98)}
     for (ph, c), o in coins.items():
         n_ = _bar.ETATS_COIN[o["etat"]][0]
@@ -831,10 +831,10 @@ def _noter_observations(f, centrage=None, calibration=None, quads=None, langue="
             continue
         nets = sum(1 for o in obs.values() if o["etat"] == "net")
         mal = sorted(((ph, z, o) for (ph, z), o in obs.items() if o["etat"] != "net"), key=lambda t: etats[t[2]["etat"]][0])
-        regle = {"coins": {9: "PSA 9 : un tout petit défaut", 8.5: "2-3 points blancs", 8: "PSA 8 : léger effilochage à 1-2 coins",
-                           7: "PSA 7 : effilochage à quelques coins", 6: "PSA 6", 5: "PSA 5 : coin légèrement arrondi", 4: "PSA 4 : coin arrondi", 3: "PSA 3 : coin plié"},
-                 "bords": {9: "PSA 9 : de fins points sur un seul bord", 8.5: "points sur 2 bords", 8: "PSA 8 : quelques points blancs", 7.5: "usure sur plusieurs bords",
-                           7: "PSA 7 : légère usure", 6: "PSA 6 : petite encoche", 5: "PSA 5 : ébréchures", 4: "PSA 4 : usure nette"}}[k]
+        regle = {"coins": {9: "9 : un tout petit défaut", 8.5: "2-3 points blancs", 8: "8 : léger effilochage à 1-2 coins",
+                           7: "7 : effilochage à quelques coins", 6: "6/10", 5: "5 : coin légèrement arrondi", 4: "4 : coin arrondi", 3: "3 : coin plié"},
+                 "bords": {9: "9 : de fins points sur un seul bord", 8.5: "points sur 2 bords", 8: "8 : quelques points blancs", 7.5: "usure sur plusieurs bords",
+                           7: "7 : légère usure", 6: "6 : petite encoche", 5: "5 : ébréchures", 4: "4 : usure nette"}}[k]
         if not mal:
             explications[k] = f"{tot} {nomk}s regardés au zoom : tous nets"
             continue
@@ -842,7 +842,7 @@ def _noter_observations(f, centrage=None, calibration=None, quads=None, langue="
                  + (f" [{num_de(nomk + ' ' + z, ph)}]" if num_de(nomk + " " + z, ph) else "") for ph, z, o in mal[:3]]
         t = f"{nets}/{len(obs)} nets · " + " ; ".join(parts)
         if hi.get(k) is not None and hi[k] < 10:
-            t += f" → {regle.get(hi[k], 'PSA ' + fr(hi[k]))}"
+            t += f" → {regle.get(hi[k], fr(hi[k]) + '/10')}"
         if lo.get(k) is not None and hi.get(k) is not None and lo[k] < hi[k]:
             t += f" (→ {fr(lo[k])} si les points à vérifier se confirment)"
         explications[k] = t
@@ -850,7 +850,7 @@ def _noter_observations(f, centrage=None, calibration=None, quads=None, langue="
         if surf:
             parts = [f"{face_(1 if o.get('photo') == 1 else 0)}{o['type']} " + {"rasante": "(lumière rasante seulement)", "de_pres": "(visible de près)", "visible": "(visible)"}.get(o.get("visibilite"), "")
                      + (" (à vérifier)" if inc(o) else "") for o in surf[:3]]
-            explications["surface"] = " ; ".join(parts) + (f" → PSA {fr(hi['surface'])}" if hi.get("surface") is not None and hi["surface"] < 10 else "")
+            explications["surface"] = " ; ".join(parts) + (f" → {fr(hi['surface'])}/10" if hi.get("surface") is not None and hi["surface"] < 10 else "")
         else:
             explications["surface"] = "carton imprimé propre : aucune rayure, tache ni pli vus"
     if hi["centrage"] is not None:
@@ -862,7 +862,7 @@ def _noter_observations(f, centrage=None, calibration=None, quads=None, langue="
             bouts.append(f"H/B {ch}" + (f" ({nomr['hb0']})" if nomr.get("hb0") else ""))
         if cd:
             bouts.append(f"dos {cd}")
-        lim = {10: "PSA 10 jusqu’à 55/45", 9: "PSA 9 jusqu’à 60/40", 8: "PSA 8 jusqu’à 65/35", 7: "PSA 7 jusqu’à 70/30", 6: "PSA 6 jusqu’à 80/20"}.get(int(hi["centrage"]), f"PSA {fr(hi['centrage'])}")
+        lim = {10: "10 jusqu’à 55/45", 9: "9 jusqu’à 60/40", 8: "8 jusqu’à 65/35", 7: "7 jusqu’à 70/30", 6: "6 jusqu’à 80/20"}.get(int(hi["centrage"]), f"{fr(hi['centrage'])}/10")
         explications["centrage"] = ("mesuré par l’app : " if mesure else "mesuré sur la règle : ") + " · ".join(bouts) + f" → {lim}"
     elif not (cg or ch):
         explications["centrage"] = "aucun repère symétrique sur cette carte : pas compté dans la note"

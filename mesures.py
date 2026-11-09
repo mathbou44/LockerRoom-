@@ -199,10 +199,73 @@ def centrage(carte):
         return None
     a = _arr(carte)
     gd = _axe(a)
+    if not gd:
+        try:
+            gd = symetrie_gd(carte)
+        except Exception:
+            gd = None
     hb = _axe(np.ascontiguousarray(a.transpose(1, 0, 2)))
     if hb:                                                              # l / r de l'axe transpose = haut / bas
         hb["t"], hb["b_"] = hb.pop("l"), hb.pop("r")
     return {"gd": gd, "hb": hb}
+
+
+def symetrie_gd(carte):
+    """9 nov 2026 (Mathieu, la Letang Cosmic : « le centering est offset ; moi je le vois, toi il faut que tu le trouves ») :
+    une carte sans bordure unie (holo, plein cadre) : ni la bordure ni les paires d'elements ne se mesurent. Mais un dessin
+    est presque toujours symetrique gauche / droite : on cherche son AXE (la position ou l'image des contours se superpose le
+    mieux a son miroir), puis le CADRE imprime : la paire de lignes verticales franches, a egale distance de l'axe, la plus
+    nette sur toute la hauteur. Bordure gauche = ligne gauche - arete ; droite = arete - ligne droite.
+    Garde seulement si l'axe est net (bien meilleur que les autres positions) et le cadre franc ; sinon None.
+    Sur les photos de Mathieu : Letang devant 41/59, Hutson devant 50/50 ; les dessins asymetriques (photo du joueur
+    en plein cadre : Willander, Marchand) sont refuses."""
+    if np is None or carte is None:
+        return None
+    W = 400
+    g = np.asarray(carte.convert("L").resize((W, max(40, int(W * carte.height / carte.width)))), dtype=float)
+    H = g.shape[0]
+    gx = np.pad(np.abs(np.diff(g, axis=1)), ((0, 0), (0, 1)))
+    gy = np.pad(np.abs(np.diff(g, axis=0)), ((0, 1), (0, 0)))
+    E = np.sqrt(gx ** 2 + gy ** 2)[int(H * .04):int(H * .96)]
+    E = np.minimum(E, np.percentile(E, 98))
+    res = []
+    for a2 in range(int(W * 0.8), int(W * 1.2) + 1):                  # l'axe x 2 (au demi-pixel)
+        ax = a2 / 2
+        half = int(min(ax, W - ax)) - int(W * 0.02)
+        if half < W * 0.3:
+            continue
+        g0 = int(ax) - half + (0 if a2 % 2 == 0 else 1)
+        L = E[:, g0:g0 + half][:, ::-1]
+        d0 = int(np.ceil(ax))
+        R = E[:, d0:d0 + half]
+        n = min(L.shape[1], R.shape[1])
+        if n < 10:
+            continue
+        sc = float(np.corrcoef(L[:, :n].ravel(), R[:, :n].ravel())[0, 1])
+        res.append((sc, ax))
+    if not res:
+        return None
+    res.sort(reverse=True)
+    sc, ax = res[0]
+    med = float(np.median([r_[0] for r_ in res]))
+    if sc < 0.18 or sc - med < 0.07:
+        return None                                                     # pas de symetrie nette (photo en plein cadre)
+    P = np.convolve(np.median(gx[int(H * .1):int(H * .9)], axis=0), np.ones(3) / 3, "same")
+    xs = np.arange(W)
+    meilleur = None
+    for d in np.arange(W * 0.30, min(ax, W - ax) - W * 0.012, 0.5):
+        v = min(np.interp(ax - d, xs, P), np.interp(ax + d, xs, P))
+        if meilleur is None or v > meilleur[0]:
+            meilleur = (v, d)
+    if not meilleur or meilleur[0] < 8:
+        return None
+    gauche, droite = (ax - meilleur[1]) / W, 1 - (ax + meilleur[1]) / W
+    if gauche <= 0.004 or droite <= 0.004:
+        return None
+    g_ = round(100 * max(gauche, droite) / (gauche + droite))
+    return {"ratio": f"{g_}/{100 - g_}", "a": round(gauche * carte.width), "b": round(droite * carte.width), "paires": 1, "contredit": 0,
+            "fiabilite": "moyenne", "bordure": False, "a_verifier": False, "methode": "symetrie",
+            "reperes": [{"a": round(gauche, 4), "b": round(1 - droite, 4)}], "l": round(gauche, 4), "r": round(1 - droite, 4)}
 
 
 # -- 2. coins et bords : le blanchiment MESURE ---------------------------------------------------------------------------

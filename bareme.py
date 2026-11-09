@@ -85,7 +85,8 @@ def note_coins(etats):
     if n["effilochage"]:
         return 7.0 if n["effilochage"] == 1 else 6.0          # PSA 6 : effilochage progressif a plusieurs coins
     if n["effilochage_leger"]:
-        return 8.0 if n["effilochage_leger"] <= 2 else 7.0 if n["effilochage_leger"] <= 4 else 6.0   # PSA 8 : 1 ou 2 coins ; 7 : quelques coins
+        # PSA 8 : 1 ou 2 coins ; 7 : quelques coins. 9 nov 2026 (Mathieu, la Willander : 3 coins du dos touches -> « 7,5 a 8 ») : 3 coins = 7,5
+        return 8.0 if n["effilochage_leger"] <= 2 else 7.5 if n["effilochage_leger"] == 3 else 7.0 if n["effilochage_leger"] <= 4 else 6.0
     if n["point_blanc"]:
         return 9.0 if n["point_blanc"] == 1 else 8.5 if n["point_blanc"] <= 3 else 8.0
     return 10.0

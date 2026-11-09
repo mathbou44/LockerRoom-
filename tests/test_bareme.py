@@ -8,13 +8,14 @@ assert b.note_coins(["net"] * 8) == 10
 assert b.note_coins(["net"] * 7 + ["point_blanc"]) == 9
 assert b.note_coins(["net"] * 6 + ["point_blanc"] * 2) == 8.5
 assert b.note_coins(["net"] * 6 + ["effilochage_leger"] * 2) == 8          # PSA 8 : un ou deux coins
-assert b.note_coins(["net"] * 5 + ["effilochage_leger"] * 3) == 7          # PSA 7 : quelques coins
+assert b.note_coins(["net"] * 4 + ["effilochage_leger"] * 4) == 7          # PSA 7 : quelques coins
 assert b.note_coins(["net"] * 7 + ["arrondi_leger"]) == 5
 assert b.note_coins(["net"] * 7 + ["plie"]) == 3
 assert b.note_bords(["net"] * 7 + ["point_blanc"]) == 9 and b.note_bords(["net"] * 6 + ["point_blanc"] * 2) == 8.5
 # 9 nov 2026 (la Hutson : des points fins sur un seul bord -> PSA 9 selon Mathieu)
 assert b.note_bords(["net"] * 7 + ["quelques_points"]) == 9 and b.note_bords(["net"] * 6 + ["quelques_points", "point_blanc"]) == 8.5
 assert b.note_bords(["net"] * 5 + ["quelques_points"] * 3) == 8
+assert b.note_coins(["net"] * 5 + ["effilochage_leger"] * 3) == 7.5 and b.note_coins(["net"] * 6 + ["effilochage_leger"] * 2) == 8   # la Willander
 assert b.note_bords(["net"] * 7 + ["encoche"]) == 6 and b.note_bords(["net"] * 4 + ["quelques_points"] * 4) == 7.5
 assert b.note_surface([]) == 10 and b.note_surface([("ligne d'impression", "rasante")]) == 10
 # 9 nov 2026 (guide pregradecards.com) : une rayure vue de pres : 7 ; deux dont une visible : 5 ; une micro-rayure rasante : 9

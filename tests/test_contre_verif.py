@@ -66,7 +66,7 @@ rp = " | ".join(e.get("a_reprendre") or [])
 assert "dos coin bas-droit" in rp and "dos : la carte touche le bord de la photo" in rp and "devant : la carte touche" not in rp, rp
 # en anglais : les libelles des defauts aussi
 e2 = vision.etat([carte(), carte(bas_colle=True)], langue="en")
-assert "a few white specks : PSA 8" in e2["defauts"][0]["pourquoi"] and "the card touches the edge" in " ".join(e2["a_reprendre"]), e2
+assert "a few white specks : 8/10" in e2["defauts"][0]["pourquoi"] and "the card touches the edge" in " ".join(e2["a_reprendre"]), e2
 # la verification echoue (pas d'outil « verdicts ») : les defauts de l'IA restent, rien de mesure n'est ajoute
 vision._appeler = lambda corps, timeout=0: appeler(corps) if corps["tools"][0]["name"] == "etat" else {"content": [], "usage": {}}
 e3 = vision.etat([carte(), carte()], langue="fr", calibration={"n": 1})

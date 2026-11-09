@@ -4912,7 +4912,7 @@ async function etapePhoto(i){
     $('#as-gal').onchange = async (e) => {
       const l = [...(e.target.files || [])].slice(0, 12); if (!l.length) return;
       if (l.length === 1) { verifierPrise(0, l[0]); return; }
-      V2.photos = []; for (const f of l) { try { V2.photos.push(await reduirePhoto(f)); } catch (x) {} }
+      V2.photos = []; for (const f of l) { try { V2.photos.push(await reduirePhoto(f, l.length > 4 ? 2400 : 4032)); } catch (x) {} }
       if (!V2.photos.length) { toast(tt('Photo illisible : reprends-la', 'Unreadable photo: retake it')); return; }
       lireVente();
     };
@@ -5643,7 +5643,7 @@ function brancherVente2(){
     if (V2.originales) { V2.studio = V2.studio || []; while (V2.studio.length < V2.originales.length) V2.studio.push(undefined); mv(V2.originales); mv(V2.studio); }
     V2.hebergees = null; re();
   });
-  const ph = $('#v2-ph'); if (ph) ph.onchange = async (e) => { for (const f of [...(e.target.files || [])].slice(0, 12 - V2.photos.length)) { try { const x = await reduirePhoto(f); V2.photos.push(x); if (V2.originales) V2.originales.push(x); } catch (x) {} } V2.hebergees = null; re(); };
+  const ph = $('#v2-ph'); if (ph) ph.onchange = async (e) => { for (const f of [...(e.target.files || [])].slice(0, 12 - V2.photos.length)) { try { const x = await reduirePhoto(f, V2.photos.length >= 4 ? 2400 : 4032); V2.photos.push(x); if (V2.originales) V2.originales.push(x); } catch (x) {} } V2.hebergees = null; re(); };
   const garderSaisie = () => { V2.champs = lireChampsVente(); V2.titre = $('#v2-titre').value; V2.description = $('#v2-desc').value; V2.cout = val('v2-cout'); };
   brancherFlou('v2-fl', () => { garderSaisie(); syncPhotos(); rendreVente2(); }, () => { garderSaisie(); rendreVente2(); });
   const pp = $('.vs-photo .photo-princ'); if (pp && (V2.photos || []).length) { pp.style.cursor = 'zoom-in'; pp.onclick = () => { V2.champs = lireChampsVente(); V2.titre = $('#v2-titre').value; V2.description = $('#v2-desc').value; V2.cout = val('v2-cout'); feuillePhotosVente(rendreVente2, true); }; }
@@ -7748,7 +7748,7 @@ function scanFermer(){
 function scannerSecours(opts){
   const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.setAttribute('capture', 'environment');
   i.onchange = async () => { const f = i.files && i.files[0]; if (!f) return;
-    if (opts.but === 'photo') { let ph; try { ph = await reduirePhoto(f, 1600); } catch (e) { toast(tt('Photo illisible : reprends-la', 'Unreadable photo: try again')); return; } changerPhotoCarte(opts.cid, ph); }
+    if (opts.but === 'photo') { let ph; try { ph = await reduirePhoto(f); } catch (e) { toast(tt('Photo illisible : reprends-la', 'Unreadable photo: try again')); return; } changerPhotoCarte(opts.cid, ph); }
     else scannerCarte(f); };
   i.click();
 }
@@ -9899,14 +9899,23 @@ function initiales(c){
 // 23 oct 2026 - « une photo, un bouton » : photo du devant (+ dos, plus precis) -> fiche remplie par l'IA
 // (modele avance, cote serveur : la cle n'est jamais sur le telephone). Les champs douteux sont en or.
 // ============================================================
-async function reduirePhoto(fichier, cote = 1600){
+// 9 nov 2026 (Mathieu : « les photos mises dans la collection : la grosseur doit etre au max, sinon l'analyse n'est pas
+// bonne, trop de gros pixels et flou ») : la photo garde sa PLEINE resolution (avant : 1600 px, ~17 px/mm sur la carte ;
+// le blanchiment de 0,1 mm s'y perd). Jusqu'a 4032 px (12 Mpx d'un iPhone), sous la limite du serveur (8 Mo) : la qualite
+// baisse d'abord un peu, puis la taille, seulement si la photo est trop lourde.
+async function reduirePhoto(fichier, cote = 4032){
   const url = URL.createObjectURL(fichier);
   try {
     const img = await new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = ko; i.src = url; });
-    const r = Math.min(1, cote / Math.max(img.naturalWidth, img.naturalHeight));
-    const cv = document.createElement('canvas'); cv.width = Math.round(img.naturalWidth * r); cv.height = Math.round(img.naturalHeight * r);
-    cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-    return cv.toDataURL('image/jpeg', 0.9);
+    const MAXB64 = 10.2e6;                                         // ~7,6 Mo une fois decode
+    let k = Math.min(1, cote / Math.max(img.naturalWidth, img.naturalHeight)), d = '';
+    for (let essai = 0; essai < 4; essai++) {
+      const cv = document.createElement('canvas'); cv.width = Math.round(img.naturalWidth * k); cv.height = Math.round(img.naturalHeight * k);
+      const g = cv.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(img, 0, 0, cv.width, cv.height);
+      for (const qu of [0.92, 0.85, 0.78]) { d = cv.toDataURL('image/jpeg', qu); if (d.length <= MAXB64) return d; }
+      k *= 0.8;
+    }
+    return d;
   } finally { URL.revokeObjectURL(url); }
 }
 async function feuilleNouvelleCarte(){
@@ -10136,10 +10145,12 @@ function diapoEtat(e, depart, apres, relancer){
   else if (n.centrage != null && n.centrage < 10 && n.centrage <= pire) phrase = tt('Ce qui retient la note : ', 'What holds the grade back: ') + `<b>${tt('le centrage', 'the centering')}</b>${cDev.length ? ' (' + esc(cDev.join(' · ')) + ')' : ''}.`;
   else phrase = tt('Aucun défaut visible sur tes photos. ', 'No visible flaw on your photos. ') + `<b>${tt('Bel exemplaire.', 'A beautiful copy.')}</b>`;
   const t_ = e.tag;
-  const d1 = `<div class="dp-d"><span class="dp-sur">${tt('État estimé', 'Estimated condition')}</span>
-    <div class="dp-note"><span class="dp-anneau ${cl(e.note_min)}"><b>${fourch}</b><small>PSA</small></span>
-      ${t_ ? `<span class="dp-tag${t_.pristine ? ' prist' : ''}"><b>${t_.note || '≤ 8'}</b><small>TAG</small></span>` : ''}</div>
-    ${t_ && t_.note ? `<span class="dp-sur">TAG ${esc(t_.pristine ? 'Pristine' : t_.libelle || '')}</span>` : ''}
+  // 9 nov 2026 (Mathieu : « on ne peut pas mettre PSA 8 ou TAG 10, c'est le pre-grade SlabCoach ») : notre note, sur 10,
+  // jamais presentee comme une note PSA ou TAG
+  const ancienne = !e.contre_verif;
+  const d1 = `<div class="dp-d"><span class="dp-sur">${tt('Pré-grade SlabCoach', 'SlabCoach pre-grade')}</span>
+    <div class="dp-note"><span class="dp-anneau ${cl(e.note_min)}"><b>${fourch}</b><small>/10</small></span></div>
+    ${ancienne && relancer ? `<div class="vd-anc">${tt('Analyse faite avant la contre-vérification des défauts. ', 'Analysis made before flaws were double-checked. ')}<button class="lien-t" data-dpre>${tt('Refaire l’examen', 'Check again')}</button></div>` : ''}
     <p class="dp-phrase">${phrase}</p>
     ${def.length ? `<div class="dp-zm petit${gpDe(def[0]) ? ' gp' : ''}"><canvas data-dz="0"></canvas><i></i></div>` : ''}
     ${def.length > 1 || (def.length && (cDev.length || e.centrage_dos)) ? `<span class="dp-pied">${tt('Glisse pour voir le détail ›', 'Swipe for the details ›')}</span>` : ''}</div>`;
@@ -10148,7 +10159,7 @@ function diapoEtat(e, depart, apres, relancer){
     <h3 class="dp-titre">${esc(LIB_DEFAUT(d.type)).replace(/^./, c => c.toUpperCase())} <em>${esc(LIB_GRAV(d.gravite))}</em></h3>
     <p class="dp-ou">${esc(ouD(d)).replace(/^./, c => c.toUpperCase())}${gpDe(d) ? ' · ' + tt('ton gros plan', 'your close-up') : ''}</p>
     ${ligneD(d) ? `<p class="dp-ligne">${esc(ligneD(d))}</p>` : ''}
-    ${d.note != null ? `<span class="dp-cout">${tt('Seul, il donne', 'On its own:')} PSA ${f(d.note)}</span>` : ''}
+    ${d.note != null ? `<span class="dp-cout">${tt('À lui seul : ', 'On its own: ')}${f(d.note)}/10</span>` : ''}
     ${e.cid ? `<div class="dp-av"><span>${tt('Tu le vois ?', 'Do you see it?')}</span><button class="${(e.avis || {})[e.defauts.indexOf(d)] === true ? 'on' : ''}" data-av="${e.defauts.indexOf(d)}" data-v="1" aria-label="${esc(tt('Je le vois', 'I see it'))}">✓</button><button class="${(e.avis || {})[e.defauts.indexOf(d)] === false ? 'on' : ''}" data-av="${e.defauts.indexOf(d)}" data-v="0" aria-label="${esc(tt('Pas de défaut', 'No flaw'))}">✕</button></div>` : ''}</div>`);
   // le centrage : un schema par face (la carte et son cadre imprime, decale comme mesure), le ratio et la note PSA
   const schema = (face) => { const v = (e.centrage_vue || {})[face] || {};
@@ -10162,7 +10173,7 @@ function diapoEtat(e, depart, apres, relancer){
     return `<div class="dp-cent"><svg viewBox="-4 -4 ${W + 8} ${H + 8}" aria-hidden="true"><rect class="cad" x="0" y="0" width="${W}" height="${H}" rx="5"/>
       <rect class="imp ${mesure ? cl(nt) : 'nd'}" x="${(bx * px).toFixed(1)}" y="${(by * py).toFixed(1)}" width="${W - bx}" height="${H - by}" rx="3"/></svg>
       <small>${face === 'devant' ? tt('Devant', 'Front') : tt('Dos', 'Back')}</small><b>${esc(r || '—')}</b>
-      <small>${mesure ? 'PSA ' + nt + (nt < 10 ? ' · ' + tt('10 jusqu’à ', '10 up to ') + (face === 'devant' ? '55/45' : '75/25') : '') : tt('pas de repère', 'no reference')}</small></div>`; };
+      <small>${mesure ? nt + '/10' + (nt < 10 ? ' · ' + tt('10 jusqu’à ', '10 up to ') + (face === 'devant' ? '55/45' : '75/25') : '') : tt('pas de repère', 'no reference')}</small></div>`; };
   const aCent = cDev.length || e.centrage_dos;
   const dc = aCent ? `<div class="dp-d"><span class="dp-sur">${tt('Centrage', 'Centering')}</span>
     <div class="dp-cents">${schema('devant')}${refs.length > 1 ? schema('dos') : ''}</div>
@@ -10191,7 +10202,7 @@ function diapoEtat(e, depart, apres, relancer){
   o.querySelector('.vd-x').onclick = fermer;
   o.querySelector('[data-dpdet]').onclick = () => { vibrer(); fermer(); voirDefauts(e, null, apres, relancer); };
   const bc = o.querySelector('[data-dpcent]'); if (bc) bc.onclick = () => { vibrer(); voirCentrage(e, e.cid, apres); };
-  const br = o.querySelector('[data-dpre]'); if (br) br.onclick = () => { fermer(); relancer(); };
+  $$('[data-dpre]', o).forEach(br => br.onclick = () => { fermer(); relancer(); });
   $$('canvas[data-dz]', o).forEach(cv => { const d = def[+cv.dataset.dz], gp = gpDe(d), j = d.photo || 0;
     const q = e.quads && e.quads[j] && e.quads[j].length === 4 ? e.quads[j] : null;
     dessinerZoom(cv, gp ? gp.ref : photoNet(refs[j] || refs[0], 1600), q, d, !!gp); });
@@ -10291,7 +10302,7 @@ function voirDefauts(e, k, apres, relancer){
       const vs = ['centrage', 'coins', 'bords', 'surface'].map(k => n_[k]).filter(v => v != null), pire = vs.length ? Math.min(...vs) : null;
       if (pire == null || e.note_max == null) return tt('Barème PSA, le même pour toutes les cartes', 'PSA scale, the same for every card');
       const t = [];
-      if (e.note_max < pire) t.push(tt(`Plusieurs catégories à ${fr_(pire)} : PSA ${fr_(pire)} ne permet qu’un seul petit défaut → ${fr_(e.note_max)}`, `Several categories at ${fr_(pire)}: PSA ${fr_(pire)} allows only one minor flaw → ${fr_(e.note_max)}`));
+      if (e.note_max < pire) t.push(tt(`Plusieurs catégories à ${fr_(pire)} : un ${fr_(pire)} ne permet qu’un seul petit défaut → ${fr_(e.note_max)}`, `Several categories at ${fr_(pire)}: a ${fr_(pire)} allows only one minor flaw → ${fr_(e.note_max)}`));
       else t.push(tt(`La pire catégorie fixe la note : ${fr_(e.note_max)}`, `The worst category sets the grade: ${fr_(e.note_max)}`));
       if (e.note_min != null && e.note_min < e.note_max) t.push(tt(`${fr_(e.note_min)} si les points « à vérifier » se confirment`, `${fr_(e.note_min)} if the “to check” points are confirmed`));
       return t.join(' · ');
@@ -10336,7 +10347,7 @@ function voirDefauts(e, k, apres, relancer){
           .map(([r, tol, l]) => ({...(axeNote(r, tol) || {}), l, tol})).filter(a => a.r).sort((a, b) => a.n - b.n);
         // 3 nov 2026 (revue) : la limite de la table de CET axe (le dos : 90/10 pour un 9), pas toujours celle du devant
         const lim = ax.length ? (ax[0].tol.find(t => t[1] === ax[0].n) || null) : null;
-        if (ax.length) return `<span class="vd-cz"><i class="vd-ci g-moyen">↔</i><span>${esc(ax[0].l)} <b>${esc(ax[0].r)}</b></span></span>${rg || (lim ? `<small>${esc(tt(`PSA ${ax[0].n} : jusqu’à ${lim[0]}/${100 - lim[0]}`, `PSA ${ax[0].n}: up to ${lim[0]}/${100 - lim[0]}`))}</small>` : '')}`;
+        if (ax.length) return `<span class="vd-cz"><i class="vd-ci g-moyen">↔</i><span>${esc(ax[0].l)} <b>${esc(ax[0].r)}</b></span></span>${rg || (lim ? `<small>${esc(tt(`${ax[0].n}/10 : jusqu’à ${lim[0]}/${100 - lim[0]}`, `${ax[0].n}/10: up to ${lim[0]}/${100 - lim[0]}`))}</small>` : '')}`;
       }
       const ds = def.map((d, i) => ({d, i})).filter(({d}) => !d.masque && catDe(d) === k);
       const surs = ds.filter(({d}) => d.gravite !== 'a verifier');
@@ -10391,12 +10402,7 @@ function voirDefauts(e, k, apres, relancer){
     o.innerHTML = `<button class="vd-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
       <div class="vd-tete"><span class="fc-al-ic et-anneau ${clg}"><b>${four}</b></span><span><b>${tt('État estimé', 'Estimated condition')} <small>/10</small></b>
         <small>${esc(pourquoiNote())}</small></span></div>
-      ${e.tag ? (() => { const t = e.tag, bas = t.bas !== undefined && t.bas !== t.note;
-        // 9 nov 2026 (criteres de TAG fournis par Mathieu) : la note TAG estimee avec les memes observations
-        return `<div class="vd-tag"><span class="vd-tag-n ${t.note === 10 ? 'vert' : t.note === 9 ? 'or' : 'rouge'}${t.pristine ? ' prist' : ''}">TAG <b>${t.note || '≤ 8'}</b></span>
-          <span><b>${esc(t.note ? t.libelle + ' · ' + t.score : tt('8 ou moins', '8 or lower'))}</b>${bas ? `<small>${tt('ou ', 'or ')}${t.bas ? 'TAG ' + t.bas : tt('8 ou moins', '8 or lower')}${tt(' si les points à vérifier se confirment', ' if the points to check are confirmed')}</small>` : ''}
-          ${(t.raisons || []).length ? `<small>${tt(t.note === 9 ? 'Pas un 10 : ' : t.note === 10 ? 'Pas Pristine : ' : 'Pourquoi : ', t.note === 9 ? 'Not a 10: ' : t.note === 10 ? 'Not Pristine: ' : 'Why: ')}${esc(t.raisons.slice(0, 2).join(' · '))}</small>` : ''}
-          ${t.centrage_mesure ? '' : `<small>${tt('Centrage pas mesuré sur cette carte : pas compté', 'Centering not measured on this card: not counted')}</small>`}</span></div>`; })() : ''}
+      ${''/* 9 nov 2026 : plus de note TAG affichee (« c'est le pre-grade SlabCoach ») */}
       ${e.ancienne ? `<div class="vd-anc"><span>${tt('Ancienne analyse : sans les mesures de l’app ni le barème fixe.', 'Older analysis: without the app’s measurements or the fixed scale.')}</span>${relancer ? `<button class="btn petit" data-relancer>${tt('Refaire l’examen', 'Check again')}</button>` : ''}</div>` : ''}
       ${(e.a_reprendre || []).length ? `<div class="vd-rep"><b>${tt('Pour une note plus sûre, reprends la photo', 'For a surer grade, retake the photo')}</b>${e.a_reprendre.map(t => `<small>${esc(t)}</small>`).join('')}</div>` : ''}
       <div class="vd-sous">${CATS_.map(([k_, l_]) => `<div class="vd-s"><span class="vd-sn ${cln(n_[k_])}"><b>${fr_(n_[k_])}</b></span><span><b>${l_}</b>${cause(k_)}</span></div>`).join('')}</div>
@@ -10405,7 +10411,7 @@ function voirDefauts(e, k, apres, relancer){
         <div class="vd-outils">${edite === j ? `<span class="sous">${tt('Glisse les 4 coins sur les coins de la carte', 'Drag the 4 handles onto the card’s corners')}</span>
             <button class="pilule" data-ann="${j}">${tt('Annuler', 'Cancel')}</button><button class="btn petit" data-ok="${j}">${tt('Enregistrer', 'Save')}</button>`
           : `<button class="chip vd-tog ${calque ? 'on' : ''}" data-calque><i></i>${tt('Étude du centrage', 'Centering study')}</button>`}</div>
-        ${calque ? `<div class="cg-leg">${(j ? [[75, 10, 'z10'], [90, 9, 'z9']] : [[55, 10, 'z10'], [60, 9, 'z9'], [65, 8, 'z8'], [70, 7, 'z7']]).map(([lim, nn, cl]) => `<span class="${cl}"><i></i>PSA ${nn} ≤ ${lim}/${100 - lim}</span>`).join('')}</div>` : ''}</div>`).join('')}
+        ${calque ? `<div class="cg-leg">${(j ? [[75, 10, 'z10'], [90, 9, 'z9']] : [[55, 10, 'z10'], [60, 9, 'z9'], [65, 8, 'z8'], [70, 7, 'z7']]).map(([lim, nn, cl]) => `<span class="${cl}"><i></i>${nn} ≤ ${lim}/${100 - lim}</span>`).join('')}</div>` : ''}</div>`).join('')}
       ${e.relief_img ? `<div class="vd-sec">${e.relief_deux ? tt('Relief de la surface (2 éclairages)', 'Surface relief (2 lights)') : tt('Relief de la surface', 'Surface relief')}</div>
         <div class="vd-gab"><div class="vd-gab-c vd-rel"><img src="${esc(e.relief_img)}" alt=""></div><small>${e.relief_deux ? tt('La différence entre tes deux photos : l’impression s’efface, ce qui reste en clair ou en foncé est du relief (ligne fine = rayure, tache ronde = bosse ou empreinte).', 'The difference between your two photos: the print fades, what stays light or dark is relief (thin line = scratch, round spot = dent or fingerprint).') : tt('Ta photo rasante, éclairage lissé et contraste renforcé : les rayures et les bosses ressortent (l’impression aussi).', 'Your raking photo, lighting evened out and contrast boosted: scratches and dents stand out (so does the print).')}</small></div>` : ''}
       ${(e.gros_plans || []).length ? `<div class="vd-sec">${tt('Gros plans des coins', 'Corner close-ups')}</div><div class="vd-gp">${grosPlans()}</div>` : ''}
@@ -10475,7 +10481,7 @@ function voirDefauts(e, k, apres, relancer){
     if (calque && aLignes && edite !== j) { const tol = TOL(face), note = (g) => (tol.find(([lim]) => g <= lim) || [0, face === 'dos' ? 8 : 3])[1];
       const x = aX ? rat(v.l, v.r) : null, y = aY ? rat(v.t, v.b) : null, n = Math.min(x ? note(x[0]) : 10, y ? note(y[0]) : 10);
       const nom = (ax) => v['repere_' + ax] ? ` <em>· ${esc(v['repere_' + ax])}${v['source_' + ax] === 'ia' ? tt(' (IA)', ' (AI)') : ''}</em>` : '';
-      lab.innerHTML = `${x ? `<b>${tt('G/D', 'L/R')} ${x[0]}/${x[1]}${nom('gd')}</b>` : `<b>${tt('G/D : aucun repère symétrique', 'L/R: no symmetric reference')}</b>`}${y ? `<b>${tt('H/B', 'T/B')} ${y[0]}/${y[1]}${nom('hb')}</b>` : `<b>${tt('H/B : aucun repère symétrique', 'T/B: no symmetric reference')}</b>`}<b class="${n >= 10 ? 'vert' : n >= 9 ? 'or' : 'rouge'}">PSA ${n} max</b>`; lab.hidden = false; }
+      lab.innerHTML = `${x ? `<b>${tt('G/D', 'L/R')} ${x[0]}/${x[1]}${nom('gd')}</b>` : `<b>${tt('G/D : aucun repère symétrique', 'L/R: no symmetric reference')}</b>`}${y ? `<b>${tt('H/B', 'T/B')} ${y[0]}/${y[1]}${nom('hb')}</b>` : `<b>${tt('H/B : aucun repère symétrique', 'T/B: no symmetric reference')}</b>`}<b class="${n >= 10 ? 'vert' : n >= 9 ? 'or' : 'rouge'}">${n}/10 max</b>`; lab.hidden = false; }
     else if (calque && q && edite !== j) { lab.innerHTML = `<b>${tt('Contour de la carte', 'Card outline')}</b><b>${tt('Aucun repère symétrique trouvé : refais l’examen', 'No symmetric reference found: check again')}</b>`; lab.hidden = false; }
     else lab.hidden = true;
     $$('.fc-pt, .vd-poi', sc).forEach(x => x.remove());
@@ -11356,7 +11362,7 @@ function voirCentrage(e, cid, apres){
     const note = (g) => (tol.find(([lim]) => g <= lim) || [0, face === 'dos' ? 8 : 3])[1];
     const lab = () => { const x = rat(m.l, m.r), y = rat(m.t, m.b), n = Math.min(vx ? note(x[0]) : 10, vy ? note(y[0]) : 10);
       return `<div class="cg-r"><span>${tt('Gauche / droite', 'Left / right')} <b>${vx ? x[0] + '/' + x[1] : tt('à placer', 'to place')}</b></span><span>${tt('Haut / bas', 'Top / bottom')} <b>${vy ? y[0] + '/' + y[1] : tt('à placer', 'to place')}</b></span>
-        <span class="cg-n ${n >= 10 ? 'vert' : n >= 9 ? 'or' : 'rouge'}">PSA ${n} ${tt('max', 'max')}</span></div>`; };
+        <span class="cg-n ${n >= 10 ? 'vert' : n >= 9 ? 'or' : 'rouge'}">${n}/10 ${tt('max', 'max')}</span></div>`; };
     o.innerHTML = `<button class="vd-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
       <h3 class="cg-h">${tt('Grille de centrage', 'Centering grid')}</h3>
       ${faces.length > 1 ? `<div class="chips">${faces.map(f => `<button class="chip ${f === face ? 'on' : ''}" data-f="${f}">${f === 'devant' ? tt('Devant', 'Front') : tt('Dos', 'Back')}</button>`).join('')}</div>` : ''}
@@ -11400,7 +11406,7 @@ function voirCentrage(e, cid, apres){
         if (vy) for (const y of [c, d, 1000 - c, 1000 - d]) h += L_(0, y, 1000, y);
       }
       const bz = z.querySelector('.cg-bandes'); if (bz) bz.innerHTML = h;
-      const lg = $('#cg-leg', o); if (lg) lg.innerHTML = Z.slice().reverse().map(([lim, n, cl]) => `<span class="${cl}"><i></i>PSA ${n} ≤ ${lim}/${100 - lim}</span>`).join('');
+      const lg = $('#cg-leg', o); if (lg) lg.innerHTML = Z.slice().reverse().map(([lim, n, cl]) => `<span class="${cl}"><i></i>${n} ≤ ${lim}/${100 - lim}</span>`).join('');
     };
     poser();
     let change = false;
