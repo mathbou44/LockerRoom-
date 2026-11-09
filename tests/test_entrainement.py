@@ -30,6 +30,8 @@ def main():
     vu = {}
 
     def appeler(corps, timeout=0):
+        if corps["tools"][0]["name"] == "verdicts":       # 9 nov 2026 : la contre-verification (rien a dire ici)
+            return {"content": [], "usage": {}}
         c = corps["messages"][0]["content"]
         vu["n_images"] = sum(1 for x in c if x.get("type") == "image")
         vu["texte"] = " ".join(x.get("text", "") for x in c if x.get("type") == "text")

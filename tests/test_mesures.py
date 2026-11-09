@@ -107,6 +107,9 @@ def main():
     vision._noter_etat = lambda u: None
     vu = {}
     def appeler(corps, timeout=0):
+        if corps["tools"][0]["name"] == "verdicts":      # 9 nov 2026 : la contre-verification confirme le coin mesure
+            vu["verif"] = " ".join(x.get("text", "") for x in corps["messages"][0]["content"] if x.get("type") == "text")
+            return {"content": [{"type": "tool_use", "name": "verdicts", "input": {"verdicts": [{"n": 1, "verdict": "confirme", "etat": "effilochage_leger", "pourquoi": "blanc a la pointe"}]}}], "usage": {}}
         vu["texte"] = " ".join(x.get("text", "") for x in corps["messages"][0]["content"] if x.get("type") == "text")
         f = {"evaluable": True, "coins": [{"photo": 0, "coin": c, "etat": "net", "certitude": "sure"} for c in ("haut-gauche", "haut-droit", "bas-droit", "bas-gauche")],
              "bords": [{"photo": 0, "bord": c, "etat": "net", "certitude": "sure"} for c in ("haut", "droit", "bas", "gauche")], "surface": [], "surface_jugeable": True}
@@ -115,9 +118,12 @@ def main():
     e = vision.etat([url], quads=[q], rasante=url, rasante2=url)
     assert "DIFFERENCE entre les deux eclairages" in vu["texte"] and "FORME de la carte" in vu["texte"], vu["texte"][-600:]
     assert "MESURE de l'app" in vu["texte"] and "bas-gauche" in vu["texte"], vu["texte"][:400]
-    m = [d for d in e["defauts"] if d.get("mesure")]
-    assert m and m[0]["zone"] == "coin bas-gauche" and m[0]["gravite"] == "a verifier", e["defauts"]
-    assert e["note_max"] == 10 and e["note_min"] <= 9 and e["mesures"]["devant"]["coins"]["bas-gauche"]["blanc_mm2"] > 0.3, (e["note_min"], e["note_max"])
+    # 9 nov 2026 : le coin MESURE passe par la contre-verification : confirme sur son gros plan -> un vrai defaut (il compte)
+    assert "#1 : le coin bas-gauche du devant" in vu["verif"], vu.get("verif")
+    m = [d for d in e["defauts"] if d.get("zone") == "coin bas-gauche"]
+    assert m and m[0]["gravite"] == "moyen" and "blanc a la pointe" in m[0]["pourquoi"], e["defauts"]
+    assert e["notes"]["coins"] == 8 and e["note_max"] <= 8 and e["contre_verif"]["fait"], (e["notes"], e["note_max"], e.get("contre_verif"))
+    assert e["mesures"]["devant"]["coins"]["bas-gauche"]["blanc_mm2"] > 0.3
     silhouette_test()
     surface_test()
     print("ok mesures")

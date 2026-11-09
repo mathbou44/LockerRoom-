@@ -2575,6 +2575,7 @@ button.vd-cz > span{border-bottom:1px solid var(--ligne); padding-bottom:2px} .v
 .ag-sv{display:flex; flex-direction:column; gap:4px; padding:16px; border-radius:18px; background:var(--carte2)} .ag-sv b{font:700 22px var(--f-cond)} .ag-sv span{font-size:14px; color:var(--doux)}
 .ag-ck{margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:6px} .ag-ck li{display:flex; justify-content:space-between; padding:10px 12px; border-radius:12px; background:var(--carte2); font-size:14px}
 .vd-zm{position:relative; display:block; flex:0 0 auto; width:56px; height:56px; border-radius:12px; background-color:#000; background-repeat:no-repeat; box-shadow:inset 0 0 0 1px var(--ligne)}
+.vd-zm canvas{display:block; width:100%; height:100%; border-radius:inherit}
 .vd-zm i{position:absolute; left:50%; top:50%; width:44%; height:44%; transform:translate(-50%,-50%); border-radius:50%; box-shadow:0 0 0 2px rgba(255,255,255,.9), 0 0 0 4px rgba(0,0,0,.45)}
 .vd-zm.grand{width:100%; height:auto; aspect-ratio:1; max-height:220px; margin-bottom:8px; border-radius:14px} .vd-zm.grand i{width:30%; height:30%}
 .vd-czz{position:relative; flex:0 0 auto} .vd-czz .vd-ci{position:absolute; right:-6px; top:-6px; width:20px; height:20px; flex-basis:20px; font-size:11px}
@@ -2710,6 +2711,45 @@ body.pop-ouverte{overflow:hidden}
 /* 2 nov 2026 - la photo cadree sur la carte, le calque (contour, cadre imprime, ratios), les coins a glisser */
 .vd-ph{position:relative; display:flex; flex-direction:column; align-items:center; gap:8px}
 .vd-cad{position:relative; width:100%; max-width:min(100%, calc(70vh * 1.6)); max-height:70vh; border-radius:12px; overflow:hidden; background:#111115; touch-action:pan-y; -webkit-user-select:none; user-select:none}
+/* 9 nov 2026 (Mathieu : « bcp trop complique et long : une pop-up avec les images du grading en diaporama ») */
+.dp{position:fixed; inset:0; z-index:9999; background:#08080a; display:flex; flex-direction:column; padding:calc(env(safe-area-inset-top) + 10px) 0 calc(env(safe-area-inset-bottom) + 12px)}
+.dp-h{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:0 16px 8px; min-height:44px}
+.dp-h .pilule{margin:0} .dp-h .vd-x{position:static}
+.dp-piste{flex:1; display:flex; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; scrollbar-width:none; overscroll-behavior:contain}
+.dp-piste::-webkit-scrollbar{display:none}
+.dp-d{flex:0 0 100%; scroll-snap-align:center; scroll-snap-stop:always; overflow-y:auto; padding:6px 20px 16px; display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center}
+.dp-d > *{max-width:440px; width:100%}
+.dp-sur{font:600 12px var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--doux)}
+.dp-note{display:flex; align-items:center; justify-content:center; gap:18px; margin-top:6px}
+.dp-anneau{width:118px; height:118px; border-radius:50%; border:3px solid currentColor; display:flex; flex-direction:column; align-items:center; justify-content:center; flex:none}
+.dp-anneau b{font:700 44px/1 var(--f-cond)} .dp-anneau small{font:600 11px var(--f-cond); letter-spacing:.1em; color:var(--doux); margin-top:4px}
+.dp-anneau.vert{color:var(--vert)} .dp-anneau.or{color:var(--or)} .dp-anneau.rouge{color:var(--rouge)}
+.dp-tag{width:70px; height:70px; border-radius:50%; border:2px solid var(--ligne); display:flex; flex-direction:column; align-items:center; justify-content:center; flex:none; color:var(--texte2, #ddd)}
+.dp-tag b{font:700 22px/1 var(--f-cond)} .dp-tag small{font:600 10px var(--f-cond); letter-spacing:.1em; color:var(--doux)} .dp-tag.prist{border-color:var(--or); color:var(--or)}
+.dp-phrase{font-size:17px; line-height:1.4; margin:0} .dp-phrase b{color:var(--or)}
+.dp-zm{position:relative; width:100%; aspect-ratio:1; border-radius:18px; overflow:hidden; background:#000; box-shadow:inset 0 0 0 1px var(--ligne)}
+.dp-zm canvas{display:block; width:100%; height:100%} .dp-zm.petit{width:62%}
+.dp-zm i{position:absolute; left:50%; top:50%; width:26%; height:26%; transform:translate(-50%,-50%); border-radius:50%; box-shadow:0 0 0 2px rgba(255,255,255,.9), 0 0 0 4px rgba(0,0,0,.45); pointer-events:none}
+.dp-zm.gp i{display:none}
+.dp-titre{font:700 22px/1.15 var(--f-cond); margin:0} .dp-titre em{font-style:normal; color:var(--doux); font-weight:600}
+.dp-ou{color:var(--doux); font-size:14px; margin:-8px 0 0}
+.dp-ligne{font-size:15.5px; line-height:1.45; margin:0}
+.dp-cout{display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:999px; background:var(--carte); font:600 13px var(--f-cond); letter-spacing:.06em; width:auto !important}
+.dp-av{display:flex; align-items:center; justify-content:center; gap:10px; color:var(--doux); font-size:14px}
+.dp-av button{width:42px; height:42px; border-radius:50%; border:1px solid var(--ligne); background:var(--carte); color:#fff; font-size:16px}
+.dp-av button.on{border-color:var(--or); color:var(--or)}
+.dp-cents{display:flex; justify-content:center; gap:22px}
+.dp-cent{display:flex; flex-direction:column; align-items:center; gap:6px; width:auto !important}
+.dp-cent svg{width:118px; height:auto} .dp-cent b{font:700 24px var(--f-cond)} .dp-cent small{color:var(--doux); font-size:13px}
+.dp-cent .cad{fill:none; stroke:var(--ligne); stroke-width:2} .dp-cent .imp{fill:none; stroke-width:2.5} .dp-cent .imp.vert{stroke:var(--vert)} .dp-cent .imp.or{stroke:var(--or)} .dp-cent .imp.rouge{stroke:var(--rouge)}
+.dp-cent .imp.nd{stroke:var(--doux); stroke-dasharray:4 4}
+.dp-liste{list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px; text-align:left}
+.dp-liste li{padding:12px 14px; border-radius:14px; background:var(--carte); font-size:14.5px; line-height:1.4}
+.dp-b{display:flex; align-items:center; justify-content:center; gap:14px; padding:6px 16px 0}
+.dp-b > button{width:44px; height:44px; border-radius:50%; border:1px solid var(--ligne); background:var(--carte); color:#fff; display:grid; place-items:center}
+.dp-b > button:disabled{opacity:.3} .dp-b > button svg{width:18px; height:18px} .dp-b > button.prec svg{transform:rotate(180deg)}
+.dp-pts{display:flex; gap:7px} .dp-pts i{width:7px; height:7px; border-radius:50%; background:var(--ligne)} .dp-pts i.on{background:var(--or); width:20px; border-radius:4px}
+.dp-pied{color:var(--doux); font-size:12.5px}
 body.vd-ouverte::before{content:''; position:fixed; top:0; left:0; right:0; height:env(safe-area-inset-top); background:#08080a; z-index:10000; pointer-events:none}
 .vd{overscroll-behavior:contain; -webkit-overflow-scrolling:touch} body.vd-ouverte{overflow:hidden} .vd img{-webkit-user-drag:none; -webkit-touch-callout:none}
 .vd-anc{padding:10px 12px; border-radius:14px; background:var(--or-fonce); color:var(--or); font-size:13.5px} .vd-anc .lien-t{font-size:13.5px}
@@ -10048,10 +10088,118 @@ function baremePSA(){
     <div class="sous">${tt('Coins et bords : les 8 du devant et du dos comptent. L’IA décrit chaque coin et chaque bord avec ces mots ; l’app calcule la note avec cette table, la même pour toutes les cartes.', 'Corners and edges: all 8 on front and back count. The AI describes each corner and edge with these words; the app computes the grade with this table, the same for every card.')}</div>
     ${tab(CO, tt('Coins (le pire)', 'Corners (worst)'))}${tab(BO, tt('Bords (le pire)', 'Edges (worst)'))}
     ${tab(SU, tt('Surface : lumière rasante · de près · à l’œil', 'Surface: raking light · up close · plain view'))}
-    <div class="sous">${tt('Note globale : la pire catégorie (deux catégories à 9 : 8,5). Un point incertain n’abaisse que le bas de la fourchette.', 'Overall: the worst category (two categories at 9: 8.5). An uncertain point only lowers the bottom of the range.')}</div>
+    <div class="sous">${tt('Note globale : la pire catégorie (deux catégories à 9 : 8,5). Chaque défaut de coin ou de bord est revérifié sur un gros plan ; un point douteux n’est ni montré ni compté.', 'Overall: the worst category (two categories at 9: 8.5). Every corner or edge flaw is re-checked on a close-up; a doubtful point is neither shown nor counted.')}</div>
     <a class="plus" href="https://www.psacard.com/resources/cardgradingstandards" target="_blank" rel="noopener">${tt('Source : psacard.com · Card Grading Standards', 'Source: psacard.com · Card Grading Standards')} ${EXT}</a>
     <div class="sous">${tt('PSA accorde environ 5 % de marge au centrage du devant jusqu’au 7 quand la carte est belle. Une estimation sur photo, pas une note PSA.', 'PSA allows about 5% leeway on front centering down to 7 when eye appeal is strong. A photo estimate, not a PSA grade.')}</div></div>`, popFermer);
   $('#bar-x').onclick = popFermer;
+}
+// 9 nov 2026 (Mathieu : « bcp trop complique et long ; une pop-up avec les images montrant le grading en slide show ») : le
+// resultat en DIAPOS qu'on glisse : 1) la note (PSA, TAG) et ce qui la retient, avec son gros plan ; 2) un defaut par diapo
+// (son gros plan, une ligne, ce qu'il coute) ; 3) le centrage des deux faces ; 4) les photos a reprendre. Le reste (photos
+// annotees, gabarit, bareme) : le bouton « Détails ».
+function ptDefaut(d, q){
+  if (!q || q.length !== 4) return [d.x, d.y];
+  const L = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  const [tl, tr, br, bl] = q, ctr = [(tl[0] + tr[0] + br[0] + bl[0]) / 4, (tl[1] + tr[1] + br[1] + bl[1]) / 4];
+  const k = {'coin haut-gauche': 0, 'coin haut-droit': 1, 'coin bas-droit': 2, 'coin bas-gauche': 3}[d.zone];
+  if (k != null) return L(q[k], ctr, 0.012);
+  const t = (a, b, v, i) => Math.max(0.06, Math.min(0.94, (v - a[i]) / ((b[i] - a[i]) || 1)));
+  const pe = {'bord haut': () => L(tl, tr, t(tl, tr, d.x, 0)), 'bord bas': () => L(bl, br, t(bl, br, d.x, 0)),
+              'bord gauche': () => L(tl, bl, t(tl, bl, d.y, 1)), 'bord droit': () => L(tr, br, t(tr, br, d.y, 1))}[d.zone];
+  return pe ? L(pe(), ctr, 0.006) : [d.x, d.y];
+}
+async function dessinerZoom(cv, url, q, d, entier){
+  let im; try { im = await chargerImage(url); } catch (x) { return; }
+  const W = im.naturalWidth, H = im.naturalHeight, T = 900; if (!W) return;
+  cv.width = cv.height = T; const g = cv.getContext('2d'); g.fillStyle = '#000'; g.fillRect(0, 0, T, T); g.imageSmoothingQuality = 'high';
+  if (entier) { const c = Math.min(W, H); g.drawImage(im, (W - c) / 2, (H - c) / 2, c, c, 0, 0, T, T); return; }
+  const [x, y] = ptDefaut(d, q), larg = q && q.length === 4 ? Math.hypot((q[1][0] - q[0][0]) * W / 1000, (q[1][1] - q[0][1]) * H / 1000) : W * 0.8;
+  const r = Math.max(24, larg * (/^coin /.test(d.zone || '') ? 0.075 : d.zone === 'surface' ? 0.14 : 0.07));
+  g.drawImage(im, x / 1000 * W - r, y / 1000 * H - r, 2 * r, 2 * r, 0, 0, T, T);
+}
+function diapoEtat(e, depart, apres, relancer){
+  const FACES = ['devant', 'dos'], refs = e.photos || [], def = (e.defauts || []).filter(d => !d.masque).slice(0, 8);
+  const n = e.notes || {}, f = (v) => v == null ? '—' : decFr(v);
+  const fourch = e.note_min != null ? (e.note_max != null && e.note_max !== e.note_min ? f(e.note_min) + '–' + f(e.note_max) : f(e.note_min)) : '—';
+  const cl = (v) => (v || 0) >= 9 ? 'vert' : (v || 0) >= 7 ? 'or' : 'rouge';
+  const ouD = (d) => LIB_ZONE(d.zone).toLowerCase() + (d.photo ? tt(' (dos)', ' (back)') : '');
+  const ligneD = (d) => String(d.pourquoi || '').split(' · ')[0];
+  const gpDe = (d) => /^coin /.test(d.zone || '') && (e.gros_plans || []).find(g => g.face === FACES[d.photo || 0] && 'coin ' + g.coin === d.zone);
+  const TOLS = {devant: TOL_DEVANT, dos: TOL_DOS};
+  const noteR = (r, face) => { const m = /^(\d{2})\/(\d{2})$/.exec(String(r || '')); if (!m) return null; const g = Math.max(+m[1], +m[2]);
+    const x = TOLS[face].find(([lim]) => g <= lim); return x ? x[1] : (face === 'dos' ? 8 : 2); };
+  // ce qui retient la note : la pire sous-note ; le centrage s'il est le seul en cause
+  const cats = ['centrage', 'coins', 'bords', 'surface'].filter(k => n[k] != null), pire = cats.length ? Math.min(...cats.map(k => n[k])) : 10;
+  const cDev = e.centrage_gd || e.centrage_hb ? [e.centrage_gd, e.centrage_hb].filter(Boolean) : [];
+  let phrase;
+  if (def.length && (n.centrage == null || n.centrage > pire || pire >= 10)) phrase = tt('Ce qui retient la note : ', 'What holds the grade back: ') + `<b>${esc(LIB_DEFAUT(def[0].type))}</b>, ${esc(ouD(def[0]))}.`;
+  else if (n.centrage != null && n.centrage < 10 && n.centrage <= pire) phrase = tt('Ce qui retient la note : ', 'What holds the grade back: ') + `<b>${tt('le centrage', 'the centering')}</b>${cDev.length ? ' (' + esc(cDev.join(' · ')) + ')' : ''}.`;
+  else phrase = tt('Aucun défaut visible sur tes photos. ', 'No visible flaw on your photos. ') + `<b>${tt('Bel exemplaire.', 'A beautiful copy.')}</b>`;
+  const t_ = e.tag;
+  const d1 = `<div class="dp-d"><span class="dp-sur">${tt('État estimé', 'Estimated condition')}</span>
+    <div class="dp-note"><span class="dp-anneau ${cl(e.note_min)}"><b>${fourch}</b><small>PSA</small></span>
+      ${t_ ? `<span class="dp-tag${t_.pristine ? ' prist' : ''}"><b>${t_.note || '≤ 8'}</b><small>TAG</small></span>` : ''}</div>
+    ${t_ && t_.note ? `<span class="dp-sur">TAG ${esc(t_.pristine ? 'Pristine' : t_.libelle || '')}</span>` : ''}
+    <p class="dp-phrase">${phrase}</p>
+    ${def.length ? `<div class="dp-zm petit${gpDe(def[0]) ? ' gp' : ''}"><canvas data-dz="0"></canvas><i></i></div>` : ''}
+    ${def.length > 1 || (def.length && (cDev.length || e.centrage_dos)) ? `<span class="dp-pied">${tt('Glisse pour voir le détail ›', 'Swipe for the details ›')}</span>` : ''}</div>`;
+  const dd = def.map((d, i) => `<div class="dp-d"><span class="dp-sur">${tt('Défaut', 'Flaw')} ${i + 1} / ${def.length}</span>
+    <div class="dp-zm${gpDe(d) ? ' gp' : ''}"><canvas data-dz="${i}"></canvas><i></i></div>
+    <h3 class="dp-titre">${esc(LIB_DEFAUT(d.type)).replace(/^./, c => c.toUpperCase())} <em>${esc(LIB_GRAV(d.gravite))}</em></h3>
+    <p class="dp-ou">${esc(ouD(d)).replace(/^./, c => c.toUpperCase())}${gpDe(d) ? ' · ' + tt('ton gros plan', 'your close-up') : ''}</p>
+    ${ligneD(d) ? `<p class="dp-ligne">${esc(ligneD(d))}</p>` : ''}
+    ${d.note != null ? `<span class="dp-cout">${tt('Seul, il donne', 'On its own:')} PSA ${f(d.note)}</span>` : ''}
+    ${e.cid ? `<div class="dp-av"><span>${tt('Tu le vois ?', 'Do you see it?')}</span><button class="${(e.avis || {})[e.defauts.indexOf(d)] === true ? 'on' : ''}" data-av="${e.defauts.indexOf(d)}" data-v="1" aria-label="${esc(tt('Je le vois', 'I see it'))}">✓</button><button class="${(e.avis || {})[e.defauts.indexOf(d)] === false ? 'on' : ''}" data-av="${e.defauts.indexOf(d)}" data-v="0" aria-label="${esc(tt('Pas de défaut', 'No flaw'))}">✕</button></div>` : ''}</div>`);
+  // le centrage : un schema par face (la carte et son cadre imprime, decale comme mesure), le ratio et la note PSA
+  const schema = (face) => { const v = (e.centrage_vue || {})[face] || {};
+    const r = face === 'devant' ? cDev.join(' · ') : (e.centrage_dos || '');
+    const gd = face === 'devant' ? e.centrage_gd : e.centrage_dos, hb = face === 'devant' ? e.centrage_hb : null;
+    const part = (a, b, s_) => { if (a != null && b != null && a + b > 0) return a / (a + b);
+      const m = /^(\d{2})\/(\d{2})$/.exec(String(s_ || '')); return m ? +m[1] / 100 : 0.5; };
+    const px = part(v.l, v.r, gd), py = part(v.t, v.b, hb), W = 100, H = 140, bx = 22, by = 28;
+    const nt = Math.min(...[noteR(gd, face), noteR(hb, face)].filter(x => x != null).concat([10]));
+    const mesure = !!(gd || hb);
+    return `<div class="dp-cent"><svg viewBox="-4 -4 ${W + 8} ${H + 8}" aria-hidden="true"><rect class="cad" x="0" y="0" width="${W}" height="${H}" rx="5"/>
+      <rect class="imp ${mesure ? cl(nt) : 'nd'}" x="${(bx * px).toFixed(1)}" y="${(by * py).toFixed(1)}" width="${W - bx}" height="${H - by}" rx="3"/></svg>
+      <small>${face === 'devant' ? tt('Devant', 'Front') : tt('Dos', 'Back')}</small><b>${esc(r || '—')}</b>
+      <small>${mesure ? 'PSA ' + nt + (nt < 10 ? ' · ' + tt('10 jusqu’à ', '10 up to ') + (face === 'devant' ? '55/45' : '75/25') : '') : tt('pas de repère', 'no reference')}</small></div>`; };
+  const aCent = cDev.length || e.centrage_dos;
+  const dc = aCent ? `<div class="dp-d"><span class="dp-sur">${tt('Centrage', 'Centering')}</span>
+    <div class="dp-cents">${schema('devant')}${refs.length > 1 ? schema('dos') : ''}</div>
+    <p class="dp-ligne">${n.centrage != null && n.centrage >= 10 ? tt('Bien centrée : le cadre imprimé est au milieu de la carte.', 'Well centered: the printed frame sits in the middle of the card.')
+      : tt('Le cadre imprimé n’est pas au milieu : la bordure la plus large donne le ratio.', 'The printed frame is off-center: the wider border sets the ratio.')}</p>
+    ${Object.keys(e.centrage_vue || {}).length ? `<button class="pilule" data-dpcent>${tt('Voir sur ma photo', 'See it on my photo')}</button>` : ''}</div>` : '';
+  const rep = (e.a_reprendre || []).slice(0, 4);
+  const dr = rep.length ? `<div class="dp-d"><span class="dp-sur">${tt('Pour une note plus sûre', 'For a surer grade')}</span>
+    <h3 class="dp-titre">${tt('Reprends ces photos', 'Retake these photos')}</h3><ul class="dp-liste">${rep.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+    ${relancer ? `<button class="pilule" data-dpre>${tt('Refaire l’examen', 'Check again')}</button>` : ''}</div>` : '';
+  const diapos = [d1, ...dd, dc, dr].filter(Boolean);
+  const o = document.createElement('div'); o.className = 'dp';
+  o.innerHTML = `<div class="dp-h"><button class="pilule" data-dpdet>${tt('Détails', 'Details')}</button><button class="vd-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button></div>
+    <div class="dp-piste">${diapos.join('')}</div>
+    <div class="dp-b"><button class="prec" aria-label="${esc(tt('Précédente', 'Previous'))}">${ICONES.chevron}</button><span class="dp-pts">${diapos.map((_, i) => `<i data-i="${i}"></i>`).join('')}</span><button class="suiv" aria-label="${esc(tt('Suivante', 'Next'))}">${ICONES.chevron}</button></div>
+    <div class="dp-b dp-pied">${tt('Estimation sur photo, pas une gradation.', 'Photo estimate, not a grade.')}</div>`;
+  document.body.appendChild(o); document.body.classList.add('vd-ouverte');
+  const fermer = () => { o.remove(); document.body.classList.remove('vd-ouverte'); };
+  const piste = o.querySelector('.dp-piste'), pts = $$('.dp-pts i', o), prec = o.querySelector('.prec'), suiv = o.querySelector('.suiv');
+  const ici = () => Math.round(piste.scrollLeft / Math.max(1, piste.clientWidth));
+  const marquer = () => { const i = ici(); pts.forEach((p, j) => p.classList.toggle('on', j === i)); prec.disabled = i <= 0; suiv.disabled = i >= diapos.length - 1; };
+  const aller = (i, doux) => { piste.scrollTo({left: Math.max(0, Math.min(diapos.length - 1, i)) * piste.clientWidth, behavior: doux === false ? 'auto' : 'smooth'}); };
+  piste.addEventListener('scroll', () => requestAnimationFrame(marquer), {passive: true});
+  prec.onclick = () => { vibrer(); aller(ici() - 1); }; suiv.onclick = () => { vibrer(); aller(ici() + 1); };
+  pts.forEach(p => p.onclick = () => aller(+p.dataset.i));
+  o.querySelector('.vd-x').onclick = fermer;
+  o.querySelector('[data-dpdet]').onclick = () => { vibrer(); fermer(); voirDefauts(e, null, apres, relancer); };
+  const bc = o.querySelector('[data-dpcent]'); if (bc) bc.onclick = () => { vibrer(); voirCentrage(e, e.cid, apres); };
+  const br = o.querySelector('[data-dpre]'); if (br) br.onclick = () => { fermer(); relancer(); };
+  $$('canvas[data-dz]', o).forEach(cv => { const d = def[+cv.dataset.dz], gp = gpDe(d), j = d.photo || 0;
+    const q = e.quads && e.quads[j] && e.quads[j].length === 4 ? e.quads[j] : null;
+    dessinerZoom(cv, gp ? gp.ref : photoNet(refs[j] || refs[0], 1600), q, d, !!gp); });
+  $$('[data-av]', o).forEach(bt => bt.onclick = async () => { vibrer(); const i = +bt.dataset.av, v = bt.dataset.v === '1', deja = (e.avis || {})[i] === v;
+    const rr = await API.carte_etat_avis(e.cid, i, deja ? null : v).catch(() => null); if (!rr || !rr.ok) { toast(tt('Pas enregistré', 'Not saved')); return; }
+    e.avis = rr.avis; $$(`[data-av="${i}"]`, o).forEach(z => z.classList.toggle('on', (rr.avis || {})[i] === (z.dataset.v === '1')));
+    if (!v && !deja) toast(tt('Merci : noté comme « pas un défaut »', 'Thanks: marked as “not a flaw”'), 2200); });
+  requestAnimationFrame(() => { aller(depart || 0, false); marquer(); });
 }
 function voirDefauts(e, k, apres, relancer){
   const def = (e.defauts || []).slice(0, 8), refs = (e.photos || []).slice(0, 2);
@@ -10087,13 +10235,32 @@ function voirDefauts(e, k, apres, relancer){
     let p = place(d, q);
     if (q && /^coin /.test(d.zone || '')) { const k = {'coin haut-gauche': 0, 'coin haut-droit': 1, 'coin bas-droit': 2, 'coin bas-gauche': 3}[d.zone];
       if (k != null) { const ctr = [(q[0][0] + q[1][0] + q[2][0] + q[3][0]) / 4, (q[0][1] + q[1][1] + q[2][1] + q[3][1]) / 4]; p = lerp(q[k], ctr, 0.012); } }
+    // 9 nov 2026 : un bord : le zoom sur l'ARETE elle-meme (pas 5 % a l'interieur, comme le numero)
+    if (q && /^bord /.test(d.zone || '')) { const [tl, tr, br, bl] = q, t = (a, b, v, k) => cl((v - a[k]) / ((b[k] - a[k]) || 1));
+      const ctr = [(tl[0] + tr[0] + br[0] + bl[0]) / 4, (tl[1] + tr[1] + br[1] + bl[1]) / 4];
+      const pe = {'bord haut': () => lerp(tl, tr, t(tl, tr, d.x, 0)), 'bord bas': () => lerp(bl, br, t(bl, br, d.x, 0)),
+                  'bord gauche': () => lerp(tl, bl, t(tl, bl, d.y, 1)), 'bord droit': () => lerp(tr, br, t(tr, br, d.y, 1))}[d.zone];
+      if (pe) p = lerp(pe(), ctr, 0.006); }
     return [Math.max(0, Math.min(1000, p[0])) / 1000, Math.max(0, Math.min(1000, p[1])) / 1000]; };
   const gpDe = (d) => /^coin /.test(d.zone || '') && (e.gros_plans || []).find(g => g.face === FACES[d.photo || 0] && 'coin ' + g.coin === d.zone);
   const zoomDef = (d) => { const u = refs[d.photo || 0]; if (!u) return ''; const gp = gpDe(d);
     if (gp) return `<span class="vd-zm grand vd-zm-gp" style="background-image:${cssUrl(gp.ref)};background-size:cover;background-position:center"><small>${tt('ton gros plan', 'your close-up')}</small></span>`;
-    const Z = 6, [x, y] = ptZoom(d);
-    const pos = (t) => Math.max(0, Math.min(100, (t * Z - 0.5) / (Z - 1) * 100)).toFixed(2);
-    return `<span class="vd-zm grand" style="background-image:${cssUrl(photoNet(u, 1600))};background-size:${Z * 100}% ${Z * 100}%;background-position:${pos(x)}% ${pos(y)}%"><i></i></span>`; };
+    return zmCanvas(d, 'grand'); };
+  // 9 nov 2026 (Mathieu, la Hutson : le zoom du coin bas-droit montrait l'hologramme, pas la pointe) : le zoom est DESSINE
+  // (canevas) depuis la photo pleine resolution : centre exactement sur le point meme au bord de la photo (fond noir au-dela),
+  // sans deformation (l'ancien fond CSS etirait l'image et se calait sur le bord de la photo)
+  const zmCanvas = (d, cls) => { const [x, y] = ptZoom(d);
+    return `<span class="vd-zm ${cls || ''}"><canvas data-zj="${d.photo || 0}" data-zx="${x}" data-zy="${y}" data-zc="${/^coin /.test(d.zone || '') ? 1 : 0}"></canvas><i></i></span>`; };
+  const peindreZm = (root) => $$('canvas[data-zj]', root).forEach(cv => {
+    const j = +cv.dataset.zj, im = o.querySelector(`.vd-ph[data-j="${j}"] img`); if (!im) return;
+    const go = () => { const W = im.naturalWidth, H = im.naturalHeight; if (!W) return;
+      const q = (Q && Q[j]) || (e.quads && e.quads[j] && e.quads[j].length === 4 ? e.quads[j] : null);
+      const larg = q ? Math.hypot((q[1][0] - q[0][0]) * W / 1000, (q[1][1] - q[0][1]) * H / 1000) : W * 0.8;
+      const r = Math.max(24, larg * (cv.dataset.zc === '1' ? 0.075 : 0.1)), cx = +cv.dataset.zx * W, cy = +cv.dataset.zy * H;
+      const T = Math.round(Math.min(900, Math.max(240, 2 * r * 2))); cv.width = cv.height = T;
+      const g = cv.getContext('2d'); g.fillStyle = '#000'; g.fillRect(0, 0, T, T); g.imageSmoothingQuality = 'high';
+      g.drawImage(im, cx - r, cy - r, 2 * r, 2 * r, 0, 0, T, T); };
+    if (im.complete && im.naturalWidth) go(); else im.addEventListener('load', go, {once: true}); });
   // la description d'un defaut, ouverte sous (ou sur) son numero : quoi, ou, le critere PSA, et ton avis
   const bulle = (cad, sc, d, i, x, y) => {
     const a = (e.avis || {})[i], b = document.createElement('div');
@@ -10101,7 +10268,7 @@ function voirDefauts(e, k, apres, relancer){
     b.innerHTML = `${zoomDef(d)}<b>${i + 1}. ${esc(LIB_DEFAUT(d.type))} <em>${esc(LIB_GRAV(d.gravite))}</em></b>
       <span>${esc(LIB_ZONE(d.zone))}${d.photo ? tt(' (dos)', ' (back)') : ''}</span>${d.pourquoi ? `<small>${esc(d.pourquoi)}</small>` : ''}
       ${e.cid ? `<div class="vd-av"><span>${tt('Tu le vois ?', 'Do you see it?')}</span><button class="${a === true ? 'on' : ''}" data-av="${i}" data-v="1" aria-label="${esc(tt('Je le vois', 'I see it'))}">✓</button><button class="${a === false ? 'on' : ''}" data-av="${i}" data-v="0" aria-label="${esc(tt('Pas de défaut', 'No flaw'))}">✕</button></div>` : ''}`;
-    cad.appendChild(b);
+    cad.appendChild(b); peindreZm(b);
     // placee dans la photo cadree : sous le numero, ou au-dessus s'il est dans le bas
     const r = sc.getBoundingClientRect(), rc = cad.getBoundingClientRect();
     const px = r.left - rc.left + x / 1000 * r.width, py = r.top - rc.top + y / 1000 * r.height;
@@ -10189,9 +10356,7 @@ function voirDefauts(e, k, apres, relancer){
     const zoom = (d, cls) => { const u = refs[d.photo || 0]; if (!u) return '';
       const gp = gpDe(d);
       if (gp) return `<span class="vd-zm vd-zm-gp ${cls || ''}" style="background-image:${cssUrl(gp.ref)};background-size:cover;background-position:center"></span>`;
-      const Z = 6, [x, y] = ptZoom(d);
-      const pos = (t) => Math.max(0, Math.min(100, (t * Z - 0.5) / (Z - 1) * 100)).toFixed(2);
-      return `<span class="vd-zm ${cls || ''}" style="background-image:${cssUrl(photoNet(u, 1600))};background-size:${Z * 100}% ${Z * 100}%;background-position:${pos(x)}% ${pos(y)}%"><i></i></span>`; };
+      return zmCanvas(d, cls); };
     // 3 nov 2026 (Mathieu : « le gabarit physique avec les lignes de delimitation, comment tu l'as pris pour le centering ») :
     // la carte A PLAT, ses aretes, les lignes du cadre retenues, la largeur de chaque bordure en mm et le ratio
     const gabarit = () => FACES.map(face => {
@@ -10251,6 +10416,7 @@ function voirDefauts(e, k, apres, relancer){
       <button class="lien-t vd-bar" data-bareme>${tt('Le barème utilisé : normes officielles PSA ›', 'The scale used: official PSA standards ›')}</button>
       <div class="sous vd-pied">${tt('Estimation sur photo, pas une gradation.', 'Photo estimate, not a grade.')}${relancer ? ` <button class="lien" data-relancer>${tt('Refaire l’examen', 'Check again')}</button>` : ''}</div>`;
     o.querySelector('.vd-x').onclick = () => { o.remove(); document.body.classList.remove('vd-ouverte'); };
+    peindreZm(o);
     refs.forEach((u, j) => {
       const w = o.querySelector(`.vd-ph[data-j="${j}"]`), im = w.querySelector('img');
       const go = async () => {
@@ -10355,6 +10521,7 @@ async function blocEtat(c, forcer, opts){
     if (!document.body.contains(z)) return;
     if (!r.ok) { z.innerHTML = vide(r.erreur); brancher(); return; }
     peindre(r);
+    if (r.evaluable !== false && document.body.contains(z)) { r.cid = c.id; diapoEtat(r, 0, peindre, lancer); }   // 9 nov 2026 : le resultat s'ouvre en diapos
   };
   const brancher = () => { const b = $('#fc-et-go'); if (b) b.onclick = () => { vibrer(); lancer(); }; };
   const peindre = (e) => {
@@ -10390,12 +10557,12 @@ async function blocEtat(c, forcer, opts){
       ${e.precision ? `<div class="et-tag">${tt(`Notre précision : ${e.precision.pct} % dans la fourchette, sur ${e.precision.n} cartes revenues du gradage`, `Our accuracy: ${e.precision.pct}% within range, on ${e.precision.n} cards back from grading`)}</div>` : ''}
       <div class="et-p">${(e.invisible || [])[0] ? tt('Pas vérifiable : ', 'Not checkable: ') + esc(e.invisible[0]) + ' · ' : ''}${tt('Estimation sur photo, pas une gradation.', 'Photo estimate, not a grade.')} <button class="lien" id="fc-et-re">${tt('Refaire', 'Redo')}</button></div></div></div>`;
     // 2 nov 2026 (Mathieu : « un seul affichage explique les notes ») : la pastille ouvre l'analyse (photos, numeros, centrage)
-    $('#fc-et-t').onclick = () => { vibrer(); voirDefauts(e, null, peindre, lancer); };
+    $('#fc-et-t').onclick = () => { vibrer(); diapoEtat(e, 0, peindre, lancer); };
     const re_ = $('#fc-et-re'); if (re_) re_.onclick = () => { vibrer(); lancer(); };
     e.cid = c.id;
     const vc = $('#fc-et-cent'); if (vc) vc.onclick = () => { vibrer(); voirCentrage(e, c.id, peindre); };
     const vo = $('#fc-et-voir'); if (vo) vo.onclick = () => { vibrer(); voirDefauts(e, null, peindre, lancer); };
-    $$('#fc-etat [data-d]').forEach(li => li.onclick = () => { vibrer(); voirDefauts(e, +li.dataset.d, peindre, lancer); });
+    $$('#fc-etat [data-d]').forEach(li => li.onclick = () => { vibrer(); diapoEtat(e, 1 + (e.defauts || []).filter(d => !d.masque).indexOf(e.defauts[+li.dataset.d]), peindre, lancer); });
   };
   if (opts.examen) { analyser(opts.examen); return; }
   if (opts.lancer) { lancer(); }

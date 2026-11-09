@@ -133,14 +133,20 @@ def affiner_quad(im, quad, recherche=0.04):
             for s_ in range(-R, R + 1):
                 v = lum(ox + nx * s_, oy + ny * s_)
                 prof.append(v)
-            best, bs = None, 0
+            best, bs, grs = None, 0, []
             for s_ in range(2, len(prof) - 2):
                 v1, v2 = prof[s_ - 2], prof[s_ + 2]
                 if v1 is None or v2 is None:
                     continue
                 gr = abs(v2 - v1)
+                grs.append((s_ - R, gr))
                 if gr > bs:
                     bs, best = gr, s_ - R
+            # 9 nov 2026 (la Letang Cosmic : sa bordure holo a des lignes plus contrastees que l'arete) : l'arete est la
+            # transition franche la plus a l'EXTERIEUR (au moins 60 % de la plus forte), pas la plus forte
+            ext = [o for o, gr in grs if gr >= max(18, 0.6 * bs)]
+            if ext:
+                best = max(ext)
             if best is not None and bs >= 18:
                 pts.append((ox + nx * best, oy + ny * best))
         if len(pts) < 12:
@@ -555,6 +561,7 @@ def preparer(photos_octets, quads=None, rasante=None, rasante2=None, gros_plans=
     quads = list(quads or [])
     images, cent, cartes, mes, verif = [], {}, [], {}, {}
     utilises = []                                          # 3 nov 2026 (revue) : le contour vraiment utilise, rendu a l'appelant
+    zooms_img = []                                         # 9 nov 2026 : les cartes redressees en pleine resolution (contre-verification)
     for j, b in enumerate(photos_octets[:2]):
         face = "devant" if j == 0 else "dos"
         im = ouvrir(b)
@@ -581,6 +588,7 @@ def preparer(photos_octets, quads=None, rasante=None, rasante2=None, gros_plans=
         c = redresser(im, q) if q else None                 # exacte : pour le centrage
         z = redresser(im, q, 0.03, COTE_ZOOM) if q else None   # pleine resolution, un peu de fond : l'arete des coins et des bords
         cartes.append(c)
+        zooms_img.append(z)
         if z is not None:
             images.append((f"Zooms des 4 coins du {face} (pleine resolution, carte redressee ; le fond autour montre l'arete)."
                            + (" CARTE TRANSPARENTE (acrylique) : le filet clair le long de l'arete est le bord de l'acrylique, PAS du "
@@ -667,7 +675,7 @@ def preparer(photos_octets, quads=None, rasante=None, rasante2=None, gros_plans=
     n_bas = note_centrage(cent.get("devant"), cent.get("dos")) if cent else None
     return {"images": images, "centrage": cent or None, "note_centrage": n_haut if n_haut is not None else (n_bas if not verif else None),
             "note_centrage_bas": n_bas, "centrage_verifier": verif, "mesures": mes, "zooms": any(c is not None for c in cartes),
-            "gros_plans": gp_info, "quads": utilises}
+            "gros_plans": gp_info, "quads": utilises, "zooms_img": zooms_img}
 
 
 def _mesurer(im, q, c, z, transparent=False):

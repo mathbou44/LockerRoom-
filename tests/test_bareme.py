@@ -12,6 +12,9 @@ assert b.note_coins(["net"] * 5 + ["effilochage_leger"] * 3) == 7          # PSA
 assert b.note_coins(["net"] * 7 + ["arrondi_leger"]) == 5
 assert b.note_coins(["net"] * 7 + ["plie"]) == 3
 assert b.note_bords(["net"] * 7 + ["point_blanc"]) == 9 and b.note_bords(["net"] * 6 + ["point_blanc"] * 2) == 8.5
+# 9 nov 2026 (la Hutson : des points fins sur un seul bord -> PSA 9 selon Mathieu)
+assert b.note_bords(["net"] * 7 + ["quelques_points"]) == 9 and b.note_bords(["net"] * 6 + ["quelques_points", "point_blanc"]) == 8.5
+assert b.note_bords(["net"] * 5 + ["quelques_points"] * 3) == 8
 assert b.note_bords(["net"] * 7 + ["encoche"]) == 6 and b.note_bords(["net"] * 4 + ["quelques_points"] * 4) == 7.5
 assert b.note_surface([]) == 10 and b.note_surface([("ligne d'impression", "rasante")]) == 10
 # 9 nov 2026 (guide pregradecards.com) : une rayure vue de pres : 7 ; deux dont une visible : 5 ; une micro-rayure rasante : 9
@@ -34,9 +37,10 @@ f = {"evaluable": True, "invisible": [],
      "surface": [{"photo": 0, "type": "rayure", "visibilite": "visible", "certitude": "sure", "x": 500, "y": 400, "sur_relique": True}]}
 r1 = vision._noter_observations(f, {"devant": {"gd": "52/48"}, "note": 10})
 r2 = vision._noter_observations(f, {"devant": {"gd": "52/48"}, "note": 10})
-assert r1["note_max"] == r2["note_max"] == 8 and r1["note_min"] == 6, (r1["note_min"], r1["note_max"])
+# 9 nov 2026 (Mathieu : « quand l'IA doute : ne rien montrer ») : l'encoche incertaine ne baisse plus rien et n'est pas montree
+assert r1["note_max"] == r2["note_max"] == 8 and r1["note_min"] == 8, (r1["note_min"], r1["note_max"])
 assert r1["notes"]["surface"] == 10                                          # la rayure est sur la patch : ignoree
-assert [d["gravite"] for d in r1["defauts"]] == ["moyen", "a verifier"]
+assert [d["gravite"] for d in r1["defauts"]] == ["moyen"]
 assert r1["bareme"] == "PSA-1"
 print("ok bareme")
 # 9 nov 2026 (la Dickinson : une vraie tache brune au dos) : jamais 10 ; au dos, un cran moins grave qu'au devant

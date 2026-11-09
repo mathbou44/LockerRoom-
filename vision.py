@@ -561,6 +561,17 @@ METHODE (dans cet ordre, sans sauter d'etape) :
    net = pointe nette et carree, aucun blanc ; point_blanc = un tout petit point blanc ou une pointe a peine adoucie, visible
    seulement au zoom ; effilochage_leger = un peu de blanc / de fibres a la pointe, vu de pres ; effilochage = blanc net, visible
    sans zoom ; arrondi_leger = pointe tres legerement ronde ; arrondi = coin rond ; plie = coin plie, ecrase ou dechire.
+   UN DEFAUT, UNE SEULE PLACE (9 nov 2026, la Hutson : du blanc le long du bord du haut compte aussi au coin haut-gauche,
+   alors que la pointe etait nette) : le coin, c'est la POINTE elle-meme (les 1-2 derniers mm). Des points blancs le long
+   d'une arete, meme pres d'un coin, vont au BORD ; le coin reste « net » si sa pointe est nette.
+   COIN IMPRIME EN BLANC (la Hutson : « tres beau coin, il est juste blanc ») : le blanc y est l'impression, jamais du
+   blanchiment ; juge seulement la FORME de la pointe. Le leger flou ou l'ombre de l'arete d'une carte blanche sur un fond
+   noir n'est pas une pointe adoucie : « net », sauf si la pointe est clairement ronde ou ecrasee.
+   BORDURE ARGENT / GRISE / METALLIQUE (9 nov 2026, le dos de la Willander Young Guns : coin haut-droit et les deux coins du
+   bas touches) : le blanchiment y a peu de contraste. C'est un blanc PUR et MAT, un peu flou ou effiloche, a la pointe
+   ou sur la ligne de coupe, plus clair que l'argent (qui est gris et brillant, avec ses stries). Compare la pointe aux
+   autres coins de la meme face : celle qui a un liseré blanc plus epais ou une pointe blanche est touchee. Le mince filet
+   de lumiere regulier sur toute l'arete (la coupe qui accroche la lumiere) n'est pas du blanchiment.
 2. Les 8 bords, moitie par moitie. Une bordure foncee montre tout : la meme severite qu'une bordure claire, mais regarde mieux.
    net ; point_blanc (un seul petit point) ; quelques_points (plusieurs petits points) ; usure_legere (fine usure continue) ;
    encoche (petit creux dans l'arete) ; ebrechures (eclats de couleur) ; usure (usure nette, entaille).
@@ -693,7 +704,12 @@ def _bil(q, u, v):
     return round(a[0] + (b[0] - a[0]) * v), round(a[1] + (b[1] - a[1]) * v)
 
 
-def _noter_observations(f, centrage=None, calibration=None, quads=None):
+_LIB_ETAT_EN = {"point_blanc": "tiny white speck", "effilochage_leger": "light fraying", "effilochage": "clear fraying",
+                "arrondi_leger": "slightly rounded tip", "arrondi": "rounded corner", "plie": "bent corner", "quelques_points": "a few white specks",
+                "usure_legere": "light wear", "encoche": "small notch", "ebrechures": "chipping", "usure": "clear wear"}
+
+
+def _noter_observations(f, centrage=None, calibration=None, quads=None, langue="fr"):
     """2 nov 2026 : les observations de l'IA -> sous-notes, fourchette, defauts et explications, TOUJOURS avec le meme bareme
     (bareme.py, normes PSA). Une observation « incertaine » n'abaisse que le bas de la fourchette."""
     import examen
@@ -716,6 +732,11 @@ def _noter_observations(f, centrage=None, calibration=None, quads=None):
     hi = {"coins": _bar.note_coins([o["etat"] for o in lim(coins.values())]),
           "bords": _bar.note_bords([o["etat"] for o in lim(bords.values())]),
           "surface": _bar.note_surface([(o["type"], o.get("visibilite"), 1 if o.get("photo") == 1 else 0) for o in lim(surf)]) if sj else None}
+    # 9 nov 2026 (Mathieu : « quand l'IA doute : ne rien montrer ») : un doute n'abaisse plus rien, meme pas le bas de la
+    # fourchette, et n'est plus montre (voir les defauts plus bas)
+    coins = {k: o for k, o in coins.items() if not inc(o)}
+    bords = {k: o for k, o in bords.items() if not inc(o)}
+    surf = lim(surf)
     lo = {"coins": _bar.note_coins([o["etat"] for o in coins.values()]),
           "bords": _bar.note_bords([o["etat"] for o in bords.values()]),
           "surface": _bar.note_surface([(o["type"], o.get("visibilite"), 1 if o.get("photo") == 1 else 0) for o in surf]) if sj else None}
@@ -777,14 +798,14 @@ def _noter_observations(f, centrage=None, calibration=None, quads=None):
         n_ = _bar.ETATS_COIN[o["etat"]][0]
         if n_ < 10:
             x, y = _bil(quads[ph] if ph < len(quads) else None, *uv_coin[c])
-            ajouter("coins", o, n_, _TYPE_COIN[o["etat"]], "coin " + c, x, y, _LIB_ETAT[o["etat"]])
+            ajouter("coins", o, n_, _TYPE_COIN[o["etat"]], "coin " + c, x, y, (_LIB_ETAT_EN if langue == "en" else _LIB_ETAT)[o["etat"]])
     for (ph, b), o in bords.items():
         n_ = _bar.ETATS_BORD[o["etat"]][0]
         if n_ < 10:
             t = max(0.05, min(0.95, (o.get("position") if isinstance(o.get("position"), int) else 500) / 1000))
             u, v = {"haut": (t, 0.01), "bas": (t, 0.99), "gauche": (0.01, t), "droit": (0.99, t)}[b]
             x, y = _bil(quads[ph] if ph < len(quads) else None, u, v)
-            ajouter("bords", o, n_, _TYPE_BORD[o["etat"]], "bord " + b, x, y, _LIB_ETAT[o["etat"]])
+            ajouter("bords", o, n_, _TYPE_BORD[o["etat"]], "bord " + b, x, y, (_LIB_ETAT_EN if langue == "en" else _LIB_ETAT)[o["etat"]])
     for o in surf:
         vis = o.get("visibilite") if o.get("visibilite") in _bar.VISIBILITES else "de_pres"
         n_ = (_bar.SURFACE_DOS.get(o["type"]) if o.get("photo") == 1 and o["type"] in _bar.SURFACE_DOS else _bar.SURFACE[o["type"]])[_bar.VISIBILITES.index(vis)]
@@ -793,7 +814,8 @@ def _noter_observations(f, centrage=None, calibration=None, quads=None):
         except (TypeError, ValueError):
             x, y = 500, 500
         t_ = o["type"] if o["type"] in _DEFAUTS else "autre"
-        ajouter("surface", o, n_, t_, "surface", x, y, o["type"] + {"rasante": " (lumiere rasante)", "de_pres": " (de pres)", "visible": ""}[vis])
+        ajouter("surface", o, n_, t_, "surface", x, y, o["type"] + ({"rasante": " (raking light)", "de_pres": " (up close)", "visible": ""} if langue == "en"
+                                                                   else {"rasante": " (lumiere rasante)", "de_pres": " (de pres)", "visible": ""})[vis])
     ordre = {"fort": 0, "moyen": 1, "leger": 2, "a verifier": 3}
     defauts.sort(key=lambda d: (ordre[d["gravite"]], d["note"]))
     defauts = defauts[:10]
@@ -811,7 +833,7 @@ def _noter_observations(f, centrage=None, calibration=None, quads=None):
         mal = sorted(((ph, z, o) for (ph, z), o in obs.items() if o["etat"] != "net"), key=lambda t: etats[t[2]["etat"]][0])
         regle = {"coins": {9: "PSA 9 : un tout petit défaut", 8.5: "2-3 points blancs", 8: "PSA 8 : léger effilochage à 1-2 coins",
                            7: "PSA 7 : effilochage à quelques coins", 6: "PSA 6", 5: "PSA 5 : coin légèrement arrondi", 4: "PSA 4 : coin arrondi", 3: "PSA 3 : coin plié"},
-                 "bords": {9: "PSA 9 : un tout petit point", 8.5: "points sur 2 bords", 8: "PSA 8 : quelques points blancs", 7.5: "usure sur plusieurs bords",
+                 "bords": {9: "PSA 9 : de fins points sur un seul bord", 8.5: "points sur 2 bords", 8: "PSA 8 : quelques points blancs", 7.5: "usure sur plusieurs bords",
                            7: "PSA 7 : légère usure", 6: "PSA 6 : petite encoche", 5: "PSA 5 : ébréchures", 4: "PSA 4 : usure nette"}}[k]
         if not mal:
             explications[k] = f"{tot} {nomk}s regardés au zoom : tous nets"
@@ -993,9 +1015,10 @@ def _infos_mesures(prep):
     return out
 
 
-def _ajouter_mesures(res, mes, quads):
+def _ajouter_mesures(res, mes, quads, defauts=True):
     """Les mesures dans le resultat (l'ecran les montre) ; un blanchiment MESURE que le modele n'a pas vu devient un point
-    « a verifier » (il n'abaisse que le bas de la fourchette), jamais sous un reflet."""
+    « a verifier » (il n'abaisse que le bas de la fourchette), jamais sous un reflet.
+    9 nov 2026 : defauts=False (l'examen complet) : les mesures passent par la contre-verification ; rien de « a verifier »."""
     if not mes:
         return
     res["mesures"] = {}
@@ -1060,6 +1083,8 @@ def _ajouter_mesures(res, mes, quads):
                                                       "note": 8 if e_["profondeur_mm"] >= 0.4 else 9, "mesure": True,
                                                       "pourquoi": f"mesuré par l'app : l'arête rentre de {str(e_['profondeur_mm']).replace('.', ',')} mm sur {str(e_['longueur_mm']).replace('.', ',')} mm, à confirmer sur le zoom"})
                 deja.add((ph, "bord " + nom))
+    if not defauts:
+        res["defauts"] = [d for d in res.get("defauts") or [] if not d.get("mesure")]
     ajoutes = [d for d in res.get("defauts") or [] if d.get("mesure")]
     if ajoutes and res.get("notes"):
         bas = dict(res.get("notes_bas") or {})
@@ -1074,6 +1099,200 @@ def _ajouter_mesures(res, mes, quads):
             res["note_min"] = min(res["note_min"], g)
     if reprendre:
         res["a_reprendre"] = reprendre[:4]
+
+
+# -- 9 nov 2026 : la CONTRE-VERIFICATION --------------------------------------------------------------------------------
+# Mathieu (la Hutson) : « ca aucun rapport » : un coin haut-gauche « blanchi » dont la pointe est nette (le blanc etait le
+# long du bord du haut, deja compte), un bord droit invente. Et : « quand l'IA doute : ne rien montrer ». Chaque defaut de
+# coin ou de bord (vu par l'IA, ou mesure par l'app) est donc revu un a un sur un gros plan PLEINE RESOLUTION de cet
+# endroit precis, par un second examen strict : confirme -> il compte ; rejete -> il disparait ; flou -> il ne compte pas,
+# et l'app demande une meilleure photo de ce coin.
+VERIF_MAX = 12
+SYSTEME_VERIF = """Tu es un grader PSA tres strict. Un premier examen d'une carte de sport a releve des defauts de coins et de
+bords. Ton travail : CONTRE-VERIFIER chacun sur son gros plan (pleine resolution, carte redressee, un peu de fond autour).
+Pour chaque numero :
+- « confirme » : tu VOIS le defaut decrit, a cet endroit, dans ce gros plan. Donne l'etat exact que tu vois.
+- « rejete » : l'endroit est net ; ou ce qu'on voit est de la poussiere, une fibre posee dessus, un reflet, le grain de la photo,
+  l'ombre de l'arete, le dessin imprime ; ou, pour un COIN, la pointe elle-meme (les 1-2 derniers mm) est nette et le blanc
+  est plus loin le long d'une arete (il appartient au BORD, pas au coin).
+- « flou » : le gros plan ne permet pas de trancher (flou, trop petit, reflet qui cache, coin coupe par la photo).
+Regles : un coin se juge a sa POINTE contre le fond ; compare avec les autres coins de la meme face (fournis). Un coin
+IMPRIME EN BLANC : le blanc est l'impression, pas du blanchiment ; seule la forme compte, et le flou ou l'ombre de l'arete
+contre un fond noir n'est pas une pointe adoucie (rejete, sauf pointe clairement ronde ou ecrasee). Une bordure ARGENT
+ou grise : le blanchiment est un blanc pur et mat, un peu effiloche, plus epais qu'aux autres coins ; le mince filet de
+lumiere regulier de la coupe, present partout, n'en est pas. Un point blanc
+SUR la ligne de coupe d'une bordure coloree ou foncee est du blanchiment ; un point blanc dans la surface est de la poussiere.
+Ne confirme jamais par prudence : dans le doute, « flou ». Reponds avec l'outil « verdicts »."""
+_ETATS_TOUS = sorted(set(_bar.ETATS_COIN) | set(_bar.ETATS_BORD))
+OUTIL_VERIF = {
+    "name": "verdicts",
+    "description": "Le verdict de chaque defaut contre-verifie.",
+    "input_schema": {"type": "object", "properties": {"verdicts": {"type": "array", "items": {"type": "object", "properties": {
+        "n": {"type": "integer"},
+        "verdict": {"type": "string", "enum": ["confirme", "rejete", "flou"]},
+        "etat": {"type": "string", "enum": _ETATS_TOUS, "description": "Si confirme : l'etat exact vu (coins : point_blanc, effilochage_leger, effilochage, arrondi_leger, arrondi, plie ; bords : point_blanc, quelques_points, usure_legere, encoche, ebrechures, usure)"},
+        "pourquoi": {"type": "string", "description": "Ce que tu vois, en une phrase courte"}},
+        "required": ["n", "verdict"]}}}, "required": ["verdicts"]}}
+
+
+def _candidats_verif(f, mes):
+    """Les defauts a contre-verifier : ceux de l'IA (coins, bords ; pas « incertaine ») et ceux MESURES par l'app la ou
+    l'IA voit net. -> [{sorte, ph, nom, etat, vu, obs?, position?}]"""
+    out = []
+    for sorte, cle, etats in (("coin", "coin", _bar.ETATS_COIN), ("bord", "bord", _bar.ETATS_BORD)):
+        for o in f.get(sorte + "s") or []:
+            if not isinstance(o, dict) or o.get(cle) not in (_bar.COINS if sorte == "coin" else _bar.BORDS):
+                continue
+            ph = 1 if o.get("photo") == 1 else 0
+            if o.get("etat") in etats and o["etat"] != "net" and o.get("certitude") != "incertaine":
+                out.append({"sorte": sorte, "ph": ph, "nom": o[cle], "etat": o["etat"], "vu": str(o.get("pourquoi") or "")[:140], "obs": o,
+                            "position": o.get("position") if isinstance(o.get("position"), int) else None})
+    for face, m in (mes or {}).items():
+        ph = 0 if face == "devant" else 1
+        q = m.get("qualite") or {}
+        if not q.get("assez_grande", True):
+            continue
+        reflets = set(q.get("reflets") or [])
+        u, sil = m.get("usure") or {}, m.get("silhouette") or {}
+        def ajout(sorte, nom, etat, vu):
+            # deja dans la liste (l'IA y voit un defaut) : rien ; l'IA y voit net : la mesure le fait revoir
+            if any(c["sorte"] == sorte and c["ph"] == ph and c["nom"] == nom for c in out):
+                return
+            out.append({"sorte": sorte, "ph": ph, "nom": nom, "etat": etat, "vu": vu, "obs": None, "mesure": True, "position": None})
+        for nom, x in (u.get("coins") or {}).items():
+            if x.get("mesurable") and x.get("blanc_mm2", 0) >= 0.25 and nom not in reflets:
+                ajout("coin", nom, "effilochage_leger" if x["blanc_mm2"] >= 0.6 else "point_blanc",
+                      f"l'app mesure {x['blanc_mm2']} mm2 de blanc a l'arete du coin")
+        for nom, x in (u.get("bords") or {}).items():
+            pf = x.get("points_fins") or 0
+            if x.get("mesurable") and pf >= 3:
+                ajout("bord", nom, "quelques_points" if pf >= 5 else "point_blanc", f"l'app mesure {pf} petits points blancs sur la ligne de coupe")
+        for nom, x in (sil.get("coins") or {}).items():
+            if x.get("mesurable") and (x.get("relatif") or 0) >= 0.3:
+                ajout("coin", nom, "point_blanc" if x["relatif"] < 0.8 else "effilochage_leger",
+                      f"l'app mesure {x.get('manque_mm2')} mm2 de carton en moins a la pointe (plus rond que les autres coins)")
+        for nom, x in (sil.get("cotes") or {}).items():
+            if x.get("mesurable") and any(e_["profondeur_mm"] >= 0.2 and e_["longueur_mm"] >= 0.3 for e_ in x.get("encoches") or []):
+                ajout("bord", nom, "encoche", "l'app mesure un petit creux dans l'arete")
+    return out[:VERIF_MAX]
+
+
+def _gros_plan_verif(z, c):
+    """Le gros plan d'un candidat dans la carte redressee z (3 % de fond autour) : un coin (carre) ou un bord (bande a
+    l'horizontale ; sans position : tout le bord en deux moities)."""
+    from PIL import Image
+    W, H = z.size
+    mx, my = W * 0.03 / 1.06, H * 0.03 / 1.06
+    court = min(W, H)
+    if c["sorte"] == "coin":
+        s = int(court * 0.16)
+        x = 0 if "gauche" in c["nom"] else W - s
+        y = 0 if "haut" in c["nom"] else H - s
+        im = z.crop((x, y, x + s, y + s))
+        k = min(4.0, 900 / max(1, s))
+        return im.resize((int(s * k), int(s * k)), Image.LANCZOS)
+    ep = int(my + court * 0.06) if c["nom"] in ("haut", "bas") else int(mx + court * 0.06)
+    if c["nom"] == "haut":
+        bande = z.crop((0, 0, W, ep))
+    elif c["nom"] == "bas":
+        bande = z.crop((0, H - ep, W, H)).rotate(180, expand=True)
+    elif c["nom"] == "gauche":
+        bande = z.crop((0, 0, ep, H)).rotate(-90, expand=True)
+    else:
+        bande = z.crop((W - ep, 0, W, H)).rotate(90, expand=True)
+    L, E = bande.size
+    if c.get("position") is not None:
+        t = max(0.0, min(1.0, c["position"] / 1000))
+        if c["nom"] in ("bas", "gauche"):
+            t = 1 - t                                     # la bande a ete tournee : le sens de lecture s'inverse
+        lg = int(L * 0.4)
+        x0 = int(max(0, min(L - lg, t * L - lg / 2)))
+        im = bande.crop((x0, 0, x0 + lg, E))
+    else:
+        a, b = bande.crop((0, 0, L // 2, E)), bande.crop((L // 2, 0, L, E))
+        im = Image.new("RGB", (L // 2, 2 * E + 8), (60, 60, 60))
+        im.paste(a, (0, 0)); im.paste(b, (0, E + 8))
+    k = min(3.0, 1400 / max(1, im.size[0]))
+    return im.resize((max(1, int(im.size[0] * k)), max(1, int(im.size[1] * k))), Image.LANCZOS)
+
+
+def _contre_verifier(cands, zimgs, langue="fr"):
+    """-> {n: {verdict, etat, pourquoi}} ou None (rien a verifier, pas d'images, erreur)."""
+    import examen
+    cands = [c for c in cands if c["ph"] < len(zimgs or []) and zimgs[c["ph"]] is not None]
+    if not cands:
+        return None
+    contenu = []
+    for ph in sorted({c["ph"] for c in cands if c["sorte"] == "coin"}):
+        face = "devant" if ph == 0 else "dos"
+        contenu += [{"type": "text", "text": f"Pour comparer : les 4 coins du {face}."},
+                    {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg",
+                                                 "data": base64.b64encode(examen.jpeg(examen.mosaique_coins(zimgs[ph], face), 1290, 90)).decode()}}]
+    for i, c in enumerate(cands, 1):
+        face = "devant" if c["ph"] == 0 else "dos"
+        lib = _LIB_ETAT.get(c["etat"], c["etat"])
+        ou = f"le {c['sorte']} {c['nom']} du {face}" + ("" if c["sorte"] == "coin" else " (la bande montre ce bord a l'horizontale, l'arete en haut" + (")" if c.get("position") is not None
+                                                                                       else " ; tout le bord, en deux moities l'une sous l'autre)"))
+        contenu += [{"type": "text", "text": f"#{i} : {ou}. Le premier examen dit : {lib}" + (f" — « {c['vu']} »" if c.get("vu") else "") + "."},
+                    {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg",
+                                                 "data": base64.b64encode(examen.jpeg(_gros_plan_verif(zimgs[c["ph"]], c), 1568, 92)).decode()}}]
+    contenu.append({"type": "text", "text": f"Donne un verdict pour chacun des {len(cands)} numeros avec l'outil « verdicts »."
+                    + (" Write « pourquoi » in plain English." if langue == "en" else " Ecris « pourquoi » en francais simple.")})
+    corps = {"model": MODELE_ETAT, "max_tokens": 8000, "system": SYSTEME_VERIF, "tools": [OUTIL_VERIF],
+             "thinking": {"type": "enabled", "budget_tokens": 4000}, "tool_choice": {"type": "auto"},
+             "messages": [{"role": "user", "content": contenu}]}
+    try:
+        r = _appeler(corps, timeout=180)
+        if not any(b.get("type") == "tool_use" and b.get("name") == "verdicts" for b in r.get("content") or []):
+            r = _appeler({"model": MODELE_ETAT, "max_tokens": 2000, "system": SYSTEME_VERIF, "tools": [OUTIL_VERIF],
+                          "tool_choice": {"type": "tool", "name": "verdicts"}, "messages": [{"role": "user", "content": contenu}]}, timeout=120)
+        _noter_etat(r.get("usage") or {})
+    except Exception as e:
+        print("Vision (contre-verification) : " + repr(e), flush=True)
+        return None
+    v = next((b.get("input") for b in r.get("content") or [] if b.get("type") == "tool_use" and b.get("name") == "verdicts"), None)
+    if not isinstance(v, dict) or not isinstance(v.get("verdicts"), list):
+        return None
+    out = {}
+    for x in v["verdicts"]:
+        try:
+            n = int(x.get("n"))
+        except (TypeError, ValueError, AttributeError):
+            continue
+        if 1 <= n <= len(cands) and x.get("verdict") in ("confirme", "rejete", "flou"):
+            out[n] = {"verdict": x["verdict"], "etat": x.get("etat"), "pourquoi": str(x.get("pourquoi") or "").strip()[:140]}
+    return {"cands": cands, "verdicts": out} if out else None
+
+
+def _appliquer_verif(f, v):
+    """Les verdicts dans les observations f (en place). -> (rejetes, flous) : [« dos coin haut-gauche », ...]."""
+    rejetes, flous = [], []
+    for i, c in enumerate(v["cands"], 1):
+        x = v["verdicts"].get(i)
+        if not x:
+            continue
+        etats = _bar.ETATS_COIN if c["sorte"] == "coin" else _bar.ETATS_BORD
+        nom = f"{'dos' if c['ph'] == 1 else 'devant'} {c['sorte']} {c['nom']}"
+        o = c.get("obs")
+        if x["verdict"] == "rejete":
+            rejetes.append(nom)
+            if o is not None:
+                o.update(etat="net", contre_verifie="rejete")
+        elif x["verdict"] == "flou":
+            flous.append(nom)
+            if o is not None:
+                o.update(certitude="incertaine", contre_verifie="flou")
+        else:
+            et = x.get("etat") if x.get("etat") in etats and x.get("etat") != "net" else c["etat"]
+            pq = x.get("pourquoi") or c.get("vu") or ""
+            if o is not None:
+                o.update(etat=et, certitude="sure", contre_verifie="confirme", pourquoi=pq)
+            else:
+                cle = "coin" if c["sorte"] == "coin" else "bord"
+                l = f.setdefault(c["sorte"] + "s", [])
+                l[:] = [y for y in l if not (isinstance(y, dict) and (1 if y.get("photo") == 1 else 0) == c["ph"] and y.get(cle) == c["nom"])]
+                l.append({"photo": c["ph"], cle: c["nom"], "etat": et, "certitude": "sure", "pourquoi": pq, "contre_verifie": "confirme", "mesure": True})
+    return rejetes, flous
 
 
 def etat(*a, **k):
@@ -1111,7 +1330,7 @@ def _etat(photos, langue="fr", quads=None, rasante=None, calibration=None, regle
                 pass
     langue = "en" if str(langue or "").lower().startswith("en") else "fr"
     # 3 nov 2026 (revue) : la cle porte aussi le contexte (slab, patch, auto), les regles apprises et le ROLE de chaque photo
-    h = hashlib.sha256(b"etat-v9-" + langue.encode() + json.dumps(quads or [], sort_keys=True).encode()
+    h = hashlib.sha256(b"etat-v10-" + langue.encode() + json.dumps(quads or [], sort_keys=True).encode()
                        + json.dumps(calibration or {}, sort_keys=True).encode() + json.dumps(contexte or {}, sort_keys=True, default=str).encode()
                        + json.dumps(list(regles or []), ensure_ascii=False).encode())
     for role, b in [(b"dev", brutes[0])] + ([(b"dos", brutes[1])] if len(brutes) > 1 else []) + ([(b"ras", ras)] if ras else []) + ([(b"ras2", ras2)] if ras2 else []):
@@ -1193,9 +1412,26 @@ def _etat(photos, langue="fr", quads=None, rasante=None, calibration=None, regle
     # 3 nov 2026 (revue) : un seul axe mesure, « a verifier » (retire de c) : son bas de fourchette compte quand meme
     cent = dict(c, note=note_c, note_bas=prep.get("note_centrage_bas"), verifier=prep.get("centrage_verifier") or {}) \
         if (c or prep.get("note_centrage_bas") is not None) else None
-    res = _noter_observations(f, cent, calibration, quads) if isinstance(f.get("coins"), list) else _nettoyer_etat(f, cent, calibration)
+    verif, rejetes, flous = None, [], []
+    if isinstance(f.get("coins"), list):
+        # 9 nov 2026 : la contre-verification de chaque defaut de coin et de bord, sur son gros plan
+        verif = _contre_verifier(_candidats_verif(f, prep.get("mesures") or {}), prep.get("zooms_img") or [], langue)
+        if verif:
+            rejetes, flous = _appliquer_verif(f, verif)
+    q_ok = prep.get("quads") if prep.get("quads") and any(prep["quads"]) else quads
+    res = _noter_observations(f, cent, calibration, q_ok, langue) if isinstance(f.get("coins"), list) else _nettoyer_etat(f, cent, calibration)
     res["zooms"] = bool(prep.get("zooms"))
-    _ajouter_mesures(res, prep.get("mesures") or {}, quads)
+    _ajouter_mesures(res, prep.get("mesures") or {}, q_ok, defauts=not isinstance(f.get("coins"), list))
+    res["contre_verif"] = {"fait": bool(verif), "n": len((verif or {}).get("cands") or []), "rejetes": rejetes, "flous": flous}
+    if flous:
+        res["a_reprendre"] = (res.get("a_reprendre") or []) + [("not sharp enough to judge: " if langue == "en" else "pas assez net pour juger : ")
+                                                              + ", ".join(flous[:3]) + (" (take a close-up)" if langue == "en" else " (prends un gros plan)")]
+    # 9 nov 2026 (la Hutson : la carte touchait le bas de la photo) : une carte collee au bord de la photo -> ses coins se
+    # jugent mal ; on demande un peu de fond tout autour
+    for j, q_ in enumerate(q_ok or []):
+        if q_ and len(q_) == 4 and any(min(x, y) < 12 or max(x, y) > 988 for x, y in q_):
+            res["a_reprendre"] = (res.get("a_reprendre") or []) + [(("front" if j == 0 else "back") + ": the card touches the edge of the photo, leave a little background all around"
+                                                                   if langue == "en" else ("devant" if j == 0 else "dos") + " : la carte touche le bord de la photo, laisse un peu de fond tout autour")]
     if prep.get("quads") and any(prep["quads"]):
         res["quads_utilises"] = [[[round(float(x), 1), round(float(y), 1)] for x, y in q] if q else None for q in prep["quads"]]
     if prep.get("gros_plans"):

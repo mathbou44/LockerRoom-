@@ -17,7 +17,7 @@ f = {"coins": [{"photo": 0, "coin": c, "etat": "net", "certitude": "sure"} for c
      + [{"photo": 0, "coin": "haut-gauche", "etat": "effilochage_leger", "certitude": "incertaine"}],
      "bords": [{"photo": 0, "bord": x, "etat": "net", "certitude": "sure"} for x in b.BORDS], "surface": []}
 r = vision._noter_observations(f, {"devant": {"gd": "52/48"}})
-assert r["tag"]["note"] == 10 and r["tag"]["bas"] == 9, r["tag"]                                   # incertaine : seulement le bas
+assert r["tag"]["note"] == 10 and r["tag"]["bas"] == 10, r["tag"]                                  # 9 nov 2026 : un doute ne baisse rien
 print("OK test_tag")
 # Pristine (990-1000) : 51/49 devant, 54,5/45,5 dos, tout net ; seulement si le centrage des deux faces est mesure
 P = b.tag(N(0) + N(1), N(0) + N(1), [], ["51/49"], ["54/46"])

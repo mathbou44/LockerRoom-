@@ -96,6 +96,11 @@ def note_bords(etats):
         return 10.0
     pire = min(ETATS_BORD[e][0] for e in etats)
     touches = sum(1 for e in etats if ETATS_BORD[e][0] < 10)
+    # 9 nov 2026 (Mathieu, la Hutson Red Prism : quelques points blancs sur UN bord, le reste parfait -> « PSA 9 ») : de fins
+    # points blancs sur un seul bord : 9 ; sur deux bords : 8,5 ; au-dela, ou de l'usure, le tableau
+    fins = [e for e in etats if ETATS_BORD[e][0] < 10]
+    if fins and all(e in ("point_blanc", "quelques_points") for e in fins) and len(fins) <= 2:
+        return 9.0 if len(fins) == 1 else 8.5
     if pire >= 8 and touches >= 4:                     # usure repetee sur plusieurs aretes : un demi-point de plus
         return psa(pire - 0.5)
     if pire == 9 and touches >= 2:
