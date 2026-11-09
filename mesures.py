@@ -451,6 +451,7 @@ def trouver_carte(im):
     pics = [i for i in range(3, H - 3) if g[i] >= g[i - 1] and g[i] >= g[i + 1] and g[i] > 6]
     pics = sorted(pics, key=lambda i: -g[i])[:40]
     meilleur, sc = None, -1.0
+    bonus = max(8.0, 0.4 * float(max((g[i] for i in pics), default=0)))
     for k in (MM_LONG / MM_COURT, MM_COURT / MM_LONG):
         h = w * k
         for yt in pics:
@@ -458,7 +459,10 @@ def trouver_carte(im):
             if not yb_cand:
                 continue
             yb = max(yb_cand, key=lambda i: g[i])
-            v = g[yt] + g[yb] + (8 if abs(yt - y0) < H * 0.02 else 0) + (8 if abs(yb - y1) < H * 0.02 else 0)
+            # 9 nov 2026 (le dos de la Marchand, une bande rouge au milieu : le bas de la carte + la bande donnaient une carte
+            # « couchee ») : une ligne qui tombe sur le bord trouve par le masque compte beaucoup plus (avant : +8, rien face
+            # a une bande imprimee contrastee)
+            v = g[yt] + g[yb] + (bonus if abs(yt - y0) < H * 0.02 else 0) + (bonus if abs(yb - y1) < H * 0.02 else 0)
             if v > sc:
                 meilleur, sc = (yt, yb), v
     if meilleur:
