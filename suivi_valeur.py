@@ -28,8 +28,20 @@ def _titre(carte):
     import cartes_match
     import ebay_csv
     t = carte.get("titre") or ebay_csv.titre_annonce(carte) or ""
-    if carte.get("auto") and not cartes_match.decoder(t)["auto"]:
+    d = cartes_match.decoder(t)
+    if carte.get("auto") and not d["auto"]:
         t += " auto"
+    # 9 nov 2026 (la Makar Young Guns Deluxe /250 comparee a la Young Guns de base, « marche 14 $ ») : la fiche de la carte
+    # connait sa parallele et sa numerotation ; un titre d'annonce qui ne les dit pas ne doit pas faire comparer a la base
+    try:
+        tir = int(carte.get("tirage") or 0)
+    except (TypeError, ValueError):
+        tir = 0
+    if tir > 1 and not d.get("serie"):
+        t += f" /{tir}"
+    par = str(carte.get("parallele") or "").strip()
+    if par and cartes_match.norm(par) not in cartes_match.norm(t):
+        t += " " + par
     return t
 
 

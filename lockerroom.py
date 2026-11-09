@@ -4044,7 +4044,8 @@ class Api:
             carte = cartes_match.est_carte(a["titre"])                        # 24 oct 2026 : une carte -> seulement la MEME carte
             # 27 oct 2026 (Forsberg Fabrics AUTO compare a des Fabrics sans auto) : l'auto connue de la fiche compte meme si le
             # titre ne le dit pas
-            titre_c = a["titre"] + (" auto" if a.get("auto") and not cartes_match.decoder(a["titre"])["auto"] else "")
+            import suivi_valeur as _sv
+            titre_c = _sv._titre(a)                                          # 9 nov 2026 : + parallele et numerotation de la fiche
             q = (cartes_match.requete_ebay(cartes_match.cible_titre(titre_c, a.get("joueur"))) if carte else None) or sante.requete(a["titre"])
             try:
                 res = ebay_compte.rechercher(q, a.get("categorie_ebay") or (CATEGORIE_CARTES if carte else None), limite=100)
@@ -5203,7 +5204,9 @@ class Api:
         val = sure if sure else round(statistics.median(float(v["prix"]) for v in vs), 2)
         # 5 nov 2026 (comme la CL Value) : des ventes qui datent -> la valeur suit l'indice du joueur depuis (indices.py)
         val, ajust = self._valeur_vieillie(val, _pv if sure and isinstance(_pv, list) else vs, carte)
-        if sure or carte.get("valeur") is None:
+        # 9 nov 2026 (revue « aucun faux indice ») : une valeur tiree d'une ou deux ventes qui ne se tiennent pas n'est pas
+        # gardee (elle donnerait un faux « trop cher » dans l'inventaire) ; seulement une valeur sure ou 3 ventes et plus
+        if sure or (carte.get("valeur") is None and len(vs) >= 3):
             self.carte_sauver({"id": cid, "valeur": val})
         recentes = sorted(vs, key=lambda v: str(v.get("le") or ""), reverse=True)
         return {"ok": True, "valeur": val, "n": len(vs), "sure": bool(sure), "derniere": (recentes[0].get("le") or "")[:10] or None,
