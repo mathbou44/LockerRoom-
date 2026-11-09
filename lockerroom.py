@@ -6409,8 +6409,12 @@ class Api:
         pmin, pmax, rmin, gmin, vmin = n("prix_min"), n("prix_max"), n("rabais_min"), n("gain_min"), n("valeur_min")
         joueurs = [cartes_match.norm(j) for j in (f.get("joueurs") or []) if str(j).strip()][:20]
         sortes = [x for x in (f.get("sortes") or []) if x in ("recrue", "auto", "patch", "numerotee", "gradee", "brute", "veteran", "hit")]
+        # 9 nov 2026 (Mathieu : « dans nos filtres, ne pas mettre un pays x ou y ») : les pays de provenance exclus
+        exclus = {str(p_).upper()[:2] for p_ in (f.get("pays_exclus") or []) if re.fullmatch(r"[A-Za-z]{2}", str(p_ or ""))}
         out = []
         for x in lst:
+            if exclus and str(x.get("lieu") or "").upper()[:2] in exclus:
+                continue
             if pmin is not None and (x.get("total") or 0) < pmin or pmax is not None and (x.get("total") or 0) > pmax:
                 continue
             if rmin is not None and (x.get("rabais") or 0) < rmin:
@@ -6486,6 +6490,11 @@ class Api:
         par_sport = {}
         for x in tout:
             par_sport[x.get("sport") or "hockey"] = par_sport.get(x.get("sport") or "hockey", 0) + 1
+        par_pays = {}                                     # 9 nov 2026 : les pays de provenance (le filtre « pas ce pays »)
+        for x in tout:
+            p_ = str(x.get("lieu") or "").upper()[:2]
+            if re.fullmatch(r"[A-Z]{2}", p_):
+                par_pays[p_] = par_pays.get(p_, 0) + 1
         lst = [x for x in tout if not f.get("sports") or (x.get("sport") or "hockey") in f["sports"]]
         if f.get("type") == "fixe":
             lst = [x for x in lst if not x.get("encan")]
@@ -6641,7 +6650,7 @@ class Api:
         return {"ok": True, "deals": lst[:240], "n": n + n_su, "n_encans_valorises": n_su, "pro": pro, "limite": None if pro else forfaits.LIMITES["deals"],
                 "suivis": suivis,
                 "pres": pres, "secours": secours, "secours_le": (dd.get("secours") or {}).get("le") if secours else None,
-                "sports": par_sport, "maj": dd.get("maj"), "ebay": ebay_compte.statut().get("cles_ok"),
+                "sports": par_sport, "pays_dispo": par_pays, "maj": dd.get("maj"), "ebay": ebay_compte.statut().get("cles_ok"),
                 "diag": _d.diagnostic(dd), "total": len(tout), "bassin": dd.get("bassin"), "nb_flux": len(_d.flux_liste()),
                 "watch": self._watch_ids()}
 
