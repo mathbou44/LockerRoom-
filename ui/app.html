@@ -345,6 +345,17 @@ button.lien{background:none; border:0; color:var(--acc); font:inherit; padding:0
 .mien-t{flex:1 1 calc(100% - 52px); min-width:0; display:flex; flex-direction:column; gap:2px} .mien-t > b{font-size:15px} .mien-t span{font-size:13.5px} .mien-t small{font-size:12px; color:var(--doux)}
 .mien-t span b{white-space:nowrap} .mien-t b.vert{color:var(--vert)} .mien-t b.rouge{color:var(--rouge)}
 .mien .btn{flex:1 1 100%; margin-left:50px; height:40px; white-space:nowrap}
+/* 9 nov 2026 : prisme des fetes (rouge, or, vert) a la place du prisme de la palette, et les lumieres du logo */
+body.fetes[data-palette], body.fetes{--h1:#FF8A8A; --h2:#F1D58E; --h3:#6FD99A; --h4:#FFB0A8;
+  --holo:linear-gradient(100deg,#FF7B7B 0%,#F1D58E 34%,#6FD99A 67%,#FF9C9C 100%)}
+.lum-logo{position:absolute; inset:0; pointer-events:none; z-index:2}
+.logo-holo.fete .lh-c i:nth-child(1){background:conic-gradient(from 0deg,#FF6F6F,#F1D58E,#6FD99A,#FFF1DC,#FF8F8F,#6FD99A,#FF6F6F)}
+.logo-holo.fete .lh-c i:nth-child(2){background:radial-gradient(40% 40% at 30% 30%,rgba(255,255,255,.5),transparent 70%),radial-gradient(35% 35% at 75% 70%,rgba(255,90,90,.45),transparent 70%)}
+#lance .la-fete{position:absolute; inset:0; display:block; background:conic-gradient(from 0deg,#FF6F6F,#F1D58E,#6FD99A,#FFF1DC,#FF8F8F,#6FD99A,#FF6F6F);
+  -webkit-mask:url(/logo_sc_c.svg) center/contain no-repeat; mask:url(/logo_sc_c.svg) center/contain no-repeat}
+.lum-logo i{position:absolute; width:4px; height:4px; margin:-2px 0 0 -2px; border-radius:50%; background:var(--c); box-shadow:0 0 5px 1px var(--c); animation:ampoule 2.6s ease-in-out infinite}
+#lance .la-lum i{width:6px; height:6px; margin:-3px 0 0 -3px; box-shadow:0 0 8px 2px var(--c)}
+.haut-logo.logo-holo{overflow:visible}
 /* 9 nov 2026 : temps des fetes (guirlande, flocons) et le mot du jour */
 .guirlande{position:absolute; left:0; right:0; bottom:-14px; height:16px; pointer-events:none; z-index:2}
 .guirlande svg{position:absolute; inset:0 0 auto 0; width:100%; height:14px; overflow:visible}
@@ -3093,7 +3104,7 @@ async function ecranLancement(){
   const el = document.createElement('div'); el.id = 'lance'; el.setAttribute('aria-hidden', 'true');
   const tips = TIPS_LANCE().sort(() => Math.random() - .5);
   if (fetesActives()) tips.unshift(tt('Joyeuses fêtes de toute l’équipe SlabCoach.', 'Happy holidays from the whole SlabCoach team.'));
-  el.innerHTML = `${fetesActives() ? htmlGuirlande(14, 'la-g') : ''}<div class="la-c"><img class="la-anneau" src="/logo_sc_c.svg" alt=""><img class="la-s" src="/logo_sc_s.svg" alt=""></div><div class="la-tip" id="la-tip">${esc(tips[0])}</div><div class="la-barre"><i id="la-p"></i></div>`;
+  el.innerHTML = `${fetesActives() ? htmlGuirlande(14, 'la-g') : ''}<div class="la-c">${fetesActives() ? htmlLumieresLogo(16, 66, 'la-lum') + '<span class="la-anneau la-fete"></span>' : '<img class="la-anneau" src="/logo_sc_c.svg" alt="">'}<img class="la-s" src="/logo_sc_s.svg" alt=""></div><div class="la-tip" id="la-tip">${esc(tips[0])}</div><div class="la-barre"><i id="la-p"></i></div>`;
   document.body.appendChild(el);
   // 31 oct 2026 (Mathieu : « l'app devrait lisser plus longtemps avant d'ouvrir et les tips plus lents ; ca ouvre mais la
   // moitie des pages doivent encore loader ») : un tip aux 3,6 s, et l'ecran reste jusqu'a ce que les onglets soient lus,
@@ -3353,7 +3364,10 @@ function htmlPiece(){ return `<img src="${LOGO_SC}" alt="">`; }
 // 28 oct 2026 (vitesse : le logo anime en image SVG occupait ~25 % du processeur du telephone) : le film holographique
 // est fait en CSS (degrades qui tournent sur la carte graphique, masques par le C) : meme effet, ~0 % du processeur
 // 30 oct 2026 (Mathieu : « animer le nouveau style de prism comme un liquide dans le C ») : le meme SVG anime partout (app, site)
-const LOGO_HOLO = (cls = '', anime = false) => `<span class="logo-holo ${cls}" aria-hidden="true"><img src="${anime ? LOGO_SC_ANIME : LOGO_SC}" alt=""></span>`;
+// 9 nov 2026 (« rouge et vert prisme en mode temps des fetes ») : pendant les fetes, l'anneau du logo prend le prisme des fetes
+const LOGO_HOLO = (cls = '', anime = false) => typeof fetesActives === 'function' && fetesActives()
+  ? `<span class="logo-holo fete ${cls}" aria-hidden="true"><span class="lh-c"><i></i><i></i></span><b></b></span>`
+  : `<span class="logo-holo ${cls}" aria-hidden="true"><img src="${anime ? LOGO_SC_ANIME : LOGO_SC}" alt=""></span>`;
 function piecesNiveau(){ document.querySelectorAll('.piece-sc').forEach(el => el.style.setProperty('--masque', 'url(/logo_sc_gold_poli.png)')); }
 const C_ANNEAU = 97.39;
 function anneau(taille, p, cls=''){
@@ -3787,7 +3801,14 @@ function switchMode(){
 // Du 9 novembre au 7 janvier ; on peut l'enlever dans Profil › Mes preferences › Palette (garde sur cet appareil).
 function saisonFetes(d){ d = d || new Date(); const m = d.getMonth() + 1, j = d.getDate(); return (m === 11 && j >= 9) || m === 12 || (m === 1 && j <= 7); }
 function fetesActives(){ try { if (localStorage.getItem('lr_fetes') === '0') return false; } catch (e) {} return saisonFetes(); }
-const COUL_FETES = ['#F2B3D6', '#F1D58E', '#9FE6D2', '#B9BEFF', '#FFB3B3'];
+// 9 nov 2026 (Mathieu : « rouge et vert prisme en mode temps des fetes ») : rouge, or, vert, et un blanc chaud
+const COUL_FETES = ['#FF6F6F', '#F1D58E', '#6FD99A', '#FFF1DC', '#FF8F8F', '#8FE8B0'];
+// des petites lumieres tout autour du logo (en-tete, ecran d'ouverture)
+function htmlLumieresLogo(n, r, cl){
+  n = n || 10; r = r || 20;
+  return `<span class="lum-logo ${cl || ''}" aria-hidden="true">${Array.from({length: n}, (_, i) => { const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+    return `<i style="left:calc(50% + ${(Math.cos(a) * r).toFixed(1)}px);top:calc(50% + ${(Math.sin(a) * r).toFixed(1)}px);--c:${COUL_FETES[i % COUL_FETES.length]};animation-delay:${((i * .41) % 2.6).toFixed(2)}s"></i>`; }).join('')}</span>`;
+}
 function htmlGuirlande(n, cl){
   n = n || 18; const pts = [];
   for (let i = 0; i < n; i++) { const x = (i + .5) / n * 100, ph = ((i % 6) + .5) / 6; pts.push([x, 3 + Math.sin(ph * Math.PI) * 7]); }
@@ -3805,6 +3826,9 @@ function decorFetes(){
   const g = b.querySelector('.guirlande');
   if (fetesActives() && !b.hidden && !g) b.insertAdjacentHTML('beforeend', htmlGuirlande(18));
   else if (!fetesActives() && g) g.remove();
+  const lg = b.querySelector('.logo-holo.haut-logo'), ll = lg && lg.querySelector('.lum-logo');
+  if (lg && fetesActives() && !ll) lg.insertAdjacentHTML('beforeend', htmlLumieresLogo(10, 19));
+  else if (ll && !fetesActives()) ll.remove();
 }
 // le mot du jour : chaleureux, sans chiffres ; il change chaque jour (un tap : le suivant)
 const MOTS_HOBBY = () => [
