@@ -29,6 +29,7 @@ def carte(decal, sym=True):
 r0 = mesures.symetrie_gd(carte(0))
 assert r0 and r0["ratio"] in ("50/50", "51/49"), r0
 r = mesures.symetrie_gd(carte(10))                          # 35 px / 55 px : 61/39
-assert r and r["ratio"] in ("60/40", "61/39", "62/38") and r["l"] < 1 - r["r"], r
+# 9 nov 2026 (la Letang : le schema montrait le decentrage du mauvais cote) : l et r sont les LARGEURS des bordures
+assert r and r["ratio"] in ("60/40", "61/39", "62/38") and r["l"] < r["r"] and abs(r["l"] - 35 / 635) < 0.01 and abs(r["r"] - 55 / 635) < 0.01, r
 assert mesures.centrage(carte(10))["gd"]["ratio"] in ("60/40", "61/39", "62/38")
 print("OK test_symetrie")

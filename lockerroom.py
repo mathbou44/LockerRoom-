@@ -2945,7 +2945,7 @@ class Api:
             print("Allegement : " + repr(x), flush=True)
         return {"ok": True, **res, "le": le, "precision": precision}
 
-    CENTRAGE_ALGO = 4                 # 3 nov 2026 : + les paires en miroir (mesures.py) et les mesures de l'app
+    CENTRAGE_ALGO = 5                 # 9 nov 2026 : + l axe de symetrie (cartes sans bordure unie), largeurs l / r corrigees
 
     @staticmethod
     def _coherent(e):
