@@ -324,6 +324,8 @@ button.lien{background:none; border:0; color:var(--acc); font:inherit; padding:0
 .notifs .nt-bloc{background:var(--carte); border:1px solid var(--ligne); border-radius:18px; padding:14px; margin-bottom:12px}
 .notifs .nt-t{display:flex; align-items:center; gap:8px; font-weight:700; font-size:17px; margin-bottom:10px} .notifs .nt-t .fv-n{margin-left:auto}
 .gg-s{display:block; font-size:12.5px; font-weight:400; color:var(--doux); margin-top:1px}
+.nt-ong{margin:0 0 14px} .nt-ong button{display:inline-flex; align-items:center; justify-content:center; gap:6px}
+.nt-c{min-width:20px; height:20px; padding:0 6px; border-radius:10px; background:var(--acc); color:var(--acc-texte); font:800 11.5px var(--f-cond); display:inline-flex; align-items:center; justify-content:center}
 .notifs .nt-vide{padding:4px 0}
 .nt-f{margin:-2px 0 6px} .nt-jour{font:700 12px var(--f-cond); letter-spacing:.08em; text-transform:uppercase; color:var(--doux); margin:12px 0 4px}
 .nt-l{position:relative; display:flex; align-items:center; gap:12px; padding:10px 2px; border-top:1px solid var(--ligne); color:inherit; text-decoration:none; cursor:pointer}
@@ -337,6 +339,34 @@ button.lien{background:none; border:0; color:var(--acc); font:inherit; padding:0
 .nt-d{font-size:13px; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .nt-ph{flex:none; width:40px; height:52px; border-radius:6px; object-fit:cover; background:#101014}
 .nt-pt{position:absolute; left:-6px; top:50%; width:7px; height:7px; margin-top:-3.5px; border-radius:50%; background:var(--acc)} .notifs .pr-pro{width:100%}
+.mien{display:flex; flex-wrap:wrap; align-items:flex-start; gap:6px 12px; padding:12px; margin:10px 0; border-radius:16px; background:var(--carte2); border:1px solid var(--acc)}
+.mien-ic{flex:none; width:38px; height:38px; border-radius:50%; display:grid; place-items:center; border:1.5px solid var(--acc); color:var(--acc)}
+.mien-ic svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round}
+.mien-t{flex:1 1 calc(100% - 52px); min-width:0; display:flex; flex-direction:column; gap:2px} .mien-t > b{font-size:15px} .mien-t span{font-size:13.5px} .mien-t small{font-size:12px; color:var(--doux)}
+.mien-t span b{white-space:nowrap} .mien-t b.vert{color:var(--vert)} .mien-t b.rouge{color:var(--rouge)}
+.mien .btn{flex:1 1 100%; margin-left:50px; height:40px; white-space:nowrap}
+/* 9 nov 2026 : temps des fetes (guirlande, flocons) et le mot du jour */
+.guirlande{position:absolute; left:0; right:0; bottom:-14px; height:16px; pointer-events:none; z-index:2}
+.guirlande svg{position:absolute; inset:0 0 auto 0; width:100%; height:14px; overflow:visible}
+.guirlande path{fill:none; stroke:rgba(255,255,255,.18); stroke-width:.6; vector-effect:non-scaling-stroke}
+.guirlande i{position:absolute; width:6px; height:8px; margin-left:-3px; border-radius:50% 50% 45% 45%; background:var(--c); box-shadow:0 0 6px 1px var(--c); animation:ampoule 2.6s ease-in-out infinite}
+@keyframes ampoule{0%,100%{opacity:1; box-shadow:0 0 7px 1px var(--c)} 50%{opacity:.45; box-shadow:0 0 2px 0 var(--c)}}
+#lance .la-g{position:absolute; top:calc(var(--haut) + 6px); bottom:auto}
+.barre-mode{position:relative}
+.neige{position:fixed; left:0; right:0; top:0; height:340px; pointer-events:none; z-index:1; overflow:hidden; -webkit-mask-image:linear-gradient(#000 55%, transparent); mask-image:linear-gradient(#000 55%, transparent)}
+body.fetes .acc-salut-tel{margin-top:14px}
+.neige i{position:absolute; top:-10px; width:var(--s); height:var(--s); border-radius:50%; background:rgba(255,255,255,.55); filter:blur(.4px); animation:flocon var(--t) linear infinite; animation-delay:var(--d)}
+@keyframes flocon{0%{transform:translate(0,-10px); opacity:0} 10%{opacity:.8} 90%{opacity:.5} 100%{transform:translate(var(--x),340px); opacity:0}}
+@media (prefers-reduced-motion:reduce){ .guirlande i, .neige i{animation:none} .neige{display:none} }
+.acc-mot{grid-column:1/-1; display:flex; align-items:center; gap:12px; width:100%; margin:2px 0 4px; padding:12px 14px; border-radius:18px; border:1px solid var(--ligne);
+  background:linear-gradient(120deg, color-mix(in srgb, var(--h3,#F2B3D6) 9%, var(--carte)), var(--carte) 55%, color-mix(in srgb, var(--h4,#F1D58E) 8%, var(--carte)));
+  color:var(--texte); text-align:left; cursor:pointer; font:inherit; transition:opacity .18s ease; position:relative; z-index:2}
+.acc-mot.change{opacity:0}
+.acc-mot:empty{display:none}
+.mot-ic{flex:none; width:34px; height:34px; border-radius:50%; display:grid; place-items:center; color:var(--h3,#F2B3D6); border:1.5px solid currentColor}
+.mot-ic svg{width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linejoin:round; stroke-linecap:round}
+.mot-t{font-size:15px; line-height:1.4; font-style:italic; color:var(--texte2, #DCD9E2)}
+body.fetes .mot-ic{color:var(--h4,#F1D58E)}
 .adm-pil-act{display:flex; gap:8px; margin-top:12px} .adm-pil-act .btn{flex:1; text-align:center}
 .adm-pil-note{margin-top:10px; font-size:13px}
 .av-z{display:flex; gap:8px; margin-top:12px} .av-z .champ{flex:1; font-size:20px; letter-spacing:.2em; text-align:center}
@@ -2549,7 +2579,10 @@ button.vd-cz > span{border-bottom:1px solid var(--ligne); padding-bottom:2px} .v
 .bar-t td{padding:8px 4px; border-top:1px solid var(--ligne)} .bar-t td:first-child{width:56px}
 .ap-code{margin:14px 0 6px; text-align:center; font:700 46px/1 var(--f-cond); letter-spacing:.12em; color:var(--texte)} #g-appareils .btn{margin:6px 0 0} .ap-l .pilule{flex:0 0 auto}
 /* 2 nov 2026 - l'ampoule des tendances et sa methode */
-.td-titre{display:flex; align-items:center; gap:10px} .td-amp{width:34px; height:34px; border-radius:50%; border:1px solid var(--ligne); background:var(--carte); color:var(--texte); display:grid; place-items:center; cursor:pointer; padding:0}
+.td-titre{display:flex; align-items:center; gap:10px} .td-perso{position:relative; margin-left:auto; width:40px; height:40px; border-radius:50%; border:1px solid var(--ligne); background:var(--carte); color:var(--texte); display:grid; place-items:center; cursor:pointer; padding:0}
+.td-perso svg{width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round} .td-perso i{position:absolute; top:4px; right:4px; width:9px; height:9px; border-radius:50%; background:var(--acc)}
+.td-filtres{display:inline-flex; align-items:center; gap:8px; margin:-4px 0 8px; padding:6px 12px; border-radius:99px; border:1px solid var(--acc); background:var(--acc-fonce); color:var(--acc); font:600 13px var(--f); cursor:pointer}
+.td-filtres span{font-size:16px; line-height:1} .td-ch{margin:6px 0 12px} .td-amp{width:34px; height:34px; border-radius:50%; border:1px solid var(--ligne); background:var(--carte); color:var(--texte); display:grid; place-items:center; cursor:pointer; padding:0}
 .td-amp svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round}
 .td-meth{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:12px} .td-meth li{display:flex; gap:12px; align-items:flex-start}
 .td-meth i{flex:0 0 26px; height:26px; border-radius:50%; display:grid; place-items:center; font:700 13px var(--f-cond); font-style:normal; border:1px solid var(--ligne); color:var(--acc)}
@@ -3052,12 +3085,15 @@ const TIPS_LANCE = () => [
   tt('Series 1, 2 et Extended : les recrues sont classées en premier.', 'Series 1, 2 and Extended: rookies are ranked first.'),
   tt('Au-dessus de 30 $, l’envoi est toujours suivi : jamais en lettre.', 'Over $30, shipping is always tracked: never a letter.'),
   tt('Le prix suggéré suit les dernières ventes de la même carte.', 'The suggested price follows the latest sales of the same card.'),
-  tt('Garde une carte dans ta collection : sa valeur est suivie chaque semaine.', 'Keep a card in your collection: its value is tracked weekly.')];
+  tt('Garde une carte dans ta collection : sa valeur est suivie chaque semaine.', 'Keep a card in your collection: its value is tracked weekly.'),
+  tt('Collectionne ce que tu aimes. Le reste suit.', 'Collect what you love. The rest follows.'),
+  tt('Une carte, c’est un souvenir. Prends le temps de l’apprécier.', 'A card is a memory. Take the time to enjoy it.')];
 async function ecranLancement(){
   if (document.getElementById('lance') || navigator.webdriver) return;           // pas pour les tests automatises
   const el = document.createElement('div'); el.id = 'lance'; el.setAttribute('aria-hidden', 'true');
   const tips = TIPS_LANCE().sort(() => Math.random() - .5);
-  el.innerHTML = `<div class="la-c"><img class="la-anneau" src="/logo_sc_c.svg" alt=""><img class="la-s" src="/logo_sc_s.svg" alt=""></div><div class="la-tip" id="la-tip">${esc(tips[0])}</div><div class="la-barre"><i id="la-p"></i></div>`;
+  if (fetesActives()) tips.unshift(tt('Joyeuses fêtes de toute l’équipe SlabCoach.', 'Happy holidays from the whole SlabCoach team.'));
+  el.innerHTML = `${fetesActives() ? htmlGuirlande(14, 'la-g') : ''}<div class="la-c"><img class="la-anneau" src="/logo_sc_c.svg" alt=""><img class="la-s" src="/logo_sc_s.svg" alt=""></div><div class="la-tip" id="la-tip">${esc(tips[0])}</div><div class="la-barre"><i id="la-p"></i></div>`;
   document.body.appendChild(el);
   // 31 oct 2026 (Mathieu : « l'app devrait lisser plus longtemps avant d'ouvrir et les tips plus lents ; ca ouvre mais la
   // moitie des pages doivent encore loader ») : un tip aux 3,6 s, et l'ecran reste jusqu'a ce que les onglets soient lus,
@@ -3745,6 +3781,63 @@ function choisirBreakMode(m){
 function switchMode(){
   return `<div class="mode-switch" role="tablist" aria-label="Volet">${['vendeur', 'acheteur'].map(m => `<button role="tab" data-mode-choix="${m}" class="${S.mode === m ? 'on' : ''}">${ICO_MODE[m]}${m === 'vendeur' ? 'Vendeur' : 'Acheteur'}</button>`).join('')}</div>`;
 }
+// 9 nov 2026 (Mathieu : « une petite ambiance de Noel, 2-3 touches decoratives, pour les 2 prochains mois ; et un message
+// chaleureux : c'est un hobby, une passion, une communaute ; l'app doit etre une place que le monde aime ouvrir, un
+// echappatoire du quotidien ») : une guirlande de petites lumieres en haut, quelques flocons sur l'accueil et le mot du jour.
+// Du 9 novembre au 7 janvier ; on peut l'enlever dans Profil › Mes preferences › Palette (garde sur cet appareil).
+function saisonFetes(d){ d = d || new Date(); const m = d.getMonth() + 1, j = d.getDate(); return (m === 11 && j >= 9) || m === 12 || (m === 1 && j <= 7); }
+function fetesActives(){ try { if (localStorage.getItem('lr_fetes') === '0') return false; } catch (e) {} return saisonFetes(); }
+const COUL_FETES = ['#F2B3D6', '#F1D58E', '#9FE6D2', '#B9BEFF', '#FFB3B3'];
+function htmlGuirlande(n, cl){
+  n = n || 18; const pts = [];
+  for (let i = 0; i < n; i++) { const x = (i + .5) / n * 100, ph = ((i % 6) + .5) / 6; pts.push([x, 3 + Math.sin(ph * Math.PI) * 7]); }
+  const fil = Array.from({length: 61}, (_, k) => { const x = k / 60 * 100, ph = (x / 100 * n % 6) / 6; return `${k ? 'L' : 'M'}${x.toFixed(2)},${(2 + Math.sin(ph * Math.PI) * 7).toFixed(2)}`; }).join('');
+  return `<div class="guirlande ${cl || ''}" aria-hidden="true"><svg viewBox="0 0 100 14" preserveAspectRatio="none"><path d="${fil}"/></svg>${pts.map(([x, y], i) =>
+    `<i style="left:${x.toFixed(2)}%;top:${(y + 2).toFixed(1)}px;--c:${COUL_FETES[i % COUL_FETES.length]};animation-delay:${((i * 0.37) % 2.6).toFixed(2)}s"></i>`).join('')}</div>`;
+}
+function htmlNeige(n){
+  n = n || 16;
+  return `<div class="neige" aria-hidden="true">${Array.from({length: n}, (_, i) => `<i style="left:${((i * 61.8) % 100).toFixed(1)}%;--t:${(9 + (i * 3.7) % 8).toFixed(1)}s;--d:${(-(i * 1.9) % 12).toFixed(1)}s;--s:${(3 + (i % 3)).toFixed(0)}px;--x:${((i % 5) - 2) * 9}px"></i>`).join('')}</div>`;
+}
+function decorFetes(){
+  document.body.classList.toggle('fetes', fetesActives());
+  const b = $('#barre-mode'); if (!b) return;
+  const g = b.querySelector('.guirlande');
+  if (fetesActives() && !b.hidden && !g) b.insertAdjacentHTML('beforeend', htmlGuirlande(18));
+  else if (!fetesActives() && g) g.remove();
+}
+// le mot du jour : chaleureux, sans chiffres ; il change chaque jour (un tap : le suivant)
+const MOTS_HOBBY = () => [
+  [tt('Une carte, c’est un souvenir : un match, une saison, la personne avec qui tu l’as ouverte.', 'A card is a memory: a game, a season, the person you opened it with.'), 'coeur'],
+  [tt('Le meilleur pull, c’est celui qui te fait sourire. Pas juste celui qui vaut cher.', 'The best pull is the one that makes you smile. Not just the one worth the most.'), 'etoile'],
+  [tt('Prends ton temps. Ici, c’est ta zone.', 'Take your time. This is your zone.'), 'coeur'],
+  [tt('Le hobby, c’est aussi les gens : les shows, les breaks, les échanges entre collectionneurs.', 'The hobby is people too: card shows, breaks, trades between collectors.'), 'profil'],
+  [tt('Gagner ou perdre sur une carte, ça arrive. Le plaisir d’ouvrir un paquet, lui, reste.', 'Win or lose on a card, it happens. The fun of opening a pack stays.'), 'etoile'],
+  [tt('Ta collection raconte ton histoire de fan. Elle n’a pas besoin d’être parfaite.', 'Your collection tells your story as a fan. It doesn’t need to be perfect.'), 'coeur'],
+  [tt('Derrière chaque carte, il y a un athlète qui a travaillé fort pour y être.', 'Behind every card is an athlete who worked hard to be there.'), 'sport'],
+  [tt('Pas besoin d’une grosse carte pour passer une belle soirée de hobby.', 'You don’t need a big card to have a great hobby night.'), 'etoile'],
+  [tt('Le marché bouge. Ta passion, elle, reste.', 'The market moves. Your passion stays.'), 'coeur'],
+  [tt('Fais découvrir le hobby à quelqu’un : c’est comme ça que la communauté grandit.', 'Share the hobby with someone: that’s how the community grows.'), 'profil'],
+  [tt('Collectionne ce que tu aimes. Le reste suit.', 'Collect what you love. The rest follows.'), 'coeur'],
+  [tt('Une pause, une boîte, ton équipe préférée : c’est ça, une bonne soirée.', 'A break, a box, your favorite team: that’s a good night.'), 'sport']];
+const MOTS_FETES = () => [
+  [tt('Joyeuses fêtes de toute l’équipe SlabCoach. Que tes paquets soient généreux.', 'Happy holidays from the whole SlabCoach team. May your packs be generous.'), 'etoile'],
+  [tt('Le temps des fêtes, c’est le moment parfait pour ouvrir une boîte en famille.', 'The holidays are the perfect time to open a box with family.'), 'coeur'],
+  [tt('Une carte de ton joueur préféré, c’est un cadeau qui se garde longtemps.', 'A card of their favorite player is a gift that lasts.'), 'etoile'],
+  [tt('Prends congé du marché. Profite des tiens et de ta collection.', 'Take a break from the market. Enjoy your people and your collection.'), 'coeur']];
+function motDuJour(decale){
+  const n = new Date(), j = Math.floor((n - new Date(n.getFullYear(), 0, 0)) / 864e5) + (decale || 0);
+  const fetes = fetesActives(), l = fetes ? MOTS_FETES() : MOTS_HOBBY();
+  // pendant les fetes : un mot des fetes un jour sur deux, sinon un mot du hobby
+  const src = fetes && j % 2 ? MOTS_HOBBY() : l;
+  return src[((j % src.length) + src.length) % src.length];
+}
+function rendreMotDuJour(){
+  const z = $('#acc-mot'); if (!z) return;
+  const [t, ic] = motDuJour(S.motDecale || 0);
+  z.innerHTML = `<span class="mot-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL[ic] || IC_PIL.coeur}</svg></span><span class="mot-t">${esc(t)}</span>`;
+  z.onclick = () => { S.motDecale = (S.motDecale || 0) + 1; vibrer(); z.classList.add('change'); setTimeout(() => { rendreMotDuJour(); z.classList.remove('change'); }, 180); };
+}
 function majBarreMode(){
   const b = $('#barre-mode'), n = $('#nav-mode'), voir = !!S.mode;
   document.body.classList.toggle('avec-barre', voir);
@@ -3760,6 +3853,7 @@ function majBarreMode(){
     const hp = $('#h-plus', b); if (hp) hp.onclick = feuilleAjouter;
     brancherSwitchMode(b);            // 28 oct 2026 (Mathieu : « passer d'acheteur a vendeur en un clic ») : les deux volets, visibles, un tap
     if (voir) majCloche();
+    decorFetes();
   }
   if (n) n.innerHTML = '';
 }
@@ -7071,6 +7165,27 @@ function majTuilePrix(id, d){
     majChiffresTuile(t, x);
   });
 }
+// 9 nov 2026 (Mathieu : « quand j'affiche une carte, l'app cherche si on l'a deja achetee : le prix paye pour le profit,
+// et notre achat n'est jamais un comp, tout sauf notre deal ») : un encadre « Tu l'as deja » sur la fiche et dans Valeur
+function blocMesAchats(l, deja, retirees, valeur){
+  l = (l || []).filter(a => a && a.cout); if (!l.length) return '';
+  const a = l[0], pa = valeur ? profitA(valeur, a.cout) : null;
+  return `<div class="mien" data-mien-z>
+    <span class="mien-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.carte}</svg></span>
+    <div class="mien-t"><b>${deja || a.cette_annonce ? tt('Tu as acheté cette annonce', 'You bought this listing') : tt('Tu as déjà cette carte', 'You already have this card')}</b>
+      <span>${tt('Payée ', 'Paid ')}${argent(a.cout, 0)}${a.date ? ' · ' + esc(dateCourte(a.date)) : ''}${l.length > 1 ? tt(` · ${l.length - 1} autre${l.length > 2 ? 's' : ''}`, ` · ${l.length - 1} more`) : ''}${pa != null ? ` · ${tt('profit à cette valeur ', 'profit at this value ')}<b class="${pa >= 0 ? 'vert' : 'rouge'}">${pa >= 0 ? '+' : '−'}${argent(Math.abs(pa), 0)}</b>` : ''}</span>
+      <small>${retirees ? tt(`Ton achat est retiré des ventes comparables`, `Your purchase is removed from comparable sales`) : tt('Tes achats ne comptent jamais dans la valeur', 'Your purchases never count in the value')}</small></div>
+    ${a.carte_id ? `<button class="btn ghost petit" data-mien-voir="${a.carte_id}">${tt('Ma carte', 'My card')}</button>`
+      : `<button class="btn petit" data-mien-aj="${esc(a.item_id)}" data-n="${a.n || 0}">${tt('Ajouter à mon inventaire', 'Add to my inventory')}</button>`}</div>`;
+}
+function brancherMesAchats(z){
+  if (!z) return;
+  $$('[data-mien-aj]', z).forEach(b => b.onclick = async (e) => { e.preventDefault(); e.stopPropagation(); b.disabled = true; vibrer();
+    const x = await essai(API.achat_vers_inventaire(b.dataset.mienAj, +b.dataset.n), tt('Ajoutée à ton inventaire, avec le prix payé', 'Added to your inventory, with the price paid'));
+    if (x && x.ok) { b.outerHTML = `<button class="btn ghost petit" data-mien-voir="${x.id}">${tt('Ma carte', 'My card')}</button>`; brancherMesAchats(z); } else b.disabled = false; });
+  $$('[data-mien-voir]', z).forEach(b => b.onclick = async (e) => { e.preventDefault(); e.stopPropagation(); vibrer();
+    const c = await API.carte_lire(+b.dataset.mienVoir).catch(() => null); if (c && c.id) { fermerAnnonce(); feuilleCarte(c); } });
+}
 async function ouvrirAnnonce(base){
   const total0 = base && base.total;                       // le prix de la tuile (avant la lecture en direct)
   let f = $('#fen-annonce');
@@ -7140,6 +7255,7 @@ async function ouvrirAnnonce(base){
       ${d.valeur_source === 'approx' ? `<div class="fa-pils"><span class="capsule or" style="white-space:normal; line-height:1.3">${tt('Pas de comps : prix approximatif (cartes similaires du joueur)', 'No comps: approximate price (similar cards of the player)')}</span></div>` : ''}
       ${d.valeur_source === 'autre_saison' ? `<div class="fa-pils"><span class="capsule or" style="white-space:normal; line-height:1.3">${tt(`Pas de comps pour la ${esc(d.saison_carte || 'saison')} : estimé avec ${esc((d.saisons || []).join(', '))}`, `No comps for the ${esc(d.saison_carte || 'season')}: estimated from ${esc((d.saisons || []).join(', '))}`)}</span></div>` : ''}
       ${ventes.length && d.ventes_attente ? barreProg(S.fenT0, 25, tt('Ventes déjà connues · mise à jour…', 'Known sales · updating…'), 'mince') : ''}
+      ${blocMesAchats(d.mes_achats, d.deja_achetee, d.mes_retirees, d.valeur)}
       <div class="fa-ventes">${ventes.length ? `<div class="fa-vt">${d.valeur_source === 'inscr_plancher' && d.valeur ? tt('Au moins ', 'At least ') + `<b class="fa-med">${argent(d.valeur, 0)}</b>` : (d.valeur_source === 'autre_saison' || d.valeur_source === 'approx') && d.valeur ? tt('Estimé ', 'Estimated ') + `<b class="fa-med">${argent(d.valeur, 0)}</b>` : d.valeur ? tt('Se vend ', 'Sells for ') + `<b class="fa-med">${argent(d.valeur, 0)}</b>` : tt('Vendues récemment', 'Recently sold')} <small>${d.valeur_source === 'inscr_plancher' ? tt(`plancher · ${d.nb_vendues} ventes sans inscription · glisse ›`, `floor · ${d.nb_vendues} sales without inscription · swipe ›`) : d.valeur_source === 'approx' ? tt(`≈ cartes similaires · ${d.nb_vendues} ventes, −25 % · glisse ›`, `≈ similar cards · ${d.nb_vendues} sales, −25% · swipe ›`) : d.valeur_source === 'autre_saison' ? tt(`cartes similaires · ${d.nb_vendues} vente${d.nb_vendues > 1 ? 's' : ''}, −20 % · glisse ›`, `similar cards · ${d.nb_vendues} sale${d.nb_vendues > 1 ? 's' : ''}, −20% · swipe ›`) : d.valeur && ventes.length && ventes.every(v => !v.prix || v.prix > d.valeur * 1.02) ? tt(`${d.nb_vendues || ventes.length} ventes seulement : −10 % sur la plus basse · glisse ›`, `only ${d.nb_vendues || ventes.length} sales: −10% off the lowest · swipe ›`) : d.valeur && d.nb_vendues ? tt(`médiane de ${d.nb_vendues} ventes · glisse ›`, `median of ${d.nb_vendues} sales · swipe ›`) : tt('même carte · glisse ›', 'same card · swipe ›')}</small></div>
         <div class="fv-car fa-car">${ventes.map(k => `<a class="fv" ${k.url ? `href="${esc(urlSure(k.url))}" target="_blank" rel="noopener"` : ''}><div class="fv-ph">${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo, 300))}" alt="" loading="lazy" data-oe="rm">` : ''}</div>
           <b>${argent(k.prix, 0)}</b><small>${k.saison ? esc(k.saison) + ' · ' : ''}${k.note ? esc(k.note) + ' · ' : ''}${k.le ? dateCourte(k.le) : ''}</small></a>`).join('')}</div>`
@@ -7154,6 +7270,7 @@ async function ouvrirAnnonce(base){
     $$('.fen-vigs [data-ph]', f).forEach(b => b.onclick = () => { $('#fen-img', f).innerHTML = `<img src="${esc(b.dataset.ph)}" alt="">`; $$('.fen-vigs button', f).forEach(x => x.classList.toggle('on', x === b)); brancherLoupe($('#fen-img', f)); });
     brancherLoupe($('#fen-img', f));
     $$('[data-fermer]', f).forEach(b => b.addEventListener('click', fermerAnnonce));
+    brancherMesAchats(f);
     const re_ = $('#fa-reessai', f); if (re_) re_.onclick = () => { vibrer(); ouvrirAnnonce({...base}); };
     const fp = $('.fen-plus', f); if (fp) fp.ontoggle = () => { S.fenPlus = fp.open; };
     const fe = $('.fen', f);
@@ -7827,7 +7944,9 @@ async function scanResultat(c, q){
   $('#sr-val').innerHTML = `${r && r.valeur ? `<div class="sr-chiffre"><span>${tt('Vaut', 'Worth')}</span><b>${argent(r.valeur, 0)}</b><small>${tt('médiane de ventes réelles', 'median of real sales')}</small></div>`
       : `<div class="sous">${(r && r.erreur) || tt('Pas assez de ventes sûres de cette carte pour donner une valeur.', 'Not enough reliable sales of this card to give a value.')}</div>`}
     ${ventes.length ? `<div class="fv-car">${ventes.slice(0, 12).map(k => `<a class="fv" ${k.url ? `href="${esc(urlSure(k.url))}" target="_blank" rel="noopener"` : ''}><div class="fv-ph">${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo))}" alt="" loading="lazy" data-oe="rm">` : ''}</div>
-      <b>${argent(k.prix, 0)}</b><small>${k.le ? tt('vendue ', 'sold ') + dateCourte(k.le) : tt('vendue', 'sold')}</small></a>`).join('')}</div>` : ''}`;
+      <b>${argent(k.prix, 0)}</b><small>${k.le ? tt('vendue ', 'sold ') + dateCourte(k.le) : tt('vendue', 'sold')}</small></a>`).join('')}</div>` : ''}
+    ${blocMesAchats(r && r.mes_achats, false, ((r && r.vendues) || {}).mes_retirees, r && r.valeur)}`;
+  brancherMesAchats($('#sr-val'));
 }
 function scanRecommencer(){
   if (SCAN.natif) { const o = SCAN.opts; scanFermer(); setTimeout(() => ouvrirScanner(o), 260); return; }
@@ -7916,7 +8035,7 @@ async function vueValeur(arg){
       <div class="coin">${capsule(tt('Vendue', 'Sold') + (k.le ? ' · ' + dateCourte(k.le) : ''), 'vert petit')}</div>
       <div class="corps"><div class="t">${esc(k.titre)}</div><div class="ligne-b"><span class="p">${argent(k.prix, 0)}</span></div></div></div>`;
   const histo = (r.vendues || {}).points && r.vendues.points.length >= 3;
-  z.innerHTML = `
+  z.innerHTML = `${blocMesAchats(r.mes_achats, false, (r.vendues || {}).mes_retirees, r.valeur)}
     <div class="v-hero">
       <div class="vh-g"><span>${tt('Vaut', 'Worth')}</span><b class="${r.valeur ? 'vert' : ''}">${r.valeur ? argent(r.valeur, 0) : tt('À confirmer', 'To confirm')}</b>
         <small>${r.valeur ? tt(`selon ${r.vendues.nb} ventes réelles`, `from ${r.vendues.nb} real sales`) : tt('pas encore assez de ventes sûres : on ne devine pas', 'not enough reliable sales yet: we don’t guess')}</small></div>
@@ -8017,8 +8136,9 @@ async function vueAccueil(arg){
   // 29 oct 2026 (Mathieu : « straight to the point, le moins de fla-fla : les deals, est-ce que son inventaire va bien ;
   // le detail en cliquant, le plus de pop-up possible, tres fluides ») : 3 chiffres, les deals du jour, puis une pastille
   // par sujet. Chaque pastille ouvre son bloc dans une feuille (les blocs restent caches dans la page).
-  V().innerHTML = `<section class="ecran acc leger">
+  V().innerHTML = `<section class="ecran acc leger">${fetesActives() ? htmlNeige(16) : ''}
     <div class="acc-salut-tel" id="acc-salut2"></div>
+    <button class="acc-mot" id="acc-mot" type="button"></button>
     <div class="histoires" id="acc-hist" role="list"></div>
     <div class="acc-tete" style="grid-area:tete"><div class="marque"><span class="logo-lr officiel piece-sc" aria-label="SlabCoach">${htmlPiece()}</span><img class="logo" id="acc-logo" src="${esc(S.logo || '/icone.png')}" alt="">
         <div class="horloge"><div class="nom-b${nomMarque() === 'SlabCoach' ? ' a-mot' : ''}" id="acc-nom">${nomMarque() === 'SlabCoach' ? MOT_SC : esc(nomMarque())}</div><div class="salut" id="acc-salut"></div><div class="h" id="acc-h">--:--</div><div class="d" id="acc-d"></div></div></div>
@@ -8267,6 +8387,7 @@ function demarrerAccueilLive(){
   if (S.reglages && !S.reglages.niveau && !S.questionVue) { S.questionVue = true; setTimeout(() => { if (surAccueil()) questionnaireProfil(() => chargerConseils(true)); }, 1500); }
   const cm = $('#cs-maj'); if (cm) cm.onclick = () => chargerConseils(true);
   tic(); S.tHorloge = setInterval(tic, 1000);
+  rendreMotDuJour();
   chargerLive(true); S.tLive = setInterval(() => { if (!surAccueil()) { arreterAccueilLive(); return; } if (!document.hidden) chargerLive(false); }, 60000);
 }
 // 26 oct 2026 (Mathieu : « une zone conseil dans l'accueil, analyse IA : quoi acheter, quoi vendre, proposer des actions »)
@@ -8295,6 +8416,8 @@ const IC_PIL = {
   lot:'<rect x="8" y="3.5" width="11" height="15" rx="2"/><path d="M5 6.5v12a2 2 0 0 0 2 2h9"/>',
   cloche:'<path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>', envoi:'<path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/>',
   retour:'<path d="M9 14l-5-5 5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>', horloge:'<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/>',
+  reglages:'<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
+  coeur:'<path d="M12 20s-7.5-4.6-7.5-10.2A4.1 4.1 0 0 1 12 7.4a4.1 4.1 0 0 1 7.5 2.4C19.5 15.4 12 20 12 20z"/>', etoile:'<path d="M12 3.5l2.5 5.3 5.8.7-4.3 4 1.1 5.7L12 16.4l-5.1 2.8 1.1-5.7-4.3-4 5.8-.7z"/>',
   carte:'<rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 7h6"/>', pin:'<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>', dollar:'<path d="M12 3v18M16.5 7.5c0-1.9-2-3-4.5-3s-4.5 1.2-4.5 3.2c0 4.6 9 2.4 9 7 0 2-2 3.3-4.5 3.3S7.5 15.8 7.5 14"/>'};
 const rangVs = (k, ic, lib, val) => `<button class="acc-pil" data-vs="${k}"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL[ic]}</svg></span>
   <span class="ap-t">${lib}</span>${val ? `<span class="ap-v">${val}</span>` : ''}<i aria-hidden="true">›</i></button>`;
@@ -8752,7 +8875,7 @@ const IC_ERE = {tous: '<circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0
 async function vueTendances(){
   // 2 nov 2026 (Mathieu : « juste le joueur ; a cote de Trending une petite ampoule qui explique comment notre trend est
   // analyse ; des techniques prouvees ») : la tendance par joueur (tendance_stats.py), l'ampoule explique la methode
-  V().innerHTML = `<section class="ecran tend"><div class="titre td-titre">${tt('Tendances', 'Trending')}<button class="td-amp" id="td-amp" aria-label="${esc(tt('Comment on calcule', 'How it’s calculated'))}"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.ampoule}</svg></button></div><div id="td-z">${roue}</div></section>`;
+  V().innerHTML = `<section class="ecran tend"><div class="titre td-titre">${tt('Tendances', 'Trending')}<button class="td-amp" id="td-amp" aria-label="${esc(tt('Comment on calcule', 'How it’s calculated'))}"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.ampoule}</svg></button><button class="td-perso" id="td-perso" aria-label="${esc(tt('Personnaliser', 'Customize'))}"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.reglages}</svg><i hidden></i></button></div><div id="td-z">${roue}</div></section>`;
   $('#td-amp').onclick = () => { vibrer(); expliquerTendances(); };
   const L = typeof LANGUE !== 'undefined' ? LANGUE : null;
   const [t, p, a] = await Promise.all([API.tendances().catch(() => null), API.pouls(L).catch(() => null), API.astuces(false, L).catch(() => null)]);
@@ -8788,36 +8911,48 @@ async function vueTendances(){
     // facile et leger ») : l'indice, une seule rangee « en ce moment » (segments chauds + chiffres), les pastilles rondes
     // Sport et Joueurs (comme les Deals), les 3 onglets, la liste ; la mention en bas
     const un = sportsT.length === 1 ? sportsT[0] : '', eL = (ERES.find(x => x[0] === ere) || ERES[0]);
-    const rond = (id, svg, lib) => `<button class="d-rond" id="${id}"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${svg}</svg></span><small>${lib}</small></button>`;
+    // 9 nov 2026 (Mathieu : « trop d'affaires, pas de zone morte ; seulement l'information la plus importante, le reste dans un
+    // pop-up ») : les 3 onglets et la liste ; le sport, l'epoque, l'indice du hobby et « en ce moment » dans « Personnaliser »
+    const filtres = [un ? nomSport(un) : '', ere ? eL[1] : ''].filter(Boolean);
     z.innerHTML = `
-      ${ih ? `<button class="ind-h" id="td-ind"><span class="ind-ht"><b>${tt('Indice du hobby', 'Hobby index')}</b><small>${tt('4 semaines', '4 weeks')} · ${ih.n_cartes} ${tt('cartes', 'cards')}</small></span>${courbeIndice(ih.points.slice(-26), 36)}<b class="ind-hv ${ih.v4 > 0 ? 'vert' : ih.v4 < 0 ? 'rouge' : ''}">${pctIndice(ih.v4)}</b><i aria-hidden="true">›</i></button>` : ''}
-      ${chauds.length || faits.length ? `<div class="td-strip">${faits.map((x, k) => `<button class="td-st td-fait" data-fait="${k}"><b>${esc(x.chiffre)}</b><small>${esc(x.titre)}</small></button>`).join('')}${chauds.map(x => `<a class="td-st td-chaud c${Math.max(1, Math.min(3, x.chaleur))}" href="#pouls/${encodeURIComponent(x.cle)}"><span class="td-sti"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.feu}</svg></span><b>${esc(x.nom.charAt(0).toUpperCase() + x.nom.slice(1))}</b><small>${tt('ça bouge', 'heating up')}</small></a>`).join('')}</div>` : ''}
-      <div class="d-ronds td-ronds">${sportsDispo.length > 1 ? rond('td-sp', icSport(un), un ? nomSport(un) : tt('Sports', 'Sports')) : ''}${J ? rond('td-er', IC_ERE[ere || 'tous'], ere ? eL[1] : tt('Joueurs', 'Players')) : ''}</div>
       <div class="seg td-ong">${ONG.map(([k, lib]) => `<button data-to="${k}" class="${k === actif ? 'on' : ''}">${lib}</button>`).join('')}</div>
+      ${filtres.length ? `<button class="td-filtres" id="td-filtres">${esc(filtres.join(' · '))}<span aria-hidden="true">×</span></button>` : ''}
       <div class="liste td-liste">${l.map(ligne).join('') || (r0.calcul ? `<div class="lecture"><span class="roue"></span>${tt('On analyse toutes nos ventes… (environ une minute)', 'Analyzing all our sales… (about a minute)')}</div>` : `<div class="vide t-vide">${tt('Rien à signaler cette semaine', 'Nothing to report this week')}</div>`)}</div>
       ${tous.length > l.length ? `<button class="pilule td-plus" id="td-plus">${tt(`Voir plus (${tous.length - l.length})`, `See more (${tous.length - l.length})`)}</button>` : ''}
       <div class="t-legal">${r.nb_ventes ? (r.nb_ventes || 0).toLocaleString(LOC()) + ' ' + tt('ventes eBay réelles analysées. ', 'real eBay sales analyzed. ') : ''}${tt('Un indice, pas une prédiction.', 'A hint, not a prediction.')}</div>`;
     remplirPortraits(z);
-    const ti = $('#td-ind', z); if (ti) ti.onclick = () => { vibrer(); feuilleIndices(r0.indices); };
     $$('[data-to]', z).forEach(b => b.onclick = () => { actif = S.tendOng = b.dataset.to; nVoir = 25; vibrer(); peindre(); });
     const nb_ = (k, cle) => unParJoueur(r[actif] || []).filter(x => cle === 'sp' ? (!k || (x.sport || 'hockey') === k) && (!ere || (x.ere || (x.recrue ? 'recrue' : 'veteran')) === ere)
       : (!k || (x.ere || (x.recrue ? 'recrue' : 'veteran')) === k) && (!sportsT.length || sportsT.includes(x.sport || 'hockey'))).length;
-    const bs = $('#td-sp', z); if (bs) bs.onclick = () => { vibrer();
-      ouvrirFeuille(`<h3>${tt('Sports', 'Sports')}</h3><div class="d-choix">${[['', tt('Tous les sports', 'All sports')], ...sportsDispo.map(k => [k, nomSport(k)])].map(([k, l]) =>
-        `<button class="d-ch ${(!k && !sportsT.length) || (k && sportsT.length === 1 && sportsT[0] === k) ? 'on' : ''}" data-tsp="${k}"><span class="d-chi"><svg viewBox="0 0 24 24" aria-hidden="true">${icSport(k)}</svg>${esc(l)}</span><small>${nb_(k, 'sp')}</small></button>`).join('')}</div>`);
-      $$('[data-tsp]').forEach(b => b.onclick = () => { const k = b.dataset.tsp; sportsT = k ? [k] : [];
-        try { localStorage.setItem('lr_tend_sports', JSON.stringify(sportsT)); } catch (e) {}
-        nVoir = 25; fermerFeuille(); peindre(); }); };
-    const be = $('#td-er', z); if (be) be.onclick = () => { vibrer();
-      ouvrirFeuille(`<h3>${tt('Joueurs', 'Players')}</h3><div class="d-choix">${ERES.map(([k, l]) =>
-        `<button class="d-ch ${ere === k ? 'on' : ''}" data-ere="${k}"><span class="d-chi"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_ERE[k || 'tous']}</svg>${esc(l)}</span><small>${nb_(k, 'ere')}</small></button>`).join('')}</div>`);
-      $$('[data-ere]').forEach(b => b.onclick = () => { ere = S.tendEre = b.dataset.ere; nVoir = 25; fermerFeuille(); peindre(); }); };
+    const pe = $('#td-perso'); if (pe) { pe.onclick = () => { vibrer(); personnaliser(); }; const pt = pe.querySelector('i'); if (pt) pt.hidden = !filtres.length; }
+    const tf = $('#td-filtres', z); if (tf) tf.onclick = () => { vibrer(); sportsT = []; ere = S.tendEre = ''; try { localStorage.setItem('lr_tend_sports', '[]'); } catch (e) {} nVoir = 25; peindre(); };
     const tp = $('#td-plus', z); if (tp) tp.onclick = () => { nVoir += 25; vibrer(); peindre(); };
-    $$('[data-fait]', z).forEach(b => b.onclick = () => { const x = faits[+b.dataset.fait]; if (!x) return; vibrer();
-      ouvrirFeuille(`<h3>${esc(x.titre)}</h3><div class="sous" style="margin-bottom:10px">${esc(x.texte || '')}</div>
-        ${x.truc ? `<div class="as-truc"><b>${x.marche ? tt('À savoir', 'Good to know') : tt('Le truc', 'The tip')}</b> ${esc(x.truc)}</div>` : ''}
-        ${x.marche && (x.preuve || []).length ? `<button class="btn" data-preuve="${+b.dataset.fait}" style="margin-top:12px">${tt('Voir les ventes', 'See the sales')}</button>` : ''}
-        <div class="sous" style="margin-top:10px">${esc(x.source || '')}</div>`); });
+  };
+  // la feuille « Personnaliser » : le sport, les joueurs, puis l'indice du hobby et ce qui bouge en ce moment
+  const personnaliser = () => {
+    const ERES = [['', tt('Tous', 'All')], ['recrue', tt('Recrues', 'Rookies')], ['veteran', tt('Vétérans', 'Veterans')], ['legende', tt('Légendes', 'Legends')]];
+    const ih = r0.indices && r0.indices.hobby && r0.indices.hobby.egal;
+    ouvrirFeuille(`<h3>${tt('Personnaliser', 'Customize')}</h3>
+      ${sportsDispo.length > 1 ? `<div class="r-titre">${tt('Sport', 'Sport')}</div><div class="pastilles td-ch">${[['', tt('Tous', 'All')], ...sportsDispo.map(k => [k, nomSport(k)])].map(([k, l]) =>
+        `<button class="chip ${(!k && !sportsT.length) || (k && sportsT.length === 1 && sportsT[0] === k) ? 'on' : ''}" data-tsp="${k}">${esc(l)}</button>`).join('')}</div>` : ''}
+      ${J ? `<div class="r-titre">${tt('Joueurs', 'Players')}</div><div class="pastilles td-ch">${ERES.map(([k, l]) => `<button class="chip ${ere === k ? 'on' : ''}" data-ere="${k}">${esc(l)}</button>`).join('')}</div>` : ''}
+      <div class="acc-pils" style="margin-top:14px">
+        ${ih ? pilAcc('td-ind', 'graphe', tt('Indice du hobby', 'Hobby index'), pctIndice(ih.v4), ih.v4 > 0 ? 'vert' : ih.v4 < 0 ? 'rouge' : '') : ''}
+        ${faits.length || chauds.length ? pilAcc('td-mtn', 'feu', tt('En ce moment', 'Right now'), faits.length + chauds.length, '') : ''}</div>`);
+    $$('[data-tsp]').forEach(b => b.onclick = () => { const k = b.dataset.tsp; sportsT = k ? [k] : []; vibrer();
+      try { localStorage.setItem('lr_tend_sports', JSON.stringify(sportsT)); } catch (e) {}
+      $$('[data-tsp]').forEach(x => x.classList.toggle('on', x === b)); nVoir = 25; peindre(); });
+    $$('[data-ere]').forEach(b => b.onclick = () => { ere = S.tendEre = b.dataset.ere; vibrer(); $$('[data-ere]').forEach(x => x.classList.toggle('on', x === b)); nVoir = 25; peindre(); });
+    const ti = $('#td-ind'); if (ti) ti.onclick = () => { vibrer(); feuilleIndices(r0.indices); };
+    const tm = $('#td-mtn'); if (tm) tm.onclick = () => { vibrer();
+      ouvrirFeuille(`<h3>${tt('En ce moment', 'Right now')}</h3><div class="acc-pils">${faits.map((x, k) => pilAcc('tdf-' + k, 'ampoule', `${esc(x.chiffre)} <small class="gg-s">${esc(x.titre)}</small>`, '')).join('')}
+        ${chauds.map(x => `<a class="acc-pil" href="#pouls/${encodeURIComponent(x.cle || x.id || '')}" data-fermer-f><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.feu}</svg></span><span class="ap-t">${esc(x.nom || x.titre || '')}</span><i aria-hidden="true">›</i></a>`).join('')}</div>`);
+      $$('[data-fermer-f]').forEach(a => a.addEventListener('click', () => fermerFeuille()));
+      faits.forEach((x, k) => { const b = $('#tdf-' + k); if (b) b.onclick = () => { vibrer();
+        ouvrirFeuille(`<h3>${esc(x.titre)}</h3><div class="sous" style="margin-bottom:10px">${esc(x.texte || '')}</div>
+          ${x.truc ? `<div class="as-truc"><b>${x.marche ? tt('À savoir', 'Good to know') : tt('Le truc', 'The tip')}</b> ${esc(x.truc)}</div>` : ''}
+          ${x.marche && (x.preuve || []).length ? `<button class="btn" data-preuve="${k}" style="margin-top:12px">${tt('Voir les ventes', 'See the sales')}</button>` : ''}
+          <div class="sous" style="margin-top:10px">${esc(x.source || '')}</div>`); }; }); };
   };
   peindre();
   if (r0.calcul) setTimeout(() => { if ((location.hash || '').startsWith('#tendances') && $('#td-z')) vueTendances(); }, 25000);   // le premier calcul : on revient voir
@@ -12250,7 +12385,7 @@ const ALARMES = () => [
 // 9 nov 2026 (Mathieu : « un onglet sur la page principale, genre centre de notifications : l'utilisateur coche quel genre
 // de notifs il veut et met les joueurs qu'il veut tracker ; max 5 en non pro et 20 en pro ») : une seule page, trois blocs
 // simples (Nouveautés · Mes joueurs suivis · Ce que je reçois) ; la cloche du haut y mène aussi
-async function vueNotifs(){
+async function vueNotifs(arg){
   V().innerHTML = `<section class="ecran notifs"><div class="titre">${tt('Notifications', 'Notifications')}</div><div id="nt-z"><div class="lecture"><span class="roue"></span></div></div></section>`;
   const [r, ra, p] = await Promise.all([API.alertes_liste().catch(() => ({alertes:[], notifications:[]})), API.alarmes_lire().catch(() => null), API.deals_profil_lire().catch(() => ({favoris:[], favoris_max:5}))]);
   const z = $('#nt-z'); if (!z) return;
@@ -12282,16 +12417,21 @@ async function vueNotifs(){
     const l = notifs.filter(n => filtre === 'tout' || groupe(n.sorte) === filtre), max = tout ? 60 : 10;
     let j0 = '', h = '';
     for (const n of l.slice(0, max)) { const j = jourDe(n.le); if (j !== j0) { h += `<div class="nt-jour">${j}</div>`; j0 = j; } h += ligne(n); }
-    $('#nt-liste').innerHTML = h || `<div class="sous nt-vide">${filtre === 'tout' ? tt('Rien de nouveau pour l’instant. Ajoute des joueurs plus bas : on te prévient quand ils sont en deal.', 'Nothing new yet. Add players below: we’ll tell you when they’re on deal.') : tt('Rien dans cette catégorie.', 'Nothing in this category.')}</div>`;
+    $('#nt-liste').innerHTML = h || `<div class="sous nt-vide">${filtre === 'tout' ? tt('Rien de nouveau pour l’instant. Ajoute des joueurs dans Réglages : on te prévient quand ils sont en deal.', 'Nothing new yet. Add players in Settings: we’ll tell you when they’re on deal.') : tt('Rien dans cette catégorie.', 'Nothing in this category.')}</div>`;
     const pl = $('#nt-plus'); if (pl) pl.hidden = tout || l.length <= max;
   };
   const presents = new Set(notifs.map(n => groupe(n.sorte)));
   const autres = ALARMES().filter(([k]) => k !== 'mes_joueurs');
   const permis = (() => { try { return !('Notification' in window) || NATIF || Notification.permission !== 'default'; } catch (e) { return true; } })();
-  z.innerHTML = `
-    <div class="nt-bloc"><div class="nt-t">${tt('Nouveautés', 'What’s new')}${r.non_lues ? ` <span class="capsule">${r.non_lues}</span>` : ''}</div>
+  // 9 nov 2026 (Mathieu : « separer les settings des notifications, propre, comme la section des breaks en haut ») :
+  // deux onglets en haut ; Notifications = ce qui est arrive ; Reglages = mes joueurs, ce que je recois, mes alertes de prix
+  let ong = arg === 'reglages' ? 'reglages' : 'liste';
+  z.innerHTML = `<div class="seg nt-ong">${[['liste', tt('Notifications', 'Notifications') + (r.non_lues ? ` <span class="nt-c">${r.non_lues}</span>` : '')], ['reglages', tt('Réglages', 'Settings')]].map(([k, t]) => `<button data-ong="${k}" class="${k === ong ? 'on' : ''}">${t}</button>`).join('')}</div>
+    <div id="nt-p-liste">
+    <div class="nt-bloc">
       ${presents.size > 1 ? `<div class="pastilles defile nt-f">${FILTRES.filter(([k]) => k === 'tout' || presents.has(k)).map(([k, t]) => `<button class="chip ${k === 'tout' ? 'on' : ''}" data-ntf="${k}">${t}</button>`).join('')}</div>` : ''}
       <div id="nt-liste"></div><button class="btn ghost petit" id="nt-plus" hidden style="margin-top:8px">${tt('Voir plus', 'See more')}</button></div>
+    </div><div id="nt-p-reg">
     <div class="nt-bloc"><div class="nt-t">${tt('Mes joueurs suivis', 'My tracked players')} <span class="fv-n" id="nt-n"></span></div>
       <div class="sous" style="margin-bottom:10px">${tt('Joueurs ou équipes. Ils passent aussi en premier dans tes deals (★).', 'Players or teams. They also come first in your deals (★).')}</div>
       <div class="fv-l" id="nt-fav"></div>
@@ -12306,7 +12446,11 @@ async function vueNotifs(){
     <div class="nt-bloc"><div class="nt-t">${tt('Mes alertes de prix', 'My price alerts')}</div>
       ${(r.alertes || []).length ? `<div class="liste">${r.alertes.map(a => `<div class="rangee"><span class="milieu"><span class="nom">${esc(a.q)}</span><span class="det">≤ ${argent(a.prix_max, 0)}</span></span><button class="ix" data-alx="${a.id}" aria-label="${esc(tt('Retirer', 'Remove'))}">${ICONES.x}</button></div>`).join('')}</div>`
         : `<div class="sous">${tt('Aucune. Choisis une carte et un prix : on te prévient quand elle passe en dessous.', 'None. Pick a card and a price: we’ll tell you when it drops below.')}</div>`}
-      <button class="btn ghost" id="nt-nv" style="margin-top:10px">${ICONES.plus} ${tt('Nouvelle alerte de prix', 'New price alert')}</button></div>`;
+      <button class="btn ghost" id="nt-nv" style="margin-top:10px">${ICONES.plus} ${tt('Nouvelle alerte de prix', 'New price alert')}</button></div></div>`;
+  const montrer = (k) => { ong = k; $('#nt-p-liste').hidden = k !== 'liste'; $('#nt-p-reg').hidden = k !== 'reglages';
+    $$('[data-ong]').forEach(x => x.classList.toggle('on', x.dataset.ong === k)); history.replaceState(null, '', k === 'reglages' ? '#notifs/reglages' : '#notifs'); };
+  montrer(ong);
+  $$('[data-ong]').forEach(b => b.onclick = () => { if (b.dataset.ong !== ong) { vibrer(); montrer(b.dataset.ong); window.scrollTo(0, 0); } });
   // les joueurs suivis : enregistres tout de suite (pas de bouton « Enregistrer »)
   const sauverFav = async () => {
     const res = await API.deals_profil_regler({collectionne: p.collectionne || [], favoris: FAV, prix_min: p.prix_min, prix_max: p.prix_max}).catch(e => ({ok:false, erreur:e.message}));
@@ -12323,7 +12467,8 @@ async function vueNotifs(){
     const bp = $('[data-nt-pro]'); if (bp) bp.onclick = () => feuillePro('joueurs');
     $$('[data-ntx]').forEach(b => b.onclick = () => { FAV.splice(+b.dataset.ntx, 1); vibrer(); peindre(); sauverFav(); });
   };
-  $('#nt-aj').onsubmit = (e) => { e.preventDefault(); const v = $('#nt-in').value.trim().replace(/\s+/g, ' ');
+  $('#nt-aj').onsubmit = (e) => { e.preventDefault(); let v = $('#nt-in').value.trim().replace(/\s+/g, ' ');
+    if (v === v.toLowerCase() || v === v.toUpperCase()) v = v.toLowerCase().replace(/(^|[\s\-'’.])([a-zà-ÿ])/g, (m, x, y) => x + y.toUpperCase());   // « matvei gridin » -> « Matvei Gridin »
     if (v.length < 3) { toast(tt('Au moins 3 lettres', 'At least 3 letters')); return; }
     if (FAV.length >= FMAX) return;
     if (!FAV.some(x => x.toLowerCase() === v.toLowerCase())) FAV.push(v.slice(0, 40));
@@ -12717,6 +12862,7 @@ async function vueReglages(arg){
     <a class="r-bloc r-idee" href="#guide"><span class="aaj-n">★</span><span><b>${tt('Guide du hobby', 'Hobby guide')}</b><small>${tt('Produits, sortes de cartes, budget : tout pour bien acheter', 'Products, card types, budget: buy smart')}</small></span><span class="fl">›</span></a>
     <button class="r-bloc r-idee" id="g-idee"><span class="aaj-n">?</span><span><b>${tt('Une idée ? Un problème ?', 'An idea? A problem?')}</b><small>${tt('Écris-nous, on répond ici dans l’app', 'Write to us, we reply here in the app')}</small></span><span class="fl">›</span></button>
     <div class="r-bloc"><div class="r-titre">${tt('Palette de l’app', 'App palette')}</div>
+      ${saisonFetes() ? `<button class="r-ligne" id="g-fetes" type="button"><span class="t"><b>${tt('Décor des fêtes', 'Holiday decor')}</b><span>${tt('Petites lumières et flocons, jusqu’au 7 janvier', 'Little lights and snowflakes, until January 7')}</span></span><span class="interrupteur ${fetesActives() ? 'on' : ''}"><i></i></span></button>` : ''}
       <div class="r-note">${tt('Ta finition préférée : les touches de couleur, les boutons et les onglets de l’app. Le vert et le rouge restent ceux des gains et des pertes.', 'Your favorite finish: the color touches, buttons and tabs of the app. Green and red stay for gains and losses.')}</div>
       <div class="th-grille" id="g-palette">${PALETTES.map(p => `<button class="th-eq th-pal ${clePalette(r.palette) === p.k ? 'on' : ''}" data-pal="${p.k}"><span class="pas" style="--p1:${p.c[0]};--p2:${p.c[1]};--p3:${p.c[2]};--p4:${p.c[3]}"></span><span>${esc(tt(p.fr, p.en))}<small>${esc(tt(p.dfr, p.den))}</small></span></button>`).join('')}</div></div>
     <div class="r-bloc"><div class="r-titre">Mon sport principal</div>${puceSports(r.sport || 'hockey', 'g-sport')}
@@ -12764,6 +12910,8 @@ async function vueReglages(arg){
   brancherBadge($('.profil-tete'));
   const gsup = $('#g-supprimer'); if (gsup) gsup.onclick = feuilleSupprimerCompte;
   const gia = $('#g-ia-retirer'); if (gia) gia.onclick = async () => { const x = await essai(API.reglages_sauver({ia_photos_ok:false}), tt('Permission retirée', 'Permission withdrawn')); if (x) { S.reglages = x; vueReglages(); } };
+  const gfe = $('#g-fetes'); if (gfe) gfe.onclick = () => { const on = !fetesActives(); try { localStorage.setItem('lr_fetes', on ? '1' : '0'); } catch (e) {}
+    gfe.querySelector('.interrupteur').classList.toggle('on', on); decorFetes(); toast(on ? tt('Décor des fêtes activé', 'Holiday decor on') : tt('Décor des fêtes retiré', 'Holiday decor off'), 1500); };
   $$('#g-palette [data-pal]').forEach(b => b.onclick = async () => {
     appliquerPalette(b.dataset.pal);
     $$('#g-palette [data-pal]').forEach(x => x.classList.toggle('on', x === b));
@@ -12888,7 +13036,7 @@ function pastillerReglages(){
     pils.insertAdjacentHTML('beforeend', pilAcc('gg-' + k, ic, `${esc(titre)}<small class="gg-s">${esc(sous)}</small>`, ''));
     pils.lastElementChild.onclick = () => {
       vibrer();
-      if (k === 'notifs') { location.hash = '#notifs'; return; }
+      if (k === 'notifs') { location.hash = '#notifs/reglages'; return; }
       if (membres.length === 1) { membres[0].ouvrir(); return; }
       ouvrirFeuille(`<h3>${esc(titre)}</h3><div class="acc-pils" id="gg-sous"></div>`);
       membres.forEach((it, i) => { $('#gg-sous').insertAdjacentHTML('beforeend', pilAcc('ggs-' + i, it.ic, esc(it.t), ''));

@@ -102,6 +102,11 @@ def mesure_carte(points, auj=None):
 _SP_PROD = {}
 
 
+# 9 nov 2026 (capture de Mathieu : « Ufc Moment » en tete des joueurs hockey) : des mots qui ne sont jamais un joueur
+PAS_JOUEUR = re.compile(r"\b(ufc|moments?|team|teams|logo|checklist|leaders?|highlights?|rookies|draft|stars|lot|cup|trophy|"
+                        r"history|playoffs?|celebration|mascot|arena|stadium|unknown|various|multi|duo|trio)\b", re.I)
+
+
 def par_joueur(cartes, auj=None):
     """cartes : [{joueur, recrue, points, ...}] (une entree par carte exacte). -> {joueur: mesure du joueur}."""
     auj = auj or datetime.now()
@@ -111,6 +116,8 @@ def par_joueur(cartes, auj=None):
     for c in cartes or []:
         j = str(c.get("joueur") or "").strip()
         if not j or "/" in j:                         # une carte a 2 joueurs ne dit rien d'UN joueur
+            continue
+        if PAS_JOUEUR.search(j) or re.search(r"\d", j):    # 9 nov 2026 (« Ufc Moment » dans les joueurs) : pas un joueur
             continue
         g = gr.setdefault(j.lower(), {"joueur": j, "recrue": False, "mes": [], "n_7j": 0, "n": 0, "pts": [], "cartes": set(), "an": None, "sp": {}})
         try:                                             # 4 nov 2026 (Mathieu : « choisir le ou les sports ») : le sport de la carte

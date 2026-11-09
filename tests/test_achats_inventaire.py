@@ -49,3 +49,15 @@ assert not l[k["id"]]["a_afficher"]                                            #
 assert not l[g["id"]]["a_afficher"]                                            # achetee le 28 oct : trop recente
 assert [x["id"] for x in api.inventaire_liste({"dispo": 1, "a_afficher": 1})] == [v["id"]]
 print("ok a mettre sur eBay")
+# 9 nov 2026 (Mathieu : « quand j'affiche une carte, l'app cherche si on l'a deja achetee : le prix paye, et notre achat
+# n'est jamais un comp, tout sauf notre deal »)
+memes, ids, exact = api._mes_achats_titre("2025-26 UD Young Guns Ivan Demidov #201 Rookie", "111")
+assert [a["item_id"] for a in memes] == ["111"] and memes[0]["cout"] == 160.0 and memes[0]["cette_annonce"] and exact and "222" in ids, memes
+assert api._mes_achats_titre("2025-26 UD Young Guns Ivan Demidov #201")[0][0]["cette_annonce"] is False
+assert api._mes_achats_titre("2025-26 UD Young Guns Matvei Michkov #451")[0] == []          # un autre joueur : rien
+vs = [{"item_id": "111", "prix": 160, "le": "2026-10-20"},                                     # mon achat (son numero)
+      {"item_id": "999", "prix": 161, "le": "2026-10-21"},                                     # au prix paye, le lendemain : le mien
+      {"item_id": "888", "prix": 210, "le": "2026-10-21"}, {"item_id": "777", "prix": 190, "le": "2026-09-01"}]
+out, n = api._sans_mes_achats(vs, memes, ids)
+assert [v["item_id"] for v in out] == ["888", "777"] and n == 2, out
+print("ok mes achats hors des comps")

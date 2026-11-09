@@ -5661,6 +5661,60 @@ class Api:
                 c.close()
         return {"ok": True, "id": r["id"]}
 
+    def _mes_achats_titre(self, titre, item_id=None):
+        """9 nov 2026 (Mathieu : « quand j'affiche une carte, l'app doit chercher si on l'a deja achetee : pour le prix paye
+        (profit) et pour ne pas prendre notre achat dans les comps, tout sauf notre deal ») : (achats de la MEME carte, les 3
+        plus recents ; numeros d'annonce de TOUS tes achats ; cette annonce-ci est un de tes achats)."""
+        t = str(titre or "").strip()
+        try:
+            c = self._db()
+            try:
+                self._achats_table(c)
+                tous = _dicts(c.execute("SELECT item_id, n, titre, cout, date, photo, carte_id FROM achats_ebay ORDER BY date DESC LIMIT 3000"))
+            finally:
+                c.close()
+        except Exception as e:
+            print("Mes achats : " + repr(e), flush=True)
+            return [], set(), False
+        ids = {str(a["item_id"]) for a in tous if a.get("item_id")}
+        exact = bool(item_id) and str(item_id) in ids
+        memes = []
+        if len(t) >= 6:
+            cib = cartes_match.cible_titre(t)
+            nom = (cib.get("joueur") or "").split()[-1:]
+            for a in tous:
+                ta = cartes_match.norm(a["titre"] or "")
+                if str(a.get("item_id")) == str(item_id or "-") or (nom and re.search(r"\b" + re.escape(nom[0]) + r"\b", ta)
+                                                                   and not cartes_match.raisons_refus(cib, a["titre"] or "")):
+                    a["photo"] = a["photo"] if a.get("photo") and a["photo"] != "-" else None
+                    a["cette_annonce"] = str(a.get("item_id")) == str(item_id or "-")
+                    memes.append(a)
+                    if len(memes) >= 3:
+                        break
+        return memes, ids, exact
+
+    @staticmethod
+    def _sans_mes_achats(vs, memes, ids):
+        """Les comps sans tes achats : son numero d'annonce, ou (achat de la meme carte) une vente au prix paye a 2 jours."""
+        def mien(v):
+            iv = str(v.get("item_id") or "") or (vendues._id_vente(v) or "")
+            if iv and iv in ids:
+                return True
+            try:
+                p, d = float(v.get("prix")), datetime.fromisoformat(str(v.get("le"))[:10])
+            except (TypeError, ValueError):
+                return False
+            for a in memes:
+                try:
+                    if a.get("cout") and abs((d - datetime.fromisoformat(str(a["date"])[:10])).days) <= 2 \
+                            and abs(p - float(a["cout"])) <= max(1.0, 0.05 * float(a["cout"])):
+                        return True
+                except (TypeError, ValueError):
+                    pass
+            return False
+        out = [v for v in vs or [] if not mien(v)]
+        return out, len(vs or []) - len(out)
+
     def achats_suggerer(self, titre):
         """A la vente : les achats pas encore relies qui ressemblent a ce titre (meme carte d'abord). -> {achats: [...]}"""
         import difflib
@@ -6672,6 +6726,12 @@ class Api:
                 vc = vendues.memes_annonce(t, q=q, n=16) if t else {"ventes": []}
         except Exception:
             vc = {"ventes": []}
+        mes_achats, mes_ids, deja_achetee = self._mes_achats_titre(t, item_id) if t else ([], set(), False)
+        if vc.get("ventes"):                   # 9 nov 2026 : tes achats ne sont jamais des comps (« tout sauf notre deal »)
+            vc["ventes"], n_mes = self._sans_mes_achats(vc["ventes"], mes_achats, mes_ids)
+            if n_mes:
+                vc["nb"] = max(0, (vc.get("nb") or 0) - n_mes)
+                vc["mes_retirees"] = n_mes
         ventes = vc.get("ventes") or (self._mes_ventes_pareilles(t, item_id) if t else [])
         # 25 oct 2026 : la valeur = les ventes reelles (3 ou plus), sinon les annonces en vente
         # 26 oct 2026 (Mathieu : « encore pas un deal » : 6 annonces a 21 $, 1 vente a 3 $) : les annonces sont un PLAFOND ;
@@ -6802,7 +6862,8 @@ class Api:
                 "rabais": round(100 * (1 - total / valeur)) if total and valeur and juger else None,
                 "taxe_achat": _deals.taxe_de(a), "etranger": _deals.etranger(a),
                 "gain": round(_net_rev(valeur) - _paye(total, a), 2) if total and valeur and juger else None,
-                "peu_de_ventes": not juger, "pourquoi": pourquoi if not juger else None, "nb_trouvees": nb_v}
+                "peu_de_ventes": not juger, "pourquoi": pourquoi if not juger else None, "nb_trouvees": nb_v,
+                "mes_achats": mes_achats, "deja_achetee": deja_achetee, "mes_retirees": vc.get("mes_retirees") or 0}
 
     def _mes_ventes_pareilles(self, titre, item_id=None, n=8):
         """Les MEMES cartes deja vendues par ce compte (vraies ventes, avec photo) : {titre, prix, le, photo}."""
@@ -6957,6 +7018,16 @@ class Api:
         # 27 oct 2026 (Mathieu : « pas de faux prix ») : une valeur SEULEMENT si les ventes reelles sont sures (deals.valeur_sure :
         # numeros speciaux ecartes, ventes recentes, coherentes). Jamais une valeur tiree des prix demandes.
         import deals as _deals
+        # 9 nov 2026 (Mathieu : « tout sauf notre deal ») : tes achats de cette carte : montres a part, jamais dans les comps
+        mes_achats, mes_ids, _ex = self._mes_achats_titre(q)
+        base["mes_achats"] = mes_achats
+        if base["vendues"].get("ventes"):
+            base["vendues"]["ventes"], n_mes = self._sans_mes_achats(base["vendues"]["ventes"], mes_achats, mes_ids)
+            if n_mes:
+                base["vendues"]["nb"] = len(base["vendues"]["ventes"])
+                base["vendues"]["mes_retirees"] = n_mes
+                pr = sorted(float(v["prix"]) for v in base["vendues"]["ventes"] if v.get("prix"))
+                base["vendues"]["mediane"] = (pr[len(pr) // 2] if len(pr) % 2 else round((pr[len(pr) // 2 - 1] + pr[len(pr) // 2]) / 2, 2)) if pr else None
         vs = [v for v in (base["vendues"].get("ventes") or []) if v.get("prix")]
         vm = _deals.valeur_sure(vs, q)[0] if len(vs) >= 2 else None
         base["valeur_sure"] = bool(vm)
