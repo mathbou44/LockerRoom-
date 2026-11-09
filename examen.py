@@ -829,8 +829,7 @@ def _glisser_le_long(im, q, zone, nx, ny, larg):
         return nx, ny
     ux, uy = (bx - ax) / lg, (by - ay) / lg                # le long de l'arete
     dx_, dy_ = _DIRS[zone]                                  # vers l'exterieur
-    g = np.asarray(im.convert("L"), dtype=float)
-    H, W = g.shape
+    W, H = im.size
     t0 = (nx - ax) * ux + (ny - ay) * uy
     pas = max(1.0, lg / 600)
     ts = np.arange(max(lg * 0.08, t0 - lg * 0.3), min(lg * 0.92, t0 + lg * 0.3), pas)   # les coins sont a eux
@@ -840,7 +839,15 @@ def _glisser_le_long(im, q, zone, nx, ny, larg):
     px = nx + (ts - t0)[:, None] * ux + prof[None, :] * dx_
     py = ny + (ts - t0)[:, None] * uy + prof[None, :] * dy_
     ok = (px >= 0) & (px < W - 1) & (py >= 0) & (py < H - 1)
-    v = np.where(ok, g[np.clip(py, 0, H - 1).astype(int), np.clip(px, 0, W - 1).astype(int)], np.nan)
+    # seulement la bande utile de la photo, en niveaux de gris (le serveur a peu de memoire : pas toute la photo en float)
+    bx0, by0 = int(max(0, np.floor(px.min()))), int(max(0, np.floor(py.min())))
+    bx1, by1 = int(min(W, np.ceil(px.max()) + 1)), int(min(H, np.ceil(py.max()) + 1))
+    if bx1 - bx0 < 2 or by1 - by0 < 2:
+        return nx, ny
+    g = np.asarray(im.crop((bx0, by0, bx1, by1)).convert("L"))
+    gy = np.clip(py - by0, 0, g.shape[0] - 1).astype(int)
+    gx = np.clip(px - bx0, 0, g.shape[1] - 1).astype(int)
+    v = np.where(ok, g[gy, gx].astype(float), np.nan)
     # par position : la tranche (le plus clair des pixels pres de l'arete) moins la bordure juste a l'interieur
     ni = max(1, int(prof.size * 0.5))
     with np.errstate(all="ignore"):

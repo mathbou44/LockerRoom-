@@ -2932,7 +2932,10 @@ class Api:
         if forcer is None:                     # lecture seule (l'ecran demande ce qui est garde, sans payer une analyse)
             if garde and (garde.get("examen") or garde.get("photos") == refs):
                 garde = self._recentrer(cid, garde)       # 2 nov 2026 : aretes et centrage refaits une fois (sans IA)
-                garde = self._caler_defauts(cid, garde)   # 9 nov 2026 : les points des defauts sur la vraie arete
+                try:                                      # 9 nov 2026 : les points des defauts sur la vraie arete
+                    garde = self._caler_defauts(cid, garde)
+                except Exception as e_:
+                    print("Calage des defauts : " + repr(e_), flush=True)
                 garde = self._sans_texture_relique(carte, garde)
                 garde = self._coherent(garde)
                 return {"ok": True, **garde, "le": carte.get("etat_le"), "precision": precision}

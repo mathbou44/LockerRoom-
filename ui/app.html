@@ -2604,8 +2604,10 @@ button.vd-cz > span{border-bottom:1px solid var(--ligne); padding-bottom:2px} .v
 .vd-z.z10{stroke:#5FD08A} .vd-z.z9{stroke:#E9CF8E} .vd-z.z8{stroke:#F0A05A} .vd-z.z7{stroke:#FF7A7A}
 .vd-rat b em{font-style:normal; font-weight:500; color:var(--doux)}
 .cg-bandes{position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:1}
-.cg-bandes line{stroke-width:1.6; vector-effect:non-scaling-stroke; stroke-dasharray:5 4; filter:drop-shadow(0 0 1px rgba(0,0,0,.9))}
-.cg-bandes .z10{stroke:#5FD08A} .cg-bandes .z9{stroke:#E9CF8E} .cg-bandes .z8{stroke:#F0A05A} .cg-bandes .z7{stroke:#FF7A7A}
+.cg-bandes rect{fill-opacity:.38} .cg-bandes .z10{fill:#5FD08A} .cg-bandes .z9{fill:#E9CF8E} .cg-bandes .z8{fill:#F0A05A} .cg-bandes .z7{fill:#FF7A7A} .cg-bandes .zn{fill:#B9B4FF; fill-opacity:.3}
+.cg .cg-z{width:calc(100% - 36px)} .cg-mode{margin:0; flex-wrap:nowrap; align-items:center} #cg-note{margin-left:auto} #cg-note .cg-n{margin:0; white-space:nowrap}
+.cg .cg-r{flex-wrap:nowrap; white-space:nowrap}
+.vd.cg > *{flex-shrink:0}  /* rien ne se tasse quand « Enregistrer » apparait : la grille ne saute pas sous le doigt */
 .cg-leg{display:flex; flex-wrap:wrap; justify-content:center; gap:6px 14px; font:700 12px var(--f-cond); letter-spacing:.04em; color:var(--doux)}
 .cg-leg span{display:flex; align-items:center; gap:6px} .cg-leg i{width:12px; height:12px; border-radius:3px}
 .cg-leg .z10 i{background:rgba(143,212,164,.8)} .cg-leg .z9 i{background:rgba(233,207,142,.8)} .cg-leg .z8 i{background:rgba(240,160,90,.8)} .cg-leg .z7 i{background:rgba(255,120,120,.8)}
@@ -2792,12 +2794,14 @@ body.vd-ouverte::before{content:''; position:fixed; top:0; left:0; right:0; heig
 .vd-sc .fc-pt{z-index:2}
 .cg-h{margin:0} .cg-r{display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; font-size:14px; color:var(--doux)} .cg-r b{color:var(--texte); font:700 18px var(--f-cond)}
 .cg-n{margin-left:auto; padding:4px 12px; border-radius:99px; font:700 14px var(--f-cond); background:rgba(255,255,255,.08)} .cg-n.vert{color:var(--vert)} .cg-n.or{color:var(--or)} .cg-n.rouge{color:var(--rouge)}
-.cg-z{position:relative; width:100%; max-height:70vh; margin:0 auto; touch-action:none; user-select:none; border-radius:6px; outline:2px solid rgba(255,255,255,.55)}
+.cg-z{position:relative; width:100%; max-height:70vh; margin:0 auto; touch-action:none; user-select:none; -webkit-user-select:none; border-radius:6px; outline:3px solid #fff; box-shadow:0 0 0 4px rgba(0,0,0,.6)}
 .cg-z img{position:absolute; inset:0; width:100%; height:100%; object-fit:fill; border-radius:6px; pointer-events:none}
-.cg-c{position:absolute; background:rgba(255,255,255,.35); pointer-events:none} .cg-c.v{left:50%; top:0; bottom:0; width:1px} .cg-c.h{top:50%; left:0; right:0; height:1px}
 .cg-l{position:absolute; z-index:2} .cg-l.v{top:0; bottom:0; width:28px; margin-left:-14px; cursor:ew-resize} .cg-l.h{left:0; right:0; height:28px; margin-top:-14px; cursor:ns-resize}
 .cg-l i{position:absolute; background:var(--acc); box-shadow:0 0 0 1px rgba(0,0,0,.6)} .cg-l.v i{left:13px; top:0; bottom:0; width:2px} .cg-l.h i{top:13px; left:0; right:0; height:2px}
-.cg-l i::after{content:''; position:absolute; width:16px; height:16px; border-radius:50%; background:var(--acc); box-shadow:0 0 0 2px rgba(0,0,0,.6)} .cg-l.v i::after{left:-7px; top:calc(50% - 8px)} .cg-l.h i::after{top:-7px; left:calc(50% - 8px)}
+.cg-l i::after{content:''; position:absolute; width:22px; height:22px; border-radius:50%; background:var(--acc); box-shadow:0 0 0 2px rgba(0,0,0,.6)} .cg-l.v i::after{left:-10px; top:calc(50% - 11px)} .cg-l.h i::after{top:-10px; left:calc(50% - 11px)}
+.cg-l em{position:absolute; font:700 10px var(--f-cond); letter-spacing:.04em; font-style:normal; white-space:nowrap; padding:1px 6px; border-radius:99px; background:rgba(0,0,0,.75); color:#fff; pointer-events:none}
+.cg-l.v em{top:calc(50% + 16px); left:14px; transform:translateX(-50%)} .cg-l.h em{left:calc(50% + 16px); top:14px; transform:translateY(-50%)}
+.cg-z:not(.cg-sans) .cg-l em{display:none}
 .cg-doigt{position:absolute; left:var(--dx,1%); top:50%; z-index:4; pointer-events:none; display:flex; flex-direction:column; align-items:center; gap:2px; margin:-4px 0 0 -15px}
 .cg-doigt svg{width:40px; height:40px; fill:rgba(0,0,0,.35); stroke:#fff; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 1px 2px rgba(0,0,0,.8))}
 .cg-doigt span{padding:2px 8px; border-radius:999px; background:rgba(0,0,0,.72); color:#fff; font:700 11px var(--f-cond); letter-spacing:.04em}
@@ -3339,7 +3343,7 @@ if (NATIF) {
   (() => {
     let x0 = null, y0 = 0, dx = 0, fl = null;
     const fleche = () => { if (!fl) { fl = document.createElement('div'); fl.className = 'retour-geste'; fl.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>'; document.body.appendChild(fl); } return fl; };
-    document.addEventListener('touchstart', (e) => { const t = e.touches[0]; x0 = t.clientX < 24 && e.touches.length === 1 ? t.clientX : null; y0 = t.clientY; dx = 0; }, {passive:true});
+    document.addEventListener('touchstart', (e) => { const t = e.touches[0]; x0 = t.clientX < 24 && e.touches.length === 1 && !(e.target.closest && e.target.closest('.cg-z')) ? t.clientX : null; y0 = t.clientY; dx = 0; }, {passive:true});
     document.addEventListener('touchmove', (e) => { if (x0 === null) return; const t = e.touches[0]; dx = t.clientX - x0;
       if (Math.abs(t.clientY - y0) > 50 && dx < 30) { x0 = null; fleche().style.opacity = 0; return; }
       const f = fleche(), k = Math.min(1, Math.max(0, dx) / 90); f.style.opacity = k; f.style.transform = `translate(${Math.min(dx, 90) - 44}px, ${y0 - 22}px) scale(${0.7 + 0.3 * k})`; }, {passive:true});
@@ -11599,95 +11603,103 @@ async function assistantSoumission(id, etape){
 // 9 nov 2026 (psacard.com) : devant 10 = 55/45, 9 = 60/40, 8 = 65/35, 7 = 70/30,
 // 6 = 80/20, 5-4 = 85/15, 3-1 = 90/10 ; dos 10 = 75/25, 9 a 1 = 90/10 (voir baremePSA)
 const TOL_DEVANT = [[55, 10], [60, 9], [65, 8], [70, 7], [80, 6], [85, 5], [90, 3]], TOL_DOS = [[75, 10], [90, 9]];   // 9 nov 2026 : psacard.com (10 = 55/45, 9 = 60/40)
+// 9 nov 2026 (Mathieu : « les lignes doivent etre fixes a partir du bord de la carte » ; « trouve un moyen de valider le
+// centering d'une carte borderless ») : le bord de la carte est FIXE (le contour blanc) ; chaque ligne se glisse depuis ce
+// bord et la bande entre les deux (la bordure, ou l'espace jusqu'au repere du dessin) se colore selon la note de son axe.
+// Deux facons de mesurer : « Avec bordure » (les lignes sur le cadre imprime) et « Sans bordure » (PSA juge alors avec le
+// dessin : la 1re lettre et le dernier signe du nom pour gauche / droite ; le haut du logo et le bas de la ligne de texte du
+// bas pour haut / bas). Plus de traits pointilles partout : une bande par cote, sa couleur dit la note.
 function voirCentrage(e, cid, apres){
   const vues = e.centrage_vue || {}, faces = ['devant', 'dos'].filter(f => vues[f] && vues[f].img);
   if (!faces.length) { toast(tt('Pas de vue redressée : refais l’examen', 'No straightened view: redo the exam')); return; }
   let face = faces[0];
-  // 9 nov 2026 (Mathieu : « un genre de doigt anime montrant qu'on peut faire ca, je ne savais meme pas ») : tant qu'on n'a
-  // jamais glisse une ligne, un doigt montre le geste
   let doigt = true; try { doigt = !localStorage.getItem('lr_cg_glisse'); } catch (x) {}
   const o = document.createElement('div'); o.className = 'vd cg';
   document.body.appendChild(o);
   const fermer = () => o.remove();
+  const MAXM = 0.3;
+  let mode = null;
   const peindre = () => {
     const v = vues[face];
-    // 9 nov 2026 (Mathieu : « les pointilles devraient partir du bord ») : un axe pas mesure (ou au-dela de 80/20, un mauvais
-    // repere) : ses 2 lignes partent du bord de la carte, a placer ; aucun ratio ni note tant qu'on ne les a pas bougees
     const ok80 = (a, c) => a != null && c != null && (a + c) > 0 && 100 * Math.max(a, c) / (a + c) <= 80;
     const okx = !!v.manuel || ok80(v.l, v.r), oky = !!v.manuel || ok80(v.t, v.b);
-    const m = {l: okx ? v.l : 0.01, r: okx ? v.r : 0.01, t: oky ? v.t : 0.01, b: oky ? v.b : 0.01}, auto = okx || oky;
-    let vx = okx, vy = oky;      // 2 nov 2026 : un axe pas mesure n'affiche pas « 50/50 »
+    const auto = okx || oky;
+    if (!mode) mode = auto ? 'bordure' : 'sans';
+    const sans = mode === 'sans';
+    const m = {l: okx ? Math.min(MAXM, v.l) : 0, r: okx ? Math.min(MAXM, v.r) : 0, t: oky ? Math.min(MAXM, v.t) : 0, b: oky ? Math.min(MAXM, v.b) : 0};
+    let vx = okx, vy = oky;
     const tol = face === 'dos' ? TOL_DOS : TOL_DEVANT;
     const rat = (a, c) => { const g = Math.round(100 * Math.max(a, c) / ((a + c) || 1)); return [g, 100 - g]; };
     const note = (g) => (tol.find(([lim]) => g <= lim) || [0, face === 'dos' ? 8 : 3])[1];
-    const lab = () => { const x = rat(m.l, m.r), y = rat(m.t, m.b), n = Math.min(vx ? note(x[0]) : 10, vy ? note(y[0]) : 10);
-      return `<div class="cg-r"><span>${tt('Gauche / droite', 'Left / right')} <b>${vx ? x[0] + '/' + x[1] : tt('à placer', 'to place')}</b></span><span>${tt('Haut / bas', 'Top / bottom')} <b>${vy ? y[0] + '/' + y[1] : tt('à placer', 'to place')}</b></span>
-        ${vx || vy ? `<span class="cg-n ${n >= 10 ? 'vert' : n >= 9 ? 'or' : 'rouge'}">${n}/10 ${tt('max', 'max')}</span>` : ''}</div>`; };
+    const cls = (n) => n >= 10 ? 'z10' : n >= 9 ? 'z9' : n >= 8 ? 'z8' : 'z7';
+    // la note a droite des choix (toujours la meme hauteur : rien ne saute sous le doigt pendant qu'on glisse)
+    const noteH = () => { const n = Math.min(vx ? note(rat(m.l, m.r)[0]) : 10, vy ? note(rat(m.t, m.b)[0]) : 10);
+      return vx || vy ? `<span class="cg-n ${n >= 10 ? 'vert' : n >= 9 ? 'or' : 'rouge'}">${n}/10 ${tt('max', 'max')}</span>` : ''; };
+    const lab = () => { const x = rat(m.l, m.r), y = rat(m.t, m.b);
+      return `<div class="cg-r"><span>${tt('Gauche / droite', 'Left / right')} <b>${vx ? x[0] + '/' + x[1] : tt('à placer', 'to place')}</b></span><span>${tt('Haut / bas', 'Top / bottom')} <b>${vy ? y[0] + '/' + y[1] : tt('à placer', 'to place')}</b></span></div>`; };
+    const ETQ = sans ? {l: tt('1re lettre du nom', 'name’s 1st letter'), r: tt('dernier signe', 'last sign'), t: tt('haut du logo', 'top of the logo'), b: tt('bas du texte', 'bottom of the text')}
+      : {l: tt('cadre', 'frame'), r: tt('cadre', 'frame'), t: tt('cadre', 'frame'), b: tt('cadre', 'frame')};
     o.innerHTML = `<button class="vd-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
       <h3 class="cg-h">${tt('Grille de centrage', 'Centering grid')}</h3>
       ${faces.length > 1 ? `<div class="chips">${faces.map(f => `<button class="chip ${f === face ? 'on' : ''}" data-f="${f}">${f === 'devant' ? tt('Devant', 'Front') : tt('Dos', 'Back')}</button>`).join('')}</div>` : ''}
+      <div class="chips cg-mode"><button class="chip ${!sans ? 'on' : ''}" data-mode="bordure">${tt('Avec bordure', 'With border')}</button><button class="chip ${sans ? 'on' : ''}" data-mode="sans">${tt('Sans bordure', 'Borderless')}</button><span id="cg-note">${noteH()}</span></div>
       <div id="cg-lab">${lab()}</div>
-      <div class="cg-z" style="aspect-ratio:${v.ratio || 0.714}"><img src="${esc(photoNet(v.img, 1600))}" alt="">
+      <div class="cg-z ${sans ? 'cg-sans' : ''}" style="aspect-ratio:${v.ratio || 0.714}"><img src="${esc(photoNet(v.img, 1600))}" alt="">
         <svg class="cg-bandes" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true"></svg>
-        <div class="cg-c v"></div><div class="cg-c h"></div>
-        <div class="cg-l v" data-k="l"><i></i></div><div class="cg-l v" data-k="r"><i></i></div><div class="cg-l h" data-k="t"><i></i></div><div class="cg-l h" data-k="b"><i></i></div>
+        ${['l', 'r', 't', 'b'].map(k => `<div class="cg-l ${k === 'l' || k === 'r' ? 'v' : 'h'}" data-k="${k}"><i></i><em>${esc(ETQ[k])}</em></div>`).join('')}
         <span class="cg-m" data-m="l"></span><span class="cg-m" data-m="r"></span><span class="cg-m" data-m="t"></span><span class="cg-m" data-m="b"></span>
         ${doigt ? `<div class="cg-doigt" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10 9.5V4a2 2 0 0 0-4 0v10"/><path d="M14 10V9a2 2 0 0 0-4 0v1"/><path d="M18 11v-1a2 2 0 0 0-4 0"/><path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-6-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg><span>${tt('Glisse', 'Drag')}</span></div>` : ''}</div>
-      <div class="cg-leg" id="cg-leg"></div>
-      <div class="sous">${!auto ? tt('Pas de bordure nette trouvée : les 4 lignes partent du bord de la carte. Glisse chacune vers l’intérieur jusqu’au cadre imprimé.', 'No clear border found: the 4 lines start at the card’s edge. Drag each one inward to the printed frame.')
-        : v.manuel ? tt('Ajusté par toi. Les lignes doivent suivre le cadre imprimé.', 'Adjusted by you. The lines should follow the printed frame.')
-        : tt('Les 4 lignes : le cadre imprimé trouvé par l’app. Glisse-les pour vérifier ou corriger.', 'The 4 lines: the printed frame found by the app. Drag them to check or fix.')}
+      <div class="cg-leg">${(face === 'dos' ? [[75, 10, 'z10'], [90, 9, 'z9']] : [[55, 10, 'z10'], [60, 9, 'z9'], [65, 8, 'z8'], [70, 7, 'z7']]).map(([lim, n, c]) => `<span class="${c}"><i></i>${n} ≤ ${lim}/${100 - lim}</span>`).join('')}</div>
+      <div class="sous">${sans
+        ? tt('Carte sans bordure : PSA juge le centrage avec le dessin. Le contour blanc est le bord de la carte, il ne bouge pas. Gauche / droite : glisse la ligne de gauche jusqu’à la 1re lettre du nom, celle de droite jusqu’au dernier signe (® compris). Haut / bas : la ligne du haut jusqu’au haut du logo, celle du bas jusque sous la ligne de texte du bas.',
+             'Borderless card: PSA judges centering from the design. The white outline is the card’s edge; it doesn’t move. Left / right: drag the left line to the name’s first letter, the right one to its last sign (® included). Top / bottom: the top line to the top of the logo, the bottom one to just under the bottom text line.')
+        : v.manuel ? tt('Ajusté par toi. Le contour blanc est le bord de la carte ; chaque ligne doit être sur le bord intérieur du cadre imprimé.', 'Adjusted by you. The white outline is the card’s edge; each line should sit on the inner edge of the printed frame.')
+        : auto ? tt('Le contour blanc est le bord de la carte, il ne bouge pas. Les 4 lignes : le cadre imprimé trouvé par l’app ; la bande entre les deux est la bordure. Glisse une ligne pour corriger.', 'The white outline is the card’s edge; it doesn’t move. The 4 lines: the printed frame found by the app; the band in between is the border. Drag a line to fix it.')
+        : tt('Le contour blanc est le bord de la carte, il ne bouge pas. Glisse chaque ligne depuis le bord jusqu’au bord intérieur du cadre imprimé : la bande entre les deux est la bordure.', 'The white outline is the card’s edge; it doesn’t move. Drag each line from the edge to the inner edge of the printed frame: the band in between is the border.')}
         ${tt(face === 'dos' ? 'Dos (normes PSA) : 10 jusqu’à 75/25, 9 et moins jusqu’à 90/10.' : 'Devant (normes PSA) : 10 jusqu’à 55/45, 9 jusqu’à 60/40, 8 jusqu’à 65/35, 7 jusqu’à 70/30.', face === 'dos' ? 'Back (PSA standards): 10 up to 75/25, 9 and below up to 90/10.' : 'Front (PSA standards): 10 up to 55/45, 9 up to 60/40, 8 up to 65/35, 7 up to 70/30.')} <a href="#" data-bareme-cg>${tt('Barème', 'Scale')}</a></div>
       <div class="env-b"><button class="btn" id="cg-ok" hidden>${tt('Enregistrer', 'Save')}</button>${v.manuel ? `<button class="pilule" id="cg-auto">${tt('Remettre la mesure de l’app', 'Restore the app’s measure')}</button>` : ''}</div>`;
     o.querySelector('.vd-x').onclick = fermer;
     const bc_ = o.querySelector('[data-bareme-cg]'); if (bc_) bc_.onclick = (ev) => { ev.preventDefault(); baremePSA(); };
-    $$('[data-f]', o).forEach(b => b.onclick = () => { face = b.dataset.f; peindre(); });
+    $$('[data-f]', o).forEach(b => b.onclick = () => { face = b.dataset.f; mode = null; peindre(); });
+    $$('[data-mode]', o).forEach(b => b.onclick = () => { if (mode !== b.dataset.mode) { mode = b.dataset.mode; peindre(); } });
     const z = o.querySelector('.cg-z');
     const poser = () => {
       const L = {l: [m.l, 'left'], r: [1 - m.r, 'left'], t: [m.t, 'top'], b: [1 - m.b, 'top']};
       for (const k in L) { const el = z.querySelector(`[data-k="${k}"]`); el.style[L[k][1]] = (L[k][0] * 100) + '%'; }
-      const mm = (k, txt, st) => { const el = z.querySelector(`[data-m="${k}"]`); el.textContent = txt; Object.assign(el.style, st); el.hidden = (k === 'l' || k === 'r') ? !vx : !vy; };
       const tot = (a, c) => (a + c) || 1;
-      mm('l', Math.round(100 * m.l / tot(m.l, m.r)) + '%', {left: (m.l * 50) + '%', top: '50%'});
-      mm('r', Math.round(100 * m.r / tot(m.l, m.r)) + '%', {left: (100 - m.r * 50) + '%', top: '50%'});
-      mm('t', Math.round(100 * m.t / tot(m.t, m.b)) + '%', {left: '50%', top: (m.t * 50) + '%'});
-      mm('b', Math.round(100 * m.b / tot(m.t, m.b)) + '%', {left: '50%', top: (100 - m.b * 50) + '%'});
-      $('#cg-lab', o).innerHTML = lab();
+      const mm = (k, txt, st, vis) => { const el = z.querySelector(`[data-m="${k}"]`); el.textContent = txt; Object.assign(el.style, st); el.hidden = !vis; };
+      mm('l', Math.round(100 * m.l / tot(m.l, m.r)) + '%', {left: (m.l * 50) + '%', top: '62%'}, vx && m.l > 0.02);
+      mm('r', Math.round(100 * m.r / tot(m.l, m.r)) + '%', {left: (100 - m.r * 50) + '%', top: '62%'}, vx && m.r > 0.02);
+      mm('t', Math.round(100 * m.t / tot(m.t, m.b)) + '%', {left: '38%', top: (m.t * 50) + '%'}, vy && m.t > 0.02);
+      mm('b', Math.round(100 * m.b / tot(m.t, m.b)) + '%', {left: '38%', top: (100 - m.b * 50) + '%'}, vy && m.b > 0.02);
+      $('#cg-lab', o).innerHTML = lab(); $('#cg-note', o).innerHTML = noteH();
       z.style.setProperty('--dx', (m.l * 100) + '%');
-      // 2 nov 2026 (Mathieu : les outils de centrage transparents, « The Center Tool ») : les zones de chaque note PSA. Pour
-      // la largeur totale des bordures d'un axe, la ligne du cadre doit tomber dans la zone verte pour un 10 (55/45 au plus),
-      // or pour un 9 (60/40), orange pour un 8 (65/35), rouge pour un 7 (70/30). Elles bougent avec les lignes.
-      const Z = face === 'dos' ? [[90, 9, 'z9'], [75, 10, 'z10']] : [[70, 7, 'z7'], [65, 8, 'z8'], [60, 9, 'z9'], [55, 10, 'z10']];
-      const T = m.l + m.r, Ty = m.t + m.b;
-      let h = '';
-      for (const [lim, n, cl] of Z) {
-        const p = lim / 100, a = T * (1 - p) * 1000, b = T * p * 1000, c = Ty * (1 - p) * 1000, d = Ty * p * 1000;
-        // comme l'outil transparent : les limites de chaque note, en traits fins de sa couleur, le chiffre au bout
-        const L_ = (x1, y1, x2, y2) => `<line class="${cl}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
-        if (vx) for (const x of [a, b, 1000 - a, 1000 - b]) h += L_(x, 0, x, 1000);
-        if (vy) for (const y of [c, d, 1000 - c, 1000 - d]) h += L_(0, y, 1000, y);
-      }
-      const bz = z.querySelector('.cg-bandes'); if (bz) bz.innerHTML = h;
-      const lg = $('#cg-leg', o); if (lg) lg.innerHTML = Z.slice().reverse().map(([lim, n, cl]) => `<span class="${cl}"><i></i>${n} ≤ ${lim}/${100 - lim}</span>`).join('');
+      // les bandes : du bord fixe de la carte jusqu'a chaque ligne ; leur couleur = la note de leur axe (gris : a placer)
+      const cx = vx ? cls(note(rat(m.l, m.r)[0])) : 'zn', cy = vy ? cls(note(rat(m.t, m.b)[0])) : 'zn';
+      const R = (x, y, w, h, c) => w > 0 && h > 0 ? `<rect class="${c}" x="${x}" y="${y}" width="${w}" height="${h}"/>` : '';
+      const bz = z.querySelector('.cg-bandes');
+      if (bz) bz.innerHTML = R(0, 0, m.l * 1000, 1000, cx) + R(1000 - m.r * 1000, 0, m.r * 1000, 1000, cx)
+        + R(m.l * 1000, 0, 1000 - (m.l + m.r) * 1000, m.t * 1000, cy) + R(m.l * 1000, 1000 - m.b * 1000, 1000 - (m.l + m.r) * 1000, m.b * 1000, cy);
     };
     poser();
     if (doigt) z.classList.add('cg-montre');                 // le doigt anime glisse la ligne de gauche, puis la remet
-    let change = false; const bouge = {l: vx, r: vx, t: vy, b: vy};
+    const bouge = {l: vx, r: vx, t: vy, b: vy};
     $$('.cg-l', z).forEach(el => el.onpointerdown = (ev) => {
-      ev.preventDefault(); el.setPointerCapture(ev.pointerId); el.classList.add('actif');
+      ev.preventDefault(); ev.stopPropagation(); el.setPointerCapture(ev.pointerId); el.classList.add('actif');
       if (doigt) { doigt = false; z.classList.remove('cg-montre'); const d_ = z.querySelector('.cg-doigt'); if (d_) d_.remove(); try { localStorage.setItem('lr_cg_glisse', '1'); } catch (x) {} }
       const k = el.dataset.k;
       el.onpointermove = (mv) => { const r = z.getBoundingClientRect();
         let f = k === 'l' || k === 'r' ? (mv.clientX - r.left) / r.width : (mv.clientY - r.top) / r.height;
         if (k === 'r' || k === 'b') f = 1 - f;
-        m[k] = Math.max(0, Math.min(0.45, f)); change = true; bouge[k] = true;
-        if (bouge.l && bouge.r) vx = true; if (bouge.t && bouge.b) vy = true; poser(); $('#cg-ok', o).hidden = !(vx || vy); };   // un axe se lit quand ses 2 lignes sont placees
-      el.onpointerup = () => { el.onpointermove = null; el.classList.remove('actif'); };
+        m[k] = Math.max(0, Math.min(MAXM, f)); bouge[k] = true;
+        if (bouge.l && bouge.r) vx = true; if (bouge.t && bouge.b) vy = true;   // un axe se lit quand ses 2 lignes sont placees
+        poser(); $('#cg-ok', o).hidden = !(vx || vy) || (vx && rat(m.l, m.r)[0] > 80) || (vy && rat(m.t, m.b)[0] > 80); };   // une ligne collee au bord (100/0) ne s'enregistre pas
+      el.onpointerup = el.onpointercancel = () => { el.onpointermove = null; el.classList.remove('actif'); };
     });
     $('#cg-ok', o).onclick = async () => { const r = await essai(API.carte_centrage(cid, face, m), tt('Centrage enregistré', 'Centering saved'));
       if (r) { Object.assign(e, r); Object.assign(vues, r.centrage_vue || {}); if (apres) apres(e); peindre(); } };
     const ra = $('#cg-auto', o); if (ra) ra.onclick = async () => { const r = await essai(API.carte_centrage(cid, face, null));
-      if (r) { Object.assign(e, r); Object.assign(vues, r.centrage_vue || {}); if (apres) apres(e); peindre(); } };
+      if (r) { Object.assign(e, r); Object.assign(vues, r.centrage_vue || {}); mode = null; if (apres) apres(e); peindre(); } };
   };
   peindre();
 }
