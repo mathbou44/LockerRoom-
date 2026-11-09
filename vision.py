@@ -597,7 +597,13 @@ METHODE (dans cet ordre, sans sauter d'etape) :
    existe des deux cotes et qui est symetrique par conception : la bordure imprimee d'abord ; sans bordure, le cadre interieur,
    le bord des fenetres de patch, un bloc de texte aligne des deux cotes. Donne sa position a gauche (debut) et a droite (fin)
    sur la regle du haut (axe gd), puis en haut et en bas sur la regle de gauche (axe hb). Lis la regle avec soin (a 5 pres).
-   Un axe sans repere symetrique (titre en haut, texte en bas) : ne le donne pas. Laisse centrage_gd / centrage_hb vides.
+   CARTE SANS BORDURE (image jusqu'au bord, 9 nov 2026, la Willander Young Guns ; Mathieu : « il faut faire des
+   approximations ») : prends les elements imprimes qui sont places symetriquement par le graphiste. Gauche / droite : la
+   ligne de texte du bas (le nom du joueur et de l'equipe, de sa 1re lettre a son dernier signe, ® compris) : debut = sa
+   1re lettre, fin = son dernier signe. Haut / bas : le haut du logo du fabricant (le point le plus haut) et le BAS de la
+   ligne de texte du bas (le point le plus bas des lettres). Nomme l'element utilise (« nom du joueur », « logo / nom »).
+   Un axe sans repere symetrique (titre en haut, texte en bas, sans rien d'autre) : ne le donne pas. Laisse centrage_gd /
+   centrage_hb vides.
 
 REGLES :
 - N'invente rien. Un reflet, une poussiere sur l'etui, un grain de photo ne sont pas des defauts : si tu ne peux pas trancher,
@@ -713,7 +719,8 @@ def _noter_observations(f, centrage=None, calibration=None, quads=None, langue="
     """2 nov 2026 : les observations de l'IA -> sous-notes, fourchette, defauts et explications, TOUJOURS avec le meme bareme
     (bareme.py, normes PSA). Une observation « incertaine » n'abaisse que le bas de la fourchette."""
     import examen
-    rat = lambda s_: s_ if re.fullmatch(r"\d{2}/\d{2}", str(s_ or "").strip()) else ""
+    # 9 nov 2026 : au-dela de 80/20 (une coupe aussi ratee se verrait tout de suite) : un mauvais repere, pas compte
+    rat = lambda s_: s_ if re.fullmatch(r"\d{2}/\d{2}", str(s_ or "").strip()) and max(int(x) for x in str(s_).strip().split("/")) <= 80 else ""
     quads = quads or []
     nface = 2 if any(int(o.get("photo") or 0) == 1 for o in (f.get("coins") or []) + (f.get("bords") or []) if isinstance(o, dict)) else 1
     coins, bords, surf = {}, {}, []
@@ -758,6 +765,8 @@ def _noter_observations(f, centrage=None, calibration=None, quads=None, langue="
             continue
         g1, g2 = a_, 1000 - b_
         if ax not in ("gd", "hb") or not (0 < g1 <= 320 and 0 < g2 <= 320):
+            continue
+        if 100 * max(g1, g2) / (g1 + g2) > 80:            # 9 nov 2026 : au-dela de 80/20, un mauvais repere (pas compte)
             continue
         rep_.append({"photo": ph, "axe": ax, "element": str(o.get("element") or "").strip()[:40], "debut": a_, "fin": b_,
                      "ratio": examen._ratio(g1, g2)})
@@ -1295,6 +1304,26 @@ def _appliquer_verif(f, v):
     return rejetes, flous
 
 
+def caler_defauts(res, images, quads):
+    """9 nov 2026 (Mathieu : « aucun des deux cercles n'est vrai ») : chaque defaut de coin ou de bord, son point cale sur la
+    vraie arete de la photo pleine resolution (examen.caler_point) ; le zoom de l'app tombe dessus (d["cale"])."""
+    import examen
+    for d in res.get("defauts") or []:
+        z = str(d.get("zone") or "")
+        if d.get("cale") or not (z.startswith("coin ") or z.startswith("bord ")):
+            continue
+        ph = 1 if d.get("photo") == 1 else 0
+        if ph >= len(images or []) or images[ph] is None or not quads or ph >= len(quads) or not quads[ph]:
+            continue
+        try:
+            p = examen.caler_point(images[ph], quads[ph], z, float(d.get("x") or 0), float(d.get("y") or 0))
+        except Exception as e:
+            print("Defaut (calage) : " + repr(e), flush=True)
+            p = None
+        if p:
+            d["x"], d["y"], d["cale"] = p[0], p[1], True
+
+
 def etat(*a, **k):
     """3 nov 2026 (revue de securite) : un examen a la fois par compte, compte dans le quota PENDANT l'appel (une rafale de
     requetes ne depasse plus le quota du mois)."""
@@ -1423,6 +1452,8 @@ def _etat(photos, langue="fr", quads=None, rasante=None, calibration=None, regle
     res["zooms"] = bool(prep.get("zooms"))
     _ajouter_mesures(res, prep.get("mesures") or {}, q_ok, defauts=not isinstance(f.get("coins"), list))
     res["contre_verif"] = {"fait": bool(verif), "n": len((verif or {}).get("cands") or []), "rejetes": rejetes, "flous": flous}
+    res["bandes_v2"] = True                                # 9 nov 2026 : bord gauche lu le haut a gauche (voir examen.mosaique_bords)
+    caler_defauts(res, [examen.ouvrir(b) for b in brutes], q_ok)
     if flous:
         res["a_reprendre"] = (res.get("a_reprendre") or []) + [("not sharp enough to judge: " if langue == "en" else "pas assez net pour juger : ")
                                                               + ", ".join(flous[:3]) + (" (take a close-up)" if langue == "en" else " (prends un gros plan)")]

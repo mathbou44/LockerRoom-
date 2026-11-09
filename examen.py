@@ -717,3 +717,92 @@ def data_url_octets(p):
     if s.startswith("data:"):
         s = s.split(",", 1)[1]
     return base64.b64decode(s)
+
+
+# -- 9 nov 2026 : le point d'un defaut de coin ou de bord, cale sur la VRAIE arete -----------------------------------------
+# Mathieu (la Willander) : « aucun des deux cercles n'est vrai » : le contour peut etre 1-2 mm a cote de l'arete ; le zoom de
+# l'app tombait dans le vide ou sur la carte. Ici, sur la photo pleine resolution : autour du point, la carte et le fond se
+# separent (la couleur du fond lue du cote exterieur) ; l'arete = la premiere ligne, depuis l'exterieur, ou la carte remplit
+# 60 % d'une bande (robuste aux fibres et a la poussiere du tapis). Coin : son arete verticale ET son arete horizontale.
+_DIRS = {"coin haut-gauche": (-1, -1), "coin haut-droit": (1, -1), "coin bas-droit": (1, 1), "coin bas-gauche": (-1, 1),
+         "bord haut": (0, -1), "bord bas": (0, 1), "bord gauche": (-1, 0), "bord droit": (1, 0)}
+
+
+def caler_point(im, quad, zone, x, y):
+    """im : la photo (PIL) ; quad : le contour 0..1000 ; zone, x, y : le defaut (0..1000). -> (x, y) cales, ou None."""
+    try:
+        import numpy as np
+    except ImportError:
+        return None
+    dv = _DIRS.get(zone)
+    q = _quad_px(quad, *im.size) if quad else None
+    if not dv or not q:
+        return None
+    W, H = im.size
+    larg = ((q[1][0] - q[0][0]) ** 2 + (q[1][1] - q[0][1]) ** 2) ** 0.5
+    r = max(12.0, larg * (0.075 if dv[0] and dv[1] else 0.07))
+    R, N = 2 * r, 160
+    cx, cy = x / 1000 * W, y / 1000 * H
+    box = (int(cx - R), int(cy - R), int(cx + R), int(cy + R))
+    reg = im.convert("RGB").crop(box).resize((N, N))
+    a = np.asarray(reg, dtype=float)
+    xs = box[0] + (np.arange(N) + 0.5) / N * (box[2] - box[0])
+    ys = box[1] + (np.arange(N) + 0.5) / N * (box[3] - box[1])
+    dedans = (ys[:, None] >= 0) & (ys[:, None] < H) & (xs[None, :] >= 0) & (xs[None, :] < W)
+    c0 = N / 2
+    yy, xx = np.mgrid[0:N, 0:N]
+    proj = dv[0] * (xx - c0) + dv[1] * (yy - c0)
+    pv = proj[dedans]
+    if pv.size < N * N * 0.2:
+        return None
+    ext = dedans & (proj >= pv.max() - N * 0.08)
+    carte = None
+    if ext.sum() >= 40:
+        f = np.median(a[ext], axis=0)
+        dist = np.sqrt(((a - f) ** 2).sum(axis=2))
+        if np.percentile(dist[ext], 80) < 28:
+            carte = dedans & (dist > 45)
+    if carte is None:                                      # fond pas uniforme : deux groupes de luminosite
+        L = a @ np.array([0.299, 0.587, 0.114])
+        v = L[dedans]
+        m1, m2 = np.percentile(v, 10), np.percentile(v, 90)
+        for _ in range(8):
+            g1 = np.abs(v - m1) <= np.abs(v - m2)
+            if g1.all() or (~g1).all():
+                return None
+            m1, m2 = v[g1].mean(), v[~g1].mean()
+        if abs(m2 - m1) < 30:
+            return None
+        g1_all = np.abs(L - m1) <= np.abs(L - m2)
+        fond_est_1 = proj[dedans & g1_all].mean() > proj[dedans & ~g1_all].mean()
+        carte = dedans & (~g1_all if fond_est_1 else g1_all)
+
+    def scan(vertical, sens, b0, b1):
+        lo, hi = max(0, int(min(b0, b1))), min(N, int(max(b0, b1)))
+        if hi - lo < 6:
+            return None
+        ordre = range(N - 1, -1, -1) if sens > 0 else range(N)
+        for t in ordre:
+            col = (dedans[lo:hi, t], carte[lo:hi, t]) if vertical else (dedans[t, lo:hi], carte[t, lo:hi])
+            nv = col[0].sum()
+            if nv >= (hi - lo) * 0.5 and col[1].sum() >= nv * 0.6:
+                return t
+        return None
+    if dv[0] and dv[1]:
+        by = (c0 - N * 0.45, c0 - N * 0.02) if dv[1] > 0 else (c0 + N * 0.02, c0 + N * 0.45)
+        bx = (c0 - N * 0.45, c0 - N * 0.02) if dv[0] > 0 else (c0 + N * 0.02, c0 + N * 0.45)
+        xe, ye = scan(True, dv[0], *by), scan(False, dv[1], *bx)
+        if xe is None or ye is None:
+            return None
+        nx = cx + (xe + 0.5 - c0) / N * 2 * R - dv[0] * r * 0.06
+        ny = cy + (ye + 0.5 - c0) / N * 2 * R - dv[1] * r * 0.06
+    else:
+        horiz = bool(dv[1])
+        b = scan(not horiz, dv[1] if horiz else dv[0], N * 0.3, N * 0.7)
+        if b is None:
+            return None
+        dec = (b + 0.5 - c0) / N * 2 * R - (dv[1] if horiz else dv[0]) * r * 0.04
+        nx, ny = (cx, cy + dec) if horiz else (cx + dec, cy)
+    if ((nx - cx) ** 2 + (ny - cy) ** 2) ** 0.5 > 1.2 * r:
+        return None
+    return round(nx / W * 1000, 1), round(ny / H * 1000, 1)

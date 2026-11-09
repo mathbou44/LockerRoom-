@@ -2924,6 +2924,7 @@ class Api:
         if forcer is None:                     # lecture seule (l'ecran demande ce qui est garde, sans payer une analyse)
             if garde and (garde.get("examen") or garde.get("photos") == refs):
                 garde = self._recentrer(cid, garde)       # 2 nov 2026 : aretes et centrage refaits une fois (sans IA)
+                garde = self._caler_defauts(cid, garde)   # 9 nov 2026 : les points des defauts sur la vraie arete
                 garde = self._sans_texture_relique(carte, garde)
                 garde = self._coherent(garde)
                 return {"ok": True, **garde, "le": carte.get("etat_le"), "precision": precision}
@@ -3123,6 +3124,50 @@ class Api:
                 r = self.carte_centrage(cid, face, None)
                 if r.get("ok"):
                     e = {k: v for k, v in r.items() if k != "ok"}
+        return e
+
+    def _caler_defauts(self, cid, e):
+        """9 nov 2026 : un examen enregistre avant le calage : ses defauts de coin et de bord recales sur la vraie arete
+        (une seule fois, sans IA). Avant le 9 nov (13 h 45), la bande du bord GAUCHE etait tournee a l'envers : la position
+        lue par l'IA etait inversee (haut <-> bas) ; elle est remise a l'endroit au passage."""
+        import examen
+        import photos_cartes
+        import vision
+        ds = e.get("defauts") or []
+        if not e.get("contre_verif") or not any(str(d.get("zone") or "").startswith(("coin ", "bord ")) and not d.get("cale") for d in ds):
+            return e
+        refs, quads = list(e.get("photos") or []), list(e.get("quads") or [])
+        if not refs or not quads:
+            return e
+        e = json.loads(json.dumps(e))
+        if not e.get("bandes_v2"):
+            for d in e["defauts"]:
+                q = quads[1 if d.get("photo") == 1 else 0] if quads else None
+                if d.get("zone") == "bord gauche" and q and len(q) == 4 and not d.get("cale"):
+                    # la position le long du bord gauche, de haut en bas (0..1) -> son miroir
+                    y0, y1 = q[0][1], q[3][1]
+                    t = (float(d.get("y") or 0) - y0) / ((y1 - y0) or 1)
+                    t = 1 - max(0.0, min(1.0, t))
+                    d["x"], d["y"] = vision._bil(q, 0.01, t)
+            e["bandes_v2"] = True
+        ims = []
+        for r in refs[:2]:
+            ch = photos_cartes.chemin(r)
+            try:
+                with open(ch, "rb") as f:
+                    ims.append(examen.ouvrir(f.read()))
+            except Exception:
+                ims.append(None)
+        vision.caler_defauts(e, ims, quads)
+        for d in e["defauts"]:                               # meme sans calage possible : une seule tentative
+            if str(d.get("zone") or "").startswith(("coin ", "bord ")):
+                d["cale"] = d.get("cale") or "essaye"
+        c = self._db()
+        try:
+            c.execute("UPDATE cartes SET etat_json=? WHERE id=?", (json.dumps(e, ensure_ascii=False), cid))
+            c.commit()
+        finally:
+            c.close()
         return e
 
     @staticmethod

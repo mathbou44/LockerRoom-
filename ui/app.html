@@ -10198,7 +10198,7 @@ function baremePSA(){
 // (son gros plan, une ligne, ce qu'il coute) ; 3) le centrage des deux faces ; 4) les photos a reprendre. Le reste (photos
 // annotees, gabarit, bareme) : le bouton « Détails ».
 function ptDefaut(d, q){
-  if (!q || q.length !== 4) return [d.x, d.y];
+  if (d.cale === true || !q || q.length !== 4) return [d.x, d.y];        // 9 nov 2026 : cale sur l'arete par le serveur
   const L = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
   const [tl, tr, br, bl] = q, ctr = [(tl[0] + tr[0] + br[0] + bl[0]) / 4, (tl[1] + tr[1] + br[1] + bl[1]) / 4];
   const k = {'coin haut-gauche': 0, 'coin haut-droit': 1, 'coin bas-droit': 2, 'coin bas-gauche': 3}[d.zone];
@@ -10416,6 +10416,7 @@ function voirDefauts(e, k, apres, relancer){
   // 3 nov 2026 (Mathieu : « un gros plan, c'est meme pas la carte ») : le point d'un coin ou d'un bord est recalcule sur le
   // contour de la carte (comme le numero sur la photo), pas pris tel que l'ancienne analyse l'avait note
   const ptZoom = (d) => { const q = (Q && Q[d.photo || 0]) || (e.quads && e.quads[d.photo || 0] && e.quads[d.photo || 0].length === 4 ? e.quads[d.photo || 0] : null);
+    if (d.cale === true) return [Math.max(0, Math.min(1000, d.x)) / 1000, Math.max(0, Math.min(1000, d.y)) / 1000];
     let p = place(d, q);
     if (q && /^coin /.test(d.zone || '')) { const k = {'coin haut-gauche': 0, 'coin haut-droit': 1, 'coin bas-droit': 2, 'coin bas-gauche': 3}[d.zone];
       if (k != null) { const ctr = [(q[0][0] + q[1][0] + q[2][0] + q[3][0]) / 4, (q[0][1] + q[1][1] + q[2][1] + q[3][1]) / 4]; p = lerp(q[k], ctr, 0.012); } }
