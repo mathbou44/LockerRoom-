@@ -7839,7 +7839,7 @@ function scanFermer(){
 function scannerSecours(opts){
   const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.setAttribute('capture', 'environment');
   i.onchange = async () => { const f = i.files && i.files[0]; if (!f) return;
-    if (opts.but === 'photo') { let ph; try { ph = await reduirePhoto(f); } catch (e) { toast(tt('Photo illisible : reprends-la', 'Unreadable photo: try again')); return; } changerPhotoCarte(opts.cid, ph); }
+    if (opts.but === 'photo') { let ph; try { ph = await reduirePhoto(f); } catch (e) { toast(tt('Photo illisible : reprends-la', 'Unreadable photo: try again')); return; } changerPhotoCarte(opts.cid, ph, opts.index || 0); }
     else scannerCarte(f); };
   i.click();
 }
@@ -8201,10 +8201,10 @@ function scanConfirmerPhoto(ph){
     <button class="btn" id="sr-ok">${tt('Utiliser cette photo', 'Use this photo')}</button><button class="btn ghost" id="sr-re">${tt('Reprendre', 'Retake')}</button>`;
   z.hidden = false; requestAnimationFrame(() => z.classList.add('ouvert'));
   $('#sr-re').onclick = scanRecommencer;
-  $('#sr-ok').onclick = async () => { $('#sr-ok').disabled = true; const cid = SCAN.opts.cid; scanFermer(); changerPhotoCarte(cid, ph); };
+  $('#sr-ok').onclick = async () => { $('#sr-ok').disabled = true; const cid = SCAN.opts.cid, ix = SCAN.opts.index || 0; scanFermer(); changerPhotoCarte(cid, ph, ix); };
 }
-async function changerPhotoCarte(cid, ph){
-  const r = await essai(API.carte_photo_changer(cid, ph), tt('Photo changée', 'Photo changed'));
+async function changerPhotoCarte(cid, ph, index){
+  const r = await essai(API.carte_photo_changer(cid, ph, index || 0), tt('Photo changée', 'Photo changed'));
   if (r && (location.hash || '').startsWith('#inventaire')) vueInventaire();
 }
 async function vueValeur(arg){
@@ -10144,7 +10144,24 @@ function ficheCollection(c, opts){
       if (!e.ok) { montrerAl({ok:true, actif:!on}); toast(e.erreur || 'Erreur'); return; }
       montrerAl(e); if (on) toast(tt('On surveille sa valeur chaque semaine', 'We’ll watch its value weekly'), 2200); };
   }
-  $('#fc-photo').onclick = () => { fermerFeuille(); ouvrirScanner({but:'photo', cid:c.id}); };
+  // 9 nov 2026 (Mathieu : « changer la photo ne me donne pas acces a ma bibliotheque ») : le devant OU le dos, et la
+  // camera OU la phototheque ; la photo garde sa pleine resolution
+  $('#fc-photo').onclick = () => {
+    let face = 0;
+    let n = 1; try { n = Math.max(1, JSON.parse(c.photos || '[]').length); } catch (x) {}
+    const peindre = () => {
+      ouvrirFeuille(`<h3>${tt('Changer la photo', 'Change the photo')}</h3>
+        <div class="seg" style="margin:6px 0 14px">${[[0, tt('Devant', 'Front')], [1, n > 1 ? tt('Dos', 'Back') : tt('Ajouter le dos', 'Add the back')]].map(([k, l]) => `<button data-fa="${k}" class="${face === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+        <button class="btn" id="cp-cam">${tt('Prendre une photo', 'Take a photo')}</button>
+        <label class="btn ghost">${tt('Choisir dans la photothèque', 'Choose from the library')}<input type="file" accept="image/*" id="cp-lib" hidden></label>`);
+      $$('[data-fa]').forEach(b => b.onclick = () => { face = +b.dataset.fa; vibrer(); peindre(); });
+      $('#cp-cam').onclick = () => { fermerFeuille(); ouvrirScanner({but:'photo', cid:c.id, index: face}); };
+      $('#cp-lib').onchange = async (ev) => { const f = ev.target.files && ev.target.files[0]; if (!f) return;
+        let ph; try { ph = await reduirePhoto(f); } catch (x) { toast(tt('Photo illisible : reprends-la', 'Unreadable photo: try again')); return; }
+        fermerFeuille(); await changerPhotoCarte(c.id, ph, face); };
+    };
+    peindre();
+  };
   $('#fc-modif').onclick = () => feuilleCarte(c);
 }
 // 1er nov 2026 (Mathieu : « les cartes de la collection, on peut les noter et dire les défauts trouvés ? centrage, coins et

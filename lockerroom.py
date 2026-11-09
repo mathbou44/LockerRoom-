@@ -2820,9 +2820,14 @@ class Api:
         r = self.carte_sauver({k: v for k, v in champs.items() if v not in (None, "")})
         return {"ok": True, "id": r["id"], "photos": refs, "achat_lie": self._lier_achat_choisi(r["id"], d.get("achat"))}
 
-    def carte_photo_changer(self, cid, photo):
+    def carte_photo_changer(self, cid, photo, index=0):
         """28 oct 2026 (Mathieu : « en tout temps il peut modifier la photo associee a la carte dans sa collection pour
-        en prendre une meilleure ») : la nouvelle photo devient la premiere ; l'ancienne premiere est effacee du disque."""
+        en prendre une meilleure ») : la nouvelle photo devient la premiere ; l'ancienne premiere est effacee du disque.
+        9 nov 2026 (« changer la photo ne me donne pas acces a ma bibliotheque ») : index 1 = le dos (ajoute s'il manque)."""
+        try:
+            index = 1 if int(index or 0) == 1 else 0
+        except (TypeError, ValueError):
+            index = 0
         import photos_cartes
         carte = self.carte_lire(cid)
         if not carte:
@@ -2840,23 +2845,26 @@ class Api:
             avant = []
         if not avant and carte.get("photo"):
             avant = [carte["photo"]]
-        nouv = refs[:1] + avant[1:]
+        if index == 1 and not avant:
+            index = 0                                        # pas de devant : la photo devient le devant
+        remplace = lambda l: (l[:index] + refs[:1] + l[index + 1:]) if len(l) > index else (l + refs[:1])
+        nouv = remplace(list(avant))
         maj = {"id": cid, "photo": nouv[0], "photos": json.dumps(nouv)}
         try:
             orig = json.loads(carte.get("photos_orig") or "[]")
         except ValueError:
             orig = []
-        if isinstance(orig, list) and orig:                  # la nouvelle photo devient aussi l'originale du devant
-            if orig[0] not in nouv:
+        if isinstance(orig, list) and orig:                  # la nouvelle photo devient aussi l'originale de cette face
+            if len(orig) > index and orig[index] not in nouv:
                 try:
-                    photos_cartes.supprimer([orig[0]])
+                    photos_cartes.supprimer([orig[index]])
                 except Exception:
                     pass
-            maj["photos_orig"] = json.dumps(refs[:1] + orig[1:])
+            maj["photos_orig"] = json.dumps(remplace(list(orig)))
         self.carte_sauver(maj)
-        if avant and avant[0] not in nouv:
+        if len(avant) > index and avant[index] not in nouv:
             try:
-                photos_cartes.supprimer([avant[0]])
+                photos_cartes.supprimer([avant[index]])
             except Exception:
                 pass
         return {"ok": True, "photo": nouv[0], "photos": nouv}
