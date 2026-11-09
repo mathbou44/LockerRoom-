@@ -2606,7 +2606,7 @@ button.vd-cz > span{border-bottom:1px solid var(--ligne); padding-bottom:2px} .v
 .cg-bandes{position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:1}
 .cg-bandes rect{fill-opacity:.38} .cg-bandes .z10{fill:#5FD08A} .cg-bandes .z9{fill:#E9CF8E} .cg-bandes .z8{fill:#F0A05A} .cg-bandes .z7{fill:#FF7A7A} .cg-bandes .zn{fill:#B9B4FF; fill-opacity:.3}
 .cg .cg-z{width:calc(100% - 36px)} .cg-mode{margin:0; flex-wrap:nowrap; align-items:center} #cg-note{margin-left:auto} #cg-note .cg-n{margin:0; white-space:nowrap}
-.cg .cg-r{flex-wrap:nowrap; white-space:nowrap}
+.cg .cg-r{flex-wrap:nowrap; white-space:nowrap} .cg-tips{margin:6px 0 6px 18px; padding:0} .cg-tips li{margin:4px 0}
 .vd.cg > *{flex-shrink:0}  /* rien ne se tasse quand « Enregistrer » apparait : la grille ne saute pas sous le doigt */
 .cg-leg{display:flex; flex-wrap:wrap; justify-content:center; gap:6px 14px; font:700 12px var(--f-cond); letter-spacing:.04em; color:var(--doux)}
 .cg-leg span{display:flex; align-items:center; gap:6px} .cg-leg i{width:12px; height:12px; border-radius:3px}
@@ -2733,7 +2733,7 @@ body.pop-ouverte{overflow:hidden}
 .dp-zm{position:relative; width:100%; aspect-ratio:1; border-radius:18px; overflow:hidden; background:#000; box-shadow:inset 0 0 0 1px var(--ligne)}
 .dp-zm canvas{display:block; width:100%; height:100%} .dp-zm.petit{width:62%}
 .dp-zm i{position:absolute; left:50%; top:50%; width:26%; height:26%; transform:translate(-50%,-50%); border-radius:50%; box-shadow:0 0 0 2px rgba(255,255,255,.9), 0 0 0 4px rgba(0,0,0,.45); pointer-events:none}
-.dp-zm.gp i{display:none}
+.dp-zm.gp i{display:none} .dp-zm i, .vd-zm i{display:none}  /* 9 nov 2026 : le cadre est dessine sur le zoom (cadreZoom) */
 .dp-titre{font:700 22px/1.15 var(--f-cond); margin:0} .dp-titre em{font-style:normal; color:var(--doux); font-weight:600}
 .dp-ou{color:var(--doux); font-size:14px; margin:-8px 0 0}
 .dp-ligne{font-size:15.5px; line-height:1.45; margin:0}
@@ -2770,7 +2770,7 @@ body.pop-ouverte{overflow:hidden}
 .vd-cat{display:flex; gap:12px; align-items:flex-start; padding:12px 14px; border-radius:16px; background:var(--carte)}
 .vd-cat-t{display:flex; flex-direction:column; gap:4px; min-width:0; flex:1} .vd-cat-t > b{font-size:15.5px} .vd-cat-t > span{font-size:14px; line-height:1.4; color:var(--texte2, #ddd)}
 .vd-vign{display:flex; gap:8px; overflow-x:auto; padding:6px 0 2px; scrollbar-width:none} .vd-vign::-webkit-scrollbar{display:none}
-.vd-vign .vd-cz{flex:0 0 auto; padding:0; background:none; border:0 !important; box-shadow:none !important; min-width:0} .vd-vign .vd-zm{width:64px; height:64px}
+.vd-vign .vd-cz{flex:0 0 auto; padding:0; background:none; border:0 !important; box-shadow:none !important; min-width:0} .vd-vign .vd-zm{width:104px; height:104px}  /* 9 nov 2026 : assez grand pour voir le defaut sans toucher */
 .vd-tech{margin-top:6px; padding:10px 14px; border-radius:14px; background:var(--carte)} .vd-tech summary{cursor:pointer; font-weight:600; font-size:14px}
 .vd-tech div{display:flex; flex-direction:column; gap:4px; margin-top:8px}
 /* 9 nov 2026 - drapeau du pays de provenance */
@@ -5213,7 +5213,7 @@ async function garderVente(){
 // photo studio, titre et prix -> la carte entre dans l'inventaire, prete a publier d'un tap. Une carte qui ne respecte
 // pas les regles n'est PAS gardee : elle est montree « a reprendre », avec la raison. Rien ne part chez eBay ici.
 // ============================================================
-const LOT_MAX = 20;
+const LOT_MAX = 50;                     // 9 nov 2026 (Mathieu : « pourquoi jusqu'a 20 ? ») : 50 ; le quota de lectures du mois s'applique toujours
 const LOT = {};
 function vueLot(but){
   for (const k in LOT) delete LOT[k];
@@ -7520,7 +7520,7 @@ async function ouvrirAnnonce(base){
   // (avant : la roue tournait pour toujours si la reponse n'arrivait pas)
   const complet = async () => {
     const d2 = await Promise.race([API.annonce_detail(base.item_id, base.titre, false, base.q || null).catch(() => null),
-                                   new Promise(ok => setTimeout(() => ok(null), 45000))]);
+                                   new Promise(ok => setTimeout(() => ok(null), 55000))]);
     if (!ouverte()) return;
     if (d2) { montrer(d2); return; }
     montrer({...(d1 || {article: base}), ventes_attente: false, ventes_lentes: true});
@@ -10243,16 +10243,40 @@ function ptDefaut(d, q){
               'bord gauche': () => L(tl, bl, t(tl, bl, d.y, 1)), 'bord droit': () => L(tr, br, t(tr, br, d.y, 1))}[d.zone];
   return pe ? L(pe(), ctr, 0.006) : [d.x, d.y];
 }
+// 9 nov 2026 (Mathieu : « un carre avec coins arrondis : si la zone du defaut est plus grande, tout dans l'encadre ; un seul
+// segment encercle porte a confusion ») : le cadre est DESSINE sur le zoom. Un bord : tout le long du blanc trouve par le
+// serveur (d.seg) ; sans etendue connue, un rectangle allonge le long du bord ; un coin ou la surface : un carre arrondi.
+// le zoom regarde un peu vers l'interieur de la carte (Mathieu : « tout encadre noir ») : le tapis n'en prend qu'un tiers
+const VERS_CARTE = {'coin haut-gauche': [1, 1], 'coin haut-droit': [-1, 1], 'coin bas-droit': [-1, -1], 'coin bas-gauche': [1, -1],
+                    'bord haut': [0, 1], 'bord bas': [0, -1], 'bord gauche': [1, 0], 'bord droit': [-1, 0]};
+function vueZoom(zone, cx, cy, r){ const v = VERS_CARTE[zone]; return v ? [cx + v[0] * r * 0.32, cy + v[1] * r * 0.32] : [cx, cy]; }
+function cadreZoom(g, T, zone, seg, px, py){      // seg : [x0, y0, x1, y1] en px du canevas, ou null ; px, py : le point
+  if (px == null) { px = T / 2; py = T / 2; }
+  const coin = /^coin /.test(zone || ''), horiz = zone === 'bord haut' || zone === 'bord bas', vert = zone === 'bord gauche' || zone === 'bord droit';
+  let x0, y0, x1, y1;
+  if (seg) { const p = T * 0.08; x0 = Math.min(seg[0], seg[2]) - p; x1 = Math.max(seg[0], seg[2]) + p; y0 = Math.min(seg[1], seg[3]) - p; y1 = Math.max(seg[1], seg[3]) + p; }
+  else { const a = horiz ? T * 0.3 : vert ? T * 0.11 : T * 0.15, b = vert ? T * 0.3 : horiz ? T * 0.11 : T * 0.15;
+    x0 = px - a; x1 = px + a; y0 = py - b; y1 = py + b; }
+  const m = T * 0.03; x0 = Math.max(m, x0); y0 = Math.max(m, y0); x1 = Math.min(T - m, x1); y1 = Math.min(T - m, y1);
+  const w = x1 - x0, h = y1 - y0, rr = Math.min(T * 0.05, w / 2, h / 2);
+  g.beginPath(); g.moveTo(x0 + rr, y0); g.arcTo(x1, y0, x1, y1, rr); g.arcTo(x1, y1, x0, y1, rr); g.arcTo(x0, y1, x0, y0, rr); g.arcTo(x0, y0, x1, y0, rr); g.closePath();
+  g.lineJoin = 'round'; g.strokeStyle = 'rgba(0,0,0,.55)'; g.lineWidth = Math.max(4, T * 0.02); g.stroke();
+  g.strokeStyle = 'rgba(255,255,255,.95)'; g.lineWidth = Math.max(2, T * 0.009); g.stroke();
+}
 async function dessinerZoom(cv, url, q, d, entier){
   let im; try { im = await chargerImage(url); } catch (x) { return; }
   const W = im.naturalWidth, H = im.naturalHeight, T = 900; if (!W) return;
   cv.width = cv.height = T; const g = cv.getContext('2d'); g.fillStyle = '#000'; g.fillRect(0, 0, T, T); g.imageSmoothingQuality = 'high';
   if (entier) { const c = Math.min(W, H); g.drawImage(im, (W - c) / 2, (H - c) / 2, c, c, 0, 0, T, T); return; }
   const [x, y] = ptDefaut(d, q), larg = q && q.length === 4 ? Math.hypot((q[1][0] - q[0][0]) * W / 1000, (q[1][1] - q[0][1]) * H / 1000) : W * 0.8;
-  const r = Math.max(24, larg * (/^coin /.test(d.zone || '') ? 0.075 : d.zone === 'surface' ? 0.14 : 0.07));
+  let r = Math.max(24, larg * (/^coin /.test(d.zone || '') ? 0.075 : d.zone === 'surface' ? 0.14 : 0.07));
   let [cx, cy] = [x / 1000 * W, y / 1000 * H];
-  try { const p = calerSurArete(im, cx, cy, r, d.zone); if (p) [cx, cy] = p; } catch (x_) {}
-  g.drawImage(im, cx - r, cy - r, 2 * r, 2 * r, 0, 0, T, T);
+  const sg = d.cale === true && Array.isArray(d.seg) && d.seg.length === 4 ? [d.seg[0] / 1000 * W, d.seg[1] / 1000 * H, d.seg[2] / 1000 * W, d.seg[3] / 1000 * H] : null;
+  if (sg) { cx = (sg[0] + sg[2]) / 2; cy = (sg[1] + sg[3]) / 2; r = Math.max(r, Math.hypot(sg[2] - sg[0], sg[3] - sg[1]) / 2 * 1.3); }
+  else try { const p = calerSurArete(im, cx, cy, r, d.zone); if (p) [cx, cy] = p; } catch (x_) {}
+  const [vx, vy] = vueZoom(d.zone, cx, cy, r), k = T / (2 * r);
+  g.drawImage(im, vx - r, vy - r, 2 * r, 2 * r, 0, 0, T, T);
+  cadreZoom(g, T, d.zone, sg ? [(sg[0] - vx + r) * k, (sg[1] - vy + r) * k, (sg[2] - vx + r) * k, (sg[3] - vy + r) * k] : null, (cx - vx + r) * k, (cy - vy + r) * k);
 }
 // 9 nov 2026 (Mathieu : « le cercle encercle rien ; c'est le coin qu'il faut encercler ») : le contour peut etre 1-2 mm a
 // l'interieur de la carte. Le zoom d'un coin ou d'un bord est recale sur la VRAIE arete, trouvee dans la photo autour du
@@ -10388,7 +10412,7 @@ function diapoEtat(e, depart, apres, relancer){
     return `${nom} : ${tt('le dessin est décalé ', 'the design is shifted ')}${bouts.join(tt(' et ', ' and '))}.`; };
   const dc = aCent || vueC ? `<div class="dp-d"><span class="dp-sur">${tt('Centrage', 'Centering')}</span>
     <div class="dp-cents">${schema('devant')}${refs.length > 1 ? schema('dos') : ''}</div>
-    <p class="dp-ligne">${aCent ? [phraseC('devant'), refs.length > 1 ? phraseC('dos') : ''].filter(Boolean).join(' ') + ' ' + tt('Le cadre vert est le dessin imprimé ; le gris, le bord de la carte.', 'The green frame is the printed design; the grey one, the card’s edge.')
+    <p class="dp-ligne">${aCent ? [phraseC('devant'), refs.length > 1 ? phraseC('dos') : ''].filter(Boolean).join(' ') + ' ' + tt('Le cadre intérieur est le dessin imprimé ; l’extérieur, le bord de la carte.', 'The inner frame is the printed design; the outer one, the card’s edge.')
       : tt('L’app n’a pas trouvé de repère sûr sur ces photos : le centrage ne compte pas dans la note. Place les 4 lignes sur le cadre imprimé pour le mesurer.', 'The app found no reliable landmark on these photos: centering isn’t counted in the grade. Place the 4 lines on the printed frame to measure it.')}</p>
     ${vueC ? `<button class="pilule" data-dpcent>${aCent ? tt('Voir sur ma photo', 'See it on my photo') : tt('Placer les lignes', 'Place the lines')}</button>` : ''}</div>` : '';
   const rep = (e.a_reprendre || []).slice(0, 4);
@@ -10473,18 +10497,22 @@ function voirDefauts(e, k, apres, relancer){
   // (canevas) depuis la photo pleine resolution : centre exactement sur le point meme au bord de la photo (fond noir au-dela),
   // sans deformation (l'ancien fond CSS etirait l'image et se calait sur le bord de la photo)
   const zmCanvas = (d, cls) => { const [x, y] = ptZoom(d);
-    return `<span class="vd-zm ${cls || ''}"><canvas data-zj="${d.photo || 0}" data-zx="${x}" data-zy="${y}" data-zc="${/^coin /.test(d.zone || '') ? 1 : 0}" data-zz="${esc(d.zone || '')}"></canvas><i></i></span>`; };
+    return `<span class="vd-zm ${cls || ''}"><canvas data-zj="${d.photo || 0}" data-zx="${x}" data-zy="${y}" data-zc="${/^coin /.test(d.zone || '') ? 1 : 0}" data-zz="${esc(d.zone || '')}" data-zs="${d.cale === true && Array.isArray(d.seg) && d.seg.length === 4 ? d.seg.join(',') : ''}"></canvas><i></i></span>`; };
   const peindreZm = (root) => $$('canvas[data-zj]', root).forEach(cv => {
     const j = +cv.dataset.zj, im = o.querySelector(`.vd-ph[data-j="${j}"] img`); if (!im) return;
     const go = () => { const W = im.naturalWidth, H = im.naturalHeight; if (!W) return;
       const q = (Q && Q[j]) || (e.quads && e.quads[j] && e.quads[j].length === 4 ? e.quads[j] : null);
       const larg = q ? Math.hypot((q[1][0] - q[0][0]) * W / 1000, (q[1][1] - q[0][1]) * H / 1000) : W * 0.8;
-      const r = Math.max(24, larg * (cv.dataset.zc === '1' ? 0.075 : 0.1));
+      let r = Math.max(24, larg * (cv.dataset.zc === '1' ? 0.075 : 0.1));
       let cx = +cv.dataset.zx * W, cy = +cv.dataset.zy * H;
-      try { const p_ = calerSurArete(im, cx, cy, r, cv.dataset.zz); if (p_) [cx, cy] = p_; } catch (x_) {}
+      const s_ = (cv.dataset.zs || '').split(',').map(Number), sg = s_.length === 4 && s_.every(v => isFinite(v)) ? [s_[0] / 1000 * W, s_[1] / 1000 * H, s_[2] / 1000 * W, s_[3] / 1000 * H] : null;
+      if (sg) { cx = (sg[0] + sg[2]) / 2; cy = (sg[1] + sg[3]) / 2; r = Math.max(r, Math.hypot(sg[2] - sg[0], sg[3] - sg[1]) / 2 * 1.3); }
+      else try { const p_ = calerSurArete(im, cx, cy, r, cv.dataset.zz); if (p_) [cx, cy] = p_; } catch (x_) {}
       const T = Math.round(Math.min(900, Math.max(240, 2 * r * 2))); cv.width = cv.height = T;
       const g = cv.getContext('2d'); g.fillStyle = '#000'; g.fillRect(0, 0, T, T); g.imageSmoothingQuality = 'high';
-      g.drawImage(im, cx - r, cy - r, 2 * r, 2 * r, 0, 0, T, T); };
+      const [vx, vy] = vueZoom(cv.dataset.zz, cx, cy, r), k = T / (2 * r);
+      g.drawImage(im, vx - r, vy - r, 2 * r, 2 * r, 0, 0, T, T);
+      cadreZoom(g, T, cv.dataset.zz, sg ? [(sg[0] - vx + r) * k, (sg[1] - vy + r) * k, (sg[2] - vx + r) * k, (sg[3] - vy + r) * k] : null, (cx - vx + r) * k, (cy - vy + r) * k); };
     if (im.complete && im.naturalWidth) go(); else im.addEventListener('load', go, {once: true}); });
   // la description d'un defaut, ouverte sous (ou sur) son numero : quoi, ou, le critere PSA, et ton avis
   const bulle = (cad, sc, d, i, x, y) => {
@@ -11637,7 +11665,7 @@ function voirCentrage(e, cid, apres){
       return vx || vy ? `<span class="cg-n ${n >= 10 ? 'vert' : n >= 9 ? 'or' : 'rouge'}">${n}/10 ${tt('max', 'max')}</span>` : ''; };
     const lab = () => { const x = rat(m.l, m.r), y = rat(m.t, m.b);
       return `<div class="cg-r"><span>${tt('Gauche / droite', 'Left / right')} <b>${vx ? x[0] + '/' + x[1] : tt('à placer', 'to place')}</b></span><span>${tt('Haut / bas', 'Top / bottom')} <b>${vy ? y[0] + '/' + y[1] : tt('à placer', 'to place')}</b></span></div>`; };
-    const ETQ = sans ? {l: tt('1re lettre du nom', 'name’s 1st letter'), r: tt('dernier signe', 'last sign'), t: tt('haut du logo', 'top of the logo'), b: tt('bas du texte', 'bottom of the text')}
+    const ETQ = sans ? {l: tt('repère gauche', 'left mark'), r: tt('repère droit', 'right mark'), t: tt('repère du haut', 'top mark'), b: tt('repère du bas', 'bottom mark')}
       : {l: tt('cadre', 'frame'), r: tt('cadre', 'frame'), t: tt('cadre', 'frame'), b: tt('cadre', 'frame')};
     o.innerHTML = `<button class="vd-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
       <h3 class="cg-h">${tt('Grille de centrage', 'Centering grid')}</h3>
@@ -11651,8 +11679,12 @@ function voirCentrage(e, cid, apres){
         ${doigt ? `<div class="cg-doigt" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10 9.5V4a2 2 0 0 0-4 0v10"/><path d="M14 10V9a2 2 0 0 0-4 0v1"/><path d="M18 11v-1a2 2 0 0 0-4 0"/><path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-6-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg><span>${tt('Glisse', 'Drag')}</span></div>` : ''}</div>
       <div class="cg-leg">${(face === 'dos' ? [[75, 10, 'z10'], [90, 9, 'z9']] : [[55, 10, 'z10'], [60, 9, 'z9'], [65, 8, 'z8'], [70, 7, 'z7']]).map(([lim, n, c]) => `<span class="${c}"><i></i>${n} ≤ ${lim}/${100 - lim}</span>`).join('')}</div>
       <div class="sous">${sans
-        ? tt('Carte sans bordure : PSA juge le centrage avec le dessin. Le contour blanc est le bord de la carte, il ne bouge pas. Gauche / droite : glisse la ligne de gauche jusqu’à la 1re lettre du nom, celle de droite jusqu’au dernier signe (® compris). Haut / bas : la ligne du haut jusqu’au haut du logo, celle du bas jusque sous la ligne de texte du bas.',
-             'Borderless card: PSA judges centering from the design. The white outline is the card’s edge; it doesn’t move. Left / right: drag the left line to the name’s first letter, the right one to its last sign (® included). Top / bottom: the top line to the top of the logo, the bottom one to just under the bottom text line.')
+        ? tt('<b>Carte sans bordure</b> : PSA juge le centrage avec le dessin. Le contour blanc est le bord de la carte, il ne bouge pas.', '<b>Borderless card</b>: PSA judges centering from the design. The white outline is the card’s edge; it doesn’t move.')
+          + `<ol class="cg-tips"><li>${tt('Choisis un élément imprimé qui devrait être centré et qui va presque d’un côté à l’autre : une ligne de texte (souvent le nom), une boîte (les statistiques au dos), une bande ou un cadre du dessin.', 'Pick a printed element that should be centered and runs almost side to side: a text line (often the name), a box (the stats on the back), a band or a frame in the design.')}</li>
+            <li>${tt('Gauche / droite : la ligne de gauche sur son bord gauche, celle de droite sur son bord droit. Le même élément des deux côtés.', 'Left / right: the left line on its left edge, the right line on its right edge. The same element on both sides.')}</li>
+            <li>${tt('Haut / bas : la ligne du haut sur le premier élément imprimé en haut (logo, numéro, texte), celle du bas sur le dernier en bas.', 'Top / bottom: the top line on the first printed element at the top (logo, number, text), the bottom line on the last one at the bottom.')}</li></ol>`
+          + tt('Exemple, Young Guns : le nom pour gauche / droite ; le haut du logo et le bas du nom pour haut / bas. Au dos : la boîte des statistiques.', 'Example, Young Guns: the name for left / right; the top of the logo and the bottom of the name for top / bottom. On the back: the stats box.')
+
         : v.manuel ? tt('Ajusté par toi. Le contour blanc est le bord de la carte ; chaque ligne doit être sur le bord intérieur du cadre imprimé.', 'Adjusted by you. The white outline is the card’s edge; each line should sit on the inner edge of the printed frame.')
         : auto ? tt('Le contour blanc est le bord de la carte, il ne bouge pas. Les 4 lignes : le cadre imprimé trouvé par l’app ; la bande entre les deux est la bordure. Glisse une ligne pour corriger.', 'The white outline is the card’s edge; it doesn’t move. The 4 lines: the printed frame found by the app; the band in between is the border. Drag a line to fix it.')
         : tt('Le contour blanc est le bord de la carte, il ne bouge pas. Glisse chaque ligne depuis le bord jusqu’au bord intérieur du cadre imprimé : la bande entre les deux est la bordure.', 'The white outline is the card’s edge; it doesn’t move. Drag each line from the edge to the inner edge of the printed frame: the band in between is the border.')}

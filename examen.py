@@ -728,8 +728,9 @@ _DIRS = {"coin haut-gauche": (-1, -1), "coin haut-droit": (1, -1), "coin bas-dro
          "bord haut": (0, -1), "bord bas": (0, 1), "bord gauche": (-1, 0), "bord droit": (1, 0)}
 
 
-def caler_point(im, quad, zone, x, y):
-    """im : la photo (PIL) ; quad : le contour 0..1000 ; zone, x, y : le defaut (0..1000). -> (x, y) cales, ou None."""
+def caler_point(im, quad, zone, x, y, info=None):
+    """im : la photo (PIL) ; quad : le contour 0..1000 ; zone, x, y : le defaut (0..1000). -> (x, y) cales, ou None.
+    info (dict, facultatif) : recoit "seg" = [x0, y0, x1, y1] (0..1000), l'etendue du blanc le long d'un bord."""
     try:
         import numpy as np
     except ImportError:
@@ -803,11 +804,13 @@ def caler_point(im, quad, zone, x, y):
             return None
         dec = (b + 0.5 - c0) / N * 2 * R - (dv[1] if horiz else dv[0]) * r * 0.04
         nx, ny = (cx, cy + dec) if horiz else (cx + dec, cy)
-    if ((nx - cx) ** 2 + (ny - cy) ** 2) ** 0.5 > 1.2 * r:
+    if ((nx - cx) ** 2 + (ny - cy) ** 2) ** 0.5 > 1.5 * r:
         return None
     if not (dv[0] and dv[1]):
         try:
-            nx, ny = _glisser_le_long(im, q, zone, nx, ny, larg)
+            nx, ny, seg = _glisser_le_long(im, q, zone, nx, ny, larg)
+            if seg and info is not None:
+                info["seg"] = [round(seg[0] / W * 1000, 1), round(seg[1] / H * 1000, 1), round(seg[2] / W * 1000, 1), round(seg[3] / H * 1000, 1)]
         except Exception as e:
             print("Defaut (le long du bord) : " + repr(e), flush=True)
     return round(nx / W * 1000, 1), round(ny / H * 1000, 1)
@@ -826,7 +829,7 @@ def _glisser_le_long(im, q, zone, nx, ny, larg):
     (ax, ay), (bx, by) = q[i0], q[i1]
     lg = ((bx - ax) ** 2 + (by - ay) ** 2) ** 0.5
     if lg < 50:
-        return nx, ny
+        return nx, ny, None
     ux, uy = (bx - ax) / lg, (by - ay) / lg                # le long de l'arete
     dx_, dy_ = _DIRS[zone]                                  # vers l'exterieur
     W, H = im.size
@@ -834,7 +837,7 @@ def _glisser_le_long(im, q, zone, nx, ny, larg):
     pas = max(1.0, lg / 600)
     ts = np.arange(max(lg * 0.08, t0 - lg * 0.3), min(lg * 0.92, t0 + lg * 0.3), pas)   # les coins sont a eux
     if ts.size < 30:
-        return nx, ny
+        return nx, ny, None
     prof = np.arange(-larg * 0.012, larg * 0.004, max(1.0, larg / 900))   # un peu dedans -> juste dehors
     px = nx + (ts - t0)[:, None] * ux + prof[None, :] * dx_
     py = ny + (ts - t0)[:, None] * uy + prof[None, :] * dy_
@@ -843,7 +846,7 @@ def _glisser_le_long(im, q, zone, nx, ny, larg):
     bx0, by0 = int(max(0, np.floor(px.min()))), int(max(0, np.floor(py.min())))
     bx1, by1 = int(min(W, np.ceil(px.max()) + 1)), int(min(H, np.ceil(py.max()) + 1))
     if bx1 - bx0 < 2 or by1 - by0 < 2:
-        return nx, ny
+        return nx, ny, None
     g = np.asarray(im.crop((bx0, by0, bx1, by1)).convert("L"))
     gy = np.clip(py - by0, 0, g.shape[0] - 1).astype(int)
     gx = np.clip(px - bx0, 0, g.shape[1] - 1).astype(int)
@@ -856,7 +859,24 @@ def _glisser_le_long(im, q, zone, nx, ny, larg):
     sc = np.convolve(blanc, np.ones(k) / k, mode="same")
     j = int(np.argmax(sc))
     med = float(np.median(sc))
-    if sc[j] < max(12.0, 2 * med) or abs(ts[j] - t0) < lg * 0.02:
-        return nx, ny
-    d_ = ts[j] - t0
-    return float(nx + d_ * ux), float(ny + d_ * uy)
+    if sc[j] < max(12.0, 2 * med):
+        return nx, ny, None
+    # 9 nov 2026 (Mathieu : « un carre aux coins arrondis qui prend toute la zone ; un seul segment du defaut encercle porte a
+    # confusion ») : l'etendue du blanc autour du pic, tant qu'il ressort (au moins 40 % du pic) ; au plus 60 % du bord
+    seuil_e = max(12.0 * 0.6, 0.4 * sc[j], 1.5 * med)
+    a = j
+    while a > 0 and sc[a - 1] >= seuil_e:
+        a -= 1
+    b = j
+    while b < sc.size - 1 and sc[b + 1] >= seuil_e:
+        b += 1
+    ta, tb = ts[a] - k * pas / 2, ts[b] + k * pas / 2
+    if tb - ta > lg * 0.6:
+        ta, tb = ts[j] - lg * 0.3, ts[j] + lg * 0.3
+    if abs(ts[j] - t0) < lg * 0.02:                      # deja au bon endroit
+        d_ = 0.0
+    else:
+        d_ = ts[j] - t0
+    px_, py_ = nx + d_ * ux, ny + d_ * uy
+    seg = (nx + (ta - t0) * ux, ny + (ta - t0) * uy, nx + (tb - t0) * ux, ny + (tb - t0) * uy)
+    return float(px_), float(py_), tuple(float(v_) for v_ in seg)

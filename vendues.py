@@ -270,6 +270,11 @@ def _budget_ok(fond, usage):
     return usage in ("verif", "prio") or (tot - utilises_aujourdhui("verif") - utilises_aujourdhui("prio")) < pl * PART_AUTRES_FOND
 
 
+# 9 nov 2026 (Mathieu : « les comps chient encore », la fiche d'une annonce : « les ventes reelles ne repondent pas ») : un
+# geste de l'utilisateur n'attend pas SoldComps plus de 15 s par appel (la fiche fait parfois 3 ou 4 recherches de suite)
+DELAI_TAP = 15
+
+
 def rechercher(q, fond=True, usage=None):
     """Ventes eBay d'une recherche (toutes cartes confondues : filtrer ensuite). {ventes, erreur, cache}."""
     q = " ".join(str(q or "").split())[:120]
@@ -308,7 +313,7 @@ def rechercher(q, fond=True, usage=None):
         # apres l'autre, ~1 s d'attente en plus) ; les taches de fond gardent le rythme d'un appel par seconde
         from concurrent.futures import ThreadPoolExecutor
         with ThreadPoolExecutor(max_workers=len(les_sites)) as ex:
-            pre = dict(zip(les_sites, ex.map(lambda st: _appel(q, st, attendre=False, usage=usage, compte=cpt), les_sites)))
+            pre = dict(zip(les_sites, ex.map(lambda st: _appel(q, st, attendre=False, usage=usage, compte=cpt, delai=DELAI_TAP), les_sites)))
     for i, site in enumerate(les_sites):
         if site not in pre and i and not _budget_ok(fond, usage):
             break                                   # le budget du jour : le site principal d'abord
@@ -316,7 +321,7 @@ def rechercher(q, fond=True, usage=None):
         # seulement si eBay.com n'a pas deja 3 ventes : 1 credit au lieu de 2 la plupart du temps
         if site not in pre and i and usage == "verif" and len(ventes) >= 3:
             break
-        d, err = pre[site] if site in pre else _appel(q, site, usage=usage, compte=cpt)
+        d, err = pre[site] if site in pre else _appel(q, site, usage=usage, compte=cpt, delai=25 if fond else DELAI_TAP)
         if err:
             erreur = erreur or err
             # 3 nov 2026 (Mathieu, Jordan Beam Team : « pourquoi ca sort rien ? », SoldComps TimeoutError) : eBay.com en
@@ -372,7 +377,7 @@ def _id_vente(v):
     return m.group(1) if m else None
 
 
-def _appel(q, site, attendre=True, usage=None, compte=None):
+def _appel(q, site, attendre=True, usage=None, compte=None, delai=25):
     """Une requete SoldComps (compte au budget AVANT l'appel). -> (donnees, erreur)"""
     url = URL_API + "/v1/scrape?" + urllib.parse.urlencode({"keyword": q, "categoryId": CATEGORIE_CARTES, "count": NB_PAR_REQUETE,
                                                             "ebaySite": site, "hydrateBoa": "true"})
@@ -385,7 +390,7 @@ def _appel(q, site, attendre=True, usage=None, compte=None):
     req = urllib.request.Request(url, headers={"Authorization": "Bearer " + _cle(), "Accept": "application/json"})
     _compter(usage, compte)                     # 27 oct 2026 (revue) : compte AVANT l'appel (un echec coute aussi au budget)
     try:
-        with urllib.request.urlopen(req, timeout=25) as r:
+        with urllib.request.urlopen(req, timeout=delai) as r:
             return json.loads(r.read().decode("utf-8")), None
     except urllib.error.HTTPError as e:
         return None, {401: "clé SoldComps refusée", 429: "quota SoldComps atteint"}.get(e.code, f"SoldComps HTTP {e.code}")

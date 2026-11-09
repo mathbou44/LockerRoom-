@@ -148,9 +148,12 @@ def rechercher(q, chasseur=False, jours=JOURS):
     p = {"keyword": q, "startDate": (fin - timedelta(days=jours)).isoformat(), "endDate": fin.isoformat(),
          "sort": "lastSoldDescending", "singleUnitOnly": "true", "limit": "50", "page": "1"}
     req = urllib.request.Request(URL + "?" + urllib.parse.urlencode(p), headers={"Authorization": "Bearer " + _cle(), "Accept": "application/json"})
-    with _verrou:
+    # 9 nov 2026 (« les ventes reelles ne repondent pas : le chasseur est peut-etre en plein tour ») : un geste de
+    # l'utilisateur n'attend pas derriere une requete du chasseur (3 s au plus, puis il passe quand meme)
+    pris = _verrou.acquire() if chasseur else _verrou.acquire(timeout=3)
+    try:
         try:
-            with urllib.request.urlopen(req, timeout=30) as r:
+            with urllib.request.urlopen(req, timeout=30 if chasseur else 15) as r:
                 d = json.loads(r.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             try:
@@ -164,6 +167,9 @@ def rechercher(q, chasseur=False, jours=JOURS):
             _ERREUR.update(le=time.time(), texte="CompSniper injoignable (" + type(e).__name__ + ")")
             return [], _ERREUR["texte"]
         _compter(chasseur)                           # une requete reussie = une requete du forfait (les echecs : gratuits)
+    finally:
+        if pris:
+            _verrou.release()
     import vendues
     ventes = lire_reponse(d, vendues._taux_usd_cad() or 1.37)
     try:

@@ -1304,6 +1304,24 @@ def _appliquer_verif(f, v):
     return rejetes, flous
 
 
+def _sur_contour(q, zone, x, y):
+    """9 nov 2026 (la Willander : coin bas-droit et bord bas du dos, cercles dans la carte) : le point de depart du calage
+    pris sur le contour de la carte (comme l'app) : un coin = la pointe du contour ; un bord = la position de l'IA LE LONG du
+    bord, posee sur le contour. Le point de l'IA peut etre loin de l'arete ; le contour, lui, est a 1-2 mm pres."""
+    if not q or len(q) != 4:
+        return x, y
+    tl, tr, br, bl = q
+    ctr = [(tl[0] + tr[0] + br[0] + bl[0]) / 4, (tl[1] + tr[1] + br[1] + bl[1]) / 4]
+    L = lambda a, b, t: [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]
+    k = {"coin haut-gauche": 0, "coin haut-droit": 1, "coin bas-droit": 2, "coin bas-gauche": 3}.get(zone)
+    if k is not None:
+        return tuple(L(q[k], ctr, 0.012))
+    t = lambda a, b, v, i: max(0.06, min(0.94, (v - a[i]) / ((b[i] - a[i]) or 1)))
+    pe = {"bord haut": lambda: L(tl, tr, t(tl, tr, x, 0)), "bord bas": lambda: L(bl, br, t(bl, br, x, 0)),
+          "bord gauche": lambda: L(tl, bl, t(tl, bl, y, 1)), "bord droit": lambda: L(tr, br, t(tr, br, y, 1))}.get(zone)
+    return tuple(L(pe(), ctr, 0.006)) if pe else (x, y)
+
+
 def caler_defauts(res, images, quads, refaire=False):
     """9 nov 2026 (Mathieu : « aucun des deux cercles n'est vrai ») : chaque defaut de coin ou de bord, son point cale sur la
     vraie arete de la photo pleine resolution (examen.caler_point) ; le zoom de l'app tombe dessus (d["cale"])."""
@@ -1313,7 +1331,7 @@ def caler_defauts(res, images, quads, refaire=False):
         if (d.get("cale") is True and not refaire) or not (z.startswith("coin ") or z.startswith("bord ")):
             continue
         ph = 1 if d.get("photo") == 1 else 0
-        d["cale_v"] = 3                                    # une seule tentative par version du calage
+        d["cale_v"] = 4                                    # une seule tentative par version du calage
         if ph >= len(images or []) or images[ph] is None:
             continue
         q = quads[ph] if quads and ph < len(quads) and quads[ph] else None
@@ -1329,7 +1347,13 @@ def caler_defauts(res, images, quads, refaire=False):
         if not q:
             continue
         try:
-            p = examen.caler_point(images[ph], q, z, float(d.get("x") or 0), float(d.get("y") or 0))
+            info = {}
+            x0, y0 = _sur_contour(q, z, float(d.get("x") or 0), float(d.get("y") or 0))
+            p = examen.caler_point(images[ph], q, z, x0, y0, info)
+            if p and info.get("seg"):
+                d["seg"] = info["seg"]                     # l'etendue du blanc le long du bord (le cadre de l'app la couvre)
+            else:
+                d.pop("seg", None)
         except Exception as e:
             print("Defaut (calage) : " + repr(e), flush=True)
             p = None

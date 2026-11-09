@@ -3146,7 +3146,7 @@ class Api:
         import vision
         ds = e.get("defauts") or []
         # v3 (9 nov, 15 h) : aussi le long du bord, vers la tranche blanche ; refait meme si une version d'avant l'a cale
-        a_caler = any(str(d.get("zone") or "").startswith(("coin ", "bord ")) and d.get("cale_v") != 3 for d in ds)
+        a_caler = any(str(d.get("zone") or "").startswith(("coin ", "bord ")) and d.get("cale_v") != 4 for d in ds)
         if not e.get("contre_verif") or (not a_caler and e.get("centrage_assaini")):
             return e
         refs = list(e.get("photos") or [])
@@ -3205,7 +3205,7 @@ class Api:
                 e["quads"] = quads
             for d in e["defauts"]:                           # meme sans calage possible : une seule tentative (v2)
                 if str(d.get("zone") or "").startswith(("coin ", "bord ")):
-                    d["cale_v"] = 3
+                    d["cale_v"] = 4
         c = self._db()
         try:
             c.execute("UPDATE cartes SET etat_json=? WHERE id=?", (json.dumps(e, ensure_ascii=False), cid))
@@ -6940,7 +6940,7 @@ class Api:
         autres = None
         # 7 nov 2026 (la fiche qui « reste a charger ») : les ventes d'autres joueurs (une recherche de plus) seulement s'il
         # reste du temps : la fiche doit revenir en moins de 30 s
-        if not rapide and t and nb_v < 2 and time.time() - t0_ < 20:
+        if not rapide and t and nb_v < 2 and time.time() - t0_ < 12:
             try:
                 autres = vendues.autres_joueurs(t)
             except Exception:
@@ -6955,7 +6955,7 @@ class Api:
         # 7 nov 2026 (Mathieu : « utiliser l'API seulement pour les cartes sans comps de 3 mois ») : pas de valeur sure avec les
         # 90 jours d'eBay -> l'historique d'un an (CompSniper, budget du mois), une seule fois par carte (cache 14 jours)
         hist_ = []
-        if not vm and not rapide and t and time.time() - t0_ < 25:
+        if not vm and not rapide and t and time.time() - t0_ < 18:
             try:
                 import historique
                 if historique.actif():
@@ -6979,7 +6979,7 @@ class Api:
         # 7 nov 2026 (Mathieu : « la Ron Francis : mettre les annees a cote pour la meme carte, montrer les cartes similaires
         # mais dire a l'utilisateur qu'il n'y a pas de comp ») : aucune vente sure de SA saison -> les saisons voisines
         saison_v = None
-        if not vm and not rapide and t and not (vc.get("erreur_ebay") or vc.get("erreur")) and time.time() - t0_ < 30:
+        if not vm and not rapide and t and not (vc.get("erreur_ebay") or vc.get("erreur")) and time.time() - t0_ < 22:
             try:
                 saison_v = vendues.autres_saisons(t, extra=hist_)
             except Exception as e:
@@ -6990,7 +6990,7 @@ class Api:
                 pourquoi = None
         # 7 nov 2026 (« les no sales : analyser les cartes similaires et donner un prix approximatif ») : ensuite, les cartes
         # similaires du meme joueur (meme produit, autre numerotation / annee / parallele)
-        if not vm and not saison_v and not rapide and t and not (vc.get("erreur_ebay") or vc.get("erreur")) and time.time() - t0_ < 30:
+        if not vm and not saison_v and not rapide and t and not (vc.get("erreur_ebay") or vc.get("erreur")) and time.time() - t0_ < 22:
             try:
                 saison_v = vendues.similaires(t, extra=hist_)
             except Exception as e:
