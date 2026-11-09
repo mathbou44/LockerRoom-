@@ -490,7 +490,8 @@ def _identifier_appel(images, cle_cache):
 _ZONES = ["coin haut-gauche", "coin haut-droit", "coin bas-droit", "coin bas-gauche", "bord haut", "bord droit", "bord bas",
           "bord gauche", "surface"]
 _DEFAUTS = ["blanchiment", "coin mou", "coin plie", "ebrechure", "entaille", "rayure", "ligne d'impression", "tache",
-            "pli", "bosse", "marque d'ecriture", "decentrage", "autre"]
+            "pli", "bosse", "marque d'ecriture", "decentrage", "micro-creux", "point d'encre", "trace de rouleau", "empreinte",
+            "perte de lustre", "decollement", "decoloration", "cire", "autre"]
 # 2 nov 2026 (Mathieu : « les baremes doivent etre etablis pour que toutes les cartes soient evaluees selon les memes
 # criteres et la meme severite ») : l'IA DECRIT (chaque coin, chaque bord, chaque marque de surface, avec des etats fixes) ;
 # la note est CALCULEE par bareme.py, la meme table pour toutes les cartes (normes PSA).
@@ -565,6 +566,19 @@ METHODE (dans cet ordre, sans sauter d'etape) :
    encoche (petit creux dans l'arete) ; ebrechures (eclats de couleur) ; usure (usure nette, entaille).
 3. La surface du carton imprime : rayures, lignes d'impression, taches, empreintes, perte de lustre, bosses, plis. Note la
    visibilite : rasante (seulement en lumiere rasante ou au zoom), de_pres, visible. Rien a signaler : liste vide.
+   Reconnaitre (guide pregradecards.com) : rayure = fine ligne brillante qui ne suit pas le dessin, souvent seulement en
+   lumiere rasante ; ligne d'impression = lignes paralleles dans UNE direction sur une zone unie (chrome, refractor) ;
+   trace de rouleau = lignes tres faibles, regulierement espacees ; point d'encre = petit point de COULEUR (encre) sur une
+   zone unie ; micro-creux = minuscule trou ou cratere qui fait une petite ombre en lumiere rasante (pas un point clair
+   pose dessus : ca, c'est de la poussiere) ; empreinte = plaque floue ou laiteuse, avec des stries de doigt ; perte de
+   lustre = zone terne dans un reflet qui devrait etre uniforme ; bosse = petit enfoncement qui fait une ombre ;
+   decollement = le foil ou le chrome qui se souleve, fait une bulle ou se fissure pres des bords ; decoloration = bordure
+   blanche jaunie ou couleurs ternies ; cire = plaque jaunatre ou brunatre, un peu en relief.
+   TACHE ou SALETE (9 nov 2026, la Dickinson : une petite tache brune au dos etait une VRAIE tache) : une tache est DANS la
+   surface (plate, contour flou, la couleur deteint dans l'impression, elle suit le relief du carton) ; une salete posee
+   dessus a un contour net, un petit relief, une ombre ou un reflet a elle, et deborde parfois sur le fond. Une marque brune,
+   jaune ou grise sur une zone unie qui n'est pas dans le dessin : tache, sauf si tu vois clairement qu'elle est posee dessus
+   (alors « incertaine »). Ne la confonds pas avec la poussiere blanche.
    marque d'ecriture = un chiffre, une lettre ou un trait CREUSE dans le carton (quelqu'un a ecrit sur une feuille posee sur
    la carte) : invisible de face, il ressort en lumiere rasante et dans la DIFFERENCE des deux eclairages comme un trace en
    creux qui ne suit pas l'image. Cherche-le partout, surtout dans les zones unies et sur les visages. PSA : 6 au mieux.
@@ -577,6 +591,16 @@ METHODE (dans cet ordre, sans sauter d'etape) :
 REGLES :
 - N'invente rien. Un reflet, une poussiere sur l'etui, un grain de photo ne sont pas des defauts : si tu ne peux pas trancher,
   certitude = « incertaine » (jamais pour un zoom net : la, decide).
+- POUSSIERE ou BLANCHIMENT (9 nov 2026, cartes de Mathieu) : de petits points blancs isoles DANS la surface (loin de l'arete),
+  ou poses sur le tapis autour, sont de la poussiere ou des fibres : jamais un defaut de surface. MAIS des points blancs SUR la
+  ligne de coupe elle-meme (l'arete), surtout sur une bordure foncee ou coloree (rouge, noire, bleue), sont du BLANCHIMENT
+  (carton mis a nu), meme tout petits : point_blanc s'il y en a un, quelques_points s'il y en a plusieurs le long du meme
+  bord. Une fibre qui traverse l'arete en debordant sur le fond reste de la poussiere. Si l'app MESURE des points sur la
+  ligne de coupe, crois-la sauf si le zoom montre clairement une fibre.
+- CARTE TRANSPARENTE (acrylique, Future Watch, Clear Cut) : le filet clair de l'arete est le bord de l'acrylique, pas du
+  blanchiment. Juge la forme des coins et des aretes (eclat, fissure) et les rayures de la surface.
+- CARTE SANS BORDURE (photo pleine page) : le centrage se juge sur le cadre ou les elements imprimes symetriques ; s'il n'y en
+  a pas, ne donne pas de centrage.
 - PATCH, RELIQUE, AUTOGRAPHE : le tissu (fils, coutures, broderie, plis du tissu, bord effiloche du tissu), l'autocollant et la
   fenetre decoupee font partie de la carte ; jamais un defaut de surface. Si tu en notes un par prudence : sur_relique = true.
 - Carte dans un toploader, une pochette ou sur un support : les aretes sont en partie cachees ; dis-le dans « invisible » et mets
@@ -691,10 +715,10 @@ def _noter_observations(f, centrage=None, calibration=None, quads=None):
     sj = f.get("surface_jugeable") is not False
     hi = {"coins": _bar.note_coins([o["etat"] for o in lim(coins.values())]),
           "bords": _bar.note_bords([o["etat"] for o in lim(bords.values())]),
-          "surface": _bar.note_surface([(o["type"], o.get("visibilite")) for o in lim(surf)]) if sj else None}
+          "surface": _bar.note_surface([(o["type"], o.get("visibilite"), 1 if o.get("photo") == 1 else 0) for o in lim(surf)]) if sj else None}
     lo = {"coins": _bar.note_coins([o["etat"] for o in coins.values()]),
           "bords": _bar.note_bords([o["etat"] for o in bords.values()]),
-          "surface": _bar.note_surface([(o["type"], o.get("visibilite")) for o in surf]) if sj else None}
+          "surface": _bar.note_surface([(o["type"], o.get("visibilite"), 1 if o.get("photo") == 1 else 0) for o in surf]) if sj else None}
     # le centrage : mesure par l'app (tolerances PSA), sinon l'estimation de l'IA avec la meme table
     cg, ch, cd = rat(f.get("centrage_gd")), rat(f.get("centrage_hb")), rat(f.get("centrage_dos"))
     mesure = bool(centrage and centrage.get("devant"))
@@ -763,7 +787,7 @@ def _noter_observations(f, centrage=None, calibration=None, quads=None):
             ajouter("bords", o, n_, _TYPE_BORD[o["etat"]], "bord " + b, x, y, _LIB_ETAT[o["etat"]])
     for o in surf:
         vis = o.get("visibilite") if o.get("visibilite") in _bar.VISIBILITES else "de_pres"
-        n_ = _bar.SURFACE[o["type"]][_bar.VISIBILITES.index(vis)]
+        n_ = (_bar.SURFACE_DOS.get(o["type"]) if o.get("photo") == 1 and o["type"] in _bar.SURFACE_DOS else _bar.SURFACE[o["type"]])[_bar.VISIBILITES.index(vis)]
         try:
             x, y = max(0, min(1000, int(o.get("x")))), max(0, min(1000, int(o.get("y"))))
         except (TypeError, ValueError):
@@ -816,12 +840,25 @@ def _noter_observations(f, centrage=None, calibration=None, quads=None):
             bouts.append(f"H/B {ch}" + (f" ({nomr['hb0']})" if nomr.get("hb0") else ""))
         if cd:
             bouts.append(f"dos {cd}")
-        lim = {10: "PSA 10 jusqu’à 60/40", 9: "PSA 9 jusqu’à 65/35", 8: "PSA 8 jusqu’à 70/30", 7: "PSA 7 jusqu’à 75/25"}.get(int(hi["centrage"]), f"PSA {fr(hi['centrage'])}")
+        lim = {10: "PSA 10 jusqu’à 55/45", 9: "PSA 9 jusqu’à 60/40", 8: "PSA 8 jusqu’à 65/35", 7: "PSA 7 jusqu’à 70/30", 6: "PSA 6 jusqu’à 80/20"}.get(int(hi["centrage"]), f"PSA {fr(hi['centrage'])}")
         explications["centrage"] = ("mesuré par l’app : " if mesure else "mesuré sur la règle : ") + " · ".join(bouts) + f" → {lim}"
     elif not (cg or ch):
         explications["centrage"] = "aucun repère symétrique sur cette carte : pas compté dans la note"
     notes = {k: hi[k] for k in ("centrage", "coins", "bords", "surface")}
-    return {"evaluable": f.get("evaluable") is not False, "raison": str(f.get("raison") or "").strip()[:80],
+    # 9 nov 2026 (criteres de TAG fournis par Mathieu) : la note TAG avec les memes observations ; « incertaine » ne compte que
+    # pour le bas (comme pour PSA) : le haut = sans les observations incertaines, le bas = avec
+    try:
+        cdev = [x for x in (cg, ch) if x]
+        cdos = [x for x in (cent2["dos"].get("gd"), cent2["dos"].get("hb"), cd) if x]
+        _t = lambda c_, b_, s_: _bar.tag([(k[0], o["etat"]) for k, o in c_], [(k[0], o["etat"]) for k, o in b_],
+                                        [(1 if o.get("photo") == 1 else 0, o["type"], o.get("visibilite") or "de_pres") for o in s_] if sj else [], cdev, cdos)
+        tag_hi = _t([kv for kv in coins.items() if not inc(kv[1])], [kv for kv in bords.items() if not inc(kv[1])], [o for o in surf if not inc(o)])
+        tag_lo = _t(list(coins.items()), list(bords.items()), surf)
+        tag_ = dict(tag_hi, bas=tag_lo.get("note"), bas_libelle=tag_lo.get("libelle"))
+    except Exception as e:
+        print("TAG : " + repr(e), flush=True)
+        tag_ = None
+    return {"evaluable": f.get("evaluable") is not False, "tag": tag_, "raison": str(f.get("raison") or "").strip()[:80],
             "centrage_gd": cg, "centrage_hb": ch, "centrage_dos": cd or ((centrage or {}).get("dos") or {}).get("gd") or "",
             "centrage_mesure": mesure, "notes": notes, "notes_bas": {k: lo[k] for k in ("coins", "bords", "surface")},
             "note_min": g_lo, "note_max": g_hi, "defauts": defauts, "explications": explications,
@@ -924,6 +961,9 @@ def _infos_mesures(prep):
         for nom, x in (u.get("bords") or {}).items():
             if x.get("mesurable") and x.get("blanc_mm", 0) >= 0.3:
                 bouts.append(f"bord {nom} {x['blanc_mm']} mm de blanc en {x['points']} point(s)")
+            elif x.get("mesurable") and (x.get("points_fins") or 0) >= 3:
+                bouts.append(f"bord {nom} : {x['points_fins']} petits points clairs SUR la ligne de coupe (bordure coloree unie) : "
+                             f"probablement du blanchiment (points_blancs ou quelques_points)")
         if bouts:
             out.append(f"MESURE de l'app ({face}) : " + " ; ".join(bouts) + ". Verifie chacun sur les zooms : vrai blanchiment, ou reflet / fond ?")
         elif any(x.get("mesurable") for x in list((u.get("coins") or {}).values()) + list((u.get("bords") or {}).values())):
@@ -980,6 +1020,15 @@ def _ajouter_mesures(res, mes, quads):
                 res.setdefault("defauts", []).append({"photo": ph, "zone": "coin " + nom, "type": "blanchiment", "gravite": "a verifier",
                                                       "x": xy[0], "y": xy[1], "note": 8 if x["blanc_mm2"] >= 0.6 else 9, "mesure": True,
                                                       "pourquoi": f"mesuré par l'app : {str(x['blanc_mm2']).replace('.', ',')} mm² de blanc à l'arête, à confirmer sur le zoom"})
+        # 9 nov 2026 : des points de blanchiment SUR la ligne de coupe d'une bordure coloree, mesures, que le modele n'a pas vus
+        for nom, x in (u.get("bords") or {}).items():
+            pf = x.get("points_fins") or 0
+            if x.get("mesurable") and pf >= 3 and (ph, "bord " + nom) not in deja:
+                uv = {"haut": (0.5, 0.01), "bas": (0.5, 0.99), "gauche": (0.01, 0.5), "droit": (0.99, 0.5)}[nom]
+                xy = _bil(quads[ph] if quads and ph < len(quads) else None, *uv)
+                res.setdefault("defauts", []).append({"photo": ph, "zone": "bord " + nom, "type": "blanchiment", "gravite": "a verifier",
+                                                      "x": xy[0], "y": xy[1], "note": 8 if pf >= 5 else 9, "mesure": True,
+                                                      "pourquoi": f"mesuré par l'app : {pf} petits points blancs sur l'arête, à confirmer sur le zoom"})
     for face, m in mes.items():
         ph = 0 if face == "devant" else 1
         sil = m.get("silhouette") or {}

@@ -326,6 +326,33 @@ def usure(carte_marge, marge):
                 pts += 1
             prev = bool(v)
         out["bords"][nom] = {"mesurable": True, "blanc_mm": round(longueur, 1), "points": pts, "ref_l": round(ref_l)}
+        # 9 nov 2026 (Mathieu : la Hutson Red Prism, « du blanc sur la bordure superieure arriere ; ce n'est pas de la
+        # poussiere ») : un point de blanchiment de 0,1 mm sur une bordure COLOREE se melange a la couleur (rose sur du
+        # rouge) : le test « blanc et peu colore » le manquait. Ici : sur la LIGNE de coupe (0,3 mm), les pixels qui montent
+        # vers le blanc par rapport a la bordure juste dessous (canal le plus bas +55, luminosite +30). Seulement sur une
+        # bordure unie (un dessin qui change le long du bord donnerait de faux points) et si c'est localise (pas un liseré).
+        try:
+            zb = z[:int(round(0.3 * px_mm)) + 2]
+            rmin = np.median(ref_z.min(axis=2), axis=0)
+            rl = np.median(_lum(ref_z), axis=0)
+            if zb.shape[1] == rmin.shape[0] and float(np.std(rl)) <= 15:
+                w = ((zb.min(axis=2) - rmin[None, :]) > 55) & ((_lum(zb) - rl[None, :]) > 30)
+                cl = w.any(axis=0)
+                if 0 < float(cl.mean()) < 0.12:
+                    runs, run = [], 0
+                    for v in cl:
+                        if v:
+                            run += 1
+                        elif run:
+                            runs.append(run)
+                            run = 0
+                    if run:
+                        runs.append(run)
+                    fins = [r_ for r_ in runs if 2 <= r_ <= 1.5 * px_mm]
+                    if fins:
+                        out["bords"][nom]["points_fins"] = len(fins)
+        except Exception:
+            pass
     return out
 
 
@@ -440,6 +467,52 @@ def trouver_carte(im):
         return None
     f = lambda x, n: max(0, min(1000, round(x / n * 1000)))
     return [[f(x0, W), f(y0, H)], [f(x1 + 1, W), f(y0, H)], [f(x1 + 1, W), f(y1 + 1, H)], [f(x0, W), f(y1 + 1, H)]]
+
+
+def bord_transparent(im, quad, marge_max=0.17):
+    """9 nov 2026 (Mathieu : 3 cartes photographiees « avec les reglages au maximum », dont une Future Watch en acrylique
+    decoupee) : une carte transparente (acrylique, die-cut, Clear Cut) : trouver_carte prend l'image imprimee au milieu, pas
+    la carte. Son vrai bord est un filet clair, fin et droit, un peu plus loin sur le fond. Pour chaque cote : le profil de
+    luminosite moyen (le milieu du cote), la crete fine la plus a l exterieur (au plus 17 % de la carte) ; le nouveau
+    contour n'est garde que s'il a le format d'une carte (63,5 x 88,9 mm, a 3,5 % pres) et qu'au moins 2 cotes ont bouge.
+    -> quad 0..1000 agrandi, ou None (carte ordinaire : rien a changer)."""
+    if np is None or im is None or not quad:
+        return None
+    k = 1100 / max(im.size)
+    g = _lum(_arr(im.convert("RGB").resize((max(8, int(im.size[0] * k)), max(8, int(im.size[1] * k))))))
+    H, W = g.shape
+    xs = [p[0] / 1000 * W for p in quad]
+    ys = [p[1] / 1000 * H for p in quad]
+    x0, x1, y0, y1 = (xs[0] + xs[3]) / 2, (xs[1] + xs[2]) / 2, (ys[0] + ys[1]) / 2, (ys[2] + ys[3]) / 2
+    if x1 - x0 < W * 0.2 or y1 - y0 < H * 0.2:
+        return None
+    lx, ly = x1 - x0, y1 - y0
+    colp = g[int(y0 + 0.3 * ly):int(y1 - 0.3 * ly), :].mean(axis=0)          # profil horizontal (gauche / droite)
+    rowp = g[:, int(x0 + 0.3 * lx):int(x1 - 0.3 * lx)].mean(axis=1)          # profil vertical (haut / bas)
+
+    def crete(prof, depart, sens, portee):
+        """La crete fine la plus eloignee du depart, vers l'exterieur (sens -1 ou +1) ; None s'il n'y en a pas."""
+        loin = None
+        for d in range(max(3, int(portee * 0.015)), int(portee * marge_max)):
+            i = int(round(depart + sens * d))
+            if i < 3 or i >= len(prof) - 3:
+                break
+            if prof[i] - max(prof[i - 3], prof[i + 3]) > 25 and prof[i] >= prof[i - 1] and prof[i] >= prof[i + 1]:
+                loin = i
+        return loin
+    nx0, nx1 = crete(colp, x0, -1, lx), crete(colp, x1, +1, lx)
+    ny0, ny1 = crete(rowp, y0, -1, ly), crete(rowp, y1, +1, ly)
+    bouges = sum(v is not None for v in (nx0, nx1, ny0, ny1))
+    if bouges < 2:
+        return None
+    X0, X1 = nx0 if nx0 is not None else x0, nx1 if nx1 is not None else x1
+    Y0, Y1 = ny0 if ny0 is not None else y0, ny1 if ny1 is not None else y1
+    r = (X1 - X0) / max(1.0, (Y1 - Y0))
+    cible = MM_COURT / MM_LONG if r < 1 else MM_LONG / MM_COURT
+    if abs(r / cible - 1) > 0.035 or (X1 - X0) * (Y1 - Y0) < 1.05 * lx * ly:
+        return None
+    f = lambda v, n: max(0, min(1000, round(v / n * 1000)))
+    return [[f(X0, W), f(Y0, H)], [f(X1, W), f(Y0, H)], [f(X1, W), f(Y1, H)], [f(X0, W), f(Y1, H)]]
 
 
 def bordure_unie(carte, axe, a, b):

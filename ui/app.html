@@ -390,6 +390,17 @@ body.fetes .mot-ic{color:var(--h4,#F1D58E)}
 .seg.seg-2x2{display:grid; grid-template-columns:1fr 1fr; gap:4px} .seg.seg-2x2 button{min-width:0}
 .ic-ext{width:.85em; height:.85em; margin-left:3px; vertical-align:-1px; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round}
 .cs-svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round}
+.gt-l{margin-top:6px; display:flex; flex-direction:column; gap:8px}
+.gt-p{display:flex; align-items:flex-start; gap:12px; padding:11px 12px; border-radius:16px; background:var(--carte)}
+.gt-ic{flex:none; width:36px; height:36px; border-radius:50%; display:grid; place-items:center; position:relative; background:conic-gradient(from 210deg, var(--h1,#9FE6D2), var(--h2,#B9BEFF), var(--h3,#F2B3D6), var(--h4,#F1D58E), var(--h1,#9FE6D2))}
+.gt-ic::before{content:''; position:absolute; inset:2px; border-radius:50%; background:var(--carte)}
+.gt-ic svg{position:relative; width:17px; height:17px; fill:none; stroke:var(--texte); stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round}
+.gt-t{flex:1; min-width:0; display:flex; flex-direction:column; gap:3px} .gt-t b{font-size:15px} .gt-t small{font-size:13px; color:var(--doux); line-height:1.35}
+.ex-qual{margin:10px 0 4px}
+.vd-tag{display:flex; align-items:center; gap:12px; margin:10px 0; padding:10px 12px; border-radius:16px; background:var(--carte2)}
+.vd-tag > span:last-child{display:flex; flex-direction:column; gap:2px; min-width:0} .vd-tag small{color:var(--doux); font-size:12.5px}
+.vd-tag-n{flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center; width:54px; height:54px; border-radius:50%; border:2px solid currentColor; font:700 10px var(--f-cond); letter-spacing:.08em}
+.vd-tag-n b{font-size:20px; letter-spacing:0} .vd-tag-n.prist{border-color:var(--or); box-shadow:0 0 0 3px color-mix(in srgb, var(--or) 25%, transparent)} .vd-tag-n.vert{color:var(--vert)} .vd-tag-n.or{color:var(--or)} .vd-tag-n.rouge{color:var(--rouge)}
 .adm-pil-act{display:flex; gap:8px; margin-top:12px} .adm-pil-act .btn{flex:1; text-align:center}
 .adm-pil-note{margin-top:10px; font-size:13px}
 .av-z{display:flex; gap:8px; margin-top:12px} .av-z .champ{flex:1; font-size:20px; letter-spacing:.2em; text-align:center}
@@ -10004,7 +10015,10 @@ const LIB_ZONE = (z) => ({'coin haut-gauche': tt('Coin haut gauche', 'Top-left c
   'bord droit': tt('Bord droit', 'Right edge'), 'bord bas': tt('Bord du bas', 'Bottom edge'), 'bord gauche': tt('Bord gauche', 'Left edge'), surface: tt('Surface', 'Surface')})[z] || z;
 const LIB_DEFAUT = (d) => ({blanchiment: tt('blanchiment', 'whitening'), 'coin mou': tt('coin mou', 'soft corner'), 'coin plie': tt('coin plié', 'bent corner'),
   ebrechure: tt('ébréchure', 'chipping'), entaille: tt('entaille', 'nick'), rayure: tt('rayure', 'scratch'), "ligne d'impression": tt('ligne d’impression', 'print line'),
-  tache: tt('tache', 'stain'), pli: tt('pli', 'crease'), bosse: tt('bosse', 'dent'), "marque d'ecriture": tt('marque d’écriture', 'writing indent'), decentrage: tt('décentrage', 'off-center'), autre: tt('défaut', 'flaw')})[d] || d;
+  tache: tt('tache', 'stain'), pli: tt('pli', 'crease'), bosse: tt('bosse', 'dent'), "marque d'ecriture": tt('marque d’écriture', 'writing indent'), decentrage: tt('décentrage', 'off-center'),
+  'micro-creux': tt('micro-creux', 'pit'), "point d'encre": tt('point d’encre', 'print dot'), 'trace de rouleau': tt('trace de rouleau', 'roller mark'),
+  empreinte: tt('empreinte', 'fingerprint'), 'perte de lustre': tt('perte de lustre', 'gloss loss'), decollement: tt('décollement', 'peeling'),
+  decoloration: tt('décoloration', 'fading'), cire: tt('tache de cire', 'wax stain'), autre: tt('défaut', 'flaw')})[d] || d;
 const gCls = (g) => String(g || '').replace(/[^a-z]+/gi, '-');      // 3 nov 2026 (revue) : jamais de texte brut dans une classe
 const LIB_GRAV = (g) => ({leger: tt('léger', 'light'), moyen: tt('moyen', 'moderate'), fort: tt('marqué', 'heavy'), 'a verifier': tt('à vérifier', 'to check')})[g] || '';
 // 2 nov 2026 (Mathieu : « les chiffres pas a la bonne place, pas d'outil de centrage visible (un genre de layer) ») : chaque
@@ -10014,7 +10028,7 @@ const LIB_GRAV = (g) => ({leger: tt('léger', 'light'), moyen: tt('moyen', 'mode
 // 2 nov 2026 (Mathieu : « on ne comprend pas ou tu as pris tes references ») : le bareme, avec sa source : les normes
 // officielles de PSA (Card Grading Standards). Les memes chiffres que l'app et l'IA utilisent.
 function baremePSA(){
-  const C = [['10', '55/45 – 60/40', '75/25'], ['9', '60/40 – 65/35', '90/10'], ['8', '65/35 – 70/30', '90/10'], ['7', '70/30 – 75/25', '90/10'],
+  const C = [['10', '55/45', '75/25'], ['9', '60/40', '90/10'], ['8', '65/35', '90/10'], ['7', '70/30', '90/10'],
     ['6', '80/20', '90/10'], ['5 · 4', '85/15', '90/10'], ['3 – 1', '90/10', '90/10']];
   // 2 nov 2026 : le bareme fixe (bareme.py) : chaque observation donne toujours la meme note, pour toutes les cartes
   const CO = [[tt('Pointe nette et carrée', 'Sharp, square tip'), '10'], [tt('1 tout petit point blanc (au zoom)', '1 tiny white dot (zoomed)'), '9'],
@@ -10212,6 +10226,12 @@ function voirDefauts(e, k, apres, relancer){
     o.innerHTML = `<button class="vd-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
       <div class="vd-tete"><span class="fc-al-ic et-anneau ${clg}"><b>${four}</b></span><span><b>${tt('État estimé', 'Estimated condition')} <small>/10</small></b>
         <small>${esc(pourquoiNote())}</small></span></div>
+      ${e.tag ? (() => { const t = e.tag, bas = t.bas !== undefined && t.bas !== t.note;
+        // 9 nov 2026 (criteres de TAG fournis par Mathieu) : la note TAG estimee avec les memes observations
+        return `<div class="vd-tag"><span class="vd-tag-n ${t.note === 10 ? 'vert' : t.note === 9 ? 'or' : 'rouge'}${t.pristine ? ' prist' : ''}">TAG <b>${t.note || '≤ 8'}</b></span>
+          <span><b>${esc(t.note ? t.libelle + ' · ' + t.score : tt('8 ou moins', '8 or lower'))}</b>${bas ? `<small>${tt('ou ', 'or ')}${t.bas ? 'TAG ' + t.bas : tt('8 ou moins', '8 or lower')}${tt(' si les points à vérifier se confirment', ' if the points to check are confirmed')}</small>` : ''}
+          ${(t.raisons || []).length ? `<small>${tt(t.note === 9 ? 'Pas un 10 : ' : t.note === 10 ? 'Pas Pristine : ' : 'Pourquoi : ', t.note === 9 ? 'Not a 10: ' : t.note === 10 ? 'Not Pristine: ' : 'Why: ')}${esc(t.raisons.slice(0, 2).join(' · '))}</small>` : ''}
+          ${t.centrage_mesure ? '' : `<small>${tt('Centrage pas mesuré sur cette carte : pas compté', 'Centering not measured on this card: not counted')}</small>`}</span></div>`; })() : ''}
       ${e.ancienne ? `<div class="vd-anc"><span>${tt('Ancienne analyse : sans les mesures de l’app ni le barème fixe.', 'Older analysis: without the app’s measurements or the fixed scale.')}</span>${relancer ? `<button class="btn petit" data-relancer>${tt('Refaire l’examen', 'Check again')}</button>` : ''}</div>` : ''}
       ${(e.a_reprendre || []).length ? `<div class="vd-rep"><b>${tt('Pour une note plus sûre, reprends la photo', 'For a surer grade, retake the photo')}</b>${e.a_reprendre.map(t => `<small>${esc(t)}</small>`).join('')}</div>` : ''}
       <div class="vd-sous">${CATS_.map(([k_, l_]) => `<div class="vd-s"><span class="vd-sn ${cln(n_[k_])}"><b>${fr_(n_[k_])}</b></span><span><b>${l_}</b>${cause(k_)}</span></div>`).join('')}</div>
@@ -10220,7 +10240,7 @@ function voirDefauts(e, k, apres, relancer){
         <div class="vd-outils">${edite === j ? `<span class="sous">${tt('Glisse les 4 coins sur les coins de la carte', 'Drag the 4 handles onto the card’s corners')}</span>
             <button class="pilule" data-ann="${j}">${tt('Annuler', 'Cancel')}</button><button class="btn petit" data-ok="${j}">${tt('Enregistrer', 'Save')}</button>`
           : `<button class="chip vd-tog ${calque ? 'on' : ''}" data-calque><i></i>${tt('Étude du centrage', 'Centering study')}</button>`}</div>
-        ${calque ? `<div class="cg-leg">${(j ? [[75, 10, 'z10'], [90, 9, 'z9']] : [[60, 10, 'z10'], [65, 9, 'z9'], [70, 8, 'z8'], [75, 7, 'z7']]).map(([lim, nn, cl]) => `<span class="${cl}"><i></i>PSA ${nn} ≤ ${lim}/${100 - lim}</span>`).join('')}</div>` : ''}</div>`).join('')}
+        ${calque ? `<div class="cg-leg">${(j ? [[75, 10, 'z10'], [90, 9, 'z9']] : [[55, 10, 'z10'], [60, 9, 'z9'], [65, 8, 'z8'], [70, 7, 'z7']]).map(([lim, nn, cl]) => `<span class="${cl}"><i></i>PSA ${nn} ≤ ${lim}/${100 - lim}</span>`).join('')}</div>` : ''}</div>`).join('')}
       ${e.relief_img ? `<div class="vd-sec">${e.relief_deux ? tt('Relief de la surface (2 éclairages)', 'Surface relief (2 lights)') : tt('Relief de la surface', 'Surface relief')}</div>
         <div class="vd-gab"><div class="vd-gab-c vd-rel"><img src="${esc(e.relief_img)}" alt=""></div><small>${e.relief_deux ? tt('La différence entre tes deux photos : l’impression s’efface, ce qui reste en clair ou en foncé est du relief (ligne fine = rayure, tache ronde = bosse ou empreinte).', 'The difference between your two photos: the print fades, what stays light or dark is relief (thin line = scratch, round spot = dent or fingerprint).') : tt('Ta photo rasante, éclairage lissé et contraste renforcé : les rayures et les bosses ressortent (l’impression aussi).', 'Your raking photo, lighting evened out and contrast boosted: scratches and dents stand out (so does the print).')}</small></div>` : ''}
       ${(e.gros_plans || []).length ? `<div class="vd-sec">${tt('Gros plans des coins', 'Corner close-ups')}</div><div class="vd-gp">${grosPlans()}</div>` : ''}
@@ -10275,7 +10295,7 @@ function voirDefauts(e, k, apres, relancer){
       const seg = (u1, v1, u2, v2, cl) => { const p = bil(q, u1, v1), p2 = bil(q, u2, v2); return `<line class="${cl}" x1="${p[0]}" y1="${p[1]}" x2="${p2[0]}" y2="${p2[1]}"/>`; };
       // les limites PSA (comme l'outil transparent) : la ligne du repere doit tomber dans la zone verte pour un 10, etc.
       if (aLignes && edite !== j) {
-        const Z = face === 'dos' ? [[90, 'z9'], [75, 'z10']] : [[75, 'z7'], [70, 'z8'], [65, 'z9'], [60, 'z10']];
+        const Z = face === 'dos' ? [[90, 'z9'], [75, 'z10']] : [[70, 'z7'], [65, 'z8'], [60, 'z9'], [55, 'z10']];
         const T = (v.l || 0) + (v.r || 0), Ty = (v.t || 0) + (v.b || 0);
         for (const [lim, cl] of Z) { const pp = lim / 100;
           // une petite regle au milieu de chaque cote (comme l'outil transparent) : la ligne du repere doit tomber dans le vert
@@ -10399,7 +10419,7 @@ function blocEnvoi(c){
   const e = envoiDe(c);
   if (!e) {
     z.innerHTML = `<div class="env-b"><button class="pilule" id="env-g">${tt('Envoyer en gradation', 'Send for grading')}</button><button class="pilule" id="env-e">${tt('Envoyer en consignation', 'Consign to auction')}</button></div>`;
-    $('#env-g').onclick = () => assistantGradation(c);
+    $('#env-g').onclick = () => conseilsGradation(c);
     $('#env-e').onclick = () => formEnvoi(c, 'encan');
     return;
   }
@@ -10682,6 +10702,7 @@ function feuilleExamen(c, opts){
       if (i < 0) {                                              // la preparation
         ouvrirFeuille(`<h3>${opts.titre || tt('Examen de la carte', 'Card exam')}</h3>
           <div class="sous">${tt('Une photo à la fois : l’app vérifie chacune et te dit quoi reprendre. Environ 3 minutes.', 'One photo at a time: the app checks each one and tells you what to retake. About 3 minutes.')}</div>
+          <div class="vd-rep ex-qual"><b>${tt('Qualité de photo minimale', 'Minimum photo quality')}</b><small>${tt('Le pré-grade se joue au dixième de millimètre : il faut un téléphone de 12 Mpx et plus (ou un scanner à 600 dpi), la carte qui remplit l’écran, une photo nette et sans reflet. Essuie la carte : la poussière ressemble à des défauts. Avec une photo trop petite ou floue, l’app le dit et la note est moins sûre.', 'Pre-grading works at a tenth of a millimetre: you need a 12 MP+ phone (or a 600 dpi scanner), the card filling the screen, a sharp photo with no glare. Wipe the card: dust looks like flaws. With a photo too small or blurry, the app says so and the grade is less certain.')}</small></div>
           <ul class="conseils-ph"><li><b>1</b>${P.slab ? tt('Essuie le slab ; incline-le un peu si la lumière s’y reflète', 'Wipe the slab; tilt it a little if light reflects on it') : tt('Sors-la du toploader ou de la pochette, à plat', 'Take it out of the toploader or sleeve, flat')}</li>
             <li><b>2</b>${tt('Fond uni foncé, lumière douce de côté, pas de flash', 'Plain dark background, soft side light, no flash')}</li>
             <li><b>3</b>${tt('Téléphone au 1×, parallèle à la carte', 'Phone at 1×, parallel to the card')}</li></ul>
@@ -10890,6 +10911,26 @@ const CIES_G = {
     pour: () => [tt('Tu sais POURQUOI la carte a sa note', 'You know WHY the card got its grade'), tt('Souvent plus rapide que PSA', 'Often faster than PSA')],
     contre: () => [tt('Revente en général sous PSA, moins de ventes pour comparer', 'Resale usually below PSA, fewer sales to compare'), tt('Depuis le Canada, la marche change souvent', 'From Canada, the process changes often')]},
 };
+// 9 nov 2026 (Mathieu : « donner des tips pour savoir quel genre de carte est bon a envoyer se faire grader ; va voir les
+// forums et sites ; la premiere page quand on clique Envoyer en gradation ») : ce que les collectionneurs et les guides
+// repetent (CLLCT, The Hockey News, forum Collectors Universe), dit simplement ; puis l'assistant (le calcul pour CETTE carte)
+function conseilsGradation(c){
+  const L = [
+    ['dollar', tt('La carte vaut bien plus que la gradation', 'The card is worth well over the grading cost'), tt('Vise au moins 3 à 4 fois les frais et l’envoi. En dessous, tu perds souvent de l’argent, même avec une bonne note.', 'Aim for at least 3 to 4 times the fees and shipping. Below that, you often lose money even with a good grade.')],
+    ['etoile', tt('Vise le 10', 'Aim for a 10'), tt('En moderne, un 9 se vend souvent à peu près le prix d’une carte non gradée. Ça vaut surtout la peine si tu crois au 10.', 'For modern cards, a 9 often sells for about the raw price. It mostly pays off if you believe it’s a 10.')],
+    ['cible', tt('Les bonnes candidates', 'Good candidates'), tt('Recrues vedettes (Young Guns, Future Watch), numérotées, autos, patchs, parallèles rares, grandes vedettes. Une carte de base ordinaire : rarement.', 'Star rookies (Young Guns, Future Watch), numbered, autos, patches, rare parallels, big stars. A common base card: rarely.')],
+    ['oeil', tt('Regarde-la de près', 'Look at it closely'), tt('Bonne lumière, loupe si possible : 4 coins pointus, bords sans blanc, surface sans rayure, bien centrée. Un défaut visible : sûrement pas un 10.', 'Good light, a loupe if you can: 4 sharp corners, edges with no white, no scratches, well centered. One visible flaw: likely not a 10.')],
+    ['graphe', tt('Fais le calcul avec les vraies ventes', 'Do the math with real sales'), tt('Valeur gradée moins les frais et l’envoi, contre la valeur non gradée. L’app le fait pour toi à l’étape suivante.', 'Graded value minus fees and shipping, versus the raw value. The app does it for you on the next step.')],
+    ['horloge', tt('Le vintage, c’est différent', 'Vintage is different'), tt('Avant 1980, même un 7 ou un 8 d’une vedette peut valoir la peine.', 'Before 1980, even a 7 or 8 of a star can be worth it.')],
+    ['coeur', tt('Pour ta collection, c’est ton choix', 'For your collection, it’s your call'), tt('Une carte que tu gardes : la gradation la protège et la met en valeur, même si ce n’est pas rentable.', 'A card you keep: grading protects and showcases it, even if it doesn’t pay.')],
+    ['attention', tt('Sois réaliste', 'Be realistic'), tt('On surestime plus souvent qu’on sous-estime ses cartes. Essuie-la avant : la poussière cache les vrais défauts.', 'People overrate their cards more often than not. Wipe it first: dust hides the real flaws.')]];
+  ouvrirFeuille(`<h3>${tt('Avant d’envoyer : est-ce que ça vaut la peine ?', 'Before sending: is it worth it?')}</h3>
+    <div class="gt-l">${L.map(([ic, t, d]) => `<div class="gt-p"><span class="gt-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL[ic] || ''}</svg></span><span class="gt-t"><b>${t}</b><small>${d}</small></span></div>`).join('')}</div>
+    <div class="ligne-btn" style="margin-top:14px"><button class="btn ghost" id="cg-ex">${tt('Évaluer l’état', 'Check condition')}</button><button class="btn" id="cg-ok">${tt('Voir le calcul', 'See the math')} ›</button></div>
+    <div class="sous" style="margin-top:10px; font-size:12px">${tt('D’après les conseils de collectionneurs (forum Collectors Universe) et des guides (CLLCT, The Hockey News).', 'Based on collector advice (Collectors Universe forum) and guides (CLLCT, The Hockey News).')}</div>`);
+  $('#cg-ok').onclick = () => { vibrer(); assistantGradation(c); };
+  $('#cg-ex').onclick = () => { vibrer(); fermerFeuille(); setTimeout(() => { const b = $('#fc-et-go'); if (b) b.click(); else assistantGradation(c); }, 250); };
+}
 async function assistantGradation(c, k0){
   let k = k0 || 0, r = null, cmp = null, cie = null, choix = null, port = null, dir = 0, voie = null;
   const VERD = {oui: ['vert', tt('Ça vaut la peine', 'Worth grading')], non: ['rouge', tt('Pas rentable', 'Not worth it')],
@@ -11130,9 +11171,9 @@ async function assistantSoumission(id, etape){
 // 1er nov 2026 (Mathieu : « une grille pour montrer comment le centering a ete evalue, comme un outil de centrage ») : la
 // carte redressee, ses aretes, les 4 lignes du cadre imprime trouvees par l'app, le ratio de chaque axe et la note PSA que ce
 // centrage permet. Les lignes se deplacent au doigt (carte sans bordure nette, ou pour verifier) ; l'ajustement est garde.
-// 2 nov 2026 : les normes officielles PSA (Card Grading Standards) : devant 10 = 55/45 a 60/40, 9 = 65/35, 8 = 70/30, 7 = 75/25,
+// 9 nov 2026 (psacard.com) : devant 10 = 55/45, 9 = 60/40, 8 = 65/35, 7 = 70/30,
 // 6 = 80/20, 5-4 = 85/15, 3-1 = 90/10 ; dos 10 = 75/25, 9 a 1 = 90/10 (voir baremePSA)
-const TOL_DEVANT = [[60, 10], [65, 9], [70, 8], [75, 7], [80, 6], [85, 5], [90, 3]], TOL_DOS = [[75, 10], [90, 9]];
+const TOL_DEVANT = [[55, 10], [60, 9], [65, 8], [70, 7], [80, 6], [85, 5], [90, 3]], TOL_DOS = [[75, 10], [90, 9]];   // 9 nov 2026 : psacard.com (10 = 55/45, 9 = 60/40)
 function voirCentrage(e, cid, apres){
   const vues = e.centrage_vue || {}, faces = ['devant', 'dos'].filter(f => vues[f] && vues[f].img);
   if (!faces.length) { toast(tt('Pas de vue redressée : refais l’examen', 'No straightened view: redo the exam')); return; }
@@ -11162,7 +11203,7 @@ function voirCentrage(e, cid, apres){
       <div class="sous">${!auto ? tt('Pas de bordure nette trouvée : glisse les 4 lignes sur le cadre imprimé de la carte.', 'No clear border found: drag the 4 lines onto the card’s printed frame.')
         : v.manuel ? tt('Ajusté par toi. Les lignes doivent suivre le cadre imprimé.', 'Adjusted by you. The lines should follow the printed frame.')
         : tt('Les 4 lignes : le cadre imprimé trouvé par l’app. Glisse-les pour vérifier ou corriger.', 'The 4 lines: the printed frame found by the app. Drag them to check or fix.')}
-        ${tt(face === 'dos' ? 'Dos (normes PSA) : 10 jusqu’à 75/25, 9 et moins jusqu’à 90/10.' : 'Devant (normes PSA) : 10 jusqu’à 55/45 – 60/40, 9 jusqu’à 65/35, 8 jusqu’à 70/30, 7 jusqu’à 75/25.', face === 'dos' ? 'Back (PSA standards): 10 up to 75/25, 9 and below up to 90/10.' : 'Front (PSA standards): 10 up to 55/45 – 60/40, 9 up to 65/35, 8 up to 70/30, 7 up to 75/25.')} <a href="#" data-bareme-cg>${tt('Barème', 'Scale')}</a></div>
+        ${tt(face === 'dos' ? 'Dos (normes PSA) : 10 jusqu’à 75/25, 9 et moins jusqu’à 90/10.' : 'Devant (normes PSA) : 10 jusqu’à 55/45, 9 jusqu’à 60/40, 8 jusqu’à 65/35, 7 jusqu’à 70/30.', face === 'dos' ? 'Back (PSA standards): 10 up to 75/25, 9 and below up to 90/10.' : 'Front (PSA standards): 10 up to 55/45, 9 up to 60/40, 8 up to 65/35, 7 up to 70/30.')} <a href="#" data-bareme-cg>${tt('Barème', 'Scale')}</a></div>
       <div class="env-b"><button class="btn" id="cg-ok" hidden>${tt('Enregistrer', 'Save')}</button>${v.manuel ? `<button class="pilule" id="cg-auto">${tt('Remettre la mesure de l’app', 'Restore the app’s measure')}</button>` : ''}</div>`;
     o.querySelector('.vd-x').onclick = fermer;
     const bc_ = o.querySelector('[data-bareme-cg]'); if (bc_) bc_.onclick = (ev) => { ev.preventDefault(); baremePSA(); };
@@ -11179,9 +11220,9 @@ function voirCentrage(e, cid, apres){
       mm('b', Math.round(100 * m.b / tot(m.t, m.b)) + '%', {left: '50%', top: (100 - m.b * 50) + '%'});
       $('#cg-lab', o).innerHTML = lab();
       // 2 nov 2026 (Mathieu : les outils de centrage transparents, « The Center Tool ») : les zones de chaque note PSA. Pour
-      // la largeur totale des bordures d'un axe, la ligne du cadre doit tomber dans la zone verte pour un 10 (55/45 a 60/40),
-      // or pour un 9 (65/35), orange pour un 8 (70/30), rouge pour un 7 (75/25). Elles bougent avec les lignes.
-      const Z = face === 'dos' ? [[90, 9, 'z9'], [75, 10, 'z10']] : [[75, 7, 'z7'], [70, 8, 'z8'], [65, 9, 'z9'], [60, 10, 'z10']];
+      // la largeur totale des bordures d'un axe, la ligne du cadre doit tomber dans la zone verte pour un 10 (55/45 au plus),
+      // or pour un 9 (60/40), orange pour un 8 (65/35), rouge pour un 7 (70/30). Elles bougent avec les lignes.
+      const Z = face === 'dos' ? [[90, 9, 'z9'], [75, 10, 'z10']] : [[70, 7, 'z7'], [65, 8, 'z8'], [60, 9, 'z9'], [55, 10, 'z10']];
       const T = m.l + m.r, Ty = m.t + m.b;
       let h = '';
       for (const [lim, n, cl] of Z) {

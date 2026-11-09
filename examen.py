@@ -527,7 +527,10 @@ def centrage(carte):
 # (psacard.com, Card Grading Standards) : le grade le plus haut que permet le centrage. Devant : 10 = environ 55/45 a
 # 60/40 ; 9 = 60/40 a 65/35 ; 8 = 65/35 a 70/30 ; 7 = 70/30 a 75/25 ; 6 = 80/20 ; 5 et 4 = 85/15 ; 3 a 1 = 90/10.
 # Dos : 10 = 75/25 ; 9 a 1 = 90/10. (Avant : un cran trop severe, 10 jusqu'a 55/45 seulement.)
-_PSA_DEVANT = ((60, 10), (65, 9), (70, 8), (75, 7), (80, 6), (85, 5), (90, 3))
+# 9 nov 2026 (captures de psacard.com envoyees par Mathieu) : PSA 10 = « environ 55/45 au devant et 75/25 au dos » ; PSA 9 =
+# « environ 60/40 au devant et 90/10 au dos ». Le tableau d'avant (10 jusqu'a 60/40) etait un cran trop genereux : corrige.
+# Les crans plus bas suivent la meme grille PSA (8 = 65/35, 7 = 70/30, 6 = 80/20, 5 et 4 = 85/15, 3 = 90/10).
+_PSA_DEVANT = ((55, 10), (60, 9), (65, 8), (70, 7), (80, 6), (85, 5), (90, 3))
 _PSA_DOS = ((75, 10), (90, 9))
 
 
@@ -557,11 +560,15 @@ def preparer(photos_octets, quads=None, rasante=None, rasante2=None, gros_plans=
         im = ouvrir(b)
         images.append((f"Photo {j} : le {face} (photo entiere).", jpeg(im)))
         q = quads[j] if j < len(quads) and quads[j] else None
+        transp = False
         if not q:                                           # 3 nov 2026 : pas de contour du telephone -> l'app trouve la carte
             try:
                 import mesures
                 q0 = mesures.trouver_carte(im)
-                q = affiner_quad(im, q0, 0.03) if q0 else None
+                # 9 nov 2026 : une carte transparente (acrylique) : son vrai bord est plus loin que l'image imprimee
+                qt = mesures.bord_transparent(im, q0) if q0 else None
+                transp = bool(qt)
+                q = affiner_quad(im, qt or q0, 0.02 if qt else 0.03) if q0 else None
             except Exception as e:
                 print("Examen (carte trouvee) : " + repr(e), flush=True)
                 q = None
@@ -575,7 +582,9 @@ def preparer(photos_octets, quads=None, rasante=None, rasante2=None, gros_plans=
         z = redresser(im, q, 0.03, COTE_ZOOM) if q else None   # pleine resolution, un peu de fond : l'arete des coins et des bords
         cartes.append(c)
         if z is not None:
-            images.append((f"Zooms des 4 coins du {face} (pleine resolution, carte redressee ; le fond autour montre l'arete).",
+            images.append((f"Zooms des 4 coins du {face} (pleine resolution, carte redressee ; le fond autour montre l'arete)."
+                           + (" CARTE TRANSPARENTE (acrylique) : le filet clair le long de l'arete est le bord de l'acrylique, PAS du "
+                              "blanchiment ; juge les coins sur leur forme (pointe nette, pas d'eclat ni de fissure)." if transp else ""),
                            jpeg(mosaique_coins(z, face), 1290, 90)))
             images.append((f"Zooms des bords haut et bas du {face}, chacun en deux moities (le fond autour montre l'arete).",
                            jpeg(mosaique_bords(z, face, ("haut", "bas")), 1568, 90)))
@@ -588,7 +597,7 @@ def preparer(photos_octets, quads=None, rasante=None, rasante2=None, gros_plans=
             # 3 nov 2026 (Mathieu : « on doit etre meilleur que tout ce qui existe ») : les mesures de l'app (mesures.py) : le
             # centrage par paires d'elements imprimes en miroir complete la symetrie ; le blanchiment des coins et des bords
             # en mm ; la qualite de la photo (resolution native, nettete, reflets)
-            mz = _mesurer(im, q, c, z)
+            mz = _mesurer(im, q, c, z, transp)
             if mz:
                 mes[face] = mz
                 cp = mz.get("centrage") or {}
@@ -661,8 +670,10 @@ def preparer(photos_octets, quads=None, rasante=None, rasante2=None, gros_plans=
             "gros_plans": gp_info, "quads": utilises}
 
 
-def _mesurer(im, q, c, z):
-    """Les mesures de mesures.py pour une face (jamais d'exception : une mesure ratee n'empeche pas l'examen)."""
+def _mesurer(im, q, c, z, transparent=False):
+    """Les mesures de mesures.py pour une face (jamais d'exception : une mesure ratee n'empeche pas l'examen).
+    9 nov 2026 : une carte transparente (acrylique) : son arete est un filet clair par nature ; le blanchiment des coins et
+    des bords ne se mesure pas (sinon : un faux « bords uses »), on le dit."""
     try:
         import mesures
         if not mesures.disponible():
@@ -672,7 +683,13 @@ def _mesurer(im, q, c, z):
         if px:
             cotes = [((px[i][0] - px[(i + 1) % 4][0]) ** 2 + (px[i][1] - px[(i + 1) % 4][1]) ** 2) ** 0.5 for i in range(4)]
             natif = min((cotes[0] + cotes[2]) / 2, (cotes[1] + cotes[3]) / 2) / mesures.MM_COURT
-        return {"centrage": mesures.centrage(c), "usure": mesures.usure(z, 0.03) if z is not None else None,
+        if transparent:
+            nm = {"mesurable": False, "raison": "carte transparente"}
+            us = {"transparent": True, "coins": {k: dict(nm) for k in ("haut-gauche", "haut-droit", "bas-droit", "bas-gauche")},
+                  "bords": {k: dict(nm) for k in ("haut", "bas", "gauche", "droit")}}
+        else:
+            us = mesures.usure(z, 0.03) if z is not None else None
+        return {"centrage": mesures.centrage(c), "usure": us, "transparent": transparent,
                 "silhouette": mesures.silhouette(z, 0.03) if z is not None else None, "qualite": mesures.qualite(c, natif)}
     except Exception as e:
         print("Examen (mesures) : " + repr(e), flush=True)

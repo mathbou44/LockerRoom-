@@ -28,7 +28,7 @@ def main():
     assert r["zooms"] and len(r["images"]) == 5          # photo, coins, bords haut-bas, bords gauche-droite
     c = r["centrage"]["devant"]
     assert c["gd"] in ("59/41", "60/40", "61/39") and c["hb"] in ("50/50", "51/49", "52/48"), c
-    assert r["note_centrage"] in (9, 10)          # normes PSA : 10 jusqu'a 60/40, 9 jusqu'a 65/35
+    assert r["note_centrage"] == 9                # normes PSA (psacard.com) : 10 jusqu'a 55/45, 9 jusqu'a 60/40
     b2, q2 = carte_test(50, 50, 52, 48)
     assert examen.preparer([b2], [q2])["note_centrage"] == 10
     # coherence : un coin blanchi plafonne les coins ; la globale ne depasse pas la pire + 0,5 ; pas de 9,5 PSA ; jamais 10 avec un defaut

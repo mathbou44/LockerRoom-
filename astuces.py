@@ -466,15 +466,15 @@ def marche_prime(api=None, langue="fr"):
 def centrage_psa(api=None, langue="fr"):
     t = T(langue)
     return {"id": "centrage", "niveau": "avance", "genre": "vendre",
-            "titre": t("PSA 10 : 60/40 au plus devant, 75/25 au dos", "PSA 10: 60/40 at most on front, 75/25 on back"),
-            "chiffre": "60/40",
-            "texte": t("Les normes de PSA demandent, pour un 10, un centrage d’environ 55/45 à 60/40 sur le devant et 75/25 au dos ; "
-                       "pour un 9, environ 60/40 à 65/35 devant et 90/10 au dos. Une carte parfaite mais décentrée à 65/35 ne peut pas avoir 10.",
-                       "PSA’s standards ask, for a 10, about 55/45 to 60/40 centering on the front and 75/25 on the back; for a 9, about "
-                       "60/40 to 65/35 front and 90/10 back. A flawless card centered 65/35 can’t get a 10."),
-            "truc": t("Avant d’envoyer : mesure les bordures gauche/droite et haut/bas (une règle suffit). Au-delà de 60/40 devant, "
+            "titre": t("PSA 10 : 55/45 au plus devant, 75/25 au dos", "PSA 10: 55/45 at most on front, 75/25 on back"),
+            "chiffre": "55/45",
+            "texte": t("Les normes de PSA (psacard.com) demandent, pour un 10, un centrage d’environ 55/45 sur le devant et 75/25 au dos ; "
+                       "pour un 9, environ 60/40 devant et 90/10 au dos. Une carte parfaite mais décentrée à 58/42 ne peut pas avoir 10.",
+                       "PSA’s standards (psacard.com) ask, for a 10, about 55/45 centering on the front and 75/25 on the back; for a 9, about "
+                       "60/40 front and 90/10 back. A flawless card centered 58/42 can’t get a 10."),
+            "truc": t("Avant d’envoyer : mesure les bordures gauche/droite et haut/bas (une règle suffit). Au-delà de 55/45 devant, "
                       "compte sur un 9 au mieux et refais le calcul de rentabilité avec le prix d’un 9.",
-                      "Before submitting: measure left/right and top/bottom borders (a ruler is enough). Past 60/40 on the front, "
+                      "Before submitting: measure left/right and top/bottom borders (a ruler is enough). Past 55/45 on the front, "
                       "expect a 9 at best and redo the math with a 9’s price."),
             "source": "PSA, Card Grading Standards", "url": "https://www.psacard.com/resources/cardgradingstandards",
             "lien": "#valeur", "calcule": False}
