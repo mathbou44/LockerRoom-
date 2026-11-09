@@ -805,4 +805,51 @@ def caler_point(im, quad, zone, x, y):
         nx, ny = (cx, cy + dec) if horiz else (cx + dec, cy)
     if ((nx - cx) ** 2 + (ny - cy) ** 2) ** 0.5 > 1.2 * r:
         return None
+    if not (dv[0] and dv[1]):
+        try:
+            nx, ny = _glisser_le_long(im, q, zone, nx, ny, larg)
+        except Exception as e:
+            print("Defaut (le long du bord) : " + repr(e), flush=True)
     return round(nx / W * 1000, 1), round(ny / H * 1000, 1)
+
+
+# 9 nov 2026 (Mathieu, la Willander, « bord bas du dos : le cercle sur la carte ou il n'y a rien ») : l'IA dit « vers le bout
+# droit » mais son point est au milieu. Le long de l'arete (au plus 30 % de sa longueur de chaque cote), la place ou la tranche
+# est la plus blanche (des pixels nettement plus clairs que la bordure) ; le point y glisse seulement si ce blanc ressort
+# clairement (2 fois la mediane), sinon il reste ou l'IA l'a mis.
+_ARETES = {"bord haut": (0, 1), "bord bas": (3, 2), "bord gauche": (0, 3), "bord droit": (1, 2)}
+
+
+def _glisser_le_long(im, q, zone, nx, ny, larg):
+    import numpy as np
+    i0, i1 = _ARETES[zone]
+    (ax, ay), (bx, by) = q[i0], q[i1]
+    lg = ((bx - ax) ** 2 + (by - ay) ** 2) ** 0.5
+    if lg < 50:
+        return nx, ny
+    ux, uy = (bx - ax) / lg, (by - ay) / lg                # le long de l'arete
+    dx_, dy_ = _DIRS[zone]                                  # vers l'exterieur
+    g = np.asarray(im.convert("L"), dtype=float)
+    H, W = g.shape
+    t0 = (nx - ax) * ux + (ny - ay) * uy
+    pas = max(1.0, lg / 600)
+    ts = np.arange(max(lg * 0.08, t0 - lg * 0.3), min(lg * 0.92, t0 + lg * 0.3), pas)   # les coins sont a eux
+    if ts.size < 30:
+        return nx, ny
+    prof = np.arange(-larg * 0.012, larg * 0.004, max(1.0, larg / 900))   # un peu dedans -> juste dehors
+    px = nx + (ts - t0)[:, None] * ux + prof[None, :] * dx_
+    py = ny + (ts - t0)[:, None] * uy + prof[None, :] * dy_
+    ok = (px >= 0) & (px < W - 1) & (py >= 0) & (py < H - 1)
+    v = np.where(ok, g[np.clip(py, 0, H - 1).astype(int), np.clip(px, 0, W - 1).astype(int)], np.nan)
+    # par position : la tranche (le plus clair des pixels pres de l'arete) moins la bordure juste a l'interieur
+    ni = max(1, int(prof.size * 0.5))
+    with np.errstate(all="ignore"):
+        blanc = np.nan_to_num(np.nanmax(v[:, ni:], axis=1) - np.nanmedian(v[:, :ni], axis=1)).clip(0)
+    k = max(3, int(round(lg * 0.025 / pas)))
+    sc = np.convolve(blanc, np.ones(k) / k, mode="same")
+    j = int(np.argmax(sc))
+    med = float(np.median(sc))
+    if sc[j] < max(12.0, 2 * med) or abs(ts[j] - t0) < lg * 0.02:
+        return nx, ny
+    d_ = ts[j] - t0
+    return float(nx + d_ * ux), float(ny + d_ * uy)

@@ -35,4 +35,17 @@ for dec in (-12, 12):                                   # contour 1,2 % trop deh
 res = {"defauts": [{"zone": "coin bas-droit", "photo": 0, "x": vrai[2][0] - 20, "y": vrai[2][1] - 15}, {"zone": "surface", "photo": 0, "x": 500, "y": 500}]}
 vision.caler_defauts(res, [im], [vrai])
 assert res["defauts"][0]["cale"] is True and not res["defauts"][1].get("cale"), res
+# 9 nov 2026 (bord bas du dos de la Willander) : l'IA met le point au milieu, le blanc est vers le bout droit : le point y glisse
+im2 = Image.new("RGB", (W, H), (14, 14, 16))
+d2 = ImageDraw.Draw(im2)
+d2.rectangle([x0, y0, x1, y1], fill=(150, 152, 156))
+for k in range(40):                                     # des points blancs sur la tranche du bas, vers la droite
+    xx = 1050 + k * 6
+    d2.rectangle([xx, y1 - 3, xx + 3, y1], fill=(250, 250, 250))
+r2 = examen.caler_point(im2, vrai, "bord bas", 500, vrai[2][1] - 8)
+assert r2 and 1040 <= r2[0] / 1000 * W <= 1310 and abs(r2[1] / 1000 * H - y1) < 14, r2
+im3 = Image.new("RGB", (W, H), (14, 14, 16))
+ImageDraw.Draw(im3).rectangle([x0, y0, x1, y1], fill=(150, 152, 156))
+r3 = examen.caler_point(im3, vrai, "bord bas", 500, vrai[2][1] - 8)  # rien de blanc : le point reste ou l'IA l'a mis
+assert r3 and abs(r3[0] - 500) < 1, r3
 print("OK calage")

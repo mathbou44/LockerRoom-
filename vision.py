@@ -1304,15 +1304,16 @@ def _appliquer_verif(f, v):
     return rejetes, flous
 
 
-def caler_defauts(res, images, quads):
+def caler_defauts(res, images, quads, refaire=False):
     """9 nov 2026 (Mathieu : « aucun des deux cercles n'est vrai ») : chaque defaut de coin ou de bord, son point cale sur la
     vraie arete de la photo pleine resolution (examen.caler_point) ; le zoom de l'app tombe dessus (d["cale"])."""
     import examen
     for d in res.get("defauts") or []:
         z = str(d.get("zone") or "")
-        if d.get("cale") is True or not (z.startswith("coin ") or z.startswith("bord ")):
+        if (d.get("cale") is True and not refaire) or not (z.startswith("coin ") or z.startswith("bord ")):
             continue
         ph = 1 if d.get("photo") == 1 else 0
+        d["cale_v"] = 3                                    # une seule tentative par version du calage
         if ph >= len(images or []) or images[ph] is None:
             continue
         q = quads[ph] if quads and ph < len(quads) and quads[ph] else None

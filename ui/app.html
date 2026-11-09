@@ -10363,7 +10363,7 @@ function diapoEtat(e, depart, apres, relancer){
   const schema = (face) => { const {gd, hb, sx, sy, nt} = faceC(face), W = 100, H = 140, bx = 32, by = 40;
     const mesure = !!(gd || hb), nom = face === 'devant' ? tt('Devant', 'Front') : tt('Dos', 'Back');
     if (!mesure) return `<div class="dp-cent"><svg viewBox="-4 -4 ${W + 8} ${H + 8}" aria-hidden="true"><rect class="cad" x="0" y="0" width="${W}" height="${H}" rx="5"/></svg>
-      <small>${nom}</small><b>—</b><small>${tt('Image jusqu’au bord : rien à mesurer', 'Full-bleed image: nothing to measure')}</small></div>`;
+      <small>${nom}</small><b>—</b><small>${tt('Pas mesuré', 'Not measured')}</small></div>`;
     // la part de la bordure de gauche (ou du haut) : 0,5 = centre ; le cote vient des bordures, l'ampleur du ratio
     const fx = rat_(gd) == null ? 0.5 : (sx >= 0 ? rat_(gd) : 1 - rat_(gd)), fy = rat_(hb) == null ? 0.5 : (sy >= 0 ? rat_(hb) : 1 - rat_(hb));
     const r = [gd, hb].filter(Boolean).join(' · ');
@@ -10371,7 +10371,9 @@ function diapoEtat(e, depart, apres, relancer){
       <rect class="imp ${cl(nt)}" x="${(bx * fx).toFixed(1)}" y="${(by * fy).toFixed(1)}" width="${W - bx}" height="${H - by}" rx="3"/></svg>
       <small>${nom}</small><b>${esc(r)}</b>
       <small>${nt + '/10' + (nt < 10 ? ' · ' + tt('10 jusqu’à ', '10 up to ') + (face === 'devant' ? '55/45' : '75/25') : '')}</small></div>`; };
-  const aCent = cDev.length || e.centrage_dos;
+  // 9 nov 2026 (Mathieu : « je n'ai plus aucune information sur le centering a la fin ») : la diapo du centrage est toujours
+  // la ; sans mesure sure (repere au-dela de 80/20 ecarte), elle le dit et ouvre la grille pour placer les lignes soi-meme
+  const aCent = cDev.length || e.centrage_dos, vueC = Object.keys(e.centrage_vue || {}).length > 0;
   const phraseC = (face) => { const {gd, hb, sx, sy} = faceC(face); if (!gd && !hb) return '';
     const nom = face === 'devant' ? tt('Devant', 'Front') : tt('Dos', 'Back'), g = rat_(gd), h = rat_(hb);
     const ok = (g == null || g <= 0.55) && (h == null || h <= 0.55);
@@ -10380,10 +10382,11 @@ function diapoEtat(e, depart, apres, relancer){
     if (g != null && g > 0.55) bouts.push(sx > 0 ? tt('vers la droite', 'to the right') : sx < 0 ? tt('vers la gauche', 'to the left') : tt('de côté', 'sideways'));
     if (h != null && h > 0.55) bouts.push(sy > 0 ? tt('vers le bas', 'down') : sy < 0 ? tt('vers le haut', 'up') : tt('en hauteur', 'vertically'));
     return `${nom} : ${tt('le dessin est décalé ', 'the design is shifted ')}${bouts.join(tt(' et ', ' and '))}.`; };
-  const dc = aCent ? `<div class="dp-d"><span class="dp-sur">${tt('Centrage', 'Centering')}</span>
+  const dc = aCent || vueC ? `<div class="dp-d"><span class="dp-sur">${tt('Centrage', 'Centering')}</span>
     <div class="dp-cents">${schema('devant')}${refs.length > 1 ? schema('dos') : ''}</div>
-    <p class="dp-ligne">${[phraseC('devant'), refs.length > 1 ? phraseC('dos') : ''].filter(Boolean).join(' ')} ${tt('Le cadre vert est le dessin imprimé ; le gris, le bord de la carte.', 'The green frame is the printed design; the grey one, the card’s edge.')}</p>
-    ${Object.keys(e.centrage_vue || {}).length ? `<button class="pilule" data-dpcent>${tt('Voir sur ma photo', 'See it on my photo')}</button>` : ''}</div>` : '';
+    <p class="dp-ligne">${aCent ? [phraseC('devant'), refs.length > 1 ? phraseC('dos') : ''].filter(Boolean).join(' ') + ' ' + tt('Le cadre vert est le dessin imprimé ; le gris, le bord de la carte.', 'The green frame is the printed design; the grey one, the card’s edge.')
+      : tt('L’app n’a pas trouvé de repère sûr sur ces photos : le centrage ne compte pas dans la note. Place les 4 lignes sur le cadre imprimé pour le mesurer.', 'The app found no reliable landmark on these photos: centering isn’t counted in the grade. Place the 4 lines on the printed frame to measure it.')}</p>
+    ${vueC ? `<button class="pilule" data-dpcent>${aCent ? tt('Voir sur ma photo', 'See it on my photo') : tt('Placer les lignes', 'Place the lines')}</button>` : ''}</div>` : '';
   const rep = (e.a_reprendre || []).slice(0, 4);
   const dr = rep.length ? `<div class="dp-d"><span class="dp-sur">${tt('Pour une note plus sûre', 'For a surer grade')}</span>
     <h3 class="dp-titre">${tt('Reprends ces photos', 'Retake these photos')}</h3><ul class="dp-liste">${rep.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
@@ -10585,7 +10588,7 @@ function voirDefauts(e, k, apres, relancer){
       const src = (ax) => v['source_' + ax] === 'ia' ? tt('repère lu par l’IA', 'reference read by the AI') : v['source_' + ax] === 'paires' ? tt('éléments imprimés en miroir', 'mirrored printed elements') : v.manuel ? tt('ajusté à la main', 'adjusted by hand') : tt('cadre imprimé mesuré', 'measured printed frame');
       const ratio = (a, b) => { const g = Math.round(100 * Math.max(a, b) / ((a + b) || 1)); return g + '/' + (100 - g); };
       return `<div class="vd-gab"><div class="vd-gab-t"><b>${face === 'dos' ? tt('Dos', 'Back') : tt('Devant', 'Front')}</b>
-          <span>${aX ? `${tt('G/D', 'L/R')} <b>${ratio(v.l, v.r)}</b>` : v.verifier_gd ? `${tt('G/D', 'L/R')} <b>${esc(v.verifier_gd)}</b> ${tt('à vérifier', 'to check')}` : tt('G/D : pas de repère', 'L/R: no reference')} · ${aY ? `${tt('H/B', 'T/B')} <b>${ratio(v.t, v.b)}</b>` : v.verifier_hb ? `${tt('H/B', 'T/B')} <b>${esc(v.verifier_hb)}</b> ${tt('à vérifier', 'to check')}` : tt('H/B : pas de repère', 'T/B: no reference')}</span></div>
+          <span>${aX ? `${tt('G/D', 'L/R')} <b>${ratio(v.l, v.r)}</b>` : tt('G/D : pas de repère sûr', 'L/R: no reliable reference')} · ${aY ? `${tt('H/B', 'T/B')} <b>${ratio(v.t, v.b)}</b>` : tt('H/B : pas de repère sûr', 'T/B: no reliable reference')}</span></div>
         <div class="vd-gab-c" style="aspect-ratio:${(v.ratio || 0.714).toFixed(4)}"><img src="${esc(v.img)}" alt="">
           ${aX ? `<i class="gl v" style="left:${pc(v.l)}"></i><i class="gl v" style="left:${pc(1 - v.r)}"></i>
             <span class="gm h" style="left:0;width:${pc(v.l)};top:50%"><em>${mm(v.l, MW)}</em></span><span class="gm h" style="right:0;width:${pc(v.r)};top:50%"><em>${mm(v.r, MW)}</em></span>` : ''}
@@ -10593,7 +10596,7 @@ function voirDefauts(e, k, apres, relancer){
             <span class="gm vt" style="top:0;height:${pc(v.t)};left:50%"><em>${mm(v.t, MH)}</em></span><span class="gm vt" style="bottom:0;height:${pc(v.b)};left:50%"><em>${mm(v.b, MH)}</em></span>` : ''}
         </div>
         <small>${[aX ? tt('G/D : ', 'L/R: ') + src('gd') + (v.repere_gd ? ' (' + esc(v.repere_gd) + ')' : '') : '', aY ? tt('H/B : ', 'T/B: ') + src('hb') + (v.repere_hb ? ' (' + esc(v.repere_hb) + ')' : '') : '',
-          (v.verifier_gd || v.verifier_hb) ? tt('« à vérifier » : l’écart vient d’un élément du dessin (logo, titre), peut-être imprimé ainsi ; pas compté dans la note', '“to check”: the gap comes from a design element (logo, title), maybe printed that way; not counted in the grade') : '',
+          (v.verifier_gd || v.verifier_hb) ? tt('Pas de repère sûr : pas compté dans la note. Place les lignes dans la grille pour le mesurer.', 'No reliable reference: not counted in the grade. Place the lines in the grid to measure it.') : '',
           tt('largeurs en mm (carte 63,5 × 88,9 mm) ; PSA juge le pire point', 'widths in mm (card 63.5 × 88.9 mm); PSA judges the worst point')].filter(Boolean).join(' · ')}</small></div>`;
     }).join('');
     // 3 nov 2026 : les gros plans des coins, chacun avec ce que l'analyse y a vu (l'etat du coin, sur le bareme PSA)
@@ -10613,7 +10616,8 @@ function voirDefauts(e, k, apres, relancer){
       const r_ = (x) => { const m = /^(\d{2})\/(\d{2})$/.exec(String(x || '')); return m ? Math.max(+m[1], +m[2]) : null; };
       const vue = e.centrage_vue || {};
       const face = (nom, gd, hb, v) => { const ver = (v || {}).verifier_gd || (v || {}).verifier_hb;
-        if (!gd && !hb) return ver ? `${nom} : ${esc(ver)} ${tt('à vérifier', 'to check')}` : `${nom} : ${tt('rien à mesurer', 'nothing to measure')}`;
+        // 9 nov 2026 : un repere au-dela de 80/20 n'est jamais montre comme un chiffre
+        if (!gd && !hb) return `${nom} : ${ver ? tt('pas de repère sûr, place les lignes', 'no reliable landmark, place the lines') : tt('pas mesuré', 'not measured')}`;
         const g = Math.max(r_(gd) || 0, r_(hb) || 0); return `${nom} : <b>${esc([gd, hb].filter(Boolean).join(' · '))}</b>${g <= 55 ? ' ' + tt('(bien centré)', '(well centered)') : ''}`; };
       return [face(tt('Devant', 'Front'), e.centrage_gd, e.centrage_hb, vue.devant), refs.length > 1 ? face(tt('Dos', 'Back'), e.centrage_dos, null, vue.dos) : ''].filter(Boolean).join(' · ');
     };

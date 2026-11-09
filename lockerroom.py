@@ -3142,7 +3142,8 @@ class Api:
         import photos_cartes
         import vision
         ds = e.get("defauts") or []
-        a_caler = any(str(d.get("zone") or "").startswith(("coin ", "bord ")) and d.get("cale") is not True and d.get("cale_v") != 2 for d in ds)
+        # v3 (9 nov, 15 h) : aussi le long du bord, vers la tranche blanche ; refait meme si une version d'avant l'a cale
+        a_caler = any(str(d.get("zone") or "").startswith(("coin ", "bord ")) and d.get("cale_v") != 3 for d in ds)
         if not e.get("contre_verif") or (not a_caler and e.get("centrage_assaini")):
             return e
         refs = list(e.get("photos") or [])
@@ -3196,12 +3197,12 @@ class Api:
                     a_caler = True
             e["bandes_v2"] = True
         if a_caler:
-            vision.caler_defauts(e, ims, quads)
+            vision.caler_defauts(e, ims, quads, refaire=True)
             if any(quads) and not any(e.get("quads") or []):
                 e["quads"] = quads
             for d in e["defauts"]:                           # meme sans calage possible : une seule tentative (v2)
                 if str(d.get("zone") or "").startswith(("coin ", "bord ")):
-                    d["cale_v"] = 2
+                    d["cale_v"] = 3
         c = self._db()
         try:
             c.execute("UPDATE cartes SET etat_json=? WHERE id=?", (json.dumps(e, ensure_ascii=False), cid))
