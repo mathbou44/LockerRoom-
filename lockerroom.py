@@ -1059,7 +1059,8 @@ class Api:
         self.reglages_sauver({"ramassage": [v for v in l if v]})
         return self.deals_vendeurs_liste()
 
-    PROFIL_COLL = ("recrues", "veterans", "legendes", "hits", "gradees")
+    # 10 nov 2026 (Mathieu : « traquer vraiment large : toutes les rookies, autos, patchs, auto-patchs, numerotees, sans joueur »)
+    PROFIL_COLL = ("recrues", "autos", "patchs", "auto_patch", "numerotees", "gradees", "veterans", "legendes", "hits")
 
     def deals_profil_lire(self):
         import deals as _d
@@ -5820,8 +5821,10 @@ class Api:
         taches += [("vendeur", v, lambda v=v: un_vendeur(v)) for v in vendeurs]
         taches += [("joueur", f, lambda f=f: un_joueur(f)) for f in fav]
         taches += [("chasse", ch, lambda ch=ch: self._radar_une_chasse(ch, prof)) for ch in chasses_l]
+        types_l = [k for k in (prof.get("collectionne") or []) if k in self.RADAR_TYPES][:4]
+        taches += [("type", k, lambda k=k: self._radar_type(k, prof)) for k in types_l]
         decouvrir_noms = []
-        if not al and not fav and not vendeurs:
+        if not al and not fav and not vendeurs and not types_l:
             try:
                 decouvrir_noms = [x["nom"] for x in self._radar_top(4)]
             except Exception as e:
@@ -5865,9 +5868,10 @@ class Api:
         vend = [r for v in vendeurs for r in [resultats.get(("vendeur", v))] if isinstance(r, dict)]
         pour_toi = [r if isinstance(r, dict) else {"joueur": f, "annonces": [], "erreur": "indisponible"} for f in fav for r in [resultats.get(("joueur", f))]]
         chasses = [r for ch in chasses_l for r in [resultats.get(("chasse", id(ch)))] if isinstance(r, dict)]
+        types = [r for k in types_l for r in [resultats.get(("type", k))] if isinstance(r, dict)]
         decouvrir = [r for n in decouvrir_noms for r in [resultats.get(("decouvrir", n))] if isinstance(r, dict) and r["annonces"]]
         chauds = [r for n in chauds_noms for r in [resultats.get(("chaud", n))] if isinstance(r, dict) and r["annonces"]]
-        for x in out + [y for g in pour_toi + decouvrir + chauds + chasses for y in g.get("annonces") or []] \
+        for x in out + [y for g in pour_toi + decouvrir + chauds + chasses + types for y in g.get("annonces") or []] \
                 + [y for v in vend for y in v.get("annonces") or []]:
             try:
                 self._frais_reels(x, pays)
@@ -5886,7 +5890,7 @@ class Api:
             except Exception:
                 pass
         return {"ok": True, "deals": out[:120], "cibles": groupes, "vendeurs": vend, "pour_toi": pour_toi,
-                "decouvrir": decouvrir, "chauds": chauds, "chasses": chasses, "alerte_feu": feu, "pays": pays,
+                "decouvrir": decouvrir, "chauds": chauds, "chasses": chasses, "types": types, "alerte_feu": feu, "pays": pays,
                 "profil": {k: prof.get(k) for k in ("collectionne", "favoris", "prix_min", "prix_max")},
                 "profil_vide": not (prof.get("favoris") or prof.get("collectionne") or prof.get("prix_max")),
                 "partiel": bool(erreurs), "duree_s": round(time.time() - t0, 1)}
@@ -5993,7 +5997,52 @@ class Api:
 
     # ce que chaque sorte de collection ajoute a la recherche eBay (OU : une seule recherche par joueur)
     RADAR_MOTS = {"recrues": ("young guns", "rookie", "rc"), "hits": ("auto", "autograph", "patch", "relic"),
-                  "gradees": ("psa", "bgs", "sgc", "graded"), "veterans": (), "legendes": ()}
+                  "autos": ("auto", "autograph"), "patchs": ("patch", "relic", "jersey"), "auto_patch": ("auto patch", "rpa"),
+                  "numerotees": ("numbered", "/99", "/25", "/10"), "gradees": ("psa", "bgs", "sgc", "graded"), "veterans": (), "legendes": ()}
+    # le Radar « large » : toutes les cartes d'une sorte, sans joueur (une case par sorte) ; la recherche eBay, puis le titre
+    # verifie (une « auto » doit dire auto, une numerotee porter 12/99...), sans lots, reimpressions ni customs
+    RADAR_TYPES = {"recrues": "(young guns, rookie, rc)", "autos": "(auto, autograph, autographed)", "patchs": "(patch, relic, jersey)",
+                   "auto_patch": "auto (patch, rpa, relic)", "numerotees": "(/99, /75, /50, /49, /25, /10, /5, numbered)",
+                   "gradees": "(psa, bgs, sgc, cgc)"}
+    SPORT_ASPECT = {"hockey": "Sport:{Ice Hockey}", "basket": "Sport:{Basketball}", "baseball": "Sport:{Baseball}", "football": "Sport:{Football}"}
+
+    def _radar_type(self, k, prof, limite=24):
+        import cartes_match
+        q = self.RADAR_TYPES.get(k)
+        if not q:
+            return None
+        pmax = prof.get("prix_max") or 100
+        pmin = prof.get("prix_min")
+        asp = self.SPORT_ASPECT.get(self.reglages_lire().get("sport") or "hockey")
+        res = []
+        for ench in (False, True):
+            res += ebay_compte.rechercher(q, categorie=CATEGORIE_CARTES, limite=100 if ench else 200, fond=False, encheres=ench,
+                                          recentes=not ench, prix_max=pmax, prix_min=pmin, aspects=asp) or []
+
+        def bon(t):
+            d = cartes_match._decoder_memo(t)
+            if d.get("exclu"):
+                return False
+            return {"recrues": d.get("rc"), "autos": d.get("auto"), "patchs": d.get("patch"), "auto_patch": d.get("auto") and d.get("patch"),
+                    "numerotees": bool(d.get("serie")) or bool(cartes_match.numero_serie(t)), "gradees": bool(d.get("grade"))}.get(k, True)
+        maint = time.time()
+        vus, out = set(), []
+        for x in res:
+            iid = str(x.get("item_id") or "")
+            tot = round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2)
+            if not iid or iid in vus or not tot or tot > pmax * 1.0001 or (pmin and tot < pmin) or not bon(x.get("titre") or ""):
+                continue
+            if x.get("encan") and x.get("fin"):
+                try:
+                    if datetime.fromisoformat(str(x["fin"]).replace("Z", "+00:00")).timestamp() < maint:
+                        continue
+                except ValueError:
+                    pass
+            vus.add(iid)
+            out.append({"item_id": iid, "titre": x.get("titre"), "total": tot, "photo": x.get("photo"), "url": x.get("url"),
+                        "encan": bool(x.get("encan")), "fin": x.get("fin"), "mises": x.get("mises"), "lieu": x.get("lieu")})
+        out.sort(key=lambda x: (0, str(x.get("fin") or "")) if x["encan"] else (1, ""))
+        return {"type": k, "annonces": out[:limite], "n": len(out)}
     RADAR_MAX_JOUEURS = 10
 
     def _radar_requete(self, nom, coll):
@@ -6240,7 +6289,7 @@ class Api:
         l = r.get("deals") or []
         if not l:                     # 10 nov 2026 : sans prix cible, les annonces de SES joueurs (ou « a decouvrir »)
             vus = set()
-            for g in (r.get("pour_toi") or []) + (r.get("decouvrir") or []):
+            for g in (r.get("pour_toi") or []) + (r.get("types") or []) + (r.get("chauds") or []) + (r.get("decouvrir") or []):
                 for x in g.get("annonces") or []:
                     if x["item_id"] not in vus:
                         vus.add(x["item_id"])

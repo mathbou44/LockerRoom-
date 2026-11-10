@@ -4316,6 +4316,10 @@ function questionnaireProfil(ensuite, forcer){
 // 10 nov 2026 (Mathieu : « on devrait voir des cartes ; un petit questionnaire rapide a la creation du compte, apres le tour
 // de l'app, pour qu'il ait ses deals direct ; sinon c'est trop complique ») : 3 questions en pastilles (tes joueurs, ce que tu
 // collectionnes, ton budget) ; le Radar se remplit tout de suite avec les annonces de SES joueurs dans SON budget
+// 10 nov 2026 (Mathieu : « traquer vraiment large : toutes les rookies, autos, patchs, auto-patchs, numerotees ») : les sortes
+const SORTES_RADAR = () => [['recrues', tt('Recrues', 'Rookies')], ['autos', 'Autos'], ['patchs', tt('Patchs', 'Patches')], ['auto_patch', tt('Auto-patchs', 'Auto-patches')],
+  ['numerotees', tt('Numérotées', 'Numbered')], ['gradees', tt('Gradées', 'Graded')], ['veterans', tt('Vétérans', 'Veterans')], ['legendes', tt('Légendes', 'Legends')]];
+const NOM_SORTE = (k) => (Object.fromEntries(SORTES_RADAR())[k]) || (k === 'hits' ? tt('Autos et patchs', 'Autos & patches') : k);
 async function questionnaireRadar(o){
   o = o || {};
   if (S.radarQOuvert) return;
@@ -4326,7 +4330,7 @@ async function questionnaireRadar(o){
   const fav = [...((p && p.favoris) || [])], co = new Set((p && p.collectionne) || []);
   let budget = p && p.prix_max ? p.prix_max : null, i = 0;
   const sug = ((sg && sg.joueurs) || []).map(x => x.nom);
-  const C = [['recrues', tt('Recrues', 'Rookies')], ['hits', tt('Autos et patchs', 'Autos & patches')], ['gradees', tt('Gradées', 'Graded')], ['veterans', tt('Vétérans', 'Veterans')], ['legendes', tt('Légendes', 'Legends')]];
+  const C = SORTES_RADAR();
   const B = [[25, '25 $'], [50, '50 $'], [100, '100 $'], [250, '250 $'], [500, '500 $'], [0, tt('Pas de limite', 'No limit')]];
   const f = document.createElement('div'); f.className = 'tuto-fond'; document.body.appendChild(f);
   const N = 3;
@@ -4348,7 +4352,7 @@ async function questionnaireRadar(o){
     if (i === 0) {
       const tous = [...new Set([...fav, ...sug])];
       f.innerHTML = `<div class="tuto quest a">${pts()}<h3>${tt('Tes joueurs préférés ?', 'Your favorite players?')}</h3>
-        <p>${tt('On te montre leurs cartes en vente sur eBay. Une équipe marche aussi.', 'We show their cards for sale on eBay. A team works too.')}</p>
+        <p>${tt('On te montre leurs cartes en vente sur eBay. Une équipe marche aussi. Aucun ? Touche Suivant : on chassera large.', 'We show their cards for sale on eBay. A team works too. None? Tap Next: we’ll hunt wide.')}</p>
         <div class="chips rq-w" id="rq-j">${tous.map(n => `<button class="chip ${fav.includes(n) ? 'on' : ''}" data-j="${esc(n)}">${esc(n)}</button>`).join('')}</div>
         <form class="rq-aj" id="rq-f"><input class="champ" id="rq-q" placeholder="${esc(tt('Un autre joueur ou une équipe', 'Another player or team'))}" autocomplete="off" enterkeyhint="done"><button class="btn ghost" type="submit">${tt('Ajouter', 'Add')}</button></form>
         <div class="rq-n" id="rq-n"></div>${bas(false)}</div>`;
@@ -4367,7 +4371,7 @@ async function questionnaireRadar(o){
         brancher(); majN(); };
     } else if (i === 1) {
       f.innerHTML = `<div class="tuto quest a">${pts()}<h3>${tt('Tu collectionnes quoi ?', 'What do you collect?')}</h3>
-        <p>${tt('Choisis-en autant que tu veux, ou rien pour tout voir.', 'Pick as many as you like, or none to see everything.')}</p>
+        <p>${tt('Sans joueur choisi, on te montre TOUTES les cartes de ces sortes dans ton budget.', 'With no player picked, we show ALL cards of these kinds in your budget.')}</p>
         <div class="chips rq-w">${C.map(([k, t]) => `<button class="chip ${co.has(k) ? 'on' : ''}" data-c="${k}">${t}</button>`).join('')}</div>${bas(false)}</div>`;
       $$('[data-c]', f).forEach(b => b.onclick = () => { const k = b.dataset.c; co.has(k) ? co.delete(k) : co.add(k); b.classList.toggle('on', co.has(k)); vibrer(); });
     } else {
@@ -6637,7 +6641,7 @@ async function feuilleMesDeals(o){
   const p = await API.deals_profil_lire().catch(() => null); if (!p || !p.ok) return;
   const co = new Set(p.collectionne || []);
   const enDev = (v) => v == null || v === '' ? '' : Math.round(convertir(v));
-  const C = [['recrues', tt('Recrues', 'Rookies')], ['veterans', tt('Vétérans', 'Veterans')], ['legendes', tt('Légendes', 'Legends')], ['hits', 'Hits'], ['gradees', tt('Gradées', 'Graded')]];
+  const C = SORTES_RADAR();
   // 9 nov 2026 (Mathieu : « adapter les deals par preference des utilisateurs, au debut quand ils ouvrent l'app ») : la
   // 1re ouverture des Deals pose ces questions une fois (« Plus tard » possible ; toujours dans Reglages ensuite)
   ouvrirFeuille(`<h3>${o.accueil ? tt('Tes deals, à ta façon', 'Your deals, your way') : tt('Mes deals', 'My deals')}</h3>
@@ -13579,14 +13583,14 @@ async function vueMesDeals(z){
     ${pastillesIndice(g) ? `<div class="pastilles md-pj">${pastillesIndice(g)}</div>` : ''}
     <div class="d-car v-car">${g.annonces.slice(0, 16).map(x => tuileA(x, src)).join('')}</div></div>`;
   // ce que le Radar suit, en pastilles : un tap rouvre le questionnaire
-  const coll = {recrues: tt('Recrues', 'Rookies'), hits: tt('Autos et patchs', 'Autos & patches'), gradees: tt('Gradées', 'Graded'), veterans: tt('Vétérans', 'Veterans'), legendes: tt('Légendes', 'Legends')};
+  const coll = new Proxy({}, {get: (_, k) => NOM_SORTE(k)});
   const perso = r.profil_vide ? '' : `<div class="md-perso">${(P.favoris || []).slice(0, 6).map(n => tag(n)).join('')}${(P.favoris || []).length > 6 ? tag('+' + ((P.favoris || []).length - 6)) : ''}
     ${(P.collectionne || []).map(k => tag(coll[k] || k, 'or')).join('')}${P.prix_max ? tag('≤ ' + argentCourt(P.prix_max), 'vert') : ''}
     <button class="pilule" id="md-perso">${tt('Modifier', 'Edit')} ›</button>
     <button class="pilule md-feu ${r.alerte_feu ? 'on' : ''}" id="md-feu">${icN('cloche')}${r.alerte_feu ? tt('Alerte en feu', 'On-fire alert') : tt('M’alerter s’ils sont en feu', 'Alert me if on fire')}</button></div>`;
-  const vide = !C.length && !PT.length && !(r.vendeurs || []).length;
+  const vide = !C.length && !PT.length && !(r.vendeurs || []).length && !(r.types || []).length;
   // 10 nov 2026 : les encans peu disputes (0 ou 1 mise, fin dans moins de 6 h) : des faits, pas un prix
-  const vuPD = new Set(), PD = [...L, ...PT.flatMap(g => g.annonces), ...(r.chauds || []).flatMap(g => g.annonces), ...DEC.flatMap(g => g.annonces)]
+  const vuPD = new Set(), PD = [...L, ...PT.flatMap(g => g.annonces), ...(r.types || []).flatMap(g => g.annonces), ...(r.chauds || []).flatMap(g => g.annonces), ...DEC.flatMap(g => g.annonces)]
     .filter(x => { const ms = Date.parse(x.fin || '') - Date.now(); if (!x.encan || !(ms > 0 && ms < 6 * 3600e3) || (x.mises || 0) > 1 || vuPD.has(x.item_id)) return false; vuPD.add(x.item_id); return true; })
     .sort((a, b) => Date.parse(a.fin) - Date.parse(b.fin)).slice(0, 10);
   z.innerHTML = `<div class="md">
@@ -13600,6 +13604,8 @@ async function vueMesDeals(z){
       ${vis.length ? `<div class="grille-c">${vis.map(tuile).join('')}</div>` : `<div class="vide">${tt('Rien à ton prix pour l’instant. On regarde eBay chaque heure et on t’avertit dès qu’une annonce passe sous ton prix.', 'Nothing at your price yet. We check eBay every hour and tell you as soon as a listing drops under it.')}</div>`}
       <div class="md-gerer"><button class="lien-doux" id="md-gerer">${tt('Gérer mes prix cibles', 'Manage my target prices')} ›</button></div>` : ''}
     ${PT.map(g => caseJ(g, 'radar')).join('')}
+    ${(r.types || []).map(g => `<div class="md-vend"><div class="v-rang-t"><b>${icN('carte')}${tt('Toutes les', 'All')} ${esc(NOM_SORTE(g.type).toLowerCase())}</b><span class="sous">${g.annonces.length ? g.annonces.length + ' ' + tt('annonces', 'listings') : ''}${P.prix_max ? ' · ≤ ' + argentCourt(P.prix_max) : ' · ≤ 100 $'}</span></div>
+      ${g.annonces.length ? `<div class="d-car v-car">${g.annonces.slice(0, 16).map(x => tuileA(x, 'type_' + g.type)).join('')}</div>` : `<div class="sous">${tt('Rien dans ton budget en ce moment.', 'Nothing in your budget right now.')}</div>`}</div>`).join('')}
     ${(r.chasses || []).map(c => `<div class="md-vend"><div class="v-rang-t"><b>${icN('carte')}${tt('Il te manque', 'You’re missing')} · ${esc(c.sous)}</b><span class="sous">${c.manque != null ? `${c.manque} / ${c.total}` : ''}</span></div>
       <div class="md-dec">${esc(c.nom || '')}${c.cartes_trouvees ? ' · ' + c.cartes_trouvees + ' ' + tt('en vente dans ton budget', 'for sale in your budget') : ''} <button class="lien-doux" data-chasse-x="${esc(c.pid)}" data-chasse-s="${esc(c.sous)}">${tt('Arrêter', 'Stop')}</button></div>
       ${(c.annonces || []).length ? `<div class="d-car v-car">${c.annonces.slice(0, 16).map(x => tuileA(x, 'chasse')).join('')}</div>`

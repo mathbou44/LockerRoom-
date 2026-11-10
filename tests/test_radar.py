@@ -89,3 +89,26 @@ r = api.mes_deals()
 assert r["ok"] and r["partiel"], r
 assert {g["joueur"]: len(g["annonces"]) for g in r["pour_toi"]}["Macklin Celebrini"] == 0
 print("OK radar robuste")
+
+# 7. le Radar « large » : toutes les autos, toutes les numerotees... sans joueur choisi ; le titre doit le dire
+vus_k = []
+
+
+def rech_large(q, **k):
+    vus_k.append(k)
+    if k.get("encheres"):
+        return []
+    return [{"item_id": "a1", "titre": "2024-25 SP Authentic Future Watch Auto Ivan Demidov", "prix_cad": 60, "port_cad": 2, "url": "u"},
+            {"item_id": "a2", "titre": "2024-25 Upper Deck Series 1 Ivan Demidov base", "prix_cad": 5, "port_cad": 2, "url": "u"},          # pas une auto
+            {"item_id": "a3", "titre": "2024-25 Upper Deck Exclusives Ivan Demidov 12/100", "prix_cad": 30, "port_cad": 2, "url": "u"},
+            {"item_id": "a4", "titre": "Lot of 10 autos hockey", "prix_cad": 40, "port_cad": 2, "url": "u"}]
+
+
+ebay_compte.rechercher = rech_large
+api.deals_profil_regler({"favoris": [], "collectionne": ["autos", "numerotees"], "prix_max": 200})
+r = api.mes_deals()
+T = {g["type"]: [x["item_id"] for x in g["annonces"]] for g in r["types"]}
+assert T == {"autos": ["a1"], "numerotees": ["a3"]}, T
+assert not r["decouvrir"] and not r["profil_vide"]
+assert all(k.get("aspects") == "Sport:{Ice Hockey}" for k in vus_k), vus_k
+print("OK radar large")
