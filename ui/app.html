@@ -370,11 +370,41 @@ body.fetes[data-palette], body.fetes{--h1:#FF8A8A; --h2:#F1D58E; --h3:#6FD99A; -
 @keyframes ampoule{0%,100%{opacity:1; box-shadow:0 0 7px 1px var(--c)} 50%{opacity:.45; box-shadow:0 0 2px 0 var(--c)}}
 #lance .la-g{position:absolute; top:calc(var(--haut) + 6px); bottom:auto}
 .barre-mode{position:relative}
+.do-g{position:fixed; top:0; right:0; left:0; height:20px; z-index:30; pointer-events:none}
+.do-g .guirlande{top:2px; bottom:auto} body.sandbox .do-g{top:26px}
+.neige.ordi{height:100vh; z-index:0; -webkit-mask-image:none; mask-image:none}
+.neige.ordi i{animation-name:flocon-o; background:rgba(255,255,255,.42)}
+@keyframes flocon-o{0%{transform:translate(0,-10px); opacity:0} 8%{opacity:.75} 92%{opacity:.4} 100%{transform:translate(var(--x),100vh); opacity:0}}
+html.deco-o #vue{position:relative; z-index:1}
+/* 9 nov 2026 (Mathieu : « peut-etre meme un foyer live ? j'aime les decorations animees ») : un petit foyer au trait dans
+   le coin de l'accueil (ordi), des flammes qui dansent, des braises qui montent, une lueur chaude qui respire */
+.foyer{position:fixed; right:28px; bottom:40px; width:170px; height:150px; z-index:0; pointer-events:none; opacity:.95}
+.foyer svg{position:absolute; inset:0; width:100%; height:100%; overflow:visible}
+.foyer .fy-cadre{fill:none; stroke:rgba(255,255,255,.28); stroke-width:2; stroke-linejoin:round}
+.foyer .fy-pierre{fill:none; stroke:rgba(255,255,255,.14); stroke-width:1.4}
+.foyer .fy-buche{fill:#5a3a2a; stroke:#7a5038; stroke-width:1.5}
+.foyer .fy-lueur{position:absolute; left:50%; bottom:22px; width:150px; height:90px; margin-left:-75px; border-radius:50%;
+  background:radial-gradient(closest-side, rgba(255,150,60,.42), rgba(255,110,40,.12) 60%, transparent); filter:blur(6px); animation:fy-respire 3.2s ease-in-out infinite}
+.foyer .fl{position:absolute; bottom:34px; left:50%; border-radius:50% 50% 45% 45% / 62% 62% 38% 38%; transform-origin:50% 100%; mix-blend-mode:screen; filter:blur(.6px)}
+.foyer .fl.a{width:34px; height:58px; margin-left:-17px; background:radial-gradient(ellipse at 50% 85%, #FFF1B8, #FFB347 45%, rgba(255,90,40,.0) 72%); animation:fy-danse 1.1s ease-in-out infinite alternate}
+.foyer .fl.b{width:26px; height:44px; margin-left:-30px; background:radial-gradient(ellipse at 50% 85%, #FFE08A, #FF7A3D 50%, transparent 72%); animation:fy-danse 1.4s ease-in-out infinite alternate-reverse}
+.foyer .fl.c{width:24px; height:40px; margin-left:6px; background:radial-gradient(ellipse at 50% 85%, #FFE08A, #FF6F6F 50%, transparent 72%); animation:fy-danse 1.25s .2s ease-in-out infinite alternate}
+.foyer .fl.d{width:16px; height:26px; margin-left:-8px; bottom:36px; background:radial-gradient(ellipse at 50% 80%, #fff, #FFE6A0 60%, transparent 75%); animation:fy-danse .8s ease-in-out infinite alternate}
+.foyer .br{position:absolute; bottom:70px; left:50%; width:3px; height:3px; border-radius:50%; background:#FFC36B; box-shadow:0 0 6px 1px #FF9A3D; opacity:0; animation:fy-braise 2.8s linear infinite}
+@keyframes fy-danse{0%{transform:scale(1,1) skewX(0)} 33%{transform:scale(.92,1.08) skewX(3deg)} 66%{transform:scale(1.06,.94) skewX(-4deg)} 100%{transform:scale(.96,1.12) skewX(2deg)}}
+@keyframes fy-respire{0%,100%{opacity:.75; transform:scale(1)} 50%{opacity:1; transform:scale(1.08)}}
+@keyframes fy-braise{0%{transform:translate(0,0); opacity:0} 10%{opacity:1} 100%{transform:translate(var(--bx),-70px); opacity:0}}
+@media (max-width:1199px){ .foyer{display:none} }
+@media (prefers-reduced-motion:reduce){ .foyer .fl, .foyer .br, .foyer .fy-lueur{animation:none} }
+.sapin-rail{display:flex; justify-content:center; gap:6px; margin-top:auto; padding:10px 0 4px; pointer-events:none}
+.sapin-rail .deco-f svg{width:22px; height:22px}
+body:not(.fetes) .sapin-rail{display:none}
 .neige{position:fixed; left:0; right:0; top:0; height:340px; pointer-events:none; z-index:1; overflow:hidden; -webkit-mask-image:linear-gradient(#000 55%, transparent); mask-image:linear-gradient(#000 55%, transparent)}
 body.fetes .acc-salut-tel{margin-top:14px}
 .neige i{position:absolute; top:-10px; width:var(--s); height:var(--s); border-radius:50%; background:rgba(255,255,255,.55); filter:blur(.4px); animation:flocon var(--t) linear infinite; animation-delay:var(--d)}
 @keyframes flocon{0%{transform:translate(0,-10px); opacity:0} 10%{opacity:.8} 90%{opacity:.5} 100%{transform:translate(var(--x),340px); opacity:0}}
 @media (prefers-reduced-motion:reduce){ .guirlande i, .neige i{animation:none} .neige{display:none} }
+@media (max-width:899px){ #deco-ordi, .sapin-rail{display:none} }
 .acc-mot{grid-column:1/-1; display:flex; align-items:center; gap:12px; width:100%; margin:2px 0 4px; padding:12px 14px; border-radius:18px; border:1px solid var(--ligne);
   background:linear-gradient(120deg, color-mix(in srgb, var(--h3,#F2B3D6) 9%, var(--carte)), var(--carte) 55%, color-mix(in srgb, var(--h4,#F1D58E) 8%, var(--carte)));
   color:var(--texte); text-align:left; cursor:pointer; font:inherit; transition:opacity .18s ease; position:relative; z-index:2}
@@ -3969,7 +3999,45 @@ function htmlNeige(n){
   n = n || 16;
   return `<div class="neige" aria-hidden="true">${Array.from({length: n}, (_, i) => `<i style="left:${((i * 61.8) % 100).toFixed(1)}%;--t:${(9 + (i * 3.7) % 8).toFixed(1)}s;--d:${(-(i * 1.9) % 12).toFixed(1)}s;--s:${(3 + (i % 3)).toFixed(0)}px;--x:${((i % 5) - 2) * 9}px"></i>`).join('')}</div>`;
 }
+// 9 nov 2026 (Mathieu : « des guirlandes, des lumieres, un sapin dans la version web ; j'aime bcp la neige a l'arriere ») :
+// a l'ordi (la barre du haut n'y est pas), une guirlande le long du haut de l'ecran, la neige derriere TOUTES les pages
+// (elle remplit les grands fonds) et un petit sapin dans la barre de gauche ; rien sur le telephone (il a deja les siens)
+const versionOrdi = () => !document.documentElement.classList.contains('tel-large') && innerWidth >= 900 && !/LockerRoomiOS/.test(navigator.userAgent);
+function decorOrdi(){
+  let z = document.getElementById('deco-ordi');
+  if (!(fetesActives() && versionOrdi())) { if (z) z.remove(); document.documentElement.classList.remove('deco-o'); return; }
+  if (!z) {
+    z = document.createElement('div'); z.id = 'deco-ordi'; z.setAttribute('aria-hidden', 'true');
+    z.innerHTML = `<div class="do-g">${htmlGuirlande(Math.max(18, Math.round(innerWidth / 70)), 'ordi')}</div>${htmlNeige(42).replace('class="neige"', 'class="neige ordi"')}`;
+    document.body.prepend(z);
+    const n = document.querySelector('nav.onglets');
+    if (n && !n.querySelector('.sapin-rail')) n.insertAdjacentHTML('beforeend', `<span class="sapin-rail">${htmlDecoFetes('sapin')}${htmlDecoFetes('cadeau')}</span>`);
+  }
+  document.documentElement.classList.add('deco-o');
+  const n = document.querySelector('nav.onglets'), g = z.querySelector('.do-g');
+  if (g) g.style.left = (n ? Math.round(n.getBoundingClientRect().right) : 0) + 'px';
+  // le foyer : sur l'accueil seulement (les autres pages ont besoin de toute la place)
+  const acc = /^#?(accueil)?$/.test(location.hash || '');
+  let f = document.getElementById('foyer');
+  if (acc && !f) {
+    f = document.createElement('div'); f.id = 'foyer'; f.className = 'foyer'; f.setAttribute('aria-hidden', 'true');
+    f.innerHTML = `<div class="fy-lueur"></div><svg viewBox="0 0 170 150">
+        <path class="fy-cadre" d="M10 146V40h150v106M4 40h162M20 40V22h130v18"/>
+        <path class="fy-pierre" d="M10 60h18M142 60h18M10 82h18M142 82h18M10 104h18M142 104h18M10 126h18M142 126h18M28 40v106M142 40v106"/>
+        <path class="fy-cadre" d="M28 146V62q57-22 114 0v84"/>
+        <rect class="fy-buche" x="52" y="122" width="66" height="10" rx="5" transform="rotate(-6 85 127)"/>
+        <rect class="fy-buche" x="54" y="124" width="62" height="10" rx="5" transform="rotate(7 85 129)"/>
+        <path class="fy-cadre" d="M28 146h114"/></svg>
+      <i class="fl b"></i><i class="fl c"></i><i class="fl a"></i><i class="fl d"></i>
+      ${Array.from({length: 7}, (_, i) => `<i class="br" style="margin-left:${(i * 9 - 27)}px;--bx:${((i % 3) - 1) * 14}px;animation-delay:${(i * .43).toFixed(2)}s"></i>`).join('')}`;
+    z.appendChild(f);
+  } else if (!acc && f) f.remove();
+}
+addEventListener('hashchange', () => { try { decorOrdi(); } catch (e) {} });
+document.addEventListener('DOMContentLoaded', () => setTimeout(() => { try { decorOrdi(); } catch (e) {} }, 600));
+addEventListener('resize', () => { try { decorOrdi(); } catch (e) {} });
 function decorFetes(){
+  try { decorOrdi(); } catch (e) {}
   document.body.classList.toggle('fetes', fetesActives());
   const b = $('#barre-mode'); if (!b) return;
   const g = b.querySelector('.guirlande');
