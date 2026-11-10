@@ -194,18 +194,38 @@ def verifier(api, maint=None):
                              f"Mise actuelle {x.get('total', 0):.0f} $, vaut ~{x.get('valeur', 0):.0f} $", "#deals", x.get("total"), x.get("photo"), maint):
                     faits["encan_fin"] = faits.get("encan_fin", 0) + 1
 
-    # -- joueur en feu (LNH) --------------------------------------------------------------------------------------
-    if r["en_feu"] and mes:
+    # -- joueur en feu : l'Indice joueur de la semaine (stats et donnees publiques, jamais un prix eBay) --------------
+    # 10 nov 2026 (Mathieu : « une alerte quand ton joueur est en feu, avant que le marche reagisse ») : ses joueurs = ceux
+    # de son inventaire + ceux de son Radar (questionnaire) ; une alerte par joueur par semaine, une seule par passe
+    if r["en_feu"]:
         try:
-            import nhl
+            import indice_joueurs
+            suivis = dict(mes)
+            try:
+                for f in (api.deals_profil_lire().get("favoris") or []):
+                    suivis.setdefault(cartes_match.norm(f), 0)
+            except Exception:
+                pass
             semaine = datetime.now().strftime("%G-%V")
-            for f in nhl.chauds():
-                n = mes.get(cartes_match.norm(f["joueur"]))
-                if n:
-                    if _notifier(api, etat, f"feu:{cartes_match.norm(f['joueur'])}:{semaine}", f"{f['joueur']} est en feu",
-                                 f"{f['points']} points en {f['matchs']} matchs · tu as {n} de ses cartes", "#joueur/" + f["joueur"], maint=maint):
+            I = indice_joueurs.lire().get("indice") or {}
+            for nom, v in sorted(I.items(), key=lambda kv: -(kv[1].get("criteres", {}).get("forme") or 0)):
+                k = cartes_match.norm(nom)
+                if k not in suivis:
+                    continue
+                p, w = v.get("pastilles") or [], v.get("semaine") or {}
+                n = suivis[k]
+                fin_t = (f" · tu as {n} de ses cartes" if n else " · ses cartes sont dans ton Radar")
+                if "en_feu" in p and (w.get("pts") or 0) >= 3:
+                    if _notifier(api, etat, f"feu:{k}:{semaine}", f"{nom} est en feu",
+                                 f"{w.get('pts')} points ({w.get('b', 0)} buts) en {w.get('mj')} matchs cette semaine" + fin_t,
+                                 "#joueur/" + nom, maint=maint):
                         faits["en_feu"] = faits.get("en_feu", 0) + 1
-                    break
+                        break
+                elif "buzz" in p:
+                    if _notifier(api, etat, f"buzz:{k}:{semaine}", f"{nom} fait jaser",
+                                 "Tout le monde le cherche cette semaine (visites en forte hausse)" + fin_t, "#joueur/" + nom, maint=maint):
+                        faits["en_feu"] = faits.get("en_feu", 0) + 1
+                        break
         except Exception as e:
             print("Alertes en feu : " + repr(e), flush=True)
 

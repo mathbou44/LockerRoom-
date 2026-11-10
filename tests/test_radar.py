@@ -58,3 +58,21 @@ print("OK accueil pour toi")
 s = api.radar_suggestions()
 assert s["ok"] and s["joueurs"][0]["nom"] == "Macklin Celebrini"
 print("OK radar suggestions")
+
+# 5. « Comparer » : la meme carte en Achat immediat, la moins chere d'abord ; jamais une moyenne ni un prix suggere
+def rech2(q, **k):
+    if k.get("encheres"):
+        return []
+    return [{"item_id": "b2", "titre": "2024-25 Upper Deck Young Guns Macklin Celebrini #201", "prix_cad": 80, "port_cad": 5, "url": "u2"},
+            {"item_id": "b1", "titre": "2024-25 Upper Deck Young Guns Macklin Celebrini #201 RC", "prix_cad": 60, "port_cad": 3, "url": "u1"},
+            {"item_id": "b3", "titre": "2024-25 Upper Deck Young Guns Macklin Celebrini Canvas #C1", "prix_cad": 20, "port_cad": 0, "url": "u3"},
+            {"item_id": "9001", "titre": "2024-25 Upper Deck Young Guns Macklin Celebrini #201", "prix_cad": 30, "port_cad": 0, "url": "u4"}]
+
+
+ebay_compte.rechercher = rech2
+c = api.comparer("9001", "2024-25 Upper Deck Young Guns Macklin Celebrini #201")
+assert c["ok"] and [x["item_id"] for x in c["annonces"]] == ["b1", "b2"], c        # sans Canvas, sans l'encan lui-meme, du moins cher
+assert set(c) == {"ok", "annonces", "n"}
+lot = api.comparer_lot([{"item_id": "9001", "titre": "2024-25 Upper Deck Young Guns Macklin Celebrini #201"}])
+assert lot["items"]["9001"]["des"] == 63 and lot["items"]["9001"]["n"] == 2, lot
+print("OK radar comparer")

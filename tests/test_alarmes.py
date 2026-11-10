@@ -33,8 +33,12 @@ a.carte_garder({"carte": {"joueur": "Ivan Demidov", "emplacement": "Collection",
 vid = a.carte_garder({"carte": {"joueur": "Lane Hutson"}, "titre": "Hutson YG", "prix": 40, "photos": []})["id"]
 a.carte_vendre(vid, {"canal": "eBay", "prix": 55, "date": datetime.now().strftime("%Y-%m-%d")})
 auj = time.strftime("%Y-%m-%d")
-with open(os.path.join(D, "nhl_forme.json"), "w") as f:
-    json.dump({"joueurs": {"ivan demidov": {"le": time.time(), "id": "1", "f": {"joueur": "Ivan Demidov", "matchs": 5, "buts": 4, "passes": 5, "points": 9, "dernier": auj}}}}, f)
+# 10 nov 2026 : « en feu » = l'Indice joueur de la semaine (stats), pour un joueur de mes cartes ou de mon Radar
+with open(os.path.join(D, "indice_joueurs.json"), "w") as f:
+    json.dump({"joueurs": {}, "indice": {"Ivan Demidov": {"indice": 95, "pastilles": ["en_feu", "recrue"], "actif": True, "criteres": {"forme": 99},
+                                                          "semaine": {"mj": 4, "b": 4, "a": 5, "pts": 9, "jours": 7}},
+                                         "Cale Makar": {"indice": 90, "pastilles": ["en_feu"], "actif": True, "criteres": {"forme": 100},
+                                                        "semaine": {"mj": 3, "b": 2, "a": 4, "pts": 6, "jours": 7}}}}, f)
 fin = (datetime.now(timezone.utc) + timedelta(minutes=40)).isoformat().replace("+00:00", "Z")
 loin = (datetime.now(timezone.utc) + timedelta(hours=20)).isoformat().replace("+00:00", "Z")
 deals._ecrire({"deals": [
@@ -61,4 +65,6 @@ assert f3.get("vendu") == 1 and pushs == [], (f3, pushs)
 # prix cible decochee : les alertes de prix ne tournent plus
 alarmes.regler(a, {"prix_cible": False})
 assert a.alertes_verifier().get("coupee")
+n_feu = [x for x in a.alertes_liste()["notifications"] if "en feu" in (x.get("titre") or "")]
+assert n_feu and n_feu[0]["titre"] == "Ivan Demidov est en feu" and "9 points" in (n_feu[0].get("texte") or ""), n_feu   # pas Makar : pas a moi
 print("ALARMES OK")

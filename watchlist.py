@@ -644,10 +644,19 @@ def verifier(api, proches=False, lire_article=None, maint=None):
                 and cfg["alerte_fin"]:
             mn = max(1, int(reste.total_seconds() // 60))
             if alarmes._notifier(api, etat_a, "watch-fin:" + x["item_id"], f"{mn} min : place ta mise",
-                                 f"{titre} · mise {(x.get('total') or 0):.0f} $ · ta mise max {(mm or 0):.0f} $",
+                                 f"{titre} · mise {(x.get('total') or 0):.0f} $" + (f" · ta mise max {mm:.0f} $" if mm else " · fixe ta limite"),
                                  "#deals/watch", x.get("total"), x.get("photo"), force=True):
                 envoyees += 1
             x["notif_fin"] = 1
+        # 10 nov 2026 (Mathieu : « un rappel de fin d'encan avec sa mise max ») : un dernier rappel, 6 min avant la fin
+        # (la boucle passe aux 5 min), avec SA limite ; SlabCoach ne mise jamais a sa place
+        if e == "ok" and x.get("encan") and reste is not None and timedelta(0) < reste <= timedelta(minutes=6) and fin_min > 6 \
+                and cfg["alerte_fin"]:
+            mn = max(1, int(reste.total_seconds() // 60))
+            if alarmes._notifier(api, etat_a, "watch-der:" + x["item_id"], f"Dernière chance : {mn} min",
+                                 f"{titre} · mise {(x.get('total') or 0):.0f} $" + (f" · ta limite {mm:.0f} $" if mm else ""),
+                                 "#deals/watch", x.get("total"), x.get("photo"), force=True):
+                envoyees += 1
     c = _cx(api)
     try:
         for x in lst:

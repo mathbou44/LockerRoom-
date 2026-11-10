@@ -1825,7 +1825,7 @@ button.btn-scan{border:none; font:inherit; font-weight:700}
 .rq-w{flex-wrap:wrap; overflow:visible; margin:6px 0; padding:0; justify-content:center} .rq-w .chip{height:38px}
 .rq-aj{display:flex; gap:8px; width:100%; margin-top:4px} .rq-aj .champ{flex:1} .rq-aj .btn{width:auto; padding:0 16px}
 .rq-n{font-size:13px; color:var(--doux)} .tuto.quest .q-opts.rq-b{grid-template-columns:repeat(3,1fr)} .rq-b .q-o{align-items:center; text-align:center}
-.md-perso{display:flex; flex-wrap:wrap; gap:8px; margin:-4px 0 12px} .md-dec{font-size:13px; color:var(--doux); margin:2px 0 8px}
+.md-pj{margin:-4px 0 8px} .t-reel{display:block; font-size:12px; color:var(--pale); margin:-2px 0 2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis} .t-reel b{color:var(--doux); font-weight:600} .tuile-c > .sd-et{position:absolute; top:8px; right:8px; z-index:3} .md-feu.on{border-color:var(--vert); color:var(--vert)} .j-pq{margin:14px 0 6px} .vp-rappel{margin:6px 0 12px; font-size:14px; color:var(--doux)} .vp-rappel b{color:var(--texte)} .vp-vendues{margin-top:4px} .w-verif{font-size:12px; margin-bottom:4px} .vp-note{text-align:center; margin-top:6px} .j-pq .nom{font-size:15px} .cmp{display:block; width:100%; margin:4px 0 0; padding:0; border:0; background:none; text-align:left; font-size:12px; color:var(--pale); cursor:pointer} .cmp b{font-weight:600; color:var(--doux)} .cmp.bas{color:var(--or)} .cmp.bas b{color:var(--or)} .md-perso{display:flex; flex-wrap:wrap; gap:8px; margin:-4px 0 12px} .md-dec{font-size:13px; color:var(--doux); margin:2px 0 8px}
 .md-vend{margin-top:18px} .md-vend .v-rang-t b{display:inline-flex; align-items:center; gap:8px}
 .fd-vs{display:grid; gap:8px; margin-top:6px}
 .md-tete{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin:4px 0 12px} .md-tete b{display:block; font-size:20px} .md-tete .btn{width:auto; flex-shrink:0} .md-f{margin-bottom:12px} .md-vide ol{text-align:left; margin:10px auto 0; max-width:340px; line-height:1.6} .md-gerer{text-align:center; margin:16px 0} .j-tend{margin-top:6px}
@@ -4407,7 +4407,7 @@ function tuileCarte(x, o={}){
     ${lien ? `<a href="${esc(lien)}" target="_blank" rel="noopener">${img}</a>` : img}
     ${o.coin ? `<div class="coin">${o.coin}</div>` : ''}${o.x ? o.x : ''}
     <div class="corps"><div class="t">${esc(x.titre || '')}</div>${o.milieu || ''}
-      <div class="ligne-b"><span class="p">${o.prix ?? argent(x.total, 0)}</span>${o.droite || ''}</div></div></div>`;
+      <div class="ligne-b"><span class="p">${o.prix ?? argent(x.total, 0)}</span>${o.droite || ''}</div>${o.bas || ''}</div></div>`;
 }
 // ============================================================
 // 24 oct 2026 (Mathieu : « il manque la section pour créer des annonces côté seller ... tout doit se faire
@@ -6730,7 +6730,7 @@ async function chargerWatch(){
         ${fini ? '' : `<div class="w-pr2"><div class="${dep ? 'rouge' : ''}"><small>${x.encan ? tt('Mise', 'Bid') : tt('Prix', 'Price')}</small><b>${cur}</b></div>
           <button class="w-max2 ${x.mise_perso ? 'perso' : ''}" data-wmax="${esc(x.item_id)}"><small>${x.encan ? tt('Ta mise max', 'Your max bid') : tt('Paie au plus', 'Pay at most')} ✎</small><b class="${(x.mise_max == null && x.sans_comps) || (x.mise_max != null && x.mise_max < 1 && !x.mise_perso) ? 'w-sc' : ''}">${x.mise_max != null && x.mise_max < 1 && !x.mise_perso && x.valeur ? tt('Trop petite', 'Too small') : x.mise_max != null ? argent(x.mise_max, 0) : x.sans_comps ? tt('Pas de comps', 'No comps') : '—'}</b></button>${x.profit != null ? `<div class="w-pro ${x.profit > 0 ? 'vert' : 'rouge'}"><small>${x.encan ? tt('Profit actuel', 'Profit now') : tt('Profit', 'Profit')}</small><b>${x.profit > 0 ? '+' : '−'}${argent(Math.abs(x.profit), 0)}</b></div>` : ''}</div>`}
         ${dep ? `<div class="w-dep">${tt('Dépasse ta mise max', 'Over your max bid')}</div>` : ''}</div>
-      <div class="w-dr">${x.etat === 'ok' && x.url ? (x.encan ? `<button class="w-go" data-wmiser="${esc(x.item_id)}">${tt('Miser', 'Bid')}</button>` : `<a class="w-go" href="${esc(lienAchat(x.url, 'watch'))}" target="_blank" rel="noopener">${tt('Acheter', 'Buy')}</a>`) : ''}
+      <div class="w-dr"><button class="lien-doux w-verif" data-verif="${esc(x.item_id)}" data-verif-t="${esc(x.titre || '')}" data-verif-p="${esc(x.total || 0)}" data-verif-e="${x.encan ? 1 : ''}">${tt('Vérifier', 'Check')}</button>${x.etat === 'ok' && x.url ? (x.encan ? `<button class="w-go" data-wmiser="${esc(x.item_id)}">${tt('Miser', 'Bid')}</button>` : `<a class="w-go" href="${esc(lienAchat(x.url, 'watch'))}" target="_blank" rel="noopener">${tt('Acheter', 'Buy')}</a>`) : ''}
         <button class="sd-et on w-et" data-watch="${esc(x.item_id)}" aria-pressed="true" aria-label="${esc(tt('Retirer de la watchlist', 'Remove from watchlist'))}">${ICO_ETOILE}</button></div></div>`;
   };
   // 31 oct 2026 (Mathieu : « les options pour envoyer vers eBay et Gixen en haut de la watchlist, c'est plus naturel ») :
@@ -11728,7 +11728,7 @@ async function feuilleChecklistColl(p, sous){
         .map(([k, lbl]) => `<button class="chip ${f === k ? 'on' : ''}" data-f="${k}">${lbl}</button>`).join('')}</div>
       <div class="liste ck-l">${l.map(x => `<div class="rangee ${x.a ? 'a' : ''}"><span class="ck-n">#${esc(x.numero || '')}</span><span class="milieu"><span class="nom">${esc(x.joueur || '')}</span>${x.equipe ? `<span class="sous">${esc(x.equipe)}</span>` : ''}</span>${x.a ? '<b class="vert">✓</b>' : ''}</div>`).join('')
         || `<div class="vide" style="padding:16px">${f === 'manque' ? tt('Set complet !', 'Set complete!') : '—'}</div>`}</div>
-      <div class="env-b"><button class="pilule" id="ck-part">${tt('Partager ce qui manque', 'Share what’s missing')}</button><button class="pilule" id="ck-imp">${tt('Imprimer la checklist', 'Print the checklist')}</button>
+      <div class="env-b">${r.total - r.possedees > 0 ? `<button class="pilule acc" id="ck-chasse">${tt('Chasser ce qui me manque', 'Hunt what I’m missing')}</button>` : ''}<button class="pilule" id="ck-part">${tt('Partager ce qui manque', 'Share what’s missing')}</button><button class="pilule" id="ck-imp">${tt('Imprimer la checklist', 'Print the checklist')}</button>
         <button class="pilule" id="ck-ret">${tt('Retour', 'Back')}</button></div>`;
     $$('#ck-f [data-f]').forEach(b => b.onclick = () => { f = b.dataset.f; peindre(); });
     $('#ck-ret').onclick = () => feuilleSetProduit(p);
@@ -11738,6 +11738,10 @@ async function feuilleChecklistColl(p, sous){
       try { await navigator.clipboard.writeText(t); toast(tt('Liste copiée', 'List copied')); } catch (e) { toast(tt('Partage impossible ici', 'Sharing not possible here')); }
     };
     $('#ck-imp').onclick = () => imprimerChecklist(p.nom, sous, r);
+    const chs = $('#ck-chasse'); if (chs) chs.onclick = async () => { vibrer();
+      const x = await API.chasse_ajouter(p.id, sous, p.nom).catch(e => ({ok:false, erreur:e.message}));
+      if (!x.ok) { toast(x.erreur || 'Erreur', 4000); return; }
+      toast(tt('Ton Radar chasse les cartes qui manquent', 'Your Radar hunts the missing cards')); fermerFeuille(); MEMO.clear(); location.hash = '#deals'; };
   };
   peindre();
 }
@@ -13022,6 +13026,7 @@ async function adminBanc(){
     <div class="pastilles">${Object.entries(dl.par_source || {}).map(([k, x]) => tag(k + ' · ' + pc(x.precision) + ' (' + x.n + ')', x.precision >= 0.9 ? 'vert' : x.precision >= 0.75 ? 'acc' : 'rouge')).join('')}</div>
     <h3>${tt('Tendance', 'Trend')}</h3><div class="sous">${td.justes == null ? tt('En attente de données.', 'Waiting for data.') : tt(`La direction annoncée il y a 28 jours était la bonne ${pc(td.justes)} du temps (${td.paris} paris).`, `The direction called 28 days ago was right ${pc(td.justes)} of the time (${td.paris} calls).`)}</div>
     <h3>${tt('Demande des joueurs, sans ventes', 'Player demand, without sales')}</h3><div class="sous">${dm.rho == null ? tt('Le labo lit les joueurs (LNH, Wikipedia) : 1re mesure après ~30 joueurs.', 'The lab reads players (NHL, Wikipedia): first measure after ~30 players.') : tt(`Corrélation avec le classement des ventes : ${decFr(dm.rho)} · top 20 en commun : ${dm.top20}.`, `Correlation with the sales ranking: ${dm.rho} · top 20 shared: ${dm.top20}.`)}</div>
+    <h3>${tt('Indice joueur de la semaine', 'Player index of the week')}</h3>${blocIndiceJ(r.indice)}
     <h3>${tt('Stats des joueurs : Highlightly', 'Player stats: Highlightly')}</h3><div id="hl-z">${blocHighlightly(r.highlightly)}</div>
     <div class="env-b" style="margin-top:14px"><button class="pilule acc" id="banc-go">${tt('Relancer la mesure', 'Run again')}</button><button class="pilule" id="hl-go">${tt('Tester Highlightly', 'Test Highlightly')}</button></div></div>`;
   $('#hl-go').onclick = async (ev) => { const bt = ev.currentTarget; if (bt.disabled) return; bt.disabled = true; vibrer();
@@ -13029,6 +13034,12 @@ async function adminBanc(){
     const x = await API.admin_highlightly_test('Connor McDavid', 'hockey').catch(e => ({ok:false, erreur:e.message})); bt.disabled = false;
     const z2 = $('#hl-z'); if (z2) z2.innerHTML = blocHighlightly({actif: x.actif, test: x}, x); };
   $('#banc-go').onclick = async () => { vibrer(); const x = await API.admin_banc_lancer().catch(() => null); toast(x && x.ok ? tt('Mesure lancée : résultat dans quelques minutes', 'Run started: results in a few minutes') : tt('Impossible', 'Not possible')); };
+}
+function blocIndiceJ(x){
+  if (!x || x.erreur || !x.joueurs) return `<div class="sous">${tt('Premier calcul dans l’heure.', 'First run within the hour.')}</div>`;
+  const ligne = (j) => `<div class="rangee"><span class="milieu"><span class="nom">${esc(j.nom)}</span><span class="det">${pastillesIndice(j) || ''}</span></span><span class="droite"><b>${j.indice}</b></span></div>`;
+  return `<div class="sous">${tt(`${x.joueurs} joueurs notés · ${x.lus_aujourdhui} lus aujourd’hui (Highlightly) · ${x.avec_semaine} avec 7 jours de stats`, `${x.joueurs} players rated · ${x.lus_aujourdhui} read today (Highlightly) · ${x.avec_semaine} with 7 days of stats`)}</div>
+    <div class="liste">${(x.top || []).map(ligne).join('')}</div>${(x.legendes || []).length ? `<div class="sous" style="margin-top:8px">${tt('Légendes', 'Legends')}</div><div class="liste">${x.legendes.map(ligne).join('')}</div>` : ''}`;
 }
 // 10 nov 2026 : l'essai Highlightly (cle, quota, saisons, ligues) ; aucun secret (4 derniers caracteres de la cle au plus)
 function blocHighlightly(h, x){
@@ -13545,17 +13556,23 @@ async function vueMesDeals(z){
   const vis = S.mdFiltre ? L.filter(x => x.alerte_id === S.mdFiltre) : L;
   const tuile = (x) => tuileCarte({...x, url: lienAchat(x.url, 'mesdeals')}, {
     coin: x.sous_pct > 0 ? capsule('−' + x.sous_pct + ' % ' + tt('sous ton prix', 'under your price'), 'vert petit') : capsule(tt('À ton prix', 'At your price'), 'acc petit'),
-    milieu: `<div class="pastilles">${x.encan ? tag(tt('Encan', 'Auction') + (x.fin ? ' · ' + finDans(x.fin) : ''), 'or') : tag(tt('Achat immédiat', 'Buy It Now'))}</div>`,
-    droite: `<span class="sous">${tt('ton prix', 'yours')} ${argentCourt(x.prix_max)}</span>`});
-  const tuileA = (x, src) => tuileCarte({...x, url: lienAchat(x.url, src)}, {milieu: `<div class="pastilles">${x.encan ? tag(tt('Encan', 'Auction') + (x.fin ? ' · ' + finDans(x.fin) : ''), 'or') : tag(tt('Achat immédiat', 'Buy It Now'))}</div>`});
+    bas: ligneReel(x), milieu: `<div class="pastilles">${x.encan ? tag(tt('Encan', 'Auction') + (x.fin ? ' · ' + finDans(x.fin) : ''), 'or') : tag(tt('Achat immédiat', 'Buy It Now'))}</div>${cmpPlace(x)}`,
+    x: boutonWatch(x), droite: `<span class="sous">${tt('ton prix', 'yours')} ${argentCourt(x.prix_max)}</span>`});
+  const tuileA = (x, src) => tuileCarte({...x, url: lienAchat(x.url, src)}, {x: boutonWatch(x), bas: ligneReel(x), milieu: `${x.numero ? `<div class="sous">#${esc(x.numero)} ${esc(x.joueur || '')}</div>` : ''}<div class="pastilles">${x.encan ? tag(tt('Encan', 'Auction') + (x.fin ? ' · ' + finDans(x.fin) : '') + (x.mises != null ? ' · ' + x.mises + ' ' + tt('mise', 'bid') + (x.mises > 1 ? 's' : '') : ''), 'or') : tag(tt('Achat immédiat', 'Buy It Now'))}</div>${cmpPlace(x)}`});
   const caseJ = (g, src) => `<div class="md-vend"><div class="v-rang-t"><b>${icN('cible')}${esc(g.joueur)}</b><span class="sous">${g.annonces.length} ${tt('annonces', 'listings')}</span></div>
+    ${pastillesIndice(g) ? `<div class="pastilles md-pj">${pastillesIndice(g)}</div>` : ''}
     <div class="d-car v-car">${g.annonces.slice(0, 16).map(x => tuileA(x, src)).join('')}</div></div>`;
   // ce que le Radar suit, en pastilles : un tap rouvre le questionnaire
   const coll = {recrues: tt('Recrues', 'Rookies'), hits: tt('Autos et patchs', 'Autos & patches'), gradees: tt('Gradées', 'Graded'), veterans: tt('Vétérans', 'Veterans'), legendes: tt('Légendes', 'Legends')};
   const perso = r.profil_vide ? '' : `<div class="md-perso">${(P.favoris || []).slice(0, 6).map(n => tag(n)).join('')}${(P.favoris || []).length > 6 ? tag('+' + ((P.favoris || []).length - 6)) : ''}
     ${(P.collectionne || []).map(k => tag(coll[k] || k, 'or')).join('')}${P.prix_max ? tag('≤ ' + argentCourt(P.prix_max), 'vert') : ''}
-    <button class="pilule" id="md-perso">${tt('Modifier', 'Edit')} ›</button></div>`;
+    <button class="pilule" id="md-perso">${tt('Modifier', 'Edit')} ›</button>
+    <button class="pilule md-feu ${r.alerte_feu ? 'on' : ''}" id="md-feu">${icN('cloche')}${r.alerte_feu ? tt('Alerte en feu', 'On-fire alert') : tt('M’alerter s’ils sont en feu', 'Alert me if on fire')}</button></div>`;
   const vide = !C.length && !PT.length && !(r.vendeurs || []).length;
+  // 10 nov 2026 : les encans peu disputes (0 ou 1 mise, fin dans moins de 6 h) : des faits, pas un prix
+  const vuPD = new Set(), PD = [...L, ...PT.flatMap(g => g.annonces), ...(r.chauds || []).flatMap(g => g.annonces), ...DEC.flatMap(g => g.annonces)]
+    .filter(x => { const ms = Date.parse(x.fin || '') - Date.now(); if (!x.encan || !(ms > 0 && ms < 6 * 3600e3) || (x.mises || 0) > 1 || vuPD.has(x.item_id)) return false; vuPD.add(x.item_id); return true; })
+    .sort((a, b) => Date.parse(a.fin) - Date.parse(b.fin)).slice(0, 10);
   z.innerHTML = `<div class="md">
     <div class="md-tete"><div><b>${tt('Ton radar', 'Your radar')}</b><span class="sous">${tt('Les cartes de tes joueurs dans ton budget, et les annonces à ton prix cible. Tu choisis, on surveille eBay.', 'Your players’ cards in your budget, and listings at your target price. You choose, we watch eBay.')}</span></div>
       <button class="btn petit" id="md-plus">${icN('cible')}${tt('Prix cible', 'Target price')}</button></div>
@@ -13566,26 +13583,111 @@ async function vueMesDeals(z){
       ${vis.length ? `<div class="grille-c">${vis.map(tuile).join('')}</div>` : `<div class="vide">${tt('Rien à ton prix pour l’instant. On regarde eBay chaque heure et on t’avertit dès qu’une annonce passe sous ton prix.', 'Nothing at your price yet. We check eBay every hour and tell you as soon as a listing drops under it.')}</div>`}
       <div class="md-gerer"><button class="lien-doux" id="md-gerer">${tt('Gérer mes prix cibles', 'Manage my target prices')} ›</button></div>` : ''}
     ${PT.map(g => caseJ(g, 'radar')).join('')}
+    ${(r.chasses || []).map(c => `<div class="md-vend"><div class="v-rang-t"><b>${icN('carte')}${tt('Il te manque', 'You’re missing')} · ${esc(c.sous)}</b><span class="sous">${c.manque != null ? `${c.manque} / ${c.total}` : ''}</span></div>
+      <div class="md-dec">${esc(c.nom || '')}${c.cartes_trouvees ? ' · ' + c.cartes_trouvees + ' ' + tt('en vente dans ton budget', 'for sale in your budget') : ''} <button class="lien-doux" data-chasse-x="${esc(c.pid)}" data-chasse-s="${esc(c.sous)}">${tt('Arrêter', 'Stop')}</button></div>
+      ${(c.annonces || []).length ? `<div class="d-car v-car">${c.annonces.slice(0, 16).map(x => tuileA(x, 'chasse')).join('')}</div>`
+        : `<div class="sous">${c.manque === 0 ? tt('Set complet !', 'Set complete!') : tt('Aucune carte manquante en vente dans ton budget pour l’instant.', 'No missing card for sale in your budget right now.')}</div>`}</div>`).join('')}
     ${!r.profil_vide && (P.favoris || []).length && !PT.length ? `<div class="vide">${tt('Rien en vente pour tes joueurs dans ton budget en ce moment. Monte un peu ton budget, ou ajoute un joueur.', 'Nothing for sale for your players in your budget right now. Raise your budget a bit, or add a player.')}</div>` : ''}
+    ${PD.length >= 2 ? `<div class="md-vend"><div class="v-rang-t"><b>${icN('horloge')}${tt('Peu disputés', 'Low competition')}</b><span class="sous">${tt('0 ou 1 mise · fin dans moins de 6 h', '0 or 1 bid · ending within 6 h')}</span></div>
+      <div class="d-car v-car">${PD.map(x => tuileA(x, 'peu_disputes')).join('')}</div></div>` : ''}
+    ${(r.chauds || []).length ? `<div class="v-rang-t" style="margin-top:6px"><b>${tt('En feu cette semaine', 'On fire this week')}</b></div><div class="md-dec">${tt('Les joueurs avec la meilleure semaine (leurs stats des 7 derniers jours). Leurs cartes dans ton budget.', 'The players with the best week (their stats over the last 7 days). Their cards in your budget.')}</div>${r.chauds.map(g => caseJ(g, 'chauds')).join('')}` : ''}
     ${vide && DEC.length ? `<div class="v-rang-t" style="margin-top:6px"><b>${tt('À découvrir', 'Discover')}</b></div><div class="md-dec">${tt('Les joueurs les plus recherchés en ce moment (stats et popularité publiques), à 100 $ ou moins. Choisis tes joueurs pour un radar à toi.', 'The most wanted players right now (public stats and popularity), at $100 or less. Pick your players for a radar of your own.')}</div>${DEC.map(g => caseJ(g, 'decouvrir')).join('')}` : ''}
     ${(r.vendeurs || []).map(v => `<div class="md-vend"><div class="v-rang-t"><b>${icN('boutique')}${esc(v.vendeur)}</b><span class="sous">${v.annonces.length ? v.annonces.length + ' ' + tt('annonces', 'listings') : tt('rien de neuf', 'nothing new')}</span></div>
-      ${v.annonces.length ? `<div class="d-car v-car">${v.annonces.slice(0, 12).map(x => tuileCarte({...x, url: lienAchat(x.url, 'vendeur')}, {milieu: `<div class="pastilles">${x.encan ? tag(tt('Encan', 'Auction') + (x.fin ? ' · ' + finDans(x.fin) : ''), 'or') : tag(tt('Nouveau', 'New'))}</div>`})).join('')}</div>` : ''}</div>`).join('')}
+      ${v.annonces.length ? `<div class="d-car v-car">${v.annonces.slice(0, 12).map(x => tuileCarte({...x, url: lienAchat(x.url, 'vendeur')}, {x: boutonWatch(x), bas: ligneReel(x), milieu: `<div class="pastilles">${x.encan ? tag(tt('Encan', 'Auction') + (x.fin ? ' · ' + finDans(x.fin) : ''), 'or') : tag(tt('Nouveau', 'New'))}</div>`})).join('')}</div>` : ''}</div>`).join('')}
+    <div class="md-gerer"><button class="lien-doux" id="md-chasse">${(r.chasses || []).length ? tt('Chasser un autre set', 'Hunt another set') : tt('Chasser les cartes qui manquent à mes sets', 'Hunt the cards missing from my sets')} ›</button></div>
     <div class="md-gerer"><button class="lien-doux" id="md-vend">${(r.vendeurs || []).length ? tt('Changer mes vendeurs', 'Change my sellers') : tt('Suivre mes vendeurs préférés', 'Follow my favorite sellers')} ›</button></div></div>`;
   const reQ = () => questionnaireRadar({apres: (ok) => { if (ok && z.isConnected) vueMesDeals(z); }});
   $('#md-plus').onclick = () => feuilleAlerte('', '');
   for (const id of ['md-q', 'md-perso']) { const b = $('#' + id); if (b) b.onclick = reQ; }
+  const fe = $('#md-feu'); if (fe) fe.onclick = async () => { vibrer(); const x = await API.radar_alerte_feu(!r.alerte_feu).catch(() => null);
+    if (x && x.ok) { r.alerte_feu = x.alerte_feu; fe.classList.toggle('on', x.alerte_feu);
+      fe.innerHTML = icN('cloche') + (x.alerte_feu ? tt('Alerte en feu', 'On-fire alert') : tt('M’alerter s’ils sont en feu', 'Alert me if on fire'));
+      toast(x.alerte_feu ? tt('On t’avertit quand un de tes joueurs a une grosse semaine', 'We’ll tell you when one of your players has a big week') : tt('Alerte retirée', 'Alert removed'));
+      if (x.alerte_feu) demanderNotifications(); } };
+  const ch = $('#md-chasse'); if (ch) ch.onclick = () => feuilleSets();
+  $$('[data-chasse-x]', z).forEach(b => b.onclick = async () => { const x = await API.chasse_retirer(b.dataset.chasseX, b.dataset.chasseS).catch(() => null); if (x && x.ok) vueMesDeals(z); });
   const g = $('#md-gerer'); if (g) g.onclick = () => feuilleAlertes();
   const mv = $('#md-vend'); if (mv) mv.onclick = () => feuilleMesDeals({apres: () => vueMesDeals(z)});
   $$('[data-md]', z).forEach(b => b.onclick = () => { vibrer(); S.mdFiltre = b.dataset.md ? +b.dataset.md : null; vueMesDeals(z); });
+  remplirComparer(z);
   // 1re visite d'un Radar vide : le questionnaire s'ouvre seul (une fois ; ensuite le bouton « Choisir mes joueurs »)
   let vu = false; try { vu = localStorage.getItem('lr_radar_q') === '1'; } catch (e) {}
   if (r.profil_vide && !C.length && !vu && !(S.reglages && S.reglages.radar_q)) setTimeout(() => { if (z.isConnected && $('#fond-feuille').hidden) reQ(); }, 600);
+}
+// 10 nov 2026 (Mathieu : « montrer quand c'est plus vraiment un bon prix, sans leur dire quoi mettre ; subtilement ») :
+// sous chaque encan, une petite ligne : la MEME carte en Achat immediat, des X $ (l'annonce la moins chere, telle quelle).
+// Plus discrete que le prix ; un peu plus visible quand une Achat immediat coute deja moins que la mise. Un tap : la liste.
+// 10 nov 2026 (Mathieu : « un bon plus vs eBay ») : ce qu'il paiera VRAIMENT (prix + port + taxes, importation estimee)
+const ligneReel = (x) => x && x.total_reel && x.total_reel > (x.total || 0) + 0.5 ? `<span class="t-reel"><b>${argentCourt(x.total_reel)}</b> ${x.etranger ? tt('avec import.', 'w/ import') : tt('tout compris', 'all-in')}</span>` : '';
+// 10 nov 2026 (Mathieu : « verifier le prix le plus rapidement possible et legalement ») : chaque carte porte « Verifier le
+// prix › » ; sous un encan, la ligne devient « Achat immediat des X $ » quand la meme carte est en vente
+const cmpPlace = (x) => `<button class="cmp" data-verif="${esc(x.item_id)}" data-cmp="${esc(x.item_id)}" data-cmp-t="${esc(x.titre || '')}" data-cmp-p="${esc(x.total || 0)}" data-cmp-e="${x.encan ? 1 : ''}">${tt('Vérifier le prix', 'Check price')} ›</button>`;
+document.addEventListener('click', (e) => { const b = e.target.closest('[data-verif]'); if (!b) return; e.preventDefault(); e.stopPropagation();
+  vibrer(); feuilleVerifier(b.dataset.verif, b.dataset.cmpT || b.dataset.verifT || '', nb(b.dataset.cmpP || b.dataset.verifP), !!(b.dataset.cmpE || b.dataset.verifE)); }, true);
+async function remplirComparer(z){
+  const B = $$('[data-cmp]', z).filter(b => b.dataset.cmpE && !b.dataset.rempli); if (!B.length) return;
+  const vus = new Map(); B.forEach(b => { if (!vus.has(b.dataset.cmp) && vus.size < 8) vus.set(b.dataset.cmp, {item_id: b.dataset.cmp, titre: b.dataset.cmpT}); });
+  const r = await API.comparer_lot([...vus.values()]).catch(() => null); if (!r || !r.ok || !z.isConnected) return;
+  B.forEach(b => { const c = (r.items || {})[b.dataset.cmp]; if (!c) return;
+    const plus_bas = c.des < nb(b.dataset.cmpP);
+    b.innerHTML = `${tt('Achat immédiat dès', 'Buy It Now from')} <b>${argentCourt(c.des)}</b>${c.n > 1 ? ` · ${c.n}` : ''} ›`;
+    b.classList.toggle('bas', plus_bas); b.dataset.rempli = '1'; });
+}
+async function feuilleVerifier(id, titre, prix, encan){
+  ouvrirFeuille(`<h3>${tt('Vérifier le prix', 'Check the price')}</h3><div class="sous">${esc(titre)}</div>
+    ${prix ? `<div class="vp-rappel">${encan ? tt('Mise actuelle de cet encan', 'This auction’s current bid') : tt('Prix de cette annonce', 'This listing’s price')} : <b>${argentCourt(prix)}</b></div>` : ''}
+    <div id="vp-z">${barreProg(Date.now(), 4, tt('On regarde la même carte sur eBay…', 'Looking at the same card on eBay…'))}</div>`);
+  const r = await API.verifier_prix(id, titre).catch(e => ({ok:false, erreur:e.message})); const z = $('#vp-z'); if (!z) return;
+  if (!r.ok) { z.innerHTML = `<div class="vide">${esc(r.erreur || 'Erreur')}</div>`; return; }
+  const V = r.en_vente || [], E = r.encans || [], M = r.mien || [];
+  const tuileV = (x, src) => tuileCarte({...x, url: lienAchat(x.url, src)}, {bas: ligneReel(x), milieu: `<div class="pastilles">${x.encan ? tag(tt('Encan', 'Auction') + (x.fin ? ' · ' + finDans(x.fin) : '') + ' · ' + (x.mises || 0) + ' ' + tt('mise', 'bid') + ((x.mises || 0) > 1 ? 's' : ''), 'or') : tag(tt('Achat immédiat', 'Buy It Now'))}</div>`});
+  z.innerHTML = `
+    <a class="btn vp-vendues" href="${esc(lienAchat(r.lien_vendues, 'vendues'))}" target="_blank" rel="noopener">${tt('Ventes terminées sur eBay', 'Sold on eBay')} ${EXT}</a>
+    <div class="sous vp-note">${tt('Recherche déjà remplie pour cette carte : les prix vendus s’affichent sur eBay.', 'Search already filled in for this card: sold prices show on eBay.')}</div>
+    <div class="v-rang-t" style="margin-top:16px"><b>${tt('En vente maintenant', 'For sale now')}</b><span class="sous">${V.length ? tt('du moins cher au plus cher', 'cheapest first') : ''}</span></div>
+    ${V.length ? `<div class="d-car v-car">${V.map(x => tuileV(x, 'verifier')).join('')}</div>` : `<div class="sous">${tt('Aucune en achat immédiat en ce moment.', 'None as Buy It Now right now.')}</div>`}
+    <div class="v-rang-t" style="margin-top:14px"><b>${tt('Encans en cours', 'Live auctions')}</b><span class="sous">${E.length ? tt('ce que les autres misent en ce moment', 'what others are bidding right now') : ''}</span></div>
+    ${E.length ? `<div class="d-car v-car">${E.map(x => tuileV(x, 'verifier_encan')).join('')}</div>` : `<div class="sous">${tt('Aucun encan de cette carte en ce moment.', 'No auction of this card right now.')}</div>`}
+    ${M.length ? `<div class="v-rang-t" style="margin-top:14px"><b>${tt('Ton historique', 'Your history')}</b></div><div class="liste">${M.map(k => `<div class="rangee"><span class="milieu"><span class="nom">${esc(titreCourt(k.titre))}</span><span class="det">${k.le ? esc(String(k.le).slice(0, 10)) : ''}</span></span>
+      <span class="droite">${k.prix_vendu ? `<span class="sous">${tt('vendue', 'sold')}</span> <b>${argentCourt(k.prix_vendu)}</b>` : k.cout ? `<span class="sous">${tt('payée', 'paid')}</span> <b>${argentCourt(k.cout)}</b>` : ''}</span></div>`).join('')}</div>` : ''}`;
+}
+// 10 nov 2026 (Mathieu : « pourquoi il monte ») : le contexte du joueur, en faits (stats, buzz, legende) ; jamais un prix
+function blocPourquoi(q){
+  if (!q) return '';
+  const L = [], ord = (n) => n === 1 ? tt('1er', '1st') : n + tt('e', n === 2 ? 'nd' : n === 3 ? 'rd' : 'th');
+  if (q.rang && q.sur) L.push([tt('Indice SlabCoach', 'SlabCoach index'), `${ord(q.rang)} ${tt('sur', 'of')} ${q.sur} ${q.actif ? tt('joueurs actifs', 'active players') : tt('retraités', 'retired')}`]);
+  const w = q.semaine; if (w && w.mj) L.push([tt('Cette semaine', 'This week'), `${w.pts} pts (${w.b || 0} ${tt('buts', 'goals')}) ${tt('en', 'in')} ${w.mj} ${tt('matchs', 'games')}`]);
+  else if (q.cinq != null) L.push([tt('5 derniers matchs', 'Last 5 games'), `${q.cinq} pts`]);
+  const sa = q.saison; if (sa) L.push([tt('Cette saison', 'This season') + (sa.ligue && !/^nhl$/i.test(sa.ligue) ? ' · ' + sa.ligue : ''), `${sa.pts} pts ${tt('en', 'in')} ${sa.mj} ${tt('matchs', 'games')} · ${sa.ppm} ${tt('par match', 'per game')}${sa.ecart_pct != null && Math.abs(sa.ecart_pct) >= 10 ? ` · <b class="${sa.ecart_pct > 0 ? 'vert' : 'rouge'}">${sa.ecart_pct > 0 ? '+' : ''}${sa.ecart_pct} %</b> ${tt('vs ses saisons d’avant', 'vs his past seasons')}` : ''}`]);
+  if ((q.ligues || []).length > 1) L.push([tt('Ligues', 'Leagues'), q.ligues.map(esc).join(', ')]);
+  if (q.buzz && Math.abs(q.buzz.pct) >= 15) L.push([tt('Recherches', 'Searches'), `<b class="${q.buzz.pct > 0 ? 'vert' : 'rouge'}">${q.buzz.pct > 0 ? '+' : ''}${q.buzz.pct} %</b> ${tt('ces 20 derniers jours (Wikipedia)', 'over the last 20 days (Wikipedia)')}`]);
+  const g = q.legende || {}, lg = [];
+  if (g.temple) lg.push(tt('Temple de la renommée', 'Hall of Fame'));
+  if (g.top100) lg.push(tt('Top 100 de l’histoire', 'Top 100 all-time'));
+  if (g.coupes) lg.push(g.coupes + ' ' + tt(g.coupes > 1 ? 'coupes Stanley' : 'coupe Stanley', g.coupes > 1 ? 'Stanley Cups' : 'Stanley Cup'));
+  if (g.trophees) lg.push(g.trophees + ' ' + tt('trophées', 'awards'));
+  if (lg.length) L.push([g.temple || g.top100 ? tt('Légende', 'Legend') : tt('Palmarès', 'Honours'), lg.join(' · ')]);
+  if (g.carriere && g.carriere.pts) L.push([tt('Carrière', 'Career'), `${g.carriere.pts} pts${g.carriere.mj ? ' ' + tt('en', 'in') + ' ' + g.carriere.mj + ' ' + tt('matchs', 'games') : ''}`]);
+  if (q.saisons && q.saisons <= 2 && q.actif) L.push([tt('Recrue', 'Rookie'), `${ord(q.saisons)} ${tt('saison', 'season')}`]);
+  if (q.repechage && q.repechage.an && q.repechage.rang && q.repechage.rang <= 10) L.push([tt('Repêchage', 'Draft'), `${ord(q.repechage.rang)} ${tt('au total', 'overall')} · ${q.repechage.an}`]);
+  if (!L.length) return '';
+  return `<div class="j-pq"><div class="v-rang-t"><b>${tt('Pourquoi il bouge', 'Why he’s moving')}</b></div><div class="liste">${L.map(([k, v]) => `<div class="rangee"><span class="milieu"><span class="det">${k}</span><span class="nom">${v}</span></span></div>`).join('')}</div></div>`;
+}
+// 10 nov 2026 (Mathieu : « 6 buts cette semaine = tres haut ; les effets legendes ») : les pastilles de l'Indice joueur
+// (stats et donnees publiques seulement : jamais un prix)
+function pastillesIndice(g){
+  if (!g) return '';
+  const L = {en_feu: [tt('En feu', 'On fire'), 'rouge'], en_hausse: [tt('En hausse', 'Rising'), 'vert'], buzz: ['Buzz', 'acc'], legende: [tt('Légende', 'Legend'), 'or'], recrue: [tt('Recrue', 'Rookie'), 'or']};
+  const out = (g.pastilles || []).filter(k => L[k]).map(k => tag(L[k][0], L[k][1]));
+  const w = g.semaine; if (w && w.mj) out.push(tag(`${w.pts} pts · ${w.mj} ${tt('matchs', 'games')} ${tt('cette semaine', 'this week')}`));
+  return out.join('');
 }
 // 10 nov 2026 : la tendance d'un joueur, 100 % publique (forme LNH, popularite Wikipedia), en pastilles
 async function pastillesTendance(z, nom){
   if (!z || !nom) return;
   const t = await API.tendance_joueur(nom).catch(() => null); if (!t || !z.isConnected) return;
-  const f = t.forme, p = t.popularite, out = [];
+  const pq = $('#j-pq'); if (pq && t.pourquoi) pq.innerHTML = blocPourquoi(t.pourquoi);
+  const f = t.forme, p = t.popularite, out = [pastillesIndice(t)].filter(Boolean);
   if (f && f.matchs) out.push(tag(tt('Forme', 'Form') + ' : ' + f.points + ' pts / ' + f.matchs + ' ' + tt('matchs', 'games'), f.points >= 6 ? 'vert' : f.points >= 3 ? 'acc' : ''));
   if (p) out.push(tag(tt('Popularité', 'Buzz') + ' ' + (p.sens === 'hausse' ? '▲' : p.sens === 'baisse' ? '▼' : '=') + ' ' + (p.ratio >= 1 ? '+' : '') + Math.round((p.ratio - 1) * 100) + ' %', p.sens === 'hausse' ? 'vert' : p.sens === 'baisse' ? 'rouge' : ''));
   z.innerHTML = out.join('');
@@ -13602,6 +13704,7 @@ async function vueJoueur(arg){
         <div class="pastilles">${r.equipe ? ecussonEquipe(r.equipe) : ''}${r.recrue ? capsule(tt('Recrue · ', 'Rookie · ') + esc(r.recrue), 'or petit') : ''}</div>
         <div class="pastilles j-tend" id="j-tend"></div></div>
       <button class="btn j-alerte" id="j-alerte">${icN('cloche')}${tt('M’alerter', 'Alert me')}</button></div>
+    <div id="j-pq"></div>
     ${r.mediane || (t && t.pct != null) ? `<div class="v-hero">
       <div class="vh-g"><span>${tt('Sa carte vaut', 'His card is worth')}</span><b class="${r.mediane ? 'vert' : ''}">${r.mediane ? argent(r.mediane, 0) : '—'}</b><small>${esc(r.requete)}</small></div>
       <div class="vh-d"><div><span>${tt('30 jours', '30 days')}</span><b class="${t && t.pct > 0 ? 'vert' : t && t.pct < 0 ? 'rouge' : ''}">${t && t.pct != null ? (t.pct > 0 ? '+' : '') + t.pct + ' %' : '—'}</b></div></div></div>` : ''}

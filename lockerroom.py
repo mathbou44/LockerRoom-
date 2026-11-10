@@ -19,6 +19,7 @@ import sqlite3
 import statistics
 import threading
 import unicodedata
+import urllib.parse
 import time
 from datetime import datetime, timedelta, timezone
 
@@ -66,6 +67,8 @@ REGLAGES_DEFAUT = {
     "photo_studio": True,
     "flou_niveau": 2,                                           # 30 oct 2026 : fond flou 1 leger, 2 moyen, 3 fort
     "ramassage": [],
+    "radar_q": 0,                # 10 nov 2026 : le questionnaire du Radar deja vu (par compte)
+    "chasses": [],               # 10 nov 2026 : les sets que le Radar chasse (« il te manque ») : [{pid, sous, nom}]
     "pays": "CA",                # 8 nov 2026 : d'ou l'utilisateur achete (CA | US) : taxes, douanes et deals de son pays d'abord
     # 30 oct 2026 (Mathieu : « la personne qui a le profil doit pouvoir personnaliser ses deals un peu ») :
     # collectionne : recrues | veterans | legendes | hits | gradees (vide = tout) ; favoris : joueurs ou equipes
@@ -1246,13 +1249,21 @@ class Api:
                 "a_ajouter": len(nouveaux_produits.liste()), "erreurs_24h": sum(1 for e in s["erreurs"] if str(e["le"]) > (datetime.now() - timedelta(days=1)).isoformat()),
                 "ebay": s["ebay"], "version": s["version"], "vendues": vendues.statut(), "photos": s.get("photos"),
                 "taches": s.get("taches"), "disque": s.get("disque"), "veille": self._veille_resume(),
-                "demande_legale": self._demande_legale_statut(), "banc": self._banc_resume(), "highlightly": self._highlightly_statut()}
+                "demande_legale": self._demande_legale_statut(), "banc": self._banc_resume(), "highlightly": self._highlightly_statut(), "indice": self._indice_statut()}
 
     @staticmethod
     def _banc_resume():
         try:
             import banc
             return banc.resume()
+        except Exception as e:
+            return {"erreur": str(e)[:120]}
+
+    @staticmethod
+    def _indice_statut():
+        try:
+            import indice_joueurs
+            return {**indice_joueurs.statut(), "top": indice_joueurs.top(10, actifs=True), "legendes": indice_joueurs.top(5, "legende", actifs=False)}
         except Exception as e:
             return {"erreur": str(e)[:120]}
 
@@ -5773,7 +5784,7 @@ class Api:
                     continue
                 vus.add(iid)
                 n += 1
-                out.append({"item_id": iid, "titre": x.get("titre"), "total": tot, "photo": x.get("photo"), "url": x.get("url"),
+                out.append({"item_id": iid, "titre": x.get("titre"), "total": tot, "photo": x.get("photo"), "url": x.get("url"), "lieu": x.get("lieu"),
                             "encan": bool(x.get("encan")), "fin": x.get("fin"), "mises": x.get("mises"), "alerte_id": a["id"],
                             "q": a["q"], "prix_max": a["prix_max"], "sous_pct": round(100 * (1 - tot / float(a["prix_max"]))) if a["prix_max"] else 0})
             groupes.append({**a, "n": n})
@@ -5797,7 +5808,8 @@ class Api:
                         continue
                     vus_v.add(iid)
                     ann.append({"item_id": iid, "titre": x.get("titre"), "total": round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2),
-                                "photo": x.get("photo"), "url": x.get("url"), "encan": bool(x.get("encan")), "fin": x.get("fin"), "mises": x.get("mises")})
+                                "photo": x.get("photo"), "url": x.get("url"), "encan": bool(x.get("encan")), "fin": x.get("fin"), "mises": x.get("mises"),
+                                "lieu": x.get("lieu")})
                 vend.append({"vendeur": v, "annonces": ann[:24]})
         except Exception as e:
             print("Mes deals (vendeurs) : " + repr(e), flush=True)
@@ -5809,9 +5821,117 @@ class Api:
         decouvrir = []
         if not al and not pour_toi and not vend:
             decouvrir = self._radar_decouvrir(prof)
+        chauds = self._radar_chauds(prof, {g["joueur"] for g in pour_toi + decouvrir})
+        chasses = self._radar_chasses(prof)
+        pays = self.reglages_lire().get("pays") or "CA"
+        for x in out + [y for g in pour_toi + decouvrir + chauds + chasses for y in g.get("annonces") or []] \
+                + [y for v in vend for y in v.get("annonces") or []]:
+            self._frais_reels(x, pays)
+        try:
+            import alarmes
+            feu = bool(alarmes.reglages(self).get("en_feu"))
+        except Exception:
+            feu = False
         return {"ok": True, "deals": out[:120], "cibles": groupes, "vendeurs": vend, "pour_toi": pour_toi,
-                "decouvrir": decouvrir, "profil": {k: prof.get(k) for k in ("collectionne", "favoris", "prix_min", "prix_max")},
+                "decouvrir": decouvrir, "chauds": chauds, "chasses": chasses, "alerte_feu": feu, "pays": pays, "profil": {k: prof.get(k) for k in ("collectionne", "favoris", "prix_min", "prix_max")},
                 "profil_vide": not (prof.get("favoris") or prof.get("collectionne") or prof.get("prix_max"))}
+
+    @staticmethod
+    def _frais_reels(x, pays="CA"):
+        """10 nov 2026 (Mathieu : « un bon plus sur notre app vs eBay ») : ce que l'acheteur paiera VRAIMENT, en $ CA : le
+        prix + le port + les taxes de son pays, et les frais d'importation d'une carte qui vient d'ailleurs (estimes). Ce
+        n'est pas un jugement du prix : c'est le calcul de la facture de CETTE annonce."""
+        import deals as _dl
+        try:
+            t = _dl.taxe_de({**x, "_pays": pays})
+        except Exception:
+            return x
+        if x.get("total"):
+            x["total_reel"] = round(float(x["total"]) * (1 + t), 2)
+            x["etranger"] = _dl.etranger({**x, "_pays": pays}, pays)
+        return x
+
+    # -- 10 nov 2026 (Mathieu : « il te manque… ») : le Radar chasse les cartes qui manquent a un set de la collection ---
+    CHASSES_MAX, CHASSES_MAX_PRO = 2, 6
+
+    def chasses_liste(self):
+        import forfaits
+        l = [c for c in (self.reglages_lire().get("chasses") or []) if isinstance(c, dict) and c.get("pid") and c.get("sous")]
+        return {"ok": True, "chasses": l, "max": self.CHASSES_MAX_PRO if forfaits.est_pro() else self.CHASSES_MAX}
+
+    def chasse_ajouter(self, pid, sous, nom=None):
+        import catalogue
+        import forfaits
+        prod = catalogue.charger(str(pid or ""))
+        if not prod or not any(c.get("sous_ensemble") == sous for c in prod.get("cartes") or []):
+            return {"ok": False, "erreur": "Set introuvable"}
+        l = self.chasses_liste()["chasses"]
+        l = [c for c in l if not (c["pid"] == prod["id"] and c["sous"] == sous)]
+        mx = self.CHASSES_MAX_PRO if forfaits.est_pro() else self.CHASSES_MAX
+        if len(l) >= mx:
+            return {"ok": False, "erreur": f"{mx} sets chasses au plus" + ("" if forfaits.est_pro() else f" ({self.CHASSES_MAX_PRO} avec Pro)"),
+                    "pro_requis": not forfaits.est_pro()}
+        l.append({"pid": prod["id"], "sous": str(sous)[:80], "nom": str(nom or prod.get("nom") or "")[:80]})
+        self.reglages_sauver({"chasses": l})
+        return {"ok": True, "chasses": l}
+
+    def chasse_retirer(self, pid, sous):
+        l = [c for c in self.chasses_liste()["chasses"] if not (c["pid"] == pid and c["sous"] == sous)]
+        self.reglages_sauver({"chasses": l})
+        return {"ok": True, "chasses": l}
+
+    def _radar_chasses(self, prof):
+        """Pour chaque set chasse : UNE recherche eBay du sous-ensemble (« 2025-26 Upper Deck Series 1 Young Guns »), puis
+        on garde les annonces d'une carte qui manque (le nom du joueur et son numero dans le titre), dans le budget."""
+        import catalogue
+        import cartes_match
+        import collection_sets
+        out = []
+        for ch in self.chasses_liste()["chasses"][:self.CHASSES_MAX_PRO]:
+            try:
+                ck = collection_sets.checklist(self, ch["pid"], ch["sous"])
+                if not ck.get("ok"):
+                    continue
+                manque = [x for x in ck["cartes"] if not x["a"]]
+                if not manque:
+                    out.append({**ch, "manque": 0, "total": ck["total"], "annonces": []})
+                    continue
+                prod = catalogue.charger(ch["pid"]) or {}
+                q = re.sub(r"\s+", " ", f"{prod.get('nom') or ''} {ch['sous'] if cartes_match.norm(ch['sous']) not in cartes_match.norm(prod.get('nom') or '') else ''}").strip()[:100]
+                res = []
+                for ench in (False, True):
+                    res += ebay_compte.rechercher(q, categorie=CATEGORIE_CARTES, limite=50 if ench else 200, fond=False, encheres=ench,
+                                                  recentes=not ench, prix_max=prof.get("prix_max")) or []
+                vus, l = set(), []
+                for x in res:
+                    t = " " + cartes_match.norm(x.get("titre") or "") + " "
+                    tot = round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2)
+                    iid = str(x.get("item_id") or "")
+                    if not iid or iid in vus or not tot or (prof.get("prix_max") and tot > prof["prix_max"]):
+                        continue
+                    for m in manque:
+                        fam = cartes_match.norm(m.get("joueur") or "").split()[-1:] or [""]
+                        num = collection_sets._num(m.get("numero")).lower()
+                        if fam[0] and f" {fam[0]} " in t and num and re.search(r"(#|\s)0*" + re.escape(num) + r"\b", t):
+                            if cartes_match._decoder_memo(x.get("titre") or "").get("exclu"):          # lot, reprint, custom
+                                break
+                            vus.add(iid)
+                            l.append({"item_id": iid, "titre": x.get("titre"), "total": tot, "photo": x.get("photo"), "url": x.get("url"),
+                                      "encan": bool(x.get("encan")), "fin": x.get("fin"), "mises": x.get("mises"), "lieu": x.get("lieu"),
+                                      "numero": m.get("numero"), "joueur": m.get("joueur")})
+                            break
+                l.sort(key=lambda x: x["total"])
+                out.append({**ch, "manque": len(manque), "total": ck["total"], "annonces": l[:24],
+                            "cartes_trouvees": len({x["numero"] for x in l})})
+            except (RuntimeError, OSError) as e:
+                out.append({**ch, "annonces": [], "erreur": str(e)[:120]})
+        return out
+
+    def radar_alerte_feu(self, on=True):
+        """La pastille « M'avertir quand mes joueurs sont en feu » du Radar (une alerte que l'utilisateur coche : App Store 4.5.4)."""
+        import alarmes
+        alarmes.regler(self, {"en_feu": bool(on)})
+        return {"ok": True, "alerte_feu": bool(alarmes.reglages(self).get("en_feu"))}
 
     # ce que chaque sorte de collection ajoute a la recherche eBay (OU : une seule recherche par joueur)
     RADAR_MOTS = {"recrues": ("young guns", "rookie", "rc"), "hits": ("auto", "autograph", "patch", "relic"),
@@ -5853,7 +5973,7 @@ class Api:
                     pass
             vus.add(iid)
             out.append({"item_id": iid, "titre": x.get("titre"), "total": tot, "photo": x.get("photo"), "url": x.get("url"),
-                        "encan": bool(x.get("encan")), "fin": x.get("fin"), "mises": x.get("mises"), "joueur": nom})
+                        "encan": bool(x.get("encan")), "fin": x.get("fin"), "mises": x.get("mises"), "joueur": nom, "lieu": x.get("lieu")})
         # les encans qui finissent bientot d'abord, puis les nouvelles annonces
         out.sort(key=lambda x: (0, str(x.get("fin") or "")) if x["encan"] else (1, ""))
         return out[:limite]
@@ -5867,13 +5987,12 @@ class Api:
             except (RuntimeError, OSError) as e:
                 out.append({"joueur": f, "annonces": [], "erreur": str(e)[:120]})
                 continue
-            out.append({"joueur": f, "annonces": l[:24], "n": len(l)})
+            out.append({"joueur": f, "annonces": l[:24], "n": len(l), **self._pastilles_joueur(f)})
         return out
 
     def _radar_decouvrir(self, prof):
         try:
-            import demande_legale
-            noms = [x["nom"] for x in demande_legale.populaires(4)]
+            noms = [x["nom"] for x in self._radar_top(4)]
         except Exception as e:
             print("Radar (decouvrir) : " + repr(e), flush=True)
             noms = []
@@ -5884,15 +6003,167 @@ class Api:
             except (RuntimeError, OSError):
                 continue
             if l:
-                out.append({"joueur": nom, "annonces": l})
+                out.append({"joueur": nom, "annonces": l, **self._pastilles_joueur(nom)})
         return out
+
+    @staticmethod
+    def _radar_top(n):
+        """Les joueurs actifs du moment : l'Indice joueur de la semaine s'il est calcule, sinon la demande legale."""
+        import demande_legale
+        try:
+            import indice_joueurs
+            l = indice_joueurs.top(n, actifs=True)
+            if len(l) >= n:
+                return l
+        except Exception:
+            pass
+        return demande_legale.populaires(n)
+
+    @staticmethod
+    def _pastilles_joueur(nom):
+        try:
+            import indice_joueurs
+            v = indice_joueurs.indice(nom) or {}
+            return {"pastilles": v.get("pastilles") or [], "indice": v.get("indice"), "semaine": v.get("semaine")}
+        except Exception:
+            return {"pastilles": [], "indice": None, "semaine": None}
+
+    def _radar_chauds(self, prof, deja):
+        """10 nov 2026 (Mathieu : « si un joueur a 6 buts cette semaine il tombe tres haut ») : les joueurs EN FEU cette
+        semaine (stats, jamais un prix eBay), et leurs annonces dans le budget. 4 joueurs au plus."""
+        try:
+            import indice_joueurs
+            chauds = [x for x in indice_joueurs.top(8, "en_feu", actifs=True) if x["nom"] not in deja][:4]
+        except Exception:
+            return []
+        out = []
+        for x in chauds:
+            try:
+                l = self._radar_annonces(x["nom"], prof.get("collectionne"), prof.get("prix_min"), prof.get("prix_max") or 100, limite=12)
+            except (RuntimeError, OSError):
+                continue
+            if l:
+                out.append({"joueur": x["nom"], "annonces": l, **self._pastilles_joueur(x["nom"])})
+        return out
+
+    # 10 nov 2026 (Mathieu : « montrer quand c'est plus vraiment un bon prix, sans leur dire quoi mettre ; subtilement ») :
+    # la MEME carte en Achat immediat, de la moins chere a la plus chere. On montre des annonces telles quelles (chercher et
+    # afficher : permis par la licence eBay) ; aucune moyenne, aucune mediane, aucun prix suggere. L'utilisateur juge.
+    def _achat_immediat_meme(self, titre, item_id=None):
+        import cartes_match
+        titre = str(titre or "")[:200]
+        if not titre.strip():
+            return []
+        c = cartes_match.cible_titre(titre)
+        q = cartes_match.requete_ebay(c)
+        if not q.strip():
+            return []
+        res = ebay_compte.rechercher(q, categorie=CATEGORIE_CARTES, limite=100, fond=False) or []
+        _c, memes, _e = cartes_match.filtrer_carte(titre, res, exclure_id=item_id)
+        vus, out = set(), []
+        for x in memes:
+            iid = str(x.get("item_id") or "")
+            tot = round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2)
+            if not iid or iid in vus or not tot or x.get("encan"):
+                continue
+            vus.add(iid)
+            out.append({"item_id": iid, "titre": x.get("titre"), "total": tot, "photo": x.get("photo"), "url": x.get("url"), "lieu": x.get("lieu")})
+        out.sort(key=lambda x: x["total"])
+        pays = self.reglages_lire().get("pays") or "CA"
+        for x in out:
+            self._frais_reels(x, pays)
+        return out
+
+    def verifier_prix(self, item_id=None, titre=None):
+        """10 nov 2026 (Mathieu : « verifier le prix le plus rapidement possible et legalement ») : un tap, trois blocs :
+        1. la meme carte EN VENTE (Achat immediat, la moins chere d'abord, vrai total) ;
+        2. les ENCANS EN COURS de la meme carte (mise actuelle, nombre de mises, fin) ;
+        3. le lien vers les VENTES TERMINEES sur eBay (le site d'eBay lui-meme, recherche deja remplie).
+        + son historique a lui (ce qu'il a paye ou vendu pour cette carte). Aucune moyenne, aucune mediane, aucun prix
+        suggere : des annonces affichees telles quelles et un lien. L'utilisateur juge."""
+        import cartes_match
+        titre = str(titre or "")[:200]
+        if not titre.strip():
+            return {"ok": False, "erreur": "Quelle carte ?"}
+        c = cartes_match.cible_titre(titre)
+        q = cartes_match.requete_ebay(c)
+        pays = self.reglages_lire().get("pays") or "CA"
+        out = {"ok": True, "titre": titre, "q": q}
+        try:
+            out["en_vente"] = self._achat_immediat_meme(titre, item_id)[:12]
+        except (RuntimeError, OSError) as e:
+            out["en_vente"], out["erreur_vente"] = [], str(e)[:160]
+        enc = []
+        try:
+            res = ebay_compte.rechercher(q, categorie=CATEGORIE_CARTES, limite=50, fond=False, encheres=True) or []
+            _c, memes, _e = cartes_match.filtrer_carte(titre, res, exclure_id=item_id)
+            maint = time.time()
+            vus = set()
+            for x in memes:
+                iid = str(x.get("item_id") or "")
+                tot = round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2)
+                try:
+                    fin_ts = datetime.fromisoformat(str(x.get("fin")).replace("Z", "+00:00")).timestamp() if x.get("fin") else None
+                except ValueError:
+                    fin_ts = None
+                if not iid or iid in vus or not tot or (fin_ts and fin_ts < maint):
+                    continue
+                vus.add(iid)
+                enc.append(self._frais_reels({"item_id": iid, "titre": x.get("titre"), "total": tot, "photo": x.get("photo"), "url": x.get("url"),
+                                              "encan": True, "fin": x.get("fin"), "mises": x.get("mises"), "lieu": x.get("lieu")}, pays))
+            enc.sort(key=lambda x: str(x.get("fin") or "9"))
+        except (RuntimeError, OSError) as e:
+            out["erreur_encans"] = str(e)[:160]
+        out["encans"] = enc[:12]
+        dom = "www.ebay.com" if pays == "US" else "www.ebay.ca"
+        out["lien_vendues"] = f"https://{dom}/sch/i.html?" + urllib.parse.urlencode(
+            {"_nkw": q, "_sacat": CATEGORIE_CARTES, "LH_Sold": "1", "LH_Complete": "1", "_sop": "13"})
+        # son historique a lui : ses cartes de la meme carte (cout, prix vendu)
+        mien = []
+        try:
+            for k in self.inventaire_liste({}) or []:
+                t = k.get("titre") or ""
+                if t and not cartes_match.raisons_refus(c, t):
+                    mien.append({"titre": t, "cout": k.get("cout"), "prix_vendu": k.get("prix_vendu"), "statut": k.get("statut"),
+                                 "le": k.get("vendu_le") or k.get("cree_le")})
+        except Exception:
+            pass
+        out["mien"] = mien[:10]
+        return out
+
+    def comparer(self, item_id=None, titre=None):
+        """La feuille « Comparer » : la meme carte en Achat immediat, la moins chere d'abord (12 au plus)."""
+        try:
+            l = self._achat_immediat_meme(titre, item_id)
+        except (RuntimeError, OSError) as e:
+            return {"ok": False, "erreur": str(e)[:160]}
+        return {"ok": True, "annonces": l[:12], "n": len(l)}
+
+    def comparer_lot(self, items=None):
+        """Pour les encans a l'ecran (8 au plus) : la moins chere de la meme carte en Achat immediat, si elle existe."""
+        out = {}
+        for x in (items or [])[:8]:
+            if not isinstance(x, dict):
+                continue
+            iid = re.sub(r"[^0-9|v]", "", str(x.get("item_id") or ""))[:40]
+            if not iid:
+                continue
+            try:
+                l = self._achat_immediat_meme(x.get("titre"), iid)
+            except (RuntimeError, OSError):
+                break
+            if l:
+                out[iid] = {"des": l[0]["total"], "n": len(l), "url": l[0]["url"]}
+        return {"ok": True, "items": out}
 
     def radar_suggestions(self):
         """Les pastilles de joueurs du questionnaire du Radar : les plus demandes et les recrues du moment (donnees publiques)."""
         try:
             import demande_legale
-            top = demande_legale.populaires(12)
-            rec = [x for x in demande_legale.populaires(8, recrues=True) if x["nom"] not in {t["nom"] for t in top}]
+            import indice_joueurs
+            top = self._radar_top(12)
+            rec = indice_joueurs.top(8, "recrue", actifs=True) or demande_legale.populaires(8, recrues=True)
+            rec = [x for x in rec if x["nom"] not in {t["nom"] for t in top}]
         except Exception:
             top, rec = [], []
         return {"ok": True, "joueurs": [{"nom": x["nom"], "equipe": x.get("equipe"), "recrue": x.get("recrue"), "hausse": x.get("hausse")}
@@ -5925,7 +6196,12 @@ class Api:
     def tendance_joueur(self, nom):
         """10 nov 2026 : la tendance d'un joueur avec des donnees publiques seulement : sa forme LNH (5 derniers matchs) et
         sa popularite (visites Wikipedia, 30 derniers jours contre les 60 d'avant)."""
-        out = {"ok": True, "joueur": nom}
+        out = {"ok": True, "joueur": nom, **self._pastilles_joueur(nom)}
+        try:
+            import indice_joueurs
+            out["pourquoi"] = indice_joueurs.pourquoi(nom)
+        except Exception as e:
+            print("Pourquoi : " + repr(e), flush=True)
         try:
             import demande_legale
             out["popularite"] = demande_legale.tendance(nom)

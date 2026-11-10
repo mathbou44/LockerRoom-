@@ -1296,6 +1296,11 @@ def _valeurs_auto():
                 highlightly.test()
         except Exception as e:
             print("Highlightly : " + str(e), flush=True)
+        try:                                    # 10 nov 2026 - l'Indice joueur de la semaine (stats Highlightly + publiques)
+            import indice_joueurs
+            indice_joueurs.passe_si_besoin()
+        except Exception as e:
+            print("Indice joueurs : " + str(e), flush=True)
         try:                                    # 10 nov 2026 - TheCardAPI : les ventes de hockey d'hier -> nos archives (1 fois/jour)
             import thecardapi
             thecardapi.moissonner_si_besoin()
