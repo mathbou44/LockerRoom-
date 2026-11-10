@@ -20,13 +20,13 @@ with comptes.utiliser(cid):
     os.environ["LR_PRIX_EBAY_PUBLIC"] = "1"               # apres l'accord ecrit d'eBay
     assert lockerroom.ebay_prix_actif()
     os.environ.pop("LR_PRIX_EBAY_PUBLIC")
-api._est_admin = lambda: True
+api._est_admin = lambda reel=False: True
 with comptes.utiliser(cid):
     assert lockerroom.ebay_prix_actif(), "l'admin garde les deals et les comps"
 print("OK deals admin")
 # 10 nov 2026 : les comps (ventes recoltees sur eBay) = admin seulement
 import vendues
-api._est_admin = lambda: False
+api._est_admin = lambda reel=False: False
 with comptes.utiliser(cid):
     assert not lockerroom.comps_permis()
     assert vendues.rechercher("connor bedard young guns", fond=False).get("coupe")
@@ -34,7 +34,22 @@ with comptes.utiliser(cid):
     assert api.tendances()["coupe"] and api.pouls()["coupe"] and api.collection_valeur()["coupe"]
     assert api.forfait()["comps"] is False
 assert lockerroom.comps_permis()                          # tache de fond sans compte (chasseur de l'admin)
-api._est_admin = lambda: True
+api._est_admin = lambda reel=False: True
 with comptes.utiliser(cid):
     assert lockerroom.comps_permis()
 print("OK comps admin")
+# 10 nov 2026 : l'admin regarde l'app comme un utilisateur Pro ou Gratuit
+import forfaits
+vrai = lockerroom.vue_simulee
+api._est_admin = lambda reel=False: True
+lockerroom.vue_simulee = lambda: "gratuit"
+with comptes.utiliser(cid):
+    assert not lockerroom.comps_permis() and not lockerroom.ebay_prix_actif()
+    assert forfaits.etat()["pro"] is False
+lockerroom.vue_simulee = lambda: "pro"
+with comptes.utiliser(cid):
+    assert forfaits.etat()["pro"] is True and not lockerroom.comps_permis()
+lockerroom.vue_simulee = vrai
+with comptes.utiliser(cid):
+    assert lockerroom.comps_permis()
+print("OK vue simulee")

@@ -732,9 +732,18 @@ def valeur_sure(pv, titre_annonce=""):
         dc = cartes_match.decoder(titre_annonce)
         if dc.get("auto") or dc.get("patch") or (dc.get("serie") and dc["serie"] <= 99):
             jm = JOURS_MAX_HITS
+    # 10 nov 2026 (banc de validation) : la recette gagnante du backtest quotidien (banc.recette) remplace les reglages
+    try:
+        import banc
+        rc = banc.recette()
+    except Exception:
+        rc = {}
+    ms, jr = int(rc.get("min_sures") or MIN_VENTES_SURES), int(rc.get("jours_recents") or JOURS_RECENTS)
+    if jm == JOURS_MAX and rc.get("jours_max"):
+        jm = int(rc["jours_max"])
     pv = [v for v in pv if _jours(v) <= jm]
-    recentes = [v for v in pv if _jours(v) <= JOURS_RECENTS]
-    if len(recentes) >= MIN_VENTES_SURES:
+    recentes = [v for v in pv if _jours(v) <= jr]
+    if len(recentes) >= ms:
         pv = recentes
     if len(pv) < 2:
         return None, "pas assez de ventes"
@@ -747,7 +756,7 @@ def valeur_sure(pv, titre_annonce=""):
             return None, "2 ventes trop differentes ou trop vieilles"
         return round(prix[0] * (0.9 if vieilles else 1), 2), pv          # 2 ventes : la plus basse
     m, garde = cartes_match.mediane_robuste(prix)
-    if len(garde) < MIN_VENTES_SURES:
+    if len(garde) < ms:
         return None, "ventes trop dispersees"
     if len(garde) >= 4:
         q1, _q2, q3 = statistics.quantiles(garde, n=4)
@@ -756,7 +765,7 @@ def valeur_sure(pv, titre_annonce=""):
     if len(garde) == 3 and garde[-1] > garde[0] * 2.5:
         return None, "ventes trop dispersees"
     dernieres = sorted(pv, key=lambda v: str(v.get("le") or ""), reverse=True)[:3]
-    if len(dernieres) == 3:
+    if len(dernieres) == 3 and rc.get("dernieres3", True):
         m = min(m, statistics.median(float(v["prix"]) for v in dernieres))
     return round(m, 2), pv
 

@@ -274,6 +274,20 @@ def marquer_ios(oui):
 _API_REF = []
 
 
+def vue_simulee():
+    """10 nov 2026 (Mathieu : « une place dans admin ou je peux switcher de ma version a celle des users reguliers et Pro ») :
+    l'admin voit l'app comme un utilisateur (« pro » ou « gratuit ») ; None = sa vraie vue. Dans la session du navigateur
+    seulement (posee par admin_vue, reserve au vrai admin) ; jamais pour les taches de fond."""
+    try:
+        from flask import has_request_context, session
+        if has_request_context():
+            v = session.get("vue_admin")
+            return v if v in ("pro", "gratuit") else None
+    except Exception:
+        pass
+    return None
+
+
 def ebay_prix_actif(api=None):
     """27 oct 2026 - interrupteur du serveur (LOCKERROOM_EBAY_PRIX=0) : coupe d'un geste les fonctions de prix sur les
     ANNONCES eBay (deals, prix suggere d'une annonce, repere prix et comparables, « Mettre au prix du marche ») si eBay
@@ -286,6 +300,8 @@ def ebay_prix_actif(api=None):
         return False
     if os.environ.get("LR_PRIX_EBAY_PUBLIC") == "1":
         return True
+    if vue_simulee():
+        return False
     try:
         import comptes
         if not comptes.MULTI:
@@ -304,6 +320,8 @@ def comps_permis(api=None):
     LR_COMPS_PUBLICS=1 pour les rouvrir a tous (seulement avec l'accord ecrit d'eBay ou une source sous licence)."""
     if os.environ.get("LR_COMPS_PUBLICS") == "1":
         return True
+    if vue_simulee():
+        return False
     try:
         import comptes
         if not comptes.MULTI or not comptes.courant():
@@ -577,7 +595,7 @@ class Api:
                         and not info.get("identites_reliees_vu"))
         except ValueError:
             neuf = False
-        return {**forfaits.resume(), "multi": multi, "compte_neuf": neuf, "admin": self._est_admin(), "comps": comps_permis(self), "admin_a_verifier": adm_c and not self._est_admin(),
+        return {**forfaits.resume(), "multi": multi, "compte_neuf": neuf, "admin": self._est_admin(), "admin_reel": self._est_admin(reel=True), "vue": vue_simulee() or "admin", "comps": comps_permis(self), "admin_a_verifier": adm_c and not self._est_admin(),
                 "admin_verif_active": adm_c and comptes.MULTI and self._admin_verif_possible(), "communaute": ventes_communaute.actif(),
                 # 27 oct 2026 - revue legale : logos et photos de la LNH = marques et contenu de la LNH (conditions : usage
                 # non commercial) -> coupes par defaut ; seulement avec une licence (LOCKERROOM_LOGOS_LNH=1)
@@ -1227,7 +1245,39 @@ class Api:
                 "demandes": {"ouvertes": dm["ouvertes"], "nouvelles": dm["nouvelles"]},
                 "a_ajouter": len(nouveaux_produits.liste()), "erreurs_24h": sum(1 for e in s["erreurs"] if str(e["le"]) > (datetime.now() - timedelta(days=1)).isoformat()),
                 "ebay": s["ebay"], "version": s["version"], "vendues": vendues.statut(), "photos": s.get("photos"),
-                "taches": s.get("taches"), "disque": s.get("disque"), "veille": self._veille_resume()}
+                "taches": s.get("taches"), "disque": s.get("disque"), "veille": self._veille_resume(),
+                "demande_legale": self._demande_legale_statut(), "banc": self._banc_resume()}
+
+    @staticmethod
+    def _banc_resume():
+        try:
+            import banc
+            return banc.resume()
+        except Exception as e:
+            return {"erreur": str(e)[:120]}
+
+    def admin_banc_lancer(self):
+        """10 nov 2026 : relancer le banc de validation tout de suite (admin)."""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import banc
+        banc._ETAT["le"] = 0.0
+        if banc._ETAT["en_cours"]:
+            return {"ok": True, "deja": True}
+        d = banc.lire()
+        if d.get("dernier"):
+            d = dict(d)
+            d["dernier"] = dict(d["dernier"], le="")       # force une nouvelle passe aujourd'hui
+            banc._ecrire(d)
+        return {"ok": True, "lance": banc.passe_si_besoin()}
+
+    @staticmethod
+    def _demande_legale_statut():
+        try:
+            import demande_legale
+            return demande_legale.statut()
+        except Exception as e:
+            return {"erreur": str(e)[:120]}
 
     @staticmethod
     def _veille_resume():
@@ -1513,7 +1563,28 @@ class Api:
         import nouveaux_produits
         return nouveaux_produits.demander(nom, sport or self.reglages_lire().get("sport"), comptes.courant() if comptes.MULTI else "local")
 
-    def _est_admin(self):
+    def admin_vue(self, vue=None):
+        """10 nov 2026 : l'admin choisit sa vue : « admin » (la sienne), « pro » ou « gratuit » (comme un utilisateur).
+        Seul le VRAI admin peut changer ; la vue simulee ne donne jamais plus que ce qu'un utilisateur a."""
+        if not self._est_admin(reel=True):
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        try:
+            from flask import has_request_context, session
+            if vue is not None and has_request_context():
+                if vue in ("pro", "gratuit"):
+                    session["vue_admin"] = vue
+                else:
+                    session.pop("vue_admin", None)
+        except Exception:
+            pass
+        return {"ok": True, "vue": vue_simulee() or "admin"}
+
+    def _est_admin(self, reel=False):
+        if not reel and vue_simulee() and self._est_admin0():
+            return False                         # 10 nov 2026 : l'admin regarde l'app comme un utilisateur
+        return self._est_admin0()
+
+    def _est_admin0(self):
         """L'admin, pour de vrai : un compte admin (_est_admin_compte) ET, en ligne, la 2e verification de CETTE session.
         8 nov 2026 (Mathieu : « ultra securise », « oui pour la validation cell ») : un compte admin vole (temoin de session
         copie, telephone emprunte...) n'ouvre pas la console : il faut le code envoye sur l'iPhone de l'admin (ou le code

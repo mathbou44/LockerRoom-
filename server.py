@@ -1279,6 +1279,16 @@ def _valeurs_auto():
             base_ventes.enrichir_si_besoin()
         except Exception as e:
             print("Base des ventes : " + str(e), flush=True)
+        try:                                    # 10 nov 2026 - le banc de validation (backtest valeur, deals, tendance ; 1 fois/jour)
+            import banc
+            banc.passe_si_besoin()
+        except Exception as e:
+            print("Banc de validation : " + str(e), flush=True)
+        try:                                    # 10 nov 2026 - la demande des joueurs sans ventes eBay (LNH, Wikipedia) + le labo
+            import demande_legale
+            demande_legale.passe_si_besoin()
+        except Exception as e:
+            print("Demande legale : " + str(e), flush=True)
         try:                                    # 10 nov 2026 - TheCardAPI : les ventes de hockey d'hier -> nos archives (1 fois/jour)
             import thecardapi
             thecardapi.moissonner_si_besoin()

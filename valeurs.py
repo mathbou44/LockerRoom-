@@ -84,18 +84,49 @@ def statut():
             "nb_mesures": sum(len(v) for v in se.values()), "nb_ventes": d.get("nb_ventes")}
 
 
+_COMPS = {}
+
+
+def _comps():
+    """10 nov 2026 : la demande mesuree sur les ventes = admin seulement (lockerroom.comps_permis), garde 5 s par compte
+    (demande() est appelee des milliers de fois par calcul)."""
+    try:
+        import comptes
+        import time as _t
+        k = comptes.courant() or ""
+        v = _COMPS.get(k)
+        if v and _t.time() - v[1] < 5:
+            return v[0]
+        import lockerroom
+        r = lockerroom.comps_permis()
+        if len(_COMPS) > 5000:
+            _COMPS.clear()
+        _COMPS[k] = (r, _t.time())
+        return r
+    except Exception:
+        return True
+
+
 def demande(joueur):
-    """Multiplicateur de demande ; carte a deux joueurs : moyenne des deux."""
+    """Multiplicateur de demande ; carte a deux joueurs : moyenne des deux.
+    10 nov 2026 : pour le public, la demande tiree des donnees publiques du sport (demande_legale : LNH, Wikipedia)."""
     _charger()
     noms = [x for x in re.split(r"\s*/\s*|\s+&\s+", str(joueur or "")) if x.strip()]
     if not noms:
         return DEMANDE_INCONNUE
+    if not _comps():
+        import demande_legale
+        vals = [demande_legale.demande(n) or DEMANDE_INCONNUE for n in noms]
+        return sum(vals) / len(vals)
     vals = [_ETAT["index"].get(norm_nom(n), DEMANDE_INCONNUE) for n in noms]
     return sum(vals) / len(vals)
 
 
 def connu(joueur):
     _charger()
+    if not _comps():
+        import demande_legale
+        return demande_legale.demande(joueur) is not None
     return norm_nom(joueur) in _ETAT["index"]
 
 
@@ -103,7 +134,7 @@ def valeur_sous_ensemble(prod, nom, se, taux, _prof=0):
     """(valeur $ pour un joueur a 1,0, mesuree?) d'une carte du sous-ensemble."""
     d = _charger()
     m = ((d.get("sous_ensembles") or {}).get(prod["id"]) or {}).get(nom)
-    if m and m.get("valeur"):
+    if m and m.get("valeur") and _comps():          # 10 nov 2026 : mesure sur les ventes = admin ; public : le modele (tirage, cotes)
         return float(m["valeur"]), True
     s = se.get(nom) or {}
     parent = s.get("parallele_de")
@@ -135,11 +166,12 @@ def valeur_carte(prod, nom, joueur, se, taux, cache=None):
     if not noms:
         return vref * DEMANDE_INCONNUE, mesure
     vals, ok = [], False
+    publique = not _comps()                              # 10 nov 2026 : ni ventes ni annonces pour le public
     for j in noms:
-        v, m = valeur_produit.valeur(prod, nom, j, None)
+        v, m = valeur_produit.valeur(prod, nom, j, None) if not publique else (None, False)
         if v is None:                                    # parallele : remonte au sous-ensemble mesure
             s, k, chaine = se.get(nom) or {}, nom, 0
-            while v is None and s.get("parallele_de") and chaine < 6:
+            while v is None and not publique and s.get("parallele_de") and chaine < 6:
                 k = s["parallele_de"]
                 vp, m = valeur_produit.valeur(prod, k, j, None)
                 if vp is not None:
@@ -149,7 +181,7 @@ def valeur_carte(prod, nom, joueur, se, taux, cache=None):
                 s, chaine = se.get(k) or {}, chaine + 1
         if v is None:
             dj = demande(j)
-            if not connu(j):                              # recrue toute neuve : sa cote d'apres ses annonces
+            if not connu(j) and not publique:             # recrue toute neuve : sa cote d'apres ses annonces (admin)
                 dr = valeur_produit.demande_recrue(prod, j)
                 dj = dr if dr is not None else dj
             # 26 oct 2026 : la demande d'un joueur (mesuree surtout sur ses recrues et ses hits) gonfle trop ses cartes de

@@ -1820,6 +1820,9 @@ button.btn-scan{border:none; font:inherit; font-weight:700}
 .j-tete{display:flex; align-items:center; flex-wrap:wrap; gap:12px 16px} .j-tete .titre{overflow-wrap:anywhere} .j-tete .j-alerte{flex:1 1 100%} .vig-j.grand{width:96px; height:128px; border-radius:14px} .j-n{flex:1; min-width:0; display:flex; flex-direction:column; gap:8px}
 .j-alerte{width:auto !important; padding:0 18px}
 .lien-j{color:inherit; text-decoration:none; border-bottom:1px dotted color-mix(in srgb, var(--acc) 60%, transparent)} .lien-j:hover{color:var(--acc-clair)}
+.banc h3{margin:18px 0 4px} .banc-t > div{display:grid; grid-template-columns:1.6fr .8fr .7fr .7fr .7fr .7fr; gap:6px; padding:7px 0; border-bottom:1px solid var(--ligne,#2B2A32); font-size:13px} .banc-t > div.on{color:var(--acc,#B9BEFF)} .banc-t .tete{opacity:.7; font-weight:700} .banc-ad{margin-top:8px}
+.adm-vue{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:6px 0 4px} .adm-vue > span{font-weight:700; font-size:13px; opacity:.75}
+.vue-simulee{position:fixed; z-index:9999; left:50%; transform:translateX(-50%); top:calc(env(safe-area-inset-top,0px) + 8px); display:flex; align-items:center; gap:10px; padding:8px 8px 8px 14px; border-radius:999px; border:1px solid rgba(241,213,142,.6); background:#1E1A10; color:#F1D58E; font:700 13px 'Barlow',system-ui,sans-serif; box-shadow:0 8px 24px rgba(0,0,0,.5)} .vue-simulee b{padding:5px 11px; border-radius:999px; background:#F1D58E; color:#1E1A10}
 .v-fiche{margin-top:6px; padding:16px; border-radius:18px; background:var(--carte,#151519); border:1px solid var(--ligne,#2B2A32)} .vf-t{font-weight:800; font-size:13px; letter-spacing:.06em; text-transform:uppercase; opacity:.7; margin-bottom:10px} .vf-p{display:flex; flex-wrap:wrap; gap:8px} .vf-p .capsule{font-size:15px; padding:8px 14px} .v-fiche .lien-doux{margin-top:12px} .vf-note{text-align:center; margin:14px 0 4px}
 .nav-alertes{display:none !important; position:relative} .cloche-n{min-width:18px; height:18px; border-radius:9px; background:var(--acc); color:var(--acc-texte); font-size:11px; font-weight:800; display:inline-flex; align-items:center; justify-content:center; padding:0 5px; margin-left:auto}
 @media (min-width:900px){ .nav-alertes{display:flex !important} }
@@ -6216,6 +6219,23 @@ function questionCompteNeuf(){
       <button class="btn ghost" id="cn-non">${tt('Non, c’est mon premier appareil', 'No, this is my first device')}</button></div>`, popFermer);
   const n = $('#cn-non'); if (n) n.onclick = popFermer;
 }
+// 10 nov 2026 (Mathieu : « une place dans admin ou je peux switcher de ma version a celle des users reguliers et Pro ») :
+// l'admin voit l'app comme un utilisateur Pro ou Gratuit ; une pastille en haut le ramene a sa vue d'un tap
+async function changerVue(v){
+  vibrer();
+  const r = await API.admin_vue(v).catch(() => null);
+  if (!r || !r.ok) { toast(tt('Impossible de changer de vue', 'Could not switch view')); return; }
+  await chargerForfait();
+  toast(v === 'admin' ? tt('Ta vue admin', 'Your admin view') : tt('Tu vois l’app comme un utilisateur ', 'You see the app as a ') + (v === 'pro' ? 'Pro' : tt('Gratuit', 'Free user')));
+  if (location.hash === (v === 'admin' ? '#admin' : '#accueil')) route(); else location.hash = v === 'admin' ? '#admin' : '#accueil';
+}
+function pastilleVue(){
+  const f = S.forfait || {}; let b = $('#vue-simulee');
+  if (!f.admin_reel || !f.vue || f.vue === 'admin') { if (b) b.remove(); return; }
+  if (!b) { b = document.createElement('button'); b.id = 'vue-simulee'; b.className = 'vue-simulee'; document.body.appendChild(b); }
+  b.innerHTML = `${tt('Vue', 'View')} ${f.vue === 'pro' ? 'Pro' : tt('Gratuit', 'Free')}<b>${tt('Revenir admin', 'Back to admin')}</b>`;
+  b.onclick = () => changerVue('admin');
+}
 async function chargerForfait(){
   S.forfait = await API.forfait().catch(() => null);
   const f = S.forfait || {};
@@ -6229,6 +6249,7 @@ async function chargerForfait(){
   if (!h) { h = document.createElement('div'); h.id = 'badge-coin'; h.className = 'badge-coin'; document.body.appendChild(h); }
   h.innerHTML = htmlBadge(); brancherBadge(h); document.body.classList.toggle('a-badge', !!h.innerHTML);
   majBarreMode();
+  pastilleVue();
 }
 const AVANTAGES_PRO = () => [
   [tt('Annonces illimitées depuis tes photos', 'Unlimited listings from your photos'), tt(`Gratuit : ${(S.forfait || {}).limites ? S.forfait.limites.annonces_mois : 5} par mois`, `Free: ${(S.forfait || {}).limites ? S.forfait.limites.annonces_mois : 5} per month`)],
@@ -8736,6 +8757,8 @@ async function vueAccueil(arg){
       ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>', tt('Produits à ajouter', 'Products to add'), String(rA.a_ajouter || 0), tt('repérés sur eBay ou demandés', 'spotted or requested'), '#admin/catalogue', rA.a_ajouter ? 'or' : ''],
       ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 21h20z"/><path d="M12 10v5M12 18h.01"/></svg>', tt('Erreurs 24 h', 'Errors 24 h'), String(rA.erreurs_24h || 0), tt('serveur', 'server'), '#admin/serveur', rA.erreurs_24h ? 'rouge' : 'vert'],
       ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>', 'SoldComps', v.actif ? `${v.aujourdhui || 0} / ${v.plafond || 0}` : tt('inactif', 'off'), tt('recherches aujourd’hui', 'searches today') + (v.poids_jour && Math.abs(v.poids_jour - 1) > 0.01 ? ' · ×' + decFr(v.poids_jour) + tt(' ce jour-là', ' this weekday') : ''), '#admin/serveur', !v.actif ? 'rouge' : pc(v.aujourdhui, v.plafond) > 80 ? 'or' : ''],
+      ...(rA.demande_legale && !rA.demande_legale.erreur ? [(() => { const dl = rA.demande_legale, lb = dl.labo || {}, g = lb.garde && (lb.combinaisons || {})[lb.garde];   // 10 nov 2026 : labo de la demande sans ventes (LNH, Wikipedia)
+        return ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/></svg>', tt('Labo demande', 'Demand lab'), g && g.rho != null ? 'ρ ' + decFr(g.rho) : String(dl.joueurs || 0), g ? (lb.garde + ' · ' + tt('top 20 en commun : ', 'top 20 shared: ') + g.top20 + ' · ' + lb.n + tt(' joueurs', ' players')) : tt('joueurs lus (LNH, Wikipedia)', 'players read (NHL, Wikipedia)'), '#admin/serveur', !g ? '' : g.rho >= 0.7 ? 'vert' : g.rho >= 0.5 ? 'or' : 'rouge']; })()] : []),
       ...(v.thecardapi ? [(() => { const t = v.thecardapi, er = t.derniere_erreur && Date.now() / 1000 - t.derniere_erreur.le < 3600;   // 10 nov 2026 : 2e source de ventes (raffiner, sauver, archiver)
         return ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>', 'TheCardAPI', t.actif ? `${t.aujourdhui || 0} / ${t.plafond || 0}` : tt('sans clé', 'no key'), t.actif ? tt('ventes lues aujourd’hui', 'sales read today') + (t.derniere_moisson ? ' · ' + tt('moisson', 'harvest') + ' ' + (t.derniere_moisson.gardees || 0) : '') : tt('THECARDAPI_CLE dans Render', 'THECARDAPI_CLE in Render'), '#admin/serveur', !t.actif ? '' : er || t.pause ? 'rouge' : pc(t.aujourdhui, t.plafond) > 80 ? 'or' : 'vert']; })()] : []),
       ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.5 12h11L21 8H7"/><circle cx="10" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/></svg>', tt('Appels eBay', 'eBay calls'), br ? pc(br.utilises, br.limite) + ' %' : '—', tt('de la limite du jour', 'of today’s limit'), '#admin/serveur', br && pc(br.utilises, br.limite) > 80 ? 'rouge' : ''],
@@ -12684,16 +12707,18 @@ async function vueAdmin(onglet){
   const pastille = (n) => n ? ` <span class="adm-n">${n}</span>` : '';
   V().innerHTML = `<section class="ecran large admin">
     <div class="entete"><div class="titre">Admin</div><span class="sous">${esc(r.version)}</span></div>
+    <div class="adm-vue"><span>${tt('Voir l’app comme', 'View the app as')}</span><div class="seg" id="adm-vue">${[['admin', 'Admin'], ['pro', 'Pro'], ['gratuit', tt('Gratuit', 'Free')]].map(([v, l]) => `<button data-v="${v}" class="${v === 'admin' ? 'on' : ''}">${l}</button>`).join('')}</div></div>
     <div class="hero-l adm-kpi">
       <div class="kpi"><span class="lib">${tt('Revenu / mois', 'Revenue / mo')}</span><span class="v vert">${a.revenu_mensuel == null ? '—' : argentCourt(a.revenu_mensuel)}</span><span class="s">${a.pro} Pro · ${a.offert} ${tt('offerts', 'gifted')}</span></div>
       <div class="kpi acc"><span class="lib">${tt('Comptes', 'Accounts')}</span><span class="v">${a.total}</span><span class="s">+${a.nouveaux_7j} ${tt('cette semaine', 'this week')} · ${a.essai} ${tt('en essai', 'on trial')}</span></div>
       <div class="kpi"><span class="lib">${tt('Actifs 7 jours', 'Active 7 days')}</span><span class="v">${a.actifs_7j}</span><span class="s">${a.total ? Math.round(100 * a.actifs_7j / a.total) : 0} %</span></div>
       <div class="kpi ${r.erreurs_24h ? 'rouge' : ''}"><span class="lib">${tt('Serveur', 'Server')}</span><span class="v">${r.erreurs_24h ? r.erreurs_24h + ' ' + tt('erreurs', 'errors') : 'OK'}</span><span class="s">eBay ${br ? Math.round(100 * br.utilises / br.limite) : 0} % ${tt('du jour', 'today')}</span></div></div>
     <div id="adm-sorties"></div>
-    <div class="seg" id="adm-o" style="margin:14px 0">${[['activite', tt('Activité', 'Activity')], ['abonnes', tt('Abonnés', 'Subscribers')], ['demandes', tt('Demandes', 'Requests') + pastille(r.demandes.nouvelles)], ['catalogue', 'Catalogue' + pastille(r.a_ajouter)], ['serveur', tt('Serveur', 'Server')]].map(([k, t]) => `<button data-v="${k}" class="${o === k ? 'on' : ''}">${t}</button>`).join('')}</div>
+    <div class="seg" id="adm-o" style="margin:14px 0">${[['activite', tt('Activité', 'Activity')], ['abonnes', tt('Abonnés', 'Subscribers')], ['demandes', tt('Demandes', 'Requests') + pastille(r.demandes.nouvelles)], ['catalogue', 'Catalogue' + pastille(r.a_ajouter)], ['banc', tt('Validation', 'Validation')], ['serveur', tt('Serveur', 'Server')]].map(([k, t]) => `<button data-v="${k}" class="${o === k ? 'on' : ''}">${t}</button>`).join('')}</div>
     <div id="adm-z"><div class="lecture"><span class="roue"></span></div></div></section>`;
   blocSorties();
-  const sous = {activite:adminActivite, abonnes:adminAbonnes, demandes:adminDemandes, catalogue:adminCatalogue, serveur:adminServeur};
+  $$('#adm-vue button').forEach(b => b.onclick = () => changerVue(b.dataset.v));
+  const sous = {activite:adminActivite, abonnes:adminAbonnes, demandes:adminDemandes, catalogue:adminCatalogue, serveur:adminServeur, banc:adminBanc};
   // 28 oct 2026 (« saccadé ») : un onglet se change sur place ; le contenu d'avant reste (estompe) jusqu'a l'arrivee du nouveau
   $$('#adm-o button').forEach(b => b.onclick = async () => {
     if (b.classList.contains('on')) return;
@@ -12889,6 +12914,36 @@ async function feuilleReference(){
       carte: {titre: val('rf-c')}, sous_notes: Object.keys(sous).length ? sous : null, defauts: (t || x) ? [{zone: $('#rf-z').value, type: t || 'autre', texte: x}] : []}), tt('Ajoutée à la banque', 'Added to the bank'));
     if (r) { fermerFeuille(); adminServeur(); }
   };
+}
+// 10 nov 2026 (Mathieu : « bati-toi un systeme de validation avec score et itere jusqu'a A+ ») : le banc de validation.
+// Une note par algorithme (valeur, deals, tendance, demande), mesuree chaque jour sur nos donnees, et la recette adoptee
+async function adminBanc(){
+  const z = $('#adm-z'); const r = await API.admin_resume().catch(e => ({ok:false, erreur:e.message}));
+  if (!r.ok) { z.innerHTML = `<div class="vide">${esc(r.erreur)}</div>`; return; }
+  const b = r.banc || {}, sc = b.scores || {}, nt = b.notes || {};
+  const coul = (n) => !n || n === '—' ? '' : n.startsWith('A') ? 'vert' : n.startsWith('B') ? 'acc' : n.startsWith('C') ? 'or' : 'rouge';
+  const pc = (x) => x == null ? '—' : Math.round(x * 100) + ' %';
+  const tuile = (k, lib, detail) => `<div class="kpi ${coul(nt[k])}"><span class="lib">${lib}</span><span class="v">${nt[k] || '—'}</span><span class="s">${sc[k] == null ? tt('pas encore assez de données', 'not enough data yet') : sc[k] + ' / 100'}${detail ? ' · ' + detail : ''}</span></div>`;
+  const rv = ((b.valeur || {}).recettes) || {};
+  const top = Object.entries(rv).sort((x, y) => y[1].score - x[1].score).slice(0, 6);
+  const dl = b.deals || {}, td = b.tendance || {}, dm = b.demande || {};
+  z.innerHTML = `<div class="banc">
+    <div class="hero-l adm-kpi"><div class="kpi ${coul(b.note)}"><span class="lib">${tt('Note globale', 'Overall grade')}</span><span class="v">${b.note || '—'}</span><span class="s">${b.global == null ? tt('1re mesure cette nuit', 'first run tonight') : b.global + ' / 100'}${b.le ? ' · ' + dateCourte(b.le) : ''}</span></div>
+      ${tuile('valeur', tt('Valeur', 'Value'), ((b.valeur || {}).cartes || 0) + tt(' cartes', ' cards'))}
+      ${tuile('deals', 'Deals', dl.verifies ? dl.verifies + tt(' vérifiés', ' checked') : (b.carnet || 0) + tt(' au carnet', ' logged'))}
+      ${tuile('tendance', tt('Tendance', 'Trend'), td.paris ? td.paris + tt(' paris', ' calls') : '')}
+      ${tuile('demande', tt('Demande (sans ventes)', 'Demand (no sales)'), dm.n ? dm.n + tt(' joueurs', ' players') : '')}</div>
+    ${b.adopte ? `<div class="sous banc-ad">${tt('Nouvelle recette adoptée', 'New recipe adopted')} : <b>${esc(b.adopte.recette)}</b> (${b.adopte.avant} → ${b.adopte.apres})</div>` : ''}
+    <h3>${tt('Valeur : les recettes qui s’affrontent', 'Value: competing recipes')}</h3>
+    <div class="sous">${tt('La dernière vente de chaque carte est cachée, puis prédite avec les ventes d’avant seulement.', 'Each card’s last sale is hidden, then predicted from earlier sales only.')}</div>
+    <div class="ex-t banc-t"><div class="tete"><span>${tt('Recette', 'Recipe')}</span><span>Score</span><span>±15 %</span><span>±25 %</span><span>${tt('Écart', 'Error')}</span><span>${tt('Couvre', 'Covers')}</span></div>
+      ${top.map(([k, x]) => `<div class="${k === 'en_place' ? 'on' : ''}"><span>${esc(k === 'en_place' ? tt('En place', 'Current') : k)}</span><span><b>${x.score}</b></span><span>${pc(x.dans15)}</span><span>${pc(x.dans25)}</span><span>${pc(x.ecart_median)}</span><span>${pc(x.couverture)}</span></div>`).join('') || `<div><span>${tt('En attente de la 1re mesure', 'Waiting for the first run')}</span></div>`}</div>
+    <h3>Deals</h3><div class="sous">${dl.precision == null ? tt('Chaque deal montré est noté ; 14 jours plus tard, on le compare aux vraies ventes de la même carte.', 'Each deal shown is logged; 14 days later it is compared to real sales of the same card.') : tt(`${pc(dl.precision)} des deals étaient encore 15 % sous le marché réel ; écart médian de notre valeur : ${pc(dl.ecart_valeur_median)}.`, `${pc(dl.precision)} of deals were still 15% under the real market; median value error: ${pc(dl.ecart_valeur_median)}.`)}</div>
+    <div class="pastilles">${Object.entries(dl.par_source || {}).map(([k, x]) => tag(k + ' · ' + pc(x.precision) + ' (' + x.n + ')', x.precision >= 0.9 ? 'vert' : x.precision >= 0.75 ? 'acc' : 'rouge')).join('')}</div>
+    <h3>${tt('Tendance', 'Trend')}</h3><div class="sous">${td.justes == null ? tt('En attente de données.', 'Waiting for data.') : tt(`La direction annoncée il y a 28 jours était la bonne ${pc(td.justes)} du temps (${td.paris} paris).`, `The direction called 28 days ago was right ${pc(td.justes)} of the time (${td.paris} calls).`)}</div>
+    <h3>${tt('Demande des joueurs, sans ventes', 'Player demand, without sales')}</h3><div class="sous">${dm.rho == null ? tt('Le labo lit les joueurs (LNH, Wikipedia) : 1re mesure après ~30 joueurs.', 'The lab reads players (NHL, Wikipedia): first measure after ~30 players.') : tt(`Corrélation avec le classement des ventes : ${decFr(dm.rho)} · top 20 en commun : ${dm.top20}.`, `Correlation with the sales ranking: ${dm.rho} · top 20 shared: ${dm.top20}.`)}</div>
+    <div class="env-b" style="margin-top:14px"><button class="pilule acc" id="banc-go">${tt('Relancer la mesure', 'Run again')}</button></div></div>`;
+  $('#banc-go').onclick = async () => { vibrer(); const x = await API.admin_banc_lancer().catch(() => null); toast(x && x.ok ? tt('Mesure lancée : résultat dans quelques minutes', 'Run started: results in a few minutes') : tt('Impossible', 'Not possible')); };
 }
 async function adminServeur(){
   const z = $('#adm-z'); const d = await API.admin_sante().catch(e => ({ok:false, erreur:e.message}));

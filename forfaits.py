@@ -72,6 +72,18 @@ def offert(info):
 def etat(cid=None):
     """{pro, essai, jours_restants, payant, offert} du compte courant (ou du compte cid, pour l'admin)."""
     import comptes
+    if cid is None:                              # 10 nov 2026 : l'admin regarde l'app comme un utilisateur Pro ou Gratuit
+        try:
+            import lockerroom
+            v = lockerroom.vue_simulee()
+        except Exception:
+            v = None
+        if v == "gratuit":
+            return {"pro": False, "essai": False, "payant": False, "offert": False, "jours_restants": 0, "source": None,
+                    "annule": False, "essai_fin": None, "simule": "gratuit"}
+        if v == "pro":
+            return {"pro": True, "essai": False, "payant": True, "offert": False, "jours_restants": None, "source": "stripe",
+                    "annule": False, "essai_fin": None, "simule": "pro"}
     cid = cid or _compte()
     if not cid:
         return {"pro": True, "essai": False, "payant": True, "jours_restants": None, "local": True}
