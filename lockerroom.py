@@ -179,7 +179,9 @@ def _connecter(chemin=None):
     for col, typ in (("debut", "TEXT"), ("watchers", "INTEGER"), ("categorie_ebay", "TEXT"), ("photo", "TEXT"), ("vu_actif_le", "TEXT"),
                      ("sport", "TEXT"), ("recrue", "INTEGER"), ("relique", "INTEGER"), ("cert", "TEXT"), ("photos", "TEXT"),
                      ("vues", "INTEGER"), ("impressions", "INTEGER"), ("trafic_le", "TEXT"), ("photos_orig", "TEXT"), ("studio_v", "INTEGER"),
-                     ("etat_json", "TEXT"), ("etat_le", "TEXT"), ("envoi_json", "TEXT"), ("soumission_id", "INTEGER")):            # 1er nov 2026 - l'etat estime (pre-gradation)   # 31 oct 2026 - vues des annonces
+                     ("etat_json", "TEXT"), ("etat_le", "TEXT"), ("envoi_json", "TEXT"), ("soumission_id", "INTEGER"),
+                     ("a_finir_le", "TEXT"), ("valeur_annonces", "REAL"), ("valeur_annonces_n", "INTEGER"),
+                     ("valeur_annonces_le", "TEXT")):         # 9 nov 2026 : repere prix sans vente (annonces pareilles - 10 %)         # 9 nov 2026 : preparee pour la vente, pas encore sur eBay (onglet « A finir »)            # 1er nov 2026 - l'etat estime (pre-gradation)   # 31 oct 2026 - vues des annonces
         if col not in cols:
             c.execute(f"ALTER TABLE cartes ADD COLUMN {col} {typ}")
     # 1er nov 2026 - soumissions : les colonnes ajoutees apres coup
@@ -2689,8 +2691,13 @@ class Api:
             r["achete_le"] = le or None
             r["a_afficher"] = bool(le and le <= lim90 and r.get("statut") == "En stock"
                                    and (r.get("emplacement") or "") not in ("Collection", "eBay") and not r.get("envoi_json"))
+        for r in out:                            # 9 nov 2026 : preparee pour la vente, pas encore sur eBay
+            r["a_finir"] = bool(r.get("a_finir_le") and r.get("statut") == "En stock" and not r.get("item_number")
+                                and (r.get("emplacement") or "") not in ("Collection", "eBay") and not r.get("envoi_json"))
         if f.get("a_afficher"):
             out = [r for r in out if r.get("a_afficher")]
+        if f.get("a_finir"):
+            out = [r for r in out if r.get("a_finir")]
         if f.get("sport"):
             out = [r for r in out if r["sport"] == f["sport"]]
         return out
@@ -2800,6 +2807,26 @@ class Api:
         studio) entre dans l'inventaire (En stock), prete a publier plus tard d'un tap. Rien ne part chez eBay."""
         import photos_cartes
         d = dict(d or {})
+        # 9 nov 2026 (Mathieu : le lot « Server unreachable » quand il quitte l'app 2 s) : l'app refait l'envoi au retour ; la
+        # cle de l'envoi fait qu'une carte deja gardee (la reponse s'etait perdue) n'est jamais creee en double
+        cle = str(d.get("cle") or "")
+        cle = cle if re.fullmatch(r"[A-Za-z0-9_-]{8,40}", cle) and not d.get("cid") else ""
+        if cle:
+            c = self._db()
+            try:
+                c.execute("CREATE TABLE IF NOT EXISTS garder_cles (cle TEXT PRIMARY KEY, id INTEGER, le REAL)")
+                c.execute("DELETE FROM garder_cles WHERE le < ?", (time.time() - 86400,))
+                c.commit()
+                row = c.execute("SELECT id FROM garder_cles WHERE cle=?", (cle,)).fetchone()
+            finally:
+                c.close()
+            deja = self.carte_lire(row[0]) if row else None
+            if deja:
+                try:
+                    ph = json.loads(deja.get("photos") or "[]")
+                except ValueError:
+                    ph = []
+                return {"ok": True, "id": deja["id"], "photos": ph, "deja": True}
         carte = {k: v for k, v in (d.get("carte") or {}).items() if k in self.CHAMPS_CARTE and k not in ("id", "photo", "photos", "photos_orig", "studio_v", "statut")}
         try:
             refs = photos_cartes.sauver(d.get("photos") or [])
@@ -2818,7 +2845,36 @@ class Api:
         else:
             champs["statut"] = "En stock"
         r = self.carte_sauver({k: v for k, v in champs.items() if v not in (None, "")})
+        # 9 nov 2026 (Mathieu : « un onglet pending : la personne part avant de finir, elle revient et reprend ses cartes pour
+        # les mettre sur eBay en lot ») : une carte preparee pour la VENTE (pas la collection) est marquee « a finir »
+        if not d.get("cid") and (carte.get("emplacement") or "") != "Collection":
+            c = self._db()
+            try:
+                c.execute("UPDATE cartes SET a_finir_le=? WHERE id=?", (datetime.now().strftime("%Y-%m-%d %H:%M"), r["id"]))
+                c.commit()
+            finally:
+                c.close()
+        if cle:
+            c = self._db()
+            try:
+                c.execute("INSERT OR REPLACE INTO garder_cles VALUES (?,?,?)", (cle, r["id"], time.time()))
+                c.commit()
+            finally:
+                c.close()
         return {"ok": True, "id": r["id"], "photos": refs, "achat_lie": self._lier_achat_choisi(r["id"], d.get("achat"))}
+
+    def cartes_a_finir_retirer(self, ids):
+        """9 nov 2026 : « Retirer de À finir » : la carte reste dans l'inventaire, elle ne compte plus comme a finir."""
+        ids = [int(i) for i in (ids or []) if str(i).isdigit()][:500]
+        if not ids:
+            return {"ok": True, "n": 0}
+        c = self._db()
+        try:
+            c.execute(f"UPDATE cartes SET a_finir_le=NULL WHERE id IN ({','.join('?' * len(ids))})", ids)
+            c.commit()
+        finally:
+            c.close()
+        return {"ok": True, "n": len(ids)}
 
     def carte_photo_changer(self, cid, photo, index=0):
         """28 oct 2026 (Mathieu : « en tout temps il peut modifier la photo associee a la carte dans sa collection pour
@@ -4239,6 +4295,11 @@ class Api:
                 break
             if carte:
                 _c, semblables, _e = cartes_match.filtrer_carte(titre_c, res, a.get("joueur"), exclure_id=a["item_number"])
+                if a.get("id"):                  # 9 nov 2026 : le repere « annonces » de la carte, sans recherche de plus
+                    try:
+                        self._repere_annonces(a, titre_c, semblables)
+                    except Exception:
+                        pass
                 # 27 oct 2026 (Mathieu : « pas de faux prix ») : le marche d'une carte = ses ventes reelles SURES, pas les prix demandes
                 try:                         # 6 nov 2026 : 90 derniers jours, sans tes achats (comme l'inventaire)
                     vs = self._ventes_inventaire([v for v in (vendues.memes_annonce(titre_c, fond=True).get("ventes") or []) if v.get("prix")])
@@ -4759,14 +4820,18 @@ class Api:
                 comps = sorted(({"titre": x["titre"], "total": round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2),
                                  "photo": x.get("photo"), "url": x.get("url")} for x in gardees if x.get("prix_cad")),
                                key=lambda x: abs(x["total"] - (med or 0)))[:8]
-            except (RuntimeError, OSError) as e:
-                note = str(e)
+            except Exception as e:               # 9 nov 2026 (Mathieu : « erreur de serveur » apres le titre) : eBay qui
+                note = str(e)[:120]              # repond mal ne bloque jamais la vente : pas de comps, l'annonce continue
+                print("Preparer (annonces eBay) : " + repr(e), flush=True)
         franco = (langue or r.get("langue") or "fr") != "en"
         desc = annonces.description(c, titre, franco, modele["etat"], r.get("nom_boutique"), modele["retours"], modele["expedition"])
         # 30 oct 2026 : une description par livraison (l'ecran montre celle qui partira vraiment : politique eBay, suivi > 30 $...)
         descs = {k: annonces.description(c, titre, franco, modele["etat"], r.get("nom_boutique"), modele["retours"], k)
                  for k in ("lettre", "suivi", "gratuit", "politique")}
-        jetons = ebay_compte._lire(ebay_compte.chemin_jetons())
+        try:
+            jetons = ebay_compte._lire(ebay_compte.chemin_jetons())
+        except Exception:
+            jetons = {}
         if not ebay_prix_actif():                # interrupteur : pas de prix suggere pour une annonce eBay
             prix, n, comps, note = None, 0, [], "Choisis ton prix"
         return {"ok": True, "titre": titre, "carte": c, "prix": prix, "n": n, "comps": comps, "note": note, "description": desc, "descriptions": descs,
@@ -4774,7 +4839,7 @@ class Api:
                 "specifiques": annonces.specifiques(c), "modele": modele, "frais_pct": r["frais_ebay_pct"], "frais_fixe": ff,
                 "etats": {k: v[2] if franco else v[1] for k, v in annonces.ETATS_BRUTS.items()},
                 "net_marche": round(prix["marche"] * (1 - fp) - ff, 2) if prix else None,
-                "promotion_ok": annonces.SCOPE_MARKETING in (jetons.get("scopes") or []), "psa_ok": __import__("psa").actif()}
+                "promotion_ok": annonces.SCOPE_MARKETING in ((jetons or {}).get("scopes") or []), "psa_ok": __import__("psa").actif()}
 
     def annonce_publier(self, d, verifier=False):
         """La carte + l'annonce : photos chez eBay, verification (frais), puis creation sur un 2e tap.
@@ -5384,7 +5449,8 @@ class Api:
             return {"ok": False, "erreur": str(e)}
         vs = self._ventes_inventaire([v for v in (r.get("ventes") or []) if v.get("prix")], carte)
         if not vs:                      # rien de neuf (ou recherche indisponible) : la derniere valeur connue reste, dite comme telle
-            return {"ok": True, "valeur": carte.get("valeur"), "n": 0, "gardee": carte.get("valeur") is not None, "erreur": r.get("erreur")}
+            return {"ok": True, "valeur": carte.get("valeur"), "n": 0, "gardee": carte.get("valeur") is not None, "erreur": r.get("erreur"),
+                    **self._repere_annonces(carte, t)}
         sure, _pv = deals.valeur_sure(vs, t)
         val = sure if sure else round(statistics.median(float(v["prix"]) for v in vs), 2)
         # 5 nov 2026 (comme la CL Value) : des ventes qui datent -> la valeur suit l'indice du joueur depuis (indices.py)
@@ -5394,8 +5460,41 @@ class Api:
         if sure or (carte.get("valeur") is None and len(vs) >= 3):
             self.carte_sauver({"id": cid, "valeur": val})
         recentes = sorted(vs, key=lambda v: str(v.get("le") or ""), reverse=True)
+        approx = self._repere_annonces(carte, t) if not (sure or len(vs) >= 3) else {}
         return {"ok": True, "valeur": val, "n": len(vs), "sure": bool(sure), "derniere": (recentes[0].get("le") or "")[:10] or None,
-                "ajustee": ajust}
+                "ajustee": ajust, **approx}
+
+    def _repere_annonces(self, carte, titre=None, res=None):
+        """9 nov 2026 (Mathieu : « pourquoi on ne voit toujours pas si la carte est dans le bon range de prix ? ») : sans ventes
+        reelles sures, le repere = la mediane des MEMES cartes en vente sur eBay moins 10 % (comme le prix suggere : les annonces
+        demandent souvent trop), 3 annonces et plus. Garde sur la carte (dit comme tel dans l'app : « annonces »)."""
+        import cartes_match
+        import suivi_valeur
+        t = titre or suivi_valeur._titre(carte)
+        try:
+            if res is None:
+                if not cartes_match.est_carte(t):
+                    return {}
+                cib = cartes_match.cible_titre(t, carte.get("joueur"))
+                res = ebay_compte.rechercher(cartes_match.requete_ebay(cib) or t, categorie=CATEGORIE_CARTES, limite=100, fond=False)
+                _c, res, _e = cartes_match.filtrer_carte(t, res, carte.get("joueur"), exclure_id=carte.get("item_number"))
+            tot = [round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2) for x in res if x.get("prix_cad")]
+            med, garde = cartes_match.mediane_robuste(tot)
+        except Exception as e:
+            print("Repere annonces : " + repr(e), flush=True)
+            return {}
+        if not med or len(garde) < 3:
+            return {}
+        v = round(med * (1 - RABAIS_ANNONCES), 2)
+        if carte.get("id"):
+            c = self._db()
+            try:
+                c.execute("UPDATE cartes SET valeur_annonces=?, valeur_annonces_n=?, valeur_annonces_le=? WHERE id=?",
+                          (v, len(garde), datetime.now().strftime("%Y-%m-%d"), carte["id"]))
+                c.commit()
+            finally:
+                c.close()
+        return {"approx": v, "n_annonces": len(garde)}
 
     JOURS_INVENTAIRE = 90
 

@@ -889,8 +889,17 @@ body.avec-barre .ecran{padding-top:14px}
 .capsule{display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 12px; border-radius:999px; font-size:14px; font-weight:700; white-space:nowrap; background:var(--carte2); color:var(--texte)}
 .capsule.vert{background:var(--vert-fond); color:var(--vert)} .capsule.rouge{background:var(--rouge-fond); color:var(--rouge)}
 .capsule.or{background:var(--or-fonce); color:var(--or)} .capsule.acc{background:var(--acc-fonce); color:var(--acc)}
+/* 9 nov 2026 (Mathieu : « quand la carte est a soumettre, le tag d'une autre couleur ») : le gradage en turquoise */
+.af{display:flex; flex-direction:column; gap:10px; margin:0 0 14px}
+.af-l{display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:14px; background:var(--carte2); box-shadow:inset 0 0 0 1px var(--ligne)}
+.af-ic{flex:0 0 auto; width:36px; height:36px; border-radius:10px; display:grid; place-items:center; background:var(--acc-fonce); color:var(--acc)} .af-ic svg{width:20px; height:20px}
+.af-t{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px} .af-t small{color:var(--doux); font-size:12px}
+.af-b{display:flex; flex-direction:column; align-items:flex-end; gap:6px}
+.af-go{display:flex; flex-direction:column; gap:6px; align-items:stretch} .af-go small{color:var(--doux); font-size:12px; text-align:center} .af-go .lien-t{align-self:center}
+.chip-afinir b{display:inline-grid; place-items:center; min-width:18px; height:18px; padding:0 5px; margin-left:4px; border-radius:99px; background:var(--or); color:#111; font-size:11px}
+.capsule.grad{background:rgba(70,200,210,.14); color:#5FD3DC; box-shadow:inset 0 0 0 1px rgba(95,211,220,.25)}
 .capsule.vert, .capsule.rouge, .capsule.or, .capsule.acc, .tag.acc, .tag.or, .tag.vert, .tag.rouge{box-shadow:inset 0 0 0 1px color-mix(in srgb, currentColor 20%, transparent)}
-.capsule:not(.vert):not(.rouge):not(.or):not(.acc), .tag:not(.acc):not(.or):not(.vert):not(.rouge){box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
+.capsule:not(.vert):not(.rouge):not(.or):not(.acc):not(.grad), .tag:not(.acc):not(.or):not(.vert):not(.rouge){box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
 /* nouvelles : une a la fois ; sans image, pas de faux visuel */
 .nouv{padding:0; overflow:hidden; gap:0; grid-area:news; min-height:200px}
 .nouv.sans-img{background:radial-gradient(140% 120% at 100% 0%, var(--acc-fonce), var(--carte) 60%)}
@@ -1837,7 +1846,7 @@ body{font-family:var(--f-txt)}
 .capsule{height:28px; font-size:14px; padding:0 11px 0 15px}
 .capsule.petit{height:24px; font-size:13px; padding:0 9px 0 13px}
 .tag::before, .capsule::before{content:''; position:absolute; left:5px; top:6px; bottom:6px; width:3px; border-radius:2px; background:currentColor; opacity:.9}
-.tag:not(.acc):not(.or):not(.vert):not(.rouge)::before, .capsule:not(.vert):not(.rouge):not(.or):not(.acc)::before{background:var(--pale)}
+.tag:not(.acc):not(.or):not(.vert):not(.rouge)::before, .capsule:not(.vert):not(.rouge):not(.or):not(.acc):not(.grad)::before{background:var(--pale)}
 button.tag{font-family:var(--f-cond); font-size:13px}
 .badge-f{border-radius:var(--r-ctl); font-family:var(--f-cond); font-weight:700; letter-spacing:.08em; text-transform:uppercase}
 /* --- les controles : boutons, filtres, segments, champs : coins de 10, meme etat « choisi » partout --- */
@@ -5252,22 +5261,28 @@ async function lancerLot(fichiers, devantsSeuls){
   if (avis) toast(avis, 5000);
   LOT.l = cartes.map((f, i) => ({n: i + 1, f, etat: 'attente', impair: !devantsSeuls && f.length === 1}));
   LOT.devants = devantsSeuls; LOT.fini = false; LOT.but = LOT.but || 'vente';
-  rendreLot();
-  for (const c of LOT.l) { try { await traiterCarteLot(c); } catch (e) { c.etat = 'revoir'; c.raison = tt('Erreur : reprends cette carte', 'Error: redo this card'); } c.f = null; rendreLot(); }
-  LOT.fini = true; rendreLot();
+  lotGarder(); rendreLot();
+  for (const c of LOT.l) { try { await traiterCarteLot(c); } catch (e) { c.etat = 'revoir'; c.raison = tt('Erreur : reprends cette carte', 'Error: redo this card'); } c.f = null; lotGarder(); rendreLot(); }
+  LOT.fini = true; lotGarder(); rendreLot();
 }
 // 8 nov 2026 : la lecture d'une carte (IA) reessaie seule quand le serveur ne repond pas (redemarrage, reseau qui saute)
-async function identifier(photos){
-  // un redemarrage du serveur (mise a jour : avec son disque, Render arrete l'ancien avant de lancer le nouveau) dure
-  // environ une minute : 5 essais sur environ 85 s
-  const pauses = [3000, 10000, 25000, 45000];
-  let r;
-  for (let k = 0; k <= pauses.length; k++) {
-    r = await API.photo_identifier(photos).catch(e => ({ok:false, erreur:e.message, reseau:!!e.reseau}));
-    if (!(r && r.reseau) || k === pauses.length) break;
+// 9 nov 2026 (Mathieu : « quand je quitte l'app deux secondes, il me sort Server unreachable ») : iOS coupe le reseau d'une
+// app en arriere-plan. Un appel du lot qui echoue ainsi attend le retour dans l'app, puis se refait (et quelques fois de
+// plus si le reseau saute ou si le serveur redemarre)
+const auPremierPlan = () => document.visibilityState === 'visible' ? Promise.resolve() : new Promise(ok => {
+  const f = () => { if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', f); setTimeout(ok, 800); } };
+  document.addEventListener('visibilitychange', f); });
+async function avecReseau(appel, pauses = [2000, 5000, 12000, 25000]){
+  for (let k = 0; ; k++) {
+    await auPremierPlan();
+    try { return await appel(); } catch (e) { if (!e.reseau || k >= pauses.length) throw e; }
     await new Promise(x => setTimeout(x, pauses[k]));
   }
-  return r;
+}
+async function identifier(photos){
+  // un redemarrage du serveur (mise a jour : avec son disque, Render arrete l'ancien avant de lancer le nouveau) dure
+  // environ une minute : 5 essais sur environ 85 s (sans compter le temps passe hors de l'app)
+  return avecReseau(() => API.photo_identifier(photos), [3000, 10000, 25000, 45000]).catch(e => ({ok:false, erreur:e.message, reseau:!!e.reseau}));
 }
 async function traiterCarteLot(c){
   const nom = (j) => (c.ph.length > 1 ? (j ? tt('Dos : ', 'Back: ') : tt('Devant : ', 'Front: ')) : '');
@@ -5300,7 +5315,7 @@ async function traiterCarteLot(c){
   for (let j = 0; j < c.ph.length; j++) { if (p[j] && p[j].coins) { try { studio[j] = (await photoStudio(c.ph[j], p[j].coins)).photo; } catch (e) {} } }
   const photos = c.ph.map((o, j) => (MODE_STUDIO && studio[j]) || o);
   const noms = Object.fromEntries(CHAMPS_VERIF()), champs = {...(r.champs || {})}, dt = (r.a_verifier || []).map(k => (noms[k] || k).toLowerCase());
-  const prep = await API.annonce_preparer(champs, typeof LANGUE !== 'undefined' ? LANGUE : 'fr').catch(() => ({ok:false}));
+  const prep = await avecReseau(() => API.annonce_preparer(champs, typeof LANGUE !== 'undefined' ? LANGUE : 'fr')).catch(() => ({ok:false}));
   const titre = (prep && prep.ok && prep.titre) || champs.titre || '';
   const prix = prep && prep.ok && prep.prix ? prep.prix.marche : '';
   if (dt.length) champs.note = tt('À vérifier : ', 'To check: ') + dt.join(', ');
@@ -5309,8 +5324,10 @@ async function traiterCarteLot(c){
   // 30 oct 2026 (Mathieu : « je peux pas selectionner mon niveau de flou », dans un lot) : l'inventaire garde les photos
   // ORIGINALES ; le fond flou (et son niveau) se fait au moment de vendre, dans le telephone, sans credit
   // 31 oct 2026 (Mathieu : « les photos pas deja modifiees comme dans seller ») : la photo studio est montree, l'originale gardee
-  const g = await API.carte_garder({carte: champs, titre, prix: C ? null : prix, photos, originales: c.ph}).catch(e => ({ok:false, erreur:e.message}));
-  if (!g || !g.ok) { c.etat = 'revoir'; c.raison = (g && g.erreur) || tt('Pas enregistrée', 'Not saved'); return; }
+  // la cle : un envoi refait (reseau coupe pendant la reponse) ne cree jamais la carte en double
+  c.cle = c.cle || (Date.now().toString(36) + Math.random().toString(36).slice(2, 10));
+  const g = await avecReseau(() => API.carte_garder({carte: champs, titre, prix: C ? null : prix, photos, originales: c.ph, cle: c.cle})).catch(e => ({ok:false, erreur:e.message, reseau:!!e.reseau}));
+  if (!g || !g.ok) { c.etat = 'revoir'; c.reseau = !!(g && g.reseau); c.raison = (g && g.erreur) || tt('Pas enregistrée', 'Not saved'); return; }
   if (C && !prix) API.carte_valeur(g.id).catch(() => {});         // la valeur par ses ventes reelles, sans bloquer le lot
   Object.assign(c, {etat: dt.length ? 'verifier' : 'ok', id: g.id, titre, prix, vig: photos[0], douteux: dt});
   c.ph = null;
@@ -5347,8 +5364,8 @@ function rendreLot(){
   const be = $('#lot-encore'); if (be) be.onclick = (e) => { e.preventDefault(); vueLot(LOT.but); };
   const br = $('#lot-relance'); if (br) br.onclick = async () => { vibrer(); LOT.fini = false; const a = LOT.l.filter(c => c.etat === 'revoir' && c.reseau && c.ph);
     a.forEach(c => { c.etat = 'attente'; c.raison = ''; }); rendreLot();
-    for (const c of a) { try { await traiterCarteLot(c); } catch (e) { c.etat = 'revoir'; c.raison = tt('Erreur : reprends cette carte', 'Error: redo this card'); } rendreLot(); }
-    LOT.fini = true; rendreLot(); };
+    for (const c of a) { try { await traiterCarteLot(c); } catch (e) { c.etat = 'revoir'; c.raison = tt('Erreur : reprends cette carte', 'Error: redo this card'); } lotGarder(); rendreLot(); }
+    LOT.fini = true; lotGarder(); rendreLot(); };
   $$('[data-lot-r]').forEach(b => b.onclick = () => corrigerLot(LOT.l[+b.dataset.lotR]));
 }
 // une carte a reprendre : la photo en cause (ou tout, si l'ordre est decale) dans l'assistant d'une carte
@@ -5383,8 +5400,13 @@ function suivreSugg(){
 }
 async function preparerVente(){
   if (!$('.vendre .lecture')) V().innerHTML = `<section class="ecran vendre">${barreProg(Date.now(), 15, tt('Titre, prix et comps de ta carte…', 'Title, price and comps for your card…'))}</section>`;
-  const p = await API.annonce_preparer(V2.champs || {}, typeof LANGUE !== 'undefined' ? LANGUE : 'fr').catch(e => ({ok:false, erreur:e.message}));
-  if (!p.ok) { V().innerHTML = `<section class="ecran"><div class="vide">${esc(p.erreur || 'Erreur')}</div></section>`; return; }
+  // 9 nov 2026 (Mathieu : « erreur de serveur » apres « le titre est correct ») : un 2e essai seul, puis « Réessayer » ;
+  // la carte lue n'est jamais perdue (elle reste dans l'assistant)
+  const prep_ = () => avecReseau(() => API.annonce_preparer(V2.champs || {}, typeof LANGUE !== 'undefined' ? LANGUE : 'fr'));
+  let p = await prep_().catch(e => ({ok:false, erreur:e.message}));
+  if (!p.ok && !p.pro_requis) { await new Promise(x => setTimeout(x, 2500)); p = await prep_().catch(e => ({ok:false, erreur:e.message})); }
+  if (!p.ok) { V().innerHTML = `<section class="ecran"><div class="vide">${esc(p.erreur || 'Erreur')}<br><button class="btn petit" id="pv-re" style="margin-top:14px">${tt('Réessayer', 'Try again')}</button></div></section>`;
+    const b_ = $('#pv-re'); if (b_) b_.onclick = () => { vibrer(); preparerVente(); }; return; }
   V2.prep = p; V2.titre = V2.titre || p.titre; V2.description = htmlTexte(p.description); V2.descMod = false; V2.opts = {...p.modele};
   if (!V2.prix && p.prix) { V2.tier = 'marche'; V2.prix = prixSugg(p.prix, V2.opts).marche; }
   V2.prix = V2.prix || (V2.champs && V2.champs.prix_demande) || '';
@@ -6734,11 +6756,14 @@ async function vueAnalyse(arg){
   if (!A.produit || arg === 'choisir') return choisirProduitAnalyse();
   rendreAnalyse();
 }
+const sansAccents = (x) => String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 async function choisirProduitAnalyse(){
   const z = $('#an-z'); const [c] = await Promise.all([API.catalogue_liste().catch(() => ({produits:[]})), imagesProduits()]);
   if (!$('#an-z')) return;
   z.innerHTML = `<div class="entete" style="min-height:0;margin-bottom:12px"><div class="sous" style="font-size:16px">${breakVendeur() ? tt('Choisis le produit que tu vas ouvrir.', 'Pick the product you’ll open.') : tt('Choisis le produit du break.', 'Pick the break’s product.')}</div>${pastilleQuota('breaks_produits')}</div>
-    <div class="grille-c">${(c.produits || []).map(p => `<button class="tuile-c tuile-prod" data-p="${esc(p.id)}">
+    <div class="recherche" style="margin-bottom:12px">${ICONES.loupe}<input id="an-q" type="search" autocomplete="off" placeholder="${esc(tt('Rechercher un produit : année, marque, set…', 'Search a product: year, brand, set…'))}" value="${esc(S.anaQ || '')}"></div>
+    <div class="vide" id="an-aucun" hidden>${tt('Aucun produit ne correspond.', 'No product matches.')}</div>
+    <div class="grille-c">${(c.produits || []).map(p => `<button class="tuile-c tuile-prod" data-p="${esc(p.id)}" data-q="${esc(sansAccents([p.nom, p.saison, p.id].join(' ')).toLowerCase())}">
       <div class="img visuel-prod">${imgProduit(p.id)}<span class="vp-saison">${esc(p.saison || '')}</span><span class="vp-nom">${esc(String(p.nom || '').replace(/^\d{4}-\d{2}\s+/, ''))}</span></div>
       ${p.ouvrir ? `<div class="coin">${capsule(p.ouvrir.verdict === 'ouvrir' ? tt('Ouvrir', 'Open') + ' +' + p.ouvrir.pct + ' %' : p.ouvrir.verdict === 'garder' ? tt('Garder scellée', 'Keep sealed') + ' ' + p.ouvrir.pct + ' %' : tt('Neutre', 'Even') + ' ' + (p.ouvrir.pct > 0 ? '+' : '') + p.ouvrir.pct + ' %', (p.ouvrir.verdict === 'ouvrir' ? 'vert' : p.ouvrir.verdict === 'garder' ? 'rouge' : 'or') + ' petit')}</div>` : ''}
       ${p.complete ? `<span class="ck-ok" title="${esc(tt('Checklist complète : toutes les cotes publiées sont dans le calcul', 'Full checklist: every published odd is in the math'))}">✓</span>` : ''}
@@ -6749,6 +6774,13 @@ async function choisirProduitAnalyse(){
   if (!(S.forfait && S.forfait.admin)) z.querySelector('.grille-c').insertAdjacentHTML('beforeend', `<button class="tuile-c tuile-ajout" id="an-demande"><span class="plus-g">?</span><b>${tt('Il manque un produit ?', 'Missing a product?')}</b><span>${tt('Envoie sa checklist Excel : il est ajouté pour tout le monde', 'Send its Excel checklist: it’s added for everyone')}</span></button>`);
   if (S.forfait && S.forfait.admin) z.querySelector('.grille-c').insertAdjacentHTML('beforeend', `<button class="tuile-c tuile-ajout" id="an-import"><span class="plus-g">+</span><b>${tt('Ajouter des produits', 'Add products')}</b><span>${tt('checklists GTS en un geste', 'GTS checklists in one tap')}</span></button>`);
   brancherQuota(z);
+  // 9 nov 2026 (Mathieu : « ajouter une option recherche pour le produit ») : tous les mots tapes, dans l'ordre qu'on veut
+  // (« 25-26 ice », « tableau », « series 1 2026 ») ; les tuiles se filtrent en direct
+  const filtrerProd = () => { const q = sansAccents(($('#an-q') || {}).value || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); S.anaQ = q;
+    const mots = q ? q.split(' ') : []; let n = 0;
+    $$('.tuile-prod', z).forEach(t => { const v = !mots.length || mots.every(m => t.dataset.q.replace(/[^a-z0-9]+/g, ' ').includes(m)); t.hidden = !v; if (v) n++; });
+    const a_ = $('#an-aucun'); if (a_) a_.hidden = !!n || !mots.length; };
+  const iq = $('#an-q'); if (iq) { iq.oninput = filtrerProd; filtrerProd(); }
   $$('[data-p]', z).forEach(b => b.onclick = () => { anaCharger(b.dataset.p); S.ana.demandes = {}; location.hash = '#analyse/' + encodeURIComponent(b.dataset.p); });
   if ($('#an-import')) $('#an-import').onclick = () => feuilleGTS(c.produits || []);
   if ($('#an-demande')) $('#an-demande').onclick = feuilleDemandeProduit;
@@ -9614,14 +9646,80 @@ async function rechargerBreakSilencieux(){ const d = await API.break_detail(S.br
 // ============================================================
 const FILTRES_INV = [['tous','Tous',{dispo:1}],['collection','Ma collection',{dispo:1, emplacement:'Collection'}],   // 28 oct (Mathieu) : plus de filtre « À lister »
   ['listee','Sur eBay',{statut:'Listée'}],
+  ['afinir','À finir',{dispo:1, a_finir:1}],                               // 9 nov 2026 : preparees pour la vente, pas encore sur eBay
   ['afficher','À mettre sur eBay',{dispo:1, a_afficher:1}],                // 5 nov 2026 : en stock depuis 3 mois et plus
   ['sans-cout','Sans coût',{sans_cout:1}],['magasin','Magasin',{dispo:1, emplacement:'Magasin'}],['consig','Consignation',{dispo:1, consignation:1}],['vendue','Vendues',{statut:'Vendue'}]];
 // 29 oct 2026 (Mathieu : « trop d'options et je dois swiper ») : 3 filtres visibles, le reste (et les sports) dans « Filtrer »
-const LIB_FILTRE = (k) => ({tous: tt('Tout', 'All'), collection: tt('Collection', 'Collection'), listee: tt('Sur eBay', 'On eBay'), afficher: tt('À mettre sur eBay', 'To list on eBay'), 'sans-cout': tt('Sans coût', 'No cost'),
+const LIB_FILTRE = (k) => ({afinir: tt('À finir', 'To finish'), tous: tt('Tout', 'All'), collection: tt('Collection', 'Collection'), listee: tt('Sur eBay', 'On eBay'), afficher: tt('À mettre sur eBay', 'To list on eBay'), 'sans-cout': tt('Sans coût', 'No cost'),
   magasin: tt('Magasin', 'Store'), consig: tt('Consignation', 'Consignment'), vendue: tt('Vendues', 'Sold')})[k] || k;
+// 9 nov 2026 (Mathieu : « un onglet pending qui disparait s'il n'y a pas de carte ; la personne part sans finir, revient et
+// reprend chacune de ses cartes pour les mettre sur eBay en lot ») : « À finir » n'apparait que s'il y a quelque chose a finir
+// (des cartes preparees pour la vente pas encore sur eBay, un lot pas termine, une mise en vente en cours)
+// le haut de l'onglet « À finir » : reprendre un lot pas termine, une mise en vente en cours, et tout mettre sur eBay en lot
+function blocAFinir(l){
+  const g = S.lotGarde, pg = pgGarde(), C = g && g.but === 'collection';
+  const ligne = (ic, t, s_, b) => `<div class="af-l"><span class="af-ic">${ic}</span><span class="af-t"><b>${t}</b><small>${s_}</small></span>${b}</div>`;
+  let h = '';
+  if (g && g.cartes && g.cartes.length) h += ligne(ICO_LOT, tt(`Lot pas terminé · ${g.cartes.length} carte${g.cartes.length > 1 ? 's' : ''}`, `Unfinished batch · ${g.cartes.length} card${g.cartes.length > 1 ? 's' : ''}`),
+    tt('Tes photos sont gardées dans le téléphone : l’app reprend où elle était.', 'Your photos are kept on the phone: the app picks up where it was.') + (C ? ' · ' + tt('collection', 'collection') : ''),
+    `<span class="af-b"><button class="btn petit" id="af-lot">${tt('Reprendre', 'Resume')}</button><button class="lien-t" id="af-lot-x">${tt('Oublier', 'Forget')}</button></span>`);
+  if (pg) h += ligne(ICONES.photo || '', tt(`Mise en vente en cours · ${(pg.choisis || []).length} carte${(pg.choisis || []).length > 1 ? 's' : ''}`, `Listing in progress · ${(pg.choisis || []).length} card${(pg.choisis || []).length > 1 ? 's' : ''}`),
+    tt('Tes choix et tes réglages sont gardés.', 'Your picks and settings are kept.'), `<span class="af-b"><a class="btn petit" href="#vendre/programmer">${tt('Reprendre', 'Resume')}</a></span>`);
+  if (l.length) h += `<div class="af-go"><button class="btn" id="af-pg">${tt(`Mettre ${l.length > 1 ? 'ces ' + l.length + ' cartes' : 'cette carte'} sur eBay`, `List ${l.length > 1 ? 'these ' + l.length + ' cards' : 'this card'} on eBay`)}</button>
+    <small>${tt('Tu choisis les cartes, les prix et l’heure à l’étape suivante. Ou touche une carte pour la finir seule.', 'You pick the cards, prices and time on the next step. Or tap a card to finish it alone.')}</small>
+    <button class="lien-t" id="af-retirer">${tt('Retirer ces cartes de « À finir »', 'Remove these cards from “To finish”')}</button></div>`;
+  return h ? `<div class="af">${h}</div>` : '';
+}
+function brancherAFinir(l){
+  const bl = $('#af-lot'); if (bl) bl.onclick = () => { vibrer(); lotReprendre(); };
+  const bx = $('#af-lot-x'); if (bx) bx.onclick = async () => { if (!await confirmer(tt('Oublier ce lot ?', 'Forget this batch?'), tt('Les photos gardées dans le téléphone pour ce lot seront effacées. Les cartes déjà dans ton inventaire restent.', 'The photos kept on the phone for this batch will be erased. Cards already in your inventory stay.'))) return;
+    await lotIdb(null); S.lotGarde = null; S.lotGardeN = 0; chargerInventaire(); };
+  const bp = $('#af-pg'); if (bp) bp.onclick = () => { vibrer(); S.pgPre = l.map(c => +c.id); for (const k in PG) delete PG[k]; location.hash = '#vendre/programmer'; };
+  const br = $('#af-retirer'); if (br) br.onclick = async () => { if (!await confirmer(tt('Retirer de « À finir » ?', 'Remove from “To finish”?'), tt('Les cartes restent dans ton inventaire ; elles ne seront juste plus dans cette liste.', 'The cards stay in your inventory; they just leave this list.'))) return;
+    await essai(API.cartes_a_finir_retirer(l.map(c => c.id))); S.nbAFinir = 0; chargerInventaire(); };
+}
+// 9 nov 2026 : le lot en cours est garde dans le telephone (IndexedDB : les photos d'origine, pas de limite de 5 Mo) ; si
+// l'app se ferme au milieu, l'onglet « À finir » le reprend ou il etait
+function lotIdb(v){
+  return new Promise(ok => {
+    let rq; try { rq = indexedDB.open('lr_lot', 1); } catch (e) { ok(null); return; }
+    rq.onupgradeneeded = () => { try { rq.result.createObjectStore('l'); } catch (e) {} };
+    rq.onerror = () => ok(null);
+    rq.onsuccess = () => { try {
+      const db = rq.result, t = db.transaction('l', v === undefined ? 'readonly' : 'readwrite'), st = t.objectStore('l');
+      if (v === undefined) { const g = st.get('lot'); g.onsuccess = () => ok(g.result || null); g.onerror = () => ok(null); }
+      else { v ? st.put(v, 'lot') : st.delete('lot'); t.oncomplete = () => ok(true); t.onerror = () => ok(null); }
+    } catch (e) { ok(null); } };
+  });
+}
+function lotGarder(){
+  if (!LOT.l) return;
+  const reste = LOT.l.filter(c => !['ok', 'verifier'].includes(c.etat) && ((c.f && c.f.length) || (c.ph && c.ph.length)));
+  const v = reste.length ? {t: Date.now(), but: LOT.but, devants: !!LOT.devants, cartes: reste.map(c => ({f: c.f || null, ph: c.ph || null, impair: !!c.impair, cle: c.cle || null}))} : null;
+  S.lotGarde = v; S.lotGardeN = v ? v.cartes.length : 0;
+  lotIdb(v);
+}
+async function lotLireGarde(){
+  const g = await lotIdb();
+  S.lotGarde = g && g.cartes && g.cartes.length && Date.now() - g.t < 14 * 86400000 ? g : null;
+  S.lotGardeN = S.lotGarde ? S.lotGarde.cartes.length : 0;
+  return S.lotGarde;
+}
+async function lotReprendre(){
+  const g = S.lotGarde || await lotLireGarde(); if (!g) return;
+  for (const k in LOT) delete LOT[k];
+  Object.assign(LOT, {but: g.but || 'vente', devants: !!g.devants, fini: false,
+    l: g.cartes.map((x, i) => ({n: i + 1, f: x.f, ph: x.ph, impair: x.impair, cle: x.cle || undefined, etat: 'attente'}))});
+  location.hash = LOT.but === 'collection' ? '#vendre/collection-lot' : '#vendre/lot';
+  await new Promise(x => setTimeout(x, 300)); rendreLot();
+  for (const c of LOT.l) { try { await traiterCarteLot(c); } catch (e) { c.etat = 'revoir'; c.raison = tt('Erreur : reprends cette carte', 'Error: redo this card'); } c.f = null; lotGarder(); rendreLot(); }
+  LOT.fini = true; lotGarder(); rendreLot();
+}
+function nbAFinir(){ return (S.nbAFinir || 0) + (S.lotGardeN || 0) + (pgGarde() ? 1 : 0); }
 function filtresBarreInv(){
-  const f = S.filtreInv || 'tous', autre = !['tous', 'collection', 'listee'].includes(f), sp = S.sportInv;
-  return ['tous', 'collection', 'listee'].map(k => `<button class="chip ${f === k ? 'on' : ''}" data-f="${k}">${LIB_FILTRE(k)}</button>`).join('')
+  const f = S.filtreInv || 'tous', autre = !['tous', 'collection', 'listee', 'afinir'].includes(f), sp = S.sportInv, n = nbAFinir();
+  return (n || f === 'afinir' ? `<button class="chip chip-afinir ${f === 'afinir' ? 'on' : ''}" data-f="afinir">${LIB_FILTRE('afinir')}${n ? ` <b>${(S.nbAFinir || 0) + (S.lotGardeN || 0) || ''}</b>` : ''}</button>` : '')
+    + ['tous', 'collection', 'listee'].map(k => `<button class="chip ${f === k ? 'on' : ''}" data-f="${k}">${LIB_FILTRE(k)}</button>`).join('')
     + `<button class="chip ${autre || sp ? 'on' : ''}" id="i-plus-f">${autre ? LIB_FILTRE(f) : sp ? nomSport(sp) : tt('Filtrer', 'Filter')} ▾</button>`;
 }
 // 31 oct 2026 (Mathieu : « a vendre rapidement ou collection : deux mentalites ; simple, beau, l'info en quelques secondes ») :
@@ -9699,6 +9797,9 @@ async function vueInventaire(arg){
     <div class="acc-reserve"><div id="i-b-res"><div id="i-coll"></div><div id="i-kpis"></div></div></div>
     <div id="i-achats"></div>
     <div id="i-liste">${roue}</div></section>`;
+  // 9 nov 2026 : un lot pas termine (garde dans le telephone) fait apparaitre « À finir »
+  lotLireGarde().then(() => { const fz_ = $('.i-filtres'); if (fz_) { fz_.innerHTML = filtresBarreInv(); brancherFiltresInv(); }
+    if (S.filtreInv === 'afinir') chargerInventaire(); }).catch(() => {});
   blocCollection($('#i-coll'));
   brancherFiltresInv();
   tableauInv();
@@ -9732,9 +9833,13 @@ function repere(c){
   const m = c.marche, prix = nb(c.prix_demande);
   // 5 nov 2026 (Mathieu : « on doit voir si notre prix de vente est bon dans cette vue ») : sans 3 ventes reelles, la valeur
   // estimee de la carte sert de repere (dit comme tel)
-  const ref = m && m.mediane && (m.n || 0) >= 3 ? m.mediane : (nb(c.valeur) && nb(c.valeur) !== prix ? nb(c.valeur) : null);
+  // 9 nov 2026 (Mathieu : « pourquoi on ne voit toujours pas si la carte est dans le bon range de prix ? ») : sans ventes
+  // sures, les MEMES cartes en vente sur eBay moins 10 % (dit « annonces »), 3 annonces et plus
+  const va = nb(c.valeur_annonces);
+  const ref = m && m.mediane && (m.n || 0) >= 3 ? m.mediane : (nb(c.valeur) && nb(c.valeur) !== prix ? nb(c.valeur) : (va || null));
   if (!ref || !prix) return null;
-  const parVentes = ref === (m && m.mediane), lib = parVentes ? tt('marché ', 'market ') : tt('valeur estimée ', 'est. value ');
+  const parVentes = ref === (m && m.mediane), parAnn = !parVentes && ref === va && !(nb(c.valeur) && nb(c.valeur) !== prix);
+  const lib = parVentes ? tt('marché ', 'market ') : parAnn ? tt('selon les annonces ', 'from listings ') : tt('valeur estimée ', 'est. value ');
   // 8 nov 2026 (Mathieu : « c'est normal d'etre plus haut que les last sold, on veut une marge pour la nego ») : le bon prix
   // va du marche (−5 %) au marche + la marge de nego (15 % par defaut, Vendre > Offres) + 10 % ; au-dessus : trop cher
   const ng = nego(), haut = ref * (1 + ng / 100) * 1.10, bas = ref * 0.95;
@@ -9771,7 +9876,8 @@ function tuileInv(c){
   const etat = vendue ? capsule(tt('Vendue', 'Sold') + (c.vendu_le ? ' · ' + dateCourte(c.vendu_le) : ''), 'petit')
     : c.statut === 'Listée' && c.debut && Date.parse(c.debut) > Date.now() ? `<span class="capsule or petit">${icH()}${esc(dateProg(c.debut))}</span>`
     : c.statut === 'Listée' ? capsule(tt('Sur eBay', 'On eBay'), 'acc petit')
-    : envoiDe(c) ? capsule(envoiDe(c).type === 'gradation' ? (envoiDe(c).etape ? tt('À soumettre', 'To submit') : tt('Au gradage', 'At grading')) + ' · ' + envoiDe(c).compagnie : tt('En encan', 'At auction'), (envoiRetard(envoiDe(c)) ? 'or' : 'acc') + ' petit')
+    : envoiDe(c) ? capsule(envoiDe(c).type === 'gradation' ? (envoiDe(c).etape ? tt('À soumettre', 'To submit') : tt('Au gradage', 'At grading')) + ' · ' + envoiDe(c).compagnie : tt('En encan', 'At auction'), (envoiRetard(envoiDe(c)) ? 'or' : envoiDe(c).type === 'gradation' ? 'grad' : 'acc') + ' petit')
+    : c.a_finir ? capsule(tt('Prête à publier', 'Ready to list'), 'vert petit')
     : c.a_afficher ? capsule(tt('À mettre sur eBay', 'List on eBay'), 'or petit')
     : capsule(c.emplacement || tt('En stock', 'In stock'), 'petit');
   const nom = c.joueur || titreCourt(c.titre) || tt('Article', 'Item');
@@ -9815,7 +9921,7 @@ function tuileSlab(c){
     <span class="sl-lab"><span class="sl-t">${esc(titre)}</span>
       <span class="sl-n ${n ? (n.vraie ? 'vraie' : '') : 'aucune'}"><b class="${n && n.n.length > 3 ? 'long' : ''}">${n ? esc(n.n) : '—'}</b><small>${n ? esc(n.s) : tt('À NOTER', 'NOT RATED')}</small></span></span>
     <span class="sl-puits">${photoOk(c.photo) ? `<img src="${esc(photoNet(c.photo))}" alt="" loading="lazy" decoding="async" data-oe="rm">` : SVG_CARTE}
-      ${pastilleTend(c, 'sl-tend')}${!env && c.a_afficher ? `<span class="sl-env">${capsule(tt('À mettre sur eBay', 'List on eBay'), 'or petit')}</span>` : ''}${env ? `<span class="sl-env">${capsule(env.type === 'gradation' ? (env.etape ? tt('À soumettre', 'To submit') : tt('Au gradage', 'At grading')) : tt('En encan', 'At auction'), (envoiRetard(env) ? 'or' : 'acc') + ' petit')}</span>` : ''}</span>
+      ${pastilleTend(c, 'sl-tend')}${!env && c.a_afficher ? `<span class="sl-env">${capsule(tt('À mettre sur eBay', 'List on eBay'), 'or petit')}</span>` : ''}${env ? `<span class="sl-env">${capsule(env.type === 'gradation' ? (env.etape ? tt('À soumettre', 'To submit') : tt('Au gradage', 'At grading')) : tt('En encan', 'At auction'), (envoiRetard(env) ? 'or' : env.type === 'gradation' ? 'grad' : 'acc') + ' petit')}</span>` : ''}</span>
   </button>`;
 }
 async function consignataires(force){ if (!S.consig || force) S.consig = await API.consignataires_liste(); return S.consig; }
@@ -9859,15 +9965,16 @@ async function estimerManquantes(l){
   const auj = new Date().toISOString().slice(0, 10);
   let fait = {}; try { fait = JSON.parse(localStorage.getItem('lr_val_t') || '{}'); } catch (e) {}
   S.valSans = S.valSans || new Set(Object.keys(fait).filter(k => fait[k].n === 0 && fait[k].j === auj).map(Number));
-  const a = (l || []).filter(c => c.statut !== 'Vendue' && nb(c.prix_demande ?? c.valeur) && !repere(c) && !c.marche_pro && !(fait[c.id] && fait[c.id].j === auj)).slice(0, 6);
+  const a = (l || []).filter(c => c.statut !== 'Vendue' && nb(c.prix_demande ?? c.valeur) && !repere(c) && !c.marche_pro && !(fait[c.id] && fait[c.id].j === auj)).slice(0, 10);
   if (!a.length) return;
   S.valEnCours = true;
   try {
     for (const c of a) {
       const r = await API.carte_valeur(c.id).catch(() => null);
       const ok = r && r.valeur && (r.sure || r.n >= 3);             // pas de faux indice : une valeur sure ou 3 ventes et plus
-      fait[c.id] = {j: auj, n: ok ? 1 : 0};
-      if (ok) c.valeur = r.valeur; else S.valSans.add(c.id);
+      const ap = r && !ok && nb(r.approx);                            // sinon : les memes cartes en vente - 10 % (3 annonces et plus)
+      fait[c.id] = {j: auj, n: ok || ap ? 1 : 0};
+      if (ok) c.valeur = r.valeur; else if (ap) c.valeur_annonces = r.approx; else S.valSans.add(c.id);
       const t = document.querySelector(`#i-liste .tuile-inv[data-id="${c.id}"]`);
       if (t) { const d = document.createElement('div'); d.innerHTML = tuileInv(c); const n = d.firstElementChild; if (n) t.innerHTML = n.innerHTML; }
     }
@@ -9897,6 +10004,8 @@ async function chargerInventaire(){
   const valeur = l.reduce((s, c) => s + (nb(vendues ? c.prix_vendu : (c.valeur ?? c.prix_demande)) || 0), 0);
   const rep = l.map(repere).filter(Boolean), bien = rep.filter(r => r.cl === 'vert').length, cher = rep.filter(r => r.cl === 'rouge' || r.cl === 'or').length, bas = rep.filter(r => r.cl === 'acc').length;
   S.parSportInv = parSport; S.invL = l;
+  if (S.filtreInv === 'tous' || S.filtreInv === 'afinir' || !S.filtreInv) S.nbAFinir = tout.filter(c => c.a_finir).length;
+  else if (S.nbAFinir == null) API.inventaire_liste({dispo:1, a_finir:1}).then(x => { const n_ = (Array.isArray(x) ? x : (x && x.cartes) || []).length; if (n_ !== S.nbAFinir) { S.nbAFinir = n_; const fz_ = $('.i-filtres'); if (fz_) { fz_.innerHTML = filtresBarreInv(); brancherFiltresInv(); } } }).catch(() => {});
   const fz = $('.i-filtres'); if (fz) { fz.innerHTML = filtresBarreInv(); brancherFiltresInv(); }
   const puces = '' && Object.keys(parSport).length > 1 ? `<div class="chips" id="i-sports" style="margin-bottom:12px"><button class="chip ${S.sportInv ? '' : 'on'}" data-sp="">${tt('Tous sports', 'All sports')}</button>${Object.entries(parSport).sort((a, b) => b[1] - a[1]).map(([k, n]) => `<button class="chip ${S.sportInv === k ? 'on' : ''}" data-sp="${k}">${nomSport(k)} ${n}</button>`).join('')}</div>` : '';
   const kpis = l.length ? `<div class="hero-l" style="margin-bottom:14px">
@@ -9912,9 +10021,12 @@ async function chargerInventaire(){
       ${!vendues && cher ? `<span class="capsule or petit ir-fix" data-fix="baisser">${cher} ${tt('trop chères', 'too pricey')}</span>` : ''}<i>›</i></button>` : '';
   const slabs = S.filtreInv === 'collection';
   const selB = l.length && !vendues ? `<div class="inv-selb"><button class="pilule ${S.selInv ? 'acc' : ''}" id="i-sel">${S.selInv ? tt('Terminer la sélection', 'Done selecting') : tt('Sélectionner', 'Select')}</button></div>` : '';
-  z.innerHTML = puces + note + (slabs ? '' : resume) + selB + (l.length ? (slabs ? `<div class="grille-slab">${l.map(tuileSlab).join('')}</div>` : `<div class="grille-c">${l.map(tuileInv).join('')}</div>`)
+  const af = S.filtreInv === 'afinir' ? blocAFinir(l) : '';
+  z.innerHTML = puces + note + af + (slabs ? '' : resume) + selB + (l.length ? (slabs ? `<div class="grille-slab">${l.map(tuileSlab).join('')}</div>` : `<div class="grille-c">${l.map(tuileInv).join('')}</div>`)
+    : S.filtreInv === 'afinir' ? (af ? '' : `<div class="vide">${tt('Rien à finir : tout est sur eBay', 'Nothing to finish: everything is on eBay')}</div>`)
     : `<div class="vide">${S.filtreInv === 'collection' ? tt('Ta collection est vide', 'Your collection is empty') : tt('Rien ici', 'Nothing here')}<button class="pilule" id="i-vide">${tt('Ajouter des cartes', 'Add cards')}</button></div>`);
   $$('#i-sports [data-sp]').forEach(b => b.onclick = () => { S.sportInv = b.dataset.sp || null; chargerInventaire(); });
+  if (af) brancherAFinir(l);
   if (slabs) cadrerSlabs(z);
   $$('#i-liste .tuile-inv').forEach(r => r.onclick = () => { const c = l.find(x => x.id === +r.dataset.id);
     if (S.selInv) { vibrer(); S.selInv.has(c.id) ? S.selInv.delete(c.id) : S.selInv.add(c.id); r.classList.toggle('choisie', S.selInv.has(c.id)); barreSelInv(); return; }
