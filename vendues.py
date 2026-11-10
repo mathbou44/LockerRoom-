@@ -43,6 +43,15 @@ def _cle():
         return ""
 
 
+
+def _coupe():
+    """10 nov 2026 : comps = admin seulement pour le lancement (lockerroom.comps_permis)."""
+    try:
+        import lockerroom
+        return not lockerroom.comps_permis()
+    except Exception:
+        return False
+
 def actif():
     return bool(_cle())
 
@@ -289,29 +298,84 @@ def _budget_ok(fond, usage):
 DELAI_TAP = 15
 
 
-def _secours(q, fond):
+def _secours(q, fond, usage=None):
     """9 nov 2026 (Mathieu, panne chez SoldComps : « on doit avoir une alternative, on est trop dependant ») : quand
     SoldComps ne repond pas et qu'on n'a rien en cache, un geste de l'utilisateur passe par CompSniper (l'historique d'un
-    an, budget du mois) : les memes ventes eBay, une autre source. Jamais pour les taches de fond (budget du mois)."""
-    if fond:
+    an, budget du mois) : les memes ventes eBay, une autre source. Jamais pour les taches de fond (budget du mois).
+    10 nov 2026 (« le plus de sources possible, une de base et les autres pour raffiner et sauver ») : puis TheCardAPI
+    (aussi pour les verifications de deals, sur sa part du jour)."""
+    if not fond:
+        try:
+            import historique
+            if historique.actif():
+                ventes, err = historique.rechercher(q)
+                if not err and ventes:
+                    depuis = (datetime.now() - timedelta(days=90)).strftime("%Y-%m-%d")      # comme SoldComps : 90 jours
+                    v90 = [v for v in ventes if str(v.get("le") or "") >= depuis] or ventes
+                    return {"ventes": v90, "erreur": None, "secours": "compsniper"}
+        except Exception as e:
+            print("Ventes (secours CompSniper) : " + repr(e), flush=True)
+    if fond and usage not in ("verif", "prio"):
         return None
     try:
-        import historique
-        if not historique.actif():
-            return None
-        ventes, err = historique.rechercher(q)
-        if err or not ventes:
-            return None
-        depuis = (datetime.now() - timedelta(days=90)).strftime("%Y-%m-%d")      # comme SoldComps : les 90 derniers jours
-        v90 = [v for v in ventes if str(v.get("le") or "") >= depuis] or ventes
-        return {"ventes": v90, "erreur": None, "secours": "compsniper"}
+        import thecardapi
+        ventes, err = thecardapi.rechercher(q, limite=100, usage="tap" if not fond else "secours", delai=DELAI_TAP if not fond else 20)
+        if not err and ventes:
+            try:
+                import base_ventes
+                base_ventes.noter(q, ventes)
+            except Exception:
+                pass
+            return {"ventes": ventes, "erreur": None, "secours": "thecardapi"}
     except Exception as e:
-        print("Ventes (secours CompSniper) : " + repr(e), flush=True)
+        print("Ventes (secours TheCardAPI) : " + repr(e), flush=True)
+    return None
+
+
+_POOL = []
+
+
+def raffiner_lancer(q):
+    """10 nov 2026 : les ventes que TheCardAPI a de PLUS (les derniers jours surtout), lues EN MEME TEMPS que SoldComps
+    (aucune attente de plus). Un geste de l'utilisateur seulement. -> un futur, ou None (inactif)."""
+    try:
+        import thecardapi
+        if not q or not thecardapi.actif():
+            return None
+        if not _POOL:
+            from concurrent.futures import ThreadPoolExecutor
+            _POOL.append(ThreadPoolExecutor(max_workers=4, thread_name_prefix="raffiner"))
+        return _POOL[0].submit(thecardapi.rechercher, q, None, 50, "raffiner", 10)
+    except Exception as e:
+        print("Ventes (raffiner) : " + repr(e), flush=True)
         return None
+
+
+def raffiner(q, ventes, futur):
+    """Ajoute aux ventes celles du futur (raffiner_lancer), doublons retires (meme numero d'annonce)."""
+    if futur is None:
+        return ventes
+    try:
+        extra, err = futur.result(timeout=12)
+    except Exception:
+        return ventes
+    if err or not extra:
+        return ventes
+    vus = {_id_vente(v) or v.get("url") for v in ventes}
+    neuves = [v for v in extra if (_id_vente(v) or v.get("url")) not in vus]
+    if neuves:
+        try:
+            import base_ventes
+            base_ventes.noter(q, neuves)
+        except Exception:
+            pass
+    return ventes + neuves
 
 
 def rechercher(q, fond=True, usage=None):
     """Ventes eBay d'une recherche (toutes cartes confondues : filtrer ensuite). {ventes, erreur, cache}."""
+    if _coupe():
+        return {"ventes": [], "erreur": None, "coupe": True}
     q = " ".join(str(q or "").split())[:120]
     if not q:
         return {"ventes": [], "erreur": None}
@@ -321,7 +385,7 @@ def rechercher(q, fond=True, usage=None):
     if not actif():
         return {"ventes": [], "erreur": "inactif"}
     if not _budget_ok(fond, usage):                 # les taps passent avant les taches de fond
-        return {"ventes": [], "erreur": "plafond du jour"}
+        return _secours(q, fond, usage) or {"ventes": [], "erreur": "plafond du jour"}
     cpt = _compte_cle() if not fond else None
     if cpt and utilises_aujourdhui(cpt) >= part_compte():
         # 3 nov 2026 (revue de securite) : un seul compte ne vide pas le budget de tout le monde (titres inventes, en boucle)
@@ -330,11 +394,12 @@ def rechercher(q, fond=True, usage=None):
     # (chaque essai compte avant l'appel) sur d'autres cartes ; les gestes de l'utilisateur essaient quand meme
     if fond and time.time() < _PANNE[0]:
         vieux = _cache_lire(q.lower(), age_max=45 * 86400)
-        return {"ventes": vieux, "erreur": None, "cache": True, "vieux_cache": True} if vieux else {"ventes": [], "erreur": "SoldComps injoignable (panne)"}
+        return {"ventes": vieux, "erreur": None, "cache": True, "vieux_cache": True} if vieux else \
+            (_secours(q, fond, usage) or {"ventes": [], "erreur": "SoldComps injoignable (panne)"})
     if not fond and time.time() < _PANNE[0] and _PANNE_N[0] >= 2:
         if time.time() - _TAP_PANNE[0] < 60:    # 9 nov 2026 : « ne pas reessayer vite » (SoldComps) : les ventes deja lues
             vieux = _cache_lire(q.lower(), age_max=45 * 86400)
-            return {"ventes": vieux, "erreur": None, "cache": True, "vieux_cache": True} if vieux else (_secours(q, fond) or {"ventes": [], "erreur": "Ventes réelles momentanément indisponibles (panne chez le fournisseur)"})
+            return {"ventes": vieux, "erreur": None, "cache": True, "vieux_cache": True} if vieux else (_secours(q, fond, usage) or {"ventes": [], "erreur": "Ventes réelles momentanément indisponibles (panne chez le fournisseur)"})
         _TAP_PANNE[0] = time.time()
     e = _ERREURS.get(q.lower())
     if e and not fond and "injoignable" in str(e[1]) and time.time() - (e[0] + 540) > 15:
@@ -371,7 +436,7 @@ def rechercher(q, fond=True, usage=None):
                 vieux = _cache_lire(q.lower(), age_max=45 * 86400)        # les ventes lues dans les 45 derniers jours
                 if vieux:
                     return {"ventes": vieux, "erreur": None, "cache": True, "vieux_cache": True}
-                return _secours(q, fond) or {"ventes": [], "erreur": err}
+                return _secours(q, fond, usage) or {"ventes": [], "erreur": err}
             continue
         for v in (_vers_vente(it, taux) for it in (d or {}).get("items") or []):
             if not v:
@@ -398,6 +463,9 @@ def rechercher(q, fond=True, usage=None):
         vieux = _cache_lire(q.lower(), age_max=45 * 86400)
         if vieux:
             return {"ventes": vieux, "erreur": None, "cache": True, "vieux_cache": True}
+        sec = _secours(q, fond, usage)
+        if sec:
+            return sec
     return {"ventes": ventes, "erreur": erreur if (erreur and not ventes) else None, "partiel": bool(erreur)}
 
 
@@ -475,6 +543,8 @@ def archives(cib, jours=365, max_=400, ignorer=()):
     """7 nov 2026 (Mathieu : une Nazar Future Watch Auto Inscribed « aucune vente trouvee », 130point en a 6 : eBay et
     SoldComps ne montrent que les 90 derniers jours de ventes) : les ventes de la MEME carte gardees dans nos archives
     (base_ventes : chaque recherche y depose toutes ses ventes), jusqu'a un an. Rien n'est appele : aucun credit."""
+    if _coupe():
+        return []
     import cartes_match
     import base_ventes
     nom = [w for w in (cib.get("joueur") or "").split() if len(w) >= 3]
@@ -497,7 +567,7 @@ def archives(cib, jours=365, max_=400, ignorer=()):
         return []
     out, vus = [], set()
     for t, p, le, ph, u, of in l:
-        k = u or f"{t}|{le}|{p}"
+        k = _id_vente({"url": u}) or u or f"{t}|{le}|{p}"
         if k in vus or not p or [x for x in cartes_match.raisons_refus(cib, t or "") if x not in ignorer]:
             continue
         vus.add(k)
@@ -505,6 +575,33 @@ def archives(cib, jours=365, max_=400, ignorer=()):
         if len(out) >= max_:
             break
     return out
+
+
+def archives_joueur(joueur, jours=365, max_=1500):
+    """10 nov 2026 (prix suggere sans ventes de LA carte) : les ventes BRUTES d'un joueur dans nos archives (toutes ses
+    cartes), les plus recentes d'abord ; le tri (saisons voisines, cartes similaires) se fait ensuite. Aucun appel."""
+    if _coupe():
+        return []
+    nom = [w for w in str(joueur or "").split() if len(w) >= 3]
+    if not nom:
+        return []
+    depuis = (datetime.now() - timedelta(days=jours)).strftime("%Y-%m-%d")
+    try:
+        import comptes
+        import base_ventes
+        ch = os.path.join(comptes.DONNEES, "base_ventes.sqlite")
+        if not os.path.exists(ch):
+            return []
+        base_ventes._cx().close()
+        c = sqlite3.connect(ch, timeout=3)
+        try:
+            l = c.execute("SELECT titre, prix, le, photo, url FROM ventes WHERE le >= ? AND titre LIKE ? ORDER BY le DESC LIMIT ?",
+                          (depuis, "%" + nom[-1].lower() + "%", max_)).fetchall()
+        finally:
+            c.close()
+    except Exception:
+        return []
+    return [{"titre": t, "prix": p, "le": le, "photo": ph, "url": u, "source": "archives"} for t, p, le, ph, u in l if p]
 
 
 # 8 nov 2026 (Mathieu, une analyse de Sports Card Investor : « up 53 % en PSA 9, 41 % en PSA 8 ») : la MEME carte, chaque
@@ -515,6 +612,8 @@ _GRADES = ("gradée", "pas gradée", "autre gradation")
 def par_gradation(texte, requete=True, fond=False, jours=365):
     """-> {ok, series: [{cle, nom, n, points: [[date, prix]], derniere: {prix, le}}], carte}. Une recherche SoldComps (cache
     partage), plus nos archives (jusqu'a un an). Les 4 gradations les plus vendues (3 ventes au moins chacune)."""
+    if _coupe():
+        return {"ok": True, "series": [], "coupe": True}
     import cartes_match
     cib = cartes_match.cible(texte) if requete else cartes_match.cible_titre(texte)
     if cib.get("exclu") or not (cib.get("joueur") or cib.get("mots")):
@@ -556,20 +655,29 @@ def memes(texte, requete=True, n=24, fond=False, exclure_titre=None):
     """Les MEMES cartes vendues (eBay via SoldComps + communaute SlabCoach), les plus recentes d'abord.
     texte = ce que l'utilisateur a tape (requete=True) ou le titre d'une annonce (requete=False).
     -> {ventes, mediane, nb, derniere, source, erreur}"""
+    if _coupe():
+        return {"ventes": [], "mediane": None, "valeur_sure": False, "nb": 0, "derniere": None, "ebay": 0, "communaute": 0,
+                "erreur": None, "coupe": True, "points": [], "tendance": None}
     import cartes_match
     import ventes_communaute
     cib = cartes_match.cible(texte) if requete else cartes_match.cible_titre(texte)
     q = cartes_match.requete_ebay(cib) or texte
+    futur = raffiner_lancer(q) if q and not fond else None        # 10 nov 2026 : TheCardAPI en meme temps que SoldComps
     r = rechercher(q, fond=fond) if q else {"ventes": [], "erreur": None}
-    ebay = [v for v in r.get("ventes") or [] if not cartes_match.raisons_refus(cib, v["titre"])]
+    brut = r.get("ventes") or []
+    if r.get("secours") != "thecardapi":
+        brut = raffiner(q, brut, futur)
+    ebay = [v for v in brut if not cartes_match.raisons_refus(cib, v["titre"])]
     try:
         comm = (ventes_communaute.chercher(texte, requete=requete, n=40) or {}).get("ventes") or []
     except Exception:
         comm = []
     tout = ebay + [{**v, "source": "SlabCoach"} for v in comm]
-    if not requete:                             # 7 nov 2026 : + nos propres archives (eBay ne montre que 90 jours de ventes)
-        vus_u = {str(v.get("url") or "") for v in tout if v.get("url")}
-        tout += [v for v in archives(cib) if str(v.get("url") or "") not in vus_u]
+    # 7 nov 2026 : + nos propres archives (eBay ne montre que 90 jours de ventes). 10 nov 2026 : aussi pour une recherche
+    # tapee quand les fournisseurs n'ont rien rendu (panne) : ce qu'on a deja vu vaut mieux que rien
+    if not requete or (not ebay and r.get("erreur")):
+        vus_u = {_id_vente(v) or str(v.get("url") or "") for v in tout if v.get("url")}
+        tout += [v for v in archives(cib) if (_id_vente(v) or str(v.get("url") or "")) not in vus_u]
     if not requete:                             # 4 nov 2026 : la fiche d'une annonce (une seule carte precise)
         tout = _sans_aberrants(tout)
     tout.sort(key=lambda v: str(v.get("le") or ""), reverse=True)
@@ -622,6 +730,8 @@ def memes_cache(titre, q=None, n=16, age_max=14 * 86400):
     """8 nov 2026 (Mathieu : « accelerer la vitesse a laquelle on voit les comps ») : les ventes de la MEME carte deja connues,
     SANS aucun appel (le cache des recherches, souvent rempli par le chasseur de deals, et nos archives) : la fiche les
     montre tout de suite, pendant que la vraie recherche se fait. -> {ventes, mediane, nb} (ventes vides si rien)."""
+    if _coupe():
+        return {"ventes": [], "mediane": None, "nb": 0, "coupe": True}
     import cartes_match
     cib = cartes_match.cible_titre(titre)
     if cib.get("exclu") or not cib.get("joueur"):
@@ -658,6 +768,8 @@ def autres_saisons(titre, fond=False, extra=None):
     cote pour la meme carte, montrer les cartes similaires, mais dire qu'il n'y a pas de comp ») : les ventes de la meme
     carte des saisons voisines (la recherche des ventes ne contient jamais l'annee : le meme appel, deja en cache).
     -> deals.valeur_autre_saison (valeur, « autre_saison », n, ventes avec leur « saison ») ou None."""
+    if _coupe():
+        return None
     import cartes_match
     import deals
     cib = cartes_match.cible_titre(titre)
@@ -674,6 +786,8 @@ def similaires(titre, fond=False, extra=None):
     """7 nov 2026 (Mathieu : « les no sales : analyser les cartes similaires et donner un prix approximatif ») : les ventes du
     meme joueur, meme produit / insert (recherche large : sans annee, numerotation ni parallele), puis deals.valeur_approx.
     -> (valeur, « approx », n, ventes) ou None."""
+    if _coupe():
+        return None
     import cartes_match
     import deals
     cib = cartes_match.cible_titre(titre)
@@ -693,6 +807,8 @@ def autres_joueurs(titre, n=12, fond=False):
     """27 oct 2026 (Mathieu : « Colton Parayko pas de comp, mais on peut montrer des ventes de joueurs de la meme carte ») :
     les ventes de la MEME carte (meme produit, insert, parallele, numerotation, auto, patch) par D'AUTRES joueurs.
     C'est un repere de prix (la valeur depend du joueur), jamais un verdict de deal."""
+    if _coupe():
+        return {"ventes": [], "nb": 0, "q": None, "erreur": None, "coupe": True}
     import cartes_match
     cib = cartes_match.cible_titre(titre)
     j = cib.get("joueur")
@@ -737,5 +853,17 @@ def tendance(ventes, jours=30):
 
 
 def statut():
-    return {"actif": actif(), "aujourdhui": utilises_aujourdhui(), "plafond": plafond_jour(), "poids_jour": poids_aujourdhui(),
-            "poids_semaine": poids_jours()}
+    d = {"actif": actif(), "aujourdhui": utilises_aujourdhui(), "plafond": plafond_jour(), "poids_jour": poids_aujourdhui(),
+         "poids_semaine": poids_jours()}
+    # 10 nov 2026 : toutes les sources de ventes, pour l'admin (base, raffiner, sauver, archives)
+    try:
+        import thecardapi
+        d["thecardapi"] = thecardapi.statut()
+    except Exception:
+        pass
+    try:
+        import historique
+        d["compsniper"] = {"actif": historique.actif()}
+    except Exception:
+        pass
+    return d

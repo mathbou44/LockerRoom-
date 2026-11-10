@@ -130,6 +130,8 @@ SCRIPT = textwrap.dedent('''
     assert a.post("/api/carte_comps", json=["123"]).get_json()["coupe"]
     assert a.post("/api/forfait", json=[]).status_code == 200
     os.environ["LOCKERROOM_EBAY_PRIX"] = "1"
+    assert a.post("/api/deals_liste", json=[{}]).get_json().get("coupe")      # 10 nov 2026 : deals = admin (licence eBay)
+    os.environ["LR_PRIX_EBAY_PUBLIC"] = "1"                                    # apres l'accord ecrit d'eBay
     assert not a.post("/api/deals_liste", json=[{}]).get_json().get("coupe")
     print("ACHATS APPLE OK")
 ''')

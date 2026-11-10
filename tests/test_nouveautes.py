@@ -116,7 +116,7 @@ class Deals(unittest.TestCase):
         maint = datetime.now(timezone.utc)
 
         def rech(q, categorie=None, limite=50, fond=True, encheres=False, **k):
-            return [{"item_id": f"{i}{int(encheres)}", "titre": f"2025-26 Upper Deck {q} #201 RC", "prix_cad": 9.0 if i == 0 else 25.0 + i,
+            return [{"item_id": f"{i}{int(encheres)}", "titre": f"2025-26 Upper Deck {q} #201 RC", "prix_cad": 9.0 if i == 0 else 55.0 + i,
                      "port_cad": 1, "url": "u", "photo": None, "encan": encheres, "mises": 1,
                      "fin": (maint + timedelta(hours=2)).isoformat().replace("+00:00", "Z") if encheres else None} for i in range(6)]
         import vendues

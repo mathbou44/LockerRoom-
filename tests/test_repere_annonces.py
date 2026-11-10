@@ -18,6 +18,9 @@ api = lockerroom.Api(os.path.join(tempfile.mkdtemp(), "t.db"))
 cid = api.carte_sauver({"titre": T, "joueur": "Luke Evangelista", "annee": "2024-25", "marque": "Upper Deck", "set_nom": "Young Guns",
                         "numero": "451", "prix_demande": 20, "statut": "En stock"})["id"]
 r = api.carte_valeur(cid)
+assert r["ok"] and not r.get("approx"), r          # 10 nov 2026 (licence eBay §9.5) : coupe par defaut
+os.environ["LR_PRIX_ANNONCES"] = "1"
+r = api.carte_valeur(cid)
 assert r["ok"] and r.get("approx") and r.get("n_annonces") == 4, r
 assert 17 <= r["approx"] <= 21, r
 l = api.inventaire_liste({"dispo": 1})

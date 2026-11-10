@@ -210,6 +210,8 @@ class Sante(unittest.TestCase):
 
     def test_parcours_api(self):
         import ebay_compte
+        os.environ["LR_PRIX_ANNONCES"] = "1"          # 10 nov 2026 : verdicts tires des annonces = accord d'eBay seulement
+        self.addCleanup(os.environ.pop, "LR_PRIX_ANNONCES", None)
         a = lockerroom.Api(os.path.join(tempfile.mkdtemp(), "s.db"))
         a._maj_annonces([{"item_number": "1", "titre": "LEGO 75192 Millennium Falcon", "sku": "", "prix": 1200, "debut": "2026-06-01T00:00:00Z", "watchers": 0},
                          {"item_number": "2", "titre": "Vintage Pyrex Bowl Set", "sku": "", "prix": 20, "debut": "2026-10-10T00:00:00Z", "watchers": 3}])
@@ -449,7 +451,7 @@ class VoletAcheteur(unittest.TestCase):
         finally:
             ebay_compte.rechercher = avant
         self.assertTrue(r["ok"])
-        self.assertEqual(r["mediane"], 100)
+        self.assertIsNone(r["mediane"])          # 10 nov 2026 (licence eBay §9.5) : aucune mediane tiree des annonces
         # 27 oct 2026 (« pas de faux prix ») : sans ventes reelles sures, pas de valeur ni de « deal » tires des prix demandes
         self.assertIsNone(r["bon_prix"])
         self.assertIsNone(r["valeur"])

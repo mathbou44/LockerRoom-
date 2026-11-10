@@ -271,12 +271,55 @@ def marquer_ios(oui):
     _IOS.set(bool(oui))
 
 
-def ebay_prix_actif():
+_API_REF = []
+
+
+def ebay_prix_actif(api=None):
     """27 oct 2026 - interrupteur du serveur (LOCKERROOM_EBAY_PRIX=0) : coupe d'un geste les fonctions de prix sur les
     ANNONCES eBay (deals, prix suggere d'une annonce, repere prix et comparables, « Mettre au prix du marche ») si eBay
     le demande (licence API §9.5) ou coupe nos cles. Valeur d'une carte, tendances, breaks, inventaire et comptoir
-    continuent : ils ne dependent pas de l'API eBay."""
-    return os.environ.get("LOCKERROOM_EBAY_PRIX", "1") != "0"
+    continuent : ils ne dependent pas de l'API eBay.
+    10 nov 2026 (Mathieu : « legaux a 100 % », choix 1) : juger le prix d'une ANNONCE eBay (deal, rabais, mise max, prix
+    suggere, verdict de tes annonces, alertes de deals) = l'outil de prix que la licence reserve a l'accord ecrit d'eBay
+    (§8.5 c, §9.5). Pour le lancement : l'ADMIN seulement. LR_PRIX_EBAY_PUBLIC=1 apres l'accord d'eBay."""
+    if os.environ.get("LOCKERROOM_EBAY_PRIX", "1") == "0":
+        return False
+    if os.environ.get("LR_PRIX_EBAY_PUBLIC") == "1":
+        return True
+    try:
+        import comptes
+        if not comptes.MULTI:
+            return True                         # le PC de Mathieu (une seule personne : l'admin)
+        a = api or (_API_REF[0] if _API_REF else None)
+        return bool(a is not None and a._est_admin())
+    except Exception:
+        return False
+
+
+def comps_permis(api=None):
+    """10 nov 2026 (Mathieu : « pour les comps on va garder ca seulement admin, mettre le tout de cote pour la version
+    officielle de lancement », « 100 % legale avec nos cles eBay ») : les ventes recoltees sur eBay (SoldComps, CompSniper,
+    TheCardAPI, nos archives) et tout ce qu'on en tire (valeur d'une carte, gradations, tendances, pouls, valeur de la
+    collection) : l'ADMIN seulement. Les taches de fond globales (chasseur de deals de l'admin, base des ventes) continuent.
+    LR_COMPS_PUBLICS=1 pour les rouvrir a tous (seulement avec l'accord ecrit d'eBay ou une source sous licence)."""
+    if os.environ.get("LR_COMPS_PUBLICS") == "1":
+        return True
+    try:
+        import comptes
+        if not comptes.MULTI or not comptes.courant():
+            return True                         # le PC de Mathieu, ou une tache de fond sans compte (admin)
+        a = api or (_API_REF[0] if _API_REF else None)
+        return bool(a is not None and a._est_admin())
+    except Exception:
+        return False
+
+
+def prix_annonces_permis():
+    """10 nov 2026 (Mathieu : « assure-toi qu'on soit legaux a 100 % ») : licence de l'API eBay §9.5 (« utiliser le
+    contenu eBay, seul ou avec de l'information de tiers, pour suggerer ou modeliser des prix » : interdit sans accord
+    ecrit). Aucun prix, repere ou mediane n'est calcule a partir des ANNONCES lues par l'API. Les annonces restent
+    montrees telles quelles (permis : chercher et parcourir les annonces). LR_PRIX_ANNONCES=1 seulement avec l'accord."""
+    return os.environ.get("LR_PRIX_ANNONCES") == "1"
 
 
 def est_ios():
@@ -412,6 +455,7 @@ RABAIS_ANNONCES = 0.10          # 8 nov 2026 : sans vente, le prix suggere = la 
 
 class Api:
     def __init__(self, chemin_db=None):
+        _API_REF[:] = [self]                 # 10 nov 2026 : ebay_prix_actif() sait si c'est l'admin
         self._chemin_fixe = chemin_db            # tests : base imposee
         with _verrou:
             _connecter(self.chemin_db).close()
@@ -533,7 +577,7 @@ class Api:
                         and not info.get("identites_reliees_vu"))
         except ValueError:
             neuf = False
-        return {**forfaits.resume(), "multi": multi, "compte_neuf": neuf, "admin": self._est_admin(), "admin_a_verifier": adm_c and not self._est_admin(),
+        return {**forfaits.resume(), "multi": multi, "compte_neuf": neuf, "admin": self._est_admin(), "comps": comps_permis(self), "admin_a_verifier": adm_c and not self._est_admin(),
                 "admin_verif_active": adm_c and comptes.MULTI and self._admin_verif_possible(), "communaute": ventes_communaute.actif(),
                 # 27 oct 2026 - revue legale : logos et photos de la LNH = marques et contenu de la LNH (conditions : usage
                 # non commercial) -> coupes par defaut ; seulement avec une licence (LOCKERROOM_LOGOS_LNH=1)
@@ -2017,6 +2061,8 @@ class Api:
         reelles dans CE produit, classees par categorie de hit (ventes_joueur : la meme regle pour chaque joueur)."""
         import forfaits
         import ventes_joueur
+        if not comps_permis(self):              # 10 nov 2026 : comps = admin seulement
+            return {"ok": True, "coupe": True, "categories": [], "ventes": []}
         p = params or {}
         if not forfaits.produit_permis(str(p.get("produit_id") or "")):
             return {"ok": False, "erreur": "L'analyse de tous les produits est dans le forfait Pro.", "pro_requis": True}
@@ -4417,8 +4463,10 @@ class Api:
                 ev = sante.evaluer_vendues(a["prix_demande"], sure, len(vs), sante.age_jours(a.get("debut")), a.get("watchers"))
             else:
                 semblables = [x for x in res if x["item_id"] != str(a["item_number"])]
-                ev = sante.evaluer(a["prix_demande"], semblables, sante.age_jours(a.get("debut")), a.get("watchers"))
-            totaux = sorted(round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2) for x in semblables if x.get("prix_cad"))
+                # 10 nov 2026 (licence eBay §9.5) : sans accord d'eBay, les annonces pareilles ne donnent plus de verdict
+                # ni de prix suggere (seulement « traine » : l'age de TON annonce) ; elles restent montrees
+                ev = sante.evaluer(a["prix_demande"], semblables if prix_annonces_permis() else [], sante.age_jours(a.get("debut")), a.get("watchers"))
+            totaux = [] if not prix_annonces_permis() else sorted(round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2) for x in semblables if x.get("prix_cad"))
             comps = sorted(({"titre": x["titre"], "total": round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2),
                              "photo": x.get("photo"), "url": x.get("url")} for x in semblables if x.get("prix_cad")), key=lambda x: x["total"])[:12]
             with _verrou:
@@ -4880,6 +4928,7 @@ class Api:
         modele = annonces.modele(r.get("modele_annonce"))
         fp, ff = (r["frais_ebay_pct"] or 0) / 100, r["frais_ebay_fixe"] or 0
         prix, comps, n, note, source, vendues_l = None, [], 0, None, None, []
+        bassin_v = []                            # 10 nov 2026 : les ventes deja lues, pour les cartes similaires
         vendu, affiche = None, None             # 30 oct 2026 : les 2 reperes montres au vendeur (ventes et annonces)
         # 30 oct 2026 (Mathieu : « proposer un prix selon les last sold ») : d'abord les VENTES reelles de la meme carte
         # (SoldComps, cache 3 jours : souvent gratuit) ; les annonces en vente seulement s'il n'y a aucune vente
@@ -4888,6 +4937,7 @@ class Api:
                 import vendues
                 vs = vendues.memes(titre, requete=False, fond=False, n=24)
                 brutes = [v for v in vs.get("ventes") or [] if v.get("prix")]
+                bassin_v = list(brutes)
                 # 8 nov 2026 (Mathieu : « le 25 $ de ma Anders Lee, c'est MA carte ») : jamais tes propres achats eBay (ni la
                 # vente au prix paye pour cette carte), et les 90 derniers jours seulement, comme la valeur de l'inventaire
                 try:
@@ -4907,6 +4957,22 @@ class Api:
                     n, source = len(ventes), ("vendues" if sure else "vendues_peu")
             except Exception as e:
                 note = str(e)[:120]
+        if titre and not prix and ebay_prix_actif():
+            # 10 nov 2026 (Mathieu : « c'est le prix suggere qui va etre difficile », licence eBay §9.5 : les annonces lues
+            # par l'API ne doivent pas servir a modeliser un prix) : sans ventes de LA carte, les VENTES des cartes proches
+            # d'abord (saisons voisines, autre numerotation ou parallele, inscription), dites comme telles
+            try:
+                ap = self._prix_similaires(titre, c.get("joueur"), bassin_v)
+                if ap:
+                    val, src_, n_, vv = ap
+                    m_ = sante.prix_rond(val)
+                    prix = {"marche": m_, "vite": max(5.0, sante.prix_rond(val * 0.90, plafond=m_)), "haut": max(m_ + 5, sante.prix_rond(val * 1.10)),
+                            "mediane": round(val, 2), "bas": min(v["prix"] for v in vv), "max": max(v["prix"] for v in vv)}
+                    n, source = n_, "similaires"
+                    vendu = {"mediane": round(val, 2), "n": n_, "sure": False, "similaires": src_}
+                    vendues_l = [{k: v.get(k) for k in ("titre", "prix", "le", "url", "photo", "note")} for v in vv[:10]]
+            except Exception as e:
+                print("Preparer (similaires) : " + repr(e), flush=True)
         if titre:
             try:
                 cib = cartes_match.cible_titre(titre, c.get("joueur"))
@@ -4914,9 +4980,9 @@ class Api:
                 _c, gardees, _e = cartes_match.filtrer_carte(titre, res, c.get("joueur"))
                 tot = [round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2) for x in gardees if x.get("prix_cad")]
                 med, garde = cartes_match.mediane_robuste(tot)
-                if med:
+                if med and prix_annonces_permis():
                     affiche = {"mediane": round(med, 2), "bas": round(min(tot), 2), "n": len(tot)}
-                if med and not prix:                    # aucune vente : les memes cartes en vente
+                if med and not prix and prix_annonces_permis():   # aucune vente : les memes cartes en vente
                     # 8 nov 2026 (Mathieu : « si aucun autre comp, mettre 10 % moins cher que la mediane des memes cartes
                     # affichees ») : les annonces demandent souvent trop ; le marche = leur mediane moins 10 %
                     n = len(garde)
@@ -4948,6 +5014,38 @@ class Api:
                 "etats": {k: v[2] if franco else v[1] for k, v in annonces.ETATS_BRUTS.items()},
                 "net_marche": round(prix["marche"] * (1 - fp) - ff, 2) if prix else None,
                 "promotion_ok": annonces.SCOPE_MARKETING in ((jetons or {}).get("scopes") or []), "psa_ok": __import__("psa").actif()}
+
+    def _prix_similaires(self, titre, joueur=None, ventes=None):
+        """10 nov 2026 : la valeur d'une carte SANS ventes, a partir des ventes des cartes proches (jamais des annonces) :
+        nos archives du joueur (un an), le bassin des deals s'il est deja en memoire, puis UNE recherche large (joueur +
+        produit) si rien. Memes regles prudentes que les deals (saisons voisines -20 %, similaires -25 %, inscription :
+        la carte sans inscription comme plancher). -> (valeur, source, n, ventes) ou None."""
+        import cartes_match
+        import deals as _d
+        cib = cartes_match.cible_titre(titre, joueur)
+        if cib.get("exclu") or not cib.get("joueur"):
+            return None
+        a = {"titre": titre}
+        pool = list(ventes or []) + vendues.archives_joueur(cib["joueur"])
+        b = _d._BASSIN.get("b")                  # jamais rebati ici (250 000 ventes : trop long pour un geste)
+        if b is not None:
+            try:
+                pool += b.candidats(_d.cible_large(dict(cib, annee=None)))
+            except Exception:
+                pass
+
+        def essai(p):
+            return _d.valeur_autre_saison(a, p, cib) or _d.valeur_approx(a, p, cib)
+        va = essai(pool)
+        if not va:
+            q = cartes_match.requete_ebay(_d.cible_large(dict(cib, inscr=False) if cib.get("inscr") else cib))
+            if q:
+                r = vendues.rechercher(q, fond=False)
+                if r.get("ventes"):
+                    va = essai(pool + list(r["ventes"]))
+        if not va or not va[0] or not va[3]:
+            return None
+        return va
 
     def annonce_publier(self, d, verifier=False):
         """La carte + l'annonce : photos chez eBay, verification (frais), puis creation sur un 2e tap.
@@ -5463,6 +5561,14 @@ class Api:
     # -- 26 oct 2026 : fiche joueur, alertes, tendances, collection, calendrier (marche.py) ---------------------------
     def joueur_fiche(self, nom):
         r = marche.fiche_joueur(self, nom)
+        if isinstance(r, dict) and r.get("ok") and not comps_permis(self):
+            # 10 nov 2026 (comps = admin seulement) : le joueur, ses cartes (tirage, groupe), sa recrue, ses alertes ; sans
+            # valeur ni vente ni tendance de prix, ni deal
+            for c_ in r.get("cartes") or []:
+                c_.pop("valeur", None)
+                c_.pop("mesuree", None)
+            r.update(ventes=[], points=[], mediane=None, nb_ventes=0, tendance=None, deals=[], demande=None, coupe=True)
+            return r
         try:                                            # 5 nov 2026 : son indice de ventes repetees (indices.py)
             import indices
             i = indices.joueur((r or {}).get("joueur") or nom) if isinstance(r, dict) and r.get("ok") else None
@@ -5573,6 +5679,13 @@ class Api:
                 "ajustee": ajust, **approx}
 
     def _repere_annonces(self, carte, titre=None, res=None):
+        # 10 nov 2026 (Mathieu : « legaux a 100 % ») : licence de l'API eBay §9.5 : les annonces lues par l'API ne servent
+        # plus a calculer un prix. Coupe par defaut ; LR_PRIX_ANNONCES=1 seulement avec l'accord ecrit d'eBay.
+        if not prix_annonces_permis():
+            return {}
+        return self._repere_annonces0(carte, titre, res)
+
+    def _repere_annonces0(self, carte, titre=None, res=None):
         """9 nov 2026 (Mathieu : « pourquoi on ne voit toujours pas si la carte est dans le bon range de prix ? ») : sans ventes
         reelles sures, le repere = la mediane des MEMES cartes en vente sur eBay moins 10 % (comme le prix suggere : les annonces
         demandent souvent trop), 3 annonces et plus. Garde sur la carte (dit comme tel dans l'app : « annonces »)."""
@@ -5723,6 +5836,8 @@ class Api:
 
     def tendances(self):
         """28 oct 2026 (vitesse) : 2 a 6 s de calcul, le meme resultat pour tous les comptes : garde 15 min."""
+        if not comps_permis(self):              # 10 nov 2026 : comps = admin seulement (lancement)
+            return {"ok": True, "coupe": True, "hausses": [], "baisses": [], "plus_vendues": [], "indice": None}
         # 3 nov 2026 (Render : « health check timed out ») : le calcul (plusieurs secondes, 1 seul serveur) ne bloque plus une
         # requete : la derniere version est servie tout de suite et la nouvelle se calcule a cote, une seule a la fois
         import threading as _th
@@ -5768,12 +5883,16 @@ class Api:
 
     def pouls(self, langue=None):
         """27 oct 2026 : le pouls du hobby (segments qui chauffent, mesures sur ventes reelles)."""
+        if not comps_permis(self):              # 10 nov 2026 : comps = admin seulement (lancement)
+            return {"ok": True, "coupe": True, "segments": []}
         import pouls
         return pouls.resume(langue or self.reglages_lire().get("langue") or "fr")
 
     def astuces(self, force=False, langue=None):
         """26 oct 2026 - « Le savais-tu ? » : astuces verifiees (calculees sur les vraies ventes ou sourcees), pour l'accueil."""
         import astuces
+        if not comps_permis(self):              # 10 nov 2026 : astuces calculees sur les ventes = admin seulement
+            return {"ok": True, "astuces": [], "coupe": True}
         rg = self.reglages_lire()
         return {"ok": True, "astuces": astuces.liste(self, rg.get("niveau"), bool(force), "en" if (langue or rg.get("langue")) == "en" else "fr")}
 
@@ -5790,6 +5909,8 @@ class Api:
         return collection_sets.checklist(self, pid, sous)
 
     def collection_valeur(self):
+        if not comps_permis(self):              # 10 nov 2026 : comps = admin seulement (lancement)
+            return {"ok": True, "coupe": True}
         import collection_sets
         return collection_sets.valeur(self)
 
@@ -7448,6 +7569,11 @@ class Api:
             x["bon"] = bool(valeur) and (not x["deal"]) and x["total"] <= valeur          # « bon prix » : sous la valeur vendue
             x["gain"] = round(_net_rev(valeur) - _paye(x["total"], x), 2) if valeur else None
             x["hors_norme"] = x["total"] not in garde
+        if not prix_annonces_permis():          # 10 nov 2026 (licence eBay §9.5) : aucun chiffre tire des annonces
+            for x in gardees:
+                x.pop("hors_norme", None)
+            return {**base, "n": len(gardees), "mediane": None, "valeur": valeur, "valeur_source": "vendues" if vm else None,
+                    "bon_prix": bon, "min": None, "max": None, "annonces": gardees[:40]}
         return {**base, "n": len(gardees), "mediane": med, "valeur": valeur, "valeur_source": "vendues" if vm else None,
                 "bon_prix": bon, "min": garde[0], "max": garde[-1], "annonces": gardees[:40]}
 

@@ -761,6 +761,10 @@ def valeur_sure(pv, titre_annonce=""):
     return round(m, 2), pv
 
 
+def _annonces_permis():
+    return os.environ.get("LR_PRIX_ANNONCES") == "1"
+
+
 def valeur_annonce(a, ventes, actives, cib=None):
     """La valeur de LA carte d'une annonce : ventes de la meme carte, seulement si elle est SURE (valeur_sure) ; les
     autres annonces de la meme carte (moins 15 %) ne servent que de plafond. -> (valeur, source, n, ventes) ou None."""
@@ -772,8 +776,9 @@ def valeur_annonce(a, ventes, actives, cib=None):
     m, pv = valeur_sure(pv, a.get("titre") or "")
     if m is None:
         return None
+    # 10 nov 2026 (licence eBay §9.5) : les autres annonces ne plafonnent plus la valeur (un prix tire des annonces)
     pa = [_total(x) for x in actives or [] if x.get("item_id") != a.get("item_id")
-          and not cartes_match.raisons_refus(cib, x.get("titre") or "")]
+          and not cartes_match.raisons_refus(cib, x.get("titre") or "")] if _annonces_permis() else []
     if len(pa) >= 3:
         m = min(m, cartes_match.mediane_robuste(pa)[0] * 0.85)
     pv.sort(key=lambda v: str(v.get("le") or ""), reverse=True)
@@ -1376,7 +1381,7 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
     if not va and verif:
         pv = memes_ventes(cib, tout_v)
         pa = [_total(x) for x in actives or [] if x.get("item_id") != a.get("item_id")
-              and not cartes_match.raisons_refus(cib, x.get("titre") or "")]
+              and not cartes_match.raisons_refus(cib, x.get("titre") or "")] if _annonces_permis() else []   # 10 nov : §9.5
         if _prometteuse(a, t, pv, pa, maint, cib):
             nv = verif(cib)
             verifiee = nv is not None                   # la recherche a vraiment eu lieu (pas refusee par le budget)
@@ -1407,7 +1412,7 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
         st.setdefault("_tard", []).append((a, r, cib))           # 29 oct : vendeur suivi, toutes ses cartes de 25 $ et plus
     elif not va and verif and not a.get("encan") and t >= HIT_MIN and _precieuse(cib) and peu_ventes:
         pa2 = [_total(x) for x in actives or [] if x.get("item_id") != a.get("item_id")
-               and not cartes_match.raisons_refus(cib, x.get("titre") or "")]
+               and not cartes_match.raisons_refus(cib, x.get("titre") or "")] if _annonces_permis() else []   # 10 nov : §9.5
         bas = bool(pa2) and t <= (cartes_match.mediane_robuste(pa2)[0] or 0) * 0.75
         if bas or (r.get("vedette") and t >= 40) or t >= 60:     # 28 oct : tout hit de 60 $ et plus (le budget est plus gros)
             st.setdefault("_tard", []).append((a, r, cib))

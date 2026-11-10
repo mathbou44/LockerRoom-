@@ -133,6 +133,12 @@ def lire_reponse(d, taux):
 
 def rechercher(q, chasseur=False, jours=JOURS):
     """Les ventes d'une recherche sur un an (une page de 50, les plus recentes d'abord). -> (ventes, erreur)."""
+    try:
+        import lockerroom
+        if not lockerroom.comps_permis():            # 10 nov 2026 : comps = admin seulement
+            return [], "coupe"
+    except Exception:
+        pass
     q = " ".join(str(q or "").lower().split())[:200]
     if not q or not actif():
         return [], "inactif"

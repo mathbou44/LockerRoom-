@@ -20,6 +20,11 @@ ma_vente = {"titre": T, "prix": 25.32, "le": j(80), "url": "https://www.ebay.com
 vendues.memes = lambda t, **k: {"ventes": [dict(ma_vente)], "mediane": None}
 ebay_compte.rechercher = lambda *a, **k: [{"item_id": "1", "titre": T, "prix_cad": 60.0, "port_cad": 0, "url": "u1"},
                                           {"item_id": "2", "titre": T, "prix_cad": 80.0, "port_cad": 0, "url": "u2"}]
+api._prix_similaires = lambda *a, **k: None
+# 10 nov 2026 (licence eBay §9.5) : par defaut, AUCUN prix tire des annonces
+r = api.annonce_preparer({"titre": T})
+assert r["ok"] and r["source_prix"] != "annonces" and not r["prix"] and not r["affiche"], (r["source_prix"], r["prix"], r["affiche"])
+os.environ["LR_PRIX_ANNONCES"] = "1"           # seulement avec l'accord ecrit d'eBay
 r = api.annonce_preparer({"titre": T})
 assert r["ok"] and not r["vendues"] and r["vendu"] is None, (r["vendues"], r["vendu"])          # mon achat ne compte pas
 assert r["source_prix"] == "annonces" and r["prix"]["mediane"] == 63.0 and r["prix"]["marche"] == 65.0, r["prix"]   # 70 - 10 %

@@ -91,6 +91,8 @@ def recrues_du_produit(prod):
 def _annonces_joueur(j, chercher):
     """Les annonces eBay a son nom (API Browse, gratuite) -> {m: mediane, h: 3e quartile, n} ou None."""
     import cartes_match
+    if os.environ.get("LR_PRIX_ANNONCES") != "1":       # 10 nov 2026 : licence eBay §9.5 (aucun prix tire des annonces)
+        return None
     res = chercher(f"{j} hockey card") or []
     fam = cartes_match.norm(j).split()[-1]
     prix = sorted(round((a.get("prix_cad") or 0) + (a.get("port_cad") or 0), 2) for a in res

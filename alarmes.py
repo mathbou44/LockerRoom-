@@ -144,7 +144,8 @@ def verifier(api, maint=None):
         return any(" " + j + " " in t for j in mes)
 
     # -- deals (communs a tous) : gros deal et encan qui finit ---------------------------------------------------
-    if r["gros_deal"] or r["encan_fin"]:
+    import lockerroom as _lr                   # 10 nov 2026 : deals = admin seulement (licence eBay §8.5 c, §9.5)
+    if (r["gros_deal"] or r["encan_fin"]) and _lr.ebay_prix_actif(api):
         import deals as _d
         l = [x for x in (_d.lire().get("deals") or []) if _d.valide(x) and _d.encore_ouvert(x)]
         budget = None
@@ -242,6 +243,9 @@ def mes_joueurs(api, maint=None):
     (ou un encan d'un gros vendeur a 70 % ou moins de sa valeur) sur un des joueurs / equipes suivis -> une alerte, une
     seule fois par annonce. Au plus 3 par passage. -> nombre envoye."""
     if not reglages(api).get("mes_joueurs"):
+        return 0
+    import lockerroom as _lr
+    if not _lr.ebay_prix_actif(api):              # 10 nov 2026 : deals = admin seulement (licence eBay)
         return 0
     p = api.reglages_lire().get("deals_profil") or {}
     favs = [(f, api._norm_fav(f)) for f in (p.get("favoris") or []) if len(str(f).strip()) >= 3]
