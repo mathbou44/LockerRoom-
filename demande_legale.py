@@ -45,8 +45,19 @@ def _norm(n):
     return re.sub(r"[^a-z ]+", " ", n).strip()
 
 
+AMORCE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "demande_legale_amorce.json")
+
+
 def lire():
     ch = _chemin()
+    if not os.path.exists(ch) and os.path.exists(AMORCE):
+        # 10 nov 2026 : l'amorce (758 joueurs deja lus : LNH + Wikipedia, donnees publiques) : le labo et le modele
+        # demarrent tout de suite en ligne ; les joueurs sont ensuite relus chaque semaine
+        try:
+            import shutil
+            shutil.copyfile(AMORCE, ch)
+        except OSError:
+            pass
     try:
         mt = os.path.getmtime(ch)
     except OSError:
@@ -78,26 +89,67 @@ def _get(url, timeout=15):
 
 
 # -- les donnees publiques d'un joueur ------------------------------------------------------------------------
+def _wiki_lot(noms):
+    """Visites Wikipedia (anglais, 60 jours) de plusieurs joueurs en UNE requete (50 titres) : « Nom (ice hockey) » puis
+    « Nom » ; la page doit parler de hockey (homonymes). Respecte la limite de Wikimedia (retry-after). -> {nom: {...}}"""
+    import urllib.error
+    titres = []
+    for n in noms:
+        titres += [n + " (ice hockey)", n]
+    out = {}
+    for i in range(0, len(titres), 50):
+        lot = titres[i:i + 50]
+        u = "https://en.wikipedia.org/w/api.php?" + urllib.parse.urlencode({"action": "query", "format": "json", "formatversion": 2,
+                                                                          "redirects": 1, "prop": "pageviews|description", "pvipdays": 60,
+                                                                          "titles": "|".join(lot)})
+        def lire_u(adr):
+            for _essai in range(4):
+                try:
+                    with urllib.request.urlopen(urllib.request.Request(adr, headers={"User-Agent": UA}), timeout=30) as r:
+                        return json.loads(r.read())
+                except urllib.error.HTTPError as e:
+                    if e.code != 429:
+                        return None
+                    time.sleep(min(90, int(e.headers.get("retry-after") or 30) + 2))
+                except Exception:
+                    return None
+            return None
+        d = lire_u(u)
+        if not d:
+            continue
+        # les visites arrivent par morceaux (« pvipcontinue ») : on suit la suite jusqu'au bout
+        vues = {p_["title"]: p_.get("pageviews") for p_ in (d.get("query") or {}).get("pages") or [] if p_.get("pageviews")}
+        suite, garde = d.get("continue"), 0
+        while suite and garde < 10:
+            garde += 1
+            time.sleep(1)
+            d2 = lire_u(u + "&" + urllib.parse.urlencode(suite))
+            if not d2:
+                break
+            for p_ in (d2.get("query") or {}).get("pages") or []:
+                if p_.get("pageviews"):
+                    vues[p_["title"]] = p_["pageviews"]
+            suite = d2.get("continue")
+        q = d.get("query") or {}
+        redir = {m["from"]: m["to"] for m in (q.get("normalized") or []) + (q.get("redirects") or [])}
+        pages = {p["title"]: p for p in q.get("pages") or []}
+        for t in lot:
+            tt = t
+            for _ in range(3):
+                tt = redir.get(tt, tt)
+            p = pages.get(tt)
+            nom = t[:-len(" (ice hockey)")] if t.endswith(" (ice hockey)") else t
+            if not p or p.get("missing") or "hockey" not in str(p.get("description") or "").lower():
+                continue
+            pv = [v or 0 for v in (vues.get(p.get("title")) or p.get("pageviews") or {}).values()]
+            if nom not in out:
+                out[nom] = {"titre": tt, "v60": sum(pv), "v20": sum(pv[-20:])}
+        time.sleep(2)
+    return out
+
+
 def _wiki(nom):
-    """Visites de sa page Wikipedia (anglais) : 90 jours et la tendance. La page doit parler de hockey (homonymes)."""
-    base = nom.strip().replace(" ", "_")
-    for t in (base + "_(ice_hockey)", base):
-        s = _get("https://en.wikipedia.org/api/rest_v1/page/summary/" + urllib.parse.quote(t, safe=""))
-        if not isinstance(s, dict) or s.get("type") == "disambiguation":
-            continue
-        desc = (str(s.get("description") or "") + " " + str(s.get("extract") or "")[:400]).lower()
-        if "hockey" not in desc:
-            continue
-        titre = (s.get("titles") or {}).get("canonical") or t
-        fin = date.today() - timedelta(days=1)
-        debut = fin - timedelta(days=89)
-        d = _get(f"https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/"
-                 f"{urllib.parse.quote(titre, safe='')}/daily/{debut:%Y%m%d}/{fin:%Y%m%d}")
-        v = [int(x.get("views") or 0) for x in ((d or {}).get("items") or [])]
-        if not v:
-            return {"titre": titre, "v90": 0, "v30": 0}
-        return {"titre": titre, "v90": sum(v), "v30": sum(v[-30:])}
-    return None
+    return _wiki_lot([nom]).get(nom)
 
 
 def _nhl(nom):
@@ -109,23 +161,20 @@ def _nhl(nom):
         pid = next((str(x.get("playerId")) for x in (l or []) if isinstance(x, dict) and _norm(x.get("name")) == n and x.get("playerId")), None)
     if not pid:
         return None
-    d = _get(f"https://api-web.nhle.com/v1/player/{pid}/landing")
-    if not isinstance(d, dict):
+    L = _get(f"https://api-web.nhle.com/v1/player/{pid}/landing")
+    if not isinstance(L, dict):
         return None
-    fs = ((d.get("featuredStats") or {}).get("regularSeason") or {})
-    sub = fs.get("subSeason") or {}
-    car = ((d.get("careerTotals") or {}).get("regularSeason") or {})
-    dd = d.get("draftDetails") or {}
-    age = None
-    try:
-        age = round((date.today() - date.fromisoformat(str(d.get("birthDate"))[:10])).days / 365.25, 1)
-    except ValueError:
-        pass
-    return {"id": pid, "pos": d.get("position"), "actif": bool(d.get("isActive")), "age": age,
-            "repech": dd.get("overallPick"), "an_repech": dd.get("year"),
-            "mj": sub.get("gamesPlayed"), "pts": sub.get("points"), "buts": sub.get("goals"),
-            "mj_c": car.get("gamesPlayed"), "pts_c": car.get("points"), "buts_c": car.get("goals"),
-            "vic_c": car.get("wins"), "trophees": len(d.get("awards") or [])}
+    bsp = L.get("birthStateProvince")
+    return {"id": pid, "equipe": L.get("currentTeamAbbrev"), "pays": L.get("birthCountry"),
+            "province": (bsp or {}).get("default") if isinstance(bsp, dict) else bsp,
+            "hhof": bool(L.get("inHHOF")), "top100": bool(L.get("inTop100AllTime")), "actif": bool(L.get("isActive")),
+            "pos": L.get("position"), "repech": (L.get("draftDetails") or {}).get("overallPick"), "naissance": str(L.get("birthDate") or "")[:10],
+            "trophees": [str((a.get("trophy") or {}).get("default") or "") for a in L.get("awards") or []],
+            "trophees_n": sum(len(a.get("seasons") or []) for a in L.get("awards") or []),
+            "carriere": (L.get("careerTotals") or {}).get("regularSeason") or {}, "series": (L.get("careerTotals") or {}).get("playoffs") or {},
+            "saison": (((L.get("featuredStats") or {}).get("regularSeason") or {}).get("subSeason") or {}),
+            "saisons": len([x for x in L.get("seasonTotals") or [] if x.get("leagueAbbrev") == "NHL" and x.get("gameTypeId") == 2]),
+            "l5": sum(int(m.get("points") or 0) for m in L.get("last5Games") or [] if isinstance(m, dict))}
 
 
 def lire_joueur(nom):
@@ -133,24 +182,34 @@ def lire_joueur(nom):
 
 
 # -- les pieces (features) ---------------------------------------------------------------------------------------
-PIECES = ("wiki90", "wiki_tend", "ppm", "pts_c", "age", "repech", "trophees", "gardien", "defense", "actif")
+PIECES = ("age", "logpick", "top10", "gp", "pts", "ppg", "spts", "sppg", "po_pts", "trophees", "hart", "hhof", "top100", "legende",
+          "actif", "G", "D", "saisons", "l5", "wiki", "wiki_tend")
 
 
 def pieces(e):
+    """Les mesures publiques d'un joueur (LNH + Wikipedia). Les anciennes fiches (avant le 10 nov) donnent des zeros."""
     n, w = (e or {}).get("nhl") or {}, (e or {}).get("wiki") or {}
-    mj = n.get("mj") or 0
-    v90, v30 = w.get("v90") or 0, w.get("v30") or 0
+    car, po, sa = n.get("carriere") or {}, n.get("series") or {}, n.get("saison") or {}
+    try:
+        age = (date.today() - date.fromisoformat(n.get("naissance") or "")).days / 365.25
+    except ValueError:
+        age = float(n.get("age") or 27.0)
+    gp, pts = car.get("gamesPlayed") or n.get("mj_c") or 0, car.get("points") or n.get("pts_c") or 0
+    sgp, spts = sa.get("gamesPlayed") or n.get("mj") or 0, sa.get("points") or n.get("pts") or 0
+    pick = float(n.get("repech") or 250)
+    tr = [str(x) for x in n.get("trophees") or []] if isinstance(n.get("trophees"), list) else []
+    v60 = w.get("v60") if w.get("v60") is not None else (w.get("v90") or 0) * 2 / 3
+    v20 = w.get("v20") if w.get("v20") is not None else (w.get("v30") or 0) * 2 / 3
     return {
-        "wiki90": math.log1p(v90),
-        "wiki_tend": math.log1p(v30) - math.log1p((v90 - v30) / 2) if v90 else 0.0,
-        "ppm": (n.get("pts") or 0) / mj if mj >= 5 else ((n.get("pts_c") or 0) / n["mj_c"] if n.get("mj_c") else 0.0),
-        "pts_c": math.log1p(n.get("pts_c") or 0),
-        "age": float(n.get("age") or 26.0),
-        "repech": math.log(float(n.get("repech") or 250)),
-        "trophees": math.log1p(n.get("trophees") or 0),
-        "gardien": 1.0 if n.get("pos") == "G" else 0.0,
-        "defense": 1.0 if n.get("pos") == "D" else 0.0,
-        "actif": 1.0 if n.get("actif") else 0.0,
+        "age": age, "logpick": math.log(pick), "top10": 1.0 if pick <= 10 else 0.0,
+        "gp": math.log1p(gp), "pts": math.log1p(pts), "ppg": pts / gp if gp >= 20 else 0.0,
+        "spts": math.log1p(spts), "sppg": spts / sgp if sgp >= 5 else 0.0, "po_pts": math.log1p(po.get("points") or 0),
+        "trophees": math.log1p(n.get("trophees_n") or (n.get("trophees") if isinstance(n.get("trophees"), int) else 0) or 0),
+        "hart": 1.0 if any("Hart" in x for x in tr) else 0.0, "hhof": 1.0 if n.get("hhof") else 0.0, "top100": 1.0 if n.get("top100") else 0.0,
+        "legende": 1.0 if (n.get("hhof") or n.get("top100")) and not n.get("actif") else 0.0,
+        "actif": 1.0 if n.get("actif") else 0.0, "G": 1.0 if n.get("pos") == "G" else 0.0, "D": 1.0 if n.get("pos") == "D" else 0.0,
+        "saisons": float(n.get("saisons") or 0), "l5": float(n.get("l5") or 0),
+        "wiki": math.log1p(v60 or 0), "wiki_tend": (math.log1p(v20) - math.log1p(((v60 or 0) - v20) / 2)) if v60 else 0.0,
     }
 
 
@@ -210,8 +269,11 @@ def labo(d=None, verite=None):
         return {"n": len(lignes), "note": "pas assez de joueurs lus (30 au moins)"}
     y = [l[2] for l in lignes]
     seules = {k: spearman([l[1][k] for l in lignes], y) for k in PIECES}
-    combos = {"popularite": ["wiki90"], "stats": ["ppm", "pts_c", "age", "repech", "gardien", "defense"],
-              "tout": list(PIECES), "pop_stats": ["wiki90", "wiki_tend", "ppm", "pts_c", "age", "repech"]}
+    combos = {"popularite": ["wiki", "wiki_tend"],
+              "stats": ["age", "logpick", "top10", "gp", "pts", "ppg", "spts", "sppg", "po_pts", "trophees", "saisons", "l5", "G", "D"],
+              "stats_legendes": ["age", "logpick", "top10", "gp", "pts", "ppg", "spts", "sppg", "po_pts", "trophees", "hart", "hhof", "top100",
+                                 "legende", "actif", "saisons", "l5", "G", "D"],
+              "tout": list(PIECES)}
     res, meilleur = {}, None
     for nom_c, ks in combos.items():
         preds = [0.0] * len(lignes)
@@ -228,16 +290,92 @@ def labo(d=None, verite=None):
         res[nom_c] = {"rho": rho, "top20": len(top_v & top_p)}
         if rho is not None and (meilleur is None or rho > res[meilleur]["rho"]):
             meilleur = nom_c
-    ks = combos[meilleur]
-    mu, sd, w, b = _ajuster([[l[1][k] for k in ks] for l in lignes], y)
-    modele = {"pieces": ks, "mu": mu, "sd": sd, "w": w, "b": b, "nom": meilleur, "n": len(lignes),
-              "le": datetime.now().isoformat(timespec="seconds")}
+    # 10 nov 2026 : des arbres (gradient boosting) captent ce qu'une droite ne voit pas (une legende retiree, une recrue n°1)
+    gb = _arbres_cv(lignes, y)
+    if gb:
+        res["arbres"] = gb["mesure"]
+        if gb["mesure"]["rho"] is not None and (meilleur is None or gb["mesure"]["rho"] > res[meilleur]["rho"]):
+            meilleur = "arbres"
+    if meilleur == "arbres":
+        modele = {"pieces": list(PIECES), "nom": "arbres", "arbres": True, "n": len(lignes), "le": datetime.now().isoformat(timespec="seconds")}
+        _sauver_arbres(gb["modele"])
+    else:
+        ks = combos[meilleur]
+        mu, sd, w, b = _ajuster([[l[1][k] for k in ks] for l in lignes], y)
+        modele = {"pieces": ks, "mu": mu, "sd": sd, "w": w, "b": b, "nom": meilleur, "n": len(lignes),
+                  "le": datetime.now().isoformat(timespec="seconds")}
     return {"n": len(lignes), "seules": seules, "combinaisons": res, "garde": meilleur, "modele": modele}
 
 
+def _arbres_cv(lignes, y):
+    try:
+        import numpy as np
+        from sklearn.ensemble import GradientBoostingRegressor
+        from sklearn.model_selection import KFold, cross_val_predict
+    except ImportError:
+        return None
+    from sklearn.ensemble import RandomForestRegressor
+    X = np.array([[l[1][k] for k in PIECES] for l in lignes])
+    yy = np.array(y)
+    # 10 nov 2026 (labo sur 758 joueurs) : foret 0,71, boosting 0,70, droite 0,64 ; on garde le meilleur des deux arbres
+    meilleur = None
+    for m in (RandomForestRegressor(n_estimators=300, min_samples_leaf=3, max_features=0.5, random_state=0, n_jobs=2),
+              GradientBoostingRegressor(n_estimators=300, max_depth=4, learning_rate=0.03, subsample=0.8, min_samples_leaf=8, random_state=0)):
+        p = cross_val_predict(m, X, yy, cv=KFold(5, shuffle=True, random_state=0))
+        rho = spearman(list(p), list(yy))
+        top = len(set(np.argsort(-yy)[:20]) & set(np.argsort(-p)[:20]))
+        if meilleur is None or (rho or 0) > (meilleur[0] or 0):
+            meilleur = (rho, int(top), m)
+    meilleur[2].fit(X, yy)
+    return {"mesure": {"rho": meilleur[0], "top20": meilleur[1], "type": type(meilleur[2]).__name__}, "modele": meilleur[2]}
+
+
+_ARBRES = {"m": None, "mt": None}
+
+
+def _chemin_arbres():
+    return _chemin().replace(".json", "_arbres.pkl")
+
+
+def _sauver_arbres(m):
+    import pickle
+    with open(_chemin_arbres() + ".tmp", "wb") as f:
+        pickle.dump(m, f)
+    os.replace(_chemin_arbres() + ".tmp", _chemin_arbres())
+
+
+def _arbres():
+    import pickle
+    try:
+        mt = os.path.getmtime(_chemin_arbres())
+    except OSError:
+        return None
+    if _ARBRES["mt"] != mt:
+        with open(_chemin_arbres(), "rb") as f:            # notre propre modele, ecrit par notre serveur
+            _ARBRES.update(m=pickle.load(f), mt=mt)
+    return _ARBRES["m"]
+
+
 # -- la demande publique ---------------------------------------------------------------------------------------
+_MEMO = {"cle": None, "d": {}}
+
+
 def demande(joueur):
-    """La demande d'un joueur (meme echelle que valeurs.demande) avec ses donnees publiques seulement ; None si inconnu."""
+    """La demande d'un joueur (meme echelle que valeurs.demande) avec ses donnees publiques seulement ; None si inconnu.
+    Gardee en memoire par joueur tant que le fichier ne change pas (appelee des milliers de fois par calcul de break)."""
+    cle = (_ETAT.get("mtime"), _ARBRES.get("mt"))
+    if _MEMO["cle"] != cle:
+        _MEMO.update(cle=cle, d={})
+    k0 = _norm(joueur)
+    if k0 in _MEMO["d"]:
+        return _MEMO["d"][k0]
+    v = _demande0(joueur)
+    if len(_MEMO["d"]) < 20000:
+        _MEMO["d"][k0] = v
+    return v
+
+
+def _demande0(joueur):
     d = lire()
     m = d.get("modele")
     if not m:
@@ -249,7 +387,13 @@ def demande(joueur):
     e = (d.get("joueurs") or {}).get(k) if k else None
     if not e or not (e.get("nhl") or e.get("wiki")):
         return None
-    return round(min(8.0, max(0.15, math.exp(_predire(m, pieces(e))))), 3)
+    if m.get("arbres"):
+        a = _arbres()
+        if a is None:
+            return None
+        p = pieces(e)
+        return round(min(20.0, max(0.15, math.exp(float(a.predict([[p[k] for k in PIECES]])[0])))), 3)
+    return round(min(20.0, max(0.15, math.exp(_predire(m, pieces(e))))), 3)
 
 
 def tendance(joueur):
@@ -257,10 +401,10 @@ def tendance(joueur):
     d = lire()
     e = next((v for k, v in (d.get("joueurs") or {}).items() if _norm(k) == _norm(joueur)), None)
     w = (e or {}).get("wiki") or {}
-    v90, v30 = w.get("v90") or 0, w.get("v30") or 0
-    if v90 < 300:
+    v60, v20 = w.get("v60") or 0, w.get("v20") or 0
+    if v60 < 200:
         return None
-    r = v30 / max(1.0, (v90 - v30) / 2)
+    r = v20 / max(1.0, (v60 - v20) / 2)
     return {"ratio": round(r, 2), "sens": "hausse" if r >= 1.25 else "baisse" if r <= 0.8 else "stable"}
 
 
@@ -285,7 +429,7 @@ def _a_lire(n=PAR_PASSE):
             continue
         vus.add(k)
         e = (d.get("joueurs") or {}).get(nm)
-        if not e or e.get("le", 0) < lim:
+        if not e or e.get("le", 0) < lim or e.get("le", 0) > time.time() + 86400:
             out.append(nm)
         if len(out) >= n:
             break
@@ -294,15 +438,19 @@ def _a_lire(n=PAR_PASSE):
 
 def passe(n=PAR_PASSE):
     lus = 0
-    for nom in _a_lire(n):
-        e = lire_joueur(nom)
+    noms = _a_lire(n)
+    wiki = {}
+    for i in range(0, len(noms), 25):                    # Wikipedia : 25 joueurs (50 titres) par requete
+        wiki.update(_wiki_lot(noms[i:i + 25]))
+    for nom in noms:
+        e = {"nom": nom, "le": time.time(), "nhl": _nhl(nom), "wiki": wiki.get(nom)}
         with _verrou:
             d = dict(lire())
             d.pop("_idx", None)
             d.setdefault("joueurs", {})[nom] = e
             _ecrire(d)
         lus += 1
-        time.sleep(0.4)
+        time.sleep(0.3)
     with _verrou:
         d = dict(lire())
         d.pop("_idx", None)

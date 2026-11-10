@@ -3006,7 +3006,7 @@ html[lang=en] body.sandbox::before{content:'SANDBOX eBay · test data'}
   <a class="nav-logo" href="#accueil" aria-label="Accueil"><span class="logo-lr petit"><img src="/logo_sc_gold.png" alt="" id="nav-logo-img"></span><span id="nav-logo-nom" class="a-mot"><span class="mot-sc" role="img" aria-label="SlabCoach"><b>slab</b>coach<sup>™</sup><span class="sc-tag">SPORTS CARDS</span></span></span></a><div class="nav-pref" id="nav-pref"></div>
   <div class="nav-mode" id="nav-mode"></div>
   <a href="#accueil" data-onglet="accueil"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 11 12 4l9 7v9H3z"/></svg>Accueil</a>
-  <a href="#deals" data-onglet="deals"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>Deals<span class="pastille" id="pastille-deals" hidden></span></a>
+  <a href="#deals" data-onglet="deals"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>Radar<span class="pastille" id="pastille-deals" hidden></span></a>
   <a href="#valeur" data-onglet="valeur" data-mode="cache" hidden><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8.5 11h5M11 8.5v5"/></svg>Valeur</a>
   <a href="#vendre" data-onglet="vendre"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="3"/><circle cx="12" cy="13" r="3.5"/><path d="M8 6l1.5-2.5h5L16 6"/></svg>Vendre</a>
   <a href="#inventaire" data-onglet="inventaire"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="6" y="3" width="13" height="17" rx="2"/><path d="M3 7v12a2 2 0 0 0 2 2h10"/></svg>Inventaire</a>
@@ -7860,8 +7860,8 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document
 async function vueDeals(arg){
   const w = arg === 'watch';
   V().innerHTML = `<section class="ecran large">
-    <div class="entete"><div class="titre">Deals</div>${w ? '' : `<span class="d-ent"><a class="aide-q d-val" href="#valeur" aria-label="${esc(tt('Combien vaut une carte ?', 'What is a card worth?'))}">${ICONES.loupe}</a><button class="aide-q" id="d-aide" aria-label="${esc(tt('Comment lire un deal', 'How to read a deal'))}">?</button></span>`}</div>
-    <div class="d-onglets" role="tablist"><a role="tab" href="#deals" aria-selected="${!w}" class="${w ? '' : 'on'}">${tt('Deals', 'Deals')}<span class="d-nb" id="d-nb" hidden></span></a>
+    <div class="entete"><div class="titre">Radar</div>${w ? '' : `<span class="d-ent"><a class="aide-q d-val" href="#valeur" aria-label="${esc(tt('Combien vaut une carte ?', 'What is a card worth?'))}">${ICONES.loupe}</a><button class="aide-q" id="d-aide" aria-label="${esc(tt('Comment lire un deal', 'How to read a deal'))}">?</button></span>`}</div>
+    <div class="d-onglets" role="tablist"><a role="tab" href="#deals" aria-selected="${!w}" class="${w ? '' : 'on'}">${comps() ? 'Deals' : tt('Mes cibles', 'My targets')}<span class="d-nb" id="d-nb" hidden></span></a>
       <a role="tab" href="#deals/watch" aria-selected="${w}" class="${w ? 'on' : ''}">${ICO_ETOILE}${tt('Watchlist', 'Watchlist')}<span class="w-nb" hidden></span></a></div>
     <form class="recherche pas-tel" id="v-form" role="search">${ICONES.loupe}<input id="v-q" type="search" enterkeyhint="search" placeholder="${esc(tt('Combien vaut une carte ? (ex. Bedard Young Guns)', 'What is a card worth? (e.g. Bedard Young Guns)'))}"></form>
     ${!w && S.forfait && S.forfait.admin ? '<a class="d-tour" id="d-tour" href="#admin/serveur"></a>' : ''}
@@ -8697,7 +8697,7 @@ async function vueAccueil(arg){
   $('#acc-tuiles').innerHTML = [
     S.mode === 'acheteur' ? `<a class="t-acc" href="#guide" id="t-budget"><span class="l">${tt('Budget du mois', 'Monthly budget')}</span><b>…</b><span class="s">${tt('touche pour le fixer', 'tap to set it')}</span></a>`
       : tuile('Profit', (h.profit < 0 ? '−' : '') + argentCourt(Math.abs(h.profit)), nomMois(h.mois) + (h.nb_ventes ? ` · ${h.nb_ventes} vente${h.nb_ventes > 1 ? 's' : ''}` : ''), h.profit > 0 ? 'vert' : h.profit < 0 ? 'rouge' : '', '#bilan" id="t-profit'),
-    tuile('Deals', a && a.gain_deals > 0 ? '+' + argentCourt(a.gain_deals) : String((a && a.nb_deals) || 0), a && a.nb_deals ? (comps() ? `${a.nb_deals} sous la valeur` : `${a.nb_deals} ${tt('à ton prix', 'at your price')}`) : 'on cherche pour toi', a && a.gain_deals > 0 ? 'or' : '', '#deals'),
+    tuile('Radar', a && a.gain_deals > 0 ? '+' + argentCourt(a.gain_deals) : String((a && a.nb_deals) || 0), a && a.nb_deals ? (comps() ? `${a.nb_deals} sous la valeur` : `${a.nb_deals} ${tt('à ton prix', 'at your price')}`) : 'on cherche pour toi', a && a.gain_deals > 0 ? 'or' : '', '#deals'),
     S.mode === 'acheteur' ? tuile(tt('Ma collection', 'My collection'), argentKpi(st.valeur), `${st.nb} carte${st.nb > 1 ? 's' : ''}`, '', '#inventaire" id="t-stock')
       : tuile('Stock', argentKpi(st.valeur), `${st.nb} carte${st.nb > 1 ? 's' : ''}${vi.delai_median != null ? ' · vend en ' + vi.delai_median + ' j' : ''}`, '', '#inventaire" id="t-stock'),
   ].join('');
@@ -8799,10 +8799,10 @@ function histoiresDeals(a){
   // petit slab : l'etiquette en haut porte le rabais a la place de la note, la photo dans la fenetre
   const nb_ = (a && a.nb_deals) || L.length;
   const tous = `<a class="hist hist-tous" role="listitem" href="#deals"><span class="anneau slab neuf"><span class="slab-in">
-      <span class="slab-lab"><small>DEALS</small><b>${nb_ > 99 ? '99+' : nb_}</b></span><span class="slab-ph ico">${ICO_MODE.acheteur}</span></span></span><span class="nom">${tt('Tous', 'All')}</span></a>`;
+      <span class="slab-lab"><small>RADAR</small><b>${nb_ > 99 ? '99+' : nb_}</b></span><span class="slab-ph ico">${ICO_MODE.acheteur}</span></span></span><span class="nom">${tt('Tous', 'All')}</span></a>`;
   return tous + tri.map(x => `<button class="hist hist-deal" role="listitem" data-vu-deal="${esc(x.item_id)}" ${attrsAnnonce(x)} aria-label="${esc(titreCourt(x.titre) + ' · −' + (x.rabais || 0) + ' %')}">
     <span class="anneau slab${vus[x.item_id] ? '' : ' neuf'}"><span class="slab-in">
-      <span class="slab-lab"><small>DEAL</small><b class="vert">${x.rabais ? '−' + x.rabais + '%' : '✓'}</b></span>
+      <span class="slab-lab"><small>${x.mes ? tt('CIBLE', 'TARGET') : 'DEAL'}</small><b class="vert">${x.rabais ? '−' + x.rabais + '%' : '✓'}</b></span>
       <span class="slab-ph">${x.photo ? `<img src="${esc(photoNet(x.photo))}" alt="" loading="lazy" decoding="async" data-oe="rm">` : SVG_CARTE}</span></span></span>
     <span class="nom">${esc(nom(x))}</span></button>`).join('');
 }
@@ -8828,7 +8828,7 @@ function histoiresAccueil(d, a){
     ...(act.magasin ? [['comptoir', null, tt('Comptoir', 'Counter'), '', '#comptoir']] : []),
     ['bilan', null, tt('Bilan', 'Report'), '', '#bilan'],
   ] : [
-    ['deals', (a && a.nb_deals) || 0, 'Deals', comps() ? tt('sous la valeur', 'under value') : tt('à ton prix', 'at your price'), '#deals'],
+    ['deals', (a && a.nb_deals) || 0, 'Radar', comps() ? tt('sous la valeur', 'under value') : tt('à ton prix', 'at your price'), '#deals'],
     ['alertes', S.clocheN || 0, tt('Alertes', 'Alerts'), tt('trouvées', 'found'), 'alertes'],
     ['valeur', null, tt('Valeur', 'Value'), '', '#valeur'],
     ['budget', null, 'Budget', '', 'budget'],
@@ -9659,7 +9659,7 @@ function moisSortie(d){ const t = Date.parse(String(d || '').slice(0, 7) + '-15'
 function tuileProduit(p){
   return `<button class="tuile" data-cat="${esc(p.id)}"><b>${esc(nomCourt(p.nom))}</b>
     <span class="pastilles">${p.recrues_par_boite >= 1 ? tag('≈ ' + p.recrues_par_boite.toLocaleString(LOC()) + ' RC/boîte', 'acc') : ''}${p.hits_par_boite >= 0.5 ? tag('≈ ' + p.hits_par_boite.toLocaleString(LOC(), {maximumFractionDigits:1}) + ' hit/boîte', 'or') : ''}
-      ${p.ev_par_boite ? tag('EV ' + argentCourt(p.ev_par_boite) + '/boîte', 'vert') : ''}${p.preliminaire ? tag('Préliminaire', 'rouge') : ''}</span>
+      ${p.ev_par_boite && comps() ? tag('EV ' + argentCourt(p.ev_par_boite) + '/boîte', 'vert') : ''}${p.preliminaire ? tag('Préliminaire', 'rouge') : ''}</span>
     <span class="sous">${esc([p.format, moisSortie(p.sortie)].filter(Boolean).join(' · '))}</span></button>`;
 }
 async function rendreCalc(){
@@ -9669,7 +9669,7 @@ async function rendreCalc(){
   const choisi = c.produit_id && (c.catalogue ? cat.produits.find(p => p.id === c.produit_id) : maison.find(p => p.id === c.produit_id));
   if (!choisi) {
     const v = cat.valeurs || {};
-    $('#b-corps').innerHTML = `<div class="pastilles">${v.nb_joueurs ? tag('Valeur des joueurs : algo SlabCoach · ' + v.nb_joueurs + ' joueurs', 'vert') : tag('Valeurs des joueurs à venir', 'rouge')}${v.maj ? tag('màj ' + dateCourte(v.maj)) : ''}</div>
+    $('#b-corps').innerHTML = `<div class="pastilles">${!comps() ? '' : v.nb_joueurs ? tag('Valeur des joueurs : algo SlabCoach · ' + v.nb_joueurs + ' joueurs', 'vert') : tag('Valeurs des joueurs à venir', 'rouge')}${v.maj && comps() ? tag('màj ' + dateCourte(v.maj)) : ''}</div>
       <div class="section">Choisis le produit</div>
       <div class="grille-tuiles">${cat.produits.map(tuileProduit).join('')}</div>
       ${maison.length ? `<div class="section">Mes produits</div><div class="grille-tuiles">${maison.map(p => `<button class="tuile" data-maison="${p.id}"><b>${esc(p.nom)}</b><span class="pastilles">${tag(p.nb_cartes + ' cartes')}</span></button>`).join('')}</div>` : ''}`;
@@ -9710,15 +9710,15 @@ function rendreResultat(){
   const cat = !!r.produit.catalogue, v = r.valeurs || {};
   const sansCout = !(nb(S.calc.cout_boite) > 0);
   z.innerHTML = `<div class="kpis"><div class="kpi"><b>${argentKpi(r.total)}</b><span>Total des places</span></div>
-      ${cat ? `<div class="kpi"><b>${argentKpi(r.ev_total)}</b><span>Valeur attendue</span></div>` : `<div class="kpi"><b>${argentKpi(r.cout)}</b><span>Coût</span></div>`}
+      ${cat && comps() ? `<div class="kpi"><b>${argentKpi(r.ev_total)}</b><span>Valeur attendue</span></div>` : `<div class="kpi"><b>${argentKpi(r.cout)}</b><span>Coût</span></div>`}
       <div class="kpi"><b class="${r.profit_estime >= 0 ? 'vert' : 'rouge'}">${argentKpi(r.profit_estime)}</b><span>Profit si tout vendu</span></div></div>
     <div class="pastilles defile" style="margin:12px 0">${sansCout ? tag('Entre ton coût par boîte', 'rouge') : ''}${tag(r.places.length + ' places', 'acc')}
-      ${cat ? tag('EV ' + argentCourt(r.ev_par_boite) + '/boîte', 'vert') + (v.nb_joueurs ? tag('Algo SlabCoach · ' + v.nb_joueurs + ' joueurs', 'vert') : tag('Valeurs par défaut', 'rouge')) + tag(Math.round(r.part_mesuree) + ' % mesuré sur ventes') : tag(r.nb_cartes + ' cartes')}
+      ${cat && comps() ? tag('EV ' + argentCourt(r.ev_par_boite) + '/boîte', 'vert') + (v.nb_joueurs ? tag('Algo SlabCoach · ' + v.nb_joueurs + ' joueurs', 'vert') : tag('Valeurs par défaut', 'rouge')) + tag(Math.round(r.part_mesuree) + ' % mesuré sur ventes') : tag(r.nb_cartes + ' cartes')}
       ${!cat && !Object.keys(r.produit.par_boite || {}).length ? tag('Cartes par boîte ?', 'rouge') : ''}</div>
     <div class="bloc"><div class="liste">${r.places.map((p, i) => `
       <div class="rangee"><span class="rang">${i + 1}</span>
         <span class="milieu"><span class="nom">${esc(p.nom)}</span>
-          <span class="pastilles">${cat ? (p.recrues >= 0.1 ? tag(environ(p.recrues) + ' RC', 'acc') : '') + (p.hits >= 0.05 ? tag(environ(p.hits, 2) + ' hit', 'or') : '') + tag('EV ' + argentCourt(p.ev))
+          <span class="pastilles">${cat ? (p.recrues >= 0.1 ? tag(environ(p.recrues) + ' RC', 'acc') : '') + (p.hits >= 0.05 ? tag(environ(p.hits, 2) + ' hit', 'or') : '') + (comps() ? tag('EV ' + argentCourt(p.ev)) : '')
             : (p.recrues ? tag(p.recrues + ' RC', 'acc') : '') + (p.autos ? tag(p.autos + ' auto', 'or') : '') + (p.numerotees ? tag(p.numerotees + ' /#') : '') + tag(p.part + ' %')}</span>
           ${p.vedettes.length ? `<span class="det">${esc(p.vedettes.join(' · '))}</span>` : ''}</span>
         <span class="prix">${argent(p.prix, 0)}</span></div>`).join('')}</div></div>
@@ -13452,7 +13452,7 @@ async function vueMesDeals(z){
     milieu: `<div class="pastilles">${x.encan ? tag(tt('Encan', 'Auction') + (x.fin ? ' · ' + finDans(x.fin) : ''), 'or') : tag(tt('Achat immédiat', 'Buy It Now'))}</div>`,
     droite: `<span class="sous">${tt('ton prix', 'yours')} ${argentCourt(x.prix_max)}</span>`});
   z.innerHTML = `<div class="md">
-    <div class="md-tete"><div><b>${tt('Mes deals', 'My deals')}</b><span class="sous">${tt('Les annonces à ton prix cible ou moins. Tu choisis le prix, on surveille eBay.', 'Listings at or under your target price. You set the price, we watch eBay.')}</span></div>
+    <div class="md-tete"><div><b>${tt('Ton radar', 'Your radar')}</b><span class="sous">${tt('Les annonces à ton prix cible ou moins. Tu choisis le prix, on surveille eBay.', 'Listings at or under your target price. You set the price, we watch eBay.')}</span></div>
       <button class="btn petit" id="md-plus">${icN('cible')}${tt('Ajouter une carte', 'Add a card')}</button></div>
     ${C.length ? `<div class="pastilles md-f"><button class="pilule ${S.mdFiltre ? '' : 'on'}" data-md="">${tt('Toutes', 'All')} · ${L.length}</button>${C.map(c => `<button class="pilule ${S.mdFiltre === c.id ? 'on' : ''}" data-md="${c.id}">${esc(c.q)} ≤ ${argentCourt(c.prix_max)} · ${c.n || 0}</button>`).join('')}</div>` : ''}
     ${vis.length ? `<div class="grille-c">${vis.map(tuile).join('')}</div>`

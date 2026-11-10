@@ -16,11 +16,12 @@ for i in range(120):
     pop = rnd.uniform(0, 4)                                # la « vraie » popularite
     nom = "Joueur " + chr(65 + i // 26) + chr(97 + i % 26) + "son"
     verite[nom] = round(math.exp(0.6 * pop - 1.2 + rnd.gauss(0, 0.25)), 3)
-    joueurs[nom] = {"le": 9e9, "wiki": {"v90": int(math.exp(6 + pop + rnd.gauss(0, 0.4))), "v30": 100},
-                    "nhl": {"pos": "C", "actif": True, "age": 24, "repech": int(200 / (1 + pop)), "mj": 20,
-                            "pts": int(5 + 5 * pop), "mj_c": 200, "pts_c": int(50 * (1 + pop)), "trophees": 0}}
+    joueurs[nom] = {"le": 9e9, "wiki": {"v60": int(math.exp(6 + pop + rnd.gauss(0, 0.4))), "v20": 100},
+                    "nhl": {"pos": "C", "actif": True, "naissance": "2002-01-01", "repech": int(200 / (1 + pop)),
+                            "saison": {"gamesPlayed": 20, "points": int(5 + 5 * pop)}, "carriere": {"gamesPlayed": 200, "points": int(50 * (1 + pop))},
+                            "trophees_n": 0}}
 r = dl.labo({"joueurs": joueurs}, verite)
-assert r["n"] == 120 and r["seules"]["wiki90"] > 0.7, r["seules"]
+assert r["n"] == 120 and r["seules"]["wiki"] > 0.7, r["seules"]
 assert r["combinaisons"][r["garde"]]["rho"] >= 0.8, r["combinaisons"]
 dl._ecrire({"joueurs": joueurs, "modele": r["modele"], "labo": {}})
 fort = max(verite, key=verite.get)
