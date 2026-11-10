@@ -5755,86 +5755,141 @@ class Api:
         return r
 
     def mes_deals(self):
-        """10 nov 2026 (Mathieu : « on doit trouver des deals quand meme », lancement 100 % legal) : les annonces eBay de la
-        MEME carte que chaque prix cible de l'utilisateur, a son prix ou moins. C'est SON prix qui decide (jamais une valeur
-        calculee par SlabCoach) : permis par la licence eBay (chercher et parcourir les annonces). Prix fixe et encans."""
+        """10 nov 2026 (Mathieu : « on doit trouver des deals quand meme », lancement 100 % legal) : le Radar. Les annonces eBay
+        de la MEME carte que chaque prix cible (son prix decide), ses joueurs dans son budget, ses vendeurs, les sets qu'il
+        chasse, les joueurs en feu, « a decouvrir ». Montrees telles quelles : aucun jugement de prix (licence eBay).
+        10 nov 2026 (« Erreur du serveur » sur le Radar) : chaque recherche tourne a part, en parallele, avec une limite de
+        temps ; une recherche qui echoue (quelle que soit l'erreur) laisse sa case vide sans faire tomber l'ecran."""
+        import contextvars
         import cartes_match
+        from concurrent.futures import ThreadPoolExecutor, wait
+        t0 = time.time()
         c = marche._cx(self)
         try:
             al = marche._dicts(c.execute("SELECT id, q, prix_max FROM alertes WHERE actif=1 ORDER BY id DESC LIMIT 25"))
         finally:
             c.close()
-        out, groupes = [], []
-        for a in al:
-            try:
-                res = ebay_compte.rechercher(a["q"], categorie=CATEGORIE_CARTES, limite=100, fond=False) or []
-                try:
-                    res += ebay_compte.rechercher(a["q"], categorie=CATEGORIE_CARTES, limite=50, fond=False, encheres=True) or []
-                except TypeError:
-                    pass
-            except (RuntimeError, OSError) as e:
-                groupes.append({**a, "n": 0, "erreur": str(e)[:120]})
-                continue
+        prof = self.deals_profil_lire()
+        pays = self.reglages_lire().get("pays") or "CA"
+        fav = [f for f in (prof.get("favoris") or []) if isinstance(f, str) and f.strip()][:self.RADAR_MAX_JOUEURS]
+        vendeurs = [v for v in (prof.get("vendeurs") or []) if v][:3]
+        try:
+            chasses_l = self.chasses_liste()["chasses"][:self.CHASSES_MAX_PRO]
+        except Exception:
+            chasses_l = []
+        erreurs = []
+
+        def une_alerte(a):
+            res = ebay_compte.rechercher(a["q"], categorie=CATEGORIE_CARTES, limite=100, fond=False) or []
+            res += ebay_compte.rechercher(a["q"], categorie=CATEGORIE_CARTES, limite=50, fond=False, encheres=True) or []
             _c, memes, _e = cartes_match.filtrer(a["q"], res)
-            vus, n = set(), 0
+            vus, l = set(), []
+            pm = _float(a.get("prix_max")) or 0
             for x in memes:
                 tot = round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2)
                 iid = str(x.get("item_id") or "")
-                if not tot or iid in vus or tot > float(a["prix_max"] or 0):
+                if not tot or iid in vus or tot > pm:
                     continue
                 vus.add(iid)
-                n += 1
-                out.append({"item_id": iid, "titre": x.get("titre"), "total": tot, "photo": x.get("photo"), "url": x.get("url"), "lieu": x.get("lieu"),
-                            "encan": bool(x.get("encan")), "fin": x.get("fin"), "mises": x.get("mises"), "alerte_id": a["id"],
-                            "q": a["q"], "prix_max": a["prix_max"], "sous_pct": round(100 * (1 - tot / float(a["prix_max"]))) if a["prix_max"] else 0})
-            groupes.append({**a, "n": n})
-        out.sort(key=lambda x: (-x["sous_pct"], x["total"]))
-        # 10 nov 2026 (Mathieu : « des cases separees pour les vendeurs preferes ») : les nouvelles annonces et les encans de
-        # chacun de TES vendeurs, une case par vendeur (montrees telles quelles : aucun jugement de prix)
-        vend = []
+                l.append({"item_id": iid, "titre": x.get("titre"), "total": tot, "photo": x.get("photo"), "url": x.get("url"), "lieu": x.get("lieu"),
+                          "encan": bool(x.get("encan")), "fin": x.get("fin"), "mises": x.get("mises"), "alerte_id": a["id"],
+                          "q": a["q"], "prix_max": a["prix_max"], "sous_pct": round(100 * (1 - tot / pm)) if pm else 0})
+            return l
+
+        def un_vendeur(v):
+            l = []
+            for ench in (False, True):
+                l += ebay_compte.rechercher("", categorie=CATEGORIE_CARTES, limite=24, fond=False, encheres=ench,
+                                            recentes=not ench, flux=True, vendeurs=[v]) or []
+            vus_v, ann = set(), []
+            for x in l:
+                iid = str(x.get("item_id") or "")
+                if not iid or iid in vus_v:
+                    continue
+                vus_v.add(iid)
+                ann.append({"item_id": iid, "titre": x.get("titre"), "total": round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2),
+                            "photo": x.get("photo"), "url": x.get("url"), "encan": bool(x.get("encan")), "fin": x.get("fin"), "mises": x.get("mises"),
+                            "lieu": x.get("lieu")})
+            return {"vendeur": v, "annonces": ann[:24]}
+
+        def un_joueur(f, budget_defaut=None, limite=40):
+            l = self._radar_annonces(f, prof.get("collectionne"), prof.get("prix_min"), prof.get("prix_max") or budget_defaut, limite=limite)
+            return {"joueur": f, "annonces": l[:24], "n": len(l), **self._pastilles_joueur(f)}
+
+        taches = [("alerte", a, lambda a=a: une_alerte(a)) for a in al]
+        taches += [("vendeur", v, lambda v=v: un_vendeur(v)) for v in vendeurs]
+        taches += [("joueur", f, lambda f=f: un_joueur(f)) for f in fav]
+        taches += [("chasse", ch, lambda ch=ch: self._radar_une_chasse(ch, prof)) for ch in chasses_l]
+        decouvrir_noms = []
+        if not al and not fav and not vendeurs:
+            try:
+                decouvrir_noms = [x["nom"] for x in self._radar_top(4)]
+            except Exception as e:
+                erreurs.append("decouvrir : " + repr(e)[:120])
+        taches += [("decouvrir", n, lambda n=n: un_joueur(n, 100, 12)) for n in decouvrir_noms]
         try:
-            for v in (self.deals_profil_lire().get("vendeurs") or [])[:3]:
-                l = []
-                for ench in (False, True):
-                    try:
-                        l += ebay_compte.rechercher("", categorie=CATEGORIE_CARTES, limite=24, fond=False, encheres=ench,
-                                                    recentes=not ench, flux=True, vendeurs=[v]) or []
-                    except (RuntimeError, OSError):
-                        pass
-                vus_v, ann = set(), []
-                for x in l:
-                    iid = str(x.get("item_id") or "")
-                    if not iid or iid in vus_v:
-                        continue
-                    vus_v.add(iid)
-                    ann.append({"item_id": iid, "titre": x.get("titre"), "total": round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2),
-                                "photo": x.get("photo"), "url": x.get("url"), "encan": bool(x.get("encan")), "fin": x.get("fin"), "mises": x.get("mises"),
-                                "lieu": x.get("lieu")})
-                vend.append({"vendeur": v, "annonces": ann[:24]})
-        except Exception as e:
-            print("Mes deals (vendeurs) : " + repr(e), flush=True)
-        # 10 nov 2026 (Mathieu : « on devrait voir des cartes ; un petit questionnaire pour qu'il ait ses deals direct ») :
-        # SES joueurs (questionnaire du Radar), dans SON budget, une case par joueur ; et si rien n'est regle, « A decouvrir » :
-        # les joueurs les plus demandes (nos donnees publiques). Montrees telles quelles : aucun jugement de prix.
-        prof = self.deals_profil_lire()
-        pour_toi = self._radar_joueurs(prof)
-        decouvrir = []
-        if not al and not pour_toi and not vend:
-            decouvrir = self._radar_decouvrir(prof)
-        chauds = self._radar_chauds(prof, {g["joueur"] for g in pour_toi + decouvrir})
-        chasses = self._radar_chasses(prof)
-        pays = self.reglages_lire().get("pays") or "CA"
+            import indice_joueurs
+            deja = set(fav) | set(decouvrir_noms)
+            chauds_noms = [x["nom"] for x in indice_joueurs.top(8, "en_feu", actifs=True) if x["nom"] not in deja][:4]
+        except Exception:
+            chauds_noms = []
+        taches += [("chaud", n, lambda n=n: un_joueur(n, 100, 12)) for n in chauds_noms]
+        resultats = {}
+        if taches:
+            ex = ThreadPoolExecutor(max_workers=8)
+            futurs = {}
+            for k, cle, fn in taches:
+                ctx = contextvars.copy_context()          # le compte courant suit chaque recherche (quota par compte)
+                futurs[ex.submit(ctx.run, fn)] = (k, id(cle) if isinstance(cle, dict) else cle)
+            fait, pas_fait = wait(list(futurs), timeout=max(5.0, float(os.environ.get("LR_RADAR_DELAI_S") or 22) - (time.time() - t0)))
+            for fu in fait:
+                k, cle = futurs[fu]
+                try:
+                    resultats[(k, cle)] = fu.result()
+                except Exception as e:
+                    erreurs.append(f"{k} {cle if not isinstance(cle, int) else ''} : {repr(e)[:160]}")
+                    resultats[(k, cle)] = e
+            for fu in pas_fait:
+                k, cle = futurs[fu]
+                erreurs.append(f"{k} : trop long")
+            ex.shutdown(wait=False, cancel_futures=True)
+        out, groupes = [], []
+        for a in al:
+            r = resultats.get(("alerte", id(a)))
+            if isinstance(r, list):
+                out += r
+                groupes.append({**a, "n": len(r)})
+            else:
+                groupes.append({**a, "n": 0, "erreur": str(r)[:120] if isinstance(r, Exception) else "trop long"})
+        out.sort(key=lambda x: (-x["sous_pct"], x["total"]))
+        vend = [r for v in vendeurs for r in [resultats.get(("vendeur", v))] if isinstance(r, dict)]
+        pour_toi = [r if isinstance(r, dict) else {"joueur": f, "annonces": [], "erreur": "indisponible"} for f in fav for r in [resultats.get(("joueur", f))]]
+        chasses = [r for ch in chasses_l for r in [resultats.get(("chasse", id(ch)))] if isinstance(r, dict)]
+        decouvrir = [r for n in decouvrir_noms for r in [resultats.get(("decouvrir", n))] if isinstance(r, dict) and r["annonces"]]
+        chauds = [r for n in chauds_noms for r in [resultats.get(("chaud", n))] if isinstance(r, dict) and r["annonces"]]
         for x in out + [y for g in pour_toi + decouvrir + chauds + chasses for y in g.get("annonces") or []] \
                 + [y for v in vend for y in v.get("annonces") or []]:
-            self._frais_reels(x, pays)
+            try:
+                self._frais_reels(x, pays)
+            except Exception:
+                pass
         try:
             import alarmes
             feu = bool(alarmes.reglages(self).get("en_feu"))
         except Exception:
             feu = False
+        if erreurs:
+            print(f"Radar ({round(time.time() - t0, 1)} s) : " + " | ".join(erreurs[:6]), flush=True)
+            try:
+                import admin
+                admin.noter_erreur("radar", RuntimeError(" | ".join(erreurs[:6])))
+            except Exception:
+                pass
         return {"ok": True, "deals": out[:120], "cibles": groupes, "vendeurs": vend, "pour_toi": pour_toi,
-                "decouvrir": decouvrir, "chauds": chauds, "chasses": chasses, "alerte_feu": feu, "pays": pays, "profil": {k: prof.get(k) for k in ("collectionne", "favoris", "prix_min", "prix_max")},
-                "profil_vide": not (prof.get("favoris") or prof.get("collectionne") or prof.get("prix_max"))}
+                "decouvrir": decouvrir, "chauds": chauds, "chasses": chasses, "alerte_feu": feu, "pays": pays,
+                "profil": {k: prof.get(k) for k in ("collectionne", "favoris", "prix_min", "prix_max")},
+                "profil_vide": not (prof.get("favoris") or prof.get("collectionne") or prof.get("prix_max")),
+                "partiel": bool(erreurs), "duree_s": round(time.time() - t0, 1)}
 
     @staticmethod
     def _frais_reels(x, pays="CA"):
@@ -5881,51 +5936,54 @@ class Api:
         return {"ok": True, "chasses": l}
 
     def _radar_chasses(self, prof):
-        """Pour chaque set chasse : UNE recherche eBay du sous-ensemble (« 2025-26 Upper Deck Series 1 Young Guns »), puis
-        on garde les annonces d'une carte qui manque (le nom du joueur et son numero dans le titre), dans le budget."""
-        import catalogue
-        import cartes_match
-        import collection_sets
         out = []
         for ch in self.chasses_liste()["chasses"][:self.CHASSES_MAX_PRO]:
             try:
-                ck = collection_sets.checklist(self, ch["pid"], ch["sous"])
-                if not ck.get("ok"):
-                    continue
-                manque = [x for x in ck["cartes"] if not x["a"]]
-                if not manque:
-                    out.append({**ch, "manque": 0, "total": ck["total"], "annonces": []})
-                    continue
-                prod = catalogue.charger(ch["pid"]) or {}
-                q = re.sub(r"\s+", " ", f"{prod.get('nom') or ''} {ch['sous'] if cartes_match.norm(ch['sous']) not in cartes_match.norm(prod.get('nom') or '') else ''}").strip()[:100]
-                res = []
-                for ench in (False, True):
-                    res += ebay_compte.rechercher(q, categorie=CATEGORIE_CARTES, limite=50 if ench else 200, fond=False, encheres=ench,
-                                                  recentes=not ench, prix_max=prof.get("prix_max")) or []
-                vus, l = set(), []
-                for x in res:
-                    t = " " + cartes_match.norm(x.get("titre") or "") + " "
-                    tot = round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2)
-                    iid = str(x.get("item_id") or "")
-                    if not iid or iid in vus or not tot or (prof.get("prix_max") and tot > prof["prix_max"]):
-                        continue
-                    for m in manque:
-                        fam = cartes_match.norm(m.get("joueur") or "").split()[-1:] or [""]
-                        num = collection_sets._num(m.get("numero")).lower()
-                        if fam[0] and f" {fam[0]} " in t and num and re.search(r"(#|\s)0*" + re.escape(num) + r"\b", t):
-                            if cartes_match._decoder_memo(x.get("titre") or "").get("exclu"):          # lot, reprint, custom
-                                break
-                            vus.add(iid)
-                            l.append({"item_id": iid, "titre": x.get("titre"), "total": tot, "photo": x.get("photo"), "url": x.get("url"),
-                                      "encan": bool(x.get("encan")), "fin": x.get("fin"), "mises": x.get("mises"), "lieu": x.get("lieu"),
-                                      "numero": m.get("numero"), "joueur": m.get("joueur")})
-                            break
-                l.sort(key=lambda x: x["total"])
-                out.append({**ch, "manque": len(manque), "total": ck["total"], "annonces": l[:24],
-                            "cartes_trouvees": len({x["numero"] for x in l})})
-            except (RuntimeError, OSError) as e:
-                out.append({**ch, "annonces": [], "erreur": str(e)[:120]})
+                r = self._radar_une_chasse(ch, prof)
+            except Exception as e:
+                r = {**ch, "annonces": [], "erreur": str(e)[:120]}
+            if r:
+                out.append(r)
         return out
+
+    def _radar_une_chasse(self, ch, prof):
+        """Pour un set chasse : UNE recherche eBay du sous-ensemble (« 2025-26 Upper Deck Series 1 Young Guns »), puis on garde
+        les annonces d'une carte qui manque (le nom du joueur et son numero dans le titre), dans le budget."""
+        import catalogue
+        import cartes_match
+        import collection_sets
+        ck = collection_sets.checklist(self, ch["pid"], ch["sous"])
+        if not ck.get("ok"):
+            return None
+        manque = [x for x in ck["cartes"] if not x["a"]]
+        if not manque:
+            return {**ch, "manque": 0, "total": ck["total"], "annonces": []}
+        prod = catalogue.charger(ch["pid"]) or {}
+        q = re.sub(r"\s+", " ", f"{prod.get('nom') or ''} {ch['sous'] if cartes_match.norm(ch['sous']) not in cartes_match.norm(prod.get('nom') or '') else ''}").strip()[:100]
+        res = []
+        for ench in (False, True):
+            res += ebay_compte.rechercher(q, categorie=CATEGORIE_CARTES, limite=50 if ench else 200, fond=False, encheres=ench,
+                                          recentes=not ench, prix_max=prof.get("prix_max")) or []
+        vus, l = set(), []
+        for x in res:
+            t = " " + cartes_match.norm(x.get("titre") or "") + " "
+            tot = round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2)
+            iid = str(x.get("item_id") or "")
+            if not iid or iid in vus or not tot or (prof.get("prix_max") and tot > prof["prix_max"]):
+                continue
+            for m in manque:
+                fam = cartes_match.norm(m.get("joueur") or "").split()[-1:] or [""]
+                num = collection_sets._num(m.get("numero")).lower()
+                if fam[0] and f" {fam[0]} " in t and num and re.search(r"(#|\s)0*" + re.escape(num) + r"\b", t):
+                    if cartes_match._decoder_memo(x.get("titre") or "").get("exclu"):          # lot, reprint, custom
+                        break
+                    vus.add(iid)
+                    l.append({"item_id": iid, "titre": x.get("titre"), "total": tot, "photo": x.get("photo"), "url": x.get("url"),
+                              "encan": bool(x.get("encan")), "fin": x.get("fin"), "mises": x.get("mises"), "lieu": x.get("lieu"),
+                              "numero": m.get("numero"), "joueur": m.get("joueur")})
+                    break
+        l.sort(key=lambda x: x["total"])
+        return {**ch, "manque": len(manque), "total": ck["total"], "annonces": l[:24], "cartes_trouvees": len({x["numero"] for x in l})}
 
     def radar_alerte_feu(self, on=True):
         """La pastille « M'avertir quand mes joueurs sont en feu » du Radar (une alerte que l'utilisateur coche : App Store 4.5.4)."""

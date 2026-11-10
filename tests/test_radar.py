@@ -76,3 +76,16 @@ assert set(c) == {"ok", "annonces", "n"}
 lot = api.comparer_lot([{"item_id": "9001", "titre": "2024-25 Upper Deck Young Guns Macklin Celebrini #201"}])
 assert lot["items"]["9001"]["des"] == 63 and lot["items"]["9001"]["n"] == 2, lot
 print("OK radar comparer")
+
+# 6. une recherche qui plante (n'importe quelle erreur) ne fait plus tomber le Radar : sa case reste vide
+def rech_panne(q, **k):
+    if "Celebrini" in q:
+        raise ValueError("JSON illisible")
+    return rech(q, **k)
+
+
+ebay_compte.rechercher = rech_panne
+r = api.mes_deals()
+assert r["ok"] and r["partiel"], r
+assert {g["joueur"]: len(g["annonces"]) for g in r["pour_toi"]}["Macklin Celebrini"] == 0
+print("OK radar robuste")

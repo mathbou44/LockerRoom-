@@ -850,6 +850,14 @@ body.sandbox .barre-mode{top:25px; padding-top:8px}
 .haut-pro{display:none; position:absolute; right:100%; top:50%; transform:translateY(-50%); margin-right:2px; padding:3px 7px; border-radius:99px; pointer-events:none;
   font:700 10px/1.2 var(--f-cond); letter-spacing:.12em; color:#1A150C; background:linear-gradient(135deg, #F3E2B3, #D9B866 55%, #A88A45)}
 body.pro .haut-pro{display:block}
+.haut-dr{position:relative; display:inline-flex; align-items:center}
+.haut-vue{position:absolute; right:100%; top:50%; transform:translateY(-50%); margin-right:4px; height:24px; padding:0 6px 0 9px; border-radius:99px; border:1px solid var(--ligne);
+  display:inline-flex; align-items:center; gap:2px; font:700 10.5px/1 var(--f-cond); letter-spacing:.12em; cursor:pointer; white-space:nowrap; background:var(--carte2); color:var(--acc)}
+.haut-vue svg{width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round}
+.haut-vue.v-pro{border:none; color:#1A150C; background:linear-gradient(135deg, #F3E2B3, #D9B866 55%, #A88A45)}
+.haut-vue.v-gratuit{color:#A9A6B1}
+body .haut-dr:has(.haut-vue) .haut-pro{display:none}
+.vue-ch{display:flex; flex-direction:column; gap:10px} .vue-o.on{border-color:var(--acc)} .vue-o.v-pro.on{border-color:#D9B866}
 body.pro .barre-mode{background:linear-gradient(180deg, rgba(38,31,17,.94), rgba(17,15,11,.92)); border-bottom-color:transparent}
 body.pro .barre-mode::after{content:''; position:absolute; left:0; right:0; bottom:0; height:1px; pointer-events:none;
   background:linear-gradient(90deg, transparent, rgba(168,138,69,.7) 25%, #F3E2B3 50%, rgba(168,138,69,.7) 75%, transparent)}
@@ -4163,8 +4171,10 @@ function majBarreMode(){
     b.innerHTML = voir ? `<button class="rond haut-plus" id="h-plus" aria-label="${esc(tt('Ajouter', 'Add'))}">${ICONES.plus}</button>
       <div class="haut-nom" id="h-nom"><span class="haut-ligne">${perso && S.logo ? `<img class="haut-logo" src="${esc(S.logo)}" alt="">` : LOGO_HOLO('haut-logo', true)}<span class="haut-mot">${perso ? esc(nomMarque()) : '<b>slab</b>coach'}</span></span>
 </div>
-      <button class="rond haut-cloche" data-alertes aria-label="${esc(tt('Alertes', 'Alerts'))}">${ICO_CLOCHE}<i class="pt" id="h-pt" hidden></i><span class="haut-pro" aria-hidden="true">PRO</span></button>` : '';
+      <span class="haut-dr">${(S.forfait || {}).admin_reel ? `<button class="haut-vue v-${esc(S.forfait.vue || 'admin')}" id="h-vue" aria-label="${esc(tt('Changer de vue', 'Switch view'))}">${S.forfait.vue === 'pro' ? 'PRO' : S.forfait.vue === 'gratuit' ? tt('GRATUIT', 'FREE') : 'ADMIN'}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></button>` : ''}
+      <button class="rond haut-cloche" data-alertes aria-label="${esc(tt('Alertes', 'Alerts'))}">${ICO_CLOCHE}<i class="pt" id="h-pt" hidden></i><span class="haut-pro" aria-hidden="true">PRO</span></button></span>` : '';
     const hp = $('#h-plus', b); if (hp) hp.onclick = feuilleAjouter;
+    const hv = $('#h-vue', b); if (hv) hv.onclick = (e) => { e.stopPropagation(); vibrer(); popVue(); };
     brancherSwitchMode(b);            // 28 oct 2026 (Mathieu : « passer d'acheteur a vendeur en un clic ») : les deux volets, visibles, un tap
     if (voir) majCloche();
     decorFetes();
@@ -6309,13 +6319,18 @@ async function changerVue(v){
   toast(v === 'admin' ? tt('Ta vue admin', 'Your admin view') : tt('Tu vois l’app comme un utilisateur ', 'You see the app as a ') + (v === 'pro' ? 'Pro' : tt('Gratuit', 'Free user')));
   if (location.hash === (v === 'admin' ? '#admin' : '#accueil')) route(); else location.hash = v === 'admin' ? '#admin' : '#accueil';
 }
-function pastilleVue(){
-  const f = S.forfait || {}; let b = $('#vue-simulee');
-  if (!f.admin_reel || !f.vue || f.vue === 'admin') { if (b) b.remove(); return; }
-  if (!b) { b = document.createElement('button'); b.id = 'vue-simulee'; b.className = 'vue-simulee'; document.body.appendChild(b); }
-  b.innerHTML = `${tt('Vue', 'View')} ${f.vue === 'pro' ? 'Pro' : tt('Gratuit', 'Free')}<b>${tt('Revenir admin', 'Back to admin')}</b>`;
-  b.onclick = () => changerVue('admin');
+// 10 nov 2026 (Mathieu : « changer d'interface entre admin, pro et base, dans l'entete ; tu cliques et une petite fenetre
+// s'ouvre pour choisir ») : la pastille ADMIN / PRO / GRATUIT a gauche de la cloche ouvre ce choix
+function popVue(){
+  const v = (S.forfait || {}).vue || 'admin';
+  const O = [['admin', 'Admin', tt('Tout, avec les comps et les deals calculés', 'Everything, with comps and computed deals')],
+             ['pro', 'Pro', tt('Ce que voient les abonnés Pro', 'What Pro subscribers see')],
+             ['gratuit', tt('Gratuit', 'Free'), tt('Un nouvel utilisateur, sans Pro', 'A new user, without Pro')]];
+  popOuvrir(`<div class="pop-tete"><span class="pop-sur">${tt('Admin', 'Admin')}</span><h3>${tt('Voir l’app comme', 'View the app as')}</h3></div>
+    <div class="pop-corps"><div class="vue-ch">${O.map(([k, l, d]) => `<button class="q-o vue-o v-${k} ${k === v ? 'on' : ''}" data-vue-ch="${k}"><b>${l}${k === v ? ` <span class="sous">· ${tt('maintenant', 'now')}</span>` : ''}</b><span>${d}</span></button>`).join('')}</div></div>`, popFermer);
+  $$('[data-vue-ch]').forEach(b => b.onclick = () => { const k = b.dataset.vueCh; popFermer(); if (k !== v) changerVue(k); });
 }
+function pastilleVue(){ const b = $('#vue-simulee'); if (b) b.remove(); }
 async function chargerForfait(){
   S.forfait = await API.forfait().catch(() => null);
   const f = S.forfait || {};
@@ -8049,6 +8064,7 @@ async function chargerDeals(frais){
   }
   if (d && d.watch) { S.watch = new Set(d.watch.map(String)); majNbWatch(); }
   if (!z.isConnected) return;
+  if (!d.ok && !comps()) { vueMesDeals(z); return; }          // 10 nov 2026 : le Radar public ne depend pas des deals calcules
   if (!d.ok) { z.innerHTML = `<div class="vide">${esc(d.erreur || 'Erreur')}</div>`; return; }
   if (d.coupe) {                                  // 27 oct 2026 : interrupteur du serveur (fonctions de prix sur les annonces eBay)
     vueMesDeals(z);
@@ -13548,7 +13564,7 @@ async function vueMesDeals(z){
   z.innerHTML = barreProg(Date.now(), 12, tt('On regarde eBay pour toi…', 'Checking eBay for you…'));
   const r = await API.mes_deals().catch(e => ({ok:false, erreur:e.message}));
   if (!z.isConnected) return;
-  if (!r.ok) { z.innerHTML = `<div class="vide">${esc(r.erreur || 'Erreur')}</div>`; return; }
+  if (!r.ok) { z.innerHTML = `<div class="vide">${esc(r.erreur || 'Erreur')}<br><button class="lien-doux" id="md-re">${tt('Réessayer', 'Try again')}</button></div>`; const re_ = $('#md-re'); if (re_) re_.onclick = () => vueMesDeals(z); return; }
   const C = r.cibles || [], L = r.deals || [], PT = (r.pour_toi || []).filter(g => (g.annonces || []).length), DEC = r.decouvrir || [], P = r.profil || {};
   const nbPT = PT.reduce((n, g) => n + g.annonces.length, 0);
   const pD = $('#pastille-deals'); if (pD) { const n = L.length || nbPT; pD.hidden = !n; pD.textContent = n > 99 ? '99+' : (n || ''); }
@@ -13577,6 +13593,7 @@ async function vueMesDeals(z){
     <div class="md-tete"><div><b>${tt('Ton radar', 'Your radar')}</b><span class="sous">${tt('Les cartes de tes joueurs dans ton budget, et les annonces à ton prix cible. Tu choisis, on surveille eBay.', 'Your players’ cards in your budget, and listings at your target price. You choose, we watch eBay.')}</span></div>
       <button class="btn petit" id="md-plus">${icN('cible')}${tt('Prix cible', 'Target price')}</button></div>
     ${perso}
+    ${r.partiel ? `<div class="sous md-dec">${tt('eBay a été lent pour quelques recherches : elles reviendront à la prochaine ouverture.', 'eBay was slow for a few searches: they’ll be back next time.')}</div>` : ''}
     ${r.profil_vide ? `<button class="btn" id="md-q" style="margin:0 0 14px">${icN('cible')}${tt('Choisir mes joueurs (30 secondes)', 'Pick my players (30 seconds)')}</button>` : ''}
     ${C.length ? `<div class="v-rang-t"><b>${tt('Mes prix cibles', 'My target prices')}</b><span class="sous">${L.length}</span></div>
       <div class="pastilles md-f"><button class="pilule ${S.mdFiltre ? '' : 'on'}" data-md="">${tt('Toutes', 'All')} · ${L.length}</button>${C.map(c => `<button class="pilule ${S.mdFiltre === c.id ? 'on' : ''}" data-md="${c.id}">${esc(c.q)} ≤ ${argentCourt(c.prix_max)} · ${c.n || 0}</button>`).join('')}</div>
