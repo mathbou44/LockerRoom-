@@ -2248,7 +2248,7 @@ body.en-defil .logo-lr::after, body.en-defil #nav-logo-nom, body.en-defil .titre
   .carte-acc > .acc-titre{margin:-16px -16px 0; padding:13px 16px 12px 28px; border-radius:16px 16px 0 0;
     background:color-mix(in srgb, var(--teinte) 13%, rgba(255,255,255,.03)); border-bottom:1px solid color-mix(in srgb, var(--teinte) 25%, transparent)}
   .carte-acc > .acc-titre::before{left:16px; background:var(--teinte)}
-  .ecran.acc .carte-acc > .acc-titre{padding-left:28px !important}
+  .ecran.acc .carte-acc > .acc-titre, .carte-acc > .acc-titre:first-child{padding-left:28px !important}       /* 10 nov 2026 : aussi dans une feuille (le N passait sous le trait) */
   .carte-acc > .acc-sous{margin-top:2px}
   .carte-acc:has(#acc-afaire){--teinte:var(--h2)}
   .carte-acc.conseils-acc{--teinte:var(--h1)}
