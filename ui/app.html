@@ -1844,6 +1844,11 @@ button.btn-scan{border:none; font:inherit; font-weight:700}
 @media (prefers-reduced-motion:reduce){ .rq-glow, .rq-glow span{animation:none} }
 .rq .liste{width:100%; align-self:stretch} .rq .rq-recap .rq-r{width:100%; text-align:left; display:flex; align-items:center; justify-content:space-between; background:none; border:none; color:inherit; cursor:pointer} .rq .rq-recap{margin:10px 0 4px; text-align:left}
 .rq .rq-l{width:100%; text-align:left; max-height:34vh; overflow:auto} .rq-cible .champ:nth-child(2){max-width:90px} .rq-vend{display:flex; flex-direction:column; gap:8px; width:100%} .rq-bas{width:100%; text-align:left}
+.md-chips{flex-wrap:nowrap; margin:0 -18px 10px; padding:0 18px} .md-tri{display:flex; align-items:center; gap:10px; margin:0 0 12px} .md-tri .seg{flex:1} .md-reg{width:42px; height:42px; flex-shrink:0; display:grid; place-items:center} .md-reg svg{width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round}
+.sc-b{display:inline-grid; place-items:center; min-width:34px; height:26px; padding:0 8px; border-radius:13px; font:700 14px/1 var(--f-cond); letter-spacing:.04em;
+  background:rgba(14,14,18,.82); color:var(--texte); border:1px solid var(--ligne); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px)}
+.sc-b.vert{color:var(--vert); border-color:color-mix(in srgb, var(--vert) 55%, transparent)} .sc-b.acc{color:var(--acc); border-color:color-mix(in srgb, var(--acc) 55%, transparent)} .sc-b.or{color:var(--or); border-color:color-mix(in srgb, var(--or) 55%, transparent)}
+.fa-pils2{margin:10px 0 2px} .fa-pq{margin:10px 0 2px; padding:10px 12px; border-radius:14px; background:var(--carte2)} .fa-pq .det{font-size:12px; color:var(--pale); margin-bottom:4px} .fa-pq-l{font-size:14px; line-height:1.4; padding:2px 0} .fa-pq-l::before{content:'·'; margin-right:6px; color:var(--acc)} .fa-joueur, .fa-vendeur{margin-top:6px} .fa-joueur .nom sup{font-size:.6em} .fa-verif{margin-top:10px; min-height:50px; width:100%} .fa-sc b{font-size:28px} .fa-sc.vert b{color:var(--vert)} .fa-sc.acc b{color:var(--acc)} .fa-sc.or b{color:var(--or)}
 .md-pj{margin:-4px 0 8px} .t-reel{display:block; font-size:12px; color:var(--pale); margin:-2px 0 2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis} .t-reel b{color:var(--doux); font-weight:600} .tuile-c > .sd-et{position:absolute; top:8px; right:8px; z-index:3} .md-feu.on{border-color:var(--vert); color:var(--vert)} .j-pq{margin:14px 0 6px} .vp-rappel{margin:6px 0 12px; font-size:14px; color:var(--doux)} .vp-rappel b{color:var(--texte)} .vp-vendues{margin-top:4px} .w-verif{font-size:12px; margin-bottom:4px} .vp-note{text-align:center; margin-top:6px} .j-pq .nom{font-size:15px} .cmp{display:block; width:100%; margin:4px 0 0; padding:0; border:0; background:none; text-align:left; font-size:12px; color:var(--pale); cursor:pointer} .cmp b{font-weight:600; color:var(--doux)} .cmp.bas{color:var(--or)} .cmp.bas b{color:var(--or)} .md-perso{display:flex; flex-wrap:wrap; gap:8px; margin:-4px 0 12px} .md-dec{font-size:13px; color:var(--doux); margin:2px 0 8px}
 .md-vend{margin-top:18px} .md-vend .v-rang-t b{display:inline-flex; align-items:center; gap:8px}
 .fd-vs{display:grid; gap:8px; margin-top:6px}
@@ -7847,6 +7852,7 @@ async function ouvrirAnnonce(base){
     f.addEventListener('click', (e) => { if (e.target === f || e.target.closest('.fen-x')) fermerAnnonce(); }); }
   document.body.classList.add('fen-ouverte');
   const montrer = (d) => {
+    if (!comps()) return montrerPublic(d);
     const a = d.article || base, photos = (a.photos && a.photos.length ? a.photos : [a.photo || base.photo]).filter(Boolean).map(photoHD);
     const total = a.total ?? base.total, url = lienAchat(a.url || base.url, 'fenetre');
     // 31 oct 2026 (Mathieu : « revoir le format : les comps sont trop bas, on doit les glisser de gauche a droite et tout
@@ -7937,6 +7943,66 @@ async function ouvrirAnnonce(base){
     }
     const pd = $('#fen-pasdeal', f); if (pd) pd.onclick = () => { const x = (S.dealsParId || {})[String(base.item_id)]; fermerAnnonce(); feuillePasDeal({...x, ventes:d.ventes, comps:d.comps, valeur:x.valeur}); };
   };
+  // 10 nov 2026 (Mathieu : « revoir l'interieur des annonces avec nos nouveaux scores ; tout ce qui est legal et beau pour
+  // aider a savoir s'il met la carte dans sa watchlist ») : la fiche publique. Ni valeur, ni mise max, ni profit (licence
+  // eBay) : la mise et ce qu'il paiera vraiment, le Score SlabCoach (joueur + carte), le joueur, la carte, le vendeur,
+  // « Verifier le prix ». Le score arrive a part (il ne bloque pas la fiche).
+  let scoreP = null;
+  const montrerPublic = (d) => {
+    const a = d.article || base, photos = (a.photos && a.photos.length ? a.photos : [a.photo || base.photo]).filter(Boolean).map(photoHD);
+    const total = a.total ?? base.total, url = lienAchat(a.url || base.url, 'fenetre');
+    const encan = !!(a.encan || (base.fin && !a.prix_fixe)), port = a.port_cad || 0;
+    const tx = d.taxe_achat != null ? d.taxe_achat : ((S.reglages || {}).pays === 'US' ? 0.07 : TAXE_ACHAT);
+    const reel = total ? Math.round(total * (1 + tx)) : null;
+    const sp = scoreP, c = (sp && sp.carte) || {};
+    const L = {en_feu: [tt('En feu', 'On fire'), 'rouge'], en_hausse: [tt('En hausse', 'Rising'), 'vert'], legende: [tt('Légende', 'Legend'), 'or'], recrue: [tt('Recrue', 'Rookie'), 'or'], buzz: ['Buzz', 'acc'], actu: [tt('Dans l’actu', 'In the news'), 'acc']};
+    const pils = [];
+    if (sp) (sp.pastilles || []).filter(k => L[k]).forEach(k => pils.push(tag(L[k][0], L[k][1])));
+    if (sp && sp.semaine && sp.semaine.mj) pils.push(tag(`${sp.semaine.pts} pts · ${sp.semaine.mj} ${tt('matchs', 'games')} ${tt('cette semaine', 'this week')}`));
+    if (c.auto && c.patch) pils.push(tag(tt('Auto-patch', 'Auto-patch'), 'acc')); else { if (c.auto) pils.push(tag('Auto', 'acc')); if (c.patch) pils.push(tag(tt('Patch', 'Patch'), 'acc')); }
+    if (c.rc && !(sp && (sp.pastilles || []).includes('recrue'))) pils.push(tag(tt('Recrue (RC)', 'Rookie (RC)')));
+    if (c.tirage) pils.push(tag((c.numero ? c.numero : '') + '/' + c.tirage, 'or'));
+    if (c.grade) pils.push(tag(c.grade, 'vert'));
+    const ms = Date.parse(a.fin || base.fin || '') - Date.now();
+    if (encan && a.mises != null) pils.push(tag(a.mises + ' ' + tt('mise', 'bid') + (a.mises > 1 ? 's' : '')));
+    if (encan && (a.mises || 0) <= 1 && ms > 0 && ms < 6 * 3600e3) pils.push(tag(tt('Peu disputé', 'Low competition'), 'vert'));
+    const vend = a.vendeur ? `${esc(a.vendeur)}${a.vendeur_pct ? ` · ${esc(a.vendeur_pct)} %` : ''}${a.vendeur_score ? ` · ${Number(a.vendeur_score).toLocaleString()} ${tt('évaluations', 'ratings')}` : ''}` : '';
+    f.innerHTML = `<div class="fen fa fa-pub" role="dialog" aria-modal="true"><button class="fen-x" aria-label="${esc(tt('Fermer', 'Close'))}">✕</button>
+      <div class="fa-photo"><div class="fen-img" id="fen-img">${photos[0] ? `<img src="${esc(photos[0])}" alt="">` : SVG_CARTE}</div>
+        ${(a.fin || base.fin) && encan ? `<span class="fa-fin">${icH()}${esc(finDans(a.fin || base.fin))}</span>` : ''}
+        ${photos.length > 1 ? `<div class="fen-vigs fa-vigs">${photos.slice(0, 6).map((p, i) => `<button class="${i ? '' : 'on'}" data-ph="${esc(p)}" style="background-image:${cssUrl(p)}" aria-label="photo ${i + 1}"></button>`).join('')}</div>` : ''}</div>
+      <div class="fa-t">${esc(a.titre || base.titre || '')}</div>
+      ${(a.lieu || base.lieu) ? `<div class="fa-pays">${drapeau(a.lieu || base.lieu)}<span>${tt('Expédiée de : ', 'Ships from: ')}${esc(nomPays(a.lieu || base.lieu))}</span></div>` : ''}
+      <div class="fa-3">
+        <div class="fa-k"><span>${encan ? tt('Mise actuelle', 'Current bid') : tt('Prix', 'Price')}</span><b>${total ? argent(encan ? Math.max(0, total - port) : total, 0) : '—'}</b><small>${a.port_cad != null ? (a.port_cad ? '+ ' + argent(port, 0) + tt(' de port', ' shipping') : tt('livraison gratuite', 'free shipping')) : '&nbsp;'}</small></div>
+        <div class="fa-k"><span>${tt('Tu paieras', 'You’ll pay')}</span><b>${reel ? argent(reel, 0) : '—'}</b><small>${d.etranger ? tt('avec l’importation', 'with import') : tt('avec les taxes', 'with tax')}</small></div>
+        <div class="fa-k fa-sc ${sp ? couleurScore(sp.score) : ''}"><span>Score SlabCoach</span><b>${sp ? sp.score : '<span class="roue"></span>'}</b><small>${sp ? (sp.score >= 80 ? tt('très recherchée', 'highly sought') : sp.score >= 65 ? tt('recherchée', 'sought after') : sp.score >= 50 ? tt('correcte', 'decent') : tt('peu recherchée', 'low demand')) : '&nbsp;'}</small></div>
+      </div>
+      ${pils.length ? `<div class="pastilles fa-pils2">${pils.join('')}</div>` : ''}
+      ${sp && sp.pourquoi ? (() => { const q = sp.pourquoi, R = [];
+        if (q.semaine && q.semaine.mj) R.push(`${q.semaine.pts} pts (${q.semaine.b || 0} ${tt('buts', 'goals')}) ${tt('en', 'in')} ${q.semaine.mj} ${tt('matchs cette semaine', 'games this week')}`);
+        if (q.saison && q.saison.ecart_pct != null && Math.abs(q.saison.ecart_pct) >= 10) R.push(`${q.saison.ecart_pct > 0 ? '+' : ''}${q.saison.ecart_pct} % ${tt('de points par match vs ses saisons d’avant', 'points per game vs his past seasons')}`);
+        if (q.buzz && q.buzz.pct >= 25) R.push(`+${q.buzz.pct} % ${tt('de recherches ces 20 jours', 'more searches in 20 days')}`);
+        const g = q.legende || {}; if (g.temple) R.push(tt('Temple de la renommée', 'Hall of Fame')); else if (g.coupes) R.push(g.coupes + ' ' + tt(g.coupes > 1 ? 'coupes Stanley' : 'coupe Stanley', g.coupes > 1 ? 'Stanley Cups' : 'Stanley Cup'));
+        if ((q.actu || [])[0]) R.push(tt('Dans l’actu : ', 'In the news: ') + esc(q.actu[0].titre));
+        return R.length ? `<div class="fa-pq"><div class="det">${tt('Pourquoi ce score', 'Why this score')}</div>${R.slice(0, 4).map(t => `<div class="fa-pq-l">${t}</div>`).join('')}</div>` : ''; })() : ''}
+      ${sp && sp.joueur ? `<a class="rangee fa-joueur" href="#joueur/${encodeURIComponent(sp.joueur)}" data-fermer><span class="milieu"><span class="det">${tt('Le joueur', 'The player')}</span><span class="nom">${esc(sp.joueur)}${sp.rang ? ` · ${sp.rang}<sup>${sp.rang === 1 ? tt('er', 'st') : tt('e', 'th')}</sup> ${tt('sur', 'of')} ${sp.sur}` : ''}</span></span><i class="fl">›</i></a>` : ''}
+      ${vend ? `<div class="rangee fa-vendeur"><span class="milieu"><span class="det">${tt('Vendeur', 'Seller')}</span><span class="nom">${vend}</span></span></div>` : ''}
+      ${blocMesAchats(d.mes_achats, d.deja_achetee, 0, null)}
+      <div class="fa-btns"><a class="btn" href="${esc(url)}" target="_blank" rel="noopener">${encan ? tt('Miser sur eBay', 'Bid on eBay') : tt('Acheter sur eBay', 'Buy on eBay')}</a>${boutonWatch({item_id: base.item_id})}</div>
+      <button class="btn ghost fa-verif" data-verif="${esc(base.item_id)}" data-verif-t="${esc(a.titre || base.titre || '')}" data-verif-p="${esc(total ? (encan ? Math.max(0, total - port) : total) : 0)}" data-verif-e="${encan ? 1 : ''}">${tt('Vérifier le prix avant de miser', 'Check the price before bidding')}</button></div>`;
+    $$('.fen-vigs [data-ph]', f).forEach(b => b.onclick = () => { $('#fen-img', f).innerHTML = `<img src="${esc(b.dataset.ph)}" alt="">`; $$('.fen-vigs button', f).forEach(x => x.classList.toggle('on', x === b)); brancherLoupe($('#fen-img', f)); });
+    brancherLoupe($('#fen-img', f));
+    $$('[data-fermer]', f).forEach(b => b.addEventListener('click', fermerAnnonce));
+    brancherMesAchats(f);
+    const fe = $('.fen', f);
+    if (fe && S.fenEntree) { S.fenEntree = false; const o = S.fenOrigine; S.fenOrigine = null;
+      if (o) { const r = fe.getBoundingClientRect(); fe.style.transformOrigin = `${Math.round(o.left + o.width / 2 - r.left)}px ${Math.round(o.top + o.height / 2 - r.top)}px`; }
+      fe.classList.add('entree'); }
+    S.fenDernier = d;
+  };
+  S.fenDernier = null;
+  if (!comps()) API.annonce_score(base.titre || '').then(x => { if (x && x.ok && S.fenId === base.item_id && $('#fen-annonce') && document.body.classList.contains('fen-ouverte')) { scoreP = x; montrerPublic(S.fenDernier || {chargement: true}); } }).catch(() => {});
   S.fenPlus = false; S.fenEntree = true; S.fenT0 = Date.now();
   montrer({chargement:true});
   // 26 oct 2026 (Mathieu : « beaucoup trop long à charger ») : l'annonce et les cartes en vente tout de suite,
@@ -13627,69 +13693,72 @@ async function vueTraiter(arg, force){
     else { b.disabled = false; toast(x.erreur || 'Erreur', 4000); }
   });
 }
+// 10 nov 2026 (Mathieu : « pas besoin de separer et slider de gauche a droite ; juste scroller down avec une option de tri ;
+// un score SlabCoach ? joueur en feu ? ») : le Radar = UN fil vertical, des pastilles pour filtrer, un tri. Chaque carte
+// porte son Score SlabCoach (le joueur + la carte, jamais le prix : licence eBay).
+const TRIS_RADAR = () => [['score', tt('Score', 'Score')], ['fin', tt('Fin bientôt', 'Ending soon')], ['prix', tt('Prix ↑', 'Price ↑')], ['prix_d', tt('Prix ↓', 'Price ↓')]];
+const couleurScore = (n) => n >= 80 ? 'vert' : n >= 65 ? 'acc' : n >= 50 ? 'or' : '';
+function pastilleScore(x){ return x && x.score != null ? `<span class="sc-b ${couleurScore(x.score)}" title="Score SlabCoach">${x.score}</span>` : ''; }
+function tuileRadar(x, src){
+  const pj = (x.pastilles_j || []).filter(k => ['en_feu', 'legende', 'recrue', 'buzz'].includes(k));
+  const L = {en_feu: [tt('En feu', 'On fire'), 'rouge'], legende: [tt('Légende', 'Legend'), 'or'], recrue: [tt('Recrue', 'Rookie'), 'or'], buzz: ['Buzz', 'acc']};
+  return tuileCarte({...x, url: lienAchat(x.url, src || 'radar')}, {x: boutonWatch(x), coin: pastilleScore(x), bas: ligneReel(x),
+    milieu: `${x.numero && x.joueur ? `<div class="sous">#${esc(x.numero)} ${esc(x.joueur)}</div>` : ''}<div class="pastilles">${x.encan ? tag(finDans(x.fin) + (x.mises != null ? ' · ' + x.mises + ' ' + tt('mise', 'bid') + (x.mises > 1 ? 's' : '') : ''), 'or') : tag(tt('Achat immédiat', 'Buy It Now'))}${pj.slice(0, 1).map(k => tag(L[k][0], L[k][1])).join('')}</div>${cmpPlace(x)}`,
+    droite: x.prix_max ? `<span class="sous">${tt('ton prix', 'yours')} ${argentCourt(x.prix_max)}</span>` : ''});
+}
 async function vueMesDeals(z){
   z.innerHTML = barreProg(Date.now(), 12, tt('On regarde eBay pour toi…', 'Checking eBay for you…'));
   const r = await API.mes_deals().catch(e => ({ok:false, erreur:e.message}));
   if (!z.isConnected) return;
   if (!r.ok) { z.innerHTML = `<div class="vide">${esc(r.erreur || 'Erreur')}<br><button class="lien-doux" id="md-re">${tt('Réessayer', 'Try again')}</button></div>`; const re_ = $('#md-re'); if (re_) re_.onclick = () => vueMesDeals(z); return; }
-  const C = r.cibles || [], L = r.deals || [], PT = (r.pour_toi || []).filter(g => (g.annonces || []).length), DEC = r.decouvrir || [], P = r.profil || {};
-  const nbPT = PT.reduce((n, g) => n + g.annonces.length, 0);
-  const pD = $('#pastille-deals'); if (pD) { const n = L.length || nbPT; pD.hidden = !n; pD.textContent = n > 99 ? '99+' : (n || ''); }
-  S.mdFiltre = S.mdFiltre && C.some(c => c.id === S.mdFiltre) ? S.mdFiltre : null;
-  const vis = S.mdFiltre ? L.filter(x => x.alerte_id === S.mdFiltre) : L;
-  const tuile = (x) => tuileCarte({...x, url: lienAchat(x.url, 'mesdeals')}, {
-    coin: x.sous_pct > 0 ? capsule('−' + x.sous_pct + ' % ' + tt('sous ton prix', 'under your price'), 'vert petit') : capsule(tt('À ton prix', 'At your price'), 'acc petit'),
-    bas: ligneReel(x), milieu: `<div class="pastilles">${x.encan ? tag(tt('Encan', 'Auction') + (x.fin ? ' · ' + finDans(x.fin) : ''), 'or') : tag(tt('Achat immédiat', 'Buy It Now'))}</div>${cmpPlace(x)}`,
-    x: boutonWatch(x), droite: `<span class="sous">${tt('ton prix', 'yours')} ${argentCourt(x.prix_max)}</span>`});
-  const tuileA = (x, src) => tuileCarte({...x, url: lienAchat(x.url, src)}, {x: boutonWatch(x), bas: ligneReel(x), milieu: `${x.numero ? `<div class="sous">#${esc(x.numero)} ${esc(x.joueur || '')}</div>` : ''}<div class="pastilles">${x.encan ? tag(tt('Encan', 'Auction') + (x.fin ? ' · ' + finDans(x.fin) : '') + (x.mises != null ? ' · ' + x.mises + ' ' + tt('mise', 'bid') + (x.mises > 1 ? 's' : '') : ''), 'or') : tag(tt('Achat immédiat', 'Buy It Now'))}</div>${cmpPlace(x)}`});
-  const caseJ = (g, src) => `<div class="md-vend"><div class="v-rang-t"><b>${icN('cible')}${esc(g.joueur)}</b><span class="sous">${g.annonces.length} ${tt('annonces', 'listings')}</span></div>
-    ${pastillesIndice(g) ? `<div class="pastilles md-pj">${pastillesIndice(g)}</div>` : ''}
-    <div class="d-car v-car">${g.annonces.slice(0, 16).map(x => tuileA(x, src)).join('')}</div></div>`;
-  // ce que le Radar suit, en pastilles : un tap rouvre le questionnaire
-  const coll = new Proxy({}, {get: (_, k) => NOM_SORTE(k)});
-  const perso = r.profil_vide ? '' : `<div class="md-perso">${(P.favoris || []).slice(0, 6).map(n => tag(n)).join('')}${(P.favoris || []).length > 6 ? tag('+' + ((P.favoris || []).length - 6)) : ''}
-    ${(P.collectionne || []).map(k => tag(coll[k] || k, 'or')).join('')}${P.prix_max ? tag('≤ ' + argentCourt(P.prix_max), 'vert') : ''}
-    <button class="pilule" id="md-perso">${tt('Modifier', 'Edit')} ›</button>
-    <button class="pilule md-feu ${r.alerte_feu ? 'on' : ''}" id="md-feu">${icN('cloche')}${r.alerte_feu ? tt('Alerte en feu', 'On-fire alert') : tt('M’alerter s’ils sont en feu', 'Alert me if on fire')}</button></div>`;
-  const vide = !C.length && !PT.length && !(r.vendeurs || []).length && !(r.types || []).length;
-  // 10 nov 2026 : les encans peu disputes (0 ou 1 mise, fin dans moins de 6 h) : des faits, pas un prix
-  const vuPD = new Set(), PD = [...L, ...PT.flatMap(g => g.annonces), ...(r.types || []).flatMap(g => g.annonces), ...(r.chauds || []).flatMap(g => g.annonces), ...DEC.flatMap(g => g.annonces)]
-    .filter(x => { const ms = Date.parse(x.fin || '') - Date.now(); if (!x.encan || !(ms > 0 && ms < 6 * 3600e3) || (x.mises || 0) > 1 || vuPD.has(x.item_id)) return false; vuPD.add(x.item_id); return true; })
-    .sort((a, b) => Date.parse(a.fin) - Date.parse(b.fin)).slice(0, 10);
-  // 10 nov 2026 (Mathieu : « le plus simple possible, un bouton et un texte anime ou glowy ») : tout se regle dans « Mon radar »
-  const rien = vide && !DEC.length && !(r.chauds || []).length && !(r.chasses || []).length;
+  // toutes les annonces dans un seul fil ; chacune garde d'ou elle vient (pour les pastilles de filtre)
+  const tous = new Map(), groupes = [];
+  const ajouter = (cle, nom, l) => { if (!(l || []).length) return; groupes.push([cle, nom]);
+    for (const x of l) { const y = tous.get(x.item_id) || {...x, _g: new Set()}; y._g.add(cle); if (x.prix_max && !y.prix_max) { y.prix_max = x.prix_max; y.sous_pct = x.sous_pct; } tous.set(x.item_id, y); } };
+  ajouter('cibles', tt('Prix cibles', 'Target prices'), r.deals);
+  (r.pour_toi || []).forEach(g => ajouter('j:' + g.joueur, g.joueur, g.annonces));
+  (r.types || []).forEach(g => ajouter('t:' + g.type, NOM_SORTE(g.type), g.annonces));
+  (r.chasses || []).forEach(c => ajouter('c:' + c.pid + c.sous, tt('Il te manque', 'Missing') + ' · ' + c.sous, c.annonces));
+  ajouter('feu', tt('En feu', 'On fire'), (r.chauds || []).flatMap(g => g.annonces));
+  ajouter('dec', tt('À découvrir', 'Discover'), (r.decouvrir || []).flatMap(g => g.annonces));
+  (r.vendeurs || []).forEach(v => ajouter('v:' + v.vendeur, v.vendeur, v.annonces));
+  const pd = [...tous.values()].filter(x => { const ms = Date.parse(x.fin || '') - Date.now(); return x.encan && ms > 0 && ms < 6 * 3600e3 && (x.mises || 0) <= 1; });
+  if (pd.length >= 2) { pd.forEach(x => x._g.add('pd')); groupes.push(['pd', tt('Peu disputés', 'Low competition')]); }
+  const nb_ = tous.size;
+  const pD = $('#pastille-deals'); if (pD) { pD.hidden = !nb_; pD.textContent = nb_ > 99 ? '99+' : (nb_ || ''); }
+  if (!groupes.some(([k]) => k === S.mdF)) S.mdF = '';
+  S.mdTri = S.mdTri || 'score';
+  const rien = !nb_;
+  const peindre = () => {
+    let l = [...tous.values()].filter(x => !S.mdF || x._g.has(S.mdF));
+    const fin_ = (x) => x.encan && x.fin ? Date.parse(x.fin) : 9e15;
+    l.sort(S.mdTri === 'fin' ? (a, b) => fin_(a) - fin_(b) : S.mdTri === 'prix' ? (a, b) => (a.total || 0) - (b.total || 0)
+      : S.mdTri === 'prix_d' ? (a, b) => (b.total || 0) - (a.total || 0) : (a, b) => (b.score || 0) - (a.score || 0) || fin_(a) - fin_(b));
+    const max = S.mdMax || 40;
+    $('#md-fil', z).innerHTML = l.length ? `<div class="grille-c md-grille">${l.slice(0, max).map(x => tuileRadar(x)).join('')}</div>${l.length > max ? `<button class="btn ghost" id="md-plus">${tt('Voir plus', 'See more')} · ${l.length - max}</button>` : ''}`
+      : `<div class="vide">${tt('Rien ici pour l’instant.', 'Nothing here yet.')}</div>`;
+    const mp = $('#md-plus', z); if (mp) mp.onclick = () => { S.mdMax = max + 40; peindre(); };
+    $$('[data-mdf]', z).forEach(b => b.classList.toggle('on', b.dataset.mdf === (S.mdF || '')));
+    $$('[data-tri]', z).forEach(b => b.classList.toggle('on', b.dataset.tri === S.mdTri));
+    remplirComparer(z);
+  };
   z.innerHTML = `<div class="md">
     <button class="rq-glow ${r.profil_vide ? 'neuf' : ''}" id="md-cfg"><span>${r.profil_vide ? tt('Configurer mon radar', 'Set up my radar') : tt('Mon radar', 'My radar')}</span></button>
     ${rien && r.partiel ? `<div class="sous md-dec" style="text-align:center">${r.erreur_txt ? esc(r.erreur_txt) : r.erreur_code === 'lent' ? tt('eBay est lent en ce moment : réessaie dans une minute.', 'eBay is slow right now: try again in a minute.') : tt('eBay ne répond pas en ce moment : réessaie dans une minute.', 'eBay isn’t answering right now: try again in a minute.')}</div>
       ${(r.erreurs_detail || []).length ? `<details class="sous md-dec"><summary>Admin</summary>${r.erreurs_detail.map(esc).join('<br>')}</details>` : ''}` : ''}
-    ${C.length ? `<div class="v-rang-t"><b>${tt('Mes prix cibles', 'My target prices')}</b><span class="sous">${L.length}</span></div>
-      <div class="pastilles md-f"><button class="pilule ${S.mdFiltre ? '' : 'on'}" data-md="">${tt('Toutes', 'All')} · ${L.length}</button>${C.map(c => `<button class="pilule ${S.mdFiltre === c.id ? 'on' : ''}" data-md="${c.id}">${esc(c.q)} ≤ ${argentCourt(c.prix_max)} · ${c.n || 0}</button>`).join('')}</div>
-      ${vis.length ? `<div class="grille-c">${vis.map(tuile).join('')}</div>` : `<div class="vide">${tt('Rien à ton prix pour l’instant. On regarde eBay chaque heure et on t’avertit dès qu’une annonce passe sous ton prix.', 'Nothing at your price yet. We check eBay every hour and tell you as soon as a listing drops under it.')}</div>`}
-` : ''}
-    ${PT.map(g => caseJ(g, 'radar')).join('')}
-    ${(r.types || []).map(g => `<div class="md-vend"><div class="v-rang-t"><b>${icN('carte')}${tt('Toutes les', 'All')} ${esc(NOM_SORTE(g.type).toLowerCase())}</b><span class="sous">${g.annonces.length ? g.annonces.length + ' ' + tt('annonces', 'listings') : ''}${P.prix_max ? ' · ≤ ' + argentCourt(P.prix_max) : ' · ≤ 100 $'}</span></div>
-      ${g.annonces.length ? `<div class="d-car v-car">${g.annonces.slice(0, 16).map(x => tuileA(x, 'type_' + g.type)).join('')}</div>` : `<div class="sous">${tt('Rien dans ton budget en ce moment.', 'Nothing in your budget right now.')}</div>`}</div>`).join('')}
-    ${(r.chasses || []).map(c => `<div class="md-vend"><div class="v-rang-t"><b>${icN('carte')}${tt('Il te manque', 'You’re missing')} · ${esc(c.sous)}</b><span class="sous">${c.manque != null ? `${c.manque} / ${c.total}` : ''}</span></div>
-      <div class="md-dec">${esc(c.nom || '')}${c.cartes_trouvees ? ' · ' + c.cartes_trouvees + ' ' + tt('en vente dans ton budget', 'for sale in your budget') : ''} <button class="lien-doux" data-chasse-x="${esc(c.pid)}" data-chasse-s="${esc(c.sous)}">${tt('Arrêter', 'Stop')}</button></div>
-      ${(c.annonces || []).length ? `<div class="d-car v-car">${c.annonces.slice(0, 16).map(x => tuileA(x, 'chasse')).join('')}</div>`
-        : `<div class="sous">${c.manque === 0 ? tt('Set complet !', 'Set complete!') : tt('Aucune carte manquante en vente dans ton budget pour l’instant.', 'No missing card for sale in your budget right now.')}</div>`}</div>`).join('')}
-    ${!r.profil_vide && (P.favoris || []).length && !PT.length ? `<div class="vide">${tt('Rien en vente pour tes joueurs dans ton budget en ce moment. Monte un peu ton budget, ou ajoute un joueur.', 'Nothing for sale for your players in your budget right now. Raise your budget a bit, or add a player.')}</div>` : ''}
-    ${PD.length >= 2 ? `<div class="md-vend"><div class="v-rang-t"><b>${icN('horloge')}${tt('Peu disputés', 'Low competition')}</b><span class="sous">${tt('0 ou 1 mise · fin dans moins de 6 h', '0 or 1 bid · ending within 6 h')}</span></div>
-      <div class="d-car v-car">${PD.map(x => tuileA(x, 'peu_disputes')).join('')}</div></div>` : ''}
-    ${(r.chauds || []).length ? `<div class="v-rang-t" style="margin-top:6px"><b>${tt('En feu cette semaine', 'On fire this week')}</b></div>${r.chauds.map(g => caseJ(g, 'chauds')).join('')}` : ''}
-    ${vide && DEC.length ? `<div class="v-rang-t" style="margin-top:6px"><b>${tt('À découvrir', 'Discover')}</b></div>${DEC.map(g => caseJ(g, 'decouvrir')).join('')}` : ''}
-    ${(r.vendeurs || []).map(v => `<div class="md-vend"><div class="v-rang-t"><b>${icN('boutique')}${esc(v.vendeur)}</b><span class="sous">${v.annonces.length ? v.annonces.length + ' ' + tt('annonces', 'listings') : tt('rien de neuf', 'nothing new')}</span></div>
-      ${v.annonces.length ? `<div class="d-car v-car">${v.annonces.slice(0, 12).map(x => tuileCarte({...x, url: lienAchat(x.url, 'vendeur')}, {x: boutonWatch(x), bas: ligneReel(x), milieu: `<div class="pastilles">${x.encan ? tag(tt('Encan', 'Auction') + (x.fin ? ' · ' + finDans(x.fin) : ''), 'or') : tag(tt('Nouveau', 'New'))}</div>`})).join('')}</div>` : ''}</div>`).join('')}
-    </div>`;
+    ${nb_ ? `<div class="chips md-chips">${[['', tt('Tout', 'All') + ' · ' + nb_], ...groupes].map(([k, n]) => `<button class="chip ${k === (S.mdF || '') ? 'on' : ''}" data-mdf="${esc(k)}">${esc(n)}</button>`).join('')}</div>
+      <div class="md-tri"><div class="seg petit">${TRIS_RADAR().map(([k, n]) => `<button data-tri="${k}" class="${k === S.mdTri ? 'on' : ''}">${n}</button>`).join('')}</div>
+        <button class="rond md-reg" id="md-reg" aria-label="${esc(tt('Mes critères de recherche', 'My search criteria'))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button></div>` : ''}
+    <div id="md-fil"></div></div>`;
+  if (nb_) peindre();
   const reQ = () => configurerRadar({apres: (ok) => { if (ok && z.isConnected) vueMesDeals(z); }});
   $('#md-cfg').onclick = () => { vibrer(); reQ(); };
-  $$('[data-chasse-x]', z).forEach(b => b.onclick = async () => { const x = await API.chasse_retirer(b.dataset.chasseX, b.dataset.chasseS).catch(() => null); if (x && x.ok) vueMesDeals(z); });
-
-  $$('[data-md]', z).forEach(b => b.onclick = () => { vibrer(); S.mdFiltre = b.dataset.md ? +b.dataset.md : null; vueMesDeals(z); });
-  remplirComparer(z);
-  // 1re visite d'un Radar vide : le questionnaire s'ouvre seul (une fois ; ensuite le bouton « Choisir mes joueurs »)
+  const mr = $('#md-reg', z); if (mr) mr.onclick = () => { vibrer(); reQ(); };       // les criteres : le recapitulatif de « Mon radar »
+  $$('[data-mdf]', z).forEach(b => b.onclick = () => { vibrer(); S.mdF = b.dataset.mdf; S.mdMax = 40; peindre(); });
+  $$('[data-tri]', z).forEach(b => b.onclick = () => { vibrer(); S.mdTri = b.dataset.tri; peindre(); });
+  // 1re visite d'un Radar vide : le formulaire s'ouvre seul (une fois)
   let vu = false; try { vu = localStorage.getItem('lr_radar_q') === '1'; } catch (e) {}
-  if (r.profil_vide && !C.length && !vu && !(S.reglages && S.reglages.radar_q)) setTimeout(() => { if (z.isConnected && $('#fond-feuille').hidden) reQ(); }, 600);
+  if (r.profil_vide && !(r.cibles || []).length && !vu && !(S.reglages && S.reglages.radar_q)) setTimeout(() => { if (z.isConnected && $('#fond-feuille').hidden) reQ(); }, 600);
 }
 // 10 nov 2026 (Mathieu : « montrer quand c'est plus vraiment un bon prix, sans leur dire quoi mettre ; subtilement ») :
 // sous chaque encan, une petite ligne : la MEME carte en Achat immediat, des X $ (l'annonce la moins chere, telle quelle).
@@ -13700,7 +13769,7 @@ const ligneReel = (x) => x && x.total_reel && x.total_reel > (x.total || 0) + 0.
 // prix › » ; sous un encan, la ligne devient « Achat immediat des X $ » quand la meme carte est en vente
 const cmpPlace = (x) => `<button class="cmp" data-verif="${esc(x.item_id)}" data-cmp="${esc(x.item_id)}" data-cmp-t="${esc(x.titre || '')}" data-cmp-p="${esc(x.total || 0)}" data-cmp-e="${x.encan ? 1 : ''}">${tt('Vérifier le prix', 'Check price')} ›</button>`;
 document.addEventListener('click', (e) => { const b = e.target.closest('[data-verif]'); if (!b) return; e.preventDefault(); e.stopPropagation();
-  vibrer(); feuilleVerifier(b.dataset.verif, b.dataset.cmpT || b.dataset.verifT || '', nb(b.dataset.cmpP || b.dataset.verifP), !!(b.dataset.cmpE || b.dataset.verifE)); }, true);
+  vibrer(); if (b.closest('#fen-annonce')) fermerAnnonce(); feuilleVerifier(b.dataset.verif, b.dataset.cmpT || b.dataset.verifT || '', nb(b.dataset.cmpP || b.dataset.verifP), !!(b.dataset.cmpE || b.dataset.verifE)); }, true);
 async function remplirComparer(z){
   const B = $$('[data-cmp]', z).filter(b => b.dataset.cmpE && !b.dataset.rempli); if (!B.length) return;
   const vus = new Map(); B.forEach(b => { if (!vus.has(b.dataset.cmp) && vus.size < 8) vus.set(b.dataset.cmp, {item_id: b.dataset.cmp, titre: b.dataset.cmpT}); });
@@ -13747,6 +13816,7 @@ function blocPourquoi(q){
   if (g.carriere && g.carriere.pts) L.push([tt('Carrière', 'Career'), `${g.carriere.pts} pts${g.carriere.mj ? ' ' + tt('en', 'in') + ' ' + g.carriere.mj + ' ' + tt('matchs', 'games') : ''}`]);
   if (q.saisons && q.saisons <= 2 && q.actif) L.push([tt('Recrue', 'Rookie'), `${ord(q.saisons)} ${tt('saison', 'season')}`]);
   if (q.repechage && q.repechage.an && q.repechage.rang && q.repechage.rang <= 10) L.push([tt('Repêchage', 'Draft'), `${ord(q.repechage.rang)} ${tt('au total', 'overall')} · ${q.repechage.an}`]);
+  (q.actu || []).slice(0, 3).forEach(n => L.push([tt('Dans l’actu', 'In the news') + (n.date ? ' · ' + esc(dateCourte(n.date)) : ''), n.lien ? `<a href="${esc(urlSure(n.lien))}" target="_blank" rel="noopener">${esc(n.titre)}</a>` : esc(n.titre)]));
   if (!L.length) return '';
   return `<div class="j-pq"><div class="v-rang-t"><b>${tt('Pourquoi il bouge', 'Why he’s moving')}</b></div><div class="liste">${L.map(([k, v]) => `<div class="rangee"><span class="milieu"><span class="det">${k}</span><span class="nom">${v}</span></span></div>`).join('')}</div></div>`;
 }
@@ -13754,7 +13824,7 @@ function blocPourquoi(q){
 // (stats et donnees publiques seulement : jamais un prix)
 function pastillesIndice(g){
   if (!g) return '';
-  const L = {en_feu: [tt('En feu', 'On fire'), 'rouge'], en_hausse: [tt('En hausse', 'Rising'), 'vert'], buzz: ['Buzz', 'acc'], legende: [tt('Légende', 'Legend'), 'or'], recrue: [tt('Recrue', 'Rookie'), 'or']};
+  const L = {en_feu: [tt('En feu', 'On fire'), 'rouge'], en_hausse: [tt('En hausse', 'Rising'), 'vert'], buzz: ['Buzz', 'acc'], actu: [tt('Dans l’actu', 'In the news'), 'acc'], legende: [tt('Légende', 'Legend'), 'or'], recrue: [tt('Recrue', 'Rookie'), 'or']};
   const out = (g.pastilles || []).filter(k => L[k]).map(k => tag(L[k][0], L[k][1]));
   const w = g.semaine; if (w && w.mj) out.push(tag(`${w.pts} pts · ${w.mj} ${tt('matchs', 'games')} ${tt('cette semaine', 'this week')}`));
   return out.join('');

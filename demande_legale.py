@@ -29,7 +29,7 @@ FRAICHEUR_J = 7                  # (ancien) : remplace par les deux fraicheurs c
 # 10 nov 2026 (Mathieu : « les stats doivent etre mises a jour regulierement, tout ce qui est vivant ») : les stats LNH de
 # chaque joueur relues chaque jour (les matchs sont le soir), ses visites Wikipedia aux 3 jours (limite de Wikimedia)
 FRAICHEUR_NHL_S = 20 * 3600
-FRAICHEUR_WIKI_S = 3 * 86400
+FRAICHEUR_WIKI_S = 86400           # 10 nov 2026 (Mathieu : « a chaque jour, a la fine pointe ») : chaque jour
 PAR_PASSE = 400                  # joueurs relus (LNH) par passe ; une passe par heure : tout le monde chaque jour
 PAR_PASSE_WIKI = 250
 _verrou = threading.Lock()

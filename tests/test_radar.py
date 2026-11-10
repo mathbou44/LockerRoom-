@@ -112,3 +112,14 @@ assert T == {"autos": ["a1"], "numerotees": ["a3"]}, T
 assert not r["decouvrir"] and not r["profil_vide"]
 assert all(k.get("aspects") == "Sport:{Ice Hockey}" for k in vus_k), vus_k
 print("OK radar large")
+
+# 8. le Score SlabCoach sur chaque annonce du Radar (joueur + carte, jamais le prix)
+import score_slab
+s1 = score_slab.score("Upper Deck 2025-26 Premier Matvei Gridin Focus Rookies Patch Auto 85/99")
+s2 = score_slab.score("2023-24 Upper Deck Series 1 Brock Nelson base #12")
+assert s1["carte"]["auto"] and s1["carte"]["patch"] and s1["carte"]["tirage"] == 99 and s1["score"] > s2["score"], (s1, s2)
+assert score_slab.score("x", None)["score"] >= 0
+r = api.mes_deals()
+assert all(isinstance(x.get("score"), int) for g in r["types"] for x in g["annonces"]), r["types"]
+assert api.annonce_score("2024-25 SP Authentic Future Watch Auto Ivan Demidov /999")["ok"]
+print("OK score slabcoach")

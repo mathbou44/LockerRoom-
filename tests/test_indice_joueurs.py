@@ -72,3 +72,14 @@ assert r["lus"] == 3 and compte["n"] == 6, (r, compte)                 # 10 - 4 
 assert ij.indice("feu joueur") and ij.top(3)[0]["indice"] >= ij.top(3)[-1]["indice"]
 assert ij.statut()["lus_aujourdhui"] == 3
 print("OK indice passe")
+
+# 4. les nouvelles de la semaine : un joueur nomme dans un evenement (trophee, rappel, record) monte et prend « actu »
+import nouvelles
+aujourd = date.today().isoformat()
+nouvelles.lire_cache = lambda: {"sports": {"hockey": [
+    {"titre": "Feu Joueur named NHL player of the week after hat trick", "lien": "https://x/1", "date": aujourd},
+    {"titre": "Calme Joueur recalled from AHL", "lien": "https://x/2", "date": aujourd}]}}
+base["Calme Joueur"] = {"nhl": {"actif": True, "equipe": "TOR", "saisons": 1, "l5": 0}, "wiki": {"v60": 600, "v20": 200}}
+I2 = ij.calculer({"joueurs": {}}, base, lambda n: 1)
+assert "actu" in I2["Calme Joueur"]["pastilles"] and I2["Calme Joueur"]["actu"][0]["lien"] == "https://x/2", I2["Calme Joueur"]
+print("OK indice actu")

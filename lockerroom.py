@@ -29,6 +29,7 @@ import ebay_compte
 import ebay_csv
 import nouvelles   # 24 oct 2026 : importe ici, avant les taches de fond (Render : « partially initialized module »)
 import sante
+import score_slab
 import sports
 import valeurs
 import vision
@@ -5877,6 +5878,7 @@ class Api:
                 + [y for v in vend for y in v.get("annonces") or []]:
             try:
                 self._frais_reels(x, pays)
+                score_slab.annoter(x)                 # 10 nov 2026 : le Score SlabCoach (joueur + carte, jamais le prix)
             except Exception:
                 pass
         try:
@@ -6242,6 +6244,19 @@ class Api:
             pass
         out["mien"] = mien[:10]
         return out
+
+    def annonce_score(self, titre=None, joueur=None):
+        """10 nov 2026 : le Score SlabCoach d'une annonce pour sa fiche publique (joueur + carte ; aucun prix)."""
+        s = score_slab.score(str(titre or "")[:200], joueur)
+        if s.get("joueur"):
+            try:
+                import indice_joueurs
+                q = indice_joueurs.pourquoi(s["joueur"])
+                s["rang"], s["sur"], s["actif"] = q.get("rang"), q.get("sur"), q.get("actif")
+                s["pourquoi"] = q                   # 10 nov 2026 : les faits du joueur, pour guider vers « Verifier le prix »
+            except Exception:
+                pass
+        return {"ok": True, **s}
 
     def comparer(self, item_id=None, titre=None):
         """La feuille « Comparer » : la meme carte en Achat immediat, la moins chere d'abord (12 au plus)."""
@@ -8134,7 +8149,11 @@ class Api:
             a = dict(a, port_cad=0.0, port_estime=False, ramassage=True, port_reel=port_r)
             total = round(max(0.0, total - port_r), 2)
         if not ebay_prix_actif():                # interrupteur : l'annonce seule, sans valeur ni rabais
-            return {"ok": True, "article": {**a, "total": total}, "comps": [], "n": 0, "coupe": True}
+            # 10 nov 2026 : la fiche publique montre ce qu'il paiera vraiment (taxes, importation) : la facture, pas un jugement
+            pays_ = self.reglages_lire().get("pays") or "CA"
+            return {"ok": True, "article": {**a, "total": total}, "comps": [], "n": 0, "coupe": True,
+                    "taxe_achat": _deals.taxe_de({**a, "_pays": pays_}), "etranger": _deals.etranger({**a, "_pays": pays_}, pays_),
+                    "mes_achats": mes_achats, "deja_achetee": deja_achetee}
         return {"ok": True, "article": {**a, "total": total}, "comps": comps, "mediane": med, "n": n, "deal_retire": bool(maj_deal and maj_deal.get("retire")),
                 "suggere": suggere, "ventes": ventes, "mediane_vendue": None if saison_v else vc.get("mediane"),
                 "nb_vendues": len(ventes) if saison_v else vc.get("nb") or len(ventes),

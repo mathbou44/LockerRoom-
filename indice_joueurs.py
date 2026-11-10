@@ -32,10 +32,10 @@ import time
 import unicodedata
 from datetime import date, datetime, timedelta
 
-POIDS_ACTIF = {"forme": 0.40, "ascension": 0.12, "rythme": 0.10, "buzz": 0.10, "notoriete": 0.06, "demande": 0.12,
-               "recrue": 0.05, "legende": 0.05}
+POIDS_ACTIF = {"forme": 0.38, "ascension": 0.11, "rythme": 0.09, "buzz": 0.09, "notoriete": 0.05, "demande": 0.11,
+               "recrue": 0.05, "legende": 0.05, "actu": 0.07}
 BONUS_FEU = 6                      # « 6 buts cette semaine = tres haut » : la semaine en feu passe devant tout le monde
-POIDS_RETIRE = {"legende": 0.35, "buzz": 0.25, "notoriete": 0.40}
+POIDS_RETIRE = {"legende": 0.33, "buzz": 0.22, "notoriete": 0.33, "actu": 0.12}
 ECHELLE_RETIRE = 0.85              # une semaine en feu passe devant ; une legende reste quand meme haut
 GARDE_JOURS = 70
 _verrou = threading.Lock()
@@ -160,7 +160,7 @@ def forme_semaine(j, aujourdhui=None):
 def _rangs(valeurs):
     """{cle: valeur} -> {cle: rang 0-100} (les egalites au meme rang ; None ignore)."""
     v = {k: x for k, x in valeurs.items() if x is not None}
-    if not v:
+    if not v or len(set(v.values())) == 1:          # aucune difference (ex. aucune nouvelle cette semaine) : critere ignore
         return {}
     tri = sorted(v.values())
     n = len(tri)
@@ -179,6 +179,46 @@ def _legende_brute(h):
     return (6 if h.get("hhof") else 0) + (4 if h.get("top100") else 0) + math.log1p(t) * 2 + math.log1p(car / 100)
 
 
+# 10 nov 2026 (Mathieu : « s'il est parle beaucoup, s'il y a eu un trophee recemment ; a chaque jour ») : les nouvelles du
+# hockey des 7 derniers jours (nos flux RSS publics) : combien de fois le joueur y est nomme, et les evenements forts
+EVENEMENTS = re.compile(r"hall of fame|temple|trophy|troph|award|record|hat[- ]trick|tour du chapeau|milestone|\b(500|600|700|800|900|1000)(th)?\b|"
+                        r"called up|recalled|rappel|promoted|debut|first nhl|premier but|signs|signe|extension|traded|echange|named captain|capitaine|"
+                        r"all-star|player of the week|joueur de la semaine|star of the week", re.I)
+
+
+def actu(jours=7):
+    """{nom normalise: {"n": mentions, "ev": evenements, "titres": [{titre, lien, date}]}} des nouvelles recentes."""
+    try:
+        import nouvelles
+        items = ((nouvelles.lire_cache().get("sports") or {}).get("hockey")) or []
+    except Exception:
+        return {}
+    limite = (date.today() - timedelta(days=jours)).isoformat()
+    return [x for x in items if str(x.get("date") or "") >= limite]
+
+
+def _actu_par_joueur(noms, items):
+    out = {}
+    if not items:
+        return out
+    textes = [(_norm(x.get("titre")), x) for x in items]
+    for nom in noms:
+        k = _norm(nom)
+        p = k.split()
+        if len(p) < 2:
+            continue
+        fam = p[-1]
+        for t, x in textes:
+            if k in t or (len(fam) >= 5 and re.search(r"\b" + re.escape(fam) + r"\b", t) and p[0][:1] and re.search(r"\b" + re.escape(p[0]) + r"\b", t)):
+                o = out.setdefault(nom, {"n": 0, "ev": 0, "titres": []})
+                o["n"] += 1
+                if EVENEMENTS.search(x.get("titre") or ""):
+                    o["ev"] += 1
+                if len(o["titres"]) < 3:
+                    o["titres"].append({"titre": (x.get("titre") or "")[:160], "lien": x.get("lien"), "date": x.get("date")})
+    return out
+
+
 def calculer(d=None, base=None, demande=None):
     """L'indice de chaque joueur : {nom: {indice, criteres, pastilles, actif, forme}}.
     base = demande_legale.lire()["joueurs"] (LNH, Wikipedia) ; demande = fonction nom -> score."""
@@ -189,7 +229,8 @@ def calculer(d=None, base=None, demande=None):
         demande = demande or demande_legale.demande
     stats_j = d.get("joueurs") or {}
     noms = set(base) | set(stats_j)
-    brut = {k: {} for k in ("forme", "ascension", "rythme", "buzz", "notoriete", "demande", "recrue", "legende")}
+    brut = {k: {} for k in ("forme", "ascension", "rythme", "buzz", "notoriete", "demande", "recrue", "legende", "actu")}
+    nouvelles_j = _actu_par_joueur(noms, actu())
     info = {}
     for nom in noms:
         e = base.get(nom) or {}
@@ -221,6 +262,8 @@ def calculer(d=None, base=None, demande=None):
             if s:
                 brut["demande"][nom] = s
         brut["recrue"][nom] = 1.0 if actif and (h.get("saisons") or 9) <= 2 else 0.0
+        na = nouvelles_j.get(nom)
+        brut["actu"][nom] = (na["n"] + 2 * na["ev"]) if na else 0.0
         brut["legende"][nom] = _legende_brute(h)
         info[nom] = {"actif": actif, "forme": fs, "equipe": h.get("equipe"), "legende_vraie": bool(h.get("hhof") or h.get("top100") or (h.get("trophees_n") or 0) >= 5)}
     rangs = {k: _rangs(v) for k, v in brut.items()}
@@ -230,7 +273,7 @@ def calculer(d=None, base=None, demande=None):
         r = {k: rangs[k].get(nom) for k in rangs}
         poids = POIDS_ACTIF if i["actif"] else POIDS_RETIRE
         pres = {k: p for k, p in poids.items() if r.get(k) is not None}
-        if not pres or sum(pres.values()) < 0.3:
+        if not pres or sum(pres.values()) < 0.2:
             continue
         val = sum(r[k] * p for k, p in pres.items()) / sum(pres.values())
         if not i["actif"]:
@@ -248,10 +291,14 @@ def calculer(d=None, base=None, demande=None):
             past.append("legende")
         if r.get("recrue") and brut["recrue"].get(nom):
             past.append("recrue")
+        if nouvelles_j.get(nom) and (nouvelles_j[nom]["ev"] or nouvelles_j[nom]["n"] >= 2):
+            past.append("actu")
         if "en_feu" in past:
             val = min(100.0, val + BONUS_FEU)
         out[nom] = {"indice": round(val, 1), "criteres": {k: v for k, v in r.items() if v is not None}, "pastilles": past,
                     "actif": i["actif"], "equipe": i["equipe"], "semaine": i["forme"]}
+        if nouvelles_j.get(nom):
+            out[nom]["actu"] = nouvelles_j[nom]["titres"]
     return out
 
 
@@ -434,4 +481,10 @@ def pourquoi(nom):
         out["saisons"] = h["saisons"]
     if h.get("an_repech"):
         out["repechage"] = {"an": h.get("an_repech"), "ronde": h.get("ronde"), "rang": h.get("repech")}
+    if v.get("actu"):
+        out["actu"] = v["actu"]
+    else:
+        na = _actu_par_joueur([nom_vrai], actu()).get(nom_vrai)
+        if na:
+            out["actu"] = na["titres"]
     return out
