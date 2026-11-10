@@ -764,6 +764,14 @@ def valeur_sure(pv, titre_annonce=""):
         return None, "ventes trop dispersees"
     if len(garde) == 3 and garde[-1] > garde[0] * 2.5:
         return None, "ventes trop dispersees"
+    if rc.get("demi_vie"):                       # 10 nov 2026 : la recette du banc ponderee par la recence
+        pw = sorted((float(v["prix"]), 0.5 ** (_jours(v) / float(rc["demi_vie"]))) for v in pv if garde[0] <= float(v["prix"]) <= garde[-1])
+        tot, acc = sum(w for _x, w in pw), 0.0
+        for x, w in pw:
+            acc += w
+            if acc >= tot / 2:
+                m = x
+                break
     dernieres = sorted(pv, key=lambda v: str(v.get("le") or ""), reverse=True)[:3]
     if len(dernieres) == 3 and rc.get("dernieres3", True):
         m = min(m, statistics.median(float(v["prix"]) for v in dernieres))

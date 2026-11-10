@@ -40,3 +40,22 @@ with comptes.utiliser(cid):
     assert abs(valeurs.demande(fort) - dl.demande(fort)) < 1e-9
     assert valeurs.demande("Personne Inconnue") == valeurs.DEMANDE_INCONNUE
 print("OK demande legale")
+# 10 nov 2026 (« tout ce qui est vivant ») : les stats LNH relues chaque jour, Wikipedia aux 3 jours ; un echec ne efface rien
+import time as _t
+dl._tous_les_noms = lambda: [fort, faible]
+appels = []
+dl._nhl = lambda n: appels.append(n) or ({"pos": "C", "actif": True} if n == fort else None)
+dl._wiki_lot = lambda noms: {n: {"v60": 999, "v20": 300} for n in noms}
+dl.labo = lambda d, verite=None: {"n": 0}
+d0 = dl.lire()
+for n in (fort, faible):
+    d0["joueurs"][n]["le_nhl"] = _t.time() - 2 * 86400            # perimees
+    d0["joueurs"][n]["le_wiki"] = _t.time() - 3600                 # fraiches
+dl._ecrire({k: v for k, v in d0.items() if k != "_idx"})
+r = dl.passe()
+assert r["lus"] == 2 and r["wiki"] == 0 and sorted(appels) == sorted([fort, faible]), (r, appels)
+J = dl.lire()["joueurs"]
+assert J[fort]["nhl"] == {"pos": "C", "actif": True} and J[fort]["le_nhl"] > _t.time() - 60
+assert J[faible]["nhl"] and J[faible]["nhl"].get("repech")          # l'echec garde les stats d'hier
+assert dl._a_lire(10, "nhl") == [faible]                               # l echec sera relu a la passe suivante
+print("OK fraicheur")

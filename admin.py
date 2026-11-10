@@ -155,6 +155,27 @@ def sante():
         disque = None
     taches = {"deals": _maj_fichier("deals_globaux.json"), "nouvelles": _maj_fichier("nouvelles_cache.json"),
               "nouveaux_produits": _maj_fichier("produits_a_ajouter.json"), "valeurs": (valeurs.statut() or {}).get("maj")}
+    # 10 nov 2026 (Mathieu : « les stats doivent etre mises a jour regulierement, tout ce qui est vivant ») : la fraicheur
+    # de chaque donnee vivante (stats LNH, popularite, forme, labo, banc de validation)
+    try:
+        import demande_legale
+        dl = demande_legale.lire()
+        J = list((dl.get("joueurs") or {}).values())
+        iso = lambda t: datetime.fromtimestamp(t).isoformat(timespec="minutes") if t and t < time.time() + 86400 else None
+        taches["stats_lnh"] = iso(max((e.get("le_nhl") or 0) for e in J) if J else 0)
+        taches["popularite"] = iso(max((e.get("le_wiki") or 0) for e in J) if J else 0)
+        taches["labo_demande"] = (dl.get("labo") or {}).get("le")
+    except Exception:
+        pass
+    try:
+        taches["forme_lnh"] = datetime.fromtimestamp(os.path.getmtime(os.path.join(comptes.DONNEES, "nhl_forme.json"))).isoformat(timespec="minutes")
+    except OSError:
+        pass
+    try:
+        import banc
+        taches["banc"] = (banc.lire().get("dernier") or {}).get("le") or None
+    except Exception:
+        pass
     try:
         import ventes_communaute
         vc = ventes_communaute.statut()

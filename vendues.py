@@ -838,10 +838,17 @@ def autres_joueurs(titre, n=12, fond=False):
             "joueurs": len({v["joueur"] for v in l if v.get("joueur")}), "q": q}
 
 
-def tendance(ventes, jours=30):
+def tendance(ventes, jours=None):
     """26 oct 2026 - % de variation : mediane des ventes des `jours` derniers jours vs les `jours`*2 d'avant.
-    None s'il n'y a pas assez de ventes des deux cotes (3 chacune)."""
+    None s'il n'y a pas assez de ventes des deux cotes (3 chacune).
+    10 nov 2026 : la fenetre gagnante du banc de validation (banc.recette_tendance), 30 jours sinon."""
     from datetime import timedelta
+    if jours is None:
+        try:
+            import banc
+            jours = int(banc.recette_tendance().get("jours") or 30)
+        except Exception:
+            jours = 30
     auj = datetime.now()
     d1, d2 = (auj - timedelta(days=jours)).strftime("%Y-%m-%d"), (auj - timedelta(days=jours * 3)).strftime("%Y-%m-%d")
     recent = [v["prix"] for v in ventes if v.get("prix") and str(v.get("le") or "") >= d1]

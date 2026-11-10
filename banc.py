@@ -64,6 +64,14 @@ def _ecrire(d):
 _RECETTE = {"d": None, "le": 0.0}
 
 
+def recette_tendance():
+    """La fenetre adoptee pour la tendance (vendues.tendance) ; {} = 30 jours."""
+    try:
+        return dict((lire().get("recette") or {}).get("tendance") or {})
+    except Exception:
+        return {}
+
+
 def recette():
     """Les parametres adoptes pour la regle de valeur (deals.valeur_sure), relus aux 10 min. {} = la regle d'origine."""
     if _RECETTE["d"] is None or time.time() - _RECETTE["le"] > 600:
@@ -132,6 +140,14 @@ def _valeur_param(pv, ref, p, titre=""):
     m, garde = cartes_match.mediane_robuste(prix)
     if not m or len(garde) < p.get("min_sures", 3):
         return None
+    if p.get("demi_vie"):                       # 10 nov 2026 : mediane ponderee par la recence (demi-vie en jours)
+        pw = sorted((v["prix"], 0.5 ** (_jours(v, ref) / float(p["demi_vie"]))) for v in pv if garde[0] <= v["prix"] <= garde[-1])
+        tot, acc = sum(w for _x, w in pw), 0.0
+        for x, w in pw:
+            acc += w
+            if acc >= tot / 2:
+                m = x
+                break
     if p.get("dernieres3", True):
         d3 = sorted(pv, key=lambda v: v["le"], reverse=True)[:3]
         if len(d3) == 3:
@@ -147,6 +163,8 @@ def _recettes():
             for d3 in (True, False):
                 k = f"ms{ms}_jr{jr}_{'d3' if d3 else 'med'}"
                 r[k] = dict(base, min_sures=ms, jours_recents=jr, dernieres3=d3)
+                for dv in (15, 30):                       # 10 nov 2026 : + ponderees par la recence
+                    r[k + f"_dv{dv}"] = dict(base, min_sures=ms, jours_recents=jr, dernieres3=d3, demi_vie=dv)
     return r
 
 
@@ -250,7 +268,17 @@ def valider_deals(d):
 
 
 # -- 3. TENDANCE : la direction annoncee il y a 28 jours s'est-elle produite ? --------------------------------------
-def valider_tendance(cartes, jours=28):
+def valider_tendances(cartes):
+    """10 nov 2026 : la tendance mesuree avec plusieurs fenetres (14, 21, 28, 45 jours) et seuils (10, 15 %) ; la meilleure
+    est adoptee (vendues.tendance la lit) quand elle bat la regle en place (30 jours) de 2 points sur 30 paris et plus."""
+    out = {}
+    for j in (14, 21, 28, 45):
+        for seuil in (0.10, 0.15):
+            out[f"j{j}_s{int(seuil * 100)}"] = valider_tendance(cartes, j, seuil)
+    return out
+
+
+def valider_tendance(cartes, jours=28, seuil=0.10):
     bons = tot = 0
     t0 = datetime.now() - timedelta(days=jours)
     for _cible, vv in cartes:
@@ -261,7 +289,7 @@ def valider_tendance(cartes, jours=28):
             continue
         a, b, c_ = statistics.median(plus_avant), statistics.median(avant), statistics.median(apres)
         pred = (b - a) / a if a else 0
-        if abs(pred) < 0.10:
+        if abs(pred) < seuil:
             continue                                              # « stable » : pas de pari
         reel = (c_ - b) / b if b else 0
         tot += 1
@@ -275,7 +303,15 @@ def passe():
     d = noter_deals(d)
     cartes = _cartes()
     v = valider_valeur(cartes)
-    t = valider_tendance(cartes)
+    tt_ = valider_tendances(cartes)
+    t = tt_.get("j28_s10") or valider_tendance(cartes)
+    t["fenetres"] = {k: {"justes": x.get("justes"), "paris": x.get("paris")} for k, x in tt_.items()}
+    meil_t = max((k for k, x in tt_.items() if x.get("paris", 0) >= 30 and x.get("justes") is not None),
+                  key=lambda k: tt_[k]["justes"], default=None)
+    if meil_t and tt_[meil_t]["justes"] * 100 >= (t.get("justes") or 0) * 100 + 2:
+        j_, s_ = meil_t[1:].split("_s")
+        d.setdefault("recette", {})["tendance"] = {"jours": int(j_), "seuil": int(s_) / 100}
+        t = dict(tt_[meil_t], fenetres=t["fenetres"], adoptee=meil_t)
     dl = valider_deals(d)
     try:
         import demande_legale

@@ -5785,7 +5785,102 @@ class Api:
                 vend.append({"vendeur": v, "annonces": ann[:24]})
         except Exception as e:
             print("Mes deals (vendeurs) : " + repr(e), flush=True)
-        return {"ok": True, "deals": out[:120], "cibles": groupes, "vendeurs": vend}
+        # 10 nov 2026 (Mathieu : « on devrait voir des cartes ; un petit questionnaire pour qu'il ait ses deals direct ») :
+        # SES joueurs (questionnaire du Radar), dans SON budget, une case par joueur ; et si rien n'est regle, « A decouvrir » :
+        # les joueurs les plus demandes (nos donnees publiques). Montrees telles quelles : aucun jugement de prix.
+        prof = self.deals_profil_lire()
+        pour_toi = self._radar_joueurs(prof)
+        decouvrir = []
+        if not al and not pour_toi and not vend:
+            decouvrir = self._radar_decouvrir(prof)
+        return {"ok": True, "deals": out[:120], "cibles": groupes, "vendeurs": vend, "pour_toi": pour_toi,
+                "decouvrir": decouvrir, "profil": {k: prof.get(k) for k in ("collectionne", "favoris", "prix_min", "prix_max")},
+                "profil_vide": not (prof.get("favoris") or prof.get("collectionne") or prof.get("prix_max"))}
+
+    # ce que chaque sorte de collection ajoute a la recherche eBay (OU : une seule recherche par joueur)
+    RADAR_MOTS = {"recrues": ("young guns", "rookie", "rc"), "hits": ("auto", "autograph", "patch", "relic"),
+                  "gradees": ("psa", "bgs", "sgc", "graded"), "veterans": (), "legendes": ()}
+    RADAR_MAX_JOUEURS = 10
+
+    def _radar_requete(self, nom, coll):
+        mots = list(dict.fromkeys(m for k in (coll or []) for m in self.RADAR_MOTS.get(k, ())))
+        return (nom + (" (" + ", ".join(mots) + ")" if mots else ""))[:100]
+
+    def _radar_annonces(self, nom, coll, pmin=None, pmax=None, limite=40):
+        """Les annonces d'un joueur (ou d'une equipe) : les plus recentes a prix fixe et les encans qui finissent bientot,
+        dans le budget ; sans lots, reimpressions ni customs ; le nom doit etre dans le titre."""
+        import cartes_match
+        q = self._radar_requete(nom, coll)
+        res = []
+        for ench in (False, True):
+            try:
+                res += ebay_compte.rechercher(q, categorie=CATEGORIE_CARTES, limite=50 if ench else 100, fond=False, encheres=ench,
+                                              recentes=not ench, prix_max=pmax, prix_min=pmin) or []
+            except TypeError:
+                pass
+        c = cartes_match.cible(nom)
+        maint = time.time()
+        vus, out = set(), []
+        for x in res:
+            iid = str(x.get("item_id") or "")
+            tot = round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2)
+            if not iid or iid in vus or not tot or (pmax and tot > pmax * 1.0001) or (pmin and tot < pmin):
+                continue
+            r = cartes_match.raisons_refus(c, x.get("titre") or "")
+            if any(k.startswith(("lot", "autre carte", "checklist")) for k in r):
+                continue
+            if x.get("encan") and x.get("fin"):
+                try:
+                    if datetime.fromisoformat(str(x["fin"]).replace("Z", "+00:00")).timestamp() < maint:
+                        continue
+                except ValueError:
+                    pass
+            vus.add(iid)
+            out.append({"item_id": iid, "titre": x.get("titre"), "total": tot, "photo": x.get("photo"), "url": x.get("url"),
+                        "encan": bool(x.get("encan")), "fin": x.get("fin"), "mises": x.get("mises"), "joueur": nom})
+        # les encans qui finissent bientot d'abord, puis les nouvelles annonces
+        out.sort(key=lambda x: (0, str(x.get("fin") or "")) if x["encan"] else (1, ""))
+        return out[:limite]
+
+    def _radar_joueurs(self, prof):
+        fav = [f for f in (prof.get("favoris") or []) if f][:self.RADAR_MAX_JOUEURS]
+        out = []
+        for f in fav:
+            try:
+                l = self._radar_annonces(f, prof.get("collectionne"), prof.get("prix_min"), prof.get("prix_max"))
+            except (RuntimeError, OSError) as e:
+                out.append({"joueur": f, "annonces": [], "erreur": str(e)[:120]})
+                continue
+            out.append({"joueur": f, "annonces": l[:24], "n": len(l)})
+        return out
+
+    def _radar_decouvrir(self, prof):
+        try:
+            import demande_legale
+            noms = [x["nom"] for x in demande_legale.populaires(4)]
+        except Exception as e:
+            print("Radar (decouvrir) : " + repr(e), flush=True)
+            noms = []
+        out = []
+        for nom in noms:
+            try:
+                l = self._radar_annonces(nom, prof.get("collectionne"), prof.get("prix_min"), prof.get("prix_max") or 100, limite=12)
+            except (RuntimeError, OSError):
+                continue
+            if l:
+                out.append({"joueur": nom, "annonces": l})
+        return out
+
+    def radar_suggestions(self):
+        """Les pastilles de joueurs du questionnaire du Radar : les plus demandes et les recrues du moment (donnees publiques)."""
+        try:
+            import demande_legale
+            top = demande_legale.populaires(12)
+            rec = [x for x in demande_legale.populaires(8, recrues=True) if x["nom"] not in {t["nom"] for t in top}]
+        except Exception:
+            top, rec = [], []
+        return {"ok": True, "joueurs": [{"nom": x["nom"], "equipe": x.get("equipe"), "recrue": x.get("recrue"), "hausse": x.get("hausse")}
+                                         for x in (top + rec)[:16]]}
 
     _MES_DEALS = {}
 
@@ -5796,7 +5891,16 @@ class Api:
         g = self._MES_DEALS.get(k)
         if g and time.time() - g[0] < 600:
             return g[1]
-        l = (self.mes_deals() or {}).get("deals") or []
+        r = self.mes_deals() or {}
+        l = r.get("deals") or []
+        if not l:                     # 10 nov 2026 : sans prix cible, les annonces de SES joueurs (ou « a decouvrir »)
+            vus = set()
+            for g in (r.get("pour_toi") or []) + (r.get("decouvrir") or []):
+                for x in g.get("annonces") or []:
+                    if x["item_id"] not in vus:
+                        vus.add(x["item_id"])
+                        l.append({**x, "pourtoi": True, "sous_pct": 0})
+            l = l[:24]
         if len(self._MES_DEALS) > 2000:
             self._MES_DEALS.clear()
         self._MES_DEALS[k] = (time.time(), l)

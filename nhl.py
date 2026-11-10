@@ -19,7 +19,7 @@ import unicodedata
 import urllib.parse
 import urllib.request
 
-GARDE_S = 12 * 3600
+GARDE_S = 6 * 3600                 # 10 nov 2026 : 12 h -> 6 h (« tout ce qui est vivant » : les matchs du soir, vus le matin)
 _verrou = threading.Lock()
 _ETAT = {"le": 0.0}
 

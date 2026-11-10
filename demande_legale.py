@@ -25,8 +25,13 @@ import urllib.request
 from datetime import date, datetime, timedelta
 
 UA = "SlabCoach/1.0 (+https://www.slabcoach.com; support@slabcoach.com)"
-FRAICHEUR_J = 7                  # les donnees d'un joueur sont relues chaque semaine
-PAR_PASSE = 120                  # joueurs lus par passe (une passe par heure au plus)
+FRAICHEUR_J = 7                  # (ancien) : remplace par les deux fraicheurs ci-dessous
+# 10 nov 2026 (Mathieu : « les stats doivent etre mises a jour regulierement, tout ce qui est vivant ») : les stats LNH de
+# chaque joueur relues chaque jour (les matchs sont le soir), ses visites Wikipedia aux 3 jours (limite de Wikimedia)
+FRAICHEUR_NHL_S = 20 * 3600
+FRAICHEUR_WIKI_S = 3 * 86400
+PAR_PASSE = 400                  # joueurs relus (LNH) par passe ; une passe par heure : tout le monde chaque jour
+PAR_PASSE_WIKI = 250
 _verrou = threading.Lock()
 _ETAT = {"d": None, "mtime": None, "en_cours": False, "le": 0.0}
 
@@ -100,7 +105,8 @@ def _wiki_lot(noms):
     for i in range(0, len(titres), 50):
         lot = titres[i:i + 50]
         u = "https://en.wikipedia.org/w/api.php?" + urllib.parse.urlencode({"action": "query", "format": "json", "formatversion": 2,
-                                                                          "redirects": 1, "prop": "pageviews|description", "pvipdays": 60,
+                                                                          "redirects": 1, "prop": "pageviews|description|info|langlinks", "pvipdays": 60,
+                                                                          "lllang": "fr", "lllimit": "max",
                                                                           "titles": "|".join(lot)})
         def lire_u(adr):
             for _essai in range(4):
@@ -143,9 +149,32 @@ def _wiki_lot(noms):
                 continue
             pv = [v or 0 for v in (vues.get(p.get("title")) or p.get("pageviews") or {}).values()]
             if nom not in out:
-                out[nom] = {"titre": tt, "v60": sum(pv), "v20": sum(pv[-20:])}
+                fr = ((p.get("langlinks") or [{}])[0] or {}).get("title")
+                out[nom] = {"titre": tt, "v60": sum(pv), "v20": sum(pv[-20:]), "len": p.get("length"), "fr": fr,
+                            "fr60": _vues_fr(fr) if fr else 0}
         time.sleep(2)
     return out
+
+
+def _vues_fr(titre):
+    """Visites de la page Wikipedia francaise (60 jours) : le marche du Quebec. API REST de Wikimedia, une page a la fois."""
+    import urllib.error
+    fin = date.today() - timedelta(days=1)
+    deb = fin - timedelta(days=59)
+    u = (f"https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/fr.wikipedia/all-access/user/"
+         f"{urllib.parse.quote(str(titre).replace(' ', '_'), safe='')}/daily/{deb:%Y%m%d}/{fin:%Y%m%d}")
+    for _essai in range(3):
+        try:
+            with urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": UA}), timeout=20) as r:
+                time.sleep(0.5)
+                return sum(int(it.get("views") or 0) for it in json.loads(r.read()).get("items") or [])
+        except urllib.error.HTTPError as e:
+            if e.code != 429:
+                return 0
+            time.sleep(min(60, int(e.headers.get("retry-after") or 20) + 2))
+        except Exception:
+            return 0
+    return 0
 
 
 def _wiki(nom):
@@ -174,6 +203,11 @@ def _nhl(nom):
             "carriere": (L.get("careerTotals") or {}).get("regularSeason") or {}, "series": (L.get("careerTotals") or {}).get("playoffs") or {},
             "saison": (((L.get("featuredStats") or {}).get("regularSeason") or {}).get("subSeason") or {}),
             "saisons": len([x for x in L.get("seasonTotals") or [] if x.get("leagueAbbrev") == "NHL" and x.get("gameTypeId") == 2]),
+            # 10 nov 2026 (labo, 0,71 -> 0,735) : chaque saison (LNH et junior), la ronde et l'annee du repechage, chaque trophee
+            "par_saison": [{"s": x.get("season"), "l": x.get("leagueAbbrev"), "gp": x.get("gamesPlayed"), "p": x.get("points"),
+                            "toi": x.get("avgToi")} for x in L.get("seasonTotals") or [] if x.get("gameTypeId") == 2 and (x.get("gamesPlayed") or 0) > 0],
+            "ronde": (L.get("draftDetails") or {}).get("round"), "an_repech": (L.get("draftDetails") or {}).get("year"),
+            "trophees_c": {str((a.get("trophy") or {}).get("default") or ""): len(a.get("seasons") or []) for a in L.get("awards") or []},
             "l5": sum(int(m.get("points") or 0) for m in L.get("last5Games") or [] if isinstance(m, dict))}
 
 
@@ -183,7 +217,46 @@ def lire_joueur(nom):
 
 # -- les pieces (features) ---------------------------------------------------------------------------------------
 PIECES = ("age", "logpick", "top10", "gp", "pts", "ppg", "spts", "sppg", "po_pts", "trophees", "hart", "hhof", "top100", "legende",
-          "actif", "G", "D", "saisons", "l5", "wiki", "wiki_tend")
+          "actif", "G", "D", "saisons", "l5", "wiki", "wiki_tend",
+          # 10 nov 2026 (2e iteration) : saisons, trophees detailles, catalogue, Wikipedia francais
+          "pic", "picppg", "dppg", "tend_ppg", "debut", "jppg", "toi", "ronde", "an_rep", "stanley", "calder", "artross", "conn",
+          "vezina", "norris", "richard", "cat_n", "cat_hits", "wiki_fr", "wiki_len")
+JUNIORS = {"OHL", "WHL", "QMJHL", "LHJMQ", "USHL", "NCAA", "SHL", "KHL", "Liiga", "NTDP", "USDP", "MHL", "AHL", "Allsvenskan", "NL"}
+_CAT = {"le": 0.0, "n": {}, "h": {}}
+
+
+def presence_catalogue():
+    """Combien de cartes (et de hits : autos, patchs, /99 et moins) le fabricant donne a chaque joueur dans nos produits.
+    Notre catalogue (checklists officielles) : le fabricant sait qui se vend. Garde 6 h."""
+    if time.time() - _CAT["le"] < 6 * 3600 and _CAT["n"]:
+        return _CAT["n"], _CAT["h"]
+    n, h = {}, {}
+    try:
+        import catalogue
+        for p in catalogue.liste() or []:
+            pp = catalogue.charger(p["id"]) or {}
+            se = {x["nom"]: x for x in pp.get("sous_ensembles") or []}
+            for c in pp.get("cartes") or []:
+                s_ = se.get(c.get("sous_ensemble")) or {}
+                hit = str(s_.get("groupe") or "") in ("auto", "memo", "auto_memo") or bool(s_.get("tirage") and s_["tirage"] <= 99)
+                for j in re.split(r"\s*/\s*", str(c.get("joueur") or "")):
+                    k = _norm(j)
+                    if k:
+                        n[k] = n.get(k, 0) + 1
+                        if hit:
+                            h[k] = h.get(k, 0) + 1
+    except Exception as e:
+        print("Demande legale (catalogue) : " + repr(e), flush=True)
+    _CAT.update(le=time.time(), n=n, h=h)
+    return n, h
+
+
+def _toi(x):
+    try:
+        m, s_ = str(x).split(":")
+        return int(m) + int(s_) / 60
+    except (ValueError, TypeError):
+        return 0.0
 
 
 def pieces(e):
@@ -210,7 +283,30 @@ def pieces(e):
         "actif": 1.0 if n.get("actif") else 0.0, "G": 1.0 if n.get("pos") == "G" else 0.0, "D": 1.0 if n.get("pos") == "D" else 0.0,
         "saisons": float(n.get("saisons") or 0), "l5": float(n.get("l5") or 0),
         "wiki": math.log1p(v60 or 0), "wiki_tend": (math.log1p(v20) - math.log1p(((v60 or 0) - v20) / 2)) if v60 else 0.0,
+        **_pieces2(e, n, w),
     }
+
+
+def _pieces2(e, n, w):
+    st = n.get("par_saison") or []
+    lnh = sorted([x for x in st if x.get("l") == "NHL" and (x.get("gp") or 0) > 0], key=lambda x: x.get("s") or 0)
+    jr = [x for x in st if x.get("l") in JUNIORS and (x.get("gp") or 0) >= 10]
+    der, avd = (lnh[-1] if lnh else {}), (lnh[-2] if len(lnh) > 1 else {})
+    ppg = lambda x: (x.get("p") or 0) / x["gp"] if x.get("gp") else 0.0
+    tc = n.get("trophees_c") or {}
+    cnt = lambda k: float(sum(v for t, v in tc.items() if k in t))
+    cn, ch = presence_catalogue()
+    k = _norm((e or {}).get("nom") or "")
+    return {"pic": math.log1p(max([x.get("p") or 0 for x in lnh] or [0])),
+            "picppg": max([ppg(x) for x in lnh if (x.get("gp") or 0) >= 20] or [0.0]),
+            "dppg": ppg(der), "tend_ppg": ppg(der) - ppg(avd),
+            "debut": float(date.today().year - int(str(lnh[0]["s"])[:4])) if lnh else -1.0,
+            "jppg": max([ppg(x) for x in jr] or [0.0]), "toi": _toi(der.get("toi")),
+            "ronde": float(n.get("ronde") or 9), "an_rep": float(n.get("an_repech") or 0),
+            "stanley": cnt("Stanley"), "calder": cnt("Calder"), "artross": cnt("Art Ross"), "conn": cnt("Conn Smythe"),
+            "vezina": cnt("Vezina"), "norris": cnt("Norris"), "richard": cnt("Richard"),
+            "cat_n": math.log1p(cn.get(k, 0)), "cat_hits": math.log1p(ch.get(k, 0)),
+            "wiki_fr": math.log1p(w.get("fr60") or 0), "wiki_len": math.log1p(w.get("len") or 0)}
 
 
 # -- le labo : chaque piece et la combinaison, contre la demande mesuree sur les ventes (admin) -----------------
@@ -319,7 +415,7 @@ def _arbres_cv(lignes, y):
     yy = np.array(y)
     # 10 nov 2026 (labo sur 758 joueurs) : foret 0,71, boosting 0,70, droite 0,64 ; on garde le meilleur des deux arbres
     meilleur = None
-    for m in (RandomForestRegressor(n_estimators=300, min_samples_leaf=3, max_features=0.5, random_state=0, n_jobs=2),
+    for m in (RandomForestRegressor(n_estimators=500, min_samples_leaf=3, max_features=0.33, random_state=0, n_jobs=2),
               GradientBoostingRegressor(n_estimators=300, max_depth=4, learning_rate=0.03, subsample=0.8, min_samples_leaf=8, random_state=0)):
         p = cross_val_predict(m, X, yy, cv=KFold(5, shuffle=True, random_state=0))
         rho = spearman(list(p), list(yy))
@@ -389,8 +485,8 @@ def _demande0(joueur):
         return None
     if m.get("arbres"):
         a = _arbres()
-        if a is None:
-            return None
+        if a is None or getattr(a, "n_features_in_", len(PIECES)) != len(PIECES):
+            return None                                   # modele d'avant les nouvelles mesures : refait a la passe suivante
         p = pieces(e)
         return round(min(20.0, max(0.15, math.exp(float(a.predict([[p[k] for k in PIECES]])[0])))), 3)
     return round(min(20.0, max(0.15, math.exp(_predire(m, pieces(e))))), 3)
@@ -409,7 +505,7 @@ def tendance(joueur):
 
 
 # -- la collecte (une passe par heure, en arriere-plan) ---------------------------------------------------------
-def _a_lire(n=PAR_PASSE):
+def _tous_les_noms():
     import valeurs
     valeurs._charger()
     noms = list((valeurs._ETAT["data"].get("joueurs") or {}).keys())
@@ -420,37 +516,57 @@ def _a_lire(n=PAR_PASSE):
             noms += [c["joueur"] for c in pp.get("cartes") or [] if c.get("joueur") and "/" not in c["joueur"]]
     except Exception:
         pass
-    d = lire()
-    lim = time.time() - FRAICHEUR_J * 86400
     vus, out = set(), []
     for nm in noms:
         k = _norm(nm)
-        if not k or k in vus:
-            continue
-        vus.add(k)
-        e = (d.get("joueurs") or {}).get(nm)
-        if not e or e.get("le", 0) < lim or e.get("le", 0) > time.time() + 86400:
+        if k and k not in vus:
+            vus.add(k)
             out.append(nm)
-        if len(out) >= n:
-            break
     return out
 
 
+def _a_lire(n=PAR_PASSE, quoi="nhl"):
+    """Les joueurs dont les stats LNH (ou les visites Wikipedia) sont perimees, les plus vieilles d'abord."""
+    d = lire()
+    maint = time.time()
+    lim = maint - (FRAICHEUR_NHL_S if quoi == "nhl" else FRAICHEUR_WIKI_S)
+    a = []
+    for nm in _tous_les_noms():
+        e = (d.get("joueurs") or {}).get(nm) or {}
+        le = e.get("le_" + quoi, e.get("le", 0))
+        if le > maint + 86400:                            # vieille amorce (date dans le futur)
+            le = 0
+        if le < lim:
+            a.append((le, nm))
+    a.sort()
+    return [nm for _le, nm in a[:n]]
+
+
 def passe(n=PAR_PASSE):
-    lus = 0
-    noms = _a_lire(n)
+    """Une passe : les stats LNH perimees (chaque jour), les visites Wikipedia perimees (aux 3 jours), puis le labo."""
+    maint = time.time()
+    noms_n = _a_lire(n, "nhl")
+    noms_w = _a_lire(PAR_PASSE_WIKI, "wiki")
     wiki = {}
-    for i in range(0, len(noms), 25):                    # Wikipedia : 25 joueurs (50 titres) par requete
-        wiki.update(_wiki_lot(noms[i:i + 25]))
-    for nom in noms:
-        e = {"nom": nom, "le": time.time(), "nhl": _nhl(nom), "wiki": wiki.get(nom)}
-        with _verrou:
-            d = dict(lire())
-            d.pop("_idx", None)
-            d.setdefault("joueurs", {})[nom] = e
-            _ecrire(d)
-        lus += 1
-        time.sleep(0.3)
+    for i in range(0, len(noms_w), 25):                  # Wikipedia : 25 joueurs (50 titres) par requete
+        wiki.update(_wiki_lot(noms_w[i:i + 25]))
+    nhl_ = {}
+    for nom in noms_n:
+        nhl_[nom] = _nhl(nom)
+        time.sleep(0.25)
+    with _verrou:
+        d = dict(lire())
+        d.pop("_idx", None)
+        J = d.setdefault("joueurs", {})
+        for nom in set(noms_n) | set(noms_w):
+            e = dict(J.get(nom) or {"nom": nom})
+            if nom in nhl_ and (nhl_[nom] or not e.get("nhl")):
+                e["nhl"], e["le_nhl"] = nhl_[nom], maint      # un echec passager ne remplace pas les stats d'hier
+            if nom in noms_w and (wiki.get(nom) or not e.get("wiki")):
+                e["wiki"], e["le_wiki"] = wiki.get(nom), maint
+            e["le"] = maint
+            J[nom] = e
+        _ecrire(d)
     with _verrou:
         d = dict(lire())
         d.pop("_idx", None)
@@ -460,7 +576,7 @@ def passe(n=PAR_PASSE):
         d["labo"] = {k: v for k, v in r.items() if k != "modele"}
         d["labo"]["le"] = datetime.now().isoformat(timespec="seconds")
         _ecrire(d)
-    return {"lus": lus, "labo": d.get("labo")}
+    return {"lus": len(noms_n), "wiki": len(noms_w), "labo": d.get("labo")}
 
 
 def passe_si_besoin():
@@ -482,4 +598,35 @@ def passe_si_besoin():
 
 def statut():
     d = lire()
-    return {"joueurs": len(d.get("joueurs") or {}), "labo": d.get("labo"), "modele": (d.get("modele") or {}).get("nom")}
+    J = list((d.get("joueurs") or {}).values())
+    maint = time.time()
+    a_jour_n = sum(1 for e in J if maint - e.get("le_nhl", e.get("le", 0)) < FRAICHEUR_NHL_S + 7200)
+    a_jour_w = sum(1 for e in J if maint - e.get("le_wiki", e.get("le", 0)) < FRAICHEUR_WIKI_S + 7200)
+    return {"joueurs": len(J), "labo": d.get("labo"), "modele": (d.get("modele") or {}).get("nom"),
+            "a_jour_lnh": a_jour_n, "a_jour_wiki": a_jour_w}
+
+
+def populaires(n=12, recrues=False):
+    """10 nov 2026 (Mathieu : « on devrait voir des cartes ») : les joueurs actifs les plus demandes selon nos donnees
+    publiques (le score de demande legal), la popularite en hausse d'abord a score proche. Pour le questionnaire du Radar
+    (les pastilles de joueurs) et « A decouvrir » quand le Radar est vide. Aucun prix ici."""
+    d = lire()
+    out = []
+    for nom, e in (d.get("joueurs") or {}).items():
+        h = e.get("nhl") or {}
+        if not h.get("equipe") or h.get("actif") is False:
+            continue
+        if recrues and (h.get("saisons") or 0) > 2:
+            continue
+        s = demande(nom) if d.get("modele") else None
+        if not s:                                  # pas encore de modele (1re passe) : les visites Wikipedia des 60 jours
+            s = math.log1p((e.get("wiki") or {}).get("v60") or 0) / 3
+        if not s:
+            continue
+        t = tendance(nom) or {}
+        out.append({"nom": nom, "equipe": h.get("equipe"), "recrue": (h.get("saisons") or 0) <= 2,
+                    "hausse": t.get("sens") == "hausse", "_s": s * (1.15 if t.get("sens") == "hausse" else 1.0)})
+    out.sort(key=lambda x: -x["_s"])
+    for x in out:
+        x.pop("_s", None)
+    return out[:n]
