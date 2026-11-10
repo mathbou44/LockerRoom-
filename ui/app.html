@@ -13022,8 +13022,27 @@ async function adminBanc(){
     <div class="pastilles">${Object.entries(dl.par_source || {}).map(([k, x]) => tag(k + ' · ' + pc(x.precision) + ' (' + x.n + ')', x.precision >= 0.9 ? 'vert' : x.precision >= 0.75 ? 'acc' : 'rouge')).join('')}</div>
     <h3>${tt('Tendance', 'Trend')}</h3><div class="sous">${td.justes == null ? tt('En attente de données.', 'Waiting for data.') : tt(`La direction annoncée il y a 28 jours était la bonne ${pc(td.justes)} du temps (${td.paris} paris).`, `The direction called 28 days ago was right ${pc(td.justes)} of the time (${td.paris} calls).`)}</div>
     <h3>${tt('Demande des joueurs, sans ventes', 'Player demand, without sales')}</h3><div class="sous">${dm.rho == null ? tt('Le labo lit les joueurs (LNH, Wikipedia) : 1re mesure après ~30 joueurs.', 'The lab reads players (NHL, Wikipedia): first measure after ~30 players.') : tt(`Corrélation avec le classement des ventes : ${decFr(dm.rho)} · top 20 en commun : ${dm.top20}.`, `Correlation with the sales ranking: ${dm.rho} · top 20 shared: ${dm.top20}.`)}</div>
-    <div class="env-b" style="margin-top:14px"><button class="pilule acc" id="banc-go">${tt('Relancer la mesure', 'Run again')}</button></div></div>`;
+    <h3>${tt('Stats des joueurs : Highlightly', 'Player stats: Highlightly')}</h3><div id="hl-z">${blocHighlightly(r.highlightly)}</div>
+    <div class="env-b" style="margin-top:14px"><button class="pilule acc" id="banc-go">${tt('Relancer la mesure', 'Run again')}</button><button class="pilule" id="hl-go">${tt('Tester Highlightly', 'Test Highlightly')}</button></div></div>`;
+  $('#hl-go').onclick = async (ev) => { const bt = ev.currentTarget; if (bt.disabled) return; bt.disabled = true; vibrer();
+    $('#hl-z').innerHTML = `<div class="sous"><span class="roue"></span> ${tt('Essai en direct…', 'Live test…')}</div>`;
+    const x = await API.admin_highlightly_test('Connor McDavid', 'hockey').catch(e => ({ok:false, erreur:e.message})); bt.disabled = false;
+    const z2 = $('#hl-z'); if (z2) z2.innerHTML = blocHighlightly({actif: x.actif, test: x}, x); };
   $('#banc-go').onclick = async () => { vibrer(); const x = await API.admin_banc_lancer().catch(() => null); toast(x && x.ok ? tt('Mesure lancée : résultat dans quelques minutes', 'Run started: results in a few minutes') : tt('Impossible', 'Not possible')); };
+}
+// 10 nov 2026 : l'essai Highlightly (cle, quota, saisons, ligues) ; aucun secret (4 derniers caracteres de la cle au plus)
+function blocHighlightly(h, x){
+  h = h || {}; const t = x || h.test;
+  if (!h.actif) return `<div class="sous">${tt('Pas de clé : ajoute HIGHLIGHTLY_CLE dans Render.', 'No key: add HIGHLIGHTLY_CLE in Render.')}</div>`;
+  if (!t) return `<div class="sous">${tt('Pas encore testé : touche « Tester Highlightly ».', 'Not tested yet: tap “Test Highlightly”.')}</div>`;
+  const P = [tag(t.ok ? tt('Fonctionne', 'Working') : tt('Erreur', 'Error') + (t.erreur ? ' : ' + t.erreur : ''), t.ok ? 'vert' : 'rouge')];
+  if (t.saisons) P.push(tag(t.saisons + tt(' saisons', ' seasons') + (t.premiere ? ' · ' + t.premiere + '–' + t.derniere : '')));
+  (t.ligues || []).forEach(l => P.push(tag(l, 'or')));
+  if (t.duree_s != null) P.push(tag(t.duree_s + ' s'));
+  if (t.restant != null || h.restant != null) P.push(tag(tt('Quota restant ', 'Quota left ') + (t.restant ?? h.restant) + (t.limite || h.limite ? ' / ' + (t.limite || h.limite) : ''), 'acc'));
+  if (h.aujourdhui != null) P.push(tag(tt('Appels aujourd’hui ', 'Calls today ') + h.aujourdhui + ' / ' + h.plafond));
+  return `<div class="pastilles">${P.join('')}</div>${t.exemple ? `<div class="sous" style="margin-top:6px">${esc(t.joueur || '')} · ${Object.entries(t.exemple).map(([k, v]) => esc(k) + ' ' + esc(v)).join(' · ')}</div>` : ''}
+    ${t.noms_stats ? `<div class="sous" style="margin-top:4px">${tt('Stats offertes : ', 'Stats offered: ')}${esc(t.noms_stats.join(', '))}</div>` : ''}`;
 }
 async function adminServeur(){
   const z = $('#adm-z'); const d = await API.admin_sante().catch(e => ({ok:false, erreur:e.message}));

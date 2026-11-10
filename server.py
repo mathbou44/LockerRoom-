@@ -1289,6 +1289,13 @@ def _valeurs_auto():
             demande_legale.passe_si_besoin()
         except Exception as e:
             print("Demande legale : " + str(e), flush=True)
+        try:                                    # 10 nov 2026 - Highlightly : un essai par jour (cle, quota, donnees) pour l'admin
+            import highlightly
+            t_ = highlightly.statut().get("test") or {}
+            if highlightly.actif() and time.time() - (t_.get("le") or 0) > 86400:
+                highlightly.test()
+        except Exception as e:
+            print("Highlightly : " + str(e), flush=True)
         try:                                    # 10 nov 2026 - TheCardAPI : les ventes de hockey d'hier -> nos archives (1 fois/jour)
             import thecardapi
             thecardapi.moissonner_si_besoin()

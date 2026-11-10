@@ -1246,7 +1246,7 @@ class Api:
                 "a_ajouter": len(nouveaux_produits.liste()), "erreurs_24h": sum(1 for e in s["erreurs"] if str(e["le"]) > (datetime.now() - timedelta(days=1)).isoformat()),
                 "ebay": s["ebay"], "version": s["version"], "vendues": vendues.statut(), "photos": s.get("photos"),
                 "taches": s.get("taches"), "disque": s.get("disque"), "veille": self._veille_resume(),
-                "demande_legale": self._demande_legale_statut(), "banc": self._banc_resume()}
+                "demande_legale": self._demande_legale_statut(), "banc": self._banc_resume(), "highlightly": self._highlightly_statut()}
 
     @staticmethod
     def _banc_resume():
@@ -1255,6 +1255,22 @@ class Api:
             return banc.resume()
         except Exception as e:
             return {"erreur": str(e)[:120]}
+
+    @staticmethod
+    def _highlightly_statut():
+        try:
+            import highlightly
+            return highlightly.statut()
+        except Exception as e:
+            return {"erreur": str(e)[:120]}
+
+    def admin_highlightly_test(self, nom=None, sport=None):
+        """10 nov 2026 (Mathieu : « teste le tout et assure-toi que c'est securitaire ») : un essai en direct (admin)."""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import highlightly
+        sp = sport if sport in highlightly.SPORTS else "hockey"
+        return highlightly.test(re.sub(r"[^\w .'-]", "", str(nom or "Connor McDavid"))[:60] or "Connor McDavid", sp)
 
     def admin_banc_lancer(self):
         """10 nov 2026 : relancer le banc de validation tout de suite (admin)."""
