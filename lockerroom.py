@@ -5856,7 +5856,7 @@ class Api:
                     resultats[(k, cle)] = e
             for fu in pas_fait:
                 k, cle = futurs[fu]
-                erreurs.append(f"{k} : trop long")
+                erreurs.append(f"{k} {cle if not isinstance(cle, int) else ''} : trop long")
             ex.shutdown(wait=False, cancel_futures=True)
         out, groupes = [], []
         for a in al:
@@ -5895,7 +5895,9 @@ class Api:
                 "decouvrir": decouvrir, "chauds": chauds, "chasses": chasses, "types": types, "alerte_feu": feu, "pays": pays,
                 "profil": {k: prof.get(k) for k in ("collectionne", "favoris", "prix_min", "prix_max")},
                 "profil_vide": not (prof.get("favoris") or prof.get("collectionne") or prof.get("prix_max")),
-                "partiel": bool(erreurs), "erreur_txt": msgs[0] if msgs else ("eBay ne répond pas en ce moment : réessaie dans une minute" if erreurs else None),
+                "partiel": bool(erreurs), "erreur_txt": msgs[0] if msgs else None,
+                "erreur_code": None if not erreurs or msgs else ("lent" if all(e.endswith("trop long") for e in erreurs) else "ebay"),
+                "erreurs_detail": erreurs[:8] if self._est_admin(reel=True) else None,
                 "duree_s": round(time.time() - t0, 1)}
 
     @staticmethod
@@ -6794,7 +6796,8 @@ class Api:
                                + (0.3 if a["meme_carte"] else 0)
                                + 0.2 * difflib.SequenceMatcher(None, t, ta).ratio(), 3)
         libres.sort(key=lambda a: -a["score"])
-        return {"ok": True, "lie": lie[0] if lie else None, "suggestions": libres[:30], "nb_achats": nb,
+        # 10 nov 2026 (Mathieu : « j'ai bien plus que 30 cartes achetees ») : la liste n'est plus coupee a 30
+        return {"ok": True, "lie": lie[0] if lie else None, "suggestions": libres[:400], "nb_achats": nb, "nb_libres": len(libres),
                 "ebay": bool(ebay_compte.statut().get("connecte"))}
 
     def achat_relier(self, carte_id, item_id, n=0):

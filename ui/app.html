@@ -12480,17 +12480,20 @@ async function achatCarte(c){
     if (x && x.ok) { const ci = $('#c-cout'); if (ci) ci.value = dev2(x.cout); c.cout = x.cout; achatCarte(c);
       const p = nb(c.prix_demande) || nb(c.prix_vendu) || nb(c.valeur); if (p) toast(tt('Profit à ', 'Profit at ') + argent(p, 0) + ' : ' + argent(profitA(p, x.cout), 2), 4000); }
   })) return;
-  let tous = false;
+  let tous = false, fq = '';
   const peindre = (ouvert) => {
-    const l = r.suggestions.filter(a => tous || a.score >= 0.5).slice(0, tous ? 30 : 6);
+    // 10 nov 2026 (Mathieu : « j'ai bien plus que 30 cartes achetees ») : tous ses achats, avec une recherche
+    const nq = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const l = r.suggestions.filter(a => tous ? (!fq || nq(a.titre).includes(nq(fq))) : a.score >= 0.5).slice(0, tous ? 400 : 6);
     z.innerHTML = `<button class="acc-pil fc-ach" id="c-ach-o">${ic}<span class="ap-t"><b>${tt('Relier à un achat eBay', 'Link to an eBay purchase')}</b>
       <small>${tt('Le coût payé devient le coût de la carte', 'The price paid becomes the card’s cost')}</small></span><i aria-hidden="true">${ouvert ? '⌄' : '›'}</i></button>
-      ${ouvert ? `<div class="fc-ach-liste">${l.length ? l.map(a => `<button class="fc-ach-r" data-ach="${esc(a.item_id)}" data-n="${a.n}"><span>${esc(titreCourt(a.titre))}</span><small>${esc(dateCourte(a.date) || '')} · ${argent(a.cout, 2)}</small></button>`).join('')
+      ${ouvert ? `<div class="fc-ach-liste">${tous ? `<input class="champ" id="c-ach-q" value="${esc(fq)}" placeholder="${esc(tt('Chercher dans mes achats', 'Search my purchases'))}" autocomplete="off" style="margin-bottom:8px">` : ''}${l.length ? l.map(a => `<button class="fc-ach-r" data-ach="${esc(a.item_id)}" data-n="${a.n}"><span>${esc(titreCourt(a.titre))}</span><small>${esc(dateCourte(a.date) || '')} · ${argent(a.cout, 2)}</small></button>`).join('')
         : `<div class="sous">${tt('Aucun achat qui ressemble à cette carte.', 'No purchase looks like this card.')}</div>`}
-        ${!tous && r.suggestions.length > l.length ? `<button class="lien-t" id="c-ach-tous">${tt('Voir tous mes achats', 'See all my purchases')} (${r.suggestions.length})</button>` : ''}
-        <div class="sous">${tt('Tes achats eBay des 90 derniers jours (limite d’eBay).', 'Your eBay purchases from the last 90 days (eBay’s limit).')}</div></div>` : ''}`;
+        ${!tous && r.suggestions.length > l.length ? `<button class="lien-t" id="c-ach-tous">${tt('Voir tous mes achats', 'See all my purchases')} (${r.nb_libres ?? r.suggestions.length})</button>` : ''}
+        <div class="sous">${tt('Tes achats eBay non reliés. eBay en donne 90 jours à la fois ; SlabCoach les garde ensuite.', 'Your unlinked eBay purchases. eBay gives 90 days at a time; SlabCoach keeps them after.')}</div></div>` : ''}`;
     $('#c-ach-o').onclick = () => { vibrer(); peindre(!ouvert); };
     const t_ = $('#c-ach-tous'); if (t_) t_.onclick = () => { tous = true; peindre(true); };
+    const q_ = $('#c-ach-q'); if (q_) q_.oninput = () => { fq = q_.value; const pos = q_.selectionStart; peindre(true); const q2 = $('#c-ach-q'); if (q2) { q2.focus(); try { q2.setSelectionRange(pos, pos); } catch (e) {} } };
     $$('[data-ach]').forEach(b => b.onclick = async () => {
       vibrer(); const x = await essai(API.achat_relier(c.id, b.dataset.ach, +b.dataset.n), tt('Achat relié · coût mis à jour', 'Purchase linked · cost updated'));
       if (x && x.ok) { const ci = $('#c-cout'); if (ci) ci.value = dev2(x.cout); c.cout = x.cout; achatCarte(c); }
@@ -13657,7 +13660,8 @@ async function vueMesDeals(z){
   const rien = vide && !DEC.length && !(r.chauds || []).length && !(r.chasses || []).length;
   z.innerHTML = `<div class="md">
     <button class="rq-glow ${r.profil_vide ? 'neuf' : ''}" id="md-cfg"><span>${r.profil_vide ? tt('Configurer mon radar', 'Set up my radar') : tt('Mon radar', 'My radar')}</span></button>
-    ${rien && r.partiel && r.erreur_txt ? `<div class="sous md-dec" style="text-align:center">${esc(r.erreur_txt)}</div>` : ''}
+    ${rien && r.partiel ? `<div class="sous md-dec" style="text-align:center">${r.erreur_txt ? esc(r.erreur_txt) : r.erreur_code === 'lent' ? tt('eBay est lent en ce moment : réessaie dans une minute.', 'eBay is slow right now: try again in a minute.') : tt('eBay ne répond pas en ce moment : réessaie dans une minute.', 'eBay isn’t answering right now: try again in a minute.')}</div>
+      ${(r.erreurs_detail || []).length ? `<details class="sous md-dec"><summary>Admin</summary>${r.erreurs_detail.map(esc).join('<br>')}</details>` : ''}` : ''}
     ${C.length ? `<div class="v-rang-t"><b>${tt('Mes prix cibles', 'My target prices')}</b><span class="sous">${L.length}</span></div>
       <div class="pastilles md-f"><button class="pilule ${S.mdFiltre ? '' : 'on'}" data-md="">${tt('Toutes', 'All')} · ${L.length}</button>${C.map(c => `<button class="pilule ${S.mdFiltre === c.id ? 'on' : ''}" data-md="${c.id}">${esc(c.q)} ≤ ${argentCourt(c.prix_max)} · ${c.n || 0}</button>`).join('')}</div>
       ${vis.length ? `<div class="grille-c">${vis.map(tuile).join('')}</div>` : `<div class="vide">${tt('Rien à ton prix pour l’instant. On regarde eBay chaque heure et on t’avertit dès qu’une annonce passe sous ton prix.', 'Nothing at your price yet. We check eBay every hour and tell you as soon as a listing drops under it.')}</div>`}

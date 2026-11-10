@@ -724,10 +724,15 @@ def rechercher(q, categorie=None, prix_max=None, recentes=False, limite=50, fond
                                                "X-EBAY-C-ENDUSERCTX": "contextualLocation=country%3D" + pays})
     appels_ebay.compter("browse")
     try:
-        with urllib.request.urlopen(req, timeout=30) as r:
+        # 10 nov 2026 : un geste de l'utilisateur n'attend pas 30 s (le Radar a sa limite de temps) ; la tache de fond, oui
+        with urllib.request.urlopen(req, timeout=30 if fond else 15) as r:
             d = json.loads(r.read())
     except urllib.error.HTTPError as e:
         raise RuntimeError(f"eBay HTTP {e.code} : {e.read().decode('utf-8', 'ignore')[:200]}")
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError) as e:
+        if fond:
+            raise
+        raise RuntimeError("eBay ne répond pas en ce moment : réessaie dans une minute") from e
     res = lire_recherche(d)
     appels_ebay.cache_ecrire(cle, res)
     return res
