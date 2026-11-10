@@ -394,7 +394,22 @@ html.deco-o #vue{position:relative; z-index:1}
 @keyframes fy-danse{0%{transform:scale(1,1) skewX(0)} 33%{transform:scale(.92,1.08) skewX(3deg)} 66%{transform:scale(1.06,.94) skewX(-4deg)} 100%{transform:scale(.96,1.12) skewX(2deg)}}
 @keyframes fy-respire{0%,100%{opacity:.75; transform:scale(1)} 50%{opacity:1; transform:scale(1.08)}}
 @keyframes fy-braise{0%{transform:translate(0,0); opacity:0} 10%{opacity:1} 100%{transform:translate(var(--bx),-70px); opacity:0}}
-@media (max-width:1199px){ .foyer{display:none} }
+/* 9 nov 2026 (Mathieu : « un sapin de l'autre cote avec des cadeaux ») : en face du foyer, un sapin au trait, ses lumieres
+   qui scintillent, l'etoile qui brille, et des cadeaux au pied */
+.sapin-acc{position:fixed; left:96px; bottom:40px; width:160px; height:190px; z-index:0; pointer-events:none}
+.sapin-acc svg{position:absolute; inset:0; width:100%; height:100%; overflow:visible}
+.sapin-acc .sa-arbre{fill:color-mix(in srgb, #6FD99A 10%, transparent); stroke:#6FD99A; stroke-width:2; stroke-linejoin:round; opacity:.85}
+.sapin-acc .sa-tronc{fill:#5a3a2a; stroke:#7a5038; stroke-width:1.5}
+.sapin-acc .sa-fil{fill:none; stroke:rgba(255,255,255,.22); stroke-width:1}
+.sapin-acc .sa-etoile{fill:#F1D58E; filter:drop-shadow(0 0 6px #F1D58E); transform-origin:80px 20px; animation:sa-etoile 2.4s ease-in-out infinite}
+.sapin-acc .sa-l{animation:sa-l 2.2s ease-in-out infinite}
+.sapin-acc .cad{stroke-width:1.6; stroke-linejoin:round}
+.sapin-acc .cad-r{fill:color-mix(in srgb, #FF6F6F 22%, transparent); stroke:#FF6F6F} .sapin-acc .cad-o{fill:color-mix(in srgb, #F1D58E 22%, transparent); stroke:#F1D58E}
+.sapin-acc .cad-v{fill:color-mix(in srgb, #8FE8B0 20%, transparent); stroke:#8FE8B0} .sapin-acc .rub{fill:none; stroke:#FFF1DC; stroke-width:1.4}
+@keyframes sa-etoile{0%,100%{transform:scale(1); opacity:.9} 50%{transform:scale(1.15); opacity:1}}
+@keyframes sa-l{0%,100%{opacity:1} 50%{opacity:.25}}
+@media (max-width:1199px){ .foyer, .sapin-acc{display:none} }
+@media (prefers-reduced-motion:reduce){ .sapin-acc .sa-etoile, .sapin-acc .sa-l{animation:none} }
 @media (prefers-reduced-motion:reduce){ .foyer .fl, .foyer .br, .foyer .fy-lueur{animation:none} }
 .sapin-rail{display:flex; justify-content:center; gap:6px; margin-top:auto; padding:10px 0 4px; pointer-events:none}
 .sapin-rail .deco-f svg{width:22px; height:22px}
@@ -4031,7 +4046,31 @@ function decorOrdi(){
       <i class="fl b"></i><i class="fl c"></i><i class="fl a"></i><i class="fl d"></i>
       ${Array.from({length: 7}, (_, i) => `<i class="br" style="margin-left:${(i * 9 - 27)}px;--bx:${((i % 3) - 1) * 14}px;animation-delay:${(i * .43).toFixed(2)}s"></i>`).join('')}`;
     z.appendChild(f);
-  } else if (!acc && f) f.remove();
+    // le sapin, de l'autre cote (a droite de la barre de gauche)
+    const lumi = [[80, 44], [70, 62], [92, 66], [60, 84], [84, 88], [104, 92], [54, 108], [76, 112], [98, 114], [118, 118], [46, 134], [70, 138], [94, 140], [116, 142]];
+    const sa = document.createElement('div'); sa.id = 'sapin-acc'; sa.className = 'sapin-acc'; sa.setAttribute('aria-hidden', 'true');
+    sa.innerHTML = `<svg viewBox="0 0 160 190">
+        <path class="sa-arbre" d="M80 26 L104 60 H94 L120 96 H108 L136 134 H120 L146 158 H14 L40 134 H24 L52 96 H40 L66 60 H56 Z"/>
+        <rect class="sa-tronc" x="72" y="158" width="16" height="14" rx="2"/>
+        <path class="sa-fil" d="M66 60 Q82 70 96 64 M50 96 Q80 112 110 98 M38 134 Q80 150 124 136"/>
+        ${lumi.map(([x, y], i) => `<circle class="sa-l" cx="${x}" cy="${y}" r="3.2" fill="${COUL_FETES[i % COUL_FETES.length]}" style="filter:drop-shadow(0 0 4px ${COUL_FETES[i % COUL_FETES.length]});animation-delay:${((i * .37) % 2.2).toFixed(2)}s"/>`).join('')}
+        <path class="sa-etoile" d="M80 8l3.5 7.2 7.9 1.1-5.7 5.6 1.4 7.8L80 26l-7.1 3.7 1.4-7.8-5.7-5.6 7.9-1.1z"/>
+        <rect class="cad cad-r" x="6" y="160" width="34" height="26" rx="3"/><path class="rub" d="M23 160v26M6 172h34M23 160c-4-7-13-8-12-3 1 3 8 3 12 3zm0 0c4-7 13-8 12-3-1 3-8 3-12 3z"/>
+        <rect class="cad cad-o" x="100" y="166" width="28" height="20" rx="3"/><path class="rub" d="M114 166v20M100 175h28M114 166c-3-6-10-6-9-2 1 2 6 2 9 2zm0 0c3-6 10-6 9-2-1 2-6 2-9 2z"/>
+        <rect class="cad cad-v" x="130" y="172" width="22" height="14" rx="2.5"/><path class="rub" d="M141 172v14M130 179h22"/>
+      </svg>`;
+    z.appendChild(sa);
+  } else if (!acc && f) { f.remove(); const sa = document.getElementById('sapin-acc'); if (sa) sa.remove(); }
+  // 9 nov 2026 (Mathieu : « y'a quand meme bcp de libre ») : le sapin et le foyer grandissent pour remplir les marges de
+  // chaque cote de l'accueil (jusqu'a 2,2 fois), et se cachent si la marge est trop etroite
+  const sa_ = document.getElementById('sapin-acc'), fo_ = document.getElementById('foyer');
+  if (sa_ || fo_) requestAnimationFrame(() => {
+    const sec = document.querySelector('#vue .ecran.acc'), r = sec ? sec.getBoundingClientRect() : null, gauche = n ? Math.round(n.getBoundingClientRect().right) : 0;
+    const mg = r ? r.left - gauche : 0, md = r ? innerWidth - r.right : 0;
+    const k = (m, base) => Math.max(0, Math.min(2.2, (m - 56) / base, (innerHeight * 0.62) / (base * 1.15)));
+    if (sa_) { const ks = k(mg, 160); sa_.style.left = (gauche + 28) + 'px'; sa_.style.transform = `scale(${ks.toFixed(2)})`; sa_.style.transformOrigin = '0 100%'; sa_.style.display = ks < .75 ? 'none' : ''; }
+    if (fo_) { const kf = k(md, 170); fo_.style.transform = `scale(${kf.toFixed(2)})`; fo_.style.transformOrigin = '100% 100%'; fo_.style.display = kf < .75 ? 'none' : ''; }
+  });
 }
 addEventListener('hashchange', () => { try { decorOrdi(); } catch (e) {} });
 document.addEventListener('DOMContentLoaded', () => setTimeout(() => { try { decorOrdi(); } catch (e) {} }, 600));
