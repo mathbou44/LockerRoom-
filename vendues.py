@@ -216,6 +216,20 @@ def _compter(usage=None, cpt=None):
             c.close()
 
 
+def _rembourser(usage=None, cpt=None):
+    """9 nov 2026 (SoldComps : « les requetes en echec ne comptent pas et ne sont pas facturees ») : un appel en echec rend
+    son credit a NOTRE budget du jour (avant : une panne de SoldComps brulait tout le budget en quelques minutes)."""
+    with _verrou:
+        c = _cx()
+        try:
+            j = jour()
+            for k in [j] + ([j + ":" + cpt] if cpt else []) + ([j + ":" + usage] if usage else []):
+                c.execute("UPDATE compteur SET n = MAX(0, n - 1) WHERE jour=?", (k,))
+            c.commit()
+        finally:
+            c.close()
+
+
 def _num(v):
     try:
         return float(str(v).replace(",", "").replace("$", "").strip())
@@ -275,6 +289,27 @@ def _budget_ok(fond, usage):
 DELAI_TAP = 15
 
 
+def _secours(q, fond):
+    """9 nov 2026 (Mathieu, panne chez SoldComps : « on doit avoir une alternative, on est trop dependant ») : quand
+    SoldComps ne repond pas et qu'on n'a rien en cache, un geste de l'utilisateur passe par CompSniper (l'historique d'un
+    an, budget du mois) : les memes ventes eBay, une autre source. Jamais pour les taches de fond (budget du mois)."""
+    if fond:
+        return None
+    try:
+        import historique
+        if not historique.actif():
+            return None
+        ventes, err = historique.rechercher(q)
+        if err or not ventes:
+            return None
+        depuis = (datetime.now() - timedelta(days=90)).strftime("%Y-%m-%d")      # comme SoldComps : les 90 derniers jours
+        v90 = [v for v in ventes if str(v.get("le") or "") >= depuis] or ventes
+        return {"ventes": v90, "erreur": None, "secours": "compsniper"}
+    except Exception as e:
+        print("Ventes (secours CompSniper) : " + repr(e), flush=True)
+        return None
+
+
 def rechercher(q, fond=True, usage=None):
     """Ventes eBay d'une recherche (toutes cartes confondues : filtrer ensuite). {ventes, erreur, cache}."""
     q = " ".join(str(q or "").split())[:120]
@@ -296,6 +331,11 @@ def rechercher(q, fond=True, usage=None):
     if fond and time.time() < _PANNE[0]:
         vieux = _cache_lire(q.lower(), age_max=45 * 86400)
         return {"ventes": vieux, "erreur": None, "cache": True, "vieux_cache": True} if vieux else {"ventes": [], "erreur": "SoldComps injoignable (panne)"}
+    if not fond and time.time() < _PANNE[0] and _PANNE_N[0] >= 2:
+        if time.time() - _TAP_PANNE[0] < 60:    # 9 nov 2026 : « ne pas reessayer vite » (SoldComps) : les ventes deja lues
+            vieux = _cache_lire(q.lower(), age_max=45 * 86400)
+            return {"ventes": vieux, "erreur": None, "cache": True, "vieux_cache": True} if vieux else (_secours(q, fond) or {"ventes": [], "erreur": "Ventes réelles momentanément indisponibles (panne chez le fournisseur)"})
+        _TAP_PANNE[0] = time.time()
     e = _ERREURS.get(q.lower())
     if e and not fond and "injoignable" in str(e[1]) and time.time() - (e[0] + 540) > 15:
         e = None                                # 3 nov 2026 : « Reessayer » apres une panne passagere : on reessaie vraiment
@@ -331,7 +371,7 @@ def rechercher(q, fond=True, usage=None):
                 vieux = _cache_lire(q.lower(), age_max=45 * 86400)        # les ventes lues dans les 45 derniers jours
                 if vieux:
                     return {"ventes": vieux, "erreur": None, "cache": True, "vieux_cache": True}
-                return {"ventes": [], "erreur": err}
+                return _secours(q, fond) or {"ventes": [], "erreur": err}
             continue
         for v in (_vers_vente(it, taux) for it in (d or {}).get("items") or []):
             if not v:
@@ -388,19 +428,28 @@ def _appel(q, site, attendre=True, usage=None, compte=None, delai=25):
                 time.sleep(attente)
             _DERNIER[0] = time.time()
     req = urllib.request.Request(url, headers={"Authorization": "Bearer " + _cle(), "Accept": "application/json"})
-    _compter(usage, compte)                     # 27 oct 2026 (revue) : compte AVANT l'appel (un echec coute aussi au budget)
+    _compter(usage, compte)                     # 27 oct 2026 (revue) : compte AVANT l'appel (deux appels en meme temps)
     try:
         with urllib.request.urlopen(req, timeout=delai) as r:
-            return json.loads(r.read().decode("utf-8")), None
+            d = json.loads(r.read().decode("utf-8"))
+        _PANNE_N[0] = 0                         # ca repond : fin de la panne
+        return d, None
     except urllib.error.HTTPError as e:
-        return None, {401: "clé SoldComps refusée", 429: "quota SoldComps atteint"}.get(e.code, f"SoldComps HTTP {e.code}")
+        err = {401: "clé SoldComps refusée", 429: "quota SoldComps atteint"}.get(e.code, f"SoldComps HTTP {e.code}")
     except Exception as e:
-        return None, "SoldComps injoignable (" + type(e).__name__ + ")"
+        err = "SoldComps injoignable (" + type(e).__name__ + ")"
+    try:
+        _rembourser(usage, compte)              # 9 nov 2026 : un echec n'est pas facture par SoldComps : pas compte non plus
+    except Exception:
+        pass
+    return None, err
 
 
 _ERREURS = {}
 _DERNIERE = {}
 _PANNE = [0.0]                   # SoldComps ne repond pas : les taches de fond attendent jusqu'a cette heure
+_PANNE_N = [0]                   # 9 nov 2026 : echecs de suite (l'attente grandit)
+_TAP_PANNE = [0.0]               # 9 nov 2026 : pendant une panne, un geste de l'utilisateur essaie au plus une fois par minute
 
 
 def derniere_erreur():
@@ -413,8 +462,12 @@ def _noter_erreur(q, err):
         _ERREURS.clear()
     # 3 nov 2026 : une panne passagere (delai depasse) n'est bloquee qu'une minute ; un refus (cle, quota) 10 minutes
     _ERREURS[q.lower()] = (time.time() - (540 if "injoignable" in str(err) else 0), err)
-    if "injoignable" in str(err) or "quota" in str(err):
-        _PANNE[0] = time.time() + 120
+    # 9 nov 2026 (SoldComps : « eBay refuse nos recherches ; ralentissez les essais ») : une panne (injoignable, quota,
+    # erreur 5xx ou refus d'eBay) -> les taches de fond attendent de plus en plus longtemps (2, 5, 15, puis 30 min) tant
+    # qu'elle dure ; une recherche qui repond remet tout a zero
+    if "injoignable" in str(err) or "quota" in str(err) or "HTTP" in str(err):
+        _PANNE_N[0] += 1
+        _PANNE[0] = time.time() + (120, 300, 900, 1800)[min(3, _PANNE_N[0] - 1)]
     _DERNIERE.update(erreur=err, le=time.time())
 
 
