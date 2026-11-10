@@ -84,8 +84,13 @@ main{position:relative; min-height:100%; display:grid; place-items:center}
 .liens a{color:var(--doux); text-decoration:none; border-bottom:1px solid #3A3842}
 .liens a:hover{color:var(--ivoire)}
 .demo{display:inline-block; margin-top:12px; color:#8C8996; font-size:13px}
-.rappel-meme{margin-top:18px; font-size:13px; line-height:1.45; color:#B9B6C2} .rappel-meme b{color:#F4F2EE}
-.rappel-meme + .demo{margin-top:6px; color:#B9B4FF; font-weight:600; font-size:14px}
+/* 10 nov 2026 (Mathieu : « trop d'info pour la connexion ») : logo, titre, 3 boutons, une ligne d'offre, une ligne
+   « deja un compte », le pied de page. Les puces et les notes en double sont parties. */
+.titre{margin-top:26px}
+.btn{margin-top:34px}
+.note.offre{margin-top:18px}
+.rappel-meme{margin-top:10px; font-size:13px; line-height:1.45; color:#8C8996}
+.rappel-meme a{color:#B9B4FF; font-weight:600; text-decoration:none; white-space:nowrap}
 @font-face{font-family:'Manrope'; font-weight:800; font-display:swap; src:url(/manrope-800.woff2) format('woff2')}
 @font-face{font-family:'Manrope'; font-weight:400; font-display:swap; src:url(/manrope-400.woff2) format('woff2')}
 .mot-sc{display:inline-block; margin-top:24px; font:400 clamp(40px,11vw,54px)/1 'Manrope',sans-serif; letter-spacing:-.025em; color:var(--ivoire); white-space:nowrap}
@@ -106,16 +111,14 @@ main{position:relative; min-height:100%; display:grid; place-items:center}
   <div class="logo"><img id="logo-sc" src="/logo_sc_liquide.svg" alt="SlabCoach"></div>
   <div class="mot-sc" role="img" aria-label="SlabCoach Sports Cards"><b>slab</b>coach<sup>™</sup><span class="tag">SPORTS CARDS</span></div>
   <h1 class="titre">Joue tes cartes <em>comme un pro.</em></h1>
-  <div class="puces"><span><b>●</b>Deals sous la valeur</span><span><b>●</b>Vraies valeurs</span><span><b>●</b>Chances de breaks</span><span><b>●</b>Inventaire et ventes eBay</span></div>
   {erreur}
   <a class="btn" href="/auth/ebay">Se connecter avec eBay<span class="reco">Recommandé</span></a>
-  <div class="note">Ton inventaire et tes ventes arrivent tout seuls</div>
   <div class="note ios-seul" id="note-ios" hidden>Sur l’iPhone, chez eBay, entre ton courriel et ton mot de passe eBay : « Continuer avec Google » ne fonctionne pas dans une app (règle de Google).</div>
   <div class="ou">ou</div>
   <div class="tiers">{autres}</div>
-  <div class="note">14 jours de Pro offerts · aucune carte de crédit</div>
-  <div class="note">Aucun mot de passe dans l’app · ton compte est créé tout seul</div>
-  <div class="liens"><a href="/">‹ Retour au site</a><a href="/support">Support</a><a href="/confidentialite">Confidentialité</a><a href="/conditions">Conditions</a></div>
+  <div class="note offre">14 jours de Pro offerts · aucune carte de crédit</div>
+  {rappel}
+  <div class="liens"><a href="/">‹ Retour au site</a><a href="/support">Support</a><a href="/confidentialite">Confidentialité</a><a href="/conditions">Conditions</a>{demo}</div>
 </div></main>
 <script>
 /* 28 oct 2026 : dans l'app iPhone (version qui le permet), eBay, Apple et Google s'ouvrent dans le navigateur securise

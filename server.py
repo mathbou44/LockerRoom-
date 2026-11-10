@@ -338,6 +338,11 @@ def auth_ebay_lier():
 def auth_ebay():
     """Multi-comptes : UN bouton = inscription + connexion (page officielle d'eBay)."""
     from flask import redirect
+    # 10 nov 2026 (Mathieu : dans l'app, « Se connecter avec eBay » s'ouvrait DANS la feuille Safari et fermer la feuille
+    # ramenait a la connexion) : Safari avait deja une session SlabCoach (un autre compte) ; eBay etait alors RELIE a ce
+    # compte-la, sans billet pour l'app. Ce bouton est toujours une connexion, peu importe la session du navigateur.
+    if comptes.MULTI:
+        comptes.activer(None)
     r = api.ebay_url_connexion()
     if not r.get("ok"):
         return redirect("/connexion?erreur=1")
@@ -517,6 +522,24 @@ def auth_tiers_retour(fournisseur):
 _BILLETS = {}
 
 
+def _unifier_ebay(cid):
+    """10 nov 2026 (Mathieu : son eBay s'est retrouve relie a 2 comptes) : un compte eBay = UN compte SlabCoach. Les autres
+    comptes qui ont ce meme eBay (prouve par eBay a chaque fois) sont fusionnes dans celui-ci : cartes, photos et watchlist
+    copiees sans doublon, leurs connexions (Apple, Google) ouvrent ensuite celui-ci. Rien n'est efface."""
+    try:
+        uid = comptes.info(cid).get("ebay_user_id")
+        if not uid:
+            return
+        for autre in comptes.par_champ("ebay_user_id", uid):
+            if autre == cid or comptes.info(autre).get("renvoi"):
+                continue
+            with comptes.utiliser(cid):
+                print("Fusion (meme eBay) :", api._fusionner_depuis(autre), flush=True)
+            comptes.renvoyer(autre, cid)
+    except Exception as e:
+        print("Fusion (meme eBay) : " + repr(e), flush=True)
+
+
 def _faire_attente(cid, attente):
     """Relier ce qui attendait le billet : ("ebay", url de retour, etat) ou ("tiers", cle, fournisseur, champs). -> bool"""
     try:
@@ -524,6 +547,7 @@ def _faire_attente(cid, attente):
         if attente[0] == "ebay":
             r = api.ebay_terminer(attente[1], attente[2])
             if r.get("ok"):
+                _unifier_ebay(cid)
                 _premiere_synchro(cid)
             return bool(r.get("ok"))
         if attente[0] == "tiers":
@@ -733,7 +757,8 @@ _EN = [("Ton inventaire eBay, tes prix et tes ventes, tout seuls.", "Your eBay i
        ("Deals sous la valeur", "Deals under value"), ("Vraies valeurs", "Real values"), ("Chances de breaks", "Break odds"),
        ("Inventaire et ventes eBay", "eBay inventory and sales"),
        ("Code de démonstration", "Demo code"), ("Continuer avec Apple", "Continue with Apple"), ("Continuer avec Google", "Continue with Google"),
-       ("Recommandé", "Recommended"), ("Ton inventaire et tes ventes arrivent tout seuls", "Your inventory and sales come in on their own"),
+       ("Recommandé", "Recommended"), ("Déjà un compte ? Connecte-toi de la même façon, ou ",
+       "Already have an account? Sign in the same way, or "), ("entre un code d’appareil", "enter a device code"), (">Démo<", ">Demo<"), ("Ton inventaire et tes ventes arrivent tout seuls", "Your inventory and sales come in on their own"),
        ('<div class="ou">ou</div>', '<div class="ou">or</div>'), ("Pas de compte eBay ? Aucun problème.", "No eBay account? No problem."),
        ("Cette connexion n’est pas encore offerte : utilise eBay", "This sign-in isn’t available yet: use eBay"),
        ("Connexion interrompue : réessaie", "Sign-in interrupted: try again"), ("‹ Retour au site", "‹ Back to site"),
@@ -775,7 +800,7 @@ def _page_langue(html):
         for a, b in _EN:
             html = html.replace(a, b)
     autre = "fr" if l == "en" else "en"
-    lien = (f"<a href='?lang={autre}' style='position:fixed;top:14px;left:14px;padding:7px 12px;border-radius:999px;"
+    lien = (f"<a href='?lang={autre}' style='position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:calc(env(safe-area-inset-left,0px) + 14px);padding:7px 12px;border-radius:999px;"
             f"border:1px solid #34333D;background:rgba(21,21,25,.7);color:#F4F2EE;font:700 13px system-ui;text-decoration:none;z-index:5'>"
             f"{'Français' if autre == 'fr' else 'English'}</a>")
     r = make_response(html.replace("</body>", lien + "</body>"))
@@ -843,11 +868,11 @@ def connexion():
         if not autres:
             page = page.replace('<div class="ou">ou</div>', "")
         # 2 nov 2026 : ouvrir le compte de l'autre appareil. 9 nov 2026 (Mathieu : 2 comptes, « un moyen beton pour que ca
-        # n'arrive pas aux utilisateurs ») : partout (aussi dans l'app iPhone), et le rappel de se connecter pareil partout
-        page = page.replace("</div></main>", "<div class='rappel-meme'>Déjà SlabCoach sur un autre appareil ? Connecte-toi de la <b>même façon</b> (eBay, Apple ou Google), ou :</div>"
-                            "<a class='demo' href='/auth/code'>Entre le code d’appareil</a></div></main>", 1)
-        if os.environ.get("LOCKERROOM_DEMO_CODE") and "LockerRoomiOS" in (request.headers.get("User-Agent") or ""):
-            page = page.replace("</div></main>", "<a class='demo' href='/demo'>Code de démonstration</a></div></main>")
+        # n'arrive pas aux utilisateurs ») : partout, le rappel de se connecter pareil. 10 nov 2026 (« trop d'info ») : 1 ligne
+        page = page.replace("{rappel}", "<div class='rappel-meme'>Déjà un compte ? Connecte-toi de la même façon, ou "
+                            "<a href='/auth/code'>entre un code d’appareil</a></div>")
+        demo = os.environ.get("LOCKERROOM_DEMO_CODE") and "LockerRoomiOS" in (request.headers.get("User-Agent") or "")
+        page = page.replace("{demo}", "<a href='/demo'>Démo</a>" if demo else "")
         return _page_langue(page)
     if not CODE_ACCES:
         return redirect("/")
@@ -976,15 +1001,18 @@ def ebay_retour():
         # 3 nov 2026 (revue) : rien n'est relie ici ; seulement quand l'app rend le billet avec son secret (ou dans le
         # navigateur deja connecte a ce compte)
         return _billet(lie[0], "/#reglages/ebay-ok", request.args.get("state"), attente=("ebay", request.url, request.args.get("state")))
-    if comptes.MULTI and not comptes.courant():
-        import ebay_compte
+    import ebay_compte
+    if comptes.MULTI and (not comptes.courant() or ebay_compte.attente_existe(request.args.get("state"))):
+        comptes.activer(None)                         # 10 nov 2026 : une connexion, meme si ce navigateur a une session
         r = ebay_compte.connexion_compte(request.url, request.args.get("state"))
         if not r.get("ok"):
             return redirect("/connexion?erreur=1")
+        _unifier_ebay(r["compte"])
         _premiere_synchro(r["compte"])
         return _billet(r["compte"], "/#accueil/" + ("bienvenue" if r.get("nouveau") else "retour"), request.args.get("state"))
     r = api.ebay_terminer(request.url, request.args.get("state"))
     if r.get("ok") and comptes.MULTI and comptes.courant():      # 28 oct 2026 : eBay relie depuis Reglages -> import tout seul
+        _unifier_ebay(comptes.courant())
         _premiere_synchro(comptes.courant())
     return redirect("/#reglages/" + ("ebay-ok" if r.get("ok") else "ebay-erreur"))
 

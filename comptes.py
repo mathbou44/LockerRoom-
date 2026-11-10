@@ -267,6 +267,25 @@ def lier_identite(compte_id, cle, env=None):
     return True
 
 
+def renvoyer(source, cible):
+    """10 nov 2026 : l'ancien compte renvoie vers cible ; ses connexions (identites) et son eBay passent a cible."""
+    with _verrou:
+        ix = _index(True)
+        if source not in ix or cible not in ix or source == cible:
+            return False
+        e, c = ix[source], ix[cible]
+        for k in e.get("identites") or []:
+            c.setdefault("identites", [])
+            if k not in c["identites"]:
+                c["identites"].append(k)
+        e["identites"] = []
+        e.pop("ebay_user_id", None)
+        e["renvoi"] = cible
+        e["relie_le"] = datetime.now().isoformat(timespec="seconds")
+        _ecrire_index(ix)
+    return True
+
+
 def courriel_utilisable(courriel):
     c = str(courriel or "").strip().lower()
     return c if c and "@" in c and not _RELAIS.search(c) else None

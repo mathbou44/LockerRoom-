@@ -277,6 +277,12 @@ def _attente_prendre(etat):
     return e if e and e.get("le", 0) > time.time() - 900 else None
 
 
+def attente_existe(etat):
+    """10 nov 2026 : ce retour d'eBay est-il une CONNEXION (bouton « Se connecter avec eBay ») ? (sans la consommer)"""
+    e = _lire(_chemin_attente()).get(etat) if etat else None
+    return bool(e and e.get("le", 0) > time.time() - 900)
+
+
 def _identite(access_token):
     appels_ebay.compter("identity")
     req = urllib.request.Request(url("identite"), headers={"Authorization": "Bearer " + access_token, "Accept": "application/json"})
@@ -301,7 +307,11 @@ def connexion_compte(texte, etat=None):
         return {"ok": False, "erreur": "eBay n'a pas confirmé ton identité : recommence"}
     if not u.get("userId"):
         return {"ok": False, "erreur": "eBay n'a pas confirmé ton identité : recommence"}
-    relie = next(iter(comptes.par_champ("ebay_user_id", u["userId"])), None)   # 27 oct 2026 : deja relie a un compte Apple / Google
+    # 27 oct 2026 : deja relie a un compte Apple / Google. 10 nov 2026 : jamais un ancien compte qui renvoie ailleurs ; si
+    # 2 comptes ont ce meme eBay (bogue du 10 nov), celui ouvert avec eBay d'abord (le serveur y fusionne l'autre)
+    relies = [x for x in comptes.par_champ("ebay_user_id", u["userId"]) if not comptes.info(x).get("renvoi")]
+    natif = comptes.id_pour(u["userId"], environnement())
+    relie = natif if natif in relies else next(iter(relies), None)
     cid, nouveau = (relie, False) if relie else comptes.trouver_ou_creer(u["userId"], u.get("username"), environnement())
     cid = comptes.resoudre(cid)                    # 2 nov 2026 : un ancien compte relie a un autre -> le compte choisi
     comptes.maj(cid, ebay_user_id=u["userId"], ebay_username=u.get("username"))   # identite confirmee par eBay
