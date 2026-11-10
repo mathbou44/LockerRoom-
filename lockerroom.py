@@ -527,7 +527,13 @@ class Api:
         import forfaits
         import ventes_communaute
         adm_c = self._est_admin_compte()
-        return {**forfaits.resume(), "multi": multi, "admin": self._est_admin(), "admin_a_verifier": adm_c and not self._est_admin(),
+        # 9 nov 2026 : un compte qui vient d'etre cree (30 min) : l'app demande s'il y en a deja un sur un autre appareil
+        try:
+            neuf = bool(multi and info.get("cree_le") and datetime.now() - datetime.fromisoformat(str(info["cree_le"])[:19]) < timedelta(minutes=30)
+                        and not info.get("identites_reliees_vu"))
+        except ValueError:
+            neuf = False
+        return {**forfaits.resume(), "multi": multi, "compte_neuf": neuf, "admin": self._est_admin(), "admin_a_verifier": adm_c and not self._est_admin(),
                 "admin_verif_active": adm_c and comptes.MULTI and self._admin_verif_possible(), "communaute": ventes_communaute.actif(),
                 # 27 oct 2026 - revue legale : logos et photos de la LNH = marques et contenu de la LNH (conditions : usage
                 # non commercial) -> coupes par defaut ; seulement avec une licence (LOCKERROOM_LOGOS_LNH=1)
@@ -2862,6 +2868,81 @@ class Api:
             finally:
                 c.close()
         return {"ok": True, "id": r["id"], "photos": refs, "achat_lie": self._lier_achat_choisi(r["id"], d.get("achat"))}
+
+    def _fusionner_depuis(self, source):
+        """9 nov 2026 (Mathieu : 2 comptes, « Mathieu Bourassa » sur le cell et « hallofcardz » sur l'ordi ; « un moyen beton
+        pour que ca n'arrive pas aux utilisateurs ») : quand une connexion (Apple, Google) d'un AUTRE compte est reliee a
+        celui-ci, ses cartes (collection, inventaire, a finir), leurs photos et sa watchlist sont copiees ici, sans doublon.
+        L'ancien compte garde tout (rien n'est efface) et renvoie ensuite vers celui-ci. Prive (jamais appele par l'app)."""
+        import photos_cartes
+        import shutil
+        import sqlite3
+        import watchlist as _wl
+        cible = comptes.courant()
+        if not cible or not source or source == cible or source not in comptes.lister():
+            return {"ok": False, "erreur": "rien a fusionner"}
+        if comptes.info(source).get("fusionne_dans"):
+            return {"ok": True, "deja": True}
+        with comptes.utiliser(source):
+            ch_src, ph_src = self.chemin_db, photos_cartes.dossier()
+        cartes, wl = [], []
+        if os.path.isfile(ch_src):
+            c = sqlite3.connect(ch_src, timeout=30)
+            c.row_factory = sqlite3.Row
+            try:
+                for t, l in (("cartes", cartes), ("watchlist", wl)):
+                    try:
+                        l += [dict(r) for r in c.execute(f"SELECT * FROM {t}")]
+                    except sqlite3.OperationalError:
+                        pass
+            finally:
+                c.close()
+        ph_dst = photos_cartes.dossier()
+
+        def copier(ref):
+            nom = str(ref or "").rsplit("/", 1)[-1]
+            if photos_cartes._NOM.fullmatch(nom) and os.path.isfile(os.path.join(ph_src, nom)) and not os.path.exists(os.path.join(ph_dst, nom)):
+                shutil.copy2(os.path.join(ph_src, nom), os.path.join(ph_dst, nom))
+        n_c = n_w = 0
+        with _verrou:
+            c = self._db()
+            try:
+                cols = [r[1] for r in c.execute("PRAGMA table_info(cartes)") if r[1] != "id"]
+                deja_items = {r[0] for r in c.execute("SELECT item_number FROM cartes WHERE item_number IS NOT NULL")}
+                deja_t = {(r[0] or "", r[1] or "") for r in c.execute("SELECT titre, photo FROM cartes")}
+                for k in cartes:
+                    if (k.get("item_number") and k["item_number"] in deja_items) or ((k.get("titre") or "", k.get("photo") or "") in deja_t):
+                        continue
+                    for champ in ("photo", "photos", "photos_orig"):
+                        v = k.get(champ)
+                        try:
+                            refs = json.loads(v) if champ != "photo" and v else ([v] if v else [])
+                        except ValueError:
+                            refs = []
+                        for r_ in refs if isinstance(refs, list) else []:
+                            copier(r_)
+                    d = {x: k.get(x) for x in cols if x in k}
+                    for x in ("soumission_id", "consignataire_id", "client_id"):     # des liens vers des tables de l'autre compte
+                        if x in d:
+                            d[x] = None
+                    c.execute(f"INSERT INTO cartes ({', '.join(d)}) VALUES ({', '.join('?' * len(d))})", list(d.values()))
+                    n_c += 1
+                c.commit()
+            finally:
+                c.close()
+        if wl:
+            c = _wl._cx(self)
+            try:
+                wcols = [r[1] for r in c.execute("PRAGMA table_info(watchlist)")]
+                for w in wl:
+                    d = {x: w.get(x) for x in wcols if x in w}
+                    n_w += c.execute(f"INSERT OR IGNORE INTO watchlist ({', '.join(d)}) VALUES ({', '.join('?' * len(d))})", list(d.values())).rowcount
+                c.commit()
+            finally:
+                c.close()
+        comptes.maj(source, fusionne_dans=cible, fusionne_le=datetime.now().isoformat(timespec="seconds"))
+        print(f"Fusion de comptes : {n_c} cartes, {n_w} suivies", flush=True)
+        return {"ok": True, "cartes": n_c, "watchlist": n_w}
 
     def scan_decouper(self, devant, dos=None):
         """9 nov 2026 (Mathieu : les cartes scannees a l'ordi, plusieurs par page) : une page de numeriseur -> une photo par

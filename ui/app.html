@@ -6197,9 +6197,23 @@ function htmlBadge(compact){
   return `<button class="badge-f gratuit" data-pro-ouvrir>${compact ? 'Pro' : `<span class="niv">${niv}</span> <b>${tt('Passer Gold', 'Go Gold')}</b>`}</button>`;
 }
 function brancherBadge(z){ $$('[data-pro-ouvrir]', z || document).forEach(b => b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); feuillePro(); }); }
+// 9 nov 2026 (Mathieu : 2 comptes sans le savoir, le cell et l'ordi ; « un moyen beton pour que ca n'arrive pas ») : un
+// compte qui vient d'etre cree demande tout de suite s'il y en a deja un sur un autre appareil ; si oui, on ouvre CELUI-LA
+// avec le code d'appareil (rien n'est perdu : le nouveau compte vide est simplement laisse de cote)
+function questionCompteNeuf(){
+  try { if (localStorage.getItem('lr_neuf_vu')) return; localStorage.setItem('lr_neuf_vu', '1'); } catch (e) { return; }
+  popOuvrir(`<div class="pop-tete"><span class="pop-sur">${tt('Bienvenue', 'Welcome')}</span><h3>${tt('Tu utilises déjà SlabCoach ailleurs ?', 'Already using SlabCoach elsewhere?')}</h3></div>
+    <div class="pop-corps"><div class="sous">${tt('Un nouveau compte vient d’être créé sur cet appareil. Si tu as déjà SlabCoach sur ton téléphone ou ton ordi, ouvre plutôt CE compte-là : tu retrouves ta collection, ta watchlist et tes cartes.', 'A new account was just created on this device. If you already use SlabCoach on your phone or computer, open THAT account instead: you get your collection, watchlist and cards back.')}</div>
+      <ol class="td-meth"><li><i>1</i><span>${tt('Sur l’autre appareil : Profil › Mon compte › <b>Ouvrir sur un autre appareil</b>', 'On the other device: Profile › My account › <b>Open on another device</b>')}</span></li>
+        <li><i>2</i><span>${tt('Ici : touche le bouton et entre le code', 'Here: tap the button and enter the code')}</span></li></ol></div>
+    <div class="pop-pied"><a class="btn" href="/deconnexion?suite=code">${tt('J’ai déjà un compte : entrer le code', 'I already have an account: enter the code')}</a>
+      <button class="btn ghost" id="cn-non">${tt('Non, c’est mon premier appareil', 'No, this is my first device')}</button></div>`, popFermer);
+  const n = $('#cn-non'); if (n) n.onclick = popFermer;
+}
 async function chargerForfait(){
   S.forfait = await API.forfait().catch(() => null);
   const f = S.forfait || {};
+  if (f.compte_neuf) setTimeout(questionCompteNeuf, 1200);
   document.body.classList.toggle('pro', !!f.pro && !f.local);
   document.body.classList.toggle('pro-payant', !!(f.payant || f.offert) && !f.local);
   document.body.dataset.niveau = f.local ? 'gold' : (f.niveau || (f.pro ? 'gold' : 'bronze'));

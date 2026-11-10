@@ -21,4 +21,17 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
         SceneDelegateProxy.shared.scene(scene, continue: userActivity)
     }
+
+    // 9 nov 2026 (Aikido) : l'apercu du selecteur d'apps est flou (voir AppDelegate.masquerEcran)
+    func sceneDidEnterBackground(_ scene: UIScene) {
+        AppDelegate.masquerEcran(window)
+    }
+
+    func sceneWillEnterForeground(_ scene: UIScene) {
+        AppDelegate.demasquerEcran(window)
+    }
+
+    func sceneDidBecomeActive(_ scene: UIScene) {
+        AppDelegate.demasquerEcran(window)
+    }
 }

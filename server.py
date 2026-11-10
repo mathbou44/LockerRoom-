@@ -527,7 +527,15 @@ def _faire_attente(cid, attente):
                 _premiere_synchro(cid)
             return bool(r.get("ok"))
         if attente[0] == "tiers":
+            # 9 nov 2026 : cette connexion ouvrait un AUTRE compte -> ses cartes et sa watchlist viennent ici (fusion)
+            ancien = comptes.par_identite(attente[1]) or comptes.id_pour(attente[1], attente[2])
             comptes.lier_identite(cid, attente[1], attente[2])
+            if ancien and ancien != cid and ancien in comptes.lister():
+                try:
+                    with comptes.utiliser(cid):
+                        print("Fusion :", api._fusionner_depuis(ancien), flush=True)
+                except Exception as e_:
+                    print("Fusion de comptes : " + repr(e_), flush=True)
             champs = dict(attente[3] or {})
             if champs.get("courriel") and comptes.info(cid).get("courriel"):
                 champs.pop("courriel")
@@ -669,7 +677,7 @@ def deconnexion():
     if session.get("compte") and session.get("sid"):
         comptes.revoquer_session(session["compte"], session["sid"])
     session.clear()
-    return redirect("/connexion")
+    return redirect("/auth/code" if request.args.get("suite") == "code" else "/connexion")
 
 
 def _premiere_synchro(cid):
@@ -834,8 +842,10 @@ def connexion():
             page = page.replace('<a href="/">‹ Retour au site</a>', "")
         if not autres:
             page = page.replace('<div class="ou">ou</div>', "")
-        if "LockerRoomiOS" not in (request.headers.get("User-Agent") or ""):     # 2 nov 2026 : ouvrir le compte du telephone
-            page = page.replace("</div></main>", "<a class='demo' href='/auth/code'>Déjà un compte sur ton téléphone ? Entre le code d’appareil</a></div></main>", 1)
+        # 2 nov 2026 : ouvrir le compte de l'autre appareil. 9 nov 2026 (Mathieu : 2 comptes, « un moyen beton pour que ca
+        # n'arrive pas aux utilisateurs ») : partout (aussi dans l'app iPhone), et le rappel de se connecter pareil partout
+        page = page.replace("</div></main>", "<div class='rappel-meme'>Déjà SlabCoach sur un autre appareil ? Connecte-toi de la <b>même façon</b> (eBay, Apple ou Google), ou :</div>"
+                            "<a class='demo' href='/auth/code'>Entre le code d’appareil</a></div></main>", 1)
         if os.environ.get("LOCKERROOM_DEMO_CODE") and "LockerRoomiOS" in (request.headers.get("User-Agent") or ""):
             page = page.replace("</div></main>", "<a class='demo' href='/demo'>Code de démonstration</a></div></main>")
         return _page_langue(page)

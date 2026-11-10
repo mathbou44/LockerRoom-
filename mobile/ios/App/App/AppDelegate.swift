@@ -17,8 +17,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidEnterBackground(_ application: UIApplication) {
-        // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
-        // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
+        // 9 nov 2026 (Aikido) : l'apercu du selecteur d'apps ne montre jamais l'ecran (prix, inventaire, compte)
+        AppDelegate.masquerEcran(window)
     }
 
     func applicationWillEnterForeground(_ application: UIApplication) {
@@ -26,7 +26,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+        AppDelegate.demasquerEcran(window)
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
@@ -49,5 +49,24 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                                           sessionRole: connectingSceneSession.role)
         config.delegateClass = SceneDelegate.self
         return config
+    }
+}
+
+// 9 nov 2026 (Aikido, « on-screen data should be hidden when backgrounding ») : quand l'app passe en arriere-plan, un flou
+// sombre couvre l'ecran ; l'apercu du selecteur d'apps ne montre ni prix, ni inventaire, ni compte. Retire au retour.
+extension AppDelegate {
+    static let etiquetteEcranPrive = 0x5C0A
+
+    static func masquerEcran(_ window: UIWindow?) {
+        guard let w = window, w.viewWithTag(etiquetteEcranPrive) == nil else { return }
+        let flou = UIVisualEffectView(effect: UIBlurEffect(style: .dark))
+        flou.frame = w.bounds
+        flou.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        flou.tag = etiquetteEcranPrive
+        w.addSubview(flou)
+    }
+
+    static func demasquerEcran(_ window: UIWindow?) {
+        window?.viewWithTag(etiquetteEcranPrive)?.removeFromSuperview()
     }
 }
