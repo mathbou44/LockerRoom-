@@ -678,11 +678,13 @@ def jeton_application():
 
 
 def rechercher(q, categorie=None, prix_max=None, recentes=False, limite=50, fond=True, encheres=False, flux=False, offset=0, vendeurs=None, frais=False,
-               aspects=None, prix_min=None):
+               aspects=None, prix_min=None, pays="CA"):
     """Annonces actives a prix fixe semblables : [{item_id, titre, prix_cad, url, photo}].
     Cache partage (24 h ; 6 h pour les nouveautes) et compteur d'appels (appels_ebay).
     24 oct 2026 - encheres=True : les encans qui finissent le plus tot (prix = mise actuelle, fin, nb de mises)."""
-    cle = appels_ebay.cle_recherche(environnement(), q=q[:100], categorie=categorie,
+    # 10 nov 2026 : « pays » etait utilise sans etre defini (NameError sur TOUTE recherche hors cache depuis le 9 nov)
+    pays = "US" if str(pays or "").upper() == "US" else "CA"
+    cle = appels_ebay.cle_recherche(environnement(), q=q[:100], categorie=categorie, **({"pays": "US"} if pays == "US" else {}),
                                      prix_max=round(float(prix_max), 2) if prix_max else None, recentes=bool(recentes), limite=int(limite),
                                      **({"encheres": True} if encheres else {}), **({"flux": True} if flux else {}), **({"offset": int(offset)} if offset else {}),
                                      **({"vendeurs": "|".join(sorted(vendeurs))} if vendeurs else {}),
