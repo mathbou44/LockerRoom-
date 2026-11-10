@@ -890,6 +890,21 @@ body.avec-barre .ecran{padding-top:14px}
 .capsule.vert{background:var(--vert-fond); color:var(--vert)} .capsule.rouge{background:var(--rouge-fond); color:var(--rouge)}
 .capsule.or{background:var(--or-fonce); color:var(--or)} .capsule.acc{background:var(--acc-fonce); color:var(--acc)}
 /* 9 nov 2026 (Mathieu : « quand la carte est a soumettre, le tag d'une autre couleur ») : le gradage en turquoise */
+/* 9 nov 2026 (Mathieu : « une vraie version ordi, pas de surface morte ») : a l'ordi, Vendre et le lot en 2 colonnes
+   (les explications a gauche, la prise et le glisser-deposer a droite) au lieu d'une colonne de 520 px au milieu */
+@media (min-width:1100px){
+  .assist.etape-ph, .assist.lot:has(#lot-f){max-width:1080px}
+  .assist .cols-o{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:20px 48px; align-items:start}
+  .assist .col-d .lot-depot{min-height:240px; cursor:pointer} .assist .col-d .lot-scan{margin-top:0}
+  .assist.etape-ph .col-d .prise-2{grid-template-columns:1fr}
+}
+.lot-scan{margin:14px 0 6px; padding:14px; border-radius:16px; background:var(--carte2); box-shadow:inset 0 0 0 1px var(--ligne); display:flex; flex-direction:column; gap:10px}
+.ls-t{display:flex; gap:12px; align-items:flex-start} .ls-t > span:last-child{display:flex; flex-direction:column; gap:3px} .ls-t small{color:var(--doux); font-size:13px; line-height:1.4}
+.ls-ic{flex:0 0 auto; width:38px; height:38px; border-radius:10px; display:grid; place-items:center; background:var(--acc-fonce); color:var(--acc)}
+.ls-astuce{font-size:12px; margin:0}
+.lot-depot{margin-top:12px; min-height:150px; border-radius:18px; border:2px dashed color-mix(in srgb, var(--acc) 45%, transparent); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; color:var(--doux); text-align:center; padding:18px; transition:background .15s, border-color .15s}
+.lot-depot svg{width:34px; height:34px; color:var(--acc)} .lot-depot b{color:var(--texte); font-size:16px} .lot-depot small{font-size:12px}
+.lot-depot.sur{background:color-mix(in srgb, var(--acc) 12%, transparent); border-color:var(--acc)}
 .af{display:flex; flex-direction:column; gap:10px; margin:0 0 14px}
 .af-l{display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:14px; background:var(--carte2); box-shadow:inset 0 0 0 1px var(--ligne)}
 .af-ic{flex:0 0 auto; width:36px; height:36px; border-radius:10px; display:grid; place-items:center; background:var(--acc-fonce); color:var(--acc)} .af-ic svg{width:20px; height:20px}
@@ -2229,6 +2244,10 @@ body.en-defil .logo-lr::after, body.en-defil #nav-logo-nom, body.en-defil .titre
 @media (max-width:899px) and (prefers-reduced-motion:reduce){ .onglets{transition:none; transform:none !important; opacity:1 !important} .onglets a.tape svg, .onglets a.tape .moi-av{animation:none} }
 /* 28 oct 2026 : une seule ligne sous les chiffres de l'accueil (collection a ajouter, ou joueur en feu) */
 .ecran.acc.leger{display:flex !important; flex-direction:column; gap:14px; height:auto !important; overflow:visible !important; max-width:760px; margin:0 auto; width:100%}
+/* 9 nov 2026 (version ordi) : l'accueil leger un peu plus large sur un grand ecran (il reste lisible d'un coup d'oeil) */
+@media (min-width:1300px){ html:not(.tel-large) .ecran.acc.leger{max-width:940px} }
+/* l'inventaire et les grilles de cartes : plus de cartes par rangee a l'ordi (7 a 1440 px, 9 a 1920 px) */
+@media (min-width:1100px){ html:not(.tel-large) .grille-c{grid-template-columns:repeat(auto-fill,minmax(178px,1fr)); gap:14px} }
 .acc-reserve{display:none !important}
 .acc-pils{display:flex; flex-direction:column; gap:8px}
 .acc-pil{display:flex; align-items:center; gap:12px; width:100%; min-height:58px; padding:9px 14px 9px 10px; border:none; border-radius:18px; background:var(--carte);
@@ -3075,9 +3094,11 @@ function ouvrirPref(b){
   try {
     const q = new URLSearchParams(location.search), natif = /LockerRoomiOS/.test(navigator.userAgent);
     if (q.get('bureau') === '1') { try { localStorage.setItem('lr_bureau', '1'); } catch (e) {} }
-    if (q.get('bureau') === '0') { try { localStorage.removeItem('lr_bureau'); } catch (e) {} }
-    let large = false; try { large = localStorage.getItem('lr_bureau') === '1'; } catch (e) {}
-    if (natif || large || innerWidth < 900) { if (large && !natif) document.addEventListener('DOMContentLoaded', () => { const l = document.createElement('a'); l.id = 'cadre-large'; l.href = '?bureau=0'; l.textContent = 'Version téléphone'; document.body.appendChild(l); }); return; }
+    if (q.get('bureau') === '0') { try { localStorage.setItem('lr_bureau', '0'); } catch (e) {} }
+    // 9 nov 2026 (Mathieu : « une vraie version ordi, beaucoup de gens vont l'utiliser sur l'ordi ») : la mise en page ORDI
+    // (barre a gauche, ecrans en colonnes) par defaut ; « Version téléphone » (en bas a droite) garde l'ecran du cell etire
+    let large = true; try { large = localStorage.getItem('lr_bureau') !== '0'; } catch (e) {}
+    if (natif || large || innerWidth < 900) { if (large && !natif && innerWidth >= 900) document.addEventListener('DOMContentLoaded', () => { const l = document.createElement('a'); l.id = 'cadre-large'; l.href = '?bureau=0'; l.textContent = (document.documentElement.lang || navigator.language || 'fr').startsWith('en') ? 'Phone layout' : 'Version téléphone'; document.body.appendChild(l); }); return; }
     document.documentElement.classList.add('tel-large');
     const BUREAU = /\(\s*min-width\s*:\s*(\d+)px\s*\)/, TEL = /\(\s*max-width\s*:\s*(899|900)px\s*\)/;
     const passer = (regles) => {
@@ -4956,28 +4977,43 @@ async function etapePhoto(i){
   const st = i === 0 ? await API.photo_statut().catch(() => ({})) : {};
   if (i === 0) S.photoStatut = st;
   const dev = i === 0;
-  V().innerHTML = `<section class="ecran vendre assist">
+  V().innerHTML = `<section class="ecran vendre assist etape-ph">
     ${filAssistant(i)}
     <div class="titre">${dev ? tt('Photo du devant', 'Front photo') : tt('Et le dos', 'Now the back')}</div>
     <div class="sous">${dev && V2.but === 'collection' ? tt('L’app lit la carte et estime sa valeur. Elle va dans ta collection : rien ne va sur eBay.', 'The app reads the card and estimates its value. It goes to your collection: nothing goes to eBay.')
       : dev ? tt('L’app lit la carte, trouve le prix et fait l’annonce. Une belle photo, c’est une vente plus rapide.', 'The app reads the card, finds the price and builds the listing. A great photo sells faster.')
       : tt('Le dos donne l’année, le numéro et le set : moins d’erreurs dans l’annonce.', 'The back gives the year, number and set: fewer mistakes in the listing.')}</div>
+    <div class="cols-o"><div class="col-g">
     ${i === 1 && V2.photos[0] ? `<div class="photos-prises"><img src="${esc(V2.photos[0])}" alt=""></div>` : `<div class="guide-ph">${SVG_GUIDE}</div>`}
     <ul class="conseils-ph">
       <li><b>1</b>${tt('Fond uni, sans motif', 'Plain background, no pattern')}</li>
       <li><b>2</b>${tt('Bonne lumière, pas de flash', 'Good light, no flash')}</li>
       <li><b>3</b>${tt('Toute la carte dans la photo', 'The whole card in the photo')}</li></ul>
+    </div><div class="col-d">
     <div class="prise-2">
-      <label class="btn gros prise">${ICONES.photo}<span>${tt('Prendre une photo', 'Take a photo')}</span>
+      <label class="btn gros prise tel-seul">${ICONES.photo}<span>${tt('Prendre une photo', 'Take a photo')}</span>
         <input type="file" accept="image/*" capture="environment" id="as-cam" hidden></label>
       <label class="btn gros prise ghost">${ICO_BIBLIO}<span>${tt('Ma photothèque', 'My photos')}</span>
         <input type="file" accept="image/*" ${dev ? 'multiple' : ''} id="as-gal" hidden></label></div>
+    <div class="lot-depot pas-tel" id="as-depot"><span>${ICO_BIBLIO}</span><b>${dev ? tt('Glisse la photo ou le scan de la carte ici', 'Drop the card’s photo or scan here') : tt('Glisse la photo du dos ici', 'Drop the back photo here')}</b><small>${tt('ou clique pour choisir un fichier', 'or click to choose a file')}</small></div></div></div>
     ${dev ? `<div class="pastilles" style="justify-content:center">${pastilleQuota('annonces_mois')}${st.limite != null ? capsule(tt(st.reste + ' lecture' + (st.reste > 1 ? 's' : '') + ' de photo ce mois', st.reste + ' photo read' + (st.reste > 1 ? 's' : '') + ' left this month'), st.reste ? 'acc' : 'rouge') : ''}</div>
       <a class="plus" href="#vendre/${V2.but === 'collection' ? 'collection-lot' : 'lot'}">${tt('Plusieurs cartes ? En lot ›', 'Several cards? As a batch ›')}</a>
       <button class="plus" id="vd-main">${tt('Remplir à la main', 'Fill in by hand')}</button>`
       : `<button class="plus" id="as-sans">${tt('Continuer sans le dos', 'Continue without the back')}</button>`}
   </section>`;
   $('#as-cam').onchange = async (e) => { const f = e.target.files && e.target.files[0]; if (f) verifierPrise(i, f); };
+  // 9 nov 2026 (version ordi) : glisser-deposer la photo (ou un scan d'une page : le lot de scans s'en charge)
+  const dz = $('#as-depot');
+  if (dz) {
+    const sur = (on) => (ev) => { ev.preventDefault(); dz.classList.toggle('sur', on); };
+    dz.ondragenter = dz.ondragover = sur(true); dz.ondragleave = sur(false);
+    dz.onclick = () => $('#as-gal').click();
+    dz.ondrop = async (ev) => { ev.preventDefault(); dz.classList.remove('sur');
+      const l = [...(ev.dataTransfer.files || [])].filter(f => /^image\//.test(f.type)); if (!l.length) return;
+      if (dev && await pageScan(l[0])) { LOT.but = V2.but === 'collection' ? 'collection' : 'vente'; location.hash = LOT.but === 'collection' ? '#vendre/collection-lot' : '#vendre/lot'; setTimeout(() => lancerScans(l, false), 300); return; }
+      if (dev && l.length > 1) { const inp = $('#as-gal'); const dt = new DataTransfer(); l.forEach(f => dt.items.add(f)); inp.files = dt.files; inp.onchange({target: inp}); return; }
+      verifierPrise(i, l[0]); };
+  }
   // 30 oct 2026 (Mathieu : « splitter le gros bouton en deux : prendre une photo ou la bibliotheque ») : deux boutons egaux
   if (!dev) $('#as-gal').onchange = async (e) => { const f = e.target.files && e.target.files[0]; if (f) verifierPrise(i, f); };
   if (dev) {
@@ -5232,6 +5268,7 @@ function vueLot(but){
     <div class="titre">${tt('Plusieurs cartes d’un coup', 'Several cards at once')}</div>
     <div class="sous">${C ? tt('Choisis tes photos dans ta photothèque, dans l’ordre : le devant puis le dos de chaque carte. L’app vérifie chaque photo, lit chaque carte, estime sa valeur et l’ajoute à ta collection. Rien ne va sur eBay.', 'Pick your photos from your library, in order: the front then the back of each card. The app checks each photo, reads each card, estimates its value and adds it to your collection. Nothing goes to eBay.')
       : tt('Choisis tes photos dans ta photothèque, dans l’ordre : le devant puis le dos de chaque carte. L’app vérifie chaque photo, lit chaque carte, fait la photo studio, le titre et le prix, puis la range dans ton inventaire, prête à publier.', 'Pick your photos from your library, in order: the front then the back of each card. The app checks each photo, reads each card, makes the studio photo, title and price, then saves it to your inventory, ready to publish.')}</div>
+    <div class="cols-o"><div class="col-g">
     <div class="lot-ordre" aria-hidden="true"><span><i>1</i>${tt('Devant', 'Front')}</span><span class="dos"><i>1</i>${tt('Dos', 'Back')}</span><span><i>2</i>${tt('Devant', 'Front')}</span><span class="dos"><i>2</i>${tt('Dos', 'Back')}</span><em>…</em></div>
     <ul class="conseils-ph">
       <li><b>1</b>${tt('Une carte par photo, les 4 coins visibles', 'One card per photo, all 4 corners visible')}</li>
@@ -5240,16 +5277,69 @@ function vueLot(but){
       <li><b>4</b>${tt('Touche les photos dans l’ordre : devant 1, dos 1, devant 2, dos 2…', 'Tap the photos in order: front 1, back 1, front 2, back 2…')}</li></ul>
     <label class="bascule">${tt('Mes photos sont seulement des devants', 'My photos are fronts only')}<input type="checkbox" id="lot-devants"></label>
     <label class="btn gros prise">${ICONES.photo}<span>${tt('Choisir mes photos', 'Choose my photos')}</span><input type="file" accept="image/*" multiple id="lot-f" hidden></label>
+    </div><div class="col-d">
+    <div class="lot-scan">
+      <div class="ls-t"><span class="ls-ic">${ICO_SCAN}</span><span><b>${tt('Cartes scannées (numériseur)', 'Scanned cards (flatbed scanner)')}</b>
+        <small>${tt('Plusieurs cartes par scan : l’app trouve et découpe chaque carte. Laisse 2-3 mm entre les cartes, couvercle fermé.', 'Several cards per scan: the app finds and crops each card. Leave 2-3 mm between cards, lid closed.')}</small></span></div>
+      <label class="bascule">${tt('J’ai aussi scanné les dos (une page de devants, puis la même page de dos)', 'I also scanned the backs (a page of fronts, then the same page of backs)')}<input type="checkbox" id="lot-sdos"></label>
+      <label class="btn gros prise ghost">${ICO_SCAN}<span>${tt('Choisir mes scans', 'Choose my scans')}</span><input type="file" accept="image/jpeg,image/png,image/webp" multiple id="lot-s" hidden></label>
+      <div class="sous ls-astuce">${tt('Ordre des fichiers : devants page 1, dos page 1, devants page 2… Retourne chaque carte sur place pour scanner les dos. JPEG ou PNG, 300 ppp suffit.', 'File order: fronts page 1, backs page 1, fronts page 2… Flip each card in place to scan the backs. JPEG or PNG, 300 dpi is enough.')}</div></div>
+    <div class="lot-depot pas-tel" id="lot-depot"><span>${ICO_SCAN}</span><b>${tt('Ou glisse tes photos ou tes scans ici', 'Or drop your photos or scans here')}</b><small>${tt('Les fichiers glissés suivent les cases cochées ci-dessus', 'Dropped files follow the boxes ticked above')}</small></div>
+    </div></div>
     <div class="sous" style="text-align:center">${tt(`Jusqu’à ${LOT_MAX} cartes par lot. Chaque carte compte pour une lecture de photo.`, `Up to ${LOT_MAX} cards per batch. Each card counts as one photo read.`)}</div>
     <a class="plus" href="#vendre/${C ? 'collection' : 'nouvelle'}">${tt('Une seule carte', 'Just one card')}</a></section>`;
   $('#lot-f').onchange = (e) => { const l = [...(e.target.files || [])]; if (l.length) lancerLot(l, coche('lot-devants')); };
+  $('#lot-s').onchange = (e) => { const l = [...(e.target.files || [])]; if (l.length) lancerScans(l, coche('lot-sdos')); };
+  // a l'ordi : glisser-deposer (des scans si la page en a l'air ou si les dos sont coches ; sinon des photos)
+  const dz = $('#lot-depot');
+  if (dz) {
+    const sur = (on) => (ev) => { ev.preventDefault(); dz.classList.toggle('sur', on); };
+    dz.ondragenter = dz.ondragover = sur(true); dz.ondragleave = sur(false);
+    dz.ondrop = async (ev) => { ev.preventDefault(); dz.classList.remove('sur');
+      const l = [...(ev.dataTransfer.files || [])].filter(f => /^image\//.test(f.type)); if (!l.length) { toast(tt('Glisse des images (JPEG ou PNG)', 'Drop images (JPEG or PNG)')); return; }
+      if (coche('lot-sdos') || (await Promise.all(l.slice(0, 2).map(pageScan))).some(Boolean)) lancerScans(l, coche('lot-sdos')); else lancerLot(l, coche('lot-devants')); };
+  }
 }
-async function lancerLot(fichiers, devantsSeuls){
+// 9 nov 2026 (Mathieu : « bcp de gens vont televerser leurs cartes scannees via l'ordi », plusieurs cartes par scan) :
+// chaque page est decoupee par le serveur (sans IA, gratuit), les dos apparies a leur devant, puis le lot habituel
+const ICO_SCAN = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M3 12h18M7 20h10"/></svg>';
+// une page de numeriseur ? grande (2000 px et plus de petit cote) et aux proportions d'une page (lettre 1,29 / A4 1,41)
+async function pageScan(f){
+  try { const b = await createImageBitmap(f); const r = Math.max(b.width, b.height) / Math.min(b.width, b.height), ok = Math.min(b.width, b.height) >= 2000 && r >= 1.25 && r <= 1.45 && !/^IMG_|^PXL_/i.test(f.name || ''); b.close && b.close(); return ok; }
+  catch (e) { return false; }
+}
+const dataVersFichier = async (u, nom) => { const b = await (await fetch(u)).blob(); return new File([b], nom, {type: 'image/jpeg'}); };
+async function lancerScans(fichiers, avecDos){
+  if (!await okIA()) { toast(tt('La lecture des photos par l’IA est nécessaire pour un lot', 'AI photo reading is needed for a batch'), 5000); return; }
+  const pages = []; for (let i = 0; i < fichiers.length; i += avecDos ? 2 : 1) pages.push([fichiers[i], avecDos ? fichiers[i + 1] : null]);
+  const t0 = Date.now(), groupes = [], avis = [];
+  for (let k = 0; k < pages.length; k++) {
+    V().innerHTML = `<section class="ecran vendre assist lot">${barreProg(t0, 8 * pages.length, tt(`Découpage du scan ${k + 1} / ${pages.length}…`, `Cropping scan ${k + 1} / ${pages.length}…`))}</section>`;
+    const [fd, fs] = pages[k];
+    let r;
+    try {
+      const dv = await reduirePhoto(fd, 6000), ds = fs ? await reduirePhoto(fs, 6000) : null;
+      r = await avecReseau(() => API.scan_decouper(dv, ds));
+    } catch (e) { r = {ok: false, erreur: e.message}; }
+    if (!r || !r.ok) { avis.push(tt(`Scan ${k + 1} : `, `Scan ${k + 1}: `) + ((r && r.erreur) || 'erreur')); continue; }
+    for (const [j, c] of r.cartes.entries()) {
+      const g = [await dataVersFichier(c.devant, `scan${k + 1}_${j + 1}_devant.jpg`)];
+      if (c.dos) g.push(await dataVersFichier(c.dos, `scan${k + 1}_${j + 1}_dos.jpg`));
+      groupes.push(g);
+    }
+    if (r.dos_sans_devant) avis.push(tt(`Scan ${k + 1} : ${r.dos_sans_devant} dos sans devant (pas au même endroit)`, `Scan ${k + 1}: ${r.dos_sans_devant} back(s) without a front (not in the same spot)`));
+  }
+  if (avis.length) toast(avis.join(' · '), 7000);
+  if (!groupes.length) { vueLot(LOT.but); return; }
+  toast(tt(`${groupes.length} carte${groupes.length > 1 ? 's' : ''} trouvée${groupes.length > 1 ? 's' : ''} dans tes scans`, `${groupes.length} card${groupes.length > 1 ? 's' : ''} found in your scans`), 3500);
+  lancerLot([], !avecDos, groupes);
+}
+async function lancerLot(fichiers, devantsSeuls, groupes){
   if (!await okIA()) { toast(tt('La lecture des photos par l’IA est nécessaire pour un lot', 'AI photo reading is needed for a batch'), 5000); return; }
   const par = devantsSeuls ? 1 : 2;
-  if (!devantsSeuls && fichiers.length === 1) { toast(tt('Une seule photo : ajoute le dos, ou coche « seulement des devants »', 'Only one photo: add the back, or tick “fronts only”'), 5000); return; }
-  let cartes = [];
-  for (let i = 0; i < fichiers.length; i += par) cartes.push(fichiers.slice(i, i + par));
+  if (!groupes && !devantsSeuls && fichiers.length === 1) { toast(tt('Une seule photo : ajoute le dos, ou coche « seulement des devants »', 'Only one photo: add the back, or tick “fronts only”'), 5000); return; }
+  let cartes = groupes ? groupes.slice() : [];
+  if (!groupes) for (let i = 0; i < fichiers.length; i += par) cartes.push(fichiers.slice(i, i + par));
   const st = await API.photo_statut().catch(() => ({}));
   S.photoStatut = st;
   let avis = '';
@@ -5259,7 +5349,7 @@ async function lancerLot(fichiers, devantsSeuls){
     cartes = cartes.slice(0, st.reste); avis = tt(`Il te reste ${st.reste} lecture(s) ce mois : on fait les ${st.reste} premières cartes`, `${st.reste} read(s) left this month: doing the first ${st.reste} cards`);
   }
   if (avis) toast(avis, 5000);
-  LOT.l = cartes.map((f, i) => ({n: i + 1, f, etat: 'attente', impair: !devantsSeuls && f.length === 1}));
+  LOT.l = cartes.map((f, i) => ({n: i + 1, f, etat: 'attente', impair: !groupes && !devantsSeuls && f.length === 1}));
   LOT.devants = devantsSeuls; LOT.fini = false; LOT.but = LOT.but || 'vente';
   lotGarder(); rendreLot();
   for (const c of LOT.l) { try { await traiterCarteLot(c); } catch (e) { c.etat = 'revoir'; c.raison = tt('Erreur : reprends cette carte', 'Error: redo this card'); } c.f = null; lotGarder(); rendreLot(); }

@@ -2863,6 +2863,33 @@ class Api:
                 c.close()
         return {"ok": True, "id": r["id"], "photos": refs, "achat_lie": self._lier_achat_choisi(r["id"], d.get("achat"))}
 
+    def scan_decouper(self, devant, dos=None):
+        """9 nov 2026 (Mathieu : les cartes scannees a l'ordi, plusieurs par page) : une page de numeriseur -> une photo par
+        carte (et, si on donne aussi le scan des dos, chaque dos avec son devant). Rien n'est lu par l'IA ici (gratuit)."""
+        import examen
+        import photos_cartes
+        import scans
+
+        def ouvrir(u):
+            brut = examen.data_url_octets(u)
+            if len(brut) > 40_000_000:
+                raise ValueError("Scan trop lourd (40 Mo au plus)")
+            im = examen.ouvrir(brut)
+            if im.size[0] * im.size[1] > photos_cartes.MAX_PIXELS:
+                im.thumbnail((8000, 8000))
+            return im
+        try:
+            dv = scans.decouper(ouvrir(devant))
+            ds = scans.decouper(ouvrir(dos)) if dos else []
+        except (ValueError, OSError) as e:
+            return {"ok": False, "erreur": str(e) or "Scan illisible"}
+        if not dv:
+            return {"ok": False, "erreur": "Aucune carte trouvée sur ce scan : laisse un peu d’espace entre les cartes, couvercle fermé"}
+        paires = scans.apparier(dv, ds) if ds else [None] * len(dv)
+        cartes = [{"devant": scans.jpeg_data_url(c["image"], cote=2400), "dos": scans.jpeg_data_url(ds[j]["image"], cote=2400) if j is not None else None,
+                   "centre": c["centre"]} for c, j in zip(dv, paires)]
+        return {"ok": True, "cartes": cartes, "n": len(cartes), "dos_sans_devant": max(0, len(ds) - sum(1 for j in paires if j is not None))}
+
     def cartes_a_finir_retirer(self, ids):
         """9 nov 2026 : « Retirer de À finir » : la carte reste dans l'inventaire, elle ne compte plus comme a finir."""
         ids = [int(i) for i in (ids or []) if str(i).isdigit()][:500]

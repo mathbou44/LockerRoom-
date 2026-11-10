@@ -28,6 +28,10 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
+try:                                         # 9 nov 2026 (Aikido) : XML lu avec defusedxml (pas d'entites ni de bombes XML)
+    from defusedxml.ElementTree import fromstring as _xml_sur
+except ImportError:                          # pragma: no cover
+    _xml_sur = ET.fromstring
 from datetime import datetime, timedelta, timezone
 
 import appels_ebay
@@ -436,7 +440,7 @@ def _txt(el, chemin):
 
 def lire_annonces_xml(brut):
     """(annonces, nb_pages) d'une reponse GetMyeBaySelling."""
-    racine = ET.fromstring(brut)
+    racine = _xml_sur(brut)
     ack = _txt(racine, "e:Ack")
     if ack not in ("Success", "Warning"):
         raise RuntimeError(_txt(racine, "e:Errors/e:LongMessage") or f"eBay : Ack={ack}")
@@ -509,7 +513,7 @@ def _jour_local(iso):
 
 def lire_transactions_xml(brut):
     """(ventes, nb_pages) d'une reponse GetSellerTransactions - meme format que lire_commandes."""
-    racine = ET.fromstring(brut)
+    racine = _xml_sur(brut)
     ack = _txt(racine, "e:Ack")
     if ack not in ("Success", "Warning"):
         raise RuntimeError(_txt(racine, "e:Errors/e:LongMessage") or f"eBay : Ack={ack}")
@@ -807,7 +811,7 @@ def trading(appel, corps, fond=False):
         "X-EBAY-API-IAF-TOKEN": jeton(), "Content-Type": "text/xml"})
     try:
         with urllib.request.urlopen(req, timeout=60) as r:
-            racine = ET.fromstring(r.read())
+            racine = _xml_sur(r.read())
     except urllib.error.HTTPError as e:
         raise RuntimeError(f"eBay HTTP {e.code} : {e.read().decode('utf-8', 'ignore')[:200]}")
     ack = _txt(racine, "e:Ack")

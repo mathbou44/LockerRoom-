@@ -54,9 +54,9 @@ def _ecrire(d):
 
 
 def _telecharger(url, timeout=25):
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (SlabCoach)", "Accept-Language": "en-CA,fr-CA;q=0.8"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return r.read(3_000_000).decode("utf-8", "ignore")
+    import reseau_sur                          # 9 nov 2026 (Aikido, SSRF) : les pages d'eBay seulement
+    return reseau_sur.lire(url, hotes=("ebay.ca", "ebay.com"), headers={"User-Agent": "Mozilla/5.0 (SlabCoach)", "Accept-Language": "en-CA,fr-CA;q=0.8"},
+                           timeout=timeout).decode("utf-8", "ignore")
 
 
 def entrees(page, base="https://www.ebay.ca"):

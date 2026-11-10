@@ -23,6 +23,10 @@ import unicodedata
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
+try:                                         # 9 nov 2026 (Aikido) : XML lu avec defusedxml (pas d'entites ni de bombes XML)
+    from defusedxml.ElementTree import fromstring as _xml_sur
+except ImportError:                          # pragma: no cover
+    _xml_sur = ET.fromstring
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 
@@ -99,7 +103,7 @@ def _image(it):
 
 def lire_rss(xml, jours=JOURS):
     """[{titre, date, heure, lien, editeur, image}] recents d'un flux RSS."""
-    racine = ET.fromstring(xml)
+    racine = _xml_sur(xml)
     limite = datetime.now(timezone.utc) - timedelta(days=jours)
     out = []
     for it in racine.iter("item"):
@@ -122,9 +126,8 @@ def lire_rss(xml, jours=JOURS):
 
 
 def _get(url, timeout=12):
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (SlabCoach)"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return r.read()
+    import reseau_sur                          # 9 nov 2026 (Aikido, SSRF) : https public seulement (liens venus des flux)
+    return reseau_sur.lire(url, headers={"User-Agent": "Mozilla/5.0 (SlabCoach)"}, timeout=timeout)
 
 
 _RE_OG = re.compile(r"""<meta[^>]+(?:property|name)=["'](?:og:image|twitter:image)["'][^>]+content=["']([^"']+)["']|<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["'](?:og:image|twitter:image)["']""", re.I)
