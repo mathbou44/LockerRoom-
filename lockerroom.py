@@ -1956,6 +1956,9 @@ class Api:
         # sans cout entre, le prix d'une boite = ses ventes recentes
         mes = valeur_produit.mesurer_si_besoin(prod) or {}
         boite_marche = mes.get("boite")
+        public = not comps_permis(self)
+        if public:                                # 10 nov 2026 : prix de boite tire des ventes / annonces = admin seulement
+            boite_marche, mes = None, {}
         cout_estime = None
         if p.get("cout_boite") in (None, "", 0, "0"):
             if boite_marche:
@@ -2002,7 +2005,7 @@ class Api:
         fmt = (prod.get("formats") or [{}])[0]
         return {**res, "ok": True, "hits": self._hits_produit(prod, boites), "boites": boites, "mode": mode,
                 "joueurs": joueurs, "prix_boite_marche": boite_marche, "cout_boite": args["cout_boite"], "cout_estime": cout_estime,
-                "ventes_actives": vendues.actif(),
+                "ventes_actives": vendues.actif() and not public, "public": public,
                 "valeurs_mesurees": bool(mes.get("sous")), "valeurs_maj": mes.get("maj"),
                 "produit": {"id": prod["id"], "nom": prod["nom"], "saison": prod.get("saison"), "marque": prod.get("marque"),
                             "format": fmt.get("format"), "boites_par_caisse": fmt.get("boites_par_caisse"), "sport": sport,
@@ -2753,9 +2756,13 @@ class Api:
         except Exception as e:
             print("Tendance des cartes (lecture) : " + repr(e), flush=True)
             tend = {}
+        public = not comps_permis(self)             # 10 nov 2026 : tendance (ventes) et repere « annonces » = admin seulement
         for r_ in out:
-            if r_.get("statut") != "Vendue" and r_.get("id") in tend:
+            if r_.get("statut") != "Vendue" and r_.get("id") in tend and not public:
                 r_["tendance"] = tend[r_["id"]]
+            if public or not prix_annonces_permis():
+                for k_ in ("valeur_annonces", "valeur_annonces_n", "valeur_annonces_le"):
+                    r_.pop(k_, None)
         # 24 oct 2026 - repere prix : ton prix face aux memes cartes en vente (sante : mediane, plus bas, nombre)
         with _verrou:
             c = self._db()
@@ -4195,13 +4202,84 @@ class Api:
             out[e["type"]].append({**x, **e, "jours": jours, "retard": retard})
         return {"ok": True, **out}
 
+    # -- 10 nov 2026 (Mathieu : « plus facile que sur eBay ») : expedier et repondre aux offres depuis l'app -----------------
+    _VENDEUR_GARDE = {}
+
+    def _vendeur_compte(self, force=False, cache_seul=False):
+        """{a_expedier, offres} gardes 10 min par compte (l'accueil s'ouvre souvent ; eBay n'est relu qu'aux 10 min).
+        cache_seul (l'accueil) : jamais d'attente ; ce qu'on a, et la lecture d'eBay se fait a cote."""
+        import comptes
+        import vendeur_outils
+        k = comptes.courant() or "local"
+        g = self._VENDEUR_GARDE.get(k)
+        if g and not force and time.time() - g[0] < 600:
+            return g[1]
+        if cache_seul:
+            import contextvars
+            import threading as _th
+            if not (g and g[0] < 0):              # une lecture deja en cours (marque negative)
+                self._VENDEUR_GARDE[k] = (-1.0, (g or (0, {}))[1])
+                ctx = contextvars.copy_context()
+                _th.Thread(target=lambda: ctx.run(self._vendeur_compte, True), daemon=True).start()
+            return (g or (0, {}))[1]
+        d = {"a_expedier": [], "offres": [], "erreur": None}
+        if ebay_compte.statut().get("connecte"):
+            try:
+                d["a_expedier"] = vendeur_outils.a_expedier()
+            except Exception as e:
+                d["erreur"] = str(e)[:160]
+            try:
+                d["offres"] = vendeur_outils.offres_recues()
+            except Exception as e:
+                d["erreur"] = d["erreur"] or str(e)[:160]
+        if len(self._VENDEUR_GARDE) > 2000:
+            self._VENDEUR_GARDE.clear()
+        self._VENDEUR_GARDE[k] = (time.time(), d)
+        return d
+
+    def vendeur_a_traiter(self, force=False):
+        """Les commandes a expedier et les offres recues (Best Offers) du vendeur."""
+        if not ebay_compte.statut().get("connecte"):
+            return {"ok": False, "erreur": "Connecte ton compte eBay (Profil)", "ebay": False}
+        d = self._vendeur_compte(force=bool(force))
+        return {"ok": True, **d}
+
+    def vendeur_expedier(self, commande, transporteur=None, suivi=None):
+        import vendeur_outils
+        try:
+            r = vendeur_outils.marquer_expedie(commande, transporteur, suivi)
+        except (ValueError, RuntimeError, OSError) as e:
+            return {"ok": False, "erreur": str(e)[:200]}
+        self._VENDEUR_GARDE.pop(__import__("comptes").courant() or "local", None)
+        return r
+
+    def vendeur_repondre_offre(self, item, offre, action, contre=None, devise=None, message=None):
+        import vendeur_outils
+        try:
+            r = vendeur_outils.repondre_offre(item, offre, action, contre, message, devise or "CAD")
+        except (ValueError, RuntimeError, OSError) as e:
+            return {"ok": False, "erreur": str(e)[:200]}
+        self._VENDEUR_GARDE.pop(__import__("comptes").courant() or "local", None)
+        return r
+
     def _actions_envois(self):
         """Pour « A faire » : les envois en retard (gradation passee la date prevue ; encan termine ou trop long)."""
+        out = []
+        try:                                       # 10 nov 2026 : commandes a expedier et offres recues (eBay), en premier
+            v = self._vendeur_compte(cache_seul=True) or {}
+            if v.get("a_expedier"):
+                n = len(v["a_expedier"])
+                out.append({"cle": "a_expedier", "n": n, "titre": "À expédier", "montant": None,
+                            "texte": "commande payée : expédie et ajoute le suivi en un tap", "lien": "#traiter", "ton": "or", "rang": 5})
+            if v.get("offres"):
+                out.append({"cle": "offres_recues", "n": len(v["offres"]), "titre": "Offres reçues", "montant": None,
+                            "texte": "accepte, contre-offre ou refuse", "lien": "#traiter", "ton": "acc", "rang": 6})
+        except Exception as e:
+            print("A faire (eBay) : " + repr(e), flush=True)
         try:
             e = self.envois_en_cours()
         except Exception:
-            return []
-        out = []
+            return out
         g = [x for x in e["gradation"] if x["retard"]]
         if g:
             out.append({"cle": "gradation", "n": len(g), "titre": "Gradation en retard", "montant": None,
@@ -5649,6 +5727,98 @@ class Api:
             print("Indice joueur : " + repr(e), flush=True)
         return r
 
+    def mes_deals(self):
+        """10 nov 2026 (Mathieu : « on doit trouver des deals quand meme », lancement 100 % legal) : les annonces eBay de la
+        MEME carte que chaque prix cible de l'utilisateur, a son prix ou moins. C'est SON prix qui decide (jamais une valeur
+        calculee par SlabCoach) : permis par la licence eBay (chercher et parcourir les annonces). Prix fixe et encans."""
+        import cartes_match
+        c = marche._cx(self)
+        try:
+            al = marche._dicts(c.execute("SELECT id, q, prix_max FROM alertes WHERE actif=1 ORDER BY id DESC LIMIT 25"))
+        finally:
+            c.close()
+        out, groupes = [], []
+        for a in al:
+            try:
+                res = ebay_compte.rechercher(a["q"], categorie=CATEGORIE_CARTES, limite=100, fond=False) or []
+                try:
+                    res += ebay_compte.rechercher(a["q"], categorie=CATEGORIE_CARTES, limite=50, fond=False, encheres=True) or []
+                except TypeError:
+                    pass
+            except (RuntimeError, OSError) as e:
+                groupes.append({**a, "n": 0, "erreur": str(e)[:120]})
+                continue
+            _c, memes, _e = cartes_match.filtrer(a["q"], res)
+            vus, n = set(), 0
+            for x in memes:
+                tot = round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2)
+                iid = str(x.get("item_id") or "")
+                if not tot or iid in vus or tot > float(a["prix_max"] or 0):
+                    continue
+                vus.add(iid)
+                n += 1
+                out.append({"item_id": iid, "titre": x.get("titre"), "total": tot, "photo": x.get("photo"), "url": x.get("url"),
+                            "encan": bool(x.get("encan")), "fin": x.get("fin"), "mises": x.get("mises"), "alerte_id": a["id"],
+                            "q": a["q"], "prix_max": a["prix_max"], "sous_pct": round(100 * (1 - tot / float(a["prix_max"]))) if a["prix_max"] else 0})
+            groupes.append({**a, "n": n})
+        out.sort(key=lambda x: (-x["sous_pct"], x["total"]))
+        # 10 nov 2026 (Mathieu : « des cases separees pour les vendeurs preferes ») : les nouvelles annonces et les encans de
+        # chacun de TES vendeurs, une case par vendeur (montrees telles quelles : aucun jugement de prix)
+        vend = []
+        try:
+            for v in (self.deals_profil_lire().get("vendeurs") or [])[:3]:
+                l = []
+                for ench in (False, True):
+                    try:
+                        l += ebay_compte.rechercher("", categorie=CATEGORIE_CARTES, limite=24, fond=False, encheres=ench,
+                                                    recentes=not ench, flux=True, vendeurs=[v]) or []
+                    except (RuntimeError, OSError):
+                        pass
+                vus_v, ann = set(), []
+                for x in l:
+                    iid = str(x.get("item_id") or "")
+                    if not iid or iid in vus_v:
+                        continue
+                    vus_v.add(iid)
+                    ann.append({"item_id": iid, "titre": x.get("titre"), "total": round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2),
+                                "photo": x.get("photo"), "url": x.get("url"), "encan": bool(x.get("encan")), "fin": x.get("fin"), "mises": x.get("mises")})
+                vend.append({"vendeur": v, "annonces": ann[:24]})
+        except Exception as e:
+            print("Mes deals (vendeurs) : " + repr(e), flush=True)
+        return {"ok": True, "deals": out[:120], "cibles": groupes, "vendeurs": vend}
+
+    _MES_DEALS = {}
+
+    def _mes_deals_garde(self):
+        """« Mes deals » pour l'accueil : garde 10 min par compte (l'accueil s'ouvre souvent ; eBay n'est relu qu'aux 10 min)."""
+        import comptes
+        k = comptes.courant() or "local"
+        g = self._MES_DEALS.get(k)
+        if g and time.time() - g[0] < 600:
+            return g[1]
+        l = (self.mes_deals() or {}).get("deals") or []
+        if len(self._MES_DEALS) > 2000:
+            self._MES_DEALS.clear()
+        self._MES_DEALS[k] = (time.time(), l)
+        return l
+
+    def tendance_joueur(self, nom):
+        """10 nov 2026 : la tendance d'un joueur avec des donnees publiques seulement : sa forme LNH (5 derniers matchs) et
+        sa popularite (visites Wikipedia, 30 derniers jours contre les 60 d'avant)."""
+        out = {"ok": True, "joueur": nom}
+        try:
+            import demande_legale
+            out["popularite"] = demande_legale.tendance(nom)
+        except Exception:
+            out["popularite"] = None
+        try:
+            import nhl
+            f = nhl.forme(nom)
+            out["forme"] = f if isinstance(f, dict) else None
+        except Exception:
+            out["forme"] = None
+        return out
+
     def alerte_ajouter(self, q, prix_max):
         return marche.alerte_ajouter(self, q, prix_max)
 
@@ -5962,10 +6132,16 @@ class Api:
     def astuces(self, force=False, langue=None):
         """26 oct 2026 - « Le savais-tu ? » : astuces verifiees (calculees sur les vraies ventes ou sourcees), pour l'accueil."""
         import astuces
-        if not comps_permis(self):              # 10 nov 2026 : astuces calculees sur les ventes = admin seulement
-            return {"ok": True, "astuces": [], "coupe": True}
         rg = self.reglages_lire()
-        return {"ok": True, "astuces": astuces.liste(self, rg.get("niveau"), bool(force), "en" if (langue or rg.get("langue")) == "en" else "fr")}
+        l = astuces.liste(self, rg.get("niveau"), bool(force), "en" if (langue or rg.get("langue")) == "en" else "fr")
+        if not comps_permis(self):
+            # 10 nov 2026 (lancement 100 % legal) : pour le public, seulement les astuces qui ne viennent PAS des ventes ni des
+            # annonces eBay : LNH, checklists et cotes du fabricant, tirages, tes reglages, articles de presse cites
+            def legale(x):
+                src = (str(x.get("source") or "") + " " + str(x.get("texte") or "")).lower()
+                return not any(m in src for m in ("soldcomps", "ebay", "ventes réelles", "real sales", "real ebay"))
+            l = [x for x in l if legale(x)]
+        return {"ok": True, "astuces": l}
 
     def collection(self):
         return marche.collection(self)
@@ -6828,6 +7004,8 @@ class Api:
         return {str(v).strip().lower() for v in (self.reglages_lire().get("ramassage") or []) if str(v).strip()}
 
     def _deals_fusion(self):
+        if not ebay_prix_actif():              # 10 nov 2026 : les deals calcules = admin (licence eBay) ; partout (accueil...)
+            return []
         import deals
         try:
             deals.chasser_si_besoin()
@@ -7542,6 +7720,14 @@ class Api:
             finally:
                 c.close()
         deals = self._deals_fusion()                  # 24 oct 2026 - tes rachats + le chasseur partage
+        if not ebay_prix_actif():
+            # 10 nov 2026 (Mathieu : « dans la vue Pro on doit garder les slabs ») : le carrousel de l'accueil montre « Mes deals »
+            # (les annonces a TON prix cible), le rabais = sous ton prix ; aucun gain calcule par SlabCoach
+            try:
+                deals = [dict(x, rabais=x.get("sous_pct") or 0, gain=0, mes=True) for x in self._mes_deals_garde()]
+            except Exception as e:
+                print("Accueil (mes deals) : " + repr(e), flush=True)
+                deals = []
         for d_ in deals:
             d_["ref_prix"] = d_.get("valeur")
         deals.sort(key=lambda d: -d["gain"])
@@ -7549,6 +7735,8 @@ class Api:
         valeur = round(sum((a.get("valeur") or a.get("prix_demande") or 0) for a in achats), 2)
         # 28 oct 2026 (vitesse) : l'accueil en montre au plus 24 ; avant, les ~800 deals partaient a chaque ouverture (1,6 Mo)
         try:                                          # 31 oct 2026 : + les encans des gros vendeurs valorises sous 70 %
+            if not ebay_prix_actif():
+                raise ValueError("public")            # 10 nov 2026 : pas les encans valorises du chasseur (admin)
             import deals as _dv
             ids_ = {str(x.get("item_id")) for x in deals}
             n_su = sum(1 for x in (_dv.lire_vite().get("suivis") or []) if x.get("valeur") and str(x.get("item_id")) not in ids_

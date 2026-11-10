@@ -1821,6 +1821,10 @@ button.btn-scan{border:none; font:inherit; font-weight:700}
 .j-alerte{width:auto !important; padding:0 18px}
 .lien-j{color:inherit; text-decoration:none; border-bottom:1px dotted color-mix(in srgb, var(--acc) 60%, transparent)} .lien-j:hover{color:var(--acc-clair)}
 .banc h3{margin:18px 0 4px} .banc-t > div{display:grid; grid-template-columns:1.6fr .8fr .7fr .7fr .7fr .7fr; gap:6px; padding:7px 0; border-bottom:1px solid var(--ligne,#2B2A32); font-size:13px} .banc-t > div.on{color:var(--acc,#B9BEFF)} .banc-t .tete{opacity:.7; font-weight:700} .banc-ad{margin-top:8px}
+.tr-c{padding:14px; border-radius:18px; background:var(--carte,#151519); border:1px solid var(--ligne,#2B2A32); margin-bottom:12px; display:grid; gap:10px} .tr-h{display:flex; gap:8px; align-items:center} .tr-h b{font-size:16px} .tr-duo{display:flex; gap:18px} .tr-duo span{display:block; font-size:12px; opacity:.7} .tr-duo b{font-size:20px} .tr-act{display:grid; gap:8px} .tr-contre{display:grid; grid-template-columns:1fr auto; gap:8px} .tr-msg{font-style:italic} .tr-t .pilule.on{background:var(--acc,#B9BEFF); color:var(--acc-texte,#12111A); border-color:transparent} .rouge-t{color:#FFB3B3}
+.md-vend{margin-top:18px} .md-vend .v-rang-t b{display:inline-flex; align-items:center; gap:8px}
+.fd-vs{display:grid; gap:8px; margin-top:6px}
+.md-tete{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin:4px 0 12px} .md-tete b{display:block; font-size:20px} .md-tete .btn{width:auto; flex-shrink:0} .md-f{margin-bottom:12px} .md-vide ol{text-align:left; margin:10px auto 0; max-width:340px; line-height:1.6} .md-gerer{text-align:center; margin:16px 0} .j-tend{margin-top:6px}
 .adm-vue{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:6px 0 4px} .adm-vue > span{font-weight:700; font-size:13px; opacity:.75}
 .vue-simulee{position:fixed; z-index:9999; left:50%; transform:translateX(-50%); top:calc(env(safe-area-inset-top,0px) + 8px); display:flex; align-items:center; gap:10px; padding:8px 8px 8px 14px; border-radius:999px; border:1px solid rgba(241,213,142,.6); background:#1E1A10; color:#F1D58E; font:700 13px 'Barlow',system-ui,sans-serif; box-shadow:0 8px 24px rgba(0,0,0,.5)} .vue-simulee b{padding:5px 11px; border-radius:999px; background:#F1D58E; color:#1E1A10}
 .v-fiche{margin-top:6px; padding:16px; border-radius:18px; background:var(--carte,#151519); border:1px solid var(--ligne,#2B2A32)} .vf-t{font-weight:800; font-size:13px; letter-spacing:.06em; text-transform:uppercase; opacity:.7; margin-bottom:10px} .vf-p{display:flex; flex-wrap:wrap; gap:8px} .vf-p .capsule{font-size:15px; padding:8px 14px} .v-fiche .lien-doux{margin-top:12px} .vf-note{text-align:center; margin:14px 0 4px}
@@ -3819,7 +3823,7 @@ function route(){
   if (!$('#fond-feuille').hidden) fermerFeuille();
   navDebut(S.ecranCourant === ecran && !!arg);              // meme ecran, autre onglet (Admin, Breaks, Sante...) : navigation douce
   S.ecranCourant = ecran;
-  const vues = {analyse:vueAnalyse, vendre:vueVendre, deals:vueDeals, valeur:vueValeur, accueil:vueAccueil, sante:vueSante, breaks:vueBreaks, break:vueBreak, inventaire:vueInventaire, comptoir:vueComptoir, bilan:vueBilan, ventes:vueVentes, reglages:vueReglages, admin:vueAdmin, guide:vueGuide, joueur:vueJoueur, calendrier:vueCalendrier, idees:vueIdees, pouls:vuePouls, tendances:vueTendances, offres:vueOffres, notifs:vueNotifs, alertes:vueNotifs};
+  const vues = {analyse:vueAnalyse, vendre:vueVendre, deals:vueDeals, valeur:vueValeur, accueil:vueAccueil, sante:vueSante, breaks:vueBreaks, break:vueBreak, inventaire:vueInventaire, comptoir:vueComptoir, bilan:vueBilan, ventes:vueVentes, reglages:vueReglages, admin:vueAdmin, guide:vueGuide, joueur:vueJoueur, calendrier:vueCalendrier, idees:vueIdees, pouls:vuePouls, tendances:vueTendances, offres:vueOffres, traiter:vueTraiter, notifs:vueNotifs, alertes:vueNotifs};
   if (!comps() && ['tendances', 'pouls'].includes(ecran)) { location.replace('#accueil'); return; }
   (vues[ecran] || vueAccueil)(arg);
 }
@@ -6420,7 +6424,7 @@ async function feuilleFiltresDeals(){
       <label class="bascule fd-l"><span>${tt('Encans avec au moins une mise', 'Auctions with at least one bid')}</span><input type="checkbox" id="fd-mise" ${F.avec_mise ? 'checked' : ''}></label>
       <button class="acc-pil fd-ram" id="fd-pays"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.envoi || IC_PIL.pin}</svg></span><span class="ap-t"><b>${tt('J’achète depuis', 'I buy from')} ${(S.reglages || {}).pays === 'US' ? tt('les États-Unis', 'the United States') : tt('le Canada', 'Canada')}</b><small>${tt('Taxes et douanes de ton pays ; ses deals d’abord', 'Your country’s taxes and customs; its deals first')}</small></span><i aria-hidden="true">›</i></button>
       <button class="acc-pil fd-ram" id="fd-ram"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.pin}</svg></span><span class="ap-t"><b>${tt('Je ramasse sur place', 'I pick up locally')}</b><small id="fd-ram-s">${tt('Le port ne compte pas chez ces vendeurs', 'Shipping doesn’t count with these sellers')}</small></span><i aria-hidden="true">›</i></button>
-      ${p.vendeurs_max ? `<label class="md-l">${tt(`Mes vendeurs eBay (${p.vendeurs_max} max)`, `My eBay sellers (${p.vendeurs_max} max)`)}${p.pro ? '' : ' <span class="badge-f pro">✦ PRO</span>'}<input class="champ" id="fd-v" value="${esc((p.vendeurs || []).join(', '))}" placeholder="${esc(tt('pseudo eBay exact', 'exact eBay username'))}" ${p.pro ? '' : 'disabled'}></label>` : ''}
+      ${p.vendeurs_max ? `<label class="md-l">${tt(`Mes vendeurs eBay (${p.vendeurs_max} max)`, `My eBay sellers (${p.vendeurs_max} max)`)}${p.pro ? '' : ' <span class="badge-f pro">✦ PRO</span>'}<span class="fd-vs">${Array.from({length: p.vendeurs_max}, (_, i) => `<input class="champ fd-v1" data-fdv="${i}" value="${esc((p.vendeurs || [])[i] || '')}" placeholder="${esc(tt('Vendeur ' + (i + 1) + ' : pseudo eBay exact', 'Seller ' + (i + 1) + ': exact eBay username'))}" autocapitalize="off" autocorrect="off" spellcheck="false" ${p.pro ? '' : 'disabled'}>`).join('')}</span></label>` : ''}
       ${(() => { const L = Object.entries(S.dealsPays || {}).sort((a, b) => b[1] - a[1]).map(([k]) => k), ex = new Set(F.pays_exclus || []);
         (F.pays_exclus || []).forEach(k => { if (!L.includes(k)) L.push(k); });
         return L.length > 1 || ex.size ? `<div class="r-titre" style="margin-top:12px">${tt('Pays de provenance', 'Ships from')} <small class="fd-aide">${tt('touche pour retirer un pays', 'tap to hide a country')}</small></div>
@@ -6478,7 +6482,7 @@ async function feuilleFiltresDeals(){
     if (raz) F.pays_exclus = [];
     const d = raz ? {collectionne: [], favoris: [], prix_min: null, prix_max: null}
       : {collectionne: [...ep], favoris: noms, prix_min: null, prix_max: cad('fd-pmax')};
-    const v = $('#fd-v'); if (!raz && v && p.pro) d.vendeurs = v.value;
+    const vs = $$('[data-fdv]'); if (!raz && vs.length && p.pro) d.vendeurs = vs.map(x => x.value.trim().replace(/,/g, ' ')).filter(Boolean).join(', ');
     const r = await API.deals_profil_regler(d).catch(e => ({ok:false, erreur:e.message}));
     if (r && r.ok === false) { toast(r.erreur || 'Erreur', 4000); return; }
     S.dealsProfil = r || null; sauverDealsF(); MEMO.clear(); fermerFeuille();
@@ -7471,7 +7475,8 @@ async function rendreAnalyse(){
     const liste = vue === 'joueurs' ? (r.joueurs || []) : [...r.places];
     // 29 oct 2026 (Mathieu : « l'expliquer, donner des choix de tri a l'utilisateur, et une recherche pour un joueur ») :
     // 4 facons de classer, chacune expliquee en une phrase ; 100 = la meilleure place de la liste pour ce critere.
-    const TRIS = TRIS_ANA();
+    // 10 nov 2026 (lancement 100 % legal) : sans comps, pas de tri en dollars (« valeur de la place »)
+    const TRIS = TRIS_ANA().filter(t => comps() || t[0] !== 'valeur');
     const tri = TRIS.some(t => t[0] === A.tri) ? A.tri : 'place';
     const pH = (x) => ((x.chances || {}).hit || {}).p || 0;
     const crit = {place: (x) => x.p_carte_prix || 0, hits: pH, rentab: (x) => x.p_rembourse || 0, recrue: (x) => x.ev_recrue != null ? x.ev_recrue / (x.demande || 1) : (x.p_recrue || 0),
@@ -7506,8 +7511,8 @@ async function rendreAnalyse(){
         ${vue === 'equipes' ? ecussonEquipe(x.cle) : vignetteJoueur(x.cle, x.equipe)}
         <span class="sl-n"><b>${esc(x.nom)}</b><span>${esc(vue === 'equipes' ? (x.vedettes || []).slice(0, 2).join(' · ') : (x.equipe || ''))} · ${
           tri === 'place' ? tt('couvre la place : ', 'covers the spot: ') + chanceTxt(x.p_carte_prix || 0) : tri === 'rentab' ? tt('rentable : ', 'break even: ') + chanceTxt(x.p_rembourse || 0)
-          : tri === 'recrue' ? (x.recrue_prix ? (/young guns/i.test(x.recrue_nom || '') ? 'YG' : tt('recrue', 'rookie')) + ' ~' + argentCourt(x.recrue_prix) + ' · ' + chanceTxt(x.p_recrue_carte || 0)
-            : x.ev_recrue != null ? tt('recrues : ~', 'rookies: ~') + argentCourt(x.ev_recrue) : tt('recrue : ', 'rookie: ') + chanceTxt(x.p_recrue || 0))
+          : tri === 'recrue' ? (x.recrue_prix && comps() ? (/young guns/i.test(x.recrue_nom || '') ? 'YG' : tt('recrue', 'rookie')) + ' ~' + argentCourt(x.recrue_prix) + ' · ' + chanceTxt(x.p_recrue_carte || 0)
+            : x.ev_recrue != null && comps() ? tt('recrues : ~', 'rookies: ~') + argentCourt(x.ev_recrue) : tt('recrue : ', 'rookie: ') + chanceTxt(x.p_recrue || 0))
           : tri === 'valeur' ? tt('vaut ~', 'worth ~') + argentCourt(x.ev || 0)
           : tri === 'argent' ? tt('hit : ', 'hit: ') + chanceTxt(ph) + ' · ' + argentCourt(x.prix_compare || x.prix || 0) : tt('hit : ', 'hit: ') + chanceTxt(ph)}</span></span>
         <span class="score ${cl}"><b>${x.rel}</b><small>${lib}</small></span></button>
@@ -7516,7 +7521,7 @@ async function rendreAnalyse(){
           <div class="sl-duo"><div><span>${tt('Au moins un hit', 'At least one hit')}</span><b>${chanceTxt(ph)}</b></div>
             <div><span>${tt('Rentabiliser', 'Break even')}</span><b>${chanceTxt(x.p_rembourse || 0)}</b></div>
             <label><span>${tt('Prix du breaker', 'Breaker’s price')}</span><input class="champ petit-n" type="number" inputmode="decimal" ${cle}="${esc(x.cle)}" value="${esc(val0 ? Math.round(convertir(val0)) : '')}" placeholder="${esc(tt('prix', 'price'))}"></label></div>
-          ${vue === 'joueurs' ? `<a class="plus" href="#joueur/${encodeURIComponent(x.cle)}">${tt('Voir ses ventes', 'See his sales')} ›</a>` : ''}
+          ${vue === 'joueurs' ? `<a class="plus" href="#joueur/${encodeURIComponent(x.cle)}">${comps() ? tt('Voir ses ventes', 'See his sales') : tt('Voir le joueur', 'See the player')} ›</a>` : ''}
           <details class="exp-calc"><summary>${tt('Comment c’est calculé', 'How it’s calculated')}</summary>${explicationPlace(x, vue, r, liste.length)}</details></div></div>`;
     };
     corps = `${segA('an-v', [['joueurs', tt('Joueurs', 'Players')], ['equipes', tt('Équipes', 'Teams')]], vue)}
@@ -7860,7 +7865,7 @@ async function vueDeals(arg){
       <a role="tab" href="#deals/watch" aria-selected="${w}" class="${w ? 'on' : ''}">${ICO_ETOILE}${tt('Watchlist', 'Watchlist')}<span class="w-nb" hidden></span></a></div>
     <form class="recherche pas-tel" id="v-form" role="search">${ICONES.loupe}<input id="v-q" type="search" enterkeyhint="search" placeholder="${esc(tt('Combien vaut une carte ? (ex. Bedard Young Guns)', 'What is a card worth? (e.g. Bedard Young Guns)'))}"></form>
     ${!w && S.forfait && S.forfait.admin ? '<a class="d-tour" id="d-tour" href="#admin/serveur"></a>' : ''}
-    <div id="d-res" data-vue="${w ? 'watch' : 'deals'}">${roue}</div>
+    <div id="d-res" data-vue="${w ? 'watch' : 'deals'}">${barreProg(Date.now(), w ? 8 : 12, w ? tt('Chargement de ta watchlist…', 'Loading your watchlist…') : tt('Recherche des deals sur eBay…', 'Looking for deals on eBay…'))}</div>
     <p class="mention-epn">${tt('Les liens vers eBay peuvent être des liens affiliés (eBay Partner Network) : SlabCoach peut toucher une commission, sans frais pour toi. SlabCoach n’est pas affilié à eBay. Les estimations sont celles de SlabCoach, pas d’eBay.', 'Links to eBay may be affiliate links (eBay Partner Network): SlabCoach may earn a commission at no cost to you. SlabCoach is not affiliated with eBay. Estimates are SlabCoach’s, not eBay’s.')}</p></section>`;
   brancherSwitchMode(V()); brancherQuota(V());
   $('#v-form').onsubmit = (e) => { e.preventDefault(); const q = $('#v-q').value.trim(); if (q) location.hash = '#valeur/' + encodeURIComponent(q); };
@@ -7970,10 +7975,7 @@ async function chargerDeals(frais){
   if (!z.isConnected) return;
   if (!d.ok) { z.innerHTML = `<div class="vide">${esc(d.erreur || 'Erreur')}</div>`; return; }
   if (d.coupe) {                                  // 27 oct 2026 : interrupteur du serveur (fonctions de prix sur les annonces eBay)
-    // 10 nov 2026 (licence eBay : juger le prix d'une annonce = admin seulement pour le lancement) : ce que la personne
-    // peut faire elle-meme, legalement : suivre des cartes et fixer SON prix cible (on l'avertit), voir la valeur d'une carte
-    z.innerHTML = `<div class="vide">${tt('Les deals arrivent bientôt. En attendant, fixe ton prix cible sur les cartes que tu veux : on t’avertit dès qu’une annonce passe sous ton prix.', 'Deals are coming soon. Meanwhile, set your target price on the cards you want: we’ll alert you when a listing drops below it.')}<br><a class="btn petit" href="#alertes" style="margin-top:12px">${tt('Mes prix cibles', 'My target prices')}</a> <a class="btn ghost petit" href="#valeur" style="margin-top:12px">${tt('Voir la valeur d’une carte', 'Check a card’s value')}</a></div>`;
-    const pD0 = $('#pastille-deals'); if (pD0) pD0.hidden = true;
+    vueMesDeals(z);
     return;
   }
   const pD = $('#pastille-deals'); if (pD) { pD.hidden = !d.n; pD.textContent = d.n || ''; }
@@ -8547,6 +8549,7 @@ async function vueValeur(arg){
     z.innerHTML = `<div class="v-fiche">
         <div class="vf-t">${tt('Cette carte', 'This card')}</div>
         <div class="pastilles vf-p">${(r.compris || []).map(x => capsule(x, 'acc')).join('')}</div>
+        <div class="pastilles j-tend" id="v-tend-j"></div>
         <button class="lien-doux" id="v-compris">✎ ${tt('Pas la bonne ? Corrige un détail', 'Not the one? Fix a detail')}</button>
       </div>
       <div class="v-actions"><button class="pilule" id="v-alerte">${icN('cloche')}${tt('Mon prix cible', 'My target price')}</button>
@@ -8558,6 +8561,7 @@ async function vueValeur(arg){
         : `<div class="vide" style="margin-top:12px">${tt('Aucune annonce de cette carte exacte en ce moment. Fixe ton prix cible : on t’avertit dès qu’elle arrive.', 'No listing of this exact card right now. Set your target price: we’ll tell you when one shows up.')}</div>`}
       <div class="sous vf-note">${tt('Tu choisis ton prix, on surveille eBay pour toi.', 'You pick your price, we watch eBay for you.')}</div>
       <div class="acc-reserve" id="v-reserve">${r.n ? `<div id="v-b-ann"><h3>${tt('En vente maintenant', 'Listed now')}</h3><div class="grille-c">${(r.annonces || []).map(tuileA).join('')}</div>${ecart}</div>` : ''}</div>`;
+    if ((r.compris || [])[0]) setTimeout(() => pastillesTendance($('#v-tend-j'), String(r.compris[0]).replace(/ (young guns|rookie|future watch).*$/i, '')), 0);
   } else
   z.innerHTML = `${blocMesAchats(r.mes_achats, false, (r.vendues || {}).mes_retirees, r.valeur)}
     <div class="v-hero">
@@ -8693,7 +8697,7 @@ async function vueAccueil(arg){
   $('#acc-tuiles').innerHTML = [
     S.mode === 'acheteur' ? `<a class="t-acc" href="#guide" id="t-budget"><span class="l">${tt('Budget du mois', 'Monthly budget')}</span><b>…</b><span class="s">${tt('touche pour le fixer', 'tap to set it')}</span></a>`
       : tuile('Profit', (h.profit < 0 ? '−' : '') + argentCourt(Math.abs(h.profit)), nomMois(h.mois) + (h.nb_ventes ? ` · ${h.nb_ventes} vente${h.nb_ventes > 1 ? 's' : ''}` : ''), h.profit > 0 ? 'vert' : h.profit < 0 ? 'rouge' : '', '#bilan" id="t-profit'),
-    tuile('Deals', a && a.gain_deals > 0 ? '+' + argentCourt(a.gain_deals) : String((a && a.nb_deals) || 0), a && a.nb_deals ? `${a.nb_deals} sous la valeur` : 'on cherche pour toi', a && a.gain_deals > 0 ? 'or' : '', '#deals'),
+    tuile('Deals', a && a.gain_deals > 0 ? '+' + argentCourt(a.gain_deals) : String((a && a.nb_deals) || 0), a && a.nb_deals ? (comps() ? `${a.nb_deals} sous la valeur` : `${a.nb_deals} ${tt('à ton prix', 'at your price')}`) : 'on cherche pour toi', a && a.gain_deals > 0 ? 'or' : '', '#deals'),
     S.mode === 'acheteur' ? tuile(tt('Ma collection', 'My collection'), argentKpi(st.valeur), `${st.nb} carte${st.nb > 1 ? 's' : ''}`, '', '#inventaire" id="t-stock')
       : tuile('Stock', argentKpi(st.valeur), `${st.nb} carte${st.nb > 1 ? 's' : ''}${vi.delai_median != null ? ' · vend en ' + vi.delai_median + ' j' : ''}`, '', '#inventaire" id="t-stock'),
   ].join('');
@@ -8824,7 +8828,7 @@ function histoiresAccueil(d, a){
     ...(act.magasin ? [['comptoir', null, tt('Comptoir', 'Counter'), '', '#comptoir']] : []),
     ['bilan', null, tt('Bilan', 'Report'), '', '#bilan'],
   ] : [
-    ['deals', (a && a.nb_deals) || 0, 'Deals', tt('sous la valeur', 'under value'), '#deals'],
+    ['deals', (a && a.nb_deals) || 0, 'Deals', comps() ? tt('sous la valeur', 'under value') : tt('à ton prix', 'at your price'), '#deals'],
     ['alertes', S.clocheN || 0, tt('Alertes', 'Alerts'), tt('trouvées', 'found'), 'alertes'],
     ['valeur', null, tt('Valeur', 'Value'), '', '#valeur'],
     ['budget', null, 'Budget', '', 'budget'],
@@ -13385,6 +13389,93 @@ function courbeVentes(points, opts){
 const flecheTendance = (t) => !t || t.pct == null ? '' : capsule((t.pct > 0 ? '▲ +' : t.pct < 0 ? '▼ ' : '') + t.pct + ' % ' + tt('sur 30 j', 'in 30 d'), t.pct > 4 ? 'vert petit' : t.pct < -4 ? 'rouge petit' : 'petit');
 const lienJoueur = (nom, txt) => `<a class="lien-j" href="#joueur/${encodeURIComponent(nom)}">${esc(txt || nom)}</a>`;
 
+// 10 nov 2026 (Mathieu : « on doit trouver des deals quand meme », 100 % legal, « tres simple, nos pastilles ») :
+// « Mes deals » = les annonces de la MEME carte a TON prix cible ou moins. C'est ton prix qui decide, jamais le notre.
+// 10 nov 2026 (Mathieu : « plus facile que sur eBay ») : a traiter = commandes a expedier + offres recues, un tap chacune
+const TRANSP = () => [['postes_canada', 'Postes Canada'], ['chit_chats', 'Chit Chats'], ['stallion', 'Stallion'], ['ups', 'UPS'], ['autre', tt('Autre', 'Other')]];
+async function vueTraiter(arg, force){
+  V().innerHTML = `<section class="ecran traiter"><div class="titre">${tt('À traiter', 'To handle')}</div><div id="tr-z">${barreProg(Date.now(), 10, tt('On regarde tes commandes et tes offres sur eBay…', 'Checking your orders and offers on eBay…'))}</div></section>`;
+  const r = await API.vendeur_a_traiter(!!force).catch(e => ({ok:false, erreur:e.message}));
+  const z = $('#tr-z'); if (!z) return;
+  if (!r.ok) { z.innerHTML = `<div class="vide">${esc(r.erreur || 'Erreur')}${r.ebay === false ? `<br><a class="btn petit" href="#reglages" style="margin-top:12px">${tt('Connecter eBay', 'Connect eBay')}</a>` : ''}</div>`; return; }
+  const E = r.a_expedier || [], O = r.offres || [];
+  S.trOng = S.trOng && ['expedier', 'offres'].includes(S.trOng) ? S.trOng : (E.length || !O.length ? 'expedier' : 'offres');
+  const tE = (o) => `<div class="tr-c" data-cmd="${esc(o.commande)}">
+      <div class="tr-h"><b>${esc((o.articles[0] || {}).titre || tt('Commande', 'Order'))}</b>${o.articles.length > 1 ? capsule('+' + (o.articles.length - 1), 'petit') : ''}</div>
+      <div class="pastilles">${tag(argent(o.total, 2), 'vert')}${o.acheteur ? tag(o.acheteur) : ''}${o.ville ? tag(o.ville) : ''}${o.payee_le ? tag(tt('payée ', 'paid ') + dateCourte(o.payee_le)) : ''}</div>
+      <div class="pastilles tr-t">${TRANSP().map(([k, l], i) => `<button class="pilule petit ${i === 0 ? 'on' : ''}" data-tr="${k}">${l}</button>`).join('')}</div>
+      <input class="champ" data-suivi placeholder="${esc(tt('Numéro de suivi (facultatif)', 'Tracking number (optional)'))}" autocapitalize="characters" autocorrect="off" spellcheck="false">
+      <button class="btn" data-exp>${icN('colis')}${tt('Expédiée', 'Shipped')}</button></div>`;
+  const tO = (o) => `<div class="tr-c" data-off="${esc(o.offre)}" data-item="${esc(o.item)}" data-dev="${esc(o.devise || 'CAD')}">
+      <div class="tr-h"><b>${esc(o.titre || '')}</b></div>
+      <div class="tr-duo"><div><span>${tt('Offre', 'Offer')}</span><b class="vert">${argent(o.offert, 2)}</b></div><div><span>${tt('Ton prix', 'Your price')}</span><b>${o.prix ? argent(o.prix, 2) : '—'}</b></div>
+        ${o.prix && o.offert ? `<div><span>${tt('Écart', 'Gap')}</span><b>−${Math.max(0, Math.round(100 * (1 - o.offert / o.prix)))} %</b></div>` : ''}</div>
+      <div class="pastilles">${o.acheteur ? tag(o.acheteur) : ''}${o.expire ? tag(tt('expire ', 'expires ') + finDans(o.expire), 'or') : ''}</div>
+      ${o.message ? `<div class="sous tr-msg">« ${esc(o.message)} »</div>` : ''}
+      <div class="tr-act"><button class="btn" data-rep="accepter">${tt('Accepter', 'Accept')}</button>
+        <div class="sous">${tt('Ou fais une contre-offre :', 'Or send a counter:')}</div><div class="tr-contre"><input class="champ" type="number" inputmode="decimal" data-contre placeholder="${esc(tt('Contre-offre', 'Counter'))}" value="${o.prix && o.offert ? Math.round((o.prix + o.offert) / 2) : ''}"><button class="btn ghost" data-rep="contre">${tt('Envoyer', 'Send')}</button></div>
+        <button class="btn ghost rouge-t" data-rep="refuser">${tt('Refuser', 'Decline')}</button></div></div>`;
+  z.innerHTML = `<div class="seg" id="tr-o" style="margin:6px 0 14px"><button data-v="expedier" class="${S.trOng === 'expedier' ? 'on' : ''}">${tt('À expédier', 'To ship')} · ${E.length}</button><button data-v="offres" class="${S.trOng === 'offres' ? 'on' : ''}">${tt('Offres reçues', 'Offers')} · ${O.length}</button></div>
+    ${S.trOng === 'expedier' ? (E.length ? E.map(tE).join('') : `<div class="vide">${tt('Rien à expédier. Tout est parti !', 'Nothing to ship. All sent!')}</div>`)
+      : (O.length ? O.map(tO).join('') : `<div class="vide">${tt('Aucune offre en attente.', 'No pending offer.')}</div>`)}
+    <div class="md-gerer"><button class="lien-doux" id="tr-maj">${tt('Actualiser', 'Refresh')} ›</button></div>
+    ${r.erreur ? `<div class="sous" style="text-align:center">${esc(r.erreur)}</div>` : ''}`;
+  $$('#tr-o button').forEach(b => b.onclick = () => { vibrer(); S.trOng = b.dataset.v; vueTraiter(); });
+  $('#tr-maj').onclick = () => vueTraiter(null, true);
+  $$('.tr-t', z).forEach(g => $$('[data-tr]', g).forEach(b => b.onclick = () => { $$('[data-tr]', g).forEach(x => x.classList.toggle('on', x === b)); }));
+  $$('[data-exp]', z).forEach(b => b.onclick = async () => {
+    const c = b.closest('[data-cmd]'), tr = ($('[data-tr].on', c) || {}).dataset?.tr, su = $('[data-suivi]', c).value.trim();
+    b.disabled = true;
+    const x = await API.vendeur_expedier(c.dataset.cmd, tr, su).catch(e => ({ok:false, erreur:e.message}));
+    if (x.ok) { toast(tt('Expédiée : l’acheteur est avisé par eBay', 'Shipped: eBay notifies the buyer')); c.remove(); } else { b.disabled = false; toast(x.erreur || 'Erreur', 4000); }
+  });
+  $$('[data-rep]', z).forEach(b => b.onclick = async () => {
+    const c = b.closest('[data-off]'), act = b.dataset.rep, contre = act === 'contre' ? nb($('[data-contre]', c).value) : null;
+    if (act === 'contre' && !contre) { toast(tt('Entre ton prix de contre-offre', 'Enter your counter price')); return; }
+    b.disabled = true;
+    const x = await API.vendeur_repondre_offre(c.dataset.item, c.dataset.off, act, contre, c.dataset.dev).catch(e => ({ok:false, erreur:e.message}));
+    if (x.ok) { toast(act === 'accepter' ? tt('Offre acceptée', 'Offer accepted') : act === 'contre' ? tt('Contre-offre envoyée', 'Counter sent') : tt('Offre refusée', 'Offer declined')); c.remove(); }
+    else { b.disabled = false; toast(x.erreur || 'Erreur', 4000); }
+  });
+}
+async function vueMesDeals(z){
+  z.innerHTML = barreProg(Date.now(), 12, tt('On regarde eBay pour tes prix cibles…', 'Checking eBay for your target prices…'));
+  const r = await API.mes_deals().catch(e => ({ok:false, erreur:e.message}));
+  if (!z.isConnected) return;
+  if (!r.ok) { z.innerHTML = `<div class="vide">${esc(r.erreur || 'Erreur')}</div>`; return; }
+  const C = r.cibles || [], L = r.deals || [];
+  const pD = $('#pastille-deals'); if (pD) { pD.hidden = !L.length; pD.textContent = L.length || ''; }
+  S.mdFiltre = S.mdFiltre && C.some(c => c.id === S.mdFiltre) ? S.mdFiltre : null;
+  const vis = S.mdFiltre ? L.filter(x => x.alerte_id === S.mdFiltre) : L;
+  const tuile = (x) => tuileCarte({...x, url: lienAchat(x.url, 'mesdeals')}, {
+    coin: x.sous_pct > 0 ? capsule('−' + x.sous_pct + ' % ' + tt('sous ton prix', 'under your price'), 'vert petit') : capsule(tt('À ton prix', 'At your price'), 'acc petit'),
+    milieu: `<div class="pastilles">${x.encan ? tag(tt('Encan', 'Auction') + (x.fin ? ' · ' + finDans(x.fin) : ''), 'or') : tag(tt('Achat immédiat', 'Buy It Now'))}</div>`,
+    droite: `<span class="sous">${tt('ton prix', 'yours')} ${argentCourt(x.prix_max)}</span>`});
+  z.innerHTML = `<div class="md">
+    <div class="md-tete"><div><b>${tt('Mes deals', 'My deals')}</b><span class="sous">${tt('Les annonces à ton prix cible ou moins. Tu choisis le prix, on surveille eBay.', 'Listings at or under your target price. You set the price, we watch eBay.')}</span></div>
+      <button class="btn petit" id="md-plus">${icN('cible')}${tt('Ajouter une carte', 'Add a card')}</button></div>
+    ${C.length ? `<div class="pastilles md-f"><button class="pilule ${S.mdFiltre ? '' : 'on'}" data-md="">${tt('Toutes', 'All')} · ${L.length}</button>${C.map(c => `<button class="pilule ${S.mdFiltre === c.id ? 'on' : ''}" data-md="${c.id}">${esc(c.q)} ≤ ${argentCourt(c.prix_max)} · ${c.n || 0}</button>`).join('')}</div>` : ''}
+    ${vis.length ? `<div class="grille-c">${vis.map(tuile).join('')}</div>`
+      : C.length ? `<div class="vide">${tt('Rien à ton prix pour l’instant. On regarde eBay chaque heure et on t’avertit dès qu’une annonce passe sous ton prix.', 'Nothing at your price yet. We check eBay every hour and tell you as soon as a listing drops under it.')}</div>`
+      : `<div class="vide md-vide"><b>${tt('3 étapes, c’est tout', '3 steps, that’s it')}</b><ol><li>${tt('Choisis une carte que tu veux', 'Pick a card you want')}</li><li>${tt('Mets ton prix', 'Set your price')}</li><li>${tt('On te montre ici chaque annonce à ton prix ou moins, et on t’avertit', 'We show every listing at or under your price here, and alert you')}</li></ol></div>`}
+    ${C.length ? `<div class="md-gerer"><button class="lien-doux" id="md-gerer">${tt('Gérer mes prix cibles', 'Manage my target prices')} ›</button></div>` : ''}
+    ${(r.vendeurs || []).map(v => `<div class="md-vend"><div class="v-rang-t"><b>${icN('boutique')}${esc(v.vendeur)}</b><span class="sous">${v.annonces.length ? v.annonces.length + ' ' + tt('annonces', 'listings') : tt('rien de neuf', 'nothing new')}</span></div>
+      ${v.annonces.length ? `<div class="d-car v-car">${v.annonces.slice(0, 12).map(x => tuileCarte({...x, url: lienAchat(x.url, 'vendeur')}, {milieu: `<div class="pastilles">${x.encan ? tag(tt('Encan', 'Auction') + (x.fin ? ' · ' + finDans(x.fin) : ''), 'or') : tag(tt('Nouveau', 'New'))}</div>`})).join('')}</div>` : ''}</div>`).join('')}
+    <div class="md-gerer"><button class="lien-doux" id="md-vend">${(r.vendeurs || []).length ? tt('Changer mes vendeurs', 'Change my sellers') : tt('Suivre mes vendeurs préférés', 'Follow my favorite sellers')} ›</button></div></div>`;
+  $('#md-plus').onclick = () => feuilleAlerte('', '');
+  const g = $('#md-gerer'); if (g) g.onclick = () => feuilleAlertes();
+  const mv = $('#md-vend'); if (mv) mv.onclick = () => feuilleMesDeals({apres: () => vueMesDeals(z)});
+  $$('[data-md]', z).forEach(b => b.onclick = () => { vibrer(); S.mdFiltre = b.dataset.md ? +b.dataset.md : null; vueMesDeals(z); });
+}
+// 10 nov 2026 : la tendance d'un joueur, 100 % publique (forme LNH, popularite Wikipedia), en pastilles
+async function pastillesTendance(z, nom){
+  if (!z || !nom) return;
+  const t = await API.tendance_joueur(nom).catch(() => null); if (!t || !z.isConnected) return;
+  const f = t.forme, p = t.popularite, out = [];
+  if (f && f.matchs) out.push(tag(tt('Forme', 'Form') + ' : ' + f.points + ' pts / ' + f.matchs + ' ' + tt('matchs', 'games'), f.points >= 6 ? 'vert' : f.points >= 3 ? 'acc' : ''));
+  if (p) out.push(tag(tt('Popularité', 'Buzz') + ' ' + (p.sens === 'hausse' ? '▲' : p.sens === 'baisse' ? '▼' : '=') + ' ' + (p.ratio >= 1 ? '+' : '') + Math.round((p.ratio - 1) * 100) + ' %', p.sens === 'hausse' ? 'vert' : p.sens === 'baisse' ? 'rouge' : ''));
+  z.innerHTML = out.join('');
+}
 async function vueJoueur(arg){
   const nom = decodeURIComponent(arg || '');
   V().innerHTML = `<section class="ecran large joueur"><div class="lecture"><span class="roue"></span>${esc(nom)}</div></section>`;
@@ -13394,7 +13485,8 @@ async function vueJoueur(arg){
   V().innerHTML = `<section class="ecran large joueur">
     <div class="j-tete"><span class="vig-j grand" data-vj="${esc(r.joueur)}">${SVG_CARTE}</span>
       <div class="j-n"><div class="titre">${esc(r.joueur)}</div>
-        <div class="pastilles">${r.equipe ? ecussonEquipe(r.equipe) : ''}${r.recrue ? capsule(tt('Recrue · ', 'Rookie · ') + esc(r.recrue), 'or petit') : ''}</div></div>
+        <div class="pastilles">${r.equipe ? ecussonEquipe(r.equipe) : ''}${r.recrue ? capsule(tt('Recrue · ', 'Rookie · ') + esc(r.recrue), 'or petit') : ''}</div>
+        <div class="pastilles j-tend" id="j-tend"></div></div>
       <button class="btn j-alerte" id="j-alerte">${icN('cloche')}${tt('M’alerter', 'Alert me')}</button></div>
     ${r.mediane || (t && t.pct != null) ? `<div class="v-hero">
       <div class="vh-g"><span>${tt('Sa carte vaut', 'His card is worth')}</span><b class="${r.mediane ? 'vert' : ''}">${r.mediane ? argent(r.mediane, 0) : '—'}</b><small>${esc(r.requete)}</small></div>
@@ -13411,11 +13503,12 @@ async function vueJoueur(arg){
       <div id="j-b-histo"><h3>${tt('Ses ventes', 'His sales')}</h3><div class="sous">${esc(r.requete)} · ${r.nb_ventes} ${tt('ventes réelles', 'real sales')}</div>${courbeVentes(r.points, {h:150})}</div>
       ${r.cartes.length ? `<div id="j-b-cartes"><h3>${tt('Ses cartes à chasser', 'His cards to hunt')}</h3><div class="sous">${tt('Touche une carte pour voir sa valeur.', 'Tap a card to see its value.')}</div><div class="liste">${r.cartes.map(c => `<a class="rangee" href="#valeur/${encodeURIComponent(r.joueur + ' ' + c.carte)}">
         <span class="milieu"><span class="nom">${esc(c.carte)}${c.numero ? ' #' + esc(c.numero) : ''}</span><span class="det">${esc(c.produit)}${c.tirage ? ' · /' + c.tirage : ''}</span></span>
-        <span class="droite"><span class="prix">${argent(c.valeur, 0)}</span>${c.mesuree ? '' : '<span class="sous">' + tt('estimé', 'est.') + '</span>'}</span></a>`).join('')}</div></div>` : ''}
+        <span class="droite">${c.valeur != null ? `<span class="prix">${argent(c.valeur, 0)}</span>${c.mesuree ? '' : '<span class="sous">' + tt('estimé', 'est.') + '</span>'}` : (c.tirage ? capsule('/' + c.tirage, 'or petit') : '')}</span></a>`).join('')}</div></div>` : ''}
       ${r.ventes.length ? `<div id="j-b-vend">${blocVendues({ventes: r.ventes, nb: r.nb_ventes, mediane: r.mediane})}</div>` : ''}
       ${r.alertes.length ? `<div id="j-b-al"><h3>${tt('Tes alertes', 'Your alerts')}</h3><div class="pastilles">${r.alertes.map(a => capsule(a.q + ' ≤ ' + argentCourt(a.prix_max), 'or')).join('')}</div></div>` : ''}
     </div>
   </section>`;
+  pastillesTendance($('#j-tend'), r.joueur);                  // 10 nov 2026 : forme LNH + popularite
   for (const [b, bl] of [['j-histo', 'j-b-histo'], ['j-cartes', 'j-b-cartes'], ['j-tout-v', 'j-b-vend'], ['j-al', 'j-b-al']]) { const x = $('#' + b); if (x) x.onclick = () => feuilleBloc($('#' + bl)); }
   $('#j-alerte').onclick = () => feuilleAlerte(r.requete, r.mediane ? Math.round(r.mediane * 0.8) : '');
   $$('[data-ind-aide]').forEach(b => b.onclick = expliquerIndice);
