@@ -5837,7 +5837,7 @@ class Api:
         except Exception:
             chauds_noms = []
         taches += [("chaud", n, lambda n=n: un_joueur(n, 100, 12)) for n in chauds_noms]
-        resultats = {}
+        resultats, msgs = {}, []
         if taches:
             ex = ThreadPoolExecutor(max_workers=8)
             futurs = {}
@@ -5851,6 +5851,8 @@ class Api:
                     resultats[(k, cle)] = fu.result()
                 except Exception as e:
                     erreurs.append(f"{k} {cle if not isinstance(cle, int) else ''} : {repr(e)[:160]}")
+                    if isinstance(e, RuntimeError) and not msgs:
+                        msgs.append(str(e)[:160])          # un message clair (ex. le quota eBay du compte), montre si rien d'autre
                     resultats[(k, cle)] = e
             for fu in pas_fait:
                 k, cle = futurs[fu]
@@ -5893,7 +5895,8 @@ class Api:
                 "decouvrir": decouvrir, "chauds": chauds, "chasses": chasses, "types": types, "alerte_feu": feu, "pays": pays,
                 "profil": {k: prof.get(k) for k in ("collectionne", "favoris", "prix_min", "prix_max")},
                 "profil_vide": not (prof.get("favoris") or prof.get("collectionne") or prof.get("prix_max")),
-                "partiel": bool(erreurs), "duree_s": round(time.time() - t0, 1)}
+                "partiel": bool(erreurs), "erreur_txt": msgs[0] if msgs else ("eBay ne répond pas en ce moment : réessaie dans une minute" if erreurs else None),
+                "duree_s": round(time.time() - t0, 1)}
 
     @staticmethod
     def _frais_reels(x, pays="CA"):

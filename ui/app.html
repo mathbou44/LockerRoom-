@@ -1833,6 +1833,17 @@ button.btn-scan{border:none; font:inherit; font-weight:700}
 .rq-w{flex-wrap:wrap; overflow:visible; margin:6px 0; padding:0; justify-content:center} .rq-w .chip{height:38px}
 .rq-aj{display:flex; gap:8px; width:100%; margin-top:4px} .rq-aj .champ{flex:1} .rq-aj .btn{width:auto; padding:0 16px}
 .rq-n{font-size:13px; color:var(--doux)} .tuto.quest .q-opts.rq-b{grid-template-columns:repeat(3,1fr)} .rq-b .q-o{align-items:center; text-align:center}
+.rq-glow{position:relative; display:block; width:100%; margin:6px 0 18px; padding:18px; border-radius:20px; border:1px solid transparent; cursor:pointer;
+  background:linear-gradient(var(--carte), var(--carte)) padding-box, conic-gradient(from var(--ang,0deg), var(--h1,#9FE6D2), var(--h2,#B9BEFF), var(--h3,#F2B3D6), var(--h4,#F1D58E), var(--h1,#9FE6D2)) border-box;
+  box-shadow:0 0 28px -8px color-mix(in srgb, var(--h2,#B9BEFF) 55%, transparent); animation:rq-tour 6s linear infinite}
+.rq-glow span{font:700 19px/1 var(--f-cond); letter-spacing:.14em; text-transform:uppercase; background:linear-gradient(90deg, var(--h1,#9FE6D2), var(--h2,#B9BEFF), var(--h3,#F2B3D6), var(--h4,#F1D58E), var(--h1,#9FE6D2));
+  background-size:200% 100%; -webkit-background-clip:text; background-clip:text; color:transparent; animation:rq-reflet 4s linear infinite}
+.rq-glow.neuf{padding:26px 18px; box-shadow:0 0 40px -6px color-mix(in srgb, var(--h2,#B9BEFF) 70%, transparent)} .rq-glow.neuf span{font-size:22px}
+@property --ang{syntax:'<angle>'; inherits:false; initial-value:0deg}
+@keyframes rq-tour{to{--ang:360deg}} @keyframes rq-reflet{to{background-position:200% 0}}
+@media (prefers-reduced-motion:reduce){ .rq-glow, .rq-glow span{animation:none} }
+.rq .liste{width:100%; align-self:stretch} .rq .rq-recap .rq-r{width:100%; text-align:left; display:flex; align-items:center; justify-content:space-between; background:none; border:none; color:inherit; cursor:pointer} .rq .rq-recap{margin:10px 0 4px; text-align:left}
+.rq .rq-l{width:100%; text-align:left; max-height:34vh; overflow:auto} .rq-cible .champ:nth-child(2){max-width:90px} .rq-vend{display:flex; flex-direction:column; gap:8px; width:100%} .rq-bas{width:100%; text-align:left}
 .md-pj{margin:-4px 0 8px} .t-reel{display:block; font-size:12px; color:var(--pale); margin:-2px 0 2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis} .t-reel b{color:var(--doux); font-weight:600} .tuile-c > .sd-et{position:absolute; top:8px; right:8px; z-index:3} .md-feu.on{border-color:var(--vert); color:var(--vert)} .j-pq{margin:14px 0 6px} .vp-rappel{margin:6px 0 12px; font-size:14px; color:var(--doux)} .vp-rappel b{color:var(--texte)} .vp-vendues{margin-top:4px} .w-verif{font-size:12px; margin-bottom:4px} .vp-note{text-align:center; margin-top:6px} .j-pq .nom{font-size:15px} .cmp{display:block; width:100%; margin:4px 0 0; padding:0; border:0; background:none; text-align:left; font-size:12px; color:var(--pale); cursor:pointer} .cmp b{font-weight:600; color:var(--doux)} .cmp.bas{color:var(--or)} .cmp.bas b{color:var(--or)} .md-perso{display:flex; flex-wrap:wrap; gap:8px; margin:-4px 0 12px} .md-dec{font-size:13px; color:var(--doux); margin:2px 0 8px}
 .md-vend{margin-top:18px} .md-vend .v-rang-t b{display:inline-flex; align-items:center; gap:8px}
 .fd-vs{display:grid; gap:8px; margin-top:6px}
@@ -4320,48 +4331,92 @@ function questionnaireProfil(ensuite, forcer){
 const SORTES_RADAR = () => [['recrues', tt('Recrues', 'Rookies')], ['autos', 'Autos'], ['patchs', tt('Patchs', 'Patches')], ['auto_patch', tt('Auto-patchs', 'Auto-patches')],
   ['numerotees', tt('Numérotées', 'Numbered')], ['gradees', tt('Gradées', 'Graded')], ['veterans', tt('Vétérans', 'Veterans')], ['legendes', tt('Légendes', 'Legends')]];
 const NOM_SORTE = (k) => (Object.fromEntries(SORTES_RADAR())[k]) || (k === 'hits' ? tt('Autos et patchs', 'Autos & patches') : k);
-async function questionnaireRadar(o){
+async function questionnaireRadar(o){ return configurerRadar(o); }
+// 10 nov 2026 (Mathieu : « un genre de "set up my radar" : une serie de fenetres de choix comme un formulaire, a la fin ca
+// montre les choix ; l'utilisateur peut en tout temps changer ses reglages, mettre des nouvelles alarmes ou en retirer ») :
+// 1 joueurs · 2 sortes · 3 budget · 4 prix cibles · 5 vendeurs et alertes · 6 le recapitulatif (chaque ligne se modifie)
+async function configurerRadar(o){
   o = o || {};
   if (S.radarQOuvert) return;
   S.radarQOuvert = true;
   try { localStorage.setItem('lr_radar_q', '1'); } catch (e) {}
-  const [p, sg] = await Promise.all([API.deals_profil_lire().catch(() => ({})), API.radar_suggestions().catch(() => ({}))]);
-  const fmax = (p && p.favoris_max) || 5;
-  const fav = [...((p && p.favoris) || [])], co = new Set((p && p.collectionne) || []);
-  let budget = p && p.prix_max ? p.prix_max : null, i = 0;
+  const [p, sg, al0, ra] = await Promise.all([API.deals_profil_lire().catch(() => ({})), API.radar_suggestions().catch(() => ({})),
+    API.alertes_liste().catch(() => ({alertes: []})), API.alarmes_lire().catch(() => ({}))]);
+  const fmax = (p && p.favoris_max) || 5, vmax = (p && p.vendeurs_max) || 3, pro = !!(p && p.pro);
+  const fav = [...((p && p.favoris) || [])], co = new Set((p && p.collectionne) || []), vend = [...((p && p.vendeurs) || [])];
+  let budget = p && p.prix_max ? p.prix_max : null, cibles = [...((al0 && al0.alertes) || [])];
+  const alm = {...((ra && ra.alarmes) || {})};
   const sug = ((sg && sg.joueurs) || []).map(x => x.nom);
   const C = SORTES_RADAR();
   const B = [[25, '25 $'], [50, '50 $'], [100, '100 $'], [250, '250 $'], [500, '500 $'], [0, tt('Pas de limite', 'No limit')]];
+  const N = 6, deja = !!(fav.length || co.size || budget);
+  let i = o.etape != null ? o.etape : (deja ? 5 : 0), change = false;
   const f = document.createElement('div'); f.className = 'tuto-fond'; document.body.appendChild(f);
-  const N = 3;
+  const sauverProfil = async () => {
+    const d = {favoris: fav, collectionne: [...co], prix_min: (p && p.prix_min) || null, prix_max: budget || null};
+    if (pro) d.vendeurs = vend.join(',');
+    const r = await API.deals_profil_regler(d).catch(() => null);
+    if (r && r.erreur) toast(r.erreur, 4000);
+    API.reglages_sauver({radar_q: 1}).catch(() => {});
+    for (const k of [...MEMO.keys()]) if (/mes_deals|accueil|deals_profil|alertes/.test(k)) MEMO.delete(k);
+    S.dealsProfil = null; change = true;
+  };
   const fin = async (sauver) => {
+    if (sauver) await sauverProfil();
     f.remove(); S.radarQOuvert = false;
-    if (sauver) {
-      const r = await API.deals_profil_regler({favoris: fav, collectionne: [...co], prix_min: (p && p.prix_min) || null, prix_max: budget || null}).catch(() => null);
-      if (r && r.erreur) toast(r.erreur, 4000); else if (r) toast(tt('Ton radar est prêt', 'Your radar is ready'));
-      API.reglages_sauver({radar_q: 1}).catch(() => {});
-      for (const k of [...MEMO.keys()]) if (/mes_deals|accueil|deals_profil/.test(k)) MEMO.delete(k);
-      S.dealsProfil = null;
-    }
-    if (o.allerRadar && sauver) { if (location.hash === '#deals') route(); else location.hash = '#deals'; }
-    if (o.apres) o.apres(sauver);
+    if (change) toast(tt('Ton radar est prêt', 'Your radar is ready'));
+    if (o.allerRadar && change) { if (location.hash === '#deals') route(); else location.hash = '#deals'; }
+    if (o.apres) o.apres(change);
   };
   const pts = () => `<div class="tuto-pts">${Array.from({length: N}, (_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>`;
-  const bas = (dernier) => `<div class="tuto-bas"><button class="plus" id="rq-passer">${tt('Plus tard', 'Later')}</button><button class="btn" id="rq-ok">${dernier ? tt('Voir mon radar', 'See my radar') : tt('Suivant', 'Next')}</button></div>`;
+  const bas = (txt) => `<div class="tuto-bas"><button class="plus" id="rq-passer">${i === N - 1 ? tt('Fermer', 'Close') : tt('Plus tard', 'Later')}</button><button class="btn" id="rq-ok">${txt || tt('Suivant', 'Next')}</button></div>`;
+  const bascule = (id, on, t, d) => `<label class="bascule fd-l rq-bas"><span><b>${t}</b>${d ? `<small>${d}</small>` : ''}</span><input type="checkbox" id="${id}" ${on ? 'checked' : ''}></label>`;
   const montrer = () => {
+    let h = '';
     if (i === 0) {
       const tous = [...new Set([...fav, ...sug])];
-      f.innerHTML = `<div class="tuto quest a">${pts()}<h3>${tt('Tes joueurs préférés ?', 'Your favorite players?')}</h3>
-        <p>${tt('On te montre leurs cartes en vente sur eBay. Une équipe marche aussi. Aucun ? Touche Suivant : on chassera large.', 'We show their cards for sale on eBay. A team works too. None? Tap Next: we’ll hunt wide.')}</p>
+      h = `<h3>${tt('Tes joueurs préférés ?', 'Your favorite players?')}</h3>
+        <p>${tt('Aucun ? Touche Suivant : on chassera large.', 'None? Tap Next: we’ll hunt wide.')}</p>
         <div class="chips rq-w" id="rq-j">${tous.map(n => `<button class="chip ${fav.includes(n) ? 'on' : ''}" data-j="${esc(n)}">${esc(n)}</button>`).join('')}</div>
-        <form class="rq-aj" id="rq-f"><input class="champ" id="rq-q" placeholder="${esc(tt('Un autre joueur ou une équipe', 'Another player or team'))}" autocomplete="off" enterkeyhint="done"><button class="btn ghost" type="submit">${tt('Ajouter', 'Add')}</button></form>
-        <div class="rq-n" id="rq-n"></div>${bas(false)}</div>`;
-      const majN = () => { $('#rq-n', f).textContent = fav.length ? `${fav.length} / ${fmax}` : tt(`Jusqu’à ${fmax}`, `Up to ${fmax}`); };
+        <form class="rq-aj" id="rq-f"><input class="champ" id="rq-q" placeholder="${esc(tt('Un joueur ou une équipe', 'A player or team'))}" autocomplete="off" enterkeyhint="done"><button class="btn ghost" type="submit">${tt('Ajouter', 'Add')}</button></form>
+        <div class="rq-n" id="rq-n"></div>`;
+    } else if (i === 1) {
+      h = `<h3>${tt('Quelles cartes ?', 'Which cards?')}</h3>
+        <p>${tt('Sans joueur choisi : toutes les cartes de ces sortes.', 'With no player: every card of these kinds.')}</p>
+        <div class="chips rq-w">${C.map(([k, t]) => `<button class="chip ${co.has(k) ? 'on' : ''}" data-c="${k}">${t}</button>`).join('')}</div>`;
+    } else if (i === 2) {
+      h = `<h3>${tt('Ton budget par carte ?', 'Your budget per card?')}</h3><p>${tt('Port compris.', 'Shipping included.')}</p>
+        <div class="q-opts rq-b">${B.map(([v, l]) => `<button class="q-o ${(v ? budget && Math.abs(budget - versCAD(v)) < 1 : !budget) ? 'on' : ''}" data-b="${v}"><b>${v ? '≤ ' + l : l}</b></button>`).join('')}</div>`;
+    } else if (i === 3) {
+      h = `<h3>${tt('Tes prix cibles', 'Your target prices')}</h3><p>${tt('Une carte précise et ton prix : on t’avertit dès qu’elle passe dessous.', 'A specific card and your price: we tell you when it drops under.')}</p>
+        <div class="liste rq-l">${cibles.map(a => `<div class="rangee"><span class="milieu"><span class="nom">${esc(a.q)}</span><span class="det">≤ ${argentCourt(a.prix_max)}</span></span><button class="ix" data-alx="${a.id}" aria-label="${esc(tt('Retirer', 'Remove'))}">${ICONES.x}</button></div>`).join('')}</div>
+        <form class="rq-aj rq-cible" id="rq-cf"><input class="champ" id="rq-cq" placeholder="${esc(tt('Ex. Bedard Young Guns', 'E.g. Bedard Young Guns'))}" autocomplete="off"><input class="champ" id="rq-cp" type="number" inputmode="decimal" placeholder="${esc(symDevise())}"><button class="btn ghost" type="submit">${ICONES.plus}</button></form>`;
+    } else if (i === 4) {
+      h = `<h3>${tt('Tes alertes', 'Your alerts')}</h3>
+        ${bascule('rq-a1', alm.prix_cible !== false, tt('Prix cible atteint', 'Target price hit'), '')}
+        ${bascule('rq-a2', !!alm.en_feu, tt('Mes joueurs en feu', 'My players on fire'), tt('Une grosse semaine, une intronisation…', 'A big week, a Hall of Fame call…'))}
+        <div class="fd-s" style="margin-top:14px">${tt('Mes vendeurs eBay', 'My eBay sellers')}${pro ? '' : ' <span class="badge-f pro">✦ PRO</span>'}</div>
+        <div class="rq-vend">${Array.from({length: vmax}, (_, k) => `<input class="champ" data-rv="${k}" value="${esc(vend[k] || '')}" placeholder="${esc(tt('pseudo eBay', 'eBay username'))}" autocapitalize="off" autocorrect="off" spellcheck="false" ${pro ? '' : 'disabled'}>`).join('')}</div>`;
+    } else {
+      const ligne = (k, t, v) => `<button class="rangee rq-r" data-aller="${k}"><span class="milieu"><span class="det">${t}</span><span class="nom">${v}</span></span><i class="fl">›</i></button>`;
+      const aucun = `<span class="pale">${tt('Aucun', 'None')}</span>`;
+      h = `<h3>${tt('Ton radar', 'Your radar')}</h3>
+        <div class="liste rq-recap">
+          ${ligne(0, tt('Joueurs', 'Players'), fav.length ? esc(fav.slice(0, 4).join(', ')) + (fav.length > 4 ? ' +' + (fav.length - 4) : '') : tt('Tous (chasse large)', 'All (wide hunt)'))}
+          ${ligne(1, tt('Cartes', 'Cards'), co.size ? esc([...co].map(NOM_SORTE).join(', ')) : tt('Toutes', 'All'))}
+          ${ligne(2, tt('Budget', 'Budget'), budget ? '≤ ' + argentCourt(budget) : tt('Pas de limite', 'No limit'))}
+          ${ligne(3, tt('Prix cibles', 'Target prices'), cibles.length ? cibles.length + ' ' + tt('carte' + (cibles.length > 1 ? 's' : ''), 'card' + (cibles.length > 1 ? 's' : '')) : aucun)}
+          ${ligne(4, tt('Alertes', 'Alerts'), [alm.prix_cible !== false ? tt('prix cible', 'target price') : '', alm.en_feu ? tt('en feu', 'on fire') : ''].filter(Boolean).join(' · ') || aucun)}
+          ${ligne(4, tt('Vendeurs', 'Sellers'), vend.filter(Boolean).length ? esc(vend.filter(Boolean).join(', ')) : aucun)}
+        </div>`;
+    }
+    f.innerHTML = `<div class="tuto quest a rq">${pts()}${h}${bas(i === N - 1 ? tt('Voir mon radar', 'See my radar') : i === N - 2 ? tt('Terminer', 'Finish') : '')}</div>`;
+    // les gestes de chaque fenetre
+    if (i === 0) {
+      const majN = () => { $('#rq-n', f).textContent = fav.length ? `${fav.length} / ${fmax}` : ''; };
       const brancher = () => $$('[data-j]', f).forEach(b => b.onclick = () => {
         const n = b.dataset.j, k = fav.indexOf(n);
-        if (k >= 0) fav.splice(k, 1);
-        else if (fav.length >= fmax) { toast(fmax < 20 ? tt(`${fmax} joueurs au plus (20 avec Pro)`, `${fmax} players max (20 with Pro)`) : tt(`${fmax} joueurs au plus`, `${fmax} players max`)); return; }
-        else fav.push(n);
+        if (k >= 0) fav.splice(k, 1); else if (fav.length >= fmax) { toast(fmax < 20 ? tt(`${fmax} joueurs au plus (20 avec Pro)`, `${fmax} players max (20 with Pro)`) : tt(`${fmax} joueurs au plus`, `${fmax} players max`)); return; } else fav.push(n);
         b.classList.toggle('on', fav.includes(n)); vibrer(); majN(); });
       brancher(); majN();
       $('#rq-f', f).onsubmit = (e) => { e.preventDefault(); const v = $('#rq-q', f).value.replace(/\s+/g, ' ').trim().slice(0, 40); if (!v) return;
@@ -4370,20 +4425,25 @@ async function questionnaireRadar(o){
         if (!$$('[data-j]', f).some(b => b.dataset.j === v)) $('#rq-j', f).insertAdjacentHTML('afterbegin', `<button class="chip on" data-j="${esc(v)}">${esc(v)}</button>`);
         brancher(); majN(); };
     } else if (i === 1) {
-      f.innerHTML = `<div class="tuto quest a">${pts()}<h3>${tt('Tu collectionnes quoi ?', 'What do you collect?')}</h3>
-        <p>${tt('Sans joueur choisi, on te montre TOUTES les cartes de ces sortes dans ton budget.', 'With no player picked, we show ALL cards of these kinds in your budget.')}</p>
-        <div class="chips rq-w">${C.map(([k, t]) => `<button class="chip ${co.has(k) ? 'on' : ''}" data-c="${k}">${t}</button>`).join('')}</div>${bas(false)}</div>`;
       $$('[data-c]', f).forEach(b => b.onclick = () => { const k = b.dataset.c; co.has(k) ? co.delete(k) : co.add(k); b.classList.toggle('on', co.has(k)); vibrer(); });
+    } else if (i === 2) {
+      $$('[data-b]', f).forEach(b => b.onclick = () => { const v = +b.dataset.b; budget = v ? Math.round(versCAD(v) * 100) / 100 : null; vibrer(); i++; montrer(); });
+    } else if (i === 3) {
+      $$('[data-alx]', f).forEach(b => b.onclick = async () => { vibrer(); await API.alerte_supprimer(+b.dataset.alx).catch(() => {}); cibles = cibles.filter(a => a.id !== +b.dataset.alx); change = true; montrer(); });
+      $('#rq-cf', f).onsubmit = async (e) => { e.preventDefault(); const q = $('#rq-cq', f).value.trim(), pr = nb($('#rq-cp', f).value);
+        if (!q || !pr) { toast(tt('La carte et ton prix', 'The card and your price')); return; }
+        const r = await API.alerte_ajouter(q, versCAD(pr)).catch(e => ({ok:false, erreur:e.message}));
+        if (r && r.ok === false) { toast(r.erreur || 'Erreur'); return; }
+        const l = await API.alertes_liste().catch(() => null); if (l) cibles = l.alertes || cibles; change = true; vibrer(); montrer(); demanderNotifications(); };
+    } else if (i === 4) {
+      $('#rq-a1', f).onchange = (e) => { alm.prix_cible = e.target.checked; API.alarmes_regler({prix_cible: e.target.checked}).catch(() => {}); change = true; };
+      $('#rq-a2', f).onchange = (e) => { alm.en_feu = e.target.checked; API.radar_alerte_feu(e.target.checked).catch(() => {}); change = true; if (e.target.checked) demanderNotifications(); };
+      $$('[data-rv]', f).forEach(x => x.oninput = () => { vend[+x.dataset.rv] = x.value.trim(); });
     } else {
-      f.innerHTML = `<div class="tuto quest a">${pts()}<h3>${tt('Ton budget par carte ?', 'Your budget per card?')}</h3>
-        <p>${tt('Port compris. Ça se change quand tu veux dans ton Radar.', 'Shipping included. Change it anytime in your Radar.')}</p>
-        <div class="q-opts rq-b">${B.map(([v, l]) => `<button class="q-o ${(v ? budget && Math.abs(budget - versCAD(v)) < 1 : !budget) ? 'on' : ''}" data-b="${v}"><b>${v ? '≤ ' + l : l}</b></button>`).join('')}</div>
-        <div class="tuto-bas"><button class="plus" id="rq-passer">${tt('Plus tard', 'Later')}</button><button class="btn ghost" id="rq-prec">‹ ${tt('Retour', 'Back')}</button></div></div>`;
-      $$('[data-b]', f).forEach(b => b.onclick = () => { const v = +b.dataset.b; budget = v ? Math.round(versCAD(v) * 100) / 100 : null; vibrer(); fin(true); });
-      $('#rq-prec', f).onclick = () => { i--; montrer(); };
+      $$('[data-aller]', f).forEach(b => b.onclick = () => { vibrer(); i = +b.dataset.aller; montrer(); });
     }
-    $('#rq-passer', f).onclick = () => fin(i > 0 && (fav.length || co.size));
-    const ok = $('#rq-ok', f); if (ok) ok.onclick = () => { i++; montrer(); };
+    $('#rq-passer', f).onclick = () => fin(!!(fav.length || co.size || budget || vend.some(Boolean)));
+    $('#rq-ok', f).onclick = async () => { vibrer(); if (i === N - 1) { fin(true); return; } if (i === N - 2) await sauverProfil(); i++; montrer(); };
   };
   montrer();
 }
@@ -13593,16 +13653,15 @@ async function vueMesDeals(z){
   const vuPD = new Set(), PD = [...L, ...PT.flatMap(g => g.annonces), ...(r.types || []).flatMap(g => g.annonces), ...(r.chauds || []).flatMap(g => g.annonces), ...DEC.flatMap(g => g.annonces)]
     .filter(x => { const ms = Date.parse(x.fin || '') - Date.now(); if (!x.encan || !(ms > 0 && ms < 6 * 3600e3) || (x.mises || 0) > 1 || vuPD.has(x.item_id)) return false; vuPD.add(x.item_id); return true; })
     .sort((a, b) => Date.parse(a.fin) - Date.parse(b.fin)).slice(0, 10);
+  // 10 nov 2026 (Mathieu : « le plus simple possible, un bouton et un texte anime ou glowy ») : tout se regle dans « Mon radar »
+  const rien = vide && !DEC.length && !(r.chauds || []).length && !(r.chasses || []).length;
   z.innerHTML = `<div class="md">
-    <div class="md-tete"><div><b>${tt('Ton radar', 'Your radar')}</b><span class="sous">${tt('Les cartes de tes joueurs dans ton budget, et les annonces à ton prix cible. Tu choisis, on surveille eBay.', 'Your players’ cards in your budget, and listings at your target price. You choose, we watch eBay.')}</span></div>
-      <button class="btn petit" id="md-plus">${icN('cible')}${tt('Prix cible', 'Target price')}</button></div>
-    ${perso}
-    ${r.partiel ? `<div class="sous md-dec">${tt('eBay a été lent pour quelques recherches : elles reviendront à la prochaine ouverture.', 'eBay was slow for a few searches: they’ll be back next time.')}</div>` : ''}
-    ${r.profil_vide ? `<button class="btn" id="md-q" style="margin:0 0 14px">${icN('cible')}${tt('Choisir mes joueurs (30 secondes)', 'Pick my players (30 seconds)')}</button>` : ''}
+    <button class="rq-glow ${r.profil_vide ? 'neuf' : ''}" id="md-cfg"><span>${r.profil_vide ? tt('Configurer mon radar', 'Set up my radar') : tt('Mon radar', 'My radar')}</span></button>
+    ${rien && r.partiel && r.erreur_txt ? `<div class="sous md-dec" style="text-align:center">${esc(r.erreur_txt)}</div>` : ''}
     ${C.length ? `<div class="v-rang-t"><b>${tt('Mes prix cibles', 'My target prices')}</b><span class="sous">${L.length}</span></div>
       <div class="pastilles md-f"><button class="pilule ${S.mdFiltre ? '' : 'on'}" data-md="">${tt('Toutes', 'All')} · ${L.length}</button>${C.map(c => `<button class="pilule ${S.mdFiltre === c.id ? 'on' : ''}" data-md="${c.id}">${esc(c.q)} ≤ ${argentCourt(c.prix_max)} · ${c.n || 0}</button>`).join('')}</div>
       ${vis.length ? `<div class="grille-c">${vis.map(tuile).join('')}</div>` : `<div class="vide">${tt('Rien à ton prix pour l’instant. On regarde eBay chaque heure et on t’avertit dès qu’une annonce passe sous ton prix.', 'Nothing at your price yet. We check eBay every hour and tell you as soon as a listing drops under it.')}</div>`}
-      <div class="md-gerer"><button class="lien-doux" id="md-gerer">${tt('Gérer mes prix cibles', 'Manage my target prices')} ›</button></div>` : ''}
+` : ''}
     ${PT.map(g => caseJ(g, 'radar')).join('')}
     ${(r.types || []).map(g => `<div class="md-vend"><div class="v-rang-t"><b>${icN('carte')}${tt('Toutes les', 'All')} ${esc(NOM_SORTE(g.type).toLowerCase())}</b><span class="sous">${g.annonces.length ? g.annonces.length + ' ' + tt('annonces', 'listings') : ''}${P.prix_max ? ' · ≤ ' + argentCourt(P.prix_max) : ' · ≤ 100 $'}</span></div>
       ${g.annonces.length ? `<div class="d-car v-car">${g.annonces.slice(0, 16).map(x => tuileA(x, 'type_' + g.type)).join('')}</div>` : `<div class="sous">${tt('Rien dans ton budget en ce moment.', 'Nothing in your budget right now.')}</div>`}</div>`).join('')}
@@ -13613,24 +13672,15 @@ async function vueMesDeals(z){
     ${!r.profil_vide && (P.favoris || []).length && !PT.length ? `<div class="vide">${tt('Rien en vente pour tes joueurs dans ton budget en ce moment. Monte un peu ton budget, ou ajoute un joueur.', 'Nothing for sale for your players in your budget right now. Raise your budget a bit, or add a player.')}</div>` : ''}
     ${PD.length >= 2 ? `<div class="md-vend"><div class="v-rang-t"><b>${icN('horloge')}${tt('Peu disputés', 'Low competition')}</b><span class="sous">${tt('0 ou 1 mise · fin dans moins de 6 h', '0 or 1 bid · ending within 6 h')}</span></div>
       <div class="d-car v-car">${PD.map(x => tuileA(x, 'peu_disputes')).join('')}</div></div>` : ''}
-    ${(r.chauds || []).length ? `<div class="v-rang-t" style="margin-top:6px"><b>${tt('En feu cette semaine', 'On fire this week')}</b></div><div class="md-dec">${tt('Les joueurs avec la meilleure semaine (leurs stats des 7 derniers jours). Leurs cartes dans ton budget.', 'The players with the best week (their stats over the last 7 days). Their cards in your budget.')}</div>${r.chauds.map(g => caseJ(g, 'chauds')).join('')}` : ''}
-    ${vide && DEC.length ? `<div class="v-rang-t" style="margin-top:6px"><b>${tt('À découvrir', 'Discover')}</b></div><div class="md-dec">${tt('Les joueurs les plus recherchés en ce moment (stats et popularité publiques), à 100 $ ou moins. Choisis tes joueurs pour un radar à toi.', 'The most wanted players right now (public stats and popularity), at $100 or less. Pick your players for a radar of your own.')}</div>${DEC.map(g => caseJ(g, 'decouvrir')).join('')}` : ''}
+    ${(r.chauds || []).length ? `<div class="v-rang-t" style="margin-top:6px"><b>${tt('En feu cette semaine', 'On fire this week')}</b></div>${r.chauds.map(g => caseJ(g, 'chauds')).join('')}` : ''}
+    ${vide && DEC.length ? `<div class="v-rang-t" style="margin-top:6px"><b>${tt('À découvrir', 'Discover')}</b></div>${DEC.map(g => caseJ(g, 'decouvrir')).join('')}` : ''}
     ${(r.vendeurs || []).map(v => `<div class="md-vend"><div class="v-rang-t"><b>${icN('boutique')}${esc(v.vendeur)}</b><span class="sous">${v.annonces.length ? v.annonces.length + ' ' + tt('annonces', 'listings') : tt('rien de neuf', 'nothing new')}</span></div>
       ${v.annonces.length ? `<div class="d-car v-car">${v.annonces.slice(0, 12).map(x => tuileCarte({...x, url: lienAchat(x.url, 'vendeur')}, {x: boutonWatch(x), bas: ligneReel(x), milieu: `<div class="pastilles">${x.encan ? tag(tt('Encan', 'Auction') + (x.fin ? ' · ' + finDans(x.fin) : ''), 'or') : tag(tt('Nouveau', 'New'))}</div>`})).join('')}</div>` : ''}</div>`).join('')}
-    <div class="md-gerer"><button class="lien-doux" id="md-chasse">${(r.chasses || []).length ? tt('Chasser un autre set', 'Hunt another set') : tt('Chasser les cartes qui manquent à mes sets', 'Hunt the cards missing from my sets')} ›</button></div>
-    <div class="md-gerer"><button class="lien-doux" id="md-vend">${(r.vendeurs || []).length ? tt('Changer mes vendeurs', 'Change my sellers') : tt('Suivre mes vendeurs préférés', 'Follow my favorite sellers')} ›</button></div></div>`;
-  const reQ = () => questionnaireRadar({apres: (ok) => { if (ok && z.isConnected) vueMesDeals(z); }});
-  $('#md-plus').onclick = () => feuilleAlerte('', '');
-  for (const id of ['md-q', 'md-perso']) { const b = $('#' + id); if (b) b.onclick = reQ; }
-  const fe = $('#md-feu'); if (fe) fe.onclick = async () => { vibrer(); const x = await API.radar_alerte_feu(!r.alerte_feu).catch(() => null);
-    if (x && x.ok) { r.alerte_feu = x.alerte_feu; fe.classList.toggle('on', x.alerte_feu);
-      fe.innerHTML = icN('cloche') + (x.alerte_feu ? tt('Alerte en feu', 'On-fire alert') : tt('M’alerter s’ils sont en feu', 'Alert me if on fire'));
-      toast(x.alerte_feu ? tt('On t’avertit quand un de tes joueurs a une grosse semaine', 'We’ll tell you when one of your players has a big week') : tt('Alerte retirée', 'Alert removed'));
-      if (x.alerte_feu) demanderNotifications(); } };
-  const ch = $('#md-chasse'); if (ch) ch.onclick = () => feuilleSets();
+    </div>`;
+  const reQ = () => configurerRadar({apres: (ok) => { if (ok && z.isConnected) vueMesDeals(z); }});
+  $('#md-cfg').onclick = () => { vibrer(); reQ(); };
   $$('[data-chasse-x]', z).forEach(b => b.onclick = async () => { const x = await API.chasse_retirer(b.dataset.chasseX, b.dataset.chasseS).catch(() => null); if (x && x.ok) vueMesDeals(z); });
-  const g = $('#md-gerer'); if (g) g.onclick = () => feuilleAlertes();
-  const mv = $('#md-vend'); if (mv) mv.onclick = () => feuilleMesDeals({apres: () => vueMesDeals(z)});
+
   $$('[data-md]', z).forEach(b => b.onclick = () => { vibrer(); S.mdFiltre = b.dataset.md ? +b.dataset.md : null; vueMesDeals(z); });
   remplirComparer(z);
   // 1re visite d'un Radar vide : le questionnaire s'ouvre seul (une fois ; ensuite le bouton « Choisir mes joueurs »)
