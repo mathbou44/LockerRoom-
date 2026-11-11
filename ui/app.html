@@ -709,6 +709,19 @@ html[lang=en] .w-ligne::after{content:'Remove'}
 .tiq-cr span{display:flex; flex-direction:column; gap:3px} .tiq-cr small{font:700 10.5px var(--f-cond); letter-spacing:.1em; text-transform:uppercase; color:var(--acc)}
 .tiq-cr i{display:block; height:5px; border-radius:3px; background:var(--carte2); overflow:hidden} .tiq-cr em{display:block; height:100%; background:linear-gradient(90deg, var(--acc), var(--vert))}
 .tiq-a{display:flex; gap:6px; align-items:flex-start; font-size:13px; color:var(--texte); line-height:1.35} .tiq-a .ic-h{width:15px; height:15px; flex:none; margin-top:2px; color:var(--acc)} .tiq-note{margin-top:14px}
+.c-eb{grid-column:1 / -1; justify-self:start; display:inline-flex; align-items:center; gap:7px; margin:-2px 0 10px; padding:6px 12px 6px 9px; border-radius:999px; border:1px solid color-mix(in srgb, var(--acc) 30%, var(--ligne)); background:color-mix(in srgb, var(--acc) 7%, transparent); color:var(--acc); font-family:inherit; font-weight:600; font-size:13.5px; cursor:pointer}
+.c-eb svg{width:16px; height:16px} .c-eb i{font-style:normal; opacity:.7}
+.pop2-fond{position:fixed; inset:0; z-index:400; display:grid; place-items:center; padding:20px; background:rgba(0,0,0,.45); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); opacity:0; transition:opacity .2s}
+.pop2-fond.ouvert{opacity:1} .pop2-fond .pop2{transform:scale(.96); transition:transform .25s cubic-bezier(.22,1,.36,1)} .pop2-fond.ouvert .pop2{transform:none}
+.pop2{position:relative; width:100%; max-width:380px; background:var(--fond); border:1px solid var(--ligne); border-radius:26px; padding:22px 20px 18px; display:flex; flex-direction:column; gap:12px; box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.pop2-x{position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:50%; border:1px solid var(--ligne); background:var(--carte); color:var(--texte); font-size:14px}
+.pop2-ic{width:42px; height:42px; border-radius:50%; display:grid; place-items:center; background:var(--acc-fonce); color:var(--acc); border:1px solid color-mix(in srgb, var(--acc) 35%, transparent)} .pop2-ic svg{width:22px; height:22px}
+.pop2-t{font:700 22px/1.1 var(--f-cond); padding-right:36px}
+.pop2-l{margin:0; padding-left:20px; display:flex; flex-direction:column; gap:6px; font-size:14.5px; color:var(--texte2); line-height:1.4} .pop2-l b{color:var(--texte)}
+.pop2-go{margin-top:2px}
+.pop2-v{display:flex; align-items:center; gap:10px; font-size:14px; color:var(--doux)} .pop2-v span{flex:none} .pop2-v .champ{flex:1; min-width:0; margin:0} .pop2-v em{font-style:normal; flex:none}
+.pop2-r{display:flex; align-items:center; gap:10px; min-height:0} .pop2-r:empty{display:none}
+.pop2-r span{font-size:13.5px; color:var(--doux)} .pop2-r small{color:var(--vert)} .pop2-r b{font:700 24px var(--f-cond); color:var(--vert); margin-left:auto} .pop2-r .btn.petit{width:auto; height:38px; padding:0 16px; border-radius:999px}
 .c-pp{font-size:13px; color:var(--doux); margin:-4px 0 6px; grid-column:1 / -1} .c-pp b{color:var(--texte)} .c-pp .vert{color:var(--vert)} .c-pp .or{color:var(--or)}
 #c-prix::placeholder{color:var(--pale); opacity:.75}
 .rc-l{display:flex; flex-direction:column; gap:8px} .rc-r{display:flex; flex-direction:column; gap:6px; padding:10px 12px; border-radius:14px; background:var(--carte)} .rc-p{display:flex; justify-content:space-between; gap:10px} .rc-p b{font:700 16px var(--f-cond)} .rc-p small{color:var(--doux)}
@@ -5040,7 +5053,9 @@ function poserFlou(img, q, o){
   const e = q.map(([x, y]) => { const vx = x - c[0], vy = y - c[1], n = Math.hypot(vx, vy) || 1; return [x + vx / n * m * 1.41, y + vy / n * m * 1.41]; });
   g.save(); g.beginPath(); e.forEach(([x, y], k) => k ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); g.clip();
   g.drawImage(img, 0, 0); g.restore();
-  return centrerCarte(cv, q, o && o.cote).toDataURL('image/jpeg', STUDIO.qualite);
+  const cc = centrerCarte(cv, q, o && o.cote), url = cc.toDataURL('image/jpeg', STUDIO.qualite);
+  cv.width = cv.height = 0; if (cc !== cv) cc.width = cc.height = 0;          // 13 nov 2026 : la memoire rendue tout de suite (iOS)
+  return url;
 }
 // 31 oct 2026 (Mathieu : « la photo est pas centrée ») : la carte au CENTRE de la photo. On recadre autour d'elle (meme
 // format que la photo, la carte ~80 % de la hauteur ou de la largeur) ; s'il manque de la photo d'un cote, ce bout est
@@ -5394,7 +5409,10 @@ async function photoStudio(src, coins1000, opts){
   if (W * H > 12e6) { const k = Math.sqrt(12e6 / (W * H)), cv = document.createElement('canvas'); cv.width = Math.round(W * k); cv.height = Math.round(H * k);
     const g_ = cv.getContext('2d'); g_.imageSmoothingQuality = 'high'; g_.drawImage(img, 0, 0, cv.width, cv.height); src_ = cv; q_ = q.map(([x, y]) => [x * k, y * k]); }
   const n = niveler(src_, q_);
-  return {photo: poserFlou(n.img, n.q, opts), coins: r.coins.map(([x, y]) => [Math.round(x / G.w * 1000), Math.round(y / G.h * 1000)]), affine: r.affine, W, H,
+  const photo = poserFlou(n.img, n.q, opts);
+  // 13 nov 2026 : iOS garde la memoire d'un canevas tant qu'il a une taille ; un lot de 20 cartes faisait redemarrer l'app
+  if (n.img !== img && n.img.width) { n.img.width = n.img.height = 0; } if (src_ !== img && src_.width) { src_.width = src_.height = 0; }
+  return {photo, coins: r.coins.map(([x, y]) => [Math.round(x / G.w * 1000), Math.round(y / G.h * 1000)]), affine: r.affine, W, H,
           angle: n.angle};
 }
 // le bord du bas de la carte (les 2 coins les plus bas) -> son angle ; la photo tournee de -angle autour du centre de la
@@ -5939,7 +5957,7 @@ async function identifier(photos){
 }
 // 11 nov 2026 (Mathieu : « c'est quand meme tres long le loading ») : 3 cartes a la fois au lieu d'une (lecture IA, photo
 // studio, titre et prix) ; chaque carte garde son propre etat, rien ne se melange
-async function lotEnParallele(l, n = 3){
+async function lotEnParallele(l, n = 2){
   let k = 0;
   const travailleur = async () => { while (k < l.length) { const c = l[k++];
     try { await traiterCarteLot(c); } catch (e) { c.etat = 'revoir'; c.raison = tt('Erreur : reprends cette carte', 'Error: redo this card'); }
@@ -5966,7 +5984,10 @@ async function traiterCarteLot(c){
     // 13 nov 2026 (Mathieu : « ce sont toutes de belles photos ») : le telephone manquait de memoire (3 cartes a la fois, en
     // 4032 px) et les photos du bout du lot ne se chargeaient plus. Une photo a la fois, la memoire liberee, et 3 essais
     // (plus petite a chaque fois) avant de dire qu'elle ne se charge pas ; alors « Reessayer » refait la meme photo.
-    for (const f of c.f) { const d = await chargerPhotoLot(f); if (!d) { c.ph = []; c.etat = 'revoir'; c.lecture = true; c.raison = tt('La photo n’a pas chargé', 'The photo didn’t load'); return; } c.ph.push(d); }
+    // 13 nov 2026 (« photo didn't load ? ») : apres un redemarrage de l'app (iOS a manque de memoire), les photos gardees
+    // du lot ne sont souvent plus lisibles : on le dit clairement, et c'est « Remplacer » (reessayer ne changerait rien)
+    for (const f of c.f) { const d = await chargerPhotoLot(f); if (!d) { c.ph = []; c.etat = 'revoir'; c.lecture = !c.repris;
+      c.raison = c.repris ? tt('L’app a redémarré pendant le lot : cette photo n’est plus accessible', 'The app restarted during the batch: this photo is no longer available') : tt('La photo n’a pas chargé', 'The photo didn’t load'); return; } c.ph.push(d); }
     c.lecture = false;
   }
   for (let j = 0; j < c.ph.length; j++) {                       // nos regles, dans le telephone, avant toute lecture
@@ -10870,7 +10891,7 @@ async function lotReprendre(){
   const g = S.lotGarde || await lotLireGarde(); if (!g) return;
   for (const k in LOT) delete LOT[k];
   Object.assign(LOT, {but: g.but || 'vente', devants: !!g.devants, fini: false,
-    l: g.cartes.map((x, i) => ({n: i + 1, f: x.f, ph: x.ph, impair: x.impair, cle: x.cle || undefined, etat: 'attente'}))});
+    l: g.cartes.map((x, i) => ({n: i + 1, f: x.f, ph: x.ph, impair: x.impair, cle: x.cle || undefined, etat: 'attente', repris: true}))});
   location.hash = LOT.but === 'collection' ? '#vendre/collection-lot' : '#vendre/lot';
   await new Promise(x => setTimeout(x, 300)); rendreLot();
   await lotEnParallele(LOT.l);
@@ -14668,6 +14689,11 @@ function suggererPrixCarte(c){
     const coutCad = cv != null ? cv / (convertir(1) || 1) : nb(c.cout);
     const y = prixPourProfit(coutCad);
     let h = $('#c-pp'); if (!h) { h = document.createElement('div'); h.id = 'c-pp'; h.className = 'c-pp'; (pi.closest('label') || pi).insertAdjacentElement('afterend', h); }
+    // 13 nov 2026 (Mathieu : « une maniere slick et facile d'amener l'utilisateur vers eBay last sold avec notre titre, pour
+    // qu'il valide le bon prix ; subtil, bien integre, pas lourd ») : un petit lien sous le prix, toujours la
+    let e = $('#c-eb'); if (!e) { e = document.createElement('button'); e.type = 'button'; e.id = 'c-eb'; e.className = 'c-eb';
+      e.innerHTML = `${ICO_VENDUS}<span>${tt('Vérifier les ventes eBay', 'Check eBay sold')}</span><i>›</i>`; h.insertAdjacentElement('afterend', e);
+      e.onclick = (ev) => { ev.preventDefault(); vibrer(); feuilleVendusEbay(($('#c-titre') || {}).value || c.titre || '', (v) => { pi.value = v; pi.dispatchEvent(new Event('input')); }); }; }
     if (!y) { pi.placeholder = ''; h.innerHTML = ''; return; }
     const yd = Math.ceil(convertir(y));
     pi.placeholder = String(yd);
@@ -14678,6 +14704,42 @@ function suggererPrixCarte(c){
   };
   if (!pi.dataset.pp) { pi.dataset.pp = '1'; pi.addEventListener('input', maj); if (ci) ci.addEventListener('input', maj); }
   maj();
+}
+const ICO_VENDUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l5-5 4 4 8-8"/><path d="M15 8h5v5"/></svg>';
+const NEGO = 0.15;
+// les ventes eBay (vendues) de cette carte, dans le navigateur de l'app ; avant : la regle des 15 % pour la negociation ;
+// apres : le dernier vendu tape -> le prix a afficher (+15 %) en un toucher. L'utilisateur lit eBay lui-meme : rien n'est
+// recopie par SlabCoach (licence eBay).
+function urlVendusEbay(titre){
+  const q = String(titre || '').replace(/[^\p{L}\p{N}#/\-.' ]+/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 80);
+  const dom = typeof DEVISE !== 'undefined' && DEVISE === 'USD' ? 'www.ebay.com' : 'www.ebay.ca';
+  return `https://${dom}/sch/i.html?_nkw=${encodeURIComponent(q)}&LH_Sold=1&LH_Complete=1&_sop=13`;
+}
+function ouvrirDansApp(url){
+  const B = PLUG().Browser;
+  if (NATIF && B) B.open({url, presentationStyle: 'popover', toolbarColor: '#0B0B0E'}); else window.open(url, '_blank', 'noopener');
+}
+function feuilleVendusEbay(titre, mettre){
+  let f = $('#pop-eb'); if (f) f.remove();
+  f = document.createElement('div'); f.id = 'pop-eb'; f.className = 'pop2-fond';
+  f.innerHTML = `<div class="pop2" role="dialog" aria-modal="true"><button class="pop2-x" aria-label="${tt('Fermer', 'Close')}">✕</button>
+    <span class="pop2-ic">${ICO_VENDUS}</span>
+    <b class="pop2-t">${tt('Le bon prix, en 10 secondes', 'The right price, in 10 seconds')}</b>
+    <ol class="pop2-l"><li>${tt('Regarde le <b>dernier vendu</b> de la même carte (même note, même parallèle).', 'Look at the <b>last sold</b> for the same card (same grade, same parallel).')}</li>
+      <li>${tt(`Affiche environ <b>${Math.round(NEGO * 100)} % de plus</b> : les acheteurs font des offres, tu gardes ta marge.`, `List about <b>${Math.round(NEGO * 100)}% higher</b>: buyers make offers, you keep your margin.`)}</li></ol>
+    <button class="btn pop2-go" id="pe-go">${tt('Voir les vendues sur eBay', 'See sold on eBay')} ${EXT}</button>
+    <label class="pop2-v"><span>${tt('Dernier vendu', 'Last sold')}</span><input class="champ" id="pe-v" type="number" inputmode="decimal" step="any" placeholder="0"><em>${symDevise()}</em></label>
+    <div class="pop2-r" id="pe-r"></div></div>`;
+  document.body.appendChild(f); requestAnimationFrame(() => f.classList.add('ouvert'));
+  const fermer = () => { f.classList.remove('ouvert'); setTimeout(() => f.remove(), 220); };
+  f.querySelector('.pop2-x').onclick = fermer; f.onclick = (e) => { if (e.target === f) fermer(); };
+  $('#pe-go').onclick = () => { vibrer(); ouvrirDansApp(urlVendusEbay(titre)); setTimeout(() => { const i = $('#pe-v'); if (i) i.focus(); }, 900); };
+  const v = $('#pe-v'), r = $('#pe-r');
+  v.oninput = () => { const x = nb(String(v.value).replace(',', '.'));
+    if (!(x > 0)) { r.innerHTML = ''; return; }
+    const p = Math.ceil(x * (1 + NEGO));
+    r.innerHTML = `<span>${tt('Prix à afficher', 'Price to list')} <small>+${Math.round(NEGO * 100)} %</small></span><b>${p} ${symDevise()}</b><button class="btn petit" id="pe-ok">${tt('Mettre', 'Use')}</button>`;
+    $('#pe-ok').onclick = () => { vibrer(); mettre(p); toast(tt('Prix mis', 'Price set'), 1500); fermer(); }; };
 }
 function prixPourProfit(cout){
   const c = +cout; if (!(c > 0)) return null;
