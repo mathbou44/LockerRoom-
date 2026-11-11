@@ -192,11 +192,18 @@ def description(c, titre, francophone=True, etat="nm", boutique=None, retours="n
     cond_en = (["Grade is the grading company's opinion; the holder may show light wear from handling."] if gradee else
                ["Raw card, sold as is: judge the condition from the photos (corners, edges, surface, centering).",
                 "No grade is guaranteed (PSA, BGS, SGC or other): a Gem Mint 10 or any other grade cannot be promised."]) + [
-               "Ships from Canada. Buyers outside Canada (including the U.S.): import duties, taxes or brokerage fees may apply and are the buyer's responsibility."]
+               # 11 nov 2026 (Mathieu : « une mention pour les frais de douane et les tarifs ; on n'est pas responsable ») :
+               "Ships from Canada. Buyers outside Canada (including the U.S.): import duties, tariffs, taxes and brokerage fees "
+               "may apply. They are not included in the item price or shipping cost and are the buyer's responsibility.",
+               "When eBay collects these charges at checkout, nothing more is due on delivery. The seller is not responsible "
+               "for customs charges, tariffs or customs delays."]
     cond_fr = (["La note est l'avis de la compagnie de gradation ; le boîtier peut montrer une légère usure de manipulation."] if gradee else
                ["Carte brute, vendue telle quelle : juge l'état sur les photos (coins, bords, surface, centrage).",
                 "Aucune note n'est garantie (PSA, BGS, SGC ou autre) : un Gem Mint 10, ou toute autre note, ne peut être promis."]) + [
-               "Expédiée du Canada. Hors Canada (y compris les États-Unis) : des droits de douane, taxes ou frais de courtage peuvent s'appliquer, à la charge de l'acheteur."]
+               "Expédiée du Canada. Hors Canada (y compris les États-Unis) : des droits de douane, tarifs, taxes et frais de courtage "
+               "peuvent s'appliquer. Ils ne sont pas inclus dans le prix ni dans le port et sont à la charge de l'acheteur.",
+               "Quand eBay perçoit ces frais au paiement, rien de plus n'est dû à la livraison. Le vendeur n'est pas responsable "
+               "des frais de douane, des tarifs ni des délais aux douanes."]
     en = (f"<h2>{escape(titre)}</h2><p><b>Card:</b> {escape(det)}</p><p><b>Condition:</b> {escape(etat_en)}. "
           "The card in the photos is the exact card you will receive.</p>"
           f"<p>{escape(envoi_en)} Combined shipping available.</p><p>{escape(ret_en)}</p>"
@@ -413,9 +420,21 @@ def xml_item(d, photos, code_postal="H2X 1Y4"):
 
 
 def photos_ebay(photos):
-    """Data URL (photo prise dans l'app) -> image hebergee par eBay ; une URL https reste telle quelle."""
+    """Data URL (photo prise dans l'app) -> image hebergee par eBay ; une URL https reste telle quelle.
+    11 nov 2026 (Mathieu : « c'est long pareil vs une carte ») : les photos partent EN MEME TEMPS (4 a la fois), dans l'ordre."""
+    photos = list(photos or [])
+    if len(photos) <= 1:
+        return _photos_ebay(photos)
+    from concurrent.futures import ThreadPoolExecutor
+    import contextvars
+    with ThreadPoolExecutor(max_workers=4) as ex:
+        fs = [ex.submit(contextvars.copy_context().run, _photos_ebay, [p], i) for i, p in enumerate(photos)]
+        return [u for f in fs for u in f.result()]
+
+
+def _photos_ebay(photos, decal=0):
     out = []
-    for i, p in enumerate(photos or []):
+    for i, p in enumerate(photos or [], start=decal):
         p = str(p or "")
         if p.startswith("https://"):
             out.append(p)

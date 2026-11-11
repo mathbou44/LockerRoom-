@@ -1301,6 +1301,13 @@ def _valeurs_auto():
             indice_joueurs.passe_si_besoin()
         except Exception as e:
             print("Indice joueurs : " + str(e), flush=True)
+        try:                                    # 11 nov 2026 - Score SlabCoach : la memoire du marche (chaque jour), reappris (chaque semaine)
+            import score_appris
+            r_sa = score_appris.taches_si_besoin()
+            if r_sa.get("reapprendre") or (r_sa.get("jour") or {}).get("ajoutees"):
+                print("Score SlabCoach : " + json.dumps(r_sa)[:300], flush=True)
+        except Exception as e:
+            print("Score SlabCoach (reappris) : " + str(e), flush=True)
         try:                                    # 10 nov 2026 - TheCardAPI : les ventes de hockey d'hier -> nos archives (1 fois/jour)
             import thecardapi
             thecardapi.moissonner_si_besoin()

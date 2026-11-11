@@ -11,3 +11,4 @@ defusedxml>=0.7.1            # 9 nov 2026 (Aikido) : lecture XML sure
 Pillow>=13.0.0               # 1er nov 2026 : examen de l etat (zooms des coins et des bords, centrage mesure)
 numpy>=2.5.3                 # 3 nov 2026 : mesures de l examen (centrage par paires, blanchiment en mm, qualite photo)
 scikit-learn>=1.6            # 10 nov 2026 : la demande des joueurs sans ventes (arbres de decision, demande_legale)
+lightgbm>=4.5               # 11 nov 2026 : SlabIQ, le reapprentissage de la semaine sur le serveur (le service n'utilise que numpy)

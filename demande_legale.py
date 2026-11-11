@@ -516,6 +516,7 @@ def _tous_les_noms():
             noms += [c["joueur"] for c in pp.get("cartes") or [] if c.get("joueur") and "/" not in c["joueur"]]
     except Exception:
         pass
+    noms += _noms_marche()
     vus, out = set(), []
     for nm in noms:
         k = _norm(nm)
@@ -523,6 +524,43 @@ def _tous_les_noms():
             vus.add(k)
             out.append(nm)
     return out
+
+
+_MARCHE = {"le": 0.0, "noms": []}
+PAS_DES_NOMS = {"from list", "complete your", "tim hortons", "wild card", "take your", "road to", "upper deck", "young guns",
+                "pick your", "you pick", "o pee", "series one", "series two"}
+
+
+def _noms_marche(jours=60, n_min=12, max_=300):
+    """11 nov 2026 (SlabIQ : les prospects - Martone, Hagens, McKenna - et des legendes - Messier, Clarke, Hasek - etaient
+    « inconnus » : ils n'etaient ni au catalogue ni dans nos valeurs) : les joueurs qui reviennent le plus dans les VENTES
+    du serveur (base_ventes). Ceux que la LNH ne connait pas restent simplement sans fiche. Recalcule une fois par jour."""
+    if time.time() - _MARCHE["le"] < 86400:
+        return _MARCHE["noms"]
+    _MARCHE["le"] = time.time()
+    try:
+        import sqlite3
+        import collections
+        import comptes
+        import cartes_match
+        ch = os.path.join(comptes.DONNEES, "base_ventes.sqlite")
+        if not os.path.exists(ch):
+            return []
+        depuis = time.strftime("%Y-%m-%d", time.gmtime(time.time() - jours * 86400))
+        c = sqlite3.connect(ch, timeout=5)
+        try:
+            titres = [r[0] for r in c.execute("SELECT titre FROM ventes WHERE le >= ? ORDER BY le DESC LIMIT 80000", (depuis,))]
+        finally:
+            c.close()
+        cnt = collections.Counter()
+        for t in titres:
+            j = cartes_match.joueur_du_titre(t or "")
+            if j and len(j.split()) >= 2 and j not in PAS_DES_NOMS:
+                cnt[j] += 1
+        _MARCHE["noms"] = [n.title() for n, k in cnt.most_common(max_) if k >= n_min]
+    except Exception as e:
+        print("Demande (noms du marche) : " + repr(e), flush=True)
+    return _MARCHE["noms"]
 
 
 def _a_lire(n=PAR_PASSE, quoi="nhl"):

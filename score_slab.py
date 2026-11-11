@@ -10,6 +10,8 @@ avec les annonces eBay). Il melange :
   - la CARTE  (45 %) : ce que le titre dit d'elle : numerotee (plus le tirage est petit, mieux c'est), auto, patch,
     auto-patch, recrue, gradee 10.
 Aucun prix n'entre dans le calcul.
+10 nov 2026 : quand score_modele.npz est la, le score vient du modele appris (precision 0,908 / confiance 0,905 sur 32 826
+ventes jamais vues) ; ce melange simple reste en secours.
 """
 import re
 
@@ -62,6 +64,14 @@ def score(titre, joueur=None):
             ij = None
     sj = float(ij["indice"]) if ij and ij.get("indice") is not None else JOUEUR_INCONNU
     total = POIDS_JOUEUR * sj + (1 - POIDS_JOUEUR) * c["score"]
+    # 10 nov 2026 (« precision 9/10 ») : le modele appris (score_modele) quand il est la ; sinon le melange simple
+    try:
+        import score_modele
+        sm = score_modele.score(titre or "", joueur)
+        if sm is not None:
+            total = sm
+    except Exception as e:
+        print("Score modele : " + repr(e), flush=True)
     nom = j.title() if j and j == j.lower() else j
     return {"score": int(round(total)), "joueur": nom or None, "indice": ij.get("indice") if ij else None,
             "pastilles": (ij or {}).get("pastilles") or [], "semaine": (ij or {}).get("semaine"), "carte": c}
@@ -80,3 +90,36 @@ def annoter(x):
     if s["joueur"] and not x.get("joueur"):
         x["joueur"] = s["joueur"]
     return x
+
+
+def annoter_lot(items):
+    """Comme annoter, pour une liste (le modele calcule tout d'un coup : bien plus rapide)."""
+    items = [x for x in items if isinstance(x, dict)]
+    try:
+        import score_modele
+        sc = score_modele.scores([x.get("titre") or "" for x in items], [x.get("joueur") for x in items])
+    except Exception as e:
+        print("Score modele (lot) : " + repr(e), flush=True)
+        sc = None
+    for k, x in enumerate(items):
+        try:
+            c = carte(x.get("titre") or "")
+            import cartes_match
+            j = (x.get("joueur") or cartes_match.joueur_du_titre(x.get("titre") or "") or "").strip()
+            ij = None
+            if j:
+                import indice_joueurs
+                ij = indice_joueurs.indice(j)
+            if sc is not None:
+                x["score"] = sc[k]
+            else:
+                sj = float(ij["indice"]) if ij and ij.get("indice") is not None else JOUEUR_INCONNU
+                x["score"] = int(round(POIDS_JOUEUR * sj + (1 - POIDS_JOUEUR) * c["score"]))
+            x["carte"] = {kk: c[kk] for kk in ("auto", "patch", "rc", "tirage", "numero", "grade")}
+            if ij and ij.get("pastilles"):
+                x["pastilles_j"] = ij["pastilles"]
+            if j and not x.get("joueur"):
+                x["joueur"] = j.title() if j == j.lower() else j
+        except Exception:
+            continue
+    return items

@@ -838,7 +838,13 @@ class Api:
             r = vision.identifier(photos if isinstance(photos, list) else [photos])
         except vision.Erreur as e:
             # 28 oct 2026 : l'admin voit la vraie raison (code et message d'Anthropic, sans la cle)
-            return {"ok": False, "erreur": str(e), **({"detail": vision.derniere_erreur()} if self._est_admin() else {})}
+            # 11 nov 2026 (« pourquoi le titre n'est pas pre-rempli ? ») : chaque echec est aussi note dans Admin > Erreurs
+            try:
+                import admin
+                admin.noter_erreur("photo_identifier", RuntimeError(str(e)[:200] + " | " + str(vision.derniere_erreur() or "")[:200]))
+            except Exception:
+                pass
+            return {"ok": False, "erreur": str(e), **({"detail": vision.derniere_erreur()} if self._est_admin(reel=True) else {})}
         try:                                   # 28 oct 2026 : CardSight AI confirme les champs douteux (si CARDSIGHT_CLE)
             import cardsight
             if cardsight.actif() and not r.get("cache"):
@@ -1251,7 +1257,7 @@ class Api:
                 "a_ajouter": len(nouveaux_produits.liste()), "erreurs_24h": sum(1 for e in s["erreurs"] if str(e["le"]) > (datetime.now() - timedelta(days=1)).isoformat()),
                 "ebay": s["ebay"], "version": s["version"], "vendues": vendues.statut(), "photos": s.get("photos"),
                 "taches": s.get("taches"), "disque": s.get("disque"), "veille": self._veille_resume(),
-                "demande_legale": self._demande_legale_statut(), "banc": self._banc_resume(), "highlightly": self._highlightly_statut(), "indice": self._indice_statut()}
+                "demande_legale": self._demande_legale_statut(), "banc": self._banc_resume(), "highlightly": self._highlightly_statut(), "indice": self._indice_statut(), "score_slab": self._score_statut()}
 
     @staticmethod
     def _banc_resume():
@@ -1262,10 +1268,28 @@ class Api:
             return {"erreur": str(e)[:120]}
 
     @staticmethod
+    def _score_statut():
+        try:
+            import score_modele
+            import score_appris
+            m = score_modele.charger()
+            st = score_appris.statut()
+            out = {**score_modele.BANC, "actif": m is not None, "source": (m or {}).get("source"), "reappris": st}
+            if st.get("actif") and st.get("mesure"):           # la mesure du dernier reapprentissage accepte remplace celle du banc
+                out.update(precision=st["mesure"].get("precision"), confiance=st["mesure"].get("confiance"),
+                           ventes_test=st["mesure"].get("ventes_test"), ventes_apprentissage=st["mesure"].get("ventes_apprentissage"),
+                           le=(st.get("le") or "")[:10])
+            return out
+        except Exception as e:
+            return {"erreur": str(e)[:120]}
+
+    @staticmethod
     def _indice_statut():
         try:
             import indice_joueurs
-            return {**indice_joueurs.statut(), "top": indice_joueurs.top(10, actifs=True), "legendes": indice_joueurs.top(5, "legende", actifs=False)}
+            return {**indice_joueurs.statut(), "top": indice_joueurs.top(10, actifs=True), "legendes": indice_joueurs.top(5, "legende", actifs=False),
+                    "creux": indice_joueurs.top(8, "en_creux", actifs=True) + indice_joueurs.top(4, "rebond", actifs=True),
+                    "creux_bilan": indice_joueurs.creux_bilan()}
         except Exception as e:
             return {"erreur": str(e)[:120]}
 
@@ -5186,7 +5210,17 @@ class Api:
             jetons = {}
         if not ebay_prix_actif():                # interrupteur : pas de prix suggere pour une annonce eBay
             prix, n, comps, note = None, 0, [], "Choisis ton prix"
-        return {"ok": True, "titre": titre, "carte": c, "prix": prix, "n": n, "comps": comps, "note": note, "description": desc, "descriptions": descs,
+        # 11 nov 2026 (Mathieu : « quand l'app reconnait une carte deja achetee, proposer un prix de vente qui fait un bon
+        # profit ») : ton achat eBay de la MEME carte (prix paye, date) ; l'ecran calcule le prix pour ta marge
+        achat = None
+        try:
+            memes, _ids, _ex = self._mes_achats_titre(titre)
+            a0 = next((a for a in memes if a.get("cout")), None)
+            if a0:
+                achat = {"cout": a0["cout"], "date": a0.get("date"), "titre": a0.get("titre"), "item_id": a0.get("item_id"), "n": len(memes)}
+        except Exception as e:
+            print("Vendre (achat de la carte) : " + repr(e), flush=True)
+        return {"ok": True, "achat": achat, "titre": titre, "carte": c, "prix": prix, "n": n, "comps": comps, "note": note, "description": desc, "descriptions": descs,
                 "source_prix": source, "vendues": vendues_l, "vendu": vendu, "affiche": affiche,
                 "specifiques": annonces.specifiques(c), "modele": modele, "frais_pct": r["frais_ebay_pct"], "frais_fixe": ff,
                 "etats": {k: v[2] if franco else v[1] for k, v in annonces.ETATS_BRUTS.items()},
@@ -5331,12 +5365,19 @@ class Api:
             except ValueError:
                 ph = [c["photo"]] if c.get("photo") else []
             prix = c.get("prix_demande") or (sante.prix_rond(c["valeur"]) if c.get("valeur") else None)
+            try:
+                orig = json.loads(c.get("photos_orig") or "[]")
+            except ValueError:
+                orig = []
             out.append({"id": c["id"], "titre": c.get("titre") or ebay_csv.titre_annonce(c), "prix": prix, "photo": c.get("photo"),
                         "nb_photos": len(ph), "emplacement": c.get("emplacement"),
+                        # 11 nov 2026 (Mathieu : « le cadre flou n'a pas ete mis autour de celle-ci ») : l'app refait le fond flou
+                        # des cartes qui ne l'ont pas encore, avant de les programmer
+                        "photos": ph[:2], "orig": orig[:2], "studio_v": c.get("studio_v") or 0,
                         "manque": [m for m, ok in (("prix", bool(prix)), ("photo", bool(ph)), ("titre", len(str(c.get("titre") or "")) >= 10)) if not ok]})
         return {"ok": True, "cartes": out, "modele": __import__("annonces").modele(self.reglages_lire().get("modele_annonce"))}
 
-    def serie_programmer(self, ids, debut, ecart_h=24, modele=None, debuts=None):
+    def serie_programmer(self, ids, debut, ecart_h=24, modele=None, debuts=None, politiques=None):
         """Programme les cartes choisies sur eBay, une apres l'autre : la 1re a « debut », puis une toutes les ecart_h
         heures. Chaque annonce : titre, prix, photos, description, details, politiques eBay, colis, offres, promotion
         (le modele d'annonce). Tout se fait en arriere-plan ; serie_etat() suit l'avancement."""
@@ -5387,15 +5428,41 @@ class Api:
         mod = annonces.modele(r_.get("modele_annonce"), modele)
         if modele:
             self.reglages_sauver({"modele_annonce": {k: mod[k] for k in annonces.MODELE_DEFAUT}})
-        plan = [{"id": i, "debut": h.astimezone(_tz.utc).isoformat()} for i, h in zip(ids, heures)]
+        # 11 nov 2026 (Mathieu : « selectionner une policy differente si certaines cartes du lot sont d'une categorie de prix
+        # differente ») : {id carte: id de la politique d'expedition eBay} ; sinon celle du modele pour toutes
+        pol_c = {}
+        for k, v in (politiques or {}).items() if isinstance(politiques, dict) else []:
+            try:
+                pol_c[int(k)] = str(v or "")[:40]
+            except (TypeError, ValueError):
+                continue
+        plan = [{"id": i, "debut": h.astimezone(_tz.utc).isoformat(), **({"politique_exp": pol_c[i]} if pol_c.get(i) else {})}
+                for i, h in zip(ids, heures)]
         etat = {"en_cours": True, "total": len(plan), "faites": 0, "erreurs": [], "plan": plan, "lance_le": _maintenant()}
         self._serie_ecrire(etat)
         compte = comptes.courant()
 
+        verrou_e = threading.Lock()
+
         def tache():
+            # 11 nov 2026 (Mathieu : « c'est long pareil vs une carte ») : 3 annonces a la fois (et leurs photos en parallele)
+            from concurrent.futures import ThreadPoolExecutor
+            import contextvars
+            with comptes.utiliser(compte):
+                with ThreadPoolExecutor(max_workers=3) as ex:
+                    for f_ in [ex.submit(contextvars.copy_context().run, une, p) for p in plan]:
+                        try:
+                            f_.result()
+                        except Exception:
+                            pass
+                etat["en_cours"] = False
+                etat["fini_le"] = _maintenant()
+                self._serie_ecrire(etat)
+
+        def une(p):
             with comptes.utiliser(compte):
                 franco = (r_.get("langue") or "fr") != "en"
-                for p in plan:
+                if True:
                     c = self.carte_lire(p["id"])
                     err = None
                     if not c:
@@ -5409,8 +5476,11 @@ class Api:
                             ph = [c["photo"]] if c.get("photo") else []
                         titre = (c.get("titre") or ebay_csv.titre_annonce(c) or "")[:80]
                         prix = c.get("prix_demande") or (sante.prix_rond(c["valeur"]) if c.get("valeur") else None)
-                        desc = annonces.description(c, titre, franco, mod["etat"], r_.get("nom_boutique"), mod["retours"], mod["expedition"])
-                        d = {**mod, "carte": {k: v for k, v in c.items() if k in self.CHAMPS_CARTE}, "titre": titre, "prix": prix,
+                        mod_c = dict(mod, politique_exp=p["politique_exp"]) if p.get("politique_exp") else mod
+                        if p.get("politique_exp") and not mod_c.get("politique_ret"):
+                            mod_c["politique_ret"] = ""
+                        desc = annonces.description(c, titre, franco, mod_c["etat"], r_.get("nom_boutique"), mod_c["retours"], mod_c["expedition"])
+                        d = {**mod_c, "carte": {k: v for k, v in c.items() if k in self.CHAMPS_CARTE}, "titre": titre, "prix": prix,
                              "description": desc, "photos": ph, "cid": c["id"], "cout": c.get("cout"), "sku": c.get("sku"),
                              "debut": p["debut"], "memoriser": False}
                         try:
@@ -5421,13 +5491,11 @@ class Api:
                                 p["item_id"] = r.get("item_id")
                         except Exception as x:
                             err = f"{type(x).__name__} : {x}"
-                    etat["faites"] += 1
-                    if err:
-                        etat["erreurs"].append({"id": p["id"], "titre": (c or {}).get("titre"), "erreur": str(err)[:200]})
-                    self._serie_ecrire(etat)
-                etat["en_cours"] = False
-                etat["fini_le"] = _maintenant()
-                self._serie_ecrire(etat)
+                    with verrou_e:
+                        etat["faites"] += 1
+                        if err:
+                            etat["erreurs"].append({"id": p["id"], "titre": (c or {}).get("titre"), "erreur": str(err)[:200]})
+                        self._serie_ecrire(etat)
         threading.Thread(target=tache, daemon=True, name="serie-annonces").start()
         return {"ok": True, **etat}
 
@@ -5838,6 +5906,16 @@ class Api:
         except Exception:
             chauds_noms = []
         taches += [("chaud", n, lambda n=n: un_joueur(n, 100, 12)) for n in chauds_noms]
+        # 11 nov 2026 (Mathieu : « un tres bon jeune joueur en periode difficile, c'est un bon moment pour acheter ») : les
+        # jeunes talents EN CREUX ou qui en sortent (stats LNH publiques, jamais un prix) ; « a surveiller », jamais « achete »
+        try:
+            import indice_joueurs
+            deja2 = deja | set(chauds_noms)
+            l_cx = indice_joueurs.top(12, "rebond", actifs=True) + indice_joueurs.top(12, "en_creux", actifs=True)
+            creux_noms = [x["nom"] for x in l_cx if x["nom"] not in deja2][:3]
+        except Exception:
+            creux_noms = []
+        taches += [("creux", n, lambda n=n: un_joueur(n, 100, 12)) for n in creux_noms]
         resultats, msgs = {}, []
         if taches:
             ex = ThreadPoolExecutor(max_workers=8)
@@ -5874,13 +5952,28 @@ class Api:
         types = [r for k in types_l for r in [resultats.get(("type", k))] if isinstance(r, dict)]
         decouvrir = [r for n in decouvrir_noms for r in [resultats.get(("decouvrir", n))] if isinstance(r, dict) and r["annonces"]]
         chauds = [r for n in chauds_noms for r in [resultats.get(("chaud", n))] if isinstance(r, dict) and r["annonces"]]
-        for x in out + [y for g in pour_toi + decouvrir + chauds + chasses + types for y in g.get("annonces") or []] \
+        creux_l = [r for n in creux_noms for r in [resultats.get(("creux", n))] if isinstance(r, dict) and r["annonces"]]
+        for g in creux_l:
+            try:
+                g["creux"] = (indice_joueurs.indice(g["joueur"]) or {}).get("creux")
+            except Exception:
+                pass
+        chauds_creux = chauds + creux_l
+        for x in out + [y for g in pour_toi + decouvrir + chauds_creux + chasses + types for y in g.get("annonces") or []] \
                 + [y for v in vend for y in v.get("annonces") or []]:
             try:
                 self._frais_reels(x, pays)
-                score_slab.annoter(x)                 # 10 nov 2026 : le Score SlabCoach (joueur + carte, jamais le prix)
             except Exception:
                 pass
+        # 10 nov 2026 : le Score SlabCoach (le modele appris : titre sans le joueur + donnees publiques ; jamais le prix)
+        score_slab.annoter_lot(out + [y for g in pour_toi + decouvrir + chauds_creux + chasses + types for y in g.get("annonces") or []]
+                               + [y for v in vend for y in v.get("annonces") or []])
+        # 11 nov 2026 (Mathieu : « dans la version admin, le cout d'acquisition avec les ventes ; il y a juste moi ») : l'ADMIN
+        # (verifie cote serveur, jamais en vue simulee) voit sur chaque annonce du Radar les ventes reelles de la meme carte
+        # (cache et archives seulement : aucun appel) et sa mise max. Les autres comptes ne recoivent jamais ces champs.
+        if self._est_admin() and ebay_prix_actif(self):
+            self._radar_admin_vendu(out + [y for g in pour_toi + decouvrir + chauds_creux + chasses + types for y in g.get("annonces") or []]
+                                    + [y for v in vend for y in v.get("annonces") or []], pays)
         try:
             import alarmes
             feu = bool(alarmes.reglages(self).get("en_feu"))
@@ -5894,7 +5987,7 @@ class Api:
             except Exception:
                 pass
         return {"ok": True, "deals": out[:120], "cibles": groupes, "vendeurs": vend, "pour_toi": pour_toi,
-                "decouvrir": decouvrir, "chauds": chauds, "chasses": chasses, "types": types, "alerte_feu": feu, "pays": pays,
+                "decouvrir": decouvrir, "chauds": chauds, "creux": creux_l, "chasses": chasses, "types": types, "alerte_feu": feu, "pays": pays,
                 "profil": {k: prof.get(k) for k in ("collectionne", "favoris", "prix_min", "prix_max")},
                 "profil_vide": not (prof.get("favoris") or prof.get("collectionne") or prof.get("prix_max")),
                 "partiel": bool(erreurs), "erreur_txt": msgs[0] if msgs else None,
@@ -6132,6 +6225,36 @@ class Api:
         except Exception:
             pass
         return demande_legale.populaires(n)
+
+    def _radar_admin_vendu(self, items, pays="CA", delai_s=6.0):
+        """ADMIN : x["admin_vendu"] = {med, nb, tend_pct, achat_max, ecart_pct} depuis les ventes deja connues de la MEME carte."""
+        import deals as _dv
+        t0, vus = time.time(), {}
+        for x in items:
+            if time.time() - t0 > delai_s:
+                break
+            t = str(x.get("titre") or "")
+            if not t or "admin_vendu" in x:
+                continue
+            try:
+                if t not in vus:
+                    vus[t] = vendues.memes_cache(t, n=40, age_max=30 * 86400)
+                vc = vus[t]
+            except Exception:
+                continue
+            if not vc or not vc.get("nb") or not vc.get("mediane"):
+                continue
+            med = float(vc["mediane"])
+            pts = [(str(a or "")[:10], float(b)) for a, b in (vc.get("points") or []) if b]
+            j14 = (datetime.now() - timedelta(days=14)).strftime("%Y-%m-%d")
+            j42 = (datetime.now() - timedelta(days=42)).strftime("%Y-%m-%d")
+            rec, avant = [b for a, b in pts if a >= j14], [b for a, b in pts if j42 <= a < j14]
+            tend = round(100 * (statistics.median(rec) / statistics.median(avant) - 1)) if len(rec) >= 2 and len(avant) >= 2 else None
+            tot = x.get("total") or round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2)
+            am = round(max(0.0, _dv.prix_max(med, taxe=_dv.taxe_de({**x, "_pays": pays}))), 2)
+            x["admin_vendu"] = {"med": round(med, 2), "nb": vc["nb"], "tend_pct": tend, "achat_max": am,
+                                "ecart_pct": round(100 * (tot / med - 1)) if tot and med else None}
+        return items
 
     @staticmethod
     def _pastilles_joueur(nom):

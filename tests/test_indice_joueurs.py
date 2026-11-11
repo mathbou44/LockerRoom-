@@ -83,3 +83,21 @@ base["Calme Joueur"] = {"nhl": {"actif": True, "equipe": "TOR", "saisons": 1, "l
 I2 = ij.calculer({"joueurs": {}}, base, lambda n: 1)
 assert "actu" in I2["Calme Joueur"]["pastilles"] and I2["Calme Joueur"]["actu"][0]["lien"] == "https://x/2", I2["Calme Joueur"]
 print("OK indice actu")
+
+# 5. 11 nov 2026 (Mathieu : Frank Nazar, Josh Doan) : le jeune talent EN CREUX (stats publiques), et quand il en sort
+h_nazar = {"actif": True, "equipe": "CHI", "pos": "C", "naissance": "2004-01-14", "repech": 13, "saisons": 4, "l5": 2,
+           "saison": {"gamesPlayed": 16, "points": 7},
+           "par_saison": [{"s": 20242025, "l": "NHL", "gp": 53, "p": 26, "toi": "15:52"}, {"s": 20252026, "l": "NHL", "gp": 66, "p": 41, "toi": "18:19"},
+                          {"s": 20262027, "l": "NHL", "gp": 16, "p": 7, "toi": "17:25"}]}
+c = ij.creux(h_nazar, date(2026, 11, 11))
+assert c and c["etat"] == "creux" and c["avant_ppm"] == 0.62 and c["ppm"] == 0.44 and c["age"] == 22 and c["toi_ratio"] == 0.95, c
+assert ij.creux({**h_nazar, "l5": 3}, date(2026, 11, 11))["etat"] == "rebond"            # 3 pts en 5 matchs : il en sort
+assert ij.creux({**h_nazar, "saison": {"gamesPlayed": 16, "points": 10}}, date(2026, 11, 11)) is None   # 0,62 : a son rythme
+assert ij.creux({**h_nazar, "naissance": "1990-01-01", "saisons": 12}, date(2026, 11, 11)) is None     # pas un jeune
+assert ij.creux({**h_nazar, "pos": "G"}) is None
+assert ij.creux({**h_nazar, "repech": 150, "par_saison": [{"s": 20252026, "l": "NHL", "gp": 66, "p": 33}, {"s": 20262027, "l": "NHL", "gp": 16, "p": 4}]}) is None  # pas de talent demontre
+assert ij.creux({**h_nazar, "saison": {"gamesPlayed": 5, "points": 0}}) is None          # trop tot dans la saison
+base2 = dict(base); base2["Frank Nazar"] = {"nhl": h_nazar, "wiki": {"v60": 5000, "v20": 1500}}
+I3 = ij.calculer({"joueurs": {}}, base2, lambda n: 1)
+assert "en_creux" in I3["Frank Nazar"]["pastilles"] and I3["Frank Nazar"]["creux"]["ecart_pct"] == -30, I3["Frank Nazar"]
+print("OK indice creux")

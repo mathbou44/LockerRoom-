@@ -18,7 +18,7 @@ Les criteres (chacun en rang 0-100 parmi les joueurs du meme sport, recalcules c
   recrue     : 1re ou 2e saison (les cartes de recrue sont les plus suivies)
   legende    : Temple, top 100, trophees (ponderes), carriere ; plancher pour les legendes, actives ou non
 Indice = melange pondere ; un joueur retire est note sur sa legende, son buzz et sa notoriete seulement.
-Pastilles : « En feu » (forme >= 95), « En hausse » (ascension >= 85), « Buzz » (buzz >= 90), « Legende », « Recrue ».
+Pastilles : « En creux » / « Sort de son creux » (11 nov : jeune talent sous ses standards), « En feu » (forme >= 95), « En hausse » (ascension >= 85), « Buzz » (buzz >= 90), « Legende », « Recrue ».
 
 Appels Highlightly : 1 par joueur par jour (le total de saison). Forfait gratuit (90/jour) : les favoris des utilisateurs,
 puis les plus demandes ; Pro (7 500/jour) : tout le monde, 4 sports.
@@ -157,6 +157,68 @@ def forme_semaine(j, aujourdhui=None):
 
 
 # -- 2. les criteres, en rangs --------------------------------------------------------------------------------------
+# -- 1b. le joueur « en creux » (11 nov 2026) ------------------------------------------------------------------------
+# Mathieu : « un tres bon jeune joueur qui connait une periode plus difficile (Frank Nazar, Josh Doan) : c'est un tres bon
+# moment pour acheter s'il va remonter ». Que des stats publiques (LNH), jamais un prix : on dit « a surveiller », jamais
+# « achete ». Conditions : jeune (25 ans et moins ou 4 saisons et moins), talent DEMONTRE (saison de reference solide,
+# ou haut choix au repechage), et un rythme NETTEMENT sous ses standards (<= 75 %) sur assez de matchs.
+# « Sort de son creux » : ses 5 derniers matchs sont revenus a son rythme d'avant.
+CREUX_RATIO = 0.75
+CREUX_MJ_MIN = 8
+
+
+def _toi_s(t):
+    try:
+        m, s = str(t or "").split(":")[:2]
+        return int(m) * 60 + int(s)
+    except (ValueError, TypeError):
+        return None
+
+
+def creux(h, aujourdhui=None):
+    """h = la fiche LNH (demande_legale) -> {etat: creux|rebond, ppm, avant_ppm, ecart_pct, age, repech, l5, toi_ratio} ou None."""
+    h = h or {}
+    if h.get("actif") is False or not h.get("equipe") or h.get("pos") == "G":
+        return None
+    today = aujourdhui or date.today()
+    age = None
+    try:
+        n = date.fromisoformat(str(h.get("naissance") or "")[:10])
+        age = today.year - n.year - ((today.month, today.day) < (n.month, n.day))
+    except ValueError:
+        pass
+    if not ((age is not None and age <= 25) or (h.get("saisons") or 99) <= 4):
+        return None
+    nhl = sorted([x for x in h.get("par_saison") or [] if x.get("l") == "NHL" and x.get("s")], key=lambda x: x["s"])
+    if not nhl:
+        return None
+    cour = nhl[-1]
+    sa = h.get("saison") or {}
+    mj, pts = sa.get("gamesPlayed") or cour.get("gp") or 0, sa.get("points") if sa.get("points") is not None else cour.get("p")
+    if mj < CREUX_MJ_MIN or pts is None:
+        return None
+    avant = [x for x in nhl[:-1] if (x.get("gp") or 0) >= 40][-2:]
+    if not avant:
+        return None
+    ref = max(x["p"] / x["gp"] for x in avant)
+    d_ = h.get("pos") == "D"
+    if ref < (0.35 if d_ else 0.45):
+        return None
+    pick = h.get("repech")
+    if not ((pick and pick <= 40) or ref >= (0.5 if d_ else 0.6)):
+        return None
+    ppm = pts / mj
+    if ppm > CREUX_RATIO * ref:
+        return None
+    l5 = h.get("l5")
+    t0, t1 = _toi_s(next((x.get("toi") for x in reversed(avant)), None)), _toi_s(cour.get("toi"))
+    out = {"etat": "rebond" if (l5 is not None and l5 / 5.0 >= 0.9 * ref) else "creux", "ppm": round(ppm, 2), "avant_ppm": round(ref, 2),
+           "ecart_pct": round(100 * (ppm / ref - 1)), "mj": mj, "age": age, "repech": pick, "l5": l5,
+           "toi_ratio": round(t1 / t0, 2) if t0 and t1 else None}
+    out["potentiel"] = round(min(1.0, (ref - ppm) / ref) * (1.0 + (0.3 if pick and pick <= 15 else 0.0)) * min(1.5, ref / 0.6), 3)
+    return out
+
+
 def _rangs(valeurs):
     """{cle: valeur} -> {cle: rang 0-100} (les egalites au meme rang ; None ignore)."""
     v = {k: x for k, x in valeurs.items() if x is not None}
@@ -265,7 +327,11 @@ def calculer(d=None, base=None, demande=None):
         na = nouvelles_j.get(nom)
         brut["actu"][nom] = (na["n"] + 2 * na["ev"]) if na else 0.0
         brut["legende"][nom] = _legende_brute(h)
-        info[nom] = {"actif": actif, "forme": fs, "equipe": h.get("equipe"), "legende_vraie": bool(h.get("hhof") or h.get("top100") or (h.get("trophees_n") or 0) >= 5)}
+        try:
+            cx = creux(h)
+        except Exception:
+            cx = None
+        info[nom] = {"creux": cx, "actif": actif, "forme": fs, "equipe": h.get("equipe"), "legende_vraie": bool(h.get("hhof") or h.get("top100") or (h.get("trophees_n") or 0) >= 5)}
     rangs = {k: _rangs(v) for k, v in brut.items()}
     out = {}
     for nom in noms:
@@ -293,12 +359,17 @@ def calculer(d=None, base=None, demande=None):
             past.append("recrue")
         if nouvelles_j.get(nom) and (nouvelles_j[nom]["ev"] or nouvelles_j[nom]["n"] >= 2):
             past.append("actu")
+        if i.get("creux"):
+            past.append("rebond" if i["creux"]["etat"] == "rebond" else "en_creux")
         if "en_feu" in past:
             val = min(100.0, val + BONUS_FEU)
         out[nom] = {"indice": round(val, 1), "criteres": {k: v for k, v in r.items() if v is not None}, "pastilles": past,
-                    "actif": i["actif"], "equipe": i["equipe"], "semaine": i["forme"]}
+                    "actif": i["actif"], "equipe": i["equipe"], "semaine": i["forme"],
+                    "dem": brut["demande"].get(nom)}           # la demande brute (le Score SlabCoach s'en sert sans recalculer)
         if nouvelles_j.get(nom):
             out[nom]["actu"] = nouvelles_j[nom]["titres"]
+        if i.get("creux"):
+            out[nom]["creux"] = i["creux"]
     return out
 
 
@@ -374,7 +445,85 @@ def passe(max_appels=None, sport="hockey"):
     d["le"] = time.time()
     d["lus_aujourdhui"] = lus
     _ecrire(d)
+    try:
+        creux_noter(d["indice"])
+    except Exception as e:
+        print("Creux (journal) : " + repr(e), flush=True)
     return {"lus": lus, "joueurs": len(d["indice"])}
+
+
+# 11 nov 2026 (Mathieu : « valider avec les ventes ») : est-ce que les joueurs « en creux » remontent vraiment ? Les ventes
+# de mai a octobre (hors saison) ne permettent pas de le mesurer apres coup : on le mesure EN AVANT. Chaque joueur signale
+# est note avec le niveau de ses cartes ce jour-la (memoire du marche de SlabIQ, admin) ; 30 et 60 jours plus tard, on regarde.
+def _creux_chemin():
+    import comptes
+    return os.path.join(comptes.DONNEES, "creux_journal.json")
+
+
+def _niveau_marche(nom):
+    """Le niveau des cartes du joueur (ecart moyen prix / titre sur 30 jours, memoire de SlabIQ) ou None."""
+    try:
+        import score_appris
+        c = score_appris._etat_cx()
+        if c is None:
+            return None
+        try:
+            r = c.execute("SELECT v FROM mem WHERE k = ?", ("j\x1f" + nom,)).fetchone()
+        finally:
+            c.close()
+        if not r:
+            return None
+        v = json.loads(r[0])
+        n = len(score_appris.HL)
+        fa = 0.5 ** ((date.today().toordinal() - v[2 * n]) / 30.0)
+        S, W = v[1] * fa, v[n + 1] * fa
+        return round(S / (W + 1.0), 4) if W > 0.5 else None
+    except Exception:
+        return None
+
+
+def creux_noter(I, aujourdhui=None):
+    jour = (aujourdhui or date.today()).isoformat()
+    try:
+        with open(_creux_chemin()) as f:
+            J = json.load(f)
+    except (OSError, ValueError):
+        J = {"signales": []}
+    deja = {(x["nom"], x["jour"][:7]) for x in J["signales"]}         # un signalement par joueur par mois
+    for nom, v in I.items():
+        cx = v.get("creux")
+        if not cx or (nom, jour[:7]) in deja:
+            continue
+        J["signales"].append({"nom": nom, "jour": jour, "etat": cx["etat"], "ppm": cx["ppm"], "avant_ppm": cx["avant_ppm"],
+                              "niveau": _niveau_marche(nom)})
+    J["signales"] = J["signales"][-2000:]
+    tmp = _creux_chemin() + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(J, f)
+    os.replace(tmp, _creux_chemin())
+    return J
+
+
+def creux_bilan(aujourdhui=None):
+    """{signales, mesurables_30, remontes_30 (part dont les cartes valent plus 30+ jours apres), ...} : admin."""
+    try:
+        with open(_creux_chemin()) as f:
+            J = json.load(f)
+    except (OSError, ValueError):
+        return {"signales": 0}
+    auj = (aujourdhui or date.today())
+    out = {"signales": len(J.get("signales") or [])}
+    for jours in (30, 60):
+        l = [x for x in J.get("signales") or [] if x.get("niveau") is not None
+             and (auj - date.fromisoformat(x["jour"])).days >= jours]
+        haut = 0
+        for x in l:
+            n = _niveau_marche(x["nom"])
+            if n is not None and n > x["niveau"]:
+                haut += 1
+        out[f"mesurables_{jours}"] = len(l)
+        out[f"remontes_{jours}"] = round(haut / len(l), 3) if l else None
+    return out
 
 
 def passe_si_besoin():
@@ -410,9 +559,11 @@ def top(n=12, filtre=None, actifs=None):
     l = [(nom, v) for nom, v in I.items() if (not filtre or filtre in v.get("pastilles", [])) and (actifs is None or v.get("actif") == actifs)]
     if filtre == "en_feu":
         l.sort(key=lambda x: -(x[1].get("criteres", {}).get("forme") or 0))
+    elif filtre in ("en_creux", "rebond"):
+        l.sort(key=lambda x: -(((x[1].get("creux") or {}).get("potentiel") or 0) + 0.002 * x[1]["indice"]))
     else:
         l.sort(key=lambda x: -x[1]["indice"])
-    return [{"nom": nom, **{k: v.get(k) for k in ("indice", "pastilles", "actif", "equipe", "semaine")}} for nom, v in l[:n]]
+    return [{"nom": nom, **{k: v.get(k) for k in ("indice", "pastilles", "actif", "equipe", "semaine", "creux")}} for nom, v in l[:n]]
 
 
 def statut():
@@ -481,6 +632,8 @@ def pourquoi(nom):
         out["saisons"] = h["saisons"]
     if h.get("an_repech"):
         out["repechage"] = {"an": h.get("an_repech"), "ronde": h.get("ronde"), "rang": h.get("repech")}
+    if v.get("creux") or creux(h):
+        out["creux"] = v.get("creux") or creux(h)
     if v.get("actu"):
         out["actu"] = v["actu"]
     else:

@@ -123,3 +123,17 @@ r = api.mes_deals()
 assert all(isinstance(x.get("score"), int) for g in r["types"] for x in g["annonces"]), r["types"]
 assert api.annonce_score("2024-25 SP Authentic Future Watch Auto Ivan Demidov /999")["ok"]
 print("OK score slabcoach")
+
+# 9. 11 nov 2026 : l'ADMIN voit les ventes reelles de la meme carte sur le Radar ; les autres comptes : jamais
+import vendues
+vendues.memes_cache = lambda t, q=None, n=16, age_max=0: {"ventes": [{"prix": 100}] * 6, "mediane": 100.0, "nb": 6,
+                                                          "points": [["2026-11-10", 110], ["2026-11-09", 104], ["2026-10-10", 90], ["2026-10-08", 92]]}
+lockerroom.ebay_prix_actif = lambda api=None: True
+r = api.mes_deals()
+av = [x.get("admin_vendu") for g in r["types"] for x in g["annonces"]]
+assert av and all(a and a["med"] == 100.0 and a["nb"] == 6 and a["achat_max"] > 0 for a in av), av
+assert av[0]["tend_pct"] is not None and av[0]["tend_pct"] > 0, av
+api._est_admin = lambda *a, **k: False                     # un compte Pro ou gratuit
+r = api.mes_deals()
+assert not any("admin_vendu" in x for g in r["types"] + r["pour_toi"] + r["creux"] for x in g["annonces"]), "fuite des ventes vers un non-admin"
+print("OK radar admin vendu (et rien pour les autres)")

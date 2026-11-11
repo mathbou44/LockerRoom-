@@ -63,12 +63,26 @@ for _ in range(50):
     time.sleep(0.1)
 e = a.serie_etat()
 assert e["faites"] == 3 and not e["erreurs"], e
+pub.sort(key=lambda d: d["debut_utc"])              # 11 nov 2026 : 3 annonces partent en meme temps (l'ordre d'arrivee varie)
 assert [d["debut_utc"][:13] for d in pub] == [(debut + timedelta(hours=24 * i)).strftime("%Y-%m-%dT%H") for i in range(3)], [d["debut_utc"] for d in pub]
 assert all(d["politique_exp"] == "111" and d["poids_g"] == 250 and d["promotion"] == 2 and d["description"] for d in pub)
 assert pub[0]["prix"] == 1500 and "Gretzky" in pub[0]["titre"]
 inv = {c["id"]: c for c in a.inventaire_liste({})}
 assert all(inv[i]["statut"] == "Listée" and inv[i]["debut"].startswith(pub[k]["debut_utc"][:16]) for k, i in enumerate(ids))
 assert a.reglages_lire()["modele_annonce"]["promotion"] == 2                         # le modele est garde pour la prochaine fois
+# 11 nov 2026 (Mathieu : « une policy differente selon la categorie de prix ») : une politique d'expedition PAR carte
+ids2 = [a.carte_garder({"carte": {"joueur": j, "annee": "2024-25", "marque": "Upper Deck"}, "titre": f"2024-25 Upper Deck Young Guns {j} RC",
+                        "prix": p, "photos": ["https://i.ebayimg.com/y%d.jpg" % k]})["id"] for k, (j, p) in enumerate((("Lane Hutson", 25), ("Ivan Demidov", 80)))]
+pub.clear()
+r = a.serie_programmer(ids2, debut.isoformat(), 24, {"politique_exp": "111"}, None, {str(ids2[0]): "0-29", ids2[1]: "30-99"})
+assert r["ok"], r
+for _ in range(50):
+    if not a.serie_etat()["en_cours"]:
+        break
+    time.sleep(0.1)
+pol = {d["prix"]: d["politique_exp"] for d in pub}
+assert pol == {25: "0-29", 80: "30-99"}, pol
+print("OK politique par carte")
 # trop loin : 30 cartes a 1 par jour depassent les 21 jours d'eBay
 r2 = a.serie_programmer(list(range(1, 31)), debut.isoformat(), 24)
 assert not r2["ok"] and "cartes au plus" in r2["erreur"], r2
