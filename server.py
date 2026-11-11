@@ -1194,7 +1194,7 @@ _ECRITURES_EBAY = {"ebay_publier", "annonce_publier", "ebay_changer_prix", "ebay
 # normal (l'ouverture de l'app fait une trentaine d'appels).
 _RYTHME_MAX = int(os.environ.get("LR_API_PAR_MIN") or 300)
 _RYTHME_LOURD_MAX = int(os.environ.get("LR_API_LOURD_PAR_MIN") or 40)
-_LOURDS = {"photo_identifier", "photos_trier", "lot_soumettre", "lot_relancer", "scan_decouper", "annonce_detail", "valeur_carte", "carte_gradations", "annonce_preparer", "carte_comps", "joueur_fiche",
+_LOURDS = {"photo_identifier", "photos_trier", "paires_verifier", "lot_soumettre", "lot_relancer", "scan_decouper", "annonce_detail", "valeur_carte", "carte_gradations", "annonce_preparer", "carte_comps", "joueur_fiche",
            "deals_pourquoi", "ebay_publier", "annonce_publier", "cartes_retirer", "serie_programmer", "ebay_prix_lot", "offres_envoyer",
            "carte_photos_studio", "carte_etat", "demande_envoyer", "code_appareil", "ebay_jeton_lier", "connexion_jeton_lier",
            "sante_rafraichir", "alertes_verifier", "alarmes_verifier", "ebay_synchroniser", "importer_annonces_ebay", "importer_ventes_ebay"}

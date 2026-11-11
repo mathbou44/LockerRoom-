@@ -99,10 +99,12 @@ OUTIL = {
                            "entiere": {"type": "boolean", "description": "true si toute la carte (ou l'etui) est dans la photo, aucun coin coupe"},
                            "nette": {"type": "boolean", "description": "true si le texte imprime est net"},
                            "reflet": {"type": "boolean", "description": "true si un reflet cache du texte ou l'image"},
-                           "probleme": {"type": "string", "description": "Si cette photo doit etre reprise : pourquoi, en 6 mots max, en francais. Sinon vide."}},
+                           "probleme": {"type": "string", "description": "Si cette photo doit etre reprise : pourquoi, en 6 mots max, en francais. Sinon vide."},
+                           # 11 nov 2026 (Mathieu : le dos d'une Necas colle a la Kurri) : le nom lu sur CHAQUE image, compare par l'app
+                           "joueur": {"type": "string", "description": "Le nom du joueur imprime sur CETTE image seulement, tel quel, si lisible ; sinon vide."}},
                            "required": ["cote", "coins", "entiere"]}},
         },
-        "required": ["est_une_carte", "sport", "joueur", "confiance", "a_verifier"],
+        "required": ["est_une_carte", "meme_carte", "sport", "joueur", "confiance", "a_verifier"],
     },
 }
 
@@ -423,6 +425,20 @@ def _nettoyer(f):
             "meme_carte": False if f.get("meme_carte") is False else True}
 
 
+_MOTS_PAS_NOM = {"the", "and", "card", "rookie", "auto", "upper", "deck", "jr", "sr"}
+
+
+def noms_differents(a, b):
+    """11 nov 2026 : deux noms lus (devant / dos) qui n'ont aucun mot en commun -> deux cartes differentes. Un nom vide ou
+    illisible ne prouve rien (False)."""
+    def mots(x):
+        import unicodedata
+        x = unicodedata.normalize("NFKD", str(x or "")).encode("ascii", "ignore").decode().lower()
+        return {m for m in re.findall(r"[a-z]{3,}", x) if m not in _MOTS_PAS_NOM}
+    ma, mb = mots(a), mots(b)
+    return bool(ma and mb and not (ma & mb))
+
+
 def _photos(l):
     """Coins (0..1000) et qualite de chaque photo, nettoyes ; une photo douteuse garde au moins son cote."""
     out = []
@@ -437,7 +453,7 @@ def _photos(l):
             coins = None
         out.append({"cote": p.get("cote") if p.get("cote") in ("devant", "dos", "autre") else None, "coins": coins,
                     "entiere": p.get("entiere") is not False, "nette": p.get("nette") is not False, "reflet": p.get("reflet") is True,
-                    "probleme": str(p.get("probleme") or "").strip()[:60]})
+                    "probleme": str(p.get("probleme") or "").strip()[:60], "joueur": str(p.get("joueur") or "").strip()[:60]})
     return out
 
 
@@ -558,6 +574,59 @@ def trier(photos):
             out.append({"i": i, "cote": x.get("cote") if x.get("cote") in ("devant", "dos", "autre") else "autre", "carte": carte,
                         "joueur": str(x.get("joueur") or "").strip()[:40]})
     return sorted(out, key=lambda x: x["i"])
+
+
+# -- 11 nov 2026 (Mathieu : 3 annonces en ligne avec le dos d'une autre carte : Dvorsky + dos Dickinson, Schaefer + dos
+# Robertson, Bossy + dos Makar) : chaque paire devant / dos est revue avant d'etre programmee. Petites images, un appel
+# pour 20 paires, cout serveur seulement.
+MAX_PAIRES = 20
+OUTIL_PAIRES = {
+    "name": "paires",
+    "description": "Pour chaque paire (devant, dos) : est-ce la MEME carte physique ?",
+    "input_schema": {"type": "object", "properties": {"paires": {"type": "array", "items": {"type": "object", "properties": {
+        "k": {"type": "integer", "description": "numero de la paire (1, 2, 3...)"},
+        "meme_carte": {"type": "boolean", "description": "true seulement si le dos est bien le verso de CE devant (meme joueur, meme numero, meme set)"},
+        "joueur_devant": {"type": "string", "description": "le nom imprime sur le devant, si lisible"},
+        "joueur_dos": {"type": "string", "description": "le nom imprime sur le dos, si lisible"}},
+        "required": ["k", "meme_carte"]}}}, "required": ["paires"]}}
+SYSTEME_PAIRES = ("Tu verifies des paires de photos de cartes de sport : pour chaque paire, la 1re image est le devant, la 2e "
+                  "devrait etre le dos de la MEME carte. Compare le nom du joueur, l'equipe, le numero de carte, le set et le "
+                  "design. Un dos d'un autre joueur ou d'une autre carte : meme_carte = false. Recopie les noms lus tels quels.")
+
+
+def verifier_paires(paires):
+    """paires : [(devant, dos)] en data URL (petites) -> [{"meme": bool, "devant": nom, "dos": nom}] dans le meme ordre."""
+    if not disponible():
+        raise Erreur("Reconnaissance photo pas encore activée sur ce serveur.")
+    paires = [(a, b) for a, b in (paires or []) if a and b][:MAX_PAIRES]
+    if not paires:
+        return []
+    if (_lire(_chemins()[1]).get(_mois()) or {}).get("usd", 0) >= PLAFOND_SERVEUR_USD:
+        raise Erreur("La reconnaissance photo est en pause pour quelques heures.")
+    contenu = []
+    for k, (a, b) in enumerate(paires):
+        contenu.append({"type": "text", "text": f"Paire {k + 1} - devant puis dos :"})
+        for p in (a, b):
+            o, typ = _decoder(p, max_octets=600_000)
+            contenu.append({"type": "image", "source": {"type": "base64", "media_type": typ, "data": base64.b64encode(o).decode()}})
+    contenu.append({"type": "text", "text": f"Verifie ces {len(paires)} paires."})
+    r = _appeler({"model": MODELE, "max_tokens": 200 + 60 * len(paires), "system": SYSTEME_PAIRES, "tools": [OUTIL_PAIRES],
+                  "tool_choice": {"type": "tool", "name": "paires"}, "messages": [{"role": "user", "content": contenu}]}, timeout=120)
+    _noter_serveur(r.get("usage") or {})
+    fiche = next((b.get("input") for b in r.get("content") or [] if b.get("type") == "tool_use"), None) or {}
+    par = {}
+    for x in fiche.get("paires") or []:
+        try:
+            par[int(x.get("k")) - 1] = x
+        except (TypeError, ValueError):
+            continue
+    out = []
+    for k in range(len(paires)):
+        x = par.get(k) or {}
+        dv, ds = str(x.get("joueur_devant") or "").strip()[:60], str(x.get("joueur_dos") or "").strip()[:60]
+        meme = x.get("meme_carte") is not False and not noms_differents(dv, ds)
+        out.append({"meme": meme if x else None, "devant": dv, "dos": ds})
+    return out
 
 
 # -- 1er nov 2026 : l'ETAT d'une carte (pre-gradation) ---------------------------------------------------------------

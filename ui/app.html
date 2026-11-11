@@ -301,8 +301,23 @@ details.reglage summary::-webkit-details-marker{display:none}
 .pg-bulle .pgb-go{flex:1; display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:12px 14px; background:none; border:0; color:var(--texte); font:inherit; text-align:left; cursor:pointer}
 .pg-bulle .pgb-go small{color:var(--doux); font-size:12.5px} .pg-bulle .pgb-x{width:48px; background:none; border:0; border-left:1px solid var(--ligne); color:var(--doux); font-size:16px; cursor:pointer}
 .pg-l2s{gap:8px}
-.pg-l2{display:grid; grid-template-columns:48px minmax(0,1fr) auto; align-items:center; gap:12px; padding:10px 12px; border-radius:20px; background:var(--carte); border:1px solid var(--ligne)}
+.pg-l2{display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:12px; padding:10px 12px; border-radius:20px; background:var(--carte); border:1px solid var(--ligne)}
 .pg-l2 .pg-ph{width:48px; height:66px; border-radius:7px}
+/* 11 nov 2026 : le devant et le dos cote a cote ; un dos qui n'est pas le sien en rouge */
+.pg-duo{position:relative; display:flex; gap:3px; flex-shrink:0; cursor:zoom-in; border-radius:8px}
+.pg-duo .pg-ph + .pg-ph{width:30px; height:40px; align-self:flex-end; opacity:.95}
+.pg-l2 .pg-duo .pg-ph:first-child{width:42px; height:58px} .pg-l2 .pg-duo .pg-ph + .pg-ph{width:30px; height:42px}
+.pg-ligne.gris.ko-l{opacity:1} .pg-ligne.ko-l input[type=checkbox]{opacity:.35}
+.pg-duo .pg-sans{font-size:9px; color:var(--doux); border:1px dashed var(--ligne); background:transparent}
+.pg-duo.ko{outline:2px solid #E5484D; outline-offset:2px}
+.pg-ko-i{position:absolute; top:-7px; right:-7px; width:18px; height:18px; border-radius:50%; background:#E5484D; color:#fff; font:700 12px/18px system-ui; font-style:normal; text-align:center}
+.pg-ko{display:flex; flex-direction:column; gap:6px; margin-top:3px} .pg-ko > b{color:var(--rouge, #FF5A5F); font-size:12.5px; font-weight:700}
+.pg-ko-a{display:flex; gap:6px; flex-wrap:wrap}
+.pg-ko-b{border:1px solid var(--ligne); background:var(--carte2); color:var(--texte); border-radius:999px; padding:5px 11px; font-size:12px; font-weight:600; cursor:pointer}
+.pg-verif{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--doux); margin:6px 0 10px} .pg-verif .roue{width:14px; height:14px}
+.pp-pop{max-width:520px; width:100%} .pp-duo{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px}
+.pp-duo figure{margin:0; display:flex; flex-direction:column; gap:6px; align-items:center} .pp-duo img{width:100%; max-height:52vh; object-fit:contain; border-radius:10px; background:#111115}
+.pp-duo figcaption{font-size:12px; color:var(--doux)} .pp-ko{margin-top:10px; color:var(--rouge, #FF5A5F); font-weight:600; font-size:13.5px; text-align:center}
 .pg-c2{display:flex; flex-direction:column; gap:6px; min-width:0}
 .pg-t2{display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; text-align:left; background:none; border:0; padding:0; color:var(--texte); font:600 14px/1.3 inherit; font-family:inherit; cursor:text}
 .pg-ta{font-size:14px !important; min-height:0 !important; height:auto !important; padding:8px 10px !important; line-height:1.35}
@@ -314,7 +329,7 @@ details.reglage summary::-webkit-details-marker{display:none}
 .pg-p2 > span{position:absolute; left:11px; top:11px; font:700 17px var(--f-cond); color:var(--doux); pointer-events:none}
 .pg-p2 input{width:92px !important; height:44px; padding:0 10px 0 24px !important; border-radius:14px; text-align:right; font:700 20px var(--f-cond)}
 .pg-p2 .pg-sug{text-align:center !important; max-width:92px; line-height:1.2}
-@media (max-width:380px){ .pg-l2{grid-template-columns:40px minmax(0,1fr) auto; gap:10px; padding:9px 10px} .pg-l2 .pg-ph{width:40px; height:55px} .pg-p2 input{width:80px !important} }
+@media (max-width:380px){ .pg-l2{grid-template-columns:auto minmax(0,1fr) auto; gap:10px; padding:9px 10px} .pg-l2 .pg-duo .pg-ph:first-child{width:38px; height:52px} .pg-l2 .pg-duo .pg-ph + .pg-ph{width:27px; height:38px} .pg-p2 input{width:80px !important} }
 .pg-prix{flex-wrap:wrap; width:104px; justify-content:flex-end} .pg-prix .pg-sug{display:block; width:100%; text-align:right; font-size:11px; color:var(--acc); margin-top:2px} .pg-recom{display:block; margin:18px auto 0}
 .pq-t{font-weight:700; margin:12px 0 6px} .pq-l{display:flex; flex-direction:column; gap:6px}
 .pq-e{display:flex; gap:10px; align-items:flex-start; font-size:13.5px} .pq-e i{flex:none; width:22px; height:22px; border-radius:50%; display:grid; place-items:center; font-style:normal; font-size:12px; background:var(--carte2); color:var(--doux)}
@@ -1378,6 +1393,8 @@ details.replie[open] > summary{margin-bottom:12px}
 .photo-princ svg{width:30%; height:30%}
 .vignettes{display:flex; gap:8px; flex-wrap:wrap}
 .vg{width:58px; height:76px; border-radius:10px; border:1.5px solid var(--ligne); background:#111115 center/cover no-repeat; padding:0; cursor:pointer}
+.vg-w{position:relative} .vg-x{position:absolute; top:-7px; right:-7px; width:24px; height:24px; border-radius:50%; border:2px solid var(--fond, #0B0B0F); background:#2A2933; color:#fff; display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer}
+.vg-x svg{width:12px; height:12px}
 .vg.on{border-color:var(--acc)} .vg.plus-ph{display:flex; align-items:center; justify-content:center; font-size:26px; color:var(--doux); border-style:dashed}
 .comps-l{display:flex; gap:8px; overflow-x:auto; scrollbar-width:none} .comps-l::-webkit-scrollbar{display:none}
 .comp-m{flex:0 0 auto; width:84px; display:flex; flex-direction:column; gap:4px; color:var(--texte); text-align:center}
@@ -5670,6 +5687,12 @@ async function lireVente(){
     [V2.photos[0], V2.photos[1]] = [V2.photos[1], V2.photos[0]]; [ph[0], ph[1]] = [ph[1], ph[0]];
     if (V2.loc) [V2.loc[0], V2.loc[1]] = [V2.loc[1], V2.loc[0]];
   }
+  // 11 nov 2026 : la 2e photo n'est pas la meme carte (l'IA le dit, ou les noms lus ne vont pas ensemble) -> retiree tout
+  // de suite ; la fiche est remplie avec le devant seulement
+  if (V2.photos.length >= 2 && ph[0] && ph[1] && (r.meme_carte === false || nomsDifferents(ph[0].joueur, ph[1].joueur))) {
+    V2.photos.splice(1, 1); ph.splice(1, 1); if (V2.loc) V2.loc.splice(1, 1);
+    toast(tt('La 2e photo n’était pas cette carte : retirée. Ajoute le dos de la bonne carte avec +.', 'The 2nd photo wasn’t this card: removed. Add the right back with +.'), 6000);
+  }
   V2.repris = V2.repris || {};
   const k = ph.findIndex((p, j) => j < 2 && p && (p.entiere === false || p.nette === false) && !V2.repris[j]);
   if (k >= 0) {                                       // la lecture dit qu'une photo est a reprendre (une seule fois par photo)
@@ -5914,6 +5937,14 @@ async function lancerScans(fichiers, avecDos){
 // les cartes d'un lot a partir du tri de l'IA : [{i, cote, carte}] -> [{ix: [devant, dos], pb}] dans l'ordre des photos.
 // Pure (testee a part) : un devant + un dos de la meme carte = une carte ; un devant seul = une carte sans dos ; un dos seul
 // ou une photo « autre » = a reprendre ; une 2e photo du meme cote = une carte a part.
+// 11 nov 2026 (Mathieu : « comment Necas s'est retrouve la ?! » : le dos d'une Necas colle a une Kurri) : deux noms lus qui
+// n'ont aucun mot en commun = deux cartes differentes (un nom vide ou illisible ne prouve rien)
+const MOTS_PAS_NOM = new Set(['the', 'and', 'card', 'rookie', 'auto', 'upper', 'deck', 'jr', 'sr']);
+function nomsDifferents(a, b){
+  const m = (x) => new Set((String(x || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().match(/[a-z]{3,}/g) || []).filter(w => !MOTS_PAS_NOM.has(w)));
+  const ma = m(a), mb = m(b);
+  return ma.size > 0 && mb.size > 0 && ![...ma].some(w => mb.has(w));
+}
 function grouperTri(n, tri){
   if (!Array.isArray(tri) || tri.length !== n || tri.some((x, k) => !x || x.i !== k)) return null;
   const par = new Map();
@@ -5921,9 +5952,11 @@ function grouperTri(n, tri){
   const out = [];
   for (const l of par.values()) {
     const dv = l.filter(x => x.cote === 'devant'), ds = l.filter(x => x.cote === 'dos'), au = l.filter(x => x.cote === 'autre');
-    if (dv.length) out.push({ix: [dv[0].i].concat(ds.length ? [ds[0].i] : []), j: dv[0].joueur || ''});
+    // un dos dont le nom ne va pas avec le devant n'est jamais colle a lui : il reste seul (« il manque le devant »)
+    const paire = dv.length && ds.length && !nomsDifferents(dv[0].joueur, ds[0].joueur);
+    if (dv.length) out.push({ix: [dv[0].i].concat(paire ? [ds[0].i] : []), j: dv[0].joueur || ''});
     dv.slice(1).forEach(x => out.push({ix: [x.i], j: x.joueur || ''}));
-    ds.slice(dv.length ? 1 : 0).forEach(x => out.push({ix: [x.i], pb: 'dos', j: x.joueur || ''}));
+    ds.slice(paire ? 1 : 0).forEach(x => out.push({ix: [x.i], pb: 'dos', j: x.joueur || ''}));
     au.forEach(x => out.push({ix: [x.i], pb: 'autre'}));
   }
   return out.sort((a, b) => Math.min(...a.ix) - Math.min(...b.ix));
@@ -6121,7 +6154,7 @@ async function traiterCarteLot(c){
   }
   // 13 nov 2026 (Mathieu : le devant d'une Lennox et celui d'une Michkov devenus UNE carte) : l'IA dit si les 2 photos sont
   // bien la meme carte ; sinon rien n'est garde, la carte est a reprendre
-  if (c.ph.length === 2 && r.meme_carte === false) { c.etat = 'revoir'; c.ordre = true;
+  if (c.ph.length === 2 && (r.meme_carte === false || (p[0] && p[1] && nomsDifferents(p[0].joueur, p[1].joueur)))) { c.etat = 'revoir'; c.ordre = true;
     c.raison = tt('Les 2 photos ne sont pas la même carte', 'The 2 photos are not the same card');
     c.detail = tt('Remets le devant puis le dos de la même carte.', 'Put the front then the back of the same card.'); return; }
   if (c.ph.length === 1 && p[0] && p[0].cote === 'dos') { c.etat = 'revoir'; c.ordre = true; c.raison = tt('C’est un dos : il manque le devant', 'This is a back: the front is missing'); return; }
@@ -6340,7 +6373,7 @@ function rendreVente2(){
         <div class="photo-princ ${photos[0] ? 'vs-ph' : ''} ${aStudio && MODE_STUDIO ? 'studio-on' : ''}">${photos[0] ? `<img src="${esc(photos[0])}" alt="">` : SVG_CARTE}</div>
         ${cadrable ? `<div class="studio-bar">${aStudio ? ctlFlou('v2-fl') : ''}
           <button class="lien-t" id="v2-cadre">${aStudio ? tt('Recadrer', 'Re-crop') : '✦ ' + tt('Fond flou', 'Blur background')}</button></div>` : ''}
-        <div class="vignettes">${photos.map((ph, i) => `<button class="vg ${i === 0 ? 'on' : ''}" data-ph="${i}" style="background-image:${cssUrl(ph)}" aria-label="photo ${i + 1}"></button>`).join('')}
+        <div class="vignettes">${photos.map((ph, i) => `<div class="vg-w"><button class="vg ${i === 0 ? 'on' : ''}" data-ph="${i}" style="background-image:${cssUrl(ph)}" aria-label="photo ${i + 1}"></button>${photos.length > 1 ? `<button class="vg-x" data-phx="${i}" aria-label="${esc(tt('Retirer cette photo', 'Remove this photo'))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg></button>` : ''}</div>`).join('')}
           ${photos.length < 12 ? `<label class="vg plus-ph" title="${esc(tt('Ajouter une photo', 'Add a photo'))}">+<input type="file" accept="image/*" multiple id="v2-ph" hidden></label>` : ''}</div>
     </div>
     ${V2.erreurIA && !(c.joueur || c.set_nom) ? `<div class="vs-ia-err"><b>${tt('L’IA n’a pas pu lire ta carte', 'AI couldn’t read your card')}</b><span>${esc(V2.erreurIA.txt)}</span>
@@ -6591,6 +6624,15 @@ function brancherVente2(){
     if (V2.originales) { V2.studio = V2.studio || []; while (V2.studio.length < V2.originales.length) V2.studio.push(undefined); mv(V2.originales); mv(V2.studio); }
     V2.hebergees = null; re();
   });
+  // 11 nov 2026 (« on peut meme pas la supprimer ») : chaque vignette a son X (il reste toujours au moins une photo)
+  $$('[data-phx]').forEach(b => b.onclick = (e) => {
+    e.stopPropagation(); vibrer();
+    const i = +b.dataset.phx, rt = (t) => { if (Array.isArray(t) && t.length > i) t.splice(i, 1); };
+    if ((V2.photos || []).length < 2) return;
+    rt(V2.photos); rt(V2.originales); rt(V2.studio); rt(V2.loc);
+    V2.hebergees = null; re();
+    toast(tt('Photo retirée', 'Photo removed'), 2000);
+  });
   const ph = $('#v2-ph'); if (ph) ph.onchange = async (e) => { for (const f of [...(e.target.files || [])].slice(0, 12 - V2.photos.length)) { try { const x = await reduirePhoto(f, V2.photos.length >= 4 ? 2400 : 4032); V2.photos.push(x); if (V2.originales) V2.originales.push(x); } catch (x) {} } V2.hebergees = null; re(); };
   const garderSaisie = () => { V2.champs = lireChampsVente(); V2.titre = $('#v2-titre').value; V2.description = $('#v2-desc').value; V2.cout = val('v2-cout'); };
   brancherFlou('v2-fl', () => { garderSaisie(); syncPhotos(); rendreVente2(); }, () => { garderSaisie(); rendreVente2(); });
@@ -6666,13 +6708,44 @@ async function vueProgrammer(){
     if (PG.pol && !PG.mod.politique_exp && PG.pol.expedition[0]) PG.mod.politique_exp = PG.pol.expedition[0].id;
     if (PG.pol && !PG.mod.politique_pai && PG.pol.paiement[0]) PG.mod.politique_pai = PG.pol.paiement[0].id;
     if (PG.pol && !PG.mod.politique_ret && PG.pol.retours[0] && PG.mod.politique_exp) PG.mod.politique_ret = PG.pol.retours[0].id;
+    setTimeout(pgVerifierPaires, 0);
   }
   rendrePG();
 }
 function pgListe(){ return PG.cartes.filter(x => PG.choisis.has(x.id)); }
 // 8 nov 2026 (Mathieu : « pourquoi je ne peux pas selectionner mes cartes ? ») : une carte sans prix (ou sans titre a elle) se
 // choisit aussi : l'etape 2 lui suggere un prix (ventes, sinon annonces - 10 %) et un titre ; seule la photo est obligatoire
-const pgChoisissable = (x) => !(x.manque || []).includes('photo');
+// 11 nov 2026 (Mathieu : 3 annonces en ligne avec le dos d'une autre carte) : une carte dont le dos n'est pas le sien ne
+// peut pas etre programmee tant qu'il n'est pas retire ou change
+const pgDosKo = (x) => !!(x.paire && x.paire.meme === false);
+const pgChoisissable = (x) => !(x.manque || []).includes('photo') && !pgDosKo(x);
+async function pgVerifierPaires(){
+  const ids = (PG.cartes || []).filter(x => (x.photos || []).length >= 2 && !x.paire).map(x => x.id);
+  if (!ids.length || PG.verif) return;
+  PG.verif = true; if (PG.etape === 1) rendrePG();
+  try {
+    for (let i = 0; i < ids.length; i += 20) {
+      const r = await API.paires_verifier({ids: ids.slice(i, i + 20)}).catch(() => null);
+      if (!r || !r.ok) break;
+      for (const x of PG.cartes) { const v = r.res && r.res[x.id]; if (v) { x.paire = v; if (v.meme === false) PG.choisis.delete(x.id); } }
+      if (PG.etape <= 2) rendrePG();
+    }
+  } finally { PG.verif = false; if (PG.etape <= 2) rendrePG(); }
+  const n = (PG.cartes || []).filter(pgDosKo).length;
+  if (n) toast(tt(`${n} carte${n > 1 ? 's ont' : ' a'} le dos d’une autre carte : à corriger avant de programmer`, `${n} card${n > 1 ? 's have' : ' has'} another card’s back: fix before scheduling`), 6000);
+}
+function voirPaire(x){
+  const ph = (x.photos || [x.photo]).filter(Boolean);
+  let f = $('#pop-paire'); if (f) f.remove();
+  f = document.createElement('div'); f.id = 'pop-paire'; f.className = 'pop2-fond';
+  f.innerHTML = `<div class="pop2 pp-pop" role="dialog" aria-modal="true"><button class="pop2-x" aria-label="${tt('Fermer', 'Close')}">✕</button>
+    <b class="pop2-t">${esc(titreCourt(x.titre || ''))}</b>
+    <div class="pp-duo">${ph.slice(0, 2).map((u, j) => `<figure><img src="${esc(photoNet(u))}" alt=""><figcaption>${j ? tt('Dos', 'Back') : tt('Devant', 'Front')}</figcaption></figure>`).join('')}</div>
+    ${pgDosKo(x) ? `<div class="pp-ko">${tt('Ce dos n’est pas celui de cette carte', 'This back is not this card’s')}${x.paire.dos ? ` (${tt('lu', 'read')} : ${esc(x.paire.dos)})` : ''}</div>` : ''}</div>`;
+  document.body.appendChild(f); requestAnimationFrame(() => f.classList.add('ouvert'));
+  const fermer = () => { f.classList.remove('ouvert'); setTimeout(() => f.remove(), 220); };
+  f.querySelector('.pop2-x').onclick = fermer; f.onclick = (e) => { if (e.target === f) fermer(); };
+}
 async function pgPrixManquants(){
   const a = pgListe().filter(x => !nb(x.prix) && !x.prix_cherche);
   pgListe().filter(x => (x.manque || []).includes('titre') && !x.titre_ok).forEach(x => { x.titre_ok = true; x.modif = true; });
@@ -6781,14 +6854,20 @@ function pgPolCarte(x){
 function rendrePG(){
   const n = PG.choisis.size, e = PG.etape, L = pgListe(), o = PG.mod, pol = PG.pol;
   const pill = (k) => `<button class="pg-pt ${k === e ? 'on' : ''} ${k < e ? 'fait' : ''}" data-et="${k}" ${k > PG.vu ? 'disabled' : ''}><i>${k < e ? '✓' : k}</i><span>${PG_ETAPES()[k - 1]}</span></button>`;
-  const vig = (x) => `<span class="pg-ph">${SVG_CARTE}${x.photo && photoOk(x.photo) ? `<img src="${esc(photoNet(x.photo))}" alt="" loading="lazy" data-oe="rm">` : ''}</span>`;
+  const vig1 = (u) => `<span class="pg-ph">${SVG_CARTE}${u && photoOk(u) ? `<img src="${esc(photoNet(u))}" alt="" loading="lazy" data-oe="rm">` : ''}</span>`;
+  // 11 nov 2026 (Mathieu : « on doit voir les photos devant et derriere ; on voyait juste la premiere ») : le devant ET le dos
+  const vig = (x) => { const ph = (x.photos && x.photos.length ? x.photos : [x.photo]);
+    return `<span class="pg-duo ${pgDosKo(x) ? 'ko' : ''}" data-pduo="${x.id}" role="button" aria-label="${esc(tt('Voir devant et dos', 'See front and back'))}">${vig1(ph[0])}${ph[1] ? vig1(ph[1]) : `<span class="pg-ph pg-sans">${tt('dos ?', 'back?')}</span>`}${pgDosKo(x) ? `<i class="pg-ko-i">!</i>` : ''}</span>`; };
+  const koBloc = (x) => pgDosKo(x) ? `<span class="pg-ko"><b>${tt('Dos d’une autre carte', 'Another card’s back')}${x.paire.dos ? ` · ${esc(x.paire.dos)}` : ''}</b>
+    <span class="pg-ko-a"><button class="pg-ko-b" data-prd="${x.id}">${tt('Retirer le dos', 'Remove back')}</button><label class="pg-ko-b">${tt('Changer le dos', 'Replace back')}<input type="file" accept="image/*" data-pcd="${x.id}" hidden></label></span></span>` : '';
   const sel = (id, l, actuel, aucun) => `<select class="champ" id="${id}">${aucun ? `<option value="">${esc(aucun)}</option>` : ''}${l.map(p => `<option value="${esc(p.id)}" ${String(p.id) === String(actuel) ? 'selected' : ''}>${esc(p.nom)}${p.defaut ? ' ★' : ''}</option>`).join('')}</select>`;
   let corps = '';
   if (e === 1) corps = `<div class="pg-q">${tt('Quelles cartes mettre en vente ?', 'Which cards to list?')}</div>
-    <div class="pg-sous">${tt('Tes cartes prêtes dans l’inventaire. ', 'Your ready cards in inventory. ')}${PG_MAX} ${tt('au plus par lot.', 'max per batch.')}</div>
+    <div class="pg-sous">${tt('Tes cartes prêtes dans l’inventaire. ', 'Your ready cards in inventory. ')}${PG_MAX} ${tt('au plus par lot.', 'max per batch.')} ${tt('Touche les photos pour voir le devant et le dos.', 'Tap the photos to see front and back.')}</div>
+    ${PG.verif ? `<div class="pg-verif"><span class="roue"></span>${tt('On vérifie que chaque dos va avec son devant…', 'Checking each back matches its front…')}</div>` : ''}
     ${PG.cartes.length ? `<button class="lien-doux" id="pg-tout">${n ? tt('Tout décocher', 'Uncheck all') : tt('Tout cocher', 'Check all')}</button>
-    <div class="pg-liste">${PG.cartes.map(x => `<label class="pg-ligne ${pgChoisissable(x) ? '' : 'gris'}"><input type="checkbox" data-pc="${x.id}" ${PG.choisis.has(x.id) ? 'checked' : ''} ${pgChoisissable(x) ? '' : 'disabled'}>${vig(x)}
-      <span class="pg-mil"><b>${esc(titreCourt(x.titre))}</b><small>${x.manque.length ? (pgChoisissable(x) ? tt('Prix et titre suggérés à l’étape 2', 'Price and title suggested in step 2') : tt('Manque : ', 'Missing: ') + x.manque.map(m => ({prix: tt('prix', 'price'), photo: 'photo', titre: tt('titre', 'title')}[m])).join(', ')) : x.nb_photos + ' photo' + (x.nb_photos > 1 ? 's' : '')}</small></span>
+    <div class="pg-liste">${PG.cartes.map(x => `<label class="pg-ligne ${pgChoisissable(x) ? '' : 'gris'} ${pgDosKo(x) ? 'ko-l' : ''}"><input type="checkbox" data-pc="${x.id}" ${PG.choisis.has(x.id) ? 'checked' : ''} ${pgChoisissable(x) ? '' : 'disabled'}>${vig(x)}
+      <span class="pg-mil"><b>${esc(titreCourt(x.titre))}</b>${koBloc(x)}<small ${pgDosKo(x) ? 'hidden' : ''}>${x.manque.length ? (pgChoisissable(x) ? tt('Prix et titre suggérés à l’étape 2', 'Price and title suggested in step 2') : tt('Manque : ', 'Missing: ') + x.manque.map(m => ({prix: tt('prix', 'price'), photo: 'photo', titre: tt('titre', 'title')}[m])).join(', ')) : x.nb_photos + ' photo' + (x.nb_photos > 1 ? 's' : '')}</small></span>
       <span class="pg-px">${x.prix ? argent(x.prix, 0) : '—'}</span></label>`).join('')}</div>`
       : `<div class="vide">${tt('Aucune carte en stock. Ajoute des cartes (photo devant + dos) : elles arrivent ici prêtes à programmer.', 'No cards in stock. Add cards (front + back photo): they arrive here ready to schedule.')}<br><a class="btn petit" href="#vendre/lot" style="margin-top:12px">${tt('Ajouter des cartes', 'Add cards')}</a></div>`}`;
   // 13 nov 2026 (Mathieu : « revoir le layout des prix, trop epais ; un petit lien vers les last sold de CETTE carte, son titre
@@ -6870,6 +6949,22 @@ function brancherPG(){
   $$('[data-pc]').forEach(c => c.onchange = () => { const id = +c.dataset.pc;
     if (c.checked && PG.choisis.size >= PG_MAX) { c.checked = false; toast(PG_MAX + tt(' cartes au plus par lot', ' cards max per batch')); return; }
     c.checked ? PG.choisis.add(id) : PG.choisis.delete(id); const b = $('#pg-suiv'); if (b) b.disabled = !PG.choisis.size; });
+  $$('[data-pduo]').forEach(b => b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); vibrer(); const x = PG.cartes.find(y => String(y.id) === b.dataset.pduo); if (x) voirPaire(x); });
+  $$('[data-prd]').forEach(b => b.onclick = async (e) => { e.preventDefault(); e.stopPropagation(); vibrer();
+    const x = PG.cartes.find(y => String(y.id) === b.dataset.prd); if (!x) return; b.disabled = true;
+    const r = await API.carte_photo_retirer(x.id, 1).catch(e2 => ({ok: false, erreur: e2.message}));
+    if (!r.ok) { b.disabled = false; toast(r.erreur || 'Erreur'); return; }
+    Object.assign(x, {photos: r.photos, photo: r.photo, orig: [], nb_photos: r.photos.length, paire: null}); MEMO.clear();
+    if (PG.choisis.size < PG_MAX) PG.choisis.add(x.id);
+    toast(tt('Dos retiré : ajoute le bon dos quand tu veux', 'Back removed: add the right back anytime'), 3500); rendrePG(); });
+  $$('[data-pcd]').forEach(inp => { inp.onclick = (e) => e.stopPropagation(); inp.onchange = async () => {
+    const x = PG.cartes.find(y => String(y.id) === inp.dataset.pcd), f = inp.files && inp.files[0]; if (!x || !f) return;
+    let d = null; try { d = await reduirePhoto(f, 2400); } catch (e) {}
+    if (!d) { toast(tt('Photo illisible : reprends-la', 'Unreadable photo: retake it')); return; }
+    toast(tt('Envoi du dos…', 'Uploading back…'), 2000);
+    const r = await API.carte_photo_changer(x.id, d, 1).catch(e2 => ({ok: false, erreur: e2.message}));
+    if (!r.ok) { toast(r.erreur || 'Erreur'); return; }
+    Object.assign(x, {photos: r.photos, photo: r.photo, orig: [], nb_photos: r.photos.length, paire: null}); MEMO.clear(); rendrePG(); pgVerifierPaires(); }; });
   const tout = $('#pg-tout'); if (tout) tout.onclick = () => { if (PG.choisis.size) PG.choisis.clear(); else PG.cartes.filter(pgChoisissable).slice(0, PG_MAX).forEach(x => PG.choisis.add(x.id)); rendrePG(); };
   $$('[data-et]').forEach(b => b.onclick = () => { pgLire(); PG.etape = +b.dataset.et; rendrePG(); scrollTo(0, 0); });
   // l'etape des prix : le titre se corrige d'un toucher ; « Vendus » ouvre les ventes eBay de CETTE carte

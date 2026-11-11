@@ -1126,7 +1126,7 @@ class Api:
         if len(p) > 1 and len(refs) > 1 and p[0].get("cote") == "dos" and p[1].get("cote") == "devant":
             refs, p = refs[::-1], p[::-1]
             photos = photos[::-1]
-        if len(refs) == 2 and res.get("meme_carte") is False:
+        if len(refs) == 2 and (res.get("meme_carte") is False or (len(p) > 1 and vision.noms_differents(p[0].get("joueur"), p[1].get("joueur")))):
             self._lot_maj(jid, etat="revoir", ordre=1, raison="Les 2 photos ne sont pas la même carte")
             return
         if len(p) > 1 and p[0].get("cote") and p[0].get("cote") == p[1].get("cote"):
@@ -3783,6 +3783,127 @@ class Api:
                 pass
         return {"ok": True, "photo": nouv[0], "photos": nouv}
 
+    def carte_photo_retirer(self, cid, index=1):
+        """11 nov 2026 (Mathieu : « on peut meme pas la supprimer ») : retire une photo de la carte (le dos d'une autre carte).
+        Il reste toujours au moins une photo."""
+        import photos_cartes
+        carte = self.carte_lire(cid)
+        if not carte:
+            return {"ok": False, "erreur": "Carte introuvable"}
+        try:
+            index = int(index)
+            avant = json.loads(carte.get("photos") or "[]")
+            avant = avant if isinstance(avant, list) else []
+        except (TypeError, ValueError):
+            return {"ok": False, "erreur": "Photo introuvable"}
+        if len(avant) < 2 or not 0 <= index < len(avant):
+            return {"ok": False, "erreur": "Il faut garder au moins une photo"}
+        nouv = avant[:index] + avant[index + 1:]
+        maj = {"id": cid, "photo": nouv[0], "photos": json.dumps(nouv)}
+        try:
+            orig = json.loads(carte.get("photos_orig") or "[]")
+        except ValueError:
+            orig = []
+        jeter = [avant[index]]
+        if isinstance(orig, list) and len(orig) > index:
+            jeter.append(orig[index])
+            maj["photos_orig"] = json.dumps(orig[:index] + orig[index + 1:])
+        self.carte_sauver(maj)
+        try:
+            photos_cartes.supprimer([r for r in jeter if r and r not in nouv])
+        except Exception:
+            pass
+        with self._PAIRES_VERROU:
+            self._paires_cache().pop(str(cid), None)
+        return {"ok": True, "photo": nouv[0], "photos": nouv}
+
+    _PAIRES_VERROU = threading.Lock()
+
+    def _paires_chemin(self):
+        import comptes
+        return os.path.join(comptes.dossier() or DOSSIER, "paires_verif.json")
+
+    def _paires_cache(self):
+        ch = self._paires_chemin()
+        m = getattr(self, "_paires_mem", None)
+        if m is None or m[0] != ch:
+            try:
+                with open(ch, encoding="utf-8") as f:
+                    v = json.load(f)
+            except (OSError, ValueError):
+                v = {}
+            self._paires_mem = m = (ch, v if isinstance(v, dict) else {})
+        return m[1]
+
+    def paires_verifier(self, d=None):
+        """11 nov 2026 (Mathieu : 3 annonces en ligne avec le dos d'une autre carte ; « on doit flagger ») : chaque carte a 2
+        photos est revue (le dos est-il bien celui de ce devant ?) ; le resultat est garde par carte et par photos (une seule
+        verification payee). -> {ok, res: {id: {meme, devant, dos}}}"""
+        import base64, io
+        import photos_cartes
+        ids = [str(x) for x in ((d or {}).get("ids") or [])][:60]
+        if not ids:
+            return {"ok": True, "res": {}}
+        if not self.reglages_lire().get("ia_photos_ok"):
+            return {"ok": False, "erreur": "Permission de lecture par l’IA requise", "consentement_requis": True}
+        cache, res, a_faire = self._paires_cache(), {}, []
+        for cid in ids:
+            c = self.carte_lire(int(cid) if cid.isdigit() else cid)
+            if not c:
+                continue
+            try:
+                ph = json.loads(c.get("photos_orig") or "[]") or json.loads(c.get("photos") or "[]")
+            except ValueError:
+                ph = []
+            if not isinstance(ph, list) or len(ph) < 2:
+                continue
+            sig = "|".join(str(x) for x in ph[:2])
+            e = cache.get(cid)
+            if e and e.get("sig") == sig:
+                res[cid] = {k: e.get(k) for k in ("meme", "devant", "dos")}
+            else:
+                a_faire.append((cid, sig, ph[:2]))
+
+        def petite(ref):
+            ch = photos_cartes.chemin(ref)
+            if not ch:
+                return None
+            from PIL import Image, ImageOps
+            im = ImageOps.exif_transpose(Image.open(ch)).convert("RGB")
+            im.thumbnail((640, 640))
+            b = io.BytesIO()
+            im.save(b, "JPEG", quality=80)
+            return "data:image/jpeg;base64," + base64.b64encode(b.getvalue()).decode()
+        prets = []
+        for cid, sig, ph in a_faire:
+            try:
+                a, b = petite(ph[0]), petite(ph[1])
+            except Exception:
+                a = b = None
+            if a and b:
+                prets.append((cid, sig, a, b))
+        for i in range(0, len(prets), vision.MAX_PAIRES):
+            lot = prets[i:i + vision.MAX_PAIRES]
+            try:
+                r = vision.verifier_paires([(a, b) for _, _, a, b in lot])
+            except Exception as e:
+                print("Paires : " + repr(e), flush=True)
+                break
+            with self._PAIRES_VERROU:
+                for (cid, sig, _, _), x in zip(lot, r):
+                    if x.get("meme") is None:
+                        continue
+                    res[cid] = x
+                    cache[cid] = dict(x, sig=sig)
+                ch = self._paires_chemin()
+                try:
+                    with open(ch + ".tmp", "w", encoding="utf-8") as f:
+                        json.dump(cache, f, ensure_ascii=False)
+                    os.replace(ch + ".tmp", ch)
+                except OSError:
+                    pass
+        return {"ok": True, "res": res}
+
     def carte_photos_studio(self, cid, photos, v=None):
         """31 oct 2026 (Mathieu : « la photo est pas centree », puis « mauvais cropping de la photo de face ») : les cartes
         gardees avant la photo studio, ou recadrees par une version plus ancienne du recadrage (studio_v). L'ecran recadre
@@ -5921,9 +6042,15 @@ class Api:
             if pct > 0 and debut_utc:
                 # 29 oct 2026 : une annonce programmee n'est pas encore active : la promotion s'ajoute toute seule quand
                 # elle passe en ligne (boucle de l'heure)
-                self._promo_attente(r["item_id"], pct, debut_utc)
-                r["promotion"] = pct
-                r["promotion_attente"] = True
+                # 11 nov 2026 (Mathieu : « la promotion de 2 % n'etait pas appliquee, j'ai du la mettre moi-meme ») : eBay
+                # accepte la promotion d'une annonce programmee : on l'essaie TOUT DE SUITE ; refusee, elle attend la mise en ligne
+                p = self._ecrire_ebay("annonces.promouvoir", r["item_id"], pct)
+                if p.get("ok"):
+                    r["promotion"] = p.get("promotion") or pct
+                else:
+                    self._promo_attente(r["item_id"], pct, debut_utc)
+                    r["promotion"] = pct
+                    r["promotion_attente"] = True
             elif pct > 0:
                 p = self._ecrire_ebay("annonces.promouvoir", r["item_id"], pct)
                 r["promotion"] = p.get("promotion") if p.get("ok") else None
@@ -6190,10 +6317,10 @@ class Api:
             c.close()
         if pct is not None:
             pct = _float(pct) or 0
-            if r[1] and str(r[1]) > datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S"):
-                self._promo_attente(item_id, pct, r[1])                   # pas encore en ligne : au moment de la mise en ligne
+            p = self._ecrire_ebay("annonces.promouvoir", item_id, pct) if pct > 0 else {"ok": True}
+            if r[1] and str(r[1]) > datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S") and not (pct > 0 and p.get("ok")):
+                self._promo_attente(item_id, pct, r[1])                   # pas encore en ligne et refusee : a la mise en ligne
                 return {"ok": True, "item_id": item_id, "attente": {"pct": pct, "debut": r[1], "essais": 0}, "promue": False}
-            p = self._ecrire_ebay("annonces.promouvoir", item_id, pct)
             if not p.get("ok"):
                 return {"ok": False, "erreur": p.get("erreur") or "Promotion refusée par eBay"}
             c = self._db()
@@ -6229,15 +6356,20 @@ class Api:
         c = self._db()
         try:
             c.execute(self._PROMOS)
-            lst = [dict(x) for x in c.execute("SELECT * FROM promos_attente WHERE debut <= ?", (maint,))]
+            # 11 nov 2026 : les annonces encore programmees sont essayees UNE fois tout de suite (essais = -1 ensuite) ;
+            # celles qui sont en ligne, jusqu'a 6 fois
+            lst = [dict(x) for x in c.execute("SELECT * FROM promos_attente WHERE debut <= ? OR essais = 0", (maint,))]
         finally:
             c.close()
         faits = 0
         for x in lst:
+            futur = str(x["debut"] or "") > maint
             p = self._ecrire_ebay("annonces.promouvoir", x["item_id"], x["pct"])
             c = self._db()
             try:
-                if p.get("ok") or x["essais"] >= 5:
+                if futur and not p.get("ok"):
+                    c.execute("UPDATE promos_attente SET essais=-1 WHERE item_id=?", (x["item_id"],))
+                elif p.get("ok") or x["essais"] >= 5:
                     c.execute("DELETE FROM promos_attente WHERE item_id=?", (x["item_id"],))
                     faits += 1 if p.get("ok") else 0
                     if not p.get("ok"):

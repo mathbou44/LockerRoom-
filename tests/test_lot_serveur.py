@@ -18,7 +18,10 @@ api.reglages_sauver({"ia_photos_ok": True})
 appels = []
 def faux_identifier(photos):
     appels.append(len(photos))
-    if len(appels) == 2:
+    import base64 as _b, io as _io
+    from PIL import Image as _I
+    _px = _I.open(_io.BytesIO(_b.b64decode(str(photos[0]).split(",", 1)[-1]))).convert("RGB").getpixel((2, 2))
+    if _px[1] > 100 and _px[0] < 100:                  # la paire verte (n 2) : deux cartes differentes (2 lectures en parallele)
         return {"ok": True, "champs": {"joueur": "B", "sport": "hockey"}, "a_verifier": [], "photos": [{"cote": "devant"}, {"cote": "devant"}], "meme_carte": False}
     return {"ok": True, "champs": {"joueur": "A", "sport": "hockey", "set_nom": "Series 1"}, "a_verifier": ["parallele"],
             "photos": [{"cote": "dos", "coins": [[1, 1], [9, 1], [9, 9], [1, 9]]}, {"cote": "devant", "coins": [[2, 2], [8, 2], [8, 8], [2, 8]]}], "meme_carte": True}
@@ -65,4 +68,17 @@ assert 3 not in {x["n"] for x in api.lot_etat()["travaux"]}
 # 3. sans consentement : rien
 api.reglages_sauver({"ia_photos_ok": False})
 assert api.lot_soumettre({"lot": "lot1234", "n": 4, "cle": "cleaaaa44", "photos": [jpeg("red")]})["consentement_requis"]
+# 4. 11 nov 2026 (le dos d'une autre carte) : chaque paire est revue une fois (gardee), et le dos se retire
+api.reglages_sauver({"ia_photos_ok": True})
+cid = t[1]["carte_id"]
+vus = []
+vision.verifier_paires = lambda paires: (vus.append(len(paires)), [{"meme": False, "devant": "A", "dos": "Necas"} for _ in paires])[1]
+r = api.paires_verifier({"ids": [cid]})
+assert r["ok"] and r["res"][str(cid)]["meme"] is False and vus == [1], (r, vus)
+assert api.paires_verifier({"ids": [cid]})["res"][str(cid)]["dos"] == "Necas" and vus == [1]      # garde : pas payee 2 fois
+avant = json.loads(api.carte_lire(cid)["photos"])
+r = api.carte_photo_retirer(cid, 1)
+assert r["ok"] and r["photos"] == avant[:1], r
+assert not api.carte_photo_retirer(cid, 0)["ok"]                    # jamais sans photo
+assert api.paires_verifier({"ids": [cid]})["res"] == {}            # une seule photo : rien a verifier
 print("OK lot au serveur")
