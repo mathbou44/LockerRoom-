@@ -841,7 +841,7 @@ button.jb-t, a.jb-t{cursor:pointer} .jb-t.l{grid-column:span 2}
 /* 11 nov 2026 (Mathieu : « tout semble pogne et beaucoup d'indications ») : l'ecran du lot, aere et court */
 .lot .lot-ordre{margin:18px 0 12px} .lot-tips{display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:0 0 14px}
 .lot-tips span{font-size:13px; padding:6px 11px; border-radius:999px; background:var(--carte); border:1px solid var(--ligne); color:var(--texte2)}
-.lot-bas{margin:4px 0 12px} .pg-polc select{max-width:44%; flex-shrink:0; height:40px; font-size:14px} .vs-pp{margin:10px 0} .vs-pp .btn{margin-top:8px} .lot-pb{color:var(--or) !important; line-height:1.35} .lot-r.revoir{border:1px solid var(--or); border-radius:14px} .lot-scan-b{margin-top:16px; width:100%} .lot-pied{text-align:center; margin-top:14px}
+.lot-bas{margin:4px 0 12px} .pg-polc select{max-width:44%; flex-shrink:0; height:40px; font-size:14px} .vs-pp{margin:10px 0} .vs-pp .btn{margin-top:8px} .lot-pb{color:var(--or) !important; line-height:1.35} .lot-r.lot-e-revoir{border:1px solid color-mix(in srgb, var(--or) 55%, transparent); background:color-mix(in srgb, var(--or) 6%, transparent); border-radius:18px; padding:10px 12px; box-sizing:border-box} .lot-scan-b{margin-top:16px; width:100%} .lot-pied{text-align:center; margin-top:14px}
 .fc-ebay label.large{display:flex; flex-direction:column; gap:6px; margin:8px 0 4px; width:100%} .grad-z:empty, .fc-achat:empty{display:none}
 .pg-anime{background-image:linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent) !important; background-size:200% 100%; animation:pgA 1.2s linear infinite} @keyframes pgA{from{background-position:200% 0} to{background-position:-200% 0}}
 /* 11 nov 2026 (Mathieu : « regarde, c'est croche ») : sur iPhone, un champ date/heure garde sa largeur native et deborde
@@ -3133,8 +3133,27 @@ body.vd-ouverte::before{content:''; position:fixed; top:0; left:0; right:0; heig
 .lot-l{display:flex; flex-direction:column; gap:8px} .lot-r{display:flex; align-items:center; gap:12px}
 .lot-r .vig{width:44px; height:60px; object-fit:cover; border-radius:6px; flex:none} .lot-r .milieu{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px}
 .lot-r .milieu b{white-space:nowrap; overflow:hidden; text-overflow:ellipsis} .lot-r .milieu small{color:var(--doux); font-size:13px}
-.lot-r.revoir .milieu small{color:var(--rouge)} .lot-r.ok .milieu small{color:var(--vert)} .lot-r.attente{opacity:.6}
-.lot-r .btn.petit{width:auto; height:36px; padding:0 14px; font-size:14px; flex:none}
+.lot-r.lot-e-revoir .milieu small{color:var(--rouge)} .lot-r.lot-e-ok .milieu small{color:var(--vert)} .lot-r.lot-e-attente{opacity:.6}
+.lot-r{min-height:68px} .lot-r[data-lot-o]{cursor:pointer}
+.lot-r .ecusson{width:44px; height:60px; border-radius:6px; flex:none; display:grid; place-items:center}
+.lot-an{position:relative; width:40px; height:40px; flex:none; display:grid; place-items:center}
+.lot-an svg{position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg)}
+.lot-an .f{fill:none; stroke:var(--carte2); stroke-width:3.2}
+.lot-an .v{fill:none; stroke:var(--acc); stroke-width:3.2; stroke-linecap:round; stroke-dasharray:var(--c); stroke-dashoffset:var(--a); animation:lot-an .9s cubic-bezier(.22,1,.36,1) both, lot-pulse 1.6s ease-in-out .9s infinite}
+.lot-an b{position:relative; font:700 11.5px/1 var(--f-cond); color:var(--texte2)} .lot-an b i{font-style:normal; font-size:8.5px; color:var(--doux)}
+.lot-an.att .v{animation:none} .lot-an.att b{color:var(--pale)}
+@keyframes lot-an{from{stroke-dashoffset:var(--de)} to{stroke-dashoffset:var(--a)}}
+@keyframes lot-pulse{50%{opacity:.55}}
+.lot-ck{width:40px; height:40px; flex:none} .lot-ck svg{width:100%; height:100%}
+.lot-ck circle{fill:var(--vert-fond); stroke:var(--vert); stroke-width:2.4}
+.lot-ck path{fill:none; stroke:var(--vert); stroke-width:3; stroke-linecap:round; stroke-linejoin:round}
+.lot-ck.neuf circle{animation:lot-ck-c .35s ease-out both} .lot-ck.neuf path{stroke-dasharray:24; animation:lot-ck-p .4s .25s cubic-bezier(.22,1,.36,1) both}
+@keyframes lot-ck-c{from{transform:scale(.6); opacity:0} to{transform:scale(1); opacity:1}} .lot-ck circle{transform-origin:18px 18px}
+@keyframes lot-ck-p{from{stroke-dashoffset:24} to{stroke-dashoffset:0}}
+@media (prefers-reduced-motion: reduce){.lot-an .v, .lot-ck.neuf circle, .lot-ck.neuf path{animation:none}}
+.lot-r .btn.petit{width:auto; height:36px; padding:0 14px; font-size:14px; flex:none; margin:0; max-width:42%; border-radius:999px}
+.lot-r.lot-e-revoir .milieu small{line-height:1.35}
+.afs-bas{display:flex; justify-content:center; gap:22px; margin-top:6px} .lien-t.rouge{color:var(--rouge)}
 /* 28 oct 2026 (Mathieu : « le background doit changer entre les differents styles de paralleles : laser, prism, surge,
    outburst, checkers ») : chaque palette a son motif, toujours en gris tres doux (+ un soupcon de sa couleur) */
 body[data-palette] #mosaique{background-repeat:no-repeat !important; background-size:auto !important}
@@ -5853,15 +5872,31 @@ async function lotEnParallele(l, n = 3){
   let k = 0;
   const travailleur = async () => { while (k < l.length) { const c = l[k++];
     try { await traiterCarteLot(c); } catch (e) { c.etat = 'revoir'; c.raison = tt('Erreur : reprends cette carte', 'Error: redo this card'); }
-    c.f = null; lotGarder(); rendreLot(); } };
+    if (!(c.etat === 'revoir' && c.lecture)) c.f = null; lotGarder(); rendreLot(); } };
   await Promise.all(Array.from({length: Math.min(n, l.length)}, travailleur));
+}
+let FILE_PH = Promise.resolve();
+function chargerPhotoLot(f){
+  const p = FILE_PH.then(async () => {
+    for (const [cote, pause] of [[4032, 0], [3000, 900], [2200, 1800]]) {
+      if (pause) await new Promise(r => setTimeout(r, pause));
+      try { const d = await reduirePhoto(f, cote); if (d && d.length > 1000) return d; } catch (e) {}
+      try { const b = new Blob([await f.arrayBuffer()], {type: f.type || 'image/jpeg'}); const d = await reduirePhoto(b, cote); if (d && d.length > 1000) return d; } catch (e) {}
+    }
+    return null; });
+  FILE_PH = p.catch(() => null);
+  return p;
 }
 async function traiterCarteLot(c){
   const nom = (j) => (c.ph.length > 1 ? (j ? tt('Dos : ', 'Back: ') : tt('Devant : ', 'Front: ')) : '');
   c.etat = 'photos'; c.reseau = false; rendreLot();
   if (c.f) {                                                    // 8 nov 2026 : une relance reprend les photos deja reduites
     c.ph = [];
-    for (const f of c.f) { try { c.ph.push(await reduirePhoto(f)); } catch (e) { c.etat = 'revoir'; c.raison = tt('Photo illisible', 'Unreadable photo'); return; } }
+    // 13 nov 2026 (Mathieu : « ce sont toutes de belles photos ») : le telephone manquait de memoire (3 cartes a la fois, en
+    // 4032 px) et les photos du bout du lot ne se chargeaient plus. Une photo a la fois, la memoire liberee, et 3 essais
+    // (plus petite a chaque fois) avant de dire qu'elle ne se charge pas ; alors « Reessayer » refait la meme photo.
+    for (const f of c.f) { const d = await chargerPhotoLot(f); if (!d) { c.ph = []; c.etat = 'revoir'; c.lecture = true; c.raison = tt('La photo n’a pas chargé', 'The photo didn’t load'); return; } c.ph.push(d); }
+    c.lecture = false;
   }
   for (let j = 0; j < c.ph.length; j++) {                       // nos regles, dans le telephone, avant toute lecture
     const q = await qualitePhoto(c.ph[j]).catch(() => ({ok: true}));
@@ -5909,23 +5944,33 @@ async function traiterCarteLot(c){
   Object.assign(c, {etat: dt.length ? 'verifier' : 'ok', id: g.id, titre, prix, vig: photos[0], douteux: dt});
   c.ph = null;
 }
+const LOT_PCT = {attente: 0, photos: 28, lecture: 58, prix: 86};
+function anneauLot(c){
+  const C_ = 2 * Math.PI * 15, a = LOT_PCT[c.etat], de = c._pv != null ? c._pv : 0;
+  return `<span class="lot-an ${c.etat === 'attente' ? 'att' : ''}" style="--de:${(C_ * (1 - de / 100)).toFixed(1)};--a:${(C_ * (1 - a / 100)).toFixed(1)};--c:${C_.toFixed(1)}"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" class="f"/><circle cx="18" cy="18" r="15" class="v"/></svg><b>${a}<i>%</i></b></span>`;
+}
 function rendreLot(){
   if (!/^#vendre\/(collection-)?lot/.test(location.hash) || !LOT.l) return;    // le lot continue meme si on change de page
   const C = LOT.but === 'collection';
   const l = LOT.l, finis = l.filter(c => ['ok', 'verifier', 'revoir'].includes(c.etat)).length;
   const prets = l.filter(c => c.etat === 'ok' || c.etat === 'verifier').length, res = l.filter(c => c.etat === 'revoir' && c.reseau && c.ph).length,
-    rev = l.filter(c => c.etat === 'revoir').length - res;
+    rev = l.filter(c => c.etat === 'revoir' && !c.lecture).length - res;
   const lib = {attente: tt('En attente', 'Waiting'), photos: tt('Contrôle des photos…', 'Checking photos…'), lecture: tt('Lecture de la carte…', 'Reading the card…'),
     prix: C ? tt('Valeur estimée…', 'Estimating value…') : tt('Photo studio, titre et prix…', 'Studio photo, title and price…'), ok: C ? tt('Dans ta collection', 'In your collection') : tt('Prête dans ton inventaire', 'Ready in your inventory'), verifier: '', revoir: ''};
   const ligne = (c, i) => {
     const sous = c.etat === 'revoir' ? c.raison : c.etat === 'verifier' ? (C ? tt('Ajoutée · à vérifier : ', 'Added · check: ') : tt('Prête · à vérifier : ', 'Ready · check: ')) + c.douteux.join(', ') : lib[c.etat];
-    const bout = (c.etat === 'ok' || c.etat === 'verifier') ? (C ? '<span class="lot-ok">✓</span>' : `<a class="btn petit ghost" href="#vendre/${c.id}">${tt('Ouvrir', 'Open')}</a>`)
+    // 13 nov 2026 (Mathieu : « pourquoi c'est pas juste un cercle qui se remplit en loadant et a la fin un crochet vert ? la
+    // barre devient mega grosse ») : la ligne garde sa taille ; a droite, un anneau qui se remplit a chaque etape (photos,
+    // lecture, titre et prix), puis un crochet vert qui se dessine. Toucher une carte prete l'ouvre.
+    const fait = c.etat === 'ok' || c.etat === 'verifier';
+    const bout = fait ? `<span class="lot-ck ${c._ck ? '' : 'neuf'}"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="16"/><path d="M11 18.5l4.6 4.6L25 13.6"/></svg></span>`
+      : c.etat === 'revoir' && c.lecture && c.f ? `<button class="btn petit" data-lot-re="${i}">${tt('Réessayer', 'Retry')}</button>`
       : c.etat === 'revoir' && !c.reseau ? `<label class="btn petit lot-remp">${tt('Remplacer', 'Replace')}<input type="file" accept="image/*" multiple hidden data-lot-f="${i}"></label>`
       : c.etat === 'revoir' && LOT.fini ? `<button class="btn petit" data-lot-r="${i}">${tt('Corriger', 'Fix')}</button>`
-      : ['photos', 'lecture', 'prix'].includes(c.etat) ? '<span class="roue"></span>' : '';
+      : c.etat in LOT_PCT ? anneauLot(c) : '';
     const v = c.vig || (c.ph && c.ph[0]);
-    return `<div class="rangee lot-r ${c.etat}">${v ? `<img class="vig" src="${esc(v)}" alt="">` : `<span class="ecusson">${c.n}</span>`}
-      <span class="milieu"><b>${esc(c.titre || tt('Carte ', 'Card ') + c.n)}</b>${c.etat === 'revoir' && !c.reseau ? `<small class="lot-pb">${esc(sous || '')}<br>${tt('Remplace par ', 'Replace with ')}${c.impair ? tt('le devant', 'the front') : tt('le devant puis le dos', 'the front then the back')}</small><small>` : '<small>'}${c.etat === 'revoir' && !c.reseau ? '' : esc(sous || '')}${c.prix ? ' · ' + (C ? tt('vaut ', 'worth ') : '') + argent(c.prix, 0) : ''}${c.impair && c.etat !== 'revoir' ? ' · ' + tt('sans dos', 'no back') : ''}</small></span>${bout}</div>`;
+    return `<div class="rangee lot-r lot-e-${c.etat}"${fait && !C && c.id ? ` data-lot-o="${c.id}" role="button"` : ''}>${v ? `<img class="vig" src="${esc(v)}" alt="">` : `<span class="ecusson">${c.n}</span>`}
+      <span class="milieu"><b>${esc(c.titre || tt('Carte ', 'Card ') + c.n)}</b>${c.etat === 'revoir' && !c.reseau && c.lecture ? `<small class="lot-pb">${esc(sous || '')}</small><small>` : c.etat === 'revoir' && !c.reseau ? `<small class="lot-pb">${esc(sous || '')}<br>${tt('Remplace par ', 'Replace with ')}${c.impair ? tt('le devant', 'the front') : tt('le devant puis le dos', 'the front then the back')}</small><small>` : '<small>'}${c.etat === 'revoir' && !c.reseau ? '' : esc(sous || '')}${c.prix ? ' · ' + (C ? tt('vaut ', 'worth ') : '') + argent(c.prix, 0) : ''}${c.impair && c.etat !== 'revoir' ? ' · ' + tt('sans dos', 'no back') : ''}</small></span>${bout}</div>`;
   };
   V().innerHTML = `<section class="ecran vendre assist lot">
     <div class="titre">${LOT.fini ? (C ? tt(`${prets} carte${prets > 1 ? 's' : ''} ajoutée${prets > 1 ? 's' : ''}`, `${prets} card${prets > 1 ? 's' : ''} added`) : tt(`${prets} carte${prets > 1 ? 's' : ''} prête${prets > 1 ? 's' : ''}`, `${prets} card${prets > 1 ? 's' : ''} ready`)) : tt(`Lot en cours · ${finis} / ${l.length}`, `Batch in progress · ${finis} / ${l.length}`)}</div>
@@ -5944,7 +5989,12 @@ function rendreLot(){
     a.forEach(c => { c.etat = 'attente'; c.raison = ''; }); rendreLot();
     for (const c of a) { try { await traiterCarteLot(c); } catch (e) { c.etat = 'revoir'; c.raison = tt('Erreur : reprends cette carte', 'Error: redo this card'); } lotGarder(); rendreLot(); }
     LOT.fini = true; lotGarder(); rendreLot(); };
+  l.forEach(c => { if (c.etat === 'ok' || c.etat === 'verifier') c._ck = true; if (c.etat in LOT_PCT) c._pv = LOT_PCT[c.etat]; });
+  $$('[data-lot-o]').forEach(r => r.onclick = () => { vibrer(); location.hash = '#vendre/' + r.dataset.lotO; });
   $$('[data-lot-r]').forEach(b => b.onclick = () => corrigerLot(LOT.l[+b.dataset.lotR]));
+  $$('[data-lot-re]').forEach(b => b.onclick = async () => { vibrer(); const c = LOT.l[+b.dataset.lotRe]; Object.assign(c, {etat: 'attente', raison: '', lecture: false}); rendreLot();
+    try { await traiterCarteLot(c); } catch (x) { c.etat = 'revoir'; c.raison = tt('Erreur : reprends cette carte', 'Error: redo this card'); }
+    if (!(c.etat === 'revoir' && c.lecture)) c.f = null; lotGarder(); rendreLot(); });
   // 11 nov 2026 (Mathieu : « un message pour remettre des photos quand elles ne sont pas belles, ou 2 recto ») : remplacer les
   // photos d'UNE carte sans quitter le lot ; elle repasse toute seule (controle, lecture, titre, prix)
   $$('[data-lot-f]').forEach(inp => inp.onchange = async (e) => { const c = LOT.l[+inp.dataset.lotF]; const l = [...(e.target.files || [])].slice(0, c.impair ? 1 : 2);
@@ -10651,7 +10701,7 @@ function vueAFinirSimple(l){
         <span class="afs-go">${m.length ? tt('Finir', 'Finish') : tt('Voir', 'View')} ›</span></button>`; }).join('')}</div>
     ${l.length ? `<button class="btn afs-tout" id="af-pg">${tt(`Mettre ${l.length > 1 ? 'les ' + l.length + ' cartes' : 'la carte'} sur eBay`, `List ${l.length > 1 ? 'the ' + l.length + ' cards' : 'the card'} on eBay`)}</button>
       <div class="sous afs-n">${tt('À l’étape suivante, tu vérifies les prix et tu choisis l’heure. Rien ne part sans ton OK.', 'On the next step you check prices and pick the time. Nothing goes out without your OK.')}</div>
-      <button class="lien-t" id="af-retirer">${tt('Vider la liste « À finir »', 'Clear the “To finish” list')}</button>`
+      <div class="afs-bas"><button class="lien-t" id="af-retirer">${tt('Vider la liste', 'Clear the list')}</button><button class="lien-t rouge" id="af-supp">${tt('Tout supprimer', 'Delete all')}</button></div>`
       : `<div class="vide">${tt('Rien à finir : tout est sur eBay', 'Nothing to finish: everything is on eBay')}</div>`}</div>`;
 }
 // 12 nov 2026 (« on devrait pouvoir supprimer des cartes des A finir en glissant ») : glisser une ligne vers la gauche montre
@@ -10701,6 +10751,13 @@ function brancherAFinir(l){
   const bx = $('#af-lot-x'); if (bx) bx.onclick = async () => { if (!await confirmer(tt('Oublier ce lot ?', 'Forget this batch?'), tt('Les photos gardées dans le téléphone pour ce lot seront effacées. Les cartes déjà dans ton inventaire restent.', 'The photos kept on the phone for this batch will be erased. Cards already in your inventory stay.'))) return;
     await lotIdb(null); S.lotGarde = null; S.lotGardeN = 0; chargerInventaire(); };
   const bp = $('#af-pg'); if (bp) bp.onclick = () => { vibrer(); S.pgPre = l.map(c => +c.id); for (const k in PG) delete PG[k]; location.hash = '#vendre/programmer'; };
+  // 13 nov 2026 (Mathieu : « delete toutes les cartes a finir pour qu'on reparte a frais ») : supprime les cartes de la liste
+  // (et le lot garde dans le telephone) ; jamais une carte sur eBay
+  const bs = $('#af-supp'); if (bs) bs.onclick = async () => { const n = l.length + (S.lotGardeN || 0);
+    if (!await confirmer(tt(`Supprimer ${n > 1 ? 'les ' + n + ' cartes' : 'la carte'} ?`, `Delete ${n > 1 ? 'the ' + n + ' cards' : 'the card'}?`), tt('Elles seront effacées de ton inventaire, photos comprises. On repart à neuf. Aucune carte sur eBay n’est touchée. Ça ne peut pas être annulé.', 'They will be erased from your inventory, photos included. Fresh start. No card on eBay is touched. This can’t be undone.'), tt('Supprimer', 'Delete'), true)) return;
+    const x = await essai(API.cartes_a_finir_supprimer(), tt('Liste vidée : on repart à neuf', 'List cleared: fresh start'));
+    if (!LOT.l || LOT.fini) { await lotIdb(null); S.lotGarde = null; S.lotGardeN = 0; }
+    if (x) { S.nbAFinir = 0; MEMO.clear(); GARDE_SAUTER.t = Date.now(); chargerInventaire(); } };
   const br = $('#af-retirer'); if (br) br.onclick = async () => { if (!await confirmer(tt('Retirer de « À finir » ?', 'Remove from “To finish”?'), tt('Les cartes restent dans ton inventaire ; elles ne seront juste plus dans cette liste.', 'The cards stay in your inventory; they just leave this list.'))) return;
     await essai(API.cartes_a_finir_retirer(l.map(c => c.id))); S.nbAFinir = 0; MEMO.clear(); GARDE_SAUTER.t = Date.now(); chargerInventaire(); };
 }
@@ -11181,9 +11238,11 @@ async function reduirePhoto(fichier, cote = 4032){
     for (let essai = 0; essai < 4; essai++) {
       const cv = document.createElement('canvas'); cv.width = Math.round(img.naturalWidth * k); cv.height = Math.round(img.naturalHeight * k);
       const g = cv.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(img, 0, 0, cv.width, cv.height);
-      for (const qu of [0.92, 0.85, 0.78]) { d = cv.toDataURL('image/jpeg', qu); if (d.length <= MAXB64) return d; }
+      for (const qu of [0.92, 0.85, 0.78]) { d = cv.toDataURL('image/jpeg', qu); if (d.length > 1000 && d.length <= MAXB64) { cv.width = cv.height = 0; return d; } }
+      cv.width = cv.height = 0;                                    // 13 nov 2026 : iOS garde la memoire d'un canevas tant qu'il a une taille
       k *= 0.8;
     }
+    if (!d || d.length <= 1000) throw new Error('canevas');
     return d;
   } finally { URL.revokeObjectURL(url); }
 }

@@ -193,3 +193,15 @@ _r = lockerroom.Api.slabiq_chiffres(lockerroom.Api.__new__(lockerroom.Api))
 assert _r["ok"] and "prix" not in json.dumps(_r), _r
 assert lockerroom.Api.slabiq_chiffres(lockerroom.Api.__new__(lockerroom.Api)) is _r
 print("ok 18 slabiq_chiffres")
+
+# 19. 13 nov 2026 : « Tout supprimer » dans A finir : seulement les cartes a finir (jamais une carte sur eBay)
+_api = lockerroom.Api.__new__(lockerroom.Api)
+_vu = []
+_orig_liste, _orig_supp = lockerroom.Api.inventaire_liste, lockerroom.Api.carte_supprimer
+lockerroom.Api.inventaire_liste = lambda self, f=None: [{"id": 1, "a_finir": True}, {"id": 2, "a_finir": True, "item_number": "123"}, {"id": 3, "a_finir": False}]
+lockerroom.Api.carte_supprimer = lambda self, cid: _vu.append(cid) or {"ok": True}
+try:
+    assert _api.cartes_a_finir_supprimer() == {"ok": True, "supprimees": 1} and _vu == [1], _vu
+finally:
+    lockerroom.Api.inventaire_liste, lockerroom.Api.carte_supprimer = _orig_liste, _orig_supp
+print("ok 19 tout supprimer a finir")

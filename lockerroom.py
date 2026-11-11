@@ -3391,6 +3391,20 @@ class Api:
                     print("Doublon (retrait) : " + repr(e), flush=True)
         return {"ok": True, "retires": n}
 
+    def cartes_a_finir_supprimer(self):
+        """13 nov 2026 (Mathieu : « delete toutes les cartes a finir pour qu'on reparte a frais ») : supprime de l'inventaire
+        toutes les cartes de « A finir » (photos comprises). Jamais une carte sur eBay, vendue, en envoi ou en collection :
+        ces cartes-la ne sont pas « a finir »."""
+        L = [x for x in (self.inventaire_liste({"dispo": 1, "a_finir": 1}) or []) if x.get("a_finir") and not x.get("item_number")]
+        n = 0
+        for x in L[:2000]:
+            try:
+                self.carte_supprimer(int(x["id"]))
+                n += 1
+            except Exception as e:
+                print("A finir (suppression) : " + repr(e), flush=True)
+        return {"ok": True, "supprimees": n}
+
     def cartes_a_finir_retirer(self, ids):
         """9 nov 2026 : « Retirer de À finir » : la carte reste dans l'inventaire, elle ne compte plus comme a finir."""
         ids = [int(i) for i in (ids or []) if str(i).isdigit()][:500]
