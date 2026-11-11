@@ -73,7 +73,11 @@ def _page_app():
         _APP_CACHE.update(mt=mt, brut=brut, etag='"' + hashlib.md5(brut).hexdigest()[:16] + '"')
     if request.headers.get("If-None-Match") == _APP_CACHE["etag"]:
         return Response(status=304, headers={"ETag": _APP_CACHE["etag"]})
-    if "gzip" in (request.headers.get("Accept-Encoding") or ""):
+    ae = request.headers.get("Accept-Encoding") or ""
+    if "br" in ae and _brotli_app():
+        return Response(_APP_CACHE["br"], mimetype="text/html", headers={"ETag": _APP_CACHE["etag"], "Cache-Control": "no-cache",
+                        "Content-Encoding": "br", "Vary": "Accept-Encoding", "Content-Length": str(len(_APP_CACHE["br"]))})
+    if "gzip" in ae:
         # 28 oct 2026 (vitesse) : la page (~790 Ko) compressee UNE fois, pas a chaque telechargement (~47 ms)
         if _APP_CACHE.get("gz_mt") != _APP_CACHE["mt"]:
             import gzip
@@ -81,6 +85,30 @@ def _page_app():
         return Response(_APP_CACHE["gz"], mimetype="text/html", headers={"ETag": _APP_CACHE["etag"], "Cache-Control": "no-cache",
                         "Content-Encoding": "gzip", "Vary": "Accept-Encoding", "Content-Length": str(len(_APP_CACHE["gz"]))})
     return Response(_APP_CACHE["brut"], mimetype="text/html", headers={"ETag": _APP_CACHE["etag"], "Cache-Control": "no-cache"})
+
+
+def _brotli_app():
+    """12 nov 2026 (nuit de revue, vitesse) : Brotli pour la page de l'app (1,7 Mo) : 488 Ko en gzip -> 402 Ko tout de suite
+    (qualite 9, ~0,1 s), puis 371 Ko (qualite 11, ~3 s, calculee une fois a cote). -24 % a telecharger a chaque mise a jour.
+    Sans le module brotli : gzip comme avant."""
+    try:
+        import brotli
+    except ImportError:
+        return False
+    mt = _APP_CACHE["mt"]
+    if _APP_CACHE.get("br_mt") != mt:
+        _APP_CACHE.update(br=brotli.compress(_APP_CACHE["brut"], quality=9), br_mt=mt)
+        brut = _APP_CACHE["brut"]
+
+        def _mieux():
+            try:
+                b = brotli.compress(brut, quality=11)
+                if _APP_CACHE.get("br_mt") == mt:
+                    _APP_CACHE["br"] = b
+            except Exception:
+                pass
+        threading.Thread(target=_mieux, daemon=True).start()
+    return True
 
 
 # 24 oct 2026 (Mathieu : « RAPIDITE, l'app doit repondre le plus rapidement possible ») - reponses compressees
@@ -1117,7 +1145,10 @@ _RYTHME_MAX = int(os.environ.get("LR_API_PAR_MIN") or 300)
 _RYTHME_LOURD_MAX = int(os.environ.get("LR_API_LOURD_PAR_MIN") or 40)
 _LOURDS = {"photo_identifier", "scan_decouper", "annonce_detail", "valeur_carte", "carte_gradations", "annonce_preparer", "carte_comps", "joueur_fiche",
            "deals_pourquoi", "ebay_publier", "annonce_publier", "cartes_retirer", "serie_programmer", "ebay_prix_lot", "offres_envoyer",
-           "carte_photos_studio", "carte_etat", "demande_envoyer", "code_appareil", "ebay_jeton_lier", "connexion_jeton_lier"}
+           "carte_photos_studio", "carte_etat", "demande_envoyer", "code_appareil", "ebay_jeton_lier", "connexion_jeton_lier",
+           "sante_rafraichir", "alertes_verifier", "alarmes_verifier", "ebay_synchroniser", "importer_annonces_ebay", "importer_ventes_ebay"}
+# 12 nov 2026 (revue de securite) : des methodes publiques de l'Api servent au serveur lui-meme, jamais a l'ecran
+_INTERNES = {"chemin_db", "sport_de"}
 _RYTHME = {}
 _RYTHME_VERROU = threading.Lock()
 
@@ -1161,7 +1192,7 @@ def _hote_local_ok():
 
 @app.route("/api/<nom>", methods=["POST"])
 def dispatcher(nom):
-    if nom.startswith("_"):
+    if nom.startswith("_") or nom in _INTERNES:
         return jsonify({"erreur": "méthode non autorisée"}), 403
     o = request.headers.get("Origin")
     if o:                                    # 27 oct 2026 : appels venus d'un autre site refuses (en plus de SameSite)

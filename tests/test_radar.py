@@ -118,7 +118,8 @@ import score_slab
 s1 = score_slab.score("Upper Deck 2025-26 Premier Matvei Gridin Focus Rookies Patch Auto 85/99")
 s2 = score_slab.score("2023-24 Upper Deck Series 1 Brock Nelson base #12")
 assert s1["carte"]["auto"] and s1["carte"]["patch"] and s1["carte"]["tirage"] == 99 and s1["score"] > s2["score"], (s1, s2)
-assert score_slab.score("x", None)["score"] >= 0
+sx = score_slab.score("x", None)["score"]                # 12 nov 2026 : un titre sans indice n'a plus de score invente
+assert sx is None or sx >= 0
 r = api.mes_deals()
 assert all(isinstance(x.get("score"), int) for g in r["types"] for x in g["annonces"]), r["types"]
 assert api.annonce_score("2024-25 SP Authentic Future Watch Auto Ivan Demidov /999")["ok"]
@@ -137,3 +138,22 @@ api._est_admin = lambda *a, **k: False                     # un compte Pro ou gr
 r = api.mes_deals()
 assert not any("admin_vendu" in x for g in r["types"] + r["pour_toi"] + r["creux"] for x in g["annonces"]), "fuite des ventes vers un non-admin"
 print("OK radar admin vendu (et rien pour les autres)")
+
+# 10. 11 nov 2026 (Mathieu : « capter tous les deals et encheres de petits vendeurs ») : la rangee « Petits vendeurs »
+from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+fin_ = (_dt.now(_tz.utc) + _td(hours=3)).isoformat()
+def rech_pv(q, **k):
+    if not k.get("encheres"):
+        return []
+    return [{"item_id": "p1", "titre": "2024-25 Upper Deck Young Guns Lane Hutson", "prix_cad": 20, "port_cad": 3, "url": "u", "encan": True, "fin": fin_,
+             "vendeur": "petitgars", "vendeur_score": 42, "vendeur_pct": 100},
+            {"item_id": "p2", "titre": "2024-25 Upper Deck Young Guns Lane Hutson", "prix_cad": 20, "port_cad": 3, "url": "u", "encan": True, "fin": fin_,
+             "vendeur": "grosvendeur", "vendeur_score": 90000, "vendeur_pct": 100},
+            {"item_id": "p3", "titre": "2024-25 Upper Deck Young Guns Lane Hutson", "prix_cad": 20, "port_cad": 3, "url": "u", "encan": True, "fin": fin_,
+             "vendeur": "nouveau", "vendeur_score": 3, "vendeur_pct": 100}]
+ebay_compte.rechercher = rech_pv
+api._est_admin = lambda *a, **k: False
+r = api.mes_deals()
+assert [x["item_id"] for x in r["petits"]] == ["p1"], r["petits"]          # pas le gros vendeur, pas le vendeur a risque
+assert r["petits"][0]["petit_vendeur"] and r["petits"][0]["vendeur_score"] == 42
+print("OK radar petits vendeurs")

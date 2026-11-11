@@ -97,3 +97,22 @@ assert ecart < 1e-3, ecart
 sa.dossier = vrai_d
 sm.recharger()
 print("OK apprentissage = service (memoire)", float(ecart))
+
+# un nouveau modele ecrit par le processus de la nuit est recharge tout seul par les travailleurs du serveur
+import time as _t
+sm.recharger()
+m_a = sm.charger()
+sa.exporter(r2, meta={})
+os.utime(os.path.join(sa.dossier(), "modele.npz"), (_t.time() + 5, _t.time() + 5))
+sm._M["vu_le"] = 0
+m_b = sm.charger()
+assert m_b is not m_a and m_b["source"] == "reappris"
+print("OK rechargement du modele")
+
+# le processus de la nuit tourne en script (toutes les fonctions definies avant le lancement) et note ses erreurs
+import subprocess
+pr = subprocess.run([sys.executable, sa.__file__, "reapprendre"], cwd=os.path.dirname(sa.__file__), capture_output=True, text=True,
+                    env={**os.environ, "LOCKERROOM_DONNEES": comptes.DONNEES}, timeout=300)
+assert pr.returncode == 0, pr.stderr[-500:]
+assert sa.historique()["essais"][-1]["accepte"] is False                     # pas de base_ventes ici : refuse proprement
+print("OK processus de la nuit", sa.historique()["essais"][-1].get("raison"))

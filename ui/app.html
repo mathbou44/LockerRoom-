@@ -672,6 +672,77 @@ html[lang=en] .w-ligne::after{content:'Remove'}
 .td-chauds{display:flex; gap:8px; overflow-x:auto; scrollbar-width:none; margin:0 -18px 12px; padding:0 18px}
 .td-chauds::-webkit-scrollbar{display:none}
 .adm-v{font-size:11.5px; margin-top:4px; opacity:.9}
+/* 11 nov 2026 : la fiche du joueur, en tuiles chiffrees (punchy) ; le detail en fenetre */
+.joueur .j-n .titre{background:linear-gradient(100deg, var(--texte) 30%, var(--acc)); -webkit-background-clip:text; background-clip:text; color:transparent}
+.joueur .v-rang-t b, .j-pq .v-rang-t b{font:700 15px var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--acc)}
+.acc-moment:empty{display:none} .acc-moment{margin:4px 0 14px; min-width:0}
+.am-t{font:700 15px var(--f-cond); letter-spacing:.14em; text-transform:uppercase; margin:0 0 8px; background:linear-gradient(90deg, var(--rouge), var(--or-clair), var(--acc)); -webkit-background-clip:text; background-clip:text; color:transparent; width:max-content}
+.am-l{display:flex; gap:10px; overflow-x:auto; scroll-snap-type:x mandatory; padding:2px 2px 6px; scrollbar-width:none} .am-l::-webkit-scrollbar{display:none}
+.am-j{flex:none; display:flex; align-items:center; gap:10px; padding:8px 14px 8px 8px; border-radius:999px; background:var(--carte); border:1px solid var(--ligne); color:var(--texte); text-decoration:none; scroll-snap-align:start}
+.am-j .vig-j{width:42px; height:42px; border-radius:50%; overflow:hidden; flex:none}
+.am-c{display:flex; flex-direction:column; gap:3px; align-items:flex-start} .am-c b{font:700 16px/1.1 var(--f-cond); white-space:nowrap} .am-c small{font-size:11.5px; color:var(--doux)} .am-c .tag{transform:scale(.86); transform-origin:left center; margin:-2px 0}
+.cx-g{display:grid; grid-template-columns:1fr 1fr; gap:10px} .cx-c{display:flex; flex-direction:column; gap:6px} .cx-c span{font:700 11.5px var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--acc)}
+.cx-c input, .cx-inv input{width:100%; padding:12px 14px; border-radius:14px; border:1px solid var(--ligne); background:var(--carte2); color:var(--texte); font:700 20px var(--f-cond)}
+.cx-r{margin:4px 0 0} .cx-inv{display:flex; align-items:center; flex-wrap:wrap; gap:8px; padding:12px 14px; border-radius:16px; background:var(--carte); border:1px solid var(--ligne); font-size:15px}
+.cx-inv input{width:76px; padding:8px 10px; font-size:18px; text-align:center} .cx-inv b{margin-left:auto; font:700 26px var(--f-cond); color:var(--vert)}
+.tuile-inv .img, .tuile-inv .sl-puits{position:relative} .inv-iq{position:absolute; left:8px; bottom:8px; z-index:3; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,.45)}
+.v-iq{margin:12px 0 2px} .v-iq:empty{display:none}
+.v-iq-b{display:flex; align-items:center; gap:12px; width:100%; padding:12px 14px; border-radius:18px; border:1px solid var(--ligne); background:var(--carte); color:var(--texte); font:inherit; text-align:left; cursor:pointer}
+.v-iq-n{font:700 34px/1 var(--f-cond); min-width:46px} .v-iq-n.vert{color:var(--vert)} .v-iq-n.acc{color:var(--acc)} .v-iq-n.or{color:var(--or)}
+.v-iq-t{display:flex; flex-direction:column} .v-iq-t small{font:700 11px/1.2 var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--acc)} .v-iq-t b{font:700 17px var(--f-cond)}
+.v-iq-p{flex:1; display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end} .v-iq-b > i{font-style:normal; color:var(--acc); font-size:20px}
+.jt{display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; margin:16px 0 10px}
+.jt-k:last-child:nth-child(odd){grid-column:1 / -1}
+.jt-k{display:flex; flex-direction:column; gap:3px; padding:14px; border-radius:18px; background:var(--carte); border:1px solid var(--ligne); min-width:0}
+.jt-k span{font:700 11.5px/1 var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--acc)}
+.jt-k b{font:700 30px/1.05 var(--f-cond)} .jt-k b.vert{color:var(--vert)} .jt-k b.rouge{color:var(--rouge)} .jt-k b.acc{color:var(--acc)} .jt-k b.or{color:var(--or-clair)}
+.jt-k small{font-size:13px; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.jt-plus{display:flex; justify-content:space-between; align-items:center; width:100%; padding:14px 16px; border-radius:16px; border:1px solid var(--ligne); background:var(--carte2); color:var(--texte); font:700 15px var(--f-cond); letter-spacing:.06em; text-transform:uppercase; cursor:pointer}
+.jt-plus i{font-style:normal; color:var(--acc); font-size:20px}
+/* 11 nov 2026 : la barre du Radar en une ligne (Mon radar · Voir · Trier) ; les choix en feuille */
+.md-barre{display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:8px; margin-bottom:14px; align-items:stretch}
+.md-barre .md-glow{margin:0; min-height:54px; padding:0 10px} .md-barre .md-glow span{font-size:15px}
+.md-dd{display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:2px; min-width:0; position:relative; padding:8px 26px 8px 12px; border-radius:16px;
+  background:var(--carte); border:1px solid var(--ligne); color:var(--texte); font:inherit; cursor:pointer; text-align:left}
+.md-dd small{font:700 10.5px/1 var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--doux)}
+.md-dd b{font:700 15px/1.15 var(--f-cond); letter-spacing:.02em; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%}
+.md-dd i{position:absolute; right:10px; top:50%; transform:translateY(-50%); font-style:normal; color:var(--doux)}
+.md-pays{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:16px; padding-top:14px; border-top:1px solid var(--ligne); font-size:15px} .md-ch{display:flex; flex-direction:column; gap:6px} .md-ch button{display:flex; align-items:center; gap:10px; padding:14px; border-radius:14px; background:var(--carte2);
+  border:1px solid var(--ligne); color:var(--texte); font:inherit; font-size:16px; text-align:left; cursor:pointer}
+.md-ch button span{flex:1} .md-ch button b{font:700 16px var(--f-cond); color:var(--doux)} .md-ch button i{font-style:normal; color:var(--acc)} .md-ch button.on{border-color:var(--acc)}
+.sr-bas small{white-space:nowrap} .sr-tag{max-width:calc(100% - 52px); overflow:hidden} .sr-tag .tag{max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+/* 11 nov 2026 : « Verifier le prix », visuel et simple */
+.vx{display:flex; flex-direction:column; gap:14px} .vx-tete{display:flex; gap:12px; align-items:center}
+.vx-tete > img, .vx-ph{width:58px; height:80px; border-radius:8px; object-fit:cover; flex:none; background:#0E0E12; display:grid; place-items:center} .vx-ph svg{width:50%}
+.vx-tete > div{display:flex; flex-direction:column; gap:6px; min-width:0}
+.vx-t{font-size:15px; line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.vx-p{font-size:14px; color:var(--doux)} .vx-p b{font:700 22px/1 var(--f-cond); color:var(--texte); margin-left:4px}
+#vp-z{display:flex; flex-direction:column; gap:12px} .vx-ebay{width:100%}
+.vx-2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.vx-k{display:flex; flex-direction:column; align-items:center; gap:2px; padding:12px 8px; border-radius:16px; background:var(--carte2); border:1px solid var(--ligne)}
+.vx-k span{font:700 12px/1 var(--f-cond); letter-spacing:.1em; text-transform:uppercase; color:var(--doux)} .vx-k b{font:700 34px/1.05 var(--f-cond)} .vx-k small{font-size:14px; color:var(--texte2)}
+.vx-k.gris b, .vx-k.gris small{color:var(--pale)}
+.vx-car{display:flex; gap:10px; overflow-x:auto; scrollbar-width:none; margin:0 -18px; padding:0 18px; scroll-snap-type:x proximity} .vx-car::-webkit-scrollbar{display:none}
+.vx-m{flex:0 0 108px; display:flex; flex-direction:column; gap:3px; scroll-snap-align:start; cursor:pointer}
+.vx-mi{aspect-ratio:3/4; border-radius:10px; overflow:hidden; background:#0E0E12; display:grid; place-items:center; position:relative} .vx-mi img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover} .vx-mi svg{width:40%}
+.vx-m b{font:700 19px/1.1 var(--f-cond)} .vx-m small{font-size:12px; color:var(--doux)}
+.vx-h{display:flex; flex-direction:column; gap:6px} .vx-hr{display:flex; justify-content:space-between; align-items:baseline; padding:10px 12px; border-radius:12px; background:var(--carte2); font-size:14px} .vx-hr b{font:700 19px var(--f-cond)}
+/* 11 nov 2026 : la tuile du Radar en slab (comme la collection) ; le score a la place de la note */
+.sr-w{display:flex; flex-direction:column; gap:6px; min-width:0}
+.slab.sr .sl-lab{height:62px} .slab.sr .sl-t{-webkit-line-clamp:3}
+.sr-sc{border:0; border-left:1px solid rgba(255,255,255,.12); background:none; font:inherit; color:inherit; cursor:pointer; padding:0 0 0 7px}
+.sr-sc.vert b{color:var(--vert)} .sr-sc.acc b{color:var(--acc)} .sr-sc.or b{color:var(--or-clair)} .sr-sc small{letter-spacing:.14em}
+.sr-fin{position:absolute; left:6px; bottom:6px; z-index:1; font:700 11.5px/1 var(--f-cond); letter-spacing:.06em; text-transform:uppercase; padding:5px 8px; border-radius:999px;
+  background:rgba(14,14,18,.82); color:#D8D5E0; box-shadow:0 1px 4px rgba(0,0,0,.4)} .sr-fin.or{color:var(--or-clair)} .sr-fin.rouge{color:var(--rouge)}
+.sr-tag{position:absolute; left:6px; top:6px; z-index:1} .sr-tag .tag{box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.slab.sr .sd-et{position:absolute; right:6px; top:6px; z-index:2}
+.sr-bas{display:flex; align-items:baseline; justify-content:flex-start; gap:8px; flex-wrap:wrap; padding:0 3px} .sr-bas b{font:700 22px/1 var(--f-cond)} .sr-bas small{font-size:12px; color:var(--doux)}
+.ps{display:flex; flex-direction:column; gap:14px} .ps-n{display:flex; align-items:center; gap:14px}
+.ps-n b{font:700 54px/1 var(--f-cond); min-width:70px; text-align:center} .ps-n.vert b{color:var(--vert)} .ps-n.acc b{color:var(--acc)} .ps-n.or b{color:var(--or-clair)}
+.ps-n span{display:flex; flex-direction:column; font-size:19px; font-weight:700} .ps-n small{font-size:12px; font-weight:500; color:var(--doux); letter-spacing:.08em; text-transform:uppercase}
+.ps-l{display:flex; flex-direction:column; gap:8px} .ps-r{display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:14px; background:var(--carte2)}
+.ps-r > span:last-child{display:flex; flex-direction:column; gap:2px; min-width:0} .ps-r b{font-size:15px} .ps-r small{font-size:13px; color:var(--doux)}
+.ps-i{width:10px; height:10px; border-radius:50%; flex:none; background:var(--acc)} .ps-i.feu{background:var(--rouge)} .ps-i.legende, .ps-i.joueur{background:var(--or)} .ps-i.creux, .ps-i.vendeur{background:var(--vert)}
 /* 11 nov 2026 (Mathieu : « tout semble pogne et beaucoup d'indications ») : l'ecran du lot, aere et court */
 .lot .lot-ordre{margin:18px 0 12px} .lot-tips{display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:0 0 14px}
 .lot-tips span{font-size:13px; padding:6px 11px; border-radius:999px; background:var(--carte); border:1px solid var(--ligne); color:var(--texte2)}
@@ -883,6 +954,7 @@ body.avec-barre .ecran{padding-top:14px}
 @media (max-width:430px){ .barre-mode{gap:6px; padding-left:12px; padding-right:12px} .barre-mode .mode-switch button{padding:7px 10px} .barre-mode .mode-switch svg{display:none} .barre-mode .rond{width:36px; height:36px} }
 .nav-mode, .nav-reglages, .nav-admin{display:none !important}
 /* feuille + toast */
+body.fen-ouverte .fond-feuille{z-index:95}  /* 11 nov 2026 : les petites fenetres de la fiche s'ouvrent par-dessus */
 .fond-feuille{position:fixed; inset:0; z-index:40; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center}
 .feuille{width:100%; max-width:640px; max-height:90vh; overflow-y:auto; background:#131317; border-radius:22px 22px 0 0; padding:10px 18px calc(18px + var(--bas)); display:flex; flex-direction:column; gap:14px;
   will-change:transform; overscroll-behavior:contain; -webkit-overflow-scrolling:touch}
@@ -895,6 +967,7 @@ body.avec-barre .ecran{padding-top:14px}
 .f-bloc > .carte-acc{background:none; padding:0; box-shadow:none; border:none}
 .feuille > *{flex-shrink:0}
 .feuille .poignee{width:40px; height:5px; border-radius:3px; background:var(--ligne); align-self:center}
+.feuille{position:relative} .feuille > .f-x + h3, .feuille > .f-x + .ps .ps-n, .feuille > .f-x + .j-pq .v-rang-t{padding-right:42px} .feuille .f-x{position:absolute; top:12px; right:12px; z-index:3; width:34px; height:34px; border-radius:50%; border:1px solid var(--ligne); background:var(--carte2); color:var(--doux); font-size:15px; display:grid; place-items:center; cursor:pointer}
 .feuille h3{font-size:18px; font-weight:600; line-height:1.3}
 .feuille .bloc{background:var(--carte)}
 @keyframes monte{from{transform:translateY(105%)}to{transform:none}}
@@ -1860,6 +1933,12 @@ button.btn-scan{border:none; font:inherit; font-weight:700}
 .sc-b{display:inline-grid; place-items:center; min-width:34px; height:26px; padding:0 8px; border-radius:13px; font:700 14px/1 var(--f-cond); letter-spacing:.04em;
   background:rgba(14,14,18,.82); color:var(--texte); border:1px solid var(--ligne); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px)}
 .sc-b.vert{color:var(--vert); border-color:color-mix(in srgb, var(--vert) 55%, transparent)} .sc-b.acc{color:var(--acc); border-color:color-mix(in srgb, var(--acc) 55%, transparent)} .sc-b.or{color:var(--or); border-color:color-mix(in srgb, var(--or) 55%, transparent)}
+.fa-chips{display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:8px; margin:12px 0 4px}
+.fa-chip{display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:16px; background:var(--carte2); border:1px solid var(--ligne); color:var(--texte); text-decoration:none; font:inherit; text-align:left; cursor:pointer; min-width:0}
+.fa-ct{display:flex; flex-direction:column; min-width:0; flex:1} .fa-ct small{font:700 10.5px/1.2 var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--acc)}
+.fa-ct b{font:700 16px/1.2 var(--f-cond); white-space:nowrap; overflow:hidden; text-overflow:ellipsis} .fa-ct em{font-style:normal; font-size:12.5px; color:var(--doux)} .fa-ct em.vert{color:var(--vert)}
+.fa-chip i{font-style:normal; color:var(--acc); font-size:18px} .fa-ci{width:34px; height:34px; flex:none; border-radius:50%; background:color-mix(in srgb, var(--acc) 16%, transparent); color:var(--acc); display:grid; place-items:center} .fa-ci .ic-h{width:18px; height:18px; margin:0}
+.ps-s{font-size:14px; color:var(--doux); margin:-4px 0 12px}
 .fa-pils2{margin:10px 0 2px} .fa-pq{margin:10px 0 2px; padding:10px 12px; border-radius:14px; background:var(--carte2)} .fa-pq .det{font-size:12px; color:var(--pale); margin-bottom:4px} .fa-pq-l{font-size:14px; line-height:1.4; padding:2px 0} .fa-pq-l::before{content:'·'; margin-right:6px; color:var(--acc)} .fa-joueur, .fa-vendeur{margin-top:6px} .fa-joueur .nom sup{font-size:.6em} .fa-verif{margin-top:10px; min-height:50px; width:100%} .fa-sc{font:inherit; color:inherit; text-align:inherit; border:0; cursor:pointer} .fa-sc b{font-size:28px} .iq-i{font-style:normal; display:inline-grid; place-items:center; width:14px; height:14px; border-radius:50%; border:1px solid currentColor; font-size:9px; margin-left:3px; opacity:.6} .fa-sc.vert b{color:var(--vert)} .fa-sc.acc b{color:var(--acc)} .fa-sc.or b{color:var(--or)}
 .md-pj{margin:-4px 0 8px} .t-reel{display:block; font-size:12px; color:var(--pale); margin:-2px 0 2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis} .t-reel b{color:var(--doux); font-weight:600} .tuile-c > .sd-et{position:absolute; top:8px; right:8px; z-index:3} .md-feu.on{border-color:var(--vert); color:var(--vert)} .j-pq{margin:14px 0 6px} .vp-rappel{margin:6px 0 12px; font-size:14px; color:var(--doux)} .vp-rappel b{color:var(--texte)} .vp-vendues{margin-top:4px} .w-verif{font-size:12px; margin-bottom:4px} .vp-note{text-align:center; margin-top:6px} .j-pq .nom{font-size:15px} .cmp{display:block; width:100%; margin:4px 0 0; padding:0; border:0; background:none; text-align:left; font-size:12px; color:var(--pale); cursor:pointer} .cmp b{font-weight:600; color:var(--doux)} .cmp.bas{color:var(--or)} .cmp.bas b{color:var(--or)} .md-perso{display:flex; flex-wrap:wrap; gap:8px; margin:-4px 0 12px} .md-dec{font-size:13px; color:var(--doux); margin:2px 0 8px}
 .md-vend{margin-top:18px} .md-vend .v-rang-t b{display:inline-flex; align-items:center; gap:8px}
@@ -3238,7 +3317,7 @@ html.tel-large .fen.fa .fen-img{max-height:calc(46vh / 1.12) !important}
 // des onglets du bas sont prechargees doucement (les memes appels que la derniere visite de chaque onglet).
 const LECTURES = new Set(['accueil', 'acheteur_accueil', 'activites', 'conseils', 'astuces', 'forfait', 'ebay_statut', 'taux_change',
   'reglages_lire', 'deals_liste', 'inventaire_liste', 'catalogue_liste', 'produits_liste', 'equipes', 'images_produits', 'images_joueurs',
-  'budget_etat', 'alertes_liste', 'breaks_liste', 'bilan', 'tendances', 'calendrier', 'collection', 'offres_liste', 'analyse_break',
+  'budget_etat', 'alertes_liste', 'joueurs_du_moment', 'inventaire_scores', 'breaks_liste', 'bilan', 'tendances', 'calendrier', 'collection', 'offres_liste', 'analyse_break',
   'admin_resume', 'admin_abonnes', 'admin_demandes', 'admin_catalogue', 'admin_sante', 'admin_entrainement', 'valeurs_statut', 'portraits_joueurs',
   'etoiles_lire', 'alarmes_lire', 'deals_profil_lire', 'sante_liste', 'pouls', 'guide_donnees', 'consignataires_liste', 'ebay_avis_statut', 'ebay_appels',
   'inventaire_tableaux', 'watch_liste', 'ventes_analyse']);
@@ -3613,7 +3692,9 @@ const V = () => $('#vue');
 function ouvrirFeuille(html){
   if (S.feuilleRetour) { const f = S.feuilleRetour; S.feuilleRetour = null; try { f(); } catch (e) {} }   // un bloc emprunte a la page y retourne
   const fe = $('#feuille'), deja = !$('#fond-feuille').hidden;
-  fe.innerHTML = '<div class="poignee"></div>' + html; $('#fond-feuille').hidden = false; fe.scrollTop = 0; fe.style.transform = '';
+  // 11 nov 2026 (Mathieu : « des petites pop up avec un X pour la fermer ») : toutes les feuilles ont leur X
+  fe.innerHTML = `<div class="poignee"></div><button class="f-x" aria-label="${tt('Fermer', 'Close')}">✕</button>` + html;
+  fe.querySelector('.f-x').onclick = () => { vibrer(); fermerFeuille(); }; $('#fond-feuille').hidden = false; fe.scrollTop = 0; fe.style.transform = '';
   // 29 oct 2026 (Mathieu : « les pop-up vraiment tres fluides, pas saccadees ») : la feuille monte avec un ressort (transform
   // seulement) ; une feuille deja ouverte change de contenu sans rejouer l'animation
   if (!deja) { fe.classList.remove('entre'); void fe.offsetWidth; fe.classList.add('entre'); }
@@ -3865,7 +3946,10 @@ function route(){
   S.ecranCourant = ecran;
   const vues = {analyse:vueAnalyse, vendre:vueVendre, deals:vueDeals, valeur:vueValeur, accueil:vueAccueil, sante:vueSante, breaks:vueBreaks, break:vueBreak, inventaire:vueInventaire, comptoir:vueComptoir, bilan:vueBilan, ventes:vueVentes, reglages:vueReglages, admin:vueAdmin, guide:vueGuide, joueur:vueJoueur, calendrier:vueCalendrier, idees:vueIdees, pouls:vuePouls, tendances:vueTendances, offres:vueOffres, traiter:vueTraiter, notifs:vueNotifs, alertes:vueNotifs};
   if (!comps() && ['tendances', 'pouls'].includes(ecran)) { location.replace('#accueil'); return; }
-  (vues[ecran] || vueAccueil)(arg);
+  // 12 nov 2026 (nuit de revue) : un lien vers un ecran qui n'existe pas (ancien lien, notification) laissait une roue sans
+  // fin (l'accueil verifie qu'il est sur #accueil) : on y va pour vrai
+  if (!vues[ecran]) { location.replace('#accueil'); return; }
+  vues[ecran](arg);
 }
 window.addEventListener('hashchange', route);
 // 28 oct 2026 (Mathieu : « manque de fluidité, très saccadé et bug entre chaque section ») : avant, la page sautait en
@@ -7840,7 +7924,7 @@ const attrsAnnonce = (x) => x && x.item_id ? `data-annonce="${esc(x.item_id)}" d
 document.addEventListener('click', (e) => {
   const a = e.target.closest('[data-annonce]'); if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return;
   if (a.dataset.glisse) { e.preventDefault(); e.stopPropagation(); return; }      // 31 oct : un glissement n'ouvre pas la fiche
-  if (e.target.closest('[data-masquer], [data-refus], [data-bonne], [data-comps], [data-pasdeal], [data-watch], [data-wmax], [data-wmiser], .w-go, .x')) return;
+  if (e.target.closest('[data-masquer], [data-refus], [data-bonne], [data-comps], [data-pasdeal], [data-watch], [data-wmax], [data-wmiser], [data-sc], .w-go, .x')) return;
   e.preventDefault(); e.stopPropagation();
   S.fenOrigine = a.getBoundingClientRect();          // 29 oct : la fiche s'ouvre depuis l'annonce touchee
   ouvrirAnnonce({item_id:a.dataset.annonce, titre:a.dataset.titre, photo:a.dataset.photo, total:nb(a.dataset.total), url:a.dataset.url, q:a.dataset.q || null});
@@ -7849,6 +7933,34 @@ document.addEventListener('click', (e) => {
 // pas de sens ») : le profit d'un ENCAN se calcule a la mise max (ce qu'on paiera si on gagne au plus haut), pas a la mise
 // actuelle qui va monter. Les frais : ceux des Reglages (eBay 13,25 % + 0,40 $ par defaut).
 const portEff = (p) => p == null ? 15 : (p || 0);          // port pas affiche : 15 $ estimes, comme le serveur (deals.PORT_INCONNU)
+// 12 nov 2026 (nuit de revue, outil) : la calculette de profit d'une vente eBay, en petite fenetre : le prix, le port charge,
+// ce que la carte a coute et l'envoi -> les frais eBay (les % du compte), ce qu'il recoit, le profit et la marge ; et
+// a l'envers : le prix a demander pour faire X % de profit. Tout se calcule sur le telephone (rien n'est envoye).
+function feuilleCalcul(pre){
+  const [pct, fixe0] = fraisVente(), v0 = pre || {};
+  // les montants tapes sont dans la devise affichee (pas de conversion) ; le frais fixe du compte est en $ CA -> converti
+  const fixe = convertir(fixe0), m = (v, d = 2) => fmtMontant(v, d);
+  const ch = (id, l, v, s_) => `<label class="cx-c"><span>${l}</span><input id="${id}" type="number" inputmode="decimal" step="0.01" min="0" value="${v != null ? v : ''}" placeholder="0">${s_ ? `<small>${s_}</small>` : ''}</label>`;
+  ouvrirFeuille(`<h3 class="cx-t">${tt('Calcul de profit', 'Profit calculator')}</h3>
+    <div class="cx-g">${ch('cx-p', tt('Prix de vente', 'Sale price'), v0.prix)}${ch('cx-port', tt('Port chargé', 'Shipping charged'), v0.port)}
+      ${ch('cx-cout', tt('Payée', 'Paid'), v0.cout)}${ch('cx-env', tt('Mon envoi', 'My shipping cost'), v0.envoi)}</div>
+    <div class="jt cx-r" id="cx-r"></div>
+    <div class="cx-inv"><span>${tt('Pour faire', 'To make')}</span><input id="cx-x" type="number" inputmode="decimal" min="0" max="500" value="30"><span>% ${tt('de profit, demande', 'profit, ask')}</span><b id="cx-px">—</b></div>
+    <div class="sous">${tt('Frais eBay de ton compte', 'Your eBay fees')} : ${decFr(Math.round(pct * 10000) / 100)} % + ${m(fixe)} · ${tt('à changer dans Réglages', 'change in Settings')}</div>`);
+  const n = (id) => { const x = parseFloat(($('#' + id) || {}).value); return isFinite(x) ? x : 0; };
+  const calc = () => {
+    const p = n('cx-p'), port = n('cx-port'), cout = n('cx-cout'), env = n('cx-env'), x = n('cx-x') / 100;
+    const frais = p || port ? (p + port) * pct + fixe : 0, net = p + port - frais - env, prof = net - cout, marge = p ? prof / p * 100 : null;
+    $('#cx-r').innerHTML = [[tt('Frais eBay', 'eBay fees'), m(frais), '', 'rouge'], [tt('Tu reçois', 'You get'), m(net), tt('après frais et envoi', 'after fees and shipping'), ''],
+      [tt('Profit', 'Profit'), (prof >= 0 ? '+' : '−') + m(Math.abs(prof)), cout ? tt('sur ', 'on ') + m(cout) : '', prof >= 0 ? 'vert' : 'rouge'],
+      [tt('Marge', 'Margin'), marge == null ? '—' : Math.round(marge) + ' %', tt('du prix', 'of price'), marge >= 20 ? 'vert' : marge < 0 ? 'rouge' : 'acc']]
+      .map(([k, v, s_, c]) => `<div class="jt-k"><span>${k}</span><b class="${c}">${v}</b><small>${s_ || '&nbsp;'}</small></div>`).join('');
+    const px = cout ? (cout * (1 + x) + env + fixe - port * (1 - pct)) / (1 - pct) : null;
+    $('#cx-px').textContent = px != null && px > 0 ? m(Math.ceil(px), 0) : '—';
+  };
+  $$('.feuille input').forEach(i => i.oninput = calc); calc();
+}
+document.addEventListener('click', (e) => { if (!e.target.closest('[data-calc]')) return; e.preventDefault(); vibrer(); feuilleCalcul(); });
 const fraisVente = () => { const r = S.reglages || {}; return [r.frais_ebay_pct != null ? r.frais_ebay_pct / 100 : 0.1325, r.frais_ebay_fixe != null ? r.frais_ebay_fixe : 0.40]; };
 // 6 nov 2026 (Mathieu : « minimum 25-30 % de profit apres tous les frais ») : le profit compte aussi le materiel d'envoi
 // (1,50 $ : le port de la revente est paye par l'acheteur) ; le prix max d'un deal laisse 30 % de profit net (deals.prix_max)
@@ -8057,27 +8169,25 @@ async function ouvrirAnnonce(base){
       <div class="fa-3">
         <div class="fa-k"><span>${encan ? tt('Mise actuelle', 'Current bid') : tt('Prix', 'Price')}</span><b>${total ? argent(encan ? Math.max(0, total - port) : total, 0) : '—'}</b><small>${a.port_cad != null ? (a.port_cad ? '+ ' + argent(port, 0) + tt(' de port', ' shipping') : tt('livraison gratuite', 'free shipping')) : '&nbsp;'}</small></div>
         <div class="fa-k"><span>${tt('Tu paieras', 'You’ll pay')}</span><b>${reel ? argent(reel, 0) : '—'}</b><small>${d.etranger ? tt('avec l’importation', 'with import') : tt('avec les taxes', 'with tax')}</small></div>
-        <button class="fa-k fa-sc ${sp ? couleurScore(sp.score) : ''}" data-slabiq><span>Score SlabIQ <i class="iq-i" aria-hidden="true">?</i></span><b>${sp ? sp.score : '<span class="roue"></span>'}</b><small>${sp ? (sp.score >= 80 ? tt('très recherchée', 'highly sought') : sp.score >= 65 ? tt('recherchée', 'sought after') : sp.score >= 50 ? tt('correcte', 'decent') : tt('peu recherchée', 'low demand')) : '&nbsp;'}</small></button>
+        <button class="fa-k fa-sc ${sp && sp.score != null ? couleurScore(sp.score) : ''}" data-slabiq><span>Score SlabIQ <i class="iq-i" aria-hidden="true">?</i></span><b>${!sp ? '<span class="roue"></span>' : sp.score != null ? sp.score : '—'}</b><small>${!sp ? '&nbsp;' : sp.score == null ? tt('pas assez d’infos', 'not enough info') : sp.score >= 80 ? tt('très recherchée', 'highly sought') : sp.score >= 65 ? tt('recherchée', 'sought after') : sp.score >= 50 ? tt('correcte', 'decent') : tt('peu recherchée', 'low demand')}</small></button>
       </div>
-      ${pils.length ? `<div class="pastilles fa-pils2">${pils.join('')}</div>` : ''}
-      ${sp && sp.pourquoi ? (() => { const q = sp.pourquoi, R = [];
-        // 11 nov 2026 : ce que le chiffre veut dire (le rang parmi les ventes de hockey du banc), puis le creux s'il y a lieu
-        if (sp.score != null) R.push(`${tt('Plus recherchée que', 'More sought after than')} <b>${sp.score} %</b> ${tt('des cartes de hockey vendues', 'of hockey cards sold')}`);
-        if (q.creux) R.push(`${q.creux.etat === 'rebond' ? tt('Sort de son creux', 'Bouncing back') : tt('Jeune talent en creux', 'Young talent in a slump')} : ${String(q.creux.ppm).replace('.', tt(',', '.'))} ${tt('pt/match vs', 'pts/game vs')} ${String(q.creux.avant_ppm).replace('.', tt(',', '.'))} ${tt('avant · à surveiller', 'before · worth watching')}`);
-        if (q.semaine && q.semaine.mj) R.push(`${q.semaine.pts} pts (${q.semaine.b || 0} ${tt('buts', 'goals')}) ${tt('en', 'in')} ${q.semaine.mj} ${tt('matchs cette semaine', 'games this week')}`);
-        if (q.saison && q.saison.ecart_pct != null && Math.abs(q.saison.ecart_pct) >= 10) R.push(`${q.saison.ecart_pct > 0 ? '+' : ''}${q.saison.ecart_pct} % ${tt('de points par match vs ses saisons d’avant', 'points per game vs his past seasons')}`);
-        if (q.buzz && q.buzz.pct >= 25) R.push(`+${q.buzz.pct} % ${tt('de recherches ces 20 jours', 'more searches in 20 days')}`);
-        const g = q.legende || {}; if (g.temple) R.push(tt('Temple de la renommée', 'Hall of Fame')); else if (g.coupes) R.push(g.coupes + ' ' + tt(g.coupes > 1 ? 'coupes Stanley' : 'coupe Stanley', g.coupes > 1 ? 'Stanley Cups' : 'Stanley Cup'));
-        if ((q.actu || [])[0]) R.push(tt('Dans l’actu : ', 'In the news: ') + esc(q.actu[0].titre));
-        return R.length ? `<div class="fa-pq"><div class="det">${tt('Pourquoi ce score', 'Why this score')}</div>${R.slice(0, 5).map(t => `<div class="fa-pq-l">${t}</div>`).join('')}</div>` : ''; })() : ''}
-      ${sp && sp.joueur ? `<a class="rangee fa-joueur" href="#joueur/${encodeURIComponent(sp.joueur)}" data-fermer><span class="milieu"><span class="det">${tt('Le joueur', 'The player')}</span><span class="nom">${esc(sp.joueur)}${sp.rang ? ` · ${sp.rang}<sup>${sp.rang === 1 ? tt('er', 'st') : tt('e', 'th')}</sup> ${tt('sur', 'of')} ${sp.sur}` : ''}</span></span><i class="fl">›</i></a>` : ''}
-      ${vend ? `<div class="rangee fa-vendeur"><span class="milieu"><span class="det">${tt('Vendeur', 'Seller')}</span><span class="nom">${vend}</span></span></div>` : ''}
+      ${pils.length ? `<div class="pastilles fa-pils2">${pils.slice(0, 6).join('')}</div>` : ''}
+      ${(sp && sp.joueur) || a.vendeur ? `<div class="fa-chips">
+        ${sp && sp.joueur ? `<a class="fa-chip" href="#joueur/${encodeURIComponent(sp.joueur)}" data-fermer><span class="fa-ci">${icN('profil')}</span><span class="fa-ct"><small>${tt('Joueur', 'Player')}</small><b>${esc(sp.joueur)}</b>${sp.rang ? `<em>${ordinal(sp.rang)} ${tt('sur', 'of')} ${sp.sur}</em>` : ''}</span><i>›</i></a>` : ''}
+        ${a.vendeur ? `<button class="fa-chip" id="fa-vd"><span class="fa-ci">${icN('boutique')}</span><span class="fa-ct"><small>${tt('Vendeur', 'Seller')}</small><b>${esc(a.vendeur)}</b>${a.vendeur_pct ? `<em class="${parseFloat(a.vendeur_pct) >= 99 ? 'vert' : ''}">${esc(a.vendeur_pct)} %</em>` : ''}</span><i>›</i></button>` : ''}</div>` : ''}
       ${blocMesAchats(d.mes_achats, d.deja_achetee, 0, null)}
       <div class="fa-btns"><a class="btn" href="${esc(url)}" target="_blank" rel="noopener">${encan ? tt('Miser sur eBay', 'Bid on eBay') : tt('Acheter sur eBay', 'Buy on eBay')}</a>${boutonWatch({item_id: base.item_id})}</div>
       <button class="btn ghost fa-verif" data-verif="${esc(base.item_id)}" data-verif-t="${esc(a.titre || base.titre || '')}" data-verif-p="${esc(total ? (encan ? Math.max(0, total - port) : total) : 0)}" data-verif-e="${encan ? 1 : ''}">${tt('Vérifier le prix avant de miser', 'Check the price before bidding')}</button></div>`;
     $$('.fen-vigs [data-ph]', f).forEach(b => b.onclick = () => { $('#fen-img', f).innerHTML = `<img src="${esc(b.dataset.ph)}" alt="">`; $$('.fen-vigs button', f).forEach(x => x.classList.toggle('on', x === b)); brancherLoupe($('#fen-img', f)); });
     brancherLoupe($('#fen-img', f));
     $$('[data-fermer]', f).forEach(b => b.addEventListener('click', fermerAnnonce));
+    // 11 nov 2026 : le score ouvre « Pourquoi ce score » (petite fenetre avec un X) ; le vendeur aussi
+    $$('[data-slabiq]', f).forEach(b => b.onclick = () => { vibrer(); if (!sp || sp.score == null) return expliquerSlabIQ();
+      _SC[(base.titre || '') + '|'] = sp; pourquoiScore({score: sp.score, titre: base.titre || '', petit_vendeur: base.petit_vendeur, vendeur_score: a.vendeur_score}); });
+    const vd = $('#fa-vd', f); if (vd) vd.onclick = () => { vibrer(); ouvrirFeuille(`<div class="ps"><div class="ps-n"><span>${esc(a.vendeur)}<small>${tt('Vendeur eBay', 'eBay seller')}</small></span></div><div class="ps-l">
+      ${a.vendeur_pct ? `<div class="ps-r"><span class="ps-i vendeur"></span><span><b>${esc(a.vendeur_pct)} %</b><small>${tt('d’évaluations positives', 'positive feedback')}</small></span></div>` : ''}
+      ${a.vendeur_score ? `<div class="ps-r"><span class="ps-i carte"></span><span><b>${Number(a.vendeur_score).toLocaleString()}</b><small>${tt('évaluations', 'ratings')}${a.vendeur_score < 5000 ? ' · ' + tt('petit vendeur, souvent moins vu', 'small seller, often less seen') : ''}</small></span></div>` : ''}
+      ${(a.lieu || base.lieu) ? `<div class="ps-r"><span class="ps-i joueur"></span><span><b>${esc(nomPays(a.lieu || base.lieu))}</b><small>${tt('expédie de', 'ships from')}</small></span></div>` : ''}</div></div>`); };
     brancherMesAchats(f);
     const fe = $('.fen', f);
     if (fe && S.fenEntree) { S.fenEntree = false; const o = S.fenOrigine; S.fenOrigine = null;
@@ -8806,6 +8916,19 @@ async function changerPhotoCarte(cid, ph, index){
   const r = await essai(API.carte_photo_changer(cid, ph, index || 0), tt('Photo changée', 'Photo changed'));
   if (r && (location.hash || '').startsWith('#inventaire')) vueInventaire();
 }
+// 12 nov 2026 (nuit de revue : « reutiliser nos pastilles, des titres colores ») : la valeur d'une carte montre aussi son
+// Score SlabIQ (la demande, jamais le prix de l'annonce) ; toucher le score ouvre « Pourquoi ce score »
+async function remplirIQ(el, q){
+  if (!el || !q) return;
+  const sp = await API.annonce_score(q).catch(() => null);
+  if (!el.isConnected || !sp || !sp.ok || sp.score == null) return;
+  _SC[q + '|'] = sp;
+  const qual = sp.score >= 80 ? tt('Très recherchée', 'Highly sought') : sp.score >= 65 ? tt('Recherchée', 'Sought after') : sp.score >= 50 ? tt('Correcte', 'Decent') : tt('Peu recherchée', 'Low demand');
+  const L = {en_feu: [tt('En feu', 'On fire'), 'rouge'], en_hausse: [tt('En hausse', 'Rising'), 'vert'], legende: [tt('Légende', 'Legend'), 'or'], recrue: [tt('Recrue', 'Rookie'), 'or'], buzz: ['Buzz', 'acc'], en_creux: [tt('En creux', 'In a slump'), ''], rebond: [tt('Sort de son creux', 'Bouncing back'), 'vert']};
+  const pils = (sp.pastilles || []).filter(k => L[k]).slice(0, 3).map(k => tag(L[k][0], L[k][1])).join('');
+  el.innerHTML = `<button class="v-iq-b" id="v-iq-b"><span class="v-iq-n ${couleurScore(sp.score)}">${sp.score}</span><span class="v-iq-t"><small>Score SlabIQ</small><b>${qual}</b></span><span class="v-iq-p">${pils}</span><i>›</i></button>`;
+  $('#v-iq-b', el).onclick = () => { vibrer(); pourquoiScore({score: sp.score, titre: q}); };
+}
 async function vueValeur(arg){
   // 24 oct 2026 (Mathieu : « will smith young guns et ca me sort tout sauf ca ») : la MEME carte seulement ;
   // l'app montre ce qu'elle a compris, ce qu'elle a ecarte et pourquoi, et apprend de « pas la bonne carte ».
@@ -8858,7 +8981,7 @@ async function vueValeur(arg){
         <div class="pastilles j-tend" id="v-tend-j"></div>
         <button class="lien-doux" id="v-compris">✎ ${tt('Pas la bonne ? Corrige un détail', 'Not the one? Fix a detail')}</button>
       </div>
-      <div class="v-actions"><button class="pilule" id="v-alerte">${icN('cloche')}${tt('Mon prix cible', 'My target price')}</button>
+      <div id="v-iq" class="v-iq"></div><div class="v-actions"><button class="pilule" id="v-alerte">${icN('cloche')}${tt('Mon prix cible', 'My target price')}</button>
         ${(r.compris || [])[0] ? `<a class="pilule" href="#joueur/${encodeURIComponent(String(r.compris[0]).replace(/ (young guns|rookie|future watch).*$/i, ''))}">${tt('Le joueur ›', 'Player ›')}</a>` : ''}
         <a class="pilule" href="${esc(lienAchat(ebayQ, 'valeur'))}" target="_blank" rel="noopener">${tt('Tout sur eBay', 'All on eBay')} ${EXT}</a></div>
       ${blocMesAchats(r.mes_achats, false, 0, null)}
@@ -8877,7 +9000,7 @@ async function vueValeur(arg){
         ${r.bon_prix ? `<div><span>${tt('Bon prix sous', 'Good price under')}</span><b class="vert">${argent(r.bon_prix, 0)}</b></div>` : ''}</div>
       <button class="aide-q" id="v-aide" aria-label="${esc(tt('Comment lire la valeur', 'How to read the value'))}">?</button></div>
     <button class="v-compris" id="v-compris"><span>${(r.compris || []).map(esc).join(' · ')}</span><i>✎</i></button>
-    <div class="v-actions">${histo ? `<button class="pilule" id="v-histo">${icN('graphe')}${tt('Historique', 'History')}</button>` : ''}<button class="pilule" id="v-alerte">${icN('cloche')}${tt('M’alerter', 'Alert me')}</button>
+    <div id="v-iq" class="v-iq"></div><div class="v-actions">${histo ? `<button class="pilule" id="v-histo">${icN('graphe')}${tt('Historique', 'History')}</button>` : ''}<button class="pilule" id="v-alerte">${icN('cloche')}${tt('M’alerter', 'Alert me')}</button>
       ${(r.compris || [])[0] ? `<a class="pilule" href="#joueur/${encodeURIComponent(String(r.compris[0]).replace(/ (young guns|rookie|future watch).*$/i, ''))}">${tt('Le joueur ›', 'Player ›')}</a>` : ''}</div>
     ${vend.length ? `<div class="v-rang-t"><b>${tt('Vendues récemment', 'Recently sold')}</b><button class="lien-doux" id="v-tout-v">${vend.length} ›</button></div>
       <div class="d-car v-car">${vend.slice(0, 10).map(tuileV).join('')}</div>` : ''}
@@ -8891,6 +9014,9 @@ async function vueValeur(arg){
       ${r.n || r.n_ecartees ? `<div id="v-b-ann"><h3>${tt('En vente maintenant', 'Listed now')}</h3><div class="sous">${tt('Prix + port des annonces de la même carte. ✕ sur une annonce qui n’est pas la bonne carte : l’app l’écarte et apprend.', 'Price + shipping of listings of the same card. ✕ on a listing that isn’t the right card: the app sets it aside and learns.')}</div>
         <div class="grille-c">${(r.annonces || []).map(tuileA).join('')}</div>${ecart}</div>` : ''}
     </div>`;
+  // 12 nov 2026 : SlabIQ lit des titres d'annonces ; « Will Smith YG 230 » tout court lui donnait peu d'indices (16) : on
+  // lui donne le titre d'une vraie vente de la meme carte (85), sinon d'une annonce, sinon la recherche
+  remplirIQ($('#v-iq', z), (vend[0] || {}).titre || ((r.annonces || [])[0] || {}).titre || r.q || '');
   const o = (id, f) => { const b = $('#' + id, z); if (b) b.onclick = f; };
   o('v-histo', () => feuilleBloc($('#v-b-histo')));
   o('v-tout-v', () => feuilleBloc($('#v-b-vend')));
@@ -8959,6 +9085,18 @@ async function demanderPartage(){
   const choisir = async (on) => { const res = await essai(API.reglages_sauver({partage_ventes: on})); if (res) S.reglages = res; fermerFeuille(); };
   $('#pv-oui').onclick = () => choisir(true); $('#pv-non').onclick = () => choisir(false);
 }
+// 12 nov 2026 (nuit de revue : « punchy ; reutilise nos pastilles ; des titres colores ») : les joueurs du moment, en
+// pastilles qui defilent (en feu, sort de son creux, recrue) ; toucher un joueur ouvre sa fiche. Jamais un prix.
+async function remplirMoment(z){
+  if (!z) return;
+  const r = await API.joueurs_du_moment().catch(() => null);
+  if (!z.isConnected || !r || !(r.joueurs || []).length) return;
+  const P = {en_feu: [tt('En feu', 'On fire'), 'rouge'], rebond: [tt('Sort du creux', 'Bouncing back'), 'vert'], recrue: [tt('Recrue', 'Rookie'), 'or'], en_creux: [tt('En creux', 'In a slump'), 'acc']};
+  z.innerHTML = `<div class="am-t">${tt('Joueurs du moment', 'Players to watch')}</div>
+    <div class="am-l">${r.joueurs.map(j => `<a class="am-j" href="#joueur/${encodeURIComponent(j.nom)}"><span class="vig-j" data-vj="${esc(j.nom)}">${SVG_CARTE}</span>
+      <span class="am-c"><b>${esc(j.nom)}</b>${tag((P[j.pastille] || ['', ''])[0], (P[j.pastille] || ['', ''])[1])}${j.semaine && j.semaine.mj ? `<small>${j.semaine.pts} pts · ${j.semaine.mj} ${tt('matchs', 'games')}</small>` : ''}</span></a>`).join('')}</div>`;
+  try { remplirPortraits(z); } catch (e) {}
+}
 async function vueAccueil(arg){
   setTimeout(() => { if ((location.hash || '#accueil').startsWith('#accueil')) demanderPartage(); }, 2500);
   if (arg === 'bienvenue' || arg === 'retour') {
@@ -8978,6 +9116,7 @@ async function vueAccueil(arg){
         <div class="horloge"><div class="nom-b${nomMarque() === 'SlabCoach' ? ' a-mot' : ''}" id="acc-nom">${nomMarque() === 'SlabCoach' ? MOT_SC : esc(nomMarque())}</div><div class="salut" id="acc-salut"></div><div class="h" id="acc-h">--:--</div><div class="d" id="acc-d"></div></div></div>
       <div class="acc-tuiles" id="acc-tuiles">${roue}</div></div>
     <div class="acc-ticker" id="acc-ticker" hidden></div>
+    <div class="acc-moment" id="acc-moment"></div>
     <div class="acc-pils" id="acc-pils"></div>
     <div class="acc-reserve" id="acc-reserve" hidden>
     <div class="carte-acc nouv" id="acc-nouv"><div class="acc-titre titre-tel">${tt('Nouvelles et astuces', 'News and tips')}</div><div class="acc-sous titre-tel">${tt('L’actualité de la LNH et des cartes, et des trucs pour mieux acheter et vendre. Glisse pour la suivante.', 'NHL and card news, plus tips to buy and sell better. Swipe for the next one.')}</div><div id="acc-news">${roue}</div></div>
@@ -8991,6 +9130,7 @@ async function vueAccueil(arg){
   brancherBadge(V());
   piecesNiveau();
   demarrerAccueilLive();
+  remplirMoment($('#acc-moment'));
   const [d, a] = await Promise.all([API.accueil().catch(e => ({erreur:e.message})), API.acheteur_accueil().catch(() => null)]);
   if (!surAccueil()) return;
   if (d.erreur) { $('#acc-afaire').innerHTML = `<div class="vide">${esc(d.erreur)}</div>`; return; }
@@ -10445,6 +10585,20 @@ function coutTuile(c){
   const g = prix ? profitA(prix, cout) : null;
   return `<div class="cout-c">${tt('Payé ', 'Paid ')}<b>${argent(cout, 0)}</b>${g != null ? ` · <b class="${g >= 0 ? 'vert' : 'rouge'}">${g >= 0 ? '+' : '−'}${argentCourt(Math.abs(g))}</b> <small>${g >= 0 ? tt('net à ce prix', 'net at this price') : tt('sous ton coût', 'below your cost')}</small>` : ''}</div>`;
 }
+// 12 nov 2026 (nuit de revue) : le Score SlabIQ de chaque carte, en pastille sur sa photo (un seul appel pour tout
+// l'inventaire, garde cote serveur tant qu'il ne change pas). Toucher la pastille : « Pourquoi ce score ».
+async function poserScoresInv(){
+  const r = await API.inventaire_scores().catch(() => null);
+  if (!r || !r.ok || !$('#i-liste')) return;
+  S.invScores = r.scores || {};
+  $$('#i-liste .tuile-inv').forEach(t => {
+    const n = S.invScores[t.dataset.id], ou = t.querySelector('.img, .sl-puits'); if (n == null || !ou || ou.querySelector('.inv-iq')) return;
+    ou.insertAdjacentHTML('beforeend', `<span class="inv-iq sc-b ${couleurScore(n)}" data-iq="${t.dataset.id}" role="button" aria-label="Score SlabIQ ${n}">${n}</span>`);
+  });
+}
+document.addEventListener('click', (e) => { const b = e.target.closest('.inv-iq[data-iq]'); if (!b) return; e.preventDefault(); e.stopPropagation(); vibrer();
+  const c = (S.invL || []).find(x => String(x.id) === b.dataset.iq) || {};
+  pourquoiScore({score: +b.textContent, titre: c.titre || [c.annee, c.marque, c.joueur, c.parallele].filter(Boolean).join(' '), joueur: c.joueur}); }, true);
 function tuileInv(c){
   const vendue = c.statut === 'Vendue', r = !vendue ? repere(c) : null, m = c.marche;
   const etat = vendue ? capsule(tt('Vendue', 'Sold') + (c.vendu_le ? ' · ' + dateCourte(c.vendu_le) : ''), 'petit')
@@ -10609,6 +10763,7 @@ async function chargerInventaire(){
   const bs = $('#i-sel'); if (bs) bs.onclick = () => { vibrer(); S.selInv = S.selInv ? null : new Set(); chargerInventaire(); };
   barreSelInv();
   estimerManquantes(l);
+  poserScoresInv();
   $$('#i-liste [data-pro]').forEach(b => b.onclick = (e) => { e.stopPropagation(); feuillePro(b.dataset.pro); });
   const ir = $('#i-res'); if (ir) ir.onclick = (e) => { vibrer(); const fx = e.target.closest('[data-fix]'); if (fx) return feuillePrixRapide(fx.dataset.fix); feuilleBloc($('#i-b-res')); };
   $$('#i-kpis [data-fix]').forEach(b => b.onclick = () => { vibrer(); feuillePrixRapide(b.dataset.fix); });
@@ -10768,6 +10923,7 @@ function ficheCollection(c, opts){
       <div class="fc-chiffres"><div><span>${tt('Valeur', 'Value')}</span><b id="fc-val">${val_ != null ? argent(val_, 0) : '—'}</b><small id="fc-val-s">${tt('ventes réelles…', 'real sales…')}</small></div>
         <div><span>${tt('Payée', 'Paid')}</span><b>${cout != null ? argent(cout, 0) : '—'}</b></div>
         ${gain != null ? `<div><span>${tt('Gain', 'Gain')}</span><b class="${gain >= 0 ? 'vert' : 'rouge'}">${gain >= 0 ? '+' : '−'}${argent(Math.abs(gain), 0)}</b></div>` : ''}</div>
+      <div id="fc-iq" class="v-iq"></div>
       ${c.tendance ? `<div class="fc-tend">${[['t7', tt('7 jours', '7 days')], ['t30', tt('30 jours', '30 days')], ['t90', tt('90 jours', '90 days')]].map(([k, l]) => { const v = c.tendance[k];
           return `<div><span>${l}</span><b class="${v == null ? '' : v >= 1 ? 'vert' : v <= -1 ? 'rouge' : ''}">${v == null ? '—' : fPct(v)}</b></div>`; }).join('')}
         <small>${c.tendance.source === 'ventes' ? tt(`Variation du prix : les ventes réelles de cette carte (${c.tendance.n} connues). « — » : pas assez de ventes pour comparer.`, `Price change: real sales of this card (${c.tendance.n} known). “—”: not enough sales to compare.`)
@@ -10822,6 +10978,7 @@ function ficheCollection(c, opts){
     const vu = (d.querySelector('img') || {}).src || src;
     zoomPhoto(vu, photoDroite(src, {maxCote: 9000}).then(r => r || chargerImage(src).then(im => ({src, w: im.naturalWidth, h: im.naturalHeight}))).catch(() => null));
   });
+  remplirIQ($('#fc-iq'), c.titre || [c.annee, c.marque, c.joueur, c.parallele].filter(Boolean).join(' '));   // 12 nov 2026 : SlabIQ de sa carte
   if ($('#fc-etat')) blocEtat(c, false, opts);
   if ($('#fc-envoi')) blocEnvoi(c);
   if (envoiDe(c)) { const v = $('#fc-vendre'); if (v) { v.hidden = true; if (v.nextElementSibling) v.nextElementSibling.hidden = true; } }   // la carte n'est pas chez toi
@@ -13789,15 +13946,57 @@ async function vueTraiter(arg, force){
 const TRIS_RADAR = () => [['score', tt('Score', 'Score')], ['fin', tt('Fin bientôt', 'Ending soon')], ['prix', tt('Prix ↑', 'Price ↑')], ['prix_d', tt('Prix ↓', 'Price ↓')]];
 const couleurScore = (n) => n >= 80 ? 'vert' : n >= 65 ? 'acc' : n >= 50 ? 'or' : '';
 function pastilleScore(x){ return x && x.score != null ? `<span class="sc-b ${couleurScore(x.score)}" title="Score SlabIQ">${x.score}</span>` : ''; }
+// 11 nov 2026 (Mathieu : « comme les slabs de l'onglet collection ; juste l'info necessaire ; punchy et rapide ; un toucher
+// sur le score montre pourquoi ») : la tuile = un slab. Etiquette : la carte + le Score SlabIQ (a la place de la note).
+// Dans le slab : la photo, le temps qui reste (ou Achat immediat) et UNE pastille. Dessous : le prix, et le vrai total.
 function tuileRadar(x, src){
-  const pj = (x.pastilles_j || []).filter(k => ['en_feu', 'rebond', 'en_creux', 'legende', 'recrue', 'buzz'].includes(k));
-  const L = {en_feu: [tt('En feu', 'On fire'), 'rouge'], legende: [tt('Légende', 'Legend'), 'or'], recrue: [tt('Recrue', 'Rookie'), 'or'], buzz: ['Buzz', 'acc'], en_creux: [tt('En creux', 'In a slump'), ''], rebond: [tt('Sort de son creux', 'Bouncing back'), 'vert']};
-  // 11 nov 2026 : ADMIN seulement (le serveur n'envoie admin_vendu qu'a l'admin verifie) : les ventes reelles de la meme carte
-  const av = x.admin_vendu, adm = av ? `<div class="sous md-adm">${tt('Vendu', 'Sold')} ${argentCourt(av.med)} (${av.nb})${av.tend_pct != null ? ` · <b class="${av.tend_pct >= 0 ? 'vert' : 'rouge'}">${av.tend_pct > 0 ? '+' : ''}${av.tend_pct} %</b>` : ''} · max <b>${argentCourt(av.achat_max)}</b>${av.ecart_pct != null ? ` · <b class="${av.ecart_pct <= -15 ? 'vert' : av.ecart_pct >= 10 ? 'rouge' : ''}">${av.ecart_pct > 0 ? '+' : ''}${av.ecart_pct} %</b>` : ''}</div>` : '';
-  return tuileCarte({...x, url: lienAchat(x.url, src || 'radar')}, {x: boutonWatch(x), coin: pastilleScore(x), bas: ligneReel(x) + adm,
-    milieu: `${x.numero && x.joueur ? `<div class="sous">#${esc(x.numero)} ${esc(x.joueur)}</div>` : ''}<div class="pastilles">${x.encan ? tag(finDans(x.fin) + (x.mises != null ? ' · ' + x.mises + ' ' + tt('mise', 'bid') + (x.mises > 1 ? 's' : '') : ''), 'or') : tag(tt('Achat immédiat', 'Buy It Now'))}${pj.slice(0, 1).map(k => tag(L[k][0], L[k][1])).join('')}</div>${cmpPlace(x)}${ligneAdminVendu(x)}`,
-    droite: x.prix_max ? `<span class="sous">${tt('ton prix', 'yours')} ${argentCourt(x.prix_max)}</span>` : ''});
+  const L = {en_feu: [tt('En feu', 'On fire'), 'rouge'], rebond: [tt('Sort de son creux', 'Bouncing back'), 'vert'], en_creux: [tt('En creux', 'In a slump'), ''],
+    legende: [tt('Légende', 'Legend'), 'or'], recrue: [tt('Recrue', 'Rookie'), 'or'], buzz: ['Buzz', 'acc']};
+  const pj = (x.pastilles_j || []).find(k => L[k]);
+  const t1 = x.petit_vendeur ? [tt('Petit vendeur', 'Small seller'), 'vert'] : pj ? L[pj] : null;
+  const fin = x.encan ? finDans(x.fin) + (x.mises != null ? ' · ' + x.mises + ' ' + tt('mise', 'bid') + (x.mises > 1 ? 's' : '') : '') : tt('Achat immédiat', 'Buy It Now');
+  const ms = Date.parse(x.fin || '') - Date.now(), urgent = x.encan && ms > 0 && ms < 3600e3;
+  const sc = x.score != null ? `<button class="sl-n sr-sc ${couleurScore(x.score)}" data-sc="${esc(x.item_id)}" aria-label="${esc(tt('Pourquoi ce score', 'Why this score'))}"><b>${x.score}</b><small>SLABIQ</small></button>` : '';
+  return `<div class="sr-w"><div class="slab sr" ${attrsAnnonce({...x, url: lienAchat(x.url, src || 'radar')})}>
+    <span class="sl-lab"><span class="sl-t">${esc(x.titre || '')}</span>${sc}</span>
+    <span class="sl-puits">${x.photo ? `<img src="${esc(photoNet(x.photo))}" alt="" loading="lazy" decoding="async" data-oe="rm">` : SVG_CARTE}
+      <span class="sr-fin ${x.encan ? (urgent ? 'rouge' : 'or') : ''}">${fin}</span>${t1 ? `<span class="sr-tag">${tag(t1[0], t1[1])}</span>` : ''}${boutonWatch(x)}</span></div>
+    <div class="sr-bas"><b>${argent(x.total, 0)}</b>${x.total_reel && x.total_reel > (x.total || 0) + 0.5 ? `<small>${argentCourt(x.total_reel)} ${x.etranger ? tt('avec import.', 'w/ import') : tt('réel', 'all-in')}</small>` : ''}${x.prix_max ? `<small>${tt('ton prix', 'yours')} ${argentCourt(x.prix_max)}</small>` : ''}</div>${ligneAdminVendu(x)}</div>`;
 }
+// le toucher sur le score : « pourquoi ce score », bref et clair (la carte, puis le joueur), et comment SlabIQ fonctionne
+const _SC = {};
+async function pourquoiScore(x){
+  if (!x) return;
+  const qual = (n) => n >= 80 ? tt('Très recherchée', 'Highly sought') : n >= 65 ? tt('Recherchée', 'Sought after') : n >= 50 ? tt('Correcte', 'Decent') : tt('Peu recherchée', 'Low demand');
+  ouvrirFeuille(`<div class="ps"><div class="ps-n ${couleurScore(x.score)}"><b>${x.score}</b><span>${qual(x.score)}<small>Score SlabIQ</small></span></div><div class="ps-s">${tt('Plus recherchée que', 'More sought after than')} <b>${x.score} %</b> ${tt('des cartes de hockey vendues', 'of hockey cards sold')}</div><div id="ps-l"><span class="roue"></span></div>
+    <button class="lien-doux" id="ps-iq">${tt('Comment SlabIQ fonctionne', 'How SlabIQ works')} ›</button></div>`);
+  $('#ps-iq').onclick = () => { fermerFeuille(); setTimeout(expliquerSlabIQ, 200); };
+  const cle = (x.titre || '') + '|' + (x.joueur || '');
+  const sp = _SC[cle] || (_SC[cle] = await API.annonce_score(x.titre, x.joueur).catch(() => null));
+  const z = $('#ps-l'); if (!z) return;
+  const c = (sp && sp.carte) || x.carte || {}, q = (sp && sp.pourquoi) || {}, R = [];
+  // la carte
+  const ca = [];
+  if (c.auto && c.patch) ca.push(tt('Auto-patch', 'Auto-patch')); else { if (c.auto) ca.push('Auto'); if (c.patch) ca.push('Patch'); }
+  if (c.tirage) ca.push(tt('Numérotée ', 'Numbered ') + (c.numero ? c.numero : '') + '/' + c.tirage);
+  if (c.rc) ca.push(tt('Recrue (RC)', 'Rookie (RC)'));
+  if (c.grade) ca.push(c.grade);
+  if (ca.length) R.push(['carte', tt('La carte', 'The card'), ca.join(' · ')]);
+  // le joueur
+  if (sp && sp.joueur) R.push(['joueur', esc(sp.joueur), sp.rang && sp.sur ? `${tt('Indice', 'Index')} : ${ordinal(sp.rang)} ${tt('sur', 'of')} ${sp.sur}` : '']);
+  if (q.creux) R.push(['creux', q.creux.etat === 'rebond' ? tt('Sort de son creux', 'Bouncing back') : tt('En creux · à surveiller', 'In a slump · worth watching'),
+    `${String(q.creux.ppm).replace('.', tt(',', '.'))} ${tt('pt/match vs', 'pts/game vs')} ${String(q.creux.avant_ppm).replace('.', tt(',', '.'))} ${tt('avant', 'before')}`]);
+  if (q.semaine && q.semaine.mj) R.push(['feu', tt('Cette semaine', 'This week'), `${q.semaine.pts} pts ${tt('en', 'in')} ${q.semaine.mj} ${tt('matchs', 'games')}`]);
+  const g = q.legende || {};
+  if (g.temple) R.push(['legende', tt('Légende', 'Legend'), tt('Temple de la renommée', 'Hall of Fame')]);
+  else if (g.coupes) R.push(['legende', tt('Palmarès', 'Honours'), g.coupes + ' ' + tt(g.coupes > 1 ? 'coupes Stanley' : 'coupe Stanley', g.coupes > 1 ? 'Stanley Cups' : 'Stanley Cup')]);
+  if (q.buzz && q.buzz.pct >= 25) R.push(['buzz', tt('Popularité', 'Buzz'), `+${q.buzz.pct} % ${tt('de recherches (20 j)', 'searches (20 d)')}`]);
+  if (x.petit_vendeur) R.push(['vendeur', tt('Petit vendeur', 'Small seller'), (x.vendeur_score != null ? x.vendeur_score + ' ' + tt('évaluations', 'ratings') + ' · ' : '') + tt('souvent moins vu', 'often less seen')]);
+  z.innerHTML = R.length ? `<div class="ps-l">${R.slice(0, 5).map(([k, a, b]) => `<div class="ps-r"><span class="ps-i ${k}"></span><span><b>${a}</b>${b ? `<small>${b}</small>` : ''}</span></div>`).join('')}</div>`
+    : `<div class="sous">${tt('Une carte courante d’un joueur peu suivi.', 'A common card of a less-followed player.')}</div>`;
+}
+document.addEventListener('click', (e) => { const b = e.target.closest('[data-sc]'); if (!b) return; e.preventDefault(); e.stopPropagation(); vibrer();
+  const id = b.dataset.sc, x = (S.mdTous && S.mdTous.get(id)) || null; pourquoiScore(x || {score: +(b.querySelector('b') || {}).textContent, titre: (b.closest('[data-titre]') || {dataset: {}}).dataset.titre}); }, true);
 // 11 nov 2026 (Mathieu : « admin seulement : le cout d'acquisition avec les ventes ») : le serveur n'envoie admin_vendu qu'a
 // l'admin verifie ; la ligne : ventes de la meme carte (mediane, nombre, tendance) et la mise max pour garder sa marge
 function ligneAdminVendu(x){
@@ -13820,10 +14019,15 @@ async function vueMesDeals(z){
   (r.chasses || []).forEach(c => ajouter('c:' + c.pid + c.sous, tt('Il te manque', 'Missing') + ' · ' + c.sous, c.annonces));
   ajouter('feu', tt('En feu', 'On fire'), (r.chauds || []).flatMap(g => g.annonces));
   ajouter('creux', tt('En creux', 'In a slump'), (r.creux || []).flatMap(g => g.annonces));      // 11 nov : jeunes talents sous leurs standards
+  ajouter('pv', tt('Petits vendeurs', 'Small sellers'), r.petits || []);                     // 11 nov : encans de vendeurs a peu d'evaluations
   ajouter('dec', tt('À découvrir', 'Discover'), (r.decouvrir || []).flatMap(g => g.annonces));
   (r.vendeurs || []).forEach(v => ajouter('v:' + v.vendeur, v.vendeur, v.annonces));
+  // tout encan ou annonce d'un petit vendeur, quelle que soit la rangee d'ou elle vient, entre aussi dans « Petits vendeurs »
+  const pv = [...tous.values()].filter(x => x.petit_vendeur);
+  if (pv.length) { pv.forEach(x => x._g.add('pv')); if (!groupes.some(([k]) => k === 'pv')) groupes.push(['pv', tt('Petits vendeurs', 'Small sellers')]); }
   const pd = [...tous.values()].filter(x => { const ms = Date.parse(x.fin || '') - Date.now(); return x.encan && ms > 0 && ms < 6 * 3600e3 && (x.mises || 0) <= 1; });
   if (pd.length >= 2) { pd.forEach(x => x._g.add('pd')); groupes.push(['pd', tt('Peu disputés', 'Low competition')]); }
+  S.mdTous = tous;
   const nb_ = tous.size;
   const pD = $('#pastille-deals'); if (pD) { pD.hidden = !nb_; pD.textContent = nb_ > 99 ? '99+' : (nb_ || ''); }
   if (!groupes.some(([k]) => k === S.mdF)) S.mdF = '';
@@ -13835,27 +14039,37 @@ async function vueMesDeals(z){
     l.sort(S.mdTri === 'ecart' ? (a, b) => ((a.admin_vendu || {}).ecart_pct ?? 999) - ((b.admin_vendu || {}).ecart_pct ?? 999) : S.mdTri === 'fin' ? (a, b) => fin_(a) - fin_(b) : S.mdTri === 'prix' ? (a, b) => (a.total || 0) - (b.total || 0)
       : S.mdTri === 'prix_d' ? (a, b) => (b.total || 0) - (a.total || 0) : (a, b) => (b.score || 0) - (a.score || 0) || fin_(a) - fin_(b));
     const max = S.mdMax || 40;
-    $('#md-fil', z).innerHTML = l.length ? `<div class="grille-c md-grille">${l.slice(0, max).map(x => tuileRadar(x)).join('')}</div>${l.length > max ? `<button class="btn ghost" id="md-plus">${tt('Voir plus', 'See more')} · ${l.length - max}</button>` : ''}`
+    $('#md-fil', z).innerHTML = l.length ? `<div class="grille-slab md-grille">${l.slice(0, max).map(x => tuileRadar(x)).join('')}</div>${l.length > max ? `<button class="btn ghost" id="md-plus">${tt('Voir plus', 'See more')} · ${l.length - max}</button>` : ''}`
       : `<div class="vide">${tt('Rien ici pour l’instant.', 'Nothing here yet.')}</div>`;
     const mp = $('#md-plus', z); if (mp) mp.onclick = () => { S.mdMax = max + 40; peindre(); };
-    $$('[data-mdf]', z).forEach(b => b.classList.toggle('on', b.dataset.mdf === (S.mdF || '')));
-    $$('[data-tri]', z).forEach(b => b.classList.toggle('on', b.dataset.tri === S.mdTri));
+    const ft = $('#md-f-t', z); if (ft) ft.textContent = (S.mdF ? (groupes.find(([k]) => k === S.mdF) || [0, ''])[1] : tt('Tout', 'All')) + ' · ' + l.length + (((S.reglages || {}).pays || 'CA') === 'US' ? ' · US' : '');
+    const tt_ = $('#md-t-t', z); if (tt_) tt_.textContent = ((TRIS_RADAR().concat([['ecart', tt('Sous le vendu', 'Below sold')]]).find(([k]) => k === S.mdTri)) || [0, ''])[1];
     remplirComparer(z);
   };
   z.innerHTML = `<div class="md">
-    <button class="rq-glow ${r.profil_vide ? 'neuf' : ''}" id="md-cfg"><span>${r.profil_vide ? tt('Configurer mon radar', 'Set up my radar') : tt('Mon radar', 'My radar')}</span></button>
+    <div class="md-barre">
+      <button class="rq-glow md-glow ${r.profil_vide ? 'neuf' : ''}" id="md-cfg"><span>${r.profil_vide ? tt('Configurer mon radar', 'Set up my radar') : tt('Mon radar', 'My radar')}</span></button>
+      ${nb_ ? `<button class="md-dd" id="md-f"><small>${tt('Voir', 'Show')}</small><b id="md-f-t"></b><i>▾</i></button>
+      <button class="md-dd" id="md-t"><small>${tt('Trier', 'Sort')}</small><b id="md-t-t"></b><i>▾</i></button>` : ''}</div>
     ${rien && r.partiel ? `<div class="sous md-dec" style="text-align:center">${r.erreur_txt ? esc(r.erreur_txt) : r.erreur_code === 'lent' ? tt('eBay est lent en ce moment : réessaie dans une minute.', 'eBay is slow right now: try again in a minute.') : tt('eBay ne répond pas en ce moment : réessaie dans une minute.', 'eBay isn’t answering right now: try again in a minute.')}</div>
       ${(r.erreurs_detail || []).length ? `<details class="sous md-dec"><summary>Admin</summary>${r.erreurs_detail.map(esc).join('<br>')}</details>` : ''}` : ''}
-    ${nb_ ? `<div class="chips md-chips">${[['', tt('Tout', 'All') + ' · ' + nb_], ...groupes].map(([k, n]) => `<button class="chip ${k === (S.mdF || '') ? 'on' : ''}" data-mdf="${esc(k)}">${esc(n)}</button>`).join('')}</div>
-      <div class="md-tri"><div class="seg petit">${TRIS_RADAR().concat([...tous.values()].some(x => x.admin_vendu) ? [['ecart', tt('Sous le vendu', 'Below sold')]] : []).map(([k, n]) => `<button data-tri="${k}" class="${k === S.mdTri ? 'on' : ''}">${n}</button>`).join('')}</div>
-        <button class="rond md-reg" id="md-reg" aria-label="${esc(tt('Mes critères de recherche', 'My search criteria'))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button></div>` : ''}
     <div id="md-fil"></div></div>`;
   if (nb_) peindre();
   const reQ = () => configurerRadar({apres: (ok) => { if (ok && z.isConnected) vueMesDeals(z); }});
   $('#md-cfg').onclick = () => { vibrer(); reQ(); };
-  const mr = $('#md-reg', z); if (mr) mr.onclick = () => { vibrer(); reQ(); };       // les criteres : le recapitulatif de « Mon radar »
-  $$('[data-mdf]', z).forEach(b => b.onclick = () => { vibrer(); S.mdF = b.dataset.mdf; S.mdMax = 40; peindre(); });
-  $$('[data-tri]', z).forEach(b => b.onclick = () => { vibrer(); S.mdTri = b.dataset.tri; peindre(); });
+  // 11 nov 2026 (Mathieu : « les filtres et le tri en menu deroulant ou en fenetre, pour maximiser les annonces ») : deux
+  // boutons compacts ; chacun ouvre une petite feuille avec ses choix (et le nombre d'annonces de chaque rangee)
+  const tris = () => TRIS_RADAR().concat([...tous.values()].some(x => x.admin_vendu) ? [['ecart', tt('Sous le vendu', 'Below sold')]] : []);
+  const nbG = (k) => k ? [...tous.values()].filter(x => x._g.has(k)).length : nb_;
+  const choix = (titre, l, actuel, f) => { ouvrirFeuille(`<h3>${titre}</h3><div class="md-ch">${l.map(([k, n, c]) => `<button class="${k === actuel ? 'on' : ''}" data-v="${esc(k)}"><span>${esc(n)}</span>${c != null ? `<b>${c}</b>` : ''}${k === actuel ? '<i>✓</i>' : ''}</button>`).join('')}</div>`);
+    $$('.md-ch [data-v]').forEach(b => b.onclick = () => { vibrer(); fermerFeuille(); f(b.dataset.v); }); };
+  const mf = $('#md-f', z); if (mf) mf.onclick = () => { vibrer(); choix(tt('Voir', 'Show'), [['', tt('Tout', 'All'), nb_], ...groupes.map(([k, n]) => [k, n, nbG(k)])], S.mdF || '', v => { S.mdF = v; S.mdMax = 40; peindre(); });
+    // 11 nov 2026 (Mathieu : « l'option Canada / USA ») : le pays d'achat (eBay du pays, port et taxes), ici aussi
+    const us = ((S.reglages || {}).pays || 'CA') === 'US', f_ = document.querySelector('.md-ch');
+    if (f_) { f_.insertAdjacentHTML('afterend', `<div class="md-pays"><span>${tt('J’achète depuis', 'I buy from')}</span><div class="seg petit"><button data-pays="CA" class="${us ? '' : 'on'}">Canada</button><button data-pays="US" class="${us ? 'on' : ''}">${tt('États-Unis', 'United States')}</button></div></div>`);
+      $$('[data-pays]').forEach(b => b.onclick = async () => { if ((b.dataset.pays === 'US') === us) return; vibrer(); fermerFeuille();
+        const x = await API.reglages_sauver({pays: b.dataset.pays}).catch(() => null); if (x) S.reglages = x; if (z.isConnected) vueMesDeals(z); }); } };
+  const mt = $('#md-t', z); if (mt) mt.onclick = () => { vibrer(); choix(tt('Trier', 'Sort'), tris().map(([k, n]) => [k, n]), S.mdTri, v => { S.mdTri = v; peindre(); }); };
   // 1re visite d'un Radar vide : le formulaire s'ouvre seul (une fois)
   let vu = false; try { vu = localStorage.getItem('lr_radar_q') === '1'; } catch (e) {}
   if (r.profil_vide && !(r.cibles || []).length && !vu && !(S.reglages && S.reglages.radar_q)) setTimeout(() => { if (z.isConnected && $('#fond-feuille').hidden) reQ(); }, 600);
@@ -13879,23 +14093,25 @@ async function remplirComparer(z){
     b.innerHTML = `${tt('Achat immédiat dès', 'Buy It Now from')} <b>${argentCourt(c.des)}</b>${c.n > 1 ? ` · ${c.n}` : ''} ›`;
     b.classList.toggle('bas', plus_bas); b.dataset.rempli = '1'; });
 }
+// 11 nov 2026 (Mathieu : « plus attrayant visuellement et simple ; trop de petite ecriture ») : la carte et sa mise en haut,
+// UN gros bouton vers les ventes eBay, deux chiffres (en vente / encans), puis les annonces en vignettes (photo + prix)
 async function feuilleVerifier(id, titre, prix, encan){
-  ouvrirFeuille(`<h3>${tt('Vérifier le prix', 'Check the price')}</h3><div class="sous">${esc(titre)}</div>
-    ${prix ? `<div class="vp-rappel">${encan ? tt('Mise actuelle de cet encan', 'This auction’s current bid') : tt('Prix de cette annonce', 'This listing’s price')} : <b>${argentCourt(prix)}</b></div>` : ''}
-    <div id="vp-z">${barreProg(Date.now(), 4, tt('On regarde la même carte sur eBay…', 'Looking at the same card on eBay…'))}</div>`);
+  const x0 = (S.mdTous && S.mdTous.get(String(id))) || {};
+  ouvrirFeuille(`<div class="vx">
+    <div class="vx-tete">${x0.photo ? `<img src="${esc(photoNet(x0.photo))}" alt="">` : `<span class="vx-ph">${SVG_CARTE}</span>`}
+      <div><b class="vx-t">${esc(titre)}</b>${prix ? `<span class="vx-p">${encan ? tt('Mise actuelle', 'Current bid') : tt('Prix', 'Price')} <b>${argentCourt(prix)}</b></span>` : ''}</div></div>
+    <div id="vp-z">${barreProg(Date.now(), 4, tt('La même carte sur eBay…', 'The same card on eBay…'))}</div></div>`);
   const r = await API.verifier_prix(id, titre).catch(e => ({ok:false, erreur:e.message})); const z = $('#vp-z'); if (!z) return;
   if (!r.ok) { z.innerHTML = `<div class="vide">${esc(r.erreur || 'Erreur')}</div>`; return; }
   const V = r.en_vente || [], E = r.encans || [], M = r.mien || [];
-  const tuileV = (x, src) => tuileCarte({...x, url: lienAchat(x.url, src)}, {bas: ligneReel(x), milieu: `<div class="pastilles">${x.encan ? tag(tt('Encan', 'Auction') + (x.fin ? ' · ' + finDans(x.fin) : '') + ' · ' + (x.mises || 0) + ' ' + tt('mise', 'bid') + ((x.mises || 0) > 1 ? 's' : ''), 'or') : tag(tt('Achat immédiat', 'Buy It Now'))}</div>`});
-  z.innerHTML = `
-    <a class="btn vp-vendues" href="${esc(lienAchat(r.lien_vendues, 'vendues'))}" target="_blank" rel="noopener">${tt('Ventes terminées sur eBay', 'Sold on eBay')} ${EXT}</a>
-    <div class="sous vp-note">${tt('Recherche déjà remplie pour cette carte : les prix vendus s’affichent sur eBay.', 'Search already filled in for this card: sold prices show on eBay.')}</div>
-    <div class="v-rang-t" style="margin-top:16px"><b>${tt('En vente maintenant', 'For sale now')}</b><span class="sous">${V.length ? tt('du moins cher au plus cher', 'cheapest first') : ''}</span></div>
-    ${V.length ? `<div class="d-car v-car">${V.map(x => tuileV(x, 'verifier')).join('')}</div>` : `<div class="sous">${tt('Aucune en achat immédiat en ce moment.', 'None as Buy It Now right now.')}</div>`}
-    <div class="v-rang-t" style="margin-top:14px"><b>${tt('Encans en cours', 'Live auctions')}</b><span class="sous">${E.length ? tt('ce que les autres misent en ce moment', 'what others are bidding right now') : ''}</span></div>
-    ${E.length ? `<div class="d-car v-car">${E.map(x => tuileV(x, 'verifier_encan')).join('')}</div>` : `<div class="sous">${tt('Aucun encan de cette carte en ce moment.', 'No auction of this card right now.')}</div>`}
-    ${M.length ? `<div class="v-rang-t" style="margin-top:14px"><b>${tt('Ton historique', 'Your history')}</b></div><div class="liste">${M.map(k => `<div class="rangee"><span class="milieu"><span class="nom">${esc(titreCourt(k.titre))}</span><span class="det">${k.le ? esc(String(k.le).slice(0, 10)) : ''}</span></span>
-      <span class="droite">${k.prix_vendu ? `<span class="sous">${tt('vendue', 'sold')}</span> <b>${argentCourt(k.prix_vendu)}</b>` : k.cout ? `<span class="sous">${tt('payée', 'paid')}</span> <b>${argentCourt(k.cout)}</b>` : ''}</span></div>`).join('')}</div>` : ''}`;
+  const mini = (x, src) => `<div class="vx-m" ${attrsAnnonce({...x, url: lienAchat(x.url, src)})}><span class="vx-mi">${x.photo ? `<img src="${esc(photoNet(x.photo))}" alt="" loading="lazy" data-oe="rm">` : SVG_CARTE}</span>
+    <b>${argentCourt(x.total)}</b><small>${x.encan ? finDans(x.fin) + ' · ' + (x.mises || 0) + ' ' + tt('mise', 'bid') + ((x.mises || 0) > 1 ? 's' : '') : tt('Achat immédiat', 'Buy It Now')}</small></div>`;
+  const bas = V.length ? Math.min(...V.map(v => v.total || 1e9)) : null, haut = E.length ? Math.max(...E.map(v => v.total || 0)) : null;
+  z.innerHTML = `<a class="btn gros vx-ebay" href="${esc(lienAchat(r.lien_vendues, 'vendues'))}" target="_blank" rel="noopener">${tt('Voir les ventes sur eBay', 'See sold prices on eBay')} ${EXT}</a>
+    <div class="vx-2"><div class="vx-k ${V.length ? '' : 'gris'}"><span>${tt('En vente', 'For sale')}</span><b>${V.length}</b><small>${bas ? tt('dès ', 'from ') + argentCourt(bas) : tt('aucune', 'none')}</small></div>
+      <div class="vx-k ${E.length ? '' : 'gris'}"><span>${tt('Encans', 'Auctions')}</span><b>${E.length}</b><small>${haut ? tt('jusqu’à ', 'up to ') + argentCourt(haut) : tt('aucun', 'none')}</small></div></div>
+    ${V.length || E.length ? `<div class="vx-car">${[...V.map(x => mini(x, 'verifier')), ...E.map(x => mini(x, 'verifier_encan'))].join('')}</div>` : ''}
+    ${M.length ? `<div class="vx-h">${M.slice(0, 3).map(k => `<div class="vx-hr"><span>${k.prix_vendu ? tt('Tu l’as vendue', 'You sold it') : tt('Tu l’as payée', 'You paid')}</span><b>${argentCourt(k.prix_vendu || k.cout || 0)}</b></div>`).join('')}</div>` : ''}`;
 }
 // 10 nov 2026 (Mathieu : « pourquoi il monte ») : le contexte du joueur, en faits (stats, buzz, legende) ; jamais un prix
 // 11 nov 2026 (Mathieu : « a toutes les semaines, le modele reapprend ») : la memoire du marche (chaque jour) et les
@@ -13936,13 +14152,37 @@ function blocReappris(st, source){
   const l = e.map(x => `<div class="rangee"><span class="milieu"><span class="nom">${esc(String(x.le || '').slice(0, 10))} · ${(x.ventes || 0).toLocaleString()} ${tt('ventes', 'sales')}</span><span class="det">${x.mesure ? `${(x.mesure.precision * 10).toFixed(2)} / ${(x.mesure.confiance * 10).toFixed(2)}` : ''} ${x.accepte ? tt('· adopté', '· adopted') : '· ' + esc(x.raison || tt('refusé', 'rejected'))}</span></span></div>`).join('');
   return `<div class="sous" style="margin-top:6px">${source === 'reappris' ? tt(`Modèle réappris sur le serveur · mémoire du marché à jour au ${esc(st.dernier_jour || '?')}.`, `Model retrained on the server · market memory up to ${esc(st.dernier_jour || '?')}.`) : tt('Modèle du dépôt : le 1er réapprentissage se fait la nuit (chaque semaine).', 'Repo model: first retrain runs at night (weekly).')}</div>${l ? `<div class="liste">${l}</div>` : ''}`;
 }
+// 11 nov 2026 : 1er, 2e / 1st, 2nd, 3rd, 11th, 21st, 271st
+function ordinal(n){
+  if (typeof LANGUE === 'undefined' || LANGUE !== 'en') return n === 1 ? '1er' : n + 'e';
+  const d = n % 10, c = n % 100;
+  return n + (c >= 11 && c <= 13 ? 'th' : d === 1 ? 'st' : d === 2 ? 'nd' : d === 3 ? 'rd' : 'th');
+}
+// 11 nov 2026 (Mathieu : « punchy et simple ; pastilles, titres colores ; pas de sur-information ; l'info en plus dans
+// une petite fenetre avec un X ») : le joueur en 4 tuiles chiffrees au plus, puis « Pourquoi il bouge » en fenetre
+function tuilesJoueur(q){
+  if (!q) return '';
+  const T = [];
+  if (q.rang && q.sur) T.push([tt('Indice', 'Index'), ordinal(q.rang), tt('sur ', 'of ') + q.sur, q.rang <= q.sur * 0.1 ? 'vert' : q.rang <= q.sur * 0.4 ? 'acc' : '']);
+  const w = q.semaine;
+  if (w && w.mj) T.push([tt('Cette semaine', 'This week'), w.pts + ' pts', w.mj + ' ' + tt('matchs', 'games'), w.pts >= 5 ? 'rouge' : w.pts >= 3 ? 'vert' : '']);
+  else if (q.cinq != null) T.push([tt('5 derniers', 'Last 5'), q.cinq + ' pts', tt('matchs', 'games'), q.cinq >= 5 ? 'vert' : '']);
+  const sa = q.saison;
+  if (sa && sa.ppm > 0) T.push([tt('Par match', 'Per game'), String(sa.ppm).replace('.', tt(',', '.')), sa.ecart_pct != null && Math.abs(sa.ecart_pct) >= 10 ? (sa.ecart_pct > 0 ? '+' : '') + sa.ecart_pct + ' % ' + tt('vs avant', 'vs before') : sa.mj + ' ' + tt('matchs', 'games'), sa.ecart_pct >= 10 ? 'vert' : sa.ecart_pct <= -10 ? 'rouge' : '']);
+  if (q.buzz && Math.abs(q.buzz.pct) >= 10) T.push([tt('Recherches', 'Searches'), (q.buzz.pct > 0 ? '+' : '') + q.buzz.pct + ' %', '20 ' + tt('jours', 'days'), q.buzz.pct > 0 ? 'vert' : 'rouge']);
+  const g = q.legende || {};
+  if (T.length < 4 && g.carriere && g.carriere.pts) T.push([tt('Carrière', 'Career'), g.carriere.pts + ' pts', g.coupes ? g.coupes + ' ' + tt('coupe' + (g.coupes > 1 ? 's' : ''), 'Cup' + (g.coupes > 1 ? 's' : '')) : '', 'or']);
+  if (!T.length) return '';
+  return `<div class="jt">${T.slice(0, 4).map(([k, v, s_, c]) => `<div class="jt-k"><span>${k}</span><b class="${c}">${v}</b><small>${esc(s_)}</small></div>`).join('')}</div>
+    <button class="jt-plus" id="jt-plus">${tt('Pourquoi il bouge', 'Why he’s moving')} <i>›</i></button>`;
+}
 function blocPourquoi(q){
   if (!q) return '';
-  const L = [], ord = (n) => n === 1 ? tt('1er', '1st') : n + tt('e', n === 2 ? 'nd' : n === 3 ? 'rd' : 'th');
-  if (q.rang && q.sur) L.push([tt('Indice SlabCoach', 'SlabCoach index'), `${ord(q.rang)} ${tt('sur', 'of')} ${q.sur} ${q.actif ? tt('joueurs actifs', 'active players') : tt('retraités', 'retired')}`]);
+  const L = [], ord = ordinal;
+  if (q.rang && q.sur) L.push([tt('Indice joueur', 'Player index'), `${ord(q.rang)} ${tt('sur', 'of')} ${q.sur} ${q.actif === false ? tt('retraités', 'retired') : tt('joueurs', 'players')}`]);
   const w = q.semaine; if (w && w.mj) L.push([tt('Cette semaine', 'This week'), `${w.pts} pts (${w.b || 0} ${tt('buts', 'goals')}) ${tt('en', 'in')} ${w.mj} ${tt('matchs', 'games')}`]);
   else if (q.cinq != null) L.push([tt('5 derniers matchs', 'Last 5 games'), `${q.cinq} pts`]);
-  const sa = q.saison; if (sa) L.push([tt('Cette saison', 'This season') + (sa.ligue && !/^nhl$/i.test(sa.ligue) ? ' · ' + sa.ligue : ''), `${sa.pts} pts ${tt('en', 'in')} ${sa.mj} ${tt('matchs', 'games')} · ${sa.ppm} ${tt('par match', 'per game')}${sa.ecart_pct != null && Math.abs(sa.ecart_pct) >= 10 ? ` · <b class="${sa.ecart_pct > 0 ? 'vert' : 'rouge'}">${sa.ecart_pct > 0 ? '+' : ''}${sa.ecart_pct} %</b> ${tt('vs ses saisons d’avant', 'vs his past seasons')}` : ''}`]);
+  const sa = q.saison; if (sa && sa.pts != null && sa.ppm > 0) L.push([tt('Cette saison', 'This season') + (sa.ligue && !/^nhl$/i.test(sa.ligue) ? ' · ' + sa.ligue : ''), `${sa.pts} pts ${tt('en', 'in')} ${sa.mj} ${tt('matchs', 'games')} · ${sa.ppm} ${tt('par match', 'per game')}${sa.ecart_pct != null && Math.abs(sa.ecart_pct) >= 10 ? ` · <b class="${sa.ecart_pct > 0 ? 'vert' : 'rouge'}">${sa.ecart_pct > 0 ? '+' : ''}${sa.ecart_pct} %</b> ${tt('vs ses saisons d’avant', 'vs his past seasons')}` : ''}`]);
   if ((q.ligues || []).length > 1) L.push([tt('Ligues', 'Leagues'), q.ligues.map(esc).join(', ')]);
   if (q.buzz && Math.abs(q.buzz.pct) >= 15) L.push([tt('Recherches', 'Searches'), `<b class="${q.buzz.pct > 0 ? 'vert' : 'rouge'}">${q.buzz.pct > 0 ? '+' : ''}${q.buzz.pct} %</b> ${tt('ces 20 derniers jours (Wikipedia)', 'over the last 20 days (Wikipedia)')}`]);
   const g = q.legende || {}, lg = [];
@@ -13977,7 +14217,8 @@ function pastillesIndice(g){
 async function pastillesTendance(z, nom){
   if (!z || !nom) return;
   const t = await API.tendance_joueur(nom).catch(() => null); if (!t || !z.isConnected) return;
-  const pq = $('#j-pq'); if (pq && t.pourquoi) pq.innerHTML = blocPourquoi(t.pourquoi);
+  const pq = $('#j-pq'); if (pq && t.pourquoi) { pq.innerHTML = tuilesJoueur(t.pourquoi);
+    const bp = $('#jt-plus'); if (bp) bp.onclick = () => { vibrer(); ouvrirFeuille(blocPourquoi(t.pourquoi) || `<div class="sous">${tt('Pas encore de faits pour ce joueur.', 'No facts yet for this player.')}</div>`); }; }
   const f = t.forme, p = t.popularite, out = [pastillesIndice(t)].filter(Boolean);
   if (f && f.matchs) out.push(tag(tt('Forme', 'Form') + ' : ' + f.points + ' pts / ' + f.matchs + ' ' + tt('matchs', 'games'), f.points >= 6 ? 'vert' : f.points >= 3 ? 'acc' : ''));
   if (p) out.push(tag(tt('Popularité', 'Buzz') + ' ' + (p.sens === 'hausse' ? '▲' : p.sens === 'baisse' ? '▼' : '=') + ' ' + (p.ratio >= 1 ? '+' : '') + Math.round((p.ratio - 1) * 100) + ' %', p.sens === 'hausse' ? 'vert' : p.sens === 'baisse' ? 'rouge' : ''));
@@ -13999,8 +14240,7 @@ async function vueJoueur(arg){
     ${r.mediane || (t && t.pct != null) ? `<div class="v-hero">
       <div class="vh-g"><span>${tt('Sa carte vaut', 'His card is worth')}</span><b class="${r.mediane ? 'vert' : ''}">${r.mediane ? argent(r.mediane, 0) : '—'}</b><small>${esc(r.requete)}</small></div>
       <div class="vh-d"><div><span>${tt('30 jours', '30 days')}</span><b class="${t && t.pct > 0 ? 'vert' : t && t.pct < 0 ? 'rouge' : ''}">${t && t.pct != null ? (t.pct > 0 ? '+' : '') + t.pct + ' %' : '—'}</b></div></div></div>` : ''}
-    ${r.indice_rs ? blocIndice(r.indice_rs, tt('Son indice, semaine par semaine', 'His index, week by week'), tt(`${r.indice_rs.n_cartes} cartes, chacune comparée à elle-même`, `${r.indice_rs.n_cartes} cards, each compared with itself`)) : ''}
-    <div class="v-actions">${(r.points || []).length >= 3 ? `<button class="pilule" id="j-histo">${icN('graphe')}${tt('Ses ventes', 'His sales')}</button>` : ''}
+    <div class="v-actions">${r.indice_rs ? `<button class="pilule" id="j-ind">${icN('graphe')}${tt('Son indice', 'His index')}</button>` : ''}${(r.points || []).length >= 3 ? `<button class="pilule" id="j-histo">${icN('graphe')}${tt('Ses ventes', 'His sales')}</button>` : ''}
       ${r.cartes.length ? `<button class="pilule" id="j-cartes">${icN('carte')}${tt('Ses cartes', 'His cards')} · ${r.cartes.length}</button>` : ''}
       ${r.alertes.length ? `<button class="pilule" id="j-al">${icN('cloche')}${r.alertes.length} ${tt('alerte', 'alert')}${r.alertes.length > 1 ? 's' : ''}</button>` : ''}</div>
     ${r.deals.length ? `<div class="v-rang-t"><b>${tt('Ses deals maintenant', 'His deals now')}</b><span class="sous">${r.deals.length}</span></div><div class="d-car">${r.deals.map(tuileDeal).join('')}</div>` : ''}
@@ -14008,6 +14248,7 @@ async function vueJoueur(arg){
       <div class="d-car v-car">${r.ventes.slice(0, 10).map(k => `<div class="tuile-c vendue"><div class="img">${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo, 640))}" alt="" loading="lazy" data-oe="rm">` : ''}</div>
         <div class="coin">${capsule(tt('Vendue', 'Sold') + (k.le ? ' · ' + dateCourte(k.le) : ''), 'vert petit')}</div><div class="corps"><div class="t">${esc(k.titre)}</div><div class="ligne-b"><span class="p">${argent(k.prix, 0)}</span></div></div></div>`).join('')}</div>` : ''}
     <div class="acc-reserve">
+      ${r.indice_rs ? `<div id="j-b-ind">${blocIndice(r.indice_rs, tt('Son indice, semaine par semaine', 'His index, week by week'), tt(`${r.indice_rs.n_cartes} cartes, chacune comparée à elle-même`, `${r.indice_rs.n_cartes} cards, each compared with itself`))}</div>` : ''}
       <div id="j-b-histo"><h3>${tt('Ses ventes', 'His sales')}</h3><div class="sous">${esc(r.requete)} · ${r.nb_ventes} ${tt('ventes réelles', 'real sales')}</div>${courbeVentes(r.points, {h:150})}</div>
       ${r.cartes.length ? `<div id="j-b-cartes"><h3>${tt('Ses cartes à chasser', 'His cards to hunt')}</h3><div class="sous">${tt('Touche une carte pour voir sa valeur.', 'Tap a card to see its value.')}</div><div class="liste">${r.cartes.map(c => `<a class="rangee" href="#valeur/${encodeURIComponent(r.joueur + ' ' + c.carte)}">
         <span class="milieu"><span class="nom">${esc(c.carte)}${c.numero ? ' #' + esc(c.numero) : ''}</span><span class="det">${esc(c.produit)}${c.tirage ? ' · /' + c.tirage : ''}</span></span>
@@ -14017,7 +14258,7 @@ async function vueJoueur(arg){
     </div>
   </section>`;
   pastillesTendance($('#j-tend'), r.joueur);                  // 10 nov 2026 : forme LNH + popularite
-  for (const [b, bl] of [['j-histo', 'j-b-histo'], ['j-cartes', 'j-b-cartes'], ['j-tout-v', 'j-b-vend'], ['j-al', 'j-b-al']]) { const x = $('#' + b); if (x) x.onclick = () => feuilleBloc($('#' + bl)); }
+  for (const [b, bl] of [['j-ind', 'j-b-ind'], ['j-histo', 'j-b-histo'], ['j-cartes', 'j-b-cartes'], ['j-tout-v', 'j-b-vend'], ['j-al', 'j-b-al']]) { const x = $('#' + b); if (x) x.onclick = () => feuilleBloc($('#' + bl)); }
   $('#j-alerte').onclick = () => feuilleAlerte(r.requete, r.mediane ? Math.round(r.mediane * 0.8) : '');
   $$('[data-ind-aide]').forEach(b => b.onclick = expliquerIndice);
   remplirPortraits(V());
@@ -14516,10 +14757,11 @@ async function vueReglages(arg){
     <div class="profil-rac">${[
       ...(S.mode !== 'acheteur' ? [['#bilan', ICO_H.bilan, tt('Bilan', 'Report')]] : []),
       ...(S.mode !== 'acheteur' && act.magasin ? [['#comptoir', ICO_H.comptoir, tt('Comptoir', 'Counter')]] : []),
+      ...(S.mode !== 'acheteur' ? [['calc', icN('dollar'), tt('Profit', 'Profit')]] : []),
       ['#breaks/liste', ICO_H.breaks, tt('Mes breaks', 'My breaks')],
       ['#guide', ICO_H.guide, 'Guide'],
       ...(S.forfait && S.forfait.admin ? [['#admin', '✦', 'Admin']] : []),
-    ].map(([h, ic, t]) => h === 'alertes' ? `<button class="pr-r" data-alertes><span class="pr-i">${ic}</span>${t}</button>` : `<a class="pr-r" href="${h}"><span class="pr-i">${ic}</span>${t}</a>`).join('')}</div>
+    ].map(([h, ic, t]) => h === 'calc' ? `<button class="pr-r" data-calc><span class="pr-i">${ic}</span>${t}</button>` : h === 'alertes' ? `<button class="pr-r" data-alertes><span class="pr-i">${ic}</span>${t}</button>` : `<a class="pr-r" href="${h}"><span class="pr-i">${ic}</span>${t}</a>`).join('')}</div>
     <div class="section">${tt('Réglages', 'Settings')}</div>
     <div class="r-bloc" id="g-ebay">${roue}</div>
     <div class="r-bloc" id="g-forfait" hidden></div>

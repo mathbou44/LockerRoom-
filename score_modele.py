@@ -177,11 +177,33 @@ def numeriques2(x, aujourdhui=None):
 
 
 # -- 2. le modele exporte (sans scikit-learn) --------------------------------------------------------------------------------
+def _empreinte():
+    """La date du modele reappris sur le disque (ou 0) : quand le processus de la nuit en ecrit un nouveau, chaque
+    travailleur du serveur le recharge tout seul (verifie au plus une fois par 2 minutes)."""
+    try:
+        import score_appris
+        return os.path.getmtime(os.path.join(score_appris.dossier(), "modele.npz"))
+    except (OSError, ImportError):
+        return 0.0
+
+
 def charger():
     """11 nov 2026 : le modele REAPPRIS (disque du serveur, score_appris) s'il est la ; sinon celui du depot (v7)."""
+    import time as _t
+    if (_M["m"] is not None or _M["essai"]) and _t.time() - _M.get("vu_le", 0) > 120:
+        _M["vu_le"] = _t.time()
+        if _empreinte() != _M.get("empreinte", 0.0):
+            recharger()
     if _M["m"] is not None or _M["essai"]:
         return _M["m"]
     _M["essai"] = True
+    _M["vu_le"] = _t.time()
+    _M["empreinte"] = _empreinte()
+    try:
+        import score_appris
+        score_appris._CACHE["vois"].clear()          # les vecteurs des voisins suivent le vocabulaire du modele
+    except Exception:
+        pass
     _M["m"] = None
     try:
         import score_appris
@@ -210,8 +232,16 @@ def _lire(npz, voc_ch):
     return {"z": zz, "vw": voc["mots"], "vc": voc["car"], "vt": voc.get("tok") or {}, "nw": len(voc["mots"]), "v": int(zz.get("version", 1))}
 
 
+def modele_depot():
+    """Le modele livre avec le code (v7, sans etat) : la reference du 1er reapprentissage."""
+    try:
+        return _lire(CHEMIN_NPZ, CHEMIN_VOC)
+    except (OSError, ValueError, KeyError):
+        return None
+
+
 def recharger():
-    _M.update(m=None, essai=False)
+    _M.update(m=None, essai=False, vu_le=0, empreinte=0.0)
 
 
 _TOK = re.compile(r'(?u)\b[\w/]+\b')
@@ -261,23 +291,27 @@ def _tfidf(grams, voc, idf, decal):
 
 
 def _arbres(z, X):
-    """La prediction d'un HistGradientBoosting exporte : base + la somme des feuilles atteintes (vectorise par arbre)."""
+    """La prediction des arbres exportes (scikit-learn ou LightGBM) : base + la somme des feuilles atteintes.
+    11 nov 2026 (vitesse) : TOUS les arbres avancent ensemble, niveau par niveau (lignes x arbres en une matrice)."""
     n = X.shape[0]
     out = np.full(n, float(z["base"]))
     if not n:
         return out
     debuts, val, fi, th, ml, gch, drt, feuille = z["debuts"], z["valeur"], z["feature"], z["seuil"], z["manque_gauche"], z["gauche"], z["droite"], z["feuille"]
     mt = z.get("type_manque")
-    lignes = np.arange(n)
-    for a in range(len(debuts) - 1):
-        d0 = debuts[a]
-        i = np.full(n, d0, dtype=np.int64)
+    d0 = np.asarray(debuts[:-1], dtype=np.int64)
+    T = len(d0)
+    for r0 in range(0, n, 256):                         # par paquets de lignes : la memoire reste petite
+        Xr = X[r0:r0 + 256]
+        m = Xr.shape[0]
+        i = np.broadcast_to(d0, (m, T)).copy()
+        lig = np.broadcast_to(np.arange(m)[:, None], (m, T))
         for _ in range(64):
             nf = feuille[i] == 0
             if not nf.any():
                 break
             k = i[nf]
-            v = X[lignes[nf], fi[k]]
+            v = Xr[lig[nf], fi[k]]
             if mt is None:
                 gauche = np.where(np.isnan(v), ml[k] == 1, v <= th[k])
             else:                     # LightGBM : NaN -> 0 (« None »), 0 et NaN manquants (« Zero »), NaN manquant (« NaN »)
@@ -286,8 +320,9 @@ def _arbres(z, X):
                 manque = np.where(t_ == 2, nan_, np.where(t_ == 1, nan_ | (v == 0), False))
                 vv = np.where(nan_, 0.0, v)
                 gauche = np.where(manque, ml[k] == 1, vv <= th[k])
-            i[nf] = d0 + np.where(gauche, gch[k], drt[k])
-        out += val[i]
+            base_t = np.broadcast_to(d0, (m, T))[nf]
+            i[nf] = base_t + np.where(gauche, gch[k], drt[k])
+        out[r0:r0 + m] += val[i].sum(axis=1)
     return out
 
 
@@ -314,9 +349,9 @@ def texte_pred(bruts, m=None):
     return _matrice(bruts, m) @ m["z"]["ridge_w"].astype(np.float64) + float(m["z"]["ridge_b"])
 
 
-def predire(bruts, pres=None):
-    """[brut] -> log du « niveau de demande » predit (echelle interne), ou None sans modele."""
-    m = charger()
+def predire(bruts, pres=None, m=None):
+    """[brut] -> log du « niveau de demande » predit (echelle interne), ou None sans modele. m : un autre modele charge."""
+    m = m or charger()
     if not m:
         return None
     z = m["z"]
@@ -377,7 +412,25 @@ def scores(titres, joueurs=None):
     b = [brut(t, j, base=base) for t, j in zip(titres, joueurs)]
     p = predire(b, pres)
     q = m["z"]["quantiles"]
-    return [int(round(100 * np.searchsorted(q, v) / len(q))) for v in p]
+    return [int(round(100 * np.searchsorted(q, v) / len(q))) if informatif(t, b=bb) else None for v, t, bb in zip(p, titres, b)]
+
+
+# 12 nov 2026 (nuit de revue) : « Test » sortait a 85 (« tres recherchee ») et « Nike shoes size 10 » aussi haut : sans
+# joueur connu, sans annee et sans un mot de carte, le modele extrapole. Ces titres-la n'ont pas de score (None) : l'app
+# dit « pas assez d'infos » au lieu d'inventer.
+_MOTS_CARTE = re.compile(r"\b(rookie|rc|auto|autograph|patch|jersey|young guns|yg|psa|bgs|sgc|cgc|tag|refractor|prizm|upper deck|ud|"
+                         r"o-pee-chee|opc|topps|panini|the cup|sp authentic|spx|parkhurst|bowman|chrome|parallel|insert|numbered|ssp|"
+                         r"canvas|exclusives|high gloss|future watch|logo|card|carte)\b|/\s*\d{1,4}\b|#\s*\d+")
+
+
+def informatif(titre, joueur=None, b=None):
+    """Le titre donne-t-il assez d'indices pour un score ? (un joueur connu, une annee, ou un mot de carte)"""
+    if b is None:
+        import demande_legale as dl
+        b = brut(titre or "", joueur, base=(dl.lire() or {}).get("joueurs") or {})
+    if not isinstance(b, dict) or b.get("exclu"):
+        return False
+    return bool(b.get("connu") or b.get("annee") or _MOTS_CARTE.search((titre or "").lower()))
 
 
 def score(titre, joueur=None):

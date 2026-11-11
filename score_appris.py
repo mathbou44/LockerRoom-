@@ -413,8 +413,10 @@ def _moteur():
     f = os.environ.get("LR_SCORE_MOTEUR")
     if f in ("lgb", "lgb_leger", "hgb"):
         return f
-    import importlib.util
-    if importlib.util.find_spec("lightgbm") is None:
+    try:
+        import importlib
+        importlib.import_module("lightgbm")          # 11 nov 2026 : un vrai import (libgomp peut manquer sur le serveur)
+    except Exception:
         return "hgb"
     try:
         with open("/proc/meminfo") as fi:
@@ -532,59 +534,83 @@ def caracteristiques(bruts, vec_car, aujourdhui=None, xv=False):
         mem = Memoire(d)
         for i, b in enumerate(bruts):
             out[i, :len(NOMS_MEM)] = mem.lire(b, jour)
+        # 11 nov 2026 (vitesse : 300 annonces en 20 s -> moins d'une seconde) : les similarites en matrices creuses, par
+        # joueur et par bloc (les candidats sont gardes en matrice pour la journee)
+        Q = _csr([vec_car(b["t"]) for b in bruts])
+        par_j = {}
         for i, b in enumerate(bruts):
-            jo = b.get("joueur")
-            if not jo:
+            if b.get("joueur"):
+                par_j.setdefault(b["joueur"], []).append(i)
+        for jo, ix in par_j.items():
+            C = _vois_du(c, jo, jour)
+            if C is None:
                 continue
-            l = _vois_du(c, jo, jour)
-            if not l:
-                continue
-            v0 = vec_car(b["t"])
-            sims = np.array([sum(x * vv.get(k, 0.0) for k, x in v0.items()) for _d, vv, _y in l])
-            out[i, nm:nm + nv] = _vois_feats(sims, np.array([x[2] for x in l]), jour - np.array([x[0] for x in l]))
+            S = (Q[ix] @ C["M"].T).toarray()
+            for q, i in enumerate(ix):
+                out[i, nm:nm + nv] = _vois_feats(S[q], C["y"], jour - C["d"])
         if xv:
             ij = NOMS_MEM.index("j_m1000")
+            par_b = {}
             for i, b in enumerate(bruts):
-                l = _xv_du(c, bloc_xv(b), jour)
-                if not l:
+                par_b.setdefault(bloc_xv(b), []).append(i)
+            for bk, ix in par_b.items():
+                C = _xv_du(c, bk, jour)
+                if C is None:
                     continue
-                v0 = vec_car(b["t"])
-                sims = np.array([sum(x * vv.get(k, 0.0) for k, x in v0.items()) for vv, _v in l])
-                out[i, nm + nv:] = _xv_feats(sims, np.array([x[1] for x in l]), out[i, ij])
+                S = (Q[ix] @ C["M"].T).toarray()
+                for q, i in enumerate(ix):
+                    out[i, nm + nv:] = _xv_feats(S[q], C["v"], out[i, ij])
     finally:
         c.close()
     return out
 
 
-def _xv_du(c, bk, jour):
+def _csr(vecs, n=None):
+    """[{j: x}] -> matrice creuse (lignes = vecteurs du modele, deja normalises)."""
+    import scipy.sparse as sp
     import score_modele as sm
-    cle = ("xv", bk)
+    m = sm.charger()
+    n = n or (len(m["vc"]) if m else 1)
+    ri, ci, va = [], [], []
+    for r_, v in enumerate(vecs):
+        for j, x in v.items():
+            ri.append(r_)
+            ci.append(j)
+            va.append(x)
+    return sp.csr_matrix((va, (ri, ci)), shape=(len(vecs), n))
+
+
+def _cache_jour(jour):
     if _CACHE["vois_jour"] != jour:
         _CACHE["vois"].clear()
         _CACHE["vois_jour"] = jour
+    if len(_CACHE["vois"]) > 600:
+        _CACHE["vois"].clear()
+
+
+def _xv_du(c, bk, jour):
+    import score_modele as sm
+    cle = ("xv", bk)
+    _cache_jour(jour)
     if cle not in _CACHE["vois"]:
-        if len(_CACHE["vois"]) > 400:
-            _CACHE["vois"].clear()
         try:
             rows = c.execute("SELECT t, v FROM xvois WHERE bloc = ? AND jour < ? ORDER BY jour DESC LIMIT ?", (bk, jour, XV_MAX)).fetchall()
         except sqlite3.OperationalError:
             rows = []
         m = sm.charger()
-        _CACHE["vois"][cle] = [(sm.vec_car(t, m), v) for t, v in rows] if m else []
+        _CACHE["vois"][cle] = {"M": _csr([sm.vec_car(t, m) for t, _v in rows]), "v": np.array([v for _t, v in rows])} if (m and rows) else None
     return _CACHE["vois"][cle]
 
 
 def _vois_du(c, joueur, jour):
     import score_modele as sm
-    if _CACHE["vois_jour"] != jour:
-        _CACHE["vois"].clear()
-        _CACHE["vois_jour"] = jour
+    _cache_jour(jour)
     if joueur not in _CACHE["vois"]:
-        if len(_CACHE["vois"]) > 400:
-            _CACHE["vois"].clear()
         rows = c.execute("SELECT jour, t, y FROM vois WHERE joueur = ? AND jour < ? ORDER BY jour DESC LIMIT ?", (joueur, jour, VOIS_MAX)).fetchall()
+        rows = list(reversed(rows))
         m = sm.charger()
-        _CACHE["vois"][joueur] = [(d, sm.vec_car(t, m), y) for d, t, y in reversed(rows)] if m else []
+        _CACHE["vois"][joueur] = {"M": _csr([sm.vec_car(t, m) for _d, t, _y in rows]), "y": np.array([y for _d, _t, y in rows]),
+                                  "d": np.array([d for d, _t, _y in rows])} if (m and rows) else None
     return _CACHE["vois"][joueur]
 
 
@@ -737,7 +763,22 @@ def reapprendre(ventes=None, aujourdhui=None, log=print, iters=1000):
     mz = r["mesure"]
     e.update(mesure=mz)
     prec = [x["mesure"]["precision"] for x in historique().get("essais") or [] if x.get("accepte") and x.get("mesure")]
-    seuil = max(0.90, (prec[-1] - 0.01) if prec else 0.0)
+    # 11 nov 2026 : le garde-fou compare sur les MEMES ventes jamais vues : au 1er reapprentissage, le modele du depot (v7)
+    # est mesure sur la meme fenetre ; ensuite, la derniere mesure acceptee (moins 0,01 : la fenetre change chaque semaine)
+    ref = None
+    if not prec:
+        try:
+            import score_modele as sm
+            import demande_legale as dl
+            md = sm.modele_depot()
+            te = jours >= coupe
+            if md:
+                p0 = sm.predire([b for b, a in zip(bruts, te) if a], dl.presence_catalogue(), m=md)
+                ref = bilan(p0, y[te])["precision"]
+                e.update(reference_depot=ref)
+        except Exception as ex:
+            log("reference : " + repr(ex)[:120])
+    seuil = max(0.85, ref - 0.002 if ref is not None else 0.0, (prec[-1] - 0.01) if prec else 0.0)
     if mz["precision"] < seuil:
         e.update(accepte=False, raison=f"precision {mz['precision']} sous le seuil {round(seuil, 4)} : l'ancien modele reste")
         _hist_ajouter(e)
@@ -797,14 +838,6 @@ def statut():
             "dernier_jour": m.get("dernier_jour"), "essais": h[-6:]}
 
 
-if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "reapprendre":
-    try:
-        print(json.dumps(reapprendre(log=lambda s: print(s, flush=True))), flush=True)
-    finally:
-        try:
-            os.remove(_verrou_fichier())
-        except OSError:
-            pass
 
 
 # -- 8. LightGBM -> les memes tableaux que les arbres de scikit-learn (le serveur n'a besoin que de numpy) -----------------
@@ -833,3 +866,22 @@ def exporter_lgb(booster):
     return dict(debuts=np.array(deb, np.int64), valeur=np.array(val), feature=np.array(fea, np.int32), seuil=np.array(seu),
                 manque_gauche=np.array(mg, np.uint8), type_manque=np.array(tm, np.int8), gauche=np.array(ga, np.int32),
                 droite=np.array(dr, np.int32), feuille=np.array(fe, np.uint8), base=np.float64(0.0))
+
+
+# -- 9. le processus de la nuit (lance par taches_si_besoin) : EN DERNIER, apres toutes les definitions -------------------
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "reapprendre":
+    try:
+        print(json.dumps(reapprendre(log=lambda s: print(s, flush=True))), flush=True)
+    except Exception as ex:                  # 11 nov 2026 : une panne de la nuit est notee (Admin > Validation), jamais muette
+        import traceback
+        traceback.print_exc()
+        try:
+            _hist_ajouter({"le": datetime.now().isoformat(timespec="seconds"), "ventes": 0, "accepte": False,
+                           "raison": "erreur : " + repr(ex)[:200]})
+        except Exception:
+            pass
+    finally:
+        try:
+            os.remove(_verrou_fichier())
+        except OSError:
+            pass

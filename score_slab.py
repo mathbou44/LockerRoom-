@@ -70,10 +70,12 @@ def score(titre, joueur=None):
         sm = score_modele.score(titre or "", joueur)
         if sm is not None:
             total = sm
+        elif score_modele.charger() and not score_modele.informatif(titre or "", joueur):
+            total = None                     # 12 nov 2026 : pas assez d'indices dans le titre : pas de score invente
     except Exception as e:
         print("Score modele : " + repr(e), flush=True)
     nom = j.title() if j and j == j.lower() else j
-    return {"score": int(round(total)), "joueur": nom or None, "indice": ij.get("indice") if ij else None,
+    return {"score": int(round(total)) if total is not None else None, "joueur": nom or None, "indice": ij.get("indice") if ij else None,
             "pastilles": (ij or {}).get("pastilles") or [], "semaine": (ij or {}).get("semaine"), "carte": c}
 
 

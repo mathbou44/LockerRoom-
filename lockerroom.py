@@ -61,6 +61,8 @@ CHEMIN_DB = os.path.join(DOSSIER, "lockerroom.db")
 _verrou = threading.RLock()
 CATEGORIE_CARTES = "261328"   # eBay : Sports Trading Card Singles
 
+# 12 nov 2026 (revue de securite) : taille max d'une valeur de reglage (JSON) ; les plus longues (listes de joueurs) font quelques Ko
+REGLAGE_MAX_OCTETS = 64 * 1024
 REGLAGES_DEFAUT = {
     "prix_auto": {},                                            # 27 oct 2026 : mode Auto des prix eBay (voir prix_auto_regler)
     "tuto_vendeur": 0, "tuto_acheteur": 0,                      # 31 oct 2026 : le tour de l'app deja vu (par compte)
@@ -290,6 +292,20 @@ def vue_simulee():
     except Exception:
         pass
     return None
+
+
+def _vendeur_info(x):
+    """11 nov 2026 (« capter tous les deals et encheres de petits vendeurs ») : le vendeur d'une annonce et s'il est « petit »
+    (la meme regle que le chasseur de deals de l'admin : moins de deals.PETIT_VENDEUR evaluations), jamais un vendeur a
+    risque (moins de 10 evaluations ou moins de 97 % positives : deals.vendeur_risque)."""
+    import deals as _dv
+    sc = x.get("vendeur_score")
+    try:
+        sc = int(sc) if sc not in (None, "") else None
+    except (TypeError, ValueError):
+        sc = None
+    petit = sc is not None and sc < _dv.PETIT_VENDEUR and not _dv.vendeur_risque(x)
+    return {"vendeur": x.get("vendeur") or None, "vendeur_score": sc, "petit_vendeur": petit}
 
 
 def ebay_prix_actif(api=None):
@@ -810,7 +826,10 @@ class Api:
             try:
                 for k, v in (nouveaux or {}).items():
                     if k in REGLAGES_DEFAUT:
-                        c.execute("INSERT OR REPLACE INTO reglages VALUES (?,?)", (k, json.dumps(v)))
+                        j = json.dumps(v)
+                        if len(j) > REGLAGE_MAX_OCTETS:         # 12 nov 2026 (revue) : une valeur geante ne gonfle pas la base
+                            raise ValueError("Réglage trop long : " + k)
+                        c.execute("INSERT OR REPLACE INTO reglages VALUES (?,?)", (k, j))
                 c.commit()
             finally:
                 c.close()
@@ -983,8 +1002,8 @@ class Api:
         with _verrou:
             c = self._db()
             try:
-                for j, n in (valeurs or {}).items():
-                    c.execute("INSERT OR REPLACE INTO etoiles VALUES (?,?)", (j, max(1, min(5, int(n)))))
+                for j, n in list((valeurs or {}).items())[:2000]:        # 12 nov 2026 (revue) : bornes
+                    c.execute("INSERT OR REPLACE INTO etoiles VALUES (?,?)", (str(j)[:80], max(1, min(5, int(n)))))
                 c.commit()
             finally:
                 c.close()
@@ -1057,7 +1076,9 @@ class Api:
     def deals_vendeurs_liste(self):
         """30 oct 2026 - pour tous : les gros vendeurs suivis (prioritaires d'abord) et ceux ou l'utilisateur ramasse."""
         import deals as _d
-        vs = sorted(_d.vendeurs_suivis(), key=lambda v: _d.rang_vendeur(v))
+        # 12 nov 2026 (revue : on ne nomme pas les vendeurs prioritaires) : l'ordre de priorite reste a l'admin ; les autres
+        # voient la liste par ordre alphabetique
+        vs = sorted(_d.vendeurs_suivis(), key=(lambda v: _d.rang_vendeur(v)) if self._est_admin() else (lambda v: str(v).lower()))
         return {"ok": True, "vendeurs": vs, "ramassage": sorted(self._chez_ramassage())}
 
     def deals_ramassage(self, liste):
@@ -2759,6 +2780,34 @@ class Api:
     CHAMPS_CARTE = ("titre", "joueur", "annee", "marque", "set_nom", "numero", "parallele", "tirage", "auto", "grade", "equipe",
                     "cout", "valeur", "prix_demande", "emplacement", "statut", "item_number", "sku", "consignataire_id", "source",
                     "note", "client_id", "sport", "recrue", "relique", "cert", "photo", "photos", "photos_orig", "studio_v")
+
+    _INV_SCORES = {}
+
+    def inventaire_scores(self):
+        """12 nov 2026 (nuit de revue) : le Score SlabIQ de chaque carte encore chez lui (pas les vendues), d'un seul coup
+        (le modele fait 300 titres en moins d'une seconde) ; garde tant que l'inventaire ne change pas (par compte). Une
+        pastille sur chaque carte de l'inventaire : ce qui est recherche se voit tout de suite. Jamais un prix."""
+        with _verrou:
+            c = self._db()
+            try:
+                L = [tuple(r) for r in c.execute("SELECT id, titre, joueur FROM cartes WHERE statut!='Vendue' ORDER BY id DESC LIMIT 1500")]
+            finally:
+                c.close()
+        import hashlib
+        cle = (comptes.courant() or "local") + ":" + hashlib.md5(json.dumps(L).encode()).hexdigest()
+        if cle in Api._INV_SCORES:
+            return Api._INV_SCORES[cle]
+        out = {}
+        try:
+            import score_modele
+            sc = score_modele.scores([str(t or "") for _, t, _ in L], [j or None for _, _, j in L]) if L else []
+            out = {str(i): s_ for (i, _, _), s_ in zip(L, sc or []) if s_ is not None}
+        except Exception as e:
+            print("Scores de l'inventaire : " + repr(e), flush=True)
+        if len(Api._INV_SCORES) > 500:
+            Api._INV_SCORES.clear()
+        Api._INV_SCORES[cle] = r = {"ok": True, "scores": out}
+        return r
 
     def inventaire_liste(self, filtres=None):
         f = filtres or {}
@@ -4637,7 +4686,7 @@ class Api:
         faits, erreur = 0, None
         import cartes_match
         import deals as _deals
-        for a in a_faire[:int(n)]:
+        for a in a_faire[:max(0, min(60, int(n or 40)))]:   # 12 nov 2026 (revue) : 60 appels eBay au plus par tour
             carte = cartes_match.est_carte(a["titre"])                        # 24 oct 2026 : une carte -> seulement la MEME carte
             # 27 oct 2026 (Forsberg Fabrics AUTO compare a des Fabrics sans auto) : l'auto connue de la fiche compte meme si le
             # titre ne le dit pas
@@ -5679,6 +5728,8 @@ class Api:
     def ebay_appels(self):
         """Appels eBay du jour (toute l'application) face aux limites, et efficacite du cache."""
         import appels_ebay
+        if comptes.MULTI and not self._est_admin():        # 12 nov 2026 (revue) : les chiffres de toute l'app : l'admin seulement
+            return {}
         return appels_ebay.resume()
 
     def ebay_avis_statut(self):
@@ -5708,7 +5759,7 @@ class Api:
         e = etats.get(k)
         if e and e.get("actif"):
             return {"ok": True, "deja": True, **e}
-        etats[k] = e = {"actif": True, "faits": 0, "total": int(n or 20), "creees": 0, "erreurs": []}
+        etats[k] = e = {"actif": True, "faits": 0, "total": max(1, min(50, int(n or 20))), "creees": 0, "erreurs": []}
         ctx = contextvars.copy_context()
 
         def tache():
@@ -5882,9 +5933,11 @@ class Api:
                             "lieu": x.get("lieu")})
             return {"vendeur": v, "annonces": ann[:24]}
 
-        def un_joueur(f, budget_defaut=None, limite=40):
+        # 11 nov 2026 (Mathieu : « juste 80 cartes dans le Radar ? ») : chaque recherche eBay rapporte deja jusqu'a 200 annonces
+        # (meme cout) ; on en garde beaucoup plus qu'avant (24 -> 60 par joueur, 12 -> 30 pour les rangees automatiques)
+        def un_joueur(f, budget_defaut=None, limite=60):
             l = self._radar_annonces(f, prof.get("collectionne"), prof.get("prix_min"), prof.get("prix_max") or budget_defaut, limite=limite)
-            return {"joueur": f, "annonces": l[:24], "n": len(l), **self._pastilles_joueur(f)}
+            return {"joueur": f, "annonces": l[:limite], "n": len(l), **self._pastilles_joueur(f)}
 
         taches = [("alerte", a, lambda a=a: une_alerte(a)) for a in al]
         taches += [("vendeur", v, lambda v=v: un_vendeur(v)) for v in vendeurs]
@@ -5898,14 +5951,14 @@ class Api:
                 decouvrir_noms = [x["nom"] for x in self._radar_top(4)]
             except Exception as e:
                 erreurs.append("decouvrir : " + repr(e)[:120])
-        taches += [("decouvrir", n, lambda n=n: un_joueur(n, 100, 12)) for n in decouvrir_noms]
+        taches += [("decouvrir", n, lambda n=n: un_joueur(n, 100, 30)) for n in decouvrir_noms]
         try:
             import indice_joueurs
             deja = set(fav) | set(decouvrir_noms)
             chauds_noms = [x["nom"] for x in indice_joueurs.top(8, "en_feu", actifs=True) if x["nom"] not in deja][:4]
         except Exception:
             chauds_noms = []
-        taches += [("chaud", n, lambda n=n: un_joueur(n, 100, 12)) for n in chauds_noms]
+        taches += [("chaud", n, lambda n=n: un_joueur(n, 100, 30)) for n in chauds_noms]
         # 11 nov 2026 (Mathieu : « un tres bon jeune joueur en periode difficile, c'est un bon moment pour acheter ») : les
         # jeunes talents EN CREUX ou qui en sortent (stats LNH publiques, jamais un prix) ; « a surveiller », jamais « achete »
         try:
@@ -5915,7 +5968,8 @@ class Api:
             creux_noms = [x["nom"] for x in l_cx if x["nom"] not in deja2][:3]
         except Exception:
             creux_noms = []
-        taches += [("creux", n, lambda n=n: un_joueur(n, 100, 12)) for n in creux_noms]
+        taches += [("creux", n, lambda n=n: un_joueur(n, 100, 30)) for n in creux_noms]
+        taches.append(("petits", "tous", lambda: self._radar_petits(prof)))
         resultats, msgs = {}, []
         if taches:
             ex = ThreadPoolExecutor(max_workers=8)
@@ -5958,7 +6012,9 @@ class Api:
                 g["creux"] = (indice_joueurs.indice(g["joueur"]) or {}).get("creux")
             except Exception:
                 pass
-        chauds_creux = chauds + creux_l
+        r_p = resultats.get(("petits", "tous"))
+        petits = (r_p or {}).get("annonces") or [] if isinstance(r_p, dict) else []
+        chauds_creux = chauds + creux_l + ([{"annonces": petits}] if petits else [])
         for x in out + [y for g in pour_toi + decouvrir + chauds_creux + chasses + types for y in g.get("annonces") or []] \
                 + [y for v in vend for y in v.get("annonces") or []]:
             try:
@@ -5987,7 +6043,7 @@ class Api:
             except Exception:
                 pass
         return {"ok": True, "deals": out[:120], "cibles": groupes, "vendeurs": vend, "pour_toi": pour_toi,
-                "decouvrir": decouvrir, "chauds": chauds, "creux": creux_l, "chasses": chasses, "types": types, "alerte_feu": feu, "pays": pays,
+                "decouvrir": decouvrir, "chauds": chauds, "creux": creux_l, "petits": petits, "chasses": chasses, "types": types, "alerte_feu": feu, "pays": pays,
                 "profil": {k: prof.get(k) for k in ("collectionne", "favoris", "prix_min", "prix_max")},
                 "profil_vide": not (prof.get("favoris") or prof.get("collectionne") or prof.get("prix_max")),
                 "partiel": bool(erreurs), "erreur_txt": msgs[0] if msgs else None,
@@ -6066,8 +6122,8 @@ class Api:
         q = re.sub(r"\s+", " ", f"{prod.get('nom') or ''} {ch['sous'] if cartes_match.norm(ch['sous']) not in cartes_match.norm(prod.get('nom') or '') else ''}").strip()[:100]
         res = []
         for ench in (False, True):
-            res += ebay_compte.rechercher(q, categorie=CATEGORIE_CARTES, limite=50 if ench else 200, fond=False, encheres=ench,
-                                          recentes=not ench, prix_max=prof.get("prix_max")) or []
+            res += ebay_compte.rechercher(q, categorie=CATEGORIE_CARTES, limite=100 if ench else 200, fond=False, encheres=ench,
+                                          recentes=not ench, prix_max=prof.get("prix_max"), pays=self._pays_radar()) or []
         vus, l = set(), []
         for x in res:
             t = " " + cartes_match.norm(x.get("titre") or "") + " "
@@ -6106,7 +6162,7 @@ class Api:
                    "gradees": "(psa, bgs, sgc, cgc)"}
     SPORT_ASPECT = {"hockey": "Sport:{Ice Hockey}", "basket": "Sport:{Basketball}", "baseball": "Sport:{Baseball}", "football": "Sport:{Football}"}
 
-    def _radar_type(self, k, prof, limite=24):
+    def _radar_type(self, k, prof, limite=80):
         import cartes_match
         q = self.RADAR_TYPES.get(k)
         if not q:
@@ -6117,7 +6173,7 @@ class Api:
         res = []
         for ench in (False, True):
             res += ebay_compte.rechercher(q, categorie=CATEGORIE_CARTES, limite=100 if ench else 200, fond=False, encheres=ench,
-                                          recentes=not ench, prix_max=pmax, prix_min=pmin, aspects=asp) or []
+                                          recentes=not ench, prix_max=pmax, prix_min=pmin, aspects=asp, pays=self._pays_radar()) or []
 
         def bon(t):
             d = cartes_match._decoder_memo(t)
@@ -6140,10 +6196,53 @@ class Api:
                     pass
             vus.add(iid)
             out.append({"item_id": iid, "titre": x.get("titre"), "total": tot, "photo": x.get("photo"), "url": x.get("url"),
-                        "encan": bool(x.get("encan")), "fin": x.get("fin"), "mises": x.get("mises"), "lieu": x.get("lieu")})
+                        "encan": bool(x.get("encan")), "fin": x.get("fin"), "mises": x.get("mises"), "lieu": x.get("lieu"),
+                        **_vendeur_info(x)})
         out.sort(key=lambda x: (0, str(x.get("fin") or "")) if x["encan"] else (1, ""))
         return {"type": k, "annonces": out[:limite], "n": len(out)}
+
+    # 11 nov 2026 (Mathieu : « on doit absolument capter tous les deals et encheres de petits vendeurs ») : les encans des
+    # vendeurs avec peu d'evaluations (souvent mal titres, peu vus, peu de mises) dans le sport et le budget de l'utilisateur.
+    # Montrer des annonces telles quelles : permis par la licence eBay ; aucun prix juge ici.
+    PETITS_REQUETES = {"hockey": ("hockey card", "hockey rookie", "hockey auto", "upper deck hockey", "nhl card")}
+
+    def _radar_petits(self, prof, limite=100):
+        import cartes_match
+        sport = self.reglages_lire().get("sport") or "hockey"
+        asp = self.SPORT_ASPECT.get(sport)
+        pmax, pmin = prof.get("prix_max") or 100, prof.get("prix_min")
+        res = []
+        for q in self.PETITS_REQUETES.get(sport, (sport + " card",)):
+            try:
+                res += ebay_compte.rechercher(q, categorie=CATEGORIE_CARTES, limite=200, fond=False, encheres=True,
+                                              prix_max=pmax, prix_min=pmin, aspects=asp, pays=self._pays_radar()) or []
+            except (RuntimeError, OSError, TypeError):
+                continue
+        maint = time.time()
+        vus, out = set(), []
+        for x in res:
+            iid = str(x.get("item_id") or "")
+            tot = round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2)
+            v = _vendeur_info(x)
+            if not iid or iid in vus or not tot or tot > pmax * 1.0001 or (pmin and tot < pmin) or not v.get("petit_vendeur"):
+                continue
+            if cartes_match._decoder_memo(x.get("titre") or "").get("exclu"):
+                continue
+            try:
+                if x.get("fin") and datetime.fromisoformat(str(x["fin"]).replace("Z", "+00:00")).timestamp() < maint:
+                    continue
+            except ValueError:
+                pass
+            vus.add(iid)
+            out.append({"item_id": iid, "titre": x.get("titre"), "total": tot, "photo": x.get("photo"), "url": x.get("url"),
+                        "encan": True, "fin": x.get("fin"), "mises": x.get("mises"), "lieu": x.get("lieu"), **v})
+        out.sort(key=lambda x: str(x.get("fin") or ""))
+        return {"annonces": out[:limite], "n": len(out)}
     RADAR_MAX_JOUEURS = 10
+
+    def _pays_radar(self):
+        """11 nov 2026 (Mathieu : « l'option Canada / USA ») : le Radar cherche sur le eBay du pays de l'acheteur (port, taxes)."""
+        return "US" if str(self.reglages_lire().get("pays") or "CA").upper() == "US" else "CA"
 
     def _radar_requete(self, nom, coll):
         mots = list(dict.fromkeys(m for k in (coll or []) for m in self.RADAR_MOTS.get(k, ())))
@@ -6157,8 +6256,8 @@ class Api:
         res = []
         for ench in (False, True):
             try:
-                res += ebay_compte.rechercher(q, categorie=CATEGORIE_CARTES, limite=50 if ench else 100, fond=False, encheres=ench,
-                                              recentes=not ench, prix_max=pmax, prix_min=pmin) or []
+                res += ebay_compte.rechercher(q, categorie=CATEGORIE_CARTES, limite=100 if ench else 200, fond=False, encheres=ench,
+                                              recentes=not ench, prix_max=pmax, prix_min=pmin, pays=self._pays_radar()) or []
             except TypeError:
                 pass
         c = cartes_match.cible(nom)
@@ -6180,7 +6279,8 @@ class Api:
                     pass
             vus.add(iid)
             out.append({"item_id": iid, "titre": x.get("titre"), "total": tot, "photo": x.get("photo"), "url": x.get("url"),
-                        "encan": bool(x.get("encan")), "fin": x.get("fin"), "mises": x.get("mises"), "joueur": nom, "lieu": x.get("lieu")})
+                        "encan": bool(x.get("encan")), "fin": x.get("fin"), "mises": x.get("mises"), "joueur": nom, "lieu": x.get("lieu"),
+                        **_vendeur_info(x)})
         # les encans qui finissent bientot d'abord, puis les nouvelles annonces
         out.sort(key=lambda x: (0, str(x.get("fin") or "")) if x["encan"] else (1, ""))
         return out[:limite]
@@ -6212,6 +6312,31 @@ class Api:
             if l:
                 out.append({"joueur": nom, "annonces": l, **self._pastilles_joueur(nom)})
         return out
+
+    _MOMENT = {"le": 0.0, "v": None}
+
+    def joueurs_du_moment(self):
+        """12 nov 2026 (nuit de revue : « punchy ; nos pastilles ; des titres colores ») : pour l'accueil, les joueurs du
+        moment en pastilles : en feu (sa semaine), qui sortent de leur creux, les recrues. Des stats de la LNH et des
+        recherches : jamais un prix (public). Cache 10 min (le meme pour tous)."""
+        m = time.time()
+        if Api._MOMENT["v"] is not None and m - Api._MOMENT["le"] < 600:
+            return Api._MOMENT["v"]
+        out, vus = [], set()
+        try:
+            import indice_joueurs
+            for filtre, n in (("en_feu", 6), ("rebond", 3), ("recrue", 4), ("en_creux", 2)):
+                for x in indice_joueurs.top(n + 4, filtre, actifs=True):
+                    if x["nom"] in vus or sum(1 for y in out if y["pastille"] == filtre) >= n:
+                        continue
+                    vus.add(x["nom"])
+                    w = x.get("semaine") or {}
+                    out.append({"nom": x["nom"], "equipe": x.get("equipe") or "", "pastille": filtre,
+                                "semaine": {"pts": w.get("pts"), "mj": w.get("mj")} if w.get("mj") else None})
+        except Exception as e:
+            print("Joueurs du moment : " + repr(e), flush=True)
+        Api._MOMENT.update(le=m, v={"ok": True, "joueurs": out[:14]})
+        return Api._MOMENT["v"]
 
     @staticmethod
     def _radar_top(n):
