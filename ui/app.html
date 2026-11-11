@@ -686,6 +686,36 @@ html[lang=en] .w-ligne::after{content:'Remove'}
 .cx-r{margin:4px 0 0} .cx-inv{display:flex; align-items:center; flex-wrap:wrap; gap:8px; padding:12px 14px; border-radius:16px; background:var(--carte); border:1px solid var(--ligne); font-size:15px}
 .cx-inv input{width:76px; padding:8px 10px; font-size:18px; text-align:center} .cx-inv b{margin-left:auto; font:700 26px var(--f-cond); color:var(--vert)}
 .tuile-inv .img, .tuile-inv .sl-puits{position:relative} .inv-iq{position:absolute; left:8px; bottom:8px; z-index:3; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,.45)}
+.am-tete{display:flex; align-items:center; justify-content:space-between; gap:10px; margin:0 0 8px} .am-tete .am-t{margin:0}
+.am-tout{font:700 14px var(--f-cond); letter-spacing:.08em; text-transform:uppercase; color:var(--acc); text-decoration:none; padding:6px 12px; border-radius:999px; border:1px solid color-mix(in srgb, var(--acc) 45%, var(--ligne))}
+.tiq-t{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px} .tiq .titre{background:linear-gradient(100deg, var(--rouge), var(--or-clair), var(--acc)); -webkit-background-clip:text; background-clip:text; color:transparent}
+.tiq-k{margin-bottom:14px} .tiq-g{display:flex; flex-direction:column; gap:6px; padding:14px; border-radius:20px; background:var(--carte); border:1px solid var(--ligne); margin-bottom:14px}
+.tiq-b{display:flex; align-items:center; gap:10px; border:0; background:none; color:var(--texte); font:inherit; text-align:left; padding:3px 0; cursor:pointer}
+.tiq-bn{width:20px; font:700 14px var(--f-cond); color:var(--doux)} .tiq-bl{flex:1; min-width:0; display:flex; flex-direction:column; gap:4px} .tiq-bl b{font:700 15px var(--f-cond); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.tiq-bl i{display:block; height:6px; border-radius:3px; background:linear-gradient(90deg, var(--acc), var(--vert))} .tiq-bv{font:700 18px var(--f-cond); color:var(--acc); min-width:28px; text-align:right}
+.tiq-cats{flex-wrap:nowrap; overflow-x:auto; margin:0 -18px 12px; padding:0 18px; scrollbar-width:none} .tiq-cats .chip b{opacity:.6; margin-left:4px}
+.tiq-liste{display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:10px}
+.tiq-c{display:flex; flex-direction:column; gap:10px; padding:14px; border-radius:20px; background:var(--carte); border:1px solid var(--ligne); color:var(--texte); font:inherit; text-align:left; cursor:pointer}
+.tiq-ch{display:flex; align-items:center; gap:12px} .tiq-ch .vig-j{width:52px; height:68px; border-radius:10px; overflow:hidden; flex:none}
+.tiq-cn{flex:1; min-width:0; display:flex; flex-direction:column; gap:6px} .tiq-cn b{font:700 20px/1.1 var(--f-cond)}
+.tiq-ci{display:flex; flex-direction:column; align-items:center; min-width:52px} .tiq-ci b{font:700 30px/1 var(--f-cond)} .tiq-ci b.vert{color:var(--vert)} .tiq-ci b.acc{color:var(--acc)} .tiq-ci small{font-size:12px; color:var(--doux)}
+.tiq-l{font-size:14px; color:var(--doux)} .tiq-cr{display:grid; grid-template-columns:1fr 1fr; gap:6px 12px}
+.tiq-cr span{display:flex; flex-direction:column; gap:3px} .tiq-cr small{font:700 10.5px var(--f-cond); letter-spacing:.1em; text-transform:uppercase; color:var(--acc)}
+.tiq-cr i{display:block; height:5px; border-radius:3px; background:var(--carte2); overflow:hidden} .tiq-cr em{display:block; height:100%; background:linear-gradient(90deg, var(--acc), var(--vert))}
+.tiq-a{display:flex; gap:6px; align-items:flex-start; font-size:13px; color:var(--texte); line-height:1.35} .tiq-a .ic-h{width:15px; height:15px; flex:none; margin-top:2px; color:var(--acc)} .tiq-note{margin-top:14px}
+.c-pp{font-size:13px; color:var(--doux); margin:-4px 0 6px; grid-column:1 / -1} .c-pp b{color:var(--texte)} .c-pp .vert{color:var(--vert)} .c-pp .or{color:var(--or)}
+#c-prix::placeholder{color:var(--pale); opacity:.75}
+.afs{display:flex; flex-direction:column; gap:12px}
+.afs-t{display:flex; align-items:baseline; flex-wrap:wrap; gap:8px} .afs-t > b{font:700 44px/1 var(--f-cond); color:var(--acc)} .afs-t > span{font:700 22px var(--f-cond); text-transform:uppercase; letter-spacing:.04em} .afs-t small{flex-basis:100%; font-size:15px; color:var(--doux)} .afs-t small b.vert{color:var(--vert)}
+.afs-lot, .afs-dbl{display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:18px; background:color-mix(in srgb, var(--or) 12%, var(--carte)); border:1px solid color-mix(in srgb, var(--or) 35%, var(--ligne))}
+.afs-dbl{background:color-mix(in srgb, var(--rouge) 12%, var(--carte)); border-color:color-mix(in srgb, var(--rouge) 40%, var(--ligne))}
+.afs-lt{flex:1; display:flex; flex-direction:column; gap:2px} .afs-lt b{font:700 17px var(--f-cond)} .afs-lt small{font-size:13px; color:var(--doux)}
+.afs-l{display:flex; flex-direction:column; gap:8px}
+.afs-r{display:flex; align-items:center; gap:12px; width:100%; padding:10px; border-radius:18px; background:var(--carte); border:1px solid var(--ligne); color:var(--texte); font:inherit; text-align:left; cursor:pointer}
+.afs-ph{width:54px; height:74px; border-radius:8px; overflow:hidden; flex:none; background:var(--carte2); display:grid; place-items:center} .afs-ph img{width:100%; height:100%; object-fit:cover}
+.afs-c{flex:1; min-width:0; display:flex; flex-direction:column; gap:6px} .afs-c > b{font:700 18px/1.15 var(--f-cond); white-space:nowrap; overflow:hidden; text-overflow:ellipsis} .afs-c > b.afs-q{color:var(--or-clair)}
+.afs-go{font:700 15px var(--f-cond); letter-spacing:.06em; text-transform:uppercase; color:var(--acc); flex:none}
+.afs-tout{margin-top:6px; min-height:56px} .afs-n{text-align:center}
 .v-iq{margin:12px 0 2px} .v-iq:empty{display:none}
 .v-iq-b{display:flex; align-items:center; gap:12px; width:100%; padding:12px 14px; border-radius:18px; border:1px solid var(--ligne); background:var(--carte); color:var(--texte); font:inherit; text-align:left; cursor:pointer}
 .v-iq-n{font:700 34px/1 var(--f-cond); min-width:46px} .v-iq-n.vert{color:var(--vert)} .v-iq-n.acc{color:var(--acc)} .v-iq-n.or{color:var(--or)}
@@ -698,6 +728,15 @@ html[lang=en] .w-ligne::after{content:'Remove'}
 .fond-feuille.centre .feuille.entre{animation:pop-c .26s cubic-bezier(.16,1,.3,1)} @keyframes pop-c{from{transform:scale(.94); opacity:0}to{transform:none; opacity:1}}
 .fond-feuille.centre .poignee{display:none}
 .fj{padding-top:34px; display:flex; flex-direction:column} .fj .jb{margin:0 0 10px} .fj .jb-tete{padding-right:12px} .fj-page{align-self:center}
+.md-iq{display:flex; align-items:center; gap:10px; width:100%; margin:0 0 12px; padding:10px 12px; border-radius:16px; border:1px solid color-mix(in srgb, var(--acc) 40%, var(--ligne)); background:linear-gradient(90deg, color-mix(in srgb, var(--acc) 16%, var(--carte)), var(--carte)); color:var(--texte); font:inherit; text-align:left; cursor:pointer}
+.md-iq-l, .iqx-t b{font:700 20px var(--f-cond); letter-spacing:.02em} .md-iq-l i, .iqx-t b i{font-style:normal; color:var(--acc)}
+.md-iq-t{flex:1; font-size:13px; color:var(--doux); line-height:1.3} .md-iq-q{width:30px; height:30px; flex:none; border-radius:50%; display:grid; place-items:center; background:var(--acc); color:#0E1026; font:700 16px var(--f-cond)}
+.iqx{padding-top:30px; display:flex; flex-direction:column; gap:12px} .iqx-t{display:flex; flex-direction:column; gap:2px} .iqx-t b{font-size:34px; line-height:1} .iqx-t span{font-size:14px; color:var(--doux)}
+.iqx-g{margin:0} .iqx-p{font-size:14.5px !important; color:var(--texte) !important; line-height:1.45 !important}
+.an-iq{min-width:30px; height:22px; font-size:12.5px; margin-left:6px; vertical-align:middle} .an-feu{color:var(--rouge); vertical-align:middle} .an-feu .ic-h{width:15px; height:15px}
+.an-iqj{display:flex; flex-direction:column; gap:8px; padding:10px 12px; border-radius:14px; background:var(--carte2)} .an-iqr{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.an-iqr > span:nth-child(2){display:flex; flex-direction:column; flex:1; min-width:0} .an-iqr small{font-size:12px; color:var(--doux)}
+.an-top{margin:6px 0 12px} .an-topj{padding:8px 14px 8px 10px; cursor:pointer; font:inherit}
 .jb{display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); grid-auto-flow:row dense; gap:10px; margin:2px 0 18px}
 @media (min-width:700px){ .jb{grid-template-columns:repeat(4, minmax(0, 1fr))} }
 .jb-t{position:relative; display:flex; flex-direction:column; gap:4px; min-width:0; padding:14px; border-radius:20px; background:var(--carte); border:1px solid var(--ligne); color:var(--texte); font:inherit; text-align:left; text-decoration:none}
@@ -751,6 +790,9 @@ button.jb-t, a.jb-t{cursor:pointer} .jb-t.l{grid-column:span 2}
 .vx-h{display:flex; flex-direction:column; gap:6px} .vx-hr{display:flex; justify-content:space-between; align-items:baseline; padding:10px 12px; border-radius:12px; background:var(--carte2); font-size:14px} .vx-hr b{font:700 19px var(--f-cond)}
 /* 11 nov 2026 : la tuile du Radar en slab (comme la collection) ; le score a la place de la note */
 .sr-w{display:flex; flex-direction:column; gap:6px; min-width:0}
+/* 12 nov 2026 (Mathieu : « le prix avec le shipping DANS la slab, pour savoir a quelle carte il va ») : une 2e etiquette au bas du boitier */
+.slab.sr .sr-px{display:flex; flex-direction:column; gap:2px; margin:8px 2px 2px; padding:8px 10px; border-radius:10px; background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.08); text-align:left}
+.slab.sr .sr-px b{font:700 22px/1 var(--f-cond); color:var(--texte)} .slab.sr .sr-px small{font-size:11.5px; color:var(--doux); line-height:1.3}
 .slab.sr .sl-lab{height:62px} .slab.sr .sl-t{-webkit-line-clamp:3}
 .sr-sc{border:0; border-left:1px solid rgba(255,255,255,.12); background:none; font:inherit; color:inherit; cursor:pointer; padding:0 0 0 7px}
 .sr-sc.vert b{color:var(--vert)} .sr-sc.acc b{color:var(--acc)} .sr-sc.or b{color:var(--or-clair)} .sr-sc small{letter-spacing:.14em}
@@ -774,7 +816,12 @@ button.jb-t, a.jb-t{cursor:pointer} .jb-t.l{grid-column:span 2}
 /* 11 nov 2026 (Mathieu : « regarde, c'est croche ») : sur iPhone, un champ date/heure garde sa largeur native et deborde
    de sa carte ; on le force dans la largeur de son bloc */
 input.champ[type="datetime-local"], input.champ[type="date"], input.champ[type="time"]{-webkit-appearance:none; appearance:none; display:block; width:100%; max-width:100%; min-width:0; box-sizing:border-box}
-input.champ[type="datetime-local"]::-webkit-date-and-time-value, input.champ[type="date"]::-webkit-date-and-time-value{text-align:center; margin:0}
+input.champ[type="datetime-local"]::-webkit-date-and-time-value, input.champ[type="date"]::-webkit-date-and-time-value{text-align:left; margin:0; min-height:1.25em; line-height:1.25}
+/* 12 nov 2026 (« la date dans Goes live est croche ») : sur iPhone le texte de la date restait colle en haut d'une boite trop
+   haute ; meme hauteur et meme alignement (a gauche, centre en hauteur) que les autres champs */
+input.champ[type="datetime-local"], input.champ[type="date"], input.champ[type="time"]{display:flex; align-items:center; text-align:left}
+input.champ[type="datetime-local"]::-webkit-date-and-time-value, input.champ[type="date"]::-webkit-date-and-time-value{display:flex; align-items:center; height:100%}
+input.champ[type="datetime-local"]::-webkit-datetime-edit, input.champ[type="date"]::-webkit-datetime-edit{padding:0; line-height:1.25}
 .vs-ia-err{margin:10px 0; padding:12px 14px; border-radius:14px; background:var(--carte2); border:1px solid var(--or); display:flex; flex-direction:column; gap:6px} .vs-ia-err span{font-size:14px; color:var(--pale)} .vs-ia-err .boutons{margin-top:4px}
 .td-chaud{flex:none; display:inline-flex; align-items:center; gap:8px; padding:5px 14px 5px 5px; border-radius:99px; background:var(--carte); color:var(--texte); text-decoration:none; font-size:14px; font-weight:600}
 .td-chaud .ap-ic{position:relative; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:conic-gradient(from 210deg, var(--h1,#9FE6D2), var(--h2,#B9BEFF), var(--h3,#F2B3D6), var(--h4,#F1D58E), var(--h1,#9FE6D2))}
@@ -3340,7 +3387,7 @@ html.tel-large .fen.fa .fen-img{max-height:calc(46vh / 1.12) !important}
 // des onglets du bas sont prechargees doucement (les memes appels que la derniere visite de chaque onglet).
 const LECTURES = new Set(['accueil', 'acheteur_accueil', 'activites', 'conseils', 'astuces', 'forfait', 'ebay_statut', 'taux_change',
   'reglages_lire', 'deals_liste', 'inventaire_liste', 'catalogue_liste', 'produits_liste', 'equipes', 'images_produits', 'images_joueurs',
-  'budget_etat', 'alertes_liste', 'joueurs_du_moment', 'mes_deals', 'inventaire_scores', 'breaks_liste', 'bilan', 'tendances', 'calendrier', 'collection', 'offres_liste', 'analyse_break',
+  'budget_etat', 'alertes_liste', 'joueurs_du_moment', 'doublons_a_finir', 'tendances_iq', 'mes_deals', 'inventaire_scores', 'breaks_liste', 'bilan', 'tendances', 'calendrier', 'collection', 'offres_liste', 'analyse_break',
   'admin_resume', 'admin_abonnes', 'admin_demandes', 'admin_catalogue', 'admin_sante', 'admin_entrainement', 'valeurs_statut', 'portraits_joueurs',
   'etoiles_lire', 'alarmes_lire', 'deals_profil_lire', 'sante_liste', 'pouls', 'guide_donnees', 'consignataires_liste', 'ebay_avis_statut', 'ebay_appels',
   'inventaire_tableaux', 'watch_liste', 'ventes_analyse']);
@@ -3712,13 +3759,13 @@ function anneau(taille, p, cls=''){
 const V = () => $('#vue');
 // 3 nov 2026 : pas de zoom a deux doigts (iPhone : l'app et Safari ignorent parfois user-scalable)
 ['gesturestart', 'gesturechange'].forEach(t => document.addEventListener(t, (e) => e.preventDefault(), {passive:false}));
-function ouvrirFeuille(html){
+function ouvrirFeuille(html, o_){
   if (S.feuilleRetour) { const f = S.feuilleRetour; S.feuilleRetour = null; try { f(); } catch (e) {} }   // un bloc emprunte a la page y retourne
   const fe = $('#feuille'), deja = !$('#fond-feuille').hidden;
   // 11 nov 2026 (Mathieu : « des petites pop up avec un X pour la fermer ») : toutes les feuilles ont leur X
   // 12 nov 2026 (Mathieu : « une petite fenetre au centre, le contour flou ou noirci, un X dans le coin ») : ouvertes depuis la
   // fiche d'une annonce, les fenetres s'ouvrent au centre, par-dessus la fiche floutee
-  $('#fond-feuille').classList.toggle('centre', document.body.classList.contains('fen-ouverte'));
+  $('#fond-feuille').classList.toggle('centre', !!(o_ && o_.centre) || document.body.classList.contains('fen-ouverte'));
   fe.innerHTML = `<div class="poignee"></div><button class="f-x" aria-label="${tt('Fermer', 'Close')}">✕</button>` + html;
   fe.querySelector('.f-x').onclick = () => { vibrer(); fermerFeuille(); }; $('#fond-feuille').hidden = false; fe.scrollTop = 0; fe.style.transform = '';
   // 29 oct 2026 (Mathieu : « les pop-up vraiment tres fluides, pas saccadees ») : la feuille monte avec un ressort (transform
@@ -3970,7 +4017,7 @@ function route(){
   if (!$('#fond-feuille').hidden) fermerFeuille();
   navDebut(S.ecranCourant === ecran && !!arg);              // meme ecran, autre onglet (Admin, Breaks, Sante...) : navigation douce
   S.ecranCourant = ecran;
-  const vues = {analyse:vueAnalyse, vendre:vueVendre, deals:vueDeals, valeur:vueValeur, accueil:vueAccueil, sante:vueSante, breaks:vueBreaks, break:vueBreak, inventaire:vueInventaire, comptoir:vueComptoir, bilan:vueBilan, ventes:vueVentes, reglages:vueReglages, admin:vueAdmin, guide:vueGuide, joueur:vueJoueur, calendrier:vueCalendrier, idees:vueIdees, pouls:vuePouls, tendances:vueTendances, offres:vueOffres, traiter:vueTraiter, notifs:vueNotifs, alertes:vueNotifs};
+  const vues = {analyse:vueAnalyse, vendre:vueVendre, deals:vueDeals, valeur:vueValeur, accueil:vueAccueil, sante:vueSante, breaks:vueBreaks, break:vueBreak, inventaire:vueInventaire, comptoir:vueComptoir, bilan:vueBilan, ventes:vueVentes, reglages:vueReglages, admin:vueAdmin, guide:vueGuide, joueur:vueJoueur, calendrier:vueCalendrier, idees:vueIdees, pouls:vuePouls, tendances:vueTendances, offres:vueOffres, traiter:vueTraiter, notifs:vueNotifs, alertes:vueNotifs, iq:vueTendancesIQ};
   if (!comps() && ['tendances', 'pouls'].includes(ecran)) { location.replace('#accueil'); return; }
   // 12 nov 2026 (nuit de revue) : un lien vers un ecran qui n'existe pas (ancien lien, notification) laissait une roue sans
   // fin (l'accueil verifie qu'il est sur #accueil) : on y va pour vrai
@@ -7730,7 +7777,12 @@ function explicationPlace(x, vue, r, nbListe){
 }
 const TIERS = (s) => s >= 80 ? ['vert', tt('Top choix', 'Top pick')] : s >= 55 ? ['acc', tt('Bon choix', 'Good pick')] : s >= 30 ? ['or', tt('Correct', 'Fair')] : ['rouge', tt('À éviter', 'Avoid')];
 // 29 oct 2026 : les classements, en termes clairs et professionnels
+document.addEventListener('click', (e) => { const b = e.target.closest('[data-antop]'); if (!b) return; vibrer();
+  const n = b.dataset.antop.toLowerCase(), l = [...document.querySelectorAll('.score-bloc.simple')].find(x => (x.dataset.nom || '').startsWith(n));
+  if (!l) return; l.hidden = false; const bt = l.querySelector('.score-l'); if (bt && bt.getAttribute('aria-expanded') !== 'true') bt.click(); l.scrollIntoView({behavior: 'smooth', block: 'center'}); });
 const TRIS_ANA = () => [
+  // 12 nov 2026 (Mathieu : « SlabIQ, l'IA mere, sert aussi a analyser les breaks ») : la carte la plus recherchee de la place
+  ['iq', 'SlabIQ', tt('La demande pour les cartes que la place te donne vraiment : le Score SlabIQ de chacune de ses cartes, pondéré par ses chances de sortir. Jamais un prix d’annonce.', 'Demand for the cards the spot really gives you: each card’s SlabIQ score, weighted by its odds. Never a listing price.')],
   ['place', tt('Carte qui couvre la place', 'Card covering the spot'), tt('Chance qu’une seule carte vaille au moins le prix moyen d’une place (ou le prix du breaker, si tu l’as entré).', 'Chance that a single card is worth at least the average spot price (or the breaker’s price, if you entered it).')],
   ['hits', tt('Probabilité de hit', 'Hit probability'), tt('Probabilité d’obtenir au moins un hit : numérotée, autographe, relique ou SSP.', 'Probability of at least one hit: numbered, autograph, relic or SSP.')],
   // 30 oct 2026 (Mathieu : « mettre l'option rookie »)
@@ -7830,7 +7882,7 @@ async function rendreAnalyse(){
     const TRIS = TRIS_ANA().filter(t => comps() || t[0] !== 'valeur');
     const tri = TRIS.some(t => t[0] === A.tri) ? A.tri : 'place';
     const pH = (x) => ((x.chances || {}).hit || {}).p || 0;
-    const crit = {place: (x) => x.p_carte_prix || 0, hits: pH, rentab: (x) => x.p_rembourse || 0, recrue: (x) => x.ev_recrue != null ? x.ev_recrue / (x.demande || 1) : (x.p_recrue || 0),
+    const crit = {iq: (x) => (x.iq || 0) / 100, place: (x) => x.p_carte_prix || 0, hits: pH, rentab: (x) => x.p_rembourse || 0, recrue: (x) => x.ev_recrue != null ? x.ev_recrue / (x.demande || 1) : (x.p_recrue || 0),
       valeur: (x) => (x.ev || 0) / (x.demande || 1),
       argent: (x) => { const p = Math.min(.999999, pH(x)), px = x.demande || x.part_brute || x.prix_compare || x.prix || 0; return px > 0 ? -Math.log(1 - p) / px : 0; }}[tri];   // part exacte : le meme ordre avec 1 ou 32 boites
     const mxv = Math.max(1e-12, ...liste.map(crit));
@@ -7860,7 +7912,7 @@ async function rendreAnalyse(){
       return `<div class="score-bloc simple ${i >= 60 ? 'loin' : ''}" data-nom="${esc(String(x.nom + ' ' + (x.equipe || '') + ' ' + (x.vedettes || []).join(' ')).toLowerCase())}"><button class="score-l ${hors ? 'hors' : ''}" data-exp="${i}" aria-expanded="false">
         <span class="rang">${i + 1}</span>
         ${vue === 'equipes' ? ecussonEquipe(x.cle) : vignetteJoueur(x.cle, x.equipe)}
-        <span class="sl-n"><b>${esc(x.nom)}</b><span>${esc(vue === 'equipes' ? (x.vedettes || []).slice(0, 2).join(' · ') : (x.equipe || ''))} · ${
+        <span class="sl-n"><b>${esc(x.nom)}${x.iq != null ? ` <span class="sc-b ${couleurScore(x.iq)} an-iq" title="SlabIQ">${x.iq}</span>` : ''}${x.iq_chaud ? ` <span class="an-feu">${icN('feu')}</span>` : ''}</b><span>${esc(vue === 'equipes' ? (x.vedettes || []).slice(0, 2).join(' · ') : (x.equipe || ''))} · ${
           tri === 'place' ? tt('couvre la place : ', 'covers the spot: ') + chanceTxt(x.p_carte_prix || 0) : tri === 'rentab' ? tt('rentable : ', 'break even: ') + chanceTxt(x.p_rembourse || 0)
           : tri === 'recrue' ? (x.recrue_prix && comps() ? (/young guns/i.test(x.recrue_nom || '') ? 'YG' : tt('recrue', 'rookie')) + ' ~' + argentCourt(x.recrue_prix) + ' · ' + chanceTxt(x.p_recrue_carte || 0)
             : x.ev_recrue != null && comps() ? tt('recrues : ~', 'rookies: ~') + argentCourt(x.ev_recrue) : tt('recrue : ', 'rookie: ') + chanceTxt(x.p_recrue || 0))
@@ -7868,6 +7920,7 @@ async function rendreAnalyse(){
           : tri === 'argent' ? tt('hit : ', 'hit: ') + chanceTxt(ph) + ' · ' + argentCourt(x.prix_compare || x.prix || 0) : tt('hit : ', 'hit: ') + chanceTxt(ph)}</span></span>
         <span class="score ${cl}"><b>${x.rel}</b><small>${lib}</small></span></button>
         <div class="exp-z" id="exp-${i}" hidden>
+          ${(x.iq_joueurs || []).length ? `<div class="an-iqj"><span class="jb-k">${tt('SlabIQ · ce que tu tires vraiment', 'SlabIQ · what you really pull')}</span>${x.iq_joueurs.slice(0, 3).map(j => `<div class="an-iqr"><span class="sc-b ${couleurScore(j.iq)}">${j.iq}</span><span><b>${esc(j.nom)}</b>${j.carte ? `<small>${tt('Meilleur hit', 'Best hit')} : ${esc(j.carte)}${j.meilleur != null ? ' · ' + j.meilleur : ''}</small>` : ''}</span>${(j.pastilles || []).map(k => tag(({en_feu: tt('En feu', 'On fire'), rebond: tt('Sort du creux', 'Bouncing back'), en_creux: tt('En creux', 'In a slump'), recrue: tt('Recrue', 'Rookie'), legende: tt('Légende', 'Legend'), en_hausse: tt('En hausse', 'Rising'), buzz: 'Buzz'})[k] || k, k === 'en_feu' ? 'rouge' : k === 'rebond' ? 'vert' : k === 'legende' || k === 'recrue' ? 'or' : 'acc')).join('')}</div>`).join('')}</div>` : ''}
           <div class="hits-m">${bandeHits(x)}</div>
           <div class="sl-duo"><div><span>${tt('Au moins un hit', 'At least one hit')}</span><b>${chanceTxt(ph)}</b></div>
             <div><span>${tt('Rentabiliser', 'Break even')}</span><b>${chanceTxt(x.p_rembourse || 0)}</b></div>
@@ -7878,6 +7931,7 @@ async function rendreAnalyse(){
     corps = `${segA('an-v', [['joueurs', tt('Joueurs', 'Players')], ['equipes', tt('Équipes', 'Teams')]], vue)}
       <div class="an-tri"><div class="sous an-expl"><b>${TRIS.find(t => t[0] === tri)[1]}</b> · ${TRIS.find(t => t[0] === tri)[2]}</div>
         <div class="recherche petite"><input id="an-rech" type="search" placeholder="${esc(vue === 'joueurs' ? tt('Chercher un joueur', 'Search a player') : tt('Chercher une équipe ou un joueur', 'Search a team or player'))}" value="${esc(A.rech || '')}" autocomplete="off"></div></div>
+      ${(() => { const t = [...liste].filter(x => x.iq != null && (x.p_carte || 0) >= 0.2).sort((a, b) => b.iq * Math.sqrt(b.p_carte || 0) - a.iq * Math.sqrt(a.p_carte || 0)).slice(0, 6); return t.length ? `<div class="an-top"><div class="am-t">${tt('Les plus recherchés · SlabIQ', 'Most sought · SlabIQ')}</div><div class="am-l">${t.map(x => `<button class="am-j an-topj" data-antop="${esc(x.nom)}"><span class="sc-b ${couleurScore(x.iq)}">${x.iq}</span><span class="am-c"><b>${esc(x.nom)}</b>${x.iq_chaud ? tag(tt('En feu', 'On fire'), 'rouge') : (x.iq_joueurs || [])[0] && vue === 'equipes' ? `<small>${esc(x.iq_joueurs[0].nom)}</small>` : ''}</span></button>`).join('')}</div></div>` : ''; })()}
       <div class="score-liste">${liste.map(ligne).join('') || `<div class="vide">${tt('Rien à analyser pour ce produit', 'Nothing to analyze for this product')}</div>`}
         <div class="vide" id="an-vide" hidden>${tt('Aucun joueur de ce produit ne correspond.', 'No player in this product matches.')}</div></div>`;
   }
@@ -9167,10 +9221,85 @@ async function remplirMoment(z){
   const r = await API.joueurs_du_moment().catch(() => null);
   if (!z.isConnected || !r || !(r.joueurs || []).length) return;
   const P = {en_feu: [tt('En feu', 'On fire'), 'rouge'], rebond: [tt('Sort du creux', 'Bouncing back'), 'vert'], recrue: [tt('Recrue', 'Rookie'), 'or'], en_creux: [tt('En creux', 'In a slump'), 'acc']};
-  z.innerHTML = `<div class="am-t">${tt('Joueurs du moment', 'Players to watch')}</div>
-    <div class="am-l">${r.joueurs.map(j => `<a class="am-j" href="#joueur/${encodeURIComponent(j.nom)}"><span class="vig-j" data-vj="${esc(j.nom)}">${SVG_CARTE}</span>
+  z.innerHTML = `<div class="am-tete"><div class="am-t">${tt('Joueurs du moment', 'Players to watch')}</div><a class="am-tout" href="#iq">${tt('Tendances', 'Trending')} ›</a></div>
+    <div class="am-l am-auto">${r.joueurs.map(j => `<a class="am-j" data-jpop="${esc(j.nom)}" href="#joueur/${encodeURIComponent(j.nom)}"><span class="vig-j" data-vj="${esc(j.nom)}">${SVG_CARTE}</span>
       <span class="am-c"><b>${esc(j.nom)}</b>${tag((P[j.pastille] || ['', ''])[0], (P[j.pastille] || ['', ''])[1])}${j.semaine && j.semaine.mj ? `<small>${j.semaine.pts} pts · ${j.semaine.mj} ${tt('matchs', 'games')}</small>` : ''}</span></a>`).join('')}</div>`;
   try { remplirPortraits(z); } catch (e) {}
+  defilerSeul($('.am-auto', z));
+}
+// 12 nov 2026 (Mathieu : « comme les annonces qui defilent toutes seules ») : une rangee defile doucement ; elle s'arrete
+// quand on la touche et repart 4 s apres
+function defilerSeul(l){
+  if (!l || l.dataset.auto || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  l.dataset.auto = '1'; let pause = 0, x = l.scrollLeft;
+  const stop = () => { pause = Date.now() + 4000; x = l.scrollLeft; };
+  ['touchstart', 'pointerdown', 'wheel'].forEach(t => l.addEventListener(t, stop, {passive: true}));
+  l.style.scrollSnapType = 'none';
+  const pas = () => { if (!l.isConnected) return;
+    if (Date.now() > pause && document.visibilityState === 'visible') { x += 0.5; if (x >= l.scrollWidth - l.clientWidth - 1) x = 0; l.scrollLeft = x; }
+    requestAnimationFrame(pas); };
+  requestAnimationFrame(pas);
+}
+// un joueur touche dans une rangee : sa petite fenetre (au centre), pas une autre page
+document.addEventListener('click', (e) => { const a = e.target.closest('[data-jpop]'); if (!a || e.target.closest('#feuille')) return;
+  e.preventDefault(); e.stopPropagation(); vibrer(); feuilleJoueur(a.dataset.jpop); }, true);
+// 12 nov 2026 (Mathieu : « un onglet Tendances avec ces joueurs-la : comment l'IA les a analyses, des statistiques, des
+// graphiques, les listes de joueurs a regarder ; le maximum legal ») : la page Tendances SlabIQ. Stats LNH, recherches,
+// nouvelles, palmares et l'Indice SlabIQ de chaque joueur avec ses criteres ; jamais un prix.
+const CATS_IQ = () => [['en_feu', tt('En feu', 'On fire'), 'rouge'], ['rebond', tt('Sortent du creux', 'Bouncing back'), 'vert'], ['recrue', tt('Recrues', 'Rookies'), 'or'],
+  ['en_hausse', tt('En hausse', 'Rising'), 'vert'], ['buzz', 'Buzz', 'acc'], ['en_creux', tt('En creux', 'In a slump'), ''], ['top', tt('Top indice', 'Top index'), 'acc'], ['legende', tt('Légendes', 'Legends'), 'or']];
+const CRIT_IQ = () => ({forme: tt('Forme', 'Form'), ascension: tt('Ascension', 'Rise'), rythme: tt('Rythme', 'Pace'), buzz: tt('Recherches', 'Searches'), notoriete: tt('Notoriété', 'Fame'),
+  demande: tt('Demande', 'Demand'), actu: tt('Actualité', 'News'), legende: tt('Palmarès', 'Honours'), recrue: tt('Recrue', 'Rookie')});
+async function vueTendancesIQ(arg){
+  V().innerHTML = `<section class="ecran tiq"><div class="tiq-t"><div><div class="titre">${tt('Tendances', 'Trending')}</div><div class="sous">${tt('Ce que SlabIQ voit chez les joueurs, chaque jour', 'What SlabIQ sees in players, every day')}</div></div>
+    <button class="md-iq-q" id="tiq-q" aria-label="SlabIQ">?</button></div><div id="tiq-z">${barreProg(Date.now(), 4, tt('SlabIQ analyse les joueurs…', 'SlabIQ is analyzing players…'))}</div></section>`;
+  $('#tiq-q').onclick = () => { vibrer(); expliquerTendancesIQ(); };
+  const r = await API.tendances_iq().catch(e => ({ok: false, erreur: e.message}));
+  const z = $('#tiq-z'); if (!z) return;
+  if (!r.ok) { z.innerHTML = `<div class="vide">${esc(r.erreur || 'Erreur')}</div>`; return; }
+  const C = CATS_IQ(), dispo = C.filter(([k]) => (r.cats[k] || []).length);
+  if (!dispo.length) { z.innerHTML = `<div class="vide">${tt('SlabIQ prépare ses premières analyses : reviens dans un moment.', 'SlabIQ is preparing its first analyses: check back soon.')}</div>`; return; }
+  let cat = dispo.find(([k]) => k === arg) ? arg : dispo[0][0];
+  const top10 = (r.cats.top || []).slice(0, 10), mx = Math.max(1, ...top10.map(x => x.indice || 0));
+  const tete = `<div class="jb tiq-k">
+      <div class="jb-t"><span class="jb-k">${tt('Joueurs analysés', 'Players analyzed')}</span><b class="jb-v acc">${r.suivis || r.actifs || 0}</b><small>${tt('chaque jour', 'every day')}</small></div>
+      <div class="jb-t"><span class="jb-k">${tt('En feu', 'On fire')}</span><b class="jb-v rouge">${r.compte.en_feu || 0}</b><small>${tt('cette semaine', 'this week')}</small></div>
+      <div class="jb-t"><span class="jb-k">${tt('Sortent du creux', 'Bouncing back')}</span><b class="jb-v vert">${r.compte.rebond || 0}</b><small>${tt('jeunes en reprise', 'young players recovering')}</small></div>
+      <div class="jb-t"><span class="jb-k">${tt('Recrues suivies', 'Rookies tracked')}</span><b class="jb-v or">${r.compte.recrue || 0}</b><small>${tt('1re ou 2e saison', '1st or 2nd season')}</small></div>
+      ${r.creux_bilan && r.creux_bilan.remontes_30 != null ? `<div class="jb-t l"><span class="jb-k">${tt('Le suivi des creux', 'Slump tracking')}</span><b class="jb-v vert">${Math.round(r.creux_bilan.remontes_30 * 100)} %</b><small>${tt(`des ${r.creux_bilan.mesurables_30} joueurs signalés en creux ont vu leur marché remonter 30 jours après`, `of the ${r.creux_bilan.mesurables_30} players flagged in a slump saw their market rise 30 days later`)}</small></div>` : ''}
+    </div>
+    ${top10.length ? `<div class="tiq-g"><div class="am-t">${tt('Top 10 de l’indice SlabIQ', 'SlabIQ index top 10')}</div>${top10.map((x, i) => `<button class="tiq-b" data-jpop="${esc(x.nom)}"><span class="tiq-bn">${i + 1}</span><span class="tiq-bl"><b>${esc(x.nom)}</b><i style="width:${Math.round(100 * (x.indice || 0) / mx)}%"></i></span><span class="tiq-bv">${Math.round(x.indice || 0)}</span></button>`).join('')}</div>` : ''}`;
+  const carte = (x) => {
+    const cr = Object.entries(x.criteres || {}).filter(([k]) => CRIT_IQ()[k]).sort((a, b) => b[1] - a[1]).slice(0, 4);
+    const P = {en_feu: [tt('En feu', 'On fire'), 'rouge'], rebond: [tt('Sort du creux', 'Bouncing back'), 'vert'], recrue: [tt('Recrue', 'Rookie'), 'or'], en_hausse: [tt('En hausse', 'Rising'), 'vert'],
+      buzz: ['Buzz', 'acc'], en_creux: [tt('En creux', 'In a slump'), ''], legende: [tt('Légende', 'Legend'), 'or'], actu: [tt('Dans l’actu', 'In the news'), 'acc']};
+    const ligne = x.semaine ? `${x.semaine.pts} pts · ${x.semaine.b || 0} ${tt('buts', 'goals')} · ${x.semaine.mj} ${tt('matchs', 'games')} ${tt('cette semaine', 'this week')}`
+      : x.creux ? `${String(x.creux.ppm).replace('.', tt(',', '.'))} ${tt('pt/match vs', 'pts/game vs')} ${String(x.creux.avant_ppm).replace('.', tt(',', '.'))} ${tt('avant', 'before')}` : '';
+    return `<button class="tiq-c" data-jpop="${esc(x.nom)}">
+      <span class="tiq-ch"><span class="vig-j" data-vj="${esc(x.nom)}">${SVG_CARTE}</span><span class="tiq-cn"><b>${esc(x.nom)}</b>
+        <span class="pastilles">${x.equipe ? `<span class="tag">${esc(x.equipe)}</span>` : ''}${(x.pastilles || []).filter(k => P[k]).slice(0, 2).map(k => tag(P[k][0], P[k][1])).join('')}</span></span>
+        <span class="tiq-ci"><b class="${(x.indice || 0) >= 80 ? 'vert' : (x.indice || 0) >= 60 ? 'acc' : ''}">${Math.round(x.indice || 0)}</b><small>${x.rang ? ordinal(x.rang) : ''}</small></span></span>
+      ${ligne ? `<span class="tiq-l">${ligne}</span>` : ''}
+      ${cr.length ? `<span class="tiq-cr">${cr.map(([k, v]) => `<span><small>${CRIT_IQ()[k]}</small><i><em style="width:${v}%"></em></i></span>`).join('')}</span>` : ''}
+      ${x.actu ? `<span class="tiq-a">${icN('news')}${esc(x.actu)}</span>` : ''}</button>`;
+  };
+  const peindre = () => {
+    z.innerHTML = tete + `<div class="tiq-cats chips">${dispo.map(([k, n, c]) => `<button class="chip ${k === cat ? 'on' : ''}" data-tcat="${k}">${n} <b>${(r.cats[k] || []).length}</b></button>`).join('')}</div>
+      <div class="tiq-liste">${(r.cats[cat] || []).map(carte).join('')}</div>
+      <div class="sous tiq-note">${tt('Données publiques : stats de la LNH, recherches Wikipedia, nouvelles, palmarès. SlabIQ ne regarde jamais le prix des annonces.', 'Public data: NHL stats, Wikipedia searches, news, honours. SlabIQ never looks at listing prices.')}${r.le ? ' · ' + tt('mis à jour ', 'updated ') + esc(ilYa(r.le)) : ''}</div>`;
+    $$('[data-tcat]', z).forEach(b => b.onclick = () => { vibrer(); cat = b.dataset.tcat; history.replaceState(null, '', '#iq/' + cat); peindre(); });
+    remplirPortraits(z);
+  };
+  peindre();
+}
+function expliquerTendancesIQ(){
+  const C = CRIT_IQ();
+  ouvrirFeuille(`<div class="iqx"><div class="iqx-t"><b>${tt('L’indice', 'The index')} Slab<i>IQ</i></b><span>${tt('Comment SlabIQ classe les joueurs', 'How SlabIQ ranks players')}</span></div>
+    <div class="jb iqx-g">
+      <div class="jb-t l"><span class="jb-k">${tt('De 0 à 100', 'From 0 to 100')}</span><small class="iqx-p">${tt('Chaque jour, SlabIQ note chaque joueur sur 9 critères, chacun classé contre tous les autres joueurs, puis les combine. Une semaine en feu passe devant tout le monde.', 'Every day SlabIQ rates each player on 9 criteria, each ranked against every other player, then combines them. A week on fire jumps ahead of everyone.')}</small></div>
+      ${Object.entries({forme: tt('ses points des derniers matchs', 'his points in recent games'), ascension: tt('sa progression vs ses saisons d’avant', 'his rise vs past seasons'), rythme: tt('son rythme de la saison', 'his season pace'), buzz: tt('les recherches Wikipedia (20 jours)', 'Wikipedia searches (20 days)'), notoriete: tt('sa notoriété de fond', 'his long-term fame'), demande: tt('la demande pour ses cartes', 'demand for his cards'), actu: tt('les nouvelles de la semaine', 'this week’s news'), recrue: tt('1re ou 2e saison', '1st or 2nd season'), legende: tt('Temple, coupes, trophées', 'Hall of Fame, Cups, awards')}).map(([k, d]) => `<div class="jb-t"><span class="jb-k">${C[k]}</span><small>${d}</small></div>`).join('')}
+      <div class="jb-t l"><span class="jb-k">${tt('Les pastilles', 'The badges')}</span><small class="iqx-p">${tt('En feu : une grosse semaine. Sort du creux : un jeune qui reprend après une période difficile. En creux : un bon jeune en période difficile, à surveiller. Recrue, Buzz, Légende.', 'On fire: a big week. Bouncing back: a young player recovering. In a slump: a good young player struggling, worth watching. Rookie, Buzz, Legend.')}</small></div>
+    </div></div>`, {centre: true});
 }
 async function vueAccueil(arg){
   setTimeout(() => { if ((location.hash || '#accueil').startsWith('#accueil')) demanderPartage(); }, 2500);
@@ -10445,6 +10574,41 @@ const LIB_FILTRE = (k) => ({afinir: tt('À finir', 'To finish'), tous: tt('Tout'
 // reprend chacune de ses cartes pour les mettre sur eBay en lot ») : « À finir » n'apparait que s'il y a quelque chose a finir
 // (des cartes preparees pour la vente pas encore sur eBay, un lot pas termine, une mise en vente en cours)
 // le haut de l'onglet « À finir » : reprendre un lot pas termine, une mise en vente en cours, et tout mettre sur eBay en lot
+// 12 nov 2026 (Mathieu : « simplifier la vue A finir ; ca doit etre plus qu'evident ; un enfant de 12 ans doit etre ok ») :
+// une liste, une carte par ligne : sa photo, son nom (ou « Carte a identifier »), ce qui manque en mots simples, un bouton.
+// En haut : combien, les doublons a retirer d'un geste ; en bas : un seul gros bouton pour tout mettre sur eBay.
+function vueAFinirSimple(l){
+  const g = S.lotGarde, nLot = g && g.cartes ? g.cartes.length : 0;
+  const manque = (c) => { const m = [];
+    if (!c.joueur && !c.titre) m.push([tt('Quelle carte ?', 'Which card?'), 'rouge']);
+    else if (/^item$|^article$/i.test(String(c.titre || c.joueur || '').trim())) m.push([tt('Quelle carte ?', 'Which card?'), 'rouge']);
+    if (!(nb(c.prix_demande) > 0)) m.push([tt('Prix', 'Price'), 'or']);
+    if (c.note && /vérifier|check/i.test(c.note)) m.push([tt('À vérifier', 'To check'), 'or']);
+    return m; };
+  const prets = l.filter(c => !manque(c).length).length;
+  return `<div class="afs">
+    <div class="afs-t"><b>${l.length + nLot}</b><span>${tt(l.length + nLot > 1 ? 'cartes à finir' : 'carte à finir', l.length + nLot > 1 ? 'cards to finish' : 'card to finish')}</span>
+      ${l.length ? `<small>${prets ? `<b class="vert">${prets} ${tt(prets > 1 ? 'prêtes' : 'prête', 'ready')}</b> · ` : ''}${l.length - prets ? `${l.length - prets} ${tt('à compléter', 'to complete')}` : ''}</small>` : ''}</div>
+    <div id="afs-dbl"></div>
+    ${nLot ? `<div class="afs-lot"><span>${ICO_LOT}</span><span class="afs-lt"><b>${tt(`${nLot} photo${nLot > 1 ? 's' : ''} pas encore lue${nLot > 1 ? 's' : ''}`, `${nLot} photo${nLot > 1 ? 's' : ''} not read yet`)}</b><small>${tt('L’app les lit et les ajoute ici.', 'The app reads them and adds them here.')}</small></span><button class="btn petit" id="af-lot">${tt('Continuer', 'Continue')}</button></div>` : ''}
+    <div class="afs-l">${l.map(c => { const m = manque(c), nom = c.joueur || titreCourt(c.titre) || '';
+      return `<button class="afs-r tuile-inv" data-id="${c.id}"><span class="afs-ph">${photoOk(c.photo) ? `<img src="${esc(photoNet(c.photo))}" alt="" loading="lazy" data-oe="rm">` : SVG_CARTE}</span>
+        <span class="afs-c"><b class="${m.some(x => x[1] === 'rouge') ? 'afs-q' : ''}">${m.some(x => x[1] === 'rouge') ? tt('Carte à identifier', 'Card to identify') : esc(nom)}</b>
+          ${m.length ? `<span class="pastilles">${m.map(x => tag(x[0], x[1])).join('')}</span>` : `<span class="pastilles">${tag(tt('Prête', 'Ready'), 'vert')}${nb(c.prix_demande) > 0 ? tag(argent(c.prix_demande, 0)) : ''}</span>`}</span>
+        <span class="afs-go">${m.length ? tt('Finir', 'Finish') : tt('Voir', 'View')} ›</span></button>`; }).join('')}</div>
+    ${l.length ? `<button class="btn afs-tout" id="af-pg">${tt(`Mettre ${l.length > 1 ? 'les ' + l.length + ' cartes' : 'la carte'} sur eBay`, `List ${l.length > 1 ? 'the ' + l.length + ' cards' : 'the card'} on eBay`)}</button>
+      <div class="sous afs-n">${tt('À l’étape suivante, tu vérifies les prix et tu choisis l’heure. Rien ne part sans ton OK.', 'On the next step you check prices and pick the time. Nothing goes out without your OK.')}</div>
+      <button class="lien-t" id="af-retirer">${tt('Vider la liste « À finir »', 'Clear the “To finish” list')}</button>`
+      : `<div class="vide">${tt('Rien à finir : tout est sur eBay', 'Nothing to finish: everything is on eBay')}</div>`}</div>`;
+}
+async function brancherAFinirSimple(l){
+  const r = await API.doublons_a_finir().catch(() => null), z = $('#afs-dbl');
+  if (!z || !r || !r.ok || !r.n) return;
+  z.innerHTML = `<div class="afs-dbl"><span class="afs-lt"><b>${tt(`${r.n} carte${r.n > 1 ? 's' : ''} en double`, `${r.n} duplicate card${r.n > 1 ? 's' : ''}`)}</b><small>${tt('La même photo est là plus d’une fois (un lot repris).', 'The same photo is here more than once (a resumed batch).')}</small></span>
+    <button class="btn petit" id="afs-dbl-b">${tt('Retirer les doublons', 'Remove duplicates')}</button></div>`;
+  $('#afs-dbl-b').onclick = async () => { if (!await confirmer(tt('Retirer les doublons ?', 'Remove duplicates?'), tt(`On garde une seule copie de chaque carte. ${r.n} copie${r.n > 1 ? 's' : ''} en trop ser${r.n > 1 ? 'ont retirées' : 'a retirée'} de ton inventaire. Aucune carte sur eBay n’est touchée.`, `We keep one copy of each card. ${r.n} extra cop${r.n > 1 ? 'ies' : 'y'} will be removed from your inventory. No card on eBay is touched.`))) return;
+    const x = await essai(API.doublons_retirer(), tt('Doublons retirés', 'Duplicates removed')); if (x) { S.nbAFinir = null; chargerInventaire(); } };
+}
 function blocAFinir(l){
   const g = S.lotGarde, pg = pgGarde(), C = g && g.but === 'collection';
   const ligne = (ic, t, s_, b) => `<div class="af-l"><span class="af-ic">${ic}</span><span class="af-t"><b>${t}</b><small>${s_}</small></span>${b}</div>`;
@@ -10483,6 +10647,9 @@ function lotIdb(v){
 }
 function lotGarder(){
   if (!LOT.l) return;
+  // 12 nov 2026 (« la catastrophe » : le lot quitte puis repris, chaque carte 2 ou 3 fois) : chaque carte a sa cle d'envoi
+  // AVANT d'etre gardee ; reprise, elle renvoie la meme cle et le serveur rend la carte deja creee
+  LOT.l.forEach(c => { c.cle = c.cle || (Date.now().toString(36) + Math.random().toString(36).slice(2, 10)); });
   const reste = LOT.l.filter(c => !['ok', 'verifier'].includes(c.etat) && ((c.f && c.f.length) || (c.ph && c.ph.length)));
   const v = reste.length ? {t: Date.now(), but: LOT.but, devants: !!LOT.devants, cartes: reste.map(c => ({f: c.f || null, ph: c.ph || null, impair: !!c.impair, cle: c.cle || null}))} : null;
   S.lotGarde = v; S.lotGardeN = v ? v.cartes.length : 0;
@@ -10825,6 +10992,10 @@ async function chargerInventaire(){
   const slabs = S.filtreInv === 'collection';
   const selB = l.length && !vendues ? `<div class="inv-selb"><button class="pilule ${S.selInv ? 'acc' : ''}" id="i-sel">${S.selInv ? tt('Terminer la sélection', 'Done selecting') : tt('Sélectionner', 'Select')}</button></div>` : '';
   const af = S.filtreInv === 'afinir' ? blocAFinir(l) : '';
+  ['i-tab', 'i-achats'].forEach(id => { const e = $('#' + id); if (e) e.hidden = S.filtreInv === 'afinir'; });   // 12 nov : A finir, rien d'autre
+  if (S.filtreInv === 'afinir') { z.innerHTML = puces + vueAFinirSimple(l); brancherAFinir(l); brancherAFinirSimple(l);
+    $$('#i-liste .tuile-inv').forEach(r => r.onclick = () => { vibrer(); const c = l.find(x => x.id === +r.dataset.id); if (c) feuilleCarte(c); });
+    const fz = $('.i-filtres'); if (fz) brancherFiltresInv(); return; }
   z.innerHTML = puces + note + af + (slabs ? '' : resume) + selB + (l.length ? (slabs ? `<div class="grille-slab">${l.map(tuileSlab).join('')}</div>` : `<div class="grille-c">${l.map(tuileInv).join('')}</div>`)
     : S.filtreInv === 'afinir' ? (af ? '' : `<div class="vide">${tt('Rien à finir : tout est sur eBay', 'Nothing to finish: everything is on eBay')}</div>`)
     : `<div class="vide">${S.filtreInv === 'collection' ? tt('Ta collection est vide', 'Your collection is empty') : tt('Rien ici', 'Nothing here')}<button class="pilule" id="i-vide">${tt('Ajouter des cartes', 'Add cards')}</button></div>`);
@@ -12944,7 +13115,8 @@ function feuilleCarte(c){
     ${surEbay && !vendue ? '<div id="c-comps" class="fc-marche"></div>' : ''}
     ${c.id ? `<button class="plus" id="c-suppr" style="color:var(--rouge)">Supprimer</button>` : ''}`);
   if (surEbay && !vendue) chargerCompsCarte(c);
-  if (c.id) achatCarte(c);
+  if (c.id) Promise.resolve(achatCarte(c)).finally(() => setTimeout(() => suggererPrixCarte(c), 400));
+  suggererPrixCarte(c);
   if ($('#c-promo')) promoCarte(c);
   let sportChoisi = c._photo && c.sport ? c.sport : null;
   douteux.forEach(k => { const e = $('#' + (CHAMP_ID[k] || '_')); if (e) e.classList.add('douteux'); });
@@ -14035,8 +14207,8 @@ function tuileRadar(x, src){
   return `<div class="sr-w"><div class="slab sr" ${attrsAnnonce({...x, url: lienAchat(x.url, src || 'radar')})}>
     <span class="sl-lab"><span class="sl-t">${esc(x.titre || '')}</span>${sc}</span>
     <span class="sl-puits">${x.photo ? `<img src="${esc(photoNet(x.photo))}" alt="" loading="lazy" decoding="async" data-oe="rm">` : SVG_CARTE}
-      <span class="sr-fin ${x.encan ? (urgent ? 'rouge' : 'or') : ''}">${fin}</span>${t1 ? `<span class="sr-tag">${tag(t1[0], t1[1])}</span>` : ''}${boutonWatch(x)}</span></div>
-    <div class="sr-bas"><b>${argent(x.total, 0)}</b>${x.total_reel && x.total_reel > (x.total || 0) + 0.5 ? `<small>${argentCourt(x.total_reel)} ${x.etranger ? tt('avec import.', 'w/ import') : tt('réel', 'all-in')}</small>` : ''}${x.prix_max ? `<small>${tt('ton prix', 'yours')} ${argentCourt(x.prix_max)}</small>` : ''}</div>${ligneAdminVendu(x)}</div>`;
+      <span class="sr-fin ${x.encan ? (urgent ? 'rouge' : 'or') : ''}">${fin}</span>${t1 ? `<span class="sr-tag">${tag(t1[0], t1[1])}</span>` : ''}${boutonWatch(x)}</span>
+    <span class="sr-px"><b>${argent(x.total, 0)}</b><small>${tt('port compris', 'incl. shipping')}${x.total_reel && x.total_reel > (x.total || 0) + 0.5 ? ` · ${argentCourt(x.total_reel)} ${x.etranger ? tt('avec import.', 'w/ import') : tt('tout compris', 'all-in')}` : ''}${x.prix_max ? ` · ${tt('ton prix', 'yours')} ${argentCourt(x.prix_max)}` : ''}</small></span></div>${ligneAdminVendu(x)}</div>`;
 }
 // le toucher sur le score : « pourquoi ce score », bref et clair (la carte, puis le joueur), et comment SlabIQ fonctionne
 const _SC = {};
@@ -14128,6 +14300,7 @@ async function vueMesDeals(z, frais){
     remplirComparer(z);
   };
   z.innerHTML = `<div class="md">
+    <button class="md-iq" id="md-iq"><span class="md-iq-l">Slab<i>IQ</i></span><span class="md-iq-t">${tt('Chaque carte a son score de 0 à 100 : touche-le pour voir pourquoi', 'Every card has a 0–100 score: tap it to see why')}</span><span class="md-iq-q">?</span></button>
     <div class="md-barre">
       <button class="rq-glow md-glow ${r.profil_vide ? 'neuf' : ''}" id="md-cfg"><span>${r.profil_vide ? tt('Configurer mon radar', 'Set up my radar') : tt('Mon radar', 'My radar')}</span></button>
       ${nb_ ? `<button class="md-dd" id="md-f"><small>${tt('Voir', 'Show')}</small><b id="md-f-t"></b><i>▾</i></button>
@@ -14136,6 +14309,7 @@ async function vueMesDeals(z, frais){
       ${(r.erreurs_detail || []).length ? `<details class="sous md-dec"><summary>Admin</summary>${r.erreurs_detail.map(esc).join('<br>')}</details>` : ''}` : ''}
     <div id="md-fil"></div></div>`;
   if (nb_) peindre();
+  const iqb = $('#md-iq', z); if (iqb) iqb.onclick = () => { vibrer(); expliquerSlabIQ(); };
   const reQ = () => configurerRadar({apres: (ok) => { if (ok && z.isConnected) vueMesDeals(z); }});
   $('#md-cfg').onclick = () => { vibrer(); reQ(); };
   // 11 nov 2026 (Mathieu : « les filtres et le tri en menu deroulant ou en fenetre, pour maximiser les annonces ») : deux
@@ -14200,17 +14374,45 @@ async function feuilleVerifier(id, titre, prix, encan){
 // 11 nov 2026 (Mathieu : « se vendre en mettant de l'avant notre algorithme ; lui donner un nom » -> SlabIQ) : ce que le
 // score veut dire, en langage simple ; que des faits verifiables (jamais une promesse de profit)
 function expliquerSlabIQ(){
-  const P = [[tt('Ce qu’il mesure', 'What it measures'), tt('À quel point une carte est recherchée sur le marché, de 0 à 100. Plus le score est haut, plus la carte se vend cher comparée aux autres cartes de hockey.', 'How sought after a card is, from 0 to 100. The higher the score, the more the card sells for compared to other hockey cards.')],
-    [tt('6 sources', '6 sources'), tt('La carte (set, insert, parallèle, numérotation, auto, patch, note) · les stats LNH · la popularité · les nouvelles · la mémoire du marché · les cartes semblables déjà vendues.', 'The card (set, insert, parallel, numbering, auto, patch, grade) · NHL stats · popularity · news · market memory · similar cards already sold.')],
-    [tt('Toujours à jour', 'Always current'), tt('Mis à jour chaque jour avec le marché, réappris chaque semaine. Un nouveau modèle remplace l’ancien seulement s’il fait au moins aussi bien.', 'Updated daily with the market, retrained weekly. A new model replaces the old one only if it does at least as well.')],
-    [tt('Testé sur de vraies ventes', 'Tested on real sales'), tt('Quand une carte s’est vendue au moins 2 fois plus cher qu’une autre, SlabIQ les met dans le bon ordre plus de 9 fois sur 10, sur des ventes qu’il n’avait jamais vues.', 'When one card sold for at least twice as much as another, SlabIQ ranks them correctly more than 9 times out of 10, on sales it had never seen.')],
-    [tt('Ce qu’il ne fait pas', 'What it doesn’t do'), tt('Il ne regarde jamais le prix de l’annonce et ne dit pas quoi miser. Vérifie toujours le prix avant d’acheter.', 'It never looks at the listing’s price and doesn’t tell you what to bid. Always check the price before buying.')]];
-  ouvrirFeuille(`<h3>SlabIQ</h3><div class="sous" style="margin-bottom:10px">${tt('Le moteur de score de SlabCoach.', 'SlabCoach’s scoring engine.')}</div><div class="liste">${P.map(([k, v]) => `<div class="rangee"><span class="milieu"><span class="nom">${k}</span><span class="det" style="white-space:normal">${v}</span></span></div>`).join('')}</div>`);
+  // 12 nov 2026 (Mathieu : « une pop up window avec un point d'interrogation pour la fenetre qui explique SlabIQ ») : une
+  // petite fenetre au centre, en tuiles, facile a lire
+  const T = [
+    ['iq-0', tt('Ce qu’il mesure', 'What it measures'), tt('À quel point une carte est recherchée, de 0 à 100, comparée à toutes les cartes de hockey vendues.', 'How sought after a card is, 0 to 100, compared with every hockey card sold.'), true],
+    ['iq-1', '80+', tt('Très recherchée', 'Highly sought'), false, 'vert'],
+    ['iq-2', '65+', tt('Recherchée', 'Sought after'), false, 'acc'],
+    ['iq-3', tt('6 sources', '6 sources'), tt('La carte (set, parallèle, /numéro, auto, patch, note) · stats LNH · popularité · nouvelles · mémoire du marché · cartes semblables vendues.', 'The card (set, parallel, /number, auto, patch, grade) · NHL stats · buzz · news · market memory · similar cards sold.'), true],
+    ['iq-4', '9/10', tt('dans le bon ordre, sur des ventes jamais vues', 'in the right order, on sales it never saw'), false, 'vert'],
+    ['iq-5', tt('24 h', '24 h'), tt('mis à jour chaque jour ; réappris aux 3 jours', 'updated daily; retrained every 3 days'), false, 'acc'],
+    ['iq-6', tt('Ce qu’il ne fait pas', 'What it doesn’t do'), tt('Il ne regarde jamais le prix de l’annonce et ne dit pas quoi miser. Vérifie toujours le prix avant d’acheter.', 'It never looks at the listing’s price and doesn’t tell you what to bid. Always check the price before buying.'), true]];
+  ouvrirFeuille(`<div class="iqx"><div class="iqx-t"><b>Slab<i>IQ</i></b><span>${tt('Le moteur de score de SlabCoach', 'SlabCoach’s scoring engine')}</span></div>
+    <div class="jb iqx-g">${T.map(([k, a, b, l, c]) => `<div class="jb-t ${l ? 'l' : ''}">${l ? `<span class="jb-k">${a}</span>` : `<b class="jb-v ${c || ''}">${a}</b><small>${b}</small>`}${l ? `<small class="iqx-p">${b}</small>` : ''}</div>`).join('')}</div></div>`, {centre: true});
 }
 // 11 nov 2026 (Mathieu : « quand l'app reconnait une carte deja achetee, lui proposer un prix de vente qui fait un bon
 // profit ») : ton cout (achat eBay relie, reconnu ou tape) -> le prix pour +30 % de profit net (frais eBay et envoi deduits).
 // Ton propre cout seulement : aucun prix d'eBay n'entre dans ce calcul.
 const MARGE_VENTE = 0.30, MARGE_MIN_D = 5;
+// 12 nov 2026 (Mathieu : « regarder dans les achats de l'utilisateur pour lui proposer un prix qui fait le minimum de
+// profit apres tous les frais ; en gris pale dans le champ prix ») : dans la fiche d'une carte, le cout (son achat eBay relie
+// ou tape) donne le prix pour +30 % net (frais eBay et envoi deduits), en gris pale dans le champ Prix tant qu'il est vide,
+// et en une ligne dessous. Son propre cout seulement : aucun prix d'eBay n'entre dans ce calcul.
+function suggererPrixCarte(c){
+  const pi = $('#c-prix'), ci = $('#c-cout'); if (!pi) return;
+  const maj = () => {
+    const cv = ci && ci.value !== '' ? nb(String(ci.value).replace(',', '.')) : null;
+    const coutCad = cv != null ? cv / (convertir(1) || 1) : nb(c.cout);
+    const y = prixPourProfit(coutCad);
+    let h = $('#c-pp'); if (!h) { h = document.createElement('div'); h.id = 'c-pp'; h.className = 'c-pp'; (pi.closest('label') || pi).insertAdjacentElement('afterend', h); }
+    if (!y) { pi.placeholder = ''; h.innerHTML = ''; return; }
+    const yd = Math.ceil(convertir(y));
+    pi.placeholder = String(yd);
+    const pv = pi.value !== '' ? nb(String(pi.value).replace(',', '.')) : null;
+    h.innerHTML = pv == null ? `${tt('Prix suggéré', 'Suggested price')} <b>${argent(y, 0)}</b> : +${Math.round(MARGE_VENTE * 100)} % ${tt('de profit après les frais eBay et l’envoi', 'profit after eBay fees and shipping')} <button class="lien-t" id="c-pp-ok">${tt('Mettre', 'Use')}</button>`
+      : pv + 0.5 < yd ? `<span class="or">${tt('Sous le prix qui fait', 'Under the price for')} +${Math.round(MARGE_VENTE * 100)} % ${tt('de profit', 'profit')} (${argent(y, 0)})</span>` : `<span class="vert">✓ +${Math.round(MARGE_VENTE * 100)} % ${tt('de profit ou plus après les frais', 'profit or more after fees')}</span>`;
+    const ok = $('#c-pp-ok'); if (ok) ok.onclick = (e) => { e.preventDefault(); vibrer(); pi.value = yd; maj(); };
+  };
+  if (!pi.dataset.pp) { pi.dataset.pp = '1'; pi.addEventListener('input', maj); if (ci) ci.addEventListener('input', maj); }
+  maj();
+}
 function prixPourProfit(cout){
   const c = +cout; if (!(c > 0)) return null;
   const [fp, ff] = fraisVente(), but = Math.max(c * MARGE_VENTE, MARGE_MIN_D);
@@ -14354,13 +14556,14 @@ function bentoJoueur(r, t){
 // 12 nov 2026 : le joueur en petite fenetre (depuis la fiche d'une annonce) : le meme bento que sa page ; ses cartes et
 // « pourquoi il bouge » s'ouvrent dans la fenetre (‹ revient au joueur) ; sa page complete reste a un toucher
 async function feuilleJoueur(nom){
-  ouvrirFeuille(`<div class="fj"><div class="lecture"><span class="roue"></span>${esc(nom)}</div></div>`);
+  ouvrirFeuille(`<div class="fj"><div class="lecture"><span class="roue"></span>${esc(nom)}</div></div>`, {centre: true});
   const [r, t] = await Promise.all([API.joueur_fiche(nom).catch(e => ({ok: false, erreur: e.message})), API.tendance_joueur(nom).catch(() => null)]);
   const z = $('#feuille .fj'); if (!z) return;
   if (!r.ok) { z.innerHTML = `<div class="vide">${esc(r.erreur || 'Erreur')}</div>`; return; }
   const dessiner = () => {
+    const crit = (() => { const c = (t && t.pourquoi && t.pourquoi.criteres) || ((S.tiqCrit || {})[r.joueur]) || null; return c; })();
     ouvrirFeuille(`<div class="fj"><div class="jb">${bentoJoueur(r, t)}</div>
-      <a class="pilule fj-page" href="#joueur/${encodeURIComponent(r.joueur)}">${tt('Sa page complète', 'Full page')} ›</a></div>`);
+      <a class="pilule fj-page" href="#joueur/${encodeURIComponent(r.joueur)}">${tt('Sa page complète', 'Full page')} ›</a></div>`, {centre: true});
     const f = $('#feuille'), retour = () => dessiner();
     const al = $('#j-alerte', f); if (al) al.onclick = () => { vibrer(); feuilleAlerte(r.requete, r.mediane ? Math.round(r.mediane * 0.8) : ''); };
     $$('[data-jfait]', f).forEach(b => b.onclick = () => { vibrer(); ouvrirFeuille(`<button class="fv-ret" id="fv-ret">‹ ${esc(r.joueur)}</button>${blocPourquoi((t || {}).pourquoi) || ''}`); $('#fv-ret').onclick = () => { vibrer(); retour(); }; });

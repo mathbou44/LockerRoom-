@@ -42,10 +42,10 @@ EXTRA = os.environ.get("LR_SCORE_EXTRA", "1") != "0"
 K_VOIS = 10
 VOIS_MAX = 400                       # ventes gardees par joueur pour les voisins
 COUPE_JOURS = 10                     # le reapprentissage se mesure sur ses 10 derniers jours (jamais vus)
-FENETRE_JOURS = 180                  # les ventes utilisees pour apprendre
-MAX_VENTES = int(os.environ.get("LR_SCORE_MAX_VENTES", "110000"))   # au plus (les plus recentes) : la memoire du serveur
+FENETRE_JOURS = int(os.environ.get("LR_SCORE_FENETRE_J", "365"))   # 12 nov 2026 (instance 4 Go) : un an de ventes (avant : 180 j)
+MAX_VENTES = int(os.environ.get("LR_SCORE_MAX_VENTES", "260000"))   # au plus (les plus recentes) : la memoire du serveur
 MO_LIBRES_MIN = float(os.environ.get("LR_SCORE_MO_LIBRES", "1300"))  # 145 000 ventes, moteur leger : pic mesure de 1,7 Go
-REAPPRENDRE_J = 7
+REAPPRENDRE_J = int(os.environ.get("LR_SCORE_REAPPRENDRE_J", "3"))   # 12 nov 2026 : aux 3 jours (avant : chaque semaine)
 HEURES_NUIT = (7, 8, 9)               # heure du serveur (UTC sur Render) : 2 h a 5 h a Montreal
 _verrou = threading.Lock()
 _CACHE = {"vois": {}, "vois_jour": None}
@@ -751,8 +751,13 @@ def reapprendre(ventes=None, aujourdhui=None, log=print, iters=1000):
     if ventes is None:
         ventes = _ventes_base((auj - timedelta(days=FENETRE_JOURS)).isoformat(), auj.isoformat())
     bruts, y, jours = preparer(ventes)
-    if len(bruts) > MAX_VENTES:
-        bruts, y, jours = bruts[-MAX_VENTES:], y[-MAX_VENTES:], jours[-MAX_VENTES:]
+    # 12 nov 2026 (« SlabIQ a pleine puissance », instance 2c-4g) : le plus de ventes que la memoire libre permet. Moteur leger :
+    # pic mesure de 1,7 Go pour 145 000 ventes (~12 Ko par vente) ; on garde 500 Mo de marge pour l'app
+    n_max = MAX_VENTES
+    if libre is not None:
+        n_max = max(20000, min(MAX_VENTES, int((libre - 500) / 0.0125)))
+    if len(bruts) > n_max:
+        bruts, y, jours = bruts[-n_max:], y[-n_max:], jours[-n_max:]
     e = {"le": datetime.now().isoformat(timespec="seconds"), "ventes": len(bruts)}
     if len(bruts) < 20000:
         e.update(accepte=False, raison="pas assez de ventes (%d)" % len(bruts))
