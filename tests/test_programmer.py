@@ -38,12 +38,15 @@ for mauvais in ("2026-10-29T12:03:00+00:00", "2026-11-25T12:00:00+00:00"):
 a = lockerroom.Api(os.path.join(tempfile.mkdtemp(), "a.db"))
 ebay_compte.statut = lambda: {"connecte": True, "ecriture": True}
 annonces.photos_ebay = lambda l: [str(p) for p in l]
-pub = []
+pub, promos, PROMO_REFUSEE = [], [], {"v": False}
 def ecrire(fn, *args, **kw):
     if fn == "annonces.publier":
         pub.append(args[0])
         return {"ok": True, "item_id": str(100000000 + len(pub)), "frais": 0}
     if fn == "annonces.promouvoir":
+        promos.append(args[0])
+        if PROMO_REFUSEE["v"]:
+            return {"ok": False, "erreur": "listing not active"}
         return {"ok": True, "promotion": args[1]}
     return {"ok": True}
 a._ecrire_ebay = ecrire
@@ -86,10 +89,17 @@ print("OK politique par carte")
 # trop loin : 30 cartes a 1 par jour depassent les 21 jours d'eBay
 r2 = a.serie_programmer(list(range(1, 31)), debut.isoformat(), 24)
 assert not r2["ok"] and "cartes au plus" in r2["erreur"], r2
-# la promotion attend la mise en ligne : rien avant, puis appliquee
-assert a.promos_attente_appliquer() == 0
+# 11 nov 2026 (« la promotion de 2 % n'etait pas appliquee ») : la promotion d'une annonce programmee est mise TOUT DE SUITE
+assert len(promos) == 5 and a.promos_attente_appliquer() == 0, promos
+# eBay la refuse tant que l'annonce n'est pas en ligne : elle attend, essayee une fois a l'heure suivante, puis a la mise en ligne
+a._promo_attente("100000099", 2, (debut + timedelta(days=3)).strftime("%Y-%m-%dT%H:%M:%S.000Z"))
+PROMO_REFUSEE["v"] = True
+promos.clear()
+assert a.promos_attente_appliquer() == 0 and promos == ["100000099"], promos
+assert a.promos_attente_appliquer() == 0 and promos == ["100000099"], promos          # pas re-essayee chaque heure
+PROMO_REFUSEE["v"] = False
 c = a._db(); c.execute("UPDATE promos_attente SET debut='2000-01-01T00:00:00.000Z'"); c.commit(); c.close()
-assert a.promos_attente_appliquer() == 3
+assert a.promos_attente_appliquer() == 1
 # modifier une annonce programmee
 rv = []
 a._ecrire_ebay = lambda fn, *args, **kw: (rv.append((fn, args)) or {"ok": True})

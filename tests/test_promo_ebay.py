@@ -93,6 +93,12 @@ assert a.annonce_promotion(cid)["promue"] is False
 r = a.annonce_promotion(cid, 2)
 assert r["ok"] and r["promue"] and r["pct"] == 2.0, r
 c = a._db(); c.execute("UPDATE cartes SET debut='2099-01-01T12:00:00.000Z' WHERE id=?", (cid,)); c.commit(); c.close()
+# 11 nov 2026 (« la promotion de 2 % n'etait pas appliquee ») : programmee, elle est essayee tout de suite chez eBay
 r = a.annonce_promotion(cid, 3)
-assert r["attente"]["pct"] == 3 and r["attente"]["debut"].startswith("2099"), r
+assert r["ok"] and r["promue"] and r["pct"] == 3.0, r
+# eBay la refuse (pas encore en ligne) : elle attend la mise en ligne
+vrai = a._ecrire_ebay
+a._ecrire_ebay = lambda fn, *x, **k: {"ok": False, "erreur": "not active"} if fn == "annonces.promouvoir" else vrai(fn, *x, **k)
+r = a.annonce_promotion(cid, 4)
+assert r["attente"]["pct"] == 4 and r["attente"]["debut"].startswith("2099"), r
 print("ok : promotion eBay")
