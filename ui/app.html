@@ -42,6 +42,8 @@
 [hidden]{display:none !important}
 html,body{margin:0; background:var(--fond); color:var(--texte); font-family:'Barlow',system-ui,sans-serif; font-size:16px}
 body{min-height:100vh; padding-bottom:calc(76px + var(--bas))}
+/* 12 nov 2026 (« pourquoi je peux bouger ma page et la tasser ? ») : la page ne glisse plus de cote (les rangees qui defilent restent) */
+html, body{overflow-x:hidden; overscroll-behavior-x:none} @supports (overflow:clip){ html, body{overflow-x:clip} }
 body.sandbox::before{content:'SANDBOX eBay · données de test'; position:sticky; top:0; z-index:60; display:block; text-align:center; padding:6px 10px; font:700 12px/1.2 'Barlow Condensed',sans-serif; letter-spacing:.12em; background:#F2B84B; color:#1A1205}
 button,input,select,textarea{font-family:inherit; font-size:16px; color:inherit}
 button{cursor:pointer}
@@ -711,8 +713,11 @@ html[lang=en] .w-ligne::after{content:'Remove'}
 .afs-t{display:flex; align-items:baseline; flex-wrap:wrap; gap:8px} .afs-t > b{font:700 44px/1 var(--f-cond); color:var(--acc)} .afs-t > span{font:700 22px var(--f-cond); text-transform:uppercase; letter-spacing:.04em} .afs-t small{flex-basis:100%; font-size:15px; color:var(--doux)} .afs-t small b.vert{color:var(--vert)}
 .afs-lot, .afs-dbl{display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:18px; background:color-mix(in srgb, var(--or) 12%, var(--carte)); border:1px solid color-mix(in srgb, var(--or) 35%, var(--ligne))}
 .afs-dbl{background:color-mix(in srgb, var(--rouge) 12%, var(--carte)); border-color:color-mix(in srgb, var(--rouge) 40%, var(--ligne))}
-.afs-lt{flex:1; display:flex; flex-direction:column; gap:2px} .afs-lt b{font:700 17px var(--f-cond)} .afs-lt small{font-size:13px; color:var(--doux)}
+.afs-lot .btn, .afs-dbl .btn{width:auto; flex:none; padding:0 16px; min-height:40px} .afs-lot > span:first-child{flex:none; color:var(--or)}
+.afs-lt{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px} .afs-lt b{font:700 17px var(--f-cond)} .afs-lt small{font-size:13px; color:var(--doux)}
 .afs-l{display:flex; flex-direction:column; gap:8px}
+.afs-g{position:relative; border-radius:18px; overflow:hidden; max-height:200px} .afs-g .afs-r{position:relative; z-index:1; will-change:transform}
+.afs-del{position:absolute; right:0; top:0; bottom:0; width:96px; border:0; background:var(--rouge); color:#fff; font:700 15px var(--f-cond); letter-spacing:.06em; text-transform:uppercase; cursor:pointer}
 .afs-r{display:flex; align-items:center; gap:12px; width:100%; padding:10px; border-radius:18px; background:var(--carte); border:1px solid var(--ligne); color:var(--texte); font:inherit; text-align:left; cursor:pointer}
 .afs-ph{width:54px; height:74px; border-radius:8px; overflow:hidden; flex:none; background:var(--carte2); display:grid; place-items:center} .afs-ph img{width:100%; height:100%; object-fit:cover}
 .afs-c{flex:1; min-width:0; display:flex; flex-direction:column; gap:6px} .afs-c > b{font:700 18px/1.15 var(--f-cond); white-space:nowrap; overflow:hidden; text-overflow:ellipsis} .afs-c > b.afs-q{color:var(--or-clair)}
@@ -10609,7 +10614,7 @@ function vueAFinirSimple(l){
   const prets = l.filter(c => !manque(c).length).length;
   return `<div class="afs">
     <div class="afs-t"><b>${l.length + nLot}</b><span>${tt(l.length + nLot > 1 ? 'cartes à finir' : 'carte à finir', l.length + nLot > 1 ? 'cards to finish' : 'card to finish')}</span>
-      ${l.length ? `<small>${prets ? `<b class="vert">${prets} ${tt(prets > 1 ? 'prêtes' : 'prête', 'ready')}</b> · ` : ''}${l.length - prets ? `${l.length - prets} ${tt('à compléter', 'to complete')}` : ''}</small>` : ''}</div>
+      ${l.length ? `<small>${[prets ? `<b class="vert">${prets} ${tt(prets > 1 ? 'prêtes' : 'prête', 'ready')}</b>` : '', l.length - prets ? `${l.length - prets} ${tt('à compléter', 'to complete')}` : '', tt('glisse une carte vers la gauche pour la retirer', 'swipe a card left to remove it')].filter(Boolean).join(' · ')}</small>` : ''}</div>
     <div id="afs-dbl"></div>
     ${nLot ? `<div class="afs-lot"><span>${ICO_LOT}</span><span class="afs-lt"><b>${tt(`${nLot} photo${nLot > 1 ? 's' : ''} pas encore lue${nLot > 1 ? 's' : ''}`, `${nLot} photo${nLot > 1 ? 's' : ''} not read yet`)}</b><small>${tt('L’app les lit et les ajoute ici.', 'The app reads them and adds them here.')}</small></span><button class="btn petit" id="af-lot">${tt('Continuer', 'Continue')}</button></div>` : ''}
     <div class="afs-l">${l.map(c => { const m = manque(c), nom = c.joueur || titreCourt(c.titre) || '';
@@ -10622,7 +10627,26 @@ function vueAFinirSimple(l){
       <button class="lien-t" id="af-retirer">${tt('Vider la liste « À finir »', 'Clear the “To finish” list')}</button>`
       : `<div class="vide">${tt('Rien à finir : tout est sur eBay', 'Nothing to finish: everything is on eBay')}</div>`}</div>`;
 }
+// 12 nov 2026 (« on devrait pouvoir supprimer des cartes des A finir en glissant ») : glisser une ligne vers la gauche montre
+// « Retirer » ; un toucher la retire de l'inventaire (jamais une carte deja sur eBay : ces lignes-la n'y sont pas)
+function glisserPourRetirer(z){
+  $$('.afs-r', z).forEach(r => {
+    if (r.parentNode.classList.contains('afs-g')) return;
+    const w = document.createElement('div'); w.className = 'afs-g'; r.parentNode.insertBefore(w, r); w.appendChild(r);
+    const del = document.createElement('button'); del.className = 'afs-del'; del.textContent = tt('Retirer', 'Remove'); w.insertBefore(del, r);
+    let x0 = null, y0 = 0, dx = 0, ouvert = false, bouge = false;
+    r.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0; bouge = false; r.style.transition = 'none'; }, {passive: true});
+    r.addEventListener('touchmove', e => { if (x0 === null) return; const ddx = e.touches[0].clientX - x0, ddy = e.touches[0].clientY - y0;
+      if (!bouge && Math.abs(ddy) > Math.abs(ddx)) { x0 = null; return; } bouge = true; dx = Math.min(0, Math.max(-110, ddx + (ouvert ? -96 : 0))); r.style.transform = `translateX(${dx}px)`; }, {passive: true});
+    r.addEventListener('touchend', () => { if (x0 === null) return; x0 = null; r.style.transition = 'transform .2s ease'; ouvert = dx < -48; r.style.transform = ouvert ? 'translateX(-96px)' : ''; if (bouge) { r.dataset.glisse = '1'; setTimeout(() => delete r.dataset.glisse, 300); } });
+    del.onclick = async () => { vibrer(); const x = await API.carte_supprimer(+r.dataset.id).catch(e => ({ok: false, erreur: e.message}));
+      if (x && x.ok === false) { toast(x.erreur || 'Erreur'); return; }
+      w.style.transition = 'opacity .2s, max-height .25s'; w.style.opacity = 0; w.style.maxHeight = '0px'; setTimeout(() => w.remove(), 260);
+      S.nbAFinir = Math.max(0, (S.nbAFinir || 1) - 1); MEMO.clear(); toast(tt('Carte retirée', 'Card removed'), 1800); };
+  });
+}
 async function brancherAFinirSimple(l){
+  glisserPourRetirer($('#i-liste'));
   const r = await API.doublons_a_finir().catch(() => null), z = $('#afs-dbl');
   if (!z || !r || !r.ok || !r.n) return;
   z.innerHTML = `<div class="afs-dbl"><span class="afs-lt"><b>${tt(`${r.n} carte${r.n > 1 ? 's' : ''} en double`, `${r.n} duplicate card${r.n > 1 ? 's' : ''}`)}</b><small>${tt('La même photo est là plus d’une fois (un lot repris).', 'The same photo is here more than once (a resumed batch).')}</small></span>
@@ -11013,9 +11037,9 @@ async function chargerInventaire(){
   const slabs = S.filtreInv === 'collection';
   const selB = l.length && !vendues ? `<div class="inv-selb"><button class="pilule ${S.selInv ? 'acc' : ''}" id="i-sel">${S.selInv ? tt('Terminer la sélection', 'Done selecting') : tt('Sélectionner', 'Select')}</button></div>` : '';
   const af = S.filtreInv === 'afinir' ? blocAFinir(l) : '';
-  ['i-tab', 'i-achats'].forEach(id => { const e = $('#' + id); if (e) e.hidden = S.filtreInv === 'afinir'; });   // 12 nov : A finir, rien d'autre
+  ['i-tab', 'i-achats'].forEach(id => { const e = $('#' + id); if (e) { if (S.filtreInv === 'afinir') e.style.setProperty('display', 'none', 'important'); else e.style.removeProperty('display'); } });   // 12 nov : A finir, rien d'autre
   if (S.filtreInv === 'afinir') { z.innerHTML = puces + vueAFinirSimple(l); brancherAFinir(l); brancherAFinirSimple(l);
-    $$('#i-liste .tuile-inv').forEach(r => r.onclick = () => { vibrer(); const c = l.find(x => x.id === +r.dataset.id); if (c) feuilleCarte(c); });
+    $$('#i-liste .tuile-inv').forEach(r => r.onclick = () => { if (r.dataset.glisse || (r.style.transform || '').includes('-96')) { r.style.transform = ''; return; } vibrer(); const c = l.find(x => x.id === +r.dataset.id); if (c) feuilleCarte(c); });
     const fz = $('.i-filtres'); if (fz) brancherFiltresInv(); return; }
   z.innerHTML = puces + note + af + (slabs ? '' : resume) + selB + (l.length ? (slabs ? `<div class="grille-slab">${l.map(tuileSlab).join('')}</div>` : `<div class="grille-c">${l.map(tuileInv).join('')}</div>`)
     : S.filtreInv === 'afinir' ? (af ? '' : `<div class="vide">${tt('Rien à finir : tout est sur eBay', 'Nothing to finish: everything is on eBay')}</div>`)

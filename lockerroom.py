@@ -3330,23 +3330,47 @@ class Api:
         return {"ok": True, "cartes": cartes, "n": len(cartes), "dos_sans_devant": max(0, len(ds) - sum(1 for j in paires if j is not None))}
 
     def _doublons_a_finir(self):
-        """{id_garde: [ids en double]} : les cartes « a finir » dont la 1re photo a le meme contenu (le lot repris)."""
-        import hashlib
+        """{id_garde: [ids en double]} : les cartes « a finir » qui sont la meme carte : la meme photo (empreinte visuelle :
+        tolere une photo recompressee ou recadree un peu), ou le meme titre identifie. La plus ancienne est gardee."""
         import photos_cartes
-        groupes = {}
-        for x in self.inventaire_liste({"dispo": 1, "a_finir": 1}) or []:
-            if x.get("item_number"):
-                continue
-            f = photos_cartes.chemin(x.get("photo"))
-            if not f:
-                continue
+        try:
+            from PIL import Image as _Im
+        except ImportError:
+            _Im = None
+        L = [x for x in (self.inventaire_liste({"dispo": 1, "a_finir": 1}) or []) if not x.get("item_number")]
+
+        def empreinte(ref):
+            f = photos_cartes.chemin(ref)
+            if not f or not _Im:
+                return None
             try:
-                with open(f, "rb") as fi:
-                    h = hashlib.sha256(fi.read()).hexdigest()
-            except OSError:
-                continue
-            groupes.setdefault(h, []).append(int(x["id"]))
-        return {min(l): sorted(i for i in l if i != min(l)) for l in groupes.values() if len(l) > 1}
+                with _Im.open(f) as im:
+                    g = im.convert("L").resize((9, 8))
+                    px = list(g.getdata())
+                return sum(1 << i for i in range(64) if px[(i // 8) * 9 + i % 8] > px[(i // 8) * 9 + i % 8 + 1])
+            except Exception:
+                return None
+        info = [(int(x["id"]), empreinte(x.get("photo")), re.sub(r"\s+", " ", str(x.get("titre") or "")).strip().lower()) for x in L]
+        parent = {i: i for i, _, _ in info}
+
+        def racine(i):
+            while parent[i] != i:
+                parent[i] = parent[parent[i]]
+                i = parent[i]
+            return i
+        for k, (i, h, t) in enumerate(info):
+            for j, h2, t2 in info[k + 1:]:
+                meme_photo = h is not None and h2 is not None and bin(h ^ h2).count("1") <= 5
+                # le meme titre seul ne suffit pas (2 vraies copies de la meme carte) : il faut aussi une photo proche
+                meme_titre = len(t) >= 20 and t == t2 and h is not None and h2 is not None and bin(h ^ h2).count("1") <= 14
+                if meme_photo or meme_titre:
+                    a_, b_ = racine(i), racine(j)
+                    if a_ != b_:
+                        parent[max(a_, b_)] = min(a_, b_)
+        groupes = {}
+        for i, _, _ in info:
+            groupes.setdefault(racine(i), []).append(i)
+        return {min(l): sorted(x for x in l if x != min(l)) for l in groupes.values() if len(l) > 1}
 
     def doublons_a_finir(self):
         """12 nov 2026 : combien de doublons dans « A finir » (pour le bouton « Retirer les doublons »)."""
