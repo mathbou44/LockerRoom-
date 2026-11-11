@@ -412,6 +412,9 @@ def rechercher(q, fond=True, usage=None):
     taux = _taux_usd_cad()
     ventes, vus, erreur = [], {}, None
     les_sites = sites() if (not fond or usage == "verif") else sites()[:1]
+    # 11 nov 2026 (SoldComps : « eBay.com, .co.uk et .com.au sont revenus ; les autres sites recuperent encore ») : un site
+    # secondaire en panne (eBay.ca) est saute 30 min ; avant, chaque recherche l'attendait 25 s et toute la chasse ralentissait
+    les_sites = [st for k_, st in enumerate(les_sites) if k_ == 0 or time.time() >= _SITE_PANNE.get(st, 0)]
     pre = {}
     if not fond and len(les_sites) > 1 and utilises_aujourdhui() + len(les_sites) <= plafond_jour():
         # 28 oct 2026 (vitesse du scan) : une demande de l'utilisateur interroge les deux sites EN MEME TEMPS (avant : l'un
@@ -428,6 +431,9 @@ def rechercher(q, fond=True, usage=None):
             break
         d, err = pre[site] if site in pre else _appel(q, site, usage=usage, compte=cpt, delai=25 if fond else DELAI_TAP)
         if err:
+            if i and ("injoignable" in str(err) or "HTTP 5" in str(err)):
+                _SITE_PANNE[site] = time.time() + 1800              # le site secondaire : on le saute 30 min
+                continue
             erreur = erreur or err
             # 3 nov 2026 (Mathieu, Jordan Beam Team : « pourquoi ca sort rien ? », SoldComps TimeoutError) : eBay.com en
             # panne mais eBay.ca lu en meme temps -> on garde eBay.ca au lieu de tout jeter
@@ -514,6 +520,7 @@ def _appel(q, site, attendre=True, usage=None, compte=None, delai=25):
 
 
 _ERREURS = {}
+_SITE_PANNE = {}                 # 11 nov 2026 : un site eBay secondaire en panne chez SoldComps -> jusqu'a quand on le saute
 _DERNIERE = {}
 _PANNE = [0.0]                   # SoldComps ne repond pas : les taches de fond attendent jusqu'a cette heure
 _PANNE_N = [0]                   # 9 nov 2026 : echecs de suite (l'attente grandit)

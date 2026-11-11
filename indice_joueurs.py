@@ -33,9 +33,9 @@ import unicodedata
 from datetime import date, datetime, timedelta
 
 POIDS_ACTIF = {"forme": 0.38, "ascension": 0.11, "rythme": 0.09, "buzz": 0.09, "notoriete": 0.05, "demande": 0.11,
-               "recrue": 0.05, "legende": 0.05, "actu": 0.07}
+               "recrue": 0.05, "legende": 0.05, "actu": 0.07, "communaute": 0.05}
 BONUS_FEU = 6                      # « 6 buts cette semaine = tres haut » : la semaine en feu passe devant tout le monde
-POIDS_RETIRE = {"legende": 0.33, "buzz": 0.22, "notoriete": 0.33, "actu": 0.12}
+POIDS_RETIRE = {"legende": 0.33, "buzz": 0.22, "notoriete": 0.33, "actu": 0.12, "communaute": 0.06}
 ECHELLE_RETIRE = 0.85              # une semaine en feu passe devant ; une legende reste quand meme haut
 GARDE_JOURS = 70
 _verrou = threading.Lock()
@@ -337,8 +337,15 @@ def calculer(d=None, base=None, demande=None):
         demande = demande or demande_legale.demande
     stats_j = d.get("joueurs") or {}
     noms = set(base) | set(stats_j)
-    brut = {k: {} for k in ("forme", "ascension", "rythme", "buzz", "notoriete", "demande", "recrue", "legende", "actu", "pic")}
+    brut = {k: {} for k in ("forme", "ascension", "rythme", "buzz", "notoriete", "demande", "recrue", "legende", "actu", "pic", "communaute")}
     nouvelles_j = _actu_par_joueur(noms, actu())
+    # 11 nov 2026 (Mathieu : « ce que nos utilisateurs regardent, suivent, ajoutent : un signal que personne d'autre n'a ») :
+    # l'interet de la communaute SlabCoach (fiches, annonces, watchlists, favoris) des 7 et 30 derniers jours
+    try:
+        import communaute
+        comm = {k.lower(): v for k, v in communaute.par_joueur(30).items()}
+    except Exception:
+        comm = {}
     info = {}
     for nom in noms:
         e = base.get(nom) or {}
@@ -377,6 +384,9 @@ def calculer(d=None, base=None, demande=None):
             if s:
                 brut["demande"][nom] = s
         brut["recrue"][nom] = 1.0 if actif and (h.get("saisons") or 9) <= 2 else 0.0
+        cm = comm.get(nom.lower())
+        if cm and cm[1] > 0:
+            brut["communaute"][nom] = cm[0] + 0.3 * cm[1]
         na = nouvelles_j.get(nom)
         brut["actu"][nom] = (na["n"] + 2 * na["ev"] + 0.2 * na.get("pos", 0)) if na else 0.0
         brut["legende"][nom] = _legende_brute(h)

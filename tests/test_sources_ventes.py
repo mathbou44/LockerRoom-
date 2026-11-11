@@ -85,7 +85,7 @@ thecardapi._appel = faux
 thecardapi._taux = lambda: 1.4
 thecardapi._CACHE.clear()
 n_t = thecardapi.moissonner(max_pages=10)
-assert [a.get("cursor") for a in appels_t] == [None, "1", "2"], appels_t
+assert [a.get("cursor") for a in appels_t if a["q"] == "hockey auto"] == [None, "1", "2"], appels_t     # 11 nov : chaque mot de la moisson
 assert thecardapi.statut()["reponse_champs"] == ["data", "next_cursor"]
 os.environ.pop("THECARDAPI_CLE")
 print("OK TheCardAPI curseur", n_t)

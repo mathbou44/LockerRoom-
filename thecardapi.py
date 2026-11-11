@@ -8,7 +8,7 @@ raffiner et sauver ». SoldComps reste la BASE. TheCardAPI (thecardapi.com) sert
   - ARCHIVER : chaque jour, une moisson des ventes de hockey d'hier va dans nos archives (base_ventes) : a nous pour de bon.
 
 Cle : THECARDAPI_CLE (Render, jamais sur GitHub ni a l'ecran). Forfait gratuit : 5 000 ventes lues par jour ; le plafond
-LR_THECARDAPI_JOUR (4 500 par defaut) laisse une marge. Prix en $ US -> $ CA (taux de la Banque du Canada).
+LR_THECARDAPI_JOUR (4 950 par defaut) laisse une petite marge. Prix en $ US -> $ CA (taux de la Banque du Canada).
 Inactif sans cle : rien ne change.
 """
 import json
@@ -39,9 +39,9 @@ def actif():
 
 def plafond_jour():
     try:
-        return max(0, int(os.environ.get("LR_THECARDAPI_JOUR") or 4500))
+        return max(0, int(os.environ.get("LR_THECARDAPI_JOUR") or 4950))
     except ValueError:
-        return 4500
+        return 4950                  # 11 nov 2026 (Mathieu : « maximiser jusqu'a 5 000, c'est gratuit ») : 50 de marge
 
 
 def _chemin_usage():
@@ -92,7 +92,9 @@ def _compter(n, usage):
 # en plus d'une recherche qui a deja repondu ; « secours » = les verifications de deals pendant une panne
 # 11 nov 2026 (forfait gratuit : 5 000 lignes par jour, pagination par curseur) : SoldComps reste la base des gestes de
 # l'utilisateur ; la moisson (qui nourrit SlabIQ) prend jusqu'a 80 % du jour
-PARTS = {"tap": 1.0, "raffiner": 0.4, "secours": 0.25, "moisson": 0.8}
+# 11 nov 2026 (Mathieu : « on enregistre le MAXIMUM de ventes utiles dans notre banque a nous ? ») : la moisson prend
+# jusqu'a 93 % du jour (avant 80 %, le reste se perdait chaque jour) ; ~300 lignes restent pour les secours
+PARTS = {"tap": 1.0, "raffiner": 0.4, "secours": 0.25, "moisson": 0.93}
 _DERNIER = {"curseur": None, "cles": None}
 
 
@@ -217,7 +219,9 @@ def _panne(err):
 
 
 # -- la moisson : les ventes de hockey d'hier, une fois par jour, dans nos archives -------------------------
-MOTS_MOISSON = ("hockey",)
+# 11 nov 2026 : les ventes UTILES d'abord (celles qui font les deals : autos, patchs, numerotees, gradees, Young Guns), puis
+# le reste du hockey avec ce qui reste du budget ; une meme vente n'est gardee qu'une fois (base_ventes)
+MOTS_MOISSON = ("hockey auto", "hockey patch", "hockey psa", "hockey numbered", "young guns", "hockey")
 
 
 def moissonner(max_pages=None):
@@ -225,8 +229,11 @@ def moissonner(max_pages=None):
     import base_ventes
     n, pages = 0, max_pages or int(os.environ.get("LR_THECARDAPI_PAGES") or 40)
     for mot in MOTS_MOISSON:
+        if not _budget_ok("moisson", 100):
+            break
         vus, cur = set(), None
-        for page in range(1, pages + 1):
+        # les recherches ciblees : 8 pages (800 ventes) chacune au plus ; « hockey » (la derniere) prend tout le reste
+        for page in range(1, (pages if mot == MOTS_MOISSON[-1] else min(pages, 8)) + 1):
             # la page suivante : par curseur quand l'API en donne un (forfait actuel), sinon par numero de page
             ventes, err = rechercher(mot, jours=2, limite=100, usage="moisson", delai=20, page=None if cur else page, curseur=cur)
             if err or not ventes:
@@ -244,8 +251,12 @@ def moissonner(max_pages=None):
 
 
 def moissonner_si_besoin():
-    """Appele chaque heure par la boucle du serveur : une moisson par jour, apres 20 h UTC (le gros des encans est fini)."""
-    if not actif() or _ETAT["en_cours"] or time.time() - _ETAT["moisson_le"] < 20 * 3600 or datetime.utcnow().hour < 20:
+    """Appele chaque heure par la boucle du serveur : une moisson apres 20 h UTC (le gros des encans est fini), puis une 2e a
+    23 h UTC qui prend ce qui reste du budget du jour (11 nov 2026 : rien ne se perd)."""
+    h = datetime.utcnow().hour
+    if not actif() or _ETAT["en_cours"] or h < 20 or not _budget_ok("moisson", 100):
+        return False
+    if time.time() - _ETAT["moisson_le"] < (2.5 * 3600 if h >= 23 else 20 * 3600):
         return False
     _ETAT.update(moisson_le=time.time(), en_cours=True)
 

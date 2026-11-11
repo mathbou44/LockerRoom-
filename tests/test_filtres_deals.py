@@ -35,6 +35,10 @@ assert ids({"sortes": ["patch"]}) == {"s2"}
 assert ids({"joueurs": ["Sakic"]}) == {"s2"}
 assert ids({"prix_max": 25}) == {"s4"}
 a.deals_profil_regler({"collectionne": ["veterans"]})                           # ce que je collectionne : pas de recrues
+# 11 nov 2026 (« ou sont tous mes deals ? dans admin ») : l'admin voit tout, son profil ne filtre pas
+a._est_admin = lambda reel=False: True
+assert "s4" in ids({}), ids({})
+a._est_admin = lambda reel=False: False
 assert "s4" not in ids({}), ids({})
 a.deals_profil_regler({"collectionne": [], "prix_min": 25})
 assert ids({}) == {"s2"}, ids({})

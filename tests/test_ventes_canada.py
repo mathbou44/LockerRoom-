@@ -16,6 +16,9 @@ def it(i, prix, dev, site):
 
 
 class TestCanada(unittest.TestCase):
+    def setUp(self):
+        vendues._SITE_PANNE.clear()          # 11 nov 2026 : un site en panne dans un test ne deborde pas sur le suivant
+
     def test_deux_sites_fusionnes_sans_doublon(self):
         appels = []
         def appel(q, site, attendre=True, usage=None, **k):

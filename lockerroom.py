@@ -73,6 +73,9 @@ REGLAGES_DEFAUT = {
     "ramassage": [],
     "radar_q": 0,                # 10 nov 2026 : le questionnaire du Radar deja vu (par compte)
     "chasses": [],               # 10 nov 2026 : les sets que le Radar chasse (« il te manque ») : [{pid, sous, nom}]
+    # 11 nov 2026 (Mathieu : « Canada est choisi mais une carte expediee des Etats-Unis est proposee : douanes, tarifs ») :
+    # les pays d'ou les cartes du Radar peuvent etre expediees (un, l'autre ou les deux)
+    "provenance": ["CA", "US"],
     "pays": "CA",                # 8 nov 2026 : d'ou l'utilisateur achete (CA | US) : taxes, douanes et deals de son pays d'abord
     # 30 oct 2026 (Mathieu : « la personne qui a le profil doit pouvoir personnaliser ses deals un peu ») :
     # collectionne : recrues | veterans | legendes | hits | gradees (vide = tout) ; favoris : joueurs ou equipes
@@ -1432,6 +1435,14 @@ class Api:
         if isinstance(fav, str):
             fav = re.split(r"[,;\n]+", fav)
         fav = list(dict.fromkeys(re.sub(r"\s+", " ", str(x)).strip()[:40] for x in (fav or []) if str(x).strip()))
+        try:                                     # 11 nov 2026 : un signal de la communaute (un joueur ajoute aux favoris)
+            import communaute
+            avant_f = {str(x).lower() for x in (self.deals_profil_lire() or {}).get("favoris") or []}
+            for f_ in fav:
+                if f_.lower() not in avant_f:
+                    communaute.noter(f_, "favori")
+        except Exception:
+            pass
         # 31 oct 2026 (Mathieu : « 3 pour le compte gratuit et au moins 10 pour les payants ») : mes joueurs suivis
         fmax = self.FAVORIS_MAX_PRO if forfaits.est_pro() else self.FAVORIS_MAX
         coupes = fav[fmax:]
@@ -6558,6 +6569,11 @@ class Api:
 
     # -- 26 oct 2026 : fiche joueur, alertes, tendances, collection, calendrier (marche.py) ---------------------------
     def joueur_fiche(self, nom):
+        try:                                     # 11 nov 2026 : un signal de la communaute (sa fiche ouverte)
+            import communaute
+            communaute.noter(nom, "fiche")
+        except Exception:
+            pass
         # 13 nov 2026 (Mathieu : « on devrait TOUJOURS avoir toute l'info » ; « Alexei Semenov BAP ») : le nom nettoye des mots
         # de set colles, et la carriere LNH + quelques lignes de bio pour TOUS les joueurs (actifs ou retraites)
         import nhl
@@ -6589,6 +6605,38 @@ class Api:
     RADAR_GARDE_S = 300
 
     def mes_deals(self, frais=False):
+        return self._filtrer_provenance(self._mes_deals0(frais))
+
+    def _provenance(self):
+        p = self.reglages_lire().get("provenance")
+        p = [str(x).upper() for x in p] if isinstance(p, list) else []
+        p = [x for x in p if x in ("CA", "US")]
+        return p or ["CA", "US"]
+
+    def _filtrer_provenance(self, r):
+        """11 nov 2026 : seulement les cartes expediees des pays choisis (une annonce sans pays connu reste)."""
+        prov = self._provenance()
+        if not isinstance(r, dict) or set(prov) >= {"CA", "US"}:
+            return r
+        ok = lambda x: not str(x.get("lieu") or "").strip() or str(x.get("lieu")).upper()[:2] in prov
+        out = dict(r)
+        for k in ("deals", "petits"):
+            if isinstance(out.get(k), list):
+                out[k] = [x for x in out[k] if not isinstance(x, dict) or ok(x)]
+        for k in ("pour_toi", "decouvrir", "chauds", "creux", "chasses", "types", "vendeurs", "cibles"):
+            if isinstance(out.get(k), list):
+                gs = []
+                for g in out[k]:
+                    if isinstance(g, dict) and isinstance(g.get("annonces"), list):
+                        g = dict(g, annonces=[x for x in g["annonces"] if ok(x)])
+                        if not g["annonces"]:
+                            continue
+                    gs.append(g)
+                out[k] = gs
+        out["provenance"] = prov
+        return out
+
+    def _mes_deals0(self, frais=False):
         """12 nov 2026 (Mathieu : « tout est ultralent dans le Radar ; ca doit etre beaucoup plus rapide ») : le Radar refait
         des dizaines de recherches eBay ; le meme Radar (meme compte, meme profil, memes prix cibles, meme pays, meme vue) est
         garde 5 min. Changer son profil, un prix cible ou le pays change la cle : le Radar se refait tout de suite.
@@ -7179,6 +7227,20 @@ class Api:
 
     _IQ_CHIFFRES = {"le": 0.0, "v": None}
 
+    # 11 nov 2026 (Mathieu : « predire la variation des cartes d'un joueur, jusqu'a 95 % de confiance ») : le test rejoue le
+    # passe avec nos ventes, Wikipedia et la LNH (slabiq_test.py) ; admin seulement, en arriere-plan, en lecture seule
+    def slabiq_test_lancer(self):
+        if not self._est_admin(reel=True):
+            return {"ok": False, "erreur": "Admin seulement"}
+        import slabiq_test
+        return slabiq_test.lancer()
+
+    def slabiq_test_lire(self):
+        if not self._est_admin(reel=True):
+            return {"ok": False, "erreur": "Admin seulement"}
+        import slabiq_test
+        return slabiq_test.lire()
+
     def slabiq_chiffres(self):
         """13 nov 2026 (Mathieu : « plus punchy et vendeur ; mettre des stats et infos wow ») : les vrais chiffres de SlabIQ pour
         sa fenetre : ventes apprises, precision mesuree sur des ventes jamais vues, date du dernier apprentissage, joueurs
@@ -7458,7 +7520,7 @@ class Api:
     def _mes_deals_garde(self):
         """« Mes deals » pour l'accueil : garde 10 min par compte (l'accueil s'ouvre souvent ; eBay n'est relu qu'aux 10 min)."""
         import comptes
-        k = comptes.courant() or "local"
+        k = (comptes.courant() or "local") + ":" + ",".join(self._provenance())
         g = self._MES_DEALS.get(k)
         if g and time.time() - g[0] < 600:
             return g[1]
@@ -7717,7 +7779,14 @@ class Api:
     # -- 29 oct 2026 (Mathieu : « une etoile pour l'enregistrer dans une watchlist ») --
     def watch_ajouter(self, x):
         import watchlist
-        return watchlist.ajouter(self, x)
+        r = watchlist.ajouter(self, x)
+        try:                                     # 11 nov 2026 : un signal de la communaute (une carte suivie)
+            import communaute
+            if isinstance(x, dict) and (not isinstance(r, dict) or r.get("ok", True)):
+                communaute.noter_titre(x.get("titre"), "watch")
+        except Exception:
+            pass
+        return r
 
     def watch_retirer(self, item_id):
         import watchlist
@@ -8747,6 +8816,76 @@ class Api:
             lst.append(x)
         return lst
 
+    # 11 nov 2026 (Mathieu : « j'ai besoin d'un visuel de TOUS les deals en ce moment, avec ces vendeurs-la, pour l'admin ;
+    # on en avait avant, la juste 13 : il s'est passe quelque chose ») : tout ce que le chasseur a garde, montre ou pas, et
+    # pour chaque carte cachee, la regle qui la cache. Admin seulement.
+    RAISONS_CACHE = {"fini": "Encan fini", "vieux": "Pas revu sur eBay depuis 6 h", "encan": "Encan : plus de 24 h ou sans mise",
+                     "monte": "Prix ou mise au-dessus du max", "invalide": "Annonce invalide", "masque": "Retiré (« pas un deal »)",
+                     "trop_beau": "Trop beau (autre carte ?)", "sans_profit": "Plus de profit", "sans_valeur": "Sans valeur calculée"}
+
+    def deals_admin_tout(self, d=None):
+        if not self._est_admin() or not ebay_prix_actif():
+            return {"ok": False, "erreur": "Admin seulement"}
+        import deals as _dl
+        dd = _dl.lire_vite()
+        maint = datetime.now(timezone.utc)
+        lim6 = (maint - timedelta(hours=6)).isoformat()
+        with _verrou:
+            c = self._db()
+            try:
+                c.execute("CREATE TABLE IF NOT EXISTS deals_masques (item_id TEXT PRIMARY KEY)")
+                masques = {x[0] for x in c.execute("SELECT item_id FROM deals_masques")}
+            finally:
+                c.close()
+        ret = dd.get("retires") or {}
+        vus, out, compte = set(), [], {}
+        sources = [(g, False) for g in dd.get("deals") or []] + [(g, True) for g in dd.get("suivis") or []]
+        for g, suivi in sources:
+            k = str(g.get("item_id") or "")
+            if not k or k in vus:
+                continue
+            vus.add(k)
+            x = _dl.a_jour(dict(g))
+            r = None
+            if k in masques or k in ret:
+                r = "masque"
+            elif not _dl.encore_ouvert(x, maint):
+                r = "fini"
+            elif str(x.get("vu_le") or "") < lim6:
+                r = "vieux"
+            elif not _dl.encan_admis(x, maint):
+                r = "encan"
+            elif suivi and not x.get("valeur"):
+                r = "sans_valeur"
+            elif not suivi and not _dl.valide(x):
+                r = "invalide"
+            elif x.get("valeur") and x.get("total") is not None:
+                pm = _dl.prix_max(x["valeur"], taxe=_dl.taxe_de(x))
+                if (not x.get("encan") and x["total"] > pm) or (x.get("encan") and x.get("mise_max") is not None
+                                                               and float(x["total"]) - float(x.get("port") or 0) > float(x["mise_max"]) + 0.5) \
+                        or (suivi and x["total"] > pm):
+                    r = "monte"
+                elif not x.get("encan") and (x.get("ratio") or 1) < (0.25 if x["valeur"] >= 400 else 0.15):
+                    r = "trop_beau"
+            if x.get("valeur") and x.get("total") is not None:
+                x["gain"] = round(_net_rev(x["valeur"]) - _paye(x.get("total") or 0, x), 2)
+                x["rabais"] = round(100 * (1 - (x.get("total") or 0) / x["valeur"]))
+                x["taxe_achat"] = _dl.taxe_de(x)
+                if r is None and not x.get("encan") and x["gain"] <= 1:
+                    r = "sans_profit"
+            x["cache"] = r
+            x["source"] = "marche"
+            v = str(x.get("vendeur") or "").lower()
+            x["groupe"] = v if v in _dl.VENDEURS_LONGS else ("fin" if _dl.rang_vendeur(v) in (3, 7) else ("petits" if _dl.rang_honnete(x) == 0 else "autres"))
+            compte[r or "visible"] = compte.get(r or "visible", 0) + 1
+            out.append(x)
+        out.sort(key=lambda x: (0 if not x["cache"] else 1, _dl.rang_vendeur(x.get("vendeur")), str(x.get("fin") or "9")))
+        for x in out[:900]:
+            if "joueur_n" not in x:
+                x["joueur_n"], x["carte_n"] = self._etiquette_deal(x.get("titre") or "", None)
+        return {"ok": True, "deals": out[:900], "n": len(out), "compte": compte, "raisons": self.RAISONS_CACHE,
+                "maj": dd.get("maj")}
+
     @staticmethod
     def _gain_affiche(x, fp=None, ff=None):
         """Le profit que l'ecran affiche : un encan, a la mise max (port compris) ; un prix fixe, au prix demande."""
@@ -8817,6 +8956,9 @@ class Api:
         # 6 nov 2026 (Mathieu : « mettre a jour les max bid au plus vite ») : la mise max de chaque deal refaite a la lecture
         # avec la regle d'aujourd'hui (30 % de profit net) ; un prix fixe qui ne laisse plus ce profit n'est plus un deal
         tout = [_dl.a_jour(x) for x in tout if _dl.encan_admis(x)]        # 7 nov : 24 h et une mise (sauf Savage, Remi, CF31)
+        prov_ = self._provenance()                                        # 11 nov 2026 : les pays d'expedition choisis
+        if not set(prov_) >= {"CA", "US"}:
+            tout = [x for x in tout if not str(x.get("lieu") or "").strip() or str(x.get("lieu")).upper()[:2] in prov_]
         rg = self.reglages_lire()
         pays = str(rg.get("pays") or "CA").upper()
         pays = pays if pays in _dl.PAYS else "CA"
@@ -8911,6 +9053,8 @@ class Api:
         if tri in ("rabais", "gain", "recent"):
             lst = [x for x in lst if not x.get("etranger")] + [x for x in lst if x.get("etranger")]    # 8 nov : son pays d'abord
         prof = self._profil_deals()                      # 30 oct 2026 : mon profil de deals (Reglages)
+        if adm_ and prof:                                # 11 nov 2026 (« ou sont tous mes deals ? dans admin ») : l'admin voit
+            prof = {"favoris": prof.get("favoris")} if prof.get("favoris") else None     # tout ; ses favoris restent devant
         lst = self._appliquer_profil(lst, prof)
         if tri == "rabais":
             lst = self._varier_deals(lst)                # 9 nov 2026 : chacun son ordre (et ses joueurs a lui d'abord)
@@ -9149,6 +9293,12 @@ class Api:
         import cartes_match
         t0_ = time.time()
         a = None
+        if titre and rapide:                     # 11 nov 2026 : un signal de la communaute (une fois par ouverture : la version rapide)
+            try:
+                import communaute
+                communaute.noter_titre(titre, "annonce")
+            except Exception:
+                pass
         try:
             # 7 nov 2026 (Mathieu : « pourquoi les prix ne se mettent pas a jour quand je refresh ? ») : la fiche ouverte par
             # l'utilisateur relit l'annonce sur eBay (cache de 3 min au lieu d'une heure : la mise d'un encan bouge)
@@ -9449,7 +9599,7 @@ class Api:
         n_tot = len(deals) + n_su
         if not ebay_prix_actif():
             import comptes as _cpt
-            n_tot = max(n_tot, self._MES_DEALS_N.get(_cpt.courant() or "local") or 0)
+            n_tot = max(n_tot, self._MES_DEALS_N.get((_cpt.courant() or "local") + ":" + ",".join(self._provenance())) or 0)
         return {"mois": m0, "deals": deals[:24], "nb_deals": n_tot, "gain_deals": round(sum(max(0, d["gain"]) for d in deals), 2),
                 "achats": {"n": len(achats), "depense": depense, "valeur": valeur,
                            "latent": round(sum(((a.get("valeur") or a.get("prix_demande") or 0) * (1 - fp) - ff - (a["cout"] or 0))

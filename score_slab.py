@@ -29,6 +29,22 @@ def nettoyer(titre):
     return re.sub(r"\s{2,}", " ", _RE_HYPE.sub(" ", str(titre or ""))).strip()
 
 
+def _savoir(titre):
+    """11 nov 2026 (Mathieu : « SlabIQ doit apprendre du livre sur les cartes des annees 90 ») : ce que le hobby sait de la carte."""
+    try:
+        import connaissance
+        return connaissance.reconnaitre(titre)
+    except Exception:
+        return None
+
+
+def plancher(total, k):
+    """Une carte reconnue (graal, chasse, recrue cle des annees 90) ne descend pas sous son plancher ; jamais baisse."""
+    if total is None or not k:
+        return total
+    return max(total, k["plancher"])
+
+
 def plafond_inconnu(total, c, ij):
     """Joueur absent de l'indice SlabIQ : le score ne depasse pas 50 + la moitie du score de la carte."""
     if total is None or (ij and ij.get("indice") is not None):
@@ -98,9 +114,12 @@ def score(titre, joueur=None):
     except Exception as e:
         print("Score modele : " + repr(e), flush=True)
     total = plafond_inconnu(total, c, ij)
+    k = _savoir(titre)
+    total = plancher(total, k)
     nom = j.title() if j and j == j.lower() else j
     return {"score": int(round(total)) if total is not None else None, "joueur": nom or None, "indice": ij.get("indice") if ij else None,
-            "pastilles": (ij or {}).get("pastilles") or [], "semaine": (ij or {}).get("semaine"), "carte": c}
+            "pastilles": (ij or {}).get("pastilles") or [], "semaine": (ij or {}).get("semaine"), "carte": c,
+            **({"connaissance": k} if k else {})}
 
 
 def annoter(x):
@@ -173,11 +192,12 @@ def _annoter_lot(items):
             if j:
                 import indice_joueurs
                 ij = indice_joueurs.indice(j)
+            sv = _savoir(x.get("titre") or "")
             if sc is not None:
-                x["score"] = sc[k] if sc[k] is None else int(round(plafond_inconnu(sc[k], c, ij)))
+                x["score"] = sc[k] if sc[k] is None else int(round(plancher(plafond_inconnu(sc[k], c, ij), sv)))
             else:
                 sj = float(ij["indice"]) if ij and ij.get("indice") is not None else JOUEUR_INCONNU
-                x["score"] = int(round(POIDS_JOUEUR * sj + (1 - POIDS_JOUEUR) * c["score"]))
+                x["score"] = int(round(plancher(POIDS_JOUEUR * sj + (1 - POIDS_JOUEUR) * c["score"], sv)))
             x["carte"] = {kk: c[kk] for kk in ("auto", "patch", "rc", "tirage", "numero", "grade")}
             if ij and ij.get("pastilles"):
                 x["pastilles_j"] = ij["pastilles"]

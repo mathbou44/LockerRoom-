@@ -238,6 +238,22 @@ details.reglage summary::-webkit-details-marker{display:none}
 #adm-vend-r .det, #adm-vend-r .nom{white-space:normal; overflow:visible; text-overflow:clip}
 .d-tour{display:block; position:relative; padding-right:26px !important; margin:-4px 0 12px; padding:9px 12px; border-radius:12px; background:rgba(233,207,142,.07); border:1px solid rgba(233,207,142,.22); font-size:13px; color:var(--doux); text-decoration:none; line-height:1.35}
 .d-tour b{color:var(--texte); font-weight:600} .d-tour i{font-style:normal; position:absolute; right:12px; top:50%; transform:translateY(-50%); color:var(--or)} .d-tour-a{margin-right:6px} .d-tour .roue{width:13px; height:13px; display:inline-block; vertical-align:-2px}
+.d-tout{display:flex; align-items:center; gap:10px; width:100%; margin:-4px 0 14px; padding:10px 12px; border-radius:14px; border:1px solid color-mix(in srgb, var(--acc) 35%, var(--ligne));
+  background:linear-gradient(90deg, color-mix(in srgb, var(--acc) 12%, transparent), transparent); color:var(--texte); text-align:left; cursor:pointer}
+.d-tout > svg{width:18px; height:18px; color:var(--acc); flex:none} .d-tout span{font-weight:700; font-size:14px} .d-tout small{color:var(--doux); font-size:12px; flex:1}
+.d-tout i{font-style:normal; color:var(--acc)}
+.tq-cours{display:flex; align-items:center; gap:8px; margin:12px 0; color:var(--doux)} .tq-cours .roue{width:14px; height:14px}
+.tq-but{display:flex; flex-direction:column; gap:4px; margin:14px 0; padding:16px; border-radius:20px; background:linear-gradient(135deg, color-mix(in srgb, var(--or) 14%, transparent), var(--carte)); border:1px solid color-mix(in srgb, var(--or) 35%, var(--ligne))}
+.tq-but.ok{background:linear-gradient(135deg, color-mix(in srgb, var(--vert) 16%, transparent), var(--carte)); border-color:color-mix(in srgb, var(--vert) 45%, var(--ligne))}
+.tq-but b{font:700 44px/1 var(--f-cond)} .tq-but span{color:var(--doux); font-size:13.5px} .tq-but em{font-style:normal; font:700 13px var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--or)} .tq-but.ok em{color:var(--vert)}
+.tq-g{grid-template-columns:1fr 1fr} .tq-s{display:flex; flex-direction:column; gap:6px} .tq-s div{display:grid; grid-template-columns:110px 1fr; align-items:center; gap:10px; font-size:13px; color:var(--doux)}
+.tq-s i{display:block; height:7px; border-radius:99px; background:var(--acc)}
+.tq-a{display:flex; flex-direction:column; gap:4px} .tq-a div{display:grid; grid-template-columns:1fr auto auto; gap:8px; align-items:center; padding:8px 10px; border-radius:12px; background:var(--carte2); font-size:13px}
+.tq-a span{color:var(--doux)} .tq-a em{font-style:normal; font-weight:700} .tq-a .ok em{color:var(--vert)} .tq-a .ko em{color:var(--rouge)}
+.da-l{font:700 12px var(--f-cond); letter-spacing:.14em; text-transform:uppercase; color:var(--doux); margin:12px 0 6px}
+.da-c{flex-wrap:wrap} .da-c b.vert{color:var(--vert)} .da-c b.rouge{color:var(--rouge)}
+.da-g{margin-top:14px} .da-t{position:relative; min-width:0}
+.da-r{position:absolute; z-index:3; left:8px; right:8px; bottom:8px; padding:5px 8px; border-radius:10px; background:rgba(40,10,14,.88); border:1px solid rgba(255,90,95,.45); color:#FFB3B3; font-size:11.5px; font-weight:600; text-align:center; pointer-events:none}
 .d-tour-a{font:700 10.5px 'Barlow Condensed',sans-serif; letter-spacing:.12em; text-transform:uppercase; color:var(--or)}
 .adm-tour{margin-bottom:6px; color:var(--texte)} .adm-tour .roue{width:13px; height:13px; vertical-align:-2px}
 .fc-heros{display:grid; grid-template-columns:104px minmax(0,1fr); gap:14px; align-items:start; margin:4px 0 14px}
@@ -593,6 +609,18 @@ body.fetes .mot-ic{color:var(--h4,#F1D58E)}
 .sd-k{display:flex; flex-direction:column; gap:1px; min-width:0} .sd-k:nth-child(2){align-items:center} .sd-k:nth-child(3){align-items:flex-end}
 .sd-k small{font:700 11.5px/1 var(--f-cond); letter-spacing:.06em; text-transform:uppercase; color:#A9A6B4}
 .sd-k b{font:700 19px/1.1 var(--f-cond); color:#F4F2F8; white-space:nowrap} .sd-k.mx b{color:var(--acc)} .sd-k.g b{color:var(--vert)}
+/* 11 nov 2026 : l'inventaire en slabs, comme les deals ; le score SlabIQ en coin */
+.inv-slab{background:none; border:none; padding:0; text-align:left; color:inherit; font:inherit; width:100%}
+.inv-slab .sd-k.rg b{color:var(--rouge)} .inv-slab .sd-j{font-size:15.5px}
+.isl-h{display:flex; align-items:flex-start; justify-content:space-between; gap:8px; min-width:0}
+.isl-n{display:flex; flex-direction:column; gap:2px; min-width:0; flex:1}
+.isl-sc{flex:none; display:flex !important; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-width:46px; height:46px !important; align-self:flex-start; padding:0 6px !important; border-radius:10px;
+  background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.12); cursor:pointer}
+.isl-sc b{display:block; font:700 22px/1 var(--f-cond) !important; color:#F4F2F8} .isl-sc small{display:block; margin:0 !important; font:700 8.5px/1 var(--f-cond) !important; letter-spacing:.12em; color:#A9A6B4; text-transform:uppercase}
+.isl-sc.vert b{color:var(--vert)} .isl-sc.or b{color:var(--or)} .isl-sc.acc b{color:var(--acc)} .isl-sc.rouge b{color:var(--rouge)} .isl-sc.vide b{color:#6E6B78}
+.isl-et{position:absolute; left:6px; top:6px; z-index:2} .isl-et .capsule{backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px)}
+.isl-mk{position:absolute; right:6px; bottom:6px; z-index:2}
+.inv-slab.vendue .sd-slab{opacity:.82}
 .sd-ph .sd-ramp{position:absolute; right:6px; bottom:6px; z-index:2; width:28px; height:28px; border-radius:50%; background:rgba(10,10,14,.86); display:grid; place-items:center; color:var(--vert)}
 /* 2 nov 2026 (Mathieu : « toute l'info d'une carte dans son slab ; eviter les mini ecritures ») : valeur et gain dans l'etiquette */
 .sd-l3, .sd-l4{display:flex; justify-content:space-between; align-items:baseline; gap:6px; font-size:13.5px; color:#C9C6D2}
@@ -711,7 +739,7 @@ html[lang=en] .w-ligne::after{content:'Remove'}
 /* 11 nov 2026 : la fiche du joueur, en tuiles chiffrees (punchy) ; le detail en fenetre */
 .joueur .j-n .titre{background:linear-gradient(100deg, var(--texte) 30%, var(--acc)); -webkit-background-clip:text; background-clip:text; color:transparent}
 .joueur .v-rang-t b, .j-pq .v-rang-t b{font:700 15px var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--acc)}
-.acc-moment:empty{display:none} .acc-moment{margin:4px 0 14px; min-width:0}
+.acc-moment:empty{display:none} .acc-moment{margin:0; min-width:0}
 .am-t{font:700 15px var(--f-cond); letter-spacing:.14em; text-transform:uppercase; margin:0 0 8px; background:linear-gradient(90deg, var(--rouge), var(--or-clair), var(--acc)); -webkit-background-clip:text; background-clip:text; color:transparent; width:max-content}
 .am-l{display:flex; gap:10px; overflow-x:auto; scroll-snap-type:x mandatory; padding:2px 2px 6px; scrollbar-width:none} .am-l::-webkit-scrollbar{display:none}
 .am-j{flex:none; display:flex; align-items:center; gap:10px; padding:8px 14px 8px 8px; border-radius:999px; background:var(--carte); border:1px solid var(--ligne); color:var(--texte); text-decoration:none; scroll-snap-align:start}
@@ -866,6 +894,15 @@ button.jb-t, a.jb-t{cursor:pointer} .jb-t.l{grid-column:span 2}
 .md-dd small{font:700 10.5px/1 var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--doux)}
 .md-dd b{font:700 15px/1.15 var(--f-cond); letter-spacing:.02em; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%}
 .md-dd i{position:absolute; right:10px; top:50%; transform:translateY(-50%); font-style:normal; color:var(--doux)}
+.prov-z{margin-top:16px; padding-top:14px; border-top:1px solid var(--ligne); display:flex; flex-direction:column; gap:10px}
+.prov-t{display:flex; flex-direction:column; gap:2px} .prov-t b{font:700 15px var(--f-cond); letter-spacing:.12em; text-transform:uppercase} .prov-t small{color:var(--doux); font-size:13px}
+.prov-p{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.prov{display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:999px; border:1.5px solid var(--ligne); background:var(--carte2); color:var(--doux); font-weight:700; font-size:15px; cursor:pointer; transition:all .15s}
+.prov-f{display:grid; place-items:center; width:30px; height:20px; border-radius:5px; overflow:hidden; flex:none; filter:grayscale(.8) brightness(.7); transition:filter .15s}
+.prov-f svg, .prov-f .drap{width:30px !important; height:20px !important; display:block; margin:0 !important; border-radius:0}
+.prov i{margin-left:auto; font-style:normal; color:var(--vert); font-weight:800}
+.prov.on{color:var(--texte); border-color:color-mix(in srgb, var(--vert) 60%, var(--ligne)); background:linear-gradient(90deg, color-mix(in srgb, var(--vert) 14%, transparent), var(--carte2)); box-shadow:0 0 18px color-mix(in srgb, var(--vert) 18%, transparent)}
+.prov.on .prov-f{filter:none}
 .md-pays{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:16px; padding-top:14px; border-top:1px solid var(--ligne); font-size:15px} .md-ch{display:flex; flex-direction:column; gap:6px} .md-ch button{display:flex; align-items:center; gap:10px; padding:14px; border-radius:14px; background:var(--carte2);
   border:1px solid var(--ligne); color:var(--texte); font:inherit; font-size:16px; text-align:left; cursor:pointer}
 .md-ch button span{flex:1} .md-ch button b{font:700 16px var(--f-cond); color:var(--doux)} .md-ch button i{font-style:normal; color:var(--acc)} .md-ch button.on{border-color:var(--acc)}
@@ -1184,9 +1221,10 @@ body.fen-ouverte .fond-feuille{z-index:95}  /* 11 nov 2026 : les petites fenetre
 .horloge .d{color:var(--doux); font-size:15px; text-transform:capitalize; margin-top:4px}
 .acc-tuiles{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px}
 /* 11 nov 2026 : l'accueil en sections nettes : un titre court, sa couleur, de l'air entre les blocs */
-.acc-sec{grid-column:1/-1; display:flex; align-items:center; gap:10px; margin:24px 0 8px; min-width:0} .acc-sec + .acc-ticker{margin-top:-6px}
-.acc-sec > span{display:flex; align-items:center; gap:8px; font:700 13px/1 var(--f-cond); letter-spacing:.18em; text-transform:uppercase; color:var(--c); white-space:nowrap}
-.acc-sec > span::before{content:''; width:8px; height:8px; border-radius:50%; background:var(--c); box-shadow:0 0 10px var(--c)}
+.acc-sec{grid-column:1/-1; display:flex; align-items:center; gap:10px; margin:8px 0 -4px; min-width:0} .acc-sec + .acc-ticker{margin-top:-10px}
+.acc-moment .acc-sec{margin:0 0 10px}
+.acc-sec > span{display:flex; align-items:center; gap:9px; font:700 17px/1 var(--f-cond); letter-spacing:.14em; text-transform:uppercase; color:var(--c); white-space:nowrap}
+.acc-sec > span::before{content:''; width:9px; height:9px; border-radius:50%; background:var(--c); box-shadow:0 0 10px var(--c)}
 .acc-sec::after{content:''; flex:1; height:1px; background:linear-gradient(90deg, color-mix(in srgb, var(--c) 45%, transparent), transparent); order:1}
 .acc-sec > a{order:2; font:700 12.5px/1 var(--f-cond); letter-spacing:.1em; text-transform:uppercase; color:var(--c); padding:6px 11px; border-radius:99px; border:1px solid color-mix(in srgb, var(--c) 40%, transparent)}
 .acc-sec:has(+ .histoires:empty), .acc-sec:has(+ [hidden]), .acc-sec:has(+ .acc-pils:empty){display:none}
@@ -7409,6 +7447,23 @@ const NOM_PAYS = {CA: ['Canada', 'Canada'], US: ['États-Unis', 'United States']
   DE: ['Allemagne', 'Germany'], FR: ['France', 'France'], IT: ['Italie', 'Italy'], CN: ['Chine', 'China'], HK: ['Hong Kong', 'Hong Kong'], AU: ['Australie', 'Australia'],
   SE: ['Suède', 'Sweden'], FI: ['Finlande', 'Finland'], CZ: ['Tchéquie', 'Czechia'], CH: ['Suisse', 'Switzerland'], TW: ['Taïwan', 'Taiwan'], KR: ['Corée du Sud', 'South Korea']};
 const nomPays = (c) => { const n = NOM_PAYS[String(c || '').toUpperCase()]; return n ? tt(n[0], n[1]) : String(c || '').toUpperCase(); };
+// 11 nov 2026 : les pays d'expedition du Radar, en deux pastilles a drapeau (au moins un toujours choisi)
+const PROV = () => { const p = ((S.reglages || {}).provenance || ['CA', 'US']).filter(x => x === 'CA' || x === 'US'); return p.length ? p : ['CA', 'US']; };
+function blocProvenance(){
+  const p = PROV();
+  return `<div class="prov-z"><div class="prov-t"><b>${tt('Cartes expédiées de', 'Cards shipped from')}</b><small>${p.length === 2 ? tt('Les deux pays', 'Both countries') : p[0] === 'CA' ? tt('Seulement du Canada : pas de douanes', 'Canada only: no customs') : tt('Seulement des États-Unis', 'United States only')}</small></div>
+    <div class="prov-p">${[['CA', 'Canada'], ['US', tt('États-Unis', 'United States')]].map(([k, n]) => `<button class="prov ${p.includes(k) ? 'on' : ''}" data-prov="${k}" aria-pressed="${p.includes(k)}"><span class="prov-f">${drapeau(k)}</span><span>${n}</span><i>${p.includes(k) ? '✓' : ''}</i></button>`).join('')}</div></div>`;
+}
+function brancherProvenance(apres){
+  $$('[data-prov]').forEach(b => b.onclick = async () => {
+    const k = b.dataset.prov, p = PROV();
+    const n = p.includes(k) ? p.filter(x => x !== k) : [...p, k];
+    if (!n.length) { toast(tt('Garde au moins un pays', 'Keep at least one country'), 2500); return; }
+    vibrer();
+    const x = await API.reglages_sauver({provenance: n}).catch(() => null); if (x) S.reglages = x;
+    if (apres) apres();
+  });
+}
 function drapeau(code){
   const c = String(code || '').toUpperCase().slice(0, 2); if (!/^[A-Z]{2}$/.test(c)) return '';
   const bandes = (cols, vert) => cols.map((col, i) => vert ? `<rect x="${i * 18 / cols.length}" y="0" width="${18 / cols.length + 0.05}" height="12" fill="${col}"/>` : `<rect x="0" y="${i * 12 / cols.length}" width="18" height="${12 / cols.length + 0.05}" fill="${col}"/>`).join('');
@@ -8880,7 +8935,7 @@ async function vueDeals(arg){
     <div class="d-onglets" role="tablist"><a role="tab" href="#deals" aria-selected="${!w}" class="${w ? '' : 'on'}">${comps() ? 'Deals' : tt('Mes cibles', 'My targets')}<span class="d-nb" id="d-nb" hidden></span></a>
       <a role="tab" href="#deals/watch" aria-selected="${w}" class="${w ? 'on' : ''}">${ICO_ETOILE}${tt('Watchlist', 'Watchlist')}<span class="w-nb" hidden></span></a></div>
     <form class="recherche pas-tel" id="v-form" role="search">${ICONES.loupe}<input id="v-q" type="search" enterkeyhint="search" placeholder="${esc(tt('Combien vaut une carte ? (ex. Bedard Young Guns)', 'What is a card worth? (e.g. Bedard Young Guns)'))}"></form>
-    ${!w && S.forfait && S.forfait.admin ? '<a class="d-tour" id="d-tour" href="#admin/serveur"></a>' : ''}
+    ${!w && S.forfait && S.forfait.admin ? `<a class="d-tour" id="d-tour" href="#admin/serveur"></a><button class="d-tout" id="d-tadm">${icN('oeil')}<span>${tt('Tous les deals du chasseur', 'All hunter deals')}</span><small>${tt('admin · visibles et cachés', 'admin · shown and hidden')}</small><i>›</i></button><button class="d-tout" id="d-iqtest">${icN('graphe')}<span>${tt('Test de prédiction SlabIQ', 'SlabIQ prediction test')}</span><small>${tt('admin · rejoue le passé', 'admin · replays the past')}</small><i>›</i></button>` : ''}
     <div id="d-res" data-vue="${w ? 'watch' : 'deals'}">${barreProg(Date.now(), w ? 8 : 12, w ? tt('Chargement de ta watchlist…', 'Loading your watchlist…') : tt('Recherche des deals sur eBay…', 'Looking for deals on eBay…'))}</div>
     <p class="mention-epn">${tt('Les liens vers eBay peuvent être des liens affiliés (eBay Partner Network) : SlabCoach peut toucher une commission, sans frais pour toi. SlabCoach n’est pas affilié à eBay. Les estimations sont celles de SlabCoach, pas d’eBay.', 'Links to eBay may be affiliate links (eBay Partner Network): SlabCoach may earn a commission at no cost to you. SlabCoach is not affiliated with eBay. Estimates are SlabCoach’s, not eBay’s.')}</p></section>`;
   brancherSwitchMode(V()); brancherQuota(V());
@@ -8888,9 +8943,66 @@ async function vueDeals(arg){
   majNbWatch();
   if (w) { clearInterval(S.tDealsNv); clearInterval(S.tDeals); await chargerWatch(); return; }
   majTourDeals();
+  const iq_ = $("#d-iqtest"); if (iq_) iq_.onclick = () => { vibrer(); feuilleTestIQ(); };
+  const dt_ = $("#d-tadm"); if (dt_) dt_.onclick = () => { vibrer(); feuilleDealsAdmin(); };
   await chargerDeals();
 }
 // 29 oct 2026 : l'admin voit sur l'ecran Deals ou en est le chasseur (un tap : l'admin, onglet Serveur)
+// 11 nov 2026 (Mathieu : « un visuel de TOUS les deals en ce moment, avec ces vendeurs-la, pour l'admin ; on en avait avant,
+// la juste 13 : il s'est passe quelque chose ») : tout ce que le chasseur garde, par vendeur ; chaque carte cachee dit pourquoi
+async function feuilleDealsAdmin(){
+  ouvrirFeuille(`<h3>${tt('Tous les deals du chasseur', 'All hunter deals')}</h3><div class="lecture"><span class="roue"></span>${tt('Chargement…', 'Loading…')}</div>`);
+  const r = await API.deals_admin_tout().catch(e => ({ok: false, erreur: e.message}));
+  if (!r || !r.ok) { ouvrirFeuille(`<h3>${tt('Tous les deals du chasseur', 'All hunter deals')}</h3><div class="vide">${esc((r && r.erreur) || 'Erreur')}</div>`); return; }
+  S.dealsParId = Object.assign(S.dealsParId || {}, Object.fromEntries(r.deals.map(x => [String(x.item_id), x])));
+  const G = [['', tt('Tous', 'All')], ['savage.cards', 'Savage'], ['remi-card-trader', 'Remi'], ['cf31_sports_cards', 'CF31'], ['petits', tt('Petits vendeurs', 'Small sellers')], ['autres', tt('Autres', 'Others')], ['fin', 'Slab Sharks · Probstein · DC']];
+  let g = '', c = 'visible', max = 60;
+  const nG = (k) => r.deals.filter(x => (!k || x.groupe === k) && (c === '*' || (x.cache || 'visible') === c)).length;
+  const peindre = () => {
+    const l = r.deals.filter(x => (!g || x.groupe === g) && (c === '*' || (x.cache || 'visible') === c));
+    const rs = [['visible', tt('Visibles', 'Shown'), 'vert'], ...Object.entries(r.raisons).filter(([k]) => r.compte[k]).map(([k, lib]) => [k, lib, 'rouge']), ['*', tt('Tout', 'Everything'), '']];
+    ouvrirFeuille(`<h3>${tt('Tous les deals du chasseur', 'All hunter deals')}</h3>
+      <div class="sous">${r.n} ${tt('cartes gardées par le chasseur', 'cards kept by the hunter')}${r.maj ? ' · ' + tt('tour de ', 'run at ') + heureCourte(r.maj) : ''}</div>
+      <div class="da-l">${tt('Montrées ou cachées', 'Shown or hidden')}</div>
+      <div class="chips da-c">${rs.map(([k, lib, cl]) => `<button class="chip ${k === c ? 'on' : ''}" data-dac="${k}">${esc(lib)} <b class="${cl}">${k === '*' ? r.n : (r.compte[k] || 0)}</b></button>`).join('')}</div>
+      <div class="da-l">${tt('Vendeur', 'Seller')}</div>
+      <div class="chips da-c">${G.map(([k, lib]) => `<button class="chip ${k === g ? 'on' : ''}" data-dag="${k}">${esc(lib)} <b>${nG(k)}</b></button>`).join('')}</div>
+      ${l.length ? `<div class="grille-c da-g">${l.slice(0, max).map(x => `<div class="da-t">${x.cache ? `<span class="da-r">${esc(r.raisons[x.cache] || x.cache)}</span>` : ''}${tuileDeal(x)}</div>`).join('')}</div>
+        ${l.length > max ? `<button class="btn ghost" id="da-plus">${tt('Voir plus', 'See more')} · ${l.length - max}</button>` : ''}` : `<div class="vide">${tt('Rien ici', 'Nothing here')}</div>`}`);
+    $$('[data-dac]').forEach(b => b.onclick = () => { vibrer(); c = b.dataset.dac; max = 60; peindre(); });
+    $$('[data-dag]').forEach(b => b.onclick = () => { vibrer(); g = b.dataset.dag; max = 60; peindre(); });
+    const pl = $('#da-plus'); if (pl) pl.onclick = () => { max += 60; peindre(); };
+  };
+  peindre();
+}
+// 11 nov 2026 (Mathieu : « predire la variation des cartes d'un joueur avec les nouvelles, jusqu'a 95 % ») : le rapport du
+// test qui rejoue le passe (nos ventes, Wikipedia jour par jour, les matchs LNH) ; le lancer, le suivre, le lire
+async function feuilleTestIQ(){
+  const T = tt('Test de prédiction SlabIQ', 'SlabIQ prediction test');
+  const r = await API.slabiq_test_lire().catch(e => ({ok: false, erreur: e.message}));
+  if (!r || !r.ok) { ouvrirFeuille(`<h3>${T}</h3><div class="vide">${esc((r && r.erreur) || 'Erreur')}</div>`); return; }
+  const R = r.rapport, pc = (x) => x == null ? '—' : Math.round(x * 100) + ' %', E = {etape: r.etape};
+  const ETAPES = {debut: tt('démarrage', 'starting'), ventes: tt('lecture des ventes', 'reading sales'), wikipedia: tt('visites Wikipedia', 'Wikipedia views'), lnh: tt('matchs LNH', 'NHL games'), apprentissage: tt('apprentissage et test', 'training and testing')};
+  let h = `<h3>${T}</h3><div class="sous">${tt('On rejoue le passé : pour chaque joueur et chaque semaine, SlabIQ prédit si ses cartes vont monter ou baisser de 10 % dans les 28 jours, avec seulement ce qu’on savait ce jour-là. Puis on compare avec ce qui est vraiment arrivé.', 'We replay the past: for each player and week, SlabIQ predicts whether his cards rise or fall 10% within 28 days, using only what was known that day. Then we compare with what really happened.')}</div>`;
+  if (r.en_cours) h += `<div class="tq-cours"><span class="roue"></span>${tt('En cours', 'Running')} · ${esc(ETAPES[E.etape] || E.etape || '')}</div>`;
+  if (R && R.erreur) h += `<div class="bandeau info">${esc(R.erreur)}</div>`;
+  else if (R && R.resultat) {
+    const x = R.resultat, ok = R.atteint;
+    h += `<div class="tq-but ${ok ? 'ok' : ''}"><b>${pc(x.precision_alertes)}</b><span>${tt('des alertes justes', 'of alerts right')}${x.alertes != null ? ` · ${x.alertes} ${tt('alertes', 'alerts')} · ${tt('couvre', 'covers')} ${pc(x.couverture)} ${tt('des mouvements', 'of moves')}` : ` · ${tt('aucun seuil n’atteint 95 % pour l’instant', 'no threshold reaches 95% yet')}`}</span><em>${ok ? tt('Objectif 95 % atteint', '95% goal reached') : tt('Objectif 95 % pas encore atteint', '95% goal not reached yet')}</em></div>
+      <div class="jb tq-g">
+        <div class="jb-t"><span class="jb-k">${tt('Exactitude', 'Accuracy')}</span><b class="jb-v">${pc(x.exactitude)}</b><small>${tt('toutes les semaines testées', 'all tested weeks')}</small></div>
+        <div class="jb-t"><span class="jb-k">${tt('Repère', 'Baseline')}</span><b class="jb-v">${pc(Math.max(...Object.values(R.reperes || {0: 0})))}</b><small>${Object.keys(R.reperes || {}).map(k => k.replace(/_/g, ' ')).join(' · ')}</small></div>
+        <div class="jb-t"><span class="jb-k">${tt('Données', 'Data')}</span><b class="jb-v">${(R.exemples || 0).toLocaleString(LOC())}</b><small>${R.joueurs} ${tt('joueurs', 'players')} · ${R.periode ? R.periode.join(' → ') : ''}</small></div>
+        <div class="jb-t"><span class="jb-k">${tt('Test (jamais vu)', 'Test (unseen)')}</span><b class="jb-v">${R.test}</b><small>${tt('semaines-joueurs', 'player-weeks')} · ${tt('seuil', 'threshold')} ${x.seuil != null ? pc(x.seuil) : '—'}</small></div></div>
+      ${(R.signaux || []).length ? `<div class="da-l">${tt('Ce qui compte le plus', 'What matters most')}</div><div class="tq-s">${R.signaux.slice(0, 8).map(([k, v]) => `<div><span>${esc(k)}</span><i style="width:${Math.max(4, Math.round(100 * v / Math.max(1e-6, R.signaux[0][1])))}%"></i></div>`).join('')}</div>` : ''}
+      ${(R.exemples_alertes || []).length ? `<div class="da-l">${tt('Alertes du test', 'Test alerts')}</div><div class="tq-a">${R.exemples_alertes.slice(0, 20).map(a => `<div class="${a.annonce === a.vrai ? 'ok' : 'ko'}"><b>${esc(a.joueur)}</b><span>${esc(a.le)} · ${esc(a.annonce)} ${pc(a.confiance)}</span><em>${a.annonce === a.vrai ? '✓' : '✗ ' + esc(a.vrai)}</em></div>`).join('')}</div>` : ''}
+      <div class="sous" style="margin-top:10px">${tt('Rapport du ', 'Report of ')}${esc((R.le || '').replace('T', ' '))} · ${R.duree_s || 0} s</div>`;
+  } else if (!r.en_cours) h += `<div class="vide">${tt('Pas encore de rapport. Lance le test : quelques minutes.', 'No report yet. Run the test: a few minutes.')}</div>`;
+  h += `<button class="btn" id="tq-go" ${r.en_cours ? 'disabled' : ''}>${r.en_cours ? tt('Test en cours…', 'Test running…') : tt('Lancer le test', 'Run the test')}</button>`;
+  ouvrirFeuille(h);
+  const go = $('#tq-go'); if (go) go.onclick = async () => { vibrer(); go.disabled = true; await API.slabiq_test_lancer().catch(() => null); setTimeout(feuilleTestIQ, 1500); };
+  if (r.en_cours) setTimeout(() => { if ($('#tq-go') && $('#fond-feuille') && !$('#fond-feuille').hidden) feuilleTestIQ(); }, 10000);
+}
 async function majTourDeals(){
   const z = $('#d-tour'); if (!z) return;
   const t = await API.deals_tour().catch(() => null);
@@ -8954,7 +9066,8 @@ function rondsDeals(F, sp){
   const un = F.sports.length === 1 ? F.sports[0] : '';
   const spL = un ? nomSport(un) : tt('Sports', 'Sports');
   const triL = (TRIS_DEALS().find(t => t[0] === F.tri) || TRIS_DEALS()[0])[1] + (F.type === 'encan' ? tt(' · encans', ' · auctions') : F.type === 'fixe' ? tt(' · prix fixe', ' · BIN') : '');
-  const pf = S.dealsProfil || {}, nf = nbFiltresDeals(F) + (F.vendeurs ? 1 : 0) + ((pf.collectionne || []).length ? 1 : 0) + (pf.prix_min || pf.prix_max ? 1 : 0) + ((pf.favoris || []).length && !(F.joueurs || []).length ? 1 : 0);
+  // 11 nov 2026 : en admin, le profil ne filtre plus rien (seulement les favoris devant) : il ne compte plus comme filtre
+  const pf = (S.forfait && S.forfait.admin) ? {} : (S.dealsProfil || {}), nf = nbFiltresDeals(F) + (F.vendeurs ? 1 : 0) + ((pf.collectionne || []).length ? 1 : 0) + (pf.prix_min || pf.prix_max ? 1 : 0) + ((pf.favoris || []).length && !(F.joueurs || []).length ? 1 : 0);
   return `<div class="d-ronds">${sp.length > 1 ? r('dr-sp', icSport(un), spL) : ''}${r('dr-tri', IC_D.tri, triL)}${r('dr-fil', IC_D.filtre, tt('Filtres', 'Filters'), nf)}</div>`;
 }
 function brancherRondsDeals(F, sp){
@@ -9727,7 +9840,8 @@ async function remplirMoment(z){
   const r = await API.joueurs_du_moment().catch(() => null);
   if (!z.isConnected || !r || !(r.joueurs || []).length) return;
   const P = {en_feu: [tt('En feu', 'On fire'), 'rouge'], honneur: [tt('Honoré', 'Honored'), 'or'], occasion: [tt('Bonne occasion', 'Buy low'), 'vert'], mauvaise: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], rebond: [tt('Sort du creux', 'Bouncing back'), 'vert'], recrue: [tt('Recrue', 'Rookie'), 'or'], en_creux: [tt('En creux', 'In a slump'), 'acc']};
-  z.innerHTML = `<div class="am-tete"><div class="am-t">${tt('Joueurs du moment', 'Players to watch')}</div><a class="am-tout" href="#iq">${tt('Tendances', 'Trending')} ›</a></div>
+  // 11 nov 2026 (Mathieu : « la section des joueurs : le meme format que le reste ») : le meme titre de section que l'accueil
+  z.innerHTML = `<div class="acc-sec" style="--c:#FF8A80"><span>${tt('Joueurs du moment', 'Players to watch')}</span><a href="#iq">${tt('Tendances', 'Trending')} ›</a></div>
     <div class="am-l am-auto">${r.joueurs.map(j => `<a class="am-j" data-jpop="${esc(j.nom)}" href="#joueur/${encodeURIComponent(j.nom)}"><span class="vig-j" data-vj="${esc(j.nom)}">${SVG_CARTE}</span>
       <span class="am-c"><b>${esc(j.nom)}</b>${tag((P[j.pastille] || ['', ''])[0], (P[j.pastille] || ['', ''])[1])}${j.semaine && j.semaine.mj ? `<small>${j.semaine.pts} pts · ${j.semaine.mj} ${tt('matchs', 'games')}</small>` : ''}</span></a>`).join('')}</div>`;
   try { remplirPortraits(z); } catch (e) {}
@@ -9754,7 +9868,7 @@ document.addEventListener('click', (e) => { const a = e.target.closest('[data-jp
 // nouvelles, palmares et l'Indice SlabIQ de chaque joueur avec ses criteres ; jamais un prix.
 const CATS_IQ = () => [['en_feu', tt('En feu', 'On fire'), 'rouge'], ['rebond', tt('Sortent du creux', 'Bouncing back'), 'vert'], ['recrue', tt('Recrues', 'Rookies'), 'or'],
   ['en_hausse', tt('En hausse', 'Rising'), 'vert'], ['buzz', 'Buzz', 'acc'], ['en_creux', tt('En creux', 'In a slump'), ''], ['top', tt('Top indice', 'Top index'), 'acc'], ['legende', tt('Légendes', 'Legends'), 'or']];
-const CRIT_IQ = () => ({forme: tt('Forme', 'Form'), ascension: tt('Ascension', 'Rise'), rythme: tt('Rythme', 'Pace'), buzz: tt('Recherches', 'Searches'), notoriete: tt('Notoriété', 'Fame'),
+const CRIT_IQ = () => ({communaute: tt('Communauté', 'Community'), forme: tt('Forme', 'Form'), ascension: tt('Ascension', 'Rise'), rythme: tt('Rythme', 'Pace'), buzz: tt('Recherches', 'Searches'), notoriete: tt('Notoriété', 'Fame'),
   demande: tt('Demande', 'Demand'), actu: tt('Actualité', 'News'), legende: tt('Palmarès', 'Honours'), recrue: tt('Recrue', 'Rookie')});
 async function vueTendancesIQ(arg){
   V().innerHTML = `<section class="ecran tiq"><div class="tiq-t"><div><div class="titre">${tt('Tendances', 'Trending')}</div><div class="sous">${tt('Ce que SlabIQ voit chez les joueurs, chaque jour', 'What SlabIQ sees in players, every day')}</div></div>
@@ -9811,6 +9925,7 @@ const SIG_IQ = () => [
   ['notoriete', tt('sa notoriété de fond', 'his long-term fame'), 5, '#C792EA', '<path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.3 6.9 19l1.2-5.6L4 9.6 9.6 9z"/>'],
   ['recrue', tt('1re ou 2e saison', '1st or 2nd season'), 5, '#7FE3D0', '<path d="M12 3v18M5 10l7-7 7 7"/>'],
   ['legende', tt('Temple, coupes, trophées', 'Hall of Fame, Cups, awards'), 5, '#E8C26A', '<path d="M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M12 13v4M8 21h8M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/>'],
+  ['communaute', tt('ce que les membres SlabCoach regardent, suivent et ajoutent à leur watchlist', 'what SlabCoach members view, follow and add to their watchlist'), 5, '#8FD4A4', '<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M15 14.5c2.8 0 5 2.2 5 5"/>'],
   ['evenements', tt('intronisation, ovation, échange, blessure : la nouvelle qui fait bouger ses cartes', 'induction, ovation, trade, injury: the news that moves his cards'), 0, '#FF7AB6', '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>']];
 function expliquerTendancesIQ(){
   const C = Object.assign(CRIT_IQ(), {evenements: tt('Événements', 'Events')}), S_ = SIG_IQ(), mx = Math.max(...S_.map(x => x[2]));
@@ -9820,7 +9935,7 @@ function expliquerTendancesIQ(){
     ['rebond', tt('Sort du creux', 'Bouncing back'), 'vert', tt('un jeune qui reprend', 'a young player recovering')], ['en_creux', tt('En creux', 'In a slump'), '', tt('à surveiller', 'worth watching')],
     ['recrue', tt('Recrue', 'Rookie'), 'or', tt('1re ou 2e saison', '1st or 2nd season')], ['legende', tt('Légende', 'Legend'), 'or', tt('une icône', 'an icon')]];
   ouvrirFeuille(`<div class="iqx"><div class="iqx-t"><b>${tt('L’indice', 'The index')} Slab<i>IQ</i></b><span>${tt('Comment SlabIQ classe les joueurs', 'How SlabIQ ranks players')}</span></div>
-    <div class="iqs-tete"><div class="iqs-n"><b>10</b><span>${tt('signaux', 'signals')}</span></div><div class="iqs-n"><b>0–100</b><span>${tt('chaque jour', 'every day')}</span></div><div class="iqs-n"><b>100 %</b><span>${tt('données publiques', 'public data')}</span></div></div>
+    <div class="iqs-tete"><div class="iqs-n"><b>11</b><span>${tt('signaux', 'signals')}</span></div><div class="iqs-n"><b>0–100</b><span>${tt('chaque jour', 'every day')}</span></div><div class="iqs-n"><b>100 %</b><span>${tt('données publiques', 'public data')}</span></div></div>
     <p class="iqs-p">${tt('Chaque joueur est classé contre tous les autres sur chaque signal, puis tout est combiné. Une semaine en feu passe devant tout le monde.', 'Each player is ranked against every other player on each signal, then it’s all combined. A week on fire jumps ahead of everyone.')}</p>
     <div class="iqs-g">${S_.map(([k, d, w, col, ic]) => `<div class="iqs-t" style="--c:${col}"><span class="iqs-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${ic}</svg></span>
       <b>${C[k]}</b><small>${d}</small><span class="iqs-b"><i style="width:${w ? Math.max(8, Math.round(100 * w / mx)) : 100}%"></i></span><em>${w ? w + ' %' : tt('bonus', 'bonus')}</em></div>`).join('')}</div>
@@ -11455,45 +11570,44 @@ async function poserScoresInv(){
   const r = await API.inventaire_scores().catch(() => null);
   if (!r || !r.ok || !$('#i-liste')) return;
   S.invScores = r.scores || {};
-  $$('#i-liste .tuile-inv').forEach(t => {
+  $$('#i-liste .isl-sc[data-isc]').forEach(e => { const n = S.invScores[e.dataset.isc]; if (n == null) return;
+    e.className = 'isl-sc ' + couleurScore(n); e.dataset.iq = e.dataset.isc; e.setAttribute('role', 'button'); e.querySelector('b').textContent = n; });
+  $$('#i-liste .tuile-inv:not(.inv-slab)').forEach(t => {
     const n = S.invScores[t.dataset.id], ou = t.querySelector('.img, .sl-puits'); if (n == null || !ou || ou.querySelector('.inv-iq')) return;
     ou.insertAdjacentHTML('beforeend', `<span class="inv-iq sc-b ${couleurScore(n)}" data-iq="${t.dataset.id}" role="button" aria-label="Score SlabIQ ${n}">${n}</span>`);
   });
 }
-document.addEventListener('click', (e) => { const b = e.target.closest('.inv-iq[data-iq]'); if (!b) return; e.preventDefault(); e.stopPropagation(); vibrer();
+document.addEventListener('click', (e) => { const b = e.target.closest('.inv-iq[data-iq], .isl-sc[data-iq]'); if (!b) return; e.preventDefault(); e.stopPropagation(); vibrer();
   const c = (S.invL || []).find(x => String(x.id) === b.dataset.iq) || {};
   pourquoiScore({score: +b.textContent, titre: c.titre || [c.annee, c.marque, c.joueur, c.parallele].filter(Boolean).join(' '), joueur: c.joueur}); }, true);
 function tuileInv(c){
-  const vendue = c.statut === 'Vendue', r = !vendue ? repere(c) : null, m = c.marche;
+  // 11 nov 2026 (Mathieu : « les memes slabs que dans les deals pour l'inventaire, la note en coin en haut a droite, le
+  // titre ; l'info liee aux cartes de l'inventaire ») : l'etiquette porte le joueur, la carte, le score SlabIQ en coin et
+  // 3 chiffres (prix, paye, profit) ; le statut sur la photo.
+  // 11 nov 2026 (« a-t-on le droit de comparer au marche ? ») : la comparaison du prix demande au marche (« Bon prix »,
+  // « Trop cher ») reste a l'admin (licence eBay : pas de prix calcule pour le public sans l'accord ecrit d'eBay)
+  const vendue = c.statut === 'Vendue', adm = !!(S.forfait && S.forfait.admin), r = !vendue && adm ? repere(c) : null;
   const etat = vendue ? capsule(tt('Vendue', 'Sold') + (c.vendu_le ? ' · ' + dateCourte(c.vendu_le) : ''), 'petit')
     : c.statut === 'Listée' && c.debut && Date.parse(c.debut) > Date.now() ? `<span class="capsule or petit">${icH()}${esc(dateProg(c.debut))}</span>`
     : c.statut === 'Listée' ? capsule(tt('Sur eBay', 'On eBay'), 'acc petit')
-    : envoiDe(c) ? capsule(envoiDe(c).type === 'gradation' ? (envoiDe(c).etape ? tt('À soumettre', 'To submit') : tt('Au gradage', 'At grading')) + ' · ' + envoiDe(c).compagnie : tt('En encan', 'At auction'), (envoiRetard(envoiDe(c)) ? 'or' : envoiDe(c).type === 'gradation' ? 'grad' : 'acc') + ' petit')
+    : envoiDe(c) ? capsule(envoiDe(c).type === 'gradation' ? (envoiDe(c).etape ? tt('À soumettre', 'To submit') : tt('Au gradage', 'At grading')) + ' · ' + envoiDe(c).compagnie : tt('En encan', 'At auction'), (envoiRetard(envoiDe(c)) ? 'or' : 'acc') + ' petit')
     : c.a_finir ? capsule(tt('Prête à publier', 'Ready to list'), 'vert petit')
     : c.a_afficher ? capsule(tt('À mettre sur eBay', 'List on eBay'), 'or petit')
     : capsule(c.emplacement || tt('En stock', 'In stock'), 'petit');
   const nom = c.joueur || titreCourt(c.titre) || tt('Article', 'Item');
-  const det = [c.annee, c.set_nom, c.parallele, c.numero ? '#' + c.numero : '', c.tirage ? '/' + c.tirage : '', c.auto ? 'Auto' : '', c.grade].filter(Boolean).join(' · ');
-  const img = `<div class="img">${c.joueur ? `<span class="ecusson gros">${esc(initiales(c))}</span>` : SVG_CARTE}${photoOk(c.photo) ? `<img src="${esc(photoNet(c.photo))}" alt="" loading="lazy" decoding="async" data-oe="rm">` : ''}</div>`;
-  const bas = vendue
-    ? `<span class="p">${argent(c.prix_vendu, 0)}</span>${c.profit != null ? capsule((c.profit >= 0 ? '+' : '') + argentCourt(c.profit), (c.profit >= 0 ? 'vert' : 'rouge') + ' petit') : ''}`
-    : `<span class="p">${argent(c.prix_demande ?? c.valeur, 0)}</span>${pastilleTend(c)}`;
-  // 8 nov 2026 (Mathieu : « on perd de l'espace pour rien et on ne voit pas si on est au bon prix ; juste le prix demande, le
-  // paye si on l'a et si on est dans le prix du marche ; les watchers dans la fiche ») : 3 lignes sous la photo
-  if (!vendue) {
-    const cout = nb(c.cout), prix = nb(c.prix_demande ?? c.valeur), g = cout != null && prix ? profitA(prix, cout) : null;
-    return `<button class="tuile-c tuile-inv inv-c" data-id="${c.id}">${img}<div class="coin">${etat}</div>
-      <div class="corps"><div class="t">${esc(nom)}</div>
-        <div class="inv-px"><span class="p">${argent(c.prix_demande ?? c.valeur, 0)}</span>${r ? `<span class="inv-mk ${r.cl}">${esc(r.court)}</span>`
-          : c.marche_pro ? `<span class="inv-mk verrou" data-pro="repere">${icN('cadenas')}${tt('Marché', 'Market')}</span>`
-          // 9 nov 2026 (Mathieu : « pourquoi on ne voit pas l'indice : bon prix, trop cher ou pas assez ? ») : sans repere, on
-          // le dit (et l'app va chercher la valeur de la carte, quelques cartes a la fois)
-          : prix ? `<span class="inv-mk gris">${S.valSans && S.valSans.has(c.id) ? tt('Peu de ventes', 'Few sales') : tt('Valeur à venir', 'Value coming')}</span>` : ''}</div>
-        <div class="inv-s">${r ? `<span>${esc(r.long)}</span>` : ''}${cout != null ? `<span>${tt('payé ', 'paid ')}<b>${argent(cout, 0)}</b>${g != null ? ` <b class="${g >= 0 ? 'vert' : 'rouge'}">${g >= 0 ? '+' : '−'}${argentCourt(Math.abs(g))}</b>` : ''}</span>` : `<span class="or">${tt('coût ?', 'cost?')}</span>`}</div></div></button>`;
-  }
-  return `<button class="tuile-c tuile-inv" data-id="${c.id}">${img}<div class="coin">${etat}</div>
-    <div class="corps"><div class="t">${esc(nom)}</div>${det ? `<div class="det-c">${esc(det)}</div>` : ''}
-      <div class="ligne-b">${bas}</div></div></button>`;
+  const det = [c.annee, c.set_nom, c.parallele, c.tirage ? '/' + c.tirage : '', c.grade].filter(Boolean).join(' ') || titreCourt(c.titre) || '';
+  const k3 = (lib, val, cl) => `<span class="sd-k ${cl || ''}"><small>${lib}</small><b>${val}</b></span>`;
+  const cout = nb(c.cout), prix = vendue ? nb(c.prix_vendu) : nb(c.prix_demande ?? c.valeur);
+  const g = vendue ? (c.profit != null ? nb(c.profit) : null) : (cout != null && prix ? profitA(prix, cout) : null);
+  const sc = S.invScores && S.invScores[c.id];
+  return `<button class="tuile-inv slab-deal inv-slab ${vendue ? 'vendue' : ''}" data-id="${c.id}">
+    <div class="sd-slab"><div class="sd-lab">
+      <div class="isl-h"><div class="isl-n"><b class="sd-j">${esc(nom)}</b><small class="sd-c">${esc(det)}</small></div>
+        <span class="isl-sc ${sc != null ? couleurScore(sc) : 'vide'}" data-isc="${c.id}" ${sc != null ? `data-iq="${c.id}" role="button" aria-label="Score SlabIQ ${sc}"` : ''}><b>${sc != null ? sc : '–'}</b><small>SlabIQ</small></span></div>
+      <span class="sd-3">${k3(vendue ? tt('Vendue', 'Sold') : tt('Prix', 'Price'), prix ? argentCourt(prix) : '—')}${k3(tt('Payé', 'Paid'), cout != null ? argentCourt(cout) : '—')}${k3('Profit', g != null ? (g >= 0 ? '+' : '−') + argentCourt(Math.abs(g)) : '—', g != null ? (g >= 0 ? 'g' : 'rg') : '')}</span></div>
+      <div class="sd-ph">${SVG_CARTE}${photoOk(c.photo) ? `<img src="${esc(photoNet(c.photo, 400))}" alt="" loading="lazy" decoding="async" data-oe="rm">` : ''}
+        <span class="isl-et">${etat}</span>${r ? `<span class="isl-mk inv-mk ${r.cl}">${esc(r.court)}</span>` : ''}</div></div>
+  </button>`;
 }
 // 1er nov 2026 (Mathieu : « dans la vue collection, chaque carte comme dans un slab : la photo, le score du slab = celui
 // calcule par l'IA, le texte = le titre de la carte, pas de montant ») : un boitier transparent, l'etiquette en haut (titre a
@@ -11831,7 +11945,7 @@ function ficheCollection(c, opts){
     if (!r || !r.ok || !r.photos) return;
     c.photos = JSON.stringify(r.photos); c.photos_orig = JSON.stringify(base); c.studio_v = STUDIO_V; c.photo = r.photos[0];
     $$('#fc-imgs img').forEach((im, j) => { if (out[j] && out[j] !== base[j]) im.src = out[j]; });
-    const t_ = $(`#i-liste .tuile-inv[data-id="${c.id}"] .img img`); if (t_) t_.src = photoNet(r.photos[0]);
+    const t_ = $(`#i-liste .tuile-inv[data-id="${c.id}"] .img img, #i-liste .tuile-inv[data-id="${c.id}"] .sd-ph img`); if (t_) t_.src = photoNet(r.photos[0]);
   })();
   // 2 nov 2026 (Mathieu : « rapetisser ou cropper la portion de la photo sans carte pour tout voir sans defiler ») : chaque
   // photo recadree sur la carte ; la boite prend le format de la carte (couchee : beaucoup moins haute)
@@ -14962,6 +15076,8 @@ async function pourquoiScore(x){
   if (c.rc) ca.push(tt('Recrue (RC)', 'Rookie (RC)'));
   if (c.grade) ca.push(c.grade);
   if (ca.length) R.push(['carte', tt('La carte', 'The card'), ca.join(' · ')]);
+  // 11 nov 2026 : ce que le hobby sait de cette carte (le guide des annees 90 appris par SlabIQ)
+  if (sp && sp.connaissance) R.push(['legende', {graal: tt('Carte mythique', 'Legendary card'), chasse: tt('Très chassée', 'Heavily chased'), cle: tt('Recrue clé', 'Key rookie')}[sp.connaissance.niveau] || 'SlabIQ', esc(tt(sp.connaissance.raison, sp.connaissance.raison_en))]);
   // le joueur
   if (sp && sp.joueur) R.push(['joueur', esc(sp.joueur), sp.rang && sp.sur ? `${tt('Indice', 'Index')} : ${ordinal(sp.rang)} ${tt('sur', 'of')} ${sp.sur}` : '']);
   if (q.creux) R.push(['creux', q.creux.etat === 'rebond' ? tt('Sort de son creux', 'Bouncing back') : tt('En creux · à surveiller', 'In a slump · worth watching'),
@@ -15052,11 +15168,11 @@ async function vueMesDeals(z, frais){
   const choix = (titre, l, actuel, f) => { ouvrirFeuille(`<h3>${titre}</h3><div class="md-ch">${l.map(([k, n, c]) => `<button class="${k === actuel ? 'on' : ''}" data-v="${esc(k)}"><span>${esc(n)}</span>${c != null ? `<b>${c}</b>` : ''}${k === actuel ? '<i>✓</i>' : ''}</button>`).join('')}</div>`);
     $$('.md-ch [data-v]').forEach(b => b.onclick = () => { vibrer(); fermerFeuille(); f(b.dataset.v); }); };
   const mf = $('#md-f', z); if (mf) mf.onclick = () => { vibrer(); choix(tt('Voir', 'Show'), [['', tt('Tout', 'All'), nb_], ...groupes.map(([k, n]) => [k, n, nbG(k)])], S.mdF || '', v => { S.mdF = v; S.mdMax = 40; peindre(); });
-    // 11 nov 2026 (Mathieu : « l'option Canada / USA ») : le pays d'achat (eBay du pays, port et taxes), ici aussi
-    const us = ((S.reglages || {}).pays || 'CA') === 'US', f_ = document.querySelector('.md-ch');
-    if (f_) { f_.insertAdjacentHTML('afterend', `<div class="md-pays"><span>${tt('J’achète depuis', 'I buy from')}</span><div class="seg petit"><button data-pays="CA" class="${us ? '' : 'on'}">Canada</button><button data-pays="US" class="${us ? 'on' : ''}">${tt('États-Unis', 'United States')}</button></div></div>`);
-      $$('[data-pays]').forEach(b => b.onclick = async () => { if ((b.dataset.pays === 'US') === us) return; vibrer(); fermerFeuille();
-        const x = await API.reglages_sauver({pays: b.dataset.pays}).catch(() => null); if (x) S.reglages = x; if (z.isConnected) vueMesDeals(z); }); } };
+    // 11 nov 2026 (Mathieu : « Canada et Etats-Unis coinces ensemble : deux pays a cliquer, deux pastilles avec des drapeaux ;
+    // Canada choisi mais une carte des Etats-Unis proposee ») : les pays d'ou les cartes sont expediees, un, l'autre ou les deux
+    const f_ = document.querySelector('.md-ch');
+    if (f_) { f_.insertAdjacentHTML('afterend', blocProvenance());
+      brancherProvenance(() => { fermerFeuille(); for (const k of [...MEMO.keys()]) if (k.startsWith('mes_deals')) MEMO.delete(k); if (z.isConnected) vueMesDeals(z); }); } };
   const mt = $('#md-t', z); if (mt) mt.onclick = () => { vibrer(); choix(tt('Trier', 'Sort'), tris().map(([k, n]) => [k, n]), S.mdTri, v => { S.mdTri = v; peindre(); }); };
   // 1re visite d'un Radar vide : le formulaire s'ouvre seul (une fois)
   let vu = false; try { vu = localStorage.getItem('lr_radar_q') === '1'; } catch (e) {}
