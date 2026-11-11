@@ -221,3 +221,25 @@ finally:
     _vi._appeler, _vi.disponible = _vi_app, _vi_dispo
 assert "photos_trier" in server._LOURDS
 print("ok 20 tri du lot")
+
+# 21. 13 nov 2026 : une seule analyse d'etat a la fois par carte ; la lecture dit qu'elle est en cours
+import threading as _th, time as _tm
+_api = lockerroom.Api.__new__(lockerroom.Api)
+_orig_ce = lockerroom.Api._carte_etat
+_ev = _th.Event()
+lockerroom.Api._carte_etat = lambda self, cid, forcer=False, langue=None, d=None: (_ev.wait(5) and {"ok": True, "fini": True}) if forcer else {"ok": True, "aucun": True}
+try:
+    _res = {}
+    _t = _th.Thread(target=lambda: _res.update(a=_api.carte_etat(7, True)))
+    _t.start(); _tm.sleep(0.2)
+    _b = _api.carte_etat(7, True)
+    assert _b["ok"] is False and _b["en_cours"], _b
+    _l = _api.carte_etat(7, None)
+    assert _l.get("en_cours") and _l.get("aucun"), _l
+    assert _api.carte_etat(8, None).get("en_cours") is None
+    _ev.set(); _t.join()
+    assert _res["a"] == {"ok": True, "fini": True}
+    assert _api.carte_etat(7, None).get("en_cours") is None
+finally:
+    lockerroom.Api._carte_etat = _orig_ce
+print("ok 21 une analyse d'etat a la fois")

@@ -3517,7 +3517,31 @@ class Api:
                 pass
         return {"ok": True, "photos": refs}
 
+    _ETAT_EN_COURS = {}
+
     def carte_etat(self, cid, forcer=False, langue=None, d=None):
+        """13 nov 2026 (Mathieu : « sorti de ma carte et rerentre, ca me laissait encore peser sur grader ; l'app ne doit pas
+        permettre plusieurs requetes ; une barre de progression, et la meme si on quitte et revient, jusqu'a la fin ») :
+        une seule analyse a la fois par carte ; la lecture dit qu'une analyse est en cours (et depuis quand). L'analyse
+        continue au serveur meme si l'app se ferme : son resultat est garde avec la carte."""
+        k = (comptes.courant() or "local", str(cid))
+        if forcer is None:
+            r = self._carte_etat(cid, None, langue, d)
+            t0 = Api._ETAT_EN_COURS.get(k)
+            if t0 and time.time() - t0 < 600 and isinstance(r, dict):
+                r = dict(r, en_cours=True, depuis=int(time.time() - t0))
+            return r
+        with _verrou:
+            t0 = Api._ETAT_EN_COURS.get(k)
+            if t0 and time.time() - t0 < 600:
+                return {"ok": False, "en_cours": True, "depuis": int(time.time() - t0), "erreur": "Analyse déjà en cours pour cette carte"}
+            Api._ETAT_EN_COURS[k] = time.time()
+        try:
+            return self._carte_etat(cid, forcer, langue, d)
+        finally:
+            Api._ETAT_EN_COURS.pop(k, None)
+
+    def _carte_etat(self, cid, forcer=False, langue=None, d=None):
         """L'etat estime d'une carte (pre-gradation). d (facultatif) = {photos: [devant, dos] (data URL : les photos
         d'EXAMEN prises pour l'occasion), quads: [coins devant, coins dos] (0..1000, trouves dans le telephone), rasante:
         data URL}. Sans photos : celles de la fiche (les originales : la photo studio met un halo qui cache les aretes).

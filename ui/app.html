@@ -709,6 +709,7 @@ html[lang=en] .w-ligne::after{content:'Remove'}
 .tiq-cr span{display:flex; flex-direction:column; gap:3px} .tiq-cr small{font:700 10.5px var(--f-cond); letter-spacing:.1em; text-transform:uppercase; color:var(--acc)}
 .tiq-cr i{display:block; height:5px; border-radius:3px; background:var(--carte2); overflow:hidden} .tiq-cr em{display:block; height:100%; background:linear-gradient(90deg, var(--acc), var(--vert))}
 .tiq-a{display:flex; gap:6px; align-items:flex-start; font-size:13px; color:var(--texte); line-height:1.35} .tiq-a .ic-h{width:15px; height:15px; flex:none; margin-top:2px; color:var(--acc)} .tiq-note{margin-top:14px}
+.et-cours{display:flex; flex-direction:column; gap:8px; padding:14px 16px; border-radius:22px; background:var(--carte); border:1px solid var(--ligne)} .et-cours small{font-size:12.5px; color:var(--doux); line-height:1.35}
 .c-eb{grid-column:1 / -1; justify-self:start; display:inline-flex; align-items:center; gap:7px; margin:-2px 0 10px; padding:6px 12px 6px 9px; border-radius:999px; border:1px solid color-mix(in srgb, var(--acc) 30%, var(--ligne)); background:color-mix(in srgb, var(--acc) 7%, transparent); color:var(--acc); font-family:inherit; font-weight:600; font-size:13.5px; cursor:pointer}
 .c-eb svg{width:16px; height:16px} .c-eb i{font-style:normal; opacity:.7}
 .pop2-fond{position:fixed; inset:0; z-index:400; display:grid; place-items:center; padding:20px; background:rgba(0,0,0,.45); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); opacity:0; transition:opacity .2s}
@@ -12100,15 +12101,40 @@ async function blocEtat(c, forcer, opts){
   // ou les photos de la fiche ; les 4 coins de la carte sont trouves ici et envoyes (zooms et centrage mesures au serveur)
   // 3 nov 2026 (revue) : l'examen guide remplace la fiche (feuilles) : la fiche est rouverte, puis l'analyse s'y affiche
   // (avant : le resultat s'ecrivait dans une fiche disparue)
+  // 13 nov 2026 (Mathieu : « sorti de ma carte et rerentre, ca me laissait encore peser ; une seule requete ; une barre de
+  // progression, la meme si on quitte et revient, jusqu'a la fin ») : l'analyse en cours est connue du serveur (et gardee
+  // dans le telephone) ; la fiche montre la barre et attend le resultat, sans jamais relancer
+  const cleEt = 'lr_etat_' + c.id;
+  const enCours = () => { try { const t = +localStorage.getItem(cleEt); return t && Date.now() - t < 6e5 ? t : 0; } catch (e) { return 0; } };
+  const barre = (t0) => { z.innerHTML = `<div class="et-cours">${barreProg(t0, 100, tt('Pré-grade IA : 8 coins, 8 bords, la surface et le centrage', 'AI pre-grade: 8 corners, 8 edges, surface and centering'))}
+    <small>${tt('Tu peux quitter la fiche ou fermer l’app : l’analyse continue et le résultat t’attend ici.', 'You can leave or close the app: the analysis keeps going and the result waits here.')}</small></div>`; };
+  const attendre = async (t0) => {                     // la fiche rouverte pendant l'analyse : on attend le resultat
+    barre(t0);
+    for (let k = 0; k < 120 && document.body.contains(z); k++) {
+      await new Promise(x => setTimeout(x, 5000));
+      const r = await API.carte_etat(c.id, null).catch(() => null);
+      if (!document.body.contains(z)) return;
+      if (r && r.en_cours) continue;
+      try { localStorage.removeItem(cleEt); } catch (e) {}
+      if (r && r.ok && !r.aucun) peindre(r); else { z.innerHTML = vide(); brancher(); }
+      return;
+    }
+  };
   const lancer = async () => {
+    if (enCours()) { attendre(enCours()); return; }
     if (!await okIA()) return;
     const d = await feuilleExamen(c); if (!d) return;
     if (!document.body.contains(z)) { ficheCollection(c, {examen: d}); return; }
     analyser(d);
   };
   const analyser = async (d) => {
-    z.innerHTML = `<div class="lecture"><span class="roue"></span>${tt('Examen des 8 coins, des 8 bords et de la surface… (1 à 2 min)', 'Checking 8 corners, 8 edges and the surface… (1 to 2 min)')}</div>`;
-    const r = await API.carte_etat(c.id, true, typeof LANGUE !== 'undefined' ? LANGUE : 'fr', d).catch(e => ({ok:false, erreur:e.message}));
+    if (enCours()) { attendre(enCours()); return; }
+    const t0 = Date.now(); try { localStorage.setItem(cleEt, String(t0)); } catch (e) {}
+    barre(t0);
+    const r = await API.carte_etat(c.id, true, typeof LANGUE !== 'undefined' ? LANGUE : 'fr', d).catch(e => ({ok:false, erreur:e.message, reseau: !!e.reseau}));
+    if (r && r.en_cours) { if (document.body.contains(z)) attendre(Date.now() - (r.depuis || 0) * 1000); return; }
+    if (r && r.reseau) { if (document.body.contains(z)) attendre(t0); return; }     // l'app fermee ou le reseau coupe : le serveur continue
+    try { localStorage.removeItem(cleEt); } catch (e) {}
     if (!document.body.contains(z)) return;
     if (!r.ok) { z.innerHTML = vide(r.erreur); brancher(); return; }
     peindre(r);
@@ -12156,8 +12182,11 @@ async function blocEtat(c, forcer, opts){
     $$('#fc-etat [data-d]').forEach(li => li.onclick = () => { vibrer(); diapoEtat(e, 1 + (e.defauts || []).filter(d => !d.masque).indexOf(e.defauts[+li.dataset.d]), peindre, lancer); });
   };
   if (opts.examen) { analyser(opts.examen); return; }
-  if (opts.lancer) { lancer(); }
   const r = await API.carte_etat(c.id, null).catch(() => null);         // ce qui est garde, sans nouvelle analyse
+  if (r && r.en_cours) { attendre(enCours() || Date.now() - (r.depuis || 0) * 1000); return; }
+  if (enCours() && r && r.ok && !r.aucun) { try { localStorage.removeItem(cleEt); } catch (e) {} }
+  else if (enCours()) { attendre(enCours()); return; }                   // le serveur redemarre : on attend encore un peu
+  if (opts.lancer) { lancer(); }
   const q = (r && r.quota) || {};
   const reste = q.limite != null ? ' · ' + tt(`reste ${q.reste} sur ${q.limite} ce mois`, `${q.reste} of ${q.limite} left this month`) : '';
   if (r && r.ok && !r.aucun) peindre(r);
