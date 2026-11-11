@@ -59,6 +59,9 @@ OUTIL = {
         "type": "object",
         "properties": {
             "est_une_carte": {"type": "boolean", "description": "false si la photo ne montre pas une carte de sport"},
+            # 13 nov 2026 (Mathieu : le devant d'une Lennox et celui d'une Michkov lus comme UNE carte, dans un lot decale)
+            "meme_carte": {"type": "boolean", "description": "Avec 2 images : true seulement si c'est bien le devant et le dos de la MEME carte "
+                                                             "(meme joueur, meme numero, meme design). Deux cartes differentes, ou deux devants : false."},
             "sport": {"type": "string", "enum": ["hockey", "football", "basketball", "baseball", "autre"]},
             "joueur": {"type": "string", "description": "Nom complet, ex. « Connor Bedard ». Deux joueurs : « A / B »."},
             "annee": {"type": "string", "description": "Saison imprimee, ex. « 2023-24 » (hockey/basket) ou « 2024 »."},
@@ -120,6 +123,8 @@ Regles :
   toploader, un one-touch ou sur un support, elle est brute (raw) : grade et cert vides, et jamais de note dans le titre.
   Pas d'etiquette lisible avec un numero de certificat = carte brute. Ne devine jamais une note d'apres l'etat de la carte.
 - photos : pour chaque image, les 4 coins exterieurs de la carte (ou de son etui / slab), le plus precis possible, et si la photo est a reprendre (coin coupe, floue, reflet sur le texte).
+- Avec 2 images : verifie que c'est la MEME carte (meme joueur, numero, set, design au devant et au dos). Deux cartes
+  differentes ou deux devants : meme_carte = false, et ne remplis la fiche qu'avec la premiere image.
 - Reponds uniquement avec l'outil « carte »."""
 
 
@@ -414,7 +419,8 @@ def _nettoyer(f):
             out["titre"] = re.sub(r"\s+", " ", _NOTE.sub("", out["titre"])).strip()
     douteux = sorted(k for k in out if k in conf and conf[k] < SEUIL_CONFIANCE)
     return {"champs": out, "a_verifier": douteux, "notes": [str(x) for x in (f.get("a_verifier") or [])][:6],
-            "conseil_photo": str(f.get("conseil_photo") or "").strip(), "confiance": conf, "photos": _photos(f.get("photos"))}
+            "conseil_photo": str(f.get("conseil_photo") or "").strip(), "confiance": conf, "photos": _photos(f.get("photos")),
+            "meme_carte": False if f.get("meme_carte") is False else True}
 
 
 def _photos(l):

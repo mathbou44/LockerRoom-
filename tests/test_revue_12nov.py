@@ -243,3 +243,9 @@ try:
 finally:
     lockerroom.Api._carte_etat = _orig_ce
 print("ok 21 une analyse d'etat a la fois")
+
+# 22. 13 nov 2026 : deux photos de cartes differentes ne font jamais une seule carte
+assert _vi._nettoyer({"joueur": "X", "meme_carte": False})["meme_carte"] is False
+assert _vi._nettoyer({"joueur": "X"})["meme_carte"] is True
+assert "meme_carte" in _vi.OUTIL["input_schema"]["properties"]
+print("ok 22 meme carte")

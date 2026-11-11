@@ -6017,6 +6017,11 @@ async function traiterCarteLot(c){
     c.raison = p[0].cote === 'dos' ? tt('Deux dos : l’ordre devant / dos est décalé', 'Two backs: the front / back order is off') : tt('Deux devants : l’ordre devant / dos est décalé', 'Two fronts: the front / back order is off');
     c.detail = tt('Remets les photos dans l’ordre : devant puis dos de la même carte.', 'Put the photos back in order: front then back of the same card.'); return;
   }
+  // 13 nov 2026 (Mathieu : le devant d'une Lennox et celui d'une Michkov devenus UNE carte) : l'IA dit si les 2 photos sont
+  // bien la meme carte ; sinon rien n'est garde, la carte est a reprendre
+  if (c.ph.length === 2 && r.meme_carte === false) { c.etat = 'revoir'; c.ordre = true;
+    c.raison = tt('Les 2 photos ne sont pas la même carte', 'The 2 photos are not the same card');
+    c.detail = tt('Remets le devant puis le dos de la même carte.', 'Put the front then the back of the same card.'); return; }
   if (c.ph.length === 1 && p[0] && p[0].cote === 'dos') { c.etat = 'revoir'; c.ordre = true; c.raison = tt('C’est un dos : il manque le devant', 'This is a back: the front is missing'); return; }
   const k = p.findIndex(x => x && (x.entiere === false || x.nette === false));
   if (k >= 0) { const [t, d] = p[k].entiere === false ? MSG_PHOTO.coupee : MSG_PHOTO.floue; c.etat = 'revoir'; c.qj = k; c.raison = nom(k) + t; c.detail = p[k].probleme || d; return; }
@@ -10800,7 +10805,7 @@ function vueAFinirSimple(l){
     <div class="afs-t"><b>${l.length + nLot}</b><span>${tt(l.length + nLot > 1 ? 'cartes à finir' : 'carte à finir', l.length + nLot > 1 ? 'cards to finish' : 'card to finish')}</span>
       ${l.length ? `<small>${[prets ? `<b class="vert">${prets} ${tt(prets > 1 ? 'prêtes' : 'prête', 'ready')}</b>` : '', l.length - prets ? `${l.length - prets} ${tt('à compléter', 'to complete')}` : '', tt('glisse une carte vers la gauche pour la retirer', 'swipe a card left to remove it')].filter(Boolean).join(' · ')}</small>` : ''}</div>
     <div id="afs-dbl"></div>
-    ${nLot ? `<div class="afs-lot"><span>${ICO_LOT}</span><span class="afs-lt"><b>${tt(`${nLot} photo${nLot > 1 ? 's' : ''} pas encore lue${nLot > 1 ? 's' : ''}`, `${nLot} photo${nLot > 1 ? 's' : ''} not read yet`)}</b><small>${tt('L’app les lit et les ajoute ici.', 'The app reads them and adds them here.')}</small></span><button class="btn petit" id="af-lot">${tt('Continuer', 'Continue')}</button></div>` : ''}
+    ${nLot ? `<div class="afs-lot"><span>${ICO_LOT}</span><span class="afs-lt"><b>${tt(`${nLot} photo${nLot > 1 ? 's' : ''} pas encore lue${nLot > 1 ? 's' : ''}`, `${nLot} photo${nLot > 1 ? 's' : ''} not read yet`)}</b><small>${tt('L’app les lit et les ajoute ici.', 'The app reads them and adds them here.')}</small></span><button class="btn petit" id="af-lot">${tt('Continuer', 'Continue')}</button><button class="lot-x" id="af-lot-x" aria-label="${esc(tt('Annuler ce lot', 'Cancel this batch'))}">✕</button></div>` : ''}
     <div class="afs-l">${l.map(c => { const m = manque(c), nom = c.joueur || titreCourt(c.titre) || '';
       return `<button class="afs-r tuile-inv" data-id="${c.id}"><span class="afs-ph">${photoOk(c.photo) ? `<img src="${esc(photoNet(c.photo))}" alt="" loading="lazy" data-oe="rm">` : SVG_CARTE}</span>
         <span class="afs-c"><b class="${m.some(x => x[1] === 'rouge') ? 'afs-q' : ''}">${m.some(x => x[1] === 'rouge') ? tt('Carte à identifier', 'Card to identify') : esc(nom)}</b>
@@ -10809,7 +10814,7 @@ function vueAFinirSimple(l){
     ${l.length ? `<button class="btn afs-tout" id="af-pg">${tt(`Mettre ${l.length > 1 ? 'les ' + l.length + ' cartes' : 'la carte'} sur eBay`, `List ${l.length > 1 ? 'the ' + l.length + ' cards' : 'the card'} on eBay`)}</button>
       <div class="sous afs-n">${tt('À l’étape suivante, tu vérifies les prix et tu choisis l’heure. Rien ne part sans ton OK.', 'On the next step you check prices and pick the time. Nothing goes out without your OK.')}</div>
       <div class="afs-bas"><button class="lien-t" id="af-retirer">${tt('Vider la liste', 'Clear the list')}</button><button class="lien-t rouge" id="af-supp">${tt('Tout supprimer', 'Delete all')}</button></div>`
-      : `<div class="vide">${tt('Rien à finir : tout est sur eBay', 'Nothing to finish: everything is on eBay')}</div>`}</div>`;
+      : nLot ? '' : `<div class="vide">${tt('Rien à finir : tout est sur eBay', 'Nothing to finish: everything is on eBay')}</div>`}</div>`;
 }
 // 12 nov 2026 (« on devrait pouvoir supprimer des cartes des A finir en glissant ») : glisser une ligne vers la gauche montre
 // « Retirer » ; un toucher la retire de l'inventaire (jamais une carte deja sur eBay : ces lignes-la n'y sont pas)
@@ -10855,8 +10860,8 @@ function blocAFinir(l){
 }
 function brancherAFinir(l){
   const bl = $('#af-lot'); if (bl) bl.onclick = () => { vibrer(); lotReprendre(); };
-  const bx = $('#af-lot-x'); if (bx) bx.onclick = async () => { if (!await confirmer(tt('Oublier ce lot ?', 'Forget this batch?'), tt('Les photos gardées dans le téléphone pour ce lot seront effacées. Les cartes déjà dans ton inventaire restent.', 'The photos kept on the phone for this batch will be erased. Cards already in your inventory stay.'))) return;
-    await lotIdb(null); S.lotGarde = null; S.lotGardeN = 0; chargerInventaire(); };
+  const bx = $('#af-lot-x'); if (bx) bx.onclick = async () => { if (!await confirmer(tt('Annuler ce lot ?', 'Cancel this batch?'), tt('Les photos pas encore lues sont effacées du téléphone. Les cartes déjà dans ton inventaire restent.', 'The photos not read yet are erased from the phone. Cards already in your inventory stay.'), tt('Annuler le lot', 'Cancel batch'), true)) return;
+    await lotIdb(null); S.lotGarde = null; S.lotGardeN = 0; if (LOT.fini !== false) LOT.l = null; MEMO.clear(); GARDE_SAUTER.t = Date.now(); toast(tt('Lot annulé', 'Batch cancelled'), 1600); chargerInventaire(); };
   const bp = $('#af-pg'); if (bp) bp.onclick = () => { vibrer(); S.pgPre = l.map(c => +c.id); for (const k in PG) delete PG[k]; location.hash = '#vendre/programmer'; };
   // 13 nov 2026 (Mathieu : « delete toutes les cartes a finir pour qu'on reparte a frais ») : supprime les cartes de la liste
   // (et le lot garde dans le telephone) ; jamais une carte sur eBay
