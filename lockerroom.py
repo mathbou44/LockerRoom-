@@ -17,6 +17,7 @@ import re
 import secrets
 import sqlite3
 import statistics
+import random
 import threading
 import unicodedata
 import urllib.parse
@@ -5896,15 +5897,81 @@ class Api:
                 sort_keys=True, default=str).encode()).hexdigest()
         except Exception:
             cle = None
-        g = Api._RADAR.get(cle) if cle else None
-        if g and not frais and time.time() - g[0] < self.RADAR_GARDE_S:
-            return {**g[1], "garde_s": int(time.time() - g[0])}
+        g = (Api._RADAR.get(cle) or self._radar_disque(cle)) if cle else None
+        age = time.time() - g[0] if g else None
+        if g and not frais and age < self.RADAR_GARDE_S:
+            return {**g[1], "garde_s": int(age)}
+        # 12 nov 2026 (« ca bloque sur Checking eBay for you ») : un Radar deja fait (moins de 6 h) s'affiche TOUT DE SUITE et le
+        # nouveau se calcule a cote (un seul calcul a la fois par Radar) ; le prochain affichage le montre. Pas en vue simulee
+        # (la tache de fond ne sait pas que l'admin regarde comme un utilisateur) : la, on calcule tout de suite.
+        if g and not frais and age < 6 * 3600 and self.RADAR_GARDE_S:
+            if cle not in Api._RADAR_EN_COURS and not vue_simulee():
+                Api._RADAR_EN_COURS.add(cle)
+                import contextvars
+                ctx = contextvars.copy_context()
+
+                def fond():
+                    try:
+                        self._radar_garder(cle, self._mes_deals_calcul())
+                    except Exception as e:
+                        print("Radar (fond) : " + repr(e), flush=True)
+                    finally:
+                        Api._RADAR_EN_COURS.discard(cle)
+                threading.Thread(target=lambda: ctx.run(fond), daemon=True).start()
+            return {**g[1], "garde_s": int(age), "maj_en_cours": True}
         r = self._mes_deals_calcul()
-        if cle and r.get("ok") and not r.get("partiel"):
-            if len(Api._RADAR) > 500:
-                Api._RADAR.clear()
-            Api._RADAR[cle] = (time.time(), r)
+        # eBay lent ou en panne : le dernier bon Radar plutot qu'un ecran vide
+        if g and r.get("partiel") and self._radar_n(r) < self._radar_n(g[1]) // 2:
+            return {**g[1], "garde_s": int(age), "ebay_lent": True}
+        self._radar_garder(cle, r)
         return r
+
+    _RADAR_EN_COURS = set()
+
+    @staticmethod
+    def _radar_n(r):
+        return sum(len(g.get("annonces") or []) for k in ("pour_toi", "decouvrir", "chauds", "creux", "chasses", "types", "vendeurs", "cibles")
+                   for g in (r.get(k) or [])) + len(r.get("deals") or []) + len((r.get("petits") or {}).get("annonces") or [] if isinstance(r.get("petits"), dict) else r.get("petits") or [])
+
+    @staticmethod
+    def _radar_chemin(cle):
+        d = os.path.join(DOSSIER, "radar_garde")
+        return d, os.path.join(d, re.sub(r"[^A-Za-z0-9_-]", "_", cle)[:120] + ".json")
+
+    def _radar_disque(self, cle):
+        """12 nov 2026 (Mathieu : « pourquoi on n'a pas de memoire pour ne pas toujours tout recharger ? ») : le dernier Radar de
+        chaque compte est aussi garde sur le disque du serveur : une mise a jour (redemarrage) ne le perd plus."""
+        if not self.RADAR_GARDE_S:
+            return None
+        try:
+            with open(self._radar_chemin(cle)[1], encoding="utf-8") as f:
+                g = json.load(f)
+            Api._RADAR[cle] = (float(g["le"]), g["r"])
+            return Api._RADAR[cle]
+        except (OSError, ValueError, KeyError, TypeError):
+            return None
+
+    def _radar_garder(self, cle, r):
+        """Un Radar complet est garde 5 min ; un Radar partiel (une recherche trop lente) aussi, mais il est refait apres 2 min."""
+        if not cle or not (r or {}).get("ok") or not self.RADAR_GARDE_S:
+            return
+        if len(Api._RADAR) > 500:
+            Api._RADAR.clear()
+        Api._RADAR[cle] = (time.time() - (self.RADAR_GARDE_S - 120 if r.get("partiel") else 0), r)
+        try:
+            d, ch = self._radar_chemin(cle)
+            os.makedirs(d, exist_ok=True)
+            tmp = ch + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump({"le": Api._RADAR[cle][0], "r": r}, f, default=str)
+            os.replace(tmp, ch)
+            if random.random() < 0.03:                # menage : les Radars de plus de 2 jours (profils changes depuis)
+                for n in os.listdir(d):
+                    f_ = os.path.join(d, n)
+                    if time.time() - os.path.getmtime(f_) > 2 * 86400:
+                        os.remove(f_)
+        except (OSError, TypeError, ValueError) as e:
+            print("Radar (disque) : " + repr(e), flush=True)
 
     def _mes_deals_calcul(self):
         """10 nov 2026 (Mathieu : « on doit trouver des deals quand meme », lancement 100 % legal) : le Radar. Les annonces eBay
@@ -6008,7 +6075,7 @@ class Api:
             for k, cle, fn in taches:
                 ctx = contextvars.copy_context()          # le compte courant suit chaque recherche (quota par compte)
                 futurs[ex.submit(ctx.run, fn)] = (k, id(cle) if isinstance(cle, dict) else cle)
-            fait, pas_fait = wait(list(futurs), timeout=max(5.0, float(os.environ.get("LR_RADAR_DELAI_S") or 22) - (time.time() - t0)))
+            fait, pas_fait = wait(list(futurs), timeout=max(5.0, float(os.environ.get("LR_RADAR_DELAI_S") or 15) - (time.time() - t0)))
             for fu in fait:
                 k, cle = futurs[fu]
                 try:

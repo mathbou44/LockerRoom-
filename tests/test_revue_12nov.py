@@ -108,3 +108,16 @@ score_slab.annoter_lot(x2)
 assert x2[0].get("score") == x1[0].get("score") and x2[0].get("carte") == x1[0].get("carte")
 score_slab._annoter_lot = _s
 print("OK Radar garde 5 min + SlabIQ en memoire")
+# 11. le Radar survit a un redemarrage (disque) et un Radar vide (eBay lent) ne remplace pas le dernier bon
+lockerroom.Api._RADAR.clear()
+r0 = api.mes_deals()                                       # relu du disque, sans appel eBay
+assert "garde_s" in r0, r0.keys()
+k = next(iter(lockerroom.Api._RADAR)); t_, bon = lockerroom.Api._RADAR[k]
+bon = {**bon, "pour_toi": [{"joueur": "X", "annonces": [{"item_id": str(i)} for i in range(10)]}]}
+lockerroom.Api._RADAR[k] = (t_ - 99999, bon)
+_calc = api._mes_deals_calcul
+api._mes_deals_calcul = lambda: {"ok": True, "partiel": True, "pour_toi": [], "deals": []}
+r = api.mes_deals(True)
+assert r.get("ebay_lent") and len(r["pour_toi"][0]["annonces"]) == 10, r
+api._mes_deals_calcul = _calc
+print("OK Radar sur disque + eBay lent")

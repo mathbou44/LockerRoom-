@@ -693,6 +693,11 @@ html[lang=en] .w-ligne::after{content:'Remove'}
 .v-iq-p{flex:1; display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end} .v-iq-b > i{font-style:normal; color:var(--acc); font-size:20px}
 .fv-ret{align-self:flex-start; border:0; background:none; color:var(--acc); font:700 15px var(--f-cond); letter-spacing:.06em; text-transform:uppercase; padding:4px 0; cursor:pointer; margin-right:44px}
 .fv-t{font:700 22px/1.2 var(--f-cond) !important; text-transform:uppercase; letter-spacing:.02em; padding-right:42px} .fv-k{margin:12px 0 0} .fv-b{display:flex; flex-wrap:wrap; gap:8px; margin-top:6px}
+.fond-feuille.centre{align-items:center; padding:16px; background:rgba(5,5,8,.55); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px)}
+.fond-feuille.centre .feuille{max-width:520px; max-height:84vh; border-radius:24px; padding-bottom:18px; border:1px solid var(--ligne); box-shadow:0 30px 80px rgba(0,0,0,.6)}
+.fond-feuille.centre .feuille.entre{animation:pop-c .26s cubic-bezier(.16,1,.3,1)} @keyframes pop-c{from{transform:scale(.94); opacity:0}to{transform:none; opacity:1}}
+.fond-feuille.centre .poignee{display:none}
+.fj{padding-top:34px; display:flex; flex-direction:column} .fj .jb{margin:0 0 10px} .fj .jb-tete{padding-right:12px} .fj-page{align-self:center}
 .jb{display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); grid-auto-flow:row dense; gap:10px; margin:2px 0 18px}
 @media (min-width:700px){ .jb{grid-template-columns:repeat(4, minmax(0, 1fr))} }
 .jb-t{position:relative; display:flex; flex-direction:column; gap:4px; min-width:0; padding:14px; border-radius:20px; background:var(--carte); border:1px solid var(--ligne); color:var(--texte); font:inherit; text-align:left; text-decoration:none}
@@ -3711,6 +3716,9 @@ function ouvrirFeuille(html){
   if (S.feuilleRetour) { const f = S.feuilleRetour; S.feuilleRetour = null; try { f(); } catch (e) {} }   // un bloc emprunte a la page y retourne
   const fe = $('#feuille'), deja = !$('#fond-feuille').hidden;
   // 11 nov 2026 (Mathieu : « des petites pop up avec un X pour la fermer ») : toutes les feuilles ont leur X
+  // 12 nov 2026 (Mathieu : « une petite fenetre au centre, le contour flou ou noirci, un X dans le coin ») : ouvertes depuis la
+  // fiche d'une annonce, les fenetres s'ouvrent au centre, par-dessus la fiche floutee
+  $('#fond-feuille').classList.toggle('centre', document.body.classList.contains('fen-ouverte'));
   fe.innerHTML = `<div class="poignee"></div><button class="f-x" aria-label="${tt('Fermer', 'Close')}">✕</button>` + html;
   fe.querySelector('.f-x').onclick = () => { vibrer(); fermerFeuille(); }; $('#fond-feuille').hidden = false; fe.scrollTop = 0; fe.style.transform = '';
   // 29 oct 2026 (Mathieu : « les pop-up vraiment tres fluides, pas saccadees ») : la feuille monte avec un ressort (transform
@@ -14078,6 +14086,9 @@ async function vueMesDeals(z, frais){
   if (!z.querySelector('.sr-w, .md-barre')) z.innerHTML = barreProg(Date.now(), 12, tt('On regarde eBay pour toi…', 'Checking eBay for you…'));
   const r = await (frais ? API.mes_deals(true) : API.mes_deals()).catch(e => ({ok:false, erreur:e.message}));
   if (!z.isConnected) return;
+  // le serveur montre son dernier Radar et en calcule un neuf a cote : on le reprend dans 20 s si on est encore en haut du Radar
+  if (r && r.maj_en_cours) setTimeout(() => { if (z.isConnected && scrollY < 240 && $('#fond-feuille').hidden && !document.body.classList.contains('fen-ouverte')) {
+    for (const k of [...MEMO.keys()]) if (k.startsWith('mes_deals')) MEMO.delete(k); vueMesDeals(z); } }, 20000);
   if (!r.ok) { z.innerHTML = `<div class="vide">${esc(r.erreur || 'Erreur')}<br><button class="lien-doux" id="md-re">${tt('Réessayer', 'Try again')}</button></div>`; const re_ = $('#md-re'); if (re_) re_.onclick = () => vueMesDeals(z); return; }
   // toutes les annonces dans un seul fil ; chacune garde d'ou elle vient (pour les pastilles de filtre)
   const tous = new Map(), groupes = [];
@@ -14340,6 +14351,33 @@ function bentoJoueur(r, t){
   if (seules % 2) { const d = [...T].reverse().find(x => !x.l); d.h = d.h.replace('class="jb-t', 'class="jb-t l'); }
   return T.map(x => x.h).join('').replace('id="j-faits"', 'id="j-faits" data-jfait');
 }
+// 12 nov 2026 : le joueur en petite fenetre (depuis la fiche d'une annonce) : le meme bento que sa page ; ses cartes et
+// « pourquoi il bouge » s'ouvrent dans la fenetre (‹ revient au joueur) ; sa page complete reste a un toucher
+async function feuilleJoueur(nom){
+  ouvrirFeuille(`<div class="fj"><div class="lecture"><span class="roue"></span>${esc(nom)}</div></div>`);
+  const [r, t] = await Promise.all([API.joueur_fiche(nom).catch(e => ({ok: false, erreur: e.message})), API.tendance_joueur(nom).catch(() => null)]);
+  const z = $('#feuille .fj'); if (!z) return;
+  if (!r.ok) { z.innerHTML = `<div class="vide">${esc(r.erreur || 'Erreur')}</div>`; return; }
+  const dessiner = () => {
+    ouvrirFeuille(`<div class="fj"><div class="jb">${bentoJoueur(r, t)}</div>
+      <a class="pilule fj-page" href="#joueur/${encodeURIComponent(r.joueur)}">${tt('Sa page complète', 'Full page')} ›</a></div>`);
+    const f = $('#feuille'), retour = () => dessiner();
+    const al = $('#j-alerte', f); if (al) al.onclick = () => { vibrer(); feuilleAlerte(r.requete, r.mediane ? Math.round(r.mediane * 0.8) : ''); };
+    $$('[data-jfait]', f).forEach(b => b.onclick = () => { vibrer(); ouvrirFeuille(`<button class="fv-ret" id="fv-ret">‹ ${esc(r.joueur)}</button>${blocPourquoi((t || {}).pourquoi) || ''}`); $('#fv-ret').onclick = () => { vibrer(); retour(); }; });
+    const jc = $('#j-cartes', f); if (jc) jc.onclick = () => { vibrer();
+      ouvrirFeuille(`<button class="fv-ret" id="fv-ret">‹ ${esc(r.joueur)}</button><h3>${tt('Ses cartes à chasser', 'His cards to hunt')}</h3><div class="liste">${r.cartes.map(c => `<button class="rangee" data-fjc="${esc(r.joueur + ' ' + c.carte)}">
+        <span class="milieu"><span class="nom">${esc(c.carte)}${c.numero ? ' #' + esc(c.numero) : ''}</span><span class="det">${esc(c.produit)}${c.tirage ? ' · /' + c.tirage : ''}</span></span><i class="fl">›</i></button>`).join('')}</div>`);
+      const liste = () => jc.onclick();
+      $('#fv-ret').onclick = () => { vibrer(); retour(); };
+      $$('[data-fjc]').forEach(b => b.onclick = () => { vibrer(); feuilleValeur(b.dataset.fjc, liste, tt('Ses cartes', 'His cards')); }); };
+    for (const id of ['j-histo', 'j-ind', 'j-al']) { const b = $('#' + id, f); if (b) b.onclick = () => { vibrer(); fermerFeuille(); fermerAnnonce(); location.hash = '#joueur/' + encodeURIComponent(r.joueur); }; }
+    $('.fj-page', f).onclick = (e) => { e.preventDefault(); fermerFeuille(); fermerAnnonce(); location.hash = '#joueur/' + encodeURIComponent(r.joueur); };
+    remplirPortraits(f);
+  };
+  dessiner();
+}
+document.addEventListener('click', (e) => { const a = e.target.closest('#fen-annonce a[href^="#joueur/"]'); if (!a) return;
+  e.preventDefault(); e.stopPropagation(); vibrer(); feuilleJoueur(decodeURIComponent(a.getAttribute('href').slice(8))); }, true);
 async function vueJoueur(arg){
   const nom = decodeURIComponent(arg || '');
   V().innerHTML = `<section class="ecran large joueur"><div class="lecture"><span class="roue"></span>${esc(nom)}</div></section>`;
