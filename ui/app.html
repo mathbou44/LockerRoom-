@@ -14226,7 +14226,8 @@ function tuileRadar(x, src){
   const L = {en_feu: [tt('En feu', 'On fire'), 'rouge'], rebond: [tt('Sort de son creux', 'Bouncing back'), 'vert'], en_creux: [tt('En creux', 'In a slump'), ''],
     legende: [tt('Légende', 'Legend'), 'or'], recrue: [tt('Recrue', 'Rookie'), 'or'], buzz: ['Buzz', 'acc']};
   const pj = (x.pastilles_j || []).find(k => L[k]);
-  const t1 = estNumerique(x.titre) ? [tt('Carte numérique ?', 'Digital card?'), 'rouge'] : x.petit_vendeur ? [tt('Petit vendeur', 'Small seller'), 'vert'] : pj ? L[pj] : null;
+  // 12 nov 2026 (Mathieu : « pas besoin de Small seller sur la tuile ; il le saura dans la fiche ») 
+  const t1 = estNumerique(x.titre) ? [tt('Carte numérique ?', 'Digital card?'), 'rouge'] : pj ? L[pj] : null;
   const fin = x.encan ? finDans(x.fin) + (x.mises != null ? ' · ' + x.mises + ' ' + tt('mise', 'bid') + (x.mises > 1 ? 's' : '') : '') : tt('Achat immédiat', 'Buy It Now');
   const ms = Date.parse(x.fin || '') - Date.now(), urgent = x.encan && ms > 0 && ms < 3600e3;
   const sc = x.score != null ? `<button class="sl-n sr-sc ${couleurScore(x.score)}" data-sc="${esc(x.item_id)}" aria-label="${esc(tt('Pourquoi ce score', 'Why this score'))}"><b>${x.score}</b><small>SLABIQ</small></button>` : '';
