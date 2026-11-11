@@ -691,6 +691,23 @@ html[lang=en] .w-ligne::after{content:'Remove'}
 .v-iq-n{font:700 34px/1 var(--f-cond); min-width:46px} .v-iq-n.vert{color:var(--vert)} .v-iq-n.acc{color:var(--acc)} .v-iq-n.or{color:var(--or)}
 .v-iq-t{display:flex; flex-direction:column} .v-iq-t small{font:700 11px/1.2 var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--acc)} .v-iq-t b{font:700 17px var(--f-cond)}
 .v-iq-p{flex:1; display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end} .v-iq-b > i{font-style:normal; color:var(--acc); font-size:20px}
+.fv-ret{align-self:flex-start; border:0; background:none; color:var(--acc); font:700 15px var(--f-cond); letter-spacing:.06em; text-transform:uppercase; padding:4px 0; cursor:pointer; margin-right:44px}
+.fv-t{font:700 22px/1.2 var(--f-cond) !important; text-transform:uppercase; letter-spacing:.02em; padding-right:42px} .fv-k{margin:12px 0 0} .fv-b{display:flex; flex-wrap:wrap; gap:8px; margin-top:6px}
+.jb{display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); grid-auto-flow:row dense; gap:10px; margin:2px 0 18px}
+@media (min-width:700px){ .jb{grid-template-columns:repeat(4, minmax(0, 1fr))} }
+.jb-t{position:relative; display:flex; flex-direction:column; gap:4px; min-width:0; padding:14px; border-radius:20px; background:var(--carte); border:1px solid var(--ligne); color:var(--texte); font:inherit; text-align:left; text-decoration:none}
+button.jb-t, a.jb-t{cursor:pointer} .jb-t.l{grid-column:span 2}
+.jb-k{font:700 11.5px/1.2 var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--acc)}
+.jb-v{font:700 30px/1.05 var(--f-cond)} .jb-v.vert{color:var(--vert)} .jb-v.rouge{color:var(--rouge)} .jb-v.acc{color:var(--acc)} .jb-v.or{color:var(--or-clair)}
+.jb-t small{font-size:13px; color:var(--doux); line-height:1.3} .jb-vs{font-size:16px !important} .jb-f{position:absolute; top:12px; right:14px; font-style:normal; color:var(--acc); font-size:18px}
+.jb-tete{flex-direction:row; align-items:center; gap:14px; background:linear-gradient(135deg, color-mix(in srgb, var(--acc) 14%, var(--carte)), var(--carte) 60%)}
+.jb-tete .vig-j{width:74px; height:100px; border-radius:12px; flex:none; overflow:hidden}
+.jb-n{flex:1; min-width:0; display:flex; flex-direction:column; gap:8px} .jb-n .titre{font-size:30px; overflow-wrap:anywhere; background:linear-gradient(100deg, var(--texte) 30%, var(--acc)); -webkit-background-clip:text; background-clip:text; color:transparent}
+.jb-n .ecu-eq, .jb-n .ecusson{transform:scale(.8); transform-origin:left center}
+.jb-cl{align-self:flex-start; width:44px; height:44px; border-radius:50%; border:0; background:var(--acc); color:#0E1026; display:grid; place-items:center; cursor:pointer; flex:none} .jb-cl .ic-h{width:20px; height:20px; margin:0}
+.jb-a{flex-direction:column; align-items:flex-start; gap:8px; background:var(--carte2)} .jb-a .jb-k{color:var(--texte); font-size:14px; letter-spacing:.06em; padding-right:16px} .jb-a b{position:absolute; right:14px; bottom:12px; font:700 26px/1 var(--f-cond); color:var(--acc)} .jb-a .jb-f{top:12px}
+.jb-ic{width:34px; height:34px; border-radius:50%; display:grid; place-items:center; background:color-mix(in srgb, var(--acc) 16%, transparent); color:var(--acc); flex:none} .jb-ic .ic-h{width:18px; height:18px; margin:0}
+.jb-actu b{font-size:16px; line-height:1.35; font-weight:600} .jb-att{min-height:90px; align-items:center; justify-content:center}
 .jt{display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; margin:16px 0 10px}
 .jt-k:last-child:nth-child(odd){grid-column:1 / -1}
 .jt-k{display:flex; flex-direction:column; gap:3px; padding:14px; border-radius:18px; background:var(--carte); border:1px solid var(--ligne); min-width:0}
@@ -8929,6 +8946,39 @@ async function remplirIQ(el, q){
   el.innerHTML = `<button class="v-iq-b" id="v-iq-b"><span class="v-iq-n ${couleurScore(sp.score)}">${sp.score}</span><span class="v-iq-t"><small>Score SlabIQ</small><b>${qual}</b></span><span class="v-iq-p">${pils}</span><i>›</i></button>`;
   $('#v-iq-b', el).onclick = () => { vibrer(); pourquoiScore({score: sp.score, titre: q}); };
 }
+// 12 nov 2026 (Mathieu : « aucun moyen de revenir en arriere dans la fiche de la carte une fois qu'on clique ; un genre de
+// roll up window comme quand on clique sur seller ») : une carte touchee dans une fenetre (« Ses cartes »...) s'ouvre dans
+// une fenetre a son tour : ‹ ramene a la liste, X ferme. La page complete reste a un toucher.
+async function feuilleValeur(q, retour, nomRetour){
+  if (!q) return;
+  ouvrirFeuille(`${retour ? `<button class="fv-ret" id="fv-ret">‹ ${esc(nomRetour || tt('Retour', 'Back'))}</button>` : ''}
+    <h3 class="fv-t">${esc(q)}</h3><div id="fv-z">${barreProg(Date.now(), 15, tt('Ventes réelles et annonces de cette carte…', 'Real sales and listings of this card…'))}</div>`);
+  const rb = $('#fv-ret'); if (rb) rb.onclick = () => { vibrer(); retour(); };
+  let r; try { r = await API.valeur_carte(q); } catch (e) { r = {ok: false, erreur: e.message}; }
+  const z = $('#fv-z'); if (!z) return;
+  if (!r.ok) { z.innerHTML = `<div class="vide">${esc(r.erreur || tt('Recherche impossible', 'Search not possible'))}</div>`; return; }
+  const vend = ((r.vendues || {}).ventes || []).slice(0, 10), ann = (r.annonces || []).slice(0, 10);
+  const vc = (k, vendue) => `<a class="tuile-c ${vendue ? 'vendue' : ''}" ${k.url ? `href="${esc(urlSure(vendue ? k.url : lienAchat(k.url, 'valeur')))}" target="_blank" rel="noopener"` : ''}><div class="img">${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo, 640))}" alt="" loading="lazy" data-oe="rm">` : ''}</div>
+    ${vendue ? `<div class="coin">${capsule(tt('Vendue', 'Sold') + (k.le ? ' · ' + dateCourte(k.le) : ''), 'vert petit')}</div>` : ''}<div class="corps"><div class="t">${esc(k.titre)}</div><div class="ligne-b"><span class="p">${argent(vendue ? k.prix : k.total, 0)}</span></div></div></a>`;
+  z.innerHTML = `<div class="pastilles">${(r.compris || []).map(x => capsule(x, 'acc')).join('')}</div>
+    ${comps() && r.valeur ? `<div class="jt fv-k"><div class="jt-k"><span>${tt('Vaut', 'Worth')}</span><b class="vert">${argent(r.valeur, 0)}</b><small>${r.vendues ? r.vendues.nb + ' ' + tt('ventes réelles', 'real sales') : ''}</small></div>
+      ${r.bon_prix ? `<div class="jt-k"><span>${tt('Bon prix sous', 'Good price under')}</span><b class="acc">${argent(r.bon_prix, 0)}</b><small>${r.n ? r.n + ' ' + tt('en vente', 'listed') : '&nbsp;'}</small></div>` : ''}</div>` : ''}
+    <div id="fv-iq" class="v-iq"></div>
+    ${vend.length && comps() ? `<div class="v-rang-t"><b>${tt('Vendues récemment', 'Recently sold')}</b></div><div class="d-car v-car">${vend.map(k => vc(k, true)).join('')}</div>` : ''}
+    ${ann.length ? `<div class="v-rang-t"><b>${tt('En vente maintenant', 'Listed now')}</b></div><div class="d-car v-car">${ann.map(k => vc(k, false)).join('')}</div>`
+      : `<div class="sous">${tt('Aucune annonce de cette carte exacte en ce moment.', 'No listing of this exact card right now.')}</div>`}
+    <div class="fv-b"><button class="pilule" id="fv-al">${icN('cloche')}${tt('Mon prix cible', 'My target price')}</button><a class="pilule" href="#valeur/${encodeURIComponent(q)}" id="fv-page">${tt('Page complète', 'Full page')} ›</a></div>`;
+  remplirIQ($('#fv-iq'), (vend[0] || {}).titre || (ann[0] || {}).titre || r.q || q);
+  $('#fv-al').onclick = () => { vibrer(); feuilleAlerte(r.q || q, r.bon_prix || ''); };
+  $('#fv-page').onclick = () => fermerFeuille();
+}
+// une carte touchee dans une fenetre : sa fiche en fenetre (et ‹ revient a la fenetre d'avant)
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('#feuille a[href^="#valeur/"]'); if (!a || a.id === 'fv-page') return;
+  e.preventDefault(); e.stopPropagation(); vibrer();
+  const bloc = a.closest('#f-bloc > *'), h3 = bloc && bloc.querySelector('h3');
+  feuilleValeur(decodeURIComponent(a.getAttribute('href').slice(8)), bloc ? () => feuilleBloc(bloc) : null, h3 ? h3.textContent : '');
+}, true);
 async function vueValeur(arg){
   // 24 oct 2026 (Mathieu : « will smith young guns et ca me sort tout sauf ca ») : la MEME carte seulement ;
   // l'app montre ce qu'elle a compris, ce qu'elle a ecarte et pourquoi, et apprend de « pas la bonne carte ».
@@ -14224,25 +14274,63 @@ async function pastillesTendance(z, nom){
   if (p) out.push(tag(tt('Popularité', 'Buzz') + ' ' + (p.sens === 'hausse' ? '▲' : p.sens === 'baisse' ? '▼' : '=') + ' ' + (p.ratio >= 1 ? '+' : '') + Math.round((p.ratio - 1) * 100) + ' %', p.sens === 'hausse' ? 'vert' : p.sens === 'baisse' ? 'rouge' : ''));
   z.innerHTML = out.join('');
 }
+// 12 nov 2026 : le bento du joueur. r = sa fiche (tout de suite), t = tendance_joueur (pourquoi, forme, popularite ; arrive
+// apres). Des tuiles de 1 ou 2 colonnes, sans trou (la derniere tuile seule s'etire). Des stats et des faits publics ;
+// la valeur de sa carte seulement si le serveur l'envoie (admin).
+function bentoJoueur(r, t){
+  const q = (t && t.pourquoi) || {}, T = [], dec = (x) => String(x).replace('.', tt(',', '.'));
+  const tuile = (k, v, s_, c, o = {}) => T.push({h: `<${o.id ? `button id="${o.id}"` : o.fait ? 'button data-jfait' : 'div'} class="jb-t ${o.large ? 'l' : ''} ${o.cls || ''}"><span class="jb-k">${k}</span><b class="jb-v ${c || ''}">${v}</b>${s_ ? `<small>${s_}</small>` : ''}${o.id || o.fait ? '<i class="jb-f">›</i>' : ''}</${o.id || o.fait ? 'button' : 'div'}>`, l: !!o.large});
+  // la tete (2 colonnes) : sa photo, son nom, son equipe, ses pastilles, la cloche
+  const pils = [];
+  if (t) { const pi = pastillesIndice(t); if (pi) pils.push(pi); }
+  if (r.recrue) pils.push(capsule(tt('Recrue · ', 'Rookie · ') + esc(r.recrue), 'or petit'));
+  T.push({h: `<div class="jb-t l jb-tete"><span class="vig-j" data-vj="${esc(r.joueur)}">${SVG_CARTE}</span>
+    <div class="jb-n"><div class="titre">${esc(r.joueur)}</div><div class="pastilles">${r.equipe ? ecussonEquipe(r.equipe) : ''}${pils.join('')}</div></div>
+    <button class="jb-cl" id="j-alerte" aria-label="${esc(tt('M’alerter', 'Alert me'))}">${icN('cloche')}</button></div>`, l: true});
+  if (r.mediane) tuile(tt('Sa carte vaut', 'His card is worth'), argent(r.mediane, 0), esc(r.requete), 'vert', {large: true});
+  if (q.rang && q.sur) tuile(tt('Indice', 'Index'), ordinal(q.rang), `${tt('sur', 'of')} ${q.sur} ${q.actif === false ? tt('retraités', 'retired') : tt('joueurs', 'players')}`, q.rang <= q.sur * 0.1 ? 'vert' : q.rang <= q.sur * 0.4 ? 'acc' : '', {fait: true});
+  const w = q.semaine;
+  if (w && w.mj) tuile(tt('Cette semaine', 'This week'), w.pts + ' pts', `${w.b || 0} ${tt('buts', 'goals')} · ${w.mj} ${tt('matchs', 'games')}`, w.pts >= 5 ? 'rouge' : w.pts >= 3 ? 'vert' : '');
+  else if (q.cinq != null && q.actif !== false) tuile(tt('5 derniers', 'Last 5'), q.cinq + ' pts', tt('matchs', 'games'), q.cinq >= 5 ? 'vert' : '');
+  const sa = q.saison;
+  if (sa && sa.ppm > 0) tuile(tt('Par match', 'Per game'), dec(sa.ppm), `${sa.pts} pts · ${sa.mj} ${tt('matchs', 'games')}${sa.ecart_pct != null && Math.abs(sa.ecart_pct) >= 10 ? ` · <b class="${sa.ecart_pct > 0 ? 'vert' : 'rouge'}">${sa.ecart_pct > 0 ? '+' : ''}${sa.ecart_pct} %</b>` : ''}`, sa.ecart_pct >= 10 ? 'vert' : sa.ecart_pct <= -10 ? 'rouge' : '');
+  if (q.buzz && Math.abs(q.buzz.pct) >= 10) tuile(tt('Recherches', 'Searches'), (q.buzz.pct > 0 ? '+' : '') + q.buzz.pct + ' %', tt('20 derniers jours', 'last 20 days'), q.buzz.pct > 0 ? 'vert' : 'rouge');
+  const g = q.legende || {};
+  if (g.carriere && g.carriere.pts) tuile(tt('Carrière', 'Career'), g.carriere.pts + ' pts', g.carriere.mj ? g.carriere.mj + ' ' + tt('matchs', 'games') : '', '');
+  const lg = [g.temple && tt('Temple de la renommée', 'Hall of Fame'), g.top100 && tt('Top 100 de l’histoire', 'Top 100 all-time'), g.trophees && g.trophees + ' ' + tt('trophées', 'awards')].filter(Boolean);
+  if (g.coupes || lg.length) tuile(g.temple || g.top100 ? tt('Légende', 'Legend') : tt('Palmarès', 'Honours'), g.coupes ? g.coupes + ' ' + tt(g.coupes > 1 ? 'coupes' : 'coupe', g.coupes > 1 ? 'Cups' : 'Cup') : lg.shift(), lg.join(' · '), 'or', {large: lg.length > 1});
+  if (q.repechage && q.repechage.rang && q.repechage.rang <= 10) tuile(tt('Repêchage', 'Draft'), ordinal(q.repechage.rang), `${tt('au total', 'overall')} · ${q.repechage.an}`, 'acc');
+  if (q.saisons && q.saisons <= 2 && q.actif) tuile(tt('Recrue', 'Rookie'), ordinal(q.saisons), tt('saison', 'season'), 'or');
+  const cx = q.creux;
+  if (cx) tuile(cx.etat === 'rebond' ? tt('Sort de son creux', 'Bouncing back') : tt('En creux · à surveiller', 'In a slump · worth watching'),
+    `${dec(cx.ppm)} <small class="jb-vs">vs ${dec(cx.avant_ppm)}</small>`, tt('pt par match cette saison, contre avant', 'pts per game this season vs before'), cx.etat === 'rebond' ? 'vert' : 'rouge', {large: true});
+  const n0 = (q.actu || [])[0];
+  if (n0) T.push({h: `<${n0.lien ? `a href="${esc(urlSure(n0.lien))}" target="_blank" rel="noopener"` : 'div'} class="jb-t l jb-actu"><span class="jb-k">${tt('Dans l’actu', 'In the news')}${n0.date ? ' · ' + esc(dateCourte(n0.date)) : ''}</span><b>${esc(n0.titre)}</b></${n0.lien ? 'a' : 'div'}>`, l: true});
+  // les gestes : des tuiles d'action
+  const act = (id, ic, k, v) => T.push({h: `<button class="jb-t jb-a" id="${id}"><span class="jb-ic">${icN(ic)}</span><span class="jb-k">${k}</span>${v != null ? `<b>${v}</b>` : ''}<i class="jb-f">›</i></button>`, l: false});
+  if (r.cartes.length) act('j-cartes', 'carte', tt('Ses cartes', 'His cards'), r.cartes.length);
+  if ((r.points || []).length >= 3) act('j-histo', 'graphe', tt('Ses ventes', 'His sales'), r.nb_ventes || null);
+  if (r.indice_rs) act('j-ind', 'pouls', tt('Son indice', 'His index'), null);
+  if (r.alertes.length) act('j-al', 'cloche', tt('Mes alertes', 'My alerts'), r.alertes.length);
+  if (t && Object.keys(q).length) act('j-faits', 'ampoule', tt('Pourquoi il bouge', 'Why he’s moving'), null);
+  if (!t) T.push({h: `<div class="jb-t l jb-att"><span class="roue"></span></div>`, l: true});
+  // pas de trou : une tuile seule a la fin s'etire sur 2 colonnes
+  let k = 0; T.forEach(x => { if (!x.l) k++; else if (k % 2) { k = 0; } });
+  const seules = T.filter(x => !x.l).length;
+  if (seules % 2) { const d = [...T].reverse().find(x => !x.l); d.h = d.h.replace('class="jb-t', 'class="jb-t l'); }
+  return T.map(x => x.h).join('').replace('id="j-faits"', 'id="j-faits" data-jfait');
+}
 async function vueJoueur(arg){
   const nom = decodeURIComponent(arg || '');
   V().innerHTML = `<section class="ecran large joueur"><div class="lecture"><span class="roue"></span>${esc(nom)}</div></section>`;
   const r = await API.joueur_fiche(nom).catch(e => ({ok:false, erreur:e.message}));
   if (!r.ok) { V().innerHTML = `<section class="ecran"><div class="vide">${esc(r.erreur)}</div></section>`; return; }
   const t = r.tendance;
+  // 12 nov 2026 (Mathieu : « un genre de bento layout clean et tres slabcoach pour tout mettre ; clair et beau a lire, pas
+  // trop de zone libre ») : tout le joueur en tuiles qui s'emboitent (voir bentoJoueur) ; le detail des faits, ses cartes,
+  // ses ventes et son indice s'ouvrent en fenetres
   V().innerHTML = `<section class="ecran large joueur">
-    <div class="j-tete"><span class="vig-j grand" data-vj="${esc(r.joueur)}">${SVG_CARTE}</span>
-      <div class="j-n"><div class="titre">${esc(r.joueur)}</div>
-        <div class="pastilles">${r.equipe ? ecussonEquipe(r.equipe) : ''}${r.recrue ? capsule(tt('Recrue · ', 'Rookie · ') + esc(r.recrue), 'or petit') : ''}</div>
-        <div class="pastilles j-tend" id="j-tend"></div></div>
-      <button class="btn j-alerte" id="j-alerte">${icN('cloche')}${tt('M’alerter', 'Alert me')}</button></div>
-    <div id="j-pq"></div>
-    ${r.mediane || (t && t.pct != null) ? `<div class="v-hero">
-      <div class="vh-g"><span>${tt('Sa carte vaut', 'His card is worth')}</span><b class="${r.mediane ? 'vert' : ''}">${r.mediane ? argent(r.mediane, 0) : '—'}</b><small>${esc(r.requete)}</small></div>
-      <div class="vh-d"><div><span>${tt('30 jours', '30 days')}</span><b class="${t && t.pct > 0 ? 'vert' : t && t.pct < 0 ? 'rouge' : ''}">${t && t.pct != null ? (t.pct > 0 ? '+' : '') + t.pct + ' %' : '—'}</b></div></div></div>` : ''}
-    <div class="v-actions">${r.indice_rs ? `<button class="pilule" id="j-ind">${icN('graphe')}${tt('Son indice', 'His index')}</button>` : ''}${(r.points || []).length >= 3 ? `<button class="pilule" id="j-histo">${icN('graphe')}${tt('Ses ventes', 'His sales')}</button>` : ''}
-      ${r.cartes.length ? `<button class="pilule" id="j-cartes">${icN('carte')}${tt('Ses cartes', 'His cards')} · ${r.cartes.length}</button>` : ''}
-      ${r.alertes.length ? `<button class="pilule" id="j-al">${icN('cloche')}${r.alertes.length} ${tt('alerte', 'alert')}${r.alertes.length > 1 ? 's' : ''}</button>` : ''}</div>
+    <div class="jb" id="jb">${bentoJoueur(r, null)}</div>
     ${r.deals.length ? `<div class="v-rang-t"><b>${tt('Ses deals maintenant', 'His deals now')}</b><span class="sous">${r.deals.length}</span></div><div class="d-car">${r.deals.map(tuileDeal).join('')}</div>` : ''}
     ${r.ventes.length ? `<div class="v-rang-t"><b>${tt('Vendues récemment', 'Recently sold')}</b><button class="lien-doux" id="j-tout-v">${r.ventes.length} ›</button></div>
       <div class="d-car v-car">${r.ventes.slice(0, 10).map(k => `<div class="tuile-c vendue"><div class="img">${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo, 640))}" alt="" loading="lazy" data-oe="rm">` : ''}</div>
@@ -14257,9 +14345,15 @@ async function vueJoueur(arg){
       ${r.alertes.length ? `<div id="j-b-al"><h3>${tt('Tes alertes', 'Your alerts')}</h3><div class="pastilles">${r.alertes.map(a => capsule(a.q + ' ≤ ' + argentCourt(a.prix_max), 'or')).join('')}</div></div>` : ''}
     </div>
   </section>`;
-  pastillesTendance($('#j-tend'), r.joueur);                  // 10 nov 2026 : forme LNH + popularite
-  for (const [b, bl] of [['j-ind', 'j-b-ind'], ['j-histo', 'j-b-histo'], ['j-cartes', 'j-b-cartes'], ['j-tout-v', 'j-b-vend'], ['j-al', 'j-b-al']]) { const x = $('#' + b); if (x) x.onclick = () => feuilleBloc($('#' + bl)); }
-  $('#j-alerte').onclick = () => feuilleAlerte(r.requete, r.mediane ? Math.round(r.mediane * 0.8) : '');
+  const brancher = () => {
+    for (const [b, bl] of [['j-ind', 'j-b-ind'], ['j-histo', 'j-b-histo'], ['j-cartes', 'j-b-cartes'], ['j-tout-v', 'j-b-vend'], ['j-al', 'j-b-al']]) { const x = $('#' + b); if (x) x.onclick = () => { vibrer(); feuilleBloc($('#' + bl)); }; }
+    const al = $('#j-alerte'); if (al) al.onclick = () => { vibrer(); feuilleAlerte(r.requete, r.mediane ? Math.round(r.mediane * 0.8) : ''); };
+    $$('#jb [data-jfait]').forEach(b => b.onclick = () => { vibrer(); ouvrirFeuille(blocPourquoi(S.jPq) || ''); });
+    remplirPortraits($('#jb'));
+  };
+  brancher();
+  API.tendance_joueur(r.joueur).then(t => { const z = $('#jb'); if (!t || !z || !z.isConnected) return; S.jPq = t.pourquoi; z.innerHTML = bentoJoueur(r, t); brancher(); }).catch(() => {});
+  for (const [b, bl] of [['j-tout-v', 'j-b-vend'], ['j-cartes', 'j-b-cartes'], ['j-tout-v', 'j-b-vend'], ['j-al', 'j-b-al']]) { const x = $('#' + b); if (x) x.onclick = () => feuilleBloc($('#' + bl)); }
   $$('[data-ind-aide]').forEach(b => b.onclick = expliquerIndice);
   remplirPortraits(V());
 }
