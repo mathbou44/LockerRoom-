@@ -12,6 +12,7 @@ import ebay_compte
 import demande_legale
 
 api = lockerroom.Api(os.path.join(tempfile.mkdtemp(), "r.db"))
+lockerroom.Api.RADAR_GARDE_S = 0          # 12 nov 2026 : ces tests changent eBay entre deux Radars (pas de garde de 5 min)
 appels = []
 
 

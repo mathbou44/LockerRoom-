@@ -5875,7 +5875,38 @@ class Api:
             print("Indice joueur : " + repr(e), flush=True)
         return r
 
-    def mes_deals(self):
+    _RADAR = {}
+    RADAR_GARDE_S = 300
+
+    def mes_deals(self, frais=False):
+        """12 nov 2026 (Mathieu : « tout est ultralent dans le Radar ; ca doit etre beaucoup plus rapide ») : le Radar refait
+        des dizaines de recherches eBay ; le meme Radar (meme compte, meme profil, memes prix cibles, meme pays, meme vue) est
+        garde 5 min. Changer son profil, un prix cible ou le pays change la cle : le Radar se refait tout de suite.
+        frais=True (tirer pour rafraichir) le refait quand meme."""
+        import hashlib
+        try:
+            c = marche._cx(self)
+            try:
+                al = c.execute("SELECT id, q, prix_max FROM alertes WHERE actif=1 ORDER BY id DESC LIMIT 25").fetchall()
+            finally:
+                c.close()
+            ch = self.chasses_liste().get("chasses") or []
+            cle = (comptes.courant() or "local") + ":" + hashlib.md5(json.dumps(
+                [[tuple(a) for a in al], self.deals_profil_lire(), self.reglages_lire().get("pays"), self._est_admin(), vue_simulee(), ch],
+                sort_keys=True, default=str).encode()).hexdigest()
+        except Exception:
+            cle = None
+        g = Api._RADAR.get(cle) if cle else None
+        if g and not frais and time.time() - g[0] < self.RADAR_GARDE_S:
+            return {**g[1], "garde_s": int(time.time() - g[0])}
+        r = self._mes_deals_calcul()
+        if cle and r.get("ok") and not r.get("partiel"):
+            if len(Api._RADAR) > 500:
+                Api._RADAR.clear()
+            Api._RADAR[cle] = (time.time(), r)
+        return r
+
+    def _mes_deals_calcul(self):
         """10 nov 2026 (Mathieu : « on doit trouver des deals quand meme », lancement 100 % legal) : le Radar. Les annonces eBay
         de la MEME carte que chaque prix cible (son prix decide), ses joueurs dans son budget, ses vendeurs, les sets qu'il
         chasse, les joueurs en feu, « a decouvrir ». Montrees telles quelles : aucun jugement de prix (licence eBay).
@@ -6206,18 +6237,31 @@ class Api:
     # Montrer des annonces telles quelles : permis par la licence eBay ; aucun prix juge ici.
     PETITS_REQUETES = {"hockey": ("hockey card", "hockey rookie", "hockey auto", "upper deck hockey", "nhl card")}
 
+    _PETITS_RES = {}
+
     def _radar_petits(self, prof, limite=100):
         import cartes_match
         sport = self.reglages_lire().get("sport") or "hockey"
         asp = self.SPORT_ASPECT.get(sport)
         pmax, pmin = prof.get("prix_max") or 100, prof.get("prix_min")
-        res = []
-        for q in self.PETITS_REQUETES.get(sport, (sport + " card",)):
-            try:
-                res += ebay_compte.rechercher(q, categorie=CATEGORIE_CARTES, limite=200, fond=False, encheres=True,
-                                              prix_max=pmax, prix_min=pmin, aspects=asp, pays=self._pays_radar()) or []
-            except (RuntimeError, OSError, TypeError):
-                continue
+        # 12 nov 2026 (vitesse) : les memes recherches pour tous les comptes du meme sport, pays et fourchette : gardees 10 min
+        pays_r = self._pays_radar()
+        k = (sport, pays_r, pmax, pmin)
+        g = Api._PETITS_RES.get(k)
+        if g and self.RADAR_GARDE_S and time.time() - g[0] < 600:
+            res = list(g[1])
+        else:
+            res = []
+            for q in self.PETITS_REQUETES.get(sport, (sport + " card",)):
+                try:
+                    res += ebay_compte.rechercher(q, categorie=CATEGORIE_CARTES, limite=200, fond=False, encheres=True,
+                                                  prix_max=pmax, prix_min=pmin, aspects=asp, pays=pays_r) or []
+                except (RuntimeError, OSError, TypeError):
+                    continue
+            if res:
+                if len(Api._PETITS_RES) > 200:
+                    Api._PETITS_RES.clear()
+                Api._PETITS_RES[k] = (time.time(), res)
         maint = time.time()
         vus, out = set(), []
         for x in res:

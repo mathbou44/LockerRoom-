@@ -3335,7 +3335,7 @@ html.tel-large .fen.fa .fen-img{max-height:calc(46vh / 1.12) !important}
 // des onglets du bas sont prechargees doucement (les memes appels que la derniere visite de chaque onglet).
 const LECTURES = new Set(['accueil', 'acheteur_accueil', 'activites', 'conseils', 'astuces', 'forfait', 'ebay_statut', 'taux_change',
   'reglages_lire', 'deals_liste', 'inventaire_liste', 'catalogue_liste', 'produits_liste', 'equipes', 'images_produits', 'images_joueurs',
-  'budget_etat', 'alertes_liste', 'joueurs_du_moment', 'inventaire_scores', 'breaks_liste', 'bilan', 'tendances', 'calendrier', 'collection', 'offres_liste', 'analyse_break',
+  'budget_etat', 'alertes_liste', 'joueurs_du_moment', 'mes_deals', 'inventaire_scores', 'breaks_liste', 'bilan', 'tendances', 'calendrier', 'collection', 'offres_liste', 'analyse_break',
   'admin_resume', 'admin_abonnes', 'admin_demandes', 'admin_catalogue', 'admin_sante', 'admin_entrainement', 'valeurs_statut', 'portraits_joueurs',
   'etoiles_lire', 'alarmes_lire', 'deals_profil_lire', 'sante_liste', 'pouls', 'guide_donnees', 'consignataires_liste', 'ebay_avis_statut', 'ebay_appels',
   'inventaire_tableaux', 'watch_liste', 'ventes_analyse']);
@@ -3377,7 +3377,7 @@ async function appelServeur(nom, corps, essai2){
 // 3 nov 2026 (Mathieu : « quand on ferme l'app et qu'on la rouvre, c'est tres, tres long d'avoir les deals, l'inventaire ») :
 // chaque onglet du bas s'ouvre tout de suite avec ce qu'on avait la derniere fois (garde sur le telephone, 36 h) ; la version
 // fraiche arrive derriere et l'ecran se redessine. Le telephone garde les plus recentes (environ 4 Mo) ; les vieilles partent.
-const GARDES = new Set(['deals_profil_lire', 'alarmes_lire', 'accueil', 'acheteur_accueil', 'deals_liste', 'inventaire_liste', 'inventaire_tableaux', 'tendances', 'pouls',
+const GARDES = new Set(['mes_deals', 'deals_profil_lire', 'alarmes_lire', 'accueil', 'acheteur_accueil', 'deals_liste', 'inventaire_liste', 'inventaire_tableaux', 'tendances', 'pouls',
   'astuces', 'forfait', 'reglages_lire', 'alertes_liste', 'breaks_liste', 'catalogue_liste', 'collection', 'bilan', 'watch_liste', 'activites']),
   GARDE_MAX_MS = 36 * 3600 * 1000;
 const GARDE_SAUTER = {t: 0};                  // 4 nov 2026 : l'heure du dernier geste ; une copie gardee plus vieille est sautee
@@ -8422,10 +8422,10 @@ async function chargerDeals(frais){
   }
   if (d && d.watch) { S.watch = new Set(d.watch.map(String)); majNbWatch(); }
   if (!z.isConnected) return;
-  if (!d.ok && !comps()) { vueMesDeals(z); return; }          // 10 nov 2026 : le Radar public ne depend pas des deals calcules
+  if (!d.ok && !comps()) { vueMesDeals(z, frais); return; }          // 10 nov 2026 : le Radar public ne depend pas des deals calcules
   if (!d.ok) { z.innerHTML = `<div class="vide">${esc(d.erreur || 'Erreur')}</div>`; return; }
   if (d.coupe) {                                  // 27 oct 2026 : interrupteur du serveur (fonctions de prix sur les annonces eBay)
-    vueMesDeals(z);
+    vueMesDeals(z, frais);
     return;
   }
   const pD = $('#pastille-deals'); if (pD) { pD.hidden = !d.n; pD.textContent = d.n || ''; }
@@ -14071,9 +14071,12 @@ function ligneAdminVendu(x){
   const tot = x.total || 0, ok = tot && v.achat_max && tot <= v.achat_max;
   return `<div class="sous adm-v"><b>${tt('Vendu', 'Sold')} ~${argentCourt(v.med)}</b> (${v.nb})${v.tend_pct != null && Math.abs(v.tend_pct) >= 5 ? ` <span class="${v.tend_pct > 0 ? 'vert' : 'rouge'}">${v.tend_pct > 0 ? '▲' : '▼'}${Math.abs(v.tend_pct)} %</span>` : ''} · max <b class="${ok ? 'vert' : ''}">${argentCourt(v.achat_max)}</b></div>`;
 }
-async function vueMesDeals(z){
-  z.innerHTML = barreProg(Date.now(), 12, tt('On regarde eBay pour toi…', 'Checking eBay for you…'));
-  const r = await API.mes_deals().catch(e => ({ok:false, erreur:e.message}));
+async function vueMesDeals(z, frais){
+  // 12 nov 2026 (Mathieu : « tout est ultralent dans le Radar ») : le dernier Radar s'affiche tout de suite (garde sur le
+  // telephone, et 5 min sur le serveur) ; tirer pour rafraichir le refait pour vrai
+  if (frais) for (const k of [...MEMO.keys()]) if (k.startsWith('mes_deals')) MEMO.delete(k);
+  if (!z.querySelector('.sr-w, .md-barre')) z.innerHTML = barreProg(Date.now(), 12, tt('On regarde eBay pour toi…', 'Checking eBay for you…'));
+  const r = await (frais ? API.mes_deals(true) : API.mes_deals()).catch(e => ({ok:false, erreur:e.message}));
   if (!z.isConnected) return;
   if (!r.ok) { z.innerHTML = `<div class="vide">${esc(r.erreur || 'Erreur')}<br><button class="lien-doux" id="md-re">${tt('Réessayer', 'Try again')}</button></div>`; const re_ = $('#md-re'); if (re_) re_.onclick = () => vueMesDeals(z); return; }
   // toutes les annonces dans un seul fil ; chacune garde d'ou elle vient (pour les pastilles de filtre)

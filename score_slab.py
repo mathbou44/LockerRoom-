@@ -94,7 +94,44 @@ def annoter(x):
     return x
 
 
+# 12 nov 2026 (Mathieu : « tout est ultralent dans le Radar ») : le Radar annote des centaines d'annonces a chaque ouverture,
+# souvent les memes. Ce qu'on a calcule pour un titre (score, carte, pastilles, joueur) est garde 30 min (20 000 titres au
+# plus) ; un nouveau modele SlabIQ vide la memoire. Seuls les titres jamais vus passent par le modele.
+_LOT = {"m": None, "d": {}}
+LOT_S = 1800
+_CHAMPS_LOT = ("score", "carte", "pastilles_j", "joueur")
+
+
 def annoter_lot(items):
+    """Comme annoter, pour une liste (le modele calcule tout d'un coup : bien plus rapide). Avec memoire par titre."""
+    import time as _t
+    items = [x for x in items if isinstance(x, dict)]
+    try:
+        import score_modele
+        mid = id(score_modele.charger())
+    except Exception:
+        mid = None
+    if _LOT["m"] != mid or len(_LOT["d"]) > 20000:
+        _LOT.update(m=mid, d={})
+    m, D, manque = _t.time(), _LOT["d"], []
+    for x in items:
+        g = D.get(((x.get("titre") or ""), x.get("joueur") or ""))
+        if g and m - g[0] < LOT_S:
+            for k, v in g[1].items():
+                if k == "joueur" and x.get("joueur"):
+                    continue
+                x[k] = v
+        else:
+            manque.append(x)
+    if manque:
+        cles = [((x.get("titre") or ""), x.get("joueur") or "") for x in manque]
+        _annoter_lot(manque)
+        for cle, x in zip(cles, manque):
+            D[cle] = (m, {k: x[k] for k in _CHAMPS_LOT if k in x})
+    return items
+
+
+def _annoter_lot(items):
     """Comme annoter, pour une liste (le modele calcule tout d'un coup : bien plus rapide)."""
     items = [x for x in items if isinstance(x, dict)]
     try:

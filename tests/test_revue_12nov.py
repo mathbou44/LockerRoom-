@@ -82,3 +82,29 @@ if score_modele.charger():
     assert r["ok"] and len(r["scores"]) == 1 and all(isinstance(v, int) for v in r["scores"].values()), r
     assert api.inventaire_scores() is r                     # meme inventaire : rien n'est recalcule
     print("OK scores de l'inventaire")
+# 9. le Radar garde 5 min (meme compte, meme profil) ; un prix cible ou le profil change -> refait ; frais=True -> refait
+import ebay_compte
+_rech = ebay_compte.rechercher
+appels = []
+ebay_compte.rechercher = lambda q, **k: (appels.append(q), [])[1]
+lockerroom.Api._RADAR.clear()
+r1 = api.mes_deals(); n1 = len(appels)
+r2 = api.mes_deals()
+assert len(appels) == n1 and "garde_s" in r2, (n1, len(appels))
+api.deals_profil_regler({"favoris": ["Connor Bedard"]})
+api.mes_deals()
+assert len(appels) > n1                                  # le profil a change : le Radar est refait
+n2 = len(appels); api.mes_deals(True)
+assert len(appels) > n2                                  # tirer pour rafraichir
+ebay_compte.rechercher = _rech
+# 10. SlabIQ du Radar : un titre deja vu n'est pas recalcule
+import score_slab
+x1 = [{"titre": "2024-25 Upper Deck Young Guns Macklin Celebrini #201 RC"}]
+score_slab.annoter_lot(x1)
+_s = score_slab._annoter_lot
+score_slab._annoter_lot = lambda l: (_ for _ in ()).throw(AssertionError("recalcule"))
+x2 = [{"titre": "2024-25 Upper Deck Young Guns Macklin Celebrini #201 RC"}]
+score_slab.annoter_lot(x2)
+assert x2[0].get("score") == x1[0].get("score") and x2[0].get("carte") == x1[0].get("carte")
+score_slab._annoter_lot = _s
+print("OK Radar garde 5 min + SlabIQ en memoire")
