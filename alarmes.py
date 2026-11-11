@@ -18,10 +18,10 @@ import os
 import time
 from datetime import datetime, timedelta
 
-TYPES = ["prix_cible", "gros_deal", "encan_fin", "en_feu", "acheteurs", "vendu", "mes_joueurs"]
+TYPES = ["prix_cible", "gros_deal", "encan_fin", "en_feu", "acheteurs", "vendu", "mes_joueurs", "iq_nouvelle", "iq_occasion"]
 # 28 oct 2026 (audit Apple 4.5.4) : les alertes « promotionnelles » (deals, joueur en feu) seulement si l'utilisateur les coche
 DEFAUT = {"prix_cible": True, "gros_deal": False, "encan_fin": True, "en_feu": False, "acheteurs": True, "vendu": True,
-          "mes_joueurs": False, "seuil_deal": 40}
+          "mes_joueurs": False, "iq_nouvelle": False, "iq_occasion": False, "seuil_deal": 40}
 MAX_JOUR = 3
 NUIT = (22, 8)
 
@@ -228,6 +228,56 @@ def verifier(api, maint=None):
                         break
         except Exception as e:
             print("Alertes en feu : " + repr(e), flush=True)
+
+    # -- 13 nov 2026 (Mathieu : « SlabIQ doit connaitre les cartes de l'inventaire et lui dire s'il devrait verifier la
+    # valeur de son annonce si bonne nouvelle » ; « dans les notifs que l'utilisateur peut activer ») ------------------
+    # iq_nouvelle : un joueur de TES cartes a une nouvelle forte (Temple, honneur, trophee, exploit, pic de recherches) ->
+    # verifie le prix de ton annonce ; une mauvaise nouvelle -> ne brade pas tout de suite. Une fois par joueur par semaine.
+    # iq_occasion : un bon joueur (tes joueurs suivis, ou un grand nom) en creux ou apres une mauvaise nouvelle : ses
+    # cartes baissent souvent pour un temps. Des faits publics seulement : jamais un prix.
+    if r.get("iq_nouvelle") or r.get("iq_occasion"):
+        try:
+            import indice_joueurs
+            I = indice_joueurs.lire().get("indice") or {}
+            semaine = datetime.now().strftime("%G-%V")
+            if r.get("iq_nouvelle") and mes:
+                for nom, v in sorted(I.items(), key=lambda kv: -((kv[1].get("ev_pos") or 0) + 4 * (kv[1].get("pic") or 0))):
+                    k = cartes_match.norm(nom)
+                    if k not in mes:
+                        continue
+                    p, evs, n = v.get("pastilles") or [], v.get("evenements") or [], mes[k]
+                    bon = next((e for e in evs if e.get("sens", 0) > 0), None)
+                    mauv = next((e for e in evs if e.get("sens", 0) < 0), None)
+                    cartes = f"tu as {n} de ses cartes" if n > 1 else "tu as une de ses cartes"
+                    if (v.get("ev_pos") or 0) >= 10 or "honneur" in p or (v.get("pic") or 0) >= 3:
+                        quoi = (bon or {}).get("titre") or "Tout le monde le cherche ces jours-ci (recherches en forte hausse)"
+                        if _notifier(api, etat, f"iqn:{k}:{semaine}", f"Bonne nouvelle pour {nom}",
+                                     f"{quoi[:120]} · {cartes} : vérifie le prix de ton annonce", "#iqcartes/" + nom, maint=maint):
+                            faits["iq_nouvelle"] = faits.get("iq_nouvelle", 0) + 1
+                            break
+                    elif "mauvaise" in p and mauv:
+                        if _notifier(api, etat, f"iqm:{k}:{semaine}", f"Mauvaise nouvelle pour {nom}",
+                                     f"{mauv['titre'][:120]} · {cartes} : ne baisse pas ton prix trop vite, ça passe souvent", "#iqcartes/" + nom, maint=maint):
+                            faits["iq_nouvelle"] = faits.get("iq_nouvelle", 0) + 1
+                            break
+            if r.get("iq_occasion"):
+                suivis = set()
+                try:
+                    suivis = {cartes_match.norm(f) for f in (api.deals_profil_lire().get("favoris") or [])}
+                except Exception:
+                    pass
+                cands = [(nom, v) for nom, v in I.items() if "occasion" in (v.get("pastilles") or [])
+                         and (cartes_match.norm(nom) in suivis or (v.get("indice") or 0) >= 55 or (v.get("criteres") or {}).get("demande", 0) >= 70)]
+                for nom, v in sorted(cands, key=lambda kv: -(kv[1].get("indice") or 0)):
+                    k = cartes_match.norm(nom)
+                    mauv = next((e for e in v.get("evenements") or [] if e.get("sens", 0) < 0), None)
+                    pq = (mauv["titre"][:110] + " · ") if mauv else ("En creux cette saison · " if v.get("creux") else "")
+                    if _notifier(api, etat, f"iqo:{k}:{semaine}", f"Bonne occasion : {nom}",
+                                 pq + "ses cartes baissent souvent pour un temps : c'est le moment de regarder", "#joueur/" + nom, maint=maint):
+                        faits["iq_occasion"] = faits.get("iq_occasion", 0) + 1
+                        break
+        except Exception as e:
+            print("Alertes SlabIQ : " + repr(e), flush=True)
 
     # -- vendeur : acheteurs interesses, carte vendue -------------------------------------------------------------
     if r["acheteurs"]:

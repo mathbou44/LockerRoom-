@@ -150,7 +150,7 @@ def _wiki_lot(noms):
             pv = [v or 0 for v in (vues.get(p.get("title")) or p.get("pageviews") or {}).values()]
             if nom not in out:
                 fr = ((p.get("langlinks") or [{}])[0] or {}).get("title")
-                out[nom] = {"titre": tt, "v60": sum(pv), "v20": sum(pv[-20:]), "len": p.get("length"), "fr": fr,
+                out[nom] = {"titre": tt, "v60": sum(pv), "v20": sum(pv[-20:]), "v7": sum(pv[-7:]), "v3": sum(pv[-3:]), "len": p.get("length"), "fr": fr,
                             "fr60": _vues_fr(fr) if fr else 0}
         time.sleep(2)
     return out

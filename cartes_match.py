@@ -152,6 +152,15 @@ def _sans_grade(t):
     return _RE_GRADE.sub(lambda m: " " if _vrai_grade(m) else m.group(0), t)
 
 
+# 13 nov 2026 (Mathieu : « pourquoi aussi haut le score ? » : « PSA 8 LOW POP /5 » lu comme une carte numerotee /5) : un
+# « /5 » ou « 1 of 5 » juste apres « pop » est la population de gradation, pas un tirage
+_RE_POP_AVANT = re.compile(r"\bpop(ulation|ulated)?\b[\s:#.\-]*(\d{1,4}\s*)?(of\s*)?$")
+
+
+def _apres_pop(t, debut):
+    return bool(_RE_POP_AVANT.search(t[max(0, debut - 16):debut]))
+
+
 def decoder(texte):
     """Ce que dit un titre (ou une recherche) sur la carte."""
     t = norm(texte)
@@ -162,6 +171,8 @@ def decoder(texte):
     serie = None
     for m in _RE_SERIE.finditer(t):
         txt = m.group(0)
+        if _apres_pop(t, m.start()):
+            continue
         if re.match(r"\s*#?\s*(19|20)\d{2}\s*/", txt):         # « 2024/25 » : une saison, pas /25
             continue
         ms = re.match(r"\s*(\d{2})\s*/\s*0*(\d{2})\b", txt)
@@ -433,7 +444,7 @@ def numero_serie(titre):
     for m in _RE_NUM_SERIE.finditer(t):
         n, d = (m.group(1), m.group(2)) if m.group(1) else (m.group(3), m.group(4))
         n, d = int(n), int(d)
-        if n >= 1900 or d >= 1900 or n < 1 or d < 1 or n > d:
+        if n >= 1900 or d >= 1900 or n < 1 or d < 1 or n > d or _apres_pop(t, m.start()):
             continue
         if m.group(1) and est_saison(t, m.start(), m.end(), n, d):
             continue

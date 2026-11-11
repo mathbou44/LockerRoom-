@@ -188,7 +188,7 @@ def _connecter(chemin=None):
                      ("vues", "INTEGER"), ("impressions", "INTEGER"), ("trafic_le", "TEXT"), ("photos_orig", "TEXT"), ("studio_v", "INTEGER"),
                      ("etat_json", "TEXT"), ("etat_le", "TEXT"), ("envoi_json", "TEXT"), ("soumission_id", "INTEGER"),
                      ("a_finir_le", "TEXT"), ("valeur_annonces", "REAL"), ("valeur_annonces_n", "INTEGER"),
-                     ("valeur_annonces_le", "TEXT")):         # 9 nov 2026 : repere prix sans vente (annonces pareilles - 10 %)         # 9 nov 2026 : preparee pour la vente, pas encore sur eBay (onglet « A finir »)            # 1er nov 2026 - l'etat estime (pre-gradation)   # 31 oct 2026 - vues des annonces
+                     ("valeur_annonces_le", "TEXT"), ("coins_json", "TEXT")):         # 9 nov 2026 : repere prix sans vente (annonces pareilles - 10 %)         # 9 nov 2026 : preparee pour la vente, pas encore sur eBay (onglet « A finir »)            # 1er nov 2026 - l'etat estime (pre-gradation)   # 31 oct 2026 - vues des annonces
         if col not in cols:
             c.execute(f"ALTER TABLE cartes ADD COLUMN {col} {typ}")
     # 1er nov 2026 - soumissions : les colonnes ajoutees apres coup
@@ -879,6 +879,309 @@ class Api:
         if not ch.get("titre"):
             ch["titre"] = ebay_csv.titre_annonce(ch)
         return r
+
+    # -- 13 nov 2026 : le lot lu AU SERVEUR ---------------------------------------------------------------------------------
+    # Mathieu : « les cartes doivent continuer de loader meme quand le cell se ferme, que l'app se ferme ou change de page ».
+    # Le telephone envoie les photos de chaque carte (quelques secondes) ; le serveur fait le reste (lecture IA, titre, prix,
+    # carte gardee dans l'inventaire), meme l'app fermee. L'ecran suit l'avancement (lot_etat). Un travail interrompu par un
+    # redemarrage du serveur reprend tout seul.
+    _LOT_FILS = {}
+    _LOT_VERROU = threading.Lock()
+    LOT_PARALLELE = 2
+    _LOT_NOMS = {"joueur": "joueur", "annee": "saison", "marque": "marque", "set_nom": "set", "parallele": "parallèle / insert",
+                 "numero": "n° de carte", "tirage": "numérotée /", "grade": "gradation", "equipe": "équipe", "numero_serie": "numéro de série",
+                 "auto": "auto", "recrue": "recrue", "relique": "relique", "sport": "sport", "cert": "certificat"}
+
+    def _lot_db(self):
+        c = self._db()
+        c.execute("""CREATE TABLE IF NOT EXISTS lot_travaux (id INTEGER PRIMARY KEY AUTOINCREMENT, lot TEXT, n INTEGER, cle TEXT UNIQUE,
+                     refs TEXT, but TEXT, impair INTEGER, langue TEXT, etat TEXT, raison TEXT, carte_id INTEGER, titre TEXT, prix REAL,
+                     douteux TEXT, essais INTEGER DEFAULT 0, cree_le REAL, maj_le REAL, ordre INTEGER DEFAULT 0)""")
+        return c
+
+    def lot_soumettre(self, d):
+        """Une carte d'un lot : {lot, n, cle, photos: [devant, dos?] (data URL), but, impair, langue} -> {ok, id}. Les photos
+        sont gardees tout de suite ; la lecture se fait en arriere-plan."""
+        import photos_cartes
+        if not self.reglages_lire().get("ia_photos_ok"):
+            return {"ok": False, "erreur": "Permission de lecture par l’IA requise", "consentement_requis": True}
+        d = dict(d or {})
+        cle = str(d.get("cle") or "")
+        lot = str(d.get("lot") or "")
+        if not re.fullmatch(r"[A-Za-z0-9_-]{8,40}", cle) or not re.fullmatch(r"[A-Za-z0-9_-]{4,40}", lot):
+            return {"ok": False, "erreur": "Envoi invalide"}
+        c = self._lot_db()
+        try:
+            row = c.execute("SELECT id FROM lot_travaux WHERE cle=?", (cle,)).fetchone()
+        finally:
+            c.close()
+        if row:                                       # un envoi refait (reseau coupe pendant la reponse)
+            self._lot_demarrer()
+            return {"ok": True, "id": row[0], "deja": True}
+        try:
+            refs = photos_cartes.sauver([p for p in (d.get("photos") or []) if p][:2])
+        except ValueError as e:
+            return {"ok": False, "erreur": str(e)}
+        if not refs:
+            return {"ok": False, "erreur": "Ajoute une photo de la carte"}
+        c = self._lot_db()
+        try:
+            cur = c.execute("INSERT INTO lot_travaux (lot, n, cle, refs, but, impair, langue, etat, cree_le, maj_le) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                            (lot, int(d.get("n") or 0), cle, json.dumps(refs), "collection" if d.get("but") == "collection" else "vente",
+                             1 if d.get("impair") else 0, str(d.get("langue") or "fr")[:5], "attente", time.time(), time.time()))
+            c.commit()
+            jid = cur.lastrowid
+        finally:
+            c.close()
+        self._lot_demarrer()
+        return {"ok": True, "id": jid}
+
+    def lot_etat(self, lot=None):
+        """L'avancement du dernier lot (ou de celui donne) -> {ok, lot, travaux: [...], restant}. Relance le travail au besoin."""
+        c = self._lot_db()
+        try:
+            if not lot:
+                r = c.execute("SELECT lot FROM lot_travaux ORDER BY id DESC LIMIT 1").fetchone()
+                lot = r[0] if r else None
+            rows = c.execute("SELECT id, n, cle, refs, but, impair, etat, raison, carte_id, titre, prix, douteux, ordre FROM lot_travaux WHERE lot=? ORDER BY n, id",
+                             (lot,)).fetchall() if lot else []
+            restant = c.execute("SELECT COUNT(*) FROM lot_travaux WHERE etat IN ('attente','lecture','prix')").fetchone()[0]
+        finally:
+            c.close()
+        if restant:
+            self._lot_demarrer()
+        out = []
+        for (i, n, cle, refs, but, imp, etat, raison, cid, titre, prix, dt, ordre) in rows:
+            try:
+                rf = json.loads(refs or "[]")
+            except ValueError:
+                rf = []
+            out.append({"id": i, "n": n, "cle": cle, "vig": rf[0] if rf else None, "nb_photos": len(rf), "but": but, "impair": bool(imp),
+                        "etat": etat, "raison": raison or "", "carte_id": cid, "titre": titre or "", "prix": prix,
+                        "douteux": json.loads(dt or "[]") if dt else [], "ordre": bool(ordre)})
+        return {"ok": True, "lot": lot, "travaux": out, "restant": restant}
+
+    def lot_retirer(self, ids):
+        """Retire des cartes du lot (pas encore lues, ou a reprendre) ; leurs photos sont effacees. Une carte deja gardee reste."""
+        import photos_cartes
+        ids = [int(i) for i in (ids if isinstance(ids, list) else [ids]) if str(i).isdigit()][:200]
+        c = self._lot_db()
+        n = 0
+        try:
+            for i in ids:
+                r = c.execute("SELECT refs, etat, carte_id FROM lot_travaux WHERE id=?", (i,)).fetchone()
+                if not r or r[1] in ("lecture", "prix"):
+                    continue
+                if not r[2]:
+                    try:
+                        photos_cartes.supprimer(json.loads(r[0] or "[]"))
+                    except Exception:
+                        pass
+                c.execute("DELETE FROM lot_travaux WHERE id=?", (i,))
+                n += 1
+            c.commit()
+        finally:
+            c.close()
+        return {"ok": True, "retires": n}
+
+    def lot_relancer(self, jid, photos=None):
+        """Une carte a reprendre : relue telle quelle, ou avec de nouvelles photos."""
+        import photos_cartes
+        c = self._lot_db()
+        try:
+            r = c.execute("SELECT refs, etat FROM lot_travaux WHERE id=?", (int(jid),)).fetchone()
+            if not r or r[1] not in ("revoir", "reseau"):
+                return {"ok": False, "erreur": "Rien a reprendre"}
+            refs = json.loads(r[0] or "[]")
+            if photos:
+                try:
+                    neufs = photos_cartes.sauver([p for p in photos if p][:2])
+                except ValueError as e:
+                    return {"ok": False, "erreur": str(e)}
+                if neufs:
+                    try:
+                        photos_cartes.supprimer(refs)
+                    except Exception:
+                        pass
+                    refs = neufs
+            c.execute("UPDATE lot_travaux SET refs=?, etat='attente', raison='', essais=0, ordre=0, impair=?, maj_le=? WHERE id=?",
+                      (json.dumps(refs), 1 if len(refs) == 1 else 0, time.time(), int(jid)))
+            c.commit()
+        finally:
+            c.close()
+        self._lot_demarrer()
+        return {"ok": True}
+
+    def _lot_demarrer(self):
+        compte = comptes.courant() or "local"
+        with Api._LOT_VERROU:
+            f = Api._LOT_FILS.get(compte)
+            if f and f.is_alive():
+                return
+            api = self
+            def fil():
+                with comptes.utiliser(None if compte == "local" else compte):
+                    api._lot_boucle()
+            t = threading.Thread(target=fil, daemon=True, name="lot-" + str(compte)[:12])
+            Api._LOT_FILS[compte] = t
+            t.start()
+
+    def _lot_boucle(self):
+        from concurrent.futures import ThreadPoolExecutor
+        import contextvars
+        c = self._lot_db()
+        try:                                          # un travail coupe par un redemarrage reprend
+            c.execute("UPDATE lot_travaux SET etat='attente' WHERE etat IN ('lecture','prix') AND maj_le < ?", (time.time() - 30,))
+            c.execute("DELETE FROM lot_travaux WHERE cree_le < ? AND etat IN ('ok','verifier')", (time.time() - 14 * 86400,))
+            c.commit()
+        finally:
+            c.close()
+        vide, menage = 0, time.time()
+        with ThreadPoolExecutor(max_workers=Api.LOT_PARALLELE) as ex:
+            en_vol = set()
+            while vide < 20:
+                if time.time() - menage > 60 and not en_vol:      # un travail reste « en cours » trop longtemps : repris
+                    menage = time.time()
+                    cm = self._lot_db()
+                    try:
+                        cm.execute("UPDATE lot_travaux SET etat='attente' WHERE etat IN ('lecture','prix') AND maj_le < ?", (time.time() - 300,))
+                        cm.commit()
+                    finally:
+                        cm.close()
+                en_vol = {f for f in en_vol if not f.done()}
+                if len(en_vol) >= Api.LOT_PARALLELE:
+                    time.sleep(0.5)
+                    continue
+                c = self._lot_db()
+                try:
+                    r = c.execute("SELECT id FROM lot_travaux WHERE etat='attente' ORDER BY id LIMIT 1").fetchone()
+                    if r:
+                        c.execute("UPDATE lot_travaux SET etat='lecture', maj_le=? WHERE id=? AND etat='attente'", (time.time(), r[0]))
+                        c.commit()
+                finally:
+                    c.close()
+                if not r:
+                    vide = vide + 1 if not en_vol else 0
+                    time.sleep(1.5)
+                    continue
+                vide = 0
+                en_vol.add(ex.submit(contextvars.copy_context().run, self._lot_un_sur, r[0]))
+
+    def _lot_un_sur(self, jid):
+        try:
+            self._lot_un(jid)
+        except Exception as e:
+            print("Lot (carte) : " + repr(e), flush=True)
+            try:
+                self._lot_maj(jid, etat="revoir", raison="Erreur : reprends cette carte")
+            except Exception:
+                pass
+
+    def _lot_maj(self, jid, **k):
+        k["maj_le"] = time.time()
+        c = self._lot_db()
+        try:
+            c.execute(f"UPDATE lot_travaux SET {', '.join(x + '=?' for x in k)} WHERE id=?", (*k.values(), jid))
+            c.commit()
+        finally:
+            c.close()
+
+    def _lot_un(self, jid):
+        import base64
+        import photos_cartes
+        c = self._lot_db()
+        try:
+            r = c.execute("SELECT refs, but, impair, langue, essais, cle FROM lot_travaux WHERE id=?", (jid,)).fetchone()
+        finally:
+            c.close()
+        if not r:
+            return
+        refs, but, impair, langue, essais, cle = json.loads(r[0] or "[]"), r[1], r[2], r[3], r[4] or 0, r[5]
+        try:
+            photos = ["data:image/jpeg;base64," + base64.b64encode(open(photos_cartes.chemin(x), "rb").read()).decode() for x in refs]
+        except (OSError, TypeError):
+            self._lot_maj(jid, etat="revoir", raison="Photo introuvable : reprends cette carte")
+            return
+        try:
+            res = vision.identifier(photos)
+            if "champs" in res:
+                try:
+                    import cardsight
+                    if cardsight.actif() and not res.get("cache"):
+                        res["champs"], res["a_verifier"], _s = cardsight.completer(res["champs"], res.get("a_verifier"), vision._decoder(photos[0])[0])
+                except Exception:
+                    pass
+        except vision.Erreur as e:
+            self._lot_maj(jid, etat="revoir", raison=str(e)[:160])
+            return
+        except Exception as e:                        # reseau, IA qui ne repond pas : on reessaie (3 fois)
+            if essais < 3:
+                time.sleep(5 * (essais + 1))
+                self._lot_maj(jid, etat="attente", essais=essais + 1)
+            else:
+                self._lot_maj(jid, etat="reseau", raison="La lecture n’a pas répondu : réessaie")
+            print("Lot (lecture) : " + repr(e), flush=True)
+            return
+        p = list(res.get("photos") or [])
+        if len(p) > 1 and len(refs) > 1 and p[0].get("cote") == "dos" and p[1].get("cote") == "devant":
+            refs, p = refs[::-1], p[::-1]
+            photos = photos[::-1]
+        if len(refs) == 2 and res.get("meme_carte") is False:
+            self._lot_maj(jid, etat="revoir", ordre=1, raison="Les 2 photos ne sont pas la même carte")
+            return
+        if len(p) > 1 and p[0].get("cote") and p[0].get("cote") == p[1].get("cote"):
+            self._lot_maj(jid, etat="revoir", ordre=1, raison="Deux dos : l’ordre devant / dos est décalé" if p[0]["cote"] == "dos" else "Deux devants : l’ordre devant / dos est décalé")
+            return
+        if len(refs) == 1 and p and p[0].get("cote") == "dos":
+            self._lot_maj(jid, etat="revoir", ordre=1, raison="C’est un dos : il manque le devant")
+            return
+        k = next((i for i, x in enumerate(p) if x.get("entiere") is False or x.get("nette") is False), None)
+        if k is not None:
+            nom = ("Dos : " if k else "Devant : ") if len(refs) > 1 else ""
+            self._lot_maj(jid, etat="revoir", raison=nom + ("coin coupé : reprends la photo" if p[k].get("entiere") is False else "photo floue : reprends-la"))
+            return
+        champs = dict(res.get("champs") or {})
+        ch_sport = champs.get("sport")
+        champs["sport"] = sports.valide(ch_sport) if ch_sport else self.sport_de(champs)
+        if not champs.get("titre"):
+            champs["titre"] = ebay_csv.titre_annonce(champs)
+        self._lot_maj(jid, etat="prix")
+        try:
+            prep = self.annonce_preparer(champs, langue or "fr")
+        except Exception as e:
+            print("Lot (prix) : " + repr(e), flush=True)
+            prep = {}
+        titre = (prep or {}).get("titre") or champs.get("titre") or ""
+        prix = (((prep or {}).get("prix") or {}).get("marche")) if (prep or {}).get("ok") else None
+        douteux = [x for x in (res.get("a_verifier") or []) if x in Api._LOT_NOMS]
+        carte = {k_: v for k_, v in champs.items() if k_ != "titre"}
+        if douteux:
+            carte["note"] = "À vérifier : " + ", ".join(Api._LOT_NOMS[x] for x in douteux)
+        coll = but == "collection"
+        if coll:
+            carte["emplacement"] = "Collection"
+            carte["valeur"] = prix or None
+        g = self.carte_garder({"carte": carte, "titre": titre, "prix": None if coll else prix, "photos": refs, "cle": cle})
+        if not g or not g.get("ok"):
+            self._lot_maj(jid, etat="revoir", raison=str((g or {}).get("erreur") or "Pas enregistrée")[:160])
+            return
+        try:                                          # les coins lus par l'IA : la photo studio (fond flou) se fera avec eux
+            co = [x.get("coins") for x in p]
+            if any(co):
+                cx = self._db()
+                try:
+                    cx.execute("UPDATE cartes SET coins_json=? WHERE id=?", (json.dumps(co), g["id"]))
+                    cx.commit()
+                finally:
+                    cx.close()
+        except Exception:
+            pass
+        if coll and not prix:
+            try:
+                self.carte_valeur(g["id"])
+            except Exception:
+                pass
+        self._lot_maj(jid, etat="verifier" if douteux else "ok", carte_id=g["id"], titre=titre[:80], prix=prix, douteux=json.dumps(douteux), refs=json.dumps(refs))
 
     def photos_trier(self, photos):
         """13 nov 2026 (Mathieu : « une carte avec seulement un endos et toutes les cartes decalent ») : le tri d'un lot avant
@@ -6123,7 +6426,16 @@ class Api:
 
     # -- 26 oct 2026 : fiche joueur, alertes, tendances, collection, calendrier (marche.py) ---------------------------
     def joueur_fiche(self, nom):
+        # 13 nov 2026 (Mathieu : « on devrait TOUJOURS avoir toute l'info » ; « Alexei Semenov BAP ») : le nom nettoye des mots
+        # de set colles, et la carriere LNH + quelques lignes de bio pour TOUS les joueurs (actifs ou retraites)
+        import nhl
+        nom = nhl.nom_propre(nom)
         r = marche.fiche_joueur(self, nom)
+        if isinstance(r, dict) and r.get("ok"):
+            try:
+                r["carriere"] = nhl.carriere(nom)
+            except Exception as e:
+                print("Carriere joueur : " + repr(e), flush=True)
         if isinstance(r, dict) and r.get("ok") and not comps_permis(self):
             # 10 nov 2026 (comps = admin seulement) : le joueur, ses cartes (tirage, groupe), sa recrue, ses alertes ; sans
             # valeur ni vente ni tendance de prix, ni deal
@@ -6954,6 +7266,11 @@ class Api:
         """10 nov 2026 : le Score SlabCoach d'une annonce pour sa fiche publique (joueur + carte ; aucun prix)."""
         s = score_slab.score(str(titre or "")[:200], joueur)
         if s.get("joueur"):
+            try:                                       # 13 nov 2026 : « Alexei Semenov BAP » -> « Alexei Semenov »
+                import nhl
+                s["joueur"] = nhl.nom_propre(s["joueur"])
+            except Exception:
+                pass
             try:
                 import indice_joueurs
                 q = indice_joueurs.pourquoi(s["joueur"])

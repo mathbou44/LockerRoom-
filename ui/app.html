@@ -800,6 +800,7 @@ button.jb-t, a.jb-t{cursor:pointer} .jb-t.l{grid-column:span 2}
 .jb-cl{align-self:flex-start; width:44px; height:44px; border-radius:50%; border:0; background:var(--acc); color:#0E1026; display:grid; place-items:center; cursor:pointer; flex:none} .jb-cl .ic-h{width:20px; height:20px; margin:0}
 .jb-a{flex-direction:column; align-items:flex-start; gap:8px; background:var(--carte2)} .jb-a .jb-k{color:var(--texte); font-size:14px; letter-spacing:.06em; padding-right:16px} .jb-a b{position:absolute; right:14px; bottom:12px; font:700 26px/1 var(--f-cond); color:var(--acc)} .jb-a .jb-f{top:12px}
 .jb-ic{width:34px; height:34px; border-radius:50%; display:grid; place-items:center; background:color-mix(in srgb, var(--acc) 16%, transparent); color:var(--acc); flex:none} .jb-ic .ic-h{width:18px; height:18px; margin:0}
+.jb-bio p{margin:6px 0 4px; font-size:14px; line-height:1.45; color:var(--texte2)} .jb-bio a{font-size:12px; color:var(--doux)}
 .jb-actu b{font-size:16px; line-height:1.35; font-weight:600} .jb-att{min-height:90px; align-items:center; justify-content:center}
 .jt{display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; margin:16px 0 10px}
 .jt-k:last-child:nth-child(odd){grid-column:1 / -1}
@@ -1121,6 +1122,9 @@ body.fen-ouverte .fond-feuille{z-index:95}  /* 11 nov 2026 : les petites fenetre
 
 /* 23 oct 2026 (v2) - Mathieu : « optimiser l'espace ; pastilles Apple : simples, belles, pas trop d'infos,
    pertinentes ». Ordi : nouvelles a gauche, « a faire » + mises a jour a droite (aucun trou). */
+.ecran.acc.acc-charge > :not(.acc-roue-g):not(.neige){visibility:hidden; opacity:0}
+.ecran.acc > *{transition:opacity .35s ease} .acc-roue-g{display:none} .ecran.acc.acc-charge .acc-roue-g{display:grid; place-items:center; position:absolute; left:0; right:0; top:34vh; z-index:2}
+.ecran.acc{position:relative}
 .ecran.acc{display:grid; grid-template-columns:minmax(0,1fr); grid-template-areas:"tete" "news" "cote" "plus"; gap:16px}
 .acc-tete{display:flex; flex-direction:column; gap:14px}
 .marque{display:flex; align-items:center; gap:16px; min-width:0}
@@ -1561,6 +1565,7 @@ body.pro .nav-logo{text-shadow:0 0 18px color-mix(in srgb, var(--acc) 25%, trans
 /* 24 oct 2026 - fenetre d'annonce : photos + infos en haut, les memes cartes (avec images) dessous */
 body.fen-ouverte{overflow:hidden}
 .fen-fond:empty{display:none}
+.fen-fond, .fond-feuille, .feuille, .vd, .pop2-fond, .cg{overscroll-behavior:contain}
 .fen-fond{position:fixed; inset:0; z-index:90; background:rgba(0,0,0,.66); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); display:flex; align-items:flex-start; justify-content:center; overflow-y:auto; padding:24px 16px}
 .fen{position:relative; width:min(1120px,100%); background:var(--fond); border:1px solid var(--ligne); border-radius:26px; padding:22px; display:flex; flex-direction:column; gap:20px; animation:fondu .25s ease-out; box-shadow:0 30px 80px rgba(0,0,0,.6)}
 @media (max-width:600px){ .fen-fond{padding:0} .fen{border-radius:0; min-height:100%; padding:16px 14px 30px} }
@@ -3182,6 +3187,8 @@ body.vd-ouverte::before{content:''; position:fixed; top:0; left:0; right:0; heig
 .lot-r .btn.petit{width:auto; height:36px; padding:0 14px; font-size:14px; flex:none; margin:0; max-width:42%; border-radius:999px}
 .lot-r.lot-e-revoir .milieu small{line-height:1.35}
 .lot-x{width:32px; height:32px; flex:none; border-radius:50%; border:1px solid var(--ligne); background:var(--carte2); color:var(--doux); font-size:13px; display:grid; place-items:center; margin-left:-4px}
+.afs-srv{width:100%; text-align:left; color:var(--texte); font:inherit; cursor:pointer; margin-bottom:10px} .afs-srv .afs-go{font-style:normal; color:var(--doux); margin-left:auto}
+.afs-plus{display:flex; align-items:center; justify-content:center; gap:10px; min-height:64px; margin:10px 0 14px; border-radius:20px; border:2px dashed color-mix(in srgb, var(--acc) 40%, var(--ligne)); color:var(--acc); font-weight:600; font-size:15px; text-decoration:none} .afs-plus span{font-size:24px; line-height:1}
 .afs-bas{display:flex; justify-content:center; gap:22px; margin-top:6px} .lien-t.rouge{color:var(--rouge)}
 /* 28 oct 2026 (Mathieu : « le background doit changer entre les differents styles de paralleles : laser, prism, surge,
    outburst, checkers ») : chaque palette a son motif, toujours en gris tres doux (+ un soupcon de sa couleur) */
@@ -4099,6 +4106,8 @@ function route(){
   if (!$('#fond-feuille').hidden) fermerFeuille();
   navDebut(S.ecranCourant === ecran && !!arg);              // meme ecran, autre onglet (Admin, Breaks, Sante...) : navigation douce
   S.ecranCourant = ecran;
+  // 13 nov 2026 : une notification SlabIQ (« bonne nouvelle pour X : verifie le prix de ton annonce ») ouvre ses cartes
+  if (ecran === 'iqcartes') { S.rechInv = decodeURIComponent(location.hash.split('/').slice(1).join('/') || ''); S.filtreInv = 'tous'; location.replace('#inventaire'); return; }
   const vues = {analyse:vueAnalyse, vendre:vueVendre, deals:vueDeals, valeur:vueValeur, accueil:vueAccueil, sante:vueSante, breaks:vueBreaks, break:vueBreak, inventaire:vueInventaire, comptoir:vueComptoir, bilan:vueBilan, ventes:vueVentes, reglages:vueReglages, admin:vueAdmin, guide:vueGuide, joueur:vueJoueur, calendrier:vueCalendrier, idees:vueIdees, pouls:vuePouls, tendances:vueTendances, offres:vueOffres, traiter:vueTraiter, notifs:vueNotifs, alertes:vueNotifs, iq:vueTendancesIQ};
   if (!comps() && ['tendances', 'pouls'].includes(ecran)) { location.replace('#accueil'); return; }
   // 12 nov 2026 (nuit de revue) : un lien vers un ecran qui n'existe pas (ancien lien, notification) laissait une roue sans
@@ -5492,7 +5501,11 @@ const MSG_PHOTO = {
   coupee: [tt('Un coin est coupé', 'A corner is cut off'), tt('Recule un peu : toute la carte doit être dans la photo.', 'Step back a little: the whole card must be in the photo.')],
 };
 async function vueVendre(arg){
-  if (arg === 'lot' || arg === 'collection-lot') { const but = arg === 'lot' ? 'vente' : 'collection'; if (LOT.l && !LOT.fini && LOT.but === but) rendreLot(); else vueLot(but); return; }
+  if (arg === 'lot' || arg === 'collection-lot') { const but = arg === 'lot' ? 'vente' : 'collection'; if (LOT.l && !LOT.fini && LOT.but === but) { rendreLot(); return; }
+    // 13 nov 2026 : un lot lu au serveur (l'app fermee entre-temps) : retrouve tel quel, avec ses cartes a reprendre
+    const g = lotSrvLire(), ouvrir = S.lotOuvrir; S.lotOuvrir = false;
+    if (g && g.but === but) { (async () => { if (await lotReprendreServeur() && (!LOT.fini || ouvrir)) { rendreLot(); if (!LOT.fini) suivreLot(); } else vueLot(but); })(); return; }
+    vueLot(but); return; }
   if (arg === 'collection') { for (const k in V2) delete V2[k]; V2.but = 'collection'; await etapePhoto(0); demanderCombien('collection'); return; }
   if (arg === 'programmer') { const e = await API.serie_etat().catch(() => ({})); if (e.en_cours) suivrePG(); else vueProgrammer(); return; }
   if (arg === 'nouvelle') { for (const k in V2) delete V2[k]; history.replaceState(null, '', '#vendre'); }
@@ -5944,8 +5957,8 @@ async function lancerLot(fichiers, devantsSeuls, groupes){
     return c; });
   LOT.devants = devantsSeuls; LOT.fini = false; LOT.but = LOT.but || 'vente'; LOT.tri = null;
   lotGarder(); rendreLot();
-  await lotEnParallele(LOT.l.filter(c => c.etat === 'attente'));
-  LOT.fini = true; lotGarder(); rendreLot();
+  lotCopier(LOT.l);
+  await lotAuServeur(LOT.l.filter(c => c.etat === 'attente'));
 }
 // 8 nov 2026 : la lecture d'une carte (IA) reessaie seule quand le serveur ne repond pas (redemarrage, reseau qui saute)
 // 9 nov 2026 (Mathieu : « quand je quitte l'app deux secondes, il me sort Server unreachable ») : iOS coupe le reseau d'une
@@ -5974,6 +5987,80 @@ async function lotEnParallele(l, n = 2){
     try { await traiterCarteLot(c); } catch (e) { c.etat = 'revoir'; c.raison = tt('Erreur : reprends cette carte', 'Error: redo this card'); }
     if (!(c.etat === 'revoir' && c.lecture)) c.f = null; lotGarder(); rendreLot(); } };
   await Promise.all(Array.from({length: Math.min(n, l.length)}, travailleur));
+}
+// 13 nov 2026 (Mathieu : « les cartes doivent continuer de loader meme quand le cell se ferme, que l'app se ferme ou change
+// de page ») : le telephone ne fait plus que PREPARER et ENVOYER les photos de chaque carte (quelques secondes) ; le serveur
+// les lit, fait le titre et le prix et garde la carte, meme l'app fermee. L'ecran suit l'avancement ; le lot est retrouve au
+// retour (Inventaire > A finir, ou Vendre > lot). Un serveur d'avant cette version : la lecture se fait ici, comme avant.
+const LOT_SRV_CLE = 'lr_lot_srv';
+const lotSrvLire = () => { try { const x = JSON.parse(localStorage.getItem(LOT_SRV_CLE) || 'null'); return x && Date.now() - x.t < 3 * 86400000 ? x : null; } catch (e) { return null; } };
+const lotSrvEcrire = (x) => { try { x ? localStorage.setItem(LOT_SRV_CLE, JSON.stringify(x)) : localStorage.removeItem(LOT_SRV_CLE); } catch (e) {} };
+const ETAT_SRV = {attente: 'srv', lecture: 'lecture', prix: 'prix', ok: 'ok', verifier: 'verifier', revoir: 'revoir', reseau: 'revoir'};
+async function lotAuServeur(l){
+  if (!LOT.srv) { LOT.srv = 'L' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  lotSrvEcrire({lot: LOT.srv, but: LOT.but || 'vente', t: Date.now()});
+  LOT.envoi = {fait: 0, n: l.length}; rendreLot();
+  let local = false;
+  for (const c of l) {
+    if (c.retiree) { LOT.envoi.fait++; continue; }
+    c.etat = 'envoi'; rendreLot();
+    if (c.f) { c.ph = []; for (const f of c.f) { const d = await chargerPhotoLot(f); if (!d) { c.ph = []; c.etat = 'revoir'; c.lecture = !c.repris;
+        c.raison = c.repris ? tt('L’app a redémarré pendant le lot : cette photo n’est plus accessible', 'The app restarted during the batch: this photo is no longer available') : tt('La photo n’a pas chargé', 'The photo didn’t load'); break; } c.ph.push(d); } }
+    if (c.etat === 'revoir') { LOT.envoi.fait++; lotGarder(); rendreLot(); continue; }
+    const q = await Promise.all((c.ph || []).map(x => qualitePhoto(x).catch(() => ({ok: true}))));
+    const k = q.findIndex(x => !x.ok);
+    if (k >= 0) { const [t, d] = MSG_PHOTO[q[k].raison] || MSG_PHOTO.floue; c.etat = 'revoir'; c.qj = k; c.raison = ((c.ph.length > 1 ? (k ? tt('Dos : ', 'Back: ') : tt('Devant : ', 'Front: ')) : '')) + t; c.detail = d;
+      LOT.envoi.fait++; lotGarder(); rendreLot(); continue; }
+    c.cle = c.cle || (Date.now().toString(36) + Math.random().toString(36).slice(2, 10));
+    const r = local ? null : await avecReseau(() => API.lot_soumettre({lot: LOT.srv, n: c.n, cle: c.cle, photos: c.ph, but: LOT.but || 'vente', impair: !!c.impair,
+      langue: typeof LANGUE !== 'undefined' ? LANGUE : 'fr'})).catch(e => ({ok: false, erreur: e.message, reseau: !!e.reseau}));
+    if (r && r.ok) { c.sid = r.id; c.etat = 'srv'; c.vigLoc = c.ph[0]; c.f = null; c.ph = null; }
+    else if (!local && r && /inconnu|introuvable|not found|404/i.test(r.erreur || '')) { local = true; }
+    else if (!local) { c.etat = 'revoir'; c.reseau = !!(r && r.reseau); c.raison = (r && r.erreur) || tt('Pas envoyée', 'Not sent'); }
+    if (local) { try { await traiterCarteLot(c); } catch (e) { c.etat = 'revoir'; c.raison = tt('Erreur : reprends cette carte', 'Error: redo this card'); } c.f = null; }
+    LOT.envoi.fait++; lotGarder(); rendreLot();
+  }
+  LOT.envoi = null; rendreLot();
+  await suivreLot();
+}
+// l'avancement au serveur, toutes les 3 s tant que la page du lot est ouverte (le serveur, lui, continue sans l'app)
+async function suivreLot(){
+  if (S.lotSuivi) return; S.lotSuivi = true;
+  try {
+    for (let k = 0; k < 2400; k++) {
+      if (!LOT.srv || !LOT.l) break;
+      const r = await API.lot_etat(LOT.srv).catch(() => null);
+      if (r && r.ok) majLotSrv(r);
+      const reste = (LOT.l || []).some(c => !c.retiree && ['srv', 'lecture', 'prix', 'envoi'].includes(c.etat));
+      if (!reste && !LOT.envoi) { LOT.fini = true; lotGarder(); rendreLot(); S.nbAFinir = null; MEMO.clear();
+        if (!(LOT.l || []).some(c => !c.retiree && c.etat === 'revoir')) lotSrvEcrire(null); break; }
+      rendreLot();
+      await new Promise(x => setTimeout(x, document.hidden ? 15000 : 3000));
+    }
+  } finally { S.lotSuivi = false; }
+}
+function majLotSrv(r){
+  const par = {}; (r.travaux || []).forEach(t => { par[t.cle] = t; });
+  for (const c of LOT.l || []) {
+    const t = c.cle && par[c.cle]; if (!t) continue;
+    c.sid = t.id; const e = ETAT_SRV[t.etat] || 'srv';
+    if (e === 'ok' || e === 'verifier') Object.assign(c, {etat: e, id: t.carte_id, titre: t.titre, prix: t.prix, vig: t.vig ? photoNet(t.vig) : c.vigLoc,
+      douteux: (t.douteux || []).map(k => (Object.fromEntries(CHAMPS_VERIF())[k] || k).toLowerCase())});
+    else if (e === 'revoir') Object.assign(c, {etat: 'revoir', raison: t.raison, reseau: false, srvRevoir: true, srvReseau: t.etat === 'reseau', ordre: !!t.ordre, impair: t.nb_photos === 1, vig: t.vig ? photoNet(t.vig) : c.vigLoc});
+    else Object.assign(c, {etat: e, vig: c.vigLoc || (t.vig ? photoNet(t.vig) : null)});
+  }
+}
+// le lot retrouve au retour dans l'app (meme apres l'avoir fermee) : refait a partir du serveur
+async function lotReprendreServeur(){
+  const g = lotSrvLire(); if (!g) return false;
+  const r = await API.lot_etat(g.lot).catch(() => null); if (!r || !r.ok || !(r.travaux || []).length) return false;
+  if (!LOT.l || LOT.srv !== g.lot) {
+    for (const k in LOT) delete LOT[k];
+    Object.assign(LOT, {but: g.but || 'vente', srv: g.lot, fini: false, l: r.travaux.map(t => ({n: t.n, cle: t.cle, sid: t.id, etat: 'srv'}))});
+  }
+  majLotSrv(r);
+  LOT.fini = !LOT.l.some(c => ['srv', 'lecture', 'prix', 'envoi'].includes(c.etat));
+  return true;
 }
 let FILE_PH = Promise.resolve();
 function chargerPhotoLot(f){
@@ -6052,7 +6139,7 @@ async function traiterCarteLot(c){
   Object.assign(c, {etat: dt.length ? 'verifier' : 'ok', id: g.id, titre, prix, vig: photos[0], douteux: dt});
   c.ph = null;
 }
-const LOT_PCT = {attente: 0, photos: 28, lecture: 58, prix: 86};
+const LOT_PCT = {attente: 0, envoi: 12, srv: 30, photos: 28, lecture: 58, prix: 86};
 function anneauLot(c){
   const C_ = 2 * Math.PI * 15, a = LOT_PCT[c.etat], de = c._pv != null ? c._pv : 0;
   return `<span class="lot-an ${c.etat === 'attente' ? 'att' : ''}" style="--de:${(C_ * (1 - de / 100)).toFixed(1)};--a:${(C_ * (1 - a / 100)).toFixed(1)};--c:${C_.toFixed(1)}"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" class="f"/><circle cx="18" cy="18" r="15" class="v"/></svg><b>${a}<i>%</i></b></span>`;
@@ -6063,7 +6150,7 @@ function rendreLot(){
   const l = LOT.l.filter(c => !c.retiree), finis = l.filter(c => ['ok', 'verifier', 'revoir'].includes(c.etat)).length;
   const prets = l.filter(c => c.etat === 'ok' || c.etat === 'verifier').length, res = l.filter(c => c.etat === 'revoir' && c.reseau && c.ph).length,
     rev = l.filter(c => c.etat === 'revoir' && !c.lecture).length - res;
-  const lib = {attente: tt('En attente', 'Waiting'), photos: tt('Contrôle des photos…', 'Checking photos…'), lecture: tt('Lecture de la carte…', 'Reading the card…'),
+  const lib = {envoi: tt('Envoi des photos…', 'Sending photos…'), srv: tt('Envoyée · lecture bientôt', 'Sent · reading soon'), attente: tt('En attente', 'Waiting'), photos: tt('Contrôle des photos…', 'Checking photos…'), lecture: tt('Lecture de la carte…', 'Reading the card…'),
     prix: C ? tt('Valeur estimée…', 'Estimating value…') : tt('Photo studio, titre et prix…', 'Studio photo, title and price…'), ok: C ? tt('Dans ta collection', 'In your collection') : tt('Prête dans ton inventaire', 'Ready in your inventory'), verifier: '', revoir: ''};
   const ligne = (c, i) => {
     const sous = c.etat === 'revoir' ? c.raison : c.etat === 'verifier' ? (C ? tt('Ajoutée · à vérifier : ', 'Added · check: ') : tt('Prête · à vérifier : ', 'Ready · check: ')) + c.douteux.join(', ') : lib[c.etat];
@@ -6072,7 +6159,7 @@ function rendreLot(){
     // lecture, titre et prix), puis un crochet vert qui se dessine. Toucher une carte prete l'ouvre.
     const fait = c.etat === 'ok' || c.etat === 'verifier';
     const bout = fait ? `<span class="lot-ck ${c._ck ? '' : 'neuf'}"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="16"/><path d="M11 18.5l4.6 4.6L25 13.6"/></svg></span>`
-      : c.etat === 'revoir' && c.lecture && c.f ? `<button class="btn petit" data-lot-re="${i}">${tt('Réessayer', 'Retry')}</button>`
+      : c.etat === 'revoir' && ((c.lecture && c.f) || (c.srvReseau && c.sid)) ? `<button class="btn petit" data-lot-re="${i}">${tt('Réessayer', 'Retry')}</button>`
       : c.etat === 'revoir' && !c.reseau ? `<label class="btn petit lot-remp">${tt('Remplacer', 'Replace')}<input type="file" accept="image/*" multiple hidden data-lot-f="${i}"></label>`
       : c.etat === 'revoir' && LOT.fini ? `<button class="btn petit" data-lot-r="${i}">${tt('Corriger', 'Fix')}</button>`
       : c.etat in LOT_PCT ? anneauLot(c) : '';
@@ -6081,11 +6168,13 @@ function rendreLot(){
       <span class="milieu"><b>${esc(c.titre || tt('Carte ', 'Card ') + c.n)}</b>${c.etat === 'revoir' && !c.reseau && c.lecture ? `<small class="lot-pb">${esc(sous || '')}</small><small>` : c.etat === 'revoir' && !c.reseau ? `<small class="lot-pb">${esc(sous || '')}<br>${tt('Remplace par ', 'Replace with ')}${c.impair ? tt('le devant', 'the front') : tt('le devant puis le dos', 'the front then the back')}</small><small>` : '<small>'}${c.etat === 'revoir' && !c.reseau ? '' : esc(sous || '')}${c.prix ? ' · ' + (C ? tt('vaut ', 'worth ') : '') + argent(c.prix, 0) : ''}${c.impair && c.etat !== 'revoir' ? ' · ' + tt('sans dos', 'no back') : ''}</small></span>${bout}${c.etat === 'revoir' ? `<button class="lot-x" data-lot-x="${i}" aria-label="${tt('Retirer du lot', 'Remove from batch')}">✕</button>` : ''}</div>`;
   };
   V().innerHTML = `<section class="ecran vendre assist lot">
-    <div class="titre">${LOT.tri ? (LOT.tri.ia ? tt('L’IA trie tes photos…', 'AI is sorting your photos…') : tt(`Préparation · ${LOT.tri.fait} / ${LOT.tri.n}`, `Preparing · ${LOT.tri.fait} / ${LOT.tri.n}`)) : LOT.fini ? (C ? tt(`${prets} carte${prets > 1 ? 's' : ''} ajoutée${prets > 1 ? 's' : ''}`, `${prets} card${prets > 1 ? 's' : ''} added`) : tt(`${prets} carte${prets > 1 ? 's' : ''} prête${prets > 1 ? 's' : ''}`, `${prets} card${prets > 1 ? 's' : ''} ready`)) : tt(`Lot en cours · ${finis} / ${l.length}`, `Batch in progress · ${finis} / ${l.length}`)}</div>
+    <div class="titre">${LOT.envoi ? tt(`Envoi des photos · ${LOT.envoi.fait} / ${LOT.envoi.n}`, `Sending photos · ${LOT.envoi.fait} / ${LOT.envoi.n}`) : LOT.tri ? (LOT.tri.ia ? tt('L’IA trie tes photos…', 'AI is sorting your photos…') : tt(`Préparation · ${LOT.tri.fait} / ${LOT.tri.n}`, `Preparing · ${LOT.tri.fait} / ${LOT.tri.n}`)) : LOT.fini ? (C ? tt(`${prets} carte${prets > 1 ? 's' : ''} ajoutée${prets > 1 ? 's' : ''}`, `${prets} card${prets > 1 ? 's' : ''} added`) : tt(`${prets} carte${prets > 1 ? 's' : ''} prête${prets > 1 ? 's' : ''}`, `${prets} card${prets > 1 ? 's' : ''} ready`)) : tt(`Lot en cours · ${finis} / ${l.length}`, `Batch in progress · ${finis} / ${l.length}`)}</div>
     <div class="barre"><i style="width:${LOT.tri ? Math.round((LOT.tri.ia ? 100 : 90 * LOT.tri.fait / Math.max(1, LOT.tri.n))) : Math.round(100 * finis / Math.max(1, l.length))}%"></i></div>
     ${LOT.tri ? `<div class="sous">${tt('Devant, dos, et quelles photos vont ensemble : une photo de trop ou un dos seul ne décale plus tout le lot.', 'Front, back, and which photos go together: one extra photo or a lone back no longer shifts the whole batch.')}</div>` : ''}
     <div class="sous">${LOT.fini && res ? tt(`${res} pas lue${res > 1 ? 's' : ''} : le serveur n’a pas répondu (rien n’a été perdu, les photos sont gardées). `, `${res} not read: the server didn’t answer (nothing was lost, the photos are kept). `) : ''}${LOT.fini ? (rev ? tt(`${rev} à reprendre : elles ne respectent pas nos règles photo (rien n’a été gardé pour elles).`, `${rev} to redo: they don’t meet our photo rules (nothing was saved for them).`) : res ? '' : (C ? tt('Tout est dans ta collection. Rien n’est allé sur eBay.', 'Everything is in your collection. Nothing went to eBay.') : tt('Tout est dans ton inventaire, prêt à publier.', 'Everything is in your inventory, ready to publish.')))
-      : res ? '' : tt('Garde l’app ouverte pendant le lot. Tu peux regarder ailleurs dans l’app : le lot continue.', 'Keep the app open during the batch. You can look around the app: the batch keeps going.')}</div>
+      : res ? '' : LOT.envoi ? tt('Garde l’app ouverte pendant l’envoi des photos (quelques secondes par carte). Ensuite, tu peux la fermer : la lecture continue.', 'Keep the app open while photos are sent (a few seconds per card). Then you can close it: reading keeps going.')
+        : LOT.srv ? tt('Tu peux fermer l’app ou changer de page : la lecture continue au serveur. Tu retrouves le lot dans Inventaire, À finir.', 'You can close the app or switch pages: reading keeps going on the server. Find the batch in Inventory, To finish.')
+        : tt('Garde l’app ouverte pendant le lot. Tu peux regarder ailleurs dans l’app : le lot continue.', 'Keep the app open during the batch. You can look around the app: the batch keeps going.')}</div>
     ${LOT.fini && res ? `<button class="btn" id="lot-relance">${tt(`Réessayer ${res > 1 ? 'ces ' + res + ' cartes' : 'cette carte'}`, `Retry ${res > 1 ? 'these ' + res + ' cards' : 'this card'}`)}</button>` : ''}
     <div class="liste lot-l">${l.map(c => ligne(c, LOT.l.indexOf(c))).join('')}</div>
     ${LOT.fini && !C && prets ? `<a class="btn" href="#vendre/programmer" id="lot-pg">${icH()}${(prets > 1 ? tt(`Programmer ces ${prets} cartes sur eBay`, `Schedule these ${prets} cards on eBay`) : tt('Programmer cette carte sur eBay', 'Schedule this card on eBay'))}</a>` : ''}
@@ -6093,7 +6182,7 @@ function rendreLot(){
       <a class="btn ghost" href="#vendre/${C ? 'collection-lot' : 'lot'}" id="lot-encore">${tt('Faire un autre lot', 'Do another batch')}</a>` : ''}</section>`;
   const bi = $('#lot-inv'); if (bi) bi.onclick = () => { S.filtreInv = C ? 'collection' : 'tous'; };
   const bp = $('#lot-pg'); if (bp) bp.onclick = () => { S.pgPre = l.filter(c => (c.etat === 'ok' || c.etat === 'verifier') && c.id).map(c => +c.id); for (const k in PG) delete PG[k]; };
-  const be = $('#lot-encore'); if (be) be.onclick = (e) => { e.preventDefault(); vueLot(LOT.but); };
+  const be = $('#lot-encore'); if (be) be.onclick = (e) => { e.preventDefault(); lotSrvEcrire(null); vueLot(LOT.but); };
   const br = $('#lot-relance'); if (br) br.onclick = async () => { vibrer(); LOT.fini = false; const a = LOT.l.filter(c => c.etat === 'revoir' && c.reseau && c.ph);
     a.forEach(c => { c.etat = 'attente'; c.raison = ''; }); rendreLot();
     for (const c of a) { try { await traiterCarteLot(c); } catch (e) { c.etat = 'revoir'; c.raison = tt('Erreur : reprends cette carte', 'Error: redo this card'); } lotGarder(); rendreLot(); }
@@ -6102,14 +6191,22 @@ function rendreLot(){
   $$('[data-lot-o]').forEach(r => r.onclick = () => { vibrer(); location.hash = '#vendre/' + r.dataset.lotO; });
   $$('[data-lot-r]').forEach(b => b.onclick = () => corrigerLot(LOT.l[+b.dataset.lotR]));
   // 13 nov 2026 (« montrer a l'utilisateur de changer les photos ou supprimer tout simplement ») : un X retire la carte du lot
-  $$('[data-lot-x]').forEach(b => b.onclick = () => { vibrer(); const c = LOT.l[+b.dataset.lotX]; if (!c) return; c.retiree = true; c.f = null; c.ph = null; lotGarder(); rendreLot(); });
-  $$('[data-lot-re]').forEach(b => b.onclick = async () => { vibrer(); const c = LOT.l[+b.dataset.lotRe]; Object.assign(c, {etat: 'attente', raison: '', lecture: false}); rendreLot();
+  $$('[data-lot-x]').forEach(b => b.onclick = () => { vibrer(); const c = LOT.l[+b.dataset.lotX]; if (!c) return; if (c.sid) API.lot_retirer([c.sid]).catch(() => {}); c.retiree = true; c.f = null; c.ph = null; lotGarder(); rendreLot(); });
+  $$('[data-lot-re]').forEach(b => b.onclick = async () => { vibrer(); const c = LOT.l[+b.dataset.lotRe];
+    if (c.sid) { const r = await API.lot_relancer(c.sid).catch(() => null); if (r && r.ok) { Object.assign(c, {etat: 'srv', raison: '', srvRevoir: false, srvReseau: false}); LOT.fini = false; rendreLot(); suivreLot(); } else toast(tt('Pas relancée', 'Not restarted')); return; }
+    Object.assign(c, {etat: 'attente', raison: '', lecture: false}); rendreLot();
     try { await traiterCarteLot(c); } catch (x) { c.etat = 'revoir'; c.raison = tt('Erreur : reprends cette carte', 'Error: redo this card'); }
     if (!(c.etat === 'revoir' && c.lecture)) c.f = null; lotGarder(); rendreLot(); });
   // 11 nov 2026 (Mathieu : « un message pour remettre des photos quand elles ne sont pas belles, ou 2 recto ») : remplacer les
   // photos d'UNE carte sans quitter le lot ; elle repasse toute seule (controle, lecture, titre, prix)
   $$('[data-lot-f]').forEach(inp => inp.onchange = async (e) => { const c = LOT.l[+inp.dataset.lotF]; const l = [...(e.target.files || [])].slice(0, c.impair ? 1 : 2);
     if (!l.length) return; vibrer(); Object.assign(c, {f: l, etat: 'attente', raison: '', detail: '', ordre: false, qj: null, reseau: false}); rendreLot();
+    // une carte deja au serveur : les nouvelles photos remplacent les anciennes et elle repasse au serveur
+    if (c.sid) { c.etat = 'envoi'; rendreLot(); const ph = []; for (const f of l) { const d = await chargerPhotoLot(f); if (d) ph.push(d); }
+      const r = ph.length ? await avecReseau(() => API.lot_relancer(c.sid, ph)).catch(() => null) : null;
+      if (r && r.ok) { Object.assign(c, {etat: 'srv', f: null, vigLoc: ph[0], srvRevoir: false, srvReseau: false, impair: ph.length === 1}); LOT.fini = false; rendreLot(); suivreLot(); }
+      else { Object.assign(c, {etat: 'revoir', raison: tt('Pas envoyée : réessaie', 'Not sent: try again')}); rendreLot(); }
+      return; }
     try { await traiterCarteLot(c); } catch (x) { c.etat = 'revoir'; c.raison = tt('Erreur : reprends cette carte', 'Error: redo this card'); }
     lotGarder(); rendreLot(); });
 }
@@ -8436,7 +8533,7 @@ async function ouvrirAnnonce(base){
   const proPils = (a, encan) => {
     const sp = scoreP, c = (sp && sp.carte) || {};
     const alerteN = estNumerique(a.titre || base.titre) ? [`<span class="capsule rouge">${tt('Carte numérique ? Vérifie que c’est une vraie carte avant de miser', 'Digital card? Check it’s a real card before bidding')}</span>`] : [];
-    const L = {en_feu: [tt('En feu', 'On fire'), 'rouge'], en_hausse: [tt('En hausse', 'Rising'), 'vert'], legende: [tt('Légende', 'Legend'), 'or'], recrue: [tt('Recrue', 'Rookie'), 'or'], buzz: ['Buzz', 'acc'], actu: [tt('Dans l’actu', 'In the news'), 'acc'], en_creux: [tt('En creux', 'In a slump'), ''], rebond: [tt('Sort de son creux', 'Bouncing back'), 'vert']};
+    const L = {en_feu: [tt('En feu', 'On fire'), 'rouge'], honneur: [tt('Honoré', 'Honored'), 'or'], occasion: [tt('Bonne occasion', 'Buy low'), 'vert'], mauvaise: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], en_hausse: [tt('En hausse', 'Rising'), 'vert'], legende: [tt('Légende', 'Legend'), 'or'], recrue: [tt('Recrue', 'Rookie'), 'or'], buzz: ['Buzz', 'acc'], actu: [tt('Dans l’actu', 'In the news'), 'acc'], en_creux: [tt('En creux', 'In a slump'), ''], rebond: [tt('Sort de son creux', 'Bouncing back'), 'vert']};
     const pils = [];
     if (sp) (sp.pastilles || []).filter(k => L[k]).forEach(k => pils.push(tag(L[k][0], L[k][1])));
     if (sp && sp.semaine && sp.semaine.mj) pils.push(tag(`${sp.semaine.pts} pts · ${sp.semaine.mj} ${tt('matchs', 'games')} ${tt('cette semaine', 'this week')}`));
@@ -8573,6 +8670,23 @@ function brancherLoupe(box){
     loupe.style.opacity = 0;
   };
 }
+// 13 nov 2026 (Mathieu : « je peux continuer a scroller le radar meme quand la pop-up est la ») : sur iPhone, le defilement
+// d'une fenetre (annonce, feuille, diapos, pop-up) passait a la page dessous une fois au bout. Les fenetres gardent leur
+// defilement (overscroll-behavior: contain) et un glissement qui ne peut rien faire defiler dans la fenetre est ignore.
+(function(){
+  const SEL = '#fen-annonce, .fond-feuille, .vd, .pop2-fond, #scan';
+  const ouverte = () => document.body.classList.contains('fen-ouverte') || document.body.classList.contains('vd-ouverte')
+    || (document.getElementById('fond-feuille') && !document.getElementById('fond-feuille').hidden) || !!document.querySelector('.pop2-fond, .vd');
+  const defile = (el, stop) => { for (let x = el; x && x !== stop.parentNode; x = x.parentNode) {
+      if (x.nodeType !== 1) continue; const st = getComputedStyle(x);
+      if ((x.scrollHeight > x.clientHeight + 1 && /(auto|scroll)/.test(st.overflowY)) || (x.scrollWidth > x.clientWidth + 1 && /(auto|scroll)/.test(st.overflowX))) return true; }
+    return false; };
+  document.addEventListener('touchmove', (e) => {
+    if (!ouverte() || e.touches.length !== 1) return;
+    const t = e.target, f = t && t.closest && t.closest(SEL);
+    if (!f || !defile(t, f)) { if (e.cancelable) e.preventDefault(); }
+  }, {passive: false});
+})();
 function fermerAnnonce(){ const f = $('#fen-annonce'); if (f) f.innerHTML = ''; document.body.classList.remove('fen-ouverte'); }
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.body.classList.contains('fen-ouverte')) fermerAnnonce(); });
 async function vueDeals(arg){
@@ -9228,7 +9342,7 @@ async function remplirIQ(el, q){
   if (!el.isConnected || !sp || !sp.ok || sp.score == null) return;
   _SC[q + '|'] = sp;
   const qual = sp.score >= 80 ? tt('Très recherchée', 'Highly sought') : sp.score >= 65 ? tt('Recherchée', 'Sought after') : sp.score >= 50 ? tt('Correcte', 'Decent') : tt('Peu recherchée', 'Low demand');
-  const L = {en_feu: [tt('En feu', 'On fire'), 'rouge'], en_hausse: [tt('En hausse', 'Rising'), 'vert'], legende: [tt('Légende', 'Legend'), 'or'], recrue: [tt('Recrue', 'Rookie'), 'or'], buzz: ['Buzz', 'acc'], en_creux: [tt('En creux', 'In a slump'), ''], rebond: [tt('Sort de son creux', 'Bouncing back'), 'vert']};
+  const L = {en_feu: [tt('En feu', 'On fire'), 'rouge'], honneur: [tt('Honoré', 'Honored'), 'or'], occasion: [tt('Bonne occasion', 'Buy low'), 'vert'], mauvaise: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], en_hausse: [tt('En hausse', 'Rising'), 'vert'], legende: [tt('Légende', 'Legend'), 'or'], recrue: [tt('Recrue', 'Rookie'), 'or'], buzz: ['Buzz', 'acc'], en_creux: [tt('En creux', 'In a slump'), ''], rebond: [tt('Sort de son creux', 'Bouncing back'), 'vert']};
   const pils = (sp.pastilles || []).filter(k => L[k]).slice(0, 3).map(k => tag(L[k][0], L[k][1])).join('');
   el.innerHTML = `<button class="v-iq-b" id="v-iq-b"><span class="v-iq-n ${couleurScore(sp.score)}">${sp.score}</span><span class="v-iq-t"><small>Score SlabIQ</small><b>${qual}</b></span><span class="v-iq-p">${pils}</span><i>›</i></button>`;
   $('#v-iq-b', el).onclick = () => { vibrer(); pourquoiScore({score: sp.score, titre: q}); };
@@ -9428,7 +9542,7 @@ async function remplirMoment(z){
   if (!z) return;
   const r = await API.joueurs_du_moment().catch(() => null);
   if (!z.isConnected || !r || !(r.joueurs || []).length) return;
-  const P = {en_feu: [tt('En feu', 'On fire'), 'rouge'], rebond: [tt('Sort du creux', 'Bouncing back'), 'vert'], recrue: [tt('Recrue', 'Rookie'), 'or'], en_creux: [tt('En creux', 'In a slump'), 'acc']};
+  const P = {en_feu: [tt('En feu', 'On fire'), 'rouge'], honneur: [tt('Honoré', 'Honored'), 'or'], occasion: [tt('Bonne occasion', 'Buy low'), 'vert'], mauvaise: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], rebond: [tt('Sort du creux', 'Bouncing back'), 'vert'], recrue: [tt('Recrue', 'Rookie'), 'or'], en_creux: [tt('En creux', 'In a slump'), 'acc']};
   z.innerHTML = `<div class="am-tete"><div class="am-t">${tt('Joueurs du moment', 'Players to watch')}</div><a class="am-tout" href="#iq">${tt('Tendances', 'Trending')} ›</a></div>
     <div class="am-l am-auto">${r.joueurs.map(j => `<a class="am-j" data-jpop="${esc(j.nom)}" href="#joueur/${encodeURIComponent(j.nom)}"><span class="vig-j" data-vj="${esc(j.nom)}">${SVG_CARTE}</span>
       <span class="am-c"><b>${esc(j.nom)}</b>${tag((P[j.pastille] || ['', ''])[0], (P[j.pastille] || ['', ''])[1])}${j.semaine && j.semaine.mj ? `<small>${j.semaine.pts} pts · ${j.semaine.mj} ${tt('matchs', 'games')}</small>` : ''}</span></a>`).join('')}</div>`;
@@ -9479,7 +9593,7 @@ async function vueTendancesIQ(arg){
     ${top10.length ? `<div class="tiq-g"><div class="am-t">${tt('Top 10 de l’indice SlabIQ', 'SlabIQ index top 10')}</div>${top10.map((x, i) => `<button class="tiq-b" data-jpop="${esc(x.nom)}"><span class="tiq-bn">${i + 1}</span><span class="tiq-bl"><b>${esc(x.nom)}</b><i style="width:${Math.round(100 * (x.indice || 0) / mx)}%"></i></span><span class="tiq-bv">${Math.round(x.indice || 0)}</span></button>`).join('')}</div>` : ''}`;
   const carte = (x) => {
     const cr = Object.entries(x.criteres || {}).filter(([k]) => CRIT_IQ()[k]).sort((a, b) => b[1] - a[1]).slice(0, 4);
-    const P = {en_feu: [tt('En feu', 'On fire'), 'rouge'], rebond: [tt('Sort du creux', 'Bouncing back'), 'vert'], recrue: [tt('Recrue', 'Rookie'), 'or'], en_hausse: [tt('En hausse', 'Rising'), 'vert'],
+    const P = {en_feu: [tt('En feu', 'On fire'), 'rouge'], honneur: [tt('Honoré', 'Honored'), 'or'], occasion: [tt('Bonne occasion', 'Buy low'), 'vert'], mauvaise: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], rebond: [tt('Sort du creux', 'Bouncing back'), 'vert'], recrue: [tt('Recrue', 'Rookie'), 'or'], en_hausse: [tt('En hausse', 'Rising'), 'vert'],
       buzz: ['Buzz', 'acc'], en_creux: [tt('En creux', 'In a slump'), ''], legende: [tt('Légende', 'Legend'), 'or'], actu: [tt('Dans l’actu', 'In the news'), 'acc']};
     const ligne = x.semaine ? `${x.semaine.pts} pts · ${x.semaine.b || 0} ${tt('buts', 'goals')} · ${x.semaine.mj} ${tt('matchs', 'games')} ${tt('cette semaine', 'this week')}`
       : x.creux ? `${String(x.creux.ppm).replace('.', tt(',', '.'))} ${tt('pt/match vs', 'pts/game vs')} ${String(x.creux.avant_ppm).replace('.', tt(',', '.'))} ${tt('avant', 'before')}` : '';
@@ -9520,7 +9634,9 @@ async function vueAccueil(arg){
   // 29 oct 2026 (Mathieu : « straight to the point, le moins de fla-fla : les deals, est-ce que son inventaire va bien ;
   // le detail en cliquant, le plus de pop-up possible, tres fluides ») : 3 chiffres, les deals du jour, puis une pastille
   // par sujet. Chaque pastille ouvre son bloc dans une feuille (les blocs restent caches dans la page).
-  V().innerHTML = `<section class="ecran acc leger">${fetesActives() ? htmlNeige(16) : ''}
+  // 13 nov 2026 (Mathieu : « tout faire apparaitre en meme temps ») : un seul chargement au centre, puis toute la page
+  // d'un coup (les chiffres, les joueurs a surveiller, les pastilles), plus de morceaux qui arrivent un par un
+  V().innerHTML = `<section class="ecran acc leger acc-charge">${fetesActives() ? htmlNeige(16) : ''}<div class="acc-roue-g" aria-hidden="true">${roue}</div>
     <div class="acc-salut-tel" id="acc-salut2"></div>
     <button class="acc-mot" id="acc-mot" type="button"></button>
     <div class="histoires" id="acc-hist" role="list"></div>
@@ -9542,10 +9658,13 @@ async function vueAccueil(arg){
   brancherBadge(V());
   piecesNiveau();
   demarrerAccueilLive();
-  remplirMoment($('#acc-moment'));
+  const pMoment = Promise.resolve(remplirMoment($('#acc-moment'))).catch(() => null);
+  const reveler = () => { const sc_ = $('.ecran.acc.acc-charge'); if (sc_) sc_.classList.remove('acc-charge'); };
+  setTimeout(reveler, 6000);                                        // jamais plus de 6 s sans rien
   const [d, a] = await Promise.all([API.accueil().catch(e => ({erreur:e.message})), API.acheteur_accueil().catch(() => null)]);
   if (!surAccueil()) return;
-  if (d.erreur) { $('#acc-afaire').innerHTML = `<div class="vide">${esc(d.erreur)}</div>`; return; }
+  if (d.erreur) { reveler(); $('#acc-afaire').innerHTML = `<div class="vide">${esc(d.erreur)}</div>`; return; }
+  Promise.race([pMoment, new Promise(x => setTimeout(x, 2500))]).then(() => requestAnimationFrame(reveler));
   appliquerActivites(d.activites);
   const h = d.hero, st = d.stock, vi = d.vitesse;
   const pB = $('#pastille-breaks'); if (pB) { pB.hidden = !d.a_envoyer; pB.textContent = d.a_envoyer || ''; }
@@ -10801,16 +10920,18 @@ function vueAFinirSimple(l){
     if (c.note && /vérifier|check/i.test(c.note)) m.push([tt('À vérifier', 'To check'), 'or']);
     return m; };
   const prets = l.filter(c => !manque(c).length).length;
+  // 13 nov 2026 (Mathieu : « on devrait pouvoir ajouter en bas si l'utilisateur en a oublie ») : « + Ajouter des cartes » sous la liste
   return `<div class="afs">
     <div class="afs-t"><b>${l.length + nLot}</b><span>${tt(l.length + nLot > 1 ? 'cartes à finir' : 'carte à finir', l.length + nLot > 1 ? 'cards to finish' : 'card to finish')}</span>
       ${l.length ? `<small>${[prets ? `<b class="vert">${prets} ${tt(prets > 1 ? 'prêtes' : 'prête', 'ready')}</b>` : '', l.length - prets ? `${l.length - prets} ${tt('à compléter', 'to complete')}` : '', tt('glisse une carte vers la gauche pour la retirer', 'swipe a card left to remove it')].filter(Boolean).join(' · ')}</small>` : ''}</div>
-    <div id="afs-dbl"></div>
+    <div id="afs-srv"></div><div id="afs-dbl"></div>
     ${nLot ? `<div class="afs-lot"><span>${ICO_LOT}</span><span class="afs-lt"><b>${tt(`${nLot} photo${nLot > 1 ? 's' : ''} pas encore lue${nLot > 1 ? 's' : ''}`, `${nLot} photo${nLot > 1 ? 's' : ''} not read yet`)}</b><small>${tt('L’app les lit et les ajoute ici.', 'The app reads them and adds them here.')}</small></span><button class="btn petit" id="af-lot">${tt('Continuer', 'Continue')}</button><button class="lot-x" id="af-lot-x" aria-label="${esc(tt('Annuler ce lot', 'Cancel this batch'))}">✕</button></div>` : ''}
     <div class="afs-l">${l.map(c => { const m = manque(c), nom = c.joueur || titreCourt(c.titre) || '';
       return `<button class="afs-r tuile-inv" data-id="${c.id}"><span class="afs-ph">${photoOk(c.photo) ? `<img src="${esc(photoNet(c.photo))}" alt="" loading="lazy" data-oe="rm">` : SVG_CARTE}</span>
         <span class="afs-c"><b class="${m.some(x => x[1] === 'rouge') ? 'afs-q' : ''}">${m.some(x => x[1] === 'rouge') ? tt('Carte à identifier', 'Card to identify') : esc(nom)}</b>
           ${m.length ? `<span class="pastilles">${m.map(x => tag(x[0], x[1])).join('')}</span>` : `<span class="pastilles">${tag(tt('Prête', 'Ready'), 'vert')}${nb(c.prix_demande) > 0 ? tag(argent(c.prix_demande, 0)) : ''}</span>`}</span>
         <span class="afs-go">${m.length ? tt('Finir', 'Finish') : tt('Voir', 'View')} ›</span></button>`; }).join('')}</div>
+    <a class="afs-plus" href="#vendre/lot" id="afs-plus"><span>+</span>${tt('Ajouter des cartes', 'Add cards')}</a>
     ${l.length ? `<button class="btn afs-tout" id="af-pg">${tt(`Mettre ${l.length > 1 ? 'les ' + l.length + ' cartes' : 'la carte'} sur eBay`, `List ${l.length > 1 ? 'the ' + l.length + ' cards' : 'the card'} on eBay`)}</button>
       <div class="sous afs-n">${tt('À l’étape suivante, tu vérifies les prix et tu choisis l’heure. Rien ne part sans ton OK.', 'On the next step you check prices and pick the time. Nothing goes out without your OK.')}</div>
       <div class="afs-bas"><button class="lien-t" id="af-retirer">${tt('Vider la liste', 'Clear the list')}</button><button class="lien-t rouge" id="af-supp">${tt('Tout supprimer', 'Delete all')}</button></div>`
@@ -10836,6 +10957,18 @@ function glisserPourRetirer(z){
   });
 }
 async function brancherAFinirSimple(l){
+  // 13 nov 2026 : le lot qui se lit au serveur (meme l'app fermee) : son avancement ici, et un toucher pour le voir
+  const g = lotSrvLire();
+  if (g) API.lot_etat(g.lot).then(r => { const z = $('#afs-srv'); if (!z || !r || !r.ok) return;
+    const T = r.travaux || [], cours = T.filter(t => ['attente', 'lecture', 'prix'].includes(t.etat)).length, rev = T.filter(t => ['revoir', 'reseau'].includes(t.etat)).length, faits = T.length - cours;
+    if (!cours && !rev) { lotSrvEcrire(null); return; }
+    const pct = Math.round(100 * faits / Math.max(1, T.length)), C_ = 2 * Math.PI * 15;
+    z.innerHTML = `<button class="afs-lot afs-srv" id="afs-srv-b">${cours ? `<span class="lot-an" style="--de:${(C_ * (1 - pct / 100)).toFixed(1)};--a:${(C_ * (1 - pct / 100)).toFixed(1)};--c:${C_.toFixed(1)}"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" class="f"/><circle cx="18" cy="18" r="15" class="v"/></svg><b>${pct}<i>%</i></b></span>` : `<span>${ICO_LOT}</span>`}
+      <span class="afs-lt"><b>${cours ? tt(`Lot en cours : ${faits} / ${T.length} lues`, `Batch in progress: ${faits} / ${T.length} read`) : tt(`${rev} carte${rev > 1 ? 's' : ''} du lot à reprendre`, `${rev} batch card${rev > 1 ? 's' : ''} to redo`)}</b>
+      <small>${cours ? tt('La lecture continue même l’app fermée.', 'Reading keeps going even with the app closed.') : tt('Remplace leurs photos ou retire-les.', 'Replace their photos or remove them.')}</small></span><i class="afs-go">›</i></button>`;
+    $('#afs-srv-b').onclick = () => { vibrer(); S.lotOuvrir = true; location.hash = g.but === 'collection' ? '#vendre/collection-lot' : '#vendre/lot'; };
+    if (cours) setTimeout(() => { if ($('#afs-srv') && S.filtreInv === 'afinir') { MEMO.clear(); GARDE_SAUTER.t = Date.now(); chargerInventaire(); } }, 8000);
+  }).catch(() => {});
   glisserPourRetirer($('#i-liste'));
   const r = await API.doublons_a_finir().catch(() => null), z = $('#afs-dbl');
   if (!z || !r || !r.ok || !r.n) return;
@@ -10875,43 +11008,73 @@ function brancherAFinir(l){
 }
 // 9 nov 2026 : le lot en cours est garde dans le telephone (IndexedDB : les photos d'origine, pas de limite de 5 Mo) ; si
 // l'app se ferme au milieu, l'onglet « À finir » le reprend ou il etait
-function lotIdb(v){
+// 13 nov 2026 (Mathieu : « ces messages apparaissent toujours quand on quitte l'app et qu'elle se recharge : il perd les
+// photos choisies ») : iOS ne garde pas l'acces aux photos choisies apres un rechargement de l'app. Chaque photo du lot est
+// donc COPIEE dans le telephone (IndexedDB, sur le disque, une a la fois) des le choix, jusqu'a son envoi au serveur : une
+// app fermee ou rechargee reprend ses cartes avec leurs vraies photos.
+function idbLot(){
   return new Promise(ok => {
-    let rq; try { rq = indexedDB.open('lr_lot', 1); } catch (e) { ok(null); return; }
-    rq.onupgradeneeded = () => { try { rq.result.createObjectStore('l'); } catch (e) {} };
-    rq.onerror = () => ok(null);
-    rq.onsuccess = () => { try {
-      const db = rq.result, t = db.transaction('l', v === undefined ? 'readonly' : 'readwrite'), st = t.objectStore('l');
-      if (v === undefined) { const g = st.get('lot'); g.onsuccess = () => ok(g.result || null); g.onerror = () => ok(null); }
-      else { v ? st.put(v, 'lot') : st.delete('lot'); t.oncomplete = () => ok(true); t.onerror = () => ok(null); }
-    } catch (e) { ok(null); } };
+    let rq; try { rq = indexedDB.open('lr_lot', 2); } catch (e) { ok(null); return; }
+    rq.onupgradeneeded = () => { try { const db = rq.result; if (!db.objectStoreNames.contains('l')) db.createObjectStore('l'); if (!db.objectStoreNames.contains('c')) db.createObjectStore('c'); } catch (e) {} };
+    rq.onerror = () => ok(null); rq.onblocked = () => ok(null);
+    rq.onsuccess = () => ok(rq.result);
   });
+}
+async function lotIdb(v){
+  const db = await idbLot(); if (!db) return null;
+  return new Promise(ok => { try {
+    const t = db.transaction(['l', 'c'], v === undefined ? 'readonly' : 'readwrite'), st = t.objectStore('l');
+    if (v === undefined) { const g = st.get('lot'); g.onsuccess = () => ok(g.result || null); g.onerror = () => ok(null); }
+    else { if (v) st.put(v, 'lot'); else { st.delete('lot'); t.objectStore('c').clear(); } t.oncomplete = () => ok(true); t.onerror = () => ok(null); }
+  } catch (e) { ok(null); } });
+}
+async function lotCarteIdb(cle, rec){                      // rec : {n, blobs, impair} ; null : retiree ; undefined : toutes
+  const db = await idbLot(); if (!db) return null;
+  return new Promise(ok => { try {
+    const t = db.transaction('c', rec === undefined ? 'readonly' : 'readwrite'), st = t.objectStore('c');
+    if (rec === undefined) { const g = st.getAll(); g.onsuccess = () => ok(g.result || []); g.onerror = () => ok([]); }
+    else { rec ? st.put(rec, cle) : st.delete(cle); t.oncomplete = () => ok(true); t.onerror = () => ok(null); }
+  } catch (e) { ok(rec === undefined ? [] : null); } });
+}
+// les copies, une photo a la fois (la memoire du telephone), dans l'ordre du lot ; une carte deja envoyee n'est pas copiee
+async function lotCopier(l){
+  for (const c of l) {
+    if (!c.f || !c.f.length || c.sid || c.retiree || c.etat === 'revoir') continue;
+    c.cle = c.cle || (Date.now().toString(36) + Math.random().toString(36).slice(2, 10));
+    const blobs = [];
+    for (const f of c.f) { try { blobs.push(f instanceof File ? new Blob([await f.arrayBuffer()], {type: f.type || 'image/jpeg'}) : f); } catch (e) { blobs.length = 0; break; } }
+    if (!blobs.length || c.sid || c.retiree) continue;
+    await lotCarteIdb(c.cle, {cle: c.cle, n: c.n, blobs, impair: !!c.impair, but: LOT.but || 'vente', t: Date.now()});
+    if (c.sid || c.retiree) lotCarteIdb(c.cle, null);
+  }
 }
 function lotGarder(){
   if (!LOT.l) return;
   // 12 nov 2026 (« la catastrophe » : le lot quitte puis repris, chaque carte 2 ou 3 fois) : chaque carte a sa cle d'envoi
   // AVANT d'etre gardee ; reprise, elle renvoie la meme cle et le serveur rend la carte deja creee
-  LOT.l.forEach(c => { c.cle = c.cle || (Date.now().toString(36) + Math.random().toString(36).slice(2, 10)); });
-  const reste = LOT.l.filter(c => !c.retiree && !['ok', 'verifier'].includes(c.etat) && ((c.f && c.f.length) || (c.ph && c.ph.length)));
-  const v = reste.length ? {t: Date.now(), but: LOT.but, devants: !!LOT.devants, cartes: reste.map(c => ({f: c.f || null, ph: c.ph || null, impair: !!c.impair, cle: c.cle || null}))} : null;
-  S.lotGarde = v; S.lotGardeN = v ? v.cartes.length : 0;
-  lotIdb(v);
+  LOT.l.forEach(c => { c.cle = c.cle || (Date.now().toString(36) + Math.random().toString(36).slice(2, 10));
+    if ((c.sid || c.retiree || c.etat === 'ok' || c.etat === 'verifier') && !c.idbRetiree) { c.idbRetiree = true; lotCarteIdb(c.cle, null); } });
+  const reste = LOT.l.filter(c => !c.retiree && !c.sid && !['ok', 'verifier'].includes(c.etat) && c.f && c.f.length);
+  const v = reste.length ? {t: Date.now(), but: LOT.but, devants: !!LOT.devants, n: reste.length} : null;
+  S.lotGardeN = v ? v.n : 0; S.lotGarde = v ? Object.assign(S.lotGarde || {}, v) : null;
+  lotIdb(v || null);
 }
 async function lotLireGarde(){
-  const g = await lotIdb();
-  S.lotGarde = g && g.cartes && g.cartes.length && Date.now() - g.t < 14 * 86400000 ? g : null;
-  S.lotGardeN = S.lotGarde ? S.lotGarde.cartes.length : 0;
+  const g = await lotIdb(), recs = (await lotCarteIdb()) || [];
+  const ok = recs.filter(r => r && r.blobs && r.blobs.length && Date.now() - (r.t || 0) < 14 * 86400000).sort((a, b) => (a.n || 0) - (b.n || 0));
+  if (!ok.length) { if (g) lotIdb(null); S.lotGarde = null; S.lotGardeN = 0; return null; }
+  S.lotGarde = {t: (g && g.t) || Date.now(), but: (g && g.but) || ok[0].but || 'vente', devants: !!(g && g.devants), cartes: ok.map(r => ({f: r.blobs, impair: r.impair, cle: r.cle, n: r.n}))};
+  S.lotGardeN = ok.length;
   return S.lotGarde;
 }
 async function lotReprendre(){
-  const g = S.lotGarde || await lotLireGarde(); if (!g) return;
+  const g = (S.lotGarde && S.lotGarde.cartes) ? S.lotGarde : await lotLireGarde(); if (!g || !g.cartes) return;
   for (const k in LOT) delete LOT[k];
   Object.assign(LOT, {but: g.but || 'vente', devants: !!g.devants, fini: false,
     l: g.cartes.map((x, i) => ({n: i + 1, f: x.f, ph: x.ph, impair: x.impair, cle: x.cle || undefined, etat: 'attente', repris: true}))});
   location.hash = LOT.but === 'collection' ? '#vendre/collection-lot' : '#vendre/lot';
   await new Promise(x => setTimeout(x, 300)); rendreLot();
-  await lotEnParallele(LOT.l);
-  LOT.fini = true; lotGarder(); rendreLot();
+  await lotAuServeur(LOT.l);
 }
 function nbAFinir(){ return (S.nbAFinir || 0) + (S.lotGardeN || 0) + (pgGarde() ? 1 : 0); }
 function filtresBarreInv(){
@@ -14541,7 +14704,7 @@ function pastilleScore(x){ return x && x.score != null ? `<span class="sc-b ${co
 const RE_NUMERIQUE = /\b(digital|nft|e-?card|virtual|veve|topps bunt|bunt app|topps now digital|code card|redemption code|app card|ar card|in[- ]app)\b/i;
 const estNumerique = (t) => RE_NUMERIQUE.test(String(t || '')) && !/\b(digital print|physical)\b/i.test(String(t || ''));
 function tuileRadar(x, src){
-  const L = {en_feu: [tt('En feu', 'On fire'), 'rouge'], rebond: [tt('Sort de son creux', 'Bouncing back'), 'vert'], en_creux: [tt('En creux', 'In a slump'), ''],
+  const L = {en_feu: [tt('En feu', 'On fire'), 'rouge'], honneur: [tt('Honoré', 'Honored'), 'or'], occasion: [tt('Bonne occasion', 'Buy low'), 'vert'], mauvaise: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], rebond: [tt('Sort de son creux', 'Bouncing back'), 'vert'], en_creux: [tt('En creux', 'In a slump'), ''],
     legende: [tt('Légende', 'Legend'), 'or'], recrue: [tt('Recrue', 'Rookie'), 'or'], buzz: ['Buzz', 'acc']};
   const pj = (x.pastilles_j || []).find(k => L[k]);
   // 12 nov 2026 (Mathieu : « pas besoin de Small seller sur la tuile ; il le saura dans la fiche ») 
@@ -14911,7 +15074,7 @@ function blocPourquoi(q){
 // (stats et donnees publiques seulement : jamais un prix)
 function pastillesIndice(g){
   if (!g) return '';
-  const L = {en_feu: [tt('En feu', 'On fire'), 'rouge'], en_hausse: [tt('En hausse', 'Rising'), 'vert'], buzz: ['Buzz', 'acc'], actu: [tt('Dans l’actu', 'In the news'), 'acc'], legende: [tt('Légende', 'Legend'), 'or'], recrue: [tt('Recrue', 'Rookie'), 'or'], en_creux: [tt('En creux', 'In a slump'), ''], rebond: [tt('Sort de son creux', 'Bouncing back'), 'vert']};
+  const L = {en_feu: [tt('En feu', 'On fire'), 'rouge'], honneur: [tt('Honoré', 'Honored'), 'or'], occasion: [tt('Bonne occasion', 'Buy low'), 'vert'], mauvaise: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], en_hausse: [tt('En hausse', 'Rising'), 'vert'], buzz: ['Buzz', 'acc'], actu: [tt('Dans l’actu', 'In the news'), 'acc'], legende: [tt('Légende', 'Legend'), 'or'], recrue: [tt('Recrue', 'Rookie'), 'or'], en_creux: [tt('En creux', 'In a slump'), ''], rebond: [tt('Sort de son creux', 'Bouncing back'), 'vert']};
   const out = (g.pastilles || []).filter(k => L[k]).map(k => tag(L[k][0], L[k][1]));
   const w = g.semaine; if (w && w.mj) out.push(tag(`${w.pts} pts · ${w.mj} ${tt('matchs', 'games')} ${tt('cette semaine', 'this week')}`));
   return out.join('');
@@ -14937,8 +15100,11 @@ function bentoJoueur(r, t){
   const pils = [];
   if (t) { const pi = pastillesIndice(t); if (pi) pils.push(pi); }
   if (r.recrue) pils.push(capsule(tt('Recrue · ', 'Rookie · ') + esc(r.recrue), 'or petit'));
+  const cr = r.carriere || null;
+  if (cr && cr.temple && !(q.legende || {}).temple) pils.push(capsule(tt('Temple de la renommée', 'Hall of Fame'), 'or petit'));
+  if (cr && cr.actif === false && q.actif !== false) pils.push(capsule(tt('Retraité', 'Retired'), 'petit'));
   T.push({h: `<div class="jb-t l jb-tete"><span class="vig-j" data-vj="${esc(r.joueur)}">${SVG_CARTE}</span>
-    <div class="jb-n"><div class="titre">${esc(r.joueur)}</div><div class="pastilles">${r.equipe ? ecussonEquipe(r.equipe) : ''}${pils.join('')}</div></div>
+    <div class="jb-n"><div class="titre">${esc((cr && cr.nom) || r.joueur)}</div><div class="pastilles">${r.equipe ? ecussonEquipe(r.equipe) : cr && cr.equipe ? capsule(esc(cr.equipe), 'petit') : ''}${pils.join('')}</div></div>
     <button class="jb-cl" id="j-alerte" aria-label="${esc(tt('M’alerter', 'Alert me'))}">${icN('cloche')}</button></div>`, l: true});
   if (r.mediane) tuile(tt('Sa carte vaut', 'His card is worth'), argent(r.mediane, 0), esc(r.requete), 'vert', {large: true});
   if (q.rang && q.sur) tuile(tt('Indice', 'Index'), ordinal(q.rang), `${tt('sur', 'of')} ${q.sur} ${q.actif === false ? tt('retraités', 'retired') : tt('joueurs', 'players')}`, q.rang <= q.sur * 0.1 ? 'vert' : q.rang <= q.sur * 0.4 ? 'acc' : '', {fait: true});
@@ -14952,6 +15118,17 @@ function bentoJoueur(r, t){
   if (g.carriere && g.carriere.pts) tuile(tt('Carrière', 'Career'), g.carriere.pts + ' pts', g.carriere.mj ? g.carriere.mj + ' ' + tt('matchs', 'games') : '', '');
   const lg = [g.temple && tt('Temple de la renommée', 'Hall of Fame'), g.top100 && tt('Top 100 de l’histoire', 'Top 100 all-time'), g.trophees && g.trophees + ' ' + tt('trophées', 'awards')].filter(Boolean);
   if (g.coupes || lg.length) tuile(g.temple || g.top100 ? tt('Légende', 'Legend') : tt('Palmarès', 'Honours'), g.coupes ? g.coupes + ' ' + tt(g.coupes > 1 ? 'coupes' : 'coupe', g.coupes > 1 ? 'Cups' : 'Cup') : lg.shift(), lg.join(' · '), 'or', {large: lg.length > 1});
+  // 13 nov 2026 (Mathieu : « on devrait TOUJOURS avoir toute l'info ») : la carriere LNH de tous les joueurs (actifs ou
+  // retraites), ses saisons, son repechage et quelques lignes de bio (Wikipedia, citee)
+  if (cr && cr.mj && !(g.carriere && g.carriere.pts)) {
+    if (cr.position === 'G' && cr.victoires != null) tuile(tt('Carrière LNH', 'NHL career'), cr.victoires + ' ' + tt('victoires', 'wins'),
+      [cr.moyenne != null ? tt('moy. ', 'GAA ') + dec(Number(cr.moyenne).toFixed(2)) : '', cr.efficacite != null ? dec((cr.efficacite * 100).toFixed(1)) + ' %' : '', cr.mj + ' ' + tt('matchs', 'games')].filter(Boolean).join(' · '), 'acc', {large: true});
+    else if (cr.points != null) tuile(tt('Carrière LNH', 'NHL career'), cr.points + ' pts', `${cr.buts || 0} ${tt('buts', 'goals')} · ${cr.passes || 0} ${tt('passes', 'assists')} · ${cr.mj} ${tt('matchs', 'games')}`, 'acc', {large: true});
+  }
+  if (cr && cr.saisons) tuile(tt('Dans la LNH', 'In the NHL'), cr.actif ? tt('depuis ', 'since ') + cr.saisons[0] : cr.saisons[0] + '–' + cr.saisons[1],
+    [{C: tt('Centre', 'Center'), L: tt('Ailier gauche', 'Left wing'), R: tt('Ailier droit', 'Right wing'), D: tt('Défenseur', 'Defense'), G: tt('Gardien', 'Goalie')}[cr.position] || '', (cr.equipes || []).length > 1 ? (cr.equipes.length + ' ' + tt('équipes', 'teams')) : ''].filter(Boolean).join(' · '), '');
+  if (cr && cr.repechage && cr.repechage.rang && !(q.repechage && q.repechage.rang)) tuile(tt('Repêchage', 'Draft'), ordinal(cr.repechage.rang), `${tt('au total', 'overall')} · ${cr.repechage.an}${cr.repechage.equipe ? ' · ' + esc(cr.repechage.equipe) : ''}`, cr.repechage.rang <= 10 ? 'acc' : '');
+  if (cr && cr.bio && cr.bio.texte) T.push({h: `<div class="jb-t l jb-bio"><span class="jb-k">${tt('Qui est-il', 'Who he is')}</span><p>${esc(cr.bio.texte)}</p>${cr.bio.lien ? `<a href="${esc(urlSure(cr.bio.lien))}" target="_blank" rel="noopener">${tt('Source : Wikipédia', 'Source: Wikipedia')} ${EXT}</a>` : ''}</div>`, l: true});
   if (q.repechage && q.repechage.rang && q.repechage.rang <= 10) tuile(tt('Repêchage', 'Draft'), ordinal(q.repechage.rang), `${tt('au total', 'overall')} · ${q.repechage.an}`, 'acc');
   if (q.saisons && q.saisons <= 2 && q.actif) tuile(tt('Recrue', 'Rookie'), ordinal(q.saisons), tt('saison', 'season'), 'or');
   const cx = q.creux;
@@ -14961,11 +15138,11 @@ function bentoJoueur(r, t){
   if (n0) T.push({h: `<${n0.lien ? `a href="${esc(urlSure(n0.lien))}" target="_blank" rel="noopener"` : 'div'} class="jb-t l jb-actu"><span class="jb-k">${tt('Dans l’actu', 'In the news')}${n0.date ? ' · ' + esc(dateCourte(n0.date)) : ''}</span><b>${esc(n0.titre)}</b></${n0.lien ? 'a' : 'div'}>`, l: true});
   // les gestes : des tuiles d'action
   const act = (id, ic, k, v) => T.push({h: `<button class="jb-t jb-a" id="${id}"><span class="jb-ic">${icN(ic)}</span><span class="jb-k">${k}</span>${v != null ? `<b>${v}</b>` : ''}<i class="jb-f">›</i></button>`, l: false});
-  if (r.cartes.length) act('j-cartes', 'carte', tt('Ses cartes', 'His cards'), r.cartes.length);
+  act('j-cartes', 'carte', tt('Ses cartes', 'His cards'), r.cartes.length || null);
   if ((r.points || []).length >= 3) act('j-histo', 'graphe', tt('Ses ventes', 'His sales'), r.nb_ventes || null);
   if (r.indice_rs) act('j-ind', 'pouls', tt('Son indice', 'His index'), null);
   if (r.alertes.length) act('j-al', 'cloche', tt('Mes alertes', 'My alerts'), r.alertes.length);
-  if (t && Object.keys(q).length) act('j-faits', 'ampoule', tt('Pourquoi il bouge', 'Why he’s moving'), null);
+  if (t && Object.keys(q).length && String(blocPourquoi(q) || '').replace(/<[^>]+>/g, '').trim().length > 20) act('j-faits', 'ampoule', tt('Pourquoi il bouge', 'Why he’s moving'), null);
   if (!t) T.push({h: `<div class="jb-t l jb-att"><span class="roue"></span></div>`, l: true});
   // pas de trou : une tuile seule a la fin s'etire sur 2 colonnes
   let k = 0; T.forEach(x => { if (!x.l) k++; else if (k % 2) { k = 0; } });
@@ -14988,9 +15165,16 @@ async function feuilleJoueur(nom){
     const al = $('#j-alerte', f); if (al) al.onclick = () => { vibrer(); feuilleAlerte(r.requete, r.mediane ? Math.round(r.mediane * 0.8) : ''); };
     $$('[data-jfait]', f).forEach(b => b.onclick = () => { vibrer(); ouvrirFeuille(`<button class="fv-ret" id="fv-ret">‹ ${esc(r.joueur)}</button>${blocPourquoi((t || {}).pourquoi) || ''}`); $('#fv-ret').onclick = () => { vibrer(); retour(); }; });
     const jc = $('#j-cartes', f); if (jc) jc.onclick = () => { vibrer();
-      ouvrirFeuille(`<button class="fv-ret" id="fv-ret">‹ ${esc(r.joueur)}</button><h3>${tt('Ses cartes à chasser', 'His cards to hunt')}</h3><div class="liste">${r.cartes.map(c => `<button class="rangee" data-fjc="${esc(r.joueur + ' ' + c.carte)}">
+      // 13 nov 2026 (Mathieu : « c'est quoi ces trois cartes ? Coronato apparait dans 100 sortes de cartes ») : ce sont SES cartes
+      // des checklists que SlabCoach connait en detail ; le dire, et ouvrir toutes ses cartes sur eBay en un toucher
+      ouvrirFeuille(`<button class="fv-ret" id="fv-ret">‹ ${esc(r.joueur)}</button><h3>${tt('Ses cartes', 'His cards')}</h3>
+        <button class="btn" id="fj-eb">${tt(`Toutes ses cartes sur eBay`, `All his cards on eBay`)} ${EXT}</button>
+        ${r.cartes.length ? `<div class="sous">${tt(`Les ${r.cartes.length} ci-dessous viennent des checklists que SlabCoach connaît en détail (tirage, rareté). Il en a beaucoup d’autres : touche le bouton pour toutes les voir.`, `The ${r.cartes.length} below come from the checklists SlabCoach knows in detail (print run, rarity). He has many more: tap the button to see them all.`)}</div>` : `<div class="sous">${tt('Aucune de ses cartes n’est encore dans nos checklists détaillées.', 'None of his cards are in our detailed checklists yet.')}</div>`}
+        <div class="liste">${r.cartes.map(c => `<button class="rangee" data-fjc="${esc(r.joueur + ' ' + c.carte)}">
         <span class="milieu"><span class="nom">${esc(c.carte)}${c.numero ? ' #' + esc(c.numero) : ''}</span><span class="det">${esc(c.produit)}${c.tirage ? ' · /' + c.tirage : ''}</span></span><i class="fl">›</i></button>`).join('')}</div>`);
       const liste = () => jc.onclick();
+      $('#fj-eb').onclick = () => { vibrer(); const dom = typeof DEVISE !== 'undefined' && DEVISE === 'USD' ? 'www.ebay.com' : 'www.ebay.ca';
+        ouvrirDansApp(`https://${dom}/sch/i.html?_nkw=${encodeURIComponent(((r.carriere && r.carriere.nom) || r.joueur) + ' hockey card')}&_sacat=261328`); };
       $('#fv-ret').onclick = () => { vibrer(); retour(); };
       $$('[data-fjc]').forEach(b => b.onclick = () => { vibrer(); feuilleValeur(b.dataset.fjc, liste, tt('Ses cartes', 'His cards')); }); };
     for (const id of ['j-histo', 'j-ind', 'j-al']) { const b = $('#' + id, f); if (b) b.onclick = () => { vibrer(); fermerFeuille(); fermerAnnonce(); location.hash = '#joueur/' + encodeURIComponent(r.joueur); }; }
@@ -15070,7 +15254,11 @@ const ALARMES = () => [
   ['en_feu', 'graphe', tt('Joueur en feu', 'Player on fire'), tt('Un joueur de tes cartes enchaîne les points', 'A player from your cards is on a streak')],
   ['prix_cible', 'cible', tt('Prix cible', 'Target price'), tt('Une carte que tu suis passe sous ton prix', 'A card you watch drops under your price')],
   ['acheteurs', 'oeil', tt('Acheteurs intéressés', 'Interested buyers'), tt('Des acheteurs surveillent tes annonces eBay', 'Buyers are watching your eBay listings')],
-  ['vendu', 'dollar', tt('Vendu', 'Sold'), tt('Une de tes cartes vient de se vendre', 'One of your cards just sold')]].filter(a => (S.forfait && S.forfait.admin) || !['mes_joueurs', 'gros_deal', 'encan_fin'].includes(a[0]));
+  ['vendu', 'dollar', tt('Vendu', 'Sold'), tt('Une de tes cartes vient de se vendre', 'One of your cards just sold')],
+  // 13 nov 2026 (Mathieu : « SlabIQ doit dire a l'utilisateur de verifier son annonce si bonne nouvelle ; dans les notifs
+  // qu'il peut activer ») : les nouvelles qui bougent la valeur de TES joueurs, et les bonnes occasions pour acheter
+  ['iq_nouvelle', 'graphe', tt('SlabIQ · Nouvelles sur mes cartes', 'SlabIQ · News on my cards'), tt('Temple, honneur, trophée, exploit, blessure : on te dit de vérifier le prix de ton annonce', 'Hall of Fame, honour, award, milestone, injury: we tell you to check your listing price')],
+  ['iq_occasion', 'cible', tt('SlabIQ · Bonnes occasions', 'SlabIQ · Buy-low chances'), tt('Un bon joueur en creux ou après une mauvaise nouvelle : ses cartes baissent souvent pour un temps', 'A good player in a slump or after bad news: his cards often dip for a while')]].filter(a => (S.forfait && S.forfait.admin) || !['mes_joueurs', 'gros_deal', 'encan_fin'].includes(a[0]));
 // 9 nov 2026 (Mathieu : « un onglet sur la page principale, genre centre de notifications : l'utilisateur coche quel genre
 // de notifs il veut et met les joueurs qu'il veut tracker ; max 5 en non pro et 20 en pro ») : une seule page, trois blocs
 // simples (Nouveautés · Mes joueurs suivis · Ce que je reçois) ; la cloche du haut y mène aussi
@@ -15085,9 +15273,10 @@ async function vueNotifs(arg){
   const notifs = (r.notifications || []).filter(n => n.sorte !== 'acheteurs' || (!vuAch && (vuAch = true)));
   const SORTE = {vente:[tt('Vendue', 'Sold'), 'dollar', 'vert'], acheteurs:[tt('Acheteurs', 'Buyers'), 'oeil', 'acc'], deal:['Deal', 'deals', 'or'],
     encan:[tt('Encan', 'Auction'), 'horloge', 'or'], trop_cher:[tt('Trop cher', 'Too pricey'), 'attention', 'rouge'], joueur:[tt('En feu', 'On fire'), 'feu', 'or'],
-    valeur:[tt('Valeur', 'Value'), 'graphe', 'acc'], prix:[tt('Prix cible', 'Target price'), 'cible', 'vert'], info:['Info', 'cloche', '']};
-  const FILTRES = [['tout', tt('Tout', 'All')], ['deal', 'Deals'], ['encan', tt('Encans', 'Auctions')], ['vente', tt('Ventes', 'Sales')], ['prix', tt('Prix', 'Prices')]];
-  const groupe = (k) => k === 'trop_cher' ? 'encan' : k === 'acheteurs' ? 'vente' : k === 'joueur' || k === 'valeur' ? 'deal' : k;
+    valeur:[tt('Valeur', 'Value'), 'graphe', 'acc'], prix:[tt('Prix cible', 'Target price'), 'cible', 'vert'], info:['Info', 'cloche', ''],
+    iq_bonne:['SlabIQ', 'graphe', 'vert'], iq_mauvaise:['SlabIQ', 'attention', 'rouge'], iq_occasion:[tt('Occasion', 'Buy low'), 'cible', 'acc']};
+  const FILTRES = [['tout', tt('Tout', 'All')], ['iq', 'SlabIQ'], ['deal', 'Deals'], ['encan', tt('Encans', 'Auctions')], ['vente', tt('Ventes', 'Sales')], ['prix', tt('Prix', 'Prices')]];
+  const groupe = (k) => /^iq_/.test(k) ? 'iq' : k === 'trop_cher' ? 'encan' : k === 'acheteurs' ? 'vente' : k === 'joueur' || k === 'valeur' ? 'deal' : k;
   let filtre = 'tout';
   const heure = (le) => { const d = new Date(le); return isNaN(d) ? '' : d.toLocaleTimeString(LOC(), {hour:'2-digit', minute:'2-digit'}); };
   const jourDe = (le) => { const d = new Date(le), a = new Date(); a.setHours(0, 0, 0, 0); const h = new Date(a - 864e5);

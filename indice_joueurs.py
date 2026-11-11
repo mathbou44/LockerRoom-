@@ -248,6 +248,43 @@ EVENEMENTS = re.compile(r"hall of fame|temple|trophy|troph|award|record|hat[- ]t
                         r"all-star|player of the week|joueur de la semaine|star of the week", re.I)
 
 
+# 13 nov 2026 (Mathieu : « Price intronise au Temple, standing ovation au Centre Bell, sa plaque mise au Centre Bell :
+# automatiquement ses cartes se vendent plus ; on doit capter TOUS les evenements qui peuvent affecter la valeur d'un
+# joueur ») : chaque nouvelle est classee (type, sens, poids) et compte de moins en moins avec les jours (demi-vie ~3 jours).
+# Bonnes nouvelles : honneurs (Temple, chandail retire, plaque, statue, hommage, ovation), trophees, exploits, rappels.
+# Mauvaises : blessure, suspension, ballottage, retrogradation, arrestation. Des TITRES publics seulement (licence eBay : aucun prix).
+TYPES_EVENEMENTS = [
+    ("temple", +30, re.compile(r"hall of fame|temple de la renomm|inducted|induction|intronis", re.I)),
+    ("honneur", +25, re.compile(r"retir\w*\s.{0,30}(jersey|number|sweater|no\.)|jersey retire|retire[sd]? (his |the )?(number|jersey|no\.)|number retire|chandail retir|num[ée]ro retir|plaque|statue|"
+                                r"ring of honou?r|banner|tribute|hommage|honou?r(ed|s)?\b|standing ovation|ovation|c[ée]l[ée]br|soir[ée]e .*honneur|ceremon", re.I)),
+    ("trophee", +20, re.compile(r"\btroph|\baward|\bmvp\b|conn smythe|hart\b|calder|vezina|norris|art ross|rocket richard|stanley cup", re.I)),
+    ("exploit", +15, re.compile(r"hat[- ]trick|tour du chapeau|milestone|record|career[- ]high|\b(500|600|700|800|900|1000|1,000)(th|e)?\b|"
+                                r"player of the (week|month)|joueur de la semaine|star of the week|first (career )?(nhl )?goal|premier but|shutout|blanchissage", re.I)),
+    ("rappel", +12, re.compile(r"called up|recalled|rappel[ée]|promoted|debut|d[ée]but|first nhl|signs? entry|named captain|capitaine|all-star", re.I)),
+    ("contrat", +6, re.compile(r"extension|\bcontract\b|signs?\b|prolongation|contrat", re.I)),
+    ("echange", +3, re.compile(r"\btraded?\b|\bacquir|\bdealt\b|[ée]chang", re.I)),
+    ("blessure", -15, re.compile(r"injur|\bIR\b|day-to-day|surgery|concussion|upper[- ]body|lower[- ]body|bless[ée]|infirmerie|op[ée]r[ée]|commotion|out (indefinitely|for)", re.I)),
+    ("negatif", -18, re.compile(r"waive|waivers|sent down|demot|suspen|healthy scratch|ballottage|r[ée]trograd|arrest|charged|benched|slump", re.I)),
+]
+DEMI_VIE_J = 3.0
+
+
+def classer_evenement(titre):
+    """Le titre d'une nouvelle -> (type, poids) du plus fort evenement reconnu, ou (None, 0)."""
+    meil = (None, 0)
+    for t, poids, rx in TYPES_EVENEMENTS:
+        if rx.search(titre or "") and abs(poids) > abs(meil[1]):
+            meil = (t, poids)
+    return meil
+
+
+def _age_j(dt, aujourdhui=None):
+    try:
+        return max(0.0, ((aujourdhui or date.today()) - date.fromisoformat(str(dt)[:10])).days)
+    except (TypeError, ValueError):
+        return 3.0
+
+
 def actu(jours=7):
     """{nom normalise: {"n": mentions, "ev": evenements, "titres": [{titre, lien, date}]}} des nouvelles recentes."""
     try:
@@ -272,10 +309,19 @@ def _actu_par_joueur(noms, items):
         fam = p[-1]
         for t, x in textes:
             if k in t or (len(fam) >= 5 and re.search(r"\b" + re.escape(fam) + r"\b", t) and p[0][:1] and re.search(r"\b" + re.escape(p[0]) + r"\b", t)):
-                o = out.setdefault(nom, {"n": 0, "ev": 0, "titres": []})
+                o = out.setdefault(nom, {"n": 0, "ev": 0, "titres": [], "pos": 0.0, "neg": 0.0, "evs": []})
                 o["n"] += 1
                 if EVENEMENTS.search(x.get("titre") or ""):
                     o["ev"] += 1
+                ty, po = classer_evenement(x.get("titre") or "")
+                if ty:
+                    f = 0.5 ** (_age_j(x.get("date")) / DEMI_VIE_J)
+                    if po > 0:
+                        o["pos"] += po * f
+                    else:
+                        o["neg"] += -po * f
+                    if len(o["evs"]) < 4:
+                        o["evs"].append({"type": ty, "sens": 1 if po > 0 else -1, "titre": (x.get("titre") or "")[:160], "lien": x.get("lien"), "date": x.get("date")})
                 if len(o["titres"]) < 3:
                     o["titres"].append({"titre": (x.get("titre") or "")[:160], "lien": x.get("lien"), "date": x.get("date")})
     return out
@@ -291,7 +337,7 @@ def calculer(d=None, base=None, demande=None):
         demande = demande or demande_legale.demande
     stats_j = d.get("joueurs") or {}
     noms = set(base) | set(stats_j)
-    brut = {k: {} for k in ("forme", "ascension", "rythme", "buzz", "notoriete", "demande", "recrue", "legende", "actu")}
+    brut = {k: {} for k in ("forme", "ascension", "rythme", "buzz", "notoriete", "demande", "recrue", "legende", "actu", "pic")}
     nouvelles_j = _actu_par_joueur(noms, actu())
     info = {}
     for nom in noms:
@@ -316,6 +362,9 @@ def calculer(d=None, base=None, demande=None):
         if v60 >= 200:
             brut["buzz"][nom] = v20 / max(1.0, (v60 - v20) / 2)
             brut["notoriete"][nom] = math.log1p(v60)
+            v3 = w.get("v3")                              # 13 nov 2026 : le pic des 3 derniers jours (un evenement d'hier)
+            if v3 is not None:
+                brut["pic"][nom] = v3 / max(1.0, (v60 - v3) / 57.0 * 3)
         if demande:
             try:
                 s = demande(nom)
@@ -325,7 +374,7 @@ def calculer(d=None, base=None, demande=None):
                 brut["demande"][nom] = s
         brut["recrue"][nom] = 1.0 if actif and (h.get("saisons") or 9) <= 2 else 0.0
         na = nouvelles_j.get(nom)
-        brut["actu"][nom] = (na["n"] + 2 * na["ev"]) if na else 0.0
+        brut["actu"][nom] = (na["n"] + 2 * na["ev"] + 0.2 * na.get("pos", 0)) if na else 0.0
         brut["legende"][nom] = _legende_brute(h)
         try:
             cx = creux(h)
@@ -363,11 +412,35 @@ def calculer(d=None, base=None, demande=None):
             past.append("rebond" if i["creux"]["etat"] == "rebond" else "en_creux")
         if "en_feu" in past:
             val = min(100.0, val + BONUS_FEU)
+        # 13 nov 2026 : les evenements du moment. Une bonne nouvelle fraiche (honneur, Temple, trophee, exploit) monte le joueur
+        # tout de suite ; un pic de visites (3 jours) aussi. Un BON joueur avec une mauvaise nouvelle ou en creux : « Bonne
+        # occasion » pour les acheteurs (ses cartes baissent souvent pour un temps)
+        na = nouvelles_j.get(nom) or {}
+        pos, neg = na.get("pos", 0.0), na.get("neg", 0.0)
+        pic = brut["pic"].get(nom)
+        if pos >= 10:
+            val = min(100.0, val + min(14.0, 0.45 * pos))
+            if any(e["type"] in ("temple", "honneur", "trophee") and e["sens"] > 0 for e in na.get("evs") or []):
+                past.append("honneur")
+        if pic is not None and pic >= 3 and (w_ := (base.get(nom) or {}).get("wiki") or {}).get("v3", 0) >= 300:
+            val = min(100.0, val + min(8.0, 2.0 * pic))
+            if "buzz" not in past:
+                past.append("buzz")
+        bon = i["legende_vraie"] or (r.get("demande") or 0) >= 70 or (r.get("notoriete") or 0) >= 80 or (r.get("rythme") or 0) >= 75
+        if neg >= 8 and pos < neg:
+            past.append("mauvaise")
+        if bon and i["actif"] and ("en_creux" in past or (neg >= 8 and pos < neg)):
+            past.append("occasion")
         out[nom] = {"indice": round(val, 1), "criteres": {k: v for k, v in r.items() if v is not None}, "pastilles": past,
                     "actif": i["actif"], "equipe": i["equipe"], "semaine": i["forme"],
                     "dem": brut["demande"].get(nom)}           # la demande brute (le Score SlabCoach s'en sert sans recalculer)
         if nouvelles_j.get(nom):
             out[nom]["actu"] = nouvelles_j[nom]["titres"]
+            if nouvelles_j[nom].get("evs"):
+                out[nom]["evenements"] = nouvelles_j[nom]["evs"]
+                out[nom]["ev_pos"], out[nom]["ev_neg"] = round(pos, 1), round(neg, 1)
+        if pic is not None:
+            out[nom]["pic"] = round(pic, 2)
         if i.get("creux"):
             out[nom]["creux"] = i["creux"]
     return out

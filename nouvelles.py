@@ -53,9 +53,28 @@ def _gn(q, fr=False):
 SANS_IMAGES = True
 
 
+# 13 nov 2026 (Mathieu : « pas juste Wikipedia, tous les sites de nouvelles legit et legaux qu'on peut utiliser ») : les
+# flux RSS publics des EDITEURS eux-memes, en anglais et en francais (le marche du Quebec), toujours en TITRE + LIEN vers
+# l'article (aucun texte, aucune image). Exclus : Google News, ESPN et Yahoo (leurs conditions interdisent l'usage
+# commercial). LR_NOUVELLES_SOURCES (cles separees par des virgules) choisit les flux ; l'etat de chacun est garde
+# (cache["etat"]) : un flux en panne ou retire est simplement saute.
+SOURCES_HOCKEY = [
+    ("sportsnet", "Sportsnet", "https://www.sportsnet.ca/hockey/nhl/feed/"),
+    ("cbc", "CBC Sports", "https://www.cbc.ca/webfeed/rss/rss-sports-nhl"),
+    ("dailyfaceoff", "Daily Faceoff", "https://www.dailyfaceoff.com/feed"),
+    ("lapresse", "La Presse", "https://www.lapresse.ca/sports/hockey/rss"),
+    ("radiocanada", "Radio-Canada Sports", "https://ici.radio-canada.ca/rss/771"),
+    ("habseyes", "Habs Eyes on the Prize", "https://www.habseyesontheprize.com/rss/index.xml"),
+    ("thn", "The Hockey News", "https://thehockeynews.com/.rss/full/"),
+]
+
+
 def sources(sport):
     s = sport if sport in _ESPN else "hockey"
-    return [("Sportsnet", "https://www.sportsnet.ca/hockey/nhl/feed/", "ligue")] if s == "hockey" else []
+    if s != "hockey":
+        return []
+    voulues = {x.strip() for x in (os.environ.get("LR_NOUVELLES_SOURCES") or "").split(",") if x.strip()}
+    return [(nom, url, "ligue") for cle, nom, url in SOURCES_HOCKEY if not voulues or cle in voulues]
 
 
 _CLASSES = [

@@ -177,6 +177,12 @@ def decrire(n):
     if pre == "feu":
         s, _ = apres(r"")
         return {"sorte": "joueur", "sujet": re.sub(r"\s+est en feu$", "", s), "detail": tx or "En feu cette semaine"}
+    if pre in ("iqn", "iqm"):                       # 13 nov 2026 : SlabIQ, une nouvelle sur un joueur de tes cartes
+        s, _ = apres(r"(Bonne|Mauvaise) nouvelle pour\s*")
+        return {"sorte": "iq_bonne" if pre == "iqn" else "iq_mauvaise", "sujet": s, "detail": tx}
+    if pre == "iqo":
+        s, _ = apres(r"Bonne occasion\s*:\s*")
+        return {"sorte": "iq_occasion", "sujet": s, "detail": tx}
     if pre == "valeur":
         m = re.match(r"(.+?)\s+([+−-]\d+\s*%.*)$", t)
         return {"sorte": "valeur", "sujet": m.group(1) if m else t, "detail": (m.group(2) if m else tx) or "Sa valeur a changé"}
