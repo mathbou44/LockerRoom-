@@ -186,3 +186,10 @@ c.commit(); c.close()
 pd = api.programmees_dates()
 assert pd["ok"] and len(pd["dates"]) == 1, pd
 print("OK annonces deja programmees")
+
+# 18. 13 nov 2026 : les chiffres de SlabIQ (des comptes et un score, jamais un prix ; garde 10 min)
+lockerroom.Api._IQ_CHIFFRES.update(le=0.0, v=None)
+_r = lockerroom.Api.slabiq_chiffres(lockerroom.Api.__new__(lockerroom.Api))
+assert _r["ok"] and "prix" not in json.dumps(_r), _r
+assert lockerroom.Api.slabiq_chiffres(lockerroom.Api.__new__(lockerroom.Api)) is _r
+print("ok 18 slabiq_chiffres")

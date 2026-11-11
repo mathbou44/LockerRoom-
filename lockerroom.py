@@ -6681,6 +6681,44 @@ class Api:
         Api._TEND_IQ.update(le=m, v=r)
         return r
 
+    _IQ_CHIFFRES = {"le": 0.0, "v": None}
+
+    def slabiq_chiffres(self):
+        """13 nov 2026 (Mathieu : « plus punchy et vendeur ; mettre des stats et infos wow ») : les vrais chiffres de SlabIQ pour
+        sa fenetre : ventes apprises, precision mesuree sur des ventes jamais vues, date du dernier apprentissage, joueurs
+        suivis, joueurs en feu, et le joueur #1 du moment (son Indice 0-100). Des comptes et un score : jamais un prix.
+        Le meme pour tous ; garde 10 min."""
+        m = time.time()
+        if Api._IQ_CHIFFRES["v"] is not None and m - Api._IQ_CHIFFRES["le"] < 600:
+            return Api._IQ_CHIFFRES["v"]
+        r = {"ok": True}
+        try:
+            import score_appris
+            mt = score_appris.lire_meta() or {}
+            if mt.get("n"):
+                r["ventes"] = int(mt["n"])
+            mz = mt.get("mesure") or {}
+            if mz.get("precision"):
+                r["precision"] = round(float(mz["precision"]) * 100)
+            if mt.get("le"):
+                r["appris_le"] = str(mt["le"])[:10]
+        except Exception:
+            pass
+        try:
+            import indice_joueurs
+            d = indice_joueurs.lire() or {}
+            I = d.get("indice") or {}
+            r["joueurs"] = len(I)
+            r["en_feu"] = sum(1 for v in I.values() if v.get("actif") and "en_feu" in (v.get("pastilles") or []))
+            r["recrues"] = sum(1 for v in I.values() if v.get("actif") and "recrue" in (v.get("pastilles") or []))
+            t = indice_joueurs.top(1, "en_feu", actifs=True) or indice_joueurs.top(1, None, actifs=True)
+            if t and t[0]["nom"] in I and I[t[0]["nom"]].get("indice") is not None:
+                r["top"] = {"nom": t[0]["nom"], "indice": round(float(I[t[0]["nom"]]["indice"]))}
+        except Exception:
+            pass
+        Api._IQ_CHIFFRES.update(le=m, v=r)
+        return r
+
     _MOMENT = {"le": 0.0, "v": None}
 
     def joueurs_du_moment(self):

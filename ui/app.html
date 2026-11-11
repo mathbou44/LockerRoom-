@@ -739,8 +739,31 @@ html[lang=en] .w-ligne::after{content:'Remove'}
 .md-iq{display:flex; align-items:center; gap:10px; width:100%; margin:0 0 12px; padding:10px 12px; border-radius:16px; border:1px solid color-mix(in srgb, var(--acc) 40%, var(--ligne)); background:linear-gradient(90deg, color-mix(in srgb, var(--acc) 16%, var(--carte)), var(--carte)); color:var(--texte); font:inherit; text-align:left; cursor:pointer}
 .md-iq-l, .iqx-t b{font:700 20px var(--f-cond); letter-spacing:.02em} .md-iq-l i, .iqx-t b i{font-style:normal; color:var(--acc)}
 .md-iq-t{flex:1; font-size:13px; color:var(--doux); line-height:1.3} .md-iq-q{width:30px; height:30px; flex:none; border-radius:50%; display:grid; place-items:center; background:var(--acc); color:#0E1026; font:700 16px var(--f-cond)}
-.iqx{padding-top:30px; display:flex; flex-direction:column; gap:12px} .iqx-t{display:flex; flex-direction:column; gap:2px} .iqx-t b{font-size:34px; line-height:1} .iqx-t span{font-size:14px; color:var(--doux)}
-.iqx-g{margin:0} .iqx-p{font-size:14.5px !important; color:var(--texte) !important; line-height:1.45 !important}
+.iqx{padding-top:26px; display:flex; flex-direction:column; gap:14px}
+.iqx-h{display:flex; align-items:center; gap:16px}
+.iqx-cad{position:relative; width:104px; height:104px; flex:none; display:grid; place-items:center; align-content:center}
+.iqx-cad svg{position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg)}
+.iqx-fd{fill:none; stroke:var(--carte2); stroke-width:9}
+.iqx-arc{fill:none; stroke-width:9; stroke-linecap:round; transition:stroke-dashoffset 1.1s cubic-bezier(.22,1,.36,1); filter:drop-shadow(0 0 6px color-mix(in srgb, var(--acc) 55%, transparent))}
+.iqx-cad b{position:relative; font:700 38px/1 var(--f-cond); background:var(--holo); -webkit-background-clip:text; background-clip:text; color:transparent}
+.iqx-cad small{position:relative; font-size:11px; color:var(--pale); margin-top:2px}
+.iqx-t{display:flex; flex-direction:column; gap:6px; min-width:0} .iqx-t b{font-size:40px; line-height:.95} .iqx-t span{font-size:17px; font-weight:600; color:var(--texte); line-height:1.25}
+.iqx-f{display:flex; flex-direction:column; gap:8px}
+.iqx-fi{display:flex; align-items:center; gap:12px; padding:11px 14px 11px 11px; border-radius:18px; background:var(--carte); border:1px solid var(--ligne)}
+.iqx-fi > span:last-child{display:flex; flex-direction:column; gap:2px; min-width:0} .iqx-fi b{font-size:15.5px} .iqx-fi small{font-size:13px; color:var(--doux); line-height:1.35}
+.iqx-ic{width:40px; height:40px; flex:none; border-radius:50%; display:grid; place-items:center; color:var(--acc); background:var(--acc-fonce); border:1px solid color-mix(in srgb, var(--acc) 35%, transparent)} .iqx-ic svg{width:21px; height:21px}
+.iqx-ch{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.iqx-s{display:flex; flex-direction:column; gap:4px; padding:14px 16px; border-radius:22px; background:linear-gradient(160deg, color-mix(in srgb, var(--c, var(--acc)) 13%, var(--carte)), var(--carte) 70%); border:1px solid color-mix(in srgb, var(--c, var(--acc)) 28%, var(--ligne))}
+.iqx-s b{font:700 34px/1 var(--f-cond); color:var(--c, var(--acc)); font-variant-numeric:tabular-nums; letter-spacing:.01em} .iqx-s small{font-size:12.5px; color:var(--doux); line-height:1.3}
+.iqx-s.vert{--c:var(--vert)} .iqx-s.acc{--c:var(--acc)} .iqx-s.or{--c:var(--or)}
+.iqx-s.holo{--c:var(--acc)} .iqx-s.holo b{background:var(--holo); -webkit-background-clip:text; background-clip:text; color:transparent}
+.iqx-t small{font-size:13px; color:var(--doux); display:flex; align-items:center; gap:5px; flex-wrap:wrap} .iqx-t small b{color:var(--texte); font-size:13px}
+.iqx-feu{width:16px; height:16px; color:var(--or); display:inline-grid} .iqx-feu svg{width:16px; height:16px}
+.iqx-e{padding:2px 4px 0} .iqx-eb{position:relative; height:10px; border-radius:99px; background:linear-gradient(90deg, var(--carte2) 0%, var(--eteint) 40%, var(--acc) 65%, var(--vert) 82%, var(--vert) 100%)}
+.iqx-eb i{position:absolute; top:-3px; width:2px; height:16px; border-radius:2px; background:var(--texte); opacity:.7}
+.iqx-el{position:relative; height:18px; margin-top:6px; font-size:11.5px; color:var(--pale)} .iqx-el span{position:absolute; transform:translateX(-50%); white-space:nowrap}
+.iqx-el span:first-child{left:0; transform:none} .iqx-el span:last-child{right:0; transform:none} .iqx-el span:nth-child(2){color:var(--acc); transform:translateX(-100%) translateX(-6px)} .iqx-el .v{color:var(--vert); font-weight:600; transform:translateX(-30%)}
+.iqx-pied{text-align:center; font-size:13.5px; font-weight:600; color:var(--texte2); line-height:1.4; padding:2px 6px 4px} .iqx-pied span{font-size:11.5px; font-weight:400; color:var(--pale)}
 .an-iq{min-width:30px; height:22px; font-size:12.5px; margin-left:6px; vertical-align:middle} .an-feu{color:var(--rouge); vertical-align:middle} .an-feu .ic-h{width:15px; height:15px}
 .an-iqj{display:flex; flex-direction:column; gap:8px; padding:10px 12px; border-radius:14px; background:var(--carte2)} .an-iqr{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
 .an-iqr > span:nth-child(2){display:flex; flex-direction:column; flex:1; min-width:0} .an-iqr small{font-size:12px; color:var(--doux)}
@@ -3395,7 +3418,7 @@ html.tel-large .fen.fa .fen-img{max-height:calc(46vh / 1.12) !important}
 // des onglets du bas sont prechargees doucement (les memes appels que la derniere visite de chaque onglet).
 const LECTURES = new Set(['accueil', 'acheteur_accueil', 'activites', 'conseils', 'astuces', 'forfait', 'ebay_statut', 'taux_change',
   'reglages_lire', 'deals_liste', 'inventaire_liste', 'catalogue_liste', 'produits_liste', 'equipes', 'images_produits', 'images_joueurs',
-  'budget_etat', 'alertes_liste', 'joueurs_du_moment', 'doublons_a_finir', 'tendances_iq', 'mes_deals', 'inventaire_scores', 'breaks_liste', 'bilan', 'tendances', 'calendrier', 'collection', 'offres_liste', 'analyse_break',
+  'budget_etat', 'alertes_liste', 'joueurs_du_moment', 'slabiq_chiffres', 'doublons_a_finir', 'tendances_iq', 'mes_deals', 'inventaire_scores', 'breaks_liste', 'bilan', 'tendances', 'calendrier', 'collection', 'offres_liste', 'analyse_break',
   'admin_resume', 'admin_abonnes', 'admin_demandes', 'admin_catalogue', 'admin_sante', 'admin_entrainement', 'valeurs_statut', 'portraits_joueurs',
   'etoiles_lire', 'alarmes_lire', 'deals_profil_lire', 'sante_liste', 'pouls', 'guide_donnees', 'consignataires_liste', 'ebay_avis_statut', 'ebay_appels',
   'inventaire_tableaux', 'watch_liste', 'ventes_analyse']);
@@ -14450,17 +14473,51 @@ async function feuilleVerifier(id, titre, prix, encan){
 // score veut dire, en langage simple ; que des faits verifiables (jamais une promesse de profit)
 function expliquerSlabIQ(){
   // 12 nov 2026 (Mathieu : « une pop up window avec un point d'interrogation pour la fenetre qui explique SlabIQ ») : une
-  // petite fenetre au centre, en tuiles, facile a lire
-  const T = [
-    ['iq-0', tt('Ce qu’il mesure', 'What it measures'), tt('À quel point une carte est recherchée, de 0 à 100, comparée à toutes les cartes de hockey vendues.', 'How sought after a card is, 0 to 100, compared with every hockey card sold.'), true],
-    ['iq-1', '80+', tt('Très recherchée', 'Highly sought'), false, 'vert'],
-    ['iq-2', '65+', tt('Recherchée', 'Sought after'), false, 'acc'],
-    ['iq-3', tt('6 sources', '6 sources'), tt('La carte (set, parallèle, /numéro, auto, patch, note) · stats LNH · popularité · nouvelles · mémoire du marché · cartes semblables vendues.', 'The card (set, parallel, /number, auto, patch, grade) · NHL stats · buzz · news · market memory · similar cards sold.'), true],
-    ['iq-4', '9/10', tt('dans le bon ordre, sur des ventes jamais vues', 'in the right order, on sales it never saw'), false, 'vert'],
-    ['iq-5', tt('24 h', '24 h'), tt('mis à jour chaque jour ; réappris aux 3 jours', 'updated daily; retrained every 3 days'), false, 'acc'],
-    ['iq-6', tt('Ce qu’il ne fait pas', 'What it doesn’t do'), tt('Il ne regarde jamais le prix de l’annonce et ne dit pas quoi miser. Vérifie toujours le prix avant d’acheter.', 'It never looks at the listing’s price and doesn’t tell you what to bid. Always check the price before buying.'), true]];
-  ouvrirFeuille(`<div class="iqx"><div class="iqx-t"><b>Slab<i>IQ</i></b><span>${tt('Le moteur de score de SlabCoach', 'SlabCoach’s scoring engine')}</span></div>
-    <div class="jb iqx-g">${T.map(([k, a, b, l, c]) => `<div class="jb-t ${l ? 'l' : ''}">${l ? `<span class="jb-k">${a}</span>` : `<b class="jb-v ${c || ''}">${a}</b><small>${b}</small>`}${l ? `<small class="iqx-p">${b}</small>` : ''}</div>`).join('')}</div></div>`, {centre: true});
+  // petite fenetre au centre, facile a lire
+  // 13 nov 2026 (Mathieu : « devrait etre plus punchy et vendeur que ca ») : un cadran qui se remplit, une promesse en une
+  // ligne, 3 forces avec icones, 3 chiffres, l'echelle en couleur. Toujours vrai : un score de demande, jamais un prix.
+  const ic = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+  const F = [
+    [ic('<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/><path d="M8.5 11h5M11 8.5v5"/>'), tt('Il lit la carte comme un pro', 'Reads the card like a pro'), tt('Set, parallèle, /numéro, auto, patch, note : tout compte.', 'Set, parallel, /number, auto, patch, grade: it all counts.')],
+    [ic('<path d="M3 17l5-5 4 4 8-8"/><path d="M15 8h5v5"/>'), tt('Il suit le joueur en direct', 'Tracks the player live'), tt('Stats LNH, nouvelles, popularité : le score bouge avec lui.', 'NHL stats, news, buzz: the score moves with him.')],
+    [ic('<path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.6"/>'), tt('Il apprend du marché', 'Learns from the market'), tt('Des milliers de cartes vendues, réappris aux 3 jours.', 'Thousands of sold cards, retrained every 3 days.')]];
+  ouvrirFeuille(`<div class="iqx">
+    <div class="iqx-h">
+      <div class="iqx-cad"><svg viewBox="0 0 120 120"><defs><linearGradient id="iqx-gr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9FE6D2"/><stop offset=".4" stop-color="#B9BEFF"/><stop offset=".75" stop-color="#F2B3D6"/><stop offset="1" stop-color="#F1D58E"/></linearGradient></defs>
+        <circle cx="60" cy="60" r="50" class="iqx-fd"/><circle cx="60" cy="60" r="50" class="iqx-arc" stroke="url(#iqx-gr)"/></svg><b id="iqx-n">0</b><small id="iqx-qui">/100</small></div>
+      <div class="iqx-t"><b>Slab<i>IQ</i></b><span>${tt('Sache quelles cartes sont chaudes avant tout le monde.', 'Know which cards are hot before everyone else.')}</span><small id="iqx-top"></small></div>
+    </div>
+    <div class="iqx-ch" id="iqx-ch">${[0, 1, 2, 3].map(() => `<div class="iqx-s"><b>&nbsp;</b><small>&nbsp;</small></div>`).join('')}</div>
+    <div class="iqx-f">${F.map(([i, a, b]) => `<div class="iqx-fi"><span class="iqx-ic">${i}</span><span><b>${a}</b><small>${b}</small></span></div>`).join('')}</div>
+    <div class="iqx-e"><div class="iqx-eb"><i style="left:65%"></i><i style="left:80%"></i></div>
+      <div class="iqx-el"><span>0</span><span style="left:65%">65 · ${tt('recherchée', 'sought')}</span><span style="left:80%" class="v">80 · ${tt('feu', 'hot')}</span><span>100</span></div></div>
+    <div class="iqx-pied">${tt('Un score de demande, jamais un prix : tu restes le boss de ta mise.', 'A demand score, never a price: you stay the boss of your bid.')}<br><span id="iqx-note"></span></div>
+  </div>`, {centre: true});
+  const fe = $('#feuille'), arc = $('.iqx-arc', fe), C = 2 * Math.PI * 50;
+  // compte de 0 a v (les chiffres « montent » comme un compteur)
+  const compter = (el, v, fmt, ms) => { const t0 = performance.now(), pas = (t) => { const k = Math.min(1, (t - t0) / (ms || 1100)), e = 1 - Math.pow(1 - k, 3);
+    if (!el.isConnected) return; el.textContent = fmt(v * e); if (k < 1) requestAnimationFrame(pas); }; requestAnimationFrame(pas); };
+  const remplir = (v) => { if (!arc) return; arc.style.strokeDasharray = C; arc.style.strokeDashoffset = C;
+    requestAnimationFrame(() => requestAnimationFrame(() => { arc.style.strokeDashoffset = C * (1 - v / 100); })); compter($('#iqx-n'), v, Math.round); };
+  const k_ = (x) => x >= 1e6 ? (x / 1e6).toLocaleString(LOC(), {maximumFractionDigits: 1}) + ' M' : x >= 1e4 ? Math.round(x / 1e3) + ' k' : Math.round(x).toLocaleString(LOC());
+  API.slabiq_chiffres().catch(() => ({})).then(d => {
+    if (!fe.contains($('#iqx-ch'))) return;
+    d = d || {};
+    const T = d.top && d.top.indice != null ? d.top : null;
+    remplir(T ? T.indice : 87);
+    if (T) { $('#iqx-qui').textContent = '#1'; $('#iqx-top').innerHTML = `<span class="iqx-feu">${ic('<path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2.2 1-3.6 2-4.6.3 1.6 1 2.6 2 3 0-3 .5-5.6 1-8.4z"/>')}</span>${tt('N° 1 en ce moment', 'No. 1 right now')} : <b>${esc(T.nom)}</b>`; }
+    const jours = d.appris_le ? Math.max(0, Math.round((Date.now() - new Date(d.appris_le + 'T12:00:00').getTime()) / 864e5)) : null;
+    const S_ = [
+      d.ventes ? [d.ventes, k_, tt('ventes apprises', 'sales learned'), 'holo'] : ['6', null, tt('sources de données', 'data sources'), 'holo'],
+      d.precision ? [d.precision, (x) => Math.round(x) + ' %', tt('bien classées*', 'ranked right*'), 'vert'] : ['9/10', null, tt('bien classées*', 'ranked right*'), 'vert'],
+      d.joueurs ? [d.joueurs, k_, tt('joueurs suivis chaque jour', 'players tracked daily'), 'acc'] : ['24 h', null, tt('mis à jour chaque jour', 'updated daily'), 'acc'],
+      d.en_feu ? [d.en_feu, Math.round, tt('joueurs en feu cette semaine', 'players on fire this week'), 'or']
+        : jours != null ? [jours === 0 ? tt('Auj.', 'Today') : jours + ' j', null, tt('dernier réapprentissage', 'last retrained'), 'or'] : ['3 j', null, tt('réappris aux 3 jours', 'retrained every 3 days'), 'or']];
+    $('#iqx-ch').innerHTML = S_.map(([v, f, l, c]) => `<div class="iqx-s ${c}"><b>${f ? '0' : esc(String(v))}</b><small>${l}</small></div>`).join('');
+    $$('#iqx-ch .iqx-s').forEach((el, i) => { const [v, f] = S_[i]; if (f) compter(el.querySelector('b'), +v, f, 1300); });
+    $('#iqx-note').textContent = tt('* paires de cartes mises dans le bon ordre, sur des ventes qu’il n’avait jamais vues', '* card pairs put in the right order, on sales it had never seen')
+      + (jours != null ? ' · ' + (jours === 0 ? tt('réappris aujourd’hui', 'retrained today') : tt(`réappris il y a ${jours} j`, `retrained ${jours} d ago`)) : '');
+  });
 }
 // 11 nov 2026 (Mathieu : « quand l'app reconnait une carte deja achetee, lui proposer un prix de vente qui fait un bon
 // profit ») : ton cout (achat eBay relie, reconnu ou tape) -> le prix pour +30 % de profit net (frais eBay et envoi deduits).
