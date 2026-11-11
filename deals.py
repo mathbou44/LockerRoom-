@@ -2170,6 +2170,26 @@ def groupes_chasse():
     return groupes_vendeurs(vendeurs_suivis()) + [pv[k:k + VENDEURS_PAR_APPEL] for k in range(0, len(pv), VENDEURS_PAR_APPEL)]
 
 
+# 11 nov 2026 (Mathieu : « comme on a discute mille et une fois : l'app passe d'abord au travers de TOUTES les annonces de
+# Savage, Remi et CF31 ; ensuite tout le reste, les petits vendeurs ; a la fin, Slab Sharks, Probstein, puis DC Sports ») :
+# les trois phases du tour de chasse
+VENDEURS_FIN = ["slabsharksinc"]          # avec les maisons a volume (VENDEURS_DERNIER), dans cet ordre, a la toute fin
+
+
+def phases_chasse():
+    """-> (debut, milieu, fin) : listes de groupes de vendeurs. Debut : Savage, Remi, CF31 (chacun seul). Fin : Slab Sharks,
+    Probstein, DC Sports (chacun seul). Milieu : les autres vendeurs suivis et ceux ajoutes par les comptes (groupes de 5)."""
+    vs, pv = vendeurs_suivis(), vendeurs_perso()
+    der = vendeurs_dernier()
+    ordre_fin = VENDEURS_FIN + [x for x in VENDEURS_DERNIER if x in der] + sorted(x for x in der if x not in VENDEURS_DERNIER)
+    tous = vs + [v for v in pv if v.lower() not in {x.lower() for x in vs}]
+    debut = [[v] for p in VENDEURS_LONGS for v in tous if v.lower() == p]
+    fin = [[v] for p in ordre_fin for v in tous if v.lower() == p]
+    pris = {g[0].lower() for g in debut + fin}
+    autres = [v for v in tous if v.lower() not in pris]
+    return debut, [autres[k:k + VENDEURS_PAR_APPEL] for k in range(0, len(autres), VENDEURS_PAR_APPEL)], fin
+
+
 def regler_vendeurs(liste):
     l = []
     for x in liste or []:
@@ -2289,41 +2309,48 @@ def flux(rechercher=None, bassin=None):
     # 29 oct : les vendeurs suivis d'abord (leurs encans et leurs nouvelles annonces), par groupes de 10 vendeurs par appel
     vs = vendeurs_suivis()
     limite_suivi = (maint + timedelta(hours=ENCAN_SUIVI_H)).isoformat().replace("+00:00", "Z")
-    grps = groupes_chasse()
+    g_debut, g_milieu, g_fin = phases_chasse()
+    grps = g_debut + g_milieu + g_fin
+    fin_noms = {g[0].lower() for g in g_fin}
     titres_vus = []                                   # 31 oct 2026 : pour apprendre les produits et inserts (produits_appris)
-    for i_g, grp in enumerate(grps):
-        _progres(detail=f"vendeurs:{i_g + 1}/{len(grps)}")
-        rv = {"q": None, "flux": "vendeurs", "sport": None, "joueur": None, "suivi": True}
-        # 30 oct 2026 : prix fixe : les 600 plus recentes (3 pages) ; un gros vendeur en met des centaines par jour
-        # 31 oct 2026 : le groupe des gros vendeurs : leurs encans seulement (leurs prix fixes passent par les recherches normales)
-        fixe_fini = all(rang_vendeur(v) < len(VENDEURS_PRIORITE) for v in grp)
-        for ench, page in [(False, k) for k in range(PAGES_FIXE_SUIVIS)] + [(True, j) for j in range(max(pages, PAGES_SUIVIS))]:
-            if not ench and fixe_fini:
-                continue
-            try:
-                l = rechercher("", categorie="261328", limite=200, fond=True, encheres=ench, recentes=not ench, flux=True, offset=200 * page, vendeurs=grp)
-            except (RuntimeError, OSError, TypeError):
-                st["erreurs_ebay"] = st.get("erreurs_ebay", 0) + 1
-                st["vendeurs_erreurs"] = st.get("vendeurs_erreurs", 0) + 1
-                break
-            st["requetes_flux"] = st.get("requetes_flux", 0) + 1
-            st["vendeurs_annonces"] = st.get("vendeurs_annonces", 0) + len(l)
-            l = [a for a in l if cartes_match.est_carte(a.get("titre") or "")]
-            titres_vus.extend(a.get("titre") or "" for a in l)
-            for a in l:
-                st.pop("_res", None)
-                _juger(a, rv, [], [] if ench else l, maint, deals, st, bassin=bassin, verif=verif)
-                if _prio(a) and a.get("encan") and st.get("_res"):
-                    cov = st.setdefault("_prio_cov", {})
-                    cov[str(a.get("item_id"))] = cov.get(str(a.get("item_id"))) or st["_res"][0] != "sans_ventes"
-                    st.setdefault("_prio_v", {})[str(a.get("item_id"))] = a.get("vendeur")
-                k_s = "suivi_" + (_noter_suivi(st, a, bassin, maint) or "ok")
-                st[k_s] = st.get(k_s, 0) + 1
-            _publier(d, deals, maint, st)
-            if not ench and len(l) < 150:
-                fixe_fini = True                       # plus d'autres annonces a prix fixe : on passe aux encans
-            if ench and (len(l) < 150 or not l or str(l[-1].get("fin") or "9") > limite_suivi):
-                break
+
+    def scanner(groupes, i0):
+      for i_g, grp in enumerate(groupes, start=i0):
+          _progres(detail=f"vendeurs:{i_g + 1}/{len(grps)}")
+          rv = {"q": None, "flux": "vendeurs", "sport": None, "joueur": None, "suivi": True}
+          # 30 oct 2026 : prix fixe : les 600 plus recentes (3 pages) ; un gros vendeur en met des centaines par jour
+          # 31 oct 2026 : le groupe des gros vendeurs : leurs encans seulement (leurs prix fixes passent par les recherches normales)
+          # 11 nov 2026 (« TOUTES les annonces de Savage, Remi et CF31 ») : leurs prix fixes aussi ; seuls les gros de la
+          # fin (Slab Sharks, Probstein, DC Sports) : leurs encans seulement
+          fixe_fini = all(v.lower() in fin_noms for v in grp)
+          for ench, page in [(False, k) for k in range(PAGES_FIXE_SUIVIS)] + [(True, j) for j in range(max(pages, PAGES_SUIVIS))]:
+              if not ench and fixe_fini:
+                  continue
+              try:
+                  l = rechercher("", categorie="261328", limite=200, fond=True, encheres=ench, recentes=not ench, flux=True, offset=200 * page, vendeurs=grp)
+              except (RuntimeError, OSError, TypeError):
+                  st["erreurs_ebay"] = st.get("erreurs_ebay", 0) + 1
+                  st["vendeurs_erreurs"] = st.get("vendeurs_erreurs", 0) + 1
+                  break
+              st["requetes_flux"] = st.get("requetes_flux", 0) + 1
+              st["vendeurs_annonces"] = st.get("vendeurs_annonces", 0) + len(l)
+              l = [a for a in l if cartes_match.est_carte(a.get("titre") or "")]
+              titres_vus.extend(a.get("titre") or "" for a in l)
+              for a in l:
+                  st.pop("_res", None)
+                  _juger(a, rv, [], [] if ench else l, maint, deals, st, bassin=bassin, verif=verif)
+                  if _prio(a) and a.get("encan") and st.get("_res"):
+                      cov = st.setdefault("_prio_cov", {})
+                      cov[str(a.get("item_id"))] = cov.get(str(a.get("item_id"))) or st["_res"][0] != "sans_ventes"
+                      st.setdefault("_prio_v", {})[str(a.get("item_id"))] = a.get("vendeur")
+                  k_s = "suivi_" + (_noter_suivi(st, a, bassin, maint) or "ok")
+                  st[k_s] = st.get(k_s, 0) + 1
+              _publier(d, deals, maint, st)
+              if not ench and len(l) < 150:
+                  fixe_fini = True                       # plus d'autres annonces a prix fixe : on passe aux encans
+              if ench and (len(l) < 150 or not l or str(l[-1].get("fin") or "9") > limite_suivi):
+                  break
+    scanner(g_debut, 0)                                 # 1. Savage, Remi, CF31 : TOUTES leurs annonces
     # 31 oct 2026 (Mathieu : « toutes les cartes des gros vendeurs favoris TOUTES analysees avant de passer au reste ») :
     # les cartes de Savage, Remi, CF31 et Slab Sharks sans valeur sont verifiees ICI, avant les flux de hits et de recrues
     # (qui depensent le budget du chasseur) ; la reserve d'abord, puis le budget du chasseur
@@ -2340,6 +2367,7 @@ def flux(rechercher=None, bassin=None):
         st["_balayage_le"] = maint.isoformat(timespec="seconds")
     except Exception as e:
         print("Balayage des petits vendeurs : " + repr(e), flush=True)
+    scanner(g_milieu, len(g_debut))                     # 2. le reste : les autres vendeurs suivis (puis les flux)
     # 28 oct 2026 (Mathieu : « les maudits deals sont encore juste des Young Guns ») : les flux larges de recrues (Young
     # Guns, rookies) un tour sur deux seulement ; les appels eBay economises vont aux hits (2 fois plus de flux de hits)
     tour_n = int(d.get("tour_n") or 0)
@@ -2363,6 +2391,7 @@ def flux(rechercher=None, bassin=None):
             _publier(d, deals, maint, st)
             if ench and (len(l) < 150 or not l or str(l[-1].get("fin") or "9") > limite_fin):
                 break                                   # derniere page, ou on depasse 48 h
+    scanner(g_fin, len(g_debut) + len(g_milieu))        # 3. a la fin : Slab Sharks, Probstein, DC Sports
     _verifier_tard(st, deals, maint, bassin, verif, d)
     try:
         import produits_appris

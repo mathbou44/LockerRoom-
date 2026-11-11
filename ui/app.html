@@ -797,6 +797,24 @@ html[lang=en] .w-ligne::after{content:'Remove'}
 .iqx-cad small{position:relative; font-size:11px; color:var(--pale); margin-top:2px}
 .iqx-t{display:flex; flex-direction:column; gap:6px; min-width:0} .iqx-t b{font-size:40px; line-height:.95} .iqx-t span{font-size:17px; font-weight:600; color:var(--texte); line-height:1.25}
 .iqx-f{display:flex; flex-direction:column; gap:8px}
+.iqs-tete{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+.iqs-n{display:flex; flex-direction:column; align-items:center; gap:2px; padding:12px 6px; border-radius:18px; background:linear-gradient(160deg, color-mix(in srgb, var(--acc) 18%, var(--carte)), var(--carte)); border:1px solid var(--ligne)}
+.iqs-n b{font:700 26px/1 var(--f-cond); background:var(--holo); -webkit-background-clip:text; background-clip:text; color:transparent}
+.iqs-n span{font-size:11.5px; color:var(--doux); text-align:center}
+.iqs-p{margin:0; font-size:14px; line-height:1.45; color:var(--doux)}
+.iqs-g{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.iqs-t{position:relative; display:flex; flex-direction:column; gap:5px; padding:13px 13px 12px; border-radius:20px; overflow:hidden;
+  background:radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 20%, transparent), transparent 60%), var(--carte); border:1px solid color-mix(in srgb, var(--c) 35%, var(--ligne))}
+.iqs-ic{width:34px; height:34px; border-radius:12px; display:grid; place-items:center; background:color-mix(in srgb, var(--c) 22%, transparent); color:var(--c)}
+.iqs-ic svg{width:19px; height:19px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+.iqs-t b{font:700 15px/1.1 var(--f-cond); letter-spacing:.06em; text-transform:uppercase; color:var(--c)}
+.iqs-t small{font-size:12.5px; line-height:1.35; color:var(--doux); flex:1}
+.iqs-b{height:5px; border-radius:99px; background:var(--carte2); overflow:hidden; margin-top:2px} .iqs-b i{display:block; height:100%; border-radius:inherit; background:var(--c); box-shadow:0 0 8px var(--c)}
+.iqs-t em{position:absolute; top:13px; right:13px; font:700 12px/1 var(--f-cond); font-style:normal; color:var(--c); letter-spacing:.04em}
+.iqs-t:last-child:nth-child(odd){grid-column:1/-1}
+.iqs-pt{padding:14px; border-radius:20px; background:var(--carte); border:1px solid var(--ligne); display:flex; flex-direction:column; gap:10px}
+.iqs-pl{display:grid; grid-template-columns:1fr 1fr; gap:8px 10px} .iqs-pi{display:flex; flex-direction:column; align-items:flex-start; gap:3px} .iqs-pi small{font-size:11.5px; color:var(--doux)}
+.iqs-f{font-size:12px; text-align:center}
 .iqx-fi{display:flex; align-items:center; gap:12px; padding:11px 14px 11px 11px; border-radius:18px; background:var(--carte); border:1px solid var(--ligne)}
 .iqx-fi > span:last-child{display:flex; flex-direction:column; gap:2px; min-width:0} .iqx-fi b{font-size:15.5px} .iqx-fi small{font-size:13px; color:var(--doux); line-height:1.35}
 .iqx-ic{width:40px; height:40px; flex:none; border-radius:50%; display:grid; place-items:center; color:var(--acc); background:var(--acc-fonce); border:1px solid color-mix(in srgb, var(--acc) 35%, transparent)} .iqx-ic svg{width:21px; height:21px}
@@ -1165,6 +1183,21 @@ body.fen-ouverte .fond-feuille{z-index:95}  /* 11 nov 2026 : les petites fenetre
 .horloge .h small{font-size:24px; color:var(--acc); -webkit-text-fill-color:var(--acc); opacity:.8; margin-left:2px}
 .horloge .d{color:var(--doux); font-size:15px; text-transform:capitalize; margin-top:4px}
 .acc-tuiles{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px}
+/* 11 nov 2026 : l'accueil en sections nettes : un titre court, sa couleur, de l'air entre les blocs */
+.acc-sec{grid-column:1/-1; display:flex; align-items:center; gap:10px; margin:24px 0 8px; min-width:0} .acc-sec + .acc-ticker{margin-top:-6px}
+.acc-sec > span{display:flex; align-items:center; gap:8px; font:700 13px/1 var(--f-cond); letter-spacing:.18em; text-transform:uppercase; color:var(--c); white-space:nowrap}
+.acc-sec > span::before{content:''; width:8px; height:8px; border-radius:50%; background:var(--c); box-shadow:0 0 10px var(--c)}
+.acc-sec::after{content:''; flex:1; height:1px; background:linear-gradient(90deg, color-mix(in srgb, var(--c) 45%, transparent), transparent); order:1}
+.acc-sec > a{order:2; font:700 12.5px/1 var(--f-cond); letter-spacing:.1em; text-transform:uppercase; color:var(--c); padding:6px 11px; border-radius:99px; border:1px solid color-mix(in srgb, var(--c) 40%, transparent)}
+.acc-sec:has(+ .histoires:empty), .acc-sec:has(+ [hidden]), .acc-sec:has(+ .acc-pils:empty){display:none}
+.t-acc.k-profit{--c:var(--vert)} .t-acc.k-radar{--c:var(--acc)} .t-acc.k-stock{--c:#E8C26A}
+.ecran.acc .acc-tuiles .t-acc{background:radial-gradient(120% 80% at 0% 0%, color-mix(in srgb, var(--c) 16%, transparent), transparent 65%), var(--carte);
+  border:1px solid color-mix(in srgb, var(--c) 30%, var(--ligne)); box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.ecran.acc .acc-tuiles .t-acc > .l:first-child{display:flex !important; align-items:center; gap:6px; color:var(--c) !important; background:linear-gradient(180deg, color-mix(in srgb, var(--c) 16%, transparent), color-mix(in srgb, var(--c) 4%, transparent)) !important}
+.ecran.acc .acc-tuiles .t-acc > .l:first-child::after{background:linear-gradient(90deg, var(--c), transparent)}
+@media (min-width:700px){ .acc-tete .acc-sec{display:none} }
+.t-ic{width:15px; height:15px; flex:none; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round}
+.ecran.acc .acc-tuiles .t-acc b:not(.vert):not(.rouge){color:var(--texte)}
 .t-acc{display:flex; flex-direction:column; gap:2px; background:var(--carte); border-radius:20px; padding:14px 16px; color:var(--texte); min-width:0; transition:transform .15s}
 .t-acc:active{transform:scale(.98)}
 .t-acc .l{font-size:14px; color:var(--doux); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
@@ -1341,6 +1374,7 @@ details.r-plie summary .r-note{flex:1; text-align:right; white-space:nowrap; ove
 
 /* 24 oct 2026 - ecrans larges (ordi) et tuiles avec grande image : « maximiser l'ecran, toujours des images » */
 .ecran.large{max-width:1280px}
+#i-liste{transition:opacity .15s} #i-liste.i-charge{opacity:.45; pointer-events:none}
 .grille-c{display:grid; grid-template-columns:repeat(auto-fill,minmax(min(160px, 100%),1fr)); gap:12px} .grille-c > *{min-width:0}
 @media (min-width:900px){ .grille-c{grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:16px} }
 .tuile-c{position:relative; background:var(--carte); border:1px solid var(--ligne); border-radius:18px; overflow:hidden; display:flex; flex-direction:column;
@@ -2397,6 +2431,7 @@ body.pro .onglets a.on{color:var(--acc)}
 .cadrage img{display:block; max-width:100%; max-height:58vh; border-radius:var(--r-ctl)}
 .cadrage svg{position:absolute; inset:0; width:100%; height:100%; pointer-events:none}
 .cadrage polygon{fill:rgba(185,190,255,.14); stroke:var(--acc); stroke-width:4; vector-effect:non-scaling-stroke}
+.cd-p::before{content:''; position:absolute; inset:-12px; border-radius:50%}
 .cd-p{position:absolute; width:30px; height:30px; margin:-15px 0 0 -15px; border-radius:50%; background:var(--acc); border:3px solid #fff; box-shadow:0 2px 10px rgba(0,0,0,.5); touch-action:none; cursor:grab}
 
 .auto-prix{display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:12px 14px; border-radius:var(--r-slab); border:1px solid var(--ligne); background:var(--carte); color:var(--texte)}
@@ -3509,14 +3544,16 @@ const LECTURES = new Set(['accueil', 'acheteur_accueil', 'activites', 'conseils'
   'admin_resume', 'admin_abonnes', 'admin_demandes', 'admin_catalogue', 'admin_sante', 'admin_entrainement', 'valeurs_statut', 'portraits_joueurs',
   'etoiles_lire', 'alarmes_lire', 'deals_profil_lire', 'sante_liste', 'pouls', 'guide_donnees', 'consignataires_liste', 'ebay_avis_statut', 'ebay_appels',
   'inventaire_tableaux', 'watch_liste', 'ventes_analyse']);
-const SANS_EFFET = new Set(['deals_etat', 'accueil_live', 'annonce_detail', 'carte_comps', 'valeur_carte', 'joueur_fiche', 'checklist',
+// 11 nov 2026 (« ca lag quand je switch ») : carte_valeur (l'estimation en fond des cartes sans valeur) vidait la memoire a
+// chaque fois : chaque changement de vue de l'inventaire rechargeait tout du serveur
+const SANS_EFFET = new Set(['carte_valeur', 'activite_page', 'deals_etat', 'accueil_live', 'annonce_detail', 'carte_comps', 'valeur_carte', 'joueur_fiche', 'checklist',
   'catalogue_checklist', 'break_detail', 'photo_statut', 'demandes_reponses', 'demandes_mes', 'ebay_environnement', 'logo_lire', 'prix_auto_lire',
   // 28 oct 2026 (vitesse) : ces appels ne changent rien a ce que les ecrans affichent : ils ne vident plus la memoire
   'push_enregistrer', 'calculer_prix', 'calculer_catalogue', 'carte_lire', 'rachat_calculer', 'clients_liste', 'break_ventes_joueur',
   'apple_achat_info', 'bilan_csv', 'break_envois', 'psa_cert', 'ebay_jeton_lier', 'deals_etat',
   'deals_tour', 'ebay_politiques', 'achats_suggerer', 'carte_gradations', 'deals_pourquoi']);        // 4 nov 2026 : des lectures qui vidaient la memoire
 // une lecture selon ses arguments : valeur_suivi(cid) lit, valeur_suivi(cid, oui) regle ; carte_etat(cid) lit le dernier examen
-const sansEffet = (nom, a) => SANS_EFFET.has(nom) || (nom === 'valeur_suivi' && a.length < 2) || (nom === 'carte_etat' && a[1] === null);
+const sansEffet = (nom, a) => SANS_EFFET.has(nom) || (nom === 'achats_liste' && !a[0]) || (nom === 'valeur_suivi' && a.length < 2) || (nom === 'carte_etat' && a[1] === null);
 // 4 nov 2026 (revue) : la virgule decimale seulement en francais (« PSA 8.5 » en anglais)
 const decFr = (v) => typeof LANGUE !== 'undefined' && LANGUE === 'en' ? String(v) : String(v).replace('.', ',');
 const MEMO = new Map(), MEMO_MAX_MS = 10 * 60 * 1000;
@@ -3901,7 +3938,9 @@ function feuilleBloc(el, avant, apres){
 // 26 oct 2026 - feuilles comme sur iPhone : on les glisse vers le bas pour les fermer
 (() => {
   let y0 = null, dy = 0;
-  document.addEventListener('touchstart', (e) => { const f = e.target.closest('#feuille'); if (!f || f.scrollTop > 0) { y0 = null; return; } y0 = e.touches[0].clientY; dy = 0; }, {passive:true});
+  // 11 nov 2026 (Mathieu : « quand je deplace le dot mauve, ca ferme la fenetre ») : le cadrage, les curseurs et le zoom ne
+  // tirent jamais la feuille
+  document.addEventListener('touchstart', (e) => { const f = e.target.closest('#feuille'); if (!f || f.scrollTop > 0 || e.target.closest('.cadrage, .cd-p, input[type=range], .pas-glisse')) { y0 = null; return; } y0 = e.touches[0].clientY; dy = 0; }, {passive:true});
   document.addEventListener('touchmove', (e) => { if (y0 === null) return; dy = Math.max(0, e.touches[0].clientY - y0); const f = $('#feuille'); if (f && dy > 0) { f.style.transition = 'none'; f.style.transform = `translateY(${dy}px)`; } }, {passive:true});
   document.addEventListener('touchend', () => { if (y0 === null) return; const f = $('#feuille'); y0 = null; if (!f) return;
     f.style.transition = 'transform .2s ease'; if (dy > 110) { f.style.transform = 'translateY(100%)'; setTimeout(fermerFeuille, 180); } else f.style.transform = ''; });
@@ -5314,7 +5353,7 @@ function coinsLocaux(img){
 // 2 nov 2026 (Mathieu : « rapetisser ou cropper la portion de la photo sans carte » ; slabs) : le contour de la carte d'une
 // photo (garde dans le telephone, une detection par photo) et la photo recadree sur la carte (debout : une carte couchee
 // est tournee d'un quart de tour, comme dans un slab PSA)
-const _QC = new Map(), _CROP = new Map();
+const _QC = new Map(), _CROP = new Map(), _CROP_OK = new Map();   // 11 nov 2026 : les cadrages deja faits, servis sans attendre
 function contourPhoto(url){
   if (_QC.has(url)) return _QC.get(url);
   let k = null; try { const v = localStorage.getItem('lr_q_' + url); if (v) k = JSON.parse(v); } catch (e) {}
@@ -5338,13 +5377,17 @@ function photoCadree(url, o){
     x0 = Math.max(0, x0 - m); y0 = Math.max(0, y0 - m); x1 = Math.min(W, x1 + m); y1 = Math.min(H, y1 + m);
     if ((x1 - x0) * (y1 - y0) > 0.93 * W * H) return null;                     // deja cadree : rien a gagner
     const tourner = debout && (x1 - x0) > (y1 - y0) * 1.1;
-    const k = Math.min(1, 1400 / Math.max(x1 - x0, y1 - y0)), w = Math.round((x1 - x0) * k), h = Math.round((y1 - y0) * k);
+    // 11 nov 2026 (« ca lag quand je switch ») : une tuile fait ~170 px ; 760 px suffisent (avant 1400 : lourd a decoder)
+    const k = Math.min(1, 760 / Math.max(x1 - x0, y1 - y0)), w = Math.round((x1 - x0) * k), h = Math.round((y1 - y0) * k);
     const cv = document.createElement('canvas'); cv.width = tourner ? h : w; cv.height = tourner ? w : h;
     const g = cv.getContext('2d');
     if (tourner) { g.translate(h, 0); g.rotate(Math.PI / 2); }
     g.drawImage(im, x0, y0, x1 - x0, y1 - y0, 0, 0, w, h);
-    return {src: cv.toDataURL('image/jpeg', 0.9), ratio: cv.width / cv.height, tourne: tourner};
+    const out = {src: cv.toDataURL('image/jpeg', 0.86), ratio: cv.width / cv.height, tourne: tourner};
+    cv.width = cv.height = 0;
+    return out;
   })().catch(() => null);
+  p.then(r => _CROP_OK.set(cle, r));
   _CROP.set(cle, p); return p;
 }
 // 7 nov 2026 (Mathieu : « encore un mauvais crop et mauvaise qualite de photo ; on devrait pouvoir cliquer sur la photo,
@@ -5428,7 +5471,14 @@ function zoomPhoto(premier, plein){
 }
 // les slabs de la collection : une photo a la fois, quand le telephone a le temps
 function cadrerSlabs(z){
-  const l = [...z.querySelectorAll('.slab .sl-puits img')];
+  // 11 nov 2026 (« ca lag quand je switch de A finir / Tout a Collection ») : les photos deja cadrees sont posees tout de
+  // suite (avant : chaque retour sur Collection recadrait toutes les cartes, une apres l'autre, et les images sautaient)
+  const l = [...z.querySelectorAll('.slab .sl-puits img')].filter(im => {
+    const k = im.getAttribute('src') + '|0.05|true';
+    if (!_CROP_OK.has(k)) return true;
+    const r = _CROP_OK.get(k); im.dataset.cad = '1';
+    if (r) { im.src = r.src; im.classList.add('cadree'); }
+    return false; });
   const suivant = async () => {
     const im = l.shift(); if (!im) return;
     if (im.isConnected && !im.dataset.cad) { im.dataset.cad = '1';
@@ -5796,6 +5846,9 @@ function feuilleCadrage(j){
   const src = (V2.originales && V2.originales[j]) || V2.photos[j];
   if (!src || !/^(data:|\/mes-photos\/)/.test(src)) { toast(tt('Cette photo vient d’eBay : reprends-la pour la recadrer', 'This photo comes from eBay: retake it to crop it')); return; }
   let q = ((V2.studio && V2.studio[j] && V2.studio[j].coins) || [[120, 80], [880, 80], [880, 920], [120, 920]]).map(p => p.slice());
+  // 11 nov 2026 : sans cadrage connu, les points partent des coins trouves dans la photo (pas d'un carre au hasard)
+  if (!(V2.studio && V2.studio[j] && V2.studio[j].coins)) chargerImage(src).then(im => { const c = coinsLocauxSurs(im);
+    if (c && $('#cd-z')) { q = c.map(p => [Math.round(p[0]), Math.round(p[1])]); dessiner(); } }).catch(() => {});
   ouvrirFeuille(`<h3>${tt('Ajuster le cadrage', 'Adjust the crop')}</h3>
     <div class="sous" style="margin-bottom:10px">${tt('Glisse les 4 points sur les coins de la carte (ou de son étui).', 'Drag the 4 dots onto the corners of the card (or its holder).')}</div>
     <div class="cadrage" id="cd-z"><img src="${esc(src)}" alt="" id="cd-img"><svg id="cd-svg" viewBox="0 0 1000 1000" preserveAspectRatio="none"><polygon id="cd-poly"/></svg>
@@ -6633,7 +6686,16 @@ function brancherVente2(){
     V2.hebergees = null; re();
     toast(tt('Photo retirée', 'Photo removed'), 2000);
   });
-  const ph = $('#v2-ph'); if (ph) ph.onchange = async (e) => { for (const f of [...(e.target.files || [])].slice(0, 12 - V2.photos.length)) { try { const x = await reduirePhoto(f, V2.photos.length >= 4 ? 2400 : 4032); V2.photos.push(x); if (V2.originales) V2.originales.push(x); } catch (x) {} } V2.hebergees = null; re(); };
+  // 11 nov 2026 (Mathieu : « quand on met une nouvelle photo, elle doit etre recadree automatiquement ») : la carte est
+  // trouvee dans le telephone et redressee comme les autres (l'originale reste gardee pour recadrer a la main)
+  const ph = $('#v2-ph'); if (ph) ph.onchange = async (e) => { toast(tt('Ajout de la photo…', 'Adding photo…'), 1500);
+    for (const f of [...(e.target.files || [])].slice(0, 12 - V2.photos.length)) { try { const x = await reduirePhoto(f, V2.photos.length >= 4 ? 2400 : 4032);
+      if (!V2.originales) { V2.originales = V2.photos.slice(); V2.studio = []; }
+      V2.studio = V2.studio || []; while (V2.studio.length < V2.originales.length) V2.studio.push(undefined);
+      V2.originales.push(x); const k = V2.originales.length - 1;
+      if (MODE_STUDIO) { try { const q = coinsLocauxSurs(await chargerImage(x)); if (q) V2.studio[k] = await photoStudio(x, q, {affiner: false}); } catch (e2) {} }
+      syncPhotos(); } catch (x) {} }
+    V2.hebergees = null; re(); };
   const garderSaisie = () => { V2.champs = lireChampsVente(); V2.titre = $('#v2-titre').value; V2.description = $('#v2-desc').value; V2.cout = val('v2-cout'); };
   brancherFlou('v2-fl', () => { garderSaisie(); syncPhotos(); rendreVente2(); }, () => { garderSaisie(); rendreVente2(); });
   const pp = $('.vs-photo .photo-princ'); if (pp && (V2.photos || []).length) { pp.style.cursor = 'zoom-in'; pp.onclick = () => { V2.champs = lireChampsVente(); V2.titre = $('#v2-titre').value; V2.description = $('#v2-desc').value; V2.cout = val('v2-cout'); feuillePhotosVente(rendreVente2, true); }; }
@@ -9736,14 +9798,35 @@ async function vueTendancesIQ(arg){
   };
   peindre();
 }
+// 11 nov 2026 (Mathieu : « ajouter une pastille pour etre complet, et un peu de vie et de couleur ; ca fait modele de base,
+// nous on est le full equipe de feu ») : chaque signal a son icone, sa couleur et son poids reel dans l'indice ; un 10e :
+// les evenements (intronisation, ovation, echange, blessure) ; les pastilles en vraies pastilles
+const SIG_IQ = () => [
+  ['forme', tt('ses points des derniers matchs', 'his points in recent games'), 38, '#FF6B5B', '<path d="M12 3c1 3 4 4.5 4 8.5a4 4 0 0 1-8 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 0-7.5z"/>'],
+  ['ascension', tt('sa progression vs ses saisons d’avant', 'his rise vs past seasons'), 11, '#5FD38D', '<path d="M4 17l6-6 4 4 6-7"/><path d="M15 8h5v5"/>'],
+  ['demande', tt('la demande pour ses cartes', 'demand for his cards'), 11, '#F5C451', '<rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 8h6M9 12h6"/>'],
+  ['rythme', tt('son rythme de la saison', 'his season pace'), 9, '#5EC8F2', '<circle cx="12" cy="13" r="7"/><path d="M12 13l3-3M10 3h4"/>'],
+  ['buzz', tt('les recherches Wikipedia (20 jours)', 'Wikipedia searches (20 days)'), 9, '#B9BEFF', '<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>'],
+  ['actu', tt('les nouvelles de la semaine', 'this week’s news'), 7, '#FF9F5B', '<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h5"/>'],
+  ['notoriete', tt('sa notoriété de fond', 'his long-term fame'), 5, '#C792EA', '<path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.3 6.9 19l1.2-5.6L4 9.6 9.6 9z"/>'],
+  ['recrue', tt('1re ou 2e saison', '1st or 2nd season'), 5, '#7FE3D0', '<path d="M12 3v18M5 10l7-7 7 7"/>'],
+  ['legende', tt('Temple, coupes, trophées', 'Hall of Fame, Cups, awards'), 5, '#E8C26A', '<path d="M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M12 13v4M8 21h8M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/>'],
+  ['evenements', tt('intronisation, ovation, échange, blessure : la nouvelle qui fait bouger ses cartes', 'induction, ovation, trade, injury: the news that moves his cards'), 0, '#FF7AB6', '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>']];
 function expliquerTendancesIQ(){
-  const C = CRIT_IQ();
+  const C = Object.assign(CRIT_IQ(), {evenements: tt('Événements', 'Events')}), S_ = SIG_IQ(), mx = Math.max(...S_.map(x => x[2]));
+  const P = [['en_feu', tt('En feu', 'On fire'), 'rouge', tt('une grosse semaine', 'a big week')], ['en_hausse', tt('En hausse', 'Rising'), 'vert', tt('il progresse', 'he’s climbing')],
+    ['buzz', 'Buzz', 'acc', tt('tout le monde le cherche', 'everyone’s searching him')], ['honneur', tt('Honoré', 'Honored'), 'or', tt('temple, ovation, record', 'HOF, ovation, record')],
+    ['occasion', tt('Bonne occasion', 'Buy low'), 'vert', tt('un bon joueur en baisse', 'a good player dipping')], ['mauvaise', tt('Mauvaise nouvelle', 'Bad news'), 'rouge', tt('blessure, suspension', 'injury, suspension')],
+    ['rebond', tt('Sort du creux', 'Bouncing back'), 'vert', tt('un jeune qui reprend', 'a young player recovering')], ['en_creux', tt('En creux', 'In a slump'), '', tt('à surveiller', 'worth watching')],
+    ['recrue', tt('Recrue', 'Rookie'), 'or', tt('1re ou 2e saison', '1st or 2nd season')], ['legende', tt('Légende', 'Legend'), 'or', tt('une icône', 'an icon')]];
   ouvrirFeuille(`<div class="iqx"><div class="iqx-t"><b>${tt('L’indice', 'The index')} Slab<i>IQ</i></b><span>${tt('Comment SlabIQ classe les joueurs', 'How SlabIQ ranks players')}</span></div>
-    <div class="jb iqx-g">
-      <div class="jb-t l"><span class="jb-k">${tt('De 0 à 100', 'From 0 to 100')}</span><small class="iqx-p">${tt('Chaque jour, SlabIQ note chaque joueur sur 9 critères, chacun classé contre tous les autres joueurs, puis les combine. Une semaine en feu passe devant tout le monde.', 'Every day SlabIQ rates each player on 9 criteria, each ranked against every other player, then combines them. A week on fire jumps ahead of everyone.')}</small></div>
-      ${Object.entries({forme: tt('ses points des derniers matchs', 'his points in recent games'), ascension: tt('sa progression vs ses saisons d’avant', 'his rise vs past seasons'), rythme: tt('son rythme de la saison', 'his season pace'), buzz: tt('les recherches Wikipedia (20 jours)', 'Wikipedia searches (20 days)'), notoriete: tt('sa notoriété de fond', 'his long-term fame'), demande: tt('la demande pour ses cartes', 'demand for his cards'), actu: tt('les nouvelles de la semaine', 'this week’s news'), recrue: tt('1re ou 2e saison', '1st or 2nd season'), legende: tt('Temple, coupes, trophées', 'Hall of Fame, Cups, awards')}).map(([k, d]) => `<div class="jb-t"><span class="jb-k">${C[k]}</span><small>${d}</small></div>`).join('')}
-      <div class="jb-t l"><span class="jb-k">${tt('Les pastilles', 'The badges')}</span><small class="iqx-p">${tt('En feu : une grosse semaine. Sort du creux : un jeune qui reprend après une période difficile. En creux : un bon jeune en période difficile, à surveiller. Recrue, Buzz, Légende.', 'On fire: a big week. Bouncing back: a young player recovering. In a slump: a good young player struggling, worth watching. Rookie, Buzz, Legend.')}</small></div>
-    </div></div>`, {centre: true});
+    <div class="iqs-tete"><div class="iqs-n"><b>10</b><span>${tt('signaux', 'signals')}</span></div><div class="iqs-n"><b>0–100</b><span>${tt('chaque jour', 'every day')}</span></div><div class="iqs-n"><b>100 %</b><span>${tt('données publiques', 'public data')}</span></div></div>
+    <p class="iqs-p">${tt('Chaque joueur est classé contre tous les autres sur chaque signal, puis tout est combiné. Une semaine en feu passe devant tout le monde.', 'Each player is ranked against every other player on each signal, then it’s all combined. A week on fire jumps ahead of everyone.')}</p>
+    <div class="iqs-g">${S_.map(([k, d, w, col, ic]) => `<div class="iqs-t" style="--c:${col}"><span class="iqs-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${ic}</svg></span>
+      <b>${C[k]}</b><small>${d}</small><span class="iqs-b"><i style="width:${w ? Math.max(8, Math.round(100 * w / mx)) : 100}%"></i></span><em>${w ? w + ' %' : tt('bonus', 'bonus')}</em></div>`).join('')}</div>
+    <div class="iqs-pt"><span class="jb-k">${tt('Les pastilles', 'The badges')}</span><div class="iqs-pl">${P.map(([k, l, c, d]) => `<div class="iqs-pi">${tag(l, c)}<small>${d}</small></div>`).join('')}</div></div>
+    <div class="sous iqs-f">${tt('Stats LNH, recherches Wikipedia, nouvelles, palmarès. SlabIQ ne regarde jamais le prix des annonces.', 'NHL stats, Wikipedia searches, news, honours. SlabIQ never looks at listing prices.')}</div>
+    </div>`, {centre: true});
 }
 async function vueAccueil(arg){
   setTimeout(() => { if ((location.hash || '#accueil').startsWith('#accueil')) demanderPartage(); }, 2500);
@@ -9761,12 +9844,16 @@ async function vueAccueil(arg){
   V().innerHTML = `<section class="ecran acc leger acc-charge">${fetesActives() ? htmlNeige(16) : ''}<div class="acc-roue-g" aria-hidden="true">${roue}</div>
     <div class="acc-salut-tel" id="acc-salut2"></div>
     <button class="acc-mot" id="acc-mot" type="button"></button>
+    <div class="acc-sec" style="--c:var(--acc)"><span>${tt('Le Radar', 'The Radar')}</span><a href="#deals">${tt('Tout voir', 'See all')} ›</a></div>
     <div class="histoires" id="acc-hist" role="list"></div>
     <div class="acc-tete" style="grid-area:tete"><div class="marque"><span class="logo-lr officiel piece-sc" aria-label="SlabCoach">${htmlPiece()}</span><img class="logo" id="acc-logo" src="${esc(S.logo || '/icone.png')}" alt="">
         <div class="horloge"><div class="nom-b${nomMarque() === 'SlabCoach' ? ' a-mot' : ''}" id="acc-nom">${nomMarque() === 'SlabCoach' ? MOT_SC : esc(nomMarque())}</div><div class="salut" id="acc-salut"></div><div class="h" id="acc-h">--:--</div><div class="d" id="acc-d"></div></div></div>
+      <div class="acc-sec" style="--c:var(--vert)"><span>${tt('Ton mois', 'Your month')}</span></div>
       <div class="acc-tuiles" id="acc-tuiles">${roue}</div></div>
+    <div class="acc-sec acc-sec-tk" style="--c:#F2C14E"><span>${tt('À savoir', 'Good to know')}</span></div>
     <div class="acc-ticker" id="acc-ticker" hidden></div>
     <div class="acc-moment" id="acc-moment"></div>
+    <div class="acc-sec" style="--c:var(--doux)"><span>${tt('Raccourcis', 'Shortcuts')}</span></div>
     <div class="acc-pils" id="acc-pils"></div>
     <div class="acc-reserve" id="acc-reserve" hidden>
     <div class="carte-acc nouv" id="acc-nouv"><div class="acc-titre titre-tel">${tt('Nouvelles et astuces', 'News and tips')}</div><div class="acc-sous titre-tel">${tt('L’actualité de la LNH et des cartes, et des trucs pour mieux acheter et vendre. Glisse pour la suivante.', 'NHL and card news, plus tips to buy and sell better. Swipe for the next one.')}</div><div id="acc-news">${roue}</div></div>
@@ -9792,13 +9879,18 @@ async function vueAccueil(arg){
   const pB = $('#pastille-breaks'); if (pB) { pB.hidden = !d.a_envoyer; pB.textContent = d.a_envoyer || ''; }
   const pD = $('#pastille-deals'); if (pD && a) { pD.hidden = !a.nb_deals; pD.textContent = a.nb_deals || ''; }
   // 3 chiffres qui comptent, en grand
-  const tuile = (lib, val, sous, cl, href) => `<a class="t-acc" href="${href}"><span class="l">${lib}</span><b class="${cl || ''}">${val}</b><span class="s">${sous}</span></a>`;
+  // 11 nov 2026 (Mathieu : « mieux ventiler l'accueil : beau, doux a l'oeil, bien separe, on sait ce qu'on regarde ») : chaque
+  // chiffre a sa couleur (profit vert, radar mauve, stock or) et son icone
+  const ICT = {Profit: '<path d="M4 17l6-6 4 4 6-7"/><path d="M15 8h5v5"/>', Radar: '<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
+    Stock: '<rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 8h6"/>'};
+  const KT = {Profit: 'k-profit', Radar: 'k-radar', Stock: 'k-stock'};
+  const tuile = (lib, val, sous, cl, href) => `<a class="t-acc ${KT[lib] || 'k-stock'}" href="${href}"><span class="l">${ICT[lib] ? `<svg class="t-ic" viewBox="0 0 24 24" aria-hidden="true">${ICT[lib]}</svg>` : ''}${lib}</span><b class="${cl || ''}">${val}</b><span class="s">${sous}</span></a>`;
   $('#acc-tuiles').innerHTML = [
     S.mode === 'acheteur' ? `<a class="t-acc" href="#guide" id="t-budget"><span class="l">${tt('Budget du mois', 'Monthly budget')}</span><b>…</b><span class="s">${tt('touche pour le fixer', 'tap to set it')}</span></a>`
       : tuile('Profit', (h.profit < 0 ? '−' : '') + argentCourt(Math.abs(h.profit)), nomMois(h.mois) + (h.nb_ventes ? ` · ${h.nb_ventes} vente${h.nb_ventes > 1 ? 's' : ''}` : ''), h.profit > 0 ? 'vert' : h.profit < 0 ? 'rouge' : '', '#bilan" id="t-profit'),
     tuile('Radar', a && a.gain_deals > 0 ? '+' + argentCourt(a.gain_deals) : String((a && a.nb_deals) || 0), a && a.nb_deals ? (comps() ? `${a.nb_deals} sous la valeur` : ((a.deals || []).some(x => x.pourtoi) ? `${a.nb_deals} ${tt('pour toi', 'for you')}` : `${a.nb_deals} ${tt('à ton prix', 'at your price')}`)) : 'on cherche pour toi', a && a.gain_deals > 0 ? 'or' : '', '#deals'),
     S.mode === 'acheteur' ? tuile(tt('Ma collection', 'My collection'), argentKpi(st.valeur), `${st.nb} carte${st.nb > 1 ? 's' : ''}`, '', '#inventaire" id="t-stock')
-      : tuile('Stock', argentKpi(st.valeur), `${st.nb} carte${st.nb > 1 ? 's' : ''}${vi.delai_median != null ? ' · vend en ' + vi.delai_median + ' j' : ''}`, '', '#inventaire" id="t-stock'),
+      : tuile('Stock', argentKpi(st.valeur), `${st.nb} carte${st.nb > 1 ? 's' : ''}${vi.delai_median != null ? ' · ' + vi.delai_median + ' j' : ''}`, '', '#inventaire" id="t-stock'),
   ].join('');
   // 28 oct 2026 (Mathieu : « ajouter sa collection, la valeur, si le joueur est en feu… mais tres simple, moins de stats ») :
   // une seule ligne en dessous des chiffres. Collection vide : une invitation a l'ajouter. Sinon, le joueur de TES cartes en feu.
@@ -11252,7 +11344,10 @@ async function tableauInv(){
   }
 }
 function brancherFiltresInv(){
-  $$('.i-filtres [data-f]').forEach(c => c.onclick = () => { S.filtreInv = c.dataset.f; S.dortIds = null; S.filtreCle = null; $('.i-filtres').innerHTML = filtresBarreInv(); brancherFiltresInv(); chargerInventaire(); tableauInv(); });
+  $$('.i-filtres [data-f]').forEach(c => c.onclick = () => { if (S.filtreInv === c.dataset.f && !S.dortIds) return; vibrer();
+    S.filtreInv = c.dataset.f; S.dortIds = null; S.filtreCle = null; $('.i-filtres').innerHTML = filtresBarreInv(); brancherFiltresInv();
+    const z = $('#i-liste'); if (z) z.classList.add('i-charge');          // 11 nov 2026 : le changement se voit tout de suite
+    chargerInventaire(); tableauInv(); });
   const p = $('#i-plus-f'); if (p) p.onclick = () => {
     const ps = S.parSportInv || {}, sports = Object.entries(ps).sort((a, b) => b[1] - a[1]);
     ouvrirFeuille(`<h3>${tt('Filtrer', 'Filter')}</h3><div class="menu-f">${filtresInv().map(([k]) => `<button class="choix-f ${S.filtreInv === k ? 'on' : ''}" data-ff="${k}">${LIB_FILTRE(k)}${S.filtreInv === k ? ' ✓' : ''}</button>`).join('')}<button class="choix-f" id="ff-ach">${tt('Mes achats eBay', 'My eBay purchases')} ›</button></div>
@@ -11480,15 +11575,23 @@ async function estimerManquantes(l){
     try { const k = Object.keys(fait); if (k.length > 400) k.slice(0, k.length - 400).forEach(x => delete fait[x]); localStorage.setItem('lr_val_t', JSON.stringify(fait)); } catch (e) {}
   }
 }
+// 11 nov 2026 (Mathieu : « desfois ca lag quand je switch de A finir a Tout ou a Collection ») : ces 3 vues sont tirees de
+// la MEME liste (les cartes pas vendues), filtree dans le telephone : un seul appel, et le changement de vue est instantane
+const VUES_LOCALES = {tous: () => true, collection: (c) => c.emplacement === 'Collection', afinir: (c) => !!c.a_finir};
 async function chargerInventaire(){
-  const f = Object.assign({}, (FILTRES_INV.find(x => x[0] === S.filtreInv) || FILTRES_INV[0])[2], {q:S.rechInv});
+  const loc = VUES_LOCALES[S.filtreInv || 'tous'];
+  const f = loc ? {dispo: 1, q: S.rechInv} : Object.assign({}, (FILTRES_INV.find(x => x[0] === S.filtreInv) || FILTRES_INV[0])[2], {q:S.rechInv});
+  const seq = S.invSeq = (S.invSeq || 0) + 1;                 // deux changements rapides : seule la derniere vue s'affiche
   let tout;
-  try { tout = await API.inventaire_liste(f); }
-  catch (e) {                                     // 27 oct 2026 (revue) : une erreur n'est pas un inventaire vide
+  try { tout = await API.inventaire_liste(f); if (seq !== S.invSeq) return; }
+  catch (e) {
+    if (seq !== S.invSeq) return;                                     // 27 oct 2026 (revue) : une erreur n'est pas un inventaire vide
     const z0 = $('#i-liste'); if (z0) { z0.innerHTML = `<div class="vide">${esc(tt('Inventaire pas chargé : ', 'Inventory not loaded: ') + e.message)}<br><button class="btn petit" id="i-reessai" style="margin-top:12px">${tt('Réessayer', 'Retry')}</button></div>`; $('#i-reessai').onclick = chargerInventaire; }
     return;
   }
   if (!Array.isArray(tout)) tout = (tout && tout.cartes) || [];
+  const z0_ = $('#i-liste'); if (z0_) z0_.classList.remove('i-charge');
+  if (loc) { S.nbAFinir = tout.filter(c => c.a_finir).length; tout = tout.filter(loc); }
   // 23 oct 2026 - plusieurs sports dans l'inventaire : un toucher pour n'en voir qu'un (rien si un seul sport)
   const parSport = {}; tout.forEach(c => { const k = c.sport || sportPrincipal(); parSport[k] = (parSport[k] || 0) + 1; });
   if (S.sportInv && !parSport[S.sportInv]) S.sportInv = null;
@@ -11501,7 +11604,7 @@ async function chargerInventaire(){
   const valeur = l.reduce((s, c) => s + (nb(vendues ? c.prix_vendu : (c.valeur ?? c.prix_demande)) || 0), 0);
   const rep = l.map(repere).filter(Boolean), bien = rep.filter(r => r.cl === 'vert').length, cher = rep.filter(r => r.cl === 'rouge' || r.cl === 'or').length, bas = rep.filter(r => r.cl === 'acc').length;
   S.parSportInv = parSport; S.invL = l;
-  if (S.filtreInv === 'tous' || S.filtreInv === 'afinir' || !S.filtreInv) S.nbAFinir = tout.filter(c => c.a_finir).length;
+  if (loc) {}
   else if (S.nbAFinir == null) API.inventaire_liste({dispo:1, a_finir:1}).then(x => { const n_ = (Array.isArray(x) ? x : (x && x.cartes) || []).length; if (n_ !== S.nbAFinir) { S.nbAFinir = n_; const fz_ = $('.i-filtres'); if (fz_) { fz_.innerHTML = filtresBarreInv(); brancherFiltresInv(); } } }).catch(() => {});
   const fz = $('.i-filtres'); if (fz) { fz.innerHTML = filtresBarreInv(); brancherFiltresInv(); }
   const puces = '' && Object.keys(parSport).length > 1 ? `<div class="chips" id="i-sports" style="margin-bottom:12px"><button class="chip ${S.sportInv ? '' : 'on'}" data-sp="">${tt('Tous sports', 'All sports')}</button>${Object.entries(parSport).sort((a, b) => b[1] - a[1]).map(([k, n]) => `<button class="chip ${S.sportInv === k ? 'on' : ''}" data-sp="${k}">${nomSport(k)} ${n}</button>`).join('')}</div>` : '';
@@ -15156,7 +15259,8 @@ function tuilesJoueur(q){
   const T = [];
   if (q.rang && q.sur) T.push([tt('Indice', 'Index'), ordinal(q.rang), tt('sur ', 'of ') + q.sur, q.rang <= q.sur * 0.1 ? 'vert' : q.rang <= q.sur * 0.4 ? 'acc' : '']);
   const w = q.semaine;
-  if (w && w.mj) T.push([tt('Cette semaine', 'This week'), w.pts + ' pts', w.mj + ' ' + tt('matchs', 'games'), w.pts >= 5 ? 'rouge' : w.pts >= 3 ? 'vert' : '']);
+  if (q.gardien) {}                                       // 11 nov 2026 : un gardien n'a pas de points a montrer
+  else if (w && w.mj) T.push([tt('Cette semaine', 'This week'), w.pts + ' pts', w.mj + ' ' + tt('matchs', 'games'), w.pts >= 5 ? 'rouge' : w.pts >= 3 ? 'vert' : '']);
   else if (q.cinq != null) T.push([tt('5 derniers', 'Last 5'), q.cinq + ' pts', tt('matchs', 'games'), q.cinq >= 5 ? 'vert' : '']);
   const sa = q.saison;
   if (sa && sa.ppm > 0) T.push([tt('Par match', 'Per game'), String(sa.ppm).replace('.', tt(',', '.')), sa.ecart_pct != null && Math.abs(sa.ecart_pct) >= 10 ? (sa.ecart_pct > 0 ? '+' : '') + sa.ecart_pct + ' % ' + tt('vs avant', 'vs before') : sa.mj + ' ' + tt('matchs', 'games'), sa.ecart_pct >= 10 ? 'vert' : sa.ecart_pct <= -10 ? 'rouge' : '']);
@@ -15233,21 +15337,31 @@ function bentoJoueur(r, t){
     <button class="jb-cl" id="j-alerte" aria-label="${esc(tt('M’alerter', 'Alert me'))}">${icN('cloche')}</button></div>`, l: true});
   if (r.mediane) tuile(tt('Sa carte vaut', 'His card is worth'), argent(r.mediane, 0), esc(r.requete), 'vert', {large: true});
   if (q.rang && q.sur) tuile(tt('Indice', 'Index'), ordinal(q.rang), `${tt('sur', 'of')} ${q.sur} ${q.actif === false ? tt('retraités', 'retired') : tt('joueurs', 'players')}`, q.rang <= q.sur * 0.1 ? 'vert' : q.rang <= q.sur * 0.4 ? 'acc' : '', {fait: true});
-  const w = q.semaine;
+  // 11 nov 2026 (Mathieu : « c'est un gardien : montre son % d'arrets et sa moyenne, pas les pts ») : un gardien a ses
+  // stats de gardien (5 derniers matchs, saison) ; jamais de points
+  const gard = (cr && cr.position === 'G') || !!q.gardien;
+  const svp = (x) => x == null ? '—' : dec(Number(x).toFixed(3).replace(/^0/, ''));
+  const gaa = (x) => x == null ? '—' : dec(Number(x).toFixed(2));
+  if (gard) {
+    const c5 = cr && cr.cinq_g, sg = cr && cr.saison_g;
+    if (c5 && c5.mj && cr.actif !== false) tuile(tt('5 derniers', 'Last 5'), svp(c5.efficacite), `${tt('arrêts', 'save %')} · ${tt('moy. ', 'GAA ')}${gaa(c5.moyenne)} · ${c5.v} ${tt(c5.v > 1 ? 'victoires' : 'victoire', c5.v === 1 ? 'win' : 'wins')}`, c5.efficacite >= 0.915 ? 'vert' : c5.efficacite != null && c5.efficacite < 0.89 ? 'rouge' : '');
+    if (sg && sg.mj) tuile(tt('Cette saison', 'This season'), svp(sg.efficacite), `${tt('moy. ', 'GAA ')}${gaa(sg.moyenne)} · ${sg.v || 0} ${tt('V', 'W')} · ${sg.mj} ${tt('matchs', 'games')}`, sg.efficacite >= 0.915 ? 'vert' : sg.efficacite != null && sg.efficacite < 0.89 ? 'rouge' : '');
+  }
+  const w = gard ? null : q.semaine;
   if (w && w.mj) tuile(tt('Cette semaine', 'This week'), w.pts + ' pts', `${w.b || 0} ${tt('buts', 'goals')} · ${w.mj} ${tt('matchs', 'games')}`, w.pts >= 5 ? 'rouge' : w.pts >= 3 ? 'vert' : '');
-  else if (q.cinq != null && q.actif !== false) tuile(tt('5 derniers', 'Last 5'), q.cinq + ' pts', tt('matchs', 'games'), q.cinq >= 5 ? 'vert' : '');
+  else if (!gard && q.cinq != null && q.actif !== false) tuile(tt('5 derniers', 'Last 5'), q.cinq + ' pts', tt('matchs', 'games'), q.cinq >= 5 ? 'vert' : '');
   const sa = q.saison;
-  if (sa && sa.ppm > 0) tuile(tt('Par match', 'Per game'), dec(sa.ppm), `${sa.pts} pts · ${sa.mj} ${tt('matchs', 'games')}${sa.ecart_pct != null && Math.abs(sa.ecart_pct) >= 10 ? ` · <b class="${sa.ecart_pct > 0 ? 'vert' : 'rouge'}">${sa.ecart_pct > 0 ? '+' : ''}${sa.ecart_pct} %</b>` : ''}`, sa.ecart_pct >= 10 ? 'vert' : sa.ecart_pct <= -10 ? 'rouge' : '');
+  if (!gard && sa && sa.ppm > 0) tuile(tt('Par match', 'Per game'), dec(sa.ppm), `${sa.pts} pts · ${sa.mj} ${tt('matchs', 'games')}${sa.ecart_pct != null && Math.abs(sa.ecart_pct) >= 10 ? ` · <b class="${sa.ecart_pct > 0 ? 'vert' : 'rouge'}">${sa.ecart_pct > 0 ? '+' : ''}${sa.ecart_pct} %</b>` : ''}`, sa.ecart_pct >= 10 ? 'vert' : sa.ecart_pct <= -10 ? 'rouge' : '');
   if (q.buzz && Math.abs(q.buzz.pct) >= 10) tuile(tt('Recherches', 'Searches'), (q.buzz.pct > 0 ? '+' : '') + q.buzz.pct + ' %', tt('20 derniers jours', 'last 20 days'), q.buzz.pct > 0 ? 'vert' : 'rouge');
   const g = q.legende || {};
-  if (g.carriere && g.carriere.pts) tuile(tt('Carrière', 'Career'), g.carriere.pts + ' pts', g.carriere.mj ? g.carriere.mj + ' ' + tt('matchs', 'games') : '', '');
+  if (!gard && g.carriere && g.carriere.pts) tuile(tt('Carrière', 'Career'), g.carriere.pts + ' pts', g.carriere.mj ? g.carriere.mj + ' ' + tt('matchs', 'games') : '', '');
   const lg = [g.temple && tt('Temple de la renommée', 'Hall of Fame'), g.top100 && tt('Top 100 de l’histoire', 'Top 100 all-time'), g.trophees && g.trophees + ' ' + tt('trophées', 'awards')].filter(Boolean);
   if (g.coupes || lg.length) tuile(g.temple || g.top100 ? tt('Légende', 'Legend') : tt('Palmarès', 'Honours'), g.coupes ? g.coupes + ' ' + tt(g.coupes > 1 ? 'coupes' : 'coupe', g.coupes > 1 ? 'Cups' : 'Cup') : lg.shift(), lg.join(' · '), 'or', {large: lg.length > 1});
   // 13 nov 2026 (Mathieu : « on devrait TOUJOURS avoir toute l'info ») : la carriere LNH de tous les joueurs (actifs ou
   // retraites), ses saisons, son repechage et quelques lignes de bio (Wikipedia, citee)
-  if (cr && cr.mj && !(g.carriere && g.carriere.pts)) {
+  if (cr && cr.mj && (gard || !(g.carriere && g.carriere.pts))) {
     if (cr.position === 'G' && cr.victoires != null) tuile(tt('Carrière LNH', 'NHL career'), cr.victoires + ' ' + tt('victoires', 'wins'),
-      [cr.moyenne != null ? tt('moy. ', 'GAA ') + dec(Number(cr.moyenne).toFixed(2)) : '', cr.efficacite != null ? dec((cr.efficacite * 100).toFixed(1)) + ' %' : '', cr.mj + ' ' + tt('matchs', 'games')].filter(Boolean).join(' · '), 'acc', {large: true});
+      [cr.moyenne != null ? tt('moy. ', 'GAA ') + dec(Number(cr.moyenne).toFixed(2)) : '', cr.efficacite != null ? svp(cr.efficacite) + ' ' + tt('arrêts', 'save %') : '', cr.mj + ' ' + tt('matchs', 'games')].filter(Boolean).join(' · '), 'acc', {large: true});
     else if (cr.points != null) tuile(tt('Carrière LNH', 'NHL career'), cr.points + ' pts', `${cr.buts || 0} ${tt('buts', 'goals')} · ${cr.passes || 0} ${tt('passes', 'assists')} · ${cr.mj} ${tt('matchs', 'games')}`, 'acc', {large: true});
   }
   if (cr && cr.saisons) tuile(tt('Dans la LNH', 'In the NHL'), cr.actif ? tt('depuis ', 'since ') + cr.saisons[0] : cr.saisons[0] + '–' + cr.saisons[1],

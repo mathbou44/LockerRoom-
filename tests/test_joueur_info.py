@@ -34,4 +34,17 @@ assert c["nom"] == "Alexei Semenov" and c["points"] == 33 and c["mj"] == 211 and
 assert c["repechage"]["rang"] == 36 and c["bio"]["texte"].startswith("Alexei Semenov") and c["actif"] is False, c
 nhl._get = lambda url: (_ for _ in ()).throw(AssertionError("le cache aurait du servir"))
 assert nhl.carriere("Alexei Semenov")["points"] == 33
+# 11 nov 2026 (« c'est un gardien : son % d'arrets et sa moyenne, pas les pts ») : un gardien a sa saison et ses 5 derniers
+rep["search"] = rep["search2"] = [{"name": "Devin Cooley", "playerId": "8480000"}]
+rep["landing"] = {"firstName": {"default": "Devin"}, "lastName": {"default": "Cooley"}, "isActive": True, "position": "G",
+                  "careerTotals": {"regularSeason": {"gamesPlayed": 45, "wins": 17, "goalsAgainstAvg": 2.97, "savePctg": 0.904}},
+                  "featuredStats": {"regularSeason": {"subSeason": {"gamesPlayed": 8, "wins": 3, "goalsAgainstAvg": 2.71, "savePctg": 0.912}}},
+                  "last5Games": [{"decision": "W", "goalsAgainst": 2, "shotsAgainst": 30}, {"decision": "L", "goalsAgainst": 4, "shotsAgainst": 28},
+                                 {"decision": "W", "goalsAgainst": 1, "shotsAgainst": 25}, {"decision": "L", "goalsAgainst": 3, "shotsAgainst": 33},
+                                 {"decision": "O", "goalsAgainst": 2, "shotsAgainst": 24}], "seasonTotals": []}
+nhl._get = faux
+g = nhl.carriere("Devin Cooley")
+assert g["position"] == "G" and g["victoires"] == 17 and "points" not in g, g
+assert g["saison_g"] == {"mj": 8, "v": 3, "moyenne": 2.71, "efficacite": 0.912, "blanchissages": None}, g["saison_g"]
+assert g["cinq_g"] == {"mj": 5, "v": 2, "efficacite": round(1 - 12 / 140, 3), "moyenne": 2.4}, g["cinq_g"]
 print("OK infos joueur")

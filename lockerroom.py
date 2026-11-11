@@ -6602,7 +6602,8 @@ class Api:
                 c.close()
             ch = self.chasses_liste().get("chasses") or []
             cle = (comptes.courant() or "local") + ":" + hashlib.md5(json.dumps(
-                [[tuple(a) for a in al], self.deals_profil_lire(), self.reglages_lire().get("pays"), self._est_admin(), vue_simulee(), ch],
+                [[tuple(a) for a in al], self.deals_profil_lire(), self.reglages_lire().get("pays"), self._est_admin(), vue_simulee(), ch,
+                 "score-v2"],                         # 11 nov 2026 : les scores SlabIQ revus (mots de vendeur, joueur inconnu)
                 sort_keys=True, default=str).encode()).hexdigest()
         except Exception:
             cle = None
@@ -7452,6 +7453,8 @@ class Api:
 
     _MES_DEALS = {}
 
+    _MES_DEALS_N = {}
+
     def _mes_deals_garde(self):
         """« Mes deals » pour l'accueil : garde 10 min par compte (l'accueil s'ouvre souvent ; eBay n'est relu qu'aux 10 min)."""
         import comptes
@@ -7460,6 +7463,13 @@ class Api:
         if g and time.time() - g[0] < 600:
             return g[1]
         r = self.mes_deals() or {}
+        # 11 nov 2026 (Mathieu : « regarde le nombre de deals du Radar sur l'accueil et le nombre reel ») : le nombre de
+        # l'accueil = le « Tout » du Radar (toutes les annonces, sans doublon), plus seulement les 24 du carrousel
+        vus_t = set()
+        for g_ in [{"annonces": r.get("deals") or []}] + [x for k_ in ("pour_toi", "types", "chasses", "chauds", "creux", "decouvrir", "vendeurs")
+                                                          for x in (r.get(k_) or [])] + [{"annonces": r.get("petits") or []}]:
+            vus_t.update(str(x.get("item_id")) for x in (g_.get("annonces") or []) if x.get("item_id"))
+        self._MES_DEALS_N[k] = len(vus_t)
         l = r.get("deals") or []
         if not l:                     # 10 nov 2026 : sans prix cible, les annonces de SES joueurs (ou « a decouvrir »)
             vus = set()
@@ -8846,7 +8856,10 @@ class Api:
             lst = [x for x in lst if x.get("encan")]
         # 25 oct 2026 (Mathieu : « une option de tri/filtre pour que l'utilisateur puisse customizer ses deals »)
         lst = self._deals_filtrer(lst, f)
-        lst = self._avec_chances(lst)
+        # 11 nov 2026 (Mathieu : « ou sont tous mes deals ?! dans admin ») : l'admin voit TOUT (la chance reste dans la fiche)
+        adm_ = self._est_admin()
+        n_caches = [0]
+        lst = self._avec_chances(lst, cacher=not adm_, compte=n_caches)
         if f.get("vendeurs"):                     # 29 oct 2026 : « tous les deals des gros vendeurs »
             lst = [x for x in lst if x.get("flux") == "vendeurs"]
         tri = f.get("tri") or "rabais"
@@ -8976,7 +8989,7 @@ class Api:
         if f.get("type") == "fixe":
             suivis = []
         suivis = [x for x in self._deals_filtrer(suivis, f_s) if not f.get("sports") or (x.get("sport") or "hockey") in f["sports"]]
-        suivis = self._avec_chances(suivis)
+        suivis = self._avec_chances(suivis, cacher=not adm_, compte=n_caches)
         suivis.sort(key=lambda x: (0 if (x.get("sport") or "hockey") == "hockey" else 1, _dl.rang_vendeur(x.get("vendeur")), str(x.get("fin"))))
         suivis = self._appliquer_profil(suivis, prof)
         suivis = self._objectif_deals(suivis, f)
@@ -8996,10 +9009,10 @@ class Api:
                 "pres": pres, "secours": secours, "secours_le": (dd.get("secours") or {}).get("le") if secours else None,
                 "sports": par_sport, "pays_dispo": par_pays, "maj": dd.get("maj"), "ebay": ebay_compte.statut().get("cles_ok"),
                 "diag": _d.diagnostic(dd), "total": len(tout), "bassin": dd.get("bassin"), "nb_flux": len(_d.flux_liste()),
-                "watch": self._watch_ids()}
+                "watch": self._watch_ids(), "caches_chance": n_caches[0] if adm_ else None}
 
     @staticmethod
-    def _avec_chances(lst):
+    def _avec_chances(lst, cacher=True, compte=None):
         """5 nov 2026 (Mathieu : « je perds mon temps a miser sur des cartes qui montent en fou ; subtilement ») : un encan
         dont le genre finit presque toujours au-dessus de la mise max n'est pas montre ; les autres gardent leur chance
         (une ligne dans la fiche). Rien ne change tant qu'on n'a pas assez d'encans finis (chances.py)."""
@@ -9015,8 +9028,12 @@ class Api:
                 # 11 nov 2026 (Mathieu : « demain c'est la fin de Savage, Remi et CF31 vendredi et y'a rien ») : leurs encans
                 # finissent presque tous au-dessus de la mise max, alors tout leur groupe etait cache. Les gros vendeurs
                 # suivis ne sont JAMAIS caches : la fiche dit leur chance, l'utilisateur decide.
-                if chances.a_cacher(x, c) and not _dl.rang_vendeur(x.get("vendeur")) < len(_dl.VENDEURS_PRIORITE):
-                    continue
+                # 11 nov 2026 : cache seulement sur le GENRE precis de l'encan (jamais tout un groupe de vendeurs d'un coup)
+                if c and c[2] == "genre" and chances.a_cacher(x, c) and not _dl.rang_vendeur(x.get("vendeur")) < len(_dl.VENDEURS_PRIORITE):
+                    if compte is not None:
+                        compte[0] += 1
+                    if cacher:
+                        continue
                 if c:
                     x = dict(x, chance={"p": c[0], "n": c[1], "niveau": c[2]})
             out.append(x)
@@ -9429,7 +9446,11 @@ class Api:
                        and _dv.encore_ouvert(x) and (x.get("total") or 0) <= _dv.prix_max(x["valeur"], taxe=_dv.taxe_de(x)))
         except Exception:
             n_su = 0
-        return {"mois": m0, "deals": deals[:24], "nb_deals": len(deals) + n_su, "gain_deals": round(sum(max(0, d["gain"]) for d in deals), 2),
+        n_tot = len(deals) + n_su
+        if not ebay_prix_actif():
+            import comptes as _cpt
+            n_tot = max(n_tot, self._MES_DEALS_N.get(_cpt.courant() or "local") or 0)
+        return {"mois": m0, "deals": deals[:24], "nb_deals": n_tot, "gain_deals": round(sum(max(0, d["gain"]) for d in deals), 2),
                 "achats": {"n": len(achats), "depense": depense, "valeur": valeur,
                            "latent": round(sum(((a.get("valeur") or a.get("prix_demande") or 0) * (1 - fp) - ff - (a["cout"] or 0))
                                              for a in achats if a.get("valeur") or a.get("prix_demande")), 2)},

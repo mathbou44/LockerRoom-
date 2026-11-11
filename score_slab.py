@@ -18,6 +18,29 @@ import re
 POIDS_JOUEUR = 0.55
 JOUEUR_INCONNU = 45.0
 
+# 11 nov 2026 (Mathieu : « es-tu sur du 94 ? » : une PSA 8 de Terry Ruskowski « LOW POP /5 » notee 94) : les mots de
+# vendeur (low pop, rare, hot, invest...) ne disent rien de la carte : retires avant le modele ; et un joueur que SlabIQ
+# ne connait pas ne peut pas monter plus haut que ce que la carte elle-meme justifie (auto, patch, numerotee, recrue).
+_RE_HYPE = re.compile(r"\b(?:low\s*pop(?:ulation)?|pop(?:ulation)?\s*(?:of\s*)?\d+(?:\s*(?:of|/)\s*\d+)?|pop\b(?:\s*/\s*\d+)?|(?:super\s*|very\s*|ultra\s*)?rare|hot|invest(?:ment)?|grail|must\s*see|wow|look|l@@k|nice|beautiful|gorgeous|sharp)\b"
+                      r"(?:\s*/\s*\d+)?", re.I)
+
+
+def nettoyer(titre):
+    return re.sub(r"\s{2,}", " ", _RE_HYPE.sub(" ", str(titre or ""))).strip()
+
+
+def plafond_inconnu(total, c, ij):
+    """Joueur absent de l'indice SlabIQ : le score ne depasse pas 50 + la moitie du score de la carte."""
+    if total is None or (ij and ij.get("indice") is not None):
+        return total
+    try:                                  # l'indice n'est pas encore calcule (serveur neuf) : pas de plafond
+        import indice_joueurs
+        if len(indice_joueurs.lire().get("indice") or {}) < 100:
+            return total
+    except Exception:
+        return total
+    return min(total, 50 + 0.5 * (c.get("score") or 0))
+
 
 def _rarete(tirage):
     if not tirage:
@@ -67,13 +90,14 @@ def score(titre, joueur=None):
     # 10 nov 2026 (« precision 9/10 ») : le modele appris (score_modele) quand il est la ; sinon le melange simple
     try:
         import score_modele
-        sm = score_modele.score(titre or "", joueur)
+        sm = score_modele.score(nettoyer(titre), joueur)
         if sm is not None:
             total = sm
-        elif score_modele.charger() and not score_modele.informatif(titre or "", joueur):
+        elif score_modele.charger() and not score_modele.informatif(nettoyer(titre), joueur):
             total = None                     # 12 nov 2026 : pas assez d'indices dans le titre : pas de score invente
     except Exception as e:
         print("Score modele : " + repr(e), flush=True)
+    total = plafond_inconnu(total, c, ij)
     nom = j.title() if j and j == j.lower() else j
     return {"score": int(round(total)) if total is not None else None, "joueur": nom or None, "indice": ij.get("indice") if ij else None,
             "pastilles": (ij or {}).get("pastilles") or [], "semaine": (ij or {}).get("semaine"), "carte": c}
@@ -136,7 +160,7 @@ def _annoter_lot(items):
     items = [x for x in items if isinstance(x, dict)]
     try:
         import score_modele
-        sc = score_modele.scores([x.get("titre") or "" for x in items], [x.get("joueur") for x in items])
+        sc = score_modele.scores([nettoyer(x.get("titre")) for x in items], [x.get("joueur") for x in items])
     except Exception as e:
         print("Score modele (lot) : " + repr(e), flush=True)
         sc = None
@@ -150,7 +174,7 @@ def _annoter_lot(items):
                 import indice_joueurs
                 ij = indice_joueurs.indice(j)
             if sc is not None:
-                x["score"] = sc[k]
+                x["score"] = sc[k] if sc[k] is None else int(round(plafond_inconnu(sc[k], c, ij)))
             else:
                 sj = float(ij["indice"]) if ij and ij.get("indice") is not None else JOUEUR_INCONNU
                 x["score"] = int(round(POIDS_JOUEUR * sj + (1 - POIDS_JOUEUR) * c["score"]))

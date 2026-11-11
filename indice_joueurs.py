@@ -346,11 +346,15 @@ def calculer(d=None, base=None, demande=None):
         j = stats_j.get(nom) or {}
         actif = h.get("actif") is not False and bool(h.get("equipe") or j.get("jours"))
         fs = forme_semaine(j)
-        der = j["jours"][sorted(j["jours"])[-1]] if j.get("jours") else None
+        # 11 nov 2026 (Mathieu : « c'est un gardien, pas les points ») : un gardien n'est jamais note sur ses points (1 passe
+        # en 8 matchs le faisait « En hausse ») : sa forme, sa percee et son rythme ne comptent pas ; le reste oui
+        if h.get("pos") == "G":
+            fs = None
+        der = j["jours"][sorted(j["jours"])[-1]] if j.get("jours") and h.get("pos") != "G" else None
         ppm = (der["pts"] or 0) / der["mj"] if der and (der.get("mj") or 0) >= 3 and der.get("pts") is not None else None
         if fs and fs["mj"]:
             brut["forme"][nom] = fs["pts"] + 0.5 * fs["b"] + 0.15 * fs["mj"]
-        elif actif and h.get("l5") is not None and not j.get("jours"):
+        elif actif and h.get("l5") is not None and not j.get("jours") and h.get("pos") != "G":
             brut["forme"][nom] = (h.get("l5") or 0) * 7 / 12.0          # en attendant 7 jours de notes : ses 5 derniers matchs
         if ppm is not None:
             brut["rythme"][nom] = ppm
@@ -669,10 +673,12 @@ def pourquoi(nom):
         pairs = [x for x in I.values() if x.get("actif") == v.get("actif")]
         out["rang"] = 1 + sum(1 for x in pairs if x.get("indice", 0) > v["indice"])
         out["sur"] = len(pairs)
-    out["semaine"] = v.get("semaine") or forme_semaine(j)
-    if not out["semaine"] and h.get("l5") is not None and v.get("actif"):
+    gardien = h.get("pos") == "G"
+    out["gardien"] = gardien or None
+    out["semaine"] = None if gardien else (v.get("semaine") or forme_semaine(j))
+    if not gardien and not out["semaine"] and h.get("l5") is not None and v.get("actif"):
         out["cinq"] = h.get("l5")
-    jours = j.get("jours") or {}
+    jours = {} if gardien else (j.get("jours") or {})
     if jours:
         der = jours[sorted(jours)[-1]]
         if (der.get("mj") or 0) >= 3 and der.get("pts") is not None:

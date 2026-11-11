@@ -74,5 +74,11 @@ for v in ("remi-card-trader", "CF31_Sports_Cards", "slabsharksinc"):
 vrai_ch = chances.chance
 chances.chance = lambda x: (0.05, 30, "genre")
 assert lockerroom.Api._avec_chances([dict(petit, item_id="q")]) == []
+# 11 nov 2026 (« ou sont tous mes deals ?! dans admin ») : l'admin voit tout (compte de ce qui serait cache) ;
+# jamais cache sur tout un groupe de vendeurs (niveau « vendeur »)
+n_ = [0]
+assert [x["item_id"] for x in lockerroom.Api._avec_chances([dict(petit, item_id="q")], cacher=False, compte=n_)] == ["q"] and n_ == [1]
+chances.chance = lambda x: (0.05, 30, "vendeur")
+assert [x["item_id"] for x in lockerroom.Api._avec_chances([dict(petit, item_id="q")])] == ["q"]
 chances.chance = vrai_ch
 print("PEPITES CHANCES OK")

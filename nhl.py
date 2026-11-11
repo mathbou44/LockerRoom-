@@ -206,7 +206,10 @@ def carriere(nom, maintenant=None):
     with _verrou:
         d = _lire()
     g = (d.get("carrieres") or {}).get(cle)
-    if g and t - g.get("le", 0) < GARDE_CARRIERE_S:
+    gc = (g or {}).get("c") or {}
+    # 11 nov 2026 : un gardien actif : sa saison et ses 5 derniers matchs changent chaque soir (12 h au plus)
+    garde = GARDE_S if gc.get("position") == "G" and gc.get("actif") else GARDE_CARRIERE_S
+    if g and t - g.get("le", 0) < garde:
         return g.get("c")
     j = _chercher(nom)
     c = None
@@ -227,6 +230,18 @@ def carriere(nom, maintenant=None):
                  "repechage": {"an": dr.get("year"), "rang": dr.get("overallPick"), "equipe": dr.get("teamAbbrev")} if dr.get("year") else None}
             if pos == "G":
                 c.update(victoires=tot.get("wins"), moyenne=tot.get("goalsAgainstAvg"), efficacite=tot.get("savePctg"), blanchissages=tot.get("shutouts"))
+                # 11 nov 2026 (Mathieu : « c'est un gardien : son % d'arrets et sa moyenne, pas les points ») : sa saison et
+                # ses 5 derniers matchs, en stats de gardien
+                ss = (((land.get("featuredStats") or {}).get("regularSeason") or {}).get("subSeason")) or {}
+                if ss.get("gamesPlayed"):
+                    c["saison_g"] = {"mj": ss.get("gamesPlayed"), "v": ss.get("wins"), "moyenne": ss.get("goalsAgainstAvg"), "efficacite": ss.get("savePctg"),
+                                     "blanchissages": ss.get("shutouts")}
+                l5 = [m for m in land.get("last5Games") or [] if isinstance(m, dict)]
+                if l5:
+                    ga = sum(int(m.get("goalsAgainst") or 0) for m in l5)
+                    sa_ = sum(int(m.get("shotsAgainst") or 0) for m in l5)
+                    c["cinq_g"] = {"mj": len(l5), "v": sum(1 for m in l5 if m.get("decision") == "W"),
+                                   "efficacite": round(1 - ga / sa_, 3) if sa_ else None, "moyenne": round(ga / len(l5), 2)}
             else:
                 c.update(buts=tot.get("goals"), passes=tot.get("assists"), points=tot.get("points"))
     if c is not None or j is None:
