@@ -53,6 +53,10 @@ h1,h2,h3{margin:0}
 .entete{display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:44px}
 .entete > div{min-width:0}
 .titre{font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:32px; letter-spacing:.2px; line-height:1}
+.d-tt{display:flex; align-items:center; gap:0; white-space:nowrap}
+.d-x-iq{display:inline-flex; align-items:center; gap:10px; margin-left:12px; padding:0; border:0; background:none; font:inherit; cursor:pointer; color:var(--texte)}
+.d-x-iq i{font-style:normal; font-weight:400; font-size:.62em; color:var(--pale); transform:translateY(-1px)}
+.d-x-iq span{font:inherit; text-transform:none; letter-spacing:.01em} .d-x-iq em{font-style:normal; background:var(--holo); -webkit-background-clip:text; background-clip:text; color:transparent}
 .sous{font-size:13px; color:var(--doux)}
 .titre.moyen{font-size:25px; line-height:1.1; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
 .rond{width:44px; height:44px; border-radius:22px; border:none; background:var(--carte); color:var(--texte); display:flex; align-items:center; justify-content:center; flex-shrink:0}
@@ -5165,6 +5169,29 @@ function rectifierCoins(q){
   if (Math.hypot(p[0] - q[o][0], p[1] - q[o][1]) < taille * 0.012) return q;
   const r = q.map(x => x.slice()); r[o] = p; return r;
 }
+// 13 nov 2026 (Mathieu : « l'IA l'a crochie ? Elle est dans un boitier Clear Cut ») : sans les coins de l'IA, la photo studio
+// trouvait la carte dans le telephone ; dans un boitier noir sur fond noir, elle prenait la carte blanche + un bout du boitier
+// (et l'etiquette holographique) et recadrait de travers. Pour la photo studio, on ne recadre plus que si c'est sur : juste
+// a l'exterieur de chaque bord, ce doit etre du fond (uni) ; sinon on garde la photo telle quelle (pas de recadrage croche).
+function coinsLocauxSurs(img){
+  const q = coinsLocaux(img); if (!q) return null;
+  const G = grisLisse(img, 360), w = G.w, h = G.h, P = q.map(([x, y]) => [x / 1000 * w, y / 1000 * h]);
+  const c = [P.reduce((a, p) => a + p[0], 0) / 4, P.reduce((a, p) => a + p[1], 0) / 4];
+  const m = Math.max(3, Math.round(Math.min(w, h) * 0.035));
+  for (let k = 0; k < 4; k++) {
+    const a = P[k], b = P[(k + 1) % 4], mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+    let nx = mx - c[0], ny = my - c[1]; const L = Math.hypot(nx, ny) || 1; nx /= L; ny /= L;     // vers l'exterieur
+    const v = [];
+    for (let t = 0.12; t <= 0.88; t += 0.04) for (let d = m * 0.6; d <= m * 1.8; d += m * 0.4) {
+      const x = Math.round(a[0] + (b[0] - a[0]) * t + nx * d), y = Math.round(a[1] + (b[1] - a[1]) * t + ny * d);
+      if (x >= 0 && y >= 0 && x < w && y < h) v.push(G.g[y * w + x]);
+    }
+    if (v.length < 20) continue;                                 // le bord touche la photo : rien a juger
+    const moy = v.reduce((a_, x) => a_ + x, 0) / v.length, et = Math.sqrt(v.reduce((a_, x) => a_ + (x - moy) ** 2, 0) / v.length);
+    if (et > 22) return null;                                    // pas du fond : le recadrage serait croche
+  }
+  return q;
+}
 function coinsLocaux(img){
   const G = grisLisse(img, 360), w = G.w, h = G.h, d = G.rgba;
   const cb = coinsBords(G);
@@ -5547,7 +5574,7 @@ async function verifierPrise(i, fichier, apres){
 async function choixFond(i, ph, suite){
   V2.loc = V2.loc || [];
   let st = null;
-  try { const img = await chargerImage(ph); const c = coinsLocaux(img); if (c) st = await photoStudio(ph, c, {affiner: false}); } catch (e) {}
+  try { const img = await chargerImage(ph); const c = coinsLocauxSurs(img); if (c) st = await photoStudio(ph, c, {affiner: false}); } catch (e) {}
   V2.loc[i] = st;
   if (!st) { suite(); return; }                                   // carte pas trouvee : on continue (l'IA la trouvera, sans cout de plus)
   const peindre = () => {
@@ -5625,7 +5652,7 @@ async function fondsLocaux(){
   if (!ph.length) return;
   V2.originales = V2.photos.slice(); V2.studio = [];
   for (let j = 0; j < Math.min(2, V2.photos.length); j++) {
-    try { const img = await chargerImage(V2.photos[j]); const c = coinsLocaux(img); if (c) V2.studio[j] = await photoStudio(V2.photos[j], c, {affiner: false}); } catch (e) {}
+    try { const img = await chargerImage(V2.photos[j]); const c = coinsLocauxSurs(img); if (c) V2.studio[j] = await photoStudio(V2.photos[j], c, {affiner: false}); } catch (e) {}
   }
   syncPhotos();
 }
@@ -5967,7 +5994,7 @@ async function traiterCarteLot(c){
     if (p[j] && p[j].coins) { try { studio[j] = (await photoStudio(c.ph[j], p[j].coins)).photo; } catch (e) {} }
     // 11 nov 2026 (« le cadre flou n'a pas ete mis autour de celle-ci ») : l'IA n'a pas donne les coins, ou le studio a
     // echoue -> on trouve la carte dans le telephone (comme pour une carte seule)
-    if (!studio[j] && MODE_STUDIO) { try { const q = coinsLocaux(await chargerImage(c.ph[j])); if (q) studio[j] = (await photoStudio(c.ph[j], q, {affiner: false})).photo; } catch (e) {} }
+    if (!studio[j] && MODE_STUDIO) { try { const q = coinsLocauxSurs(await chargerImage(c.ph[j])); if (q) studio[j] = (await photoStudio(c.ph[j], q, {affiner: false})).photo; } catch (e) {} }
   }
   const photos = c.ph.map((o, j) => (MODE_STUDIO && studio[j]) || o);
   const noms = Object.fromEntries(CHAMPS_VERIF()), champs = {...(r.champs || {})}, dt = (r.a_verifier || []).map(k => (noms[k] || k).toLowerCase());
@@ -6583,7 +6610,7 @@ async function pgStudio(L){
   if (!a.length) return;
   let k = 0, faits = 0;
   const un = async (x) => { const base = ((x.orig || []).length ? x.orig : x.photos).slice(0, 2), out = []; let ok = false;
-    for (const u of base) { try { const q = coinsLocaux(await chargerImage(u)); if (q) { out.push((await photoStudio(u, q, {affiner: false})).photo); ok = true; continue; } } catch (e) {} out.push(u); }
+    for (const u of base) { try { const q = coinsLocauxSurs(await chargerImage(u)); if (q) { out.push((await photoStudio(u, q, {affiner: false})).photo); ok = true; continue; } } catch (e) {} out.push(u); }
     if (ok) { const r = await API.carte_photos_studio(x.id, out, STUDIO_V).catch(() => null); if (r && r.ok && r.photos) { x.photos = r.photos; x.orig = base; x.studio_v = STUDIO_V; x.photo = r.photos[0]; } }
     faits++; const b = $('#pg-go'); if (b) b.textContent = tt(`Fond flou des photos… ${faits}/${a.length}`, `Blurring photo backgrounds… ${faits}/${a.length}`); };
   await Promise.all(Array.from({length: Math.min(3, a.length)}, async () => { while (k < a.length) await un(a[k++]); }));
@@ -8514,7 +8541,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document
 async function vueDeals(arg){
   const w = arg === 'watch';
   V().innerHTML = `<section class="ecran large">
-    <div class="entete"><div class="titre">Radar</div>${w ? '' : `<span class="d-ent"><a class="aide-q d-val" href="#valeur" aria-label="${esc(tt('Combien vaut une carte ?', 'What is a card worth?'))}">${ICONES.loupe}</a><button class="aide-q" id="d-aide" aria-label="${esc(tt('Comment lire un deal', 'How to read a deal'))}">?</button></span>`}</div>
+    <div class="entete"><div class="titre d-tt">Radar${w ? '' : `<button class="d-x-iq" id="d-x-iq" aria-label="SlabIQ"><i>×</i><span>Slab<em>IQ</em></span></button>`}</div>${w ? '' : `<span class="d-ent"><a class="aide-q d-val" href="#valeur" aria-label="${esc(tt('Combien vaut une carte ?', 'What is a card worth?'))}">${ICONES.loupe}</a><button class="aide-q" id="d-aide" aria-label="${esc(tt('Comment lire un deal', 'How to read a deal'))}">?</button></span>`}</div>
     <div class="d-onglets" role="tablist"><a role="tab" href="#deals" aria-selected="${!w}" class="${w ? '' : 'on'}">${comps() ? 'Deals' : tt('Mes cibles', 'My targets')}<span class="d-nb" id="d-nb" hidden></span></a>
       <a role="tab" href="#deals/watch" aria-selected="${w}" class="${w ? 'on' : ''}">${ICO_ETOILE}${tt('Watchlist', 'Watchlist')}<span class="w-nb" hidden></span></a></div>
     <form class="recherche pas-tel" id="v-form" role="search">${ICONES.loupe}<input id="v-q" type="search" enterkeyhint="search" placeholder="${esc(tt('Combien vaut une carte ? (ex. Bedard Young Guns)', 'What is a card worth? (e.g. Bedard Young Guns)'))}"></form>
@@ -8690,6 +8717,7 @@ async function chargerDeals(frais){
   brancherRondsDeals(F, sp);
   suiteDeals();
   const da = $('#d-aide'); if (da) da.onclick = feuilleAideDeals;
+  const dxi = $('#d-x-iq'); if (dxi) dxi.onclick = () => { vibrer(); expliquerSlabIQ(); };
   // 29 oct 2026 (Mathieu : « je veux voir tous les deals des gros vendeurs ») : un tap
 
   // 28 oct 2026 (Mathieu : « encore que des rookies ») : deux raccourcis, un tap
