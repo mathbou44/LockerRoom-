@@ -65,5 +65,14 @@ assert ca and ca[2] == "tous" and not chances.a_cacher(autre, ca), ca
 # 4. deals_liste : l'encan perdu d'avance n'est pas montre, l'autre garde sa chance
 import lockerroom
 l = lockerroom.Api._avec_chances([dict(gros, item_id="g"), dict(petit, item_id="p"), {"item_id": "f", "encan": False, "valeur": 10}])
-assert [x["item_id"] for x in l] == ["p", "f"] and l[0]["chance"]["niveau"] == "genre", l
+# 11 nov 2026 (« demain c'est la fin de Savage, Remi et CF31 et y'a rien ») : un gros vendeur suivi n'est JAMAIS cache,
+# il garde sa chance (la fiche la dit) ; un autre vendeur perdu d'avance l'est toujours
+assert [x["item_id"] for x in l] == ["g", "p", "f"], l
+assert l[0]["chance"]["p"] < 0.12 and l[1]["chance"]["niveau"] == "genre", l
+for v in ("remi-card-trader", "CF31_Sports_Cards", "slabsharksinc"):
+    assert [x["item_id"] for x in lockerroom.Api._avec_chances([dict(gros, item_id="v", vendeur=v)])] == ["v"], v
+vrai_ch = chances.chance
+chances.chance = lambda x: (0.05, 30, "genre")
+assert lockerroom.Api._avec_chances([dict(petit, item_id="q")]) == []
+chances.chance = vrai_ch
 print("PEPITES CHANCES OK")

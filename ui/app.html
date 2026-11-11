@@ -300,6 +300,21 @@ details.reglage summary::-webkit-details-marker{display:none}
 .pg-bulle{position:fixed; left:12px; right:12px; bottom:calc(96px + env(safe-area-inset-bottom)); z-index:34; display:flex; align-items:stretch; border-radius:18px; background:var(--carte2); border:1px solid var(--acc); box-shadow:0 10px 30px rgba(0,0,0,.45); overflow:hidden}
 .pg-bulle .pgb-go{flex:1; display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:12px 14px; background:none; border:0; color:var(--texte); font:inherit; text-align:left; cursor:pointer}
 .pg-bulle .pgb-go small{color:var(--doux); font-size:12.5px} .pg-bulle .pgb-x{width:48px; background:none; border:0; border-left:1px solid var(--ligne); color:var(--doux); font-size:16px; cursor:pointer}
+.pg-l2s{gap:8px}
+.pg-l2{display:grid; grid-template-columns:48px minmax(0,1fr) auto; align-items:center; gap:12px; padding:10px 12px; border-radius:20px; background:var(--carte); border:1px solid var(--ligne)}
+.pg-l2 .pg-ph{width:48px; height:66px; border-radius:7px}
+.pg-c2{display:flex; flex-direction:column; gap:6px; min-width:0}
+.pg-t2{display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; text-align:left; background:none; border:0; padding:0; color:var(--texte); font:600 14px/1.3 inherit; font-family:inherit; cursor:text}
+.pg-ta{font-size:14px !important; min-height:0 !important; height:auto !important; padding:8px 10px !important; line-height:1.35}
+.pg-act{display:flex; align-items:center; gap:8px}
+.pg-vd{display:inline-flex; align-items:center; gap:5px; height:28px; padding:0 10px 0 8px; border-radius:999px; border:1px solid color-mix(in srgb, var(--acc) 35%, var(--ligne)); background:var(--acc-fonce); color:var(--acc); font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer}
+.pg-vd svg{width:14px; height:14px} .pg-vd .ic-ext{width:11px; height:11px; stroke:currentColor; fill:none; stroke-width:2.2}
+.pg-n{font-size:11px; color:var(--pale); margin-left:auto}
+.pg-p2{display:flex; flex-direction:column; align-items:stretch; width:auto !important; gap:3px; position:relative}
+.pg-p2 > span{position:absolute; left:11px; top:11px; font:700 17px var(--f-cond); color:var(--doux); pointer-events:none}
+.pg-p2 input{width:92px !important; height:44px; padding:0 10px 0 24px !important; border-radius:14px; text-align:right; font:700 20px var(--f-cond)}
+.pg-p2 .pg-sug{text-align:center !important; max-width:92px; line-height:1.2}
+@media (max-width:380px){ .pg-l2{grid-template-columns:40px minmax(0,1fr) auto; gap:10px; padding:9px 10px} .pg-l2 .pg-ph{width:40px; height:55px} .pg-p2 input{width:80px !important} }
 .pg-prix{flex-wrap:wrap; width:104px; justify-content:flex-end} .pg-prix .pg-sug{display:block; width:100%; text-align:right; font-size:11px; color:var(--acc); margin-top:2px} .pg-recom{display:block; margin:18px auto 0}
 .pq-t{font-weight:700; margin:12px 0 6px} .pq-l{display:flex; flex-direction:column; gap:6px}
 .pq-e{display:flex; gap:10px; align-items:flex-start; font-size:13.5px} .pq-e i{flex:none; width:22px; height:22px; border-radius:50%; display:grid; place-items:center; font-style:normal; font-size:12px; background:var(--carte2); color:var(--doux)}
@@ -6776,10 +6791,16 @@ function rendrePG(){
       <span class="pg-mil"><b>${esc(titreCourt(x.titre))}</b><small>${x.manque.length ? (pgChoisissable(x) ? tt('Prix et titre suggérés à l’étape 2', 'Price and title suggested in step 2') : tt('Manque : ', 'Missing: ') + x.manque.map(m => ({prix: tt('prix', 'price'), photo: 'photo', titre: tt('titre', 'title')}[m])).join(', ')) : x.nb_photos + ' photo' + (x.nb_photos > 1 ? 's' : '')}</small></span>
       <span class="pg-px">${x.prix ? argent(x.prix, 0) : '—'}</span></label>`).join('')}</div>`
       : `<div class="vide">${tt('Aucune carte en stock. Ajoute des cartes (photo devant + dos) : elles arrivent ici prêtes à programmer.', 'No cards in stock. Add cards (front + back photo): they arrive here ready to schedule.')}<br><a class="btn petit" href="#vendre/lot" style="margin-top:12px">${tt('Ajouter des cartes', 'Add cards')}</a></div>`}`;
-  if (e === 2) corps = `<div class="pg-q">${tt('Titres et prix', 'Titles and prices')}</div><div class="pg-sous">${tt('Corrige au besoin. La description et les détails eBay se font tout seuls.', 'Fix if needed. The description and eBay details are built for you.')}</div>
+  // 13 nov 2026 (Mathieu : « revoir le layout des prix, trop epais ; un petit lien vers les last sold de CETTE carte, son titre
+  // deja dans la recherche ; la case du prix ; plus beau, plus sexy ») : une ligne compacte par carte : la photo, le titre
+  // sur 2 lignes (toucher pour le corriger), la pastille « Vendus » (les ventes eBay de la carte, dans l'app) et le prix
+  if (e === 2) corps = `<div class="pg-q">${tt('Titres et prix', 'Titles and prices')}</div><div class="pg-sous">${tt('Touche « Vendus » pour voir les dernières ventes de la carte. Affiche environ 15 % de plus : ça laisse de la place pour la négo.', 'Tap “Sold” to see the card’s latest sales. List about 15% higher: it leaves room to negotiate.')}</div>
     <button class="lien-doux" id="pg-reprix">${tt('Recalculer les prix suggérés', 'Recalculate suggested prices')}</button>
-    <div class="pg-liste">${L.map(x => `<div class="pg-ligne edit">${vig(x)}<span class="pg-mil"><textarea class="champ" rows="2" maxlength="80" data-pt="${x.id}">${esc(x.titre || '')}</textarea></span>
-      <label class="pg-prix">$<input class="champ" type="number" inputmode="decimal" step="0.01" data-pp="${x.id}" value="${esc(x.prix ?? '')}" placeholder="${x.prix_cherche === 'en_cours' ? '…' : ''}">${x.prix_auto ? `<small class="pg-sug">${(x.prix_auto === 'annonces' ? tt('annonces −10 %', 'listings −10%') : x.prix_auto === 'similaires' ? tt('cartes proches', 'similar cards') : tt('ventes', 'sales')) + (negoPct(PG.mod) ? ` · +${negoPct(PG.mod)} % ${tt('négo', 'nego')}` : '')}</small>` : ''}</label></div>`).join('')}</div>`;
+    <div class="pg-liste pg-l2s">${L.map(x => `<div class="pg-l2">${vig(x)}<div class="pg-c2">
+        <button class="pg-t2" data-pte="${x.id}" aria-label="${esc(tt('Corriger le titre', 'Edit the title'))}">${esc(x.titre || tt('Ajoute un titre', 'Add a title'))}</button>
+        <textarea class="champ pg-ta" rows="3" maxlength="80" data-pt="${x.id}" hidden>${esc(x.titre || '')}</textarea>
+        <div class="pg-act"><button class="pg-vd" data-pv="${x.id}">${ICO_VENDUS}<span>${tt('Vendus', 'Sold')}</span>${EXT}</button><small class="pg-n" hidden>${(x.titre || '').length}/80</small></div></div>
+      <label class="pg-prix pg-p2"><span>$</span><input class="champ" type="number" inputmode="decimal" step="0.01" data-pp="${x.id}" value="${esc(x.prix ?? '')}" placeholder="${x.prix_cherche === 'en_cours' ? '…' : '0'}">${x.prix_auto ? `<small class="pg-sug">${(x.prix_auto === 'annonces' ? tt('annonces −10 %', 'listings −10%') : x.prix_auto === 'similaires' ? tt('cartes proches', 'similar cards') : tt('ventes', 'sales')) + (negoPct(PG.mod) ? ` · +${negoPct(PG.mod)} % ${tt('négo', 'nego')}` : '')}</small>` : ''}</label></div>`).join('')}</div>`;
   if (e === 3) corps = `<div class="pg-q">${tt('Expédition', 'Shipping')}</div><div class="pg-sous">${PG.polMode === 'prix' ? tt('Une politique selon le prix de chaque carte.', 'A policy based on each card’s price.') : tt('La même pour toutes les cartes du lot.', 'The same for every card in the batch.')}</div>
     ${pol && pol.expedition.length ? `<div class="bloc-v pol-z">${polTete()}${polAide(false)}${sel('pg-pexp', pol.expedition, o.politique_exp, tt('Aucune : réglages de l’app', 'None: app settings'))}
       ${(pol.expedition.find(p => String(p.id) === String(o.politique_exp)) || {}).resume ? `<div class="pg-sous">${esc(pol.expedition.find(p => String(p.id) === String(o.politique_exp)).resume)}</div>` : ''}</div>`
@@ -6851,6 +6872,12 @@ function brancherPG(){
     c.checked ? PG.choisis.add(id) : PG.choisis.delete(id); const b = $('#pg-suiv'); if (b) b.disabled = !PG.choisis.size; });
   const tout = $('#pg-tout'); if (tout) tout.onclick = () => { if (PG.choisis.size) PG.choisis.clear(); else PG.cartes.filter(pgChoisissable).slice(0, PG_MAX).forEach(x => PG.choisis.add(x.id)); rendrePG(); };
   $$('[data-et]').forEach(b => b.onclick = () => { pgLire(); PG.etape = +b.dataset.et; rendrePG(); scrollTo(0, 0); });
+  // l'etape des prix : le titre se corrige d'un toucher ; « Vendus » ouvre les ventes eBay de CETTE carte
+  $$('[data-pte]').forEach(b => b.onclick = () => { vibrer(); const ta = b.parentNode.querySelector('.pg-ta'); b.hidden = true; ta.hidden = false; const n_ = b.parentNode.querySelector('.pg-n'); if (n_) n_.hidden = false; ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); });
+  $$('.pg-ta').forEach(ta => { const n = ta.parentNode.querySelector('.pg-n'), b = ta.parentNode.querySelector('.pg-t2');
+    ta.oninput = () => { if (n) n.textContent = ta.value.length + '/80'; };
+    ta.onblur = () => { b.textContent = ta.value.trim() || tt('Ajoute un titre', 'Add a title'); ta.hidden = true; b.hidden = false; if (n) n.hidden = true; }; });
+  $$('[data-pv]').forEach(b => b.onclick = () => { vibrer(); const ta = $(`[data-pt="${b.dataset.pv}"]`); ouvrirDansApp(urlVendusEbay(requeteVendus(ta ? ta.value : ''))); });
   const p = $('#pg-prec'); if (p) p.onclick = () => { pgLire(); PG.etape--; rendrePG(); scrollTo(0, 0); };
   const s = $('#pg-suiv'); if (s) s.onclick = () => {
     pgLire();
@@ -14965,6 +14992,9 @@ const NEGO = 0.15;
 // les ventes eBay (vendues) de cette carte, dans le navigateur de l'app ; avant : la regle des 15 % pour la negociation ;
 // apres : le dernier vendu tape -> le prix a afficher (+15 %) en un toucher. L'utilisateur lit eBay lui-meme : rien n'est
 // recopie par SlabCoach (licence eBay).
+function requeteVendus(titre){
+  return String(titre || '').replace(/#\s*[\w-]+/g, ' ').replace(/\b(RC|rookie card|card|hockey|nhl)\b/gi, ' ').replace(/\s+/g, ' ').trim();
+}
 function urlVendusEbay(titre){
   const q = String(titre || '').replace(/[^\p{L}\p{N}#/\-.' ]+/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 80);
   const dom = typeof DEVISE !== 'undefined' && DEVISE === 'USD' ? 'www.ebay.com' : 'www.ebay.ca';
@@ -14988,7 +15018,7 @@ function feuilleVendusEbay(titre, mettre){
   document.body.appendChild(f); requestAnimationFrame(() => f.classList.add('ouvert'));
   const fermer = () => { f.classList.remove('ouvert'); setTimeout(() => f.remove(), 220); };
   f.querySelector('.pop2-x').onclick = fermer; f.onclick = (e) => { if (e.target === f) fermer(); };
-  $('#pe-go').onclick = () => { vibrer(); ouvrirDansApp(urlVendusEbay(titre)); setTimeout(() => { const i = $('#pe-v'); if (i) i.focus(); }, 900); };
+  $('#pe-go').onclick = () => { vibrer(); ouvrirDansApp(urlVendusEbay(requeteVendus(titre))); setTimeout(() => { const i = $('#pe-v'); if (i) i.focus(); }, 900); };
   const v = $('#pe-v'), r = $('#pe-r');
   v.oninput = () => { const x = nb(String(v.value).replace(',', '.'));
     if (!(x > 0)) { r.innerHTML = ''; return; }

@@ -8875,11 +8875,15 @@ class Api:
             import chances
         except Exception:
             return lst
+        import deals as _dl
         out = []
         for x in lst:
             if x.get("encan") and x.get("mise_max") is not None:
                 c = chances.chance(x)
-                if chances.a_cacher(x, c):
+                # 11 nov 2026 (Mathieu : « demain c'est la fin de Savage, Remi et CF31 vendredi et y'a rien ») : leurs encans
+                # finissent presque tous au-dessus de la mise max, alors tout leur groupe etait cache. Les gros vendeurs
+                # suivis ne sont JAMAIS caches : la fiche dit leur chance, l'utilisateur decide.
+                if chances.a_cacher(x, c) and not _dl.rang_vendeur(x.get("vendeur")) < len(_dl.VENDEURS_PRIORITE):
                     continue
                 if c:
                     x = dict(x, chance={"p": c[0], "n": c[1], "niveau": c[2]})
