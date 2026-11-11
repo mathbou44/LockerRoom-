@@ -1950,6 +1950,7 @@ button.btn-scan{border:none; font:inherit; font-weight:700}
 .sc-b{display:inline-grid; place-items:center; min-width:34px; height:26px; padding:0 8px; border-radius:13px; font:700 14px/1 var(--f-cond); letter-spacing:.04em;
   background:rgba(14,14,18,.82); color:var(--texte); border:1px solid var(--ligne); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px)}
 .sc-b.vert{color:var(--vert); border-color:color-mix(in srgb, var(--vert) 55%, transparent)} .sc-b.acc{color:var(--acc); border-color:color-mix(in srgb, var(--acc) 55%, transparent)} .sc-b.or{color:var(--or); border-color:color-mix(in srgb, var(--or) 55%, transparent)}
+.fa-iqb{margin:2px 0 0} .fa-iqb .v-iq-p .tag{transform:scale(.9)}
 .fa-chips{display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:8px; margin:12px 0 4px}
 .fa-chip{display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:16px; background:var(--carte2); border:1px solid var(--ligne); color:var(--texte); text-decoration:none; font:inherit; text-align:left; cursor:pointer; min-width:0}
 .fa-ct{display:flex; flex-direction:column; min-width:0; flex:1} .fa-ct small{font:700 10.5px/1.2 var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--acc)}
@@ -8062,6 +8063,7 @@ async function ouvrirAnnonce(base){
   document.body.classList.add('fen-ouverte');
   const montrer = (d) => {
     if (!comps()) return montrerPublic(d);
+    S.fenDernier = d;
     const a = d.article || base, photos = (a.photos && a.photos.length ? a.photos : [a.photo || base.photo]).filter(Boolean).map(photoHD);
     const total = a.total ?? base.total, url = lienAchat(a.url || base.url, 'fenetre');
     // 31 oct 2026 (Mathieu : « revoir le format : les comps sont trop bas, on doit les glisser de gauche a droite et tout
@@ -8118,6 +8120,8 @@ async function ouvrirAnnonce(base){
         <div class="fa-k fa-g"><span>${tt('Profit', 'Profit')}</span>${gainAff != null ? `<b class="${gainAff > 0 ? '' : 'neg'}">${gainAff > 0 ? '+' : '−'}${argent(Math.abs(gainAff), 0)}</b><small>${encan && maxA != null && d.valeur ? tt('à ta mise max', 'at your max bid') + (d.gain != null && d.gain - gainAff >= 1 ? `<br>${tt('actuel ', 'now ')}<b class="fa-g2">+${argentCourt(d.gain)}</b>` : '') : tt('après frais', 'after fees')}</small>`
           : d.chargement || d.ventes_attente ? `<b><span class="roue"></span></b><small>&nbsp;</small>` : `<b>—</b><small>&nbsp;</small>`}</div>
       </div>
+      <button class="v-iq-b fa-iqb" data-slabiq>${scoreP ? (scoreP.score != null ? `<span class="v-iq-n ${couleurScore(scoreP.score)}">${scoreP.score}</span><span class="v-iq-t"><small>Score SlabIQ</small><b>${scoreP.score >= 80 ? tt('Très recherchée', 'Highly sought') : scoreP.score >= 65 ? tt('Recherchée', 'Sought after') : scoreP.score >= 50 ? tt('Correcte', 'Decent') : tt('Peu recherchée', 'Low demand')}</b></span>` : `<span class="v-iq-n">—</span><span class="v-iq-t"><small>Score SlabIQ</small><b>${tt('Pas assez d’infos', 'Not enough info')}</b></span>`) : `<span class="v-iq-n"><span class="roue"></span></span><span class="v-iq-t"><small>Score SlabIQ</small><b>&nbsp;</b></span>`}${(() => { const pa = proPils(a, encan); return pa.length ? `<span class="v-iq-p">${pa.slice(0, 4).join('')}</span>` : ''; })()}<i>›</i></button>
+      ${proChips(a)}
       ${depasse || budget || suspect ? `<div class="fa-pils">${suspect ? `<span class="capsule or">${tt('Prix très bas : vérifie que c’est la même carte', 'Very low price: check it’s the same card')}</span>` : ''}${depasse ? `<span class="capsule rouge">${esc(vt[1])}</span>` : ''}${depasse && d.deal_retire ? `<span class="capsule">${tt('Retiré de tes deals', 'Removed from your deals')}</span>` : ''}${budget ? `<span class="capsule rouge">${S.budget.reste <= 0 ? tt('Budget du mois atteint', 'Monthly budget reached') : tt('Au-dessus de ton budget', 'Over your budget')}</span>` : ''}</div>` : ''}
       ${(x0 || {}).faute || (encan && (x0 || {}).chance && (x0 || {}).chance.niveau !== 'tous') ? `<div class="fa-note">${(x0 || {}).faute ? `<span>${icN('oeil')}${tt('Nom mal écrit sur eBay', 'Name misspelled on eBay')} (« ${esc((x0 || {}).faute)} ») : ${tt('peu d’acheteurs la trouvent.', 'few buyers find it.')}</span>` : ''}${encan && (x0 || {}).chance && (x0 || {}).chance.niveau !== 'tous' ? `<span>${tt(`Ce genre d’encan finit sous ton pay max environ ${Math.max(1, Math.round((x0 || {}).chance.p * 10))} fois sur 10.`, `This kind of auction ends under your pay max about ${Math.max(1, Math.round((x0 || {}).chance.p * 10))} times out of 10.`)}</span>` : ''}</div>` : ''}
       ${d.etranger && d.taxe_achat > ((S.reglages || {}).pays === 'US' ? 0.07 : TAXE_ACHAT) + 0.001 ? `<div class="fa-pils"><span class="capsule or" style="white-space:normal; line-height:1.3">${(S.reglages || {}).pays === 'US' ? tt(`Hors États-Unis : +${Math.round(d.taxe_achat * 100)} % de taxes et douanes (estimé), déjà comptés dans la mise max`, `Outside the US: +${Math.round(d.taxe_achat * 100)}% taxes and customs (estimate), already counted in the max bid`) : tt(`Hors Canada : +${Math.round(d.taxe_achat * 100)} % de taxes et frais d’importation, déjà comptés dans la mise max`, `Outside Canada: +${Math.round(d.taxe_achat * 100)}% taxes and import fees, already counted in the max bid`)}</span></div>` : ''}
@@ -8140,7 +8144,7 @@ async function ouvrirAnnonce(base){
     $$('.fen-vigs [data-ph]', f).forEach(b => b.onclick = () => { $('#fen-img', f).innerHTML = `<img src="${esc(b.dataset.ph)}" alt="">`; $$('.fen-vigs button', f).forEach(x => x.classList.toggle('on', x === b)); brancherLoupe($('#fen-img', f)); });
     brancherLoupe($('#fen-img', f));
     $$('[data-fermer]', f).forEach(b => b.addEventListener('click', fermerAnnonce));
-    $$('[data-slabiq]', f).forEach(b => b.onclick = () => { vibrer(); expliquerSlabIQ(); });
+    brancherPro(a);
     brancherMesAchats(f);
     const re_ = $('#fa-reessai', f); if (re_) re_.onclick = () => { vibrer(); ouvrirAnnonce({...base}); };
     const fp = $('.fen-plus', f); if (fp) fp.ontoggle = () => { S.fenPlus = fp.open; };
@@ -8158,12 +8162,9 @@ async function ouvrirAnnonce(base){
   // eBay) : la mise et ce qu'il paiera vraiment, le Score SlabCoach (joueur + carte), le joueur, la carte, le vendeur,
   // « Verifier le prix ». Le score arrive a part (il ne bloque pas la fiche).
   let scoreP = null;
-  const montrerPublic = (d) => {
-    const a = d.article || base, photos = (a.photos && a.photos.length ? a.photos : [a.photo || base.photo]).filter(Boolean).map(photoHD);
-    const total = a.total ?? base.total, url = lienAchat(a.url || base.url, 'fenetre');
-    const encan = !!(a.encan || (base.fin && !a.prix_fixe)), port = a.port_cad || 0;
-    const tx = d.taxe_achat != null ? d.taxe_achat : ((S.reglages || {}).pays === 'US' ? 0.07 : TAXE_ACHAT);
-    const reel = total ? Math.round(total * (1 + tx)) : null;
+  // 12 nov 2026 (Mathieu : « pour l'admin, tout ce qu'on a fait pour la version pro, plus last sold, max bid, profit ») :
+  // les morceaux de la fiche Pro (pastilles, joueur et vendeur, Score SlabIQ), partages par les deux fiches
+  const proPils = (a, encan) => {
     const sp = scoreP, c = (sp && sp.carte) || {};
     const L = {en_feu: [tt('En feu', 'On fire'), 'rouge'], en_hausse: [tt('En hausse', 'Rising'), 'vert'], legende: [tt('Légende', 'Legend'), 'or'], recrue: [tt('Recrue', 'Rookie'), 'or'], buzz: ['Buzz', 'acc'], actu: [tt('Dans l’actu', 'In the news'), 'acc'], en_creux: [tt('En creux', 'In a slump'), ''], rebond: [tt('Sort de son creux', 'Bouncing back'), 'vert']};
     const pils = [];
@@ -8176,6 +8177,28 @@ async function ouvrirAnnonce(base){
     const ms = Date.parse(a.fin || base.fin || '') - Date.now();
     if (encan && a.mises != null) pils.push(tag(a.mises + ' ' + tt('mise', 'bid') + (a.mises > 1 ? 's' : '')));
     if (encan && (a.mises || 0) <= 1 && ms > 0 && ms < 6 * 3600e3) pils.push(tag(tt('Peu disputé', 'Low competition'), 'vert'));
+    return pils;
+  };
+  const proChips = (a) => { const sp = scoreP; return (sp && sp.joueur) || a.vendeur ? `<div class="fa-chips">
+        ${sp && sp.joueur ? `<a class="fa-chip" href="#joueur/${encodeURIComponent(sp.joueur)}" data-fermer><span class="fa-ci">${icN('profil')}</span><span class="fa-ct"><small>${tt('Joueur', 'Player')}</small><b>${esc(sp.joueur)}</b>${sp.rang ? `<em>${ordinal(sp.rang)} ${tt('sur', 'of')} ${sp.sur}</em>` : ''}</span><i>›</i></a>` : ''}
+        ${a.vendeur ? `<button class="fa-chip" id="fa-vd"><span class="fa-ci">${icN('boutique')}</span><span class="fa-ct"><small>${tt('Vendeur', 'Seller')}</small><b>${esc(a.vendeur)}</b>${a.vendeur_pct ? `<em class="${parseFloat(a.vendeur_pct) >= 99 ? 'vert' : ''}">${esc(a.vendeur_pct)} %</em>` : ''}</span><i>›</i></button>` : ''}</div>` : ''; };
+  const brancherPro = (a) => { const sp = scoreP;
+    // 11 nov 2026 : le score ouvre « Pourquoi ce score » (petite fenetre avec un X) ; le vendeur aussi
+    $$('[data-slabiq]', f).forEach(b => b.onclick = () => { vibrer(); if (!sp || sp.score == null) return expliquerSlabIQ();
+      _SC[(base.titre || '') + '|'] = sp; pourquoiScore({score: sp.score, titre: base.titre || '', petit_vendeur: base.petit_vendeur, vendeur_score: a.vendeur_score}); });
+    const vd = $('#fa-vd', f); if (vd) vd.onclick = () => { vibrer(); ouvrirFeuille(`<div class="ps"><div class="ps-n"><span>${esc(a.vendeur)}<small>${tt('Vendeur eBay', 'eBay seller')}</small></span></div><div class="ps-l">
+      ${a.vendeur_pct ? `<div class="ps-r"><span class="ps-i vendeur"></span><span><b>${esc(a.vendeur_pct)} %</b><small>${tt('d’évaluations positives', 'positive feedback')}</small></span></div>` : ''}
+      ${a.vendeur_score ? `<div class="ps-r"><span class="ps-i carte"></span><span><b>${Number(a.vendeur_score).toLocaleString()}</b><small>${tt('évaluations', 'ratings')}${a.vendeur_score < 5000 ? ' · ' + tt('petit vendeur, souvent moins vu', 'small seller, often less seen') : ''}</small></span></div>` : ''}
+      ${(a.lieu || base.lieu) ? `<div class="ps-r"><span class="ps-i joueur"></span><span><b>${esc(nomPays(a.lieu || base.lieu))}</b><small>${tt('expédie de', 'ships from')}</small></span></div>` : ''}</div></div>`); };
+  };
+  const montrerPublic = (d) => {
+    const a = d.article || base, photos = (a.photos && a.photos.length ? a.photos : [a.photo || base.photo]).filter(Boolean).map(photoHD);
+    const total = a.total ?? base.total, url = lienAchat(a.url || base.url, 'fenetre');
+    const encan = !!(a.encan || (base.fin && !a.prix_fixe)), port = a.port_cad || 0;
+    const tx = d.taxe_achat != null ? d.taxe_achat : ((S.reglages || {}).pays === 'US' ? 0.07 : TAXE_ACHAT);
+    const reel = total ? Math.round(total * (1 + tx)) : null;
+    const sp = scoreP, c = (sp && sp.carte) || {};
+    const pils = proPils(a, encan);
     const vend = a.vendeur ? `${esc(a.vendeur)}${a.vendeur_pct ? ` · ${esc(a.vendeur_pct)} %` : ''}${a.vendeur_score ? ` · ${Number(a.vendeur_score).toLocaleString()} ${tt('évaluations', 'ratings')}` : ''}` : '';
     f.innerHTML = `<div class="fen fa fa-pub" role="dialog" aria-modal="true"><button class="fen-x" aria-label="${esc(tt('Fermer', 'Close'))}">✕</button>
       <div class="fa-photo"><div class="fen-img" id="fen-img">${photos[0] ? `<img src="${esc(photos[0])}" alt="">` : SVG_CARTE}</div>
@@ -8189,22 +8212,14 @@ async function ouvrirAnnonce(base){
         <button class="fa-k fa-sc ${sp && sp.score != null ? couleurScore(sp.score) : ''}" data-slabiq><span>Score SlabIQ <i class="iq-i" aria-hidden="true">?</i></span><b>${!sp ? '<span class="roue"></span>' : sp.score != null ? sp.score : '—'}</b><small>${!sp ? '&nbsp;' : sp.score == null ? tt('pas assez d’infos', 'not enough info') : sp.score >= 80 ? tt('très recherchée', 'highly sought') : sp.score >= 65 ? tt('recherchée', 'sought after') : sp.score >= 50 ? tt('correcte', 'decent') : tt('peu recherchée', 'low demand')}</small></button>
       </div>
       ${pils.length ? `<div class="pastilles fa-pils2">${pils.slice(0, 6).join('')}</div>` : ''}
-      ${(sp && sp.joueur) || a.vendeur ? `<div class="fa-chips">
-        ${sp && sp.joueur ? `<a class="fa-chip" href="#joueur/${encodeURIComponent(sp.joueur)}" data-fermer><span class="fa-ci">${icN('profil')}</span><span class="fa-ct"><small>${tt('Joueur', 'Player')}</small><b>${esc(sp.joueur)}</b>${sp.rang ? `<em>${ordinal(sp.rang)} ${tt('sur', 'of')} ${sp.sur}</em>` : ''}</span><i>›</i></a>` : ''}
-        ${a.vendeur ? `<button class="fa-chip" id="fa-vd"><span class="fa-ci">${icN('boutique')}</span><span class="fa-ct"><small>${tt('Vendeur', 'Seller')}</small><b>${esc(a.vendeur)}</b>${a.vendeur_pct ? `<em class="${parseFloat(a.vendeur_pct) >= 99 ? 'vert' : ''}">${esc(a.vendeur_pct)} %</em>` : ''}</span><i>›</i></button>` : ''}</div>` : ''}
+      ${proChips(a)}
       ${blocMesAchats(d.mes_achats, d.deja_achetee, 0, null)}
       <div class="fa-btns"><a class="btn" href="${esc(url)}" target="_blank" rel="noopener">${encan ? tt('Miser sur eBay', 'Bid on eBay') : tt('Acheter sur eBay', 'Buy on eBay')}</a>${boutonWatch({item_id: base.item_id})}</div>
       <button class="btn ghost fa-verif" data-verif="${esc(base.item_id)}" data-verif-t="${esc(a.titre || base.titre || '')}" data-verif-p="${esc(total ? (encan ? Math.max(0, total - port) : total) : 0)}" data-verif-e="${encan ? 1 : ''}">${tt('Vérifier le prix avant de miser', 'Check the price before bidding')}</button></div>`;
     $$('.fen-vigs [data-ph]', f).forEach(b => b.onclick = () => { $('#fen-img', f).innerHTML = `<img src="${esc(b.dataset.ph)}" alt="">`; $$('.fen-vigs button', f).forEach(x => x.classList.toggle('on', x === b)); brancherLoupe($('#fen-img', f)); });
     brancherLoupe($('#fen-img', f));
     $$('[data-fermer]', f).forEach(b => b.addEventListener('click', fermerAnnonce));
-    // 11 nov 2026 : le score ouvre « Pourquoi ce score » (petite fenetre avec un X) ; le vendeur aussi
-    $$('[data-slabiq]', f).forEach(b => b.onclick = () => { vibrer(); if (!sp || sp.score == null) return expliquerSlabIQ();
-      _SC[(base.titre || '') + '|'] = sp; pourquoiScore({score: sp.score, titre: base.titre || '', petit_vendeur: base.petit_vendeur, vendeur_score: a.vendeur_score}); });
-    const vd = $('#fa-vd', f); if (vd) vd.onclick = () => { vibrer(); ouvrirFeuille(`<div class="ps"><div class="ps-n"><span>${esc(a.vendeur)}<small>${tt('Vendeur eBay', 'eBay seller')}</small></span></div><div class="ps-l">
-      ${a.vendeur_pct ? `<div class="ps-r"><span class="ps-i vendeur"></span><span><b>${esc(a.vendeur_pct)} %</b><small>${tt('d’évaluations positives', 'positive feedback')}</small></span></div>` : ''}
-      ${a.vendeur_score ? `<div class="ps-r"><span class="ps-i carte"></span><span><b>${Number(a.vendeur_score).toLocaleString()}</b><small>${tt('évaluations', 'ratings')}${a.vendeur_score < 5000 ? ' · ' + tt('petit vendeur, souvent moins vu', 'small seller, often less seen') : ''}</small></span></div>` : ''}
-      ${(a.lieu || base.lieu) ? `<div class="ps-r"><span class="ps-i joueur"></span><span><b>${esc(nomPays(a.lieu || base.lieu))}</b><small>${tt('expédie de', 'ships from')}</small></span></div>` : ''}</div></div>`); };
+    brancherPro(a);
     brancherMesAchats(f);
     const fe = $('.fen', f);
     if (fe && S.fenEntree) { S.fenEntree = false; const o = S.fenOrigine; S.fenOrigine = null;
@@ -8213,7 +8228,8 @@ async function ouvrirAnnonce(base){
     S.fenDernier = d;
   };
   S.fenDernier = null;
-  if (!comps()) API.annonce_score(base.titre || '').then(x => { if (x && x.ok && S.fenId === base.item_id && $('#fen-annonce') && document.body.classList.contains('fen-ouverte')) { scoreP = x; montrerPublic(S.fenDernier || {chargement: true}); } }).catch(() => {});
+  // 12 nov 2026 : le Score SlabIQ arrive a part, pour les deux fiches (Pro et admin)
+  API.annonce_score(base.titre || '').then(x => { if (x && x.ok && S.fenId === base.item_id && $('#fen-annonce') && document.body.classList.contains('fen-ouverte')) { scoreP = x; montrer(S.fenDernier || {chargement: true}); } }).catch(() => {});
   S.fenPlus = false; S.fenEntree = true; S.fenT0 = Date.now();
   montrer({chargement:true});
   // 26 oct 2026 (Mathieu : « beaucoup trop long à charger ») : l'annonce et les cartes en vente tout de suite,
