@@ -483,6 +483,77 @@ def _identifier_appel(images, cle_cache):
     return dict(res, ok=True, cache=False, cout_usd=cout)
 
 
+# -- 13 nov 2026 : le tri d'un lot (devant / dos, et quelles photos vont ensemble) -----------------------------------------
+# Mathieu : « j'ai insere une carte avec seulement un endos sans faire expres et ca bug ; toutes les cartes decalent ; l'IA
+# doit voir la difference entre l'endos et le devant ». Avant de lire les cartes une a une, une seule lecture de TOUTES les
+# photos en petit : pour chacune, devant / dos / autre et le numero de la carte a laquelle elle appartient. Le lot se monte
+# ensuite par carte, plus par position. Une lecture de tri ne compte pas dans les photos du mois (juste dans le plafond).
+MAX_TRI = 100
+OUTIL_TRI = {
+    "name": "tri",
+    "description": "Pour chaque photo du lot : devant, dos ou autre, et la carte a laquelle elle appartient.",
+    "input_schema": {
+        "type": "object",
+        "properties": {"photos": {"type": "array", "items": {"type": "object", "properties": {
+            "i": {"type": "integer", "description": "numero de la photo (1, 2, 3...)"},
+            "cote": {"type": "string", "enum": ["devant", "dos", "autre"]},
+            "carte": {"type": "integer", "description": "meme numero pour le devant et le dos de la MEME carte physique ; 1 pour la premiere carte vue, 2 pour la suivante..."},
+            "joueur": {"type": "string", "description": "le joueur (court), si lisible"}},
+            "required": ["i", "cote", "carte"]}}},
+        "required": ["photos"]}}
+SYSTEME_TRI = ("Tu tries les photos d'un lot de cartes de sport. Les photos viennent normalement par paires (devant puis dos "
+               "de la meme carte), mais il peut manquer un devant ou un dos, ou y avoir une photo en trop. Pour CHAQUE photo : "
+               "« devant » (l'image du joueur, le recto), « dos » (le verso : texte, statistiques, numero, logos legaux) ou "
+               "« autre » (pas une carte). Donne le meme numero de carte au devant et au dos d'une MEME carte physique : "
+               "compare le joueur, l'equipe, le numero de la carte, le set, les couleurs et le design. Un dos qui ne va avec "
+               "aucun devant garde son propre numero de carte. Ne force jamais une paire : en cas de doute, deux numeros.")
+
+
+def _noter_serveur(usage):
+    entree, sortie = int(usage.get("input_tokens") or 0), int(usage.get("output_tokens") or 0)
+    usd = entree / 1e6 * PRIX_ENTREE + sortie / 1e6 * PRIX_SORTIE
+    serveur = _chemins()[1]
+    with _verrou:
+        d = _lire(serveur)
+        m = d.setdefault(_mois(), {"n": 0, "usd": 0.0})
+        m["usd"] = round(m["usd"] + usd, 5)
+        _ecrire(serveur, d)
+    return round(usd, 4)
+
+
+def trier(photos):
+    """photos : 2 a 100 petites images (data URL) dans l'ordre du lot -> [{"i" (0..n-1), "cote", "carte", "joueur"}]."""
+    if not disponible():
+        raise Erreur("Reconnaissance photo pas encore activée sur ce serveur.")
+    photos = [p for p in (photos or []) if p][:MAX_TRI]
+    if len(photos) < 2:
+        return []
+    if (_lire(_chemins()[1]).get(_mois()) or {}).get("usd", 0) >= PLAFOND_SERVEUR_USD:
+        raise Erreur("La reconnaissance photo est en pause pour quelques heures.")
+    contenu = []
+    for i, p in enumerate(photos):
+        b, typ = _decoder(p, max_octets=600_000)
+        contenu.append({"type": "text", "text": f"Photo {i + 1} :"})
+        contenu.append({"type": "image", "source": {"type": "base64", "media_type": typ, "data": base64.b64encode(b).decode()}})
+    contenu.append({"type": "text", "text": f"Trie ces {len(photos)} photos."})
+    r = _appeler({"model": MODELE, "max_tokens": 200 + 40 * len(photos), "system": SYSTEME_TRI, "tools": [OUTIL_TRI],
+                  "tool_choice": {"type": "tool", "name": "tri"}, "messages": [{"role": "user", "content": contenu}]}, timeout=120)
+    _noter_serveur(r.get("usage") or {})
+    fiche = next((b.get("input") for b in r.get("content") or [] if b.get("type") == "tool_use"), None) or {}
+    out, vus = [], set()
+    for x in fiche.get("photos") or []:
+        try:
+            i = int(x.get("i")) - 1
+            carte = int(x.get("carte"))
+        except (TypeError, ValueError):
+            continue
+        if 0 <= i < len(photos) and i not in vus:
+            vus.add(i)
+            out.append({"i": i, "cote": x.get("cote") if x.get("cote") in ("devant", "dos", "autre") else "autre", "carte": carte,
+                        "joueur": str(x.get("joueur") or "").strip()[:40]})
+    return sorted(out, key=lambda x: x["i"])
+
+
 # -- 1er nov 2026 : l'ETAT d'une carte (pre-gradation) ---------------------------------------------------------------
 # Mathieu : « pour les cartes ajoutees a la collection, on peut les noter et dire les defauts trouves ? centrage, coins et
 # bords ? ». Une estimation sur photo, dite comme telle : une fourchette (jamais une promesse de 10), le centrage en

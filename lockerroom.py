@@ -880,6 +880,19 @@ class Api:
             ch["titre"] = ebay_csv.titre_annonce(ch)
         return r
 
+    def photos_trier(self, photos):
+        """13 nov 2026 (Mathieu : « une carte avec seulement un endos et toutes les cartes decalent ») : le tri d'un lot avant
+        sa lecture : devant / dos / autre et quelles photos vont ensemble (une seule lecture, en petit). -> {ok, photos}"""
+        if not self.reglages_lire().get("ia_photos_ok"):
+            return {"ok": False, "erreur": "Permission de lecture par l’IA requise", "consentement_requis": True}
+        try:
+            return {"ok": True, "photos": vision.trier(photos if isinstance(photos, list) else [])}
+        except vision.Erreur as e:
+            return {"ok": False, "erreur": str(e)}
+        except Exception as e:
+            print("Tri du lot : " + repr(e), flush=True)
+            return {"ok": False, "erreur": "Tri pas fait"}
+
     def sports_liste(self):
         return {"sports": sports.liste(), "principal": self.reglages_lire().get("sport") or sports.DEFAUT}
 

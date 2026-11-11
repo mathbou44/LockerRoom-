@@ -205,3 +205,19 @@ try:
 finally:
     lockerroom.Api.inventaire_liste, lockerroom.Api.carte_supprimer = _orig_liste, _orig_supp
 print("ok 19 tout supprimer a finir")
+
+# 20. 13 nov 2026 : le tri d'un lot (devant / dos, quelles photos vont ensemble) ; ne compte pas dans les photos du mois
+import vision as _vi
+_png = "data:image/jpeg;base64," + base64.b64encode(b"\xff\xd8\xff" + b"x" * 5000).decode()
+_vi_app, _vi_dispo = _vi._appeler, _vi.disponible
+_vi.disponible = lambda: True
+_vi._appeler = lambda corps, timeout=90: {"usage": {"input_tokens": 1000, "output_tokens": 50}, "content": [{"type": "tool_use", "input": {"photos": [
+    {"i": 1, "cote": "devant", "carte": 1}, {"i": 2, "cote": "dos", "carte": 1}, {"i": 3, "cote": "dos", "carte": 2}, {"i": 9, "cote": "dos", "carte": 5}, {"i": 3, "cote": "devant", "carte": 7}]}}]}
+try:
+    _t = _vi.trier([_png, _png, _png])
+    assert [(x["i"], x["cote"], x["carte"]) for x in _t] == [(0, "devant", 1), (1, "dos", 1), (2, "dos", 2)], _t
+    assert _vi.trier([_png]) == []
+finally:
+    _vi._appeler, _vi.disponible = _vi_app, _vi_dispo
+assert "photos_trier" in server._LOURDS
+print("ok 20 tri du lot")

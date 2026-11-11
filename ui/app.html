@@ -3153,6 +3153,7 @@ body.vd-ouverte::before{content:''; position:fixed; top:0; left:0; right:0; heig
 @media (prefers-reduced-motion: reduce){.lot-an .v, .lot-ck.neuf circle, .lot-ck.neuf path{animation:none}}
 .lot-r .btn.petit{width:auto; height:36px; padding:0 14px; font-size:14px; flex:none; margin:0; max-width:42%; border-radius:999px}
 .lot-r.lot-e-revoir .milieu small{line-height:1.35}
+.lot-x{width:32px; height:32px; flex:none; border-radius:50%; border:1px solid var(--ligne); background:var(--carte2); color:var(--doux); font-size:13px; display:grid; place-items:center; margin-left:-4px}
 .afs-bas{display:flex; justify-content:center; gap:22px; margin-top:6px} .lien-t.rouge{color:var(--rouge)}
 /* 28 oct 2026 (Mathieu : « le background doit changer entre les differents styles de paralleles : laser, prism, surge,
    outburst, checkers ») : chaque palette a son motif, toujours en gris tres doux (+ un soupcon de sa couleur) */
@@ -5826,12 +5827,53 @@ async function lancerScans(fichiers, avecDos){
   toast(tt(`${groupes.length} carte${groupes.length > 1 ? 's' : ''} trouvée${groupes.length > 1 ? 's' : ''} dans tes scans`, `${groupes.length} card${groupes.length > 1 ? 's' : ''} found in your scans`), 3500);
   lancerLot([], !avecDos, groupes);
 }
+// les cartes d'un lot a partir du tri de l'IA : [{i, cote, carte}] -> [{ix: [devant, dos], pb}] dans l'ordre des photos.
+// Pure (testee a part) : un devant + un dos de la meme carte = une carte ; un devant seul = une carte sans dos ; un dos seul
+// ou une photo « autre » = a reprendre ; une 2e photo du meme cote = une carte a part.
+function grouperTri(n, tri){
+  if (!Array.isArray(tri) || tri.length !== n || tri.some((x, k) => !x || x.i !== k)) return null;
+  const par = new Map();
+  tri.forEach(x => { const k = 'c' + x.carte; if (!par.has(k)) par.set(k, []); par.get(k).push(x); });
+  const out = [];
+  for (const l of par.values()) {
+    const dv = l.filter(x => x.cote === 'devant'), ds = l.filter(x => x.cote === 'dos'), au = l.filter(x => x.cote === 'autre');
+    if (dv.length) out.push({ix: [dv[0].i].concat(ds.length ? [ds[0].i] : []), j: dv[0].joueur || ''});
+    dv.slice(1).forEach(x => out.push({ix: [x.i], j: x.joueur || ''}));
+    ds.slice(dv.length ? 1 : 0).forEach(x => out.push({ix: [x.i], pb: 'dos', j: x.joueur || ''}));
+    au.forEach(x => out.push({ix: [x.i], pb: 'autre'}));
+  }
+  return out.sort((a, b) => Math.min(...a.ix) - Math.min(...b.ix));
+}
+async function trierLot(fichiers, but){
+  LOT.l = []; LOT.but = but; LOT.fini = false; LOT.tri = {fait: 0, n: fichiers.length}; rendreLot();
+  const minis = [];
+  for (const f of fichiers) {                                   // en petit, une a la fois (memoire du telephone)
+    let d = null; try { d = await reduirePhoto(f, 640); } catch (e) {}
+    if (!d) { LOT.tri = null; return null; }
+    minis.push(d); LOT.tri.fait++; rendreLot();
+  }
+  LOT.tri.ia = true; rendreLot();
+  const r = await avecReseau(() => API.photos_trier(minis), [3000, 10000]).catch(() => null);
+  LOT.tri = null;
+  const g = r && r.ok ? grouperTri(fichiers.length, r.photos) : null;
+  if (!g) return null;
+  return g.map(x => ({f: x.ix.map(i => fichiers[i]), mini: minis[x.ix[0]],
+    pb: x.pb === 'dos' ? tt('C’est un dos : il manque le devant', 'This is a back: the front is missing') : x.pb === 'autre' ? tt('Ce n’est pas une carte', 'This is not a card') : ''}));
+}
 async function lancerLot(fichiers, devantsSeuls, groupes){
   if (!await okIA()) { toast(tt('La lecture des photos par l’IA est nécessaire pour un lot', 'AI photo reading is needed for a batch'), 5000); return; }
   const par = devantsSeuls ? 1 : 2;
   if (!groupes && !devantsSeuls && fichiers.length === 1) { toast(tt('Une seule photo : ajoute le dos, ou coche « seulement des devants »', 'Only one photo: add the back, or tick “fronts only”'), 5000); return; }
-  let cartes = groupes ? groupes.slice() : [];
-  if (!groupes) for (let i = 0; i < fichiers.length; i += par) cartes.push(fichiers.slice(i, i + par));
+  let cartes = groupes ? groupes.slice() : [], drap = null;
+  // 13 nov 2026 (Mathieu : « une carte avec seulement un endos et toutes les cartes decalent ; l'IA doit voir la difference
+  // entre l'endos et le devant ») : avant la lecture, l'IA trie toutes les photos en petit (devant / dos, et lesquelles vont
+  // ensemble) ; le lot se monte par carte, plus par position. Un dos seul ou une photo qui n'est pas une carte est montre
+  // tout de suite, a remplacer ou a retirer. Si le tri ne repond pas : l'ordre des photos, comme avant.
+  if (!groupes && fichiers.length >= 2) {
+    const t = await trierLot(fichiers.slice(0, LOT_MAX * 2), LOT.but || 'vente');
+    if (t) { cartes = t.map(g => g.f); drap = t; }
+  }
+  if (!groupes && !drap) for (let i = 0; i < fichiers.length; i += par) cartes.push(fichiers.slice(i, i + par));
   const st = await API.photo_statut().catch(() => ({}));
   S.photoStatut = st;
   let avis = '';
@@ -5841,10 +5883,12 @@ async function lancerLot(fichiers, devantsSeuls, groupes){
     cartes = cartes.slice(0, st.reste); avis = tt(`Il te reste ${st.reste} lecture(s) ce mois : on fait les ${st.reste} premières cartes`, `${st.reste} read(s) left this month: doing the first ${st.reste} cards`);
   }
   if (avis) toast(avis, 5000);
-  LOT.l = cartes.map((f, i) => ({n: i + 1, f, etat: 'attente', impair: !groupes && !devantsSeuls && f.length === 1}));
-  LOT.devants = devantsSeuls; LOT.fini = false; LOT.but = LOT.but || 'vente';
+  LOT.l = cartes.map((f, i) => { const d = drap && drap[i], c = {n: i + 1, f, etat: 'attente', impair: !groupes && !devantsSeuls && f.length === 1, mini: d && d.mini, trie: !!d};
+    if (d && d.pb) Object.assign(c, {etat: 'revoir', ordre: true, pre: true, raison: d.pb, impair: true});
+    return c; });
+  LOT.devants = devantsSeuls; LOT.fini = false; LOT.but = LOT.but || 'vente'; LOT.tri = null;
   lotGarder(); rendreLot();
-  await lotEnParallele(LOT.l);
+  await lotEnParallele(LOT.l.filter(c => c.etat === 'attente'));
   LOT.fini = true; lotGarder(); rendreLot();
 }
 // 8 nov 2026 : la lecture d'une carte (IA) reessaie seule quand le serveur ne repond pas (redemarrage, reseau qui saute)
@@ -5952,7 +5996,7 @@ function anneauLot(c){
 function rendreLot(){
   if (!/^#vendre\/(collection-)?lot/.test(location.hash) || !LOT.l) return;    // le lot continue meme si on change de page
   const C = LOT.but === 'collection';
-  const l = LOT.l, finis = l.filter(c => ['ok', 'verifier', 'revoir'].includes(c.etat)).length;
+  const l = LOT.l.filter(c => !c.retiree), finis = l.filter(c => ['ok', 'verifier', 'revoir'].includes(c.etat)).length;
   const prets = l.filter(c => c.etat === 'ok' || c.etat === 'verifier').length, res = l.filter(c => c.etat === 'revoir' && c.reseau && c.ph).length,
     rev = l.filter(c => c.etat === 'revoir' && !c.lecture).length - res;
   const lib = {attente: tt('En attente', 'Waiting'), photos: tt('Contrôle des photos…', 'Checking photos…'), lecture: tt('Lecture de la carte…', 'Reading the card…'),
@@ -5968,17 +6012,18 @@ function rendreLot(){
       : c.etat === 'revoir' && !c.reseau ? `<label class="btn petit lot-remp">${tt('Remplacer', 'Replace')}<input type="file" accept="image/*" multiple hidden data-lot-f="${i}"></label>`
       : c.etat === 'revoir' && LOT.fini ? `<button class="btn petit" data-lot-r="${i}">${tt('Corriger', 'Fix')}</button>`
       : c.etat in LOT_PCT ? anneauLot(c) : '';
-    const v = c.vig || (c.ph && c.ph[0]);
+    const v = c.vig || (c.ph && c.ph[0]) || c.mini;
     return `<div class="rangee lot-r lot-e-${c.etat}"${fait && !C && c.id ? ` data-lot-o="${c.id}" role="button"` : ''}>${v ? `<img class="vig" src="${esc(v)}" alt="">` : `<span class="ecusson">${c.n}</span>`}
-      <span class="milieu"><b>${esc(c.titre || tt('Carte ', 'Card ') + c.n)}</b>${c.etat === 'revoir' && !c.reseau && c.lecture ? `<small class="lot-pb">${esc(sous || '')}</small><small>` : c.etat === 'revoir' && !c.reseau ? `<small class="lot-pb">${esc(sous || '')}<br>${tt('Remplace par ', 'Replace with ')}${c.impair ? tt('le devant', 'the front') : tt('le devant puis le dos', 'the front then the back')}</small><small>` : '<small>'}${c.etat === 'revoir' && !c.reseau ? '' : esc(sous || '')}${c.prix ? ' · ' + (C ? tt('vaut ', 'worth ') : '') + argent(c.prix, 0) : ''}${c.impair && c.etat !== 'revoir' ? ' · ' + tt('sans dos', 'no back') : ''}</small></span>${bout}</div>`;
+      <span class="milieu"><b>${esc(c.titre || tt('Carte ', 'Card ') + c.n)}</b>${c.etat === 'revoir' && !c.reseau && c.lecture ? `<small class="lot-pb">${esc(sous || '')}</small><small>` : c.etat === 'revoir' && !c.reseau ? `<small class="lot-pb">${esc(sous || '')}<br>${tt('Remplace par ', 'Replace with ')}${c.impair ? tt('le devant', 'the front') : tt('le devant puis le dos', 'the front then the back')}</small><small>` : '<small>'}${c.etat === 'revoir' && !c.reseau ? '' : esc(sous || '')}${c.prix ? ' · ' + (C ? tt('vaut ', 'worth ') : '') + argent(c.prix, 0) : ''}${c.impair && c.etat !== 'revoir' ? ' · ' + tt('sans dos', 'no back') : ''}</small></span>${bout}${c.etat === 'revoir' ? `<button class="lot-x" data-lot-x="${i}" aria-label="${tt('Retirer du lot', 'Remove from batch')}">✕</button>` : ''}</div>`;
   };
   V().innerHTML = `<section class="ecran vendre assist lot">
-    <div class="titre">${LOT.fini ? (C ? tt(`${prets} carte${prets > 1 ? 's' : ''} ajoutée${prets > 1 ? 's' : ''}`, `${prets} card${prets > 1 ? 's' : ''} added`) : tt(`${prets} carte${prets > 1 ? 's' : ''} prête${prets > 1 ? 's' : ''}`, `${prets} card${prets > 1 ? 's' : ''} ready`)) : tt(`Lot en cours · ${finis} / ${l.length}`, `Batch in progress · ${finis} / ${l.length}`)}</div>
-    <div class="barre"><i style="width:${Math.round(100 * finis / Math.max(1, l.length))}%"></i></div>
+    <div class="titre">${LOT.tri ? (LOT.tri.ia ? tt('L’IA trie tes photos…', 'AI is sorting your photos…') : tt(`Préparation · ${LOT.tri.fait} / ${LOT.tri.n}`, `Preparing · ${LOT.tri.fait} / ${LOT.tri.n}`)) : LOT.fini ? (C ? tt(`${prets} carte${prets > 1 ? 's' : ''} ajoutée${prets > 1 ? 's' : ''}`, `${prets} card${prets > 1 ? 's' : ''} added`) : tt(`${prets} carte${prets > 1 ? 's' : ''} prête${prets > 1 ? 's' : ''}`, `${prets} card${prets > 1 ? 's' : ''} ready`)) : tt(`Lot en cours · ${finis} / ${l.length}`, `Batch in progress · ${finis} / ${l.length}`)}</div>
+    <div class="barre"><i style="width:${LOT.tri ? Math.round((LOT.tri.ia ? 100 : 90 * LOT.tri.fait / Math.max(1, LOT.tri.n))) : Math.round(100 * finis / Math.max(1, l.length))}%"></i></div>
+    ${LOT.tri ? `<div class="sous">${tt('Devant, dos, et quelles photos vont ensemble : une photo de trop ou un dos seul ne décale plus tout le lot.', 'Front, back, and which photos go together: one extra photo or a lone back no longer shifts the whole batch.')}</div>` : ''}
     <div class="sous">${LOT.fini && res ? tt(`${res} pas lue${res > 1 ? 's' : ''} : le serveur n’a pas répondu (rien n’a été perdu, les photos sont gardées). `, `${res} not read: the server didn’t answer (nothing was lost, the photos are kept). `) : ''}${LOT.fini ? (rev ? tt(`${rev} à reprendre : elles ne respectent pas nos règles photo (rien n’a été gardé pour elles).`, `${rev} to redo: they don’t meet our photo rules (nothing was saved for them).`) : res ? '' : (C ? tt('Tout est dans ta collection. Rien n’est allé sur eBay.', 'Everything is in your collection. Nothing went to eBay.') : tt('Tout est dans ton inventaire, prêt à publier.', 'Everything is in your inventory, ready to publish.')))
       : res ? '' : tt('Garde l’app ouverte pendant le lot. Tu peux regarder ailleurs dans l’app : le lot continue.', 'Keep the app open during the batch. You can look around the app: the batch keeps going.')}</div>
     ${LOT.fini && res ? `<button class="btn" id="lot-relance">${tt(`Réessayer ${res > 1 ? 'ces ' + res + ' cartes' : 'cette carte'}`, `Retry ${res > 1 ? 'these ' + res + ' cards' : 'this card'}`)}</button>` : ''}
-    <div class="liste lot-l">${l.map(ligne).join('')}</div>
+    <div class="liste lot-l">${l.map(c => ligne(c, LOT.l.indexOf(c))).join('')}</div>
     ${LOT.fini && !C && prets ? `<a class="btn" href="#vendre/programmer" id="lot-pg">${icH()}${(prets > 1 ? tt(`Programmer ces ${prets} cartes sur eBay`, `Schedule these ${prets} cards on eBay`) : tt('Programmer cette carte sur eBay', 'Schedule this card on eBay'))}</a>` : ''}
     ${LOT.fini ? `<a class="btn ${!C && prets ? 'ghost' : ''}" href="#inventaire" id="lot-inv">${C ? tt('Voir ma collection', 'See my collection') : tt('Voir mon inventaire', 'See my inventory')}</a>
       <a class="btn ghost" href="#vendre/${C ? 'collection-lot' : 'lot'}" id="lot-encore">${tt('Faire un autre lot', 'Do another batch')}</a>` : ''}</section>`;
@@ -5992,6 +6037,8 @@ function rendreLot(){
   l.forEach(c => { if (c.etat === 'ok' || c.etat === 'verifier') c._ck = true; if (c.etat in LOT_PCT) c._pv = LOT_PCT[c.etat]; });
   $$('[data-lot-o]').forEach(r => r.onclick = () => { vibrer(); location.hash = '#vendre/' + r.dataset.lotO; });
   $$('[data-lot-r]').forEach(b => b.onclick = () => corrigerLot(LOT.l[+b.dataset.lotR]));
+  // 13 nov 2026 (« montrer a l'utilisateur de changer les photos ou supprimer tout simplement ») : un X retire la carte du lot
+  $$('[data-lot-x]').forEach(b => b.onclick = () => { vibrer(); const c = LOT.l[+b.dataset.lotX]; if (!c) return; c.retiree = true; c.f = null; c.ph = null; lotGarder(); rendreLot(); });
   $$('[data-lot-re]').forEach(b => b.onclick = async () => { vibrer(); const c = LOT.l[+b.dataset.lotRe]; Object.assign(c, {etat: 'attente', raison: '', lecture: false}); rendreLot();
     try { await traiterCarteLot(c); } catch (x) { c.etat = 'revoir'; c.raison = tt('Erreur : reprends cette carte', 'Error: redo this card'); }
     if (!(c.etat === 'revoir' && c.lecture)) c.f = null; lotGarder(); rendreLot(); });
@@ -10780,7 +10827,7 @@ function lotGarder(){
   // 12 nov 2026 (« la catastrophe » : le lot quitte puis repris, chaque carte 2 ou 3 fois) : chaque carte a sa cle d'envoi
   // AVANT d'etre gardee ; reprise, elle renvoie la meme cle et le serveur rend la carte deja creee
   LOT.l.forEach(c => { c.cle = c.cle || (Date.now().toString(36) + Math.random().toString(36).slice(2, 10)); });
-  const reste = LOT.l.filter(c => !['ok', 'verifier'].includes(c.etat) && ((c.f && c.f.length) || (c.ph && c.ph.length)));
+  const reste = LOT.l.filter(c => !c.retiree && !['ok', 'verifier'].includes(c.etat) && ((c.f && c.f.length) || (c.ph && c.ph.length)));
   const v = reste.length ? {t: Date.now(), but: LOT.but, devants: !!LOT.devants, cartes: reste.map(c => ({f: c.f || null, ph: c.ph || null, impair: !!c.impair, cle: c.cle || null}))} : null;
   S.lotGarde = v; S.lotGardeN = v ? v.cartes.length : 0;
   lotIdb(v);
