@@ -94,12 +94,20 @@ def _nom_carte(sous):
     return " ".join(t.split())
 
 
-def construire_plan(max_par_produit=60):
+VEDETTES_SORTES = ("young guns", "auto", "patch", "numbered")
+
+
+def construire_plan(max_par_produit=None):
     """Pour chaque produit recent du catalogue : ses recrues (sous-ensembles de recrues sans numerotation) et ses
-    joueurs les plus demandes (leurs hits). Une ligne = une recherche « saison joueur carte »."""
+    joueurs les plus demandes (leurs hits). Une ligne = une recherche « saison joueur carte ».
+    11 nov 2026 (Mathieu : « on est deja au forfait SoldComps de 50 000 requetes ») : SlabIQ apprend mieux avec plus de
+    ventes (mesure : +0,9 point de precision quand on double). Le plan grandit avec le budget du jour (LR_BASE_JOUR) :
+    plus de cartes par produit, et les joueurs les plus suivis (Indice) dans toutes leurs sortes de cartes, toutes saisons."""
     import cartes_match
     import catalogue
     import valeurs
+    if max_par_produit is None:
+        max_par_produit = max(60, min(400, par_jour() * REFAIRE_J // 25))
     dem = (valeurs._charger() or {}).get("joueurs") or {}
     an_min = datetime.now().year - (1 if datetime.now().month >= 6 else 2)
     lignes = {}
@@ -126,6 +134,19 @@ def construire_plan(max_par_produit=60):
             q = " ".join((cartes_match.requete_ebay(cartes_match.cible(full)) or full).lower().split())[:120]
             if full not in lignes:
                 lignes[full] = (full, q, j, sous, p["nom"], p["id"], int(recrue), round(poids, 3))
+    # les joueurs les plus suivis (actifs et legendes), dans leurs sortes de cartes les plus vendues, toutes saisons
+    n_ved = max(0, min(400, (par_jour() * REFAIRE_J - len(lignes)) // len(VEDETTES_SORTES)))
+    if n_ved:
+        try:
+            import indice_joueurs
+            ved = [x["nom"] for x in indice_joueurs.top(n_ved, actifs=True)] + [x["nom"] for x in indice_joueurs.top(max(10, n_ved // 6), "legende", actifs=False)]
+        except Exception:
+            ved = []
+        for k, j in enumerate(dict.fromkeys(ved)):
+            for so in VEDETTES_SORTES:
+                full = f"{j} {so}".lower()
+                if full not in lignes:
+                    lignes[full] = (full, full[:120], j, so, "", "", 0, round(1.0 - k / (len(ved) + 1), 3))
     with _verrou:
         c = _cx()
         try:
@@ -165,6 +186,19 @@ def enrichir(n=None, rechercher=None):
     return {"ok": True, "faites": faites}
 
 
+def _plan_trop_petit():
+    """Le budget (LR_BASE_JOUR) a grandi : le plan doit couvrir au moins ~5 jours de recherches."""
+    try:
+        c = _cx()
+        try:
+            n = c.execute("SELECT COUNT(DISTINCT q) FROM plan").fetchone()[0]
+        finally:
+            c.close()
+        return n < par_jour() * REFAIRE_J * 0.6
+    except Exception:
+        return False
+
+
 def enrichir_si_besoin():
     """Chaque heure (boucle du serveur) ; le plan est refait chaque semaine."""
     if par_jour() <= 0 or time.time() - _ETAT["le"] < 3500 or _ETAT["en_cours"]:
@@ -176,7 +210,8 @@ def enrichir_si_besoin():
             import vendues
             if not vendues.actif():
                 return
-            if datetime.now().weekday() == 0 and datetime.now().hour < 2:
+            if (datetime.now().weekday() == 0 and datetime.now().hour < 2) or (time.time() - _ETAT.get("plan_le", 0) > 86400 and _plan_trop_petit()):
+                _ETAT["plan_le"] = time.time()
                 construire_plan()
             enrichir()
         except Exception as e:
