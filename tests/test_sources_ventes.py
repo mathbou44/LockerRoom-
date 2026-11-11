@@ -70,3 +70,22 @@ n = thecardapi.moissonner(max_pages=3)
 assert n >= 2, n
 assert vendues.statut()["thecardapi"]["actif"]
 print("OK sources de ventes")
+
+# 11 nov 2026 : TheCardAPI (forfait gratuit : pagination par curseur) : la moisson suit le curseur jusqu'a la fin
+import thecardapi
+os.environ["THECARDAPI_CLE"] = "test"
+appels_t = []
+def faux(p, delai):
+    appels_t.append(dict(p))
+    k = int(p.get("cursor") or 0)
+    rows = [{"title": f"2024-25 Upper Deck Young Guns Joueur {k * 100 + i} #201", "sale_price": 10 + i, "sale_date": "2026-11-10",
+             "url": f"https://www.ebay.com/itm/{k * 100 + i}", "currency": "USD"} for i in range(100 if k < 2 else 40)]
+    return {"data": rows, "next_cursor": str(k + 1) if k < 2 else None}
+thecardapi._appel = faux
+thecardapi._taux = lambda: 1.4
+thecardapi._CACHE.clear()
+n_t = thecardapi.moissonner(max_pages=10)
+assert [a.get("cursor") for a in appels_t] == [None, "1", "2"], appels_t
+assert thecardapi.statut()["reponse_champs"] == ["data", "next_cursor"]
+os.environ.pop("THECARDAPI_CLE")
+print("OK TheCardAPI curseur", n_t)

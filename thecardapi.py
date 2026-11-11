@@ -90,7 +90,10 @@ def _compter(n, usage):
 # la part du jour de chaque usage : les gestes de l'utilisateur d'abord, la moisson prend ce qui reste en fin de journee
 # « tap » = le secours d'un geste de l'utilisateur (SoldComps en panne) : il prend ce qui reste ; « raffiner » = les ventes
 # en plus d'une recherche qui a deja repondu ; « secours » = les verifications de deals pendant une panne
-PARTS = {"tap": 1.0, "raffiner": 0.4, "secours": 0.25, "moisson": 0.3}
+# 11 nov 2026 (forfait gratuit : 5 000 lignes par jour, pagination par curseur) : SoldComps reste la base des gestes de
+# l'utilisateur ; la moisson (qui nourrit SlabIQ) prend jusqu'a 80 % du jour
+PARTS = {"tap": 1.0, "raffiner": 0.4, "secours": 0.25, "moisson": 0.8}
+_DERNIER = {"curseur": None, "cles": None}
 
 
 def _budget_ok(usage, limite):
@@ -152,12 +155,25 @@ def _appel(params, delai):
         return json.loads(r.read().decode("utf-8"))
 
 
-def rechercher(q, jours=None, limite=50, usage="tap", delai=10, page=None):
+def _curseur(d):
+    """Le curseur de la page suivante, ou None (les noms usuels : next_cursor, cursor, meta / pagination)."""
+    if not isinstance(d, dict):
+        return None
+    for src in (d, d.get("meta") or {}, d.get("pagination") or {}, d.get("links") or {}):
+        if isinstance(src, dict):
+            for k in ("next_cursor", "nextCursor", "cursor_next", "next"):
+                v = src.get(k)
+                if v and isinstance(v, (str, int)) and not str(v).startswith("http"):
+                    return str(v)
+    return None
+
+
+def rechercher(q, jours=None, limite=50, usage="tap", delai=10, page=None, curseur=None):
     """-> (ventes, erreur). Rien si inactif, en panne ou hors budget (erreur dit pourquoi)."""
     q = " ".join(str(q or "").split())[:120]
     if not q or not actif():
         return [], "inactif"
-    cle_c = f"{q.lower()}|{jours}|{limite}|{page}"
+    cle_c = f"{q.lower()}|{jours}|{limite}|{page}|{curseur}"
     c = _CACHE.get(cle_c)
     if c and time.time() - c[0] < CACHE_S:
         return list(c[1]), None
@@ -168,7 +184,9 @@ def rechercher(q, jours=None, limite=50, usage="tap", delai=10, page=None):
     p = {"q": q, "limit": limite}
     if jours:
         p["date_from"] = (datetime.utcnow() - timedelta(days=jours)).strftime("%Y-%m-%d")
-    if page:
+    if curseur:
+        p["cursor"] = curseur
+    elif page:
         p["page"] = page
     try:
         d = _appel(p, delai)
@@ -178,6 +196,8 @@ def rechercher(q, jours=None, limite=50, usage="tap", delai=10, page=None):
     except Exception as e:
         return [], _panne("TheCardAPI injoignable (" + type(e).__name__ + ")")
     _PANNE[1] = 0
+    _DERNIER["curseur"] = _curseur(d)
+    _DERNIER["cles"] = sorted(d.keys())[:12] if isinstance(d, dict) else None
     lignes = (d or {}).get("data") or []
     _compter(len(lignes), usage)
     taux = _taux()
@@ -205,16 +225,20 @@ def moissonner(max_pages=None):
     import base_ventes
     n, pages = 0, max_pages or int(os.environ.get("LR_THECARDAPI_PAGES") or 40)
     for mot in MOTS_MOISSON:
-        vus = set()
+        vus, cur = set(), None
         for page in range(1, pages + 1):
-            ventes, err = rechercher(mot, jours=2, limite=100, usage="moisson", delai=20, page=page)
+            # la page suivante : par curseur quand l'API en donne un (forfait actuel), sinon par numero de page
+            ventes, err = rechercher(mot, jours=2, limite=100, usage="moisson", delai=20, page=None if cur else page, curseur=cur)
             if err or not ventes:
                 break
             neuves = [v for v in ventes if v.get("url") not in vus]
-            if not neuves:                           # la meme page revient : pas de pagination par « page »
+            if not neuves:                           # la meme page revient : fin
                 break
             vus.update(v.get("url") for v in neuves)
             n += base_ventes.noter("moisson " + mot, neuves)
+            cur = _DERNIER.get("curseur")
+            if page > 1 and not cur and len(ventes) < 100:
+                break
     _ETAT["derniere"] = {"le": time.time(), "gardees": n}
     return n
 
@@ -239,4 +263,4 @@ def moissonner_si_besoin():
 def statut():
     return {"actif": actif(), "aujourdhui": utilisees(), "plafond": plafond_jour(),
             "par_usage": {u: utilisees(u) for u in PARTS}, "pause": time.time() < _PANNE[0],
-            "derniere_moisson": _ETAT["derniere"], "derniere_erreur": _ETAT["erreur"]}
+            "derniere_moisson": _ETAT["derniere"], "derniere_erreur": _ETAT["erreur"], "reponse_champs": _DERNIER["cles"]}
