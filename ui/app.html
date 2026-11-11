@@ -3265,7 +3265,7 @@ function ouvrirPref(b){
   p.style.top = Math.round(r.bottom + 8) + 'px'; p.style.left = Math.max(8, Math.round(r.left)) + 'px';
   const choisir = (l, d) => {
     try { localStorage.setItem(I18N_APP + '_langue', l); localStorage.setItem(I18N_APP + '_devise', d); } catch (e) {}
-    try { document.cookie = I18N_APP + '_langue=' + l + '; path=/; max-age=31536000; samesite=lax'; } catch (e) {}
+    try { document.cookie = I18N_APP + '_langue=' + l + '; path=/; max-age=31536000; samesite=lax' + (location.protocol === 'https:' ? '; secure' : ''); } catch (e) {}
     if (typeof prefSauver === 'function') { Promise.resolve(prefSauver(l, d)).catch(() => {}).finally(() => location.reload()); } else location.reload();
   };
   p.querySelectorAll('[data-l]').forEach(x => x.onclick = () => choisir(x.dataset.l, DEVISE));
@@ -4237,9 +4237,10 @@ function decorFetes(){
   else if (!fetesActives() && g) g.remove();
   // 9 nov 2026 (Mathieu : « j'aime pas les lumieres autour du logo ; mettre des cadeaux et un sapin ») : un petit sapin a
   // gauche du logo et un cadeau a droite du nom, au trait, aux couleurs des fetes
-  const hl = b.querySelector('.haut-ligne'), dj = hl && hl.querySelector('.deco-f');
-  if (hl && fetesActives() && !dj) { hl.insertAdjacentHTML('afterbegin', htmlDecoFetes('sapin')); hl.insertAdjacentHTML('beforeend', htmlDecoFetes('cadeau')); }
-  else if (hl && !fetesActives()) hl.querySelectorAll('.deco-f').forEach(e => e.remove());
+  // 12 nov 2026 (Mathieu : « la barre avec le nom de l'app est trop chargee : enlever le sapin et le cadeau ») : le logo
+  // seul ; la guirlande reste sous la barre
+  const hl = b.querySelector('.haut-ligne');
+  if (hl) hl.querySelectorAll('.deco-f').forEach(e => e.remove());
 }
 // le mot du jour : chaleureux, sans chiffres ; il change chaque jour (un tap : le suivant)
 // 9 nov 2026 (Mathieu : « base-toi sur des forums et des phrases de vraies personnes ; sincere et authentique, sans etre

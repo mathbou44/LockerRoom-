@@ -817,7 +817,7 @@ def _page_vitrine():
     from flask import make_response
     r = make_response(html)
     if request.args.get("lang") in ("fr", "en"):
-        r.set_cookie("lr_langue", l, max_age=365 * 86400, samesite="Lax")
+        r.set_cookie("lr_langue", l, max_age=365 * 86400, samesite="Lax", secure=HEBERGE)   # 12 nov 2026 (Aikido) : jamais en clair
     return r
 
 
@@ -833,7 +833,7 @@ def _page_langue(html):
             f"{'Français' if autre == 'fr' else 'English'}</a>")
     r = make_response(html.replace("</body>", lien + "</body>"))
     if request.args.get("lang") in ("fr", "en"):
-        r.set_cookie("lr_langue", l, max_age=365 * 86400, samesite="Lax")
+        r.set_cookie("lr_langue", l, max_age=365 * 86400, samesite="Lax", secure=HEBERGE)   # 12 nov 2026 (Aikido) : jamais en clair
     return r
 
 
