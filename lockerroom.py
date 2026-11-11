@@ -2077,14 +2077,91 @@ class Api:
             self._scores_relatifs(joueurs)
             joueurs.sort(key=lambda x: -x["score"])
             joueurs = joueurs[:400]          # 29 oct : tous (recherche d'un joueur dans l'ecran) ; l'ecran en montre 60
+        # 12 nov 2026 (Mathieu : « SlabIQ devient l'IA mere, en arriere de toute l'app ; il sert aussi a analyser les breaks
+        # avec les joueurs ») : chaque place recoit le Score SlabIQ de ses meilleures cartes (la demande : jamais un prix) et
+        # les pastilles de ses joueurs (en feu, recrue, creux, legende)
+        try:
+            self._slabiq_places(prod, res["places"] + (joueurs or []), mode)
+        except Exception as e:
+            print("SlabIQ (break) : " + repr(e), flush=True)
         fmt = (prod.get("formats") or [{}])[0]
         return {**res, "ok": True, "hits": self._hits_produit(prod, boites), "boites": boites, "mode": mode,
+                "iq_places": sorted([{"cle": pl["cle"], "nom": pl.get("nom"), "iq": pl["iq"], "chaud": pl.get("iq_chaud")} for pl in res["places"] if pl.get("iq") is not None],
+                                    key=lambda x: -x["iq"])[:5],
                 "joueurs": joueurs, "prix_boite_marche": boite_marche, "cout_boite": args["cout_boite"], "cout_estime": cout_estime,
                 "ventes_actives": vendues.actif() and not public, "public": public,
                 "valeurs_mesurees": bool(mes.get("sous")), "valeurs_maj": mes.get("maj"),
                 "produit": {"id": prod["id"], "nom": prod["nom"], "saison": prod.get("saison"), "marque": prod.get("marque"),
                             "format": fmt.get("format"), "boites_par_caisse": fmt.get("boites_par_caisse"), "sport": sport,
                             "preliminaire": bool(prod.get("preliminaire"))}}
+
+    _IQ_BREAK = {}
+
+    def _slabiq_places(self, prod, places, mode):
+        """Le Score SlabIQ d'une place = celui de sa meilleure carte (titre construit comme une annonce : saison, produit,
+        sous-ensemble, joueur), avec les pastilles de l'Indice joueur. Un seul passage du modele pour tout le produit."""
+        import score_modele
+        import indice_joueurs
+        if not score_modele.charger():
+            return
+        base = " ".join(x for x in (str(prod.get("saison") or ""), str(prod.get("nom") or "")) if x)
+        # 12 nov 2026 : chaque joueur, toutes ses cartes de ce produit (paralleles compris) ; le SlabIQ de la place = la moyenne
+        # des scores de ses cartes ponderee par leurs chances de sortir (ce qu'on tire vraiment), et son meilleur hit a part.
+        # (Le maximum seul favorisait la carte la plus rare de n'importe quel joueur : un 1/1 de veteran passait devant Celebrini.)
+        import catalogue
+        poids = {}
+        for c, s_, n in catalogue.cartes_attendues(prod, 1):
+            j, n_ = str(c.get("joueur") or "").strip(), s_.get("nom") or ""
+            if j and "/" not in j and n_ and n > 0:
+                d_ = poids.setdefault(j, {})
+                d_[n_] = d_.get(n_, 0.0) + n
+        sous = {j: [k for k, _ in sorted(d_.items(), key=lambda kv: -kv[1])[:25]] for j, d_ in poids.items()}
+        # le meilleur score de chaque joueur dans ce produit ne depend ni des boites ni des prix : garde 6 h (par modele)
+        cache = Api._IQ_BREAK.setdefault((prod.get("id"), id(score_modele.charger())), {})
+        if len(Api._IQ_BREAK) > 60:
+            Api._IQ_BREAK.clear()
+            cache = Api._IQ_BREAK.setdefault((prod.get("id"), id(score_modele.charger())), {})
+        titres, ou, connus = [], [], []
+        for pl in places[:520]:
+            noms = [pl["cle"]] if "equipe" in pl or mode == "joueurs" else list(pl.get("vedettes") or [])[:3]   # place « joueur » / « equipe »
+            for j in noms:
+                g = cache.get(j)
+                if g and time.time() - g[0] < 6 * 3600:
+                    continue
+                for n_ in sous.get(j) or [""]:
+                    titres.append(f"{base} {n_} {j}".strip())
+                    ou.append((pl, j, n_))
+        sc = (score_modele.scores(titres, [j for _, j, _ in ou]) or []) if titres else []
+        agg = {}
+        for (pl, j, n_), v in zip(ou, sc):
+            if v is None:
+                continue
+            w = (poids.get(j) or {}).get(n_, 0.0) or 1e-6
+            a_ = agg.setdefault(j, [0.0, 0.0, -1, None])
+            a_[0] += w * v
+            a_[1] += w
+            if v > a_[2]:
+                a_[2], a_[3] = v, n_
+        for j, (sv, sw, vb, nb_) in agg.items():
+            cache[j] = (time.time(), int(round(sv / sw)) if sw else None, vb, nb_)
+        vus = set()
+        for pl in places[:520]:
+            noms = [pl["cle"]] if "equipe" in pl or mode == "joueurs" else list(pl.get("vedettes") or [])[:3]
+            for j in noms:
+                g = cache.get(j)
+                if not g or g[1] is None or (id(pl), j) in vus:
+                    continue
+                vus.add((id(pl), j))
+                ij = indice_joueurs.indice(j) or {}
+                pil = [k for k in (ij.get("pastilles") or []) if k in ("en_feu", "en_hausse", "recrue", "legende", "en_creux", "rebond", "buzz")]
+                pl.setdefault("iq_joueurs", []).append({"nom": j, "iq": g[1], "meilleur": g[2], "carte": g[3], "pastilles": pil[:2]})
+                if pl.get("iq") is None or g[1] > pl["iq"]:
+                    pl["iq"] = g[1]
+                if "en_feu" in pil or "rebond" in pil:
+                    pl["iq_chaud"] = True
+        for pl in places:
+            if pl.get("iq_joueurs"):
+                pl["iq_joueurs"].sort(key=lambda x: -x["iq"])
 
     @staticmethod
     def _noter_place(pl, demande, stats, barre=None):
@@ -3061,6 +3138,27 @@ class Api:
                     ph = []
                 return {"ok": True, "id": deja["id"], "photos": ph, "deja": True}
         carte = {k: v for k, v in (d.get("carte") or {}).items() if k in self.CHAMPS_CARTE and k not in ("id", "photo", "photos", "photos_orig", "studio_v", "statut")}
+        # 12 nov 2026 (Mathieu : « regarde la catastrophe », le lot quitte au milieu puis repris : chaque carte 2 ou 3 fois) :
+        # la MEME photo envoyee de nouveau (7 jours) rend la carte deja gardee, quelle que soit la cle de l'envoi
+        h_ph = None
+        if not d.get("cid") and cle and (d.get("photos") or []):          # les envois d'un lot (avec cle)
+            import hashlib
+            h_ph = hashlib.sha256(str((d.get("photos") or [""])[0]).encode()).hexdigest()[:32]
+            c = self._db()
+            try:
+                c.execute("CREATE TABLE IF NOT EXISTS garder_photos (h TEXT PRIMARY KEY, id INTEGER, le REAL)")
+                c.execute("DELETE FROM garder_photos WHERE le < ?", (time.time() - 7 * 86400,))
+                c.commit()
+                row = c.execute("SELECT id FROM garder_photos WHERE h=?", (h_ph,)).fetchone()
+            finally:
+                c.close()
+            deja = self.carte_lire(row[0]) if row else None
+            if deja and deja.get("statut") != "Vendue":
+                try:
+                    ph = json.loads(deja.get("photos") or "[]")
+                except ValueError:
+                    ph = []
+                return {"ok": True, "id": deja["id"], "photos": ph, "deja": True}
         try:
             refs = photos_cartes.sauver(d.get("photos") or [])
             # 31 oct 2026 (Mathieu : « les photos pas deja modifiees comme dans seller ») : on montre la photo studio ;
@@ -3084,6 +3182,13 @@ class Api:
             c = self._db()
             try:
                 c.execute("UPDATE cartes SET a_finir_le=? WHERE id=?", (datetime.now().strftime("%Y-%m-%d %H:%M"), r["id"]))
+                c.commit()
+            finally:
+                c.close()
+        if h_ph:
+            c = self._db()
+            try:
+                c.execute("INSERT OR REPLACE INTO garder_photos VALUES (?,?,?)", (h_ph, r["id"], time.time()))
                 c.commit()
             finally:
                 c.close()
@@ -3197,6 +3302,44 @@ class Api:
         cartes = [{"devant": scans.jpeg_data_url(c["image"], cote=2400), "dos": scans.jpeg_data_url(ds[j]["image"], cote=2400) if j is not None else None,
                    "centre": c["centre"]} for c, j in zip(dv, paires)]
         return {"ok": True, "cartes": cartes, "n": len(cartes), "dos_sans_devant": max(0, len(ds) - sum(1 for j in paires if j is not None))}
+
+    def _doublons_a_finir(self):
+        """{id_garde: [ids en double]} : les cartes « a finir » dont la 1re photo a le meme contenu (le lot repris)."""
+        import hashlib
+        import photos_cartes
+        groupes = {}
+        for x in self.inventaire_liste({"dispo": 1, "a_finir": 1}) or []:
+            if x.get("item_number"):
+                continue
+            f = photos_cartes.chemin(x.get("photo"))
+            if not f:
+                continue
+            try:
+                with open(f, "rb") as fi:
+                    h = hashlib.sha256(fi.read()).hexdigest()
+            except OSError:
+                continue
+            groupes.setdefault(h, []).append(int(x["id"]))
+        return {min(l): sorted(i for i in l if i != min(l)) for l in groupes.values() if len(l) > 1}
+
+    def doublons_a_finir(self):
+        """12 nov 2026 : combien de doublons dans « A finir » (pour le bouton « Retirer les doublons »)."""
+        d = self._doublons_a_finir()
+        return {"ok": True, "n": sum(len(v) for v in d.values()), "groupes": len(d)}
+
+    def doublons_retirer(self):
+        """12 nov 2026 : retire les cartes en double (meme photo) de « A finir » ; garde la plus ancienne de chaque groupe.
+        Jamais une carte deja sur eBay ou vendue."""
+        d = self._doublons_a_finir()
+        n = 0
+        for _, ids in d.items():
+            for i in ids:
+                try:
+                    self.carte_supprimer(i)
+                    n += 1
+                except Exception as e:
+                    print("Doublon (retrait) : " + repr(e), flush=True)
+        return {"ok": True, "retires": n}
 
     def cartes_a_finir_retirer(self, ids):
         """9 nov 2026 : « Retirer de À finir » : la carte reste dans l'inventaire, elle ne compte plus comme a finir."""
@@ -6423,6 +6566,49 @@ class Api:
             if l:
                 out.append({"joueur": nom, "annonces": l, **self._pastilles_joueur(nom)})
         return out
+
+    _TEND_IQ = {"le": 0.0, "v": None}
+
+    def tendances_iq(self):
+        """12 nov 2026 (Mathieu : « un onglet Tendances : les joueurs a surveiller, comment l'IA les a analyses, des stats, des
+        graphiques ; le maximum legal ») : la page Tendances SlabIQ. Seulement des donnees publiques (stats LNH, recherches
+        Wikipedia, nouvelles, palmares) et l'Indice SlabIQ du joueur avec ses criteres (0-100) ; jamais un prix eBay.
+        Le meme pour tous ; garde 10 min."""
+        m = time.time()
+        if Api._TEND_IQ["v"] is not None and m - Api._TEND_IQ["le"] < 600:
+            return Api._TEND_IQ["v"]
+        import indice_joueurs
+        d = indice_joueurs.lire() or {}
+        I = d.get("indice") or {}
+        actifs = sorted([(n, v) for n, v in I.items() if v.get("actif")], key=lambda kv: -kv[1]["indice"])
+        rang = {n: k + 1 for k, (n, _) in enumerate(actifs)}
+
+        def fiche(nom, v):
+            c = v.get("criteres") or {}
+            w = v.get("semaine") or {}
+            cx = v.get("creux") or None
+            return {"nom": nom, "equipe": v.get("equipe") or "", "indice": v.get("indice"), "rang": rang.get(nom), "sur": len(actifs),
+                    "pastilles": [k for k in (v.get("pastilles") or []) if k in ("en_feu", "en_hausse", "recrue", "legende", "en_creux", "rebond", "buzz", "actu")],
+                    "semaine": {"pts": w.get("pts"), "b": w.get("b"), "mj": w.get("mj")} if w.get("mj") else None,
+                    "creux": {k: cx.get(k) for k in ("etat", "ppm", "avant_ppm", "ecart_pct", "age")} if cx else None,
+                    "criteres": {k: round(float(c[k])) for k in ("forme", "ascension", "rythme", "buzz", "notoriete", "demande", "actu", "legende", "recrue") if c.get(k) is not None},
+                    "actu": ((v.get("actu") or [None])[0]) if isinstance(v.get("actu"), list) else None}
+        cats = {}
+        for k, filtre, n in (("en_feu", "en_feu", 30), ("rebond", "rebond", 20), ("recrue", "recrue", 30), ("en_creux", "en_creux", 20),
+                             ("buzz", "buzz", 20), ("en_hausse", "en_hausse", 20), ("legende", "legende", 20), ("top", None, 40)):
+            l = indice_joueurs.top(n, filtre, actifs=None if k == "legende" else True)
+            cats[k] = [fiche(x["nom"], I[x["nom"]]) for x in l if x["nom"] in I]
+        st = indice_joueurs.statut()
+        r = {"ok": True, "cats": cats, "suivis": st.get("joueurs"), "actifs": len(actifs), "le": d.get("le"),
+             "compte": {k: sum(1 for v in I.values() if k in (v.get("pastilles") or [])) for k in ("en_feu", "rebond", "recrue", "en_creux", "buzz", "en_hausse", "legende")}}
+        try:
+            b = indice_joueurs.creux_bilan()
+            if b and (b.get("mesurables_30") or 0) >= 10:     # le suivi des creux (une part, jamais un prix)
+                r["creux_bilan"] = {k: b.get(k) for k in ("signales", "mesurables_30", "remontes_30", "mesurables_60", "remontes_60")}
+        except Exception:
+            pass
+        Api._TEND_IQ.update(le=m, v=r)
+        return r
 
     _MOMENT = {"le": 0.0, "v": None}
 

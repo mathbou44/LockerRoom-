@@ -1,5 +1,5 @@
 """12 nov 2026 (Mathieu : « tu as toute la nuit : performance, outils, securite, SlabIQ, layout ») : la revue de la nuit."""
-import os, sys, tempfile
+import json, os, sys, tempfile
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ["LOCKERROOM_DONNEES"] = tempfile.mkdtemp()
 import comptes
@@ -121,3 +121,38 @@ r = api.mes_deals(True)
 assert r.get("ebay_lent") and len(r["pour_toi"][0]["annonces"]) == 10, r
 api._mes_deals_calcul = _calc
 print("OK Radar sur disque + eBay lent")
+# 12. Tendances SlabIQ : des listes par pastille, les criteres de l'indice, jamais un prix
+lockerroom.Api._TEND_IQ.update(le=0.0, v=None)
+_lire, _top, _st = indice_joueurs.lire, indice_joueurs.top, indice_joueurs.statut
+I = {"A": {"indice": 95, "actif": True, "equipe": "SJS", "pastilles": ["en_feu", "recrue"], "semaine": {"pts": 6, "b": 3, "mj": 3}, "criteres": {"forme": 99.2, "buzz": 70}},
+     "B": {"indice": 70, "actif": True, "equipe": "CHI", "pastilles": ["rebond"], "creux": {"etat": "rebond", "ppm": 0.5, "avant_ppm": 0.7, "ecart_pct": -28}}}
+indice_joueurs.lire = lambda: {"indice": I, "le": "2026-11-12"}
+indice_joueurs.top = lambda n=12, filtre=None, actifs=None: [{"nom": k} for k, v in sorted(I.items(), key=lambda kv: -kv[1]["indice"]) if not filtre or filtre in v["pastilles"]][:n]
+indice_joueurs.statut = lambda: {"joueurs": 2}
+r = api.tendances_iq()
+assert r["ok"] and [x["nom"] for x in r["cats"]["en_feu"]] == ["A"] and r["cats"]["rebond"][0]["creux"]["etat"] == "rebond"
+assert r["cats"]["top"][0]["rang"] == 1 and r["cats"]["en_feu"][0]["criteres"] == {"forme": 99, "buzz": 70} and r["compte"]["en_feu"] == 1
+assert "prix" not in json.dumps(r) and "valeur" not in json.dumps(r)
+indice_joueurs.lire, indice_joueurs.top, indice_joueurs.statut = _lire, _top, _st
+print("OK Tendances SlabIQ")
+# 13. SlabIQ dans les breaks : chaque place recoit un Score SlabIQ (la demande de ce qu'elle donne), sans prix
+if score_modele.charger():
+    rb = api.analyse_break({"produit_id": "2024-25-the-cup", "boites": 1, "acheteur": True})
+    assert rb["ok"] and any(pl.get("iq") is not None for pl in rb["places"]) and rb.get("iq_places")
+    j0 = next(j for j in rb["joueurs"] if j.get("iq_joueurs"))
+    assert set(j0["iq_joueurs"][0]) >= {"nom", "iq", "meilleur", "carte", "pastilles"}
+    print("OK SlabIQ dans les breaks")
+# 14. le lot repris ne cree plus de doublons (meme photo -> meme carte) ; les doublons deja la se retirent d'un geste
+import base64, io
+from PIL import Image as _Im
+import random as _r; _r.seed(4); _im = _Im.new("RGB", (600, 840)); _im.putdata([(_r.randrange(256), _r.randrange(256), _r.randrange(256)) for _ in range(600 * 840)]); _b = io.BytesIO(); _im.save(_b, "JPEG", quality=80); PH = "data:image/jpeg;base64," + base64.b64encode(_b.getvalue()).decode()
+g1 = api.carte_garder({"carte": {"joueur": "Lane Hutson"}, "titre": "Lane Hutson Red Prism /199", "prix": 20, "photos": [PH], "cle": "aaaaaaaa1111"})
+g2 = api.carte_garder({"carte": {"joueur": "Lane Hutson"}, "titre": "Lane Hutson Red Prism /199", "prix": 20, "photos": [PH], "cle": "bbbbbbbb2222"})
+assert g1["ok"] and g2.get("deja") and g2["id"] == g1["id"], (g1, g2)
+c = api._db(); c.execute("DELETE FROM garder_photos"); c.commit(); c.close()            # comme avant le correctif
+g3 = api.carte_garder({"carte": {"joueur": "Lane Hutson"}, "titre": "Lane Hutson Red Prism /199", "prix": 20, "photos": [PH], "cle": "cccccccc3333"})
+assert g3["id"] != g1["id"]
+assert api.doublons_a_finir()["n"] == 1
+assert api.doublons_retirer()["retires"] == 1 and api.doublons_a_finir()["n"] == 0
+assert api.carte_lire(g1["id"]) and not api.carte_lire(g3["id"])                        # la plus ancienne reste
+print("OK lot sans doublons")
