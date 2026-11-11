@@ -709,6 +709,7 @@ html[lang=en] .w-ligne::after{content:'Remove'}
 #c-prix::placeholder{color:var(--pale); opacity:.75}
 .rc-l{display:flex; flex-direction:column; gap:8px} .rc-r{display:flex; flex-direction:column; gap:6px; padding:10px 12px; border-radius:14px; background:var(--carte)} .rc-p{display:flex; justify-content:space-between; gap:10px} .rc-p b{font:700 16px var(--f-cond)} .rc-p small{color:var(--doux)}
 .adm-sv{margin-top:12px; display:inline-flex}
+.feuille .pastilles.conf-t{font-size:15px; line-height:1.45; color:var(--doux)}
 .afs{display:flex; flex-direction:column; gap:12px}
 .afs-t{display:flex; align-items:baseline; flex-wrap:wrap; gap:8px} .afs-t > b{font:700 44px/1 var(--f-cond); color:var(--acc)} .afs-t > span{font:700 22px var(--f-cond); text-transform:uppercase; letter-spacing:.04em} .afs-t small{flex-basis:100%; font-size:15px; color:var(--doux)} .afs-t small b.vert{color:var(--vert)}
 .afs-lot, .afs-dbl{display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:18px; background:color-mix(in srgb, var(--or) 12%, var(--carte)); border:1px solid color-mix(in srgb, var(--or) 35%, var(--ligne))}
@@ -3898,8 +3899,11 @@ function confirmer(titre, libelle, danger, quatrieme){
   // 21 oct 2026 - forme longue : confirmer(titre, texte, libelle[, danger])
   let texte = '';
   if (typeof danger === 'string') { texte = libelle; libelle = danger; danger = quatrieme; }
+  // 12 nov 2026 (« le texte est trop gros pour la case ») : appelee avec (titre, texte), une phrase longue devenait le libelle
+  // du bouton ; elle va dans le texte et le bouton dit « Confirmer »
+  else if (libelle && String(libelle).length > 28) { texte = libelle; libelle = tt('Confirmer', 'Confirm'); }
   return new Promise(res => {
-    ouvrirFeuille(`<h3>${esc(titre)}</h3>${texte ? `<div class="pastilles">${esc(texte)}</div>` : ''}<div class="boutons"><button class="btn ghost" id="f-non">Annuler</button><button class="btn ${danger ? 'danger' : ''}" id="f-oui">${esc(libelle)}</button></div>`);
+    ouvrirFeuille(`<h3>${esc(titre)}</h3>${texte ? `<div class="pastilles conf-t">${esc(texte)}</div>` : ''}<div class="boutons"><button class="btn ghost" id="f-non">Annuler</button><button class="btn ${danger ? 'danger' : ''}" id="f-oui">${esc(libelle)}</button></div>`);
     $('#f-non').onclick = () => { fermerFeuille(); res(false); };
     $('#f-oui').onclick = () => { fermerFeuille(); res(true); };
   });
@@ -10642,7 +10646,8 @@ function glisserPourRetirer(z){
     del.onclick = async () => { vibrer(); const x = await API.carte_supprimer(+r.dataset.id).catch(e => ({ok: false, erreur: e.message}));
       if (x && x.ok === false) { toast(x.erreur || 'Erreur'); return; }
       w.style.transition = 'opacity .2s, max-height .25s'; w.style.opacity = 0; w.style.maxHeight = '0px'; setTimeout(() => w.remove(), 260);
-      S.nbAFinir = Math.max(0, (S.nbAFinir || 1) - 1); MEMO.clear(); toast(tt('Carte retirée', 'Card removed'), 1800); };
+      S.nbAFinir = Math.max(0, (S.nbAFinir || 1) - 1); MEMO.clear(); toast(tt('Carte retirée', 'Card removed'), 1800);
+      clearTimeout(S.tAfinir); S.tAfinir = setTimeout(() => { if ($('#i-liste') && S.filtreInv === 'afinir') { MEMO.clear(); GARDE_SAUTER.t = Date.now(); chargerInventaire(); } }, 900); };
   });
 }
 async function brancherAFinirSimple(l){
@@ -10651,8 +10656,8 @@ async function brancherAFinirSimple(l){
   if (!z || !r || !r.ok || !r.n) return;
   z.innerHTML = `<div class="afs-dbl"><span class="afs-lt"><b>${tt(`${r.n} carte${r.n > 1 ? 's' : ''} en double`, `${r.n} duplicate card${r.n > 1 ? 's' : ''}`)}</b><small>${tt('La même photo est là plus d’une fois (un lot repris).', 'The same photo is here more than once (a resumed batch).')}</small></span>
     <button class="btn petit" id="afs-dbl-b">${tt('Retirer les doublons', 'Remove duplicates')}</button></div>`;
-  $('#afs-dbl-b').onclick = async () => { if (!await confirmer(tt('Retirer les doublons ?', 'Remove duplicates?'), tt(`On garde une seule copie de chaque carte. ${r.n} copie${r.n > 1 ? 's' : ''} en trop ser${r.n > 1 ? 'ont retirées' : 'a retirée'} de ton inventaire. Aucune carte sur eBay n’est touchée.`, `We keep one copy of each card. ${r.n} extra cop${r.n > 1 ? 'ies' : 'y'} will be removed from your inventory. No card on eBay is touched.`))) return;
-    const x = await essai(API.doublons_retirer(), tt('Doublons retirés', 'Duplicates removed')); if (x) { S.nbAFinir = null; chargerInventaire(); } };
+  $('#afs-dbl-b').onclick = async () => { if (!await confirmer(tt('Retirer les doublons ?', 'Remove duplicates?'), tt(`On garde une seule copie de chaque carte. ${r.n} copie${r.n > 1 ? 's' : ''} en trop ser${r.n > 1 ? 'ont retirées' : 'a retirée'} de ton inventaire. Aucune carte sur eBay n’est touchée.`, `We keep one copy of each card. ${r.n} extra cop${r.n > 1 ? 'ies' : 'y'} will be removed from your inventory. No card on eBay is touched.`), tt('Retirer', 'Remove'), true)) return;
+    const x = await essai(API.doublons_retirer(), tt('Doublons retirés', 'Duplicates removed')); if (x) { S.nbAFinir = null; MEMO.clear(); GARDE_SAUTER.t = Date.now(); chargerInventaire(); } };
 }
 function blocAFinir(l){
   const g = S.lotGarde, pg = pgGarde(), C = g && g.but === 'collection';
@@ -10674,7 +10679,7 @@ function brancherAFinir(l){
     await lotIdb(null); S.lotGarde = null; S.lotGardeN = 0; chargerInventaire(); };
   const bp = $('#af-pg'); if (bp) bp.onclick = () => { vibrer(); S.pgPre = l.map(c => +c.id); for (const k in PG) delete PG[k]; location.hash = '#vendre/programmer'; };
   const br = $('#af-retirer'); if (br) br.onclick = async () => { if (!await confirmer(tt('Retirer de « À finir » ?', 'Remove from “To finish”?'), tt('Les cartes restent dans ton inventaire ; elles ne seront juste plus dans cette liste.', 'The cards stay in your inventory; they just leave this list.'))) return;
-    await essai(API.cartes_a_finir_retirer(l.map(c => c.id))); S.nbAFinir = 0; chargerInventaire(); };
+    await essai(API.cartes_a_finir_retirer(l.map(c => c.id))); S.nbAFinir = 0; MEMO.clear(); GARDE_SAUTER.t = Date.now(); chargerInventaire(); };
 }
 // 9 nov 2026 : le lot en cours est garde dans le telephone (IndexedDB : les photos d'origine, pas de limite de 5 Mo) ; si
 // l'app se ferme au milieu, l'onglet « À finir » le reprend ou il etait
@@ -13894,7 +13899,9 @@ const PTR_SEUIL = 72, PTR_MAX = 120;
     e.style.opacity = Math.min(1, p / 40);
     e.style.setProperty('--r', (p * 4) + 'deg');
     if (v) v.style.transform = p ? `translateY(${p * .7}px)` : ''; };
-  const actif = (t) => !!$('#d-res') && !occupe && (window.scrollY || document.documentElement.scrollTop) <= 0
+  // 12 nov 2026 (Mathieu : « toutes les pages doivent se refresh quand on tire vers le bas, comme toutes les apps ») : partout,
+  // sauf dans les ecrans de prise de photo et de vente en cours
+  const actif = (t) => !!$('#vue .ecran') && !document.querySelector('#scan, .vd') && !/^#(vendre)/.test(location.hash) && !occupe && (window.scrollY || document.documentElement.scrollTop) <= 0
     && !(t && t.closest && t.closest('#feuille, #fen-annonce, .fen, input, textarea, select'));
   document.addEventListener('touchstart', (e) => {
     if (e.touches.length !== 1 || !actif(e.target)) { y0 = null; return; }
@@ -13916,10 +13923,13 @@ const PTR_SEUIL = 72, PTR_MAX = 120;
     if (d < PTR_SEUIL) { placer(0, el); el.style.opacity = 0; return; }
     occupe = true; placer(60, el); el.classList.add('charge');
     const t0 = Date.now();
-    try { if (zoneDeals('watch')) await chargerWatch(); else await chargerDeals(true); } catch (e) {}
+    try {
+      if ($('#d-res')) { if (zoneDeals('watch')) await chargerWatch(); else await chargerDeals(true); }
+      else { MEMO.clear(); GARDE_SAUTER.t = Date.now(); if ($('#i-liste')) { S.nbAFinir = null; await chargerInventaire(); } else await Promise.resolve(route()); }
+    } catch (e) {}
     await new Promise(r => setTimeout(r, Math.max(0, 650 - (Date.now() - t0))));    // le logo a le temps de tourner
     el.classList.remove('charge');
-    el.querySelector('.ptr-ok').textContent = '✓ ' + tt('À jour', 'Up to date') + (S.dealsMaj && !$('.w-liste, .w-vide') ? ' · ' + tt('chasse ', 'hunt ') + ilYa(S.dealsMaj) : '');
+    el.querySelector('.ptr-ok').textContent = '✓ ' + tt('À jour', 'Up to date') + (S.dealsMaj && $('#d-res') && !$('.w-liste, .w-vide') ? ' · ' + tt('chasse ', 'hunt ') + ilYa(S.dealsMaj) : '');
     el.classList.add('fini');
     await new Promise(r => setTimeout(r, 900));
     el.classList.remove('fini'); placer(0, el); el.style.opacity = 0;
@@ -13927,6 +13937,20 @@ const PTR_SEUIL = 72, PTR_MAX = 120;
   };
   document.addEventListener('touchend', fin, {passive:true});
   document.addEventListener('touchcancel', fin, {passive:true});
+  // 12 nov 2026 : retour dans l'app apres plus d'une minute ailleurs -> la page se remet a jour toute seule
+  // (jamais pendant une saisie, une fiche ouverte, la prise de photo ou une vente en cours)
+  let cache0 = 0;
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { cache0 = Date.now(); return; }
+    if (!cache0 || Date.now() - cache0 < 60000) return; cache0 = 0;
+    const a = document.activeElement;
+    if (occupe || !$('#vue .ecran') || document.querySelector('#scan, .vd') || !$('#fond-feuille').hidden || document.body.classList.contains('fen-ouverte') || /^#(vendre)/.test(location.hash)
+      || (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) return;
+    MEMO.clear(); GARDE_SAUTER.t = Date.now();
+    try { if ($('#d-res')) { if (zoneDeals('watch')) chargerWatch(); else chargerDeals(true); }
+      else if ($('#i-liste')) { S.nbAFinir = null; chargerInventaire(); }
+      else { const y = window.scrollY; Promise.resolve(route()).then(() => window.scrollTo(0, y)).catch(() => {}); } } catch (e) {}
+  });
 })();
 // 29 oct 2026 (Mathieu : « je suis pas capable de voir ce que tu as cherché avec mes crédits ») : chaque vérification
 // SoldComps du chasseur, la carte, le prix et le résultat ; un bilan 24 h par genre (vétérans/légendes vs recrues)
