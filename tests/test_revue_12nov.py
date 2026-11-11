@@ -156,3 +156,33 @@ assert api.doublons_a_finir()["n"] == 1
 assert api.doublons_retirer()["retires"] == 1 and api.doublons_a_finir()["n"] == 0
 assert api.carte_lire(g1["id"]) and not api.carte_lire(g3["id"])                        # la plus ancienne reste
 print("OK lot sans doublons")
+# 15. la sauvegarde .zip : l'admin seulement ; le zip contient les donnees, pas les caches
+comptes.MULTI = False
+r = c_ = server.app.test_client().get("/admin/sauvegarde.zip", headers={"Host": "localhost"})
+assert r.status_code == 200 and r.data[:2] == b"PK", r.status_code
+import zipfile as _zf
+noms = _zf.ZipFile(io.BytesIO(r.data)).namelist()
+assert any(n.endswith(".db") for n in noms) and not any(n.startswith("radar_garde") for n in noms), noms[:10]
+print("OK sauvegarde zip")
+# 16. recap d'un break : place par place, qui a eu quoi (jamais un prix)
+c = api._db()
+bid = c.execute("INSERT INTO breaks (nom, mode, statut) VALUES ('The Cup x2', 'equipes', 'ouvert')").lastrowid
+p1 = c.execute("INSERT INTO places (break_id, cle, libelle, prix, acheteur, vendu, ordre) VALUES (?, 'MTL', 'Montreal', 40, 'jo123', 1, 1)", (bid,)).lastrowid
+c.execute("INSERT INTO places (break_id, cle, libelle, prix, acheteur, vendu, ordre) VALUES (?, 'TOR', 'Toronto', 30, 'max', 1, 2)", (bid,))
+c.execute("INSERT INTO frappes (break_id, carte, joueur, valeur, place_id) VALUES (?, 'Hutson RPA /99', 'Lane Hutson', 300, ?)", (bid, p1))
+c.commit(); c.close()
+rc = api.break_recap(bid, "fr")
+assert rc["ok"] and rc["hits"] == 1 and rc["places"][0]["cartes"] == ["Hutson RPA /99"] and rc["places"][1]["cartes"] == []
+assert "jo123" in rc["texte"] and "aucun hit" in rc["texte"] and "300" not in rc["texte"]
+print("OK recap de break")
+# 17. les annonces deja programmees : leurs heures a venir (pour continuer la serie apres la derniere)
+from datetime import datetime as _d, timedelta as _t, timezone as _z
+c = api._db()
+futur = (_d.now(_z.utc) + _t(days=2)).isoformat(); passe = (_d.now(_z.utc) - _t(days=2)).isoformat()
+c.execute("INSERT INTO cartes (titre, statut, item_number, debut) VALUES ('a', 'Listée', '111', ?)", (futur,))
+c.execute("INSERT INTO cartes (titre, statut, item_number, debut) VALUES ('b', 'Listée', '112', ?)", (passe,))
+c.execute("INSERT INTO cartes (titre, statut, debut) VALUES ('c', 'En stock', ?)", (futur,))       # pas sur eBay : ignoree
+c.commit(); c.close()
+pd = api.programmees_dates()
+assert pd["ok"] and len(pd["dates"]) == 1, pd
+print("OK annonces deja programmees")

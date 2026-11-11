@@ -705,6 +705,8 @@ html[lang=en] .w-ligne::after{content:'Remove'}
 .tiq-a{display:flex; gap:6px; align-items:flex-start; font-size:13px; color:var(--texte); line-height:1.35} .tiq-a .ic-h{width:15px; height:15px; flex:none; margin-top:2px; color:var(--acc)} .tiq-note{margin-top:14px}
 .c-pp{font-size:13px; color:var(--doux); margin:-4px 0 6px; grid-column:1 / -1} .c-pp b{color:var(--texte)} .c-pp .vert{color:var(--vert)} .c-pp .or{color:var(--or)}
 #c-prix::placeholder{color:var(--pale); opacity:.75}
+.rc-l{display:flex; flex-direction:column; gap:8px} .rc-r{display:flex; flex-direction:column; gap:6px; padding:10px 12px; border-radius:14px; background:var(--carte)} .rc-p{display:flex; justify-content:space-between; gap:10px} .rc-p b{font:700 16px var(--f-cond)} .rc-p small{color:var(--doux)}
+.adm-sv{margin-top:12px; display:inline-flex}
 .afs{display:flex; flex-direction:column; gap:12px}
 .afs-t{display:flex; align-items:baseline; flex-wrap:wrap; gap:8px} .afs-t > b{font:700 44px/1 var(--f-cond); color:var(--acc)} .afs-t > span{font:700 22px var(--f-cond); text-transform:uppercase; letter-spacing:.04em} .afs-t small{flex-basis:100%; font-size:15px; color:var(--doux)} .afs-t small b.vert{color:var(--vert)}
 .afs-lot, .afs-dbl{display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:18px; background:color-mix(in srgb, var(--or) 12%, var(--carte)); border:1px solid color-mix(in srgb, var(--or) 35%, var(--ligne))}
@@ -6345,10 +6347,14 @@ const PG_ETAPES = () => [tt('Cartes', 'Cards'), tt('Titres et prix', 'Titles & p
 async function vueProgrammer(){
   if (!PG.cartes) {
     V().innerHTML = `<section class="ecran vendre pg"><div class="titre">${tt('Programmer sur eBay', 'Schedule on eBay')}</div><div class="charge-logo"><span class="roue grande"></span></div></section>`;
-    const [c, p] = await Promise.all([API.serie_candidates().catch(e => ({ok:false, erreur:e.message})), API.ebay_politiques().catch(() => ({ok:false}))]);
+    const [c, p, occ] = await Promise.all([API.serie_candidates().catch(e => ({ok:false, erreur:e.message})), API.ebay_politiques().catch(() => ({ok:false})), API.programmees_dates().catch(() => null)]);
     if (!c.ok) { V().innerHTML = `<section class="ecran vendre pg"><div class="vide">${esc(c.erreur || 'Erreur')}</div></section>`; return; }
     Object.assign(PG, {etape: 1, vu: 1, cartes: c.cartes, choisis: new Set(c.cartes.filter(x => !x.manque.length).slice(0, PG_MAX).map(x => x.id)),
-      mod: {...c.modele}, pol: p && p.ok ? p : null, debut: soir19h(), ecart: 0});
+      mod: {...c.modele}, pol: p && p.ok ? p : null, debut: soir19h(), ecart: 0,
+      // 12 nov 2026 (Mathieu : « voir qu'il y a deja des annonces en attente, commencer apres la derniere ; au bout du maximum
+      // d'eBay, recommencer au debut ») : les heures deja prises ; le plan continue a la suite, puis repart au debut du creneau
+      occupees: ((occ && occ.dates) || []).map(d => Date.parse(d)).filter(t => t > Date.now() + 15 * 60000).sort((a, b) => a - b), debutAuto: true});
+    if (PG.occupees.length) { const d0 = pgDates()[0]; if (d0) PG.debut = heureLocaleInput(Math.round((d0.getTime() - Date.now()) / 60000)); }
     if (S.pgPre && S.pgPre.length) { const pre = new Set(S.pgPre), l_ = c.cartes.filter(x => pre.has(x.id) && pgChoisissable(x)).slice(0, PG_MAX).map(x => x.id);
       if (l_.length) PG.choisis = new Set(l_); S.pgPre = null; }       // 8 nov : un lot sans carte prete garde le choix par defaut
     else pgReprendre();
@@ -6429,7 +6435,14 @@ function planEtale(t0, n, maint = Date.now()){
   while (out.length < n) out.push(new Date(Math.min(lim, t0 + out.length * H)));   // (jamais en pratique : 60 cartes au plus)
   return out;
 }
-function pgDates(){ const t0 = new Date(PG.debut).getTime(); return PG.ecart === 0 ? planEtale(t0, pgListe().length) : pgListe().map((x, i) => new Date(t0 + i * PG.ecart * 3600000)); }
+function pgDates(){
+  const n = pgListe().length, occ = (PG.occupees || []).filter(t => t > Date.now() + 15 * 60000);
+  if (occ.length && PG.debutAuto !== false) {
+    // le meme plan que si les annonces deja programmees en faisaient partie : on saute leurs heures (a 45 min pres)
+    const tous = planEtale(occ[0], occ.length + n), libres = tous.filter(d => !occ.some(t => Math.abs(t - d.getTime()) < 45 * 60000));
+    if (libres.length >= n) return libres.slice(0, n);
+  }
+  const t0 = new Date(PG.debut).getTime(); return PG.ecart === 0 ? planEtale(t0, n) : pgListe().map((x, i) => new Date(t0 + i * PG.ecart * 3600000)); }
 // 11 nov 2026 (Mathieu : « une policy differente si certaines cartes du lot sont d'une autre categorie de prix ») : la
 // fourchette lue dans le NOM de la politique (« 0-29$ », « 30$-99$ », « 100$+ », « moins de 30 $ ») ; sinon celle du lot
 // 11 nov 2026 (Mathieu : « la retouche du cadre flou n'a pas ete mise autour de celle-ci ») : avant de programmer, les cartes
@@ -6504,7 +6517,7 @@ function rendrePG(){
         : segV('pg-ret', [['non', tt('Pas de retours', 'No returns')], ['30_acheteur', tt('30 j · acheteur paie', '30 d · buyer pays')]], o.retours)}</div>`;
   if (e === 5) { const D = pgDates(), fin = new Date(Math.max(...D.map(d => d.getTime()))), trop = D.length && fin.getTime() > Date.now() + 21 * 86400000;
     corps = `<div class="pg-q">${tt('Calendrier', 'Schedule')}</div><div class="pg-sous">${tt('Une annonce après l’autre, pour ne pas toutes les mettre en même temps.', 'One listing after the other, so they don’t all go up at once.')}</div>
-    <div class="bloc-v"><label class="bloc-t" for="pg-d">${tt('Première annonce', 'First listing')}</label><input class="champ" type="datetime-local" id="pg-d" value="${esc(PG.debut)}" min="${esc(heureLocaleInput(15))}" max="${esc(heureLocaleInput(21 * 1440))}"></div>
+    <div class="bloc-v"><label class="bloc-t" for="pg-d">${tt('Première annonce', 'First listing')}</label><input class="champ" type="datetime-local" id="pg-d" value="${esc(PG.debut)}" min="${esc(heureLocaleInput(15))}" max="${esc(heureLocaleInput(21 * 1440))}">${(PG.occupees || []).length && PG.debutAuto !== false ? `<div class="sous pg-occ">${tt(`${PG.occupees.length} annonce${PG.occupees.length > 1 ? 's' : ''} déjà programmée${PG.occupees.length > 1 ? 's' : ''} : la série continue après la dernière (${dateCourte(new Date(PG.occupees[PG.occupees.length - 1]).toISOString())}), puis repart au début du créneau d’eBay (21 jours).`, `${PG.occupees.length} listing${PG.occupees.length > 1 ? 's' : ''} already scheduled: the series continues after the last one (${dateCourte(new Date(PG.occupees[PG.occupees.length - 1]).toISOString())}), then starts over within eBay’s window (21 days).`)}</div>` : ''}</div>
     <div class="bloc-v"><div class="bloc-t">${tt('Puis une toutes les', 'Then one every')}</div>${segV('pg-ec', [[0, tt('Étaler', 'Spread'), tt('21 jours', '21 days')], [24, tt('24 h', '24 h'), tt('1 par jour', '1 a day')], [12, '12 h'], [6, '6 h'], [2, '2 h']], PG.ecart)}
       ${PG.ecart === 0 ? (() => { const jours = new Set(D.map(d => d.toDateString())).size, parJ = Math.ceil(L.length / Math.max(1, jours));
         return `<div class="pg-sous">${tt(`Une carte par jour à ${heureCourte(D[0])}, sur ${jours} jour${jours > 1 ? 's' : ''}`, `One card a day at ${heureCourte(D[0])}, over ${jours} day${jours > 1 ? 's' : ''}`)}${parJ > 1 ? tt(` ; au bout des ${jours} jours, on recommence au 2e jour, un peu plus tôt dans la journée (jusqu’à ${parJ} par jour).`, `; after ${jours} days it starts over from day 2, a bit earlier in the day (up to ${parJ} a day).`) : '.'} ${tt('Tes annonces restent nouvelles le plus longtemps possible.', 'Your listings stay fresh as long as possible.')}</div>`; })() : ''}</div>
@@ -6532,7 +6545,7 @@ function pgLire(){
   if (v('pg-pret') !== undefined) o.politique_ret = v('pg-pret');
   for (const [id, k] of [['pg-g', 'poids_g'], ['pg-lo', 'longueur_cm'], ['pg-la', 'largeur_cm'], ['pg-h', 'hauteur_cm']]) if (v(id) !== undefined) o[k] = nb(v(id)) || 0;
   const of = $('#pg-off'); if (of) o.offres = of.checked;
-  if (v('pg-d')) PG.debut = v('pg-d');
+  if (v('pg-d') && v('pg-d') !== PG.debut) { PG.debut = v('pg-d'); PG.debutAuto = false; }   // l'heure choisie a la main gagne
 }
 function brancherPG(){
   const o = PG.mod, re = () => { pgLire(); rendrePG(); };
@@ -8229,6 +8242,7 @@ async function ouvrirAnnonce(base){
   // les morceaux de la fiche Pro (pastilles, joueur et vendeur, Score SlabIQ), partages par les deux fiches
   const proPils = (a, encan) => {
     const sp = scoreP, c = (sp && sp.carte) || {};
+    const alerteN = estNumerique(a.titre || base.titre) ? [`<span class="capsule rouge">${tt('Carte numérique ? Vérifie que c’est une vraie carte avant de miser', 'Digital card? Check it’s a real card before bidding')}</span>`] : [];
     const L = {en_feu: [tt('En feu', 'On fire'), 'rouge'], en_hausse: [tt('En hausse', 'Rising'), 'vert'], legende: [tt('Légende', 'Legend'), 'or'], recrue: [tt('Recrue', 'Rookie'), 'or'], buzz: ['Buzz', 'acc'], actu: [tt('Dans l’actu', 'In the news'), 'acc'], en_creux: [tt('En creux', 'In a slump'), ''], rebond: [tt('Sort de son creux', 'Bouncing back'), 'vert']};
     const pils = [];
     if (sp) (sp.pastilles || []).filter(k => L[k]).forEach(k => pils.push(tag(L[k][0], L[k][1])));
@@ -8240,7 +8254,7 @@ async function ouvrirAnnonce(base){
     const ms = Date.parse(a.fin || base.fin || '') - Date.now();
     if (encan && a.mises != null) pils.push(tag(a.mises + ' ' + tt('mise', 'bid') + (a.mises > 1 ? 's' : '')));
     if (encan && (a.mises || 0) <= 1 && ms > 0 && ms < 6 * 3600e3) pils.push(tag(tt('Peu disputé', 'Low competition'), 'vert'));
-    return pils;
+    return alerteN.concat(pils);
   };
   const proChips = (a) => { const sp = scoreP; return (sp && sp.joueur) || a.vendeur ? `<div class="fa-chips">
         ${sp && sp.joueur ? `<a class="fa-chip" href="#joueur/${encodeURIComponent(sp.joueur)}" data-fermer><span class="fa-ci">${icN('profil')}</span><span class="fa-ct"><small>${tt('Joueur', 'Player')}</small><b>${esc(sp.joueur)}</b>${sp.rang ? `<em>${ordinal(sp.rang)} ${tt('sur', 'of')} ${sp.sur}</em>` : ''}</span><i>›</i></a>` : ''}
@@ -10436,7 +10450,7 @@ function rendreBreak(){
     <div class="entete"><div><div class="titre moyen">${esc(b.nom)}</div></div>${anneau(52, places.length ? vendues / places.length : 0, vendues === places.length && places.length ? 'vert' : '')}</div>
     <div class="pastilles defile">${tag(statut[0], 'grand ' + statut[1])}${tag({equipes:'Équipes', divisions:'Divisions', joueurs:'Joueurs', aleatoire:'Aléatoire'}[b.mode] || b.mode, 'grand')}
       ${tag(vendues + '/' + places.length + ' vendues', 'grand')}${payees < vendues ? tag((vendues - payees) + ' à payer', 'grand rouge') : ''}
-      <button class="tag grand acc" id="k-lien">${ICONES.lien} Page publique</button></div>
+      <button class="tag grand acc" id="k-lien">${ICONES.lien} Page publique</button><button class="tag grand vert" id="k-recap">${tt('Récap', 'Recap')}</button></div>
     <div class="kpis"><div class="kpi"><b>${argentKpi(bil.revenus)}</b><span>Ventes</span></div>
       <div class="kpi"><b>${argentKpi(bil.frais + bil.cout + bil.port)}</b><span>Coûts + frais</span></div>
       <div class="kpi"><b class="${bil.profit >= 0 ? 'vert' : 'rouge'}">${argentKpi(bil.profit)}</b><span>Profit</span></div></div>
@@ -10449,6 +10463,13 @@ function rendreBreak(){
       <button class="plus" id="k-suppr" style="color:var(--rouge)">Supprimer ce break</button></div>
   </section>`;
   $$('.seg button', V()).forEach(x => x.onclick = () => { S.ongletBreak = x.dataset.o; rendreBreak(); });
+  // 12 nov 2026 (forums) : le recapitulatif clair, place par place, pret a copier
+  $('#k-recap').onclick = async () => { vibrer();
+    const r = await essai(API.break_recap(id, typeof LANGUE !== 'undefined' ? LANGUE : 'fr')); if (!r) return;
+    ouvrirFeuille(`<div class="iqx"><div class="iqx-t"><b>${tt('Récap', 'Recap')}</b><span>${r.hits} hit${r.hits !== 1 ? 's' : ''} · ${r.places.length} ${tt('places', 'spots')}</span></div>
+      <div class="rc-l">${r.places.map(p => `<div class="rc-r"><span class="rc-p"><b>${esc(p.place)}</b><small>${esc(p.acheteur || '—')}</small></span><span class="pastilles">${p.cartes.length ? p.cartes.map(c => tag(c, 'acc')).join('') : tag(tt('Aucun hit', 'No hit'))}</span></div>`).join('')}</div>
+      <button class="btn" id="rc-copier">${tt('Copier le récap', 'Copy the recap')}</button></div>`, {centre: true});
+    $('#rc-copier').onclick = async () => { vibrer(); try { await navigator.clipboard.writeText(r.texte); toast(tt('Récap copié : colle-le où tu veux', 'Recap copied: paste it anywhere'), 2500); } catch (e) { toast(tt('Copie impossible ici', 'Copy not available here')); } }; };
   $('#k-lien').onclick = async () => {
     ouvrirFeuille(`<h3>Page publique du break</h3>
       <div class="pastilles">${tag('Lecture seule', 'acc')}${tag('Acheteurs masqués')}${tag('Tirage vérifiable', 'vert')}</div>
@@ -13436,6 +13457,7 @@ async function vueAdmin(onglet){
       <div class="kpi"><span class="lib">${tt('Actifs 7 jours', 'Active 7 days')}</span><span class="v">${a.actifs_7j}</span><span class="s">${a.total ? Math.round(100 * a.actifs_7j / a.total) : 0} %</span></div>
       <div class="kpi ${r.erreurs_24h ? 'rouge' : ''}"><span class="lib">${tt('Serveur', 'Server')}</span><span class="v">${r.erreurs_24h ? r.erreurs_24h + ' ' + tt('erreurs', 'errors') : 'OK'}</span><span class="s">eBay ${br ? Math.round(100 * br.utilises / br.limite) : 0} % ${tt('du jour', 'today')}</span></div></div>
     <div id="adm-sorties"></div>
+    <a class="pilule adm-sv" href="/admin/sauvegarde.zip" download>${icN('colis')}${tt('Télécharger la sauvegarde (.zip) · 1 fois par semaine', 'Download the backup (.zip) · once a week')}</a>
     <div class="seg" id="adm-o" style="margin:14px 0">${[['activite', tt('Activité', 'Activity')], ['abonnes', tt('Abonnés', 'Subscribers')], ['demandes', tt('Demandes', 'Requests') + pastille(r.demandes.nouvelles)], ['catalogue', 'Catalogue' + pastille(r.a_ajouter)], ['banc', tt('Validation', 'Validation')], ['serveur', tt('Serveur', 'Server')]].map(([k, t]) => `<button data-v="${k}" class="${o === k ? 'on' : ''}">${t}</button>`).join('')}</div>
     <div id="adm-z"><div class="lecture"><span class="roue"></span></div></div></section>`;
   blocSorties();
@@ -14196,11 +14218,15 @@ function pastilleScore(x){ return x && x.score != null ? `<span class="sc-b ${co
 // 11 nov 2026 (Mathieu : « comme les slabs de l'onglet collection ; juste l'info necessaire ; punchy et rapide ; un toucher
 // sur le score montre pourquoi ») : la tuile = un slab. Etiquette : la carte + le Score SlabIQ (a la place de la note).
 // Dans le slab : la photo, le temps qui reste (ou Achat immediat) et UNE pastille. Dessous : le prix, et le vrai total.
+// 12 nov 2026 (forums : « des cartes numeriques dans des annonces qui ressemblent a des cartes physiques ») : un titre qui
+// parle de carte numerique (digital, NFT, app, code) est signale : « Carte numérique ? »
+const RE_NUMERIQUE = /\b(digital|nft|e-?card|virtual|veve|topps bunt|bunt app|topps now digital|code card|redemption code|app card|ar card|in[- ]app)\b/i;
+const estNumerique = (t) => RE_NUMERIQUE.test(String(t || '')) && !/\b(digital print|physical)\b/i.test(String(t || ''));
 function tuileRadar(x, src){
   const L = {en_feu: [tt('En feu', 'On fire'), 'rouge'], rebond: [tt('Sort de son creux', 'Bouncing back'), 'vert'], en_creux: [tt('En creux', 'In a slump'), ''],
     legende: [tt('Légende', 'Legend'), 'or'], recrue: [tt('Recrue', 'Rookie'), 'or'], buzz: ['Buzz', 'acc']};
   const pj = (x.pastilles_j || []).find(k => L[k]);
-  const t1 = x.petit_vendeur ? [tt('Petit vendeur', 'Small seller'), 'vert'] : pj ? L[pj] : null;
+  const t1 = estNumerique(x.titre) ? [tt('Carte numérique ?', 'Digital card?'), 'rouge'] : x.petit_vendeur ? [tt('Petit vendeur', 'Small seller'), 'vert'] : pj ? L[pj] : null;
   const fin = x.encan ? finDans(x.fin) + (x.mises != null ? ' · ' + x.mises + ' ' + tt('mise', 'bid') + (x.mises > 1 ? 's' : '') : '') : tt('Achat immédiat', 'Buy It Now');
   const ms = Date.parse(x.fin || '') - Date.now(), urgent = x.encan && ms > 0 && ms < 3600e3;
   const sc = x.score != null ? `<button class="sl-n sr-sc ${couleurScore(x.score)}" data-sc="${esc(x.item_id)}" aria-label="${esc(tt('Pourquoi ce score', 'Why this score'))}"><b>${x.score}</b><small>SLABIQ</small></button>` : '';

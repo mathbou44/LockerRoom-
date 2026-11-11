@@ -2607,6 +2607,32 @@ class Api:
                                          b["frais_fixe"] or 0, b["port_paye"] or 0)
         return {"ok": True, "break": b, "places": places, "frappes": frappes}
 
+    def break_recap(self, bid, langue=None):
+        """12 nov 2026 (forums : « des breakers qui ne nomment ni les joueurs ni les hits dans le recap ») : le recapitulatif
+        clair d'un break, place par place : l'acheteur, puis chaque carte sortie pour lui. Pret a copier (Whatnot, Instagram,
+        Discord, courriel). Aucun prix ni valeur : juste qui a eu quoi."""
+        d = self.break_detail(bid)
+        if not d.get("ok"):
+            return d
+        en = (langue or self.reglages_lire().get("langue") or "fr") == "en"
+        b, places, frappes = d["break"], d["places"], d["frappes"]
+        par = {}
+        for f in reversed(frappes):                       # dans l'ordre ou elles sont sorties
+            par.setdefault(f.get("place_id"), []).append(f)
+        lignes, R = [], []
+        for p in places:
+            if not p.get("vendu"):
+                continue
+            cartes = [str(f.get("carte") or f.get("joueur") or "").strip() for f in par.get(p["id"], []) if (f.get("carte") or f.get("joueur"))]
+            R.append({"place": p.get("libelle") or p.get("cle"), "acheteur": p.get("acheteur") or "", "cartes": cartes})
+            lignes.append(f"• {p.get('libelle') or p.get('cle')} — {p.get('acheteur') or ('?')} : " + (", ".join(cartes) if cartes else ("no hit" if en else "aucun hit")))
+        sans = [str(f.get("carte") or "").strip() for f in par.get(None, []) if f.get("carte")]
+        tete = (f"RECAP — {b.get('nom') or ''}" if en else f"RÉCAP — {b.get('nom') or ''}").strip(" —")
+        n_h = sum(len(x["cartes"]) for x in R)
+        pied = (f"{n_h} hit{'s' if n_h != 1 else ''} · {len(R)} spots" if en else f"{n_h} hit{'s' if n_h != 1 else ''} · {len(R)} places")
+        texte = "\n".join([tete] + lignes + ([("Not assigned: " if en else "Pas encore attribuées : ") + ", ".join(sans)] if sans else []) + [pied])
+        return {"ok": True, "places": R, "sans_place": sans, "texte": texte, "hits": n_h}
+
     def break_maj(self, bid, champs):
         ok = {k: v for k, v in (champs or {}).items() if k in ("nom", "port_paye", "cout", "statut", "frais_pct", "frais_fixe")}
         for k in ("port_paye", "cout", "frais_pct", "frais_fixe"):
@@ -5569,6 +5595,27 @@ class Api:
                         "photos": ph[:2], "orig": orig[:2], "studio_v": c.get("studio_v") or 0,
                         "manque": [m for m, ok in (("prix", bool(prix)), ("photo", bool(ph)), ("titre", len(str(c.get("titre") or "")) >= 10)) if not ok]})
         return {"ok": True, "cartes": out, "modele": __import__("annonces").modele(self.reglages_lire().get("modele_annonce"))}
+
+    def programmees_dates(self):
+        """12 nov 2026 (Mathieu : « l'app doit voir qu'il y a deja des annonces en attente et programmer apres la derniere ;
+        au bout, recommencer au debut ») : les heures de mise en ligne deja prevues (annonces eBay programmees, a venir)."""
+        with _verrou:
+            c = self._db()
+            try:
+                l = [r[0] for r in c.execute("SELECT debut FROM cartes WHERE debut IS NOT NULL AND statut != 'Vendue' AND item_number IS NOT NULL")]
+            finally:
+                c.close()
+        now = datetime.now(timezone.utc)
+        out = set()
+        for d in l:
+            try:
+                t = datetime.fromisoformat(str(d).replace("Z", "+00:00"))
+            except ValueError:
+                continue
+            t = t if t.tzinfo else t.replace(tzinfo=timezone.utc)
+            if t > now:
+                out.add(t.astimezone(timezone.utc).isoformat())
+        return {"ok": True, "dates": sorted(out)[:400]}
 
     def serie_programmer(self, ids, debut, ecart_h=24, modele=None, debuts=None, politiques=None):
         """Programme les cartes choisies sur eBay, une apres l'autre : la 1re a « debut », puis une toutes les ecart_h

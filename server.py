@@ -16,6 +16,7 @@ Routes :
 import json
 import os
 import sys
+import shutil
 import threading
 import time
 
@@ -1090,6 +1091,56 @@ def mes_photos(nom):
     if not f:
         abort(404)
     return send_from_directory(os.path.dirname(f), os.path.basename(f), mimetype="image/jpeg", max_age=30 * 86400)
+
+
+@app.route("/admin/sauvegarde.zip")
+def admin_sauvegarde_zip():
+    """12 nov 2026 (liste du lancement : « une sauvegarde hors de Render chaque semaine ») : toutes les donnees du serveur
+    (comptes, inventaires, photos, ventes, modele SlabIQ) en un .zip, pour l'admin seulement (verifie, jamais en vue
+    simulee). Les caches qui se refont seuls sont laisses de cote. Le fichier est ecrit a part, envoye, puis efface."""
+    import tempfile
+    import zipfile
+    from flask import send_file
+    import lockerroom as _lr
+    if not api._est_admin(reel=True):
+        abort(403)
+    racine = _lr.DOSSIER
+    sauter = {"radar_garde", "__pycache__", "tmp"}
+    caches = ("cache_vendues.sqlite", ".verrou", ".tmp", ".lock")
+    taille = 0
+    for d, sous, fichiers in os.walk(racine):
+        sous[:] = [x for x in sous if x not in sauter and not x.startswith(".")]
+        taille += sum(os.path.getsize(os.path.join(d, f)) for f in fichiers if not f.endswith(caches))
+    libre = shutil.disk_usage(tempfile.gettempdir()).free
+    if libre < taille * 1.1 + 200e6:
+        return ("Pas assez d'espace libre pour la sauvegarde (%d Mo de donnees, %d Mo libres)" % (taille // 1e6, libre // 1e6), 507)
+    tmp = tempfile.NamedTemporaryFile(prefix="slabcoach_", suffix=".zip", delete=False)
+    tmp.close()
+    with zipfile.ZipFile(tmp.name, "w", zipfile.ZIP_DEFLATED, compresslevel=5) as z:
+        for d, sous, fichiers in os.walk(racine):
+            sous[:] = [x for x in sous if x not in sauter and not x.startswith(".")]
+            for f in fichiers:
+                if f.endswith(caches) or os.path.join(d, f) == tmp.name:
+                    continue
+                ch = os.path.join(d, f)
+                try:
+                    z.write(ch, os.path.relpath(ch, racine))
+                except OSError:
+                    pass
+    nom = "slabcoach_sauvegarde_" + time.strftime("%Y-%m-%d") + ".zip"
+    f = open(tmp.name, "rb")
+    rep = send_file(f, mimetype="application/zip", as_attachment=True, download_name=nom, max_age=0)
+    try:
+        os.remove(tmp.name)
+    except OSError:
+        def _effacer():
+            try:
+                f.close()
+                os.remove(tmp.name)
+            except OSError:
+                pass
+        rep.call_on_close(_effacer)
+    return rep
 
 
 @app.route("/admin/entrainement.zip")
