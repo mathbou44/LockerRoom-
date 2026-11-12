@@ -7241,6 +7241,21 @@ class Api:
         import slabiq_test
         return slabiq_test.lancer()
 
+    def sauvegarde_statut(self):
+        """13 nov 2026 : la sauvegarde de nuit vers R2 (admin) : derniere reussite, taille, erreur, cles presentes ou non."""
+        if not self._est_admin(reel=True):
+            return {"ok": False, "erreur": "Admin seulement"}
+        import sauvegarde
+        return {"ok": True, **sauvegarde.statut()}
+
+    def sauvegarde_lancer(self):
+        if not self._est_admin(reel=True):
+            return {"ok": False, "erreur": "Admin seulement"}
+        import sauvegarde
+        if not sauvegarde.actif():
+            return {"ok": False, "erreur": "Ajoute d'abord les cles R2 dans Render (R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY)"}
+        return sauvegarde.lancer()
+
     def slabiq_test_lire(self):
         if not self._est_admin(reel=True):
             return {"ok": False, "erreur": "Admin seulement"}

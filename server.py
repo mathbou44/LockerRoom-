@@ -1117,29 +1117,14 @@ def admin_sauvegarde_zip():
     import lockerroom as _lr
     if not api._est_admin(reel=True):
         abort(403)
-    racine = _lr.DOSSIER
-    sauter = {"radar_garde", "__pycache__", "tmp"}
-    caches = ("cache_vendues.sqlite", ".verrou", ".tmp", ".lock")
-    taille = 0
-    for d, sous, fichiers in os.walk(racine):
-        sous[:] = [x for x in sous if x not in sauter and not x.startswith(".")]
-        taille += sum(os.path.getsize(os.path.join(d, f)) for f in fichiers if not f.endswith(caches))
+    import sauvegarde                          # 13 nov 2026 : le meme .zip que la sauvegarde de nuit (SQLite coherent)
+    taille = sauvegarde.taille_donnees()
     libre = shutil.disk_usage(tempfile.gettempdir()).free
     if libre < taille * 1.1 + 200e6:
         return ("Pas assez d'espace libre pour la sauvegarde (%d Mo de donnees, %d Mo libres)" % (taille // 1e6, libre // 1e6), 507)
     tmp = tempfile.NamedTemporaryFile(prefix="slabcoach_", suffix=".zip", delete=False)
     tmp.close()
-    with zipfile.ZipFile(tmp.name, "w", zipfile.ZIP_DEFLATED, compresslevel=5) as z:
-        for d, sous, fichiers in os.walk(racine):
-            sous[:] = [x for x in sous if x not in sauter and not x.startswith(".")]
-            for f in fichiers:
-                if f.endswith(caches) or os.path.join(d, f) == tmp.name:
-                    continue
-                ch = os.path.join(d, f)
-                try:
-                    z.write(ch, os.path.relpath(ch, racine))
-                except OSError:
-                    pass
+    sauvegarde.faire_zip(tmp.name)
     nom = "slabcoach_sauvegarde_" + time.strftime("%Y-%m-%d") + ".zip"
     f = open(tmp.name, "rb")
     rep = send_file(f, mimetype="application/zip", as_attachment=True, download_name=nom, max_age=0)
@@ -1403,6 +1388,12 @@ def _valeurs_auto():
                 print("Score SlabCoach : " + json.dumps(r_sa)[:300], flush=True)
         except Exception as e:
             print("Score SlabCoach (reappris) : " + str(e), flush=True)
+        try:                                    # 13 nov 2026 - la sauvegarde de nuit vers Cloudflare R2 (3 h a 6 h, Montreal)
+            import sauvegarde
+            if sauvegarde.passe_si_besoin():
+                print("Sauvegarde R2 lancee", flush=True)
+        except Exception as e:
+            print("Sauvegarde R2 : " + str(e), flush=True)
         try:                                    # 12 nov 2026 - SlabIQ : le test et le journal en direct (1 fois/semaine)
             import slabiq_test
             if slabiq_test.passe_si_besoin():

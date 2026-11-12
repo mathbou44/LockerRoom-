@@ -2966,6 +2966,11 @@ body.zp-ouvert{overflow:hidden}
 .so-bas{position:sticky; bottom:0; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 10px 10px 16px; border-radius:18px; background:var(--fond-feuille, var(--carte))} .so-bas span{flex:1 1 auto; min-width:0; font-size:14px} .so-bas .btn{flex:0 0 auto; width:auto; margin:0; padding-inline:28px}
 .so-fil{margin:0 0 14px} .so-fil li{cursor:pointer}
 /* 3 nov 2026 - filtres des deals : nos pastilles rondes, la barre « Appliquer » qui apparait au premier changement */
+.adm-r2{margin:10px 0 6px} .r2-l{display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:16px; background:var(--carte2); border:1px solid var(--ligne)}
+.r2-p{width:10px; height:10px; border-radius:50%; background:var(--doux); flex:none} .r2-l.ok .r2-p{background:var(--vert); box-shadow:0 0 0 4px color-mix(in srgb, var(--vert) 25%, transparent)} .r2-l.ko .r2-p{background:var(--rouge)}
+.r2-t{display:flex; flex-direction:column; gap:2px; flex:1 1 auto; min-width:0} .r2-l .btn{width:auto !important; flex:none; margin:0 !important; padding:0 14px; height:36px} .r2-t b{font-size:14px} .r2-t small{font-size:12.5px; color:var(--doux)}
+.est-b{display:flex; flex-direction:column; gap:4px; padding:12px 14px; border-radius:14px; background:var(--carte2)} .est-b b{font-size:15px} .est-b span{color:var(--doux); font-size:13.5px; line-height:1.4}
+.sd-est{position:absolute; top:8px; left:8px; z-index:3; height:24px; padding:0 9px; border-radius:99px; border:1px solid color-mix(in srgb, var(--or, #E8C26A) 60%, transparent); background:rgba(14,14,18,.82); color:#E8C26A; font:700 11px var(--f-cond); letter-spacing:.08em; text-transform:uppercase; cursor:pointer; backdrop-filter:blur(4px)}
 /* 13 nov 2026 : le rapport SlabIQ qui fait wow */
 .iq-hero{margin:14px 0 6px; padding:20px 18px; border-radius:24px; background:radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--acc) 28%, transparent), transparent 60%), radial-gradient(90% 90% at 100% 100%, color-mix(in srgb, var(--vert) 18%, transparent), transparent 60%), var(--carte); border:1px solid color-mix(in srgb, var(--acc) 40%, var(--ligne)); display:flex; flex-direction:column; gap:8px}
 .iq-k{font:700 13px var(--f-cond); letter-spacing:.16em; text-transform:uppercase; color:var(--acc)}
@@ -7899,9 +7904,9 @@ function tuileDeal(x){
   return `<div class="tuile-deal slab-deal ${x.pres ? 'pres' : ''} ${sansV ? 'suivi' : ''}" data-id="${esc(x.item_id)}" ${attrsAnnonce(x)} role="button" tabindex="0">
     <div class="sd-slab"><div class="sd-lab">
         <b class="sd-j">${x.favori ? '<i class="sd-fav">★</i> ' : ''}${esc(nom)}</b>${carte ? `<small class="sd-c">${esc(carte)}</small>` : ''}
-        <span class="sd-3">${k3(encan ? tt('Mise', 'Bid') : tt('Prix', 'Price'), argentCourt(prix), 'pr')}${k3(tt('Paie max', 'Pay max'), max != null && !sansV ? (x.valeur_source === 'autre_saison' || x.valeur_source === 'approx' ? '≈' : '') + argentCourt(max) : '—', 'mx')}${k3(tt('Profit', 'Profit'), g > 0 && !sansV ? '+' + argentCourt(g) : '—', 'g')}</span></div>
+        <span class="sd-3">${k3(encan ? tt('Mise', 'Bid') : tt('Prix', 'Price'), argentCourt(prix), 'pr')}${k3(tt('Paie max', 'Pay max'), max != null && !sansV ? argentCourt(max) : '—', 'mx')}${k3(tt('Profit', 'Profit'), g > 0 && !sansV ? '+' + argentCourt(g) : '—', 'g')}</span></div>
       <div class="sd-ph">${SVG_CARTE}${x.photo ? `<img src="${esc(photoNet(x.photo, 400))}" alt="" loading="lazy" decoding="async" data-oe="rm">` : ''}${boutonWatch(x)}
-        ${encan ? `<span class="sd-fin">${icH()}${finDans(x.fin)}</span>` : ''}${x.ramassage ? `<span class="sd-ramp">${icPin()}</span>` : ''}${x.lieu ? drapeau(x.lieu) : ''}</div></div>
+        ${encan ? `<span class="sd-fin">${icH()}${finDans(x.fin)}</span>` : ''}${x.ramassage ? `<span class="sd-ramp">${icPin()}</span>` : ''}${x.lieu ? drapeau(x.lieu) : ''}${!sansV && (x.valeur_source === 'autre_saison' || x.valeur_source === 'approx') ? `<button class="sd-est" data-est="${esc(x.valeur_source)}" data-est-n="${esc(x.valeur_n || x.n_ventes || '')}">${tt('Estimé', 'Estimated')}</button>` : ''}</div></div>
     </div>`;
 }
 // 26 oct 2026 (Mathieu : « encore pas un deal ... une option : l'annonce disparaît et ça nous laisse savoir quoi
@@ -14321,6 +14326,34 @@ function feuilleConsignataire(k){
 // ============================================================
 const ST_AB = {pro:['Pro', 'or'], offert:[tt('Pro offert', 'Gifted Pro'), 'or'], essai:[tt('Essai', 'Trial'), 'acc'], gratuit:[tt('Gratuit', 'Free'), '']};
 const CAT_DM = {bug:[tt('Problème', 'Bug'), 'rouge'], idee:[tt('Idée', 'Idea'), 'acc'], produit:[tt('Produit', 'Product'), 'or'], question:['Question', ''], abonnement:[tt('Abonnement', 'Billing'), 'or'], autre:[tt('Autre', 'Other'), ''], deal:[tt('Pas un deal', 'Not a deal'), 'rouge'], pas_deal:[tt('Pas un deal', 'Not a deal'), 'rouge'], amelioration:[tt('Amélioration', 'Improvement'), 'acc']};
+// 13 nov 2026 (Mathieu : « pourquoi ils ont des waves ? » -> « oui d'accord ») : la vague « ≈ » devient une pastille
+// « Estimé » sur la photo ; un tap dit pourquoi (aucune vente de LA carte : ses saisons voisines, ou des cartes semblables)
+document.addEventListener('click', (e) => {
+  const b = e.target.closest && e.target.closest('[data-est]'); if (!b) return;
+  e.preventDefault(); e.stopPropagation(); vibrer();
+  const sv = b.dataset.est === 'autre_saison';
+  ouvrirFeuille(`<h3>${tt('Valeur estimée', 'Estimated value')}</h3>
+    <div class="sous" style="margin-bottom:10px">${tt('Aucune vente de cette carte exacte.', 'No sale of this exact card.')}</div>
+    <div class="est-b"><b>${sv ? tt('La même carte, saisons voisines', 'The same card, nearby seasons') : tt('Des cartes semblables du même joueur', 'Similar cards of the same player')}</b>
+      <span>${sv ? tt('1 ou 2 années avant ou après · valeur réduite de 20 % par prudence', '1 or 2 years before or after · value cut 20% for safety') : tt('Même produit, auto, patch, gradation · autre année, numérotation ou parallèle · valeur réduite de 25 % par prudence', 'Same product, auto, patch, grade · other year, numbering or parallel · value cut 25% for safety')}</span></div>
+    <div class="sous" style="margin-top:10px">${tt('Bon deal probable : vérifie avant d’enchérir haut. Touche la carte pour voir ces ventes.', 'Likely a good deal: check before bidding high. Tap the card to see these sales.')}</div>`);
+}, true);
+// 13 nov 2026 (Mathieu a cree son R2 : « fait, on a 10 Go ») : la sauvegarde de nuit hors de Render, d'un coup d'oeil
+async function blocSauvegardeR2(){
+  const z = $('#adm-r2'); if (!z) return;
+  const s = await API.sauvegarde_statut().catch(() => null); if (!s || !s.ok || !$('#adm-r2')) return;
+  const quand = (d) => d ? new Date(d).toLocaleString(LOC(), {weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'}) : '';
+  const mo = (b) => b ? (b >= 1e9 ? (b / 1e9).toFixed(2).replace('.', ',') + ' Go' : Math.round(b / 1e6) + ' Mo') : '';
+  const ok = s.actif && s.dernier_ok && (!s.dernier_essai || s.dernier_essai === s.dernier_ok);
+  z.innerHTML = `<div class="r2-l ${!s.actif ? 'off' : ok ? 'ok' : s.dernier_essai ? 'ko' : ''}"><span class="r2-p"></span>
+    <span class="r2-t"><b>${tt('Sauvegarde de nuit · Cloudflare R2', 'Nightly backup · Cloudflare R2')}</b><small>${!s.actif ? tt('Pas encore active : ajoute R2_ACCOUNT_ID, R2_ACCESS_KEY_ID et R2_SECRET_ACCESS_KEY dans Render', 'Not active yet: add R2_ACCOUNT_ID, R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY in Render')
+      : s.en_cours ? tt('En cours…', 'Running…')
+      : ok ? `${tt('Dernière', 'Last')} : ${esc(quand(s.dernier_ok))} · ${mo(s.derniere_taille)} · ${tt('chaque nuit vers 3 h', 'nightly around 3 am')}`
+      : s.dernier_essai ? `${tt('Échec', 'Failed')} ${esc(quand(s.dernier_essai))} : ${esc(s.erreur || '')}` : tt('Prête : la première partira cette nuit vers 3 h', 'Ready: the first one goes tonight around 3 am')}</small></span>
+    ${s.actif && !s.en_cours ? `<button class="btn petit ghost" id="r2-go">${tt('Maintenant', 'Now')}</button>` : ''}</div>`;
+  const g = $('#r2-go'); if (g) g.onclick = async () => { vibrer(); g.disabled = true; const r = await API.sauvegarde_lancer().catch(e => ({ok: false, erreur: e.message}));
+    toast(r && r.ok ? tt('Sauvegarde lancée : quelques minutes', 'Backup started: a few minutes') : (r && r.erreur) || 'Erreur', 3500); setTimeout(blocSauvegardeR2, 4000); };
+}
 async function vueAdmin(onglet){
   if (S.forfait && !S.forfait.admin && S.forfait.admin_a_verifier) {
     V().innerHTML = `<section class="ecran"><div class="vide">${tt('Confirme que c’est toi pour ouvrir l’admin.', 'Confirm it’s you to open admin.')}<br><button class="btn" id="av-ouvrir" style="margin-top:12px">${tt('Recevoir le code', 'Get the code')}</button></div></section>`;
@@ -14341,10 +14374,11 @@ async function vueAdmin(onglet){
       <div class="kpi"><span class="lib">${tt('Actifs 7 jours', 'Active 7 days')}</span><span class="v">${a.actifs_7j}</span><span class="s">${a.total ? Math.round(100 * a.actifs_7j / a.total) : 0} %</span></div>
       <div class="kpi ${r.erreurs_24h ? 'rouge' : ''}"><span class="lib">${tt('Serveur', 'Server')}</span><span class="v">${r.erreurs_24h ? r.erreurs_24h + ' ' + tt('erreurs', 'errors') : 'OK'}</span><span class="s">eBay ${br ? Math.round(100 * br.utilises / br.limite) : 0} % ${tt('du jour', 'today')}</span></div></div>
     <div id="adm-sorties"></div>
-    <a class="pilule adm-sv" href="/admin/sauvegarde.zip" download>${icN('colis')}${tt('Télécharger la sauvegarde (.zip) · 1 fois par semaine', 'Download the backup (.zip) · once a week')}</a>
+    <div class="adm-r2" id="adm-r2"></div>
+    <a class="pilule adm-sv" href="/admin/sauvegarde.zip" download>${icN('colis')}${tt('Télécharger la sauvegarde (.zip)', 'Download the backup (.zip)')}</a>
     <div class="seg" id="adm-o" style="margin:14px 0">${[['activite', tt('Activité', 'Activity')], ['abonnes', tt('Abonnés', 'Subscribers')], ['demandes', tt('Demandes', 'Requests') + pastille(r.demandes.nouvelles)], ['catalogue', 'Catalogue' + pastille(r.a_ajouter)], ['banc', tt('Validation', 'Validation')], ['serveur', tt('Serveur', 'Server')]].map(([k, t]) => `<button data-v="${k}" class="${o === k ? 'on' : ''}">${t}</button>`).join('')}</div>
     <div id="adm-z"><div class="lecture"><span class="roue"></span></div></div></section>`;
-  blocSorties();
+  blocSorties(); blocSauvegardeR2();
   $$('#adm-vue button').forEach(b => b.onclick = () => changerVue(b.dataset.v));
   const sous = {activite:adminActivite, abonnes:adminAbonnes, demandes:adminDemandes, catalogue:adminCatalogue, serveur:adminServeur, banc:adminBanc};
   // 28 oct 2026 (« saccadé ») : un onglet se change sur place ; le contenu d'avant reste (estompe) jusqu'a l'arrivee du nouveau
