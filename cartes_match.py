@@ -32,8 +32,11 @@ SYNONYMES = [                       # forme courte -> forme longue (dans la rech
     (r"\bsignature class\b", "signatureclass"),
     # 4 nov 2026 (Mathieu : une The Cup Signature Materials comparee aux Rookie Auto Patch) : « Signature Materials »,
     # « Signature Patches », « Signature Swatches » sont des INSERTS a part (pas « auto + patch ») ; le nom reste entier
-    (r"\bsignature materials?\b", "sigmaterials auto materials"), (r"\bsignature patch(es)?\b", "sigpatches auto patch"),
-    (r"\bsignature swatch(es)?\b", "sigswatches auto swatch"),
+    # 13 nov 2026 (Mathieu : une Ice « Signature Swatches » Gauthier titree « The Cup Signatures Swatches » : comparee aux
+    # The Cup, mise max 777 $) : « Signatures Swatches » (avec un s) est le meme insert, et cet insert est un insert d'ICE
+    (r"\bthe cup\b(?=.*\bsignatures? swatch)", "ice"),
+    (r"\bsignatures? materials?\b", "sigmaterials auto materials"), (r"\bsignatures? patch(es)?\b", "sigpatches auto patch"),
+    (r"\bsignatures? swatch(es)?\b", "sigswatches auto swatch"),
     (r"\byg\b", "young guns"), (r"\bud\b", "upper deck"), (r"\bopc\b", "o-pee-chee"), (r"\bo pee chee\b", "o-pee-chee"),
     (r"(?<!#)\bspa\b(?!-)", "sp authentic"), (r"(?<!#)\bfw\b(?!-)", "future watch"),   # pas le code #FW-JD (r"\brr\b", "rated rookie"),
     (r"\bautograph(ed|s)?\b", "auto"), (r"\bsigned\b", "auto"), (r"\bsignature(s)?\b", "auto"), (r"\bautos\b", "auto"),

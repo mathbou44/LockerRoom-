@@ -9446,11 +9446,30 @@ class Api:
                 valeur, juger = saison_v[0], True
                 ventes = saison_v[3]
                 pourquoi = None
+        # 13 nov 2026 (Mathieu : « une 2 couleurs vaut a peu pres 60 % d'une 4 couleurs ; on doit en tenir compte ») : une
+        # patch : chaque vente est ramenee aux couleurs de CETTE patch (titre, sinon photo lue une fois), la valeur suit
+        patch_info = None
+        if valeur and juger and not rapide and ventes and time.time() - t0_ < 30:
+            try:
+                import patchs
+                if patchs.est_patch(t):
+                    ph0 = (a.get("photos") or [None])[0] or a.get("photo")
+                    rp, n_cp, ventes_p = patchs.ajuster(t, ph0, ventes)
+                    ventes = ventes_p
+                    if n_cp:
+                        patch_info = {"couleurs": n_cp, "ratio": rp,
+                                      "lues": sum(1 for v in ventes_p if v.get("couleurs")), "ventes": len(ventes_p)}
+                        if abs(rp - 1) >= 0.03:
+                            valeur = round(valeur * rp, 2)
+                            if saison_v:
+                                saison_v = (valeur,) + tuple(saison_v[1:])
+            except Exception as e:
+                print("Patchs (fiche) : " + repr(e)[:200], flush=True)
         suggere = None
         if saison_v:
             suggere = {"vente": valeur, "achat_max": round(max(0.0, _deals.prix_max(valeur, taxe=_deals.taxe_de(a))), 2), "source": saison_v[1]}
         elif valeur and (vm or n >= 3):
-            pv = sorted(x["prix"] for x in ventes if x.get("prix")) if vm else sorted(x["total"] for x in comps)
+            pv = sorted((x.get("prix_patch") or x["prix"]) for x in ventes if x.get("prix")) if vm else sorted(x["total"] for x in comps)
             vente = pv[max(0, int(len(pv) * 0.6) - 1)] if len(pv) >= 3 else valeur     # vendues : un peu au-dessus du milieu
             suggere = {"vente": round(vente if vm else min(vente, valeur), 2),
                        # 2 nov 2026 (« pourquoi le max bid change ? ») : la meme regle que les deals et la watchlist (70 %)
@@ -9506,6 +9525,7 @@ class Api:
                 "suggere": suggere, "ventes": ventes, "mediane_vendue": None if saison_v else vc.get("mediane"),
                 "nb_vendues": len(ventes) if saison_v else vc.get("nb") or len(ventes),
                 "valeur": valeur, "valeur_source": "chasseur" if chasseur else "vendues" if vm else saison_v[1] if saison_v else "annonces",
+                "patch": patch_info,
                 "saisons": sorted({v.get("saison") for v in (saison_v or [0, 0, 0, []])[3] if v.get("saison")}) or None,
                 "saison_carte": _deals.saison(cartes_match.cible_titre(t or "").get("annee")) if saison_v else None,
                 "ventes_attente": bool(vc.get("attente")),

@@ -872,7 +872,9 @@ def cible_large(cib):
     numerotation ni le parallele (« ron francis clear cut auto »)."""
     j = [w for w in (cib.get("joueur") or "").split() if w]
     prod = [w for w in (cib.get("mots") or []) if w not in j][:2] or sorted(_mots_carte(cib))[:2]
-    return dict(cib, mots=j + prod, paralleles=set(), serie=None, veut_serie=False, q_plus=[], ident=set(cib.get("ident") or ()))
+    # 13 nov 2026 : toutes les notes (une carte rare gradee n'a presque jamais une vente de SA note ; valeur_approx les ramene)
+    return dict(cib, mots=j + prod, paralleles=set(), serie=None, veut_serie=False, q_plus=[], ident=set(cib.get("ident") or ()),
+                grade=None, veut_grade=False)
 
 
 def valeur_inscr_plancher(a, ventes, cib=None):
@@ -905,7 +907,35 @@ def valeur_inscr_plancher(a, ventes, cib=None):
             [{**{k: v.get(k) for k in ("titre", "prix", "le", "photo", "url")}, "note": "sans inscription", "similaire": True} for v in gard[:6]])
 
 
+_GRADES = ("gradée", "pas gradée", "autre gradation")
+# 13 nov 2026 (Mathieu : une Caufield OPC Platinum Rookie Auto Emerald Surge /10 PSA 8 « doit absolument se retrouver dans nos
+# deals ») : une carte rare gradee n'a presque jamais une vente de SA note ; une vente d'une autre note est ramenee a la
+# sienne par ce bareme (part du prix d'une 10), plus 10 % de prudence. Brute : environ le prix d'une 8,5.
+NOTE_PART = {10: 1.0, 9.5: 0.85, 9: 0.6, 8.5: 0.5, 8: 0.45, 7.5: 0.38, 7: 0.33, 6: 0.25}
+BRUTE_PART = 0.5
+
+
+def _part_note(g):
+    if not g:
+        return BRUTE_PART
+    try:
+        n = float(str(g.get("note") or "").replace(",", "."))
+    except ValueError:
+        return None
+    if not n:
+        return None
+    return next((v for k, v in sorted(NOTE_PART.items(), reverse=True) if n >= k), 0.2)
+
+
 def valeur_approx(a, ventes, cib=None):
+    """(13 nov 2026) Sans assez de ventes de la meme note : une 2e passe accepte les autres notes, ramenees a celle de la
+    carte (NOTE_PART), avec 10 % de prudence de plus."""
+    import cartes_match
+    cib = cib or cartes_match.cible_titre(a.get("titre") or "")
+    return _valeur_approx(a, ventes, cib) or _valeur_approx(a, ventes, cib, notes=True)
+
+
+def _valeur_approx(a, ventes, cib=None, notes=False):
     """7 nov 2026 (Mathieu : « regarde tous les no sales : on doit analyser les cartes similaires et donner un prix
     approximatif ») : aucune vente de LA carte (ni de ses saisons voisines) -> les ventes du MEME joueur, meme produit /
     insert, memes auto, patch, inscription et gradation, dont l'annee, la numerotation ou le parallele different. Le prix
@@ -935,21 +965,30 @@ def valeur_approx(a, ventes, cib=None):
         if not cartes_match._a_mot(nt, j[-1]) or cartes_match.abimee(t) or _jours(v) > JOURS_MAX_HITS:
             continue
         r = cartes_match.raisons_refus(cib, t)
+        dv = cartes_match._decoder_memo(t)
+        fg = 1.0
+        if notes and any(x in _GRADES for x in r):
+            p0, p1 = _part_note(cib.get("grade")), _part_note(dv.get("grade"))
+            if not p0 or not p1:
+                continue
+            fg = min(2.5, max(0.3, p0 / p1)) * 0.9
+            r = [x for x in r if x not in _GRADES]
         if any(x.startswith(_REFUS_DURS) for x in r):
             continue
-        dv = cartes_match._decoder_memo(t)
         sim = len(toks & set(nt.split())) / len(toks)
         if sim < 0.5:
             continue
         s1 = dv.get("serie")
-        f = 1.0
+        f = fg
+        rare = bool(s0 and s0 <= 25)                           # 13 nov 2026 : /25 et moins, la rarete pese plus (Emerald /10)
         if s0 and s1:
-            f = min(1.8, max(0.6, (s1 / s0) ** 0.3))           # /25 vs une vente /99 : x 1,5
+            f *= min(3.0 if rare else 1.8, max(0.6, (s1 / s0) ** (0.4 if rare else 0.3)))   # /25 vs une vente /99 : x 1,5
         elif s0 and not s1:
-            f = 1.3
+            f *= 2.0 if rare else 1.3
         elif s1 and not s0:
-            f = 0.8
-        note = " · ".join(x for x in ((f"/{s1}" if s1 else ""), (saison(dv.get("annee")) if dv.get("annee") and dv.get("annee") != cib.get("annee") else "")) if x)
+            f *= 0.8
+        gtxt = (f"{(dv.get('grade') or {}).get('cie', '').upper()} {(dv.get('grade') or {}).get('note', '')}".strip() or "brute") if fg != 1.0 else ""
+        note = " · ".join(x for x in ((f"/{s1}" if s1 else ""), (saison(dv.get("annee")) if dv.get("annee") and dv.get("annee") != cib.get("annee") else ""), gtxt) if x)
         out.append((sim, float(v["prix"]) * f, dict(v, similaire=True, note=note or None, prix_ramene=round(float(v["prix"]) * f, 2))))
     if len(out) < 2:
         return None
@@ -1455,6 +1494,17 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
         deals.pop(a["item_id"], None)                 # revue : plus un deal (encan dont la mise a monte...)
         return
     med_a, source_a, n_a, ventes_a = va
+    # 13 nov 2026 (Mathieu : « une 2 couleurs vaut a peu pres 60 % d'une 4 couleurs ») : une patch qui a l'air d'un deal :
+    # ses ventes ramenees aux couleurs de SA patch (titres, sinon photos lues une fois, budget du jour) avant de juger
+    if ventes_a and t <= prix_max(med_a, taxe=taxe_de(a)):
+        try:
+            import patchs
+            if patchs.est_patch(a.get("titre")):
+                rp, n_cp, ventes_a = patchs.ajuster(a.get("titre"), a.get("photo"), ventes_a)
+                if n_cp and abs(rp - 1) >= 0.03:
+                    med_a = round(med_a * rp, 2)
+        except Exception as e:
+            print("Patchs (chasseur) : " + repr(e)[:200], flush=True)
     if t > prix_max(med_a, taxe=taxe_de(a)):
         st["_res"] = ("pres" if t <= med_a * RATIO_PRES and not a.get("encan") else "trop_cher", round(t / med_a, 3))
         st["trop_cher"] = st.get("trop_cher", 0) + 1
