@@ -191,6 +191,10 @@ ENCAN_H = 24                     # avant : 48 h (26 oct) ; 6 h au tout debut
 VENDEURS_LONGS = ("savage.cards", "remi-card-trader", "cf31_sports_cards")
 MISES_MIN = 1
 ENCAN_VERIF_H = 6                # une recherche de ventes ciblee pour un encan : seulement s'il finit dans 6 h (la mise monte)
+# 13 nov 2026 (Mathieu : la Caufield Emerald Surge 1/10 PSA 8 a 115 $, les ventes autour de 1 000 $, fin dans moins de 48 h,
+# pas dans nos deals) : un encan RARE (auto ou patch /25 et moins, ou un 1/1), chez n'importe quel vendeur, est admis et
+# verifie jusqu'a 72 h de la fin, meme sans mise : ces cartes-la sont trop rares pour attendre les 24 dernieres heures
+ENCAN_RARE_H = 72
 PAGES_ENCANS = 3                 # flux d'encans : jusqu'a 3 pages de 200 (les plus proches de la fin d'abord)
 PAR_TOUR = 20                    # requetes prix fixe par tour (les plus recentes d'abord) : la liste entiere en 6 h
 FRAICHEUR_S = 3600
@@ -1362,7 +1366,7 @@ def _prometteuse(a, t, pv, pa, maint, cib=None):
     import cartes_match
     if a.get("encan"):
         try:
-            if datetime.fromisoformat(str(a.get("fin")).replace("Z", "+00:00")) - maint > timedelta(hours=ENCAN_VERIF_H):
+            if datetime.fromisoformat(str(a.get("fin")).replace("Z", "+00:00")) - maint > timedelta(hours=ENCAN_RARE_H if _rare(cib) else ENCAN_VERIF_H):
                 return False
         except ValueError:
             return False
@@ -1455,7 +1459,7 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
     peu_ventes = len(memes_ventes(cib, tout_v)) < 3
     if not va and verif and a.get("encan") and t >= HIT_MIN and _precieuse(cib) and peu_ventes and not r.get("suivi"):
         try:
-            if datetime.fromisoformat(str(fin).replace("Z", "+00:00")) - maint <= timedelta(hours=VERIF_TARD_H):
+            if datetime.fromisoformat(str(fin).replace("Z", "+00:00")) - maint <= timedelta(hours=ENCAN_RARE_H if _rare(cib) else VERIF_TARD_H):
                 st.setdefault("_tard", []).append((a, r, cib))      # verifie a la fin du tour (budget restant)
         except ValueError:
             pass
@@ -1685,6 +1689,24 @@ def vendeur_long(x):
     return str((x or {}).get("vendeur") or "").lower() in VENDEURS_LONGS
 
 
+def _rare(cib):
+    """Une carte rare : auto ou patch numerotee /25 et moins, ou un 1/1."""
+    se = (cib or {}).get("serie")
+    try:
+        se = int(se) if se else None
+    except (TypeError, ValueError):
+        se = None
+    return bool(se and (se == 1 or (se <= 25 and (cib.get("auto") or cib.get("patch")))))
+
+
+def rare_titre(titre):
+    import cartes_match
+    try:
+        return _rare(cartes_match._decoder_memo(str(titre or "")))
+    except Exception:
+        return False
+
+
 def encan_admis(x, maint=None):
     """7 nov 2026 : un encan peut-il etre un deal ? Savage, Remi, CF31 : fin dans 5 jours et moins ; les autres : fin dans
     24 h et moins ET au moins une mise (MISES_MIN). Un prix fixe : toujours."""
@@ -1701,6 +1723,8 @@ def encan_admis(x, maint=None):
         return False
     if vendeur_long(x):
         return f - maint <= timedelta(hours=ENCAN_SUIVI_H)
+    if f - maint <= timedelta(hours=ENCAN_RARE_H) and rare_titre(x.get("titre")):
+        return True
     try:
         mises = int(x.get("mises") or 0)
     except (TypeError, ValueError):
@@ -2337,7 +2361,34 @@ def balayer(rechercher, bassin, d, deals, st, maint, verif):
         _publier(d, deals, maint, st)
         if len(l) < 150 or not l or str(l[-1].get("fin") or "9") > limite_fin:
             break                                    # au-dela de 24 h
+    # 13 nov 2026 (la Caufield Emerald Surge 1/10 PSA 8 a 115 $, fin dans moins de 48 h, ventes autour de 1 000 $) : les
+    # encans RARES (auto / patch /25 et moins, 1/1) de tous les vendeurs, jusqu'a 72 h de la fin : quelques recherches ciblees
+    lim_rare = (maint + timedelta(hours=ENCAN_RARE_H)).isoformat().replace("+00:00", "Z")
+    for q in rares_requetes():
+        try:
+            l = rechercher(q, categorie="261328", limite=200, fond=True, encheres=True, flux=True, aspects=BALAYAGE_ASPECT)
+        except (RuntimeError, OSError, TypeError):
+            st["erreurs_ebay"] = st.get("erreurs_ebay", 0) + 1
+            break
+        st["requetes_flux"] = st.get("requetes_flux", 0) + 1
+        bons = [a for a in l if a.get("item_id") not in vus and str(a.get("fin") or "9") <= lim_rare
+                and cartes_match.est_carte(a.get("titre") or "") and rare_titre(a.get("titre"))]
+        st["rares_vus"] = st.get("rares_vus", 0) + len(bons)
+        for a in bons:
+            vus.add(a.get("item_id"))
+            _juger(a, dict(r, flux="rares"), [], [], maint, deals, st, bassin=bassin, verif=verif)
+            n += 1
+        _publier(d, deals, maint, st)
     return n
+
+
+RARES_Q = ("auto /10", "auto /5", "auto /15", "auto /25", "patch /10", "patch /25", "1/1", "emerald auto", "superfractor",
+           "gold auto /10", "rpa /25")
+
+
+def rares_requetes():
+    e = os.environ.get("LR_RARES_Q")                    # « auto /10;1/1 » pour remplacer la liste
+    return [x.strip() for x in e.split(";") if x.strip()] if e else list(RARES_Q)
 
 
 def flux_liste():

@@ -44,6 +44,9 @@ finally:
     deals._juger = vrai_juger
 assert n == 2 and sorted(i for i, _ in vus) == ["e1", "f1"], vus                 # le tres gros vendeur est saute
 assert all(f == "petits vendeurs" for _, f in vus)
+rares = [x for x in appels if x[0]]                                         # 13 nov 2026 : les encans rares (recherches ciblees)
+assert [x[0] for x in rares] == list(deals.RARES_Q) and all(x[2] for x in rares), rares
+appels = [x for x in appels if not x[0]]
 assert all(q == "" and c == "261328" and a == deals.BALAYAGE_ASPECT for q, c, _e, _o, a in appels), appels
 assert [e for _q, _c, e, _o, _a in appels] == [False, True, True]                # moins de 150 annonces : une page chacun (+ 30 $ et plus)
 assert prix_min_vus == [deals.BALAYAGE_PRIX_MIN]                                 # 8 nov : 2e passage, les encans de 30 $ et plus

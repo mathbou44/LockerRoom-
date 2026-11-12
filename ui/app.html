@@ -2978,6 +2978,12 @@ body.zp-ouvert{overflow:hidden}
 .est-b{display:flex; flex-direction:column; gap:4px; padding:12px 14px; border-radius:14px; background:var(--carte2)} .est-b b{font-size:15px} .est-b span{color:var(--doux); font-size:13.5px; line-height:1.4}
 .sd-est{position:absolute; top:8px; left:8px; z-index:3; height:24px; padding:0 9px; border-radius:99px; border:1px solid color-mix(in srgb, var(--or, #E8C26A) 60%, transparent); background:rgba(14,14,18,.82); color:#E8C26A; font:700 11px var(--f-cond); letter-spacing:.08em; text-transform:uppercase; cursor:pointer; backdrop-filter:blur(4px)}
 .fv-pc{font-style:normal; font-weight:700; color:#E8C26A} .fa-patch{margin-top:6px; font-size:13px; color:var(--doux)} .fa-patch b{color:#E8C26A}
+.dq-bar{display:flex; align-items:center; gap:8px; margin:-4px 0 14px; padding:0 6px 0 14px; height:48px; border-radius:999px; background:var(--carte2); border:1.5px solid color-mix(in srgb, var(--acc) 45%, var(--ligne))}
+.dq-bar svg{width:18px; height:18px; flex:none; fill:none; stroke:var(--doux); stroke-width:2; stroke-linecap:round}
+.dq-bar input{flex:1; min-width:0; height:100%; border:0; background:none; color:var(--texte); font:inherit; font-size:16px; outline:none}
+.dq-bar input::-webkit-search-cancel-button{display:none}
+.dq-n{font:700 13px var(--f-cond); color:var(--acc); min-width:18px; text-align:right}
+.dq-x{width:36px; height:36px; border-radius:50%; border:0; background:var(--ligne); color:var(--texte); font-size:20px; line-height:1; cursor:pointer; flex:none}
 /* 13 nov 2026 : le rapport SlabIQ qui fait wow */
 .iq-hero{margin:14px 0 6px; padding:20px 18px; border-radius:24px; background:radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--acc) 28%, transparent), transparent 60%), radial-gradient(90% 90% at 100% 100%, color-mix(in srgb, var(--vert) 18%, transparent), transparent 60%), var(--carte); border:1px solid color-mix(in srgb, var(--acc) 40%, var(--ligne)); display:flex; flex-direction:column; gap:8px}
 .iq-k{font:700 13px var(--f-cond); letter-spacing:.16em; text-transform:uppercase; color:var(--acc)}
@@ -9176,7 +9182,22 @@ const IC_SP = {
 IC_SP.tous = [['hockey', 0, 0], ['baseball', 12.4, 0], ['basketball', 0, 12.4], ['football', 12.4, 12.4]]
   .map(([k, x, y]) => `<g transform="translate(${x} ${y}) scale(.48)" style="stroke-width:3.3">${IC_SP[k]}</g>`).join('');
 const icSport = (k) => IC_SP[k] || IC_SP.tous;
-const IC_D = {tri: '<path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/>', filtre: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>'};
+const IC_D = {loupe: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>', tri: '<path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/>', filtre: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>'};
+// 13 nov 2026 : la recherche dans les deals affiches (joueur, carte, titre, vendeur ; sans accents ; tous les mots)
+const normQ = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+function filtrerDealsQ(q, deja){
+  const avant = S.dealsQ || '';
+  S.dealsQ = String(q || '').trim().slice(0, 60);
+  const g = $('#d-grille'), lab = $('#dr-q small');
+  if (lab) lab.textContent = S.dealsQ || tt('Chercher', 'Search');
+  if (!S.dealsQ) { $('#dq-n') && ($('#dq-n').textContent = ''); if (avant && !deja) chargerDeals(); return; }
+  if (!g) return;
+  const mots = normQ(S.dealsQ).split(' ');
+  const L = Object.values(S.dealsParId || {}).filter(x => { const t = normQ([x.joueur_n, x.carte_n, x.titre, x.vendeur, x.joueur].join(' ')); return mots.every(m => t.includes(m)); });
+  S.dealsReste = L.slice(120).map(tuileDeal);
+  g.innerHTML = L.length ? L.slice(0, 120).map(tuileDeal).join('') : `<div class="vide" style="grid-column:1/-1">${tt('Aucune carte pour', 'No card for')} « ${esc(S.dealsQ)} »</div>`;
+  const n = $('#dq-n'); if (n) n.textContent = L.length ? String(L.length) : '0';
+}
 function rondsDeals(F, sp){
   const r = (id, svg, lib, n) => `<button class="d-rond" id="${id}"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${svg}</svg>${n ? `<em>${n}</em>` : ''}</span><small>${lib}</small></button>`;
   const un = F.sports.length === 1 ? F.sports[0] : '';
@@ -9184,7 +9205,10 @@ function rondsDeals(F, sp){
   const triL = (TRIS_DEALS().find(t => t[0] === F.tri) || TRIS_DEALS()[0])[1] + (F.type === 'encan' ? tt(' · encans', ' · auctions') : F.type === 'fixe' ? tt(' · prix fixe', ' · BIN') : '');
   // 11 nov 2026 : en admin, le profil ne filtre plus rien (seulement les favoris devant) : il ne compte plus comme filtre
   const pf = (S.forfait && S.forfait.admin) ? {} : (S.dealsProfil || {}), nf = nbFiltresDeals(F) + (F.vendeurs ? 1 : 0) + ((pf.collectionne || []).length ? 1 : 0) + (pf.prix_min || pf.prix_max ? 1 : 0) + ((pf.favoris || []).length && !(F.joueurs || []).length ? 1 : 0);
-  return `<div class="d-ronds">${sp.length > 1 ? r('dr-sp', icSport(un), spL) : ''}${r('dr-tri', IC_D.tri, triL)}${r('dr-fil', IC_D.filtre, tt('Filtres', 'Filters'), nf)}</div>`;
+  // 13 nov 2026 (Mathieu : « une pastille avec option recherche pour les cartes affichees : il pourrait y en avoir 1000+ »)
+  const q = S.dealsQ || '';
+  return `<div class="d-ronds">${r('dr-q', IC_D.loupe, q ? esc(q) : tt('Chercher', 'Search'))}${sp.length > 1 ? r('dr-sp', icSport(un), spL) : ''}${r('dr-tri', IC_D.tri, triL)}${r('dr-fil', IC_D.filtre, tt('Filtres', 'Filters'), nf)}</div>
+    <div class="dq-bar" id="dq-bar" ${q ? '' : 'hidden'}><svg viewBox="0 0 24 24" aria-hidden="true">${IC_D.loupe}</svg><input id="dq-in" type="search" enterkeyhint="search" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(q)}" placeholder="${esc(tt('Joueur, set, vendeur…', 'Player, set, seller…'))}"><span class="dq-n" id="dq-n"></span><button class="dq-x" id="dq-x" aria-label="${esc(tt('Effacer', 'Clear'))}">×</button></div>`;
 }
 function brancherRondsDeals(F, sp){
   const go = () => { sauverDealsF(); fermerFeuille(); chargerDeals(); };
@@ -9198,6 +9222,15 @@ function brancherRondsDeals(F, sp){
     $$('[data-dtri]').forEach(b => b.onclick = () => { F.tri = b.dataset.dtri; go(); });
     $$('#dr-type button').forEach(b => b.onclick = () => { F.type = b.dataset.v; if (F.type === 'encan' && F.tri === 'rabais') F.tri = 'fin'; go(); }); };
   $('#dr-fil').onclick = () => { vibrer(); feuilleFiltresDeals(); };
+  const bar = $('#dq-bar'), inp = $('#dq-in');
+  if (bar && inp) {
+    $('#dr-q').onclick = () => { vibrer(); bar.hidden = false; inp.focus(); };
+    let t_ = null;
+    inp.oninput = () => { clearTimeout(t_); t_ = setTimeout(() => filtrerDealsQ(inp.value), 180); };
+    inp.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); } };
+    $('#dq-x').onclick = () => { vibrer(); inp.value = ''; bar.hidden = true; filtrerDealsQ(''); };
+    if (S.dealsQ) filtrerDealsQ(S.dealsQ, true);
+  }
 
 }
 async function chargerDeals(frais){
