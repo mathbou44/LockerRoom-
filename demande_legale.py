@@ -216,11 +216,18 @@ def lire_joueur(nom):
 
 
 # -- les pieces (features) ---------------------------------------------------------------------------------------
+EQUIPES = ("ANA", "BOS", "BUF", "CGY", "CAR", "CHI", "COL", "CBJ", "DAL", "DET", "EDM", "FLA", "LAK", "MIN", "MTL", "NSH", "NJD",
+           "NYI", "NYR", "OTT", "PHI", "PIT", "SJS", "SEA", "STL", "TBL", "TOR", "UTA", "VAN", "VGK", "WSH", "WPG")
+EQ_CAN = {"MTL", "TOR", "VAN", "EDM", "CGY", "OTT", "WPG"}
+EQ_ORIG6 = {"MTL", "TOR", "BOS", "CHI", "DET", "NYR"}
 PIECES = ("age", "logpick", "top10", "gp", "pts", "ppg", "spts", "sppg", "po_pts", "trophees", "hart", "hhof", "top100", "legende",
           "actif", "G", "D", "saisons", "l5", "wiki", "wiki_tend",
           # 10 nov 2026 (2e iteration) : saisons, trophees detailles, catalogue, Wikipedia francais
           "pic", "picppg", "dppg", "tend_ppg", "debut", "jppg", "toi", "ronde", "an_rep", "stanley", "calder", "artross", "conn",
-          "vezina", "norris", "richard", "cat_n", "cat_hits", "wiki_fr", "wiki_len")
+          "vezina", "norris", "richard", "cat_n", "cat_hits", "wiki_fr", "wiki_len",
+          # 13 nov 2026 (Mathieu : « tu prends en consideration les equipes qui vendent le plus ? ») : l'equipe (marche canadien,
+          # Original Six, chaque club) et d'ou il vient (Canada, Quebec) ; le labo mesure ce qu'elles valent contre les ventes
+          "eq_can", "eq_orig6", "ne_can", "ne_qc") + tuple("eq_" + e for e in EQUIPES)
 JUNIORS = {"OHL", "WHL", "QMJHL", "LHJMQ", "USHL", "NCAA", "SHL", "KHL", "Liiga", "NTDP", "USDP", "MHL", "AHL", "Allsvenskan", "NL"}
 _CAT = {"le": 0.0, "n": {}, "h": {}}
 
@@ -306,7 +313,16 @@ def _pieces2(e, n, w):
             "stanley": cnt("Stanley"), "calder": cnt("Calder"), "artross": cnt("Art Ross"), "conn": cnt("Conn Smythe"),
             "vezina": cnt("Vezina"), "norris": cnt("Norris"), "richard": cnt("Richard"),
             "cat_n": math.log1p(cn.get(k, 0)), "cat_hits": math.log1p(ch.get(k, 0)),
-            "wiki_fr": math.log1p(w.get("fr60") or 0), "wiki_len": math.log1p(w.get("len") or 0)}
+            "wiki_fr": math.log1p(w.get("fr60") or 0), "wiki_len": math.log1p(w.get("len") or 0),
+            **_pieces_equipe(n)}
+
+
+def _pieces_equipe(n):
+    eq = str(n.get("equipe") or "").upper()
+    pays, prov = str(n.get("pays") or "").upper(), str(n.get("province") or "").lower()
+    return {"eq_can": 1.0 if eq in EQ_CAN else 0.0, "eq_orig6": 1.0 if eq in EQ_ORIG6 else 0.0,
+            "ne_can": 1.0 if pays in ("CAN", "CA") else 0.0, "ne_qc": 1.0 if prov in ("quebec", "québec", "qc") else 0.0,
+            **{"eq_" + e: 1.0 if eq == e else 0.0 for e in EQUIPES}}
 
 
 # -- le labo : chaque piece et la combinaison, contre la demande mesuree sur les ventes (admin) -----------------

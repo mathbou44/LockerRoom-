@@ -9660,6 +9660,27 @@ class Api:
         except Exception as e:
             return {"ok": False, "erreur": type(e).__name__}
 
+    JOUEUR_SEUL_MIN = 20.0
+
+    @staticmethod
+    def _joueur_seul(q, c=None):
+        """Le nom du joueur si la recherche n'est QUE ce nom (« cole caufield », « caufield »), sinon None."""
+        import cartes_match
+        c = c or cartes_match.cible(q)
+        if any(c.get(k) for k in ("annee", "rc", "auto", "patch", "serie", "grade", "veut_grade", "num", "inscr")) or c.get("paralleles"):
+            return None
+        j = cartes_match.joueur_du_titre(q) or ""
+        jt = set(cartes_match.norm(j).split())
+        mots = [m for m in (c.get("mots") or []) if m]
+        if not jt or not mots or not set(mots) <= jt:
+            return None
+        try:
+            import nhl
+            j = nhl.nom_propre(j)
+        except Exception:
+            pass
+        return " ".join(w[:1].upper() + w[1:] for w in j.split())
+
     def valeur_carte(self, q):
         """« Combien vaut cette carte ? » : annonces actives a prix fixe (eBay Browse, cache partage).
         24 oct 2026 : seulement la MEME carte (cartes_match : variante, gradation, auto, patch, numerotation,
@@ -9675,8 +9696,13 @@ class Api:
             return {"ok": False, "erreur": str(e), "pro_requis": True}
         c = cartes_match.cible(q)
         q_ebay = cartes_match.requete_ebay(c) or q
+        joueur_seul = self._joueur_seul(q, c)
         try:
-            res = ebay_compte.rechercher(q_ebay, categorie=CATEGORIE_CARTES, limite=200, fond=False)
+            # un joueur seul : ses annonces de 20 $ et plus d'abord (eBay trie par pertinence : les cartes a 2 $ passaient devant)
+            res = ebay_compte.rechercher(q_ebay, categorie=CATEGORIE_CARTES, limite=200, fond=False,
+                                         **({"prix_min": self.JOUEUR_SEUL_MIN} if joueur_seul else {}))
+            if joueur_seul and len(res or []) < 6:
+                res = ebay_compte.rechercher(q_ebay, categorie=CATEGORIE_CARTES, limite=200, fond=False)
         except (RuntimeError, OSError) as e:
             return {"ok": False, "erreur": str(e)}
         r = self.reglages_lire()
@@ -9686,9 +9712,31 @@ class Api:
             total = round((a.get("prix_cad") or 0) + (a.get("port_cad") or 0), 2)
             if total > 0:
                 lst.append({**a, "total": total})
-        _c, gardees, ecartees = cartes_match.filtrer(q, lst)
-        gardees.sort(key=lambda x: x["total"])
-        compris = cartes_match.resume(c)
+        # 13 nov 2026 (Mathieu : « cole caufield » -> seulement des cartes a 2 $ et un score de 2 « peu recherchee ») : un nom de
+        # joueur SEUL n'est pas une carte. Avant : lu comme « base, non gradee » (les autos, patchs, gradees, numerotees
+        # ecartees) et trie du moins cher. Maintenant : toutes ses cartes, les plus recherchees d'abord (hits, puis prix), le
+        # score SlabIQ du JOUEUR (pas celui de la carte la moins chere), et aucune « valeur » melangee.
+        if joueur_seul:
+            nom_j = joueur_seul
+            dern = nom_j.lower().split()[-1]
+            gardees, ecartees = [], []
+            for x in lst:
+                t_ = x.get("titre") or ""
+                ct = cartes_match.cible_titre(t_)
+                if dern in cartes_match.norm(t_).split() and not ct.get("exclu") and cartes_match.est_carte(t_):
+                    x["hit"] = bool(ct.get("auto") or ct.get("patch") or ct.get("serie") or ct.get("grade"))
+                    gardees.append(x)
+                else:
+                    ecartees.append({**x, "raison": "autre joueur ou lot"})
+            gardees.sort(key=lambda x: (not x.get("hit"), -x["total"]))
+            # « de base, on ne devrait pas voir des cartes de 5 $ » : sous 20 $, seulement s'il n'y a presque rien d'autre
+            if sum(1 for x in gardees if x["total"] >= self.JOUEUR_SEUL_MIN) >= 6:
+                ecartees += [{**x, "raison": "moins de 20 $"} for x in gardees if x["total"] < self.JOUEUR_SEUL_MIN]
+                gardees = [x for x in gardees if x["total"] >= self.JOUEUR_SEUL_MIN]
+        else:
+            _c, gardees, ecartees = cartes_match.filtrer(q, lst)
+            gardees.sort(key=lambda x: x["total"])
+        compris = [joueur_seul] if joueur_seul else cartes_match.resume(c)
         raisons = {}
         for x in ecartees:
             raisons[x["raison"]] = raisons.get(x["raison"], 0) + 1
@@ -9696,6 +9744,15 @@ class Api:
                 "raisons": sorted(raisons.items(), key=lambda kv: -kv[1])[:6],
                 "ecartees": [{k: x.get(k) for k in ("item_id", "titre", "total", "photo", "url", "raison")} for x in ecartees[:30]]}
         forfaits.compter("valeur_jour")
+        if joueur_seul:
+            try:
+                import indice_joueurs
+                ij = indice_joueurs.pourquoi(joueur_seul) or {}
+            except Exception:
+                ij = {}
+            return {**base, "joueur_seul": joueur_seul, "joueur_iq": {k: ij.get(k) for k in ("indice", "rang", "sur", "pastilles", "actif")},
+                    "n": len(gardees), "annonces": gardees[:40], "vendues": {"ventes": [], "nb": 0, "mediane": None},
+                    "valeur": None, "valeur_source": None, "bon_prix": None, "mes_achats": []}
         # 25 oct 2026 (Mathieu : « base-toi toujours sur les last sold ») : la valeur = ventes reelles
         try:
             base["vendues"] = vendues.memes(q, requete=True, n=24)

@@ -2984,6 +2984,7 @@ body.zp-ouvert{overflow:hidden}
 .dq-bar input::-webkit-search-cancel-button{display:none}
 .dq-n{font:700 13px var(--f-cond); color:var(--acc); min-width:18px; text-align:right}
 .dq-x{width:36px; height:36px; border-radius:50%; border:0; background:var(--ligne); color:var(--texte); font-size:20px; line-height:1; cursor:pointer; flex:none}
+.v-iq-r{margin-left:auto; font:700 13px var(--f-cond); color:var(--doux)} .vf-astuce{margin:4px 0 8px}
 /* 13 nov 2026 : le rapport SlabIQ qui fait wow */
 .iq-hero{margin:14px 0 6px; padding:20px 18px; border-radius:24px; background:radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--acc) 28%, transparent), transparent 60%), radial-gradient(90% 90% at 100% 100%, color-mix(in srgb, var(--vert) 18%, transparent), transparent 60%), var(--carte); border:1px solid color-mix(in srgb, var(--acc) 40%, var(--ligne)); display:flex; flex-direction:column; gap:8px}
 .iq-k{font:700 13px var(--f-cond); letter-spacing:.16em; text-transform:uppercase; color:var(--acc)}
@@ -9782,7 +9783,18 @@ async function changerPhotoCarte(cid, ph, index){
 }
 // 12 nov 2026 (nuit de revue : « reutiliser nos pastilles, des titres colores ») : la valeur d'une carte montre aussi son
 // Score SlabIQ (la demande, jamais le prix de l'annonce) ; toucher le score ouvre « Pourquoi ce score »
-async function remplirIQ(el, q){
+// 13 nov 2026 (Mathieu : « cole caufield » -> score 2 « peu recherchee » : c'etait le score de la carte a 2 $) : une
+// recherche d'un joueur seul montre le score SlabIQ du JOUEUR
+function remplirIQJoueur(el, r){
+  if (!el || !r || !r.joueur_seul) return false;
+  const ji = r.joueur_iq || {}, sc = ji.indice != null ? Math.round(ji.indice) : null;
+  if (sc == null) { el.innerHTML = ''; return true; }
+  const qual = sc >= 80 ? tt('Très demandé', 'In high demand') : sc >= 65 ? tt('Demandé', 'In demand') : sc >= 50 ? tt('Correct', 'Decent') : tt('Peu demandé', 'Low demand');
+  el.innerHTML = `<a class="v-iq-b" href="#joueur/${encodeURIComponent(r.joueur_seul)}"><span class="v-iq-n ${couleurScore(sc)}">${sc}</span><span class="v-iq-t"><small>${tt('Score SlabIQ du joueur', 'SlabIQ player score')}</small><b>${qual}</b></span>${ji.rang ? `<span class="v-iq-r">${ji.rang}${tt('e', 'th')} / ${ji.sur}</span>` : ''}<i>›</i></a>`;
+  return true;
+}
+async function remplirIQ(el, q, r){
+  if (r && remplirIQJoueur(el, r)) return;
   if (!el || !q) return;
   const sp = await API.annonce_score(q).catch(() => null);
   if (!el.isConnected || !sp || !sp.ok || sp.score == null) return;
@@ -9815,7 +9827,7 @@ async function feuilleValeur(q, retour, nomRetour){
     ${ann.length ? `<div class="v-rang-t"><b>${tt('En vente maintenant', 'Listed now')}</b></div><div class="d-car v-car">${ann.map(k => vc(k, false)).join('')}</div>`
       : `<div class="sous">${tt('Aucune annonce de cette carte exacte en ce moment.', 'No listing of this exact card right now.')}</div>`}
     <div class="fv-b"><button class="pilule" id="fv-al">${icN('cloche')}${tt('Mon prix cible', 'My target price')}</button><a class="pilule" href="#valeur/${encodeURIComponent(q)}" id="fv-page">${tt('Page complète', 'Full page')} ›</a></div>`;
-  remplirIQ($('#fv-iq'), (vend[0] || {}).titre || (ann[0] || {}).titre || r.q || q);
+  remplirIQ($('#fv-iq'), (vend[0] || {}).titre || (ann[0] || {}).titre || r.q || q, r);
   $('#fv-al').onclick = () => { vibrer(); feuilleAlerte(r.q || q, r.bon_prix || ''); };
   $('#fv-page').onclick = () => fermerFeuille();
 }
@@ -9870,10 +9882,10 @@ async function vueValeur(arg){
   const histo = (r.vendues || {}).points && r.vendues.points.length >= 3;
   // 10 nov 2026 (Mathieu : « tres simple, garde nos pastilles, encore plus facile que sur eBay ») : sans comps (lancement),
   // la fiche de la carte : ce qu'elle est (pastilles), 3 gestes (mon prix cible, le joueur, eBay), mes achats, en vente
-  if (!comps()) {
+  if (!comps() || r.joueur_seul) {
     const ebayQ = 'https://www.ebay.ca/sch/i.html?_sacat=261328&_nkw=' + encodeURIComponent(r.q || q);
     z.innerHTML = `<div class="v-fiche">
-        <div class="vf-t">${tt('Cette carte', 'This card')}</div>
+        <div class="vf-t">${r.joueur_seul ? tt('Ce joueur · toutes ses cartes', 'This player · all his cards') : tt('Cette carte', 'This card')}</div>
         <div class="pastilles vf-p">${(r.compris || []).map(x => capsule(x, 'acc')).join('')}</div>
         <div class="pastilles j-tend" id="v-tend-j"></div>
         <button class="lien-doux" id="v-compris">✎ ${tt('Pas la bonne ? Corrige un détail', 'Not the one? Fix a detail')}</button>
@@ -9882,7 +9894,8 @@ async function vueValeur(arg){
         ${(r.compris || [])[0] ? `<a class="pilule" href="#joueur/${encodeURIComponent(String(r.compris[0]).replace(/ (young guns|rookie|future watch).*$/i, ''))}">${tt('Le joueur ›', 'Player ›')}</a>` : ''}
         <a class="pilule" href="${esc(lienAchat(ebayQ, 'valeur'))}" target="_blank" rel="noopener">${tt('Tout sur eBay', 'All on eBay')} ${EXT}</a></div>
       ${blocMesAchats(r.mes_achats, false, 0, null)}
-      ${r.n ? `<div class="v-rang-t"><b>${tt('En vente maintenant', 'Listed now')}</b><button class="lien-doux" id="v-tout-a">${r.n} ›</button></div>
+      ${r.joueur_seul ? `<div class="sous vf-astuce">${tt('Pour la valeur d’une carte précise, ajoute-la : « ', 'For one card’s value, add it: “')}${esc(r.joueur_seul)} Young Guns${tt(' »', '”')}</div>` : ''}
+      ${r.n ? `<div class="v-rang-t"><b>${r.joueur_seul ? tt('Ses cartes · les plus recherchées d’abord', 'His cards · most sought first') : tt('En vente maintenant', 'Listed now')}</b><button class="lien-doux" id="v-tout-a">${r.n} ›</button></div>
         <div class="d-car v-car">${r.annonces.slice(0, 10).map(tuileA).join('')}</div>`
         : `<div class="vide" style="margin-top:12px">${tt('Aucune annonce de cette carte exacte en ce moment. Fixe ton prix cible : on t’avertit dès qu’elle arrive.', 'No listing of this exact card right now. Set your target price: we’ll tell you when one shows up.')}</div>`}
       <div class="sous vf-note">${tt('Tu choisis ton prix, on surveille eBay pour toi.', 'You pick your price, we watch eBay for you.')}</div>
@@ -9913,7 +9926,7 @@ async function vueValeur(arg){
     </div>`;
   // 12 nov 2026 : SlabIQ lit des titres d'annonces ; « Will Smith YG 230 » tout court lui donnait peu d'indices (16) : on
   // lui donne le titre d'une vraie vente de la meme carte (85), sinon d'une annonce, sinon la recherche
-  remplirIQ($('#v-iq', z), (vend[0] || {}).titre || ((r.annonces || [])[0] || {}).titre || r.q || '');
+  remplirIQ($('#v-iq', z), (vend[0] || {}).titre || ((r.annonces || [])[0] || {}).titre || r.q || '', r);
   const o = (id, f) => { const b = $('#' + id, z); if (b) b.onclick = f; };
   o('v-histo', () => feuilleBloc($('#v-b-histo')));
   o('v-tout-v', () => feuilleBloc($('#v-b-vend')));
