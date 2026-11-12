@@ -510,7 +510,17 @@ def _journal(par_j, wiki, nhl_, X, y, meta, d_min, d_max):
                 k = int(max(range(len(p)), key=lambda q: p[q]))
                 if classes[k] != 1:
                     l.append((p[k], classes[k], m_[1]))
+            # 12 nov 2026 (Mathieu : « dans les deals, un joueur en pente descendante, ce n'est pas un deal ») : la prevision de
+            # CHAQUE joueur (sens, confiance, rang parmi les sens annonces), pour les deals de l'admin
+            prev = {}
+            for p, m_ in zip(mod.predict_proba(Xv).tolist(), mv):
+                k = int(max(range(len(p)), key=lambda q: p[q]))
+                prev[m_[1]] = [{0: "baisse", 1: "stable", 2: "hausse"}[classes[k]], round(p[k], 3)]
             l.sort(key=lambda t: -t[0])
+            for r_, (c, cl, j) in enumerate(l):
+                if j in prev:
+                    prev[j].append(round(r_ / max(1, len(l)), 3))
+            jr["previsions"] = {"le": auj.isoformat(), "joueurs": prev}
             for c, cl, j in l[:max(1, int(round(TOP_DIRECT * len(l))))]:
                 al.append({"le": auj.isoformat(), "cree": datetime.now().isoformat(timespec="seconds"), "joueur": j,
                            "annonce": {0: "baisse", 2: "hausse"}[cl], "confiance": round(c, 3), "parmi": len(l)})
@@ -526,6 +536,26 @@ def _journal(par_j, wiki, nhl_, X, y, meta, d_min, d_max):
     return {"justes": k, "notees": len(notes), "certitude": round(_wilson(k, len(notes)), 3),
             "ouvertes": [a for a in al if not a.get("vrai") and not a.get("non_mesurable")][-30:],
             "notees_l": notes[-40:]}
+
+
+_PREV = {"mt": None, "d": {}}
+
+
+def prevision(nom):
+    """12 nov 2026 : la derniere prevision du modele pour ce joueur : {sens, confiance, rang (0 = le plus sur), le} ou None.
+    Le modele apprend sur les ventes (labo) : pour l'admin seulement."""
+    p = _chemin("slabiq_journal.json")
+    try:
+        mt = os.path.getmtime(p)
+    except OSError:
+        return None
+    if _PREV["mt"] != mt:
+        pv = _journal_lire().get("previsions") or {}
+        _PREV.update(mt=mt, d={"le": pv.get("le"), "j": {str(k).lower(): v for k, v in (pv.get("joueurs") or {}).items()}})
+    v = _PREV["d"].get("j", {}).get(str(nom or "").strip().lower())
+    if not v:
+        return None
+    return {"sens": v[0], "confiance": v[1], "rang": v[2] if len(v) > 2 else None, "le": _PREV["d"].get("le")}
 
 
 def passe_si_besoin():

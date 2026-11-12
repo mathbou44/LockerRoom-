@@ -9280,6 +9280,16 @@ class Api:
                 # 2 nov 2026 (« COSMIC » au lieu de LeBron James) : le joueur connu du deal d'abord, s'il est dans le titre
                 jd = str(x.get("joueur") or "").strip()
                 x["joueur_n"], x["carte_n"] = self._etiquette_deal(x.get("titre") or "", jd if jd and cartes_match.norm(jd) in cartes_match.norm(x.get("titre") or "") else None)
+        # 12 nov 2026 (Mathieu : « payer 50 % d'une carte d'un joueur en pente descendante, ce n'est pas un deal si on veut la
+        # vendre dans 3 mois ; il faut des joueurs stables ou qui montent, ou des bons joueurs en slump ») : ADMIN, le Score
+        # SlabIQ du joueur et son sens sur chaque deal ; un joueur qui descend (pas un bon joueur en creux) passe apres
+        if adm_:
+            try:
+                self._iq_deals([*lst[:240], *suivis, *pres])
+                lst = [x for x in lst if not (x.get("iq") or {}).get("risque")] + [x for x in lst if (x.get("iq") or {}).get("risque")]
+                suivis = [x for x in suivis if not (x.get("iq") or {}).get("risque")] + [x for x in suivis if (x.get("iq") or {}).get("risque")]
+            except Exception as e:
+                print("SlabIQ (deals) : " + repr(e), flush=True)
         # 31 oct 2026 (Mathieu : « les deals n'apparaissent pas au fur et a mesure, ca reste a 35 ») : un encan d'un gros vendeur
         # qui vient de recevoir sa valeur et qui est a 70 % ou moins de celle-ci est un deal : il compte dans le nombre
         n_su = sum(1 for x in suivis if x.get("valeur") and (x.get("total") or 0) <= _dl.prix_max(x["valeur"], taxe=_dl.taxe_de(x)))
@@ -9289,6 +9299,62 @@ class Api:
                 "sports": par_sport, "pays_dispo": par_pays, "maj": dd.get("maj"), "ebay": ebay_compte.statut().get("cles_ok"),
                 "diag": _d.diagnostic(dd), "total": len(tout), "bassin": dd.get("bassin"), "nb_flux": len(_d.flux_liste()),
                 "watch": self._watch_ids(), "caches_chance": n_caches[0] if adm_ else None}
+
+    IQ_BAISSE_PTS = 8.0          # l'Indice qui perd 8 points en ~4 semaines : une pente descendante
+    IQ_PREV_RANG = 0.15          # une prevision du modele parmi ses 15 % les plus sures
+    IQ_PREV_CONF = 0.55
+
+    @staticmethod
+    def _iq_un(nom, I=None):
+        """Le Score SlabIQ d'un joueur et son sens : {s, sens (hausse|stable|baisse|creux), risque, pq}. None si inconnu."""
+        import indice_joueurs
+        v = (I or {}).get(nom) or indice_joueurs.indice(nom)
+        if not v or v.get("indice") is None:
+            return None
+        past = set(v.get("pastilles") or [])
+        try:
+            import slabiq_test
+            pv = slabiq_test.prevision(nom)
+        except Exception:
+            pv = None
+        sur = bool(pv and pv.get("rang") is not None and pv["rang"] <= Api.IQ_PREV_RANG and pv["confiance"] >= Api.IQ_PREV_CONF)
+        try:
+            import quoi_de_neuf
+            a = quoi_de_neuf.avant(nom, (datetime.now() - timedelta(days=28)).strftime("%Y-%m-%d"))
+            d = round(v["indice"] - a[0], 1) if a and a[0] is not None else None
+        except Exception:
+            d = None
+        bon_creux = "occasion" in past or ("en_creux" in past and "legende" in past)
+        if "en_creux" in past or "occasion" in past:
+            sens, pq = ("creux", "creux_bon") if bon_creux else ("baisse", "creux")
+        elif sur and pv["sens"] == "baisse" or (d is not None and d <= -Api.IQ_BAISSE_PTS) or "mauvaise" in past:
+            sens = "baisse"
+            pq = ("prev_baisse" if sur and pv["sens"] == "baisse" else
+                  "indice_baisse" if d is not None and d <= -Api.IQ_BAISSE_PTS else "mauvaise")
+        elif sur and pv["sens"] == "hausse" or past & {"en_feu", "en_hausse", "rebond", "honneur"} or (d is not None and d >= Api.IQ_BAISSE_PTS):
+            sens = "hausse"
+            pq = ("prev_hausse" if sur and pv["sens"] == "hausse" else
+                  "feu" if "en_feu" in past else "rebond" if "rebond" in past else "honneur" if "honneur" in past else "hausse")
+        else:
+            sens, pq = "stable", "stable"
+        return {"s": int(round(v["indice"])), "sens": sens, "risque": sens == "baisse", "pq": pq,
+                **({"prev": pv} if pv else {}), **({"ecart_28j": d} if d is not None else {})}
+
+    def _iq_deals(self, items):
+        """Sur place : x["iq"] pour chaque deal dont le joueur est connu de l'Indice (un calcul par joueur)."""
+        import indice_joueurs
+        I = indice_joueurs.lire().get("indice") or {}
+        memo = {}
+        for x in items:
+            nom = str(x.get("joueur") or x.get("joueur_n") or "").strip()
+            if not nom:
+                continue
+            if nom not in memo:
+                k = indice_joueurs._norm(nom)
+                vrai = nom if nom in I else next((n for n in I if indice_joueurs._norm(n) == k), nom)
+                memo[nom] = self._iq_un(vrai, I)
+            if memo[nom]:
+                x["iq"] = memo[nom]
 
     @staticmethod
     def _avec_chances(lst, cacher=True, compte=None):

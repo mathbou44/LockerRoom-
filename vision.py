@@ -91,7 +91,9 @@ OUTIL = {
             # 27 oct 2026 : la photo studio (recadrage dans le telephone) et la prise de photo guidee
             "photos": {"type": "array", "description": "Une entree par image, dans l'ordre recu.",
                        "items": {"type": "object", "properties": {
-                           "cote": {"type": "string", "enum": ["devant", "dos", "autre"]},
+                           "cote": {"type": "string", "enum": ["devant", "dos", "autre"],
+                                    "description": "Ce que montre CETTE image, peu importe son rang : devant (le recto : la photo du joueur, "
+                                                   "l'autographe, le patch) ou dos (le verso : texte, stats, numero, mentions legales)."},
                            "coins": {"type": "array", "items": {"type": "array", "items": {"type": "integer"}},
                                      "description": "Les 4 coins exterieurs de la carte, ou de son etui / slab si elle est dedans (jamais le support), "
                                                     "en coordonnees 0 a 1000 de l'image (x vers la droite, y vers le bas), dans l'ordre : haut-gauche, "
@@ -112,7 +114,8 @@ SYSTEME = """Tu identifies des cartes de sport (hockey, football NFL, basketball
 Regles :
 - Lis ce qui est IMPRIME sur la carte (devant et dos) et sur l'etiquette de gradation. N'invente jamais : un champ illisible reste vide, avec une confiance basse, et va dans a_verifier.
 - Le dos donne souvent l'annee (copyright), le numero de la carte et le set ; l'estampe /99 donne le tirage.
-- Avec 2 images (le devant puis le dos de la MEME carte) : combine-les. Le numero de serie (ex. 12/99) peut etre au devant
+- Avec 2 images (normalement le devant puis le dos de la MEME carte, mais l'utilisateur les envoie parfois a l'envers) :
+  regarde chaque image et dis dans photos[].cote ce qu'elle montre vraiment ; combine-les. Le numero de serie (ex. 12/99) peut etre au devant
   OU au dos ; l'autographe et le patch se voient au devant ; le dos confirme l'annee, le set, le numero de la carte et
   souvent le nom de l'insert ou du parallele (Exclusives, High Gloss, Canvas...). Une info lue d'un seul cote compte.
 - Parallele : decris ce que tu vois (couleur, motif, finition) seulement si tu es sur du nom officiel ; sinon mets-le dans a_verifier.
@@ -484,7 +487,10 @@ def identifier(photos):
 def _identifier_appel(images, cle_cache):
     contenu = []
     for i, (b, typ) in enumerate(images):
-        contenu.append({"type": "text", "text": "Devant de la carte :" if i == 0 else "Dos de la carte :"})
+        # 12 nov 2026 (Mathieu : une annonce publiee avec le dos en 1re photo) : plus d'etiquette « Devant » / « Dos » imposee
+        # (l'IA recopiait l'etiquette dans photos[].cote) ; elle dit elle-meme quel cote montre chaque image, et l'app remet
+        # le devant en premier
+        contenu.append({"type": "text", "text": f"Image {i + 1} :" if len(images) > 1 else "La carte :"})
         contenu.append({"type": "image", "source": {"type": "base64", "media_type": typ, "data": base64.b64encode(b).decode()}})
     contenu.append({"type": "text", "text": "Remplis la fiche de cette carte."})
     r = _appeler({"model": MODELE, "max_tokens": 1500, "system": SYSTEME, "tools": [OUTIL],

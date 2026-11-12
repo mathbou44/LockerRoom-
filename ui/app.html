@@ -629,6 +629,14 @@ body.fetes .mot-ic{color:var(--h4,#F1D58E)}
 .sd-l3 b{color:#F4F2F8; font-weight:700} .sd-l3 .sd-g{font:700 17px/1 var(--f-cond); color:var(--vert)} .sd-l4 b{color:#F4F2F8}
 .sd-j .sd-fav{font-style:normal; color:var(--or)}
 .sd-l2 .sd-rab{font:700 22px/1 var(--f-cond)} .sd-pr{font:700 22px/1 var(--f-cond); color:#F4F2F8}
+.sd-iq{position:absolute; right:6px; bottom:6px; z-index:2; display:inline-flex; align-items:center; gap:2px; height:24px; padding:0 6px 0 8px; border-radius:99px;
+  background:rgba(10,10,14,.86); border:1px solid var(--ligne); color:var(--texte); font:700 13px/1 var(--f-cond); letter-spacing:.02em}
+.sd-iq svg{width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round}
+.sd-iq.hausse{color:var(--vert); border-color:color-mix(in srgb, var(--vert) 45%, transparent)} .sd-iq.baisse{color:var(--rouge); border-color:color-mix(in srgb, var(--rouge) 50%, transparent)}
+.sd-iq.creux{color:var(--or); border-color:color-mix(in srgb, var(--or) 45%, transparent)} .sd-iq.stable svg{opacity:.7}
+.sd-iq ~ .sd-ramp{bottom:36px}
+.fa-iq{display:flex; align-items:center; gap:10px; margin-top:8px; text-transform:none} .fa-iq .sd-iq{position:static; height:28px; font-size:15px}
+.fa-iq span{display:flex; flex-direction:column; gap:1px; min-width:0} .fa-iq b{font-size:13.5px} .fa-iq small{font-size:12.5px; color:var(--doux); font-weight:500}
 .sd-ph .sd-fin{position:absolute; left:6px; bottom:6px; z-index:2; padding:3px 7px; border-radius:99px; background:rgba(10,10,14,.86); color:#F4F2F8; font:600 12px/1.2 var(--f-cond); letter-spacing:.04em; display:inline-flex; align-items:center}
 .sd-bas small .g{color:var(--vert); font-weight:700}
 .d-nv{position:sticky; top:calc(env(safe-area-inset-top, 0px) + 74px); z-index:30; display:block; margin:0 auto 10px; padding:9px 16px; border-radius:99px; border:0;
@@ -1259,7 +1267,7 @@ body.fen-ouverte .fond-feuille{z-index:95}  /* 11 nov 2026 : les petites fenetre
   .assist.etape-ph, .assist.lot:has(#lot-f){max-width:1080px}
   .assist .cols-o{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:20px 48px; align-items:start}
   .assist .col-d .lot-depot{min-height:240px; cursor:pointer} .assist .col-d .lot-scan{margin-top:0}
-  .assist.etape-ph .col-d .prise-2{grid-template-columns:1fr}
+  .assist.etape-ph .col-d .prise-2{grid-template-columns:1fr} .assist.etape-ph .col-d{margin-top:0}
 }
 .lot-scan{margin:14px 0 6px; padding:14px; border-radius:16px; background:var(--carte2); box-shadow:inset 0 0 0 1px var(--ligne); display:flex; flex-direction:column; gap:10px}
 .ls-t{display:flex; gap:12px; align-items:flex-start} .ls-t > span:last-child{display:flex; flex-direction:column; gap:3px} .ls-t small{color:var(--doux); font-size:13px; line-height:1.4}
@@ -2454,6 +2462,7 @@ body.pro .onglets a.on{color:var(--acc)}
 .conseils-ph li{display:flex; align-items:center; gap:12px; font-size:15px; color:var(--texte2); background:var(--carte); border:1px solid var(--ligne); border-radius:var(--r-ctl); padding:10px 12px}
 .conseils-ph b{width:24px; height:24px; border-radius:var(--r-pas); background:var(--acc-fonce); color:var(--acc); display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0}
 .btn.gros.prise{height:60px; font-size:18px; cursor:pointer} .btn.prise svg{width:24px; height:24px}
+.etape-ph .col-d{margin-top:16px}   /* 12 nov 2026 (Mathieu : « Take a photo et My photos se touchent ») : de l'air sous les conseils */
 .prise-2{display:grid; grid-template-columns:1fr 1fr; gap:10px} .prise-2 .btn.gros.prise{height:auto; min-height:76px; flex-direction:column; gap:6px; font-size:15.5px; padding:12px 8px; line-height:1.15; text-align:center}
 .photo-controle{position:relative; align-self:center; width:min(260px, 70vw)}
 .photo-controle img{width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:var(--r-slab); border:1px solid var(--ligne); display:block}
@@ -3656,6 +3665,55 @@ html.tel-large .fond-feuille .feuille{max-width:620px; margin:0 auto}
 html.tel-large .fen.fa{height:calc((100dvh - 20px) / 1.12) !important; max-height:calc(940px / 1.12)}
 html.tel-large .feuille{max-height:calc(86vh / 1.12) !important}
 html.tel-large .fen.fa .fen-img{max-height:calc(46vh / 1.12) !important}
+/* ============================================================
+   12 nov 2026 (Mathieu : « etre coherent : les memes couleurs, le meme genre de prisme, les memes petites pastilles ; si c'est
+   des icones rectangulaires, ca suit avec les couleurs et le prisme ; le bouton Vendre plus attrayant, dans le style de nos
+   pastilles, plus gros que le reste ») : UNE pastille prisme (anneau prisme, fond de carte, icone claire) partout.
+   ============================================================ */
+:root{--prisme:conic-gradient(from 210deg, var(--h1,#9FE6D2), var(--h2,#B9BEFF), var(--h3,#F2B3D6), var(--h4,#F1D58E), var(--h1,#9FE6D2));
+  --pastille-fond:linear-gradient(var(--carte), var(--carte))}
+/* 1. le bouton Vendre de la barre du bas : une grosse pastille prisme qui depasse un peu */
+@media (max-width:899px){
+  body .onglets a.centre svg, body:not(.mode-acheteur) .onglets a.centre svg, body.mode-acheteur .onglets a.centre svg{
+    width:24px !important; height:24px !important; padding:11px !important; margin-top:-22px !important; border-radius:50% !important;
+    border:2.5px solid transparent !important; background:linear-gradient(#17171D, #17171D) padding-box, var(--prisme) border-box !important;
+    stroke:#F4F2EE !important; color:#F4F2EE !important;
+    box-shadow:0 0 0 4px rgba(13,13,17,.95), 0 8px 22px color-mix(in srgb, var(--h2,#B9BEFF) 30%, transparent) !important}
+  body .onglets a.centre.on svg{background:linear-gradient(color-mix(in srgb, var(--acc) 22%, #17171D), color-mix(in srgb, var(--acc) 22%, #17171D)) padding-box, var(--prisme) border-box !important}
+  body .onglets a.centre{color:var(--texte) !important; font-weight:700 !important}
+}
+/* 2. les pastilles numerotees et les petites icones rondes : l'anneau prisme */
+.conseils-ph li{border-radius:18px; padding:10px 14px 10px 10px; min-height:54px; font-size:15.5px; color:var(--texte)}
+.conseils-ph b{width:34px; height:34px; border-radius:50%; border:2px solid transparent; background:var(--pastille-fond) padding-box, var(--prisme) border-box;
+  color:var(--texte); font:700 15px var(--f-cond)}
+.r-idee .aaj-n{border:2px solid transparent; background:var(--pastille-fond) padding-box, var(--prisme) border-box; color:var(--texte)}
+.pr-i, .profil-rac .pr-r .pr-i{width:38px; height:38px; border-radius:50%; border:2px solid transparent; background:var(--pastille-fond) padding-box, var(--prisme) border-box; color:var(--texte)}
+.pr-i svg, .profil-rac .pr-r .pr-i svg{width:18px !important; height:18px !important}
+.profil-rac .pr-r{padding:10px 2px 9px; gap:7px}
+/* 3. l'assistant Vendre : le fil des etapes et les deux gros boutons photo */
+.fil-v li.on i{background:var(--pastille-fond) padding-box, var(--prisme) border-box; border:2px solid transparent; color:var(--texte);
+  box-shadow:0 0 0 4px color-mix(in srgb, var(--h2,#B9BEFF) 16%, transparent)}
+.fil-v li.fait i{background:var(--pastille-fond) padding-box, var(--prisme) border-box; border:2px solid transparent; color:var(--vert)}
+.fil-v li.fait::before, .fil-v li.on::before{background:linear-gradient(90deg, var(--h1,#9FE6D2), var(--h2,#B9BEFF))}
+.prise-2 .btn.gros.prise{min-height:116px; border-radius:22px; gap:10px; background:var(--carte); color:var(--texte); border:1px solid var(--ligne); box-shadow:none;
+  font:700 15px var(--f-cond); letter-spacing:.08em}
+.prise-2 .btn.gros.prise:not(.ghost){border:1.5px solid transparent; background:var(--pastille-fond) padding-box, var(--prisme) border-box}
+.prise-2 .btn.gros.prise svg{box-sizing:content-box; width:24px; height:24px; padding:12px; border-radius:50%; border:2px solid transparent;
+  background:linear-gradient(#17171D, #17171D) padding-box, var(--prisme) border-box; stroke:var(--texte); color:var(--texte)}
+.prise-2 .btn.gros.prise:active{transform:scale(.98)}
+.btn.gros.prise:not(.ghost):not(.prise-2 *){background:var(--pastille-fond) padding-box, var(--prisme) border-box; border:1.5px solid transparent; color:var(--texte)}
+/* 4. Valeur : « Scanner une carte » dans le meme style (carte, contour prisme, icone en pastille) */
+.v-scan-grand{background:var(--pastille-fond) padding-box, var(--prisme) border-box; border:1.5px solid transparent; color:var(--texte); box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.v-scan-grand svg{box-sizing:content-box; width:24px; height:24px; padding:12px; border-radius:50%; border:2px solid transparent;
+  background:linear-gradient(#17171D, #17171D) padding-box, var(--prisme) border-box; stroke:var(--texte)}
+.v-scan-grand small{color:var(--doux); opacity:1}
+/* 5. le guide, le bandeau « a faire », les points du tour : la meme pastille et la meme couleur */
+.g-regles b{border:2px solid transparent; background:var(--pastille-fond) padding-box, var(--prisme) border-box; color:var(--texte)}
+.bandeau-aaj .aaj-n{border:2px solid transparent; background:var(--pastille-fond) padding-box, var(--prisme) border-box; color:var(--texte)}
+.tuto-pts i.on, .tuto.a .tuto-pts i.on{background:linear-gradient(90deg, var(--h1,#9FE6D2), var(--h2,#B9BEFF), var(--h3,#F2B3D6))}
+/* 6. les en-tetes ronds (« Analyser un produit », Breaks) : la fleche en pastille prisme */
+.tuile-analyse .go{width:40px; height:40px; flex-shrink:0; border-radius:50%; display:grid; place-items:center; border:2px solid transparent; font-size:20px; color:var(--texte);
+  background:var(--pastille-fond) padding-box, var(--prisme) border-box}
 </style>
 <script>
 
@@ -5925,7 +5983,9 @@ async function lireVente(){
     : {ok:false, erreur:tt('Sans l’IA : complète les détails de la carte', 'Without AI: fill in the card details')};
   if (!r || !r.ok) toast((r && r.erreur) || tt('Carte pas reconnue : complète les détails', 'Card not recognized: complete the details'), 5000);
   const ph = (r && r.photos) || [];
-  if (ph[0] && ph[1] && ph[0].cote === 'dos' && ph[1].cote === 'devant') {        // le dos en premier : on remet le devant devant
+  // 12 nov 2026 (Mathieu : « l'annonce a ete publiee avec les photos inversees ») : le dos en premier -> le devant revient devant
+  // (l'IA dit ce que montre chaque image ; la 2e n'a qu'a ne pas etre un dos)
+  if (ph[0] && ph[1] && ph[0].cote === 'dos' && ph[1].cote !== 'dos') {
     [V2.photos[0], V2.photos[1]] = [V2.photos[1], V2.photos[0]]; [ph[0], ph[1]] = [ph[1], ph[0]];
     if (V2.loc) [V2.loc[0], V2.loc[1]] = [V2.loc[1], V2.loc[0]];
   }
@@ -8000,6 +8060,16 @@ function suiteDeals(){
   }, {rootMargin: '1400px 0px'});
   S.obsDeals.observe(sent);
 }
+const IQ_SENS = () => ({hausse: [tt('En hausse', 'Rising'), '<path d="M6 15l6-6 6 6"/>'], baisse: [tt('En baisse', 'Falling'), '<path d="M6 9l6 6 6-6"/>'],
+  creux: [tt('Bon joueur en creux', 'Good player in a slump'), '<path d="M4 8c3 8 13 8 16 0"/>'], stable: [tt('Stable', 'Steady'), '<path d="M5 12h14"/>']});
+const pqIQ = (iq) => ({prev_baisse: tt('Le modèle SlabIQ prévoit une baisse de ses cartes', 'The SlabIQ model expects his cards to drop'),
+  prev_hausse: tt('Le modèle SlabIQ prévoit une hausse de ses cartes', 'The SlabIQ model expects his cards to rise'),
+  indice_baisse: tt(`Son indice : ${iq.ecart_28j} en 4 semaines`, `His index: ${iq.ecart_28j} in 4 weeks`), mauvaise: tt('Une mauvaise nouvelle cette semaine', 'Bad news this week'),
+  creux_bon: tt('Un bon joueur en creux : ses cartes remontent souvent', 'A good player in a slump: his cards often come back'), creux: tt('En creux', 'In a slump'),
+  feu: tt('En feu cette semaine', 'On fire this week'), rebond: tt('Il sort de son creux', 'Coming out of a slump'), honneur: tt('Un honneur cette semaine', 'An honour this week'),
+  hausse: tt('Son indice monte', 'His index is rising'), stable: tt('Ni hausse ni baisse marquée', 'No clear rise or drop')})[iq.pq] || '';
+const badgeIQ = (iq) => { const [lib, ic] = IQ_SENS()[iq.sens] || IQ_SENS().stable;
+  return `<span class="sd-iq ${esc(iq.sens)}" title="SlabIQ ${iq.s} · ${esc(lib)}" aria-label="SlabIQ ${iq.s} · ${esc(lib)}"><b>${iq.s}</b><svg viewBox="0 0 24 24" aria-hidden="true">${ic}</svg></span>`; };
 function tuileDeal(x){
   // 30 oct 2026 (Mathieu : « l'annonce du deal : le nom du joueur en haut, son % sous la mediane des dernieres ventes et le
   // prix actuel ; prends exemple sur ces slabs (PSA, TAG) ; un contour prisme mince ») : l'etiquette du slab porte le joueur
@@ -8012,12 +8082,15 @@ function tuileDeal(x){
   const max = x.mise_max != null ? x.mise_max : x.valeur ? Math.round(prixMaxDeal(x.valeur, undefined, undefined, x.taxe_achat) - (encan ? portEff(x.port) : 0)) : null;
   const k3 = (lib, val, cl) => `<span class="sd-k ${cl || ''}"><small>${lib}</small><b>${val}</b></span>`;
   const g = encan && max != null && x.valeur ? profitDeal(x.valeur, max + portEff(x.port), x.taxe_achat) : x.gain;          // encan : a la mise max
+  // 12 nov 2026 (Mathieu : « le score SlabIQ dans le coin, sans prendre trop de place : un joueur en pente descendante n'est pas
+  // un deal ») : ADMIN, le Score SlabIQ du joueur et son sens, en bas a droite de la photo ; le pourquoi dans la fiche
+  const iq = x.iq; if (iq) { S.iqDeals = S.iqDeals || {}; S.iqDeals[x.item_id] = iq; }
   return `<div class="tuile-deal slab-deal ${x.pres ? 'pres' : ''} ${sansV ? 'suivi' : ''}" data-id="${esc(x.item_id)}" ${attrsAnnonce(x)} role="button" tabindex="0">
     <div class="sd-slab"><div class="sd-lab">
         <b class="sd-j">${x.favori ? '<i class="sd-fav">★</i> ' : ''}${esc(nom)}</b>${carte ? `<small class="sd-c">${esc(carte)}</small>` : ''}
         <span class="sd-3">${k3(encan ? tt('Mise', 'Bid') : tt('Prix', 'Price'), argentCourt(prix), 'pr')}${k3(tt('Paie max', 'Pay max'), max != null && !sansV ? argentCourt(max) : '—', 'mx')}${k3(tt('Profit', 'Profit'), g > 0 && !sansV ? '+' + argentCourt(g) : '—', 'g')}</span></div>
       <div class="sd-ph">${SVG_CARTE}${x.photo ? `<img src="${esc(photoNet(x.photo, 400))}" alt="" loading="lazy" decoding="async" data-oe="rm">` : ''}${boutonWatch(x)}
-        ${encan ? `<span class="sd-fin">${icH()}${finDans(x.fin)}</span>` : ''}${x.ramassage ? `<span class="sd-ramp">${icPin()}</span>` : ''}${x.lieu ? drapeau(x.lieu) : ''}${!sansV && (x.valeur_source === 'autre_saison' || x.valeur_source === 'approx') ? `<button class="sd-est" data-est="${esc(x.valeur_source)}" data-est-n="${esc(x.valeur_n || x.n_ventes || '')}">${tt('Estimé', 'Estimated')}</button>` : ''}</div></div>
+        ${encan ? `<span class="sd-fin">${icH()}${finDans(x.fin)}</span>` : ''}${iq ? badgeIQ(iq) : ''}${x.ramassage ? `<span class="sd-ramp">${icPin()}</span>` : ''}${x.lieu ? drapeau(x.lieu) : ''}${!sansV && (x.valeur_source === 'autre_saison' || x.valeur_source === 'approx') ? `<button class="sd-est" data-est="${esc(x.valeur_source)}" data-est-n="${esc(x.valeur_n || x.n_ventes || '')}">${tt('Estimé', 'Estimated')}</button>` : ''}</div></div>
     </div>`;
 }
 // 26 oct 2026 (Mathieu : « encore pas un deal ... une option : l'annonce disparaît et ça nous laisse savoir quoi
@@ -8896,6 +8969,8 @@ async function ouvrirAnnonce(base){
       <div class="fa-t">${esc(a.titre || base.titre || '')}</div>
       ${(a.lieu || base.lieu) ? `<div class="fa-pays">${drapeau(a.lieu || base.lieu)}<span>${tt('Expédiée de : ', 'Ships from: ')}${esc(nomPays(a.lieu || base.lieu))}</span></div>` : ''}
       ${d.titre_corrige ? `<div class="fa-corr">${tt('Titre corrigé', 'Title corrected')} : ${esc(String(d.titre_corrige).replace(/ \(code #([A-Z]+)\)/, ' · code #$1'))} · ${tt('jugée comme la vraie carte', 'judged as the real card')}</div>` : ''}
+      ${(() => { const iq = (S.iqDeals || {})[base.item_id]; if (!iq) return ''; const [lib] = IQ_SENS()[iq.sens] || IQ_SENS().stable;
+        return `<div class="fa-iq ${esc(iq.sens)}">${badgeIQ(iq)}<span><b>SlabIQ · ${esc(lib)}</b><small>${esc(pqIQ(iq))}${iq.risque ? tt(' : prudence si tu revends dans quelques mois', ': careful if you resell in a few months') : ''}</small></span></div>`; })()}
       <div class="fa-3">
         <div class="fa-k"><span>${encan ? tt('Mise actuelle', 'Current bid') : tt('Prix', 'Price')}</span><b>${total ? argent(encan ? Math.max(0, total - port) : total, 0) : '—'}</b><small>${a.ramassage ? tt('ramassage · sans port', 'pickup · no shipping') : a.port_cad != null ? (a.port_cad ? (encan ? '+ ' + argent(port, 0) + (a.port_estime ? tt(' de port (estimé)', ' shipping (est.)') : tt(' de port', ' shipping')) : a.port_estime ? tt('port estimé compris', 'est. shipping incl.') : tt('port compris', 'shipping incl.')) : tt('livraison gratuite', 'free shipping')) : '&nbsp;'}</small></div>
         <div class="fa-k fa-m"><span>${encan ? tt('Mise max', 'Max bid') : tt('Paie max', 'Pay max')}</span>${maxA != null && !tropPetite ? `<b>${argent(maxA, 0)}</b><small>${conn && conn.mise_perso ? tt('choisie par toi', 'set by you') : encan && port ? tt('hors port', 'excl. shipping') : '&nbsp;'}</small>` : `<b>—</b><small>&nbsp;</small>`}</div>
@@ -8991,6 +9066,8 @@ async function ouvrirAnnonce(base){
       <div class="fa-t">${esc(a.titre || base.titre || '')}</div>
       ${(a.lieu || base.lieu) ? `<div class="fa-pays">${drapeau(a.lieu || base.lieu)}<span>${tt('Expédiée de : ', 'Ships from: ')}${esc(nomPays(a.lieu || base.lieu))}</span></div>` : ''}
       ${d.titre_corrige ? `<div class="fa-corr">${tt('Titre corrigé', 'Title corrected')} : ${esc(String(d.titre_corrige).replace(/ \(code #([A-Z]+)\)/, ' · code #$1'))} · ${tt('jugée comme la vraie carte', 'judged as the real card')}</div>` : ''}
+      ${(() => { const iq = (S.iqDeals || {})[base.item_id]; if (!iq) return ''; const [lib] = IQ_SENS()[iq.sens] || IQ_SENS().stable;
+        return `<div class="fa-iq ${esc(iq.sens)}">${badgeIQ(iq)}<span><b>SlabIQ · ${esc(lib)}</b><small>${esc(pqIQ(iq))}${iq.risque ? tt(' : prudence si tu revends dans quelques mois', ': careful if you resell in a few months') : ''}</small></span></div>`; })()}
       <div class="fa-3">
         <div class="fa-k"><span>${encan ? tt('Mise actuelle', 'Current bid') : tt('Prix', 'Price')}</span><b>${total ? argent(encan ? Math.max(0, total - port) : total, 0) : '—'}</b><small>${a.port_cad != null ? (a.port_cad ? '+ ' + argent(port, 0) + tt(' de port', ' shipping') : tt('livraison gratuite', 'free shipping')) : '&nbsp;'}</small></div>
         <div class="fa-k"><span>${tt('Tu paieras', 'You’ll pay')}</span><b>${reel ? argent(reel, 0) : '—'}</b><small>${d.etranger ? tt('avec l’importation', 'with import') : tt('avec les taxes', 'with tax')}</small></div>
