@@ -8679,6 +8679,25 @@ function majChiffresTuile(t, x){
   const g = x.encan && x.mise_max != null && x.valeur ? profitDeal(x.valeur, x.mise_max + portEff(x.port), x.taxe_achat) : x.gain;
   if (b('g')) b('g').textContent = g > 0 ? '+' + argentCourt(g) : '—';
 }
+// 13 nov 2026 (Mathieu : la Gretzky « ≈ 81 $ » sur la tuile ; la fiche a 4 vraies ventes, mediane 67 $, plus un deal ;
+// en sortant, la tuile n'avait pas bouge) : la fiche complete (ventes reelles) corrige la tuile : valeur, mise max,
+// profit, pastille « Estime » ; plus un deal -> la tuile s'en va (le serveur l'a deja retiree pour tout le monde)
+function majTuileValeur(id, d){
+  const x = (S.dealsParId || {})[String(id)], a = d && d.article;
+  if (!x || !d || d.ventes_panne || d.ventes_attente || !d.valeur || !['vendues', 'autre_saison', 'approx', 'inscr_plancher'].includes(d.valeur_source)) return;
+  if (a && a.total) { x.total = a.total; if (a.port_cad != null) x.port = a.port_cad; }
+  x.valeur = d.valeur; x.valeur_source = d.valeur_source;
+  if (x.encan && !x.mise_perso) x.mise_max = Math.round((prixMaxDeal(x.valeur, undefined, undefined, x.taxe_achat) - portEff(x.port)) * 100) / 100;
+  x.gain = d.gain != null ? d.gain : x.gain;
+  const fini = d.deal_retire || (x.encan ? (x.total || 0) - (x.port || 0) > (x.mise_max || 0) + 0.5 : x.total > prixMaxDeal(x.valeur, undefined, undefined, x.taxe_achat) + 0.5);
+  $$(`.tuile-deal[data-id="${CSS.escape(String(id))}"]`).forEach(t => {
+    if (fini) { t.classList.add('sort'); setTimeout(() => t.remove(), 300); return; }
+    majChiffresTuile(t, x);
+    const e = t.querySelector('[data-est]');
+    if (e && !['autre_saison', 'approx'].includes(x.valeur_source)) e.remove();
+  });
+  if (fini) { delete S.dealsParId[String(id)]; MEMO.clear(); GARDE_SAUTER.t = Date.now(); }
+}
 function majTuilePrix(id, d){
   const a = d && d.article, x = (S.dealsParId || {})[String(id)];
   if (!a || !a.total || !x) return;
@@ -8903,6 +8922,7 @@ async function ouvrirAnnonce(base){
   const complet = async () => {
     const d2 = await Promise.race([API.annonce_detail(base.item_id, base.titre, false, base.q || null).catch(() => null),
                                    new Promise(ok => setTimeout(() => ok(null), 55000))]);
+    if (d2) majTuileValeur(base.item_id, d2);              // 13 nov 2026 : la tuile suit la fiche, meme fermee
     if (!ouverte()) return;
     if (d2) { montrer(d2); return; }
     montrer({...(d1 || {article: base}), ventes_attente: false, ventes_lentes: true});

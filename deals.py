@@ -308,9 +308,11 @@ def _bannis():
     return _BANNIS["s"]
 
 
-def corriger(item_id, valeur, gain, total):
+def corriger(item_id, valeur, gain, total, source=None):
     """26 oct 2026 - la fenetre d'une annonce a recalcule sa valeur avec les ventes de la meme carte : pas assez de
-    ventes, ou plus sous 70 % de la valeur, ou pas de profit -> retiree ; sinon sa valeur est mise a jour."""
+    ventes, ou plus sous 70 % de la valeur, ou pas de profit -> retiree ; sinon sa valeur est mise a jour.
+    13 nov 2026 (Mathieu : la Gretzky « ≈ 81 $ » sur la tuile, 4 vraies ventes a 67 $ dans la fiche) : la source suit
+    (une valeur estimee devient une valeur de ventes reelles) et le profit aussi. -> {"trouve", "retire"}"""
     iid = str(item_id)
     d = lire()
     # 30 oct 2026 (Mathieu : « Stankoven : il y a des comps mais le dashboard ne le montre pas ») : l'encan d'un vendeur
@@ -326,7 +328,7 @@ def corriger(item_id, valeur, gain, total):
     l = d.get("deals") or []
     x = next((g for g in l if str(g.get("item_id")) == iid), None)
     if not x:
-        return False
+        return {"trouve": False, "retire": False}
     with _verrou:
         d = lire()
         l = d.get("deals") or []
@@ -336,6 +338,10 @@ def corriger(item_id, valeur, gain, total):
                 if str(g.get("item_id")) == iid:
                     g.update(valeur=valeur, ratio=round(total / valeur, 3) if total else g.get("ratio"),
                              corrige_le=datetime.now(timezone.utc).isoformat(timespec="seconds"))
+                    if source:
+                        g["valeur_source"] = source
+                    if gain is not None:
+                        g["gain"] = gain
                     if g.get("encan"):          # 27 oct 2026 (revue) : la mise max suit la nouvelle valeur
                         g["mise_max"] = round(prix_max(valeur, taxe=taxe_de(g)) - port_eff(g.get("port")), 2)
                         if g["mise_max"] <= (g.get("total") or 0) - (g.get("port") or 0):
@@ -344,7 +350,7 @@ def corriger(item_id, valeur, gain, total):
             d["deals"] = [g for g in l if str(g.get("item_id")) != iid]
             _noter_retires(d, [iid])            # un tour de chasse deja commence ne le remettra pas
         _ecrire(d)
-    return True
+    return {"trouve": True, "retire": retirer}
 
 
 RETIRES_JOURS = 7

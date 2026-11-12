@@ -1,7 +1,7 @@
 # 3 nov 2026 (revue de securite) : versions minimales sans les failles connues (Flask, Werkzeug, gunicorn, Pillow, cryptography)
 # 8 nov 2026 (2e revue, pip-audit) : Flask 3.1.3, Werkzeug 3.1.9, cryptography 50, Pillow 13 (24 failles corrigees dans Pillow 13)
 flask>=3.1.3
-brotli>=1.1
+brotli>=1.2.1                # 13 nov 2026 (Aikido, critique) : CVE-2026-111497, debordement du decodeur corrige dans 1.2.1
 werkzeug>=3.1.9
 gunicorn>=26.2.0            # 9 nov 2026 (Aikido) : HTTP request smuggling corrige
 cryptography>=50.0.0

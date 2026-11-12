@@ -9471,11 +9471,13 @@ class Api:
                     suggere = {"vente": valeur, "achat_max": round(max(0.0, _deals.prix_max(valeur, taxe=_deals.taxe_de(a))), 2), "source": "chasseur"}
             except Exception as e:
                 print("Deals (valeur du chasseur) : " + repr(e), flush=True)
+        corr = None
         if not rapide and total and not panne:
             try:
                 import deals as _dl
                 gain_v = round(_net_rev(valeur) - _paye(total, a), 2) if valeur and juger else None
-                _dl.corriger(item_id, valeur if juger else None, gain_v, total)
+                src_v = "vendues" if vm else saison_v[1] if saison_v else "annonces"
+                corr = _dl.corriger(item_id, valeur if juger else None, gain_v, total, source=src_v)
             except Exception:
                 pass
         if valeur and juger:                     # 5 nov 2026 : la valeur trouvee ici sert aussi a la watchlist (sa mise max)
@@ -9500,7 +9502,7 @@ class Api:
             return {"ok": True, "article": {**a, "total": total}, "comps": [], "n": 0, "coupe": True,
                     "taxe_achat": _deals.taxe_de({**a, "_pays": pays_}), "etranger": _deals.etranger({**a, "_pays": pays_}, pays_),
                     "mes_achats": mes_achats, "deja_achetee": deja_achetee}
-        return {"ok": True, "article": {**a, "total": total}, "comps": comps, "mediane": med, "n": n, "deal_retire": bool(maj_deal and maj_deal.get("retire")),
+        return {"ok": True, "article": {**a, "total": total}, "comps": comps, "mediane": med, "n": n, "deal_retire": bool(maj_deal and maj_deal.get("retire")) or bool(isinstance(corr, dict) and corr.get("retire")),
                 "suggere": suggere, "ventes": ventes, "mediane_vendue": None if saison_v else vc.get("mediane"),
                 "nb_vendues": len(ventes) if saison_v else vc.get("nb") or len(ventes),
                 "valeur": valeur, "valeur_source": "chasseur" if chasseur else "vendues" if vm else saison_v[1] if saison_v else "annonces",
