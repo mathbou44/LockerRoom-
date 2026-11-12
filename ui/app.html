@@ -2174,7 +2174,13 @@ button.btn-scan{border:none; font:inherit; font-weight:700}
 .md-vend{margin-top:18px} .md-vend .v-rang-t b{display:inline-flex; align-items:center; gap:8px}
 .fd-vs{display:grid; gap:8px; margin-top:6px}
 .md-tete{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin:4px 0 12px} .md-tete b{display:block; font-size:20px} .md-tete .btn{width:auto; flex-shrink:0} .md-f{margin-bottom:12px} .md-vide ol{text-align:left; margin:10px auto 0; max-width:340px; line-height:1.6} .md-gerer{text-align:center; margin:16px 0} .j-tend{margin-top:6px}
-.adm-vue{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:6px 0 4px} .adm-vue > span{font-weight:700; font-size:13px; opacity:.75}
+.adm-vue{display:flex; flex-direction:column; gap:8px; margin:10px 0 18px} .adm-vue > span{font:700 13px var(--f-cond); letter-spacing:.14em; text-transform:uppercase; color:var(--doux)}
+/* 13 nov 2026 (Mathieu : « tout est pogne en haut pour changer entre les abonnements ») : 3 pastilles larges et aerees */
+#adm-o{display:flex; flex-wrap:nowrap; overflow-x:auto; gap:6px; width:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch} #adm-o::-webkit-scrollbar{display:none} #adm-o button{flex:none; white-space:nowrap; padding:10px 16px}
+.adm-vp{display:grid; grid-template-columns:repeat(3, 1fr); gap:8px}
+.adm-vp button{display:flex; flex-direction:column; align-items:center; gap:2px; padding:12px 6px; border-radius:18px; border:1.5px solid var(--ligne); background:var(--carte2); color:var(--doux); cursor:pointer; transition:all .15s}
+.adm-vp button b{font:800 17px var(--f-cond); letter-spacing:.06em; text-transform:uppercase} .adm-vp button small{font-size:11.5px}
+.adm-vp button.on{color:var(--texte); border-color:var(--acc); background:color-mix(in srgb, var(--acc) 18%, var(--carte2)); box-shadow:0 0 0 3px color-mix(in srgb, var(--acc) 18%, transparent)}
 .vue-simulee{position:fixed; z-index:9999; left:50%; transform:translateX(-50%); top:calc(env(safe-area-inset-top,0px) + 8px); display:flex; align-items:center; gap:10px; padding:8px 8px 8px 14px; border-radius:999px; border:1px solid rgba(241,213,142,.6); background:#1E1A10; color:#F1D58E; font:700 13px 'Barlow',system-ui,sans-serif; box-shadow:0 8px 24px rgba(0,0,0,.5)} .vue-simulee b{padding:5px 11px; border-radius:999px; background:#F1D58E; color:#1E1A10}
 .v-fiche{margin-top:6px; padding:16px; border-radius:18px; background:var(--carte,#151519); border:1px solid var(--ligne,#2B2A32)} .vf-t{font-weight:800; font-size:13px; letter-spacing:.06em; text-transform:uppercase; opacity:.7; margin-bottom:10px} .vf-p{display:flex; flex-wrap:wrap; gap:8px} .vf-p .capsule{font-size:15px; padding:8px 14px} .v-fiche .lien-doux{margin-top:12px} .vf-note{text-align:center; margin:14px 0 4px}
 .nav-alertes{display:none !important; position:relative} .cloche-n{min-width:18px; height:18px; border-radius:9px; background:var(--acc); color:var(--acc-texte); font-size:11px; font-weight:800; display:inline-flex; align-items:center; justify-content:center; padding:0 5px; margin-left:auto}
@@ -14367,7 +14373,7 @@ async function vueAdmin(onglet){
   const pastille = (n) => n ? ` <span class="adm-n">${n}</span>` : '';
   V().innerHTML = `<section class="ecran large admin">
     <div class="entete"><div class="titre">Admin</div><span class="sous">${esc(r.version)}</span></div>
-    <div class="adm-vue"><span>${tt('Voir l’app comme', 'View the app as')}</span><div class="seg" id="adm-vue">${[['admin', 'Admin'], ['pro', 'Pro'], ['gratuit', tt('Gratuit', 'Free')]].map(([v, l]) => `<button data-v="${v}" class="${v === 'admin' ? 'on' : ''}">${l}</button>`).join('')}</div></div>
+    <div class="adm-vue"><span>${tt('Voir l’app comme', 'View the app as')}</span><div class="adm-vp" id="adm-vue">${[['admin', 'Admin', tt('tout', 'everything')], ['pro', 'Pro', tt('abonné', 'subscriber')], ['gratuit', tt('Gratuit', 'Free'), tt('compte de base', 'basic account')]].map(([v, l, d]) => `<button data-v="${v}" class="${v === ((S.forfait || {}).vue || 'admin') ? 'on' : ''}"><b>${l}</b><small>${d}</small></button>`).join('')}</div></div>
     <div class="hero-l adm-kpi">
       <div class="kpi"><span class="lib">${tt('Revenu / mois', 'Revenue / mo')}</span><span class="v vert">${a.revenu_mensuel == null ? '—' : argentCourt(a.revenu_mensuel)}</span><span class="s">${a.pro} Pro · ${a.offert} ${tt('offerts', 'gifted')}</span></div>
       <div class="kpi acc"><span class="lib">${tt('Comptes', 'Accounts')}</span><span class="v">${a.total}</span><span class="s">+${a.nouveaux_7j} ${tt('cette semaine', 'this week')} · ${a.essai} ${tt('en essai', 'on trial')}</span></div>
