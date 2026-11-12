@@ -8994,7 +8994,7 @@ async function feuilleTestIQ(){
     const RP = {toujours_stable: tt('toujours « stable »', 'always “stable”'), toujours_baisse: tt('toujours « baisse »', 'always “down”'), toujours_hausse: tt('toujours « hausse »', 'always “up”'), elan_naif: tt('l’élan continue', 'momentum continues')};
     const prin = x.precision_alertes != null ? x.precision_alertes : (M ? M.precision : null);
     const sousB = x.precision_alertes != null
-      ? `${x.alertes} ${tt('alertes', 'alerts')} · ${tt('couvre', 'covers')} ${pc(x.couverture)} ${tt('des mouvements', 'of moves')}`
+      ? `${x.alertes} ${tt('alertes', 'alerts')} ${tt('au seuil', 'at threshold')} ${pc(x.seuil)}${x.seuil_mode === 'meilleur' ? ' (' + tt('le plus sûr, choisi avant le test', 'the surest, chosen before the test') + ')' : ''} · ${tt('couvre', 'covers')} ${pc(x.couverture)} ${tt('des mouvements', 'of moves')}`
       : (M ? `${tt('au mieux', 'at best')} · ${M.alertes} ${tt('alertes', 'alerts')} ${tt('au seuil', 'at threshold')} ${pc(M.seuil)} · ${tt('aucun seuil fiable à 95 % pour l’instant', 'no reliable 95% threshold yet')}` : tt('aucune alerte', 'no alerts'));
     const mois = R.ventes_mois || [], mxM = Math.max(1, ...mois.map(m => m[1]));
     const crb = (R.courbe || []).filter(c => [0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.97, 0.99].some(v => Math.abs(v - c.seuil) < 1e-6));

@@ -33,7 +33,7 @@ from datetime import date, datetime, timedelta
 HORIZON_J = 28
 SEUIL = math.log(1.10)
 VENTES_MIN = 6
-JOUEURS_MAX = 400
+JOUEURS_MAX = 1000         # 12 nov 2026 : 400 -> 1000, plus de semaines pour apprendre (Wikipedia et LNH en cache)
 CIBLE_PRECISION = 0.95
 UA = "SlabCoach/1.0 (+https://www.slabcoach.com; contact via site)"
 _ETAT = {"en_cours": False, "etape": None, "debut": None}
@@ -415,7 +415,15 @@ def executer(joueurs_max=JOUEURS_MAX):
     p_ch, y_ch = [p for _i, p in choix], [y[i] for i, _p in choix]
     p_te, y_te = [p for _i, p in test], [y[i] for i, _p in test]
     seuil = _precision_seuil(p_ch, y_ch, classes)
+    seuil_mode = "95" if seuil is not None else None
+    if seuil is None:
+        # 12 nov 2026 : aucun seuil a 95 % sur la premiere moitie -> le plus sur qui garde au moins 8 alertes, choisi AVANT
+        # de regarder le test (le chiffre affiche reste honnete)
+        c_ch = [c for c in _courbe(p_ch, y_ch, classes) if c["alertes"] >= 8]
+        if c_ch:
+            seuil, seuil_mode = max(c_ch, key=lambda c: (c["precision"], -c["seuil"]))["seuil"], "meilleur"
     res = _mesure(p_te, y_te, classes, seuil)
+    res["seuil_mode"] = seuil_mode
     courbe = _courbe(p_te, y_te, classes)
     meilleur = max((c for c in courbe if c["alertes"] >= 8), key=lambda c: (c["precision"], c["alertes"]), default=None)
     maj = max(set(y_te), key=y_te.count)
