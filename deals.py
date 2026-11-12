@@ -1009,7 +1009,29 @@ def _valeur_approx(a, ventes, cib=None, notes=False):
 
 def valeur_ou_saison(a, ventes, actives, cib=None):
     """La valeur de la carte (ses propres ventes) ; sinon celle des saisons voisines (valeur_autre_saison), dite comme telle."""
-    return valeur_annonce(a, ventes, actives, cib=cib) or valeur_autre_saison(a, ventes, cib=cib) or valeur_approx(a, ventes, cib=cib)
+    return valeur_annonce(a, ventes, actives, cib=cib) or valeur_autre_saison(a, ventes, cib=cib) or valeur_approx(a, ventes, cib=cib) \
+        or valeur_unique(a, ventes, cib=cib)
+
+
+UNIQUE_SERIE_MAX = 25            # 12 nov 2026 : une carte numerotee /25 ou moins...
+UNIQUE_PRUDENCE = 0.75           # ... avec UNE seule vente d'un an : 75 % de cette vente, dite « estimee »
+
+
+def valeur_unique(a, ventes, cib=None):
+    """12 nov 2026 (Mathieu : la Hasek Premier Focus Auto Gold /15 : 2 ventes en 9 mois, une seule retrouvee) : un hit tres
+    rare (/25 et moins, auto ou patch) se vend parfois une fois par an. Sa seule vente de l'annee (meme carte, pas un numero
+    special, pas abimee) donne une valeur PRUDENTE (75 %), toujours affichee « estimee ». -> (valeur, « unique », 1, [vente])."""
+    import cartes_match
+    cib = cib or cartes_match.cible_titre(a.get("titre") or "")
+    if not (cib.get("serie") and cib["serie"] <= UNIQUE_SERIE_MAX and (cib.get("auto") or cib.get("patch"))):
+        return None
+    titre = a.get("titre") or ""
+    pv = [v for v in memes_ventes(cib, ventes) if _jours(v) <= JOURS_MAX_HITS and not cartes_match.abimee(v.get("titre") or "")
+          and (cartes_match.serie_speciale(titre) or not cartes_match.serie_speciale(v.get("titre") or ""))]
+    if len(pv) != 1:
+        return None
+    v = pv[0]
+    return round(float(v["prix"]) * UNIQUE_PRUDENCE, 2), "unique", 1, [{k: v.get(k) for k in ("titre", "prix", "le", "photo", "url")}]
 
 
 def _diag(d, **k):
@@ -1351,6 +1373,19 @@ def _cle_nom(n):
 
 VERIF_TARD_H = 30                # 27 oct 2026 : un encan de hit qui finit dans 6 a 30 h est verifie a la fin du tour, s'il reste du budget
 HIT_MIN = 25.0                   # 27 oct 2026 : un hit (auto, patch, numerotee /99 et moins) de 25 $ et plus (port compris) vaut une verification
+
+
+def _cle_historique(t):
+    """12 nov 2026 : l'ordre des recherches d'historique (CompSniper, quelques-unes par jour) : les plus rares d'abord (/25 et
+    moins), les autos, puis le meilleur joueur (Indice SlabIQ), puis celui qui finit le plus tot."""
+    x, cib = t[0], t[1]
+    serie = cib.get("serie") or 9999
+    try:
+        import indice_joueurs
+        ij = (indice_joueurs.indice(cib.get("joueur") or "") or {}).get("indice") or 0
+    except Exception:
+        ij = 0
+    return (0 if serie <= 25 else 1 if serie <= 99 else 2, 0 if cib.get("auto") else 1, -ij, str(x.get("fin") or ""))
 
 
 def _hit(cib):
@@ -3088,7 +3123,7 @@ def valoriser_suivis(rechercher=None, n_max=None):
     a_faire = [x for x in d.get("suivis") or [] if not x.get("valeur") and _prio(x) and encore_ouvert(x)]
     a_faire.sort(key=lambda x: (rang_ordre(x.get("vendeur")), str(x.get("fin") or "")))
     jour, heure = _jour_mtl()
-    trouves, faites, n = {}, set(), 0
+    trouves, faites, n, hist_c = {}, set(), 0, []
     for x in a_faire:
         if n >= n_max:
             break
@@ -3116,19 +3151,57 @@ def valoriser_suivis(rechercher=None, n_max=None):
             if va:
                 trouves[str(y.get("item_id"))] = va
         # 7 nov 2026 (Mathieu : « enclenche le tout rapidement, plusieurs encheres finissent bientot ») : un hit qui finit
-        # dans 12 h, toujours sans valeur avec les 90 jours d'eBay -> l'historique d'un an (CompSniper, budget du jour)
+        # dans 12 h, toujours sans valeur avec les 90 jours d'eBay -> l'historique d'un an.
+        # 12 nov 2026 (Mathieu : la Hasek Premier Focus Auto Gold /15 de Savage, 92 $, ses 2 ventes a 328 $ et 427 $ datent de
+        # fevrier : « garanti qu'on devrait la pogner ») : d'abord NOS archives d'un an (gratuites), puis CompSniper ; et le peu
+        # de recherches CompSniper du jour va aux hits les plus prometteurs (les plus rares, les autos, les meilleurs joueurs),
+        # plus aux premiers venus
         if str(x.get("item_id")) not in trouves and _hit(cib):
             try:
                 f_ = datetime.fromisoformat(str(x.get("fin")).replace("Z", "+00:00"))
-                import historique
-                if historique.actif() and f_ - maint <= timedelta(hours=12):
-                    hv = historique.carte(cib, chasseur=True)
-                    if hv:
-                        va = valeur_ou_saison(x, list(v) + hv, [], cib=cib)
-                        if va:
-                            trouves[str(x.get("item_id"))] = va
+                if f_ - maint <= timedelta(hours=12):
+                    av = vendues.archives(cib, jours=JOURS_MAX_HITS)
+                    va = valeur_ou_saison(x, list(v) + av, [], cib=cib) if av else None
+                    if va:
+                        trouves[str(x.get("item_id"))] = va
+                    else:
+                        hist_c.append((x, cib, list(v) + list(av or [])))
             except Exception as e:
-                print("Historique (encans proches) : " + repr(e), flush=True)
+                print("Archives (encans proches) : " + repr(e), flush=True)
+    # 12 nov 2026 (Mathieu : une Caufield Emerald Surge Auto 1/10 PSA 8 « estimee » 388 $ d'apres des Pink : ses vraies ventes,
+    # 1 100 a 1 334 $, datent d'avril a juillet, hors des 90 jours d'eBay) : une carte RARE (/25 et moins) qui n'a qu'une valeur
+    # estimee (autres cartes, autre saison) passe aussi par l'historique d'un an, pour trouver ses vraies ventes
+    for g in d.get("suivis") or []:
+        if not (g.get("valeur") and g.get("valeur_source") in ("approx", "autre_saison") and _prio(g) and encore_ouvert(g)):
+            continue
+        c_ = cartes_match.cible_titre(g.get("titre") or "")
+        try:
+            f_ = datetime.fromisoformat(str(g.get("fin")).replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if c_.get("serie") and c_["serie"] <= UNIQUE_SERIE_MAX and f_ - maint <= timedelta(hours=12):
+            q_ = (cartes_match.requete_ebay(c_) or "").strip()
+            av = vendues.archives(c_, jours=JOURS_MAX_HITS)
+            base_ = list(vendues.en_cache(q_) or []) + list(av or [])
+            va = valeur_annonce(g, base_, [], cib=c_) or valeur_unique(g, base_, cib=c_)
+            if va:
+                trouves[str(g.get("item_id"))] = va
+            else:
+                hist_c.append((g, c_, base_))
+    try:
+        import historique
+        if hist_c and historique.actif():
+            hist_c.sort(key=_cle_historique)
+            for x, cib, deja in hist_c:
+                if str(x.get("item_id")) in trouves:
+                    continue
+                hv = historique.carte(cib, chasseur=True)        # s'arrete tout seul au budget du jour (liste vide)
+                if hv:
+                    va = valeur_ou_saison(x, deja + hv, [], cib=cib)
+                    if va and not (x.get("valeur") and va[1] not in ("vendues", "unique")):
+                        trouves[str(x.get("item_id"))] = va
+    except Exception as e:
+        print("Historique (encans proches) : " + repr(e), flush=True)
     # 31 oct 2026 (Mathieu : « la barre ne bouge pas ») : les encans dont les ventes ont ete cherchees comptent comme analyses
     analyses = [str(y.get("item_id")) for y in a_faire
                 if (cartes_match.requete_ebay(cartes_match.cible_titre(y.get("titre") or "")) or "").strip() in faites]
@@ -3137,8 +3210,9 @@ def valoriser_suivis(rechercher=None, n_max=None):
             d = lire()
             for g in d.get("suivis") or []:
                 va = trouves.get(str(g.get("item_id")))
-                if va and not g.get("valeur"):
-                    g.update(valeur=va[0], n=va[2], vendues=va[3], mise_max=round(prix_max(va[0], taxe=taxe_de(g)) - port_eff(g.get("port")), 2))
+                if va and (not g.get("valeur") or (g.get("valeur_source") in ("approx", "autre_saison") and va[1] in ("vendues", "unique"))):
+                    g.update(valeur=va[0], n=va[2], vendues=va[3], valeur_source=va[1],
+                             mise_max=round(prix_max(va[0], taxe=taxe_de(g)) - port_eff(g.get("port")), 2))
             cov = d.get("prio_couverture")
             if cov and analyses:
                 if cov.get("ids"):                  # 7 nov : chaque carte comptee une fois, le detail par vendeur suit

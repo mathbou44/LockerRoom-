@@ -3721,7 +3721,13 @@ html.tel-large .fen.fa .fen-img{max-height:calc(46vh / 1.12) !important}
     border:2px solid transparent !important; background:linear-gradient(#1A1A21, #1A1A21) padding-box, var(--prisme) border-box !important;
     stroke:#F4F2EE !important; color:#F4F2EE !important; box-shadow:none !important; filter:none !important}
   body .onglets a.centre.on svg{background:linear-gradient(color-mix(in srgb, var(--acc) 24%, #1A1A21), color-mix(in srgb, var(--acc) 24%, #1A1A21)) padding-box, var(--prisme) border-box !important}
-  body .onglets a.centre{color:var(--texte) !important; font-weight:700 !important; gap:2px !important}
+  body .onglets a.centre{color:var(--texte) !important; font-weight:700 !important}
+  /* 12 nov 2026 (Mathieu : « les options de la barre n'ont pas l'air toutes egales ») : tous les noms sur la MEME ligne (en bas),
+     les icones juste au-dessus ; seules la pastille Vendre et le logo du profil sont plus gros, sans decaler leur nom */
+  body .onglets a, body .onglets a.on, body .onglets a.centre, body .onglets a.centre.on{justify-content:flex-end !important; padding:0 0 8px !important; gap:4px !important}
+  body .onglets a > svg{width:24px !important; height:24px !important; margin:0 !important}
+  body .onglets a.centre > svg, body:not(.mode-acheteur) .onglets a.centre > svg, body.mode-acheteur .onglets a.centre > svg{width:20px !important; height:20px !important; padding:7px !important; margin:0 0 -1px !important}
+  body .onglets .nav-moi .moi-av{width:28px !important; height:28px !important; margin:0 !important}
 }
 /* 2. les pastilles numerotees et les petites icones rondes : l'anneau prisme */
 .conseils-ph li{border-radius:18px; padding:10px 14px 10px 10px; min-height:54px; font-size:15.5px; color:var(--texte)}
@@ -8131,7 +8137,7 @@ function tuileDeal(x){
         <b class="sd-j">${x.favori ? '<i class="sd-fav">★</i> ' : ''}${esc(nom)}</b>${carte ? `<small class="sd-c">${esc(carte)}</small>` : ''}
         <span class="sd-3">${k3(encan ? tt('Mise', 'Bid') : tt('Prix', 'Price'), argentCourt(prix), 'pr')}${k3(tt('Paie max', 'Pay max'), max != null && !sansV ? argentCourt(max) : '—', 'mx')}${k3(tt('Profit', 'Profit'), g > 0 && !sansV ? '+' + argentCourt(g) : '—', 'g')}</span></div>
       <div class="sd-ph">${SVG_CARTE}${x.photo ? `<img src="${esc(photoNet(x.photo, 400))}" alt="" loading="lazy" decoding="async" data-oe="rm">` : ''}
-        ${encan ? `<span class="sd-fin">${icH()}${finDans(x.fin)}</span>` : ''}${iq ? badgeIQ(iq) : ''}${x.ramassage ? `<span class="sd-ramp">${icPin()}</span>` : ''}${x.lieu ? drapeau(x.lieu) : ''}${!sansV && (x.valeur_source === 'autre_saison' || x.valeur_source === 'approx') ? `<button class="sd-est" data-est="${esc(x.valeur_source)}" data-est-n="${esc(x.valeur_n || x.n_ventes || '')}">${tt('Estimé', 'Estimated')}</button>` : ''}</div></div>
+        ${encan ? `<span class="sd-fin">${icH()}${finDans(x.fin)}</span>` : ''}${iq ? badgeIQ(iq) : ''}${x.ramassage ? `<span class="sd-ramp">${icPin()}</span>` : ''}${x.lieu ? drapeau(x.lieu) : ''}${!sansV && (x.valeur_source === 'autre_saison' || x.valeur_source === 'approx' || x.valeur_source === 'unique') ? `<button class="sd-est" data-est="${esc(x.valeur_source)}" data-est-n="${esc(x.valeur_n || x.n_ventes || '')}">${tt('Estimé', 'Estimated')}</button>` : ''}</div></div>
     </div>`;
 }
 // 26 oct 2026 (Mathieu : « encore pas un deal ... une option : l'annonce disparaît et ça nous laisse savoir quoi
@@ -8903,7 +8909,7 @@ function majChiffresTuile(t, x){
 // profit, pastille « Estime » ; plus un deal -> la tuile s'en va (le serveur l'a deja retiree pour tout le monde)
 function majTuileValeur(id, d){
   const x = (S.dealsParId || {})[String(id)], a = d && d.article;
-  if (!x || !d || d.ventes_panne || d.ventes_attente || !d.valeur || !['vendues', 'autre_saison', 'approx', 'inscr_plancher'].includes(d.valeur_source)) return;
+  if (!x || !d || d.ventes_panne || d.ventes_attente || !d.valeur || !['vendues', 'autre_saison', 'approx', 'inscr_plancher', 'unique'].includes(d.valeur_source)) return;
   if (a && a.total) { x.total = a.total; if (a.port_cad != null) x.port = a.port_cad; }
   x.valeur = d.valeur; x.valeur_source = d.valeur_source;
   if (x.encan && !x.mise_perso) x.mise_max = Math.round((prixMaxDeal(x.valeur, undefined, undefined, x.taxe_achat) - portEff(x.port)) * 100) / 100;
@@ -8913,7 +8919,7 @@ function majTuileValeur(id, d){
     if (fini) { t.classList.add('sort'); setTimeout(() => t.remove(), 300); return; }
     majChiffresTuile(t, x);
     const e = t.querySelector('[data-est]');
-    if (e && !['autre_saison', 'approx'].includes(x.valeur_source)) e.remove();
+    if (e && !['autre_saison', 'approx', 'unique'].includes(x.valeur_source)) e.remove();
   });
   if (fini) { delete S.dealsParId[String(id)]; MEMO.clear(); GARDE_SAUTER.t = Date.now(); }
 }
@@ -8975,7 +8981,7 @@ async function ouvrirAnnonce(base){
     // 6 nov 2026 (Mathieu : « les mises sont hautes vis-a-vis la mediane des last sold ») : la fiche vient de relire les
     // ventes reelles de CETTE carte : c'est elles qui comptent (la tuile pouvait garder une valeur plus vieille, plus haute).
     // Les chiffres de la tuile ne servent que si la fiche n'a pas pu relire les ventes.
-    const frais_ = !!(d.valeur && ['vendues', 'autre_saison', 'approx', 'inscr_plancher'].includes(d.valeur_source) && !d.ventes_panne && !d.ventes_attente);
+    const frais_ = !!(d.valeur && ['vendues', 'autre_saison', 'approx', 'inscr_plancher', 'unique'].includes(d.valeur_source) && !d.ventes_panne && !d.ventes_attente);
     const conn = !frais_ && x0 && x0.mise_max != null && x0.valeur ? x0 : null;
     if (conn && d.valeur !== conn.valeur && total) {
       d = Object.assign({}, d, {valeur: conn.valeur, nb_vendues: conn.n || d.nb_vendues, valeur_source: d.valeur_source || 'vendues',
@@ -9028,7 +9034,7 @@ async function ouvrirAnnonce(base){
       ${d.valeur_source === 'autre_saison' ? `<div class="fa-pils"><span class="capsule or" style="white-space:normal; line-height:1.3">${tt(`Pas de comps pour la ${esc(d.saison_carte || 'saison')} : estimé avec ${esc((d.saisons || []).join(', '))}`, `No comps for the ${esc(d.saison_carte || 'season')}: estimated from ${esc((d.saisons || []).join(', '))}`)}</span></div>` : ''}
       ${ventes.length && d.ventes_attente ? barreProg(S.fenT0, 25, tt('Ventes déjà connues · mise à jour…', 'Known sales · updating…'), 'mince') : ''}
       ${blocMesAchats(d.mes_achats, d.deja_achetee, d.mes_retirees, d.valeur)}
-      <div class="fa-ventes">${ventes.length ? `<div class="fa-vt">${d.valeur_source === 'inscr_plancher' && d.valeur ? tt('Au moins ', 'At least ') + `<b class="fa-med">${argent(d.valeur, 0)}</b>` : (d.valeur_source === 'autre_saison' || d.valeur_source === 'approx') && d.valeur ? tt('Estimé ', 'Estimated ') + `<b class="fa-med">${argent(d.valeur, 0)}</b>` : d.valeur ? tt('Se vend ', 'Sells for ') + `<b class="fa-med">${argent(d.valeur, 0)}</b>` : tt('Vendues récemment', 'Recently sold')} <small>${d.valeur_source === 'inscr_plancher' ? tt(`plancher · ${d.nb_vendues} ventes sans inscription · glisse ›`, `floor · ${d.nb_vendues} sales without inscription · swipe ›`) : d.valeur_source === 'approx' ? tt(`≈ cartes similaires · ${d.nb_vendues} ventes, −25 % · glisse ›`, `≈ similar cards · ${d.nb_vendues} sales, −25% · swipe ›`) : d.valeur_source === 'autre_saison' ? tt(`cartes similaires · ${d.nb_vendues} vente${d.nb_vendues > 1 ? 's' : ''}, −20 % · glisse ›`, `similar cards · ${d.nb_vendues} sale${d.nb_vendues > 1 ? 's' : ''}, −20% · swipe ›`) : d.valeur && ventes.length && ventes.every(v => !v.prix || v.prix > d.valeur * 1.02) ? tt(`${d.nb_vendues || ventes.length} ventes seulement : −10 % sur la plus basse · glisse ›`, `only ${d.nb_vendues || ventes.length} sales: −10% off the lowest · swipe ›`) : d.valeur && d.nb_vendues ? tt(`médiane de ${d.nb_vendues} ventes · glisse ›`, `median of ${d.nb_vendues} sales · swipe ›`) : tt('même carte · glisse ›', 'same card · swipe ›')}</small></div>
+      <div class="fa-ventes">${ventes.length ? `<div class="fa-vt">${d.valeur_source === 'inscr_plancher' && d.valeur ? tt('Au moins ', 'At least ') + `<b class="fa-med">${argent(d.valeur, 0)}</b>` : (d.valeur_source === 'autre_saison' || d.valeur_source === 'approx' || d.valeur_source === 'unique') && d.valeur ? tt('Estimé ', 'Estimated ') + `<b class="fa-med">${argent(d.valeur, 0)}</b>` : d.valeur ? tt('Se vend ', 'Sells for ') + `<b class="fa-med">${argent(d.valeur, 0)}</b>` : tt('Vendues récemment', 'Recently sold')} <small>${d.valeur_source === 'inscr_plancher' ? tt(`plancher · ${d.nb_vendues} ventes sans inscription · glisse ›`, `floor · ${d.nb_vendues} sales without inscription · swipe ›`) : d.valeur_source === 'unique' ? tt('une seule vente en un an, −25 % · glisse ›', 'only one sale in a year, −25% · swipe ›') : d.valeur_source === 'approx' ? tt(`≈ cartes similaires · ${d.nb_vendues} ventes, −25 % · glisse ›`, `≈ similar cards · ${d.nb_vendues} sales, −25% · swipe ›`) : d.valeur_source === 'autre_saison' ? tt(`cartes similaires · ${d.nb_vendues} vente${d.nb_vendues > 1 ? 's' : ''}, −20 % · glisse ›`, `similar cards · ${d.nb_vendues} sale${d.nb_vendues > 1 ? 's' : ''}, −20% · swipe ›`) : d.valeur && ventes.length && ventes.every(v => !v.prix || v.prix > d.valeur * 1.02) ? tt(`${d.nb_vendues || ventes.length} ventes seulement : −10 % sur la plus basse · glisse ›`, `only ${d.nb_vendues || ventes.length} sales: −10% off the lowest · swipe ›`) : d.valeur && d.nb_vendues ? tt(`médiane de ${d.nb_vendues} ventes · glisse ›`, `median of ${d.nb_vendues} sales · swipe ›`) : tt('même carte · glisse ›', 'same card · swipe ›')}</small></div>
         <div class="fv-car fa-car">${ventes.map(k => `<a class="fv" ${k.url ? `href="${esc(urlSure(k.url))}" target="_blank" rel="noopener"` : ''}><div class="fv-ph">${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo, 300))}" alt="" loading="lazy" data-oe="rm">` : ''}</div>
           <b>${argent(k.prix, 0)}</b><small>${k.couleurs ? `<i class="fv-pc">${k.couleurs >= 5 ? tt('logo/tag', 'logo/tag') : k.couleurs + ' ' + tt('coul.', 'col.')}</i> ` : ''}${k.saison ? esc(k.saison) + ' · ' : ''}${k.note ? esc(k.note) + ' · ' : ''}${k.le ? dateCourte(k.le) : ''}</small></a>`).join('')}</div>
         ${d.patch && d.patch.couleurs ? `<div class="fa-patch"><b>${tt('Patch', 'Patch')} ${d.patch.couleurs >= 5 ? tt('logo / tag', 'logo / tag') : d.patch.couleurs + ' ' + tt(d.patch.couleurs > 1 ? 'couleurs' : 'couleur', d.patch.couleurs > 1 ? 'colors' : 'color')}</b> · ${Math.abs(d.patch.ratio - 1) >= 0.03 ? tt(`ventes ramenées à cette patch (${d.patch.ratio > 1 ? '+' : '−'}${Math.round(Math.abs(d.patch.ratio - 1) * 100)} %)`, `sales adjusted to this patch (${d.patch.ratio > 1 ? '+' : '−'}${Math.round(Math.abs(d.patch.ratio - 1) * 100)}%)`) : tt('comme les ventes', 'like the sales')}</div>` : ''}`

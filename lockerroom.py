@@ -9396,11 +9396,24 @@ class Api:
         q = (cartes_match.requete_ebay(cib) or "").strip()
         ventes = vendues.en_cache(q) if q else None
         cherche = False
-        if ventes is None and chercher and q:
-            r_v = vendues.rechercher(q, fond=False, usage="prio")
-            ventes, cherche = r_v.get("ventes") or [], True
-            if r_v.get("erreur"):
-                etape(False, "Recherche des ventes : " + str(r_v["erreur"]))
+        if chercher and q:
+            if ventes is None:
+                r_v = vendues.rechercher(q, fond=False, usage="prio")
+                ventes, cherche = r_v.get("ventes") or [], True
+                if r_v.get("erreur"):
+                    etape(False, "Recherche des ventes : " + str(r_v["erreur"]))
+            # 12 nov 2026 : eBay ne garde que 90 jours ; nos archives et l'historique d'un an (CompSniper) pour les cartes rares
+            if len(_dl.memes_ventes(cib, ventes or [])) < 2:
+                plus = list(vendues.archives(cib, jours=_dl.JOURS_MAX_HITS) or [])
+                try:
+                    import historique
+                    if historique.actif():
+                        plus += list(historique.carte(cib) or [])
+                except Exception:
+                    pass
+                if plus:
+                    ventes = list(ventes or []) + plus
+                    etape(True, f"Ventes de plus de 90 jours ajoutées (archives, historique d’un an) : {len(plus)}")
         etape(ventes is not None, (f"Ventes en mémoire pour « {q} » : {len(ventes)}" + (" (cherchées maintenant)" if cherche else ""))
               if ventes is not None else f"Aucune vente en mémoire pour « {q} » : la valeur attend une recherche (budget du jour)")
         va = _dl.valeur_ou_saison({"titre": x["titre"], "item_id": iid}, ventes or [], [], cib=cib) if ventes else None
@@ -9421,7 +9434,7 @@ class Api:
         bloque = next((e["t"] for e in E[2:] if not e["ok"]), None)
         return {"ok": True, "item_id": iid, "titre": x["titre"], "vendeur": x["vendeur"], "mise": mise, "valeur": valeur, "mise_max": mm,
                 "q": q, "etapes": E, "verdict": bloque or ("Elle devrait être dans le Radar au prochain tour" if valeur else "Elle attend sa valeur"),
-                "peut_chercher": ventes is None and bool(q)}
+                "peut_chercher": not valeur and bool(q) and not chercher}
 
     IQ_BAISSE_PTS = 8.0          # l'Indice qui perd 8 points en ~4 semaines : une pente descendante
     IQ_PREV_RANG = 0.15          # une prevision du modele parmi ses 15 % les plus sures
