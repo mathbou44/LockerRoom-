@@ -1612,7 +1612,8 @@ class Api:
         return {"ok": True, "abonnes": {k: v for k, v in a.items() if k != "comptes"},
                 "demandes": {"ouvertes": dm["ouvertes"], "nouvelles": dm["nouvelles"]},
                 "a_ajouter": len(nouveaux_produits.liste()), "erreurs_24h": sum(1 for e in s["erreurs"] if str(e["le"]) > (datetime.now() - timedelta(days=1)).isoformat()),
-                "ebay": s["ebay"], "version": s["version"], "vendues": vendues.statut(), "photos": s.get("photos"),
+                "ebay": s["ebay"], "version": s["version"], "version_app": s.get("version_app"), "demarre_le": s.get("demarre_le"),
+                "en_ligne_h": s.get("en_ligne_h"), "vendues": vendues.statut(), "photos": s.get("photos"),
                 "taches": s.get("taches"), "disque": s.get("disque"), "veille": self._veille_resume(),
                 "demande_legale": self._demande_legale_statut(), "banc": self._banc_resume(), "highlightly": self._highlightly_statut(), "indice": self._indice_statut(), "score_slab": self._score_statut(),
                 "types_cartes": self._types_statut()}

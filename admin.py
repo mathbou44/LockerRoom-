@@ -136,6 +136,9 @@ def _maj_fichier(nom, cle="maj"):
         return None
 
 
+VERSION_APP = "v244"            # 12 nov 2026 : la version montree dans l'admin (a monter a chaque livraison)
+
+
 def sante():
     import appels_ebay
     import comptes
@@ -182,7 +185,34 @@ def sante():
         taches["ventes_communaute"] = vc.get("maj")
     except Exception:
         vc = None
-    return {"version": (os.environ.get("RENDER_GIT_COMMIT") or "")[:7] or "PC",
+    # 12 nov 2026 (Mathieu : « je ne sais pas ce qui roule en background, si j'ai mes mises a jour, c'est quoi la version ») :
+    # toutes les taches de fond, chacune avec sa derniere passe
+    def iso_mt(nom):
+        try:
+            return datetime.fromtimestamp(os.path.getmtime(os.path.join(comptes.DONNEES, nom))).isoformat(timespec="minutes")
+        except OSError:
+            return None
+    for k, nom in (("indice_joueurs", "indice_joueurs.json"), ("historique_indice", "indice_hist.json"), ("types_cartes", "types_cartes.json"),
+                   ("codes_produits", "codes_produits.json"), ("encans_archive", "encans_archive.json"), ("slabiq_journal", "slabiq_journal.json"),
+                   ("patchs", "patchs_cache.json")):
+        try:
+            v_ = iso_mt(nom)
+            if v_:
+                taches[k] = v_
+        except Exception:
+            pass
+    try:
+        import slabiq_test
+        taches["slabiq_test"] = (slabiq_test.lire().get("rapport") or {}).get("le")
+    except Exception:
+        pass
+    try:
+        import sauvegarde
+        sv = sauvegarde.statut()
+        taches["sauvegarde"] = sv.get("dernier_ok") if sv.get("actif") else None
+    except Exception:
+        pass
+    return {"version": (os.environ.get("RENDER_GIT_COMMIT") or "")[:7] or "PC", "version_app": VERSION_APP,
             "demarre_le": datetime.fromtimestamp(DEMARRE).isoformat(timespec="minutes"),
             "en_ligne_h": round((time.time() - DEMARRE) / 3600, 1),
             "ebay": appels_ebay.resume(), "photos": photos, "disque": disque, "taches": taches,

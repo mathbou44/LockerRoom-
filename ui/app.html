@@ -3687,6 +3687,32 @@ html.tel-large .fen.fa .fen-img{max-height:calc(46vh / 1.12) !important}
 .pq-e.ok i{background:var(--vert-fond); color:var(--vert)} .pq-e.ko i{background:var(--rouge-fond); color:var(--rouge)} .pq-e.ko span{color:var(--texte)} .pq-e.ok span{color:var(--doux)}
 .pq-v{display:flex; flex-direction:column; gap:3px; margin-top:12px; padding:12px; border-radius:16px; border:1.5px solid transparent; background:var(--pastille-fond) padding-box, var(--prisme) border-box}
 .pq-v b{font:700 12px var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--doux)} .pq-v span{font-size:14.5px}
+/* 12 nov 2026 : l'admin en tuiles et en fenetres */
+.admin2 .titre{margin-bottom:12px}
+.adm-etat{display:flex; align-items:center; gap:12px; width:100%; padding:14px 16px; border-radius:20px; border:1.5px solid transparent; color:var(--texte); text-align:left; cursor:pointer;
+  background:var(--pastille-fond) padding-box, var(--prisme) border-box; margin-bottom:12px}
+.adm-etat-p{width:14px; height:14px; border-radius:50%; flex-shrink:0; background:var(--vert); box-shadow:0 0 0 4px color-mix(in srgb, var(--vert) 22%, transparent)}
+.adm-etat.alerte .adm-etat-p{background:#F2C14E; box-shadow:0 0 0 4px rgba(242,193,78,.22)}
+.adm-etat-t{display:flex; flex-direction:column; gap:2px; flex:1; min-width:0} .adm-etat-t b{font-size:17px} .adm-etat-t small{font-size:12.5px; color:var(--doux)}
+.adm-etat-v{font:700 12px var(--f-cond); letter-spacing:.08em; text-transform:uppercase; color:var(--acc); white-space:nowrap}
+.adm-kpi2{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; margin:12px 0 6px}
+.adm-kpi2 > div{display:flex; flex-direction:column; gap:2px; padding:10px 12px; border-radius:16px; background:var(--carte); border:1px solid var(--ligne)}
+.adm-kpi2 span{font:700 11px var(--f-cond); letter-spacing:.1em; text-transform:uppercase; color:var(--doux)} .adm-kpi2 b{font:700 20px var(--f-cond)} .adm-kpi2 b.vert{color:var(--vert)} .adm-kpi2 b.rouge{color:var(--rouge)}
+.adm-grille2{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; margin-bottom:6px}
+@media (min-width:900px){ .adm-grille2{grid-template-columns:repeat(4, minmax(0,1fr))} }
+.adm-tu{position:relative; display:flex; flex-direction:column; align-items:flex-start; gap:8px; min-height:118px; padding:12px; border-radius:20px; border:1px solid var(--ligne);
+  background:var(--carte); color:var(--texte); text-align:left; cursor:pointer}
+.adm-tu:active{transform:scale(.98)}
+.adm-tu-i{width:38px; height:38px; border-radius:50%; display:grid; place-items:center; border:2px solid transparent; background:var(--pastille-fond) padding-box, var(--prisme) border-box}
+.adm-tu-i svg{width:18px; height:18px; fill:none; stroke:var(--texte); stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round}
+.adm-tu-t{display:flex; flex-direction:column; gap:2px; min-width:0} .adm-tu-t b{font-size:15px; line-height:1.2} .adm-tu-t small{font-size:12px; color:var(--doux); line-height:1.3}
+.adm-tu-v{position:absolute; top:12px; right:12px; font:700 15px var(--f-cond); color:var(--texte2); max-width:55%; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.adm-tu.vert .adm-tu-v{color:var(--vert)} .adm-tu.rouge .adm-tu-v{color:var(--rouge)} .adm-tu.or .adm-tu-v{color:#F2C14E} .adm-tu.acc .adm-tu-v{color:var(--acc)}
+.pop.pop-large{max-width:min(880px, 100%)} .adm-pop .bloc{margin-bottom:12px}
+.tj-liste{display:flex; flex-direction:column; gap:6px}
+.tj-l{display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:14px; background:var(--carte); border:1px solid var(--ligne)}
+.tj-p{width:12px; height:12px; border-radius:50%; flex-shrink:0; background:var(--eteint)} .tj-p.vert{background:var(--vert)} .tj-p.or{background:#F2C14E} .tj-p.rouge{background:var(--rouge)}
+.tj-n{display:flex; flex-direction:column; gap:1px} .tj-n b{font-size:14.5px} .tj-n small{font-size:12px; color:var(--doux)}
 /* 1. le bouton Vendre de la barre du bas : une pastille prisme plus grosse que les autres icones, DANS la barre (sur iPhone,
    ce qui depasse de la barre floutee est coupe, et une ombre sur un <svg> se dessine en carre : ni l'un ni l'autre) */
 @media (max-width:899px){
@@ -14789,6 +14815,45 @@ function feuillePourquoi(lien0){
   $('#pq-ok').onclick = () => { vibrer(); go(false); };
   if (lien0) go(false);
 }
+// 12 nov 2026 (Mathieu : « la section admin est tres compliquee : je ne sais pas ce qui roule en background, si j'ai mes mises
+// a jour, c'est quoi la version ; trop de menus deroulants, trop d'information ; reorganise en tuiles et en pop-ups ») :
+// en haut, la version et « tout roule ? » ; puis des tuiles classees par sujet, chacune ouvre SA fenetre (un seul sujet)
+const TACHES_ADM = () => [
+  ['deals', tt('Chasseur de deals', 'Deal hunter'), 2], ['indice_joueurs', tt('Indice des joueurs', 'Player index'), 26], ['historique_indice', tt('Historique de l’indice', 'Index history'), 26],
+  ['slabiq_test', tt('Test et journal SlabIQ', 'SlabIQ test & journal'), 8 * 24], ['types_cartes', tt('Types de cartes', 'Card types'), 7 * 24 + 6],
+  ['codes_produits', tt('Codes de produits (titres corrigés)', 'Product codes (fixed titles)'), 26], ['encans_archive', tt('Encans finis (vendeurs)', 'Finished auctions (sellers)'), 26],
+  ['stats_lnh', tt('Stats LNH', 'NHL stats'), 26], ['forme_lnh', tt('Forme LNH', 'NHL form'), 26], ['popularite', tt('Popularité (Wikipedia)', 'Popularity (Wikipedia)'), 30],
+  ['labo_demande', tt('Labo de la demande', 'Demand lab'), 30], ['nouvelles', tt('Nouvelles', 'News'), 4], ['nouveaux_produits', tt('Nouveaux produits', 'New products'), 8 * 24],
+  ['valeurs', tt('Valeurs des joueurs', 'Player values'), 8 * 24], ['banc', tt('Banc de validation', 'Validation bench'), 8 * 24],
+  ['ventes_communaute', tt('Ventes de la communauté', 'Community sales'), 26], ['sauvegarde', tt('Sauvegarde de nuit (R2)', 'Nightly backup (R2)'), 26]];
+function admAge(le){ if (!le) return null; const t = Date.parse(String(le).length <= 16 ? le + ':00' : le); return isFinite(t) ? (Date.now() - t) / 36e5 : null; }
+// une fenetre d'admin : le contenu d'une ancienne section (meme code : elle s'ecrit dans #adm-z), ou une partie seulement
+async function admPop(titre, rendu, garder){
+  const p = popOuvrir(`<button class="pop-x" id="ap-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
+    <div class="pop-tete"><span class="pop-sur">Admin</span><h3>${titre}</h3></div>
+    <div class="pop-corps adm-pop" id="adm-z"><div class="lecture"><span class="roue"></span></div></div>`, popFermer);
+  p.classList.add('pop-large');
+  $('#ap-x').onclick = popFermer;
+  try { await rendu(); } catch (e) { const z = $('#adm-z'); if (z) z.innerHTML = `<div class="vide">${esc(e.message || 'Erreur')}</div>`; }
+  const z = $('#adm-z'); if (!z || !garder) return;
+  [...z.children].forEach((c, i) => { if (!garder(c, i, z.children)) c.style.display = 'none'; });
+}
+// les morceaux de l'ancienne section Serveur, chacun dans sa fenetre
+const SERVEUR_PART = {
+  chasseur: (c) => c.id === 'adm-deals', vendeurs: (c) => c.id === 'adm-vend', veille: (c) => c.id === 'adm-veille', entrainement: (c) => c.id === 'adm-entr',
+  systeme: (c) => c.classList.contains('deux-col'),
+  erreurs: (c, i, l) => { const k = [...l].findIndex(x => x.classList.contains('r-titre')); return k >= 0 && i >= k; }};
+function feuilleTaches(r){
+  const t = r.taches || {};
+  const ligne = ([k, lib, per]) => { const h = admAge(t[k]); const cl = h == null ? 'gris' : h <= per * 1.5 ? 'vert' : h <= per * 3 ? 'or' : 'rouge';
+    return `<div class="tj-l"><span class="tj-p ${cl}"></span><span class="tj-n"><b>${esc(lib)}</b><small>${h == null ? tt('pas encore passé (ou pas activé)', 'not run yet (or off)') : tt('dernière passe ', 'last run ') + ilYa(t[k])}</small></span></div>`; };
+  popOuvrir(`<button class="pop-x" id="tj-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
+    <div class="pop-tete"><span class="pop-sur">Admin</span><h3>${tt('Ce qui roule en arrière-plan', 'What runs in the background')}</h3></div>
+    <div class="pop-corps"><div class="sous" style="margin-bottom:10px">${tt('Vert : passée à l’heure. Or : en retard. Rouge : bloquée depuis longtemps. Gris : jamais passée.', 'Green: on time. Gold: late. Red: stuck for a while. Grey: never ran.')}</div>
+      <div class="tj-liste">${TACHES_ADM().map(ligne).join('')}</div>
+      <div class="sous" style="margin-top:12px">${tt('Serveur redémarré ', 'Server restarted ')}${r.demarre_le ? ilYa(r.demarre_le) : '—'} · ${esc(r.version_app || '')} · commit ${esc(r.version || '')}</div></div>`, popFermer);
+  $('#tj-x').onclick = popFermer;
+}
 async function vueAdmin(onglet){
   if (S.forfait && !S.forfait.admin && S.forfait.admin_a_verifier) {
     V().innerHTML = `<section class="ecran"><div class="vide">${tt('Confirme que c’est toi pour ouvrir l’admin.', 'Confirm it’s you to open admin.')}<br><button class="btn" id="av-ouvrir" style="margin-top:12px">${tt('Recevoir le code', 'Get the code')}</button></div></section>`;
@@ -14796,37 +14861,65 @@ async function vueAdmin(onglet){
   if (!(S.forfait && S.forfait.admin)) { location.hash = '#accueil'; return; }
   const r = await API.admin_resume().catch(e => ({ok:false, erreur:e.message}));
   if (!r.ok) { V().innerHTML = `<section class="ecran"><div class="vide">${esc(r.erreur)}</div></section>`; return; }
-  const o = onglet || S.ongletAdmin || (r.demandes.nouvelles ? 'demandes' : 'abonnes');
-  S.ongletAdmin = o;
-  const a = r.abonnes, br = r.ebay && r.ebay.appels && r.ebay.appels.browse;
-  const pastille = (n) => n ? ` <span class="adm-n">${n}</span>` : '';
-  V().innerHTML = `<section class="ecran large admin">
-    <div class="entete"><div class="titre">Admin</div><span class="sous">${esc(r.version)}</span></div>
+  const a = r.abonnes, br = r.ebay && r.ebay.appels && r.ebay.appels.browse, t = r.taches || {};
+  const enRetard = TACHES_ADM().filter(([k, , per]) => { const h = admAge(t[k]); return h != null && h > per * 3; }).length;
+  const tc = r.types_cartes || {}, m_ = tc.mesure || {};
+  // [cle, icone, titre, valeur, sous-titre, ton, action]
+  const G = [
+    [tt('Tes utilisateurs', 'Your users'), [
+      ['abonnes', 'profil', tt('Abonnés', 'Subscribers'), String(a.total), `${a.pro} Pro · +${a.nouveaux_7j} ${tt('cette semaine', 'this week')}`, 'acc', () => admPop(tt('Abonnés', 'Subscribers'), adminAbonnes)],
+      ['activite', 'graphe', tt('Activité', 'Activity'), String(a.actifs_7j), tt('actifs sur 7 jours', 'active over 7 days'), '', () => admPop(tt('Activité', 'Activity'), adminActivite)],
+      ['demandes', 'idee', tt('Demandes', 'Requests'), String(r.demandes.nouvelles || 0), `${r.demandes.ouvertes || 0} ${tt('ouvertes', 'open')}`, r.demandes.nouvelles ? 'or' : '', () => admPop(tt('Demandes', 'Requests'), adminDemandes)]]],
+    [tt('Radar et deals', 'Radar and deals'), [
+      ['chasseur', 'deals', tt('Chasseur de deals', 'Deal hunter'), admAge(t.deals) != null ? ilYa(t.deals) : '—', tt('dernier tour · relancer, budget', 'last run · rerun, budget'), admAge(t.deals) != null && admAge(t.deals) > 3 ? 'rouge' : '', () => admPop(tt('Chasseur de deals', 'Deal hunter'), adminServeur, SERVEUR_PART.chasseur)],
+      ['vendeurs', 'boutique', tt('Vendeurs suivis', 'Followed sellers'), '', tt('la liste et un test eBay', 'the list and an eBay test'), '', () => admPop(tt('Vendeurs suivis', 'Followed sellers'), adminServeur, SERVEUR_PART.vendeurs)],
+      ['perf', 'dollar', tt('Vendeurs sous la valeur', 'Sellers under value'), '', tt('qui finit le plus bas pour nous', 'who ends lowest for us'), '', () => feuilleVendeursPerf()],
+      ['pourquoi', 'cible', tt('Pas dans le Radar ?', 'Not in the Radar?'), '', tt('colle un lien eBay', 'paste an eBay link'), '', () => feuillePourquoi()]]],
+    [tt('SlabIQ et données', 'SlabIQ and data'), [
+      ['iqtest', 'pouls', tt('Test SlabIQ', 'SlabIQ test'), admAge(t.slabiq_test) != null ? ilYa(t.slabiq_test) : '—', tt('le bilan et le journal en direct', 'results and live journal'), '', () => feuilleTestIQ()],
+      ['types', 'etoile', tt('Types de cartes', 'Card types'), m_.apres != null ? 'ρ ' + decFr(m_.avant) + ' → ' + decFr(m_.apres) : String(tc.types || 0), tc.actif === false ? tt('en pause : pas mieux', 'paused: not better') : tt('test avant / après', 'before / after test'), m_.apres == null ? '' : m_.apres > m_.avant ? 'vert' : 'rouge', () => feuilleTypesAdmin()],
+      ['banc', 'cible', tt('Validation', 'Validation'), '', tt('le banc de test des valeurs', 'the value test bench'), '', () => admPop(tt('Validation', 'Validation'), adminBanc)],
+      ['entr', 'photo', tt('Banque d’entraînement IA', 'AI training bank'), '', tt('examens et vraies notes', 'exams and real grades'), '', () => admPop(tt('Banque d’entraînement IA', 'AI training bank'), adminServeur, SERVEUR_PART.entrainement)]]],
+    [tt('Catalogue', 'Catalogue'), [
+      ['catalogue', 'colis', tt('Produits', 'Products'), String(r.a_ajouter || 0), tt('à ajouter · checklists et cotes', 'to add · checklists and odds'), r.a_ajouter ? 'or' : '', () => admPop('Catalogue', adminCatalogue)],
+      ['sorties', 'calendrier', tt('Sorties à venir', 'Upcoming releases'), '', 'Upper Deck · Topps', '', () => admPop(tt('Sorties à venir', 'Upcoming releases'), async () => { $('#adm-z').innerHTML = '<div id="adm-sorties"><div class="lecture"><span class="roue"></span></div></div>'; await blocSorties(); })]]],
+    [tt('Système', 'System'), [
+      ['serveur', 'admin', tt('Serveur', 'Server'), br ? Math.round(100 * br.utilises / br.limite) + ' %' : '—', tt('appels eBay du jour · photos IA · disque', 'eBay calls today · AI photos · disk'), br && br.utilises / br.limite > 0.8 ? 'rouge' : '', () => admPop(tt('Serveur', 'Server'), adminServeur, SERVEUR_PART.systeme)],
+      ['erreurs', 'attention', tt('Erreurs', 'Errors'), String(r.erreurs_24h || 0), tt('dernières 24 h', 'last 24 h'), r.erreurs_24h ? 'rouge' : 'vert', () => admPop(tt('Erreurs récentes', 'Recent errors'), adminServeur, SERVEUR_PART.erreurs)],
+      ['veille', 'oeil', tt('Veille eBay', 'eBay watch'), '', tt('frais, règles, douanes', 'fees, rules, customs'), '', () => admPop(tt('Veille eBay', 'eBay watch'), adminServeur, SERVEUR_PART.veille)],
+      ['sauvegarde', 'colis', tt('Sauvegarde', 'Backup'), admAge(t.sauvegarde) != null ? ilYa(t.sauvegarde) : tt('pas active', 'off'), tt('chaque nuit · télécharger', 'nightly · download'), admAge(t.sauvegarde) != null && admAge(t.sauvegarde) < 30 ? 'vert' : 'or',
+        () => admPop(tt('Sauvegarde', 'Backup'), async () => { $('#adm-z').innerHTML = `<div class="adm-r2" id="adm-r2"></div><a class="pilule adm-sv" href="/admin/sauvegarde.zip" download style="margin-top:12px">${icN('colis')}${tt('Télécharger la sauvegarde (.zip)', 'Download the backup (.zip)')}</a>`; await blocSauvegardeR2(); })]]]];
+  const tuile = ([k, ic, ti, v, s, cl]) => `<button class="adm-tu ${cl || ''}" data-at="${k}"><span class="adm-tu-i">${icP(ic)}</span><span class="adm-tu-t"><b>${ti}</b><small>${s}</small></span>${v ? `<span class="adm-tu-v">${esc(v)}</span>` : ''}</button>`;
+  V().innerHTML = `<section class="ecran large admin admin2">
+    <div class="titre">Admin</div>
+    <button class="adm-etat ${r.erreurs_24h || enRetard ? 'alerte' : ''}" id="adm-etat">
+      <span class="adm-etat-p"></span><span class="adm-etat-t"><b>${r.erreurs_24h || enRetard ? tt('À regarder', 'Needs a look') : tt('Tout roule', 'All good')}</b>
+        <small>${esc(r.version_app || '')} · ${tt('en ligne depuis ', 'live since ')}${r.demarre_le ? ilYa(r.demarre_le) : '—'}${enRetard ? ' · ' + enRetard + tt(' tâche(s) en retard', ' late job(s)') : ''}${r.erreurs_24h ? ' · ' + r.erreurs_24h + tt(' erreur(s) 24 h', ' error(s) 24 h') : ''}</small></span>
+      <span class="adm-etat-v">${tt('Ce qui roule', 'What runs')} ›</span></button>
     <div class="adm-vue"><span>${tt('Voir l’app comme', 'View the app as')}</span><div class="adm-vp" id="adm-vue">${[['admin', 'Admin', tt('tout', 'everything')], ['pro', 'Pro', tt('abonné', 'subscriber')], ['gratuit', tt('Gratuit', 'Free'), tt('compte de base', 'basic account')]].map(([v, l, d]) => `<button data-v="${v}" class="${v === ((S.forfait || {}).vue || 'admin') ? 'on' : ''}"><b>${l}</b><small>${d}</small></button>`).join('')}</div></div>
-    <div class="hero-l adm-kpi">
-      <div class="kpi"><span class="lib">${tt('Revenu / mois', 'Revenue / mo')}</span><span class="v vert">${a.revenu_mensuel == null ? '—' : argentCourt(a.revenu_mensuel)}</span><span class="s">${a.pro} Pro · ${a.offert} ${tt('offerts', 'gifted')}</span></div>
-      <div class="kpi acc"><span class="lib">${tt('Comptes', 'Accounts')}</span><span class="v">${a.total}</span><span class="s">+${a.nouveaux_7j} ${tt('cette semaine', 'this week')} · ${a.essai} ${tt('en essai', 'on trial')}</span></div>
-      <div class="kpi"><span class="lib">${tt('Actifs 7 jours', 'Active 7 days')}</span><span class="v">${a.actifs_7j}</span><span class="s">${a.total ? Math.round(100 * a.actifs_7j / a.total) : 0} %</span></div>
-      <div class="kpi ${r.erreurs_24h ? 'rouge' : ''}"><span class="lib">${tt('Serveur', 'Server')}</span><span class="v">${r.erreurs_24h ? r.erreurs_24h + ' ' + tt('erreurs', 'errors') : 'OK'}</span><span class="s">eBay ${br ? Math.round(100 * br.utilises / br.limite) : 0} % ${tt('du jour', 'today')}</span></div></div>
-    <div id="adm-sorties"></div>
-    <div class="adm-r2" id="adm-r2"></div>
-    <button class="acc-pil" id="adm-vend"><span class="ap-ic">${icP('dollar')}</span><span class="ap-t">${tt('Vendeurs : qui finit sous la valeur', 'Sellers: who ends under value')}</span><i aria-hidden="true">›</i></button>
-    <a class="pilule adm-sv" href="/admin/sauvegarde.zip" download>${icN('colis')}${tt('Télécharger la sauvegarde (.zip)', 'Download the backup (.zip)')}</a>
-    <div class="seg" id="adm-o" style="margin:14px 0">${[['activite', tt('Activité', 'Activity')], ['abonnes', tt('Abonnés', 'Subscribers')], ['demandes', tt('Demandes', 'Requests') + pastille(r.demandes.nouvelles)], ['catalogue', 'Catalogue' + pastille(r.a_ajouter)], ['banc', tt('Validation', 'Validation')], ['serveur', tt('Serveur', 'Server')]].map(([k, t]) => `<button data-v="${k}" class="${o === k ? 'on' : ''}">${t}</button>`).join('')}</div>
-    <div id="adm-z"><div class="lecture"><span class="roue"></span></div></div></section>`;
-  blocSorties(); blocSauvegardeR2();
-  $('#adm-vend').onclick = () => { vibrer(); feuilleVendeursPerf(); };
+    <div class="adm-kpi2"><div><span>${tt('Revenu / mois', 'Revenue / mo')}</span><b class="vert">${a.revenu_mensuel == null ? '—' : argentCourt(a.revenu_mensuel)}</b></div>
+      <div><span>${tt('Comptes', 'Accounts')}</span><b>${a.total}</b></div><div><span>${tt('Actifs 7 j', 'Active 7 d')}</span><b>${a.actifs_7j}</b></div></div>
+    ${G.map(([titre, l]) => `<div class="acc-sec" style="--c:var(--acc)"><span>${titre}</span></div><div class="adm-grille2">${l.map(tuile).join('')}</div>`).join('')}
+  </section>`;
+  $('#adm-etat').onclick = () => { vibrer(); feuilleTaches(r); };
   $$('#adm-vue button').forEach(b => b.onclick = () => changerVue(b.dataset.v));
-  const sous = {activite:adminActivite, abonnes:adminAbonnes, demandes:adminDemandes, catalogue:adminCatalogue, serveur:adminServeur, banc:adminBanc};
-  // 28 oct 2026 (« saccadé ») : un onglet se change sur place ; le contenu d'avant reste (estompe) jusqu'a l'arrivee du nouveau
-  $$('#adm-o button').forEach(b => b.onclick = async () => {
-    if (b.classList.contains('on')) return;
-    S.ongletAdmin = b.dataset.v; history.replaceState(null, '', '#admin/' + b.dataset.v);
-    $$('#adm-o button').forEach(x => x.classList.toggle('on', x === b));
-    const z = $('#adm-z'); z.style.minHeight = z.offsetHeight + 'px'; z.classList.add('charge');
-    try { await (sous[b.dataset.v] || adminAbonnes)(); } finally { z.classList.remove('charge'); setTimeout(() => { z.style.minHeight = ''; }, 400); }
+  const actions = Object.fromEntries(G.flatMap(([, l]) => l.map(x => [x[0], x[6]])));
+  $$('[data-at]').forEach(b => b.onclick = () => { vibrer(); history.replaceState(null, '', '#admin/' + b.dataset.at); actions[b.dataset.at](); });
+  // un ancien lien (#admin/serveur, #admin/abonnes...) ouvre directement sa fenetre
+  const vieux = {activite: 'activite', abonnes: 'abonnes', demandes: 'demandes', catalogue: 'catalogue', banc: 'banc', serveur: 'serveur'};
+  const k = vieux[onglet] || onglet; if (k && actions[k]) actions[k]();
+}
+async function feuilleTypesAdmin(){
+  await admPop(tt('Types de cartes', 'Card types'), async () => {
+    const r = await API.types_cartes_admin().catch(e => ({ok: false, erreur: e.message})); const z = $('#adm-z'); if (!z) return;
+    if (!r.ok) { z.innerHTML = `<div class="vide">${esc(r.erreur || 'Erreur')}</div>`; return; }
+    if (!(r.types || []).length) { z.innerHTML = `<div class="vide">${tt('Pas encore calculé : le serveur le fait une fois par semaine (la 1re passe arrive dans l’heure après une mise à jour).', 'Not computed yet: the server does it weekly (the 1st run comes within an hour of an update).')}</div>`; return; }
+    const m = r.mesure || {};
+    z.innerHTML = `<div class="adm-kpi2"><div><span>${tt('Ventes', 'Sales')}</span><b>${r.ventes}</b></div><div><span>${tt('Fiabilité', 'Reliability')}</span><b>${r.fiabilite != null ? decFr(r.fiabilite) : '—'}</b></div>
+        <div><span>${tt('Avant → après', 'Before → after')}</span><b class="${m.apres > m.avant ? 'vert' : 'rouge'}">${m.apres != null ? decFr(m.avant) + ' → ' + decFr(m.apres) : '—'}</b></div></div>
+      <div class="sous" style="margin:8px 0 10px">${tt('Prime = prix médian de ce type contre la carte typique du MÊME joueur. Le test : sur les 4 derniers mois (jamais vus), les types classent-ils mieux les cartes ?', 'Premium = median price of this type vs the SAME player’s typical card. The test: on the last 4 months (never seen), do types rank cards better?')}</div>
+      <div class="vpf-liste">${r.types.map((x, i) => `<div class="vpf-l"><span class="vpf-r">${i + 1}</span><span class="vpf-m"><b>${esc(x.nom)}</b><small>${x.n} ${tt('ventes', 'sales')} · ${x.joueurs} ${tt('joueurs', 'players')}</small></span><span class="vpf-c"><b>×${decFr(x.prime)}</b><small>${tt('score', 'score')} ${x.score}</small></span></div>`).join('')}</div>`;
   });
-  (sous[o] || adminAbonnes)();
 }
 // 9 nov 2026 (Mathieu : « un statsboard pour l'administrateur : toute l'activite, les utilisateurs, les pages les plus
 // utilisees, les fonctions les moins utilisees, tous les commentaires regroupes par categorie, ce qui est a faire ») :
