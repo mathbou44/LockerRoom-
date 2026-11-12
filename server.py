@@ -1093,6 +1093,19 @@ def mes_photos(nom):
     return send_from_directory(os.path.dirname(f), os.path.basename(f), mimetype="image/jpeg", max_age=30 * 86400)
 
 
+@app.route("/admin/slabiq_donnees.json.gz")
+def admin_slabiq_donnees():
+    """12 nov 2026 : les donnees du dernier test de prediction SlabIQ (admin seulement, verifie), pour le rejouer ailleurs."""
+    from flask import send_file
+    import comptes as _c
+    if not api._est_admin(reel=True):
+        abort(403)
+    p = os.path.join(_c.DONNEES, "slabiq_test_donnees.json.gz")
+    if not os.path.exists(p):
+        return ("Lance d'abord le test de prediction SlabIQ", 404)
+    return send_file(p, mimetype="application/gzip", as_attachment=True, download_name="slabiq_donnees.json.gz", max_age=0)
+
+
 @app.route("/admin/sauvegarde.zip")
 def admin_sauvegarde_zip():
     """12 nov 2026 (liste du lancement : « une sauvegarde hors de Render chaque semaine ») : toutes les donnees du serveur

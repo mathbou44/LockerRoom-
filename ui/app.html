@@ -2966,6 +2966,24 @@ body.zp-ouvert{overflow:hidden}
 .so-bas{position:sticky; bottom:0; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 10px 10px 16px; border-radius:18px; background:var(--fond-feuille, var(--carte))} .so-bas span{flex:1 1 auto; min-width:0; font-size:14px} .so-bas .btn{flex:0 0 auto; width:auto; margin:0; padding-inline:28px}
 .so-fil{margin:0 0 14px} .so-fil li{cursor:pointer}
 /* 3 nov 2026 - filtres des deals : nos pastilles rondes, la barre « Appliquer » qui apparait au premier changement */
+/* 12 nov 2026 : la feuille Filtres, tres simple (5 questions, des pastilles) */
+.fx-h{display:flex; align-items:center; justify-content:space-between; gap:10px} .fx-h h3{margin:0}
+.fx-raz{display:block; margin:6px auto 4px; border:0; background:none; color:var(--doux); font-size:14px; font-weight:600; padding:10px 14px; cursor:pointer; text-decoration:underline; text-underline-offset:3px}
+.fx-n{font:500 13px var(--f-txt, inherit); letter-spacing:0; text-transform:none; color:var(--doux); margin-left:6px}
+.fx-s{display:flex; flex-direction:column; gap:10px; padding:18px 0; border-bottom:1px solid var(--ligne)} .fx-s:last-of-type{border-bottom:0}
+.fx-t{display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:34px}
+.fx-t > span{font:700 15px var(--f-cond); letter-spacing:.12em; text-transform:uppercase}
+.fx-pl{display:flex; flex-wrap:wrap; gap:8px}
+.fx-p{height:40px; padding:0 16px; border-radius:999px; border:1.5px solid var(--ligne); background:var(--carte2); color:var(--doux); font-weight:700; font-size:15px; cursor:pointer; transition:all .15s}
+.fx-p.on{color:var(--texte); border-color:var(--acc); background:color-mix(in srgb, var(--acc) 18%, var(--carte2))}
+.fx-seul{display:inline-flex; align-items:center; gap:8px; font-size:14px; color:var(--doux); cursor:pointer}
+.fx-seul input{position:absolute; opacity:0; pointer-events:none}
+.fx-seul i{position:relative; width:44px; height:26px; border-radius:99px; background:var(--ligne); transition:background .15s}
+.fx-seul i::after{content:""; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition:transform .15s}
+.fx-seul input:checked + i{background:var(--vert)} .fx-seul input:checked + i::after{transform:translateX(18px)}
+.fx-s .fd-pv{margin:0} .fx-s .fd-r{margin:6px 0 2px}
+.fx-vs{display:flex; flex-direction:column; gap:8px}
+.fx-s .fv-aj .btn{width:46px; padding:0; font-size:22px}
 .fd-pils{display:flex; flex-wrap:wrap; gap:14px 6px; justify-content:flex-start; margin:4px 0 2px}
 .fd-p{min-width:76px} .fd-p .ap-ic{width:54px; height:54px; background:var(--ligne)} .fd-p .ap-ic b{position:relative; font:700 16px var(--f-cond); color:var(--texte)}
 .fd-p.on .ap-ic{background:conic-gradient(from 210deg, var(--h1,#9FE6D2), var(--h2,#B9BEFF), var(--h3,#F2B3D6), var(--h4,#F1D58E), var(--h1,#9FE6D2))}
@@ -7328,47 +7346,41 @@ async function feuilleFiltresDeals(){
   let pv = pm === '$' ? Math.round(convertir(F.gain_min || 0)) : (+F.rabais_min || 0);
   const PMAX = {'%': 70, '$': 500}, PPAS = {'%': 5, '$': 10};
   const libP = () => !pv ? tt('Tous les deals', 'All deals') : pm === '%' ? tt(`−${pv} % ou plus sous la valeur`, `${pv}% or more below value`) : tt(`+${fmtMontant(pv, 0)} de profit ou plus`, `+${fmtMontant(pv, 0)} profit or more`);
+  // 12 nov 2026 (Mathieu : « beaucoup trop de choix et de texte, c'est melangeant ; tres tres simple », admin = pro) :
+  // 5 questions, rien que des pastilles et un curseur, aucune phrase d'aide. Le pays d'achat, le ramassage et mes vendeurs
+  // eBay vivent dans Reglages > Mes deals ; « boutiques suivies » et « au moins une mise » sont retires.
+  const BUD = [0, 50, 100, 250, 500, 1000];
+  let bud = pmax0 ? Math.round(convertir(pmax0)) : 0;
+  const budL = BUD.includes(bud) ? BUD : [...BUD, bud].sort((x, y) => x - y);
+  const PV0 = PROV(); const PV = new Set(PV0);
   ouvrirFeuille(`<h3>${tt('Filtres', 'Filters')}</h3>
-    <div class="fd-s"><div class="r-titre">${tt('Quelles cartes ?', 'Which cards?')}</div>
-      ${pils('fd-ep', [['recrues', tt('Recrues', 'Rookies')], ['veterans', tt('Vétérans', 'Veterans')], ['legendes', tt('Légendes', 'Legends')]], k => ep.has(k), 'ep')}
-      <small class="fd-aide">${tt('Rien de choisi : toutes les cartes.', 'Nothing chosen: all cards.')}</small></div>
-    <div class="fd-s"><div class="fd-pt"><div class="r-titre">${tt('Profit minimum', 'Minimum profit')}</div>
+    <div class="fx-s"><div class="fx-t"><span>${tt('Profit minimum', 'Minimum profit')}</span>
         <div class="seg fd-pm">${['%', '$'].map(m => `<button data-pm="${m}" class="${pm === m ? 'on' : ''}">${m === '$' ? symDevise() : '%'}</button>`).join('')}</div></div>
       <b class="fd-pv" id="fd-pv">${esc(libP())}</b>
-      <input type="range" class="fd-r" id="fd-r" min="0" max="${PMAX[pm]}" step="${PPAS[pm]}" value="${Math.min(pv, PMAX[pm])}">
-      <div class="fd-rl"><span>${tt('Tous', 'All')}</span><span id="fd-rmax">${pm === '%' ? '−70 %' : fmtMontant(500, 0) + '+'}</span></div></div>
-    <div class="fd-s"><div class="r-titre">${tt('Budget max par carte', 'Max budget per card')} (${symDevise()})</div>
-      <input class="champ" id="fd-pmax" type="number" inputmode="decimal" value="${enDev(pmax0)}" placeholder="${esc(tt('aucun', 'none'))}"></div>
-    <div class="fd-s"><div class="r-titre">${tt('Mes joueurs', 'My players')} <small class="fd-aide">${tt('en premier, avec une ★', 'first, with a ★')}</small></div>
+      <input type="range" class="fd-r" id="fd-r" min="0" max="${PMAX[pm]}" step="${PPAS[pm]}" value="${Math.min(pv, PMAX[pm])}"></div>
+    <div class="fx-s"><div class="fx-t"><span>${tt('Budget par carte', 'Budget per card')}</span></div>
+      <div class="fx-pl" id="fd-bud">${budL.map(v => `<button class="fx-p ${v === bud ? 'on' : ''}" data-bud="${v}">${v ? '≤ ' + fmtMontant(v, 0) : tt('Tout', 'Any')}</button>`).join('')}</div></div>
+    <div class="fx-s"><div class="fx-t"><span>${tt('Cartes', 'Cards')}</span></div>
+      <div class="fx-pl" id="fd-ep">${[['recrues', tt('Recrues', 'Rookies')], ['veterans', tt('Vétérans', 'Veterans')], ['legendes', tt('Légendes', 'Legends')]].map(([k, t]) => `<button class="fx-p ${ep.has(k) ? 'on' : ''}" data-ep="${k}">${t}</button>`).join('')}</div></div>
+    <div class="fx-s"><div class="fx-t"><span>${tt('Expédiées de', 'Ships from')}</span></div>
+      <div class="prov-p">${[['CA', 'Canada'], ['US', tt('États-Unis', 'USA')]].map(([k, n]) => `<button class="prov ${PV.has(k) ? 'on' : ''}" data-pv="${k}"><span class="prov-f">${drapeau(k)}</span><span>${n}</span><i>${PV.has(k) ? '✓' : ''}</i></button>`).join('')}</div></div>
+    <div class="fx-s"><div class="fx-t"><span>${tt('Mes joueurs', 'My players')} <small class="fx-n" id="fv-n"></small></span><label class="fx-seul"><span>${tt('Seulement eux', 'Only them')}</span><input type="checkbox" id="fd-seul" ${seul ? 'checked' : ''}><i></i></label></div>
       <div class="fv-l" id="fv-l"></div>
-      <form class="fv-aj" id="fv-aj"><input class="champ" id="fv-in" enterkeyhint="done" autocomplete="off" placeholder="${esc(tt('Joueur ou équipe', 'Player or team'))}"><button class="btn petit" id="fv-ok">${tt('Ajouter', 'Add')}</button></form>
-      <label class="bascule fd-l"><span>${tt('M’avertir quand ils sont en deal', 'Alert me when they’re on deal')}</span><input type="checkbox" id="fd-avert" ${avert0 ? 'checked' : ''}></label></div>
-    <details class="fd-plus"><summary>${tt('Plus d’options', 'More options')}</summary>
-      <label class="bascule fd-l"><span>${tt('Seulement mes joueurs', 'Only my players')}</span><input type="checkbox" id="fd-seul" ${seul ? 'checked' : ''}></label>
-      <label class="bascule fd-l"><span>${tt('Seulement les boutiques suivies', 'Followed shops only')}</span><input type="checkbox" id="fd-vend" ${F.vendeurs ? 'checked' : ''}></label>
-      <label class="bascule fd-l"><span>${tt('Encans avec au moins une mise', 'Auctions with at least one bid')}</span><input type="checkbox" id="fd-mise" ${F.avec_mise ? 'checked' : ''}></label>
-      <button class="acc-pil fd-ram" id="fd-pays"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.envoi || IC_PIL.pin}</svg></span><span class="ap-t"><b>${tt('J’achète depuis', 'I buy from')} ${(S.reglages || {}).pays === 'US' ? tt('les États-Unis', 'the United States') : tt('le Canada', 'Canada')}</b><small>${tt('Taxes et douanes de ton pays ; ses deals d’abord', 'Your country’s taxes and customs; its deals first')}</small></span><i aria-hidden="true">›</i></button>
-      <button class="acc-pil fd-ram" id="fd-ram"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.pin}</svg></span><span class="ap-t"><b>${tt('Je ramasse sur place', 'I pick up locally')}</b><small id="fd-ram-s">${tt('Le port ne compte pas chez ces vendeurs', 'Shipping doesn’t count with these sellers')}</small></span><i aria-hidden="true">›</i></button>
-      ${p.vendeurs_max ? `<label class="md-l">${tt(`Mes vendeurs eBay (${p.vendeurs_max} max)`, `My eBay sellers (${p.vendeurs_max} max)`)}${p.pro ? '' : ' <span class="badge-f pro">✦ PRO</span>'}<span class="fd-vs">${Array.from({length: p.vendeurs_max}, (_, i) => `<input class="champ fd-v1" data-fdv="${i}" value="${esc((p.vendeurs || [])[i] || '')}" placeholder="${esc(tt('Vendeur ' + (i + 1) + ' : pseudo eBay exact', 'Seller ' + (i + 1) + ': exact eBay username'))}" autocapitalize="off" autocorrect="off" spellcheck="false" ${p.pro ? '' : 'disabled'}>`).join('')}</span></label>` : ''}
-      ${(() => { const L = Object.entries(S.dealsPays || {}).sort((a, b) => b[1] - a[1]).map(([k]) => k), ex = new Set(F.pays_exclus || []);
-        (F.pays_exclus || []).forEach(k => { if (!L.includes(k)) L.push(k); });
-        return L.length > 1 || ex.size ? `<div class="r-titre" style="margin-top:12px">${tt('Pays de provenance', 'Ships from')} <small class="fd-aide">${tt('touche pour retirer un pays', 'tap to hide a country')}</small></div>
-          <div class="chips fd-w" id="fd-px">${L.map(k => `<button class="chip fd-px ${ex.has(k) ? 'barre' : 'on'}" data-px="${k}">${drapeau(k)}<span>${esc(nomPays(k))}</span></button>`).join('')}</div>` : ''; })()}
-      <button class="lien-t" id="fd-raz">${tt('Tout effacer', 'Clear all')}</button></details>
-    <div class="fd-app" id="fd-app" hidden><button class="btn" id="fd-ok">${tt('Appliquer', 'Apply')} <span id="fd-app-n"></span></button></div>`);
+      <form class="fv-aj" id="fv-aj"><input class="champ" id="fv-in" enterkeyhint="done" autocomplete="off" placeholder="${esc(tt('Ajouter un joueur', 'Add a player'))}"><button class="btn petit" id="fv-ok" aria-label="${esc(tt('Ajouter', 'Add'))}">+</button></form></div>
+    <button class="fx-raz" id="fd-raz">${tt('Réinitialiser', 'Reset')}</button>
+    <div class="fd-app" id="fd-app" hidden><button class="btn" id="fd-ok">${tt('Appliquer', 'Apply')}</button></div>`);
   // la barre « Appliquer » : visible des qu'un choix change (sinon on ne sait pas si ca a pris)
-  let change = 0;
-  const marquer = () => { change++; const a = $('#fd-app'); if (!a) return; a.hidden = false; $('#fd-app-n').textContent = change > 1 ? `(${change})` : ''; };
+  const marquer = () => { const a_ = $('#fd-app'); if (a_) a_.hidden = false; };
   setTimeout(() => { const z = $('#feuille'); if (!z) return;
-    z.addEventListener('click', (e) => { if (e.target.closest('[data-ep], [data-pm], [data-fvx], #fv-ok')) setTimeout(marquer, 0); });
-    z.addEventListener('input', (e) => { if (e.target.matches('#fd-pmax, #fd-v, #fd-r')) marquer(); });
+    z.addEventListener('click', (e) => { if (e.target.closest('[data-ep], [data-pm], [data-fvx], [data-bud], [data-pv], #fv-ok')) setTimeout(marquer, 0); });
+    z.addEventListener('input', (e) => { if (e.target.matches('#fd-r')) marquer(); });
     z.addEventListener('change', (e) => { if (e.target.matches('input[type=checkbox]')) marquer(); }); }, 0);
   const peindreFav = () => {
-    $('#fv-l').innerHTML = FAV.map((n, i) => `<span class="fv-p">${esc(n)}<button data-fvx="${i}" aria-label="${esc(tt('Retirer', 'Remove'))}">×</button></span>`).join('')
-      + `<span class="fv-n">${FAV.length} / ${FMAX}</span>`;
+    $('#fv-l').innerHTML = FAV.map((n, i) => `<span class="fv-p">${esc(n)}<button data-fvx="${i}" aria-label="${esc(tt('Retirer', 'Remove'))}">×</button></span>`).join('');
+    $('#fv-l').hidden = !FAV.length; $('#fv-n').textContent = `${FAV.length}/${FMAX}`;
     const plein = FAV.length >= FMAX;
     $('#fv-in').disabled = plein; $('#fv-ok').disabled = plein;
-    $('#fv-in').placeholder = plein ? (p.pro ? tt('Liste pleine', 'List full') : tt(`Liste pleine · ${p.favoris_max_pro || 20} avec Pro`, `List full · ${p.favoris_max_pro || 20} with Pro`)) : tt('Joueur ou équipe', 'Player or team');
+    $('#fv-in').placeholder = plein ? (p.pro ? tt('Liste pleine', 'List full') : tt(`Liste pleine · ${p.favoris_max_pro || 20} avec Pro`, `List full · ${p.favoris_max_pro || 20} with Pro`)) : tt('Ajouter un joueur', 'Add a player');
     $$('[data-fvx]').forEach(b => b.onclick = () => { FAV.splice(+b.dataset.fvx, 1); vibrer(); peindreFav(); });
   };
   $('#fv-aj').onsubmit = (e) => { e.preventDefault(); const v = $('#fv-in').value.trim().replace(/\s+/g, ' ');
@@ -7376,38 +7388,33 @@ async function feuilleFiltresDeals(){
     if (!FAV.some(x => x.toLowerCase() === v.toLowerCase())) FAV.push(v.slice(0, 40));
     $('#fv-in').value = ''; vibrer(); peindreFav(); };
   peindreFav();
-  $('#fd-avert').onchange = (e) => { if (e.target.checked) demanderNotifications(); };
-  // 31 oct 2026 (Mathieu : « un inventaire a vendre rapidement et un inventaire de collection : une autre mentalite ») :
-  // revente = ce qui se revend vite, le plus gros profit d'abord ; collection = ce qui est rare et recherche
-  let obj = F.objectif || '';
-  const aideObj = () => { $('#fd-obj-aide').textContent = obj === 'revente' ? tt('Les cartes qui se vendent souvent (4 ventes réelles et plus), le plus gros profit d’abord.', 'Cards that sell often (4+ real sales), biggest profit first.')
-    : obj === 'collection' ? tt('Les cartes rares et recherchées (rareté 45/100 et plus : numérotées basses, autos, SSP, rarement en vente, vedettes), les plus désirables d’abord.', 'Rare, sought-after cards (rarity 45/100+: low numbered, autos, SSP, rarely for sale, stars), most desirable first.')
-    : tt('Rien de choisi : tous les deals.', 'Nothing chosen: all deals.'); };
   const peindreP = () => { const r = $('#fd-r'); r.max = PMAX[pm]; r.step = PPAS[pm]; r.value = Math.min(pv, PMAX[pm]);
     r.style.setProperty('--p', (100 * r.value / PMAX[pm]) + '%'); $('#fd-pv').textContent = libP();
-    $('#fd-rmax').textContent = pm === '%' ? '−70 %' : fmtMontant(500, 0) + '+';
     $$('[data-pm]').forEach(x => x.classList.toggle('on', x.dataset.pm === pm)); };
   $('#fd-r').oninput = (e) => { pv = +e.target.value; peindreP(); };
   $('#fd-r').onchange = () => vibrer();
   $$('[data-pm]').forEach(b => b.onclick = () => { if (pm === b.dataset.pm) return; pm = b.dataset.pm; pv = 0; vibrer(); peindreP(); });
   peindreP();
   $$('#fd-ep [data-ep]').forEach(b => b.onclick = () => { const k = b.dataset.ep; ep.has(k) ? ep.delete(k) : ep.add(k); b.classList.toggle('on', ep.has(k)); vibrer(); });
+  $$('#fd-bud [data-bud]').forEach(b => b.onclick = () => { bud = +b.dataset.bud; $$('#fd-bud [data-bud]').forEach(x => x.classList.toggle('on', x === b)); vibrer(); });
+  $$('[data-pv]').forEach(b => b.onclick = () => { const k = b.dataset.pv;
+    if (PV.has(k) && PV.size === 1) { toast(tt('Garde au moins un pays', 'Keep at least one country'), 2200); return; }
+    PV.has(k) ? PV.delete(k) : PV.add(k); vibrer();
+    $$('[data-pv]').forEach(x => { const o = PV.has(x.dataset.pv); x.classList.toggle('on', o); x.querySelector('i').textContent = o ? '✓' : ''; }); });
 
-  const cad = (id) => { const v = nb(val(id)); return v ? Math.round(versCAD(v) * 100) / 100 : null; };
   const appliquer = async (raz) => {
-    const enCours = $('#fv-in').value.trim();                          // un nom tape sans toucher « Ajouter » compte aussi
+    const enCours = $('#fv-in').value.trim();                          // un nom tape sans toucher « + » compte aussi
     if (!raz && enCours.length >= 3 && FAV.length < FMAX && !FAV.some(x => x.toLowerCase() === enCours.toLowerCase())) FAV.push(enCours.slice(0, 40));
     const noms = raz ? [] : [...FAV];
-    if (!raz && $('#fd-avert').checked !== avert0) API.alarmes_regler({mes_joueurs: $('#fd-avert').checked}).catch(() => {});
     Object.assign(F, raz ? {sortes:[], rabais_min:null, prix_min:null, prix_max:null, gain_min:null, joueurs:[], avec_mise:false, vendeurs:false, objectif:''}
       : {objectif: '', sortes: [], profit_mode: pm, rabais_min: pm === '%' && pv ? pv : null, prix_min:null, prix_max:null,
-         gain_min: pm === '$' && pv ? Math.round(versCAD(pv)) : null,       // le budget : sur le compte
-         avec_mise: $('#fd-mise').checked,
-         joueurs: $('#fd-seul').checked ? noms : [], avec_mise: $('#fd-mise').checked, vendeurs: $('#fd-vend').checked, pays_exclus: [...PX]});
-    if (raz) F.pays_exclus = [];
+         gain_min: pm === '$' && pv ? Math.round(versCAD(pv)) : null,
+         joueurs: $('#fd-seul').checked ? noms : [], avec_mise: false, vendeurs: false});
+    F.pays_exclus = [];                                                // remplace par « Expediees de » (le reglage du compte)
     const d = raz ? {collectionne: [], favoris: [], prix_min: null, prix_max: null}
-      : {collectionne: [...ep], favoris: noms, prix_min: null, prix_max: cad('fd-pmax')};
-    const vs = $$('[data-fdv]'); if (!raz && vs.length && p.pro) d.vendeurs = vs.map(x => x.value.trim().replace(/,/g, ' ')).filter(Boolean).join(', ');
+      : {collectionne: [...ep], favoris: noms, prix_min: null, prix_max: bud ? Math.round(versCAD(bud) * 100) / 100 : null};
+    const pvN = raz ? ['CA', 'US'] : ['CA', 'US'].filter(k => PV.has(k));
+    if (pvN.join() !== PV0.join()) { const x = await API.reglages_sauver({provenance: pvN}).catch(() => null); if (x) S.reglages = x; }
     const r = await API.deals_profil_regler(d).catch(e => ({ok:false, erreur:e.message}));
     if (r && r.ok === false) { toast(r.erreur || 'Erreur', 4000); return; }
     S.dealsProfil = r || null; sauverDealsF(); MEMO.clear(); fermerFeuille();
@@ -7416,19 +7423,33 @@ async function feuilleFiltresDeals(){
     const n_ = (S.dealsParId ? Object.keys(S.dealsParId).length : null);
     toast(raz ? tt('Filtres effacés : tous les deals', 'Filters cleared: all deals') : (n_ != null ? tt(`Filtres appliqués : ${n_} deals`, `Filters applied: ${n_} deals`) : tt('Filtres appliqués', 'Filters applied')), 2200);
   };
-  const PX = new Set(F.pays_exclus || []);
-  $$('#fd-px [data-px]').forEach(b => b.onclick = () => { const k = b.dataset.px; PX.has(k) ? PX.delete(k) : PX.add(k);
-    b.classList.toggle('barre', PX.has(k)); b.classList.toggle('on', !PX.has(k)); vibrer(); marquer(); });
   $('#fd-ok').onclick = (e) => { e.currentTarget.disabled = true; e.currentTarget.innerHTML = `<span class="roue"></span>`; appliquer(false); };
-  $('#fd-raz').onclick = () => appliquer(true);
-  API.deals_vendeurs_liste().then(r => { const e = $('#fd-ram-s'); if (e && r && r.ok && r.ramassage.length) e.textContent = r.ramassage.join(', '); }).catch(() => {});
-  $('#fd-ram').onclick = () => feuilleRamassage(() => { fermerFeuille(); chargerDeals(true); });
-  // 8 nov 2026 (Mathieu : « prioriser les deals canadiens pour un Canadien et americains pour un Americain ») : le pays d'achat
-  $('#fd-pays').onclick = () => { vibrer(); const pa = (S.reglages || {}).pays === 'US' ? 'US' : 'CA';
-    ouvrirFeuille(`<h3>${tt('Tu achètes depuis', 'You buy from')}</h3><div class="sous" style="margin-bottom:10px">${tt('Les taxes, les frais d’importation et la mise max suivent ton pays. Les deals de ton pays passent en premier : pas de douane.', 'Taxes, import fees and the max bid follow your country. Deals from your country come first: no customs.')}</div>
-      <div class="d-choix">${[['CA', tt('Canada', 'Canada')], ['US', tt('États-Unis', 'United States')]].map(([k, l]) => `<button class="d-ch ${pa === k ? 'on' : ''}" data-pays="${k}"><span>${l}</span></button>`).join('')}</div>`);
+  $('#fd-raz').onclick = () => { vibrer(); appliquer(true); };
+}
+// 12 nov 2026 (Mathieu : « les filtres : beaucoup trop de choix ») : ce qui ne change presque jamais quitte les Filtres et
+// vit ici (Reglages > Mes deals) : le pays d'achat, le ramassage sur place, mes vendeurs eBay. Trois rangees, rien d'autre.
+async function feuilleReglagesDeals(){
+  const [p, rv] = await Promise.all([API.deals_profil_lire().catch(() => null), API.deals_vendeurs_liste().catch(() => null)]);
+  if (!p) { toast(tt('Le serveur est occupé : réessaie dans un instant', 'The server is busy: try again in a moment')); return; }
+  const pa = (S.reglages || {}).pays === 'US' ? 'US' : 'CA', ram = (rv && rv.ok && rv.ramassage) || [], vs = p.vendeurs || [];
+  const ligne = (id, ic, t, v) => `<button class="acc-pil fd-ram" id="${id}"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${ic}</svg></span><span class="ap-t"><b>${t}</b><small>${v}</small></span><i aria-hidden="true">›</i></button>`;
+  ouvrirFeuille(`<h3>${tt('Mes deals', 'My deals')}</h3>
+    ${ligne('rd-pays', IC_PIL.envoi || IC_PIL.pin, tt('J’achète depuis', 'I buy from'), pa === 'US' ? tt('États-Unis', 'United States') : 'Canada')}
+    ${ligne('rd-ram', IC_PIL.pin, tt('Je ramasse sur place', 'I pick up locally'), ram.length ? esc(ram.join(', ')) : tt('Aucun vendeur', 'No seller'))}
+    ${p.vendeurs_max ? ligne('rd-vend', IC_PIL.profil, tt('Mes vendeurs eBay', 'My eBay sellers') + (p.pro ? '' : ' <span class="badge-f pro">✦ PRO</span>'), vs.length ? esc(vs.join(', ')) : tt('Aucun', 'None')) : ''}
+    <button class="acc-pil fd-ram" id="rd-fil"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.graphe}</svg></span><span class="ap-t"><b>${tt('Filtres', 'Filters')}</b><small>${tt('Profit, budget, cartes, pays, joueurs', 'Profit, budget, cards, country, players')}</small></span><i aria-hidden="true">›</i></button>`);
+  $('#rd-pays').onclick = () => { vibrer();
+    ouvrirFeuille(`<h3>${tt('J’achète depuis', 'I buy from')}</h3><div class="prov-p">${[['CA', 'Canada'], ['US', tt('États-Unis', 'USA')]].map(([k, n]) => `<button class="prov ${pa === k ? 'on' : ''}" data-pays="${k}"><span class="prov-f">${drapeau(k)}</span><span>${n}</span><i>${pa === k ? '✓' : ''}</i></button>`).join('')}</div>`);
     $$('[data-pays]').forEach(b => b.onclick = async () => { const r = await essai(API.reglages_sauver({pays: b.dataset.pays}), tt('Enregistré', 'Saved'));
-      if (r) { S.reglages = r; MEMO.clear(); fermerFeuille(); chargerDeals(true); } }); };
+      if (r) { S.reglages = r; MEMO.clear(); feuilleReglagesDeals(); } }); };
+  $('#rd-ram').onclick = () => { vibrer(); feuilleRamassage(() => feuilleReglagesDeals()); };
+  const v_ = $('#rd-vend'); if (v_) v_.onclick = () => { vibrer();
+    if (!p.pro) { toast(tt('Mes vendeurs eBay : avec Pro', 'My eBay sellers: with Pro'), 2500); return; }
+    ouvrirFeuille(`<h3>${tt('Mes vendeurs eBay', 'My eBay sellers')}</h3><div class="fx-vs">${Array.from({length: p.vendeurs_max}, (_, i) => `<input class="champ" data-rdv="${i}" value="${esc(vs[i] || '')}" placeholder="${esc(tt('Pseudo eBay', 'eBay username'))}" autocapitalize="off" autocorrect="off" spellcheck="false">`).join('')}</div>
+      <button class="btn" id="rd-v-ok" style="margin-top:14px">${tt('Enregistrer', 'Save')}</button>`);
+    $('#rd-v-ok').onclick = async () => { const v = $$('[data-rdv]').map(x => x.value.trim().replace(/,/g, ' ')).filter(Boolean).join(', ');
+      if (await essai(API.deals_profil_regler({vendeurs: v}), tt('Enregistré', 'Saved'))) { MEMO.clear(); feuilleReglagesDeals(); } }; };
+  $('#rd-fil').onclick = () => { vibrer(); fermerFeuille(); location.hash = '#deals'; setTimeout(() => { if (S.dealsF) feuilleFiltresDeals(); }, 700); };
 }
 // 30 oct 2026 (Mathieu : « Remi, Savage et CF31, je peux aller pick up sur place ») : le port ne compte pas chez eux
 async function feuilleRamassage(apres){
@@ -9008,6 +9029,7 @@ async function feuilleTestIQ(){
       ${crb.length ? `<div class="da-l">${tt('Plus SlabIQ est sûr, plus il a raison ?', 'The surer SlabIQ is, the more often right?')}</div><div class="tq-c"><div class="tq-ch"><span>${tt('Confiance', 'Confidence')}</span><span>${tt('Alertes', 'Alerts')}</span><span>${tt('Justes', 'Right')}</span></div>${crb.map(c => `<div class="${c.precision >= 0.95 ? 'ok' : ''}"><span>≥ ${pc(c.seuil)}</span><span>${c.alertes}</span><b>${pc1(c.precision)}</b></div>`).join('')}</div>` : ''}
       ${(R.signaux || []).length ? `<div class="da-l">${tt('Ce qui compte le plus', 'What matters most')}</div><div class="tq-s">${R.signaux.slice(0, 8).map(([k, v]) => `<div><span>${esc(k)}</span><i style="width:${Math.max(4, Math.round(100 * Math.max(0, v) / Math.max(1e-6, R.signaux[0][1])))}%"></i></div>`).join('')}</div>` : ''}
       ${(R.exemples_alertes || []).length ? `<div class="da-l">${tt('Alertes du test (les plus sûres)', 'Test alerts (most confident)')}</div><div class="tq-a">${R.exemples_alertes.slice(0, 20).map(a => `<div class="${a.annonce === a.vrai ? 'ok' : 'ko'}"><b>${esc(a.joueur)}</b><span>${esc(a.le)} · ${esc(a.annonce)} ${pc(a.confiance)}${a.mouvement_pct != null ? ` · ${tt('réel', 'actual')} ${a.mouvement_pct > 0 ? '+' : ''}${a.mouvement_pct} %` : ''}</span><em>${a.annonce === a.vrai ? '✓' : '✗ ' + esc(a.vrai)}</em></div>`).join('')}</div>` : ''}
+      <a class="lien-t" href="/admin/slabiq_donnees.json.gz" download style="display:inline-block;margin-top:12px">${tt('Télécharger les données du test', 'Download the test data')}</a>
       <div class="sous" style="margin-top:10px">${tt('Rapport du ', 'Report of ')}${esc((R.le || '').replace('T', ' '))} · ${R.duree_s || 0} s</div>`;
   } else if (!r.en_cours) h += `<div class="vide">${tt('Pas encore de rapport. Lance le test : quelques minutes.', 'No report yet. Run the test: a few minutes.')}</div>`;
   h += `<button class="btn" id="tq-go" ${r.en_cours ? 'disabled' : ''}>${r.en_cours ? tt('Test en cours…', 'Test running…') : tt('Lancer le test', 'Run the test')}</button>`;
@@ -16102,7 +16124,7 @@ async function vueReglages(arg){
       ${ligneAct('breaks', 'Breaks', 'Prix des places, tirage, envois')}${ligneAct('magasin', 'Magasin / comptoir', 'Ventes en personne, rachats, consignation')}</div>
     <div class="r-bloc" ${S.forfait && S.forfait.communaute ? '' : 'hidden'}><button class="r-ligne" id="g-partage"><span class="t"><b>${tt('Partager mes ventes (anonymes)', 'Share my sales (anonymous)')}</b><span>${tt('Tes prix vendus, sans ton nom ni l’acheteur, aident les prix « vendues » de tout le monde', 'Your sold prices, without your name or the buyer’s, power everyone’s “sold” prices')}</span></span><span class="interrupteur ${(S.reglages || {}).partage_ventes === true ? 'on' : ''}"><i></i></span></button></div>
     <div class="r-bloc"><div class="r-titre">${tt('Entraînement de l’IA', 'AI training')}</div><button class="r-ligne" id="g-entr"><span class="t"><b>${tt('Aider à entraîner l’IA de SlabCoach', 'Help train SlabCoach’s AI')}</b><span>${tt('Quand une carte examinée revient du gradage (ou que tu confirmes un défaut), SlabCoach garde ses photos d’examen, les mesures et la vraie note pour entraîner son analyseur. Sans ton nom, ton pseudo ni tes prix. Retirer efface tes exemples.', 'When an examined card comes back from grading (or you confirm a defect), SlabCoach keeps its exam photos, measurements and real grade to train its analyzer. Without your name, username or prices. Withdrawing erases your examples.')}</span></span><span class="interrupteur ${(S.reglages || {}).ia_entrainement_ok ? 'on' : ''}"><i></i></span></button></div>
-    <button class="r-bloc r-idee" id="g-deals"><span class="aaj-n">★</span><span><b>${tt('Mes deals', 'My deals')}</b><small>${tt('Ce que je collectionne, mes favoris, mon budget', 'What I collect, my favorites, my budget')}</small></span></button>
+    <button class="r-bloc r-idee" id="g-deals"><span class="aaj-n">★</span><span><b>${tt('Mes deals', 'My deals')}</b><small>${tt('Pays d’achat, ramassage, mes vendeurs, filtres', 'Buying country, pickup, my sellers, filters')}</small></span></button>
     <button class="r-bloc r-idee" id="g-profil"><span class="aaj-n">◎</span><span><b>${tt('Mon profil', 'My profile')}</b><small>${tt('Niveau, but, budget : pour des conseils à ta mesure', 'Level, goal, budget: tips made for you')}</small></span><span class="fl">›</span></button>
     <button class="r-bloc r-idee" id="g-tour"><span class="aaj-n">▶</span><span><b>${tt('Le tour de l’app', 'App tour')}</b><small>${tt('Tout ce que tu peux faire, en 1 minute', 'Everything you can do, in 1 minute')}</small></span><span class="fl">›</span></button>
     <a class="r-bloc r-idee" href="#guide"><span class="aaj-n">★</span><span><b>${tt('Guide du hobby', 'Hobby guide')}</b><small>${tt('Produits, sortes de cartes, budget : tout pour bien acheter', 'Products, card types, budget: buy smart')}</small></span><span class="fl">›</span></a>
@@ -16181,7 +16203,7 @@ async function vueReglages(arg){
     if (await essai(API.reglages_sauver({activites:n}))) { appliquerActivites(n); toast(n[b.dataset.act] ? tt('Onglet ajouté', 'Tab added') : tt('Onglet masqué', 'Tab hidden')); vueReglages(); }
   });
   if ($('#g-idee')) $('#g-idee').onclick = feuilleIdee;
-  if ($('#g-deals')) $('#g-deals').onclick = () => { location.hash = '#deals'; setTimeout(() => { if (S.dealsF) feuilleFiltresDeals(); }, 700); };
+  if ($('#g-deals')) $('#g-deals').onclick = () => { vibrer(); feuilleReglagesDeals(); };
   if ($('#g-profil')) $('#g-profil').onclick = () => questionnaireProfil(() => toast(tt('Profil enregistré', 'Profile saved')), true);
   if ($('#g-tour')) $('#g-tour').onclick = () => tutoriel(S.mode === 'acheteur' ? 'acheteur' : 'vendeur', true);
   if ($('#g-entr')) $('#g-entr').onclick = async () => {

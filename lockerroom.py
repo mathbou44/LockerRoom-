@@ -1449,6 +1449,12 @@ class Api:
         fav = fav[:fmax]
         p = {"collectionne": [x for x in d.get("collectionne") or [] if x in self.PROFIL_COLL], "favoris": fav,
              "prix_min": _float(d.get("prix_min")) or None, "prix_max": _float(d.get("prix_max")) or None}
+        # 12 nov 2026 : une cle absente garde sa valeur (Reglages > Mes vendeurs n'envoie que « vendeurs »)
+        avant = self.reglages_lire().get("deals_profil")
+        if isinstance(avant, dict):
+            for k in ("collectionne", "favoris", "prix_min", "prix_max"):
+                if k not in d:
+                    p[k] = avant.get(k)
         if p["prix_min"] and p["prix_max"] and p["prix_min"] > p["prix_max"]:
             p["prix_min"], p["prix_max"] = p["prix_max"], p["prix_min"]
         self.reglages_sauver({"deals_profil": p})

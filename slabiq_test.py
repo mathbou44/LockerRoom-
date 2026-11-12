@@ -135,6 +135,9 @@ def _med_pond(paires):
     return paires[-1][0]
 
 
+_RECRUES = {}
+
+
 def _series(cartes):
     """-> {joueur: [[(date, log prix)] par carte]} : les ventes de chaque carte exacte, gardees carte par carte.
     12 nov 2026 : plus de « valeur habituelle » calculee sur toute l'annee (elle voyait le futur) ; on compare toujours une
@@ -151,6 +154,9 @@ def _series(cartes):
         pts = gardes
         if len(pts) >= 4:
             par_j.setdefault(c["joueur"], []).append(pts)
+            r = _RECRUES.setdefault(c["joueur"], [0, 0])
+            r[0] += 1 if c.get("recrue") else 0
+            r[1] += 1
     return par_j
 
 
@@ -176,15 +182,36 @@ def _iso(t, k):
     return (t + timedelta(days=k)).isoformat()
 
 
+JOURS_APP = (0, 2, 4)    # 12 nov 2026 : on apprend des lundis, mercredis et vendredis (3x plus d'exemples) ; la note : les lundis
+
+
 def _lundis(d_min, d_max):
     t = d_min + timedelta(days=(7 - d_min.weekday()) % 7)
     while t <= d_max:
         yield t
-        t += timedelta(days=7)
+        t += timedelta(days=1)
+        while t.weekday() not in JOURS_APP:
+            t += timedelta(days=1)
 
 
 NOMS_F = ["elan_prix", "elan_court", "niveau", "ventes_av", "ventes_ratio", "marche_elan", "marche_niveau", "buzz7", "buzz28",
-          "notoriete", "pic3", "pts14", "pts28", "rythme", "gardien", "sans_lnh", "communaute7", "communaute_hausse"]
+          "notoriete", "pic3", "pts14", "pts28", "rythme", "gardien", "sans_lnh", "communaute7", "communaute_hausse",
+          "volatilite", "prix", "cartes", "recrues"]
+
+
+def _profil(cartes_j, d0, d1):
+    """(volatilite : l'ecart-type des ventes autour de la mediane de LEUR carte ; le prix median (log) ; nb de cartes vendues)."""
+    ecarts, prix, n = [], [], 0
+    for pts in cartes_j:
+        a = [lg for le, lg in pts if d0 <= le < d1]
+        if not a:
+            continue
+        n += 1
+        m = _med(a)
+        prix.append(m)
+        ecarts += [x - m for x in a]
+    vol = statistics.pstdev(ecarts) if len(ecarts) >= 3 else 0.0
+    return vol, (_med(prix) or 0.0), n
 PAIRES_MIN = 2          # au moins 2 cartes differentes vendues avant ET apres
 POIDS_MIN = 3           # et au moins 3 ventes comparables
 
@@ -256,9 +283,11 @@ def _exemples(par_j, wiki, nhl_, d_min, d_max):
                 p28 / g28 if g28 else 0.0,
                 1.0 if n.get("position") == "G" else 0.0,
                 0.0 if matchs else 1.0,
-                *_communaute(cj, j, t)])
+                *_communaute(cj, j, t),
+                *_profil(cartes_j, _iso(t, -28), ts),
+                (lambda r: r[0] / r[1] if r and r[1] else 0.0)(_RECRUES.get(j))])
             y.append(cl)
-            meta.append((ts, j, round(cible, 4), k))
+            meta.append((ts, j, round(cible, 4), k, t.weekday() == 0))
     return X, y, meta, NOMS_F
 
 
@@ -314,41 +343,106 @@ def _mesure(proba, y, classes, seuil):
     return out
 
 
+class _Vote:
+    """12 nov 2026 : trois modeles qui votent (la moyenne de leurs probabilites) : une alerte sure doit l'etre pour tous."""
+    def __init__(self):
+        from sklearn.ensemble import HistGradientBoostingClassifier
+        self.m = [HistGradientBoostingClassifier(max_iter=200, learning_rate=0.05, max_leaf_nodes=8, min_samples_leaf=25,
+                                                 l2_regularization=2.0, random_state=7),
+                  HistGradientBoostingClassifier(max_iter=300, learning_rate=0.03, max_leaf_nodes=15, min_samples_leaf=40,
+                                                 l2_regularization=4.0, random_state=11),
+                  HistGradientBoostingClassifier(max_iter=150, learning_rate=0.08, max_depth=3, min_samples_leaf=30,
+                                                 l2_regularization=1.0, random_state=23)]
+        self.classes_ = None
+
+    def fit(self, X, y):
+        for m in self.m:
+            m.fit(X, y)
+        self.classes_ = self.m[0].classes_
+        return self
+
+    def predict_proba(self, X):
+        import numpy as np
+        return np.mean([m.predict_proba(X) for m in self.m], axis=0)
+
+    def predict(self, X):
+        p = self.predict_proba(X)
+        return self.classes_[p.argmax(axis=1)]
+
+    def score(self, X, y):
+        return float((self.predict(X) == y).mean())
+
+    def get_params(self, deep=False):
+        return {}
+
+
 def _modele():
-    from sklearn.ensemble import HistGradientBoostingClassifier
-    return HistGradientBoostingClassifier(max_iter=200, learning_rate=0.05, max_leaf_nodes=8, min_samples_leaf=25,
-                                          l2_regularization=2.0, random_state=7)
+    return _Vote()
 
 
-def _pas_a_pas(X, y, meta, app_min=150, tous_les=2):
-    """Rejoue le passe SEMAINE PAR SEMAINE : pour chaque lundi w, le modele n'apprend que des exemples dont la reponse etait
-    connue avant w (lundi + 28 jours <= w), puis predit w. -> [(indice, proba)], classes, dernier modele."""
+def _pas_a_pas(X, y, meta, app_min=150, tous_les_j=7):
+    """Rejoue le passe jour par jour : pour chaque jour d, le modele n'apprend que des exemples dont la reponse etait connue
+    avant d (jour + 28 jours <= d), puis predit d ; il est reentraine chaque semaine. -> [(indice, proba)], classes, modele.
+    Seuls les LUNDIS sont notes (les autres jours ne servent qu'a apprendre)."""
     par_d = {}
     for i, m in enumerate(meta):
         par_d.setdefault(m[0], []).append(i)
     dates = sorted(par_d)
-    out, classes, mod, k = [], None, None, 0
+    out, classes, mod, der = [], None, None, None
     for d in dates:
-        lim = (date.fromisoformat(d) - timedelta(days=HORIZON_J)).isoformat()
-        app = [i for i, m in enumerate(meta) if m[0] <= lim]
-        if len(app) < app_min or len({y[i] for i in app}) < 3:
+        ids = [i for i in par_d[d] if len(meta[i]) < 5 or meta[i][4]]
+        if not ids:
             continue
-        if mod is None or k % tous_les == 0:
+        lim = (date.fromisoformat(d) - timedelta(days=HORIZON_J)).isoformat()
+        if mod is None or (date.fromisoformat(d) - der).days >= tous_les_j:
+            app = [i for i, m in enumerate(meta) if m[0] <= lim]
+            if len(app) < app_min or len({y[i] for i in app}) < 3:
+                continue
+            time.sleep(0.01)
             mod = _modele()
             mod.fit([X[i] for i in app], [y[i] for i in app])
-            classes = list(mod.classes_)
-        k += 1
-        ids = par_d[d]
+            classes, der = list(mod.classes_), date.fromisoformat(d)
         for i, p in zip(ids, mod.predict_proba([X[i] for i in ids]).tolist()):
             out.append((i, p))
     return out, classes, mod
 
 
-def executer(joueurs_max=JOUEURS_MAX):
+def _donnees_sauver(par_j, wiki, nhl_, n_cartes):
+    """12 nov 2026 (Mathieu : « tu peux pas tester direct avec les donnees de l'app ? ») : ce que le test a lu (les ventes
+    carte par carte en log, Wikipedia jour par jour, les matchs LNH), en un fichier que l'admin telecharge pour rejouer
+    le test ailleurs, sans aller-retour. Aucun compte, aucun titre, aucune annonce."""
+    import gzip
+    d = {"le": datetime.now().isoformat(timespec="seconds"), "cartes": par_j, "recrues": _RECRUES, "wiki": wiki, "nhl": nhl_,
+         "n_cartes": n_cartes}
+    try:
+        p = _chemin("slabiq_test_donnees.json.gz")
+        with gzip.open(p + ".tmp", "wt", encoding="utf-8") as f:
+            json.dump(d, f, separators=(",", ":"))
+        os.replace(p + ".tmp", p)
+    except OSError:
+        pass
+
+
+def _donnees_lire(chemin):
+    import gzip
+    with gzip.open(chemin, "rt", encoding="utf-8") as f:
+        d = json.load(f)
+    par_j = {j: [[tuple(x) for x in pts] for pts in cj] for j, cj in d["cartes"].items()}
+    nhl_ = {j: {**v, "matchs": [tuple(m) for m in v.get("matchs") or []]} for j, v in (d.get("nhl") or {}).items()}
+    return par_j, d.get("recrues") or {}, d.get("wiki") or {}, nhl_, d.get("n_cartes") or 0
+
+
+def executer(joueurs_max=JOUEURS_MAX, depuis=None):
+    """depuis : un fichier slabiq_test_donnees.json.gz (rejouer le test hors du serveur, memes donnees)."""
     import base_ventes
     import nhl
     t0 = time.time()
     _ETAT.update(etape="ventes")
+    _RECRUES.clear()
+    if depuis:
+        par_j, rec, wiki0, nhl0, n_c = _donnees_lire(depuis)
+        _RECRUES.update(rec)
+        return _apprendre(dict(sorted(par_j.items(), key=lambda kv: -sum(len(p) for p in kv[1]))[:joueurs_max]), wiki0, nhl0, n_c, t0)
     cartes = [c for c in base_ventes.cartes_toutes(jours=420, n_min=4, max_q=20000) if (c.get("sport") or "hockey") == "hockey"]
     par_j = _series(cartes)
     par_j = dict(sorted(par_j.items(), key=lambda kv: -sum(len(p) for p in kv[1]))[:joueurs_max])
@@ -392,14 +486,21 @@ def executer(joueurs_max=JOUEURS_MAX):
                 _cache_ecrire(cache)
         nhl_[j] = cache["nhl"][k]
     _cache_ecrire(cache)
+    _donnees_sauver(par_j, wiki, nhl_, len(cartes))
+    return _apprendre(par_j, wiki, nhl_, len(cartes), t0)
+
+
+def _apprendre(par_j, wiki, nhl_, n_cartes, t0):
+    toutes = [le for cj in par_j.values() for pts in cj for le, _e in pts]
+    d_min, d_max = date.fromisoformat(min(toutes)), date.fromisoformat(max(toutes))
     _ETAT.update(etape="apprentissage")
     X, y, meta, noms_f = _exemples(par_j, wiki, nhl_, d_min, d_max)
     # combien de ventes on a, mois par mois : l'historique est le vrai carburant du test
     par_mois = {}
     for le in toutes:
         par_mois[le[:7]] = par_mois.get(le[:7], 0) + 1
-    base = {"periode": [d_min.isoformat(), d_max.isoformat()], "joueurs": len(par_j), "cartes": len(cartes), "ventes": len(toutes),
-            "ventes_mois": sorted(par_mois.items()), "exemples": len(X)}
+    base = {"periode": [d_min.isoformat(), d_max.isoformat()], "joueurs": len(par_j), "cartes": n_cartes, "ventes": len(toutes),
+            "ventes_mois": sorted(par_mois.items()), "exemples": sum(1 for m in meta if m[4]), "exemples_app": len(X)}
     if len(X) < 200:
         return {"erreur": f"Trop peu d'exemples ({len(X)}) : il faut plus d'historique de ventes (meme carte vendue avant et apres)",
                 **base}
@@ -470,7 +571,16 @@ def lancer():
 
     def tache():
         try:
-            r = executer()
+            try:                                   # 12 nov 2026 : un seul coeur pour l'apprentissage, l'app garde l'autre
+                from threadpoolctl import threadpool_limits
+                lim = threadpool_limits(limits=1)
+            except Exception:
+                lim = None
+            try:
+                r = executer()
+            finally:
+                if lim is not None:
+                    lim.unregister() if hasattr(lim, "unregister") else lim.restore_original_limits()
         except Exception as e:
             r = {"erreur": f"{type(e).__name__} : {e}"[:300]}
         r.setdefault("le", datetime.now().isoformat(timespec="seconds"))

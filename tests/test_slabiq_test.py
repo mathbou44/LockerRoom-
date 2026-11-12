@@ -71,3 +71,14 @@ a_, b_ = _sig(bruit), _sig(fut)
 assert len(a_) > 300, len(a_)
 assert not [k for k in a_ if k in b_ and any(abs(u - v) > 1e-9 for u, v in zip(a_[k], b_[k]))], "le futur fuit dans les signaux"
 print("SLABIQ SANS FUTUR OK", len(a_))
+
+# 12 nov 2026 : le test laisse ses donnees (slabiq_test_donnees.json.gz) et se rejoue a l'identique depuis ce fichier
+import os as _os
+base_ventes.cartes_toutes = lambda **k: cartes
+r3 = slabiq_test.executer()
+p_ = _os.path.join(comptes.DONNEES, "slabiq_test_donnees.json.gz")
+assert _os.path.exists(p_), "donnees pas sauvees"
+base_ventes.cartes_toutes = lambda **k: (_ for _ in ()).throw(AssertionError("ne doit pas relire la base"))
+r4 = slabiq_test.executer(depuis=p_)
+assert r4["resultat"] == r3["resultat"] and r4["exemples"] == r3["exemples"], (r3["resultat"], r4["resultat"])
+print("SLABIQ REJOUE OK", r4["resultat"])
