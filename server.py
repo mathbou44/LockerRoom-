@@ -1401,6 +1401,12 @@ def _valeurs_auto():
                 print("Sauvegarde R2 lancee", flush=True)
         except Exception as e:
             print("Sauvegarde R2 : " + str(e), flush=True)
+        try:                                    # 12 nov 2026 - les types de cartes qui comptent (nos ventes, 1 fois/semaine)
+            import types_cartes
+            if types_cartes.passe_si_besoin():
+                print("Types de cartes : passe lancee", flush=True)
+        except Exception as e:
+            print("Types de cartes : " + str(e), flush=True)
         try:                                    # 12 nov 2026 - SlabIQ : le test et le journal en direct (1 fois/semaine)
             import slabiq_test
             if slabiq_test.passe_si_besoin():

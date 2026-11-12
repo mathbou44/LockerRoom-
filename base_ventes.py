@@ -82,6 +82,30 @@ def apprendre_codes_si_besoin(jours=365):
     return len(tab)
 
 
+def ventes_titres(jours=365):
+    """12 nov 2026 (types de cartes) : [(joueur, titre, prix, le)] des ventes de `jours` jours ; le joueur vient du plan de la
+    recherche, sinon du nom lu dans la recherche."""
+    import cartes_match
+    d0 = (datetime.now() - timedelta(days=jours)).strftime("%Y-%m-%d")
+    try:
+        c = _cx()
+        try:
+            plan = {q: j for q, j in c.execute("SELECT q, joueur FROM plan WHERE joueur IS NOT NULL")}
+            rows = c.execute("SELECT q, titre, prix, le FROM ventes WHERE le >= ? AND prix > 0", (d0,)).fetchall()
+        finally:
+            c.close()
+    except sqlite3.Error:
+        return []
+    noms, out = {}, []
+    for q, titre, prix, le in rows:
+        if q not in noms:
+            j = plan.get(q) or cartes_match.joueur_du_titre(q or "")
+            noms[q] = " ".join(w[:1].upper() + w[1:] for w in j.lower().split()) if j and len(j.split()) >= 2 else None
+        if noms[q]:
+            out.append((noms[q], titre, prix, le))
+    return out
+
+
 def ventes_par_joueur(jours=90):
     """13 nov 2026 (Mathieu : « les equipes qui ont le plus d'acheteurs, de liquidite ») : le nombre de ventes de nos archives
     par joueur sur `jours` jours (la recherche -> son joueur : le plan, sinon le nom lu dans la recherche). Agrege seulement."""

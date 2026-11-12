@@ -552,6 +552,11 @@ def passe(max_appels=None, sport="hockey"):
         creux_noter(d["indice"])
     except Exception as e:
         print("Creux (journal) : " + repr(e), flush=True)
+    try:                                   # 12 nov 2026 : la photo du jour (« ce que tu as manque » compare a la derniere visite)
+        import quoi_de_neuf
+        quoi_de_neuf.hist_noter(d["indice"])
+    except Exception as e:
+        print("Indice (historique) : " + repr(e), flush=True)
     return {"lus": lus, "joueurs": len(d["indice"])}
 
 

@@ -72,6 +72,8 @@ REGLAGES_DEFAUT = {
     "flou_niveau": 2,                                           # 30 oct 2026 : fond flou 1 leger, 2 moyen, 3 fort
     "ramassage": [],
     "radar_q": 0,                # 10 nov 2026 : le questionnaire du Radar deja vu (par compte)
+    # 12 nov 2026 : « ce que tu as manque » (la visite d'avant, la valeur de la collection par jour) et les nouveautes vues
+    "visite_le": "", "visite_prec": "", "valeur_hist": {}, "maj_vue": 0,
     "chasses": [],               # 10 nov 2026 : les sets que le Radar chasse (« il te manque ») : [{pid, sous, nom}]
     # 11 nov 2026 (Mathieu : « Canada est choisi mais une carte expediee des Etats-Unis est proposee : douanes, tarifs ») :
     # les pays d'ou les cartes du Radar peuvent etre expediees (un, l'autre ou les deux)
@@ -1612,7 +1614,8 @@ class Api:
                 "a_ajouter": len(nouveaux_produits.liste()), "erreurs_24h": sum(1 for e in s["erreurs"] if str(e["le"]) > (datetime.now() - timedelta(days=1)).isoformat()),
                 "ebay": s["ebay"], "version": s["version"], "vendues": vendues.statut(), "photos": s.get("photos"),
                 "taches": s.get("taches"), "disque": s.get("disque"), "veille": self._veille_resume(),
-                "demande_legale": self._demande_legale_statut(), "banc": self._banc_resume(), "highlightly": self._highlightly_statut(), "indice": self._indice_statut(), "score_slab": self._score_statut()}
+                "demande_legale": self._demande_legale_statut(), "banc": self._banc_resume(), "highlightly": self._highlightly_statut(), "indice": self._indice_statut(), "score_slab": self._score_statut(),
+                "types_cartes": self._types_statut()}
 
     @staticmethod
     def _banc_resume():
@@ -1678,6 +1681,19 @@ class Api:
             d["dernier"] = dict(d["dernier"], le="")       # force une nouvelle passe aujourd'hui
             banc._ecrire(d)
         return {"ok": True, "lance": banc.passe_si_besoin()}
+
+    @staticmethod
+    def _types_statut():
+        """12 nov 2026 : les types de cartes (nos ventes) : quand, combien, fiabilite, et le test avant / apres du score carte."""
+        try:
+            import types_cartes
+            d = types_cartes.lire()
+            if not d:
+                return None
+            return {"le": d.get("le"), "ventes": d.get("ventes"), "types": len(d.get("types") or {}), "fiabilite": d.get("fiabilite"),
+                    "mesure": d.get("mesure"), "actif": types_cartes.aide()}
+        except Exception:
+            return None
 
     @staticmethod
     def _demande_legale_statut():
@@ -7212,7 +7228,7 @@ class Api:
                     "pastilles": [k for k in (v.get("pastilles") or []) if k in ("en_feu", "en_hausse", "recrue", "legende", "en_creux", "rebond", "buzz", "actu")],
                     "semaine": {"pts": w.get("pts"), "b": w.get("b"), "mj": w.get("mj")} if w.get("mj") else None,
                     "creux": {k: cx.get(k) for k in ("etat", "ppm", "avant_ppm", "ecart_pct", "age")} if cx else None,
-                    "criteres": {k: round(float(c[k])) for k in ("forme", "ascension", "rythme", "buzz", "notoriete", "demande", "actu", "legende", "recrue") if c.get(k) is not None},
+                    "criteres": {k: round(float(c[k])) for k in ("forme", "ascension", "rythme", "buzz", "notoriete", "demande", "marche", "actu", "legende", "recrue") if c.get(k) is not None},
                     "actu": ((v.get("actu") or [None])[0]) if isinstance(v.get("actu"), list) else None}
         cats = {}
         for k, filtre, n in (("en_feu", "en_feu", 30), ("rebond", "rebond", 20), ("recrue", "recrue", 30), ("en_creux", "en_creux", 20),
@@ -7228,8 +7244,24 @@ class Api:
                 r["creux_bilan"] = {k: b.get(k) for k in ("signales", "mesurables_30", "remontes_30", "mesurables_60", "remontes_60")}
         except Exception:
             pass
+        try:                                   # 12 nov 2026 : les types de cartes les plus recherches (classement, score ; aucun prix)
+            import types_cartes
+            r["types"] = types_cartes.classement(12)
+        except Exception:
+            r["types"] = []
         Api._TEND_IQ.update(le=m, v=r)
         return r
+
+    def types_cartes_admin(self):
+        """12 nov 2026 : ADMIN - le tableau complet des types de cartes (prime contre la carte typique du joueur, volume,
+        fiabilite du classement)."""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l’admin"}
+        import types_cartes
+        d = types_cartes.lire()
+        return {"ok": True, "le": d.get("le"), "ventes": d.get("ventes"), "fiabilite": d.get("fiabilite"), "fiabilite_n": d.get("fiabilite_n"),
+                "mesure": d.get("mesure"),
+                "joueurs": len(d.get("joueurs") or {}), "types": types_cartes.classement(80, admin=True)}
 
     _IQ_CHIFFRES = {"le": 0.0, "v": None}
 
@@ -7322,6 +7354,83 @@ class Api:
             print("Joueurs du moment : " + repr(e), flush=True)
         Api._MOMENT.update(le=m, v={"ok": True, "joueurs": out[:14]})
         return Api._MOMENT["v"]
+
+    def quoi_de_neuf(self, forcer=False, langue=None):
+        """12 nov 2026 (Mathieu : « bonjour M./Mme X, voici les nouvelles que tu as manquees depuis ta derniere visite ») :
+        a l'ouverture apres 6 h d'absence, ce qui a change pour SES cartes : ses joueurs (echange, honneur, blessure,
+        Indice SlabIQ), la valeur de sa collection, ses ventes, ses alertes. forcer = revoir le resume de cette visite."""
+        import marche as _mq
+        import quoi_de_neuf as qn
+        r = self.reglages_lire()
+        en = (langue or r.get("langue")) == "en"
+        depuis, nouvelle, ecrire = qn.rouler_visite(r)
+        with _verrou:
+            c = self._db()
+            try:
+                stock = _dicts(c.execute("SELECT joueur, item_number, valeur, prix_demande, cout FROM cartes WHERE statut!='Vendue'"))
+                med = {x["item_number"]: x["mediane"] for x in _dicts(c.execute("SELECT item_number, mediane FROM sante")) if x["mediane"]}
+                vendues = _dicts(c.execute("SELECT prix_vendu FROM cartes WHERE statut='Vendue' AND vendu_le >= ?",
+                                           (str(depuis or "9999")[:19],)))
+            finally:
+                c.close()
+        valeur = sum((med.get(k.get("item_number")) or k.get("valeur") or k.get("prix_demande") or k.get("cout") or 0) for k in stock)
+        hist = r.get("valeur_hist") if isinstance(r.get("valeur_hist"), dict) else {}
+        va = qn.valeur_avant(hist, depuis) if depuis else None
+        ecrire["valeur_hist"] = qn.valeur_noter(hist, valeur, len(stock))
+        try:
+            self.reglages_sauver(ecrire)
+        except Exception as e:
+            print("Quoi de neuf (visite) : " + repr(e), flush=True)
+        if not depuis or not (nouvelle or forcer):
+            return {"ok": True, "montrer": False}
+        # les joueurs de SES cartes (les plus nombreux d'abord), puis ses joueurs suivis du Radar
+        par = {}
+        for k in stock:
+            j = re.sub(r"\s+", " ", str(k.get("joueur") or "")).strip()
+            if j:
+                par[j] = par.get(j, 0) + 1
+        try:
+            p = r.get("deals_profil") if isinstance(r.get("deals_profil"), dict) else {}
+            for f in p.get("favoris") or []:
+                par.setdefault(str(f).strip(), 0)
+        except Exception:
+            pass
+        noms = sorted(par.items(), key=lambda x: -x[1])[:150]
+        items = []
+        try:
+            for it in qn.joueurs(noms, depuis, en):
+                t, d, ton = qn.phrase(it, en)
+                items.append({"sorte": it["sorte"], "joueur": it["joueur"], "titre": t, "detail": d, "ton": ton,
+                              "lien": it.get("lien") if it.get("sorte") == "evenement" else None})
+        except Exception as e:
+            print("Quoi de neuf (joueurs) : " + repr(e), flush=True)
+        # ailleurs dans la LNH (quand ses joueurs n'ont rien de neuf) : 2 joueurs du moment, en mots simples
+        autres = []
+        if len(items) < 2:
+            try:
+                for x in (self.joueurs_du_moment().get("joueurs") or [])[:6]:
+                    if x["pastille"] == "en_feu" and x["nom"] not in par and len(autres) < 2:
+                        w = x.get("semaine") or {}
+                        autres.append({"joueur": x["nom"], "titre": (x["nom"] + (" is on fire" if en else " est en feu")),
+                                       "detail": (f"{w.get('pts')} points " + ("in" if en else "en") + f" {w.get('mj')} " + ("games" if en else "matchs")) if w.get("mj") else "",
+                                       "ton": "or"})
+            except Exception:
+                pass
+        try:
+            no = [n for n in _mq.alertes_liste(self).get("notifications") or [] if not n.get("lu") and str(n.get("le") or "") >= str(depuis)[:19]]
+        except Exception:
+            no = []
+        out = {"ok": True, "montrer": True, "depuis": depuis, "heures": round(qn.heures_depuis(depuis) or 0),
+               "joueurs": items, "autres": autres, "alertes": len(no),
+               "ventes": {"n": len(vendues), "total": round(sum(v.get("prix_vendu") or 0 for v in vendues), 2)},
+               # la variation seulement a nombre de cartes egal (des cartes ajoutees ou vendues ne sont pas le marche)
+               "valeur": {"maintenant": round(valeur, 2), "nb": len(stock), "avant": va[0] if va else None,
+                          "ecart": round(valeur - va[0], 2) if va and va[1] == len(stock) else None,
+                          "ajoutees": (len(stock) - va[1]) if va and len(stock) > va[1] else 0}}
+        ec = out["valeur"]["ecart"]
+        if not (items or autres or no or vendues or (ec is not None and abs(ec) >= max(5, 0.02 * (va[0] or 0)))):
+            out["montrer"] = bool(forcer)
+        return out
 
     @staticmethod
     def _radar_top(n):
@@ -7576,6 +7685,11 @@ class Api:
             out["pourquoi"] = indice_joueurs.pourquoi(nom)
         except Exception as e:
             print("Pourquoi : " + repr(e), flush=True)
+        try:                                   # 12 nov 2026 : ses cartes qui comptent le plus (nos ventes ; jamais un prix au public)
+            import types_cartes
+            out["types"] = types_cartes.du_joueur(nom, admin=self._est_admin())
+        except Exception:
+            out["types"] = None
         try:
             import demande_legale
             out["popularite"] = demande_legale.tendance(nom)
@@ -9733,7 +9847,25 @@ class Api:
                     gardees.append(x)
                 else:
                     ecartees.append({**x, "raison": "autre joueur ou lot"})
-            gardees.sort(key=lambda x: (not x.get("hit"), -x["total"]))
+            # 12 nov 2026 (Mathieu : « une Young Guns PSA 10 avant une Dazzler PSA 10 ») : les types de cartes qui comptent le
+            # plus POUR CE JOUEUR (nos ventes ; sinon le classement general) passent devant ; ensuite les hits, puis le prix
+            try:
+                import types_cartes
+                tj = types_cartes.du_joueur(nom_j)
+                ordre = {t["type"]: t["rang"] for t in tj["types"]} if tj["source"] == "joueur" else {}
+                gen = {t["type"]: t["score"] for t in types_cartes.classement(200)}
+            except Exception:
+                tj, ordre, gen = None, {}, {}
+            for x in gardees:
+                k = None
+                try:
+                    k = types_cartes.type_de(x.get("titre") or "") if gen else None
+                except Exception:
+                    pass
+                x["prio"] = (100 - 4 * ordre[k]) if k in ordre else (0.8 * gen[k]) if k in gen else (40 if x.get("hit") else 10)
+                if k and (k in ordre or k in gen):
+                    x["type_nom"] = types_cartes.nom_type(k)
+            gardees.sort(key=lambda x: (-x.get("prio", 0), not x.get("hit"), -x["total"]))
             # « de base, on ne devrait pas voir des cartes de 5 $ » : sous 20 $, seulement s'il n'y a presque rien d'autre
             if sum(1 for x in gardees if x["total"] >= self.JOUEUR_SEUL_MIN) >= 6:
                 ecartees += [{**x, "raison": "moins de 20 $"} for x in gardees if x["total"] < self.JOUEUR_SEUL_MIN]
@@ -9756,6 +9888,7 @@ class Api:
             except Exception:
                 ij = {}
             return {**base, "joueur_seul": joueur_seul, "joueur_iq": {k: ij.get(k) for k in ("indice", "rang", "sur", "pastilles", "actif")},
+                    "types": (tj or {}).get("types") if (tj or {}).get("source") == "joueur" else None,
                     "n": len(gardees), "annonces": gardees[:40], "vendues": {"ventes": [], "nb": 0, "mediane": None},
                     "valeur": None, "valeur_source": None, "bon_prix": None, "mes_achats": []}
         # 25 oct 2026 (Mathieu : « base-toi toujours sur les last sold ») : la valeur = ventes reelles

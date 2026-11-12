@@ -74,7 +74,7 @@ def _gem(g):
     return n in ("10", "9.5") or n.startswith("10")
 
 
-def carte(titre):
+def carte(titre, avec_type=True):
     """Ce que le titre dit de la carte (sans prix) : {auto, patch, rc, tirage, numero, grade, score}."""
     import cartes_match
     d = cartes_match._decoder_memo(titre or "")
@@ -84,7 +84,20 @@ def carte(titre):
     g = d.get("grade")
     s = 0.45 * _rarete(tirage) + (22 if auto else 0) + (14 if patch else 0) + (8 if auto and patch else 0) + (16 if rc else 0) \
         + (10 if _gem(g) else 0)
+    # 12 nov 2026 (Mathieu : « une Dazzler PSA 10 versus une Young Guns PSA 10, ca n'a rien a voir ») : le type de carte appris
+    # dans nos ventes (types_cartes : la carte contre la carte typique du MEME joueur) compte pour 30 % de la part carte
+    ty = None
+    try:
+        if not avec_type:
+            raise LookupError
+        import types_cartes
+        ty = types_cartes.info(titre)
+        if ty and ty.get("score") is not None and types_cartes.aide():
+            s = 0.7 * min(100.0, s) + 0.3 * ty["score"]
+    except Exception:
+        ty = None
     return {"auto": auto, "patch": patch, "rc": rc, "tirage": tirage, "numero": ns[0] if ns else None,
+            "type": ({k: ty.get(k) for k in ("type", "nom", "score", "rang", "sur")} if ty else None),
             "grade": (g.get("cie", "").upper() + " " + str(g.get("note") or "")).strip() if g else None,
             "exclu": bool(d.get("exclu")), "score": round(min(100.0, s), 1)}
 

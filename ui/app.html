@@ -2669,6 +2669,35 @@ body.en-defil .logo-lr::after, body.en-defil #nav-logo-nom, body.en-defil .titre
 .acc-pil .ap-t{flex:1; min-width:0; font-size:16px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .acc-pil > i{font-style:normal; font-size:22px; color:var(--pale); line-height:1}
 .acc-pil[hidden]{display:none}
+.maj-z .ap-t{display:flex; flex-direction:column; gap:2px; white-space:normal} .maj-z .ap-t small{font-size:13px; font-weight:500; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.maj-pt{width:9px; height:9px; border-radius:50%; background:var(--rouge); flex-shrink:0; box-shadow:0 0 0 3px color-mix(in srgb, var(--rouge) 25%, transparent)} .maj-pt[hidden]{display:none}
+/* 12 nov 2026 : « ce que tu as manque » et les nouveautes (au centre, flou, X) */
+.pop-tete .sous{font-size:14px; color:var(--doux)}
+.pop-corps.qd{display:flex; flex-direction:column; gap:8px}
+.qd-s{font:700 12px var(--f-cond); letter-spacing:.14em; text-transform:uppercase; color:var(--doux); margin:8px 2px 0}
+.qd-l{display:flex; align-items:center; gap:12px; width:100%; padding:10px 12px; border-radius:18px; border:1px solid var(--ligne); background:var(--carte); color:var(--texte); font:inherit; text-align:left; cursor:pointer}
+.qd-l:active{transform:scale(.985)} .qd-l > i{font-style:normal; color:var(--pale); font-size:20px; margin-left:auto}
+.qd-ic{width:38px; height:38px; flex-shrink:0; border-radius:50%; display:grid; place-items:center; background:var(--carte2); color:var(--texte)}
+.qd-ic svg{width:19px; height:19px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round}
+.qd-ic.vert{background:var(--vert-fond); color:var(--vert)} .qd-ic.rouge{background:var(--rouge-fond); color:var(--rouge)} .qd-ic.or{background:var(--or-fonce); color:var(--or)} .qd-ic.acc{background:var(--acc-fonce); color:var(--acc)}
+.qd-ic.bas svg{transform:scaleY(-1)}
+.qd-m{display:flex; flex-direction:column; gap:2px; min-width:0} .qd-m b{font-size:15.5px; line-height:1.25} .qd-m small{font-size:13px; color:var(--doux); line-height:1.3}
+.qd-m em{font-style:normal; font-size:12.5px; color:var(--acc); line-height:1.3}
+.qd-tu{display:grid; grid-template-columns:repeat(auto-fit, minmax(96px, 1fr)); gap:8px}
+.qd-t{display:flex; flex-direction:column; gap:2px; padding:10px 12px; border-radius:18px; background:var(--carte); border:1px solid var(--ligne); color:var(--texte); text-decoration:none}
+.qd-t span{font:700 11px var(--f-cond); letter-spacing:.1em; text-transform:uppercase; color:var(--doux)} .qd-t b{font-size:20px} .qd-t small{font-size:12.5px; color:var(--doux)}
+.qd-t small.vert{color:var(--vert)} .qd-t small.rouge{color:var(--rouge)}
+.mj-b{display:flex; flex-direction:column; gap:8px; padding:6px 0 12px} .mj-b + .mj-b{border-top:1px solid var(--sep); padding-top:14px}
+.mj-d{font:700 12px var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--doux); display:flex; align-items:center; gap:8px}
+.mj-p{display:flex; gap:12px; align-items:flex-start} .mj-ic{width:34px; height:34px; flex-shrink:0; border-radius:50%; display:grid; place-items:center; background:var(--acc-fonce); color:var(--acc)}
+.mj-ic svg{width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round}
+.mj-m{display:flex; flex-direction:column; gap:2px} .mj-m b{font-size:15.5px} .mj-m small{font-size:13.5px; color:var(--doux); line-height:1.35}
+/* 12 nov 2026 : les types de cartes (nos ventes) */
+.ty-l{display:flex; flex-wrap:wrap; gap:6px; margin-top:6px}
+.ty-p{display:inline-flex; align-items:center; gap:7px; padding:5px 12px 5px 5px; border-radius:999px; border:1px solid var(--ligne); background:var(--carte2); color:var(--texte); font:600 13.5px var(--f-txt); cursor:pointer}
+.ty-p i{width:22px; height:22px; border-radius:50%; display:grid; place-items:center; font-style:normal; font:700 12px var(--f-cond); background:var(--acc-fonce); color:var(--acc)}
+.ty-p:first-child i{background:var(--holo); color:#111}
+.jb-ty .ty-l{margin-top:4px}
 .acc-ticker{position:relative; overflow:hidden; margin:2px -16px; padding:4px 0;
   -webkit-mask:linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); mask:linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent)}
 .acc-ticker[hidden]{display:none}
@@ -9964,7 +9993,8 @@ async function vueValeur(arg){
         ${(r.compris || [])[0] ? `<a class="pilule" href="#joueur/${encodeURIComponent(String(r.compris[0]).replace(/ (young guns|rookie|future watch).*$/i, ''))}">${tt('Le joueur ›', 'Player ›')}</a>` : ''}
         <a class="pilule" href="${esc(lienAchat(ebayQ, 'valeur'))}" target="_blank" rel="noopener">${tt('Tout sur eBay', 'All on eBay')} ${EXT}</a></div>
       ${blocMesAchats(r.mes_achats, false, 0, null)}
-      ${r.joueur_seul ? `<div class="sous vf-astuce">${tt('Pour la valeur d’une carte précise, ajoute-la : « ', 'For one card’s value, add it: “')}${esc(r.joueur_seul)} Young Guns${tt(' »', '”')}</div>` : ''}
+      ${r.joueur_seul && (r.types || []).length >= 2 ? `<div class="v-rang-t"><b>${tt('Ses cartes les plus recherchées', 'His most sought-after cards')}</b></div>${pilsTypes(r.types, r.joueur_seul, 6)}`
+        : r.joueur_seul ? `<div class="sous vf-astuce">${tt('Pour la valeur d’une carte précise, ajoute-la : « ', 'For one card’s value, add it: “')}${esc(r.joueur_seul)} Young Guns${tt(' »', '”')}</div>` : ''}
       ${r.n ? `<div class="v-rang-t"><b>${r.joueur_seul ? tt('Ses cartes · les plus recherchées d’abord', 'His cards · most sought first') : tt('En vente maintenant', 'Listed now')}</b><button class="lien-doux" id="v-tout-a">${r.n} ›</button></div>
         <div class="d-car v-car">${r.annonces.slice(0, 10).map(tuileA).join('')}</div>`
         : `<div class="vide" style="margin-top:12px">${tt('Aucune annonce de cette carte exacte en ce moment. Fixe ton prix cible : on t’avertit dès qu’elle arrive.', 'No listing of this exact card right now. Set your target price: we’ll tell you when one shows up.')}</div>`}
@@ -10120,7 +10150,10 @@ async function vueTendancesIQ(arg){
       <div class="jb-t"><span class="jb-k">${tt('Recrues suivies', 'Rookies tracked')}</span><b class="jb-v or">${r.compte.recrue || 0}</b><small>${tt('1re ou 2e saison', '1st or 2nd season')}</small></div>
       ${r.creux_bilan && r.creux_bilan.remontes_30 != null ? `<div class="jb-t l"><span class="jb-k">${tt('Le suivi des creux', 'Slump tracking')}</span><b class="jb-v vert">${Math.round(r.creux_bilan.remontes_30 * 100)} %</b><small>${tt(`des ${r.creux_bilan.mesurables_30} joueurs signalés en creux ont vu leur marché remonter 30 jours après`, `of the ${r.creux_bilan.mesurables_30} players flagged in a slump saw their market rise 30 days later`)}</small></div>` : ''}
     </div>
-    ${top10.length ? `<div class="tiq-g"><div class="am-t">${tt('Top 10 de l’indice SlabIQ', 'SlabIQ index top 10')}</div>${top10.map((x, i) => `<button class="tiq-b" data-jpop="${esc(x.nom)}"><span class="tiq-bn">${i + 1}</span><span class="tiq-bl"><b>${esc(x.nom)}</b><i style="width:${Math.round(100 * (x.indice || 0) / mx)}%"></i></span><span class="tiq-bv">${Math.round(x.indice || 0)}</span></button>`).join('')}</div>` : ''}`;
+    ${top10.length ? `<div class="tiq-g"><div class="am-t">${tt('Top 10 de l’indice SlabIQ', 'SlabIQ index top 10')}</div>${top10.map((x, i) => `<button class="tiq-b" data-jpop="${esc(x.nom)}"><span class="tiq-bn">${i + 1}</span><span class="tiq-bl"><b>${esc(x.nom)}</b><i style="width:${Math.round(100 * (x.indice || 0) / mx)}%"></i></span><span class="tiq-bv">${Math.round(x.indice || 0)}</span></button>`).join('')}</div>` : ''}
+    ${(r.types || []).length >= 3 ? `<div class="tiq-g"><div class="am-t">${tt('Les cartes les plus recherchées', 'The most sought-after cards')}</div>
+      <div class="sous" style="margin:-2px 0 6px">${tt('Chaque sorte de carte comparée aux autres cartes du même joueur, dans les vraies ventes. Une Young Guns gradée 10 et une Dazzlers gradée 10, ce n’est pas la même chose.', 'Each kind of card compared with the same player’s other cards, in real sales. A graded 10 Young Guns and a graded 10 Dazzlers are not the same thing.')}</div>
+      ${r.types.slice(0, 10).map((x, i) => `<button class="tiq-b" data-tyq="${esc(qType(x.nom))}"><span class="tiq-bn">${i + 1}</span><span class="tiq-bl"><b>${esc(nomTypeT(x.nom))}</b><i style="width:${Math.max(4, x.score || 0)}%"></i></span><span class="tiq-bv">${x.score}</span></button>`).join('')}</div>` : ''}`;
   const carte = (x) => {
     const cr = Object.entries(x.criteres || {}).filter(([k]) => CRIT_IQ()[k]).sort((a, b) => b[1] - a[1]).slice(0, 4);
     const P = {en_feu: [tt('En feu', 'On fire'), 'rouge'], honneur: [tt('Honoré', 'Honored'), 'or'], occasion: [tt('Bonne occasion', 'Buy low'), 'vert'], mauvaise: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], rebond: [tt('Sort du creux', 'Bouncing back'), 'vert'], recrue: [tt('Recrue', 'Rookie'), 'or'], en_hausse: [tt('En hausse', 'Rising'), 'vert'],
@@ -10153,6 +10186,7 @@ const SIG_IQ = () => [
   ['demande', tt('la demande pour ses cartes', 'demand for his cards'), 11, '#F5C451', '<rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 8h6M9 12h6"/>'],
   ['rythme', tt('son rythme de la saison', 'his season pace'), 9, '#5EC8F2', '<circle cx="12" cy="13" r="7"/><path d="M12 13l3-3M10 3h4"/>'],
   ['buzz', tt('les recherches Wikipedia (20 jours)', 'Wikipedia searches (20 days)'), 9, '#B9BEFF', '<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>'],
+  ['marche', tt('le marché de cartes de son équipe (les équipes qui vendent le plus)', 'his team’s card market (the teams that sell the most)'), 8, '#6FB1FF', '<path d="M3 21h18M5 21V10l7-5 7 5v11"/><path d="M9 21v-6h6v6"/>'],
   ['actu', tt('les nouvelles de la semaine', 'this week’s news'), 7, '#FF9F5B', '<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h5"/>'],
   ['notoriete', tt('sa notoriété de fond', 'his long-term fame'), 5, '#C792EA', '<path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.3 6.9 19l1.2-5.6L4 9.6 9.6 9z"/>'],
   ['recrue', tt('1re ou 2e saison', '1st or 2nd season'), 5, '#7FE3D0', '<path d="M12 3v18M5 10l7-7 7 7"/>'],
@@ -10175,6 +10209,117 @@ function expliquerTendancesIQ(){
     <div class="sous iqs-f">${tt('Stats LNH, recherches Wikipedia, nouvelles, palmarès. SlabIQ ne regarde jamais le prix des annonces.', 'NHL stats, Wikipedia searches, news, honours. SlabIQ never looks at listing prices.')}</div>
     </div>`, {centre: true});
 }
+// ============================================================
+// 12 nov 2026 (Mathieu : « monsieur, madame tout le monde, un papa, un grand-pere, quelqu'un qui travaille : quand il ouvre
+// l'app, bonjour, voici les nouvelles que tu as manquees depuis ta derniere visite » ; « en bas, une zone mise a jour, pour
+// que l'utilisateur sente que l'application est vivante ») : le resume de la visite (au centre, flou, X) et les Nouveautes.
+// ============================================================
+const MAJ_APP = () => [
+  {n: 236, le: '2026-11-12', points: [
+    ['cloche', tt('Ce que tu as manqué', 'What you missed'), tt('Quand tu ouvres l’app, on te dit ce qui a changé pour tes joueurs et ta collection depuis ta dernière visite. Rien d’autre.', 'When you open the app, we tell you what changed for your players and your collection since your last visit. Nothing else.')],
+    ['etoile', tt('Les cartes qui comptent', 'The cards that matter'), tt('Pour chaque joueur, ses cartes les plus recherchées en premier (Young Guns gradée 10, Future Watch Auto…), apprises dans les vraies ventes.', 'For each player, his most sought-after cards first (graded 10 Young Guns, Future Watch Auto…), learned from real sales.')],
+    ['sport', tt('Le marché de l’équipe', 'The team’s market'), tt('SlabIQ tient compte du marché de cartes de l’équipe du joueur. Un échange vers un plus petit marché se voit dès le lendemain.', 'SlabIQ now weighs the card market of the player’s team. A trade to a smaller market shows up the next day.')],
+    ['photo', tt('Tes photos en grand', 'Your photos, full size'), tt('Touche la photo d’une carte : plein écran, zoom, et glisse pour vérifier le cadrage avant eBay.', 'Tap a card’s photo: full screen, zoom, and swipe to check the crop before eBay.')]]},
+  {n: 234, le: '2026-11-11', points: [
+    ['loupe', tt('Chercher un joueur', 'Search a player'), tt('Tape juste un nom (ex. Cole Caufield) : ses vraies cartes, les plus recherchées d’abord, sans les cartes à 2 $.', 'Just type a name (e.g. Cole Caufield): his real cards, most sought-after first, without the $2 cards.')],
+    ['deals', tt('Une loupe dans le Radar', 'A search in the Radar'), tt('Retrouve une carte parmi des centaines, en quelques lettres.', 'Find one card among hundreds, in a few letters.')],
+    ['etiquette', tt('Les erreurs de titre', 'Title mistakes'), tt('Quand un vendeur se trompe de produit dans son titre, le code imprimé sur la carte le corrige.', 'When a seller names the wrong product, the code printed on the card fixes it.')]]}];
+const majVue = () => +((S.reglages || {}).maj_vue || 0);
+const majNonVues = () => MAJ_APP().filter(m => m.n > majVue());
+function marquerMajVues(){
+  const n = MAJ_APP()[0].n; if (majVue() >= n) return;
+  S.reglages = {...(S.reglages || {}), maj_vue: n};
+  API.reglages_sauver({maj_vue: n}).then(r => { if (r && !r.erreur) S.reglages = r; }).catch(() => {});
+  $$('.maj-pt').forEach(p => p.hidden = true);
+}
+const icP = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL[k] || (typeof IC_PIL_TUTO !== 'undefined' && IC_PIL_TUTO[k]) || IC_PIL.ampoule}</svg>`;
+function feuilleNouveautes(){
+  vibrer();
+  const nv = new Set(majNonVues().map(m => m.n));
+  popOuvrir(`<button class="pop-x" id="mj-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
+    <div class="pop-tete"><span class="pop-sur">SlabCoach</span><h3>${tt('Nouveau dans l’app', 'New in the app')}</h3></div>
+    <div class="pop-corps">${MAJ_APP().map(m => `<div class="mj-b"><div class="mj-d">${esc(dateCourte(m.le))}${nv.has(m.n) ? ' ' + tag(tt('Nouveau', 'New'), 'acc') : ''}</div>
+      ${m.points.map(([ic, t, x]) => `<div class="mj-p"><span class="mj-ic">${icP(ic)}</span><span class="mj-m"><b>${esc(t)}</b><small>${esc(x)}</small></span></div>`).join('')}</div>`).join('')}</div>
+    <div class="pop-pied"><button class="btn" id="mj-ok">${tt('Super', 'Great')}</button></div>`, popFermer);
+  $('#mj-x').onclick = popFermer; $('#mj-ok').onclick = popFermer;
+  marquerMajVues();
+}
+// la zone du bas de l'accueil : la derniere mise a jour (un point si pas vue) et « revoir ce que tu as manque »
+function zoneNouveautes(){
+  const z = $('#acc-maj'); if (!z) return;
+  const m = MAJ_APP()[0], neuf = majNonVues().length > 0;
+  z.innerHTML = `<button class="acc-pil maj-z" id="maj-ouvrir"><span class="ap-ic">${icP('conseils')}</span>
+      <span class="ap-t"><b>${tt('Mise à jour du ', 'Update of ')}${esc(dateCourte(m.le))}</b><small>${m.points.slice(0, 2).map(p => esc(p[1])).join(' · ')}</small></span>
+      <i class="maj-pt" ${neuf ? '' : 'hidden'}></i><i aria-hidden="true">›</i></button>
+    ${S.qdn ? `<button class="acc-pil" id="qdn-revoir"><span class="ap-ic">${icP('cloche')}</span><span class="ap-t">${tt('Revoir ce que tu as manqué', 'See what you missed again')}</span><i aria-hidden="true">›</i></button>` : ''}`;
+  $('#maj-ouvrir').onclick = feuilleNouveautes;
+  const rv = $('#qdn-revoir'); if (rv) rv.onclick = () => { vibrer(); ouvrirQuoiDeNeuf(S.qdn); };
+}
+// le resume de la visite : une seule fois par visite (6 h sans ouvrir l'app), jamais par-dessus un tour ou une feuille
+async function verifierQuoiDeNeuf(){
+  if (S.qdnFait) return; S.qdnFait = true;
+  const r = await API.quoi_de_neuf(false, LANGUE).catch(() => null);
+  if (!r || !r.ok || !r.montrer) return;
+  S.qdn = r; zoneNouveautes();
+  const libre = () => !$('.tuto-fond') && !$('#pop-fond') && (!$('#fond-feuille') || $('#fond-feuille').hidden) && !S.questionOuvert && !S.radarQOuvert;
+  let essais = 0;
+  const go = () => { if (!surAccueil()) return; if (!libre()) { if (++essais < 20) setTimeout(go, 3000); return; } ouvrirQuoiDeNeuf(r); };
+  setTimeout(go, 1200);
+}
+const IC_QDN = {echange: 'retour', evenement: 'news', monte: 'graphe', baisse: 'graphe', feu: 'feu'};
+// un conseil d'une ligne selon le but de l'utilisateur (questionnaire : collectionner, profit...) ; jamais un ordre
+function conseilQdn(x){
+  const obj = (S.reglages || {}).objectif || '', vend = obj === 'profit' || S.mode === 'vendeur' && obj !== 'collection';
+  const bon = x.sorte === 'monte' || x.sorte === 'feu' || (x.sorte === 'evenement' && x.ton !== 'rouge');
+  const mauvais = x.sorte === 'baisse' || (x.sorte === 'evenement' && x.ton === 'rouge');
+  if (bon) return vend ? tt('Bon moment pour vérifier le prix de tes annonces', 'Good time to check your listing prices') : tt('Une bonne nouvelle pour ta collection', 'Good news for your collection');
+  if (mauvais) return vend ? tt('Évite de vendre dans la panique : ses cartes reviennent souvent', 'Don’t panic-sell: his cards often come back') : tt('Pas de panique : le marché monte et descend', 'No panic: the market goes up and down');
+  return '';
+}
+function ouvrirQuoiDeNeuf(r){
+  if (!r) return;
+  const nm = (nomMarque() !== 'SlabCoach' && nomMarque()) || (S.forfait && S.forfait.username) || '';
+  const hr = new Date().getHours();
+  const salut = (hr < 5 || hr >= 18 ? tt('Bonsoir', 'Good evening') : hr < 12 ? tt('Bonjour', 'Good morning') : tt('Bon après-midi', 'Good afternoon')) + (nm ? ', ' + nm : '');
+  const h = r.heures || 0, j = Math.round(h / 24);
+  const quand = h >= 36 ? tt(`il y a ${j} jours`, `${j} days ago`) : h >= 16 ? tt('hier', 'yesterday') : tt(`il y a ${h} h`, `${h} h ago`);
+  const ligne = (x, autre) => { const c = autre ? '' : conseilQdn(x);
+    return `<button class="qd-l" data-qdj="${esc(x.joueur)}"><span class="qd-ic ${esc(x.ton || '')} ${x.sorte === 'baisse' ? 'bas' : ''}">${icP(IC_QDN[x.sorte] || 'feu')}</span>
+      <span class="qd-m"><b>${esc(x.titre)}</b>${x.detail ? `<small>${esc(x.detail)}</small>` : ''}${c ? `<em>${esc(c)}</em>` : ''}</span><i aria-hidden="true">›</i></button>`; };
+  const v = r.valeur || {}, ve = r.ventes || {}, nv = majNonVues()[0];
+  const secs = [];
+  if ((r.joueurs || []).length) secs.push(`<div class="qd-s">${tt('Tes joueurs', 'Your players')}</div>${r.joueurs.map(x => ligne(x)).join('')}`);
+  if ((r.autres || []).length) secs.push(`<div class="qd-s">${tt('Ailleurs dans la LNH', 'Elsewhere in the NHL')}</div>${r.autres.map(x => ligne(x, true)).join('')}`);
+  const tuiles = [];
+  if (v.nb) tuiles.push(`<a class="qd-t" href="#inventaire"><span>${tt('Collection', 'Collection')}</span><b>${argentKpi(v.maintenant)}</b>
+    <small class="${v.ecart > 0 ? 'vert' : v.ecart < 0 ? 'rouge' : ''}">${v.ecart != null && Math.abs(v.ecart) >= 1 ? (v.ecart > 0 ? '▲ ' : '▼ ') + argentCourt(Math.abs(v.ecart)) : v.ajoutees ? tt(`+${v.ajoutees} carte${v.ajoutees > 1 ? 's' : ''} ajoutée${v.ajoutees > 1 ? 's' : ''}`, `+${v.ajoutees} card${v.ajoutees > 1 ? 's' : ''} added`) : tt('stable', 'steady')}</small></a>`);
+  if (ve.n) tuiles.push(`<a class="qd-t" href="#bilan"><span>${tt('Tes ventes', 'Your sales')}</span><b class="vert">${ve.n}</b><small>${argentCourt(ve.total)}</small></a>`);
+  if (r.alertes) tuiles.push(`<a class="qd-t" href="#notifs"><span>${tt('Alertes', 'Alerts')}</span><b class="or">${r.alertes}</b><small>${tt('à lire', 'to read')}</small></a>`);
+  if (tuiles.length) secs.unshift(`<div class="qd-tu">${tuiles.join('')}</div>`);
+  if (!v.nb && !(r.joueurs || []).length) secs.push(`<button class="qd-l" id="qd-ajout"><span class="qd-ic acc">${icP('carte')}</span><span class="qd-m"><b>${tt('Ajoute tes cartes', 'Add your cards')}</b><small>${tt('On te dira ce qui change pour elles à chaque visite.', 'We’ll tell you what changes for them at every visit.')}</small></span><i aria-hidden="true">›</i></button>`);
+  if (nv) secs.push(`<button class="qd-l qd-maj" id="qd-maj"><span class="qd-ic acc">${icP('conseils')}</span><span class="qd-m"><b>${tt('Nouveau dans l’app', 'New in the app')}</b><small>${nv.points.map(p => esc(p[1])).join(' · ')}</small></span><i aria-hidden="true">›</i></button>`);
+  popOuvrir(`<button class="pop-x" id="qd-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
+    <div class="pop-tete"><span class="pop-sur">${esc(salut)}</span><h3>${tt('Voici ce que tu as manqué', 'Here’s what you missed')}</h3>
+      <div class="sous">${tt('depuis ta dernière visite, ', 'since your last visit, ')}${esc(quand)}</div></div>
+    <div class="pop-corps qd">${secs.join('')}</div>
+    <div class="pop-pied"><button class="btn" id="qd-ok">${tt('C’est noté', 'Got it')}</button></div>`, popFermer);
+  const f = $('#pop-fond');
+  $('#qd-x', f).onclick = popFermer; $('#qd-ok', f).onclick = popFermer;
+  $$('[data-qdj]', f).forEach(b => b.onclick = () => { vibrer(); popFermer(); feuilleJoueur(b.dataset.qdj); });
+  $$('a.qd-t', f).forEach(a => a.addEventListener('click', () => popFermer()));
+  const aj = $('#qd-ajout', f); if (aj) aj.onclick = () => { popFermer(); feuilleAjout(); };
+  const mj = $('#qd-maj', f); if (mj) mj.onclick = () => feuilleNouveautes();
+}
+// 12 nov 2026 (Mathieu : « une Young Guns PSA 10 avant une Dazzler PSA 10 ») : les types de cartes (nos ventes) en pastilles ;
+// une pastille cherche cette carte du joueur
+const qType = (n) => String(n || '').replace(/ gradée 10$/, ' PSA 10').replace(/ gradée 9$/, ' PSA 9').replace(/ gradée$/, ' graded').replace(/ \(base\)$/, '').replace(' / jersey', '');
+const nomTypeT = (n) => LANGUE === 'en' ? String(n || '').replace(/ gradée 10$/, ' graded 10').replace(/ gradée 9$/, ' graded 9').replace(/ gradée$/, ' graded') : String(n || '');
+function pilsTypes(types, joueur, n = 5){
+  return `<div class="ty-l">${(types || []).slice(0, n).map((t, i) => `<button class="ty-p" data-tyq="${esc((joueur ? joueur + ' ' : '') + qType(t.nom))}"><i>${i + 1}</i>${esc(nomTypeT(t.nom))}</button>`).join('')}</div>`;
+}
+document.addEventListener('click', (e) => { const b = e.target.closest('[data-tyq]'); if (!b) return;
+  e.preventDefault(); e.stopPropagation(); vibrer();
+  if (b.closest('#feuille')) feuilleValeur(b.dataset.tyq); else location.hash = '#valeur/' + encodeURIComponent(b.dataset.tyq); }, true);
 async function vueAccueil(arg){
   setTimeout(() => { if ((location.hash || '#accueil').startsWith('#accueil')) demanderPartage(); }, 2500);
   if (arg === 'bienvenue' || arg === 'retour') {
@@ -10202,6 +10347,8 @@ async function vueAccueil(arg){
     <div class="acc-moment" id="acc-moment"></div>
     <div class="acc-sec" style="--c:var(--doux)"><span>${tt('Raccourcis', 'Shortcuts')}</span></div>
     <div class="acc-pils" id="acc-pils"></div>
+    <div class="acc-sec" style="--c:var(--acc)"><span>${tt('Nouveau dans l’app', 'New in the app')}</span></div>
+    <div class="acc-pils acc-maj" id="acc-maj"></div>
     <div class="acc-reserve" id="acc-reserve" hidden>
     <div class="carte-acc nouv" id="acc-nouv"><div class="acc-titre titre-tel">${tt('Nouvelles et astuces', 'News and tips')}</div><div class="acc-sous titre-tel">${tt('L’actualité de la LNH et des cartes, et des trucs pour mieux acheter et vendre. Glisse pour la suivante.', 'NHL and card news, plus tips to buy and sell better. Swipe for the next one.')}</div><div id="acc-news">${roue}</div></div>
     <div class="acc-cote">${bandeauEssai()}
@@ -10287,6 +10434,8 @@ async function vueAccueil(arg){
   const zh = $('#acc-hist'); if (zh) { zh.innerHTML = histoiresDeals(a); brancherHistoiresDeals(zh); }
   brancherCourbe(h);
   pastillesAccueil(d, a, vus, admin);
+  zoneNouveautes();
+  verifierQuoiDeNeuf();
   const ec = $('.ecran.acc'); if (ec) ec.classList.toggle('admin', admin);
   if (admin) API.admin_resume().then(rA => {
     const z = $('#acc-admin .liste'); if (!z || !rA || !rA.ok) return;
@@ -15754,6 +15903,11 @@ function bentoJoueur(r, t){
     `${dec(cx.ppm)} <small class="jb-vs">vs ${dec(cx.avant_ppm)}</small>`, tt('pt par match cette saison, contre avant', 'pts per game this season vs before'), cx.etat === 'rebond' ? 'vert' : 'rouge', {large: true});
   const n0 = (q.actu || [])[0];
   if (n0) T.push({h: `<${n0.lien ? `a href="${esc(urlSure(n0.lien))}" target="_blank" rel="noopener"` : 'div'} class="jb-t l jb-actu"><span class="jb-k">${tt('Dans l’actu', 'In the news')}${n0.date ? ' · ' + esc(dateCourte(n0.date)) : ''}</span><b>${esc(n0.titre)}</b></${n0.lien ? 'a' : 'div'}>`, l: true});
+  // 12 nov 2026 (Mathieu : « Lundell : d'abord les Young Guns PSA 10, les Future Watch Auto, les autopatchs... ; une Dazzler
+  // PSA 10 n'a rien a voir ») : ses cartes les plus recherchees, apprises dans nos ventes (le classement, jamais un prix)
+  const ty = t && t.types;
+  if (ty && (ty.types || []).length >= 2) T.push({h: `<div class="jb-t l jb-ty"><span class="jb-k">${ty.source === 'joueur' ? tt('Ses cartes les plus recherchées', 'His most sought-after cards') : tt('Les cartes les plus recherchées', 'The most sought-after cards')}</span>
+    ${pilsTypes(ty.types, r.joueur, 5)}<small>${ty.source === 'joueur' ? tt('D’après ses vraies ventes : chaque sorte comparée à ses autres cartes. Touche pour chercher.', 'From his real sales: each kind compared with his other cards. Tap to search.') : tt('Tous joueurs, d’après les vraies ventes. Touche pour chercher la sienne.', 'All players, from real sales. Tap to search his.')}</small></div>`, l: true});
   // les gestes : des tuiles d'action
   const act = (id, ic, k, v) => T.push({h: `<button class="jb-t jb-a" id="${id}"><span class="jb-ic">${icN(ic)}</span><span class="jb-k">${k}</span>${v != null ? `<b>${v}</b>` : ''}<i class="jb-f">›</i></button>`, l: false});
   act('j-cartes', 'carte', tt('Ses cartes', 'His cards'), r.cartes.length || null);
