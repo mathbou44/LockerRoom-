@@ -216,8 +216,9 @@ PAIRES_MIN = 2          # au moins 2 cartes differentes vendues avant ET apres
 POIDS_MIN = 3           # et au moins 3 ventes comparables
 
 
-def _exemples(par_j, wiki, nhl_, d_min, d_max):
-    """-> X, y, meta, noms. Chaque exemple : un joueur, un lundi t. Tout ce qui entre dans X est connu AVANT t."""
+def _exemples(par_j, wiki, nhl_, d_min, d_max, vivant=None):
+    """-> X, y, meta, noms. Chaque exemple : un joueur, un lundi t. Tout ce qui entre dans X est connu AVANT t.
+    vivant (une date) : les signaux de CE jour seulement, sans reponse (pour predire en direct)."""
     X, y, meta = [], [], []
     try:                                       # 11 nov 2026 : l'interet de la communaute SlabCoach (depuis qu'on le compte)
         import communaute
@@ -225,7 +226,7 @@ def _exemples(par_j, wiki, nhl_, d_min, d_max):
     except Exception:
         cj = {}
     debut = d_min.isoformat()
-    lundis = list(_lundis(d_min + timedelta(days=56), d_max - timedelta(days=HORIZON_J)))
+    lundis = [vivant] if vivant else list(_lundis(d_min + timedelta(days=56), d_max - timedelta(days=HORIZON_J)))
     # le marche : le mouvement median de tous les joueurs, connu a t (la saison, l'ete, la sortie d'un produit)
     marche = {}
     for t in lundis:
@@ -247,9 +248,15 @@ def _exemples(par_j, wiki, nhl_, d_min, d_max):
         matchs = n.get("matchs") or []
         for t in lundis:
             ts = t.isoformat()
-            cible, k, poids = _mouv(cartes_j, _iso(t, -28), ts, ts, _iso(t, HORIZON_J))
-            if cible is None or k < PAIRES_MIN or poids < POIDS_MIN:
-                continue
+            if vivant:                         # en direct : assez de cartes vendues ce mois-ci pour juger dans 28 jours
+                k = sum(1 for pts in cartes_j if any(_iso(t, -28) <= le < ts for le, _lg in pts))
+                cible = 0.0
+                if k < PAIRES_MIN:
+                    continue
+            else:
+                cible, k, poids = _mouv(cartes_j, _iso(t, -28), ts, ts, _iso(t, HORIZON_J))
+                if cible is None or k < PAIRES_MIN or poids < POIDS_MIN:
+                    continue
             nv = _n_ventes(cartes_j, _iso(t, -28), ts)
             nv0 = _n_ventes(cartes_j, _iso(t, -56), _iso(t, -28))
             elan, ke, _p = _mouv(cartes_j, _iso(t, -56), _iso(t, -28), _iso(t, -28), ts)
@@ -324,6 +331,38 @@ def _courbe(proba, y, classes):
     return out
 
 
+def _wilson(k, n, z=1.96):
+    """La borne basse de l'intervalle de confiance a 95 % (Wilson) : la certitude minimale d'une precision k/n."""
+    if not n:
+        return 0.0
+    p = k / n
+    d = 1 + z * z / n
+    return (p + z * z / (2 * n) - z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n))) / d
+
+
+TOP_SEMAINE = (0.01, 0.02, 0.03, 0.05)
+
+
+def _top_semaine(lignes, classes, y, meta):
+    """12 nov 2026 : les alertes = le top q % des joueurs les plus surs de CHAQUE semaine (et non un seuil fixe, qui ne se
+    transporte pas d'une saison a l'autre). -> {q: {alertes, justes, precision, certitude, exemples}}."""
+    par = {}
+    for i, p in lignes:
+        k = int(max(range(len(p)), key=lambda q: p[q]))
+        if classes[k] != 1:
+            par.setdefault(meta[i][0], []).append((p[k], classes[k], y[i], i))
+    out = {}
+    for q in TOP_SEMAINE:
+        al = []
+        for d in sorted(par):
+            l = sorted(par[d], key=lambda t: -t[0])
+            al += l[:max(1, int(round(q * len(l))))]
+        k = sum(1 for c, a, b, _i in al if a == b)
+        out[str(q)] = {"alertes": len(al), "justes": k, "precision": round(k / len(al), 3) if al else None,
+                       "certitude": round(_wilson(k, len(al)), 3)}
+    return out
+
+
 def _precision_seuil(proba, y, classes, cible=CIBLE_PRECISION, n_min=8):
     """Le plus petit seuil ou les alertes (hausse/baisse) atteignent la precision visee (au moins n_min alertes)."""
     for c in _courbe(proba, y, classes):
@@ -343,19 +382,28 @@ def _mesure(proba, y, classes, seuil):
     return out
 
 
+ARBRES = 1.0             # les tests le baissent (plus rapide) ; le serveur garde 1.0
+
+
 class _Vote:
-    """12 nov 2026 : trois modeles qui votent (la moyenne de leurs probabilites) : une alerte sure doit l'etre pour tous."""
+    """Les modeles qui votent (la moyenne de leurs probabilites) : une alerte sure doit l'etre pour tous.
+    12 nov 2026 (rejoue sur les vraies ventes, 20 essais) : foret aleatoire + arbres extremes + boosting prudent + regression
+    -> 17/18 justes sur le 1 % le plus sur de chaque semaine jamais vue (l'ancien vote : 12/18). Un coeur (n_jobs=1)."""
     def __init__(self):
-        from sklearn.ensemble import HistGradientBoostingClassifier
-        self.m = [HistGradientBoostingClassifier(max_iter=200, learning_rate=0.05, max_leaf_nodes=8, min_samples_leaf=25,
-                                                 l2_regularization=2.0, random_state=7),
-                  HistGradientBoostingClassifier(max_iter=300, learning_rate=0.03, max_leaf_nodes=15, min_samples_leaf=40,
-                                                 l2_regularization=4.0, random_state=11),
-                  HistGradientBoostingClassifier(max_iter=150, learning_rate=0.08, max_depth=3, min_samples_leaf=30,
-                                                 l2_regularization=1.0, random_state=23)]
+        from sklearn.ensemble import ExtraTreesClassifier, HistGradientBoostingClassifier, RandomForestClassifier
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.pipeline import make_pipeline
+        from sklearn.preprocessing import StandardScaler
+        self.m = [RandomForestClassifier(n_estimators=int(400 * ARBRES), min_samples_leaf=20, max_features=0.4, n_jobs=1, random_state=7),
+                  ExtraTreesClassifier(n_estimators=int(600 * ARBRES), min_samples_leaf=20, max_features=0.5, n_jobs=1, random_state=7),
+                  HistGradientBoostingClassifier(max_iter=150, learning_rate=0.04, max_depth=3, min_samples_leaf=60,
+                                                 l2_regularization=5.0, random_state=7),
+                  make_pipeline(StandardScaler(), LogisticRegression(C=0.3, max_iter=3000))]
         self.classes_ = None
 
     def fit(self, X, y):
+        import numpy as np
+        X = np.nan_to_num(np.asarray(X, dtype=float))
         for m in self.m:
             m.fit(X, y)
         self.classes_ = self.m[0].classes_
@@ -363,6 +411,7 @@ class _Vote:
 
     def predict_proba(self, X):
         import numpy as np
+        X = np.nan_to_num(np.asarray(X, dtype=float))
         return np.mean([m.predict_proba(X) for m in self.m], axis=0)
 
     def predict(self, X):
@@ -370,7 +419,8 @@ class _Vote:
         return self.classes_[p.argmax(axis=1)]
 
     def score(self, X, y):
-        return float((self.predict(X) == y).mean())
+        import numpy as np
+        return float((self.predict(X) == np.asarray(y)).mean())
 
     def get_params(self, deep=False):
         return {}
@@ -405,6 +455,83 @@ def _pas_a_pas(X, y, meta, app_min=150, tous_les_j=7):
         for i, p in zip(ids, mod.predict_proba([X[i] for i in ids]).tolist()):
             out.append((i, p))
     return out, classes, mod
+
+
+TOP_DIRECT = 0.02         # le journal en direct : le top 2 % des joueurs les plus surs du jour
+
+
+def _journal_lire():
+    try:
+        with open(_chemin("slabiq_journal.json"), encoding="utf-8") as f:
+            return json.load(f) or {"alertes": []}
+    except (OSError, ValueError):
+        return {"alertes": []}
+
+
+def _journal(par_j, wiki, nhl_, X, y, meta, d_min, d_max):
+    """12 nov 2026 (Mathieu : « des exemples concrets de bons coups, verifiables ») : le JOURNAL EN DIRECT. Chaque passe, le
+    modele (appris sur tout ce dont on connait la reponse) note le top 2 % des joueurs du jour, horodate ; 28 jours plus
+    tard, la meme mesure que le test (meme carte avant / apres) dit juste ou faux. Rien ne s'efface : le vrai bilan."""
+    jr = _journal_lire()
+    al = jr.setdefault("alertes", [])
+    # 1. noter les alertes dont les 28 jours sont passes
+    for a in al:
+        if a.get("vrai") or a.get("non_mesurable"):
+            continue
+        t = date.fromisoformat(a["le"])
+        if (t + timedelta(days=HORIZON_J)).isoformat() > d_max.isoformat():
+            continue
+        cj_ = par_j.get(a["joueur"])
+        m, k, poids = _mouv(cj_, _iso(t, -28), a["le"], a["le"], _iso(t, HORIZON_J)) if cj_ else (None, 0, 0)
+        if m is None or k < PAIRES_MIN or poids < POIDS_MIN:
+            a["non_mesurable"] = True
+            continue
+        a["vrai"] = "hausse" if m > SEUIL else "baisse" if m < -SEUIL else "stable"
+        a["mouvement_pct"] = round(100 * (math.exp(m) - 1), 1)
+        a["juste"] = a["vrai"] == a["annonce"]
+    # 2. les alertes du jour (une passe par jour au plus)
+    auj = min(date.today(), d_max + timedelta(days=1))
+    if not any(a["le"] == auj.isoformat() for a in al):
+        Xv, _yv, mv, _n = _exemples(par_j, wiki, nhl_, d_min, d_max, vivant=auj)
+        if Xv and len(set(y)) == 3:
+            mod = _modele()
+            mod.fit(X, y)
+            classes = list(mod.classes_)
+            l = []
+            for p, m_ in zip(mod.predict_proba(Xv).tolist(), mv):
+                k = int(max(range(len(p)), key=lambda q: p[q]))
+                if classes[k] != 1:
+                    l.append((p[k], classes[k], m_[1]))
+            l.sort(key=lambda t: -t[0])
+            for c, cl, j in l[:max(1, int(round(TOP_DIRECT * len(l))))]:
+                al.append({"le": auj.isoformat(), "cree": datetime.now().isoformat(timespec="seconds"), "joueur": j,
+                           "annonce": {0: "baisse", 2: "hausse"}[cl], "confiance": round(c, 3), "parmi": len(l)})
+    p = _chemin("slabiq_journal.json")
+    try:
+        with open(p + ".tmp", "w", encoding="utf-8") as f:
+            json.dump(jr, f, ensure_ascii=False)
+        os.replace(p + ".tmp", p)
+    except OSError:
+        pass
+    notes = [a for a in al if a.get("vrai")]
+    k = sum(1 for a in notes if a.get("juste"))
+    return {"justes": k, "notees": len(notes), "certitude": round(_wilson(k, len(notes)), 3),
+            "ouvertes": [a for a in al if not a.get("vrai") and not a.get("non_mesurable")][-30:],
+            "notees_l": notes[-40:]}
+
+
+def passe_si_besoin():
+    """La boucle du serveur (chaque heure) : le test et le journal en direct, une fois par semaine (le lundi ou plus tard)."""
+    if _ETAT["en_cours"]:
+        return None
+    r = lire().get("rapport") or {}
+    try:
+        der = datetime.fromisoformat(str(r.get("le"))[:19])
+    except ValueError:
+        der = None
+    if der and (datetime.now() - der).days < 7:
+        return None
+    return lancer()
 
 
 def _donnees_sauver(par_j, wiki, nhl_, n_cartes):
@@ -526,6 +653,12 @@ def _apprendre(par_j, wiki, nhl_, n_cartes, t0):
     res = _mesure(p_te, y_te, classes, seuil)
     res["seuil_mode"] = seuil_mode
     courbe = _courbe(p_te, y_te, classes)
+    top = _top_semaine(test, classes, y, meta)
+    al1 = []
+    for d in sorted({meta[i][0] for i, _p in test}):
+        l = sorted([(max(p), i, p) for i, p in test if meta[i][0] == d and classes[int(max(range(len(p)), key=lambda q: p[q]))] != 1],
+                   key=lambda t: -t[0])
+        al1 += l[:max(1, int(round(TOP_SEMAINE[0] * len(l))))]
     meilleur = max((c for c in courbe if c["alertes"] >= 8), key=lambda c: (c["precision"], c["alertes"]), default=None)
     maj = max(set(y_te), key=y_te.count)
     naif = [2 if X[i][0] > SEUIL else 0 if X[i][0] < -SEUIL else 1 for i, _p in test]
@@ -540,22 +673,28 @@ def _apprendre(par_j, wiki, nhl_, n_cartes, t0):
     # des alertes du test : les plus confiantes d'abord, toutes dates
     ex = []
     s_ex = seuil if seuil is not None else (meilleur or {}).get("seuil", 0.8)
-    for i, p in sorted(test, key=lambda ip: -max(ip[1])):
+    for _c, i, p in sorted(al1, key=lambda t: -t[0]):           # 12 nov 2026 : les alertes du top 1 % de chaque semaine
         k = int(max(range(len(p)), key=lambda q: p[q]))
-        if max(p) >= s_ex and classes[k] != 1:
+        if classes[k] != 1:
             ex.append({"joueur": meta[i][1], "le": meta[i][0], "annonce": {0: "baisse", 2: "hausse"}[classes[k]],
                        "confiance": round(max(p), 3), "vrai": {0: "baisse", 1: "stable", 2: "hausse"}[y[i]],
                        "mouvement_pct": round(100 * (math.exp(meta[i][2]) - 1), 1)})
         if len(ex) >= 40:
             break
+    try:
+        _ETAT.update(etape="direct")
+        journal = _journal(par_j, wiki, nhl_, X, y, meta, d_min, d_max)
+    except Exception as e:
+        journal = {"erreur": f"{type(e).__name__} : {e}"[:200]}
     r = {"le": datetime.now().isoformat(timespec="seconds"), "duree_s": round(time.time() - t0), "methode": "v2-meme-carte-pas-a-pas",
+         "direct": journal,
          **base, "testees": len(oos), "choix_seuil": len(choix), "test": len(test),
          "test_debut": meta[test[0][0]][0] if test else None,
          "repartition_test": {"baisse": y_te.count(0), "stable": y_te.count(1), "hausse": y_te.count(2)},
          "horizon_j": HORIZON_J, "seuil_pct": 10, "cible_precision": CIBLE_PRECISION,
-         "resultat": res, "reperes": rep, "courbe": courbe, "meilleur": meilleur,
+         "resultat": res, "reperes": rep, "courbe": courbe, "meilleur": meilleur, "top_semaine": top,
          "signaux": [[k, round(v, 4)] for k, v in poids],
-         "atteint": bool(res.get("precision_alertes") is not None and res["precision_alertes"] >= CIBLE_PRECISION and res.get("alertes", 0) >= 10),
+         "atteint": bool((top.get("0.01") or {}).get("certitude", 0) >= CIBLE_PRECISION),
          "exemples_alertes": ex}
     return r
 

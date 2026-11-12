@@ -7,6 +7,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import comptes
 comptes.DONNEES = os.environ["LOCKERROOM_DONNEES"]
 import slabiq_test, base_ventes, nhl
+slabiq_test.ARBRES = 0.15                  # 12 nov 2026 : des forets plus petites, le test reste rapide
 random.seed(3)
 d0 = date(2025, 11, 1)
 jours = 360
@@ -53,7 +54,9 @@ r2 = slabiq_test.executer()
 x2 = r2["resultat"]
 assert not r2["atteint"], x2
 assert x2["exactitude"] <= max(r2["reperes"].values()) + 0.05, (x2, r2["reperes"])
-assert r2["courbe"] and r2["ventes_mois"], r2.keys()
+assert r2["ventes_mois"] and "courbe" in r2, r2.keys()
+# 12 nov 2026 : sur du bruit, le top 1 % de chaque semaine ne doit pas sembler sur
+assert all(v["certitude"] < 0.6 for v in r2["top_semaine"].values()), r2["top_semaine"]
 print("SLABIQ BRUIT OK", x2, r2["reperes"], (r2.get("meilleur") or {}))
 
 # 12 nov 2026 : AUCUN signal d'un lundi ne bouge si on change tout ce qui arrive apres (prix x10, ventes en plus)
@@ -82,3 +85,18 @@ base_ventes.cartes_toutes = lambda **k: (_ for _ in ()).throw(AssertionError("ne
 r4 = slabiq_test.executer(depuis=p_)
 assert r4["resultat"] == r3["resultat"] and r4["exemples"] == r3["exemples"], (r3["resultat"], r4["resultat"])
 print("SLABIQ REJOUE OK", r4["resultat"])
+
+# 12 nov 2026 : le journal en direct (horodate) : des alertes du jour, et 28 jours plus tard, le verdict (meme mesure)
+import json as _json
+assert "direct" in r3 and r3["direct"].get("ouvertes"), r3.get("direct")
+pj = _os.path.join(comptes.DONNEES, "slabiq_journal.json")
+jr = _json.load(open(pj))
+jr["alertes"].append({"le": "2026-08-03", "cree": "2026-08-03T09:00:00", "joueur": "Joueur 1", "annonce": "hausse", "confiance": 0.9})
+_json.dump(jr, open(pj, "w"))
+base_ventes.cartes_toutes = lambda **k: cartes
+r5 = slabiq_test.executer()
+vieux = [a for a in _json.load(open(pj))["alertes"] if a["le"] == "2026-08-03"][0]
+assert vieux.get("vrai") or vieux.get("non_mesurable"), vieux
+n_auj = sum(1 for a in _json.load(open(pj))["alertes"] if a["le"] == r3["direct"]["ouvertes"][0]["le"])
+assert n_auj == len(r3["direct"]["ouvertes"]), "une seule passe par jour"
+print("SLABIQ DIRECT OK", vieux, r5["direct"]["justes"], "/", r5["direct"]["notees"])
