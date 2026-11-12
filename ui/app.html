@@ -3672,15 +3672,15 @@ html.tel-large .fen.fa .fen-img{max-height:calc(46vh / 1.12) !important}
    ============================================================ */
 :root{--prisme:conic-gradient(from 210deg, var(--h1,#9FE6D2), var(--h2,#B9BEFF), var(--h3,#F2B3D6), var(--h4,#F1D58E), var(--h1,#9FE6D2));
   --pastille-fond:linear-gradient(var(--carte), var(--carte))}
-/* 1. le bouton Vendre de la barre du bas : une grosse pastille prisme qui depasse un peu */
+/* 1. le bouton Vendre de la barre du bas : une pastille prisme plus grosse que les autres icones, DANS la barre (sur iPhone,
+   ce qui depasse de la barre floutee est coupe, et une ombre sur un <svg> se dessine en carre : ni l'un ni l'autre) */
 @media (max-width:899px){
   body .onglets a.centre svg, body:not(.mode-acheteur) .onglets a.centre svg, body.mode-acheteur .onglets a.centre svg{
-    width:24px !important; height:24px !important; padding:11px !important; margin-top:-22px !important; border-radius:50% !important;
-    border:2.5px solid transparent !important; background:linear-gradient(#17171D, #17171D) padding-box, var(--prisme) border-box !important;
-    stroke:#F4F2EE !important; color:#F4F2EE !important;
-    box-shadow:0 0 0 4px rgba(13,13,17,.95), 0 8px 22px color-mix(in srgb, var(--h2,#B9BEFF) 30%, transparent) !important}
-  body .onglets a.centre.on svg{background:linear-gradient(color-mix(in srgb, var(--acc) 22%, #17171D), color-mix(in srgb, var(--acc) 22%, #17171D)) padding-box, var(--prisme) border-box !important}
-  body .onglets a.centre{color:var(--texte) !important; font-weight:700 !important}
+    width:21px !important; height:21px !important; padding:7px !important; margin-top:-10px !important; border-radius:50% !important;
+    border:2px solid transparent !important; background:linear-gradient(#1A1A21, #1A1A21) padding-box, var(--prisme) border-box !important;
+    stroke:#F4F2EE !important; color:#F4F2EE !important; box-shadow:none !important; filter:none !important}
+  body .onglets a.centre.on svg{background:linear-gradient(color-mix(in srgb, var(--acc) 24%, #1A1A21), color-mix(in srgb, var(--acc) 24%, #1A1A21)) padding-box, var(--prisme) border-box !important}
+  body .onglets a.centre{color:var(--texte) !important; font-weight:700 !important; gap:2px !important}
 }
 /* 2. les pastilles numerotees et les petites icones rondes : l'anneau prisme */
 .conseils-ph li{border-radius:18px; padding:10px 14px 10px 10px; min-height:54px; font-size:15.5px; color:var(--texte)}
