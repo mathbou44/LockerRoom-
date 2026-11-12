@@ -1388,6 +1388,13 @@ def _valeurs_auto():
                 print("Score SlabCoach : " + json.dumps(r_sa)[:300], flush=True)
         except Exception as e:
             print("Score SlabCoach (reappris) : " + str(e), flush=True)
+        try:                                    # 13 nov 2026 - le produit de chaque code de carte (#BDB- -> Black Diamond), 1 fois/jour
+            import base_ventes as _bv_codes
+            n_codes = _bv_codes.apprendre_codes_si_besoin()
+            if n_codes:
+                print("Codes de cartes appris :", n_codes, flush=True)
+        except Exception as e:
+            print("Codes de cartes : " + str(e), flush=True)
         try:                                    # 13 nov 2026 - la sauvegarde de nuit vers Cloudflare R2 (3 h a 6 h, Montreal)
             import sauvegarde
             if sauvegarde.passe_si_besoin():

@@ -1681,6 +1681,8 @@ dessous de la valeur de la carte que son titre decrit : souvent, c'est une AUTRE
 si c'est exactement la carte decrite. Pieges frequents :
 - une carte CHECKLIST : le mot « Checklist » imprime, ou deux joueurs cote a cote avec une plage de numeros (ex. « 701-750 ») ;
 - un autre joueur, un autre numero de carte, une autre version (base au lieu de Young Guns, Canvas, variante, parallele) ;
+- un autre PRODUIT ou une autre annee que le titre : lis le nom imprime sur la carte (ex. le titre dit « Premier » mais la
+  carte montre « BLACK DIAMOND » ; le titre dit « The Cup » mais c'est « ICE ») -> probleme « autre version » ;
 - une carte gradee en boitier (slab) alors que le titre decrit une carte raw, ou l'inverse ;
 - une reimpression, une carte « custom », une carte abimee (pli, coin arrache).
 Si la photo est floue, partielle ou ne permet pas de juger : meme_carte = true et probleme = « pas visible ». N'invente rien."""

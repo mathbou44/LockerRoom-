@@ -14,3 +14,18 @@ p = demande_legale.pieces({"nom": "Cole Caufield", "nhl": {"equipe": "MTL", "pay
 assert p["eq_can"] == 1.0 and p["eq_orig6"] == 1.0 and p["eq_MTL"] == 1.0 and p["eq_TOR"] == 0.0 and p["ne_can"] == 0.0
 assert all(k in p for k in demande_legale.PIECES)
 print("JOUEUR SEUL OK")
+
+# 13 nov 2026 : le marche du club (le plus de ventes dans nos archives = 100), americain ou canadien
+import base_ventes, indice_joueurs
+base_ventes.ventes_par_joueur = lambda jours=90: {"Cole Caufield": 900, "Nick Suzuki": 700, "Jack Hughes": 1200, "Joe Nobody": 20}
+d = {"joueurs": {"Cole Caufield": {"nom": "Cole Caufield", "nhl": {"equipe": "MTL", "actif": True}},
+                 "Nick Suzuki": {"nom": "Nick Suzuki", "nhl": {"equipe": "MTL", "actif": True}},
+                 "Jack Hughes": {"nom": "Jack Hughes", "nhl": {"equipe": "NJD", "actif": True}},
+                 "Joe Nobody": {"nom": "Joe Nobody", "nhl": {"equipe": "UTA", "actif": True}}}}
+t = demande_legale.table_equipes(d, {"Cole Caufield": 3.0, "Jack Hughes": 2.0})
+assert t["MTL"]["ventes"] == 1600 and t["NJD"]["ventes"] == 1200 and t["MTL"]["rang_pct"] > t["NJD"]["rang_pct"] > t["UTA"]["rang_pct"], t
+demande_legale._ecrire({**d, "equipes": t})
+assert demande_legale.marche_equipe("mtl") == t["MTL"]["rang_pct"] and demande_legale.marche_equipe("XXX") is None
+assert demande_legale.pieces(d["joueurs"]["Jack Hughes"])["eq_marche"] == t["NJD"]["rang_pct"] / 100
+assert "marche" in indice_joueurs.POIDS_ACTIF
+print("MARCHE DES EQUIPES OK", {k: v["rang_pct"] for k, v in t.items()})

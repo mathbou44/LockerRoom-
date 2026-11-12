@@ -1545,6 +1545,9 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
                            "port": a.get("port_cad"), "mise_max": round(prix_max(med_a, taxe=taxe_de(a)) - port_eff(a.get("port_cad")), 2) if a.get("encan") else None,
                            "comps": comps or [], "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION,
                            "vendeur": a.get("vendeur"), "vendeur_score": a.get("vendeur_score"), **achat(a),
+                           # 13 nov 2026 : titre au mauvais produit (le code de la carte le dit) : juge avec le bon
+                           **({"titre_corrige": cartes_match.corriger_produit(a.get("titre") or "")[1]}
+                              if cartes_match.corriger_produit(a.get("titre") or "")[1] else {}),
                            # 5 nov 2026 : une pepite (nom mal ecrit sur eBay) : la faute et le titre tel qu'ecrit
                            **({"faute": r["faute"], "titre_ebay": a.get("titre_ebay")} if r.get("faute") else {})}
 

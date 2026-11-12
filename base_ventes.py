@@ -56,6 +56,56 @@ def _cx():
     return c
 
 
+def apprendre_codes_si_besoin(jours=365):
+    """13 nov 2026 : une fois par jour, le produit de chaque prefixe de code de carte (#BDB- -> black diamond), appris de
+    nos ventes (cartes_match.apprendre_codes) -> codes_produits.json."""
+    import cartes_match
+    p = os.path.join(__import__("comptes").DONNEES, "codes_produits.json")
+    try:
+        if time.time() - os.path.getmtime(p) < 20 * 3600:
+            return None
+    except OSError:
+        pass
+    d0 = (datetime.now() - timedelta(days=jours)).strftime("%Y-%m-%d")
+    try:
+        c = _cx()
+        try:
+            titres = [t for (t,) in c.execute("SELECT titre FROM ventes WHERE le >= ? AND titre LIKE '%-%'", (d0,))]
+        finally:
+            c.close()
+    except sqlite3.Error:
+        return None
+    tab = cartes_match.apprendre_codes(titres)
+    with open(p + ".tmp", "w", encoding="utf-8") as f:
+        json.dump({"le": datetime.now().isoformat(timespec="seconds"), "titres": len(titres), "codes": tab}, f, ensure_ascii=False)
+    os.replace(p + ".tmp", p)
+    return len(tab)
+
+
+def ventes_par_joueur(jours=90):
+    """13 nov 2026 (Mathieu : « les equipes qui ont le plus d'acheteurs, de liquidite ») : le nombre de ventes de nos archives
+    par joueur sur `jours` jours (la recherche -> son joueur : le plan, sinon le nom lu dans la recherche). Agrege seulement."""
+    import cartes_match
+    d0 = (datetime.now() - timedelta(days=jours)).strftime("%Y-%m-%d")
+    try:
+        c = _cx()
+        try:
+            plan = {q: j for q, j in c.execute("SELECT q, joueur FROM plan WHERE joueur IS NOT NULL")}
+            par_q = c.execute("SELECT q, COUNT(*) FROM ventes WHERE le >= ? GROUP BY q", (d0,)).fetchall()
+        finally:
+            c.close()
+    except sqlite3.Error:
+        return {}
+    out = {}
+    for q, n in par_q:
+        j = plan.get(q) or cartes_match.joueur_du_titre(q or "")
+        if not j or len(j.split()) < 2:
+            continue
+        k = " ".join(w[:1].upper() + w[1:] for w in j.lower().split())
+        out[k] = out.get(k, 0) + int(n)
+    return out
+
+
 def noter(q, ventes):
     """Appele par vendues.rechercher apres chaque vraie recherche : on garde toutes ses ventes."""
     q = " ".join(str(q or "").lower().split())

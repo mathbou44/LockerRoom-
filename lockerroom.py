@@ -9327,6 +9327,11 @@ class Api:
         except (RuntimeError, OSError) as e:
             a = {"item_id": str(item_id), "titre": titre or "", "photos": [], "erreur": str(e)}
         t = a.get("titre") or titre or ""
+        titre_corr = None
+        try:                                     # 13 nov 2026 : le code de la carte contredit le produit du titre
+            t, titre_corr = cartes_match.corriger_produit(t)
+        except Exception:
+            pass
         if a.get("prix_cad") and a.get("port_cad") is None:     # 3 nov 2026 (revue) : port pas affiche -> estime, comme les deals
             import deals as _dlp
             a["port_cad"], a["port_estime"] = _dlp.PORT_INCONNU, True
@@ -9525,7 +9530,7 @@ class Api:
                 "suggere": suggere, "ventes": ventes, "mediane_vendue": None if saison_v else vc.get("mediane"),
                 "nb_vendues": len(ventes) if saison_v else vc.get("nb") or len(ventes),
                 "valeur": valeur, "valeur_source": "chasseur" if chasseur else "vendues" if vm else saison_v[1] if saison_v else "annonces",
-                "patch": patch_info,
+                "patch": patch_info, "titre_corrige": titre_corr,
                 "saisons": sorted({v.get("saison") for v in (saison_v or [0, 0, 0, []])[3] if v.get("saison")}) or None,
                 "saison_carte": _deals.saison(cartes_match.cible_titre(t or "").get("annee")) if saison_v else None,
                 "ventes_attente": bool(vc.get("attente")),

@@ -871,8 +871,95 @@ SUITES_SET = {"renewed", "retro", "throwback", "flashback", "rewind", "remastere
 DESCRIPTIFS = {"horizontal", "vertical", "landscape", "portrait", "acetate", "jumbo", "oversized", "short", "print"}
 
 
+# 13 nov 2026 (Mathieu : Savage titre « 2025-26 Upper Deck PREMIER Premium Patch Logan Cooley #BDB-CO /49 » ; la carte est une
+# BLACK DIAMOND Premium Relic (ventes 22 a 38 $), mise max 72 $ : « je sais pas s'ils font expres, on doit contrer ca ») : le
+# CODE de la carte (#BDB-CO) dit son produit. On apprend de nos ventes quel produit va avec chaque prefixe de code (BDB ->
+# black diamond) ; un titre qui nomme un AUTRE produit est corrige avant d'etre juge.
+PRODUITS_CODE = ["the cup", "ultimate collection", "black diamond", "sp authentic", "sp game used", "artifacts", "synergy",
+                 "credentials", "trilogy", "chronology", "premier", "allure", "spx", "o-pee-chee platinum", "ice", "mvp",
+                 "clear cut", "metal universe", "stature", "engrained", "parkhurst", "exquisite", "flagship"]
+_RE_CODE = re.compile(r"#?\b([A-Za-z]{2,5})-([A-Za-z0-9]{1,5})\b")
+_CODES = {"mt": None, "t": {}}
+
+
+def _chemin_codes():
+    import comptes
+    import os
+    return os.path.join(comptes.DONNEES, "codes_produits.json")
+
+
+def codes_produits():
+    import json
+    import os
+    try:
+        p = _chemin_codes()
+        mt = os.path.getmtime(p)
+    except Exception:
+        return _CODES["t"]
+    if _CODES["mt"] != mt:
+        try:
+            with open(p, encoding="utf-8") as f:
+                _CODES["t"] = (json.load(f) or {}).get("codes") or {}
+        except (OSError, ValueError):
+            _CODES["t"] = {}
+        _CODES["mt"] = mt
+    return _CODES["t"]
+
+
+def produits_du_titre(titre):
+    t = norm(titre or "")
+    return [p for p in PRODUITS_CODE if _a_mot(t, p) and not any(p != q and p in q and _a_mot(t, q) for q in PRODUITS_CODE)]
+
+
+def prefixe_code(titre):
+    for m in _RE_CODE.finditer(str(titre or "")):
+        pre = m.group(1).upper()
+        if pre not in ("RC", "SP", "SSP", "PSA", "BGS", "SGC", "CGC", "UD", "OPC", "YG", "FW", "AU", "GU", "HOF", "NHL"):
+            return pre
+    return None
+
+
+def apprendre_codes(titres, n_min=5, part_min=0.8):
+    """[titres de ventes] -> {prefixe: {produit, n, part}} : le produit qui va avec chaque prefixe de code."""
+    cpt = {}
+    for t in titres:
+        pre = prefixe_code(t)
+        if not pre:
+            continue
+        ps = produits_du_titre(t)
+        if len(ps) != 1:
+            continue
+        d = cpt.setdefault(pre, {})
+        d[ps[0]] = d.get(ps[0], 0) + 1
+    out = {}
+    for pre, d in cpt.items():
+        n = sum(d.values())
+        p, k = max(d.items(), key=lambda kv: kv[1])
+        if n >= n_min and k / n >= part_min:
+            out[pre] = {"produit": p, "n": n, "part": round(k / n, 3)}
+    return out
+
+
+def corriger_produit(titre, table=None):
+    """-> (titre corrige, note ou None). Le code dit « black diamond », le titre dit « premier » : le titre est corrige."""
+    pre = prefixe_code(titre)
+    if not pre:
+        return titre, None
+    e = (table if table is not None else codes_produits()).get(pre)
+    if not e:
+        return titre, None
+    bon = e["produit"]
+    ps = produits_du_titre(titre)
+    if not ps or bon in ps:
+        return titre, None
+    faux = ps[0]
+    t2 = re.sub(r"(?i)\b" + re.escape(faux).replace("\\ ", "\\s+") + r"\b", bon, str(titre), count=1)
+    return (t2, f"{faux} -> {bon} (code #{pre})") if t2 != titre else (titre, None)
+
+
 def cible_titre(titre, joueur=None):
     """Notre carte (son titre) -> ce que les comparables doivent avoir."""
+    titre, _corr = corriger_produit(titre)
     c = cible(titre)
     t = c["texte"]
     j = joueur_du_titre(titre, joueur)

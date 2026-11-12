@@ -33,7 +33,10 @@ import unicodedata
 from datetime import date, datetime, timedelta
 
 POIDS_ACTIF = {"forme": 0.38, "ascension": 0.11, "rythme": 0.09, "buzz": 0.09, "notoriete": 0.05, "demande": 0.11,
-               "recrue": 0.05, "legende": 0.05, "actu": 0.07, "communaute": 0.05}
+               "recrue": 0.05, "legende": 0.05, "actu": 0.07, "communaute": 0.05,
+               # 13 nov 2026 (Mathieu : « les equipes qui ont le plus d'acheteurs doivent avoir un score plus eleve ») : le
+               # marche de son club (le plus de ventes de cartes dans nos archives = 100), americain ou canadien
+               "marche": 0.08}
 BONUS_FEU = 6                      # « 6 buts cette semaine = tres haut » : la semaine en feu passe devant tout le monde
 POIDS_RETIRE = {"legende": 0.33, "buzz": 0.22, "notoriete": 0.33, "actu": 0.12, "communaute": 0.06}
 ECHELLE_RETIRE = 0.85              # une semaine en feu passe devant ; une legende reste quand meme haut
@@ -337,7 +340,13 @@ def calculer(d=None, base=None, demande=None):
         demande = demande or demande_legale.demande
     stats_j = d.get("joueurs") or {}
     noms = set(base) | set(stats_j)
-    brut = {k: {} for k in ("forme", "ascension", "rythme", "buzz", "notoriete", "demande", "recrue", "legende", "actu", "pic", "communaute")}
+    brut = {k: {} for k in ("forme", "ascension", "rythme", "buzz", "notoriete", "demande", "recrue", "legende", "actu", "pic", "communaute",
+                            "marche")}
+    try:
+        import demande_legale as _dl_m
+        marche_eq = _dl_m.marche_equipe
+    except Exception:
+        marche_eq = None
     nouvelles_j = _actu_par_joueur(noms, actu())
     # 11 nov 2026 (Mathieu : « ce que nos utilisateurs regardent, suivent, ajoutent : un signal que personne d'autre n'a ») :
     # l'interet de la communaute SlabCoach (fiches, annonces, watchlists, favoris) des 7 et 30 derniers jours
@@ -390,6 +399,13 @@ def calculer(d=None, base=None, demande=None):
         na = nouvelles_j.get(nom)
         brut["actu"][nom] = (na["n"] + 2 * na["ev"] + 0.2 * na.get("pos", 0)) if na else 0.0
         brut["legende"][nom] = _legende_brute(h)
+        if actif and h.get("equipe") and marche_eq:
+            try:
+                mq = marche_eq(h.get("equipe"))
+            except Exception:
+                mq = None
+            if mq is not None:
+                brut["marche"][nom] = mq
         try:
             cx = creux(h)
         except Exception:

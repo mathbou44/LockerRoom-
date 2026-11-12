@@ -227,7 +227,7 @@ PIECES = ("age", "logpick", "top10", "gp", "pts", "ppg", "spts", "sppg", "po_pts
           "vezina", "norris", "richard", "cat_n", "cat_hits", "wiki_fr", "wiki_len",
           # 13 nov 2026 (Mathieu : « tu prends en consideration les equipes qui vendent le plus ? ») : l'equipe (marche canadien,
           # Original Six, chaque club) et d'ou il vient (Canada, Quebec) ; le labo mesure ce qu'elles valent contre les ventes
-          "eq_can", "eq_orig6", "ne_can", "ne_qc") + tuple("eq_" + e for e in EQUIPES)
+          "eq_marche", "eq_can", "eq_orig6", "ne_can", "ne_qc") + tuple("eq_" + e for e in EQUIPES)
 JUNIORS = {"OHL", "WHL", "QMJHL", "LHJMQ", "USHL", "NCAA", "SHL", "KHL", "Liiga", "NTDP", "USDP", "MHL", "AHL", "Allsvenskan", "NL"}
 _CAT = {"le": 0.0, "n": {}, "h": {}}
 
@@ -320,7 +320,12 @@ def _pieces2(e, n, w):
 def _pieces_equipe(n):
     eq = str(n.get("equipe") or "").upper()
     pays, prov = str(n.get("pays") or "").upper(), str(n.get("province") or "").lower()
-    return {"eq_can": 1.0 if eq in EQ_CAN else 0.0, "eq_orig6": 1.0 if eq in EQ_ORIG6 else 0.0,
+    try:
+        mq = marche_equipe(eq) if eq else None
+    except Exception:
+        mq = None
+    return {"eq_marche": (mq or 50.0) / 100.0 if eq else 0.0,
+            "eq_can": 1.0 if eq in EQ_CAN else 0.0, "eq_orig6": 1.0 if eq in EQ_ORIG6 else 0.0,
             "ne_can": 1.0 if pays in ("CAN", "CA") else 0.0, "ne_qc": 1.0 if prov in ("quebec", "québec", "qc") else 0.0,
             **{"eq_" + e: 1.0 if eq == e else 0.0 for e in EQUIPES}}
 
@@ -416,7 +421,46 @@ def labo(d=None, verite=None):
         mu, sd, w, b = _ajuster([[l[1][k] for k in ks] for l in lignes], y)
         modele = {"pieces": ks, "mu": mu, "sd": sd, "w": w, "b": b, "nom": meilleur, "n": len(lignes),
                   "le": datetime.now().isoformat(timespec="seconds")}
-    return {"n": len(lignes), "seules": seules, "combinaisons": res, "garde": meilleur, "modele": modele}
+    return {"n": len(lignes), "seules": seules, "combinaisons": res, "garde": meilleur, "modele": modele,
+            "equipes": table_equipes(d, verite)}
+
+
+def table_equipes(d=None, verite=None):
+    """13 nov 2026 (Mathieu : « les equipes, meme americaines, qui ont le plus d'acheteurs / de liquidite doivent avoir un
+    score plus eleve ») : chaque club LNH : le nombre de ventes de cartes de ses joueurs dans nos archives (90 jours) et la
+    demande moyenne mesuree sur les ventes. Calculee au labo (admin) ; un joueur n'y est relie que par le NOM de son equipe."""
+    d = d or lire()
+    try:
+        import base_ventes
+        vpj = {_norm(k): v for k, v in base_ventes.ventes_par_joueur(90).items()}
+    except Exception:
+        vpj = {}
+    vn = {_norm(k): v for k, v in (verite or {}).items()}
+    eq = {}
+    for nom, e in (d.get("joueurs") or {}).items():
+        n = (e or {}).get("nhl") or {}
+        t = str(n.get("equipe") or "").upper()
+        if not t or n.get("actif") is False:
+            continue
+        x = eq.setdefault(t, {"ventes": 0, "joueurs": 0, "dem": []})
+        x["joueurs"] += 1
+        x["ventes"] += vpj.get(_norm(nom), 0)
+        if _norm(nom) in vn:
+            x["dem"].append(math.log(vn[_norm(nom)]))
+    out = {}
+    for t, x in eq.items():
+        out[t] = {"ventes": x["ventes"], "joueurs": x["joueurs"],
+                  "demande": round(math.exp(sum(x["dem"]) / len(x["dem"])), 3) if x["dem"] else None}
+    tot = sorted(out.values(), key=lambda v: v["ventes"])
+    for r, v in enumerate(tot):
+        v["rang_pct"] = round(100 * (r + 0.5) / len(tot), 1)          # 100 = le club qui vend le plus
+    return out
+
+
+def marche_equipe(equipe):
+    """Le marche d'un club (0 a 100 : 100 = le plus d'acheteurs), d'apres la table du labo ; None si inconnu."""
+    t = (lire().get("equipes") or {}).get(str(equipe or "").upper())
+    return t.get("rang_pct") if t else None
 
 
 def _arbres_cv(lignes, y):
@@ -627,7 +671,9 @@ def passe(n=PAR_PASSE):
         r = labo(d)
         if r.get("modele"):
             d["modele"] = r["modele"]
-        d["labo"] = {k: v for k, v in r.items() if k != "modele"}
+        if r.get("equipes"):
+            d["equipes"] = r["equipes"]
+        d["labo"] = {k: v for k, v in r.items() if k not in ("modele", "equipes")}
         d["labo"]["le"] = datetime.now().isoformat(timespec="seconds")
         _ecrire(d)
     return {"lus": len(noms_n), "wiki": len(noms_w), "labo": d.get("labo")}
