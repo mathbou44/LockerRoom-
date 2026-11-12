@@ -1165,6 +1165,7 @@ body.pro .haut-pro{display:block}
 .haut-vue.coin-vue{position:static; transform:none; margin:0; height:30px; padding:0 8px 0 12px; font-size:12px; background:var(--carte, #1b1b22)}
 .haut-vue.coin-vue.v-pro{background:linear-gradient(135deg, #F3E2B3, #D9B866 55%, #A88A45)}
 body .haut-dr:has(.haut-vue) .haut-pro{display:none}
+.mi-case.mi-garde input{border-color:var(--vert); box-shadow:0 0 0 2px rgba(80,200,120,.25); transition:box-shadow .2s}
 .vue-ch{display:flex; flex-direction:column; gap:10px} .vue-o.on{border-color:var(--acc)} .vue-o.v-pro.on{border-color:#D9B866}
 body.pro .barre-mode{background:linear-gradient(180deg, rgba(38,31,17,.94), rgba(17,15,11,.92)); border-bottom-color:transparent}
 body.pro .barre-mode::after{content:''; position:absolute; left:0; right:0; bottom:0; height:1px; pointer-events:none;
@@ -8015,7 +8016,7 @@ async function feuilleMiser(id, lot){
     i.oninput = maj; maj();
     go.onclick = (e) => { const v = nb(i.value) || 0; copier(String(Math.floor(v * 100) / 100)); vibrer(); M.envoye = true; M.faits++;
       if (ouvrirMiseEbay(x)) { e.preventDefault(); e.stopPropagation(); }
-      if (v > 0 && x.taux) API.watch_mise_max(x.item_id, Math.round(v * x.taux * 100) / 100).catch(() => {});   // ta mise devient ta mise max (alertes)
+      if (v > 0 && x.taux) API.watch_mise_max(x.item_id, Math.round(v * x.taux * 100) / 100, v, x.devise, true).catch(() => {});   // ta mise devient ta mise max (alertes), dans la devise de l'annonce
       toast(tt('Montant copié : colle-le sur eBay', 'Amount copied: paste it on eBay'), 2500); };
     const p = $('#mi-passe'); if (p) p.onclick = () => { M.i++; etape(); };
     const sv = $('#mi-suiv'); if (sv) sv.onclick = () => { M.i++; etape(); };
@@ -8033,6 +8034,10 @@ async function feuilleMiser(id, lot){
   // est pret, et Gixen pour moi ; tres simple, guide, standard »)
   function liste(){
     const W_ = Q;
+    // 12 nov 2026 (Mathieu : « si je modifie le prix propose, c'est celui-la qui doit rester ; je veux pas passer 20 min a
+    // mettre les prix parfaits, quitter l'app et revenir et tous mes prix sont disparus ») : une mise ecrite a la main
+    // revient ecrite (pas en pale), et chaque case est gardee au serveur ~1 s apres la derniere touche
+    W_.forEach(x => { if (x._m == null && x.mise_perso && x.mise_max > 0) x._m = Math.floor(x.mise_max); });
     ouvrirFeuille(`<h3>${tt('Miser en lot', 'Bid in a batch')}</h3>
       <div class="mi-etapes"><span><b>1</b>${tt('Ton montant', 'Your amount')}</span><span><b>2</b>${tt('Miser sur eBay', 'Bid on eBay')}</span><span><b>3</b>${tt('Confirmer', 'Confirm')}</span></div>
       <div class="mi-haut"><button class="btn" id="ml-go"></button>${S.forfait && S.forfait.admin ? `<button class="btn ghost petit" id="ml-gx">Gixen</button>` : ''}</div>
@@ -8046,7 +8051,14 @@ async function feuilleMiser(id, lot){
     const prets = () => W_.filter(x => val(x) > 0 && !(x.mise_min != null && val(x) < x.mise_min));
     const maj = () => { const n = prets().length, b = $('#ml-go'); b.textContent = tt(`Miser sur eBay (${n})`, `Bid on eBay (${n})`); b.disabled = !n;
       $$('.mi-case input').forEach(i => { const x = W_[+i.dataset.k], v = val(x); i.closest('.mi-t').classList.toggle('mi-bas', x.mise_min != null && v < x.mise_min); }); };
-    $$('.mi-case input').forEach(i => i.oninput = () => { const x = W_[+i.dataset.k]; x._m = i.value === '' ? null : nb(i.value); maj(); });
+    const garder = (i, x) => { clearTimeout(x._t); x._t = setTimeout(() => { x._t = null;
+      const v = x._m, cad = v != null && v > 0 ? Math.round(v * (x.taux || 1) * 100) / 100 : null;
+      API.watch_mise_max(x.item_id, cad, cad ? v : null, cad ? x.devise : null, true)
+        .then(() => { x.mise_perso = !!cad; if (cad) x.mise_max = v; i.closest('.mi-case').classList.add('mi-garde'); setTimeout(() => { const c_ = i.closest('.mi-case'); if (c_) c_.classList.remove('mi-garde'); }, 1200); })
+        .catch(() => toast(tt('Mise pas enregistrée : vérifie ta connexion', 'Bid not saved: check your connection'))); }, 900); };
+    $$('.mi-case input').forEach(i => { const x = W_[+i.dataset.k];
+      i.oninput = () => { x._m = i.value === '' ? null : nb(i.value); maj(); garder(i, x); };
+      i.onchange = () => { if (x._t) { clearTimeout(x._t); x._t = null; garder(i, x); } }; });
     maj();
     $('#ml-go').onclick = () => { vibrer(); Q = prets(); Q.forEach(x => { x._m = val(x); }); M.i = 0; etape(); };
     const g = $('#ml-gx'); if (g) g.onclick = () => { vibrer(); const L2 = prets(); feuilleGixen(Object.fromEntries(L2.map(x => [x.item_id, val(x)]))); };

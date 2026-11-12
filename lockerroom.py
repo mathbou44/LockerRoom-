@@ -7954,9 +7954,9 @@ class Api:
         import watchlist
         return watchlist.preparer(self)
 
-    def watch_mise_max(self, item_id, valeur=None):
+    def watch_mise_max(self, item_id, valeur=None, montant=None, devise=None, leger=False):
         import watchlist
-        return watchlist.mise_max(self, item_id, valeur)
+        return watchlist.mise_max(self, item_id, valeur, montant, devise, liste_=not leger)
 
     def watch_proches(self):
         """Boucle du serveur (5 min) : les encans suivis qui finissent bientot, relus sur eBay."""

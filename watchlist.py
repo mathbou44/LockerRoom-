@@ -29,6 +29,14 @@ def _cx(api):
         c.execute("ALTER TABLE watchlist ADD COLUMN mise_perso INTEGER DEFAULT 0")
     except Exception:
         pass
+    try:                                         # 12 nov 2026 : la mise ecrite dans la devise de l'annonce (39 $ US reste 39 $ US)
+        c.execute("ALTER TABLE watchlist ADD COLUMN mise_devise REAL")
+    except Exception:
+        pass
+    try:
+        c.execute("ALTER TABLE watchlist ADD COLUMN mise_dev TEXT")
+    except Exception:
+        pass
     try:                                         # 31 oct 2026 : quand la carte a ete envoyee dans la watchlist eBay
         c.execute("ALTER TABLE watchlist ADD COLUMN ebay_le TEXT")
     except Exception:
@@ -144,22 +152,28 @@ def _refaire_mises(api, cfg=None, item_id=None):
         c.close()
 
 
-def mise_max(api, item_id, valeur):
-    """La mise max d'UNE carte, choisie par l'utilisateur (vide = revient au % par defaut)."""
+def mise_max(api, item_id, valeur, montant=None, devise=None, liste_=True):
+    """La mise max d'UNE carte, choisie par l'utilisateur (vide = revient au % par defaut).
+    12 nov 2026 (Mathieu : « je veux pas passer 20 min a mettre les prix parfaits, quitter l'app, revenir et tous mes prix
+    sont disparus ») : la mise ecrite dans « Miser en lot » / Gixen est gardee tout de suite, dans la devise de l'annonce
+    (montant, devise) en plus de son equivalent en $ CA (valeur) : elle revient telle quelle, au dollar pres."""
     v = _f(valeur)
+    m = _f(montant)
+    dev = str(devise or "").upper()[:3] or None
     cfg = reglages(api)
     c = _cx(api)
     try:
         if v and v > 0:
-            c.execute("UPDATE watchlist SET mise_max=?, mise_perso=1, notif_seuil=0 WHERE item_id=?", (v, str(item_id)))
+            c.execute("UPDATE watchlist SET mise_max=?, mise_perso=1, notif_seuil=0, mise_devise=?, mise_dev=? WHERE item_id=?",
+                      (v, m if m and m > 0 and dev else None, dev if m and m > 0 else None, str(item_id)))
         else:
-            c.execute("UPDATE watchlist SET mise_perso=0 WHERE item_id=?", (str(item_id),))
+            c.execute("UPDATE watchlist SET mise_perso=0, mise_devise=NULL, mise_dev=NULL WHERE item_id=?", (str(item_id),))
         c.commit()
     finally:
         c.close()
     if not (v and v > 0):
         _refaire_mises(api, cfg, item_id)
-    return liste(api)
+    return liste(api) if liste_ else {"ok": True}
 
 
 def _f(v):
@@ -711,7 +725,10 @@ def preparer(api, lire_article=None):
             if t:
                 y["devise"] = dev
                 # arrondi vers le bas, au dollar (une mise de 39,73 $ US -> 39 $ US) : jamais au-dessus de la mise max
-                y["mise_max"] = float(int(x["mise_max"] / t)) if dev != "CAD" else float(int(x["mise_max"]))
+                y["mise_max"] = float(int(x["mise_max"] / t + 1e-6)) if dev != "CAD" else float(int(x["mise_max"] + 1e-6))
+                # 12 nov 2026 : la mise ecrite a la main dans cette devise revient exactement (pas reconvertie)
+                if x.get("mise_perso") and x.get("mise_devise") and str(x.get("mise_dev") or "") == dev:
+                    y["mise_max"] = float(x["mise_devise"])
                 y["mise_actuelle"] = a.get("prix_devise") or (a.get("prix_cad") / t if a.get("prix_cad") else None)
                 y["taux"], y["mises"] = t, a.get("mises")
                 y["mise_min"] = mise_minimum(y["mise_actuelle"], a.get("mises"))

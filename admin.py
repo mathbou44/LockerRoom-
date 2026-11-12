@@ -136,7 +136,7 @@ def _maj_fichier(nom, cle="maj"):
         return None
 
 
-VERSION_APP = "v248"            # 12 nov 2026 : la version montree dans l'admin (a monter a chaque livraison)
+VERSION_APP = "v249"            # 12 nov 2026 : la version montree dans l'admin (a monter a chaque livraison)
 
 
 def sante():
