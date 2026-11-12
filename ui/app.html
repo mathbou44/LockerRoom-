@@ -3672,6 +3672,9 @@ html.tel-large .fen.fa .fen-img{max-height:calc(46vh / 1.12) !important}
    ============================================================ */
 :root{--prisme:conic-gradient(from 210deg, var(--h1,#9FE6D2), var(--h2,#B9BEFF), var(--h3,#F2B3D6), var(--h4,#F1D58E), var(--h1,#9FE6D2));
   --pastille-fond:linear-gradient(var(--carte), var(--carte))}
+/* 12 nov 2026 (Mathieu : « l'etoile de la watchlist en haut a droite ») : dans le coin de l'etiquette du slab, plus sur la photo */
+.slab-deal .sd-lab{position:relative} .slab-deal .sd-lab > .sd-et{position:absolute; top:3px; right:2px; z-index:2; width:34px; height:34px; background:transparent}
+.slab-deal .sd-lab > .sd-et svg{width:20px; height:20px} .slab-deal .sd-j, .slab-deal .sd-c{padding-right:30px}
 /* 1. le bouton Vendre de la barre du bas : une pastille prisme plus grosse que les autres icones, DANS la barre (sur iPhone,
    ce qui depasse de la barre floutee est coupe, et une ombre sur un <svg> se dessine en carre : ni l'un ni l'autre) */
 @media (max-width:899px){
@@ -8086,10 +8089,10 @@ function tuileDeal(x){
   // un deal ») : ADMIN, le Score SlabIQ du joueur et son sens, en bas a droite de la photo ; le pourquoi dans la fiche
   const iq = x.iq; if (iq) { S.iqDeals = S.iqDeals || {}; S.iqDeals[x.item_id] = iq; }
   return `<div class="tuile-deal slab-deal ${x.pres ? 'pres' : ''} ${sansV ? 'suivi' : ''}" data-id="${esc(x.item_id)}" ${attrsAnnonce(x)} role="button" tabindex="0">
-    <div class="sd-slab"><div class="sd-lab">
+    <div class="sd-slab"><div class="sd-lab">${boutonWatch(x)}
         <b class="sd-j">${x.favori ? '<i class="sd-fav">★</i> ' : ''}${esc(nom)}</b>${carte ? `<small class="sd-c">${esc(carte)}</small>` : ''}
         <span class="sd-3">${k3(encan ? tt('Mise', 'Bid') : tt('Prix', 'Price'), argentCourt(prix), 'pr')}${k3(tt('Paie max', 'Pay max'), max != null && !sansV ? argentCourt(max) : '—', 'mx')}${k3(tt('Profit', 'Profit'), g > 0 && !sansV ? '+' + argentCourt(g) : '—', 'g')}</span></div>
-      <div class="sd-ph">${SVG_CARTE}${x.photo ? `<img src="${esc(photoNet(x.photo, 400))}" alt="" loading="lazy" decoding="async" data-oe="rm">` : ''}${boutonWatch(x)}
+      <div class="sd-ph">${SVG_CARTE}${x.photo ? `<img src="${esc(photoNet(x.photo, 400))}" alt="" loading="lazy" decoding="async" data-oe="rm">` : ''}
         ${encan ? `<span class="sd-fin">${icH()}${finDans(x.fin)}</span>` : ''}${iq ? badgeIQ(iq) : ''}${x.ramassage ? `<span class="sd-ramp">${icPin()}</span>` : ''}${x.lieu ? drapeau(x.lieu) : ''}${!sansV && (x.valeur_source === 'autre_saison' || x.valeur_source === 'approx') ? `<button class="sd-est" data-est="${esc(x.valeur_source)}" data-est-n="${esc(x.valeur_n || x.n_ventes || '')}">${tt('Estimé', 'Estimated')}</button>` : ''}</div></div>
     </div>`;
 }
