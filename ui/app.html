@@ -310,11 +310,19 @@ details.reglage summary::-webkit-details-marker{display:none}
 .fa-g small b.fa-g2{font:inherit; font-weight:700; color:var(--vert)}
 .vp-nego{display:flex; align-items:center; justify-content:space-between; gap:8px; margin:-2px 0 10px; font-size:12.5px; color:var(--doux)}
 .inv-selb{display:flex; justify-content:flex-end; margin:-4px 0 10px}
+.inv-ligne{display:flex; flex-direction:column} .inv-ligne:not(:has(.inv-selb, .i-ach)){display:none}
+@media (min-width:900px){
+  .inv-ligne{flex-direction:row; align-items:center; gap:12px; margin:0 0 12px}
+  .inv-ligne #i-achats{flex:0 1 460px; min-width:0} .inv-ligne #i-achats:empty{display:none} .inv-ligne .i-ach{margin:0}
+  .inv-ligne #i-selslot{margin-left:auto} .inv-ligne .inv-selb{margin:0}
+}
 .tuile-inv.choisie{outline:2px solid var(--acc); outline-offset:2px; position:relative}
 .tuile-inv.choisie::after{content:'✓'; position:absolute; top:8px; right:8px; width:26px; height:26px; border-radius:50%; background:var(--acc); color:#0b0b0e; font-weight:800; display:flex; align-items:center; justify-content:center}
 .sel-barre{position:fixed; left:12px; right:12px; bottom:calc(96px + env(safe-area-inset-bottom)); z-index:35; display:flex; align-items:center; gap:8px; padding:10px 12px; border-radius:18px; background:var(--carte2); border:1px solid var(--ligne); box-shadow:0 10px 30px rgba(0,0,0,.45)}
 .sel-barre .sb-t{flex:1; display:flex; flex-direction:column; font-size:14px} .sel-barre .sb-t small{color:var(--doux); font-size:12px}
 .sel-barre .pilule.rouge{background:var(--rouge); color:#fff; border-color:transparent} .sel-barre .pilule[disabled]{opacity:.4}
+/* 12 nov 2026 : sur l'ordi, la barre de selection centree sur le contenu (pas sous le menu de gauche), en bas de l'ecran */
+@media (min-width:900px){ .sel-barre{left:calc(50% + 38px); right:auto; transform:translateX(-50%); width:min(620px, calc(100vw - 140px)); bottom:24px} }
 .pg-bulle{position:fixed; left:12px; right:12px; bottom:calc(96px + env(safe-area-inset-bottom)); z-index:34; display:flex; align-items:stretch; border-radius:18px; background:var(--carte2); border:1px solid var(--acc); box-shadow:0 10px 30px rgba(0,0,0,.45); overflow:hidden}
 .pg-bulle .pgb-go{flex:1; display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:12px 14px; background:none; border:0; color:var(--texte); font:inherit; text-align:left; cursor:pointer}
 .pg-bulle .pgb-go small{color:var(--doux); font-size:12.5px} .pg-bulle .pgb-x{width:48px; background:none; border:0; border-left:1px solid var(--ligne); color:var(--doux); font-size:16px; cursor:pointer}
@@ -1153,6 +1161,9 @@ body.pro .haut-pro{display:block}
 .haut-vue svg{width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round}
 .haut-vue.v-pro{border:none; color:#1A150C; background:linear-gradient(135deg, #F3E2B3, #D9B866 55%, #A88A45)}
 .haut-vue.v-gratuit{color:#A9A6B1}
+#badge-coin:has(.coin-vue){display:none} @media (min-width:900px){ #badge-coin:has(.coin-vue){display:flex; align-items:center; gap:8px} body:has(.choix-plein) #badge-coin{display:none} }
+.haut-vue.coin-vue{position:static; transform:none; margin:0; height:30px; padding:0 8px 0 12px; font-size:12px; background:var(--carte, #1b1b22)}
+.haut-vue.coin-vue.v-pro{background:linear-gradient(135deg, #F3E2B3, #D9B866 55%, #A88A45)}
 body .haut-dr:has(.haut-vue) .haut-pro{display:none}
 .vue-ch{display:flex; flex-direction:column; gap:10px} .vue-o.on{border-color:var(--acc)} .vue-o.v-pro.on{border-color:#D9B866}
 body.pro .barre-mode{background:linear-gradient(180deg, rgba(38,31,17,.94), rgba(17,15,11,.92)); border-bottom-color:transparent}
@@ -7435,7 +7446,11 @@ async function chargerForfait(){
   appliquerActivites();
   let h = $('#badge-coin');
   if (!h) { h = document.createElement('div'); h.id = 'badge-coin'; h.className = 'badge-coin'; document.body.appendChild(h); }
-  h.innerHTML = htmlBadge(); brancherBadge(h); document.body.classList.toggle('a-badge', !!h.innerHTML);
+  // 12 nov 2026 (Mathieu : « dans la version Pro, sur l'ordi, j'ai nulle part ou switcher entre les versions ») : sur l'ordi,
+  // l'entete du telephone est cachee ; la pastille ADMIN / PRO / GRATUIT va dans le coin, a cote du badge du forfait
+  const vueB = f.admin_reel ? `<button class="haut-vue coin-vue v-${esc(f.vue || 'admin')}" id="c-vue" aria-label="${esc(tt('Changer de vue', 'Switch view'))}">${f.vue === 'pro' ? 'PRO' : f.vue === 'gratuit' ? tt('GRATUIT', 'FREE') : 'ADMIN'}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></button>` : '';
+  h.innerHTML = vueB + htmlBadge(); brancherBadge(h); document.body.classList.toggle('a-badge', !!h.innerHTML);
+  const cv = $('#c-vue', h); if (cv) cv.onclick = (e) => { e.stopPropagation(); vibrer(); popVue(); };
   majBarreMode();
   pastilleVue();
 }
@@ -11996,7 +12011,7 @@ async function vueInventaire(arg){
     <div class="chips i-filtres">${filtresBarreInv()}</div>
     <div class="acc-tuiles i-tab" id="i-tab"></div>
     <div class="acc-reserve"><div id="i-b-res"><div id="i-coll"></div><div id="i-kpis"></div></div></div>
-    <div id="i-achats"></div>
+    <div class="inv-ligne"><div id="i-achats"></div><div id="i-selslot"></div></div>
     <div id="i-liste">${roue}</div></section>`;
   // 9 nov 2026 : un lot pas termine (garde dans le telephone) fait apparaitre « À finir »
   lotLireGarde().then(() => { const fz_ = $('.i-filtres'); if (fz_) { fz_.innerHTML = filtresBarreInv(); brancherFiltresInv(); }
@@ -12148,7 +12163,7 @@ function barreSelInv(){
   if (!b) { b = document.createElement('div'); b.id = 'sel-inv'; b.className = 'sel-barre'; document.body.appendChild(b); }
   const n = S.selInv.size, l = S.invL || [];
   const ebayN = l.filter(c => S.selInv.has(c.id) && c.item_number && c.statut === 'Listée').length;
-  b.innerHTML = `<div class="sb-t"><b>${n}</b> ${n > 1 ? tt('cartes', 'cards') : tt('carte', 'card')}${ebayN ? `<small>${ebayN} ${tt('sur eBay', 'on eBay')}</small>` : ''}</div>
+  b.innerHTML = `<div class="sb-t"><span><b>${n}</b> ${n > 1 ? tt('cartes', 'cards') : tt('carte', 'card')}</span>${ebayN ? `<small>${ebayN} ${tt('sur eBay', 'on eBay')}</small>` : ''}</div>
     <button class="pilule" id="sb-tout">${n === l.length ? tt('Aucune', 'None') : tt('Toutes', 'All')}</button>
     <button class="pilule rouge" id="sb-ret" ${n ? '' : 'disabled'}>${tt('Retirer', 'Remove')}</button>
     <button class="pilule" id="sb-x" aria-label="${esc(tt('Annuler', 'Cancel'))}">✕</button>`;
@@ -12244,11 +12259,14 @@ async function chargerInventaire(){
   const slabs = S.filtreInv === 'collection';
   const selB = l.length && !vendues ? `<div class="inv-selb"><button class="pilule ${S.selInv ? 'acc' : ''}" id="i-sel">${S.selInv ? tt('Terminer la sélection', 'Done selecting') : tt('Sélectionner', 'Select')}</button></div>` : '';
   const af = S.filtreInv === 'afinir' ? blocAFinir(l) : '';
+  // 12 nov 2026 (Mathieu : « le bouton Select ne devrait pas tout decaler les annonces vers le bas ; il a assez de place pour etre
+  // a la meme hauteur que My eBay purchases, qui est beaucoup trop long ») : sur la meme ligne que « Mes achats eBay »
+  const slot = $('#i-selslot'); if (slot) slot.innerHTML = S.filtreInv === 'afinir' ? '' : selB;
   ['i-tab', 'i-achats'].forEach(id => { const e = $('#' + id); if (e) { if (S.filtreInv === 'afinir') e.style.setProperty('display', 'none', 'important'); else e.style.removeProperty('display'); } });   // 12 nov : A finir, rien d'autre
   if (S.filtreInv === 'afinir') { z.innerHTML = puces + vueAFinirSimple(l); brancherAFinir(l); brancherAFinirSimple(l);
     $$('#i-liste .tuile-inv').forEach(r => r.onclick = () => { if (r.dataset.glisse || (r.style.transform || '').includes('-96')) { r.style.transform = ''; return; } vibrer(); const c = l.find(x => x.id === +r.dataset.id); if (c) feuilleCarte(c); });
     const fz = $('.i-filtres'); if (fz) brancherFiltresInv(); return; }
-  z.innerHTML = puces + note + af + (slabs ? '' : resume) + selB + (l.length ? (slabs ? `<div class="grille-slab">${l.map(tuileSlab).join('')}</div>` : `<div class="grille-c">${l.map(tuileInv).join('')}</div>`)
+  z.innerHTML = puces + note + af + (slabs ? '' : resume) + (slot ? '' : selB) + (l.length ? (slabs ? `<div class="grille-slab">${l.map(tuileSlab).join('')}</div>` : `<div class="grille-c">${l.map(tuileInv).join('')}</div>`)
     : S.filtreInv === 'afinir' ? (af ? '' : `<div class="vide">${tt('Rien à finir : tout est sur eBay', 'Nothing to finish: everything is on eBay')}</div>`)
     : `<div class="vide">${S.filtreInv === 'collection' ? tt('Ta collection est vide', 'Your collection is empty') : tt('Rien ici', 'Nothing here')}<button class="pilule" id="i-vide">${tt('Ajouter des cartes', 'Add cards')}</button></div>`);
   $$('#i-sports [data-sp]').forEach(b => b.onclick = () => { S.sportInv = b.dataset.sp || null; chargerInventaire(); });
