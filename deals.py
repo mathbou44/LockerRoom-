@@ -3113,12 +3113,12 @@ def _etat_soldcomps():
     import vendues
     try:
         e = vendues.derniere_erreur()
-        return {"source": vendues.source(), "jour": vendues.utilises_aujourdhui(), "plafond": vendues.plafond_jour(), "fond": int(vendues.plafond_jour() * 0.7),
+        return {"source": vendues.source(), "jour": vendues.utilises_total(), "plafond": vendues.plafond_jour(), "fond": int(vendues.plafond_jour() * 0.7),
                 "verif": vendues.utilises_aujourdhui("verif"), "prio": vendues.utilises_aujourdhui("prio"), "prio_max": prio_max(),
                 "autres_max": int(vendues.plafond_jour() * vendues.PART_AUTRES_FOND),
                 "erreur": e.get("erreur") if e and time.time() - e.get("le", 0) < 6 * 3600 else None, "sites": vendues.sites(),
                 # 29 oct 2026 : budget du jour atteint -> quand ca repart (le compteur suit le jour du serveur, UTC)
-                "epuise": vendues.utilises_aujourdhui() >= int(vendues.plafond_jour() * 0.7),
+                "epuise": vendues.utilises_total() >= int(vendues.plafond_jour() * 0.7),
                 "reprise": _minuit_mtl()}
     except Exception as x:
         return {"erreur": repr(x)}

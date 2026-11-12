@@ -87,3 +87,16 @@ r = vendues.comparaison_resume()
 assert r["n"] == 1 and r["couverture"] == 0.5 and r["plus_frais"]["sc"] == 1, r
 os.environ.pop("SOLDCOMPS_CLE")
 print("COMPARAISON OK")
+# 12 nov 2026 : le jour de la bascule, les recherches SoldComps du matin ne bloquent pas CompSniper le soir
+os.environ["LR_VENTES_SOURCE"] = "compsniper"; os.environ["LR_HISTORIQUE_MOIS"] = "9500"
+for _ in range(900):
+    vendues._compter("verif")                          # 900 recherches SoldComps ce matin
+assert vendues.utilises_aujourdhui() >= 900 and vendues.utilises_total() == vendues.utilises_aujourdhui("cs")
+assert vendues._budget_ok(True, "prio"), (vendues.utilises_total(), vendues.plafond_jour())
+n0 = vendues.utilises_total()
+historique.urllib.request.urlopen = faux
+historique._ERREUR.update(le=0, texte=None)
+vendues.rechercher("une carte du soir", fond=True, usage="prio")
+assert vendues.utilises_total() == n0 + 1
+os.environ.pop("LR_VENTES_SOURCE")
+print("BASCULE OK")

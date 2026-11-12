@@ -259,6 +259,28 @@ def _compter(usage=None, cpt=None):
             c.close()
 
 
+def _cle_plus(suffixe, d=1):
+    """Un compteur du jour a part (« cs » : les requetes CompSniper seulement)."""
+    with _verrou:
+        c = _cx()
+        try:
+            k = jour() + ":" + suffixe
+            if d > 0:
+                c.execute("INSERT INTO compteur VALUES (?, ?) ON CONFLICT(jour) DO UPDATE SET n = n + ?", (k, d, d))
+            else:
+                c.execute("UPDATE compteur SET n = MAX(0, n + ?) WHERE jour=?", (d, k))
+            c.commit()
+        finally:
+            c.close()
+
+
+def utilises_total():
+    """12 nov 2026 (admin : « CompSniper 994 / 794 » et le chasseur arrete a 18 h 43, les encans de Savage finissant le soir) :
+    le jour de la bascule, le compteur du jour comptait aussi les recherches SoldComps du matin (deja payees, autre forfait).
+    CompSniper principal : seules SES requetes comptent contre son budget du jour."""
+    return utilises_aujourdhui("cs") if source() == "compsniper" else utilises_aujourdhui()
+
+
 def _rembourser(usage=None, cpt=None):
     """9 nov 2026 (SoldComps : « les requetes en echec ne comptent pas et ne sont pas facturees ») : un appel en echec rend
     son credit a NOTRE budget du jour (avant : une panne de SoldComps brulait tout le budget en quelques minutes)."""
@@ -318,7 +340,7 @@ PART_AUTRES_FOND = 0.25          # 29 oct 2026 : 0,35 -> 0,25 : les verification
 
 
 def _budget_ok(fond, usage):
-    tot, pl = utilises_aujourdhui(), plafond_jour()
+    tot, pl = utilises_total(), plafond_jour()
     if not fond:
         return tot < pl
     if tot >= pl * 0.7:
@@ -527,10 +549,12 @@ def _par_compsniper(q, fond, usage, cpt):
                     time.sleep(attente)
                 _DERNIER[0] = time.time()
         _compter(usage, cpt)
+        _cle_plus("cs")
         ventes, err = historique.rechercher(q, chasseur=fond, principal=True, cache_s=CACHE_S, delai=25 if fond else DELAI_TAP)
         if err:
             try:
                 _rembourser(usage, cpt)        # un echec n'est pas facture
+                _cle_plus("cs", -1)
             except Exception:
                 pass
     else:
@@ -1062,7 +1086,7 @@ def tendance(ventes, jours=None):
 
 
 def statut():
-    d = {"actif": actif(), "source": source(), "aujourdhui": utilises_aujourdhui(), "plafond": plafond_jour(), "poids_jour": poids_aujourdhui(),
+    d = {"actif": actif(), "source": source(), "aujourdhui": utilises_total(), "plafond": plafond_jour(), "poids_jour": poids_aujourdhui(),
          "poids_semaine": poids_jours()}
     # 10 nov 2026 : toutes les sources de ventes, pour l'admin (base, raffiner, sauver, archives)
     try:
