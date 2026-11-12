@@ -2966,6 +2966,24 @@ body.zp-ouvert{overflow:hidden}
 .so-bas{position:sticky; bottom:0; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 10px 10px 16px; border-radius:18px; background:var(--fond-feuille, var(--carte))} .so-bas span{flex:1 1 auto; min-width:0; font-size:14px} .so-bas .btn{flex:0 0 auto; width:auto; margin:0; padding-inline:28px}
 .so-fil{margin:0 0 14px} .so-fil li{cursor:pointer}
 /* 3 nov 2026 - filtres des deals : nos pastilles rondes, la barre « Appliquer » qui apparait au premier changement */
+/* 13 nov 2026 : le rapport SlabIQ qui fait wow */
+.iq-hero{margin:14px 0 6px; padding:20px 18px; border-radius:24px; background:radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--acc) 28%, transparent), transparent 60%), radial-gradient(90% 90% at 100% 100%, color-mix(in srgb, var(--vert) 18%, transparent), transparent 60%), var(--carte); border:1px solid color-mix(in srgb, var(--acc) 40%, var(--ligne)); display:flex; flex-direction:column; gap:8px}
+.iq-k{font:700 13px var(--f-cond); letter-spacing:.16em; text-transform:uppercase; color:var(--acc)}
+.iq-big{display:flex; align-items:baseline; gap:4px; font:800 76px/0.95 var(--f-cond)} .iq-big i{font-style:normal; color:var(--doux); font-size:48px}
+.iq-s{color:var(--texte); font-size:15px; font-weight:600}
+.iq-ch{display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-top:6px}
+.iq-ch span{display:flex; flex-direction:column; gap:2px; padding:10px; border-radius:14px; background:rgba(0,0,0,.22)}
+.iq-ch b{font:800 22px var(--f-cond)} .iq-ch b.rouge{color:var(--rouge)} .iq-ch b.vert{color:var(--vert)} .iq-ch small{font-size:11.5px; color:var(--doux); line-height:1.25}
+.iq-cert{margin-top:6px} .iq-cl{display:flex; justify-content:space-between; align-items:baseline; font-size:13px; color:var(--doux)} .iq-cl b{font:800 18px var(--f-cond); color:var(--texte)}
+.iq-bar{position:relative; height:10px; border-radius:99px; background:rgba(255,255,255,.08); margin:6px 0 4px; overflow:hidden}
+.iq-bar i{position:absolute; inset:0 auto 0 0; border-radius:99px; background:linear-gradient(90deg, var(--acc), var(--vert))}
+.iq-cert small{font-size:12px; color:var(--doux)}
+.iq-coups{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.iq-c{position:relative; display:flex; flex-direction:column; gap:2px; padding:12px; border-radius:16px; background:var(--carte2); border:1px solid var(--ligne)}
+.iq-cn{font-weight:700; font-size:14px; padding-right:18px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.iq-c b{font:800 26px var(--f-cond); color:var(--rouge)} .iq-c.hausse b{color:var(--vert)} .iq-c small{font-size:11.5px; color:var(--doux)}
+.iq-c em{position:absolute; top:10px; right:12px; font-style:normal; color:var(--vert); font-weight:800}
+.tq-tech{margin-top:18px; border-top:1px solid var(--ligne); padding-top:10px} .tq-tech > summary{cursor:pointer; color:var(--doux); font-weight:600; font-size:14px; padding:8px 0}
 /* 12 nov 2026 : la feuille Filtres, tres simple (5 questions, des pastilles) */
 .fx-h{display:flex; align-items:center; justify-content:space-between; gap:10px} .fx-h h3{margin:0}
 .fx-raz{display:block; margin:6px auto 4px; border:0; background:none; color:var(--doux); font-size:14px; font-weight:600; padding:10px 14px; cursor:pointer; text-decoration:underline; text-underline-offset:3px}
@@ -9022,6 +9040,32 @@ async function feuilleTestIQ(){
       : (M ? `${tt('au mieux', 'at best')} · ${M.alertes} ${tt('alertes', 'alerts')} ${tt('au seuil', 'at threshold')} ${pc(M.seuil)} · ${tt('aucun seuil fiable à 95 % pour l’instant', 'no reliable 95% threshold yet')}` : tt('aucune alerte', 'no alerts'));
     const mois = R.ventes_mois || [], mxM = Math.max(1, ...mois.map(m => m[1]));
     const crb = (R.courbe || []).filter(c => [0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.97, 0.99].some(v => Math.abs(v - c.seuil) < 1e-6));
+    // 13 nov 2026 (Mathieu : « sauf les 45 et 46 %, c'est pas vendeur : un rapport qui fait wow ») : en haut, ce qui compte
+    // (les alertes de chaque semaine, ce qu'elles ont vu venir, les bons coups, le direct) ; le technique, replie en bas
+    const T2 = TS.find(v => Math.abs(v.q - 0.02) < 1e-9) || TB;
+    if (T2) {
+      const mvA = T2.mouvement_moyen, mk = R.marche_test_pct, cert = T2.certitude || 0;
+      const coups = (T2.liste || []).filter(a => a.annonce === a.vrai).slice(0, 6);
+      h += `<div class="iq-hero">
+        <div class="iq-k">${tt('Les alertes SlabIQ', 'SlabIQ alerts')}</div>
+        <div class="iq-big"><b>${T2.justes}</b><i>/</i><b>${T2.alertes}</b></div>
+        <div class="iq-s">${tt('justes, sur des semaines que SlabIQ n’avait jamais vues', 'right, on weeks SlabIQ had never seen')}</div>
+        <div class="iq-ch">
+          ${mvA != null ? `<span><b class="${mvA < 0 ? 'rouge' : 'vert'}">${mvA > 0 ? '+' : ''}${String(mvA).replace('.', ',')} %</b><small>${tt('en moyenne, 28 jours après l’alerte', 'on average, 28 days after the alert')}</small></span>` : ''}
+          ${mk != null ? `<span><b>${mk > 0 ? '+' : ''}${String(mk).replace('.', ',')} %</b><small>${tt('le joueur moyen, mêmes semaines', 'the median player, same weeks')}</small></span>` : ''}
+          <span><b>${T2.semaines || '—'}</b><small>${tt('semaines testées à l’aveugle', 'weeks tested blind')}</small></span></div>
+        <div class="iq-cert"><div class="iq-cl"><span>${tt('Certitude minimale', 'Minimum certainty')}</span><b>${pc(cert)}</b></div>
+          <div class="iq-bar"><i style="width:${Math.round(100 * Math.min(1, cert / 0.95))}%"></i><em style="left:100%"></em></div>
+          <small>${tt('Objectif 95 %. Elle monte toute seule avec chaque semaine de ventes.', 'Goal 95%. It rises by itself with every week of sales.')}</small></div></div>
+      ${coups.length ? `<div class="da-l">${tt('Ses meilleurs coups', 'Its best calls')}</div><div class="iq-coups">${coups.map(a => `<div class="iq-c ${a.vrai}"><span class="iq-cn">${esc(a.joueur)}</span><b>${a.mouvement_pct > 0 ? '+' : ''}${String(a.mouvement_pct).replace('.', ',')} %</b><small>${tt('annoncé le', 'called on')} ${esc(new Date(a.le + 'T12:00:00').toLocaleDateString(LOC(), {day: 'numeric', month: 'short'}))} · ${tt('28 jours', '28 days')}</small><em>✓</em></div>`).join('')}</div>` : ''}`;
+    }
+    h += `${''}
+      ${R.direct && !R.direct.erreur ? (() => { const J = R.direct, fin = (d) => { const x = new Date(d + 'T12:00:00'); x.setDate(x.getDate() + 28); return x.toISOString().slice(0, 10); };
+        return `<div class="da-l">${tt('En direct · horodaté', 'Live · timestamped')}</div>
+        <div class="sous" style="margin-bottom:8px">${J.notees ? `<b>${J.justes}/${J.notees}</b> ${tt('justes', 'right')} · ${tt('certitude min.', 'min. certainty')} ${pc(J.certitude)}` : tt('Les premières prédictions en direct seront jugées 28 jours après leur date. Rien ne s’efface : c’est le vrai bilan.', 'The first live predictions are judged 28 days after their date. Nothing is erased: the real record.')}</div>
+        <div class="tq-a">${[...(J.notees_l || []).slice().reverse().map(a => `<div class="${a.juste ? 'ok' : 'ko'}"><b>${esc(a.joueur)}</b><span>${esc(a.le)} · ${esc(a.annonce)} ${pc(a.confiance)} · ${tt('réel', 'actual')} ${a.mouvement_pct > 0 ? '+' : ''}${a.mouvement_pct} %</span><em>${a.juste ? '✓' : '✗ ' + esc(a.vrai)}</em></div>`),
+          ...(J.ouvertes || []).slice().reverse().map(a => `<div><b>${esc(a.joueur)}</b><span>${esc(a.le)} · ${esc(a.annonce)} ${pc(a.confiance)}</span><em class="tq-att">${tt('verdict le', 'verdict on')} ${new Date(fin(a.le) + 'T12:00:00').toLocaleDateString(LOC(), {day: 'numeric', month: 'short'})}</em></div>`)].slice(0, 20).join('')}</div>`; })() : ''}
+      <details class="tq-tech"><summary>${tt('Détails techniques', 'Technical details')}</summary>`;
     h += `<div class="tq-but ${ok ? 'ok' : ''}"><b>${pc1(prin)}</b><span>${TB ? `${tt('des alertes justes', 'of alerts right')} · ${TB.justes}/${TB.alertes} · ${tt('les', 'the')} ${Math.round(TB.q * 100)} % ${tt('les plus sûrs de chaque semaine', 'surest each week')} · ${tt('certitude minimale', 'minimum certainty')} ${pc(TB.certitude)}` : `${tt('des alertes justes', 'of alerts right')} · ${sousB}`}</span><em>${ok ? tt('Objectif 95 % atteint', '95% goal reached') : tt('Objectif 95 % pas encore atteint', '95% goal not reached yet')}</em></div>
       <div class="jb tq-g">
         <div class="jb-t"><span class="jb-k">${tt('Exactitude', 'Accuracy')}</span><b class="jb-v">${pc(x.exactitude)}</b><small>${tt('toutes les semaines testées', 'all tested weeks')}</small></div>
@@ -9029,15 +9073,11 @@ async function feuilleTestIQ(){
         <div class="jb-t"><span class="jb-k">${tt('Ventes', 'Sales')}</span><b class="jb-v">${(R.ventes || 0).toLocaleString(LOC())}</b><small>${R.joueurs} ${tt('joueurs', 'players')} · ${(R.exemples || 0).toLocaleString(LOC())} ${tt('semaines-joueurs', 'player-weeks')}</small></div>
         <div class="jb-t"><span class="jb-k">${tt('Test (jamais vu)', 'Test (unseen)')}</span><b class="jb-v">${R.test}</b><small>${tt('depuis', 'since')} ${esc(R.test_debut || '')} · ${tt('seuil', 'threshold')} ${x.seuil != null ? pc(x.seuil) : '—'}</small></div></div>
       ${mois.length ? `<div class="da-l">${tt('Nos ventes, mois par mois', 'Our sales, month by month')}</div><div class="tq-m">${mois.map(([m, n]) => `<div title="${esc(m)} · ${n}"><i style="height:${Math.max(3, Math.round(56 * n / mxM))}px"></i><span>${esc(m.slice(5))}</span></div>`).join('')}</div>` : ''}
-      ${R.direct && !R.direct.erreur ? (() => { const J = R.direct, fin = (d) => { const x = new Date(d + 'T12:00:00'); x.setDate(x.getDate() + 28); return x.toISOString().slice(0, 10); };
-        return `<div class="da-l">${tt('En direct · horodaté', 'Live · timestamped')}</div>
-        <div class="sous" style="margin-bottom:8px">${J.notees ? `<b>${J.justes}/${J.notees}</b> ${tt('justes', 'right')} · ${tt('certitude min.', 'min. certainty')} ${pc(J.certitude)}` : tt('Les premières prédictions en direct seront jugées 28 jours après leur date. Rien ne s’efface : c’est le vrai bilan.', 'The first live predictions are judged 28 days after their date. Nothing is erased: the real record.')}</div>
-        <div class="tq-a">${[...(J.notees_l || []).slice().reverse().map(a => `<div class="${a.juste ? 'ok' : 'ko'}"><b>${esc(a.joueur)}</b><span>${esc(a.le)} · ${esc(a.annonce)} ${pc(a.confiance)} · ${tt('réel', 'actual')} ${a.mouvement_pct > 0 ? '+' : ''}${a.mouvement_pct} %</span><em>${a.juste ? '✓' : '✗ ' + esc(a.vrai)}</em></div>`),
-          ...(J.ouvertes || []).slice().reverse().map(a => `<div><b>${esc(a.joueur)}</b><span>${esc(a.le)} · ${esc(a.annonce)} ${pc(a.confiance)}</span><em class="tq-att">${tt('verdict le', 'verdict on')} ${fin(a.le).slice(5)}</em></div>`)].slice(0, 20).join('')}</div>`; })() : ''}
       ${TS.length ? `<div class="da-l">${tt('Les plus sûrs de chaque semaine', 'The surest each week')}</div><div class="tq-c"><div class="tq-ch"><span>${tt('Top', 'Top')}</span><span>${tt('Justes', 'Right')}</span><span>${tt('Certitude min.', 'Min. certainty')}</span></div>${TS.map(v => `<div class="${v.precision >= 0.95 ? 'ok' : ''}"><span>${Math.round(v.q * 100)} %</span><span>${v.justes}/${v.alertes} · ${pc1(v.precision)}</span><b>${pc(v.certitude)}</b></div>`).join('')}</div><div class="sous" style="margin-top:6px">${tt('Certitude min. : ce que la précision vaut au pire, avec 95 % de confiance. Elle monte avec chaque semaine de ventes.', 'Min. certainty: the worst-case precision, at 95% confidence. It rises with every week of sales.')}</div>` : ''}
       ${crb.length ? `<div class="da-l">${tt('Plus SlabIQ est sûr, plus il a raison ?', 'The surer SlabIQ is, the more often right?')}</div><div class="tq-c"><div class="tq-ch"><span>${tt('Confiance', 'Confidence')}</span><span>${tt('Alertes', 'Alerts')}</span><span>${tt('Justes', 'Right')}</span></div>${crb.map(c => `<div class="${c.precision >= 0.95 ? 'ok' : ''}"><span>≥ ${pc(c.seuil)}</span><span>${c.alertes}</span><b>${pc1(c.precision)}</b></div>`).join('')}</div>` : ''}
       ${(R.signaux || []).length ? `<div class="da-l">${tt('Ce qui compte le plus', 'What matters most')}</div><div class="tq-s">${R.signaux.slice(0, 8).map(([k, v]) => `<div><span>${esc(k)}</span><i style="width:${Math.max(4, Math.round(100 * Math.max(0, v) / Math.max(1e-6, R.signaux[0][1])))}%"></i></div>`).join('')}</div>` : ''}
       ${(R.exemples_alertes || []).length ? `<div class="da-l">${tt('Alertes du test (top 1 % de chaque semaine)', 'Test alerts (top 1% each week)')}</div><div class="tq-a">${R.exemples_alertes.slice(0, 20).map(a => `<div class="${a.annonce === a.vrai ? 'ok' : 'ko'}"><b>${esc(a.joueur)}</b><span>${esc(a.le)} · ${esc(a.annonce)} ${pc(a.confiance)}${a.mouvement_pct != null ? ` · ${tt('réel', 'actual')} ${a.mouvement_pct > 0 ? '+' : ''}${a.mouvement_pct} %` : ''}</span><em>${a.annonce === a.vrai ? '✓' : '✗ ' + esc(a.vrai)}</em></div>`).join('')}</div>` : ''}
+      </details>
       <a class="lien-t" href="/admin/slabiq_donnees.json.gz" download style="display:inline-block;margin-top:12px">${tt('Télécharger les données du test', 'Download the test data')}</a>
       <div class="sous" style="margin-top:10px">${tt('Rapport du ', 'Report of ')}${esc((R.le || '').replace('T', ' '))} · ${R.duree_s || 0} s</div>`;
   } else if (!r.en_cours) h += `<div class="vide">${tt('Pas encore de rapport. Lance le test : quelques minutes.', 'No report yet. Run the test: a few minutes.')}</div>`;

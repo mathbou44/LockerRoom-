@@ -358,8 +358,16 @@ def _top_semaine(lignes, classes, y, meta):
             l = sorted(par[d], key=lambda t: -t[0])
             al += l[:max(1, int(round(q * len(l))))]
         k = sum(1 for c, a, b, _i in al if a == b)
+        mv = [100 * (math.exp(meta[i][2]) - 1) for _c, _a, _b, i in al]
         out[str(q)] = {"alertes": len(al), "justes": k, "precision": round(k / len(al), 3) if al else None,
-                       "certitude": round(_wilson(k, len(al)), 3)}
+                       "certitude": round(_wilson(k, len(al)), 3),
+                       # 13 nov 2026 (Mathieu : « un rapport qui fait wow ») : ce que les alertes ont vraiment vu venir
+                       "mouvement_moyen": round(sum(mv) / len(mv), 1) if mv else None,
+                       "semaines": len({meta[i][0] for _c, _a, _b, i in al}),
+                       "liste": [{"joueur": meta[i][1], "le": meta[i][0], "annonce": {0: "baisse", 2: "hausse"}[a],
+                                  "vrai": {0: "baisse", 1: "stable", 2: "hausse"}[b], "confiance": round(c, 3),
+                                  "mouvement_pct": round(100 * (math.exp(meta[i][2]) - 1), 1)}
+                                 for c, a, b, i in sorted(al, key=lambda t: meta[t[3]][2] if t[1] == 0 else -meta[t[3]][2])][:40]}
     return out
 
 
@@ -654,6 +662,8 @@ def _apprendre(par_j, wiki, nhl_, n_cartes, t0):
     res["seuil_mode"] = seuil_mode
     courbe = _courbe(p_te, y_te, classes)
     top = _top_semaine(test, classes, y, meta)
+    mv_t = [100 * (math.exp(meta[i][2]) - 1) for i, _p in test]
+    marche_test = round(statistics.median(mv_t), 1) if mv_t else None    # le joueur median des memes semaines
     al1 = []
     for d in sorted({meta[i][0] for i, _p in test}):
         l = sorted([(max(p), i, p) for i, p in test if meta[i][0] == d and classes[int(max(range(len(p)), key=lambda q: p[q]))] != 1],
@@ -692,7 +702,7 @@ def _apprendre(par_j, wiki, nhl_, n_cartes, t0):
          "test_debut": meta[test[0][0]][0] if test else None,
          "repartition_test": {"baisse": y_te.count(0), "stable": y_te.count(1), "hausse": y_te.count(2)},
          "horizon_j": HORIZON_J, "seuil_pct": 10, "cible_precision": CIBLE_PRECISION,
-         "resultat": res, "reperes": rep, "courbe": courbe, "meilleur": meilleur, "top_semaine": top,
+         "resultat": res, "reperes": rep, "courbe": courbe, "meilleur": meilleur, "top_semaine": top, "marche_test_pct": marche_test,
          "signaux": [[k, round(v, 4)] for k, v in poids],
          "atteint": bool((top.get("0.01") or {}).get("certitude", 0) >= CIBLE_PRECISION),
          "exemples_alertes": ex}
