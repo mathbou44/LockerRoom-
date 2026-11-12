@@ -1756,7 +1756,7 @@ def _verifier_tard(st, deals, maint, bassin, verif, d=None):
     tard.sort(key=lambda x: (0 if x[1].get("suivi") else 1, 0, 1 if _recrue(x[2]) else 0, 0 if _precieuse(x[2]) else 1, str(x[0].get("fin")), 0)
               if x[0].get("encan") else (0 if x[1].get("suivi") else 1, 1, 1 if _recrue(x[2]) else 0, 0 if _precieuse(x[2]) else 1, "", -(_total(x[0]) or 0)))
     tard.sort(key=lambda x: 0 if x[1].get("prio") else 1)                    # 30 oct : la reserve d'abord (tri stable)
-    tard.sort(key=lambda x: (rang_vendeur(x[0].get("vendeur")), 0 if x[0].get("encan") else 1, str(x[0].get("fin") or ""), -(_total(x[0]) or 0))
+    tard.sort(key=lambda x: (rang_ordre(x[0].get("vendeur")), 0 if x[0].get("encan") else 1, str(x[0].get("fin") or ""), -(_total(x[0]) or 0))
               if x[1].get("prio") else (9,))
     # 30 oct : dans la reserve, par vendeur (Savage d'abord), les encans qui finissent le plus tot d'abord
     fini = {"prio": False, "std": False}
@@ -1879,7 +1879,7 @@ def _sauver(d, deals, maint, st, **champs):
                 vieux[str(k)] = _fusion_suivi(vieux.get(str(k)), x)
             # 30 oct 2026 : la limite garde d'abord Savage, Remi, CF31 et Slab Sharks (Slab Sharks a enormement d'encans)
             d2["suivis"] = sorted((x for k, x in vieux.items() if k not in ids and str(k) not in retires),
-                                  key=lambda x: (rang_vendeur(x.get("vendeur")), str(x.get("fin"))))[:_env_int("LR_SUIVIS_MAX", SUIVIS_MAX)]
+                                  key=lambda x: (rang_ordre(x.get("vendeur")), str(x.get("fin"))))[:_env_int("LR_SUIVIS_MAX", SUIVIS_MAX)]
         _diag(d2, **st)
         _ecrire(d2)
     try:                                                 # 5 nov 2026 : les encans suivis, pour apprendre la chance de les gagner
@@ -1945,7 +1945,7 @@ def _publier(d, deals, maint, st, force=False):
             for k, x in ns.items():
                 vieux[str(k)] = _fusion_suivi(vieux.get(str(k)), x)
             d2["suivis"] = sorted((x for k, x in vieux.items() if k not in ids and k not in retires),
-                                  key=lambda x: (rang_vendeur(x.get("vendeur")), str(x.get("fin"))))[:_env_int("LR_SUIVIS_MAX", SUIVIS_MAX)]
+                                  key=lambda x: (rang_ordre(x.get("vendeur")), str(x.get("fin"))))[:_env_int("LR_SUIVIS_MAX", SUIVIS_MAX)]
         _ecrire(d2)
     return True
 
@@ -2146,11 +2146,51 @@ def rang_vendeur(v):
     return 4 if v and v in {x.lower() for x in vendeurs_suivis()} else 5
 
 
+# 12 nov 2026 (Mathieu : « les vendeurs dont les encans finissent le plus sous la mediane des last sold : on passe toutes
+# leurs annonces avant les autres ; Savage, Remi et CF31 : pas de port, on ramasse ») : l'ORDRE des vendeurs suit leurs
+# encans finis (chances.perf_vendeurs : prix final + port, contre la valeur), le moins cher pour nous d'abord. Rien a l'ecran.
+RAMASSAGE_DEFAUT = ("savage.cards", "remi-card-trader", "cf31_sports_cards")
+PERF_N_MIN = 5
+
+
+def _perf(v, ramassage=None):
+    try:
+        import chances
+        x = (chances.perf_vendeurs(RAMASSAGE_DEFAUT if ramassage is None else ramassage).get("vendeurs") or {}).get(str(v or "").lower())
+    except Exception:
+        return None
+    return x["score"] if x and x["n"] >= PERF_N_MIN else None
+
+
+def ordre_priorite(ramassage=None):
+    """Les vendeurs prioritaires, du moins cher au plus cher pour nous (sans donnees : la moyenne, dans l'ordre d'origine)."""
+    try:
+        import chances
+        moy = chances.perf_vendeurs(RAMASSAGE_DEFAUT if ramassage is None else ramassage).get("moyenne") or 1.0
+    except Exception:
+        moy = 1.0
+    cle = {v: (_perf(v, ramassage) if _perf(v, ramassage) is not None else moy, i) for i, v in enumerate(VENDEURS_PRIORITE)}
+    return sorted(VENDEURS_PRIORITE, key=lambda v: cle[v])
+
+
+def rang_ordre(v, ramassage=None):
+    """La cle de tri d'un vendeur : les prioritaires d'abord (dans l'ordre de leurs encans), puis les vendeurs suivis et le
+    reste, chacun du moins cher au plus cher pour nous ; les maisons a volume en dernier."""
+    v = str(v or "").lower()
+    r = rang_vendeur(v)
+    if r >= 7:
+        return 7.0
+    if r < len(VENDEURS_PRIORITE):
+        return float(ordre_priorite(ramassage).index(v))
+    s = _perf(v, ramassage)
+    return r + (min(0.98, max(0.0, s - 0.4)) if s is not None else 0.99)
+
+
 def groupes_vendeurs(vs=None):
     """Les recherches de vendeurs, dans l'ordre : chaque prioritaire seul, puis les autres par groupes de 5."""
     vs = list(vs if vs is not None else vendeurs_suivis())
-    prio = [v for p in VENDEURS_PRIORITE for v in vs if v.lower() == p]
-    autres = [v for v in vs if v.lower() not in VENDEURS_PRIORITE and v.lower() not in vendeurs_dernier()] \
+    prio = [v for p in ordre_priorite() for v in vs if v.lower() == p]
+    autres = sorted([v for v in vs if v.lower() not in VENDEURS_PRIORITE and v.lower() not in vendeurs_dernier()], key=rang_ordre) \
         + [v for v in vs if v.lower() in vendeurs_dernier()]                   # 2 nov 2026 : les maisons a volume en dernier
     return [[v] for v in prio] + [autres[k:k + VENDEURS_PAR_APPEL] for k in range(0, len(autres), VENDEURS_PAR_APPEL)]
 VENDEURS_PAR_APPEL = 5                   # 5 vendeurs par recherche : chaque groupe a ses 10 pages d'encans (2 000)
@@ -3046,7 +3086,7 @@ def valoriser_suivis(rechercher=None, n_max=None):
     maint = datetime.now(timezone.utc)
     n_max = n_max or _env_int("LR_VALO_PAR_PASSE", VALO_PAR_PASSE)
     a_faire = [x for x in d.get("suivis") or [] if not x.get("valeur") and _prio(x) and encore_ouvert(x)]
-    a_faire.sort(key=lambda x: (rang_vendeur(x.get("vendeur")), str(x.get("fin") or "")))
+    a_faire.sort(key=lambda x: (rang_ordre(x.get("vendeur")), str(x.get("fin") or "")))
     jour, heure = _jour_mtl()
     trouves, faites, n = {}, set(), 0
     for x in a_faire:

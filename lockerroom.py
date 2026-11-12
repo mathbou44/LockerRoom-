@@ -1400,7 +1400,7 @@ class Api:
         import deals as _d
         # 12 nov 2026 (revue : on ne nomme pas les vendeurs prioritaires) : l'ordre de priorite reste a l'admin ; les autres
         # voient la liste par ordre alphabetique
-        vs = sorted(_d.vendeurs_suivis(), key=(lambda v: _d.rang_vendeur(v)) if self._est_admin() else (lambda v: str(v).lower()))
+        vs = sorted(_d.vendeurs_suivis(), key=(lambda v: _d.rang_ordre(v)) if self._est_admin() else (lambda v: str(v).lower()))
         return {"ok": True, "vendeurs": vs, "ramassage": sorted(self._chez_ramassage())}
 
     def deals_ramassage(self, liste):
@@ -9014,7 +9014,7 @@ class Api:
             x["groupe"] = v if v in _dl.VENDEURS_LONGS else ("fin" if _dl.rang_vendeur(v) in (3, 7) else ("petits" if _dl.rang_honnete(x) == 0 else "autres"))
             compte[r or "visible"] = compte.get(r or "visible", 0) + 1
             out.append(x)
-        out.sort(key=lambda x: (0 if not x["cache"] else 1, _dl.rang_vendeur(x.get("vendeur")), str(x.get("fin") or "9")))
+        out.sort(key=lambda x: (0 if not x["cache"] else 1, _dl.rang_ordre(x.get("vendeur")), str(x.get("fin") or "9")))
         for x in out[:900]:
             if "joueur_n" not in x:
                 x["joueur_n"], x["carte_n"] = self._etiquette_deal(x.get("titre") or "", None)
@@ -9153,7 +9153,8 @@ class Api:
         if tri == "rabais":
             # 29 oct 2026 (Mathieu : « as-tu priorise les vendeurs qu'on a mentionnes, et apres le reste ? ») : leurs deals d'abord
             # 30 oct 2026 : Savage, Remi, CF31, Slab Sharks, puis les autres vendeurs suivis, puis le reste
-            lst = sorted(lst, key=lambda x: _dl.rang_vendeur(x.get("vendeur")) if x.get("flux") == "vendeurs" else 6)
+            ram_ = self._chez_ramassage() or None
+            lst = sorted(lst, key=lambda x: _dl.rang_ordre(x.get("vendeur"), ram_) if x.get("flux") == "vendeurs" else 6)
         # 2 nov 2026 (Mathieu : « favoriser les places honnetes et les petits vendeurs ; Probstein et DC Sports en dernier ») :
         # dans chaque tri, les petits vendeurs d'abord, les maisons a volume a la toute fin (l'ordre du tri est garde a
         # l'interieur de chaque groupe)
@@ -9269,7 +9270,8 @@ class Api:
             suivis = []
         suivis = [x for x in self._deals_filtrer(suivis, f_s) if not f.get("sports") or (x.get("sport") or "hockey") in f["sports"]]
         suivis = self._avec_chances(suivis, cacher=not adm_, compte=n_caches)
-        suivis.sort(key=lambda x: (0 if (x.get("sport") or "hockey") == "hockey" else 1, _dl.rang_vendeur(x.get("vendeur")), str(x.get("fin"))))
+        ram_s = self._chez_ramassage() or None
+        suivis.sort(key=lambda x: (0 if (x.get("sport") or "hockey") == "hockey" else 1, _dl.rang_ordre(x.get("vendeur"), ram_s), str(x.get("fin"))))
         suivis = self._appliquer_profil(suivis, prof)
         suivis = self._objectif_deals(suivis, f)
         suivis = suivis[:_dl._env_int("LR_SUIVIS_ECRAN", 300) if pro else 6]
@@ -9299,6 +9301,126 @@ class Api:
                 "sports": par_sport, "pays_dispo": par_pays, "maj": dd.get("maj"), "ebay": ebay_compte.statut().get("cles_ok"),
                 "diag": _d.diagnostic(dd), "total": len(tout), "bassin": dd.get("bassin"), "nb_flux": len(_d.flux_liste()),
                 "watch": self._watch_ids(), "caches_chance": n_caches[0] if adm_ else None}
+
+    def vendeurs_rapport(self):
+        """12 nov 2026 (Mathieu : « un rapport des vendeurs avec lesquels les ventes finissent le plus sous la mediane des last
+        sold ») : ADMIN. Chaque vendeur dont on connait des encans finis (45 derniers jours) : prix final / valeur, cout avec le
+        port (0 chez un vendeur ou l'on ramasse), part sous la valeur, part sous notre mise max. Du meilleur pour nous au pire."""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l’admin"}
+        import chances
+        import deals as _dl
+        ram = self._chez_ramassage() or set(_dl.RAMASSAGE_DEFAUT)
+        p = chances.perf_vendeurs(ram)
+        suivis = {v.lower() for v in _dl.vendeurs_suivis()}
+        l = [{"vendeur": v, **x, "suivi": v in suivis, "prioritaire": v in _dl.VENDEURS_PRIORITE, "volume": v in _dl.vendeurs_dernier()}
+             for v, x in (p.get("vendeurs") or {}).items()]
+        l.sort(key=lambda x: (x["n"] < _dl.PERF_N_MIN, x["score"]))
+        a = chances._lire()
+        return {"ok": True, "vendeurs": l, "moyenne": p.get("moyenne"), "encans": p.get("encans"), "n_min": _dl.PERF_N_MIN,
+                "archives": len(a.get("encans") or {}), "le": a.get("le"), "ramassage": sorted(ram),
+                "ordre_priorite": _dl.ordre_priorite(ram)}
+
+    RAISONS_SUIVI = {
+        "prix_fixe": "C’est un prix fixe (chez les vendeurs suivis, le chasseur garde leurs encans).",
+        "joueur_inconnu": "Le joueur n’est pas reconnu dans le titre, ou la carte est exclue (lot, reproduction…).",
+        "ordinaire": "Carte jugée ordinaire (ni hit, ni numérotée, ni gradée, ni recrue).",
+        "abimee": "Carte abîmée selon le titre, ou vendeur à risque.",
+        "pas_hockey": "Pas reconnue comme une carte de hockey.",
+        "fin": "Hors de la fenêtre d’encan (fin trop loin, déjà finie, ou pas de mise chez un vendeur non prioritaire).",
+        "base": "Carte de base à petit prix : pas montrée."}
+
+    def deal_pourquoi(self, lien, chercher=False):
+        """12 nov 2026 (Mathieu : une Hasek Premier Focus Auto Gold /15 de Savage, 92 $, 16 mises : « pas dans notre radar, elle
+        devrait etre la ») : ADMIN, une annonce eBay -> ce que le chasseur en fait, etape par etape, et pourquoi elle n'est pas a
+        l'ecran. chercher = aller chercher ses ventes (1 recherche SoldComps) si aucune n'est en cache."""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l’admin"}
+        import deals as _dl
+        import vendues
+        lien = str(lien or "").strip()
+        m = re.search(r"(?:/itm/(?:[^/?#]*/)?|^|\D)(\d{9,15})(?:\D|$)", lien)
+        if not m and re.match(r"https://(ebay\.us|(www\.)?ebay\.(ca|com))/", lien):
+            try:                                   # le lien court de l'app eBay (ebay.us/m/...) : on suit la redirection
+                import urllib.request
+                rq = urllib.request.Request(lien, method="HEAD", headers={"User-Agent": "Mozilla/5.0"})
+                with urllib.request.urlopen(rq, timeout=8) as rp:
+                    m = re.search(r"/itm/(?:[^/?#]*/)?(\d{9,15})", rp.geturl())
+            except Exception:
+                m = None
+        if not m:
+            return {"ok": False, "erreur": "Colle le lien eBay de l'annonce (ou son numéro)"}
+        iid = m.group(1)
+        try:
+            a = ebay_compte.article(iid, fond=False, frais=True)
+        except (RuntimeError, OSError) as e:
+            return {"ok": False, "erreur": "eBay : " + str(e)[:160]}
+        x = {"item_id": iid, "titre": a.get("titre"), "encan": bool(a.get("encan")), "fin": a.get("fin"), "mises": a.get("mises"),
+             "vendeur": a.get("vendeur"), "vendeur_score": a.get("vendeur_score"), "prix_cad": a.get("prix_cad"), "port_cad": a.get("port_cad"),
+             "url": a.get("url"), "photo": a.get("photo"), "lieu": a.get("lieu")}
+        E = []
+
+        def etape(ok, t):
+            E.append({"ok": ok, "t": t})
+        maint = datetime.now(timezone.utc)
+        v_ = str(x["vendeur"] or "").lower()
+        suivi = v_ in {s.lower() for s in _dl.vendeurs_suivis()}
+        etape(suivi, ("Vendeur suivi" + (" (prioritaire)" if v_ in _dl.VENDEURS_PRIORITE else "")) if suivi
+              else "Vendeur pas dans la liste des vendeurs suivis : seul le balayage general peut la trouver")
+        dd = _dl.lire_vite()
+        ou = [k for k in ("deals", "suivis", "pres", "secours") if any(str(y.get("item_id")) == iid for y in
+                                                                     ((dd.get(k) or {}).get("deals") if k == "secours" else dd.get(k)) or [])]
+        etape(bool(ou), ("Vue par le chasseur : " + ", ".join(ou)) if ou else "Pas (encore) vue par le dernier tour du chasseur")
+        if iid in (dd.get("retires") or {}):
+            etape(False, "Retirée par le chasseur (vendue, finie ou plus un deal) : " + str((dd.get("retires") or {}).get(iid))[:120])
+        if iid in _dl._bannis():
+            etape(False, "Signalée « pas un deal » : bannie")
+        try:
+            with _verrou:
+                c = self._db()
+                try:
+                    c.execute("CREATE TABLE IF NOT EXISTS deals_masques (item_id TEXT PRIMARY KEY)")
+                    if c.execute("SELECT 1 FROM deals_masques WHERE item_id=?", (iid,)).fetchone():
+                        etape(False, "Masquée par toi (bouton masquer)")
+                finally:
+                    c.close()
+        except Exception:
+            pass
+        r_s = _dl._noter_suivi({}, x, None, maint)
+        etape(r_s in ("ok", "ok_recrue"), "Gardée comme encan d'un vendeur suivi" if r_s in ("ok", "ok_recrue")
+              else self.RAISONS_SUIVI.get(r_s, r_s))
+        if x["encan"]:
+            etape(_dl.encan_admis(x, maint), "Encan admis (fin et mises)" if _dl.encan_admis(x, maint) else "Encan pas admis : fin trop loin ou pas de mise")
+        cib = cartes_match.cible_titre(x["titre"] or "")
+        q = (cartes_match.requete_ebay(cib) or "").strip()
+        ventes = vendues.en_cache(q) if q else None
+        cherche = False
+        if ventes is None and chercher and q:
+            r_v = vendues.rechercher(q, fond=False, usage="prio")
+            ventes, cherche = r_v.get("ventes") or [], True
+            if r_v.get("erreur"):
+                etape(False, "Recherche des ventes : " + str(r_v["erreur"]))
+        etape(ventes is not None, (f"Ventes en mémoire pour « {q} » : {len(ventes)}" + (" (cherchées maintenant)" if cherche else ""))
+              if ventes is not None else f"Aucune vente en mémoire pour « {q} » : la valeur attend une recherche (budget du jour)")
+        va = _dl.valeur_ou_saison({"titre": x["titre"], "item_id": iid}, ventes or [], [], cib=cib) if ventes else None
+        valeur = va[0] if va else None
+        etape(bool(valeur), (f"Valeur : {valeur:.0f} $ ({va[2]} ventes)" if valeur else
+                             "Pas de valeur sûre : pas assez de ventes de CETTE carte (même série, même numérotation)"))
+        mise = (x["prix_cad"] or 0)
+        mm = round(_dl.prix_max(valeur, taxe=_dl.taxe_de(x)) - _dl.port_eff(x.get("port_cad")), 2) if valeur else None
+        if mm is not None:
+            etape(mise <= mm + 0.5, f"Mise actuelle {mise:.0f} $ contre mise max {mm:.0f} $" + ("" if mise <= mm + 0.5 else " : déjà trop haute, plus un deal"))
+        try:
+            import chances
+            ch = chances.chance({**x, "valeur": valeur, "recrue": bool(_dl.est_recrue(x["titre"]))}) if valeur else None
+            if ch and chances.a_cacher({**x, "valeur": valeur}, ch):
+                etape(False, f"Ce genre d'encan finit presque toujours au-dessus de la mise max ({round(100 * ch[0])} % sous) : caché")
+        except Exception:
+            pass
+        bloque = next((e["t"] for e in E[2:] if not e["ok"]), None)
+        return {"ok": True, "item_id": iid, "titre": x["titre"], "vendeur": x["vendeur"], "mise": mise, "valeur": valeur, "mise_max": mm,
+                "q": q, "etapes": E, "verdict": bloque or ("Elle devrait être dans le Radar au prochain tour" if valeur else "Elle attend sa valeur"),
+                "peut_chercher": ventes is None and bool(q)}
 
     IQ_BAISSE_PTS = 8.0          # l'Indice qui perd 8 points en ~4 semaines : une pente descendante
     IQ_PREV_RANG = 0.15          # une prevision du modele parmi ses 15 % les plus sures

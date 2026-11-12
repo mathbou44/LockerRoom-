@@ -168,3 +168,68 @@ def a_cacher(x, c=None):
     """Cache seulement sur le genre de l'encan ou son groupe de vendeur (jamais sur la moyenne de tous les encans)."""
     c = c or chance(x)
     return bool(c and c[2] != "tous" and c[0] < CACHER_SOUS)
+
+
+# -- 12 nov 2026 : les vendeurs qui finissent SOUS la valeur ------------------------------------------------------------
+# Mathieu : « quels vendeurs (Slab Sharks, Savage, CF31, Remi, les plus petits qui vendent beaucoup) finissent le plus sous
+# la mediane des last sold ? Ce qui est le meilleur pour nous. On les priorise dans le classement, sans le dire dans nos
+# pastilles. Savage, Remi et CF31 : pas de port (ramassage). » Chaque encan archive dont on connait le prix final :
+#   ratio = prix final / valeur (la mediane des ventes de la MEME carte) ; cout = (prix final + port) / valeur, le port a 0
+#   chez un vendeur ou l'on ramasse. Moyenne tronquee (10 %), ramenee vers la moyenne de tous (6 encans de poids) : un
+#   vendeur avec 3 encans ne passe pas devant un vendeur avec 80.
+POIDS_PRIOR = 6
+_PERF = {"cle": None, "v": None}
+
+
+def _moy_tronquee(l, f=0.1):
+    l = sorted(l)
+    k = int(len(l) * f)
+    l = l[k:len(l) - k] if len(l) - 2 * k >= 3 else l
+    return sum(l) / len(l) if l else None
+
+
+def perf_vendeurs(ramassage=()):
+    """{vendeur: {n, ratio, cout, score, sous_valeur, sous_mise, port_moy, groupe, ramassage}} + la moyenne de tous."""
+    import deals
+    a = _lire()
+    ram = {str(v).strip().lower() for v in ramassage or ()}
+    cle = (_MEM.get("mtime"), tuple(sorted(ram)))
+    if _PERF["cle"] == cle and _PERF["v"] is not None:
+        return _PERF["v"]
+    par = {}
+    for x in (a.get("encans") or {}).values():
+        if "final" not in x or not x.get("valeur"):
+            continue
+        v = str(x.get("vendeur") or "").strip().lower()
+        if not v:
+            continue
+        port = 0.0 if v in ram else deals.port_eff(x.get("port"))
+        r = max(0.1, min(3.0, x["final"] / x["valeur"]))
+        c = max(0.1, min(3.0, (x["final"] + port) / x["valeur"]))
+        d = par.setdefault(v, {"r": [], "c": [], "sous_v": 0, "sous_m": 0, "ports": [], "score_ebay": x.get("vendeur_score"), "x": x})
+        d["r"].append(r)
+        d["c"].append(c)
+        d["sous_v"] += 1 if x["final"] < x["valeur"] else 0
+        d["sous_m"] += 1 if x["final"] <= x["mise_max"] + 0.5 else 0
+        d["ports"].append(port)
+    # la moyenne de reference sans les maisons a volume (elles tireraient tout le monde vers le bas)
+    tous_c = [c for v, d in par.items() if v not in deals.vendeurs_dernier() for c in d["c"]] or [c for d in par.values() for c in d["c"]]
+    g = _moy_tronquee(tous_c) or 1.0
+    out = {}
+    for v, d in par.items():
+        n = len(d["c"])
+        moy_c = _moy_tronquee(d["c"])
+        out[v] = {"n": n, "ratio": round(_moy_tronquee(d["r"]), 3), "cout": round(moy_c, 3),
+                  "score": round((moy_c * n + g * POIDS_PRIOR) / (n + POIDS_PRIOR), 3),
+                  "sous_valeur": round(d["sous_v"] / n, 3), "sous_mise": round(d["sous_m"] / n, 3),
+                  "port_moy": round(sum(d["ports"]) / n, 2), "groupe": groupe(d["x"]), "ramassage": v in ram,
+                  "vendeur_score": d["score_ebay"]}
+    res = {"vendeurs": out, "moyenne": round(g, 3), "encans": len(tous_c)}
+    _PERF.update(cle=cle, v=res)
+    return res
+
+
+def score_vendeur(v, ramassage=()):
+    """Le score (cout moyen / valeur, ramene vers la moyenne) d'un vendeur, ou None s'il n'a aucun encan connu."""
+    x = (perf_vendeurs(ramassage).get("vendeurs") or {}).get(str(v or "").strip().lower())
+    return x["score"] if x else None

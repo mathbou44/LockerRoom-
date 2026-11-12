@@ -414,7 +414,13 @@ def requete_ebay(c):
         m.append("inscribed")
     if c["grade"]:
         m.append((c["grade"]["cie"] + " " + (c["grade"]["note"] or "")).strip())
-    return " ".join(m)[:100]
+    # 12 nov 2026 (Hasek Premier Focus Auto Gold : « ... focus auto gold auto ») : un mot ne revient jamais deux fois
+    vus, mots = set(), []
+    for w in " ".join(m).split():
+        if w not in vus:
+            vus.add(w)
+            mots.append(w)
+    return " ".join(mots)[:100]
 
 
 # 27 oct 2026 (Mathieu : « pas de faux deals ni de faux prix ») ------------------------------------------------------

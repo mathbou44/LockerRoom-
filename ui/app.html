@@ -3675,6 +3675,18 @@ html.tel-large .fen.fa .fen-img{max-height:calc(46vh / 1.12) !important}
 /* 12 nov 2026 (Mathieu : « l'etoile de la watchlist en haut a droite ») : dans le coin de l'etiquette du slab, plus sur la photo */
 .slab-deal .sd-lab{position:relative} .slab-deal .sd-lab > .sd-et{position:absolute; top:3px; right:2px; z-index:2; width:34px; height:34px; background:transparent}
 .slab-deal .sd-lab > .sd-et svg{width:20px; height:20px} .slab-deal .sd-j, .slab-deal .sd-c{padding-right:30px}
+.vpf-liste{display:flex; flex-direction:column; gap:6px}
+.vpf-l{display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:16px; background:var(--carte); border:1px solid var(--ligne)}
+.vpf-r{width:26px; height:26px; flex-shrink:0; border-radius:50%; display:grid; place-items:center; font:700 13px var(--f-cond); border:2px solid transparent; background:var(--pastille-fond) padding-box, var(--prisme) border-box}
+.vpf-m{display:flex; flex-direction:column; gap:2px; min-width:0; flex:1} .vpf-m b{font-size:14.5px; display:flex; flex-wrap:wrap; gap:4px; align-items:center; word-break:break-all} .vpf-m small{font-size:12px; color:var(--doux); line-height:1.3}
+.vpf-c{display:flex; flex-direction:column; align-items:flex-end; flex-shrink:0} .vpf-c b{font:700 19px var(--f-cond)} .vpf-c small{font-size:11px; color:var(--doux)}
+.vpf-c.vert b{color:var(--vert)} .vpf-c.rouge b{color:var(--rouge)}
+.pq-t{display:flex; flex-direction:column; gap:3px; margin-bottom:10px} .pq-t b{font-size:15px; line-height:1.3} .pq-t small{font-size:12.5px; color:var(--doux)}
+.pq-l{display:flex; flex-direction:column; gap:6px}
+.pq-e{display:flex; gap:10px; align-items:flex-start; font-size:13.5px; line-height:1.35} .pq-e i{width:22px; height:22px; flex-shrink:0; border-radius:50%; display:grid; place-items:center; font-style:normal; font-size:12px; font-weight:700}
+.pq-e.ok i{background:var(--vert-fond); color:var(--vert)} .pq-e.ko i{background:var(--rouge-fond); color:var(--rouge)} .pq-e.ko span{color:var(--texte)} .pq-e.ok span{color:var(--doux)}
+.pq-v{display:flex; flex-direction:column; gap:3px; margin-top:12px; padding:12px; border-radius:16px; border:1.5px solid transparent; background:var(--pastille-fond) padding-box, var(--prisme) border-box}
+.pq-v b{font:700 12px var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--doux)} .pq-v span{font-size:14.5px}
 /* 1. le bouton Vendre de la barre du bas : une pastille prisme plus grosse que les autres icones, DANS la barre (sur iPhone,
    ce qui depasse de la barre floutee est coupe, et une ombre sur un <svg> se dessine en carre : ni l'un ni l'autre) */
 @media (max-width:899px){
@@ -9195,7 +9207,7 @@ async function vueDeals(arg){
     <div class="d-onglets" role="tablist"><a role="tab" href="#deals" aria-selected="${!w}" class="${w ? '' : 'on'}">${comps() ? 'Deals' : tt('Mes cibles', 'My targets')}<span class="d-nb" id="d-nb" hidden></span></a>
       <a role="tab" href="#deals/watch" aria-selected="${w}" class="${w ? 'on' : ''}">${ICO_ETOILE}${tt('Watchlist', 'Watchlist')}<span class="w-nb" hidden></span></a></div>
     <form class="recherche pas-tel" id="v-form" role="search">${ICONES.loupe}<input id="v-q" type="search" enterkeyhint="search" placeholder="${esc(tt('Combien vaut une carte ? (ex. Bedard Young Guns)', 'What is a card worth? (e.g. Bedard Young Guns)'))}"></form>
-    ${!w && S.forfait && S.forfait.admin ? `<a class="d-tour" id="d-tour" href="#admin/serveur"></a><button class="d-tout" id="d-tadm">${icN('oeil')}<span>${tt('Tous les deals du chasseur', 'All hunter deals')}</span><small>${tt('admin · visibles et cachés', 'admin · shown and hidden')}</small><i>›</i></button><button class="d-tout" id="d-iqtest">${icN('graphe')}<span>${tt('Test de prédiction SlabIQ', 'SlabIQ prediction test')}</span><small>${tt('admin · rejoue le passé', 'admin · replays the past')}</small><i>›</i></button>` : ''}
+    ${!w && S.forfait && S.forfait.admin ? `<a class="d-tour" id="d-tour" href="#admin/serveur"></a><button class="d-tout" id="d-tadm">${icN('oeil')}<span>${tt('Tous les deals du chasseur', 'All hunter deals')}</span><small>${tt('admin · visibles et cachés', 'admin · shown and hidden')}</small><i>›</i></button><button class="d-tout" id="d-pq">${icN('cible')}<span>${tt('Pas dans le Radar ?', 'Not in the Radar?')}</span><small>${tt('admin · colle le lien eBay', 'admin · paste the eBay link')}</small><i>›</i></button><button class="d-tout" id="d-iqtest">${icN('graphe')}<span>${tt('Test de prédiction SlabIQ', 'SlabIQ prediction test')}</span><small>${tt('admin · rejoue le passé', 'admin · replays the past')}</small><i>›</i></button>` : ''}
     <div id="d-res" data-vue="${w ? 'watch' : 'deals'}">${barreProg(Date.now(), w ? 8 : 12, w ? tt('Chargement de ta watchlist…', 'Loading your watchlist…') : tt('Recherche des deals sur eBay…', 'Looking for deals on eBay…'))}</div>
     <p class="mention-epn">${tt('Les liens vers eBay peuvent être des liens affiliés (eBay Partner Network) : SlabCoach peut toucher une commission, sans frais pour toi. SlabCoach n’est pas affilié à eBay. Les estimations sont celles de SlabCoach, pas d’eBay.', 'Links to eBay may be affiliate links (eBay Partner Network): SlabCoach may earn a commission at no cost to you. SlabCoach is not affiliated with eBay. Estimates are SlabCoach’s, not eBay’s.')}</p></section>`;
   brancherSwitchMode(V()); brancherQuota(V());
@@ -9205,6 +9217,7 @@ async function vueDeals(arg){
   majTourDeals();
   const iq_ = $("#d-iqtest"); if (iq_) iq_.onclick = () => { vibrer(); feuilleTestIQ(); };
   const dt_ = $("#d-tadm"); if (dt_) dt_.onclick = () => { vibrer(); feuilleDealsAdmin(); };
+  const pq_ = $("#d-pq"); if (pq_) pq_.onclick = () => { vibrer(); feuillePourquoi(); };
   await chargerDeals();
 }
 // 29 oct 2026 : l'admin voit sur l'ecran Deals ou en est le chasseur (un tap : l'admin, onglet Serveur)
@@ -14731,6 +14744,51 @@ async function blocSauvegardeR2(){
   const g = $('#r2-go'); if (g) g.onclick = async () => { vibrer(); g.disabled = true; const r = await API.sauvegarde_lancer().catch(e => ({ok: false, erreur: e.message}));
     toast(r && r.ok ? tt('Sauvegarde lancée : quelques minutes', 'Backup started: a few minutes') : (r && r.erreur) || 'Erreur', 3500); setTimeout(blocSauvegardeR2, 4000); };
 }
+// 12 nov 2026 (Mathieu : « un rapport des vendeurs avec lesquels les ventes finissent le plus sous la mediane des last sold ;
+// on les priorise dans le classement sans le dire ; Savage, Remi, CF31 : pas de port ») : ADMIN, du meilleur pour nous au pire
+async function feuilleVendeursPerf(){
+  popOuvrir(`<button class="pop-x" id="vp-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
+    <div class="pop-tete"><span class="pop-sur">Admin · Radar</span><h3>${tt('Les vendeurs qui finissent sous la valeur', 'Sellers who end under value')}</h3></div>
+    <div class="pop-corps" id="vp-z"><div class="lecture"><span class="roue"></span></div></div>`, popFermer);
+  $('#vp-x').onclick = popFermer;
+  const r = await API.vendeurs_rapport().catch(e => ({ok: false, erreur: e.message}));
+  const z = $('#vp-z'); if (!z) return;
+  if (!r.ok) { z.innerHTML = `<div class="vide">${esc(r.erreur || 'Erreur')}</div>`; return; }
+  if (!(r.vendeurs || []).length) { z.innerHTML = `<div class="vide">${tt('Pas encore d’encans finis avec leur prix final : le chasseur les retrouve dans les ventes 2 h après la fin. Reviens demain.', 'No finished auctions with a final price yet: the hunter finds them in sales 2 h after the end. Check back tomorrow.')}</div>`; return; }
+  const pc = (x) => Math.round(100 * x) + '\u00a0%', m = r.moyenne || 1;
+  const ligne = (x, i) => { const cl = x.n < r.n_min ? '' : x.score <= m - 0.04 ? 'vert' : x.score >= m + 0.04 ? 'rouge' : '';
+    return `<div class="vpf-l"><span class="vpf-r">${x.n >= r.n_min ? i + 1 : '·'}</span><span class="vpf-m"><b>${esc(x.vendeur)}${x.ramassage ? ' ' + tag(tt('Ramassage', 'Pickup'), 'vert') : ''}${x.prioritaire ? ' ' + tag(tt('Prioritaire', 'Priority'), 'acc') : !x.suivi ? ' ' + tag(tt('Pas suivi', 'Not tracked'), '') : ''}${x.volume ? ' ' + tag(tt('Volume', 'Volume'), 'rouge') : ''}</b>
+      <small>${x.n} ${tt('encans', 'auctions')} · ${tt('finit à', 'ends at')} ${pc(x.ratio)} ${tt('de la valeur', 'of value')} · ${pc(x.sous_mise)} ${tt('sous notre mise max', 'under our max bid')}${x.port_moy ? ' · ' + tt('port', 'shipping') + ' ~' + argentCourt(x.port_moy) : ''}</small></span>
+      <span class="vpf-c ${cl}"><b>${pc(x.cout)}</b><small>${tt('avec port', 'with ship.')}</small></span></div>`; };
+  const ok = r.vendeurs.filter(x => x.n >= r.n_min), peu = r.vendeurs.filter(x => x.n < r.n_min);
+  z.innerHTML = `<div class="sous" style="margin-bottom:10px">${tt(`Chaque encan fini, prix final + port, contre la valeur (la médiane des ventes de la même carte). Le plus bas = le meilleur pour nous. Moyenne : ${pc(m)}. Le chasseur passe les vendeurs dans cet ordre ; rien n’apparaît dans les pastilles.`, `Each finished auction, final price + shipping, vs the value (median of the same card’s sales). Lowest = best for us. Average: ${pc(m)}. The hunter goes through sellers in this order; nothing shows on the badges.`)}</div>
+    <div class="vpf-liste">${ok.map(ligne).join('')}</div>
+    ${peu.length ? `<div class="qd-s">${tt(`Pas encore assez d’encans (moins de ${r.n_min})`, `Not enough auctions yet (under ${r.n_min})`)}</div><div class="vpf-liste">${peu.map(ligne).join('')}</div>` : ''}
+    <div class="sous" style="margin-top:10px">${r.encans} ${tt('encans mesurés', 'auctions measured')} · ${tt('ordre des prioritaires', 'priority order')} : ${r.ordre_priorite.map(esc).join(' › ')}</div>`;
+}
+// 12 nov 2026 (Mathieu : « pas dans notre radar a deals en admin, elle devrait etre la ») : une annonce eBay -> ce que le
+// chasseur en fait, etape par etape, et ce qui la bloque ; au besoin, aller chercher ses ventes (1 recherche)
+function feuillePourquoi(lien0){
+  popOuvrir(`<button class="pop-x" id="pq-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
+    <div class="pop-tete"><span class="pop-sur">Admin · Radar</span><h3>${tt('Pourquoi pas dans le Radar ?', 'Why not in the Radar?')}</h3></div>
+    <div class="pop-corps"><div class="sous">${tt('Colle le lien de l’annonce (bouton Partager dans l’app eBay) ou son numéro.', 'Paste the listing link (Share button in the eBay app) or its number.')}</div>
+      <input class="champ" id="pq-l" inputmode="url" placeholder="https://www.ebay.ca/itm/…" value="${esc(lien0 || '')}" style="margin:10px 0">
+      <button class="btn" id="pq-ok">${tt('Analyser', 'Analyze')}</button><div id="pq-z" style="margin-top:12px"></div></div>`, popFermer);
+  $('#pq-x').onclick = popFermer;
+  const go = async (chercher) => {
+    const z = $('#pq-z'); z.innerHTML = `<div class="lecture"><span class="roue"></span>${tt('Le chasseur regarde l’annonce…', 'The hunter is checking the listing…')}</div>`;
+    const r = await API.deal_pourquoi($('#pq-l').value, !!chercher).catch(e => ({ok: false, erreur: e.message}));
+    if (!$('#pq-z')) return;
+    if (!r.ok) { z.innerHTML = `<div class="vide">${esc(r.erreur || 'Erreur')}</div>`; return; }
+    z.innerHTML = `<div class="pq-t"><b>${esc(r.titre || '')}</b><small>${esc(r.vendeur || '')}${r.mise ? ' · ' + tt('mise ', 'bid ') + argent(r.mise, 0) : ''}${r.valeur ? ' · ' + tt('valeur ', 'value ') + argent(r.valeur, 0) : ''}${r.mise_max != null ? ' · ' + tt('mise max ', 'max bid ') + argent(r.mise_max, 0) : ''}</small></div>
+      <div class="pq-l">${r.etapes.map(e => `<div class="pq-e ${e.ok ? 'ok' : 'ko'}"><i>${e.ok ? '✓' : '✕'}</i><span>${esc(e.t)}</span></div>`).join('')}</div>
+      <div class="pq-v"><b>${tt('Verdict', 'Verdict')}</b><span>${esc(r.verdict)}</span></div>
+      ${r.peut_chercher ? `<button class="btn ghost" id="pq-ch" style="margin-top:10px">${tt('Chercher ses ventes maintenant (1 recherche)', 'Look up its sales now (1 search)')}</button>` : ''}`;
+    const ch = $('#pq-ch'); if (ch) ch.onclick = () => { vibrer(); go(true); };
+  };
+  $('#pq-ok').onclick = () => { vibrer(); go(false); };
+  if (lien0) go(false);
+}
 async function vueAdmin(onglet){
   if (S.forfait && !S.forfait.admin && S.forfait.admin_a_verifier) {
     V().innerHTML = `<section class="ecran"><div class="vide">${tt('Confirme que c’est toi pour ouvrir l’admin.', 'Confirm it’s you to open admin.')}<br><button class="btn" id="av-ouvrir" style="margin-top:12px">${tt('Recevoir le code', 'Get the code')}</button></div></section>`;
@@ -14752,10 +14810,12 @@ async function vueAdmin(onglet){
       <div class="kpi ${r.erreurs_24h ? 'rouge' : ''}"><span class="lib">${tt('Serveur', 'Server')}</span><span class="v">${r.erreurs_24h ? r.erreurs_24h + ' ' + tt('erreurs', 'errors') : 'OK'}</span><span class="s">eBay ${br ? Math.round(100 * br.utilises / br.limite) : 0} % ${tt('du jour', 'today')}</span></div></div>
     <div id="adm-sorties"></div>
     <div class="adm-r2" id="adm-r2"></div>
+    <button class="acc-pil" id="adm-vend"><span class="ap-ic">${icP('dollar')}</span><span class="ap-t">${tt('Vendeurs : qui finit sous la valeur', 'Sellers: who ends under value')}</span><i aria-hidden="true">›</i></button>
     <a class="pilule adm-sv" href="/admin/sauvegarde.zip" download>${icN('colis')}${tt('Télécharger la sauvegarde (.zip)', 'Download the backup (.zip)')}</a>
     <div class="seg" id="adm-o" style="margin:14px 0">${[['activite', tt('Activité', 'Activity')], ['abonnes', tt('Abonnés', 'Subscribers')], ['demandes', tt('Demandes', 'Requests') + pastille(r.demandes.nouvelles)], ['catalogue', 'Catalogue' + pastille(r.a_ajouter)], ['banc', tt('Validation', 'Validation')], ['serveur', tt('Serveur', 'Server')]].map(([k, t]) => `<button data-v="${k}" class="${o === k ? 'on' : ''}">${t}</button>`).join('')}</div>
     <div id="adm-z"><div class="lecture"><span class="roue"></span></div></div></section>`;
   blocSorties(); blocSauvegardeR2();
+  $('#adm-vend').onclick = () => { vibrer(); feuilleVendeursPerf(); };
   $$('#adm-vue button').forEach(b => b.onclick = () => changerVue(b.dataset.v));
   const sous = {activite:adminActivite, abonnes:adminAbonnes, demandes:adminDemandes, catalogue:adminCatalogue, serveur:adminServeur, banc:adminBanc};
   // 28 oct 2026 (« saccadé ») : un onglet se change sur place ; le contenu d'avant reste (estompe) jusqu'a l'arrivee du nouveau
