@@ -1428,6 +1428,12 @@ def _noter_journal(st, a, r, cib, dv):
     """29 oct 2026 (Mathieu : « je suis pas capable de voir ce que tu as cherche avec mes credits ») : chaque
     verification SoldComps, sa carte, son prix et le resultat (deal, trop cher, pas assez de ventes)."""
     res, ratio = st.pop("_res", (None, None))
+    try:
+        import credits
+        credits.noter(cib, a.get("vendeur"), _total(a), res or "sans_ventes", ratio, cache=dv.get("cache", False), n_ventes=dv.get("n", 0),
+                      encan=bool(a.get("encan")))
+    except Exception as e:
+        print("Credits (registre) : " + repr(e)[:200], flush=True)
     st.setdefault("_journal", []).append({
         "le": datetime.now(timezone.utc).isoformat(timespec="seconds"), "titre": str(a.get("titre") or "")[:140],
         "total": _total(a), "url": a.get("url"), "encan": bool(a.get("encan")), "q": dv.get("q"), "ventes": dv.get("n", 0),
@@ -1479,6 +1485,17 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
     tout_v = list(brut_v or []) + (bassin.candidats(cib) if bassin else [])
     va = valeur_annonce(a, tout_v, actives, cib=cib)
     nv_, verifiee = [], False
+    # 12 nov 2026 (Mathieu : « limiter le gaspillage de credit [...] rien savoir des cartes en bas de 30 $ ») : une carte ne
+    # coute un credit que si elle en vaut la peine (credits.note : profit attendu par credit de sa categorie, joueur, vendeur)
+    if not va and verif:
+        try:
+            import credits
+            pv0 = [v.get("prix") for v in memes_ventes(cib, tout_v) if v.get("prix")]
+            if not credits.vaut(cib, t, a.get("vendeur"), connue=statistics.median(pv0) if pv0 else None, annonce=a):
+                verif = None
+                st["credits_sautes"] = st.get("credits_sautes", 0) + 1
+        except Exception as e:
+            print("Credits (note) : " + repr(e)[:200], flush=True)
     if not va and verif:
         pv = memes_ventes(cib, tout_v)
         pa = [_total(x) for x in actives or [] if x.get("item_id") != a.get("item_id")
@@ -1780,6 +1797,23 @@ def encore_ouvert(x, maint=None):
         return False
 
 
+def _ordre_tard(x, maint):
+    """12 nov 2026 : (groupe du vendeur, -note de la carte) ; un encan qui finit dans 6 h : note x 1,3."""
+    a, _r, cib = x
+    u = 1.0
+    if a.get("encan"):
+        try:
+            if datetime.fromisoformat(str(a.get("fin")).replace("Z", "+00:00")) - maint <= timedelta(hours=6):
+                u = 1.3
+        except ValueError:
+            pass
+    try:
+        import credits
+        return credits.cle_ordre(cib, _total(a), a.get("vendeur"), annonce=a, urgence=u)
+    except Exception:
+        return (9, 0.0)
+
+
 def _verifier_tard(st, deals, maint, bassin, verif, d=None):
     """27 oct 2026 (Mathieu : la Savoie Draft Day Marks /35 a 50 $, qui finit dans 25 h) : les encans de hits sans ventes
     connues qui finissent dans 6 a 30 h, verifies a la fin du tour avec le budget qui reste, les plus proches de la fin d'abord."""
@@ -1793,6 +1827,13 @@ def _verifier_tard(st, deals, maint, bassin, verif, d=None):
     tard.sort(key=lambda x: 0 if x[1].get("prio") else 1)                    # 30 oct : la reserve d'abord (tri stable)
     tard.sort(key=lambda x: (rang_ordre(x[0].get("vendeur")), 0 if x[0].get("encan") else 1, str(x[0].get("fin") or ""), -(_total(x[0]) or 0))
               if x[1].get("prio") else (9,))
+    # 12 nov 2026 (Mathieu : « y aller par ordre pour limiter le gaspillage de credit » ; « nos meilleurs vendeurs et les
+    # petits vendeurs, ensuite les moins bons, Probstein en dernier ; on priorise le Canada ») : la reserve d'abord (vendeur par vendeur, puis la note), puis par
+    # groupe de vendeur (prioritaires, petits suivis, autres, maisons a volume) et, dans chaque groupe, la carte qui rapporte
+    # le plus par credit (credits.note : auto-patch et gradees de bons joueurs, puis les numerotees... ; une carte des
+    # Etats-Unis x 0,45 : ses frais de 50 %), un peu plus pour un encan qui finit dans 6 h. L'ordre d'avant departage.
+    tard.sort(key=lambda x: (0, rang_ordre(x[0].get("vendeur"))) + _ordre_tard(x, maint)[1:] if x[1].get("prio")
+              else (1, 0.0) + _ordre_tard(x, maint))
     # 30 oct : dans la reserve, par vendeur (Savage d'abord), les encans qui finissent le plus tot d'abord
     fini = {"prio": False, "std": False}
     for a, r, cib in tard:
@@ -2975,7 +3016,7 @@ def etat():
             "hits_24h": {"vus": g.get("hits_vus", 0), "verifies": g.get("hits_verifies", 0), "deals": g.get("hits_deals", 0),
                          "refus_budget": g.get("verif_budget", 0), "erreurs_ventes": g.get("erreurs_ventes", 0), "sans_ventes": g.get("sans_ventes", 0),
                          "plafond": g.get("verif_plafond", 0)},
-            "soldcomps": _etat_soldcomps(), "journal": journal(), "tour": tour(d), "historique": _etat_historique(),
+            "soldcomps": _etat_soldcomps(), "credits": _credits_rapport(), "journal": journal(), "tour": tour(d), "historique": _etat_historique(),
             "vendeurs_24h": {"annonces": g.get("vendeurs_annonces", 0), "gardes": g.get("suivi_ok", 0) + g.get("suivi_ok_recrue", 0), "erreurs": g.get("vendeurs_erreurs", 0),
                              "suivis": len(d.get("suivis") or []), "deals": sum(1 for x in d.get("deals") or [] if x.get("flux") == "vendeurs")},
             # 7 nov 2026 : le balayage des petits vendeurs (toute la categorie hockey)
@@ -3059,11 +3100,20 @@ def _etat_historique():
         return {"actif": False, "erreur": repr(e)[:120]}
 
 
+def _credits_rapport():
+    try:
+        import credits
+        import vendues
+        return dict(credits.rapport(), comparaison=vendues.comparaison_resume())
+    except Exception as x:
+        return {"erreur": repr(x)}
+
+
 def _etat_soldcomps():
     import vendues
     try:
         e = vendues.derniere_erreur()
-        return {"jour": vendues.utilises_aujourdhui(), "plafond": vendues.plafond_jour(), "fond": int(vendues.plafond_jour() * 0.7),
+        return {"source": vendues.source(), "jour": vendues.utilises_aujourdhui(), "plafond": vendues.plafond_jour(), "fond": int(vendues.plafond_jour() * 0.7),
                 "verif": vendues.utilises_aujourdhui("verif"), "prio": vendues.utilises_aujourdhui("prio"), "prio_max": prio_max(),
                 "autres_max": int(vendues.plafond_jour() * vendues.PART_AUTRES_FOND),
                 "erreur": e.get("erreur") if e and time.time() - e.get("le", 0) < 6 * 3600 else None, "sites": vendues.sites(),
@@ -3121,7 +3171,16 @@ def valoriser_suivis(rechercher=None, n_max=None):
     maint = datetime.now(timezone.utc)
     n_max = n_max or _env_int("LR_VALO_PAR_PASSE", VALO_PAR_PASSE)
     a_faire = [x for x in d.get("suivis") or [] if not x.get("valeur") and _prio(x) and encore_ouvert(x)]
-    a_faire.sort(key=lambda x: (rang_ordre(x.get("vendeur")), str(x.get("fin") or "")))
+    # 12 nov 2026 : par vendeur (le meilleur d'abord), puis la carte qui rapporte le plus par credit ; une carte sous 30 $
+    # attendus : jamais (credits.note)
+    try:
+        import credits
+        notes = {str(x.get("item_id")): credits.note(cartes_match.cible_titre(x.get("titre") or ""), _total(x) or x.get("total"), x.get("vendeur"), annonce=x)[0]
+                 for x in a_faire}
+    except Exception:
+        notes = {}
+    a_faire = [x for x in a_faire if notes.get(str(x.get("item_id")), 1) > 0]
+    a_faire.sort(key=lambda x: (rang_ordre(x.get("vendeur")), -notes.get(str(x.get("item_id")), 0), str(x.get("fin") or "")))
     jour, heure = _jour_mtl()
     trouves, faites, n, hist_c = {}, set(), 0, []
     for x in a_faire:
@@ -3141,6 +3200,14 @@ def valoriser_suivis(rechercher=None, n_max=None):
             if r.get("erreur"):
                 continue
             v = r.get("ventes") or []
+            try:
+                import credits
+                va_ = valeur_ou_saison(x, v, [], cib=cib)
+                t_ = _total(x) or x.get("total")
+                credits.noter(cib, x.get("vendeur"), t_, "sans_ventes" if not va_ else ("deal" if t_ and t_ <= prix_max(va_[0], taxe=taxe_de(x)) else "trop_cher"),
+                              round(t_ / va_[0], 3) if va_ and t_ and va_[0] else None, cache=bool(r.get("cache")), n_ventes=len(v), encan=True)
+            except Exception as e:
+                print("Credits (suivis) : " + repr(e)[:200], flush=True)
         for y in a_faire:                                    # une recherche sert a toutes les annonces de la meme carte
             if str(y.get("item_id")) in trouves:
                 continue

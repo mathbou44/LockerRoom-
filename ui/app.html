@@ -10572,7 +10572,7 @@ async function vueAccueil(arg){
       ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>', tt('Demandes', 'Requests'), String((rA.demandes || {}).nouvelles || 0), `${(rA.demandes || {}).ouvertes || 0} ${tt('ouvertes', 'open')}`, '#admin/demandes', (rA.demandes || {}).nouvelles ? 'or' : ''],
       ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>', tt('Produits à ajouter', 'Products to add'), String(rA.a_ajouter || 0), tt('repérés sur eBay ou demandés', 'spotted or requested'), '#admin/catalogue', rA.a_ajouter ? 'or' : ''],
       ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 21h20z"/><path d="M12 10v5M12 18h.01"/></svg>', tt('Erreurs 24 h', 'Errors 24 h'), String(rA.erreurs_24h || 0), tt('serveur', 'server'), '#admin/serveur', rA.erreurs_24h ? 'rouge' : 'vert'],
-      ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>', 'SoldComps', v.actif ? `${v.aujourdhui || 0} / ${v.plafond || 0}` : tt('inactif', 'off'), tt('recherches aujourd’hui', 'searches today') + (v.poids_jour && Math.abs(v.poids_jour - 1) > 0.01 ? ' · ×' + decFr(v.poids_jour) + tt(' ce jour-là', ' this weekday') : ''), '#admin/serveur', !v.actif ? 'rouge' : pc(v.aujourdhui, v.plafond) > 80 ? 'or' : ''],
+      ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>', (v.source === 'compsniper' ? 'CompSniper' : 'SoldComps'), v.actif ? `${v.aujourdhui || 0} / ${v.plafond || 0}` : tt('inactif', 'off'), tt('recherches aujourd’hui', 'searches today') + (v.poids_jour && Math.abs(v.poids_jour - 1) > 0.01 ? ' · ×' + decFr(v.poids_jour) + tt(' ce jour-là', ' this weekday') : ''), '#admin/serveur', !v.actif ? 'rouge' : pc(v.aujourdhui, v.plafond) > 80 ? 'or' : ''],
       ...(rA.demande_legale && !rA.demande_legale.erreur ? [(() => { const dl = rA.demande_legale, lb = dl.labo || {}, g = lb.garde && (lb.combinaisons || {})[lb.garde];   // 10 nov 2026 : labo de la demande sans ventes (LNH, Wikipedia)
         return ['<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/></svg>', tt('Labo demande', 'Demand lab'), g && g.rho != null ? 'ρ ' + decFr(g.rho) : String(dl.joueurs || 0), g ? (lb.garde + ' · ' + tt('top 20 en commun : ', 'top 20 shared: ') + g.top20 + ' · ' + lb.n + tt(' joueurs', ' players')) : tt('joueurs lus (LNH, Wikipedia)', 'players read (NHL, Wikipedia)'), '#admin/serveur', !g ? '' : g.rho >= 0.7 ? 'vert' : g.rho >= 0.5 ? 'or' : 'rouge']; })()] : []),
       ...(rA.types_cartes ? [(() => { const tc = rA.types_cartes, m = tc.mesure || {};   // 12 nov 2026 : types de cartes (nos ventes) + test avant / apres
@@ -11321,7 +11321,7 @@ async function vuePouls(arg){
       ${sel && sel.exemples.length ? `<div class="r-titre" style="margin-top:6px">${tt('Ventes récentes', 'Recent sales')} · ${esc(sel.nom)}</div>
         <div class="pl-ex">${sel.exemples.map(v => `<a class="pl-e" href="${esc(lienAchat(v.url || '#', 'pouls'))}" target="_blank" rel="noopener">
           <span class="pl-img" style="${v.photo ? `background-image:${cssUrl(v.photo)}` : ''}"></span><b>${argentCourt(v.prix)}</b><small>${esc(v.titre || '')}</small></a>`).join('')}</div>` : ''}
-      <div class="t-legal">${tt('Mesuré par SlabCoach sur des ventes eBay réelles (SoldComps). À titre informatif seulement : ce n’est pas un conseil financier.', 'Measured by SlabCoach on real eBay sales (SoldComps). For information only: this is not financial advice.')}</div>
+      <div class="t-legal">${tt('Mesuré par SlabCoach sur des ventes eBay réelles. À titre informatif seulement : ce n’est pas un conseil financier.', 'Measured by SlabCoach on real eBay sales. For information only: this is not financial advice.')}</div>
     </section>`;
     $$('[data-pl]').forEach(b => b.onclick = () => { sel = l.find(x => x.cle === b.dataset.pl); peindre(); });
   };
@@ -14798,6 +14798,39 @@ async function feuilleVendeursPerf(){
     ${peu.length ? `<div class="qd-s">${tt(`Pas encore assez d’encans (moins de ${r.n_min})`, `Not enough auctions yet (under ${r.n_min})`)}</div><div class="vpf-liste">${peu.map(ligne).join('')}</div>` : ''}
     <div class="sous" style="margin-top:10px">${r.encans} ${tt('encans mesurés', 'auctions measured')} · ${tt('ordre des prioritaires', 'priority order')} : ${r.ordre_priorite.map(esc).join(' › ')}</div>`;
 }
+// 12 nov 2026 (Mathieu : « y aller par ordre pour limiter le gaspillage de credit ») : l'ordre dans lequel le chasseur depense
+// ses recherches de ventes (profit attendu par credit : test de depart sur 38 600 ventes, puis les vrais resultats)
+async function feuilleCredits(){
+  popOuvrir(`<button class="pop-x" id="cr-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
+    <div class="pop-tete"><span class="pop-sur">Admin · Radar</span><h3>${tt('L’ordre des crédits', 'The credit order')}</h3></div>
+    <div class="pop-corps" id="cr-z"><div class="lecture"><span class="roue"></span></div></div>`, popFermer);
+  $('#cr-x').onclick = popFermer;
+  const e = await API.deals_etat().catch(x => ({ok: false, erreur: x.message}));
+  const z = $('#cr-z'); if (!z) return;
+  const c = (e && e.credits) || {};
+  if (!e.ok || !c.lignes) { z.innerHTML = `<div class="vide">${esc(e.erreur || c.erreur || 'Erreur')}</div>`; return; }
+  const sc = e.soldcomps || {}, T = c.total || {};
+  const CAL = {bon: [tt('Bon joueur', 'Good player'), 'vert'], moyen: [tt('Moyen', 'Mid'), 'acc'], gris: [tt('Gris', 'Grey'), '']};
+  const ok = c.lignes.filter(l => !l.sautee), saut = c.lignes.filter(l => l.sautee);
+  const ligne = (l, i) => `<div class="vpf-l"><span class="vpf-r">${i + 1}</span><span class="vpf-m"><b>${esc(l.nom)} ${tag(CAL[l.calibre][0], CAL[l.calibre][1])}</b>
+      <small>${tt('vaut ~', 'worth ~')}${argentCourt(l.valeur)} · ${tt('départ ', 'start ')}${argent(l.depart, 2)}${l.credits ? ' · ' + tt('vrai ', 'real ') + argent(l.vrai, 2) + ' (' + l.credits + ' ' + tt('crédits', 'credits') + ', ' + l.deals + ' deals)' : ''}</small></span>
+      <span class="vpf-c"><b>${argent(l.note, 2)}</b><small>${tt('par crédit', 'per credit')}</small></span></div>`;
+  z.innerHTML = `<div class="adm-kpi2"><div><span>${sc.source === 'compsniper' ? 'CompSniper' : 'SoldComps'} ${tt('aujourd’hui', 'today')}</span><b>${(sc.jour ?? '?') + ' / ' + (sc.plafond ?? '?')}</b></div>
+      <div><span>${tt('Deals trouvés', 'Deals found')}</span><b>${T.deals || 0}</b></div><div><span>${tt('Profit / crédit', 'Profit / credit')}</span><b class="vert">${T.par_credit != null ? argent(T.par_credit, 2) : '—'}</b></div></div>
+    <div class="sous" style="margin:10px 0">${tt(`Le chasseur dépense ses recherches dans cet ordre : le profit attendu par crédit de la catégorie, selon le joueur. Une carte qui vaut moins de ${argentCourt(c.valeur_min)} n’est jamais cherchée. Une carte des États-Unis compte pour 45 % (environ 50 % de frais à l’import). Au départ : un test sur 38 600 ventes ; ensuite, chaque vraie recherche corrige la note.`, `The hunter spends searches in this order: expected profit per credit of the category, by player. A card worth under ${argentCourt(c.valeur_min)} is never searched. A US card counts for 45% (about 50% import fees). Start: a test on 38,600 sales; then every real search adjusts the score.`)}</div>
+    ${(() => { const k = c.comparaison || {}; if (!k.n) return '';
+      const pc = (x) => x == null ? '—' : Math.round(100 * x) + '\u00a0%', bon = k.couverture >= 0.85 && (k.ecart_median == null || k.ecart_median <= 0.10), f = k.plus_frais || {};
+      return `<div class="qd-s">${tt('CompSniper contre SoldComps (test jusqu’au 18 nov.)', 'CompSniper vs SoldComps (test until Nov 18)')}</div>
+      <div class="vpf-liste"><div class="vpf-l"><span class="vpf-r">${k.n}</span><span class="vpf-m"><b>${bon ? tt('Assez précis pour le garder', 'Accurate enough to keep') : tt('À surveiller', 'Keep an eye on it')} ${tag(bon ? 'OK' : '?', bon ? 'vert' : 'acc')}</b>
+        <small>${tt('recherches comparées', 'searches compared')} · ${tt('ventes SoldComps retrouvées : ', 'SoldComps sales found: ')}${pc(k.couverture)} · ${tt('écart des médianes : ', 'median gap: ')}${pc(k.ecart_median)}<br>
+        ${tt('vente la plus récente : CompSniper ', 'newest sale: CompSniper ')}${f.cs || 0} · SoldComps ${f.sc || 0} · ${tt('égal ', 'tie ')}${f.egal || 0} · ${tt('coupées à 50 : ', 'capped at 50: ')}${k.coupees} · ${tt('rien chez CompSniper : ', 'nothing at CompSniper: ')}${k.rien_cs}</small></span>
+        <span class="vpf-c ${bon ? 'vert' : ''}"><b>${pc(k.couverture)}</b><small>${tt('couverture', 'coverage')}</small></span></div></div>`; })()}
+    <div class="qd-s">${tt('Vendeurs, dans cet ordre', 'Sellers, in this order')}</div>
+    <div class="vpf-liste">${c.groupes.map(g => `<div class="vpf-l"><span class="vpf-r">×${decFr(g.facteur)}</span><span class="vpf-m"><b>${esc(g.nom)}</b><small>${g.credits} ${tt('crédits', 'credits')} · ${g.deals} deals</small></span><span class="vpf-c"><b>${g.credits ? argent(g.gain / g.credits, 2) : '—'}</b><small>${tt('par crédit', 'per credit')}</small></span></div>`).join('')}</div>
+    <div class="qd-s">${tt('Les cartes, de la meilleure à la moins bonne', 'Cards, best to worst')}</div>
+    <div class="vpf-liste">${ok.map(ligne).join('')}</div>
+    ${saut.length ? `<div class="qd-s">${tt('Jamais cherchées (valent moins de ', 'Never searched (worth under ')}${argentCourt(c.valeur_min)})</div><div class="sous">${saut.map(l => esc(l.nom) + ' · ' + CAL[l.calibre][0].toLowerCase()).join(' — ')}</div>` : ''}`;
+}
 // 12 nov 2026 (Mathieu : « pas dans notre radar a deals en admin, elle devrait etre la ») : une annonce eBay -> ce que le
 // chasseur en fait, etape par etape, et ce qui la bloque ; au besoin, aller chercher ses ventes (1 recherche)
 function feuillePourquoi(lien0){
@@ -14879,6 +14912,7 @@ async function vueAdmin(onglet){
     [tt('Radar et deals', 'Radar and deals'), [
       ['chasseur', 'deals', tt('Chasseur de deals', 'Deal hunter'), admAge(t.deals) != null ? ilYa(t.deals) : '—', tt('dernier tour · relancer, budget', 'last run · rerun, budget'), admAge(t.deals) != null && admAge(t.deals) > 3 ? 'rouge' : '', () => admPop(tt('Chasseur de deals', 'Deal hunter'), adminServeur, SERVEUR_PART.chasseur)],
       ['vendeurs', 'boutique', tt('Vendeurs suivis', 'Followed sellers'), '', tt('la liste et un test eBay', 'the list and an eBay test'), '', () => admPop(tt('Vendeurs suivis', 'Followed sellers'), adminServeur, SERVEUR_PART.vendeurs)],
+      ['credits', 'graphe', tt('Ordre des crédits', 'Credit order'), '', tt('ce qui rapporte le plus par recherche', 'what pays most per search'), '', () => feuilleCredits()],
       ['perf', 'dollar', tt('Vendeurs sous la valeur', 'Sellers under value'), '', tt('qui finit le plus bas pour nous', 'who ends lowest for us'), '', () => feuilleVendeursPerf()],
       ['pourquoi', 'cible', tt('Pas dans le Radar ?', 'Not in the Radar?'), '', tt('colle un lien eBay', 'paste an eBay link'), '', () => feuillePourquoi()]]],
     [tt('SlabIQ et données', 'SlabIQ and data'), [
@@ -15262,7 +15296,7 @@ async function adminServeur(){
         + (e.soldcomps.verif != null ? tt(' · vérifs de deals ', ' · deal checks ') + e.soldcomps.verif + (e.soldcomps.prio != null ? tt(' · Savage, Remi, CF31, Slab Sharks ', ' · Savage, Remi, CF31, Slab Sharks ') + e.soldcomps.prio + ' / ' + e.soldcomps.prio_max : '') + tt(' · autres ', ' · other ') + ((e.soldcomps.jour || 0) - e.soldcomps.verif - (e.soldcomps.prio || 0)) + ' / ' + e.soldcomps.autres_max : '') + (e.soldcomps.erreur ? ' · <span style="color:var(--rouge)">' + esc(e.soldcomps.erreur) + '</span>' : '') : ''}
       <br>${tt('Reconnaissance photo', 'Photo recognition')} : ${esc(e.vision_modele || '—')}${e.vision_erreur ? ' · <span style="color:var(--rouge)">' + tt('dernière erreur', 'last error') + ' HTTP ' + esc(e.vision_erreur.code) + ' ' + esc((e.vision_erreur.detail || '').slice(0, 140)) + '</span>' : ''}`;
     el.innerHTML = `<div class="adm-tour">${ligneTour(e.tour)}</div>
-      <div class="adm-ks">${kp(e.deals, tt('deals en ligne', 'live deals'))}${kp((sc.jour ?? '?') + ' / ' + (sc.plafond ?? '?'), 'SoldComps', sc.epuise)}
+      <div class="adm-ks">${kp(e.deals, tt('deals en ligne', 'live deals'))}${kp((sc.jour ?? '?') + ' / ' + (sc.plafond ?? '?'), sc.source === 'compsniper' ? 'CompSniper' : 'SoldComps', sc.epuise)}
         ${kp((sc.prio ?? 0) + ' / ' + (sc.prio_max ?? 0), 'Savage, Remi, CF31, Slab Sharks')}${kp(e.verif + ' / ' + e.verif_max, tt('vérifs de deals', 'deal checks'), e.verif >= e.verif_max)}</div>
       ${(() => { const c = e.prio_couverture; if (!c || !c.total) return '';       // 31 oct 2026 : les 4 gros vendeurs, analyses d'abord
         const pc = Math.round(100 * c.faites / c.total);

@@ -44,6 +44,11 @@ def budget_mois():
     return _env_int("LR_HISTORIQUE_MOIS", 95)          # le forfait gratuit : 100 requetes par mois (une marge de 5)
 
 
+def limite():
+    """Ventes par requete (une page) : 50 ; LR_CS_LIMITE pour essayer plus si le forfait CompSniper le permet."""
+    return min(200, max(10, _env_int("LR_CS_LIMITE", 50)))
+
+
 def budget_jour():
     """Le chasseur de deals, par jour : LR_HISTORIQUE_JOUR, sinon ce qui reste du mois reparti sur les jours qui restent
     (x 2 : les encans finissent surtout certains soirs), 3 au moins. Les fiches ouvertes, elles, n'ont que le plafond du mois."""
@@ -93,7 +98,7 @@ def _compter(chasseur):
         c.close()
 
 
-def _cache(q):
+def _cache(q, age_max=None):
     try:
         c = _cx()
         try:
@@ -102,7 +107,7 @@ def _cache(q):
             c.close()
     except sqlite3.Error:
         return None
-    if r and time.time() - r[0] < CACHE_S:
+    if r and time.time() - r[0] < (CACHE_S if age_max is None else age_max):
         try:
             return json.loads(r[1])
         except ValueError:
@@ -131,35 +136,42 @@ def lire_reponse(d, taux):
     return out
 
 
-def rechercher(q, chasseur=False, jours=JOURS):
-    """Les ventes d'une recherche sur un an (une page de 50, les plus recentes d'abord). -> (ventes, erreur)."""
+def cle_q(q):
+    return " ".join(str(q or "").lower().split())[:200]
+
+
+def rechercher(q, chasseur=False, jours=JOURS, principal=False, cache_s=None, delai=None):
+    """Les ventes d'une recherche sur un an (une page de 50, les plus recentes d'abord). -> (ventes, erreur).
+    12 nov 2026 (Mathieu : « je peux remplacer SoldComps par CompSniper ») : principal=True quand CompSniper est LA source
+    des ventes (vendues.source()) : pas de plafond « chasseur » (vendues tient le budget du jour), seulement celui du mois ;
+    cache_s : l'age maximal du cache (3 jours, comme SoldComps : les ventes d'hier comptent pour un deal)."""
     try:
         import lockerroom
         if not lockerroom.comps_permis():            # 10 nov 2026 : comps = admin seulement
             return [], "coupe"
     except Exception:
         pass
-    q = " ".join(str(q or "").lower().split())[:200]
+    q = cle_q(q)
     if not q or not actif():
         return [], "inactif"
-    deja = _cache(q)
+    deja = _cache(q, cache_s)
     if deja is not None:
         return deja, None
     if time.time() - _ERREUR["le"] < 300 and _ERREUR["texte"]:
         return [], _ERREUR["texte"]                  # une panne / un quota : on attend 5 min
     u = utilises()
-    if u["mois"] >= budget_mois() or (chasseur and u["chasseur"] >= budget_jour()):
+    if u["mois"] >= budget_mois() or (chasseur and not principal and u["chasseur"] >= budget_jour()):
         return [], "budget"
     fin = datetime.now(timezone.utc).date()
     p = {"keyword": q, "startDate": (fin - timedelta(days=jours)).isoformat(), "endDate": fin.isoformat(),
-         "sort": "lastSoldDescending", "singleUnitOnly": "true", "limit": "50", "page": "1"}
+         "sort": "lastSoldDescending", "singleUnitOnly": "true", "limit": str(limite()), "page": "1"}
     req = urllib.request.Request(URL + "?" + urllib.parse.urlencode(p), headers={"Authorization": "Bearer " + _cle(), "Accept": "application/json"})
     # 9 nov 2026 (« les ventes reelles ne repondent pas : le chasseur est peut-etre en plein tour ») : un geste de
     # l'utilisateur n'attend pas derriere une requete du chasseur (3 s au plus, puis il passe quand meme)
     pris = _verrou.acquire() if chasseur else _verrou.acquire(timeout=3)
     try:
         try:
-            with urllib.request.urlopen(req, timeout=30 if chasseur else 15) as r:
+            with urllib.request.urlopen(req, timeout=delai or (30 if chasseur else 15)) as r:
                 d = json.loads(r.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             try:
@@ -172,7 +184,7 @@ def rechercher(q, chasseur=False, jours=JOURS):
         except Exception as e:
             _ERREUR.update(le=time.time(), texte="CompSniper injoignable (" + type(e).__name__ + ")")
             return [], _ERREUR["texte"]
-        _compter(chasseur)                           # une requete reussie = une requete du forfait (les echecs : gratuits)
+        _compter(chasseur and not principal)         # une requete reussie = une requete du forfait (les echecs : gratuits)
     finally:
         if pris:
             _verrou.release()

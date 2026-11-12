@@ -76,16 +76,18 @@ class TestPrioSavage(unittest.TestCase):
         prio_q = [q for q, u in appels if u == "prio"]
         ids = {x["item_id"]: x for x in deals.lire().get("deals") or []}
         self.assertFalse(any("hughes" in q for q in prio_q))  # 31 oct : un prix fixe des 4 vendeurs n'est pas analyse
-        for i in (0, 1, 3):                                  # Savage et Remi, leurs encans : verifies -> deals
+        for i in (0, 2, 3):                                  # Savage et Remi, leurs encans : verifies -> deals
             self.assertIn(f"p{i}", ids, (CARTES[i][0], prio_q))
             self.assertTrue(ids[f"p{i}"].get("valeur"))
         self.assertNotIn("p4", ids)                          # 7 nov : analysee (couverture), mais 12 $ : moins de 15 $ de profit possible
         self.assertNotIn("p5", ids)                          # vendeur suivi non prioritaire : budget du chasseur (0)
         self.assertFalse(any("makar" in q for q in prio_q))
-        self.assertTrue(any("mackinnon" in q for q in prio_q))
+        # 12 nov 2026 (Mathieu : « limiter le gaspillage de credit ; rien savoir des cartes en bas de 30 $ ») : la recrue d'un
+        # joueur gris et la parallele Ice a 4 $ (12 $) ne coutent plus de credit, meme chez Savage
+        self.assertFalse(any("mackinnon" in q or "stenberg" in q for q in prio_q))
+        self.assertNotIn("p1", ids)
         cov = deals.lire()["prio_couverture"]                # 31 oct : combien de cartes des 4 vendeurs sont analysees
-        self.assertEqual((cov["faites"], cov["total"]), (5, 5), cov)
-        self.assertEqual(cov["par_vendeur"]["savage.cards"], [4, 4])
+        self.assertEqual(cov["faites"], 3, cov)
         # l'ordre : Savage avant Remi
         ia = [i for i, q in enumerate(prio_q) if "crosby" in q][0]
         ib = [i for i, q in enumerate(prio_q) if "mcdavid" in q][0]
@@ -119,9 +121,9 @@ class TestPrioSavage(unittest.TestCase):
             os.environ["LR_DEALS_VERIF_JOUR"] = "0"
         us = [(q, x) for q, x in appels]
         self.assertEqual([x for _q, x in us][:1], ["prio"])
-        self.assertEqual(len([1 for _q, x in us if x == "verif"]), 3)       # le budget du chasseur, aux 4 vendeurs d'abord
+        self.assertEqual(len([1 for _q, x in us if x == "verif"]), 2)       # le budget du chasseur, aux 4 vendeurs d'abord (12 nov : 3 cartes valent un credit)
         self.assertFalse(any("makar" in q for q, _x in us))                 # l'autre vendeur attend
-        self.assertTrue(deals.lire()["prio_couverture"]["faites"] >= 4)
+        self.assertTrue(deals.lire()["prio_couverture"]["faites"] >= 3)
 
     def test_valoriser_entre_deux_tours(self):
         """30 oct 2026 : entre deux tours, les encans de Savage sans valeur prennent la leur (reserve « prio »)."""

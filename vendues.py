@@ -52,8 +52,28 @@ def _coupe():
     except Exception:
         return False
 
+def _cs_actif():
+    try:
+        import historique
+        return historique.actif()
+    except Exception:
+        return False
+
+
+def source():
+    """12 nov 2026 (Mathieu : « je peux remplacer SoldComps par CompSniper ») : la source principale des ventes.
+    LR_VENTES_SOURCE (Render) = « compsniper » ou « soldcomps » pour choisir ; sinon SoldComps s'il a sa cle, CompSniper
+    s'il n'y a plus que lui (on retire SOLDCOMPS_CLE : la bascule se fait toute seule)."""
+    v = (os.environ.get("LR_VENTES_SOURCE") or "").strip().lower()
+    if v == "compsniper" and _cs_actif():
+        return "compsniper"
+    if _cle():
+        return "soldcomps"
+    return "compsniper" if _cs_actif() else "soldcomps"
+
+
 def actif():
-    return bool(_cle())
+    return bool(_cle()) or _cs_actif()
 
 
 # 3 nov 2026 (Mathieu : « le jeudi, beaucoup d'encheres finissent ; on pourrait modifier la limite pour cette journee ? ») :
@@ -98,11 +118,25 @@ def budget_du_jour(base):
 
 
 def plafond_jour():
+    if source() == "compsniper":
+        return _plafond_cs()
     try:
         base = int(os.environ.get("LR_SOLDCOMPS_JOUR") or 150)
     except ValueError:
         base = 150
     return budget_du_jour(base)
+
+
+def _plafond_cs():
+    """CompSniper principal : le budget du jour = ce qui reste du mois (LR_HISTORIQUE_MOIS) reparti sur les jours qui
+    restent, ajuste au jour de la semaine (le jeudi plus). Les credits deja pris aujourd'hui restent dans le calcul."""
+    import calendar
+    import historique
+    m = datetime.utcnow()
+    u = historique.utilises()
+    reste_j = calendar.monthrange(m.year, m.month)[1] - m.day + 1
+    reste = max(0, historique.budget_mois() - (u["mois"] - u["jour"]))
+    return min(reste, budget_du_jour(max(1, reste // max(1, reste_j)))) if reste else 0
 
 
 def _cx():
@@ -304,7 +338,7 @@ def _secours(q, fond, usage=None):
     an, budget du mois) : les memes ventes eBay, une autre source. Jamais pour les taches de fond (budget du mois).
     10 nov 2026 (« le plus de sources possible, une de base et les autres pour raffiner et sauver ») : puis TheCardAPI
     (aussi pour les verifications de deals, sur sa part du jour)."""
-    if not fond:
+    if not fond and source() != "compsniper":         # CompSniper principal : deja essaye (et son budget du jour)
         try:
             import historique
             if historique.actif():
@@ -390,6 +424,10 @@ def rechercher(q, fond=True, usage=None):
     if cpt and utilises_aujourdhui(cpt) >= part_compte():
         # 3 nov 2026 (revue de securite) : un seul compte ne vide pas le budget de tout le monde (titres inventes, en boucle)
         return {"ventes": [], "erreur": "plafond du jour"}
+    if source() == "compsniper":
+        r_cs = _par_compsniper(q, fond, usage, cpt)
+        if r_cs is not None:
+            return r_cs                         # None : CompSniper en erreur et SoldComps encore la (jusqu'au 18 nov) : en secours
     # 3 nov 2026 (revue) : SoldComps en panne -> les taches de fond attendent 2 minutes au lieu de bruler des credits
     # (chaque essai compte avant l'appel) sur d'autres cartes ; les gestes de l'utilisateur essaient quand meme
     if fond and time.time() < _PANNE[0]:
@@ -473,6 +511,163 @@ def rechercher(q, fond=True, usage=None):
         if sec:
             return sec
     return {"ventes": ventes, "erreur": erreur if (erreur and not ventes) else None, "partiel": bool(erreur)}
+
+
+def _par_compsniper(q, fond, usage, cpt):
+    """12 nov 2026 : CompSniper comme source principale : UNE requete = un an de ventes (eBay ; la regle des 90 jours
+    reste dans le jugement des deals, les hits gardent un an). Meme budget du jour, memes compteurs (verif, prio, compte)
+    que SoldComps ; une recherche deja en cache chez CompSniper (3 jours) ne compte pas."""
+    import historique
+    neuf = historique._cache(historique.cle_q(q), CACHE_S) is None
+    if neuf:
+        if fond:
+            with _verrou:                      # 60 requetes / minute chez CompSniper : les taches de fond, une par seconde
+                attente = INTERVALLE_MIN_S - (time.time() - _DERNIER[0])
+                if attente > 0:
+                    time.sleep(attente)
+                _DERNIER[0] = time.time()
+        _compter(usage, cpt)
+        ventes, err = historique.rechercher(q, chasseur=fond, principal=True, cache_s=CACHE_S, delai=25 if fond else DELAI_TAP)
+        if err:
+            try:
+                _rembourser(usage, cpt)        # un echec n'est pas facture
+            except Exception:
+                pass
+    else:
+        ventes, err = historique.rechercher(q, principal=True, cache_s=CACHE_S)
+    if err:
+        if err == "budget":
+            err = "plafond du jour"
+        if _cle() and err not in ("plafond du jour", "coupe", "inactif"):
+            return None                        # 12 nov 2026 : SoldComps encore actif (jusqu'au 18 nov) : il prend le relais
+        _noter_erreur(q, err)
+        vieux = _cache_lire(q.lower(), age_max=45 * 86400)
+        if vieux:
+            return {"ventes": vieux, "erreur": None, "cache": True, "vieux_cache": True}
+        if fond and usage not in ("verif", "prio"):
+            return {"ventes": [], "erreur": err}
+        try:
+            import thecardapi
+            v2, e2 = thecardapi.rechercher(q, limite=100, usage="tap" if not fond else "secours", delai=DELAI_TAP if not fond else 20)
+            if not e2 and v2:
+                return {"ventes": v2, "erreur": None, "secours": "thecardapi"}
+        except Exception:
+            pass
+        return {"ventes": [], "erreur": err}
+    out = []
+    for v in ventes or []:
+        v = dict(v)
+        v.setdefault("ts", v.get("le"))
+        v["site"] = "compsniper"
+        out.append(v)
+    _cache_ecrire(q.lower(), out)
+    if neuf:
+        comparer_lancer(q, out)
+    return {"ventes": out, "erreur": None, "source": "compsniper"}
+
+
+# 12 nov 2026 (Mathieu : « garde tout ce qui est SoldComps [...] quelques jours vont suffire pour voir si CompSniper est assez
+# precis pour qu'on le garde avec les 50 resultats ») : tant que SoldComps repond encore (jusqu'au 18 nov), une partie des
+# recherches CompSniper est refaite chez SoldComps (eBay.com, 90 jours) et les deux sont comparees : les ventes de SoldComps
+# que CompSniper a aussi, l'ecart de mediane, la vente la plus recente de chacun, les recherches coupees a 50. L'admin voit
+# le bilan (tuile « Ordre des credits »). LR_COMPARER_JOUR : combien par jour (15 ; 0 = arrete).
+COMPARER_MAX = 300
+_COMP_VERROU = threading.Lock()
+_COMP_JOUR = {"jour": None, "n": 0}
+
+
+def _id_item(v):
+    import re
+    m = re.search(r"/itm/(?:[^/?#]+/)?(\d{9,})", str(v.get("url") or ""))
+    return m.group(1) if m else (str(v.get("item_id")) if v.get("item_id") else None)
+
+
+def _comp_chemin():
+    import comptes
+    return os.path.join(comptes.DONNEES, "comparaison_sources.json")
+
+
+def comparer_lancer(q, ventes_cs):
+    if not _cle():
+        return
+    try:
+        n_max = int(os.environ.get("LR_COMPARER_JOUR") or 15)
+    except ValueError:
+        n_max = 15
+    j = jour()
+    with _COMP_VERROU:
+        if _COMP_JOUR["jour"] != j:
+            _COMP_JOUR.update(jour=j, n=0)
+        if _COMP_JOUR["n"] >= n_max:
+            return
+        _COMP_JOUR["n"] += 1
+    threading.Thread(target=comparer, args=(q, list(ventes_cs)), daemon=True).start()
+
+
+def comparer(q, ventes_cs, appel=None):
+    """Une recherche refaite chez SoldComps (hors budget du jour : SoldComps est deja paye jusqu'au 18 nov) -> une ligne de
+    comparaison gardee dans comparaison_sources.json."""
+    try:
+        if appel is None:
+            url = URL_API + "/v1/scrape?" + urllib.parse.urlencode({"keyword": q, "categoryId": CATEGORIE_CARTES, "count": NB_PAR_REQUETE,
+                                                                    "ebaySite": "ebay.com", "hydrateBoa": "true"})
+            req = urllib.request.Request(url, headers={"Authorization": "Bearer " + _cle(), "Accept": "application/json"})
+            with urllib.request.urlopen(req, timeout=30) as r:
+                d = json.loads(r.read().decode("utf-8"))
+        else:
+            d = appel(q)
+        taux = _taux_usd_cad()
+        sc = [v for v in (_vers_vente(it, taux) for it in (d or {}).get("items") or []) if v]
+    except Exception as e:
+        print("Comparaison des sources : " + repr(e)[:200], flush=True)
+        return None
+    depuis = (datetime.now() - timedelta(days=90)).strftime("%Y-%m-%d")
+    cs90 = [v for v in ventes_cs if str(v.get("le") or "") >= depuis]
+    ids_cs = {_id_item(v) for v in ventes_cs} - {None}
+    ids_sc = [_id_item(v) for v in sc]
+    communs = sum(1 for i in ids_sc if i and i in ids_cs)
+    med = lambda l: round(statistics.median([v["prix"] for v in l if v.get("prix")]), 2) if any(v.get("prix") for v in l) else None
+    ligne = {"le": datetime.now().isoformat(timespec="seconds"), "q": q[:120], "sc": len(sc), "cs": len(ventes_cs), "cs90": len(cs90),
+             "communs": communs, "coupe": len(ventes_cs) >= 50, "med_sc": med(sc), "med_cs90": med(cs90),
+             "der_sc": max((str(v.get("le") or "") for v in sc), default="") or None,
+             "der_cs": max((str(v.get("le") or "") for v in ventes_cs), default="") or None}
+    with _COMP_VERROU:
+        try:
+            with open(_comp_chemin(), encoding="utf-8") as f:
+                l = json.load(f) or []
+        except (OSError, ValueError):
+            l = []
+        l = (l + [ligne])[-COMPARER_MAX:]
+        try:
+            with open(_comp_chemin() + ".tmp", "w", encoding="utf-8") as f:
+                json.dump(l, f, ensure_ascii=False)
+            os.replace(_comp_chemin() + ".tmp", _comp_chemin())
+        except OSError:
+            pass
+    return ligne
+
+
+def comparaison_resume():
+    """Le bilan CompSniper contre SoldComps : sur les ventes que SoldComps voit (eBay.com, 90 jours), combien CompSniper les a
+    aussi ; l'ecart des medianes ; qui a la vente la plus fraiche ; combien de recherches CompSniper sont coupees a 50."""
+    try:
+        with open(_comp_chemin(), encoding="utf-8") as f:
+            l = json.load(f) or []
+    except (OSError, ValueError):
+        l = []
+    if not l:
+        return {"n": 0}
+    tot_sc = sum(x["sc"] for x in l)
+    ecarts = [abs(x["med_cs90"] - x["med_sc"]) / x["med_sc"] for x in l if x.get("med_sc") and x.get("med_cs90")]
+    plus_frais = {"cs": sum(1 for x in l if (x.get("der_cs") or "") > (x.get("der_sc") or "")),
+                  "sc": sum(1 for x in l if (x.get("der_sc") or "") > (x.get("der_cs") or "")),
+                  "egal": sum(1 for x in l if (x.get("der_sc") or "") == (x.get("der_cs") or ""))}
+    rien_cs = sum(1 for x in l if x["sc"] and not x["cs90"])
+    rien_sc = sum(1 for x in l if x["cs90"] and not x["sc"])
+    return {"n": len(l), "depuis": l[0]["le"], "couverture": round(sum(x["communs"] for x in l) / tot_sc, 3) if tot_sc else None,
+            "ecart_median": round(statistics.median(ecarts), 3) if ecarts else None, "plus_frais": plus_frais,
+            "coupees": sum(1 for x in l if x.get("coupe")), "rien_cs": rien_cs, "rien_sc": rien_sc,
+            "ventes_sc": tot_sc, "ventes_cs90": sum(x["cs90"] for x in l), "derniers": l[-8:][::-1]}
 
 
 def sites():
@@ -867,7 +1062,7 @@ def tendance(ventes, jours=None):
 
 
 def statut():
-    d = {"actif": actif(), "aujourdhui": utilises_aujourdhui(), "plafond": plafond_jour(), "poids_jour": poids_aujourdhui(),
+    d = {"actif": actif(), "source": source(), "aujourdhui": utilises_aujourdhui(), "plafond": plafond_jour(), "poids_jour": poids_aujourdhui(),
          "poids_semaine": poids_jours()}
     # 10 nov 2026 : toutes les sources de ventes, pour l'admin (base, raffiner, sauver, archives)
     try:
