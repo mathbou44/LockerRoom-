@@ -22,4 +22,17 @@ assert deals.valeur_autre_saison({"titre": R}, [{"titre": "2023-24 Upper Deck Yo
 P = [{"titre": "2024-25 UD Clear Cut Outburst Auto Ron Francis 1%d/25" % i, "prix": 60 + i, "le": jr(5 + i)} for i in range(3)]
 assert deals.valeur_ou_saison({"titre": T}, P + V, [])[1] == "vendues"
 assert deals.saison(2024) == "2024-25" and deals.saison(1999) == "1999-00"
+# 13 nov 2026 (Mathieu : Celebrini Stature Orange 2025-26 estimee avec ses Stature RECRUE 2024-25) : jamais l'annee recrue
+# pour estimer une autre annee (ni l'inverse)
+import datetime as _dt
+_j = lambda k: (_dt.datetime.now() - _dt.timedelta(days=k)).strftime("%Y-%m-%d")
+deals._AN_RC["macklin celebrini"] = 2024
+VC = [{"titre": "2024-25 Upper Deck Stature Rookie Macklin Celebrini Orange /199", "prix": 426, "le": _j(20)},
+      {"titre": "2024-25 Upper Deck Stature Macklin Celebrini Orange 12/199", "prix": 214, "le": _j(40)},
+      {"titre": "2025-26 Upper Deck Stature Macklin Celebrini Blue /299", "prix": 60, "le": _j(5)},
+      {"titre": "2025-26 Upper Deck Stature Macklin Celebrini Red /99", "prix": 95, "le": _j(3)}]
+AC = {"titre": "2025-26 UD Stature Orange Macklin Celebrini #30 057/199 (MicMas)"}
+assert deals.valeur_autre_saison(AC, VC) is None
+va = deals.valeur_approx(AC, VC)
+assert va and all(v["titre"].startswith("2025-26") for v in va[3]) and va[0] < 120, va
 print("AUTRE SAISON OK")

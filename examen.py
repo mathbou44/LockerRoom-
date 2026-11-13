@@ -351,19 +351,6 @@ def _profil(carte, axe, de, a, bande=(0.25, 0.75)):
     return [z.getpixel((0, i)) for i in range(a - de)]
 
 
-def _bordure(profil, mini, maxi):
-    """La position de la ligne bordure -> image la plus franche entre mini et maxi (pixels depuis le bord), et sa force."""
-    g = [0.0] * len(profil)
-    for i in range(2, len(profil) - 2):
-        g[i] = sum(abs(profil[i + 2][c] - profil[i - 2][c]) for c in range(3))
-    zone = g[mini:maxi]
-    if not zone:
-        return None, 0, 0
-    pic = max(range(len(zone)), key=lambda i: zone[i]) + mini
-    fond = sorted(zone)[len(zone) // 2] or 1
-    return pic, g[pic], g[pic] / fond
-
-
 def _candidats(profil, mini, maxi):
     """Les lignes franches d'un profil (maxima locaux du gradient, force >= 45 et >= 3,5 x le gradient median)."""
     g = [0.0] * len(profil)
@@ -382,47 +369,6 @@ def _candidats(profil, mini, maxi):
                 continue
             out.append(i)
     return out
-
-
-def _cote(carte, cote):
-    """La largeur de la bordure d'un cote : 2 nov 2026 - la ligne imprimee la plus a l'EXTERIEUR qui est droite sur les 3
-    segments du bord (avant : la plus forte, souvent une fenetre de patch ou un cadre interieur). -> px ou None."""
-    W, H = carte.size
-    long = W if cote in ("gauche", "droite") else H
-    mini, maxi = max(3, int(long * 0.012)), int(long * 0.24)
-    tol = max(3, long * 0.012)
-    segs = []
-    for seg in ((0.22, 0.40), (0.41, 0.59), (0.60, 0.78)):
-        if cote == "gauche":
-            p = _profil(carte, "x", 0, maxi + 3, seg)
-        elif cote == "droite":
-            p = list(reversed(_profil(carte, "x", W - maxi - 3, W, seg)))
-        elif cote == "haut":
-            p = _profil(carte, "y", 0, maxi + 3, seg)
-        else:
-            p = list(reversed(_profil(carte, "y", H - maxi - 3, H, seg)))
-        segs.append(_candidats(p, mini, maxi))
-    if not all(segs):
-        return None
-    for x in segs[0]:
-        trio = [x]
-        for autres in segs[1:]:
-            proche = [y for y in autres if abs(y - x) <= tol]
-            if not proche:
-                break
-            trio.append(min(proche, key=lambda y: abs(y - x)))
-        if len(trio) == 3:
-            return sorted(trio)[1]
-    return None
-
-
-def _couleur(carte, cote, px):
-    """La couleur moyenne de la bordure (entre l'arete et la ligne trouvee), au milieu du cote."""
-    W, H = carte.size
-    px = max(2, int(px))
-    box = {"gauche": (0, int(H * .3), px, int(H * .7)), "droite": (W - px, int(H * .3), W, int(H * .7)),
-           "haut": (int(W * .3), 0, int(W * .7), px), "bas": (int(W * .3), H - px, int(W * .7), H)}[cote]
-    return carte.crop(box).resize((1, 1), Image.BOX).getpixel((0, 0))
 
 
 def _ratio(a, b):

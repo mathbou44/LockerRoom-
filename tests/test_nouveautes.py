@@ -228,7 +228,10 @@ class Deals(unittest.TestCase):
         self.assertIn("s1", ids)
         self.assertGreater(ids["s1"]["valeur"], 140)
         self.assertNotIn("s3", ids)
-        self.assertEqual(len(appels), 2)                          # s1 (finit dans 2 h), puis s4 en fin de tour
+        # s1 (finit dans 2 h), s4 en fin de tour ; 13 nov 2026 : et s5 (Wyatt Johnston patch auto /35, un gros hit d'un bon joueur,
+        # 40 h) : verifie jusqu'a 72 h de la fin (ENCAN_HIT_H)
+        self.assertEqual(len(appels), 3, appels)
+        self.assertTrue(any("johnston" in q for q in appels))
         self.assertIn("s4", ids)                                  # Savoie : 44 $ pour ~86 $ (7 nov : 30 % net, taxes de l'achat)
         self.assertAlmostEqual(ids["s4"]["mise_max"], round(deals.prix_max(ids["s4"]["valeur"]) - 6.0, 2))   # 6 nov : 30 % de profit net
         self.assertNotIn("s5", ids)

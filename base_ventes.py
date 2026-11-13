@@ -37,9 +37,11 @@ def par_jour():
 _FAITES = set()
 
 
-def _cx():
+def _cx(sport=None):
+    """13 nov 2026 (Mathieu : « on va y aller avec le baseball ») : les ventes d'un autre sport vont dans leur propre base
+    (base_ventes_baseball.sqlite) : rien ne se mele aux analyses du hockey (valeurs, deals, SlabIQ, tendances)."""
     import comptes
-    ch = os.path.join(comptes.DONNEES, "base_ventes.sqlite")
+    ch = os.path.join(comptes.DONNEES, "base_ventes.sqlite" if sport in (None, "", "hockey") else f"base_ventes_{sport}.sqlite")
     deja = ch in _FAITES and os.path.exists(ch)
     c = sqlite3.connect(ch, timeout=30)
     if deja:                    # 4 nov 2026 (vitesse) : les tables une fois par processus
@@ -130,11 +132,28 @@ def ventes_par_joueur(jours=90):
     return out
 
 
-def noter(q, ventes):
-    """Appele par vendues.rechercher apres chaque vraie recherche : on garde toutes ses ventes."""
+def sport_des_ventes(q, ventes):
+    """13 nov 2026 (« bien separer les sports ») : le sport d'une recherche faite par l'app (valeur d'une carte, deals...) :
+    la majorite de ses 8 premiers titres (sports.sport_de). Une recherche de baseball va dans la base du baseball, jamais
+    dans celle du hockey."""
+    import collections
+    import sports
+    c = collections.Counter(sports.sport_de((v or {}).get("titre") or q) for v in list(ventes)[:8])
+    if not c:
+        return sports.sport_de(q)
+    sp, n = c.most_common(1)[0]
+    return sp if n * 2 > sum(c.values()) else sports.DEFAUT
+
+
+def noter(q, ventes, sport=None):
+    """Appele par vendues.rechercher apres chaque vraie recherche : on garde toutes ses ventes (sport : sa propre base)."""
     q = " ".join(str(q or "").lower().split())
     if not q or not ventes:
         return 0
+    if sport is None:
+        sport = sport_des_ventes(q, ventes)
+    import sports
+    sport = sports.base_sport(sport)
     maint = datetime.now().isoformat(timespec="seconds")
     lignes = []
     for v in ventes:
@@ -145,7 +164,7 @@ def noter(q, ventes):
                        1 if v.get("offre") else 0, maint))
     try:
         with _verrou:
-            c = _cx()
+            c = _cx(sport)
             try:
                 c.executemany("INSERT OR REPLACE INTO ventes VALUES (?,?,?,?,?,?,?,?,?)", lignes)
                 c.execute("UPDATE plan SET fait_le=?, nb=? WHERE q=?", (maint, len(lignes), q))
@@ -455,3 +474,18 @@ def cartes_toutes(jours=42, n_min=4, max_q=12000):
         except sqlite3.Error:
             pass
     return out
+
+
+def nombre(sport=None, jours=None):
+    """Combien de ventes dans la base d'un sport (toutes, ou des N derniers jours)."""
+    try:
+        c = _cx(sport)
+        try:
+            if jours:
+                d = (datetime.now() - timedelta(days=jours)).strftime("%Y-%m-%d")
+                return c.execute("SELECT COUNT(*) FROM ventes WHERE le >= ?", (d,)).fetchone()[0]
+            return c.execute("SELECT COUNT(*) FROM ventes").fetchone()[0]
+        finally:
+            c.close()
+    except sqlite3.Error:
+        return 0

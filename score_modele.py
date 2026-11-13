@@ -86,7 +86,9 @@ def brut(titre, joueur=None, base=None, indice=None, demande=None):
             # 11 nov 2026 (v2 : « tester de nouvelles entrees ») : publiques aussi (LNH) - equipe, pays, position, age, rythme
             'equipe': h.get('equipe'), 'pays': h.get('pays'), 'prov': h.get('province'), 'pos': h.get('pos'), 'naiss': h.get('naissance'),
             'ronde': h.get('ronde'), 'sa': h.get('saison') or {}, 'ps': h.get('par_saison') or [], 'tc': h.get('trophees_c') or {},
-            'crit': v.get('criteres') or {}, 'creux': v.get('creux')}
+            'crit': v.get('criteres') or {}, 'creux': v.get('creux'),
+            # 13 nov 2026 : l'equipe de chaque saison LNH (fidelite a une franchise, son bassin de partisans)
+            'eqs': h.get('equipes') or [], 'chandail': h.get('chandail')}
 
 
 _IDX = {"id": None, "i": {}}
@@ -174,6 +176,72 @@ def numeriques2(x, aujourdhui=None):
             f(tc.get("Stanley Cup")), f(tc.get("Hart Memorial Trophy")), f(tc.get("Calder Memorial Trophy")),
             f(cr.get("forme")), f(cr.get("ascension")), f(cr.get("buzz")), f(cr.get("notoriete")), f(cr.get("demande")),
             (-1.0 if cx.get("etat") == "creux" else 1.0) * (cx.get("potentiel") or 0) if cx else 0.0]
+
+
+# 13 nov 2026 (Mathieu : « les tres bons joueurs ayant joue une longue carriere dans la meme equipe sont souvent, voire
+# toujours, tres recherches, et c'est encore pire si le club a un gros bassin de partisans ») : la FIDELITE a une franchise.
+# Les franchises demenagees comptent ensemble (Nordiques = Avalanche, Whalers = Hurricanes, North Stars = Stars...). Le
+# bassin : MARCHES (Toronto, Montreal 3 ; Rangers, Chicago, Boston, Edmonton, Vancouver, Pittsburgh, Detroit, Philadelphie 2...).
+FRANCHISES = {
+    "Anaheim Ducks": "ANA", "Mighty Ducks of Anaheim": "ANA", "Arizona Coyotes": "UTA", "Phoenix Coyotes": "UTA", "Winnipeg Jets (1979)": "UTA",
+    "Utah Hockey Club": "UTA", "Utah Mammoth": "UTA", "Atlanta Flames": "CGY", "Calgary Flames": "CGY", "Atlanta Thrashers": "WPG",
+    "Winnipeg Jets": "WPG", "Boston Bruins": "BOS", "Buffalo Sabres": "BUF", "Carolina Hurricanes": "CAR", "Hartford Whalers": "CAR",
+    "Chicago Blackhawks": "CHI", "Chicago Black Hawks": "CHI", "Colorado Avalanche": "COL", "Quebec Nordiques": "COL",
+    "Colorado Rockies": "NJD", "Kansas City Scouts": "NJD", "New Jersey Devils": "NJD", "Columbus Blue Jackets": "CBJ",
+    "Dallas Stars": "DAL", "Minnesota North Stars": "DAL", "Detroit Red Wings": "DET", "Edmonton Oilers": "EDM",
+    "Florida Panthers": "FLA", "Los Angeles Kings": "LAK", "Minnesota Wild": "MIN", "Montréal Canadiens": "MTL", "Montreal Canadiens": "MTL",
+    "Nashville Predators": "NSH", "New York Islanders": "NYI", "New York Rangers": "NYR", "Ottawa Senators": "OTT",
+    "Philadelphia Flyers": "PHI", "Pittsburgh Penguins": "PIT", "San Jose Sharks": "SJS", "Seattle Kraken": "SEA",
+    "St. Louis Blues": "STL", "Tampa Bay Lightning": "TBL", "Toronto Maple Leafs": "TOR", "Vancouver Canucks": "VAN",
+    "Vegas Golden Knights": "VGK", "Washington Capitals": "WSH", "California Golden Seals": "CLE", "Oakland Seals": "CLE"}
+NOMS3 = ["fid_part", "fid_saisons", "fid_marche", "fid_fin", "fid_ind"]
+
+
+def fidelite(eqs):
+    """[[saison, equipe, matchs]] -> (franchise principale, part des matchs, saisons avec elle, a fini avec elle) ou None."""
+    gp, sais, der = {}, {}, None
+    for r in sorted(eqs or [], key=lambda r: r[0] or 0):
+        try:
+            s, e, g = r[0], r[1], int(r[2] or 0)
+        except (TypeError, ValueError, IndexError):
+            continue
+        f = FRANCHISES.get(e) or e
+        if not f or g <= 0:
+            continue
+        gp[f] = gp.get(f, 0) + g
+        sais.setdefault(f, set()).add(s)
+        der = f
+    tot = sum(gp.values())
+    if tot < 82:
+        return None
+    f = max(gp, key=gp.get)
+    return f, gp[f] / tot, len(sais[f]), der == f
+
+
+def numeriques3(x):
+    fi = fidelite(x.get("eqs"))
+    if not fi:
+        return [np.nan] * len(NOMS3)
+    f, part, n, fin = fi
+    mar = MARCHES.get(f, 0.5)
+    return [part, float(n), mar, 1.0 if fin else 0.0, part * min(1.0, n / 12.0) * (1.0 + mar)]
+
+
+# 13 nov 2026 : la carte numerotee au NUMERO DU CHANDAIL du joueur (la 87/99 de Crosby, une serie /77 de Dach) : une prime
+# connue du hobby. Le numero du chandail : celui de la LNH (le dernier porte).
+NOMS4 = ["ch_copie", "ch_tirage"]
+
+
+def numeriques4(x):
+    ch = x.get("chandail")
+    try:
+        ch = int(ch) if ch not in (None, "") else None
+    except (TypeError, ValueError):
+        ch = None
+    if not ch:
+        return [np.nan, np.nan]
+    s, n = x.get("serie"), x.get("num")
+    return [1.0 if (n and s and int(n) == ch) else 0.0, 1.0 if (s and int(s) == ch) else 0.0]
 
 
 # -- 2. le modele exporte (sans scikit-learn) --------------------------------------------------------------------------------
@@ -346,7 +414,24 @@ def _matrice(bruts, m):
 
 def texte_pred(bruts, m=None):
     m = m or charger()
-    return _matrice(bruts, m) @ m["z"]["ridge_w"].astype(np.float64) + float(m["z"]["ridge_b"])
+    return _matrice(bruts, m) @ _poids(m)[0] + float(m["z"]["ridge_b"])
+
+
+def _poids(m):
+    """13 nov 2026 (vitesse : 17 ms par carte, dont 80 % a recopier les poids) : les poids prets une fois par modele charge :
+    le ridge en float64 (petit) et la SVD transposee, contigue, en float32 (meme memoire : l'originale devient une vue)."""
+    p = m.get("_poids")
+    if p is None:
+        z = m["z"]
+        svd_t = np.ascontiguousarray(z["svd"].T, dtype=np.float32)
+        z["svd"] = svd_t.T
+        p = m["_poids"] = (np.asarray(z["ridge_w"], dtype=np.float64), svd_t)
+    return p
+
+
+def _texte_comp(M, m):
+    rw, svd_t = _poids(m)
+    return M @ rw + float(m["z"]["ridge_b"]), np.asarray(M.astype(np.float32) @ svd_t, dtype=np.float64)
 
 
 def predire(bruts, pres=None, m=None):
@@ -359,11 +444,14 @@ def predire(bruts, pres=None, m=None):
         # 11 nov 2026 : le modele reappris : texte + public + la memoire du marche (mise a jour chaque jour) + voisins
         import score_appris
         M = _matrice(bruts, m)
-        texte = M @ z["ridge_w"].astype(np.float64) + float(z["ridge_b"])
-        comp = M @ z["svd"].T.astype(np.float64)
+        texte, comp = _texte_comp(M, m)
         Xn = np.array([numeriques(x, pres) for x in bruts], dtype=float)
         if int(z.get("extra", 0)):
             Xn = np.column_stack([Xn, np.array([numeriques2(x) for x in bruts], dtype=float)])
+        if int(z.get("fid", 0)):                   # 13 nov 2026 : fidelite a une franchise
+            Xn = np.column_stack([Xn, np.array([numeriques3(x) for x in bruts], dtype=float)])
+        if int(z.get("chandail", 0)):              # 13 nov 2026 : numerotee au numero du chandail
+            Xn = np.column_stack([Xn, np.array([numeriques4(x) for x in bruts], dtype=float)])
         Xm = score_appris.caracteristiques(bruts, lambda t: vec_car(t, m), xv=bool(int(z.get("xv", 0))))
         parts = [texte, Xn, comp, Xm]
         if int(z.get("rar", 0)):
@@ -393,8 +481,7 @@ def predire(bruts, pres=None, m=None):
         for j, x in v.items():
             ri.append(r_); ci.append(j); va.append(x)
     M = sp.csr_matrix((va, (ri, ci)), shape=(len(lignes), z["ridge_w"].shape[0]))
-    texte = M @ z["ridge_w"].astype(np.float64) + float(z["ridge_b"])
-    comp = M @ z["svd"].T.astype(np.float64)
+    texte, comp = _texte_comp(M, m)
     Xn = np.array([numeriques(x, pres) for x in bruts], dtype=float)
     X = np.column_stack([texte, Xn, comp])
     return _arbres(z, X)

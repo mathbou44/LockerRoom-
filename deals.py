@@ -430,7 +430,7 @@ def photo_refusee(item_id, photo, titre, attendu=None):
     return not v.get("meme_carte", True)
 
 
-def maj_prix(item_id, total, port=None, mises=None, fin=None, achat_=None):
+def maj_prix(item_id, total, port=None, mises=None, fin=None, achat_=None, encan=None):
     """2 nov 2026 (Mathieu : « le prix doit updater dans les 2 affichages ») : la fiche d'une annonce lit eBay en direct ; ce
     prix remplace celui du deal garde (tuile et fiche disent la meme chose). Au-dessus de 70 % de la valeur -> il sort des
     deals. -> {"deal": x mis a jour | None, "retire": bool}"""
@@ -455,6 +455,8 @@ def maj_prix(item_id, total, port=None, mises=None, fin=None, achat_=None):
                 y["mises"] = mises
             if fin:
                 y["fin"] = fin
+            if encan is not None:                        # 13 nov 2026 (Weber The Cup : encan a 183 $ garde « Buy now 91 $ »)
+                y["encan"] = bool(encan)
             if achat_:
                 y.update(achat_)                         # 8 nov 2026 : lieu et frais d'importation lus par la fiche
             if y.get("valeur"):
@@ -825,6 +827,31 @@ def saison(an):
     return f"{a}-{(a + 1) % 100:02d}"
 
 
+_AN_RC = {}
+
+
+def annee_recrue(joueur):
+    """L'annee de debut (2024 pour 2024-25) de la saison recrue LNH d'un joueur (sa 1re saison avec des matchs), ou None."""
+    j = str(joueur or "").strip().lower()
+    if not j:
+        return None
+    if j in _AN_RC:
+        return _AN_RC[j]
+    r = None
+    try:
+        import demande_legale
+        J = (demande_legale.lire() or {}).get("joueurs") or {}
+        e = J.get(j.title()) or next((v for k, v in J.items() if k.lower() == j), None) or {}
+        s = sorted(int(x["s"]) for x in ((e.get("nhl") or {}).get("par_saison") or []) if x.get("l") == "NHL" and x.get("s") and (x.get("gp") or 0) > 0)
+        r = s[0] // 10000 if s else None
+    except Exception:
+        r = None
+    if len(_AN_RC) > 5000:
+        _AN_RC.clear()
+    _AN_RC[j] = r
+    return r
+
+
 def valeur_autre_saison(a, ventes, cib=None):
     """7 nov 2026 (Mathieu : la Ron Francis « 2024-25 UD Clear Cut Outburst Auto /25 », aucune vente ; seulement la 2023-24 :
     « mettre les annees a cote pour la meme carte, montrer les cartes similaires, mais dire a l'utilisateur qu'il n'y a pas
@@ -837,10 +864,17 @@ def valeur_autre_saison(a, ventes, cib=None):
     if not an or cib.get("rc") or cib.get("yg") or not _precieuse(cib):
         return None
     sans_an = dict(cib, annee=None)
+    # 13 nov 2026 (Mathieu : Celebrini Stature Orange 2025-26 estimee avec ses Stature 2024-25 : « l'annee rookie vs non
+    # rookie ; le prix change en maudit ») : une carte de son annee RECRUE ne sert jamais a estimer une autre annee (ni
+    # l'inverse). On l'ecarte si le titre le dit (RC, Rookie, Young Guns) ou si c'est sa saison recrue dans la LNH.
+    an_rc = annee_recrue(cib.get("joueur"))
     pv = []
     for v in memes_ventes(sans_an, ventes):
         av = cartes_match._decoder_memo(v.get("titre") or "")["annee"]
         if av and av != an and abs(int(av) - int(an)) <= SAISONS_ECART:
+            cv = cartes_match.cible_titre(v.get("titre") or "")
+            if cv.get("rc") or cv.get("yg") or (an_rc and int(av) == an_rc):
+                continue
             pv.append(dict(v, saison=saison(av)))
     titre = a.get("titre") or ""
     if not cartes_match.serie_speciale(titre):
@@ -958,6 +992,11 @@ def _valeur_approx(a, ventes, cib=None, notes=False):
     if not toks:
         return None
     s0 = cib.get("serie")
+    # 13 nov 2026 (Mathieu : « annee rookie vs non rookie ») : une carte de l'annee recrue n'est jamais « similaire » a une
+    # carte d'une autre annee (et l'inverse) : RC / Rookie / Young Guns dans le titre, ou la saison recrue LNH du joueur
+    an_rc = annee_recrue(cib.get("joueur"))
+    est_rc = lambda c, an: (int(an) == an_rc) if (an_rc and an) else bool(c.get("rc") or c.get("yg"))
+    rc0 = est_rc(cib, cib.get("annee"))
     out, vus = [], set()
     for v in ventes or []:
         t = v.get("titre") or ""
@@ -970,6 +1009,8 @@ def _valeur_approx(a, ventes, cib=None, notes=False):
             continue
         r = cartes_match.raisons_refus(cib, t)
         dv = cartes_match._decoder_memo(t)
+        if dv.get("annee") and cib.get("annee") and dv["annee"] != cib["annee"] and est_rc(cartes_match.cible_titre(t), dv["annee"]) != rc0:
+            continue                                      # une autre annee, et l'une des deux est l'annee recrue
         fg = 1.0
         if notes and any(x in _GRADES for x in r):
             p0, p1 = _part_note(cib.get("grade")), _part_note(dv.get("grade"))
@@ -1401,13 +1442,13 @@ def _prometteuse(a, t, pv, pa, maint, cib=None):
     import cartes_match
     if a.get("encan"):
         try:
-            if datetime.fromisoformat(str(a.get("fin")).replace("Z", "+00:00")) - maint > timedelta(hours=ENCAN_RARE_H if _rare(cib) else ENCAN_VERIF_H):
+            if datetime.fromisoformat(str(a.get("fin")).replace("Z", "+00:00")) - maint > timedelta(hours=ENCAN_RARE_H if (_rare(cib) or hit_fort(a.get("titre"))) else ENCAN_VERIF_H):
                 return False
         except ValueError:
             return False
     if len(pv) == 1 and t <= prix_max(pv[0]["prix"], taxe=taxe_de(a)):
         return True
-    if a.get("encan") and not pv and cib and _hit(cib) and t >= HIT_MIN:
+    if a.get("encan") and not pv and cib and _hit(cib) and (t >= HIT_MIN or hit_fort(a.get("titre"))):     # 13 nov : la mise de 1 $ d'un gros hit ne dit rien
         return True
     return len(pa) >= 3 and t <= (cartes_match.mediane_robuste(pa)[0] or 0) * 0.6
 
@@ -1424,10 +1465,80 @@ def vendeur_risque(a):
 JOURNAL_MAX = 200                # 29 oct 2026 : les dernieres verifications SoldComps (admin)
 
 
+# 13 nov 2026 (Mathieu : « une carte en encan 7 jours, scannee, pas un deal : a la 2e passe, j'espere que tu ne repasses pas
+# dessus ; le prix n'aura pas descendu. Juste passer les nouvelles ») : chaque annonce jugee est retenue (item, prix, valeur,
+# verdict). Un ENCAN juge trop cher ne coute plus jamais de credit (une mise ne fait que monter) ; un prix fixe, seulement si
+# son prix a baisse ; une carte sans ventes connues, pas avant 4 jours. Avant : la recherche etait gardee 3 jours, puis une
+# 2e recherche (un 2e credit) pour la meme carte, deja ecartee.
+JUGEES_SANS_VENTES_J = 4
+JUGEES_GARDE_J = 14
+_JUG = {"d": None}
+_JUG_VERROU = threading.Lock()
+
+
+def _jugees_chemin():
+    import comptes
+    return os.path.join(comptes.DONNEES, "deals_jugees.json")
+
+
+def jugees():
+    if _JUG["d"] is None:
+        try:
+            with open(_jugees_chemin(), encoding="utf-8") as f:
+                _JUG["d"] = json.load(f) or {}
+        except (OSError, ValueError):
+            _JUG["d"] = {}
+    return _JUG["d"]
+
+
+def noter_jugee(a, res, ratio):
+    iid = str(a.get("item_id") or "")
+    t = _total(a) or a.get("total")
+    if not iid or not res or not t:
+        return
+    maint = datetime.now(timezone.utc)
+    with _JUG_VERROU:
+        d = jugees()
+        d[iid] = {"le": maint.isoformat(timespec="seconds"), "res": res, "total": round(float(t), 2), "encan": bool(a.get("encan")),
+                  "valeur": round(float(t) / float(ratio), 2) if ratio else None, "fin": a.get("fin")}
+        lim = (maint - timedelta(days=JUGEES_GARDE_J)).isoformat()
+        for k in [k for k, v in d.items() if str(v.get("le") or "") < lim or (v.get("fin") and str(v["fin"]).replace("Z", "+00:00") < maint.isoformat())]:
+            d.pop(k, None)
+        try:
+            with open(_jugees_chemin() + ".tmp", "w", encoding="utf-8") as f:
+                json.dump(d, f, separators=(",", ":"))
+            os.replace(_jugees_chemin() + ".tmp", _jugees_chemin())
+        except OSError:
+            pass
+
+
+def deja_jugee(a, t=None, maint=None):
+    """True : cette annonce a deja ete jugee et rien n'a change qui pourrait en faire un deal (pas de credit)."""
+    j = jugees().get(str(a.get("item_id") or ""))
+    if not j:
+        return False
+    t = t if t is not None else (_total(a) or a.get("total") or 0)
+    if j.get("res") in ("trop_cher", "pres", "photo"):
+        if a.get("encan"):
+            return True                                   # la mise ne fait que monter
+        return t >= (j.get("total") or 0) - 0.5           # prix fixe : seulement si le prix a baisse
+    if j.get("res") == "sans_ventes":
+        maint = maint or datetime.now(timezone.utc)
+        try:
+            return maint - datetime.fromisoformat(j["le"]) < timedelta(days=JUGEES_SANS_VENTES_J)
+        except (KeyError, ValueError):
+            return False
+    return False
+
+
 def _noter_journal(st, a, r, cib, dv):
     """29 oct 2026 (Mathieu : « je suis pas capable de voir ce que tu as cherche avec mes credits ») : chaque
     verification SoldComps, sa carte, son prix et le resultat (deal, trop cher, pas assez de ventes)."""
     res, ratio = st.pop("_res", (None, None))
+    try:
+        noter_jugee(a, res or "sans_ventes", ratio)
+    except Exception as e:
+        print("Deals (jugees) : " + repr(e)[:200], flush=True)
     try:
         import credits
         credits.noter(cib, a.get("vendeur"), _total(a), res or "sans_ventes", ratio, cache=dv.get("cache", False), n_ventes=dv.get("n", 0),
@@ -1476,6 +1587,9 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
         return
     if r.get("suivi") and not sport_carte(a.get("titre"), cib):
         return                                                                  # 29 oct : vendeurs suivis : pas de soccer, tennis...
+    if not _sport_servi(a, r, cib):
+        st["autre_sport"] = st.get("autre_sport", 0) + 1                        # 13 nov : un sport que le chasseur ne sert pas
+        return
     st["annonces"] = st.get("annonces", 0) + 1
     if a.get("encan"):
         st["encans_fen"] = st.get("encans_fen", 0) + 1
@@ -1487,6 +1601,9 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
     nv_, verifiee = [], False
     # 12 nov 2026 (Mathieu : « limiter le gaspillage de credit [...] rien savoir des cartes en bas de 30 $ ») : une carte ne
     # coute un credit que si elle en vaut la peine (credits.note : profit attendu par credit de sa categorie, joueur, vendeur)
+    if not va and verif and deja_jugee(a, t, maint):
+        verif = None                                    # 13 nov 2026 : deja jugee, rien n'a change : pas un 2e credit
+        st["deja_jugees"] = st.get("deja_jugees", 0) + 1
     if not va and verif:
         try:
             import credits
@@ -1509,9 +1626,9 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
     # 28 oct 2026 (Mathieu : « les deals affichent toujours la meme cochonnerie » ; admin : 7 407 hits vus, 14 verifies) :
     # un hit avec 1 ou 2 ventes connues (pas assez pour une valeur sure) n'etait JAMAIS verifie ; maintenant oui
     peu_ventes = len(memes_ventes(cib, tout_v)) < 3
-    if not va and verif and a.get("encan") and t >= HIT_MIN and _precieuse(cib) and peu_ventes and not r.get("suivi"):
+    if not va and verif and a.get("encan") and (t >= HIT_MIN or hit_fort(a.get("titre"))) and _precieuse(cib) and peu_ventes and not r.get("suivi"):
         try:
-            if datetime.fromisoformat(str(fin).replace("Z", "+00:00")) - maint <= timedelta(hours=ENCAN_RARE_H if _rare(cib) else VERIF_TARD_H):
+            if datetime.fromisoformat(str(fin).replace("Z", "+00:00")) - maint <= timedelta(hours=ENCAN_RARE_H if (_rare(cib) or hit_fort(a.get("titre"))) else VERIF_TARD_H):
                 st.setdefault("_tard", []).append((a, r, cib))      # verifie a la fin du tour (budget restant)
         except ValueError:
             pass
@@ -1612,6 +1729,15 @@ _HORS_SPORTS = re.compile(r"\b(world cup|fifa|uefa|premier league|serie a|la lig
 _JOUEURS_HOCKEY = None
 
 
+def _sport_servi(a, r, cib=None):
+    """13 nov 2026 (Mathieu : « bien separer les sports ; tout melanger serait une catastrophe ») : le chasseur ne juge (et
+    ne depense un credit) que pour un sport qu'il sert (sports.MOTEURS["deals"]). Une carte de baseball chez Savage n'est
+    ni evaluee avec les regles du hockey, ni payee avec les credits du hockey."""
+    import sports
+    sp = sport_carte(a.get("titre"), cib) if r.get("suivi") else sports.sport_de(a.get("titre") or "", (cib or {}).get("joueur"))
+    return sports.sert("deals", sp or sports.DEFAUT)
+
+
 def _sport_titre(titre, sport):
     """7 nov 2026 (Mathieu : « Ace Bailey n'est pas un joueur de hockey ») : le sport de la recherche (le balayage des petits
     vendeurs cherche « Ice Hockey », mais des vendeurs classent mal leurs cartes) ; le titre gagne s'il dit nettement un
@@ -1667,6 +1793,9 @@ def _noter_suivi(st, a, bassin, maint):
     sport = sport_carte(a.get("titre"), cib)
     if not sport:
         return "pas_hockey"                                      # soccer, tennis, sans preuve : pas dans SlabCoach (hockey d'abord)
+    import sports
+    if not sports.sert("deals", sport):
+        return "autre_sport"                                     # 13 nov : une carte de baseball n'entre pas dans les deals du hockey
     f = a.get("fin")
     fd = None
     try:
@@ -1754,6 +1883,46 @@ def _rare(cib):
     return bool(se and (se == 1 or (se <= 25 and (cib.get("auto") or cib.get("patch")))))
 
 
+# 13 nov 2026 (Mathieu : les Lundell The Cup RPA /249 et Signature Materials /99 a 1 $, la Dach Honorable Numbers /77 : « on les
+# trouve dans le Radar Pro mais pas dans admin ! ») : un encan d'un GROS hit (auto-patch, ou auto / patch /99 et moins, ou une
+# carte mythique des annees 90 comme une Precious Metal Gems) d'un bon joueur (ou moyen) est admis et verifie jusqu'a 72 h de
+# la fin, chez n'importe quel vendeur, meme sans mise. Avant : 24 h et une mise. Chaque annonce n'est verifiee qu'une fois.
+ENCAN_HIT_H = 72
+_HIT_FORT = {}
+
+
+def hit_fort(titre):
+    t = str(titre or "")
+    if t in _HIT_FORT:
+        return _HIT_FORT[t]
+    ok = False
+    try:
+        import cartes_match
+        d = cartes_match._decoder_memo(t)
+        se = d.get("serie")
+        try:
+            se = int(se) if se else None
+        except (TypeError, ValueError):
+            se = None
+        gros = (d.get("auto") and d.get("patch")) or ((d.get("auto") or d.get("patch")) and se and se <= 99)
+        if not gros:
+            try:
+                import score_slab
+                k = score_slab._savoir(t)
+                gros = bool(k and k.get("niveau") in ("graal", "chasse"))
+            except Exception:
+                gros = False
+        if gros and not d.get("exclu"):
+            import credits
+            ok = credits.calibre(cartes_match.joueur_du_titre(t) or "") in ("bon", "moyen")
+    except Exception:
+        ok = False
+    if len(_HIT_FORT) > 20000:
+        _HIT_FORT.clear()
+    _HIT_FORT[t] = ok
+    return ok
+
+
 def rare_titre(titre):
     import cartes_match
     try:
@@ -1779,6 +1948,8 @@ def encan_admis(x, maint=None):
     if vendeur_long(x):
         return f - maint <= timedelta(hours=ENCAN_SUIVI_H)
     if f - maint <= timedelta(hours=ENCAN_RARE_H) and rare_titre(x.get("titre")):
+        return True
+    if f - maint <= timedelta(hours=ENCAN_HIT_H) and hit_fort(x.get("titre")):
         return True
     try:
         mises = int(x.get("mises") or 0)
@@ -2092,7 +2263,6 @@ def encans(n=PAR_TOUR_ENCANS, rechercher=None, bassin=None, vedettes=False):
     """26 oct 2026 (Mathieu : « aucune enchere se terminant ? ») : chaque heure, n recherches d'ENCANS (ceux qui finissent
     le plus tot, 48 h et moins) : toute la liste en 3 h. La valeur vient des ventes
     deja connues (le bassin) et, pour un encan prometteur qui finit dans 3 h, d'une recherche ciblee."""
-    import cartes_match
     import ebay_compte
     rechercher = rechercher or ebay_compte.rechercher
     bassin = bassin if bassin is not None else bassin_partage()
@@ -2154,7 +2324,9 @@ FLUX_HITS = [("ud black auto", "hockey"), ("spx auto patch", "hockey"), ("patch 
              ("signature moments auto", "hockey"), ("the cup legends", "hockey"), ("sp signature edition auto", "hockey"),
              ("leaf auto hockey", "hockey"), ("tag patch hockey", "hockey"), ("letter patch hockey", "hockey"),
              ("gretzky auto", "hockey"), ("lemieux auto", "hockey"), ("crosby auto", "hockey"), ("ovechkin auto", "hockey"),
-             ("patrick roy auto", "hockey"), ("mcdavid auto patch", "hockey")]
+             ("patrick roy auto", "hockey"), ("mcdavid auto patch", "hockey"),
+             # 13 nov 2026 : la Lundell Metal Universe Precious Metal Gems Red /100, vue dans le Radar Pro seulement
+             ("precious metal gems hockey", "hockey"), ("signature materials hockey", "hockey"), ("honorable numbers", "hockey")]
 HITS_PAR_TOUR = 16               # 28 oct (soir) : 16 par heure : tous les flux de hits en ~2 h
 
 
@@ -2618,6 +2790,10 @@ def flux(rechercher=None, bassin=None):
             if ench and (len(l) < 150 or not l or str(l[-1].get("fin") or "9") > limite_fin):
                 break                                   # derniere page, ou on depasse 48 h
     scanner(g_fin, len(g_debut) + len(g_milieu))        # 3. a la fin : Slab Sharks, Probstein, DC Sports
+    try:
+        _juger_candidats(st, deals, maint, bassin, verif, d)  # 13 nov 2026 : ce que les Radars Pro ont vu
+    except Exception as e:
+        print("Deals (candidats du Radar) : " + repr(e)[:200], flush=True)
     _verifier_tard(st, deals, maint, bassin, verif, d)
     try:
         import produits_appris
@@ -2627,6 +2803,80 @@ def flux(rechercher=None, bassin=None):
     bal = {"balayage_le": st.pop("_balayage_le")} if st.get("_balayage_le") else {}
     garde_ = _sauver(d, deals, maint, st, curseur_h=curseur_h, tour_n=tour_n + 1, **bal)
     return {"ok": True, "deals": len(garde_), "stats": st}
+
+
+# 13 nov 2026 (Mathieu : « juste etre sur qu'on ne les manquera pas », les Lundell et la Dach vues dans le Radar Pro, pas dans
+# admin) : les encans trouves par les Radars Pro (toutes les recherches des abonnes) sont gardes ici ; a chaque tour, le
+# chasseur les juge comme les siens (memes regles, memes credits, une seule verification par annonce)
+CANDIDATS_MAX = 3000
+_CAND_VERROU = threading.Lock()
+CHAMPS_CAND = ("item_id", "titre", "prix_cad", "port_cad", "encan", "fin", "mises", "vendeur", "vendeur_pct", "vendeur_score",
+               "url", "photo", "lieu", "cree")
+
+
+def _cand_chemin():
+    import comptes
+    return os.path.join(comptes.DONNEES, "candidats_radar.json")
+
+
+def candidats():
+    try:
+        with open(_cand_chemin(), encoding="utf-8") as f:
+            return json.load(f) or {}
+    except (OSError, ValueError):
+        return {}
+
+
+def proposer(annonces):
+    """Des annonces vues ailleurs (Radar Pro) -> la file du chasseur. Les encans seulement (les prix fixes : deja cherches)."""
+    maint = datetime.now(timezone.utc).isoformat()
+    neuves = {}
+    for a in annonces or []:
+        if not isinstance(a, dict) or not a.get("encan") or not a.get("item_id") or not a.get("fin"):
+            continue
+        if str(a.get("fin")).replace("Z", "+00:00") < maint:
+            continue
+        x = {k: a.get(k) for k in CHAMPS_CAND if a.get(k) is not None}
+        if x.get("prix_cad") is None:
+            if a.get("prix") is not None:
+                x["prix_cad"] = a.get("prix")
+            elif a.get("total") is not None:
+                x["prix_cad"], x["port_cad"] = a.get("total"), 0.0
+        if x.get("prix_cad") is None:
+            continue
+        neuves[str(a["item_id"])] = x
+    if not neuves:
+        return 0
+    with _CAND_VERROU:
+        d = {k: v for k, v in candidats().items() if str(v.get("fin") or "").replace("Z", "+00:00") >= maint}
+        d.update(neuves)
+        if len(d) > CANDIDATS_MAX:
+            d = dict(sorted(d.items(), key=lambda kv: str(kv[1].get("fin") or ""))[:CANDIDATS_MAX])
+        try:
+            with open(_cand_chemin() + ".tmp", "w", encoding="utf-8") as f:
+                json.dump(d, f, separators=(",", ":"))
+            os.replace(_cand_chemin() + ".tmp", _cand_chemin())
+        except OSError:
+            pass
+    return len(neuves)
+
+
+def _juger_candidats(st, deals, maint, bassin, verif, d=None):
+    """Les encans proposes par les Radars Pro, juges comme ceux du chasseur (encan_admis, credits, deja jugees)."""
+    import cartes_match
+    r = {"q": None, "flux": "radar_pro", "sport": None, "joueur": None}
+    n = 0
+    for a in sorted(candidats().values(), key=lambda x: str(x.get("fin") or "")):
+        if a.get("item_id") in st.get("_vus", set()) or not encan_admis(a, maint):
+            continue
+        if not cartes_match.est_carte(a.get("titre") or ""):
+            continue
+        _juger(dict(a), r, [], [], maint, deals, st, bassin=bassin, verif=verif)
+        n += 1
+    st["candidats_radar"] = n
+    if d is not None and n:
+        _publier(d, deals, maint, st)
+    return n
 
 
 FAUTES_PAR_TOUR = 4             # 5 nov 2026 : recherches de noms mal ecrits par tour (2 appels eBay chacune)
@@ -2926,34 +3176,6 @@ def recharger():
 VEDETTES_PAR_CHASSE = 40         # 29 oct 2026 : admin « Chasser veterans maintenant » : 40 recherches prix fixe + 40 encans
 
 
-def chasser_vedettes():
-    """29 oct 2026 (Mathieu : « depuis le debut de la journee je te demande des legendes et des veterans ») : un tour
-    seulement pour les veterans, les legendes et les jeunes de 2e a 4e annee, tout de suite (admin). Le budget du jour
-    (eBay et SoldComps) tient toujours."""
-    import appels_ebay
-    with _verrou:
-        if _ETAT["en_cours"] or not _prendre_tour():
-            return {"ok": True, "deja": True}
-        _ETAT["en_cours"] = True
-        _ETAT["essai_le"] = time.time()
-    appels_ebay.liberer(900)
-
-    def tache():
-        _ETAT.update(debut=time.time(), etape="vedettes", detail=None)
-        try:
-            b = bassin_partage()
-            for f in (chasser, encans):
-                try:
-                    f(VEDETTES_PAR_CHASSE, bassin=b, vedettes=True)
-                except Exception as e:
-                    print("Deals (vedettes) : " + repr(e), flush=True)
-        finally:
-            _ETAT.update(en_cours=False, etape=None, detail=None)
-            _rendre_tour()
-    threading.Thread(target=tache, daemon=True, name="deals-vedettes").start()
-    return {"ok": True, "lance": True}
-
-
 def tour(d=None):
     """Ou en est le chasseur : en cours (etape i/4, progression, depuis, fin estimee) ou le prochain tour."""
     d = d or lire_vite()
@@ -3006,7 +3228,6 @@ def etat():
     v = d.get("verif") or {}
     jour = _jour_mtl()[0]
     g = diagnostic(d)
-    import cartes_match
     rep = {"young_guns": 0, "recrues": 0, "hits": 0, "veterans": 0}
     for x in d.get("deals") or []:
         if not (valide(x) and encore_ouvert(x)):
@@ -3179,7 +3400,7 @@ def valoriser_suivis(rechercher=None, n_max=None):
                  for x in a_faire}
     except Exception:
         notes = {}
-    a_faire = [x for x in a_faire if notes.get(str(x.get("item_id")), 1) > 0]
+    a_faire = [x for x in a_faire if notes.get(str(x.get("item_id")), 1) > 0 and not deja_jugee(x)]
     a_faire.sort(key=lambda x: (rang_ordre(x.get("vendeur")), -notes.get(str(x.get("item_id")), 0), str(x.get("fin") or "")))
     jour, heure = _jour_mtl()
     trouves, faites, n, hist_c = {}, set(), 0, []
@@ -3204,8 +3425,10 @@ def valoriser_suivis(rechercher=None, n_max=None):
                 import credits
                 va_ = valeur_ou_saison(x, v, [], cib=cib)
                 t_ = _total(x) or x.get("total")
-                credits.noter(cib, x.get("vendeur"), t_, "sans_ventes" if not va_ else ("deal" if t_ and t_ <= prix_max(va_[0], taxe=taxe_de(x)) else "trop_cher"),
-                              round(t_ / va_[0], 3) if va_ and t_ and va_[0] else None, cache=bool(r.get("cache")), n_ventes=len(v), encan=True)
+                res_ = "sans_ventes" if not va_ else ("deal" if t_ and t_ <= prix_max(va_[0], taxe=taxe_de(x)) else "trop_cher")
+                ratio_ = round(t_ / va_[0], 3) if va_ and t_ and va_[0] else None
+                credits.noter(cib, x.get("vendeur"), t_, res_, ratio_, cache=bool(r.get("cache")), n_ventes=len(v), encan=True)
+                noter_jugee(x, res_, ratio_)
             except Exception as e:
                 print("Credits (suivis) : " + repr(e)[:200], flush=True)
         for y in a_faire:                                    # une recherche sert a toutes les annonces de la meme carte

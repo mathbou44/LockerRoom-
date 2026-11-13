@@ -207,6 +207,22 @@ def ajouter(api, x):
     iid = str(x.get("item_id") or "").strip()
     if not iid or len(iid) > 20:
         return {"ok": False, "erreur": "Annonce inconnue"}
+    # 13 nov 2026 (Mathieu : une Weber The Cup RPA de Remi en ENCAN montree « Buy now » dans la watchlist) : une etoile qui
+    # arrive sans savoir si c'est un encan (fiche ouverte d'ailleurs) -> l'annonce relue sur eBay (encan, fin, prix, port,
+    # vendeur) ; avant : elle devenait un prix fixe, sans fin, sans alerte de fin d'encan
+    if x.get("encan") is None or not x.get("fin") and x.get("encan"):
+        try:
+            import ebay_compte
+            a = ebay_compte.article(iid, fond=False)
+            if a:
+                x = dict(x, encan=bool(a.get("encan")), fin=x.get("fin") or a.get("fin"), vendeur=x.get("vendeur") or a.get("vendeur"),
+                         titre=x.get("titre") or a.get("titre"), photo=x.get("photo") or a.get("photo"), url=x.get("url") or a.get("url"))
+                if a.get("prix_cad") and x.get("total") is None:
+                    x["total"] = round(a["prix_cad"] + (a.get("port_cad") or 0), 2)
+                if x.get("port") is None and a.get("port_cad") is not None:
+                    x["port"] = a["port_cad"]
+        except Exception as e:
+            print("Watchlist (relecture a l'ajout) : " + repr(e)[:160], flush=True)
     valeur, port = _f(x.get("valeur")), _f(x.get("port"))
     vendeur = str(x.get("vendeur") or "")[:80] or None
     taxe = _tx(x.get("taxe_achat"))
@@ -406,6 +422,31 @@ def _du_chasseur(lst):
             x.update(total=y.get("total", x.get("total")), fin=y.get("fin") or x.get("fin"), maj_le=y.get("vu_le"))
             if y.get("port") is not None:
                 x["port"] = y["port"]
+            if y.get("encan") is not None:                # 13 nov 2026 : le type suit aussi (encan / prix fixe)
+                x["encan"] = 1 if y.get("encan") else 0
+
+
+def rafraichir(api, item_id, a, maint=None):
+    """13 nov 2026 (Mathieu : « le prix dans la fiche est bon et a jour ; celui de la vue rapide ne l'est pas » : la Weber
+    The Cup, encan a 183 $ dans la fiche, « Buy now 91 $ » dans la watchlist) : quand l'app vient de LIRE une annonce sur
+    eBay (la fiche ouverte), la ligne de la watchlist prend ce prix, ce port, cette fin et ce type (encan ou prix fixe).
+    -> True si une ligne a change."""
+    if not a or not a.get("prix_cad"):
+        return False
+    maint = maint or _maint()
+    tot = round(float(a["prix_cad"]) + float(a.get("port_cad") or 0), 2)
+    c = _cx(api)
+    try:
+        r = c.execute("SELECT total, encan, fin FROM watchlist WHERE item_id=?", (str(item_id),)).fetchone()
+        if not r:
+            return False
+        enc = (1 if a.get("encan") else 0) if a.get("encan") is not None else r[1]
+        c.execute("UPDATE watchlist SET total=?, port=?, fin=?, encan=?, maj_le=? WHERE item_id=?",
+                  (tot, a.get("port_cad"), a.get("fin") or r[2], enc, maint.isoformat(timespec="seconds"), str(item_id)))
+        c.commit()
+        return (r[0], r[1]) != (tot, enc)
+    finally:
+        c.close()
 
 
 def purger(api, maint=None):
@@ -636,6 +677,8 @@ def verifier(api, proches=False, lire_article=None, maint=None):
                 if a and a.get("prix_cad"):
                     x.update(total=round(a["prix_cad"] + (a.get("port_cad") or 0), 2), port=a.get("port_cad"),
                              fin=a.get("fin") or x.get("fin"), maj_le=maint.isoformat(timespec="seconds"))
+                    if a.get("encan") is not None:
+                        x["encan"] = 1 if a.get("encan") else 0       # 13 nov 2026 : un encan garde par erreur en prix fixe se corrige
                     f = _dt(x.get("fin"))
                     reste = (f - maint) if f else None
             except RuntimeError as e:
@@ -674,9 +717,9 @@ def verifier(api, proches=False, lire_article=None, maint=None):
     c = _cx(api)
     try:
         for x in lst:
-            c.execute("UPDATE watchlist SET total=?, port=?, fin=?, maj_le=?, statut=?, notif_fin=?, notif_seuil=? WHERE item_id=?",
+            c.execute("UPDATE watchlist SET total=?, port=?, fin=?, maj_le=?, statut=?, notif_fin=?, notif_seuil=?, encan=? WHERE item_id=?",
                       (x.get("total"), x.get("port"), x.get("fin"), x.get("maj_le"), x.get("statut") or "ok", x.get("notif_fin") or 0,
-                       x.get("notif_seuil") or 0, x["item_id"]))
+                       x.get("notif_seuil") or 0, 1 if x.get("encan") else 0, x["item_id"]))
         c.commit()
     finally:
         c.close()

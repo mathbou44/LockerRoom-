@@ -206,13 +206,13 @@ def _nhl(nom):
             # 10 nov 2026 (labo, 0,71 -> 0,735) : chaque saison (LNH et junior), la ronde et l'annee du repechage, chaque trophee
             "par_saison": [{"s": x.get("season"), "l": x.get("leagueAbbrev"), "gp": x.get("gamesPlayed"), "p": x.get("points"),
                             "toi": x.get("avgToi")} for x in L.get("seasonTotals") or [] if x.get("gameTypeId") == 2 and (x.get("gamesPlayed") or 0) > 0],
+            "chandail": L.get("sweaterNumber"),          # 13 nov 2026 : numerotee au numero du chandail (numeriques4)
+            # 13 nov 2026 : l'equipe de chaque saison LNH (fidelite a une franchise : score_modele.numeriques3)
+            "equipes": [[x.get("season"), (x.get("teamName") or {}).get("default"), x.get("gamesPlayed") or 0] for x in L.get("seasonTotals") or []
+                        if x.get("leagueAbbrev") == "NHL" and x.get("gameTypeId") == 2],
             "ronde": (L.get("draftDetails") or {}).get("round"), "an_repech": (L.get("draftDetails") or {}).get("year"),
             "trophees_c": {str((a.get("trophy") or {}).get("default") or ""): len(a.get("seasons") or []) for a in L.get("awards") or []},
             "l5": sum(int(m.get("points") or 0) for m in L.get("last5Games") or [] if isinstance(m, dict))}
-
-
-def lire_joueur(nom):
-    return {"nom": nom, "le": time.time(), "nhl": _nhl(nom), "wiki": _wiki(nom)}
 
 
 # -- les pieces (features) ---------------------------------------------------------------------------------------

@@ -12,7 +12,6 @@ Mathieu : « tous » (les 7 idees proposees) :
 Rien n'est achete ni vendu automatiquement : une alerte previent, l'utilisateur decide.
 """
 import json
-import os
 import re
 import statistics
 from datetime import datetime, timedelta

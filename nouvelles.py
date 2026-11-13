@@ -21,7 +21,6 @@ import threading
 import time
 import unicodedata
 import urllib.parse
-import urllib.request
 import xml.etree.ElementTree as ET
 try:                                         # 9 nov 2026 (Aikido) : XML lu avec defusedxml (pas d'entites ni de bombes XML)
     from defusedxml.ElementTree import fromstring as _xml_sur
@@ -40,11 +39,6 @@ _ESPN = {"hockey": "nhl", "football": "nfl", "basketball": "nba", "baseball": "m
 _LIGUE_FR = {"hockey": "LNH", "football": "NFL", "basketball": "NBA", "baseball": "MLB"}
 _LIGUE_EN = {"hockey": "NHL", "football": "NFL", "basketball": "NBA", "baseball": "MLB"}
 _HOBBY = {"hockey": "hockey cards", "football": "football cards", "basketball": "basketball cards", "baseball": "baseball cards"}
-
-
-def _gn(q, fr=False):
-    hl, ceid = ("fr-CA", "CA:fr") if fr else ("en-CA", "CA:en")
-    return f"https://news.google.com/rss/search?q={urllib.parse.quote(q)}&hl={hl}&gl=CA&ceid={ceid}"
 
 
 # 27 oct 2026 - revue legale (Mathieu : « assure-toi que tout est legal ») : Google News (flux RSS pour usage personnel

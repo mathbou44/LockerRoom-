@@ -364,7 +364,7 @@ def _secours(q, fond, usage=None):
         try:
             import historique
             if historique.actif():
-                ventes, err = historique.rechercher(q)
+                ventes, err = historique.rechercher(q, sport=_sport_q(q))
                 if not err and ventes:
                     depuis = (datetime.now() - timedelta(days=90)).strftime("%Y-%m-%d")      # comme SoldComps : 90 jours
                     v90 = [v for v in ventes if str(v.get("le") or "") >= depuis] or ventes
@@ -550,7 +550,9 @@ def _par_compsniper(q, fond, usage, cpt):
                 _DERNIER[0] = time.time()
         _compter(usage, cpt)
         _cle_plus("cs")
-        ventes, err = historique.rechercher(q, chasseur=fond, principal=True, cache_s=CACHE_S, delai=25 if fond else DELAI_TAP)
+        # 13 nov 2026 (« bien separer les sports ») : une recherche d'un autre sport (baseball) se paie sur SA part (15 %)
+        ventes, err = historique.rechercher(q, chasseur=fond, principal=True, cache_s=CACHE_S, delai=25 if fond else DELAI_TAP,
+                                            sport=_sport_q(q))
         if err:
             try:
                 _rembourser(usage, cpt)        # un echec n'est pas facture
@@ -1100,3 +1102,11 @@ def statut():
     except Exception:
         pass
     return d
+
+
+def _sport_q(q):
+    try:
+        import sports
+        return sports.sport_de(q)
+    except Exception:
+        return None

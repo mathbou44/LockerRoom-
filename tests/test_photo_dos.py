@@ -22,4 +22,7 @@ r3 = api.carte_photo_changer(cid, ph((0, 0, 200)), 1)            # remplace le d
 assert len(r3["photos"]) == 2 and r3["photos"][0] == r["photos"][0] and r3["photos"][1] != r2["photos"][1], r3
 r4 = api.carte_photo_changer(cid, ph((9, 9, 9)))                 # remplace le devant
 assert r4["photos"][1] == r3["photos"][1] and r4["photos"][0] != r3["photos"][0]
+r5 = api.carte_photos_inverser(cid)                                # 13 nov : inverser devant et dos
+assert r5["ok"] and r5["photos"] == [r4["photos"][1], r4["photos"][0]] and api.carte_lire(cid)["photo"] == r4["photos"][1], r5
+assert not api.carte_photos_inverser(api.carte_sauver({"titre": "Une seule", "statut": "En stock"})["id"])["ok"]
 print("OK photo devant / dos")

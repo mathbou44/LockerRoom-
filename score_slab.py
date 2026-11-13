@@ -102,10 +102,26 @@ def carte(titre, avec_type=True):
             "exclu": bool(d.get("exclu")), "score": round(min(100.0, s), 1)}
 
 
+def sport_autre(titre):
+    """Le sport d'une carte quand SlabIQ ne le sert pas (sports.MOTEURS["score"]), sinon None."""
+    try:
+        import sports
+        sp = sports.sport_de(titre or "")
+        return None if sports.sert("score", sp) else sp
+    except Exception:
+        return None
+
+
 def score(titre, joueur=None):
     """{score 0-100, joueur, indice, pastilles (du joueur), carte {...}}. Le score : joueur 55 % + carte 45 %."""
     import cartes_match
     c = carte(titre)
+    sp = sport_autre(titre)
+    if sp:
+        # 13 nov 2026 (« on va y aller avec le baseball ») : le modele SlabIQ a appris le HOCKEY ; une carte d'un autre sport
+        # n'a pas de score invente. Le baseball aura le sien quand sa base de ventes sera assez grande (mlb, base_ventes)
+        return {"score": None, "joueur": joueur or None, "indice": None, "pastilles": [], "semaine": None, "carte": c, "sport": sp,
+                "bientot": sp == "baseball"}
     j = (joueur or cartes_match.joueur_du_titre(titre or "") or "").strip()
     ij = None
     if j:

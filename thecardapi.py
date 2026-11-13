@@ -95,6 +95,15 @@ def _compter(n, usage):
 # 11 nov 2026 (Mathieu : « on enregistre le MAXIMUM de ventes utiles dans notre banque a nous ? ») : la moisson prend
 # jusqu'a 93 % du jour (avant 80 %, le reste se perdait chaque jour) ; ~300 lignes restent pour les secours
 PARTS = {"tap": 1.0, "raffiner": 0.4, "secours": 0.25, "moisson": 0.93}
+
+
+def part_baseball():
+    """13 nov 2026 (Mathieu : « on va y aller avec le baseball ») : la part de la moisson du jour qui va au baseball (20 %
+    par defaut, LR_MOISSON_BASEBALL en %). Elle nourrit la base du baseball (et plus tard son SlabIQ) ; le hockey garde le reste."""
+    try:
+        return min(0.6, max(0.0, float(os.environ.get("LR_MOISSON_BASEBALL") or 20) / 100))
+    except ValueError:
+        return 0.2
 _DERNIER = {"curseur": None, "cles": None}
 
 
@@ -105,6 +114,11 @@ def _budget_ok(usage, limite):
         return False
     if usage == "tap":
         return True
+    mb = pl * PARTS["moisson"] * part_baseball()
+    if usage == "moisson_baseball":
+        return utilisees(usage) + limite <= mb
+    if usage == "moisson":                       # le hockey : la moisson moins ce que le baseball a deja pris
+        return utilisees("moisson") + utilisees("moisson_baseball") + limite <= pl * PARTS["moisson"]
     return utilisees(usage) + limite <= pl * PARTS.get(usage, 0.3)
 
 
@@ -224,9 +238,60 @@ def _panne(err):
 MOTS_MOISSON = ("hockey auto", "hockey patch", "hockey psa", "hockey numbered", "young guns", "hockey")
 
 
-def moissonner(max_pages=None):
-    """Les ventes de hockey des derniers jours (le forfait gratuit voit 3 jours) -> base_ventes. -> nombre gardees."""
+# 13 nov 2026 : le baseball (sa propre base). Les cartes qui comptent d'abord : Bowman (les 1st Bowman des prospects),
+# Topps Chrome, autos, gradees ; puis « baseball » prend le reste de sa part
+MOTS_MOISSON_BASEBALL = ("1st bowman", "bowman chrome auto", "bowman draft", "topps chrome auto", "baseball auto", "baseball psa",
+                         "baseball numbered", "baseball rookie", "baseball")
+
+
+def garder_baseball(titre):
+    """Une vente moissonnee pour le baseball : on la garde sauf si le titre dit clairement un autre sport (Topps Chrome F1,
+    Bowman football, Topps soccer...)."""
+    import sports
+    if _PAS_BASEBALL.search(titre or ""):
+        return False
+    return sports.detecter(titre or "", defaut="baseball") == "baseball"
+
+
+_PAS_BASEBALL = re.compile(r"\b(uefa|soccer|fifa|premier league|champions league|la liga|bundesliga|serie a|mls|merlin|ucc|wwe|aew|ufc|"
+                           r"pokemon|pok[eé]mon|nascar|indycar|golf|pga|tennis|wnba|star wars|marvel|disney|garbage pail)\b", re.I)
+
+
+def moissonner_baseball(max_pages=None):
+    """La part du baseball (part_baseball) -> base_ventes_baseball. -> nombre gardees."""
     import base_ventes
+    n, pages = 0, max_pages or int(os.environ.get("LR_THECARDAPI_PAGES") or 40)
+    for mot in MOTS_MOISSON_BASEBALL:
+        if not _budget_ok("moisson_baseball", 100):
+            break
+        vus, cur = set(), None
+        for page in range(1, (pages if mot == MOTS_MOISSON_BASEBALL[-1] else min(pages, 6)) + 1):
+            if not _budget_ok("moisson_baseball", 100):
+                break
+            ventes, err = rechercher(mot, jours=2, limite=100, usage="moisson_baseball", delai=20, page=None if cur else page, curseur=cur)
+            if err or not ventes:
+                break
+            neuves = [v for v in ventes if v.get("url") not in vus]
+            if not neuves:
+                break
+            vus.update(v.get("url") for v in neuves)
+            n += base_ventes.noter("moisson " + mot, [v for v in neuves if garder_baseball(v.get("titre"))], sport="baseball")
+            cur = _DERNIER.get("curseur")
+            if page > 1 and not cur and len(ventes) < 100:
+                break
+    _ETAT["derniere_baseball"] = {"le": time.time(), "gardees": n}
+    return n
+
+
+def moissonner(max_pages=None):
+    """Les ventes de hockey des derniers jours (le forfait gratuit voit 3 jours) -> base_ventes. -> nombre gardees.
+    13 nov 2026 : la part du baseball passe d'abord (elle a son plafond a elle), le hockey prend tout le reste."""
+    import base_ventes
+    try:
+        if part_baseball() > 0:
+            print("TheCardAPI moisson baseball :", moissonner_baseball(max_pages), "ventes gardees", flush=True)
+    except Exception as e:
+        print("TheCardAPI moisson baseball : " + repr(e), flush=True)
     n, pages = 0, max_pages or int(os.environ.get("LR_THECARDAPI_PAGES") or 40)
     for mot in MOTS_MOISSON:
         if not _budget_ok("moisson", 100):
@@ -273,5 +338,6 @@ def moissonner_si_besoin():
 
 def statut():
     return {"actif": actif(), "aujourdhui": utilisees(), "plafond": plafond_jour(),
-            "par_usage": {u: utilisees(u) for u in PARTS}, "pause": time.time() < _PANNE[0],
-            "derniere_moisson": _ETAT["derniere"], "derniere_erreur": _ETAT["erreur"], "reponse_champs": _DERNIER["cles"]}
+            "par_usage": {u: utilisees(u) for u in list(PARTS) + ["moisson_baseball"]}, "pause": time.time() < _PANNE[0],
+            "derniere_moisson": _ETAT["derniere"], "derniere_moisson_baseball": _ETAT.get("derniere_baseball"),
+            "part_baseball": part_baseball(), "derniere_erreur": _ETAT["erreur"], "reponse_champs": _DERNIER["cles"]}

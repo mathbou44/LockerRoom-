@@ -33,3 +33,25 @@ a.watch_mise_max("111", None, None, None, True)
 x = {x["item_id"]: x for x in watchlist.preparer(a, lire)["cartes"]}["111"]
 assert not x["mise_perso"] and x["mise_max"] == float(int(watchlist.mise_auto(watchlist.reglages(a), 300, 0) / 1.37 + 1e-6)), x
 print("MISE GARDEE OK")
+# 13 nov 2026 : une etoile sans « encan » (fiche ouverte d'ailleurs) : l'annonce est relue ; un encan reste un encan
+ebay_compte.article = lambda i, fond=True, frais=False: {"encan": True, "fin": iso(700), "prix_cad": 91.0, "port_cad": 15.0, "vendeur": "remi-card-trader", "titre": "Weber The Cup RPA /249"}
+a.watch_ajouter({"item_id": "333", "titre": "2006-07 The Cup Shea Weber RPA /249", "valeur": 154, "encan": None})
+w = {x["item_id"]: x for x in a.watch_liste()["cartes"]}["333"]
+assert w["encan"] and w["fin"] and w["vendeur"] == "remi-card-trader", w
+# un encan garde par erreur en prix fixe se corrige a la relecture
+import sqlite3
+c = a._db(); c.execute("UPDATE watchlist SET encan=0, maj_le='2000-01-01' WHERE item_id='333'"); c.commit(); c.close()
+watchlist.verifier(a, proches=False, lire_article=lambda i: ebay_compte.article(i))
+assert {x["item_id"]: x for x in a.watch_liste()["cartes"]}["333"]["encan"]
+print("ENCAN OK")
+
+# 13 nov 2026 (Weber The Cup : encan a 183 $ dans la fiche, « Buy now 91 $ » dans la watchlist) : la fiche ouverte met la
+# ligne de la watchlist a jour (prix, port, fin, encan)
+import watchlist as _w
+_c = _w._cx(a)
+_c.execute("INSERT OR REPLACE INTO watchlist (item_id, titre, total, encan) VALUES ('777', 'Weber The Cup RPA', 91, 0)"); _c.commit(); _c.close()
+assert _w.rafraichir(a, "777", {"prix_cad": 183, "port_cad": 15, "encan": True, "fin": "2026-11-14T03:00:00Z"})
+_c = _w._cx(a); _r = _c.execute("SELECT total, encan, fin FROM watchlist WHERE item_id='777'").fetchone(); _c.close()
+assert tuple(_r) == (198, 1, "2026-11-14T03:00:00Z"), _r
+assert not _w.rafraichir(a, "absent", {"prix_cad": 5})
+print("OK watchlist suit la fiche")

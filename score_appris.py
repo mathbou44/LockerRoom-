@@ -39,6 +39,8 @@ import numpy as np
 
 HL = (7.0, 30.0, 1000.0)
 EXTRA = os.environ.get("LR_SCORE_EXTRA", "1") != "0"
+FID = os.environ.get("LR_SCORE_FID", "0") == "1"     # 13 nov 2026 : fidelite a une franchise (score_modele.numeriques3)
+CHANDAIL = os.environ.get("LR_SCORE_CHANDAIL", "0") == "1"   # 13 nov 2026 : numerotee au numero du chandail (numeriques4)
 K_VOIS = 10
 VOIS_MAX = 400                       # ventes gardees par joueur pour les voisins
 COUPE_JOURS = 10                     # le reapprentissage se mesure sur ses 10 derniers jours (jamais vus)
@@ -331,6 +333,10 @@ def entrainer(bruts, y, jours, coupe=None, iters=1000, log=print):
     Xn = np.array([sm.numeriques(b, pres) for b in bruts], dtype=float)
     if EXTRA:                                                # 11 nov 2026 : equipe, pays, position, age, rythme, criteres de l'Indice
         Xn = np.column_stack([Xn, np.array([sm.numeriques2(b) for b in bruts], dtype=float)])
+    if FID:
+        Xn = np.column_stack([Xn, np.array([sm.numeriques3(b) for b in bruts], dtype=float)])
+    if CHANDAIL:
+        Xn = np.column_stack([Xn, np.array([sm.numeriques4(b) for b in bruts], dtype=float)])
     import rarete_cat
     Rr = np.array([rarete_cat.rarete(b) for b in bruts], dtype=float)
     X = np.column_stack([oof, Xn, Xs, R, V, XV, Rr])
@@ -361,12 +367,21 @@ def entrainer(bruts, y, jours, coupe=None, iters=1000, log=print):
         del X
     gc.collect()
     log(f"matrice ok ({_mo()} Mo)")
+    if os.environ.get("LR_SCORE_DUMP") and moteur.startswith("lgb"):   # banc : la matrice gardee pour essayer d'autres reglages
+        d_ = os.environ["LR_SCORE_DUMP"]
+        sp.save_npz(d_ + "_M.npz", M)
+        np.save(d_ + "_y.npy", y); np.save(d_ + "_tr.npy", tr); np.save(d_ + "_te.npy", te)
+        log("matrice gardee")
     if moteur.startswith("lgb"):
         import lightgbm as lgb
         leger = moteur == "lgb_leger"
         gb = lgb.LGBMRegressor(n_estimators=int(iters * (2.0 if leger else 2.5)), learning_rate=0.04 if leger else 0.03,
                                num_leaves=127 if leger else 255, max_bin=63 if leger else 255, min_child_samples=20, subsample=0.8,
-                               subsample_freq=1, colsample_bytree=0.5, reg_lambda=1.0, random_state=0, verbose=-1, force_col_wise=True,
+                               subsample_freq=1, colsample_bytree=0.3, reg_lambda=1.0, random_state=0, verbose=-1, force_col_wise=True,
+                               # 13 nov 2026 (banc, 145 000 ventes, test sur les ventes apres le 8 oct) : une erreur « robuste »
+                               # (huber : les ventes aberrantes pesent moins) et 30 % des colonnes par arbre au lieu de 50 % :
+                               # precision 0,9307 -> 0,9328, confiance 0,9279 -> 0,9298 ; et l'apprentissage est plus court
+                               objective="huber", alpha=0.6,
                                n_jobs=int(os.environ.get("LR_SCORE_FILS", "2"))).fit(M[tr], y[tr])
         arbres = exporter_lgb(gb.booster_)
         pred = gb.predict
@@ -389,7 +404,7 @@ def entrainer(bruts, y, jours, coupe=None, iters=1000, log=print):
     pred_tr = pred(M[tr])
     modele = dict(idf_mots=vw.idf_.astype(np.float32), idf_car=vc.idf_.astype(np.float32), ridge_w=rid.coef_.astype(np.float32),
                   ridge_b=np.float64(rid.intercept_), svd=svd.components_.astype(np.float32), **arbres,
-                  quantiles=np.quantile(pred_tr, np.linspace(0, 1, 1001)), version=np.int32(3), extra=np.int32(1 if EXTRA else 0),
+                  quantiles=np.quantile(pred_tr, np.linspace(0, 1, 1001)), version=np.int32(3), extra=np.int32(1 if EXTRA else 0), fid=np.int32(1 if FID else 0), chandail=np.int32(1 if CHANDAIL else 0),
                   xv=np.int32(1), rar=np.int32(1), ntok=np.int32(len(cvt.vocabulary_)))
     vocab = {"mots": {k: int(v) for k, v in vw.vocabulary_.items()}, "car": {k: int(v) for k, v in vc.vocabulary_.items()},
              "tok": {k: int(v) for k, v in cvt.vocabulary_.items()}}

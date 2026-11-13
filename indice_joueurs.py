@@ -15,7 +15,7 @@ Les criteres (chacun en rang 0-100 parmi les joueurs du meme sport, recalcules c
   buzz       : visites Wikipedia des 20 derniers jours contre la moyenne d'avant (un evenement : intronisation, record…)
   notoriete  : visites Wikipedia des 60 jours (le niveau)
   demande    : le score de demande legal (modele foret, valide sur nos ventes en admin)
-  recrue     : 1re ou 2e saison (les cartes de recrue sont les plus suivies)
+  recrue     : recrue LNH cette saison (regle du Calder ; les cartes de recrue sont les plus suivies)
   legende    : Temple, top 100, trophees (ponderes), carriere ; plancher pour les legendes, actives ou non
 Indice = melange pondere ; un joueur retire est note sur sa legende, son buzz et sa notoriete seulement.
 Pastilles : « En creux » / « Sort de son creux » (11 nov : jeune talent sous ses standards), « En feu » (forme >= 95), « En hausse » (ascension >= 85), « Buzz » (buzz >= 90), « Legende », « Recrue ».
@@ -30,7 +30,7 @@ import re
 import threading
 import time
 import unicodedata
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 
 POIDS_ACTIF = {"forme": 0.38, "ascension": 0.11, "rythme": 0.09, "buzz": 0.09, "notoriete": 0.05, "demande": 0.11,
                "recrue": 0.05, "legende": 0.05, "actu": 0.07, "communaute": 0.05,
@@ -244,6 +244,40 @@ def _legende_brute(h):
     return (6 if h.get("hhof") else 0) + (4 if h.get("top100") else 0) + math.log1p(t) * 2 + math.log1p(car / 100)
 
 
+def saison_lnh(aujourdhui=None):
+    """La saison LNH en cours, au format de la LNH (20262027) : elle commence en septembre."""
+    d = aujourdhui or date.today()
+    y = d.year if d.month >= 9 else d.year - 1
+    return y * 10000 + y + 1
+
+
+def recrue_lnh(h, aujourdhui=None):
+    """13 nov 2026 (Mathieu : « assure-toi que le badge Rookie, ce soit bel et bien des recrues de 2026-27 ; Easton Cowan et
+    Schaefer ne sont plus en saison recrue ») : la regle de la LNH (Calder) : aucune saison d'avant avec 25 matchs et plus,
+    pas 6 matchs et plus dans deux saisons d'avant, et moins de 26 ans au 15 septembre. Avant : « 2 saisons ou
+    moins » (une 2e annee comptait comme recrue)."""
+    cour = saison_lnh(aujourdhui)
+    if not (h or {}).get("par_saison"):                  # fiche ancienne (sans le detail par saison) : 1re saison seulement
+        return (h or {}).get("saisons") is not None and int(h.get("saisons") or 0) <= 1
+    nhl = [x for x in (h or {}).get("par_saison") or [] if x.get("l") == "NHL" and x.get("s")]
+    avant = {}
+    for x in nhl:
+        if int(x["s"]) < cour:
+            avant[int(x["s"])] = avant.get(int(x["s"]), 0) + int(x.get("gp") or 0)
+    if any(g >= 25 for g in avant.values()):
+        return False
+    if sum(1 for g in avant.values() if g >= 6) >= 2:   # 6 matchs et plus dans deux saisons d'avant (n'importe lesquelles)
+        return False
+    try:
+        n = date.fromisoformat(str((h or {}).get("naissance") or "")[:10])
+        sept = date(cour // 10000, 9, 15)
+        if (sept - n).days / 365.25 >= 26:
+            return False
+    except ValueError:
+        pass
+    return True
+
+
 # 10 nov 2026 (Mathieu : « s'il est parle beaucoup, s'il y a eu un trophee recemment ; a chaque jour ») : les nouvelles du
 # hockey des 7 derniers jours (nos flux RSS publics) : combien de fois le joueur y est nomme, et les evenements forts
 EVENEMENTS = re.compile(r"hall of fame|temple|trophy|troph|award|record|hat[- ]trick|tour du chapeau|milestone|\b(500|600|700|800|900|1000)(th)?\b|"
@@ -392,7 +426,7 @@ def calculer(d=None, base=None, demande=None):
                 s = None
             if s:
                 brut["demande"][nom] = s
-        brut["recrue"][nom] = 1.0 if actif and (h.get("saisons") or 9) <= 2 else 0.0
+        brut["recrue"][nom] = 1.0 if actif and recrue_lnh(h) else 0.0
         cm = comm.get(nom.lower())
         if cm and cm[1] > 0:
             brut["communaute"][nom] = cm[0] + 0.3 * cm[1]
@@ -487,7 +521,7 @@ def _ordre(base, demande, favoris=()):
             s = demande(n) or 0
         except Exception:
             s = 0
-        rec = 1.5 if ((base[n].get("nhl") or {}).get("saisons") or 9) <= 2 else 1.0
+        rec = 1.5 if recrue_lnh(base[n].get("nhl") or {}) else 1.0
         return -s * rec
     return list(dict.fromkeys(fav + sorted(act, key=cle)))
 
@@ -557,6 +591,11 @@ def passe(max_appels=None, sport="hockey"):
         quoi_de_neuf.hist_noter(d["indice"])
     except Exception as e:
         print("Indice (historique) : " + repr(e), flush=True)
+    try:                                   # 13 nov 2026 : le journal des evenements (pourquoi les cartes bougent : mouvements.py)
+        import mouvements
+        mouvements.journal_noter(d["indice"])
+    except Exception as e:
+        print("Mouvements (journal) : " + repr(e), flush=True)
     return {"lus": lus, "joueurs": len(d["indice"])}
 
 

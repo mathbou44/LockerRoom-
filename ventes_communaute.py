@@ -13,7 +13,6 @@ les ventes REELLES des comptes eBay connectes a l'app (deja importees dans chaqu
 import hashlib
 import json
 import os
-import re
 import secrets
 import sqlite3
 import statistics

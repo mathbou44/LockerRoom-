@@ -223,7 +223,6 @@ def annonces_recrues(prod, chercher=None):
     sa cote se lit dans ses cartes deja en vente (prospect, junior, autres produits). -> {joueur: {m, h, n}}.
     Seulement les recrues que l'indice ne connait pas ; plus (31 oct 2026) quelques recrues connues, les etalons."""
     import ebay_compte
-    import valeurs
     chercher = chercher or (lambda q: ebay_compte.rechercher(q, categorie="261328", limite=50, fond=True))
     out = {}
     for j in joueurs_a_mesurer(prod):

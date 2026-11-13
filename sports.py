@@ -147,6 +147,67 @@ SPORTS = {
 }
 DEFAUT = "hockey"
 
+# -- 13 nov 2026 (Mathieu : « il faut bien separer les sports pour ne pas creer de bruit et de confusion ; tout melanger serait
+# une catastrophe ») : UN SPORT = UN MONDE. Chaque moteur de SlabCoach dit ici les sports qu'il sert ; une carte d'un sport
+# qu'un moteur ne sert pas n'y entre JAMAIS (pas de valeur, pas de credit, pas de score, pas de tendance inventes).
+# Chaque sport a ses donnees a lui : base_ventes.sqlite (hockey) / base_ventes_baseball.sqlite ; fiches LNH / fiches MLB ;
+# modele SlabIQ du hockey / (plus tard) du baseball ; credits CompSniper du hockey / part des autres sports (15 %).
+# Ajouter un sport a un moteur = l'ajouter ICI, une fois que ce moteur a ses propres donnees pour lui.
+MOTEURS = {
+    "ventes": {"hockey", "baseball"},      # la base des ventes (chaque sport dans SA base)
+    "fiches": {"hockey", "baseball"},      # les stats publiques des joueurs (LNH, MLB)
+    "score": {"hockey"},                   # SlabIQ : le modele appris (baseball : quand sa base aura 20 000 ventes)
+    "indice": {"hockey"},                  # l'indice joueurs, Tendances, en feu / en creux / recrues
+    "valeurs": {"hockey"},                 # les valeurs, tendances des cartes, produits
+    "deals": {"hockey"},                   # le chasseur de deals (les credits de verification)
+}
+
+
+def sert(moteur, sport):
+    """Le moteur sert-il ce sport ?"""
+    return (sport or DEFAUT) in MOTEURS.get(moteur, set())
+
+
+def base_sport(sport):
+    """Le sport dont les donnees sont separees : None pour le hockey (la base historique), sinon le code du sport."""
+    return None if not sport or sport == DEFAUT else sport
+
+
+def sport_de(titre, joueur=None, defaut=DEFAUT):
+    """LE sport d'une carte, pour tous les moteurs (une seule regle partout) :
+    1. un joueur de hockey connu (nos noms) -> hockey ;
+    2. sinon les mots du titre (equipes, ligues, produits), avec +2 pour le baseball si un joueur MLB connu y est nomme ;
+    3. rien ne tranche -> defaut (le hockey)."""
+    t = " ".join(str(x) for x in (titre, joueur) if x)
+    k = (t, defaut)
+    r = _SPORT_DE.get(k)
+    if r is None:
+        r = _sport_de(t, defaut)
+        if len(_SPORT_DE) > 20000:
+            _SPORT_DE.clear()
+        _SPORT_DE[k] = r
+    return r
+
+
+_SPORT_DE = {}
+
+
+def _sport_de(t, defaut):
+    try:
+        import cartes_match
+        if cartes_match._noms_dans(cartes_match.norm(t)):
+            return "hockey"
+    except Exception:
+        pass
+    bonus = None
+    try:
+        import mlb
+        if mlb.joueur_du_titre(t):
+            bonus = {"baseball": 2}
+    except Exception:
+        pass
+    return detecter(t, defaut=defaut, bonus=bonus)
+
 
 def liste():
     """[{code, nom, ligue}] pour l'ecran Reglages."""

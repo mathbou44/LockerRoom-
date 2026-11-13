@@ -58,6 +58,7 @@ PARALLELES = [
     "artist proof", "premier", "jumbo", "fluorescent", "galactic", "nebula", "ice",
     "checklist",                 # 31 oct 2026 : la « Young Guns Checklist » Schaefer / Misa (15 $) n'est pas sa Young Guns (222 $)
 ]
+_PAR_TOK = [(p, re.findall(r"[a-z0-9]+", p)[0]) for p in PARALLELES]   # 13 nov 2026 : (expression, son 1er mot)
 # mots qui ressemblent a une variante mais sont le NOM d'un produit (le chercher les exige quand meme)
 PRODUITS = ["prizm", "optic", "mosaic", "select", "chrome", "ice", "platinum", "black diamond", "retro", "sapphire",
             "premier", "artifacts", "heritage", "finest", "stadium club", "contenders", "national treasures", "immaculate"]
@@ -78,6 +79,12 @@ EQUIPES_COULEUR = ["red wings", "blue jackets", "blue jays", "red sox", "white s
 PRODUITS_LONGS = ["black diamond", "stadium club", "national treasures", "young guns", "future watch", "sp authentic",
                   "rated rc", "color blast", "power play", "gold label", "red line"]
 _EXCLUS_RE = [re.compile(x) for x in EXCLUS]
+_EXCLUS_UN = re.compile("|".join(f"(?:{x})" for x in EXCLUS))     # 13 nov 2026 (vitesse) : une seule recherche au lieu de 49
+_RE_COULEURS_PATCH = re.compile(r"\b(?:\d+|one|two|three|four|five|six|tri|dual|multi)[\s-]*colou?r(?:s|ed)?\b|\bcolou?r(?:s|ed)?\s+(?:patch|swatch|jersey|relic)")
+# 13 nov 2026 : dans un produit, une numerotation dit sa couleur (Stature : les patch autos /35 sont VERTES) ; l'annonce qui ne
+# nomme pas la couleur et la vente « Green /35 » sont la meme carte
+COULEURS_SERIE = {"silver", "gold", "red", "blue", "green", "orange", "purple", "pink", "black", "emerald", "ruby", "sapphire",
+                  "violet", "aqua", "bronze", "copper"}
 _RE_ANNEE = re.compile(r"\b(19[5-9]\d|20[0-4]\d)\s*(?:[-/]\s*(\d{2,4}))?\b|\b(\d{2})\s*-\s*(\d{2})\b")
 _RE_GRADE = re.compile(r"\b(psa|bgs|sgc|cgc|tag|ksa|hga|beckett|bccg|csg|gma|isa|ags|mnt)\s*-?\s*(gem\s*(?:mint|mt)?\s*|mint\s*|pristine\s*|black label\s*)?(10|9\.5|9|8\.5|8|7\.5|7|6|5|4|3|2|1)?\b")
 _RE_SERIE = re.compile(r"(?:#\s*)?(?:\b\d{1,4}\s*)?/\s*0*(\d{1,4})\b|\b(\d{1,4})\s+of\s+(\d{1,4})\b|\b1\s*/\s*1\b|\bone of one\b")
@@ -121,6 +128,7 @@ def _norm(t):
 
 
 _RX_MOT = {}
+_RE_TOK = re.compile(r"[a-z0-9]+")
 
 
 def _a_mot(t, mot):
@@ -197,14 +205,20 @@ def decoder(texte):
     t_par = t
     for x in EQUIPES_COULEUR + PRODUITS_LONGS:
         t_par = t_par.replace(x, " ")
+    # 13 nov 2026 (Mathieu : la Marleau Stature « 3 Color Patch Auto /35 » sans aucune vente, alors que 3 se sont vendues) : « 3
+    # color patch », « two-color », « tri-color » decrivent la PATCH (ses couleurs), pas une parallele « Color »
+    t_par = _RE_COULEURS_PATCH.sub(" ", t_par)
     par = set()
-    for p in PARALLELES:
-        if _a_mot(t_par, p):
+    # 13 nov 2026 (vitesse : 79 expressions cherchees une a une dans chaque titre) : seulement celles dont le 1er mot est
+    # dans le titre (condition necessaire), puis la meme verification qu'avant
+    mots_t = set(_RE_TOK.findall(t_par))
+    for p, m0 in _PAR_TOK:
+        if m0 in mots_t and _a_mot(t_par, p):
             par.add(p)
     if "prizm silver" in par or "silver prizm" in par:
         par -= {"prizm silver", "silver prizm"}
         par.add("silver")
-    exclu = any(rx.search(t) for rx in _EXCLUS_RE)
+    exclu = _EXCLUS_UN.search(t) is not None
     return {"texte": t, "annee": _annee(t), "num": num, "serie": serie, "grade": grade,
             "auto": bool(_RE_AUTO.search(t)), "patch": bool(_RE_PATCH.search(t)), "rc": bool(_RE_RC.search(t)),
             "inscr": bool(_RE_INSCR.search(t)),
@@ -324,6 +338,8 @@ def raisons_refus(c, titre, appris=None):
     # paralleles : ceux demandes doivent y etre ; aucun autre (les noms de produits demandes ne comptent pas)
     voulus = set(c["paralleles"])
     en_trop = {p for p in a["paralleles"] - voulus if p not in c["produits"]}
+    if c["serie"] is not None and a["serie"] == c["serie"] and not (voulus & COULEURS_SERIE):
+        en_trop -= COULEURS_SERIE                         # la meme numerotation : sa couleur va de soi
     absents = {p for p in voulus if p not in a["paralleles"] and p not in c["produits"]}
     if absents:
         r.append("pas la variante " + ", ".join(sorted(absents)))
@@ -648,6 +664,7 @@ SETS_CLES = ["young guns", "future watch", "sp authentic", "the cup", "ultimate 
              "heritage", "stadium club", "update", "fleer", "score", "leaf", "panini", "upper deck", "flawless", "spectra",
              "obsidian", "certified", "absolute", "phoenix", "revolution", "hoops", "dynasty", "noir", "luminance", "clear cut",
              "canvas", "exclusives", "high gloss", "outburst", "rookie redemption"]
+_SETS_TOK = [(x, re.findall(r"[a-z0-9]+", x)[0]) for x in SETS_CLES]
 GENERIQUES = set("""upper deck ud panini topps bowman donruss leaf fleer score o-pee-chee opc series extended young guns future
 watch sp authentic cup ultimate collection rookies rookie rc black diamond artifacts mvp synergy credentials trilogy chronology
 premier allure spx game used ice prizm optic select mosaic chrome rated contenders national treasures immaculate finest heritage
@@ -963,15 +980,35 @@ def corriger_produit(titre, table=None):
     return (t2, f"{faux} -> {bon} (code #{pre})") if t2 != titre else (titre, None)
 
 
+_CIB = {"le": 0.0, "d": {}}
+
+
 def cible_titre(titre, joueur=None):
+    """13 nov 2026 (vitesse : ~1 ms par titre, et le meme titre est relu des centaines de fois par tour : chasseur, Radar,
+    fiches) : le resultat garde 10 minutes (les noms connus et les produits appris se mettent a jour plus lentement) ;
+    chaque appel recoit sa propre copie (listes et ensembles copies)."""
+    import time as _t
+    maint = _t.time()
+    if maint - _CIB["le"] > 600 or len(_CIB["d"]) > 30000:
+        _CIB["d"] = {}
+        _CIB["le"] = maint
+    k = (titre, joueur)
+    r = _CIB["d"].get(k)
+    if r is None:
+        r = _CIB["d"][k] = _cible_titre(titre, joueur)
+    return {x: (v.copy() if isinstance(v, (list, set, dict)) else v) for x, v in r.items()}
+
+
+def _cible_titre(titre, joueur=None):
     """Notre carte (son titre) -> ce que les comparables doivent avoir."""
     titre, _corr = corriger_produit(titre)
     c = cible(titre)
     t = c["texte"]
     j = joueur_du_titre(titre, joueur)
     sets = []
-    for s_ in SETS_CLES:
-        if _a_mot(t, s_) and not any(s_ in x for x in sets) and s_ not in ("upper deck", "panini", "topps", "series 1", "series 2", "extended"):
+    mots_t = set(_RE_TOK.findall(t))                      # 13 nov 2026 (vitesse) : le 1er mot d'abord
+    for s_, m0 in _SETS_TOK:
+        if m0 in mots_t and _a_mot(t, s_) and not any(s_ in x for x in sets) and s_ not in ("upper deck", "panini", "topps", "series 1", "series 2", "extended"):
             sets.append(s_)
         if len(sets) >= 2:
             break

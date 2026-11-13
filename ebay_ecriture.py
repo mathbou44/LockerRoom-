@@ -9,7 +9,6 @@ Toujours declenche par un tap du vendeur, jamais en automatique :
 
 Le meme code sert en sandbox et en production (ebay_compte.environnement()).
 """
-import base64
 import os
 import re
 import urllib.request

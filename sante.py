@@ -15,7 +15,7 @@ Rien n'est modifie sur eBay : l'app suggere un prix, le vendeur decide.
 import math
 import re
 import statistics
-from datetime import datetime, timedelta
+from datetime import datetime
 
 HAUT, BAS = 1.15, 0.80
 MIN_ANNONCES = 5

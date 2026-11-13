@@ -11,9 +11,7 @@ Deux sortes d'astuces :
   - SOURCEES : un fait publie (source et lien affiches), et le calcul qu'on peut refaire soi-meme.
 Chaque astuce : titre, le chiffre, le truc (quoi faire), niveau (debutant / tous / avance), source.
 """
-import json
 import math
-import os
 import re
 import statistics
 import time

@@ -21,6 +21,7 @@ import os
 import re
 import secrets
 import threading
+import time
 from datetime import datetime
 
 DONNEES = os.environ.get("LOCKERROOM_DONNEES") or os.path.dirname(os.path.abspath(__file__))
@@ -114,6 +115,19 @@ def trouver_ou_creer(ebay_user_id, username, env):
     return cid, nouveau
 
 
+_VU = {}
+
+
+def vu(compte_id, maintenant=None):
+    """13 nov 2026 (Mathieu : « mon frere est connecte, pourquoi je ne le vois pas ») : « vu » etait seulement la date de la
+    derniere CONNEXION. Maintenant : la derniere activite (au plus une ecriture aux 10 minutes par compte)."""
+    t = maintenant or time.time()
+    if not compte_id or t - _VU.get(compte_id, 0) < 600:
+        return False
+    _VU[compte_id] = t
+    return maj(compte_id, vu_le=datetime.fromtimestamp(t).isoformat(timespec="seconds"))
+
+
 def maj(compte_id, **champs):
     """Champs du compte ecrits par le SERVEUR seulement (ex. forfait venu de Stripe)."""
     with _verrou:
@@ -135,11 +149,6 @@ def lister():
 
 def info(compte_id):
     return dict(_index().get(compte_id) or {})
-
-
-def par_username(username):
-    u = str(username or "").lower()
-    return [cid for cid, e in _index().items() if str(e.get("username") or "").lower() == u]
 
 
 def supprimer(compte_id):
@@ -197,10 +206,6 @@ def dechiffrer(texte):
             raise RuntimeError("Jetons chiffrés : LOCKERROOM_CLE manquante")
         return f.decrypt(texte[5:].encode()).decode()
     return texte
-
-
-def nouvel_etat():
-    return secrets.token_urlsafe(16)
 
 
 # -- 2 nov 2026 (Mathieu : « un utilisateur doit voir la meme chose sur son ordi que sur son cell ») ------------------------

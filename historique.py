@@ -87,11 +87,38 @@ def utilises():
     return {"mois": r.get(mois, 0), "jour": r.get(jour, 0), "chasseur": r.get("chasseur:" + jour, 0)}
 
 
-def _compter(chasseur):
+def part_autres_sports():
+    """13 nov 2026 (Mathieu : « ~15 % (1 500/mois) » pour les autres sports, pour ne pas affamer le hockey) : la part du mois
+    CompSniper que le baseball (et les sports a venir) peut prendre, ensemble. LR_CS_AUTRES_SPORTS en %."""
+    try:
+        return min(0.5, max(0.0, float(os.environ.get("LR_CS_AUTRES_SPORTS") or 15) / 100))
+    except ValueError:
+        return 0.15
+
+
+def utilises_sports():
+    """Les requetes du mois des sports autres que le hockey."""
+    mois, _jour = _periodes()
+    try:
+        c = _cx()
+        try:
+            r = c.execute("SELECT n FROM compteur WHERE periode=?", ("sports:" + mois,)).fetchone()
+        finally:
+            c.close()
+    except sqlite3.Error:
+        return 0
+    return r[0] if r else 0
+
+
+def _autre_sport(sport):
+    return bool(sport) and sport != "hockey"
+
+
+def _compter(chasseur, sport=None):
     mois, jour = _periodes()
     c = _cx()
     try:
-        for p in (mois, jour) + (("chasseur:" + jour,) if chasseur else ()):
+        for p in (mois, jour) + (("chasseur:" + jour,) if chasseur else ()) + (("sports:" + mois,) if _autre_sport(sport) else ()):
             c.execute("INSERT INTO compteur VALUES (?, 1) ON CONFLICT(periode) DO UPDATE SET n = n + 1", (p,))
         c.commit()
     finally:
@@ -140,7 +167,7 @@ def cle_q(q):
     return " ".join(str(q or "").lower().split())[:200]
 
 
-def rechercher(q, chasseur=False, jours=JOURS, principal=False, cache_s=None, delai=None):
+def rechercher(q, chasseur=False, jours=JOURS, principal=False, cache_s=None, delai=None, sport=None):
     """Les ventes d'une recherche sur un an (une page de 50, les plus recentes d'abord). -> (ventes, erreur).
     12 nov 2026 (Mathieu : « je peux remplacer SoldComps par CompSniper ») : principal=True quand CompSniper est LA source
     des ventes (vendues.source()) : pas de plafond « chasseur » (vendues tient le budget du jour), seulement celui du mois ;
@@ -162,6 +189,8 @@ def rechercher(q, chasseur=False, jours=JOURS, principal=False, cache_s=None, de
     u = utilises()
     if u["mois"] >= budget_mois() or (chasseur and not principal and u["chasseur"] >= budget_jour()):
         return [], "budget"
+    if _autre_sport(sport) and utilises_sports() >= budget_mois() * part_autres_sports():
+        return [], "budget"                          # 13 nov 2026 : le baseball a sa part (15 %), le hockey garde le reste
     fin = datetime.now(timezone.utc).date()
     p = {"keyword": q, "startDate": (fin - timedelta(days=jours)).isoformat(), "endDate": fin.isoformat(),
          "sort": "lastSoldDescending", "singleUnitOnly": "true", "limit": str(limite()), "page": "1"}
@@ -184,7 +213,7 @@ def rechercher(q, chasseur=False, jours=JOURS, principal=False, cache_s=None, de
         except Exception as e:
             _ERREUR.update(le=time.time(), texte="CompSniper injoignable (" + type(e).__name__ + ")")
             return [], _ERREUR["texte"]
-        _compter(chasseur and not principal)         # une requete reussie = une requete du forfait (les echecs : gratuits)
+        _compter(chasseur and not principal, sport)         # une requete reussie = une requete du forfait (les echecs : gratuits)
     finally:
         if pris:
             _verrou.release()

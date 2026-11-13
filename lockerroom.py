@@ -145,12 +145,6 @@ CREATE TABLE IF NOT EXISTS soumissions (id INTEGER PRIMARY KEY, compagnie TEXT, 
 """
 
 
-def _envoi_net():
-    """6 nov 2026 : le materiel d'envoi d'une carte revendue (deals.ENVOI_NET) : compte dans le profit des deals."""
-    import deals as _d
-    return _d.ENVOI_NET
-
-
 def _net_rev(valeur):
     """7 nov 2026 : ce qui reste de la revente d'un deal (deals.net_revente : frais eBay sur prix + port, pub, envoi)."""
     import deals as _d
@@ -370,7 +364,6 @@ def est_ios():
     return _IOS.get()
 
 
-
 def _niveau(resume, info):
     """bronze (gratuit) | silver (forfait intermediaire, plus tard) | gold (Pro, essai, offert, app locale)."""
     f = str((info or {}).get("forfait") or "").lower()
@@ -444,7 +437,6 @@ def popularite(cartes, maint=None):
                      "watchers": int(pops[0].get("watchers") or 0), "vues": pops[0].get("vues")} if pops else None)}
 
 
-
 def effacer_compte(cid):
     """3 nov 2026 (revue de securite) : TOUT ce qui part avec un compte, quel que soit le chemin (dans l'app, avis eBay) :
     l'abonnement Stripe annule, l'acces Apple retire, ses exemples d'entrainement, puis son dossier et ceux des anciens
@@ -495,6 +487,25 @@ AFFICHER_APRES_J = 90                  # 5 nov 2026 : en stock depuis plus de 3 
 
 
 RABAIS_ANNONCES = 0.10          # 8 nov 2026 : sans vente, le prix suggere = la mediane des annonces pareilles moins 10 %
+
+
+def _bb_resume(f, k, n):
+    """Une ligne de joueur de baseball pour les ecrans (13 nov 2026). Stat de la derniere saison : frappeur (circuits, OPS)
+    ou lanceur (manches, retraits au baton, MPM)."""
+    import mlb
+    f = f or {}
+    der = (f.get("par_saison") or [{}])[-1] if f.get("par_saison") else {}
+    tc = f.get("trophees_c") or {}
+    ligne = None
+    if der:
+        if f.get("lanceur"):
+            ligne = {"s": der.get("s"), "ip": der.get("ip"), "so": der.get("so_l"), "era": der.get("era")}
+        else:
+            ligne = {"s": der.get("s"), "hr": der.get("hr"), "ops": der.get("ops"), "ab": der.get("ab")}
+    return {"nom": f.get("nom") or k.title(), "ventes": n, "equipe": f.get("equipe"), "pos": f.get("pos"), "lanceur": f.get("lanceur"),
+            "niveau": f.get("niveau"), "recrue": bool(f) and mlb.recrue(f), "prospect": bool(f) and mlb.prospect(f),
+            "vedette": bool(tc.get("mvp") or tc.get("cy") or f.get("hof") or (tc.get("etoile") or 0) >= 3),
+            "trophees": {kk: v for kk, v in tc.items() if kk in ("mvp", "cy", "recrue", "etoile", "ws", "hof")}, "ligne": ligne, "fiche": bool(f)}
 
 
 class Api:
@@ -692,7 +703,6 @@ class Api:
         """Apple 5.1.1(v) : supprimer son compte DANS l'app. Annule l'abonnement Stripe, efface tout son dossier
         (base, jetons eBay chiffres, reglages) ; ses ventes partagees anonymement restent anonymes."""
         import comptes
-        import paiements
         cid = comptes.courant() if comptes.MULTI else None
         if not cid:
             return {"ok": False, "erreur": "Rien à supprimer sur ce PC"}
@@ -1353,9 +1363,6 @@ class Api:
         res.update(ok=True, produit=prod)
         return res
 
-    def equipes_lnh(self):
-        return [{"code": k, "nom": v[0], "division": v[1]} for k, v in sorted(calcul.EQUIPES_LNH.items(), key=lambda kv: kv[1][0])]
-
     # -- catalogue (cle en main) -------------------------------------------------------------
     _EV_CACHE = {}
 
@@ -1570,13 +1577,6 @@ class Api:
             return {"ok": False, "erreur": "Réservé à l'administrateur"}
         import deals as _d
         return {**_d.recharger(), "etat": self.deals_etat()}
-
-    def deals_chasser_vedettes(self):
-        """29 oct 2026 - admin : un tour seulement pour les veterans, les legendes et les jeunes de 2e a 4e annee."""
-        if not self._est_admin():
-            return {"ok": False, "erreur": "Réservé à l'administrateur"}
-        import deals as _d
-        return {**_d.chasser_vedettes(), "etat": self.deals_etat()}
 
     def deals_tour(self):
         """29 oct 2026 - admin : ou en est le chasseur (leger : l'ecran Deals le demande a chaque ouverture)."""
@@ -1799,6 +1799,14 @@ class Api:
             return {"ok": False, "erreur": "Réservé à l'administrateur"}
         import admin
         return {"ok": True, **admin.abonnes()}
+
+    def admin_supprimer_compte(self, cid, nom_confirme):
+        """13 nov 2026 : l'admin supprime un compte (garde-fous dans admin.supprimer_compte)."""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import admin
+        import comptes
+        return admin.supprimer_compte(str(cid), comptes.courant(), nom_confirme)
 
     def admin_offrir_pro(self, cid, jours=None):
         if not self._est_admin():
@@ -3816,6 +3824,30 @@ class Api:
             except Exception:
                 pass
         return {"ok": True, "photo": nouv[0], "photos": nouv}
+
+    def carte_photos_inverser(self, cid):
+        """13 nov 2026 (Mathieu : « encore inversees les photos ») : le devant et le dos d'une carte changent de place (et
+        leurs originales). L'annonce eBay deja publiee garde son ordre (ebay=True : on le dit a l'utilisateur)."""
+        carte = self.carte_lire(cid)
+        if not carte:
+            return {"ok": False, "erreur": "Carte introuvable"}
+        try:
+            l = json.loads(carte.get("photos") or "[]")
+        except ValueError:
+            l = []
+        if not isinstance(l, list) or len(l) < 2:
+            return {"ok": False, "erreur": "Il faut le devant ET le dos pour les inverser"}
+        l[0], l[1] = l[1], l[0]
+        maj = {"id": cid, "photo": l[0], "photos": json.dumps(l)}
+        try:
+            o = json.loads(carte.get("photos_orig") or "[]")
+        except ValueError:
+            o = []
+        if isinstance(o, list) and len(o) >= 2:
+            o[0], o[1] = o[1], o[0]
+            maj["photos_orig"] = json.dumps(o)
+        self.carte_sauver(maj)
+        return {"ok": True, "photo": l[0], "photos": l, "ebay": bool(carte.get("item_number")) and carte.get("statut") == "Listée"}
 
     def carte_photo_retirer(self, cid, index=1):
         """11 nov 2026 (Mathieu : « on peut meme pas la supprimer ») : retire une photo de la carte (le dos d'une autre carte).
@@ -6330,7 +6362,6 @@ class Api:
     # -- 31 oct 2026 (Mathieu : « la promotion de 2 % pour eBay n'a pas fonctionne pour Mercer ») --------------------
     def annonce_promotion(self, cid, pct=None):
         """La promotion eBay d'une carte en vente : son etat chez eBay (pct=None), ou la promouvoir au % choisi."""
-        import annonces
         c = self._db()
         try:
             r = c.execute("SELECT item_number, debut FROM cartes WHERE id=?", (int(cid),)).fetchone()
@@ -6628,7 +6659,56 @@ class Api:
     RADAR_GARDE_S = 300
 
     def mes_deals(self, frais=False):
-        return self._filtrer_provenance(self._mes_deals0(frais))
+        r = self._filtrer_provenance(self._mes_deals0(frais))
+        try:
+            if not forfaits.est_pro() and not self._est_admin():
+                return self._radar_gratuit(r)
+        except Exception as e:
+            print("Radar gratuit : " + repr(e), flush=True)
+        return r
+
+    # 13 nov 2026 (Mathieu : « limiter le Radar en mode gratuit pour donner envie d'aller Pro ; le gratuit doit donner un
+    # accrochage et ne pas vraiment laisser le choix ») : en Gratuit (apres l'essai), le Radar trouve TOUT comme en Pro, mais
+    # montre seulement RADAR_GRATUIT cartes : sa meilleure (la preuve que SlabIQ trouve de bonnes cartes) et quelques
+    # cartes ordinaires. Les meilleures (score SlabIQ 75 et plus) restent en vue, floues et verrouillees : on voit leur score
+    # et combien il y en a, jamais leur titre, leur prix ni leur lien (rien a contourner : le serveur ne les envoie pas).
+    RADAR_GRATUIT, RADAR_GRATUIT_SEUIL, RADAR_GRATUIT_VERROUS = 6, 75, 30
+
+    def _radar_gratuit(self, r):
+        import hashlib
+        if not isinstance(r, dict) or not r.get("ok"):
+            return r
+        secs = ("pour_toi", "decouvrir", "chauds", "creux", "chasses", "types", "vendeurs", "cibles")
+        tous = {}
+        for x in list(r.get("deals") or []) + list(r.get("petits") or []) + [y for k in secs for g in (r.get(k) or [])
+                                                                              for y in ((g or {}).get("annonces") or [])]:
+            if isinstance(x, dict) and x.get("item_id") and x["item_id"] not in tous:
+                tous[x["item_id"]] = x
+        l = sorted(tous.values(), key=lambda x: -(x.get("score") or 0))
+        vis = l[:1] + [x for x in l[1:] if (x.get("score") or 0) < self.RADAR_GRATUIT_SEUIL][:self.RADAR_GRATUIT - 1]
+        vis_ids = {x["item_id"] for x in vis}
+        verrous = [x for x in l if x["item_id"] not in vis_ids][:self.RADAR_GRATUIT_VERROUS]
+        ver_ids = {x["item_id"] for x in verrous}
+
+        def bout(x):
+            if x["item_id"] in vis_ids:
+                return x
+            if x["item_id"] not in ver_ids:
+                return None
+            return {"item_id": "L" + hashlib.sha1(str(x["item_id"]).encode()).hexdigest()[:12], "verrou": True, "score": x.get("score"),
+                    "photo": x.get("photo"), "encan": bool(x.get("encan")), "fin": x.get("fin")}
+
+        def filtre(lst):
+            return [y for y in (bout(x) for x in lst or [] if isinstance(x, dict) and x.get("item_id")) if y]
+        out = dict(r)
+        out["deals"] = filtre(r.get("deals"))
+        out["petits"] = filtre(r.get("petits"))
+        for k in secs:
+            out[k] = [dict(g, annonces=filtre(g.get("annonces"))) if isinstance(g, dict) else g for g in (r.get(k) or [])]
+        out["gratuit"] = {"trouvees": len(l), "visibles": len(vis), "verrouillees": len(l) - len(vis),
+                          "meilleures": sum(1 for x in l if (x.get("score") or 0) >= self.RADAR_GRATUIT_SEUIL),
+                          "seuil": self.RADAR_GRATUIT_SEUIL}
+        return out
 
     def _provenance(self):
         p = self.reglages_lire().get("provenance")
@@ -6734,10 +6814,22 @@ class Api:
 
     def _radar_garder(self, cle, r):
         """Un Radar complet est garde 5 min ; un Radar partiel (une recherche trop lente) aussi, mais il est refait apres 2 min."""
+        # 13 nov 2026 (Mathieu : « juste etre sur qu'on ne les manquera pas ») : chaque encan qu'un Radar Pro trouve est aussi
+        # propose au chasseur admin (il le juge a son prochain tour, avec ses ventes) : le Radar admin voit tout ce que le Pro voit
+        try:
+            import deals as _dl
+            _dl.proposer([a for k, v in (r or {}).items() if k in ("pour_toi", "decouvrir", "chauds", "creux", "chasses", "types", "vendeurs", "cibles", "petits", "deals")
+                          for a in ((v.get("annonces") or []) if isinstance(v, dict) else
+                                    [y for g in (v or []) for y in ((g.get("annonces") or []) if isinstance(g, dict) and "annonces" in g else [g])])])
+        except Exception as e:
+            print("Radar -> chasseur : " + repr(e)[:200], flush=True)
         if not cle or not (r or {}).get("ok") or not self.RADAR_GARDE_S:
             return
-        if len(Api._RADAR) > 500:
-            Api._RADAR.clear()
+        # 13 nov 2026 (memoire depassee chez Render) : 500 Radars gardes en memoire (souvent 1 Mo chacun) -> 40 au plus, les
+        # plus vieux sortent d'abord (la copie sur disque reste : il s'affiche quand meme tout de suite)
+        if len(Api._RADAR) >= 40:
+            for k_ in sorted(Api._RADAR, key=lambda k: Api._RADAR[k][0])[:len(Api._RADAR) - 39]:
+                Api._RADAR.pop(k_, None)
         Api._RADAR[cle] = (time.time() - (self.RADAR_GARDE_S - 120 if r.get("partiel") else 0), r)
         try:
             d, ch = self._radar_chemin(cle)
@@ -6771,7 +6863,7 @@ class Api:
             c.close()
         prof = self.deals_profil_lire()
         pays = self.reglages_lire().get("pays") or "CA"
-        fav = [f for f in (prof.get("favoris") or []) if isinstance(f, str) and f.strip()][:self.RADAR_MAX_JOUEURS]
+        fav = [f for f in (prof.get("favoris") or []) if isinstance(f, str) and f.strip()][:self.RADAR_MAX_JOUEURS if forfaits.est_pro() or self._est_admin() else 3]
         vendeurs = [v for v in (prof.get("vendeurs") or []) if v][:3]
         try:
             chasses_l = self.chasses_liste()["chasses"][:self.CHASSES_MAX_PRO]
@@ -6974,17 +7066,6 @@ class Api:
         self.reglages_sauver({"chasses": l})
         return {"ok": True, "chasses": l}
 
-    def _radar_chasses(self, prof):
-        out = []
-        for ch in self.chasses_liste()["chasses"][:self.CHASSES_MAX_PRO]:
-            try:
-                r = self._radar_une_chasse(ch, prof)
-            except Exception as e:
-                r = {**ch, "annonces": [], "erreur": str(e)[:120]}
-            if r:
-                out.append(r)
-        return out
-
     def _radar_une_chasse(self, ch, prof):
         """Pour un set chasse : UNE recherche eBay du sous-ensemble (« 2025-26 Upper Deck Series 1 Young Guns »), puis on garde
         les annonces d'une carte qui manque (le nom du joueur et son numero dans le titre), dans le budget."""
@@ -7176,34 +7257,6 @@ class Api:
         # les encans qui finissent bientot d'abord, puis les nouvelles annonces
         out.sort(key=lambda x: (0, str(x.get("fin") or "")) if x["encan"] else (1, ""))
         return out[:limite]
-
-    def _radar_joueurs(self, prof):
-        fav = [f for f in (prof.get("favoris") or []) if f][:self.RADAR_MAX_JOUEURS]
-        out = []
-        for f in fav:
-            try:
-                l = self._radar_annonces(f, prof.get("collectionne"), prof.get("prix_min"), prof.get("prix_max"))
-            except (RuntimeError, OSError) as e:
-                out.append({"joueur": f, "annonces": [], "erreur": str(e)[:120]})
-                continue
-            out.append({"joueur": f, "annonces": l[:24], "n": len(l), **self._pastilles_joueur(f)})
-        return out
-
-    def _radar_decouvrir(self, prof):
-        try:
-            noms = [x["nom"] for x in self._radar_top(4)]
-        except Exception as e:
-            print("Radar (decouvrir) : " + repr(e), flush=True)
-            noms = []
-        out = []
-        for nom in noms:
-            try:
-                l = self._radar_annonces(nom, prof.get("collectionne"), prof.get("prix_min"), prof.get("prix_max") or 100, limite=12)
-            except (RuntimeError, OSError):
-                continue
-            if l:
-                out.append({"joueur": nom, "annonces": l, **self._pastilles_joueur(nom)})
-        return out
 
     _TEND_IQ = {"le": 0.0, "v": None}
 
@@ -7485,24 +7538,6 @@ class Api:
         except Exception:
             return {"pastilles": [], "indice": None, "semaine": None}
 
-    def _radar_chauds(self, prof, deja):
-        """10 nov 2026 (Mathieu : « si un joueur a 6 buts cette semaine il tombe tres haut ») : les joueurs EN FEU cette
-        semaine (stats, jamais un prix eBay), et leurs annonces dans le budget. 4 joueurs au plus."""
-        try:
-            import indice_joueurs
-            chauds = [x for x in indice_joueurs.top(8, "en_feu", actifs=True) if x["nom"] not in deja][:4]
-        except Exception:
-            return []
-        out = []
-        for x in chauds:
-            try:
-                l = self._radar_annonces(x["nom"], prof.get("collectionne"), prof.get("prix_min"), prof.get("prix_max") or 100, limite=12)
-            except (RuntimeError, OSError):
-                continue
-            if l:
-                out.append({"joueur": x["nom"], "annonces": l, **self._pastilles_joueur(x["nom"])})
-        return out
-
     # 10 nov 2026 (Mathieu : « montrer quand c'est plus vraiment un bon prix, sans leur dire quoi mettre ; subtilement ») :
     # la MEME carte en Achat immediat, de la moins chere a la plus chere. On montre des annonces telles quelles (chercher et
     # afficher : permis par la licence eBay) ; aucune moyenne, aucune mediane, aucun prix suggere. L'utilisateur juge.
@@ -7588,6 +7623,20 @@ class Api:
         out["mien"] = mien[:10]
         return out
 
+    def carte_histoire(self, titre=None, joueur=None):
+        """13 nov 2026 (Mathieu : « quand tu cliques sur le score : pourquoi cette carte-la est interessante, surtout les cartes
+        des annees 90 et debut 2000 ») : l'histoire de la carte (recherche web une fois par carte, gardee). Pro et admin."""
+        import forfaits
+        import histoire_carte
+        try:
+            pro = self._est_admin() or forfaits.est_pro()
+        except Exception:
+            pro = False
+        if not pro:
+            return {"ok": True, "pro": False}
+        h = histoire_carte.generer(str(titre or "")[:200], (str(joueur or "")[:80] or None))
+        return {"ok": True, "pro": True, "histoire": h if h.get("fr") else None, "raison": h.get("erreur")}
+
     def annonce_score(self, titre=None, joueur=None):
         """10 nov 2026 : le Score SlabCoach d'une annonce pour sa fiche publique (joueur + carte ; aucun prix)."""
         s = score_slab.score(str(titre or "")[:200], joueur)
@@ -7602,6 +7651,22 @@ class Api:
                 q = indice_joueurs.pourquoi(s["joueur"])
                 s["rang"], s["sur"], s["actif"] = q.get("rang"), q.get("sur"), q.get("actif")
                 s["pourquoi"] = q                   # 10 nov 2026 : les faits du joueur, pour guider vers « Verifier le prix »
+            except Exception:
+                pass
+            # 13 nov 2026 (Mathieu : « les tres bons joueurs d'une longue carriere dans la meme equipe sont tres recherches, encore
+            # plus si le club a un gros bassin de partisans ») : dit dans « Pourquoi ce score » (explication ; le score, lui, vient
+            # des ventes : au banc, cette donnee n'ameliorait pas le modele, la memoire des ventes du joueur la porte deja)
+            try:
+                import demande_legale as dl
+                import score_modele as sm
+                base = (dl.lire() or {}).get("joueurs") or {}
+                e = base.get(s["joueur"]) or base.get(next((k for k in base if dl._norm(k) == dl._norm(s["joueur"])), ""), {})
+                eqs = ((e or {}).get("nhl") or {}).get("equipes") or []
+                fi = sm.fidelite(eqs)
+                if fi and fi[1] >= 0.75 and fi[2] >= 10:
+                    nom_eq = next((t for _s, t, _g in sorted(eqs, key=lambda r: r[0] or 0, reverse=True) if (sm.FRANCHISES.get(t) or t) == fi[0]), fi[0])
+                    s.setdefault("pourquoi", {})["fidelite"] = {"equipe": nom_eq, "saisons": fi[2], "toute": fi[1] >= 0.98,
+                                                                "gros_marche": sm.MARCHES.get(fi[0], 0) >= 2}
             except Exception:
                 pass
         return {"ok": True, **s}
@@ -7651,7 +7716,7 @@ class Api:
     def _mes_deals_garde(self):
         """« Mes deals » pour l'accueil : garde 10 min par compte (l'accueil s'ouvre souvent ; eBay n'est relu qu'aux 10 min)."""
         import comptes
-        k = (comptes.courant() or "local") + ":" + ",".join(self._provenance())
+        k = (comptes.courant() or "local") + ":" + ",".join(self._provenance()) + (":pro" if forfaits.est_pro() else ":gratuit")
         g = self._MES_DEALS.get(k)
         if g and time.time() - g[0] < 600:
             return g[1]
@@ -7702,7 +7767,100 @@ class Api:
             out["forme"] = f if isinstance(f, dict) else None
         except Exception:
             out["forme"] = None
+        # 13 nov 2026 (Mathieu : « pourquoi les mouvements et les spikes de ventes ») : ses mouvements de l'annee et leurs causes
+        # possibles (admin : les prix viennent d'eBay)
+        if self._est_admin():
+            try:
+                import mouvements
+                out["mouvements"] = mouvements.analyser(nom)
+            except Exception as e:
+                print("Mouvements : " + repr(e)[:200], flush=True)
         return out
+
+    _EFFETS = {"le": 0.0, "v": None}
+
+    def mouvements_effets(self):
+        """13 nov 2026 (admin) : ce que chaque type d'evenement fait aux cartes, en general (refait au plus une fois par jour)."""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import mouvements
+        if Api._EFFETS["v"] is None or time.time() - Api._EFFETS["le"] > 86400:
+            Api._EFFETS.update(v=mouvements.effets(), le=time.time())
+        return {"ok": True, "effets": Api._EFFETS["v"], "joueurs": len(mouvements.journal()),
+                "evenements": sum(len(v) for v in mouvements.journal().values())}
+
+    def baseball_statut(self):
+        """13 nov 2026 (admin ; Mathieu : « on va y aller avec le baseball ») : ou en est le baseball : joueurs MLB connus,
+        fiches lues, ventes dans sa base a lui, moisson du jour, credits CompSniper des autres sports."""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import mlb
+        import thecardapi
+        import historique
+        st = mlb.statut()
+        top = []
+        try:
+            F = mlb.fiches()
+            for k, n in mlb.noms_du_marche(jours=30)[:15]:
+                f = F.get(k) or {}
+                top.append({"nom": f.get("nom") or k.title(), "ventes": n, "equipe": f.get("equipe"), "pos": f.get("pos"),
+                            "recrue": mlb.recrue(f) if f else None, "prospect": mlb.prospect(f) if f else None})
+        except Exception as e:
+            print("Baseball (top) : " + repr(e), flush=True)
+        import sports
+        return {"ok": True, **st, "top": top, "moteurs": {k: sorted(v) for k, v in sports.MOTEURS.items()},
+                "moisson": {"aujourdhui": thecardapi.utilisees("moisson_baseball"), "part": thecardapi.part_baseball(),
+                            "derniere": thecardapi._ETAT.get("derniere_baseball")},
+                "compsniper": {"utilises": historique.utilises_sports(),
+                               "plafond": int(historique.budget_mois() * historique.part_autres_sports())}}
+
+    def baseball_joueurs(self, filtre=None):
+        """13 nov 2026 (admin ; Mathieu : « un selecteur Hockey / Baseball ; chaque ecran baseball s'allume quand il est
+        pret ») : les joueurs de baseball qui se vendent (nos ventes de baseball, 30 jours) avec leur fiche MLB.
+        filtre : recrues | prospects | vedettes. Jamais un prix."""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import mlb
+        F = mlb.fiches()
+        out = []
+        for k, n in mlb.noms_du_marche(jours=30, n_min=2, max_=400):
+            f = F.get(k)
+            j = _bb_resume(f, k, n)
+            if filtre == "recrues" and not j["recrue"]:
+                continue
+            if filtre == "prospects" and not j["prospect"]:
+                continue
+            if filtre == "vedettes" and not j["vedette"]:
+                continue
+            out.append(j)
+        return {"ok": True, "joueurs": out[:150], "fiches": len(F), "saison": mlb.saison()}
+
+    def baseball_joueur(self, nom):
+        """13 nov 2026 (admin) : la fiche MLB d'un joueur (stats publiques, trophees, 6 dernieres saisons). Jamais un prix."""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import mlb
+        k = mlb._n(nom)
+        f = mlb.fiches().get(k)
+        n = dict(mlb.noms_du_marche(jours=30, n_min=1, max_=2000)).get(k, 0)
+        if not f:
+            return {"ok": True, "joueur": _bb_resume(None, k, n), "fiche": None}
+        return {"ok": True, "joueur": _bb_resume(f, k, n), "fiche": {kk: f.get(kk) for kk in ("nom", "equipe", "equipe_nom", "niveau", "pos", "lanceur",
+                "naissance", "pays", "debut", "chandail", "an_repech", "ronde", "repech", "trophees_c", "hof", "saisons", "carriere")},
+                "saisons": (f.get("par_saison") or [])[-6:]}
+
+    def sports_marche(self, refaire=False):
+        """13 nov 2026 (admin ; Mathieu : « prendre le 2e sport le plus vendu au Canada ; fie-toi aux ventes ») : la part
+        estimee de chaque sport dans les ventes au Canada. Mesure gardee ; « refaire » relit (au plus une fois par heure)."""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import sports_marche
+        r = sports_marche.lire()
+        if refaire or not r:
+            if r and time.time() - (datetime.fromisoformat(r["le"]).timestamp() if r.get("le") else 0) < 3600:
+                return {"ok": True, **r, "trop_tot": True}
+            r = sports_marche.mesurer()
+        return {"ok": True, **r}
 
     def alerte_ajouter(self, q, prix_max):
         return marche.alerte_ajouter(self, q, prix_max)
@@ -8690,26 +8848,6 @@ class Api:
                 w.writerow([b["cree_le"][:10], "Break", b["nom"], b["revenus"], b["frais"], b["cout"], b["profit"]])
         return {"ok": True, "csv": s.getvalue(), "nom": f"bilan_{mois}.csv"}
 
-    # -- accueil --------------------------------------------------------------------------------------
-    def tableau_bord(self):
-        b = self.bilan()
-        with _verrou:
-            c = self._db()
-            try:
-                stock = c.execute("SELECT COUNT(*), COALESCE(SUM(COALESCE(valeur, prix_demande, cout, 0)),0), COALESCE(SUM(cout),0) "
-                                  "FROM cartes WHERE statut!='Vendue'").fetchone()
-                a_lister = c.execute("SELECT COUNT(*) FROM cartes WHERE statut='En stock' AND COALESCE(emplacement,'') NOT IN ('Magasin','Collection')").fetchone()[0]
-            finally:
-                c.close()
-        brk = self.breaks_liste()
-        return {"mois": b, "stock": {"nb": stock[0], "valeur": round(stock[1], 2), "cout": round(stock[2], 2)},
-                "a_lister": a_lister,
-                "breaks_ouverts": [x for x in brk if x["statut"] != "ferme"][:5],
-                "a_envoyer": sum(x["a_envoyer"] for x in brk),
-                "consignation_du": round(sum(k["du"] for k in self.consignataires_liste()), 2),
-                "nom_boutique": self.reglages_lire()["nom_boutique"]}
-
-
     # -- accueil « faire de l'argent » (22 oct 2026) ----------------------------------------------
     # Etudes dashboard : 3-5 chiffres en haut, chacun avec sa comparaison ; puis les actions
     # classees par $ ; le detail est un tap plus loin. Un vendeur veut savoir : combien je fais,
@@ -9642,6 +9780,12 @@ class Api:
             a = ebay_compte.article(item_id, frais=True)
         except (RuntimeError, OSError) as e:
             a = {"item_id": str(item_id), "titre": titre or "", "photos": [], "erreur": str(e)}
+        if rapide and a.get("prix_cad"):          # 13 nov 2026 : la watchlist prend le prix qu'on vient de lire sur eBay
+            try:
+                import watchlist
+                a["watch_maj"] = watchlist.rafraichir(self, item_id, a)
+            except Exception as e:
+                print("Watchlist (fiche) : " + repr(e), flush=True)
         t = a.get("titre") or titre or ""
         titre_corr = None
         try:                                     # 13 nov 2026 : le code de la carte contredit le produit du titre
@@ -9676,7 +9820,7 @@ class Api:
         if total and not a.get("erreur"):
             try:
                 import deals as _dl0
-                maj_deal = _dl0.maj_prix(item_id, total, a.get("port_cad"), a.get("mises"), a.get("fin"), achat_=_dl0.achat(a))
+                maj_deal = _dl0.maj_prix(item_id, total, a.get("port_cad"), a.get("mises"), a.get("fin"), achat_=_dl0.achat(a), encan=a.get("encan"))
             except Exception as e:
                 print("Deals (prix fiche) : " + repr(e), flush=True)
         r = self.reglages_lire()

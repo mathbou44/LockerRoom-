@@ -17,7 +17,6 @@ import re
 import statistics
 import threading
 import time
-import urllib.request
 from datetime import datetime, timedelta, timezone
 
 SOURCES = [

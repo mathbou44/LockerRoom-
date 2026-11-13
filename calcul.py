@@ -113,11 +113,6 @@ def categories_carte(c, s):
     return out
 
 
-def _arrondir(v, pas):
-    pas = max(0.01, float(pas or 1))
-    return round(math.ceil(v / pas - 1e-9) * pas, 2)
-
-
 # 28 oct 2026 (Mathieu : « l'ecart entre Schaefer et Demidov me semble eleve : revois l'attribution des prix et reste dans
 # les chiffres ronds, 5 et 0 a la fin : 45 $ et non 43 $ ») :
 #   - la part de chaque place suit sa valeur attendue ADOUCIE (valeur ^ 0,7) : la grosse place reste la plus chere, mais
@@ -226,36 +221,6 @@ def prix_places(checklist, boites=1, cout_boite=0.0, marge=0.25, frais_pct=0.109
     net = total * (1 - float(frais_pct)) - float(frais_fixe) * len(places)
     return {"places": places, "total": total, "cible": round(cible, 2), "cout": cout,
             "profit_estime": round(net - cout, 2), "nb_cartes": len(checklist)}
-
-
-def _gamma_p(k, x):
-    """Gamma incomplete reguliere P(k, x) (series / fraction continue, Numerical Recipes)."""
-    if x <= 0:
-        return 0.0
-    if x < k + 1:
-        terme = somme = 1.0 / k
-        a = k
-        for _ in range(500):
-            a += 1
-            terme *= x / a
-            somme += terme
-            if abs(terme) < abs(somme) * 1e-10:
-                break
-        return min(1.0, somme * math.exp(-x + k * math.log(x) - math.lgamma(k)))
-    b, c, d = x + 1 - k, 1e300, 1 / (x + 1 - k)
-    h = d
-    for i in range(1, 500):
-        an = -i * (i - k)
-        b += 2
-        d = an * d + b
-        d = 1e-300 if abs(d) < 1e-300 else d
-        c = b + an / c
-        c = 1e-300 if abs(c) < 1e-300 else c
-        d = 1 / d
-        h *= d * c
-        if abs(d * c - 1) < 1e-10:
-            break
-    return max(0.0, 1.0 - math.exp(-x + k * math.log(x) - math.lgamma(k)) * h)
 
 
 SEUIL_REVENTE = 1.50           # $ CA : sous ce prix, une carte ne se revend pas a l'unite

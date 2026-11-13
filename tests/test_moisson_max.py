@@ -16,7 +16,12 @@ def appel(p, delai):
 thecardapi._appel = appel
 thecardapi._taux = lambda: 1.38
 thecardapi.moissonner(max_pages=100)
-assert mots[0] == "hockey auto" and "hockey" in mots, mots[:3]
+# 13 nov 2026 : le baseball (sa part, 20 %) passe d'abord, dans sa propre base ; le hockey prend tout le reste
+assert mots[0] == "1st bowman" and "hockey auto" in mots and "young guns" in mots, mots[:3]
+hb = [m for m in mots if m in thecardapi.MOTS_MOISSON_BASEBALL]
+assert mots.index("hockey auto") == len(hb), "le baseball d'abord, puis le hockey"
+assert 0 < thecardapi.utilisees("moisson_baseball") <= 4950 * 0.93 * 0.2 + 1
+assert base_ventes.nombre("baseball") > 0 and base_ventes.nombre() > base_ventes.nombre("baseball")
 u = thecardapi.utilisees()
 assert 4500 <= u <= 4950 * 0.94 + 100, u                       # presque tout le jour, ~300 gardees pour les secours
 assert thecardapi._budget_ok("tap", 100)                         # un geste de l'utilisateur passe encore

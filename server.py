@@ -308,6 +308,11 @@ def _garde():
             if cid2 != cid:
                 session["compte"] = cid = cid2
             comptes.activer(cid)                                     # cette requete ne voit que ce compte
+            if request.path.startswith("/api/"):
+                try:
+                    comptes.vu(cid)                                  # 13 nov 2026 : « vu » = la derniere activite
+                except Exception:
+                    pass
         elif request.path == "/" and not CODE_ACCES:
             if "LockerRoomiOS" in (request.headers.get("User-Agent") or ""):
                 return redirect("/connexion")                        # app iPhone : pas la vitrine (prix du site)
@@ -509,7 +514,7 @@ _LIER_TIERS = {}      # etat OAuth -> (compte qui relie Apple / Google, le)
 @app.route("/auth/<fournisseur>/retour", methods=["GET", "POST"])
 def auth_tiers_retour(fournisseur):
     """Google revient en GET, Apple en POST (form_post). Compte cree au premier passage."""
-    from flask import redirect, session
+    from flask import redirect
     import auth_tiers as at
     if fournisseur not in at.FOURNISSEURS or not comptes.MULTI:
         abort(404)
@@ -843,7 +848,7 @@ def _page_langue(html):
 # s'ouvre sur le MEME compte, peu importe comment on s'est connecte la premiere fois.
 @app.route("/auth/code", methods=["GET", "POST"])
 def auth_code():
-    from flask import redirect, session
+    from flask import redirect
     if not comptes.MULTI:
         return redirect("/")
     msg = ""
@@ -1022,7 +1027,7 @@ def donnees_break(jeton):
 @app.route("/api/ebay_retour")
 def ebay_retour():
     """Page ou eBay renvoie le vendeur apres « Accepter » (auth accepted URL)."""
-    from flask import redirect, session
+    from flask import redirect
     if not _navigateur_lie(request.args.get("state")):
         return redirect("/connexion?erreur=1" if not comptes.courant() else "/#reglages/ebay-erreur")
     lie = _LIER_ETATS.pop(request.args.get("state") or "", None)
@@ -1112,9 +1117,7 @@ def admin_sauvegarde_zip():
     (comptes, inventaires, photos, ventes, modele SlabIQ) en un .zip, pour l'admin seulement (verifie, jamais en vue
     simulee). Les caches qui se refont seuls sont laisses de cote. Le fichier est ecrit a part, envoye, puis efface."""
     import tempfile
-    import zipfile
     from flask import send_file
-    import lockerroom as _lr
     if not api._est_admin(reel=True):
         abort(403)
     import sauvegarde                          # 13 nov 2026 : le meme .zip que la sauvegarde de nuit (SQLite coherent)
@@ -1316,7 +1319,6 @@ def _valeurs_auto():
     dossier de Hall of Cardz sur ce PC (lecture seule) ; sans source, les
     valeurs deja la (ou celles par defaut) restent."""
     import valeurs
-    import valeurs_maj
     # 3 nov 2026 (Mathieu : « c'est tellement long a charger l'app apres une mise a jour ») : apres un deploiement, les
     # 3 premieres minutes servent l'app (les gens rouvrent tous l'app en meme temps) ; les gros calculs attendent
     time.sleep(CALME_DEMARRAGE_S)
@@ -1418,6 +1420,11 @@ def _valeurs_auto():
             thecardapi.moissonner_si_besoin()
         except Exception as e:
             print("TheCardAPI moisson : " + str(e), flush=True)
+        try:                                    # 13 nov 2026 - le baseball : la liste MLB + les fiches des joueurs qui se vendent
+            import mlb
+            mlb.passe_si_besoin()
+        except Exception as e:
+            print("MLB : " + str(e), flush=True)
         try:                                    # 27 oct 2026 - population PSA des fiches connues (PSA_TENDANCES=1, 1 fois/jour)
             import psa
             n_psa = psa.rafraichir_si_besoin()
@@ -1463,6 +1470,11 @@ def _watch_boucle():
                         print("Mes joueurs :", cid or "", rj["envoyees"], flush=True)
                 except Exception as e:
                     print("Mes joueurs : " + str(e), flush=True)
+        try:                                     # 13 nov 2026 : pres de la limite de memoire, les memoires de confort videes
+            import admin as _adm
+            _adm.soupape()
+        except Exception as e:
+            print("Memoire : " + str(e), flush=True)
         time.sleep(300)
 
 

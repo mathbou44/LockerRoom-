@@ -19,11 +19,9 @@ telecharge par l'app.
 import json
 import os
 import re
-import shutil
 import sqlite3
 import statistics
 import sys
-import tempfile
 from datetime import datetime, timedelta
 
 import catalogue

@@ -228,8 +228,3 @@ def perf_vendeurs(ramassage=()):
     _PERF.update(cle=cle, v=res)
     return res
 
-
-def score_vendeur(v, ramassage=()):
-    """Le score (cout moyen / valeur, ramene vers la moyenne) d'un vendeur, ou None s'il n'a aucun encan connu."""
-    x = (perf_vendeurs(ramassage).get("vendeurs") or {}).get(str(v or "").strip().lower())
-    return x["score"] if x else None

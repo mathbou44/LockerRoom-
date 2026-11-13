@@ -30,6 +30,8 @@ ENTETES = {
     "ville": ("team city", "city"),
     "recrue": ("rookie", "rc", "rookie card", "rc?"),
     "auto": ("auto", "autograph", "autographed", "signed"),
+    # 13 nov 2026 (Splendor : la colonne « Mem » = Patch etait ignoree ; 1 371 cartes auto-patch lues « auto » seulement)
+    "memo": ("mem", "memo", "memorabilia", "relic", "relics", "patch", "jersey"),
     "tech": ("tech", "technology", "finish"),
     "sp": ("sps", "sp", "short print", "sp/ssp"),
     "cotes": ("stated odds", "odds", "insertion odds", "pack odds"),
@@ -181,7 +183,7 @@ def lire(brut, nom_fichier="checklist.xlsx", sport=None):
         carte = {"numero": str(num).strip(), "joueur": joueur, "equipe": "/".join(c for c in codes if c) or str(equipe_txt).strip(),
                  "sous_ensemble": se, "recrue": rc or groupe_de(se) == "recrue",
                  "auto": groupe_de(se) in ("auto", "auto_memo") or bool(str(g("auto") or "").strip()),
-                 "memo": groupe_de(se) in ("memo", "auto_memo"), "tirage": tir}
+                 "memo": groupe_de(se) in ("memo", "auto_memo") or bool(str(g("memo") or "").strip()), "tirage": tir}
         if sp in ("SP", "SSP"):
             carte["sp"] = sp
         if insc:
@@ -216,6 +218,10 @@ def lire(brut, nom_fichier="checklist.xlsx", sport=None):
         g = groupe_de(nom)
         if g not in ("auto", "auto_memo") and lot and all(c["auto"] for c in lot):
             g = "auto"
+        if lot and all(c["auto"] and c["memo"] for c in lot):
+            g = "auto_memo"                              # 13 nov 2026 : la colonne « Mem » le dit pour tout le sous-ensemble
+        elif g not in ("memo", "auto_memo") and lot and all(c["memo"] and not c["auto"] for c in lot):
+            g = "memo"
         s = {"nom": nom, "groupe": g, "nb_cartes": len(lot), "tirage": tir.pop() if len(tir) == 1 else None,
              "parallele_de": None, "par_boite": None, "cotes": txt}
         ch = cote_hobby(txt)

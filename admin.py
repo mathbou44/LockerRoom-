@@ -70,7 +70,10 @@ def abonnes():
         e = forfaits.etat(cid)
         statut = "pro" if e.get("payant") else "offert" if e.get("offert") else "essai" if e.get("essai") else "gratuit"
         vu = _date(info.get("vu_le"))
+        rv = info.get("renvoi")
         out.append({"id": cid, "username": info.get("username") or "?", "env": info.get("env"), "statut": statut,
+                    "relie_a": ((comptes.info(comptes.resoudre(cid)) or {}).get("username") or "?") if rv else None,
+                    "admin": est_compte_admin(cid), "connexion": info.get("env"),
                     "cree_le": info.get("cree_le"), "vu_le": info.get("vu_le"),
                     "actif_7j": bool(vu and maint - vu < timedelta(days=7)),
                     "jours_essai": e.get("jours_restants") if e.get("essai") else None,
@@ -94,6 +97,42 @@ def abonnes():
             "gratuit": n("gratuit"), "actifs_7j": sum(1 for x in out if x["actif_7j"]), "nouveaux_7j": nouveaux,
             "revenu_mensuel": mensuel, "devise": (prix or {}).get("devise") or "CAD", "prix": prix,
             "stripe_mode": paiements.mode() or None}
+
+
+def _admins():
+    return {x.strip().lower() for x in os.environ.get("LOCKERROOM_ADMINS", "").split(",") if x.strip()}
+
+
+def est_compte_admin(cid):
+    import comptes
+    e = comptes.info(cid) or {}
+    noms = {cid, e.get("ebay_username")} | ({e.get("username")} if e.get("env") in ("production", "sandbox") else set())
+    return bool({str(x).strip().lower() for x in noms if x} & _admins())
+
+
+def supprimer_compte(cid, moi, nom_confirme):
+    """13 nov 2026 (Mathieu : « supprimer un de mes comptes » dans Abonnes) : l'admin supprime un compte, pour de bon.
+    Garde-fous : jamais le compte avec lequel l'admin est connecte (ni celui ou il est relie), jamais un compte admin, et le
+    nom du compte doit etre retape. Un ancien compte RELIE (renvoi vers un autre) : seulement son dossier ; ses connexions
+    (eBay, Apple, Google) sont deja passees au compte choisi, on ne touche ni a Stripe ni a Apple (sinon la connexion du
+    compte choisi serait coupee)."""
+    import comptes
+    if cid not in comptes.lister():
+        return {"ok": False, "erreur": "Compte introuvable"}
+    e = comptes.info(cid) or {}
+    if str(nom_confirme or "").strip().lower() != str(e.get("username") or "").strip().lower():
+        return {"ok": False, "erreur": "Le nom retapé ne correspond pas au compte"}
+    if cid in (moi, comptes.resoudre(moi)) or comptes.resoudre(cid) == comptes.resoudre(moi) and not e.get("renvoi"):
+        return {"ok": False, "erreur": "C’est le compte avec lequel tu es connecté : impossible de le supprimer d’ici"}
+    if est_compte_admin(cid) and not e.get("renvoi"):
+        return {"ok": False, "erreur": "Compte administrateur : impossible de le supprimer"}
+    if e.get("renvoi"):
+        comptes.supprimer(cid)
+        print("Admin : ancien compte relie supprime", flush=True)
+        return {"ok": True, "supprimes": [cid], "relie": True}
+    import lockerroom
+    groupe = lockerroom.effacer_compte(cid)
+    return {"ok": True, "supprimes": groupe}
 
 
 def offrir_pro(cid, jours=None):
@@ -136,7 +175,11 @@ def _maj_fichier(nom, cle="maj"):
         return None
 
 
-VERSION_APP = "v250"            # 12 nov 2026 : la version montree dans l'admin (a monter a chaque livraison)
+# 13 nov 2026 (Mathieu : « ca devrait etre V2.5.1 ; on fait pour suivre l'industrie ») : versions semantiques MAJEURE.MINEURE.
+# CORRECTIF, montees a chaque livraison : un correctif seulement -> CORRECTIF + 1 (2.5.1 -> 2.5.2) ; une nouvelle fonction
+# -> MINEURE + 1 et CORRECTIF a 0 (2.5.2 -> 2.6.0) ; un gros changement (refonte, rupture) -> MAJEURE + 1 (-> 3.0.0).
+# Avant : un compteur de livraisons (v1 a v251) ; 2.5.1 reprend la 251e. Separee du numero de l'app iPhone (App Store).
+VERSION_APP = "2.7.1"
 
 
 def sante():
@@ -216,7 +259,73 @@ def sante():
             "demarre_le": datetime.fromtimestamp(DEMARRE).isoformat(timespec="minutes"),
             "en_ligne_h": round((time.time() - DEMARRE) / 3600, 1),
             "ebay": appels_ebay.resume(), "photos": photos, "disque": disque, "taches": taches,
-            "erreurs": erreurs()[:30], "multi": comptes.MULTI, "ventes_communaute": vc}
+            "erreurs": erreurs()[:30], "multi": comptes.MULTI, "ventes_communaute": vc, "memoire": memoire()}
+
+
+# 13 nov 2026 (Render : « Web Service lockerroom exceeded its memory limit », redemarrage automatique) : la memoire est
+# suivie (le processus et tout le conteneur, contre sa limite) ; au-dessus de 80 % de la limite, les memoires de confort
+# (Radars gardes, scores deja calcules, ventes en cache) sont videes avant que Render ne coupe tout
+def _lire_entier(ch):
+    try:
+        with open(ch) as f:
+            v = f.read().strip()
+        return None if v == "max" else int(v)
+    except (OSError, ValueError):
+        return None
+
+
+def memoire():
+    rss = None
+    try:
+        with open("/proc/self/status") as f:
+            rss = next(int(l.split()[1]) // 1024 for l in f if l.startswith("VmRSS"))
+    except (OSError, StopIteration, ValueError):
+        pass
+    cur = _lire_entier("/sys/fs/cgroup/memory.current") or _lire_entier("/sys/fs/cgroup/memory/memory.usage_in_bytes")
+    lim = _lire_entier("/sys/fs/cgroup/memory.max") or _lire_entier("/sys/fs/cgroup/memory/memory.limit_in_bytes")
+    if lim and lim > 1 << 45:
+        lim = None                                   # pas de limite reelle
+    return {"processus_mo": rss, "conteneur_mo": cur // (1 << 20) if cur else None, "limite_mo": lim // (1 << 20) if lim else None,
+            "soupapes": _SOUPAPE["n"], "derniere_soupape": _SOUPAPE["le"]}
+
+
+_SOUPAPE = {"n": 0, "le": None}
+SOUPAPE_PCT = 0.80
+
+
+def soupape():
+    """Aux 5 min (server.py) : pres de la limite, on vide les memoires de confort (rien de perdu : elles se refont)."""
+    m = memoire()
+    utilise, lim = m.get("conteneur_mo") or m.get("processus_mo"), m.get("limite_mo")
+    if not utilise or not lim or utilise < SOUPAPE_PCT * lim:
+        return None
+    videes = []
+    try:
+        import lockerroom
+        n = len(lockerroom.Api._RADAR)
+        lockerroom.Api._RADAR.clear()
+        videes.append(f"radars:{n}")
+    except Exception:
+        pass
+    try:
+        import score_slab
+        n = len(score_slab._LOT["d"])
+        score_slab._LOT["d"].clear()
+        videes.append(f"scores:{n}")
+    except Exception:
+        pass
+    try:
+        import deals
+        deals._HIT_FORT.clear()
+        deals._LU.update(cle=None, d={})
+    except Exception:
+        pass
+    import gc
+    gc.collect()
+    _SOUPAPE["n"] += 1
+    _SOUPAPE["le"] = datetime.now().isoformat(timespec="minutes")
+    print(f"Memoire : {utilise} / {lim} Mo, memoires videes ({', '.join(videes)})", flush=True)
+    return videes
 
 
 # -- catalogue -----------------------------------------------------------------------------------
