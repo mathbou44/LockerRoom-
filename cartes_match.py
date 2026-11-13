@@ -361,8 +361,12 @@ def raisons_refus(c, titre, appris=None):
         for mot, parents in IMPLIQUES.items():
             if mot in ia and mot in ci:                  # dans les deux sens : le parent peut manquer d'un cote ou de l'autre
                 ia, ci = ia - parents, ci - parents
-        en_plus = ia - ci
-        manque_i = ci - ia
+        # 13 nov 2026 (Mathieu : la Lundell « Exquisite Endorsement Rookie Auto Patch /50 » : « No sale », alors que ses ventes
+        # disent « Rookie Endorsements ») : le singulier et le pluriel du meme mot sont le meme mot
+        sing = lambda w: w[:-1] if len(w) > 4 and w.endswith("s") and not w.endswith("ss") else w
+        ia_s, ci_s = {sing(w) for w in ia}, {sing(w) for w in ci}
+        en_plus = {w for w in ia if sing(w) not in ci_s}
+        manque_i = {w for w in ci if sing(w) not in ia_s}
         # 4 nov 2026 (Mathieu : une Sennecke « Rookie Draft Outburst » comparee aux Young Guns Outburst) : certains mots
         # font toujours une autre carte ; ils ne peuvent pas manquer, meme quand le reste du titre correspond
         forts = (c["ident"] & MOTS_FORTS) - ia

@@ -879,6 +879,16 @@ def par_gradation(texte, requete=True, fond=False, jours=365):
             "erreur": r.get("erreur")}
 
 
+def requete_precise(cib, q):
+    """La recherche, plus precise : les mots de l'insert / du produit (« endorsement », « outburst ») qui n'y sont pas encore,
+    2 au plus, sans les mots trop courants. None si rien a ajouter."""
+    import cartes_match
+    deja = set(q.split())
+    plus = [w for w in sorted(cib.get("ident") or ()) if w.isalpha() and len(w) >= 4 and w not in deja and w not in cartes_match.GENERIQUES
+            and w not in cartes_match.MARQUES]
+    return (q + " " + " ".join(plus[:2])) if plus else None
+
+
 def memes(texte, requete=True, n=24, fond=False, exclure_titre=None):
     """Les MEMES cartes vendues (eBay via SoldComps + communaute SlabCoach), les plus recentes d'abord.
     texte = ce que l'utilisateur a tape (requete=True) ou le titre d'une annonce (requete=False).
@@ -896,6 +906,14 @@ def memes(texte, requete=True, n=24, fond=False, exclure_titre=None):
     if r.get("secours") != "thecardapi":
         brut = raffiner(q, brut, futur)
     ebay = [v for v in brut if not cartes_match.raisons_refus(cib, v["titre"])]
+    # 13 nov 2026 (Mathieu : la Lundell Exquisite Endorsement /50 : « No sale », alors que 130point en montre) : la recherche
+    # rend au plus 50 ventes, les plus recentes ; quand elles sont toutes d'AUTRES cartes du joueur, les ventes de celle-ci
+    # (plus vieilles) n'y sont pas. Une 2e recherche, plus precise (les mots de l'insert en plus), une seule fois
+    if not ebay and q and len(brut) >= 40 and not r.get("erreur"):
+        q2 = requete_precise(cib, q)
+        if q2:
+            r2 = rechercher(q2, fond=fond)
+            ebay = [v for v in (r2.get("ventes") or []) if not cartes_match.raisons_refus(cib, v["titre"])]
     try:
         comm = (ventes_communaute.chercher(texte, requete=requete, n=40) or {}).get("ventes") or []
     except Exception:

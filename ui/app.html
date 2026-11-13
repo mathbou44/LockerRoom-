@@ -231,7 +231,7 @@ background:linear-gradient(transparent, var(--fond) 30%)}
 #adm-vend-r .det, #adm-vend-r .nom{white-space:normal; overflow:visible; text-overflow:clip}
 .d-adm{display:flex; align-items:center; gap:8px; margin:-4px 0 12px} .d-adm .d-tour{flex:1; min-width:0; margin:0 !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .d-adm-o{flex:none; width:40px; height:40px; border-radius:50%; display:grid; place-items:center; border:2px solid transparent; background:var(--pastille-fond, #1A1A21) padding-box, var(--prisme) border-box; color:var(--texte)}
-.d-adm-o svg{width:18px; height:18px}
+.d-adm-o{padding:0; line-height:0; cursor:pointer} .d-adm-o svg{width:18px; height:18px; margin:0; vertical-align:0; display:block}   
 .d-tour{display:block; position:relative; padding-right:26px !important; margin:-4px 0 12px; padding:9px 12px; border-radius:12px; background:rgba(233,207,142,.07); border:1px solid rgba(233,207,142,.22); font-size:13px; color:var(--doux); text-decoration:none; line-height:1.35}
 .d-tour b{color:var(--texte); font-weight:600} .d-tour i{font-style:normal; position:absolute; right:12px; top:50%; transform:translateY(-50%); color:var(--or)} .d-tour-a{margin-right:6px} .d-tour .roue{width:13px; height:13px; display:inline-block; vertical-align:-2px}
 .d-tout{display:flex; align-items:center; gap:10px; width:100%; margin:-4px 0 14px; padding:10px 12px; border-radius:14px; border:1px solid color-mix(in srgb, var(--acc) 35%, var(--ligne));
@@ -3379,7 +3379,7 @@ body .onglets a{line-height:14px !important}
 body .onglets a.centre > svg, body:not(.mode-acheteur) .onglets a.centre > svg, body.mode-acheteur .onglets a.centre > svg{
 width:24px !important; height:24px !important; padding:0 !important; margin:0 !important; border:0 !important;
 background:none !important; position:relative; z-index:1}
-body .onglets a.centre::after{content:''; position:absolute; z-index:0; left:50%; bottom:20px; width:38px; height:38px; margin-left:-19px;
+body .onglets a.centre::after{content:''; position:absolute; z-index:0; left:50%; top:calc(var(--pad-ong, 6px) - 7px); bottom:auto; width:38px; height:38px; margin-left:-19px;
 box-sizing:border-box; border-radius:50%; border:2px solid transparent; background:linear-gradient(#1A1A21, #1A1A21) padding-box, var(--prisme) border-box; pointer-events:none}
 body .onglets a.centre.on::after{background:linear-gradient(color-mix(in srgb, var(--acc) 24%, #1A1A21), color-mix(in srgb, var(--acc) 24%, #1A1A21)) padding-box, var(--prisme) border-box}
 }

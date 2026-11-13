@@ -28,3 +28,12 @@ assert [x["item_id"] for x in d["deals"]] == ["2"], d["deals"]
 assert not d["suivis"][0].get("valeur")
 assert deals.revalider_produits() == {"fait": False}          # une seule fois
 print("OK test_meme_produit")
+
+# 13 nov 2026 (Lundell Exquisite « Endorsement » vs ses ventes « Rookie Endorsements ») : singulier = pluriel ; et la
+# recherche precise ajoute le mot de l'insert
+import cartes_match as _C, vendues as _v
+_c = _C.cible_titre("2021-22 UD Exquisite Collection Endorsement Rookie Auto Patch Anton Lundell /50")
+assert not _C.raisons_refus(_c, "2021-22 Upper Deck Exquisite Collection Rookie Endorsements Auto Patch Anton Lundell 12/50")
+assert _C.raisons_refus(_c, "2021-22 The Cup Exquisite Rookie Auto Patch Anton Lundell /50")
+assert "endorsement" in (_v.requete_precise(_c, _C.requete_ebay(_c)) or "")
+print("OK singulier pluriel")

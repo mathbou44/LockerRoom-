@@ -179,7 +179,7 @@ def _maj_fichier(nom, cle="maj"):
 # CORRECTIF, montees a chaque livraison : un correctif seulement -> CORRECTIF + 1 (2.5.1 -> 2.5.2) ; une nouvelle fonction
 # -> MINEURE + 1 et CORRECTIF a 0 (2.5.2 -> 2.6.0) ; un gros changement (refonte, rupture) -> MAJEURE + 1 (-> 3.0.0).
 # Avant : un compteur de livraisons (v1 a v251) ; 2.5.1 reprend la 251e. Separee du numero de l'app iPhone (App Store).
-VERSION_APP = "2.7.1"
+VERSION_APP = "2.7.2"
 
 
 def sante():
