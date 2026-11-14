@@ -138,3 +138,18 @@ d = {"rosters": {"le": 9e12, "cour": {"joe a": "CBJ"}, "prec": {"joe a": ["TOR",
 assert ij.suivre_echanges(d, {}, AUJ) == {}
 v_ = {"le": time.time(), "cour": {"x": "TOR"}}; assert ij.rosters_lnh(v_) is v_          # pas relu avant 20 h
 print("ALIGNEMENTS OK")
+
+# 10. 14 nov 2026 (« les grosses nouvelles qui expliquent le score dans la fiche : Cousins s'est fait defoncer par Chychrun ») :
+# les evenements d'un joueur restent 30 jours avec lui (titre + lien), les plus recents d'abord ; une grosse mise en echec compte
+assert ij.classer_evenement("Jakob Chychrun lays out Nick Cousins with huge hit")[0] == "choc"
+assert ij.classer_evenement("Cousins leaves game after big hit")[0] == "blessure"
+d = {"grosses": {"Nick Cousins": [{"titre": "Vieux", "date": (AUJ - timedelta(days=40)).isoformat(), "type": "exploit", "sens": 1}]}}
+ij.garder_grosses(d, {"Nick Cousins": {"evs": [{"type": "choc", "sens": 1, "titre": "Jakob Chychrun lays out Nick Cousins with huge hit",
+                                                 "lien": "https://x/1", "date": AUJ.isoformat()}]}}, AUJ)
+ij.garder_grosses(d, {"Nick Cousins": {"evs": [{"type": "choc", "sens": 1, "titre": "Jakob Chychrun lays out Nick Cousins with huge hit",
+                                                 "lien": "https://x/1", "date": AUJ.isoformat()}]}}, AUJ)            # deux fois : une seule
+assert [e["titre"] for e in d["grosses"]["Nick Cousins"]] == ["Jakob Chychrun lays out Nick Cousins with huge hit"], d
+ij._ecrire({"joueurs": {}, "indice": {"Nick Cousins": {"indice": 62, "actif": True, "pastilles": ["buzz"]}}, "le": 0, "grosses": d["grosses"]})
+q = ij.pourquoi("Nick Cousins")
+assert q["nouvelles"][0]["type"] == "choc" and q["nouvelles"][0]["lien"] == "https://x/1", q
+print("GROSSES NOUVELLES OK")

@@ -486,7 +486,12 @@ TYPES_EVENEMENTS = [
     ("contrat", +6, re.compile(r"extension|\bcontract\b|signs?\b|prolongation|contrat", re.I)),
     # 14 nov 2026 : un echange n'est ni bon ni mauvais en soi (Knies a Columbus : -50 %) ; son sens vient des marches
     ("echange", 0, re.compile(r"\btraded?\b|\bacquir|\bdealt\b|[ée]chang", re.I)),
-    ("blessure", -15, re.compile(r"injur|\bIR\b|day-to-day|surgery|concussion|upper[- ]body|lower[- ]body|bless[ée]|infirmerie|op[ée]r[ée]|commotion|out (indefinitely|for)", re.I)),
+    # 14 nov 2026 (Mathieu : « Cousins, c'est parce qu'il s'est fait defoncer par Chychrun ») : une grosse mise en echec, une
+    # bagarre : tout le monde en parle (le buzz), sans dire si c'est bon pour ses cartes
+    ("choc", 4, re.compile(r"\bbig hit\b|huge hit|massive hit|\blays? out\b|\blaid out\b|\blevell?ed\b|\bcrushe[sd]\b|\bdestroy|demolish|"
+                           r"\bfight\b|drops? the gloves|\bscrap\b|bagarre|mise en [ée]chec|\bejected\b|match penalty|hit on\b|cheap shot|"
+                           r"\bsuspension hearing\b", re.I)),
+    ("blessure", -15, re.compile(r"leaves? (the )?game|injur|\bIR\b|day-to-day|surgery|concussion|upper[- ]body|lower[- ]body|bless[ée]|infirmerie|op[ée]r[ée]|commotion|out (indefinitely|for)", re.I)),
     ("negatif", -18, re.compile(r"waive|waivers|sent down|demot|suspen|healthy scratch|ballottage|r[ée]trograd|arrest|charged|benched|slump", re.I)),
 ]
 DEMI_VIE_J = 3.0
@@ -517,6 +522,33 @@ def actu(jours=7):
         return {}
     limite = (date.today() - timedelta(days=jours)).isoformat()
     return [x for x in items if str(x.get("date") or "") >= limite]
+
+
+# 14 nov 2026 (Mathieu : « mettre les grosses nouvelles des joueurs qui expliquent le score dans leur fiche ») : le fil ne
+# garde que 7 jours ; les evenements d'un joueur (trophee, blessure, echange, grosse mise en echec...) restent 30 jours
+# avec lui (titre + lien seulement), les plus forts d'abord.
+GROSSES_JOURS = 30
+GROSSES_MAX = 6
+
+
+def garder_grosses(d, nouvelles_j, aujourdhui=None):
+    G = d.setdefault("grosses", {})
+    lim = ((aujourdhui or date.today()) - timedelta(days=GROSSES_JOURS)).isoformat()
+    for nom, na in (nouvelles_j or {}).items():
+        evs = [e for e in na.get("evs") or [] if e.get("titre")]
+        if not evs:
+            continue
+        l = G.setdefault(nom, [])
+        vus = {e["titre"] for e in l}
+        for e in evs:
+            if e["titre"] not in vus:
+                l.append({k: e.get(k) for k in ("titre", "lien", "date", "type", "sens")})
+                vus.add(e["titre"])
+    for nom in list(G):
+        G[nom] = sorted([e for e in G[nom] if str(e.get("date") or "") >= lim], key=lambda e: str(e.get("date") or ""), reverse=True)[:GROSSES_MAX]
+        if not G[nom]:
+            G.pop(nom)
+    return G
 
 
 def _actu_par_joueur(noms, items):
@@ -568,6 +600,10 @@ def calculer(d=None, base=None, demande=None):
     except Exception:
         marche_eq = None
     nouvelles_j = _actu_par_joueur(noms, actu())
+    try:
+        garder_grosses(d, nouvelles_j)
+    except Exception as e:
+        print("Grosses nouvelles : " + repr(e)[:120], flush=True)
     try:
         echanges = suivre_echanges(d, base)
     except Exception as e:
@@ -766,7 +802,8 @@ def passe(max_appels=None, sport="hockey"):
     import highlightly
     d = lire()
     d = {"joueurs": dict(d.get("joueurs") or {}), "indice": d.get("indice") or {}, "le": d.get("le") or 0,
-         "equipes_vues": dict(d.get("equipes_vues") or {}), "echanges": dict(d.get("echanges") or {}), "rosters": d.get("rosters")}
+         "equipes_vues": dict(d.get("equipes_vues") or {}), "echanges": dict(d.get("echanges") or {}), "rosters": d.get("rosters"),
+         "grosses": dict(d.get("grosses") or {})}
     try:
         d["rosters"] = rosters_lnh(d.get("rosters"))
     except Exception as e:
@@ -952,6 +989,9 @@ def pourquoi(nom):
     out = {"indice": v.get("indice"), "pastilles": v.get("pastilles") or [], "criteres": v.get("criteres") or {}, "actif": v.get("actif")}
     if v.get("echange"):
         out["echange"] = v["echange"]                 # 14 nov 2026 : {de_nom, vers_nom, le, sens}
+    gr = (d.get("grosses") or {}).get(nom_vrai) or next((x for n, x in (d.get("grosses") or {}).items() if _norm(n) == k), None)
+    if gr:
+        out["nouvelles"] = gr                         # 14 nov 2026 : les evenements des 30 derniers jours (titre + lien)
     I = d.get("indice") or {}
     if v.get("indice") is not None:
         pairs = [x for x in I.values() if x.get("actif") == v.get("actif")]
