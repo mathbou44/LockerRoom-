@@ -8434,10 +8434,13 @@ class Api:
 
         def tache():
             for a in manque:
+                # 14 nov 2026 (Mathieu : « les images ne loadent pas toutes ») : une erreur passagere d'eBay (delai, quota) ne
+                # marque plus l'achat « sans photo » pour toujours ; seul « eBay n'a pas de photo » le fait. On reessaie plus tard.
                 try:
                     ph = ebay_compte.photo_item(a["item_id"]) or "-"
-                except Exception:
-                    ph = "-"
+                except Exception as e:
+                    print("Photo d'achat " + str(a.get("item_id")) + " : " + repr(e)[:120], flush=True)
+                    continue
                 with _verrou:
                     c = self._db()
                     try:
@@ -8521,6 +8524,7 @@ class Api:
     # apres l'achat, et surtout si le score SlabIQ est haut (forte demande, en feu...) ») : les cartes achetees PAS ENCORE sur
     # eBay (achats eBay pas encore ajoutes + cartes de l'inventaire achetees, en stock), chacune avec son score SlabIQ, les
     # pastilles du joueur, le prix paye, le prix propose, le profit et QUAND la mettre en vente.
+    _ACH_PH_LE = 0.0
     ACHETEES_FORT = 80                     # un score SlabIQ de 80 et plus : forte demande
     ACHETEES_PASTILLES_FORTES = ("en_feu", "en_hausse", "honneur", "buzz", "echange_hausse", "rebond")
 
@@ -8553,7 +8557,8 @@ class Api:
                 continue                                     # reliee a une carte vendue, listee ou en collection
             out.append({"cle": f"a:{a['item_id']}:{a.get('n') or 0}", "carte_id": None, "item_id": a["item_id"], "n": a.get("n") or 0,
                         "titre": a.get("titre") or "", "photo": a.get("photo") if a.get("photo") not in (None, "", "-") else None,
-                        "cout": a.get("cout"), "achete_le": str(a.get("date") or "")[:10] or None, "a_ajouter": True})
+                        "cout": a.get("cout"), "achete_le": str(a.get("date") or "")[:10] or None, "a_ajouter": True,
+                        "_ph_x": a.get("photo") == "-"})
         for k in cartes:                                     # 2. dans l'inventaire, en stock, pas sur eBay
             if (k.get("emplacement") or "") in ("Collection", "eBay") or k.get("item_number") or ("envoi_json" in cols and k.get("envoi_json")):
                 continue
@@ -8566,11 +8571,15 @@ class Api:
                         "photo": ph_a or k.get("photo"), "cout": k.get("cout") if k.get("cout") is not None else (a or {}).get("cout"),
                         "achete_le": str((a or {}).get("date") or k.get("cree_le") or "")[:10] or None,
                         "valeur_carte": k.get("valeur"), "prix_demande": k.get("prix_demande"),
-                        "a_finir": bool("a_finir_le" in cols and k.get("a_finir_le"))})
+                        "a_finir": bool("a_finir_le" in cols and k.get("a_finir_le")), "_ph_x": bool(a and a.get("photo") == "-")})
         try:
             score_slab.annoter_lot(out)
         except Exception as e:
             print("Achetees (scores) : " + repr(e), flush=True)
+        manque = [{"item_id": x["item_id"]} for x in out if x.get("item_id") and not x.get("photo") and not x.get("_ph_x")]
+        if manque and time.time() - Api._ACH_PH_LE > 90:          # les photos qui manquent, en fond (40 a la fois)
+            Api._ACH_PH_LE = time.time()
+            self._achats_photos(manque, n=40)
         comps = comps_permis(self)
         t0 = time.time()
         for x in out:
@@ -8617,7 +8626,7 @@ class Api:
         ordre = {"maintenant": 0, "prete": 1, "attendre_creux": 2, "attendre_3mois": 3, "inconnu": 4}
         out.sort(key=lambda x: (ordre[x["quand"]], -(x.get("score") or 0) if x["quand"] in ("maintenant", "prete") else (x.get("jours_restants") or 0)))
         for x in out:
-            for k in ("valeur_carte", "prix_demande"):
+            for k in ("valeur_carte", "prix_demande", "_ph_x"):
                 x.pop(k, None)
         resume = {"n": len(out), "maintenant": sum(1 for x in out if x["quand"] == "maintenant"),
                   "pretes": sum(1 for x in out if x["quand"] in ("maintenant", "prete")),
@@ -8625,7 +8634,8 @@ class Api:
                   "paye": round(sum(float(x["cout"]) for x in out if x.get("cout") is not None), 2),
                   "propose": round(sum(x["propose"] for x in out if x.get("propose")), 2),
                   "profit": round(sum(x["profit"] for x in out if x.get("profit") is not None), 2),
-                  "apres_j": AFFICHER_APRES_J, "comps": comps}
+                  "apres_j": AFFICHER_APRES_J, "comps": comps,
+                  "photos_en_route": sum(1 for x in out if x.get("item_id") and not x.get("photo") and not x.get("_ph_x"))}
         if not comps:
             for x in out:
                 if x.get("source_prix") == "ventes":
@@ -9581,6 +9591,11 @@ class Api:
         # 12 nov 2026 (Mathieu : « payer 50 % d'une carte d'un joueur en pente descendante, ce n'est pas un deal si on veut la
         # vendre dans 3 mois ; il faut des joueurs stables ou qui montent, ou des bons joueurs en slump ») : ADMIN, le Score
         # SlabIQ du joueur et son sens sur chaque deal ; un joueur qui descend (pas un bon joueur en creux) passe apres
+        try:                                     # 14 nov 2026 : le score SlabIQ de la carte, en coin (le meme slab partout)
+            import score_slab
+            score_slab.annoter_lot([x for x in [*lst[:240], *suivis, *pres] if x.get("score") is None])
+        except Exception as e:
+            print("Score (deals) : " + repr(e), flush=True)
         if adm_:
             try:
                 self._iq_deals([*lst[:240], *suivis, *pres])
@@ -10277,6 +10292,14 @@ class Api:
         if not ebay_prix_actif():
             import comptes as _cpt
             n_tot = max(n_tot, self._MES_DEALS_N.get((_cpt.courant() or "local") + ":" + ",".join(self._provenance())) or 0)
+        try:                                          # 14 nov 2026 : le meme slab partout (joueur, carte, score SlabIQ en coin)
+            import score_slab
+            score_slab.annoter_lot([x for x in deals[:24] if x.get("score") is None])
+            for x in deals[:24]:
+                if not x.get("joueur_n"):
+                    x["joueur_n"], x["carte_n"] = self._etiquette_deal(x.get("titre") or "", None)
+        except Exception as e:
+            print("Accueil (slabs) : " + repr(e), flush=True)
         return {"mois": m0, "deals": deals[:24], "nb_deals": n_tot, "gain_deals": round(sum(max(0, d["gain"]) for d in deals), 2),
                 "achats": {"n": len(achats), "depense": depense, "valeur": valeur,
                            "latent": round(sum(((a.get("valeur") or a.get("prix_demande") or 0) * (1 - fp) - ff - (a["cout"] or 0))
