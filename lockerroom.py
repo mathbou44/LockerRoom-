@@ -7306,6 +7306,46 @@ class Api:
         Api._TEND_IQ.update(le=m, v=r)
         return r
 
+    # 14 nov 2026 (Mathieu : « revoir la page d'accueil en format ordi : des bentos, grossir les annonces, ajouter un graph de
+    # trend ou un tableau ») : le tableau des tendances de l'accueil ordi : les joueurs en tete de l'Indice SlabIQ et les plus
+    # fortes hausses sur 30 jours, avec la courbe de leur Indice (une photo par jour, quoi_de_neuf). Jamais un prix.
+    _ACC_TEND = {"le": 0.0, "v": None}
+
+    def accueil_tendances(self, n=8):
+        m = time.time()
+        if Api._ACC_TEND["v"] is not None and m - Api._ACC_TEND["le"] < 600:
+            return Api._ACC_TEND["v"]
+        import indice_joueurs
+        import quoi_de_neuf
+        I = (indice_joueurs.lire() or {}).get("indice") or {}
+        h = quoi_de_neuf.hist_lire() or {}
+        jours = sorted(h)[-30:]
+        actifs = sorted([(nom, v) for nom, v in I.items() if v.get("actif") and v.get("indice") is not None], key=lambda kv: -kv[1]["indice"])
+        rang = {nom: k + 1 for k, (nom, _v) in enumerate(actifs)}
+
+        def serie(nom):
+            out = []
+            for j in jours:
+                x = (h.get(j) or {}).get(nom)
+                out.append(round(float(x[0]), 1) if x and x[0] is not None else None)
+            return out
+
+        def ligne(nom, v):
+            sr = serie(nom)
+            pts = [x for x in sr if x is not None]
+            w = v.get("semaine") or {}
+            return {"nom": nom, "equipe": v.get("equipe") or "", "indice": round(float(v["indice"]), 1), "rang": rang.get(nom),
+                    "pastilles": [k for k in (v.get("pastilles") or []) if k in ("en_feu", "en_hausse", "recrue", "en_creux", "rebond", "buzz",
+                                                                               "honneur", "echange_baisse", "echange_hausse")],
+                    "serie": sr, "ecart": round(float(v["indice"]) - pts[0], 1) if len(pts) >= 2 else None,
+                    "semaine": {"pts": w.get("pts"), "mj": w.get("mj")} if w.get("mj") else None}
+        top = [ligne(nom, v) for nom, v in actifs[:n]]
+        tous = [ligne(nom, v) for nom, v in actifs[:250]]
+        hausses = sorted([x for x in tous if x["ecart"] is not None and x["ecart"] > 0], key=lambda x: -x["ecart"])[:n]
+        r = {"ok": True, "top": top, "hausses": hausses, "jours": len(jours), "sur": len(actifs)}
+        Api._ACC_TEND.update(le=m, v=r)
+        return r
+
     def types_cartes_admin(self):
         """12 nov 2026 : ADMIN - le tableau complet des types de cartes (prime contre la carte typique du joueur, volume,
         fiabilite du classement)."""
