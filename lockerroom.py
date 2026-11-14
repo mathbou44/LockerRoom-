@@ -8528,6 +8528,72 @@ class Api:
     ACHETEES_FORT = 80                     # un score SlabIQ de 80 et plus : forte demande
     ACHETEES_PASTILLES_FORTES = ("en_feu", "en_hausse", "honneur", "buzz", "echange_hausse", "rebond")
 
+    def _photos_achats_locales(self, ids):
+        """14 nov 2026 (Mathieu : « pourquoi on n'a pas les photos ? on doit aller les chercher », dans « Achetees ») : eBay ne
+        rend plus la photo d'une annonce terminee depuis plus de 90 jours. On la cherche chez nous, par son numero d'annonce :
+        la watchlist, le Radar, les deals vus par le chasseur, nos archives de ventes (ta carte achetee est une vente).
+        -> {item_id: photo}"""
+        ids = [str(i) for i in ids if i and re.fullmatch(r"\d{9,15}", str(i))]
+        out = {}
+        if not ids:
+            return out
+        ok = lambda u: isinstance(u, str) and u.startswith("http")
+        try:
+            c = self._db()
+            try:
+                for t in ("watchlist", "opportunites"):
+                    try:
+                        for i, ph in c.execute(f"SELECT item_id, photo FROM {t} WHERE item_id IN ({','.join('?' * len(ids))})", ids):
+                            if ok(ph):
+                                out.setdefault(str(i), ph)
+                    except sqlite3.Error:
+                        pass
+            finally:
+                c.close()
+        except Exception:
+            pass
+        reste = [i for i in ids if i not in out]
+        if reste:
+            try:
+                import deals as _dl
+                d = _dl.lire_vite() or {}
+                for k in ("deals", "suivis", "pres", "petits"):
+                    for x in d.get(k) or []:
+                        if isinstance(x, dict) and str(x.get("item_id")) in reste and ok(x.get("photo")):
+                            out.setdefault(str(x["item_id"]), x["photo"])
+            except Exception:
+                pass
+        reste = [i for i in ids if i not in out][:60]
+        if reste:
+            try:
+                import base_ventes
+                c = base_ventes._cx()
+                try:
+                    q = " OR ".join("url LIKE ?" for _ in reste)
+                    for url, ph in c.execute(f"SELECT url, photo FROM ventes WHERE photo IS NOT NULL AND photo <> '' AND ({q}) LIMIT 200",
+                                             [f"%{i}%" for i in reste]):
+                        for i in reste:
+                            if i in str(url or "") and ok(ph):
+                                out.setdefault(i, ph)
+                finally:
+                    c.close()
+            except Exception as e:
+                print("Photos d'achats (archives) : " + repr(e)[:120], flush=True)
+        if out:                                        # trouvee : gardee avec l'achat (plus besoin de chercher)
+            try:
+                with _verrou:
+                    c = self._db()
+                    try:
+                        self._achats_table(c)
+                        c.executemany("UPDATE achats_ebay SET photo=? WHERE item_id=? AND (photo IS NULL OR photo='' OR photo='-')",
+                                      [(ph, i) for i, ph in out.items()])
+                        c.commit()
+                    finally:
+                        c.close()
+            except Exception:
+                pass
+        return out
+
     def achetees_tableau(self):
         """-> {cartes: [{cle, carte_id, item_id, n, titre, photo, cout, achete_le, jours, score, joueur, pastilles, propose,
         source_prix, profit, quand, jours_restants, fort}], resume}"""
@@ -8576,6 +8642,12 @@ class Api:
             score_slab.annoter_lot(out)
         except Exception as e:
             print("Achetees (scores) : " + repr(e), flush=True)
+        # les photos qui manquent : d'abord chez nous (numero d'annonce), puis eBay (90 jours), sinon la photo d'une vente
+        # de la MEME carte (dite « photo semblable »)
+        loc = self._photos_achats_locales([x["item_id"] for x in out if x.get("item_id") and not x.get("photo")])
+        for x in out:
+            if not x.get("photo") and loc.get(str(x.get("item_id"))):
+                x["photo"], x["_ph_x"] = loc[str(x["item_id"])], False
         manque = [{"item_id": x["item_id"]} for x in out if x.get("item_id") and not x.get("photo") and not x.get("_ph_x")]
         if manque and time.time() - Api._ACH_PH_LE > 90:          # les photos qui manquent, en fond (40 a la fois)
             Api._ACH_PH_LE = time.time()
@@ -8604,6 +8676,15 @@ class Api:
             if prop is None and (x.get("prix_demande") or x.get("valeur_carte")):
                 prop, src = float(x.get("prix_demande") or x.get("valeur_carte")), "ton prix"
             x["propose"] = round(prop, 2) if prop else None
+            # (admin seulement : une photo tiree des ventes = des comps, licence eBay)
+            if comps and not x.get("photo") and (x.get("_ph_x") or (x.get("jours") or 0) > 85) and time.time() - t0 < 12:
+                try:                                   # eBay n'a plus la photo : celle d'une vente de la MEME carte
+                    vs = vendues.memes_cache(x["titre"], n=12, age_max=365 * 86400)
+                    ph = next((v.get("photo") for v in (vs.get("ventes") or []) if str(v.get("photo") or "").startswith("http")), None)
+                    if ph:
+                        x["photo"], x["photo_semblable"] = ph, True
+                except Exception:
+                    pass
             x["source_prix"] = src
             cout = x.get("cout")
             x["profit"] = round(_net_rev(prop) - float(cout), 2) if prop and cout is not None else None

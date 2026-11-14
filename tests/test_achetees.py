@@ -76,3 +76,13 @@ dem = next(x for x in r["cartes"] if "Demidov" in x["titre"])
 assert dem["propose"] is None and dem["profit"] is None, dem
 assert next(x for x in r["cartes"] if "Celebrini" in x["titre"])["propose"] == 450
 print("ACHETEES OK")
+
+# 14 nov 2026 (« pourquoi on n'a pas les photos ? on doit aller les chercher ») : eBay n'a plus la photo d'un achat de plus de
+# 90 jours ; on la retrouve chez nous par son numero d'annonce (la watchlist, nos archives de ventes) et on la garde
+import base_ventes, watchlist
+c = watchlist._cx(api); c.execute("INSERT OR REPLACE INTO watchlist (item_id, titre, photo) VALUES ('123456789012', 't', 'https://i.ebayimg.com/w.jpg')"); c.commit(); c.close()
+base_ventes.noter("joe ordinaire young guns", [{"titre": "x", "prix": 12, "le": "2026-08-01", "photo": "https://i.ebayimg.com/v.jpg",
+                                                 "url": "https://www.ebay.ca/itm/987654321098"}], sport="hockey")
+ph = api._photos_achats_locales(["123456789012", "987654321098", "111"])
+assert ph == {"123456789012": "https://i.ebayimg.com/w.jpg", "987654321098": "https://i.ebayimg.com/v.jpg"}, ph
+print("PHOTOS LOCALES OK")
