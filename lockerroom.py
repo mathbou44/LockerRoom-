@@ -8475,6 +8475,123 @@ class Api:
                 c.close()
         return {"ok": True, "id": r["id"]}
 
+    # 14 nov 2026 (Mathieu : « un onglet pour les cartes achetees avec toute l'info : le score SlabIQ en pastille avec les photos
+    # de l'annonce originale, comme les pastilles de l'inventaire, avec le prix paye et propose pour le profit ; je n'ai pas de
+    # visibilite sur ce que j'ai achete et qui n'est pas encore sur eBay ; je dois savoir quand les mettre : 3 mois minimum
+    # apres l'achat, et surtout si le score SlabIQ est haut (forte demande, en feu...) ») : les cartes achetees PAS ENCORE sur
+    # eBay (achats eBay pas encore ajoutes + cartes de l'inventaire achetees, en stock), chacune avec son score SlabIQ, les
+    # pastilles du joueur, le prix paye, le prix propose, le profit et QUAND la mettre en vente.
+    ACHETEES_FORT = 80                     # un score SlabIQ de 80 et plus : forte demande
+    ACHETEES_PASTILLES_FORTES = ("en_feu", "en_hausse", "honneur", "buzz", "echange_hausse", "rebond")
+
+    def achetees_tableau(self):
+        """-> {cartes: [{cle, carte_id, item_id, n, titre, photo, cout, achete_le, jours, score, joueur, pastilles, propose,
+        source_prix, profit, quand, jours_restants, fort}], resume}"""
+        import score_slab
+        auj = datetime.now()
+        with _verrou:
+            c = self._db()
+            try:
+                self._achats_table(c)
+                achats = _dicts(c.execute("SELECT item_id, n, titre, cout, date, photo, carte_id FROM achats_ebay ORDER BY date DESC LIMIT 1500"))
+                cols = {r[1] for r in c.execute("PRAGMA table_info(cartes)")}
+                cartes = _dicts(c.execute("SELECT * FROM cartes WHERE statut='En stock' AND consignataire_id IS NULL"))
+            finally:
+                c.close()
+        par_carte = {}
+        for a in achats:
+            if a.get("carte_id"):
+                p = par_carte.setdefault(a["carte_id"], a)
+                if str(a.get("date") or "") < str(p.get("date") or ""):
+                    par_carte[a["carte_id"]] = {**a, "photo": a.get("photo") or p.get("photo")}
+        ids = {k["id"] for k in cartes}
+        out = []
+        for a in achats:                                     # 1. achetees sur eBay, pas encore dans l'inventaire
+            if a.get("carte_id") and a["carte_id"] in ids:
+                continue
+            if a.get("carte_id"):
+                continue                                     # reliee a une carte vendue, listee ou en collection
+            out.append({"cle": f"a:{a['item_id']}:{a.get('n') or 0}", "carte_id": None, "item_id": a["item_id"], "n": a.get("n") or 0,
+                        "titre": a.get("titre") or "", "photo": a.get("photo") if a.get("photo") not in (None, "", "-") else None,
+                        "cout": a.get("cout"), "achete_le": str(a.get("date") or "")[:10] or None, "a_ajouter": True})
+        for k in cartes:                                     # 2. dans l'inventaire, en stock, pas sur eBay
+            if (k.get("emplacement") or "") in ("Collection", "eBay") or k.get("item_number") or ("envoi_json" in cols and k.get("envoi_json")):
+                continue
+            a = par_carte.get(k["id"])
+            if not a and not (k.get("cout") or 0) > 0:
+                continue                                     # ni achat relie ni cout : pas une carte achetee
+            ph_a = a.get("photo") if a and a.get("photo") not in (None, "", "-") else None
+            out.append({"cle": f"c:{k['id']}", "carte_id": k["id"], "item_id": a.get("item_id") if a else None, "n": a.get("n") if a else None,
+                        "titre": k.get("titre") or (a or {}).get("titre") or "", "joueur": k.get("joueur"),
+                        "photo": ph_a or k.get("photo"), "cout": k.get("cout") if k.get("cout") is not None else (a or {}).get("cout"),
+                        "achete_le": str((a or {}).get("date") or k.get("cree_le") or "")[:10] or None,
+                        "valeur_carte": k.get("valeur"), "prix_demande": k.get("prix_demande"),
+                        "a_finir": bool("a_finir_le" in cols and k.get("a_finir_le"))})
+        try:
+            score_slab.annoter_lot(out)
+        except Exception as e:
+            print("Achetees (scores) : " + repr(e), flush=True)
+        comps = comps_permis(self)
+        t0 = time.time()
+        for x in out:
+            try:
+                j = (auj - datetime.fromisoformat(x["achete_le"])).days if x.get("achete_le") else None
+            except ValueError:
+                j = None
+            x["jours"] = j
+            past = list(x.pop("pastilles_j", None) or [])
+            x["pastilles"] = past
+            # le prix propose : l'admin, la valeur des ventes de la MEME carte deja connues (aucun appel, aucun credit) ;
+            # sinon le prix que tu as mis sur la carte
+            prop, src = None, None
+            if comps and time.time() - t0 < 10:
+                try:
+                    vc = vendues.memes_cache(x["titre"], n=40, age_max=30 * 86400)
+                    if vc.get("mediane"):
+                        prop, src = float(vc["mediane"]), "ventes"
+                        x["nb_ventes"] = vc.get("nb")
+                except Exception:
+                    pass
+            if prop is None and (x.get("prix_demande") or x.get("valeur_carte")):
+                prop, src = float(x.get("prix_demande") or x.get("valeur_carte")), "ton prix"
+            x["propose"] = round(prop, 2) if prop else None
+            x["source_prix"] = src
+            cout = x.get("cout")
+            x["profit"] = round(_net_rev(prop) - float(cout), 2) if prop and cout is not None else None
+            # QUAND la mettre en vente : 3 mois minimum ; plus vite parmi les pretes si la demande est forte
+            sc = x.get("score")
+            fort = bool((sc is not None and sc >= self.ACHETEES_FORT) or set(past) & set(self.ACHETEES_PASTILLES_FORTES))
+            x["fort"] = fort
+            reste = None if j is None else max(0, AFFICHER_APRES_J - j)
+            x["jours_restants"] = reste
+            if reste is None:
+                x["quand"] = "inconnu"
+            elif reste > 0:
+                x["quand"] = "attendre_3mois"
+            elif "en_creux" in past and not fort:
+                x["quand"] = "attendre_creux"                 # un bon joueur en creux : ses cartes remontent souvent
+            elif fort:
+                x["quand"] = "maintenant"
+            else:
+                x["quand"] = "prete"
+        ordre = {"maintenant": 0, "prete": 1, "attendre_creux": 2, "attendre_3mois": 3, "inconnu": 4}
+        out.sort(key=lambda x: (ordre[x["quand"]], -(x.get("score") or 0) if x["quand"] in ("maintenant", "prete") else (x.get("jours_restants") or 0)))
+        for x in out:
+            for k in ("valeur_carte", "prix_demande"):
+                x.pop(k, None)
+        resume = {"n": len(out), "maintenant": sum(1 for x in out if x["quand"] == "maintenant"),
+                  "pretes": sum(1 for x in out if x["quand"] in ("maintenant", "prete")),
+                  "a_ajouter": sum(1 for x in out if x.get("a_ajouter")),
+                  "paye": round(sum(float(x["cout"]) for x in out if x.get("cout") is not None), 2),
+                  "propose": round(sum(x["propose"] for x in out if x.get("propose")), 2),
+                  "profit": round(sum(x["profit"] for x in out if x.get("profit") is not None), 2),
+                  "apres_j": AFFICHER_APRES_J, "comps": comps}
+        if not comps:
+            for x in out:
+                if x.get("source_prix") == "ventes":
+                    x["propose"] = x["profit"] = None
+        return {"ok": True, "cartes": out, "resume": resume, "ebay": bool(ebay_compte.statut().get("connecte"))}
+
     def _mes_achats_titre(self, titre, item_id=None):
         """9 nov 2026 (Mathieu : « quand j'affiche une carte, l'app doit chercher si on l'a deja achetee : pour le prix paye
         (profit) et pour ne pas prendre notre achat dans les comps, tout sauf notre deal ») : (achats de la MEME carte, les 3
@@ -9599,19 +9716,27 @@ class Api:
         except Exception:
             d = None
         bon_creux = "occasion" in past or ("en_creux" in past and "legende" in past)
-        if "en_creux" in past or "occasion" in past:
+        ex = v.get("echange") or {}
+        ech = {"de": ex.get("de_nom"), "vers": ex.get("vers_nom")} if ex else None
+        if "echange_baisse" in past:                   # 14 nov 2026 (Knies, Toronto -> Columbus)
+            sens, pq = "baisse", "echange_baisse"
+        elif "en_creux" in past or "occasion" in past:
             sens, pq = ("creux", "creux_bon") if bon_creux else ("baisse", "creux")
         elif sur and pv["sens"] == "baisse" or (d is not None and d <= -Api.IQ_BAISSE_PTS) or "mauvaise" in past:
             sens = "baisse"
             pq = ("prev_baisse" if sur and pv["sens"] == "baisse" else
                   "indice_baisse" if d is not None and d <= -Api.IQ_BAISSE_PTS else "mauvaise")
+        elif "echange_hausse" in past:
+            sens, pq = "hausse", "echange_hausse"
         elif sur and pv["sens"] == "hausse" or past & {"en_feu", "en_hausse", "rebond", "honneur"} or (d is not None and d >= Api.IQ_BAISSE_PTS):
             sens = "hausse"
             pq = ("prev_hausse" if sur and pv["sens"] == "hausse" else
                   "feu" if "en_feu" in past else "rebond" if "rebond" in past else "honneur" if "honneur" in past else "hausse")
+        elif "echange" in past:
+            sens, pq = "stable", "echange"
         else:
             sens, pq = "stable", "stable"
-        return {"s": int(round(v["indice"])), "sens": sens, "risque": sens == "baisse", "pq": pq,
+        return {"s": int(round(v["indice"])), "sens": sens, "risque": sens == "baisse", "pq": pq, **({"ech": ech} if ech else {}),
                 **({"prev": pv} if pv else {}), **({"ecart_28j": d} if d is not None else {})}
 
     def _iq_deals(self, items):
@@ -9884,6 +10009,9 @@ class Api:
             except Exception as e:
                 print("Historique (fiche) : " + repr(e), flush=True)
         pourquoi = None if vm else (vc.get("erreur") or (vs_[1] if isinstance(vs_[1], str) else None))
+        # 14 nov 2026 (Knies a Columbus) : le joueur vient de changer d'equipe ; la valeur le dit (ventes d'avant ramenees)
+        ech_v = _deals.echange_carte(t) if t else None
+        src_vm = "echange" if vm and isinstance(vs_[1], list) and any(isinstance(x, dict) and x.get("_ech") for x in vs_[1]) else "vendues"
         if vm and med and n >= 3:                 # 3 nov 2026 (revue) : le meme plafond que le chasseur (deals.valeur_annonce)
             vm = min(vm, round(med * 0.85, 2))
         valeur = vm
@@ -9989,7 +10117,8 @@ class Api:
         return {"ok": True, "article": {**a, "total": total}, "comps": comps, "mediane": med, "n": n, "deal_retire": bool(maj_deal and maj_deal.get("retire")) or bool(isinstance(corr, dict) and corr.get("retire")),
                 "suggere": suggere, "ventes": ventes, "mediane_vendue": None if saison_v else vc.get("mediane"),
                 "nb_vendues": len(ventes) if saison_v else vc.get("nb") or len(ventes),
-                "valeur": valeur, "valeur_source": "chasseur" if chasseur else "vendues" if vm else saison_v[1] if saison_v else "annonces",
+                "valeur": valeur, "valeur_source": "chasseur" if chasseur else src_vm if vm else saison_v[1] if saison_v else "annonces",
+                "echange": {k: ech_v.get(k) for k in ("de_nom", "vers_nom", "le", "sens")} if ech_v else None,
                 "patch": patch_info, "titre_corrige": titre_corr,
                 "saisons": sorted({v.get("saison") for v in (saison_v or [0, 0, 0, []])[3] if v.get("saison")}) or None,
                 "saison_carte": _deals.saison(cartes_match.cible_titre(t or "").get("annee")) if saison_v else None,

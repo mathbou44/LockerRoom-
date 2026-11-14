@@ -993,7 +993,7 @@ def cible_titre(titre, joueur=None):
     chaque appel recoit sa propre copie (listes et ensembles copies)."""
     import time as _t
     maint = _t.time()
-    if maint - _CIB["le"] > 600 or len(_CIB["d"]) > 30000:
+    if maint - _CIB["le"] > 600 or len(_CIB["d"]) > 8000:     # 14 nov 2026 : ~2,7 Ko par titre -> 22 Mo au plus
         _CIB["d"] = {}
         _CIB["le"] = maint
     k = (titre, joueur)

@@ -179,7 +179,7 @@ def _maj_fichier(nom, cle="maj"):
 # CORRECTIF, montees a chaque livraison : un correctif seulement -> CORRECTIF + 1 (2.5.1 -> 2.5.2) ; une nouvelle fonction
 # -> MINEURE + 1 et CORRECTIF a 0 (2.5.2 -> 2.6.0) ; un gros changement (refonte, rupture) -> MAJEURE + 1 (-> 3.0.0).
 # Avant : un compteur de livraisons (v1 a v251) ; 2.5.1 reprend la 251e. Separee du numero de l'app iPhone (App Store).
-VERSION_APP = "2.7.2"
+VERSION_APP = "2.8.0"
 
 
 def sante():
@@ -318,6 +318,15 @@ def soupape():
         import deals
         deals._HIT_FORT.clear()
         deals._LU.update(cle=None, d={})
+        deals._AN_RC.clear()
+    except Exception:
+        pass
+    try:                                             # 14 nov 2026 : les memoires de la vitesse (titres lus, sports)
+        import cartes_match
+        import sports
+        videes.append(f"titres:{len(cartes_match._CIB['d'])}")
+        cartes_match._CIB["d"] = {}
+        sports._SPORT_DE.clear()
     except Exception:
         pass
     import gc

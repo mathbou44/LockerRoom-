@@ -415,11 +415,25 @@ def entrainer(bruts, y, jours, coupe=None, iters=1000, log=print):
 
 
 def _mo_libres():
+    """La memoire libre, en Mo. 14 nov 2026 (Render : « exceeded its memory limit » a 2 h 46, l'heure du reapprentissage) :
+    /proc/meminfo donne la memoire de la MACHINE (des dizaines de Go), pas la limite du service ; le reapprentissage se
+    croyait riche, prenait le gros moteur et 260 000 ventes, et le service depassait sa limite. Maintenant : la limite du
+    conteneur (cgroup) moins ce qu'il utilise deja (l'app comprise), et jamais plus que ce que la machine dit."""
+    meminfo = None
     try:
         with open("/proc/meminfo") as fi:
-            return next(int(l.split()[1]) for l in fi if l.startswith("MemAvailable")) / 1024
+            meminfo = next(int(l.split()[1]) for l in fi if l.startswith("MemAvailable")) / 1024
     except (OSError, StopIteration, ValueError):
-        return None
+        pass
+    try:
+        import admin
+        m = admin.memoire()
+        if m.get("limite_mo") and m.get("conteneur_mo") is not None:
+            cg = m["limite_mo"] - m["conteneur_mo"]
+            return min(cg, meminfo) if meminfo is not None else cg
+    except Exception:
+        pass
+    return meminfo
 
 
 def _moteur():
@@ -433,11 +447,7 @@ def _moteur():
         importlib.import_module("lightgbm")          # 11 nov 2026 : un vrai import (libgomp peut manquer sur le serveur)
     except Exception:
         return "hgb"
-    try:
-        with open("/proc/meminfo") as fi:
-            libre = next(int(l.split()[1]) for l in fi if l.startswith("MemAvailable")) / 1024
-    except (OSError, StopIteration, ValueError):
-        libre = 0
+    libre = _mo_libres() or 0                        # 14 nov 2026 : la vraie memoire libre du service (voir _mo_libres)
     return "lgb" if libre >= float(os.environ.get("LR_SCORE_MO_MIN", "3800")) else "lgb_leger"
 
 

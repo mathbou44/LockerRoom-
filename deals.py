@@ -731,7 +731,50 @@ def _jours(v, maint=None):
     return ((maint or datetime.now()).replace(tzinfo=None) - d).days
 
 
+# 14 nov 2026 (Mathieu : « Matthew Knies echange en debut de saison a Columbus ; la valeur de ses cartes a drastiquement
+# diminue ; SlabIQ aurait du le capter ») : apres un changement d'equipe (indice_joueurs.detecter_echange), les ventes
+# d'AVANT ne disent plus ce que la carte vaut. Assez de ventes depuis (2) : seulement elles. Sinon les ventes d'avant
+# comptent moins : 70 % s'il a quitte Toronto ou Montreal (Knies -50 %, Robertson -47 % dans nos ventes), 90 % pour un autre
+# changement (plus d'ecart, sans sens net) ; arrive a Toronto ou Montreal : telles quelles (elles sous-estiment : prudent).
+ECHANGE_FACTEURS = {"baisse": 0.70, "neutre": 0.90, "hausse": 1.0}
+
+
+def echange_carte(titre):
+    """Le changement d'equipe recent du joueur d'un titre (indice_joueurs) ; None sinon (ou si l'indice est illisible)."""
+    if not titre:
+        return None
+    try:
+        import indice_joueurs
+        return indice_joueurs.echange_titre(titre)
+    except Exception:
+        return None
+
+
+def ventes_echange(pv, ex):
+    """Les ventes d'avant le changement d'equipe ramenees a leur facteur (copies marquees _ech, prix_reel garde)."""
+    f = ECHANGE_FACTEURS.get((ex or {}).get("sens"), 0.9)
+    if not ex or f >= 1:
+        return list(pv)
+    le = str(ex.get("le") or "")
+    return [v if v.get("_ech") or not v.get("prix") or str(v.get("le") or "")[:10] >= le
+            else {**v, "prix": round(float(v["prix"]) * f, 2), "prix_reel": v["prix"], "_ech": f} for v in pv]
+
+
 def valeur_sure(pv, titre_annonce=""):
+    """(valeur, ventes retenues) ou (None, raison). Un joueur qui vient de changer d'equipe : voir ECHANGE_FACTEURS."""
+    ex = echange_carte(titre_annonce)
+    if not ex:
+        return _valeur_sure0(pv, titre_annonce)
+    le = str(ex.get("le") or "")
+    apres = [v for v in pv if str(v.get("le") or "")[:10] >= le]
+    if len(apres) >= 2:
+        r = _valeur_sure0(apres, titre_annonce)
+        if r[0] is not None:
+            return r
+    return _valeur_sure0(ventes_echange(pv, ex), titre_annonce)
+
+
+def _valeur_sure0(pv, titre_annonce=""):
     """(valeur, ventes retenues) ou (None, raison)."""
     import cartes_match
     if not cartes_match.serie_speciale(titre_annonce):
@@ -811,7 +854,9 @@ def valeur_annonce(a, ventes, actives, cib=None):
     if len(pa) >= 3:
         m = min(m, cartes_match.mediane_robuste(pa)[0] * 0.85)
     pv.sort(key=lambda v: str(v.get("le") or ""), reverse=True)
-    return round(m, 2), "vendues", len(pv), [{k: v.get(k) for k in ("titre", "prix", "le", "photo", "url")} for v in pv[:6]]
+    ech = any(v.get("_ech") for v in pv)              # 14 nov 2026 : des ventes d'avant un changement d'equipe, ramenees
+    return round(m, 2), "echange" if ech else "vendues", len(pv), \
+        [{**{k: v.get(k) for k in ("titre", "le", "photo", "url")}, "prix": v.get("prix_reel") or v.get("prix")} for v in pv[:6]]
 
 
 SAISONS_ECART = 2                # 7 nov 2026 : les saisons voisines (2 de chaque cote) pour une carte sans ventes
@@ -3488,7 +3533,7 @@ def valoriser_suivis(rechercher=None, n_max=None):
                 hv = historique.carte(cib, chasseur=True)        # s'arrete tout seul au budget du jour (liste vide)
                 if hv:
                     va = valeur_ou_saison(x, deja + hv, [], cib=cib)
-                    if va and not (x.get("valeur") and va[1] not in ("vendues", "unique")):
+                    if va and not (x.get("valeur") and va[1] not in ("vendues", "echange", "unique")):
                         trouves[str(x.get("item_id"))] = va
     except Exception as e:
         print("Historique (encans proches) : " + repr(e), flush=True)
@@ -3500,7 +3545,7 @@ def valoriser_suivis(rechercher=None, n_max=None):
             d = lire()
             for g in d.get("suivis") or []:
                 va = trouves.get(str(g.get("item_id")))
-                if va and (not g.get("valeur") or (g.get("valeur_source") in ("approx", "autre_saison") and va[1] in ("vendues", "unique"))):
+                if va and (not g.get("valeur") or (g.get("valeur_source") in ("approx", "autre_saison") and va[1] in ("vendues", "echange", "unique"))):
                     g.update(valeur=va[0], n=va[2], vendues=va[3], valeur_source=va[1],
                              mise_max=round(prix_max(va[0], taxe=taxe_de(g)) - port_eff(g.get("port")), 2))
             cov = d.get("prio_couverture")

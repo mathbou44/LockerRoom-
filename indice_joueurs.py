@@ -44,6 +44,140 @@ GARDE_JOURS = 70
 _verrou = threading.Lock()
 _ETAT = {"le": 0.0, "en_cours": False, "d": None, "mt": None}
 
+# -- 1c. le joueur qui change d'equipe (14 nov 2026) ----------------------------------------------------------------------
+# Mathieu : « Matthew Knies : un bon joueur des Leafs echange en debut de saison a Columbus ; la valeur de ses cartes a
+# drastiquement diminue ; SlabIQ aurait du le capter ». Etude sur nos ventes (mai-oct 2026, niveau des cartes contre ce que
+# le titre predit, moins le marche) : Knies (Toronto -> Columbus) -50 %, Robertson (Toronto -> Pittsburgh) -47 %,
+# Marchenko (Columbus -> Toronto) +161 %, Kreider (Anaheim -> Montreal) +143 % ; les autres changements : pas de sens net
+# (mediane ~0) mais deux fois plus d'ecart. Donc : quitter Toronto ou Montreal = baisse ; y arriver = hausse ; le reste =
+# des ventes d'avant moins fiables.
+GRANDS_MARCHES = ("TOR", "MTL")
+ECHANGE_JOURS = 150                # l'effet d'un changement d'equipe sur ses cartes : environ une demi-saison
+ECHANGE_POINTS = 8.0               # l'indice : -8 (quitte Toronto/Montreal) ou +8 (y arrive)
+EQUIPES_ABREV = {
+    "anaheim ducks": "ANA", "boston bruins": "BOS", "buffalo sabres": "BUF", "calgary flames": "CGY", "carolina hurricanes": "CAR",
+    "chicago blackhawks": "CHI", "colorado avalanche": "COL", "columbus blue jackets": "CBJ", "dallas stars": "DAL",
+    "detroit red wings": "DET", "edmonton oilers": "EDM", "florida panthers": "FLA", "los angeles kings": "LAK", "minnesota wild": "MIN",
+    "montreal canadiens": "MTL", "nashville predators": "NSH", "new jersey devils": "NJD", "new york islanders": "NYI",
+    "new york rangers": "NYR", "ottawa senators": "OTT", "philadelphia flyers": "PHI", "pittsburgh penguins": "PIT",
+    "san jose sharks": "SJS", "seattle kraken": "SEA", "st louis blues": "STL", "tampa bay lightning": "TBL",
+    "toronto maple leafs": "TOR", "utah mammoth": "UTA", "utah hockey club": "UTA", "vancouver canucks": "VAN",
+    "vegas golden knights": "VGK", "washington capitals": "WSH", "winnipeg jets": "WPG", "arizona coyotes": "ARI"}
+EQUIPES_NOM = {"ANA": "Anaheim", "BOS": "Boston", "BUF": "Buffalo", "CGY": "Calgary", "CAR": "Caroline", "CHI": "Chicago",
+               "COL": "Colorado", "CBJ": "Columbus", "DAL": "Dallas", "DET": "Detroit", "EDM": "Edmonton", "FLA": "Floride",
+               "LAK": "Los Angeles", "MIN": "Minnesota", "MTL": "Montréal", "NSH": "Nashville", "NJD": "New Jersey",
+               "NYI": "Islanders", "NYR": "Rangers", "OTT": "Ottawa", "PHI": "Philadelphie", "PIT": "Pittsburgh",
+               "SJS": "San Jose", "SEA": "Seattle", "STL": "St. Louis", "TBL": "Tampa Bay", "TOR": "Toronto", "UTA": "Utah",
+               "VAN": "Vancouver", "VGK": "Vegas", "WSH": "Washington", "WPG": "Winnipeg", "ARI": "Arizona"}
+
+
+def abrev_equipe(nom):
+    """« Toronto Maple Leafs » -> « TOR » ; une abreviation reste telle quelle ; None si inconnue."""
+    s = str(nom or "").strip()
+    if not s:
+        return None
+    if s.upper() in EQUIPES_NOM:
+        return s.upper()
+    return EQUIPES_ABREV.get(re.sub(r"\s+", " ", re.sub(r"[^a-z ]", " ", _norm(s))).strip())
+
+
+def sens_echange(de, vers):
+    """Le sens d'un changement d'equipe pour ses cartes : « baisse » (quitte Toronto/Montreal), « hausse » (y arrive), sinon
+    « neutre »."""
+    g_de, g_vers = de in GRANDS_MARCHES, vers in GRANDS_MARCHES
+    return "baisse" if g_de and not g_vers else "hausse" if g_vers and not g_de else "neutre"
+
+
+def _debut_saison(aujourdhui):
+    an = aujourdhui.year if aujourdhui.month >= 7 else aujourdhui.year - 1
+    return an, date(an, 10, 1)
+
+
+def detecter_echange(h, vu=None, aujourdhui=None):
+    """Le dernier changement d'equipe d'un joueur, s'il est recent : {de, vers, le, source} ou None.
+    1. vu = {eq, le} : l'equipe notee a la derniere passe ; une autre aujourd'hui = un changement DU JOUR (date exacte).
+    2. Sinon, ses saisons LNH (h["equipes"] : [saison, nom du club, matchs]) : l'equipe d'avant, si c'etait la saison
+       derniere (changement d'ete : date = debut de la saison, ou aujourd'hui avant octobre) ou cette saison (date inconnue :
+       aujourd'hui, par prudence)."""
+    aujourdhui = aujourdhui or date.today()
+    abr = abrev_equipe((h or {}).get("equipe"))
+    if not abr:
+        return None
+    if vu and vu.get("eq") and vu["eq"] != abr:
+        return {"de": vu["eq"], "vers": abr, "le": aujourdhui.isoformat(), "source": "vu"}
+    an, debut = _debut_saison(aujourdhui)
+    cour, prec = an * 10000 + an + 1, (an - 1) * 10000 + an
+    eqs = [(int(e[0] or 0), abrev_equipe(e[1])) for e in (h or {}).get("equipes") or [] if isinstance(e, (list, tuple)) and len(e) >= 2]
+    eqs = [(sa, a) for sa, a in eqs if a]
+    for k in range(len(eqs) - 1, -1, -1):
+        sa, a = eqs[k]
+        if a == abr:
+            continue
+        if sa == cour:                                        # change pendant cette saison
+            return {"de": a, "vers": abr, "le": aujourdhui.isoformat(), "source": "saisons"}
+        if sa == prec and not any(s2 == prec and a2 == abr for s2, a2 in eqs[k + 1:]):      # change cet ete
+            return {"de": a, "vers": abr, "le": min(aujourdhui, debut).isoformat(), "source": "saisons"}
+        return None                                           # l'equipe d'avant est plus vieille : pas recent
+    return None
+
+
+def suivre_echanges(d, base, aujourdhui=None):
+    """Garde dans d l'equipe vue de chaque joueur actif et ses changements recents (d["echanges"]) ; enleve les vieux."""
+    aujourdhui = aujourdhui or date.today()
+    vus, ech = d.setdefault("equipes_vues", {}), d.setdefault("echanges", {})
+    for nom, e in (base or {}).items():
+        h = (e or {}).get("nhl") or {}
+        if h.get("actif") is False:
+            continue
+        abr = abrev_equipe(h.get("equipe"))
+        if not abr:
+            continue
+        vu = vus.get(nom)
+        x = detecter_echange(h, vu if vu and vu.get("eq") else None, aujourdhui)
+        if x and (vu and vu.get("eq") and vu["eq"] != abr or nom not in ech):
+            if not (nom in ech and ech[nom].get("vers") == x["vers"] and x["source"] != "vu"):
+                ech[nom] = x
+        if not vu or vu.get("eq") != abr:
+            vus[nom] = {"eq": abr, "le": aujourdhui.isoformat()}
+    lim = (aujourdhui - timedelta(days=ECHANGE_JOURS)).isoformat()
+    for nom in [n for n, x in ech.items() if str(x.get("le") or "") < lim]:
+        ech.pop(nom, None)
+    return ech
+
+
+def echange_de(nom, d=None):
+    """Le changement d'equipe recent d'un joueur, avec son sens et les noms des clubs ; None sinon."""
+    d = d if d is not None else lire()
+    E = d.get("echanges") or {}
+    x = E.get(nom)
+    if x is None:
+        k = _norm(nom)
+        x = next((v for n, v in E.items() if _norm(n) == k), None)
+    if not x:
+        return None
+    return {**x, "sens": sens_echange(x["de"], x["vers"]), "de_nom": EQUIPES_NOM.get(x["de"], x["de"]),
+            "vers_nom": EQUIPES_NOM.get(x["vers"], x["vers"])}
+
+
+_ECH_IDX = {"mt": None, "m": {}}
+
+
+def echange_titre(titre):
+    """Le changement d'equipe recent du joueur NOMME dans un titre d'annonce (rapide : seulement les joueurs echanges)."""
+    d = lire()
+    if _ECH_IDX["mt"] != _ETAT.get("mt") or not _ECH_IDX["m"] and d.get("echanges"):
+        _ECH_IDX["m"] = {_norm(n): n for n in (d.get("echanges") or {})}
+        _ECH_IDX["mt"] = _ETAT.get("mt")
+    if not _ECH_IDX["m"]:
+        return None
+    t = " " + _norm(titre) + " "
+    for k, nom in _ECH_IDX["m"].items():
+        if " " + k + " " in t:
+            x = echange_de(nom, d)
+            return dict(x, joueur=nom) if x else None
+    return None
+
+
 # les gros trophees comptent plus (meme echelle que demande_legale)
 TROPHEES_POIDS = {"Stanley Cup": 2.0, "Hart Memorial Trophy": 3.0, "Art Ross Trophy": 2.5, "Conn Smythe Trophy": 2.5,
                   "Maurice “Rocket” Richard Trophy": 2.0, "Calder Memorial Trophy": 2.0, "Vezina Trophy": 2.0,
@@ -299,7 +433,8 @@ TYPES_EVENEMENTS = [
                                 r"player of the (week|month)|joueur de la semaine|star of the week|first (career )?(nhl )?goal|premier but|shutout|blanchissage", re.I)),
     ("rappel", +12, re.compile(r"called up|recalled|rappel[ée]|promoted|debut|d[ée]but|first nhl|signs? entry|named captain|capitaine|all-star", re.I)),
     ("contrat", +6, re.compile(r"extension|\bcontract\b|signs?\b|prolongation|contrat", re.I)),
-    ("echange", +3, re.compile(r"\btraded?\b|\bacquir|\bdealt\b|[ée]chang", re.I)),
+    # 14 nov 2026 : un echange n'est ni bon ni mauvais en soi (Knies a Columbus : -50 %) ; son sens vient des marches
+    ("echange", 0, re.compile(r"\btraded?\b|\bacquir|\bdealt\b|[ée]chang", re.I)),
     ("blessure", -15, re.compile(r"injur|\bIR\b|day-to-day|surgery|concussion|upper[- ]body|lower[- ]body|bless[ée]|infirmerie|op[ée]r[ée]|commotion|out (indefinitely|for)", re.I)),
     ("negatif", -18, re.compile(r"waive|waivers|sent down|demot|suspen|healthy scratch|ballottage|r[ée]trograd|arrest|charged|benched|slump", re.I)),
 ]
@@ -382,6 +517,11 @@ def calculer(d=None, base=None, demande=None):
     except Exception:
         marche_eq = None
     nouvelles_j = _actu_par_joueur(noms, actu())
+    try:
+        echanges = suivre_echanges(d, base)
+    except Exception as e:
+        print("Echanges : " + repr(e), flush=True)
+        echanges = {}
     # 11 nov 2026 (Mathieu : « ce que nos utilisateurs regardent, suivent, ajoutent : un signal que personne d'autre n'a ») :
     # l'interet de la communaute SlabCoach (fiches, annonces, watchlists, favoris) des 7 et 30 derniers jours
     try:
@@ -490,6 +630,17 @@ def calculer(d=None, base=None, demande=None):
             val = min(100.0, val + min(8.0, 2.0 * pic))
             if "buzz" not in past:
                 past.append("buzz")
+        # 14 nov 2026 (Knies, Toronto -> Columbus) : un changement d'equipe recent
+        ex = echange_de(nom, {"echanges": echanges}) if i["actif"] and nom in echanges else None
+        if ex:
+            if ex["sens"] == "baisse":
+                val = max(0.0, val - ECHANGE_POINTS)
+                past.append("echange_baisse")
+            elif ex["sens"] == "hausse":
+                val = min(100.0, val + ECHANGE_POINTS)
+                past.append("echange_hausse")
+            else:
+                past.append("echange")
         bon = i["legende_vraie"] or (r.get("demande") or 0) >= 70 or (r.get("notoriete") or 0) >= 80 or (r.get("rythme") or 0) >= 75
         if neg >= 8 and pos < neg:
             past.append("mauvaise")
@@ -505,6 +656,8 @@ def calculer(d=None, base=None, demande=None):
                 out[nom]["ev_pos"], out[nom]["ev_neg"] = round(pos, 1), round(neg, 1)
         if pic is not None:
             out[nom]["pic"] = round(pic, 2)
+        if ex:
+            out[nom]["echange"] = {k: ex[k] for k in ("de", "vers", "le", "sens", "de_nom", "vers_nom")}
         if i.get("creux"):
             out[nom]["creux"] = i["creux"]
     return out
@@ -558,7 +711,8 @@ def passe(max_appels=None, sport="hockey"):
     import demande_legale
     import highlightly
     d = lire()
-    d = {"joueurs": dict(d.get("joueurs") or {}), "indice": d.get("indice") or {}, "le": d.get("le") or 0}
+    d = {"joueurs": dict(d.get("joueurs") or {}), "indice": d.get("indice") or {}, "le": d.get("le") or 0,
+         "equipes_vues": dict(d.get("equipes_vues") or {}), "echanges": dict(d.get("echanges") or {})}
     base = (demande_legale.lire() or {}).get("joueurs") or {}
     jour = date.today().isoformat()
     lus = 0
@@ -738,6 +892,8 @@ def pourquoi(nom):
         e = {}
     h, w = e.get("nhl") or {}, e.get("wiki") or {}
     out = {"indice": v.get("indice"), "pastilles": v.get("pastilles") or [], "criteres": v.get("criteres") or {}, "actif": v.get("actif")}
+    if v.get("echange"):
+        out["echange"] = v["echange"]                 # 14 nov 2026 : {de_nom, vers_nom, le, sens}
     I = d.get("indice") or {}
     if v.get("indice") is not None:
         pairs = [x for x in I.values() if x.get("actif") == v.get("actif")]

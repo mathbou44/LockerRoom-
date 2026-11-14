@@ -22,3 +22,12 @@ for i in range(60):
     lockerroom.Api._radar_garder(a, f"k{i}", {"ok": True})
 assert len(lockerroom.Api._RADAR) <= 40 and "k59" in lockerroom.Api._RADAR and "k0" not in lockerroom.Api._RADAR
 print("MEMOIRE OK")
+
+# 14 nov 2026 (Render : memoire depassee a l'heure du reapprentissage) : la memoire libre = la limite du service moins ce
+# qu'il utilise, jamais la memoire de toute la machine
+import score_appris as _sa
+_m = admin.memoire
+admin.memoire = lambda: {"limite_mo": 4096, "conteneur_mo": 2600, "processus_mo": 900}
+assert _sa._mo_libres() <= 1496 and _sa._moteur() == "lgb_leger", (_sa._mo_libres(), _sa._moteur())
+admin.memoire = _m
+print("OK memoire libre du service")

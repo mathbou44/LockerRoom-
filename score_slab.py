@@ -45,6 +45,22 @@ def plancher(total, k):
     return max(total, k["plancher"])
 
 
+ECHANGE_SCORE = 6                  # 14 nov 2026 : un joueur qui quitte Toronto/Montreal (ou y arrive) : -6 / +6 sur ses cartes
+
+
+def ajuster_echange(total, ij):
+    """14 nov 2026 (Mathieu : « Knies echange a Columbus ; SlabIQ aurait du le capter ») : le modele a appris sur des ventes
+    ou le joueur etait encore dans son ancien club ; un changement d'equipe recent qui touche le marche le corrige."""
+    if total is None or not ij:
+        return total
+    p = set(ij.get("pastilles") or [])
+    if "echange_baisse" in p:
+        return max(0.0, total - ECHANGE_SCORE)
+    if "echange_hausse" in p:
+        return min(100.0, total + ECHANGE_SCORE)
+    return total
+
+
 def plafond_inconnu(total, c, ij):
     """Joueur absent de l'indice SlabIQ : le score ne depasse pas 50 + la moitie du score de la carte."""
     if total is None or (ij and ij.get("indice") is not None):
@@ -142,7 +158,7 @@ def score(titre, joueur=None):
             total = None                     # 12 nov 2026 : pas assez d'indices dans le titre : pas de score invente
     except Exception as e:
         print("Score modele : " + repr(e), flush=True)
-    total = plafond_inconnu(total, c, ij)
+    total = ajuster_echange(plafond_inconnu(total, c, ij), ij)
     k = _savoir(titre)
     total = plancher(total, k)
     nom = j.title() if j and j == j.lower() else j
@@ -223,7 +239,7 @@ def _annoter_lot(items):
                 ij = indice_joueurs.indice(j)
             sv = _savoir(x.get("titre") or "")
             if sc is not None:
-                x["score"] = sc[k] if sc[k] is None else int(round(plancher(plafond_inconnu(sc[k], c, ij), sv)))
+                x["score"] = sc[k] if sc[k] is None else int(round(plancher(ajuster_echange(plafond_inconnu(sc[k], c, ij), ij), sv)))
             else:
                 sj = float(ij["indice"]) if ij and ij.get("indice") is not None else JOUEUR_INCONNU
                 x["score"] = int(round(plancher(POIDS_JOUEUR * sj + (1 - POIDS_JOUEUR) * c["score"], sv)))
