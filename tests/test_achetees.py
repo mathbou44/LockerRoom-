@@ -86,3 +86,15 @@ base_ventes.noter("joe ordinaire young guns", [{"titre": "x", "prix": 12, "le": 
 ph = api._photos_achats_locales(["123456789012", "987654321098", "111"])
 assert ph == {"123456789012": "https://i.ebayimg.com/w.jpg", "987654321098": "https://i.ebayimg.com/v.jpg"}, ph
 print("PHOTOS LOCALES OK")
+
+# 14 nov 2026 (« je parle de la photo de la carte ») : rien chez nous ni chez eBay (plus de 90 jours) -> l'annonce active de
+# la MEME carte (admin), dite « photo semblable » ; une autre carte ne compte pas
+lockerroom.comps_permis = lambda *a, **k: True
+vendues.memes_cache = lambda t, **k: {"mediane": None, "nb": 0, "ventes": []}
+lockerroom.Api._PH_SEM.clear()
+ebay_compte.rechercher = lambda q, **k: [{"titre": "2024-25 Upper Deck Young Guns Joe Ordinaire #240 RC", "photo": "https://i.ebayimg.com/sem.jpg"}]
+r = api.achetees_tableau()
+joe = next(x for x in r["cartes"] if "Ordinaire" in x["titre"])
+assert joe["photo"] == "https://i.ebayimg.com/sem.jpg" and joe["photo_semblable"], joe
+assert not next(x for x in r["cartes"] if "Demidov" in x["titre"]).get("photo_semblable")      # sa vraie photo
+print("PHOTO SEMBLABLE OK")

@@ -8525,6 +8525,7 @@ class Api:
     # eBay (achats eBay pas encore ajoutes + cartes de l'inventaire achetees, en stock), chacune avec son score SlabIQ, les
     # pastilles du joueur, le prix paye, le prix propose, le profit et QUAND la mettre en vente.
     _ACH_PH_LE = 0.0
+    _PH_SEM = {}                           # 14 nov 2026 : la photo semblable trouvee pour un achat (item_id -> photo)
     ACHETEES_FORT = 80                     # un score SlabIQ de 80 et plus : forte demande
     ACHETEES_PASTILLES_FORTES = ("en_feu", "en_hausse", "honneur", "buzz", "echange_hausse", "rebond")
 
@@ -8654,6 +8655,7 @@ class Api:
             self._achats_photos(manque, n=40)
         comps = comps_permis(self)
         t0 = time.time()
+        n_rech = [0]
         for x in out:
             try:
                 j = (auj - datetime.fromisoformat(x["achete_le"])).days if x.get("achete_le") else None
@@ -8677,14 +8679,28 @@ class Api:
                 prop, src = float(x.get("prix_demande") or x.get("valeur_carte")), "ton prix"
             x["propose"] = round(prop, 2) if prop else None
             # (admin seulement : une photo tiree des ventes = des comps, licence eBay)
-            if comps and not x.get("photo") and (x.get("_ph_x") or (x.get("jours") or 0) > 85) and time.time() - t0 < 12:
+            if comps and not x.get("photo") and (x.get("_ph_x") or (x.get("jours") or 0) > 85 or not x.get("item_id")) and time.time() - t0 < 12:
                 try:                                   # eBay n'a plus la photo : celle d'une vente de la MEME carte
                     vs = vendues.memes_cache(x["titre"], n=12, age_max=365 * 86400)
                     ph = next((v.get("photo") for v in (vs.get("ventes") or []) if str(v.get("photo") or "").startswith("http")), None)
+                    # 14 nov 2026 (Mathieu : « je parle de la photo de la carte ») : pas de vente connue de la MEME carte ->
+                    # une annonce active de la MEME carte sur eBay (recherche Browse, gardee 24 h ; 8 recherches par ouverture)
+                    if not ph:
+                        ph = Api._PH_SEM.get(str(x.get("item_id") or x["cle"]))
+                    if not ph and n_rech[0] < 8:
+                        n_rech[0] += 1
+                        cib = cartes_match.cible_titre(x["titre"])
+                        q = cartes_match.requete_ebay(cib) or x["titre"]
+                        for it in ebay_compte.rechercher(q[:100], limite=20, fond=True) or []:
+                            if str(it.get("photo") or "").startswith("http") and not cartes_match.raisons_refus(cib, it.get("titre") or ""):
+                                ph = it["photo"]
+                                break
+                        if ph:
+                            Api._PH_SEM[str(x.get("item_id") or x["cle"])] = ph
                     if ph:
                         x["photo"], x["photo_semblable"] = ph, True
-                except Exception:
-                    pass
+                except Exception as e:
+                    print("Achetees (photo semblable) : " + repr(e)[:120], flush=True)
             x["source_prix"] = src
             cout = x.get("cout")
             x["profit"] = round(_net_rev(prop) - float(cout), 2) if prop and cout is not None else None
