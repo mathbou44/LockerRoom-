@@ -37,6 +37,8 @@ POIDS_ACTIF = {"forme": 0.38, "ascension": 0.11, "rythme": 0.09, "buzz": 0.09, "
                # 13 nov 2026 (Mathieu : « les equipes qui ont le plus d'acheteurs doivent avoir un score plus eleve ») : le
                # marche de son club (le plus de ventes de cartes dans nos archives = 100), americain ou canadien
                "marche": 0.08}
+PIC_MOYEN, PIC_FORT = 2.6, 4.5     # 14 nov 2026 : le pic de visites (3 jours) qui compte (etude des evenements)
+PIC_BONUS_MOYEN, PIC_BONUS_FORT, PIC_BONUS_EXPLOIT = 4.0, 8.0, 6.0
 BONUS_FEU = 6                      # « 6 buts cette semaine = tres haut » : la semaine en feu passe devant tout le monde
 POIDS_RETIRE = {"legende": 0.33, "buzz": 0.22, "notoriete": 0.33, "actu": 0.12, "communaute": 0.06}
 ECHELLE_RETIRE = 0.85              # une semaine en feu passe devant ; une legende reste quand meme haut
@@ -716,8 +718,19 @@ def calculer(d=None, base=None, demande=None):
             val = min(100.0, val + min(14.0, 0.45 * pos))
             if any(e["type"] in ("temple", "honneur", "trophee") and e["sens"] > 0 for e in na.get("evs") or []):
                 past.append("honneur")
-        if pic is not None and pic >= 3 and (w_ := (base.get(nom) or {}).get("wiki") or {}).get("v3", 0) >= 300:
-            val = min(100.0, val + min(8.0, 2.0 * pic))
+        # 14 nov 2026 (Mathieu : « integre les evenements dans SlabIQ si ca aide : teste sur des joueurs, categorise, regarde la
+        # mediane des cartes vendues a la date de l'evenement ») : etude sur nos ventes (mai-nov 2026, 216 joueurs, 154
+        # evenements = pics de visites Wikipedia) : jours temoins -2,3 % ; pic x3-5 -4,3 % (rien) ; x5-10 +4,2 % ; x10+ +8,9 % ;
+        # un pic le jour d'un gros match (3 pts+) +32,6 % (encore +16 % 3 semaines apres) ; hors saison (contrat, echange) +8,9 %.
+        # Donc : un petit pic ne compte plus ; un gros pic oui ; un gros pic + un exploit, encore plus. Banc (correlation bonus /
+        # cartes 7 jours apres) : 0,071 -> 0,092, la nouvelle regle gagne 89 % des tirages. Le pic ici = 3 jours (un pic d'un
+        # jour x5 ~ x2,6 sur 3 jours ; x10 ~ x4,5).
+        if pic is not None and pic >= PIC_MOYEN and (w_ := (base.get(nom) or {}).get("wiki") or {}).get("v3", 0) >= 300:
+            bonus = PIC_BONUS_FORT if pic >= PIC_FORT else PIC_BONUS_MOYEN
+            exploit = "en_feu" in past or any(e.get("type") == "exploit" and e.get("sens", 0) > 0 for e in (na.get("evs") or []))
+            if exploit:
+                bonus += PIC_BONUS_EXPLOIT
+            val = min(100.0, val + bonus)
             if "buzz" not in past:
                 past.append("buzz")
         # 14 nov 2026 (Knies, Toronto -> Columbus) : un changement d'equipe recent
