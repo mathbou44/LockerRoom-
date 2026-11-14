@@ -8331,7 +8331,82 @@ class Api:
                 c.commit()
             finally:
                 c.close()
+        try:                                             # 14 nov 2026 : puis les cartes qui ont deja un cout (vendues, sur eBay)
+            res["relies"] += self.lier_achats_auto(force=True)
+        except Exception as e:
+            print("Achats relies tout seuls : " + repr(e)[:160], flush=True)
         return {"ok": True, **res}
+
+    # 14 nov 2026 (Mathieu : « dans l'onglet Bought, quand la carte est liee a une vente, elle doit etre retiree, c'est un
+    # doublon ; l'app doit faire les ajustements ») : un achat eBay pas encore relie dont la carte est DEJA dans l'inventaire
+    # (en stock, sur eBay ou vendue) se relie tout seul a elle : il sort de « Achetees » (une carte vendue ou sur eBay n'y est
+    # pas) et la carte garde le vrai prix paye. Prudent : la MEME carte (cartes_match), mise en vente apres l'achat, un cout
+    # vide ou egal au prix paye (5 %), et UNE seule carte possible (deux copies identiques : on ne devine pas).
+    _LIER_AUTO_LE = 0.0
+
+    def lier_achats_auto(self, force=False):
+        if not force and time.time() - Api._LIER_AUTO_LE < 600:
+            return 0
+        Api._LIER_AUTO_LE = time.time()
+        import difflib
+        with _verrou:
+            c = self._db()
+            try:
+                self._achats_table(c)
+                libres = _dicts(c.execute("SELECT rowid AS rid, item_id, n, titre, cout, date FROM achats_ebay WHERE carte_id IS NULL"))
+                if not libres:
+                    return 0
+                pris = {r[0] for r in c.execute("SELECT carte_id FROM achats_ebay WHERE carte_id IS NOT NULL")}
+                cols = {r[1] for r in c.execute("PRAGMA table_info(cartes)")}
+                cartes = _dicts(c.execute("SELECT id, titre, joueur, cout, statut, cree_le" + (", debut" if "debut" in cols else "") +
+                                          " FROM cartes WHERE COALESCE(titre, '') <> '' AND statut IN ('En stock', 'Listée', 'Vendue')"))
+            finally:
+                c.close()
+        cartes = [k for k in cartes if k["id"] not in pris]
+        # un index par nom de famille (le dernier mot du joueur) : on ne compare que les cartes du meme joueur
+        idx = {}
+        for k in cartes:
+            j = cartes_match.norm(k.get("joueur") or (cartes_match.cible_titre(k["titre"]).get("joueur") or ""))
+            if j:
+                idx.setdefault(j.split()[-1], []).append(k)
+        choix = {}
+        for a in libres:
+            cib = cartes_match.cible_titre(a["titre"] or "")
+            j = cartes_match.norm(cib.get("joueur") or "")
+            if not j:
+                continue
+            cands = []
+            for k in idx.get(j.split()[-1], []):
+                quand = str(k.get("debut") or k.get("cree_le") or "")[:10]
+                if quand and a.get("date") and quand < str(a["date"])[:10]:
+                    continue                                   # deja dans l'inventaire avant l'achat : pas cette carte
+                if k.get("cout") and a.get("cout") and abs(float(k["cout"]) - float(a["cout"])) > max(1.0, 0.05 * float(a["cout"])):
+                    continue                                   # un autre cout : une autre copie
+                if cartes_match.raisons_refus(cib, k["titre"]):
+                    continue
+                if difflib.SequenceMatcher(None, cartes_match.norm(a["titre"]), cartes_match.norm(k["titre"])).ratio() < 0.35:
+                    continue
+                cands.append(k["id"])
+            if len(cands) == 1:
+                choix.setdefault(cands[0], []).append(a)
+        n = 0
+        with _verrou:
+            c = self._db()
+            try:
+                for cid, l in choix.items():
+                    if len(l) != 1:
+                        continue                               # deux achats pour la meme carte : on ne devine pas
+                    a = l[0]
+                    c.execute("UPDATE achats_ebay SET carte_id=? WHERE rowid=? AND carte_id IS NULL", (cid, a["rid"]))
+                    c.execute("UPDATE cartes SET cout=?, note=TRIM(COALESCE(note,'') || ' Coût : achat eBay #' || ?) WHERE id=? "
+                              "AND COALESCE(cout,0)=0", (a["cout"], a["item_id"], cid))
+                    n += 1
+                c.commit()
+            finally:
+                c.close()
+        if n:
+            print(f"Achats relies tout seuls : {n}", flush=True)
+        return n
 
     # 30 oct 2026 (Mathieu : « relie a mon inventaire : j'ai des cartes d'inventaire reliees a mes achats ») : sur la fiche
     # d'une carte, l'achat eBay qui lui est relie (date, cout, lien) ; sinon les achats non relies qui lui ressemblent, un
@@ -8600,6 +8675,11 @@ class Api:
         source_prix, profit, quand, jours_restants, fort}], resume}"""
         import score_slab
         auj = datetime.now()
+        try:
+            lies_auto = self.lier_achats_auto()
+        except Exception as e:
+            print("Achats relies tout seuls : " + repr(e)[:160], flush=True)
+            lies_auto = 0
         with _verrou:
             c = self._db()
             try:
@@ -8731,7 +8811,7 @@ class Api:
                   "paye": round(sum(float(x["cout"]) for x in out if x.get("cout") is not None), 2),
                   "propose": round(sum(x["propose"] for x in out if x.get("propose")), 2),
                   "profit": round(sum(x["profit"] for x in out if x.get("profit") is not None), 2),
-                  "apres_j": AFFICHER_APRES_J, "comps": comps,
+                  "apres_j": AFFICHER_APRES_J, "comps": comps, "lies_auto": lies_auto,
                   "photos_en_route": sum(1 for x in out if x.get("item_id") and not x.get("photo") and not x.get("_ph_x"))}
         if not comps:
             for x in out:

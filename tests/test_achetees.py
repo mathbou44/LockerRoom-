@@ -98,3 +98,28 @@ joe = next(x for x in r["cartes"] if "Ordinaire" in x["titre"])
 assert joe["photo"] == "https://i.ebayimg.com/sem.jpg" and joe["photo_semblable"], joe
 assert not next(x for x in r["cartes"] if "Demidov" in x["titre"]).get("photo_semblable")      # sa vraie photo
 print("PHOTO SEMBLABLE OK")
+
+# 14 nov 2026 (« quand la carte est liee a une vente, elle doit etre retiree : c'est un doublon ; l'app doit faire les
+# ajustements ») : un achat pas relie dont la carte est deja dans l'inventaire (vendue, sur eBay) s'y relie tout seul
+api2 = lockerroom.Api(os.path.join(tempfile.mkdtemp(), "t2.db"))
+api2._TAUX.update(c={"usd": 0.72, "lu": 9e12}, lu=9e12)
+score_slab.annoter_lot = lambda items: items
+api2.couts_depuis_achats([
+    {"item_id": "501", "titre": "2023-24 SP Game Used Pekka Rinne Gold Auto /25", "quantite": 1, "cout_total": 59.0, "devise": "CAD", "date": j(99)},
+    {"item_id": "502", "titre": "2022-23 Upper Deck Young Guns Matt Boldy #219", "quantite": 1, "cout_total": 40.0, "devise": "CAD", "date": j(95)},
+    {"item_id": "503", "titre": "2022-23 Upper Deck Young Guns Matt Boldy #219", "quantite": 1, "cout_total": 41.0, "devise": "CAD", "date": j(94)}])
+assert len(api2.achetees_tableau()["cartes"]) == 3
+# la Rinne a ete vendue (carte importee de la vente eBay, avec le meme cout) ; deux Boldy identiques en stock
+v = api2.carte_sauver({"titre": "Pekka Rinne 2023-24 SP Game Used Gold Autograph 15/25", "statut": "Vendue", "cout": 59.0})
+b1 = api2.carte_sauver({"titre": "2022-23 UD Young Guns Matt Boldy #219 RC", "statut": "En stock"})
+b2 = api2.carte_sauver({"titre": "2022-23 UD Young Guns Matt Boldy #219 RC", "statut": "En stock"})
+lockerroom.Api._LIER_AUTO_LE = 0
+r = api2.achetees_tableau()
+assert r["resume"]["lies_auto"] == 1, r["resume"]
+L = [x for x in r["cartes"] if "Rinne" in x["titre"]]
+assert not L, "vendue : plus dans Achetees (doublon)"
+c = api2._db(); lie = c.execute("SELECT carte_id FROM achats_ebay WHERE item_id='501'").fetchone()[0]; c.close()
+assert lie == v["id"]
+# deux copies identiques pour deux achats : on ne devine pas (elles restent a relier a la main)
+assert sum(1 for x in r["cartes"] if "Boldy" in x["titre"] and x.get("a_ajouter")) == 2, [x["titre"] for x in r["cartes"]]
+print("LIER AUTO OK")
