@@ -3271,12 +3271,41 @@ class Api:
         Api._INV_SCORES[cle] = r = {"ok": True, "scores": out}
         return r
 
+    # 14 nov 2026 (Mathieu : « 157 $ de profit ? 170 - 59 et les frais, ca fait pas 157 ») : le profit d'une carte vendue
+    # etait calcule A LA VENTE, avec le cout connu a ce moment-la (souvent aucun) ; quand l'achat eBay se reliait ensuite
+    # (cout 59 $), le profit restait l'ancien (le net de la vente). Le profit d'une vente = prix + port charge - frais - port
+    # paye - cout, refait chaque fois que le cout change, et une fois pour toutes les ventes deja faites.
+    @staticmethod
+    def _profit_juste(c, cid=None):
+        """Refait le profit des cartes VENDUES (pas en consignation) a partir de leurs chiffres ; cid=None : toutes."""
+        q = ("UPDATE cartes SET profit = ROUND(COALESCE(prix_vendu,0) + COALESCE(port_charge,0) - COALESCE(frais,0) - "
+             "COALESCE(port_paye,0) - COALESCE(cout,0), 2) WHERE statut='Vendue' AND consignataire_id IS NULL AND prix_vendu IS NOT NULL "
+             "AND frais IS NOT NULL AND ABS(COALESCE(profit,0) - (COALESCE(prix_vendu,0) + COALESCE(port_charge,0) - COALESCE(frais,0) - "
+             "COALESCE(port_paye,0) - COALESCE(cout,0))) > 0.01")
+        return c.execute(q + (" AND id=?" if cid is not None else ""), ((int(cid),) if cid is not None else ())).rowcount
+
+    _PROFITS_REPARES = {}
+
     def inventaire_liste(self, filtres=None):
         f = filtres or {}
         try:
             self._reparer_soumissions()
         except Exception as e:
             print("Soumissions (reparation) : " + repr(e), flush=True)
+        try:                                                  # une fois par base : les ventes deja faites
+            if not Api._PROFITS_REPARES.get(self.chemin_db):
+                with _verrou:
+                    c = self._db()
+                    try:
+                        n = self._profit_juste(c)
+                        c.commit()
+                    finally:
+                        c.close()
+                Api._PROFITS_REPARES[self.chemin_db] = True
+                if n:
+                    print(f"Profits de ventes refaits : {n}", flush=True)
+        except Exception as e:
+            print("Profits (reparation) : " + repr(e)[:160], flush=True)
         sql, args = "SELECT * FROM cartes WHERE 1=1", []
         if f.get("statut"):
             sql += " AND statut=?"
@@ -3477,6 +3506,8 @@ class Api:
                             c.execute("UPDATE cartes SET vu_actif_le=NULL WHERE id=? AND COALESCE(item_number,'')<>?",
                                       (cid, str(d.get("item_number") or "")))
                         c.execute(f"UPDATE cartes SET {', '.join(k + '=?' for k in d)} WHERE id=?", list(d.values()) + [cid])
+                        if "cout" in d and "profit" not in d:
+                            self._profit_juste(c, cid)            # 14 nov 2026 : un cout corrige sur une carte vendue
                 else:
                     d.setdefault("statut", "En stock")
                     d.setdefault("emplacement", "Réserve")
@@ -8326,6 +8357,7 @@ class Api:
                         c.execute("UPDATE cartes SET cout=?, note=TRIM(COALESCE(note,'') || ' Coût : achat eBay #' || ?) WHERE id=? "
                                   "AND COALESCE(cout,0)=0", (a["cout"], a["item_id"], meilleur["id"]))
                         c.execute("UPDATE achats_ebay SET carte_id=? WHERE rowid=?", (meilleur["id"], a["rid"]))
+                        self._profit_juste(c, meilleur["id"])
                         pris.add(meilleur["id"])
                         res["relies"] += 1
                 c.commit()
@@ -8400,6 +8432,7 @@ class Api:
                     c.execute("UPDATE achats_ebay SET carte_id=? WHERE rowid=? AND carte_id IS NULL", (cid, a["rid"]))
                     c.execute("UPDATE cartes SET cout=?, note=TRIM(COALESCE(note,'') || ' Coût : achat eBay #' || ?) WHERE id=? "
                               "AND COALESCE(cout,0)=0", (a["cout"], a["item_id"], cid))
+                    self._profit_juste(c, cid)
                     n += 1
                 c.commit()
             finally:
@@ -8473,6 +8506,7 @@ class Api:
                 c.execute("UPDATE achats_ebay SET carte_id=NULL WHERE carte_id=?", (cid,))
                 c.execute("UPDATE achats_ebay SET carte_id=? WHERE item_id=? AND n=?", (cid, str(item_id), int(n or 0)))
                 c.execute("UPDATE cartes SET cout=? WHERE id=?", (a[0], cid))
+                self._profit_juste(c, cid)                    # 14 nov 2026 : une carte deja vendue : son profit suit
                 c.commit()
             finally:
                 c.close()
