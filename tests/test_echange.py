@@ -2,6 +2,7 @@
 cartes a drastiquement diminue ; SlabIQ aurait du le capter ») : le changement d'equipe recent, son sens (quitter ou rejoindre
 Toronto/Montreal), l'indice, le score de la carte et la valeur (ventes d'avant ramenees)."""
 import json
+import time
 import os
 import sys
 import tempfile
@@ -109,10 +110,10 @@ assert deals.valeur_sure([dict(x, titre=x["titre"].replace("Matthew Knies", "Jou
     deals._valeur_sure0([dict(x, titre=x["titre"].replace("Matthew Knies", "Joueur A")) for x in avant], T2)
 print("OK valeur", v, v0)
 
-# 7. le score de la carte : -6 en quittant Toronto, +6 en y arrivant
+# 7. le score de la carte : -12 en quittant Toronto, +8 en y arrivant
 import score_slab
-assert score_slab.ajuster_echange(80, {"pastilles": ["echange_baisse"]}) == 74
-assert score_slab.ajuster_echange(80, {"pastilles": ["echange_hausse"]}) == 86
+assert score_slab.ajuster_echange(80, {"pastilles": ["echange_baisse"]}) == 68
+assert score_slab.ajuster_echange(80, {"pastilles": ["echange_hausse"]}) == 88
 assert score_slab.ajuster_echange(80, {"pastilles": ["echange"]}) == 80 and score_slab.ajuster_echange(None, {"pastilles": []}) is None
 print("OK score")
 
@@ -123,3 +124,17 @@ assert q["sens"] == "baisse" and q["pq"] == "echange_baisse" and q["ech"] == {"d
 q = lockerroom.Api._iq_un("Kirill Marchenko", I)
 assert q["sens"] == "hausse" and q["pq"] == "echange_hausse", q
 print("ECHANGE OK")
+
+# 9. 14 nov 2026 (« pourquoi Knies est encore a 87 ? ») : sa fiche LNH etait vieille (ou absente) ; les alignements des 32
+# clubs (cette saison et la derniere) disent le vrai club et le changement, meme sans fiche
+d = {"rosters": {"le": 9e12, "cour": {"matthew knies": "CBJ", "kirill marchenko": "TOR", "auston matthews": "TOR"},
+                 "prec": {"matthew knies": ["TOR"], "kirill marchenko": ["CBJ"], "auston matthews": ["TOR"]}},
+     "indice": {"Matthew Knies": {"indice": 40}, "Auston Matthews": {"indice": 90}}}
+E = ij.suivre_echanges(d, {"Kirill Marchenko": {"nhl": {"actif": True, "equipe": "CBJ"}}}, AUJ)     # fiche vieille : CBJ
+assert E["Matthew Knies"] == {"de": "TOR", "vers": "CBJ", "le": "2026-10-01", "source": "alignements"}, E
+assert E["Kirill Marchenko"]["vers"] == "TOR" and "Auston Matthews" not in E, E
+# echange PENDANT la saison derniere (dans les deux clubs l'an passe) : pas recent
+d = {"rosters": {"le": 9e12, "cour": {"joe a": "CBJ"}, "prec": {"joe a": ["TOR", "CBJ"]}}, "indice": {"Joe A": {"indice": 50}}}
+assert ij.suivre_echanges(d, {}, AUJ) == {}
+v_ = {"le": time.time(), "cour": {"x": "TOR"}}; assert ij.rosters_lnh(v_) is v_          # pas relu avant 20 h
+print("ALIGNEMENTS OK")

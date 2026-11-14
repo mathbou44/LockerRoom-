@@ -45,7 +45,8 @@ def plancher(total, k):
     return max(total, k["plancher"])
 
 
-ECHANGE_SCORE = 6                  # 14 nov 2026 : un joueur qui quitte Toronto/Montreal (ou y arrive) : -6 / +6 sur ses cartes
+ECHANGE_SCORE = 12                 # 14 nov 2026 : un joueur qui quitte Toronto/Montreal : -12 sur ses cartes (Knies : -50 % de valeur)
+ECHANGE_SCORE_HAUSSE = 8           # ... qui y arrive : +8
 
 
 def ajuster_echange(total, ij):
@@ -57,7 +58,7 @@ def ajuster_echange(total, ij):
     if "echange_baisse" in p:
         return max(0.0, total - ECHANGE_SCORE)
     if "echange_hausse" in p:
-        return min(100.0, total + ECHANGE_SCORE)
+        return min(100.0, total + ECHANGE_SCORE_HAUSSE)
     return total
 
 

@@ -121,17 +121,68 @@ def detecter_echange(h, vu=None, aujourdhui=None):
     return None
 
 
+# 14 nov 2026 (Mathieu : « pourquoi Knies est encore a 87 ? ») : les fiches LNH de nos joueurs se relisent lentement (Knies
+# n'en avait pas, ou une vieille : « TOR »). La verite de chaque jour : les alignements des 32 clubs (API publique de la LNH,
+# 64 appels par jour) : l'equipe de CETTE saison et celle(s) de la saison derniere de chaque joueur.
+ROSTERS_H = 20
+
+
+def rosters_lnh(vieux=None, maintenant=None):
+    """{le, saison, cour: {nom normalise: club}, prec: {nom normalise: [clubs]}} ; relu au plus aux 20 h."""
+    if vieux and vieux.get("cour") and time.time() - (vieux.get("le") or 0) < ROSTERS_H * 3600:
+        return vieux
+    import urllib.request
+    an, _deb = _debut_saison(maintenant or date.today())
+    cour_s, prec_s = f"{an}{an + 1}", f"{an - 1}{an}"
+    cour, prec, ok = {}, {}, 0
+    for club in sorted(k for k in EQUIPES_NOM if k != "ARI"):
+        for saison, dest in ((cour_s, "c"), (prec_s, "p")):
+            u = f"https://api-web.nhle.com/v1/roster/{'UTA' if club == 'UTA' else club}/{saison}"
+            try:
+                with urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": "SlabCoach"}), timeout=15) as r:
+                    j = json.loads(r.read().decode())
+                ok += 1
+            except Exception:
+                continue
+            for grp in ("forwards", "defensemen", "goalies"):
+                for x in j.get(grp) or []:
+                    n = _norm(f"{(x.get('firstName') or {}).get('default', '')} {(x.get('lastName') or {}).get('default', '')}")
+                    if not n:
+                        continue
+                    if dest == "c":
+                        cour[n] = club
+                    else:
+                        prec.setdefault(n, [])
+                        if club not in prec[n]:
+                            prec[n].append(club)
+    if ok < 20 and vieux:
+        return vieux                                         # la LNH ne repond pas : on garde la derniere lecture
+    return {"le": time.time(), "saison": cour_s, "cour": cour, "prec": prec}
+
+
 def suivre_echanges(d, base, aujourdhui=None):
-    """Garde dans d l'equipe vue de chaque joueur actif et ses changements recents (d["echanges"]) ; enleve les vieux."""
+    """Garde dans d l'equipe vue de chaque joueur actif et ses changements recents (d["echanges"]) ; enleve les vieux.
+    14 nov 2026 : l'equipe vient d'abord des alignements LNH du jour (d["rosters"]), sinon de la fiche du joueur."""
     aujourdhui = aujourdhui or date.today()
     vus, ech = d.setdefault("equipes_vues", {}), d.setdefault("echanges", {})
-    for nom, e in (base or {}).items():
+    R = d.get("rosters") or {}
+    rc, rp = R.get("cour") or {}, R.get("prec") or {}
+    an, debut = _debut_saison(aujourdhui)
+    noms = set(base or {}) | set(d.get("indice") or {})
+    for nom in noms:
+        e = (base or {}).get(nom) or {}
         h = (e or {}).get("nhl") or {}
         if h.get("actif") is False:
             continue
-        abr = abrev_equipe(h.get("equipe"))
+        k = _norm(nom)
+        abr = rc.get(k) or abrev_equipe(h.get("equipe"))
         if not abr:
             continue
+        # les alignements : dans un club cette saison, dans un AUTRE la saison derniere (jamais celui-ci) = change cet ete
+        # ou depuis le debut de la saison
+        if rc.get(k) and rp.get(k) and rc[k] not in rp[k] and not (nom in ech and ech[nom].get("vers") == rc[k]):
+            ech[nom] = {"de": rp[k][-1], "vers": rc[k], "le": min(aujourdhui, debut).isoformat(), "source": "alignements"}
+        h = dict(h, equipe=abr)
         vu = vus.get(nom)
         x = detecter_echange(h, vu if vu and vu.get("eq") else None, aujourdhui)
         if x and (vu and vu.get("eq") and vu["eq"] != abr or nom not in ech):
@@ -530,9 +581,12 @@ def calculer(d=None, base=None, demande=None):
     except Exception:
         comm = {}
     info = {}
+    rc_ = (d.get("rosters") or {}).get("cour") or {}
     for nom in noms:
         e = base.get(nom) or {}
         h, w = e.get("nhl") or {}, e.get("wiki") or {}
+        if rc_.get(_norm(nom)) and h.get("actif") is not False:
+            h = dict(h, equipe=rc_[_norm(nom)])               # 14 nov 2026 : l'equipe du jour (alignements LNH)
         j = stats_j.get(nom) or {}
         actif = h.get("actif") is not False and bool(h.get("equipe") or j.get("jours"))
         fs = forme_semaine(j)
@@ -712,7 +766,11 @@ def passe(max_appels=None, sport="hockey"):
     import highlightly
     d = lire()
     d = {"joueurs": dict(d.get("joueurs") or {}), "indice": d.get("indice") or {}, "le": d.get("le") or 0,
-         "equipes_vues": dict(d.get("equipes_vues") or {}), "echanges": dict(d.get("echanges") or {})}
+         "equipes_vues": dict(d.get("equipes_vues") or {}), "echanges": dict(d.get("echanges") or {}), "rosters": d.get("rosters")}
+    try:
+        d["rosters"] = rosters_lnh(d.get("rosters"))
+    except Exception as e:
+        print("Alignements LNH : " + repr(e)[:160], flush=True)
     base = (demande_legale.lire() or {}).get("joueurs") or {}
     jour = date.today().isoformat()
     lus = 0
