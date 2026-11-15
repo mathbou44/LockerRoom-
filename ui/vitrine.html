@@ -123,6 +123,20 @@ h2{font:700 clamp(30px,4vw,44px)/1.08 'Barlow Condensed',sans-serif; letter-spac
 .col li.plus::before{content:'+'; color:var(--acc)}
 .note{margin-top:14px; font-size:13.5px; color:var(--pale)}
 /* 15 nov 2026 : la preuve du bon moment (test sur 6 400 vraies ventes de Young Guns) */
+.duel{margin-top:30px; display:grid; grid-template-columns:1fr 1fr; gap:16px}
+.du{padding:24px; border-radius:20px; background:var(--carte); border:1px solid var(--ligne); text-align:center}
+.du.avec{border-color:transparent; background:linear-gradient(var(--carte),var(--carte)) padding-box, var(--holo) border-box; border:2px solid transparent}
+.du small{display:block; font:700 13px 'Barlow Condensed',sans-serif; letter-spacing:.2em; text-transform:uppercase; color:var(--pale)}
+.du.avec small{color:var(--acc)}
+.du b{display:block; font:700 64px/1.05 'Barlow Condensed',sans-serif; margin:10px 0 6px; white-space:nowrap}
+.du.sans b{color:#E58FA0} .du.avec b{color:var(--vert)}
+.du p{margin:0; color:var(--doux); font-size:15px}
+.chiffres{margin-top:16px; display:grid; grid-template-columns:repeat(3,1fr); gap:16px}
+.chiffres div{padding:16px; border-radius:16px; background:var(--carte); border:1px solid var(--ligne); text-align:center}
+.chiffres b{display:block; font:700 30px 'Barlow Condensed',sans-serif} .chiffres div>span{color:var(--doux); font-size:14px}
+.mo-titre{font:700 20px 'Barlow Condensed',sans-serif; margin:40px 0 0}
+@media (max-width:600px){ .duel{grid-template-columns:1fr 1fr; gap:10px} .du{padding:16px 10px} .du b{font-size:40px} .du p{font-size:13px}
+  .chiffres{grid-template-columns:1fr; gap:10px} .chiffres div{display:flex; align-items:center; gap:12px; text-align:left; padding:12px 16px} .chiffres b{font-size:26px; min-width:70px} }
 .moment{margin-top:30px; padding:24px; border-radius:20px; background:var(--carte); border:1px solid var(--ligne); display:grid; gap:18px}
 .mo-l{display:grid; grid-template-columns:minmax(0,190px) minmax(0,1fr) 84px; gap:14px; align-items:center}
 .mo-l h3{font:700 17px/1.2 'Barlow Condensed',sans-serif; margin:0} .mo-l h3 small{display:block; font:500 13px 'Barlow',sans-serif; color:var(--pale); margin-top:3px}
@@ -306,7 +320,17 @@ footer .mention{flex-basis:100%; font-size:12.5px}
 <section id="moment"><div class="conteneur">
   <p class="kicker holo-t"><span class="fr">Le bon moment</span><span class="en">The right moment</span></p>
   <h2><span class="fr">Acheter au bon moment, ça change tout.</span><span class="en">Buying at the right moment changes everything.</span></h2>
-  <p class="intro"><span class="fr">On a repris 6 400 vraies ventes de Young Guns, de décembre 2025 à août 2026. Pour chacune : ce que SlabIQ affichait le jour de l’achat, avec seulement ce qu’on savait ce jour-là. Puis ce que la carte valait 2 mois plus tard.</span><span class="en">We replayed 6,400 real Young Guns sales, from December 2025 to August 2026. For each one: what SlabIQ showed on the day of purchase, using only what was known that day. Then what the card was worth 2 months later.</span></p>
+  <p class="intro"><span class="fr">On a repris 6 400 vraies ventes de Young Guns, de décembre 2025 à août 2026, et on a refait le même achat deux fois : sans SlabIQ (acheter n’importe quand) et avec SlabIQ (acheter seulement quand il dit que c’est le bon moment). Avec seulement ce qu’on savait le jour de l’achat.</span><span class="en">We replayed 6,400 real Young Guns sales, from December 2025 to August 2026, and made the same purchase twice: without SlabIQ (buying any time) and with SlabIQ (buying only when it says it’s the right moment). Using only what was known on the day of purchase.</span></p>
+  <div class="duel">
+    <div class="du sans"><small><span class="fr">Sans SlabIQ</span><span class="en">Without SlabIQ</span></small><b><span class="fr">−5,6 %</span><span class="en">−5.6%</span></b><p><span class="fr">de valeur perdue</span><span class="en">of value lost</span></p></div>
+    <div class="du avec"><small><span class="fr">Avec SlabIQ</span><span class="en">With SlabIQ</span></small><b><span class="fr">−0,6 %</span><span class="en">−0.6%</span></b><p><span class="fr">la valeur est gardée</span><span class="en">value is kept</span></p></div>
+  </div>
+  <div class="chiffres">
+    <div><b>15/15</b><span><span class="fr">tests gagnés par SlabIQ</span><span class="en">tests won by SlabIQ</span></span></div>
+    <div><b><span class="fr">+5 pts</span><span class="en">+5 pts</span></b><span><span class="fr">de mieux, en moyenne</span><span class="en">better, on average</span></span></div>
+    <div><b><span class="fr">6 400</span><span class="en">6,400</span></b><span><span class="fr">vraies ventes testées</span><span class="en">real sales tested</span></span></div>
+  </div>
+  <h3 class="mo-titre"><span class="fr">Le détail : la valeur 2 mois après l’achat</span><span class="en">The detail: value 2 months after purchase</span></h3>
   <div class="moment" role="table" aria-label="Value 2 months after purchase">
     <div class="mo-tete" role="row"><span><span class="fr">Le jour de l’achat, SlabIQ disait</span><span class="en">On the day of purchase, SlabIQ said</span></span><span><span class="fr">Baisse de valeur 2 mois plus tard</span><span class="en">Drop in value 2 months later</span></span><span><span class="fr">Valeur</span><span class="en">Value</span></span></div>
     <div class="mo-l bon" role="row"><h3><span class="fr">Bon moment</span><span class="en">Good moment</span><small><span class="fr">43 % valaient plus</span><span class="en">43% were worth more</span></small></h3><div class="mo-b"><i style="width:4%"></i></div><b class="mo-v"><span class="fr">−1,5 %</span><span class="en">−1.5%</span></b></div>
@@ -315,7 +339,7 @@ footer .mention{flex-basis:100%; font-size:12.5px}
     <div class="mo-l neuf" role="row"><h3><span class="fr">Vient de sortir</span><span class="en">Just released</span><small><span class="fr">recrue, 18 % valaient plus</span><span class="en">rookie, 18% were worth more</span></small></h3><div class="mo-b"><i style="width:100%"></i></div><b class="mo-v"><span class="fr">−37 %</span><span class="en">−37%</span></b></div>
   </div>
   <p class="intro"><span class="fr">Le marché des Young Guns a baissé pendant cette période. Achetée au bon moment, une carte a presque gardé sa valeur. Achetée en pleine flambée ou à sa sortie, elle en a perdu beaucoup plus.</span><span class="en">The Young Guns market went down over this period. Bought at the right moment, a card nearly held its value. Bought during a spike or at release, it lost a lot more.</span></p>
-  <p class="note"><span class="fr">Valeur médiane des ventes de la même carte (raw ou PSA 10) 2 mois après chaque achat payé au prix du marché. Résultats passés : ils ne garantissent pas les prochains. SlabCoach ne donne pas de conseils financiers.</span><span class="en">Median sale value of the same card (raw or PSA 10) 2 months after each purchase made at market price. Past results do not guarantee future ones. SlabCoach does not give financial advice.</span></p>
+  <p class="note"><span class="fr">Moyenne de nos 15 tests : 9 pour le collectionneur (revente à 1, 2 et 3 mois, sur toute la période et sur deux moitiés séparées) et 6 pour le revendeur (frais eBay, port, taxes de 0 %, 8 % et 15 %, revente à 1, 2 et 3 mois, à une vraie vente tirée au hasard). Dans un test (taxe de 15 %), l’écart est trop petit pour être sûr. Valeurs médianes des ventes de la même carte (raw ou PSA 10). Résultats passés : ils ne garantissent pas les prochains. SlabCoach ne donne pas de conseils financiers.</span><span class="en">Average of our 15 tests: 9 for the collector (resale at 1, 2 and 3 months, over the whole period and two separate halves) and 6 for the reseller (eBay fees, shipping, 0%, 8% and 15% sales tax, resale at 1, 2 and 3 months, at a real sale drawn at random). In one test (15% tax), the gap is too small to be sure. Median sale values of the same card (raw or PSA 10). Past results do not guarantee future ones. SlabCoach does not give financial advice.</span></p>
 </div></section>
 
 <section><div class="conteneur">
