@@ -19,6 +19,7 @@ import sys
 import shutil
 import threading
 import time
+from datetime import date, datetime, timedelta
 
 DOSSIER = os.path.dirname(os.path.abspath(__file__))
 PORT = int(os.environ.get("LOCKERROOM_PORT", "8430"))
@@ -1596,6 +1597,7 @@ def demarrer_taches():
     threading.Thread(target=_revalider_deals, daemon=True, name="revalider").start()
     threading.Thread(target=_rechauffer, daemon=True, name="rechauffer").start()
     threading.Thread(target=_reprendre_banque_yg, daemon=True, name="banque-yg-reprise").start()
+    threading.Thread(target=_moment_yg_boucle, daemon=True, name="moment-yg").start()
 
 
 def _reprendre_banque_yg():
@@ -1606,6 +1608,56 @@ def _reprendre_banque_yg():
         banque_yg.reprendre_si_besoin()
     except Exception as e:
         print("Banque YG (reprise) : " + repr(e)[:160], flush=True)
+
+
+def _valeur_actuelle(titre):
+    """La valeur d'une carte aujourd'hui (mediane de ses ventes des 30 derniers jours, sans aucun appel) ou None."""
+    import statistics
+    import vendues
+    vc = vendues.memes_cache(titre, n=40, age_max=30 * 86400) or {}
+    lim = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+    pts = [float(b) for a, b in (vc.get("points") or []) if b and str(a or "")[:10] >= lim]
+    return round(statistics.median(pts), 2) if len(pts) >= 3 else None
+
+
+def moment_yg_tour():
+    """Une passe : la mise a jour de la semaine (ventes recentes), l'iteration de la semaine (SlabIQ remesure ses regles et
+    essaie mieux), les etats du jour et la verification du journal en direct. -> resume."""
+    import banque_yg
+    import moment_yg
+    out = {}
+    if banque_yg.ETAT["en_cours"]:
+        return {"attente": "collecte en cours"}
+    r = banque_yg.rafraichir_si_besoin()
+    if r:
+        out["mise_a_jour"] = {k: r.get(k) for k in ("credits", "ventes", "requetes", "fini", "erreur")}
+    try:
+        der = float(banque_yg._meta("itere_le") or 0)
+    except ValueError:
+        der = 0.0
+    if time.time() - der >= 7 * 86400:
+        it = moment_yg.iterer_maintenant()
+        banque_yg._meta("itere_le", time.time())
+        out["iteration"] = {"change": it["change"], "feu_vert": (it["validation"] or {}).get("feu_vert")}
+    elif banque_yg._meta("moment_jour") != date.today().isoformat():
+        out["etats"] = moment_yg.calculer_jour()
+    banque_yg._meta("moment_jour", date.today().isoformat())
+    out["journal_verifies"] = moment_yg.journal_verifier(_valeur_actuelle)
+    return out
+
+
+def _moment_yg_boucle():
+    """15 nov 2026 (Mathieu : « on ne doit jamais arreter d'iterer et d'ameliorer SlabIQ ») : toutes les heures, une passe
+    (la plupart ne font rien : chaque etape a son rythme, jour ou semaine)."""
+    time.sleep(CALME_DEMARRAGE_S + 90)
+    while True:
+        try:
+            r = moment_yg_tour()
+            if r and any(k in r for k in ("mise_a_jour", "iteration", "etats")):
+                print("Moment YG :", r, flush=True)
+        except Exception as e:
+            print("Moment YG : " + repr(e)[:200], flush=True)
+        time.sleep(3600)
 
 
 def _rechauffer():

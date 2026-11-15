@@ -278,6 +278,7 @@ def marquer_ios(oui):
 
 
 _API_REF = []
+_MOMENT_ETAT = {"en_cours": False}
 
 
 def vue_simulee():
@@ -1686,6 +1687,37 @@ class Api:
         except (TypeError, ValueError):
             plafond = 6000
         return banque_yg.lancer(plafond)
+
+    # 15 nov 2026 (Mathieu : « on ne doit jamais arreter d'iterer et d'ameliorer SlabIQ ») : le moment d'achat (Young Guns),
+    # ses regles en place, chaque iteration de la semaine (garde ou change, et pourquoi) et le journal en direct
+    def admin_moment_yg(self):
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import moment_yg
+        out = moment_yg.bilan()
+        out["en_cours"] = bool(_MOMENT_ETAT["en_cours"])
+        return out
+
+    def admin_moment_yg_iterer(self):
+        """Une iteration tout de suite (en fond : ~20 s)."""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        if _MOMENT_ETAT["en_cours"]:
+            return {"ok": True, "deja": True}
+
+        def tache():
+            _MOMENT_ETAT["en_cours"] = True
+            try:
+                import banque_yg
+                import moment_yg
+                moment_yg.iterer_maintenant()
+                banque_yg._meta("itere_le", time.time())
+            except Exception as e:
+                print("Moment YG (iteration) : " + repr(e)[:160], flush=True)
+            finally:
+                _MOMENT_ETAT["en_cours"] = False
+        threading.Thread(target=tache, daemon=True, name="moment-yg-iterer").start()
+        return {"ok": True, "lancee": True}
 
     def admin_banc_lancer(self):
         """10 nov 2026 : relancer le banc de validation tout de suite (admin)."""
@@ -9971,6 +10003,27 @@ class Api:
         if tri == "rabais":
             lst = self._varier_deals(lst)                # 9 nov 2026 : chacun son ordre (et ses joueurs a lui d'abord)
         lst = self._objectif_deals(lst, f)
+        # 15 nov 2026 (Mathieu : « SlabIQ doit aider a choisir quelle carte acheter, a quel moment et pourquoi » ; « itere
+        # jusqu'a ce que le gain soit reel ») : le MOMENT du joueur lu sur sa Young Guns (banque YG, ventes = admin) croise
+        # avec le rabais : Feu vert (rabais fort + creux), Bon moment, Attendre (apres une flambee). En tri par defaut, les
+        # Feux verts d'abord et les « Attendre » a la fin (l'ordre est garde dans chaque groupe). Chaque signal va au journal
+        # en direct, verifie 60 jours plus tard.
+        if comps_permis(self):
+            try:
+                import cartes_match
+                import moment_yg
+                for x in lst:
+                    if not x.get("joueur"):
+                        x["joueur"] = cartes_match.joueur_du_titre(x.get("titre") or "") or None
+                    moment_yg.annoter(x)
+                if tri == "rabais":
+                    def _rang_m(x):
+                        v = (x.get("moment") or {}).get("verdict") or {}
+                        return {3: 0, 2: 1}.get(v.get("niveau"), 3 if v.get("cle") == "flambee" else 2)
+                    lst = sorted(lst, key=_rang_m)
+                moment_yg.journal_noter(lst)
+            except Exception as e:
+                print("Moment YG : " + repr(e)[:160], flush=True)
         n = len(lst)
         pro = forfaits.est_pro()
         if not pro:
@@ -10261,7 +10314,21 @@ class Api:
             sens, pq = "stable", "echange"
         else:
             sens, pq = "stable", "stable"
-        return {"s": int(round(v["indice"])), "sens": sens, "risque": sens == "baisse", "pq": pq, **({"ech": ech} if ech else {}),
+        # 15 nov 2026 (Mathieu : « on ne doit pas creer un autre SlabIQ, c'est juste SlabIQ qui fait tout » ; « la Young Guns
+        # est la carte mere ») : le MOMENT lu sur la Young Guns du joueur (18 mois de ventes, regles remesurees chaque semaine)
+        # passe devant pour le timing : au creux -> « creux », apres une flambee -> « flambee » (attendre). Ventes = admin.
+        yg = None
+        if comps_permis():
+            try:
+                import moment_yg
+                m = moment_yg.etat(nom)
+                if m and m["etat"] in ("creux", "creux_fort", "flambee"):
+                    yg = {"etat": m["etat"], "raisons": m["raisons"][:2]}
+                    sens, pq = ("flambee", "yg_flambee") if m["etat"] == "flambee" else ("creux", "yg_creux")
+            except Exception:
+                yg = None
+        return {"s": int(round(v["indice"])), "sens": sens, "risque": sens in ("baisse", "flambee"), "pq": pq, **({"ech": ech} if ech else {}),
+                **({"yg": yg} if yg else {}),
                 **({"prev": pv} if pv else {}), **({"ecart_28j": d} if d is not None else {})}
 
     def _iq_deals(self, items):

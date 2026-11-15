@@ -31,6 +31,8 @@ JOURS = 548                          # 18 mois
 PAR_PAGE = 200                       # CompSniper : jusqu'a 200 par page si le forfait le permet (sinon 50)
 PAGES_MAX = 40                       # par recherche (une YG tres vendue)
 RESERVE_APP = 1000                   # credits du mois laisses a l'app (Radar, fiches)
+RAFRAICHIR_PLAFOND = 450             # 15 nov 2026 : la mise a jour de la semaine (~1 900 credits par mois)
+RAFRAICHIR_J = 7
 PAUSE_S = 1.2
 _verrou = threading.Lock()
 ETAT = {"en_cours": False, "le": 0.0, "texte": None, "credits": 0, "ventes": 0, "joueurs_faits": 0, "joueurs_total": 0, "erreur": None}
@@ -51,6 +53,8 @@ def _cx():
     # 15 nov 2026 (Mathieu : « j'ai clique il y a 30 min, on est en pleine recherche et ca dit clique encore ; on devrait voir
     # notre progression ») : la collecte en cours est gardee DANS LA BASE (pas en memoire) : un redemarrage du serveur (un
     # deploiement) ne l'efface plus, elle reprend toute seule, et la console montre toujours ou elle en est
+    c.execute("CREATE TABLE IF NOT EXISTS rafraichi (q TEXT PRIMARY KEY, le REAL)")
+    c.execute("CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT)")
     c.execute("CREATE TABLE IF NOT EXISTS collecte (id INTEGER PRIMARY KEY CHECK (id = 1), statut TEXT, plafond INTEGER, credits INTEGER,"
               " debut REAL, battement REAL, texte TEXT, erreur TEXT, joueurs TEXT)")
     return c
@@ -112,10 +116,10 @@ def _requetes(nom):
     return [(nom, f"{nom} young guns"), (nom, f"{nom} young guns psa 10")]
 
 
-def _page(q, page, par_page):
+def _page(q, page, par_page, debut=None):
     import historique
     fin = datetime.now(timezone.utc).date()
-    p = {"keyword": q, "startDate": (fin - timedelta(days=JOURS)).isoformat(), "endDate": fin.isoformat(),
+    p = {"keyword": q, "startDate": debut or (fin - timedelta(days=JOURS)).isoformat(), "endDate": fin.isoformat(),
          "sort": "lastSoldDescending", "singleUnitOnly": "true", "limit": str(par_page), "page": str(page)}
     req = urllib.request.Request(historique.URL + "?" + urllib.parse.urlencode(p),
                                  headers={"Authorization": "Bearer " + historique._cle(), "Accept": "application/json"})
@@ -254,6 +258,113 @@ def collecter(plafond=6000, joueurs=None, arret=None):
     finally:
         ETAT["en_cours"] = False
         _run_maj(statut=fin_statut if fin_statut != "en_cours" else "interrompue", battement=time.time())
+
+
+def _meta(k, v=None):
+    with _verrou:
+        c = _cx()
+        try:
+            if v is not None:
+                c.execute("INSERT OR REPLACE INTO meta VALUES (?,?)", (k, str(v)))
+                c.commit()
+                return v
+            r = c.execute("SELECT v FROM meta WHERE k=?", (k,)).fetchone()
+            return r[0] if r else None
+        finally:
+            c.close()
+
+
+def rafraichir(plafond=RAFRAICHIR_PLAFOND, arret=None):
+    """15 nov 2026 (Mathieu : « on ne doit jamais arreter d'iterer et d'ameliorer SlabIQ ») : chaque semaine, les ventes
+    RECENTES de chaque recherche de la banque (depuis sa derniere vente connue, 3 jours de marge, 60 jours au plus), les plus
+    anciennes mises a jour d'abord, dans un plafond de credits (et jamais au-dela du budget du mois moins la reserve de l'app).
+    Le moment de chaque joueur (moment_yg) reste ainsi a jour. -> {credits, ventes, requetes, fini}."""
+    import historique
+    import vendues
+    if not historique.actif():
+        return {"ok": False, "erreur": "Clé CompSniper absente (COMPSNIPER_CLE)"}
+    if ETAT["en_cours"]:
+        return {"ok": False, "erreur": "Collecte en cours"}
+    taux = vendues._taux_usd_cad() or 1.37
+    c = _cx()
+    try:
+        qs = c.execute("SELECT f.q, f.joueur, r.le FROM faits f LEFT JOIN rafraichi r ON r.q = f.q ORDER BY COALESCE(r.le, 0), f.q").fetchall()
+        dern = dict(c.execute("SELECT q, MAX(le) FROM ventes GROUP BY q").fetchall())
+    finally:
+        c.close()
+    auj = datetime.now(timezone.utc).date()
+    cr = nv = nq = 0
+    par_page = 50
+    fini = True
+    for q, joueur, _le in qs:
+        if arret and arret():
+            fini = False
+            break
+        d0 = auj - timedelta(days=60)
+        try:
+            d0 = max(d0, date.fromisoformat(str(dern.get(q) or "")[:10]) - timedelta(days=3))
+        except ValueError:
+            pass
+        page = 1
+        while page <= 10:
+            if cr >= plafond or historique.budget_mois() - RESERVE_APP - historique.utilises()["mois"] <= 0:
+                fini = False
+                break
+            try:
+                d = _page(q, page, par_page, debut=d0.isoformat())
+            except Exception as e:
+                print("Banque YG (mise a jour) : " + repr(e)[:120], flush=True)
+                fini = False
+                break
+            historique._compter(False)
+            cr += 1
+            v = _lire(d, taux)
+            with _verrou:
+                c = _cx()
+                try:
+                    c.executemany("INSERT OR IGNORE INTO ventes VALUES (?,?,?,?,?,?,?,?,?)",
+                                  [((x["item_id"] or "") + "|" + x["le"] + "|" + x["titre"][:80], q, joueur, x["titre"], x["prix_usd"],
+                                    x["devise"], x["prix_cad"], x["le"], x["item_id"]) for x in v])
+                    c.commit()
+                finally:
+                    c.close()
+            nv += len(v)
+            try:
+                import base_ventes
+                base_ventes.noter(q, [{"titre": x["titre"], "prix": x["prix_cad"], "le": x["le"], "url": x["url"], "photo": x["photo"],
+                                       "item_id": x["item_id"], "source": "historique"} for x in v])
+            except Exception:
+                pass
+            if len(v) < par_page * 0.9:
+                break
+            page += 1
+            time.sleep(PAUSE_S)
+        if not fini:
+            break
+        nq += 1
+        with _verrou:
+            c = _cx()
+            try:
+                c.execute("INSERT OR REPLACE INTO rafraichi VALUES (?,?)", (q, time.time()))
+                c.commit()
+            finally:
+                c.close()
+    if fini:
+        _meta("rafraichi_le", time.time())
+    return {"ok": True, "credits": cr, "ventes": nv, "requetes": nq, "fini": fini}
+
+
+def rafraichir_si_besoin():
+    """Une fois par semaine (le reste de la semaine, s'il manquait des credits, reprend a la suivante)."""
+    try:
+        der = float(_meta("rafraichi_le") or 0)
+    except ValueError:
+        der = 0.0
+    essai = float(_meta("rafraichi_essai") or 0)
+    if time.time() - der < RAFRAICHIR_J * 86400 or time.time() - essai < 86400:
+        return None
+    _meta("rafraichi_essai", time.time())
+    return rafraichir()
 
 
 def reprendre_si_besoin():
