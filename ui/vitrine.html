@@ -122,6 +122,16 @@ h2{font:700 clamp(30px,4vw,44px)/1.08 'Barlow Condensed',sans-serif; letter-spac
 .col li{display:flex; gap:10px; color:#DCD9E2; font-size:15px} .col li::before{content:'✓'; color:var(--vert); font-weight:800}
 .col li.plus::before{content:'+'; color:var(--acc)}
 .note{margin-top:14px; font-size:13.5px; color:var(--pale)}
+/* 15 nov 2026 : la preuve du bon moment (test sur 6 400 vraies ventes de Young Guns) */
+.moment{margin-top:30px; padding:24px; border-radius:20px; background:var(--carte); border:1px solid var(--ligne); display:grid; gap:18px}
+.mo-l{display:grid; grid-template-columns:minmax(0,190px) minmax(0,1fr) 84px; gap:14px; align-items:center}
+.mo-l h3{font:700 17px/1.2 'Barlow Condensed',sans-serif; margin:0} .mo-l h3 small{display:block; font:500 13px 'Barlow',sans-serif; color:var(--pale); margin-top:3px}
+.mo-b{height:14px; border-radius:99px; background:var(--carte2); overflow:hidden} .mo-b i{display:block; height:100%; border-radius:99px; background:var(--pale)}
+.mo-l.bon .mo-b i{background:var(--vert)} .mo-l.att .mo-b i{background:#F2B3D6} .mo-l.neuf .mo-b i{background:#E58FA0}
+.mo-v{font:700 22px 'Barlow Condensed',sans-serif; text-align:right; white-space:nowrap} .mo-l.bon .mo-v{color:var(--vert)}
+.mo-tete{display:grid; grid-template-columns:minmax(0,190px) minmax(0,1fr) 84px; gap:14px; font-size:12.5px; color:var(--pale); letter-spacing:.04em}
+.mo-tete>span:last-child{text-align:right}
+@media (max-width:600px){ .moment{padding:18px 14px} .mo-l,.mo-tete{grid-template-columns:minmax(0,1fr) 72px} .mo-b{grid-column:1/-1; grid-row:2} .mo-tete>span:nth-child(2){display:none} }
 /* forfaits */
 .forfaits{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:34px; max-width:900px}
 @media (max-width:800px){ .forfaits{grid-template-columns:1fr} }
@@ -291,6 +301,21 @@ footer .mention{flex-basis:100%; font-size:12.5px}
     <div class="etape"><b>9/10</b><h3><span class="fr">Testé sur de vraies ventes</span><span class="en">Tested on real sales</span></h3><p><span class="fr">Quand une carte s’est vendue au moins 2 fois plus cher qu’une autre, SlabIQ les met dans le bon ordre plus de 9 fois sur 10, sur des ventes qu’il n’avait jamais vues.</span><span class="en">When a card sold for at least twice another, SlabIQ puts them in the right order more than 9 times in 10, on sales it had never seen.</span></p></div>
     <div class="etape"><b>24 h</b><h3><span class="fr">Toujours à jour</span><span class="en">Always current</span></h3><p><span class="fr">Stats de la LNH, recherches, nouvelles, joueurs en feu ou en creux : SlabIQ se met à jour chaque jour et réapprend aux 3 jours. Il ne regarde jamais le prix de l’annonce.</span><span class="en">NHL stats, searches, news, players on fire or in a slump: SlabIQ updates daily and retrains every 3 days. It never looks at the listing price.</span></p></div>
   </div>
+</div></section>
+
+<section id="moment"><div class="conteneur">
+  <p class="kicker holo-t"><span class="fr">Le bon moment</span><span class="en">The right moment</span></p>
+  <h2><span class="fr">Acheter au bon moment, ça change tout.</span><span class="en">Buying at the right moment changes everything.</span></h2>
+  <p class="intro"><span class="fr">On a repris 6 400 vraies ventes de Young Guns, de décembre 2025 à août 2026. Pour chacune : ce que SlabIQ affichait le jour de l’achat, avec seulement ce qu’on savait ce jour-là. Puis ce que la carte valait 2 mois plus tard.</span><span class="en">We replayed 6,400 real Young Guns sales, from December 2025 to August 2026. For each one: what SlabIQ showed on the day of purchase, using only what was known that day. Then what the card was worth 2 months later.</span></p>
+  <div class="moment" role="table" aria-label="Value 2 months after purchase">
+    <div class="mo-tete" role="row"><span><span class="fr">Le jour de l’achat, SlabIQ disait</span><span class="en">On the day of purchase, SlabIQ said</span></span><span><span class="fr">Baisse de valeur 2 mois plus tard</span><span class="en">Drop in value 2 months later</span></span><span><span class="fr">Valeur</span><span class="en">Value</span></span></div>
+    <div class="mo-l bon" role="row"><h3><span class="fr">Bon moment</span><span class="en">Good moment</span><small><span class="fr">43 % valaient plus</span><span class="en">43% were worth more</span></small></h3><div class="mo-b"><i style="width:4%"></i></div><b class="mo-v"><span class="fr">−1,5 %</span><span class="en">−1.5%</span></b></div>
+    <div class="mo-l" role="row"><h3><span class="fr">Neutre</span><span class="en">Neutral</span><small><span class="fr">31 % valaient plus</span><span class="en">31% were worth more</span></small></h3><div class="mo-b"><i style="width:19%"></i></div><b class="mo-v"><span class="fr">−7 %</span><span class="en">−7%</span></b></div>
+    <div class="mo-l att" role="row"><h3><span class="fr">Attendre</span><span class="en">Wait</span><small><span class="fr">prix en flambée, 32 % valaient plus</span><span class="en">price spike, 32% were worth more</span></small></h3><div class="mo-b"><i style="width:32%"></i></div><b class="mo-v"><span class="fr">−12 %</span><span class="en">−12%</span></b></div>
+    <div class="mo-l neuf" role="row"><h3><span class="fr">Vient de sortir</span><span class="en">Just released</span><small><span class="fr">recrue, 18 % valaient plus</span><span class="en">rookie, 18% were worth more</span></small></h3><div class="mo-b"><i style="width:100%"></i></div><b class="mo-v"><span class="fr">−37 %</span><span class="en">−37%</span></b></div>
+  </div>
+  <p class="intro"><span class="fr">Le marché des Young Guns a baissé pendant cette période. Achetée au bon moment, une carte a presque gardé sa valeur. Achetée en pleine flambée ou à sa sortie, elle en a perdu beaucoup plus.</span><span class="en">The Young Guns market went down over this period. Bought at the right moment, a card nearly held its value. Bought during a spike or at release, it lost a lot more.</span></p>
+  <p class="note"><span class="fr">Valeur médiane des ventes de la même carte (raw ou PSA 10) 2 mois après chaque achat payé au prix du marché. Résultats passés : ils ne garantissent pas les prochains. SlabCoach ne donne pas de conseils financiers.</span><span class="en">Median sale value of the same card (raw or PSA 10) 2 months after each purchase made at market price. Past results do not guarantee future ones. SlabCoach does not give financial advice.</span></p>
 </div></section>
 
 <section><div class="conteneur">
