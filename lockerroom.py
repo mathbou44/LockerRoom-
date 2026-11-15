@@ -8968,7 +8968,18 @@ class Api:
                 if not x_["photo"] and pe.get("photo"):
                     x_["photo"] = pe["photo"]                 # ta propre photo de la meme carte
         for k in cartes:                                     # 2. dans l'inventaire, en stock, pas sur eBay
-            if (k.get("emplacement") or "") in ("Collection", "eBay") or k.get("item_number") or ("envoi_json" in cols and k.get("envoi_json")):
+            # 15 nov 2026 (Mathieu : « une carte achetee peut etre envoyee chez PSA ou une autre compagnie de gradation ») : elle
+            # RESTE dans « Achetees », marquee « Au gradage · PSA » (elle sera a vendre a son retour) ; une consignation (un encan
+            # qui la vend) en sort ; la Collection aussi (on la garde)
+            env = None
+            if "envoi_json" in cols and k.get("envoi_json"):
+                try:
+                    env = json.loads(k["envoi_json"]) or None
+                except ValueError:
+                    env = None
+                if not env or env.get("type") != "gradation":
+                    continue
+            if (k.get("emplacement") or "") in ("Collection", "eBay") or k.get("item_number"):
                 continue
             a = par_carte.get(k["id"])
             if not a and not (k.get("cout") or 0) > 0:
@@ -8981,6 +8992,8 @@ class Api:
                         "valeur_carte": k.get("valeur"), "prix_demande": k.get("prix_demande"),
                         "a_finir": bool("a_finir_le" in cols and k.get("a_finir_le")), "_ph_x": bool(a and a.get("photo") == "-"),
                         "ebay_etat": "pas_liste"})
+            if env:
+                out[-1]["envoi"] = {c_: env.get(c_) for c_ in ("compagnie", "etape", "retour_prevu", "envoye_le")}
         try:
             score_slab.annoter_lot(out)
         except Exception as e:
@@ -9061,7 +9074,9 @@ class Api:
             x["fort"] = fort
             reste = None if j is None else max(0, AFFICHER_APRES_J - j)
             x["jours_restants"] = reste
-            if reste is None:
+            if x.get("envoi"):
+                x["quand"] = "au_gradage"                     # pas avant son retour (avec sa note, sa valeur change)
+            elif reste is None:
                 x["quand"] = "inconnu"
             elif reste > 0:
                 x["quand"] = "attendre_3mois"
@@ -9071,7 +9086,7 @@ class Api:
                 x["quand"] = "maintenant"
             else:
                 x["quand"] = "prete"
-        ordre = {"maintenant": 0, "prete": 1, "attendre_creux": 2, "attendre_3mois": 3, "inconnu": 4}
+        ordre = {"maintenant": 0, "prete": 1, "attendre_creux": 2, "attendre_3mois": 3, "au_gradage": 4, "inconnu": 5}
         out.sort(key=lambda x: (ordre[x["quand"]], -(x.get("score") or 0) if x["quand"] in ("maintenant", "prete") else (x.get("jours_restants") or 0)))
         for x in out:
             for k in ("valeur_carte", "prix_demande", "_ph_x", "_attente_h"):

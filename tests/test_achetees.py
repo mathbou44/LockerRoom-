@@ -1,7 +1,7 @@
 """14 nov 2026 (Mathieu : « un onglet pour les cartes achetees : le score SlabIQ en pastille avec les photos de l'annonce, le
 prix paye et propose pour le profit ; savoir quand les mettre : 3 mois minimum apres l'achat, et surtout si le score SlabIQ est
 haut ») : achetees_tableau. Aucun reseau."""
-import os, time, sys, tempfile
+import os, time, sys, tempfile, json
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ["LOCKERROOM_DONNEES"] = tempfile.mkdtemp()
 import comptes
@@ -176,3 +176,19 @@ s_ = next(x for x in r["cartes"] if "Sergachev" in x["titre"])
 assert s_["photo"] == "https://i.ebayimg.com/images/i/336877908150-0-1/s-l500.jpg" and not s_.get("photo_semblable"), s_
 assert VUS == ["336877908150"], VUS
 print("PHOTO PAR NUMERO OK")
+
+# 15 nov 2026 (« une carte achetee peut etre envoyee chez PSA ») : elle reste dans « Achetees », « Au gradage · PSA » ;
+# une consignation (un encan la vend) en sort
+api5 = lockerroom.Api(os.path.join(tempfile.mkdtemp(), "t5.db"))
+api5._TAUX.update(c={"usd": 0.72, "lu": 9e12}, lu=9e12)
+g_ = api5.carte_sauver({"titre": "2023-24 Upper Deck Young Guns Zach Benson #474", "statut": "En stock", "cout": 27})
+e_ = api5.carte_sauver({"titre": "2023-24 Upper Deck Young Guns Logan Cooley #451", "statut": "En stock", "cout": 30})
+c = api5._db()
+c.execute("UPDATE cartes SET envoi_json=? WHERE id=?", (json.dumps({"type": "gradation", "compagnie": "PSA", "envoye_le": j(3)}), g_["id"]))
+c.execute("UPDATE cartes SET envoi_json=? WHERE id=?", (json.dumps({"type": "encan", "maison": "PWCC"}), e_["id"])); c.commit(); c.close()
+r = api5.achetees_tableau()
+z = next(x for x in r["cartes"] if "Benson" in x["titre"])
+assert z["quand"] == "au_gradage" and z["envoi"]["compagnie"] == "PSA", z
+assert not any("Cooley" in x["titre"] for x in r["cartes"])
+assert r["resume"]["pretes"] == 0
+print("AU GRADAGE OK")
