@@ -123,3 +123,22 @@ assert lie == v["id"]
 # deux copies identiques pour deux achats : on ne devine pas (elles restent a relier a la main)
 assert sum(1 for x in r["cartes"] if "Boldy" in x["titre"] and x.get("a_ajouter")) == 2, [x["titre"] for x in r["cartes"]]
 print("LIER AUTO OK")
+
+# 14 nov 2026 (« la meme carte : dans Bought, une icone On eBay ou Not listed yet ») : chaque carte dit son etat eBay ; un achat
+# dont une carte de l'inventaire SEMBLE etre la meme (pas assez sur pour la relier seule) : « Sur eBay ? », sa photo, un tap relie
+api3 = lockerroom.Api(os.path.join(tempfile.mkdtemp(), "t3.db"))
+api3._TAUX.update(c={"usd": 0.72, "lu": 9e12}, lu=9e12)
+api3.couts_depuis_achats([{"item_id": "601", "titre": "Chris Osgood Clear Cut Ice Gallery Red Wings", "quantite": 1, "cout_total": 32.0,
+                           "devise": "CAD", "date": j(99)},
+                          {"item_id": "602", "titre": "2023-24 Upper Deck Young Guns Joe Ordinaire #240", "quantite": 1, "cout_total": 9.0,
+                           "devise": "CAD", "date": j(99)}])
+k = api3.carte_sauver({"titre": "2024-25 Clear Cut Chris Osgood Ice Gallery Autograph", "statut": "Listée", "cout": 30,
+                       "photo": "https://i.ebayimg.com/osg.jpg"})
+lockerroom.Api._LIER_AUTO_LE = 0
+r = api3.achetees_tableau()
+o = next(x for x in r["cartes"] if "Osgood" in x["titre"])
+assert o["ebay_etat"] == "sur_ebay" and o["peut_etre"]["carte_id"] == k["id"] and o["photo"] == "https://i.ebayimg.com/osg.jpg", o
+assert next(x for x in r["cartes"] if "Ordinaire" in x["titre"])["ebay_etat"] == "pas_liste"
+api3.achat_relier(k["id"], "601", 0)
+assert not any("Osgood" in x["titre"] for x in api3.achetees_tableau()["cartes"])          # reliee : sortie de « Achetees »
+print("ETAT EBAY OK")

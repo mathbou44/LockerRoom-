@@ -1101,6 +1101,12 @@ def valeur_ou_saison(a, ventes, actives, cib=None):
 
 UNIQUE_SERIE_MAX = 25            # 12 nov 2026 : une carte numerotee /25 ou moins...
 UNIQUE_PRUDENCE = 0.75           # ... avec UNE seule vente d'un an : 75 % de cette vente, dite « estimee »
+# 14 nov 2026 (Mathieu : la Kaprizov The Cup Scripted Swatches Auto Patch /35 chez Remi, une seule vente en 15 mois : « oui
+# go ») : l'exception s'elargit aux autos et patchs /50 et moins, avec UNE vente jusqu'a 18 mois, a 60 % (plus vieille,
+# plus de prudence). Toujours « estimee ».
+UNIQUE_SERIE_MAX_LARGE = 50
+UNIQUE_JOURS_LARGE = 548
+UNIQUE_PRUDENCE_LARGE = 0.60
 
 
 def valeur_unique(a, ventes, cib=None):
@@ -1109,15 +1115,16 @@ def valeur_unique(a, ventes, cib=None):
     special, pas abimee) donne une valeur PRUDENTE (75 %), toujours affichee « estimee ». -> (valeur, « unique », 1, [vente])."""
     import cartes_match
     cib = cib or cartes_match.cible_titre(a.get("titre") or "")
-    if not (cib.get("serie") and cib["serie"] <= UNIQUE_SERIE_MAX and (cib.get("auto") or cib.get("patch"))):
+    if not (cib.get("serie") and cib["serie"] <= UNIQUE_SERIE_MAX_LARGE and (cib.get("auto") or cib.get("patch"))):
         return None
     titre = a.get("titre") or ""
-    pv = [v for v in memes_ventes(cib, ventes) if _jours(v) <= JOURS_MAX_HITS and not cartes_match.abimee(v.get("titre") or "")
+    pv = [v for v in memes_ventes(cib, ventes) if _jours(v) <= UNIQUE_JOURS_LARGE and not cartes_match.abimee(v.get("titre") or "")
           and (cartes_match.serie_speciale(titre) or not cartes_match.serie_speciale(v.get("titre") or ""))]
     if len(pv) != 1:
         return None
     v = pv[0]
-    return round(float(v["prix"]) * UNIQUE_PRUDENCE, 2), "unique", 1, [{k: v.get(k) for k in ("titre", "prix", "le", "photo", "url")}]
+    pru = UNIQUE_PRUDENCE if cib["serie"] <= UNIQUE_SERIE_MAX and _jours(v) <= JOURS_MAX_HITS else UNIQUE_PRUDENCE_LARGE
+    return round(float(v["prix"]) * pru, 2), "unique", 1, [{k: v.get(k) for k in ("titre", "prix", "le", "photo", "url")}]
 
 
 def _diag(d, **k):

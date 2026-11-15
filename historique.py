@@ -19,7 +19,7 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 
 URL = "https://api.compsniper.com/v1/research/sold"
-JOURS = 365                       # un an de ventes (la regle des hits : deals.JOURS_MAX_HITS)
+JOURS = 548                       # 14 nov 2026 : 18 mois (une carte rare : deals.valeur_unique) ; avant : un an
 CACHE_S = 14 * 86400
 _verrou = threading.Lock()
 _ERREUR = {"le": 0.0, "texte": None}

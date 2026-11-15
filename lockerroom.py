@@ -8721,8 +8721,41 @@ class Api:
                 achats = _dicts(c.execute("SELECT item_id, n, titre, cout, date, photo, carte_id FROM achats_ebay ORDER BY date DESC LIMIT 1500"))
                 cols = {r[1] for r in c.execute("PRAGMA table_info(cartes)")}
                 cartes = _dicts(c.execute("SELECT * FROM cartes WHERE statut='En stock' AND consignataire_id IS NULL"))
+                libres_inv = _dicts(c.execute("SELECT id, titre, joueur, statut, item_number, photo, cout FROM cartes WHERE statut IN "
+                                              "('En stock', 'Listée') AND COALESCE(titre,'') <> '' AND id NOT IN "
+                                              "(SELECT carte_id FROM achats_ebay WHERE carte_id IS NOT NULL)"))
             finally:
                 c.close()
+        # 14 nov 2026 (Mathieu : « la meme carte : dans Bought, on doit avoir une icone On eBay ou Not listed yet ; faut le
+        # savoir ») : un achat pas relie dont une carte de l'inventaire SEMBLE etre la meme (meme joueur, titre proche, pas
+        # assez sur pour la relier seule) : on le dit (« Sur eBay ? » / « Dans l'inventaire ? »), sa photo a toi, et un tap relie.
+        import difflib
+        idx_inv = {}
+        for k in libres_inv:
+            j = cartes_match.norm(k.get("joueur") or (cartes_match.cible_titre(k["titre"]).get("joueur") or ""))
+            if j:
+                idx_inv.setdefault(j.split()[-1], []).append(k)
+
+        def peut_etre(titre):
+            cib = cartes_match.cible_titre(titre or "")
+            j = cartes_match.norm(cib.get("joueur") or "")
+            if not j:
+                return None
+            meil, sc_m = None, 0.0
+            for k in idx_inv.get(j.split()[-1], []):
+                ck = cartes_match.cible_titre(k["titre"])
+                if cib.get("annee") and ck.get("annee") and cib["annee"] != ck["annee"]:
+                    continue
+                sc = difflib.SequenceMatcher(None, cartes_match.norm(titre), cartes_match.norm(k["titre"])).ratio()
+                if not cartes_match.raisons_refus(cib, k["titre"]):
+                    sc += 0.3
+                if sc > sc_m:
+                    meil, sc_m = k, sc
+            if not meil or sc_m < 0.42:
+                return None
+            return {"carte_id": meil["id"], "titre": meil["titre"], "statut": meil["statut"],
+                    "sur_ebay": meil["statut"] == "Listée" or bool(meil.get("item_number")),
+                    "photo": meil.get("photo") if str(meil.get("photo") or "").startswith("http") else None}
         par_carte = {}
         for a in achats:
             if a.get("carte_id"):
@@ -8740,6 +8773,16 @@ class Api:
                         "titre": a.get("titre") or "", "photo": a.get("photo") if a.get("photo") not in (None, "", "-") else None,
                         "cout": a.get("cout"), "achete_le": str(a.get("date") or "")[:10] or None, "a_ajouter": True,
                         "_ph_x": a.get("photo") == "-"})
+            try:
+                pe = peut_etre(a.get("titre"))
+            except Exception:
+                pe = None
+            x_ = out[-1]
+            x_["ebay_etat"] = ("sur_ebay" if pe["sur_ebay"] else "inventaire") if pe else "pas_liste"
+            if pe:
+                x_["peut_etre"] = pe
+                if not x_["photo"] and pe.get("photo"):
+                    x_["photo"] = pe["photo"]                 # ta propre photo de la meme carte
         for k in cartes:                                     # 2. dans l'inventaire, en stock, pas sur eBay
             if (k.get("emplacement") or "") in ("Collection", "eBay") or k.get("item_number") or ("envoi_json" in cols and k.get("envoi_json")):
                 continue
@@ -8752,7 +8795,8 @@ class Api:
                         "photo": ph_a or k.get("photo"), "cout": k.get("cout") if k.get("cout") is not None else (a or {}).get("cout"),
                         "achete_le": str((a or {}).get("date") or k.get("cree_le") or "")[:10] or None,
                         "valeur_carte": k.get("valeur"), "prix_demande": k.get("prix_demande"),
-                        "a_finir": bool("a_finir_le" in cols and k.get("a_finir_le")), "_ph_x": bool(a and a.get("photo") == "-")})
+                        "a_finir": bool("a_finir_le" in cols and k.get("a_finir_le")), "_ph_x": bool(a and a.get("photo") == "-"),
+                        "ebay_etat": "pas_liste"})
         try:
             score_slab.annoter_lot(out)
         except Exception as e:
