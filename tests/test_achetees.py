@@ -8,6 +8,7 @@ import comptes
 comptes.DONNEES = os.environ["LOCKERROOM_DONNEES"]
 from datetime import datetime, timedelta
 import lockerroom, ebay_compte, score_slab, vendues
+ebay_compte.photo_heritee = lambda i: None          # pas de reseau dans les tests
 
 ebay_compte.statut = lambda *a, **k: {"connecte": False}
 api = lockerroom.Api(os.path.join(tempfile.mkdtemp(), "t.db"))
@@ -156,3 +157,22 @@ assert next(x for x in r["cartes"] if "Ordinaire" in x["titre"])["ebay_etat"] ==
 api3.achat_relier(k["id"], "601", 0)
 assert not any("Osgood" in x["titre"] for x in api3.achetees_tableau()["cartes"])          # reliee : sortie de « Achetees »
 print("ETAT EBAY OK")
+
+# 15 nov 2026 (« pourquoi tu ne mets pas la photo de MA carte ? ») : un achat de plus de 90 jours (eBay : « sans photo ») ->
+# sa vraie photo a l'adresse par numero d'annonce, AVANT une photo semblable
+api4 = lockerroom.Api(os.path.join(tempfile.mkdtemp(), "t4.db"))
+api4._TAUX.update(c={"usd": 0.72, "lu": 9e12}, lu=9e12)
+api4.couts_depuis_achats([{"item_id": "336877908150", "titre": "2025-26 UD SP Authentic Mikhail Sergachev Limited Auto Material Patch /100",
+                           "quantite": 1, "cout_total": 49.0, "devise": "CAD", "date": j(108)}])
+c = api4._db(); c.execute("UPDATE achats_ebay SET photo='-'"); c.commit(); c.close()
+VUS = []
+ebay_compte.photo_heritee = lambda i: (VUS.append(i), "https://i.ebayimg.com/images/i/%s-0-1/s-l500.jpg" % i)[1]
+r = api4.achetees_tableau()
+for _ in range(100):
+    if not lockerroom.Api._PH_SEM_FOND: break
+    time.sleep(0.05)
+r = api4.achetees_tableau()
+s_ = next(x for x in r["cartes"] if "Sergachev" in x["titre"])
+assert s_["photo"] == "https://i.ebayimg.com/images/i/336877908150-0-1/s-l500.jpg" and not s_.get("photo_semblable"), s_
+assert VUS == ["336877908150"], VUS
+print("PHOTO PAR NUMERO OK")

@@ -187,7 +187,7 @@ def _connecter(chemin=None):
                      ("vues", "INTEGER"), ("impressions", "INTEGER"), ("trafic_le", "TEXT"), ("photos_orig", "TEXT"), ("studio_v", "INTEGER"),
                      ("etat_json", "TEXT"), ("etat_le", "TEXT"), ("envoi_json", "TEXT"), ("soumission_id", "INTEGER"),
                      ("a_finir_le", "TEXT"), ("valeur_annonces", "REAL"), ("valeur_annonces_n", "INTEGER"),
-                     ("valeur_annonces_le", "TEXT"), ("coins_json", "TEXT")):         # 9 nov 2026 : repere prix sans vente (annonces pareilles - 10 %)         # 9 nov 2026 : preparee pour la vente, pas encore sur eBay (onglet « A finir »)            # 1er nov 2026 - l'etat estime (pre-gradation)   # 31 oct 2026 - vues des annonces
+                     ("valeur_annonces_le", "TEXT"), ("coins_json", "TEXT"), ("photo_ebay_le", "TEXT")):         # 9 nov 2026 : repere prix sans vente (annonces pareilles - 10 %)         # 9 nov 2026 : preparee pour la vente, pas encore sur eBay (onglet « A finir »)            # 1er nov 2026 - l'etat estime (pre-gradation)   # 31 oct 2026 - vues des annonces
         if col not in cols:
             c.execute(f"ALTER TABLE cartes ADD COLUMN {col} {typ}")
     # 1er nov 2026 - soumissions : les colonnes ajoutees apres coup
@@ -3452,6 +3452,47 @@ class Api:
                     "requete": r["requete"], "a_rafraichir": True}
         return {"ok": True, "comps": comps, "mediane": r["mediane"], "n": r["n"], "bas": r["bas"], "maj": r["maj"], "requete": r["requete"]}
 
+    # 15 nov 2026 (Mathieu, une carte « On eBay » : « c'est meme plus cette photo-la, pourquoi c'est encore ca ? sur eBay ce
+    # sont d'autres photos ») : la carte gardait la photo prise dans l'app (ou la vignette d'eBay, qui peut rester ancienne).
+    # Maintenant, a chaque synchro, les photos des cartes en vente sont relues chez eBay (GetItem, toutes les photos, dans
+    # l'ordre de l'annonce), les plus anciennes verifiees d'abord : la tuile et la fiche montrent ce que l'acheteur voit.
+    PHOTOS_ANNONCES_PAR_TOUR = 200            # 1er tour : toutes ; ensuite chaque annonce une fois aux 20 h
+    PHOTOS_ANNONCES_H = 20                    # une annonce est relue au plus une fois aux 20 h
+
+    def _photos_annonces(self, n=None):
+        n = int(n or self.PHOTOS_ANNONCES_PAR_TOUR)
+        lim = (datetime.now() - timedelta(hours=self.PHOTOS_ANNONCES_H)).isoformat(timespec="seconds")
+        with _verrou:
+            c = self._db()
+            try:
+                lst = [(r[0], r[1]) for r in c.execute(
+                    "SELECT id, item_number FROM cartes WHERE statut='Listée' AND item_number IS NOT NULL AND item_number<>'' "
+                    "AND (photo_ebay_le IS NULL OR photo_ebay_le < ?) ORDER BY COALESCE(photo_ebay_le, '') ASC LIMIT ?", (lim, n))]
+            finally:
+                c.close()
+        changees = 0
+        for cid, item in lst:
+            try:
+                urls = ebay_compte.photos_item(item)
+            except (RuntimeError, OSError) as e:
+                print(f"[synchro] photos des annonces : {e}", flush=True)
+                break
+            with _verrou:
+                c = self._db()
+                try:
+                    if urls:
+                        r = c.execute("SELECT photo, photos FROM cartes WHERE id=?", (cid,)).fetchone()
+                        nouv = json.dumps(urls[:12])
+                        if r and (r[0] != urls[0] or (r[1] or "") != nouv):
+                            changees += 1
+                        c.execute("UPDATE cartes SET photo=?, photos=?, photo_ebay_le=? WHERE id=?", (urls[0], nouv, _maintenant(), cid))
+                    else:
+                        c.execute("UPDATE cartes SET photo_ebay_le=? WHERE id=?", (_maintenant(), cid))
+                    c.commit()
+                finally:
+                    c.close()
+        return changees
+
     def _photos_vendues(self, n=25):
         """Cartes vendues sans photo : la photo de l'annonce terminee (Trading GetItem, 90 jours). Peu d'appels par synchro."""
         with _verrou:
@@ -5260,7 +5301,8 @@ class Api:
                     if ex:
                         c.execute("UPDATE cartes SET prix_demande=?, statut=CASE WHEN statut='Vendue' THEN statut ELSE 'Listée' END, "
                                   "emplacement='eBay', debut=COALESCE(?, debut), watchers=COALESCE(?, watchers), "
-                                  "categorie_ebay=COALESCE(?, categorie_ebay), photo=COALESCE(?, photo), vu_actif_le=? WHERE id=?",
+                                  "categorie_ebay=COALESCE(?, categorie_ebay), photo=CASE WHEN photo_ebay_le IS NOT NULL AND COALESCE(photo,'')<>'' THEN photo ELSE COALESCE(?, photo) END, "
+                                  "vu_actif_le=? WHERE id=?",
                                   (a["prix"], a.get("debut") or None, a.get("watchers"), a.get("categorie") or None,
                                    a.get("photo") or None, vu, ex["id"]))
                         maj += 1
@@ -6614,6 +6656,12 @@ class Api:
         except Exception as e:
             cx = {"relies": 0}
             print(f"[synchro] couts depuis les achats eBay : {e}", flush=True)
+        try:                                     # 15 nov 2026 - les photos des cartes en vente = celles de l'annonce eBay
+            n_ph = self._photos_annonces()
+            if n_ph:
+                print(f"[synchro] photos d'annonces mises a jour : {n_ph}", flush=True)
+        except Exception as e:
+            print(f"[synchro] photos des annonces : {e}", flush=True)
         try:                                     # 24 oct 2026 - « mettre des images sur les sold aussi »
             self._photos_vendues(25)
         except Exception as e:
@@ -8546,7 +8594,7 @@ class Api:
                 # 14 nov 2026 (Mathieu : « les images ne loadent pas toutes ») : une erreur passagere d'eBay (delai, quota) ne
                 # marque plus l'achat « sans photo » pour toujours ; seul « eBay n'a pas de photo » le fait. On reessaie plus tard.
                 try:
-                    ph = ebay_compte.photo_item(a["item_id"]) or "-"
+                    ph = ebay_compte.photo_item(a["item_id"]) or ebay_compte.photo_heritee(a["item_id"]) or "-"
                 except Exception as e:
                     print("Photo d'achat " + str(a.get("item_id")) + " : " + repr(e)[:120], flush=True)
                     continue
@@ -8761,6 +8809,39 @@ class Api:
             raise err
         return None
 
+    def _photos_heritees_fond(self, ids):
+        """Les achats qu'eBay dit « sans photo » (plus de 90 jours) : la photo par numero d'annonce, un essai chacun.
+        Trouvee -> la VRAIE photo de l'achat (achats_ebay.photo)."""
+        base = "h:" + self.chemin_db
+        if not ids or base in Api._PH_SEM_FOND:
+            return False
+        Api._PH_SEM_FOND.add(base)
+
+        def tour():
+            n = 0
+            try:
+                for i in ids[:150]:
+                    try:
+                        u = ebay_compte.photo_heritee(i)
+                    except Exception as e:                   # reseau : on arrete, rien de garde
+                        print("Photos d'achats (CDN eBay) : " + repr(e)[:120], flush=True)
+                        break
+                    self._ph_sem_garder("h:" + str(i), u)
+                    if u:
+                        n += 1
+                        with _verrou:
+                            c = self._db()
+                            try:
+                                c.execute("UPDATE achats_ebay SET photo=? WHERE item_id=?", (u, str(i)))
+                                c.commit()
+                            finally:
+                                c.close()
+                print(f"Photos d'achats (CDN eBay) : {n} trouvees sur {min(len(ids), 150)}", flush=True)
+            finally:
+                Api._PH_SEM_FOND.discard(base)
+        threading.Thread(target=tour, daemon=True, name="photos-heritees").start()
+        return True
+
     def _photos_semblables_fond(self, items):
         """items : [(cle, titre)] ; un seul tour a la fois par base."""
         base = self.chemin_db
@@ -8897,8 +8978,8 @@ class Api:
             self._achats_photos(manque, n=40)
         comps = comps_permis(self)
         t0 = time.time()
-        sem = self._ph_sem_lire() if comps else {}
-        a_chercher = []
+        sem = self._ph_sem_lire()
+        a_chercher, heritees = [], []
         for x in out:
             try:
                 j = (auj - datetime.fromisoformat(x["achete_le"])).days if x.get("achete_le") else None
@@ -8922,7 +9003,16 @@ class Api:
                 prop, src = float(x.get("prix_demande") or x.get("valeur_carte")), "ton prix"
             x["propose"] = round(prop, 2) if prop else None
             # (admin seulement : une photo tiree des ventes = des comps, licence eBay)
-            if comps and not x.get("photo") and (x.get("_ph_x") or (x.get("jours") or 0) > 85 or not x.get("item_id")):
+            # 15 nov 2026 (Mathieu : « pourquoi tu ne mets pas la photo de MA carte ? celle-la est inventee ») : d'abord SA vraie
+            # photo, a l'adresse par numero d'annonce chez eBay (l'API ne rend plus rien apres 90 jours) ; une semblable ensuite
+            if not x.get("photo") and x.get("item_id") and (x.get("_ph_x") or (x.get("jours") or 0) > 85):
+                h_ = sem.get("h:" + str(x["item_id"]))
+                if h_ and str(h_[0] or "").startswith("http"):
+                    x["photo"] = h_[0]
+                elif not h_:
+                    heritees.append(str(x["item_id"]))
+                    x["_attente_h"] = True
+            if comps and not x.get("photo") and not x.get("_attente_h") and (x.get("_ph_x") or (x.get("jours") or 0) > 85 or not x.get("item_id")):
                 try:                                   # eBay n'a plus la photo : celle d'une vente de la MEME carte
                     ph = None
                     if time.time() - t0 < 12:
@@ -8965,7 +9055,7 @@ class Api:
         ordre = {"maintenant": 0, "prete": 1, "attendre_creux": 2, "attendre_3mois": 3, "inconnu": 4}
         out.sort(key=lambda x: (ordre[x["quand"]], -(x.get("score") or 0) if x["quand"] in ("maintenant", "prete") else (x.get("jours_restants") or 0)))
         for x in out:
-            for k in ("valeur_carte", "prix_demande", "_ph_x"):
+            for k in ("valeur_carte", "prix_demande", "_ph_x", "_attente_h"):
                 x.pop(k, None)
         resume = {"n": len(out), "maintenant": sum(1 for x in out if x["quand"] == "maintenant"),
                   "pretes": sum(1 for x in out if x["quand"] in ("maintenant", "prete")),
@@ -8975,6 +9065,9 @@ class Api:
                   "profit": round(sum(x["profit"] for x in out if x.get("profit") is not None), 2),
                   "apres_j": AFFICHER_APRES_J, "comps": comps, "lies_auto": lies_auto,
                   "photos_en_route": sum(1 for x in out if x.get("item_id") and not x.get("photo") and not x.get("_ph_x"))}
+        if heritees:
+            self._photos_heritees_fond(heritees)
+            resume["photos_en_route"] += len(heritees[:150])
         if a_chercher:
             self._photos_semblables_fond(a_chercher)
             resume["photos_en_route"] += len(a_chercher[:self.PH_SEM_PAR_TOUR])

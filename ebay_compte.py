@@ -605,6 +605,62 @@ def achats(jours=90):
     return out
 
 
+def photos_item(item_id):
+    """15 nov 2026 (Mathieu : « sur eBay ce sont d'autres photos ») : TOUTES les photos d'une annonce, dans l'ordre d'eBay
+    (PictureURL ; la vignette GalleryURL seulement s'il n'y a rien d'autre). [] si eBay refuse l'annonce ; None si numero invalide."""
+    item_id = str(item_id or "").strip()
+    if not re.fullmatch(r"\d{9,15}", item_id):
+        return None
+    corps = ('<?xml version="1.0" encoding="utf-8"?><GetItemRequest xmlns="urn:ebay:apis:eBLBaseComponents">'
+             f"<ItemID>{item_id}</ItemID><OutputSelector>PictureDetails</OutputSelector></GetItemRequest>")
+    try:
+        r = trading("GetItem", corps, fond=True)
+    except RuntimeError as e:
+        if "eBay a refusé" in str(e):
+            return []
+        raise
+    urls = [x.text.strip() for x in r.findall("e:Item/e:PictureDetails/e:PictureURL", _NS) if x.text and x.text.strip().startswith("http")]
+    if not urls:
+        g = _txt(r, "e:Item/e:PictureDetails/e:GalleryURL")
+        urls = [g] if g.startswith("http") else []
+    return list(dict.fromkeys(urls))
+
+
+_PH_HER_TEMOIN = {}
+
+
+def _lire_image(u):
+    """(octets ou None). Erreur reseau -> exception (on reessaiera) ; 404 / pas une image -> None."""
+    req = urllib.request.Request(u, headers={"User-Agent": "SlabCoach/1.0 (+https://www.slabcoach.com)"})
+    try:
+        with urllib.request.urlopen(req, timeout=12) as r:
+            if getattr(r, "status", 200) != 200 or not str(r.headers.get("Content-Type", "")).startswith("image/"):
+                return None
+            return r.read(600000)
+    except urllib.error.HTTPError:
+        return None
+
+
+def photo_heritee(item_id):
+    """15 nov 2026 (Mathieu : « pourquoi il n'y a pas de photo si on clique sur le lien de l'annonce et qu'elle est la ? ») :
+    l'API d'eBay ne rend plus RIEN d'une annonce terminee depuis plus de 90 jours (GetItem refuse), mais la page la montre
+    encore. Sa 1re photo reste au CDN d'eBay a l'adresse « par numero d'annonce » : on la prend si c'est une VRAIE photo
+    (pas l'image vide qu'eBay sert pour un numero inconnu : comparee a celle d'un numero temoin). -> url ou None."""
+    import hashlib
+    item_id = str(item_id or "").strip()
+    if not re.fullmatch(r"\d{9,15}", item_id):
+        return None
+    gabarit = "https://i.ebayimg.com/images/i/{}-0-1/s-l500.jpg"
+    if "h" not in _PH_HER_TEMOIN:
+        b0 = _lire_image(gabarit.format("100000000001"))
+        _PH_HER_TEMOIN["h"] = hashlib.sha1(b0).hexdigest() if b0 else None
+    u = gabarit.format(item_id)
+    b = _lire_image(u)
+    if not b or len(b) < 3000 or hashlib.sha1(b).hexdigest() == _PH_HER_TEMOIN.get("h"):
+        return None
+    return u
+
+
 def photo_item(item_id):
     """Photo d'une de TES annonces, meme terminee (90 jours) : Trading GetItem, seulement les photos."""
     item_id = str(item_id or "").strip()
