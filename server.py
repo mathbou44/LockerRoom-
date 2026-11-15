@@ -1677,14 +1677,18 @@ def _rechauffer():
     # 15 nov 2026 (Mathieu : « la page breaks est excessivement longue a loader ») : le premier calcul d'un produit faisait
     # passer ses ~5 000 cartes dans le modele SlabIQ (5-11 s) ; apres un deploiement, chaque produit est calcule une fois en
     # fond, doucement (le score de chaque joueur est garde 6 h, le calcul entier 20 min)
+    # 15 nov 2026 (« ca fait 2 min que ca load ») : le rechauffage des breaks prenait le processeur juste apres un deploiement
+    # (27 produits d'affilee) et ralentissait tout le monde : seulement les 8 produits les plus recents, doucement (20 s entre
+    # chaque), et pas avant 2 min
     try:
         import catalogue
-        for p in sorted(catalogue.liste(), key=lambda x: str(x.get("sortie") or ""), reverse=True):
+        time.sleep(int(os.environ.get("LR_RECHAUFFER_BREAKS_S") or 120))
+        for p in sorted(catalogue.liste(), key=lambda x: str(x.get("sortie") or ""), reverse=True)[:8]:
             try:
                 api.analyse_break({"produit_id": p["id"], "boites": 1, "mode": "equipes", "acheteur": True})
             except Exception as e:
                 print("Rechauffage (break) : " + repr(e)[:120], flush=True)
-            time.sleep(2)
+            time.sleep(20)
     except Exception as e:
         print("Rechauffage (breaks) : " + repr(e), flush=True)
 
