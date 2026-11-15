@@ -3447,6 +3447,23 @@ transition:width .22s cubic-bezier(.2,.7,.2,1), box-shadow .22s; background:rgba
 border-right:2px solid var(--pale); border-bottom:2px solid var(--pale); transform:rotate(-45deg); opacity:.7; transition:transform .22s, opacity .2s}
 .onglets:hover::after, .onglets:has(:focus-visible)::after{transform:rotate(135deg); opacity:.35}
 }
+@media (min-width:900px){
+body .onglets{gap:6px !important}
+body .onglets > a.nav-moi{display:flex !important; align-items:center} body .onglets > a.nav-reglages{display:none !important}
+body .onglets > a.nav-moi .moi-av{width:26px !important; height:26px !important; margin:0 !important; flex:none; padding:1.5px !important; border-radius:50%; background:var(--prisme) !important}
+body .onglets > a.nav-moi .moi-av img{width:100%; height:100%; border-radius:50%; object-fit:contain; background:var(--carte); box-shadow:none}
+body .onglets > a.nav-admin, body .onglets > a.nav-moi{margin-top:0 !important}
+body .onglets > a.nav-alertes{margin-top:auto !important}
+body .onglets > a.nav-alertes::before{content:''; position:absolute; left:12px; right:12px; top:-8px; height:1px; background:var(--ligne); display:block !important; bottom:auto; width:auto}
+body .onglets > a.nav-alertes.on::before{background:var(--ligne)}
+body .onglets > a.nav-admin svg{color:var(--or) !important}
+body .onglets > a.on{background:linear-gradient(color-mix(in srgb, var(--carte2) 92%, transparent), color-mix(in srgb, var(--carte2) 92%, transparent)) padding-box, var(--prisme) border-box !important;
+border:1px solid transparent !important; color:var(--texte) !important}
+body .onglets > a:not(.on){border:1px solid transparent}
+body .onglets > a[data-onglet="vendre"] svg{box-sizing:content-box; width:18px; height:18px; padding:4px; margin:-5px -2.5px; border-radius:50%; border:1.5px solid transparent;
+background:linear-gradient(var(--carte), var(--carte)) padding-box, var(--prisme) border-box; color:var(--texte) !important}
+body .onglets > a .cloche-n, body .onglets > a .pastille{margin-left:auto}
+}
 .profil-av.sc{background:var(--carte2); padding:0; border:1px solid var(--ligne-fort)}
 .profil-av.sc img{object-fit:contain; padding:12px; box-sizing:border-box; background:transparent; box-shadow:none}
 .moi-av.sc{background:var(--carte2) !important} .moi-av.sc img{object-fit:contain !important; padding:3px; box-sizing:border-box; background:transparent !important}
