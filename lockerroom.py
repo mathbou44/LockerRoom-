@@ -1668,6 +1668,25 @@ class Api:
         sp = sport if sport in highlightly.SPORTS else "hockey"
         return highlightly.test(re.sub(r"[^\w .'-]", "", str(nom or "Connor McDavid"))[:60] or "Connor McDavid", sp)
 
+    # 15 nov 2026 (Mathieu : « prends toute la data qu'il faut, il reste 8 000 credits ; fais tout ») : la banque Young Guns
+    # (18 mois de ventes CompSniper, l'offre du jour, les nouvelles) pour entrainer SlabIQ sur le timing. Admin seulement.
+    def admin_banque_yg(self):
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import banque_yg
+        import historique
+        return {**banque_yg.bilan(), "compsniper": historique.etat(), "reserve_app": banque_yg.RESERVE_APP}
+
+    def admin_banque_yg_lancer(self, plafond=6000):
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import banque_yg
+        try:
+            plafond = max(10, min(20000, int(plafond)))
+        except (TypeError, ValueError):
+            plafond = 6000
+        return banque_yg.lancer(plafond)
+
     def admin_banc_lancer(self):
         """10 nov 2026 : relancer le banc de validation tout de suite (admin)."""
         if not self._est_admin():

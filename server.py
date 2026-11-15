@@ -1111,6 +1111,17 @@ def admin_slabiq_donnees():
     return send_file(p, mimetype="application/gzip", as_attachment=True, download_name="slabiq_donnees.json.gz", max_age=0)
 
 
+@app.route("/admin/banque_yg.json.gz")
+def admin_banque_yg_export():
+    """15 nov 2026 : la banque Young Guns (ventes 18 mois, offre du jour, nouvelles) pour l'entrainement de SlabIQ (admin)."""
+    from flask import Response as _R
+    if not api._est_admin(reel=True):
+        abort(403)
+    import banque_yg
+    b, nom = banque_yg.exporter()
+    return _R(b, mimetype="application/gzip", headers={"Content-Disposition": f"attachment; filename={nom}", "Cache-Control": "no-store"})
+
+
 @app.route("/admin/sauvegarde.zip")
 def admin_sauvegarde_zip():
     """12 nov 2026 (liste du lancement : « une sauvegarde hors de Render chaque semaine ») : toutes les donnees du serveur
@@ -1484,6 +1495,13 @@ def _ebay_auto():
     time.sleep(60)
     import comptes as _c
     while True:
+        try:                                     # 15 nov 2026 : la banque Young Guns, l'offre du jour (une fois par jour, Browse)
+            import banque_yg
+            n_o = banque_yg.offre_du_jour()
+            if n_o:
+                print("Banque YG : offre du jour lue pour", n_o, "joueurs", flush=True)
+        except Exception as e:
+            print("Banque YG (offre) : " + repr(e)[:160], flush=True)
         for cid in (_c.lister() if _c.MULTI else [None]):      # multi : chaque client a tour de role
             with _c.utiliser(cid):
                 try:

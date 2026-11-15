@@ -602,6 +602,11 @@ def calculer(d=None, base=None, demande=None):
     except Exception:
         marche_eq = None
     nouvelles_j = _actu_par_joueur(noms, actu())
+    try:                                         # 15 nov 2026 : la banque Young Guns garde chaque titre (titre + lien + date)
+        import banque_yg
+        banque_yg.archiver_nouvelles(nouvelles_j)
+    except Exception as e:
+        print("Banque YG (nouvelles) : " + repr(e)[:120], flush=True)
     try:
         garder_grosses(d, nouvelles_j)
     except Exception as e:
