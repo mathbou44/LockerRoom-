@@ -48,7 +48,46 @@ def _cx():
     c.execute("CREATE TABLE IF NOT EXISTS faits (q TEXT PRIMARY KEY, joueur TEXT, pages INTEGER, ventes INTEGER, fini INTEGER, le REAL)")
     c.execute("CREATE TABLE IF NOT EXISTS offre (jour TEXT, joueur TEXT, annonces INTEGER, prix_median REAL, PRIMARY KEY (jour, joueur))")
     c.execute("CREATE TABLE IF NOT EXISTS nouvelles (lien TEXT PRIMARY KEY, joueur TEXT, titre TEXT, le TEXT, type TEXT, sens INTEGER)")
+    # 15 nov 2026 (Mathieu : « j'ai clique il y a 30 min, on est en pleine recherche et ca dit clique encore ; on devrait voir
+    # notre progression ») : la collecte en cours est gardee DANS LA BASE (pas en memoire) : un redemarrage du serveur (un
+    # deploiement) ne l'efface plus, elle reprend toute seule, et la console montre toujours ou elle en est
+    c.execute("CREATE TABLE IF NOT EXISTS collecte (id INTEGER PRIMARY KEY CHECK (id = 1), statut TEXT, plafond INTEGER, credits INTEGER,"
+              " debut REAL, battement REAL, texte TEXT, erreur TEXT, joueurs TEXT)")
     return c
+
+
+def _run():
+    try:
+        c = _cx()
+        try:
+            r = c.execute("SELECT statut, plafond, credits, debut, battement, texte, erreur, joueurs FROM collecte WHERE id=1").fetchone()
+        finally:
+            c.close()
+    except sqlite3.Error:
+        r = None
+    if not r:
+        return {}
+    d = dict(zip(("statut", "plafond", "credits", "debut", "battement", "texte", "erreur", "joueurs"), r))
+    try:
+        d["joueurs"] = json.loads(d["joueurs"] or "[]")
+    except ValueError:
+        d["joueurs"] = []
+    return d
+
+
+def _run_maj(**kw):
+    with _verrou:
+        c = _cx()
+        try:
+            if not c.execute("SELECT 1 FROM collecte WHERE id=1").fetchone():
+                c.execute("INSERT INTO collecte (id, statut, credits) VALUES (1, 'aucune', 0)")
+            if "joueurs" in kw:
+                kw["joueurs"] = json.dumps(kw["joueurs"], ensure_ascii=False)
+            if kw:
+                c.execute("UPDATE collecte SET " + ", ".join(k + "=?" for k in kw) + " WHERE id=1", list(kw.values()))
+            c.commit()
+        finally:
+            c.close()
 
 
 # -- 1. la collecte CompSniper ------------------------------------------------------------------------------------------
@@ -107,7 +146,12 @@ def _lire(d, taux):
 def credits_disponibles(plafond):
     import historique
     u = historique.utilises()["mois"]
-    return max(0, min(plafond - ETAT["credits"], historique.budget_mois() - RESERVE_APP - u))
+    return max(0, min(plafond - (_run().get("credits") or 0), historique.budget_mois() - RESERVE_APP - u))
+
+
+def _texte(t, **kw):
+    ETAT["texte"] = t
+    _run_maj(texte=t, battement=time.time(), **kw)
 
 
 def collecter(plafond=6000, joueurs=None, arret=None):
@@ -118,9 +162,16 @@ def collecter(plafond=6000, joueurs=None, arret=None):
     if not historique.actif():
         return {"ok": False, "erreur": "Clé CompSniper absente (COMPSNIPER_CLE)"}
     taux = vendues._taux_usd_cad() or 1.37
-    noms = joueurs or joueurs_cibles()
-    ETAT.update(en_cours=True, le=time.time(), credits=0, ventes=0, joueurs_faits=0, joueurs_total=len(noms), erreur=None, texte="Démarrage")
+    r0 = _run()
+    reprise = r0.get("statut") == "en_cours"
+    noms = joueurs or (r0.get("joueurs") if reprise and r0.get("joueurs") else None) or joueurs_cibles()
+    ETAT.update(en_cours=True, le=time.time(), ventes=0, joueurs_faits=0, joueurs_total=len(noms), erreur=None, texte="Démarrage")
+    if reprise:
+        _run_maj(statut="en_cours", plafond=int(plafond), battement=time.time(), texte="Reprise", erreur=None, joueurs=noms)
+    else:
+        _run_maj(statut="en_cours", plafond=int(plafond), credits=0, debut=time.time(), battement=time.time(), texte="Démarrage", erreur=None, joueurs=noms)
     par_page = PAR_PAGE
+    fin_statut = "en_cours"
     try:
         for k, nom in enumerate(noms):
             for joueur, q in _requetes(nom):
@@ -134,12 +185,14 @@ def collecter(plafond=6000, joueurs=None, arret=None):
                 page = (f[0] if f else 0) + 1
                 while page <= PAGES_MAX:
                     if arret and arret():
-                        ETAT["texte"] = "Arrêtée"
+                        fin_statut = "arretee"
+                        _texte("Arrêtée")
                         return bilan()
                     if credits_disponibles(plafond) <= 0:
-                        ETAT["texte"] = "Plafond de crédits atteint"
+                        fin_statut = "plafond"
+                        _texte("Plafond de crédits atteint")
                         return bilan()
-                    ETAT["texte"] = f"{nom} · page {page}"
+                    _texte(f"{nom} · page {page}")
                     essais = 0
                     while True:
                         try:
@@ -154,6 +207,8 @@ def collecter(plafond=6000, joueurs=None, arret=None):
                                 time.sleep(60 * essais)
                                 continue
                             ETAT["erreur"] = f"CompSniper HTTP {e.code}"
+                            fin_statut = "erreur"
+                            _run_maj(erreur=ETAT["erreur"])
                             return bilan()
                         except Exception as e:
                             if essais < 2:
@@ -161,9 +216,12 @@ def collecter(plafond=6000, joueurs=None, arret=None):
                                 time.sleep(10)
                                 continue
                             ETAT["erreur"] = "CompSniper injoignable (" + type(e).__name__ + ")"
+                            fin_statut = "erreur"
+                            _run_maj(erreur=ETAT["erreur"])
                             return bilan()
                     historique._compter(False)                # 1 page = 1 credit, compte comme les autres
                     ETAT["credits"] += 1
+                    _run_maj(credits=(_run().get("credits") or 0) + 1, battement=time.time())
                     v = _lire(d, taux)
                     with _verrou:
                         c = _cx()
@@ -190,10 +248,24 @@ def collecter(plafond=6000, joueurs=None, arret=None):
                     page += 1
                     time.sleep(PAUSE_S)
             ETAT["joueurs_faits"] = k + 1
-        ETAT["texte"] = "Terminée"
+        fin_statut = "terminee"
+        _texte("Terminée")
         return bilan()
     finally:
         ETAT["en_cours"] = False
+        _run_maj(statut=fin_statut if fin_statut != "en_cours" else "interrompue", battement=time.time())
+
+
+def reprendre_si_besoin():
+    """Au demarrage du serveur : une collecte qui tournait (coupee par un redemarrage) reprend toute seule."""
+    r = _run()
+    if r.get("statut") in ("en_cours", "interrompue") and not ETAT["en_cours"]:
+        import historique
+        if historique.actif():
+            _run_maj(statut="en_cours")
+            print("Banque YG : reprise de la collecte", flush=True)
+            return lancer(r.get("plafond") or 6000)
+    return None
 
 
 def lancer(plafond=6000):
@@ -219,9 +291,24 @@ def bilan():
     except sqlite3.Error:
         n_v = n_j = n_f = n_o = n_n = 0
         d0 = d1 = None
+    r = _run()
+    noms = r.get("joueurs") or []
+    faits_j = 0
+    if noms:
+        try:
+            c = _cx()
+            try:
+                finies = {q for (q,) in c.execute("SELECT q FROM faits WHERE fini=1")}
+            finally:
+                c.close()
+            faits_j = sum(1 for nm in noms if all(q in finies for _, q in _requetes(nm)))
+        except sqlite3.Error:
+            pass
+    vivant = ETAT["en_cours"] or (r.get("statut") == "en_cours" and time.time() - (r.get("battement") or 0) < 180)
     return {"ok": True, "ventes": n_v, "joueurs": n_j, "recherches_finies": n_f, "du": d0, "au": d1, "jours_offre": n_o,
-            "nouvelles": n_n, "en_cours": ETAT["en_cours"], "texte": ETAT["texte"], "credits_cette_collecte": ETAT["credits"],
-            "joueurs_faits": ETAT["joueurs_faits"], "joueurs_total": ETAT["joueurs_total"], "erreur": ETAT["erreur"]}
+            "nouvelles": n_n, "en_cours": bool(vivant), "statut": r.get("statut") or "aucune", "texte": r.get("texte") or ETAT["texte"],
+            "credits_cette_collecte": r.get("credits") or 0, "plafond": r.get("plafond"), "debut": r.get("debut"), "battement": r.get("battement"),
+            "joueurs_faits": faits_j, "joueurs_total": len(noms), "erreur": r.get("erreur") or ETAT["erreur"]}
 
 
 # -- 2. l'offre du jour (eBay Browse) ------------------------------------------------------------------------------------

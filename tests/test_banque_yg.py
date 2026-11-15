@@ -35,10 +35,26 @@ assert len([a for a in APP if a[2] == 50]) == 2 and r["texte"] == "Plafond de cr
 os.environ["LR_HISTORIQUE_MOIS"] = str(historique.utilises()["mois"] + banque_yg.RESERVE_APP)       # plus rien pour la banque
 APP.clear(); r = banque_yg.collecter(plafond=100, joueurs=["Lane Hutson"]); assert not APP and "Plafond" in r["texte"]
 print("COLLECTE OK")
+# 15 nov 2026 (« j'ai clique il y a 30 min et ca dit clique encore ») : coupee par un redemarrage, la collecte reprend toute
+# seule ; la progression vient de la base
+import time
+os.environ["LR_HISTORIQUE_MOIS"] = "100000"
+banque_yg._run_maj(statut="interrompue", plafond=50, credits=3, joueurs=["Connor Bedard", "Cole Caufield"], texte="Cole Caufield · page 1")
+b0 = banque_yg.bilan(); assert b0["statut"] == "interrompue" and b0["joueurs_total"] == 2 and b0["joueurs_faits"] == 1 and not b0["en_cours"], b0
+APP.clear(); assert banque_yg.reprendre_si_besoin()["ok"]
+for _ in range(200):
+    time.sleep(0.05)
+    if banque_yg._run().get("statut") != "en_cours" and not banque_yg.ETAT["en_cours"]: break
+b1 = banque_yg.bilan()
+assert b1["statut"] == "terminee" and b1["joueurs_faits"] == 2 and b1["credits_cette_collecte"] == 3 + 6, b1
+assert all("Caufield" in q for q, _, _ in APP if q), APP
+assert banque_yg.reprendre_si_besoin() is None                         # terminee : rien a reprendre
+print("REPRISE OK")
 # l'offre du jour : une fois par jour par joueur
 LUS = []
 banque_yg._offre_une = lambda nom: (LUS.append(nom), (123, 45.0))[1]
-assert banque_yg.offre_du_jour() == 3 and banque_yg.offre_du_jour() == 0 and len(LUS) == 3
+c_ = banque_yg._cx(); nj = c_.execute("SELECT COUNT(DISTINCT joueur) FROM faits").fetchone()[0]; c_.close()
+assert banque_yg.offre_du_jour() == nj and banque_yg.offre_du_jour() == 0 and len(LUS) == nj, (nj, LUS)
 print("OFFRE OK")
 # les nouvelles : titre + lien, une fois
 nj = {"Connor Bedard": {"titres": [{"titre": "Bedard scores twice", "lien": "https://www.nhl.com/a", "date": jr(1)}],

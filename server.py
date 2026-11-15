@@ -1595,6 +1595,17 @@ def demarrer_taches():
     threading.Thread(target=_watch_boucle, daemon=True, name="watchlist").start()
     threading.Thread(target=_revalider_deals, daemon=True, name="revalider").start()
     threading.Thread(target=_rechauffer, daemon=True, name="rechauffer").start()
+    threading.Thread(target=_reprendre_banque_yg, daemon=True, name="banque-yg-reprise").start()
+
+
+def _reprendre_banque_yg():
+    """15 nov 2026 : une collecte de la banque Young Guns coupee par un redemarrage (deploiement) reprend toute seule."""
+    time.sleep(CALME_DEMARRAGE_S + 30)
+    try:
+        import banque_yg
+        banque_yg.reprendre_si_besoin()
+    except Exception as e:
+        print("Banque YG (reprise) : " + repr(e)[:160], flush=True)
 
 
 def _rechauffer():
