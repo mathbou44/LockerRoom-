@@ -158,7 +158,9 @@ def facteurs(ix, d):
 
 
 def etat_de(f, R=None):
-    """facteurs -> (etat, raisons). etat : creux_fort | creux | neutre | flambee."""
+    """facteurs -> (etat, raisons). etat : creux_fort | creux | neutre | flambee.
+    15 nov 2026 (Mathieu : « quand l'utilisateur selectionne anglais, tout doit etre en anglais ») : les raisons sont des
+    CODES ({k, v}), jamais du texte : l'ecran les ecrit dans la langue choisie (raisonYG)."""
     R = R or REGLES_V1
     if not f:
         return "inconnu", []
@@ -168,24 +170,24 @@ def etat_de(f, R=None):
             or (z is not None and z >= R["z_haut"]):
         rs = []
         if m14 is not None and m14 >= math.log(1 + R["flambee14"]):
-            rs.append(f"YG +{pct(m14)} % en 2 semaines")
+            rs.append({"k": "hausse14", "v": pct(m14)})
         elif m28 is not None and m28 >= math.log(1 + R["flambee28"]):
-            rs.append(f"YG +{pct(m28)} % en 4 semaines")
+            rs.append({"k": "hausse28", "v": pct(m28)})
         if z is not None and z >= R["z_haut"]:
-            rs.append("au-dessus de sa moyenne de 6 mois")
+            rs.append({"k": "haut6m"})
         return "flambee", rs
     bon, rs = False, []
     if m14 is not None and m14 <= math.log(1 + R["chute14"]):
         bon = True
-        rs.append(f"YG {pct(m14)} % en 2 semaines")
+        rs.append({"k": "chute14", "v": pct(m14)})
     if z is not None and z <= R["z_bas"]:
         bon = True
-        rs.append("au plus bas depuis 6 mois")
+        rs.append({"k": "bas6m"})
     if dd <= math.log(1 + R["sous_sommet56"]):
         bon = True
-        rs.append(f"{pct(dd)} % sous son sommet de 8 semaines")
+        rs.append({"k": "sous_sommet8", "v": pct(dd)})
     if bon and vr >= R["volume_x"]:
-        return "neutre", rs + ["mais beaucoup de ventes d'un coup"]
+        return "neutre", rs + [{"k": "volume"}]
     if bon:
         return ("creux_fort" if (z is not None and z <= R["z_bas"]) else "creux"), rs
     return "neutre", []
@@ -198,7 +200,7 @@ def verdict(etat, rabais_pct, R=None, stats=None):
         return None
     r = (rabais_pct or 0) / 100.0
     if etat == "flambee":
-        return {"niveau": 0, "texte": "Attendre", "cle": "flambee"}
+        return {"niveau": 0, "cle": "flambee"}           # l'ecran ecrit « Attendre » / « Wait »
     cle = None
     if etat in ("creux", "creux_fort") and r >= R["rabais_fort"]:
         cle = "fort_bas" if etat == "creux_fort" else "fort"
@@ -207,7 +209,7 @@ def verdict(etat, rabais_pct, R=None, stats=None):
     if not cle:
         return None
     st = (stats or {}).get(cle) or {}
-    return {"niveau": 3 if cle in ("fort", "fort_bas") else 2, "texte": "Bon moment" if cle == "bon" else "Feu vert", "cle": cle,
+    return {"niveau": 3 if cle in ("fort", "fort_bas") else 2, "cle": cle,
             "taux_vaut_plus": st.get("vaut_plus"), "taux_profit": st.get("profit"), "n": st.get("n")}
 
 

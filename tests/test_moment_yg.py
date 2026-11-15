@@ -33,15 +33,15 @@ flambe = [100] * 300 + [100 + 3 * k for k in range(20)] + [160] * 10
 for prix, attendu in ((chute, ("creux", "creux_fort")), (flambe, ("flambee",))):
     ix = M.indice({"raw": serie(prix)})
     e, rs = M.etat_de(M.facteurs(ix, J0 + len(prix) - 1))
-    assert e in attendu and rs, (e, rs)
+    assert e in attendu and rs and all(isinstance(r, dict) and r.get("k") for r in rs), (e, rs)     # des codes, jamais du texte
 assert M.etat_de(M.facteurs(M.indice({"raw": serie([100] * 330)}), J0 + 329))[0] == "neutre"
 print("ETAT OK")
 
 # 3. le verdict d'un deal : etat x rabais
-assert M.verdict("creux_fort", 30)["texte"] == "Feu vert" and M.verdict("creux_fort", 30)["cle"] == "fort_bas"
-assert M.verdict("creux", 26)["niveau"] == 3 and M.verdict("creux", 18)["texte"] == "Bon moment"
+assert M.verdict("creux_fort", 30)["niveau"] == 3 and M.verdict("creux_fort", 30)["cle"] == "fort_bas"
+assert M.verdict("creux", 26)["niveau"] == 3 and M.verdict("creux", 18)["cle"] == "bon"
 assert M.verdict("creux", 5) is None and M.verdict("neutre", 40) is None
-assert M.verdict("flambee", 40)["texte"] == "Attendre"
+assert M.verdict("flambee", 40)["cle"] == "flambee"
 v = M.verdict("creux", 30, stats={"fort": {"vaut_plus": 91, "profit": 81, "n": 500}})
 assert v["taux_vaut_plus"] == 91 and v["taux_profit"] == 81
 print("VERDICT OK")
@@ -66,7 +66,7 @@ assert M.calculer_jour() == 13
 e = M.etat("connor bedard")                          # sans accents ni majuscules
 assert e and e["etat"] in ("creux", "creux_fort"), e
 x = M.annoter({"joueur": "Connor Bedard", "rabais": 30, "item_id": "1", "total": 70.0, "valeur": 100.0, "titre": "Bedard YG"})
-assert x["moment"]["verdict"]["texte"] == "Feu vert", x
+assert x["moment"]["verdict"]["niveau"] == 3, x
 assert "moment" not in M.annoter({"joueur": "Inconnu Total", "rabais": 30})
 out = M.iterer_maintenant()
 assert out["ventes_test"] > 1000 and "tout" in out["stats"], out
