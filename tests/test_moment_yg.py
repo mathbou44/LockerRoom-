@@ -147,3 +147,12 @@ assert "mise_a_jour" in r and "iteration" in r and "journal_verifies" in r, r
 r = server.moment_yg_tour()
 assert "iteration" not in r and "mise_a_jour" not in r, r                 # deja fait : rien a refaire avant demain / la semaine
 print("PASSE SERVEUR OK")
+
+# 10. les points du moment dans le Score SlabIQ (mesures : ou va la YG dans 2 mois dans cet etat)
+st = {"derive": {"creux_fort": {"derive_pct": 16.9}, "creux": {"derive_pct": 4.3}, "flambee": {"derive_pct": -8.7}, "neutre": {"derive_pct": -0.7}, "tout": {"derive_pct": 0.0}}}
+assert M.points("creux_fort", st) == 10 and M.points("creux", st) == 3 and M.points("flambee", st) == -5 and M.points("neutre", st) == 0
+assert M.points("creux_fort", {"derive": {"creux_fort": {"derive_pct": 80}, "tout": {"derive_pct": 0}}}) == 12      # plafond
+assert M.points("creux", None) == 0
+d_ = M.mesurer_derives({j: ix for j, ix in ((j, M.indice(v)) for j, v in M.ventes_par_joueur(M._lignes_banque()).items()) if ix}, M.REGLES_V1)
+assert "tout" in d_ and all("derive_pct" in v for v in d_.values()), d_
+print("POINTS OK")

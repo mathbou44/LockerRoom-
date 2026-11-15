@@ -283,16 +283,63 @@ _MOMENT_ETAT = {"en_cours": False}
 
 def vue_simulee():
     """10 nov 2026 (Mathieu : « une place dans admin ou je peux switcher de ma version a celle des users reguliers et Pro ») :
-    l'admin voit l'app comme un utilisateur (« pro » ou « gratuit ») ; None = sa vraie vue. Dans la session du navigateur
-    seulement (posee par admin_vue, reserve au vrai admin) ; jamais pour les taches de fond."""
+    l'admin voit l'app comme un utilisateur (« pro » ou « gratuit ») ; None = sa vraie vue. Posee par admin_vue (reserve au
+    vrai admin), pour CETTE session du navigateur seulement ; jamais pour les taches de fond.
+    15 nov 2026 (Mathieu : « faut tout le temps que je refresh, des fois ca refresh pas ; on met admin et on tombe sur pro ») :
+    la vue etait gardee DANS le temoin de session ; une session « permanente » renvoie son temoin a CHAQUE reponse, alors une
+    lecture partie juste avant le changement (Radar, accueil, sondage aux 10 s) revenait apres et remettait l'ancienne vue.
+    La vue est maintenant gardee cote serveur, par session (sid) : rien dans le temoin, donc rien a ecraser."""
     try:
-        from flask import has_request_context, session
+        from flask import has_request_context
         if has_request_context():
-            v = session.get("vue_admin")
+            v = _vues_lire().get(_vue_cle())
             return v if v in ("pro", "gratuit") else None
     except Exception:
         pass
     return None
+
+
+_VUES = {"d": None}
+_VUES_VERROU = threading.Lock()
+
+
+def _vue_cle():
+    from flask import session
+    return str(session.get("sid") or session.get("compte") or "local")
+
+
+def _vues_chemin():
+    import comptes
+    return os.path.join(comptes.DONNEES, "vues_admin.json")
+
+
+def _vues_lire():
+    if _VUES["d"] is None:
+        try:
+            with open(_vues_chemin(), encoding="utf-8") as f:
+                _VUES["d"] = json.load(f) or {}
+        except (OSError, ValueError):
+            _VUES["d"] = {}
+    return _VUES["d"]
+
+
+def vue_poser(vue):
+    """La vue de la session courante (« pro », « gratuit » ou None = admin), gardee sur le disque (un redemarrage la garde)."""
+    with _VUES_VERROU:
+        d = dict(_vues_lire())
+        k = _vue_cle()
+        if vue in ("pro", "gratuit"):
+            d[k] = vue
+        else:
+            d.pop(k, None)
+        _VUES["d"] = d
+        try:
+            tmp = _vues_chemin() + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(d, f)
+            os.replace(tmp, _vues_chemin())
+        except OSError:
+            pass
 
 
 def _vendeur_info(x):
@@ -2055,10 +2102,8 @@ class Api:
         try:
             from flask import has_request_context, session
             if vue is not None and has_request_context():
-                if vue in ("pro", "gratuit"):
-                    session["vue_admin"] = vue
-                else:
-                    session.pop("vue_admin", None)
+                vue_poser(vue)
+                session.pop("vue_admin", None)          # l'ancienne place (le temoin) : plus utilisee
         except Exception:
             pass
         return {"ok": True, "vue": vue_simulee() or "admin"}
@@ -10120,6 +10165,20 @@ class Api:
         except Exception as e:
             print("Score (deals) : " + repr(e), flush=True)
         if adm_:
+            # 15 nov 2026 (Mathieu : « meme si c'est un deal et que je fais beaucoup de profit, le profit va des fois vers le bas
+            # parce que le joueur est mauvais ; SlabIQ doit m'aider a choisir ») : le Score SlabIQ de chaque deal porte le
+            # moment de la Young Guns du joueur (points mesures chaque semaine ; la carte seule reste dans score_carte)
+            try:
+                import moment_yg
+                for x in [*lst[:240], *suivis, *pres]:
+                    if "moment" not in x and x.get("joueur"):
+                        moment_yg.annoter(x)
+                    p_ = (x.get("moment") or {}).get("points") or 0
+                    if p_ and x.get("score") is not None and "score_carte" not in x:
+                        x["score_carte"] = x["score"]
+                        x["score"] = int(max(0, min(100, x["score"] + p_)))
+            except Exception as e:
+                print("Moment YG (score) : " + repr(e)[:160], flush=True)
             try:
                 self._iq_deals([*lst[:240], *suivis, *pres])
                 lst = [x for x in lst if not (x.get("iq") or {}).get("risque")] + [x for x in lst if (x.get("iq") or {}).get("risque")]
@@ -10317,17 +10376,21 @@ class Api:
         # 15 nov 2026 (Mathieu : « on ne doit pas creer un autre SlabIQ, c'est juste SlabIQ qui fait tout » ; « la Young Guns
         # est la carte mere ») : le MOMENT lu sur la Young Guns du joueur (18 mois de ventes, regles remesurees chaque semaine)
         # passe devant pour le timing : au creux -> « creux », apres une flambee -> « flambee » (attendre). Ventes = admin.
-        yg = None
+        # 15 nov 2026 (« le score SlabIQ tient-il compte de l'etude Young Guns ? c'est vraiment important ») : le NOMBRE aussi :
+        # les points du moment (ou va sa YG dans 2 mois dans cette situation, mesure chaque semaine) s'ajoutent au score
+        yg, pts = None, 0
         if comps_permis():
             try:
                 import moment_yg
                 m = moment_yg.etat(nom)
-                if m and m["etat"] in ("creux", "creux_fort", "flambee"):
-                    yg = {"etat": m["etat"], "raisons": m["raisons"][:2]}
-                    sens, pq = ("flambee", "yg_flambee") if m["etat"] == "flambee" else ("creux", "yg_creux")
+                if m and m["etat"] != "inconnu":
+                    pts, der = moment_yg.points_de(nom)
+                    yg = {"etat": m["etat"], "raisons": m["raisons"][:2], "points": pts, "derive_pct": der}
+                    if m["etat"] in ("creux", "creux_fort", "flambee"):
+                        sens, pq = ("flambee", "yg_flambee") if m["etat"] == "flambee" else ("creux", "yg_creux")
             except Exception:
-                yg = None
-        return {"s": int(round(v["indice"])), "sens": sens, "risque": sens in ("baisse", "flambee"), "pq": pq, **({"ech": ech} if ech else {}),
+                yg, pts = None, 0
+        return {"s": int(max(0, min(100, round(v["indice"] + pts)))), "sens": sens, "risque": sens in ("baisse", "flambee"), "pq": pq, **({"ech": ech} if ech else {}),
                 **({"yg": yg} if yg else {}),
                 **({"prev": pv} if pv else {}), **({"ecart_28j": d} if d is not None else {})}
 

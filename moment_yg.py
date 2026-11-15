@@ -260,6 +260,40 @@ def mesurer(T, IX, R, depuis=None, jusqua=None):
     return st
 
 
+def mesurer_derives(IX, R, jusqua=None):
+    """15 nov 2026 (Mathieu : « meme si c'est un deal avec beaucoup de profit, des fois le profit va vers le bas parce que le
+    joueur est mauvais ; SlabIQ doit m'aider ») : ou va la Young Guns du joueur dans les 2 mois, selon son etat aujourd'hui.
+    Etude du 15 nov (18 mois) : au plus bas +17 % (marche qui monte +31, qui baisse +11) ; creux +4 ; neutre -1 ;
+    apres une flambee -9 % (-6 / -11). -> {etat: {n, derive_pct}, 'tout': {...}}"""
+    acc = defaultdict(list)
+    for j, ix in IX.items():
+        P = ix["P"]
+        for d in sorted(P)[::3]:
+            if jusqua and d >= jusqua:
+                break
+            fut = [P[k] for k in range(d + 50, d + 71) if k in P]
+            if len(fut) < 5:
+                continue
+            f = facteurs(ix, d)
+            if not f:
+                continue
+            e, _ = etat_de(f, R)
+            y = float(np.median(fut)) - P[d]
+            acc[e].append(y)
+            acc["tout"].append(y)
+    return {k: {"n": len(v), "derive_pct": round(100 * (math.exp(float(np.median(v))) - 1), 1)} for k, v in acc.items() if len(v) >= 30}
+
+
+def points(etat, stats):
+    """Les points que le moment ajoute au Score SlabIQ (entre -12 et +12) : 0,6 point par % de derive au-dessus (ou au-dessous)
+    de la derive habituelle. Mesure chaque semaine ; sans mesure : 0."""
+    D = (stats or {}).get("derive") or {}
+    a, t = D.get(etat), D.get("tout")
+    if not a or not t:
+        return 0
+    return int(max(-12, min(12, round(0.6 * (a["derive_pct"] - t["derive_pct"])))))
+
+
 def _note(st):
     """Ce qu'on cherche a maximiser : le profit apres frais des Feux verts, s'il y en a assez (sinon tres bas)."""
     f = st.get("feu_vert") or {}
@@ -304,7 +338,9 @@ def iterer(V, aujourd=None, R=None):
         vb = mesurer(T, IX, best, depuis=coupe, jusqua=fin)
         if _note(vb) >= _note(base_b) + 1.0:     # mieux aussi sur les mois recents : il remplace les regles en place
             R, base_b, change = best, vb, True
-    return {"regles": R, "change": change, "stats": mesurer(T, IX, R, jusqua=fin), "validation": base_b,
+    st = mesurer(T, IX, R, jusqua=fin)
+    st["derive"] = mesurer_derives(IX, R, jusqua=auj - 70)
+    return {"regles": R, "change": change, "stats": st, "validation": base_b,
             "ventes_test": len(T), "joueurs": len(IX)}
 
 
@@ -405,8 +441,18 @@ def annoter(x):
     if not e or e["etat"] == "inconnu":
         return x
     v = verdict(e["etat"], x.get("rabais"), _CACHE["regles"], _CACHE["stats"])
-    x["moment"] = {**e, "verdict": v}
+    dv = ((_CACHE["stats"] or {}).get("derive") or {}).get(e["etat"]) or {}
+    x["moment"] = {**e, "verdict": v, "points": points(e["etat"], _CACHE["stats"]), "derive_pct": dv.get("derive_pct")}
     return x
+
+
+def points_de(joueur):
+    """(points, derive_pct) du moment d'un joueur pour le Score SlabIQ ; (0, None) hors banque."""
+    e = etat(joueur)
+    if not e or e["etat"] == "inconnu":
+        return 0, None
+    dv = ((_CACHE["stats"] or {}).get("derive") or {}).get(e["etat"]) or {}
+    return points(e["etat"], _CACHE["stats"]), dv.get("derive_pct")
 
 
 def iterer_maintenant(aujourd=None):
