@@ -33,6 +33,7 @@ from datetime import date
 
 import numpy as np
 
+VERSION = "2026-11-15c"                 # change -> au prochain passage, l'iteration et les etats sont refaits (regles et taux a jour)
 W = 14                                   # jours de la mediane
 FRAIS = math.log(1 / 0.87)               # 13 % de frais a la revente
 H0, H1 = 46, 74                          # « deux mois apres » : la mediane des ventes entre J+46 et J+74
@@ -47,7 +48,11 @@ REGLES_V1 = {"chute14": -0.10, "z_bas": -1.0, "sous_sommet56": -0.25, "flambee14
 #   - la VAGUE DE SORTIE (Mathieu : « un nouveau produit est gonfle ») : 0-30 j apres la sortie, un achat typique vaut
 #     -35 % deux mois plus tard (6 % valent plus) ; meme a -25 % de rabais, seulement 24 % valent plus ; 30-60 j : -23 % ;
 #     des 60 j, un rabais de 25 %+ vaut plus 91-93 % du temps -> pas de Feu vert pendant les 60 premiers jours.
-REGLES_V2 = dict(REGLES_V1, rabais_fort=0.35, sortie_j=60)
+REGLES_V2 = dict(REGLES_V1, rabais_fort=0.35, sortie_j=60, z_retombee=0.5)
+# 15 nov 2026 (Lafreniere : YG +174 % en 4 semaines, puis -31 % en 2 semaines, mais encore au-dessus de sa moyenne de 6 mois)
+# : une baisse JUSTE APRES une flambee n'est pas un creux. Banc beton : « creux » avec z (6 mois) > 0,5 -> un achat typique
+# vaut plus 2 mois apres 31 % du temps (mediane -13 %), comme apres une flambee ; « creux » avec z <= 0 : 52 % (+2 %).
+# -> etat « retombee » : attendre (jamais de Feu vert ni de Bon moment).
 _verrou = threading.Lock()
 _CACHE = {"jour": None, "etats": {}, "regles": None, "stats": None}
 
@@ -233,6 +238,8 @@ def etat_de(f, R=None, age=None):
     if dd <= math.log(1 + R["sous_sommet56"]):
         bon = True
         rs.append({"k": "sous_sommet8", "v": pct(dd)})
+    if bon and z is not None and z > R.get("z_retombee", 99):
+        return "retombee", rs[:1] + [{"k": "haut6m"}]
     if bon and vr >= R["volume_x"]:
         return "neutre", rs + [{"k": "volume"}]
     if bon:
@@ -246,7 +253,7 @@ def verdict(etat, rabais_pct, R=None, stats=None):
     if etat in (None, "inconnu"):
         return None
     r = (rabais_pct or 0) / 100.0
-    if etat in ("flambee", "sortie"):
+    if etat in ("flambee", "sortie", "retombee"):
         return {"niveau": 0, "cle": etat}                 # l'ecran ecrit « Attendre » / « Wait »
     cle = None
     if etat in ("creux", "creux_fort") and r >= R["rabais_fort"]:
@@ -257,6 +264,7 @@ def verdict(etat, rabais_pct, R=None, stats=None):
         return None
     st = (stats or {}).get(cle) or {}
     return {"niveau": 3 if cle in ("fort", "fort_bas") else 2, "cle": cle,
+            "rabais_min": round(100 * (R["rabais_fort"] if cle in ("fort", "fort_bas") else R["rabais_bon"])),
             "taux_vaut_plus": st.get("vaut_plus"), "taux_profit": st.get("profit"), "n": st.get("n")}
 
 
@@ -367,14 +375,14 @@ def _note(st):
 def voisins(R):
     """Les challengers : chaque seuil pousse d'un cran de chaque cote (un a la fois)."""
     pas = {"chute14": 0.05, "z_bas": 0.25, "sous_sommet56": 0.05, "flambee14": 0.05, "flambee28": 0.05, "z_haut": 0.25,
-           "volume_x": 0.5, "rabais_bon": 0.05, "rabais_fort": 0.05, "sortie_j": 30}
+           "volume_x": 0.5, "rabais_bon": 0.05, "rabais_fort": 0.05, "sortie_j": 30, "z_retombee": 0.25}
     out = []
     for k, s in pas.items():
         for sens in (-1, 1):
             r2 = dict(R)
-            r2[k] = round(R[k] + sens * s, 3)
+            r2[k] = round(R.get(k, REGLES_V2.get(k, 0)) + sens * s, 3)
             if r2["rabais_bon"] < 0.05 or r2["rabais_fort"] <= r2["rabais_bon"] or r2["rabais_fort"] > 0.4 or r2["volume_x"] < 1.2 \
-                    or not 0 <= r2["sortie_j"] <= 180:
+                    or not 0 <= r2["sortie_j"] <= 180 or not 0 <= r2.get("z_retombee", 0.5) <= 1.5:
                 continue
             out.append(r2)
     return out
@@ -438,6 +446,8 @@ def regles_en_place():
     R = {**REGLES_V2, **json.loads(r[0])}
     if "sortie_j" not in json.loads(r[0]):      # des regles d'avant le banc beton : on prend ce qu'il a confirme
         R.update(sortie_j=REGLES_V2["sortie_j"], rabais_fort=max(R["rabais_fort"], REGLES_V2["rabais_fort"]))
+    if "z_retombee" not in json.loads(r[0]):
+        R["z_retombee"] = REGLES_V2["z_retombee"]
     return R, json.loads(r[1] or "null")
 
 

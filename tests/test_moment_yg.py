@@ -166,3 +166,12 @@ assert M.points("creux", None) == 0
 d_ = M.mesurer_derives({j: ix for j, ix in ((j, M.indice(v)) for j, v in M.ventes_par_joueur(M._lignes_banque()).items()) if ix}, M.REGLES_V1)
 assert "tout" in d_ and all("derive_pct" in v for v in d_.values()), d_
 print("POINTS OK")
+
+# 11. une baisse juste apres une flambee (encore au-dessus de sa moyenne de 6 mois) n'est pas un creux : « retombee », attendre
+f_ = {"mom14": math.log(0.69), "mom28": math.log(0.85), "dd56": math.log(0.68), "z182": 0.82, "volrel": 0.75}
+e_, rs_ = M.etat_de(f_, M.REGLES_V2, age=2000)
+assert e_ == "retombee" and rs_[-1] == {"k": "haut6m"}, (e_, rs_)
+assert M.verdict("retombee", 55)["cle"] == "retombee" and M.verdict("retombee", 55)["niveau"] == 0
+assert M.etat_de(dict(f_, z182=-0.2), M.REGLES_V2, age=2000)[0] == "creux"
+assert M.verdict("creux", 40)["rabais_min"] == 35
+print("RETOMBEE OK")

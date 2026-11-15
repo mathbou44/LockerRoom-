@@ -2689,8 +2689,8 @@ class Api:
                             continue
                         e["iq"] = int(max(0, min(100, e["iq"] + pt)))
                         e["yg"] = et
-                        if et in ("creux", "creux_fort", "flambee", "sortie"):
-                            k = {"flambee": "yg_flambee", "sortie": "yg_sortie"}.get(et, "yg_creux")
+                        if et in ("creux", "creux_fort", "flambee", "sortie", "retombee"):
+                            k = {"flambee": "yg_flambee", "sortie": "yg_sortie", "retombee": "yg_retombee"}.get(et, "yg_creux")
                             e["pastilles"] = [k] + [x for x in e.get("pastilles") or [] if x != k][:1]
                     if pl.get("iq_joueurs"):
                         pl["iq"] = max(e["iq"] for e in pl["iq_joueurs"])
@@ -10159,7 +10159,7 @@ class Api:
                         v = (x.get("moment") or {}).get("verdict") or {}
                         if x.get("vague"):
                             return 3
-                        return {3: 0, 2: 1}.get(v.get("niveau"), 3 if v.get("cle") in ("flambee", "sortie") else 2)
+                        return {3: 0, 2: 1}.get(v.get("niveau"), 3 if v.get("cle") in ("flambee", "sortie", "retombee") else 2)
                     lst = sorted(lst, key=_rang_m)
                 moment_yg.journal_noter(lst)
             except Exception as e:
@@ -10485,8 +10485,9 @@ class Api:
                 if m and m["etat"] != "inconnu":
                     pts, der = moment_yg.points_de(nom)
                     yg = {"etat": m["etat"], "raisons": m["raisons"][:2], "points": pts, "derive_pct": der}
-                    if m["etat"] in ("creux", "creux_fort", "flambee", "sortie"):
-                        sens, pq = {"flambee": ("flambee", "yg_flambee"), "sortie": ("sortie", "yg_sortie")}.get(m["etat"], ("creux", "yg_creux"))
+                    if m["etat"] in ("creux", "creux_fort", "flambee", "sortie", "retombee"):
+                        sens, pq = {"flambee": ("flambee", "yg_flambee"), "sortie": ("sortie", "yg_sortie"),
+                                    "retombee": ("flambee", "yg_retombee")}.get(m["etat"], ("creux", "yg_creux"))
             except Exception:
                 yg, pts = None, 0
         return {"s": int(max(0, min(100, round(v["indice"] + pts)))), "sens": sens, "risque": sens in ("baisse", "flambee", "sortie"), "pq": pq, **({"ech": ech} if ech else {}),

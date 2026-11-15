@@ -1635,9 +1635,10 @@ def moment_yg_tour():
         der = float(banque_yg._meta("itere_le") or 0)
     except ValueError:
         der = 0.0
-    if time.time() - der >= 7 * 86400:
+    if time.time() - der >= 7 * 86400 or banque_yg._meta("moment_v") != moment_yg.VERSION:
         it = moment_yg.iterer_maintenant()
         banque_yg._meta("itere_le", time.time())
+        banque_yg._meta("moment_v", moment_yg.VERSION)
         out["iteration"] = {"change": it["change"], "feu_vert": (it["validation"] or {}).get("feu_vert")}
     elif banque_yg._meta("moment_jour") != date.today().isoformat():
         out["etats"] = moment_yg.calculer_jour()
