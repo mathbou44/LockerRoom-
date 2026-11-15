@@ -1673,6 +1673,19 @@ def _rechauffer():
         api.catalogue_liste()
     except Exception as e:
         print("Rechauffage : " + repr(e), flush=True)
+    # 15 nov 2026 (Mathieu : « la page breaks est excessivement longue a loader ») : le premier calcul d'un produit faisait
+    # passer ses ~5 000 cartes dans le modele SlabIQ (5-11 s) ; apres un deploiement, chaque produit est calcule une fois en
+    # fond, doucement (le score de chaque joueur est garde 6 h, le calcul entier 20 min)
+    try:
+        import catalogue
+        for p in sorted(catalogue.liste(), key=lambda x: str(x.get("sortie") or ""), reverse=True):
+            try:
+                api.analyse_break({"produit_id": p["id"], "boites": 1, "mode": "equipes", "acheteur": True})
+            except Exception as e:
+                print("Rechauffage (break) : " + repr(e)[:120], flush=True)
+            time.sleep(2)
+    except Exception as e:
+        print("Rechauffage (breaks) : " + repr(e), flush=True)
 
 
 CALME_DEMARRAGE_S = int(os.environ.get("LR_CALME_DEMARRAGE_S") or 180)

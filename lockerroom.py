@@ -22,7 +22,7 @@ import threading
 import unicodedata
 import urllib.parse
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 import calcul
 import catalogue
@@ -279,6 +279,15 @@ def marquer_ios(oui):
 
 _API_REF = []
 _MOMENT_ETAT = {"en_cours": False}
+
+
+def forfaits_pro_cle():
+    """Le forfait courant entre dans la cle du cache des breaks (un Gratuit ne recoit pas la reponse d'un Pro)."""
+    try:
+        import forfaits
+        return bool(forfaits.est_pro())
+    except Exception:
+        return None
 
 
 def vue_simulee():
@@ -2454,7 +2463,33 @@ class Api:
                             "sortie": prod.get("sortie"), "catalogue": True})
         return res
 
+    _AB_CACHE = {}
+    AB_TTL_S = 1200
+
     def analyse_break(self, params):
+        """15 nov 2026 (Mathieu : « la page breaks est excessivement longue a loader ; plus c'est long, plus on perd
+        l'utilisateur ») : le meme calcul (memes reglages, memes donnees) est garde 20 min ; le premier calcul d'un produit
+        coutait 5-11 s (le modele SlabIQ sur 5 000 titres de la checklist), puis l'ecran recevait 860 ko. Garde par vue
+        (admin / public) et par version des donnees (valeurs, modele, moment du jour)."""
+        import score_modele
+        try:
+            cle = (json.dumps(params or {}, sort_keys=True, default=str), comps_permis(self), self._est_admin(),
+                   getattr(self, "_EV_CLE", None), id(score_modele.charger()), date.today().isoformat(), forfaits_pro_cle())
+        except Exception:
+            cle = None
+        if cle is not None:
+            g = Api._AB_CACHE.get(cle)
+            if g and time.time() - g[0] < Api.AB_TTL_S:
+                return g[1]
+        out = self._analyse_break(params)
+        if cle is not None and isinstance(out, dict) and out.get("ok"):
+            if len(Api._AB_CACHE) > 48:
+                for k in sorted(Api._AB_CACHE, key=lambda k: Api._AB_CACHE[k][0])[:16]:
+                    Api._AB_CACHE.pop(k, None)
+            Api._AB_CACHE[cle] = (time.time(), out)
+        return out
+
+    def _analyse_break(self, params):
         """24 oct 2026 (Mathieu : « break analyser dans seller et acheteur ») - pour un produit du catalogue (checklists
         officielles extraites dans catalogue/*.json) :
           vendeur  : prix de chaque place selon le cout des boites, le profit voulu et la decote (les places partent
@@ -2538,8 +2573,31 @@ class Api:
             self._slabiq_places(prod, res["places"] + (joueurs or []), mode)
         except Exception as e:
             print("SlabIQ (break) : " + repr(e), flush=True)
+        # 15 nov 2026 (vitesse) : l'ecran montre 60 joueurs ; les autres (recherche) n'ont pas besoin du detail de leurs cartes
+        for i_, pl in enumerate(joueurs or []):
+            if i_ >= 60:
+                pl.pop("cartes_possibles", None)        # (les chances restent : l'ecran trie tous les joueurs avec elles)
+            elif pl.get("cartes_possibles"):
+                pl["cartes_possibles"] = pl["cartes_possibles"][:8]
+        # 15 nov 2026 (Mathieu : « un nouveau produit est gonfle ; au fil du temps il rejoint le prix des anciens ») : un
+        # produit sorti il y a moins de 60 jours : la vague (la baisse mesuree : admin)
+        vague = None
+        try:
+            import moment_yg
+            so = date.fromisoformat(str(prod.get("sortie") or "")[:10]).toordinal()
+            moment_yg._charger_cache()
+            age = date.today().toordinal() - so
+            if 0 <= age < ((moment_yg._CACHE["regles"] or moment_yg.REGLES_V2).get("sortie_j") or 60):
+                vague = {"jours": age}
+                if not public:
+                    dv = ((moment_yg._CACHE["stats"] or {}).get("derive") or {}).get("sortie") or {}
+                    vague["baisse_pct"] = dv.get("derive_pct") if dv.get("derive_pct") is not None else (-35.0 if age < 30 else -23.0)
+        except (ValueError, TypeError):
+            vague = None
+        except Exception as e:
+            print("Vague (break) : " + repr(e)[:120], flush=True)
         fmt = (prod.get("formats") or [{}])[0]
-        return {**res, "ok": True, "hits": self._hits_produit(prod, boites), "boites": boites, "mode": mode,
+        return {**res, "ok": True, "hits": self._hits_produit(prod, boites), "boites": boites, "mode": mode, "vague": vague,
                 "iq_places": sorted([{"cle": pl["cle"], "nom": pl.get("nom"), "iq": pl["iq"], "chaud": pl.get("iq_chaud")} for pl in res["places"] if pl.get("iq") is not None],
                                     key=lambda x: -x["iq"])[:5],
                 "joueurs": joueurs, "prix_boite_marche": boite_marche, "cout_boite": args["cout_boite"], "cout_estime": cout_estime,
@@ -2613,6 +2671,34 @@ class Api:
                     pl["iq"] = g[1]
                 if "en_feu" in pil or "rebond" in pil:
                     pl["iq_chaud"] = True
+        # 15 nov 2026 (Mathieu : « toujours lier SlabIQ avec nos breaks ; ca vaut vraiment la peine pour chasser le produit ou
+        # les joueurs dans le produit ») : le moment de la Young Guns de chaque joueur (admin : ventes) : ses points dans le
+        # SlabIQ de la place (au creux +, apres une flambee ou en vague de sortie -) et sa pastille
+        if comps_permis(self):
+            try:
+                import moment_yg
+                memo = {}
+                for pl in places[:520]:
+                    for e in pl.get("iq_joueurs") or []:
+                        j = e["nom"]
+                        if j not in memo:
+                            m = moment_yg.etat(j)
+                            memo[j] = (m["etat"], moment_yg.points_de(j)[0]) if m and m["etat"] != "inconnu" else (None, 0)
+                        et, pt = memo[j]
+                        if not et:
+                            continue
+                        e["iq"] = int(max(0, min(100, e["iq"] + pt)))
+                        e["yg"] = et
+                        if et in ("creux", "creux_fort", "flambee", "sortie"):
+                            k = {"flambee": "yg_flambee", "sortie": "yg_sortie"}.get(et, "yg_creux")
+                            e["pastilles"] = [k] + [x for x in e.get("pastilles") or [] if x != k][:1]
+                    if pl.get("iq_joueurs"):
+                        pl["iq"] = max(e["iq"] for e in pl["iq_joueurs"])
+                        tops = [e for e in pl["iq_joueurs"] if e.get("yg")]
+                        if tops:
+                            pl["yg"] = max(tops, key=lambda e: e["iq"])["yg"]
+            except Exception as e:
+                print("Moment YG (break) : " + repr(e)[:160], flush=True)
         for pl in places:
             if pl.get("iq_joueurs"):
                 pl["iq_joueurs"].sort(key=lambda x: -x["iq"])
@@ -10061,10 +10147,19 @@ class Api:
                     if not x.get("joueur"):
                         x["joueur"] = cartes_match.joueur_du_titre(x.get("titre") or "") or None
                     moment_yg.annoter(x)
+                    # 15 nov 2026 (Mathieu : « un nouveau produit est gonfle ; au fil du temps il rejoint le prix des anciens ») :
+                    # une carte d'un produit sorti il y a moins de 60 jours : pas de Feu vert, « attendre la fin de la vague »
+                    vg = moment_yg.vague_de(x.get("titre"))
+                    if vg:
+                        x["vague"] = vg
+                        if x.get("moment"):
+                            x["moment"]["verdict"] = {"niveau": 0, "cle": "sortie"}
                 if tri == "rabais":
                     def _rang_m(x):
                         v = (x.get("moment") or {}).get("verdict") or {}
-                        return {3: 0, 2: 1}.get(v.get("niveau"), 3 if v.get("cle") == "flambee" else 2)
+                        if x.get("vague"):
+                            return 3
+                        return {3: 0, 2: 1}.get(v.get("niveau"), 3 if v.get("cle") in ("flambee", "sortie") else 2)
                     lst = sorted(lst, key=_rang_m)
                 moment_yg.journal_noter(lst)
             except Exception as e:
@@ -10173,7 +10268,11 @@ class Api:
                 for x in [*lst[:240], *suivis, *pres]:
                     if "moment" not in x and x.get("joueur"):
                         moment_yg.annoter(x)
-                    p_ = (x.get("moment") or {}).get("points") or 0
+                    if "vague" not in x:
+                        vg = moment_yg.vague_de(x.get("titre"))
+                        if vg:
+                            x["vague"] = vg
+                    p_ = (x["vague"]["points"] if x.get("vague") else (x.get("moment") or {}).get("points")) or 0
                     if p_ and x.get("score") is not None and "score_carte" not in x:
                         x["score_carte"] = x["score"]
                         x["score"] = int(max(0, min(100, x["score"] + p_)))
@@ -10386,11 +10485,11 @@ class Api:
                 if m and m["etat"] != "inconnu":
                     pts, der = moment_yg.points_de(nom)
                     yg = {"etat": m["etat"], "raisons": m["raisons"][:2], "points": pts, "derive_pct": der}
-                    if m["etat"] in ("creux", "creux_fort", "flambee"):
-                        sens, pq = ("flambee", "yg_flambee") if m["etat"] == "flambee" else ("creux", "yg_creux")
+                    if m["etat"] in ("creux", "creux_fort", "flambee", "sortie"):
+                        sens, pq = {"flambee": ("flambee", "yg_flambee"), "sortie": ("sortie", "yg_sortie")}.get(m["etat"], ("creux", "yg_creux"))
             except Exception:
                 yg, pts = None, 0
-        return {"s": int(max(0, min(100, round(v["indice"] + pts)))), "sens": sens, "risque": sens in ("baisse", "flambee"), "pq": pq, **({"ech": ech} if ech else {}),
+        return {"s": int(max(0, min(100, round(v["indice"] + pts)))), "sens": sens, "risque": sens in ("baisse", "flambee", "sortie"), "pq": pq, **({"ech": ech} if ech else {}),
                 **({"yg": yg} if yg else {}),
                 **({"prev": pv} if pv else {}), **({"ecart_28j": d} if d is not None else {})}
 

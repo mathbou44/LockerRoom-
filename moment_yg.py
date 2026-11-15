@@ -37,7 +37,17 @@ W = 14                                   # jours de la mediane
 FRAIS = math.log(1 / 0.87)               # 13 % de frais a la revente
 H0, H1 = 46, 74                          # « deux mois apres » : la mediane des ventes entre J+46 et J+74
 REGLES_V1 = {"chute14": -0.10, "z_bas": -1.0, "sous_sommet56": -0.25, "flambee14": 0.15, "flambee28": 0.25, "z_haut": 1.0,
-             "volume_x": 2.0, "rabais_bon": 0.15, "rabais_fort": 0.25}
+             "volume_x": 2.0, "rabais_bon": 0.15, "rabais_fort": 0.25, "sortie_j": 0}
+# 15 nov 2026 (Mathieu : « fais varier les durees, les pourcentages, toutes les variables ; un test beton ») - banc beton
+# (banc_score/yg18/b) : 16 parametres, 40 000 tirages + affinage, choisis sur le passe et valides sur des mois jamais vus :
+#   - la recherche LARGE (tout changer d'un coup) s'emballe sur le passe : 82 % de profit sur les mois suivants, contre 88 %
+#     pour les regles en place -> l'iteration de l'app reste PRUDENTE (un cran a la fois, gagner aux deux endroits) ;
+#   - un seul changement tient aux deux periodes : Feu vert a -35 % au lieu de -30 % (profit 94 -> 98 %, borne 87 -> 90) ;
+#   - les fenetres (lissage 7/14/21 j, momentum 7-42 j, z 3-9 mois, sommet 4-12 sem.) : aucun gain hors echantillon ;
+#   - la VAGUE DE SORTIE (Mathieu : « un nouveau produit est gonfle ») : 0-30 j apres la sortie, un achat typique vaut
+#     -35 % deux mois plus tard (6 % valent plus) ; meme a -25 % de rabais, seulement 24 % valent plus ; 30-60 j : -23 % ;
+#     des 60 j, un rabais de 25 %+ vaut plus 91-93 % du temps -> pas de Feu vert pendant les 60 premiers jours.
+REGLES_V2 = dict(REGLES_V1, rabais_fort=0.35, sortie_j=60)
 _verrou = threading.Lock()
 _CACHE = {"jour": None, "etats": {}, "regles": None, "stats": None}
 
@@ -49,6 +59,41 @@ EQUIPES = re.compile(r"red wings|blue jackets|st\.? louis blues|\bblues\b|golden
                      r"lightning|hurricanes|devils|rangers|islanders|penguins|capitals|bruins|sabres|senators|canadiens|habs|oilers|flames|"
                      r"canucks|jets|wild|predators|stars|avalanche|coyotes|utah|mammoth|sharks|kings|ducks|panthers|red\s*/\s*white|white\s*border")
 GR10 = re.compile(r"psa\s*10|psa\s*gem\s*m?t?\s*10|psa\s*gem mint 10")
+
+
+def sortie_yg(titres):
+    """La date de sortie (ordinal) de la YG d'un joueur, d'apres ses titres : l'annee la plus frequente et le numero
+    (201-250 Series 1 ~ 12 nov ; 451-500 Series 2 ~ 18 fev ; 701-750 Extended ~ 18 juin). None si inconnue."""
+    ans, nums = defaultdict(int), defaultdict(int)
+    for t in titres:
+        t = str(t or "").lower()
+        a = _annee(t)
+        if a:
+            ans[a] += 1
+        m = re.search(r"#\s?(\d{3})\b", t)
+        if m:
+            nums[int(m.group(1))] += 1
+    if not ans:
+        return None
+    a = max(ans, key=ans.get)
+    n = max(nums, key=nums.get) if nums else 201
+    try:
+        if 450 <= n < 550:
+            return date(a + 1, 2, 18).toordinal()
+        if 700 <= n < 760:
+            return date(a + 1, 6, 18).toordinal()
+        return date(a, 11, 12).toordinal()
+    except ValueError:
+        return None
+
+
+def sorties(lignes):
+    """lignes (joueur, titre, ...) -> {joueur: sortie de sa YG (ordinal)}"""
+    T = defaultdict(list)
+    for j, titre, *_ in lignes:
+        if classer(titre, j):
+            T[j].append(titre)
+    return {j: sortie_yg(t) for j, t in T.items()}
 
 
 def _annee(t):
@@ -157,11 +202,13 @@ def facteurs(ix, d):
             "volrel": n14 / (n56 + 0.5), "niveau": p}
 
 
-def etat_de(f, R=None):
+def etat_de(f, R=None, age=None):
     """facteurs -> (etat, raisons). etat : creux_fort | creux | neutre | flambee.
     15 nov 2026 (Mathieu : « quand l'utilisateur selectionne anglais, tout doit etre en anglais ») : les raisons sont des
     CODES ({k, v}), jamais du texte : l'ecran les ecrit dans la langue choisie (raisonYG)."""
-    R = R or REGLES_V1
+    R = R or REGLES_V2
+    if age is not None and age >= 0 and age < (R.get("sortie_j") or 0):
+        return "sortie", [{"k": "sortie", "v": int(age)}]          # la vague de sortie : le prix baisse, attendre
     if not f:
         return "inconnu", []
     m14, m28, z, dd, vr = f.get("mom14"), f.get("mom28"), f.get("z182"), f.get("dd56"), f.get("volrel") or 0
@@ -194,13 +241,13 @@ def etat_de(f, R=None):
 
 
 def verdict(etat, rabais_pct, R=None, stats=None):
-    """L'etat du joueur x le rabais de l'annonce (% sous la valeur) -> {niveau 0-3, texte, taux (mesure), ...} ou None."""
-    R = R or REGLES_V1
+    """L'etat du joueur x le rabais de l'annonce (% sous la valeur) -> {niveau 0-3, cle, taux (mesure), ...} ou None."""
+    R = R or REGLES_V2
     if etat in (None, "inconnu"):
         return None
     r = (rabais_pct or 0) / 100.0
-    if etat == "flambee":
-        return {"niveau": 0, "cle": "flambee"}           # l'ecran ecrit « Attendre » / « Wait »
+    if etat in ("flambee", "sortie"):
+        return {"niveau": 0, "cle": etat}                 # l'ecran ecrit « Attendre » / « Wait »
     cle = None
     if etat in ("creux", "creux_fort") and r >= R["rabais_fort"]:
         cle = "fort_bas" if etat == "creux_fort" else "fort"
@@ -216,6 +263,10 @@ def verdict(etat, rabais_pct, R=None, stats=None):
 # -- la mesure (backtest) et l'iteration continue ---------------------------------------------------------------------
 def _ventes_test(V, IX):
     """Chaque vraie vente YG : (joueur, jour, rabais log vs mediane 14 j de la meme gradation, issue log 2 mois apres, grade)."""
+    return _ventes_test2(V, IX, {})
+
+
+def _ventes_test2(V, IX, SO):
     out = []
     for j, gg in V.items():
         if j not in IX:
@@ -235,17 +286,17 @@ def _ventes_test(V, IX):
                     continue
                 a2, b2 = np.searchsorted(o, d + H0), np.searchsorted(o, d + H1)
                 y = float(np.median(lp[a2:b2])) - lp[k] if b2 - a2 >= 3 else None
-                out.append((j, d, disc, y, g))
+                out.append((j, d, disc, y, g, (d - SO[j]) if SO.get(j) else None))
     return out
 
 
 def mesurer(T, IX, R, depuis=None, jusqua=None):
     """Les taux de chaque verdict sur les ventes test T (entre depuis et jusqua, en jours ordinaux)."""
     acc = defaultdict(list)
-    for j, d, disc, y, g in T:
+    for j, d, disc, y, g, *ag in T:
         if y is None or (depuis and d < depuis) or (jusqua and d >= jusqua):
             continue
-        e, _ = etat_de(facteurs(IX[j], d), R)
+        e, _ = etat_de(facteurs(IX[j], d), R, ag[0] if ag else None)
         acc["tout"].append(y)
         v = verdict(e, -100 * (math.exp(disc) - 1), R)
         if v:
@@ -260,7 +311,7 @@ def mesurer(T, IX, R, depuis=None, jusqua=None):
     return st
 
 
-def mesurer_derives(IX, R, jusqua=None):
+def mesurer_derives(IX, R, jusqua=None, SO=None):
     """15 nov 2026 (Mathieu : « meme si c'est un deal avec beaucoup de profit, des fois le profit va vers le bas parce que le
     joueur est mauvais ; SlabIQ doit m'aider ») : ou va la Young Guns du joueur dans les 2 mois, selon son etat aujourd'hui.
     Etude du 15 nov (18 mois) : au plus bas +17 % (marche qui monte +31, qui baisse +11) ; creux +4 ; neutre -1 ;
@@ -277,7 +328,8 @@ def mesurer_derives(IX, R, jusqua=None):
             f = facteurs(ix, d)
             if not f:
                 continue
-            e, _ = etat_de(f, R)
+            so = (SO or {}).get(j)
+            e, _ = etat_de(f, R, (d - so) if so else None)
             y = float(np.median(fut)) - P[d]
             acc[e].append(y)
             acc["tout"].append(y)
@@ -294,36 +346,47 @@ def points(etat, stats):
     return int(max(-12, min(12, round(0.6 * (a["derive_pct"] - t["derive_pct"])))))
 
 
+def wilson(k, n, z=1.96):
+    if not n:
+        return 0.0
+    p = k / n
+    d = 1 + z * z / n
+    return (p + z * z / (2 * n) - z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n))) / d
+
+
 def _note(st):
-    """Ce qu'on cherche a maximiser : le profit apres frais des Feux verts, s'il y en a assez (sinon tres bas)."""
+    """Ce qu'on cherche a maximiser : la borne basse (95 %) du profit des Feux verts (la precision ET la confiance : peu de cas
+    = borne basse). Banc beton du 15 nov : la meilleure note pour l'iteration prudente. Trop peu de cas : tres bas."""
     f = st.get("feu_vert") or {}
-    if (f.get("n") or 0) < 60:
+    n = f.get("n") or 0
+    if n < 40:
         return -1.0
-    return f["profit"] + 0.25 * (st.get("bon") or {}).get("profit", 0) + 2.0 * math.log(f["n"] / 60.0)
+    return 100 * wilson(round(n * f["profit"] / 100), n)
 
 
 def voisins(R):
     """Les challengers : chaque seuil pousse d'un cran de chaque cote (un a la fois)."""
     pas = {"chute14": 0.05, "z_bas": 0.25, "sous_sommet56": 0.05, "flambee14": 0.05, "flambee28": 0.05, "z_haut": 0.25,
-           "volume_x": 0.5, "rabais_bon": 0.05, "rabais_fort": 0.05}
+           "volume_x": 0.5, "rabais_bon": 0.05, "rabais_fort": 0.05, "sortie_j": 30}
     out = []
     for k, s in pas.items():
         for sens in (-1, 1):
             r2 = dict(R)
             r2[k] = round(R[k] + sens * s, 3)
-            if r2["rabais_bon"] < 0.05 or r2["rabais_fort"] <= r2["rabais_bon"] or r2["rabais_fort"] > 0.4 or r2["volume_x"] < 1.2:
+            if r2["rabais_bon"] < 0.05 or r2["rabais_fort"] <= r2["rabais_bon"] or r2["rabais_fort"] > 0.4 or r2["volume_x"] < 1.2 \
+                    or not 0 <= r2["sortie_j"] <= 180:
                 continue
             out.append(r2)
     return out
 
 
-def iterer(V, aujourd=None, R=None):
+def iterer(V, aujourd=None, R=None, SO=None):
     """Une iteration : les regles en place vs leurs voisines. On CHOISIT sur les mois plus anciens (jusqu'a 4 mois avant
     aujourd'hui) et on VALIDE sur les 4 derniers mois mesurables (jamais vus pendant le choix). Le challenger ne gagne que s'il
     fait mieux aux deux endroits. -> {regles, change, stats (sur tout), choix, validation}."""
-    R = dict(R or REGLES_V1)
+    R = dict(R or REGLES_V2)
     IX = {j: ix for j, ix in ((j, indice(v)) for j, v in V.items()) if ix}
-    T = _ventes_test(V, IX)
+    T = _ventes_test2(V, IX, SO or {})
     auj = (aujourd or date.today()).toordinal()
     fin = auj - H1                                  # une vente plus recente n'a pas encore son « deux mois apres »
     coupe = fin - 120
@@ -339,7 +402,7 @@ def iterer(V, aujourd=None, R=None):
         if _note(vb) >= _note(base_b) + 1.0:     # mieux aussi sur les mois recents : il remplace les regles en place
             R, base_b, change = best, vb, True
     st = mesurer(T, IX, R, jusqua=fin)
-    st["derive"] = mesurer_derives(IX, R, jusqua=auj - 70)
+    st["derive"] = mesurer_derives(IX, R, jusqua=auj - 70, SO=SO)
     return {"regles": R, "change": change, "stats": st, "validation": base_b,
             "ventes_test": len(T), "joueurs": len(IX)}
 
@@ -371,14 +434,19 @@ def regles_en_place():
     finally:
         c.close()
     if not r:
-        return dict(REGLES_V1), None
-    return {**REGLES_V1, **json.loads(r[0])}, json.loads(r[1] or "null")
+        return dict(REGLES_V2), None
+    R = {**REGLES_V2, **json.loads(r[0])}
+    if "sortie_j" not in json.loads(r[0]):      # des regles d'avant le banc beton : on prend ce qu'il a confirme
+        R.update(sortie_j=REGLES_V2["sortie_j"], rabais_fort=max(R["rabais_fort"], REGLES_V2["rabais_fort"]))
+    return R, json.loads(r[1] or "null")
 
 
 def calculer_jour(aujourd=None):
     """Chaque jour : l'etat de chaque joueur de la banque. -> nombre de joueurs."""
     jour = (aujourd or date.today())
-    V = ventes_par_joueur(_lignes_banque())
+    L = _lignes_banque()
+    V = ventes_par_joueur(L)
+    SO = sorties(L)
     R, st = regles_en_place()
     lignes = []
     for j, vj in V.items():
@@ -387,7 +455,7 @@ def calculer_jour(aujourd=None):
             continue
         d = min(jour.toordinal(), max(ix["P"]) + 3)
         f = facteurs(ix, d) if jour.toordinal() - max(ix["P"]) <= 21 else None    # pas de vente depuis 3 semaines : inconnu
-        e, rs = etat_de(f, R)
+        e, rs = etat_de(f, R, (jour.toordinal() - SO[j]) if SO.get(j) else None)
         lignes.append((j, jour.isoformat(), e, json.dumps(rs, ensure_ascii=False),
                        json.dumps({k: (round(v, 4) if isinstance(v, float) else v) for k, v in (f or {}).items()})))
     with _verrou:
@@ -413,7 +481,7 @@ def _charger_cache():
             c.close()
         R, st = regles_en_place()
     except Exception:
-        et, R, st = {}, dict(REGLES_V1), None
+        et, R, st = {}, dict(REGLES_V2), None
     _CACHE.update(jour=auj, etats=et, regles=R, stats=st)
 
 
@@ -446,6 +514,70 @@ def annoter(x):
     return x
 
 
+_PRODUITS = {"t": 0, "l": []}
+_NOMS_COURTS = [("the cup", "the cup"), ("sp authentic", "sp authentic"), ("sp game used", "sp game used"), ("artifacts", "artifacts"),
+                ("black diamond", "black diamond"), ("metal universe", "metal universe"), ("o-pee-chee platinum", "platinum"),
+                ("parkhurst", "parkhurst"), ("premier", "premier"), ("spx", "spx"), ("mvp", "mvp"), ("ice", " ice"), ("trilogy", "trilogy"),
+                ("synergy", "synergy"), ("allure", "allure"), ("credentials", "credentials"), ("extended", "extended"), ("series 2", "series 2"),
+                ("series 1", "series 1"), ("o-pee-chee", "o-pee-chee")]
+
+
+def _produits():
+    if time.time() - _PRODUITS["t"] > 6 * 3600:
+        try:
+            import catalogue
+            _PRODUITS["l"] = [(p.get("saison"), str(p.get("nom") or "").lower(), p.get("sortie")) for p in catalogue.liste() if p.get("sortie")]
+        except Exception:
+            _PRODUITS["l"] = []
+        _PRODUITS["t"] = time.time()
+    return _PRODUITS["l"]
+
+
+def sortie_produit(titre):
+    """La date de sortie (ordinal) du produit d'une carte : le catalogue (saison + nom du produit), sinon le numero de la Young
+    Guns (Series 1 / 2 / Extended). None si on ne sait pas."""
+    t = " " + str(titre or "").lower() + " "
+    m = re.search(r"\b(20\d\d)\s*[-/]\s*(\d\d)\b", t)
+    if not m:
+        return None
+    a = int(m.group(1))
+    saison = f"{a}-{(a + 1) % 100:02d}"
+    if "young guns" in t:
+        n = re.search(r"#\s?(\d{3})\b", t)
+        if n:
+            return sortie_yg([t])
+        if "extended" not in t and "series 2" not in t:
+            return sortie_yg([t])
+    for cle, mot in _NOMS_COURTS:
+        if mot in t:
+            for sa, nom, so in _produits():
+                if sa == saison and cle in nom:
+                    try:
+                        return date.fromisoformat(str(so)[:10]).toordinal()
+                    except ValueError:
+                        return None
+    return None
+
+
+def vague_de(titre, aujourd=None):
+    """15 nov 2026 (Mathieu : « un nouveau produit est gonfle artificiellement ; au fil du temps il rejoint le prix des
+    anciens ») : une carte d'un produit sorti il y a moins de sortie_j jours -> {jours, baisse_pct (mesuree : ou va le prix
+    dans 2 mois a cet age), points}. None sinon."""
+    so = sortie_produit(titre)
+    if not so:
+        return None
+    _charger_cache()
+    R = _CACHE["regles"] or REGLES_V2
+    age = (aujourd or date.today()).toordinal() - so
+    if age < 0 or age >= (R.get("sortie_j") or 0):
+        return None
+    dv = ((_CACHE["stats"] or {}).get("derive") or {}).get("sortie") or {}
+    b = dv.get("derive_pct")
+    if b is None:
+        b = -35.0 if age < 30 else -23.0          # etude du 15 nov (banque YG) : 0-30 j -35 %, 30-60 j -23 %
+    return {"jours": int(age), "baisse_pct": b, "points": points("sortie", _CACHE["stats"]) or -12}
+
+
 def points_de(joueur):
     """(points, derive_pct) du moment d'un joueur pour le Score SlabIQ ; (0, None) hors banque."""
     e = etat(joueur)
@@ -458,7 +590,8 @@ def points_de(joueur):
 def iterer_maintenant(aujourd=None):
     """L'iteration de la semaine : mesure, challenger, garde l'historique ; puis les etats du jour avec les regles gagnantes."""
     R0, _ = regles_en_place()
-    out = iterer(ventes_par_joueur(_lignes_banque()), aujourd, R0)
+    L = _lignes_banque()
+    out = iterer(ventes_par_joueur(L), aujourd, R0, SO=sorties(L))
     with _verrou:
         c = _cx()
         try:
@@ -525,10 +658,15 @@ def journal_verifier(valeur_actuelle, aujourd=None, max_n=60):
 def journal_bilan():
     c = _cx()
     try:
-        L = c.execute("SELECT verdict, total, plus_tard FROM moment_journal").fetchall()
+        L = c.execute("SELECT verdict, total, plus_tard, titre FROM moment_journal").fetchall()
     finally:
         c.close()
     out = {"signales": len(L)}
+    # 15 nov 2026 (Mathieu : « si la YG baisse, toutes ses cartes baissent ») : le journal le mesure, YG et autres cartes a part
+    for nom, garde in (("yg", lambda t: "young guns" in str(t or "").lower()), ("autres", lambda t: "young guns" not in str(t or "").lower())):
+        l = [(t, p) for v, t, p, ti in L if p and v in ("fort", "fort_bas", "bon") and garde(ti)]
+        out[nom] = {"verifies": len(l), "vaut_plus": round(100 * sum(1 for t, p in l if p > t) / len(l)) if l else None}
+    L = [(v, t, p) for v, t, p, _ in L]
     for cle in ("fort_bas", "fort", "bon"):
         l = [(t, p) for v, t, p in L if v == cle and p]
         out[cle] = {"signales": sum(1 for v, _, _ in L if v == cle), "verifies": len(l),

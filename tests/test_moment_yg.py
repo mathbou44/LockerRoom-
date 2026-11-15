@@ -38,12 +38,22 @@ assert M.etat_de(M.facteurs(M.indice({"raw": serie([100] * 330)}), J0 + 329))[0]
 print("ETAT OK")
 
 # 3. le verdict d'un deal : etat x rabais
-assert M.verdict("creux_fort", 30)["niveau"] == 3 and M.verdict("creux_fort", 30)["cle"] == "fort_bas"
-assert M.verdict("creux", 26)["niveau"] == 3 and M.verdict("creux", 18)["cle"] == "bon"
+assert M.verdict("creux_fort", 36)["niveau"] == 3 and M.verdict("creux_fort", 36)["cle"] == "fort_bas"
+assert M.verdict("creux", 36)["niveau"] == 3 and M.verdict("creux", 30)["cle"] == "bon" and M.verdict("creux", 18)["cle"] == "bon"     # banc beton : Feu vert a -35 %
 assert M.verdict("creux", 5) is None and M.verdict("neutre", 40) is None
 assert M.verdict("flambee", 40)["cle"] == "flambee"
-v = M.verdict("creux", 30, stats={"fort": {"vaut_plus": 91, "profit": 81, "n": 500}})
+v = M.verdict("creux", 40, stats={"fort": {"vaut_plus": 91, "profit": 81, "n": 500}})
 assert v["taux_vaut_plus"] == 91 and v["taux_profit"] == 81
+# la vague de sortie (banc beton : 0-60 j apres la sortie, un achat vaut -28 % deux mois plus tard) : jamais de Feu vert
+assert M.etat_de(None, M.REGLES_V2, age=20) == ("sortie", [{"k": "sortie", "v": 20}])
+assert M.etat_de(None, M.REGLES_V2, age=90)[0] == "inconnu" and M.verdict("sortie", 50)["cle"] == "sortie"
+assert M.sortie_yg(["2025-26 Upper Deck Young Guns #451 Ivan Demidov"]) == date(2026, 2, 18).toordinal()
+assert M.sortie_yg(["2025-26 Upper Deck Extended Young Guns #712 X"]) == date(2026, 6, 18).toordinal()
+assert M.sortie_yg(["2023-24 Upper Deck Young Guns #201 Connor Bedard"]) == date(2023, 11, 12).toordinal()
+a_ = date.today().year if date.today().month >= 11 else date.today().year - 1
+vg = M.vague_de(f"{a_}-{(a_ + 1) % 100:02d} Upper Deck Young Guns #201 Joueur Neuf", aujourd=date(a_, 11, 30))
+assert vg and vg["jours"] == 18 and vg["baisse_pct"] < 0 and vg["points"] < 0, vg
+assert M.vague_de("2023-24 Upper Deck Young Guns #201 Connor Bedard") is None
 print("VERDICT OK")
 
 # 4. la banque : des ventes, les etats du jour, l'annotation d'un deal, l'iteration (garde l'historique)
@@ -65,7 +75,7 @@ c.commit(); c.close()
 assert M.calculer_jour() == 13
 e = M.etat("connor bedard")                          # sans accents ni majuscules
 assert e and e["etat"] in ("creux", "creux_fort"), e
-x = M.annoter({"joueur": "Connor Bedard", "rabais": 30, "item_id": "1", "total": 70.0, "valeur": 100.0, "titre": "Bedard YG"})
+x = M.annoter({"joueur": "Connor Bedard", "rabais": 40, "item_id": "1", "total": 70.0, "valeur": 100.0, "titre": "Bedard YG"})
 assert x["moment"]["verdict"]["niveau"] == 3, x
 assert "moment" not in M.annoter({"joueur": "Inconnu Total", "rabais": 30})
 out = M.iterer_maintenant()
