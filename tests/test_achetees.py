@@ -1,7 +1,7 @@
 """14 nov 2026 (Mathieu : « un onglet pour les cartes achetees : le score SlabIQ en pastille avec les photos de l'annonce, le
 prix paye et propose pour le profit ; savoir quand les mettre : 3 mois minimum apres l'achat, et surtout si le score SlabIQ est
 haut ») : achetees_tableau. Aucun reseau."""
-import os, sys, tempfile
+import os, time, sys, tempfile
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ["LOCKERROOM_DONNEES"] = tempfile.mkdtemp()
 import comptes
@@ -92,11 +92,25 @@ print("PHOTOS LOCALES OK")
 lockerroom.comps_permis = lambda *a, **k: True
 vendues.memes_cache = lambda t, **k: {"mediane": None, "nb": 0, "ventes": []}
 lockerroom.Api._PH_SEM.clear()
-ebay_compte.rechercher = lambda q, **k: [{"titre": "2024-25 Upper Deck Young Guns Joe Ordinaire #240 RC", "photo": "https://i.ebayimg.com/sem.jpg"}]
+# 15 nov 2026 (« va chercher TOUTES les photos manquantes ») : cherchees en fond (Canada, puis Etats-Unis, puis encans),
+# gardees dans la base ; l'onglet se redessine quand elles arrivent
+APPELS = []
+def _rech(q, **k):
+    APPELS.append(k.get("pays"))
+    return [{"titre": "2024-25 Upper Deck Young Guns Joe Ordinaire #240 RC", "photo": "https://i.ebayimg.com/sem.jpg"}] if k.get("pays") == "US" else []
+ebay_compte.rechercher = _rech
+r = api.achetees_tableau()
+assert r["resume"].get("photos_cherchees") and r["resume"]["photos_en_route"] >= 1, r["resume"]
+for _ in range(100):
+    if not lockerroom.Api._PH_SEM_FOND: break
+    time.sleep(0.05)
+assert "US" in APPELS, APPELS
+lockerroom.Api._PH_SEM.clear()                       # apres un redemarrage : lue dans la base
 r = api.achetees_tableau()
 joe = next(x for x in r["cartes"] if "Ordinaire" in x["titre"])
 assert joe["photo"] == "https://i.ebayimg.com/sem.jpg" and joe["photo_semblable"], joe
 assert not next(x for x in r["cartes"] if "Demidov" in x["titre"]).get("photo_semblable")      # sa vraie photo
+assert not r["resume"].get("photos_cherchees"), r["resume"]        # rien a chercher de plus (ni de nouveau avant 7 jours)
 print("PHOTO SEMBLABLE OK")
 
 # 14 nov 2026 (« quand la carte est liee a une vente, elle doit etre retiree : c'est un doublon ; l'app doit faire les

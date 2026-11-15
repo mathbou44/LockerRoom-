@@ -8635,6 +8635,9 @@ class Api:
     # pastilles du joueur, le prix paye, le prix propose, le profit et QUAND la mettre en vente.
     _ACH_PH_LE = 0.0
     _PH_SEM = {}                           # 14 nov 2026 : la photo semblable trouvee pour un achat (item_id -> photo)
+    _PH_SEM_FOND = set()                   # 15 nov 2026 : les bases dont la recherche de photos tourne en fond
+    PH_SEM_PAR_TOUR = 60                   # recherches eBay (Browse) par tour de fond, au plus
+    PH_SEM_REESSAI_J = 7                   # une carte sans photo trouvee : on reessaie apres 7 jours
     ACHETEES_FORT = 80                     # un score SlabIQ de 80 et plus : forte demande
     ACHETEES_PASTILLES_FORTES = ("en_feu", "en_hausse", "honneur", "buzz", "echange_hausse", "rebond")
 
@@ -8703,6 +8706,87 @@ class Api:
             except Exception:
                 pass
         return out
+
+    # 15 nov 2026 (Mathieu : « essaye d'aller chercher toutes les photos manquantes ») : avant, 8 recherches par ouverture,
+    # gardees en memoire (perdues au redemarrage). Maintenant : TOUTES les cartes sans photo, cherchees en fond (60 par tour),
+    # au Canada puis aux Etats-Unis, a prix fixe puis en encan, toujours la MEME carte (cartes_match) ; le resultat est garde
+    # dans la base (une carte introuvable est reessayee apres 7 jours). L'onglet se redessine seul quand elles arrivent.
+    def _ph_sem_table(self, c):
+        c.execute("CREATE TABLE IF NOT EXISTS photos_semblables (cle TEXT PRIMARY KEY, photo TEXT, le REAL)")
+
+    def _ph_sem_lire(self):
+        """-> {cle: (photo ou '-', le)}"""
+        try:
+            c = self._db()
+            try:
+                self._ph_sem_table(c)
+                return {str(k): (ph, le or 0) for k, ph, le in c.execute("SELECT cle, photo, le FROM photos_semblables")}
+            finally:
+                c.close()
+        except Exception as e:
+            print("Photos semblables (lecture) : " + repr(e)[:120], flush=True)
+            return {}
+
+    def _ph_sem_garder(self, cle, photo):
+        try:
+            with _verrou:
+                c = self._db()
+                try:
+                    self._ph_sem_table(c)
+                    c.execute("INSERT OR REPLACE INTO photos_semblables (cle, photo, le) VALUES (?,?,?)", (str(cle), photo or "-", time.time()))
+                    c.commit()
+                finally:
+                    c.close()
+        except Exception as e:
+            print("Photos semblables (garde) : " + repr(e)[:120], flush=True)
+
+    @staticmethod
+    def _ph_sem_chercher(titre):
+        """La photo d'une annonce eBay de la MEME carte (CA puis US ; prix fixe puis encan), ou None.
+        Leve une erreur si AUCUNE recherche n'a marche (eBay ferme, cles manquantes) : rien n'est garde, on reessaiera."""
+        cib = cartes_match.cible_titre(titre)
+        q = (cartes_match.requete_ebay(cib) or titre)[:100]
+        err = None
+        for pays, enc in (("CA", False), ("US", False), ("CA", True), ("US", True)):
+            try:
+                L = ebay_compte.rechercher(q, limite=50, fond=True, pays=pays, encheres=enc) or []
+                err = False if err is None else err
+            except Exception as e:
+                err = e if err is None else err
+                continue
+            for it in L:
+                if str(it.get("photo") or "").startswith("http") and not cartes_match.raisons_refus(cib, it.get("titre") or ""):
+                    return it["photo"]
+        if err:
+            raise err
+        return None
+
+    def _photos_semblables_fond(self, items):
+        """items : [(cle, titre)] ; un seul tour a la fois par base."""
+        base = self.chemin_db
+        if not items or base in Api._PH_SEM_FOND:
+            return False
+        Api._PH_SEM_FOND.add(base)
+
+        def tour():
+            n = 0
+            try:
+                for cle, titre in items[:self.PH_SEM_PAR_TOUR]:
+                    try:
+                        ph = self._ph_sem_chercher(titre)
+                    except Exception as e:                   # eBay ne repond pas : on arrete ce tour, rien de garde
+                        print("Photos semblables (eBay) : " + repr(e)[:120], flush=True)
+                        break
+                    self._ph_sem_garder(cle, ph)
+                    if ph:
+                        Api._PH_SEM[str(cle)] = ph
+                        n += 1
+                    time.sleep(0.2)
+                print(f"Photos semblables : {n} trouvees sur {min(len(items), self.PH_SEM_PAR_TOUR)}", flush=True)
+            finally:
+                Api._PH_SEM_FOND.discard(base)
+        threading.Thread(target=tour, daemon=True, name="photos-semblables").start()
+        return True
 
     def achetees_tableau(self):
         """-> {cartes: [{cle, carte_id, item_id, n, titre, photo, cout, achete_le, jours, score, joueur, pastilles, propose,
@@ -8813,7 +8897,8 @@ class Api:
             self._achats_photos(manque, n=40)
         comps = comps_permis(self)
         t0 = time.time()
-        n_rech = [0]
+        sem = self._ph_sem_lire() if comps else {}
+        a_chercher = []
         for x in out:
             try:
                 j = (auj - datetime.fromisoformat(x["achete_le"])).days if x.get("achete_le") else None
@@ -8837,24 +8922,23 @@ class Api:
                 prop, src = float(x.get("prix_demande") or x.get("valeur_carte")), "ton prix"
             x["propose"] = round(prop, 2) if prop else None
             # (admin seulement : une photo tiree des ventes = des comps, licence eBay)
-            if comps and not x.get("photo") and (x.get("_ph_x") or (x.get("jours") or 0) > 85 or not x.get("item_id")) and time.time() - t0 < 12:
+            if comps and not x.get("photo") and (x.get("_ph_x") or (x.get("jours") or 0) > 85 or not x.get("item_id")):
                 try:                                   # eBay n'a plus la photo : celle d'une vente de la MEME carte
-                    vs = vendues.memes_cache(x["titre"], n=12, age_max=365 * 86400)
-                    ph = next((v.get("photo") for v in (vs.get("ventes") or []) if str(v.get("photo") or "").startswith("http")), None)
+                    ph = None
+                    if time.time() - t0 < 12:
+                        vs = vendues.memes_cache(x["titre"], n=12, age_max=365 * 86400)
+                        ph = next((v.get("photo") for v in (vs.get("ventes") or []) if str(v.get("photo") or "").startswith("http")), None)
                     # 14 nov 2026 (Mathieu : « je parle de la photo de la carte ») : pas de vente connue de la MEME carte ->
-                    # une annonce active de la MEME carte sur eBay (recherche Browse, gardee 24 h ; 8 recherches par ouverture)
+                    # une annonce de la MEME carte sur eBay, cherchee en fond et gardee dans la base (15 nov : toutes)
+                    k_ = str(x.get("item_id") or x["cle"])
                     if not ph:
-                        ph = Api._PH_SEM.get(str(x.get("item_id") or x["cle"]))
-                    if not ph and n_rech[0] < 8:
-                        n_rech[0] += 1
-                        cib = cartes_match.cible_titre(x["titre"])
-                        q = cartes_match.requete_ebay(cib) or x["titre"]
-                        for it in ebay_compte.rechercher(q[:100], limite=20, fond=True) or []:
-                            if str(it.get("photo") or "").startswith("http") and not cartes_match.raisons_refus(cib, it.get("titre") or ""):
-                                ph = it["photo"]
-                                break
-                        if ph:
-                            Api._PH_SEM[str(x.get("item_id") or x["cle"])] = ph
+                        ph = Api._PH_SEM.get(k_)
+                    if not ph:
+                        g = sem.get(k_)
+                        if g and str(g[0] or "").startswith("http"):
+                            ph = g[0]
+                        elif not g or time.time() - (g[1] or 0) > self.PH_SEM_REESSAI_J * 86400:
+                            a_chercher.append((k_, x["titre"]))
                     if ph:
                         x["photo"], x["photo_semblable"] = ph, True
                 except Exception as e:
@@ -8891,6 +8975,10 @@ class Api:
                   "profit": round(sum(x["profit"] for x in out if x.get("profit") is not None), 2),
                   "apres_j": AFFICHER_APRES_J, "comps": comps, "lies_auto": lies_auto,
                   "photos_en_route": sum(1 for x in out if x.get("item_id") and not x.get("photo") and not x.get("_ph_x"))}
+        if a_chercher:
+            self._photos_semblables_fond(a_chercher)
+            resume["photos_en_route"] += len(a_chercher[:self.PH_SEM_PAR_TOUR])
+            resume["photos_cherchees"] = len(a_chercher)
         if not comps:
             for x in out:
                 if x.get("source_prix") == "ventes":
