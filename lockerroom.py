@@ -7222,6 +7222,9 @@ class Api:
         # (meme cout) ; on en garde beaucoup plus qu'avant (24 -> 60 par joueur, 12 -> 30 pour les rangees automatiques)
         def un_joueur(f, budget_defaut=None, limite=60):
             l = self._radar_annonces(f, prof.get("collectionne"), prof.get("prix_min"), prof.get("prix_max") or budget_defaut, limite=limite)
+            eq = Api.equipe_fav(f)
+            if eq:                               # 15 nov 2026 : une equipe (pas de pastilles de joueur)
+                return {"joueur": f, "equipe": eq["nom"], "annonces": l[:limite], "n": len(l), "pastilles": [], "indice": None, "semaine": None}
             return {"joueur": f, "annonces": l[:limite], "n": len(l), **self._pastilles_joueur(f)}
 
         taches = [("alerte", a, lambda a=a: une_alerte(a)) for a in al]
@@ -7535,10 +7538,47 @@ class Api:
         mots = list(dict.fromkeys(m for k in (coll or []) for m in self.RADAR_MOTS.get(k, ())))
         return (nom + (" (" + ", ".join(mots) + ")" if mots else ""))[:100]
 
+    _SURNOMS_2 = ("maple leafs", "red wings", "blue jackets", "golden knights", "hockey club")
+
+    @staticmethod
+    def equipe_fav(nom):
+        """15 nov 2026 (Mathieu : « montrer les cartes des joueurs OU des equipes que le collectionneur a choisis ; mettre
+        team aussi ») : un favori qui est une equipe LNH (nom complet, surnom ou abreviation : « Canadiens », « Habs »,
+        « Montreal Canadiens », « MTL ») -> {abrev, nom, surnom} ; sinon None (un joueur)."""
+        import indice_joueurs
+        n = re.sub(r"\s+", " ", re.sub(r"[^a-z ]", " ", indice_joueurs._norm(nom or ""))).strip()
+        if not n:
+            return None
+        if n == "habs":
+            n = "canadiens"
+        for full, ab in indice_joueurs.EQUIPES_ABREV.items():
+            mots = full.split()
+            sur = " ".join(mots[-2:]) if " ".join(mots[-2:]) in Api._SURNOMS_2 else mots[-1]
+            if sur == "hockey club":
+                sur = "utah"
+            if n in (full, sur, ab.lower()):
+                return {"abrev": ab, "nom": full.title(), "surnom": sur}
+        return None
+
+    def _joueurs_equipe(self, ab, n=5):
+        """Les n joueurs les plus recherches (Indice SlabIQ) de l'equipe en ce moment."""
+        try:
+            import indice_joueurs
+            I = indice_joueurs.lire().get("indice") or {}
+            l = sorted([(k, v) for k, v in I.items() if v.get("equipe") == ab and v.get("actif") is not False and v.get("indice") is not None],
+                       key=lambda kv: -kv[1]["indice"])
+            return [k for k, _ in l[:n]]
+        except Exception:
+            return []
+
     def _radar_annonces(self, nom, coll, pmin=None, pmax=None, limite=40):
         """Les annonces d'un joueur (ou d'une equipe) : les plus recentes a prix fixe et les encans qui finissent bientot,
-        dans le budget ; sans lots, reimpressions ni customs ; le nom doit etre dans le titre."""
+        dans le budget ; sans lots, reimpressions ni customs ; le nom doit etre dans le titre.
+        15 nov 2026 : une EQUIPE -> son surnom OU ses 5 joueurs les plus recherches dans le titre (une seule recherche eBay)."""
         import cartes_match
+        eq = Api.equipe_fav(nom)
+        if eq:
+            return self._radar_annonces_equipe(eq, coll, pmin, pmax, limite)
         q = self._radar_requete(nom, coll)
         res = []
         for ench in (False, True):
@@ -7569,6 +7609,48 @@ class Api:
                         "encan": bool(x.get("encan")), "fin": x.get("fin"), "mises": x.get("mises"), "joueur": nom, "lieu": x.get("lieu"),
                         **_vendeur_info(x)})
         # les encans qui finissent bientot d'abord, puis les nouvelles annonces
+        out.sort(key=lambda x: (0, str(x.get("fin") or "")) if x["encan"] else (1, ""))
+        return out[:limite]
+
+    def _radar_annonces_equipe(self, eq, coll, pmin, pmax, limite):
+        import cartes_match
+        joueurs = self._joueurs_equipe(eq["abrev"])
+        noms = [eq["surnom"]] + [j.split()[-1].lower() for j in joueurs]
+        grp = "(" + ", ".join(dict.fromkeys(noms)) + ")"
+        mots = list(dict.fromkeys(m for k in (coll or []) for m in self.RADAR_MOTS.get(k, ())))
+        q = (grp + (" (" + ", ".join(mots) + ")" if mots else ""))[:100]
+        res = []
+        for ench in (False, True):
+            try:
+                res += ebay_compte.rechercher(q, categorie=CATEGORIE_CARTES, limite=100 if ench else 200, fond=False, encheres=ench,
+                                              recentes=not ench, prix_max=pmax, prix_min=pmin, pays=self._pays_radar()) or []
+            except TypeError:
+                pass
+        maint = time.time()
+        vus, out = set(), []
+        for x in res:
+            iid = str(x.get("item_id") or "")
+            t = str(x.get("titre") or "")
+            tl = cartes_match.norm(t) if hasattr(cartes_match, "norm") else t.lower()
+            tot = round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2)
+            if not iid or iid in vus or not tot or (pmax and tot > pmax * 1.0001) or (pmin and tot < pmin):
+                continue
+            qui = next((j for j in joueurs if cartes_match.norm(j) in tl), None)
+            if not qui and eq["surnom"] not in tl:
+                continue                       # ni l'equipe ni un de ses joueurs dans le titre
+            r = cartes_match.raisons_refus(cartes_match.cible(qui or eq["nom"]), t)
+            if any(k.startswith(("lot", "checklist")) for k in r):
+                continue
+            if x.get("encan") and x.get("fin"):
+                try:
+                    if datetime.fromisoformat(str(x["fin"]).replace("Z", "+00:00")).timestamp() < maint:
+                        continue
+                except ValueError:
+                    pass
+            vus.add(iid)
+            out.append({"item_id": iid, "titre": t, "total": tot, "photo": x.get("photo"), "url": x.get("url"),
+                        "encan": bool(x.get("encan")), "fin": x.get("fin"), "mises": x.get("mises"), "joueur": qui or None,
+                        "equipe": eq["nom"], "lieu": x.get("lieu"), **_vendeur_info(x)})
         out.sort(key=lambda x: (0, str(x.get("fin") or "")) if x["encan"] else (1, ""))
         return out[:limite]
 

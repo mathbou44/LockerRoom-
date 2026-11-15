@@ -20,3 +20,24 @@ print("LIEN OK")
 assert S.plafond_joueur(88, {"score": 70}, {"indice": 25}) < 55 and S.plafond_joueur(88, {"score": 70}, {"indice": 85}) == 88
 assert S.plafond_joueur(88, {"score": 70}, None) == 88
 print("POPULARITE OK")
+
+# une EQUIPE dans le Radar : son surnom ou ses joueurs les plus recherches au titre (une seule recherche)
+import ebay_compte, indice_joueurs
+assert A.equipe_fav("Canadiens")["abrev"] == "MTL" and A.equipe_fav("Habs")["abrev"] == "MTL" and A.equipe_fav("Maple Leafs")["abrev"] == "TOR"
+assert A.equipe_fav("Connor Bedard") is None
+indice_joueurs.lire = lambda: {"indice": {"Lane Hutson": {"equipe": "MTL", "indice": 90, "actif": True}, "Nick Suzuki": {"equipe": "MTL", "indice": 80, "actif": True},
+                                         "Auston Matthews": {"equipe": "TOR", "indice": 95, "actif": True}}}
+Q = []
+def rech(q, **k):
+    Q.append(q)
+    return [{"item_id": "1", "titre": "2024-25 Upper Deck Young Guns Lane Hutson RC", "prix_cad": 30, "port_cad": 0, "url": "u"},
+            {"item_id": "2", "titre": "1990 Patrick Roy Montreal Canadiens OPC", "prix_cad": 20, "port_cad": 0, "url": "u"},
+            {"item_id": "3", "titre": "Auston Matthews Young Guns", "prix_cad": 50, "port_cad": 0, "url": "u"},
+            {"item_id": "4", "titre": "Lot of 50 Canadiens cards", "prix_cad": 40, "port_cad": 0, "url": "u"}] if not k.get("encheres") else []
+ebay_compte.rechercher = rech
+api._pays_radar = lambda: "CA"
+l = api._radar_annonces("Canadiens", ["recrues"])
+assert [x["item_id"] for x in l] == ["1", "2"], l
+assert l[0]["joueur"] == "Lane Hutson" and l[1]["equipe"] == "Montreal Canadiens"
+assert Q[0].startswith("(canadiens, hutson, suzuki)"), Q
+print("EQUIPE OK")
