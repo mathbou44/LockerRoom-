@@ -2666,9 +2666,12 @@ class Api:
                 vus.add((id(pl), j))
                 ij = indice_joueurs.indice(j) or {}
                 pil = [k for k in (ij.get("pastilles") or []) if k in ("en_feu", "en_hausse", "recrue", "legende", "en_creux", "rebond", "buzz")]
-                pl.setdefault("iq_joueurs", []).append({"nom": j, "iq": g[1], "meilleur": g[2], "carte": g[3], "pastilles": pil[:2]})
-                if pl.get("iq") is None or g[1] > pl["iq"]:
-                    pl["iq"] = g[1]
+                # 15 nov 2026 (« la liquidite et la popularite d'un joueur sont toujours le main driver ») : un joueur peu
+                # recherche ne monte pas plus haut que son indice + 20, meme avec des cartes rares dans le produit
+                iq_ = int(min(g[1], float(ij["indice"]) + 20)) if ij.get("indice") is not None else g[1]
+                pl.setdefault("iq_joueurs", []).append({"nom": j, "iq": iq_, "meilleur": g[2], "carte": g[3], "pastilles": pil[:2]})
+                if pl.get("iq") is None or iq_ > pl["iq"]:
+                    pl["iq"] = iq_
                 if "en_feu" in pil or "rebond" in pil:
                     pl["iq_chaud"] = True
         # 15 nov 2026 (Mathieu : « toujours lier SlabIQ avec nos breaks ; ca vaut vraiment la peine pour chasser le produit ou
@@ -6977,12 +6980,61 @@ class Api:
         p = [x for x in p if x in ("CA", "US")]
         return p or ["CA", "US"]
 
+    @staticmethod
+    def _requete_vendues(titre, c, q):
+        """15 nov 2026 (Mathieu : « le texte de recherche n'est pas bon » : « skybox metal universe pmg scott red » ramenait la
+        Scott MORROW) : le lien « Voir les ventes sur eBay » est lu par une personne : le nom COMPLET du joueur, l'annee et le
+        numero de la carte, en plus des mots de la carte."""
+        import cartes_match
+        mots = str(q or "").split()
+        j = str(cartes_match.joueur_du_titre(titre or "") or c.get("joueur") or "").lower().split()
+        an = str(c.get("annee") or "")
+        num = str(c.get("num") or "")
+        tout = ([an] if an and an not in mots else []) + [w for w in j if w not in mots] + mots + ([num] if num and num not in mots else [])
+        vus, out = set(), []
+        for w in tout:
+            if w and w not in vus:
+                vus.add(w)
+                out.append(w)
+        return " ".join(out)[:100]
+
+    ENCAN_SANS_MISE_MAX = 20.0          # $ : un encan sans mise qui demande plus que ca n'est pas montre
+
+    @staticmethod
+    def _encan_douteux(x, maint=None):
+        """15 nov 2026 (Mathieu : « 95 % du temps, une enchere sans mise qui a deja un gros prix, ce n'est pas bon signe ;
+        on devrait pouvoir enlever les 0 bids ») : un encan sans aucune mise dont le prix de depart depasse 20 $, ou un encan
+        deja fini (« Ended » dans le Radar), n'est pas montre."""
+        if not isinstance(x, dict) or not x.get("encan"):
+            return False
+        try:
+            fin = datetime.fromisoformat(str(x.get("fin")).replace("Z", "+00:00")).timestamp() if x.get("fin") else None
+        except ValueError:
+            fin = None
+        if fin and fin < (maint or time.time()):
+            return True
+        m = x.get("mises")
+        try:
+            m = int(m) if m not in (None, "") else None
+        except (TypeError, ValueError):
+            m = None
+        return m == 0 and float(x.get("total") or 0) > Api.ENCAN_SANS_MISE_MAX
+
     def _filtrer_provenance(self, r):
-        """11 nov 2026 : seulement les cartes expediees des pays choisis (une annonce sans pays connu reste)."""
+        """11 nov 2026 : seulement les cartes expediees des pays choisis (une annonce sans pays connu reste).
+        15 nov 2026 : et jamais un encan fini ni un encan sans mise a gros prix de depart (_encan_douteux)."""
         prov = self._provenance()
-        if not isinstance(r, dict) or set(prov) >= {"CA", "US"}:
+        if not isinstance(r, dict):
             return r
-        ok = lambda x: not str(x.get("lieu") or "").strip() or str(x.get("lieu")).upper()[:2] in prov
+        maint = time.time()
+        tous_pays = set(prov) >= {"CA", "US"}
+        ok = lambda x: not Api._encan_douteux(x, maint) and (tous_pays or not str(x.get("lieu") or "").strip() or str(x.get("lieu")).upper()[:2] in prov)
+        if tous_pays:                                # rien a filtrer (aucun encan douteux) : la reponse telle quelle
+            items = [x for k in ("deals", "petits") for x in (r.get(k) or []) if isinstance(x, dict)]
+            items += [x for k in ("pour_toi", "decouvrir", "chauds", "creux", "chasses", "types", "vendeurs", "cibles")
+                      for g in (r.get(k) or []) if isinstance(g, dict) for x in (g.get("annonces") or []) if isinstance(x, dict)]
+            if not any(Api._encan_douteux(x, maint) for x in items):
+                return r
         out = dict(r)
         for k in ("deals", "petits"):
             if isinstance(out.get(k), list):
@@ -6992,8 +7044,9 @@ class Api:
                 gs = []
                 for g in out[k]:
                     if isinstance(g, dict) and isinstance(g.get("annonces"), list):
+                        avant = len(g["annonces"])
                         g = dict(g, annonces=[x for x in g["annonces"] if ok(x)])
-                        if not g["annonces"]:
+                        if avant and not g["annonces"]:
                             continue
                     gs.append(g)
                 out[k] = gs
@@ -7910,7 +7963,7 @@ class Api:
         out["encans"] = enc[:12]
         dom = "www.ebay.com" if pays == "US" else "www.ebay.ca"
         out["lien_vendues"] = f"https://{dom}/sch/i.html?" + urllib.parse.urlencode(
-            {"_nkw": q, "_sacat": CATEGORIE_CARTES, "LH_Sold": "1", "LH_Complete": "1", "_sop": "13"})
+            {"_nkw": self._requete_vendues(titre, c, q), "_sacat": CATEGORIE_CARTES, "LH_Sold": "1", "LH_Complete": "1", "_sop": "13"})
         # son historique a lui : ses cartes de la meme carte (cout, prix vendu)
         mien = []
         try:

@@ -62,6 +62,20 @@ def ajuster_echange(total, ij):
     return total
 
 
+JOUEUR_MARGE = 10.0          # points au-dessus de l'indice du joueur
+JOUEUR_PART_CARTE = 0.2      # + 20 % du score de la carte elle-meme (rarete, auto, patch, recrue, gradee)
+
+
+def plafond_joueur(total, c, ij):
+    """15 nov 2026 (Mathieu : « un score aussi haut (88) pour Scott Perunovich est bizarre, ce n'est pas un joueur recherche » ;
+    « la liquidite et la popularite d'un joueur sont toujours le main driver ») : la carte d'un joueur peu recherche ne monte
+    jamais plus haut que l'indice du joueur + 10 + 20 % du score de la carte. Une PMG Red /100 d'un joueur a 25 reste ~50 ;
+    un joueur a 80 et plus n'est presque jamais plafonne."""
+    if total is None or not ij or ij.get("indice") is None:
+        return total
+    return min(total, float(ij["indice"]) + JOUEUR_MARGE + JOUEUR_PART_CARTE * float(c.get("score") or 0))
+
+
 def plafond_inconnu(total, c, ij):
     """Joueur absent de l'indice SlabIQ : le score ne depasse pas 50 + la moitie du score de la carte."""
     if total is None or (ij and ij.get("indice") is not None):
@@ -159,7 +173,7 @@ def score(titre, joueur=None):
             total = None                     # 12 nov 2026 : pas assez d'indices dans le titre : pas de score invente
     except Exception as e:
         print("Score modele : " + repr(e), flush=True)
-    total = ajuster_echange(plafond_inconnu(total, c, ij), ij)
+    total = ajuster_echange(plafond_joueur(plafond_inconnu(total, c, ij), c, ij), ij)
     k = _savoir(titre)
     total = plancher(total, k)
     nom = j.title() if j and j == j.lower() else j
@@ -240,7 +254,7 @@ def _annoter_lot(items):
                 ij = indice_joueurs.indice(j)
             sv = _savoir(x.get("titre") or "")
             if sc is not None:
-                x["score"] = sc[k] if sc[k] is None else int(round(plancher(ajuster_echange(plafond_inconnu(sc[k], c, ij), ij), sv)))
+                x["score"] = sc[k] if sc[k] is None else int(round(plancher(ajuster_echange(plafond_joueur(plafond_inconnu(sc[k], c, ij), c, ij), ij), sv)))
             else:
                 sj = float(ij["indice"]) if ij and ij.get("indice") is not None else JOUEUR_INCONNU
                 x["score"] = int(round(plancher(POIDS_JOUEUR * sj + (1 - POIDS_JOUEUR) * c["score"], sv)))
