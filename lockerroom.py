@@ -3615,6 +3615,21 @@ class Api:
         for r in out:                            # 9 nov 2026 : preparee pour la vente, pas encore sur eBay
             r["a_finir"] = bool(r.get("a_finir_le") and r.get("statut") == "En stock" and not r.get("item_number")
                                 and (r.get("emplacement") or "") not in ("Collection", "eBay") and not r.get("envoi_json"))
+        # 16 nov 2026 (le moment de VENDRE, mesure sur la banque YG : une Young Guns sortie depuis moins de 60 jours valait
+        # 35 % de moins 2 mois plus tard, 97 % du temps, sur les deux periodes testees) : une carte d'un produit tout neuf,
+        # pas vendue et pas en collection -> « Vends tot » (le reste du temps, rien : la flambee seule n'est pas un signal sur)
+        try:
+            import moment_yg
+            for r in out:
+                if r.get("statut") == "Vendue" or (r.get("emplacement") or "") == "Collection" or (r.get("sport") or "hockey") != "hockey":
+                    continue
+                vg = moment_yg.vague_de(r.get("titre") or "")
+                if vg:
+                    r["vendre_tot"] = {"jours": vg["jours"], "baisse_pct": vg["baisse_pct"]}
+        except Exception as e:
+            print("Vendre tot : " + repr(e)[:160], flush=True)
+        if f.get("vendre_tot"):
+            out = [r for r in out if r.get("vendre_tot")]
         if f.get("a_afficher"):
             out = [r for r in out if r.get("a_afficher")]
         if f.get("a_finir"):

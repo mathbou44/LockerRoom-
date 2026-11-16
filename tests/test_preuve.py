@@ -41,3 +41,30 @@ open(p, "wb").write(gzip.compress(preuve.canonique(doc), mtime=0))
 v = preuve.verifier()
 assert not v["ok"] and any("modifi" in x for x in v["erreurs"]), v
 print("PREUVE OK")
+
+# 16 nov 2026 : les autres cartes du Radar (autos, patchs...) : la valeur plus tard vient de notre archive de ventes
+import base_ventes  # noqa: E402
+d = date.today() - timedelta(days=110)
+T = "2023-24 Upper Deck SP Authentic Future Watch Auto Connor Bedard #151 /999"
+preuve.figer(d, {"jour": d.isoformat(), "marche": [], "radar": [
+    {"t": "r", "id": "A1", "titre": T, "j": "Connor Bedard", "g": None, "prix": 100.0, "rabais": 25, "etat": "creux"},
+    {"t": "r", "id": "A2", "titre": T, "j": "Connor Bedard", "g": None, "prix": 160.0, "rabais": 5, "etat": "flambee"}]})
+c = base_ventes._cx()
+for h in (30, 60, 90):
+    for k in range(3):
+        le = (d + timedelta(days=h + k - 1)).isoformat()
+        c.execute("INSERT OR IGNORE INTO ventes (q, cle, titre, prix, le) VALUES (?,?,?,?,?)", ("bedard future watch auto", f"{h}-{k}", T, 130.0, le))
+c.commit(); c.close()
+r = preuve.resultats()
+ph = r["par_horizon"]
+assert ph["30"]["autres"]["n"] == 2 and ph["30"]["autres_avec"]["mediane_pct"] == 30.0 and ph["30"]["autres_attendre"]["mediane_pct"] < 0, ph["30"]
+assert ph["90"]["autres_avec"]["vaut_plus_pct"] == 100
+# l'echantillon a re-mesurer : choisi par une empreinte (pas a la main), et un plafond de recherches par jour
+assert len(preuve._suivis()) >= 1
+appels = []
+import vendues  # noqa: E402
+vendues.rechercher = lambda q, fond=True, usage=None: appels.append(q) or {"ventes": []}
+n1 = preuve.rechercher_suivis(maxi=2)
+n2 = preuve.rechercher_suivis(maxi=2)
+assert n1 <= 2 and n2 == 0, (n1, n2)                     # le plafond est par jour
+print("PREUVE AUTRES OK")

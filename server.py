@@ -883,6 +883,13 @@ def page_preuve():
         if sa and av:
             lignes_r += (f'<tr><td>{h} {t("jours", "days")}</td><td class="n rouge">{sa["mediane_pct"]:+.1f} %</td><td class="n vert">{av["mediane_pct"]:+.1f} %</td>'
                          f'<td class="n">{av["vaut_plus_pct"]} % / {sa["vaut_plus_pct"]} %</td><td class="n">{av["n"]} / {sa["n"]}</td></tr>')
+    lignes_a = ""
+    for h in ("30", "60", "90"):
+        r = rs.get(h) or {}
+        av, at, al = r.get("autres_avec"), r.get("autres_attendre"), r.get("autres")
+        if al:
+            f_ = lambda x: (f'{x["mediane_pct"]:+.1f} % <small>({x["vaut_plus_pct"]} % +, n={x["n"]})</small>') if x else "—"
+            lignes_a += (f'<tr><td>{h} {t("jours", "days")}</td><td class="n">{f_(al)}</td><td class="n vert">{f_(av)}</td><td class="n rouge">{f_(at)}</td></tr>')
     if ch:
         prem = ch[-1]["jour"]
         try:
@@ -894,6 +901,9 @@ def page_preuve():
     res_html = (f'<table class="tab-f"><thead><tr><th>{t("Après", "After")}</th><th>{t("Sans SlabCoach", "Without SlabCoach")}</th><th>{t("Avec SlabCoach", "With SlabCoach")}</th>'
                 f'<th>{t("Valaient plus (avec / sans)", "Worth more (with / without)")}</th><th>{t("Cartes (avec / sans)", "Cards (with / without)")}</th></tr></thead><tbody>{lignes_r}</tbody></table>') if lignes_r else (
         f'<p class="intro">{t(f"Les premiers résultats en direct arrivent vers le {pret} : il faut 30 jours, puis 2 semaines de ventes pour mesurer la valeur.", f"The first live results arrive around {pret}: it takes 30 days, then 2 weeks of sales to measure value.")}</p>' if pret else "")
+    if lignes_a:
+        res_html += (f'<h3 class="mo-titre">{t("Les autres cartes du Radar (autos, patchs, numérotées)", "Other Radar cards (autos, patches, numbered)")}</h3>'
+                     f'<table class="tab-f"><thead><tr><th>{t("Après", "After")}</th><th>{t("Tous les deals", "All deals")}</th><th>{t("Bon moment", "Good moment")}</th><th>{t("Attendre", "Wait")}</th></tr></thead><tbody>{lignes_a}</tbody></table>')
     v = p.get("verification") or {}
     def _rang(e):
         j = _h.escape(e["jour"])
@@ -910,7 +920,7 @@ def page_preuve():
 </div></div>
 <section style="padding-top:24px"><div class="conteneur">
   <div class="etapes">
-    <div class="etape"><b>1</b><h3>{t("Figé chaque jour", "Frozen every day")}</h3><p>{t("Le prix de chaque Young Guns suivie, le moment SlabIQ, le score et chaque deal du Radar.", "The price of every tracked Young Guns, the SlabIQ moment, the score and every Radar deal.")}</p></div>
+    <div class="etape"><b>1</b><h3>{t("Figé chaque jour", "Frozen every day")}</h3><p>{t("Le prix de chaque Young Guns suivie, le moment SlabIQ, le score et chaque deal du Radar, autos, patchs et numérotées compris (un échantillon tiré au hasard est re-mesuré à 30, 60 et 90 jours).", "The price of every tracked Young Guns, the SlabIQ moment, the score and every Radar deal, autos, patches and numbered included (a random sample is re-measured at 30, 60 and 90 days).")}</p></div>
     <div class="etape"><b>2</b><h3>{t("Empreinte horodatée", "Timestamped fingerprint")}</h3><p>{t("L’empreinte du fichier (SHA-256) est enchaînée à la veille et ancrée dans Bitcoin (OpenTimestamps). Changer un seul chiffre casse la preuve.", "The file’s fingerprint (SHA-256) is chained to the day before and anchored in Bitcoin (OpenTimestamps). Changing a single number breaks the proof.")}</p></div>
     <div class="etape"><b>3</b><h3>{t("Le résultat, plus tard", "The result, later")}</h3><p>{t("30, 60 et 90 jours après, on mesure ce que les cartes valaient vraiment. Les fichiers sont publiés après 30 jours : tout le monde peut vérifier.", "30, 60 and 90 days later, we measure what the cards were really worth. Files are published after 30 days: anyone can check.")}</p></div>
   </div>

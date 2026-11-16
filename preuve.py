@@ -149,6 +149,10 @@ def figer(aujourd=None, forcer_contenu=None):
         e = {"jour": nom, "sha256": h, "chaine": maillon, "n_marche": len(contenu.get("marche") or []),
              "n_radar": len(contenu.get("radar") or []), "ots": None}
         ch.append(e)
+        try:
+            _planifier(nom, contenu.get("radar") or [])
+        except Exception as ex:
+            print("Preuve (suivis) : " + repr(ex)[:120], flush=True)
         tmp = _chaine_chemin() + ".tmp"
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(ch, f, indent=1)
@@ -241,7 +245,26 @@ def resultats(aujourd=None):
             return None
         return px[len(px) // 2] if len(px) % 2 else (px[len(px) // 2 - 1] + px[len(px) // 2]) / 2
 
-    acc = {h: {"sans": [], "avec": [], "radar": [], "iq_haut": [], "iq_bas": []} for h in HORIZONS}
+    # 16 nov 2026 (« vas-y par ordre de priorite » : la preuve elargie aux autos, patchs, numerotees) : pour une carte du Radar
+    # qui n'est pas une Young Guns de base, la valeur plus tard vient des ventes de NOTRE archive (base_ventes : chaque
+    # recherche de comps y est gardee) de la MEME carte (cartes_match, la regle de l'app), +/- 14 jours
+    noms, d_min = set(), None
+    for e in chaine():                                   # 1re passe : les noms et la plus vieille date utiles seulement
+        d0 = date.fromisoformat(e["jour"]).toordinal()
+        if auj - d0 < min(HORIZONS) + 14:
+            continue
+        try:
+            doc = json.loads(lire_jour(e["jour"]))
+        except (OSError, ValueError):
+            continue
+        for x in doc.get("radar") or []:
+            if not x.get("g") and x.get("j"):
+                noms.add(str(x["j"]).lower().split()[-1])
+                d_min = min(d_min or d0, d0)
+    autres = _AutresVentes(auj, noms, (d_min or auj) + min(HORIZONS) - 14)
+
+    acc = {h: {"sans": [], "avec": [], "radar": [], "iq_haut": [], "iq_bas": [],
+               "autres": [], "autres_avec": [], "autres_attendre": []} for h in HORIZONS}
     jours = []
     for e in chaine():
         d0 = date.fromisoformat(e["jour"]).toordinal()
@@ -267,15 +290,27 @@ def resultats(aujourd=None):
                 elif iq is not None and iq < 50:
                     acc[h]["iq_bas"].append(c)
             for x in doc.get("radar") or []:
-                if not x.get("g") or not x.get("prix") or not x.get("j"):
+                if not x.get("prix") or not x.get("j"):
                     continue
-                v = plus_tard(x["j"], x["g"], d0, h)
+                bon = x.get("etat") in BON and (x.get("rabais") or 0) >= RABAIS_MIN
+                if x.get("g"):                                    # une Young Guns de base : la banque YG
+                    v = plus_tard(x["j"], x["g"], d0, h)
+                    if not v:
+                        continue
+                    c = 100 * (v / x["prix"] - 1)
+                    acc[h]["radar"].append(c)
+                    if bon:
+                        acc[h]["avec"].append(c)
+                    continue
+                v = autres.valeur(x, d0 + h)                      # toute autre carte : notre archive de ventes
                 if not v:
                     continue
                 c = 100 * (v / x["prix"] - 1)
-                acc[h]["radar"].append(c)
-                if x.get("etat") in BON and (x.get("rabais") or 0) >= RABAIS_MIN:
-                    acc[h]["avec"].append(c)
+                acc[h]["autres"].append(c)
+                if bon:
+                    acc[h]["autres_avec"].append(c)
+                elif x.get("etat") in ("flambee", "retombee", "sortie"):
+                    acc[h]["autres_attendre"].append(c)
 
     def res(l):
         if not l:
@@ -284,13 +319,155 @@ def resultats(aujourd=None):
         med = s[len(s) // 2] if len(s) % 2 else (s[len(s) // 2 - 1] + s[len(s) // 2]) / 2
         return {"n": len(l), "mediane_pct": round(med, 1), "vaut_plus_pct": round(100 * sum(1 for x in l if x > 0) / len(l))}
     return {"ok": True, "jours_evalues": jours, "par_horizon": {str(h): {k: res(v) for k, v in acc[h].items()} for h in HORIZONS},
-            "regle": {"avec": f"bon moment (creux) et au moins {RABAIS_MIN} % sous la valeur", "sans": "toutes les Young Guns au prix du marche"}}
+            "regle": {"avec": f"bon moment (creux) et au moins {RABAIS_MIN} % sous la valeur", "sans": "toutes les Young Guns au prix du marche",
+                      "autres": "les autres cartes du Radar (autos, patchs, numerotees...) : ventes de la meme carte dans notre archive"}}
+
+
+class _AutresVentes:
+    """Les ventes de notre archive (base_ventes), indexees par nom de famille, chargees une fois par calcul."""
+
+    def __init__(self, auj_ord, noms=(), depuis_ord=None):
+        self.auj, self.noms, self.depuis = auj_ord, set(noms or ()), depuis_ord or auj_ord
+        self.par_nom = None
+
+    def _charger(self):
+        self.par_nom = {}
+        try:
+            import base_ventes
+            if not self.noms:
+                return
+            d0 = date.fromordinal(self.depuis).isoformat()
+            c = base_ventes._cx()
+            try:
+                rows = c.execute("SELECT titre, prix, le, url FROM ventes WHERE le >= ? AND prix > 0", (d0,)).fetchall()
+            finally:
+                c.close()
+        except Exception as e:
+            print("Preuve (archive) : " + repr(e)[:120], flush=True)
+            rows = []
+        import re as _re
+        for t, p, le, url in rows:
+            try:
+                o = date.fromisoformat(str(le)[:10]).toordinal()
+            except ValueError:
+                continue
+            v = {"titre": t, "prix": p, "le": le, "url": url, "_o": o}
+            for w in set(_re.findall(r"[a-zà-ÿ'-]{3,}", str(t or "").lower())) & self.noms:
+                self.par_nom.setdefault(w, []).append(v)
+
+    def valeur(self, x, cible_ord):
+        if self.par_nom is None:
+            self._charger()
+        nom = str(x.get("j") or "").lower().split()
+        if not nom:
+            return None
+        l = [v for v in self.par_nom.get(nom[-1], []) if cible_ord - 14 <= v["_o"] <= cible_ord + 14]
+        if len(l) < 3:
+            return None
+        try:
+            import cartes_match
+            import deals
+            l = deals.memes_ventes(cartes_match.cible_titre(x.get("titre") or ""), l)
+        except Exception:
+            return None
+        px = sorted(float(v["prix"]) for v in l)
+        if len(px) < 3:
+            return None
+        return px[len(px) // 2] if len(px) % 2 else (px[len(px) // 2 - 1] + px[len(px) // 2]) / 2
+
+
+# -- les cartes du Radar a re-mesurer (autos, patchs, numerotees) ------------------------------------------------------
+# La banque YG suit deja chaque Young Guns. Pour les autres cartes, on garde chaque jour un ECHANTILLON du Radar (choisi
+# par une empreinte de l'annonce, pas par nous : aucune main pour choisir les bonnes) et on cherche leurs ventes 30, 60 et
+# 90 jours plus tard (+10 jours pour avoir les ventes autour). Ces recherches entrent dans notre archive comme toutes les
+# autres. Budget : SUIVIS_JOUR cartes par jour, RECHERCHES_JOUR recherches par jour au plus (credits SoldComps).
+SUIVIS_JOUR = 6
+RECHERCHES_JOUR = 12
+
+
+def _suivis_chemin():
+    return os.path.join(dossier(), "suivis.json")
+
+
+def _suivis():
+    try:
+        with open(_suivis_chemin(), encoding="utf-8") as f:
+            return json.load(f) or []
+    except (OSError, ValueError):
+        return []
+
+
+def _suivis_ecrire(l):
+    tmp = _suivis_chemin() + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(l, f, ensure_ascii=False)
+    os.replace(tmp, _suivis_chemin())
+
+
+def _planifier(jour, radar):
+    import cartes_match
+    cands = [x for x in radar if not x.get("g") and x.get("j") and x.get("prix") and x.get("titre")]
+    tri = lambda x: hashlib.sha256((jour + str(x.get("id"))).encode()).hexdigest()       # le hasard, pas un choix
+    bons = sorted([x for x in cands if x.get("etat") in BON and (x.get("rabais") or 0) >= RABAIS_MIN], key=tri)
+    att = sorted([x for x in cands if x.get("etat") in ("flambee", "retombee", "sortie")], key=tri)
+    rest = sorted([x for x in cands if x not in bons and x not in att], key=tri)
+    pris = (bons[:SUIVIS_JOUR // 2] + att[:1] + rest)[:SUIVIS_JOUR]
+    if not pris:
+        return 0
+    l = _suivis()
+    for x in pris:
+        q = (cartes_match.requete_ebay(cartes_match.cible_titre(x["titre"])) or "").strip()
+        if q:
+            l.append({"jour": jour, "id": x.get("id"), "q": q, "faits": []})
+    _suivis_ecrire(l[-3000:])
+    return len(pris)
+
+
+def rechercher_suivis(aujourd=None, maxi=None):
+    """Les recherches arrivees a echeance (jour + 30/60/90 + 10), les plus anciennes d'abord."""
+    auj = (aujourd or date.today()).toordinal()
+    l = _suivis()
+    dus = []
+    for s_ in l:
+        d0 = date.fromisoformat(s_["jour"]).toordinal()
+        for h in HORIZONS:
+            if h not in s_["faits"] and auj >= d0 + h + 10:
+                dus.append((d0 + h, s_, h))
+    dus.sort(key=lambda t: t[0])
+    cpt_ch = os.path.join(dossier(), "recherches_jour.json")
+    jr = date.fromordinal(auj).isoformat()
+    try:
+        with open(cpt_ch, encoding="utf-8") as f:
+            cpt = json.load(f)
+    except (OSError, ValueError):
+        cpt = {}
+    deja = cpt.get("n", 0) if cpt.get("jour") == jr else 0
+    reste = max(0, (maxi or RECHERCHES_JOUR) - deja)                 # le tour passe chaque heure : un plafond PAR JOUR
+    n = 0
+    try:
+        import vendues
+    except Exception:
+        return 0
+    for _, s_, h in dus[:reste]:
+        try:
+            r = vendues.rechercher(s_["q"], fond=True, usage="preuve")
+        except Exception:
+            break
+        if r.get("erreur") in ("plafond du jour", "inactif"):
+            break
+        s_["faits"].append(h)
+        n += 1
+    if n:
+        _suivis_ecrire(l)
+        with open(cpt_ch, "w", encoding="utf-8") as f:
+            json.dump({"jour": jr, "n": deja + n}, f)
+    return n
 
 
 def statut():
     ch = chaine()
     return {"jours": len(ch), "premier": ch[0]["jour"] if ch else None, "dernier": ch[-1] if ch else None,
-            "horodates": sum(1 for e in ch if e.get("ots")), "public_apres_j": DELAI_PUBLIC_J}
+            "horodates": sum(1 for e in ch if e.get("ots")), "public_apres_j": DELAI_PUBLIC_J, "suivis": len(_suivis())}
 
 
 def tour(aujourd=None):
@@ -302,6 +479,13 @@ def tour(aujourd=None):
     else:
         horodater_en_attente()
     try:
+        out["recherches"] = rechercher_suivis(aujourd)
+    except Exception as ex:
+        out["recherches_erreur"] = repr(ex)[:120]
+    try:
+        g = resultats_garde() or {}
+        if str(g.get("le") or "")[:10] == (aujourd or date.today()).isoformat() and not out.get("fige"):
+            return out                                      # deja calcule aujourd'hui (le tour passe chaque heure)
         r = resultats(aujourd)
         with open(os.path.join(dossier(), "resultats.json"), "w", encoding="utf-8") as f:
             json.dump({**r, "le": datetime.now().isoformat(timespec="minutes")}, f, ensure_ascii=False)
