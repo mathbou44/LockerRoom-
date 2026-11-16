@@ -7338,7 +7338,7 @@ class Api:
             ch = self.chasses_liste().get("chasses") or []
             cle = (comptes.courant() or "local") + ":" + hashlib.md5(json.dumps(
                 [[tuple(a) for a in al], self.deals_profil_lire(), self.reglages_lire().get("pays"), self._est_admin(), vue_simulee(), ch,
-                 "score-v3"],                         # 16 nov 2026 : le bareme de l'expert (A+ a E) : les vieux Radars ne servent plus
+                 "score-v4"],                         # 16 nov 2026 : Radar a neuf (bareme A+ a E, petits vendeurs filtres, noms)
                 sort_keys=True, default=str).encode()).hexdigest()
         except Exception:
             cle = None
@@ -7490,12 +7490,17 @@ class Api:
 
         # 11 nov 2026 (Mathieu : « juste 80 cartes dans le Radar ? ») : chaque recherche eBay rapporte deja jusqu'a 200 annonces
         # (meme cout) ; on en garde beaucoup plus qu'avant (24 -> 60 par joueur, 12 -> 30 pour les rangees automatiques)
+        # 16 nov 2026 (Mathieu : « impossible qu'il y ait juste 40 cartes dans le Radar ») : le filtre de qualite (B et plus)
+        # passait APRES la coupe a 30-60 annonces (les encans qui finissent d'abord, souvent des bases) : il ne restait presque
+        # rien. On garde maintenant toutes les annonces trouvees (meme cout eBay) ; la coupe se fait apres le filtre (« _cap »)
         def un_joueur(f, budget_defaut=None, limite=60):
-            l = self._radar_annonces(f, prof.get("collectionne"), prof.get("prix_min"), prof.get("prix_max") or budget_defaut, limite=limite)
+            l = self._radar_annonces(f, prof.get("collectionne"), prof.get("prix_min"), prof.get("prix_max") or budget_defaut,
+                                     limite=limite if not Api.RADAR_FILTRE else 300)
             eq = Api.equipe_fav(f)
             if eq:                               # 15 nov 2026 : une equipe (pas de pastilles de joueur)
-                return {"joueur": f, "equipe": eq["nom"], "annonces": l[:limite], "n": len(l), "pastilles": [], "indice": None, "semaine": None}
-            return {"joueur": f, "annonces": l[:limite], "n": len(l), **self._pastilles_joueur(f)}
+                return {"joueur": f, "equipe": eq["nom"], "annonces": l, "n": len(l), "pastilles": [], "indice": None, "semaine": None,
+                        "_cap": limite}
+            return {"joueur": f, "annonces": l, "n": len(l), "_cap": limite, **self._pastilles_joueur(f)}
 
         taches = [("alerte", a, lambda a=a: une_alerte(a)) for a in al]
         taches += [("vendeur", v, lambda v=v: un_vendeur(v)) for v in vendeurs]
@@ -7606,7 +7611,7 @@ class Api:
             petits = garde(petits)          # 16 nov 2026 (« pourquoi ces E sont la ») : les encans des petits vendeurs aussi
             for g in pour_toi + decouvrir + chauds_creux + chasses + types + list(groupes or []):
                 if isinstance(g, dict) and "annonces" in g:
-                    g["annonces"] = garde(g.get("annonces"))
+                    g["annonces"] = garde(g.get("annonces"))[:g.pop("_cap", None) or None]
             for v in vend:
                 if isinstance(v, dict) and "annonces" in v:
                     v["annonces"] = garde(v.get("annonces"))

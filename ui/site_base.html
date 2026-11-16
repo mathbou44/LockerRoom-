@@ -339,6 +339,14 @@ section[id], div[id].ancre{scroll-margin-top:124px}
 .histoire .logo-g{width:100%; max-width:300px; aspect-ratio:1; margin:0 auto; border-radius:32px; display:flex; align-items:center; justify-content:center; background:radial-gradient(60% 60% at 50% 50%, rgba(185,190,255,.12), transparent 70%), var(--carte); border:1px solid var(--ligne)}
 .histoire .logo-g img{width:58%; display:block; transform:translateX(4%); filter:drop-shadow(0 0 40px rgba(185,190,255,.3))}
 .histoire p{color:#DCD9E2; font-size:19px; line-height:1.65; margin:0 0 16px} .histoire .sig{color:var(--doux); font-size:16px}
+/* 16 nov 2026 (Mathieu : « modifier le layout, c'est vraiment trop haut et bizarre ») : le logo flottait au milieu d'une longue
+   colonne de texte. Le logo reste en haut (et suit la lecture), le texte passe sur deux colonnes a l'ordi, plus serre */
+.histoire{grid-template-columns:240px minmax(0, 1fr); align-items:start; gap:48px}
+.histoire .logo-g{position:sticky; top:96px; max-width:240px}
+.histoire p{font-size:17.5px; line-height:1.6; margin:0 0 14px}
+@media (min-width:1100px){ .histoire > div:last-child{column-count:2; column-gap:44px} .histoire > div:last-child > *{break-inside:avoid}
+  .histoire > div:last-child > .kicker{column-span:all} }
+@media (max-width:800px){ .histoire{grid-template-columns:1fr; gap:22px} .histoire .logo-g{position:static; max-width:150px} }
 .histoire p.fort{padding:14px 18px; border-radius:16px; background:var(--carte); border:1px solid var(--ligne); border-left:3px solid #B9BEFF; color:var(--texte)}
 .contact{display:flex; flex-wrap:wrap; gap:12px; margin-top:24px}
 /* 16 nov 2026 (Mathieu : « grossir les titres et le texte ») : une marche de plus partout, l'ecart entre les sections reduit */
