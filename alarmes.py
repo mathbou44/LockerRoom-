@@ -18,10 +18,10 @@ import os
 import time
 from datetime import datetime, timedelta
 
-TYPES = ["prix_cible", "gros_deal", "encan_fin", "en_feu", "acheteurs", "vendu", "mes_joueurs", "iq_nouvelle", "iq_occasion", "iq_haut"]
+TYPES = ["prix_cible", "gros_deal", "encan_fin", "en_feu", "acheteurs", "vendu", "mes_joueurs", "iq_nouvelle", "iq_occasion", "iq_haut", "marche_bas"]
 # 28 oct 2026 (audit Apple 4.5.4) : les alertes « promotionnelles » (deals, joueur en feu) seulement si l'utilisateur les coche
 DEFAUT = {"prix_cible": True, "gros_deal": False, "encan_fin": True, "en_feu": False, "acheteurs": True, "vendu": True,
-          "mes_joueurs": False, "iq_nouvelle": False, "iq_occasion": False, "iq_haut": False, "seuil_deal": 40}
+          "mes_joueurs": False, "iq_nouvelle": False, "iq_occasion": False, "iq_haut": False, "marche_bas": False, "seuil_deal": 40}
 MAX_JOUR = 3
 NUIT = (22, 8)
 
@@ -92,6 +92,33 @@ def iq_haut(api, etat, mes=None, maint=None):
         texte = (f"Son indice est maintenant à {int(round(ind))} sur 100 : ses cartes sont plus recherchées" if quoi == "monte"
                  else f"Indice {int(round(ind))} sur 100 : un des joueurs les plus recherchés en ce moment")
         if _notifier(api, etat, f"iqh:{k}:{semaine}", titre, texte, "#joueur/" + nom, maint=maint):
+            return 1
+    return 0
+
+
+def marche_bas(api, etat, mes=None, maint=None):
+    """16 nov 2026 (Mathieu : « savoir quand un joueur cle est plus bas qu'a l'habitude ; ca tend a remonter ») : un de SES
+    joueurs suivis est un joueur cle au marche bas (marche_cles, verifie contre le hasard). Une fois par joueur aux 14 jours,
+    une seule par passe. L'ecart en %, jamais un prix."""
+    import cartes_match
+    import marche_cles
+    suivis = set()
+    try:
+        suivis |= {cartes_match.norm(f) for f in (api.deals_profil_lire().get("favoris") or []) if str(f).strip()}
+    except Exception:
+        pass
+    suivis |= set((mes or {}).keys())
+    if not suivis:
+        return 0
+    quinz = datetime.now().strftime("%G") + "-" + str(int(datetime.now().strftime("%V")) // 2)
+    for x in marche_cles.liste_bas():
+        k = cartes_match.norm(x["nom"])
+        if k not in suivis:
+            continue
+        e = x.get("ecart_pct")
+        titre = f"{x['nom']} : marché bas" + (f" ({e} %)" if e is not None and e < 0 else "")
+        texte = "Ses cartes sont sous leur prix habituel. D'habitude, ça remonte : c'est le moment de regarder."
+        if _notifier(api, etat, f"mb:{k}:{quinz}", titre, texte, "#joueur/" + x["nom"], maint=maint):
             return 1
     return 0
 
@@ -337,6 +364,12 @@ def verifier(api, maint=None):
             faits["iq_haut"] = iq_haut(api, etat, mes, maint) or 0
         except Exception as e:
             print("Alertes SlabIQ haut : " + repr(e), flush=True)
+
+    if r.get("marche_bas"):
+        try:
+            faits["marche_bas"] = marche_bas(api, etat, mes, maint) or 0
+        except Exception as e:
+            print("Alertes marche bas : " + repr(e), flush=True)
 
     # -- vendeur : acheteurs interesses, carte vendue -------------------------------------------------------------
     if r["acheteurs"]:
