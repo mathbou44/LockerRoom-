@@ -1565,7 +1565,7 @@ class Api:
         perso = ((_d.lire_vite().get("vendeurs_perso") or {}).get(str(comptes.courant() if comptes.MULTI else "local")) or [])
         return {"ok": True, "collectionne": [x for x in p.get("collectionne") or [] if x in self.PROFIL_COLL],
                 "favoris": p.get("favoris") or [], "prix_min": p.get("prix_min"), "prix_max": p.get("prix_max"),
-                "vendeurs": perso, "pro": forfaits.est_pro(), "vendeurs_max": _d.VENDEURS_PERSO_MAX,
+                "iq_min": p.get("iq_min"), "vendeurs": perso, "pro": forfaits.est_pro(), "vendeurs_max": _d.VENDEURS_PERSO_MAX,
                 "favoris_max": self.FAVORIS_MAX_PRO if forfaits.est_pro() else self.FAVORIS_MAX,
                 "favoris_max_pro": self.FAVORIS_MAX_PRO}
 
@@ -1594,11 +1594,12 @@ class Api:
         coupes = fav[fmax:]
         fav = fav[:fmax]
         p = {"collectionne": [x for x in d.get("collectionne") or [] if x in self.PROFIL_COLL], "favoris": fav,
-             "prix_min": _float(d.get("prix_min")) or None, "prix_max": _float(d.get("prix_max")) or None}
+             "prix_min": _float(d.get("prix_min")) or None, "prix_max": _float(d.get("prix_max")) or None,
+             "iq_min": (max(0, min(95, int(_float(d.get("iq_min")) or 0))) if d.get("iq_min") is not None else None)}
         # 12 nov 2026 : une cle absente garde sa valeur (Reglages > Mes vendeurs n'envoie que « vendeurs »)
         avant = self.reglages_lire().get("deals_profil")
         if isinstance(avant, dict):
-            for k in ("collectionne", "favoris", "prix_min", "prix_max"):
+            for k in ("collectionne", "favoris", "prix_min", "prix_max", "iq_min"):
                 if k not in d:
                     p[k] = avant.get(k)
         if p["prix_min"] and p["prix_max"] and p["prix_min"] > p["prix_max"]:
@@ -1691,17 +1692,25 @@ class Api:
     RADAR_FILTRE = True                                                      # (les tests du tri le coupent)
 
     @staticmethod
-    def _radar_digne(x, prix_min=None):
+    def _radar_digne(x, prix_min=None, iq_min=None):
         if not isinstance(x, dict):
             return False
         sc = x.get("score")
+        lim = Api.RADAR_PRIX_MIN if prix_min is None else float(prix_min)
+        tot = _float(x.get("total"))
+        # 16 nov 2026 (Mathieu : « me donner la chance de mettre des cartes de tous les Slab Score si je veux ») : la note
+        # minimum choisie dans les Filtres remplace la regle par defaut ; 0 = toutes les cartes (meme les bases)
+        if iq_min is not None:
+            if tot is not None and tot < lim:
+                return False
+            if not iq_min:
+                return True
+            return sc is not None and sc >= float(iq_min) and not (x.get("sorte") == "D" and float(iq_min) >= 50)
         if sc is None or x.get("sorte") == "D":                              # jamais une carte de base (ni un lot)
             return False
         suivi = "joueur" in (x.get("pour_moi") or [])
         if sc < (Api.RADAR_SCORE_MIN_SUIVI if suivi else Api.RADAR_SCORE_MIN):
             return False
-        tot = _float(x.get("total"))
-        lim = Api.RADAR_PRIX_MIN if prix_min is None else float(prix_min)
         if tot is not None and tot < lim:
             return False
         return True
@@ -3715,14 +3724,27 @@ class Api:
     # etait calcule A LA VENTE, avec le cout connu a ce moment-la (souvent aucun) ; quand l'achat eBay se reliait ensuite
     # (cout 59 $), le profit restait l'ancien (le net de la vente). Le profit d'une vente = prix + port charge - frais - port
     # paye - cout, refait chaque fois que le cout change, et une fois pour toutes les ventes deja faites.
-    @staticmethod
-    def _profit_juste(c, cid=None):
-        """Refait le profit des cartes VENDUES (pas en consignation) a partir de leurs chiffres ; cid=None : toutes."""
-        q = ("UPDATE cartes SET profit = ROUND(COALESCE(prix_vendu,0) + COALESCE(port_charge,0) - COALESCE(frais,0) - "
-             "COALESCE(port_paye,0) - COALESCE(cout,0), 2) WHERE statut='Vendue' AND consignataire_id IS NULL AND prix_vendu IS NOT NULL "
-             "AND frais IS NOT NULL AND ABS(COALESCE(profit,0) - (COALESCE(prix_vendu,0) + COALESCE(port_charge,0) - COALESCE(frais,0) - "
-             "COALESCE(port_paye,0) - COALESCE(cout,0))) > 0.01")
-        return c.execute(q + (" AND id=?" if cid is not None else ""), ((int(cid),) if cid is not None else ())).rowcount
+    def _profit_juste(self, c, cid=None):
+        """Refait le profit des cartes VENDUES (pas en consignation) a partir de leurs chiffres ; cid=None : toutes.
+        16 nov 2026 (Mathieu : « payee 45, vendue 35 : profit 0 ? devrait etre -10 au minimum ») : une vente importee sans
+        frais (frais NULL) gardait son vieux profit. Les frais manquants d'une vente eBay sont maintenant estimes avec les
+        reglages (13,25 % + 0,40 $ sur prix + port charge), et le profit refait comme les autres."""
+        pct, fixe = REGLAGES_DEFAUT.get("frais_ebay_pct", 13.25) / 100, REGLAGES_DEFAUT.get("frais_ebay_fixe", 0.40)
+        try:                                         # les reglages du compte, lus sur la meme connexion (jamais de 2e verrou)
+            for k, v in c.execute("SELECT k, v FROM reglages WHERE k IN ('frais_ebay_pct', 'frais_ebay_fixe')"):
+                if k == "frais_ebay_pct":
+                    pct = float(json.loads(v)) / 100
+                else:
+                    fixe = float(json.loads(v))
+        except Exception:
+            pass
+        fr = ("COALESCE(frais, CASE WHEN COALESCE(canal,'eBay')='eBay' THEN ROUND((COALESCE(prix_vendu,0) + COALESCE(port_charge,0)) * ? + ?, 2) "
+              "ELSE 0 END)")
+        calc = f"ROUND(COALESCE(prix_vendu,0) + COALESCE(port_charge,0) - {fr} - COALESCE(port_paye,0) - COALESCE(cout,0), 2)"
+        q = (f"UPDATE cartes SET profit = {calc} WHERE statut='Vendue' AND consignataire_id IS NULL AND prix_vendu IS NOT NULL "
+             f"AND ABS(COALESCE(profit,0) - {calc}) > 0.01")
+        par = [pct, fixe, pct, fixe]
+        return c.execute(q + (" AND id=?" if cid is not None else ""), par + ([int(cid)] if cid is not None else [])).rowcount
 
     _PROFITS_REPARES = {}
 
@@ -7606,7 +7628,8 @@ class Api:
         # jamais sous 10 $ (ou sous le prix minimum choisi par l'utilisateur)
         try:
             _pm = _float(prof.get("prix_min")) if isinstance(prof, dict) else None
-            garde = (lambda l: [x for x in (l or []) if Api._radar_digne(x, _pm)]) if Api.RADAR_FILTRE else (lambda l: l)
+            _iq = prof.get("iq_min") if isinstance(prof, dict) else None
+            garde = (lambda l: [x for x in (l or []) if Api._radar_digne(x, _pm, _iq)]) if Api.RADAR_FILTRE else (lambda l: l)
             out = garde(out)
             petits = garde(petits)          # 16 nov 2026 (« pourquoi ces E sont la ») : les encans des petits vendeurs aussi
             for g in pour_toi + decouvrir + chauds_creux + chasses + types + list(groupes or []):
@@ -7637,7 +7660,7 @@ class Api:
                 pass
         return {"ok": True, "deals": out[:120], "cibles": groupes, "vendeurs": vend, "pour_toi": pour_toi,
                 "decouvrir": decouvrir, "chauds": chauds, "creux": creux_l, "petits": petits, "chasses": chasses, "types": types, "alerte_feu": feu, "pays": pays,
-                "profil": {k: prof.get(k) for k in ("collectionne", "favoris", "prix_min", "prix_max")},
+                "profil": {k: prof.get(k) for k in ("collectionne", "favoris", "prix_min", "prix_max", "iq_min")},
                 "profil_vide": not (prof.get("favoris") or prof.get("collectionne") or prof.get("prix_max")),
                 "partiel": bool(erreurs), "erreur_txt": msgs[0] if msgs else None,
                 "erreur_code": None if not erreurs or msgs else ("lent" if all(e.endswith("trop long") for e in erreurs) else "ebay"),
