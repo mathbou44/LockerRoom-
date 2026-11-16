@@ -259,12 +259,15 @@ class Deals(unittest.TestCase):
     def test_valeur_de_la_meme_carte(self):
         """26 oct 2026 : un Purple Shock a 1 $ ne « vaut » pas 70 $ parce que les autos de la recherche se vendent 70 $."""
         import deals
-        v = [{"titre": "2024 Donruss Optic Rated Rookie Bucky Irving #216 Purple Shock", "prix": p, "le": "2026-10-2" + str(i)}
+        # 16 nov 2026 : des dates relatives a aujourd'hui (des dates fixes sortaient de la fenetre des ventes avec le temps)
+        from datetime import date as _d, timedelta as _td
+        jr = lambda n: (_d.today() - _td(days=n)).isoformat()
+        v = [{"titre": "2024 Donruss Optic Rated Rookie Bucky Irving #216 Purple Shock", "prix": p, "le": jr(25 - i)}
              for i, p in enumerate([1, 1, 2, 3, 1])]
-        v += [{"titre": "2024 Donruss Optic Rated Rookie Bucky Irving #216 Auto /25", "prix": 70, "le": "2026-10-20"}] * 6
+        v += [{"titre": "2024 Donruss Optic Rated Rookie Bucky Irving #216 Auto /25", "prix": 70, "le": jr(26)}] * 6
         r = deals.valeur_annonce({"titre": "2024 Panini Donruss Optic - Rated Rookie Bucky Irving #216 Purple Shock", "item_id": "x"}, v, [])
         # une seule vente (3 $) et des annonces a 21 $ : pas de valeur de deal (Red Prism /199, 26 oct 2026)
-        une = [{"titre": "2025-26 O-Pee-Chee Platinum Red Prism Michael Callahan Marquee Rookie /199", "prix": 3, "le": "2026-10-01"}]
+        une = [{"titre": "2025-26 O-Pee-Chee Platinum Red Prism Michael Callahan Marquee Rookie /199", "prix": 3, "le": jr(30)}]
         ann = [{"item_id": str(i), "titre": "2025-26 O-Pee-Chee Platinum Red Prism Michael Callahan Marquee Rookie /199", "prix_cad": 21}
                for i in range(6)]
         self.assertIsNone(deals.valeur_annonce({"titre": une[0]["titre"], "item_id": "z"}, une, ann))

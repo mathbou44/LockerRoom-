@@ -340,7 +340,17 @@ def tableau(api):
         alertes.append({"k": "couts", "n": couts["a_remplir"], "ton": "acc", "section": "services"})
     if revenus["annualise"] >= 0.8 * revenus["seuil_tps"]:
         alertes.append({"k": "tps", "ton": "rouge", "section": "obligations"})
-    return {"ok": True, "le": datetime.now().isoformat(timespec="minutes"),
+    # -- la preuve en direct (preuve.py) : jours figes, horodatage, chaine intacte, premiers resultats
+    try:
+        import preuve
+        pv = {**preuve.statut(), "verification": preuve.verifier(), "resultats": (preuve.resultats_garde() or {}).get("par_horizon")}
+    except Exception as e:
+        pv = {"erreur": repr(e)[:120]}
+    if pv.get("verification") and not pv["verification"].get("ok"):
+        alertes.insert(0, {"k": "preuve_brisee", "ton": "rouge", "section": "preuve"})
+    elif pv.get("jours") is not None and (not pv.get("dernier") or pv["dernier"]["jour"] < (aujourd - timedelta(days=1)).isoformat()):
+        alertes.append({"k": "preuve_retard", "ton": "or", "section": "preuve"})
+    return {"ok": True, "le": datetime.now().isoformat(timespec="minutes"), "preuve": pv,
             "abonnes": {**{k: v for k, v in a.items() if k not in ("comptes", "prix")}, "semaines": sem, "conversion_pct": conv, "annules": annules,
                         "derniers": [{"username": c["username"], "statut": c["statut"], "cree_le": c.get("cree_le"), "vu_le": c.get("vu_le"), "connexion": c.get("connexion")}
                                      for c in sorted(cpts, key=lambda x: str(x.get("cree_le") or ""), reverse=True)[:10]]},

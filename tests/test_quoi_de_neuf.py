@@ -59,7 +59,9 @@ c.execute("INSERT INTO cartes (titre, joueur, valeur, statut, cree_le) VALUES (?
 c.execute("INSERT INTO cartes (titre, joueur, prix_vendu, statut, cree_le, vendu_le) VALUES (?,?,?,?,?,?)",
           ("Price auto", "Carey Price", 80, "Vendue", avant, datetime.now().isoformat(timespec="seconds")))
 c.commit(); c.close()
-a.reglages_sauver({"visite_le": avant})
+# 16 nov 2026 : entre minuit et 9 h, « 9 h plus tot » tombe la veille : la valeur notee a la 1re ouverture compte pour ce jour-la
+h0 = dict(r0["valeur_hist"]); h0.setdefault(avant[:10], list(r0["valeur_hist"].values())[0])
+a.reglages_sauver({"visite_le": avant, "valeur_hist": h0})
 import demande_legale
 demande_legale.marche_equipe = mq
 r = a.quoi_de_neuf()

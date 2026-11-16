@@ -241,7 +241,7 @@ app.config["MAX_CONTENT_LENGTH"] = 64 * 1024 * 1024        # 5 nov 2026 : photos
 #        # 23 oct 2026 - 2 photos ; 3 nov 2026 : + rasantes et 8 gros plans des coins
 # pages qui restent publiques : break partage, retour et avis eBay, pages legales, icones
 _PUBLIQUES = ("/b/", "/api/b/", "/api/ebay_retour", "/ebay/suppression-compte", "/confidentialite", "/conditions",
-              "/support", "/tarifs", "/pricing", "/a-propos", "/about", "/robots.txt", "/sitemap.xml", "/logo_sc_", "/syne-800.woff2", "/manrope-", "/barlow-", "/connexion", "/icone", "/favicon", "/manifest.json", "/stripe/webhook", "/apple/notifications", "/sante", "/csp-rapport")
+              "/support", "/tarifs", "/pricing", "/a-propos", "/about", "/preuve", "/proof", "/robots.txt", "/sitemap.xml", "/logo_sc_", "/syne-800.woff2", "/manrope-", "/barlow-", "/connexion", "/icone", "/favicon", "/manifest.json", "/stripe/webhook", "/apple/notifications", "/sante", "/csp-rapport")
 
 
 import comptes  # noqa: E402
@@ -817,21 +817,27 @@ SITE_PAGES = {
     "tarifs": ("/tarifs", "site_tarifs.html", "Tarifs · SlabCoach", "Pricing · SlabCoach",
                "Gratuit pour toujours, ou Pro à 7,99 $ CA par mois. 14 jours de Pro offerts, sans carte de crédit.",
                "Free forever, or Pro at $7.99 CAD a month. 14 days of Pro on us, no credit card."),
+    "preuve": ("/preuve", None, "La preuve en direct · SlabCoach", "Live proof · SlabCoach",
+               "Chaque jour, ce que SlabCoach dit est fige, enchaine et horodate avant de connaitre la suite. Les resultats arrivent 30, 60 et 90 jours plus tard.",
+               "Every day, what SlabCoach says is frozen, chained and timestamped before the outcome is known. Results come 30, 60 and 90 days later."),
     "apropos": ("/a-propos", "site_apropos.html", "Qui nous sommes · SlabCoach", "About us · SlabCoach",
                 "SlabCoach est fait au Québec par un collectionneur, pour que chaque collectionneur achète et vende avec les vrais chiffres.",
                 "SlabCoach is made in Quebec by a collector, so every collector can buy and sell with the real numbers."),
 }
 
 
-def _page_vitrine(page="accueil"):
+def _page_vitrine(page="accueil", contenu_force=None):
     """27 oct 2026 - slabcoach.com pour un visiteur ; 16 nov 2026 : trois pages (accueil, tarifs, qui nous sommes)."""
     import html as _h
     chemin, fichier, t_fr, t_en, d_fr, d_en = SITE_PAGES.get(page) or SITE_PAGES["accueil"]
     try:
         with open(os.path.join(DOSSIER_UI, "site_base.html"), encoding="utf-8") as f:
             html = f.read()
-        with open(os.path.join(DOSSIER_UI, fichier), encoding="utf-8") as f:
-            contenu = f.read()
+        if contenu_force is not None:
+            contenu = contenu_force
+        else:
+            with open(os.path.join(DOSSIER_UI, fichier), encoding="utf-8") as f:
+                contenu = f.read()
     except OSError:
         from flask import redirect
         return redirect("/connexion")
@@ -859,6 +865,101 @@ def page_tarifs():
         from flask import redirect
         return redirect("/connexion")                                # app iPhone : pas les prix du site (regles d'Apple)
     return _page_vitrine("tarifs")
+
+
+@app.route("/preuve")
+@app.route("/proof")
+def page_preuve():
+    import preuve
+    import html as _h
+    p = preuve.public()
+    t = lambda fr, en: f'<span class="fr">{fr}</span><span class="en">{en}</span>'
+    ch = list(reversed(p["chaine"]))
+    rs = (p.get("resultats") or {}).get("par_horizon") or {}
+    lignes_r = ""
+    for h in ("30", "60", "90"):
+        r = rs.get(h) or {}
+        sa, av = r.get("sans"), r.get("avec")
+        if sa and av:
+            lignes_r += (f'<tr><td>{h} {t("jours", "days")}</td><td class="n rouge">{sa["mediane_pct"]:+.1f} %</td><td class="n vert">{av["mediane_pct"]:+.1f} %</td>'
+                         f'<td class="n">{av["vaut_plus_pct"]} % / {sa["vaut_plus_pct"]} %</td><td class="n">{av["n"]} / {sa["n"]}</td></tr>')
+    if ch:
+        prem = ch[-1]["jour"]
+        try:
+            pret = (date.fromisoformat(prem) + timedelta(days=30 + 14)).isoformat()
+        except ValueError:
+            pret = ""
+    else:
+        prem, pret = "", ""
+    res_html = (f'<table class="tab-f"><thead><tr><th>{t("Après", "After")}</th><th>{t("Sans SlabCoach", "Without SlabCoach")}</th><th>{t("Avec SlabCoach", "With SlabCoach")}</th>'
+                f'<th>{t("Valaient plus (avec / sans)", "Worth more (with / without)")}</th><th>{t("Cartes (avec / sans)", "Cards (with / without)")}</th></tr></thead><tbody>{lignes_r}</tbody></table>') if lignes_r else (
+        f'<p class="intro">{t(f"Les premiers résultats en direct arrivent vers le {pret} : il faut 30 jours, puis 2 semaines de ventes pour mesurer la valeur.", f"The first live results arrive around {pret}: it takes 30 days, then 2 weeks of sales to measure value.")}</p>' if pret else "")
+    v = p.get("verification") or {}
+    def _rang(e):
+        j = _h.escape(e["jour"])
+        fich = ('<a href="/preuve/' + j + '.json">JSON</a> · ') if e.get("fichier") else (t("public après %d j" % p["public_apres_j"], "public after %d d" % p["public_apres_j"]) + " · ")
+        ots = ('<a href="/preuve/' + j + '.json.ots">.ots</a>') if e.get("ots") else ""
+        return ("<tr><td>" + j + '</td><td class="n">' + str(e.get("n_marche", 0)) + " + " + str(e.get("n_radar", 0)) + "</td>"
+                + '<td><code title="' + _h.escape(e["sha256"]) + '">' + _h.escape(e["sha256"][:16]) + "…</code></td>"
+                + "<td>" + ("✓ Bitcoin" if e.get("ots") else t("en attente", "pending")) + "</td><td>" + fich + ots + "</td></tr>")
+    rangs = "".join(_rang(e) for e in ch[:120])
+    contenu = f"""<div class="page-tete"><div class="conteneur">
+  <p class="kicker holo-t">{t("La preuve en direct", "Live proof")}</p>
+  <h1>{t('Pas de résultats arrangés. <span class="holo-t">Tout est figé avant.</span>', 'No cherry-picked results. <span class="holo-t">Everything is frozen first.</span>')}</h1>
+  <p class="sous-titre">{t("Chaque jour, ce que SlabCoach dit est enregistré avant de connaître la suite. Personne, pas même nous, ne peut le changer après coup.", "Every day, what SlabCoach says is recorded before the outcome is known. No one, not even us, can change it afterwards.")}</p>
+</div></div>
+<section style="padding-top:24px"><div class="conteneur">
+  <div class="etapes">
+    <div class="etape"><b>1</b><h3>{t("Figé chaque jour", "Frozen every day")}</h3><p>{t("Le prix de chaque Young Guns suivie, le moment SlabIQ, le score et chaque deal du Radar.", "The price of every tracked Young Guns, the SlabIQ moment, the score and every Radar deal.")}</p></div>
+    <div class="etape"><b>2</b><h3>{t("Empreinte horodatée", "Timestamped fingerprint")}</h3><p>{t("L’empreinte du fichier (SHA-256) est enchaînée à la veille et ancrée dans Bitcoin (OpenTimestamps). Changer un seul chiffre casse la preuve.", "The file’s fingerprint (SHA-256) is chained to the day before and anchored in Bitcoin (OpenTimestamps). Changing a single number breaks the proof.")}</p></div>
+    <div class="etape"><b>3</b><h3>{t("Le résultat, plus tard", "The result, later")}</h3><p>{t("30, 60 et 90 jours après, on mesure ce que les cartes valaient vraiment. Les fichiers sont publiés après 30 jours : tout le monde peut vérifier.", "30, 60 and 90 days later, we measure what the cards were really worth. Files are published after 30 days: anyone can check.")}</p></div>
+  </div>
+</div></section>
+<section><div class="conteneur">
+  <p class="kicker holo-t">{t("Résultats en direct", "Live results")}</p>
+  <h2>{t("Sans SlabCoach contre avec SlabCoach", "Without vs with SlabCoach")}</h2>
+  {res_html}
+</div></section>
+<section><div class="conteneur">
+  <p class="kicker holo-t">{t("La chaîne", "The chain")}</p>
+  <h2>{t(f"{len(ch)} jour(s) figé(s)", f"{len(ch)} day(s) frozen")} · {"✓ " + t("chaîne intacte", "chain intact") if v.get("ok") else t("à vérifier", "to check")}</h2>
+  <div style="overflow-x:auto"><table class="tab-f"><thead><tr><th>{t("Jour", "Day")}</th><th>{t("Cartes + deals", "Cards + deals")}</th><th>SHA-256</th><th>{t("Horodatage", "Timestamp")}</th><th>{t("Fichiers", "Files")}</th></tr></thead><tbody>{rangs}</tbody></table></div>
+  <p class="note">{t("Pour vérifier : télécharge le fichier JSON d’un jour et son .ots, puis lance « ots verify » (opentimestamps.org). L’empreinte SHA-256 du JSON doit être celle de la chaîne.", "To verify: download a day’s JSON file and its .ots, then run “ots verify” (opentimestamps.org). The JSON’s SHA-256 must match the chain.")} <a href="/preuve/chaine.json">chaine.json</a></p>
+</div></section>"""
+    return _page_vitrine("preuve", contenu)
+
+
+@app.route("/preuve/chaine.json")
+def preuve_chaine():
+    import preuve
+    return jsonify(preuve.chaine())
+
+
+@app.route("/preuve/<jour>.json")
+def preuve_fichier(jour):
+    import preuve
+    import re as _re
+    if not _re.fullmatch(r"\d{4}-\d{2}-\d{2}", jour or "") or jour > (date.today() - timedelta(days=preuve.DELAI_PUBLIC_J)).isoformat():
+        return jsonify({"erreur": "Pas encore public"}), 404
+    try:
+        corps = preuve.lire_jour(jour)
+    except OSError:
+        return jsonify({"erreur": "Introuvable"}), 404
+    from flask import Response
+    return Response(corps, mimetype="application/json", headers={"Content-Disposition": f"attachment; filename={jour}.json"})
+
+
+@app.route("/preuve/<jour>.json.ots")
+def preuve_ots(jour):
+    import preuve
+    import re as _re
+    if not _re.fullmatch(r"\d{4}-\d{2}-\d{2}", jour or ""):
+        return jsonify({"erreur": "Introuvable"}), 404
+    ch = os.path.join(preuve.dossier(), jour + ".ots")
+    if not os.path.exists(ch):
+        return jsonify({"erreur": "Pas encore horodaté"}), 404
+    from flask import send_file
+    return send_file(ch, mimetype="application/octet-stream", as_attachment=True, download_name=jour + ".json.ots")
 
 
 @app.route("/a-propos")
@@ -1686,6 +1787,15 @@ def moment_yg_tour():
         out["etats"] = moment_yg.calculer_jour()
     banque_yg._meta("moment_jour", date.today().isoformat())
     out["journal_verifies"] = moment_yg.journal_verifier(_valeur_actuelle)
+    # 16 nov 2026 (Mathieu : « on doit etre bullet proof si on se fait challenger ») : chaque jour, ce que SlabCoach dit est
+    # fige, enchaine et horodate AVANT de connaitre la suite (voir preuve.py)
+    try:
+        import preuve
+        p = preuve.tour()
+        if p.get("fige"):
+            out["preuve"] = p["fige"]
+    except Exception as e:
+        print("Preuve : " + repr(e)[:200], flush=True)
     return out
 
 
