@@ -1574,6 +1574,12 @@ def _valeurs_auto():
                 print("Types de cartes : passe lancee", flush=True)
         except Exception as e:
             print("Types de cartes : " + str(e), flush=True)
+        try:                                    # 16 nov 2026 - SlabIQ contre l'expert : la boucle (1 fois/semaine)
+            import slabiq_expert
+            if slabiq_expert.passe_si_besoin():
+                print("SlabIQ expert : boucle lancee", flush=True)
+        except Exception as e:
+            print("SlabIQ expert : " + str(e), flush=True)
         try:                                    # 16 nov 2026 - les joueurs cles et leur marche bas (1 fois/jour, verifie)
             import marche_cles
             if marche_cles.passe_si_besoin():

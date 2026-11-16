@@ -173,9 +173,24 @@ def score(titre, joueur=None):
             total = None                     # 12 nov 2026 : pas assez d'indices dans le titre : pas de score invente
     except Exception as e:
         print("Score modele : " + repr(e), flush=True)
+    # 16 nov 2026 (Mathieu : « une carte peut sortir A+ pour un flip, pour collectionner, ou parce que le marche est chaud ;
+    # le score reste le meme, on explique quand on clique ») : le joueur evergreen (evergreen.py) et sa grosse carte
+    ev = None
+    try:
+        import evergreen
+        ev = evergreen.de(nom_j) if (nom_j := (j.title() if j and j == j.lower() else j)) else None
+    except Exception:
+        ev = None
+    prem = premium(c)
+    if ev and ev.get("evergreen") and prem:
+        ij = dict(ij or {}, indice=max(float((ij or {}).get("indice") or 0), float(ev["score"])))   # le plafond joueur suit l'evergreen
     total = ajuster_echange(plafond_joueur(plafond_inconnu(total, c, ij), c, ij), ij)
     k = _savoir(titre)
     total = plancher(total, k)
+    if total is not None and ev and ev.get("evergreen") and prem:
+        pe = parametres().get("plancher_evergreen")
+        if pe:
+            total = max(total, float(pe))
     nom = j.title() if j and j == j.lower() else j
     pil = list((ij or {}).get("pastilles") or [])
     mb = None
@@ -186,9 +201,51 @@ def score(titre, joueur=None):
         mb = None
     if mb:
         pil = ["marche_bas"] + [x for x in pil if x != "marche_bas"]
+    raison = raison_de(pil, mb, ev, prem, k)
     return {"score": int(round(total)) if total is not None else None, "joueur": nom or None, "indice": ij.get("indice") if ij else None,
-            "pastilles": pil, "semaine": (ij or {}).get("semaine"), "carte": c,
+            "pastilles": pil, "semaine": (ij or {}).get("semaine"), "carte": c, "raison": raison,
+            **({"evergreen": {"score": ev["score"], "raisons": ev["raisons"]}} if ev and ev.get("evergreen") else {}),
             **({"marche": {"ecart_pct": mb.get("ecart_pct")}} if mb else {}), **({"connaissance": k} if k else {})}
+
+
+def premium(c):
+    """16 nov 2026 : une « grosse carte » (ce que les collectionneurs gardent) : auto, patch, numerotee /99 et moins, recrue,
+    gradee, ou une sorte ultra / tres recherchee."""
+    c = c or {}
+    t = c.get("tirage")
+    ty = c.get("type") or {}
+    return bool(c.get("auto") or c.get("patch") or (t and t <= 99) or c.get("rc") or c.get("grade")
+                or ty.get("niveau") in ("ultra", "forte"))
+
+
+def raison_de(pil, mb, ev, prem, k=None):
+    """LA raison principale de la note, pour l'expliquer en un mot : « marche_bas » (le joueur cle sous sa normale),
+    « chaud » (en feu, en hausse, buzz), « long_terme » (evergreen et grosse carte, ou une carte mythique), sinon None.
+    (« flip » : une annonce sous le prix des ventes, dite par l'ecran du deal.)"""
+    pil = pil or []
+    if mb:
+        return "marche_bas"
+    if any(x in pil for x in ("en_feu", "en_hausse", "buzz")):
+        return "chaud"
+    if (ev and ev.get("evergreen") and prem) or (k and k.get("niveau") in ("graal", "chasse", "cle")):
+        return "long_terme"
+    return None
+
+
+_PARAMS = {"t": 0.0, "v": None}
+
+
+def parametres():
+    """Les reglages choisis par la boucle de l'expert (slabiq_expert), gardes 10 min ; defaut : un plancher A- (80)."""
+    import time as _t
+    if _PARAMS["v"] is None or _t.time() - _PARAMS["t"] > 600:
+        try:
+            import slabiq_expert
+            _PARAMS["v"] = slabiq_expert.params()
+        except Exception:
+            _PARAMS["v"] = {}
+        _PARAMS["t"] = _t.time()
+    return {"plancher_evergreen": 80, **(_PARAMS["v"] or {})}
 
 
 def annoter(x):

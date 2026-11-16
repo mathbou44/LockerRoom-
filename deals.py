@@ -2418,7 +2418,9 @@ def flux_hits(curseur):
 # 29 oct 2026 (Mathieu : « on doit passer toutes les cartes de ces vendeurs et des autres gros vendeurs de cartes de hockey,
 # ensuite on analyse le reste ») : pseudos verifies sur eBay le 29 oct. CF31 = « cf31_sports_cards » (pas « cf_31 »).
 # Groupe 1 : les specialistes du hockey ; groupe 2 : les mega-vendeurs multi-sports (leurs cartes de hockey seulement).
-VENDEURS_DEFAUT = ["savage.cards", "remi-card-trader", "cf31_sports_cards", "slabsharksinc", "wests01",     # hockey
+# 16 nov 2026 (Mathieu : « ajouter ce vendeur dans les suivis comme Savage, CF31 », THE HOBBY SPOT and QCB, Canada, 24K
+# ventes ; pseudo lu dans « A propos » de sa boutique)
+VENDEURS_DEFAUT = ["savage.cards", "remi-card-trader", "cf31_sports_cards", "slabsharksinc", "wests01", "thehobbyspot_dot_ca",     # hockey
                    "ultsportscards", "rakesecret", "sforget76", "dcsports87", "probstein123"]                 # + mega-vendeurs
 # 30 oct 2026 (Mathieu : « toujours passer le scan avec Savage en premier, ensuite Remi, ensuite CF31, Slab Sharks et le
 # reste ») : ces 4 vendeurs sont cherches SEULS (chacun ses pages d'encans, jamais noyes dans un groupe), dans cet ordre,
@@ -2515,7 +2517,7 @@ def groupes_vendeurs(vs=None):
         + [v for v in vs if v.lower() in vendeurs_dernier()]                   # 2 nov 2026 : les maisons a volume en dernier
     return [[v] for v in prio] + [autres[k:k + VENDEURS_PAR_APPEL] for k in range(0, len(autres), VENDEURS_PAR_APPEL)]
 VENDEURS_PAR_APPEL = 5                   # 5 vendeurs par recherche : chaque groupe a ses 10 pages d'encans (2 000)
-VENDEURS_V = 2
+VENDEURS_V = 3                  # 16 nov 2026 : + thehobbyspot_dot_ca (ajoute aux listes deja reglees)
 
 
 def vendeurs_suivis():

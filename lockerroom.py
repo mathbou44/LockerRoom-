@@ -1508,7 +1508,35 @@ class Api:
         if liste is not None:
             if isinstance(liste, str):
                 liste = re.split(r"[\s,;]+", liste)
-            return {"ok": True, "vendeurs": _d.regler_vendeurs(liste)}
+            # 16 nov 2026 (Mathieu : « THE HOBBY SPOT and QCB » : eBay montre le nom de la boutique, pas le pseudo) : un LIEN
+            # d'annonce (ou son numero) colle dans la liste -> le pseudo exact du vendeur, lu chez eBay
+            out, pas_lus = [], []
+            for x in liste:
+                x = str(x or "").strip()
+                if re.match(r"^https?://(www\.)?ebay\.us/", x, re.I):      # le lien « Partager » de l'app eBay : sa redirection
+                    try:
+                        import urllib.request
+                        with urllib.request.urlopen(urllib.request.Request(x, method="HEAD", headers={"User-Agent": "Mozilla/5.0"}), timeout=8) as rq:
+                            x = rq.geturl()
+                    except Exception:
+                        pass
+                m = re.search(r"(?:/itm/(?:[^/?#]*/)?|^)(\d{9,15})(?!\d)", x)
+                if m and ("ebay." in x.lower() or x.isdigit()):
+                    try:
+                        a = ebay_compte.article(m.group(1), fond=False)
+                        v = (a or {}).get("vendeur")
+                    except Exception:
+                        v = None
+                    if v:
+                        out.append(v)
+                    else:
+                        pas_lus.append(m.group(1))
+                    continue
+                out.append(x)
+            r = {"ok": True, "vendeurs": _d.regler_vendeurs(out)}
+            if pas_lus:
+                r["pas_lus"] = pas_lus
+            return r
         return {"ok": True, "vendeurs": _d.vendeurs_suivis()}
 
     def deals_vendeurs_liste(self):
@@ -8357,6 +8385,28 @@ class Api:
             except Exception:
                 pass
         return {"ok": True, **s}
+
+    # 16 nov 2026 (Mathieu : « SlabIQ doit proposer exactement ce qu'un expert aurait achete, pour un flip ou pour garder ») :
+    # l'admin juge des cartes du Radar (flip / garder / passe) ; SlabIQ se mesure et se regle contre ses jugements
+    def expert_noter(self, item_id=None, titre=None, choix=None, joueur=None, prix=None, score=None, raison=None):
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import slabiq_expert
+        x = slabiq_expert.noter(item_id, titre, choix, joueur, _float(prix), score, raison)
+        return {"ok": bool(x), "mesure": slabiq_expert.mesure()}
+
+    def expert_etat(self):
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import slabiq_expert
+        d = slabiq_expert.lire()
+        try:
+            import evergreen
+            ev = evergreen.liste(60)
+        except Exception:
+            ev = []
+        return {"ok": True, "faits": sorted(slabiq_expert.faits()), "mesure": slabiq_expert.mesure(), "params": d.get("params") or {},
+                "dernier_essai": (d.get("historique") or [None])[-1], "evergreen": ev}
 
     def comparer(self, item_id=None, titre=None):
         """La feuille « Comparer » : la meme carte en Achat immediat, la moins chere d'abord (12 au plus)."""
