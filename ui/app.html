@@ -3558,6 +3558,12 @@ body .onglets > a .cloche-n, body .onglets > a .pastille{margin-left:auto}
 .ecran.ecran.acc.acc-ft-mode .b-maj, .ecran.ecran.acc.acc-ft-mode .acc-tete .acc-tuiles, .ecran.ecran.acc.acc-ft-mode .acc-tete > .acc-sec{display:none !important}
 .ecran.acc.acc-ft-mode > .acc-mot{order:0} .ecran.acc.acc-ft-mode > .acc-news2{order:1} .ecran.acc.acc-ft-mode > .acc-tete{order:2} .ecran.acc.acc-ft-mode > .acc-ft{order:3}
 .acc-ft{display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px}
+@media (min-width:900px){
+.ecran.acc.acc-ft-mode .acc-tete > .marque{flex:none; min-width:max-content}
+.ecran.acc.acc-ft-mode .acc-tete .horloge .h, .ecran.acc.acc-ft-mode .acc-tete .horloge .d{white-space:nowrap}
+.ecran.acc.acc-ft-mode .acc-tete > .acc-ligne{flex:1 1 300px; min-width:0; width:auto; max-width:560px; margin:0 0 0 auto}
+.ecran.acc.acc-ft-mode .acc-tete > .acc-ligne b, .ecran.acc.acc-ft-mode .acc-tete > .acc-ligne span{min-width:0; overflow:hidden; text-overflow:ellipsis}
+}
 .acc-ft:empty{display:none}
 .ft-t{position:relative; display:flex; flex-direction:column; gap:3px; min-height:118px; padding:13px 14px 12px; border-radius:20px; text-decoration:none; color:var(--texte);
 background:linear-gradient(180deg, color-mix(in srgb, var(--carte) 82%, transparent), color-mix(in srgb, var(--carte) 56%, transparent));
