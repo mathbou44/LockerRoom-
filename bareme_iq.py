@@ -27,9 +27,9 @@ EN FEU (en feu, en hausse, buzz) : un demi-cran de plus (FEU_PTS), et la raison 
 """
 import re
 
-NOTE = {"A+": 95, "A": 88, "A-": 82, "B+": 76, "B": 68, "C+": 61, "C": 55, "D": 40}
+NOTE = {"A+": 95, "A": 88, "A-": 82, "B+": 76, "B": 68, "C+": 61, "C": 55, "D": 40, "E": 25}
 PART_ECART = 0.25
-JOUEUR_INCONNU = 50
+JOUEUR_INCONNU = 30              # 16 nov (« genre de carte qui devrait etre E ») : un joueur sans aucune demande connue
 FEU_PTS = 4                     # « un joueur en feu : un demi-cran » (B -> B+)
 PLAFOND_LOT = 45                # un lot, un checklist, une reimpression reste D, peu importe le joueur
 
@@ -54,7 +54,7 @@ JOUEURS_EXPERT = {
     "Brandon Hagel": "B", "Elias Pettersson": "B", "Matthew Tkachuk": "B+",
 }
 # La demande de ses cartes (nos ventes) et sa notoriete -> une note (points d'appui calibres sur les lettres de l'expert)
-_APPUIS = ((40, 40), (55, 55), (65, 61), (75, 68), (85, 76), (92, 82), (96, 88), (99, 95), (100, 95))
+_APPUIS = ((30, 20), (45, 35), (55, 55), (65, 61), (75, 68), (85, 76), (92, 82), (96, 88), (99, 95), (100, 95))
 
 _R = lambda m: re.compile(m)
 YG = _R(r"\byoung guns?\b|\byg\b")
@@ -161,7 +161,7 @@ def note_joueur(nom, criteres=None, recrue=False):
     if c.get("demande") is None and c.get("notoriete") is None:
         if recrue:
             return float(JOUEUR_RECRUE_INCONNUE), "B", "recrue_inconnue"
-        return float(JOUEUR_INCONNU), None, "inconnu"
+        return float(JOUEUR_INCONNU), "E", "inconnu"
     w = [(0.7, c.get("demande")), (0.3, c.get("notoriete"))]
     w = [(p, float(v)) for p, v in w if v is not None]
     x = sum(p * v for p, v in w) / sum(p for p, _ in w)
@@ -176,10 +176,24 @@ def note_joueur(nom, criteres=None, recrue=False):
 
 
 def lettre_joueur(n):
-    for s, l in ((92, "A+"), (85, "A"), (80, "A-"), (73, "B+"), (65, "B"), (58, "C+"), (50, "C")):
+    for s, l in ((92, "A+"), (85, "A"), (80, "A-"), (73, "B+"), (65, "B"), (58, "C+"), (50, "C"), (35, "D")):
         if n >= s:
             return l
-    return "D"
+    return "E"
+
+
+def recrue_recente(titre, rc):
+    """Une carte recrue de la saison en cours ou de la precedente (« un rookie inconnu = B » : seulement un VRAI nouveau ;
+    une recrue de 2021 que personne n'achete n'est pas un rookie a decouvrir)."""
+    if not rc:
+        return False
+    import datetime as _d
+    a = _annee(str(titre or "").lower())
+    if a is None:
+        return True
+    t = _d.date.today()
+    saison = t.year if t.month >= 8 else t.year - 1
+    return a >= saison - 1
 
 
 def note_finale(n_sorte, n_joueur):
@@ -190,7 +204,7 @@ def note_finale(n_sorte, n_joueur):
 
 
 def lettre(n):
-    for s, l in ((92, "A+"), (85, "A"), (80, "A-"), (73, "B+"), (65, "B"), (50, "C")):
+    for s, l in ((92, "A+"), (85, "A"), (80, "A-"), (73, "B+"), (65, "B"), (50, "C"), (40, "D")):
         if n >= s:
             return l
-    return "D"
+    return "E"                 # 16 nov 2026 (Mathieu : « genre de carte qui devrait etre E ») : sous D

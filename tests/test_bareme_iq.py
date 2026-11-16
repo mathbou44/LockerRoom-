@@ -34,6 +34,14 @@ assert b.note_joueur("Marc-Andre Fleury")[1] == "A-"
 assert b.note_joueur("Brandon Hagel")[1] == "B"
 assert b.note_joueur("Matthew Tkachuk")[1] == "B+"
 
+# 16 nov (« genre de carte qui devrait etre E ») : l'insert n'est pas le joueur ; un joueur sans demande donne E
+import cartes_match
+assert cartes_match.joueur_du_titre("2021-22 Upper Deck SPX Hockey Finite Rookies Sampo Ranta F-28 276/299") == "sampo ranta"
+assert cartes_match.joueur_du_titre("2023-24 Engrained Hockey Rookie Signature Shots Vincent Iorio RSS-VI 096/299") == "vincent iorio"
+assert b.lettre(b.note_finale(b.NOTE["C"], b.JOUEUR_INCONNU)) == "E"
+assert b.lettre(b.note_finale(b.NOTE["B"], b.note_joueur("X", {"demande": 50, "notoriete": 13})[0])) == "E"
+assert not b.recrue_recente("2021-22 Upper Deck SPX Finite Rookies Sampo Ranta", True)
+
 # le joueur : la cote de collection de l'expert
 assert b.note_joueur("Cole Caufield")[1] == "A+"
 assert b.note_joueur("Jakub Dobes")[1] == "B"
@@ -41,7 +49,7 @@ assert b.note_joueur("Brendan Smith")[1] == "D"
 assert b.note_joueur("Inconnu Total")[2] == "inconnu"
 assert b.note_joueur("Inconnu Total", recrue=True)[1] == "B"                          # « rookie inconnu = B »
 assert b.note_joueur("X", {"demande": 99, "notoriete": 99})[1] in ("A+", "A")
-assert b.note_joueur("X", {"demande": 50, "notoriete": 40})[1] in ("C", "D")
+assert b.note_joueur("X", {"demande": 50, "notoriete": 40})[1] in ("C", "D", "E")
 
 # la note finale : le plus faible domine
 L = lambda s, j: b.lettre(b.note_finale(b.NOTE[s], b.NOTE[j]))

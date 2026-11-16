@@ -168,7 +168,7 @@ def score(titre, joueur=None):
     import bareme_iq as bq
     so, so_r = bq.sorte(titre)
     crit = (ij or {}).get("criteres") or {}
-    nj, lj, src = bq.note_joueur(nom or (ij or {}).get("nom"), crit, recrue=bool(c.get("rc")) or so_r.startswith("yg"))
+    nj, lj, src = bq.note_joueur(nom or (ij or {}).get("nom"), crit, recrue=bq.recrue_recente(titre, bool(c.get("rc")) or so_r.startswith("yg")))
     ev = None
     try:
         import evergreen

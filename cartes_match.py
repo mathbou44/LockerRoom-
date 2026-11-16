@@ -820,16 +820,23 @@ def joueur_du_titre(titre, joueur=None):
     if _EQUIPES_MOTS["t"] is None:
         _EQUIPES_MOTS["t"] = _mots_equipes()
     gen = GENERIQUES | VIDES | _EQUIPES_MOTS["t"] | set(PARALLELES)
-    reste, out = re.sub(r"#\s*\S+|/\s*\d+|\b\d[\d\-./]*\b", " ", t).split(), []
+    reste = re.sub(r"#\s*\S+|/\s*\d+|\b\d[\d\-./]*\b", " ", t).split()
+    # 16 nov 2026 (Mathieu : « Finite » pris pour le joueur dans « SPX Finite Rookies Sampo Ranta ») : les suites de mots
+    # qui ne sont ni produit ni equipe ; un prenom + nom (2-3 mots) passe avant un mot seul (souvent un nom d'insert)
+    suites, out = [], []
     for m in reste:
         if m in gen or len(m) < 2 or not m.isalpha():
             if out:
-                break
+                suites.append(out)
+                out = []
             continue
         out.append(m)
-        if len(out) >= 3:
-            break
-    return " ".join(out)
+    if out:
+        suites.append(out)
+    if not suites:
+        return ""
+    s = next((x for x in suites if 2 <= len(x) <= 3), None) or suites[0]
+    return " ".join(s[:3])
 
 
 # 26 oct 2026 (Mathieu : « pas du tout les memes cartes » : une National Hockey Card Day comparee a des Tim Hortons,

@@ -7338,7 +7338,7 @@ class Api:
             ch = self.chasses_liste().get("chasses") or []
             cle = (comptes.courant() or "local") + ":" + hashlib.md5(json.dumps(
                 [[tuple(a) for a in al], self.deals_profil_lire(), self.reglages_lire().get("pays"), self._est_admin(), vue_simulee(), ch,
-                 "score-v2"],                         # 11 nov 2026 : les scores SlabIQ revus (mots de vendeur, joueur inconnu)
+                 "score-v3"],                         # 16 nov 2026 : le bareme de l'expert (A+ a E) : les vieux Radars ne servent plus
                 sort_keys=True, default=str).encode()).hexdigest()
         except Exception:
             cle = None

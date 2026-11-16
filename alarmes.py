@@ -61,12 +61,12 @@ def iq_haut_juger(maintenant, avant):
     return None
 
 
-NOTES_IQ = ((92, "A+"), (85, "A"), (80, "A-"), (73, "B+"), (65, "B"), (50, "C"))
+NOTES_IQ = ((92, "A+"), (85, "A"), (80, "A-"), (73, "B+"), (65, "B"), (50, "C"), (40, "D"))
 
 
 def lettre(n):
     """16 nov 2026 : le score SlabIQ en lettre (le meme bareme que l'app)."""
-    return next((l for s, l in NOTES_IQ if float(n) >= s), "D")
+    return next((l for s, l in NOTES_IQ if float(n) >= s), "E")
 
 
 def iq_haut(api, etat, mes=None, maint=None):
