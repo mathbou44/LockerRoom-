@@ -867,6 +867,48 @@ def page_tarifs():
     return _page_vitrine("tarifs")
 
 
+def _bloc_collectionneurs(t):
+    """16 nov 2026 (Mathieu : « deux collectionneurs, le meme budget, avec et sans SlabIQ ; plusieurs joueurs, equipes,
+    variables ; le montrer sur le site ») : le resume de simulation_iq, en gros chiffres, avec ses limites."""
+    try:
+        import simulation_iq
+        d = simulation_iq.lire()
+    except Exception:
+        d = {}
+    T = d.get("total") or {}
+    if not T.get("n"):
+        return ""
+    pct = lambda v: f"{v:+.0f}\u00a0%".replace("+-", "−").replace("-", "−")
+    pt = d.get("par_type") or {}
+    nom_t = {"joueur": t("Un joueur", "One player"), "equipe": t("Une équipe", "One team"), "panier": t("5 joueurs", "5 players")}
+    lignes = "".join(f'<tr><td>{nom_t.get(k, k)}</td><td class="n vert">{round(v["b_gagne"] * 100)} %</td><td class="n rouge">{pct(v["gain_A"])}</td>'
+                     f'<td class="n vert">{pct(v["gain_B"])}</td><td class="n">{v["n"]}</td></tr>' for k, v in pt.items() if v.get("n"))
+    pj = d.get("par_joueur") or {}
+    gagnes = sum(1 for v in pj.values() if v.get("b_gagne", 0) > 0.5)
+    ex = ""
+    for x in (d.get("exemples") or [])[:4]:
+        a_, b_ = x["A"], x["B"]
+        ex += (f'<tr><td>{x["nom"]}</td><td class="n">{a_["cartes"]}\u00a0·\u00a0${a_["total"]:,.0f}</td><td class="n vert">{b_["cartes"]}\u00a0·\u00a0${b_["total"]:,.0f}</td></tr>')
+    per = d.get("periode") or ["", ""]
+    return f"""<section><div class="conteneur">
+  <p class="kicker holo-t">{t("Deux collectionneurs, le même budget", "Two collectors, the same budget")}</p>
+  <h2>{t(f'SlabIQ a fait mieux dans <span class="holo-t">{round(T["b_gagne"] * 100)} %</span> des {T["n"]:,} collections testées'.replace(",", " "), f'SlabIQ did better in <span class="holo-t">{round(T["b_gagne"] * 100)}%</span> of {T["n"]:,} collections tested')}</h2>
+  <p class="intro">{t("Deux personnes commencent à collectionner avec le même budget chaque mois. L’une achète au hasard, ou quand tout le monde en parle. L’autre suit SlabIQ : quoi acheter, quand, et quand attendre. On compare ce que valent leurs cartes à la fin.", "Two people start collecting with the same monthly budget. One buys at random, or when everyone is talking about it. The other follows SlabIQ: what to buy, when, and when to wait. We compare what their cards are worth at the end.")}</p>
+  <style>.sim-k{{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin:22px 0}}
+  .sim-k > div{{padding:20px 22px;border-radius:20px;border:1.5px solid transparent;background:linear-gradient(#141419,#141419) padding-box,linear-gradient(120deg,rgba(184,188,255,.8),rgba(242,179,214,.55),rgba(159,230,210,.55),rgba(241,213,142,.6)) border-box}}
+  .sim-k b{{display:block;font:800 clamp(44px,6vw,64px)/1 'Barlow Condensed',sans-serif}} .sim-k .v{{color:#8FD4A4}} .sim-k .r{{color:#FF8C8C}} .sim-k .a{{background:linear-gradient(100deg,#F2B3D6,#F1D58E,#9FE6D2,#B8BCFF);-webkit-background-clip:text;background-clip:text;color:transparent}}
+  .sim-k h3{{margin:10px 0 4px;font-size:20px}} .sim-k p{{margin:0;color:#A9A6B4}} .sim-t td.n{{white-space:nowrap}}</style>
+  <div class="sim-k">
+    <div><b class="a">{round(T["b_gagne"] * 100)} %</b><h3>{t("des collections", "of collections")}</h3><p>{t("finissent avec plus de valeur avec SlabIQ.", "end with more value with SlabIQ.")}</p></div>
+    <div><b class="r">{pct(T["gain_A"])}</b><h3>{t("Sans SlabIQ", "Without SlabIQ")}</h3><p>{t("la valeur médiane à la fin, contre l’argent mis.", "the median value at the end, against the money put in.")}</p></div>
+    <div><b class="v">{pct(T["gain_B"])}</b><h3>{t("Avec SlabIQ", "With SlabIQ")}</h3><p>{t("même budget, mêmes frais, mêmes cartes à vendre.", "same budget, same fees, same cards for sale.")}</p></div>
+  </div>
+  <div style="overflow-x:auto"><table class="tab-f sim-t"><thead><tr><th>{t("Collection", "Collection")}</th><th>{t("SlabIQ gagne", "SlabIQ wins")}</th><th>{t("Sans", "Without")}</th><th>{t("Avec", "With")}</th><th>{t("Tests", "Tests")}</th></tr></thead><tbody>{lignes}</tbody></table></div>
+  {f'<h3 class="mo-titre">{t("Exemples : 1 an, 100 $ par mois", "Examples: 1 year, $100 a month")}</h3><div style="overflow-x:auto"><table class="tab-f sim-t"><thead><tr><th>{t("Joueur", "Player")}</th><th>{t("Sans : cartes · valeur", "Without: cards · value")}</th><th>{t("Avec : cartes · valeur", "With: cards · value")}</th></tr></thead><tbody>{ex}</tbody></table></div>' if ex else ''}
+  <p class="note">{t(f"{T['n']} scénarios : {d.get('joueurs', 0)} joueurs seuls, leurs équipes et des groupes de 5 joueurs ; départs tous les 2 mois ; 6 mois et 1 an ; 50, 100 et 250 $ par mois ; acheteur au hasard ou « quand ça monte » ; 3 réglages de SlabIQ. SlabIQ fait mieux pour {gagnes} joueurs sur {len(pj)}. Les cartes : la Young Guns de chaque joueur (raw et PSA 10), achetée aux prix des vraies ventes de {per[0]} à {per[1]}, frais d’achat et port compris pour les deux. SlabIQ ne voit jamais le futur : chaque achat se décide avec les ventes d’avant. Le marché des Young Guns a baissé pendant cette période : c’est pourquoi les deux finissent souvent sous leur mise ; SlabIQ perd beaucoup moins. Les règles de SlabIQ ont été choisies sur ces mêmes mois ; le test en direct ci-dessous, figé chaque jour, est celui qui compte.", f"{T['n']} scenarios: {d.get('joueurs', 0)} single players, their teams and groups of 5 players; starts every 2 months; 6 months and 1 year; $50, $100 and $250 a month; random or “buy when it’s rising” buyer; 3 SlabIQ settings. SlabIQ does better for {gagnes} players out of {len(pj)}. The cards: each player’s Young Guns (raw and PSA 10), bought at real sale prices from {per[0]} to {per[1]}, buying fees and shipping included for both. SlabIQ never sees the future: every purchase is decided with past sales only. The Young Guns market went down during this period, which is why both often end below what they put in; SlabIQ loses much less. SlabIQ’s rules were chosen on these same months; the live test below, frozen every day, is the one that counts.")}</p>
+</div></section>"""
+
+
 @app.route("/preuve")
 @app.route("/proof")
 def page_preuve():
@@ -925,6 +967,7 @@ def page_preuve():
     <div class="etape"><b>3</b><h3>{t("Le résultat, plus tard", "The result, later")}</h3><p>{t("30, 60 et 90 jours après, on mesure ce que les cartes valaient vraiment. Les fichiers sont publiés après 30 jours : tout le monde peut vérifier.", "30, 60 and 90 days later, we measure what the cards were really worth. Files are published after 30 days: anyone can check.")}</p></div>
   </div>
 </div></section>
+{_bloc_collectionneurs(t)}
 <section><div class="conteneur">
   <p class="kicker holo-t">{t("Résultats en direct", "Live results")}</p>
   <h2>{t("Sans SlabCoach contre avec SlabCoach", "Without vs with SlabCoach")}</h2>
@@ -1574,6 +1617,12 @@ def _valeurs_auto():
                 print("Types de cartes : passe lancee", flush=True)
         except Exception as e:
             print("Types de cartes : " + str(e), flush=True)
+        try:                                    # 16 nov 2026 - deux collectionneurs, avec et sans SlabIQ (1 fois/semaine)
+            import simulation_iq
+            if simulation_iq.passe_si_besoin():
+                print("Simulation SlabIQ : passe lancee", flush=True)
+        except Exception as e:
+            print("Simulation SlabIQ : " + str(e), flush=True)
         try:                                    # 16 nov 2026 - SlabIQ contre l'expert : la boucle (1 fois/semaine)
             import slabiq_expert
             if slabiq_expert.passe_si_besoin():
