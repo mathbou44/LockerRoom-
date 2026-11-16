@@ -66,6 +66,7 @@ OBL_CATEGORIES = {"taxes": "Taxes de vente", "impots": "Impôts", "comptabilite"
 
 # Idees de revenus en plus (le front les affiche ; le serveur dit seulement ce qui est deja branche)
 OPPORTUNITES = [
+    ("platine", "Version Platine (comps)", "Ta vue admin devient un forfait payant plus cher : valeurs tirées des ventes, prix calculés, deals avec mise max. Déjà prête : il suffit d'une licence commerciale des ventes (ou de l'accord écrit d'eBay), puis LR_PLATINE=1 dans Render.", "revenus"),
     ("epn", "Affiliation eBay (eBay Partner Network)", "Chaque achat fait par un lien du Radar peut rapporter une commission à SlabCoach, sans rien coûter à l’acheteur. Déjà branché dans l’app : il faut seulement l’identifiant de campagne. À dire clairement aux utilisateurs (lien affilié).", "affiliation"),
     ("parrainage", "Parrainage", "Un mois de Pro offert à celui qui invite et à celui qui s’inscrit. Le coût est faible et chaque collectionneur connaît d’autres collectionneurs.", "croissance"),
     ("boutiques", "Forfait Boutique", "Les fonctions boutique (comptoir, rachats, consignation, rapport de taxes) valent plus que 7,99 $ pour un commerce : un forfait à part, plus cher.", "revenus"),
@@ -322,7 +323,7 @@ def tableau(api):
                     "fait_le": c.get("fait_le"), "note": c.get("note") or ""})
     obl.sort(key=lambda o: (o["jours"] is None, o["jours"] if o["jours"] is not None else 0))
     # -- opportunites
-    opp = [{"cle": k, "type": ty, "branche": (k == "epn" and bool(os.environ.get("LOCKERROOM_EPN_CAMPID")))} for k, t, d, ty in OPPORTUNITES]
+    opp = [{"cle": k, "type": ty, "branche": (k == "epn" and bool(os.environ.get("LOCKERROOM_EPN_CAMPID"))) or (k == "platine" and os.environ.get("LR_PLATINE") == "1")} for k, t, d, ty in OPPORTUNITES]
     # -- les alertes du jour (ce qui demande une action), en premier sur la page
     alertes = []
     for o in obl:

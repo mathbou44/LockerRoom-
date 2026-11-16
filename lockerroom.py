@@ -302,7 +302,7 @@ def vue_simulee():
         from flask import has_request_context
         if has_request_context():
             v = _vues_lire().get(_vue_cle())
-            return v if v in ("pro", "gratuit") else None
+            return v if v in ("pro", "gratuit", "platine") else None
     except Exception:
         pass
     return None
@@ -337,7 +337,7 @@ def vue_poser(vue):
     with _VUES_VERROU:
         d = dict(_vues_lire())
         k = _vue_cle()
-        if vue in ("pro", "gratuit"):
+        if vue in ("pro", "gratuit", "platine"):
             d[k] = vue
         else:
             d.pop(k, None)
@@ -377,6 +377,8 @@ def ebay_prix_actif(api=None):
         return False
     if os.environ.get("LR_PRIX_EBAY_PUBLIC") == "1":
         return True
+    if _platine():                               # 16 nov 2026 : la version Platine (voir _platine)
+        return True
     if vue_simulee():
         return False
     try:
@@ -389,6 +391,20 @@ def ebay_prix_actif(api=None):
         return False
 
 
+def _platine():
+    """16 nov 2026 (Mathieu : « la version admin va devenir la version Platine, avec l'acces aux comps quand on aura une API
+    commerciale officielle ; entrainer SlabIQ dans ma version admin pour que le lancement soit ultra facile ») : tout ce que
+    l'admin voit des comps et des prix calcules passe par comps_permis / ebay_prix_actif ; un compte au forfait « platine »
+    y a droit des que LR_PLATINE=1 (la licence obtenue). L'admin peut deja regarder l'app « comme un Platine »."""
+    if vue_simulee() == "platine":
+        return True
+    try:
+        import forfaits
+        return forfaits.est_platine()
+    except Exception:
+        return False
+
+
 def comps_permis(api=None):
     """10 nov 2026 (Mathieu : « pour les comps on va garder ca seulement admin, mettre le tout de cote pour la version
     officielle de lancement », « 100 % legale avec nos cles eBay ») : les ventes recoltees sur eBay (SoldComps, CompSniper,
@@ -396,6 +412,8 @@ def comps_permis(api=None):
     collection) : l'ADMIN seulement. Les taches de fond globales (chasseur de deals de l'admin, base des ventes) continuent.
     LR_COMPS_PUBLICS=1 pour les rouvrir a tous (seulement avec l'accord ecrit d'eBay ou une source sous licence)."""
     if os.environ.get("LR_COMPS_PUBLICS") == "1":
+        return True
+    if _platine():
         return True
     if vue_simulee():
         return False
@@ -1596,10 +1614,14 @@ class Api:
             if t and tot and time.time() - t0 < delai_s:
                 try:
                     if t not in memo:
-                        memo[t] = vendues.memes_cache(t, n=40, age_max=30 * 86400)
+                        memo[t] = vendues.memes_cache(t, n=40, age_max=120 * 86400)
                     vc = memo[t] or {}
                     if (vc.get("nb") or 0) >= 3 and vc.get("mediane") and tot > float(vc["mediane"]) * (1 + Api.VERIF_CHER):
                         raisons.append("cher")
+                    # 16 nov 2026 (« pourquoi cette carte est dans le Radar ? » : valeur 97 $, ventes a 1-11 $) : une valeur de
+                    # deal 2,5 fois plus haute que les ventes connues de la meme carte : contredite, la tuile sort du Radar
+                    if x.get("valeur") and (vc.get("nb") or 0) >= 3 and vc.get("mediane") and float(x["valeur"]) > 2.5 * float(vc["mediane"]):
+                        x["contredit"] = True
                 except Exception:
                     pass
             x["verifier"] = raisons

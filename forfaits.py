@@ -81,6 +81,9 @@ def etat(cid=None):
         if v == "gratuit":
             return {"pro": False, "essai": False, "payant": False, "offert": False, "jours_restants": 0, "source": None,
                     "annule": False, "essai_fin": None, "simule": "gratuit"}
+        if v == "platine":
+            return {"pro": True, "platine": True, "essai": False, "payant": True, "offert": False, "jours_restants": None, "source": "stripe",
+                    "annule": False, "essai_fin": None, "simule": "platine"}
         if v == "pro":
             return {"pro": True, "essai": False, "payant": True, "offert": False, "jours_restants": None, "source": "stripe",
                     "annule": False, "essai_fin": None, "simule": "pro"}
@@ -88,7 +91,8 @@ def etat(cid=None):
     if not cid:
         return {"pro": True, "essai": False, "payant": True, "jours_restants": None, "local": True}
     info = comptes.info(cid) or {}
-    payant = (info.get("forfait") or "gratuit") == "pro"
+    payant = (info.get("forfait") or "gratuit") in ("pro", "platine")
+    platine = platine_ouvert() and ((info.get("forfait") or "") == "platine" or offert({"pro_offert": info.get("platine_offert")}))
     if payant and info.get("forfait_source") == "apple":       # 27 oct 2026 : filet si un avis d'Apple se perd
         try:
             payant = time.time() < float(info.get("forfait_fin") or 0) + 3 * 86400
@@ -101,13 +105,25 @@ def etat(cid=None):
         fin = None
     essai = (not payant) and (not don) and fin is not None and datetime.now() < fin
     reste = max(0, (fin - datetime.now()).days + 1) if essai else 0
-    return {"pro": payant or essai or don, "essai": essai, "payant": payant, "offert": don, "jours_restants": reste,
+    return {"pro": payant or essai or don or platine, "platine": bool(platine), "essai": essai, "payant": payant, "offert": don, "jours_restants": reste,
             "source": info.get("forfait_source") if payant else None, "annule": bool(info.get("forfait_annule")),
             "essai_fin": fin.isoformat(timespec="minutes") if fin else None}
 
 
 def est_pro():
     return etat()["pro"]
+
+
+def platine_ouvert():
+    """16 nov 2026 : la version Platine (comps et prix calcules) s'ouvre aux abonnes avec LR_PLATINE=1, une fois la licence
+    commerciale des ventes obtenue. Avant : seul l'admin (et sa vue « comme un Platine »)."""
+    return os.environ.get("LR_PLATINE") == "1"
+
+
+def est_platine():
+    """Le compte courant a-t-il la version Platine ? (jamais avant platine_ouvert(), sauf la vue simulee de l'admin)"""
+    e = etat()
+    return bool(e.get("platine")) and (e.get("simule") == "platine" or platine_ouvert())
 
 
 def _chemin():
