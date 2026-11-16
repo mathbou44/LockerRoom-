@@ -135,6 +135,11 @@ h2{font:700 clamp(30px,4vw,44px)/1.08 'Barlow Condensed',sans-serif; letter-spac
 .chiffres{margin-top:16px; display:grid; grid-template-columns:repeat(3,1fr); gap:16px}
 .chiffres div{padding:16px; border-radius:16px; background:var(--carte); border:1px solid var(--ligne); text-align:center}
 .chiffres b{display:block; font:700 30px 'Barlow Condensed',sans-serif} .chiffres div>span{color:var(--doux); font-size:14px}
+.regles{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px}
+.regles > div{display:flex; gap:12px; padding:18px 20px; border-radius:18px; background:var(--carte); border:1px solid var(--ligne)}
+.regles svg{flex:none; width:22px; height:22px; color:var(--vert); margin-top:2px}
+.regles b{display:block; font:700 18px 'Barlow Condensed',sans-serif; margin-bottom:2px} .regles span{color:var(--doux); font-size:15px}
+@media (max-width:600px){ .regles{grid-template-columns:1fr; gap:10px} }
 .mo-titre{font:700 20px 'Barlow Condensed',sans-serif; margin:40px 0 0}
 @media (max-width:600px){ .duel{grid-template-columns:1fr 1fr; gap:10px} .du{padding:16px 10px} .du b{font-size:40px} .du p{font-size:13px}
   .chiffres{grid-template-columns:1fr; gap:10px} .chiffres div{display:flex; align-items:center; gap:12px; text-align:left; padding:12px 16px} .chiffres b{font-size:26px; min-width:70px} }
@@ -338,7 +343,7 @@ section[id], div[id].ancre{scroll-margin-top:124px}
   </nav>
   <div class="menu-p">
     <a href="/#deals"><span class="fr">Fonctionnalités</span><span class="en">Features</span></a>
-    <a href="/#moment"><span class="fr">Le bon moment</span><span class="en">The right moment</span></a>
+    <a href="/#moment"><span class="fr">La preuve</span><span class="en">The proof</span></a>
     <a href="/tarifs"><span class="fr">Tarifs</span><span class="en">Pricing</span></a>
     <a href="/a-propos"><span class="fr">Qui nous sommes</span><span class="en">About us</span></a>
     <a href="/connexion"><span class="fr">Se connecter</span><span class="en">Sign in</span></a>
