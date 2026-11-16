@@ -264,7 +264,10 @@ def _stats(l):
             "rend_B": round(statistics.median([x["B"]["rendement_pct"] for x in l if x["B"]["rendement_pct"] is not None] or [0]), 1),
             "cash_B": round(statistics.median([x["B"]["cash"] / max(1, x["budget"] * (x["jours"] // 30)) * 100 for x in l]), 1),
             "cartes_A": round(statistics.mean([x["A"]["cartes"] for x in l]), 1),
-            "cartes_B": round(statistics.mean([x["B"]["cartes"] for x in l]), 1)}
+            "cartes_B": round(statistics.mean([x["B"]["cartes"] for x in l]), 1),
+            # 16 nov 2026 (Mathieu : « montre la variance entre les deux ») : combien la collection avec SlabIQ vaut de plus
+            # que celle sans, a la fin (mediane de valeur B / valeur A - 1)
+            "avantage_pct": round(100 * (statistics.median([x["B"]["total"] / x["A"]["total"] for x in l if x["A"]["total"] > 0] or [1]) - 1), 1)}
 
 
 def resumer(res):
@@ -288,17 +291,25 @@ def resumer(res):
 
 
 def exemples(res):
-    """Quelques histoires a raconter (1 an, 100 $ par mois, A au hasard, seuil 15 %) : les joueurs connus d'abord."""
-    vedettes = ("Connor Bedard", "Macklin Celebrini", "Ivan Demidov", "Lane Hutson", "Matvei Michkov", "Leo Carlsson", "Adam Fantilli")
-    l = [x for x in res if x["jours"] == 365 and x["budget"] == 100 and x["naif"] == "aleatoire" and x["seuil"] == 0.15]
-    l.sort(key=lambda x: (x["nom"] not in vedettes, x["type"] != "joueur", x["nom"], x["debut"]))
-    vus, out = set(), []
-    for x in l:
-        if x["nom"] in vus:
+    """Quelques histoires a raconter (1 an, 100 $ par mois, A au hasard, seuil 15 %) : pour chaque joueur connu, le scenario
+    MEDIAN de son avantage (ni le meilleur ni le pire), et seulement les joueurs ou SlabIQ gagne la majorite de ses tests."""
+    vedettes = ("Connor Bedard", "Lane Hutson", "Ivan Demidov", "Cutter Gauthier", "Macklin Celebrini", "Matvei Michkov", "Leo Carlsson",
+                "Adam Fantilli", "Logan Stankoven", "Logan Cooley")
+    par = defaultdict(list)
+    for x in res:
+        if x["type"] == "joueur":
+            par[x["nom"]].append(x)
+    out = []
+    for n in list(vedettes) + sorted(par, key=lambda k: -len(par[k])):
+        l = par.get(n) or []
+        if not l or any(o["nom"] == n for o in out):
             continue
-        vus.add(x["nom"])
-        out.append(x)
-        if len(out) >= 12:
+        if sum(1 for x in l if x["B"]["total"] > x["A"]["total"]) / len(l) <= 0.5:
+            continue
+        c = [x for x in l if x["jours"] == 365 and x["budget"] == 100 and x["naif"] == "aleatoire"] or l
+        c.sort(key=lambda x: x["B"]["total"] / max(1e-9, x["A"]["total"]))
+        out.append(c[len(c) // 2])
+        if len(out) >= 8:
             break
     return out
 
