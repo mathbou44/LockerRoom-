@@ -86,6 +86,7 @@ class TestToujoursQuelqueChose(unittest.TestCase):
         pres = dict(vieux, item_id="777777777", total=33, ratio=.8, v=deals.VERSION, palier="pres")
         deals._ecrire({"deals": [dict(vieux)], "pres": [pres], "maj": maint})
         import lockerroom
+        lockerroom.Api.DEAL_SCORE_MIN = 0          # 16 nov 2026 : ce test porte sur la continuite (titre court : SlabIQ 22)
         a = lockerroom.Api(os.path.join(tempfile.mkdtemp(), "t.db"))
         r = a.deals_liste({})
         self.assertEqual([x["item_id"] for x in r["deals"]], ["555555555"])

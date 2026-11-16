@@ -23,6 +23,7 @@ d = deals.lire()
 d["suivis"], d["pres"] = [], []
 d["deals"] = [D("u1", "US", 40, 200), D("c1", "CA", 80, 200), D("u2", "US", 50, 200), D("c2", "CA", 90, 200)]
 deals._ecrire(d)
+lockerroom.Api.DEAL_SCORE_MIN = 0          # 16 nov 2026 : ce test porte sur le pays (titres courts : SlabIQ bas)
 a = lockerroom.Api(os.path.join(tempfile.mkdtemp(), "a.db"))
 a._valeur_en_cache = lambda x, calculer=True: None
 def liste():

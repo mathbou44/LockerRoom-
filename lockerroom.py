@@ -1589,6 +1589,34 @@ class Api:
             _d.regler_vendeurs_perso(comptes.courant() if comptes.MULTI else "local", v or [])
         return self.deals_profil_lire()
 
+    DEAL_SCORE_MIN = int(os.environ.get("LR_DEAL_SCORE_MIN") or 35)
+    DEAL_ESTIMES = ("approx", "autre_saison", "unique")
+
+    @staticmethod
+    def _deals_qualite(items, delai_s=2.5):
+        """Garde les deals solides (voir deals_liste, 16 nov 2026). Les ventes connues : cache seulement, aucun appel."""
+        out, t0, memo = [], time.time(), {}
+        for x in items or []:
+            if not isinstance(x, dict):
+                continue
+            sc = x.get("score")
+            if sc is not None and sc < Api.DEAL_SCORE_MIN:
+                continue
+            if x.get("valeur_source") in Api.DEAL_ESTIMES:
+                continue
+            t, v = str(x.get("titre") or ""), _float(x.get("valeur"))
+            if t and v and time.time() - t0 < delai_s:
+                try:
+                    if t not in memo:
+                        memo[t] = vendues.memes_cache(t, n=40, age_max=400 * 86400)
+                    vc = memo[t] or {}
+                    if (vc.get("nb") or 0) >= 3 and vc.get("mediane") and v > 2.5 * float(vc["mediane"]):
+                        continue
+                except Exception:
+                    pass
+            out.append(x)
+        return out
+
     VERIF_CHER = 0.20
 
     @staticmethod
@@ -10607,6 +10635,14 @@ class Api:
             score_slab.annoter_lot([x for x in [*lst[:240], *suivis, *pres] if x.get("score") is None])
         except Exception as e:
             print("Score (deals) : " + repr(e), flush=True)
+        # 16 nov 2026 (Mathieu : « l'Eichel est toujours la, et ce genre de carte ne devrait pas se retrouver dans le Radar » :
+        # des cartes de base a 7-19 $, valeur « Estimé », SlabIQ 11-30, profit de +21 a +75 $) : un deal du Radar = une carte
+        # RECHERCHEE (SlabIQ >= 35 : la liquidite d'abord) dont la valeur vient des ventes de la MEME carte (pas une estimation),
+        # et que ses ventes connues (meme vieilles) ne contredisent pas (valeur 2,5 fois leur mediane)
+        try:
+            lst, pres = self._deals_qualite(lst), self._deals_qualite(pres)
+        except Exception as e:
+            print("Deals (qualite) : " + repr(e)[:120], flush=True)
         if adm_:
             # 15 nov 2026 (Mathieu : « meme si c'est un deal et que je fais beaucoup de profit, le profit va des fois vers le bas
             # parce que le joueur est mauvais ; SlabIQ doit m'aider a choisir ») : le Score SlabIQ de chaque deal porte le

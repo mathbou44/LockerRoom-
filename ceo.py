@@ -78,6 +78,72 @@ OPPORTUNITES = [
 ]
 
 
+# 16 nov 2026 (Mathieu : « la liste des choses a faire dans mon tableau d'admin CEO ; ca doit devenir mon outil de travail ») :
+# ses taches a lui (titre, note, echeance, priorite 1-4, projet, etat), melees aux alertes dans « Aujourd'hui ». Le projet
+# « Licences de donnees » est seme une fois : chaque demande a son courriel pret a copier (modele) et son contact.
+PRIOS = (1, 2, 3, 4)                       # 1 urgent, 2 bientot, 3 a faire, 4 quand tu peux
+ETATS = ("a_faire", "en_cours", "attente", "fait")
+SEMIS = {
+    "licences": [
+        ("lic_hci", "Demander la licence commerciale à Hobby Card Index", "Commercial Data License : ventes réelles (hockey), affichage public dans une app payante, entraînement de modèles, Canada. Plan Enterprise 49,99 $/mois + licence à négocier.", 2, "hci", "https://www.hobbycardindex.com/developers"),
+        ("lic_tca", "Demander la licence commerciale à The Card API", "Déjà branchée chez nous : passer en Enterprise avec droits d'affichage public, d'entraînement et Canada.", 2, "tca", "https://www.thecardapi.com/trading-card-api"),
+        ("lic_ch", "Demander la licence commerciale à Card Hedge", "40 M ventes/semaine, toutes gradations, hockey. support@cardhedger.com", 2, "ch", "https://ai.cardhedger.com/api-services"),
+        ("lic_hl", "Confirmer l'usage commercial avec Highlightly (stats LNH)", "La licence commerciale n'est pas affichée sur leur site : la confirmer par écrit pour l'app payante.", 3, "hl", "https://highlightly.net"),
+        ("lic_ebay", "eBay : accès Marketplace Insights + accord écrit pour l'outil de prix", "Licence API eBay : §8.5.3 (outil de prix sur accord écrit), §9.5 (modéliser des prix), §9.10 (entraînement interdit). Ticket au support développeur.", 3, "ebay", "https://developer.ebay.com/support"),
+        ("lic_cl", "Collectors / Card Ladder : demande de partenariat de données", "La donnée qu'eBay utilise dans son propre guide de prix. Long, mais la source la plus solide.", 3, "cl", "https://www.cardladder.com/about"),
+        ("lic_avocat", "Faire valider la licence choisie par un avocat avant de signer", "Points à vérifier : affichage public, entraînement de modèles, Canada, résiliation, données gardées après la fin.", 3, None, None),
+        ("lic_platine", "Après la signature : brancher le fournisseur et ouvrir Platine", "Claude branche la nouvelle source (1-2 jours), puis : prix du forfait Platine, produit Stripe/Apple, LR_PLATINE=1 dans Render.", 4, None, None),
+    ],
+}
+PROJETS = {"licences": "Licences de données", "lancement": "Lancement", "general": "Général"}
+
+
+def taches(cfg=None):
+    """Les taches, la plus importante d'abord (priorite, puis echeance, puis la plus vieille)."""
+    cfg = cfg if cfg is not None else lire()
+    l = [t for t in (cfg.get("taches") or []) if isinstance(t, dict)]
+    return sorted(l, key=lambda t: (t.get("etat") == "fait", int(t.get("prio") or 3), t.get("echeance") or "9999", t.get("cree_le") or ""))
+
+
+def _semer(cur):
+    """Une seule fois par projet : ses taches de depart."""
+    vus = set(cur.get("semis") or [])
+    l = cur.setdefault("taches", [])
+    maint = datetime.now().isoformat(timespec="minutes")
+    for projet, items in SEMIS.items():
+        if projet in vus:
+            continue
+        for tid, titre, note, prio, modele, lien in items:
+            if not any(t.get("id") == tid for t in l):
+                l.append({"id": tid, "titre": titre, "note": note, "prio": prio, "projet": projet, "etat": "a_faire",
+                          "modele": modele, "lien": lien, "cree_le": maint, "echeance": None, "fait_le": None})
+        vus.add(projet)
+    cur["semis"] = sorted(vus)
+    return cur
+
+
+def _tache_propre(v, ancienne=None):
+    t = dict(ancienne or {})
+    if "titre" in v:
+        t["titre"] = str(v.get("titre") or "").strip()[:160]
+    if "note" in v:
+        t["note"] = str(v.get("note") or "")[:2000]
+    if "echeance" in v:
+        t["echeance"] = _date_ok(v.get("echeance")) if v.get("echeance") else None
+    if "prio" in v:
+        try:
+            t["prio"] = int(v["prio"]) if int(v["prio"]) in PRIOS else 3
+        except (TypeError, ValueError):
+            t["prio"] = 3
+    if "projet" in v:
+        p = str(v.get("projet") or "general").strip()[:40] or "general"
+        t["projet"] = p
+    if "etat" in v and v.get("etat") in ETATS:
+        t["etat"] = v["etat"]
+        t["fait_le"] = datetime.now().isoformat(timespec="minutes") if v["etat"] == "fait" else None
+    return t
+
+
 def _chemin():
     import comptes
     return os.path.join(comptes.DONNEES, "admin_ceo.json")
@@ -147,6 +213,25 @@ def sauver(d):
                     e[t] = str(d["entreprise"][t] or "")[:120]
         if "notes" in d:
             cur["notes"] = str(d.get("notes") or "")[:4000]
+        # les taches : ajout, modification, suppression (identifiant genere ici)
+        l = [t for t in (cur.get("taches") or []) if isinstance(t, dict)]
+        if isinstance(d.get("tache_ajout"), dict) and str(d["tache_ajout"].get("titre") or "").strip() and len(l) < 500:
+            import secrets
+            t = _tache_propre({"prio": 3, "projet": "general", "etat": "a_faire", **d["tache_ajout"]})
+            t.update(id="t" + secrets.token_hex(5), cree_le=datetime.now().isoformat(timespec="minutes"))
+            t.setdefault("fait_le", None)
+            l.append(t)
+        if isinstance(d.get("taches"), dict):
+            for tid, v in d["taches"].items():
+                if not isinstance(v, dict):
+                    continue
+                for i, t in enumerate(l):
+                    if t.get("id") == tid:
+                        l[i] = _tache_propre(v, t)
+        if isinstance(d.get("taches_suppr"), list):
+            ids = {str(x) for x in d["taches_suppr"]}
+            l = [t for t in l if t.get("id") not in ids]
+        cur["taches"] = l
         cur["maj"] = datetime.now().isoformat(timespec="minutes")
         ch = _chemin()
         tmp = ch + ".tmp"
@@ -190,6 +275,13 @@ def tableau(api):
     import demandes
     aujourd = date.today()
     cfg = lire()
+    if set(SEMIS) - set(cfg.get("semis") or []):          # 16 nov 2026 : les taches de depart, une seule fois
+        with _verrou:
+            cfg = _semer(lire())
+            ch = _chemin()
+            with open(ch + ".tmp", "w", encoding="utf-8") as f:
+                json.dump(cfg, f, ensure_ascii=False, indent=1)
+            os.replace(ch + ".tmp", ch)
     a = admin.abonnes()
     cpts = a.get("comptes") or []
     # -- abonnes : la courbe des inscriptions (12 semaines) et les chiffres du lancement
@@ -356,5 +448,5 @@ def tableau(api):
                         "derniers": [{"username": c["username"], "statut": c["statut"], "cree_le": c.get("cree_le"), "vu_le": c.get("vu_le"), "connexion": c.get("connexion")}
                                      for c in sorted(cpts, key=lambda x: str(x.get("cree_le") or ""), reverse=True)[:10]]},
             "revenus": revenus, "couts": couts, "services": services, "categories": CATEGORIES, "quotas": quotas, "demandes": dem,
-            "erreurs": erreurs, "securite": securite, "obligations": obl, "obl_categories": OBL_CATEGORIES, "opportunites": opp,
+            "erreurs": erreurs, "securite": securite, "obligations": obl, "obl_categories": OBL_CATEGORIES, "opportunites": opp, "taches": taches(cfg), "projets": PROJETS,
             "entreprise": cfg.get("entreprise") or {}, "notes": cfg.get("notes") or "", "alertes": alertes, "multi": comptes.MULTI}
