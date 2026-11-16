@@ -96,7 +96,8 @@ def sorte(titre):
     auto, patch, serie, g = bool(d.get("auto")), bool(d.get("patch")), d.get("serie"), d.get("grade")
     rc = bool(d.get("rc")) or bool(re.search(r"\brookies?\b|\brc\b", t))
     c = []                                             # (lettre, raison) : on garde la meilleure
-    if d.get("exclu") or re.search(r"\bchecklist\b|\blot\b|\breprint\b|\bcustom\b", t):
+    if d.get("exclu") or re.search(r"\bchecklist\b|\blot\b|\breprint\b|\bcustom\b|\bu-? ?pick\b|\byou pick\b|\bpick (?:from|your|one)\b"
+                                          r"|\b(?:complete|finish) your set\b|\byou choose\b|\bfrom list\b|\bpick list\b", t):
         return ("D", "lot_checklist")                  # un lot, un checklist, une reimpression : jamais une bonne sorte
     yg = bool(YG.search(t))
     brut = " " + str(titre or "").lower() + " "
@@ -159,7 +160,7 @@ def note_joueur(nom, criteres=None, recrue=False):
         return float(NOTE[l]), l, "expert"
     c = criteres or {}
     if c.get("demande") is None and c.get("notoriete") is None:
-        if recrue:
+        if recrue and len(str(nom or "").split()) >= 2:          # une recrue NOMMEE (prenom + nom), pas un titre sans joueur
             return float(JOUEUR_RECRUE_INCONNUE), "B", "recrue_inconnue"
         return float(JOUEUR_INCONNU), "E", "inconnu"
     w = [(0.7, c.get("demande")), (0.3, c.get("notoriete"))]

@@ -7603,6 +7603,7 @@ class Api:
             _pm = _float(prof.get("prix_min")) if isinstance(prof, dict) else None
             garde = (lambda l: [x for x in (l or []) if Api._radar_digne(x, _pm)]) if Api.RADAR_FILTRE else (lambda l: l)
             out = garde(out)
+            petits = garde(petits)          # 16 nov 2026 (« pourquoi ces E sont la ») : les encans des petits vendeurs aussi
             for g in pour_toi + decouvrir + chauds_creux + chasses + types + list(groupes or []):
                 if isinstance(g, dict) and "annonces" in g:
                     g["annonces"] = garde(g.get("annonces"))

@@ -196,7 +196,13 @@ def _sport_de(t, defaut):
     try:
         import cartes_match
         if cartes_match._noms_dans(cartes_match.norm(t)):
-            return "hockey"
+            # 16 nov 2026 (« Will Smith ... Los Angeles Dodgers » au Radar) : un nom de hockey connu, mais le titre crie un
+            # autre sport (equipe, ligue) et rien du hockey : l'autre sport
+            sc = scores(t)
+            autre = max((k for k in sc if k != "hockey"), key=lambda k: sc[k])
+            if not (sc.get("hockey", 0) == 0 and sc[autre] >= 4):
+                return "hockey"
+            return autre
     except Exception:
         pass
     bonus = None

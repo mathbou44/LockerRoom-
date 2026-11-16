@@ -819,7 +819,7 @@ def joueur_du_titre(titre, joueur=None):
             return n
     if _EQUIPES_MOTS["t"] is None:
         _EQUIPES_MOTS["t"] = _mots_equipes()
-    gen = GENERIQUES | VIDES | _EQUIPES_MOTS["t"] | set(PARALLELES)
+    gen = GENERIQUES | VIDES | _EQUIPES_MOTS["t"] | set(PARALLELES) | _MOTS_CARTE | {"rpa", "pick", "you", "list", "choose"}
     reste = re.sub(r"#\s*\S+|/\s*\d+|\b\d[\d\-./]*\b", " ", t).split()
     # 16 nov 2026 (Mathieu : « Finite » pris pour le joueur dans « SPX Finite Rookies Sampo Ranta ») : les suites de mots
     # qui ne sont ni produit ni equipe ; un prenom + nom (2-3 mots) passe avant un mot seul (souvent un nom d'insert)
@@ -835,8 +835,21 @@ def joueur_du_titre(titre, joueur=None):
         suites.append(out)
     if not suites:
         return ""
-    s = next((x for x in suites if 2 <= len(x) <= 3), None) or suites[0]
+    # un prenom connu en tete (« Super Scripts Liam Foudy » -> Liam Foudy) ; sinon la DERNIERE suite de 2-3 mots (l'insert
+    # vient avant le joueur : « Finite Rookies Sampo Ranta ») ; sinon la premiere suite
+    if _PRENOMS["t"] is None:
+        _PRENOMS["t"] = {n.split()[0] for n in _joueurs_connus() if " " in n}
+    coupes = []
+    for x in suites:                               # « super scripts liam foudy » -> « super scripts » + « liam foudy »
+        k = next((i for i, w in enumerate(x) if i > 0 and w in _PRENOMS["t"] and i < len(x) - 1), None)
+        coupes += [x[:k], x[k:]] if k else [x]
+    suites = coupes
+    cand = [x for x in suites if 2 <= len(x) <= 3]
+    s = next((x for x in cand if x[0] in _PRENOMS["t"]), None) or (cand[-1] if cand else suites[0])
     return " ".join(s[:3])
+
+
+_PRENOMS = {"t": None}
 
 
 # 26 oct 2026 (Mathieu : « pas du tout les memes cartes » : une National Hockey Card Day comparee a des Tim Hortons,

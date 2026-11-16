@@ -133,11 +133,27 @@ def carte(titre, avec_type=True):
             "exclu": bool(d.get("exclu")), "score": round(min(100.0, s), 1)}
 
 
+_RE_PAS_HOCKEY = re.compile(r"\b(?:nrl|afl|rugby|soccer|premier league|la liga|bundesliga|nba|nfl|mlb|wnba|prizm|mosaic|optic"
+                            r"|topps chrome|bowman chrome|sensational signatures|ufc|wwe|f1|formula 1|golf|pga|tennis)\b", re.I)
+
+
 def sport_autre(titre):
     """Le sport d'une carte quand SlabIQ ne le sert pas (sports.MOTEURS["score"]), sinon None."""
     try:
         import sports
         sp = sports.sport_de(titre or "")
+        if sp == "hockey":
+            # 16 nov 2026 (Trevor Lawrence, Justin Herbert au Radar) : aucun joueur de hockey connu, rien du hockey dans le titre
+            # et des mots d'un autre sport (Prizm, NFL...) : pas une carte de hockey
+            import cartes_match
+            sc = sports.scores(titre or "")
+            autre = max((k for k in sc if k != "hockey"), key=lambda k: sc[k])
+            connu = cartes_match._noms_dans(cartes_match.norm(titre or ""))
+            if sc.get("hockey", 0) == 0 and sc[autre] >= 2 and not connu:
+                sp = autre
+            # 16 nov 2026 (audit du Radar : une NRL « Young Guns », une Prizm de basket) : des mots qui ne sont jamais du hockey
+            elif not connu and _RE_PAS_HOCKEY.search(titre or ""):
+                sp = autre if sc.get(autre) else "autre"
         return None if sports.sert("score", sp) else sp
     except Exception:
         return None
