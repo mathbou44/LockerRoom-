@@ -236,6 +236,16 @@ def preparer(ventes, base=None, indice=None, sport="hockey"):
     return [x[1] for x in L], np.array([x[2] for x in L]), np.array([x[0] for x in L])
 
 
+def _plis_temps(n, k=5):
+    """15 nov 2026 (session SlabIQ) : les plis de la prediction « texte » hors pli (oof) en BLOCS DE TEMPS contigus (les
+    ventes sont triees par jour), plus au hasard. Au hasard, la meme carte remise en vente le meme jour tombait dans un autre
+    pli : la prediction texte paraissait plus juste qu'elle ne l'est sur des ventes nouvelles et les arbres s'y fiaient trop.
+    Banc (predictions_ventes, 191 000 ventes de hockey, lgb_leger, ventes jamais vues) : coupe au 2 oct (15 % des jours)
+    precision 0,9176 -> 0,9198, confiance 0,9156 -> 0,9184 ; coupe au 8 oct 0,9165 -> 0,9186, confiance 0,9136 -> 0,9153."""
+    from sklearn.model_selection import KFold
+    return list(KFold(k, shuffle=False).split(np.arange(n)))
+
+
 def _mo():
     try:
         with open("/proc/self/status") as f:
@@ -264,7 +274,7 @@ def entrainer(bruts, y, jours, coupe=None, iters=1000, log=print):
     del Xw                                                   # 11 nov 2026 : la memoire du serveur (2 Go partages avec l'app)
     itr = np.where(tr)[0]
     oof = np.zeros(n)
-    for a, b_ in KFold(5, shuffle=True, random_state=0).split(itr):
+    for a, b_ in _plis_temps(len(itr)):
         oof[itr[b_]] = Ridge(alpha=1.0).fit(Xt[itr[a]], y[itr[a]]).predict(Xt[itr[b_]])
     rid = Ridge(alpha=1.0).fit(Xt[tr], y[tr])
     if te.any():
