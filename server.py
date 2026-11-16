@@ -241,7 +241,7 @@ app.config["MAX_CONTENT_LENGTH"] = 64 * 1024 * 1024        # 5 nov 2026 : photos
 #        # 23 oct 2026 - 2 photos ; 3 nov 2026 : + rasantes et 8 gros plans des coins
 # pages qui restent publiques : break partage, retour et avis eBay, pages legales, icones
 _PUBLIQUES = ("/b/", "/api/b/", "/api/ebay_retour", "/ebay/suppression-compte", "/confidentialite", "/conditions",
-              "/support", "/robots.txt", "/sitemap.xml", "/logo_sc_", "/syne-800.woff2", "/manrope-", "/barlow-", "/connexion", "/icone", "/favicon", "/manifest.json", "/stripe/webhook", "/apple/notifications", "/sante", "/csp-rapport")
+              "/support", "/tarifs", "/pricing", "/a-propos", "/about", "/robots.txt", "/sitemap.xml", "/logo_sc_", "/syne-800.woff2", "/manrope-", "/barlow-", "/connexion", "/icone", "/favicon", "/manifest.json", "/stripe/webhook", "/apple/notifications", "/sante", "/csp-rapport")
 
 
 import comptes  # noqa: E402
@@ -808,16 +808,40 @@ def _langue():
     return "en" if (request.accept_languages.best_match(["fr", "en"]) or "fr") == "en" else "fr"
 
 
-def _page_vitrine():
-    """27 oct 2026 - slabcoach.com pour un visiteur : la vitrine (pourquoi nous, Gratuit / essai / Pro, eBay recommande)."""
+# 16 nov 2026 (Mathieu : « une page principale qui montre tous nos avantages en menu defilant, une page d'abonnement, une page
+# de qui nous sommes et notre but ») : le site en 3 pages, une base commune (barre, menu, pied) et le contenu de chaque page
+SITE_PAGES = {
+    "accueil": ("/", "site_accueil.html", "SlabCoach · L’app des cartes de sport", "SlabCoach · The sports card app",
+                "Deals sous la valeur, SlabIQ et le bon moment pour acheter, vraie valeur, collection, ventes eBay et breaks. Gratuit, 14 jours de Pro offerts.",
+                "Deals under value, SlabIQ and the right moment to buy, real value, collection, eBay sales and breaks. Free, 14 days of Pro on us."),
+    "tarifs": ("/tarifs", "site_tarifs.html", "Tarifs · SlabCoach", "Pricing · SlabCoach",
+               "Gratuit pour toujours, ou Pro à 7,99 $ CA par mois. 14 jours de Pro offerts, sans carte de crédit.",
+               "Free forever, or Pro at $7.99 CAD a month. 14 days of Pro on us, no credit card."),
+    "apropos": ("/a-propos", "site_apropos.html", "Qui nous sommes · SlabCoach", "About us · SlabCoach",
+                "SlabCoach est fait au Québec par un collectionneur, pour que chaque collectionneur achète et vende avec les vrais chiffres.",
+                "SlabCoach is made in Quebec by a collector, so every collector can buy and sell with the real numbers."),
+}
+
+
+def _page_vitrine(page="accueil"):
+    """27 oct 2026 - slabcoach.com pour un visiteur ; 16 nov 2026 : trois pages (accueil, tarifs, qui nous sommes)."""
+    import html as _h
+    chemin, fichier, t_fr, t_en, d_fr, d_en = SITE_PAGES.get(page) or SITE_PAGES["accueil"]
     try:
-        with open(os.path.join(DOSSIER_UI, "vitrine.html"), encoding="utf-8") as f:
+        with open(os.path.join(DOSSIER_UI, "site_base.html"), encoding="utf-8") as f:
             html = f.read()
+        with open(os.path.join(DOSSIER_UI, fichier), encoding="utf-8") as f:
+            contenu = f.read()
     except OSError:
         from flask import redirect
         return redirect("/connexion")
     l = _langue()
     autre = "fr" if l == "en" else "en"
+    html = (html.replace("{{CONTENU}}", contenu).replace("{{SCRIPT}}", "")
+            .replace("{{TITRE}}", _h.escape(t_en if l == "en" else t_fr)).replace("{{DESC}}", _h.escape(d_en if l == "en" else d_fr))
+            .replace("{{CHEMIN}}", chemin))
+    for k in SITE_PAGES:
+        html = html.replace("{{ACT_" + k.upper() + "}}", "actif" if k == page else "")
     html = html.replace('<html lang="fr">', f'<html lang="{l}">').replace(
         '<a class="btn holo" href="/connexion"><span class="fr">Commencer</span>',
         f'<a class="lang" href="?lang={autre}">{"Français" if autre == "fr" else "English"}</a><a class="btn holo" href="/connexion"><span class="fr">Commencer</span>', 1)
@@ -826,6 +850,24 @@ def _page_vitrine():
     if request.args.get("lang") in ("fr", "en"):
         r.set_cookie("lr_langue", l, max_age=365 * 86400, samesite="Lax", secure=HEBERGE)   # 12 nov 2026 (Aikido) : jamais en clair
     return r
+
+
+@app.route("/tarifs")
+@app.route("/pricing")
+def page_tarifs():
+    if "LockerRoomiOS" in (request.headers.get("User-Agent") or ""):
+        from flask import redirect
+        return redirect("/connexion")                                # app iPhone : pas les prix du site (regles d'Apple)
+    return _page_vitrine("tarifs")
+
+
+@app.route("/a-propos")
+@app.route("/about")
+def page_apropos():
+    if "LockerRoomiOS" in (request.headers.get("User-Agent") or ""):
+        from flask import redirect
+        return redirect("/connexion")
+    return _page_vitrine("apropos")
 
 
 def _page_langue(html):
