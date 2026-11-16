@@ -61,6 +61,14 @@ def iq_haut_juger(maintenant, avant):
     return None
 
 
+NOTES_IQ = ((92, "A+"), (85, "A"), (80, "A-"), (73, "B+"), (65, "B"), (50, "C"))
+
+
+def lettre(n):
+    """16 nov 2026 : le score SlabIQ en lettre (le meme bareme que l'app)."""
+    return next((l for s, l in NOTES_IQ if float(n) >= s), "D")
+
+
 def iq_haut(api, etat, mes=None, maint=None):
     import indice_joueurs
     import cartes_match
@@ -88,9 +96,10 @@ def iq_haut(api, etat, mes=None, maint=None):
         if j:
             cands.append((j[0] == "monte", j[1] or 0, float(v["indice"]), nom, k, j))
     for _, _, ind, nom, k, (quoi, d) in sorted(cands, reverse=True):
-        titre = (f"SlabIQ de {nom} : +{d} en 7 jours" if quoi == "monte" else f"{nom} entre dans le haut du SlabIQ")
-        texte = (f"Son indice est maintenant à {int(round(ind))} sur 100 : ses cartes sont plus recherchées" if quoi == "monte"
-                 else f"Indice {int(round(ind))} sur 100 : un des joueurs les plus recherchés en ce moment")
+        # 16 nov 2026 (« des barèmes comme a l'ecole ») : la lettre, pas le chiffre
+        titre = (f"SlabIQ de {nom} : en hausse cette semaine" if quoi == "monte" else f"{nom} entre dans le haut du SlabIQ")
+        texte = (f"Il est maintenant {lettre(ind)} : ses cartes sont plus recherchées" if quoi == "monte"
+                 else f"Note {lettre(ind)} : un des joueurs les plus recherchés en ce moment")
         if _notifier(api, etat, f"iqh:{k}:{semaine}", titre, texte, "#joueur/" + nom, maint=maint):
             return 1
     return 0
