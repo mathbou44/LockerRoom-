@@ -204,6 +204,9 @@ def score(titre, joueur=None):
     raison = raison_de(pil, mb, ev, prem, k)
     return {"score": int(round(total)) if total is not None else None, "joueur": nom or None, "indice": ij.get("indice") if ij else None,
             "pastilles": pil, "semaine": (ij or {}).get("semaine"), "carte": c, "raison": raison,
+            # 16 nov 2026 (Mathieu : « tous nos baremes doivent etre la, de maniere simple ») : les criteres du joueur (0-100)
+            "criteres": {k: round(float(v)) for k, v in (((ij or {}).get("criteres")) or {}).items()
+                         if k in ("forme", "demande", "buzz", "notoriete", "marche", "communaute", "legende", "ascension", "recrue") and v is not None},
             **({"evergreen": {"score": ev["score"], "raisons": ev["raisons"]}} if ev and ev.get("evergreen") else {}),
             **({"marche": {"ecart_pct": mb.get("ecart_pct")}} if mb else {}), **({"connaissance": k} if k else {})}
 
