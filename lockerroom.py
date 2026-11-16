@@ -565,6 +565,40 @@ def _bb_resume(f, k, n):
             "trophees": {kk: v for kk, v in tc.items() if kk in ("mvp", "cy", "recrue", "etoile", "ws", "hof")}, "ligne": ligne, "fiche": bool(f)}
 
 
+_IQB_FICHIER = os.path.join(DOSSIER, "cache_iq_break.json")
+_IQB_VERROU = threading.Lock()
+
+
+def _iq_break_lire(ck):
+    """16 nov 2026 : le SlabIQ de chaque joueur d'un produit (break), garde sur le disque par produit et version du modele."""
+    try:
+        with open(_IQB_FICHIER, encoding="utf-8") as f:
+            d = json.load(f)
+        e = d.get(f"{ck[0]}|{ck[1]}") or {}
+        return {j: tuple(v) for j, v in e.items() if isinstance(v, list) and len(v) == 4}
+    except (OSError, ValueError):
+        return {}
+
+
+def _iq_break_ecrire(ck, cache):
+    try:
+        with _IQB_VERROU:
+            try:
+                with open(_IQB_FICHIER, encoding="utf-8") as f:
+                    d = json.load(f)
+            except (OSError, ValueError):
+                d = {}
+            pre = f"{ck[0]}|"
+            d = {k: v for k, v in d.items() if not k.startswith(pre)}       # une seule version du modele par produit
+            d[f"{ck[0]}|{ck[1]}"] = {j: list(v) for j, v in cache.items()}
+            tmp = _IQB_FICHIER + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(d, f)
+            os.replace(tmp, _IQB_FICHIER)
+    except OSError as e:
+        print("Cache SlabIQ break : " + repr(e)[:120], flush=True)
+
+
 class Api:
     def __init__(self, chemin_db=None):
         _API_REF[:] = [self]                 # 10 nov 2026 : ebay_prix_actif() sait si c'est l'admin
@@ -1537,6 +1571,70 @@ class Api:
             _d.regler_vendeurs_perso(comptes.courant() if comptes.MULTI else "local", v or [])
         return self.deals_profil_lire()
 
+    VERIF_CHER = 0.20
+
+    @staticmethod
+    def _indices_verifier(annonces, delai_s=3.0):
+        """16 nov 2026 (Mathieu : « une maniere grise de donner un hint a l'utilisateur de verifier le prix de certaines
+        cartes ; valide les criteres les plus pertinents ») : x["verifier"] = les raisons, EN MOTS (aucun chiffre, aucun prix,
+        aucune mediane ne sort) : « cher » (le prix est 20 %+ au-dessus des ventes deja connues de la meme carte : cache
+        seulement, aucun appel) et « nouveau » (produit sorti il y a moins de 60 jours). Valide sur 18 463 achats simules
+        (banc YG, 2 mois) : avec l'indice, mediane -27,5 % et 70 % perdent plus de 15 % ; sans, +3,4 % et 22 %."""
+        import moment_yg
+        t0, memo = time.time(), {}
+        for x in annonces or []:
+            if not isinstance(x, dict) or "verifier" in x:
+                continue
+            t = str(x.get("titre") or "")
+            raisons = []
+            try:
+                if moment_yg.vague_de(t):
+                    raisons.append("nouveau")
+            except Exception:
+                pass
+            tot = _float(x.get("total"))
+            if t and tot and time.time() - t0 < delai_s:
+                try:
+                    if t not in memo:
+                        memo[t] = vendues.memes_cache(t, n=40, age_max=30 * 86400)
+                    vc = memo[t] or {}
+                    if (vc.get("nb") or 0) >= 3 and vc.get("mediane") and tot > float(vc["mediane"]) * (1 + Api.VERIF_CHER):
+                        raisons.append("cher")
+                except Exception:
+                    pass
+            x["verifier"] = raisons
+
+    POUR_MOI_PTS = {"joueur": 12, "type": 5, "budget": 3}
+
+    @staticmethod
+    def _pour_moi(annonces, prof):
+        """16 nov 2026 : les raisons pour lesquelles une annonce est pour CET utilisateur (joueur suivi, sorte de carte qu'il
+        collectionne, dans son budget) et les points qui la font monter dans son Radar (le score SlabIQ ne change pas)."""
+        prof = prof or {}
+        fav = [cartes_match.norm(f) for f in (prof.get("favoris") or []) if str(f).strip()]
+        coll = set(prof.get("collectionne") or [])
+        pmin, pmax = _float(prof.get("prix_min")), _float(prof.get("prix_max"))
+        for x in annonces or []:
+            if not isinstance(x, dict) or "pour_moi" in x:
+                continue
+            t = x.get("titre") or ""
+            pm = []
+            if fav:
+                tn = cartes_match.norm(t + " " + str(x.get("joueur") or ""))
+                if any(f and f in tn for f in fav):
+                    pm.append("joueur")
+            if coll:
+                d = cartes_match._decoder_memo(t) or {}
+                ok = {"recrues": d.get("rc"), "autos": d.get("auto"), "patchs": d.get("patch"), "auto_patch": d.get("auto") and d.get("patch"),
+                      "numerotees": bool(d.get("serie")) or bool(cartes_match.numero_serie(t)), "gradees": bool(d.get("grade"))}
+                if any(ok.get(k) for k in coll):
+                    pm.append("type")
+            tot = _float(x.get("total"))
+            if tot and (pmax or pmin) and (not pmax or tot <= pmax * 1.0001) and (not pmin or tot >= pmin):
+                pm.append("budget")
+            x["pour_moi"] = pm
+            x["pour_moi_pts"] = sum(Api.POUR_MOI_PTS[k] for k in pm)
+
     def _profil_deals(self):
         """Le profil de deals du compte, pret a appliquer (None = rien de regle)."""
         p = self.reglages_lire().get("deals_profil")
@@ -2486,7 +2584,10 @@ class Api:
         (admin / public) et par version des donnees (valeurs, modele, moment du jour)."""
         import score_modele
         try:
-            cle = (json.dumps(params or {}, sort_keys=True, default=str), comps_permis(self), self._est_admin(),
+            # 16 nov 2026 (Mathieu : « page break toujours aussi lente ») : la cle ne garde que ce qui change le calcul
+            # (les champs vides et {} tombent) : le rechauffage en fond et l'ecran de l'acheteur tombent sur la MEME cle
+            pn = {k: v for k, v in (params or {}).items() if v is not None and v != "" and v != {} and v != []}
+            cle = (json.dumps(pn, sort_keys=True, default=str), comps_permis(self), self._est_admin(),
                    getattr(self, "_EV_CLE", None), id(score_modele.charger()), date.today().isoformat(), forfaits_pro_cle())
         except Exception:
             cle = None
@@ -2494,7 +2595,10 @@ class Api:
             g = Api._AB_CACHE.get(cle)
             if g and time.time() - g[0] < Api.AB_TTL_S:
                 return g[1]
+        t0 = time.time()
         out = self._analyse_break(params)
+        if time.time() - t0 > 3:
+            print(f"Break lent : {(params or {}).get('produit_id')} {time.time() - t0:.1f} s", flush=True)
         if cle is not None and isinstance(out, dict) and out.get("ok"):
             if len(Api._AB_CACHE) > 48:
                 for k in sorted(Api._AB_CACHE, key=lambda k: Api._AB_CACHE[k][0])[:16]:
@@ -2642,16 +2746,21 @@ class Api:
                 d_[n_] = d_.get(n_, 0.0) + n
         sous = {j: [k for k, _ in sorted(d_.items(), key=lambda kv: -kv[1])[:25]] for j, d_ in poids.items()}
         # le meilleur score de chaque joueur dans ce produit ne depend ni des boites ni des prix : garde 6 h (par modele)
-        cache = Api._IQ_BREAK.setdefault((prod.get("id"), id(score_modele.charger())), {})
-        if len(Api._IQ_BREAK) > 60:
-            Api._IQ_BREAK.clear()
-            cache = Api._IQ_BREAK.setdefault((prod.get("id"), id(score_modele.charger())), {})
+        # 16 nov 2026 (« page break toujours aussi lente ») : garde aussi sur le disque (par produit et par version du
+        # modele) : apres un deploiement, le premier ecran d'un produit ne refait plus passer ses cartes dans le modele
+        ck = (prod.get("id"), score_modele._M.get("empreinte", 0.0))
+        if ck not in Api._IQ_BREAK:
+            if len(Api._IQ_BREAK) > 60:
+                Api._IQ_BREAK.clear()
+            Api._IQ_BREAK[ck] = _iq_break_lire(ck)
+        cache = Api._IQ_BREAK[ck]
+        n_avant = len(cache)
         titres, ou, connus = [], [], []
         for pl in places[:520]:
             noms = [pl["cle"]] if "equipe" in pl or mode == "joueurs" else list(pl.get("vedettes") or [])[:3]   # place « joueur » / « equipe »
             for j in noms:
                 g = cache.get(j)
-                if g and time.time() - g[0] < 6 * 3600:
+                if g and time.time() - g[0] < 24 * 3600:          # (meme modele : meme score ; la cle change avec le modele)
                     continue
                 for n_ in sous.get(j) or [""]:
                     titres.append(f"{base} {n_} {j}".strip())
@@ -2669,6 +2778,8 @@ class Api:
                 a_[2], a_[3] = v, n_
         for j, (sv, sw, vb, nb_) in agg.items():
             cache[j] = (time.time(), int(round(sv / sw)) if sw else None, vb, nb_)
+        if agg or len(cache) != n_avant:
+            _iq_break_ecrire(ck, cache)
         vus = set()
         for pl in places[:520]:
             noms = [pl["cle"]] if "equipe" in pl or mode == "joueurs" else list(pl.get("vedettes") or [])[:3]
@@ -3450,11 +3561,24 @@ class Api:
         with _verrou:
             c = self._db()
             try:
-                L = [tuple(r) for r in c.execute("SELECT id, titre, joueur FROM cartes WHERE statut!='Vendue' ORDER BY id DESC LIMIT 1500")]
+                R = [tuple(r) for r in c.execute("SELECT id, titre, joueur, annee, marque, set_nom, parallele, tirage, grade, auto "
+                                                  "FROM cartes WHERE statut!='Vendue' ORDER BY id DESC LIMIT 1500")]
             finally:
                 c.close()
+        # 16 nov 2026 (Mathieu : « aucun SlabIQ score affiche » dans l'inventaire) : une carte entree a la main (ou un titre
+        # trop court) n'avait pas de titre utilisable : le titre est complete avec ses champs (annee, marque, set, joueur,
+        # parallele, tirage, gradation)
+        def titre_de(r):
+            i, t, j, an, ma, se, pa, ti, gr, au = r
+            t = str(t or "").strip()
+            if len(t) >= 25:
+                return t
+            bouts = [str(x) for x in (an, ma, se, j, pa, ("/" + str(ti)) if ti else None, "Auto" if au else None, gr) if x]
+            return " ".join(dict.fromkeys([t] + bouts if t else bouts)).strip()
+        L = [(r[0], titre_de(r), r[2]) for r in R]
         import hashlib
-        cle = (comptes.courant() or "local") + ":" + hashlib.md5(json.dumps(L).encode()).hexdigest()
+        import score_modele
+        cle = (comptes.courant() or "local") + ":" + str(score_modele._M.get("empreinte", 0.0)) + ":" + hashlib.md5(json.dumps(L).encode()).hexdigest()
         if cle in Api._INV_SCORES:
             return Api._INV_SCORES[cle]
         out = {}
@@ -3464,9 +3588,12 @@ class Api:
             out = {str(i): s_ for (i, _, _), s_ in zip(L, sc or []) if s_ is not None}
         except Exception as e:
             print("Scores de l'inventaire : " + repr(e), flush=True)
+        r = {"ok": True, "scores": out}
+        if L and not out:
+            return r                     # (modele pas encore charge, ou erreur) : rien de garde, le prochain appel reessaie
         if len(Api._INV_SCORES) > 500:
             Api._INV_SCORES.clear()
-        Api._INV_SCORES[cle] = r = {"ok": True, "scores": out}
+        Api._INV_SCORES[cle] = r
         return r
 
     # 14 nov 2026 (Mathieu : « 157 $ de profit ? 170 - 59 et les frais, ca fait pas 157 ») : le profit d'une carte vendue
@@ -7340,6 +7467,20 @@ class Api:
         # 10 nov 2026 : le Score SlabCoach (le modele appris : titre sans le joueur + donnees publiques ; jamais le prix)
         score_slab.annoter_lot(out + [y for g in pour_toi + decouvrir + chauds_creux + chasses + types for y in g.get("annonces") or []]
                                + [y for v in vend for y in v.get("annonces") or []])
+        # 16 nov 2026 (Mathieu : « dire que SlabCoach x SlabIQ s'adapte a son utilisateur ; faire en sorte que ce soit le
+        # cas ») : le score reste UN seul chiffre (le meme pour tout le monde) ; ce qui s'adapte, c'est l'ordre et le pourquoi :
+        # ses joueurs suivis, les sortes de cartes qu'il collectionne et son budget poussent une annonce plus haut dans SON
+        # Radar, avec la raison (« pour_moi »)
+        try:
+            self._pour_moi(out + [y for g in pour_toi + decouvrir + chauds_creux + chasses + types for y in g.get("annonces") or []]
+                           + [y for v in vend for y in v.get("annonces") or []], prof)
+        except Exception as e:
+            print("Radar (pour moi) : " + repr(e)[:120], flush=True)
+        try:
+            self._indices_verifier(out + [y for g in pour_toi + decouvrir + chauds_creux + chasses + types for y in g.get("annonces") or []]
+                                   + [y for v in vend for y in v.get("annonces") or []])
+        except Exception as e:
+            print("Radar (verifier) : " + repr(e)[:120], flush=True)
         # 11 nov 2026 (Mathieu : « dans la version admin, le cout d'acquisition avec les ventes ; il y a juste moi ») : l'ADMIN
         # (verifie cote serveur, jamais en vue simulee) voit sur chaque annonce du Radar les ventes reelles de la meme carte
         # (cache et archives seulement : aucun appel) et sa mise max. Les autres comptes ne recoivent jamais ces champs.
@@ -9679,10 +9820,27 @@ class Api:
         with _verrou:
             c = self._db()
             try:
-                for canal, rev, prof, nb in c.execute(
-                        "SELECT canal, SUM(prix_vendu), SUM(profit), COUNT(*) FROM cartes WHERE statut='Vendue' AND substr(vendu_le,1,7)=? "
-                        "GROUP BY canal", (mois,)):
+                # 16 nov 2026 (Mathieu : « pas sur de comprendre cette page ; revoir comment l'info est presentee ») : ou va
+                # l'argent (cout des cartes, frais, livraison), les ventes sans cout connu et le mois d'avant pour comparer
+                det = {"couts": 0.0, "frais": 0.0, "port": 0.0, "sans_cout": 0}
+                for canal, rev, prof, nb, co, fr, pp, pc, sc in c.execute(
+                        "SELECT canal, SUM(prix_vendu), SUM(profit), COUNT(*), SUM(COALESCE(cout,0)), SUM(COALESCE(frais,0)), "
+                        "SUM(COALESCE(port_paye,0)), SUM(COALESCE(port_charge,0)), SUM(CASE WHEN cout IS NULL THEN 1 ELSE 0 END) "
+                        "FROM cartes WHERE statut='Vendue' AND substr(vendu_le,1,7)=? GROUP BY canal", (mois,)):
                     out["canaux"][canal or "Autre"] = {"revenus": round(rev or 0, 2), "profit": round(prof or 0, 2), "nb": nb}
+                    det["couts"] += co or 0
+                    det["frais"] += fr or 0
+                    det["port"] += (pp or 0) - (pc or 0)
+                    det["sans_cout"] += sc or 0
+                out["detail"] = {k: (round(v, 2) if isinstance(v, float) else v) for k, v in det.items()}
+                try:
+                    y_, m_ = (int(x) for x in mois.split("-"))
+                    prec = f"{y_ - 1}-12" if m_ == 1 else f"{y_}-{m_ - 1:02d}"
+                    rv_, pf_, n_ = c.execute("SELECT COALESCE(SUM(prix_vendu),0), COALESCE(SUM(profit),0), COUNT(*) FROM cartes "
+                                             "WHERE statut='Vendue' AND substr(vendu_le,1,7)=?", (prec,)).fetchone()
+                    out["precedent"] = {"mois": prec, "revenus": round(rv_, 2), "profit": round(pf_, 2), "nb": n_}
+                except (ValueError, TypeError):
+                    pass
                 ventes_libres = c.execute("SELECT lignes FROM ventes_comptoir WHERE substr(le,1,7)=?", (mois,)).fetchall()
                 libre = sum(_float(l.get("prix")) or 0 for (lj,) in ventes_libres for l in json.loads(lj) if not l.get("carte_id"))
                 if libre:
@@ -9703,6 +9861,7 @@ class Api:
                                        "profit": round(sum(b["profit"] for b in brk), 2), "nb": len(brk)}
         out["revenus"] = round(sum(v["revenus"] for v in out["canaux"].values()), 2)
         out["profit"] = round(sum(v["profit"] for v in out["canaux"].values()) - out["depenses"], 2)
+        out["nb"] = sum(v["nb"] for v in out["canaux"].values())
         return out
 
     def ventes_analyse(self, periode="90"):

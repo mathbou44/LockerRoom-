@@ -1845,9 +1845,12 @@ def _rechauffer():
     try:
         import catalogue
         time.sleep(int(os.environ.get("LR_RECHAUFFER_BREAKS_S") or 120))
-        for p in sorted(catalogue.liste(), key=lambda x: str(x.get("sortie") or ""), reverse=True)[:8]:
+        # 16 nov 2026 : les memes arguments que l'ecran de l'acheteur (meme cle de cache) ; tous les produits, du plus recent
+        # au plus vieux : le SlabIQ de leurs joueurs est garde sur le disque, seul le tout premier passage coute
+        for p in sorted(catalogue.liste(), key=lambda x: str(x.get("sortie") or ""), reverse=True):
             try:
-                api.analyse_break({"produit_id": p["id"], "boites": 1, "mode": "equipes", "acheteur": True})
+                api.analyse_break({"produit_id": p["id"], "boites": 1, "mode": "equipes", "cout_boite": 0, "decote": 0,
+                                   "prix_demandes": {}, "prix_joueurs": {}, "acheteur": True})
             except Exception as e:
                 print("Rechauffage (break) : " + repr(e)[:120], flush=True)
             time.sleep(20)

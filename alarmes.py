@@ -18,10 +18,10 @@ import os
 import time
 from datetime import datetime, timedelta
 
-TYPES = ["prix_cible", "gros_deal", "encan_fin", "en_feu", "acheteurs", "vendu", "mes_joueurs", "iq_nouvelle", "iq_occasion"]
+TYPES = ["prix_cible", "gros_deal", "encan_fin", "en_feu", "acheteurs", "vendu", "mes_joueurs", "iq_nouvelle", "iq_occasion", "iq_haut"]
 # 28 oct 2026 (audit Apple 4.5.4) : les alertes « promotionnelles » (deals, joueur en feu) seulement si l'utilisateur les coche
 DEFAUT = {"prix_cible": True, "gros_deal": False, "encan_fin": True, "en_feu": False, "acheteurs": True, "vendu": True,
-          "mes_joueurs": False, "iq_nouvelle": False, "iq_occasion": False, "seuil_deal": 40}
+          "mes_joueurs": False, "iq_nouvelle": False, "iq_occasion": False, "iq_haut": False, "seuil_deal": 40}
 MAX_JOUR = 3
 NUIT = (22, 8)
 
@@ -44,6 +44,56 @@ def _ecrire(d):
     with open(p + ".tmp", "w", encoding="utf-8") as f:
         json.dump(d, f)
     os.replace(p + ".tmp", p)
+
+
+SEUIL_HAUT = 80
+HAUSSE_MIN = 10
+
+
+def iq_haut_juger(maintenant, avant):
+    """(indice d'aujourd'hui, indice d'il y a 7 jours ou None) -> ("monte", delta) | ("haut", None) | None."""
+    if maintenant is None:
+        return None
+    if avant is not None and maintenant - avant >= HAUSSE_MIN:
+        return ("monte", int(round(maintenant - avant)))
+    if maintenant >= SEUIL_HAUT and (avant is None or avant < SEUIL_HAUT):
+        return ("haut", None)
+    return None
+
+
+def iq_haut(api, etat, mes=None, maint=None):
+    import indice_joueurs
+    import cartes_match
+    import quoi_de_neuf
+    suivis = {}
+    try:
+        for f in (api.deals_profil_lire().get("favoris") or []):
+            suivis[cartes_match.norm(f)] = 0
+    except Exception:
+        pass
+    for k, n in (mes or {}).items():
+        suivis.setdefault(k, n)
+    if not suivis:
+        return 0
+    I = indice_joueurs.lire().get("indice") or {}
+    semaine = datetime.now().strftime("%G-%V")
+    il_y_a_7 = (datetime.now() - timedelta(days=7)).date().isoformat()
+    cands = []
+    for nom, v in I.items():
+        k = cartes_match.norm(nom)
+        if k not in suivis or v.get("indice") is None:
+            continue
+        a = quoi_de_neuf.avant(nom, il_y_a_7)
+        j = iq_haut_juger(float(v["indice"]), float(a[0]) if a and a[0] is not None else None)
+        if j:
+            cands.append((j[0] == "monte", j[1] or 0, float(v["indice"]), nom, k, j))
+    for _, _, ind, nom, k, (quoi, d) in sorted(cands, reverse=True):
+        titre = (f"SlabIQ de {nom} : +{d} en 7 jours" if quoi == "monte" else f"{nom} entre dans le haut du SlabIQ")
+        texte = (f"Son indice est maintenant à {int(round(ind))} sur 100 : ses cartes sont plus recherchées" if quoi == "monte"
+                 else f"Indice {int(round(ind))} sur 100 : un des joueurs les plus recherchés en ce moment")
+        if _notifier(api, etat, f"iqh:{k}:{semaine}", titre, texte, "#joueur/" + nom, maint=maint):
+            return 1
+    return 0
 
 
 def reglages(api):
@@ -278,6 +328,15 @@ def verifier(api, maint=None):
                         break
         except Exception as e:
             print("Alertes SlabIQ : " + repr(e), flush=True)
+
+    # -- 16 nov 2026 (Mathieu : « mettre ses joueurs en tracking et recevoir une notif quand le SlabScore est haut ou
+    # augmente ») : pour ses joueurs suivis (et ceux de ses cartes), l'Indice SlabIQ qui MONTE (+10 en 7 jours) ou qui
+    # ENTRE dans le haut (80 et plus). Une fois par joueur par semaine, une seule par passe. Des faits publics : jamais un prix.
+    if r.get("iq_haut"):
+        try:
+            faits["iq_haut"] = iq_haut(api, etat, mes, maint) or 0
+        except Exception as e:
+            print("Alertes SlabIQ haut : " + repr(e), flush=True)
 
     # -- vendeur : acheteurs interesses, carte vendue -------------------------------------------------------------
     if r["acheteurs"]:

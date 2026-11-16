@@ -36,7 +36,7 @@ html[lang="fr"] .en, html[lang="en"] .fr{display:none !important}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 html,body{overflow-x:clip}
-body{margin:0; background:var(--fond); color:var(--texte); font:16px/1.55 'Barlow',system-ui,-apple-system,sans-serif; overflow-x:hidden}
+body{margin:0; background:var(--fond); color:var(--texte); font:17px/1.6 'Barlow',system-ui,-apple-system,sans-serif; overflow-x:hidden}
 a{color:inherit}
 .holo-t{background:var(--holo); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent}
 .conteneur{width:min(1120px,100%); margin:0 auto; padding:0 20px}
@@ -91,18 +91,30 @@ h1{font:700 clamp(40px,6.4vw,68px)/1.02 'Barlow Condensed',sans-serif; letter-sp
 @media (max-width:900px){ .hero .conteneur{grid-template-columns:1fr} .visuel{height:360px; max-width:520px; width:100%; margin:0 auto} .tuile{width:190px} .t2{left:30%} .t3{left:56%} }
 @media (max-width:480px){ .tuile{width:160px} .t1{left:0} .t2{left:26%} .t3{left:50%} .visuel{height:310px} }
 /* sections */
-section{padding:72px 0}
+section{padding:48px 0}
+/* 16 nov 2026 (Mathieu : « moins d'espace entre les sections ; une touche de couleur ou de motif entre les sections comme repere,
+   dans notre concept de prisme, de paralleles et de refractors ») : entre deux sections, un trait prisme qui s'efface aux bouts
+   et, au centre, une petite bande de rayures paralleles holographiques (comme une carte refractor) */
+section + section{position:relative}
+section + section::before{content:''; position:absolute; top:0; left:50%; transform:translateX(-50%); width:min(1120px, calc(100% - 40px)); height:1px;
+  background:var(--holo); opacity:.45; -webkit-mask:linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent); mask:linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent)}
+section + section::after{content:''; position:absolute; top:-5px; left:50%; transform:translateX(-50%) skewX(-24deg); width:96px; height:11px; border-radius:3px;
+  background:repeating-linear-gradient(90deg, rgba(11,11,14,.85) 0 3px, transparent 3px 7px), var(--holo); background-size:auto, 300% 100%;
+  box-shadow:0 0 18px rgba(185,190,255,.35), 0 0 0 4px var(--fond); animation:sep-reflet 9s ease-in-out infinite}
+@keyframes sep-reflet{0%,100%{background-position:0 0, 0 0} 50%{background-position:0 0, 100% 0}}
+@media (prefers-reduced-motion:reduce){ section + section::after{animation:none} }
+@media (max-width:600px){ section{padding:40px 0} section + section::after{width:72px} }
 .kicker{font:700 12px 'Barlow Condensed',sans-serif; letter-spacing:.3em; text-transform:uppercase; margin:0}
 h2{font:700 clamp(30px,4vw,44px)/1.08 'Barlow Condensed',sans-serif; letter-spacing:-.03em; margin:12px 0 0; text-wrap:balance; max-width:760px}
-.intro{color:var(--doux); margin:14px 0 0; max-width:640px; font-size:17px}
+.intro{color:var(--doux); margin:14px 0 0; max-width:660px; font-size:18.5px}
 .grille{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-top:34px}
 @media (max-width:900px){ .grille{grid-template-columns:repeat(2,minmax(0,1fr))} }
 @media (max-width:600px){ .grille{grid-template-columns:1fr} }
 .atout{position:relative; padding:22px; border-radius:20px; background:var(--carte); border:1px solid var(--ligne)}
 .atout .ic{width:44px; height:44px; border-radius:13px; display:flex; align-items:center; justify-content:center; background:rgba(185,190,255,.08); box-shadow:inset 0 0 0 1px rgba(185,190,255,.16); color:var(--acc)}
 .atout .ic svg{width:22px; height:22px}
-.atout h3{font:700 18px/1.25 'Barlow Condensed',sans-serif; margin:16px 0 0; letter-spacing:-.01em}
-.atout p{margin:8px 0 0; color:var(--doux); font-size:15px}
+.atout h3{font:700 20px/1.25 'Barlow Condensed',sans-serif; margin:16px 0 0; letter-spacing:-.01em}
+.atout p{margin:8px 0 0; color:var(--doux); font-size:16px}
 .puce-ebay{position:absolute; top:18px; right:18px; font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:999px; color:var(--acc); background:#1E2038; box-shadow:inset 0 0 0 1px rgba(185,190,255,.2)}
 /* etapes */
 .etapes{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-top:34px; counter-reset:e}
@@ -260,10 +272,10 @@ section[id], div[id].ancre{scroll-margin-top:124px}
 .pas.r{color:#F2A7B5; background:#2A1519; box-shadow:inset 0 0 0 1px rgba(242,167,181,.25)}
 /* pastille SlabIQ (prisme rond) */
 .iq{display:flex; gap:22px; align-items:center}
-.iq-p{flex:none; width:118px; height:118px; border-radius:50%; padding:4px; background:conic-gradient(from 200deg,#9FE6D2,#B9BEFF,#F2B3D6,#F1D58E,#9FE6D2); box-shadow:0 18px 50px rgba(185,190,255,.25)}
+.iq-p{flex:none; width:118px; height:118px; border-radius:50%; padding:4px; background:conic-gradient(from 200deg,#9FE6D2,#B9BEFF,#F2B3D6,#F1D58E,#9FE6D2); box-shadow:0 0 46px rgba(185,190,255,.22)}
 .iq-p div{width:100%; height:100%; border-radius:50%; background:#121216; display:flex; flex-direction:column; align-items:center; justify-content:center}
 .iq-p b{font:700 46px/1 'Barlow Condensed',sans-serif} .iq-p small{font:700 10px 'Barlow Condensed',sans-serif; letter-spacing:.2em; color:var(--pale)}
-.iq ul{list-style:none; margin:0; padding:0; display:grid; gap:9px; font-size:14.5px; color:#DCD9E2}
+.iq ul{list-style:none; margin:0; padding:0; display:grid; gap:9px; font-size:15.5px; color:#DCD9E2}
 .iq li{display:flex; gap:9px; align-items:center} .iq li i{width:8px; height:8px; border-radius:50%; background:var(--vert); flex:none} .iq li i.n{background:var(--or)}
 .iq-bas{margin-top:18px; padding:12px 14px; border-radius:14px; background:rgba(143,212,164,.07); box-shadow:inset 0 0 0 1px rgba(143,212,164,.22); font-size:14px; color:#DCD9E2}
 .iq-bas b{color:var(--vert)}
@@ -294,7 +306,7 @@ section[id], div[id].ancre{scroll-margin-top:124px}
 .pq div{padding:22px; border-radius:20px; background:var(--carte); border:1px solid var(--ligne)}
 .pq b{display:block; font:700 30px/1.05 'Barlow Condensed',sans-serif} .pq h3{font:700 18px 'Barlow Condensed',sans-serif; margin:10px 0 0} .pq p{margin:6px 0 0; color:var(--doux); font-size:14.5px}
 /* tarifs */
-.page-tete{padding:64px 0 8px; text-align:center}
+.page-tete{padding:52px 0 4px; text-align:center}
 .page-tete h1{margin-left:auto; margin-right:auto; max-width:820px}
 .page-tete .sous-titre{margin-left:auto; margin-right:auto; max-width:640px}
 .bascule{display:inline-flex; margin-top:28px; padding:4px; border-radius:999px; border:1px solid var(--ligne); background:var(--carte)}
@@ -324,10 +336,25 @@ section[id], div[id].ancre{scroll-margin-top:124px}
 .but blockquote{margin:0; font:700 clamp(28px,4vw,42px)/1.15 'Barlow Condensed',sans-serif; letter-spacing:-.02em; text-wrap:balance}
 .histoire{display:grid; grid-template-columns:.8fr 1.2fr; gap:40px; align-items:center}
 @media (max-width:800px){ .histoire{grid-template-columns:1fr} }
-.histoire .logo-g{width:100%; max-width:300px; aspect-ratio:1; margin:0 auto; border-radius:32px; display:flex; align-items:center; justify-content:center; background:radial-gradient(60% 60% at 50% 40%, rgba(185,190,255,.12), transparent 70%), var(--carte); border:1px solid var(--ligne)}
-.histoire .logo-g img{width:58%; filter:drop-shadow(0 20px 50px rgba(185,190,255,.3))}
-.histoire p{color:#DCD9E2; font-size:17px} .histoire .sig{color:var(--doux); font-size:15px}
+.histoire .logo-g{width:100%; max-width:300px; aspect-ratio:1; margin:0 auto; border-radius:32px; display:flex; align-items:center; justify-content:center; background:radial-gradient(60% 60% at 50% 50%, rgba(185,190,255,.12), transparent 70%), var(--carte); border:1px solid var(--ligne)}
+.histoire .logo-g img{width:58%; display:block; transform:translateX(4%); filter:drop-shadow(0 0 40px rgba(185,190,255,.3))}
+.histoire p{color:#DCD9E2; font-size:19px; line-height:1.65; margin:0 0 16px} .histoire .sig{color:var(--doux); font-size:16px}
+.histoire p.fort{padding:14px 18px; border-radius:16px; background:var(--carte); border:1px solid var(--ligne); border-left:3px solid #B9BEFF; color:var(--texte)}
 .contact{display:flex; flex-wrap:wrap; gap:12px; margin-top:24px}
+/* 16 nov 2026 (Mathieu : « grossir les titres et le texte ») : une marche de plus partout, l'ecart entre les sections reduit */
+.kicker{font-size:13.5px}
+h2{font-size:clamp(34px,4.6vw,54px)}
+.fonction li{font-size:17px} .fonction li svg{width:22px; height:22px}
+.etape h3{font-size:21px} .etape p{font-size:16.5px}
+.col li{font-size:16.5px} .du p{font-size:16.5px} .note{font-size:14.5px}
+.chiffres b{font-size:34px} .chiffres div>span{font-size:15.5px}
+.regles b{font-size:20px} .regles span{font-size:16.5px}
+.forfait .d, .forfait li{font-size:16.5px} .faq p{font-size:16.5px}
+.pilier p{font-size:16px} .compare td:first-child{font-size:16.5px} .compare td:first-child small{font-size:13.5px}
+.iq-bas{font-size:15px} .ligne-d h4{font-size:17px} .ligne-d p{font-size:14px}
+.pq h3{font-size:20px} .pq p{font-size:15.5px} .bande div>span{font-size:15.5px} .bande b{font-size:31px}
+.garanties h3{font-size:19px} .garanties p{font-size:15.5px} .faq summary{font-size:19px}
+@media (max-width:600px){ h2{font-size:clamp(30px,8vw,40px)} .du p{font-size:14px} .compare td:first-child{font-size:14px} }
 </style>
 </head>
 <body>

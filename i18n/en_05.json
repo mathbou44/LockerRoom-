@@ -294,5 +294,16 @@
 "Pas de pointage": "No score",
 "pas de prix trouvé": "no price found",
 "pas de profit": "no profit",
-"Pas en vente": "Not listed"
+"Pas en vente": "Not listed",
+"l’assistant t’attend : valeurs, emballage, envoi": "the assistant is waiting: values, packing, shipping",
+"acheteurs qui attendent": "buyers waiting",
+"Offres reçues": "Offers received",
+"date de retour passée : vérifie la soumission": "return date passed: check the submission",
+"Gradation en retard": "Grading overdue",
+"Soumission à finir": "Submission to finish",
+"À expédier": "To ship",
+"Encan à suivre": "Auction to follow",
+"terminé ou trop long : vérifie la vente et le paiement": "ended or taking too long: check the sale and payment",
+"commande payée : expédie et ajoute le suivi en un tap": "order paid: ship and add tracking in one tap",
+"accepte, contre-offre ou refuse": "accept, counter or decline"
 }
