@@ -272,6 +272,31 @@ def retirer(api, item_id):
     return out
 
 
+def retirer_lot(api, item_ids):
+    """16 nov 2026 (Mathieu : « une methode rapide de pouvoir supprimer des cartes ») : plusieurs cartes d'un coup (les encans
+    finis, celles au-dessus de la mise max, ou celles cochees) ; celles qu'on avait mises sur eBay en sortent aussi."""
+    l = [str(x) for x in (item_ids or []) if str(x or "").strip()][:400]
+    if not l:
+        return {"ok": True, "retirees": 0, "ids": ids(api)}
+    c = _cx(api)
+    try:
+        q = ",".join("?" * len(l))
+        eb = [r[0] for r in c.execute(f"SELECT item_id FROM watchlist WHERE item_id IN ({q}) AND ebay_le IS NOT NULL AND ebay_le != ''", l).fetchall()]
+        n = c.execute(f"DELETE FROM watchlist WHERE item_id IN ({q})", l).rowcount
+        c.commit()
+    finally:
+        c.close()
+    out = {"ok": True, "retirees": n, "ids": ids(api)}
+    if eb and reglages(api).get("ebay_auto"):
+        try:
+            for i in range(0, len(eb), PAR_APPEL):
+                _appel_ebay("RemoveFromWatchList", eb[i:i + PAR_APPEL])
+            out["ebay"] = True
+        except Exception as e:
+            out["ebay"], out["ebay_erreur"] = False, str(e)[:160]
+    return out
+
+
 # -- 31 oct 2026 (Mathieu : « que la watchlist sur mon app ait l'option de la televerser dans la watchlist eBay ») --------
 # Trading API AddToWatchList / RemoveFromWatchList, avec le compte eBay connecte de l'utilisateur. Toujours sur un geste
 # de l'utilisateur (le bouton, ou l'option « a chaque etoile » qu'il a activee). eBay : 400 cartes au plus par watchlist.

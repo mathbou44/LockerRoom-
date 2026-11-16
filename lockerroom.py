@@ -1717,6 +1717,19 @@ class Api:
         except Exception as e:
             return {"erreur": str(e)[:120]}
 
+    # 16 nov 2026 (Mathieu : « une page admin dashboard ultra complete a la Shopify pour le lancement ») : le tableau du CEO
+    def admin_ceo(self):
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import ceo
+        return ceo.tableau(self)
+
+    def admin_ceo_sauver(self, d=None):
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import ceo
+        return ceo.sauver(d or {})
+
     def admin_highlightly_test(self, nom=None, sport=None):
         """10 nov 2026 (Mathieu : « teste le tout et assure-toi que c'est securitaire ») : un essai en direct (admin)."""
         if not self._est_admin():
@@ -8521,6 +8534,10 @@ class Api:
     def watch_retirer(self, item_id):
         import watchlist
         return watchlist.retirer(self, item_id)
+
+    def watch_retirer_lot(self, item_ids=None):
+        import watchlist
+        return watchlist.retirer_lot(self, item_ids)
 
     def watch_liste(self):
         import watchlist

@@ -78,4 +78,10 @@ n0 = len(pushs)
 watchlist.verifier(a, proches=True, lire_article=lambda i: {"prix_cad": 300.0, "port_cad": 0.0, "fin": iso(20)}, maint=maint)
 assert not any("777" in str(x) or "McDavid" in str(x) for x in pushs[n0:]), pushs[n0:]
 assert {x["item_id"]: x for x in a.watch_mise_max("666", None)["cartes"]}["666"]["mise_max"] == watchlist.mise_auto({"profit_pct": 40}, 1000, 0)
+# 16 nov 2026 : retirer plusieurs cartes d'un coup
+for i in ("L1", "L2", "L3"):
+    a.watch_ajouter({"item_id": i, "titre": "Lot " + i, "valeur": 100, "total": 20})
+r = a.watch_retirer_lot(["L1", "L3", "inexistante"])
+assert r["ok"] and r["retirees"] == 2 and "L2" in r["ids"] and "L1" not in r["ids"] and "L3" not in r["ids"], r
+assert a.watch_retirer_lot([])["retirees"] == 0
 print("WATCHLIST OK")
