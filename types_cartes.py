@@ -10,7 +10,7 @@ The Cup RPA, Premier, Dazzlers...) et sa note (gradee 10, gradee 9, autre gradee
   - prime : combien la carte vaut par rapport a la carte typique du MEME joueur (mediane de prix / prix / mediane du joueur) :
     on compare des Lundell a des Lundell, la popularite du joueur ne fausse rien ;
   - volume : le nombre de ventes et de joueurs (la liquidite, telle que nos archives la voient) ;
-  - score 0-100 : 75 % le rang de la prime, 25 % le rang du volume.
+  - score 0-100 : 60 % le rang de la prime, 40 % le rang du volume (16 nov 2026 ; avant 75 / 25).
   - fiabilite : le classement des 8 premiers mois contre celui des 4 derniers (correlation de rangs).
 Par joueur (assez de ventes) : ses types du plus fort au plus faible. Le public voit le CLASSEMENT et le score, jamais un prix
 (licence eBay) ; l'admin voit les primes.
@@ -29,6 +29,7 @@ _ETAT = {"mt": None, "d": None, "en_cours": False}
 N_MIN = 25            # ventes d'un type pour le classer
 J_MIN = 4             # joueurs differents
 JOUEUR_MIN = 8        # ventes d'un joueur pour son propre classement
+POIDS_PRIME = 0.6     # 16 nov 2026 : la prime 60 %, la liquidite 40 %
 
 # (cle, nom, motif sur le texte normalise de cartes_match : yg -> young guns, fw -> future watch, autograph/signature -> auto)
 FAMILLES = [
@@ -177,7 +178,10 @@ def _table(v):
     rp = _rangs({k: math.log(t["prime"]) for k, t in types.items()})
     rv = _rangs({k: math.log(t["n"]) for k, t in types.items()})
     for k, t in types.items():
-        t["score"] = round(0.75 * rp[k] + 0.25 * rv[k])
+        # 16 nov 2026 (Mathieu : « une Young Guns gradee 10, c'est la carte la plus recherchee en gradation ; pourquoi A- ? ») :
+        # la liquidite (le volume) compte plus (40 % au lieu de 25 %) : une sorte qui se vend tout le temps est aussi recherchee
+        # qu'une sorte chere qui se vend rarement (avant : 75 % prime, 25 % volume)
+        t["score"] = round(POIDS_PRIME * rp[k] + (1 - POIDS_PRIME) * rv[k])
     return types
 
 
