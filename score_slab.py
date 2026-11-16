@@ -144,7 +144,8 @@ def sport_autre(titre):
 
 
 def score(titre, joueur=None):
-    """{score 0-100, joueur, indice, pastilles (du joueur), carte {...}}. Le score : joueur 55 % + carte 45 %."""
+    """{score 0-100, joueur, indice, pastilles (du joueur), carte {...}, bareme {...}}. 16 nov 2026 : le bareme de l'expert
+    (bareme_iq) : la sorte x la cote de collection du joueur, + un demi-cran s'il est en feu."""
     import cartes_match
     c = carte(titre)
     sp = sport_autre(titre)
@@ -154,6 +155,7 @@ def score(titre, joueur=None):
         return {"score": None, "joueur": joueur or None, "indice": None, "pastilles": [], "semaine": None, "carte": c, "sport": sp,
                 "bientot": sp == "baseball"}
     j = (joueur or cartes_match.joueur_du_titre(titre or "") or "").strip()
+    nom = j.title() if j and j == j.lower() else j
     ij = None
     if j:
         try:
@@ -161,37 +163,35 @@ def score(titre, joueur=None):
             ij = indice_joueurs.indice(j)
         except Exception:
             ij = None
-    sj = float(ij["indice"]) if ij and ij.get("indice") is not None else JOUEUR_INCONNU
-    total = POIDS_JOUEUR * sj + (1 - POIDS_JOUEUR) * c["score"]
-    # 10 nov 2026 (« precision 9/10 ») : le modele appris (score_modele) quand il est la ; sinon le melange simple
-    try:
-        import score_modele
-        sm = score_modele.score(nettoyer(titre), joueur)
-        if sm is not None:
-            total = sm
-        elif score_modele.charger() and not score_modele.informatif(nettoyer(titre), joueur):
-            total = None                     # 12 nov 2026 : pas assez d'indices dans le titre : pas de score invente
-    except Exception as e:
-        print("Score modele : " + repr(e), flush=True)
-    # 16 nov 2026 (Mathieu : « une carte peut sortir A+ pour un flip, pour collectionner, ou parce que le marche est chaud ;
-    # le score reste le meme, on explique quand on clique ») : le joueur evergreen (evergreen.py) et sa grosse carte
+    # 16 nov 2026 (Mathieu, questionnaires : « fais-toi un bareme de A+ a D ; les YG, Future Watch Auto, Cup RPA, Premier RPA
+    # sont A+ ») : la note = la SORTE de carte (bareme de l'expert) x la cote de COLLECTION du joueur ; le plus faible domine
+    import bareme_iq as bq
+    so, so_r = bq.sorte(titre)
+    crit = (ij or {}).get("criteres") or {}
+    nj, lj, src = bq.note_joueur(nom or (ij or {}).get("nom"), crit, recrue=bool(c.get("rc")) or so_r.startswith("yg"))
     ev = None
     try:
         import evergreen
-        ev = evergreen.de(nom_j) if (nom_j := (j.title() if j and j == j.lower() else j)) else None
+        ev = evergreen.de(nom) if nom else None
     except Exception:
         ev = None
-    prem = premium(c)
-    if ev and ev.get("evergreen") and prem:
-        ij = dict(ij or {}, indice=max(float((ij or {}).get("indice") or 0), float(ev["score"])))   # le plafond joueur suit l'evergreen
-    total = ajuster_echange(plafond_joueur(plafond_inconnu(total, c, ij), c, ij), ij)
+    prem = bq.NOTE[so] >= bq.NOTE["B+"]            # une grosse carte = une sorte B+ et plus (une base gradee reste une base)
+    if ev and ev.get("evergreen") and prem and src != "expert":
+        nj = max(nj, float(ev["score"]))
+        lj = bq.lettre_joueur(nj)
+    total = bq.note_finale(bq.NOTE[so], nj)
+    if so_r == "lot_checklist":
+        total = min(total, bq.PLAFOND_LOT)
+    pil0 = set((ij or {}).get("pastilles") or [])
+    if pil0 & {"en_feu", "en_hausse", "buzz"} and so_r != "lot_checklist":
+        total = min(100.0, total + bq.FEU_PTS)          # « en feu : un demi-cran »
+    total = ajuster_echange(total, ij)
     k = _savoir(titre)
     total = plancher(total, k)
     if total is not None and ev and ev.get("evergreen") and prem:
         pe = parametres().get("plancher_evergreen")
         if pe:
             total = max(total, float(pe))
-    nom = j.title() if j and j == j.lower() else j
     pil = list((ij or {}).get("pastilles") or [])
     mb = None
     try:                                   # 16 nov 2026 : un joueur cle au marche bas (verifie) : une pastille, l'ecart en %
@@ -208,6 +208,7 @@ def score(titre, joueur=None):
             "criteres": {k: round(float(v)) for k, v in (((ij or {}).get("criteres")) or {}).items()
                          if k in ("forme", "demande", "buzz", "notoriete", "marche", "communaute", "legende", "ascension", "recrue") and v is not None},
             **({"evergreen": {"score": ev["score"], "raisons": ev["raisons"]}} if ev and ev.get("evergreen") else {}),
+            "bareme": {"sorte": so, "sorte_raison": so_r, "joueur": lj, "joueur_note": round(nj, 1), "joueur_source": src},
             **({"marche": {"ecart_pct": mb.get("ecart_pct")}} if mb else {}), **({"connaissance": k} if k else {})}
 
 
@@ -259,6 +260,8 @@ def annoter(x):
         return x
     x["score"] = s["score"]
     x["carte"] = {k: s["carte"][k] for k in ("auto", "patch", "rc", "tirage", "numero", "grade")}
+    if s.get("bareme"):
+        x["sorte"] = s["bareme"]["sorte"]
     if s["pastilles"]:
         x["pastilles_j"] = s["pastilles"]
     if s["joueur"] and not x.get("joueur"):
@@ -271,7 +274,7 @@ def annoter(x):
 # plus) ; un nouveau modele SlabIQ vide la memoire. Seuls les titres jamais vus passent par le modele.
 _LOT = {"m": None, "d": {}}
 LOT_S = 1800
-_CHAMPS_LOT = ("score", "carte", "pastilles_j", "joueur")
+_CHAMPS_LOT = ("score", "carte", "pastilles_j", "joueur", "sorte")
 
 
 def annoter_lot(items):
@@ -304,34 +307,8 @@ def annoter_lot(items):
 
 
 def _annoter_lot(items):
-    """Comme annoter, pour une liste (le modele calcule tout d'un coup : bien plus rapide)."""
-    items = [x for x in items if isinstance(x, dict)]
-    try:
-        import score_modele
-        sc = score_modele.scores([nettoyer(x.get("titre")) for x in items], [x.get("joueur") for x in items])
-    except Exception as e:
-        print("Score modele (lot) : " + repr(e), flush=True)
-        sc = None
-    for k, x in enumerate(items):
-        try:
-            c = carte(x.get("titre") or "")
-            import cartes_match
-            j = (x.get("joueur") or cartes_match.joueur_du_titre(x.get("titre") or "") or "").strip()
-            ij = None
-            if j:
-                import indice_joueurs
-                ij = indice_joueurs.indice(j)
-            sv = _savoir(x.get("titre") or "")
-            if sc is not None:
-                x["score"] = sc[k] if sc[k] is None else int(round(plancher(ajuster_echange(plafond_joueur(plafond_inconnu(sc[k], c, ij), c, ij), ij), sv)))
-            else:
-                sj = float(ij["indice"]) if ij and ij.get("indice") is not None else JOUEUR_INCONNU
-                x["score"] = int(round(plancher(POIDS_JOUEUR * sj + (1 - POIDS_JOUEUR) * c["score"], sv)))
-            x["carte"] = {kk: c[kk] for kk in ("auto", "patch", "rc", "tirage", "numero", "grade")}
-            if ij and ij.get("pastilles"):
-                x["pastilles_j"] = ij["pastilles"]
-            if j and not x.get("joueur"):
-                x["joueur"] = j.title() if j == j.lower() else j
-        except Exception:
-            continue
+    """Comme annoter, pour une liste (16 nov 2026 : le bareme de l'expert est rapide : une annonce a la fois)."""
+    for x in items:
+        if isinstance(x, dict):
+            annoter(x)
     return items

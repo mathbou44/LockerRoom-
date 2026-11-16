@@ -8,6 +8,9 @@ os.environ["LOCKERROOM_DONNEES"] = tempfile.mkdtemp()
 import comptes
 comptes.DONNEES = os.environ["LOCKERROOM_DONNEES"]
 import lockerroom
+
+import lockerroom as _lr_f
+_lr_f.Api.RADAR_FILTRE = False          # 16 nov 2026 : ces tests verifient le tri, pas le filtre de qualite
 import ebay_compte
 import demande_legale
 

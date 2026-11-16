@@ -47,6 +47,9 @@ print("OK creux indice")
 
 # 3. le Radar : la rangee « En creux » ; la ligne de ventes reelles SEULEMENT pour l'admin verifie
 import lockerroom
+
+import lockerroom as _lr_f
+_lr_f.Api.RADAR_FILTRE = False          # 16 nov 2026 : ces tests verifient le tri, pas le filtre de qualite
 import ebay_compte
 import vendues
 import demande_legale

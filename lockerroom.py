@@ -1683,6 +1683,28 @@ class Api:
             x["verifier"] = raisons
 
     POUR_MOI_PTS = {"joueur": 12, "type": 5, "budget": 3}
+    # 16 nov 2026 (Mathieu, questionnaire : « B et plus seulement, C+ pour mes joueurs, jamais une base ; la limite inferieure
+    # a 10 $ et laisser l'utilisateur choisir »)
+    RADAR_SCORE_MIN = int(os.environ.get("LR_RADAR_SCORE_MIN") or 65)        # B et plus
+    RADAR_SCORE_MIN_SUIVI = 58                                               # ses joueurs suivis : C+ et plus
+    RADAR_PRIX_MIN = 10.0                                                    # sauf si l'utilisateur a choisi son prix minimum
+    RADAR_FILTRE = True                                                      # (les tests du tri le coupent)
+
+    @staticmethod
+    def _radar_digne(x, prix_min=None):
+        if not isinstance(x, dict):
+            return False
+        sc = x.get("score")
+        if sc is None or x.get("sorte") == "D":                              # jamais une carte de base (ni un lot)
+            return False
+        suivi = "joueur" in (x.get("pour_moi") or [])
+        if sc < (Api.RADAR_SCORE_MIN_SUIVI if suivi else Api.RADAR_SCORE_MIN):
+            return False
+        tot = _float(x.get("total"))
+        lim = Api.RADAR_PRIX_MIN if prix_min is None else float(prix_min)
+        if tot is not None and tot < lim:
+            return False
+        return True
 
     MARCHE_BAS_PTS = 6                 # 16 nov 2026 : un joueur cle au marche bas (marche_cles) monte dans le Radar
 
@@ -7574,6 +7596,21 @@ class Api:
                                    + [y for v in vend for y in v.get("annonces") or []])
         except Exception as e:
             print("Radar (verifier) : " + repr(e)[:120], flush=True)
+        # 16 nov 2026 (Mathieu : « genre de cartes de merde qui ne devraient pas etre dans le Radar », des D a 2-12 $) : le Radar
+        # ne montre que des cartes qu'un expert regarderait : B et plus (C+ et plus pour SES joueurs suivis), jamais une base,
+        # jamais sous 10 $ (ou sous le prix minimum choisi par l'utilisateur)
+        try:
+            _pm = _float(prof.get("prix_min")) if isinstance(prof, dict) else None
+            garde = (lambda l: [x for x in (l or []) if Api._radar_digne(x, _pm)]) if Api.RADAR_FILTRE else (lambda l: l)
+            out = garde(out)
+            for g in pour_toi + decouvrir + chauds_creux + chasses + types + list(groupes or []):
+                if isinstance(g, dict) and "annonces" in g:
+                    g["annonces"] = garde(g.get("annonces"))
+            for v in vend:
+                if isinstance(v, dict) and "annonces" in v:
+                    v["annonces"] = garde(v.get("annonces"))
+        except Exception as e:
+            print("Radar (qualite) : " + repr(e)[:120], flush=True)
         # 11 nov 2026 (Mathieu : « dans la version admin, le cout d'acquisition avec les ventes ; il y a juste moi ») : l'ADMIN
         # (verifie cote serveur, jamais en vue simulee) voit sur chaque annonce du Radar les ventes reelles de la meme carte
         # (cache et archives seulement : aucun appel) et sa mise max. Les autres comptes ne recoivent jamais ces champs.
