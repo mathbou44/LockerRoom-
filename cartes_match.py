@@ -320,7 +320,9 @@ def raisons_refus(c, titre, appris=None):
     elif a["grade"]:
         r.append("gradée")
     # auto, patch
-    if c["auto"] != a["auto"]:
+    # 16 nov 2026 (Luke Hughes Honorable Numbers « RPA ») : « RPA » sans « auto » ne tranche pas (Rookie Patch Auto, ou une
+    # simple Rookie Patch) : une carte auto n'est pas refusee pour ca
+    if c["auto"] != a["auto"] and not (c["auto"] and not a["auto"] and re.search(r"\brpa\b", t)):
         r.append("autographe" if a["auto"] else "sans autographe")
     if c["patch"] != a["patch"]:
         r.append("patch / relique" if a["patch"] else "sans patch")
@@ -727,7 +729,7 @@ def _noms_famille():
         prenoms = {n.split()[0] for n in _joueurs_connus()}          # « Connor » : prenom de Bedard, nom de Logan O'Connor
         for n in _joueurs_connus():
             f = n.split()[-1]
-            if len(f) >= 4 and f.isalpha() and f not in gen and f not in prenoms:
+            if len(f) >= 4 and f.replace("-", "").isalpha() and f not in gen and f not in prenoms:   # 16 nov : Brandsegg-Nygard
                 out.setdefault(f, n)
         _FAM["t"] = out
     return _FAM["t"]
@@ -808,6 +810,13 @@ def joueur_du_titre(titre, joueur=None):
     trouves = _noms_dans(t)
     if trouves:
         return max(trouves, key=len)
+    # 16 nov 2026 (Mathieu : « pourquoi on l'a pas capte » : « Micheal Brandsegg-Nygard », prenom mal ecrit) : un nom de
+    # famille connu et unique suffit (le prenom mal ecrit ou absent)
+    fam = _noms_famille()
+    for m in t.split():
+        n = fam.get(m)
+        if n and _nom_unique(m, n):
+            return n
     if _EQUIPES_MOTS["t"] is None:
         _EQUIPES_MOTS["t"] = _mots_equipes()
     gen = GENERIQUES | VIDES | _EQUIPES_MOTS["t"] | set(PARALLELES)

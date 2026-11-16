@@ -11,7 +11,7 @@ le = (datetime.now() - timedelta(days=200)).strftime("%Y-%m-%d")
 t = "2024-25 Upper Deck Premier Focus Auto Gold Dominik Hasek #PFA-DH /15"
 v = [{"titre": "2024-25 UD Premier Dominik Hasek Focus Auto Gold /15 Sabres", "prix": 328.12, "le": le, "url": "https://www.ebay.com/itm/1"}]
 r = deals.valeur_ou_saison({"titre": t, "item_id": "9"}, v, [])
-assert r and r[1] == "unique" and r[0] == round(328.12 * 0.75, 2), r
+assert r and r[1] == "unique" and r[0] == round(328.12 * 0.80, 2), r
 v2 = v + [{"titre": "Dominik Hasek 2024-25 Premier Upper Deck Focus Auto Gold /15", "prix": 427.48, "le": le, "url": "https://www.ebay.com/itm/2"}]
 r2 = deals.valeur_ou_saison({"titre": t, "item_id": "9"}, v2, [])
 assert r2 and r2[1] == "vendues" and abs(r2[0] - 328.12 * 0.9) < 0.02, r2
@@ -22,7 +22,7 @@ tk = "2020-21 UD THE CUP SCRIPTED SWATCHES ROOKIES AUTO PATCH /35 KIRILL KAPRIZO
 vieux = (datetime.now() - timedelta(days=465)).strftime("%Y-%m-%d")
 vk = [{"titre": "2020-21 UD The Cup Rookie Scripted Swatches Auto Patch 5/35 Kirill Kaprizov FCFZ", "prix": 438.14, "le": vieux, "url": "https://www.ebay.com/itm/3"}]
 rk = deals.valeur_ou_saison({"titre": tk, "item_id": "10"}, vk, [])
-assert rk and rk[1] == "unique" and rk[0] == round(438.14 * 0.60, 2), rk
+assert rk and rk[1] == "unique" and rk[0] == round(438.14 * 0.65, 2), rk
 trop = (datetime.now() - timedelta(days=600)).strftime("%Y-%m-%d")
 assert deals.valeur_unique({"titre": tk}, [dict(vk[0], le=trop)]) is None
 t99 = "2020-21 SP Authentic Future Watch Auto /99 Kirill Kaprizov"

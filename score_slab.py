@@ -128,7 +128,7 @@ def carte(titre, avec_type=True):
     except Exception:
         ty = None
     return {"auto": auto, "patch": patch, "rc": rc, "tirage": tirage, "numero": ns[0] if ns else None,
-            "type": ({k: ty.get(k) for k in ("type", "nom", "score", "rang", "sur")} if ty else None),
+            "type": ({k: ty.get(k) for k in ("type", "nom", "score", "rang", "sur", "niveau")} if ty else None),
             "grade": (g.get("cie", "").upper() + " " + str(g.get("note") or "")).strip() if g else None,
             "exclu": bool(d.get("exclu")), "score": round(min(100.0, s), 1)}
 
@@ -177,9 +177,18 @@ def score(titre, joueur=None):
     k = _savoir(titre)
     total = plancher(total, k)
     nom = j.title() if j and j == j.lower() else j
+    pil = list((ij or {}).get("pastilles") or [])
+    mb = None
+    try:                                   # 16 nov 2026 : un joueur cle au marche bas (verifie) : une pastille, l'ecart en %
+        import marche_cles
+        mb = marche_cles.bas(nom) if nom else None
+    except Exception:
+        mb = None
+    if mb:
+        pil = ["marche_bas"] + [x for x in pil if x != "marche_bas"]
     return {"score": int(round(total)) if total is not None else None, "joueur": nom or None, "indice": ij.get("indice") if ij else None,
-            "pastilles": (ij or {}).get("pastilles") or [], "semaine": (ij or {}).get("semaine"), "carte": c,
-            **({"connaissance": k} if k else {})}
+            "pastilles": pil, "semaine": (ij or {}).get("semaine"), "carte": c,
+            **({"marche": {"ecart_pct": mb.get("ecart_pct")}} if mb else {}), **({"connaissance": k} if k else {})}
 
 
 def annoter(x):

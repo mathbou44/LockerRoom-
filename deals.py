@@ -1052,6 +1052,10 @@ def _valeur_approx(a, ventes, cib=None, notes=False):
         nt = cartes_match.norm(t)
         if not cartes_match._a_mot(nt, j[-1]) or cartes_match.abimee(t) or _jours(v) > JOURS_MAX_HITS:
             continue
+        # 16 nov 2026 (Luke Hughes comparee a des ventes de Jack Hughes) : un nom de famille partage (Hughes, Tkachuk, Sedin...)
+        # -> le prenom doit y etre
+        if len(j) >= 2 and not cartes_match._nom_unique(j[-1], " ".join(j)) and not cartes_match._a_mot(nt, j[0]):
+            continue
         r = cartes_match.raisons_refus(cib, t)
         dv = cartes_match._decoder_memo(t)
         if dv.get("annee") and cib.get("annee") and dv["annee"] != cib["annee"] and est_rc(cartes_match.cible_titre(t), dv["annee"]) != rc0:
@@ -1095,8 +1099,10 @@ def _valeur_approx(a, ventes, cib=None, notes=False):
 
 def valeur_ou_saison(a, ventes, actives, cib=None):
     """La valeur de la carte (ses propres ventes) ; sinon celle des saisons voisines (valeur_autre_saison), dite comme telle."""
-    return valeur_annonce(a, ventes, actives, cib=cib) or valeur_autre_saison(a, ventes, cib=cib) or valeur_approx(a, ventes, cib=cib) \
-        or valeur_unique(a, ventes, cib=cib)
+    # 16 nov 2026 (Mathieu, Luke Hughes Honorable Numbers /43 : « faut pas que ca arrive, surtout quand on a les comps ») :
+    # UNE vente de LA carte passe avant les cartes similaires
+    return valeur_annonce(a, ventes, actives, cib=cib) or valeur_autre_saison(a, ventes, cib=cib) or valeur_unique(a, ventes, cib=cib) \
+        or valeur_approx(a, ventes, cib=cib)
 
 
 UNIQUE_SERIE_MAX = 25            # 12 nov 2026 : une carte numerotee /25 ou moins...
@@ -1107,6 +1113,10 @@ UNIQUE_PRUDENCE = 0.75           # ... avec UNE seule vente d'un an : 75 % de ce
 UNIQUE_SERIE_MAX_LARGE = 50
 UNIQUE_JOURS_LARGE = 548
 UNIQUE_PRUDENCE_LARGE = 0.60
+# 16 nov 2026 (Mathieu : la Luke Hughes Honorable Numbers /43 vendue 316 $ en fevrier, estimee 237 $) : une vente de LA carte
+# dans l'annee (/50 et moins) vaut 80 % ; plus vieille (jusqu'a 18 mois), 65 %
+UNIQUE_PRUDENCE_AN = 0.80
+UNIQUE_PRUDENCE_VIEILLE = 0.65
 
 
 def valeur_unique(a, ventes, cib=None):
@@ -1123,7 +1133,7 @@ def valeur_unique(a, ventes, cib=None):
     if len(pv) != 1:
         return None
     v = pv[0]
-    pru = UNIQUE_PRUDENCE if cib["serie"] <= UNIQUE_SERIE_MAX and _jours(v) <= JOURS_MAX_HITS else UNIQUE_PRUDENCE_LARGE
+    pru = UNIQUE_PRUDENCE_AN if _jours(v) <= JOURS_MAX_HITS else UNIQUE_PRUDENCE_VIEILLE
     return round(float(v["prix"]) * pru, 2), "unique", 1, [{k: v.get(k) for k in ("titre", "prix", "le", "photo", "url")}]
 
 
@@ -1705,6 +1715,8 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
             st.setdefault("_tard", []).append((a, r, cib))
     if not va:                                        # 7 nov 2026 : sans ventes de SA saison : les saisons voisines
         va = valeur_autre_saison(a, tout_v + nv_, cib)
+    if not va:                                        # 16 nov 2026 : UNE vente de LA carte avant les similaires
+        va = valeur_unique(a, tout_v + nv_, cib)
     if not va:                                        # 7 nov 2026 : puis les cartes similaires (prix approximatif)
         va = valeur_approx(a, tout_v + nv_, cib)
         if not va and verifiee and verif and _hit(cib) and t >= 10:
@@ -1798,6 +1810,11 @@ def _sport_titre(titre, sport):
     return sports.detecter(titre or "", defaut=sport or "hockey")
 
 
+def cartes_match_a_mot(t, m):
+    import cartes_match
+    return cartes_match._a_mot(cartes_match.norm(t), m)
+
+
 def sport_carte(titre, cib=None):
     """29 oct 2026 (Mathieu : « pour les legendes on dirait tout sauf du hockey ») : le sport d'une carte des vendeurs
     suivis, avec une PREUVE : hockey si le titre le dit (set, equipe LNH...) ou si le joueur est un joueur de hockey connu ;
@@ -1816,6 +1833,10 @@ def sport_carte(titre, cib=None):
         except Exception:
             _JOUEURS_HOCKEY = {v.lower() for v in VEDETTES}
     j = str((cib or {}).get("joueur") or "").lower()
+    # 16 nov 2026 : « Benoit Paire » (tennis, Topps Chrome) lu comme Simon Benoit : sans son prenom, le nom seul ne prouve le
+    # hockey que si aucun autre sport n'est signale (« UD Crosby Auto » oui ; « Topps Chrome Benoit Paire » non)
+    if j and len(j.split()) >= 2 and not cartes_match_a_mot(t, j.split()[0]) and any(v > 0 for k, v in sc.items() if k != "hockey"):
+        j = ""
     if (j and j in _JOUEURS_HOCKEY) or (sc.get("hockey", 0) >= 2 and sc["hockey"] >= max(sc.values())):
         return "hockey"
     m = max(sc.values())

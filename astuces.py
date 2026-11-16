@@ -161,7 +161,7 @@ def prime_psa10(api=None, langue="fr"):
     try:
         c = base_ventes._cx()
         try:
-            plan = c.execute("SELECT q, cible FROM plan WHERE fait_le IS NOT NULL").fetchall()
+            plan = c.execute("SELECT q, cible FROM plan WHERE fait_le IS NOT NULL AND cible NOT LIKE 'sorte %'").fetchall()
             ventes = {}
             for q, titre, prix in c.execute("SELECT q, titre, prix FROM ventes WHERE le >= ?", ((datetime.now() - timedelta(days=60)).strftime("%Y-%m-%d"),)):
                 ventes.setdefault(q, []).append((titre, prix))
@@ -545,7 +545,7 @@ def _ratio_variante(suffixe_haut, suffixe_bas="", jours=60, min_ventes=3, min_ca
     try:
         c = base_ventes._cx()
         try:
-            plan = c.execute("SELECT q, cible FROM plan WHERE fait_le IS NOT NULL").fetchall()
+            plan = c.execute("SELECT q, cible FROM plan WHERE fait_le IS NOT NULL AND cible NOT LIKE 'sorte %'").fetchall()
             ventes = {}
             for q, titre, prix in c.execute("SELECT q, titre, prix FROM ventes WHERE le >= ?", ((datetime.now() - timedelta(days=jours)).strftime("%Y-%m-%d"),)):
                 ventes.setdefault(q, []).append((titre, prix))

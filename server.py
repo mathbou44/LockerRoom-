@@ -1574,6 +1574,12 @@ def _valeurs_auto():
                 print("Types de cartes : passe lancee", flush=True)
         except Exception as e:
             print("Types de cartes : " + str(e), flush=True)
+        try:                                    # 16 nov 2026 - les joueurs cles et leur marche bas (1 fois/jour, verifie)
+            import marche_cles
+            if marche_cles.passe_si_besoin():
+                print("Marche des joueurs cles : passe lancee", flush=True)
+        except Exception as e:
+            print("Marche des joueurs cles : " + str(e), flush=True)
         try:                                    # 12 nov 2026 - SlabIQ : le test et le journal en direct (1 fois/semaine)
             import slabiq_test
             if slabiq_test.passe_si_besoin():

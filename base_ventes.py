@@ -99,7 +99,13 @@ def ventes_titres(jours=365):
     except sqlite3.Error:
         return []
     noms, out = {}, []
+    larges = set(SORTES_Q)
     for q, titre, prix, le in rows:
+        if q in larges:                                   # 16 nov 2026 : une recherche large : le joueur de CHAQUE titre
+            j = cartes_match.joueur_du_titre(titre or "")
+            if j and len(j.split()) >= 2:
+                out.append((" ".join(w[:1].upper() + w[1:] for w in j.lower().split()), titre, prix, le))
+            continue
         if q not in noms:
             j = plan.get(q) or cartes_match.joueur_du_titre(q or "")
             noms[q] = " ".join(w[:1].upper() + w[1:] for w in j.lower().split()) if j and len(j.split()) >= 2 else None
@@ -188,6 +194,12 @@ def _nom_carte(sous):
 
 
 VEDETTES_SORTES = ("young guns", "auto", "patch", "numbered")
+# 16 nov 2026 (Mathieu : « les sortes les plus transigees ») : une recherche LARGE par sorte (tous les joueurs), refaite tous
+# les 5 jours : le volume de chaque sorte n'est plus seulement celui des cartes que l'app a deja cherchees. ~3 recherches/jour.
+SORTES_Q = ("upper deck kaboom hockey", "upper deck downtown hockey", "upper deck uptown hockey", "upper deck manga hockey",
+            "upper deck color blast hockey", "upper deck fluorescence hockey", "young guns canvas", "young guns clear cut",
+            "young guns psa 10", "the cup rookie auto patch", "future watch auto", "premier rookie auto patch", "ice premieres",
+            "dazzlers hockey", "o-pee-chee platinum rookie auto")
 
 
 def construire_plan(max_par_produit=None):
@@ -240,6 +252,8 @@ def construire_plan(max_par_produit=None):
                 full = f"{j} {so}".lower()
                 if full not in lignes:
                     lignes[full] = (full, full[:120], j, so, "", "", 0, round(1.0 - k / (len(ved) + 1), 3))
+    for k, q in enumerate(SORTES_Q):
+        lignes.setdefault("sorte " + q, ("sorte " + q, q, None, "sorte", "", "", 0, round(1.5 - k / 100, 3)))
     with _verrou:
         c = _cx()
         try:
@@ -340,6 +354,8 @@ def tendances(jours=14):
         return None
     hausses, baisses, vendues_7, records, cartes = [], [], [], [], []
     for q, full, j, carte, produit, pid, recrue in plan:
+        if carte == "sorte":                              # 16 nov 2026 : une recherche large (tous les joueurs) : pas une carte
+            continue
         cib = cartes_match.cible(full)
         l = [v for v in ventes.get(q) or [] if not cartes_match.raisons_refus(cib, v["titre"])]
         if not l:

@@ -32,6 +32,14 @@ JOUEUR_MIN = 8        # ventes d'un joueur pour son propre classement
 
 # (cle, nom, motif sur le texte normalise de cartes_match : yg -> young guns, fw -> future watch, autograph/signature -> auto)
 FAMILLES = [
+    # 16 nov 2026 (Mathieu : « les sortes de cartes comme les Kaboom, Uptown, Downtown, Young Guns : lesquelles se transigent le
+    # plus ou sortent le plus cher ; certaines sont ultra recherchees ») : les inserts « case hit » d'Upper Deck, avant le reste
+    ("kaboom", "Kaboom", r"\bkaboom\b"),
+    ("downtown", "Downtown", r"\bdowntowns?\b"),
+    ("uptown", "Uptown", r"\buptowns?\b"),
+    ("manga", "Manga", r"\bmanga\b"),
+    ("color_blast", "Color Blast", r"\bcolou?r ?blast\b"),
+    ("fluorescence", "Fluorescence", r"\bfluorescence\b"),
     ("cup_rpa", "The Cup RPA", r"\bthe cup\b.*\b(rpa|rc auto patch|auto patch|patch auto|rc patch auto)\b"),
     ("cup_auto", "The Cup Auto", r"\bthe cup\b.*\bauto\b"),
     ("cup", "The Cup", r"\bthe cup\b"),
@@ -41,6 +49,9 @@ FAMILLES = [
     ("yg_canvas", "Young Guns Canvas", r"\byoung guns?\b.*\bcanvas\b|\bcanvas\b.*\byoung guns?\b"),
     ("yg_exclusives", "Young Guns Exclusives", r"\byoung guns?\b.*\b(exclusives|high gloss|outburst|clear cut)\b"),
     ("young_guns", "Young Guns", r"\byoung guns?\b"),
+    ("canvas", "UD Canvas", r"\bcanvas\b"),
+    ("clear_cut", "Clear Cut", r"\bclear ?cut\b"),
+    ("tableau", "Tableau", r"\btableau\b"),
     ("future_watch", "Future Watch", r"\bfuture watch\b"),
     ("decades", "Decades", r"\bdecades?\b"),
     ("black_diamond", "Black Diamond", r"\bblack diamond\b"),
@@ -349,13 +360,28 @@ def info(titre):
     if not t:
         return {"type": k, "nom": nom_type(k)}
     rang = 1 + sum(1 for x in T.values() if x["score"] > t["score"])
-    return {"type": k, "nom": t["nom"], "score": t["score"], "rang": rang, "sur": len(T)}
+    return {"type": k, "nom": t["nom"], "score": t["score"], "rang": rang, "sur": len(T), "niveau": niveau(t)}
+
+
+# 16 nov 2026 (Mathieu : « que la personne sache qu'elle paie peut-etre plus cher, mais c'est ultra liquide, tres en demande »)
+ULTRA_SCORE = 85
+ULTRA_JOUEURS = 6
+FORTE_SCORE = 70
+
+
+def niveau(t):
+    """« ultra » (les sortes les plus recherchees, assez de joueurs pour le dire), « forte », ou None."""
+    if not t or t.get("score") is None:
+        return None
+    if t["score"] >= ULTRA_SCORE and (t.get("joueurs") or 0) >= ULTRA_JOUEURS:
+        return "ultra"
+    return "forte" if t["score"] >= FORTE_SCORE else None
 
 
 def classement(n=20, admin=False):
     T = lire().get("types") or {}
     l = sorted(T.items(), key=lambda kv: -kv[1]["score"])[:n]
-    return [{"type": k, "nom": t["nom"], "score": t["score"], "joueurs": t["joueurs"],
+    return [{"type": k, "nom": t["nom"], "score": t["score"], "joueurs": t["joueurs"], "niveau": niveau(t),
              **({"prime": t["prime"], "n": t["n"]} if admin else {})} for k, t in l]
 
 

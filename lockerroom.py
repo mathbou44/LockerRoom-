@@ -1656,6 +1656,8 @@ class Api:
 
     POUR_MOI_PTS = {"joueur": 12, "type": 5, "budget": 3}
 
+    MARCHE_BAS_PTS = 6                 # 16 nov 2026 : un joueur cle au marche bas (marche_cles) monte dans le Radar
+
     @staticmethod
     def _pour_moi(annonces, prof):
         """16 nov 2026 : les raisons pour lesquelles une annonce est pour CET utilisateur (joueur suivi, sorte de carte qu'il
@@ -1664,6 +1666,7 @@ class Api:
         fav = [cartes_match.norm(f) for f in (prof.get("favoris") or []) if str(f).strip()]
         coll = set(prof.get("collectionne") or [])
         pmin, pmax = _float(prof.get("prix_min")), _float(prof.get("prix_max"))
+        mb_ = {}
         for x in annonces or []:
             if not isinstance(x, dict) or "pour_moi" in x:
                 continue
@@ -1684,6 +1687,18 @@ class Api:
                 pm.append("budget")
             x["pour_moi"] = pm
             x["pour_moi_pts"] = sum(Api.POUR_MOI_PTS[k] for k in pm)
+            # 16 nov 2026 (Mathieu : « savoir quand un joueur cle est plus bas qu'a l'habitude ») : il monte dans le Radar
+            j_ = x.get("joueur") or cartes_match.joueur_du_titre(t)
+            if j_:
+                if j_ not in mb_:
+                    try:
+                        import marche_cles
+                        mb_[j_] = marche_cles.bas(j_)
+                    except Exception:
+                        mb_[j_] = None
+                if mb_[j_]:
+                    x["marche_bas"] = mb_[j_].get("ecart_pct") if mb_[j_].get("ecart_pct") is not None else True
+                    x["pour_moi_pts"] += Api.MARCHE_BAS_PTS
 
     def _profil_deals(self):
         """Le profil de deals du compte, pret a appliquer (None = rien de regle)."""
@@ -6494,7 +6509,7 @@ class Api:
                 pass
 
         def essai(p):
-            return _d.valeur_autre_saison(a, p, cib) or _d.valeur_approx(a, p, cib)
+            return _d.valeur_autre_saison(a, p, cib) or _d.valeur_unique(a, p, cib) or _d.valeur_approx(a, p, cib)
         va = essai(pool)
         if not va:
             q = cartes_match.requete_ebay(_d.cible_large(dict(cib, inscr=False) if cib.get("inscr") else cib))
@@ -7904,9 +7919,26 @@ class Api:
                              ("buzz", "buzz", 20), ("en_hausse", "en_hausse", 20), ("legende", "legende", 20), ("top", None, 40)):
             l = indice_joueurs.top(n, filtre, actifs=None if k == "legende" else True)
             cats[k] = [fiche(x["nom"], I[x["nom"]]) for x in l if x["nom"] in I]
+        # 16 nov 2026 (Mathieu : « les joueurs cles quand leur marche est plus bas qu'a l'habitude ; dans le Trending ») : les
+        # joueurs cles au marche bas (verifie contre le hasard, marche_cles) ; l'ecart en %, jamais un prix
+        try:
+            import marche_cles
+            mb = []
+            for x in marche_cles.liste_bas()[:20]:
+                v = I.get(x["nom"]) or next((w for n_, w in I.items() if n_.lower() == x["nom"].lower()), None)
+                f_ = fiche(x["nom"], v) if v else {"nom": x["nom"], "equipe": "", "indice": None, "rang": None, "sur": len(actifs),
+                                                     "pastilles": [], "semaine": None, "creux": None, "criteres": {}, "actu": None}
+                f_["pastilles"] = ["marche_bas"] + [k for k in f_["pastilles"] if k != "marche_bas"]
+                f_["marche"] = {"ecart_pct": x["ecart_pct"]}
+                mb.append(f_)
+            cats["marche_bas"] = mb
+        except Exception as e:
+            print("Tendances (marche bas) : " + repr(e), flush=True)
+            cats["marche_bas"] = []
         st = indice_joueurs.statut()
         r = {"ok": True, "cats": cats, "suivis": st.get("joueurs"), "actifs": len(actifs), "le": d.get("le"),
-             "compte": {k: sum(1 for v in I.values() if k in (v.get("pastilles") or [])) for k in ("en_feu", "rebond", "recrue", "en_creux", "buzz", "en_hausse", "legende")}}
+             "compte": {**{k: sum(1 for v in I.values() if k in (v.get("pastilles") or [])) for k in ("en_feu", "rebond", "recrue", "en_creux", "buzz", "en_hausse", "legende")},
+                        "marche_bas": len(cats.get("marche_bas") or [])}}
         try:
             b = indice_joueurs.creux_bilan()
             if b and (b.get("mesurables_30") or 0) >= 10:     # le suivi des creux (une part, jamais un prix)
