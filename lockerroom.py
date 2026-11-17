@@ -3754,8 +3754,10 @@ class Api:
             self._reparer_soumissions()
         except Exception as e:
             print("Soumissions (reparation) : " + repr(e), flush=True)
-        try:                                                  # une fois par base : les ventes deja faites
-            if not Api._PROFITS_REPARES.get(self.chemin_db):
+        # 16 nov 2026 (Mathieu : vendue 35 $, payee 13 $, profit +33 $ ?) : refait a CHAQUE lecture de l'inventaire (une seule
+        # requete, seulement les ventes dont le profit ne colle pas aux chiffres) : un vieux profit ne survit plus
+        try:
+            if True:
                 with _verrou:
                     c = self._db()
                     try:
@@ -3900,6 +3902,17 @@ class Api:
             out = [r for r in out if r.get("a_finir")]
         if f.get("sport"):
             out = [r for r in out if r["sport"] == f["sport"]]
+        # 16 nov 2026 (des tuiles « YOUNG GUNS... », « PRIZM BLACK & ... » : une vente importee sans joueur) : le joueur lu
+        # dans le titre, pour le nom en haut de la tuile (la fiche, elle, ne change pas)
+        try:
+            import cartes_match
+            for r in out:
+                if not r.get("joueur") and r.get("titre"):
+                    j = cartes_match.joueur_du_titre(r["titre"])
+                    if j and len(j.split()) >= 2:
+                        r["joueur_n"] = " ".join(w.capitalize() for w in j.split())
+        except Exception:
+            pass
         return out
 
     def carte_comps(self, item_number):
@@ -7998,11 +8011,22 @@ class Api:
         actifs = sorted([(n, v) for n, v in I.items() if v.get("actif")], key=lambda kv: -kv[1]["indice"])
         rang = {n: k + 1 for k, (n, _) in enumerate(actifs)}
 
+        # 16 nov 2026 (Mathieu : « pourquoi Matt Duchene est premier ? ») : l'Indice est la forme de la SEMAINE ; le top et
+        # la lettre de chaque joueur suivent maintenant sa cote de COLLECTION (bareme de l'expert : popularite dans le hobby,
+        # demande de ses cartes), plus un demi-cran s'il est en feu, comme pour ses cartes
+        import bareme_iq as _bq
+
+        def cote(nom, v):
+            n = _bq.note_joueur(nom, (v or {}).get("criteres") or {})[0]
+            return min(100.0, n + (_bq.FEU_PTS if "en_feu" in ((v or {}).get("pastilles") or []) else 0))
+
         def fiche(nom, v):
             c = v.get("criteres") or {}
             w = v.get("semaine") or {}
             cx = v.get("creux") or None
+            nc = cote(nom, v)
             return {"nom": nom, "equipe": v.get("equipe") or "", "indice": v.get("indice"), "rang": rang.get(nom), "sur": len(actifs),
+                    "note": round(nc, 1), "lettre": _bq.lettre_joueur(nc),
                     "pastilles": [k for k in (v.get("pastilles") or []) if k in ("en_feu", "en_hausse", "recrue", "legende", "en_creux", "rebond", "buzz", "actu")],
                     "semaine": {"pts": w.get("pts"), "b": w.get("b"), "mj": w.get("mj")} if w.get("mj") else None,
                     "creux": {k: cx.get(k) for k in ("etat", "ppm", "avant_ppm", "ecart_pct", "age")} if cx else None,
@@ -8011,7 +8035,10 @@ class Api:
         cats = {}
         for k, filtre, n in (("en_feu", "en_feu", 30), ("rebond", "rebond", 20), ("recrue", "recrue", 30), ("en_creux", "en_creux", 20),
                              ("buzz", "buzz", 20), ("en_hausse", "en_hausse", 20), ("legende", "legende", 20), ("top", None, 40)):
-            l = indice_joueurs.top(n, filtre, actifs=None if k == "legende" else True)
+            if k == "top":                   # la cote de collection d'abord, puis la forme pour departager
+                l = [{"nom": n_} for n_, _ in sorted(actifs, key=lambda kv: (-cote(kv[0], kv[1]), -(kv[1].get("indice") or 0)))[:n]]
+            else:
+                l = indice_joueurs.top(n, filtre, actifs=None if k == "legende" else True)
             cats[k] = [fiche(x["nom"], I[x["nom"]]) for x in l if x["nom"] in I]
         # 16 nov 2026 (Mathieu : « les joueurs cles quand leur marche est plus bas qu'a l'habitude ; dans le Trending ») : les
         # joueurs cles au marche bas (verifie contre le hasard, marche_cles) ; l'ecart en %, jamais un prix
