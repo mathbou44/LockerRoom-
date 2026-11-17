@@ -3674,7 +3674,8 @@ class Api:
     # -- inventaire -------------------------------------------------------------------------------
     CHAMPS_CARTE = ("titre", "joueur", "annee", "marque", "set_nom", "numero", "parallele", "tirage", "auto", "grade", "equipe",
                     "cout", "valeur", "prix_demande", "emplacement", "statut", "item_number", "sku", "consignataire_id", "source",
-                    "note", "client_id", "sport", "recrue", "relique", "cert", "photo", "photos", "photos_orig", "studio_v")
+                    "note", "client_id", "sport", "recrue", "relique", "cert", "photo", "photos", "photos_orig", "studio_v",
+                    "port_paye")                  # 16 nov 2026 : l'envoi paye d'une vente, corrige dans sa fiche
 
     _INV_SCORES = {}
 
@@ -4010,7 +4011,7 @@ class Api:
 
     def carte_sauver(self, d):
         d = {k: v for k, v in (d or {}).items() if k in self.CHAMPS_CARTE or k == "id"}
-        for k in ("cout", "valeur", "prix_demande"):
+        for k in ("cout", "valeur", "prix_demande", "port_paye"):
             if k in d:
                 d[k] = _float(d[k])
         if "tirage" in d:
@@ -4037,7 +4038,7 @@ class Api:
                             c.execute("UPDATE cartes SET vu_actif_le=NULL WHERE id=? AND COALESCE(item_number,'')<>?",
                                       (cid, str(d.get("item_number") or "")))
                         c.execute(f"UPDATE cartes SET {', '.join(k + '=?' for k in d)} WHERE id=?", list(d.values()) + [cid])
-                        if "cout" in d and "profit" not in d:
+                        if ("cout" in d or "port_paye" in d) and "profit" not in d:
                             self._profit_juste(c, cid)            # 14 nov 2026 : un cout corrige sur une carte vendue
                 else:
                     d.setdefault("statut", "En stock")
