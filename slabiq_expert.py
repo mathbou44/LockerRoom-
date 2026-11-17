@@ -71,6 +71,24 @@ def noter(item_id, titre, choix, joueur=None, prix=None, score=None, raison=None
     return x
 
 
+RAISONS_SIGNAL = ("sorte_trop_haut", "sorte_trop_bas", "joueur_trop_haut", "joueur_trop_bas", "mauvais_joueur", "pas_hockey", "lot_reprint", "autre")
+
+
+def signaler(item_id, titre, raison, joueur=None, score=None, note=None, compte=None):
+    """16 nov 2026 (Mathieu : « un bouton pas un bon score : enlever la carte et faire une boucle d'apprentissage ») : un
+    signalement d'un utilisateur sur la note d'une carte (la raison choisie), garde pour la revue de l'expert et la boucle."""
+    if raison not in RAISONS_SIGNAL or not titre:
+        return None
+    d = lire()
+    L = [x for x in d.get("signalements") or [] if not (str(x.get("item_id")) == str(item_id) and x.get("compte") == compte)]
+    x = {"item_id": str(item_id or ""), "titre": str(titre)[:200], "joueur": joueur, "score": score, "raison": raison,
+         "note": str(note or "")[:300], "compte": compte, "le": datetime.now().isoformat(timespec="seconds")}
+    L.append(x)
+    d["signalements"] = L[-5000:]
+    ecrire(d)
+    return x
+
+
 def faits():
     return {str(x.get("item_id")) for x in lire().get("etiquettes") or []}
 

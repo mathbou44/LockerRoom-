@@ -7681,9 +7681,20 @@ class Api:
         # ne montre que des cartes qu'un expert regarderait : B et plus (C+ et plus pour SES joueurs suivis), jamais une base,
         # jamais sous 10 $ (ou sous le prix minimum choisi par l'utilisateur)
         try:
+            try:
+                with _verrou:
+                    c_ = self._db()
+                    try:
+                        c_.execute("CREATE TABLE IF NOT EXISTS deals_masques (item_id TEXT PRIMARY KEY)")
+                        _msq = {x[0] for x in c_.execute("SELECT item_id FROM deals_masques")}
+                    finally:
+                        c_.close()
+            except Exception:
+                _msq = set()
             _pm = _float(prof.get("prix_min")) if isinstance(prof, dict) else None
             _iq = prof.get("iq_min") if isinstance(prof, dict) else None
-            garde = (lambda l: [x for x in (l or []) if Api._radar_digne(x, _pm, _iq)]) if Api.RADAR_FILTRE else (lambda l: l)
+            garde = (lambda l: [x for x in (l or []) if Api._radar_digne(x, _pm, _iq) and str(x.get("item_id")) not in _msq]) if Api.RADAR_FILTRE \
+                else (lambda l: [x for x in (l or []) if str(x.get("item_id")) not in _msq])
             out = garde(out)
             petits = Api._grouper_memes(garde(petits))   # 16 nov 2026 : les petits vendeurs filtres ; une tuile par carte
             for g in pour_toi + decouvrir + chauds_creux + chasses + types + list(groupes or []):
@@ -8537,6 +8548,15 @@ class Api:
         x = slabiq_expert.noter(item_id, titre, choix, joueur, _float(prix), score, raison)
         return {"ok": bool(x), "mesure": slabiq_expert.mesure()}
 
+    def slabiq_signaler(self, item_id=None, titre=None, raison=None, joueur=None, score=None, note=None):
+        """16 nov 2026 : « pas une bonne note » : la carte sort du Radar de ce compte, et le signalement va a l'expert."""
+        import comptes
+        import slabiq_expert
+        if item_id:
+            self.deal_masquer(item_id)
+        x = slabiq_expert.signaler(item_id, titre, raison, joueur, score, note, str(comptes.courant() or "local"))
+        return {"ok": bool(x)}
+
     def expert_etat(self):
         if not self._est_admin():
             return {"ok": False, "erreur": "Réservé à l'administrateur"}
@@ -8548,7 +8568,8 @@ class Api:
         except Exception:
             ev = []
         return {"ok": True, "faits": sorted(slabiq_expert.faits()), "mesure": slabiq_expert.mesure(), "params": d.get("params") or {},
-                "dernier_essai": (d.get("historique") or [None])[-1], "evergreen": ev}
+                "dernier_essai": (d.get("historique") or [None])[-1], "evergreen": ev,
+                "signalements": list(reversed((d.get("signalements") or [])[-40:]))}
 
     def comparer(self, item_id=None, titre=None):
         """La feuille « Comparer » : la meme carte en Achat immediat, la moins chere d'abord (12 au plus)."""

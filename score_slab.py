@@ -159,6 +159,16 @@ def sport_autre(titre):
         return None
 
 
+def _veteran(nom):
+    """Un joueur qui avait deja 350 matchs et plus dans la LNH (donc pas une recrue de 2024-25), d'apres sa fiche LNH."""
+    try:
+        import evergreen
+        h = evergreen._faits(nom) if nom else {}
+        return int(((h or {}).get("carriere") or {}).get("gamesPlayed") or 0) >= 350
+    except Exception:
+        return False
+
+
 def score(titre, joueur=None):
     """{score 0-100, joueur, indice, pastilles (du joueur), carte {...}, bareme {...}}. 16 nov 2026 : le bareme de l'expert
     (bareme_iq) : la sorte x la cote de collection du joueur, + un demi-cran s'il est en feu."""
@@ -184,6 +194,12 @@ def score(titre, joueur=None):
     import bareme_iq as bq
     so, so_r = bq.sorte(titre)
     crit = (ij or {}).get("criteres") or {}
+    # 16 nov 2026 (Mathieu : « marquee Retro, mais c'est une Renewed ») : une « Young Guns » 2024-25 d'un VETERAN (pas une
+    # recrue, aucun mot rookie dans le titre) = une Young Guns Renewed (les vraies YG de 2024-25 sont des recrues)
+    if so_r in ("yg", "insert_retro", "yg_variante") and (bq._annee(str(titre or "").lower()) or 0) == 2024 \
+            and not re.search(r"\brookies?\b|\brc\b|\(rc\)", str(titre or "").lower()) \
+            and float(crit.get("recrue") or 0) < 80 and _veteran(nom or j):
+        so, so_r = "E", "yg_renewed"
     nj, lj, src = bq.note_joueur(nom or (ij or {}).get("nom"), crit, recrue=bq.recrue_recente(titre, bool(c.get("rc")) or so_r.startswith("yg")))
     ev = None
     try:

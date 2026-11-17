@@ -27,7 +27,7 @@ EN FEU (en feu, en hausse, buzz) : un demi-cran de plus (FEU_PTS), et la raison 
 """
 import re
 
-NOTE = {"A+": 95, "A": 88, "A-": 82, "B+": 76, "B": 68, "C+": 61, "C": 55, "D": 40, "E": 25}
+NOTE = {"A+": 95, "A": 88, "A-": 82, "B+": 76, "B": 68, "B-": 64, "C+": 61, "C": 55, "D": 40, "E": 25}
 PART_ECART = 0.25
 JOUEUR_INCONNU = 30              # 16 nov (« genre de carte qui devrait etre E ») : un joueur sans aucune demande connue
 FEU_PTS = 4                     # « un joueur en feu : un demi-cran » (B -> B+)
@@ -51,10 +51,15 @@ JOUEURS_EXPERT = {
     "Patrick Kane": "A-", "Pavel Datsyuk": "A-", "Marc-Andre Fleury": "A-",
     "Jack Hughes": "A", "Quinn Hughes": "A-", "Matthew Schaefer": "A",
     "Easton Cowan": "B+", "Jacob Fowler": "A-", "Tim Stutzle": "A-", "Tim Stützle": "A-",
-    "Brandon Hagel": "B", "Elias Pettersson": "B", "Matthew Tkachuk": "B+",
+    "Brandon Hagel": "B", "Dawson Mercer": "B-", "Sebastian Aho": "B+",
+    # ronde 6 (16 nov) : les joueurs du milieu
+    "Quinton Byfield": "B", "Mavrik Bourque": "B-", "Kirby Dach": "C+", "Matthew Knies": "B+", "Dylan Guenther": "B+",
+    "Logan Cooley": "A-", "Elias Pettersson": "B", "Matthew Tkachuk": "B+",
 }
 # La demande de ses cartes (nos ventes) et sa notoriete -> une note (points d'appui calibres sur les lettres de l'expert)
-_APPUIS = ((30, 20), (45, 35), (55, 55), (65, 61), (75, 68), (85, 76), (92, 82), (96, 88), (99, 95), (100, 95))
+# 16 nov 2026 (Mathieu : « Byfield et Bourque ne sont surement pas des E ») : un joueur MOYEN (demande au milieu des ~870
+# joueurs suivis) vaut C, pas D ; D et E restent pour le bas de la liste (le quart le moins demande)
+_APPUIS = ((10, 25), (25, 40), (45, 52), (55, 57), (65, 61), (75, 68), (85, 76), (92, 82), (96, 88), (99, 95), (100, 95))
 
 _R = lambda m: re.compile(m)
 YG = _R(r"\byoung guns?\b|\byg\b")
@@ -181,7 +186,7 @@ def note_joueur(nom, criteres=None, recrue=False):
 
 
 def lettre_joueur(n):
-    for s, l in ((92, "A+"), (85, "A"), (80, "A-"), (73, "B+"), (65, "B"), (58, "C+"), (50, "C"), (35, "D")):
+    for s, l in ((92, "A+"), (85, "A"), (80, "A-"), (73, "B+"), (66, "B"), (62, "B-"), (58, "C+"), (50, "C"), (35, "D")):
         if n >= s:
             return l
     return "E"
