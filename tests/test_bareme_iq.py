@@ -62,4 +62,11 @@ assert L("A+", "B+") == "A-"         # Duchene YG PSA 10, Scheifele Cup RPA
 assert L("A", "D") == "C"            # Brendan Smith YG
 # en feu : un demi-cran
 assert b.lettre(b.note_finale(b.NOTE["A"], b.NOTE["B+"]) + b.FEU_PTS) == "A-"   # Marner YG B+ -> A-
+# 17 nov 2026 : tous les paralleles de YG (couleurs, Acetate) ; les courtes impressions non numerotees
+assert S("2024-25 Upper Deck Young Guns Acetate Lane Hutson") == "A+"
+assert S("2024-25 Upper Deck Young Guns Outburst Gold Macklin Celebrini") == "A+"
+assert S("2024-25 Upper Deck Young Guns Detroit Red Wings Marco Kasper") == "A"          # Red Wings n'est pas un parallele
+assert S("2025-26 O-Pee-Chee Platinum Marquee Rookies Photo Variation Ivan Demidov") == "B+"
+assert S("Lane Hutson 2024-25 SP Authentic #50") == "D"                                  # SP Authentic n'est pas une SP
+assert len(b.familles()) >= 6 and b.familles()[0]["lettre"] == "A+"
 print("BAREME IQ OK")

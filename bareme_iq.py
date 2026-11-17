@@ -69,7 +69,15 @@ FW = _R(r"\bfuture watch\b")
 CASE_HITS = _R(r"\bkaboom\b|\bdowntowns?\b|\buptowns?\b")
 HOCKEY_UD = _R(r"\bupper deck\b|\bo-pee-chee\b|\bopc\b|\bsp authentic\b|\bthe cup\b|\bud\b")
 YG_VAR = _R(r"\bexclusives?\b|\bhigh gloss\b|\bcanvas\b|\bclear ?cut\b|\boutburst\b|\bdeluxe\b|\bsilver foil\b"
-            r"|\bfrench\b|\bretro\b|\bphoto variations?\b|\bssp\b|\bsp variation\b")
+            r"|\bfrench\b|\bretro\b|\bphoto variations?\b|\bssp\b|\bsp variation\b"
+            # 17 nov 2026 (Mathieu : « tous les Young Guns paralleles sont mega recherches : Outburst, Clear Cut, Acetate,
+            # Outburst Gold, Red... ») : les couleurs aussi (sans confondre Red Wings, Blue Jackets, Golden Knights)
+            r"|\bacetate\b|\bgold\b|\bred\b(?! wings)|\bblue\b(?! jackets)|\bgreen\b|\bpurple\b|\borange\b|\bpink\b"
+            r"|\bblack\b|\brainbow\b|\bfoil\b|\bparallel\b|\bvariations?\b|\bglossy\b")
+# 17 nov 2026 (Mathieu : « parfois elle n'est pas numerotee mais c'est une SSP ou une SP et devient rare, comme les OPC
+# Platinum Marquee Rookie variation ») : la courte impression non numerotee
+SSP = _R(r"\bssp\b|\bsuper short print\b|\bcase hit\b")
+SP_ = _R(r"\bsp\b(?! ?(?:authentic|game|signature|legendary|premier|x\b))|\bshort print\b|\bvariations?\b|\bphoto var\b|\bimage var")
 CANVAS = _R(r"\bcanvas\b")
 ICE_PREM = _R(r"\bice\b.*\bpremieres?\b|\bpremieres?\b.*\bice\b")
 OPC_PLAT = _R(r"\bo-pee-chee platinum\b|\bopc platinum\b|\bplatinum\b")
@@ -153,6 +161,12 @@ def sorte(titre):
     if serie:
         s = int(serie)
         c.append(("A-" if s <= 10 else "B+" if s <= 50 else "B" if s <= 199 else "C", "numerotee"))
+    if yg and serie:
+        c.append(("A+", "yg_variante"))               # une YG numerotee est une variante
+    if not serie and SSP.search(brut):
+        c.append(("B+", "ssp"))
+    elif not serie and SP_.search(brut):
+        c.append(("B+" if rc else "B", "sp"))          # une variation de recrue (Marquee Rookie variation) : B+
     if not c:
         c.append(("D", "base"))
     return max(c, key=lambda x: NOTE[x[0]])
@@ -218,3 +232,36 @@ def lettre(n):
         if n >= s:
             return l
     return "E"                 # 16 nov 2026 (Mathieu : « genre de carte qui devrait etre E ») : sous D
+
+
+# 17 nov 2026 (Mathieu : « revoir comment presenter les cartes, il y a une chier de sortes » ; « tous les Young Guns paralleles
+# sont mega recherches ») : la liste des cartes recherchees montre les FAMILLES du bareme (la meme lettre que SlabIQ donne),
+# pas 40 sortes apprises une a une. (cle, lettre affichee, nom FR, nom EN, [(exemple FR, exemple EN, lettre)])
+FAMILLES_VUE = [
+    ("yg", "A+", "Young Guns et leurs parallèles", "Young Guns & parallels",
+     [("Young Guns gradée 10", "Graded 10 Young Guns", "A+"), ("Exclusives, High Gloss", "Exclusives, High Gloss", "A+"),
+      ("Outburst, Outburst Gold, Red…", "Outburst, Outburst Gold, Red…", "A+"), ("Clear Cut, Acetate", "Clear Cut, Acetate", "A+"),
+      ("Canvas, Deluxe, Silver Foil, French", "Canvas, Deluxe, Silver Foil, French", "A+"), ("Photo Variation, SSP", "Photo Variation, SSP", "A+"),
+      ("Young Guns raw", "Raw Young Guns", "A")]),
+    ("rpa", "A+", "Les grosses recrues autographes", "Top rookie autographs",
+     [("The Cup RPA", "The Cup RPA", "A+"), ("Premier Auto Patch", "Premier Auto Patch", "A+"), ("Future Watch Auto", "Future Watch Auto", "A+")]),
+    ("rc_auto", "A", "Recrues autographes et vintage", "Rookie autos & vintage rookies",
+     [("Ultimate, SP Game Used, SPx, Trilogy", "Ultimate, SP Game Used, SPx, Trilogy", "A"),
+      ("Ice Premieres, OPC Platinum, Black Diamond (auto)", "Ice Premieres, OPC Platinum, Black Diamond (auto)", "A"),
+      ("Recrue d’avant 1990 (A+ en 10)", "Pre-1990 rookie (A+ in a 10)", "A")]),
+    ("inserts_a", "A", "Les inserts vedettes", "Star inserts", [("Clear Cut, Manga, Color Blast", "Clear Cut, Manga, Color Blast", "A")]),
+    ("num", "A- à B", "Les numérotées", "Numbered cards",
+     [("/10 et moins", "/10 or less", "A-"), ("/50 et moins", "/50 or less", "B+"), ("/199 et moins", "/199 or less", "B")]),
+    ("sp", "B+ à B", "Les courtes impressions", "Short prints",
+     [("SSP, variation de recrue", "SSP, rookie variation", "B+"), ("SP, variation", "SP, variation", "B")]),
+    ("inserts", "B+ à B", "Les autres inserts", "Other inserts",
+     [("Fluorescence", "Fluorescence", "B+"), ("Auto, Patch, Dazzlers", "Auto, Patch, Dazzlers", "B"),
+      ("Retro Young Guns d’un vétéran", "Veteran Retro Young Guns", "B")]),
+    ("eviter", "D à E", "À éviter", "Skip these",
+     [("Bases, lots, checklists", "Base cards, lots, checklists", "D"), ("Young Guns Renewed", "Young Guns Renewed", "E")]),
+]
+
+
+def familles():
+    return [{"cle": k, "lettre": l, "nom": n, "nom_en": ne, "ex": [{"nom": a, "nom_en": b, "lettre": c} for a, b, c in ex]}
+            for k, l, n, ne, ex in FAMILLES_VUE]

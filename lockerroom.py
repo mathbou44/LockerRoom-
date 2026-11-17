@@ -8131,6 +8131,8 @@ class Api:
             r["types"] = types_cartes.classement(12)
         except Exception:
             r["types"] = []
+        import bareme_iq as _bq                # 17 nov 2026 : les familles du bareme (la meme lettre que SlabIQ)
+        r["familles"] = _bq.familles()
         Api._TEND_IQ.update(le=m, v=r)
         return r
 
@@ -10113,7 +10115,9 @@ class Api:
         return {"ok": True}
 
     def bilan(self, mois=None):
-        """mois « AAAA-MM » (defaut : ce mois-ci). Revenus et profit par canal."""
+        """mois « AAAA-MM » (defaut : ce mois-ci). Revenus et profit par canal.
+        17 nov 2026 (Mathieu : « pourquoi le profit n'est pas le meme ? » accueil vs Vendues) : le profit ne compte que les
+        ventes dont le cout est connu (comme l'onglet Vendues) ; une vente sans prix d'achat n'est pas 100 % de profit."""
         mois = mois or datetime.now().strftime("%Y-%m")
         out = {"mois": mois, "canaux": {}, "depenses": 0.0}
         with _verrou:
@@ -10123,7 +10127,7 @@ class Api:
                 # l'argent (cout des cartes, frais, livraison), les ventes sans cout connu et le mois d'avant pour comparer
                 det = {"couts": 0.0, "frais": 0.0, "port": 0.0, "sans_cout": 0}
                 for canal, rev, prof, nb, co, fr, pp, pc, sc in c.execute(
-                        "SELECT canal, SUM(prix_vendu), SUM(profit), COUNT(*), SUM(COALESCE(cout,0)), SUM(COALESCE(frais,0)), "
+                        "SELECT canal, SUM(prix_vendu), SUM(CASE WHEN cout IS NOT NULL OR consignataire_id IS NOT NULL THEN profit ELSE 0 END), COUNT(*), SUM(COALESCE(cout,0)), SUM(COALESCE(frais,0)), "
                         "SUM(COALESCE(port_paye,0)), SUM(COALESCE(port_charge,0)), SUM(CASE WHEN cout IS NULL THEN 1 ELSE 0 END) "
                         "FROM cartes WHERE statut='Vendue' AND substr(vendu_le,1,7)=? GROUP BY canal", (mois,)):
                     out["canaux"][canal or "Autre"] = {"revenus": round(rev or 0, 2), "profit": round(prof or 0, 2), "nb": nb}
@@ -10135,7 +10139,7 @@ class Api:
                 try:
                     y_, m_ = (int(x) for x in mois.split("-"))
                     prec = f"{y_ - 1}-12" if m_ == 1 else f"{y_}-{m_ - 1:02d}"
-                    rv_, pf_, n_ = c.execute("SELECT COALESCE(SUM(prix_vendu),0), COALESCE(SUM(profit),0), COUNT(*) FROM cartes "
+                    rv_, pf_, n_ = c.execute("SELECT COALESCE(SUM(prix_vendu),0), COALESCE(SUM(CASE WHEN cout IS NOT NULL OR consignataire_id IS NOT NULL THEN profit ELSE 0 END),0), COUNT(*) FROM cartes "
                                              "WHERE statut='Vendue' AND substr(vendu_le,1,7)=?", (prec,)).fetchone()
                     out["precedent"] = {"mois": prec, "revenus": round(rv_, 2), "profit": round(pf_, 2), "nb": n_}
                 except (ValueError, TypeError):
@@ -10280,7 +10284,7 @@ class Api:
     def _serie_profit(self, c, mois):
         """Profit cumule jour par jour du mois (cartes vendues + breaks - depenses)."""
         jours = {}
-        for d, p in c.execute("SELECT substr(vendu_le,9,2), SUM(COALESCE(profit,0)) FROM cartes WHERE statut='Vendue' "
+        for d, p in c.execute("SELECT substr(vendu_le,9,2), SUM(CASE WHEN cout IS NOT NULL OR consignataire_id IS NOT NULL THEN profit ELSE 0 END) FROM cartes WHERE statut='Vendue' "
                               "AND substr(vendu_le,1,7)=? GROUP BY 1", (mois,)):
             jours[int(d or 1)] = jours.get(int(d or 1), 0) + (p or 0)
         for d, m in c.execute("SELECT substr(le,9,2), SUM(montant) FROM depenses WHERE substr(le,1,7)=? GROUP BY 1", (mois,)):
