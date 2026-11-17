@@ -316,6 +316,8 @@ def decider(m):
             continue
         expert = x["nom"].lower() in cotes_exp or x["source"] == "expert"
         fort = abs(x["crans"]) >= 2 and x["stable"] and x["n"] >= N_JOUEUR_AUTO
+        if x["source"] == "marche" and not expert:
+            continue                                # deja cote par la cote marche (cote_marche) : rien a corriger
         if fort and not expert:
             auto_j[x["nom"]] = x["marche"]
         elif expert and abs(x["crans"]) >= 2 and x["stable"]:

@@ -1658,6 +1658,13 @@ def _valeurs_auto():
                 print("SlabIQ expert : boucle lancee", flush=True)
         except Exception as e:
             print("SlabIQ expert : " + str(e), flush=True)
+        try:                                    # 17 nov 2026 - la cote marche des joueurs (moyenne 90 j, liquidite ; 1 fois/semaine)
+            import cote_marche
+            if cote_marche.passe_si_besoin():
+                print("Cote marche : passe lancee", flush=True)
+            cote_marche.balayer_si_besoin()     # 17 nov 2026 : chaque joueur mesure chez SoldComps, une fois par semaine
+        except Exception as e:
+            print("Cote marche : " + str(e), flush=True)
         try:                                    # 17 nov 2026 - la validation du bareme par le marche + sa boucle (1 fois/semaine)
             import validation_iq
             if validation_iq.passe_si_besoin():

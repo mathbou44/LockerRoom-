@@ -8641,6 +8641,8 @@ class Api:
         import validation_iq
         if validation_iq._ETAT["en_cours"]:
             return {"ok": False, "en_cours": True}
+        import cote_marche                    # la cote marche se refait d'abord (la validation la lit)
+        cote_marche.passe_si_besoin(forcer=True)
         return {"ok": bool(validation_iq.passe_si_besoin(forcer=True))}
 
     def expert_etat(self):
@@ -8656,7 +8658,8 @@ class Api:
         return {"ok": True, "faits": sorted(slabiq_expert.faits()), "mesure": slabiq_expert.mesure(), "params": d.get("params") or {},
                 "dernier_essai": (d.get("historique") or [None])[-1], "evergreen": ev,
                 "signalements": list(reversed((d.get("signalements") or [])[-40:])),
-                "validation": {k: v for k, v in (d.get("validation") or {}).items() if k != "sortes"}}
+                "validation": {k: v for k, v in (d.get("validation") or {}).items() if k != "sortes"},
+                "cote_marche": (lambda c: {"le": c.get("le"), "joueurs": c.get("n"), "ventes": c.get("ventes")})(__import__("cote_marche").lire())}
 
     def comparer(self, item_id=None, titre=None):
         """La feuille « Comparer » : la meme carte en Achat immediat, la moins chere d'abord (12 au plus)."""
@@ -11858,7 +11861,14 @@ class Api:
                 if "en_feu" in (_v.get("pastilles") or []):
                     _n = min(100.0, _n + _bq.FEU_PTS)
                     _l = _bq.lettre_joueur(_n)
-                jiq.update(note=round(_n, 1), lettre=_l, equipe=_v.get("equipe"))
+                jiq.update(note=round(_n, 1), lettre=_l, equipe=_v.get("equipe"), source=_src)
+                # 17 nov 2026 : la cote marche (90 j de ventes reelles) : les lettres pour tous, les montants pour l'admin
+                import cote_marche as _cm
+                _m = _cm.joueur(joueur_seul)
+                if _m:
+                    jiq["marche"] = {k: _m.get(k) for k in ("lettre", "lettre_valeur", "lettre_liquidite", "tendance_pct")}
+                    if self._est_admin():
+                        jiq["marche"].update({k: _m.get(k) for k in ("n", "moyenne", "mediane", "par_semaine")})
             except Exception:
                 pass
             return {**base, "joueur_seul": joueur_seul, "joueur_iq": jiq,

@@ -222,6 +222,7 @@ def cotes_apprises():
 
 
 _AUTO = {"t": 0.0, "d": {}}
+COTE_MARCHE_N = 20           # ventes en 90 jours pour que la cote marche decide
 
 
 def cotes_auto():
@@ -248,6 +249,15 @@ def note_joueur(nom, criteres=None, recrue=False, jeune=False):
     la = cotes_apprises().get(str(nom or "").lower())
     if la:
         return float(NOTE[la]), la, "expert"
+    # 17 nov 2026 (Mathieu : « la moyenne de vente d'un joueur sur 3 mois et le nombre de fois qu'il a ete transige : avec ca
+    # on fait varier les cotes de maniere solide, chaque semaine ») : la cote MARCHE (cote_marche) passe avant les signaux
+    try:
+        import cote_marche
+        cm = cote_marche.joueur(nom)
+        if cm and cm.get("lettre") in NOTE and (cm.get("n") or 0) >= COTE_MARCHE_N:
+            return float(NOTE[cm["lettre"]]), cm["lettre"], "marche"
+    except Exception:
+        pass
     lm = cotes_auto().get(str(nom or "").lower())
     if lm:
         return float(NOTE[lm]), lm, "marche"
