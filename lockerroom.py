@@ -1716,6 +1716,8 @@ class Api:
             return False
         return True
 
+    _SORTES_NETTES = {"yg", "yg10", "yg_variante", "yg_renewed", "cup_rpa", "premier_rpa", "fw_auto", "ice_premieres", "opc_plat_auto", "bd_gems"}
+
     @staticmethod
     def _grouper_memes(l, garder=10):
         """16 nov 2026 (Mathieu : « plusieurs annonces de la meme carte : montrer celle au meilleur prix, et les autres en un
@@ -1731,8 +1733,12 @@ class Api:
                 d = cartes_match._decoder_memo(t)
                 g = d.get("grade") or {}
                 var = tuple(sorted(set(m.lower() for m in _bq.YG_VAR.findall(cartes_match.norm(t)))))
-                cle = (cartes_match.norm(x.get("joueur") or cartes_match.joueur_du_titre(t) or ""), tuple(sorted(cartes_match.identite(t)[0])),
-                       _bq.sorte(t)[1], var, d.get("serie"), (g.get("cie"), g.get("note")) if g else None, bool(d.get("auto")), bool(d.get("patch")))
+                so_r = _bq.sorte(t)[1]
+                # 16 nov 2026 (« meme carte » : « Series One Young Guns » et « 2026/2027 UD Young Guns » de Cole Hutson) : une
+                # sorte bien definie (YG, Cup RPA, Future Watch...) suffit avec le joueur ; les mots du titre seulement pour le reste
+                ident = () if so_r in Api._SORTES_NETTES else tuple(sorted(cartes_match.identite(t)[0]))
+                cle = (cartes_match.norm(x.get("joueur") or cartes_match.joueur_du_titre(t) or ""), ident,
+                       so_r, var, d.get("serie"), (g.get("cie"), g.get("note")) if g else None, bool(d.get("auto")), bool(d.get("patch")))
             except Exception:
                 cle = ("_", x.get("item_id"))
             if cle not in groupes:
@@ -7686,6 +7692,14 @@ class Api:
             for v in vend:
                 if isinstance(v, dict) and "annonces" in v:
                     v["annonces"] = garde(v.get("annonces"))
+            # une annonce rangee comme « autre annonce de la meme carte » ne revient pas en tuile dans une autre rangee
+            sec = [g for g in pour_toi + decouvrir + chauds + creux_l + chasses + types if isinstance(g, dict) and "annonces" in g]
+            caches = {str(a.get("item_id")) for g in sec for y in g["annonces"] for a in y.get("autres") or []} \
+                | {str(a.get("item_id")) for y in petits for a in y.get("autres") or []}
+            if caches:
+                for g in sec:
+                    g["annonces"] = [y for y in g["annonces"] if str(y.get("item_id")) not in caches or y.get("autres")]
+                petits = [y for y in petits if str(y.get("item_id")) not in caches or y.get("autres")]
         except Exception as e:
             print("Radar (qualite) : " + repr(e)[:120], flush=True)
         # 11 nov 2026 (Mathieu : « dans la version admin, le cout d'acquisition avec les ventes ; il y a juste moi ») : l'ADMIN
@@ -8064,7 +8078,7 @@ class Api:
                     "note": round(nc, 1), "lettre": _bq.lettre_joueur(nc),
                     "pastilles": [k for k in (v.get("pastilles") or []) if k in ("en_feu", "en_hausse", "recrue", "legende", "en_creux", "rebond", "buzz", "actu")],
                     "semaine": {"pts": w.get("pts"), "b": w.get("b"), "mj": w.get("mj")} if w.get("mj") else None,
-                    "creux": {k: cx.get(k) for k in ("etat", "ppm", "avant_ppm", "ecart_pct", "age")} if cx else None,
+                    "creux": {k: cx.get(k) for k in ("etat", "ppm", "avant_ppm", "ecart_pct", "age", "l5")} if cx else None,
                     "criteres": {k: round(float(c[k])) for k in ("forme", "ascension", "rythme", "buzz", "notoriete", "demande", "marche", "actu", "legende", "recrue") if c.get(k) is not None},
                     "actu": ((v.get("actu") or [None])[0]) if isinstance(v.get("actu"), list) else None}
         cats = {}
@@ -9841,6 +9855,10 @@ class Api:
             for x in out:
                 if x.get("source_prix") == "ventes":
                     x["propose"] = x["profit"] = None
+            # 16 nov 2026 (« des references a la version Platine ») : les totaux suivent (sinon le profit estime tire des
+            # ventes passait quand meme dans la tuile)
+            resume["propose"] = round(sum(x["propose"] for x in out if x.get("propose")), 2)
+            resume["profit"] = round(sum(x["profit"] for x in out if x.get("profit") is not None), 2)
         return {"ok": True, "cartes": out, "resume": resume, "ebay": bool(ebay_compte.statut().get("connecte"))}
 
     def _mes_achats_titre(self, titre, item_id=None):

@@ -635,8 +635,17 @@ def liste(api):
         c.close()
     _du_chasseur(lst)
     _ramassage(api, lst)
-    _valeurs_manquantes(api, lst)
-    _mises_a_jour(api, lst)
+    # 16 nov 2026 (Mathieu : « beaucoup de references a la version Platine qui n'est pas sortie : worth, bid, profit ») : la
+    # valeur, la mise max et le profit d'une ANNONCE eBay = l'outil de prix reserve (licence eBay §9.5) : admin / Platine
+    import lockerroom as _lr
+    prix_ok = _lr.ebay_prix_actif(api)
+    if prix_ok:
+        _valeurs_manquantes(api, lst)
+        _mises_a_jour(api, lst)
+    else:
+        for x in lst:
+            for k in ("valeur", "valeur_cad", "mise_max", "mise_min", "mise_perso", "profit", "sans_comps_le", "rabais", "ratio", "gain"):
+                x.pop(k, None)
     maint = _maint()
     # 31 oct 2026 (Mathieu : « il reste de la place : le profit calcule, qui s'ajuste en live avec le nouveau prix de
     # l'encan ») : ce que la carte rapporte si tu l'as au prix du moment = valeur revendue, moins les frais eBay, moins
@@ -660,7 +669,7 @@ def liste(api):
     # 31 oct 2026 (Mathieu : « trier par defaut ceux qui finissent en premier vers les derniers ») : par heure de fin
     # seulement (une mise depassee reste a sa place) ; les prix fixes ensuite, les encans termines a la fin
     lst.sort(key=lambda x: (1 if x["etat"] == "fini" else 0, x["reste_min"] if x["reste_min"] is not None else 10 ** 7))
-    return {"ok": True, "cartes": lst, "n": len(lst), "reglages": reglages(api)}
+    return {"ok": True, "cartes": lst, "n": len(lst), "reglages": reglages(api), "prix": bool(prix_ok)}
 
 
 def verifier(api, proches=False, lire_article=None, maint=None):
@@ -684,8 +693,13 @@ def verifier(api, proches=False, lire_article=None, maint=None):
     _du_chasseur(lst)
     _ramassage(api, lst)
     try:
-        _valeurs_manquantes(api, lst)                    # 5 nov 2026 : la mise max arrive aussi sans ouvrir l'ecran
-        _mises_a_jour(api, lst, cfg)                     # 6 nov 2026 : et suit la regle d'aujourd'hui
+        import lockerroom as _lr
+        if _lr.ebay_prix_actif(api):                     # 16 nov 2026 : la mise max calculee : admin / Platine seulement
+            _valeurs_manquantes(api, lst)                # 5 nov 2026 : la mise max arrive aussi sans ouvrir l'ecran
+            _mises_a_jour(api, lst, cfg)                 # 6 nov 2026 : et suit la regle d'aujourd'hui
+        else:
+            for x in lst:
+                x.pop("mise_max", None)
     except Exception as e:
         print("Watchlist (valeurs) : " + repr(e), flush=True)
     etat_a = alarmes._lire()
