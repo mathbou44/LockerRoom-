@@ -43,6 +43,10 @@ SYNONYMES = [                       # forme courte -> forme longue (dans la rech
     (r"\brookie\b", "rc"), (r"\brookies\b", "rc"), (r"\bjsy\b", "jersey"), (r"\bmem\b", "relic"),
     (r"\bx-?fractor\b", "xfractor"), (r"\brefractors\b", "refractor"), (r"\bpatches\b", "patch"),
     (r"\bfirst\b", "1st"), (r"\bseries one\b", "series 1"), (r"\bseries two\b", "series 2"),
+    # 17 nov 2026 (Mathieu : la Misa Metal Universe Blue PMG /50 estimee avec des cartes « similaires » d'une autre couleur alors
+    # que ses vraies ventes existent) : PMG = Precious Metal Gems = « Precious Gems » ; « Skybox » souvent absent du titre
+    (r"\bprecious metal gems?\b(\s+pmg\b)?", "precious metal gems"), (r"\bprecious gems?\b", "precious metal gems"),
+    (r"\bpmg\b", "precious metal gems"), (r"\bskybox\s+(?=metal universe\b)", ""),
 ]
 _SYN_RE = [(re.compile(a), b) for a, b in SYNONYMES]
 

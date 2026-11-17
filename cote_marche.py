@@ -195,7 +195,10 @@ def passe(rows=None):
 def passe_si_besoin(forcer=False):
     """Une fois par semaine (« refresh a toutes les semaines, faire varier les cotes de maniere solide »), en arriere-plan."""
     try:
-        if not forcer and (datetime.now() - datetime.fromisoformat(lire().get("le"))).total_seconds() < 7 * 86400:
+        age = (datetime.now() - datetime.fromisoformat(lire().get("le"))).total_seconds()
+        # de nouvelles mesures du balayage depuis la derniere cote : on la refait le jour meme (pas dans une semaine)
+        neuves = any((b.get("le") or "") > (lire().get("le") or "") for b in (lire_balayage().get("joueurs") or {}).values())
+        if not forcer and age < (86400 if neuves else 7 * 86400):
             return None
     except (TypeError, ValueError):
         pass
@@ -224,6 +227,8 @@ def passe_si_besoin(forcer=False):
 # de SoldComps ; les joueurs les plus vieux (ou jamais mesures) d'abord.
 # ---------------------------------------------------------------------------------------------------------------------
 _BAL = {"en_cours": False}
+RATTRAPAGE_JOUR = 300
+TRANCHE = 60                     # joueurs par tour de la boucle (une requete par seconde : ~1 minute)
 
 
 def _chemin_bal():
@@ -310,6 +315,15 @@ def balayer(n_max=None):
     jour = datetime.now().strftime("%Y-%m-%d")
     fait = (d.get("jours") or {}).get(jour, 0)
     du_jour = -(-budget_semaine() // 7)
+    # 17 nov 2026 (Mathieu : « y'a-t-il moyen d'accelerer ? ») : la PREMIERE mesure de chaque joueur se fait en rattrapage
+    # (jusqu'a 300 par jour) : tout le monde est mesure en ~3 jours au lieu d'une semaine ; le meme nombre de recherches au
+    # total (une par joueur), juste plus vite. Ensuite : le rythme normal de la semaine.
+    try:
+        _jamais = sum(1 for n in ((indice_joueurs.lire() or {}).get("indice") or {}) if n not in (d.get("joueurs") or {}))
+    except Exception:
+        _jamais = 0
+    if _jamais:
+        du_jour = max(du_jour, RATTRAPAGE_JOUR)
     reste = min(du_jour - fait, n_max or 10**9)
     if reste <= 0:
         return {"ok": True, "fait": 0, "raison": "budget du jour"}
@@ -355,7 +369,7 @@ def balayer_si_besoin():
 
     def tache():
         try:
-            r = balayer(20)
+            r = balayer(TRANCHE)
             if r.get("fait"):
                 print("Balayage des joueurs : %s" % r, flush=True)
         except Exception as e:
@@ -363,4 +377,100 @@ def balayer_si_besoin():
         finally:
             _BAL["en_cours"] = False
     threading.Thread(target=tache, daemon=True, name="balayage-joueurs").start()
+    return True
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# 17 nov 2026 (Mathieu : « j'ai 25 k de credits SoldComps pas utilises qui finissent demain, donc goooo ») : le BLITZ.
+# Un bouton admin : en arriere-plan, une requete par seconde, jusqu'a epuiser les credits (ou un plafond) :
+#   1. chaque joueur suivi : sa recherche du balayage (« Nom hockey ») ;
+#   2. puis ses sortes qui comptent (Young Guns, auto, patch, PSA 10, numerotee) : ses ventes des 90 jours, bien plus
+#      completes ; tout va dans nos archives (base_ventes) et sert ensuite a tout (cote marche, comps, deals).
+# Le disque compte : les ventes sont gardees sans leur photo, et le blitz s'arrete a BLITZ_MAX_VENTES lignes ajoutees.
+# Il s'arrete aussi au premier « quota atteint » de SoldComps, ou s'il est arrete par l'admin.
+# ---------------------------------------------------------------------------------------------------------------------
+BLITZ_VARIANTES = ("young guns", "rookie auto", "patch", "psa 10", "numbered")
+BLITZ_MAX_REQ = 22000
+BLITZ_MAX_VENTES = 900000
+_BLITZ = {"en_cours": False, "stop": False}
+
+
+def _ordre_joueurs():
+    """Les joueurs les plus importants d'abord (l'expert, puis la cote, puis le reste)."""
+    import bareme_iq as bq
+    import indice_joueurs
+    try:
+        I = (indice_joueurs.lire() or {}).get("indice") or {}
+    except Exception:
+        I = {}
+    noms = list(dict.fromkeys(list(bq.JOUEURS_EXPERT) + list(I)))
+    def poids(n):
+        c = (I.get(n) or {}).get("criteres") or {}
+        return -(bq.NOTE.get(bq.JOUEURS_EXPERT.get(n), 0) or float(c.get("demande") or 0))
+    return sorted(noms, key=poids)
+
+
+def blitz_etat():
+    return dict(lire_balayage().get("blitz") or {}, en_cours=_BLITZ["en_cours"])
+
+
+def blitz(max_req=BLITZ_MAX_REQ):
+    import base_ventes
+    import vendues
+    if not vendues._cle():
+        return {"ok": False, "raison": "pas de clé SoldComps"}
+    d = lire_balayage()
+    b = d.setdefault("blitz", {})
+    b.update(lance_le=datetime.now().isoformat(timespec="seconds"), requetes=0, ventes=0, etat="en cours", erreur=None)
+    _ecrire_bal(d)
+    taux = vendues._taux_usd_cad() or 1.37
+    site = (vendues.sites() or ["EBAY-US"])[0]
+    noms = _ordre_joueurs()
+    J = d.setdefault("joueurs", {})
+    taches = [(n, None) for n in noms] + [(n, v) for v in BLITZ_VARIANTES for n in noms]
+    for nom, var in taches:
+        if _BLITZ["stop"] or b["requetes"] >= max_req or b["ventes"] >= BLITZ_MAX_VENTES:
+            break
+        q = f"{nom} hockey" if not var else f"{nom} {var}"
+        donnees, err = vendues._appel(q, site, usage="blitz")
+        b["requetes"] += 1
+        if err:
+            b["erreur"] = err
+            if "quota" in err or "refusée" in err:
+                break                                   # credits epuises ou cle refusee : on arrete
+            time.sleep(5)
+            continue
+        items = (donnees or {}).get("items") or []
+        gardees, m = mesurer_joueur(nom, items, taux)
+        for v in gardees:
+            v.pop("photo", None)                        # le disque : pas de photo dans les archives du blitz
+        try:
+            if gardees:
+                b["ventes"] += base_ventes.noter(q, gardees, sport="hockey") or 0
+        except Exception:
+            pass
+        if not var:
+            J[nom] = {**m, "le": datetime.now().isoformat(timespec="seconds")}
+        if b["requetes"] % 25 == 0:
+            _ecrire_bal(d)
+    b["etat"] = "arrêté" if _BLITZ["stop"] else "terminé"
+    b["fini_le"] = datetime.now().isoformat(timespec="seconds")
+    _ecrire_bal(d)
+    return {"ok": True, **b}
+
+
+def blitz_lancer():
+    if _BLITZ["en_cours"]:
+        return False
+    _BLITZ.update(en_cours=True, stop=False)
+
+    def tache():
+        try:
+            print("Blitz SoldComps : %s" % blitz(), flush=True)
+            passe_si_besoin(forcer=True)                 # la cote marche refaite avec tout ce qui est entre
+        except Exception as e:
+            print("Blitz SoldComps : " + repr(e), flush=True)
+        finally:
+            _BLITZ["en_cours"] = False
+    threading.Thread(target=tache, daemon=True, name="blitz-soldcomps").start()
     return True

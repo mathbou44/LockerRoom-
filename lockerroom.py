@@ -8634,6 +8634,17 @@ class Api:
         Api._TEND_IQ.update(le=0.0)
         return {"ok": bool(ok)}
 
+    def soldcomps_blitz(self, action=None):
+        """17 nov 2026 (« 25 k credits SoldComps qui finissent demain : goooo ») : lancer, suivre ou arreter le blitz (admin)."""
+        if not self._est_admin(reel=True):
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import cote_marche
+        if action == "lancer":
+            return {"ok": True, "lance": cote_marche.blitz_lancer(), **cote_marche.blitz_etat()}
+        if action == "arreter":
+            cote_marche._BLITZ["stop"] = True
+        return {"ok": True, **cote_marche.blitz_etat()}
+
     def slabiq_valider(self):
         """17 nov 2026 : lancer la validation du bareme par le marche maintenant (admin), en arriere-plan."""
         if not self._est_admin(reel=True):
@@ -8642,6 +8653,7 @@ class Api:
         if validation_iq._ETAT["en_cours"]:
             return {"ok": False, "en_cours": True}
         import cote_marche                    # la cote marche se refait d'abord (la validation la lit)
+        cote_marche.balayer_si_besoin()       # et une tranche du balayage SoldComps tout de suite
         cote_marche.passe_si_besoin(forcer=True)
         return {"ok": bool(validation_iq.passe_si_besoin(forcer=True))}
 
