@@ -373,12 +373,12 @@ def iterer(rows=None):
             "auto": len(auto_j), "questions": len(Q)}
 
 
-def passe_si_besoin():
-    """Une fois par semaine (la boucle du serveur), en arriere-plan."""
+def passe_si_besoin(forcer=False):
+    """Une fois par semaine (la boucle du serveur), en arriere-plan ; forcer=True : maintenant (le bouton de l'admin)."""
     import slabiq_expert
     h = (slabiq_expert.lire().get("validation_hist") or [{}])[-1]
     try:
-        if h and (datetime.now() - datetime.fromisoformat(h.get("le"))).days < 7:
+        if not forcer and h and (datetime.now() - datetime.fromisoformat(h.get("le"))).days < 7:
             return None
     except (TypeError, ValueError):
         pass

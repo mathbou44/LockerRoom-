@@ -8634,6 +8634,15 @@ class Api:
         Api._TEND_IQ.update(le=0.0)
         return {"ok": bool(ok)}
 
+    def slabiq_valider(self):
+        """17 nov 2026 : lancer la validation du bareme par le marche maintenant (admin), en arriere-plan."""
+        if not self._est_admin(reel=True):
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import validation_iq
+        if validation_iq._ETAT["en_cours"]:
+            return {"ok": False, "en_cours": True}
+        return {"ok": bool(validation_iq.passe_si_besoin(forcer=True))}
+
     def expert_etat(self):
         if not self._est_admin():
             return {"ok": False, "erreur": "Réservé à l'administrateur"}
@@ -8646,7 +8655,8 @@ class Api:
             ev = []
         return {"ok": True, "faits": sorted(slabiq_expert.faits()), "mesure": slabiq_expert.mesure(), "params": d.get("params") or {},
                 "dernier_essai": (d.get("historique") or [None])[-1], "evergreen": ev,
-                "signalements": list(reversed((d.get("signalements") or [])[-40:]))}
+                "signalements": list(reversed((d.get("signalements") or [])[-40:])),
+                "validation": {k: v for k, v in (d.get("validation") or {}).items() if k != "sortes"}}
 
     def comparer(self, item_id=None, titre=None):
         """La feuille « Comparer » : la meme carte en Achat immediat, la moins chere d'abord (12 au plus)."""
