@@ -134,7 +134,20 @@ def carte(titre, avec_type=True):
 
 
 _RE_PAS_HOCKEY = re.compile(r"\b(?:nrl|afl|rugby|soccer|premier league|la liga|bundesliga|nba|nfl|mlb|wnba|prizm|mosaic|optic"
-                            r"|topps chrome|bowman chrome|sensational signatures|ufc|wwe|f1|formula 1|golf|pga|tennis)\b", re.I)
+                            r"|topps chrome|bowman chrome|sensational signatures|ufc|wwe|f1|formula 1|golf|pga|tennis"
+                            # 17 nov 2026 (audit : National Treasures football, MTG, cartes japonaises, Barry Larkin notees comme du hockey)
+                            r"|national treasures|flawless|donruss|bowman|topps finest|hoops|uefa|fifa|champions league|collegiate|draft picks"
+                            r"|mtg|magic the gathering|lotr|middle.earth|pokemon|yu.gi.oh|one piece|bbm|mythic|baseball|basketball|football"
+                            r"|cowboys|chiefs|eagles|bulls|lakers|celtics|warriors|yankees|dodgers|red sox|cubs|fever|seahawks|steelers|packers"
+                            r"|49ers|patriots|bills|ravens|bengals|knicks|heat|mavericks|spurs|thunder|giants|mets|braves|astros"
+                            r"|panini|kaboom|downtown|dragon ball|manga comic|boxing|tcg|wild card|leaf|goodwin|onyx|immaculate|spectra|obsidian)\b"
+                            r"|[\u3040-\u30ff\u4e00-\u9fff\uac00-\ud7af]", re.I)
+
+
+_RE_HOCKEY = re.compile(r"\b(?:hockey|nhl|lnh|young guns?|yg|o-pee-chee|opc|the cup|parkhurst|tim hortons|sp authentic|future watch"
+                        r"|ice premieres|sp game used|spgu|chl|ahl|ohl|whl|qmjhl|lhjmq|iihf|team canada|stanley|goalie|goaltender|hart"
+                        r"|vezina|norris|calder|ultimate collection|black diamond|artifacts|mvp|synergy|allure|chronology|credentials|stature"
+                        r"|ud canvas|series (?:1|2|one|two)|extended series|trilogy|premier|engrained|metal universe|fleer ultra|pinnacle|score)\b", re.I)
 
 
 def sport_autre(titre):
@@ -154,6 +167,10 @@ def sport_autre(titre):
             # 16 nov 2026 (audit du Radar : une NRL « Young Guns », une Prizm de basket) : des mots qui ne sont jamais du hockey
             elif not connu and _RE_PAS_HOCKEY.search(titre or ""):
                 sp = autre if sc.get(autre) else "autre"
+            # 17 nov 2026 (audit : Stephen Curry, Scottie Barnes, Dragon Ball notees comme du hockey) : aucun joueur connu, aucun
+            # mot du hockey (equipe, LNH, Young Guns, O-Pee-Chee...) : SlabIQ ne devine pas
+            elif not connu and sc.get("hockey", 0) == 0 and not _RE_HOCKEY.search(titre or ""):
+                sp = autre if sc.get(autre) else "autre"
         return None if sports.sert("score", sp) else sp
     except Exception:
         return None
@@ -165,6 +182,17 @@ def _veteran(nom):
         import evergreen
         h = evergreen._faits(nom) if nom else {}
         return int(((h or {}).get("carriere") or {}).get("gamesPlayed") or 0) >= 350
+    except Exception:
+        return False
+
+
+def _jeune(nom):
+    """17 nov 2026 : un jeune joueur (moins de 220 matchs en carriere LNH : ses 2 ou 3 premieres saisons)."""
+    try:
+        import evergreen
+        h = evergreen._faits(nom) if nom else {}
+        gp = int(((h or {}).get("carriere") or {}).get("gamesPlayed") or 0)
+        return 0 < gp < 220
     except Exception:
         return False
 
@@ -200,7 +228,10 @@ def score(titre, joueur=None):
             and not re.search(r"\brookies?\b|\brc\b|\(rc\)", str(titre or "").lower()) \
             and float(crit.get("recrue") or 0) < 80 and _veteran(nom or j):
         so, so_r = "E", "yg_renewed"
-    nj, lj, src = bq.note_joueur(nom or (ij or {}).get("nom"), crit, recrue=bq.recrue_recente(titre, bool(c.get("rc")) or so_r.startswith("yg")))
+    nj, lj, src = bq.note_joueur(nom or (ij or {}).get("nom"), crit, recrue=bq.recrue_recente(titre, bool(c.get("rc")) or so_r.startswith("yg"))
+                                    # 17 nov 2026 (Gridin) : un joueur dans ses 2 premieres saisons, meme sur une carte qui n'est pas sa recrue
+                                    or float((crit or {}).get("recrue") or 0) >= 90,
+                                 jeune=_jeune(nom or (ij or {}).get("nom")))
     ev = None
     try:
         import evergreen

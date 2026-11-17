@@ -7414,7 +7414,7 @@ class Api:
             ch = self.chasses_liste().get("chasses") or []
             cle = (comptes.courant() or "local") + ":" + hashlib.md5(json.dumps(
                 [[tuple(a) for a in al], self.deals_profil_lire(), self.reglages_lire().get("pays"), self._est_admin(), vue_simulee(), ch,
-                 "score-v4"],                         # 16 nov 2026 : Radar a neuf (bareme A+ a E, petits vendeurs filtres, noms)
+                 [self.reglages_lire().get(k) for k in ("budget_mois", "objectif")], "score-v5"],                         # 16 nov 2026 : Radar a neuf (bareme A+ a E, petits vendeurs filtres, noms)
                 sort_keys=True, default=str).encode()).hexdigest()
         except Exception:
             cle = None
@@ -7522,6 +7522,16 @@ class Api:
         finally:
             c.close()
         prof = self.deals_profil_lire()
+        # 17 nov 2026 (audit, un debutant a 50 $ par mois) : sans maximum choisi pour le Radar, le budget du mois du questionnaire
+        # sert de plafond par carte (une Young Guns de Bedard a 600 $ n'a rien a faire dans un Radar de 50 $ par mois)
+        if not prof.get("prix_max"):
+            try:
+                _rg = self.reglages_lire()
+                _bm = float(_rg.get("budget_mois") or 0)
+                if 0 < _bm < 1300 and _rg.get("objectif") == "collection" and not self._est_admin(reel=True):
+                    prof = {**prof, "prix_max": _bm}
+            except Exception:
+                pass
         pays = self.reglages_lire().get("pays") or "CA"
         fav = [f for f in (prof.get("favoris") or []) if isinstance(f, str) and f.strip()][:self.RADAR_MAX_JOUEURS if forfaits.est_pro() or self._est_admin() else 3]
         vendeurs = [v for v in (prof.get("vendeurs") or []) if v][:3]
@@ -8077,7 +8087,8 @@ class Api:
         import bareme_iq as _bq
 
         def cote(nom, v):
-            n = _bq.note_joueur(nom, (v or {}).get("criteres") or {})[0]
+            _c = (v or {}).get("criteres") or {}
+            n = _bq.note_joueur(nom, _c, recrue=float(_c.get("recrue") or 0) >= 90)[0]       # 17 nov : une recrue jamais sous B
             return min(100.0, n + (_bq.FEU_PTS if "en_feu" in ((v or {}).get("pastilles") or []) else 0))
 
         def fiche(nom, v):
@@ -8120,6 +8131,13 @@ class Api:
         r = {"ok": True, "cats": cats, "suivis": st.get("joueurs"), "actifs": len(actifs), "le": d.get("le"),
              "compte": {**{k: sum(1 for v in I.values() if k in (v.get("pastilles") or [])) for k in ("en_feu", "rebond", "recrue", "en_creux", "buzz", "en_hausse", "legende")},
                         "marche_bas": len(cats.get("marche_bas") or [])}}
+        # 17 nov 2026 (Mathieu : « un utilisateur devrait pouvoir chercher son joueur dans le Trending ») : tous les joueurs suivis
+        # (nom, equipe, lettre), pour une recherche instantanee dans la page
+        try:
+            r["noms"] = sorted(([n_, (v or {}).get("equipe") or "", _bq.lettre_joueur(cote(n_, v))] for n_, v in I.items()), key=lambda x: x[0])
+        except Exception as e:
+            print("Tendances (noms) : " + repr(e), flush=True)
+            r["noms"] = []
         try:
             b = indice_joueurs.creux_bilan()
             if b and (b.get("mesurables_30") or 0) >= 10:     # le suivi des creux (une part, jamais un prix)
@@ -8558,6 +8576,63 @@ class Api:
             self.deal_masquer(item_id)
         x = slabiq_expert.signaler(item_id, titre, raison, joueur, score, note, str(comptes.courant() or "local"))
         return {"ok": bool(x)}
+
+    def slabiq_questions(self, n=25):
+        """17 nov 2026 (Mathieu : « l'algo doit trouver un moyen de valider sa cote et, s'il n'est pas sur, m'ecrire ») : les
+        joueurs dont SlabIQ doute (ses signaux ne s'entendent pas), les plus en vue d'abord ; l'admin donne la vraie lettre."""
+        if not self._est_admin(reel=True):
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import bareme_iq as _bq
+        import indice_joueurs
+        import score_slab
+        import slabiq_expert
+        try:
+            I = (indice_joueurs.lire() or {}).get("indice") or {}
+        except Exception:
+            I = {}
+        deja = {k.lower() for k in slabiq_expert.passes_recents()} | {k.lower() for k in _bq.cotes_apprises()}
+        d_ = slabiq_expert.lire()
+        # 1. les questions de la boucle de validation (le marche contredit la lettre), les plus solides d'abord
+        Qm = [dict(q) for q in (d_.get("questions_marche") or [])
+              if q.get("type") == "sorte" and q.get("nom") not in (d_.get("sortes") or {})
+              or q.get("type") == "joueur" and str(q.get("nom") or "").lower() not in deja]
+        for q in Qm:
+            if q.get("type") == "sorte":
+                import validation_iq
+                q["libelle"], q["libelle_en"] = validation_iq.LIBELLES.get(q["nom"], (q["nom"], q["nom"]))
+        vu_m = {str(q.get("nom") or "").lower() for q in Qm}
+        Q = []
+        for nom, v in I.items():
+            if nom.lower() in deja or nom in _bq.JOUEURS_EXPERT:
+                continue
+            c = (v or {}).get("criteres") or {}
+            jeune = float(c.get("recrue") or 0) >= 90 or score_slab._jeune(nom)
+            d = _bq.doute(nom, c, jeune=jeune)
+            if d:
+                vu = float(c.get("notoriete") or 0) + float(c.get("demande") or 0)
+                Q.append({"nom": nom, "equipe": (v or {}).get("equipe") or "", "lettre": d[0], "raison": d[1], "raison_en": d[2],
+                          "jeune": jeune, "vu": round(vu), "criteres": {k: round(float(c[k])) for k in ("demande", "notoriete", "buzz", "forme") if c.get(k) is not None}})
+        Q.sort(key=lambda q: -q["vu"])
+        Q = Qm + [q for q in Q if q["nom"].lower() not in vu_m]
+        v_ = d_.get("validation") or {}
+        return {"ok": True, "n": len(Q), "questions": Q[:max(1, min(int(n or 25), 60))],
+                "accord": v_.get("accord_global"), "rho": v_.get("rho"), "valide_le": v_.get("le"), "auto": v_.get("auto")}
+
+    def slabiq_coter(self, nom=None, lettre=None, type_=None):
+        if not self._est_admin(reel=True):
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import bareme_iq as _bq
+        import comptes
+        import slabiq_expert
+        if lettre and lettre not in _bq.NOTE:
+            return {"ok": False, "erreur": "Lettre inconnue"}
+        if type_ == "sorte":
+            ok = slabiq_expert.coter_sorte(nom, lettre or None, str(comptes.courant() or "local"))
+        else:
+            ok = slabiq_expert.coter(nom, lettre or None, str(comptes.courant() or "local"))
+        _bq._APPRIS["t"] = _bq._AUTO["t"] = _bq._SORTES["t"] = 0.0
+        Api._TEND_IQ.update(le=0.0)
+        return {"ok": bool(ok)}
 
     def expert_etat(self):
         if not self._est_admin():
@@ -11762,7 +11837,21 @@ class Api:
                 ij = indice_joueurs.pourquoi(joueur_seul) or {}
             except Exception:
                 ij = {}
-            return {**base, "joueur_seul": joueur_seul, "joueur_iq": {k: ij.get(k) for k in ("indice", "rang", "sur", "pastilles", "actif")},
+            # 17 nov 2026 (audit) : la lettre du joueur = sa cote de collection du bareme (la meme qu'au Radar et dans Tendances)
+            jiq = {k: ij.get(k) for k in ("indice", "rang", "sur", "pastilles", "actif")}
+            try:
+                import bareme_iq as _bq
+                import score_slab as _ss
+                _v = indice_joueurs.indice(joueur_seul) or {}
+                _c = _v.get("criteres") or {}
+                _n, _l, _src = _bq.note_joueur(joueur_seul, _c, recrue=float(_c.get("recrue") or 0) >= 90, jeune=_ss._jeune(joueur_seul))
+                if "en_feu" in (_v.get("pastilles") or []):
+                    _n = min(100.0, _n + _bq.FEU_PTS)
+                    _l = _bq.lettre_joueur(_n)
+                jiq.update(note=round(_n, 1), lettre=_l, equipe=_v.get("equipe"))
+            except Exception:
+                pass
+            return {**base, "joueur_seul": joueur_seul, "joueur_iq": jiq,
                     "types": (tj or {}).get("types") if (tj or {}).get("source") == "joueur" else None,
                     "n": len(gardees), "annonces": gardees[:40], "vendues": {"ventes": [], "nb": 0, "mediane": None},
                     "valeur": None, "valeur_source": None, "bon_prix": None, "mes_achats": []}

@@ -1658,6 +1658,12 @@ def _valeurs_auto():
                 print("SlabIQ expert : boucle lancee", flush=True)
         except Exception as e:
             print("SlabIQ expert : " + str(e), flush=True)
+        try:                                    # 17 nov 2026 - la validation du bareme par le marche + sa boucle (1 fois/semaine)
+            import validation_iq
+            if validation_iq.passe_si_besoin():
+                print("Validation SlabIQ : passe lancee", flush=True)
+        except Exception as e:
+            print("Validation SlabIQ : " + str(e), flush=True)
         try:                                    # 16 nov 2026 - les joueurs cles et leur marche bas (1 fois/jour, verifie)
             import marche_cles
             if marche_cles.passe_si_besoin():

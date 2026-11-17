@@ -116,7 +116,9 @@ def norm(t):
 
 
 def _norm(t):
-    t = unicodedata.normalize("NFKD", str(t or "")).encode("ascii", "ignore").decode().lower()
+    # 17 nov 2026 (audit : « HAGENS🔥Young Guns » lu « Hagensyoung ») : un emoji ou un symbole separe les mots au lieu de les coller
+    t = re.sub(r"[^\w\s'’&#/.\-]", " ", str(t or ""))
+    t = unicodedata.normalize("NFKD", t).encode("ascii", "ignore").decode().lower()
     t = t.replace("&", " and ").replace("’", "'")
     t = re.sub(r"[^a-z0-9#/.\- ]+", " ", t)
     t = re.sub(r"(?<![a-z0-9])\.|\.(?![0-9])", " ", t)      # points isoles (garde 9.5)
@@ -807,7 +809,8 @@ def joueur_du_titre(titre, joueur=None):
         return norm(joueur)
     t = norm(titre)
     # le nom connu le plus long du titre (une seule expression pour tous les noms : rapide)
-    trouves = _noms_dans(t)
+    # 17 nov 2026 (audit : « Dylan Guenther Young Guns Utah Hockey Club » lu « Utah Hockey Club ») : une equipe n'est pas un joueur
+    trouves = [n for n in _noms_dans(t) if not re.search(r"\b(?:hockey|club|team)\b", n)]
     if trouves:
         return max(trouves, key=len)
     # 16 nov 2026 (Mathieu : « pourquoi on l'a pas capte » : « Micheal Brandsegg-Nygard », prenom mal ecrit) : un nom de

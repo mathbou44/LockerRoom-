@@ -89,6 +89,49 @@ def signaler(item_id, titre, raison, joueur=None, score=None, note=None, compte=
     return x
 
 
+def coter_sorte(raison, lettre, compte=None):
+    """17 nov 2026 : l'expert tranche une question de la boucle de validation sur une SORTE de carte."""
+    d = lire()
+    if lettre:
+        d.setdefault("sortes", {})[raison] = lettre
+    d.setdefault("cotes_hist", []).append({"sorte": raison, "lettre": lettre, "le": datetime.now().isoformat(timespec="seconds"), "compte": compte})
+    d["questions_marche"] = [q for q in (d.get("questions_marche") or []) if not (q.get("type") == "sorte" and q.get("nom") == raison)]
+    ecrire(d)
+    return True
+
+
+def coter(nom, lettre, compte=None):
+    """17 nov 2026 : l'expert repond a une question de SlabIQ (« quelle est la vraie cote de ce joueur ? ») ; lettre=None :
+    « je ne sais pas » (la question ne revient pas avant 30 jours)."""
+    nom = str(nom or "").strip()
+    if not nom:
+        return False
+    d = lire()
+    if lettre:
+        d.setdefault("cotes", {})[nom] = lettre
+        d.setdefault("cotes_hist", []).append({"nom": nom, "lettre": lettre, "le": datetime.now().isoformat(timespec="seconds"), "compte": compte})
+        d["cotes_hist"] = d["cotes_hist"][-3000:]
+    else:
+        d.setdefault("passes", {})[nom] = datetime.now().isoformat(timespec="seconds")
+    d["questions_marche"] = [q for q in (d.get("questions_marche") or []) if not (q.get("type") == "joueur" and q.get("nom") == nom)]
+    if lettre:
+        (d.get("cotes_auto") or {}).pop(nom, None)
+    ecrire(d)
+    return True
+
+
+def passes_recents(jours=30):
+    lim = time.time() - jours * 86400
+    out = set()
+    for n, le in (lire().get("passes") or {}).items():
+        try:
+            if datetime.fromisoformat(le).timestamp() >= lim:
+                out.add(n)
+        except (TypeError, ValueError):
+            pass
+    return out
+
+
 def faits():
     return {str(x.get("item_id")) for x in lire().get("etiquettes") or []}
 
