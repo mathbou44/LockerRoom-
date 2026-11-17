@@ -101,6 +101,10 @@ def sorte(titre):
         return ("D", "lot_checklist")                  # un lot, un checklist, une reimpression : jamais une bonne sorte
     yg = bool(YG.search(t))
     brut = " " + str(titre or "").lower() + " "
+    # 16 nov 2026 (Mathieu : « les Young Guns Renewed ne valent presque rien ; seulement McDavid, Crosby, Ovechkin passent
+    # 10 $ » ; verifie sur nos ventes : McDavid 15 $, Crosby 13,50 $, Ovechkin 12,60 $, les autres 2 a 6 $, la masse 1,90 $)
+    if yg and re.search(r"\brenewed\b", brut):
+        return ("E", "yg_renewed")
     if yg and re.search(r"\bretro\b|\brenewed\b", brut) and not re.search(r"\brookies?\b|\brc\b|\(rc\)", brut):
         yg = False                                     # une « Retro / Renewed Young Guns » d'un veteran : un insert, pas sa YG
         c.append(("B", "insert_retro"))

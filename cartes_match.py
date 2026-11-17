@@ -813,9 +813,21 @@ def joueur_du_titre(titre, joueur=None):
     # 16 nov 2026 (Mathieu : « pourquoi on l'a pas capte » : « Micheal Brandsegg-Nygard », prenom mal ecrit) : un nom de
     # famille connu et unique suffit (le prenom mal ecrit ou absent)
     fam = _noms_famille()
-    for m in t.split():
+    toks = t.split()
+    for i_, m in enumerate(toks):
         n = fam.get(m)
         if n and _nom_unique(m, n):
+            # 16 nov 2026 (« Corban Knight » lu comme Spencer Knight) : un AUTRE prenom juste devant le nom de famille = un
+            # autre joueur ; un prenom mal ecrit (« Micheal » pour Michael) passe encore (assez semblable)
+            p_ = toks[i_ - 1] if i_ else ""
+            if _EQUIPES_MOTS["t"] is None:
+                _EQUIPES_MOTS["t"] = _mots_equipes()
+            pas_prenom = GENERIQUES | VIDES | set(PARALLELES) | set(PRODUITS) | _MOTS_CARTE | _EQUIPES_MOTS["t"] | REMPLISSAGE | MARQUES
+            if p_.isalpha() and len(p_) >= 3 and p_ not in pas_prenom:
+                import difflib
+                pr = n.split()[0]
+                if p_ != pr and difflib.SequenceMatcher(None, p_, pr).ratio() < 0.7:
+                    continue
             return n
     if _EQUIPES_MOTS["t"] is None:
         _EQUIPES_MOTS["t"] = _mots_equipes()
@@ -850,6 +862,12 @@ def joueur_du_titre(titre, joueur=None):
 
 
 _PRENOMS = {"t": None}
+
+
+def _prenoms_connus():
+    if _PRENOMS["t"] is None:
+        _PRENOMS["t"] = {n.split()[0] for n in _joueurs_connus() if " " in n}
+    return _PRENOMS["t"]
 
 
 # 26 oct 2026 (Mathieu : « pas du tout les memes cartes » : une National Hockey Card Day comparee a des Tim Hortons,

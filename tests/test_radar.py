@@ -46,7 +46,9 @@ appels.clear()
 r = api.mes_deals()
 assert not r["profil_vide"] and not r["decouvrir"]
 pt = {g["joueur"]: [x["item_id"] for x in g["annonces"]] for g in r["pour_toi"]}
-assert pt == {"Macklin Celebrini": ["c1", "c3"], "Connor Bedard": []}, pt
+# 16 nov 2026 : c1 et c3 sont la MEME carte : une tuile (la moins chere), l'autre annonce dans « autres »
+assert pt == {"Macklin Celebrini": ["c1"], "Connor Bedard": []}, pt
+assert [a["item_id"] for g in r["pour_toi"] for x in g["annonces"] for a in x.get("autres") or []] == ["c3"]
 q0 = [q for q, _k in appels if "Celebrini" in q][0]
 assert "young guns" in q0 and "auto" in q0 and q0.startswith("Macklin Celebrini ("), q0
 print("OK radar mes joueurs")
@@ -55,7 +57,7 @@ print("OK radar mes joueurs")
 lockerroom.ebay_prix_actif = lambda api=None: False
 api._MES_DEALS.clear()
 a = api.acheteur_accueil()
-assert [d["item_id"] for d in a["deals"]][:2] == ["c1", "c3"] and all(d.get("pourtoi") for d in a["deals"]), a["deals"]
+assert [d["item_id"] for d in a["deals"]][:1] == ["c1"] and all(d.get("pourtoi") for d in a["deals"]), a["deals"]
 print("OK accueil pour toi")
 
 # 4. les pastilles du questionnaire

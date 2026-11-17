@@ -14,7 +14,7 @@ for v in ("Exclusives /100", "High Gloss /10", "Canvas", "Clear Cut", "Outburst"
           "Photo Variation SSP"):
     assert S("Ivan Demidov 2025-26 Upper Deck Young Guns Rookie " + v) == "A+", v    # toutes les variantes de YG
 assert S("2025-26 Upper Deck Extended Series Outburst Retro Young Guns Kris Letang #OR-29") == "B"    # Retro YG d'un veteran
-assert S("2024-25 Upper Deck Series 2 Young Guns Renewed Connor McDavid #201") == "B"                 # ... un insert
+assert S("2024-25 Upper Deck Series 2 Young Guns Renewed Connor McDavid #201") == "E"                 # Renewed : presque rien (ventes)
 assert S("Macklin Celebrini 2024-25 The Cup Rookie Auto Patch RPA /249") == "A+"
 assert S("Quinn Hutson 2025-26 SP Authentic Future Watch Auto Patch /100") == "A+"
 assert S("Matt Duchene 2009-10 Upper Deck Victory #250") == "D"                       # une base

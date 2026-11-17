@@ -86,6 +86,7 @@ REGLAGES_DEFAUT = {
     "nom_boutique": "Ma boutique",
     "equipe_fav": "",                                           # 26 oct 2026 : les accents de l'app aux couleurs de cette equipe
     "palette": "refractor",                                     # 27 oct 2026 : refractor + 5 paralleles
+    "motif": "",                                                # 16 nov 2026 : le motif (prisme, cracked ice, damier...) a part de la couleur
     "ia_photos_ok": False,                                      # 27 oct 2026 : permission explicite (Apple 5.1.2(i))
     "ia_entrainement_ok": False,                                # 3 nov 2026 : photos d'examen gardees pour entrainer l'IA (OUI explicite)
     "frais_ebay_pct": 13.25, "frais_ebay_fixe": 0.40,           # eBay Canada, cartes (a ajuster a ton compte)
@@ -1714,6 +1715,39 @@ class Api:
         if tot is not None and tot < lim:
             return False
         return True
+
+    @staticmethod
+    def _grouper_memes(l, garder=10):
+        """16 nov 2026 (Mathieu : « plusieurs annonces de la meme carte : montrer celle au meilleur prix, et les autres en un
+        toucher ») : une tuile par carte (joueur, mots qui disent quelle carte, variante, numerotation, note) : la moins chere
+        (total), avec « autres » (les autres annonces de la meme carte, moins chere d'abord)."""
+        import bareme_iq as _bq
+        groupes, ordre = {}, []
+        for x in l or []:
+            if not isinstance(x, dict):
+                continue
+            t = x.get("titre") or ""
+            try:
+                d = cartes_match._decoder_memo(t)
+                g = d.get("grade") or {}
+                var = tuple(sorted(set(m.lower() for m in _bq.YG_VAR.findall(cartes_match.norm(t)))))
+                cle = (cartes_match.norm(x.get("joueur") or cartes_match.joueur_du_titre(t) or ""), tuple(sorted(cartes_match.identite(t)[0])),
+                       _bq.sorte(t)[1], var, d.get("serie"), (g.get("cie"), g.get("note")) if g else None, bool(d.get("auto")), bool(d.get("patch")))
+            except Exception:
+                cle = ("_", x.get("item_id"))
+            if cle not in groupes:
+                groupes[cle] = []
+                ordre.append(cle)
+            groupes[cle].append(x)
+        out = []
+        for cle in ordre:
+            L = sorted(groupes[cle], key=lambda y: (_float(y.get("total")) or 1e9))
+            tete = L[0]
+            if len(L) > 1:
+                tete = dict(tete, n_autres=len(L) - 1,
+                            autres=[{k: y.get(k) for k in ("item_id", "titre", "total", "url", "encan", "fin", "mises", "photo", "vendeur", "lieu")} for y in L[1:1 + garder]])
+            out.append(tete)
+        return out
 
     MARCHE_BAS_PTS = 6                 # 16 nov 2026 : un joueur cle au marche bas (marche_cles) monte dans le Radar
 
@@ -7645,10 +7679,10 @@ class Api:
             _iq = prof.get("iq_min") if isinstance(prof, dict) else None
             garde = (lambda l: [x for x in (l or []) if Api._radar_digne(x, _pm, _iq)]) if Api.RADAR_FILTRE else (lambda l: l)
             out = garde(out)
-            petits = garde(petits)          # 16 nov 2026 (« pourquoi ces E sont la ») : les encans des petits vendeurs aussi
+            petits = Api._grouper_memes(garde(petits))   # 16 nov 2026 : les petits vendeurs filtres ; une tuile par carte
             for g in pour_toi + decouvrir + chauds_creux + chasses + types + list(groupes or []):
                 if isinstance(g, dict) and "annonces" in g:
-                    g["annonces"] = garde(g.get("annonces"))[:g.pop("_cap", None) or None]
+                    g["annonces"] = Api._grouper_memes(garde(g.get("annonces")))[:g.pop("_cap", None) or None]
             for v in vend:
                 if isinstance(v, dict) and "annonces" in v:
                     v["annonces"] = garde(v.get("annonces"))
