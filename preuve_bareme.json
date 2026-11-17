@@ -1,0 +1,142 @@
+{
+ "le": "2026-11-16",
+ "coupe": "2026-08-01",
+ "avant": "juin-juillet 2026",
+ "apres": "août-octobre 2026",
+ "ventes": 194409,
+ "joueurs": 1279,
+ "tous": {
+  "A+": {
+   "cartes": 512,
+   "ventes_par_carte": 10.47,
+   "prix_median": 366.6,
+   "n_evol": 131,
+   "evol_mediane": 8.4,
+   "hausse_pct": 68
+  },
+  "A": {
+   "cartes": 2099,
+   "ventes_par_carte": 11.01,
+   "prix_median": 132.5,
+   "n_evol": 363,
+   "evol_mediane": 13.1,
+   "hausse_pct": 65
+  },
+  "A-": {
+   "cartes": 2399,
+   "ventes_par_carte": 6.83,
+   "prix_median": 70.7,
+   "n_evol": 327,
+   "evol_mediane": 11.6,
+   "hausse_pct": 67
+  },
+  "B+": {
+   "cartes": 4020,
+   "ventes_par_carte": 5.26,
+   "prix_median": 37.0,
+   "n_evol": 457,
+   "evol_mediane": 7.2,
+   "hausse_pct": 56
+  },
+  "B": {
+   "cartes": 3924,
+   "ventes_par_carte": 4.41,
+   "prix_median": 15.3,
+   "n_evol": 414,
+   "evol_mediane": 0.0,
+   "hausse_pct": 49
+  },
+  "C": {
+   "cartes": 2509,
+   "ventes_par_carte": 5.45,
+   "prix_median": 10.7,
+   "n_evol": 183,
+   "evol_mediane": -2.4,
+   "hausse_pct": 46
+  },
+  "D": {
+   "cartes": 2962,
+   "ventes_par_carte": 3.33,
+   "prix_median": 15.5,
+   "n_evol": 149,
+   "evol_mediane": -0.1,
+   "hausse_pct": 48
+  },
+  "E": {
+   "cartes": 2530,
+   "ventes_par_carte": 2.24,
+   "prix_median": 10.0,
+   "n_evol": 36,
+   "evol_mediane": 7.3,
+   "hausse_pct": 56
+  }
+ },
+ "tca": {
+  "A+": {
+   "cartes": 122,
+   "ventes_par_carte": 6.45,
+   "prix_median": 246.3,
+   "n_evol": 53,
+   "evol_mediane": 8.5,
+   "hausse_pct": 68
+  },
+  "A": {
+   "cartes": 419,
+   "ventes_par_carte": 10.58,
+   "prix_median": 90.0,
+   "n_evol": 156,
+   "evol_mediane": 11.7,
+   "hausse_pct": 74
+  },
+  "A-": {
+   "cartes": 396,
+   "ventes_par_carte": 7.12,
+   "prix_median": 37.9,
+   "n_evol": 136,
+   "evol_mediane": 18.4,
+   "hausse_pct": 74
+  },
+  "B+": {
+   "cartes": 601,
+   "ventes_par_carte": 5.32,
+   "prix_median": 22.9,
+   "n_evol": 174,
+   "evol_mediane": 13.0,
+   "hausse_pct": 68
+  },
+  "B": {
+   "cartes": 667,
+   "ventes_par_carte": 3.59,
+   "prix_median": 12.3,
+   "n_evol": 167,
+   "evol_mediane": 12.4,
+   "hausse_pct": 68
+  },
+  "C": {
+   "cartes": 342,
+   "ventes_par_carte": 2.97,
+   "prix_median": 9.8,
+   "n_evol": 77,
+   "evol_mediane": 9.9,
+   "hausse_pct": 56
+  },
+  "D": {
+   "cartes": 826,
+   "ventes_par_carte": 1.97,
+   "prix_median": 10.6,
+   "n_evol": 49,
+   "evol_mediane": 22.5,
+   "hausse_pct": 63
+  },
+  "E": {
+   "cartes": 565,
+   "ventes_par_carte": 1.75,
+   "prix_median": 7.0,
+   "n_evol": 21,
+   "evol_mediane": 13.5,
+   "hausse_pct": 62
+  }
+ },
+ "fois": 4.9,
+ "fois_tca": 5.5
+}

@@ -867,6 +867,31 @@ def page_tarifs():
     return _page_vitrine("tarifs")
 
 
+def _bloc_bareme(t):
+    """16 nov 2026 (Mathieu : « faire les tests et les presenter sur le site, avec les mises a jour de SlabIQ ») : le bareme
+    A+ a E teste proprement : les lettres calculees avec les ventes d'AVANT (juin-juillet), le resultat mesure sur les ventes
+    d'APRES (aout-octobre). Le fichier preuve_bareme.json est fige (le test, refait a la main, le remplace)."""
+    try:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "preuve_bareme.json"), encoding="utf-8") as f:
+            d = json.load(f)
+    except (OSError, ValueError):
+        return ""
+    T = d.get("tous") or {}
+    if not T.get("A") or not T.get("E"):
+        return ""
+    nb = lambda v: f"{v:,}".replace(",", "\u00a0")
+    lig = "".join(f'<tr><td><b>{l}</b></td><td class="n">{nb(T[l]["cartes"])}</td><td class="n{" vert" if l in ("A+", "A") else ""}">{str(T[l]["ventes_par_carte"]).replace(".", ",")}</td>'
+                  f'<td class="n">{round(T[l]["prix_median"])}\u00a0$</td></tr>' for l in ("A+", "A", "A-", "B+", "B", "C", "D", "E") if T.get(l))
+    fois = str(d.get("fois")).replace(".", ",")
+    return f"""<section><div class="conteneur">
+  <p class="kicker holo-t">{t("Les lettres SlabIQ", "SlabIQ letters")}</p>
+  <h2>{t(f'Une carte A se revend <span class="holo-t">{fois} fois</span> plus souvent qu’une carte E', f'An A card resells <span class="holo-t">{fois} times</span> more often than an E card')}</h2>
+  <p class="intro">{t("Le test : chaque carte reçoit sa lettre avec seulement les ventes de juin et juillet. Puis on regarde ce qui se vend vraiment d’août à octobre, des ventes que SlabIQ n’avait jamais vues.", "The test: every card gets its letter using only June and July sales. Then we look at what actually sells from August to October, sales SlabIQ had never seen.")}</p>
+  <div style="overflow-x:auto"><table class="tab-f"><thead><tr><th>{t("Lettre", "Letter")}</th><th>{t("Cartes", "Cards")}</th><th>{t("Ventes par carte", "Sales per card")}</th><th>{t("Prix médian", "Median price")}</th></tr></thead><tbody>{lig}</tbody></table></div>
+  <p class="note">{t(f"{nb(d.get('ventes', 0))} ventes de hockey (eBay et archives), {nb(d.get('joueurs', 0))} joueurs. Les lettres des joueurs viennent seulement des ventes d’avant le 1er août (aucune note d’expert). Sur nos archives seules (moins touchées par nos recherches) : {str(d.get('fois_tca')).replace('.', ',')} fois. Une lettre dit à quel point une carte est recherchée, pas qu’elle va monter.", f"{nb(d.get('ventes', 0))} hockey sales (eBay and archives), {nb(d.get('joueurs', 0))} players. Player letters come only from sales before August 1 (no expert input). On our archives alone (less affected by our own searches): {d.get('fois_tca')} times. A letter says how sought after a card is, not that it will go up.")}</p>
+</div></section>"""
+
+
 def _bloc_collectionneurs(t):
     """16 nov 2026 (Mathieu : « deux collectionneurs, le meme budget, avec et sans SlabIQ ; le montrer sur le site » ; « montre
     la difference entre les deux, pas des negatifs ») : l'avance de la collection avec SlabIQ sur celle sans, en gros chiffres."""
@@ -970,6 +995,7 @@ def page_preuve():
     <div class="etape"><b>3</b><h3>{t("Le résultat, plus tard", "The result, later")}</h3><p>{t("30, 60 et 90 jours après, on mesure ce que les cartes valaient vraiment. Les fichiers sont publiés après 30 jours : tout le monde peut vérifier.", "30, 60 and 90 days later, we measure what the cards were really worth. Files are published after 30 days: anyone can check.")}</p></div>
   </div>
 </div></section>
+{_bloc_bareme(t)}
 {_bloc_collectionneurs(t)}
 <section><div class="conteneur">
   <p class="kicker holo-t">{t("Résultats en direct", "Live results")}</p>
