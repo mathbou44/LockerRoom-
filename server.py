@@ -1354,41 +1354,55 @@ def mes_photos(nom):
     return send_from_directory(os.path.dirname(f), os.path.basename(f), mimetype="image/jpeg", max_age=30 * 86400)
 
 
+_EXPORT_V = threading.Lock()
+
+
 @app.route("/admin/ventes_export.tsv.gz")
 def admin_ventes_export():
     """18 nov 2026 (Mathieu : « travaille sur SlabIQ cette nuit avec nos nouvelles donnees ») : TOUTES nos ventes archivees
-    (titre, prix CAD, date, recherche) d'un sport, compressees : l'admin les telecharge pour les analyser ailleurs."""
-    import gzip
+    (titre, prix CAD, date, recherche) d'un sport, compressees. Envoyees EN CONTINU (le telechargement demarre tout de suite,
+    meme pour des centaines de milliers de ventes ; avant : le fichier entier etait prepare d'abord et rien ne se passait)."""
     import sqlite3
-    import tempfile
-    from flask import send_file
+    import zlib
+    from flask import Response, stream_with_context
     import base_ventes as _bv
     if not api._est_admin(reel=True):
         abort(403)
     sport = request.args.get("sport") if request.args.get("sport") in ("hockey", "baseball") else "hockey"
-    fd, ch = tempfile.mkstemp(suffix=".tsv.gz")
-    os.close(fd)
-    c = _bv._cx(sport)
-    try:
-        with gzip.open(ch, "wt", encoding="utf-8", compresslevel=6) as f:
-            f.write("titre\tprix\tle\tq\n")
-            for t, p_, le, q in c.execute("SELECT titre, prix, le, q FROM ventes"):
-                f.write("%s\t%s\t%s\t%s\n" % (str(t or "").replace("\t", " ").replace("\n", " "), p_, le or "", str(q or "").replace("\t", " ")))
-    except sqlite3.Error:
-        pass
-    finally:
-        c.close()
-    f_ = open(ch, "rb")
-    rep = send_file(f_, mimetype="application/gzip", as_attachment=True, download_name=f"ventes_{sport}.tsv.gz", max_age=0)
 
-    def _effacer():
+    # 18 nov 2026 (« ca a crashe, le site ne repond plus ») : l'export d'un coup tenait le processeur ; la verification de sante
+    # de Render (5 s) ne repondait plus et Render a tue le serveur. Maintenant : un seul export a la fois, par petits blocs,
+    # avec une pause entre chaque bloc (les autres requetes passent)
+    if not _EXPORT_V.acquire(blocking=False):
+        return ("Un export est déjà en cours : attends qu'il finisse", 429)
+
+    def flux():
+      try:
+        z = zlib.compressobj(4, zlib.DEFLATED, 31)
+        yield z.compress(b"titre\tprix\tle\tq\n")
+        c = _bv._cx(sport)
         try:
-            f_.close()
-            os.remove(ch)
-        except OSError:
+            cur = c.execute("SELECT titre, prix, le, q FROM ventes")
+            while True:
+                rows = cur.fetchmany(1500)
+                if not rows:
+                    break
+                time.sleep(0.05)
+                bloc = "".join("%s\t%s\t%s\t%s\n" % (str(t or "").replace("\t", " ").replace("\n", " "), p_, le or "",
+                                                       str(q or "").replace("\t", " ").replace("\n", " ")) for t, p_, le, q in rows)
+                out = z.compress(bloc.encode("utf-8"))
+                if out:
+                    yield out
+        except sqlite3.Error:
             pass
-    rep.call_on_close(_effacer)
-    return rep
+        finally:
+            c.close()
+        yield z.flush()
+      finally:
+        _EXPORT_V.release()
+    return Response(stream_with_context(flux()), mimetype="application/gzip",
+                    headers={"Content-Disposition": f'attachment; filename="ventes_{sport}.tsv.gz"', "Cache-Control": "no-store",
+                             "X-Accel-Buffering": "no"})
 
 
 @app.route("/admin/slabiq_donnees.json.gz")
