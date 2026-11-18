@@ -1663,6 +1663,8 @@ def _valeurs_auto():
             if cote_marche.passe_si_besoin():
                 print("Cote marche : passe lancee", flush=True)
             cote_marche.balayer_si_besoin()     # 17 nov 2026 : chaque joueur mesure chez SoldComps, une fois par semaine
+            import deals as _dl_                # 17 nov 2026 : les valeurs « estimees » rejugees avec les archives (Misa PMG)
+            threading.Thread(target=_dl_.reestimer_approx, daemon=True, name="reestimer-approx").start()
         except Exception as e:
             print("Cote marche : " + str(e), flush=True)
         try:                                    # 17 nov 2026 - la validation du bareme par le marche + sa boucle (1 fois/semaine)

@@ -11754,6 +11754,26 @@ class Api:
         except Exception as e:
             return {"ok": False, "erreur": type(e).__name__}
 
+    def carte_grader(self, titre, note=None):
+        """17 nov 2026 : « Grader ? » : vaut-il la peine de faire grader cette carte brute (grader.py). Regle des comps : admin
+        et Platine pour l'instant (le reste : rien)."""
+        import grader
+        titre = re.sub(r"\s+", " ", str(titre or "")).strip()[:200]
+        if len(titre) < 3 or grader.gradee(titre):
+            return {"ok": False, "raison": "gradee"}
+        if not comps_permis(self):
+            return {"ok": False, "raison": "comps"}
+        try:
+            g = vendues.par_gradation(titre, requete=False, fond=False, force=True)
+        except Exception as e:
+            return {"ok": False, "erreur": type(e).__name__}
+        r = self.reglages_lire()
+        try:
+            fpsa = float(r.get("frais_psa") or grader.FRAIS_PSA)
+        except (TypeError, ValueError):
+            fpsa = grader.FRAIS_PSA
+        return grader.calculer((g or {}).get("series"), note, (r.get("frais_ebay_pct") or 13.25) / 100, r.get("frais_ebay_fixe") or 0.40, fpsa)
+
     JOUEUR_SEUL_MIN = 20.0
 
     @staticmethod

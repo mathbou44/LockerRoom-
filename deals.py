@@ -471,7 +471,7 @@ def maj_prix(item_id, total, port=None, mises=None, fin=None, achat_=None, encan
     return {"deal": None if retire else x, "retire": retire}
 
 
-REVALIDE_V = 16                  # 16 (7 nov) : le sport de tous les deals refait (Ace Bailey « hockey ») ; (approx : cartes similaires, 7 nov) 15 (7 nov) : saisons voisines, Exquisite, hits 365 j ; 14 (7 nov) : inscriptions a part ; 13 (7 nov) : port 10 $ / 20 $ ; 12 (7 nov) : frais reels (14,9 % de prix + port) ; 11 (7 nov) : 15 $ de profit au moins, taxes de l'achat ; 10 (6 nov) : mises max refaites sur TOUS les deals gardes ; 9 (6 nov) : prix max a 30 % de profit net (avant : 70 % de la valeur) ; 2 : « checklist » ; 3 : Bowman U = football ; 4 : la F1 ; 5 : « Beckett » prenom (pas gradee) ; 6 : Signature Materials ; 7 : « Draft » ; 8 : « Beam Team » (4 nov)
+REVALIDE_V = 17                  # 16 (7 nov) : le sport de tous les deals refait (Ace Bailey « hockey ») ; (approx : cartes similaires, 7 nov) 15 (7 nov) : saisons voisines, Exquisite, hits 365 j ; 14 (7 nov) : inscriptions a part ; 13 (7 nov) : port 10 $ / 20 $ ; 12 (7 nov) : frais reels (14,9 % de prix + port) ; 11 (7 nov) : 15 $ de profit au moins, taxes de l'achat ; 10 (6 nov) : mises max refaites sur TOUS les deals gardes ; 9 (6 nov) : prix max a 30 % de profit net (avant : 70 % de la valeur) ; 2 : « checklist » ; 3 : Bowman U = football ; 4 : la F1 ; 5 : « Beckett » prenom (pas gradee) ; 6 : Signature Materials ; 7 : « Draft » ; 8 : « Beam Team » (4 nov)
 
 
 def _revalider_un(x):
@@ -515,6 +515,49 @@ def a_jour(x):
     if y.get("encan"):
         y["mise_max"] = round(prix_max(y["valeur"], taxe=taxe_de(y)) - port_eff(y.get("port")), 2)
     return y
+
+
+def reestimer_approx(max_n=400):
+    """17 nov 2026 (Mathieu : la Misa Blue PMG /50 « estimee 627 $ » avec des cartes similaires, alors que ses vraies ventes
+    existent : « PMG » et « Precious Gems » n'etaient pas reconnus, la recherche exigeait « Skybox ») : chaque deal ou encan
+    suivi qui n'a qu'une valeur ESTIMEE (cartes similaires, autre saison) est rejuge avec nos archives (le blitz SoldComps les
+    remplit) et la recherche corrigee deja en cache : ses vraies ventes trouvees -> sa vraie valeur. Aucun appel."""
+    import cartes_match
+    import vendues
+    with _verrou:
+        d = lire()
+        cibles = [x for cle in ("deals", "suivis") for x in (d.get(cle) or [])
+                  if x.get("valeur") and x.get("valeur_source") in ("approx", "autre_saison")][:max_n]
+    trouves = {}
+    for x in cibles:
+        try:
+            cib = cartes_match.cible_titre(x.get("titre") or "")
+            q = (cartes_match.requete_ebay(cib) or "").strip()
+            base = list(vendues.en_cache(q) or []) + list(vendues.archives(cib, jours=JOURS_MAX_HITS) or [])
+            va = valeur_ou_saison(x, base, [], cib=cib) if base else None
+            # une vraie valeur, ou une estimation refaite avec de meilleures ventes (la Misa : 627 $ -> 285 $, ses vraies ventes)
+            if va and (va[1] in ("vendues", "echange", "unique") or abs(float(va[0]) - float(x["valeur"])) >= 0.05 * float(x["valeur"])):
+                trouves[str(x.get("item_id"))] = va
+        except Exception as e:
+            print("Reestimer (approx) : " + repr(e)[:160], flush=True)
+    if not trouves:
+        return 0
+    maint_ = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    with _verrou:
+        d = lire()
+        n = 0
+        for cle in ("deals", "suivis"):
+            for g in d.get(cle) or []:
+                va = trouves.get(str(g.get("item_id")))
+                if va and g.get("valeur_source") in ("approx", "autre_saison"):
+                    g.pop("gain", None)
+                    g.update(valeur=va[0], n=va[2], vendues=va[3], valeur_source=va[1], corrige_le=maint_,
+                             mise_max=round(prix_max(va[0], taxe=taxe_de(g)) - port_eff(g.get("port")), 2))
+                    n += 1
+        _ecrire(d)
+    _VALIDES.clear()
+    print(f"Deals : {n} valeurs estimees remplacees par leurs vraies ventes", flush=True)
+    return n
 
 
 def revalider_produits():

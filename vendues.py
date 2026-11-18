@@ -837,10 +837,10 @@ def archives_joueur(joueur, jours=365, max_=1500):
 _GRADES = ("gradée", "pas gradée", "autre gradation")
 
 
-def par_gradation(texte, requete=True, fond=False, jours=365):
+def par_gradation(texte, requete=True, fond=False, jours=365, force=False):
     """-> {ok, series: [{cle, nom, n, points: [[date, prix]], derniere: {prix, le}}], carte}. Une recherche SoldComps (cache
     partage), plus nos archives (jusqu'a un an). Les 4 gradations les plus vendues (3 ventes au moins chacune)."""
-    if _coupe():
+    if _coupe() and not force:
         return {"ok": True, "series": [], "coupe": True}
     import cartes_match
     cib = cartes_match.cible(texte) if requete else cartes_match.cible_titre(texte)
@@ -870,7 +870,7 @@ def par_gradation(texte, requete=True, fond=False, jours=365):
             return (1, -float(k.split()[-1]))
         except ValueError:
             return (2, 0)
-    gs = sorted(((k, v) for k, v in groupes.items() if len(v) >= 3), key=lambda kv: -len(kv[1]))[:4]
+    gs = sorted(((k, v) for k, v in groupes.items() if len(v) >= 3), key=lambda kv: -len(kv[1]))[:4 if not force else 12]
     series = []
     for k, pts in sorted(gs, key=lambda kv: rang(kv[0])):
         pts.sort(key=lambda p: p[0])
