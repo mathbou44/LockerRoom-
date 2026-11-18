@@ -1354,6 +1354,43 @@ def mes_photos(nom):
     return send_from_directory(os.path.dirname(f), os.path.basename(f), mimetype="image/jpeg", max_age=30 * 86400)
 
 
+@app.route("/admin/ventes_export.tsv.gz")
+def admin_ventes_export():
+    """18 nov 2026 (Mathieu : « travaille sur SlabIQ cette nuit avec nos nouvelles donnees ») : TOUTES nos ventes archivees
+    (titre, prix CAD, date, recherche) d'un sport, compressees : l'admin les telecharge pour les analyser ailleurs."""
+    import gzip
+    import sqlite3
+    import tempfile
+    from flask import send_file
+    import base_ventes as _bv
+    if not api._est_admin(reel=True):
+        abort(403)
+    sport = request.args.get("sport") if request.args.get("sport") in ("hockey", "baseball") else "hockey"
+    fd, ch = tempfile.mkstemp(suffix=".tsv.gz")
+    os.close(fd)
+    c = _bv._cx(sport)
+    try:
+        with gzip.open(ch, "wt", encoding="utf-8", compresslevel=6) as f:
+            f.write("titre\tprix\tle\tq\n")
+            for t, p_, le, q in c.execute("SELECT titre, prix, le, q FROM ventes"):
+                f.write("%s\t%s\t%s\t%s\n" % (str(t or "").replace("\t", " ").replace("\n", " "), p_, le or "", str(q or "").replace("\t", " ")))
+    except sqlite3.Error:
+        pass
+    finally:
+        c.close()
+    f_ = open(ch, "rb")
+    rep = send_file(f_, mimetype="application/gzip", as_attachment=True, download_name=f"ventes_{sport}.tsv.gz", max_age=0)
+
+    def _effacer():
+        try:
+            f_.close()
+            os.remove(ch)
+        except OSError:
+            pass
+    rep.call_on_close(_effacer)
+    return rep
+
+
 @app.route("/admin/slabiq_donnees.json.gz")
 def admin_slabiq_donnees():
     """12 nov 2026 : les donnees du dernier test de prediction SlabIQ (admin seulement, verifie), pour le rejouer ailleurs."""
