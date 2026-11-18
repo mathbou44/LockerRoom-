@@ -47,9 +47,17 @@ def _fichiers():
     return [out[k] for k in sorted(out)]
 
 
+def _dans(chemin, *bases):
+    """18 nov 2026 (Aikido, inclusion de fichier) : le chemin reel reste DANS un des dossiers permis."""
+    r = os.path.realpath(chemin)
+    return any(r == os.path.realpath(b) or r.startswith(os.path.realpath(b) + os.sep) for b in bases)
+
+
 def _lire(chemin):
     if not os.path.isabs(chemin):
         chemin = os.path.join(DOSSIER, chemin)
+    if not _dans(chemin, DOSSIER, dossier_ajouts()):
+        raise ValueError("chemin refusé")
     mt = os.path.getmtime(chemin)
     if _CACHE.get(chemin, (None,))[0] != mt:
         with open(chemin, encoding="utf-8") as f:
@@ -59,7 +67,10 @@ def _lire(chemin):
 
 def enregistrer_ajout(prod):
     os.makedirs(dossier_ajouts(), exist_ok=True)
-    chemin = os.path.join(dossier_ajouts(), prod["id"] + ".json")
+    pid = re.sub(r"[^a-z0-9_-]+", "-", str(prod.get("id") or "").lower()).strip("-")[:120]   # 18 nov (Aikido) : jamais un « ../ »
+    if not pid:
+        raise ValueError("identifiant de produit invalide")
+    chemin = os.path.join(dossier_ajouts(), pid + ".json")
     tmp = chemin + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump({**{k: v for k, v in prod.items() if not k.startswith("_")}, "maj": datetime.now().isoformat(timespec="seconds")},

@@ -40,6 +40,14 @@ JOUEURS_BB = {
     "Josh Gibson": "A", "Mike Schmidt": "A-", "George Brett": "A-", "Rickey Henderson": "A-", "Cal Ripken Jr.": "A-",
     "Ken Griffey Jr.": "A", "Derek Jeter": "A", "Tony Gwynn": "B+", "Frank Thomas": "B+", "Chipper Jones": "B+",
     "Ichiro Suzuki": "A-", "Albert Pujols": "B+", "Mariano Rivera": "B+",
+    # l'integration (1947-1952) : les anciens des Negro Leagues entres dans la MLB (Temple de la renommee)
+    "Larry Doby": "B+", "Monte Irvin": "B", "Minnie Minoso": "B", "Don Newcombe": "B",
+    # les recrues cles des annees 60 (Cardboard Connection) et les Japonais (cartes BBM)
+    "Carl Yastrzemski": "B+", "Willie McCovey": "B+", "Lou Brock": "B", "Rod Carew": "B", "Willie Stargell": "B",
+    "Hideki Matsui": "B", "Hideo Nomo": "B",
+    # les recrues des annees 70 (Cardboard Connection)
+    "Robin Yount": "B+", "Ozzie Smith": "B+", "Thurman Munson": "B+", "Eddie Murray": "B", "Paul Molitor": "B",
+    "Dennis Eckersley": "B", "Carlton Fisk": "B", "Dave Winfield": "B",
     # les vedettes d'aujourd'hui
     "Shohei Ohtani": "A+", "Aaron Judge": "A+", "Mike Trout": "A", "Paul Skenes": "A", "Juan Soto": "A-",
     "Ronald Acuna Jr.": "A-", "Bobby Witt Jr.": "A-", "Elly De La Cruz": "A-", "Gunnar Henderson": "A-",
@@ -51,6 +59,7 @@ _ALIAS = {"ken griffey jr": "Ken Griffey Jr.", "cal ripken": "Cal Ripken Jr.", "
           "ronald acuña": "Ronald Acuna Jr.", "julio rodríguez": "Julio Rodriguez", "bobby witt": "Bobby Witt Jr.", "ohtani": "Shohei Ohtani", "mantle": "Mickey Mantle",
           "clemente": "Roberto Clemente", "koufax": "Sandy Koufax", "gehrig": "Lou Gehrig", "dimaggio": "Joe DiMaggio",
           "skenes": "Paul Skenes", "griffey": "Ken Griffey Jr.",
+          "yastrzemski": "Carl Yastrzemski", "yaz": "Carl Yastrzemski",
           "fernando tatis": "Fernando Tatis Jr.", "vladimir guerrero jr": "Vladimir Guerrero Jr.", "joe jackson": "Shoeless Joe Jackson"}
 
 # Les vedettes du Temple (Hall of Fame) dont une carte vintage compte toujours (meme en mauvais etat)
@@ -102,9 +111,60 @@ ICONES = [
     (_R(r"\b2011\b.*\btopps update\b.*\btrout\b|\bus175\b"), "A+"),
     (_R(r"\b2013\b.*\bbowman\b.*\bjudge\b"), "A+"),
     (_R(r"\b2018\b.*\bbowman chrome\b.*\bohtani\b"), "A+"),
+    # 18 nov (nuit) : la vraie 1re carte pro d'Ohtani : 2013 BBM 1st Version « Red Wing » (829 gradees PSA ; une PSA 10 vendue
+    # 11 200 $, Sports Illustrated) ; les recrues 1955 Topps Koufax #123, Killebrew #124, Clemente #164
+    (_R(r"\b2013\b.*\bbbm\b.*\bohtani\b|\bohtani\b.*\b2013\b.*\bbbm\b"), "A+"),
+    (_R(r"\b2013\b.*\bcalbee\b.*\bohtani\b|\bohtani\b.*\b2013\b.*\bcalbee\b"), "A"),
+    (_R(r"\b1955\b.*\btopps\b.*\b(?:koufax|clemente|killebrew)\b"), "A+"),
     # 18 nov : la 1re refractor de l'histoire (1993 Finest, ~241 copies de chacune, jamais confirme par Topps ; Baseball Cardpedia)
     (_R(r"\b1993\b.*\bfinest\b.*\brefractor\b|\b1993\b.*\brefractor\b.*\bfinest\b"), "A"),
+    # 18 nov (2e passe) : Bowman 1948-1955 (Topps Ripped, All Vintage Cards) : la Ted Williams 1954 #66 retiree des paquets
+    # (dispute de contrat avec Topps) ; les Mantle 1952 #101, 1953 couleur #59, 1955 #202 ; Mays 1952 #218 ; Aaron 1955 #179
+    (_R(r"\b1954\b.*\bbowman\b.*\bwilliams\b|\bwilliams\b.*\b1954\b.*\bbowman\b"), "A+"),
+    (_R(r"\b195[235]\b.*\bbowman\b.*\bmantle\b|\bmantle\b.*\b195[235]\b.*\bbowman\b"), "A"),
+    (_R(r"\b1952\b.*\bbowman\b.*\bmays\b|\b1955\b.*\bbowman\b.*\b(?:mays|aaron)\b"), "A"),
+    # l'integration (Old Sports Cards) : la 1952 Topps #312 Robinson est sa carte la plus chere ; 1949 Bowman Robinson #50 et
+    # Paige #224 (sa seule autre carte d'epoque) ; Doby 1948 Leaf #138 (1re carte du 1er joueur noir de la Ligue americaine)
+    (_R(r"\b1952\b.*\btopps\b.*\brobinson\b|\brobinson\b.*\b1952\b.*\btopps\b"), "A+"),
+    (_R(r"\b1949\b.*\bbowman\b.*\b(?:robinson|paige)\b|\b(?:robinson|paige)\b.*\b1949\b.*\bbowman\b"), "A"),
+    (_R(r"\b1948\b.*\bleaf\b.*\bdoby\b|\bdoby\b.*\b1948\b.*\bleaf\b"), "A"),
+    # 18 nov (4e passe) : les 10 recrues des annees 60 (Cardboard Connection) ; plusieurs sont des cartes a 2-4 recrues :
+    # 1968 #177 Ryan/Koosman, 1968 #247 Bench/Tompkins, 1967 #581 Seaver/Denehy, 1967 #569 Carew/Allen, 1963 #553 Stargell
+    (_R(r"\b1968\b.*\btopps\b.*\b(?:ryan|koosman)\b|\b(?:ryan|koosman)\b.*\b1968\b.*\btopps\b"), "A+"),
+    (_R(r"\b1968\b.*\btopps\b.*\bbench\b|\bbench\b.*\b1968\b.*\btopps\b"), "A+"),
+    (_R(r"\b1967\b.*\btopps\b.*\bseaver\b|\bseaver\b.*\b1967\b.*\btopps\b"), "A+"),
+    (_R(r"\b1969\b.*\btopps\b.*\b(?:reggie )?jackson\b.*(?:#\s?260|\brc\b|\brookie\b)|\b1969\b.*\btopps\b.*#\s?260\b"), "A+"),
+    (_R(r"\b1960\b.*\btopps\b.*\b(?:yastrzemski|mccovey)\b|\b1962\b.*\btopps\b.*\bbrock\b"
+        r"|\b1967\b.*\btopps\b.*\bcarew\b|\b1963\b.*\btopps\b.*\bstargell\b"), "A-"),
+    # les Japonais (Cardboard Connection, Topps Ripped) : la vraie 1re carte d'Ichiro est la 1993 BBM #239 (beaucoup de
+    # contrefacons) ; la 1994 Calbee Hokkaido (vendue quelques semaines) ; la 1995 UD Collector's Choice Japan (100-200 copies) ;
+    # Matsui 1993 BBM #423
+    (_R(r"\b1993\b.*\bbbm\b.*\b(?:ichiro|suzuki)\b|\b(?:ichiro|suzuki)\b.*\b1993\b.*\bbbm\b"), "A+"),
+    (_R(r"\b1994\b.*\bcalbee\b.*\b(?:ichiro|suzuki)\b.*\bhokkaido\b|\b1994\b.*\bcalbee\b.*\bhokkaido\b.*\b(?:ichiro|suzuki)\b"), "A"),
+    (_R(r"\b1995\b.*\bcollector'?s choice\b.*\bjapan\b.*\b(?:ichiro|suzuki)\b|\b(?:ichiro|suzuki)\b.*\b1995\b.*\bcollector'?s choice\b.*\bjapan\b"), "A"),
+    (_R(r"\b1993\b.*\bbbm\b.*\bmatsui\b|\bmatsui\b.*\b1993\b.*\bbbm\b"), "A-"),
+    # 18 nov (5e passe) : les recrues des annees 70 (Cardboard Connection, prix PSA 8) : Brett 1975 #228, Yount 1975 #223,
+    # Ozzie Smith 1979 #116, Munson 1970 #189 ; puis Blyleven 1971 #26, Garvey 1971 #341, Fisk 1972 #79, Winfield 1974 #456,
+    # Eckersley 1976 #98, Murray 1978 #36, Molitor/Trammell 1978 #707, Rice 1975 #616, Carter 1975 #620, Baker/Baylor 1971 #709
+    (_R(r"\b1975\b.*\btopps\b.*\b(?:brett|yount)\b|\b1979\b.*\btopps\b.*\bozzie\b|\b1970\b.*\btopps\b.*\bmunson\b"), "A"),
+    (_R(r"\b1971\b.*\btopps\b.*\b(?:blyleven|garvey|baylor|dusty baker)\b|\b1972\b.*\btopps\b.*\bfisk\b|\b1974\b.*\btopps\b.*\bwinfield\b"
+        r"|\b1976\b.*\btopps\b.*\beckersley\b|\b1978\b.*\btopps\b.*\b(?:eddie murray|molitor|trammell)\b|\b1975\b.*\btopps\b.*\b(?:jim rice|gary carter)\b"), "A-"),
+    # les inserts legendaires des annees 90 (Sports Illustrated) : 1998 Metal Universe Precious Metal Gems (baseball : 50 copies
+    # au plus), 1997 Flair Showcase Masterpieces (les 1res 1/1 en paquets) ; 1998 Donruss Crusade (Red /25, Purple /100,
+    # Green /250) ; 1991 Donruss Elite (1re insert numerotee, /10 000) ; 1997 Metal Universe Mother Lode (1:288, Baseball Cardpedia)
+    (_R(r"\bprecious metal gems?\b|\bpmg\b"), "A+"),
+    (_R(r"\bflair\b.*\bmasterpieces?\b"), "A+"),
+    (_R(r"\bmother lode\b"), "A-"),
+    (_R(r"\b199[78]\b.*\bcrusade\b"), "B+"),
+    (_R(r"\b199[1-3]\b.*\bdonruss\b.*\belite\b"), "B+"),
 ]
+# Topps Heritage (Cardlines 2022) : les variations RARES (Throwback 1:22 487, Error 1:9 506, Nickname 1:4 753, couleur de l'icone
+# 1:3 961) ; la variation photo (« Image », 1:64) et le changement de couleur du nom (1:382) sont bien plus courants
+HERITAGE_RARE = _R(r"\bthrowback\b|\berror\b|\bnickname\b|\bicon\b.*\bcolor\b|\bcolor swap\b.*\bicon\b")
+HERITAGE_COURANTE = _R(r"\bimage variation\b|\bphoto variation\b|\bvariation\b|\bname color\b|\bcolor swap\b")
+# Les « high numbers » vintage : la derniere serie, imprimee en plus petit nombre (1952 Topps #311-407, 1955 Bowman #225-320,
+# 1973 Topps : la Schmidt #615)
+HIGH_VINTAGE = _R(r"\bhigh (?:number|#|series)\b|\bhi(?:gh)?[- ]#\b")
 # Le vintage O-Pee-Chee (Canada) : imprime en bien plus petit nombre que Topps (la Schmidt 1973 : 299 OPC gradees contre 19 468
 # Topps, Sports Illustrated) ; un cran de plus que la meme Topps
 OPC = _R(r"\bo-?pee-?chee\b|\bopc\b")
@@ -124,6 +184,16 @@ def _tirage(t):
         return int(m.group(2) or m.group(1))
     except (TypeError, ValueError):
         return None
+
+
+def _high_connu(t, an):
+    """Les series « high numbers » connues, d'apres le numero de la carte."""
+    m = re.search(r"#\s?(\d{1,3})\b", t)
+    if not m:
+        return False
+    n = int(m.group(1))
+    return ((an == 1952 and "topps" in t and 311 <= n <= 407) or (an == 1955 and "bowman" in t and 225 <= n <= 320)
+            or (an == 1973 and "topps" in t and 529 <= n <= 660))
 
 
 def sorte(titre):
@@ -154,6 +224,8 @@ def sorte(titre):
             c.append(("A+", "rc_vintage_temple"))
         elif vedette:
             c.append(("A+" if opc else "A", "vintage_temple"))
+        elif HIGH_VINTAGE.search(t) or _high_connu(t, an):
+            c.append(("B+" if rc or opc else "B", "vintage_high"))
         else:
             c.append((("B+" if rc else "B") if opc else ("B" if rc else "C+"), "vintage_opc" if opc else "vintage"))
     # la « junk wax » (1986-1994) : imprimee a des millions ; seules les erreurs celebres et les Tiffany comptent
@@ -171,10 +243,23 @@ def sorte(titre):
             c.append(("B+", "1st_bowman"))
     if TOPPS_CHROME.search(t) and rc:
         c.append(("A" if auto else "A+" if gem else "A-", "topps_chrome_rc"))
-    if GOLDEN_MIRROR.search(t):
+    heritage = bool(HERITAGE.search(t))
+    if heritage and HERITAGE_RARE.search(t):
+        c.append(("A+" if gem else "A-", "heritage_rare"))
+    elif heritage and HERITAGE_COURANTE.search(t) and not re.search(r"\bssp\b|\bsuper short print\b", t):
+        c.append(("B+", "heritage_variation"))
+    elif GOLDEN_MIRROR.search(t):
         c.append(("A+" if gem else "A-", "ssp"))
     if FLAGSHIP.search(t) and rc and not (an and an < 2000):
         c.append(("A-" if gem else "B+", "flagship_rc"))
+    # Allen & Ginter (Cardboard Connection 2025) : la mini Wood 1/1 et les mini « No Number » /50 ; les mini autos encadrees
+    if re.search(r"\bginter\b", t):
+        if re.search(r"\bwood\b", t) and re.search(r"\bmini\b", t):
+            c.append(("A+", "ginter_wood"))
+        elif re.search(r"\bno number\b", t):
+            c.append(("A-", "ginter_no_number"))
+        elif re.search(r"\bframed\b", t) and auto:
+            c.append(("A-" if tir and tir <= 25 else "B+", "ginter_framed_auto"))
     if HERITAGE.search(t) and re.search(r"\bsp\b|short print|\bhigh number\b", t):
         c.append(("B+", "heritage_sp"))
     if tir:

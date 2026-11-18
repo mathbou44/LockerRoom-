@@ -30,5 +30,37 @@ assert b.sorte("1989 Upper Deck Ken Griffey Jr #1 RC")[0] == "A-"           # un
 assert b.sorte("1973 O-Pee-Chee #615 Mike Schmidt RC")[0] == "A+"
 assert b.sorte("1975 O-Pee-Chee #400 Joe Random")[1] == "vintage_opc"
 assert b.sorte("1993 Finest Refractor #13 John Olerud")[0] == "A"
-assert len(astuces.astuces_baseball("fr")) == 15
+assert b.sorte("2013 BBM 1st Version Shohei Ohtani #F91 Red Wing")[0] == "A+"
+assert b.sorte("1955 Topps #164 Roberto Clemente RC SGC 1")[0] == "A+"
+assert b.sorte("2025 Topps Allen & Ginter Wood Mini Aaron Judge 1/1")[0] == "A+"
+assert b.sorte("2025 Topps Allen & Ginter No Number Mini Paul Skenes")[0] == "A-"
+# 18 nov (2e passe) : Bowman 1952-1955, Heritage, integration
+assert b.sorte("1954 Bowman #66 Ted Williams PSA 4") == ("A+", "icone")
+assert b.sorte("1953 Bowman Color #59 Mickey Mantle")[0] == "A"
+assert b.sorte("1955 Bowman #179 Hank Aaron")[0] == "A"
+assert b.sorte("1952 Topps #312 Jackie Robinson PSA 5") == ("A+", "icone")
+assert b.sorte("1949 Bowman #224 Satchel Paige")[0] == "A"
+assert b.sorte("1948 Leaf #138 Larry Doby RC")[0] == "A"
+assert b.sorte("2022 Topps Heritage Mike Trout Error Variation") == ("A-", "heritage_rare")
+assert b.sorte("2022 Topps Heritage Juan Soto Image Variation") == ("B+", "heritage_variation")
+assert b.sorte("1952 Topps #340 Joe Random") == ("B", "vintage_high")
+assert b.sorte("1952 Topps #12 Joe Random") == ("C+", "vintage")
+assert b.sorte("1955 Bowman #300 Joe Umpire") == ("B", "vintage_high")
+assert b.sorte("1973 Topps #600 Joe Random")[1] == "vintage_high"
+assert len(astuces.astuces_baseball("fr")) == 26
+# 18 nov (5e passe) : annees 70 et inserts 90
+assert b.sorte("1975 Topps #223 Robin Yount") == ("A", "icone")
+assert b.sorte("1979 Topps #116 Ozzie Smith RC")[0] == "A"
+assert b.sorte("1978 Topps #707 Paul Molitor Alan Trammell RC")[0] == "A-"
+assert b.sorte("1998 Metal Universe Precious Metal Gems Derek Jeter /50") == ("A+", "icone")
+assert b.sorte("1991 Donruss Elite Nolan Ryan /10000")[0] == "B+"
+assert b.sorte("1991 Donruss Joe Smith") == ("D", "junk_wax")
+# 18 nov (4e passe) : annees 60 et Japon
+assert b.sorte("1968 Topps #177 Nolan Ryan Jerry Koosman PSA 5") == ("A+", "icone")
+assert b.sorte("1969 Topps #260 Reggie Jackson RC")[0] == "A+"
+assert b.sorte("1960 Topps #148 Carl Yastrzemski RC") == ("A-", "icone")
+assert b.sorte("1993 BBM #239 Ichiro Suzuki RC") == ("A+", "icone")
+assert b.sorte("1993 BBM #423 Hideki Matsui")[0] == "A-"
+assert b.sorte("1968 Topps Bob Random") == ("C+", "vintage")
+assert b.joueur_connu("1960 Topps Yastrzemski") == "Carl Yastrzemski"
 print("BAREME BB OK")

@@ -128,7 +128,7 @@ LIBELLES = {"yg": ("Young Guns", "Young Guns"), "yg_variante": ("Young Guns para
             "fluorescence": ("Fluorescence", "Fluorescence"), "case_hit": ("Case hit", "Case hit")}
 
 
-def ventes(jours=365, chemin=None, max_n=60000):
+def ventes(jours=365, chemin=None, max_n=150000):   # 18 nov 2026 : 150 000 (le blitz en a ajoute 117 000+)
     """[(titre, prix, jour)] des ventes de hockey connues (les plus recentes d'abord, au plus max_n)."""
     import sqlite3
     import comptes
@@ -167,7 +167,9 @@ def _annoter(rows):
     Il = {k.lower(): v for k, v in I.items()}
     memo_j = {}
     out = []
-    for t, p, j in rows:
+    for i_, (t, p, j) in enumerate(rows):
+        if i_ % 2000 == 1999:
+            time.sleep(0.01)                     # 18 nov 2026 : laisse respirer le serveur (la verification de sante de Render)
         so, ra = bq.sorte(t)
         if ra == "lot_checklist":
             continue

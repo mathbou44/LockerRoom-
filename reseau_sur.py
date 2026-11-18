@@ -48,3 +48,19 @@ def lire(url, hotes=None, headers=None, timeout=15, max_octets=3_000_000):
     req = urllib.request.Request(url, headers=headers or {})
     with urllib.request.build_opener(_Redir(hotes)).open(req, timeout=timeout) as r:
         return r.read(max_octets)
+
+
+class _Head(urllib.request.Request):
+    def get_method(self):
+        return "HEAD"
+
+
+def suivre(url, hotes=None, timeout=8):
+    """18 nov 2026 (Aikido, SSRF) : l'adresse FINALE d'un lien court colle par l'utilisateur (ebay.us/...) : chaque saut est
+    verifie (https, hote public, permis) ; aucune adresse interne n'est jamais touchee."""
+    verifier(url, hotes)
+    req = _Head(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.build_opener(_Redir(hotes)).open(req, timeout=timeout) as r:
+        fin = r.geturl()
+    verifier(fin, hotes)
+    return fin

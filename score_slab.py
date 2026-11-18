@@ -211,8 +211,9 @@ def score(titre, joueur=None):
             try:
                 import bareme_bb
                 b = bareme_bb.score(titre, joueur)
-                return {"score": b["score"], "joueur": b["joueur"], "indice": None, "pastilles": [], "semaine": None, "carte": c,
-                        "sport": sp, "bareme": b["bareme"], "apercu_bb": True}
+                # le public garde « bientot » (score None) ; la note du baseball voyage a part, pour l'apercu admin
+                return {"score": None, "joueur": b["joueur"] or joueur or None, "indice": None, "pastilles": [], "semaine": None,
+                        "carte": c, "sport": sp, "bientot": True, "apercu_bb": {"score": b["score"], "lettre": b["lettre"], "bareme": b["bareme"]}}
             except Exception:
                 pass
         return {"score": None, "joueur": joueur or None, "indice": None, "pastilles": [], "semaine": None, "carte": c, "sport": sp,

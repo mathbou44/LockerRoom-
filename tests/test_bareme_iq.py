@@ -43,7 +43,8 @@ assert S("2023-24 Upper Deck Allure 16-Bit Alex Ovechkin") == "A-"
 assert S("2023-24 Upper Deck Allure 16-Bit Alex Ovechkin PSA 10") == "A+"
 assert S("2023-24 O-Pee-Chee Platinum Marquee Rookies Photo Variation SP Logan Cooley RC") == "B+"
 assert S("2023-24 Upper Deck Short Print Variation Sidney Crosby PSA 10") == "A+"
-assert S("2025-26 Upper Deck Series 2 Fanimation Connor McDavid") == "A-"
+assert S("2025-26 Upper Deck Series 2 Fanimation Connor McDavid") != "A-"         # 18 nov : mesure x0,64, retire des SSP
+assert S("2025-26 Upper Deck Series 1 Pro Visions Connor McDavid") == "A-"
 assert S("2025-26 Upper Deck Series 1 Holotypes Macklin Celebrini PSA 10") == "A+"
 assert S("2025-26 Upper Deck Series 1 Dazzlers Lane Hutson") != "A-"             # la Dazzlers de base reste B
 assert S("2025-26 Upper Deck Series 1 Dazzlers Gold Lane Hutson") == "A-"

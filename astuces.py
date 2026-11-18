@@ -927,4 +927,100 @@ def astuces_baseball(langue="fr"):
             t("Pas de numéro au dos : on la reconnaît à son reflet arc-en-ciel. Compare toujours avec une photo d’une gradée.",
               "No number on the back: you spot it by its rainbow shine. Always compare with a photo of a graded one."),
             "Baseball Cardpedia", "https://baseballcardpedia.com/index.php/1993_Finest"),
+        _bb("bb_ohtani_jp", "avance", "acheter", t("Ohtani : sa vraie première carte est japonaise", "Ohtani: his true first card is Japanese"), "829",
+            t("Avant les Angels, Ohtani jouait au Japon : sa 2013 BBM 1st Version « Red Wing » est sa carte la plus recherchée de cette "
+              "époque. Seulement 829 copies gradées par PSA, contre environ 34 000 pour sa Bowman 2018 de base ; une PSA 10 s’est vendue "
+              "11 200 $.", "Before the Angels, Ohtani played in Japan: his 2013 BBM 1st Version “Red Wing” is his most sought card from "
+              "that era. Only 829 PSA-graded copies, versus about 34,000 for his 2018 base Bowman; a PSA 10 sold for $11,200."),
+            t("Le hobby appelle quand même 2018 son année recrue : une carte japonaise ne porte pas le logo RC.",
+              "The hobby still calls 2018 his rookie year: a Japanese card doesn’t carry the RC logo."),
+            "Sports Illustrated", "https://www.si.com/collectibles/auctions/comparing-shohei-ohtani-japanese-mlb-cards"),
+        _bb("bb_1955", "tous", "acheter", t("1955 Topps : trois recrues du Temple dans le plus petit set", "1955 Topps: three Hall of Fame rookies in the "
+            "smallest set"), "#164",
+            t("206 cartes seulement, le premier Topps à l’horizontale, et trois recrues : Sandy Koufax #123, Harmon Killebrew #124, "
+              "Roberto Clemente #164. Même en PSA 1, une Clemente se vend près de 900 $.",
+              "Only 206 cards, the first horizontal Topps, and three rookies: Sandy Koufax #123, Harmon Killebrew #124, Roberto Clemente "
+              "#164. Even in PSA 1, a Clemente sells for about $900."),
+            t("En vintage, une carte usée mais bien centrée se revend souvent mieux qu’une carte propre et décentrée : demande les deux "
+              "côtés en photo.", "In vintage, a worn but well-centered card often resells better than a clean off-center one: ask for "
+              "photos of both sides."),
+            "Sports Illustrated", "https://www.si.com/collectibles/hobby-101/three-iconic-rookie-cards-help-1955-topps"),
+        _bb("bb_draft", "tous", "acheter", t("Bowman Draft : les 1st Bowman des repêchés, sans aucune recrue", "Bowman Draft: draftees’ 1st Bowman, no "
+            "rookies at all"), "Top 3",
+            t("Depuis 2014, Bowman Draft ne contient que des joueurs qui n’ont jamais joué dans la MLB : la 1re carte Bowman des repêchés "
+              "de l’année. Les autos des trois premiers choix font la valeur du produit.",
+              "Since 2014, Bowman Draft only has players who haven’t debuted in MLB: the year’s draftees’ first Bowman card. The autos "
+              "of the top three picks drive the product’s value."),
+            t("Acheter une 1st Bowman d’un repêché, c’est parier sur 3 à 5 ans : la plupart ne deviennent pas des vedettes.",
+              "Buying a draftee’s 1st Bowman is a 3-to-5-year bet: most don’t become stars."),
+            "Topps (Ripped)", "https://ripped.topps.com/bowman-draft"),
+        _bb("bb_ginter", "avance", "acheter", t("Allen & Ginter : la mini en bois, 1 seule copie", "Allen & Ginter: the wood mini, one of one"), "1/1",
+            t("Allen & Ginter a ses minis : normale et bordure noire (illimitées), « No Number » /50, en bois 1/1 (hobby seulement). Les "
+              "mini autos encadrées vont de /99 (vert) à 1/1 (mauve).", "Allen & Ginter has its minis: regular and black border "
+              "(unlimited), “No Number” /50, wood 1/1 (hobby only). Framed mini autos run from /99 (green) to 1/1 (purple)."),
+            t("Une mini « No Number » n’a pas de numéro au dos : c’est justement ce qui la rend rare. Ne la confonds pas avec une erreur.",
+              "A “No Number” mini has no number on the back: that’s exactly what makes it rare. Don’t mistake it for an error."),
+            "Cardboard Connection", "https://www.cardboardconnection.com/2025-topps-allen-ginter-baseball-set-review-and-checklist"),
+        _bb("bb_bowman55", "avance", "acheter", t("1948-1955 : l’âge d’or de Bowman", "1948-1955: Bowman’s golden age"), "#66",
+            t("La 1954 Bowman #66 Ted Williams a été retirée des paquets (dispute de contrat avec Topps) : la plus rare du set. En 1955, le "
+              "cadre « télé » brun s’écaille aux coins, et les #225 à #320 sont la série difficile. Bowman disparaît ensuite, achetée par Topps.",
+              "The 1954 Bowman #66 Ted Williams was pulled from packs (contract fight with Topps): the set’s scarcest card. In 1955, the "
+              "brown “TV” frame chips at the corners, and #225 to #320 are the tough series. Bowman then vanished, bought by Topps."),
+            t("Une 1955 Bowman aux coins propres vaut une prime : c’est le défaut que tout le monde a.",
+              "A 1955 Bowman with clean corners earns a premium: it’s the flaw everyone has."),
+            "All Vintage Cards", "https://allvintagecards.com/1955-bowman-baseball-most-valuable/"),
+        _bb("bb_heritage", "avance", "acheter", t("Topps Heritage : toutes les variations ne se valent pas", "Topps Heritage: not all variations are equal"),
+            "1:22 487",
+            t("Heritage copie un vieux set (2022 = 1973). Les SP du haut du set sortent 1 paquet sur 3. Variation photo : 1:64. Mais Throwback "
+              "1:22 487, Error 1:9 506, Nickname 1:4 753 : celles-là sont vraiment rares.", "Heritage copies an old set (2022 = 1973). The "
+              "high-numbered SPs fall 1 in 3 packs. Photo variation: 1:64. But Throwback 1:22,487, Error 1:9,506, Nickname 1:4,753: those "
+              "are truly rare."),
+            t("Une annonce « SP variation » Heritage peut être la commune 1:64 : vérifie laquelle avant de payer le prix d’une rare.",
+              "A Heritage “SP variation” listing may be the common 1:64: check which one before paying a rare’s price."),
+            "Cardlines", "https://www.cardlines.com/guide-to-2022-topps-heritage-short-prints-and-variations/"),
+        _bb("bb_integration", "tous", "info", t("Jackie Robinson : sa vraie recrue est la 1948 Leaf #79", "Jackie Robinson: his true rookie is the 1948 Leaf #79"),
+            "#79",
+            t("Le set 1948 Leaf (98 cartes numérotées jusqu’à 168) a les 1res cartes de Robinson #79, Satchel Paige #8 (une SP, la plus chère "
+              "du set) et Larry Doby #138. La 1949 Bowman #50 de Robinson est souvent vendue comme « RC », mais elle vient après ; sa carte la "
+              "plus chère reste la 1952 Topps #312.", "The 1948 Leaf set (98 cards numbered up to 168) has the first cards of Robinson #79, "
+              "Satchel Paige #8 (a short print, the set’s priciest) and Larry Doby #138. Robinson’s 1949 Bowman #50 is often sold as an “RC”, "
+              "but it came later; his priciest card is still the 1952 Topps #312."),
+            t("« RC » dans un titre vintage n’est pas une garantie : vérifie l’année de la 1re carte du joueur.",
+              "“RC” in a vintage title isn’t a guarantee: check the year of the player’s first card."),
+            "Old Sports Cards", "https://www.oldsportscards.com/?p=1348"),
+        _bb("bb_60s", "tous", "acheter", t("Années 60 : les recrues partagées", "The ’60s: shared rookie cards"), "#177",
+            t("Plusieurs grandes recrues des années 60 sont sur une carte à 2 ou 4 joueurs : 1968 Topps #177 Nolan Ryan avec Jerry Koosman, "
+              "#247 Johnny Bench, 1967 #581 Tom Seaver, 1963 #537 Pete Rose (avec trois autres). Le nom de l’autre joueur dans le titre, "
+              "c’est normal.", "Several great ’60s rookies share a card with 2 to 4 players: 1968 Topps #177 Nolan Ryan with Jerry Koosman, "
+              "#247 Johnny Bench, 1967 #581 Tom Seaver, 1963 #537 Pete Rose (with three others). Another player’s name in the title is normal."),
+            t("Une « Jerry Koosman 1968 » sans le nom de Ryan dans le titre est souvent la même carte #177 : vérifie le numéro.",
+              "A “1968 Jerry Koosman” without Ryan’s name in the title is often the same #177 card: check the number."),
+            "Cardboard Connection", "https://www.cardboardconnection.com/top-10-baseball-rookie-cards-of-the-1960s"),
+        _bb("bb_japon", "avance", "acheter", t("Japon : la vraie 1re carte d’Ichiro est une BBM 1993", "Japan: Ichiro’s true first card is a 1993 BBM"),
+            "#239",
+            t("Avant la MLB, les vedettes japonaises ont des cartes BBM et Calbee : Ichiro 1993 BBM #239, Matsui 1993 BBM #423, Ohtani 2013 "
+              "BBM. Les BBM 1993 sont plus petites que les cartes américaines, et les contrefaçons sont nombreuses.", "Before MLB, Japanese "
+              "stars have BBM and Calbee cards: Ichiro 1993 BBM #239, Matsui 1993 BBM #423, Ohtani 2013 BBM. 1993 BBMs are smaller than US "
+              "cards, and fakes are common."),
+            t("Une Ichiro 1993 BBM ou 1994 Calbee Hokkaido : achète-la gradée seulement. Les fausses ont une impression tachée et des "
+              "lettres plus arrondies.", "A 1993 BBM or 1994 Calbee Hokkaido Ichiro: buy it graded only. Fakes have spotty print and "
+              "rounder lettering."),
+            "Cardboard Connection", "https://www.cardboardconnection.com/top-japanese-ichiro-cards"),
+        _bb("bb_70s", "tous", "acheter", t("Années 70 : Brett, Yount, Ozzie, Munson", "The ’70s: Brett, Yount, Ozzie, Munson"), "#228",
+            t("Les recrues 70 les plus chères en PSA 8 : 1971 Blyleven #26, 1973 Schmidt #615, 1970 Munson #189, 1975 Brett #228, "
+              "1975 Yount #223, 1979 Ozzie Smith #116. La 1971 #709 (Baker, Baylor) est une SP à bordure noire : chaque coin abîmé se voit.",
+              "The priciest ’70s rookies in PSA 8: 1971 Blyleven #26, 1973 Schmidt #615, 1970 Munson #189, 1975 Brett #228, 1975 "
+              "Yount #223, 1979 Ozzie Smith #116. The 1971 #709 (Baker, Baylor) is a black-bordered short print: every chipped corner shows."),
+            t("Pour les années 70, vise le PSA 8 : c’est là que le marché se fait. Un PSA 9 vaut souvent plusieurs fois plus.",
+              "For the ’70s, aim for PSA 8: that’s where the market trades. A PSA 9 is often worth several times more."),
+            "Cardboard Connection", "https://www.cardboardconnection.com/most-valuable-baseball-rookie-cards-1970s"),
+        _bb("bb_90s_inserts", "avance", "acheter", t("Années 90 : les inserts devenus légendaires", "The ’90s: inserts that became legends"), "PMG",
+            t("Au milieu de la junk wax, des inserts valent une fortune : 1991 Donruss Elite (la 1re carte numérotée, /10 000), 1993 Finest "
+              "Refractor (~241 copies), 1997 Flair Showcase Masterpieces (les 1res 1/1), 1998 Donruss Crusade, 1998 Metal Universe "
+              "Precious Metal Gems (50 copies au plus).", "Amid junk wax, some inserts are worth a fortune: 1991 Donruss Elite (the first "
+              "numbered card, /10,000), 1993 Finest Refractor (~241 copies), 1997 Flair Showcase Masterpieces (the first 1/1s), 1998 Donruss "
+              "Crusade, 1998 Metal Universe Precious Metal Gems (50 copies at most)."),
+            t("Une carte des années 90 numérotée ou 1/1 n’est pas de la junk wax : regarde le dos avant de la jeter dans un lot.",
+              "A numbered or 1/1 ’90s card isn’t junk wax: check the back before tossing it in a lot."),
+            "Sports Illustrated", "https://www.si.com/collectibles/top-5-iconic-1990s-baseball-card-insert-sets"),
     ]

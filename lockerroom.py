@@ -1569,10 +1569,9 @@ class Api:
             for x in liste:
                 x = str(x or "").strip()
                 if re.match(r"^https?://(www\.)?ebay\.us/", x, re.I):      # le lien « Partager » de l'app eBay : sa redirection
-                    try:
-                        import urllib.request
-                        with urllib.request.urlopen(urllib.request.Request(x, method="HEAD", headers={"User-Agent": "Mozilla/5.0"}), timeout=8) as rq:
-                            x = rq.geturl()
+                    try:                       # 18 nov 2026 (Aikido) : chaque redirection verifiee (eBay seulement)
+                        import reseau_sur
+                        x = reseau_sur.suivre(x, hotes=("ebay.us", "ebay.ca", "ebay.com"))
                     except Exception:
                         pass
                 m = re.search(r"(?:/itm/(?:[^/?#]*/)?|^)(\d{9,15})(?!\d)", x)
@@ -3292,9 +3291,9 @@ class Api:
         import urllib.request
 
         def get(url, n=600_000):
-            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (SlabCoach)", "Accept": "*/*"})
-            with urllib.request.urlopen(req, timeout=8) as r:
-                return r.read(n).decode("utf-8", "ignore")
+            import reseau_sur                     # 18 nov 2026 (Aikido) : upperdeck.com seulement, redirections verifiees
+            return reseau_sur.lire(url, hotes=("upperdeck.com",), headers={"User-Agent": "Mozilla/5.0 (SlabCoach)", "Accept": "*/*"},
+                                   timeout=8, max_octets=n).decode("utf-8", "ignore")
 
         def og(page):
             m = re.search(r"""<meta[^>]+property=["']og:image(?::secure_url)?["'][^>]+content=["']([^"']+)["']""", page, re.I) \
@@ -11237,11 +11236,9 @@ class Api:
         lien = str(lien or "").strip()
         m = re.search(r"(?:/itm/(?:[^/?#]*/)?|^|\D)(\d{9,15})(?:\D|$)", lien)
         if not m and re.match(r"https://(ebay\.us|(www\.)?ebay\.(ca|com))/", lien):
-            try:                                   # le lien court de l'app eBay (ebay.us/m/...) : on suit la redirection
-                import urllib.request
-                rq = urllib.request.Request(lien, method="HEAD", headers={"User-Agent": "Mozilla/5.0"})
-                with urllib.request.urlopen(rq, timeout=8) as rp:
-                    m = re.search(r"/itm/(?:[^/?#]*/)?(\d{9,15})", rp.geturl())
+            try:                                   # le lien court de l'app eBay (ebay.us/m/...) : on suit la redirection (verifiee)
+                import reseau_sur
+                m = re.search(r"/itm/(?:[^/?#]*/)?(\d{9,15})", reseau_sur.suivre(lien, hotes=("ebay.us", "ebay.ca", "ebay.com")))
             except Exception:
                 m = None
         if not m:

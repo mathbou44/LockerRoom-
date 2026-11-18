@@ -149,7 +149,18 @@ def _verrou_de(chemin):
     return _VERROUS.setdefault(chemin, threading.RLock())
 
 
+def _chemin_permis(chemin):
+    """18 nov 2026 (Aikido, inclusion de fichier) : les jetons et cles ne se lisent / s'ecrivent que dans nos dossiers."""
+    r = os.path.realpath(chemin)
+    bases = [os.path.realpath(DOSSIER), os.path.realpath(comptes.DONNEES), os.path.realpath(getattr(comptes, "DOSSIER_COMPTES", comptes.DONNEES))]
+    bases += [os.path.realpath(os.path.dirname(c)) for c in (CHEMIN_CLES, CHEMIN_JETONS, CHEMIN_ENV) if c]      # chemins imposes (tests)
+    if not any(r.startswith(b + os.sep) for b in bases) or os.path.basename(r).startswith(".."):
+        raise ValueError("chemin refusé")
+    return chemin
+
+
 def _lire(chemin):
+    _chemin_permis(chemin)
     try:
         with open(chemin, encoding="utf-8") as f:
             brut = f.read()
@@ -164,6 +175,7 @@ def _lire(chemin):
 
 
 def _ecrire(chemin, data):
+    _chemin_permis(chemin)
     texte = json.dumps(data)
     if os.path.basename(chemin).startswith(".ebay_jetons"):
         texte = comptes.chiffrer(texte)      # LOCKERROOM_CLE definie : jetons chiffres sur le disque
@@ -631,9 +643,11 @@ _PH_HER_TEMOIN = {}
 
 def _lire_image(u):
     """(octets ou None). Erreur reseau -> exception (on reessaiera) ; 404 / pas une image -> None."""
+    import reseau_sur                      # 18 nov 2026 (Aikido) : le CDN d'images d'eBay seulement, redirections verifiees
+    reseau_sur.verifier(u, hotes=("ebayimg.com",))
     req = urllib.request.Request(u, headers={"User-Agent": "SlabCoach/1.0 (+https://www.slabcoach.com)"})
     try:
-        with urllib.request.urlopen(req, timeout=12) as r:
+        with urllib.request.build_opener(reseau_sur._Redir(("ebayimg.com",))).open(req, timeout=12) as r:
             if getattr(r, "status", 200) != 200 or not str(r.headers.get("Content-Type", "")).startswith("image/"):
                 return None
             return r.read(600000)

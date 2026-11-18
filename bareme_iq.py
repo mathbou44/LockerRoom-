@@ -83,12 +83,15 @@ YG_VAR = _R(r"\bexclusives?\b|\bhigh gloss\b|\bcanvas\b|\bclear ?cut\b|\boutburs
 # 18 nov 2026 (Mathieu : « les SSP au moins A-, gradees PSA 10 tres tres recherchees, comme la 16-Bit » ; la liste des inserts
 # aussi durs a sortir, cotes officielles Upper Deck 2025-26 : Beckett, Breakninja, Cardboard Connection, Checklist Insider) :
 # ils comptent comme des SSP (A- bruts, A+ en PSA 10)
+# 18 nov 2026 (nuit, 325 000 ventes du blitz) : chaque insert garde ici a ete MESURE (prix / prix median du meme joueur) :
+# SSP x2,3 · 16-Bit x5,6 · Dazzlers Gold x2,7 · Sign of the Times Rookies x2,6 · Pro Visions x2,4 · case hit x2,0 · Dark Matter
+# x1,4 · Authentic Moments x1,4. RETIRES (le marche ne les paie pas) : HoloGrFX x0,16, Front Row Talent x0,23, Swagnificent
+# x0,49, Fanimation x0,64, Standing On Their Head x0,76, Day With The Cup x0,96, Impressions x0,98, Canvas noir et blanc x1,1,
+# Snow Spray x1,2. Les autres (Bootleg, Holotypes, Incarnations...) : trop peu de ventes pour juger, gardes d'apres leurs cotes.
 SSP = _R(r"\bssp\b|\bsuper short print\b|\bcase hit\b|\b16[ -]?bit\b"
-         r"|\bsnow spray\b|\bdazzlers (?:blue )?gold\b|\bcelebration variations?\b|\bbootleg\b|\bholotypes?\b|\bswagnificent\b"
-         r"|\bwhite house visit\b|\bfanimation\b|\bincarnations?\b|\bday with the cup\b|\bcanvas black (?:and|&) white\b"
-         r"|\brookie debut game jersey\b|\bhologrfx\b|\bkiller keepers\b|\ballure\b.*\bimpressions\b|\btile variations?\b"
-         r"|\bsign of the times rookies\b|\bauthentic moments\b|\bsheer dominance\b|\bpro visions\b|\bfront row talent\b"
-         r"|\bstanding on their head\b|\b3-?d marquee rookies\b|\bplatinum portraits?\b|\bbrush off\b|\bdark matter\b")
+         r"|\bdazzlers (?:blue )?gold\b|\bcelebration variations?\b|\bbootleg\b|\bholotypes?\b|\bwhite house visit\b|\bincarnations?\b"
+         r"|\brookie debut game jersey\b|\bstar view\b|\bkiller keepers\b|\btile variations?\b|\bsign of the times rookies\b"
+         r"|\bauthentic moments\b|\bsheer dominance\b|\bpro visions\b|\b3-?d marquee rookies\b|\bplatinum portraits?\b|\bbrush off\b|\bdark matter\b")
 SP_ = _R(r"\bsp\b(?! ?(?:authentic|game|signature|legendary|premier|x\b))|\bshort print\b|\bvariations?\b|\bphoto var\b|\bimage var")
 CANVAS = _R(r"\bcanvas\b")
 ICE_PREM = _R(r"\bice\b.*\bpremieres?\b|\bpremieres?\b.*\bice\b")
