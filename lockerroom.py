@@ -1745,9 +1745,29 @@ class Api:
     RADAR_PRIX_MIN = 10.0                                                    # sauf si l'utilisateur a choisi son prix minimum
     RADAR_FILTRE = True                                                      # (les tests du tri le coupent)
 
+    # 18 nov 2026 (Mathieu : « enlever toutes les petites cartes que le monde vend 25 $ mais qui ont paye 2 $, qui ne sont pas
+    # en enchere ; je ne veux pas ca dans la Pro ») : sans les comps (Pro, gratuit), une annonce a PRIX FIXE doit etre une
+    # carte que le hobby recherche : A- et plus (B+ pour ses joueurs suivis). Les encans gardent la regle B. Aucun prix n'est
+    # juge (licence eBay §9.5 : pas de prix modelise) : seulement la note de la carte. Ses prix cibles (alertes) restent.
+    RADAR_FIXE_MIN = int(os.environ.get("LR_RADAR_FIXE_MIN") or 82)          # A-
+    RADAR_FIXE_MIN_SUIVI = 76                                                # B+
+
     @staticmethod
-    def _radar_digne(x, prix_min=None, iq_min=None):
+    def _radar_fixe_ok(x):
+        if not isinstance(x, dict) or x.get("encan") or x.get("alerte_id"):
+            return True
+        sc = x.get("score")
+        if sc is None:
+            return False
+        suivi = "joueur" in (x.get("pour_moi") or [])
+        return sc >= (Api.RADAR_FIXE_MIN_SUIVI if suivi else Api.RADAR_FIXE_MIN)
+
+    @staticmethod
+    def _radar_digne(x, prix_min=None, iq_min=None, fixe_strict=False):
         if not isinstance(x, dict):
+            return False
+        # la regle du prix fixe tient tant que l'utilisateur n'a pas elargi lui-meme ses Filtres (« Toutes », « C et + »)
+        if fixe_strict and (iq_min is None or float(iq_min) >= Api.RADAR_SCORE_MIN) and not Api._radar_fixe_ok(x):
             return False
         sc = x.get("score")
         lim = Api.RADAR_PRIX_MIN if prix_min is None else float(prix_min)
@@ -7510,7 +7530,7 @@ class Api:
             ch = self.chasses_liste().get("chasses") or []
             cle = (comptes.courant() or "local") + ":" + hashlib.md5(json.dumps(
                 [[tuple(a) for a in al], self.deals_profil_lire(), self.reglages_lire().get("pays"), self._est_admin(), vue_simulee(), ch,
-                 [self.reglages_lire().get(k) for k in ("budget_mois", "objectif")], "score-v7"],                         # 16 nov 2026 : Radar a neuf (bareme A+ a E, petits vendeurs filtres, noms)
+                 [self.reglages_lire().get(k) for k in ("budget_mois", "objectif")], "score-v8"],                         # 18 nov 2026 : prix fixe A- (Pro) ; 16 nov 2026 : Radar a neuf (bareme A+ a E, petits vendeurs filtres, noms)
                 sort_keys=True, default=str).encode()).hexdigest()
         except Exception:
             cle = None
@@ -7799,7 +7819,8 @@ class Api:
                 _msq = set()
             _pm = _float(prof.get("prix_min")) if isinstance(prof, dict) else None
             _iq = prof.get("iq_min") if isinstance(prof, dict) else None
-            garde = (lambda l: [x for x in (l or []) if Api._radar_digne(x, _pm, _iq) and str(x.get("item_id")) not in _msq]) if Api.RADAR_FILTRE \
+            _fx = not comps_permis(self)              # 18 nov 2026 : Pro et gratuit : prix fixe = A- et plus (admin, Platine : inchange)
+            garde = (lambda l: [x for x in (l or []) if Api._radar_digne(x, _pm, _iq, _fx) and str(x.get("item_id")) not in _msq]) if Api.RADAR_FILTRE \
                 else (lambda l: [x for x in (l or []) if str(x.get("item_id")) not in _msq])
             out = garde(out)
             petits = Api._grouper_memes(garde(petits))   # 16 nov 2026 : les petits vendeurs filtres ; une tuile par carte
@@ -8709,10 +8730,41 @@ class Api:
                 Q.append({"nom": nom, "equipe": (v or {}).get("equipe") or "", "lettre": d[0], "raison": d[1], "raison_en": d[2],
                           "jeune": jeune, "vu": round(vu), "criteres": {k: round(float(c[k])) for k in ("demande", "notoriete", "buzz", "forme") if c.get(k) is not None}})
         Q.sort(key=lambda q: -q["vu"])
+        # 18 nov 2026 (le point 1 « juste ») : un doute de SlabIQ (pas de ventes pour trancher) a une confiance moyenne ;
+        # son impact = combien on le voit
+        for q in Q:
+            q.update(type="joueur", confiance=50, impact=q["vu"], priorite=round(q["vu"] * 0.5, 1),
+                     preuves={"criteres": q.get("criteres")})
         Q = Qm + [q for q in Q if q["nom"].lower() not in vu_m]
+        # au plus 10 questions par semaine : les 10 plus utiles sont choisies le lundi (ou a la 1re visite de la semaine) ;
+        # une question repondue n'est pas remplacee avant la semaine suivante
+        sem = datetime.now().strftime("%G-W%V")
+        cle = lambda q: f"{q.get('type') or 'joueur'}:{str(q.get('nom') or '').lower()}"
+        # 18 nov 2026 (Mathieu : « chaque jour, je vais voir si tu m'en donnes ») : les places libres de la semaine se remplissent
+        # chaque jour avec les nouvelles questions (l'audit Pro tourne chaque jour) ; jamais plus de 10 par semaine
+        s_ = d_.get("semaine_q") or {}
+        if s_.get("semaine") != sem:
+            s_ = {"semaine": sem, "cles": [], "doute": []}
+        cles_ = list(s_.get("cles") or [])
+        if s_.get("jour") != date.today().isoformat() and len(cles_) < self.SLABIQ_Q_SEMAINE:
+            for q in Q:
+                if len(cles_) >= self.SLABIQ_Q_SEMAINE:
+                    break
+                if cle(q) not in cles_:
+                    cles_.append(cle(q))
+                    if q not in Qm:
+                        d_.setdefault("questions_doute", [])
+                        d_["questions_doute"] = [x for x in d_["questions_doute"] if cle(x) != cle(q)] + [q]
+            s_.update(cles=cles_, jour=date.today().isoformat())
+            d_["semaine_q"] = s_
+            slabiq_expert.ecrire(d_)
+        garde = set(s_.get("cles") or [])
+        Q = [q for q in Q if cle(q) in garde]
         v_ = d_.get("validation") or {}
-        return {"ok": True, "n": len(Q), "questions": Q[:max(1, min(int(n or 25), 60))],
+        return {"ok": True, "n": len(Q), "questions": Q[:max(1, min(int(n or 25), 60))], "suivi": slabiq_expert.suivi(d_),
                 "accord": v_.get("accord_global"), "rho": v_.get("rho"), "valide_le": v_.get("le"), "auto": v_.get("auto")}
+
+    SLABIQ_Q_SEMAINE = 10
 
     def slabiq_coter(self, nom=None, lettre=None, type_=None):
         if not self._est_admin(reel=True):
@@ -8753,7 +8805,23 @@ class Api:
         import cote_marche                    # la cote marche se refait d'abord (la validation la lit)
         cote_marche.balayer_si_besoin()       # et une tranche du balayage SoldComps tout de suite
         cote_marche.passe_si_besoin(forcer=True)
+        try:                                  # 18 nov 2026 : et l'audit Pro (les annonces Pro contre leurs comps, en coulisse)
+            Api.audit_pro_si_besoin(forcer=True)
+        except Exception as e:
+            print("Audit Pro : " + repr(e)[:160], flush=True)
         return {"ok": bool(validation_iq.passe_si_besoin(forcer=True))}
+
+    @staticmethod
+    def _comps_audit(titre):
+        """Les ventes deja connues de la MEME carte (cache et archives : aucun appel) : pour l'audit Pro, jamais montrees."""
+        return vendues.memes_cache(titre, n=40, age_max=30 * 86400)
+
+    @staticmethod
+    def audit_pro_si_besoin(forcer=False):
+        """18 nov 2026 (Mathieu : « la cote de la Pro doit s'auto-reguler avec les comps, sans que le client voie le
+        background ») : une fois par semaine, en coulisse (audit_pro)."""
+        import audit_pro
+        return audit_pro.passe_si_besoin(DOSSIER, Api._comps_audit, lambda x: Api._radar_digne(x, None, None, True), forcer=forcer)
 
     def expert_etat(self):
         if not self._est_admin():
@@ -8769,6 +8837,7 @@ class Api:
                 "dernier_essai": (d.get("historique") or [None])[-1], "evergreen": ev,
                 "signalements": list(reversed((d.get("signalements") or [])[-40:])),
                 "validation": {k: v for k, v in (d.get("validation") or {}).items() if k != "sortes"},
+                "audit_pro": {k: (d.get("audit_pro") or {}).get(k) for k in ("le", "verifiees", "encans_finis", "surpayees", "part", "corrigees", "baisses", "retours", "questions")},
                 "cote_marche": (lambda c: {"le": c.get("le"), "joueurs": c.get("n"), "ventes": c.get("ventes")})(__import__("cote_marche").lire())}
 
     def comparer(self, item_id=None, titre=None):
@@ -10608,6 +10677,13 @@ class Api:
         except Exception as e:
             print("Nouvelles accueil : " + repr(e), flush=True)
             n = {"items": [], "maj": None}
+        try:                                     # 18 nov 2026 : les sorties de produits (Upper Deck au hockey, Topps au baseball)
+            import sorties
+            prod = sorties.annonces(principal, lg)
+            if prod:
+                n = dict(n, items=prod + [x for x in (n.get("items") or []) if x.get("titre") not in {p_["titre"] for p_ in prod}])
+        except Exception as e:
+            print("Sorties (nouvelles) : " + repr(e)[:160], flush=True)
         st = ebay_compte.statut()
         pouls = []
         if st.get("connecte"):

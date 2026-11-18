@@ -15,6 +15,7 @@ Les rappels fiscaux sont des reperes generaux pour un travailleur autonome au Qu
 """
 import json
 import os
+import re
 import threading
 from datetime import date, datetime, timedelta
 
@@ -95,7 +96,18 @@ SEMIS = {
         ("lic_platine", "Après la signature : brancher le fournisseur et ouvrir Platine", "Claude branche la nouvelle source (1-2 jours), puis : prix du forfait Platine, produit Stripe/Apple, LR_PLATINE=1 dans Render.", 4, None, None),
     ],
 }
-PROJETS = {"licences": "Licences de données", "lancement": "Lancement", "general": "Général"}
+# 18 nov 2026 (Mathieu : « revoir la liste des choses a faire pour etre sur qu'on est a jour ») : ce qui reste a faire de son
+# cote apres les travaux des 17-18 nov
+SEMIS["suivi"] = [
+    ("sv_pousser", "Pousser les dernières versions (v84 à v95), puis « Valider maintenant »", "GitHub Desktop → Push. Ensuite : Entraîner SlabIQ → Valider maintenant (lettres, audit Pro, questions).", 1, None, None),
+    ("sv_stripe_annuel", "Stripe : créer le prix annuel (5,99 $/mois, 12 mois)", "Puis STRIPE_PRIX_PRO_ANNUEL dans Render et le lien des conditions (frais d'annulation).", 2, None, "https://dashboard.stripe.com/products"),
+    ("sv_soldcomps", "SoldComps : renouveler ou changer de plan", "Les crédits du blitz finissaient le 18 nov. Sans crédits : moins de comps récentes (règle des 45 jours).", 2, None, None),
+    ("sv_aikido", "Aikido : marquer lightgbm « Ignore »", "Aucune version corrigée n'existe ; le reste est réglé.", 3, None, None),
+    ("sv_recadrage", "Vérifier le recadrage photo sur une vraie carte (ex. Demidov holo)", "4 mm nets sur chaque côté : la carte ne doit plus être coupée.", 3, None, None),
+    ("sv_defi", "Jouer le défi SlabIQ 2-3 fois au cell", "Page /slabiq : fluidité, lisibilité, bouton « Rejouer ».", 3, None, None),
+    ("sv_baseball", "Vérifier que le blitz baseball se remplit", "Entraîner SlabIQ → bandeau du blitz : des ventes de baseball doivent apparaître.", 3, None, None),
+]
+PROJETS = {"licences": "Licences de données", "lancement": "Lancement", "general": "Général", "suivi": "Suivi"}
 
 
 def taches(cfg=None):
@@ -206,6 +218,44 @@ def sauver(d):
                 e["prochaine"] = _date_ok(v["prochaine"])
             if "note" in v:
                 e["note"] = str(v["note"] or "")[:200]
+        # 18 nov 2026 (Mathieu : « rentrer toutes les places ou on a des mensualites, et les nouvelles, le plus simple
+        # possible ») : ses abonnements a lui, en plus de la liste connue
+        P = [x for x in (cur.get("services_perso") or []) if isinstance(x, dict)]
+        def _perso(v, x=None):
+            x = dict(x or {})
+            if "nom" in v:
+                x["nom"] = str(v.get("nom") or "").strip()[:60]
+            if "montant" in v:
+                x["montant"] = _nombre(v["montant"]) if v["montant"] not in (None, "") else None
+            if v.get("devise") in ("CAD", "USD"):
+                x["devise"] = v["devise"]
+            if v.get("periode") in ("mois", "an", "usage"):
+                x["periode"] = v["periode"]
+            if "renouvellement" in v:
+                x["renouvellement"] = _date_ok(v["renouvellement"]) if v.get("renouvellement") else None
+            return x
+        a_ = d.get("perso_ajout")
+        if isinstance(a_, dict) and str(a_.get("nom") or "").strip() and len(P) < 60:
+            # meme nom deja la (connu ou perso) : on met a jour au lieu de doubler
+            n_ = re.sub(r"\W+", "", str(a_["nom"]).lower())
+            connu = next((s[0] for s in SERVICES if re.sub(r"\W+", "", str(s[1]).lower()) == n_), None)
+            deja = next((x for x in P if re.sub(r"\W+", "", str(x.get("nom") or "").lower()) == n_), None)
+            if connu:
+                e = cur.setdefault("services", {}).setdefault(connu, {})
+                e.update({k: v for k, v in _perso(a_).items() if k != "nom"})
+            elif deja:
+                P = [_perso(a_, x) if x is deja else x for x in P]
+            else:
+                import secrets
+                P.append({"id": "p" + secrets.token_hex(4), "devise": "CAD", "periode": "mois", **_perso(a_)})
+        if isinstance(d.get("perso"), dict):
+            for pid, v in d["perso"].items():
+                if isinstance(v, dict):
+                    P = [_perso(v, x) if x.get("id") == pid else x for x in P]
+        if isinstance(d.get("perso_suppr"), list):
+            ids = {str(x) for x in d["perso_suppr"]}
+            P = [x for x in P if x.get("id") not in ids]
+        cur["services_perso"] = P
         if isinstance(d.get("entreprise"), dict):
             e = cur.setdefault("entreprise", {})
             for t in ("statut", "neq", "comptable", "fin_exercice", "tps_tvq"):
@@ -320,6 +370,15 @@ def tableau(api):
                          "montant": c.get("montant"), "devise": c.get("devise") or "CAD", "periode": c.get("periode") or "mois",
                          "plan": c.get("plan") or "", "renouvellement": c.get("renouvellement"), "note": c.get("note") or "",
                          "par_mois_cad": pm, "a_remplir": c.get("montant") is None})
+    for x in (cfg.get("services_perso") or []):
+        if not isinstance(x, dict) or not x.get("id"):
+            continue
+        pm = _par_mois_cad(x.get("montant"), x.get("devise") or "CAD", x.get("periode") or "mois", usd_cad)
+        if pm:
+            fixe += pm
+        services.append({"cle": x["id"], "nom": x.get("nom") or "?", "categorie": "perso", "lien": None, "configure": None, "perso": True,
+                         "montant": x.get("montant"), "devise": x.get("devise") or "CAD", "periode": x.get("periode") or "mois",
+                         "plan": "", "renouvellement": x.get("renouvellement"), "note": "", "par_mois_cad": pm, "a_remplir": x.get("montant") is None})
     s = admin.sante()
     ia_usd = ((s.get("photos") or {}).get("usd") or 0.0)
     ia_cad = round(ia_usd * usd_cad, 2)

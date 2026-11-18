@@ -140,3 +140,47 @@ def jours(d, auj=None):
         return (date.fromisoformat(str(d)[:10]) - (auj or date.today())).days
     except (TypeError, ValueError):
         return None
+
+
+# 18 nov 2026 (Mathieu : « dans nos nouvelles : nouveau produit sort bientot, une semaine avant ; produit sorti le jour
+# meme ; Upper Deck au hockey, Topps au baseball ») : les sorties deviennent des nouvelles, selon l'onglet de sport choisi
+MARQUE_SPORT = {"hockey": ("Upper Deck",), "baseball": ("Topps",)}
+AVANT_J = 7
+
+
+def annonces(sport, langue="fr", auj=None):
+    """Les nouvelles « nouveau produit » du sport : 7 jours avant la sortie, puis le jour meme (et le lendemain). Sans appel :
+    le calendrier garde sur le disque (lister le rafraichit en arriere-plan)."""
+    marques = MARQUE_SPORT.get(sport)
+    if not marques:
+        return []
+    en = langue == "en"
+    out = []
+    for x in (_lire().get("produits") or []):
+        nom = x.get("nom") or ""
+        if (x.get("sport") or sport_de(nom)) != sport or (x.get("marque") or marque_de(nom)) not in marques:
+            continue
+        n = jours(x.get("date"), auj)
+        if n is None or n > AVANT_J or n < -1:
+            continue
+        if n >= 1:
+            titre = (f"New product: {nom} drops in {n} day{'s' if n > 1 else ''}" if en
+                     else f"Nouveau produit : {nom} sort dans {n} jour{'s' if n > 1 else ''}")
+        else:
+            titre = f"Out now: {nom}" if en else f"Nouveau produit sorti : {nom}"
+        out.append({"titre": titre, "lien": x.get("url"), "source": "SlabCoach", "date": x.get("date"), "sport": sport,
+                    "libelle": ("New product" if en else "Nouveau produit"), "genre": "hobby", "produit": True, "langue": langue,
+                    "phare": bool(x.get("phare")), "dans": n})
+    out.sort(key=lambda y: (y["dans"] < 0, abs(y["dans"]), not y["phare"]))
+    return out[:4]
+
+
+def rafraichir_si_besoin():
+    """La boucle du serveur : le calendrier relu au plus toutes les 12 h, en arriere-plan (les nouvelles annonces de
+    produits de l'annee y apparaissent toutes seules)."""
+    d = _lire()
+    if d.get("produits") and time.time() - d.get("le", 0) < FRAICHEUR_S:
+        return False
+    threading.Thread(target=lambda: lister(), daemon=True, name="sorties").start()
+    return True
+

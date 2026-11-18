@@ -207,11 +207,11 @@ class Deals(unittest.TestCase):
             appels.append(q)
             if "savoie" in q:
                 return {"ventes": [{"titre": "2022-23 SP Game Used Draft Day Marks Matt Savoie Patch Auto %d/35" % n, "prix": p,
-                                    "le": "2026-07-1" + str(i), "url": "x" + str(i)}
+                                    "le": (maint - timedelta(days=10 + i)).strftime("%Y-%m-%d"), "url": "x" + str(i)}   # 18 nov : des ventes recentes (JOURS_FRAIS)
                                    for i, (n, p) in enumerate(((3, 174.5), (27, 84.08), (13, 87.09), (8, 118.24), (11, 84.08), (4, 56.05)))],
                         "erreur": None}
             return {"ventes": [{"titre": "2025-26 SPx Update UD Black Pride of a Nation Patch Auto %d/99 Tim Stutzle" % n, "prix": p,
-                                "le": "2026-10-1" + str(i), "url": "w" + str(i)}
+                                "le": (maint - timedelta(days=5 + i)).strftime("%Y-%m-%d"), "url": "w" + str(i)}
                                for i, (n, p) in enumerate(((48, 143.82), (66, 241.72), (3, 177.50), (9, 145.03), (7, 135.31)))],
                     "erreur": None}
         vrai = vendues.rechercher

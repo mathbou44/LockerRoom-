@@ -12,8 +12,8 @@ LA SORTE (la carte seulement, pas le joueur) -> une lettre :
        SP Authentic Future Watch Auto (et Auto Patch) ; Kaboom, Downtown, Uptown (autres sports : pas au hockey)
   A  : Young Guns raw (et gradee 9 et moins) ; Ice Premieres
        (auto / patch), OPC Platinum Rookie Auto, Black Diamond Rookie Gems Auto ; Clear Cut, Manga, Color Blast
-  B+ : Fluorescence
-  B  : les autos de base de produits moyens ; patch / jersey sans auto ; Dazzlers
+  B  : les autos de base de produits moyens ; patch / jersey sans auto
+  C  : Dazzlers (18 nov) ; D : Fluorescence, Young Guns Renewed (18 nov)
   Courtes impressions (18 nov) : SSP / 16-Bit A- ; SP B+ ; gradee 10 : A+
   Numerotees (une parallele sans autre raison) : /10 et moins A- ; /25 a /50 B+ ; /99 a /199 B ; /250 et plus C
   D  : une carte de base, sans numero
@@ -92,6 +92,7 @@ SSP = _R(r"\bssp\b|\bsuper short print\b|\bcase hit\b|\b16[ -]?bit\b"
          r"|\bdazzlers (?:blue )?gold\b|\bcelebration variations?\b|\bbootleg\b|\bholotypes?\b|\bwhite house visit\b|\bincarnations?\b"
          r"|\brookie debut game jersey\b|\bstar view\b|\bkiller keepers\b|\btile variations?\b|\bsign of the times rookies\b"
          r"|\bauthentic moments\b|\bsheer dominance\b|\bpro visions\b|\b3-?d marquee rookies\b|\bplatinum portraits?\b|\bbrush off\b|\bdark matter\b")
+SP_PRODUIT = _R(r"\b(?:\d{4}(?:-\d{2,4})?|upper deck|ud)\s+sp\b(?!\s*(?:short|ssp))|\bsp\s+hockey\b")
 SP_ = _R(r"\bsp\b(?! ?(?:authentic|game|signature|legendary|premier|x\b))|\bshort print\b|\bvariations?\b|\bphoto var\b|\bimage var")
 CANVAS = _R(r"\bcanvas\b")
 ICE_PREM = _R(r"\bice\b.*\bpremieres?\b|\bpremieres?\b.*\bice\b")
@@ -144,7 +145,7 @@ def sorte(titre):
     # 16 nov 2026 (Mathieu : « les Young Guns Renewed ne valent presque rien ; seulement McDavid, Crosby, Ovechkin passent
     # 10 $ » ; verifie sur nos ventes : McDavid 15 $, Crosby 13,50 $, Ovechkin 12,60 $, les autres 2 a 6 $, la masse 1,90 $)
     if yg and re.search(r"\brenewed\b", brut):
-        return ("E", "yg_renewed")
+        return ("D", "yg_renewed")                    # 18 nov 2026 (Mathieu, apres la mesure : E -> D)
     if yg and re.search(r"\bretro\b|\brenewed\b", brut) and not re.search(r"\brookies?\b|\brc\b|\(rc\)", brut):
         yg = False                                     # une « Retro / Renewed Young Guns » d'un veteran : un insert, pas sa YG
         c.append(("B", "insert_retro"))
@@ -181,17 +182,17 @@ def sorte(titre):
     if OPC_PLAT.search(t) and rc and auto:
         c.append(("A", "opc_plat_auto"))
     if BD_GEMS.search(t) and rc and auto:
-        c.append(("A-", "bd_gems"))                   # 18 nov : entre SP Authentic / Ice (A) et SPx / Trilogy (B+)
+        c.append(("A", "bd_gems"))                    # 18 nov (Mathieu, apres la mesure : se vend comme une A+ ; A- -> A)
     if INSERTS_A.search(t):
         c.append(("A", "insert_a"))
     if FLUO.search(t):
-        c.append(("B+", "fluorescence"))
+        c.append(("D", "fluorescence"))               # 18 nov (Mathieu : « ca vaut pas grand-chose » ; mesure E ; B+ -> D)
     if auto:
         c.append(("B", "auto"))
     if patch:
         c.append(("B", "patch"))
     if DAZZ.search(t):
-        c.append(("B", "dazzlers"))
+        c.append(("C", "dazzlers"))                   # 18 nov (Mathieu ; mesure D, x0,5 ; B -> C)
     if serie:
         s = int(serie)
         c.append(("A-" if s <= 10 else "B+" if s <= 50 else "B" if s <= 199 else "C", "numerotee"))
@@ -201,7 +202,8 @@ def sorte(titre):
     # comme la 16-Bit ») : SSP A-, SP B+, et une SSP / SP gradee 10 : A+
     if not serie and SSP.search(brut):
         c.append(("A+" if _gem(g) else "A-", "ssp10" if _gem(g) else "ssp"))
-    elif not serie and SP_.search(brut):
+    # « SP » = short print ici, jamais le PRODUIT (SP Authentic, SP Game Used, SPx, et « 2025-26 SP » / « Upper Deck SP Hockey »)
+    elif not serie and SP_.search(SP_PRODUIT.sub(" ", brut)):
         c.append(("A+" if _gem(g) else "B+", "sp10" if _gem(g) else "sp"))
     if not c:
         c.append(("D", "base"))
@@ -261,17 +263,45 @@ def cotes_auto():
     return _AUTO["d"]
 
 
+_AUDIT = {"t": 0.0, "d": {}}
+
+
+def cotes_audit():
+    """18 nov 2026 : les plafonds de l'audit Pro (audit_pro) : un joueur dont les annonces Pro sont souvent a 3x leurs comps."""
+    if time.time() - _AUDIT["t"] > 30:
+        try:
+            import slabiq_expert
+            _AUDIT["d"] = {str(k).lower(): v for k, v in (slabiq_expert.lire().get("cotes_audit") or {}).items() if v in NOTE}
+        except Exception:
+            _AUDIT["d"] = {}
+        _AUDIT["t"] = time.time()
+    return _AUDIT["d"]
+
+
 def note_joueur(nom, criteres=None, recrue=False, jeune=False):
+    """La cote du joueur (_note_joueur0), corrigee par l'audit Pro (jamais un joueur cote par l'expert)."""
+    r = _note_joueur0(nom, criteres, recrue=recrue, jeune=jeune)
+    if r[2] != "expert":
+        # 18 nov 2026 : l'audit Pro corrige d'un cran, dans un sens ou dans l'autre (annonces surpayees, prix final des encans)
+        cap = cotes_audit().get(str(nom or "").lower())
+        if cap and cap != r[1]:
+            return float(NOTE[cap]), cap, "marche"
+    return r
+
+
+def _note_joueur0(nom, criteres=None, recrue=False, jeune=False):
     """(note 0-100, lettre, source) : la cote de COLLECTION du joueur : l'expert, sinon la demande et la notoriete ;
     un inconnu vaut C, une recrue inconnue (sa carte recrue) vaut B."""
+    # 18 nov 2026 (Mathieu : « quand je reponds aux questions, ca doit s'appliquer directement dans l'app ») : sa reponse dans
+    # « SlabIQ demande » passe avant la liste de depart de l'expert (meme pour Crosby ou McDavid)
+    la = cotes_apprises().get(str(nom or "").lower())
+    if la:
+        return float(NOTE[la]), la, "expert"
     l = JOUEURS_EXPERT.get(nom or "") or next((v for k, v in JOUEURS_EXPERT.items() if k.lower() == str(nom or "").lower()), None)
     if not l:
         l = _alias_expert(nom)
     if l:
         return float(NOTE[l]), l, "expert"
-    la = cotes_apprises().get(str(nom or "").lower())
-    if la:
-        return float(NOTE[la]), la, "expert"
     # 17 nov 2026 (Mathieu : « la moyenne de vente d'un joueur sur 3 mois et le nombre de fois qu'il a ete transige : avec ca
     # on fait varier les cotes de maniere solide, chaque semaine ») : la cote MARCHE (cote_marche) passe avant les signaux
     try:
@@ -395,7 +425,7 @@ FAMILLES_VUE = [
      [("Splendor, Tableau, The Cup", "Splendor, Tableau, The Cup", "A+"),
       ("SP Authentic, Premier, Stature, Ice, Ultimate", "SP Authentic, Premier, Stature, Ice, Ultimate", "A"),
       ("OPC Platinum (auto)", "OPC Platinum (auto)", "A"),
-      ("Black Diamond (auto)", "Black Diamond (auto)", "A-"),
+      ("Black Diamond (auto)", "Black Diamond (auto)", "A"),
       ("SPx, Trilogy, SP Game Used", "SPx, Trilogy, SP Game Used", "B+"),
       ("Recrue d’avant 1990 (A+ en 10)", "Pre-1990 rookie (A+ in a 10)", "A")]),
     ("inserts_a", "A", "Les inserts vedettes", "Star inserts", [("Clear Cut, Manga, Color Blast", "Clear Cut, Manga, Color Blast", "A")]),
@@ -404,11 +434,11 @@ FAMILLES_VUE = [
     ("sp", "A+ à B+", "Les courtes impressions", "Short prints",
      [("SSP ou SP gradée PSA 10", "SSP or SP graded PSA 10", "A+"), ("SSP, 16-Bit, case hit", "SSP, 16-Bit, case hit", "A-"),
       ("SP, variation", "SP, variation", "B+")]),
-    ("inserts", "B+ à B", "Les autres inserts", "Other inserts",
-     [("Fluorescence", "Fluorescence", "B+"), ("Auto, Patch, Dazzlers", "Auto, Patch, Dazzlers", "B"),
-      ("Retro Young Guns d’un vétéran", "Veteran Retro Young Guns", "B")]),
-    ("eviter", "D à E", "À éviter", "Skip these",
-     [("Bases, lots, checklists", "Base cards, lots, checklists", "D"), ("Young Guns Renewed", "Young Guns Renewed", "E")]),
+    ("inserts", "B à C", "Les autres inserts", "Other inserts",
+     [("Auto, Patch", "Auto, Patch", "B"), ("Retro Young Guns d’un vétéran", "Veteran Retro Young Guns", "B"),
+      ("Dazzlers", "Dazzlers", "C")]),
+    ("eviter", "D", "À éviter", "Skip these",
+     [("Bases, lots, checklists", "Base cards, lots, checklists", "D"), ("Young Guns Renewed, Fluorescence", "Young Guns Renewed, Fluorescence", "D")]),
 ]
 
 

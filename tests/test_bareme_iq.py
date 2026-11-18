@@ -14,7 +14,7 @@ for v in ("Exclusives /100", "High Gloss /10", "Canvas", "Clear Cut", "Outburst"
           "Photo Variation SSP"):
     assert S("Ivan Demidov 2025-26 Upper Deck Young Guns Rookie " + v) == "A+", v    # toutes les variantes de YG
 assert S("2025-26 Upper Deck Extended Series Outburst Retro Young Guns Kris Letang #OR-29") == "B"    # Retro YG d'un veteran
-assert S("2024-25 Upper Deck Series 2 Young Guns Renewed Connor McDavid #201") == "E"                 # Renewed : presque rien (ventes)
+assert S("2024-25 Upper Deck Series 2 Young Guns Renewed Connor McDavid #201") == "D"                 # Renewed : presque rien (ventes)
 assert S("Macklin Celebrini 2024-25 The Cup Rookie Auto Patch RPA /249") == "A+"
 assert S("Quinn Hutson 2025-26 SP Authentic Future Watch Auto Patch /100") == "A+"
 assert S("Matt Duchene 2009-10 Upper Deck Victory #250") == "D"                       # une base
@@ -32,7 +32,7 @@ assert S("2024-25 Ultimate Collection Macklin Celebrini Rookie Auto Patch /99") 
 assert S("2023-24 SPx Rookie Auto Connor Bedard RC") == "B+"                          # 18 nov : SPx, Trilogy, SPGU sous SP Authentic
 assert S("2023-24 Trilogy Rookie Auto Patch Connor Bedard RC /399") == "A-"
 assert S("2023-24 SP Game Used Rookie Auto Connor Bedard RC") == "B+"
-assert S("2023-24 Black Diamond Rookie Gems Auto Connor Bedard RC") == "A-"
+assert S("2023-24 Black Diamond Rookie Gems Auto Connor Bedard RC") == "A"
 assert S("2023-24 Stature Rookie Auto Connor Bedard RC") == "A"
 assert S("2023-24 Upper Deck Splendor Rookie Auto Connor Bedard RC") == "A+"
 assert S("2024-25 Tableau Rookie Auto Macklin Celebrini RC") == "A+"
@@ -46,7 +46,7 @@ assert S("2023-24 Upper Deck Short Print Variation Sidney Crosby PSA 10") == "A+
 assert S("2025-26 Upper Deck Series 2 Fanimation Connor McDavid") != "A-"         # 18 nov : mesure x0,64, retire des SSP
 assert S("2025-26 Upper Deck Series 1 Pro Visions Connor McDavid") == "A-"
 assert S("2025-26 Upper Deck Series 1 Holotypes Macklin Celebrini PSA 10") == "A+"
-assert S("2025-26 Upper Deck Series 1 Dazzlers Lane Hutson") != "A-"             # la Dazzlers de base reste B
+assert S("2025-26 Upper Deck Series 1 Dazzlers Lane Hutson") == "C"              # 18 nov : la Dazzlers de base C (Mathieu)
 assert S("2025-26 Upper Deck Series 1 Dazzlers Gold Lane Hutson") == "A-"
 assert b.note_joueur("Marc-Andre Fleury")[1] == "A-"
 assert b.note_joueur("Brandon Hagel")[1] == "B"
@@ -87,4 +87,8 @@ assert S("2024-25 Upper Deck Young Guns Detroit Red Wings Marco Kasper") == "A" 
 assert S("2025-26 O-Pee-Chee Platinum Marquee Rookies Photo Variation Ivan Demidov") == "B+"
 assert S("Lane Hutson 2024-25 SP Authentic #50") == "D"                                  # SP Authentic n'est pas une SP
 assert len(b.familles()) >= 6 and b.familles()[0]["lettre"] == "A+"
+# 18 nov 2026 (Mathieu, reponses aux questions de la nuit)
+assert S("2025-26 Upper Deck Series 2 Fluorescence Ivan Demidov") == "D"
+assert S("2025-26 SP Hockey Ivan Demidov #12") == "D"                              # « SP » le produit, pas un short print
+assert S("2025-26 Upper Deck MVP Ivan Demidov SP") == "B+"                         # « SP » = short print
 print("BAREME IQ OK")

@@ -89,9 +89,32 @@ def signaler(item_id, titre, raison, joueur=None, score=None, note=None, compte=
     return x
 
 
+def _noter_reponse(d, type_, nom, lettre):
+    """18 nov 2026 (le point 1 « juste ») : chaque reponse est gardee avec ce que SlabIQ disait et ce que le marche disait :
+    c'est ce qui donne le taux d'erreur de SlabIQ, et ce qui apprend a la confiance des prochaines questions."""
+    q = next((x for x in (d.get("questions_marche") or []) + (d.get("questions_doute") or [])
+              if x.get("type", "joueur") == type_ and str(x.get("nom") or "").lower() == str(nom or "").lower()), None) or {}
+    d.setdefault("reponses", []).append({"type": type_, "nom": nom, "iq": q.get("lettre"), "marche": q.get("marche"), "rep": lettre,
+                                         "confiance": q.get("confiance"), "le": datetime.now().isoformat(timespec="seconds")})
+    d["reponses"] = d["reponses"][-2000:]
+
+
+def suivi(d=None):
+    """Les 2 chiffres de suivi (haut de « Entrainer SlabIQ ») : les questions de la semaine, et le taux d'erreur de SlabIQ
+    (la part des reponses ou l'expert a change la lettre de SlabIQ)."""
+    d = d if d is not None else lire()
+    R = [r for r in (d.get("reponses") or []) if r.get("rep") and r.get("iq")]
+    sem = d.get("semaine_q") or {}
+    return {"semaine": len(sem.get("cles") or []), "semaine_id": sem.get("semaine"), "reponses": len(R),
+            "erreur": round(sum(1 for r in R if r["rep"] != r["iq"]) / len(R), 3) if R else None,
+            "marche_juste": round(sum(1 for r in R if r.get("marche") and r["rep"] == r["marche"]) / max(1, sum(1 for r in R if r.get("marche"))), 3)
+            if any(r.get("marche") for r in R) else None}
+
+
 def coter_sorte(raison, lettre, compte=None):
     """17 nov 2026 : l'expert tranche une question de la boucle de validation sur une SORTE de carte."""
     d = lire()
+    _noter_reponse(d, "sorte", raison, lettre)
     if lettre:
         d.setdefault("sortes", {})[raison] = lettre
     d.setdefault("cotes_hist", []).append({"sorte": raison, "lettre": lettre, "le": datetime.now().isoformat(timespec="seconds"), "compte": compte})
@@ -107,6 +130,7 @@ def coter(nom, lettre, compte=None):
     if not nom:
         return False
     d = lire()
+    _noter_reponse(d, "joueur", nom, lettre)
     if lettre:
         d.setdefault("cotes", {})[nom] = lettre
         d.setdefault("cotes_hist", []).append({"nom": nom, "lettre": lettre, "le": datetime.now().isoformat(timespec="seconds"), "compte": compte})

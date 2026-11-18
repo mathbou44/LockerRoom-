@@ -1749,6 +1749,16 @@ def _valeurs_auto():
             threading.Thread(target=_dl_.reestimer_approx, daemon=True, name="reestimer-approx").start()
         except Exception as e:
             print("Cote marche : " + str(e), flush=True)
+        try:                                    # 18 nov 2026 - le calendrier des sorties (nouvelles « nouveau produit »), toutes les 12 h
+            import sorties
+            sorties.rafraichir_si_besoin()
+        except Exception as e:
+            print("Sorties : " + str(e), flush=True)
+        try:                                    # 18 nov 2026 - l'audit Pro : les annonces Pro contre leurs comps, en coulisse (1 fois/semaine)
+            if lockerroom.Api.audit_pro_si_besoin():
+                print("Audit Pro : passe lancee", flush=True)
+        except Exception as e:
+            print("Audit Pro : " + str(e), flush=True)
         try:                                    # 17 nov 2026 - la validation du bareme par le marche + sa boucle (1 fois/semaine)
             import validation_iq
             if validation_iq.passe_si_besoin():

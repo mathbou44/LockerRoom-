@@ -18,4 +18,14 @@ assert not d({"score": 70, "total": 30}, prix_min=50)         # son minimum a 50
 assert not d({"score": 80, "total": 45, "sorte": "D"})        # jamais une base
 assert d({"score": 70, "total": 45, "sorte": "A"})
 assert not d({"total": 45})                                   # sans note : non
+# 18 nov 2026 (Mathieu : « pas les petites cartes a 25 $ payees 2 $ qui ne sont pas en enchere, dans la Pro ») :
+# sans les comps, un prix fixe doit etre A- et plus (B+ pour ses joueurs) ; les encans gardent B ; ses prix cibles restent
+assert not d({"score": 70, "total": 25}, fixe_strict=True)                      # un B a prix fixe : non (Pro)
+assert d({"score": 70, "total": 25, "encan": True}, fixe_strict=True)           # le meme B en encan : oui
+assert d({"score": 82, "total": 25}, fixe_strict=True)                          # un A- a prix fixe : oui
+assert d({"score": 76, "total": 25, "pour_moi": ["joueur"]}, fixe_strict=True)  # un B+ de SON joueur : oui
+assert d({"score": 70, "total": 25, "alerte_id": 3}, fixe_strict=True)          # son prix cible : oui
+assert d({"score": 70, "total": 25})                                            # admin / Platine : inchange
+assert d({"score": 30, "total": 25}, iq_min=0, fixe_strict=True)                # il a choisi « toutes les notes » : son choix
+assert not d({"score": 70, "total": 25}, iq_min=65, fixe_strict=True)          # « B et + » (le defaut des Filtres) : la regle tient
 print("RADAR DIGNE OK")

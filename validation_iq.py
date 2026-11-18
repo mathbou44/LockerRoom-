@@ -291,6 +291,17 @@ def mesurer(rows):
         joueurs.append({"nom": j, "lettre": l, "marche": lm, "crans": e, "stable": e != 0 and e1 * e > 0 and e2 * e > 0,
                         "valeur": round(J[j][0], 2), "n": J[j][1], "source": src_j.get(j)})
     # -- les lettres finales (la coupe dans le temps)
+    # 18 nov 2026 (« les preuves dans la question ») : 3 ventes recentes de chaque sorte et de chaque joueur
+    ex_r, ex_j = {}, {}
+    for x in reversed(A):
+        for D, k in ((ex_r, x["ra"]), (ex_j, x["nom"])):
+            l_ = D.setdefault(k, [])
+            if len(l_) < 3:
+                l_.append({"titre": str(x["t"])[:90], "prix": round(float(x["p"]), 2), "le": x["j"]})
+    for x in sortes:
+        x["ex"] = ex_r.get(x["raison"], [])
+    for x in joueurs:
+        x["ex"] = ex_j.get(x["nom"], [])
     fin, rho = _lettres_finales(A)
     ls = [l for l in ORDRE if l in fin]
     inversions = [[a, b] for a, b in zip(ls, ls[1:]) if fin[b]["reventes"] > fin[a]["reventes"] * 1.05]
@@ -304,6 +315,9 @@ def mesurer(rows):
             "lettres": fin, "rho": rho, "inversions": inversions,
             "accord": {l: round(a[0] / a[1], 3) for l, a in acc.items() if a[1]},
             "accord_global": round(sum(a[0] for a in acc.values()) / max(1, sum(a[1] for a in acc.values())), 3)}
+
+
+SORTES_TRANCHEES = {"fluorescence", "dazzlers", "yg_renewed", "bd_gems", "ssp", "ssp10", "sp", "sp10"}
 
 
 def decider(m):
@@ -322,15 +336,17 @@ def decider(m):
             continue                                # deja cote par la cote marche (cote_marche) : rien a corriger
         if fort and not expert:
             auto_j[x["nom"]] = x["marche"]
-        elif expert and abs(x["crans"]) >= 2 and x["stable"]:
-            Q.append({"type": "joueur", "nom": x["nom"], "lettre": x["lettre"], "marche": x["marche"], "n": x["n"], "confirmer": True,
-                      "raison": f"Tu l'as coté {x['lettre']}, mais ses cartes se vendent comme un {x['marche']} ({x['n']} ventes)",
-                      "raison_en": f"You rated him {x['lettre']}, but his cards sell like a {x['marche']} ({x['n']} sales)"})
+        elif expert:
+            # 18 nov 2026 (Mathieu : « Crosby, Kane, Caufield : la valeur est intrinseque au joueur, pas reliee aux ventes ; c'est
+            # pour ca qu'ils sont hors ») : la cote d'un joueur coté par l'expert ne se discute plus avec le marche (ses milliers
+            # de cartes bon marche tirent sa moyenne vers le bas) : ni correction, ni question
+            continue
         elif not expert and (abs(x["crans"]) >= 2 or x["stable"]):
             Q.append({"type": "joueur", "nom": x["nom"], "lettre": x["lettre"], "marche": x["marche"], "n": x["n"],
                       "raison": f"SlabIQ dit {x['lettre']}, ses ventes disent {x['marche']} ({x['n']} ventes)",
                       "raison_en": f"SlabIQ says {x['lettre']}, his sales say {x['marche']} ({x['n']} sales)"})
-    sortes_exp = set((d.get("sortes") or {}))
+    # 18 nov 2026 : les sortes que Mathieu a deja tranchees apres la mesure de la nuit (ecrites dans bareme_iq) : plus de question
+    sortes_exp = set((d.get("sortes") or {})) | SORTES_TRANCHEES
     for x in m.get("sortes") or []:
         if not x["crans"] or x["raison"] == "numerotee":
             continue                                # la numerotee a ses propres paliers (/10, /50, /199)
@@ -342,9 +358,36 @@ def decider(m):
             Q.append({"type": "sorte", "nom": x["raison"], "lettre": x["lettre"], "marche": x["marche"], "n": x["n"],
                       "raison": f"La sorte « {LIBELLES.get(x['raison'], (x['raison'],))[0]} » : notée {x['lettre']}, le marché dit {x['marche']} ({x['n']} ventes)",
                       "raison_en": f"Card type “{LIBELLES.get(x['raison'], (0, x['raison']))[1]}”: rated {x['lettre']}, the market says {x['marche']} ({x['n']} sales)"})
-    # les sortes ne changent jamais seules (le bareme vient de l'expert) : une question, la plus urgente d'abord
-    Q.sort(key=lambda q: (not q.get("urgent"), not q.get("confirmer"), -(q.get("n") or 0)))
+    # 18 nov 2026 (le point 1 « juste ») : chaque question a sa CONFIANCE (le nombre de ventes, l'accord des deux moities de la
+    # periode, et ce que l'expert a repondu aux questions de ce type), son IMPACT (ventes touchees x taille de l'ecart) et ses
+    # PREUVES ; la plus utile d'abord (impact x confiance)
+    idx = {("joueur", x["nom"]): x for x in m.get("joueurs") or []} | {("sorte", x["raison"]): x for x in m.get("sortes") or []}
+    for q in Q:
+        x = idx.get((q["type"], q["nom"])) or {}
+        n = max(1, int(q.get("n") or 0))
+        cr = abs(int(x.get("crans") or 0)) or 1
+        q["confiance"] = confiance(n, bool(x.get("stable")), q["type"], d)
+        q["impact"] = n * cr
+        q["priorite"] = round(q["impact"] * q["confiance"] / 100, 1)
+        q["preuves"] = {"n": n, "crans": cr, "stable": bool(x.get("stable")), "prime": x.get("prime"), "valeur": x.get("valeur"),
+                        "ex": x.get("ex") or []}
+    Q.sort(key=lambda q: (not q.get("urgent"), -q["priorite"]))
     return auto_j, auto_s, Q
+
+
+def appris(d, type_):
+    """Ce que l'expert a repondu aux questions de ce type : (fois ou il a donne raison au marche, reponses)."""
+    R = [r for r in (d.get("reponses") or []) if r.get("type") == type_ and r.get("rep") and r.get("marche")]
+    return sum(1 for r in R if r["rep"] == r["marche"]), len(R)
+
+
+def confiance(n, stable, type_, d):
+    """0-99 : plus de ventes = plus sur ; un ecart qui tient sur les deux moities de la periode = plus sur ; et l'apprentissage :
+    si l'expert donne souvent raison au marche sur ce type de question, la confiance monte (sinon elle baisse)."""
+    base = (1 - 1 / math.sqrt(max(1, n))) * (1.0 if stable else 0.7)
+    a, t = appris(d, type_)
+    part = (a + 1) / (t + 2)                       # 0,5 sans reponse : aucun effet
+    return int(max(5, min(99, round(100 * base * (0.5 + part)))))
 
 
 def iterer(rows=None):

@@ -981,6 +981,8 @@ def valeur_autre_saison(a, ventes, cib=None):
             [{k: v.get(k) for k in ("titre", "prix", "le", "photo", "url", "saison")} for v in pv[:6]])
 
 
+JOURS_FRAIS = 45                 # 18 nov 2026 : une valeur doit avoir au moins une vente de 45 jours ou moins
+_VERIF_FORCE = {}                # le verificateur du tour (pour aller chercher les ventes d'aujourd'hui d'une valeur perimee)
 RABAIS_APPROX = 0.75             # 7 nov 2026 : une carte SIMILAIRE n'est pas la carte : 25 % de prudence
 _REFUS_DURS = ("autre joueur", "plusieurs joueurs", "lot", "checklist", "gradée", "pas gradée", "autre gradation", "autographe",
                "sans autographe", "patch", "sans patch", "inscription", "sans inscription", "pas le produit", "écartée")
@@ -1773,6 +1775,23 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
         st["sans_ventes"] = st.get("sans_ventes", 0) + 1
         deals.pop(a["item_id"], None)                 # revue : plus un deal (encan dont la mise a monte...)
         return
+    # 18 nov 2026 (Mathieu : « ou sont les comps recentes ?! » : une Misa PMG Blue /50 jugee « +122 $ » sur deux ventes de
+    # juillet et aout, ramenees -25 % ; 130point montrait 477 $ CA le 1er oct. et 283 $ CA le 15 oct.) : une valeur sans
+    # AUCUNE vente de la carte (ou de sa similaire) dans les 45 derniers jours n'est pas une valeur : on va chercher les
+    # ventes d'aujourd'hui (une recherche, meme deja jugee) ; toujours rien de recent -> pas un deal
+    if not any(_jours(v, maint) <= JOURS_FRAIS for v in (va[3] or [])):
+        st["comps_vieilles"] = st.get("comps_vieilles", 0) + 1
+        vf = verif or _VERIF_FORCE.get("f")
+        nv2 = vf(cib) if vf and not verifiee else None
+        if nv2:
+            st["comps_rafraichies"] = st.get("comps_rafraichies", 0) + 1
+            nv_ += list(nv2)
+            va = (valeur_annonce(a, tout_v + nv_, actives, cib=cib) or valeur_autre_saison(a, tout_v + nv_, cib)
+                  or valeur_unique(a, tout_v + nv_, cib) or valeur_approx(a, tout_v + nv_, cib))
+        if not va or not any(_jours(v, maint) <= JOURS_FRAIS for v in (va[3] or [])):
+            st["_res"] = ("comps_vieilles", None)
+            deals.pop(a["item_id"], None)
+            return
     med_a, source_a, n_a, ventes_a = va
     # 13 nov 2026 (Mathieu : « une 2 couleurs vaut a peu pres 60 % d'une 4 couleurs ») : une patch qui a l'air d'un deal :
     # ses ventes ramenees aux couleurs de SA patch (titres, sinon photos lues une fois, budget du jour) avant de juger
@@ -2345,6 +2364,7 @@ def chasser(n=PAR_TOUR, rechercher=None, bassin=None, vedettes=False):
     deals = {x["item_id"]: x for x in d.get("deals") or []}
     st = {}
     verif = _verificateur(d, st, bassin)
+    _VERIF_FORCE["f"] = verif                      # 18 nov 2026 : pour rafraichir une valeur perimee (JOURS_FRAIS)
     for i_r, r in enumerate(lot):
         _progres(detail=f"{i_r + 1}/{len(lot)}")
         try:
@@ -2395,6 +2415,7 @@ def encans(n=PAR_TOUR_ENCANS, rechercher=None, bassin=None, vedettes=False):
     deals = {x["item_id"]: x for x in d.get("deals") or []}
     st = {}
     verif = _verificateur(d, st, bassin)
+    _VERIF_FORCE["f"] = verif                      # 18 nov 2026 : pour rafraichir une valeur perimee (JOURS_FRAIS)
     for i_r, r in enumerate(lot):
         _progres(detail=f"{i_r + 1}/{len(lot)}")
         try:
@@ -2816,6 +2837,7 @@ def flux(rechercher=None, bassin=None):
     deals = {x["item_id"]: x for x in d.get("deals") or []}
     st = {}
     verif = _verificateur(d, st, bassin)
+    _VERIF_FORCE["f"] = verif                      # 18 nov 2026 : pour rafraichir une valeur perimee (JOURS_FRAIS)
     try:
         pages = max(1, int(os.environ.get("LR_DEALS_PAGES_ENCANS") or PAGES_ENCANS))
     except ValueError:
@@ -3020,6 +3042,7 @@ def pepites(rechercher=None, bassin=None, n=None):
     deals = {x["item_id"]: x for x in d.get("deals") or []}
     st = {}
     verif = _verificateur(d, st, bassin)
+    _VERIF_FORCE["f"] = verif                      # 18 nov 2026 : pour rafraichir une valeur perimee (JOURS_FRAIS)
     for i_q, (faute, nom) in enumerate(lot):
         _progres(detail=f"fautes:{i_q + 1}/{len(lot)}")
         r = {"q": None, "flux": "fautes", "sport": None, "joueur": nom, "faute": faute}
@@ -3692,6 +3715,7 @@ def proches_prio(rechercher=None, bassin=None, maint=None, valoriser=True):
     deals = {x["item_id"]: x for x in d.get("deals") or []}
     st = {}
     verif = _verificateur(d, st, bassin)
+    _VERIF_FORCE["f"] = verif                      # 18 nov 2026 : pour rafraichir une valeur perimee (JOURS_FRAIS)
     rv = {"q": None, "flux": "vendeurs", "sport": None, "joueur": None, "suivi": True}
     vus = 0
     for page in range(PROCHES_PAGES):
