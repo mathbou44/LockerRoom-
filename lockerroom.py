@@ -469,7 +469,7 @@ def _niveau(resume, info):
 
 LIER = {}          # 28 oct 2026 : jetons a usage unique pour relier eBay depuis l'app iPhone (jeton -> (compte, le))
 
-STUDIO_V = 2
+STUDIO_V = 3                         # 18 nov 2026 : le recadrage garde plus d'air (meme nombre que l'app)
 # 3 nov 2026 (Mathieu : « COSMIC » et « BEAM » affiches comme joueurs) : des mots de sets et d'inserts qui ne sont jamais un nom
 _MOTS_INSERTS = set("""cosmic planetary pursuit sun moon chrome refractor prizm mosaic select optic sapphire update heritage stadium club
 team beam finest bowman draft topps panini donruss contenders certified spectra immaculate national treasures flawless obsidian
@@ -9308,6 +9308,11 @@ class Api:
             return {"ok": True, "coupe": True, "segments": []}
         import pouls
         return pouls.resume(langue or self.reglages_lire().get("langue") or "fr")
+
+    def astuces_baseball(self, langue=None):
+        """18 nov 2026 : les astuces du baseball (sources verifiees), pour l'apercu baseball."""
+        import astuces
+        return {"ok": True, "astuces": astuces.astuces_baseball("en" if langue == "en" else "fr")}
 
     def astuces(self, force=False, langue=None):
         """26 oct 2026 - « Le savais-tu ? » : astuces verifiees (calculees sur les vraies ventes ou sourcees), pour l'accueil."""

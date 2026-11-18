@@ -107,7 +107,7 @@ def frais(api=None, langue="fr"):
         return None
     net5 = 5 * (1 - fp) - ff
     return {"id": "frais", "niveau": "debutant", "genre": "vendre",
-            "titre": t(f"Une carte vendue 5 $ te laisse {net5:.2f} $", f"A card sold for $5 leaves you ${net5:.2f}"),
+            "titre": t(f"Une carte vendue 5 $ sur eBay te laisse {net5:.2f} $", f"A card sold for $5 on eBay leaves you ${net5:.2f}"),
             "chiffre": t(f"{net5:.2f} $", f"${net5:.2f}"),
             "texte": t(f"Avec tes frais eBay ({fp * 100:.1f} % + {ff:.2f} $ par vente), une carte à 5 $ te rapporte {net5:.2f} $ avant "
                        "l’enveloppe et le timbre. C’est pour ça que SlabCoach ne compte pas les cartes de moins de 1,50 $ dans la "
@@ -793,3 +793,112 @@ def liste(api, niveau=None, force=False, langue="fr"):
              "expert": ["avance", "tous", "debutant"]}.get(niveau or "", ["tous", "debutant", "avance"])
     out.sort(key=lambda x: (ordre.index(x["niveau"]) if x["niveau"] in ordre else 9, not x.get("calcule")))
     return out
+
+
+# -- 18 nov 2026 (Mathieu : « renseigne-toi le max possible sur le baseball, surtout le vintage ; tu dois tout connaitre ») :
+# les astuces du BASEBALL (vues quand le sport choisi est le baseball). Chaque fait vient d'une source verifiee, citee.
+def _bb(id_, niveau, genre, titre, chiffre, texte, truc, source, url, lien="#valeur"):
+    return {"id": id_, "niveau": niveau, "genre": genre, "titre": titre, "chiffre": chiffre, "texte": texte, "truc": truc,
+            "source": source, "url": url, "lien": lien, "calcule": False, "sport": "baseball"}
+
+
+def astuces_baseball(langue="fr"):
+    t = T(langue)
+    return [
+        _bb("bb_mantle", "tous", "acheter", t("La Mantle 1952 Topps n’est pas sa recrue", "The 1952 Topps Mantle isn’t his rookie"), "1951",
+            t("Sa vraie recrue est la 1951 Bowman #253. La 1952 Topps #311 est sa « première Topps », la carte la plus célèbre d’après-guerre, "
+              "et la plus contrefaite.", "His true rookie is the 1951 Bowman #253. The 1952 Topps #311 is his “first Topps”, the most famous "
+              "post-war card, and the most counterfeited."),
+            t("Une Mantle à bon prix sans boîtier PSA ou SGC : passe ton tour.", "A cheap Mantle without a PSA or SGC slab: walk away."),
+            "Sports Collectors Daily", "https://www.sportscollectorsdaily.com/five-tips-for-novice-1950s-collectors/"),
+        _bb("bb_high", "avance", "acheter", t("1952 Topps : les « high numbers » #311 à #407", "1952 Topps: the high numbers #311 to #407"), "#311+",
+            t("La dernière série est arrivée si tard que les détaillants n’en voulaient pas : elle est bien plus rare que le reste du set. "
+              "Beaucoup des survivantes ont abouti au Canada et dans le nord des États-Unis.", "The last series shipped so late that "
+              "retailers didn’t want it: it’s far scarcer than the rest of the set. Many survivors ended up in Canada and the northern US."),
+            t("Une 1952 Topps de joueur ordinaire numérotée 311 et plus vaut souvent plus qu’une vedette des premières séries.",
+              "A 1952 Topps common numbered 311 and up is often worth more than a star from the early series."),
+            "Old Sports Cards", "https://www.oldsportscards.com/?p=2603"),
+        _bb("bb_junk", "debutant", "vendre", t("1986-1993 : la « junk wax » ne vaut presque rien", "1986-1993: “junk wax” is worth almost nothing"),
+            "2,5 M",
+            t("Topps a imprimé environ 2,5 millions de copies de chaque carte de 1987, et la recrue Griffey Upper Deck 1989 environ 2 millions. "
+              "Les exceptions : les erreurs célèbres (1990 Topps Frank Thomas sans nom, moins de 500 copies) et les Tiffany.",
+              "Topps printed about 2.5 million copies of each 1987 card, and the 1989 Upper Deck Griffey rookie about 2 million. The "
+              "exceptions: famous errors (1990 Topps Frank Thomas no-name, under 500 copies) and Tiffany cards."),
+            t("Ne fais pas grader une base de cette époque : la gradation coûte souvent plus que la carte.",
+              "Don’t grade a base card from that era: grading often costs more than the card."),
+            "All Vintage Cards", "https://allvintagecards.com/history-of-the-junk-wax-era/"),
+        _bb("bb_rc", "debutant", "info", t("Une recrue de baseball : le logo RC après son 1er match", "A baseball rookie: the RC logo after his debut"),
+            "RC",
+            t("Selon Topps, une recrue est sa 1re carte après un match officiel dans la MLB (une présence au bâton ou un lancer suffit), "
+              "marquée du logo RC. Les recrues « flagship » sortent dans Series 1, Series 2 et Update.",
+              "Per Topps, a rookie card is his first card after an official MLB game (one at-bat or one pitch is enough), marked with the "
+              "RC logo. Flagship rookies come in Series 1, Series 2 and Update."),
+            t("Un joueur rappelé en juin ou plus tard rate souvent le flagship de l’année : sa recrue sort l’année suivante.",
+              "A player called up in June or later often misses that year’s flagship: his rookie comes the next year."),
+            "Topps (Ripped)", "https://ripped.topps.com/mlb-rookie-card-crash-course-part-one-product"),
+        _bb("bb_1st", "tous", "acheter", t("Avant la recrue : la « 1st Bowman »", "Before the rookie: the “1st Bowman”"), "1st",
+            t("La 1st Bowman est la 1re carte d’un espoir, dans l’uniforme de l’équipe qui l’a repêché, marquée « 1st Bowman ». C’est la "
+              "carte d’espoir qui vaut presque toujours le plus, souvent plus que sa recrue.", "The 1st Bowman is a prospect’s first "
+              "card, in the uniform of the team that drafted him, stamped “1st Bowman”. It’s the prospect card that almost always carries "
+              "the most value, often more than his rookie."),
+            t("La reine : la 1st Bowman Chrome AUTO. La version papier vaut bien moins.", "The queen: the 1st Bowman Chrome AUTO. The "
+              "paper version is worth far less."),
+            "Sports Illustrated", "https://www.si.com/collectibles/inside-the-hobby/posts/what-is-the-best-mlb-prospect-card-to-buy"),
+        _bb("bb_rainbow", "avance", "acheter", t("Topps Chrome : la Red /5 sort 1 paquet sur 6 299", "Topps Chrome: the Red /5 falls 1 in 6,299 packs"),
+            "/5",
+            t("2025 Topps Chrome : Refractor 1:3, Gold /50 1:595, Orange /25 1:681, Black /10 1:1 717, Red /5 1:6 299, SuperFractor 1/1. "
+              "Chaque couleur a son prix : ne compare jamais une Gold avec une Orange.", "2025 Topps Chrome: Refractor 1:3, Gold /50 "
+              "1:595, Orange /25 1:681, Black /10 1:1,717, Red /5 1:6,299, SuperFractor 1/1. Each color has its price: never compare a "
+              "Gold with an Orange."),
+            t("La Refractor de base (1 paquet sur 3) n’est pas rare : ne la paie pas comme une numérotée.",
+              "The base Refractor (1 in 3 packs) isn’t rare: don’t pay for it like a numbered card."),
+            "Cardboard Connection", "https://www.cardboardconnection.com/2025-topps-chrome-baseball-set-review-and-checklist"),
+        _bb("bb_mirror", "avance", "acheter", t("Topps flagship : la Golden Mirror SSP", "Topps flagship: the Golden Mirror SSP"), "SSP",
+            t("Chaque carte de base a une variation photo « Golden Mirror » : au dos, la mention SSP en or près du numéro. Environ 1 paquet "
+              "hobby sur 454, environ 150 copies chacune (non numérotées).", "Every base card has a “Golden Mirror” photo variation: on "
+              "the back, a gold SSP label by the card number. About 1 in 454 hobby packs, about 150 copies each (not numbered)."),
+            t("Une annonce « variation » sans photo du dos : demande-la. Le mot SSP en or ne ment pas.",
+              "A “variation” listing without a back photo: ask for it. The gold SSP label doesn’t lie."),
+            "Beckett", "https://beckett.com/news/2023-topps-golden-mirror-image-variations-guide"),
+        _bb("bb_vintage_grade", "avance", "vendre", t("Vintage : un PSA 10 d’avant 1970 est presque impossible", "Vintage: a pre-1970 PSA 10 is "
+            "almost impossible"), "PSA 8",
+            t("Coupées à la main, gardées dans des paquets de cigarettes ou des élastiques : les cartes anciennes ont presque toutes de "
+              "l’usure. Le centrage toléré est plus large pour un PSA 8 : environ 75/25 avant 1960, 70/30 dans les années 60.",
+              "Hand-cut, stored in cigarette packs or rubber bands: old cards almost all show wear. Centering is judged more loosely for "
+              "a PSA 8: about 75/25 before 1960, 70/30 in the ’60s."),
+            t("Pour le vintage, SGC est souvent préféré sous 1 000 $ ; PSA rapporte plus au-dessus.",
+              "For vintage, SGC is often preferred under $1,000; PSA pays more above that."),
+            "Pregrade Cards", "https://pregradecards.com/blog/vintage-baseball-card-grading-t206-wagner-1952-mantle-2026"),
+        _bb("bb_prewar", "tous", "info", t("Avant-guerre : le T206, le set le plus collectionné", "Pre-war: T206, the most collected set"), "524",
+            t("Le T206 (1909-1911) compte 524 cartes, dont la Honus Wagner, la carte la plus chère du hobby, et quatre Ty Cobb. Le Goudey 1933 "
+              "a lancé l’ère des cartes avec gomme : Babe Ruth, deux Lou Gehrig, et la Nap Lajoie jamais vendue en paquet.",
+              "T206 (1909-1911) has 524 cards, including Honus Wagner, the hobby’s most valuable card, and four Ty Cobbs. 1933 Goudey "
+              "launched the gum-card era: Babe Ruth, two Lou Gehrigs, and the Nap Lajoie never sold in packs."),
+            t("En avant-guerre, l’état compte moins : une T206 d’une vedette garde sa valeur même usée.",
+              "In pre-war, condition matters less: a star’s T206 holds value even when worn."),
+            "Pre-War Cards", "https://prewarcards.com/2019/12/13/best-baseball-card-sets-of-all-time-pre-war-t206-1933-goudey-old-judge-n172/"),
+        _bb("bb_trim", "avance", "acheter", t("Vintage : repérer une carte coupée (« trimmed »)", "Vintage: spotting a trimmed card"), t("Bord", "Edge"),
+            t("Ne te fie pas à la mesure : les vieilles cartes varient en taille. Compare avec des cartes du même set : un bord plus pâle, "
+              "lisse comme du verre ou trop propre pour son âge, ou un coin plié en triangle croche, trahit une coupe.",
+              "Don’t rely on measuring: old cards vary in size. Compare with cards from the same set: an edge that’s lighter, glassy-smooth "
+              "or too clean for its age, or a corner crease that makes a lopsided triangle, gives away a trim."),
+            t("Même dans un boîtier, regarde les bords à la loupe : des cartes altérées ont déjà été gradées.",
+              "Even in a slab, check the edges under a loupe: altered cards have been graded before."),
+            "Beckett", "https://www.beckett.com/news/how-to-spot-and-protect-yourself-from-trimmed-sports-cards/"),
+        _bb("bb_80s", "tous", "acheter", t("Années 80 : les recrues qui valent encore cher", "The ’80s: rookies still worth real money"), "1984",
+            t("Malgré la surproduction : 1980 Topps Rickey Henderson #482, 1983 Topps Tony Gwynn #482, et le set 1984 Fleer Update (Clemens, "
+              "Puckett, Gooden), tiré en petite quantité. La 1982 Topps Traded Ripken vaut plus que sa vraie recrue, mais n’en est pas une.",
+              "Despite overproduction: 1980 Topps Rickey Henderson #482, 1983 Topps Tony Gwynn #482, and the 1984 Fleer Update set (Clemens, "
+              "Puckett, Gooden), printed in small quantities. The 1982 Topps Traded Ripken sells for more than his true rookie, but isn’t one."),
+            t("Une « recrue » des années 80 : vérifie le set et le numéro, pas seulement l’année.",
+              "An ’80s “rookie”: check the set and the card number, not just the year."),
+            "Cardboard Connection", "https://www.cardboardconnection.com/10-baseball-rookie-cards-1980s/amp"),
+        _bb("bb_iconiques", "tous", "info", t("Les recrues iconiques, décennie par décennie", "The iconic rookies, decade by decade"), "#253",
+            t("1951 Bowman Mantle #253 · 1963 Topps Pete Rose #537 · 1980 Topps Rickey Henderson #482 · 1993 SP Derek Jeter #279 · 2001 "
+              "Bowman Chrome Pujols auto · 2011 Topps Update Mike Trout #US175 · 2018 Bowman Chrome Ohtani.",
+              "1951 Bowman Mantle #253 · 1963 Topps Pete Rose #537 · 1980 Topps Rickey Henderson #482 · 1993 SP Derek Jeter #279 · 2001 "
+              "Bowman Chrome Pujols auto · 2011 Topps Update Mike Trout #US175 · 2018 Bowman Chrome Ohtani."),
+            t("Le numéro de la carte fait partie du nom : une « Trout 2011 » sans US175 n’est pas LA recrue.",
+              "The card number is part of the name: a “2011 Trout” without US175 isn’t THE rookie."),
+            "Sports Illustrated", "https://www.si.com/collectibles/the-best-baseball-rookie-cards-from-every-decade"),
+    ]

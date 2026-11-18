@@ -439,6 +439,109 @@ def balayer_baseball(n_max=None):
     return {"ok": True, "fait": n_fait, "restants": max(0, len(a_faire) - n_fait)}
 
 
+# 18 nov 2026 (Mathieu : « on extrait le maximum de ventes pour le baseball, pour l'analyse ; surtout le vintage ») : le BLITZ
+# DU BASEBALL. Il part tout seul quand le blitz du hockey est fini (jamais les deux a la fois), plafonne a LR_BLITZ_BB_MAX
+# recherches (3 000 par defaut), garde sa position (un redemarrage le fait reprendre). L'ordre : le vintage d'abord (chaque annee
+# Topps 1948-1979 et les grands sets d'avant-guerre), puis les legendes, puis chaque joueur du marche et ses sortes qui comptent.
+BB_VARIANTES = ("bowman chrome", "1st bowman auto", "topps chrome rookie", "psa 10", "refractor", "auto")
+BB_AVANT_GUERRE = ("t206", "1933 goudey", "1914 cracker jack", "1939 play ball", "1934 goudey", "1941 play ball", "e90-1",
+                   "t205", "1916 sporting news", "diamond stars")
+_BLITZ_BB = {"en_cours": False, "stop": False}
+
+
+def blitz_bb_max():
+    try:
+        return max(0, int(os.environ.get("LR_BLITZ_BB_MAX") or 3000))
+    except ValueError:
+        return 3000
+
+
+def _taches_bb():
+    import bareme_bb
+    t = [f"{a} topps baseball" for a in range(1948, 1980)] + [f"{a} bowman baseball" for a in range(1948, 1956)]
+    t += [f"{s} baseball" for s in BB_AVANT_GUERRE]
+    legendes = [k for k, v in bareme_bb.JOUEURS_BB.items() if v in ("A+", "A", "A-")]
+    t += [f"{n} baseball card" for n in legendes] + [f"{n} psa" for n in legendes]
+    noms = [n for n in _noms_baseball(600) if n not in legendes]
+    t += [f"{n} baseball" for n in noms] + [f"{n} {v}" for v in BB_VARIANTES for n in (legendes[:0] + noms[:250])]
+    return list(dict.fromkeys(t))
+
+
+def blitz_bb(reprendre=True):
+    import base_ventes
+    import sports
+    import vendues
+    if not vendues._cle():
+        return {"ok": False, "raison": "pas de clé SoldComps"}
+    d = lire_balayage()
+    b = d.setdefault("blitz_bb", {})
+    if not b.get("lance_le") or not reprendre:
+        b.update(lance_le=datetime.now().isoformat(timespec="seconds"), requetes=0, ventes=0, pos=0)
+    b.update(etat="en cours", erreur=None)
+    _ecrire_bal(d)
+    taux = vendues._taux_usd_cad() or 1.37
+    site = (vendues.sites() or ["EBAY-US"])[0]
+    taches = _taches_bb()
+    echecs = 0
+    while b.get("pos", 0) < len(taches) and b["requetes"] < blitz_bb_max():
+        if _BLITZ_BB["stop"] or _BLITZ["en_cours"]:
+            break
+        q = taches[b["pos"]]
+        donnees, err = vendues._appel(q, site, usage="blitz")
+        if err:
+            b["erreur"] = err
+            if "quota" in err or "refusée" in err:
+                break
+            echecs += 1
+            _ecrire_bal(d)
+            time.sleep(min(300, 10 * echecs))
+            continue
+        echecs = 0
+        b["requetes"] += 1
+        b["pos"] += 1
+        gardees = []
+        for it in (donnees or {}).get("items") or []:
+            v = vendues._vers_vente(it, taux)
+            if v and v.get("le") and sports.sport_de(v["titre"]) == "baseball":
+                v.pop("photo", None)
+                gardees.append(v)
+        try:
+            if gardees:
+                b["ventes"] += base_ventes.noter(q, gardees, sport="baseball") or 0
+        except Exception:
+            pass
+        if b["requetes"] % 10 == 0:
+            _ecrire_bal(d)
+    b["etat"] = "terminé" if b.get("pos", 0) >= len(taches) or b["requetes"] >= blitz_bb_max() else "arrêté"
+    b["total"] = len(taches)
+    b["fini_le"] = datetime.now().isoformat(timespec="seconds")
+    _ecrire_bal(d)
+    return {"ok": True, **b}
+
+
+def blitz_bb_si_besoin():
+    """La boucle : une fois le blitz du hockey fini (ou s'il n'y en a jamais eu), le blitz du baseball part ou reprend."""
+    if _BLITZ_BB["en_cours"] or _BLITZ["en_cours"] or not blitz_bb_max():
+        return None
+    d = lire_balayage()
+    if (d.get("blitz") or {}).get("etat") == "en cours":
+        return None                                      # le hockey d'abord
+    bb = d.get("blitz_bb") or {}
+    if bb.get("etat") == "terminé" and (bb.get("pos", 0) >= bb.get("total", 1) or bb.get("requetes", 0) >= blitz_bb_max()):
+        return None                                      # fini (monter LR_BLITZ_BB_MAX le relance la ou il etait)
+    _BLITZ_BB.update(en_cours=True, stop=False)
+
+    def tache():
+        try:
+            print("Blitz baseball : %s" % {k: v for k, v in blitz_bb().items() if k != "erreur"}, flush=True)
+        except Exception as e:
+            print("Blitz baseball : " + repr(e), flush=True)
+        finally:
+            _BLITZ_BB["en_cours"] = False
+    threading.Thread(target=tache, daemon=True, name="blitz-baseball").start()
+    return True
+
+
 def balayer_si_besoin():
     """La boucle du serveur : une tranche de 20 joueurs a la fois, en arriere-plan."""
     if _BAL["en_cours"]:
@@ -450,7 +553,8 @@ def balayer_si_besoin():
             r = balayer(TRANCHE)
             if r.get("fait"):
                 print("Balayage des joueurs : %s" % r, flush=True)
-            rb = balayer_baseball(20)
+            blitz_bb_si_besoin()
+            rb = balayer_baseball(20) if not _BLITZ_BB["en_cours"] else {}
             if rb.get("fait"):
                 print("Balayage baseball : %s" % rb, flush=True)
         except Exception as e:
@@ -493,6 +597,7 @@ def _ordre_joueurs():
 
 def blitz_etat():
     b = dict(lire_balayage().get("blitz") or {}, en_cours=_BLITZ["en_cours"])
+    b["baseball"] = dict(lire_balayage().get("blitz_bb") or {}, en_cours=_BLITZ_BB["en_cours"], max=blitz_bb_max())
     if b.get("etat") == "en cours" and not b["en_cours"]:
         b["etat"] = "interrompu"                        # le serveur a redemarre : il reprend tout seul (ou bouton Reprendre)
     return b

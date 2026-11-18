@@ -206,6 +206,15 @@ def score(titre, joueur=None):
     if sp:
         # 13 nov 2026 (« on va y aller avec le baseball ») : le modele SlabIQ a appris le HOCKEY ; une carte d'un autre sport
         # n'a pas de score invente. Le baseball aura le sien quand sa base de ventes sera assez grande (mlb, base_ventes)
+        if sp == "baseball":
+            # 18 nov 2026 : le bareme du baseball (bareme_bb : la sorte x la cote du joueur, sources du hobby), apercu admin
+            try:
+                import bareme_bb
+                b = bareme_bb.score(titre, joueur)
+                return {"score": b["score"], "joueur": b["joueur"], "indice": None, "pastilles": [], "semaine": None, "carte": c,
+                        "sport": sp, "bareme": b["bareme"], "apercu_bb": True}
+            except Exception:
+                pass
         return {"score": None, "joueur": joueur or None, "indice": None, "pastilles": [], "semaine": None, "carte": c, "sport": sp,
                 "bientot": sp == "baseball"}
     j = (joueur or cartes_match.joueur_du_titre(titre or "") or "").strip()
