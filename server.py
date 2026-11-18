@@ -137,9 +137,9 @@ def _compresser(rep):
 # d'un autre site (une faille d'affichage ne peut ni charger un script ailleurs ni envoyer les donnees ailleurs) ; les
 # images restent permises partout (photos eBay). Les scripts de nos pages sont dans la page (« unsafe-inline »).
 CSP = ("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-       "font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https: http:; media-src 'self' data: blob:; "
+       "font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' data: blob:; "
        "connect-src 'self' data: blob:; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self'; "
-       "frame-ancestors 'self'; form-action 'self'")       # 8 nov 2026 : un formulaire injecte ne peut rien envoyer ailleurs
+       "frame-ancestors 'self'; form-action 'self'; script-src-attr 'none'; manifest-src 'self'; upgrade-insecure-requests")   # 18 nov : plus d'images http, aucun onclick       # 8 nov 2026 : un formulaire injecte ne peut rien envoyer ailleurs
 
 
 # 8 nov 2026 (Mathieu : « le CSP, si ca vaut la peine, go » ; 2e revue de securite) : plus de « unsafe-inline » pour les
@@ -191,6 +191,18 @@ def _csp(rep):
     return CSP.replace("script-src 'self' 'unsafe-inline'", "script-src 'self' " + " ".join(sorted(h))) + "; report-uri /csp-rapport"
 
 
+@app.route("/langue", methods=["POST"])
+def choisir_langue():
+    """18 nov 2026 (Aikido « Cookie missing HttpOnly ») : le choix de langue de l'app devient un temoin HttpOnly ecrit ici."""
+    l = (request.args.get("l") or "").lower()
+    if l not in ("fr", "en"):
+        return ("", 400)
+    from flask import make_response
+    r = make_response("", 204)
+    r.set_cookie("lr_langue", l, max_age=365 * 86400, samesite="Lax", secure=HEBERGE, httponly=True)
+    return r
+
+
 @app.route("/csp-rapport", methods=["POST"])
 def csp_rapport():
     """Le navigateur signale ce que la CSP a bloque : note dans les erreurs de l'admin (sans donnees du compte)."""
@@ -215,8 +227,9 @@ def _entetes_securite(rep):
     h.setdefault("X-Frame-Options", "SAMEORIGIN")
     h.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
     h.setdefault("Permissions-Policy", "geolocation=(), microphone=(), payment=()")
-    if HEBERGE:
-        h.setdefault("Strict-Transport-Security", "max-age=31536000")
+    # 18 nov 2026 (Aikido « HSTS header is missing ») : aussi derriere le proxy de Render (X-Forwarded-Proto), 2 ans + sous-domaines
+    if HEBERGE or request.is_secure or request.headers.get("X-Forwarded-Proto", "").split(",")[0].strip() == "https":
+        h["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
     # 8 nov 2026 (2e revue de securite) : les reponses de l'API et des pages de connexion contiennent des donnees du compte :
     # jamais gardees par un cache (proxy, navigateur partage, appareil prete)
     if request.path.startswith(("/api/", "/auth/", "/connexion", "/deconnexion", "/mes-photos/")) and request.path != "/api/b/":
@@ -241,7 +254,7 @@ app.config["MAX_CONTENT_LENGTH"] = 64 * 1024 * 1024        # 5 nov 2026 : photos
 #        # 23 oct 2026 - 2 photos ; 3 nov 2026 : + rasantes et 8 gros plans des coins
 # pages qui restent publiques : break partage, retour et avis eBay, pages legales, icones
 _PUBLIQUES = ("/b/", "/api/b/", "/api/ebay_retour", "/ebay/suppression-compte", "/confidentialite", "/conditions",
-              "/support", "/tarifs", "/pricing", "/a-propos", "/about", "/preuve", "/proof", "/robots.txt", "/sitemap.xml", "/logo_sc_", "/syne-800.woff2", "/manrope-", "/barlow-", "/connexion", "/icone", "/favicon", "/manifest.json", "/stripe/webhook", "/apple/notifications", "/sante", "/csp-rapport")
+              "/support", "/tarifs", "/pricing", "/a-propos", "/about", "/preuve", "/proof", "/slabiq", "/langue", "/robots.txt", "/sitemap.xml", "/logo_sc_", "/syne-800.woff2", "/manrope-", "/barlow-", "/connexion", "/icone", "/favicon", "/manifest.json", "/stripe/webhook", "/apple/notifications", "/sante", "/csp-rapport")
 
 
 import comptes  # noqa: E402
@@ -265,7 +278,7 @@ def _ouvrir_session(cid, garder_ok=False):
 
 # 3 nov 2026 (revue de securite) : les formulaires POST de connexion n'acceptent que notre propre site (pas de « login CSRF »
 # depuis un autre site) ; les retours des fournisseurs (Apple poste depuis son site) et les avis signes sont exemptes.
-_POST_EXEMPTES = ("/auth/apple/retour", "/auth/google/retour", "/stripe/webhook", "/apple/notifications", "/ebay/suppression-compte", "/api/", "/csp-rapport")
+_POST_EXEMPTES = ("/auth/apple/retour", "/auth/google/retour", "/stripe/webhook", "/apple/notifications", "/ebay/suppression-compte", "/api/", "/csp-rapport", "/langue")
 
 
 def _meme_site():
@@ -820,6 +833,9 @@ SITE_PAGES = {
     "preuve": ("/preuve", None, "La preuve en direct · SlabCoach", "Live proof · SlabCoach",
                "Chaque jour, ce que SlabCoach dit est fige, enchaine et horodate avant de connaitre la suite. Les resultats arrivent 30, 60 et 90 jours plus tard.",
                "Every day, what SlabCoach says is frozen, chained and timestamped before the outcome is known. Results come 30, 60 and 90 days later."),
+    "slabiq": ("/slabiq", "site_slabiq.html", "SlabIQ · SlabCoach", "SlabIQ · SlabCoach",
+               "Une lettre de A+ à E pour chaque carte de sport. Entraîné sur plus de 200 000 ventes réelles, revalidé contre le marché chaque semaine.",
+               "One letter from A+ to E for every sports card. Trained on 200,000+ real sales, revalidated against the market every week."),
     "apropos": ("/a-propos", "site_apropos.html", "Qui nous sommes · SlabCoach", "About us · SlabCoach",
                 "SlabCoach est fait au Québec par un collectionneur, pour que chaque collectionneur achète et vende avec les vrais chiffres.",
                 "SlabCoach is made in Quebec by a collector, so every collector can buy and sell with the real numbers."),
@@ -854,7 +870,7 @@ def _page_vitrine(page="accueil", contenu_force=None):
     from flask import make_response
     r = make_response(html)
     if request.args.get("lang") in ("fr", "en"):
-        r.set_cookie("lr_langue", l, max_age=365 * 86400, samesite="Lax", secure=HEBERGE)   # 12 nov 2026 (Aikido) : jamais en clair
+        r.set_cookie("lr_langue", l, max_age=365 * 86400, samesite="Lax", secure=HEBERGE, httponly=True)   # 12 nov 2026 (Aikido) : jamais en clair ; 18 nov : HttpOnly
     return r
 
 
@@ -1044,6 +1060,15 @@ def preuve_ots(jour):
     return send_file(ch, mimetype="application/octet-stream", as_attachment=True, download_name=jour + ".json.ots")
 
 
+@app.route("/slabiq")
+def page_slabiq():
+    """18 nov 2026 (Mathieu : « une page dediee, c'est vraiment fort ce qu'on construit »)."""
+    if "LockerRoomiOS" in (request.headers.get("User-Agent") or ""):
+        from flask import redirect
+        return redirect("/connexion")
+    return _page_vitrine("slabiq")
+
+
 @app.route("/a-propos")
 @app.route("/about")
 def page_apropos():
@@ -1065,7 +1090,7 @@ def _page_langue(html):
             f"{'Français' if autre == 'fr' else 'English'}</a>")
     r = make_response(html.replace("</body>", lien + "</body>"))
     if request.args.get("lang") in ("fr", "en"):
-        r.set_cookie("lr_langue", l, max_age=365 * 86400, samesite="Lax", secure=HEBERGE)   # 12 nov 2026 (Aikido) : jamais en clair
+        r.set_cookie("lr_langue", l, max_age=365 * 86400, samesite="Lax", secure=HEBERGE, httponly=True)   # 12 nov 2026 (Aikido) : jamais en clair ; 18 nov : HttpOnly
     return r
 
 
@@ -1239,7 +1264,12 @@ _BREAKS_TROUVES, _BREAKS_INCONNUS = {}, {}
 def page_break(jeton):
     if not _break_public(jeton):
         abort(404)
-    return send_from_directory(DOSSIER_UI, "break.html")
+    # 18 nov 2026 : le temoin de langue est HttpOnly (Aikido) : le serveur ecrit la langue dans <html lang>, la page la lit la
+    l = request.args.get("lang") if request.args.get("lang") in ("fr", "en") else request.cookies.get("lr_langue")
+    if l not in ("fr", "en"):
+        return send_from_directory(DOSSIER_UI, "break.html")
+    with open(os.path.join(DOSSIER_UI, "break.html"), encoding="utf-8") as f:
+        return f.read().replace('<html lang="fr">', f'<html lang="{l}" data-langue="{l}">', 1)
 
 
 @app.route("/api/b/<jeton>")

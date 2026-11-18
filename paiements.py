@@ -46,6 +46,21 @@ def prix_pro():
     return (os.environ.get("STRIPE_PRIX_PRO") or "").strip()
 
 
+def prix_pro_annuel():
+    """18 nov 2026 (Mathieu : « une section annuelle avec paiement mensuel, mais pas annulable ; si demande d'annulation, il
+    y aura des frais ») : un 2e prix Stripe, MENSUEL et moins cher (STRIPE_PRIX_PRO_ANNUEL = un price_...), avec un
+    engagement de 12 mois tenu par SlabCoach : le portail de cet abonnement n'a pas de bouton « Annuler »."""
+    return (os.environ.get("STRIPE_PRIX_PRO_ANNUEL") or "").strip()
+
+
+ENGAGEMENT_MOIS = 12
+
+
+def frais_annulation(mois_payes, prix_mensuel, prix_engage):
+    """Annuler avant 12 mois : on rembourse le rabais deja recu (les mois payes au prix regulier). Jamais negatif."""
+    return round(max(0.0, (float(prix_mensuel or 0) - float(prix_engage or 0)) * max(0, int(mois_payes or 0))), 2)
+
+
 def secret_webhook():
     return (os.environ.get("STRIPE_WEBHOOK_SECRET") or "").strip()
 
@@ -110,10 +125,10 @@ def _appel(methode, chemin, params=None, ouvrir=None):
         raise Erreur("Stripe injoignable : réessaie dans un instant")
 
 
-def prix_affiche():
+def prix_affiche(p=None):
     """{"montant": 1.0, "devise": "CAD", "intervalle": "month"} (garde 1 h ; None si inconnu)."""
-    p = prix_pro()
-    if not actif():
+    p = p or prix_pro()
+    if not actif() or not p:
         return None
     c = _cache_prix.get(p)
     if c and time.time() - c[0] < 3600:
@@ -128,15 +143,27 @@ def prix_affiche():
     return r
 
 
-def creer_paiement(compte_id, client=None, essai_jours=0):
-    """Page de paiement Stripe (abonnement) -> son adresse. Le compte voyage dans les metadonnees."""
+def creer_paiement(compte_id, client=None, essai_jours=0, plan="mensuel"):
+    """Page de paiement Stripe (abonnement) -> son adresse. Le compte voyage dans les metadonnees.
+    plan « annuel » : le prix engage (mensuel, 12 mois) ; la fin de l'engagement voyage dans les metadonnees."""
     if not actif():
         raise Erreur("Paiements pas encore configurés")
+    annuel = plan == "annuel"
+    if annuel and not prix_pro_annuel():
+        raise Erreur("Le forfait annuel n'est pas encore offert")
     base = adresse_publique()
-    p = {"mode": "subscription", "line_items": [{"price": prix_pro(), "quantity": 1}],
+    meta = {"compte": compte_id}
+    if annuel:
+        fin = time.gmtime(time.time() + 365 * 86400)
+        meta.update(plan="annuel", engagement_fin=time.strftime("%Y-%m-%d", fin))
+    p = {"mode": "subscription", "line_items": [{"price": prix_pro_annuel() if annuel else prix_pro(), "quantity": 1}],
          "success_url": base + "/#reglages/pro-ok", "cancel_url": base + "/#reglages",
-         "client_reference_id": compte_id, "metadata": {"compte": compte_id},
-         "subscription_data": {"metadata": {"compte": compte_id}}, "allow_promotion_codes": True, "locale": "fr-CA"}
+         "client_reference_id": compte_id, "metadata": dict(meta),
+         "subscription_data": {"metadata": dict(meta)}, "allow_promotion_codes": True, "locale": "fr-CA"}
+    if annuel:
+        p["consent_collection"] = {"terms_of_service": "required"}       # la case « j'accepte » (engagement + frais) chez Stripe
+        p["custom_text"] = {"terms_of_service_acceptance": {"message": "Engagement de 12 mois, payé chaque mois. Annuler avant la fin : "
+                                                                       "frais égaux au rabais déjà reçu sur les mois payés."}}
     if essai_jours:
         p["subscription_data"]["trial_period_days"] = int(essai_jours)
     if client:
@@ -147,11 +174,34 @@ def creer_paiement(compte_id, client=None, essai_jours=0):
     return d["url"]
 
 
-def portail(client):
-    """Portail client Stripe : carte, factures, annulation."""
+def _config_portail_engage():
+    """Un portail Stripe SANS bouton « Annuler » (carte et factures seulement), cree une fois, son id garde sur le disque."""
+    import comptes
+    ch = os.path.join(comptes.DONNEES, "stripe_portail_engage.json")
+    try:
+        with open(ch, encoding="utf-8") as f:
+            d = json.load(f) or {}
+        if d.get("id") and d.get("cle") == mode():
+            return d["id"]
+    except (OSError, ValueError):
+        pass
+    r = _appel("POST", "billing_portal/configurations", {
+        "features": {"subscription_cancel": {"enabled": False}, "payment_method_update": {"enabled": True},
+                     "invoice_history": {"enabled": True}, "customer_update": {"enabled": True, "allowed_updates": ["email", "address"]}},
+        "business_profile": {"headline": "SlabCoach Pro · engagement de 12 mois"}})
+    with open(ch, "w", encoding="utf-8") as f:
+        json.dump({"id": r.get("id"), "cle": mode()}, f)
+    return r.get("id")
+
+
+def portail(client, engage=False):
+    """Portail client Stripe : carte, factures, annulation (sans annulation pendant un engagement de 12 mois)."""
     if not client:
         raise Erreur("Aucun abonnement à gérer")
-    d = _appel("POST", "billing_portal/sessions", {"customer": client, "return_url": adresse_publique() + "/#reglages"})
+    p = {"customer": client, "return_url": adresse_publique() + "/#reglages"}
+    if engage:
+        p["configuration"] = _config_portail_engage()
+    d = _appel("POST", "billing_portal/sessions", p)
     return d["url"]
 
 
@@ -187,7 +237,10 @@ def _fin_periode(abo):
 
 def _depuis_abonnement(abo):
     statut = abo.get("status") or ""
+    meta = abo.get("metadata") or {}
     return {"forfait": "pro" if statut in STATUTS_PRO else "gratuit", "forfait_statut": statut, "forfait_source": "stripe",
+            "forfait_plan": "annuel" if meta.get("plan") == "annuel" else "mensuel", "engagement_fin": meta.get("engagement_fin"),
+            "forfait_debut": abo.get("start_date"),
             "stripe_client": abo.get("customer"), "stripe_abonnement": abo.get("id"),
             "forfait_fin": _fin_periode(abo), "forfait_annule": bool(abo.get("cancel_at_period_end"))}
 

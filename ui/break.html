@@ -52,7 +52,7 @@ details summary{cursor:pointer; color:var(--acc); font-weight:600}
 const EN = (() => {
   const q = new URLSearchParams(location.search).get('lang');
   if (q === 'en' || q === 'fr') return q === 'en';
-  const c = (document.cookie.match(/(?:^|; )lr_langue=(fr|en)/) || [])[1];
+  const c = document.documentElement.dataset.langue;   // ecrite par le serveur (temoin HttpOnly)
   if (c) return c === 'en';
   return (navigator.language || '').toLowerCase().startsWith('en');
 })();

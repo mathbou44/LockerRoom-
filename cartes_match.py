@@ -1144,3 +1144,33 @@ def est_carte(titre):
     """Une carte de sport ? (sinon : comparaison large, comme avant - LEGO, consoles, etc.)"""
     t = norm(titre)
     return bool(_RE_CARTE.search(t)) or any(_a_mot(t, n) for n in _joueurs_connus()[:2000])
+
+
+
+# 18 nov 2026 (Mathieu : « j'ai achete un cadre photo signe de Shayne Corson : ce n'est pas une carte ; eBay sert a acheter
+# plusieurs choses ; importer seulement ce qui a trait aux cartes ») : un achat eBay est-il une CARTE ?
+_RE_PAS_CARTE = re.compile(
+    r"\b(?:framed|frame|cadre|encadr|photo(?:graph)?s?\b(?! ?variation)|8 ?x ?10|11 ?x ?14|16 ?x ?20|poster|print|lithograph|canvas print"
+    r"|puck|rondelle|helmet|casque|stick|baton|jersey(?! ?(?:card|relic|patch|swatch|auto|#|/))|chandail|t-?shirt|hoodie|hat|cap|tuque"
+    r"|bobblehead|figure|figurine|funko|mini helmet|plaque|ticket stub|billet|program|magazine|book|livre|dvd|video game"
+    r"|toploaders?|top loaders?|sleeves?|penny sleeves|binder|cartable|storage box|card saver|one ?touch|magnetic holder|display case"
+    r"|team bag|semi rigid|shipping supplies|bubble mailer)\b", re.I)
+_RE_CARTE = re.compile(
+    r"\b(?:card|cards|carte|rc|rookie|young guns|psa|bgs|sgc|cgc|beckett|auto|autograph|patch|relic|refractor|prizm|parallel"
+    r"|upper deck|ud|o-pee-chee|opc|topps|panini|bowman|donruss|fleer|skybox|parkhurst|tim hortons|sp authentic|the cup"
+    r"|future watch|canvas|exclusives|numbered|insert|base set|hobby box|blaster|break"
+    r"|sp game used|spgu|game used|materials|artifacts|ice|mvp|black diamond|trilogy|premier|ultimate collection|chronology|synergy"
+    r"|allure|credentials|stature|metal universe|select|chrome|optic|mosaic|national treasures|flawless|immaculate|leaf|score"
+    r"|pinnacle|pacific|stadium club|spx|engrained|in the game|itg|stickers?|rpa|ssp)\b|#\s?\d|/\s?\d{1,4}\b", re.I)
+
+
+def est_carte(titre):
+    """True si le titre d'un achat parle d'une carte (ou d'un produit de cartes : boite, break). Un objet signe (cadre, photo,
+    rondelle, chandail) ou des fournitures (toploaders, sleeves) : False."""
+    t = str(titre or "")
+    if _RE_PAS_CARTE.search(t) and not re.search(r"\b(?:card|cards|carte)\b", t, re.I):
+        return False
+    if _RE_CARTE.search(t):
+        return True
+    n = " " + norm(t) + " "                      # un produit de cartes connu (SP Game Used, Artifacts, Select, Chrome...)
+    return any(" " + p + " " in n for p in PRODUITS if len(p) >= 3) or bool(set(n.split()) & MARQUES)

@@ -122,18 +122,21 @@ def frais(api=None, langue="fr"):
 # -- 4. la numerotation : la rarete se calcule -------------------------------------------------------------------
 def numerotation(api=None, langue="fr"):
     t = T(langue)
-    return {"id": "numerotation", "niveau": "debutant", "genre": "info",
-            "titre": t("Une /10 est 10 fois plus rare qu’une /99", "A /10 is 10 times rarer than a /99"),
-            "chiffre": "×10",
-            "texte": t("Le chiffre après la barre, c’est le nombre d’exemplaires imprimés de CETTE carte : une /99 existe en 99 copies, "
-                       "une /10 en 10, une 1/1 en une seule. Dans un break, chacune sort en proportion de son tirage.",
-                       "The number after the slash is how many copies of THAT card were printed: a /99 exists in 99 copies, a /10 in 10, "
-                       "a 1/1 in one. In a break, each comes out in proportion to its print run."),
-            "truc": t("Compare toujours la même numérotation : une /99 ne se compare pas à une /25 ni à une non numérotée. Dans Valeur, "
-                      "écris « /99 » et SlabCoach ne garde que les /99.",
-                      "Always compare the same numbering: a /99 isn’t comparable to a /25 or an unnumbered card. In Value, type “/99” "
-                      "and SlabCoach keeps only /99s."),
-            "source": t("Tirage = exemplaires imprimés", "Print run = copies printed"), "lien": "#valeur", "calcule": False}
+    return {"id": "numerotation", "niveau": "tous", "genre": "vendre",
+            # 18 nov 2026 (Mathieu : « un peu trop evident ») : ce qu'un collectionneur actif ne sait pas toujours : le NUMERO
+            # de la copie compte aussi, pas seulement le tirage
+            "titre": t("Une 87/99 de Crosby vaut plus qu’une 12/99", "A Crosby 87/99 is worth more than a 12/99"),
+            "chiffre": "#87",
+            "texte": t("Même carte, même tirage : la copie dont le numéro est celui du chandail du joueur (87/99 pour Crosby, 97/99 "
+                       "pour McDavid), la 1re (1/99) et la dernière (99/99) se vendent plus cher. Les acheteurs les cherchent, "
+                       "et il n’y en a qu’une de chaque.",
+                       "Same card, same print run: the copy numbered to the player’s jersey (87/99 for Crosby, 97/99 for McDavid), "
+                       "the first (1/99) and the last (99/99) sell higher. Buyers hunt for them, and there’s only one of each."),
+            "truc": t("Avant de vendre une numérotée, regarde son numéro : si c’est le chandail, la 1re ou la dernière, dis-le dans "
+                      "le titre (« Jersey # », « First numbered ») et ne la brade pas.",
+                      "Before selling a numbered card, check its number: if it’s the jersey, the first or the last, say so in the "
+                      "title (“Jersey #”, “First numbered”) and don’t sell it cheap."),
+            "source": t("Pratique du marché des cartes numérotées", "Numbered card market practice"), "lien": "#valeur", "calcule": False}
 
 
 # -- 5. la gradation ---------------------------------------------------------------------------------------------
@@ -609,8 +612,128 @@ def prime_exclusives(api=None, langue="fr"):
             "lien": "#valeur", "calcule": True}
 
 
+# -- 18 nov 2026 (Mathieu : « des tips plus pousses, ce que les connaisseurs savent ; va chercher l'info, valide-la ») --------
+# Chaque chiffre vient de la fiche du produit (cotes et tirages d'Upper Deck, repris par Cardboard Connection / Checklist Insider)
+def allure_16bit(api=None, langue="fr"):
+    t = T(langue)
+    return {"id": "allure_16bit", "niveau": "avance", "genre": "acheter",
+            "titre": t("Allure : la 16-Bit, l’insert que les connaisseurs chassent", "Allure: 16-Bit, the insert collectors hunt"),
+            "chiffre": "1:720",
+            "texte": t("Dans Allure 2025-26, la 16-Bit (le design en pixels de jeu vidéo, 16 joueurs : vedettes et recrues) sort 1 paquet sur "
+                       "720 en hobby et 1 sur 1 800 en blaster. C’est plus rare qu’une Impressions (1:600) et 80 fois plus rare qu’une "
+                       "Hue’s Next? (1:9). Elle n’est pas numérotée : beaucoup de vendeurs la sous-estiment.",
+                       "In 2025-26 Allure, 16-Bit (the pixel video-game design, 16 players: stars and rookies) falls 1 in 720 hobby packs and "
+                       "1 in 1,800 blaster packs. That’s rarer than Impressions (1:600) and 80 times rarer than Hue’s Next? (1:9). "
+                       "It isn’t numbered, so many sellers underprice it."),
+            "truc": t("Cherche « 16-Bit » sans « /» : une annonce mal titrée (juste « Allure insert ») est souvent la bonne affaire.",
+                      "Search “16-Bit” without a “/”: a poorly titled listing (just “Allure insert”) is often the deal."),
+            "source": "Cardboard Connection, 2025-26 Upper Deck Allure",
+            "url": "https://www.cardboardconnection.com/2025-26-upper-deck-allure-hockey-set-review-and-checklist",
+            "lien": "#valeur/16-Bit%20Allure", "calcule": False}
+
+
+def pmg_metal(api=None, langue="fr"):
+    t = T(langue)
+    return {"id": "pmg_metal", "niveau": "avance", "genre": "acheter",
+            "titre": t("Metal Universe : la PMG bleue /50 sort seulement des Hot Boxes", "Metal Universe: the Blue PMG /50 only comes from Hot Boxes"),
+            "chiffre": "/10",
+            "texte": t("Les Precious Metal Gems, l’icône des années 90 : rouge /100, bleue /50 (seulement dans les boîtes « Hot Box »), "
+                       "verte /10, or 1/1, toutes hobby ou ePack. La verte /10 est la vraie chasse : 10 copies, et les collectionneurs "
+                       "nostalgiques paient pour.",
+                       "Precious Metal Gems, the ’90s icon: red /100, blue /50 (only in “Hot Box” boxes), green /10, gold 1/1, all hobby "
+                       "or ePack. The green /10 is the real chase: 10 copies, and nostalgic collectors pay for them."),
+            "truc": t("Une annonce « PMG » sans couleur ni numéro : demande la photo du dos. Une PMG rouge vendue au prix d’une verte, "
+                      "c’est l’erreur la plus fréquente.",
+                      "A “PMG” listing with no color or number: ask for a photo of the back. A red PMG sold at a green’s price is the most "
+                      "common mistake."),
+            "source": "Checklist Insider, 2025-26 Skybox Metal Universe",
+            "url": "https://www.checklistinsider.com/2025-26-skybox-metal-universe-hockey",
+            "lien": "#valeur/Precious%20Metal%20Gems", "calcule": False}
+
+
+def opc_platinum(api=None, langue="fr"):
+    t = T(langue)
+    return {"id": "opc_platinum", "niveau": "avance", "genre": "acheter",
+            "titre": t("OPC Platinum : la Red Prism /199 n’est pas la chasse", "OPC Platinum: the Red Prism /199 isn’t the chase"),
+            "chiffre": "/25",
+            "texte": t("Les Marquee Rookies ont 13 parallèles. Les numérotées vont de Violet Pixels /299 à Golden Treasures 1/1 ; la Red "
+                       "Prism /199 est l’une des plus communes. La vraie chasse : Seismic Gold /50, Orange Checkers /25 (hobby seulement) "
+                       "et Bioluminescence /5.",
+                       "Marquee Rookies have 13 parallels. Numbered ones run from Violet Pixels /299 to Golden Treasures 1/1; the Red "
+                       "Prism /199 is one of the most common. The real chase: Seismic Gold /50, Orange Checkers /25 (hobby only) and "
+                       "Bioluminescence /5."),
+            "truc": t("Ne paie pas une Red Prism comme une carte rare. Une Orange Checkers vient forcément d’une boîte hobby : un bon "
+                      "signe pour l’état.",
+                      "Don’t pay for a Red Prism like a rare card. An Orange Checkers always comes from a hobby box: a good sign for "
+                      "condition."),
+            "source": "Cardboard Connection, 2025-26 O-Pee-Chee Platinum",
+            "url": "https://www.cardboardconnection.com/2025-26-upper-deck-o-pee-chee-platinum-hockey-set-review-and-checklist",
+            "lien": "#valeur/Marquee%20Rookies", "calcule": False}
+
+
+def cup_niveaux(api=None, langue="fr"):
+    t = T(langue)
+    return {"id": "cup_niveaux", "niveau": "avance", "genre": "acheter",
+            "titre": t("The Cup : une RPA /99, c’est un top prospect", "The Cup: a /99 RPA means a top prospect"),
+            "chiffre": "/99",
+            "texte": t("Dans The Cup, Upper Deck classe les recrues en niveaux : niveau 1 numéroté /249, niveau 2 /99 pour les meilleurs "
+                       "espoirs (Celebrini en 2024-25). Le tirage te dit donc qui Upper Deck voit comme une vedette. Parallèles : Gold "
+                       "Spectrum /36, Gold /24, Red /4, Green /3, Black 1/1.",
+                       "In The Cup, Upper Deck sorts rookies into tiers: level 1 numbered /249, level 2 /99 for the top prospects "
+                       "(Celebrini in 2024-25). So the print run tells you who Upper Deck sees as a star. Parallels: Gold Spectrum /36, "
+                       "Gold /24, Red /4, Green /3, Black 1/1."),
+            "truc": t("Compare une RPA avec une RPA du même niveau : une /249 d’un bon joueur peut coûter moins qu’une /99 d’un joueur "
+                      "moyen, et rattraper plus vite.",
+                      "Compare an RPA with an RPA of the same tier: a good player’s /249 can cost less than an average player’s /99 and "
+                      "catch up faster."),
+            "source": "Cardboard Connection, 2024-25 Upper Deck The Cup",
+            "url": "https://www.cardboardconnection.com/2024-25-upper-deck-the-cup-hockey-set-review-and-checklist",
+            "lien": "#valeur/The%20Cup%20Rookie%20Patch%20Auto", "calcule": False}
+
+
+def hanger_yg(api=None, langue="fr"):
+    t = T(langue)
+    return {"id": "hanger_yg", "niveau": "avance", "genre": "break",
+            "titre": t("Au détail, prends les hangers : les cotes du hobby", "At retail, pick hangers: hobby odds"),
+            "chiffre": "1:24",
+            "texte": t("Series 2 2025-26 : une Canvas Young Guns sort 1 paquet sur 24 en hobby… et en hanger, contre 1 sur 48 en blaster "
+                       "ou en mega. Les hangers donnent aussi une Young Guns par paquet. L’Outburst Young Guns : 1:60 en hobby, 1:90 en "
+                       "hanger, 1:180 en blaster. Les Exclusives /100 et les Outburst Gold et Red : hobby et ePack seulement.",
+                       "2025-26 Series 2: a Canvas Young Guns falls 1 in 24 hobby packs… and 1 in 24 hanger packs, vs 1 in 48 in blaster "
+                       "or mega. Hangers also give one Young Guns per pack. Outburst Young Guns: 1:60 hobby, 1:90 hanger, 1:180 blaster. "
+                       "Exclusives /100 and Outburst Gold and Red: hobby and ePack only."),
+            "truc": t("Au Walmart ou chez Costco, entre un blaster et un hanger au même prix : le hanger. Et ne cherche jamais une "
+                      "Exclusives dans du détail.",
+                      "At Walmart or Costco, between a blaster and a hanger at the same price: the hanger. And never hunt an Exclusives "
+                      "in retail."),
+            "source": "Breakninja (cotes officielles Upper Deck), 2025-26 Series 2",
+            "url": "https://www.breakninja.com/hockey/25-26-Upper-Deck-Series-2-Hockey-Checklist-Odds.php",
+            "lien": "#analyse", "calcule": False}
+
+
+def fin_encan(api=None, langue="fr"):
+    t = T(langue)
+    return {"id": "fin_encan", "niveau": "avance", "genre": "vendre",
+            "titre": t("Finis tes encans le dimanche soir, jamais le vendredi", "End your auctions Sunday evening, never Friday"),
+            "chiffre": t("Dim.", "Sun."),
+            "texte": t("Le conseil qui revient chez les vendeurs aguerris (forum de PSA / Collectors Universe) : un encan qui finit le "
+                       "dimanche soir attire plus de mises ; le vendredi et le samedi soir, les acheteurs sont sortis. Les mises se "
+                       "jouent dans les dernières minutes : la fin compte plus que le début.",
+                       "The advice that keeps coming back from seasoned sellers (PSA / Collectors Universe forum): an auction ending "
+                       "Sunday evening draws more bids; Friday and Saturday nights, buyers are out. Bids happen in the last minutes: "
+                       "the end matters more than the start."),
+            "truc": t("Lance un encan de 7 jours un dimanche vers 19 h (heure de l’Est) : il finira le dimanche suivant à la même heure, "
+                      "quand le Canada et les États-Unis sont devant leur téléphone.",
+                      "Start a 7-day auction on a Sunday around 7 pm Eastern: it ends the next Sunday at the same time, when Canada and "
+                      "the US are on their phones."),
+            "source": "Forum Collectors Universe (vendeurs eBay)",
+            "url": "https://forums.collectors.com/discussion/928711/question-for-ebay-sellers",
+            "lien": "#vendre", "calcule": False}
+
+
 GENERATEURS = [pouls_hobby, joueur_en_feu, marche_hausse, marche_baisse, marche_prime, chute_sortie, bedard, frais, numerotation, gradation, prime_psa10, offres, jours, chance_boite, ouvrir,
-               hobby_seulement, yg_canvas, demande_vs_vendu, centrage_psa, pop_bedard, echange, cotes_s2, bgs_vs_psa, prime_exclusives]
+               hobby_seulement, yg_canvas, demande_vs_vendu, centrage_psa, pop_bedard, echange, cotes_s2, bgs_vs_psa, prime_exclusives,
+               allure_16bit, pmg_metal, opc_platinum, cup_niveaux, hanger_yg, fin_encan]
 
 
 _PAR_COMPTE = {"frais"}                 # les seules astuces qui lisent les reglages du compte

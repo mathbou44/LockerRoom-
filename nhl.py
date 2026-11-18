@@ -87,7 +87,7 @@ def forme(nom, maintenant=None):
     with _verrou:
         d = _lire()
     g = (d.get("joueurs") or {}).get(cle)
-    if g and t - g.get("le", 0) < GARDE_S:
+    if g and t - g.get("le", 0) < GARDE_S and (not g.get("f") or "parties" in g["f"]):
         return g.get("f")
     pid = (g or {}).get("id") or _id(nom)
     f = None
@@ -98,7 +98,13 @@ def forme(nom, maintenant=None):
             if l5:
                 s = lambda k: sum(int(m.get(k) or 0) for m in l5)
                 f = {"joueur": _nom_de(land) or nom, "matchs": len(l5), "buts": s("goals"), "passes": s("assists"), "points": s("points"),
-                     "dernier": max(str(m.get("gameDate") or "") for m in l5)}
+                     "dernier": max(str(m.get("gameDate") or "") for m in l5),
+                     # 18 nov 2026 : match par match (le plus recent d'abord) pour la fiche du joueur
+                     "parties": [{"le": str(m.get("gameDate") or "")[:10], "contre": str(m.get("opponentAbbrev") or "")[:4],
+                                  "dom": m.get("homeRoadFlag") == "H", "b": int(m.get("goals") or 0), "p": int(m.get("assists") or 0),
+                                  "pts": int(m.get("points") or 0), "pm": m.get("plusMinus"), "toi": str(m.get("toi") or "")[:6],
+                                  **({"arr": m.get("savePctg"), "ba": m.get("goalsAgainst")} if m.get("savePctg") is not None else {})}
+                                 for m in sorted(l5, key=lambda m: str(m.get("gameDate") or ""), reverse=True)]}
     with _verrou:
         d = _lire()
         d.setdefault("joueurs", {})[cle] = {"le": t, "id": pid, "f": f}

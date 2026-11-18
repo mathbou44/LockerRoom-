@@ -31,7 +31,8 @@ def urlopen(req, timeout=0):
 
 urllib.request.urlopen = urlopen
 f = nhl.forme("Macklin Celebrini")
-assert f == {"joueur": "Macklin Celebrini", "matchs": 5, "buts": 5, "passes": 5, "points": 10, "dernier": AUJ}, f
+assert {k: v for k, v in f.items() if k != "parties"} == {"joueur": "Macklin Celebrini", "matchs": 5, "buts": 5, "passes": 5, "points": 10, "dernier": AUJ}, f
+assert len(f["parties"]) == 5 and sum(m["pts"] for m in f["parties"]) == 10, f        # 18 nov 2026 : match par match
 assert any("8484801/landing" in u for u in VU) and "User-Agent" in str(VU) or True
 n = len(VU); assert nhl.forme("Macklin Celebrini") == f and len(VU) == n          # garde 12 h
 assert nhl.forme("Personne Inconnu") is None                                       # pas trouve : rien

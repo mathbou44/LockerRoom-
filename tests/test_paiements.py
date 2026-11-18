@@ -20,10 +20,14 @@ SCRIPT = textwrap.dedent('''
            "items": {"data": [{"current_period_end": 1790000000}]}}
     def faux(methode, chemin, params=None, ouvrir=None):
         APPELS.append((methode, chemin, paiements._form(params or {})))
+        if chemin.startswith("prices/price_test_annuel"):
+            return {"unit_amount": 75, "currency": "cad", "recurring": {"interval": "month"}}
         if chemin.startswith("prices/"):
             return {"unit_amount": 100, "currency": "cad", "recurring": {"interval": "month"}}
         if chemin == "checkout/sessions":
             return {"url": "https://checkout.stripe.com/c/pay/cs_test_1"}
+        if chemin == "billing_portal/configurations":
+            return {"id": "bpc_engage"}
         if chemin == "billing_portal/sessions":
             return {"url": "https://billing.stripe.com/p/session/1"}
         if chemin.startswith("subscriptions/"):
@@ -87,6 +91,30 @@ SCRIPT = textwrap.dedent('''
     envoyer({"id": "evt_4", "type": "customer.subscription.created", "data": {"object": {"id": "sub_1", "customer": "cus_1", "metadata": {}}}})
     assert comptes.info(cid)["forfait"] == "pro"
 
+    # 18 nov 2026 : forfait annuel (engagement 12 mois, paye chaque mois) : portail sans « Annuler », frais = rabais recu
+    f = c.post("/api/forfait", json=[]).get_json()
+    assert f["prix_annuel"]["montant"] == 0.75 and f["plan"] == "mensuel" and not f["engage"], f
+    assert not c.post("/api/abonnement_annuler_demande", json=[]).get_json()["ok"]
+    comptes.maj(cid, forfait="gratuit")
+    r = c.post("/api/abonnement_payer", json=["annuel"]).get_json()
+    p = dict(APPELS[-1][2])
+    assert r["ok"] and p["line_items[0][price]"] == "price_test_annuel" and p["subscription_data[metadata][plan]"] == "annuel", p
+    assert p["consent_collection[terms_of_service]"] == "required" and p["subscription_data[metadata][engagement_fin]"] > time.strftime("%%Y-%%m-%%d")
+    ABO.update(status="active", metadata={"compte": cid, "plan": "annuel", "engagement_fin": "2099-01-01"}, start_date=int(time.time()) - 95 * 86400)
+    envoyer({"id": "evt_5", "type": "customer.subscription.updated", "data": {"object": {"id": "sub_1", "customer": "cus_1", "metadata": {"compte": cid}}}})
+    f = c.post("/api/forfait", json=[]).get_json()
+    assert f["plan"] == "annuel" and f["engage"] and f["engagement_fin"] == "2099-01-01", f
+    assert c.post("/api/abonnement_gerer", json=[]).get_json()["ok"]
+    assert dict(APPELS[-1][2]).get("configuration") == "bpc_engage", APPELS[-1]
+    r = c.post("/api/abonnement_annuler_demande", json=[]).get_json()
+    assert r["ok"] and r["mois_payes"] in (3, 4) and abs(r["frais"] - 0.25 * r["mois_payes"]) < 0.001 and not r.get("envoyee"), r
+    r = c.post("/api/abonnement_annuler_demande", json=[True]).get_json()
+    assert r["envoyee"] and c.post("/api/forfait", json=[]).get_json()["annulation_demandee"]
+    assert paiements.frais_annulation(5, 7.99, 5.99) == 10.0 and paiements.frais_annulation(5, 5, 6) == 0
+    ABO.update(metadata={"compte": cid}, start_date=None)
+    envoyer({"id": "evt_6", "type": "customer.subscription.updated", "data": {"object": {"id": "sub_1", "customer": "cus_1", "metadata": {"compte": cid}}}})
+    assert not c.post("/api/forfait", json=[]).get_json()["engage"]
+
     # avis de suppression eBay : jeton et adresse donnes par Render
     d = ebay_avis.reponse_defi("abc")
     attendu = hashlib.sha256(("abc" + os.environ["LOCKERROOM_EBAY_AVIS_JETON"] + "https://lr.onrender.com/ebay/suppression-compte").encode()).hexdigest()
@@ -140,7 +168,7 @@ if __name__ == "__main__":
     env = dict(os.environ, LOCKERROOM_HEBERGE="1", LOCKERROOM_MULTI="1", LOCKERROOM_DONNEES=d, LOCKERROOM_SECRET="s" * 32,
                LOCKERROOM_TACHES="0", LOCKERROOM_CLE="test", LOCKERROOM_EBAY_ENV="production",
                LOCKERROOM_EBAY_APP_ID="App-PRD-1234", LOCKERROOM_EBAY_CERT_ID="Cert-5678", LOCKERROOM_EBAY_RUNAME="Ru-9999",
-               STRIPE_CLE_SECRETE="sk_test_faux", STRIPE_PRIX_PRO="price_test_pro", STRIPE_WEBHOOK_SECRET="whsec_test",
+               STRIPE_CLE_SECRETE="sk_test_faux", STRIPE_PRIX_PRO="price_test_pro", STRIPE_PRIX_PRO_ANNUEL="price_test_annuel", STRIPE_WEBHOOK_SECRET="whsec_test",
                RENDER_EXTERNAL_URL="https://lr.onrender.com", LOCKERROOM_EBAY_AVIS_JETON="J" * 40, LOCKERROOM_EPN_CAMPID="5339000001")
     r = subprocess.run([sys.executable, "-c", SCRIPT % {"ici": ICI}], env=env, capture_output=True, text=True)
     print(r.stdout or r.stderr[-2500:])

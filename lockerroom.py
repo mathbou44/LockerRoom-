@@ -406,6 +406,26 @@ def _platine():
         return False
 
 
+def _engage(info):
+    """18 nov 2026 : un forfait annuel encore dans ses 12 mois (pas annulable sans frais)."""
+    f = str((info or {}).get("engagement_fin") or "")
+    return (info or {}).get("forfait_plan") == "annuel" and (info or {}).get("forfait") == "pro" and f > datetime.now().strftime("%Y-%m-%d")
+
+
+def _prix_annuel():
+    try:
+        import paiements
+        return paiements.prix_affiche(paiements.prix_pro_annuel()) if paiements.prix_pro_annuel() else None
+    except Exception:
+        return None
+
+
+def _payee(v):
+    """Une vente eBay payee (ou sans information de paiement : les anciennes sources)."""
+    st = str(v.get("statut_paiement") or "").upper()
+    return not st or st in ("PAID", "FULLY_PAID", "PARTIALLY_REFUNDED", "COMPLETE", "COMPLETED")
+
+
 def comps_permis(api=None):
     """10 nov 2026 (Mathieu : « pour les comps on va garder ca seulement admin, mettre le tout de cote pour la version
     officielle de lancement », « 100 % legale avec nos cles eBay ») : les ventes recoltees sur eBay (SoldComps, CompSniper,
@@ -752,6 +772,8 @@ class Api:
                 "statut": info.get("forfait_statut") or "", "fin": info.get("forfait_fin"),
                 "annule": bool(info.get("forfait_annule")), "client": bool(info.get("stripe_client")),
                 "paiements": paiements.actif(), "mode_paiement": paiements.mode(), "prix": prix,
+                "prix_annuel": _prix_annuel(), "plan": info.get("forfait_plan") or "mensuel",
+                "engage": _engage(info), "engagement_fin": info.get("engagement_fin"), "annulation_demandee": bool(info.get("annulation_demandee")),
                 "photos_mois": photos.get("ce_mois"), "photos_limite": photos.get("limite"),
                 "gratuit_photos": vision.QUOTA_GRATUIT, "ios": est_ios(), "demo": bool(info.get("demo")),
                 "push": __import__("apns").actif(),
@@ -821,7 +843,7 @@ class Api:
         effacer_compte(cid)
         return {"ok": True, "deconnecter": True}
 
-    def abonnement_payer(self):
+    def abonnement_payer(self, plan="mensuel"):
         import comptes
         import paiements
         cid = comptes.courant() if comptes.MULTI else None
@@ -833,7 +855,7 @@ class Api:
         if e.get("forfait") == "pro" and (e.get("stripe_abonnement") or e.get("forfait_source") == "apple"):   # pas un 2e abonnement
             return {"ok": False, "erreur": "Ton forfait Pro est déjà actif : gère-le dans « Gérer mon abonnement »", "deja_pro": True}
         try:
-            return {"ok": True, "url": paiements.creer_paiement(cid, e.get("stripe_client"))}
+            return {"ok": True, "url": paiements.creer_paiement(cid, e.get("stripe_client"), plan="annuel" if plan == "annuel" else "mensuel")}
         except paiements.Erreur as e:
             return {"ok": False, "erreur": str(e)}
 
@@ -845,10 +867,42 @@ class Api:
             return {"ok": False, "erreur": "Non disponible dans l’app iPhone"}
         if cid and (comptes.info(cid) or {}).get("forfait_source") == "apple":
             return {"ok": False, "erreur": "Ton Pro est pris avec ton identifiant Apple : gère-le dans Réglages de l’iPhone › ton nom › Abonnements"}
+        e = (comptes.info(cid) or {}) if cid else {}
         try:
-            return {"ok": True, "url": paiements.portail((comptes.info(cid) or {}).get("stripe_client") if cid else None)}
+            return {"ok": True, "url": paiements.portail(e.get("stripe_client"), engage=_engage(e))}
         except paiements.Erreur as e:
             return {"ok": False, "erreur": str(e)}
+
+    def abonnement_annuler_demande(self, confirmer=False):
+        """18 nov 2026 : forfait annuel (engagement de 12 mois) : annuler se demande ; les frais (le rabais deja recu) sont
+        calcules ici et montres AVANT ; la demande arrive a l'admin, qui annule et facture dans Stripe."""
+        import comptes
+        import demandes
+        import paiements
+        cid = comptes.courant() if comptes.MULTI else None
+        e = (comptes.info(cid) or {}) if cid else {}
+        if not _engage(e):
+            return {"ok": False, "erreur": "Pas d'engagement en cours : annule dans « Gérer mon abonnement »"}
+        try:
+            pm = (paiements.prix_affiche() or {}).get("montant") or 0
+            pa = (paiements.prix_affiche(paiements.prix_pro_annuel()) or {}).get("montant") or 0
+        except Exception:
+            pm = pa = 0
+        try:
+            debut = datetime.fromtimestamp(int(e.get("forfait_debut")))
+            mois = max(1, (datetime.now().year - debut.year) * 12 + datetime.now().month - debut.month + (1 if datetime.now().day >= debut.day else 0))
+        except (TypeError, ValueError):
+            mois = 1
+        mois = min(mois, paiements.ENGAGEMENT_MOIS)
+        frais = paiements.frais_annulation(mois, pm, pa)
+        r = {"ok": True, "frais": frais, "mois_payes": mois, "engagement_fin": e.get("engagement_fin")}
+        if confirmer:
+            demandes.envoyer("question", f"DEMANDE D'ANNULATION (forfait annuel) : {mois} mois payés, frais {frais:.2f} $ "
+                             f"(engagement jusqu'au {e.get('engagement_fin')}). Abonnement Stripe {e.get('stripe_abonnement')}.",
+                             cid, username=e.get("username"), page="annulation", agent=False)
+            comptes.maj(cid, annulation_demandee=datetime.now().isoformat(timespec="seconds"))
+            r["envoyee"] = True
+        return r
 
     # -- 27 oct 2026 : verification d'un certificat PSA (voir psa.py), un a la fois, a la demande du vendeur ---------
     def psa_cert(self, cert):
@@ -3811,7 +3865,7 @@ class Api:
                     print(f"Profits de ventes refaits : {n}", flush=True)
         except Exception as e:
             print("Profits (reparation) : " + repr(e)[:160], flush=True)
-        sql, args = "SELECT * FROM cartes WHERE 1=1", []
+        sql, args = "SELECT * FROM cartes WHERE statut != 'Annulée'", []      # 18 nov 2026 : une vente annulee importee
         if f.get("statut"):
             sql += " AND statut=?"
             args.append(f["statut"])
@@ -5933,6 +5987,39 @@ class Api:
         self.reglages_sauver({"frais_ebay_pct": pct, "frais_auto": True})
         return {"ok": True, "n": len(pcts), "change": True, "avant": r.get("frais_ebay_pct"), "pct": pct}
 
+    def _defaire_ventes(self, annulees):
+        """Une vente eBay annulee (acheteur qui n'a pas paye...) deja comptee : la carte redevient En stock (ou disparait si
+        elle n'existait que par cette vente)."""
+        n = 0
+        with _verrou:
+            c = self._db()
+            try:
+                for v in annulees or []:
+                    if not v.get("item_number"):
+                        continue
+                    k = c.execute("SELECT id, source, vendu_le FROM cartes WHERE item_number=? AND statut='Vendue' AND canal='eBay' "
+                                  "ORDER BY vendu_le DESC LIMIT 1", (v["item_number"],)).fetchone()
+                    if not k:
+                        continue
+                    try:
+                        ecart = abs((datetime.fromisoformat(str(k["vendu_le"] or "2000-01-01")[:10]) - datetime.fromisoformat(str(v.get("date") or _maintenant())[:10])).days)
+                    except ValueError:
+                        ecart = 0
+                    if ecart > 7:
+                        continue
+                    if (k["source"] or "") == "import eBay":
+                        c.execute("UPDATE cartes SET statut='Annulée' WHERE id=?", (k["id"],))
+                    else:
+                        c.execute("UPDATE cartes SET statut='En stock', prix_vendu=NULL, frais=NULL, profit=NULL, port_charge=NULL, vendu_le=NULL "
+                                  "WHERE id=?", (k["id"],))
+                    n += 1
+                c.commit()
+            finally:
+                c.close()
+        if n:
+            print(f"[synchro] {n} ventes annulees defaites", flush=True)
+        return n
+
     def _maj_ventes(self, ventes):
         r = self.reglages_lire()
         nouvelles = deja = sans_fiche = 0
@@ -7161,14 +7248,20 @@ class Api:
         """Annonces actives + ventes des `jours` derniers jours, avec les frais reels."""
         try:
             annonces = ebay_compte.annonces_actives()
-            ventes = [v for v in ebay_compte.commandes(int(jours or 90)) if not v.get("annulee")]
+            tout_c = ebay_compte.commandes(int(jours or 90))
+            # 18 nov 2026 (Mathieu : « l'acheteur n'a pas paye, remis en vente ») : une vente n'est comptee que PAYEE ; une
+            # commande annulee apres coup (acheteur qui ne paie pas) defait la vente deja comptee
+            annulees = [v for v in tout_c if v.get("annulee")]
+            ventes = [v for v in tout_c if not v.get("annulee") and _payee(v)]
         except (RuntimeError, OSError, ValueError) as e:
             return {"ok": False, "erreur": str(e)}
         # 22 oct 2026 - 2e source (API Trading) : une vente que la nouvelle API n'a pas encore transmise
         # arrive quand meme ; les doublons entre les deux sources sont ecartes dans _maj_ventes.
         trading_ok = True
         try:
-            ventes += [v for v in ebay_compte.ventes_trading(min(30, int(jours or 30))) if not v.get("annulee")]
+            tr_ = ebay_compte.ventes_trading(min(30, int(jours or 30)))
+            annulees += [v for v in tr_ if v.get("annulee")]
+            ventes += [v for v in tr_ if not v.get("annulee") and _payee(v)]
         except (RuntimeError, OSError, ValueError) as e:
             trading_ok = False
             print(f"[synchro] ventes Trading ignorees : {e}", flush=True)
@@ -7178,6 +7271,10 @@ class Api:
         except Exception as e:
             print(f"[synchro] vues des annonces : {e}", flush=True)
         v = self._maj_ventes(ventes)
+        try:
+            v["annulees"] = self._defaire_ventes(annulees)
+        except Exception as e:
+            print(f"[synchro] ventes annulees : {e}", flush=True)
         try:
             a["terminees"] = self._annonces_terminees(a.get("vu"), len(annonces)) if trading_ok else 0
         except Exception as e:
@@ -7414,7 +7511,7 @@ class Api:
             ch = self.chasses_liste().get("chasses") or []
             cle = (comptes.courant() or "local") + ":" + hashlib.md5(json.dumps(
                 [[tuple(a) for a in al], self.deals_profil_lire(), self.reglages_lire().get("pays"), self._est_admin(), vue_simulee(), ch,
-                 [self.reglages_lire().get(k) for k in ("budget_mois", "objectif")], "score-v5"],                         # 16 nov 2026 : Radar a neuf (bareme A+ a E, petits vendeurs filtres, noms)
+                 [self.reglages_lire().get(k) for k in ("budget_mois", "objectif")], "score-v7"],                         # 16 nov 2026 : Radar a neuf (bareme A+ a E, petits vendeurs filtres, noms)
                 sort_keys=True, default=str).encode()).hexdigest()
         except Exception:
             cle = None
@@ -8746,6 +8843,30 @@ class Api:
         self._MES_DEALS[k] = (time.time(), l)
         return l
 
+    def _cote_joueur(self, nom):
+        """18 nov 2026 : la cote SlabIQ d'un joueur (bareme) + sa cote marche (90 j de ventes) : lettres pour tous, montants admin."""
+        out = {}
+        try:
+            import indice_joueurs
+            import bareme_iq as _bq
+            import score_slab as _ss
+            _v = indice_joueurs.indice(nom) or {}
+            _c = _v.get("criteres") or {}
+            _n, _l, _src = _bq.note_joueur(nom, _c, recrue=float(_c.get("recrue") or 0) >= 90, jeune=_ss._jeune(nom))
+            if "en_feu" in (_v.get("pastilles") or []):
+                _n = min(100.0, _n + _bq.FEU_PTS)
+                _l = _bq.lettre_joueur(_n)
+            out.update(note=round(_n, 1), lettre=_l, equipe=_v.get("equipe"), source=_src)
+            import cote_marche as _cm
+            _m = _cm.joueur(nom)
+            if _m:
+                out["marche"] = {k: _m.get(k) for k in ("lettre", "lettre_valeur", "lettre_liquidite", "tendance_pct")}
+                if self._est_admin():
+                    out["marche"].update({k: _m.get(k) for k in ("n", "moyenne", "mediane", "par_semaine")})
+        except Exception:
+            pass
+        return out
+
     def tendance_joueur(self, nom):
         """10 nov 2026 : la tendance d'un joueur avec des donnees publiques seulement : sa forme LNH (5 derniers matchs) et
         sa popularite (visites Wikipedia, 30 derniers jours contre les 60 d'avant)."""
@@ -8771,6 +8892,7 @@ class Api:
             out["forme"] = f if isinstance(f, dict) else None
         except Exception:
             out["forme"] = None
+        out["iq"] = self._cote_joueur(nom)        # 18 nov 2026 (Mathieu : « toujours sa cote, ses 5 derniers matchs, son trending »)
         # 13 nov 2026 (Mathieu : « pourquoi les mouvements et les spikes de ventes ») : ses mouvements de l'annee et leurs causes
         # possibles (admin : les prix viennent d'eBay)
         if self._est_admin():
@@ -9243,6 +9365,7 @@ class Api:
             c.execute("CREATE TABLE IF NOT EXISTS achats_ebay (item_id TEXT, n INTEGER, titre TEXT, cout REAL, devise TEXT, "
                       "date TEXT, carte_id INTEGER, PRIMARY KEY (item_id, n))")
             l = _dicts(c.execute("SELECT titre, cout, date FROM achats_ebay WHERE date LIKE ? ORDER BY date DESC", (m0 + "%",)))
+            l = [x for x in l if cartes_match.est_carte(x.get("titre"))]
         finally:
             c.close()
         dep = round(sum(x["cout"] or 0 for x in l), 2)
@@ -9265,8 +9388,8 @@ class Api:
                 c.execute("CREATE TABLE IF NOT EXISTS achats_ebay (item_id TEXT, n INTEGER, titre TEXT, cout REAL, devise TEXT, "
                           "date TEXT, carte_id INTEGER, PRIMARY KEY (item_id, n))")
                 for x in achats:
-                    if x.get("cout_total") is None:
-                        continue
+                    if x.get("cout_total") is None or not cartes_match.est_carte(x.get("titre")):
+                        continue                               # 18 nov 2026 : seulement les cartes (pas un cadre, des sleeves)
                     cout = x["cout_total"] / max(1, x.get("quantite") or 1)
                     cout = round(cout * (taux if (x.get("devise") or "CAD") == "USD" else 1.0), 2)
                     for k in range(max(1, x.get("quantite") or 1)):
@@ -9534,6 +9657,42 @@ class Api:
         return {"ok": True, "achats": l, "a_ajouter": sum(1 for a in l if not a.get("carte_id")),
                 "ebay": bool(ebay_compte.statut().get("connecte"))}
 
+    def achat_sortie(self, item_id, n=0, prix=0.0, raison="donnee"):
+        """18 nov 2026 (Mathieu : « je l'ai donnee, donc vendue ; pas moyen de la cocher vendue ») : un achat qui n'est plus a
+        lui (donne, vendu ailleurs) : il devient une carte VENDUE (canal « Autre »), cout = le prix paye, prix = ce qu'il a recu
+        (0 si donnee) ; le profit est juste et la carte sort de « Achetees »."""
+        r = self.achat_vers_inventaire(item_id, n)
+        if not r.get("ok") or not r.get("id"):
+            return r
+        try:
+            p = max(0.0, float(prix or 0))
+        except (TypeError, ValueError):
+            p = 0.0
+        with _verrou:
+            c = self._db()
+            try:
+                k = c.execute("SELECT cout FROM cartes WHERE id=?", (int(r["id"]),)).fetchone()
+                cout = float((k["cout"] if k else 0) or 0)
+                c.execute("UPDATE cartes SET statut='Vendue', canal=?, prix_vendu=?, frais=0, port_charge=0, profit=?, vendu_le=? WHERE id=?",
+                          ("Donnée" if raison == "donnee" or not p else "Autre", p, round(p - cout, 2), _maintenant(), int(r["id"])))
+                c.commit()
+            finally:
+                c.close()
+        return {"ok": True, "id": r["id"]}
+
+    def vente_annuler(self, cid):
+        """18 nov 2026 (Mathieu : « l'acheteur n'a pas paye, donc remis en vente ; faire attention a ce genre de situation ») :
+        une vente qui n'a pas eu lieu : la carte redevient En stock (le prix, les frais et le profit de la vente s'effacent)."""
+        with _verrou:
+            c = self._db()
+            try:
+                c.execute("UPDATE cartes SET statut='En stock', prix_vendu=NULL, frais=NULL, profit=NULL, port_charge=NULL, vendu_le=NULL "
+                          "WHERE id=? AND statut='Vendue'", (int(cid),))
+                c.commit()
+            finally:
+                c.close()
+        return {"ok": True}
+
     def achat_vers_inventaire(self, item_id, n=0, emplacement=None):
         """Un achat eBay -> une carte de l'inventaire (En stock), cout = le prix paye, titre et photo de l'annonce."""
         with _verrou:
@@ -9773,6 +9932,7 @@ class Api:
             try:
                 self._achats_table(c)
                 achats = _dicts(c.execute("SELECT item_id, n, titre, cout, date, photo, carte_id FROM achats_ebay ORDER BY date DESC LIMIT 1500"))
+                achats = [x for x in achats if x.get("carte_id") or cartes_match.est_carte(x.get("titre"))]   # 18 nov : les deja importes aussi
                 cols = {r[1] for r in c.execute("PRAGMA table_info(cartes)")}
                 cartes = _dicts(c.execute("SELECT * FROM cartes WHERE statut='En stock' AND consignataire_id IS NULL"))
                 libres_inv = _dicts(c.execute("SELECT id, titre, joueur, statut, item_number, photo, cout FROM cartes WHERE statut IN "
@@ -11886,25 +12046,7 @@ class Api:
                 ij = {}
             # 17 nov 2026 (audit) : la lettre du joueur = sa cote de collection du bareme (la meme qu'au Radar et dans Tendances)
             jiq = {k: ij.get(k) for k in ("indice", "rang", "sur", "pastilles", "actif")}
-            try:
-                import bareme_iq as _bq
-                import score_slab as _ss
-                _v = indice_joueurs.indice(joueur_seul) or {}
-                _c = _v.get("criteres") or {}
-                _n, _l, _src = _bq.note_joueur(joueur_seul, _c, recrue=float(_c.get("recrue") or 0) >= 90, jeune=_ss._jeune(joueur_seul))
-                if "en_feu" in (_v.get("pastilles") or []):
-                    _n = min(100.0, _n + _bq.FEU_PTS)
-                    _l = _bq.lettre_joueur(_n)
-                jiq.update(note=round(_n, 1), lettre=_l, equipe=_v.get("equipe"), source=_src)
-                # 17 nov 2026 : la cote marche (90 j de ventes reelles) : les lettres pour tous, les montants pour l'admin
-                import cote_marche as _cm
-                _m = _cm.joueur(joueur_seul)
-                if _m:
-                    jiq["marche"] = {k: _m.get(k) for k in ("lettre", "lettre_valeur", "lettre_liquidite", "tendance_pct")}
-                    if self._est_admin():
-                        jiq["marche"].update({k: _m.get(k) for k in ("n", "moyenne", "mediane", "par_semaine")})
-            except Exception:
-                pass
+            jiq.update(self._cote_joueur(joueur_seul))
             return {**base, "joueur_seul": joueur_seul, "joueur_iq": jiq,
                     "types": (tj or {}).get("types") if (tj or {}).get("source") == "joueur" else None,
                     "n": len(gardees), "annonces": gardees[:40], "vendues": {"ventes": [], "nb": 0, "mediane": None},

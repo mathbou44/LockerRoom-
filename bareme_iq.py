@@ -14,6 +14,7 @@ LA SORTE (la carte seulement, pas le joueur) -> une lettre :
        (auto / patch), OPC Platinum Rookie Auto, Black Diamond Rookie Gems Auto ; Clear Cut, Manga, Color Blast
   B+ : Fluorescence
   B  : les autos de base de produits moyens ; patch / jersey sans auto ; Dazzlers
+  Courtes impressions (18 nov) : SSP / 16-Bit A- ; SP B+ ; gradee 10 : A+
   Numerotees (une parallele sans autre raison) : /10 et moins A- ; /25 a /50 B+ ; /99 a /199 B ; /250 et plus C
   D  : une carte de base, sans numero
 La sorte garde la MEILLEURE regle qui s'applique (une Future Watch Auto /99 reste A+).
@@ -79,7 +80,7 @@ YG_VAR = _R(r"\bexclusives?\b|\bhigh gloss\b|\bcanvas\b|\bclear ?cut\b|\boutburs
             r"|\bblack\b|\brainbow\b|\bfoil\b|\bparallel\b|\bvariations?\b|\bglossy\b")
 # 17 nov 2026 (Mathieu : « parfois elle n'est pas numerotee mais c'est une SSP ou une SP et devient rare, comme les OPC
 # Platinum Marquee Rookie variation ») : la courte impression non numerotee
-SSP = _R(r"\bssp\b|\bsuper short print\b|\bcase hit\b")
+SSP = _R(r"\bssp\b|\bsuper short print\b|\bcase hit\b|\b16[ -]?bit\b")     # 18 nov : la 16-Bit d'Allure (1:720) aussi
 SP_ = _R(r"\bsp\b(?! ?(?:authentic|game|signature|legendary|premier|x\b))|\bshort print\b|\bvariations?\b|\bphoto var\b|\bimage var")
 CANVAS = _R(r"\bcanvas\b")
 ICE_PREM = _R(r"\bice\b.*\bpremieres?\b|\bpremieres?\b.*\bice\b")
@@ -90,7 +91,11 @@ FLUO = _R(r"\bfluorescence\b")
 DAZZ = _R(r"\bdazzlers?\b")
 
 
-RC_AUTO_A = _R(r"\bultimate\b|\bsp game used\b|\bspx\b|\btrilogy\b")
+# 18 nov 2026 (Mathieu : « SPx, Trilogy, SP Game Used sont moins recherches que SP Authentic, The Cup, Premier, Stature, Ice ;
+# entre les deux, Black Diamond ; Splendor et Tableau sont au top avec The Cup ») : les recrues autographes par produit
+RC_AUTO_TOP = _R(r"\bsplendor\b|\btableau\b|\bthe cup\b")                       # A+
+RC_AUTO_A = _R(r"\bultimate\b|\bsp authentic\b|\bpremier\b|\bstature\b|\bice\b")    # A
+RC_AUTO_MOY = _R(r"\bsp game used\b|\bspgu\b|\bspx\b|\btrilogy\b")                 # B+ (A- avec une patch)
 
 
 def _annee(t):
@@ -147,7 +152,12 @@ def sorte(titre):
         if YG_VAR.search(t):
             c.append(("A+", "yg_variante"))   # « toutes les variantes de YG sont ultra recherchees »
     # ronde 5 : les grosses recrues autographes (Ultimate, SP Game Used, SPx, Trilogy, une RPA d'Artifacts...) : A
-    if rc and auto and (patch or RC_AUTO_A.search(t)):
+    if rc and (auto or patch) and RC_AUTO_TOP.search(t):
+        c.append(("A+", "rc_auto_top"))               # Splendor, Tableau, The Cup : le haut du hobby
+    if rc and auto and RC_AUTO_MOY.search(t):
+        vraie_patch = bool(re.search(r"\bpatch\b|\bjersey\b|\brelic\b|\bswatch\b|\bmaterials?\b|\btag\b", brut))   # « Game Used » = le nom du produit
+        c.append(("A-" if vraie_patch else "B+", "rc_auto_moyen"))
+    elif rc and auto and (patch or RC_AUTO_A.search(t)):
         # 17 nov 2026 (Mathieu : Lekkerimaki Ultimate Collection Rookie Auto /299 « la carte est un B ») : une recrue auto sans
         # patch tiree a plus de 199 copies reste B
         c.append(("B" if not patch and serie and int(serie) > 199 else "A", "rc_auto"))
@@ -160,7 +170,7 @@ def sorte(titre):
     if OPC_PLAT.search(t) and rc and auto:
         c.append(("A", "opc_plat_auto"))
     if BD_GEMS.search(t) and rc and auto:
-        c.append(("A", "bd_gems"))
+        c.append(("A-", "bd_gems"))                   # 18 nov : entre SP Authentic / Ice (A) et SPx / Trilogy (B+)
     if INSERTS_A.search(t):
         c.append(("A", "insert_a"))
     if FLUO.search(t):
@@ -176,10 +186,12 @@ def sorte(titre):
         c.append(("A-" if s <= 10 else "B+" if s <= 50 else "B" if s <= 199 else "C", "numerotee"))
     if yg and serie:
         c.append(("A+", "yg_variante"))               # une YG numerotee est une variante
+    # 18 nov 2026 (Mathieu : « les SSP sont au moins A-, les SP B+ ; gradees PSA 10, elles sont tres tres recherchees,
+    # comme la 16-Bit ») : SSP A-, SP B+, et une SSP / SP gradee 10 : A+
     if not serie and SSP.search(brut):
-        c.append(("B+", "ssp"))
+        c.append(("A+" if _gem(g) else "A-", "ssp10" if _gem(g) else "ssp"))
     elif not serie and SP_.search(brut):
-        c.append(("B+" if rc else "B", "sp"))          # une variation de recrue (Marquee Rookie variation) : B+
+        c.append(("A+" if _gem(g) else "B+", "sp10" if _gem(g) else "sp"))
     if not c:
         c.append(("D", "base"))
     best = max(c, key=lambda x: NOTE[x[0]])
@@ -369,14 +381,18 @@ FAMILLES_VUE = [
     ("rpa", "A+", "Les grosses recrues autographes", "Top rookie autographs",
      [("The Cup RPA", "The Cup RPA", "A+"), ("Premier Auto Patch", "Premier Auto Patch", "A+"), ("Future Watch Auto", "Future Watch Auto", "A+")]),
     ("rc_auto", "A", "Recrues autographes et vintage", "Rookie autos & vintage rookies",
-     [("Ultimate, SP Game Used, SPx, Trilogy", "Ultimate, SP Game Used, SPx, Trilogy", "A"),
-      ("Ice Premieres, OPC Platinum, Black Diamond (auto)", "Ice Premieres, OPC Platinum, Black Diamond (auto)", "A"),
+     [("Splendor, Tableau, The Cup", "Splendor, Tableau, The Cup", "A+"),
+      ("SP Authentic, Premier, Stature, Ice, Ultimate", "SP Authentic, Premier, Stature, Ice, Ultimate", "A"),
+      ("OPC Platinum (auto)", "OPC Platinum (auto)", "A"),
+      ("Black Diamond (auto)", "Black Diamond (auto)", "A-"),
+      ("SPx, Trilogy, SP Game Used", "SPx, Trilogy, SP Game Used", "B+"),
       ("Recrue d’avant 1990 (A+ en 10)", "Pre-1990 rookie (A+ in a 10)", "A")]),
     ("inserts_a", "A", "Les inserts vedettes", "Star inserts", [("Clear Cut, Manga, Color Blast", "Clear Cut, Manga, Color Blast", "A")]),
     ("num", "A- à B", "Les numérotées", "Numbered cards",
      [("/10 et moins", "/10 or less", "A-"), ("/50 et moins", "/50 or less", "B+"), ("/199 et moins", "/199 or less", "B")]),
-    ("sp", "B+ à B", "Les courtes impressions", "Short prints",
-     [("SSP, variation de recrue", "SSP, rookie variation", "B+"), ("SP, variation", "SP, variation", "B")]),
+    ("sp", "A+ à B+", "Les courtes impressions", "Short prints",
+     [("SSP ou SP gradée PSA 10", "SSP or SP graded PSA 10", "A+"), ("SSP, 16-Bit, case hit", "SSP, 16-Bit, case hit", "A-"),
+      ("SP, variation", "SP, variation", "B+")]),
     ("inserts", "B+ à B", "Les autres inserts", "Other inserts",
      [("Fluorescence", "Fluorescence", "B+"), ("Auto, Patch, Dazzlers", "Auto, Patch, Dazzlers", "B"),
       ("Retro Young Guns d’un vétéran", "Veteran Retro Young Guns", "B")]),
