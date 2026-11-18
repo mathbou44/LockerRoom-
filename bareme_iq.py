@@ -80,7 +80,15 @@ YG_VAR = _R(r"\bexclusives?\b|\bhigh gloss\b|\bcanvas\b|\bclear ?cut\b|\boutburs
             r"|\bblack\b|\brainbow\b|\bfoil\b|\bparallel\b|\bvariations?\b|\bglossy\b")
 # 17 nov 2026 (Mathieu : « parfois elle n'est pas numerotee mais c'est une SSP ou une SP et devient rare, comme les OPC
 # Platinum Marquee Rookie variation ») : la courte impression non numerotee
-SSP = _R(r"\bssp\b|\bsuper short print\b|\bcase hit\b|\b16[ -]?bit\b")     # 18 nov : la 16-Bit d'Allure (1:720) aussi
+# 18 nov 2026 (Mathieu : « les SSP au moins A-, gradees PSA 10 tres tres recherchees, comme la 16-Bit » ; la liste des inserts
+# aussi durs a sortir, cotes officielles Upper Deck 2025-26 : Beckett, Breakninja, Cardboard Connection, Checklist Insider) :
+# ils comptent comme des SSP (A- bruts, A+ en PSA 10)
+SSP = _R(r"\bssp\b|\bsuper short print\b|\bcase hit\b|\b16[ -]?bit\b"
+         r"|\bsnow spray\b|\bdazzlers (?:blue )?gold\b|\bcelebration variations?\b|\bbootleg\b|\bholotypes?\b|\bswagnificent\b"
+         r"|\bwhite house visit\b|\bfanimation\b|\bincarnations?\b|\bday with the cup\b|\bcanvas black (?:and|&) white\b"
+         r"|\brookie debut game jersey\b|\bhologrfx\b|\bkiller keepers\b|\ballure\b.*\bimpressions\b|\btile variations?\b"
+         r"|\bsign of the times rookies\b|\bauthentic moments\b|\bsheer dominance\b|\bpro visions\b|\bfront row talent\b"
+         r"|\bstanding on their head\b|\b3-?d marquee rookies\b|\bplatinum portraits?\b|\bbrush off\b|\bdark matter\b")
 SP_ = _R(r"\bsp\b(?! ?(?:authentic|game|signature|legendary|premier|x\b))|\bshort print\b|\bvariations?\b|\bphoto var\b|\bimage var")
 CANVAS = _R(r"\bcanvas\b")
 ICE_PREM = _R(r"\bice\b.*\bpremieres?\b|\bpremieres?\b.*\bice\b")
