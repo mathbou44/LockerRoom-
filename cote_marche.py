@@ -311,6 +311,8 @@ def balayer(n_max=None):
     import vendues
     if not vendues._cle() or time.time() < vendues._PANNE[0]:
         return {"ok": False, "raison": "soldcomps"}
+    if _BLITZ["en_cours"]:
+        return {"ok": False, "raison": "blitz en cours"}     # jamais les deux en meme temps (les memes recherches)
     d = lire_balayage()
     jour = datetime.now().strftime("%Y-%m-%d")
     fait = (d.get("jours") or {}).get(jour, 0)
@@ -411,35 +413,50 @@ def _ordre_joueurs():
 
 
 def blitz_etat():
-    return dict(lire_balayage().get("blitz") or {}, en_cours=_BLITZ["en_cours"])
+    b = dict(lire_balayage().get("blitz") or {}, en_cours=_BLITZ["en_cours"])
+    if b.get("etat") == "en cours" and not b["en_cours"]:
+        b["etat"] = "interrompu"                        # le serveur a redemarre : il reprend tout seul (ou bouton Reprendre)
+    return b
 
 
-def blitz(max_req=BLITZ_MAX_REQ):
+def blitz(max_req=BLITZ_MAX_REQ, reprendre=False):
+    """17-18 nov 2026 : reprendre=True continue la ou il s'etait arrete (un redemarrage du serveur, un push, une panne) :
+    la position est gardee a chaque recherche ; les compteurs continuent."""
     import base_ventes
     import vendues
     if not vendues._cle():
         return {"ok": False, "raison": "pas de clé SoldComps"}
     d = lire_balayage()
     b = d.setdefault("blitz", {})
-    b.update(lance_le=datetime.now().isoformat(timespec="seconds"), requetes=0, ventes=0, etat="en cours", erreur=None)
+    if not reprendre:
+        b.update(lance_le=datetime.now().isoformat(timespec="seconds"), requetes=0, ventes=0, pos=0)
+    elif "pos" not in b:
+        b["pos"] = int(b.get("requetes") or 0)          # un blitz d'avant la reprise : on repart de son nombre de recherches
+    b.update(etat="en cours", erreur=None)
     _ecrire_bal(d)
     taux = vendues._taux_usd_cad() or 1.37
     site = (vendues.sites() or ["EBAY-US"])[0]
     noms = _ordre_joueurs()
     J = d.setdefault("joueurs", {})
     taches = [(n, None) for n in noms] + [(n, v) for v in BLITZ_VARIANTES for n in noms]
-    for nom, var in taches:
+    echecs = 0
+    while b.get("pos", 0) < len(taches):
         if _BLITZ["stop"] or b["requetes"] >= max_req or b["ventes"] >= BLITZ_MAX_VENTES:
             break
+        nom, var = taches[b.get("pos", 0)]
         q = f"{nom} hockey" if not var else f"{nom} {var}"
         donnees, err = vendues._appel(q, site, usage="blitz")
-        b["requetes"] += 1
         if err:
             b["erreur"] = err
             if "quota" in err or "refusée" in err:
                 break                                   # credits epuises ou cle refusee : on arrete
-            time.sleep(5)
+            echecs += 1                                 # une panne (503...) : on attend de plus en plus, puis on REESSAIE la meme
+            _ecrire_bal(d)
+            time.sleep(min(300, 10 * echecs))
             continue
+        echecs = 0
+        b["requetes"] += 1
+        b["pos"] = b.get("pos", 0) + 1
         items = (donnees or {}).get("items") or []
         gardees, m = mesurer_joueur(nom, items, taux)
         for v in gardees:
@@ -451,22 +468,31 @@ def blitz(max_req=BLITZ_MAX_REQ):
             pass
         if not var:
             J[nom] = {**m, "le": datetime.now().isoformat(timespec="seconds")}
-        if b["requetes"] % 25 == 0:
+        if b["requetes"] % 10 == 0:
             _ecrire_bal(d)
-    b["etat"] = "arrêté" if _BLITZ["stop"] else "terminé"
+    b["etat"] = "arrêté" if _BLITZ["stop"] else ("terminé" if b.get("pos", 0) >= len(taches) else "arrêté")
+    b["total"] = len(taches)
     b["fini_le"] = datetime.now().isoformat(timespec="seconds")
     _ecrire_bal(d)
     return {"ok": True, **b}
 
 
-def blitz_lancer():
+def blitz_reprendre_si_besoin():
+    """Au demarrage du serveur (un push redemarre Render) : un blitz qui etait « en cours » reprend tout seul."""
+    b = lire_balayage().get("blitz") or {}
+    if b.get("etat") == "en cours" and not _BLITZ["en_cours"]:
+        return blitz_lancer(reprendre=True)
+    return None
+
+
+def blitz_lancer(reprendre=False):
     if _BLITZ["en_cours"]:
         return False
     _BLITZ.update(en_cours=True, stop=False)
 
     def tache():
         try:
-            print("Blitz SoldComps : %s" % blitz(), flush=True)
+            print("Blitz SoldComps : %s" % blitz(reprendre=reprendre), flush=True)
             passe_si_besoin(forcer=True)                 # la cote marche refaite avec tout ce qui est entre
         except Exception as e:
             print("Blitz SoldComps : " + repr(e), flush=True)

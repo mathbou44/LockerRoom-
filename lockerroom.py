@@ -8641,6 +8641,8 @@ class Api:
         import cote_marche
         if action == "lancer":
             return {"ok": True, "lance": cote_marche.blitz_lancer(), **cote_marche.blitz_etat()}
+        if action == "reprendre":
+            return {"ok": True, "lance": cote_marche.blitz_lancer(reprendre=True), **cote_marche.blitz_etat()}
         if action == "arreter":
             cote_marche._BLITZ["stop"] = True
         return {"ok": True, **cote_marche.blitz_etat()}
