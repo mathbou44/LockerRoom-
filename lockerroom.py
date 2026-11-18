@@ -8763,7 +8763,7 @@ class Api:
         d = slabiq_expert.lire()
         try:
             import evergreen
-            ev = evergreen.liste(60)
+            ev = evergreen.liste(150)
         except Exception:
             ev = []
         return {"ok": True, "faits": sorted(slabiq_expert.faits()), "mesure": slabiq_expert.mesure(), "params": d.get("params") or {},

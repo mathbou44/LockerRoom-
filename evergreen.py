@@ -16,6 +16,20 @@ import math
 import time
 
 SEUIL = 60
+# 18 nov 2026 (Mathieu : « McDavid ? Ovechkin ? Kane ? il y en a d'autres, c'est sur ») : les evergreen du hobby, toujours dans la
+# liste meme si une fiche publique manque (un joueur absent de la base n'avait aucun score) ; plancher 75
+EVERGREEN_HOBBY = (
+    # en activite (ou tout juste retires), carrieres de vedette
+    "Connor McDavid", "Sidney Crosby", "Alex Ovechkin", "Patrick Kane", "Evgeni Malkin", "Nathan MacKinnon", "Auston Matthews",
+    "Leon Draisaitl", "Nikita Kucherov", "Steven Stamkos", "Jonathan Toews", "Marc-Andre Fleury", "Carey Price", "Anze Kopitar",
+    "Brad Marchand", "Patrice Bergeron", "Henrik Lundqvist", "Andrei Vasilevskiy", "Victor Hedman", "Erik Karlsson", "Drew Doughty",
+    "Cale Makar", "Connor Bedard", "Macklin Celebrini",
+    # legendes
+    "Wayne Gretzky", "Mario Lemieux", "Bobby Orr", "Gordie Howe", "Maurice Richard", "Jean Beliveau", "Guy Lafleur", "Patrick Roy",
+    "Martin Brodeur", "Jaromir Jagr", "Steve Yzerman", "Joe Sakic", "Mark Messier", "Ray Bourque", "Nicklas Lidstrom",
+    "Pavel Datsyuk", "Teemu Selanne", "Peter Forsberg", "Brett Hull", "Bobby Hull", "Mike Bossy", "Dominik Hasek", "Paul Kariya",
+    "Martin St. Louis", "Joe Thornton", "Jarome Iginla", "Ken Dryden", "Terry Sawchuk", "Stan Mikita", "Phil Esposito",
+)
 _CACHE = {"t": 0.0, "d": None}
 
 
@@ -103,6 +117,12 @@ def tous():
                 out[nom] = {"score": sc, "raisons": r}
     except Exception:
         pass
+    for nom in EVERGREEN_HOBBY:
+        k = next((x for x in out if x.lower() == nom.lower()), nom)
+        v = out.get(k) or {"score": 0.0, "raisons": []}
+        if v["score"] < 75:
+            v = {"score": 75.0, "raisons": list(dict.fromkeys((v.get("raisons") or []) + ["hobby"]))}
+        out[k] = v
     _CACHE.update(t=time.time(), d=out)
     return out
 
