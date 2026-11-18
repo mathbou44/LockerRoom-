@@ -901,4 +901,30 @@ def astuces_baseball(langue="fr"):
             t("Le numéro de la carte fait partie du nom : une « Trout 2011 » sans US175 n’est pas LA recrue.",
               "The card number is part of the name: a “2011 Trout” without US175 isn’t THE rookie."),
             "Sports Illustrated", "https://www.si.com/collectibles/the-best-baseball-rookie-cards-from-every-decade"),
+        _bb("bb_opc", "avance", "acheter", t("Vintage : la O-Pee-Chee, la Topps canadienne bien plus rare", "Vintage: O-Pee-Chee, the far rarer "
+            "Canadian Topps"), "299",
+            t("Imprimées pour le petit marché canadien : la recrue Mike Schmidt 1973 compte 299 copies gradées en O-Pee-Chee contre 19 468 "
+              "en Topps. Dos bilingue depuis 1970, « Printed in Canada », et un centrage souvent pire : les hautes notes sont rares.",
+              "Printed for the small Canadian market: the 1973 Mike Schmidt rookie has 299 graded O-Pee-Chee copies versus 19,468 Topps. "
+              "Bilingual backs since 1970, “Printed in Canada”, and often worse centering: high grades are rare."),
+            t("Au Québec, on en trouve encore dans les ventes de garage : regarde le dos avant d’acheter un lot.",
+              "In Canada they still turn up at garage sales: check the back before buying a lot."),
+            "Sports Illustrated", "https://www.si.com/collectibles/5-most-valuable-and-iconic-o-pee-chee-baseball-cards"),
+        _bb("bb_espoirs", "tous", "vendre", t("Les espoirs : achète l’hiver, vends le jour du rappel", "Prospects: buy in winter, sell on call-up day"),
+            "−60 %",
+            t("Le prix d’un espoir culmine souvent au rappel ou au premier match (Caglianone : 1 263 $ le jour de ses débuts, environ 500 $ "
+              "ensuite). Le battage retombe vite : Langford PSA 10 de 900 $ à 340 $, Volpe de 1 000 $ à environ 425 $.",
+              "A prospect’s price often peaks at the call-up or first game (Caglianone: $1,263 on debut day, about $500 after). Hype fades "
+              "fast: Langford PSA 10 from $900 to $340, Volpe from $1,000 to about $425."),
+            t("Achète d’octobre à janvier ou pendant une léthargie ; vends dans l’emballement du printemps ou au rappel.",
+              "Buy from October to January or during a slump; sell into spring hype or on call-up day."),
+            "All Vintage Cards · CLLCT", "https://allvintagecards.com/boom-or-bust-the-pros-cons-of-investing-in-baseball-prospect-cards/"),
+        _bb("bb_finest", "avance", "info", t("1993 Finest : la toute première Refractor", "1993 Finest: the very first Refractor"), "~241",
+            t("Les Refractors sont nées en 1993 dans Finest : environ 1 paquet sur 15, et un tirage estimé à 241 copies de chaque carte "
+              "(jamais confirmé par Topps). Très sensibles au centrage et aux égratignures.",
+              "Refractors were born in 1993 Finest: about 1 in 15 packs, with an estimated 241 copies of each card (never confirmed by Topps). "
+              "Very sensitive to centering and scratches."),
+            t("Pas de numéro au dos : on la reconnaît à son reflet arc-en-ciel. Compare toujours avec une photo d’une gradée.",
+              "No number on the back: you spot it by its rainbow shine. Always compare with a photo of a graded one."),
+            "Baseball Cardpedia", "https://baseballcardpedia.com/index.php/1993_Finest"),
     ]

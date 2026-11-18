@@ -102,7 +102,12 @@ ICONES = [
     (_R(r"\b2011\b.*\btopps update\b.*\btrout\b|\bus175\b"), "A+"),
     (_R(r"\b2013\b.*\bbowman\b.*\bjudge\b"), "A+"),
     (_R(r"\b2018\b.*\bbowman chrome\b.*\bohtani\b"), "A+"),
+    # 18 nov : la 1re refractor de l'histoire (1993 Finest, ~241 copies de chacune, jamais confirme par Topps ; Baseball Cardpedia)
+    (_R(r"\b1993\b.*\bfinest\b.*\brefractor\b|\b1993\b.*\brefractor\b.*\bfinest\b"), "A"),
 ]
+# Le vintage O-Pee-Chee (Canada) : imprime en bien plus petit nombre que Topps (la Schmidt 1973 : 299 OPC gradees contre 19 468
+# Topps, Sports Illustrated) ; un cran de plus que la meme Topps
+OPC = _R(r"\bo-?pee-?chee\b|\bopc\b")
 
 
 def _annee(t):
@@ -144,12 +149,13 @@ def sorte(titre):
         c.append(("A+" if vedette else "A", "avant_guerre"))
     # le vintage d'apres-guerre (1946-1979) : la recrue d'une vedette du Temple est la carte reine
     if an and 1946 <= an <= 1979:
+        opc = bool(OPC.search(t))
         if vedette and rc:
             c.append(("A+", "rc_vintage_temple"))
         elif vedette:
-            c.append(("A", "vintage_temple"))
+            c.append(("A+" if opc else "A", "vintage_temple"))
         else:
-            c.append(("B" if rc else "C+", "vintage"))
+            c.append((("B+" if rc else "B") if opc else ("B" if rc else "C+"), "vintage_opc" if opc else "vintage"))
     # la « junk wax » (1986-1994) : imprimee a des millions ; seules les erreurs celebres et les Tiffany comptent
     if an and 1986 <= an <= 1994:
         if ERREURS_CELEBRES.search(t):

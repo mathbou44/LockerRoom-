@@ -27,4 +27,8 @@ assert b.sorte("1980 Topps #482 Rickey Henderson RC PSA 6") == ("A+", "icone")
 assert b.score("2011 Topps Update #US175 Mike Trout RC")["lettre"] == "A+"
 assert b.sorte("1984 Fleer Update Roger Clemens #U-27 RC")[0] == "A"
 assert b.sorte("1989 Upper Deck Ken Griffey Jr #1 RC")[0] == "A-"           # une icone, mais imprimee a ~2 millions
+assert b.sorte("1973 O-Pee-Chee #615 Mike Schmidt RC")[0] == "A+"
+assert b.sorte("1975 O-Pee-Chee #400 Joe Random")[1] == "vintage_opc"
+assert b.sorte("1993 Finest Refractor #13 John Olerud")[0] == "A"
+assert len(astuces.astuces_baseball("fr")) == 15
 print("BAREME BB OK")
