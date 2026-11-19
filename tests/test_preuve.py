@@ -22,13 +22,21 @@ hier = date.today() - timedelta(days=1)
 preuve.figer(hier, {"jour": hier.isoformat(), "marche": [], "radar": [{"t": "r", "id": "1", "titre": "x"}]})
 assert preuve.verifier()["ok"]
 pub = preuve.public()
-assert pub["chaine"][0]["fichier"] is True and pub["chaine"][1]["fichier"] is False   # le vieux jour est public, pas hier
+# 19 nov 2026 (audit) : des prix tires d'eBay : aucun fichier public sans licence ; l'empreinte, oui
+assert pub["chaine"][0]["fichier"] is False and pub["chaine"][1]["fichier"] is False and not pub["fichiers_publics"]
+os.environ["LR_PREUVE_FICHIERS"] = "1"
+pub = preuve.public()
+assert pub["chaine"][0]["fichier"] is True and pub["chaine"][1]["fichier"] is False   # avec licence : le vieux jour est public, pas hier
+del os.environ["LR_PREUVE_FICHIERS"]
 
 import server  # noqa: E402
 c = server.app.test_client()
 r = c.get("/preuve")
 assert r.status_code == 200 and b"SHA-256" in r.data and e1["sha256"][:16].encode() in r.data
-assert c.get(f"/preuve/{vieux.isoformat()}.json").status_code == 200
+assert c.get(f"/preuve/{vieux.isoformat()}.json").status_code == 404                 # sans licence : jamais le fichier (prix eBay)
+os.environ["LR_PREUVE_FICHIERS"] = "1"
+assert c.get(f"/preuve/{vieux.isoformat()}.json").status_code == 200                 # avec licence : apres 30 jours
+del os.environ["LR_PREUVE_FICHIERS"]
 assert c.get(f"/preuve/{hier.isoformat()}.json").status_code == 404                 # pas avant 30 jours
 assert c.get("/preuve/../server.py.json").status_code == 404
 assert c.get("/preuve/chaine.json").get_json()[0]["sha256"] == e1["sha256"]

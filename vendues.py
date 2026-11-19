@@ -244,7 +244,32 @@ def utilises_aujourdhui(usage=None):
     return 10 ** 9
 
 
+_RECENTS = []                   # 19 nov 2026 : l'heure des derniers appels (les credits « en direct » de l'admin)
+
+
+def credits_direct():
+    """{jour, mois, minute} : les requetes SoldComps comptees chez nous (aujourd'hui, ce mois, la derniere minute)."""
+    j = jour()
+    mois = None
+    try:
+        c = _cx()
+        try:
+            pre, d = j.rsplit(":", 1) if ":" in j else ("", j)          # « mtl:2026-11-19 »
+            pat = (pre + ":" if pre else "") + d[:7] + "-__"
+            r = c.execute("SELECT SUM(n) FROM compteur WHERE jour LIKE ?", (pat,)).fetchone()
+            mois = int(r[0] or 0)
+        finally:
+            c.close()
+    except sqlite3.Error:
+        pass
+    m = time.time() - 60
+    return {"jour": utilises_aujourdhui(), "mois": mois, "minute": sum(1 for t in _RECENTS[-400:] if t >= m)}
+
+
 def _compter(usage=None, cpt=None):
+    _RECENTS.append(time.time())
+    if len(_RECENTS) > 2000:
+        del _RECENTS[:1000]
     with _verrou:
         c = _cx()
         try:

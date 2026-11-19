@@ -864,6 +864,15 @@ def _page_vitrine(page="accueil", contenu_force=None):
             .replace("{{CHEMIN}}", chemin))
     for k in SITE_PAGES:
         html = html.replace("{{ACT_" + k.upper() + "}}", "actif" if k == page else "")
+    # 19 nov 2026 (audit du site) : le Pro annuel n'est annonce que s'il est vraiment offert (le prix Stripe existe) ; sinon le
+    # client qui le choisit recevait « Le forfait annuel n'est pas encore offert »
+    try:
+        import paiements
+        annuel = bool(paiements.prix_pro_annuel())
+    except Exception:
+        annuel = False
+    if not annuel:
+        html = html.replace("</head>", "<style>.si-annuel{display:none !important} @media (min-width:901px){ .forfaits.trois:has(> .si-annuel){grid-template-columns:repeat(2,minmax(0,1fr)); max-width:760px} }</style></head>", 1)
     html = html.replace('<html lang="fr">', f'<html lang="{l}">').replace(
         '<a class="btn holo" href="/connexion"><span class="fr">Commencer</span>',
         f'<a class="lang" href="?lang={autre}">{"Français" if autre == "fr" else "English"}</a><a class="btn holo" href="/connexion"><span class="fr">Commencer</span>', 1)
@@ -884,31 +893,44 @@ def page_tarifs():
 
 
 def _bloc_bareme(t):
-    """16 nov 2026 (Mathieu : « faire les tests et les presenter sur le site, avec les mises a jour de SlabIQ ») : le bareme
-    A+ a E teste proprement : les lettres calculees avec les ventes d'AVANT (juin-juillet), le resultat mesure sur les ventes
-    d'APRES (aout-octobre). Le fichier preuve_bareme.json est fige (le test, refait a la main, le remplace)."""
+    """19 nov 2026 (audit : « 5x ici, 10x la ») : le meme test que la page SlabIQ et l'accueil (ui/slabiq_tests.json, refait a
+    chaque version de SlabIQ par outils/tests_site.py) : les lettres fixees avec les ventes d'AVANT une date, les reventes
+    mesurees APRES, sur des ventes que SlabIQ n'avait jamais vues. Plus aucun prix tire des ventes eBay sur cette page."""
     try:
-        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "preuve_bareme.json"), encoding="utf-8") as f:
+        with open(os.path.join(DOSSIER_UI, "slabiq_tests.json"), encoding="utf-8") as f:
             d = json.load(f)
     except (OSError, ValueError):
         return ""
-    T = d.get("tous") or {}
-    if not T.get("A") or not T.get("E"):
+    L = d.get("lettres") or {}
+    if not L.get("E") or not d.get("x_ahaut_e"):
         return ""
     nb = lambda v: f"{v:,}".replace(",", "\u00a0")
-    lig = "".join(f'<tr><td><b>{l}</b></td><td class="n">{nb(T[l]["cartes"])}</td><td class="n{" vert" if l in ("A+", "A") else ""}">{str(T[l]["ventes_par_carte"]).replace(".", ",")}</td>'
-                  f'<td class="n">{round(T[l]["prix_median"])}\u00a0$</td></tr>' for l in ("A+", "A", "A-", "B+", "B", "C", "D", "E") if T.get(l))
-    fois = str(d.get("fois")).replace(".", ",")
+    MF = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
+    ME = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+    def jr(x):
+        try:
+            a = date.fromisoformat(x)
+        except (TypeError, ValueError):
+            return x, x
+        return f"{a.day}{'er' if a.day == 1 else ''} {MF[a.month - 1]} {a.year}", f"{ME[a.month - 1]} {a.day}, {a.year}"
+    c_fr, c_en = jr(d.get("coupe"))
+    r0_fr, r0_en = jr(d.get("revente_des"))
+    r1_fr, r1_en = jr(d.get("revente_fin"))
+    x = int(round(d["x_ahaut_e"]))
+    lig = "".join(f'<tr><td><b>{l}</b></td><td class="n">{nb(L[l]["cartes"])}</td><td class="n{" vert" if l in ("A+", "A") else ""}">{str(L[l]["reventes"]).replace(".", ",")}</td></tr>'
+                  for l in ("A+", "A", "A-", "B+", "B", "C", "D", "E") if L.get(l))
     return f"""<section><div class="conteneur">
   <p class="kicker holo-t">{t("Les lettres SlabIQ", "SlabIQ letters")}</p>
-  <h2>{t(f'Une carte A se revend <span class="holo-t">{fois} fois</span> plus souvent qu’une carte E', f'An A card resells <span class="holo-t">{fois} times</span> more often than an E card')}</h2>
-  <p class="intro">{t("Le test : chaque carte reçoit sa lettre avec seulement les ventes de juin et juillet. Puis on regarde ce qui se vend vraiment d’août à octobre, des ventes que SlabIQ n’avait jamais vues.", "The test: every card gets its letter using only June and July sales. Then we look at what actually sells from August to October, sales SlabIQ had never seen.")}</p>
-  <div style="overflow-x:auto"><table class="tab-f"><thead><tr><th>{t("Lettre", "Letter")}</th><th>{t("Cartes", "Cards")}</th><th>{t("Ventes par carte", "Sales per card")}</th><th>{t("Prix médian", "Median price")}</th></tr></thead><tbody>{lig}</tbody></table></div>
-  <p class="note">{t(f"{nb(d.get('ventes', 0))} ventes de hockey (eBay et archives), {nb(d.get('joueurs', 0))} joueurs. Les lettres des joueurs viennent seulement des ventes d’avant le 1er août (aucune note d’expert). Sur nos archives seules (moins touchées par nos recherches) : {str(d.get('fois_tca')).replace('.', ',')} fois. Une lettre dit à quel point une carte est recherchée, pas qu’elle va monter.", f"{nb(d.get('ventes', 0))} hockey sales (eBay and archives), {nb(d.get('joueurs', 0))} players. Player letters come only from sales before August 1 (no expert input). On our archives alone (less affected by our own searches): {d.get('fois_tca')} times. A letter says how sought after a card is, not that it will go up.")}</p>
+  <h2>{t(f'Une carte A ou A+ se revend <span class="holo-t">{x} fois</span> plus souvent qu’une carte E', f'An A or A+ card resells <span class="holo-t">{x} times</span> more often than an E card')}</h2>
+  <p class="intro">{t(f"Le test : chaque carte reçoit sa lettre avec seulement les ventes d’avant le {c_fr}. Puis on compte ses reventes entre le {r0_fr} et le {r1_fr} : des ventes que SlabIQ n’avait jamais vues.", f"The test: every card gets its letter using only sales before {c_en}. Then we count its resales between {r0_en} and {r1_en}: sales SlabIQ had never seen.")}</p>
+  <div style="overflow-x:auto"><table class="tab-f"><thead><tr><th>{t("Lettre", "Letter")}</th><th>{t("Cartes", "Cards")}</th><th>{t("Reventes par carte", "Resales per card")}</th></tr></thead><tbody>{lig}</tbody></table></div>
+  <p class="note">{t(f"{nb(d.get('ventes_total', 0))} ventes de hockey, {nb(d.get('joueurs', 0))} joueurs. Refait à chaque nouvelle version de SlabIQ ; les mêmes chiffres que sur la page SlabIQ.", f"{nb(d.get('ventes_total', 0))} hockey sales, {nb(d.get('joueurs', 0))} players. Redone with every new SlabIQ version; the same numbers as on the SlabIQ page.")}</p>
 </div></section>"""
 
 
 def _bloc_collectionneurs(t):
+    # 19 nov 2026 (audit du site) : plus affiche sur /preuve : cette ancienne simulation n'est pas refaite avec chaque version de
+    # SlabIQ ; la simulation testee (outils/tests_site.py) est sur la page SlabIQ
     """16 nov 2026 (Mathieu : « deux collectionneurs, le meme budget, avec et sans SlabIQ ; le montrer sur le site » ; « montre
     la difference entre les deux, pas des negatifs ») : l'avance de la collection avec SlabIQ sur celle sans, en gros chiffres."""
     try:
@@ -993,7 +1015,7 @@ def page_preuve():
     v = p.get("verification") or {}
     def _rang(e):
         j = _h.escape(e["jour"])
-        fich = ('<a href="/preuve/' + j + '.json">JSON</a> · ') if e.get("fichier") else (t("public après %d j" % p["public_apres_j"], "public after %d d" % p["public_apres_j"]) + " · ")
+        fich = ('<a href="/preuve/' + j + '.json">JSON</a> · ') if e.get("fichier") else ((t("public après %d j" % p["public_apres_j"], "public after %d d" % p["public_apres_j"]) if p.get("fichiers_publics") else t("empreinte seulement", "fingerprint only")) + " · ")
         ots = ('<a href="/preuve/' + j + '.json.ots">.ots</a>') if e.get("ots") else ""
         return ("<tr><td>" + j + '</td><td class="n">' + str(e.get("n_marche", 0)) + " + " + str(e.get("n_radar", 0)) + "</td>"
                 + '<td><code title="' + _h.escape(e["sha256"]) + '">' + _h.escape(e["sha256"][:16]) + "…</code></td>"
@@ -1008,11 +1030,11 @@ def page_preuve():
   <div class="etapes">
     <div class="etape"><b>1</b><h3>{t("Figé chaque jour", "Frozen every day")}</h3><p>{t("Le prix de chaque Young Guns suivie, le moment SlabIQ, le score et chaque deal du Radar, autos, patchs et numérotées compris (un échantillon tiré au hasard est re-mesuré à 30, 60 et 90 jours).", "The price of every tracked Young Guns, the SlabIQ moment, the score and every Radar deal, autos, patches and numbered included (a random sample is re-measured at 30, 60 and 90 days).")}</p></div>
     <div class="etape"><b>2</b><h3>{t("Empreinte horodatée", "Timestamped fingerprint")}</h3><p>{t("L’empreinte du fichier (SHA-256) est enchaînée à la veille et ancrée dans Bitcoin (OpenTimestamps). Changer un seul chiffre casse la preuve.", "The file’s fingerprint (SHA-256) is chained to the day before and anchored in Bitcoin (OpenTimestamps). Changing a single number breaks the proof.")}</p></div>
-    <div class="etape"><b>3</b><h3>{t("Le résultat, plus tard", "The result, later")}</h3><p>{t("30, 60 et 90 jours après, on mesure ce que les cartes valaient vraiment. Les fichiers sont publiés après 30 jours : tout le monde peut vérifier.", "30, 60 and 90 days later, we measure what the cards were really worth. Files are published after 30 days: anyone can check.")}</p></div>
+    <div class="etape"><b>3</b><h3>{t("Le résultat, plus tard", "The result, later")}</h3><p>{t("30, 60 et 90 jours après, on mesure ce que les cartes valaient vraiment. L’empreinte de chaque jour est publique dès le jour même ; les fichiers complets seront publiés quand nos licences de données le permettront.", "30, 60 and 90 days later, we measure what the cards were really worth. Each day’s fingerprint is public the same day; the full files will be published once our data licences allow it.")}</p></div>
   </div>
 </div></section>
 {_bloc_bareme(t)}
-{_bloc_collectionneurs(t)}
+
 <section><div class="conteneur">
   <p class="kicker holo-t">{t("Résultats en direct", "Live results")}</p>
   <h2>{t("Sans SlabCoach contre avec SlabCoach", "Without vs with SlabCoach")}</h2>
@@ -1039,6 +1061,8 @@ def preuve_fichier(jour):
     import re as _re
     if not _re.fullmatch(r"\d{4}-\d{2}-\d{2}", jour or "") or jour > (date.today() - timedelta(days=preuve.DELAI_PUBLIC_J)).isoformat():
         return jsonify({"erreur": "Pas encore public"}), 404
+    if not preuve.fichiers_publics():                # 19 nov 2026 (audit) : des prix tires d'eBay : pas publics sans licence
+        return jsonify({"erreur": "Réservé : publié quand nos licences de données le permettront ; l’empreinte du jour est publique"}), 404
     try:
         corps = preuve.lire_jour(jour)
     except OSError:

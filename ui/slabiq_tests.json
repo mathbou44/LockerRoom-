@@ -1,0 +1,96 @@
+{
+ "le": "2026-11-19",
+ "empreinte": "54246fda192e11d2",
+ "regles": {
+  "fixe": 86.0,
+  "encan": 82.0,
+  "prix_min": 30.0
+ },
+ "coupe": "2026-10-19",
+ "revente_des": "2026-10-29",
+ "revente_fin": "2026-11-19",
+ "ventes": 142155,
+ "ventes_total": 416934,
+ "joueurs": 915,
+ "accord": 0.794,
+ "accord_avant": 0.667,
+ "rho": 0.952,
+ "inversions": [],
+ "corrections": 224,
+ "lettres": {
+  "B": {
+   "cartes": 36324,
+   "reventes": 0.093
+  },
+  "B+": {
+   "cartes": 35889,
+   "reventes": 0.258
+  },
+  "E": {
+   "cartes": 11697,
+   "reventes": 0.043
+  },
+  "D": {
+   "cartes": 24451,
+   "reventes": 0.095
+  },
+  "A+": {
+   "cartes": 1485,
+   "reventes": 0.261
+  },
+  "C": {
+   "cartes": 38679,
+   "reventes": 0.114
+  },
+  "A-": {
+   "cartes": 9725,
+   "reventes": 0.207
+  },
+  "A": {
+   "cartes": 10061,
+   "reventes": 0.442
+  }
+ },
+ "pro": {
+  "n": 1226,
+  "garde": 0.703
+ },
+ "pro_avant": {
+  "n": 5665,
+  "garde": 0.548
+ },
+ "defi": {
+  "gagne": 0.774,
+  "egal": 0.107
+ },
+ "x_aplus_e": 6.1,
+ "x_a_e": 10.3,
+ "x_ahaut_e": 9.7,
+ "sim": {
+  "r_sans": -0.0439,
+  "r_avec": 0.111,
+  "bat": 0.958,
+  "ecart": 804,
+  "p10": 251,
+  "p90": 1300,
+  "mois": [
+   "2025-11",
+   "2025-12",
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07",
+   "2026-08",
+   "2026-09",
+   "2026-10"
+  ],
+  "prix": [
+   30.0,
+   150
+  ],
+  "seuil": 86.0
+ }
+}

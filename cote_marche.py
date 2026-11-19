@@ -611,6 +611,14 @@ def blitz_etat():
     b["baseball"] = dict(lire_balayage().get("blitz_bb") or {}, en_cours=_BLITZ_BB["en_cours"], max=blitz_bb_max())
     if b.get("etat") == "en cours" and not b["en_cours"]:
         b["etat"] = "interrompu"                        # le serveur a redemarre : il reprend tout seul (ou bouton Reprendre)
+    # 19 nov 2026 (Mathieu : « voir que ca roule et les credits monter en live ») : l'etat des boutons et les credits
+    b["pause_demandee"] = bool(_BLITZ["en_cours"] and _BLITZ["stop"])
+    b["bb_prio"] = bool(_BB_PRIO[0])
+    try:
+        import vendues
+        b["credits"] = vendues.credits_direct()
+    except Exception:
+        b["credits"] = {}
     return b
 
 

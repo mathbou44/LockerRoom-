@@ -31,6 +31,12 @@ from datetime import date, datetime, timedelta
 
 _verrou = threading.Lock()
 DELAI_PUBLIC_J = 30
+# 19 nov 2026 (audit du site) : les fichiers du jour contiennent des prix tires des ventes eBay (mediane des Young Guns) et les
+# deals du Radar admin (annonces, valeurs, rabais) : pas publics tant que nos licences de donnees ne le permettent pas
+# (licence API eBay §9.5). L'empreinte de chaque jour reste publique et horodatee (rien ne peut etre change apres coup).
+# LR_PREUVE_FICHIERS=1 : les rouvrir (seulement avec l'accord ecrit d'eBay ou une source sous licence).
+def fichiers_publics():
+    return os.environ.get("LR_PREUVE_FICHIERS") == "1"
 HORIZONS = (30, 60, 90)
 BON = ("creux", "creux_fort")
 RABAIS_MIN = 10
@@ -505,5 +511,6 @@ def resultats_garde():
 def public():
     """Ce que tout le monde peut voir : la chaine (empreintes le jour meme) ; les fichiers apres 30 jours."""
     lim = (date.today() - timedelta(days=DELAI_PUBLIC_J)).isoformat()
-    return {"chaine": [{**e, "fichier": e["jour"] <= lim} for e in chaine()], "public_apres_j": DELAI_PUBLIC_J,
+    return {"chaine": [{**e, "fichier": fichiers_publics() and e["jour"] <= lim} for e in chaine()], "public_apres_j": DELAI_PUBLIC_J,
+            "fichiers_publics": fichiers_publics(),
             "resultats": resultats_garde(), "verification": verifier()}
