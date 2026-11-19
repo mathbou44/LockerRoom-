@@ -24,4 +24,22 @@ assert r["ok"] and cote_marche._BLITZ["stop"] and cote_marche._BB_PRIO[0], r
 cote_marche._BLITZ["en_cours"] = False
 api.soldcomps_blitz("arreter_baseball")
 assert cote_marche._BLITZ_BB["stop"]
+# « Baseball maintenant » : le baseball part des que le hockey s'arrete (avant : au prochain tour de la boucle, une fois par heure)
+import time
+parti = []
+cote_marche.blitz_bb = lambda *a, **k: parti.append(1) or {"ok": True}
+cote_marche._BLITZ.update(en_cours=True, stop=False)
+cote_marche._BLITZ_BB.update(en_cours=False, stop=False)
+cote_marche.baseball_maintenant()
+assert cote_marche._BLITZ["stop"] and not parti
+cote_marche._BLITZ["en_cours"] = False                 # le hockey s'est arrete
+for _ in range(50):
+    if parti:
+        break
+    time.sleep(0.1)
+time.sleep(0.3)
+assert parti, "le baseball n'est pas parti"
+# une attente de panne s'interrompt au bouton Arreter
+t0 = time.time(); cote_marche._BLITZ["stop"] = True; cote_marche._dormir(30, cote_marche._BLITZ)
+assert time.time() - t0 < 2
 print("OK test_blitz_baseball")

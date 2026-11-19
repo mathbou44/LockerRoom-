@@ -8978,10 +8978,7 @@ class Api:
         # 19 nov 2026 (Mathieu : « j'ai resume le blitz pour baseball ») : jamais les deux a la fois ; « Baseball maintenant »
         # met le hockey en pause (il reprend ou il etait) et le baseball part au prochain tour de la boucle (une minute)
         if action == "baseball":
-            if cote_marche._BLITZ["en_cours"]:
-                cote_marche._BLITZ["stop"] = True
-            cote_marche._BB_PRIO[0] = True
-            cote_marche._BLITZ_BB["stop"] = False
+            cote_marche.baseball_maintenant()
             return {"ok": True, "baseball": True, **cote_marche.blitz_etat()}
         if action == "arreter_baseball":
             cote_marche._BLITZ_BB["stop"] = True

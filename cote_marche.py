@@ -448,7 +448,14 @@ BB_AVANT_GUERRE = ("t206", "1933 goudey", "1914 cracker jack", "1939 play ball",
                    "t205", "1916 sporting news", "diamond stars")
 _BLITZ_BB = {"en_cours": False, "stop": False}
 _BB_PRIO = [False]                   # le bouton « Baseball maintenant »
-BLITZ_ECHECS_MAX = 8                 # 19 nov 2026 : 8 echecs de suite (environ 25 min) : le blitz s'arrete et dit pourquoi
+BLITZ_ECHECS_MAX = 8
+
+
+def _dormir(s, etat):
+    """19 nov 2026 : une attente (SoldComps en panne) que le bouton Arreter interrompt tout de suite (avant : jusqu'a 5 min)."""
+    fin = time.time() + s
+    while time.time() < fin and not etat.get("stop"):
+        time.sleep(1)                 # 19 nov 2026 : 8 echecs de suite (environ 25 min) : le blitz s'arrete et dit pourquoi
 
 
 def blitz_bb_max():
@@ -498,7 +505,7 @@ def blitz_bb(reprendre=True):
             if echecs >= BLITZ_ECHECS_MAX:
                 break
             _ecrire_bal(d)
-            time.sleep(min(300, 10 * echecs))
+            _dormir(min(300, 10 * echecs), _BLITZ_BB)
             continue
         echecs = 0
         b["requetes"] += 1
@@ -521,6 +528,24 @@ def blitz_bb(reprendre=True):
     b["fini_le"] = datetime.now().isoformat(timespec="seconds")
     _ecrire_bal(d)
     return {"ok": True, **b}
+
+
+def baseball_maintenant():
+    """19 nov 2026 (Mathieu : « ca augmente dans SoldComps mais pas dans notre app » : le baseball attendait le prochain tour de
+    la boucle, une fois par HEURE) : le hockey s'arrete (au plus quelques secondes) et le baseball part tout de suite apres."""
+    _BB_PRIO[0] = True
+    _BLITZ_BB["stop"] = False
+    if _BLITZ["en_cours"]:
+        _BLITZ["stop"] = True
+
+    def attendre():
+        for _ in range(600):                              # 10 minutes au plus
+            if not _BLITZ["en_cours"]:
+                break
+            time.sleep(1)
+        blitz_bb_si_besoin()
+    threading.Thread(target=attendre, daemon=True, name="baseball-maintenant").start()
+    return True
 
 
 def blitz_bb_si_besoin():
@@ -657,7 +682,7 @@ def blitz(max_req=BLITZ_MAX_REQ, reprendre=False):
             if echecs >= BLITZ_ECHECS_MAX:              # 19 nov 2026 : pas sans fin (souvent : plus de credits) ; il s'arrete
                 break
             _ecrire_bal(d)
-            time.sleep(min(300, 10 * echecs))
+            _dormir(min(300, 10 * echecs), _BLITZ)
             continue
         echecs = 0
         b["requetes"] += 1
