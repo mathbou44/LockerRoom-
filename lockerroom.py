@@ -7384,8 +7384,35 @@ class Api:
     _RADAR = {}
     RADAR_GARDE_S = 300
 
+    def _pastilles_radar(self, r):
+        """19 nov 2026 (Mathieu : « comprendre en 1 seconde, visuellement leger ») : deux petites pastilles sur la photo.
+        « Culte » / « Carte cle » (sets tres collectionnes, pour tous) et, admin et Platine, la chance de series de l'equipe
+        (series.py). Ne touche pas au score SlabIQ."""
+        if not isinstance(r, dict):
+            return r
+        try:
+            import sets_cultes
+            import series
+            ser = comps_permis(self)
+            items = [x for k in ("deals", "petits") for x in (r.get(k) or []) if isinstance(x, dict)]
+            items += [x for k in ("pour_toi", "decouvrir", "chauds", "creux", "chasses", "types", "vendeurs", "cibles")
+                      for g in (r.get(k) or []) if isinstance(g, dict) for x in (g.get("annonces") or []) if isinstance(x, dict)]
+            for x in items:
+                j = x.get("joueur_n") or x.get("joueur")
+                hockey = str(x.get("sport") or "hockey") == "hockey"          # les sets cultes et les series : la LNH
+                if "culte" not in x:
+                    x["culte"] = sets_cultes.info(x.get("titre") or "", j) if hockey else None
+                if ser and j and hockey:
+                    x["series"] = series.pour_joueur(j)
+                elif "series" in x:
+                    x.pop("series", None)
+        except Exception as e:
+            print("Pastilles radar : " + repr(e), flush=True)
+        return r
+
     def mes_deals(self, frais=False):
         r = self._filtrer_provenance(self._mes_deals0(frais))
+        r = self._pastilles_radar(r)
         try:
             if not forfaits.est_pro() and not self._est_admin():
                 return self._radar_gratuit(r)

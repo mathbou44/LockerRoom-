@@ -136,7 +136,10 @@ def sorte(titre):
     brut = " " + str(titre or "").lower() + " "
     # 17 nov 2026 (audit : « UD Series 1 Outburst #224 Sandis Vilmanis R/C » note D) : sans les mots « Young Guns », le numero
     # dit si c'est une YG (Series 1 : 201-250, Series 2 : 451-500, Extended : 701-750) quand c'est une recrue Upper Deck
-    if not yg and rc and re.search(r"\bupper deck\b|\bud\b", brut) and not re.search(r"\bsp\b|\bice\b|\bartifacts\b|\bcup\b|\bpremier\b|\bmvp\b|\bo-pee-chee\b|\bopc\b|\bcanvas\b|\bchronology\b|\bsynergy\b|\btrilogy\b|\bultimate\b|\bclear cut\b|\bblack diamond\b|\bcredentials\b|\ballure\b|\bstature\b|\bmetal\b|\bengrained\b|\btim hortons\b|\bpremieres\b|\bauto", brut):
+    # 18 nov 2026 (Mathieu : « Bedard 1st Round Draft a 12 $ note A+ : c'est plus un B+ ») : l'insert 1st Round Draft d'Extended
+    # porte un numero dans la plage des YG (#740) ; ce n'est PAS une YG (nos ventes : Bedard 27 $ contre 254 $ pour sa YG)
+    frd = bool(re.search(r"\b(?:1st|first) round draft\b|\bfrd\b", brut))
+    if not yg and not frd and rc and re.search(r"\bupper deck\b|\bud\b", brut) and not re.search(r"\bsp\b|\bice\b|\bartifacts\b|\bcup\b|\bpremier\b|\bmvp\b|\bo-pee-chee\b|\bopc\b|\bcanvas\b|\bchronology\b|\bsynergy\b|\btrilogy\b|\bultimate\b|\bclear cut\b|\bblack diamond\b|\bcredentials\b|\ballure\b|\bstature\b|\bmetal\b|\bengrained\b|\btim hortons\b|\bpremieres\b|\bauto", brut):
         mn = re.search(r"#\s*(\d{3})\b", brut)
         no = int(mn.group(1)) if mn else None
         if no and ((re.search(r"\bseries (?:1|one|i)\b", brut) and 201 <= no <= 250) or (re.search(r"\bseries (?:2|two|ii)\b", brut) and 451 <= no <= 500)
@@ -185,6 +188,8 @@ def sorte(titre):
         c.append(("A", "bd_gems"))                    # 18 nov (Mathieu, apres la mesure : se vend comme une A+ ; A- -> A)
     if INSERTS_A.search(t):
         c.append(("A", "insert_a"))
+    if frd and not yg:
+        c.append(("B", "frd"))                        # joueur A+ (Bedard) -> B+ ; joueur moyen -> C
     if FLUO.search(t):
         c.append(("D", "fluorescence"))               # 18 nov (Mathieu : « ca vaut pas grand-chose » ; mesure E ; B+ -> D)
     if auto:

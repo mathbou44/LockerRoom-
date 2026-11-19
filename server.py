@@ -1754,6 +1754,12 @@ def _valeurs_auto():
             sorties.rafraichir_si_besoin()
         except Exception as e:
             print("Sorties : " + str(e), flush=True)
+        try:                                    # 19 nov 2026 - la chance de series de chaque equipe (12 h) et les sets cultes (semaine)
+            import series as _se_, sets_cultes as _sc_
+            _se_.rafraichir_si_besoin()
+            _sc_.recalculer_si_besoin()
+        except Exception as e:
+            print("Series / sets cultes : " + str(e), flush=True)
         try:                                    # 18 nov 2026 - l'audit Pro : les annonces Pro contre leurs comps, en coulisse (1 fois/semaine)
             if lockerroom.Api.audit_pro_si_besoin():
                 print("Audit Pro : passe lancee", flush=True)
