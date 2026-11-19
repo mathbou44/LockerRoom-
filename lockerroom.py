@@ -7538,8 +7538,9 @@ class Api:
             x = dict(x)
             # une recherche choisie : toutes ses cartes du bareme (B et plus, ou la note minimum choisie ; jamais une base,
             # jamais sous 10 $ ou son minimum) ; chacune avec sa lettre
-            iqm = 65 if _iq is None else float(_iq or 0)
-            if x.get("score") is None or x["score"] < iqm or x.get("sorte") == "D" or (x.get("total") or 0) < (_pm or 10):
+            # 19 nov 2026 (Mathieu, une Sittler Hockey Heroes Clear Cut a 7 $ : « pas une carte recherchee ca ») : la recherche suit
+            # EXACTEMENT le bareme du Radar (A- et plus, A et plus a prix fixe sans comps, 30 $ et plus ou le minimum choisi)
+            if not Api._radar_digne(x, _pm, _iq, not cp):
                 continue
             try:
                 self._frais_reels(x, pays)

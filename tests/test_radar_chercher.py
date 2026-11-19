@@ -39,12 +39,16 @@ lockerroom.comps_permis = lambda *a, **k: False            # vue Pro
 
 r = api.radar_chercher("gridin")
 ids = sorted(x["item_id"] for x in r["annonces"])
-assert r["ok"] and ids == ["1", "2", "4"], r               # une recherche choisie : tout le bareme (B et plus) ; la base a 4 $ non
+assert r["ok"] and ids == ["1", "4"], r                    # le bareme du Radar : la base a 4 $ non, le B a prix fixe non (Pro : A et plus)
 assert all(x.get("recherche") and x.get("score") for x in r["annonces"])
 assert sorted(ajoutes) == ["1", "4"], ajoutes              # gardees pour tout le monde (« A la une »)
 r2 = api.radar_chercher("  Gridin ")                       # un autre compte, la meme recherche : aucun appel
-assert appels == ["gridin"] and len(r2["annonces"]) == 3, appels
+assert appels == ["gridin"] and len(r2["annonces"]) == 2, appels
 assert api.radar_chercher("gr")["annonces"] == [] and appels == ["gridin"]     # trop court : rien
+# une carte a 7 $ (meme notee A) : jamais (30 $ et plus, comme le Radar)
+T["5"] = ("2023-24 Upper Deck Extended Darryl Sittler Hockey Heroes Clear Cut #HH-35", 7.0, 90, "A")
+lockerroom.Api._RECH.clear()
+assert "5" not in [x["item_id"] for x in api.radar_chercher("sittler")["annonces"]]
 forfaits.est_pro = lambda *a, **k: False
 assert api.radar_chercher("gridin").get("pro")             # gratuit : non
 print("OK test_radar_chercher")
