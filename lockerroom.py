@@ -7394,7 +7394,7 @@ class Api:
             import sets_cultes
             import series
             ser = comps_permis(self)
-            items = [x for k in ("deals", "petits") for x in (r.get(k) or []) if isinstance(x, dict)]
+            items = [x for k in ("deals", "petits", "suivis", "pres") for x in (r.get(k) or []) if isinstance(x, dict)]
             items += [x for k in ("pour_toi", "decouvrir", "chauds", "creux", "chasses", "types", "vendeurs", "cibles")
                       for g in (r.get(k) or []) if isinstance(g, dict) for x in (g.get("annonces") or []) if isinstance(x, dict)]
             for x in items:
@@ -11293,12 +11293,12 @@ class Api:
         # 31 oct 2026 (Mathieu : « les deals n'apparaissent pas au fur et a mesure, ca reste a 35 ») : un encan d'un gros vendeur
         # qui vient de recevoir sa valeur et qui est a 70 % ou moins de celle-ci est un deal : il compte dans le nombre
         n_su = sum(1 for x in suivis if x.get("valeur") and (x.get("total") or 0) <= _dl.prix_max(x["valeur"], taxe=_dl.taxe_de(x)))
-        return {"ok": True, "deals": lst[:240], "n": n + n_su, "n_encans_valorises": n_su, "pro": pro, "limite": None if pro else forfaits.LIMITES["deals"],
+        return self._pastilles_radar({"ok": True, "deals": lst[:240], "n": n + n_su, "n_encans_valorises": n_su, "pro": pro, "limite": None if pro else forfaits.LIMITES["deals"],
                 "suivis": suivis,
                 "pres": pres, "secours": secours, "secours_le": (dd.get("secours") or {}).get("le") if secours else None,
                 "sports": par_sport, "pays_dispo": par_pays, "maj": dd.get("maj"), "ebay": ebay_compte.statut().get("cles_ok"),
                 "diag": _d.diagnostic(dd), "total": len(tout), "bassin": dd.get("bassin"), "nb_flux": len(_d.flux_liste()),
-                "watch": self._watch_ids(), "caches_chance": n_caches[0] if adm_ else None}
+                "watch": self._watch_ids(), "caches_chance": n_caches[0] if adm_ else None})
 
     def vendeurs_rapport(self):
         """12 nov 2026 (Mathieu : « un rapport des vendeurs avec lesquels les ventes finissent le plus sous la mediane des last

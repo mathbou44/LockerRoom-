@@ -37,3 +37,16 @@ assert I("2023-24 Upper Deck Extended 1st Round Draft Connor Bedard #740", "Conn
 assert I("2015-16 Upper Deck The Cup Connor McDavid Rookie Patch Auto /99 RPA", "Connor McDavid")["cle"] is True
 assert I("2022-23 Upper Deck Series 1 Connor McDavid #1", "Connor McDavid") is None
 print("OK test_series_cultes")
+# 5) les pastilles arrivent dans la liste du Radar (deals_liste ET mes_deals passent par _pastilles_radar)
+import lockerroom
+series._ecrire({"le": 0, "phase": "saison", "equipes": {"SJS": {"p": 0.15}}, "joueurs": {"michael misa": "SJS"}})
+api = lockerroom.Api()
+r = api._pastilles_radar({"deals": [{"titre": "2020-21 Upper Deck The Cup Tim Stutzle Rookie Patch Auto /249", "joueur_n": "Tim Stutzle"},
+                                    {"titre": "2025-26 Metal Universe PMG Blue /50 Michael Misa", "joueur_n": "Michael Misa"}], "suivis": []})
+assert r["deals"][0]["culte"]["set"] == "2020-21 The Cup", r["deals"][0]
+assert r["deals"][1]["culte"] is None
+if lockerroom.comps_permis(api):
+    assert r["deals"][1]["series"]["eq"] == "SJS", r["deals"][1]
+import inspect
+assert "_pastilles_radar(" in inspect.getsource(lockerroom.Api.deals_liste)
+print("OK pastilles radar")
