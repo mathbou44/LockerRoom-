@@ -37,7 +37,8 @@ LR = os.path.join(RACINE, "lrtest") if os.path.exists(os.path.join(RACINE, "lrte
 TRAV = "/tmp/claude-0/ts"
 BASE_DONNEES = os.environ.get("LR_TESTS_DONNEES") or "/tmp/claude-0/nuit/bal/d_sans"   # l'indice des joueurs (stats publiques), sans correction automatique
 VENTES_DEFAUT = "/mnt/user-data/uploads/Downloads/ventes_hockey.tsv.gz"
-G = re.compile(r"\b(psa|bgs|sgc|cgc)\s*(?:gem\s*(?:mint|mt)?\s*)?(\d+(?:\.\d)?)\b", re.I)
+# 19 nov 2026 : toutes les compagnies (une KSA 10 n'est plus melangee avec la meme carte non gradee)
+G = re.compile(r"\b(psa|bgs|sgc|cgc|tag|ksa|hga|beckett|bccg|csg|gma|isa|ags|mnt)\s*-?\s*(?:gem\s*(?:mint|mt)?\s*|mint\s*|pristine\s*)?(\d+(?:\.\d)?)\b", re.I)
 FICHIERS_DECISION = ("bareme_iq.py", "score_slab.py", "validation_iq.py", "vitrine.py", "sets_cultes.py")
 
 
@@ -114,6 +115,7 @@ def _annoter_ici(rows_pkl, sortie, apprendre=None, mesurer=None):
         info["mesure"] = {k: m[k] for k in ("ventes", "rho", "accord_global", "inversions")}
     import cartes_match
     import indice_joueurs
+    import score_slab
     I = (indice_joueurs.lire() or {}).get("indice") or {}
     Il = {k.lower(): x for k, x in I.items()}
     memo, out = {}, []
@@ -133,6 +135,11 @@ def _annoter_ici(rows_pkl, sortie, apprendre=None, mesurer=None):
         nj, lj, src, connu = memo[nom]
         g = G.search(t)
         s_ = bq.note_finale(bq.NOTE[so], nj)
+        # 19 nov 2026 : comme l'app (score_slab.plafond_grade) : une carte gradee ne depasse pas la lettre de sa compagnie
+        gd = cartes_match._decoder_memo(t).get("grade")
+        pg = score_slab.plafond_grade(gd["cie"]) if gd else None
+        if pg is not None and s_ > pg:
+            s_ = float(pg)
         out.append(dict(k=v.cle_carte(t), gr=float(g.group(2)) if g else 0.0, p=p, j=j, so=bq.NOTE[so], nj=nj, ra=ra, nom=nom, src=src,
                         t=t[:120], fin=bq.lettre(s_), s=s_, connu=connu))
     info["joueurs"] = len({x["nom"] for x in out if x["connu"]})

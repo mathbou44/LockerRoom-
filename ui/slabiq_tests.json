@@ -1,6 +1,6 @@
 {
  "le": "2026-11-19",
- "empreinte": "54246fda192e11d2",
+ "empreinte": "01c296e9d88dcd0b",
  "regles": {
   "fixe": 86.0,
   "encan": 82.0,
@@ -12,67 +12,72 @@
  "ventes": 142155,
  "ventes_total": 416934,
  "joueurs": 915,
- "accord": 0.794,
+ "accord": 0.802,
  "accord_avant": 0.667,
  "rho": 0.952,
- "inversions": [],
+ "inversions": [
+  [
+   "B",
+   "C"
+  ]
+ ],
  "corrections": 224,
  "lettres": {
-  "B": {
-   "cartes": 36324,
-   "reventes": 0.093
+  "E": {
+   "cartes": 11721,
+   "reventes": 0.042
   },
   "B+": {
-   "cartes": 35889,
-   "reventes": 0.258
-  },
-  "E": {
-   "cartes": 11697,
-   "reventes": 0.043
-  },
-  "D": {
-   "cartes": 24451,
-   "reventes": 0.095
+   "cartes": 35936,
+   "reventes": 0.255
   },
   "A+": {
-   "cartes": 1485,
-   "reventes": 0.261
+   "cartes": 1296,
+   "reventes": 0.262
   },
   "C": {
-   "cartes": 38679,
-   "reventes": 0.114
+   "cartes": 38753,
+   "reventes": 0.111
+  },
+  "B": {
+   "cartes": 36346,
+   "reventes": 0.092
   },
   "A-": {
-   "cartes": 9725,
-   "reventes": 0.207
+   "cartes": 9756,
+   "reventes": 0.209
+  },
+  "D": {
+   "cartes": 24496,
+   "reventes": 0.094
   },
   "A": {
-   "cartes": 10061,
-   "reventes": 0.442
+   "cartes": 10286,
+   "reventes": 0.425
   }
  },
  "pro": {
-  "n": 1226,
-  "garde": 0.703
+  "n": 1230,
+  "garde": 0.68
  },
  "pro_avant": {
-  "n": 5665,
-  "garde": 0.548
+  "n": 5668,
+  "garde": 0.538
  },
  "defi": {
-  "gagne": 0.774,
-  "egal": 0.107
+  "gagne": 0.803,
+  "egal": 0.094
  },
- "x_aplus_e": 6.1,
- "x_a_e": 10.3,
  "x_ahaut_e": 9.7,
+ "x_aplus_e": 6.2,
+ "x_a_e": 10.1,
  "sim": {
-  "r_sans": -0.0439,
-  "r_avec": 0.111,
-  "bat": 0.958,
-  "ecart": 804,
-  "p10": 251,
-  "p90": 1300,
+  "r_sans": -0.045,
+  "r_avec": 0.1002,
+  "bat": 0.963,
+  "ecart": 818,
+  "p10": 257,
+  "p90": 1283,
   "mois": [
    "2025-11",
    "2025-12",

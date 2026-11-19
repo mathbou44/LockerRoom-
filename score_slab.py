@@ -13,6 +13,7 @@ Aucun prix n'entre dans le calcul.
 10 nov 2026 : quand score_modele.npz est la, le score vient du modele appris (precision 0,908 / confiance 0,905 sur 32 826
 ventes jamais vues) ; ce melange simple reste en secours.
 """
+import os
 import re
 
 POIDS_JOUEUR = 0.55
@@ -265,6 +266,11 @@ def score(titre, joueur=None):
         pe = parametres().get("plancher_evergreen")
         if pe:
             total = max(total, float(pe))
+    # 19 nov 2026 (Mathieu : « PSA c'est A+, TAG et Beckett A, SGC et CGC B+, le reste B, dans le monde des slabs ») : une carte
+    # gradee ne depasse pas la lettre de sa compagnie (une KSA 10 de Sakic reste B) ; une carte non gradee : rien ne change
+    pg = plafond_grade(c.get("grade"))
+    if total is not None and pg is not None and total > pg:
+        total = float(pg)
     pil = list((ij or {}).get("pastilles") or [])
     mb = None
     try:                                   # 16 nov 2026 : un joueur cle au marche bas (verifie) : une pastille, l'ecart en %
@@ -281,8 +287,25 @@ def score(titre, joueur=None):
             "criteres": {k: round(float(v)) for k, v in (((ij or {}).get("criteres")) or {}).items()
                          if k in ("forme", "demande", "buzz", "notoriete", "marche", "communaute", "legende", "ascension", "recrue") and v is not None},
             **({"evergreen": {"score": ev["score"], "raisons": ev["raisons"]}} if ev and ev.get("evergreen") else {}),
-            "bareme": {"sorte": so, "sorte_raison": so_r, "joueur": lj, "joueur_note": round(nj, 1), "joueur_source": src},
+            "bareme": {"sorte": so, "sorte_raison": so_r, "joueur": lj, "joueur_note": round(nj, 1), "joueur_source": src,
+                       **({"plafond_grade": pg} if pg is not None and total is not None and total >= pg else {})},
             **({"marche": {"ecart_pct": mb.get("ecart_pct")}} if mb else {}), **({"connaissance": k} if k else {})}
+
+
+# la lettre maximale d'une carte gradee, selon la compagnie. Mesure du 19 nov 2026 : la regle complete (TAG/Beckett A, SGC/CGC B+,
+# les autres B) fait tomber la simulation d'un an de +10,0 % a +5,3 % sur les ventes jamais vues (les KSA et SGC achetees moins
+# cher se revendent souvent avec profit : le prix les escompte deja, 40 % d'une PSA pour une KSA). On garde donc seulement :
+# A+ = PSA ; toute autre compagnie au plus A (91). Le reste passe par la tuile « La gradation » (ce que le marche paie).
+PLAFOND_GRADE = {"psa": None}
+PLAFOND_GRADE_AUTRES = 91
+
+
+def plafond_grade(grade):
+    """grade = « PSA 10 », « KSA 9 »... (carte()["grade"]) -> le score maximal, ou None (pas gradee, ou PSA)."""
+    if not grade or os.environ.get("LR_AB_SANS_PLAFOND"):
+        return None
+    cie = str(grade).split()[0].lower()
+    return PLAFOND_GRADE.get(cie, PLAFOND_GRADE_AUTRES) if cie in PLAFOND_GRADE else PLAFOND_GRADE_AUTRES
 
 
 def premium(c):

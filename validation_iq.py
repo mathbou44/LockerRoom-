@@ -414,6 +414,9 @@ def iterer(rows=None):
     try:
         import bareme_iq
         bareme_iq._APPRIS["t"] = 0.0
+        # 19 nov 2026 : les corrections automatiques aussi, tout de suite (sans ca, la mesure suivante pouvait garder les
+        # anciennes cotes jusqu'a 30 s : le resultat dependait de la vitesse de la machine)
+        bareme_iq._AUTO["t"] = 0.0
     except Exception:
         pass
     return {"ok": True, "ventes": m["ventes"], "accord": m["accord_global"], "rho": m["rho"], "inversions": m["inversions"],
