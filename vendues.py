@@ -730,7 +730,9 @@ def _appel(q, site, attendre=True, usage=None, compte=None, delai=25):
         _PANNE_N[0] = 0                         # ca repond : fin de la panne
         return d, None
     except urllib.error.HTTPError as e:
-        err = {401: "clé SoldComps refusée", 429: "quota SoldComps atteint"}.get(e.code, f"SoldComps HTTP {e.code}")
+        # 19 nov 2026 (Mathieu : « ca marque encore 0 credit ») : 402 = plus de credits : le blitz restait « en cours » a
+        # reessayer sans fin (et le baseball attendait derriere)
+        err = {401: "clé SoldComps refusée", 402: "quota SoldComps atteint : plus de crédits", 429: "quota SoldComps atteint"}.get(e.code, f"SoldComps HTTP {e.code}")
     except Exception as e:
         err = "SoldComps injoignable (" + type(e).__name__ + ")"
     try:

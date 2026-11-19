@@ -447,6 +447,8 @@ BB_VARIANTES = ("bowman chrome", "1st bowman auto", "topps chrome rookie", "psa 
 BB_AVANT_GUERRE = ("t206", "1933 goudey", "1914 cracker jack", "1939 play ball", "1934 goudey", "1941 play ball", "e90-1",
                    "t205", "1916 sporting news", "diamond stars")
 _BLITZ_BB = {"en_cours": False, "stop": False}
+_BB_PRIO = [False]                   # le bouton « Baseball maintenant »
+BLITZ_ECHECS_MAX = 8                 # 19 nov 2026 : 8 echecs de suite (environ 25 min) : le blitz s'arrete et dit pourquoi
 
 
 def blitz_bb_max():
@@ -493,6 +495,8 @@ def blitz_bb(reprendre=True):
             if "quota" in err or "refusée" in err:
                 break
             echecs += 1
+            if echecs >= BLITZ_ECHECS_MAX:
+                break
             _ecrire_bal(d)
             time.sleep(min(300, 10 * echecs))
             continue
@@ -527,6 +531,13 @@ def blitz_bb_si_besoin():
     if (d.get("blitz") or {}).get("etat") == "en cours":
         return None                                      # le hockey d'abord
     bb = d.get("blitz_bb") or {}
+    if "quota" in str(bb.get("erreur") or "") and bb.get("fini_le") and not _BB_PRIO[0]:
+        try:                                             # plus de credits : il reessaie aux 6 h (ou tout de suite au bouton)
+            if (datetime.now() - datetime.fromisoformat(bb["fini_le"])).total_seconds() < 6 * 3600:
+                return None
+        except ValueError:
+            pass
+    _BB_PRIO[0] = False
     if bb.get("etat") == "terminé" and (bb.get("pos", 0) >= bb.get("total", 1) or bb.get("requetes", 0) >= blitz_bb_max()):
         return None                                      # fini (monter LR_BLITZ_BB_MAX le relance la ou il etait)
     _BLITZ_BB.update(en_cours=True, stop=False)
@@ -635,6 +646,8 @@ def blitz(max_req=BLITZ_MAX_REQ, reprendre=False):
             if "quota" in err or "refusée" in err:
                 break                                   # credits epuises ou cle refusee : on arrete
             echecs += 1                                 # une panne (503...) : on attend de plus en plus, puis on REESSAIE la meme
+            if echecs >= BLITZ_ECHECS_MAX:              # 19 nov 2026 : pas sans fin (souvent : plus de credits) ; il s'arrete
+                break
             _ecrire_bal(d)
             time.sleep(min(300, 10 * echecs))
             continue

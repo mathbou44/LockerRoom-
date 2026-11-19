@@ -107,6 +107,12 @@ SEMIS["suivi"] = [
     ("sv_defi", "Jouer le défi SlabIQ 2-3 fois au cell", "Page /slabiq : fluidité, lisibilité, bouton « Rejouer ».", 3, None, None),
     ("sv_baseball", "Vérifier que le blitz baseball se remplit", "Entraîner SlabIQ → bandeau du blitz : des ventes de baseball doivent apparaître.", 3, None, None),
 ]
+# 19 nov 2026 (Mathieu : « aller chercher les encheres de Fanatics Collect aussi ») : leurs conditions interdisent l'extraction
+# de leurs donnees ; on leur demande une entente. Un 2e semis (le 1er des licences est deja fait) range dans « Licences ».
+SEMIS["licences_fc"] = [
+    ("lic_fc", "Demander à Fanatics Collect une entente pour montrer leurs enchères", "Leurs conditions interdisent d'extraire leurs données : il faut leur accord écrit (API ou flux des lots Weekly et Premier, affichage dans l'app, affiliation). En attendant : un bouton « Fanatics Collect » ouvre leurs enchères de la semaine.", 2, "fc", "https://help.fanaticscollect.com/hc/en-us/articles/18437607549853-Contact-Us"),
+]
+SEMIS_PROJET = {"licences_fc": "licences"}
 PROJETS = {"licences": "Licences de données", "lancement": "Lancement", "general": "Général", "suivi": "Suivi"}
 
 
@@ -127,7 +133,7 @@ def _semer(cur):
             continue
         for tid, titre, note, prio, modele, lien in items:
             if not any(t.get("id") == tid for t in l):
-                l.append({"id": tid, "titre": titre, "note": note, "prio": prio, "projet": projet, "etat": "a_faire",
+                l.append({"id": tid, "titre": titre, "note": note, "prio": prio, "projet": SEMIS_PROJET.get(projet, projet), "etat": "a_faire",
                           "modele": modele, "lien": lien, "cree_le": maint, "echeance": None, "fait_le": None})
         vus.add(projet)
     cur["semis"] = sorted(vus)
