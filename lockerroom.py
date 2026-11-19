@@ -1984,8 +1984,24 @@ class Api:
     def deals_encans_rafraichir(self, n=80):
         """19 nov 2026 (Mathieu : « un bouton pour forcer le refresh des prix des encheres ») : admin, relit sur eBay la mise
         actuelle de chaque encan du Radar (les plus proches de la fin d'abord) ; une mise qui depasse la mise max sort des deals."""
-        if not self._est_admin():
-            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        # 19 nov 2026 (Mathieu : « aucun bouton refresh auction dans Platine ») : admin ET Platine (les comps) ; une relecture
+        # sert tout le monde pendant ENC_PAUSE_S (jamais deux fois les memes appels eBay coup sur coup)
+        if not comps_permis(self):
+            return {"ok": False, "erreur": "Réservé à Platine"}
+        with Api._ENC_VERROU:
+            d0 = Api._ENC_DERNIER
+            if d0 and time.time() - d0[0] < Api.ENC_PAUSE_S:
+                return {**d0[1], "deja": True}
+            r = self._deals_encans_rafraichir0(n)
+            if r.get("ok"):
+                Api._ENC_DERNIER = (time.time(), r)
+            return r
+
+    ENC_PAUSE_S = 120
+    _ENC_DERNIER = None
+    _ENC_VERROU = threading.Lock()
+
+    def _deals_encans_rafraichir0(self, n=80):
         import deals as _d
         from concurrent.futures import ThreadPoolExecutor
         maint = time.time()
@@ -7460,6 +7476,87 @@ class Api:
         except Exception as e:
             print("Radar gratuit : " + repr(e), flush=True)
         return r
+
+    # 19 nov 2026 (Mathieu : « quand je cherche Gridin dans le Radar je ne trouve rien, mais sur eBay oui ; ca doit etre le cas
+    # de plusieurs joueurs » ; « si l'utilisateur cherche un joueur, toutes ses cartes qui entrent dans notre bareme doivent
+    # sortir cotees et etre enregistrees pour les autres utilisateurs, pour ne pas payer deux fois les credits ») : la
+    # recherche du Radar ne filtre plus seulement les cartes deja chargees ; elle cherche aussi sur eBay (prix fixe et encans),
+    # note chaque carte (SlabIQ) et garde ce qui passe le bareme du Radar. Une recherche sert tout le monde : la reponse
+    # d'eBay est dans le cache partage (appels_ebay, des heures) et la liste notee reste RECH_S en memoire ; les cartes A et
+    # A+ entrent dans la vitrine (« A la une » de tous). Admin et Platine : la valeur des ventes deja en cache (aucun credit).
+    RECH_S = 1800
+    _RECH = {}
+    _RECH_VERROU = threading.Lock()
+
+    def radar_chercher(self, q):
+        q = re.sub(r"\s+", " ", str(q or "")).strip()[:60]
+        if len(re.sub(r"[^\w]", "", q)) < 3:
+            return {"ok": True, "q": q, "annonces": []}
+        try:
+            permis = forfaits.est_pro() or self._est_admin()
+        except Exception:
+            permis = False
+        if not permis:
+            return {"ok": False, "pro": True, "q": q, "annonces": []}
+        pays = self._pays_radar()
+        k = (" ".join(unicodedata.normalize("NFKD", q).encode("ascii", "ignore").decode().lower().split()), pays)
+        e = Api._RECH.get(k)
+        if e and time.time() - e[0] < Api.RECH_S:
+            base = e[1]
+        else:
+            try:
+                base = self._radar_annonces(q, None, None, None, limite=300)
+            except Exception as ex:
+                print("Recherche Radar : " + repr(ex)[:160], flush=True)
+                return {"ok": False, "q": q, "annonces": [], "erreur": "eBay ne répond pas en ce moment"}
+            for x in base:                       # le joueur se lit dans le titre (« gridin » -> Matvei Gridin) : la bonne note
+                x.pop("joueur", None)
+            try:
+                score_slab.annoter_lot(base)
+            except Exception as ex:
+                print("Recherche Radar (notes) : " + repr(ex)[:120], flush=True)
+            try:
+                import vitrine
+                vitrine.ajouter([dict(x) for x in base])
+            except Exception as ex:
+                print("Recherche Radar (vitrine) : " + repr(ex)[:120], flush=True)
+            with Api._RECH_VERROU:
+                if len(Api._RECH) > 400:
+                    for z in sorted(Api._RECH, key=lambda z: Api._RECH[z][0])[:200]:
+                        Api._RECH.pop(z, None)
+                Api._RECH[k] = (time.time(), base)
+        prof = {}
+        try:
+            prof = self.deals_profil_lire() or {}
+        except Exception:
+            pass
+        _pm = _float(prof.get("prix_min")) if isinstance(prof, dict) else None
+        _iq = prof.get("iq_min") if isinstance(prof, dict) else None
+        cp = comps_permis(self)
+        l = []
+        for x in base:
+            x = dict(x)
+            # une recherche choisie : toutes ses cartes du bareme (B et plus, ou la note minimum choisie ; jamais une base,
+            # jamais sous 10 $ ou son minimum) ; chacune avec sa lettre
+            iqm = 65 if _iq is None else float(_iq or 0)
+            if x.get("score") is None or x["score"] < iqm or x.get("sorte") == "D" or (x.get("total") or 0) < (_pm or 10):
+                continue
+            try:
+                self._frais_reels(x, pays)
+            except Exception:
+                pass
+            if cp:
+                v = self._valeur_en_cache(x)
+                if v:
+                    x["valeur"], x["n"] = round(v[0], 2), v[1]
+                    if x.get("total"):
+                        x["rabais"] = round(100 * (1 - x["total"] / v[0]))
+            x["recherche"] = True
+            x.setdefault("joueur_n", x.get("joueur"))
+            l.append(x)
+        l.sort(key=lambda x: (-(x.get("score") or 0), 0 if x.get("encan") else 1, str(x.get("fin") or "")))
+        r = self._pastilles_radar({"ok": True, "q": q, "a_la_une": l})
+        return {"ok": True, "q": q, "annonces": r.get("a_la_une") or [], "trouvees": len(base)}
 
     # 13 nov 2026 (Mathieu : « limiter le Radar en mode gratuit pour donner envie d'aller Pro ; le gratuit doit donner un
     # accrochage et ne pas vraiment laisser le choix ») : en Gratuit (apres l'essai), le Radar trouve TOUT comme en Pro, mais

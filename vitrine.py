@@ -76,7 +76,7 @@ def ajouter(annonces):
             if not isinstance(a, dict) or not a.get("item_id") or not a.get("titre"):
                 continue
             k = str(a["item_id"])
-            tot = round(float(a.get("prix_cad") or 0) + float(a.get("port_cad") or 0), 2)
+            tot = round(float(a.get("total") or 0) or (float(a.get("prix_cad") or 0) + float(a.get("port_cad") or 0)), 2)
             if k in P:
                 if P[k] is not None:
                     P[k].update({c: a.get(c) for c in ("prix_cad", "port_cad", "mises", "fin") if a.get(c) is not None}, total=tot, vu=maint)

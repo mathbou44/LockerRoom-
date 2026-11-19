@@ -18,4 +18,12 @@ r = api.deals_encans_rafraichir()
 assert r["ok"] and r["encans"] == 2 and r["lus"] == 2 and r["retires"] == 1, r
 L = {x["item_id"]: x for x in deals.lire()["deals"]}
 assert L["A1"]["total"] == 65.0 and "A2" not in L and "F1" in L, L
+# une 2e relecture tout de suite (un autre compte Platine) : la meme reponse, aucun appel eBay de plus
+appels = []
+ebay_compte.article = lambda iid, frais=False: appels.append(iid) or {"item_id": iid, "prix_cad": 61.0, "port_cad": 5.0, "mises": 4, "fin": fin, "encan": True}
+r2 = api.deals_encans_rafraichir()
+assert r2["ok"] and r2.get("deja") and not appels, (r2, appels)
+lockerroom.Api._ENC_DERNIER = None
+r3 = api.deals_encans_rafraichir()
+assert r3["ok"] and appels == ["A1"], (r3, appels)
 print("OK test_encans_refresh")
