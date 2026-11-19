@@ -23,7 +23,7 @@ noms = [x["nom"] for x in L]
 assert "Steve Yzerman" in noms and "Joe Quatrieme" not in noms, L
 
 # 2. l'indice : chaque sorte contre SA normale (une Young Guns et une Kaboom se comparent a elles-memes)
-types_cartes.type_de = lambda t: ("kaboom|r" if "kaboom" in t.lower() else "young_guns|r")
+types_cartes.type_de = lambda t: ("kaboom|r" if "kaboom" in t.lower() else "canvas|r" if "canvas" in t.lower() else "young_guns|r")
 random.seed(3)
 auj = date(2026, 11, 16)
 J = lambda n: (auj - timedelta(days=n)).isoformat()
@@ -42,6 +42,7 @@ def ventes_joueur(nom, creux_les, profondeur=0.75, rebond=True):
         v.append((nom, "2023-24 Upper Deck Young Guns " + nom, round(100 * f * random.uniform(0.92, 1.08), 2), J(d)))
         if d % 4 == 0:
             v.append((nom, "Upper Deck Kaboom " + nom, round(1000 * f * random.uniform(0.92, 1.08), 2), J(d)))
+            v.append((nom, "Upper Deck Canvas " + nom, round(40 * f * random.uniform(0.92, 1.08), 2), J(d)))     # 3 sortes
     return v
 
 
@@ -49,7 +50,7 @@ V = []
 liste = []
 for i in range(12):
     nom = f"Joueur Cle{i}"
-    V += ventes_joueur(nom, creux_les=[300 - 7 * i, 160 - 5 * i] + ([7] if i < 3 else []))
+    V += ventes_joueur(nom, creux_les=[300 - 7 * i, 160 - 5 * i] + ([13] if i < 3 else []))
     liste.append({"nom": nom, "score": 70, "raisons": []})
 S = mc.series(V, [x["nom"] for x in liste])
 ix, n = mc.indice_a(S["Joueur Cle0"], auj.toordinal())
@@ -79,3 +80,16 @@ assert not d2["verif"]["actif"], d2["verif"]
 mc.ecrire(d2)
 assert mc.bas("Joueur Bas0") is None
 print("MARCHE CLES OK", {k: v[k] for k in ("seuil", "taux", "base", "n", "gain_med")})
+
+# 5. 19 nov 2026 (« Marche bas » : Sittler -84 %) : un vendeur vide des dizaines de communes a 1 $ le meme jour, et des cartes a
+# plusieurs joueurs : sous PRIX_MIN, ou une carte de plusieurs joueurs, ca ne compte pas ; une sorte = une voix
+V3 = ventes_joueur("Joueur Vieux", creux_les=[])
+V3 += [("Joueur Vieux", f"1983-84 O-Pee-Chee Joueur Vieux #{k}", 1.0, J(3)) for k in range(40)]
+V3 += [("Joueur Vieux", f"1978-79 O-Pee-Chee Joueur Vieux/Autre Gars/Troisieme Gars #{k}", 9.0, J(2)) for k in range(5)]
+S3 = mc.series(V3, ["Joueur Vieux"])
+ix3, _ = mc.indice_a(S3["Joueur Vieux"], auj.toordinal())
+assert ix3 is not None and 0.9 < ix3 < 1.1, ix3
+# la meme vente vue deux fois (meme titre, meme jour) ne compte qu'une fois
+S4 = mc.series([("A B", "Carte A B", 10.0, J(1)), ("A B", "Carte A B", 10.02, J(1))], ["A B"])
+assert sum(len(l) for l in S4["A B"].values()) == 1
+print("OK test_marche_cles (lot de communes)")

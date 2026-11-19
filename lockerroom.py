@@ -1673,7 +1673,7 @@ class Api:
         return self.deals_profil_lire()
 
     DEAL_SCORE_MIN = int(os.environ.get("LR_DEAL_SCORE_MIN") or 35)
-    DEAL_ESTIMES = ("approx", "autre_saison", "unique")
+    DEAL_ESTIMES = ("approx", "autre_saison", "unique", "autre_note")
 
     @staticmethod
     def _deals_qualite(items, delai_s=2.5):
@@ -6798,7 +6798,7 @@ class Api:
                 pass
 
         def essai(p):
-            return _d.valeur_autre_saison(a, p, cib) or _d.valeur_unique(a, p, cib) or _d.valeur_approx(a, p, cib)
+            return _d.valeur_autre_saison(a, p, cib) or _d.valeur_unique(a, p, cib) or _d.valeur_autre_note(a, p, cib) or _d.valeur_approx(a, p, cib)
         va = essai(pool)
         if not va:
             q = cartes_match.requete_ebay(_d.cible_large(dict(cib, inscr=False) if cib.get("inscr") else cib))

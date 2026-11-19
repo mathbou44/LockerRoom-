@@ -62,7 +62,11 @@ PARALLELES = [
     "artist proof", "premier", "jumbo", "fluorescent", "galactic", "nebula", "ice",
     "checklist",                 # 31 oct 2026 : la « Young Guns Checklist » Schaefer / Misa (15 $) n'est pas sa Young Guns (222 $)
 ]
-_PAR_TOK = [(p, re.findall(r"[a-z0-9]+", p)[0]) for p in PARALLELES]   # 13 nov 2026 : (expression, son 1er mot)
+_PAR_TOK = [(p, re.findall(r"[a-z0-9]+", p)[0]) for p in PARALLELES]
+# 19 nov 2026 (Mathieu, la Kucherov Allure 16-Bit « SSP » : « aucune vente trouvee », 130point en montre 8) : « SSP » et
+# « short print » sont souvent un mot de vendeur pour un insert deja rare : ni exiges, ni refuses, ni cherches. Une vraie
+# variante photo garde son mot « variation ».
+PAR_SOUPLES = {"ssp", "short print"}   # 13 nov 2026 : (expression, son 1er mot)
 # mots qui ressemblent a une variante mais sont le NOM d'un produit (le chercher les exige quand meme)
 PRODUITS = ["prizm", "optic", "mosaic", "select", "chrome", "ice", "platinum", "black diamond", "retro", "sapphire",
             "premier", "artifacts", "heritage", "finest", "stadium club", "contenders", "national treasures", "immaculate"]
@@ -97,6 +101,10 @@ _RE_AUTO = re.compile(r"(?<!non )(?<!non-)(?<!no )(?<!not )\bauto\b|\bon card\b|
 # 7 nov 2026 (Mathieu : « attention, les inscribed valent beaucoup plus », une Nazar Future Watch Auto « Inscribed » comparee
 # aux Future Watch Auto ordinaires) : une inscription (date, surnom, statistique ecrite par le joueur) fait une autre carte
 _RE_INSCR = re.compile(r"\binscri(bed|ption|ptions|be)\b|\binscr\b|\binsc\b")
+# 19 nov 2026 (Mathieu, la Jack Hughes SP Authentic Signature Handles Auto « Inscribed » /10 : « aucune vente trouvee », 130point
+# en montre 3) : une Signature Handles porte TOUJOURS une inscription (le @ du joueur) : le mot du vendeur ne fait pas une
+# autre carte
+_RE_INSCR_INNE = re.compile(r"\b(?:signature|auto) handles?\b")      # (« signature » devient « auto » a la normalisation)
 _RE_PATCH = re.compile(r"\bpatch\b|\bpatch-?taculars?\b|(?<!new )\bjerseys?\b|\brelics?\b|\bgame (used|worn)\b|\bswatch(es)?\b|\brpa\b|\bmemorabilia\b|\bgu\b|\bfabrics?\b|\bmaterials?\b|\bstick\b")
 _RE_RC = re.compile(r"\brc\b|\byoung guns\b|\brated rc\b|\b1st bowman\b|\bbowman 1st\b|\bfuture watch\b|\bcanvas rc\b")
 VIDES = set("the a an of and with for in on card cards hockey nhl nba nfl mlb football basketball baseball new mint nm nmmt "
@@ -227,7 +235,7 @@ def decoder(texte):
     exclu = _EXCLUS_UN.search(t) is not None
     return {"texte": t, "annee": _annee(t), "num": num, "serie": serie, "grade": grade,
             "auto": bool(_RE_AUTO.search(t)), "patch": bool(_RE_PATCH.search(t)), "rc": bool(_RE_RC.search(t)),
-            "inscr": bool(_RE_INSCR.search(t)),
+            "inscr": bool(_RE_INSCR.search(t)) and not _RE_INSCR_INNE.search(t),
             "paralleles": par, "exclu": exclu}
 
 
@@ -344,8 +352,8 @@ def raisons_refus(c, titre, appris=None):
     elif a["serie"] is not None:
         r.append("numérotée /" + str(a["serie"]))
     # paralleles : ceux demandes doivent y etre ; aucun autre (les noms de produits demandes ne comptent pas)
-    voulus = set(c["paralleles"])
-    en_trop = {p for p in a["paralleles"] - voulus if p not in c["produits"]}
+    voulus = set(c["paralleles"]) - PAR_SOUPLES
+    en_trop = {p for p in a["paralleles"] - voulus - PAR_SOUPLES if p not in c["produits"]}
     if c["serie"] is not None and a["serie"] == c["serie"] and not (voulus & COULEURS_SERIE):
         en_trop -= COULEURS_SERIE                         # la meme numerotation : sa couleur va de soi
     absents = {p for p in voulus if p not in a["paralleles"] and p not in c["produits"]}
@@ -431,7 +439,9 @@ def requete_ebay(c):
     for k, q in (("sigmaterials", "signature materials"), ("sigpatches", "signature patches"), ("sigswatches", "signature swatches")):
         if k in (c.get("ident") or ()) and q not in m:
             m.append(q)
-    m += sorted(p for p in c["paralleles"] if p not in m)
+    if _RE_INSCR_INNE.search(c.get("texte") or "") and "handles" not in m:      # 19 nov 2026 : la Signature Handles par son nom
+        m.append("handles")
+    m += sorted(p for p in c["paralleles"] if p not in m and p not in PAR_SOUPLES)
     if c["auto"]:
         m.append("auto")
     # 7 nov 2026 (« Endorsements Relics ... Auto 30/50 » : la recherche ajoutait « patch », absent de la moitie des ventes) :

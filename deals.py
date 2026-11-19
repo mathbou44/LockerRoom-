@@ -527,7 +527,7 @@ def reestimer_approx(max_n=400):
     with _verrou:
         d = lire()
         cibles = [x for cle in ("deals", "suivis") for x in (d.get(cle) or [])
-                  if x.get("valeur") and x.get("valeur_source") in ("approx", "autre_saison")][:max_n]
+                  if x.get("valeur") and x.get("valeur_source") in ("approx", "autre_saison", "autre_note")][:max_n]
     trouves = {}
     for x in cibles:
         try:
@@ -549,7 +549,7 @@ def reestimer_approx(max_n=400):
         for cle in ("deals", "suivis"):
             for g in d.get(cle) or []:
                 va = trouves.get(str(g.get("item_id")))
-                if va and g.get("valeur_source") in ("approx", "autre_saison"):
+                if va and g.get("valeur_source") in ("approx", "autre_saison", "autre_note"):
                     g.pop("gain", None)
                     g.update(valeur=va[0], n=va[2], vendues=va[3], valeur_source=va[1], corrige_le=maint_,
                              mise_max=round(prix_max(va[0], taxe=taxe_de(g)) - port_eff(g.get("port")), 2))
@@ -1055,6 +1055,70 @@ def _part_note(g):
     return next((v for k, v in sorted(NOTE_PART.items(), reverse=True) if n >= k), 0.2)
 
 
+# 19 nov 2026 (Mathieu : « compare les prix de la meme carte autour des memes dates en PSA, KSA, TAG, BGS ») : mesure sur
+# nos ventes (meme carte, meme note, a 45 jours d'une PSA ; 1 357 paires) : une BGS se vend 84 % du prix PSA, TAG 79 %,
+# SGC 62 %, CGC 56 %, KSA 40 %. Les petites compagnies (pas assez de ventes) : comme KSA.
+PART_CIE = {"psa": 1.0, "bgs": 0.84, "beckett": 0.84, "tag": 0.79, "sgc": 0.62, "cgc": 0.56, "ksa": 0.40}
+PART_CIE_AUTRES = 0.40
+
+
+def _part_cie(g):
+    if not g:
+        return 1.0                       # une brute : sa part est dans BRUTE_PART (_part_note)
+    return PART_CIE.get(str(g.get("cie") or "").lower(), PART_CIE_AUTRES)
+
+
+def _facteur_note(g_cible, g_vente):
+    """Ce qu'il faut multiplier le prix d'une vente (sa note, sa compagnie) pour l'avoir a la note de la carte ; None = inconnu."""
+    p0, p1 = _part_note(g_cible), _part_note(g_vente)
+    if not p0 or not p1:
+        return None
+    return min(3.0, max(0.3, (p0 * _part_cie(g_cible)) / (p1 * _part_cie(g_vente))))
+
+
+AUTRE_NOTE_PRUDENCE = 0.90       # plusieurs ventes de LA carte, a une autre note ou compagnie
+AUTRE_NOTE_PRUDENCE_1 = 0.80     # une seule
+
+
+def valeur_autre_note(a, ventes, cib=None):
+    """19 nov 2026 (Mathieu, la Jack Hughes The Cup Rookie Gear Auto Patch /24 PSA 9 : « pourquoi on la trouve pas ? » ; on
+    l'estimait 1 838 $ avec des cartes semblables, alors qu'elle s'etait vendue 615 $ en BGS 9 le 5 nov.) : avant les cartes
+    semblables, les ventes de LA MEME carte a une autre note ou chez une autre compagnie, ramenees a la note de la carte
+    (NOTE_PART x PART_CIE). Un an (18 mois pour un hit /50 et moins) ; prudence 90 % (80 % pour une seule vente).
+    -> (valeur, « autre_note », n, ventes) ou None."""
+    import cartes_match
+    cib = cib or cartes_match.cible_titre(a.get("titre") or "")
+    titre = a.get("titre") or ""
+    jmax = UNIQUE_JOURS_LARGE if (cib.get("serie") and cib["serie"] <= UNIQUE_SERIE_MAX_LARGE and (cib.get("auto") or cib.get("patch"))) else JOURS_MAX_HITS
+    out, vus = [], set()
+    for v in ventes or []:
+        t = v.get("titre") or ""
+        k = v.get("url") or f"{t}|{v.get('le')}|{v.get('prix')}"
+        if not v.get("prix") or k in vus:
+            continue
+        vus.add(k)
+        r = cartes_match.raisons_refus(cib, t)
+        if not r or any(x not in _GRADES for x in r):
+            continue                       # la meme note (deja vue ailleurs), ou pas la meme carte
+        if _jours(v) > jmax or cartes_match.abimee(t) or (cartes_match.serie_speciale(t) and not cartes_match.serie_speciale(titre)):
+            continue
+        dv = cartes_match._decoder_memo(t)
+        f = _facteur_note(cib.get("grade"), dv.get("grade"))
+        if not f:
+            continue
+        g = dv.get("grade") or {}
+        note = (f"{g.get('cie', '').upper()} {g.get('note') or ''}".strip() if g else "brute")
+        out.append((float(v["prix"]) * f, dict(v, note=note, prix_ramene=round(float(v["prix"]) * f, 2))))
+    if not out:
+        return None
+    prix = sorted(x[0] for x in out)
+    m = cartes_match.mediane_robuste(prix)[0] if len(prix) >= 3 else statistics.median(prix)
+    pru = AUTRE_NOTE_PRUDENCE if len(prix) >= 2 else AUTRE_NOTE_PRUDENCE_1
+    vs = sorted((x[1] for x in out), key=lambda v: str(v.get("le") or ""), reverse=True)
+    return (round(m * pru, 2), "autre_note", len(out),
+            [{k: v.get(k) for k in ("titre", "prix", "le", "photo", "url", "note")} for v in vs[:6]])
+
+
 def valeur_approx(a, ventes, cib=None):
     """(13 nov 2026) Sans assez de ventes de la meme note : une 2e passe accepte les autres notes, ramenees a celle de la
     carte (NOTE_PART), avec 10 % de prudence de plus."""
@@ -1107,10 +1171,10 @@ def _valeur_approx(a, ventes, cib=None, notes=False):
             continue                                      # une autre annee, et l'une des deux est l'annee recrue
         fg = 1.0
         if notes and any(x in _GRADES for x in r):
-            p0, p1 = _part_note(cib.get("grade")), _part_note(dv.get("grade"))
-            if not p0 or not p1:
+            f0 = _facteur_note(cib.get("grade"), dv.get("grade"))      # 19 nov 2026 : la note ET la compagnie
+            if not f0:
                 continue
-            fg = min(2.5, max(0.3, p0 / p1)) * 0.9
+            fg = min(2.5, f0) * 0.9
             r = [x for x in r if x not in _GRADES]
         if any(x.startswith(_REFUS_DURS) for x in r):
             continue
@@ -1147,7 +1211,7 @@ def valeur_ou_saison(a, ventes, actives, cib=None):
     # 16 nov 2026 (Mathieu, Luke Hughes Honorable Numbers /43 : « faut pas que ca arrive, surtout quand on a les comps ») :
     # UNE vente de LA carte passe avant les cartes similaires
     return valeur_annonce(a, ventes, actives, cib=cib) or valeur_autre_saison(a, ventes, cib=cib) or valeur_unique(a, ventes, cib=cib) \
-        or valeur_approx(a, ventes, cib=cib)
+        or valeur_autre_note(a, ventes, cib=cib) or valeur_approx(a, ventes, cib=cib)
 
 
 UNIQUE_SERIE_MAX = 25            # 12 nov 2026 : une carte numerotee /25 ou moins...
@@ -1762,6 +1826,8 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
         va = valeur_autre_saison(a, tout_v + nv_, cib)
     if not va:                                        # 16 nov 2026 : UNE vente de LA carte avant les similaires
         va = valeur_unique(a, tout_v + nv_, cib)
+    if not va:                                        # 19 nov 2026 : LA carte, a une autre note ou compagnie
+        va = valeur_autre_note(a, tout_v + nv_, cib)
     if not va:                                        # 7 nov 2026 : puis les cartes similaires (prix approximatif)
         va = valeur_approx(a, tout_v + nv_, cib)
         if not va and verifiee and verif and _hit(cib) and t >= 10:
@@ -1787,7 +1853,7 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
             st["comps_rafraichies"] = st.get("comps_rafraichies", 0) + 1
             nv_ += list(nv2)
             va = (valeur_annonce(a, tout_v + nv_, actives, cib=cib) or valeur_autre_saison(a, tout_v + nv_, cib)
-                  or valeur_unique(a, tout_v + nv_, cib) or valeur_approx(a, tout_v + nv_, cib))
+                  or valeur_unique(a, tout_v + nv_, cib) or valeur_autre_note(a, tout_v + nv_, cib) or valeur_approx(a, tout_v + nv_, cib))
         if not va or not any(_jours(v, maint) <= JOURS_FRAIS for v in (va[3] or [])):
             st["_res"] = ("comps_vieilles", None)
             deals.pop(a["item_id"], None)
@@ -3617,7 +3683,7 @@ def valoriser_suivis(rechercher=None, n_max=None):
     # 1 100 a 1 334 $, datent d'avril a juillet, hors des 90 jours d'eBay) : une carte RARE (/25 et moins) qui n'a qu'une valeur
     # estimee (autres cartes, autre saison) passe aussi par l'historique d'un an, pour trouver ses vraies ventes
     for g in d.get("suivis") or []:
-        if not (g.get("valeur") and g.get("valeur_source") in ("approx", "autre_saison") and _prio(g) and encore_ouvert(g)):
+        if not (g.get("valeur") and g.get("valeur_source") in ("approx", "autre_saison", "autre_note") and _prio(g) and encore_ouvert(g)):
             continue
         c_ = cartes_match.cible_titre(g.get("titre") or "")
         try:
@@ -3655,7 +3721,8 @@ def valoriser_suivis(rechercher=None, n_max=None):
             d = lire()
             for g in d.get("suivis") or []:
                 va = trouves.get(str(g.get("item_id")))
-                if va and (not g.get("valeur") or (g.get("valeur_source") in ("approx", "autre_saison") and va[1] in ("vendues", "echange", "unique"))):
+                if va and (not g.get("valeur") or (g.get("valeur_source") in ("approx", "autre_saison", "autre_note") and va[1] in ("vendues", "echange", "unique"))
+                           or (g.get("valeur_source") == "approx" and va[1] == "autre_note")):
                     g.update(valeur=va[0], n=va[2], vendues=va[3], valeur_source=va[1],
                              mise_max=round(prix_max(va[0], taxe=taxe_de(g)) - port_eff(g.get("port")), 2))
             cov = d.get("prio_couverture")

@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import comptes
 comptes.DONNEES = os.environ["LOCKERROOM_DONNEES"]
 import alarmes, marche_cles as mc
-mc.ecrire({"verif": {"actif": True, "seuil": 0.15}, "cles": {"Sidney Crosby": {"score": 95}, "Connor Mcdavid": {"score": 96}},
+mc.ecrire({"v": mc.VERSION, "verif": {"actif": True, "seuil": 0.15}, "cles": {"Sidney Crosby": {"score": 95}, "Connor Mcdavid": {"score": 96}},
            "etats": {"Sidney Crosby": {"indice": 0.78, "n": 20, "ecart_pct": -22}, "Connor Mcdavid": {"indice": 0.98, "n": 30, "ecart_pct": -2}}})
 envoyes = []
 alarmes._notifier = lambda api, etat, cle, titre, texte, lien, maint=None: (envoyes.append((cle, titre)) or True) if cle not in [c for c, _ in envoyes] else False

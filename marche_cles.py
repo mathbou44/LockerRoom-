@@ -36,6 +36,8 @@ W = 14                  # jours de l'indice
 BASE = 180              # jours de la normale
 N_BASE_MIN = 4          # ventes d'une sorte dans la normale
 N_W_MIN = 6             # ventes comparees dans les 14 jours
+N_SORTES_MIN = 3        # 19 nov 2026 : au moins 3 sortes de cartes differentes dans les 14 jours...
+N_SORTE_W_MIN = 2       # ... chacune avec 2 ventes au moins (une vente seule ne dit rien)
 H0, H1 = 46, 74         # « deux mois apres » (comme moment_yg)
 SEUILS = (0.10, 0.15, 0.20, 0.25, 0.30)
 N_TEST_MIN = 30         # creux passes pour juger un seuil
@@ -189,14 +191,33 @@ def _tranche(titre):
     return "1" if s == 1 else "10" if s <= 10 else "25" if s <= 25 else "99" if s <= 99 else "x"
 
 
+# 19 nov 2026 (Mathieu : la liste « Marche bas » : Sittler -84 %, Gilbert -82 %, Lafleur -70 %...) : un vendeur avait vide
+# des dizaines de cartes O-Pee-Chee communes des annees 80 a 1 $ (le 16 nov.), comparees a la « normale » de TOUTES les
+# O-Pee-Chee du joueur (sa recrue de 1975 comprise). Maintenant : la sorte porte aussi la SAISON ; une carte a plusieurs
+# joueurs (leaders, checklists) n'est pas la sienne ; une vente de moins de PRIX_MIN ne dit rien du marche ; et chaque sorte
+# compte UNE fois dans l'indice (la mediane de ses ventes), pour qu'un lot ne fasse pas l'indice a lui seul.
+PRIX_MIN = 5.0
+VERSION = 2             # un calcul d'une autre version n'est jamais lu (il est refait a la prochaine passe)
+
+
 def sorte(titre):
-    """La sorte de carte (pour la normale) : le type (famille + note) et la tranche de tirage."""
+    """La sorte de carte (pour la normale) : le type (famille + note), la tranche de tirage et la saison."""
     try:
         import types_cartes
         k = types_cartes.type_de(titre)
     except Exception:
         k = None
-    return f"{k}|{_tranche(titre)}" if k else None
+    if not k:
+        return None
+    try:
+        import cartes_match
+        d = cartes_match._decoder_memo(titre)
+        an = d.get("annee") or "-"
+        if "/" in str(titre or "") and len(cartes_match.cible_titre(titre).get("autres_joueurs") or []) > 0:
+            return None
+    except Exception:
+        an = "-"
+    return f"{k}|{_tranche(titre)}|{an}"
 
 
 def _ord(le):
@@ -210,17 +231,25 @@ def series(ventes, noms):
     """[(joueur, titre, prix, le)] -> {joueur: {sorte: [(jour ordinal, prix)] tries}} pour les joueurs cles."""
     garde = set(noms)
     S = defaultdict(lambda: defaultdict(list))
+    vus = set()
     for j, titre, p, le in ventes:
         j = _titre(j)
         if j not in garde:
             continue
+        # 19 nov 2026 : la meme vente vue par deux recherches (meme titre, meme jour, prix converti a quelques cents pres)
+        cle = (j, str(titre or "").strip().lower(), str(le)[:10])
+        if cle in vus:
+            continue
+        vus.add(cle)
         try:
             p = float(p)
         except (TypeError, ValueError):
             continue
         d = _ord(le)
+        if p < PRIX_MIN or not d:
+            continue
         k = sorte(titre)
-        if p >= 1 and d and k:
+        if k:
             S[j][k].append((d, p))
     for j in S:
         for k in S[j]:
@@ -248,12 +277,15 @@ def indice_a(sj, jour, nor=None, a=None, b=None):
     nor = normale(sj, jour) if nor is None else nor
     a = jour - W if a is None else a
     b = jour if b is None else b
-    r = []
+    r, n = [], 0
     for k, m in nor.items():
-        r += [p / m for p in _fen(sj[k], a, b)]
-    if len(r) < N_W_MIN:
-        return None, len(r)
-    return statistics.median(r), len(r)
+        f = _fen(sj[k], a, b)
+        if len(f) >= N_SORTE_W_MIN:
+            r.append(statistics.median(f) / m)          # une sorte = une voix (un lot ne fait pas l'indice)
+            n += len(f)
+    if n < N_W_MIN or len(r) < N_SORTES_MIN:
+        return None, n
+    return statistics.median(r), n
 
 
 # -- 3. la verification (chaque semaine) ----------------------------------------------------------------------------------
@@ -328,7 +360,7 @@ def calculer(ventes=None, liste=None, aujourd=None):
         if ix is None:
             continue
         etats[x["nom"]] = {"indice": round(ix, 3), "n": n, "ecart_pct": round((ix - 1) * 100)}
-    return {"le": datetime.now().isoformat(timespec="seconds"), "jour": aujourd.isoformat(), "verif": V,
+    return {"v": VERSION, "le": datetime.now().isoformat(timespec="seconds"), "jour": aujourd.isoformat(), "verif": V,
             "cles": {x["nom"]: {"score": x["score"], "raisons": x["raisons"]} for x in liste}, "etats": etats}
 
 
@@ -346,7 +378,8 @@ def lire():
     if _ETAT["d"] is None or _ETAT["mt"] != mt:
         try:
             with open(p, encoding="utf-8") as f:
-                _ETAT["d"] = json.load(f)
+                d_ = json.load(f)
+            _ETAT["d"] = d_ if d_.get("v") == VERSION else {}
             _ETAT["mt"] = mt
         except (OSError, ValueError):
             return {}
@@ -370,7 +403,7 @@ def passe():
 def passe_si_besoin():
     """Une fois par jour (les etats) ; la verification se refait a chaque passe (la boucle du serveur, chaque heure)."""
     try:
-        if time.time() - os.path.getmtime(_chemin()) < 20 * 3600:
+        if time.time() - os.path.getmtime(_chemin()) < 20 * 3600 and lire().get("v") == VERSION:
             return None
     except OSError:
         pass

@@ -17,6 +17,11 @@ import statistics
 import threading
 
 BAREME = {1: 0.35, 2: 0.60, 3: 0.80, 4: 1.00, 5: 1.15}
+# 19 nov 2026 (Mathieu, la Gabe Perreault Premier Rookie Auto Patch /99 a une couleur, jugee sur des ventes sans photo :
+# « une patch une couleur vaut presque 2,5 fois moins qu'une 3 couleurs et plus ») : une vente dont on ne connait pas la
+# patch compte comme une patch typique (3 couleurs) quand la carte a une patch pauvre (1 ou 2 couleurs). Jamais l'inverse
+# (une belle patch ne monte pas sur des ventes inconnues).
+N_TYPIQUE = 3
 MAX_PHOTOS = 16
 APPELS_JOUR = int(os.environ.get("LR_PATCHS_JOUR") or 400)     # lectures IA par jour au plus (le chasseur et les fiches)
 _verrou = threading.Lock()
@@ -177,7 +182,7 @@ def ajuster(titre, photo, ventes, photos=True):
         if n_v is None and v.get("photo"):
             n_v = lus.get(str(v.get("photo")))
         p = v.get("prix") or v.get("total")
-        f = facteur(n_c, n_v)
+        f = facteur(n_c, n_v if n_v else (N_TYPIQUE if n_c and n_c < N_TYPIQUE else None))
         out.append(dict(v, couleurs=n_v, prix_patch=round(p * f, 2) if p else None))
         if p:
             brut.append(p)

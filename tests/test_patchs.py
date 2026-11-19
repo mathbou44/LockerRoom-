@@ -33,3 +33,10 @@ assert patchs.ajuster("McDavid Young Guns", "http://x/carte.jpg", ventes)[0] == 
 patchs.compter = lambda urls: {}
 assert patchs.ajuster("Gauthier Signature Swatches /49", "http://x/carte.jpg", ventes)[0] == 1.0
 print("PATCHS OK", r)
+# 19 nov 2026 (Perreault 1 couleur, ventes sans photo) : une patch pauvre contre des ventes inconnues -> comme 3 couleurs
+_v = [{"prix": 270.0, "titre": "2025 Premier Gabe Perreault Rookie Auto Patch /99"}, {"prix": 280.0, "titre": "2025 Premier Gabe Perreault Rookie Auto Patch /99"}]
+_r, _n, _ = patchs.ajuster("2025 Premier Gabe Perreault Rookie Auto 1 color Patch /99", None, _v, photos=False)
+assert _n == 1 and abs(_r - 0.35 / 0.80) < 0.01, _r
+_r, _n, _ = patchs.ajuster("2025 Premier Gabe Perreault Rookie Auto 4 color Patch /99", None, _v, photos=False)
+assert _r == 1.0, _r                      # une belle patch ne monte pas sur des ventes inconnues
+print("PATCHS pauvres OK")
