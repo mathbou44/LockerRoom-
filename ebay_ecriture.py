@@ -176,7 +176,10 @@ def changer_prix(item_id, prix):
 
 # 8 nov 2026 (Mathieu : « les cartes a retirer de mon inventaire devraient aussi se supprimer dans eBay ») : terminer une
 # annonce (Inventory API : withdraw ; sinon Trading EndItem). Une annonce deja terminee ou vendue n'est pas une erreur.
-_DEJA_FINIE = ("1047", "already been closed", "already ended", "has been closed", "is no longer available", "not active")
+# 19 nov 2026 (Mathieu : « ca me laisse pas supprimer une carte programmee, meme si j'ai supprime l'annonce dans eBay ») : une
+# annonce deja supprimee chez eBay (« cannot be accessed », « has been deleted », introuvable) = deja terminee
+_DEJA_FINIE = ("1047", "already been closed", "already ended", "has been closed", "is no longer available", "not active",
+               "cannot be accessed", "has been deleted", "was deleted", "item not found", "does not exist", "invalid item", "item id is invalid")
 
 
 def terminer(item_id):

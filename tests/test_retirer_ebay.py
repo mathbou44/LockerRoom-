@@ -43,3 +43,15 @@ try:
 finally:
     ebay_compte.trading, ebay_moderne.retirer = vt, vm
 print("RETIRER EBAY OK")
+# 19 nov 2026 (Mathieu : « ca ne me laisse pas supprimer une carte programmee, meme si j'ai supprime l'annonce dans eBay ») :
+# une annonce deja supprimee chez eBay = deja terminee : la carte part
+vm, vt = ebay_moderne.retirer, ebay_compte.trading
+ebay_moderne.retirer = lambda iid: None
+def supprimee(*a, **k):
+    raise RuntimeError("eBay 17 : This item cannot be accessed because the listing has been deleted.")
+ebay_compte.trading = supprimee
+try:
+    assert ebay_ecriture.terminer("333333333333").get("deja")
+finally:
+    ebay_moderne.retirer, ebay_compte.trading = vm, vt
+print("RETIRER EBAY SUPPRIMEE OK")
