@@ -2759,6 +2759,7 @@ def balayer(rechercher, bassin, d, deals, st, maint, verif):
         st["requetes_flux"] = st.get("requetes_flux", 0) + 1
         st["balayage_" + ("encans" if ench else "fixe")] = st.get("balayage_" + ("encans" if ench else "fixe"), 0) + len(l)
         bons = [a for a in l if cartes_match.est_carte(a.get("titre") or "") and petit_ou_moyen(a)]
+        _vitrine([a for a in l if cartes_match.est_carte(a.get("titre") or "")])
         st["balayage_petits"] = st.get("balayage_petits", 0) + len(bons)
         for a in bons:
             _juger(a, r, [], [] if ench else bons, maint, deals, st, bassin=bassin, verif=verif)
@@ -2783,6 +2784,7 @@ def balayer(rechercher, bassin, d, deals, st, maint, verif):
             break
         st["requetes_flux"] = st.get("requetes_flux", 0) + 1
         st["balayage_gros"] = st.get("balayage_gros", 0) + len(l)
+        _vitrine([a for a in l if cartes_match.est_carte(a.get("titre") or "")])
         bons = [a for a in l if a.get("item_id") not in vus and cartes_match.est_carte(a.get("titre") or "") and petit_ou_moyen(a)]
         st["balayage_petits"] = st.get("balayage_petits", 0) + len(bons)
         for a in bons:
@@ -2819,6 +2821,16 @@ RARES_Q = ("auto /10", "auto /5", "auto /15", "auto /25", "patch /10", "patch /2
 def rares_requetes():
     e = os.environ.get("LR_RARES_Q")                    # « auto /10;1/1 » pour remplacer la liste
     return [x.strip() for x in e.split(";") if x.strip()] if e else list(RARES_Q)
+
+
+def _vitrine(l):
+    """19 nov 2026 : ce que le chasseur balaie nourrit aussi la vitrine du Radar Pro (vitrine.py : la note de la carte, jamais
+    une valeur ni un comparable)."""
+    try:
+        import vitrine
+        vitrine.ajouter(l)
+    except Exception as e:
+        print("Vitrine : " + repr(e)[:160], flush=True)
 
 
 def flux_liste():
@@ -2873,6 +2885,7 @@ def flux(rechercher=None, bassin=None):
               st["requetes_flux"] = st.get("requetes_flux", 0) + 1
               st["vendeurs_annonces"] = st.get("vendeurs_annonces", 0) + len(l)
               l = [a for a in l if cartes_match.est_carte(a.get("titre") or "")]
+              _vitrine(l)                                 # 19 nov 2026 : la vitrine du Radar Pro (A et A+, aucune valeur)
               titres_vus.extend(a.get("titre") or "" for a in l)
               for a in l:
                   st.pop("_res", None)
@@ -2923,6 +2936,7 @@ def flux(rechercher=None, bassin=None):
                 break
             st["requetes_flux"] = st.get("requetes_flux", 0) + 1
             l = [a for a in l if cartes_match.est_carte(a.get("titre") or "")]
+            _vitrine(l)                                 # 19 nov 2026 : la vitrine du Radar Pro (A et A+, aucune valeur)
             titres_vus.extend(a.get("titre") or "" for a in l)
             for a in l:
                 _juger(a, r, [], [] if ench else l, maint, deals, st, bassin=bassin, verif=verif)

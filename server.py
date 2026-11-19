@@ -1354,7 +1354,7 @@ def mes_photos(nom):
     return send_from_directory(os.path.dirname(f), os.path.basename(f), mimetype="image/jpeg", max_age=30 * 86400)
 
 
-_EXPORT_V = threading.Lock()
+_EXPORT_V = {}                 # 19 nov 2026 : sport -> debut de l'export en cours (expire seul apres 10 min)
 
 
 @app.route("/admin/ventes_export.tsv.gz")
@@ -1373,8 +1373,12 @@ def admin_ventes_export():
     # 18 nov 2026 (« ca a crashe, le site ne repond plus ») : l'export d'un coup tenait le processeur ; la verification de sante
     # de Render (5 s) ne repondait plus et Render a tue le serveur. Maintenant : un seul export a la fois, par petits blocs,
     # avec une pause entre chaque bloc (les autres requetes passent)
-    if not _EXPORT_V.acquire(blocking=False):
+    # 19 nov 2026 (Mathieu : « pourquoi ca telecharge pas ? ») : le verrou etait pris AVANT que le flux demarre ; un
+    # telechargement annule avant le premier octet ne le rendait jamais et tous les suivants etaient refuses. Maintenant :
+    # un export a la fois PAR SPORT, et un export oublie expire seul apres 10 minutes.
+    if time.time() - _EXPORT_V.get(sport, 0) < 600:
         return ("Un export est déjà en cours : attends qu'il finisse", 429)
+    _EXPORT_V[sport] = time.time()
 
     def flux():
       try:
@@ -1399,7 +1403,7 @@ def admin_ventes_export():
             c.close()
         yield z.flush()
       finally:
-        _EXPORT_V.release()
+        _EXPORT_V.pop(sport, None)
     return Response(stream_with_context(flux()), mimetype="application/gzip",
                     headers={"Content-Disposition": f'attachment; filename="ventes_{sport}.tsv.gz"', "Cache-Control": "no-store",
                              "X-Accel-Buffering": "no"})

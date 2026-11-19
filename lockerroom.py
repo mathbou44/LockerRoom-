@@ -1740,25 +1740,36 @@ class Api:
     POUR_MOI_PTS = {"joueur": 12, "type": 5, "budget": 3}
     # 16 nov 2026 (Mathieu, questionnaire : « B et plus seulement, C+ pour mes joueurs, jamais une base ; la limite inferieure
     # a 10 $ et laisser l'utilisateur choisir »)
-    RADAR_SCORE_MIN = int(os.environ.get("LR_RADAR_SCORE_MIN") or 65)        # B et plus
-    RADAR_SCORE_MIN_SUIVI = 58                                               # ses joueurs suivis : C+ et plus
-    RADAR_PRIX_MIN = 10.0                                                    # sauf si l'utilisateur a choisi son prix minimum
+    # 19 nov 2026 (Mathieu : « le Pro doit etre ultra precis ; pas de cartes a 20 $ ») : teste sur des ventes jamais vues, une
+    # carte B garde sa valeur a peine plus qu'au hasard (54 %), A- 62 %, A 70 %, A+ 82 % ; le Radar Pro part donc de A- (encans)
+    # et de A (prix fixe), a 30 $ et plus (le plancher n'enleve aucune precision). L'utilisateur peut elargir dans ses Filtres.
+    RADAR_SCORE_MIN = int(os.environ.get("LR_RADAR_SCORE_MIN") or 82)        # A- et plus
+    RADAR_SCORE_MIN_SUIVI = 76                                               # ses joueurs suivis : B+ et plus
+    RADAR_PRIX_MIN = 30.0                                                    # sauf si l'utilisateur a choisi son prix minimum
     RADAR_FILTRE = True                                                      # (les tests du tri le coupent)
 
     # 18 nov 2026 (Mathieu : « enlever toutes les petites cartes que le monde vend 25 $ mais qui ont paye 2 $, qui ne sont pas
     # en enchere ; je ne veux pas ca dans la Pro ») : sans les comps (Pro, gratuit), une annonce a PRIX FIXE doit etre une
     # carte que le hobby recherche : A- et plus (B+ pour ses joueurs suivis). Les encans gardent la regle B. Aucun prix n'est
     # juge (licence eBay §9.5 : pas de prix modelise) : seulement la note de la carte. Ses prix cibles (alertes) restent.
-    RADAR_FIXE_MIN = int(os.environ.get("LR_RADAR_FIXE_MIN") or 82)          # A-
-    RADAR_FIXE_MIN_SUIVI = 76                                                # B+
+    RADAR_FIXE_MIN = int(os.environ.get("LR_RADAR_FIXE_MIN") or 86)          # A (19 nov 2026 : A- -> A, 62 % -> 70 % au test)
+    RADAR_FIXE_MIN_SUIVI = 82                                                # A-
 
     @staticmethod
     def _radar_fixe_ok(x):
         if not isinstance(x, dict) or x.get("encan") or x.get("alerte_id"):
             return True
-        sc = x.get("score")
+        sc = x.get("score_carte") if x.get("score_carte") is not None else x.get("score")
         if sc is None:
             return False
+        # 19 nov 2026 (Mathieu : Draisaitl Extended a 41 $, Duchene Parkhurst SP, « on n'en veut pas ») : un joueur « en feu »
+        # gagne un demi-cran (B+ -> A-) ; ce demi-cran ne suffit plus a faire entrer un PRIX FIXE dans le Radar Pro, et une
+        # carte de base n'y entre jamais
+        if x.get("sorte") == "D":
+            return False
+        import bareme_iq as _bq
+        if set(x.get("pastilles_j") or []) & {"en_feu", "en_hausse", "buzz"}:
+            sc = sc - _bq.FEU_PTS
         suivi = "joueur" in (x.get("pour_moi") or [])
         return sc >= (Api.RADAR_FIXE_MIN_SUIVI if suivi else Api.RADAR_FIXE_MIN)
 
@@ -1969,6 +1980,36 @@ class Api:
             return {"ok": False, "erreur": "Réservé à l'administrateur"}
         import deals as _d
         return {**_d.recharger(), "etat": self.deals_etat()}
+
+    def deals_encans_rafraichir(self, n=80):
+        """19 nov 2026 (Mathieu : « un bouton pour forcer le refresh des prix des encheres ») : admin, relit sur eBay la mise
+        actuelle de chaque encan du Radar (les plus proches de la fin d'abord) ; une mise qui depasse la mise max sort des deals."""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import deals as _d
+        from concurrent.futures import ThreadPoolExecutor
+        maint = time.time()
+        def _fin(x):
+            try:
+                return datetime.fromisoformat(str(x.get("fin")).replace("Z", "+00:00")).timestamp()
+            except (TypeError, ValueError):
+                return float("inf")
+        enc = [x for x in (_d.lire().get("deals") or []) if isinstance(x, dict) and x.get("encan") and x.get("item_id") and _fin(x) > maint]
+        enc = sorted(enc, key=_fin)[:max(1, min(int(n or 80), 150))]
+        def un(x):
+            try:
+                a = ebay_compte.article(x["item_id"], frais=True)
+            except (RuntimeError, OSError):
+                return None
+            if a.get("erreur") or not a.get("prix_cad"):
+                return None
+            port = a.get("port_cad") if a.get("port_cad") is not None else _d.PORT_INCONNU
+            total = round(a["prix_cad"] + port, 2)
+            return _d.maj_prix(x["item_id"], total, port, a.get("mises"), a.get("fin"), achat_=_d.achat(a), encan=a.get("encan"))
+        with ThreadPoolExecutor(max_workers=6) as ex:
+            res = list(ex.map(un, enc))
+        lus = [r for r in res if r is not None]
+        return {"ok": True, "encans": len(enc), "lus": len(lus), "retires": sum(1 for r in lus if r.get("retire"))}
 
     def deals_tour(self):
         """29 oct 2026 - admin : ou en est le chasseur (leger : l'ecran Deals le demande a chaque ouverture)."""
@@ -7394,7 +7435,7 @@ class Api:
             import sets_cultes
             import series
             ser = comps_permis(self)
-            items = [x for k in ("deals", "petits", "suivis", "pres") for x in (r.get(k) or []) if isinstance(x, dict)]
+            items = [x for k in ("deals", "petits", "suivis", "pres", "a_la_une") for x in (r.get(k) or []) if isinstance(x, dict)]
             items += [x for k in ("pour_toi", "decouvrir", "chauds", "creux", "chasses", "types", "vendeurs", "cibles")
                       for g in (r.get(k) or []) if isinstance(g, dict) for x in (g.get("annonces") or []) if isinstance(x, dict)]
             for x in items:
@@ -7433,7 +7474,7 @@ class Api:
             return r
         secs = ("pour_toi", "decouvrir", "chauds", "creux", "chasses", "types", "vendeurs", "cibles")
         tous = {}
-        for x in list(r.get("deals") or []) + list(r.get("petits") or []) + [y for k in secs for g in (r.get(k) or [])
+        for x in list(r.get("deals") or []) + list(r.get("a_la_une") or []) + list(r.get("petits") or []) + [y for k in secs for g in (r.get(k) or [])
                                                                               for y in ((g or {}).get("annonces") or [])]:
             if isinstance(x, dict) and x.get("item_id") and x["item_id"] not in tous:
                 tous[x["item_id"]] = x
@@ -7456,6 +7497,7 @@ class Api:
         out = dict(r)
         out["deals"] = filtre(r.get("deals"))
         out["petits"] = filtre(r.get("petits"))
+        out["a_la_une"] = filtre(r.get("a_la_une"))
         for k in secs:
             out[k] = [dict(g, annonces=filtre(g.get("annonces"))) if isinstance(g, dict) else g for g in (r.get(k) or [])]
         out["gratuit"] = {"trouvees": len(l), "visibles": len(vis), "verrouillees": len(l) - len(vis),
@@ -7519,13 +7561,13 @@ class Api:
         tous_pays = set(prov) >= {"CA", "US"}
         ok = lambda x: not Api._encan_douteux(x, maint) and (tous_pays or not str(x.get("lieu") or "").strip() or str(x.get("lieu")).upper()[:2] in prov)
         if tous_pays:                                # rien a filtrer (aucun encan douteux) : la reponse telle quelle
-            items = [x for k in ("deals", "petits") for x in (r.get(k) or []) if isinstance(x, dict)]
+            items = [x for k in ("deals", "petits", "a_la_une") for x in (r.get(k) or []) if isinstance(x, dict)]
             items += [x for k in ("pour_toi", "decouvrir", "chauds", "creux", "chasses", "types", "vendeurs", "cibles")
                       for g in (r.get(k) or []) if isinstance(g, dict) for x in (g.get("annonces") or []) if isinstance(x, dict)]
             if not any(Api._encan_douteux(x, maint) for x in items):
                 return r
         out = dict(r)
-        for k in ("deals", "petits"):
+        for k in ("deals", "petits", "a_la_une"):
             if isinstance(out.get(k), list):
                 out[k] = [x for x in out[k] if not isinstance(x, dict) or ok(x)]
         for k in ("pour_toi", "decouvrir", "chauds", "creux", "chasses", "types", "vendeurs", "cibles"):
@@ -7557,7 +7599,7 @@ class Api:
             ch = self.chasses_liste().get("chasses") or []
             cle = (comptes.courant() or "local") + ":" + hashlib.md5(json.dumps(
                 [[tuple(a) for a in al], self.deals_profil_lire(), self.reglages_lire().get("pays"), self._est_admin(), vue_simulee(), ch,
-                 [self.reglages_lire().get(k) for k in ("budget_mois", "objectif")], "score-v8"],                         # 18 nov 2026 : prix fixe A- (Pro) ; 16 nov 2026 : Radar a neuf (bareme A+ a E, petits vendeurs filtres, noms)
+                 [self.reglages_lire().get(k) for k in ("budget_mois", "objectif")], "score-v9"],                         # 18 nov 2026 : prix fixe A- (Pro) ; 16 nov 2026 : Radar a neuf (bareme A+ a E, petits vendeurs filtres, noms)
                 sort_keys=True, default=str).encode()).hexdigest()
         except Exception:
             cle = None
@@ -7722,6 +7764,9 @@ class Api:
         # 16 nov 2026 (Mathieu : « impossible qu'il y ait juste 40 cartes dans le Radar ») : le filtre de qualite (B et plus)
         # passait APRES la coupe a 30-60 annonces (les encans qui finissent d'abord, souvent des bases) : il ne restait presque
         # rien. On garde maintenant toutes les annonces trouvees (meme cout eBay) ; la coupe se fait apres le filtre (« _cap »)
+        # 19 nov 2026 (Mathieu : « pourquoi pas de meilleures cartes plus cheres ? elles arretent toutes a 100 ») : les recherches
+        # Decouvrir / En feu / En creux n'ont plus de plafond de 100 $ (au test sur des ventes jamais vues, les A- de plus de
+        # 100 $ ont garde leur valeur 64,9 % du temps contre 59,8 % sous 100 $) ; le budget choisi par l'utilisateur reste
         def un_joueur(f, budget_defaut=None, limite=60):
             l = self._radar_annonces(f, prof.get("collectionne"), prof.get("prix_min"), prof.get("prix_max") or budget_defaut,
                                      limite=limite if not Api.RADAR_FILTRE else 300)
@@ -7743,14 +7788,14 @@ class Api:
                 decouvrir_noms = [x["nom"] for x in self._radar_top(4)]
             except Exception as e:
                 erreurs.append("decouvrir : " + repr(e)[:120])
-        taches += [("decouvrir", n, lambda n=n: un_joueur(n, 100, 30)) for n in decouvrir_noms]
+        taches += [("decouvrir", n, lambda n=n: un_joueur(n, None, 30)) for n in decouvrir_noms]
         try:
             import indice_joueurs
             deja = set(fav) | set(decouvrir_noms)
             chauds_noms = [x["nom"] for x in indice_joueurs.top(8, "en_feu", actifs=True) if x["nom"] not in deja][:4]
         except Exception:
             chauds_noms = []
-        taches += [("chaud", n, lambda n=n: un_joueur(n, 100, 30)) for n in chauds_noms]
+        taches += [("chaud", n, lambda n=n: un_joueur(n, None, 30)) for n in chauds_noms]
         # 11 nov 2026 (Mathieu : « un tres bon jeune joueur en periode difficile, c'est un bon moment pour acheter ») : les
         # jeunes talents EN CREUX ou qui en sortent (stats LNH publiques, jamais un prix) ; « a surveiller », jamais « achete »
         try:
@@ -7760,7 +7805,7 @@ class Api:
             creux_noms = [x["nom"] for x in l_cx if x["nom"] not in deja2][:3]
         except Exception:
             creux_noms = []
-        taches += [("creux", n, lambda n=n: un_joueur(n, 100, 30)) for n in creux_noms]
+        taches += [("creux", n, lambda n=n: un_joueur(n, None, 30)) for n in creux_noms]
         taches.append(("petits", "tous", lambda: self._radar_petits(prof)))
         resultats, msgs = {}, []
         if taches:
@@ -7783,7 +7828,7 @@ class Api:
                 k, cle = futurs[fu]
                 erreurs.append(f"{k} {cle if not isinstance(cle, int) else ''} : trop long")
             ex.shutdown(wait=False, cancel_futures=True)
-        out, groupes = [], []
+        out, groupes, a_la_une = [], [], []
         for a in al:
             r = resultats.get(("alerte", id(a)))
             if isinstance(r, list):
@@ -7851,6 +7896,19 @@ class Api:
                 else (lambda l: [x for x in (l or []) if str(x.get("item_id")) not in _msq])
             out = garde(out)
             petits = Api._grouper_memes(garde(petits))   # 16 nov 2026 : les petits vendeurs filtres ; une tuile par carte
+            # 19 nov 2026 (Mathieu : « le Pro doit trouver les memes cartes que le Platine, ou presque ») : la vitrine (vitrine.py) :
+            # les cartes A et A+ que le chasseur a vues dans son balayage (gros vendeurs, hits, categorie) ; aucune valeur
+            try:
+                import vitrine
+                une = vitrine.liste(90, prof.get("prix_min"), prof.get("prix_max"))
+                for x in une:
+                    try:
+                        self._frais_reels(x, pays)
+                    except Exception:
+                        pass
+                a_la_une = Api._grouper_memes(garde(une))[:60]
+            except Exception as e:
+                print("Radar (vitrine) : " + repr(e)[:120], flush=True)
             for g in pour_toi + decouvrir + chauds_creux + chasses + types + list(groupes or []):
                 if isinstance(g, dict) and "annonces" in g:
                     g["annonces"] = Api._grouper_memes(garde(g.get("annonces")))[:g.pop("_cap", None) or None]
@@ -7885,7 +7943,7 @@ class Api:
                 admin.noter_erreur("radar", RuntimeError(" | ".join(erreurs[:6])))
             except Exception:
                 pass
-        return {"ok": True, "deals": out[:120], "cibles": groupes, "vendeurs": vend, "pour_toi": pour_toi,
+        return {"ok": True, "deals": out[:120], "a_la_une": a_la_une, "cibles": groupes, "vendeurs": vend, "pour_toi": pour_toi,
                 "decouvrir": decouvrir, "chauds": chauds, "creux": creux_l, "petits": petits, "chasses": chasses, "types": types, "alerte_feu": feu, "pays": pays,
                 "profil": {k: prof.get(k) for k in ("collectionne", "favoris", "prix_min", "prix_max", "iq_min")},
                 "profil_vide": not (prof.get("favoris") or prof.get("collectionne") or prof.get("prix_max")),
