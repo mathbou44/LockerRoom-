@@ -17,6 +17,9 @@ ME = ["January", "February", "March", "April", "May", "June", "July", "August", 
 MFc = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."]
 MEc = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 ORDRE = ["A+", "A", "A-", "B+", "B", "C", "D", "E"]
+import sys                                     # noqa: E402
+sys.path.insert(0, os.path.dirname(UI))
+import iq_publie                               # noqa: E402  20 nov 2026 : les memes arrondis que l'app
 
 
 def fr(n):
@@ -130,8 +133,9 @@ def ecrire(R, defi):
     r_s, r_a = sim["r_sans"] * 100, sim["r_avec"] * 100
     ecart = int(round(sim["ecart"], -1))
     bat = round(sim["bat"] * 100)
-    x_ae = int(round(R["x_ahaut_e"]))
-    k_ventes = f"{int(R['ventes_total'] // 5000 * 5)} k+"
+    # 20 nov 2026 : les memes arrondis que la fenetre SlabIQ de l'app (iq_publie : une seule source, toujours vers le bas)
+    x_ae = iq_publie.fois(R)
+    k_ventes = iq_publie.ventes_k(R)
     pmin, pmax = int(sim["prix"][0]), int(sim["prix"][1])
     m0, m1 = sim["mois"][0], sim["mois"][-1]
     L = R["lettres"]
@@ -152,12 +156,11 @@ def ecrire(R, defi):
     kick_fr, kick_en = f"Nos tests · {d_le.day} {MFc[d_le.month - 1]} {d_le.year}", f"Our tests · {MEc[d_le.month - 1]} {d_le.day}, {d_le.year}"
     # 20 nov 2026 : le Radar Pro se mesure sur TOUS ses achats : reussi = revendue ET au moins 90 % du prix (jamais revendue = ratee) ;
     # le point de comparaison : les memes achats au hasard. Arrondi vers le bas : jamais plus que la mesure.
-    pro, pha = int(R["pro"]["reussi"] * 100 + 1e-9), int(R["hasard"]["reussi"] * 100 + 1e-9)
-    acc, aav = round(R["accord"] * 100), round(R["accord_avant"] * 100)
+    pro, pha = iq_publie.pro(R)
     # 19 nov 2026 (Mathieu : « 80 % c'est plus beau que 79 ») : jamais un chiffre plus haut que la mesure ; a moins d'un point
     # sous un chiffre rond (multiple de 5), on ecrit « ≈ » (79,4 % -> « ≈ 80 % »)
-    rond = round(R["accord"] * 100 / 5) * 5
-    acc_txt, acc_en = (f"≈ {rond} %", f"≈ {rond}%") if 0 < rond - R["accord"] * 100 < 1 else (f"{acc} %", f"{acc}%")
+    acc_txt, acc_en, aav = iq_publie.accord(R)
+    acc = round(R["accord"] * 100)
     seuil = {95: "A+", 88: "A", 86: "A", 82: "A-"}.get(int(sim["seuil"]), "A")
 
     # ---- la page SlabIQ
@@ -218,6 +221,9 @@ def ecrire(R, defi):
     # 19 nov 2026 (Mathieu : « 5x ici, 10x la : attention, audit tout le site ») : une seule mesure partout (A et plus contre E)
     # 19 nov 2026 (audit) : « +780 $ avec SlabIQ » laissait croire a 780 $ de profit ; c'est l'ECART avec un achat au hasard
     # 20 nov 2026 (Mathieu : « vendeur d'un coup sec ») : le chiffre du defi, le plus parlant : une carte du Radar Pro contre une au hasard
+    # 20 nov 2026 (Mathieu : « valide l'info, partout ») : la FAQ disait « 5 fois » (une A seule, ancienne mesure) : la meme mesure
+    s = sub1(s, r'une carte A ou A\+ se revend [0-9]+ fois plus souvent qu’une E', f'une carte A ou A+ se revend {x_ae} fois plus souvent qu’une E')
+    s = sub1(s, r'an A or A\+ card resells [0-9]+ times more often than an E', f'an A or A+ card resells {x_ae} times more often than an E')
     om, orr = round(st_["ok_marche"] * 100), round(st_["ok_radar"] * 100)
     s = sub1(s, r'<a class="iqp-test" href="/slabiq#defi"><b class="holo-t">.*?</b><span><span class="fr">[^<]*</span><span class="en">[^<]*</span></span>',
              f'<a class="iqp-test" href="/slabiq#defi"><b class="holo-t"><span class="fr">{orr} %</span><span class="en">{orr}%</span></b><span><span class="fr">des cartes du Radar Pro se sont revendues sans perdre leur valeur. Au hasard : {om} %. Et toi, ferais-tu mieux ?</span><span class="en">of Pro Radar cards resold without losing value. At random: {om}%. Could you do better?</span></span>')

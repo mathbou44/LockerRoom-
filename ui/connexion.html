@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0B0B0E">
-<title>SlabCoach · Joue tes cartes comme un pro</title>
+<title>SlabCoach · Collectionne plus. Cherche moins.</title>
 <meta name="description" content="SlabCoach, l'app des cartes de sport : deals sous la valeur sur eBay, vraies valeurs des cartes, chances de hits dans les breaks, inventaire et ventes eBay.">
 <link rel="canonical" href="https://slabcoach.com/connexion">
-<meta property="og:title" content="SlabCoach · Joue tes cartes comme un pro">
+<meta property="og:title" content="SlabCoach · Collectionne plus. Cherche moins.">
 <meta property="og:description" content="Deals sous la valeur, vraies valeurs, chances de breaks, inventaire et ventes eBay.">
 <meta property="og:image" content="https://slabcoach.com/icone-512.png">
 <meta property="og:url" content="https://slabcoach.com/connexion">
@@ -56,6 +56,7 @@ main{position:relative; min-height:100%; display:grid; place-items:center}
   background-size:250% 100%; animation:reflet 4.5s ease-in-out infinite; mix-blend-mode:screen;
   -webkit-mask:url(/logo_sc_gold_poli.png) center/contain no-repeat; mask:url(/logo_sc_gold_poli.png) center/contain no-repeat}
 .titre{margin:30px 0 0; font-size:clamp(22px,5.4vw,28px); font-weight:800; line-height:1.2; text-wrap:balance}
+.douleur{margin:10px auto 0; max-width:30ch; min-height:1.4em; font-size:15px; font-style:italic; line-height:1.4; color:rgba(244,242,238,.55); text-wrap:balance}
 .titre em{font-style:normal; background:var(--holo); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent}
 .puces{display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:18px}
 .puces span{padding:7px 12px; border-radius:999px; border:1px solid var(--ligne); background:rgba(255,255,255,.03); color:#DCD9E2; font-size:13px; font-weight:600}
@@ -110,7 +111,8 @@ main{position:relative; min-height:100%; display:grid; place-items:center}
 <main><div class="boite">
   <div class="logo"><img id="logo-sc" src="/logo_sc_liquide.svg" alt="SlabCoach"></div>
   <div class="mot-sc" role="img" aria-label="SlabCoach Sports Cards"><b>slab</b>coach<sup>™</sup><span class="tag">SPORTS CARDS</span></div>
-  <h1 class="titre">Joue tes cartes <em>comme un pro.</em></h1>
+  <h1 class="titre">Collectionne plus. <em>Cherche moins.</em></h1>
+  <p class="douleur" id="douleur" aria-live="off"></p>
   {erreur}
   <a class="btn" href="/auth/ebay">Se connecter avec eBay<span class="reco">Recommandé</span></a>
   <div class="note ios-seul" id="note-ios" hidden>Sur l’iPhone, chez eBay, entre ton courriel et ton mot de passe eBay : « Continuer avec Google » ne fonctionne pas dans une app (règle de Google).</div>
@@ -121,6 +123,14 @@ main{position:relative; min-height:100%; display:grid; place-items:center}
   <div class="liens"><a href="/">‹ Retour au site</a><a href="/support">Support</a><a href="/confidentialite">Confidentialité</a><a href="/conditions">Conditions</a>{demo}</div>
 </div></main>
 <script>
+/* 20 nov 2026 (Mathieu : « nommer les douleurs que chacun pense vivre seul ») : une phrase qu'un collectionneur se dit, une par visite */
+(function () {
+  var en = document.documentElement.lang === "en", L = en
+    ? ["So many parallels. What am I even holding?", "Hundreds of releases a year. Impossible to keep up.", "Boxes cost a fortune. What’s even inside?", "My cards sit in the closet. I rebuy ones I own.", "My card spending got away from me.", "I always miss the card I was looking for."]
+    : ["Tellement de parallèles. C’est laquelle, celle-là ?", "Des centaines de sorties par année. Impossible de suivre.", "Les boîtes coûtent une fortune. Qu’est-ce qu’il y a dedans ?", "Mes cartes dorment au garde-robe. J’en rachète que j’ai déjà.", "Mes dépenses en cartes m’ont échappé.", "Je manque toujours la carte que je cherchais."];
+  var e = document.getElementById("douleur"); if (e) e.textContent = "« " + L[Math.floor(Math.random() * L.length)] + " »";
+  if (e && en) e.textContent = "“" + e.textContent.slice(2, -2) + "”";
+})();
 /* 28 oct 2026 : dans l'app iPhone (version qui le permet), eBay, Apple et Google s'ouvrent dans le navigateur securise
    d'iOS : Google y fonctionne (il refuse les vues web integrees), « Continuer avec Google » d'eBay aussi. Au retour,
    slabcoachauth://retour?b=... ramene un billet a usage unique, echange ici contre la session avec le secret de l'app. */

@@ -66,6 +66,7 @@ CATEGORIE_CARTES = "261328"   # eBay : Sports Trading Card Singles
 REGLAGE_MAX_OCTETS = 64 * 1024
 REGLAGES_DEFAUT = {
     "histo_complet_le": None,                                   # 20 nov 2026 : la 1re synchro (2 ans de ventes) deja faite
+    "trivia": {},                                               # 20 nov 2026 : le trivia du hobby (serie de jours, scores)
     "prix_auto": {},                                            # 27 oct 2026 : mode Auto des prix eBay (voir prix_auto_regler)
     "tuto_vendeur": 0, "tuto_acheteur": 0,                      # 31 oct 2026 : le tour de l'app deja vu (par compte)
     "watch": {},                                                # 29 oct 2026 : alarmes de la watchlist (voir watchlist.regler)
@@ -654,8 +655,10 @@ class Api:
     def __init__(self, chemin_db=None):
         _API_REF[:] = [self]                 # 10 nov 2026 : ebay_prix_actif() sait si c'est l'admin
         self._chemin_fixe = chemin_db            # tests : base imposee
-        with _verrou:
-            _connecter(self.chemin_db).close()
+        import comptes
+        if chemin_db or not comptes.MULTI or comptes.courant():   # 20 nov 2026 : en ligne, chaque base se cree avec son compte
+            with _verrou:
+                _connecter(self.chemin_db).close()
 
     @property
     def chemin_db(self):
@@ -8586,6 +8589,23 @@ class Api:
         import slabiq_test
         return slabiq_test.lire()
 
+    # 20 nov 2026 (Mathieu : « un genre de Trivia Crack pour apprendre le monde de la carte sportive ; hockey d'abord ; dans
+    # Admin pour que je le teste ») : 5 questions par jour, les memes pour tous ; seulement des faits verifies (trivia.py)
+    def trivia_jour(self, sport="hockey", langue=None):
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur (à l'essai)"}
+        import trivia
+        L = trivia.jour("en" if (langue or self.reglages_lire().get("langue")) == "en" else "fr", str(sport or "hockey"))
+        return {"ok": True, "sport": sport or "hockey", "questions": L, "etat": self.reglages_lire().get("trivia") or {}}
+
+    def trivia_fini(self, bonnes, total, sport="hockey"):
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur (à l'essai)"}
+        import trivia
+        e = trivia.noter(self.reglages_lire().get("trivia") or {}, max(0, int(bonnes or 0)), max(1, int(total or 5)))
+        self.reglages_sauver({"trivia": e})
+        return {"ok": True, "etat": e}
+
     def slabiq_chiffres(self):
         """13 nov 2026 (Mathieu : « plus punchy et vendeur ; mettre des stats et infos wow ») : les vrais chiffres de SlabIQ pour
         sa fenetre : ventes apprises, precision mesuree sur des ventes jamais vues, date du dernier apprentissage, joueurs
@@ -8619,6 +8639,11 @@ class Api:
                 r["top"] = {"nom": t[0]["nom"], "indice": round(float(I[t[0]["nom"]]["indice"]))}
         except Exception:
             pass
+        try:                                     # 20 nov 2026 : les chiffres du site, tels quels (iq_publie : une seule source)
+            import iq_publie
+            r["publie"] = iq_publie.publics()
+        except Exception:
+            r["publie"] = {}
         Api._IQ_CHIFFRES.update(le=m, v=r)
         return r
 
@@ -10366,7 +10391,8 @@ class Api:
                 print(f"Photos d'achats (CDN eBay) : {n} trouvees sur {min(len(ids), 150)}", flush=True)
             finally:
                 Api._PH_SEM_FOND.discard(base)
-        threading.Thread(target=tour, daemon=True, name="photos-heritees").start()
+        import comptes                                  # 20 nov 2026 : le fil garde le compte (il ecrivait dans la base racine)
+        comptes.fil(tour, nom="photos-heritees")
         return True
 
     def _photos_semblables_fond(self, items):
@@ -10393,7 +10419,8 @@ class Api:
                 print(f"Photos semblables : {n} trouvees sur {min(len(items), self.PH_SEM_PAR_TOUR)}", flush=True)
             finally:
                 Api._PH_SEM_FOND.discard(base)
-        threading.Thread(target=tour, daemon=True, name="photos-semblables").start()
+        import comptes                                  # 20 nov 2026 : le fil garde le compte (il ecrivait dans la base racine)
+        comptes.fil(tour, nom="photos-semblables")
         return True
 
     def achetees_tableau(self):

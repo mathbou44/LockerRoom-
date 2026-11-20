@@ -29,11 +29,62 @@ MULTI = os.environ.get("LOCKERROOM_MULTI") == "1"
 DOSSIER_COMPTES = os.path.join(DONNEES, "comptes")
 CHEMIN_INDEX = os.path.join(DOSSIER_COMPTES, "index.json")
 _courant = contextvars.ContextVar("compte_lockerroom", default=None)
+_systeme = contextvars.ContextVar("compte_systeme", default=False)
 _verrou = threading.Lock()
 
 
 def courant():
     return _courant.get()
+
+
+# 20 nov 2026 (blindage avant le lancement) : en ligne (MULTI), un travail qui ne sait pas a quel compte il appartient
+# (une tache de fond qui a perdu son compte, un fil lance sans le contexte) RETOMBAIT sur les fichiers de la racine (la
+# base de l'admin) : les donnees d'un client pouvaient y atterrir, ou celles de l'admin lui etre montrees. Maintenant il est
+# REFUSE (SansCompte) et note dans le journal. Le travail commun a tous (catalogue, deals, base des ventes) n'utilise pas
+# les dossiers des comptes ; le peu qui lit volontairement la racine le dit : « with comptes.systeme(): ».
+class SansCompte(RuntimeError):
+    pass
+
+
+REFUSES = []                                    # les derniers refus (Admin, tests) : (quand, quoi, fil)
+GARDE = os.environ.get("LR_GARDE_COMPTE", "refuser")      # « noter » : on note seulement (diagnostic), on ne refuse pas
+
+
+def garde(quoi):
+    """Appelee la ou un fichier d'un compte est choisi. Sans compte en ligne : refuse (sauf dans comptes.systeme())."""
+    if not MULTI or _courant.get() or _systeme.get():
+        return
+    import traceback
+    pile = "".join(traceback.format_stack(limit=18)[:-1])
+    REFUSES.append((time.time(), quoi, threading.current_thread().name, pile))
+    del REFUSES[:-50]
+    print(f"Compte manquant ({quoi}, fil {threading.current_thread().name}) : refuse\n" + pile[-1200:], flush=True)
+    try:                                        # Admin > Erreurs : pour le voir sans lire le journal
+        import admin
+        admin.noter_erreur("compte manquant (" + quoi + ")", RuntimeError(pile.strip().splitlines()[-3][:200] if pile.strip() else quoi))
+    except Exception:
+        pass
+    if GARDE != "noter":
+        raise SansCompte(f"Aucun compte pour {quoi}")
+
+
+@contextlib.contextmanager
+def systeme():
+    """with comptes.systeme(): ... -> travail de l'administration du serveur, sans compte, sur la racine (permis)."""
+    j1, j2 = _courant.set(None), _systeme.set(True)
+    try:
+        yield
+    finally:
+        _systeme.reset(j2)
+        _courant.reset(j1)
+
+
+def fil(cible, *args, nom=None, **kw):
+    """Un fil de fond qui GARDE le compte de celui qui le lance (threading.Thread ne le garde pas : il retombait sans compte)."""
+    ctx = contextvars.copy_context()
+    t = threading.Thread(target=lambda: ctx.run(cible, *args, **kw), daemon=True, name=nom or getattr(cible, "__name__", "fil"))
+    t.start()
+    return t
 
 
 @contextlib.contextmanager
@@ -54,6 +105,7 @@ def activer(compte_id):
 def dossier(compte_id=None):
     cid = compte_id or courant()
     if not cid:
+        garde("dossier")                    # 20 nov 2026 : en ligne, pas de compte = refuse (pas la racine)
         return None
     if not re.fullmatch(r"[a-z0-9]{8,40}", str(cid)):
         raise ValueError("Compte invalide")

@@ -733,8 +733,16 @@ def _taux_vers_cad(dev):
 _TAUX_MEMO = [TAUX_CAD["USD"], 0.0]
 
 
+def chemin_jeton_app():
+    """20 nov 2026 : le jeton de l'APPLICATION (recherches publiques, pas un client) : un seul fichier commun, hors des comptes.
+    Avant : range dans les jetons du compte courant, et les taches communes (deals, nouveaux produits) n'avaient pas de compte."""
+    if CHEMIN_JETONS:
+        return CHEMIN_JETONS
+    return os.path.join(DOSSIER, "app_" + _env()["jetons"])
+
+
 def jeton_application():
-    ch = chemin_jetons()
+    ch = chemin_jeton_app()
     with _verrou_de(ch):
         j = _lire(ch)
         if j.get("app_token") and j.get("app_expire_a", 0) > time.time() + MARGE_S:

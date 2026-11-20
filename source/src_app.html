@@ -504,6 +504,7 @@ html.deco-o #vue{position:relative; z-index:1}
   .np-ic .deco-f svg, .np-ic svg{width:18px; height:18px}
   .np-t{display:flex; flex-direction:column; line-height:1.2; white-space:nowrap} .np-t b{font:700 13px var(--f-cond); letter-spacing:.06em; text-transform:uppercase; color:var(--or)}
   .np-t small{font-size:11.5px; color:var(--doux)}
+  .np-devise{font:700 11.5px var(--f-cond); letter-spacing:.06em; text-transform:uppercase; color:var(--doux); margin-bottom:1px}
   .np-legal{display:flex; flex-direction:column; gap:3px; font-size:10.5px; line-height:1.3; color:var(--pale); padding:0 8px; white-space:nowrap}
   .onglets .np-legal a{display:inline !important; padding:0 !important; margin:0 !important; font:inherit !important; font-size:10.5px !important; color:var(--pale) !important;
     background:none !important; border:0 !important; border-radius:0 !important; text-decoration:none} .onglets .np-legal a:hover{color:var(--texte) !important}
@@ -4726,6 +4727,50 @@ html.tel-large .ecran.acc.acc-ft-mode > .acc-news2{order:9}
 .sig-g{display:grid; grid-template-columns:1fr 1fr; gap:8px} .sig-o{padding:12px; border-radius:14px; border:1.5px solid var(--ligne); background:var(--carte); color:var(--texte); font:600 14px var(--f-txt); text-align:left; cursor:pointer}
 .sig-o.on{border-color:transparent; background:linear-gradient(var(--carte2), var(--carte2)) padding-box, var(--prisme) border-box}
 .iqx-ch .iqx-s:nth-child(n+3){display:none} .iqx-f{gap:8px} .iqx-fi{padding-top:10px !important; padding-bottom:10px !important}
+/* 20 nov 2026 : le trivia du hobby (Admin, a l'essai) */
+.tv{display:flex; flex-direction:column; gap:14px; padding-top:22px; min-height:420px}
+.tv-h{display:flex; align-items:center; justify-content:space-between; gap:10px; padding-right:44px}
+.tv-nom{font:800 22px var(--f-cond); letter-spacing:.02em; text-transform:uppercase} .tv-nom span{background:var(--holo); -webkit-background-clip:text; background-clip:text; color:transparent}
+.tv-pts{display:flex; gap:6px} .tv-pts i{width:10px; height:10px; border-radius:50%; background:var(--carte2)} .tv-pts i.ici{background:var(--texte)} .tv-pts i.ok{background:var(--vert)} .tv-pts i.non{background:var(--rouge)}
+.tv-serie{display:inline-flex; align-items:center; gap:4px; font:700 16px var(--f-cond); color:var(--or)} .tv-serie svg{width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:2}
+.tv-cad{position:relative; width:64px; height:64px; align-self:center; display:grid; place-items:center}
+.tv-cad svg{position:absolute; inset:0; transform:rotate(-90deg)} .tv-fd{fill:none; stroke:var(--carte2); stroke-width:4} .tv-arc{fill:none; stroke:var(--c); stroke-width:4; stroke-linecap:round}
+.tv-cad b{font:700 22px var(--f-cond); color:var(--texte)}
+.tv-th{align-self:center; padding:5px 14px; border-radius:999px; font:700 13px var(--f-cond); letter-spacing:.1em; text-transform:uppercase; color:var(--c); border:1px solid color-mix(in srgb, var(--c) 45%, transparent); background:color-mix(in srgb, var(--c) 12%, transparent)}
+.tv-q{margin:0; text-align:center; font-size:21px; line-height:1.3; font-weight:700}
+.tv-c{display:grid; gap:9px}
+.tv-b{display:flex; align-items:center; gap:12px; padding:14px; border-radius:16px; border:1px solid var(--ligne); background:var(--carte); color:var(--texte); font:600 16px var(--f-txt, inherit); text-align:left; cursor:pointer; transition:transform .12s, border-color .15s}
+.tv-b:active{transform:scale(.98)} .tv-l{flex:none; width:30px; height:30px; border-radius:50%; display:grid; place-items:center; font:700 14px var(--f-cond); background:var(--carte2); color:var(--doux)}
+.tv-b.ok{border-color:var(--vert); background:color-mix(in srgb, var(--vert) 16%, var(--carte))} .tv-b.ok .tv-l{background:var(--vert); color:#0B0B0E}
+.tv-b.non{border-color:var(--rouge); background:color-mix(in srgb, var(--rouge) 14%, var(--carte))} .tv-b.non .tv-l{background:var(--rouge); color:#0B0B0E}
+.tv-b:disabled{cursor:default}
+.tv-ex{display:flex; flex-direction:column; gap:8px; padding:14px; border-radius:16px; background:var(--carte); border:1px solid var(--ligne)} .tv-ex[hidden]{display:none}
+.tv-ex b{font-size:17px} .tv-ex b.vert{color:var(--vert)} .tv-ex b.rouge{color:var(--rouge)} .tv-ex span{font-size:14.5px; color:var(--doux); line-height:1.4} .tv-ex .btn{align-self:stretch}
+.tv-fin{display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center; padding:10px 0}
+.tv-score b{font:800 96px/1 var(--f-cond); background:var(--holo); -webkit-background-clip:text; background-clip:text; color:transparent} .tv-score span{font:700 34px var(--f-cond); color:var(--doux)}
+.tv-fin p{margin:0; font-size:17px; font-weight:600}
+.tv-k{display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; width:100%} .tv-k div{display:flex; flex-direction:column; gap:3px; padding:12px; border-radius:16px; background:var(--carte); border:1px solid var(--ligne)}
+.tv-k b{font:700 28px var(--f-cond); color:var(--or)} .tv-k small{font-size:12px; color:var(--doux)}
+.tv-bas{display:flex; gap:10px; width:100%} .tv-bas .btn{flex:1} .tv-note{font-size:12px; color:var(--pale)}
+/* 20 nov 2026 : SlabIQ, la grosse affaire : un chiffre geant, trois preuves, une seule ligne de petite ecriture */
+.iqx2{gap:16px} .iqx2 .iqx-t span em{font-style:normal; background:var(--holo); -webkit-background-clip:text; background-clip:text; color:transparent} .iqx2 .iqx-t span{font-size:22px !important}
+.iqx2 > .iqx-g, .iqx2 > .iqx-d{display:flex; flex-direction:column; gap:16px; min-width:0}
+/* a l'ordi : deux colonnes (la promesse et les preuves | comment il pense), sans defilement */
+@media (min-width:900px){ #feuille:has(.iqx2){width:min(1000px, 92vw) !important; max-width:min(1000px, 92vw) !important}
+  .iqx2{display:grid !important; grid-template-columns:minmax(0, 1.05fr) minmax(0, 1fr); column-gap:24px; align-items:start} }
+.iqx2 .iqx-t span{font-size:18px; font-weight:700; letter-spacing:-.005em}
+.iqx-hero{display:flex; flex-direction:column; align-items:center; text-align:center; gap:4px; padding:18px 16px 16px; border-radius:26px;
+  background:radial-gradient(90% 120% at 50% 0%, color-mix(in srgb, var(--acc) 22%, transparent), transparent 70%), var(--carte); border:1px solid color-mix(in srgb, var(--acc) 30%, var(--ligne))}
+.iqx-hero[hidden]{display:none}
+.iqx-hero b{font:800 clamp(64px, 20vw, 96px)/.95 var(--f-cond); letter-spacing:-.01em; background:var(--holo); -webkit-background-clip:text; background-clip:text; color:transparent}
+.iqx-hero span{font-size:17px; font-weight:700; color:var(--texte); max-width:30ch; line-height:1.3}
+.iqx-ch3{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px} .iqx-ch3[hidden]{display:none}
+.iqx-ch3 .iqx-s:nth-child(3){grid-column:1 / -1; flex-direction:row; align-items:center; gap:14px} .iqx-ch3 .iqx-s:nth-child(3) small{font-size:13px}
+.iqx2 .iqx-h:not(:has(.iqx-cad.on)) .iqx-cad{display:none}
+.iqx-ch3 .iqx-s{padding:12px 11px; border-radius:18px; gap:5px} .iqx-ch3 .iqx-s b{font-size:clamp(28px, 8vw, 36px); white-space:nowrap} .iqx-ch3 .iqx-s small{font-size:12.5px; line-height:1.3}
+.iqx-sec{font:700 12px var(--f-cond); letter-spacing:.14em; text-transform:uppercase; color:var(--pale); margin:2px 2px -6px}
+.iqx2 .iqx-lt{margin:4px 0 0} .iqx2 .iqx-lr span:nth-child(2){color:var(--texte2); font-weight:600}
+.iqx2 .iqx-pied{display:flex; flex-direction:column; gap:4px; font-size:15px} .iqx2 .iqx-pied b{color:var(--texte)} .iqx2 .iqx-pied span{font-size:12px} .iqx2 .iqx-pied a{color:var(--acc); text-decoration:none; white-space:nowrap}
 .iqx-lt{display:grid; grid-template-columns:repeat(8,1fr); gap:6px; margin:14px 0 6px} .iqx-lt b{display:grid; place-items:center; height:34px; border-radius:10px; border:1.5px solid currentColor; font-weight:800; font-size:14px}
 .iqx-lr{display:flex; justify-content:space-between; gap:10px; font-size:12.5px; color:var(--doux); margin-bottom:6px} .iqx-lr span:last-child{text-align:right}
 .tiq-rech{position:relative; display:flex; align-items:center; gap:10px; margin:14px 0 4px; padding:0 14px; height:50px; border-radius:16px; background:rgba(255,255,255,.05); border:1px solid var(--ligne, rgba(255,255,255,.1))}
@@ -5176,6 +5221,22 @@ input[type=number]{-moz-appearance:textfield; appearance:textfield}
 .ft-n{order:-1; font-weight:800; font-size:17px; letter-spacing:.01em}
 .ft-h{order:0} .ft-t .ft-s{order:1} .ft-t .ft-g, .ft-t .ft-gz{order:2}
 .ft-h{justify-content:flex-start; gap:10px; margin:6px 0 2px}
+/* 20 nov 2026 (Mathieu : « l'ecriture prend la moitie de la tuile ; il y a moyen d'optimiser et de rendre ca plus beau ») :
+   au cell, quand les tuiles remplissent l'ecran, chacune se met en page comme un widget : le titre en haut, la courbe au milieu
+   s'il y a la place, le gros chiffre et le detail en bas ; tout se dimensionne sur la TUILE (container queries) */
+@media (max-width:699px) and (min-height:741px){
+  .ecran.acc.acc-ft-mode.acc-plein .ft-t{container-type:size; display:flex !important; flex-direction:column; justify-content:flex-start;
+    gap:0; padding:14px 14px 13px !important; overflow:hidden}
+  .ecran.acc.acc-ft-mode.acc-plein .ft-n{order:0; font-size:clamp(18px, min(13.5cqw, 18cqh), 25px); line-height:1.1; letter-spacing:.005em}
+  .ecran.acc.acc-ft-mode.acc-plein .ft-t .ft-g{order:1; display:none; flex:1 1 auto; width:100%; height:auto; min-height:0; margin:8px 0 6px; padding:0}
+  .ecran.acc.acc-ft-mode.acc-plein .ft-h{order:2; position:static; margin:auto 0 0 !important; gap:clamp(8px, 4cqw, 12px); align-items:center}
+  .ecran.acc.acc-ft-mode.acc-plein .ft-t .ap-ic{width:clamp(32px, min(22cqw, 30cqh), 48px); height:clamp(32px, min(22cqw, 30cqh), 48px)}
+  .ecran.acc.acc-ft-mode.acc-plein .ft-t .ap-ic svg{width:45%; height:45%}
+  .ecran.acc.acc-ft-mode.acc-plein .ft-v, .ecran.acc.acc-ft-mode.acc-plein .ft-t.k-maj.neuf .ft-v{font-size:clamp(24px, min(24cqw, 31cqh), 54px); line-height:1}
+  .ecran.acc.acc-ft-mode.acc-plein .ft-s{order:3; margin-top:clamp(4px, 2.4cqh, 8px); font-size:clamp(13px, min(8cqw, 10cqh), 15.5px); line-height:1.25; -webkit-line-clamp:2}
+  @container (min-height:112px){ .ecran.acc.acc-ft-mode.acc-plein .ft-t .ft-g{display:block} }
+  @container (max-height:100px){ .ecran.acc.acc-ft-mode.acc-plein .ft-s{-webkit-line-clamp:1} }
+}
 @media (max-width:699px){
   .acc-ft-mode .ft-t{justify-content:flex-start; height:auto; min-height:0}
   .acc-ft-mode .ft-h{position:static; margin:4px 0 0; justify-content:flex-start; gap:9px}
@@ -7006,7 +7067,7 @@ function piedNav(){
   const f = fetesActives();
   p.innerHTML = `${f ? `<div class="np-fete"><span class="np-ic">${htmlDecoFetes('sapin')}${htmlDecoFetes('cadeau')}</span>
       <span class="np-t"><b>${tt('Joyeuses fêtes', 'Happy holidays')}</b><small>${tt('de toute l’équipe SlabCoach', 'from the whole SlabCoach team')}</small></span></div>` : ''}
-    <div class="np-legal"><span>© ${new Date().getFullYear()} SlabCoach™ · ${tt('Tous droits réservés', 'All rights reserved')}</span><span><a href="/conditions" target="_blank" rel="noopener">${tt('Conditions', 'Terms')}</a> · <a href="/confidentialite" target="_blank" rel="noopener">${tt('Confidentialité', 'Privacy')}</a></span></div>`;
+    <div class="np-legal"><b class="np-devise">${tt('Collectionne plus. Cherche moins.', 'Collect more. Search less.')}</b><span>© ${new Date().getFullYear()} SlabCoach™ · ${tt('Tous droits réservés', 'All rights reserved')}</span><span><a href="/conditions" target="_blank" rel="noopener">${tt('Conditions', 'Terms')}</a> · <a href="/confidentialite" target="_blank" rel="noopener">${tt('Confidentialité', 'Privacy')}</a></span></div>`;
 }
 function decorOrdi(){
   let z = document.getElementById('deco-ordi');
@@ -19038,6 +19099,7 @@ async function vueAdmin(onglet, cible){
       ['effets', 'pouls', tt('Ce qui fait bouger les cartes', 'What moves cards'), '', tt('chaque événement : prix et ventes après', 'each event: price and sales after'), '', () => feuilleEffets()],
       ['sports', 'graphe', tt('Le 2e sport au Canada', '2nd sport in Canada'), '', tt('les ventes de chaque sport, part du Canada', 'each sport’s sales, Canada share'), '', () => feuilleSportsMarche()],
       ['baseball', 'graphe', 'Baseball', '', tt('joueurs, ventes, crédits : où on en est', 'players, sales, credits: progress'), '', () => feuilleBaseball()],
+      ['trivia', 'cible', tt('Trivia hockey', 'Hockey trivia'), '', tt('à l’essai · 5 questions par jour', 'trial · 5 questions a day'), '', () => jouerTrivia('hockey')],
       ['banc', 'cible', tt('Validation', 'Validation'), '', tt('le banc de test des valeurs', 'the value test bench'), '', () => admPop(tt('Validation', 'Validation'), adminBanc)],
       ['entr', 'photo', tt('Banque d’entraînement IA', 'AI training bank'), '', tt('examens et vraies notes', 'exams and real grades'), '', () => admPop(tt('Banque d’entraînement IA', 'AI training bank'), adminServeur, SERVEUR_PART.entrainement)]]],
     [tt('Catalogue', 'Catalogue'), [
@@ -20269,43 +20331,109 @@ function expliquerSlabIQ(){
     [ic('<rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 8h6M9 12h6"/>'), tt('La carte', 'The card'), tt('Young Guns, auto, patch, numérotée, gradée : chaque sorte a sa lettre.', 'Young Guns, auto, patch, numbered, graded: each kind has its letter.')],
     [ic('<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>'), tt('Le joueur', 'The player'), tt('Sa cote chez les collectionneurs, plus un demi-cran s’il est en feu.', 'His collector rating, plus half a step when he’s on fire.')],
     [ic('<path d="M12 3v18M5 8h14M7 8l-3 7h6zM17 8l-3 7h6z"/>'), tt('Le plus faible décide', 'The weaker one decides'), tt('Une base de McDavid reste une base ; une Young Guns d’un joueur moyen reste moyenne.', 'A McDavid base card is still a base; a Young Guns of an average player stays average.')]];
-  ouvrirFeuille(`<div class="iqx">
+  // 20 nov 2026 (Mathieu : « valide l'info, la meme partout ; la petite ecriture ; SlabIQ doit etre la grosse affaire, comme
+  // Apple et iOS ») : une promesse, UN chiffre geant, trois preuves ; chaque chiffre est celui du site (iq_publie, mesure sur des
+  // ventes jamais vues, arrondi vers le bas) ; plus aucun chiffre ecrit en dur ; une seule ligne de petite ecriture, avec le lien
+  ouvrirFeuille(`<div class="iqx iqx2"><div class="iqx-g">
     <div class="iqx-h">
       <div class="iqx-cad"><svg viewBox="0 0 120 120"><defs><linearGradient id="iqx-gr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9FE6D2"/><stop offset=".4" stop-color="#B9BEFF"/><stop offset=".75" stop-color="#F2B3D6"/><stop offset="1" stop-color="#F1D58E"/></linearGradient></defs>
         <circle cx="60" cy="60" r="50" class="iqx-fd"/><circle cx="60" cy="60" r="50" class="iqx-arc" stroke="url(#iqx-gr)"/></svg><b id="iqx-n">0</b><small id="iqx-qui">/100</small></div>
-      <div class="iqx-t"><b>Slab<i>IQ</i></b><span>${tt('Sache quelles cartes sont chaudes avant tout le monde.', 'Know which cards are hot before everyone else.')}</span><small id="iqx-top"></small></div>
+      <div class="iqx-t"><b>Slab<i>IQ</i></b><span>${tt('Une lettre. <em>Toute la réponse.</em>', 'One letter. <em>The whole answer.</em>')}</span><small id="iqx-top"></small></div>
     </div>
-    <div class="iqx-ch" id="iqx-ch">${[0, 1, 2, 3].map(() => `<div class="iqx-s"><b>&nbsp;</b><small>&nbsp;</small></div>`).join('')}</div>
+    <div class="iqx-hero" id="iqx-hero" hidden><b id="iqx-x"></b><span id="iqx-xt"></span></div>
+    <div class="iqx-ch3" id="iqx-ch"></div></div><div class="iqx-d">
+    <div class="iqx-sec">${tt('Comment il pense', 'How it thinks')}</div>
     <div class="iqx-f">${F.map(([i, a, b]) => `<div class="iqx-fi"><span class="iqx-ic">${i}</span><span><b>${a}</b><small>${b}</small></span></div>`).join('')}</div>
     <div class="iqx-lt">${['A+', 'A', 'A-', 'B+', 'B', 'C', 'D', 'E'].map(l => `<b class="${famCl(l)}">${l}</b>`).join('')}</div>
-    <div class="iqx-lr"><span>${tt('Au Radar : B et plus', 'In the Radar: B and up')}</span><span>${tt('A et A+ se revendent 5× plus souvent que E', 'A and A+ resell 5× more often than E')}</span></div>
-    <div class="iqx-pied">${tt('Une note de demande, jamais un prix : tu restes le boss de ta mise.', 'A demand grade, never a price: you stay the boss of your bid.')}<br><span id="iqx-note"></span></div>
-  </div>`, {centre: true});
+    <div class="iqx-lr"><span>${tt('Recherchée', 'In demand')}</span><span>${tt('Au Radar : B et plus', 'In the Radar: B and up')}</span><span>${tt('Boudée', 'Overlooked')}</span></div>
+    <div class="iqx-pied"><b>${tt('Une note de demande, jamais un prix.', 'A demand grade, never a price.')}</b><span id="iqx-note"></span></div>
+  </div></div>`, {centre: true});
   const fe = $('#feuille'), arc = $('.iqx-arc', fe), C = 2 * Math.PI * 50;
   // compte de 0 a v (les chiffres « montent » comme un compteur)
   const compter = (el, v, fmt, ms) => { const t0 = performance.now(), pas = (t) => { const k = Math.min(1, (t - t0) / (ms || 1100)), e = 1 - Math.pow(1 - k, 3);
     if (!el.isConnected) return; el.textContent = fmt(v * e); if (k < 1) requestAnimationFrame(pas); }; requestAnimationFrame(pas); };
   const remplir = (v) => { if (!arc) return; arc.style.strokeDasharray = C; arc.style.strokeDashoffset = C;
     requestAnimationFrame(() => requestAnimationFrame(() => { arc.style.strokeDashoffset = C * (1 - v / 100); })); compter($('#iqx-n'), v, Math.round); };
-  const k_ = (x) => x >= 1e6 ? (x / 1e6).toLocaleString(LOC(), {maximumFractionDigits: 1}) + ' M' : x >= 1e4 ? Math.round(x / 1e3) + ' k' : Math.round(x).toLocaleString(LOC());
   API.slabiq_chiffres().catch(() => ({})).then(d => {
     if (!fe.contains($('#iqx-ch'))) return;
     d = d || {};
-    const T = d.top && d.top.indice != null ? d.top : null;
-    remplir(T ? T.indice : 87);
+    const T = d.top && d.top.indice != null ? d.top : null, P = d.publie || {};
+    remplir(T ? T.indice : 0);
     if (T) { $('#iqx-qui').textContent = '#1'; $('#iqx-top').innerHTML = `<span class="iqx-feu">${ic('<path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2.2 1-3.6 2-4.6.3 1.6 1 2.6 2 3 0-3 .5-5.6 1-8.4z"/>')}</span>${tt('N° 1 en ce moment', 'No. 1 right now')} : <b>${esc(T.nom)}</b>`; }
-    const jours = d.appris_le ? Math.max(0, Math.round((Date.now() - new Date(d.appris_le + 'T12:00:00').getTime()) / 864e5)) : null;
-    const S_ = [
-      d.ventes ? [d.ventes, k_, tt('ventes apprises', 'sales learned'), 'holo'] : ['6', null, tt('sources de données', 'data sources'), 'holo'],
-      d.precision ? [d.precision, (x) => Math.round(x) + ' %', tt('bien classées*', 'ranked right*'), 'vert'] : ['9/10', null, tt('bien classées*', 'ranked right*'), 'vert'],
-      d.joueurs ? [d.joueurs, k_, tt('joueurs suivis chaque jour', 'players tracked daily'), 'acc'] : ['24 h', null, tt('mis à jour chaque jour', 'updated daily'), 'acc'],
-      d.en_feu ? [d.en_feu, Math.round, tt('joueurs en feu cette semaine', 'players on fire this week'), 'or']
-        : jours != null ? [jours === 0 ? tt('Auj.', 'Today') : jours + ' j', null, tt('dernier réapprentissage', 'last retrained'), 'or'] : ['3 j', null, tt('réappris aux 3 jours', 'retrained every 3 days'), 'or']];
-    $('#iqx-ch').innerHTML = S_.map(([v, f, l, c]) => `<div class="iqx-s ${c}"><b>${f ? '0' : esc(String(v))}</b><small>${l}</small></div>`).join('');
-    $$('#iqx-ch .iqx-s').forEach((el, i) => { const [v, f] = S_[i]; if (f) compter(el.querySelector('b'), +v, f, 1300); });
-    $('#iqx-note').textContent = tt('* paires de cartes mises dans le bon ordre, sur des ventes qu’il n’avait jamais vues', '* card pairs put in the right order, on sales it had never seen')
-      + (jours != null ? ' · ' + (jours === 0 ? tt('réappris aujourd’hui', 'retrained today') : tt(`réappris il y a ${jours} j`, `retrained ${jours} d ago`)) : '');
+    if (T) $('.iqx-cad', fe).classList.add('on');                   // pas de joueur #1 : pas de cadran vide
+    if (!P.le) { $('#iqx-ch').hidden = true; return; }               // pas de mesure publiee : aucun chiffre plutot qu'un chiffre invente
+    const h = $('#iqx-hero'); h.hidden = false;
+    compter($('#iqx-x'), P.fois, (x) => Math.round(x) + '×', 1200);
+    $('#iqx-xt').textContent = tt(`Une carte A ou A+ se revend ${P.fois} fois plus qu’une E.`, `An A or A+ card resells ${P.fois} times more than an E.`);
+    const S_ = [[P.ventes, tt('ventes réelles apprises', 'real sales learned'), 'holo'],
+      [tt(P.accord_fr, P.accord_en), tt('d’accord avec le marché', 'agreement with the market'), 'acc'],
+      [tt(P.pro + ' %', P.pro + '%'), tt(`des achats du Radar Pro se revendent sans perte. Au hasard : ${P.hasard} %.`, `of Pro Radar buys resell without a loss. At random: ${P.hasard}%.`), 'vert']];
+    $('#iqx-ch').innerHTML = S_.map(([v, l, c]) => `<div class="iqx-s ${c}"><b>${esc(String(v))}</b><small>${l}</small></div>`).join('');
+    const dt_ = new Date(P.le + 'T12:00:00').toLocaleDateString(LOC(), {day: 'numeric', month: 'long', year: 'numeric'});
+    $('#iqx-note').innerHTML = esc(tt(`Mesuré le ${dt_}, sur des ventes que SlabIQ n’avait jamais vues.`, `Measured on ${dt_}, on sales SlabIQ had never seen.`))
+      + ` <a href="/slabiq" target="_blank" rel="noopener">${tt('Voir nos tests', 'See our tests')} ›</a>`;
   });
+}
+// 20 nov 2026 (Mathieu : « un genre de Trivia Crack pour apprendre le monde de la carte sportive ; hockey d'abord ; a tester dans
+// Admin ») : 5 questions par jour (les memes pour tous), 4 choix, 20 s chacune, la bonne reponse et l'explication apres chaque
+// question, la serie de jours. Seulement des faits verifies (nos checklists, les stats de la LNH, une banque sure : trivia.py)
+const TV_THEMES = {'parallèles': ['Parallèles', 'Parallels', '#B9BEFF'], 'recrues': ['Recrues', 'Rookies', '#7FE0B4'], 'exploits': ['Exploits', 'Feats', '#F1D58E'],
+  'produits': ['Produits', 'Products', '#9FD6FF'], 'lnh': ['LNH', 'NHL', '#FF9F9F'], 'vocab': ['Le hobby', 'The hobby', '#F2B3D6'],
+  'gradation': ['Gradation', 'Grading', '#C9A6FF'], 'histoire': ['Histoire', 'History', '#FFC48A']};
+async function jouerTrivia(sport){
+  vibrer();
+  if (typeof popFermer === 'function') try { popFermer(); } catch (e) {}
+  ouvrirFeuille(`<div class="tv"><div class="lecture"><span class="roue"></span></div></div>`, {centre: true});
+  const r = await API.trivia_jour(sport, LANGUE).catch(e => ({ok: false, erreur: e.message}));
+  const z = $('#feuille .tv'); if (!z) return;
+  if (!r || !r.ok || !(r.questions || []).length) { z.innerHTML = `<div class="vide">${esc((r && r.erreur) || tt('Pas de questions aujourd’hui.', 'No questions today.'))}</div>`; return; }
+  const Q = r.questions, auj = new Date().toISOString().slice(0, 10), deja = (r.etat || {}).dernier === auj;
+  let i = 0, bonnes = 0, minuterie = null;
+  const theme = (t) => TV_THEMES[t] || [t, t, 'var(--acc)'];
+  const points = () => Q.map((_, k) => `<i class="${k < i ? (Q[k]._ok ? 'ok' : 'non') : k === i ? 'ici' : ''}"></i>`).join('');
+  const SERIE = (n) => `<span class="tv-serie" title="${esc(tt('Série de jours', 'Day streak'))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2.2 1-3.6 2-4.6.3 1.6 1 2.6 2 3 0-3 .5-5.6 1-8.4z"/></svg>${n}</span>`;
+  const question = () => {
+    const q = Q[i], [tf, te, c] = theme(q.theme);
+    z.innerHTML = `<div class="tv-h"><b class="tv-nom">Trivia <span>${sport === 'hockey' ? tt('hockey', 'hockey') : esc(sport)}</span></b><span class="tv-pts">${points()}</span>${SERIE((r.etat || {}).serie || 0)}</div>
+      <div class="tv-cad" style="--c:${c}"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="19" class="tv-fd"/><circle cx="22" cy="22" r="19" class="tv-arc" id="tv-arc"/></svg><b id="tv-s">20</b></div>
+      <div class="tv-th" style="--c:${c}">${tt(tf, te)} · ${i + 1}/${Q.length}</div>
+      <h3 class="tv-q">${esc(q.q)}</h3>
+      <div class="tv-c">${q.choix.map((x, k) => `<button class="tv-b" data-k="${k}"><span class="tv-l">${'ABCD'[k]}</span><span>${esc(x)}</span></button>`).join('')}</div>
+      <div class="tv-ex" id="tv-ex" hidden></div>`;
+    let reste = 20; const arc = $('#tv-arc'), C = 2 * Math.PI * 19;
+    arc.style.strokeDasharray = C; arc.style.strokeDashoffset = 0;
+    requestAnimationFrame(() => requestAnimationFrame(() => { arc.style.transition = 'stroke-dashoffset 20s linear'; arc.style.strokeDashoffset = C; }));
+    clearInterval(minuterie);
+    minuterie = setInterval(() => { reste--; const e = $('#tv-s'); if (!e) return clearInterval(minuterie); e.textContent = Math.max(0, reste); if (reste <= 0) repondre(-1); }, 1000);
+    $$('.tv-b', z).forEach(b => b.onclick = () => repondre(+b.dataset.k));
+  };
+  const repondre = (k) => {
+    clearInterval(minuterie);
+    const q = Q[i], ok = k === q.bonne; q._ok = ok; if (ok) bonnes++;
+    vibrer(ok ? 12 : [30, 40, 30]);
+    $$('.tv-b', z).forEach((b, j) => { b.disabled = true; if (j === q.bonne) b.classList.add('ok'); else if (j === k) b.classList.add('non'); });
+    const arc = $('#tv-arc'); if (arc) { const st = getComputedStyle(arc).strokeDashoffset; arc.style.transition = 'none'; arc.style.strokeDashoffset = st; }
+    const ex = $('#tv-ex'); ex.hidden = false;
+    ex.innerHTML = `<b class="${ok ? 'vert' : 'rouge'}">${ok ? tt('Bonne réponse !', 'Correct!') : k < 0 ? tt('Temps écoulé', 'Time’s up') : tt('Pas tout à fait', 'Not quite')}</b>
+      ${q.expl ? `<span>${esc(q.expl)}</span>` : ''}<button class="btn" id="tv-suite">${i + 1 < Q.length ? tt('Question suivante', 'Next question') : tt('Voir mon score', 'See my score')}</button>`;
+    $('#tv-suite').onclick = () => { vibrer(); i++; if (i < Q.length) question(); else fin(); };
+    $('.tv-pts', z).innerHTML = points();
+  };
+  const fin = async () => {
+    let e = r.etat || {};
+    if (!deja) { const x = await API.trivia_fini(bonnes, Q.length, sport).catch(() => null); if (x && x.ok) e = x.etat; }
+    const msg = bonnes === Q.length ? tt('Parfait. Tu connais ton hobby.', 'Perfect. You know your hobby.') : bonnes >= 3 ? tt('Solide. Reviens demain pour 5 nouvelles.', 'Solid. Come back tomorrow for 5 new ones.') : tt('Chaque question t’apprend un truc. Reviens demain.', 'Every question teaches you something. Come back tomorrow.');
+    z.innerHTML = `<div class="tv-fin">
+      <div class="tv-score"><b>${bonnes}</b><span>/${Q.length}</span></div>
+      <p>${msg}</p>
+      <div class="tv-k"><div><b>${e.serie || 0}</b><small>${tt('jours de suite', 'days in a row')}</small></div><div><b>${e.meilleure_serie || 0}</b><small>${tt('meilleure série', 'best streak')}</small></div><div><b>${e.parties || 0}</b><small>${tt('parties', 'games')}</small></div></div>
+      ${deja ? `<small class="tv-note">${tt('Déjà joué aujourd’hui : cette partie ne compte pas.', 'Already played today: this game doesn’t count.')}</small>` : ''}
+      <div class="tv-bas"><button class="btn secondaire" id="tv-re">${tt('Rejouer', 'Play again')}</button><button class="btn" id="tv-ok">${tt('Fermer', 'Close')}</button></div>
+      <small class="tv-note">${tt('Nouvelles questions chaque semaine : nos checklists, les stats de la LNH et le vocabulaire du hobby.', 'New questions every week: our checklists, NHL stats and hobby vocabulary.')}</small></div>`;
+    $('#tv-ok').onclick = () => fermerFeuille();
+    $('#tv-re').onclick = () => jouerTrivia(sport);
+  };
+  question();
 }
 // 11 nov 2026 (Mathieu : « quand l'app reconnait une carte deja achetee, lui proposer un prix de vente qui fait un bon
 // profit ») : ton cout (achat eBay relie, reconnu ou tape) -> le prix pour +30 % de profit net (frais eBay et envoi deduits).

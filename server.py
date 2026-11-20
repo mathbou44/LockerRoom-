@@ -834,8 +834,8 @@ _EN = [("Ton inventaire eBay, tes prix et tes ventes, tout seuls.", "Your eBay i
        "No password in the app · your account is created automatically"), ("Confidentialité", "Privacy"),
        (">Conditions<", ">Terms<"), ("Connexion eBay interrompue : réessaie", "eBay sign-in interrupted: try again"),
        ("Code incorrect", "Wrong code"), ("Code d’accès", "Access code"), (">Entrer<", ">Enter<"),
-       ('<html lang="fr">', '<html lang="en">'), ("Joue tes cartes <em>comme un pro.</em>", "Play your cards <em>like a pro.</em>"),
-       ("SlabCoach · Joue tes cartes comme un pro", "SlabCoach · Play your cards like a pro"),
+       ('<html lang="fr">', '<html lang="en">'), ("Collectionne plus. <em>Cherche moins.</em>", "Collect more. <em>Search less.</em>"),
+       ("SlabCoach · Collectionne plus. Cherche moins.", "SlabCoach · Collect more. Search less."),
        ("Deals sous la valeur", "Deals under value"), ("Vraies valeurs", "Real values"), ("Chances de breaks", "Break odds"),
        ("Inventaire et ventes eBay", "eBay inventory and sales"),
        ("Code de démonstration", "Demo code"), ("Continuer avec Apple", "Continue with Apple"), ("Continuer avec Google", "Continue with Google"),
@@ -2102,7 +2102,13 @@ def _moment_yg_boucle():
 
 def _rechauffer():
     """4 nov 2026 (vitesse) : apres un deploiement, le premier ecran Deals (1,5 s) et le catalogue (1 s) payaient le calcul
-    a froid. 20 s apres le demarrage, doucement en fond : le jugement des deals et la valeur des boites du catalogue."""
+    a froid. 20 s apres le demarrage, doucement en fond : le jugement des deals et la valeur des boites du catalogue.
+    20 nov 2026 : travail du serveur, sans compte (comptes.systeme : la racine est permise, le reste est refuse)."""
+    with comptes.systeme():
+        _rechauffer0()
+
+
+def _rechauffer0():
     time.sleep(int(os.environ.get("LR_RECHAUFFER_S") or 20))
     try:
         import deals
