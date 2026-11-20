@@ -881,12 +881,6 @@ def joueur_du_titre(titre, joueur=None):
 _PRENOMS = {"t": None}
 
 
-def _prenoms_connus():
-    if _PRENOMS["t"] is None:
-        _PRENOMS["t"] = {n.split()[0] for n in _joueurs_connus() if " " in n}
-    return _PRENOMS["t"]
-
-
 # 26 oct 2026 (Mathieu : « pas du tout les memes cartes » : une National Hockey Card Day comparee a des Tim Hortons,
 # une Metal Universe a des Copperheads et des Young Guns) : une annonce n'a comme comparables que les cartes du MEME
 # produit / insert. On lit les mots qui disent QUELLE carte c'est (produit, insert, sous-ensemble) ; un comparable
@@ -1146,15 +1140,8 @@ def filtrer_carte(titre, annonces, joueur=None, exclure_id=None):
     return c, gardees, ecartees
 
 
-_RE_CARTE = re.compile(r"\b(19[5-9]\d|20[0-4]\d)(-\d{2})?\b.*\b(card|rc|rookie|#\s*\w+|psa|bgs|sgc|auto|patch|refractor|parallel|insert|/\d+)\b"
-                       r"|\b(young guns|future watch|sp authentic|upper deck|panini|topps|bowman|donruss|o-pee-chee|prizm|optic|trading card)\b")
-
-
-def est_carte(titre):
-    """Une carte de sport ? (sinon : comparaison large, comme avant - LEGO, consoles, etc.)"""
-    t = norm(titre)
-    return bool(_RE_CARTE.search(t)) or any(_a_mot(t, n) for n in _joueurs_connus()[:2000])
-
+# 20 nov 2026 (revue du code) : une 1re version de est_carte (24 oct) et de _RE_CARTE etait ici ; la version du 18 nov (plus bas)
+# la remplacait deja partout (meme nom, definie apres) : retiree pour qu'il n'y ait qu'une seule regle.
 
 
 # 18 nov 2026 (Mathieu : « j'ai achete un cadre photo signe de Shayne Corson : ce n'est pas une carte ; eBay sert a acheter

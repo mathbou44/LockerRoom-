@@ -13,7 +13,7 @@ import os
 import re
 
 ICI = os.path.dirname(os.path.abspath(__file__))
-FICHIERS = ("bareme_iq.py", "score_slab.py", "validation_iq.py", "vitrine.py", "sets_cultes.py")
+FICHIERS = ("bareme_iq.py", "score_slab.py", "validation_iq.py", "vitrine.py", "sets_cultes.py", "liquidite.py")
 CONSTANTES = ("RADAR_SCORE_MIN", "RADAR_SCORE_MIN_SUIVI", "RADAR_PRIX_MIN", "RADAR_FIXE_MIN", "RADAR_FIXE_MIN_SUIVI", "FEU_PTS")
 _VAL = r"(?:int\(os\.environ\.get\([^)]*\)\s*or\s*)?([0-9.]+)"
 

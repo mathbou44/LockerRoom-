@@ -1915,6 +1915,13 @@ html body .ex-n .sc-b{height:auto !important; min-height:0; line-height:1 !impor
   html body .onglets > a{padding-top:8px !important; padding-bottom:8px !important}
   html body .onglets .nav-pied{margin-top:6px; padding-top:8px; gap:6px}
 }
+/* 20 nov 2026 (Mathieu : « la pastille Too high est dure a lire ») : sur la photo, la pastille de prix (Bon prix, Trop cher...)
+   avait un fond de sa couleur a 14 % : le rose sur rose se perdait dans l'image. Fond fonce plein, contour et texte de sa
+   couleur (plus vive), comme la capsule « Sur eBay » a cote : lisible sur n'importe quelle photo. */
+html body .sd-ph .isl-mk.inv-mk{background:rgba(11,11,14,.9) !important; border:1px solid currentColor; box-shadow:0 2px 10px rgba(0,0,0,.5);
+  backdrop-filter:none; letter-spacing:.01em}
+html body .sd-ph .isl-mk.inv-mk.rouge{color:#FF8E8E} html body .sd-ph .isl-mk.inv-mk.vert{color:#86EBB5}
+html body .sd-ph .isl-mk.inv-mk.or{color:#F6DC94} html body .sd-ph .isl-mk.inv-mk.acc{color:#C6CAFF}
 /* 20 nov 2026 : le prix final d'un encan fini de la watchlist */
 .w-final b{color:var(--texte)} .w-fin-at b{font-size:16px !important; color:var(--doux) !important; font-weight:600}
 .w-ecart{margin-top:4px; font-size:15px; font-weight:700} .w-ecart.vert{color:var(--vert)} .w-ecart.rouge{color:var(--rouge)}
@@ -7132,14 +7139,16 @@ function majBarreMode(){
     const hp = $('#h-plus', b); if (hp) hp.onclick = feuilleAjouter;
     const hv = $('#h-vue', b); if (hv) hv.onclick = (e) => { e.stopPropagation(); vibrer(); popVue(); };
     brancherSwitchMode(b);            // 28 oct 2026 (Mathieu : « passer d'acheteur a vendeur en un clic ») : les deux volets, visibles, un tap
-    if (voir) majCloche();
+    if (voir) majPointCloche();
     decorFetes();
   }
   if (n) n.innerHTML = '';
 }
 const ICO_CLOCHE = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9M10 20.5a2 2 0 0 0 4 0"/></svg>';
 // la cloche : un point quand une alerte a trouve quelque chose de pas encore vu (au plus une fois aux 5 min)
-function majCloche(force){
+// 20 nov 2026 (revue du code) : s'appelait aussi majCloche, comme le compteur des notifications (plus bas) : la 2e definition
+// remplacait celle-ci partout ; le point ne s'allumait jamais et l'en-tete remettait le compteur a zero a chaque affichage
+function majPointCloche(force){
   const pt = $('#h-pt'); if (!pt) return;
   if (S.clocheN != null) pt.hidden = !S.clocheN;
   if (!force && S.clocheLe && Date.now() - S.clocheLe < 300000) return;
@@ -19117,10 +19126,8 @@ async function adminDemandes(){
       <textarea class="champ" style="min-height:260px; font-size:14px" readonly>${esc(r.texte)}</textarea>`);
   };
 }
-async function copier(t){
-  try { await navigator.clipboard.writeText(t); return true; } catch (e) {}
-  try { const x = document.createElement('textarea'); x.value = t; document.body.appendChild(x); x.select(); const ok = document.execCommand('copy'); x.remove(); return ok; } catch (e) { return false; }
-}
+// 20 nov 2026 (revue du code) : une 2e fonction copier() ici remplacait la premiere (plus haut) partout ; celle d'en haut est la
+// plus sure sur l'iPhone (champ en lecture seule, setSelectionRange) : elle reste seule
 function feuilleDemande(x){
   if (!x) return;
   const ia = x.ia || {}, c = CAT_DM[ia.categorie] || CAT_DM[x.type === 'probleme' ? 'bug' : x.type] || [x.type, ''];

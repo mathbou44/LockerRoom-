@@ -72,10 +72,6 @@ def annonces_pro(dossier, jours=JOURS):
     return out
 
 
-def _cran_dessous(l):
-    return ORDRE[min(len(ORDRE) - 1, ORDRE.index(l) + 1)] if l in ORDRE else l
-
-
 def auditer(items, comps, digne=None):
     """items : annonces (titre, total, score, joueur) ; comps(titre) -> {mediane, nb} ; digne(x) -> visible en Pro ?
     -> le rapport (rien n'est ecrit ici)."""

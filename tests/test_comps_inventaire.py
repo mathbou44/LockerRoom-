@@ -26,4 +26,22 @@ lockerroom.comps_permis = lambda *a_, **k: False
 L = a.inventaire_liste({}); L = L if isinstance(L, list) else L.get("cartes")
 assert "comps_valeur" not in [x for x in L if x["id"] == cid][0]
 assert a.comps_inventaire() == 0
+# 20 nov 2026 (Mathieu : « calculee avec les last comps, ponderation plus elevee aux ventes plus recentes, puis la mediane ») :
+# la mediane ponderee par la recence (demi-vie donnee) ; les prix aberrants ecartes d abord
+import deals
+v = lambda p, d: {"prix": p, "le": J(d)}
+assert deals.mediane_recente([v(100, 1), v(100, 2), v(40, 80), v(40, 85), v(40, 88)], demi_vie=30) == 100     # la mediane simple : 40
+assert deals.mediane_recente([v(40, 1), v(40, 2), v(100, 80), v(100, 85), v(100, 88)], demi_vie=30) == 40
+assert deals.mediane_recente([v(50, 1), v(52, 3), v(1000, 2), v(48, 5)], demi_vie=30) in (48, 50, 52)          # 1 000 $ ecarte
+assert deals.mediane_recente([], demi_vie=30) is None
+assert deals.demi_vie_comps() > 0
+# l'inventaire : une carte vendue 100 $ ces jours-ci, 40 $ il y a 2-3 mois -> la reference suit les ventes recentes
+lockerroom.comps_permis = lambda *a_, **k: True
+T2 = "2021-22 Upper Deck Series 2 Young Guns Mason McTavish PSA 10 #451"
+vendues.memes_annonce = lambda t, q=None, n=24, fond=False: {"ventes": [{"titre": T2, "prix": p, "le": J(d)} for p, d in ((70, 2), (72, 5), (68, 9), (40, 70), (41, 75), (39, 80), (40, 85))]}
+c2 = a.carte_sauver({"titre": T2, "joueur": "Mason McTavish", "prix_demande": 70, "statut": "Listée", "grade": "PSA 10"})
+c2 = c2.get("id") if isinstance(c2, dict) else c2
+a.carte_valeur(c2)
+x = [y for y in (lambda L: L if isinstance(L, list) else L.get("cartes"))(a.inventaire_liste({})) if y["id"] == c2][0]
+assert 66 <= x["comps_valeur"] <= 74, x["comps_valeur"]                         # la mediane simple (sans poids) : 41
 print("OK test_comps_inventaire")

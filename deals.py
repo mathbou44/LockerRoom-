@@ -803,6 +803,48 @@ def ventes_echange(pv, ex):
             else {**v, "prix": round(float(v["prix"]) * f, 2), "prix_reel": v["prix"], "_ech": f} for v in pv]
 
 
+# 20 nov 2026 (Mathieu : « la pastille Trop cher doit absolument etre calculee avec les last comps, avec notre ponderation plus
+# elevee aux ventes plus recentes, et ensuite le prix est la mediane ») : la reference de l'analyse de prix de l'inventaire =
+# la MEDIANE PONDEREE par la recence des ventes de la carte : chaque vente pese 0,5 ^ (son age / la demi-vie) ; les prix
+# aberrants (moins du tiers ou plus du triple de la mediane, mediane_robuste) sont ecartes d'abord. La demi-vie : celle que le
+# banc de validation a adoptee (banc.recette « demi_vie »), sinon 15 jours (une vente d'il y a 15 jours pese moitie moins
+# qu'une vente d'aujourd'hui, une de 30 jours un quart).
+# 20 nov 2026 (outils/banc_valeur.py : 27 436 tests sur 10 395 cartes ; la verite = la mediane des ventes des 14 jours suivants) :
+# a +/- 25 %, 15 jours bat 30 jours (+0,28 pt, IC 95 % [+0,08 ; +0,49]) et la mediane simple de 90 jours (+0,92 pt) ; 10 a 15
+# jours forment un plateau (5 et 20 jours : moins bien). Le biais aussi baisse (+0,3 % contre +2,9 % pour la mediane simple).
+DEMI_VIE_COMPS = 15
+
+
+def demi_vie_comps():
+    try:
+        import banc
+        return float(banc.recette().get("demi_vie") or DEMI_VIE_COMPS)
+    except Exception:
+        return float(DEMI_VIE_COMPS)
+
+
+def mediane_recente(ventes, demi_vie=None, maint=None):
+    """La mediane ponderee par la recence de [{prix, le}] (voir plus haut), ou None."""
+    import cartes_match
+    pv = [v for v in ventes or [] if v.get("prix")]
+    if not pv:
+        return None
+    _m, garde = cartes_match.mediane_robuste([float(v["prix"]) for v in pv])
+    if not garde:
+        return None
+    dv = float(demi_vie or demi_vie_comps())
+    pw = sorted((float(v["prix"]), 0.5 ** (max(0, _jours(v, maint)) / dv)) for v in pv if garde[0] <= float(v["prix"]) <= garde[-1])
+    tot = sum(w for _x, w in pw)
+    if tot <= 0:
+        return round(statistics.median(garde), 2)
+    acc = 0.0
+    for x, w in pw:
+        acc += w
+        if acc >= tot / 2 - 1e-12:
+            return round(x, 2)
+    return round(pw[-1][0], 2)
+
+
 def valeur_sure(pv, titre_annonce=""):
     """(valeur, ventes retenues) ou (None, raison). Un joueur qui vient de changer d'equipe : voir ECHANGE_FACTEURS."""
     ex = echange_carte(titre_annonce)

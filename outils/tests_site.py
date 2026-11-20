@@ -41,7 +41,6 @@ BASE_DONNEES = os.environ.get("LR_TESTS_DONNEES") or ("/tmp/claude-0/nuit/bal/d_
 VENTES_DEFAUT = "/mnt/user-data/uploads/Downloads/ventes_hockey.tsv.gz"
 # 19 nov 2026 : toutes les compagnies (une KSA 10 n'est plus melangee avec la meme carte non gradee)
 G = re.compile(r"\b(psa|bgs|sgc|cgc|tag|ksa|hga|beckett|bccg|csg|gma|isa|ags|mnt)\s*-?\s*(?:gem\s*(?:mint|mt)?\s*|mint\s*|pristine\s*)?(\d+(?:\.\d)?)\b", re.I)
-FICHIERS_DECISION = ("bareme_iq.py", "score_slab.py", "validation_iq.py", "vitrine.py", "sets_cultes.py")
 
 
 _VAL = r"(?:int\(os\.environ\.get\([^)]*\)\s*or\s*)?([0-9.]+)"
@@ -120,6 +119,15 @@ def _annoter_ici(rows_pkl, sortie, apprendre=None, mesurer=None):
     import score_slab
     I = (indice_joueurs.lire() or {}).get("indice") or {}
     Il = {k.lower(): x for k, x in I.items()}
+    # 20 nov 2026 (revue des bancs) : mesurer la FUITE. L'indice du test est une photo de novembre (demande apprise sur nos ventes,
+    # notoriete et buzz de Wikipedia des 20-60 derniers jours) et les cotes de l'expert ont ete ecrites le 16 nov : des
+    # informations d'APRES la coupe. LR_TS_SANS_INSTANTANE=1 : sans ces criteres ; LR_TS_SANS_EXPERT=1 : sans les cotes de l'expert.
+    sans_inst, sans_exp = os.environ.get("LR_TS_SANS_INSTANTANE") == "1", os.environ.get("LR_TS_SANS_EXPERT") == "1"
+    if sans_exp:
+        bq.JOUEURS_EXPERT = {}
+        bq.cotes_apprises = lambda: {}
+        bq._alias_expert = lambda nom: None
+    info["variante"] = {"sans_instantane": sans_inst, "sans_expert": sans_exp}
     memo, out = {}, []
     for t, p, j in rows:                          # comme validation_iq._annoter, en gardant la note du joueur (0-100)
         so, ra = bq.sorte(t)
@@ -132,6 +140,8 @@ def _annoter_ici(rows_pkl, sortie, apprendre=None, mesurer=None):
         if nom not in memo:
             x = indice_joueurs.indice(nom) or Il.get(nom.lower()) or {}
             c = x.get("criteres") or {}
+            if sans_inst:
+                c = {k_: v_ for k_, v_ in c.items() if k_ not in ("demande", "notoriete", "buzz")}
             connu = bool(x) or bq._legende(nom) or nom in bq.JOUEURS_EXPERT or bq._alias_expert(nom)
             memo[nom] = (*bq.note_joueur(nom, c, recrue=float(c.get("recrue") or 0) >= 90), bool(connu))
         nj, lj, src, connu = memo[nom]
@@ -142,7 +152,9 @@ def _annoter_ici(rows_pkl, sortie, apprendre=None, mesurer=None):
         pg = score_slab.plafond_grade(gd["cie"]) if gd else None
         if pg is not None and s_ > pg:
             s_ = float(pg)
-        out.append(dict(k=v.cle_carte(t), gr=float(g.group(2)) if g else 0.0, p=p, j=j, so=bq.NOTE[so], nj=nj, ra=ra, nom=nom, src=src,
+        # 20 nov 2026 : la compagnie aussi (une PSA 10 et une SGC 10 ne sont pas la meme carte : avant, seule la note comptait)
+        out.append(dict(k=v.cle_carte(t) + ("|" + g.group(1).lower().replace("beckett", "bgs") if g else ""), gr=float(g.group(2)) if g else 0.0,
+                        cie=g.group(1).upper().replace("BECKETT", "BGS") if g else "", p=p, j=j, so=bq.NOTE[so], nj=nj, ra=ra, nom=nom, src=src,
                         t=t[:120], fin=bq.lettre(s_), s=s_, connu=connu))
     info["joueurs"] = len({x["nom"] for x in out if x["connu"]})
     pickle.dump({"A": out, "info": info}, open(sortie, "wb"))
@@ -165,19 +177,48 @@ def mesures(A, C0, C, R):
     for k in vues:
         parL[lettre_de[k]].append(apres.get(k, 0))
     lettres = {L: dict(cartes=len(v), reventes=round(sum(v) / len(v), 3)) for L, v in parL.items() if len(v) >= 200}
-    # le Radar Pro : achats entre C0 et C ; « garde sa valeur » = la meme carte revendue apres C a au moins 90 % du prix
-    def pro(seuil, pmin):
-        n = ok = 0
+    # 20 nov 2026 (Mathieu : « il ne faut pas que l'acheteur reste pogne avec sa carte ») : la mesure publiee du Radar Pro est
+    # celle de sa vraie regle (liquidite.py : A- et mieux, 5 ventes de la meme carte en 60 jours, pas plus de 10 % au-dessus de
+    # ce qu'elle se vend). Un achat entre C0 et C est REUSSI si la meme carte se revend apres C (elle est liquide) ET a au moins
+    # 90 % du prix (elle garde sa valeur). Les achats jamais revendus comptent comme rates (avant : ils ne comptaient pas).
+    # Le point de comparaison : les memes achats au hasard (meme prix minimum, ni base ni lot). Intervalle a 95 % (bootstrap).
+    sys.path.insert(0, LR)
+    import liquidite
+    import bisect
+    idx = {k: ([j for j, _ in sorted(v)], [p for _, p in sorted(v)]) for k, v in par.items()}
+
+    def signaux(a):
+        js, ps = idx[(a["k"], a["gr"])]
+        i = bisect.bisect_left(js, a["j"])
+        j60 = (dt.date.fromisoformat(a["j"]) - dt.timedelta(days=liquidite.LIQ_JOURS)).isoformat()
+        j90 = (dt.date.fromisoformat(a["j"]) - dt.timedelta(days=liquidite.MED_JOURS)).isoformat()
+        i90 = bisect.bisect_left(js, j90)
+        return i - bisect.bisect_left(js, j60), liquidite.mediane_recente(list(zip(js[i90:i], ps[i90:i])), a["j"], avant=True)
+
+    def radar(a):
+        return a["s"] >= liquidite.NOTE_MIN and liquidite.passe(*signaux(a), a["p"])
+    FRAIS, FIXE = 0.1325, 0.40
+
+    def pro_reel(regle, pmin, runs=1000, seed=5):
+        L_ = []
         for a in A:
-            if not (C0 <= a["j"] < C) or a["p"] < max(10, pmin) or a["s"] < seuil or a["ra"] in ("base", "lot_checklist"):
+            if not (C0 <= a["j"] < C) or a["p"] < max(10, pmin) or a["ra"] in ("base", "lot_checklist") or not regle(a):
                 continue
             L = [p for j, p in par[(a["k"], a["gr"])] if j >= C]
-            if not L:
-                continue
-            n += 1
-            ok += st.median(L) >= 0.9 * a["p"]
-        return dict(n=n, garde=round(ok / n, 3) if n else None)
-    pro_now, pro_avant = pro(R["fixe"], R["prix_min"]), pro(65, 10)
+            m_ = st.median(L) if L else None
+            L_.append((m_ is not None, m_ is not None and m_ >= 0.9 * a["p"], m_ is not None and m_ * (1 - FRAIS) - FIXE >= a["p"]))
+        if not L_:
+            return dict(n=0)
+        n, rev = len(L_), sum(x[0] for x in L_)
+        rng = random.Random(seed)
+        bs = sorted(sum(x[1] for x in rng.choices(L_, k=n)) / n for _ in range(runs))
+        return dict(n=n, reussi=round(sum(x[1] for x in L_) / n, 3), reussi_ic95=[round(bs[int(.025 * runs)], 3), round(bs[int(.975 * runs)], 3)],
+                    revendue=round(rev / n, 3), garde=round(sum(x[1] for x in L_) / rev, 3) if rev else None,
+                    profit_apres_frais=round(sum(x[2] for x in L_) / n, 3))
+    pro_now = pro_reel(radar, R["prix_min"])
+    pro_avant = pro_reel(lambda a: a["s"] >= R["fixe"], R["prix_min"])          # le Radar Pro jusqu'au 19 nov : A et A+ seulement
+    hasard = pro_reel(lambda a: True, R["prix_min"])
+    realisme = {"frais": [FRAIS, FIXE]}
     # la simulation d'un an : 400 collectionneurs, 500 $ par mois, cartes de R prix_min a 150 $, au hasard ou avec SlabIQ
     fin = {k: st.median([p for j, p in v if j >= C]) for k, v in par.items() if any(j >= C for j, p in v)}
     ventes = [(a["j"], (a["k"], a["gr"]), a["p"], a["s"], a["nom"]) for a in A if "2025-11-01" <= a["j"] < C]
@@ -232,7 +273,7 @@ def mesures(A, C0, C, R):
     sim = dict(sans=ms, avec=ma, r_sans=round(float(np.median(a_)) - 1, 4), r_avec=round(float(np.median(b_)) - 1, 4), bat=round(float(np.mean(b_ > a_)), 3),
                ecart=round(float(np.median(eb - ea))), p10=round(float(np.percentile(eb - ea, 10))), p90=round(float(np.percentile(eb - ea, 90))),
                mois=[pp[0][:7] for pp in P], prix=[pmin_s, 150], seuil=R["fixe"])
-    return dict(lettres=lettres, pro=pro_now, pro_avant=pro_avant, sim=sim), fin, par
+    return dict(lettres=lettres, pro=pro_now, pro_avant=pro_avant, hasard=hasard, sim=sim, realisme=realisme), fin, par, radar
 
 
 PROD = [("the cup", "The Cup"), ("sp authentic", "SP Authentic"), ("sp game used", "SP Game Used"), ("spx", "SPx"), ("ultimate", "Ultimate"),
@@ -253,65 +294,63 @@ def _etiquette(v, t, ra, nom, gr):
     typ = v.LIBELLES.get(ra, (ra.replace("_", " ").title(),))[0]
     if ra == "yg10":
         typ = "Young Guns"
-    g = f"PSA {int(gr) if gr == int(gr) else gr}" if gr else ""
+    cie = (G.search(t).group(1).upper().replace("BECKETT", "BGS") if gr and G.search(t) else "PSA")
+    g = f"{cie} {int(gr) if gr == int(gr) else gr}" if gr else ""
     return {"j": nom, "t": " · ".join(x for x in (an + (" " + pr if pr else ""), typ + (f" /{num.group(1)}" if num and ra not in ("yg", "base") else ""), g) if x.strip())}
 
 
-def defi(A, fin, C):
-    """Le defi du site : 8 manches, 8 vraies cartes vendues au meme prix, on en garde 2 ; SlabIQ prend ses 2 meilleures lettres."""
+def defi(A, par, C0, C, radar, n_marche=80):
+    """Le defi du site (20 nov 2026, Mathieu : « une bataille contre SlabIQ, plus robuste ; montrer le vrai gain ») : 8 manches.
+    A chaque manche, 8 vraies cartes achetees sur eBay entre C0 et C dans la meme gamme de prix (le marche : ce qu'on voit en
+    cherchant soi-meme) ; on en garde 2. SlabIQ, lui, prend 2 cartes de son Radar Pro de la meme gamme et de la meme periode (la
+    regle de liquidite.py : ce que le Radar t'aurait montre). « A garde sa valeur » : la meme carte s'est REVENDUE apres C a au
+    moins 90 % du prix ; une carte jamais revendue (on reste pogne avec) est ratee. C'est la mesure du Radar Pro."""
     import numpy as np
     sys.path.insert(0, LR)
     import validation_iq as v
     import bareme_iq as bq
     HORS = {'Michael Jordan', 'Lebron James', 'Kobe Bryant', 'Shohei Ohtani', 'Tom Brady', 'Patrick Mahomes', 'Mike Trout', 'Aaron Judge',
             'Victor Wembanyama', 'Caitlin Clark'}
-    etiquette = lambda t, ra, nom, gr: _etiquette(v, t, ra, nom, gr)
-    debut = dt.date(2025, 11, 1)
-    MOIS = []
-    d = debut
-    while d.isoformat()[:7] < C[:7]:
-        MOIS.append(d.isoformat()[:7])
-        d = (d.replace(day=1) + dt.timedelta(days=32)).replace(day=1)
-    BANDES = ((10, 25), (25, 50), (50, 100), (100, 150))
-    cell = collections.defaultdict(dict)
+    BANDES = ((30, 50), (50, 100), (100, 200), (200, 500))
+    cell = [dict() for _ in BANDES]
     for a in A:
+        if not (C0 <= a["j"] < C) or not (BANDES[0][0] <= a["p"] < BANDES[-1][1]) or a["ra"] == "lot_checklist":
+            continue
+        if a["nom"] in HORS or a["src"] == "inconnu":
+            continue
         k = (a["k"], a["gr"])
-        m = a["j"][:7]
-        if m in MOIS and a["j"] < C and 10 <= a["p"] <= 150 and k in fin:
-            b = next(i for i, (x, y) in enumerate(BANDES) if x <= a["p"] < y or (i == 3 and a["p"] <= 150))
-            if k not in cell[(m, b)]:
-                cell[(m, b)][k] = (a["p"], a["s"], a["nom"], a["ra"], a["gr"], a["t"], a["src"])
+        b = next(i for i, (x, y) in enumerate(BANDES) if x <= a["p"] < y)
+        if k in cell[b]:
+            continue
+        L = [p for j, p in par[k] if j >= C]
+        cell[b][k] = {**_etiquette(v, a["t"], a["ra"], a["nom"], a["gr"]), "L": bq.lettre(a["s"]), "r": int(radar(a)),
+                      "ok": int(bool(L) and st.median(L) >= 0.9 * a["p"])}
     rng = random.Random(12)
-    POOL = {}
-    for (m, b), dd in cell.items():
-        L = list(dd.items())
-        rng.shuffle(L)
-        vus, keep = set(), []
-        for k, (p, s, nom, ra, gr, t, src_) in L:
-            if nom in vus or nom in HORS or src_ == "inconnu" or (bq._legende(nom) and ra in ("yg", "yg10", "yg_variante")):
-                continue
-            vus.add(nom)
-            keep.append({**etiquette(t, ra, nom, gr), "s": round(s), "L": bq.lettre(s), "ok": int(fin[k] >= 0.9 * p)})
-            if len(keep) >= 36:
-                break
-        if len(keep) >= 8:
-            POOL[f"{m}|{b}"] = keep
+    POOL, stats_b = [], []
+    for b, d in enumerate(cell):
+        marche = list(d.values())
+        rad = [c for c in marche if c["r"]]
+        if len(marche) < 8 or len(rad) < 2:
+            raise SystemExit(f"defi : la gamme {BANDES[b]} n'a pas assez de cartes ({len(marche)}, Radar {len(rad)})")
+        stats_b.append((marche, rad))
+        POOL.append({"m": [{k_: c[k_] for k_ in ("j", "t", "L", "ok")} for c in rng.sample(marche, min(n_marche, len(marche)))],
+                     "r": [{k_: c[k_] for k_ in ("j", "t", "L", "ok")} for c in rad]})
 
     def partie(r):
-        ms = [MOIS[round(i * (len(MOIS) - 1) / 7)] for i in range(8)]
         I = H = 0
-        for m in ms:
-            bs = [b for b in range(4) if f"{m}|{b}" in POOL]
-            if not bs:
-                continue
-            Cc = r.sample(POOL[f"{m}|{r.choice(bs)}"], 8)
-            I += sum(c["ok"] for c in sorted(Cc, key=lambda c: -c["s"])[:2])
-            H += sum(c["ok"] for c in r.sample(Cc, 2))
+        for _ in range(8):
+            marche, rad = stats_b[r.randrange(len(BANDES))]
+            H += sum(c["ok"] for c in r.sample(r.sample(marche, 8), 2))
+            I += sum(c["ok"] for c in r.sample(rad, 2))
         return I, H
     r = random.Random(1)
     Rr = np.array([partie(r) for _ in range(20000)])
-    stats = dict(gagne=round(float(np.mean(Rr[:, 0] > Rr[:, 1])), 3), egal=round(float(np.mean(Rr[:, 0] == Rr[:, 1])), 3))
-    return {"pool": POOL, "stats": stats, "mois": MOIS, "bandes": BANDES}
+    tm = [c["ok"] for m_, _ in stats_b for c in m_]
+    tr = [c["ok"] for _, rd in stats_b for c in rd]
+    stats = dict(gagne=round(float(np.mean(Rr[:, 0] > Rr[:, 1])), 4), egal=round(float(np.mean(Rr[:, 0] == Rr[:, 1])), 3),
+                 iq=round(float(np.mean(Rr[:, 0])), 1), hasard=round(float(np.mean(Rr[:, 1])), 1),
+                 ok_marche=round(sum(tm) / len(tm), 3), ok_radar=round(sum(tr) / len(tr), 3), cartes=len(tm), cartes_radar=len(tr))
+    return {"pool": POOL, "stats": stats, "bandes": BANDES, "periode": [C0, C]}
 
 
 # ---------------------------------------------------------------- tout
@@ -331,8 +370,8 @@ def lancer(chemin, ecrire=False):
         res[nom] = _annoter_sous(rp, dd, os.path.join(TRAV, f"A_{nom}.pkl"), apprendre, C0)
         print(nom, res[nom]["info"], flush=True)
     A = res["maintenant"]["A"]
-    m, fin, par = mesures(A, C0, C, R)
-    df = defi(A, fin, C)
+    m, fin, par, radar = mesures(A, C0, C, R)
+    df = defi(A, par, C0, C, radar)
     L = m["lettres"]
     out = dict(le=dt.date.today().isoformat(), empreinte=empreinte(), regles=R, coupe=C0, revente_des=C, revente_fin=js[-1],
                ventes=res["maintenant"]["info"]["mesure"]["ventes"], ventes_total=len(rows), joueurs=res["maintenant"]["info"]["joueurs"],

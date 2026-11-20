@@ -16,5 +16,6 @@ for f in ("site_slabiq.html", "site_accueil.html"):
     x = f"{int(round(R['x_ahaut_e']))}×"
     assert re.findall(r'>(\d+)×<', s) and set(re.findall(r'>(\d+×)<', s)) == {x}, (f, set(re.findall(r'>(\d+×)<', s)), x)
 s = open(os.path.join(ICI, "ui", "site_slabiq.html"), encoding="utf-8").read()
-assert (f'{round(R["accord"] * 100)} %</b>' in s or f'≈ {round(R["accord"] * 20) * 5} %</b>' in s) and f'{round(R["pro"]["garde"] * 100)} %</b>' in s
+assert (f'{round(R["accord"] * 100)} %</b>' in s or f'≈ {round(R["accord"] * 20) * 5} %</b>' in s) and f'{int(R["pro"]["reussi"] * 100 + 1e-9)} %</b>' in s \
+    and f'(au hasard : {int(R["hasard"]["reussi"] * 100 + 1e-9)} %)' in s
 print("OK test_site_a_jour")

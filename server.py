@@ -307,6 +307,32 @@ def sante_render():
     return "ok", 200, {"Content-Type": "text/plain", "Cache-Control": "no-store"}
 
 
+# 20 nov 2026 (revue de performance : « que tout performe au maximum ») : le serveur ne mesurait pas le temps de ses requetes.
+# Chaque requete de plus de LR_LENT_S secondes (2 par defaut) est notee dans le journal (« Lent : ... ») avec sa duree : on
+# sait enfin quels ecrans sont lents en vrai, avec les vraies donnees. Rien d'autre n'est garde (ni compte, ni parametre).
+try:
+    _LENT_S = float(os.environ.get("LR_LENT_S") or 2.0)
+except ValueError:
+    _LENT_S = 2.0
+
+
+@app.before_request
+def _chrono_debut():
+    from flask import g
+    g._t0 = time.perf_counter()
+
+
+@app.after_request
+def _chrono_fin(rep):
+    from flask import g
+    t0 = getattr(g, "_t0", None)
+    if t0 is not None and _LENT_S > 0:
+        d = time.perf_counter() - t0
+        if d >= _LENT_S and request.path != "/sante":
+            print(f"Lent : {request.method} {request.path} {d:.1f} s ({rep.status_code})", flush=True)
+    return rep
+
+
 @app.before_request
 def _garde():
     from flask import redirect, session

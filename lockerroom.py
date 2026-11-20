@@ -226,6 +226,14 @@ def _connecter(chemin=None):
                             ("opportunites", "sport", "TEXT"), ("opportunites", "mediane", "REAL")):
         if col not in {r[1] for r in c.execute(f"PRAGMA table_info({table})")}:
             c.execute(f"ALTER TABLE {table} ADD COLUMN {col} {typ}")
+    # 20 nov 2026 (Mathieu : « calculee avec les last comps, ponderation plus elevee aux ventes recentes, puis la mediane ») :
+    # les analyses de prix faites avec l'ancienne regle sont refaites une fois (leur valeur reste affichee jusque-la)
+    if not c.execute("SELECT 1 FROM migrations WHERE nom='comps_mediane_recente'").fetchone():
+        try:
+            c.execute("UPDATE cartes SET comps_le=NULL WHERE comps_le IS NOT NULL")
+        except sqlite3.Error:
+            pass
+        c.execute("INSERT INTO migrations VALUES ('comps_mediane_recente', ?)", (datetime.now().isoformat(timespec="seconds"),))
     c.commit()
     _BASES_PRETES.add(p)
     return c
@@ -9373,7 +9381,10 @@ class Api:
         val = sure if sure else round(statistics.median(float(v["prix"]) for v in vs), 2)
         # 5 nov 2026 (comme la CL Value) : des ventes qui datent -> la valeur suit l'indice du joueur depuis (indices.py)
         val, ajust = self._valeur_vieillie(val, _pv if sure and isinstance(_pv, list) else vs, carte)
-        self._comps_garder(cid, val, len(vs), bool(sure))
+        # 20 nov 2026 (Mathieu : « calculee avec les last comps, ponderation plus elevee aux ventes recentes, puis la mediane ») :
+        # la reference de la pastille de prix (Bon prix / Trop cher) = la mediane ponderee par la recence des ventes retenues
+        cv = deals.mediane_recente(_pv if sure and isinstance(_pv, list) else vs)
+        self._comps_garder(cid, cv if cv is not None else val, len(vs), bool(sure))
         # 9 nov 2026 (revue « aucun faux indice ») : une valeur tiree d'une ou deux ventes qui ne se tiennent pas n'est pas
         # gardee (elle donnerait un faux « trop cher » dans l'inventaire) ; seulement une valeur sure ou 3 ventes et plus
         if sure or (carte.get("valeur") is None and len(vs) >= 3):

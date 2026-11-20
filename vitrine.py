@@ -9,12 +9,15 @@ la categorie hockey : des dizaines de milliers d'annonces) ; le Pro ne cherchait
 La vitrine garde, pendant ce meme balayage, les annonces dont la CARTE est tres recherchee (SlabIQ A et A+, jamais une base,
 30 $ et plus) ; le Radar Pro les montre en premier (« A la une »).
 
-Licence eBay : aucune valeur ni comparable n'entre ici. Le choix se fait sur la note SlabIQ de la carte (le titre, le bareme de
-l'expert) ; le prix ne sert qu'au plancher de 30 $ que l'utilisateur peut changer. Les annonces sont gardees au plus 12 h (prix
-fixe) ou jusqu'a la fin de l'encan, et le Radar relit la fiche en direct quand on l'ouvre.
+20 nov 2026 (Mathieu : « il ne faut pas que l'acheteur reste pogne avec ; des cartes liquides et desirees » ; « le prix en
+coulisse, mais l'utilisateur voit juste la lettre ») : une annonce entre dans la vitrine si sa carte est A- ou mieux ET se
+vend (5 ventes et plus de la meme carte, meme compagnie, meme note, en 60 jours) ET n'est pas plus de 10 % au-dessus de ce
+qu'elle se vend (liquidite.py). L'utilisateur voit la lettre et l'annonce : jamais la mediane ni le compte de ventes.
 
-Teste sur des ventes jamais vues (nov 2026) : une carte A ou A+ a garde au moins 90 % de son prix d'achat 70 % du temps (A- :
-62 %, A+ seule : 82 %) ; le plancher de 30 $ ne change pas la precision et enleve les petites cartes.
+Teste sur des achats jamais vus (outils/radar_iq.py ; reussi = la carte se revend ensuite ET a au moins 90 % du prix paye) :
+oct. : hasard 11,7 %, ancienne regle (A et A+) 29,8 %, cette regle 71,0 % ; nov. : hasard 11,3 %, cette regle 60,3 %.
+Les annonces sont gardees au plus 12 h (prix fixe) ou jusqu'a la fin de l'encan, et le Radar relit la fiche en direct quand
+on l'ouvre. Un encan dont la mise monte au-dessus de la limite de prix sort de la liste.
 """
 import json
 import os
@@ -23,7 +26,8 @@ import threading
 import time
 from datetime import datetime, timezone
 
-NOTE_MIN = 86                      # A
+import liquidite
+
 PRIX_MIN = 30.0
 MAX = 4000
 FIXE_H = 12
@@ -38,7 +42,7 @@ CHAMPS = ("item_id", "titre", "prix_cad", "port_cad", "encan", "fin", "mises", "
 
 def _chemin():
     import comptes
-    return os.path.join(comptes.DONNEES, "vitrine.json")
+    return os.path.join(comptes.DONNEES, "vitrine_liq.json")     # 20 nov 2026 : un nouveau fichier : tout est rejuge
 
 
 def _pool():
@@ -93,16 +97,31 @@ def ajouter(annonces):
     except Exception as e:
         print("Vitrine (notes) : " + repr(e)[:160], flush=True)
         return 0
+    bonnes = []
+    for x in neuves:
+        ok = (x.get("score") or 0) >= liquidite.NOTE_MIN and x.get("sorte") not in (None, "D") and x.get("joueur")
+        try:
+            ok = ok and sports.detecter(x.get("titre") or "", defaut="hockey") == "hockey"
+        except Exception:
+            pass
+        x["_ok"] = bool(ok)
+        bonnes += [x["titre"]] if ok else []
+    try:
+        sig = liquidite.signaux(bonnes) if bonnes else {}
+    except Exception as e:
+        print("Vitrine (liquidite) : " + repr(e)[:160], flush=True)
+        sig = None
     gardees = 0
     with _VERROU:
         P = _pool()
         for x in neuves:
-            ok = (x.get("score") or 0) >= NOTE_MIN and x.get("sorte") not in (None, "D") and x.get("joueur")
-            try:
-                ok = ok and sports.detecter(x.get("titre") or "", defaut="hockey") == "hockey"
-            except Exception:
-                pass
-            P[x["item_id"]] = x if ok else None          # None : deja jugee, pas assez recherchee (on ne la renote pas)
+            ok = x.pop("_ok")
+            if ok and sig is None:
+                continue                                 # l'index n'est pas pret : jugee au prochain balayage
+            if ok:
+                x["_liq"], x["_med"] = sig.get(x["titre"]) or (0, None)
+                ok = liquidite.passe(x["_liq"], x["_med"], x["total"])
+            P[x["item_id"]] = x if ok else None          # None : deja jugee, pas assez recherchee ou liquide (pas renotee)
             gardees += 1 if ok else 0
         _ETAT["sale"] = True
         _purger(P, maint)
@@ -143,10 +162,12 @@ def liste(n=80, prix_min=None, prix_max=None):
     with _VERROU:
         L = [dict(x) for x in _pool().values() if x is not None and _vivante(x, maint)]
     pm = PRIX_MIN if prix_min is None else float(prix_min)
-    L = [x for x in L if (x.get("total") or 0) >= pm and (not prix_max or (x.get("total") or 0) <= float(prix_max))]
+    L = [x for x in L if (x.get("total") or 0) >= pm and (not prix_max or (x.get("total") or 0) <= float(prix_max))
+         and liquidite.passe(x.get("_liq"), x.get("_med"), x.get("total"))]       # le prix d'un encan monte
     L.sort(key=lambda x: (-(x.get("score") or 0), 0 if x.get("encan") else 1, _ts(x.get("fin")) or 9e12, -(x.get("total") or 0)))
     out = []
     for x in L[: max(1, int(n))]:
+        x.pop("_liq", None), x.pop("_med", None)         # jamais montres : seulement la lettre
         x["joueur_n"] = x.get("joueur")
         x["a_la_une"] = True
         out.append(x)

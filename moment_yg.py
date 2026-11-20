@@ -269,11 +269,6 @@ def verdict(etat, rabais_pct, R=None, stats=None):
 
 
 # -- la mesure (backtest) et l'iteration continue ---------------------------------------------------------------------
-def _ventes_test(V, IX):
-    """Chaque vraie vente YG : (joueur, jour, rabais log vs mediane 14 j de la meme gradation, issue log 2 mois apres, grade)."""
-    return _ventes_test2(V, IX, {})
-
-
 def _ventes_test2(V, IX, SO):
     out = []
     for j, gg in V.items():
