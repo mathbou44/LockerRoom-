@@ -128,31 +128,44 @@ def majX(s, x):
 
 
 def pente(sans_fin, avec_fin):
-    """20 nov 2026 (Mathieu : « trouve une maniere d'avoir un graphique montant pour SlabIQ et descendant sans SlabIQ ») : le
-    point de depart (0 $) et le resultat mesure 12 mois plus tard, relies. Rien d'invente : ce sont les deux bouts de la courbe
-    mesuree ; « Voir mois par mois » montre le chemin complet (avec sa bosse du printemps)."""
-    W, H, X0, X1, T, B = 600, 250, 76, 430, 22, 40
-    m = max(abs(sans_fin), abs(avec_fin), 1) * 1.25
-    Y = lambda v: T + (1 - (v + m) / (2 * m)) * (H - T - B)
+    """20 nov 2026 (Mathieu : « un graphique montant pour SlabIQ, descendant sans » ; puis « deux lignes droites, ca fait pas
+    naturel ») : deux barres qui partent de 0 $ : celle de SlabIQ monte, l'autre descend. C'est le resultat mesure au bout de
+    12 mois, sans pretendre a un chemin en ligne droite ; « Voir mois par mois » montre le vrai chemin."""
+    W, H, T, B = 600, 360, 84, 84
+    m = max(abs(sans_fin), abs(avec_fin), 1) * 1.02
+    y0 = T + (H - T - B) / 2
+    k = (H - T - B) / 2 / m
     sg = lambda v: ("+" if v > 0 else "−" if v < 0 else "")
-    ya, ys = Y(avec_fin), Y(sans_fin)
-    return f'''<svg class="sim-pente" viewBox="0 0 {W} {H}" role="img" aria-label="Start and 12 months later">
-  <defs><linearGradient id="peP" x1="0" x2="1"><stop offset="0" stop-color="#9FE6D2"/><stop offset=".5" stop-color="#B79CF2"/><stop offset="1" stop-color="#F2B6D2"/></linearGradient>
-  <linearGradient id="peA" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#B79CF2" stop-opacity=".32"/><stop offset="1" stop-color="#B79CF2" stop-opacity="0"/></linearGradient>
-  <filter id="peG" x="-10%" y="-40%" width="120%" height="180%"><feGaussianBlur stdDeviation="6"/></filter></defs>
-  <line x1="{X0 - 10}" x2="{X1 + 10}" y1="{Y(0):.1f}" y2="{Y(0):.1f}" class="l-inv"/>
-  <text x="{X0 - 16}" y="{Y(0) + 4:.1f}" class="ty"><tspan class="fr">0 $</tspan><tspan class="en">$0</tspan></text>
-  <polygon points="{X0},{Y(0):.1f} {X1},{ya:.1f} {X1},{Y(0):.1f}" fill="url(#peA)"/>
-  <line x1="{X0}" y1="{Y(0):.1f}" x2="{X1}" y2="{ys:.1f}" class="l-sans"/>
-  <line x1="{X0}" y1="{Y(0):.1f}" x2="{X1}" y2="{ya:.1f}" stroke="url(#peP)" class="l-glow" filter="url(#peG)"/>
-  <line x1="{X0}" y1="{Y(0):.1f}" x2="{X1}" y2="{ya:.1f}" stroke="url(#peP)" class="l-avec"/>
-  <circle cx="{X0}" cy="{Y(0):.1f}" r="5" class="p-0"/><circle cx="{X1}" cy="{ya:.1f}" r="7" class="p-a"/><circle cx="{X1}" cy="{ys:.1f}" r="5.5" class="p-s"/>
-  <text x="{X1 + 16}" y="{ya + 4:.1f}" class="v-a"><tspan class="fr">{sg(avec_fin)}{fr(abs(avec_fin))} $</tspan><tspan class="en">{sg(avec_fin)}${en(abs(avec_fin))}</tspan></text>
-  <text x="{X1 + 16}" y="{ya + 24:.1f}" class="n"><tspan class="fr">Avec SlabIQ</tspan><tspan class="en">With SlabIQ</tspan></text>
-  <text x="{X1 + 16}" y="{ys + 4:.1f}" class="v-s"><tspan class="fr">{sg(sans_fin)}{fr(abs(sans_fin))} $</tspan><tspan class="en">{sg(sans_fin)}${en(abs(sans_fin))}</tspan></text>
-  <text x="{X1 + 16}" y="{ys + 24:.1f}" class="n"><tspan class="fr">Sans SlabIQ</tspan><tspan class="en">Without SlabIQ</tspan></text>
-  <text x="{X0}" y="{H - 12}" class="tx"><tspan class="fr">Départ</tspan><tspan class="en">Start</tspan></text>
-  <text x="{X1}" y="{H - 12}" class="tx"><tspan class="fr">12 mois plus tard</tspan><tspan class="en">12 months later</tspan></text>
+    xs, xa, bw = 190, 410, 112
+    ha, hs = avec_fin * k, sans_fin * k
+
+    def barre(x, h, cls, fill):
+        y, hh = (y0 - h, h) if h >= 0 else (y0, -h)
+        r = min(14, hh / 2)
+        if h >= 0:      # coins ronds en haut
+            d = f"M{x - bw / 2:.1f},{y0:.1f} V{y + r:.1f} Q{x - bw / 2:.1f},{y:.1f} {x - bw / 2 + r:.1f},{y:.1f} H{x + bw / 2 - r:.1f} Q{x + bw / 2:.1f},{y:.1f} {x + bw / 2:.1f},{y + r:.1f} V{y0:.1f} Z"
+        else:           # coins ronds en bas
+            yb = y0 + hh
+            d = f"M{x - bw / 2:.1f},{y0:.1f} V{yb - r:.1f} Q{x - bw / 2:.1f},{yb:.1f} {x - bw / 2 + r:.1f},{yb:.1f} H{x + bw / 2 - r:.1f} Q{x + bw / 2:.1f},{yb:.1f} {x + bw / 2:.1f},{yb - r:.1f} V{y0:.1f} Z"
+        return f'<path d="{d}" class="{cls}" fill="{fill}"/>'
+
+    def etiq(x, v, nom_fr, nom_en, cls):
+        if v >= 0:
+            yv, yn = y0 - v * k - 14, y0 - v * k - 50
+        else:
+            yv, yn = y0 - v * k + 38, y0 - v * k + 62
+        return (f'<text x="{x}" y="{yv:.1f}" class="{cls}"><tspan class="fr">{sg(v)}{fr(abs(v))} $</tspan><tspan class="en">{sg(v)}${en(abs(v))}</tspan></text>'
+                f'<text x="{x}" y="{yn:.1f}" class="n"><tspan class="fr">{nom_fr}</tspan><tspan class="en">{nom_en}</tspan></text>')
+    return f'''<svg class="sim-pente" viewBox="0 0 {W} {H}" role="img" aria-label="Profit after 12 months">
+  <defs><linearGradient id="peP" x1="0" x2="0" y1="1" y2="0"><stop offset="0" stop-color="#9FE6D2"/><stop offset=".55" stop-color="#B79CF2"/><stop offset="1" stop-color="#F2B6D2"/></linearGradient>
+  <linearGradient id="peS" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#8f95a3" stop-opacity=".55"/><stop offset="1" stop-color="#8f95a3" stop-opacity=".2"/></linearGradient>
+  <filter id="peG" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="14"/></filter></defs>
+  {barre(xa, ha, "b-glow", "url(#peP)").replace('class="b-glow"', 'class="b-glow" filter="url(#peG)"')}
+  {barre(xs, hs, "b-sans", "url(#peS)")}{barre(xa, ha, "b-avec", "url(#peP)")}
+  <line x1="{xs - bw / 2 - 40:.1f}" x2="{xa + bw / 2 + 40:.1f}" y1="{y0:.1f}" y2="{y0:.1f}" class="l-inv"/>
+  <text x="{xs - bw / 2 - 48:.1f}" y="{y0 + 4:.1f}" class="ty"><tspan class="fr">0 $</tspan><tspan class="en">$0</tspan></text>
+  {etiq(xs, sans_fin, "Sans SlabIQ", "Without SlabIQ", "v-s")}{etiq(xa, avec_fin, "Avec SlabIQ", "With SlabIQ", "v-a")}
+  <text x="8" y="22" class="tx tl"><tspan class="fr">Au bout de 12 mois</tspan><tspan class="en">After 12 months</tspan></text>
 </svg>'''
 
 
