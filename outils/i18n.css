@@ -1,0 +1,12 @@
+/* I18N CSS DEBUT - pastille Langue / Devise */
+.pref{display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 11px 0 4px; border-radius:999px; border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.04)); color:var(--texte); font:700 12.5px/1 inherit; font-family:inherit; white-space:nowrap; cursor:pointer; flex-shrink:0}
+.pref .pref-g{display:inline-flex; align-items:center; justify-content:center; height:24px; min-width:28px; padding:0 6px; border-radius:999px; background:rgba(255,255,255,.12); font-size:11.5px; letter-spacing:.04em}
+.pref-pop{position:fixed; z-index:80; width:236px; padding:12px; border-radius:16px; background:rgba(28,28,32,.97); border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 18px 40px rgba(0,0,0,.5); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); display:flex; flex-direction:column; gap:8px; color:var(--texte)}
+.pref-l{font-size:11.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--doux)}
+.pref-seg{display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:3px; border-radius:12px; background:rgba(255,255,255,.06)}
+.pref-seg button{height:34px; border:none; border-radius:9px; background:none; color:var(--texte); font:600 13.5px inherit; font-family:inherit; cursor:pointer}
+.pref-seg button.on{background:rgba(255,255,255,.16)}
+.pref-n{font-size:12px; color:var(--doux)}
+/* I18N CSS FIN */

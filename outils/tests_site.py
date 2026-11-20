@@ -34,8 +34,10 @@ import datetime as dt
 
 RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LR = os.path.join(RACINE, "lrtest") if os.path.exists(os.path.join(RACINE, "lrtest", "bareme_iq.py")) else RACINE   # le bac a sable ou le depot
-TRAV = "/tmp/claude-0/ts"
-BASE_DONNEES = os.environ.get("LR_TESTS_DONNEES") or "/tmp/claude-0/nuit/bal/d_sans"   # l'indice des joueurs (stats publiques), sans correction automatique
+TRAV = os.environ.get("LR_TESTS_TRAV") or "/tmp/claude-0/ts"
+# 20 nov 2026 (passation) : l'indice des joueurs du test est aussi dans le depot (outils/donnees_tests_site)
+_D_DEPOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "donnees_tests_site")
+BASE_DONNEES = os.environ.get("LR_TESTS_DONNEES") or ("/tmp/claude-0/nuit/bal/d_sans" if os.path.isdir("/tmp/claude-0/nuit/bal/d_sans") else _D_DEPOT)   # l'indice des joueurs (stats publiques), sans correction automatique
 VENTES_DEFAUT = "/mnt/user-data/uploads/Downloads/ventes_hockey.tsv.gz"
 # 19 nov 2026 : toutes les compagnies (une KSA 10 n'est plus melangee avec la meme carte non gradee)
 G = re.compile(r"\b(psa|bgs|sgc|cgc|tag|ksa|hga|beckett|bccg|csg|gma|isa|ags|mnt)\s*-?\s*(?:gem\s*(?:mint|mt)?\s*|mint\s*|pristine\s*)?(\d+(?:\.\d)?)\b", re.I)
