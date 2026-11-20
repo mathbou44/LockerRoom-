@@ -385,36 +385,108 @@ def _noms_baseball(max_=400):
     return out
 
 
+def budget_baseball_jour():
+    """20 nov 2026 : les recherches de baseball par jour : LR_BALAYAGE_BB_JOUR si Mathieu l'a mis dans Render, sinon la part
+    de la semaine (LR_BALAYAGE_BB_SEMAINE / 7), comme avant. Le budget ne change pas sans lui."""
+    v = os.environ.get("LR_BALAYAGE_BB_JOUR")
+    if v:
+        try:
+            return max(0, int(v))
+        except ValueError:
+            pass
+    return -(-budget_baseball() // 7)
+
+
+# 20 nov 2026 (Mathieu : « on doit remplir le data baseball a tous les jours, ramasser de bonnes donnees baseball maintenant ») :
+# le test SlabIQ du baseball (outils/tests_site_bb.py) a montre que nos ventes de baseball sont une PHOTO (le blitz du 18-19 nov),
+# pas une histoire : SoldComps ne rend que les ~240 ventes les plus recentes d'une recherche. Ohtani ou Judge : 240 ventes = un
+# seul jour ; un joueur tranquille : 240 ventes = des mois. Relire chaque joueur une fois par semaine perdait presque toutes les
+# ventes des vedettes. Maintenant chaque recherche est relue JUSTE AVANT que ses 240 resultats ne debordent :
+#   - pleine (230 resultats et plus) : aux 80 % des jours qu'elle couvre (90 % de ses ventes les plus recentes) ; un jour ou
+#     moins : aux 12 h ; pas pleine (toutes ses ventes y sont) : chaque semaine ;
+#   - les joueurs d'abord (leur recherche « Nom baseball » fait la cote marche), puis, pour les joueurs dont la recherche est
+#     pleine, leurs sortes qui comptent (BB_VARIANTES : Bowman Chrome, 1st Bowman auto, PSA 10...), au meme rythme ;
+#   - le plus en retard d'abord, dans le budget du jour (budget_baseball_jour) ; les ventes vont dans les archives du baseball.
+BB_INTERVALLE_MIN_H = 12
+BB_PLEIN = 230
+
+
+def _bb_variantes_max():
+    try:
+        return max(0, int(os.environ.get("LR_BB_VARIANTES_JOUEURS") or 120))
+    except ValueError:
+        return 120
+
+
+def _couverture_jours(jours):
+    """Les jours couverts par 90 % des ventes les plus recentes d'une recherche (une vieille vente isolee ne compte pas)."""
+    j = sorted(str(x)[:10] for x in jours if x)
+    if not j:
+        return None
+    try:
+        lo = j[int(len(j) * 0.10)]
+        return (datetime.fromisoformat(j[-1]) - datetime.fromisoformat(lo)).days + 1
+    except ValueError:
+        return None
+
+
+def _bb_intervalle_h(info):
+    if not info.get("plein"):
+        return 7 * 24
+    c = info.get("couvert") or 7
+    return BB_INTERVALLE_MIN_H if c <= 1 else max(24, int(c * 0.8) * 24)
+
+
+def _bb_echeance(info):
+    """Quand relire cette recherche (datetime). Jamais lue, ou lue avant le 20 nov (sans couverture) : maintenant."""
+    if not info.get("le") or "plein" not in info:
+        return datetime.min
+    try:
+        return datetime.fromisoformat(str(info["le"])[:19]) + timedelta(hours=_bb_intervalle_h(info))
+    except ValueError:
+        return datetime.min
+
+
+def taches_baseball(B, V, noms, maint=None):
+    """Les recherches dues, la plus en retard d'abord ; les joueurs avant leurs variantes. -> [(type, cle, requete, nom)]"""
+    maint = maint or datetime.now()
+    t = [("j", n, f"{n} baseball", n) for n in noms]
+    pleins = [n for n in noms if (B.get(n) or {}).get("plein")][:_bb_variantes_max()]
+    t += [("v", f"{n}|{va}", f"{n} {va}", n) for n in pleins for va in BB_VARIANTES]
+    dues = [x for x in t if _bb_echeance((B if x[0] == "j" else V).get(x[1]) or {}) <= maint]
+    dues.sort(key=lambda x: (x[0] == "v", _bb_echeance((B if x[0] == "j" else V).get(x[1]) or {})))
+    return dues
+
+
 def balayer_baseball(n_max=None):
     import base_ventes
     import mlb
     import sports
     import vendues
-    if not budget_baseball() or not vendues._cle() or time.time() < vendues._PANNE[0]:
+    if not budget_baseball_jour() or not vendues._cle() or time.time() < vendues._PANNE[0]:
         return {"ok": False, "raison": "soldcomps"}
     if _BLITZ["en_cours"] or (lire_balayage().get("blitz") or {}).get("etat") == "en cours":
         return {"ok": False, "raison": "blitz du hockey d'abord"}
     d = lire_balayage()
     jour = datetime.now().strftime("%Y-%m-%d")
     fait = (d.get("jours_bb") or {}).get(jour, 0)
-    reste = min(-(-budget_baseball() // 7) - fait, n_max or 10**9)
+    reste = min(budget_baseball_jour() - fait, n_max or 10**9)
     if reste <= 0:
         return {"ok": True, "fait": 0, "raison": "budget du jour"}
     B = d.setdefault("baseball", {})
-    lim = (datetime.now() - timedelta(days=7)).isoformat()
-    a_faire = [n for n in _noms_baseball() if (B.get(n) or {}).get("le", "") < lim]
-    a_faire.sort(key=lambda n: (B.get(n) or {}).get("le", ""))
+    V = d.setdefault("baseball_var", {})
+    a_faire = taches_baseball(B, V, _noms_baseball())
     taux = vendues._taux_usd_cad() or 1.37
     site = (vendues.sites() or ["EBAY-US"])[0]
-    n_fait = 0
-    for nom in a_faire[:reste]:
-        q = f"{nom} baseball"
+    n_fait = n_ventes = 0
+    for type_, cle, q, nom in a_faire[:reste]:
         donnees, err = vendues._appel(q, site, usage="balayage")
         if err:
             vendues._noter_erreur(q, err)
             break
+        items = (donnees or {}).get("items") or []
         gardees = []
-        for it in (donnees or {}).get("items") or []:
+        for it in items:
             v = vendues._vers_vente(it, taux)
             if not v or not v.get("le"):
                 continue
@@ -426,17 +498,23 @@ def balayer_baseball(n_max=None):
             gardees.append(v)
         try:
             if gardees:
-                base_ventes.noter(q, gardees, sport="baseball")
+                n_ventes += base_ventes.noter(q, gardees, sport="baseball") or 0
         except Exception:
             pass
-        prix = [v["prix"] for v in gardees]
-        B[nom] = {"n": len(gardees), "le": datetime.now().isoformat(timespec="seconds"),
-                  **({"moyenne": round(_moy_taillee(prix), 2), "mediane": round(statistics.median(prix), 2)} if prix else {})}
+        info = {"n": len(gardees), "le": datetime.now().isoformat(timespec="seconds"), "plein": len(items) >= BB_PLEIN,
+                "couvert": _couverture_jours([v.get("le") for v in gardees] or [it.get("soldDate") or it.get("endDate") for it in items])}
+        if type_ == "j":
+            prix = [v["prix"] for v in gardees]
+            B[nom] = {**info, **({"moyenne": round(_moy_taillee(prix), 2), "mediane": round(statistics.median(prix), 2)} if prix else {})}
+        else:
+            V[cle] = info
         n_fait += 1
         d.setdefault("jours_bb", {})[jour] = fait + n_fait
+        if n_fait % 10 == 0:
+            _ecrire_bal(d)
     d["jours_bb"] = {k: v for k, v in (d.get("jours_bb") or {}).items() if k >= (datetime.now() - timedelta(days=14)).strftime("%Y-%m-%d")}
     _ecrire_bal(d)
-    return {"ok": True, "fait": n_fait, "restants": max(0, len(a_faire) - n_fait)}
+    return {"ok": True, "fait": n_fait, "ventes": n_ventes, "dues": len(a_faire), "restants": max(0, len(a_faire) - n_fait)}
 
 
 # 18 nov 2026 (Mathieu : « on extrait le maximum de ventes pour le baseball, pour l'analyse ; surtout le vintage ») : le BLITZ
