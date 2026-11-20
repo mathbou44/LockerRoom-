@@ -29,7 +29,10 @@ assert n >= 3
 e = trivia.noter({}, 4, 5, date(2026, 11, 20)); assert e["serie"] == 1
 e = trivia.noter(e, 5, 5, date(2026, 11, 20)); assert e["parties"] == 1          # une partie comptee par jour
 e = trivia.noter(e, 3, 5, date(2026, 11, 21)); assert e["serie"] == 2 and e["meilleure_serie"] == 2
-e = trivia.noter(e, 3, 5, date(2026, 11, 23)); assert e["serie"] == 1 and e["meilleure_serie"] == 2
+e = trivia.noter(e, 3, 5, date(2026, 11, 23)); assert e["serie"] == 3 and e["gel"], e      # 1 jour manque : gele, la serie tient
+e = trivia.noter(e, 3, 5, date(2026, 11, 25)); assert e["serie"] == 1 and not e["gel"], e   # un 2e dans la meme semaine : repart
+e = trivia.noter(e, 3, 5, date(2026, 11, 26)); assert e["serie"] == 2
+e = trivia.noter(e, 3, 5, date(2026, 12, 1)); assert e["serie"] == 1                     # 4 jours manques : repart a 1
 # l'API : l'admin seulement
 os.environ["LOCKERROOM_DONNEES"] = tempfile.mkdtemp()
 import lockerroom

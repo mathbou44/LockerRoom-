@@ -36,31 +36,27 @@
   </div>
 </div></section>
 <section id="probleme"><div class="conteneur">
-  <!-- 20 nov 2026 (Mathieu : « nommer les douleurs que chacun pense vivre seul, qu'il se retrouve a travers ca ; leger a l'oeil ») :
-       une liste aeree, sans cartes ni bordures : la phrase qu'il se dit, puis ce que l'app fait. Pas de ventes ni de comps. -->
-  <style>.tr{list-style:none;margin:22px 0 0;padding:0;max-width:820px}
-  .tr li{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:24px;align-items:baseline;padding:15px 0;border-top:1px solid rgba(255,255,255,.06)}
-  .tr li:last-child{border-bottom:1px solid rgba(255,255,255,.06)}
-  .tr q{font-size:17px;line-height:1.45;color:var(--doux);font-style:italic;quotes:"« " " »" "“" "”"}
-  .tr span.r{font-size:16.5px;line-height:1.4;color:var(--texte);font-weight:600}
-  .tr span.r::before{content:'';display:inline-block;width:7px;height:7px;margin:0 10px 2px 0;border-radius:50%;background:#9FE6D2}
-  .tr-fin{margin:22px 0 0;max-width:620px;font-size:18px;line-height:1.5;color:var(--doux)} .tr-fin b{color:var(--texte)}
-  @media (max-width:760px){.tr li{grid-template-columns:1fr;gap:6px;padding:13px 0} .tr q{font-size:16px} .tr span.r{font-size:15.5px}}</style>
-  <!-- 20 nov 2026 (Mathieu : « les douleurs qui ressortent le plus sur Reddit et les autres forums ») : ce qui revient sur les
-       forums (Blowout Cards, Collectors Universe) et dans les infolettres du hobby : trop de parallèles, trop de sorties, le prix
-       des boîtes, la collection qu'on ne retrouve plus (doublons), les dépenses qui échappent, la carte manquée. Chaque réponse
-       = une fonction qui existe déjà. -->
-  <p class="kicker holo-t"><span class="fr">Ce qui revient le plus sur les forums</span><span class="en">What comes up most on the forums</span></p>
-  <h2><span class="fr">Tu te reconnais ? Tu n’es pas le seul.</span><span class="en">Sound familiar? You’re not the only one.</span></h2>
+  <!-- 20 nov 2026 (Mathieu : « les douleurs qui ressortent le plus sur les forums » ; « le monde liront pas ca, trop de texte ») :
+       6 tuiles qu'on lit d'un coup d'oeil : la douleur en 2-3 mots (barree), la reponse en 5 mots. Sources : forums Blowout Cards,
+       Collectors Universe, infolettres du hobby (trop de parallèles, de sorties, prix des boîtes, collection oubliée/doublons,
+       dépenses, la carte manquée). Chaque réponse = une fonction qui existe. -->
+  <style>.tr{list-style:none;margin:24px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .tr li{display:flex;flex-direction:column;gap:6px;padding:16px 18px;border-radius:16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)}
+  .tr s{font-size:14.5px;color:var(--doux);text-decoration-color:rgba(255,138,122,.7);text-decoration-thickness:1.5px}
+  .tr b{font:700 21px/1.2 'Barlow Condensed',sans-serif;color:var(--texte)}
+  .tr-fin{margin:18px 0 0;font-size:17px;color:var(--doux)} .tr-fin b{color:var(--texte)}
+  @media (max-width:900px){.tr{grid-template-columns:1fr 1fr;gap:8px} .tr li{padding:13px 14px} .tr b{font-size:18px} .tr s{font-size:13.5px}}</style>
+  <p class="kicker holo-t"><span class="fr">Ce qui revient sur les forums</span><span class="en">What comes up on the forums</span></p>
+  <h2><span class="fr">Tu te reconnais ?</span><span class="en">Sound familiar?</span></h2>
   <ul class="tr">
-    <li><q><span class="fr">Il y a tellement de parallèles que je ne sais plus ce que j’ai dans les mains.</span><span class="en">There are so many parallels I don’t know what I’m holding anymore.</span></q><span class="r"><span class="fr">Prends ta carte en photo : on te dit laquelle c’est.</span><span class="en">Snap your card: we tell you which one it is.</span></span></li>
-    <li><q><span class="fr">Des centaines de sorties par année. Impossible de suivre.</span><span class="en">Hundreds of releases a year. Impossible to keep up.</span></q><span class="r"><span class="fr">Le calendrier des sorties et toutes les checklists, au même endroit.</span><span class="en">The release calendar and every checklist, in one place.</span></span></li>
-    <li><q><span class="fr">Les boîtes coûtent une fortune et je ne sais même pas ce qu’il y a dedans.</span><span class="en">Boxes cost a fortune and I don’t even know what’s inside.</span></q><span class="r"><span class="fr">Pour chaque produit : les recrues, les hits et les cotes par boîte.</span><span class="en">For every product: the rookies, hits and odds per box.</span></span></li>
-    <li><q><span class="fr">Mes cartes dorment au fond du garde-robe. Je rachète des cartes que j’ai déjà.</span><span class="en">My cards sit in the back of the closet. I rebuy cards I already own.</span></q><span class="r"><span class="fr">Ton inventaire se remplit tout seul, même avec tes achats eBay. Tu sais ce que tu as.</span><span class="en">Your inventory fills itself, even with your eBay purchases. You know what you have.</span></span></li>
-    <li><q><span class="fr">Mes dépenses en cartes m’ont échappé.</span><span class="en">My card spending got away from me.</span></q><span class="r"><span class="fr">Ton budget du mois, toujours sous tes yeux.</span><span class="en">Your monthly budget, always in sight.</span></span></li>
-    <li><q><span class="fr">Je manque toujours la carte que je cherchais.</span><span class="en">I always miss the card I was looking for.</span></q><span class="r"><span class="fr">Le Radar la guette pour toi.</span><span class="en">The Radar watches for it.</span></span></li>
+    <li><s><span class="fr">Trop de parallèles</span><span class="en">Too many parallels</span></s><b><span class="fr">Une photo : on te dit laquelle c’est</span><span class="en">One photo: we tell you which one</span></b></li>
+    <li><s><span class="fr">Trop de sorties</span><span class="en">Too many releases</span></s><b><span class="fr">Sorties et checklists, au même endroit</span><span class="en">Releases and checklists, in one place</span></b></li>
+    <li><s><span class="fr">Boîtes à l’aveugle</span><span class="en">Boxes in the dark</span></s><b><span class="fr">Recrues et hits de chaque boîte</span><span class="en">Rookies and hits in every box</span></b></li>
+    <li><s><span class="fr">Cartes oubliées, doublons</span><span class="en">Forgotten cards, duplicates</span></s><b><span class="fr">Ton inventaire se remplit seul</span><span class="en">Your inventory fills itself</span></b></li>
+    <li><s><span class="fr">Dépenses qui débordent</span><span class="en">Spending that slips</span></s><b><span class="fr">Ton budget du mois, sous tes yeux</span><span class="en">Your monthly budget, in sight</span></b></li>
+    <li><s><span class="fr">La carte manquée</span><span class="en">The card you missed</span></s><b><span class="fr">Le Radar la guette pour toi</span><span class="en">The Radar watches for it</span></b></li>
   </ul>
-  <p class="tr-fin"><span class="fr"><b>C’est normal.</b> Le hobby a grossi plus vite que notre temps libre. SlabCoach fait la partie plate. Toi, tu gardes la partie le fun.</span><span class="en"><b>That’s normal.</b> The hobby grew faster than our free time. SlabCoach does the boring part. You keep the fun.</span></p>
+  <p class="tr-fin"><span class="fr"><b>C’est normal.</b> SlabCoach fait la partie plate. Toi, tu gardes le fun.</span><span class="en"><b>That’s normal.</b> SlabCoach does the boring part. You keep the fun.</span></p>
 </div></section>
 <div class="conteneur" style="padding-bottom:36px;padding-top:8px"><div class="bande" style="margin-top:8px">
   <div><b class="holo-t">9×</b><span><span class="fr">plus de reventes pour une carte A ou A+ que pour une E</span><span class="en">more resales for an A or A+ card than an E</span></span></div>

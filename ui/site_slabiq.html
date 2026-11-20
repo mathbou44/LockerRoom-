@@ -55,6 +55,26 @@
 .sim-svg .hl{stroke:rgba(255,255,255,.35); stroke-width:1; opacity:0} .sim-svg .hit{fill:transparent; cursor:crosshair}
 .sim-tip{position:absolute; top:6px; min-width:138px; padding:10px 12px; border-radius:14px; background:#16161b; border:1px solid var(--ligne); font-size:14px; pointer-events:none; box-shadow:0 10px 30px rgba(0,0,0,.4)}
 .sim-tip b{display:block; margin-bottom:4px} .sim-tip span{display:flex; align-items:center; gap:8px}
+/* 20 nov 2026 (Mathieu : « trop gros, ca fit meme pas dans l'ecran ») : compact ; a l'ordi, les chiffres a gauche et le graphique a droite */
+#toi-vs-iq h2{font-size:clamp(28px,3.2vw,42px); max-width:none}
+.sim-pente{display:block; width:100%; height:auto; max-height:300px}
+.sim-pente line{fill:none; stroke-linecap:round} .sim-pente .l-inv{stroke:#6c6b66; stroke-width:1.5; stroke-dasharray:5 5}
+.sim-pente .l-sans{stroke:#8f95a3} .sim-pente .l-glow{stroke-width:11; opacity:.5}
+.sim-pente .p-a{fill:#F2B6D2; stroke:var(--carte); stroke-width:3} .sim-pente .p-s{fill:#8f95a3; stroke:var(--carte); stroke-width:3}
+.sim-pente .v-a, .sim-pente .v-s{font:800 26px 'Barlow Condensed',sans-serif; fill:#f3f1ff} .sim-pente .v-s{fill:#b9bdc7} .sim-pente .n{font:500 14px Barlow,sans-serif; fill:var(--doux)}
+@media (max-width:900px){ .sim-pente .v-a, .sim-pente .v-s{font-size:38px} .sim-pente .n{font-size:22px} .sim-pente .tx, .sim-pente .ty{font-size:22px !important} }
+.sim-pente .p-0{fill:#f3f1ff} .sim-g .sim-svg{display:none} .sim-g.detail .sim-svg{display:block} .sim-g.detail .sim-pente{display:none}
+.sim-pente .l-sans{stroke-width:3} .sim-pente .l-avec{stroke-width:4.5} .sim-pente .v-a, .sim-pente .v-s{font-size:26px}
+.sim-pente .ty{fill:var(--doux); font:500 13px Barlow,sans-serif; text-anchor:end} .sim-pente .tx{fill:var(--doux); font:500 14px Barlow,sans-serif; text-anchor:middle}
+.sim-mois{display:block; margin:6px auto 0; padding:7px 14px; border-radius:999px; border:1px solid var(--ligne); background:none; color:var(--doux); font:600 14px Barlow,sans-serif; cursor:pointer}
+.sim-mois:hover{color:var(--texte); border-color:rgba(255,255,255,.25)}
+@media (min-width:1000px){
+  .sim{display:grid; grid-template-columns:230px minmax(0,1fr); column-gap:26px; align-items:center; padding:20px 24px}
+  .sim > .sim-chf{grid-column:1; grid-row:1 / span 4; grid-template-columns:1fr; gap:10px}
+  .sim > .sim-g, .sim > .sim-mois, .sim > .sim-leg{grid-column:2}
+  .sim-chf > div{padding:12px 14px} .sim-chf b{font-size:36px}
+  .sim-g{margin-top:0} .sim-g .sim-svg{max-height:340px}
+}
 .sim-leg{display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:8px 16px; margin:12px 0 0; font-size:15px; color:var(--doux)}
 .k-a, .k-s, .k-i{display:inline-block; width:18px; height:4px; border-radius:2px; margin-right:-8px} .k-a{background:linear-gradient(90deg,#9FE6D2,#B79CF2,#F2B6D2,#E8C77A)} .k-s{background:#8f95a3} .k-i{background:repeating-linear-gradient(90deg,#6c6b66 0 5px,transparent 5px 9px)}
 .df{margin-top:26px; padding:24px; border-radius:24px; border:1.5px solid transparent; background:linear-gradient(var(--carte),var(--carte)) padding-box, linear-gradient(120deg,#9FE6D2,#B79CF2,#F2B6D2,#E8C77A) border-box}
@@ -101,7 +121,24 @@
       <div class="pr"><span><span class="fr">Avec SlabIQ</span><span class="en">With SlabIQ</span></span><b class="holo-t"><span class="fr">+6,0 %</span><span class="en">+6.0%</span></b></div>
       <div><span><span class="fr">Écart en 1 an</span><span class="en">Gap in 1 year</span></span><b class="holo-t"><span class="fr">≈ 580 $</span><span class="en">≈ $580</span></b></div>
     </div>
-    <div class="sim-g"><svg class="sim-svg" viewBox="0 0 760 320" role="img" aria-label="Profit over 12 months">
+    <div class="sim-g"><svg class="sim-pente" viewBox="0 0 600 250" role="img" aria-label="Start and 12 months later">
+  <defs><linearGradient id="peP" x1="0" x2="1"><stop offset="0" stop-color="#9FE6D2"/><stop offset=".5" stop-color="#B79CF2"/><stop offset="1" stop-color="#F2B6D2"/></linearGradient>
+  <linearGradient id="peA" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#B79CF2" stop-opacity=".32"/><stop offset="1" stop-color="#B79CF2" stop-opacity="0"/></linearGradient>
+  <filter id="peG" x="-10%" y="-40%" width="120%" height="180%"><feGaussianBlur stdDeviation="6"/></filter></defs>
+  <line x1="66" x2="440" y1="116.0" y2="116.0" class="l-inv"/>
+  <text x="60" y="120.0" class="ty"><tspan class="fr">0 $</tspan><tspan class="en">$0</tspan></text>
+  <polygon points="76,116.0 430,40.8 430,116.0" fill="url(#peA)"/>
+  <line x1="76" y1="116.0" x2="430" y2="188.9" class="l-sans"/>
+  <line x1="76" y1="116.0" x2="430" y2="40.8" stroke="url(#peP)" class="l-glow" filter="url(#peG)"/>
+  <line x1="76" y1="116.0" x2="430" y2="40.8" stroke="url(#peP)" class="l-avec"/>
+  <circle cx="76" cy="116.0" r="5" class="p-0"/><circle cx="430" cy="40.8" r="7" class="p-a"/><circle cx="430" cy="188.9" r="5.5" class="p-s"/>
+  <text x="446" y="44.8" class="v-a"><tspan class="fr">+300 $</tspan><tspan class="en">+$300</tspan></text>
+  <text x="446" y="64.8" class="n"><tspan class="fr">Avec SlabIQ</tspan><tspan class="en">With SlabIQ</tspan></text>
+  <text x="446" y="192.9" class="v-s"><tspan class="fr">−291 $</tspan><tspan class="en">−$291</tspan></text>
+  <text x="446" y="212.9" class="n"><tspan class="fr">Sans SlabIQ</tspan><tspan class="en">Without SlabIQ</tspan></text>
+  <text x="76" y="238" class="tx"><tspan class="fr">Départ</tspan><tspan class="en">Start</tspan></text>
+  <text x="430" y="238" class="tx"><tspan class="fr">12 mois plus tard</tspan><tspan class="en">12 months later</tspan></text>
+</svg><svg class="sim-svg" viewBox="0 0 760 320" role="img" aria-label="Profit over 12 months">
   <defs><linearGradient id="simP" x1="0" x2="1"><stop offset="0" stop-color="#9FE6D2"/><stop offset=".45" stop-color="#B79CF2"/><stop offset=".75" stop-color="#F2B6D2"/><stop offset="1" stop-color="#E8C77A"/></linearGradient>
   <linearGradient id="simA" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#B79CF2" stop-opacity=".30"/><stop offset="1" stop-color="#B79CF2" stop-opacity="0"/></linearGradient>
   <filter id="simG" x="-5%" y="-20%" width="110%" height="140%"><feGaussianBlur stdDeviation="5"/></filter></defs>
@@ -118,6 +155,7 @@
   <line class="hl" x1="0" x2="0" y1="16" y2="284"/>
   <rect class="hit" x="64" y="16" width="568" height="268"/>
 </svg><div class="sim-tip" hidden></div></div>
+    <button class="sim-mois" type="button" aria-expanded="false"><span class="fr">Voir mois par mois</span><span class="en">See month by month</span></button>
     <p class="sim-leg"><i class="k-a"></i><span class="fr">Avec SlabIQ</span><span class="en">With SlabIQ</span><i class="k-s"></i><span class="fr">Sans SlabIQ</span><span class="en">Without SlabIQ</span><i class="k-i"></i><span class="fr">0 $ : ni gain ni perte</span><span class="en">$0: break-even</span></p>
     <p class="sim-leg"><span class="fr">Le profit : la valeur des cartes (leurs reventes) moins l’argent mis.</span><span class="en">Profit: the cards’ value (their resales) minus the money spent.</span></p>
   </div>
@@ -218,7 +256,7 @@
   // le graphique : la valeur au survol
   var sd = document.getElementById('sim-data');
   if (sd) {
-    var S = JSON.parse(sd.textContent), g = document.querySelector('.sim-g'), svg = g.querySelector('svg'), tip = g.querySelector('.sim-tip'), hl = svg.querySelector('.hl');
+    var S = JSON.parse(sd.textContent), g = document.querySelector('.sim-g'), svg = g.querySelector('.sim-svg'), tip = g.querySelector('.sim-tip'), hl = svg.querySelector('.hl');
     var nf = function(n){ var sg = S.profit && n > 0 ? '+' : n < 0 ? '−' : ''; n = Math.abs(n); return sg + (EN ? '$' + n.toLocaleString('en-US') : n.toLocaleString('fr-CA').replace(/ | /g, ' ') + ' $'); };
     var bouge = function(ev){
       var r = svg.getBoundingClientRect(), x = (ev.clientX - r.left) * S.w / r.width, i = Math.max(0, Math.min(11, Math.round((x - S.x0) / S.dx)));
@@ -226,6 +264,10 @@
       tip.hidden = false; tip.innerHTML = '<b>' + (EN ? S.me[i] : S.mf[i]) + '</b><span><i class="k-a"></i>' + nf(S.avec[i]) + '</span><span><i class="k-s"></i>' + nf(S.sans[i]) + '</span>';
       var left = px * r.width / S.w; tip.style.left = Math.min(r.width - 150, Math.max(0, left + 12)) + 'px';
     };
+    // 20 nov 2026 : d'abord le depart et le resultat (une ligne qui monte, une qui descend) ; « Voir mois par mois » : le chemin complet
+    var bm = document.querySelector('.sim-mois');
+    if (bm) bm.addEventListener('click', function(){ var o = g.classList.toggle('detail'); bm.setAttribute('aria-expanded', o ? 'true' : 'false');
+      bm.innerHTML = o ? '<span class="fr">Voir le départ et l’arrivée</span><span class="en">See start and finish</span>' : '<span class="fr">Voir mois par mois</span><span class="en">See month by month</span>'; });
     svg.querySelector('.hit').addEventListener('pointermove', bouge);
     svg.querySelector('.hit').addEventListener('pointerleave', function(){ tip.hidden = true; hl.style.opacity = 0; });
   }

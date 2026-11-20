@@ -4727,6 +4727,19 @@ html.tel-large .ecran.acc.acc-ft-mode > .acc-news2{order:9}
 .sig-g{display:grid; grid-template-columns:1fr 1fr; gap:8px} .sig-o{padding:12px; border-radius:14px; border:1.5px solid var(--ligne); background:var(--carte); color:var(--texte); font:600 14px var(--f-txt); text-align:left; cursor:pointer}
 .sig-o.on{border-color:transparent; background:linear-gradient(var(--carte2), var(--carte2)) padding-box, var(--prisme) border-box}
 .iqx-ch .iqx-s:nth-child(n+3){display:none} .iqx-f{gap:8px} .iqx-fi{padding-top:10px !important; padding-bottom:10px !important}
+/* 20 nov 2026 : « Pour bien partir » et le set le plus proche (barre de progres) */
+.acc-ligne .pbp-b{grid-column:1; display:block; height:6px; margin:5px 0 3px; border-radius:99px; background:rgba(255,255,255,.08); overflow:hidden}
+.pbp-b{display:block; height:8px; border-radius:99px; background:rgba(255,255,255,.08); overflow:hidden}
+.pbp-b i{display:block; height:100%; border-radius:99px; background:var(--holo); transition:width .6s cubic-bezier(.22,1,.36,1)}
+.pbp{display:flex; flex-direction:column; gap:14px; padding-top:20px} .pbp h3{margin:0}
+.pbp-tete{display:flex; align-items:center; gap:14px} .pbp-tete b{font:800 34px/1 var(--f-cond)} .pbp-tete b small{font-size:20px; color:var(--doux)} .pbp-tete .pbp-b{flex:1}
+.pbp-l{display:flex; flex-direction:column}
+.pbp-e{display:flex; align-items:center; gap:14px; padding:13px 2px; border:0; border-top:1px solid var(--sep); background:none; color:var(--texte); text-align:left; font:inherit; cursor:pointer}
+.pbp-e:disabled{cursor:default} .pbp-e i{margin-left:auto; font-style:normal; font-size:22px; color:var(--acc)}
+.pbp-c{flex:none; width:28px; height:28px; border-radius:50%; border:2px solid var(--ligne); display:grid; place-items:center}
+.pbp-e.fait .pbp-c{border-color:var(--vert); background:var(--vert)} .pbp-c svg{width:16px; height:16px; fill:none; stroke:#0B0B0E; stroke-width:3; stroke-linecap:round; stroke-linejoin:round}
+.pbp-t{display:flex; flex-direction:column; gap:2px; min-width:0} .pbp-t b{font-size:16px} .pbp-e.fait .pbp-t b{color:var(--doux); font-weight:600} .pbp-t small{font-size:13px; color:var(--doux)}
+.pbp-x{align-self:center; border:0; background:none; color:var(--pale); font:600 13px inherit; cursor:pointer; text-decoration:underline}
 /* 20 nov 2026 : le trivia du hobby (Admin, a l'essai) */
 .tv{display:flex; flex-direction:column; gap:14px; padding-top:22px; min-height:420px}
 .tv-h{display:flex; align-items:center; justify-content:space-between; gap:10px; padding-right:44px}
@@ -4751,6 +4764,7 @@ html.tel-large .ecran.acc.acc-ft-mode > .acc-news2{order:9}
 .tv-fin p{margin:0; font-size:17px; font-weight:600}
 .tv-k{display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; width:100%} .tv-k div{display:flex; flex-direction:column; gap:3px; padding:12px; border-radius:16px; background:var(--carte); border:1px solid var(--ligne)}
 .tv-k b{font:700 28px var(--f-cond); color:var(--or)} .tv-k small{font-size:12px; color:var(--doux)}
+.tv-gel{padding:8px 12px; border-radius:12px; font-size:13px; color:var(--vert); background:color-mix(in srgb, var(--vert) 12%, transparent)}
 .tv-bas{display:flex; gap:10px; width:100%} .tv-bas .btn{flex:1} .tv-note{font-size:12px; color:var(--pale)}
 /* 20 nov 2026 : SlabIQ, la grosse affaire : un chiffre geant, trois preuves, une seule ligne de petite ecriture */
 .iqx2{gap:16px} .iqx2 .iqx-t span em{font-style:normal; background:var(--holo); -webkit-background-clip:text; background-clip:text; color:transparent} .iqx2 .iqx-t span{font-size:22px !important}
@@ -13587,6 +13601,18 @@ async function vueAccueil(arg){
     const old = $('.acc-ligne'); if (old) old.remove();
     if (l) { zt.insertAdjacentHTML('afterend', l); const b = $('#acc-ajout'); if (b) b.onclick = () => ajoutCollection(); const bc = $('#acc-coll'); if (bc) bc.onclick = () => { S.filtreInv = 'collection'; }; }
     const ts = $('#t-stock'); if (ts && !vide) ts.onclick = (e) => { e.preventDefault(); feuilleStockAcc(d); };
+    // 20 nov 2026 (docs/GUIDE_ACCROCHE.md) : « Pour bien partir » (les etapes deja faites cochees : on part a 2/5) tant que ce
+    // n'est pas fini ; ensuite, le set le plus proche d'etre complet (« il te manque 3 cartes »). Une seule ligne a la fois.
+    API.accueil_progres().then(p => {
+      const z2 = $('#acc-tuiles'); if (!p || !p.ok || !z2) return;
+      const dep = !p.cache && p.faites < p.total, st_ = !dep && p.set && !nc && !vide ? p.set : null;
+      if (!dep && !st_) { if (p.faites >= p.total) feteDepart(); return; }
+      const o2 = $('.acc-ligne'); if (o2) o2.remove();
+      z2.insertAdjacentHTML('afterend', dep ? ligneDepart(p) : ligneSet(st_));
+      const b2 = $('#acc-depart'); if (b2) b2.onclick = () => { vibrer(); feuilleDepart(p); };
+      const b3 = $('#acc-set'); if (b3) b3.onclick = () => { vibrer(); feuilleChecklistColl({id: st_.pid, nom: st_.produit, n: st_.possedees, valeur: 0,
+        sous: [{nom: st_.sous, possedees: st_.possedees, total: st_.total, pct: st_.pct}]}, st_.sous); };
+    }).catch(() => {});
   }
   if (S.mode === 'acheteur') budgetEtat(true).then(b => { const t = $('#t-budget'); if (!t || !b) return;
     if (!b.budget) { t.querySelector('b').textContent = tt('À fixer', 'Not set'); t.onclick = (e) => { e.preventDefault(); feuilleBudget(); }; return; }
@@ -17071,6 +17097,40 @@ function feuilleExamen(c, opts){
     const fond = $('#fond-feuille'); if (fond) { const obs = new MutationObserver(() => { if (fond.hidden) { obs.disconnect(); if (!fini) { fini = true; ok(null); } } }); obs.observe(fond, {attributes: true, attributeFilter: ['hidden']}); }
   });
 }
+// -- 20 nov 2026 (docs/GUIDE_ACCROCHE.md) : « Pour bien partir » et le set le plus proche ------------------------------------
+const DEPART = {
+  compte: [tt('Ton compte est créé', 'Your account is ready'), ''],
+  ebay: [tt('Relie ton eBay', 'Link your eBay'), tt('Ton inventaire et tes achats arrivent tout seuls', 'Your inventory and purchases come in on their own')],
+  carte: [tt('Ajoute ta 1re carte', 'Add your first card'), tt('Une photo : on te dit laquelle c’est', 'One photo: we tell you which one')],
+  joueurs: [tt('Choisis tes joueurs', 'Pick your players'), tt('Le Radar guette leurs cartes pour toi', 'The Radar watches for their cards')],
+  budget: [tt('Fixe ton budget du mois', 'Set your monthly budget'), tt('Pour que tes dépenses ne t’échappent pas', 'So your spending doesn’t get away from you')]};
+const barreDep = (pct) => `<span class="pbp-b"><i style="width:${Math.max(4, Math.min(100, pct))}%"></i></span>`;
+function ligneDepart(p){
+  const proch = (p.etapes.find(e => !e.fait) || {}).k;
+  return `<button class="acc-ligne acc-depart" id="acc-depart"><b>${tt('Pour bien partir', 'Getting started')} · ${p.faites}/${p.total}</b>${barreDep(100 * p.faites / p.total)}
+    <span>${tt('Prochaine étape', 'Next step')} : ${esc((DEPART[proch] || [''])[0])}</span><i>›</i></button>`;
+}
+function ligneSet(x){
+  return `<button class="acc-ligne acc-set" id="acc-set"><b>${tt(`Il te manque ${x.manque} carte${x.manque > 1 ? 's' : ''}`, `${x.manque} card${x.manque > 1 ? 's' : ''} to go`)}</b>${barreDep(x.pct)}
+    <span>${esc(x.sous)} · ${esc(x.produit)} · ${x.possedees}/${x.total}</span><i>›</i></button>`;
+}
+function feuilleDepart(p){
+  const act = {ebay: () => { fermerFeuille(); location.hash = '#reglages'; }, carte: () => { fermerFeuille(); ajoutCollection(); },
+    joueurs: () => { fermerFeuille(); configurerRadar({}); }, budget: () => { fermerFeuille(); feuilleBudget(); }};
+  ouvrirFeuille(`<div class="pbp">
+    <h3>${tt('Pour bien partir', 'Getting started')}</h3>
+    <div class="pbp-tete"><b>${p.faites}<small>/${p.total}</small></b>${barreDep(100 * p.faites / p.total)}</div>
+    <div class="pbp-l">${p.etapes.map(e => `<button class="pbp-e ${e.fait ? 'fait' : ''}" data-k="${e.k}" ${e.fait ? 'disabled' : ''}>
+      <span class="pbp-c">${e.fait ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>' : ''}</span>
+      <span class="pbp-t"><b>${esc(DEPART[e.k][0])}</b>${!e.fait && DEPART[e.k][1] ? `<small>${esc(DEPART[e.k][1])}</small>` : ''}</span>${e.fait ? '' : '<i>›</i>'}</button>`).join('')}</div>
+    <button class="pbp-x" id="pbp-x">${tt('Masquer', 'Hide')}</button></div>`, {centre: true});
+  $$('.pbp-e:not(.fait)').forEach(b => b.onclick = () => { vibrer(); (act[b.dataset.k] || (() => {}))(); });
+  $('#pbp-x').onclick = async () => { await API.depart_cacher().catch(() => {}); fermerFeuille(); const l = $('#acc-depart'); if (l) l.remove(); };
+}
+function feteDepart(){
+  let vu = false; try { vu = localStorage.getItem('lr_depart_fete') === '1'; localStorage.setItem('lr_depart_fete', '1'); } catch (e) { vu = true; }
+  if (!vu) toast(tt('Bien parti ! Tes 5 étapes sont faites.', 'Off to a great start! All 5 steps done.'), 4000);
+}
 // -- 1er nov 2026 : la collection par sets (le % complete, les cartes qui manquent) --
 const barreSet = (pct) => `<span class="cs-b"><i style="width:${Math.max(2, Math.min(100, pct))}%"></i></span>`;
 async function feuilleSets(){
@@ -20427,6 +20487,7 @@ async function jouerTrivia(sport){
       <div class="tv-score"><b>${bonnes}</b><span>/${Q.length}</span></div>
       <p>${msg}</p>
       <div class="tv-k"><div><b>${e.serie || 0}</b><small>${tt('jours de suite', 'days in a row')}</small></div><div><b>${e.meilleure_serie || 0}</b><small>${tt('meilleure série', 'best streak')}</small></div><div><b>${e.parties || 0}</b><small>${tt('parties', 'games')}</small></div></div>
+      ${e.gel && !deja ? `<small class="tv-gel">${tt('Ta série est sauvée : un jour manqué par semaine est permis.', 'Your streak is safe: one missed day a week is allowed.')}</small>` : ''}
       ${deja ? `<small class="tv-note">${tt('Déjà joué aujourd’hui : cette partie ne compte pas.', 'Already played today: this game doesn’t count.')}</small>` : ''}
       <div class="tv-bas"><button class="btn secondaire" id="tv-re">${tt('Rejouer', 'Play again')}</button><button class="btn" id="tv-ok">${tt('Fermer', 'Close')}</button></div>
       <small class="tv-note">${tt('Nouvelles questions chaque semaine : nos checklists, les stats de la LNH et le vocabulaire du hobby.', 'New questions every week: our checklists, NHL stats and hobby vocabulary.')}</small></div>`;

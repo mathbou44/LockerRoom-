@@ -245,8 +245,19 @@ def noter(etat, bonnes, total, quand=None):
     e = dict(etat or {})
     if e.get("dernier") == quand:
         return e                                          # une partie comptée par jour
-    hier = date.fromordinal(date.fromisoformat(quand).toordinal() - 1).isoformat()
-    e["serie"] = (int(e.get("serie") or 0) + 1) if e.get("dernier") == hier else 1
+    j = date.fromisoformat(quand)
+    hier = date.fromordinal(j.toordinal() - 1).isoformat()
+    avant_hier = date.fromordinal(j.toordinal() - 2).isoformat()
+    sem = "%d-%02d" % j.isocalendar()[:2]
+    e["gel"] = False
+    if e.get("dernier") == hier:
+        e["serie"] = int(e.get("serie") or 0) + 1
+    elif e.get("dernier") == avant_hier and e.get("gel_semaine") != sem and int(e.get("serie") or 0) > 0:
+        # 20 nov 2026 (guide : « les series pardonnent ») : UN jour manque par semaine ne casse pas la serie (comme le gel de Duolingo)
+        e["serie"] = int(e.get("serie") or 0) + 1
+        e["gel_semaine"], e["gel"] = sem, True
+    else:
+        e["serie"] = 1
     e["dernier"], e["score_jour"] = quand, [int(bonnes), int(total)]
     e["parties"] = int(e.get("parties") or 0) + 1
     e["bonnes"] = int(e.get("bonnes") or 0) + int(bonnes)

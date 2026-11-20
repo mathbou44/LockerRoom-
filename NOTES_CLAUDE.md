@@ -46,6 +46,7 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
 - **Pas de barre de défilement sur ordinateur** (son navigateur est à 125 % : fenêtre ~1465×694). Tester à cette taille.
 - Slab : 8×13,5 cm vertical ; même standard de slab dans Radar et Inventaire.
 - Design : pastilles rondes, icônes en traits, pas d'emoji, de vraies données ; fenêtres au centre, fond flou, un X.
+- Accroche, texte et rétention : lire docs/GUIDE_ACCROCHE.md avant tout écran, page, notification ou texte (recherche sur le comportement humain, nos règles, liste de vérification). Slogan : « Collectionne plus. Cherche moins. » Ton hobby, pas finance.
 - La mission : aider monsieur, madame tout le monde à suivre sa collection, savoir quand acheter et vendre, sans le
   bruit des influenceurs. Un enfant de 12 ans doit s'en sortir.
 - **SlabIQ** : tout changement de décision est testé avant/après sur des données jamais vues ; on garde seulement si ce

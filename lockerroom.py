@@ -67,6 +67,7 @@ REGLAGE_MAX_OCTETS = 64 * 1024
 REGLAGES_DEFAUT = {
     "histo_complet_le": None,                                   # 20 nov 2026 : la 1re synchro (2 ans de ventes) deja faite
     "trivia": {},                                               # 20 nov 2026 : le trivia du hobby (serie de jours, scores)
+    "depart_cache": False,                                      # 20 nov 2026 : « Pour bien partir » ferme par la personne
     "prix_auto": {},                                            # 27 oct 2026 : mode Auto des prix eBay (voir prix_auto_regler)
     "tuto_vendeur": 0, "tuto_acheteur": 0,                      # 31 oct 2026 : le tour de l'app deja vu (par compte)
     "watch": {},                                                # 29 oct 2026 : alarmes de la watchlist (voir watchlist.regler)
@@ -9722,6 +9723,57 @@ class Api:
     def collection_sets(self):
         import collection_sets
         return collection_sets.sets(self)
+
+    # 20 nov 2026 (guide docs/GUIDE_ACCROCHE.md, Mathieu : « va s'y Picasso ») : ce qui fait rester, en vrai.
+    #  - « Pour bien partir » : 5 etapes ; celles deja faites sont cochees (le compte, eBay relie) : on part a 2/5, pas a 0
+    #    (progres offert, Nunes et Dreze 2006). Rien de faux : chaque coche est un etat reel.
+    #  - le set le plus proche d'etre complet : « il te manque 3 cartes » (plus on est pres du but, plus on accelere ; Kivetz 2006)
+    _PROGRES = {}
+
+    def accueil_progres(self):
+        import forfaits
+        cle = self.chemin_db
+        r = self.reglages_lire()
+        try:
+            eb = bool(ebay_compte.statut().get("connecte"))
+        except Exception:
+            eb = False
+        c = self._db()
+        try:
+            nb = c.execute("SELECT COUNT(*) FROM cartes").fetchone()[0]
+        finally:
+            c.close()
+        p = r.get("deals_profil") if isinstance(r.get("deals_profil"), dict) else {}
+        etapes = [{"k": "compte", "fait": True}, {"k": "ebay", "fait": eb}, {"k": "carte", "fait": nb > 0},
+                  {"k": "joueurs", "fait": bool(p.get("favoris") or p.get("collectionne"))},
+                  {"k": "budget", "fait": float(r.get("budget_mois") or 0) > 0}]
+        out = {"ok": True, "etapes": etapes, "faites": sum(1 for e in etapes if e["fait"]), "total": len(etapes),
+               "cache": bool(r.get("depart_cache")), "set": None}
+        m = Api._PROGRES.get(cle)                   # le set le plus proche : calcul plus lourd, garde 5 min ; les etapes : toujours fraiches
+        if m and time.time() - m[0] < 300:
+            out["set"] = m[1]
+            return out
+        try:
+            import collection_sets
+            best = None
+            for pr in collection_sets.sets(self).get("produits") or []:
+                for so in pr.get("sous") or []:
+                    manque = so["total"] - so["possedees"]
+                    # loin du but, ca decourage (Cao, Reimann, Brucks 2025) : seulement a 50 % et plus, ou 10 cartes ou moins
+                    if so["possedees"] >= 3 and 0 < manque and so["total"] >= 5 and (so["pct"] >= 50 or manque <= 10):
+                        k = (so["possedees"] / so["total"], -manque)
+                        if not best or k > best[0]:
+                            best = (k, {"pid": pr["id"], "produit": pr["nom"], "sous": so["nom"], "possedees": so["possedees"],
+                                        "total": so["total"], "manque": manque, "pct": so["pct"]})
+            out["set"] = best[1] if best else None
+        except Exception as e:
+            print("Progres (sets) : " + repr(e)[:160], flush=True)
+        Api._PROGRES[cle] = (time.time(), out["set"])
+        return out
+
+    def depart_cacher(self):
+        self.reglages_sauver({"depart_cache": True})
+        return {"ok": True}
 
     def collection_checklist(self, pid, sous):
         import collection_sets

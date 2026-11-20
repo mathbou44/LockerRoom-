@@ -127,6 +127,39 @@ def majX(s, x):
     return nouveau
 
 
+def pente(sans_fin, avec_fin):
+    """20 nov 2026 (Mathieu : « trouve une maniere d'avoir un graphique montant pour SlabIQ et descendant sans SlabIQ ») : le
+    point de depart (0 $) et le resultat mesure 12 mois plus tard, relies. Rien d'invente : ce sont les deux bouts de la courbe
+    mesuree ; « Voir mois par mois » montre le chemin complet (avec sa bosse du printemps)."""
+    W, H, X0, X1, T, B = 600, 250, 76, 430, 22, 40
+    m = max(abs(sans_fin), abs(avec_fin), 1) * 1.25
+    Y = lambda v: T + (1 - (v + m) / (2 * m)) * (H - T - B)
+    sg = lambda v: ("+" if v > 0 else "−" if v < 0 else "")
+    ya, ys = Y(avec_fin), Y(sans_fin)
+    return f'''<svg class="sim-pente" viewBox="0 0 {W} {H}" role="img" aria-label="Start and 12 months later">
+  <defs><linearGradient id="peP" x1="0" x2="1"><stop offset="0" stop-color="#9FE6D2"/><stop offset=".5" stop-color="#B79CF2"/><stop offset="1" stop-color="#F2B6D2"/></linearGradient>
+  <linearGradient id="peA" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#B79CF2" stop-opacity=".32"/><stop offset="1" stop-color="#B79CF2" stop-opacity="0"/></linearGradient>
+  <filter id="peG" x="-10%" y="-40%" width="120%" height="180%"><feGaussianBlur stdDeviation="6"/></filter></defs>
+  <line x1="{X0 - 10}" x2="{X1 + 10}" y1="{Y(0):.1f}" y2="{Y(0):.1f}" class="l-inv"/>
+  <text x="{X0 - 16}" y="{Y(0) + 4:.1f}" class="ty"><tspan class="fr">0 $</tspan><tspan class="en">$0</tspan></text>
+  <polygon points="{X0},{Y(0):.1f} {X1},{ya:.1f} {X1},{Y(0):.1f}" fill="url(#peA)"/>
+  <line x1="{X0}" y1="{Y(0):.1f}" x2="{X1}" y2="{ys:.1f}" class="l-sans"/>
+  <line x1="{X0}" y1="{Y(0):.1f}" x2="{X1}" y2="{ya:.1f}" stroke="url(#peP)" class="l-glow" filter="url(#peG)"/>
+  <line x1="{X0}" y1="{Y(0):.1f}" x2="{X1}" y2="{ya:.1f}" stroke="url(#peP)" class="l-avec"/>
+  <circle cx="{X0}" cy="{Y(0):.1f}" r="5" class="p-0"/><circle cx="{X1}" cy="{ya:.1f}" r="7" class="p-a"/><circle cx="{X1}" cy="{ys:.1f}" r="5.5" class="p-s"/>
+  <text x="{X1 + 16}" y="{ya + 4:.1f}" class="v-a"><tspan class="fr">{sg(avec_fin)}{fr(abs(avec_fin))} $</tspan><tspan class="en">{sg(avec_fin)}${en(abs(avec_fin))}</tspan></text>
+  <text x="{X1 + 16}" y="{ya + 24:.1f}" class="n"><tspan class="fr">Avec SlabIQ</tspan><tspan class="en">With SlabIQ</tspan></text>
+  <text x="{X1 + 16}" y="{ys + 4:.1f}" class="v-s"><tspan class="fr">{sg(sans_fin)}{fr(abs(sans_fin))} $</tspan><tspan class="en">{sg(sans_fin)}${en(abs(sans_fin))}</tspan></text>
+  <text x="{X1 + 16}" y="{ys + 24:.1f}" class="n"><tspan class="fr">Sans SlabIQ</tspan><tspan class="en">Without SlabIQ</tspan></text>
+  <text x="{X0}" y="{H - 12}" class="tx"><tspan class="fr">Départ</tspan><tspan class="en">Start</tspan></text>
+  <text x="{X1}" y="{H - 12}" class="tx"><tspan class="fr">12 mois plus tard</tspan><tspan class="en">12 months later</tspan></text>
+</svg>'''
+
+
+SIM_BOUTON = ('<button class="sim-mois" type="button" aria-expanded="false"><span class="fr">Voir mois par mois</span>'
+              '<span class="en">See month by month</span></button>')
+
+
 def ecrire(R, defi):
     sim = R["sim"]
     svg, serie, inv, sans, avec = graphique(sim)
@@ -186,7 +219,8 @@ def ecrire(R, defi):
       <div class="pr"><span><span class="fr">Avec SlabIQ</span><span class="en">With SlabIQ</span></span><b class="holo-t"><span class="fr">{pfr(r_a)}</span><span class="en">{pen(r_a)}</span></b></div>
       <div><span><span class="fr">Écart en 1 an</span><span class="en">Gap in 1 year</span></span><b class="holo-t"><span class="fr">≈ {fr(ecart)} $</span><span class="en">≈ ${en(ecart)}</span></b></div>
     </div>
-    <div class="sim-g">{svg}<div class="sim-tip" hidden></div></div>
+    <div class="sim-g">{pente(sans[-1], avec[-1])}{svg}<div class="sim-tip" hidden></div></div>
+    {SIM_BOUTON}
     <p class="sim-leg"><i class="k-a"></i><span class="fr">Avec SlabIQ</span><span class="en">With SlabIQ</span><i class="k-s"></i><span class="fr">Sans SlabIQ</span><span class="en">Without SlabIQ</span><i class="k-i"></i><span class="fr">0 $ : ni gain ni perte</span><span class="en">$0: break-even</span></p>
     <p class="sim-leg"><span class="fr">Le profit : la valeur des cartes (leurs reventes) moins l’argent mis.</span><span class="en">Profit: the cards’ value (their resales) minus the money spent.</span></p>
   </div>
