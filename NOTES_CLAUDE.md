@@ -86,3 +86,5 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   activer HSTS (Edge Certificates), ajouter DMARC p=none. Ne PAS activer Bot Fight Mode (bloque Stripe, Apple, eBay).
 - **Aikido** : relancer le scan ; ignorer avec raison lightgbm, liste IP GitHub, SSRF (faux positif), CSP.
 - Prix annuel Stripe à confirmer. Réponse d'eBay (prix vendus montrés au public) toujours attendue.
+
+- Inventaire = des CARTES seulement (20 nov 2026, Mathieu : « un cadre signe, c'est pas une carte ; pas de tables de cuisine ni de chaudrons ») : rien n'entre tout seul s'il n'est pas une carte a l'unite (cartes_match.est_carte_seule). Objets signes, cadres, photos, chandails, rondelles, fournitures, boites scellees, places de break : jamais importes automatiquement.

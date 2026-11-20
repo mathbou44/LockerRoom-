@@ -67,7 +67,9 @@ REGLAGE_MAX_OCTETS = 64 * 1024
 REGLAGES_DEFAUT = {
     "histo_complet_le": None,                                   # 20 nov 2026 : la 1re synchro (2 ans de ventes) deja faite
     "trivia": {},                                               # 20 nov 2026 : le trivia du hobby (serie de jours, scores)
-    "depart_cache": False,                                      # 20 nov 2026 : « Pour bien partir » ferme par la personne
+    "depart_cache": False,
+    "auto_coll_corrige": False,
+    "non_cartes_retires": False,                                # 20 nov 2026 : les objets (cadres, photos...) sortis une fois                                 # 20 nov 2026 : copies d'achats remises une fois dans « Achetees »                                      # 20 nov 2026 : « Pour bien partir » ferme par la personne
     "prix_auto": {},                                            # 27 oct 2026 : mode Auto des prix eBay (voir prix_auto_regler)
     "tuto_vendeur": 0, "tuto_acheteur": 0,                      # 31 oct 2026 : le tour de l'app deja vu (par compte)
     "watch": {},                                                # 29 oct 2026 : alarmes de la watchlist (voir watchlist.regler)
@@ -9882,18 +9884,55 @@ class Api:
     # devient une carte de l'inventaire, avec le vrai prix paye. Un collectionneur (mode acheteur ou objectif collection) : dans sa
     # Collection ; un vendeur : en Reserve. Une carte supprimee par la personne ne revient pas (l'achat garde son lien).
     def achats_ajouter_auto(self):
+        # 20 nov 2026 (Mathieu : « ou sont tous mes cartes ?! ») : un achat eBay arrive dans « Achetees » (la Reserve), pour tout
+        # le monde. Avant, en mode collection, il allait direct dans la Collection et disparaissait de « Achetees ».
         rg = self.reglages_lire()
-        emp = "Collection" if rg.get("mode") == "acheteur" or rg.get("objectif") == "collection" else "Réserve"
+        emp = "Réserve"
         with _verrou:
             c = self._db()
             try:
                 self._achats_table(c)
+                # une seule fois par compte : les copies automatiques deja rangees dans la Collection reviennent dans « Achetees »
+                if not rg.get("auto_coll_corrige"):
+                    cols_ = {r[1] for r in c.execute("PRAGMA table_info(cartes)")}
+                    if "source" in cols_ and "emplacement" in cols_:
+                        cur = c.execute("UPDATE cartes SET emplacement='Réserve' WHERE source='achat eBay' AND emplacement='Collection' "
+                                        "AND statut='En stock' AND COALESCE(item_number,'')='' AND id IN (SELECT carte_id FROM achats_ebay "
+                                        "WHERE carte_id IS NOT NULL)")
+                        if cur.rowcount:
+                            print(f"Achats : {cur.rowcount} copie(s) automatique(s) remise(s) dans Achetees", flush=True)
+                        c.commit()
                 # les liens vers une carte qui n'existe plus (supprimee avant le 20 nov 2026) : retires, jamais reajoutes
                 c.execute("UPDATE achats_ebay SET carte_id=-1 WHERE carte_id > 0 AND carte_id NOT IN (SELECT id FROM cartes)")
                 c.commit()
-                libres = [tuple(r) for r in c.execute("SELECT item_id, n FROM achats_ebay WHERE carte_id IS NULL ORDER BY date")]
+                # 20 nov 2026 (Mathieu : « c'est pas une carte, c'est un cadre signe ; faut un garde-fou pour pas que le monde
+                # importe des tables de cuisine et des chaudrons dans leurs cartes ») : seules les CARTES entrent toutes seules
+                # (cartes_match.est_carte : un cadre, une photo 8x10, une rondelle, un chandail, des toploaders : non)
+                libres = [(r[0], r[1]) for r in c.execute("SELECT item_id, n, titre FROM achats_ebay WHERE carte_id IS NULL ORDER BY date")
+                          if cartes_match.est_carte_seule(r[2])]
+                # une seule fois : les objets deja entres tout seuls (jamais touches, jamais en vente) ressortent de l'inventaire
+                if not rg.get("non_cartes_retires"):
+                    faux = [r for r in c.execute("SELECT k.id, k.titre, a.rowid FROM cartes k JOIN achats_ebay a ON a.carte_id = k.id "
+                                                 "WHERE k.source = 'achat eBay' AND k.statut = 'En stock' AND COALESCE(k.item_number, '') = ''")
+                            if not cartes_match.est_carte_seule(r[1])]
+                    for kid, _t, rid in faux:
+                        c.execute("DELETE FROM cartes WHERE id=?", (kid,))
+                        c.execute("UPDATE achats_ebay SET carte_id=NULL WHERE rowid=?", (rid,))
+                    if faux:
+                        print(f"Achats : {len(faux)} objet(s) qui ne sont pas des cartes retire(s) de l'inventaire", flush=True)
+                    c.commit()
             finally:
                 c.close()
+        if not rg.get("non_cartes_retires"):
+            try:
+                self.reglages_sauver({"non_cartes_retires": True})
+            except Exception as e:
+                print("Achats (reglage) : " + repr(e)[:120], flush=True)
+        if not rg.get("auto_coll_corrige"):
+            try:
+                self.reglages_sauver({"auto_coll_corrige": True})
+            except Exception as e:
+                print("Achats (reglage) : " + repr(e)[:120], flush=True)
         n = 0
         for item_id, k in libres:
             r = self.achat_vers_inventaire(item_id, k, emp)
@@ -10485,6 +10524,10 @@ class Api:
         except Exception as e:
             print("Achats relies tout seuls : " + repr(e)[:160], flush=True)
             lies_auto = 0
+        try:                                                 # 20 nov 2026 : les achats arrivent ici, meme sans synchro
+            self.achats_ajouter_auto()
+        except Exception as e:
+            print("Achats (ajout auto) : " + repr(e)[:160], flush=True)
         with _verrou:
             c = self._db()
             try:

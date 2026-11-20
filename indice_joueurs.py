@@ -1044,6 +1044,8 @@ def pourquoi(nom):
         leg["coupes"] = tc["Stanley Cup"]
     if h.get("trophees_n"):
         leg["trophees"] = h["trophees_n"]
+    if tc:                                    # 20 nov 2026 (« je peux pas cliquer sur ses awards ») : la liste, pour la fenetre
+        leg["liste"] = sorted(([str(k), int(v or 1)] for k, v in tc.items() if k), key=lambda x: (-x[1], x[0]))[:24]
     car = h.get("carriere") or {}
     if car.get("points"):
         leg["carriere"] = {"pts": car.get("points"), "mj": car.get("gamesPlayed"), "b": car.get("goals")}

@@ -28,13 +28,40 @@ assert a.achats_fusionner_doublons() == 1
 L = a.inventaire_liste({"dispo": 1}); L = L if isinstance(L, list) else L.get("cartes")
 cel = [x for x in L if "Celebrini" in x["titre"]]
 assert len(cel) == 1 and cel[0]["id"] == r["id"] and cel[0]["cout"] == 120.0, cel
-# un collectionneur : dans sa Collection
+# 20 nov 2026 (« ou sont tous mes cartes ?! ») : un collectionneur aussi : l'achat arrive dans « Achetees » (la Reserve),
+# et les copies deja rangees dans la Collection par l'ancienne version y reviennent, une seule fois
 c = a._db(); c.execute("INSERT INTO achats_ebay (item_id, n, titre, cout, devise, date) VALUES (?,?,?,?,?,?)",
                        ("333", 0, "2023-24 Upper Deck Young Guns Connor Bedard #451", 400.0, "CAD", "2026-11-03")); c.commit(); c.close()
 a.reglages_sauver({"mode": "acheteur"})
 a.achats_ajouter_auto()
 L = a.inventaire_liste({"dispo": 1}); L = L if isinstance(L, list) else L.get("cartes")
+bed = [x for x in L if "Bedard" in x["titre"]]
+assert [x["emplacement"] for x in bed] == ["Réserve"], bed
+assert any("Bedard" in x["titre"] for x in a.achetees_tableau()["cartes"])
+c = a._db(); c.execute("UPDATE cartes SET emplacement='Collection' WHERE id=?", (bed[0]["id"],)); c.commit(); c.close()
+a.reglages_sauver({"auto_coll_corrige": False}); a.achats_ajouter_auto()
+L = a.inventaire_liste({"dispo": 1}); L = L if isinstance(L, list) else L.get("cartes")
+assert [x["emplacement"] for x in L if "Bedard" in x["titre"]] == ["Réserve"]
+c = a._db(); c.execute("UPDATE cartes SET emplacement='Collection' WHERE id=?", (bed[0]["id"],)); c.commit(); c.close()
+a.achats_ajouter_auto()                                   # rangee ensuite par la personne : on n'y touche plus
+L = a.inventaire_liste({"dispo": 1}); L = L if isinstance(L, list) else L.get("cartes")
 assert [x["emplacement"] for x in L if "Bedard" in x["titre"]] == ["Collection"]
+# 20 nov 2026 (« c'est pas une carte, c'est un cadre signe ») : un objet signe, une boite scellee : jamais tout seuls dans les cartes ;
+# un objet deja entre tout seul (version d'avant) ressort une fois
+c = a._db()
+c.execute("INSERT INTO achats_ebay (item_id, n, titre, cout, devise, date) VALUES (?,?,?,?,?,?)",
+          ("444", 0, "Shayne Corson Signed Autographed 8x10 Photo Framed Montreal Canadiens", 150.0, "CAD", "2026-11-04"))
+c.execute("INSERT INTO achats_ebay (item_id, n, titre, cout, devise, date) VALUES (?,?,?,?,?,?)",
+          ("555", 0, "2024-25 Upper Deck Series 1 Hobby Box", 160.0, "CAD", "2026-11-04"))
+c.commit(); c.close()
+a.achats_ajouter_auto()
+L = a.inventaire_liste({}); L = L if isinstance(L, list) else L.get("cartes")
+assert not [x for x in L if "Corson" in x["titre"] or "Hobby Box" in x["titre"]], [x["titre"] for x in L]
+r_ = a.achat_vers_inventaire("444", 0)                     # l'ancienne version l'aurait ajoute tout seul
+assert r_.get("ok")
+a.reglages_sauver({"non_cartes_retires": False}); a.achats_ajouter_auto()
+L = a.inventaire_liste({}); L = L if isinstance(L, list) else L.get("cartes")
+assert not [x for x in L if "Corson" in x["titre"]], [x["titre"] for x in L]
 # la 1re synchro : 2 ans de ventes, une seule fois
 import ebay_compte
 vus = []

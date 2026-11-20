@@ -1161,6 +1161,18 @@ _RE_CARTE = re.compile(
     r"|pinnacle|pacific|stadium club|spx|engrained|in the game|itg|stickers?|rpa|ssp)\b|#\s?\d|/\s?\d{1,4}\b", re.I)
 
 
+# 20 nov 2026 (Mathieu : « faut pas importer des tables de cuisine et des chaudrons dans leurs cartes ») : ce qui entre TOUT SEUL
+# dans l'inventaire de cartes : une carte a l'unite. Pas un objet signe, pas des fournitures, pas une boite scellee, un paquet,
+# une caisse ni une place de break (ceux-la restent dans « Achetees », la personne decide).
+_RE_SCELLE = re.compile(r"\b(?:hobby box|retail box|blaster|mega box|hanger|fat pack|value pack|sealed|scell[ée]e?|factory set|case break|"
+                        r"break spot|random team|pick your team|pyt|spot|\bpacks?\b|boxes|box lot|tin|bundle|case)\b", re.I)
+
+
+def est_carte_seule(titre):
+    t = str(titre or "")
+    return est_carte(t) and not _RE_SCELLE.search(t)
+
+
 def est_carte(titre):
     """True si le titre d'un achat parle d'une carte (ou d'un produit de cartes : boite, break). Un objet signe (cadre, photo,
     rondelle, chandail) ou des fournitures (toploaders, sleeves) : False."""

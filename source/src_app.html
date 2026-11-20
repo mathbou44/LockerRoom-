@@ -320,6 +320,20 @@ details.reglage summary::-webkit-details-marker{display:none}
 /* 15 nov 2026 (version web, « trop d'options ») : la barre de cote = la barre du cell (Accueil, Radar, Vendre, Inventaire,
    Breaks, Profil) + la cloche et Admin ; le Comptoir et le Bilan sont dans Profil, les idees dans « Aide et idees » */
 .onglets [data-onglet="comptoir"], .onglets [data-onglet="bilan"], .onglets .nav-idees{display:none !important}
+.inv-con{display:inline-flex; align-items:center; gap:7px; height:40px; padding:0 14px 0 12px; border-radius:999px; border:1px solid var(--ligne); background:var(--carte); color:var(--texte); font:700 14px var(--f-cond); letter-spacing:.08em; text-transform:uppercase; cursor:pointer}
+.inv-con svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round}
+@media (max-width:520px){ .inv-con{width:40px; padding:0; justify-content:center} .inv-con span{display:none} }
+#i-selslot{display:inline-flex; gap:8px; align-items:center}
+.csg-m{display:flex; flex-wrap:wrap; gap:6px; margin:12px 0 8px} .csg-autre{flex:1 1 120px; min-width:110px; height:36px; min-height:0; padding:0 12px; border-radius:999px}
+.csg-info{font-size:13px; color:var(--doux); line-height:1.4; margin-bottom:10px} .csg-info a{color:var(--acc); font-weight:600; text-decoration:none; white-space:nowrap}
+.csg-l{display:flex; flex-direction:column; border-radius:16px; background:var(--carte2); overflow:hidden; margin-bottom:10px}
+.csg-i{display:flex; align-items:center; gap:12px; padding:8px 12px; border-bottom:1px solid rgba(255,255,255,.06)} .csg-i:last-child{border-bottom:0}
+.csg-i img, .csg-v{width:30px; height:42px; flex:none; object-fit:contain; border-radius:4px; background:#0E0E12; display:grid; place-items:center} .csg-v svg{width:60%; opacity:.4}
+.csg-i span{display:flex; flex-direction:column; min-width:0} .csg-i b{font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis} .csg-i small{font-size:12px; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+#feuille > .csg-l, #feuille > .csg-b, #feuille > .csg-m, #feuille > .csg-info{flex:none} .csg-i > span{flex:1}
+.csg-plus{padding:8px 12px; font:700 13px var(--f-cond); color:var(--doux)}
+.csg-ph{display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--doux); margin:2px 0 12px} .csg-ph input{accent-color:var(--acc); width:17px; height:17px}
+.csg-b{display:grid; grid-template-columns:1fr 1fr; gap:8px} .csg-b .btn{margin:0} .csg-suivi{display:block; margin:12px auto 0}
 .inv-sel-r svg{width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round} .inv-sel-r.on{background:var(--acc); color:var(--acc-texte)} #i-selslot:empty{display:none}
 .inv-sel-b{display:inline-flex; align-items:center; gap:7px} .inv-sel-b svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
 @media (max-width:899px){
@@ -1115,6 +1129,8 @@ button.jb-t, a.jb-t{cursor:pointer} .jb-t.l{grid-column:span 2}
 .md-barre .md-glow .md-g-t{display:flex; flex-direction:column; gap:3px; min-width:0}
 .md-barre .md-glow .md-g-t span{font-size:19px; letter-spacing:.1em; white-space:nowrap}
 .md-barre .md-glow .md-g-t small{font:600 11.5px/1.1 var(--f-txt, inherit); color:var(--doux); letter-spacing:.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.md-barre .md-glow .md-g-eng{flex:none; width:30px; height:30px; display:grid; place-items:center; margin-left:auto; border-radius:50%; background:rgba(255,255,255,.06)}
+.md-barre .md-glow .md-g-eng svg{width:17px; height:17px; fill:none; stroke:var(--doux); stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round}
 .md-barre .md-glow .md-g-ch{flex:none; font-style:normal; font-size:24px; line-height:1; color:var(--doux); margin-left:auto}
 .md-barre .md-glow:hover .md-g-ch, .md-barre .md-glow:active .md-g-ch{color:var(--texte)}
 @media (max-width:480px){ .md-barre .md-glow{gap:7px; padding:6px 8px} .md-barre .md-glow .md-g-ic{width:28px; height:28px} .md-barre .md-glow .md-g-ic svg{width:16px; height:16px}
@@ -3730,6 +3746,20 @@ html, body{touch-action:pan-x pan-y} button, a, .slab-deal{touch-action:manipula
 .ra-pm{width:48px; height:48px; border-radius:12px; border:1px solid var(--ligne); background:var(--carte2); color:var(--texte); font-size:24px; line-height:1}
 .ra-g .chips{flex-wrap:wrap; overflow:visible; gap:6px} .ra-g .ra-autre{width:84px; min-height:0; height:38px; padding:0 12px; border-radius:999px; font-size:15px} .ra-g small{font-size:12.5px; color:var(--doux)}
 .ra-tris{display:flex; flex-direction:column; gap:6px}
+/* 20 nov 2026 (Mathieu : « revoir ca sans scroll bar ») : la description n'apparait que sous le tri choisi (comme un choix iOS) ;
+   a l'ordi, les tris en 2 colonnes et les boites + le budget cote a cote */
+.ra-tri:not(:has(input:checked)) small{display:none} .ra-tri:not(:has(input:checked)){padding-top:9px; padding-bottom:9px}
+.ra-tri:has(input:checked){border-color:color-mix(in srgb, var(--acc) 55%, transparent); background:color-mix(in srgb, var(--acc) 12%, var(--carte2))}
+.ra-tris{display:grid; grid-template-columns:1fr 1fr; grid-auto-flow:row dense; gap:6px} .ra-tri:has(input:checked){grid-column:1 / -1}
+.ra-tri b{white-space:nowrap; overflow:hidden; text-overflow:ellipsis} .ra-tri > span{min-width:0}
+@media (min-width:700px){ 
+  #feuille:has(.ra-tris){display:grid; grid-template-columns:1fr 1fr; column-gap:16px; align-content:start}
+  #feuille:has(.ra-tris) > *{grid-column:1 / -1} #feuille:has(.ra-tris) > .ra-g:has(#ra-n), #feuille:has(.ra-tris) > .ra-g:has(#ra-budget){grid-column:auto}
+  #feuille:has(.ra-tris) > .ra-g:has(#ra-n) small{white-space:nowrap; overflow:hidden; text-overflow:ellipsis} }
+#feuille:has(.ra-tris) > .ra-g{margin-bottom:10px} #feuille:has(.ra-tris) > .ra-g:has(#ra-n) > small{display:none}
+#feuille:has(.ra-tris) > h3{margin-bottom:8px} #feuille:has(.ra-tris) .ra-tri{padding-top:8px; padding-bottom:8px}
+#feuille:has(.ra-tris) .ra-tri b{font-size:14.5px}
+#feuille:has(.ra-tris) .ra-nb{flex-wrap:nowrap} #feuille:has(.ra-tris) #ra-n{width:72px; min-width:0; flex:none} #feuille:has(.ra-tris) #ra-caisse{white-space:nowrap}
 .ra-tri{display:flex; gap:12px; align-items:flex-start; padding:11px 12px; border-radius:14px; background:var(--carte2); border:1px solid transparent; cursor:pointer}
 .ra-tri:has(input:checked){border-color:var(--acc); background:color-mix(in srgb, var(--acc) 10%, var(--carte2))}
 .ra-tri input{accent-color:var(--acc); margin-top:3px; width:18px; height:18px; flex:none} .ra-tri b{display:block; font-size:15px} .ra-tri small{font-size:12.5px; color:var(--doux); line-height:1.3}
@@ -4694,6 +4724,10 @@ html.tel-large .ecran.acc.acc-ft-mode > .acc-news2{order:9}
 @media (min-width:900px) and (min-height:640px){
   .ecran:has(.tete-fixe) .d-barre, .ecran:has(.tete-fixe) .md-rech{position:sticky; top:calc(var(--tf-top, 48px) + var(--tf-h, 180px) + 20px); z-index:19; background:var(--fond);
     box-shadow:0 0 0 100vmax var(--fond); clip-path:inset(-22px -100vmax -10px -100vmax); padding-bottom:4px}
+  /* 20 nov 2026 (Mathieu : « l'eclairage autour, j'aime, mais il est abruptement cache par l'entete ») : la barre « Mon radar »
+     descend d'un cran : son halo a toute sa place sous la bande fixe */
+  .ecran:has(.tete-fixe) .md-barre{margin-top:22px}
+  .ecran:has(.tete-fixe) .md-barre .md-glow{box-shadow:0 0 22px -8px color-mix(in srgb, var(--h2,#B9BEFF) 55%, transparent)}
 }
 /* 19 nov 2026 (Mathieu : « la barre de defilement devrait juste faire defiler les cartes, pas tout l'en-tete », Radar et
    Inventaire) : a l'ordinateur, l'en-tete (titre, recherche, filtres, tuiles) reste en haut ; seules les cartes defilent */
@@ -4987,7 +5021,8 @@ html.tel-large .ecran.acc.acc-ft-mode > .acc-news2{order:9}
   .ecran.large.joueur #jb:has(> .jb-nv, > .jb-mv){grid-template-rows:auto minmax(0,1fr) minmax(0,1fr) auto}
   .ecran.large.joueur #jb > .jb-a{align-self:stretch}
   .ecran.large.joueur #jb > *{overflow:hidden}
-  .ecran.large.joueur > :not(#jb){display:none !important}
+  .ecran.large.joueur > :not(#jb):not(.jb-ret){display:none !important}
+  .ecran.large.joueur{position:relative} .ecran.large.joueur > .jb-ret{position:absolute; top:max(14px, calc(var(--haut, 52px) - 40px)); left:clamp(18px, 3vw, 52px); z-index:6; height:32px; padding:0 14px 0 10px; border-radius:999px; border:1px solid var(--ligne); background:color-mix(in srgb, var(--carte) 80%, transparent); font-size:14px; font-weight:600; cursor:pointer}
   .ecran.large.joueur #jb:has(.jb-deals) > .jb-deals{grid-row:2 / -1}
   .jb-deals .jb-dg{align-content:start} .jb-deals .jb-dg .tuile-deal{max-height:100%}
   /* 19 nov 2026 (Mathieu, la page de Rod Gilbert : « revoir le design ; maximiser l'espace toujours ») : sans deals, deux bandes
@@ -5003,6 +5038,23 @@ html.tel-large .ecran.acc.acc-ft-mode > .acc-news2{order:9}
   .ecran.large.joueur #jb > .jb-a .jb-k{flex:1} .ecran.large.joueur #jb > .jb-a b{font-size:24px; position:static !important} .ecran.large.joueur #jb > .jb-a .jb-f{position:static}
 }
 .jb-deals{display:none}
+.hon-l{display:flex; flex-direction:column; margin-top:12px} .hon-i{display:flex; align-items:center; gap:12px; padding:10px 2px; border-bottom:1px solid rgba(255,255,255,.07)} .hon-i:last-child{border-bottom:0}
+.hon-ic{width:32px; height:32px; flex:none; border-radius:10px; display:grid; place-items:center; background:linear-gradient(180deg, #F2C14E, #D99A2B)} .hon-ic svg{width:16px; height:16px; stroke:#1A1206 !important}
+.hon-i b{flex:1; font-size:15px; font-weight:600} .hon-i em{font-style:normal; font:700 15px var(--f-cond); color:var(--or)}
+/* 20 nov 2026 (Mathieu, la page de Kucherov : « je peux pas cliquer sur ses awards, on voit rien ») : avec ses deals a droite, la
+   colonne de gauche s'empile sans rien ecraser : le palmares sur toute la largeur, les gestes, ses cartes recherchees (en ligne),
+   puis pourquoi elles ont bouge, qui prend le reste */
+@media (min-width:1100px){
+  .ecran.large.joueur #jb:has(.jb-deals){grid-template-rows:auto auto auto auto minmax(0,1fr) !important}
+  .ecran.large.joueur #jb:has(.jb-deals) > .jb-hon{grid-column:1 / span 3 !important; order:2; flex-direction:row; align-items:baseline; flex-wrap:wrap; column-gap:12px; padding:12px 16px}
+  .ecran.large.joueur #jb:has(.jb-deals) > .jb-hon .jb-v{font-size:22px} .ecran.large.joueur #jb:has(.jb-deals) > .jb-hon .jb-k{flex-basis:100%}
+  .ecran.large.joueur #jb:has(.jb-deals) > .jb-a{order:3 !important; grid-column:span 1 !important}
+  .ecran.large.joueur #jb:has(.jb-deals) > .jb-ty{order:4 !important; grid-column:1 / span 3 !important}
+  .ecran.large.joueur #jb:has(.jb-deals) > .jb-mv, .ecran.large.joueur #jb:has(.jb-deals) > .jb-nv{order:5 !important; grid-column:1 / span 3 !important; overflow:hidden !important}
+  .ecran.large.joueur #jb:has(.jb-deals) > .jb-ty .ty-l{flex-direction:row !important; flex-wrap:wrap; gap:6px}
+  .ecran.large.joueur #jb:has(.jb-deals) > .jb-ty small{display:none}
+  .ecran.large.joueur #jb > .jb-mv{scrollbar-width:none} .ecran.large.joueur #jb > .jb-mv::-webkit-scrollbar{display:none}
+}
 .jb-cv, .jb-vt{display:none}
 .jb-dg{position:relative} .jb-dg.jb-flou > .tuile-deal{filter:blur(7px) saturate(1.1); pointer-events:none; user-select:none}
 .jb-lock{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; border:0; background:rgba(10,10,14,.35); color:var(--texte); font:inherit; cursor:pointer; border-radius:14px}
@@ -6012,6 +6064,25 @@ html.tel-large .fen.fa .fen-img{max-height:calc(46vh / 1.12) !important}
 /* 6. les en-tetes ronds (« Analyser un produit », Breaks) : la fleche en pastille prisme */
 .tuile-analyse .go{width:40px; height:40px; flex-shrink:0; border-radius:50%; display:grid; place-items:center; border:2px solid transparent; font-size:20px; color:var(--texte);
   background:var(--pastille-fond) padding-box, var(--prisme) border-box}
+/* 20 nov 2026 (Mathieu : « on devrait pas avoir a scroller ici ») : la fiche d'une carte tient dans l'ecran du cell : photo
+   plus basse, chiffres et lignes compacts, les liens (photo, modifier) sur la meme ligne que gradation et consignation */
+@media (max-width:899px){
+  #feuille .fc{display:flex; flex-direction:column; gap:8px}
+  #feuille .fc > *{margin-top:0 !important; margin-bottom:0 !important}
+  #feuille .fc .fc-img{height:min(31dvh, 300px) !important; flex:none}
+  #feuille .fc .fc-img .fc-ph, #feuille .fc .fc-img img{max-height:100%}
+  #feuille .fc > h3{font-size:19px; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-transform:capitalize}
+  #feuille .fc > .sous{font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:-6px !important}
+  #feuille .fc .fc-chiffres{gap:8px} #feuille .fc .fc-chiffres > div{padding:8px 12px !important; min-height:0; border-radius:14px}
+  #feuille .fc .fc-chiffres b{font-size:22px !important; line-height:1.1} #feuille .fc .fc-chiffres small{font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block}
+  #feuille .fc .v-iq > *{min-height:0 !important; padding-top:7px !important; padding-bottom:7px !important}
+  #feuille .fc #fc-etat .fc-alerte, #feuille .fc .fc-alerte{min-height:0 !important; padding:8px 14px !important}
+  #feuille .fc .fc-alerte small{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block}
+  #feuille .fc .fc-al-ic{width:36px !important; height:36px !important}
+  #feuille .fc #fc-envoi .ph-liens{margin:0 !important; padding:0 !important}
+  #feuille .fc #fc-vendre{min-height:48px; height:48px}
+  #feuille .fc .fc-liens{padding:0 !important; min-height:0; height:34px; justify-content:center; gap:28px} #feuille .fc .fc-liens .plus{white-space:nowrap; width:auto; flex:none}
+}
 /* 20 nov 2026 (Mathieu : « revoit l'interface admin, jamais de scroll bar, tout toujours fit sur une page, aucun espace
    inutilise », « pense comme Apple, simple et sexy ») : la console a l'ordi tient dans l'ecran, sans barre de defilement */
 .ceo-al > [hidden]{display:none !important}
@@ -6068,6 +6139,11 @@ html.tel-large .fen.fa .fen-img{max-height:calc(46vh / 1.12) !important}
   html body .ceo-sec[data-sec="securite"] .ceo-s > div{min-width:0}
   /* Mes taches : les projets en 2 colonnes */
   html body .ceo-tl{display:block !important; columns:2; column-gap:12px} html body .ceo-tl > *{break-inside:avoid; margin:0 0 12px !important}
+  html body .col-pages{column-fill:auto; overflow:hidden !important; scrollbar-width:none} html body .col-pages::-webkit-scrollbar{display:none}
+  html body .col-pages > *{-webkit-box-decoration-break:clone; box-decoration-break:clone; break-inside:auto !important}
+  html body .col-pages .ceo-tr, html body .col-pages .ceo-o, html body .col-pages .ceo-c-t{break-inside:avoid}
+  html body .ceo .col-pages > .ceo-c{overflow:clip !important} html body .col-pages > .cp-fill{break-inside:avoid !important; margin:0 !important}
+  html body .ceo-obls.col-pages{display:block !important; columns:3; column-gap:10px} html body .ceo-obls.col-pages > *{break-inside:avoid; margin:0 0 10px !important}
   /* Croissance : 5 colonnes, le texte en 4 lignes */
   html body .ceo-opps{grid-template-columns:repeat(5, minmax(0,1fr)) !important}
   html body .ceo-op p{display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden}
@@ -6844,7 +6920,7 @@ async function produits(force){ if (!S.produits || force) S.produits = await API
 const comps = () => !S.forfait || S.forfait.comps !== false;
 function route(){
   const h = (location.hash || '#accueil').slice(1);
-  if (!h.startsWith('inventaire')) { S.selInv = null; const sb = document.getElementById('sel-inv'); if (sb) sb.remove(); }   // 8 nov : la barre de selection
+  if (!h.startsWith('inventaire')) { S.selInv = null; S.selBut = null; const sb = document.getElementById('sel-inv'); if (sb) sb.remove(); }   // 8 nov : la barre de selection
   setTimeout(pgBulle, 600);                                                     // 8 nov : « reprendre ta mise en vente »
   let [ecran, arg] = h.split('/');
   // 9 nov 2026 : l'ecran ouvert, compte (anonyme) pour le tableau d'activite de l'admin ; une fois par changement d'ecran
@@ -15567,11 +15643,13 @@ function barreSelInv(){
   const ebayN = l.filter(c => S.selInv.has(c.id) && c.item_number && c.statut === 'Listée').length;
   b.innerHTML = `<div class="sb-t"><span><b>${n}</b> ${n > 1 ? tt('cartes', 'cards') : tt('carte', 'card')}</span>${ebayN ? `<small>${ebayN} ${tt('sur eBay', 'on eBay')}</small>` : ''}</div>
     <button class="pilule" id="sb-tout">${n === l.length ? tt('Aucune', 'None') : tt('Toutes', 'All')}</button>
-    <button class="pilule rouge" id="sb-ret" ${n ? '' : 'disabled'}>${tt('Retirer', 'Remove')}</button>
+    ${S.selBut === 'consig' ? '' : `<button class="pilule rouge" id="sb-ret" ${n ? '' : 'disabled'}>${tt('Retirer', 'Remove')}</button>`}
+    <button class="pilule ${S.selBut === 'consig' ? 'acc' : ''}" id="sb-con" ${n ? '' : 'disabled'}>${tt('Consigner', 'Consign')}</button>
     <button class="pilule" id="sb-x" aria-label="${esc(tt('Annuler', 'Cancel'))}">✕</button>`;
   $('#sb-tout').onclick = () => { S.selInv = n === l.length ? new Set() : new Set(l.map(c => c.id)); chargerInventaire(); };
-  $('#sb-x').onclick = () => { S.selInv = null; chargerInventaire(); };
-  $('#sb-ret').onclick = async () => { if (await retirerCartes(l.filter(c => S.selInv.has(c.id)))) { S.selInv = null; chargerInventaire(); } };
+  $('#sb-x').onclick = () => { S.selInv = null; S.selBut = null; chargerInventaire(); };
+  $('#sb-con').onclick = () => { vibrer(); feuilleConsigner(l.filter(c => S.selInv.has(c.id))); };
+  const sbr = $('#sb-ret'); if (sbr) sbr.onclick = async () => { if (await retirerCartes(l.filter(c => S.selInv.has(c.id)))) { S.selInv = null; chargerInventaire(); } };
 }
 async function retirerCartes(cartes){
   if (!cartes.length) return false;
@@ -15697,7 +15775,11 @@ async function chargerInventaire(){
   const af = S.filtreInv === 'afinir' ? blocAFinir(l) : '';
   // 12 nov 2026 (Mathieu : « le bouton Select ne devrait pas tout decaler les annonces vers le bas ; il a assez de place pour etre
   // a la meme hauteur que My eBay purchases, qui est beaucoup trop long ») : sur la meme ligne que « Mes achats eBay »
-  const slot = $('#i-selslot'); if (slot) slot.innerHTML = S.filtreInv === 'afinir' ? '' : selB;
+  // 20 nov 2026 (Mathieu : « un bouton en haut bien place : tu selectionnes les cartes a envoyer en consignation et l'app cree
+  // le fichier avec toute l'info ») : « Consigner » a cote de Selectionner ; un toucher ouvre la selection, la barre du bas consigne
+  const conB = l.length && !vendues && !S.selInv ? `<button class="inv-con" id="i-con" aria-label="${esc(tt('Consigner des cartes', 'Consign cards'))}"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.colis}</svg><span>${tt('Consigner', 'Consign')}</span></button>` : '';
+  const slot = $('#i-selslot'); if (slot) slot.innerHTML = S.filtreInv === 'afinir' ? '' : conB + selB;
+  { const ic = $('#i-con'); if (ic) ic.onclick = () => { vibrer(); S.selInv = new Set(); S.selBut = 'consig'; chargerInventaire(); toast(tt('Touche les cartes à consigner', 'Tap the cards to consign'), 2600); }; }
   { const ek = $('#i-kpis'); if (ek) ek.style.removeProperty('display'); }
   ['i-tab', 'i-achats'].forEach(id => { const e = $('#' + id); if (e) { if (S.filtreInv === 'afinir') e.style.setProperty('display', 'none', 'important'); else e.style.removeProperty('display'); } });   // 12 nov : A finir, rien d'autre
   if (S.filtreInv === 'afinir') { z.innerHTML = puces + vueAFinirSimple(l); brancherAFinir(l); brancherAFinirSimple(l);
@@ -15723,7 +15805,7 @@ async function chargerInventaire(){
     if (S.selInv) { vibrer(); S.selInv.has(c.id) ? S.selInv.delete(c.id) : S.selInv.add(c.id); r.classList.toggle('choisie', S.selInv.has(c.id)); barreSelInv(); return; }
     if (c && c.emplacement === 'Collection' && c.statut === 'En stock') ficheCollection(c); else feuilleCarte(c); });
   if (S.selInv) { S.selInv = new Set([...S.selInv].filter(id => l.some(c => c.id === id))); $$('#i-liste .tuile-inv').forEach(r => r.classList.toggle('choisie', S.selInv.has(+r.dataset.id))); }
-  const bs = $('#i-sel'); if (bs) bs.onclick = () => { vibrer(); S.selInv = S.selInv ? null : new Set(); chargerInventaire(); };
+  const bs = $('#i-sel'); if (bs) bs.onclick = () => { vibrer(); S.selInv = S.selInv ? null : new Set(); S.selBut = null; chargerInventaire(); };
   barreSelInv();
   estimerManquantes(l);
   poserScoresInv();
@@ -17861,6 +17943,71 @@ async function exporterCsv(texte, nom){
   try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([texte], {type: 'text/csv'})); a.download = nom; document.body.appendChild(a); a.click(); a.remove(); }
   catch (e) { try { await navigator.clipboard.writeText(texte); toast(tt('Liste copiée', 'List copied')); } catch (x) { toast(tt('Export impossible ici', 'Export not possible here')); } }
 }
+// 20 nov 2026 (Mathieu : « DC Sports, Slab Sharks, Savage, CF31, Remi... c'est quoi le format qu'ils prennent ») : verifie sur leurs
+// sites le 20 nov 2026 : Slab Sharks genere le formulaire dans son portail (« pas besoin de decrire chaque carte ») ; Remi Card
+// Trader : un formulaire PDF, il verifie les cartes recues contre ce formulaire, 100 $ minimum par carte ; DCSports87 : un
+// bordereau de soumission dans le colis. Partout, une liste propre des cartes aide (et protege si une carte manque). Savage et
+// CF31 : rien de public sur leur format, on ne dit rien. Jamais de prix derive d'eBay dans la liste (licence) : une colonne
+// « Prix minimum » vide, que la personne remplit si elle veut.
+const MAISONS_CONSIG = () => [
+  ['Slab Sharks', tt('Leur portail crée le formulaire. Pas besoin de décrire chaque carte : ta liste reste ta preuve.', 'Their portal creates the form. No need to describe each card: your list is your proof.'), 'https://slabsharks.com'],
+  ['Rémi Card Trader', tt('Formulaire PDF : ils comparent les cartes reçues à ta liste. Minimum 100 $ par carte.', 'PDF form: they check the cards against your list. $100 minimum per card.'), 'https://remicardtrader.ca/pages/consignment'],
+  ['DCSports87', tt('Un bordereau de soumission va dans le colis : joins ta liste.', 'A submission slip goes in the package: add your list.'), ''],
+  ['Savage Cards', '', ''], ['CF31', '', '']];
+function lignesConsig(cartes){
+  return cartes.map((c, i) => ({no: i + 1, joueur: c.joueur || '', annee: c.annee || '', marque: c.marque || '', set: c.set_nom || '', numero: c.numero ? '#' + c.numero : '',
+    parallele: c.parallele || '', tirage: c.tirage ? '/' + c.tirage : '', grade: c.grade || tt('Non gradée', 'Raw'), titre: c.titre || '',
+    photo: (() => { let ph = []; try { ph = JSON.parse(c.photos || '[]'); } catch (e) {} const u = ph[0] || c.photo; return u && photoOk(u) ? photoNet(u, 640) : ''; })()}));
+}
+function csvConsig(L, maison){
+  const T = [tt('N°', 'No.'), tt('Joueur', 'Player'), tt('Saison', 'Season'), tt('Marque', 'Brand'), 'Set', tt('N° de carte', 'Card #'), tt('Parallèle', 'Parallel'),
+    tt('Numérotée', 'Serial'), tt('Gradation', 'Grade'), tt('Titre complet', 'Full title'), tt('Prix minimum (optionnel)', 'Minimum price (optional)'), tt('Photo', 'Photo')];
+  const q = (v) => { v = String(v ?? ''); return /[",;\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  const rows = [[`${tt('Consignation', 'Consignment')} · ${maison || ''} · ${auj()} · ${L.length} ${tt('cartes', 'cards')}`], T,
+    ...L.map(x => [x.no, x.joueur, x.annee, x.marque, x.set, x.numero, x.parallele, x.tirage, x.grade, x.titre, '', x.photo])];
+  return '﻿' + rows.map(r => r.map(q).join(',')).join('\r\n');
+}
+function imprimerConsig(L, maison, photos){
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(tt('Consignation', 'Consignment'))} ${esc(maison || '')}</title><style>
+    body{font:12px -apple-system,Helvetica,Arial,sans-serif;margin:24px;color:#111} h1{font-size:18px;margin:0 0 2px} p{margin:0 0 14px;color:#555}
+    table{border-collapse:collapse;width:100%} th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#666;border-bottom:2px solid #111;padding:6px}
+    td{padding:6px;border-bottom:1px solid #ddd;vertical-align:middle} td.n{width:22px;color:#888} td.ph{width:46px} td.ph img{width:40px;height:56px;object-fit:contain;border-radius:3px;background:#f2f2f2}
+    td.px{width:90px;border-bottom:1px solid #999} .sig{display:flex;gap:28px;margin-top:26px} .sig div{flex:1;border-top:1px solid #111;padding-top:4px;color:#555;font-size:11px}
+    @page{margin:14mm}</style></head><body>
+    <h1>${esc(tt('Consignation', 'Consignment'))}${maison ? ' · ' + esc(maison) : ''}</h1><p>${esc(auj())} · ${L.length} ${tt('cartes', 'cards')} · ${esc(tt('dans l’ordre du colis', 'in package order'))}</p>
+    <table><thead><tr><th></th>${photos ? '<th></th>' : ''}<th>${tt('Carte', 'Card')}</th><th>${tt('Gradation', 'Grade')}</th><th>${tt('Prix minimum', 'Minimum')}</th></tr></thead><tbody>
+    ${L.map(x => `<tr><td class="n">${x.no}</td>${photos ? `<td class="ph">${x.photo ? `<img src="${esc(x.photo)}">` : ''}</td>` : ''}<td><b>${esc(x.joueur || x.titre)}</b><br>${esc([x.annee, x.marque, x.set, x.numero, x.parallele, x.tirage].filter(Boolean).join(' · '))}</td><td>${esc(x.grade)}</td><td class="px"></td></tr>`).join('')}
+    </tbody></table><div class="sig"><div>${tt('Nom', 'Name')}</div><div>${tt('Courriel / téléphone', 'Email / phone')}</div><div>${tt('Signature', 'Signature')}</div></div></body></html>`;
+  const f = document.createElement('iframe'); f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+  document.body.appendChild(f); f.contentDocument.open(); f.contentDocument.write(html); f.contentDocument.close();
+  setTimeout(() => { try { f.contentWindow.focus(); f.contentWindow.print(); } catch (e) { toast(tt('Impression impossible ici', 'Printing not possible here')); } setTimeout(() => f.remove(), 60000); }, photos ? 1200 : 300);
+}
+function feuilleConsigner(cartes){
+  if (!cartes.length) return;
+  const M = MAISONS_CONSIG(), L = lignesConsig(cartes), surEbay = cartes.filter(c => c.item_number && c.statut === 'Listée').length;
+  let maison = S.consigMaison || M[0][0], photos = true;
+  const info = () => { const m = M.find(x => x[0] === maison); return m && m[1] ? `${esc(m[1])}${m[2] ? ` <a href="${esc(m[2])}" target="_blank" rel="noopener">${tt('Leur site', 'Their site')} ↗</a>` : ''}` : tt('Vérifie leur façon de faire sur leur site : ta liste sert partout.', 'Check how they work on their site: your list works everywhere.'); };
+  ouvrirFeuille(`<h3>${tt('Envoyer en consignation', 'Send to consignment')}</h3><div class="sous">${L.length} ${L.length > 1 ? tt('cartes', 'cards') : tt('carte', 'card')} · ${tt('une liste prête à joindre au colis', 'a list ready to put in the package')}</div>
+    <div class="csg-m" id="cs-m">${M.map(([n]) => `<button class="chip ${n === maison ? 'on' : ''}" data-cm="${esc(n)}">${esc(n)}</button>`).join('')}<input class="champ csg-autre" id="cs-autre" placeholder="${esc(tt('Autre…', 'Other…'))}" value="${M.some(x => x[0] === maison) ? '' : esc(maison)}"></div>
+    <div class="csg-info" id="cs-info">${info()}</div>
+    ${surEbay ? `<div class="bandeau info">${tt(`${surEbay} ${surEbay > 1 ? 'sont' : 'est'} en vente sur eBay : termine l’annonce avant d’envoyer.`, `${surEbay} ${surEbay > 1 ? 'are' : 'is'} for sale on eBay: end the listing before shipping.`)}</div>` : ''}
+    <div class="csg-l">${L.slice(0, 6).map(x => `<div class="csg-i">${x.photo ? `<img src="${esc(x.photo)}" alt="" loading="lazy">` : `<span class="csg-v">${SVG_CARTE}</span>`}<span><b>${esc(x.joueur || x.titre)}</b><small>${esc([x.annee, x.set || x.marque, x.parallele, x.grade].filter(Boolean).join(' · '))}</small></span></div>`).join('')}
+      ${L.length > 6 ? `<div class="csg-plus">+ ${L.length - 6}</div>` : ''}</div>
+    <label class="csg-ph"><input type="checkbox" id="cs-ph" checked> ${tt('Photos dans la version imprimée', 'Photos in the printed version')}</label>
+    <div class="csg-b"><button class="btn" id="cs-xls">${tt('Exporter (Excel)', 'Export (Excel)')}</button><button class="btn ghost" id="cs-pdf">${tt('Imprimer / PDF', 'Print / PDF')}</button></div>
+    <button class="lien-doux csg-suivi" id="cs-suivi">${tt('Les suivre dans « Consignation »', 'Track them in “Consignment”')} ›</button>`);
+  const nomM = () => (val('cs-autre') || '').trim() || maison;
+  $$('#cs-m [data-cm]').forEach(b => b.onclick = () => { vibrer(); maison = b.dataset.cm; $('#cs-autre').value = ''; $$('#cs-m .chip').forEach(x => x.classList.toggle('on', x === b)); $('#cs-info').innerHTML = info(); });
+  $('#cs-autre').oninput = () => { if (val('cs-autre').trim()) { $$('#cs-m .chip').forEach(x => x.classList.remove('on')); $('#cs-info').innerHTML = info(); } };
+  $('#cs-ph').onchange = (e) => { photos = e.target.checked; };
+  const garder = () => { S.consigMaison = nomM(); };
+  $('#cs-xls').onclick = () => { vibrer(); garder(); exporterCsv(csvConsig(L, nomM()), `consignation-${nomM().replace(/[^\w]+/g, '-').toLowerCase()}-${auj()}.csv`); };
+  $('#cs-pdf').onclick = () => { vibrer(); garder(); imprimerConsig(L, nomM(), photos); };
+  $('#cs-suivi').onclick = async () => { vibrer(); garder(); const b = $('#cs-suivi'); b.disabled = true;
+    let ok = 0; for (const c of cartes) { const r = await API.carte_envoi(c.id, {type: 'consignation', chez: nomM(), envoye_le: auj(), alerte_jours: 45}).catch(() => null); if (r && r.carte) ok++; }
+    fermerFeuille(); S.selInv = null; S.selBut = null; chargerInventaire();
+    toast(tt(`${ok} carte${ok > 1 ? 's' : ''} en consignation chez ${nomM()}`, `${ok} card${ok > 1 ? 's' : ''} consigned with ${nomM()}`), 3500); };
+}
 function formEnvoi(c, type, e0){
   const e = e0 || {}, G = type === 'gradation';
   ouvrirFeuille(`<h3>${G ? tt('Envoyer en gradation', 'Send for grading') : tt('Envoyer en consignation', 'Consign to auction')}</h3>
@@ -18841,6 +18988,30 @@ function brancherBlitz(z){
     if (document.hidden) return; redessiner(await API.soldcomps_blitz().catch(() => null)); }, 4000);
 }
 // 19 nov 2026 (« tout doit fitter dans une page sans scroll ») : a l'ordi, la page prend la hauteur exacte qui reste sous l'en-tete
+// 20 nov 2026 (Mathieu : « jamais de scroll bar, tout toujours fit sur une page ») : une liste trop longue coule en colonnes
+// de la hauteur de l'ecran ; les colonnes de trop deviennent des pages (‹ 1/2 ›) au lieu d'une barre de defilement. Ordi seulement.
+function paginerColonnes(el){
+  if (!el || !el.isConnected) return;
+  let pg = el.nextElementSibling && el.nextElementSibling.classList.contains('ceo-pg') ? el.nextElementSibling : null;
+  if (innerWidth < 1100 || !el.offsetParent) { if (pg) pg.hidden = true; el.style.height = ''; return; }
+  if (!pg) { pg = document.createElement('div'); pg.className = 'ceo-pg'; el.after(pg); }
+  el.classList.add('col-pages');
+  const top = el.getBoundingClientRect().top;
+  el.style.height = Math.max(220, innerHeight - top - 58) + 'px';
+  $$(':scope > .cp-fill', el).forEach(x => x.remove());
+  const cs = getComputedStyle(el), gap = parseFloat(cs.columnGap) || 12, w = el.clientWidth + gap, cpp = parseInt(cs.columnCount) || 1;
+  const n = Math.max(1, Math.ceil((el.scrollWidth - 4) / w));
+  // la derniere page : des colonnes vides la completent (sinon elle repete des colonnes de la page d'avant)
+  const colW = (el.clientWidth - gap * (cpp - 1)) / cpp, cols = Math.round((el.scrollWidth + gap) / (colW + gap));
+  for (let i = cols; i < n * cpp; i++) { const f = document.createElement('div'); f.className = 'cp-fill'; f.style.height = el.clientHeight + 'px'; el.appendChild(f); }
+  let k = Math.min(Math.round(el.scrollLeft / w), n - 1);
+  const montrer = () => { el.scrollLeft = k * w;
+    pg.hidden = n < 2;
+    pg.innerHTML = n < 2 ? '' : `<button data-pg="-1" ${k ? '' : 'disabled'} aria-label="${esc(tt('Précédent', 'Previous'))}">‹</button><span>${k + 1} / ${n}</span><button data-pg="1" ${k < n - 1 ? '' : 'disabled'} aria-label="${esc(tt('Suivant', 'Next'))}">›</button>`;
+    $$('[data-pg]', pg).forEach(b => b.onclick = () => { vibrer(); k = Math.max(0, Math.min(n - 1, k + +b.dataset.pg)); montrer(); }); };
+  montrer();
+  if (!el._pgR) { el._pgR = () => paginerColonnes(el); addEventListener('resize', el._pgR); }
+}
 function ajusterEx(z){
   const f = () => { if (!z.isConnected) { removeEventListener('resize', z._exR); return; }
     const top = z.getBoundingClientRect().top + scrollY; z.style.setProperty('--ex-h', Math.max(470, innerHeight - top - 14) + 'px'); };
@@ -19176,7 +19347,8 @@ async function vueCEO(){
   const aller = (k) => { majNavM(k); S.ceoSec = k;
     if (k === 'expert') { const ze = $('#ceo-ex-z'); if (ze && !ze.dataset.fait) { ze.dataset.fait = '1'; vueExpert(ze); } }
     if (k === 'outils') { const zo = $('#ceo-outils'); if (zo && !zo.dataset.fait) { zo.dataset.fait = '1'; const o = S.admOnglet; S.admOnglet = null; vueAdmin(o, zo); } } $$('.ceo-sec').forEach(x => x.classList.toggle('on', x.dataset.sec === k)); $$('[data-cn]').forEach(x => x.classList.toggle('on', x.dataset.cn === k));
-    const n = $('.ceo-nav [data-cn="' + k + '"]'); if (n && n.scrollIntoView && innerWidth < 1100) n.scrollIntoView({inline: 'center', block: 'nearest'}); scrollTo(0, 0); const cm_ = $('.ceo-main'); if (cm_) cm_.scrollTop = 0; };
+    const n = $('.ceo-nav [data-cn="' + k + '"]'); if (n && n.scrollIntoView && innerWidth < 1100) n.scrollIntoView({inline: 'center', block: 'nearest'}); scrollTo(0, 0); const cm_ = $('.ceo-main'); if (cm_) cm_.scrollTop = 0;
+    requestAnimationFrame(() => { if (k === 'taches') paginerColonnes($('#ceo-tl')); if (k === 'obligations') paginerColonnes($('.ceo-obls')); }); };
   aller(S.ceoSec);
   // les taches : la liste de la section (par projet, filtre), ouvrir, cocher, ajouter
   const recharger = () => { vueCEO(); };
@@ -19216,7 +19388,7 @@ async function vueCEO(){
         <button class="ceo-tb" data-tk="${esc(t.id)}"><span><b>${esc(t.titre)}</b>${t.note ? `<small>${esc(String(t.note).slice(0, 140))}</small>` : ''}</span>
         <span class="ceo-tm">${t.modele ? `<u class="ceo-mail">${tt('courriel prêt', 'email ready')}</u>` : ''}${t.etat === 'attente' ? `<em class="ceo-pr p4">${tt('En attente', 'Waiting')}</em>` : t.etat === 'en_cours' ? `<em class="ceo-pr p3">${tt('En cours', 'In progress')}</em>` : t.etat === 'fait' ? '' : `<em class="ceo-pr p${g}">${LIBP[g]}</em>`}${t.echeance ? `<small>${ceoDate(t.echeance)}</small>` : ''}</span></button></div>`; }).join('')}</div>`).join('')
       : `<div class="ceo-vide">${f === 'fait' ? tt('Rien de fait encore.', 'Nothing done yet.') : tt('Rien ici. Ajoute ta prochaine tâche.', 'Nothing here. Add your next task.')}</div>`;
-    brancherTaches(z_); };
+    brancherTaches(z_); requestAnimationFrame(() => paginerColonnes(z_)); };
   peindreTaches();
   brancherTaches($('.ceo-todo'));
   $$('[data-tfl]').forEach(b => b.onclick = () => { vibrer(); S.ceoTf = b.dataset.tfl; $$('[data-tfl]').forEach(x => x.classList.toggle('on', x === b)); peindreTaches(); });
@@ -20449,7 +20621,7 @@ async function vueMesDeals(z, frais){
   z.innerHTML = `<div class="md">
     <button class="md-iq" id="md-iq"><span class="md-iq-l">Slab<i>IQ</i></span><span class="md-iq-t">${tt('Chaque carte a sa note, de A+ à E : touche-la pour voir pourquoi', 'Every card has a grade, A+ to E: tap it to see why')}</span><span class="md-iq-q">?</span></button>
     <div class="md-barre">
-      <button class="rq-glow md-glow ${r.profil_vide ? 'neuf' : ''}" id="md-cfg"><i class="md-g-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2.2"/><circle cx="10" cy="17" r="2.2"/></svg></i><div class="md-g-t"><span>${r.profil_vide ? tt('Configurer mon radar', 'Set up my radar') : tt('Mon radar', 'My radar')}</span><small>${tt('Mes joueurs · modifier', 'My players · edit')}</small></div><em class="md-g-ch" aria-hidden="true">›</em></button>
+      <button class="rq-glow md-glow ${r.profil_vide ? 'neuf' : ''}" id="md-cfg"><div class="md-g-t"><span>${tt('Mon radar', 'My radar')}</span></div><i class="md-g-eng" aria-label="${esc(tt('Régler mon radar', 'Set up my radar'))}"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.reglages}</svg></i></button>
       ${nb_ ? `<button class="md-dd" id="md-f"><small>${tt('Voir', 'Show')}</small><b id="md-f-t"></b><i>▾</i></button>
       <button class="md-dd" id="md-t"><small>${tt('Trier', 'Sort')}</small><b id="md-t-t"></b><i>▾</i></button>` : ''}</div>
     ${r.gratuit && r.gratuit.verrouillees > 0 ? `<button class="md-gratuit" data-pro-lock="radar"><span class="md-g-n"><b>${r.gratuit.trouvees}</b><small>${tt('cartes', 'cards')}</small></span>
@@ -20854,7 +21026,9 @@ function bentoJoueur(r, t){
   const g = q.legende || {};
   if (!gard && g.carriere && g.carriere.pts) tuile(tt('Carrière', 'Career'), g.carriere.pts + ' pts', g.carriere.mj ? g.carriere.mj + ' ' + tt('matchs', 'games') : '', '');
   const lg = [g.temple && tt('Temple de la renommée', 'Hall of Fame'), g.top100 && tt('Top 100 de l’histoire', 'Top 100 all-time'), g.trophees && g.trophees + ' ' + tt('trophées', 'awards')].filter(Boolean);
-  if (g.coupes || lg.length) tuile(g.temple || g.top100 ? tt('Légende', 'Legend') : tt('Palmarès', 'Honours'), g.coupes ? g.coupes + ' ' + tt(g.coupes > 1 ? 'coupes' : 'coupe', g.coupes > 1 ? 'Cups' : 'Cup') : lg.shift(), lg.join(' · '), 'or', {large: lg.length > 1});
+  // 20 nov 2026 (Mathieu : « je peux pas cliquer sur ses awards, on voit rien ») : le palmares s'ouvre (trophees un par un)
+  S.jHon = g;
+  if (g.coupes || lg.length) tuile(g.temple || g.top100 ? tt('Légende', 'Legend') : tt('Palmarès', 'Honours'), g.coupes ? g.coupes + ' ' + tt(g.coupes > 1 ? 'coupes' : 'coupe', g.coupes > 1 ? 'Cups' : 'Cup') : lg.shift(), lg.join(' · '), 'or', {large: lg.length > 1, cls: 'jb-hon', id: (g.liste || []).length || g.temple || g.top100 ? 'j-hon' : null});
   // 13 nov 2026 (Mathieu : « on devrait TOUJOURS avoir toute l'info ») : la carriere LNH de tous les joueurs (actifs ou
   // retraites), ses saisons, son repechage et quelques lignes de bio (Wikipedia, citee)
   if (cr && cr.mj && (gard || !(g.carriere && g.carriere.pts))) {
@@ -21034,7 +21208,9 @@ async function vueJoueur(arg){
   // 12 nov 2026 (Mathieu : « un genre de bento layout clean et tres slabcoach pour tout mettre ; clair et beau a lire, pas
   // trop de zone libre ») : tout le joueur en tuiles qui s'emboitent (voir bentoJoueur) ; le detail des faits, ses cartes,
   // ses ventes et son indice s'ouvrent en fenetres
+  // 20 nov 2026 (Mathieu : « pour les breaks, quand je clique sur le joueur y'a aucun moyen de revenir ») : un retour, toujours
   V().innerHTML = `<section class="ecran large joueur">
+    <button class="retour jb-ret" id="jb-ret">${ICONES.retour} ${tt('Retour', 'Back')}</button>
     <div class="jb" id="jb">${bentoJoueur(r, null)}${tuileDealsJoueur(r)}${tuilesVentesJoueur(r)}</div>
     ${boutonFanatics(r.joueur, 'margin-top:14px')}
     ${r.deals.length ? `<div class="v-rang-t j-deals-t"><b>${tt('Ses deals maintenant', 'His deals now')}</b><span class="sous">${r.deals.length}</span></div><div class="d-car j-deals">${r.deals.map(tuileDeal).join('')}</div>` : ''}
@@ -21055,10 +21231,14 @@ async function vueJoueur(arg){
   const brancher = () => {
     for (const [b, bl] of [['j-ind', 'j-b-ind'], ['j-histo', 'j-b-histo'], ['j-cartes', 'j-b-cartes'], ['j-tout-v', 'j-b-vend'], ['j-al', 'j-b-al']]) { const x = $('#' + b); if (x) x.onclick = () => { vibrer(); feuilleBloc($('#' + bl)); }; }
     const al = $('#j-alerte'); if (al) al.onclick = () => { vibrer(); feuilleAlerte(r.requete, r.mediane ? Math.round(r.mediane * 0.8) : ''); };
+    const hon = $('#j-hon'); if (hon) hon.onclick = () => { vibrer(); const g = S.jHon || {};
+      const L = [...(g.temple ? [[tt('Temple de la renommée', 'Hall of Fame'), 0]] : []), ...(g.top100 ? [[tt('Top 100 de l’histoire de la LNH', 'NHL Top 100 all-time'), 0]] : []), ...(g.liste || [])];
+      ouvrirFeuille(`<h3>${tt('Son palmarès', 'His honours')}</h3><div class="sous">${esc(r.joueur)}</div><div class="hon-l">${L.map(([n, k]) => `<div class="hon-i"><span class="hon-ic">${icN('etoile')}</span><b>${esc(n)}</b>${k > 1 ? `<em>× ${k}</em>` : ''}</div>`).join('')}</div>`); };
     $$('#jb [data-jfait]').forEach(b => b.onclick = () => { vibrer(); ouvrirFeuille(blocPourquoi(S.jPq) || ''); });
     remplirPortraits($('#jb'));
   };
   brancher(); remplir();
+  { const rb = $('#jb-ret'); if (rb) rb.onclick = () => { vibrer(); if (history.length > 1) history.back(); else location.hash = '#accueil'; }; }
   API.tendance_joueur(r.joueur).then(t => { const z = $('#jb'); if (!t || !z || !z.isConnected) return; S.jPq = t.pourquoi; z.innerHTML = bentoJoueur(r, t) + tuileDealsJoueur(r) + tuilesVentesJoueur(r); brancher(); remplir(); }).catch(() => {});
   for (const [b, bl] of [['j-tout-v', 'j-b-vend'], ['j-cartes', 'j-b-cartes'], ['j-tout-v', 'j-b-vend'], ['j-al', 'j-b-al']]) { const x = $('#' + b); if (x) x.onclick = () => feuilleBloc($('#' + bl)); }
   $$('[data-ind-aide]').forEach(b => b.onclick = expliquerIndice);
