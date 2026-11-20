@@ -939,7 +939,24 @@ html[lang=en] .w-ligne::after{content:'Remove'}
 .am-tete{display:flex; align-items:center; justify-content:space-between; gap:10px; margin:0 0 8px} .am-tete .am-t{margin:0}
 .am-tout{font:700 14px var(--f-cond); letter-spacing:.08em; text-transform:uppercase; color:var(--acc); text-decoration:none; padding:6px 12px; border-radius:999px; border:1px solid color-mix(in srgb, var(--acc) 45%, var(--ligne))}
 .tiq-t{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px} .tiq .titre{background:linear-gradient(100deg, var(--rouge), var(--or-clair), var(--acc)); -webkit-background-clip:text; background-clip:text; color:transparent}
-.tiq-k{margin-bottom:14px} .tiq-g{display:flex; flex-direction:column; gap:6px; padding:14px; border-radius:20px; background:var(--carte); border:1px solid var(--ligne); margin-bottom:14px}
+.tiq-k{margin-bottom:14px}
+.iqs-g2{grid-template-columns:1fr 1fr; gap:6px 18px}
+.iqs-g2 .iqs-t{display:grid; grid-template-columns:28px minmax(0,1fr) auto; grid-template-rows:auto auto; column-gap:10px; row-gap:4px; align-items:center;
+  padding:8px 0; border:0; border-radius:0; background:none; border-bottom:1px solid var(--sep); overflow:visible}
+.iqs-g2 .iqs-t::before, .iqs-g2 .iqs-t::after{display:none}
+.iqs-g2 .iqs-ic{grid-row:1 / span 2; width:28px; height:28px; border-radius:9px} .iqs-g2 .iqs-ic svg{width:15px; height:15px}
+.iqs-g2 .iqs-t b{grid-column:2; font:700 13px var(--f-cond); letter-spacing:.06em; text-transform:uppercase; color:var(--texte)}
+.iqs-g2 .iqs-t em{grid-column:3; grid-row:1; position:static; font:700 12px var(--f-cond); color:var(--c)}
+.iqs-g2 .iqs-b{grid-column:2 / span 2; grid-row:2; height:4px; margin:0}
+.iqs-g2 .iqs-t small{display:none} details.iqs-pt summary{cursor:pointer; font:700 12px var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--doux); list-style:none}
+details.iqs-pt summary::-webkit-details-marker{display:none} details.iqs-pt summary::after{content:' ›'} details.iqs-pt[open] summary::after{content:' ‹'} details.iqs-pt .iqs-pl{margin-top:10px}
+.tiq-kr{display:flex; flex-wrap:wrap; gap:8px; margin:0 0 14px} .tiq-kr:empty{display:none}
+.tiq-kp{display:inline-flex; align-items:baseline; gap:7px; padding:8px 14px; border-radius:999px; border:1px solid var(--ligne); background:rgba(255,255,255,.03); color:var(--doux); font:500 14px var(--f-txt, inherit); cursor:pointer}
+.tiq-kp b{font:800 19px/1 var(--f-cond)} .tiq-kp:hover{border-color:rgba(255,255,255,.22); color:var(--texte)}
+/* 20 nov 2026 : l'en-tete fixe des Tendances (a l'ordi, comme Radar et Inventaire) */
+.tiq-tf{gap:0} .tiq-tf > .tiq-t{margin-bottom:12px}
+@media (max-width:899px){ .tiq-tf{position:sticky; top:var(--bm-h, 0px); z-index:18; margin:0 -18px 12px; padding:8px 18px 12px;
+  background:color-mix(in srgb, var(--fond) 92%, transparent); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px)} .tiq-tf .tiq-rech{margin:0} } .tiq-g{display:flex; flex-direction:column; gap:6px; padding:14px; border-radius:20px; background:var(--carte); border:1px solid var(--ligne); margin-bottom:14px}
 .tiq-b{display:flex; align-items:center; gap:10px; border:0; background:none; color:var(--texte); font:inherit; text-align:left; padding:3px 0; cursor:pointer}
 .tiq-bn{width:20px; font:700 14px var(--f-cond); color:var(--doux)} .tiq-bl{flex:1; min-width:0; display:flex; flex-direction:column; gap:4px} .tiq-bl b{font:700 15px var(--f-cond); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .tiq-bl i{display:block; height:6px; border-radius:3px; background:linear-gradient(90deg, var(--acc), var(--vert))} .tiq-bv{font:700 18px var(--f-cond); color:var(--acc); min-width:28px; text-align:right}
@@ -4390,15 +4407,8 @@ body[data-motif="prisme"] #mosaique{background-image:
     border-right:2px solid var(--pale); border-bottom:2px solid var(--pale); transform:rotate(-45deg); opacity:.7; transition:transform .22s, opacity .2s}
   .onglets:hover::after, .onglets:has(:focus-visible)::after{transform:rotate(135deg); opacity:.35}
 }
-/* 20 nov 2026 (rapport ergonomie : une icone seule oblige a se souvenir de ce qu'elle fait) : fermee, la barre garde un petit mot
-   sous chaque icone ; au survol, elle s'ouvre comme avant */
-@media (min-width:900px) and (hover:hover){
-  html body .onglets:is(.rail-ferme, :not(:hover):not(:has(:focus-visible))){padding-left:6px !important; padding-right:6px !important}
-  html body .onglets:is(.rail-ferme, :not(:hover):not(:has(:focus-visible))) > a:not(.nav-logo){color:var(--doux) !important; flex-direction:column !important; justify-content:center !important;
-    gap:3px !important; padding:7px 2px !important; font-size:10.5px !important; line-height:1.1 !important; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  html body .onglets:is(.rail-ferme, :not(:hover):not(:has(:focus-visible))) > a.on:not(.nav-logo){color:var(--texte) !important}
-  html body .onglets:is(.rail-ferme, :not(:hover):not(:has(:focus-visible))) > a:not(.nav-logo) svg{width:21px; height:21px}
-}
+/* 20 nov 2026 (Mathieu : « les petites ecritures devraient juste apparaitre a cote de l'icone quand le menu grossit au survol ») :
+   fermee, la barre montre les icones seules ; au survol, elle s'ouvre et chaque mot apparait a cote de son icone */
 
 /* 15 nov 2026 (Mathieu, la barre de cote a l'ordi : « ameliore le layout et le design ») : deux groupes nets, sans trou au
    milieu : en haut les 5 onglets du cell (Vendre en pastille prisme, comme le bouton du milieu au cell) ; en bas, colles,
@@ -4540,6 +4550,17 @@ html.tel-large .ecran.acc.acc-ft-mode > .acc-news2{order:9}
 .nl-ic svg{width:24px; height:24px; fill:none; stroke:var(--acc); stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round}
 .nl-t{display:flex; flex-direction:column; gap:2px; min-width:0} .nl-t small{font-size:12px; color:var(--doux); text-transform:uppercase; letter-spacing:.05em}
 .nl-t b{font-size:14.5px; font-weight:600; line-height:1.3; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical}
+/* 20 nov 2026 (Mathieu : « pense comme Apple, simple et sexy, jamais de flafla ») : les nouvelles en liste groupee iOS : un seul
+   bloc, des rangees separees par un filet, une petite pastille pleine par genre, centree ; plus de boites dans des boites */
+.nl-l{gap:0 !important; border-radius:20px; background:color-mix(in srgb, var(--carte) 80%, transparent); border:1px solid rgba(255,255,255,.06); overflow:hidden}
+.nl-l > .nl{position:relative; gap:14px; padding:12px 16px !important; border:0; border-radius:0; background:none}
+.nl-l > .nl + .nl::before{content:''; position:absolute; top:0; right:0; left:70px; height:1px; background:rgba(255,255,255,.07)}
+.nl-l > .nl:hover{background:rgba(255,255,255,.035)} .nl-l > .nl:active{transform:none; background:rgba(255,255,255,.06)}
+.nl-l .nl-ic, .nl-l .nl-img, .nl-s .nl-ic{width:40px !important; height:40px !important; border-radius:11px; align-self:center}
+.nl-ic.nl-produit{--ni:#8B7CF6} .nl-ic.nl-hausse{--ni:#34C77B} .nl-ic.nl-baisse{--ni:#FF5D5D} .nl-ic.nl-astuce{--ni:#F2B33D} .nl-ic.nl-sport{--ni:#3E8BFF}
+.nl-ic[class*="nl-"]{background:linear-gradient(180deg, color-mix(in srgb, var(--ni) 100%, #fff 12%), var(--ni)); box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
+.nl-ic[class*="nl-"] svg{width:21px; height:21px; stroke:#fff; stroke-width:2}
+.nl-l .nl-t{gap:3px} .nl-l .nl-t small{font-size:11.5px !important; font-weight:600; letter-spacing:.04em; color:var(--pale)} .nl-l .nl-t b{font-weight:600}
 @media (min-width:700px){ .acc-ft{grid-template-columns:repeat(3, minmax(0, 1fr))} }
 @media (min-width:1100px){
   /* 15 nov 2026 (Mathieu : « optimiser l'espace » a l'ordi) : toute la largeur ; l'heure et la citation sur une seule rangee ;
@@ -4695,6 +4716,9 @@ html.tel-large .ecran.acc.acc-ft-mode > .acc-news2{order:9}
 /* 16 nov 2026 (design) : la lettre du joueur dans son cercle ; la fleche du choix de liste bien visible */
 .tiq-ml b{font:800 18px var(--f-cond) !important; letter-spacing:0 !important} .tiq-ml.vert b{color:var(--vert)} .tiq-ml.acc b{color:var(--acc)} .tiq-ml.or b{color:var(--or)}
 .tiq-sel-ch{width:36px; height:36px; flex:none; border-radius:50%; display:grid; place-items:center; background:color-mix(in srgb, var(--acc) 18%, transparent); border:1px solid color-mix(in srgb, var(--acc) 45%, transparent)}
+/* 20 nov 2026 (« simple, jamais de flafla ») : le chevron colle au titre, comme un menu iOS ; plus de bouton flottant au milieu */
+.tiq-sel.tiq-sel{justify-content:flex-start; width:auto; max-width:100%; padding:6px 4px; gap:10px}
+.tiq-sel .tiq-sel-ch{width:28px; height:28px; background:none; border:0} .tiq-sel .tiq-sel-ch svg{width:18px; height:18px}
 .tiq-sel-ch svg{width:20px; height:20px; fill:none; stroke:var(--acc); stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round}
 /* la fenetre d'une annonce (bento) : le X dans le coin, des titres de tuiles plus gros, les pastilles du bas en prism */
 .fen.fen.fen.fa.fb{padding-top:52px !important}
@@ -4839,6 +4863,30 @@ html.tel-large .ecran.acc.acc-ft-mode > .acc-news2{order:9}
    de grande colonne vide au milieu), puis SlabIQ, les ventes en petites vignettes, le bouton. Tout tient dans la fenetre. */
 .fb-dr{display:contents}
 .ex-haut, .ex-bas{display:contents}
+.ex-k-d{display:none}
+/* 20 nov 2026 (Mathieu : « revoir ce layout, aucun espace ne doit etre inutilise », « pense comme Apple ») : Entrainer SlabIQ
+   a l'ordi en 3 colonnes pleines : la photo sur toute la hauteur (son propre flou en fond, plus de bandes vides) ; au centre la
+   carte, la question et 3 gros boutons qui prennent la hauteur qui reste ; a droite les questions, tes 3 chiffres, le blitz */
+@media (min-width:1100px){
+  html body .ex-z.ex-z{grid-template-columns:minmax(0,27fr) minmax(0,40fr) minmax(370px,33fr) !important; grid-template-rows:auto auto minmax(0,1fr) auto !important; row-gap:12px !important; column-gap:18px !important}
+  html body .ex-z.ex-z > .ex-bas > .ex-k{display:none !important}
+  html body .ex-z.ex-z .ex-ph{grid-column:1 !important; grid-row:1 / -1 !important; position:relative; isolation:isolate; padding:14px !important; overflow:hidden; background:#0C0C10}
+  html body .ex-z.ex-z .ex-ph::before{content:''; position:absolute; inset:-30px; z-index:-1; background:var(--ph, none) center/cover; filter:blur(34px) saturate(1.3); opacity:.45}
+  html body .ex-z.ex-z .ex-ph img{position:relative; width:100%; height:100%; max-height:none; object-fit:contain; filter:drop-shadow(0 18px 30px rgba(0,0,0,.55))}
+  html body .ex-z.ex-z .ex-i{grid-column:2 !important; grid-row:1 !important}
+  html body .ex-z.ex-z .ex-q2{grid-column:2 !important; grid-row:2 !important}
+  html body .ex-z.ex-z .ex-b{grid-column:2 !important; grid-row:3 !important; align-self:stretch !important; display:flex !important; flex-direction:column; gap:10px; min-height:0}
+  html body .ex-z.ex-z .ex-b .ex-x{flex:1 1 0; height:auto !important; min-height:56px}
+  html body .ex-z.ex-z > .ex-bas > details{grid-column:2 !important; grid-row:4 !important}
+  html body .ex-z.ex-z > .ex-haut{grid-column:3 !important; grid-row:1 / -1 !important; display:flex !important; flex-direction:column; gap:12px; min-height:0; overflow:hidden !important}
+  html body .ex-z.ex-z > .ex-haut > .ex-k-d{display:flex !important; flex-direction:column; flex:1 1 0; min-height:0; gap:8px; margin:0 !important; align-self:stretch !important; width:auto !important}
+  html body .ex-z.ex-z > .ex-haut > .ex-k-d .ak{flex:1 1 0; min-height:0 !important; display:flex; flex-direction:row; align-items:center; justify-content:space-between; gap:12px; padding:10px 18px !important; border-radius:18px}
+  html body .ex-z.ex-z > .ex-haut > .ex-k-d .ak-h{display:flex; flex-direction:column; align-items:flex-start; gap:2px}
+  html body .ex-z.ex-z > .ex-haut > .ex-k-d .ak-l{font-size:15px} html body .ex-z.ex-z > .ex-haut > .ex-k-d .ak-sur{font:500 13px var(--f-txt, inherit); text-transform:none; letter-spacing:0; color:var(--doux); opacity:1}
+  html body .ex-z.ex-z > .ex-haut > .ex-k-d .ak-v{font-size:clamp(26px, 2.3vw, 40px) !important; white-space:nowrap}
+  html body .ex-z.ex-z > .ex-haut > .ex-q, html body .ex-z.ex-z > .ex-haut > .ex-bz{flex:none}
+  html body .ex-z.ex-z > .ex-bas > .vide{grid-column:1 / 3 !important; grid-row:1 / -1 !important; align-self:center}
+}
 .ex-bb{display:block; margin-top:4px; font-size:13px; color:var(--doux)} .ex-dl{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px} .ex-dl span{font-size:13px; color:var(--doux)}
 /* 18 nov 2026 (« je ne devrais pas avoir a scroller la aussi ; ou est le telecharger toutes les ventes ? ») : a l'ordi, Entrainer
    SlabIQ tient dans l'ecran : les deux cartes du haut cote a cote, puis la carte a juger a gauche et ses chiffres + boutons a droite */
@@ -5964,6 +6012,85 @@ html.tel-large .fen.fa .fen-img{max-height:calc(46vh / 1.12) !important}
 /* 6. les en-tetes ronds (« Analyser un produit », Breaks) : la fleche en pastille prisme */
 .tuile-analyse .go{width:40px; height:40px; flex-shrink:0; border-radius:50%; display:grid; place-items:center; border:2px solid transparent; font-size:20px; color:var(--texte);
   background:var(--pastille-fond) padding-box, var(--prisme) border-box}
+/* 20 nov 2026 (Mathieu : « revoit l'interface admin, jamais de scroll bar, tout toujours fit sur une page, aucun espace
+   inutilise », « pense comme Apple, simple et sexy ») : la console a l'ordi tient dans l'ecran, sans barre de defilement */
+.ceo-al > [hidden]{display:none !important}
+.ceo-pg{display:flex; align-items:center; justify-content:center; gap:14px; padding-top:8px; font:700 13px var(--f-cond); letter-spacing:.08em; color:var(--doux)}
+.ceo-pg[hidden]{display:none} .ceo-pg button{width:30px; height:30px; border-radius:50%; border:1px solid var(--ligne); background:var(--carte2); color:var(--texte); font-size:17px; line-height:1; cursor:pointer}
+.ceo-pg button:disabled{opacity:.3; cursor:default}
+.ceo-k-sp{position:absolute; right:12px; top:34px; display:flex; align-items:flex-end; gap:2px; height:24px; width:40%; pointer-events:none; opacity:.85}
+.ceo-k-sp i{flex:1; border-radius:2px 2px 0 0; background:linear-gradient(180deg, #F2B3D6, #B9BEFF)}
+@media (min-width:1100px){
+  /* le menu de gauche : toutes les sections tiennent, la hauteur des lignes s'ajuste a l'ecran */
+  html body .ceo-nav.ceo-nav{max-height:calc(100dvh - 92px) !important; overflow:hidden !important; scrollbar-width:none}
+  html body .ceo-nav.ceo-nav a{height:clamp(25px, calc((100dvh - 330px) / 13), 40px) !important; flex:none}
+  html body .ceo-nav.ceo-nav a.ceo-nav-a{height:clamp(29px, calc((100dvh - 300px) / 12), 44px) !important}
+  html body .ceo-nav.ceo-nav .ceo-nav-g{padding:clamp(4px, 1dvh, 12px) 10px 2px !important}
+  /* jamais de barre de defilement dans la console */
+  html body .ecran.ceo-e .ceo-main{scrollbar-width:none} html body .ecran.ceo-e .ceo-main::-webkit-scrollbar{display:none}
+  html body .ecran.ceo-e .ceo-main:has(> .ceo-sec[data-sec="apercu"].on){display:flex; flex-direction:column; overflow:hidden}
+  /* Aujourd'hui : a faire a gauche sur toute la hauteur ; a droite, 4 cartes qui se partagent la hauteur */
+  html body .ceo-sec[data-sec="apercu"].on{flex:1 1 auto; min-height:0; display:flex; flex-direction:column}
+  html body .ceo-sec[data-sec="apercu"].on .ceo-home{flex:1 1 auto; min-height:0 !important; height:auto; grid-template-columns:minmax(0,1.55fr) minmax(0,1fr) !important; grid-template-rows:minmax(0,1fr); margin-top:10px !important; gap:10px !important}
+  html body .ceo-sec[data-sec="apercu"].on .ceo-home-g{display:flex; flex-direction:column; min-height:0}
+  html body .ceo-sec[data-sec="apercu"].on .ceo-todo{flex:1 1 auto; min-height:0; display:flex; flex-direction:column}
+  html body .ceo-sec[data-sec="apercu"].on .ceo-todo .ceo-al{flex:1 1 0; min-height:0 !important; max-height:none !important; overflow:hidden !important; gap:6px !important; margin:0}
+  html body .ceo-sec[data-sec="apercu"].on .ceo-al-b > span{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; flex:1}
+  html body .ceo-sec[data-sec="apercu"].on .ceo-home-d{display:flex !important; flex-direction:column; gap:10px !important; min-height:0}
+  html body .ceo-sec[data-sec="apercu"].on .ceo-home-d > .ceo-c{flex:1 1 auto !important; min-height:0; display:flex; flex-direction:column; overflow:hidden}
+  html body .ceo-sec[data-sec="apercu"].on .ceo-home-d > .ceo-c > :nth-child(2){margin-top:auto}
+  html body .ceo-sec[data-sec="apercu"].on .ceo-home-d > .ceo-c > :last-child{margin-bottom:auto}
+  html body .ceo-sec[data-sec="apercu"].on .ceo-home-d > .ceo-mini .ceo-q + .ceo-q{margin-top:7px !important}
+  html body .ceo-sec[data-sec="apercu"].on .ceo-home-d .ceo-dm2{display:flex; align-items:center; gap:8px; min-width:0; padding:3px 0}
+  html body .ceo-sec[data-sec="apercu"].on .ceo-home-d .ceo-dm2 > span:last-child{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  html body .ceo-sec[data-sec="apercu"].on .ceo-k6 .ceo-k{min-height:0}
+  html body .ceo-sec[data-sec="apercu"].on .ceo-home-d > .ceo-home-b2{flex:1 1 auto; min-height:0; display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  html body .ceo-home-b2 > .ceo-c{display:flex; flex-direction:column; min-height:0; overflow:hidden}
+  html body .ceo-home-b2 > .ceo-c > :nth-child(2){margin-top:auto} html body .ceo-home-b2 > .ceo-c > :last-child{margin-bottom:auto}
+  html body .ceo-home-b2 .ceo-q + .ceo-q{margin-top:6px !important} html body .ceo-home-b2 .ceo-q-t{font-size:13px !important; margin-bottom:3px} html body .ceo-home-b2 .ceo-q-b{height:5px !important}
+  html body .ceo-home-b2 .ceo-q-t b{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  html body .ceo-home-b2 .ceo-dm2{font-size:13px} html body .ceo .ceo-home-b2 > .ceo-c > .ceo-c-t{font-size:12.5px !important; line-height:18px; padding:8px 13px 7px !important}
+  html body .ecran.ceo-e .ceo-nav.ceo-nav{align-self:stretch !important; max-height:none !important} html body .ceo-home-b2 .ceo-c-t{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  html body .ceo-sec[data-sec="apercu"].on .ceo-home-d .ceo-lg{padding-top:6px !important; padding-bottom:6px !important}
+  /* Taxes : le formulaire en fenetre, les obligations en 3 colonnes */
+  html body .ceo-ent-r{display:flex; align-items:center; gap:14px; width:100%; margin:0 0 10px; padding:12px 16px !important; font:inherit; color:var(--texte); text-align:left; cursor:pointer}
+  html body .ceo-ent-r b{font:700 13px var(--f-cond); letter-spacing:.1em; text-transform:uppercase} html body .ceo-ent-r span{flex:1; min-width:0; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  html body .ceo-ent-r em{font-style:normal; color:var(--acc); font-weight:600}
+  html body .ceo-avis{padding:8px 14px !important; font-size:12.5px !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  html body .ceo-obls{grid-template-columns:repeat(3, minmax(0,1fr)) !important; align-items:start; margin-top:0 !important}
+  html body .ceo-obls .ceo-o{padding:7px 0; flex-wrap:wrap; row-gap:4px} html body .ceo-obls .ceo-o-t small{display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+  html body .ceo-obls .ceo-o-d{margin-left:auto}
+  /* Securite : les verifications en 2 colonnes */
+  html body .ceo-sec[data-sec="securite"] .ceo-2{grid-template-columns:minmax(0,2.2fr) minmax(0,1fr) !important; align-items:start}
+  html body .ceo-sec[data-sec="securite"] .ceo-2 > .ceo-c:first-child{display:grid; grid-template-columns:1fr 1fr; column-gap:22px}
+  html body .ceo-sec[data-sec="securite"] .ceo-s{padding:7px 0; border-bottom:1px solid color-mix(in srgb, var(--ligne) 55%, transparent) !important}
+  html body .ceo-sec[data-sec="securite"] .ceo-s small, html body .ceo-sec[data-sec="securite"] .ceo-s em{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  html body .ceo-sec[data-sec="securite"] .ceo-s > div{min-width:0}
+  /* Mes taches : les projets en 2 colonnes */
+  html body .ceo-tl{display:block !important; columns:2; column-gap:12px} html body .ceo-tl > *{break-inside:avoid; margin:0 0 12px !important}
+  /* Croissance : 5 colonnes, le texte en 4 lignes */
+  html body .ceo-opps{grid-template-columns:repeat(5, minmax(0,1fr)) !important}
+  html body .ceo-op p{display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden}
+  html body .ceo-tl .ceo-tr{padding:5px 0} html body .ceo-tl .ceo-tr b{display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  html body .ceo-tl .ceo-tr small{display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis} html body .ceo-tl .ceo-tr > :not(button):not(em):not(span.ceo-p){min-width:0; flex:1}
+  html body .ceo-obls .ceo-o-t b{white-space:nowrap; overflow:hidden; text-overflow:ellipsis} html body .ceo-obls .ceo-o-t small{-webkit-line-clamp:1 !important}
+  html body .ceo-obls .ceo-o{padding:5px 0}
+  /* Outils admin : des tuiles compactes (icone a gauche, titre, sous-titre), 5 par rangee, comme les reglages d'iOS */
+  html body .ceo-sec[data-sec="outils"] .adm-emb .adm-grille2{display:grid !important; grid-template-columns:repeat(5, minmax(0,1fr)) !important; gap:8px !important; margin:0 0 6px !important}
+  html body .ceo-sec[data-sec="outils"] .adm-emb .adm-tu{min-height:0 !important; flex-direction:row !important; align-items:center !important; gap:10px !important; padding:9px 12px !important; border-radius:16px !important}
+  html body .ceo-sec[data-sec="outils"] .adm-emb .adm-tu-i{width:32px !important; height:32px !important; flex:none} html body .ceo-sec[data-sec="outils"] .adm-emb .adm-tu-i svg{width:15px !important; height:15px !important}
+  html body .ceo-sec[data-sec="outils"] .adm-emb .adm-tu-t{flex:1; min-width:0} html body .ceo-sec[data-sec="outils"] .adm-emb .adm-tu-t b{font-size:14px !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  html body .ceo-sec[data-sec="outils"] .adm-emb .adm-tu-t small{font-size:11.5px !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  html body .ceo-sec[data-sec="outils"] .adm-emb .adm-tu-v{position:static !important; flex:none; font-size:14px !important}
+  html body .ceo-sec[data-sec="outils"] .adm-emb .acc-sec{margin:8px 0 6px !important; font-size:11px}
+  html body .ceo-sec[data-sec="outils"] .adm-emb .adm-etat{padding:8px 14px !important; margin-bottom:4px !important}
+  /* Abonnes : les 8 chiffres sur une rangee */
+  html body .ceo-sec[data-sec="abonnes"] .ceo-kpis.p{grid-template-columns:repeat(8, minmax(0,1fr)) !important}
+}
+.ceo-entw{position:fixed; inset:0; z-index:120; display:grid; place-items:center} .ceo-entw[hidden]{display:none}
+.ceo-entw-f{position:absolute; inset:0; background:rgba(5,5,8,.55); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px)}
+.ceo-entw-c{position:relative; width:min(880px, 92vw); padding:22px 24px !important; border-radius:24px !important}
+.ceo-entw-x{position:absolute; top:5px; right:8px; z-index:2; width:34px; height:34px; border-radius:50%; border:1px solid var(--ligne); background:var(--carte2); color:var(--texte); font-size:20px; line-height:1; cursor:pointer}
 </style>
 <script>
 
@@ -7080,8 +7207,9 @@ function piedNav(){
   if (!p) { p = document.createElement('div'); p.className = 'nav-pied'; n.appendChild(p); }
   const f = fetesActives();
   p.innerHTML = `${f ? `<div class="np-fete"><span class="np-ic">${htmlDecoFetes('sapin')}${htmlDecoFetes('cadeau')}</span>
-      <span class="np-t"><b>${tt('Joyeuses fêtes', 'Happy holidays')}</b><small>${tt('de toute l’équipe SlabCoach', 'from the whole SlabCoach team')}</small></span></div>` : ''}
-    <div class="np-legal"><b class="np-devise">${tt('Collectionne plus. Cherche moins.', 'Collect more. Search less.')}</b><span>© ${new Date().getFullYear()} SlabCoach™ · ${tt('Tous droits réservés', 'All rights reserved')}</span><span><a href="/conditions" target="_blank" rel="noopener">${tt('Conditions', 'Terms')}</a> · <a href="/confidentialite" target="_blank" rel="noopener">${tt('Confidentialité', 'Privacy')}</a></span></div>`;
+      <span class="np-t"><b>${tt('Joyeuses fêtes', 'Happy holidays')}</b></span></div>` : ''}
+    <div class="np-legal"><span>© ${new Date().getFullYear()} · <a href="/conditions" target="_blank" rel="noopener">${tt('Conditions', 'Terms')}</a> · <a href="/confidentialite" target="_blank" rel="noopener">${tt('Confidentialité', 'Privacy')}</a></span></div>`;
+  // 20 nov 2026 (Mathieu : « il se passe trop de choses la ») : le pied tient en 2 lignes : les fetes, puis le legal sur une seule ligne
 }
 function decorOrdi(){
   let z = document.getElementById('deco-ordi');
@@ -13260,9 +13388,10 @@ async function questionsSlabIQ(){
   montrer();
 }
 async function vueTendancesIQ(arg){
-  V().innerHTML = `<section class="ecran tiq"><div class="tiq-t"><div><div class="titre">${tt('Tendances', 'Trending')}</div><div class="sous">${tt('Ce que SlabIQ voit chez les joueurs, chaque jour', 'What SlabIQ sees in players, every day')}</div></div>
+  // 20 nov 2026 (Mathieu : « l'entete ne devrait pas bouger ») : le titre et la recherche dans l'en-tete fixe (comme Radar et Inventaire)
+  V().innerHTML = `<section class="ecran tiq"><div class="tete-fixe tiq-tf"><div class="tiq-t"><div><div class="titre">${tt('Tendances', 'Trending')}</div><div class="sous">${tt('Ce que SlabIQ voit chez les joueurs, chaque jour', 'What SlabIQ sees in players, every day')}</div></div>
     <button class="md-iq-q" id="tiq-q" aria-label="SlabIQ">?</button></div>
-    <div class="tiq-rech"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input id="tiq-r" type="search" autocomplete="off" placeholder="${esc(tt('Chercher ton joueur…', 'Search your player…'))}" aria-label="${esc(tt('Chercher un joueur', 'Search a player'))}"><div class="tiq-rl" id="tiq-rl"></div></div><div id="tiq-z">${barreProg(Date.now(), 4, tt('SlabIQ analyse les joueurs…', 'SlabIQ is analyzing players…'))}</div></section>`;
+    <div class="tiq-rech"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input id="tiq-r" type="search" autocomplete="off" placeholder="${esc(tt('Chercher ton joueur…', 'Search your player…'))}" aria-label="${esc(tt('Chercher un joueur', 'Search a player'))}"><div class="tiq-rl" id="tiq-rl"></div></div></div><div id="tiq-z">${barreProg(Date.now(), 4, tt('SlabIQ analyse les joueurs…', 'SlabIQ is analyzing players…'))}</div></section>`;
   $('#tiq-q').onclick = () => { vibrer(); expliquerTendancesIQ(); };
   const r = await API.tendances_iq().catch(e => ({ok: false, erreur: e.message}));
   const z = $('#tiq-z'); if (!z) return;
@@ -13280,14 +13409,10 @@ async function vueTendancesIQ(arg){
   let cat = dispo.find(([k]) => k === arg) ? arg : dispo[0][0];
   r.types = typesSansGrade(r.types);
   const top10 = (r.cats.top || []).slice(0, 10), mx = Math.max(1, ...top10.map(x => x.note ?? x.indice ?? 0));
-  const tete = `<div class="jb tiq-k">
-      ${r.compte.marche_bas ? `<button class="jb-t tiq-kb" data-tcat="marche_bas"><span class="jb-k">${tt('Marché bas', 'Market low')}</span><b class="jb-v vert">${r.compte.marche_bas}</b><small>${tt('joueurs clés', 'key players')}</small></button>`
-        : `<div class="jb-t"><span class="jb-k">${tt('Joueurs analysés', 'Players analyzed')}</span><b class="jb-v acc">${r.suivis || r.actifs || 0}</b><small>${tt('chaque jour', 'every day')}</small></div>`}
-      <button class="jb-t tiq-kb" data-tcat="en_feu"><span class="jb-k">${tt('En feu', 'On fire')}</span><b class="jb-v rouge">${r.compte.en_feu || 0}</b><small>${tt('cette semaine', 'this week')}</small></button>
-      <button class="jb-t tiq-kb" data-tcat="rebond"><span class="jb-k">${tt('Sortent du creux', 'Bouncing back')}</span><b class="jb-v vert">${r.compte.rebond || 0}</b><small>${tt('jeunes en reprise', 'young players recovering')}</small></button>
-      <button class="jb-t tiq-kb" data-tcat="recrue"><span class="jb-k">${tt('Recrues suivies', 'Rookies tracked')}</span><b class="jb-v or">${r.compte.recrue || 0}</b><small>${tt('saison recrue 2026-27', '2026-27 rookie season')}</small></button>
-      ${r.creux_bilan && r.creux_bilan.remontes_30 != null ? `<div class="jb-t l"><span class="jb-k">${tt('Le suivi des creux', 'Slump tracking')}</span><b class="jb-v vert">${Math.round(r.creux_bilan.remontes_30 * 100)} %</b><small>${tt(`des ${r.creux_bilan.mesurables_30} joueurs signalés en creux ont vu leur marché remonter 30 jours après`, `of the ${r.creux_bilan.mesurables_30} players flagged in a slump saw their market rise 30 days later`)}</small></div>` : ''}
-    </div>
+  // 20 nov 2026 (docs/GUIDE_ACCROCHE.md : « moins de choix, le chiffre en gros, le contexte en petit ») : les 4 grosses tuiles
+  // deviennent une rangee de pastilles legeres, chacune ouvre sa liste ; « joueurs analyses » et le suivi des creux : dans la note
+  const kp = (k, l, c) => (r.compte[k] || 0) ? `<button class="tiq-kp tiq-kb" data-tcat="${k}"><b class="${c}">${r.compte[k]}</b><span>${l}</span></button>` : '';
+  const tete = `<div class="tiq-kr">${kp('marche_bas', tt('marché bas', 'market low'), 'vert')}${kp('en_feu', tt('en feu cette semaine', 'on fire this week'), 'rouge')}${kp('rebond', tt('sortent du creux', 'bouncing back'), 'vert')}${kp('recrue', tt('recrues suivies', 'rookies tracked'), 'or')}</div>
     <div class="tiq-2">${top10.length ? `<div class="tiq-g"><button class="am-t tiq-gt" data-tout="top">${tt('Les joueurs les plus recherchés', 'Most sought-after players')}<span>${tt('Voir tout', 'See all')} ›</span></button>${top10.slice(0, 5).map((x, i) => `<button class="tiq-b" data-jpop="${esc(x.nom)}"><span class="tiq-bn">${i + 1}</span><span class="tiq-bl"><b>${esc(x.nom)}</b><i style="width:${Math.round(100 * ((x.note ?? x.indice) || 0) / mx)}%"></i></span><span class="tiq-bv">${x.lettre || lettre(x.indice)}</span></button>`).join('')}</div>` : ''}
     ${(r.familles || []).length ? `<div class="tiq-g"><button class="am-t tiq-gt" data-tout="types">${tt('Les cartes les plus recherchées', 'The most sought-after cards')}<span>${tt('Voir tout', 'See all')} ›</span></button>
       ${r.familles.slice(0, 5).map(x => `<button class="tiq-b tiq-fam" data-fam="${esc(x.cle)}"><span class="tiq-fl ${famCl(x.lettre)}">${esc(x.lettre.split(' ')[0])}</span><span class="tiq-bl"><b>${esc(tt(x.nom, x.nom_en))}</b><small>${esc(x.ex.slice(0, 2).map(e => tt(e.nom, e.nom_en)).join(' · '))}</small></span><span class="tiq-bv">›</span></button>`).join('')}</div>` : ''}</div>`;
@@ -13348,7 +13473,7 @@ async function vueTendancesIQ(arg){
       <div class="tiq-sd">${DESC_IQ()[cat] || ''}</div>
       <div class="tiq-liste">${(r.cats[cat] || []).slice(0, ouvert ? 999 : 12).map(carte).join('')}</div>
       ${!ouvert && (r.cats[cat] || []).length > 12 ? `<button class="pilule tiq-plus" id="tiq-plus">${tt(`Voir les ${(r.cats[cat] || []).length}`, `See all ${(r.cats[cat] || []).length}`)} ›</button>` : ''}
-      <div class="sous tiq-note">${tt('Données publiques : stats de la LNH, recherches Wikipedia, nouvelles, palmarès. SlabIQ ne regarde jamais le prix des annonces.', 'Public data: NHL stats, Wikipedia searches, news, honours. SlabIQ never looks at listing prices.')}${r.le ? ' · ' + tt('mis à jour ', 'updated ') + esc(ilYa(r.le)) : ''}</div>`;
+      <div class="sous tiq-note">${tt(`${r.suivis || r.actifs || 0} joueurs analysés chaque jour, sur des données publiques. SlabIQ ne regarde jamais le prix des annonces.`, `${r.suivis || r.actifs || 0} players analyzed daily, on public data. SlabIQ never looks at listing prices.`)}${r.creux_bilan && r.creux_bilan.remontes_30 != null ? ' · ' + tt(`${Math.round(r.creux_bilan.remontes_30 * 100)} % des joueurs en creux remontent en 30 jours`, `${Math.round(r.creux_bilan.remontes_30 * 100)}% of slumping players recover within 30 days`) : ''}${r.le ? ' · ' + tt('mis à jour ', 'updated ') + esc(ilYa(r.le)) : ''}</div>`;
     $$('[data-tcat]', z).forEach(b => b.onclick = () => { if (!(r.cats[b.dataset.tcat] || []).length) return; vibrer(); cat = b.dataset.tcat; ouvert = false; history.replaceState(null, '', '#iq/' + cat); peindre();
       if (b.classList.contains('tiq-kb')) { const l = $('#tiq-sel', z); if (l && l.scrollIntoView) l.scrollIntoView({block: 'start', behavior: 'smooth'}); } });
     $$('[data-tout]', z).forEach(b => b.onclick = () => { vibrer(); toutListe(b.dataset.tout); });
@@ -13389,11 +13514,11 @@ function expliquerTendancesIQ(){
     ['ultra', tt('Ultra recherchée', 'Ultra sought-after'), 'or', tt('sorte de carte très demandée, se revend vite', 'card type in high demand, resells fast')]];
   ouvrirFeuille(`<div class="iqx"><div class="iqx-t"><b>${tt('L’indice', 'The index')} Slab<i>IQ</i></b><span>${tt('Comment SlabIQ classe les joueurs', 'How SlabIQ ranks players')}</span></div>
     <div class="iqs-tete"><div class="iqs-n"><b>11</b><span>${tt('signaux', 'signals')}</span></div><div class="iqs-n"><b>A+ → D</b><span>${tt('chaque jour', 'every day')}</span></div><div class="iqs-n"><b>100 %</b><span>${tt('données publiques', 'public data')}</span></div></div>
-    <p class="iqs-p">${tt('Chaque joueur est classé contre tous les autres sur chaque signal, puis tout est combiné. Une semaine en feu passe devant tout le monde.', 'Each player is ranked against every other player on each signal, then it’s all combined. A week on fire jumps ahead of everyone.')}</p>
-    <div class="iqs-g">${S_.map(([k, d, w, col, ic]) => `<div class="iqs-t" style="--c:${col}"><span class="iqs-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${ic}</svg></span>
-      <b>${C[k]}</b><small>${d}</small><span class="iqs-b"><i style="width:${w ? Math.max(8, Math.round(100 * w / mx)) : 100}%"></i></span><em>${w ? w + ' %' : tt('bonus', 'bonus')}</em></div>`).join('')}</div>
-    <div class="iqs-pt"><span class="jb-k">${tt('Les pastilles', 'The badges')}</span><div class="iqs-pl">${P.map(([k, l, c, d]) => `<div class="iqs-pi">${tag(l, c)}<small>${d}</small></div>`).join('')}</div></div>
-    <div class="sous iqs-f">${tt('Stats LNH, recherches Wikipedia, nouvelles, palmarès. SlabIQ ne regarde jamais le prix des annonces.', 'NHL stats, Wikipedia searches, news, honours. SlabIQ never looks at listing prices.')}</div>
+    <p class="iqs-p">${tt('Chaque joueur, comparé à tous les autres, chaque jour. Une semaine en feu passe devant tout le monde.', 'Every player, compared with all the others, every day. A week on fire jumps ahead of everyone.')}</p>
+    <div class="iqs-g iqs-g2">${S_.map(([k, d, w, col, ic]) => `<div class="iqs-t" style="--c:${col}" title="${esc(d)}"><span class="iqs-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${ic}</svg></span>
+      <b>${C[k]}</b><span class="iqs-b"><i style="width:${w ? Math.max(8, Math.round(100 * w / mx)) : 100}%"></i></span><em>${w ? w + ' %' : tt('bonus', 'bonus')}</em></div>`).join('')}</div>
+    <details class="iqs-pt"><summary>${tt('Les pastilles', 'The badges')} · ${P.length}</summary><div class="iqs-pl">${P.map(([k, l, c, d]) => `<div class="iqs-pi">${tag(l, c)}<small>${d}</small></div>`).join('')}</div></details>
+    <div class="sous iqs-f">${tt('Données publiques seulement. Jamais le prix des annonces.', 'Public data only. Never listing prices.')}</div>
     </div>`, {centre: true});
 }
 // ============================================================
@@ -13847,7 +13972,11 @@ function tuileTendances(r){
 function rendreNewsListe(){
   const z = $('#acc-news2'), L = S.newsListe || []; if (!z) return;
   if (!L.length) { z.hidden = true; return; }
-  const ico = (n) => `<span class="nl-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${n.produit ? IC_PIL.breaks : n.marche ? IC_PIL.graphe : n.astuce ? IC_PIL.ampoule : IC_SP[n.sport] || IC_PIL.news}</svg></span>`;
+  // 20 nov 2026 (Mathieu : « les icones sont decalees… plus sexy », « pense comme Apple ») : une pastille de couleur pleine
+  // par genre, comme les reglages d'iOS ; le marche a la baisse a sa fleche vers le bas (avant : la meme fleche montante partout)
+  const BAS_ = '<path d="M4 5h16M5 9l4 4 3-3 7 7M15 17h4v-4"/>';
+  const ico = (n) => { const k = n.sortie || n.produit ? 'produit' : n.marche ? (/baisse/.test(n.id || '') ? 'baisse' : 'hausse') : n.astuce ? 'astuce' : 'sport';
+    return `<span class="nl-ic nl-${k}"><svg viewBox="0 0 24 24" aria-hidden="true">${k === 'produit' ? IC_PIL.breaks : k === 'hausse' ? IC_PIL.graphe : k === 'baisse' ? BAS_ : k === 'astuce' ? IC_PIL.ampoule : IC_SP[n.sport] || IC_PIL.news}</svg></span>`; };
   // 16 nov 2026 (Mathieu, capture au cell : « mettre les nouvelles en bas, en un carre gris qui defile avec les petits points
   // en bas pour voir quelle page on est ; leger ; une fenetre avec plus d'info quand on clique ») : au cell, un carrousel
   // leger sous les tuiles ; un toucher ouvre la nouvelle en grand
@@ -18750,23 +18879,24 @@ async function vueExpert(z){
       au.part != null ? tt(`${pc_(au.part)} des cartes Pro trop chères`, `${pc_(au.part)} of Pro cards overpriced`) : '',
       su.semaine != null ? tt(`${su.semaine} questions cette semaine`, `${su.semaine} questions this week`) : '',
       va.le ? tt('vérifiée le ', 'checked ') + ceoDate(va.le) : ''].filter(Boolean).join(' · ');
+    // 20 nov 2026 (Mathieu : « aucun espace ne doit etre inutilise ») : a l'ordi, les 3 chiffres vont dans la colonne de droite
+    const kHtml = (() => { // 19 nov 2026 (Mathieu : « je comprends 0 ce que tu veux dire ») : des phrases au lieu d'etiquettes ; un % seulement a
+          // partir de 10 cartes jugees (avec 1 carte, « 100 % » ne veut rien dire)
+          const n_ = m.n || 0, ok_ = n_ >= 10, v_ = (x) => ok_ ? pct(x) : '—';
+          return `<div class="ak vert"><span class="ak-h"><span class="ak-l">${tt('SlabIQ choisit comme toi', 'SlabIQ picks like you')}</span>${ok_ ? '' : `<span class="ak-sur">${tt('dès 10 cartes jugées', 'after 10 cards judged')}</span>`}</span><b class="ak-v">${v_(t.accord)}</b></div>
+        <div class="ak acc"><span class="ak-h"><span class="ak-l">${tt('Cartes jugées', 'Cards judged')}</span></span><b class="ak-v">${n_}<span class="ak-sur2"> ${tt('sur', 'of')} ${n_ + pile.length}</span></b></div>
+        <div class="ak or"><span class="ak-h"><span class="ak-l">${tt('Ses cartes A- et plus que tu achètes', 'Its A- and up cards you’d buy')}</span>${ok_ ? '' : `<span class="ak-sur">${tt('dès 10 cartes jugées', 'after 10 cards judged')}</span>`}</span><b class="ak-v">${v_(t.precision)}</b></div>`; })();
     const blocQ = `<div class="ex-etape">1</div><div class="ex-haut"><div class="ex-q ex-pl" title="${esc(infoQ)}"><div class="ex-pl-t"><b>${tt('Questions de SlabIQ', 'SlabIQ questions')}</b><button class="btn ghost petit" id="ex-val">${tt('Vérifier', 'Check')}</button></div>
         ${nq ? `<button class="btn ex-pl-go" id="ex-qr">${tt(`Répondre à ${nq} question${nq > 1 ? 's' : ''}`, `Answer ${nq} question${nq > 1 ? 's' : ''}`)}</button>`
           : `<div class="ex-pl-ok"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>${tt('Aucune question en attente', 'No question waiting')}</span></div>`}
         <p class="ex-exp">${tt('SlabIQ te montre un joueur et la lettre qu’il lui donne (A+ à E), avec pourquoi il doute. Tu touches la vraie lettre de ce joueur chez les collectionneurs. Ta réponse change la note de TOUTES ses cartes.', 'SlabIQ shows you a player and the letter it gives him (A+ to E), and why it’s unsure. You tap his real letter among collectors. Your answer changes the grade of ALL his cards.')}</p>
         ${infoQ ? `<div class="ex-pl-info">${esc(infoQ)}</div>` : ''}</div>
-      ${bz && bz.ok ? blitzHtml(bz) : ''}</div>`;
+      <div class="ex-k ex-k-d">${kHtml}</div>${bz && bz.ok ? blitzHtml(bz) : ''}</div>`;
     z.innerHTML = blocQ + `<div class="ex-etape">2</div><div class="ex-bas"><div class="ex-q2"><b>${x ? tt(`Tu l’achèterais à ${argentCourt(x.total || 0)} ?`, `Would you buy it for ${argentCourt(x.total || 0)}?`) : tt('Tu l’achèterais à ce prix ?', 'Would you buy it at this price?')}</b></div>
 
-      <div class="ex-k">
-        ${(() => { // 19 nov 2026 (Mathieu : « je comprends 0 ce que tu veux dire ») : des phrases au lieu d'etiquettes ; un % seulement a
-          // partir de 10 cartes jugees (avec 1 carte, « 100 % » ne veut rien dire)
-          const n_ = m.n || 0, ok_ = n_ >= 10, v_ = (x) => ok_ ? pct(x) : '—';
-          return `<div class="ak vert"><span class="ak-h"><span class="ak-l">${tt('SlabIQ choisit comme toi', 'SlabIQ picks like you')}</span>${ok_ ? '' : `<span class="ak-sur">${tt('dès 10 cartes jugées', 'after 10 cards judged')}</span>`}</span><b class="ak-v">${v_(t.accord)}</b></div>
-        <div class="ak acc"><span class="ak-h"><span class="ak-l">${tt('Cartes jugées', 'Cards judged')}</span></span><b class="ak-v">${n_}<span class="ak-sur2"> ${tt('sur', 'of')} ${n_ + pile.length}</span></b></div>
-        <div class="ak or"><span class="ak-h"><span class="ak-l">${tt('Ses cartes A- et plus que tu achètes', 'Its A- and up cards you’d buy')}</span>${ok_ ? '' : `<span class="ak-sur">${tt('dès 10 cartes jugées', 'after 10 cards judged')}</span>`}</span><b class="ak-v">${v_(t.precision)}</b></div></div>`; })()}
+      <div class="ex-k">${kHtml}</div>
       ${x ? `<div class="ex-c">
-        <div class="ex-ph">${x.photo ? `<img src="${esc(photoHD(x.photo))}" alt="">` : SVG_CARTE}</div>
+        <div class="ex-ph"${x.photo ? ` style="--ph:${cssUrl(photoHD(x.photo))}"` : ''}>${x.photo ? `<img src="${esc(photoHD(x.photo))}" alt="">` : SVG_CARTE}</div>
         <div class="ex-i"><b>${esc(x.joueur_n || x.joueur || titreCourt(x.titre))}</b><span>${esc(x.titre)}</span>
           <div class="ex-n"><span class="sc-b ${couleurScore(x.score || 0)}">${lettre(x.score)}</span><b>${argentCourt(x.total || 0)}</b></div></div></div>
         <div class="ex-b"><button class="ex-x vert" data-ex="flip">${tt('Flip', 'Flip')}<small>${tt('pour revendre', 'to resell')}</small></button><button class="ex-x or" data-ex="garder">${tt('Garder', 'Keep')}<small>${tt('pour ma collection', 'for my collection')}</small></button><button class="ex-x" data-ex="passe">${tt('Passe', 'Pass')}<small>${tt('je n’achète pas', 'I don’t buy')}</small></button></div>
@@ -18896,7 +19026,7 @@ async function vueCEO(){
         ${kpi(tt('Revenu mensuel', 'Monthly revenue'), ceoCAD(rv.mrr), tt(`${ceoCAD(rv.arr, 0)} par an`, `${ceoCAD(rv.arr, 0)} a year`), 'vert')}
         ${kpi(tt('Net par mois', 'Net per month'), ceoCAD(rv.net_mois), tt('revenu − coûts', 'revenue − costs'), rv.net_mois >= 0 ? 'vert' : 'rouge')}
         ${kpi(tt('Abonnés Pro', 'Pro subscribers'), ceoNb(a.pro), tt(`${ceoNb(a.essai)} en essai`, `${ceoNb(a.essai)} on trial`))}
-        ${kpi(tt('Comptes', 'Accounts'), ceoNb(a.total), `+${ceoNb(a.nouveaux_7j)} ${tt('cette semaine', 'this week')}`)}
+        ${kpi(tt('Comptes', 'Accounts'), ceoNb(a.total), `+${ceoNb(a.nouveaux_7j)} ${tt('cette semaine', 'this week')}`).replace(/<\/div>$/, `<span class="ceo-k-sp" title="${esc(tt('Inscriptions par semaine, 12 semaines', 'Sign-ups per week, 12 weeks'))}">${sem.map(x => `<i style="height:${Math.max(8, Math.round(100 * x.n / mxS))}%"></i>`).join('')}</span></div>`)}
         ${kpi(tt('Essai → Pro', 'Trial → Pro'), conv == null ? '—' : String(conv).replace('.', S.langue === 'en' ? '.' : ',') + (S.langue === 'en' ? '%' : ' %'), tt(`${ceoNb(a.actifs_7j)} actifs 7 j`, `${ceoNb(a.actifs_7j)} active 7 d`))}
         ${kpi(tt('Sécurité', 'Security'), sec.score + (S.langue === 'en' ? '%' : ' %'), tt(`${(sec.verifs || []).filter(v => v.ok).length} / ${(sec.verifs || []).length} vérifications`, `${(sec.verifs || []).filter(v => v.ok).length} / ${(sec.verifs || []).length} checks`), sec.score >= 80 ? 'vert' : sec.score >= 50 ? 'or' : 'rouge')}
       </div>
@@ -18904,21 +19034,19 @@ async function vueCEO(){
         <div class="ceo-c ceo-todo"><div class="ceo-c-t">${tt('À faire', 'To do')}${todo.length ? ` <em class="ceo-nb ${todo.some(o => o.p < 2000) ? 'rouge' : 'acc'}">${todo.length}</em>` : ''}<button class="ceo-tadd" data-tadd aria-label="${esc(tt('Ajouter une tâche', 'Add a task'))}">+ ${tt('Tâche', 'Task')}</button></div>
           ${todo.length ? `<div class="ceo-al">${todo.map((o, n) => ligneTodo(o, n)).join('')}</div>`
             : `<div class="ceo-vide">${tt('Rien à faire aujourd’hui. Tout roule.', 'Nothing to do today. All good.')}</div>`}</div>
-        <div class="ceo-home-b">
-          <button class="ceo-c ceo-mini" data-va="quotas"><div class="ceo-c-t">${tt('Crédits les plus utilisés', 'Most used credits')} <b>›</b></div>
-            ${[...(r.quotas || [])].filter(q => q.limite).sort((x, y) => y.utilises / y.limite - x.utilises / x.limite).slice(0, 4).map(q => { const pct = Math.min(100, Math.round(100 * q.utilises / q.limite));
-              return `<div class="ceo-q"><div class="ceo-q-t"><b>${q.nom === 'ia_photos' ? tt('IA photos', 'AI photos') : esc(q.nom)}</b><span>${pct}${S.langue === 'en' ? '%' : ' %'}</span></div><div class="ceo-q-b"><i class="${pct > 80 ? 'rouge' : pct > 50 ? 'or' : ''}" style="width:${pct}%"></i></div></div>`; }).join('') || `<div class="pale">${tt('Aucun quota', 'No quotas')}</div>`}</button>
-          <button class="ceo-c ceo-mini" data-va="demandes"><div class="ceo-c-t">${tt('Dernières demandes', 'Latest requests')}${dm.nouvelles ? ` <em class="ceo-nb or">${dm.nouvelles}</em>` : ''} <b>›</b></div>
-            ${(dm.liste || []).slice(0, 4).map(x => `<div class="ceo-dm2"><span class="ceo-p ${x.categorie === 'bug' || x.type === 'probleme' ? 'rouge' : 'acc'}">${NOMS_CAT_D[x.categorie] || NOMS_CAT_D[x.type] || '—'}</span><span>${esc(x.resume)}</span></div>`).join('') || `<div class="pale">${tt('Aucune demande ouverte', 'No open requests')}</div>`}
-            <div class="ceo-dm2 err"><span class="ceo-p ${er.h24 ? 'rouge' : 'vert'}">${tt('Erreurs 24 h', 'Errors 24 h')}</span><span>${ceoNb(er.h24 || 0)} · ${tt(`${er.j7 || 0} sur 7 jours`, `${er.j7 || 0} over 7 days`)}</span></div></button>
-        </div></div>
+        </div>
         <div class="ceo-home-d">
-          <div class="ceo-c"><div class="ceo-c-t">${tt('Inscriptions par semaine', 'Sign-ups per week')}</div>${barres}</div>
           <div class="ceo-c"><div class="ceo-c-t">${tt('Ce mois-ci', 'This month')}</div>
             <div class="ceo-lg"><span>${tt('Revenu', 'Revenue')}</span><b class="vert">${ceoCAD(rv.mrr)}</b></div><div class="ceo-lg"><span>${tt('Coûts', 'Costs')}<small>${tt('fixes', 'fixed')} ${ceoCAD(c.fixe_mois)} · ${tt('variables', 'variable')} ${ceoCAD(c.variable_mois)}</small></span><b>${ceoCAD(c.total_mois)}</b></div>
             <div class="ceo-lg tot"><span>${tt('Net', 'Net')}</span><b class="${rv.net_mois >= 0 ? 'vert' : 'rouge'}">${ceoCAD(rv.net_mois)}</b></div></div>
           <div class="ceo-c"><div class="ceo-c-t">${tt('Prochaines échéances', 'Next deadlines')}</div>
             ${(r.obligations || []).filter(o => o.prochaine && o.jours != null && !(o.fait_le && o.fait_le >= o.prochaine)).sort((x, y) => x.jours - y.jours).slice(0, 3).map(o => `<button class="ceo-lg ceo-ech" data-va="obligations"><span>${(T.obl[o.cle] || [o.cle])[0]}</span><b class="${o.jours <= 7 ? 'rouge' : o.jours <= 30 ? 'or' : ''}">${ceoDate(o.prochaine)}</b></button>`).join('') || `<div class="pale">${tt('Aucune échéance datée', 'No dated deadline')}</div>`}</div>
+          <div class="ceo-home-b2">          <button class="ceo-c ceo-mini" data-va="quotas"><div class="ceo-c-t">${tt('Crédits', 'Credits')} <b>›</b></div>
+            ${[...(r.quotas || [])].filter(q => q.limite).sort((x, y) => y.utilises / y.limite - x.utilises / x.limite).slice(0, 3).map(q => { const pct = Math.min(100, Math.round(100 * q.utilises / q.limite));
+              return `<div class="ceo-q"><div class="ceo-q-t"><b>${q.nom === 'ia_photos' ? tt('IA photos', 'AI photos') : esc(q.nom)}</b><span>${pct}${S.langue === 'en' ? '%' : ' %'}</span></div><div class="ceo-q-b"><i class="${pct > 80 ? 'rouge' : pct > 50 ? 'or' : ''}" style="width:${pct}%"></i></div></div>`; }).join('') || `<div class="pale">${tt('Aucun quota', 'No quotas')}</div>`}</button>
+          <button class="ceo-c ceo-mini" data-va="demandes"><div class="ceo-c-t">${tt('Demandes', 'Requests')}${dm.nouvelles ? ` <em class="ceo-nb or">${dm.nouvelles}</em>` : ''} <b>›</b></div>
+            ${(dm.liste || []).slice(0, 2).map(x => `<div class="ceo-dm2"><span class="ceo-p ${x.categorie === 'bug' || x.type === 'probleme' ? 'rouge' : 'acc'}">${NOMS_CAT_D[x.categorie] || NOMS_CAT_D[x.type] || '—'}</span><span>${esc(x.resume)}</span></div>`).join('') || `<div class="pale">${tt('Aucune demande ouverte', 'No open requests')}</div>`}
+            <div class="ceo-dm2 err"><span class="ceo-p ${er.h24 ? 'rouge' : 'vert'}">${tt('Erreurs 24 h', 'Errors 24 h')}</span><span>${ceoNb(er.h24 || 0)} · ${tt(`${er.j7 || 0} sur 7 jours`, `${er.j7 || 0} over 7 days`)}</span></div></button></div>
         </div></div>
 
       ${tete('expert', tt('Questions, flip ou garder, validation', 'Questions, flip or keep, validation'))}
@@ -18991,11 +19119,12 @@ async function vueCEO(){
 
       ${tete('obligations')}
       <div class="ceo-c ceo-avis">${tt('Repères généraux pour un travailleur autonome au Québec. Ils ne remplacent pas ton comptable : fais-les valider une fois, puis coche au fur et à mesure.', 'General guideposts for a self-employed person in Quebec. They don’t replace your accountant: have them validated once, then check them off as you go.')}</div>
-      <div class="ceo-c"><div class="ceo-c-t">${tt('Ton entreprise', 'Your business')}</div><div class="ceo-ent">
+      <button class="ceo-c ceo-ent-r" id="ceo-ent-ouvrir"><b>${tt('Ton entreprise', 'Your business')}</b><span>${esc([en.statut, en.neq && 'NEQ ' + en.neq, en.tps_tvq, en.comptable].filter(Boolean).join(' · ') || tt('À remplir', 'To fill in'))}</span><em>${tt('Modifier', 'Edit')} ›</em></button>
+      <div class="ceo-entw" id="ceo-entw" hidden><div class="ceo-entw-f" data-entw-x></div><div class="ceo-c ceo-entw-c"><button class="ceo-entw-x" data-entw-x aria-label="${esc(tt('Fermer', 'Close'))}">×</button><div class="ceo-c-t">${tt('Ton entreprise', 'Your business')}</div><div class="ceo-ent">
         ${[['statut', tt('Statut', 'Status'), tt('Travailleur autonome, inc.…', 'Sole proprietor, inc.…')], ['neq', 'NEQ', ''], ['tps_tvq', tt('TPS/TVQ', 'GST/QST'), tt('Pas inscrit / numéros', 'Not registered / numbers')], ['fin_exercice', tt('Fin d’exercice', 'Fiscal year end'), '31 déc.'], ['comptable', tt('Comptable', 'Accountant'), tt('Nom, courriel', 'Name, email')]]
           .map(([k, l, ph]) => `<label><span>${l}</span><input class="champ" data-en="${k}" value="${esc(en[k] || '')}" placeholder="${esc(ph)}" maxlength="120"></label>`).join('')}</div>
         <label class="ceo-notes"><span>${tt('Notes', 'Notes')}</span><textarea class="champ" id="ceo-notes" rows="3" maxlength="4000" placeholder="${esc(tt('Ce que tu veux garder sous la main', 'Whatever you want at hand'))}">${esc(r.notes || '')}</textarea></label>
-        <button class="btn" id="ceo-ent-ok" style="margin-top:10px">${tt('Enregistrer', 'Save')}</button></div>
+        <button class="btn" id="ceo-ent-ok" style="margin-top:10px">${tt('Enregistrer', 'Save')}</button></div></div>
       <div class="ceo-obls">${Object.entries(oblParCat).map(([cat, l]) => `<div class="ceo-c"><div class="ceo-c-t">${T.oblCat[cat] || cat}</div>${l.map(ligneObl).join('')}</div>`).join('')}</div>
 
       ${tete('securite', sec.score + ' %')}
@@ -19013,6 +19142,18 @@ async function vueCEO(){
         return `<div class="ceo-c ceo-op"><div class="ceo-op-h"><span class="ceo-p ${o.type === 'revenus' ? 'vert' : o.type === 'affiliation' ? 'or' : 'acc'}">${T.oppType[o.type] || o.type}</span>${o.branche ? `<span class="ceo-p vert">${tt('Actif', 'Live')}</span>` : ''}</div><b>${ti}</b><p>${de}</p></div>`; }).join('')}</div>
     </div></div></div></section>`;
   V().innerHTML = html;
+  // 20 nov 2026 (Mathieu : « jamais de scroll bar, tout toujours fit sur une page ») : « A faire » montre ce qui tient dans
+  // la hauteur, puis des pages (‹ 1/3 ›) au lieu d'une barre de defilement
+  { const al = $('.ceo-todo .ceo-al'); if (al && window.ResizeObserver) { let pg = 0;
+    const pager = document.createElement('div'); pager.className = 'ceo-pg'; al.after(pager);
+    const fit = () => { const L = [...al.children]; if (!al.clientHeight) return; L.forEach(x => x.hidden = false);
+      const h = al.clientHeight, gap = parseFloat(getComputedStyle(al).rowGap) || 0, hl = (L[0] && L[0].offsetHeight) || 40;
+      const n = Math.max(1, Math.floor((h + gap) / (hl + gap))), pages = Math.max(1, Math.ceil(L.length / n)); pg = Math.min(pg, pages - 1);
+      L.forEach((x, k) => x.hidden = Math.floor(k / n) !== pg);
+      pager.hidden = pages < 2;
+      pager.innerHTML = pages < 2 ? '' : `<button data-pg="-1" ${pg ? '' : 'disabled'} aria-label="${esc(tt('Précédent', 'Previous'))}">‹</button><span>${pg + 1} / ${pages}</span><button data-pg="1" ${pg < pages - 1 ? '' : 'disabled'} aria-label="${esc(tt('Suivant', 'Next'))}">›</button>`;
+      $$('[data-pg]', pager).forEach(b => b.onclick = () => { vibrer(); pg += +b.dataset.pg; fit(); }); };
+    new ResizeObserver(() => requestAnimationFrame(fit)).observe(al); } }
   // gestes
   // 16 nov 2026 (Mathieu : « j'aime pas le menu en pastilles qu'il faut defiler ; plus rapide et intuitif ») : au cell, UN
   // bouton qui dit ou on est ; il ouvre toutes les sections d'un coup, en tuiles (icone, nom, ce qui est a regler)
@@ -19090,6 +19231,8 @@ async function vueCEO(){
   $('#ceo-taches').onclick = async () => { vibrer(); const x = await API.admin_resume().catch(() => null); if (x && x.ok) feuilleTaches(x); };
   const sauver = async (d, msg) => { const x = await API.admin_ceo_sauver(d).catch(e => ({ok: false, erreur: e.message}));
     if (!x || x.ok === false) { toast((x && x.erreur) || 'Erreur'); return false; } if (msg) toast(msg); return true; };
+  { const w = $('#ceo-entw'), o = $('#ceo-ent-ouvrir'); if (w && o) { o.onclick = () => { vibrer(); w.hidden = false; };
+      $$('[data-entw-x]', w).forEach(x => x.onclick = () => { w.hidden = true; }); } }
   $('#ceo-ent-ok').onclick = async () => { vibrer(); const e_ = {}; $$('[data-en]').forEach(i => { e_[i.dataset.en] = i.value.trim(); });
     if (await sauver({entreprise: e_, notes: $('#ceo-notes').value}, tt('Enregistré', 'Saved'))) vueCEO(); };
   $$('[data-of]').forEach(b => b.onclick = async () => { vibrer(); const o = (r.obligations || []).find(x => x.cle === b.dataset.of);
