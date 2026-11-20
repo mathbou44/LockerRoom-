@@ -1,34 +1,67 @@
-<div class="page-tete"><div class="conteneur">
+<!-- 20 nov 2026 (Mathieu : « on peut faire mieux, visuellement, concept et texte ») : l'histoire en 3 temps courts (le frisson,
+     le hobby qui a change, l'outil construit), le slogan au coeur, 4 promesses en lignes legeres. Le ton hobby : pas d'argent,
+     pas de ventes ni de comps. Les faits sur Mathieu sont ceux qu'il a donnes (Montreal, hockey, F1, la premiere pochette). -->
+<style>
+.ap-h{padding:76px 0 34px;text-align:center}
+.ap-h h1{margin:12px auto 0;max-width:15ch}
+.ap-h .sous-titre{margin:18px auto 0;max-width:34ch;font-size:19px;line-height:1.5;color:var(--doux)}
+.ap-ch{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:40px;margin-top:10px}
+.ap-ch > div{position:relative;padding-top:22px;border-top:1px solid rgba(255,255,255,.08)}
+.ap-ch .n{font:800 15px 'Barlow Condensed',sans-serif;letter-spacing:.18em}
+.ap-ch h3{margin:10px 0 12px;font:800 30px/1.05 'Barlow Condensed',sans-serif;letter-spacing:.005em}
+.ap-ch p{margin:0;font-size:17px;line-height:1.6;color:var(--doux)} .ap-ch p b{color:var(--texte);font-weight:600}
+.ap-sig{display:flex;align-items:center;gap:14px;margin-top:34px}
+.ap-sig img{width:46px;height:46px;border-radius:14px;padding:8px;background:var(--carte);border:1px solid var(--ligne)}
+.ap-sig b{display:block;font-size:16px} .ap-sig span.s{font-size:14px;color:var(--doux)}
+.ap-dev{padding:70px 0;text-align:center}
+.ap-dev .grand{margin:0 auto;color:var(--texte);font:800 clamp(44px,7vw,88px)/.95 'Barlow Condensed',sans-serif;letter-spacing:-.005em}
+.ap-dev p:not(.grand):not(.kicker){margin:20px auto 0;max-width:40ch;font-size:18px;line-height:1.55;color:var(--doux)}
+.ap-pr{list-style:none;margin:22px 0 0;padding:0;display:grid;grid-template-columns:1fr 1fr;column-gap:48px;max-width:900px}
+.ap-pr li{display:flex;gap:16px;padding:18px 0;border-top:1px solid rgba(255,255,255,.07)}
+.ap-pr li:nth-last-child(-n+2){border-bottom:1px solid rgba(255,255,255,.07)}
+.ap-pr svg{flex:none;width:22px;height:22px;margin-top:3px;color:#9FE6D2}
+.ap-pr b{display:block;font-size:17px;margin-bottom:4px} .ap-pr span{font-size:15.5px;line-height:1.5;color:var(--doux)}
+@media (max-width:900px){.ap-ch{grid-template-columns:1fr;gap:26px} .ap-pr{grid-template-columns:1fr} .ap-pr li:nth-last-child(2){border-bottom:0}
+  .ap-h{padding:52px 0 20px} .ap-h .sous-titre{font-size:17px} .ap-ch h3{font-size:27px} .ap-ch p{font-size:16px} .ap-dev{padding:52px 0}}
+</style>
+<div class="ap-h"><div class="conteneur">
   <p class="kicker holo-t"><span class="fr">Qui nous sommes</span><span class="en">About us</span></p>
-  <h1><span class="fr">Fait par un collectionneur, <span class="holo-t">pour les collectionneurs.</span></span><span class="en">Built by a collector, <span class="holo-t">for collectors.</span></span></h1>
+  <h1><span class="fr">On collectionne <span class="holo-t">nous aussi.</span></span><span class="en">We collect <span class="holo-t">too.</span></span></h1>
+  <p class="sous-titre"><span class="fr">SlabCoach est fait au Québec par un collectionneur qui voulait passer plus de temps avec ses cartes, et moins à chercher.</span><span class="en">SlabCoach is made in Quebec by a collector who wanted to spend more time with his cards, and less time searching.</span></p>
 </div></div>
-<section><div class="conteneur histoire h2c">
-  <div class="h-tete"><div class="logo-g"><img src="/logo_sc_liquide.svg" alt=""></div><p class="kicker holo-t"><span class="fr">Notre histoire</span><span class="en">Our story</span></p></div>
-  <div class="h-col"><p><span class="fr">Salut, moi c’est Mathieu. J’ai grandi à Montréal avec un bâton de hockey dans les mains, un ballon dans la cour et la F1 le dimanche matin. Les cartes sont arrivées presque en même temps : la première pochette ouverte sur le plancher du salon, et ce frisson quand une recrue de mon équipe est sortie. Ce frisson-là, je l’ai encore.</span><span class="en">Hi, I’m Mathieu. I grew up in Montreal with a hockey stick in my hands, a ball in the backyard and F1 on Sunday mornings. Cards came along almost at the same time: the first pack ripped open on the living room floor, and that rush when a rookie from my team came out. I still get that rush.</span></p>
-    <p><span class="fr">J’ai aussi appris à la dure, comme plusieurs d’entre vous. La carte payée beaucoup trop cher le soir de sa sortie, parce que tout le monde s’énervait. La vente qui avait l’air payante… jusqu’à ce que les frais et la livraison passent. Les soirées à fouiller les ventes eBay, une calculatrice à côté, à me demander si je venais de faire un bon coup ou une erreur.</span><span class="en">I also learned the hard way, like a lot of you. The card I paid way too much for on release night, because everyone was hyped. The sale that looked profitable… until fees and shipping came out. Evenings digging through eBay sales, calculator in hand, wondering if I’d just made a good move or a mistake.</span></p>
+
+<section><div class="conteneur">
+  <p class="kicker holo-t"><span class="fr">Notre histoire</span><span class="en">Our story</span></p>
+  <div class="ap-ch">
+    <div><span class="n holo-t">01</span>
+      <h3><span class="fr">Le frisson</span><span class="en">The rush</span></h3>
+      <p><span class="fr">Montréal. Un bâton de hockey dans les mains, la F1 le dimanche matin. Puis <b>la première pochette ouverte sur le plancher du salon</b>, et une recrue de mon équipe. Ce frisson-là, je l’ai encore.</span><span class="en">Montreal. A hockey stick in my hands, F1 on Sunday mornings. Then <b>the first pack ripped open on the living room floor</b>, and a rookie from my team. I still get that rush.</span></p></div>
+    <div><span class="n holo-t">02</span>
+      <h3><span class="fr">Le hobby a grossi</span><span class="en">The hobby got big</span></h3>
+      <p><span class="fr">Des centaines de sorties par année. Des dizaines de parallèles par carte. Des cartes qui dorment dans des boîtes. Je passais mes soirées <b>à chercher plutôt qu’à collectionner</b>.</span><span class="en">Hundreds of releases a year. Dozens of parallels per card. Cards sleeping in boxes. I was spending my evenings <b>searching instead of collecting</b>.</span></p></div>
+    <div><span class="n holo-t">03</span>
+      <h3><span class="fr">Alors je l’ai construit</span><span class="en">So I built it</span></h3>
+      <p><span class="fr">J’ai cherché l’outil qui ferait la partie plate à ma place. Je ne l’ai pas trouvé. Alors je l’ai construit, soir après soir, <b>pour moi d’abord, puis pour toi</b>.</span><span class="en">I looked for the tool that would do the boring part for me. I couldn’t find it. So I built it, night after night, <b>for me first, then for you</b>.</span></p></div>
   </div>
-  <div class="h-col"><p class="fort"><span class="fr">Au fond, c’est ça qui me dérangeait. Ces cartes, on les paie avec de l’argent durement gagné : des heures de travail, un bonus, ce qu’on réussit à mettre de côté chaque mois. Cet argent-là mérite d’être bien dépensé. Tu devrais pouvoir en tirer le maximum, et cliquer sur « Acheter » en sachant que c’est un bon coup, pas en croisant les doigts.</span><span class="en">Deep down, that’s what bothered me. We pay for these cards with hard-earned money: hours of work, a bonus, whatever we manage to set aside each month. That money deserves to be spent well. You should be able to get the most out of it, and hit “Buy” knowing it’s a good move, not crossing your fingers.</span></p>
-    <p><span class="fr">J’ai cherché l’outil qui m’aurait donné cette confiance-là. Je ne l’ai pas trouvé. Alors je l’ai construit, soir après soir, pour moi d’abord, puis pour vous. C’est SlabCoach : les cartes qui valent la peine, le bon moment pour acheter, et ce qu’il te reste une fois tout payé.</span><span class="en">I looked for the tool that would have given me that confidence. I couldn’t find it. So I built it, night after night, for me first, then for you. That’s SlabCoach: the cards worth buying, the right moment to buy, and what’s left once everything is paid.</span></p>
-  </div>
-  <div class="h-pied"><p class="sig"><span class="fr">Mathieu, collectionneur et fondateur de SlabCoach</span><span class="en">Mathieu, collector and founder of SlabCoach</span></p></div>
+  <div class="ap-sig"><img src="/logo_sc_liquide.svg" alt=""><div><b>Mathieu</b><span class="s"><span class="fr">Collectionneur et fondateur de SlabCoach</span><span class="en">Collector and founder of SlabCoach</span></span></div></div>
 </div></section>
-<section><div class="conteneur but">
+
+<div class="ap-dev"><div class="conteneur">
   <p class="kicker holo-t"><span class="fr">Notre but</span><span class="en">Our goal</span></p>
-  <blockquote><span class="fr">Un assistant qui te donne confiance à chaque achat, <span class="holo-t">pour que ton argent durement gagné nourrisse ta passion.</span></span><span class="en">An assistant that gives you confidence with every buy, <span class="holo-t">so your hard-earned money fuels your hobby.</span></span></blockquote>
-  <p class="intro" style="margin:18px auto 0"><span class="fr">Que tu ouvres ta première boîte ou que tu gères une boutique, SlabCoach te dit si la carte vaut la peine, le bon moment et ce qu’il te restera une fois tout payé. Tu sais si c’est un bon coup avant de cliquer, et tu gardes le plaisir du hobby.</span><span class="en">Whether you’re opening your first box or running a shop, SlabCoach tells you if the card is worth it, the right moment and what you’ll keep once everything is paid. You know it’s a good move before you click, and you keep the fun of the hobby.</span></p>
-</div></section>
+  <p class="grand"><span class="fr">Collectionne plus.<br><span class="holo-t">Cherche moins.</span></span><span class="en">Collect more.<br><span class="holo-t">Search less.</span></span></p>
+  <p><span class="fr">SlabCoach fait la partie plate : les sorties, les checklists, l’inventaire, la carte que tu guettes. Toi, tu gardes la partie le fun.</span><span class="en">SlabCoach does the boring part: releases, checklists, inventory, the card you’re watching for. You keep the fun part.</span></p>
+</div></div>
+
 <section><div class="conteneur">
   <p class="kicker holo-t"><span class="fr">Ce qui nous guide</span><span class="en">What guides us</span></p>
-  <h2><span class="fr">Six promesses.</span><span class="en">Six promises.</span></h2>
-  <div class="grille">
-    <div class="atout"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></div><h3><span class="fr">Les vrais chiffres</span><span class="en">The real numbers</span></h3><p><span class="fr">Ton vrai profit sur chaque vente : frais, taxes et livraison toujours comptés.</span><span class="en">Your real profit on every sale: fees, taxes and shipping always counted.</span></p></div>
-    <div class="atout"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg></div><h3><span class="fr">Honnêtes, même quand ça nous coûte</span><span class="en">Honest, even when it costs us</span></h3><p><span class="fr">On publie nos tests comme ils sont, même les écarts serrés. Une estimation reste une estimation.</span><span class="en">We publish our tests as they are, even the close calls. An estimate is still an estimate.</span></p></div>
-    <div class="atout"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16"/><path d="M4 6h16"/><path d="M4 18h10"/></svg></div><h3><span class="fr">Simple d’abord</span><span class="en">Simple first</span></h3><p><span class="fr">Une réponse claire plutôt que dix options. Si un débutant ne comprend pas, on recommence.</span><span class="en">One clear answer instead of ten options. If a beginner doesn’t get it, we start over.</span></p></div>
-    <div class="atout"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/></svg></div><h3><span class="fr">Tes données sont à toi</span><span class="en">Your data is yours</span></h3><p><span class="fr">Aucune donnée vendue, aucune publicité. Tu supprimes ton compte, tout part avec.</span><span class="en">No data sold, no ads. Delete your account and everything goes with it.</span></p></div>
-    <div class="atout"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></div><h3><span class="fr">D’ici</span><span class="en">From here</span></h3><p><span class="fr">Fait au Québec, en français et en anglais, en dollars canadiens.</span><span class="en">Made in Quebec, in French and English, in Canadian dollars.</span></p></div>
-    <div class="atout"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg></div><h3><span class="fr">Toujours mieux</span><span class="en">Always better</span></h3><p><span class="fr">SlabIQ réapprend aux 3 jours et chaque changement est testé sur de vraies ventes avant d’arriver dans l’app.</span><span class="en">SlabIQ retrains every 3 days and every change is tested on real sales before it reaches the app.</span></p></div>
-  </div>
+  <ul class="ap-pr">
+    <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16"/><path d="M4 6h16"/><path d="M4 18h10"/></svg><div><b><span class="fr">Simple d’abord</span><span class="en">Simple first</span></b><span><span class="fr">Une réponse claire plutôt que dix options. Si un débutant ne comprend pas, on recommence.</span><span class="en">One clear answer instead of ten options. If a beginner doesn’t get it, we start over.</span></span></div></li>
+    <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg><div><b><span class="fr">Honnêtes</span><span class="en">Honest</span></b><span><span class="fr">On publie nos tests tels quels, même les écarts serrés. Jamais un chiffre plus beau que la mesure.</span><span class="en">We publish our tests as they are, even the close calls. Never a number nicer than the measure.</span></span></div></li>
+    <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/></svg><div><b><span class="fr">Tes données sont à toi</span><span class="en">Your data is yours</span></b><span><span class="fr">Aucune donnée vendue, aucune publicité. Tu supprimes ton compte, tout part avec.</span><span class="en">No data sold, no ads. Delete your account and everything goes with it.</span></span></div></li>
+    <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><div><b><span class="fr">D’ici</span><span class="en">From here</span></b><span><span class="fr">Fait au Québec, en français et en anglais, en dollars canadiens.</span><span class="en">Made in Quebec, in French and English, in Canadian dollars.</span></span></div></li>
+  </ul>
 </div></section>
+
 <section><div class="conteneur but">
   <p class="kicker holo-t"><span class="fr">Nous joindre</span><span class="en">Contact us</span></p>
   <h2 style="margin-left:auto;margin-right:auto"><span class="fr">Une idée, une question, un bogue ?</span><span class="en">An idea, a question, a bug?</span></h2>

@@ -868,11 +868,11 @@ SITE_PAGES = {
                "Chaque jour, ce que SlabCoach dit est fige, enchaine et horodate avant de connaitre la suite. Les resultats arrivent 30, 60 et 90 jours plus tard.",
                "Every day, what SlabCoach says is frozen, chained and timestamped before the outcome is known. Results come 30, 60 and 90 days later."),
     "slabiq": ("/slabiq", "site_slabiq.html", "SlabIQ · SlabCoach", "SlabIQ · SlabCoach",
-               "Une lettre de A+ à E pour chaque carte de sport. Entraîné sur plus de 200 000 ventes réelles, revalidé contre le marché chaque semaine.",
-               "One letter from A+ to E for every sports card. Trained on 200,000+ real sales, revalidated against the market every week."),
+               "Une lettre de A+ à E pour chaque carte de sport. Apprise sur plus de 415 000 ventes réelles, testée sur des ventes qu’elle n’avait jamais vues.",
+               "One letter from A+ to E for every sports card. Learned from 415,000+ real sales, tested on sales it had never seen."),
     "apropos": ("/a-propos", "site_apropos.html", "Qui nous sommes · SlabCoach", "About us · SlabCoach",
-                "SlabCoach est fait au Québec par un collectionneur, pour que chaque collectionneur achète et vende avec les vrais chiffres.",
-                "SlabCoach is made in Quebec by a collector, so every collector can buy and sell with the real numbers."),
+                "SlabCoach est fait au Québec par un collectionneur qui voulait passer plus de temps avec ses cartes, et moins à chercher.",
+                "SlabCoach is made in Quebec by a collector who wanted to spend more time with his cards, and less time searching."),
 }
 
 
