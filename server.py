@@ -19,7 +19,7 @@ import sys
 import shutil
 import threading
 import time
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 DOSSIER = os.path.dirname(os.path.abspath(__file__))
 PORT = int(os.environ.get("LOCKERROOM_PORT", "8430"))
@@ -254,7 +254,7 @@ app.config["MAX_CONTENT_LENGTH"] = 64 * 1024 * 1024        # 5 nov 2026 : photos
 #        # 23 oct 2026 - 2 photos ; 3 nov 2026 : + rasantes et 8 gros plans des coins
 # pages qui restent publiques : break partage, retour et avis eBay, pages legales, icones
 _PUBLIQUES = ("/b/", "/api/b/", "/api/ebay_retour", "/ebay/suppression-compte", "/confidentialite", "/conditions",
-              "/support", "/tarifs", "/pricing", "/a-propos", "/about", "/preuve", "/proof", "/slabiq", "/langue", "/robots.txt", "/sitemap.xml", "/logo_sc_", "/syne-800.woff2", "/manrope-", "/barlow-", "/connexion", "/icone", "/favicon", "/manifest.json", "/stripe/webhook", "/apple/notifications", "/sante", "/csp-rapport")
+              "/support", "/tarifs", "/pricing", "/a-propos", "/about", "/preuve", "/proof", "/slabiq", "/langue", "/robots.txt", "/sitemap.xml", "/logo_sc_", "/syne-800.woff2", "/manrope-", "/barlow-", "/connexion", "/icone", "/favicon", "/manifest.json", "/stripe/webhook", "/apple/notifications", "/sante", "/csp-rapport", "/.well-known/security.txt", "/security.txt")
 
 
 import comptes  # noqa: E402
@@ -1230,6 +1230,18 @@ def _page_legale(nom):
 @app.route("/confidentialite")
 def page_confidentialite():
     return _page_legale("confidentialite.html")
+
+
+# 20 nov 2026 (Cloudflare Security Insights : « Security.txt not configured ») : qui contacter pour signaler une faille (RFC 9116)
+@app.route("/.well-known/security.txt")
+@app.route("/security.txt")
+def security_txt():
+    from flask import Response
+    fin = (datetime.now(timezone.utc) + timedelta(days=365)).strftime("%Y-%m-%dT00:00:00.000Z")
+    return Response("Contact: mailto:support@slabcoach.com\n"
+                    f"Expires: {fin}\n"
+                    "Preferred-Languages: fr, en\n"
+                    "Canonical: https://slabcoach.com/.well-known/security.txt\n", mimetype="text/plain")
 
 
 @app.route("/conditions")
