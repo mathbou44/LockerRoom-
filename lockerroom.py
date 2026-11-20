@@ -11823,9 +11823,8 @@ class Api:
     def inventaire_tableaux(self):
         """31 oct 2026 : deux tableaux, deux facons de penser.
         A vendre : combien, ce que ca vaut, le temps reel pour vendre (tes ventes des 6 derniers mois), ce qui dort (60 j+).
-        Collection : la valeur et son evolution (3, 6, 12 mois quand l'historique les couvre), les cartes les plus desirables,
-        les plus fortes hausses (suivi de valeur)."""
-        import desirabilite
+        Collection : la valeur et son evolution (3, 6, 12 mois quand l'historique les couvre), son Score SlabIQ moyen et ses
+        meilleures cartes, les plus fortes hausses (suivi de valeur)."""
         maint = datetime.now()
         with _verrou:
             c = self._db()
@@ -11870,20 +11869,22 @@ class Api:
                 ref = next((h for h in hist if h["jour"] >= (maint - timedelta(days=j)).strftime("%Y-%m-%d")), None)
                 if ref and ref["valeur"] and (datetime.fromisoformat(der["jour"]) - datetime.fromisoformat(ref["jour"])).days >= j * 0.8:
                     var[k] = round(100 * (der["valeur"] / ref["valeur"] - 1), 1)
-        scores = []
-        for x in coll:
-            vc = desirabilite.ventes_connues(x.get("titre") or "") if len(coll) <= 300 else None
-            d = desirabilite.score(x.get("titre") or "", carte=x, ventes=vc[0] if vc else None, jours=vc[1] if vc else None)
-            scores.append({"id": x["id"], "joueur": x.get("joueur") or x.get("titre"), "score": d["score"], "raisons": d["raisons"],
-                           "valeur": x.get("valeur"), "photo": None})
-        scores.sort(key=lambda s: -s["score"])
+        # 20 nov 2026 (Mathieu : « la collection donne un chiffre ?! doit etre une lettre ») : la tuile de la collection prend le
+        # Score SlabIQ, le meme que la pastille de chaque carte (avant : une « rarete » /100 d'un autre calcul, qui ne
+        # correspondait pas aux lettres des cartes). L'app l'affiche en lettre.
+        try:
+            sc = self.inventaire_scores().get("scores") or {}
+        except Exception:
+            sc = {}
+        scores = sorted(({"id": x["id"], "joueur": x.get("joueur") or x.get("titre"), "score": sc[str(x["id"])]}
+                         for x in coll if sc.get(str(x["id"])) is not None), key=lambda s_: -s_["score"])
         par_id = {x["id"]: x for x in coll}
         hausses = sorted(({"id": s["carte_id"], "joueur": (par_id.get(s["carte_id"]) or {}).get("joueur"),
                            "pct": round(100 * (s["derniere"] / s["reference"] - 1))} for s in suivis if s["carte_id"] in par_id),
                          key=lambda h: -h["pct"])
         collection = {"n": len(coll), "valeur": round(sum((x.get("valeur") or 0) for x in coll), 2),
                       "cout": round(sum((x.get("cout") or 0) for x in coll), 2), "variation": var,
-                      "desir_moyen": round(statistics.mean([s["score"] for s in scores])) if scores else None,
+                      "iq": round(statistics.mean([s_["score"] for s_ in scores])) if scores else None,
                       "top": scores[:3], "hausses": [h for h in hausses if h["pct"] > 0][:3]}
         return {"ok": True, "vente": vente, "collection": collection}
 

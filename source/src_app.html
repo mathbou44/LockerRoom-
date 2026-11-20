@@ -3019,7 +3019,7 @@ body.pro .onglets a.on{color:var(--acc)}
   .barre-mode{display:grid !important; grid-template-columns:44px minmax(0,1fr) 44px; align-items:center; gap:8px}
   .barre-mode[hidden]{display:none !important}
   .haut-plus, .haut-cloche{background:transparent; width:44px; height:44px; position:relative}
-  .haut-plus svg{width:26px; height:26px} .haut-cloche svg{width:25px; height:25px}
+  .haut-cloche svg{width:25px; height:25px}
   .haut-cloche .pt{position:absolute; top:8px; right:9px; width:9px; height:9px; border-radius:50%; background:var(--acc); box-shadow:0 0 0 2px var(--fond)}
   .haut-nom{justify-self:center; display:flex; flex-direction:column; align-items:center; gap:2px; background:none; border:none; color:var(--texte); padding:2px 8px; min-width:0; max-width:100%}
   .haut-mot{font:400 24px/1 'Manrope',system-ui,sans-serif; letter-spacing:-.025em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%}
@@ -3857,7 +3857,6 @@ body.zp-ouvert{overflow:hidden}
 .vd-q{margin-top:6px} .vd-av{margin-left:auto; display:flex; gap:6px; flex:0 0 auto}
 .vd-av button{width:34px; height:34px; border-radius:50%; border:1px solid var(--ligne); background:none; color:var(--doux); font-size:15px; cursor:pointer}
 .vd-av button.on[data-v="1"]{background:var(--vert); color:#06140f; border-color:transparent} .vd-av button.on[data-v="0"]{background:var(--rouge); color:#fff; border-color:transparent}
-.d-val{display:grid; place-items:center; text-decoration:none; margin-right:8px} .d-val svg{width:18px; height:18px}   /* 1er nov 2026 : la Valeur, depuis les Deals */
 .bk-mode{display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:5px; margin:0 0 14px; border-radius:999px; background:var(--carte); border:1px solid var(--ligne)}
 .bk-mode button{border:0; border-radius:999px; padding:11px 8px; background:none; color:var(--doux); font:700 14px var(--f-cond); letter-spacing:.06em; text-transform:uppercase; cursor:pointer}
 .bk-mode button.on{background:var(--acc); color:var(--acc-texte)}
@@ -4232,10 +4231,24 @@ body.vd-ouverte::before{content:''; position:fixed; top:0; left:0; right:0; heig
 .fc-chiffres div{display:flex; flex-direction:column; gap:2px; padding:10px 12px; border-radius:14px; background:var(--carte); border:1px solid var(--ligne)}
 .fc-chiffres span{font:700 11px var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--doux)} .fc-chiffres b{font:700 24px/1.05 var(--f-cond)}
 .fc-chiffres b.vert{color:var(--vert)} .fc-chiffres b.rouge{color:var(--rouge)}
-/* 28 oct 2026 : la feuille « Ajouter des cartes » */
-.aj-bloc{display:flex; flex-direction:column; gap:8px; margin-bottom:14px} .aj-t{display:flex; flex-direction:column; gap:2px; padding:0 2px}
-.aj-t b{font:700 15px var(--f-cond); letter-spacing:.12em; text-transform:uppercase} .aj-t span{font-size:13.5px; color:var(--doux)}
-.aj-bloc .r-ligne > svg:last-child{width:18px; height:18px; margin-left:auto; color:var(--doux); flex:none}
+/* 20 nov 2026 : la bande « Ajuste ton Radar » (a la place de la fenetre qui s'ouvrait toute seule) */
+.d-ajust{display:flex; align-items:center; gap:8px; margin:8px 0 10px; padding:4px 4px 4px 0; border-radius:16px; border:1.5px solid transparent;
+  background:linear-gradient(var(--carte2, #1E1E25), var(--carte2, #1E1E25)) padding-box, var(--holo) border-box}
+.d-aj-b{flex:1; min-width:0; display:grid; grid-template-columns:1fr auto; gap:1px 10px; padding:9px 4px 9px 14px; text-align:left; background:none; border:0; color:var(--texte); font:inherit; cursor:pointer}
+.d-aj-b b{font-size:15px} .d-aj-b span{grid-column:1; font-size:13px; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis} .d-aj-b i{grid-column:2; grid-row:1 / span 2; align-self:center; font-style:normal; color:var(--acc); font-size:20px}
+.d-aj-x{flex:none; width:34px; height:34px; border-radius:50%; border:1px solid var(--ligne); background:var(--carte); color:var(--doux); display:grid; place-items:center; padding:0; cursor:pointer} .d-aj-x svg{width:14px; height:14px}
+/* 20 nov 2026 : la fenetre « Ajouter des cartes » : des tuiles au contour prisme */
+.aj-pop{padding:8px 18px 20px; display:flex; flex-direction:column; gap:10px}
+.aj-pop-t{margin:4px 2px 0; font-size:13.5px; color:var(--doux)}
+.aj-tus{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:10px}
+.aj-tu{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; min-height:132px; padding:16px 8px; border-radius:20px; cursor:pointer; text-align:center; color:var(--texte); font:inherit;
+  border:1.5px solid transparent; background:linear-gradient(var(--carte2, #1E1E25), var(--carte2, #1E1E25)) padding-box, var(--holo) border-box; transition:transform .15s}
+.aj-tu:active{transform:scale(.97)} .aj-tu b{font-size:16px; font-weight:700} .aj-tu > span:last-child{font-size:12.5px; color:var(--doux); line-height:1.3}
+.aj-tu-i{width:52px; height:52px; border-radius:50%; display:grid; place-items:center; background:color-mix(in srgb, var(--acc) 16%, transparent); color:var(--acc)}
+.aj-tu-i svg{fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round}
+.aj-tu-l{flex-direction:row; justify-content:flex-start; min-height:0; padding:14px 16px; gap:14px; text-align:left; display:grid; grid-template-columns:auto 1fr; grid-template-rows:auto auto}
+.aj-tu-l .aj-tu-i{grid-row:1 / span 2} .aj-tu-l b{align-self:end} .aj-tu-l > span:last-child{align-self:start}
+@media (max-width:360px){ .aj-tus{grid-template-columns:1fr} .aj-tu{min-height:0; flex-direction:row; justify-content:flex-start; gap:12px; text-align:left} }
 .lot-ok{width:32px; height:32px; border-radius:16px; display:flex; align-items:center; justify-content:center; background:var(--vert-fond); color:var(--vert); font-weight:800; flex:none}
 /* 28 oct 2026 : vendre en lot */
 .carte-lot{display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:center; padding:13px 15px; border-radius:var(--r-ctl, 14px); border:1px solid color-mix(in srgb, var(--acc) 30%, var(--ligne)); background:color-mix(in srgb, var(--acc) 7%, var(--carte)); color:var(--texte)}
@@ -4341,6 +4354,15 @@ body[data-motif="prisme"] #mosaique{background-image:
   .onglets::after{content:''; position:absolute; top:50%; right:10px; width:8px; height:8px; margin-top:-4px;
     border-right:2px solid var(--pale); border-bottom:2px solid var(--pale); transform:rotate(-45deg); opacity:.7; transition:transform .22s, opacity .2s}
   .onglets:hover::after, .onglets:has(:focus-visible)::after{transform:rotate(135deg); opacity:.35}
+}
+/* 20 nov 2026 (rapport ergonomie : une icone seule oblige a se souvenir de ce qu'elle fait) : fermee, la barre garde un petit mot
+   sous chaque icone ; au survol, elle s'ouvre comme avant */
+@media (min-width:900px) and (hover:hover){
+  html body .onglets:is(.rail-ferme, :not(:hover):not(:has(:focus-visible))){padding-left:6px !important; padding-right:6px !important}
+  html body .onglets:is(.rail-ferme, :not(:hover):not(:has(:focus-visible))) > a:not(.nav-logo){color:var(--doux) !important; flex-direction:column !important; justify-content:center !important;
+    gap:3px !important; padding:7px 2px !important; font-size:10.5px !important; line-height:1.1 !important; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  html body .onglets:is(.rail-ferme, :not(:hover):not(:has(:focus-visible))) > a.on:not(.nav-logo){color:var(--texte) !important}
+  html body .onglets:is(.rail-ferme, :not(:hover):not(:has(:focus-visible))) > a:not(.nav-logo) svg{width:21px; height:21px}
 }
 
 /* 15 nov 2026 (Mathieu, la barre de cote a l'ordi : « ameliore le layout et le design ») : deux groupes nets, sans trou au
@@ -5006,8 +5028,7 @@ input[type=number]{-moz-appearance:textfield; appearance:textfield}
 .acc-sp small{font-size:12.5px; color:var(--doux); white-space:nowrap}
 .acc-sp.on .sp-r{background:radial-gradient(closest-side, #17161F calc(100% - 3px), transparent calc(100% - 2px)), var(--prisme); box-shadow:0 0 22px -2px color-mix(in srgb, var(--h2,#B9BEFF) 60%, transparent)}
 .acc-sp.on .sp-r svg{opacity:.24; color:var(--acc)}
-.acc-sp.bientot{opacity:.45} .acc-sp.bientot small{font-style:italic}
-.acc-sp:not(.on):not(.bientot):hover .sp-r{box-shadow:0 0 14px -4px var(--acc)} .acc-sp:active .sp-r{transform:scale(.94)}
+.acc-sp:not(.on):hover .sp-r{box-shadow:0 0 14px -4px var(--acc)} .acc-sp:active .sp-r{transform:scale(.94)}
 @media (min-width:700px){ .acc-tete:has(.acc-ligne) .acc-sports{display:none} }   /* l'invitation prend la place ; le sport reste dans la colonne de gauche */
 @media (max-width:699px){ .acc-sports{gap:14px; margin-left:0} .acc-sp{width:60px} .acc-sp .sp-r{width:54px; height:54px} .acc-sp .sp-r b{font-size:15px} }
 /* 18 nov 2026 (Mathieu : « quand je clique sur une selection, la pastille ne change pas de couleur ») : un choix coche se voit */
@@ -6583,7 +6604,7 @@ function route(){
   // 1er nov 2026 : une seule app ; plus de redirection selon un volet
   $$('.onglets a').forEach(a => {
     const o = a.dataset.onglet;
-    a.classList.toggle('on', o === ecran || (o === 'breaks' && ['break', 'analyse'].includes(ecran)) || (o === 'analyse' && ecran === 'analyse') || (o === 'accueil' && ecran === 'sante') || (o === 'deals' && ecran === 'valeur'));
+    a.classList.toggle('on', o === ecran || (o === 'breaks' && ['break', 'analyse'].includes(ecran)) || (o === 'analyse' && ecran === 'analyse') || (o === 'accueil' && ecran === 'sante') || (o === 'vendre' && ecran === 'valeur'));
   });
   if (!$('#fond-feuille').hidden) fermerFeuille();
   navDebut(S.ecranCourant === ecran && !!arg);              // meme ecran, autre onglet (Admin, Breaks, Sante...) : navigation douce
@@ -6629,16 +6650,17 @@ function majNavSport(){
   n.onclick = (e) => { e.preventDefault(); vibrer();
     popOuvrir(`<button class="pop-x" id="ns-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button><div class="pop-tete"><h3>${tt('Ton sport', 'Your sport')}</h3></div>
       <div class="pop-corps">${htmlSports().replace('class="acc-sports"', 'class="acc-sports ns-pop"')}</div>`, popFermer);
-    $('#ns-x').onclick = popFermer; $$('.ns-pop .acc-sp:not(.bientot)').forEach(b => b.addEventListener('click', popFermer)); };
+    $('#ns-x').onclick = popFermer; $$('.ns-pop .acc-sp').forEach(b => b.addEventListener('click', popFermer)); };
 }
 function htmlSports(){
   const adm = !!(S.forfait || {}).admin, cur = sportApp();
-  const L = [['hockey', 'Hockey', 'NHL', true], ['baseball', 'Baseball', 'MLB', adm], ['football', 'Football', 'NFL', false], ['basket', 'Basketball', 'NBA', false]];
-  return `<div class="acc-sports" role="tablist" aria-label="${esc(tt('Sport', 'Sport'))}">${L.map(([k, n, lg, pret]) => `<button type="button" role="tab" class="acc-sp ${k === cur ? 'on' : ''} ${pret ? '' : 'bientot'}" data-sp="${k}" aria-selected="${k === cur}">
-    <span class="sp-r"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_SPORT[k]}</svg><b>${lg}</b></span><small>${pret ? n : tt('Bientôt', 'Soon')}</small></button>`).join('')}</div>`;
+  // 20 nov 2026 (rapport ergonomie) : les sports « Bientôt » ne sont plus montres ; un seul sport pret : pas de selecteur
+  const L = [['hockey', 'Hockey', 'NHL', true], ['baseball', 'Baseball', 'MLB', adm]].filter(x => x[3]);
+  if (L.length < 2) return '';
+  return `<div class="acc-sports" role="tablist" aria-label="${esc(tt('Sport', 'Sport'))}">${L.map(([k, n, lg]) => `<button type="button" role="tab" class="acc-sp ${k === cur ? 'on' : ''}" data-sp="${k}" aria-selected="${k === cur}">
+    <span class="sp-r"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_SPORT[k]}</svg><b>${lg}</b></span><small>${n}</small></button>`).join('')}</div>`;
 }
 document.addEventListener('click', (e) => { const b = e.target.closest('.acc-sp[data-sp]'); if (!b) return;
-  if (b.classList.contains('bientot')) { vibrer(); toast(tt(`${b.querySelector('b').textContent} arrive bientôt dans SlabCoach`, `${b.querySelector('b').textContent} is coming soon to SlabCoach`), 2500); return; }
   if (b.dataset.sp !== sportApp()) changerSport(b.dataset.sp); });
 function changerSport(k){
   S.sport = k; try { localStorage.setItem('lr_sport', k); } catch (e) {}
@@ -6858,14 +6880,17 @@ function appliquerActivites(a){
     x.hidden = !bonMode || (x.dataset.onglet in voir && !voir[x.dataset.onglet]) || (x.dataset.onglet === 'admin' && !(S.forfait && S.forfait.admin));
   });
   const tel = matchMedia('(max-width:899px)').matches;
-  $$('a', nav).forEach(x => { if (tel && ['comptoir', 'bilan'].includes(x.dataset.onglet)) x.hidden = true; });   // 28 oct : Breaks revient dans la barre de l'acheteur
+  // 20 nov 2026 (rapport ergonomie : 5 boutons au plus dans la barre du bas) : au telephone, Breaks sort de la barre ; il reste
+  // sur l'accueil (tuile Breaks), dans Profil (Mes breaks) et dans la barre de l'ordinateur
+  $$('a', nav).forEach(x => { if (tel && ['comptoir', 'bilan', 'breaks'].includes(x.dataset.onglet)) x.hidden = true; });
   // 26 oct 2026 (Mathieu : « inspiré des meilleures apps ») : comme CollX et Ludex, l'action principale au centre de
   // la barre du bas, en bouton rond doré : Valeur (acheteur : scanner ou chercher une carte), Vendre (vendeur : une photo)
   const mobile = matchMedia('(max-width:899px)').matches;
   const vis = $$('a:not([hidden]):not(.nav-reglages):not(.nav-moi):not(.nav-admin):not(.nav-alertes)' + (mobile ? ':not(.nav-idees):not(.nav-logo)' : ''), nav);
   $$('a', nav).forEach(x => x.classList.remove('centre'));
-  const c = vis[Math.floor(vis.length / 2)];
-  if (c && ['valeur', 'vendre'].includes(c.dataset.onglet)) c.classList.add('centre');
+  // 20 nov 2026 : la camera est le bouton du centre, quel que soit le nombre d'onglets visibles (Breaks sort de la barre du cell)
+  const c = vis.find(x => ['valeur', 'vendre'].includes(x.dataset.onglet));
+  if (c) c.classList.add('centre');
   nav.style.gridTemplateColumns = `repeat(${vis.length},minmax(0,1fr))`;
   majBarreMode();
 }
@@ -7110,6 +7135,7 @@ function motsDuJour(){
 }
 function rendreMotDuJour(){
   const z = $('#acc-mot'); if (!z) return;
+  if (!estBureau()) { z.remove(); return; }      // 20 nov 2026 (rapport ergonomie) : au telephone, le haut de l'ecran va aux tuiles
   const l = motsDuJour(), n = new Date(), j = Math.floor((n - new Date(n.getFullYear(), 0, 0)) / 864e5);
   const peindre = () => { const [t, ic, auteur] = l[(j + (S.motDecale || 0)) % l.length];
     const lg = t.length + (auteur ? auteur.length + 3 : 0);
@@ -7131,12 +7157,14 @@ function majBarreMode(){
   if (b) {
     b.hidden = !voir;
     const perso = nomMarque() !== 'SlabCoach';
-    b.innerHTML = voir ? `<button class="rond haut-plus" id="h-plus" aria-label="${esc(tt('Ajouter', 'Add'))}">${ICONES.plus}</button>
+    // 20 nov 2026 (rapport ergonomie : un seul « + » par ecran) : plus de « + » en haut a gauche, loin du pouce, qui ouvrait un
+    // autre menu que celui de la page ; la place reste vide pour garder le nom au centre (ajouter : la camera du centre, le « + »
+    // de l'inventaire ; le comptoir et les breaks : le Profil ; le budget : l'accueil ; une alerte : depuis une carte)
+    b.innerHTML = voir ? `<span class="haut-plus" aria-hidden="true"></span>
       <div class="haut-nom" id="h-nom"><span class="haut-ligne">${perso && S.logo ? `<img class="haut-logo" src="${esc(S.logo)}" alt="">` : LOGO_HOLO('haut-logo', true)}<span class="haut-mot">${perso ? esc(nomMarque()) : '<b>slab</b>coach'}</span></span>
 </div>
       <span class="haut-dr">${(S.forfait || {}).admin_reel ? `<button class="haut-vue v-${esc(S.forfait.vue || 'admin')}" id="h-vue" aria-label="${esc(tt('Changer de vue', 'Switch view'))}">${S.forfait.vue === 'pro' ? 'PRO' : S.forfait.vue === 'platine' ? 'PLATINE' : S.forfait.vue === 'gratuit' ? tt('GRATUIT', 'FREE') : sportApp() === 'baseball' ? 'MLB' : 'ADMIN'}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></button>` : ''}
       <button class="rond haut-cloche" data-alertes aria-label="${esc(tt('Alertes', 'Alerts'))}">${ICO_CLOCHE}<i class="pt" id="h-pt" hidden></i><span class="haut-pro" aria-hidden="true">PRO</span></button></span>` : '';
-    const hp = $('#h-plus', b); if (hp) hp.onclick = feuilleAjouter;
     const hv = $('#h-vue', b); if (hv) hv.onclick = (e) => { e.stopPropagation(); vibrer(); popVue(); };
     brancherSwitchMode(b);            // 28 oct 2026 (Mathieu : « passer d'acheteur a vendeur en un clic ») : les deux volets, visibles, un tap
     if (voir) majPointCloche();
@@ -7159,48 +7187,35 @@ document.addEventListener('click', (e) => { if (e.target.closest && e.target.clo
 // 28 oct 2026 (Mathieu : « revoir l'ajout de photo / creation d'annonce / ajout de ta carte a l'app, sans necessairement la
 // mettre sur eBay : l'utilisateur peut avoir une collection sans vouloir vendre ») : deux chemins clairs.
 // Ma collection : la carte entre dans l'app avec sa valeur estimee, rien ne va sur eBay. Vendre : l'annonce eBay.
-// 17 nov 2026 (Mathieu : « cette petite fenetre est-elle necessaire ? ca nous envoie apres sur la page photo ; eliminer une
-// etape ») : pour la COLLECTION, « Ajouter » ouvre directement la camera ; la phototheque et « a la main » sont dans la camera
-// (en bas) ; si on ferme la camera sans photo, les autres facons reviennent (la petite fenetre, sans la partie vente)
-function ajoutCollection(){ ouvrirScanner({but: 'collection', siAnnule: () => feuilleAjout({collection: true})}); }
+// 20 nov 2026 (Mathieu : « le + m'envoie direct sur la camera ; ca devrait me demander : camera ou photos. Et quand je ferme la
+// camera, il m'ouvre le menu ; ca n'a pas rapport. Refaire le menu en fenetre avec des tuiles, contour prism ») : le + et
+// « Ajouter des cartes » ouvrent une fenetre au centre ; la camera ou la phototheque s'ouvrent seulement quand on les choisit
+// (le 17 nov, la camera s'ouvrait toute seule)
+function ajoutCollection(){ feuilleAjout({collection: true}); }
 function feuilleAjout(o = {}){
-  if (o.direct) return ajoutCollection();
   const vend = S.mode !== 'acheteur' && !o.collection;
-  const coll = [['collection', ICONES.photo, tt('Scanner une carte', 'Scan a card'), tt('La caméra la lit en direct, montre sa valeur et l’ajoute', 'The camera reads it live, shows its value and adds it')],
-    ['collection-lot', ICO_BIBLIO.replace('<svg ', '<svg width="22" height="22" '), tt('Depuis ma photothèque', 'From the library'), tt(`Jusqu’à ${LOT_MAX} cartes · devant puis dos`, `Up to ${LOT_MAX} cards · front then back`)],
-    ['main', ICONES.plus, tt('À la main', 'By hand'), tt('Sans photo : joueur, année, set, prix payé', 'No photo: player, year, set, price paid')]];
-  const vente = [['nouvelle', ICO_EBAY_TAG, tt('Créer des annonces eBay', 'Create eBay listings'), tt('Une carte ou plusieurs : titre, prix et annonce complète', 'One card or several: title, price and full listing')]];
-  const bloc = (t, d, l) => `<div class="aj-bloc"><div class="aj-t"><b>${t}</b><span>${d}</span></div><div class="liste-ajout">${l.map(([k, ic, n, x]) => `<button class="r-ligne" data-aj2="${k}"><span class="aj-ico">${ic}</span><span class="t"><b>${n}</b><span>${x}</span></span>${ICONES.chevron || '›'}</button>`).join('')}</div></div>`;
-  const bC = bloc(tt('Dans ma collection', 'To my collection'), tt('Rien ne va sur eBay. Tu la mets en vente plus tard si tu veux.', 'Nothing goes to eBay. List it later if you want.'), coll);
-  const bV = vend ? bloc(tt('Pour vendre', 'To sell'), tt('L’annonce eBay, prête en une photo.', 'The eBay listing, ready in one photo.'), vente) : '';
-  ouvrirFeuille(`<h3>${tt('Ajouter des cartes', 'Add cards')}</h3>${vend ? bV + bC : bC}
-    ${!vend ? `<div class="sous" style="margin-top:4px">${tt('Pour vendre sur eBay, passe en mode Vendeur (en haut).', 'To sell on eBay, switch to Seller mode (top).')}</div>` : ''}`);
+  const ico = (svg) => svg.replace('<svg ', '<svg width="26" height="26" ');
+  const coll = [['collection', ico(ICONES.photo), tt('Caméra', 'Camera'), tt('Elle lit la carte en direct', 'It reads the card live')],
+    ['collection-lot', ico(ICO_BIBLIO), tt('Mes photos', 'My photos'), tt(`Jusqu’à ${LOT_MAX} cartes`, `Up to ${LOT_MAX} cards`)],
+    ['main', ico(ICONES.plus), tt('À la main', 'By hand'), tt('Sans photo', 'No photo')]];
+  const tuile = ([k, ic, n, x]) => `<button class="aj-tu" data-aj2="${k}"><span class="aj-tu-i">${ic}</span><b>${n}</b><span>${x}</span></button>`;
+  popOuvrir(`<button class="pop-x" id="aj-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
+    <div class="pop-tete"><span class="pop-sur">${tt('Ajouter des cartes', 'Add cards')}</span><h3>${tt('Comment veux-tu les ajouter ?', 'How do you want to add them?')}</h3></div>
+    <div class="aj-pop">
+      ${vend ? `<button class="aj-tu aj-tu-l" data-aj2="nouvelle"><span class="aj-tu-i">${ico(ICO_EBAY_TAG)}</span><b>${tt('Vendre sur eBay', 'Sell on eBay')}</b><span>${tt('L’annonce complète en une photo', 'The full listing in one photo')}</span></button>
+        <p class="aj-pop-t">${tt('Dans ma collection (rien ne va sur eBay)', 'To my collection (nothing goes to eBay)')}</p>` : `<p class="aj-pop-t">${tt('Dans ta collection : rien ne va sur eBay', 'To your collection: nothing goes to eBay')}</p>`}
+      <div class="aj-tus">${coll.map(tuile).join('')}</div>
+    </div>`);
+  $('#aj-x').onclick = popFermer;
   $$('[data-aj2]').forEach(b => b.onclick = () => {
-    const k = b.dataset.aj2; fermerFeuille();
+    const k = b.dataset.aj2; popFermer();
     if (k === 'main') { feuilleCarte({emplacement: 'Collection'}); return; }
-    if (k === 'collection') { ouvrirScanner({but:'collection'}); return; }      // 28 oct 2026 : le meme scanner en direct
+    if (k === 'collection') { ouvrirScanner({but:'collection'}); return; }
     location.hash = '#vendre/' + k;
   });
 }
 const ICO_LOT = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="3" width="13" height="17" rx="2"/><path d="M4 7v12a2 2 0 0 0 2 2h9"/></svg>';
 const ICO_EBAY_TAG = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>';
-// le + : ajouter, selon le volet et ce que tu fais
-function feuilleAjouter(){
-  const act = S.activites || {}, v = S.mode !== 'acheteur';
-  const L = v ? [
-    [ICONES.photo || ICONES.plus, tt('Vendre une carte', 'Sell a card'), tt('Une photo : l’annonce eBay complète', 'One photo: the full eBay listing'), () => { location.hash = '#vendre'; }],
-    [ICONES.plus, tt('Ajouter à ma collection', 'Add to my collection'), tt('Garder des cartes sans les vendre : scanner, en lot ou à la main', 'Keep cards without selling: scan, batch or by hand'), () => ajoutCollection()],
-    ...(act.breaks !== false ? [[ICONES.calc || ICONES.plus, tt('Préparer un break', 'Plan a break'), tt('Prix des places selon le produit', 'Spot prices from the product'), () => { location.hash = '#analyse'; }]] : []),
-    ...(act.magasin ? [[ICONES.caisse || ICONES.plus, tt('Vente au comptoir', 'Counter sale'), tt('En personne, à la boutique', 'In person, at the shop'), () => { location.hash = '#comptoir'; }]] : []),
-  ] : [
-    [ICONES.loupe, tt('Valeur d’une carte', 'What a card is worth'), tt('Une photo ou le nom de la carte', 'A photo or the card name'), () => { location.hash = '#valeur'; }],
-    [ICONES.plus, tt('Ajouter à ma collection', 'Add to my collection'), tt('Scanner, en lot ou à la main : rien ne va sur eBay', 'Scan, batch or by hand: nothing goes to eBay'), () => ajoutCollection()],
-    [ICO_CLOCHE, tt('Créer une alerte de prix', 'Create a price alert'), tt('On te prévient quand la carte passe sous ton prix', 'We tell you when the card drops under your price'), () => feuilleAlerte('', 0)],
-    ['$', tt('Mon budget du mois', 'My monthly budget'), tt('Ce qui te reste à dépenser', 'What you have left to spend'), () => feuilleBudget()],
-  ];
-  ouvrirFeuille(`<h3>${tt('Ajouter', 'Add')}</h3><div class="liste-ajout">${L.map(([ic, t, d], i) => `<button class="r-ligne" data-aj="${i}"><span class="aj-ico">${ic}</span><span class="t"><b>${t}</b><span>${d}</span></span></button>`).join('')}</div>`);
-  $$('[data-aj]').forEach(b => b.onclick = () => { const f = L[+b.dataset.aj][3]; fermerFeuille(); setTimeout(f, 60); });
-}
 function brancherSwitchMode(z){ $$('[data-mode-choix]', z || document).forEach(b => b.onclick = () => changerMode(b.dataset.modeChoix)); }
 async function changerMode(m){
   if (m === S.mode && location.hash) return;
@@ -9773,6 +9788,10 @@ async function chargerForfait(){
   appliquerMarque();
   appliquerActivites();
   majNavSport();
+  // 20 nov 2026 : le choix du sport n'apparait que s'il y a plus d'un sport pret (le baseball : admin) ; le forfait arrive
+  // parfois apres l'accueil : on pose le choix a ce moment-la
+  const zs = document.querySelector('.acc-tete');
+  if (zs && f.admin && !zs.querySelector('.acc-sports')) { const t_ = zs.querySelector('.acc-sec'); if (t_) t_.insertAdjacentHTML('beforebegin', htmlSports()); }
   let h = $('#badge-coin');
   if (!h) { h = document.createElement('div'); h.id = 'badge-coin'; h.className = 'badge-coin'; document.body.appendChild(h); }
   // 12 nov 2026 (Mathieu : « dans la version Pro, sur l'ordi, j'ai nulle part ou switcher entre les versions ») : sur l'ordi,
@@ -11913,7 +11932,7 @@ document.addEventListener('click', (e) => { const b = e.target.closest('#fa-sig'
 async function vueDeals(arg){
   const w = arg === 'watch';
   V().innerHTML = `<section class="ecran large">
-    <div class="tete-fixe"><div class="entete"><div class="titre d-tt">Radar${w ? '' : `<button class="d-x-iq" id="d-x-iq" aria-label="SlabIQ"><i>×</i><span>Slab<em>IQ</em></span></button>`}</div>${w ? '' : `<span class="d-ent"><a class="aide-q d-val" href="#valeur" aria-label="${esc(tt('Combien vaut une carte ?', 'What is a card worth?'))}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC_PIL.dollar}</svg></a><button class="aide-q" id="d-aide" aria-label="${esc(tt('Comment lire un deal', 'How to read a deal'))}">?</button></span>`}</div>
+    <div class="tete-fixe"><div class="entete"><div class="titre d-tt">Radar${w ? '' : `<button class="d-x-iq" id="d-x-iq" aria-label="SlabIQ"><i>×</i><span>Slab<em>IQ</em></span></button>`}</div>${w ? '' : `<span class="d-ent"><button class="aide-q" id="d-aide" aria-label="${esc(tt('Comment lire un deal', 'How to read a deal'))}">?</button></span>`}</div>
     ${''/* 16 nov 2026 (Mathieu : « ca prend de l'espace en long et en hauteur pour rien ; en pastilles a cote de Deals et
        Watchlist ») : les onglets, le prochain tour (admin) et « annonces verifiees » sur UNE rangee */}
     <div class="d-ligne"><div class="d-onglets" role="tablist"><a role="tab" href="#deals" aria-selected="${!w}" class="${w ? '' : 'on'}">${comps() ? 'Deals' : tt('Mes cibles', 'My targets')}<span class="d-nb" id="d-nb" hidden></span></a>
@@ -12289,8 +12308,15 @@ async function chargerDeals(frais){
     let vu = false; try { vu = localStorage.getItem('lr_deals_accueil') === '1'; } catch (x) {}
     // la question reste due tant que la personne n'a pas repondu (Enregistrer ou Plus tard) : une feuille fermee par un
     // changement d'ecran revient a la prochaine visite
-    if (!vu && !S.onbDeals) { S.onbDeals = true;
-      setTimeout(() => { S.onbDeals = false; if (location.hash.startsWith('#deals') && $('#fond-feuille').hidden) feuilleMesDeals({accueil: true, apres: () => { S.dealsProfil = null; route(); }}); }, 1500); }
+    // 20 nov 2026 (rapport ergonomie : montrer les cartes d'abord) : plus de fenetre qui s'ouvre toute seule par-dessus le Radar ;
+    // une petite bande « Ajuster » sous les onglets, qui ouvre les memes questions quand la personne le veut (X : on n'en parle plus)
+    const li = $('.d-ligne');
+    if (!vu && li && !$('#d-ajust')) {
+      li.insertAdjacentHTML('afterend', `<div class="d-ajust" id="d-ajust"><button class="d-aj-b" id="d-aj-b"><b>${tt('Ajuste ton Radar', 'Tune your Radar')}</b><span>${tt('Dis-nous ce que tu collectionnes : les meilleures cartes pour toi d’abord', 'Tell us what you collect: the best cards for you first')}</span><i aria-hidden="true">›</i></button><button class="d-aj-x" id="d-aj-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button></div>`);
+      const fini = () => { try { localStorage.setItem('lr_deals_accueil', '1'); } catch (x) {} const z = $('#d-ajust'); if (z) z.remove(); };
+      $('#d-aj-b').onclick = () => { vibrer(); fini(); feuilleMesDeals({accueil: true, apres: () => { S.dealsProfil = null; route(); }}); };
+      $('#d-aj-x').onclick = () => { vibrer(); fini(); };
+    }
   }
   if (d && d.watch) { S.watch = new Set(d.watch.map(String)); majNbWatch(); }
   if (!z.isConnected) return;
@@ -12519,7 +12545,7 @@ async function scanNatif(opts){
     photo ? [tt('Touche la carte pour la mise au point', 'Tap the card to focus')]
       : [tt('La carte remplit le cadre, sans reflet. Touche-la pour la mise au point.', 'The card fills the frame, no glare. Tap it to focus.'),
          tt('Retourne la carte, même cadrage', 'Flip the card, same framing')]);
-  if (!l) { if (opts.siAnnule) opts.siAnnule(); return; }
+  if (!l) return;
   const ph = await petitePhoto(l[0].url), dos = l[1] ? await petitePhoto(l[1].url) : null;
   scanFermer();
   Object.assign(SCAN, {opts, actif: true, natif: true, etat: 'lecture', essais: 1, devant: ph, devantHD: l[0].url, dosHD: l[1] ? l[1].url : null,
@@ -12531,7 +12557,7 @@ async function scanNatif(opts){
   return scanIdentifier(dos ? [ph, dos] : [ph], ph, dos);
 }
 async function ouvrirScanner(opts = {}){
-  if (opts.but !== 'photo' && !await okIA()) { if (opts.siAnnule) { opts.siAnnule(); return; } toast(tt('Sans l’IA : cherche la carte par son nom', 'Without AI: search the card by name'), 4000); return; }
+  if (opts.but !== 'photo' && !await okIA()) { toast(tt('Sans l’IA : cherche la carte par son nom', 'Without AI: search the card by name'), 4000); return; }
   if (await cameraHD()) return scanNatif(opts);
   if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) return scannerSecours(opts);
   let flux;
@@ -13618,8 +13644,8 @@ function tuilesAccueil(d, a, h, gestes, admin){
   const z = $('#acc-ft'); if (!z) return;
   // 17 nov 2026 (audit, un debutant qui veut se partir une collection) : celui qui a repondu « Collectionner » voit son budget du
   // mois et SA collection, pas un profit a 0 $ ni « Vendre »
-  const st = d.stock || {}, ach = S.mode === 'acheteur' || (S.reglages || {}).objectif === 'collection', act = d.activites || {}, nbD = (a && a.nb_deals) || 0;
-  const brk = (d.breaks_ouverts || []).length, rien = !gestes.length, neuf = majNonVues().length > 0;
+  const st = d.stock || {}, ach = S.mode === 'acheteur' || (S.reglages || {}).objectif === 'collection', nbD = (a && a.nb_deals) || 0;
+  const brk = (d.breaks_ouverts || []).length, rien = !gestes.length;
   const radarSous = nbD ? (comps() ? tt(`${nbD} sous la valeur`, `${nbD} under value`) : ((a.deals || []).some(x => x.pourtoi) ? tt(`${nbD} pour toi`, `${nbD} for you`) : tt(`${nbD} à ton prix`, `${nbD} at your price`))) : tt('on cherche pour toi', 'searching for you');
   z.innerHTML = [
     tuileFT('ft-radar', 'deals', 'Radar', a && a.gain_deals > 0 ? '+' + argentCourt(a.gain_deals) : String(nbD), radarSous, '#deals', 'k-radar'),
@@ -13628,16 +13654,15 @@ function tuilesAccueil(d, a, h, gestes, admin){
           nomMois(h.mois) + (h.nb_ventes ? ` · ${h.nb_ventes} ${tt(h.nb_ventes > 1 ? 'ventes' : 'vente', h.nb_ventes > 1 ? 'sales' : 'sale')}` : ''), '#bilan', 'k-profit ' + ((h.profit || 0) > 0 ? 'pos' : (h.profit || 0) < 0 ? 'neg' : ''), miniCourbe(h.courbe, (h.profit || 0) >= 0 ? 'h' : 'b')),
     tuileFT('ft-inv', 'carte', ach ? tt('Ma collection', 'My collection') : tt('Inventaire', 'Inventory'), argentKpi(st.valeur), st.nb ? `${st.nb} ${tt(st.nb > 1 ? 'cartes' : 'carte', st.nb !== 1 ? 'cards' : 'card')}` : tt('ajoute ta 1re carte', 'add your first card'), '#inventaire', 'k-stock'),
     tuileFT('ft-tend', 'pouls', tt('Tendances', 'Trends'), '', tt('Les joueurs qui montent', 'Players on the rise'), '#iq', 'k-tend', '<span class="ft-gz"></span>'),
-    act.breaks !== false ? tuileFT('ft-breaks', 'breaks', 'Breaks', brk || '', brk ? tt(`${brk} en cours`, `${brk} in progress`) : tt('Analyser un produit', 'Analyze a product'), brk ? '#breaks/liste' : '#analyse', 'k-breaks') : '',
-    !ach ? tuileFT('ft-vendre', 'photo', tt('Vendre', 'Sell'), '', tt('Une photo, une annonce', 'One photo, one listing'), '#vendre', 'k-vendre') : '',
-    tuileFT('ft-faire', 'faire', tt('À faire', 'To do'), rien ? '✓' : gestes.length, rien ? tt('Tout est fait', 'All done') : ach ? tt('Pour bien partir', 'To get started') : tt('Le plus payant d’abord', 'Most profitable first'), '#', 'k-faire'),
-    admin ? tuileFT('ft-admin', 'admin', 'Admin', '', tt('Ton tableau de bord CEO', 'Your CEO dashboard'), '#ceo', 'k-admin') : '',
+    // 20 nov 2026 : Breaks sort de la barre du cell : sa tuile est toujours la (comme l'onglet l'etait), pas seulement pour un breaker
+    tuileFT('ft-breaks', 'breaks', 'Breaks', brk || '', brk ? tt(`${brk} en cours`, `${brk} in progress`) : tt('Le juste prix d’une place', 'The fair price of a spot'), brk ? '#breaks/liste' : '#analyse', 'k-breaks'),
+    // 20 nov 2026 (rapport ergonomie, Mathieu : « go fait tout ») : moins de tuiles. Vendre = la camera du centre de la barre ;
+    // Admin = la tuile Admin du Profil ; Nouveautes = une ligne du Profil ; « A faire » seulement quand il reste quelque chose
+    rien ? '' : tuileFT('ft-faire', 'faire', tt('À faire', 'To do'), gestes.length, ach ? tt('Pour bien partir', 'To get started') : tt('Le plus payant d’abord', 'Most profitable first'), '#', 'k-faire'),
     admin ? tuileFT('ft-iqq', 'conseils', tt('SlabIQ demande', 'SlabIQ asks'), '…', tt('les cotes dont il doute', 'ratings it’s unsure of'), '#', 'k-maj') : '',
-    tuileFT('ft-maj', 'conseils', tt('Nouveautés', 'What’s new'), neuf ? '•' : '', tt('Ce qui a changé dans l’app', 'What changed in the app'), '#', 'k-maj' + (neuf ? ' neuf' : '')),
   ].join('');
   const o = (id, f) => { const b = $('#' + id); if (b) b.onclick = (e) => { e.preventDefault(); vibrer(); f(); }; };
   o('ft-faire', () => feuilleBloc($('#acc-afaire') && ($('#acc-afaire').closest('.carte-acc') || $('#acc-afaire'))));
-  o('ft-maj', () => feuilleNouveautes());
   // 17 nov 2026 (« pourquoi c'est pas dans SlabIQ asks ?! ») : la tuile mene a la page Entrainer SlabIQ (questions + blitz)
   if (admin) { o('ft-iqq', () => { S.ceoSec = 'expert'; location.hash = '#ceo'; });
     API.slabiq_questions(1).then(q => { const t = $('#ft-iqq'); if (!t) return; const v = t.querySelector('.ft-v');
@@ -13700,7 +13725,9 @@ function rendreNewsListe(){
       const k = Math.round(c.scrollLeft / Math.max(1, c.clientWidth)), n_ = c.children.length; c.scrollTo({left: ((k + 1) % n_) * c.clientWidth, behavior: 'smooth'}); }, 7000);
     return;
   }
-  z.innerHTML = `<div class="acc-sec" style="--c:#F2C14E"><span>${tt('Nouvelles', 'News')}</span><button class="lien-doux" id="nl-tout">${tt('Tout voir', 'See all')} ›</button></div>
+  // 20 nov 2026 (rapport ergonomie) : le titre dit ce qu'il y a dessous : « Astuces » quand ce n'est que des astuces
+  const _ast = L.slice(0, 7).every(n => n.astuce);
+  z.innerHTML = `<div class="acc-sec" style="--c:#F2C14E"><span>${_ast ? tt('Astuces', 'Tips') : tt('Nouvelles', 'News')}</span><button class="lien-doux" id="nl-tout">${tt('Tout voir', 'See all')} ›</button></div>
     <div class="nl-l">${L.slice(0, estBureau() ? 7 : 4).map((n, j) => `<button class="nl" data-nl="${j}">${n.image && !n.astuce ? `<span class="nl-img" style="background-image:${cssUrl(n.image)}"></span>` : ico(n)}
       <span class="nl-t"><small>${n.marche ? tt('Marché', 'Market') : n.astuce ? tt('Astuce', 'Tip') : esc(n.libelle || nomSport(n.sport) || tt('Nouvelle', 'News'))}${n.date && !n.astuce ? ' · ' + esc(dateCourte(n.date)) : ''}</small><b>${insec(esc(String(n.titre || '').slice(0, 110)))}</b></span></button>`).join('')}</div>`;
   z.hidden = false;
@@ -13792,7 +13819,7 @@ function demarrerAccueilLive(){
   const tic = () => {
     if (!surAccueil()) { arreterAccueilLive(); return; }
     const n = new Date(), p = (x) => String(x).padStart(2, '0');
-    $('#acc-h').innerHTML = `${p(n.getHours())}:${p(n.getMinutes())}<small>:${p(n.getSeconds())}</small>`;
+    $('#acc-h').textContent = `${p(n.getHours())}:${p(n.getMinutes())}`;          // 20 nov 2026 : sans les secondes
     $('#acc-d').textContent = n.toLocaleDateString(LOC(), {weekday:'long', day:'numeric', month:'long'});
     // 26 oct 2026 (Mathieu : « on ne voit plus bonjour le nom de l'utilisateur ») ; nom : la boutique, sinon le pseudo eBay
     const sa = $('#acc-salut'); if (sa) { const hr = n.getHours(), nm = (nomMarque() !== 'SlabCoach' && nomMarque()) || (S.forfait && S.forfait.username) || '';
@@ -14988,9 +15015,10 @@ function filtresBarreInv(){
   // 13 nov 2026 (Mathieu : « ou est notre onglet Sold dans l'inventaire ? ») : « Vendues » visible a cote des 3 autres ; les
   // autres filtres (et les sports) dans le petit bouton rond a droite
   // 14 nov 2026 (Mathieu : « un onglet pour les cartes achetees ») : « Achetées » visible aussi
-  const f = S.filtreInv || 'tous', autre = !['tous', 'collection', 'listee', 'achetees', 'vendue', 'afinir'].includes(f), sp = S.sportInv, n = nbAFinir();
+  const f = S.filtreInv || 'tous', autre = !['tous', 'collection', 'vendue', 'afinir'].includes(f), sp = S.sportInv, n = nbAFinir();
   return (n || f === 'afinir' ? `<button class="chip chip-afinir ${f === 'afinir' ? 'on' : ''}" data-f="afinir">${LIB_FILTRE('afinir')}${n ? ` <b>${(S.nbAFinir || 0) + (S.lotGardeN || 0) || ''}</b>` : ''}</button>` : '')
-    + ['tous', 'collection', 'listee', 'achetees', 'vendue'].map(k => `<button class="chip ${f === k ? 'on' : ''}" data-f="${k}">${LIB_FILTRE(k)}</button>`).join('')
+    // 20 nov 2026 (rapport ergonomie) : 3 filtres visibles (Tout, Collection, Vendues) ; Sur eBay, Achetees et les autres : « Filtrer »
+    + ['tous', 'collection', 'vendue'].map(k => `<button class="chip ${f === k ? 'on' : ''}" data-f="${k}">${LIB_FILTRE(k)}</button>`).join('')
     + (autre || sp ? `<button class="chip on" id="i-plus-f">${autre ? LIB_FILTRE(f) : nomSport(sp)} ▾</button>`
       : `<button class="chip i-f-rond" id="i-plus-f" aria-label="${esc(tt('Plus de filtres', 'More filters'))}"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.reglages}</svg></button>`);
 }
@@ -15009,8 +15037,8 @@ async function tableauInv(){
     const c = r.collection, v = c.variation || {}, k = v['12m'] != null ? '12m' : v['6m'] != null ? '6m' : v['3m'] != null ? '3m' : null;
     const per = {['3m']: tt('3 mois', '3 months'), ['6m']: tt('6 mois', '6 months'), ['12m']: tt('12 mois', '12 months')};
     const h = (c.hausses || [])[0], top = (c.top || [])[0];
-    z.innerHTML = !c.n ? '' : t(tt('Ma collection', 'My collection'), argentKpi(c.valeur), k ? `${v[k] >= 0 ? '+' : '−'}${Math.abs(v[k]).toLocaleString(LOC())} % · ${per[k]}` : `${c.n} ${tt('cartes', 'cards')}`, k ? (v[k] >= 0 ? 'vert' : 'rouge') : '')
-      + t(tt('Rareté', 'Rarity'), c.desir_moyen != null ? c.desir_moyen + '<small>/100</small>' : '—', top ? tt('plus rare : ', 'rarest: ') + esc(String(top.joueur || '').split(' ').slice(-1)[0]) : tt('moyenne', 'average'), '', 'it-rare')
+    z.innerHTML = !c.n ? '' : t(tt('Ma collection', 'My collection'), argentKpi(c.valeur), k ? `${v[k] >= 0 ? '+' : '−'}${Math.abs(v[k]).toLocaleString(LOC())} % · ${per[k]}` : `${c.n} ${c.n > 1 ? tt('cartes', 'cards') : tt('carte', 'card')}`, k ? (v[k] >= 0 ? 'vert' : 'rouge') : '')
+      + t('SlabIQ', c.iq != null ? lettre(c.iq) : '—', top ? tt('la meilleure : ', 'best: ') + esc(String(top.joueur || '').split(' ').slice(-1)[0]) : tt('ta collection', 'your collection'), c.iq != null ? couleurScore(c.iq) : '', 'it-rare')       // 20 nov 2026 : une lettre, comme les cartes
       + (h ? t(tt('Monte le plus', 'Rising most'), '+' + h.pct + ' %', esc(h.joueur || ''), 'vert', 'it-h') : t(tt('Cartes', 'Cards'), String(c.n), tt('en collection', 'in collection')));
     const ouvrir = (id) => { const b = $(`#i-liste .tuile-inv[data-id="${id}"]`); if (b) b.click(); };
     const rr = $('#it-rare'); if (rr && top) rr.onclick = () => ouvrir(top.id);
@@ -15023,7 +15051,7 @@ async function tableauInv(){
     const v = r.vente, enLigne = v.populaires != null;
     const nomC = (x) => esc(String((x && x.joueur) || '').split(' ').slice(-1)[0]);
     const sousPop = v.top ? [nomC(v.top), v.top.watchers ? v.top.watchers + ' ' + tt('suivis', 'watchers') : (v.top.vues || 0) + ' ' + tt('vues', 'views')].filter(Boolean).join(' · ') : tt('aucun suivi encore', 'no watchers yet');
-    z.innerHTML = !v.n ? '' : t(tt('À vendre', 'For sale'), argentKpi(v.valeur), v.delai_median != null ? tt('se vend en ~', 'sells in ~') + v.delai_median + tt(' j', ' d') : `${v.n} ${tt('cartes', 'cards')}`)
+    z.innerHTML = !v.n ? '' : t(tt('À vendre', 'For sale'), argentKpi(v.valeur), v.delai_median != null ? tt('se vend en ~', 'sells in ~') + v.delai_median + tt(' j', ' d') : `${v.n} ${v.n > 1 ? tt('cartes', 'cards') : tt('carte', 'card')}`)
       + (enLigne ? t(tt('Populaires', 'Popular'), String(v.populaires), sousPop, v.populaires ? 'vert' : '', 'it-pop')
                  : t(tt('Se vend en', 'Sells in'), v.delai_median != null ? '~' + v.delai_median + tt(' j', ' d') : '—', v.delai_median != null ? tt('tes ventes · 6 mois', 'your sales · 6 months') : tt('pas assez de ventes', 'not enough sales')))
       + (enLigne ? t(tt('À liquider', 'To clear'), String(v.liquider), tt('30 j+ sans intérêt', '30 d+ no interest'), v.liquider ? 'or' : '', 'it-liq')
@@ -21335,6 +21363,10 @@ function pastillerReglages(){
         $('#gg-sous').lastElementChild.onclick = () => { vibrer(); it.ouvrir(); }; });
     };
   });
+  // 20 nov 2026 (rapport ergonomie) : « Nouveautés » quitte l'accueil pour le Profil (le point s'allume s'il y a du neuf)
+  const nvx = majNonVues().length;
+  pils.insertAdjacentHTML('beforeend', pilAcc('gg-maj', 'conseils', `${esc(tt('Nouveautés', 'What’s new'))}<small class="gg-s">${esc(tt('Ce qui a changé dans l’app', 'What changed in the app'))}</small>`, nvx ? String(nvx) : '', 'acc'));
+  pils.lastElementChild.onclick = () => { vibrer(); feuilleNouveautes(); };
   ec.appendChild(pils); ec.appendChild(res);
 }
 // -- 24 oct 2026 - forfait : Gratuit ou Pro (Stripe). Payer et gerer = pages de Stripe ; le forfait

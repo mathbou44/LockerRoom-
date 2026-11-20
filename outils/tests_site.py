@@ -221,6 +221,8 @@ def mesures(A, C0, C, R):
     realisme = {"frais": [FRAIS, FIXE]}
     # la simulation d'un an : 400 collectionneurs, 500 $ par mois, cartes de R prix_min a 150 $, au hasard ou avec SlabIQ
     fin = {k: st.median([p for j, p in v if j >= C]) for k, v in par.items() if any(j >= C for j, p in v)}
+    # 20 nov 2026 : essaye avec la regle du Radar Pro (liquidite) : +4,0 % contre +6,0 % avec la lettre seule (avant aout 2026, nos
+    # archives ont trop peu de ventes pour juger la liquidite : peu de cartes passent). La simulation garde la lettre A et plus.
     ventes = [(a["j"], (a["k"], a["gr"]), a["p"], a["s"], a["nom"]) for a in A if "2025-11-01" <= a["j"] < C]
     d = dt.date(2025, 11, 1)
     P = []

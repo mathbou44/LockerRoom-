@@ -47,7 +47,11 @@ c.commit()
 c.close()
 t = a.inventaire_tableaux()
 assert t["vente"]["n"] == 1 and t["vente"]["dorment"] == 1 and t["vente"]["delai_median"] in (11, 12), t["vente"]
-assert t["collection"]["n"] == 1 and t["collection"]["top"][0]["score"] >= 80, t["collection"]
+# 20 nov 2026 : la tuile de la collection = le Score SlabIQ (le meme que les pastilles des cartes), en lettre dans l'app
+sc = a.inventaire_scores()["scores"]
+assert t["collection"]["n"] == 1 and "desir_moyen" not in t["collection"], t["collection"]
+gid = str(t["collection"]["top"][0]["id"]) if t["collection"]["top"] else None      # Gretzky (la carte de la collection)
+assert (t["collection"]["iq"] == round(sc[gid]) and t["collection"]["top"][0]["joueur"] == "Wayne Gretzky") if sc else t["collection"]["iq"] is None, (t["collection"], sc)
 rare = desirabilite.score("2023-24 Upper Deck Young Guns Connor Bedard #201", valeur=150, ventes=1, jours=400)
 courant = desirabilite.score("2023-24 Upper Deck Young Guns Connor Bedard #201", valeur=150, ventes=40)
 assert rare["score"] > courant["score"] and any("presque jamais" in r for r in rare["raisons"]), (rare, courant)

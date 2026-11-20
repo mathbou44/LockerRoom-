@@ -18,13 +18,15 @@ se revend ensuite ET a au moins 90 % du prix paye.
   achats du 1er au 8 nov. : hasard 11,3 % ; cette regle 60,3 % (57,3-63,2).
 Sans le prix (liquidite seulement) : 62,4 % et 51,8 %. LR_RADAR_PRIX=0 dans Render enleve le prix de la regle.
 
-L'index (table liquidite de base_ventes.sqlite) se remplit en fond, par paquets, depuis les ventes deja archivees : aucun appel
-de plus a SoldComps ni a eBay.
+L'index se remplit en fond, par paquets, depuis les ventes deja archivees (base_ventes.sqlite, en lecture seulement) : aucun
+appel de plus a SoldComps ni a eBay. 20 nov 2026 (Render : « database is locked ») : l'index a son propre fichier
+(liquidite.sqlite, en WAL) : il n'attend jamais apres les longues lectures des archives, et les archives n'attendent pas apres lui.
 """
 import datetime as dt
 import hashlib
 import os
 import re
+import sqlite3
 import statistics
 import threading
 import time
@@ -45,7 +47,7 @@ _ETAT = {"le": 0.0, "en_cours": False, "pret": set(), "tables": set()}
 
 def _ch():
     import comptes
-    return os.path.join(comptes.DONNEES, "base_ventes.sqlite")
+    return os.path.join(comptes.DONNEES, "liquidite.sqlite")
 
 
 def prix_permis():
@@ -82,10 +84,10 @@ def mediane_recente(hist, jour, dv=DEMI_VIE, jours=MED_JOURS, avant=False):
 
 
 def _cx():
-    import base_ventes
-    c = base_ventes._cx()
+    c = sqlite3.connect(_ch(), timeout=30)
     if _ch() in _ETAT["tables"]:
         return c
+    c.execute("PRAGMA journal_mode=WAL")
     c.execute("CREATE TABLE IF NOT EXISTS liquidite (cle TEXT, le TEXT, prix REAL, h TEXT, PRIMARY KEY (cle, le, prix, h)) WITHOUT ROWID")
     c.execute("CREATE INDEX IF NOT EXISTS liquidite_le ON liquidite (le)")
     c.execute("CREATE TABLE IF NOT EXISTS liquidite_etat (k TEXT PRIMARY KEY, v TEXT)")
@@ -105,12 +107,29 @@ def rafraichir(pause=0.05):
     n = 0
     try:
         d0 = (dt.date.today() - dt.timedelta(days=MED_JOURS + 1)).isoformat()
+        import base_ventes
+        if not _ETAT.get("ancien_ote"):                  # 20 nov 2026 : la 1re version de l'index vivait dans base_ventes.sqlite
+            try:
+                v = base_ventes._cx()
+                try:
+                    v.execute("DROP TABLE IF EXISTS liquidite")
+                    v.execute("DROP TABLE IF EXISTS liquidite_etat")
+                    v.commit()
+                finally:
+                    v.close()
+                _ETAT["ancien_ote"] = True
+            except Exception as e:
+                print("Liquidite (ancien index) : " + repr(e)[:120], flush=True)
         c = _cx()
         try:
             r = c.execute("SELECT v FROM liquidite_etat WHERE k='rowid'").fetchone()
             dernier = int(r[0]) if r else 0
             while True:
-                rows = c.execute("SELECT rowid, titre, prix, le FROM ventes WHERE rowid > ? ORDER BY rowid LIMIT ?", (dernier, PAQUET)).fetchall()
+                v = base_ventes._cx()                     # une courte lecture par paquet, jamais de transaction ouverte
+                try:
+                    rows = v.execute("SELECT rowid, titre, prix, le FROM ventes WHERE rowid > ? ORDER BY rowid LIMIT ?", (dernier, PAQUET)).fetchall()
+                finally:
+                    v.close()
                 if not rows:
                     break
                 lignes = []
