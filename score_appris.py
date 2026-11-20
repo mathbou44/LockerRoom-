@@ -46,7 +46,10 @@ VOIS_MAX = 400                       # ventes gardees par joueur pour les voisin
 COUPE_JOURS = 10                     # le reapprentissage se mesure sur ses 10 derniers jours (jamais vus)
 FENETRE_JOURS = int(os.environ.get("LR_SCORE_FENETRE_J", "365"))   # 12 nov 2026 (instance 4 Go) : un an de ventes (avant : 180 j)
 MAX_VENTES = int(os.environ.get("LR_SCORE_MAX_VENTES", "260000"))   # au plus (les plus recentes) : la memoire du serveur
-MO_LIBRES_MIN = float(os.environ.get("LR_SCORE_MO_LIBRES", "1300"))  # 145 000 ventes, moteur leger : pic mesure de 1,7 Go
+MO_LIBRES_MIN = float(os.environ.get("LR_SCORE_MO_LIBRES", "2000"))  # 145 000 ventes, moteur leger : pic mesure de 1,7 Go
+# 20 nov 2026 (revue de lancement : le service tue par manque de memoire les 13 et 14 nov, 7 a 8 min apres « reapprendre :
+# lance ») : le seuil (1 300 Mo) etait SOUS le pic mesure (1,7 Go). 2 000 Mo = le pic + une marge. En echange, la memoire
+# libre compte le cache de fichiers que le systeme reprend au besoin (inactive_file), pour ne pas sauter les nuits pour rien.
 REAPPRENDRE_J = int(os.environ.get("LR_SCORE_REAPPRENDRE_J", "3"))   # 12 nov 2026 : aux 3 jours (avant : chaque semaine)
 HEURES_NUIT = (7, 8, 9)               # heure du serveur (UTC sur Render) : 2 h a 5 h a Montreal
 _verrou = threading.Lock()
@@ -439,11 +442,25 @@ def _mo_libres():
         import admin
         m = admin.memoire()
         if m.get("limite_mo") and m.get("conteneur_mo") is not None:
-            cg = m["limite_mo"] - m["conteneur_mo"]
+            cg = m["limite_mo"] - m["conteneur_mo"] + _cache_repris_mo()
             return min(cg, meminfo) if meminfo is not None else cg
     except Exception:
         pass
     return meminfo
+
+
+def _cache_repris_mo():
+    """20 nov 2026 : le cache de fichiers inactif du conteneur (cgroup), que le systeme reprend avant de tuer le service."""
+    for ch, cle in (("/sys/fs/cgroup/memory.stat", "inactive_file"), ("/sys/fs/cgroup/memory/memory.stat", "total_inactive_file")):
+        try:
+            with open(ch) as f:
+                for l in f:
+                    k, _, v = l.partition(" ")
+                    if k == cle:
+                        return int(v) / (1 << 20)
+        except (OSError, ValueError):
+            continue
+    return 0.0
 
 
 def _moteur():

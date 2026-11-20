@@ -3209,6 +3209,7 @@ def reverifier(lire_article=None, max_=None):
 FIN_PROCHE_H = 2
 FIN_PROCHE_PAS_S = 300
 FIN_PROCHE_APPELS = 8                      # au plus 160 annonces par passe
+FIN_PROCHE_UN_PAR_UN = 5                   # 20 nov 2026 : sans getItems (refuse par eBay), 5 annonces par passe, les plus proches de la fin
 
 
 def fin_proche_si_besoin():
@@ -3226,7 +3227,6 @@ def fin_proche_si_besoin():
 
 def fin_proche(lire_lot=None, maint=None):
     import ebay_compte
-    lire_lot = lire_lot or (lambda ids: ebay_compte.articles_lot(ids, fond=True))
     maint = maint or datetime.now(timezone.utc)
     lim = (maint + timedelta(hours=FIN_PROCHE_H)).isoformat().replace("+00:00", "Z")
     d = lire_vite()
@@ -3236,14 +3236,20 @@ def fin_proche(lire_lot=None, maint=None):
             a_lire.setdefault(str(x["item_id"]), str(x.get("fin")))
     ids = sorted(a_lire, key=lambda i: a_lire[i])[:20 * FIN_PROCHE_APPELS]          # ceux qui finissent le plus tot d'abord
     lus, demandes = {}, set()
-    for k in range(0, len(ids), 20):
-        lot = ids[k:k + 20]
+    if lire_lot is None:                       # 20 nov 2026 : getItems d'abord ; refuse (403) -> une par une, les plus proches
         try:
-            lus.update(lire_lot(lot))
-            demandes.update(lot)
+            lus, demandes = ebay_compte.articles_relire(ids, fond=True, maxi=FIN_PROCHE_UN_PAR_UN)
         except (RuntimeError, OSError) as e:
             print("Deals (fin proche) : " + repr(e), flush=True)
-            break
+    else:
+        for k in range(0, len(ids), 20):
+            lot = ids[k:k + 20]
+            try:
+                lus.update(lire_lot(lot))
+                demandes.update(lot)
+            except (RuntimeError, OSError) as e:
+                print("Deals (fin proche) : " + repr(e), flush=True)
+                break
     if not demandes:
         return {"ok": True, "lus": 0, "sortis": 0}
     vu = maint.isoformat(timespec="seconds")
@@ -3289,6 +3295,7 @@ def fin_proche(lire_lot=None, maint=None):
 PRIX_FIXE_PAS_S = 1200
 PRIX_FIXE_AGE_S = 1800                     # une annonce relue il y a moins de 30 min n'est pas relue
 PRIX_FIXE_APPELS = 6                       # au plus 120 annonces par passe (72 passes x 6 = 432 appels / jour au maximum)
+PRIX_FIXE_UN_PAR_UN = 6                    # 20 nov 2026 : sans getItems, 6 annonces par passe (432 appels / jour au maximum, comme prevu)
 
 
 def prix_fixes_si_besoin():
@@ -3306,7 +3313,6 @@ def prix_fixes_si_besoin():
 
 def prix_fixes(lire_lot=None, maint=None):
     import ebay_compte
-    lire_lot = lire_lot or (lambda ids: ebay_compte.articles_lot(ids, fond=True))
     maint = maint or datetime.now(timezone.utc)
     lim = (maint - timedelta(seconds=PRIX_FIXE_AGE_S)).isoformat(timespec="seconds")
     d = lire_vite()
@@ -3318,17 +3324,25 @@ def prix_fixes(lire_lot=None, maint=None):
     ids = sorted(vus, key=lambda i: (str(vus[i].get("prix_lu_le") or ""), -((vus[i].get("valeur") or 0) - (vus[i].get("total") or 0))))
     ids = ids[:20 * PRIX_FIXE_APPELS]
     lus, demandes = {}, set()
-    for k in range(0, len(ids), 20):
-        lot = ids[k:k + 20]
+    if lire_lot is None:                       # 20 nov 2026 : getItems d'abord ; refuse (403) -> une par une
         try:
-            r = lire_lot(lot)
+            lus, demandes = ebay_compte.articles_relire(ids, fond=True, maxi=PRIX_FIXE_UN_PAR_UN)
         except (RuntimeError, OSError) as e:
             print("Deals (prix fixes) : " + repr(e), flush=True)
-            break
-        if not r:                                  # reponse vide : on ne conclut rien (panne, limite) ; on ne sort personne
-            continue
-        lus.update(r)
-        demandes.update(lot)
+        if demandes and not lus and len(demandes) > 1:
+            demandes = set()                       # toutes « absentes » d'un coup : on ne conclut rien (comme une reponse vide)
+    else:
+        for k in range(0, len(ids), 20):
+            lot = ids[k:k + 20]
+            try:
+                r = lire_lot(lot)
+            except (RuntimeError, OSError) as e:
+                print("Deals (prix fixes) : " + repr(e), flush=True)
+                break
+            if not r:                              # reponse vide : on ne conclut rien (panne, limite) ; on ne sort personne
+                continue
+            lus.update(r)
+            demandes.update(lot)
     if not demandes:
         return {"ok": True, "lus": 0, "sortis": 0}
     vu = maint.isoformat(timespec="seconds")

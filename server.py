@@ -44,6 +44,14 @@ def _prendre_verrou():
     return True
 
 
+# 20 nov 2026 : la memoire du serveur (voir admin.limiter_arenes) : 2 zones de memoire C au lieu de 8 par processeur,
+# AVANT que les fils (gunicorn, taches de fond) ne demarrent. Linux seulement.
+try:
+    import admin as _adm_mem  # noqa: E402
+    _adm_mem.limiter_arenes()
+except Exception as _e_mem:
+    print("Memoire (zones) : " + repr(_e_mem), flush=True)
+
 from flask import Flask, abort, jsonify, request, send_from_directory  # noqa: E402
 
 import lockerroom  # noqa: E402

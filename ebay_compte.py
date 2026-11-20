@@ -938,6 +938,46 @@ def post_json(adresse, corps, marketplace="EBAY_CA"):
         raise RuntimeError(f"eBay HTTP {e.code} : {msg}")
 
 
+# 20 nov 2026 (revue de lancement : « Deals (fin proche) : eBay HTTP 403 » aux 5 min depuis au moins le 13 nov) : getItems
+# (lots de 20) est une methode « Limited Release » qu'eBay reserve a des partenaires approuves ; notre cle recoit 403
+# (errorId 1100). Les encans qui finissent et les prix fixes n'etaient donc JAMAIS relus. Repli : get_item_by_legacy_id
+# (methode publique), une annonce par appel, au plus `maxi` annonces par passe. Le refus est retenu 24 h (pas d'appel perdu).
+_LOT_REFUSE = {"jusqu": 0.0, "dit": False}
+
+
+def articles_relire(item_ids, fond=True, maxi=5):
+    """-> (lus, demandes). lus = {item_id: article} ; demandes = les annonces vraiment demandees a eBay. Une annonce
+    demandee mais absente de lus est finie ou retiree (404). Une autre erreur (limite, panne) arrete la passe : le reste
+    n'est pas demande, donc rien n'est conclu pour lui."""
+    ids = [str(i).strip() for i in item_ids if re.fullmatch(r"\d{9,15}", str(i).strip())]
+    if not ids:
+        return {}, set()
+    if time.time() >= _LOT_REFUSE["jusqu"]:
+        lot = ids[:20]
+        try:
+            return articles_lot(lot, fond=fond), set(lot)
+        except RuntimeError as e:
+            if "HTTP 403" not in str(e):
+                raise
+            _LOT_REFUSE["jusqu"] = time.time() + 86400
+            if not _LOT_REFUSE["dit"]:
+                print("eBay getItems refuse (Limited Release) : relecture une par une", flush=True)
+                _LOT_REFUSE["dit"] = True
+    lus, demandes = {}, set()
+    for iid in ids[:max(0, int(maxi))]:
+        try:
+            lus[iid] = article(iid, fond=fond, frais=True)
+        except RuntimeError as e:
+            if "HTTP 404" in str(e):                    # finie ou retiree
+                demandes.add(iid)
+                continue
+            if lus or demandes:
+                break                                   # limite ou panne : on garde ce qui est deja lu
+            raise
+        demandes.add(iid)
+    return lus, demandes
+
+
 def articles_lot(item_ids, fond=True):
     """31 oct 2026 (Mathieu : « les cartes qui arrivent a la fin, 2 dernieres heures : rafraichir le prix eBay souvent, le
     deal change et peut vite devenir un faux deal ») : jusqu'a 20 annonces en UN appel (Browse getItems), jamais le cache.

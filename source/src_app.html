@@ -1904,6 +1904,17 @@ html body .ex-n .sc-b{height:auto !important; min-height:0; line-height:1 !impor
 @media (min-width:900px){
   html body .ecran.ceo-e .ceo-sec.on > .ceo-st{margin:0 0 6px !important; padding:8px 0 16px; box-shadow:0 16px 16px -4px var(--fond) !important}
 }
+/* 20 nov 2026 (revue de lancement, fenetre 1465x694) : 1) le body gardait 24 px sous l'ecran (place de la barre du bas sur le
+   telephone) : Accueil, Comptoir, Idees et Reglages depassaient de 4 a 22 px et montraient une barre de defilement ;
+   2) sur un ecran bas, le pied de la barre de gauche (fetes, (c), Conditions, Confidentialite) etait coupe sous le bord. */
+@media (min-width:900px){
+  html body{padding-bottom:0}
+}
+@media (min-width:900px) and (max-height:780px){
+  html body .onglets{padding-top:14px !important; padding-bottom:10px !important; gap:2px !important}
+  html body .onglets > a{padding-top:8px !important; padding-bottom:8px !important}
+  html body .onglets .nav-pied{margin-top:6px; padding-top:8px; gap:6px}
+}
 /* 20 nov 2026 : le prix final d'un encan fini de la watchlist */
 .w-final b{color:var(--texte)} .w-fin-at b{font-size:16px !important; color:var(--doux) !important; font-weight:600}
 .w-ecart{margin-top:4px; font-size:15px; font-weight:700} .w-ecart.vert{color:var(--vert)} .w-ecart.rouge{color:var(--rouge)}

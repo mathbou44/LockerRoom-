@@ -312,6 +312,7 @@ def vue_simulee():
 
 
 _VUES = {"d": None}
+_TRAFIC_PAUSE = {"jusqu": 0.0}     # 20 nov 2026 : eBay a dit 429 (trop de demandes de vues) -> pause d'une heure
 _VUES_VERROU = threading.Lock()
 
 
@@ -7362,8 +7363,13 @@ class Api:
             print(f"[synchro] ventes Trading ignorees : {e}", flush=True)
         a = self._maj_annonces(annonces)
         try:                                     # 31 oct 2026 - les vues de chaque annonce (30 j), si le compte a donne l'acces
-            self._maj_trafic([x["item_number"] for x in annonces if x.get("item_number")])
+            # 20 nov 2026 (revue de lancement : un « HTTP 429 » a chaque synchro, plusieurs par minute) : la limite d'eBay
+            # pour les vues est atteinte -> on attend 1 h avant de redemander (les vues bougent lentement)
+            if time.time() >= _TRAFIC_PAUSE["jusqu"]:
+                self._maj_trafic([x["item_number"] for x in annonces if x.get("item_number")])
         except Exception as e:
+            if "429" in str(e):
+                _TRAFIC_PAUSE["jusqu"] = time.time() + 3600
             print(f"[synchro] vues des annonces : {e}", flush=True)
         v = self._maj_ventes(ventes)
         try:

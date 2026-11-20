@@ -466,11 +466,13 @@ class VoletAcheteur(unittest.TestCase):
         un = {"item_id": "9", "titre": "x", "total": 40, "url": "u", "valeur": 100, "ratio": 0.4, "encan": False, "fin": None,
               "sport": "hockey", "q": None, "v": deals.VERSION, "vu_le": lockerroom._maintenant()}
         lire_avant, deals.lire = deals.lire, lambda: {"deals": [un]}
+        # 20 nov 2026 : l'accueil lit deals.lire_vite (qui ne relit pas deals.lire sans fichier sur le disque) : simule aussi
+        vite_avant, deals.lire_vite = deals.lire_vite, lambda: {"deals": [un]}
         deals.chasser_si_besoin, chasser_avant = (lambda: False), deals.chasser_si_besoin
         try:
             d = a.acheteur_accueil()
         finally:
-            deals.lire, deals.chasser_si_besoin = lire_avant, chasser_avant
+            deals.lire, deals.lire_vite, deals.chasser_si_besoin = lire_avant, vite_avant, chasser_avant
         self.assertEqual(d["nb_deals"], 1)
         self.assertEqual(d["deals"][0]["rabais"], 60)
         self.assertGreater(d["deals"][0]["gain"], 35)              # 7 nov : taxes de l'achat comprises (38,86 $)

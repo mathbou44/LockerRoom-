@@ -11,6 +11,7 @@ Les remboursements et annulations restent dans Stripe (lien direct vers le clien
 import json
 import os
 import shutil
+import sys
 import threading
 import time
 from datetime import datetime, timedelta
@@ -274,6 +275,23 @@ def _lire_entier(ch):
         return None
 
 
+def _stat_cgroup():
+    """20 nov 2026 : le detail de la memoire du conteneur (Mo) : anon (les objets de l'app), file (cache de fichiers),
+    inactive_file (cache que le systeme reprend avant de tuer le service), shmem (fichiers en memoire, /tmp)."""
+    for ch, pre in (("/sys/fs/cgroup/memory.stat", ""), ("/sys/fs/cgroup/memory/memory.stat", "total_")):
+        try:
+            d = {}
+            with open(ch) as f:
+                for l in f:
+                    k, _, v = l.partition(" ")
+                    d[k] = int(v)
+            noms = {"anon": "anon", "file": "file"} if not pre else {"anon": "rss", "file": "cache"}       # cgroup v2 / v1
+            return {k: d.get(pre + noms.get(k, k), 0) // (1 << 20) for k in ("anon", "file", "inactive_file", "shmem")} if d else {}
+        except (OSError, ValueError):
+            continue
+    return {}
+
+
 def memoire():
     rss = None
     try:
@@ -285,8 +303,58 @@ def memoire():
     lim = _lire_entier("/sys/fs/cgroup/memory.max") or _lire_entier("/sys/fs/cgroup/memory/memory.limit_in_bytes")
     if lim and lim > 1 << 45:
         lim = None                                   # pas de limite reelle
-    return {"processus_mo": rss, "conteneur_mo": cur // (1 << 20) if cur else None, "limite_mo": lim // (1 << 20) if lim else None,
-            "soupapes": _SOUPAPE["n"], "derniere_soupape": _SOUPAPE["le"]}
+    st = _stat_cgroup()
+    cmo = cur // (1 << 20) if cur else None
+    return {"processus_mo": rss, "conteneur_mo": cmo, "limite_mo": lim // (1 << 20) if lim else None,
+            # 20 nov 2026 : la memoire vraiment prise = le conteneur moins le cache de fichiers inactif (repris au besoin)
+            "reel_mo": (cmo - st.get("inactive_file", 0)) if cmo is not None else None, "detail": st,
+            "soupapes": _SOUPAPE["n"], "derniere_soupape": _SOUPAPE["le"], "rendus_mo": _SOUPAPE.get("rendus_mo", 0)}
+
+
+# 20 nov 2026 (revue de lancement : la memoire montait de ~150 Mo/h ; la soupape videait les memoires de l'app aux 5 min
+# au-dessus de 80 % sans rien faire baisser) : avec 32 fils, la bibliotheque C (glibc) ouvre jusqu'a 8 zones de memoire
+# par processeur ; ce que Python libere y reste reserve (fragmentation) et n'est jamais rendu au systeme. Deux gestes :
+# limiter les zones a 2 (au demarrage, avant les fils) et rendre au systeme la memoire liberee (malloc_trim) a chaque
+# passe de la soupape. Linux seulement ; sur le PC (Windows) rien ne change. LR_MALLOC_ARENES=0 coupe le 1er geste.
+_LIBC = {"l": None, "lu": False}
+
+
+def _libc():
+    if not _LIBC["lu"]:
+        _LIBC["lu"] = True
+        if sys.platform.startswith("linux"):
+            try:
+                import ctypes
+                _LIBC["l"] = ctypes.CDLL("libc.so.6")
+            except OSError:
+                _LIBC["l"] = None
+    return _LIBC["l"]
+
+
+def limiter_arenes():
+    v = os.environ.get("LR_MALLOC_ARENES", "2")
+    l = _libc()
+    if v == "0" or l is None:
+        return False
+    try:
+        return bool(l.mallopt(-8, max(1, int(v))))          # -8 = M_ARENA_MAX
+    except (AttributeError, ValueError):
+        return False
+
+
+def rendre_memoire():
+    """La memoire liberee par Python rendue au systeme. -> les Mo rendus (estimes par le RSS du processus)."""
+    l = _libc()
+    if l is None:
+        return 0
+    avant = memoire().get("processus_mo") or 0
+    try:
+        l.malloc_trim(0)
+    except AttributeError:
+        return 0
+    rendus = max(0, avant - (memoire().get("processus_mo") or avant))
+    _SOUPAPE["rendus_mo"] = _SOUPAPE.get("rendus_mo", 0) + rendus
+    return rendus
 
 
 _SOUPAPE = {"n": 0, "le": None}
@@ -294,9 +362,12 @@ SOUPAPE_PCT = 0.80
 
 
 def soupape():
-    """Aux 5 min (server.py) : pres de la limite, on vide les memoires de confort (rien de perdu : elles se refont)."""
+    """Aux 5 min (server.py) : pres de la limite, on vide les memoires de confort (rien de perdu : elles se refont).
+    20 nov 2026 : la memoire liberee est rendue au systeme a chaque passe ; le seuil se juge sur la memoire vraiment prise
+    (sans le cache de fichiers que le systeme reprend seul), plus sur le compteur brut du conteneur."""
+    rendre_memoire()
     m = memoire()
-    utilise, lim = m.get("conteneur_mo") or m.get("processus_mo"), m.get("limite_mo")
+    utilise, lim = m.get("reel_mo") or m.get("conteneur_mo") or m.get("processus_mo"), m.get("limite_mo")
     if not utilise or not lim or utilise < SOUPAPE_PCT * lim:
         return None
     videes = []
@@ -331,9 +402,13 @@ def soupape():
         pass
     import gc
     gc.collect()
+    r = rendre_memoire()
     _SOUPAPE["n"] += 1
     _SOUPAPE["le"] = datetime.now().isoformat(timespec="minutes")
-    print(f"Memoire : {utilise} / {lim} Mo, memoires videes ({', '.join(videes)})", flush=True)
+    d = m.get("detail") or {}
+    print(f"Memoire : {utilise} / {lim} Mo (conteneur {m.get('conteneur_mo')}, processus {m.get('processus_mo')}, "
+          f"anon {d.get('anon')}, cache {d.get('file')}, shmem {d.get('shmem')}), memoires videes ({', '.join(videes)}), "
+          f"rendus {r} Mo", flush=True)
     return videes
 
 
