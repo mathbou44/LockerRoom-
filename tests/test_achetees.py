@@ -49,7 +49,7 @@ bed = next(x for x in r["cartes"] if "Bedard" in x["titre"])
 cel = next(x for x in r["cartes"] if "Celebrini" in x["titre"])
 joe = next(x for x in r["cartes"] if "Ordinaire" in x["titre"])
 # Demidov : achat eBay pas encore ajoute, photo de l'annonce, 120 jours, score 88 -> maintenant ; prix des ventes, profit
-assert dem["a_ajouter"] and dem["photo"] == "https://i.ebayimg.com/x1.jpg" and dem["jours"] == 120 and dem["quand"] == "maintenant", dem
+assert dem["photo"] == "https://i.ebayimg.com/x1.jpg" and dem["jours"] == 120 and dem["quand"] == "maintenant", dem
 assert dem["propose"] == 300.0 and dem["source_prix"] == "ventes" and dem["profit"] == round(lockerroom._net_rev(300.0) - 160.0, 2), dem
 # Bedard : dans l'inventaire (carte_id), en feu -> maintenant ; pas de prix connu
 assert bed["carte_id"] == b["id"] and bed["quand"] == "maintenant" and bed["propose"] is None and "en_feu" in bed["pastilles"], bed
@@ -61,7 +61,7 @@ assert joe["quand"] == "prete", joe
 assert [x["quand"] for x in r["cartes"]] == ["maintenant", "maintenant", "prete", "attendre_3mois"], [x["quand"] for x in r["cartes"]]
 assert r["cartes"][0] is not None and r["cartes"][0]["titre"].find("Demidov") >= 0
 s = r["resume"]
-assert s["n"] == 4 and s["maintenant"] == 2 and s["pretes"] == 3 and s["a_ajouter"] == 2 and s["paye"] == 160 + 380 + 12 + 300, s
+assert s["n"] == 4 and s["maintenant"] == 2 and s["pretes"] == 3 and s["a_ajouter"] == 0 and s["paye"] == 160 + 380 + 12 + 300, s
 print("ok achetees")
 
 # un bon joueur EN CREUX, pret : attendre
@@ -130,13 +130,14 @@ b1 = api2.carte_sauver({"titre": "2022-23 UD Young Guns Matt Boldy #219 RC", "st
 b2 = api2.carte_sauver({"titre": "2022-23 UD Young Guns Matt Boldy #219 RC", "statut": "En stock"})
 lockerroom.Api._LIER_AUTO_LE = 0
 r = api2.achetees_tableau()
-assert r["resume"]["lies_auto"] == 1, r["resume"]
+assert r["resume"]["lies_auto"] == 3, r["resume"]       # 20 nov 2026 : la Rinne + les deux Boldy (une copie par achat)
 L = [x for x in r["cartes"] if "Rinne" in x["titre"]]
 assert not L, "vendue : plus dans Achetees (doublon)"
 c = api2._db(); lie = c.execute("SELECT carte_id FROM achats_ebay WHERE item_id='501'").fetchone()[0]; c.close()
 assert lie == v["id"]
-# deux copies identiques pour deux achats : on ne devine pas (elles restent a relier a la main)
-assert sum(1 for x in r["cartes"] if "Boldy" in x["titre"] and x.get("a_ajouter")) == 2, [x["titre"] for x in r["cartes"]]
+# 20 nov 2026 : deux achats identiques et deux cartes identiques faites a la main : reliees une a une, pas de doublon
+c = api2._db(); bo = sorted(r[0] for r in c.execute("SELECT carte_id FROM achats_ebay WHERE item_id IN ('502','503')")); nb = c.execute("SELECT COUNT(*) FROM cartes WHERE titre LIKE '%Boldy%'").fetchone()[0]; c.close()
+assert bo == sorted([b1["id"], b2["id"]]) and nb == 2, (bo, nb)
 print("LIER AUTO OK")
 
 # 14 nov 2026 (« la meme carte : dans Bought, une icone On eBay ou Not listed yet ») : chaque carte dit son etat eBay ; un achat

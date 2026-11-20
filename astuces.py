@@ -784,10 +784,152 @@ def _globales(api, langue, force=False):
     return l
 
 
+# -- 20 nov 2026 (Mathieu : « ou sont les tips and tricks ? Il y a une infinite de trucs pour aider les collectionneurs ») : une banque
+# de trucs de hockey qui ne dependent d'aucune donnee eBay (permis pour le public), pour acheter, vendre, grader, proteger. Les faits
+# precis sont sources ; les autres sont des regles de prudence du hobby. Une partie change chaque jour (voir liste()).
+def _hk(id_, niveau, genre, titre, texte, truc, source="SlabCoach", url="", lien="#valeur"):
+    return {"id": id_, "niveau": niveau, "genre": genre, "titre": titre, "chiffre": "", "texte": texte, "truc": truc,
+            "source": source, "url": url, "lien": lien, "calcule": False, "sport": "hockey"}
+
+
+def astuces_hockey(langue="fr"):
+    t = T(langue)
+    SI = "Sports Illustrated Collectibles"
+    return [
+        _hk("hk_vendu", "debutant", "acheter", t("Le vrai prix : ce qui s’est vendu", "The real price: what sold"),
+            t("Une annonce affiche le prix que le vendeur espère. Ce qui compte, c’est le prix des ventes conclues de la même carte.",
+              "A listing shows the price the seller hopes for. What counts is the price of completed sales of the same card."),
+            t("Avant d’acheter, regarde les ventes récentes, jamais les annonces.", "Before you buy, look at recent sales, never at listings."),
+            SI, "https://www.si.com/collectibles/the-five-rookie-mistakes-new-card-collectors-make"),
+        _hk("hk_meme", "debutant", "acheter", t("Compare la même carte, pas une cousine", "Compare the same card, not a cousin"),
+            t("La base, une parallèle numérotée et la même carte gradée 10 n’ont pas le même prix, même si la photo se ressemble.",
+              "The base, a numbered parallel and the same card graded 10 don’t share a price, even if the photo looks alike."),
+            t("Vérifie l’année, le set, la parallèle, le numéro et la note avant de comparer un prix.",
+              "Check year, set, parallel, number and grade before you compare a price.")),
+        _hk("hk_max", "tous", "acheter", t("Ta mise max, décidée avant l’encan", "Your max bid, decided before the auction"),
+            t("Dans les dernières secondes d’un encan, on paie souvent trop cher sous la pression.",
+              "In an auction’s final seconds, people often overpay under pressure."),
+            t("Fixe ton prix maximum avant et ne le dépasse pas : la même carte reviendra.", "Set your max before and don’t go over it: the same card will come back."),
+            lien="#deals"),
+        _hk("hk_offre", "tous", "acheter", t("Les annonces « ou meilleure offre »", "“Or best offer” listings"),
+            t("Beaucoup de vendeurs acceptent une offre raisonnable sous le prix affiché.", "Many sellers accept a reasonable offer under the asking price."),
+            t("Une offre polie, proche des ventes récentes, passe souvent.", "A polite offer close to recent sales often goes through."), lien="#deals"),
+        _hk("hk_trop_beau", "debutant", "acheter", t("Trop beau pour être vrai ?", "Too good to be true?"),
+            t("Les fausses autos, les patchs trafiqués et les fausses étiquettes existent. Un prix très bas est le premier signal.",
+              "Fake autographs, doctored patches and fake labels exist. A very low price is the first warning sign."),
+            t("Une grosse carte à petit prix : regarde le vendeur, les photos du dos et l’étiquette avant de payer.",
+              "A big card at a small price: check the seller, the back photos and the label before you pay."),
+            SI, "https://www.si.com/collectibles/inside-the-hobby/the-hobby-u-avoiding-common-new-card-collector-mistakes"),
+        _hk("hk_vendeur", "debutant", "acheter", t("Le vendeur compte autant que la carte", "The seller matters as much as the card"),
+            t("Un vendeur avec beaucoup de ventes et une note proche de 100 % est plus sûr.", "A seller with many sales and a rating near 100% is safer."),
+            t("Peu d’évaluations et un prix très bas : prudence.", "Few ratings and a very low price: be careful.")),
+        _hk("hk_photos", "tous", "acheter", t("Demande le dos et les coins", "Ask for the back and the corners"),
+            t("Une photo de face ne montre pas les coins blanchis, les bords ni le centrage du dos.",
+              "A front photo doesn’t show whitened corners, edges or back centering."),
+            t("Pas de photo du dos sur une carte chère ? Demande-la avant d’acheter.", "No back photo on an expensive card? Ask for it before you buy.")),
+        _hk("hk_centrage", "avance", "grader", t("Le centrage avant de grader", "Centering before grading"),
+            t("Une carte mal centrée n’aura pas un 10, même avec des coins parfaits.", "A poorly centered card won’t get a 10, even with perfect corners."),
+            t("Mesure le centrage (la caméra de SlabCoach le fait) avant de payer une gradation.", "Measure centering (SlabCoach’s camera does it) before paying to grade."),
+            lien="#vendre"),
+        _hk("hk_grader", "tous", "grader", t("Grader seulement si ça rapporte", "Grade only if it pays"),
+            t("La gradation coûte de l’argent et du temps. Pour une carte de faible valeur, elle coûte souvent plus que ce qu’elle ajoute.",
+              "Grading costs money and time. For a low-value card, it often costs more than it adds."),
+            t("Gradue les recrues recherchées en très bon état ; garde les autres brutes.", "Grade sought-after rookies in great shape; keep the rest raw.")),
+        _hk("hk_yg", "debutant", "acheter", t("Les Young Guns, la recrue de référence", "Young Guns, the benchmark rookie"),
+            t("Dans Upper Deck Series 1 et 2, les Young Guns sont les cartes recrues que les collectionneurs de hockey suivent le plus.",
+              "In Upper Deck Series 1 and 2, Young Guns are the rookie cards hockey collectors follow most."),
+            t("Pour une première recrue d’un joueur, commence par sa Young Guns.", "For a player’s first rookie card, start with his Young Guns.")),
+        _hk("hk_tirage", "tous", "acheter", t("Rare ne veut pas dire recherché", "Rare doesn’t mean sought after"),
+            t("Une /25 d’un joueur que personne ne suit se vend moins qu’une base d’une vedette.", "A /25 of a player nobody follows sells for less than a star’s base."),
+            t("Le joueur d’abord, le tirage ensuite.", "The player first, the print run second.")),
+        _hk("hk_hausse", "avance", "vendre", t("Ce qui monte vite redescend souvent", "What rises fast often comes back down"),
+            t("Après un gros coup de chaleur (une série de buts, une nouvelle), les prix reviennent souvent vers leur niveau d’avant : nos tests sur les ventes l’ont mesuré.",
+              "After a big spike (a scoring streak, a headline), prices often drift back toward where they were: our tests on sales measured it."),
+            t("Tu veux vendre ? Profite de l’emballement. Tu veux acheter ? Attends qu’il passe.", "Selling? Ride the hype. Buying? Wait for it to pass.")),
+        _hk("hk_frais", "debutant", "vendre", t("Compte les frais avant ton prix", "Count the fees before your price"),
+            t("Les frais de vente et l’envoi grugent une partie de chaque vente.", "Selling fees and shipping eat part of every sale."),
+            t("Fixe ton prix pour que ton profit reste positif une fois les frais payés.", "Set your price so your profit stays positive after fees."), lien="#vendre"),
+        _hk("hk_lot", "tous", "vendre", t("Sépare les bonnes cartes des lots", "Pull the good cards out of lots"),
+            t("Les acheteurs cherchent une ou deux cartes précises et paient rarement plus pour le reste du lot.",
+              "Buyers look for one or two specific cards and rarely pay more for the rest of the lot."),
+            t("Vends les cartes de valeur seules ; regroupe seulement les petites.", "Sell valuable cards on their own; only group the small ones."),
+            "Sports Collectors Daily", "https://www.sportscollectorsdaily.com/selling-sports-cards-on-ebay-for-cash/", "#vendre"),
+        _hk("hk_titre", "debutant", "vendre", t("Un bon titre se fait trouver", "A good title gets found"),
+            t("Les acheteurs cherchent par année, joueur, set, numéro et parallèle.", "Buyers search by year, player, set, number and parallel."),
+            t("Mets ces 5 éléments dans le titre ; SlabCoach l’écrit pour toi.", "Put those 5 things in the title; SlabCoach writes it for you."), lien="#vendre"),
+        _hk("hk_envoi", "tous", "vendre", t("Une carte bien emballée arrive intacte", "A well-packed card arrives intact"),
+            t("Une carte de valeur voyage dans un protège-carte et un toploader, avec un envoi suivi.",
+              "A valuable card travels in a penny sleeve and a toploader, with tracked shipping."),
+            t("Au-dessus de quelques dizaines de dollars, prends toujours un envoi suivi.", "Above a few tens of dollars, always use tracked shipping.")),
+        _hk("hk_cout", "tous", "collection", t("Note ce que tu as payé", "Write down what you paid"),
+            t("Sans le prix payé, impossible de savoir si une vente rapporte.", "Without the price paid, you can’t know whether a sale makes money."),
+            t("Entre le coût de chaque carte : SlabCoach calcule ton vrai profit.", "Enter each card’s cost: SlabCoach works out your real profit."), lien="#inventaire"),
+        _hk("hk_budget", "debutant", "collection", t("Un budget par mois", "A monthly budget"),
+            t("Le hobby va vite : sans limite, les petits achats s’additionnent.", "The hobby moves fast: without a limit, small buys add up."),
+            t("Fixe ton budget du mois ; l’app te dit ce qu’il te reste.", "Set your monthly budget; the app tells you what’s left."), lien="#guide"),
+        _hk("hk_focus", "debutant", "collection", t("Choisis ton terrain de jeu", "Pick your playing field"),
+            t("Un joueur, une équipe ou un set : une collection ciblée est plus simple à suivre et plus agréable.",
+              "One player, one team or one set: a focused collection is easier to follow and more fun."),
+            t("Ajoute tes joueurs dans le Radar : il cherche pour toi.", "Add your players to the Radar: it searches for you."), lien="#deals"),
+        _hk("hk_break", "tous", "acheter", t("Une place de break a un juste prix", "A break spot has a fair price"),
+            t("La valeur d’une place dépend de l’équipe, du produit et des cartes possibles.", "A spot’s value depends on the team, the product and the possible cards."),
+            t("Calcule la valeur de ta place avant de payer.", "Work out your spot’s value before you pay."), lien="#analyse"),
+    ]
+
+
+# -- 20 nov 2026 (Mathieu : « la sortie de nouveaux produits aussi, on doit l'annoncer ») : un produit du catalogue sorti dans les
+# 30 derniers jours (ou qui sort dans les 30 prochains) est annonce en tete des nouvelles de l'accueil. Les donnees du catalogue
+# (date, recrues et hits par boite) viennent du fabricant ; rien d'eBay.
+SORTIE_JOURS = 30
+
+
+def sorties(langue="fr", auj=None):
+    import datetime as _dt
+    import catalogue
+    t = T(langue)
+    auj = auj or _dt.date.today()
+    MF = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
+    ME = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+    out = []
+    try:
+        L = catalogue.liste()
+    except Exception:
+        return []
+    for p in L:
+        try:
+            d = _dt.date.fromisoformat(str(p.get("sortie") or "")[:10])
+        except ValueError:
+            continue
+        ecart = (d - auj).days
+        if not -SORTIE_JOURS <= ecart <= SORTIE_JOURS:
+            continue
+        jour = t(f"{d.day}{'er' if d.day == 1 else ''} {MF[d.month - 1]}", f"{ME[d.month - 1]} {d.day}")
+        bouts = []
+        nb = lambda x: (str(int(round(float(x)))) if abs(float(x) - round(float(x))) < 0.05 else (f"{float(x):.1f}".replace(".", ",") if langue != "en" else f"{float(x):.1f}"))
+        if p.get("recrues_par_boite"):
+            bouts.append(t(f"{nb(p['recrues_par_boite'])} recrues par boîte", f"{nb(p['recrues_par_boite'])} rookies per box"))
+        if p.get("hits_par_boite"):
+            bouts.append(t(f"{nb(p['hits_par_boite'])} hit{'s' if float(p['hits_par_boite']) >= 1.5 else ''} par boîte", f"{nb(p['hits_par_boite'])} hit{'s' if float(p['hits_par_boite']) >= 1.5 else ''} per box"))
+        out.append({"id": "sortie_" + str(p["id"]), "niveau": "tous", "genre": "acheter", "sortie": str(d), "calcule": False, "sport": "hockey",
+                    "titre": p["nom"], "chiffre": "", "a_venir": ecart > 0,
+                    "texte": (t("Sorti le ", "Released ") if ecart <= 0 else t("Sort le ", "Releases ")) + jour + (". " + ", ".join(bouts) + t(" (cotes du fabricant).", " (manufacturer odds).") if bouts else "."),
+                    "truc": t("Avant d’acheter une boîte ou une place de break, calcule ce qu’elle vaut vraiment.",
+                              "Before buying a box or a break spot, work out what it’s really worth."),
+                    "source": t("Catalogue SlabCoach (fabricant)", "SlabCoach catalogue (manufacturer)"), "url": "", "lien": "#analyse"})
+    out.sort(key=lambda x: x["sortie"], reverse=True)
+    return out
+
+
 def liste(api, niveau=None, force=False, langue="fr"):
     par = dict(_globales(api, langue, force))
     par.update(_calculer(api, langue, [g for g in GENERATEURS if g.__name__ in _PAR_COMPTE]))
     out = [dict(par[g.__name__]) for g in GENERATEURS if g.__name__ in par]
+    # 20 nov 2026 : les trucs du hobby (sans donnees eBay) ; leur ordre change chaque jour, pour en voir de nouveaux
+    import datetime as _dt
+    hk = astuces_hockey(langue)
+    j = _dt.date.today().toordinal() % len(hk)
+    out += hk[j:] + hk[:j]
+    out = sorties(langue) + out
     # debutant / retour : d'abord les bases ; avance : d'abord les chiffres
     ordre = {"debutant": ["debutant", "tous", "avance"], "retour": ["debutant", "tous", "avance"],
              "expert": ["avance", "tous", "debutant"]}.get(niveau or "", ["tous", "debutant", "avance"])

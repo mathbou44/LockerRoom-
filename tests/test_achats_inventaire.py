@@ -15,7 +15,9 @@ achats = [{"item_id": "111", "titre": "2025-26 Upper Deck Young Guns Ivan Demido
           {"item_id": "222", "titre": "2023-24 Upper Deck Young Guns Connor Bedard #201", "quantite": 1, "cout_total": 380.0, "devise": "CAD", "date": "2026-10-28"}]
 api.couts_depuis_achats(achats)
 l = api.achats_liste()
-assert l["ok"] and l["a_ajouter"] == 2 and len(l["achats"]) == 2, l
+# 20 nov 2026 : les achats entrent tout seuls dans l'inventaire (cout = prix paye)
+assert l["ok"] and l["a_ajouter"] == 0 and len(l["achats"]) == 2 and all(a["carte_id"] for a in l["achats"]), l
+auto_bed = next(a["carte_id"] for a in l["achats"] if a["item_id"] == "222")
 # a la vente : la Bedard est proposee pour une Bedard, pas la Demidov
 s = api.achats_suggerer("2023-24 UD Young Guns Connor Bedard #201 Rookie")
 assert [a["item_id"] for a in s["achats"]] == ["222"] and s["achats"][0]["meme_carte"], s
@@ -24,17 +26,21 @@ g = api.carte_garder({"carte": {"emplacement": "Collection"}, "titre": "2023-24 
                       "achat": {"item_id": "222", "n": 0}})
 assert g["ok"] and g["achat_lie"] and g["achat_lie"]["cout"] == 380.0, g
 assert api.carte_lire(g["id"])["cout"] == 380.0
+assert not api.carte_lire(auto_bed).get("id"), "la copie automatique est remplacee par la carte gardee"
 assert api.achats_suggerer("Connor Bedard Young Guns")["achats"] == []          # deja relie : plus propose
 # un achat -> une carte de l'inventaire
 r = api.achat_vers_inventaire("111", 0)
+assert r.get("deja")
+r = {"ok": True, "id": next(a["carte_id"] for a in api.achats_liste()["achats"] if a["item_id"] == "111")}
 c = api.carte_lire(r["id"])
 assert r["ok"] and c["cout"] == 160.0 and c["statut"] == "En stock" and "Demidov" in c["titre"] and c["source"] == "achat eBay", c
 assert api.achat_vers_inventaire("111", 0).get("deja")                           # deux taps : une seule carte
 l = api.achats_liste()
 assert l["a_ajouter"] == 0 and all(a["carte_id"] for a in l["achats"]), l
-# la carte effacee : l'achat redevient libre
+# la carte effacee par la personne : l'achat ne revient pas
 api.carte_supprimer(r["id"])
-assert api.achats_liste()["a_ajouter"] == 1
+l = api.achats_liste()
+assert l["a_ajouter"] == 0 and [a["item_id"] for a in l["achats"]] == ["222"], l
 print("ok achats inventaire")
 
 # 5 nov 2026 : achetee il y a plus de 3 mois, toujours en stock -> « A mettre sur eBay » (pas une carte de collection)

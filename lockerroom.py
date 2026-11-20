@@ -65,6 +65,7 @@ CATEGORIE_CARTES = "261328"   # eBay : Sports Trading Card Singles
 # 12 nov 2026 (revue de securite) : taille max d'une valeur de reglage (JSON) ; les plus longues (listes de joueurs) font quelques Ko
 REGLAGE_MAX_OCTETS = 64 * 1024
 REGLAGES_DEFAUT = {
+    "histo_complet_le": None,                                   # 20 nov 2026 : la 1re synchro (2 ans de ventes) deja faite
     "prix_auto": {},                                            # 27 oct 2026 : mode Auto des prix eBay (voir prix_auto_regler)
     "tuto_vendeur": 0, "tuto_acheteur": 0,                      # 31 oct 2026 : le tour de l'app deja vu (par compte)
     "watch": {},                                                # 29 oct 2026 : alarmes de la watchlist (voir watchlist.regler)
@@ -5913,6 +5914,12 @@ class Api:
             c = self._db()
             try:
                 c.execute("DELETE FROM cartes WHERE id=?", (cid,))
+                # 20 nov 2026 : l'achat eBay d'une carte supprimee ne revient pas dans l'inventaire (-1 : retire par la personne ; un
+                # numero de carte garde pouvait etre reutilise par la carte suivante et la relier par erreur)
+                try:
+                    c.execute("UPDATE achats_ebay SET carte_id=-1 WHERE carte_id=?", (cid,))
+                except sqlite3.OperationalError:
+                    pass
                 c.commit()
             finally:
                 c.close()
@@ -7348,8 +7355,15 @@ class Api:
     def ebay_donnees_test_etat(self):
         return dict((self.__dict__.get("_test_etats") or {}).get(comptes.courant() or "local") or {"actif": False})
 
+    HISTO_JOURS = 729                    # 20 nov 2026 : eBay donne les ventes de 2 ans au plus (Fulfillment getOrders)
+
     def ebay_synchroniser(self, jours=90):
-        """Annonces actives + ventes des `jours` derniers jours, avec les frais reels."""
+        """Annonces actives + ventes des `jours` derniers jours, avec les frais reels.
+        20 nov 2026 (Mathieu : « a la premiere connexion, aller chercher leurs achats et leurs ventes le plus loin possible ») : la
+        1re synchro d'un compte (et une fois pour les comptes deja la) va chercher 2 ans de ventes ; les achats : 90 jours (eBay)."""
+        histo = not self.reglages_lire().get("histo_complet_le")
+        if histo:
+            jours = max(int(jours or 90), self.HISTO_JOURS)
         try:
             annonces = ebay_compte.annonces_actives()
             tout_c = ebay_compte.commandes(int(jours or 90))
@@ -7404,7 +7418,10 @@ class Api:
         except Exception as e:
             print(f"[synchro] photos des ventes : {e}", flush=True)
         bilan = {"annonces": a.get("lues"), "nouvelles_annonces": a.get("crees"), "ventes": v.get("nouvelles"),
-                 "deja": v.get("deja"), "couts_relies": cx.get("relies"), "le": _maintenant()}
+                 "deja": v.get("deja"), "couts_relies": cx.get("relies"), "achats_ajoutes": cx.get("ajoutes"), "le": _maintenant(),
+                 "ventes_jours": int(jours or 90)}
+        if histo:
+            self.reglages_sauver({"histo_complet_le": _maintenant()})
         ebay_compte.noter_synchro(bilan)
         return {"ok": True, **bilan}
 
@@ -9777,7 +9794,93 @@ class Api:
             res["relies"] += self.lier_achats_auto(force=True)
         except Exception as e:
             print("Achats relies tout seuls : " + repr(e)[:160], flush=True)
+        try:                                             # 20 nov 2026 : le reste entre tout seul dans l'inventaire
+            res["ajoutes"] = self.achats_ajouter_auto()
+        except Exception as e:
+            print("Achats ajoutes tout seuls : " + repr(e)[:160], flush=True)
         return {"ok": True, **res}
+
+    # 20 nov 2026 (Mathieu : « les cartes achetees sont necessairement dans ton inventaire : le bouton Ajouter fait juste du bruit ;
+    # tout doit etre automatise, pour les utilisateurs aussi ») : chaque achat eBay (une carte) qui n'est relie a aucune carte
+    # devient une carte de l'inventaire, avec le vrai prix paye. Un collectionneur (mode acheteur ou objectif collection) : dans sa
+    # Collection ; un vendeur : en Reserve. Une carte supprimee par la personne ne revient pas (l'achat garde son lien).
+    def achats_ajouter_auto(self):
+        rg = self.reglages_lire()
+        emp = "Collection" if rg.get("mode") == "acheteur" or rg.get("objectif") == "collection" else "Réserve"
+        with _verrou:
+            c = self._db()
+            try:
+                self._achats_table(c)
+                # les liens vers une carte qui n'existe plus (supprimee avant le 20 nov 2026) : retires, jamais reajoutes
+                c.execute("UPDATE achats_ebay SET carte_id=-1 WHERE carte_id > 0 AND carte_id NOT IN (SELECT id FROM cartes)")
+                c.commit()
+                libres = [tuple(r) for r in c.execute("SELECT item_id, n FROM achats_ebay WHERE carte_id IS NULL ORDER BY date")]
+            finally:
+                c.close()
+        n = 0
+        for item_id, k in libres:
+            r = self.achat_vers_inventaire(item_id, k, emp)
+            n += 1 if r.get("ok") and not r.get("deja") else 0
+        if n:
+            print(f"Achats ajoutes tout seuls a l'inventaire : {n}", flush=True)
+        try:
+            self.achats_fusionner_doublons()
+        except Exception as e:
+            print("Achats (doublons) : " + repr(e)[:160], flush=True)
+        return n
+
+    # 20 nov 2026 : une carte ajoutee toute seule depuis un achat eBay, puis la meme carte creee a la main (une photo pour la vendre,
+    # un scan) : l'app garde la carte creee par la personne, lui donne le prix paye et l'achat, et retire la copie automatique.
+    # Prudent : la copie n'a jamais ete mise en vente, c'est la MEME carte (cartes_match), creee apres l'achat, du meme joueur.
+    def achats_fusionner_doublons(self):
+        import difflib
+        with _verrou:
+            c = self._db()
+            try:
+                self._achats_table(c)
+                auto = _dicts(c.execute("SELECT k.id, k.titre, k.cout, a.item_id, a.n, a.date, a.rowid AS rid FROM cartes k JOIN achats_ebay a ON a.carte_id = k.id "
+                                        "WHERE k.source = 'achat eBay' AND k.statut = 'En stock' AND COALESCE(k.item_number, '') = ''"))
+                if not auto:
+                    return 0
+                autres = _dicts(c.execute("SELECT id, titre, joueur, cout, cree_le FROM cartes WHERE COALESCE(source, '') <> 'achat eBay' "
+                                          "AND statut IN ('En stock', 'Listée', 'Vendue') AND COALESCE(titre, '') <> ''"))
+                pris = {r[0] for r in c.execute("SELECT carte_id FROM achats_ebay WHERE carte_id IS NOT NULL")}
+            finally:
+                c.close()
+        autres = [k for k in autres if k["id"] not in pris]
+        faits, groupes = [], {}
+        for a in auto:
+            cib = cartes_match.cible_titre(a["titre"] or "")
+            j = cartes_match.norm(cib.get("joueur") or "")
+            if not j:
+                continue
+            cands = [k for k in autres
+                     if str(k.get("cree_le") or "")[:10] >= str(a.get("date") or "")[:10]
+                     and j.split()[-1] in cartes_match.norm(k.get("joueur") or k["titre"])
+                     and not (k.get("cout") and abs(float(k["cout"]) - float(a["cout"] or 0)) > max(1.0, 0.05 * float(a["cout"] or 0)))
+                     and not cartes_match.raisons_refus(cib, k["titre"])
+                     and difflib.SequenceMatcher(None, cartes_match.norm(a["titre"]), cartes_match.norm(k["titre"])).ratio() >= 0.45]
+            if cands:
+                groupes.setdefault(frozenset(k["id"] for k in cands), []).append(a)
+        # une seule carte possible : reliee ; des copies identiques (2 achats, 2 cartes faites a la main) : reliees une a une
+        for ids, l in groupes.items():
+            if len(l) == len(ids):
+                faits += list(zip(sorted(l, key=lambda a: str(a.get("date") or "")), sorted(ids)))
+        for a, cid in faits:
+            with _verrou:
+                c = self._db()
+                try:
+                    c.execute("UPDATE achats_ebay SET carte_id=? WHERE rowid=?", (cid, a["rid"]))
+                    c.execute("UPDATE cartes SET cout=?, note=TRIM(COALESCE(note,'') || ' Coût : achat eBay #' || ?) WHERE id=? AND COALESCE(cout,0)=0",
+                              (a["cout"], a["item_id"], cid))
+                    self._profit_juste(c, cid)
+                    c.commit()
+                finally:
+                    c.close()
+            self.carte_supprimer(a["id"])
+        if faits:
+            print(f"Achats : {len(faits)} copie(s) automatique(s) fusionnee(s) avec la carte creee a la main", flush=True)
+        return len(faits)
 
     # 14 nov 2026 (Mathieu : « dans l'onglet Bought, quand la carte est liee a une vente, elle doit etre retiree, c'est un
     # doublon ; l'app doit faire les ajustements ») : un achat eBay pas encore relie dont la carte est DEJA dans l'inventaire
@@ -9790,6 +9893,15 @@ class Api:
         if not force and time.time() - Api._LIER_AUTO_LE < 600:
             return 0
         Api._LIER_AUTO_LE = time.time()
+        n = self._lier_achats_libres()
+        # 20 nov 2026 : la copie ajoutee toute seule dont la carte est arrivee autrement (vendue, creee a la main) : une seule carte
+        try:
+            n += self.achats_fusionner_doublons()
+        except Exception as e:
+            print("Achats fusionnes : " + repr(e)[:160], flush=True)
+        return n
+
+    def _lier_achats_libres(self):
         import difflib
         with _verrou:
             c = self._db()
@@ -9878,7 +9990,10 @@ class Api:
         try:
             self._achats_table(c)
             lie = _dicts(c.execute("SELECT item_id, n, titre, cout, date, photo FROM achats_ebay WHERE carte_id=?", (cid,)))
-            libres = _dicts(c.execute("SELECT item_id, n, titre, cout, date, photo FROM achats_ebay WHERE carte_id IS NULL ORDER BY date DESC"))
+            # 20 nov 2026 : les achats ajoutes tout seuls (copie pas encore en vente) restent proposes : la carte choisie la remplace
+            libres = _dicts(c.execute("SELECT a.item_id, a.n, a.titre, a.cout, a.date, a.photo FROM achats_ebay a LEFT JOIN cartes k ON k.id = a.carte_id "
+                                      "WHERE a.carte_id IS NULL OR (a.carte_id <> ? AND k.source = 'achat eBay' AND k.statut = 'En stock' "
+                                      "AND COALESCE(k.item_number, '') = '') ORDER BY a.date DESC", (cid,)))
             nb = c.execute("SELECT COUNT(*) FROM achats_ebay").fetchone()[0]
         finally:
             c.close()
@@ -9909,8 +10024,14 @@ class Api:
                 a = c.execute("SELECT cout, carte_id FROM achats_ebay WHERE item_id=? AND n=?", (str(item_id), int(n or 0))).fetchone()
                 if not a:
                     return {"ok": False, "erreur": "Achat introuvable"}
-                if a[1] and a[1] != cid:
-                    return {"ok": False, "erreur": "Cet achat est déjà relié à une autre carte"}
+                copie = None
+                if a[1] and a[1] > 0 and a[1] != cid:
+                    # 20 nov 2026 : relie a la copie ajoutee toute seule (pas encore en vente) : la carte choisie la remplace
+                    if c.execute("SELECT 1 FROM cartes WHERE id=? AND source='achat eBay' AND statut='En stock' "
+                                 "AND COALESCE(item_number,'')=''", (a[1],)).fetchone():
+                        copie = a[1]
+                    else:
+                        return {"ok": False, "erreur": "Cet achat est déjà relié à une autre carte"}
                 if not c.execute("SELECT 1 FROM cartes WHERE id=?", (cid,)).fetchone():
                     return {"ok": False, "erreur": "Carte introuvable"}
                 c.execute("UPDATE achats_ebay SET carte_id=NULL WHERE carte_id=?", (cid,))
@@ -9920,6 +10041,8 @@ class Api:
                 c.commit()
             finally:
                 c.close()
+        if copie:
+            self.carte_supprimer(copie)
         return {"ok": True, "cout": a[0]}
 
     def achat_delier(self, carte_id):
@@ -9990,12 +10113,17 @@ class Api:
                 c.close()
         if vide and not force and ebay_compte.statut().get("connecte"):
             return self.achats_liste(True)
+        if not force:                            # 20 nov 2026 : un achat pas encore dans l'inventaire y entre tout seul
+            try:
+                self.achats_ajouter_auto()
+            except Exception as e:
+                print("Achats ajoutes tout seuls : " + repr(e)[:160], flush=True)
         c = self._db()
         try:
             self._achats_table(c)
             l = _dicts(c.execute("SELECT a.item_id, a.n, a.titre, a.cout, a.date, a.photo, a.carte_id, k.titre AS carte_titre, "
                                  "k.statut AS carte_statut FROM achats_ebay a LEFT JOIN cartes k ON k.id = a.carte_id "
-                                 "ORDER BY (a.carte_id IS NOT NULL), a.date DESC LIMIT 400"))
+                                 "WHERE COALESCE(a.carte_id, 0) <> -1 ORDER BY (a.carte_id IS NOT NULL), a.date DESC LIMIT 400"))
         finally:
             c.close()
         for a in l:
@@ -10004,8 +10132,9 @@ class Api:
             if a.get("photo") == "-":
                 a["photo"] = None
         self._achats_photos([a for a in l if not a.get("carte_id")])
+        # 20 nov 2026 : eBay ne donne les achats que des 90 derniers jours : l'app dit a partir de quand entrer les autres a la main
         return {"ok": True, "achats": l, "a_ajouter": sum(1 for a in l if not a.get("carte_id")),
-                "ebay": bool(ebay_compte.statut().get("connecte"))}
+                "ebay": bool(ebay_compte.statut().get("connecte")), "depuis": (datetime.now() - timedelta(days=90)).strftime("%Y-%m-%d")}
 
     def achat_sortie(self, item_id, n=0, prix=0.0, raison="donnee"):
         """18 nov 2026 (Mathieu : « je l'ai donnee, donc vendue ; pas moyen de la cocher vendue ») : un achat qui n'est plus a
@@ -10374,6 +10503,18 @@ class Api:
                         "ebay_etat": "pas_liste"})
             if env:
                 out[-1]["envoi"] = {c_: env.get(c_) for c_ in ("compagnie", "etape", "retour_prevu", "envoye_le")}
+            elif k.get("source") == "achat eBay" and a:
+                # 20 nov 2026 : la copie ajoutee toute seule : une carte de l'inventaire qui SEMBLE la meme (sur eBay ?) est
+                # signalee, un tap relie (la copie disparait)
+                try:
+                    pe = peut_etre(k.get("titre"))
+                except Exception:
+                    pe = None
+                if pe:
+                    out[-1]["ebay_etat"] = "sur_ebay" if pe["sur_ebay"] else "inventaire"
+                    out[-1]["peut_etre"] = pe
+                    if not out[-1]["photo"] and pe.get("photo"):
+                        out[-1]["photo"] = pe["photo"]
         try:
             score_slab.annoter_lot(out)
         except Exception as e:
@@ -10559,7 +10700,10 @@ class Api:
         c = self._db()
         try:
             self._achats_table(c)
-            libres = _dicts(c.execute("SELECT item_id, n, titre, cout, date, photo FROM achats_ebay WHERE carte_id IS NULL ORDER BY date DESC LIMIT 400"))
+            # 20 nov 2026 : un achat ajoute tout seul (copie pas encore en vente) reste propose : la carte choisie la remplace
+            libres = _dicts(c.execute("SELECT a.item_id, a.n, a.titre, a.cout, a.date, a.photo FROM achats_ebay a LEFT JOIN cartes k ON k.id = a.carte_id "
+                                      "WHERE a.carte_id IS NULL OR (k.source = 'achat eBay' AND k.statut = 'En stock' AND COALESCE(k.item_number, '') = '') "
+                                      "ORDER BY a.date DESC LIMIT 400"))
         finally:
             c.close()
         cib = cartes_match.cible_titre(t)

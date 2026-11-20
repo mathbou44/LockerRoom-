@@ -692,9 +692,10 @@ def photo_item(item_id):
 
 
 def commandes(jours=90):
-    depuis = (datetime.now(timezone.utc) - timedelta(days=jours)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    """20 nov 2026 : jusqu'a 2 ans (729 jours : la limite d'eBay pour getOrders), 20 000 commandes au plus."""
+    depuis = (datetime.now(timezone.utc) - timedelta(days=min(729, int(jours or 90)))).strftime("%Y-%m-%dT%H:%M:%S.000Z")
     tout, offset = [], 0
-    while offset < 5000:
+    while offset < 20000:
         q = urllib.parse.urlencode({"filter": f"creationdate:[{depuis}..]", "limit": 200, "offset": offset})
         p = _get_json(url("commandes") + "?" + q)
         tout += lire_commandes(p)

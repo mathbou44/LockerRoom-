@@ -29,7 +29,8 @@
 :root{
   /* 27 oct 2026 - palette refractor douce (Mathieu : « que ca fit avec les refractor mais pas trop intense ») :
      noir neutre du logo, ivoire du S, accent pervenche chrome, or champagne, et le degrade refractor en touches fines */
-  --fond:#0B0B0E; --carte:#1C1C24; --carte2:#272731; --ligne:#393845; --sep:#22222A;   /* 28 oct (« contraste trop faible ») : les pastilles ressortent du fond */
+  /* 20 nov 2026 (Mathieu : « l'app est vraiment sombre, difficile de voir le contraste entre fond et tuile ») : les tuiles plus claires */
+  --fond:#0B0B0E; --carte:#25252F; --carte2:#30303C; --ligne:#474654; --sep:#2B2B34;   /* 28 oct (« contraste trop faible ») : les pastilles ressortent du fond */
   --texte:#F4F2EE; --doux:#A9A6B1; --pale:#8C8996;
   --acc:#B9BEFF; --acc-fonce:#1E2038; --acc-texte:#0E1026;
   --or:#E9CF8E; --or-clair:#F3E2B3; --or-fort:#D9B866; --or-sombre:#A88A45; --or-fonce:#2A2416; --or-ligne:#5C4E2C;
@@ -2186,7 +2187,7 @@ body.theme-equipe{background-image:radial-gradient(1200px 420px at 50% -120px, c
 .bandeau-essai .btn{width:auto; flex-shrink:0}
 /* le look Pro : un fil dore en haut, des bordures qui accrochent la lumiere, les titres et l'onglet actif dores */
 /* 28 oct 2026 (Mathieu : « une barre prism pas rapport dans le haut de l'ecran ») : la ligne prisme du Pro en haut est retiree */
-body.pro{--ligne:#393845}
+body.pro{--ligne:#474654}
 body.pro .titre{background:linear-gradient(92deg,#FFFFFF 0%,var(--acc-clair) 60%,var(--acc) 100%); -webkit-background-clip:text; background-clip:text; color:transparent}
 body.pro .kpi, body.pro .tuile-c, body.pro .carte-acc{border-color:color-mix(in srgb, var(--acc) 16%, transparent)}
 body.pro .tuile-c:hover{border-color:color-mix(in srgb, var(--acc) 45%, transparent); box-shadow:0 10px 30px color-mix(in srgb, var(--acc) 12%, transparent)}
@@ -2959,7 +2960,7 @@ button.tag{font-family:var(--f-cond); font-size:13px}
 .champ, .recherche, select.champ{border-radius:var(--r-ctl)}
 .vig, .ecusson{border-radius:8px; box-shadow:inset 0 0 0 2px var(--carte2), 0 0 0 1px var(--ligne)}
 /* --- Pro : le meme systeme, les reflets prennent la palette --- */
-body.pro{--ligne:color-mix(in srgb, var(--acc) 12%, #393845)}
+body.pro{--ligne:color-mix(in srgb, var(--acc) 14%, #474654)}
 body.pro .titre{background:linear-gradient(110deg,#FFFFFF 0%,var(--acc-clair) 30%,var(--acc) 45%,#FFFFFF 50%,var(--acc) 55%,var(--acc-clair) 70%,#FFFFFF 100%);
   background-size:250% 100%; -webkit-background-clip:text; background-clip:text; color:transparent}
 body.pro .onglets a.on{color:var(--acc)}
@@ -4231,6 +4232,39 @@ body.vd-ouverte::before{content:''; position:fixed; top:0; left:0; right:0; heig
 .fc-chiffres div{display:flex; flex-direction:column; gap:2px; padding:10px 12px; border-radius:14px; background:var(--carte); border:1px solid var(--ligne)}
 .fc-chiffres span{font:700 11px var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--doux)} .fc-chiffres b{font:700 24px/1.05 var(--f-cond)}
 .fc-chiffres b.vert{color:var(--vert)} .fc-chiffres b.rouge{color:var(--rouge)}
+/* 20 nov 2026 (Mathieu, la fiche d'un joueur au cell : « que ca fit sur une page et que ca look plus simple ») : des tuiles plus
+   basses, l'en-tete plus petit, ses cartes recherchees sur une rangee qui glisse, le lien Fanatics sur une ligne */
+@media (max-width:699px){
+  html body .ecran.large.joueur .jb{gap:8px; margin-bottom:10px}
+  html body .ecran.large.joueur .jb-t{padding:10px 12px; border-radius:16px; gap:2px}
+  html body .ecran.large.joueur .jb-tete{gap:12px} html body .ecran.large.joueur .jb-tete .vig-j{width:52px; height:70px; border-radius:10px}
+  html body .ecran.large.joueur .jb-n{gap:6px} html body .ecran.large.joueur .jb-n .titre{font-size:24px; line-height:1.05}
+  html body .ecran.large.joueur .jb-cl{width:38px; height:38px}
+  html body .ecran.large.joueur .jb-v{font-size:24px}
+  html body .ecran.large.joueur .jb-t small{font-size:12.5px}
+  html body .ecran.large.joueur .jb-nv{gap:4px} html body .ecran.large.joueur .jb-nx{display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; font-size:14px}
+  html body .ecran.large.joueur .jb-ty > small{display:none}
+  html body .ecran.large.joueur .jb-ty .ty-l{flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; margin:4px -12px 0; padding:0 12px 2px} html body .ecran.large.joueur .jb-ty .ty-l::-webkit-scrollbar{display:none}
+  html body .ecran.large.joueur .jb-ty .ty-p{flex:none}
+  html body .ecran.large.joueur .jb-a{flex-direction:row; align-items:center; gap:10px} html body .ecran.large.joueur .jb-a .jb-ic{width:30px; height:30px}
+  html body .ecran.large.joueur .jb-a b{position:static; margin-left:auto; font-size:22px}
+  html body .ecran.large.joueur .jb-a{padding-right:30px} html body .ecran.large.joueur .jb-a .jb-k{white-space:nowrap; padding-right:0} html body .ecran.large.joueur .jb-a .jb-f{top:50%; transform:translateY(-50%)}
+  html body .ecran.large.joueur > .lien-fc{margin-top:0 !important; padding:10px 14px; flex-wrap:nowrap} html body .ecran.large.joueur > .lien-fc .lien-fc-t{flex-basis:auto; order:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:13px}
+}
+/* 20 nov 2026 (Mathieu : « l'en-tete jusqu'a la barre de recherche reste en haut, fige quand je defile ») : Breaks */
+.bk-fixe{position:sticky; top:var(--bm-h, 0px); z-index:18; display:flex; flex-direction:column; gap:12px; margin:0 -18px; padding:10px 18px 12px;
+  background:color-mix(in srgb, var(--fond) 92%, transparent); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px)}
+.bk-fixe .bk-mode{margin:0} .bk-fixe #an-rech:empty{display:none} .bk-fixe .recherche{margin:0}
+@media (min-width:900px){ .bk-fixe{margin:0; padding:10px 0 12px; top:calc(var(--haut) + 34px); background:var(--fond);
+  box-shadow:0 0 0 100vmax var(--fond); clip-path:inset(-200px -100vmax -1px -100vmax)} }
+/* 20 nov 2026 : les achats d'avant les 90 jours d'eBay : a la main */
+.fa-vieux{display:flex; flex-direction:column; gap:6px; margin-top:14px; padding:12px 14px; border-radius:16px; border:1px solid color-mix(in srgb, var(--or) 40%, var(--ligne)); background:color-mix(in srgb, var(--or) 8%, var(--carte))}
+.fa-vieux b{font-size:15px} .fa-vieux span{font-size:13.5px; color:var(--doux)} .fa-vieux .btn{align-self:flex-start}
+/* 20 nov 2026 : le X des notifications ; le X des barres de recherche (des qu'il y a du texte) */
+.nt-tt{display:flex; align-items:center; justify-content:space-between; gap:12px} .nt-tt .nt-x{position:static; flex:none; width:40px; height:40px}
+.rech-x{flex:none; width:26px; height:26px; margin-left:auto; border-radius:50%; border:0; background:color-mix(in srgb, var(--texte) 16%, transparent); color:var(--texte);
+  display:grid; place-items:center; padding:0; cursor:pointer} .rech-x[hidden]{display:none} .rech-x svg{width:12px; height:12px}
+input[type="search"]::-webkit-search-cancel-button{-webkit-appearance:none; appearance:none; display:none}
 /* 20 nov 2026 : la bande « Ajuste ton Radar » (a la place de la fenetre qui s'ouvrait toute seule) */
 .d-ajust{display:flex; align-items:center; gap:8px; margin:8px 0 10px; padding:4px 4px 4px 0; border-radius:16px; border:1.5px solid transparent;
   background:linear-gradient(var(--carte2, #1E1E25), var(--carte2, #1E1E25)) padding-box, var(--holo) border-box}
@@ -4424,17 +4458,24 @@ body[data-motif="prisme"] #mosaique{background-image:
   border:1px solid color-mix(in srgb, var(--ligne) 70%, transparent); overflow:hidden; -webkit-tap-highlight-color:transparent; transition:transform .14s ease-out, border-color .2s}
 /* 18 nov 2026 (Mathieu : « les tuiles sont toutes pareilles ; un petit fond de couleur leger, dans le theme choisi, pour bien
    les separer ») : chaque tuile prend une des 4 couleurs du theme (--h1 a --h4), tres diluee ; voisines jamais pareilles */
-#acc-ft > .ft-t:nth-child(4n+1){--tt:var(--h1,#9FE6D2)} #acc-ft > .ft-t:nth-child(4n+2){--tt:var(--h2,#B9BEFF)}
-#acc-ft > .ft-t:nth-child(4n+3){--tt:var(--h3,#F2B3D6)} #acc-ft > .ft-t:nth-child(4n+4){--tt:var(--h4,#F1D58E)}
-#acc-ft > .ft-t{background:linear-gradient(160deg, color-mix(in srgb, var(--tt) 15%, color-mix(in srgb, var(--carte) 86%, transparent)), color-mix(in srgb, var(--tt) 5%, color-mix(in srgb, var(--carte) 62%, transparent)));
-  border-color:color-mix(in srgb, var(--tt) 26%, var(--ligne))}
+/* 20 nov 2026 (Mathieu : « les couleurs de tuiles doivent changer avec la palette ; mauve = plusieurs degres de mauve ») : 4 degres
+   de l'accent de la palette choisie (pas les couleurs des fetes) */
+body{--t1:var(--acc); --t2:color-mix(in oklab, var(--acc) 58%, #fff); --t3:color-mix(in oklab, var(--acc) 72%, #000); --t4:color-mix(in oklab, var(--acc) 62%, #8a8a95)}
+#acc-ft > .ft-t:nth-child(4n+1){--tt:var(--t1)} #acc-ft > .ft-t:nth-child(4n+2){--tt:var(--t2)}
+#acc-ft > .ft-t:nth-child(4n+3){--tt:var(--t3)} #acc-ft > .ft-t:nth-child(4n+4){--tt:var(--t4)}
+/* 20 nov 2026 (Mathieu : « ca fait monotone, c'est a peine colore ») : la couleur plus franche (un halo dans le coin, un fond
+   plus teinte, un contour de la meme couleur) ; le texte reste blanc et lisible */
+#acc-ft > .ft-t{background:radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--tt) 34%, transparent), transparent 62%),
+    linear-gradient(160deg, color-mix(in srgb, var(--tt) 24%, color-mix(in srgb, var(--carte) 86%, transparent)), color-mix(in srgb, var(--tt) 10%, color-mix(in srgb, var(--carte) 70%, transparent)));
+  border-color:color-mix(in srgb, var(--tt) 48%, var(--ligne))}
 .ft-t:active{transform:scale(.97)} @media (hover:hover){ .ft-t:hover{border-color:color-mix(in srgb, var(--acc) 45%, var(--ligne))} }
 /* 19 nov 2026 (Mathieu : « des couleurs differentes legeres dans les tuiles bento comme a l'accueil ; faire ce concept partout
    sur l'app ») : les grilles de tuiles (la cote SlabIQ, l'admin, les bilans, les achats) prennent les 4 teintes du theme */
-:is(.psb-g, .ceo-kpis, .achx-k, .adm-kpi2, .an-bilan, .bil-ks, .fjc-tr, .adm-grille2) > :not(.ak):nth-child(4n+1){--tt:var(--h1,#9FE6D2)} :is(.psb-g, .ceo-kpis, .achx-k, .adm-kpi2, .an-bilan, .bil-ks, .fjc-tr, .adm-grille2) > :not(.ak):nth-child(4n+2){--tt:var(--h2,#B9BEFF)}
-:is(.psb-g, .ceo-kpis, .achx-k, .adm-kpi2, .an-bilan, .bil-ks, .fjc-tr, .adm-grille2) > :not(.ak):nth-child(4n+3){--tt:var(--h3,#F2B3D6)} :is(.psb-g, .ceo-kpis, .achx-k, .adm-kpi2, .an-bilan, .bil-ks, .fjc-tr, .adm-grille2) > :not(.ak):nth-child(4n+4){--tt:var(--h4,#F1D58E)}
-:is(.psb-g, .ceo-kpis, .achx-k, .adm-kpi2, .an-bilan, .bil-ks, .fjc-tr, .adm-grille2) > :not(.ak){background:linear-gradient(160deg, color-mix(in srgb, var(--tt) 15%, var(--carte2, var(--carte))), color-mix(in srgb, var(--tt) 4%, var(--carte2, var(--carte)))) !important;
-  border:1px solid color-mix(in srgb, var(--tt) 28%, var(--ligne)) !important}
+:is(.psb-g, .ceo-kpis, .achx-k, .adm-kpi2, .an-bilan, .bil-ks, .fjc-tr, .adm-grille2) > :not(.ak):nth-child(4n+1){--tt:var(--t1)} :is(.psb-g, .ceo-kpis, .achx-k, .adm-kpi2, .an-bilan, .bil-ks, .fjc-tr, .adm-grille2) > :not(.ak):nth-child(4n+2){--tt:var(--t2)}
+:is(.psb-g, .ceo-kpis, .achx-k, .adm-kpi2, .an-bilan, .bil-ks, .fjc-tr, .adm-grille2) > :not(.ak):nth-child(4n+3){--tt:var(--t3)} :is(.psb-g, .ceo-kpis, .achx-k, .adm-kpi2, .an-bilan, .bil-ks, .fjc-tr, .adm-grille2) > :not(.ak):nth-child(4n+4){--tt:var(--t4)}
+:is(.psb-g, .ceo-kpis, .achx-k, .adm-kpi2, .an-bilan, .bil-ks, .fjc-tr, .adm-grille2) > :not(.ak){background:radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--tt) 30%, transparent), transparent 62%),
+    linear-gradient(160deg, color-mix(in srgb, var(--tt) 22%, var(--carte2, var(--carte))), color-mix(in srgb, var(--tt) 8%, var(--carte2, var(--carte)))) !important;
+  border:1px solid color-mix(in srgb, var(--tt) 45%, var(--ligne)) !important}
 .psb-g > .psb .psb-h svg{stroke:color-mix(in srgb, var(--tt) 70%, var(--texte))}
 .ft-h{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px}
 .ft-t .ap-ic{position:relative; width:38px; height:38px; flex-shrink:0; border-radius:50%; display:flex; align-items:center; justify-content:center;
@@ -5126,7 +5167,9 @@ input[type=number]{-moz-appearance:textfield; appearance:textfield}
 .tiq-fd summary b{flex:1; min-width:0} .tiq-fd summary i{font-style:normal; color:var(--doux); transition:transform .2s} .tiq-fd[open] summary i{transform:rotate(90deg)}
 .tiq-fx{padding:0 14px 12px 66px; display:flex; flex-direction:column; gap:8px}
 .tiq-fx div{display:flex; justify-content:space-between; gap:10px; font-size:14.5px; color:var(--doux)} .tiq-fx div b{flex:none; font-weight:800}
-.fa-sig{align-self:center; font-size:13px; color:var(--doux)} .fa-bas-d{display:flex; gap:14px; align-items:center} .fa-bas .fa-sig{margin:0; padding:0}
+.fa-sig{align-self:center; font-size:13px; color:var(--doux)}
+.fa-sig.fa-sig-p{align-self:flex-start; margin:-2px 0 2px; padding:5px 12px; border-radius:999px; border:1px solid color-mix(in srgb, var(--rouge) 45%, transparent);
+  background:color-mix(in srgb, var(--rouge) 12%, transparent); color:color-mix(in srgb, var(--rouge) 70%, #fff); font:600 13px var(--f-txt, inherit); cursor:pointer} .fa-bas-d{display:flex; gap:14px; align-items:center} .fa-bas .fa-sig{margin:0; padding:0}
 /* 16 nov 2026 (Mathieu : « on doit savoir rapidement ou nous menent les pastilles : le titre en gros en premier, l'icone et
    les chiffres apres » ; « ne fit pas dans un ecran » a l'ordi) : chaque tuile de l'accueil dit d'abord OU elle mene (titre en
    gros), puis l'icone et le chiffre cote a cote, puis le detail ; a l'ordi, tout l'accueil tient dans la hauteur de l'ecran */
@@ -6329,6 +6372,10 @@ const V = () => $('#vue');
     if (ec) r_.setProperty('--tf-top', Math.max(0, Math.round(parseFloat(getComputedStyle(ec).paddingTop) - 12)) + 'px'); } }) : null;
   const suivre = () => { const t = document.querySelector('.tete-fixe'); if (ro && t && !t._ro) { t._ro = 1; ro.observe(t); } };
   const go = () => { const v = document.getElementById('vue'); if (!v) return setTimeout(go, 200); new MutationObserver(suivre).observe(v, {childList: true, subtree: true}); suivre(); }; go(); })();
+// 20 nov 2026 : la hauteur de la barre du haut (telephone), pour que les bandes fixes (Breaks) collent juste dessous
+(() => { const b = () => document.querySelector('.barre-mode'); const m = () => { const e = b();
+    document.documentElement.style.setProperty('--bm-h', (e && getComputedStyle(e).display !== 'none' && getComputedStyle(e).position === 'sticky' ? Math.round(e.getBoundingClientRect().height) : 0) + 'px'); };
+  const go = () => { const e = b(); if (!e) return setTimeout(go, 300); m(); if (typeof ResizeObserver === 'function') new ResizeObserver(m).observe(e); addEventListener('resize', m); }; go(); })();
 // 3 nov 2026 : pas de zoom a deux doigts (iPhone : l'app et Safari ignorent parfois user-scalable)
 ['gesturestart', 'gesturechange'].forEach(t => document.addEventListener(t, (e) => e.preventDefault(), {passive:false}));
 function ouvrirFeuille(html, o_){
@@ -10787,8 +10834,8 @@ async function vueAnalyse(arg){
   if (arg && arg !== 'choisir' && A.produit !== decodeURIComponent(arg)) anaCharger(decodeURIComponent(arg));
   V().innerHTML = `<section class="ecran large"><div class="entete"><div class="titre">${tt('Breaks', 'Breaks')}</div>
       <div class="pastilles">${vendeur ? '<a class="pilule" href="#breaks/liste">' + tt('Mes breaks', 'My breaks') + '</a>' : ''}</div></div>
-    <div class="bk-mode" role="tablist" aria-label="${esc(tt('Je…', 'I…'))}">${[['acheteur', tt('J’achète une place', 'I buy a spot')], ['breaker', tt('Je fais un break', 'I run a break')]].map(([k, l]) =>
-      `<button role="tab" aria-selected="${S.breakMode === k}" class="${S.breakMode === k ? 'on' : ''}" data-bkm="${k}">${l}</button>`).join('')}</div>
+    <div class="bk-fixe"><div class="bk-mode" role="tablist" aria-label="${esc(tt('Je…', 'I…'))}">${[['acheteur', tt('J’achète une place', 'I buy a spot')], ['breaker', tt('Je fais un break', 'I run a break')]].map(([k, l]) =>
+      `<button role="tab" aria-selected="${S.breakMode === k}" class="${S.breakMode === k ? 'on' : ''}" data-bkm="${k}">${l}</button>`).join('')}</div><div id="an-rech"></div></div>
     <div id="an-z">${roue}</div></section>`;
   $$('[data-bkm]').forEach(b => b.onclick = () => choisirBreakMode(b.dataset.bkm));
   if (!A.produit || arg === 'choisir') return choisirProduitAnalyse();
@@ -10798,13 +10845,15 @@ const sansAccents = (x) => String(x || '').normalize('NFD').replace(/[\u0300-\u0
 async function choisirProduitAnalyse(){
   const z = $('#an-z'); const [c] = await Promise.all([API.catalogue_liste().catch(() => ({produits:[]})), imagesProduits()]);
   if (!$('#an-z')) return;
+  // 20 nov 2026 (Mathieu : « l'en-tete jusqu'a la barre de recherche reste toujours en haut ») : la recherche vit dans la bande fixe
+  const zr = $('#an-rech'); if (zr) zr.innerHTML = `<div class="recherche">${ICONES.loupe}<input id="an-q" type="search" autocomplete="off" placeholder="${esc(tt('Rechercher un produit : année, marque, set…', 'Search a product: year, brand, set…'))}" value="${esc(S.anaQ || '')}"></div>`;
   z.innerHTML = `${(S.forfait || {}).pro ? '' : `<div class="pastilles" style="margin-bottom:10px">${pastilleQuota('breaks_produits')}</div>`}
-    <div class="recherche" style="margin-bottom:12px">${ICONES.loupe}<input id="an-q" type="search" autocomplete="off" placeholder="${esc(tt('Rechercher un produit : année, marque, set…', 'Search a product: year, brand, set…'))}" value="${esc(S.anaQ || '')}"></div>
     <div class="vide" id="an-aucun" hidden>${tt('Aucun produit ne correspond.', 'No product matches.')}</div>
     <div class="grille-c">${(c.produits || []).map(p => `<button class="tuile-c tuile-prod" data-p="${esc(p.id)}" data-q="${esc(sansAccents([p.nom, p.saison, p.id].join(' ')).toLowerCase())}">
       <div class="img visuel-prod">${imgProduit(p.id)}<span class="vp-saison">${esc(p.saison || '')}</span><span class="vp-nom">${esc(String(p.nom || '').replace(/^\d{4}-\d{2}\s+/, ''))}</span></div>
       ${p.ouvrir ? `<div class="coin">${capsule(p.ouvrir.verdict === 'ouvrir' ? tt('Ouvrir', 'Open') + ' +' + p.ouvrir.pct + ' %' : p.ouvrir.verdict === 'garder' ? tt('Garder scellée', 'Keep sealed') + ' ' + p.ouvrir.pct + ' %' : tt('Neutre', 'Even') + ' ' + (p.ouvrir.pct > 0 ? '+' : '') + p.ouvrir.pct + ' %', (p.ouvrir.verdict === 'ouvrir' ? 'vert' : p.ouvrir.verdict === 'garder' ? 'rouge' : 'or') + ' petit')}</div>` : ''}
-      ${p.complete ? `<span class="ck-ok" title="${esc(tt('Checklist complète : toutes les cotes publiées sont dans le calcul', 'Full checklist: every published odd is in the math'))}">✓</span>` : ''}
+      ${'' /* 20 nov 2026 (Mathieu : « des crochets, pas de crochets : on pense que le produit n'est pas complet ») : chaque produit a sa checklist : le crochet partout */}
+      ${!p.complete && S.forfait && S.forfait.admin ? '' : `<span class="ck-ok" title="${esc(tt('Checklist dans SlabCoach', 'Checklist in SlabCoach'))}">✓</span>`}
       ${!p.complete && S.forfait && S.forfait.admin ? `<span class="ck-manq">${capsule(p.cotes_manquantes + ' ' + tt(p.cotes_manquantes > 1 ? 'cotes' : 'cote', p.cotes_manquantes > 1 ? 'odds' : 'odd'), 'or petit')}</span>` : ''}</button>`).join('')}</div>
     <div class="ph-liens"><a href="#calendrier">${tt('Calendrier des sorties', 'Release calendar')}</a></div>`;
   // 15 nov 2026 (Mathieu : « minimise l'info, pas de flafla ») : la tuile = le visuel du produit (saison + nom) et le crochet
@@ -11190,6 +11239,7 @@ function feuilleReglagesAna(r, vendeur){
 }
 async function rendreAnalyse(){
   const z = $('#an-z'), A = S.ana, vendeur = breakVendeur();
+  const zr_ = $('#an-rech'); if (zr_) zr_.innerHTML = '';
   A.demandesJ = A.demandesJ || {};
   const args = (m) => ({produit_id:A.produit, boites:A.boites, mode: vendeur ? (m || A.mode) : 'equipes', cout_boite: vendeur ? A.cout : 0, marge:A.marge, decote:0,
     prix_demandes:A.demandes, prix_joueurs:A.demandesJ, acheteur: !vendeur});
@@ -11757,10 +11807,11 @@ async function ouvrirAnnonce(base){
       ${pils.length ? `<div class="pastilles fa-pils2">${pils.slice(0, 2).join('')}</div>` : ''}
       ${bandeauVerifier(base.item_id)}
       ${proChips(a)}
+      ${''/* 20 nov 2026 (Mathieu : « Wrong grade juste en dessous des deux tuiles, un petit onglet en rouge pale ») */}
+      <button class="fa-sig fa-sig-p" id="fa-sig">${tt('Pas la bonne note ?', 'Wrong grade?')}</button>
       ${blocMesAchats(d.mes_achats, d.deja_achetee, 0, null)}
       <div class="fa-btns"><a class="btn" href="${esc(url)}" target="_blank" rel="noopener">${encan ? tt('Miser sur eBay', 'Bid on eBay') : tt('Acheter sur eBay', 'Buy on eBay')}</a>${boutonWatch({item_id: base.item_id})}</div>
       ${blocAutres(base)}
-      <button class="lien-doux fa-sig" id="fa-sig">${tt('Pas la bonne note ?', 'Wrong grade?')}</button>
       <button class="btn ghost fa-verif" data-verif="${esc(base.item_id)}" data-verif-t="${esc(a.titre || base.titre || '')}" data-verif-p="${esc(total ? (encan ? Math.max(0, total - port) : total) : 0)}" data-verif-e="${encan ? 1 : ''}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><span>${encan ? tt('Vérifier le prix avant de miser', 'Check the price before bidding') : tt('Vérifier le prix avant d’acheter', 'Check the price before buying')}</span></button></div>`;
     $$('.fen-vigs [data-ph]', f).forEach(b => b.onclick = () => { $('#fen-img', f).innerHTML = `<img src="${esc(b.dataset.ph)}" alt="">`; $$('.fen-vigs button', f).forEach(x => x.classList.toggle('on', x === b)); brancherLoupe($('#fen-img', f)); });
     brancherLoupe($('#fen-img', f));
@@ -13392,7 +13443,8 @@ async function vueAccueil(arg){
   setTimeout(() => { if ((location.hash || '#accueil').startsWith('#accueil')) demanderPartage(); }, 2500);
   if (arg === 'bienvenue' || arg === 'retour') {
     history.replaceState(null, '', '#accueil');
-    toast(arg === 'bienvenue' ? 'Bienvenue ! On importe tes annonces et tes ventes eBay…' : 'Re-bonjour !', 4500);
+    // 20 nov 2026 : la 1re fois, tout ton eBay arrive tout seul (annonces, 2 ans de ventes, 90 jours d'achats) : ca peut prendre quelques minutes
+    toast(arg === 'bienvenue' ? tt('Bienvenue ! On importe tout ton eBay : tes annonces, tes ventes des 2 dernières années et tes achats des 90 derniers jours. La première fois, ça peut prendre quelques minutes.', 'Welcome! We’re importing your whole eBay: your listings, your sales from the last 2 years and your purchases from the last 90 days. The first time can take a few minutes.') : tt('Re-bonjour !', 'Welcome back!'), 7000);
     if (arg === 'bienvenue') suivrePremiereSynchro();
   }
   arreterAccueilLive();
@@ -13713,9 +13765,9 @@ function rendreNewsListe(){
   // en bas pour voir quelle page on est ; leger ; une fenetre avec plus d'info quand on clique ») : au cell, un carrousel
   // leger sous les tuiles ; un toucher ouvre la nouvelle en grand
   if (!estBureau()) {
-    const M = L.slice(0, 8);
+    const M = L.slice(0, 12);
     z.innerHTML = `<div class="nl-car" id="nl-car">${M.map((n, j) => `<button class="nl-s" data-nl="${j}">${n.image && !n.astuce ? `<span class="nl-img" style="background-image:${cssUrl(n.image)}"></span>` : ico(n)}
-        <span class="nl-t"><small>${n.marche ? tt('Marché', 'Market') : n.astuce ? tt('Astuce', 'Tip') : esc(n.libelle || nomSport(n.sport) || tt('Nouvelle', 'News'))}${n.date && !n.astuce ? ' · ' + esc(dateCourte(n.date)) : ''}</small><b>${insec(esc(String(n.titre || '').slice(0, 120)))}</b></span></button>`).join('')}</div>
+        <span class="nl-t"><small>${n.sortie ? (n.a_venir ? tt('Bientôt', 'Coming soon') : tt('Nouveau produit', 'New product')) : n.marche ? tt('Marché', 'Market') : n.astuce ? tt('Astuce', 'Tip') : esc(n.libelle || nomSport(n.sport) || tt('Nouvelle', 'News'))}${n.date && !n.astuce ? ' · ' + esc(dateCourte(n.date)) : ''}</small><b>${insec(esc(String(n.titre || '').slice(0, 120)))}</b></span></button>`).join('')}</div>
       ${M.length > 1 ? `<div class="nl-pts" aria-hidden="true">${M.map((_, j) => `<i class="${j ? '' : 'on'}"></i>`).join('')}</div>` : ''}`;
     z.hidden = false;
     const car = $('#nl-car', z), pts = $$('.nl-pts i', z);
@@ -13729,7 +13781,7 @@ function rendreNewsListe(){
   const _ast = L.slice(0, 7).every(n => n.astuce);
   z.innerHTML = `<div class="acc-sec" style="--c:#F2C14E"><span>${_ast ? tt('Astuces', 'Tips') : tt('Nouvelles', 'News')}</span><button class="lien-doux" id="nl-tout">${tt('Tout voir', 'See all')} ›</button></div>
     <div class="nl-l">${L.slice(0, estBureau() ? 7 : 4).map((n, j) => `<button class="nl" data-nl="${j}">${n.image && !n.astuce ? `<span class="nl-img" style="background-image:${cssUrl(n.image)}"></span>` : ico(n)}
-      <span class="nl-t"><small>${n.marche ? tt('Marché', 'Market') : n.astuce ? tt('Astuce', 'Tip') : esc(n.libelle || nomSport(n.sport) || tt('Nouvelle', 'News'))}${n.date && !n.astuce ? ' · ' + esc(dateCourte(n.date)) : ''}</small><b>${insec(esc(String(n.titre || '').slice(0, 110)))}</b></span></button>`).join('')}</div>`;
+      <span class="nl-t"><small>${n.sortie ? (n.a_venir ? tt('Bientôt', 'Coming soon') : tt('Nouveau produit', 'New product')) : n.marche ? tt('Marché', 'Market') : n.astuce ? tt('Astuce', 'Tip') : esc(n.libelle || nomSport(n.sport) || tt('Nouvelle', 'News'))}${n.date && !n.astuce ? ' · ' + esc(dateCourte(n.date)) : ''}</small><b>${insec(esc(String(n.titre || '').slice(0, 110)))}</b></span></button>`).join('')}</div>`;
   z.hidden = false;
   const ouvrir = (k) => { vibrer(); feuilleBloc($('#acc-nouv')); requestAnimationFrame(() => { rendreNouvelles((S.live && S.live.nouvelles) || []); if (S.newsAller) S.newsAller(k, false); }); };
   $$('[data-nl]', z).forEach(b => b.onclick = () => ouvrir(+b.dataset.nl));
@@ -13917,7 +13969,7 @@ function rendreTicker(){
   const z = $('#acc-ticker'), L = S.newsListe || []; if (!z) return;
   if (!L.length) { z.hidden = true; return; }
   const item = (n, j) => `<button class="tk ${n.astuce ? 'astuce' : ''}" data-tk="${j}"><span class="tk-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${n.marche ? IC_PIL.graphe : n.astuce ? IC_PIL.ampoule : IC_SP[n.sport] || IC_PIL.news}</svg></span>
-    <span class="tk-t"><small>${n.marche ? tt('Marché', 'Market') : n.astuce ? tt('Astuce', 'Tip') : esc(n.libelle || nomSport(n.sport) || tt('Nouvelle', 'News'))}</small><b>${insec(esc(String(n.titre || '').slice(0, 120)))}</b></span></button>`;
+    <span class="tk-t"><small>${n.sortie ? (n.a_venir ? tt('Bientôt', 'Coming soon') : tt('Nouveau produit', 'New product')) : n.marche ? tt('Marché', 'Market') : n.astuce ? tt('Astuce', 'Tip') : esc(n.libelle || nomSport(n.sport) || tt('Nouvelle', 'News'))}</small><b>${insec(esc(String(n.titre || '').slice(0, 120)))}</b></span></button>`;
   const html = L.map(item).join('');
   z.innerHTML = `<div class="tk-piste" style="--tk-d:${Math.max(24, L.length * 7)}s">${html}${html}</div>`;
   z.hidden = false;
@@ -14039,12 +14091,14 @@ function rendreNouvelles(items){
   }
   let L = [];
   const construire = () => {
-    const news = items.slice(0, 8), tips = (S.astuces || []).slice(0, 12), out = [];
+    const news = items.slice(0, 8), tips = (S.astuces || []).slice(0, 30), out = [];      // 20 nov 2026 : la banque de trucs
     for (let k = 0; k < Math.max(news.length, tips.length); k++) { if (news[k]) out.push(news[k]); if (tips[k]) out.push({...tips[k], astuce:true}); }
     const ip = out.findIndex(x => x.astuce && ['pouls', 'en_feu'].includes(x.id));          // 27 oct 2026 : le pouls du hobby passe en premier
     if (ip > 0) out.unshift(out.splice(ip, 1)[0]);
     // 31 oct 2026 : nos nouvelles du marche (ventes reelles) juste apres
     const mk = out.filter(x => x.marche); mk.forEach(x => out.splice(out.indexOf(x), 1)); out.splice(Math.min(1, out.length), 0, ...mk);
+    // 20 nov 2026 (Mathieu : « la sortie de nouveaux produits, on doit l'annoncer ») : les sorties du catalogue passent en premier
+    const so = out.filter(x => x.astuce && x.sortie); so.forEach(x => out.splice(out.indexOf(x), 1)); out.unshift(...so);
     S.newsSlides = out;
     return out;
   };
@@ -14425,12 +14479,12 @@ async function vuePouls(arg){
 async function suivrePremiereSynchro(){
   // 28 oct 2026 : on attend une NOUVELLE synchro (pas celle d'avant), jusqu'a ~4 min, puis l'ecran se met a jour
   const avant = ((await API.ebay_statut().catch(() => null)) || {}).derniere_synchro || '';
-  for (let i = 0; i < 80; i++) {
+  for (let i = 0; i < 200; i++) {                  // 20 nov 2026 : 2 ans de ventes : jusqu'a ~10 min
     await new Promise(ok => setTimeout(ok, 3000));
     const st = await API.ebay_statut().catch(() => null);
     if (st && st.derniere_synchro && st.derniere_synchro !== avant) {
       const b = st.bilan_synchro || {};
-      toast(tt(`${b.annonces || 0} annonces et ${b.ventes || 0} ventes importées`, `${b.annonces || 0} listings and ${b.ventes || 0} sales imported`), 4500);
+      toast(tt(`${b.annonces || 0} annonces, ${b.ventes || 0} ventes et ${b.achats_ajoutes || 0} achats importés. Tes achats d’il y a plus de 90 jours : ajoute-les à la main (le +).`, `${b.annonces || 0} listings, ${b.ventes || 0} sales and ${b.achats_ajoutes || 0} purchases imported. Purchases older than 90 days: add them by hand (the +).`), 7000);
       const h = (location.hash || '#accueil');
       if (h.startsWith('#accueil')) vueAccueil(); else if (h.startsWith('#reglages')) vueReglages(); else if (h.startsWith('#inventaire')) route();
       return;
@@ -15015,10 +15069,10 @@ function filtresBarreInv(){
   // 13 nov 2026 (Mathieu : « ou est notre onglet Sold dans l'inventaire ? ») : « Vendues » visible a cote des 3 autres ; les
   // autres filtres (et les sports) dans le petit bouton rond a droite
   // 14 nov 2026 (Mathieu : « un onglet pour les cartes achetees ») : « Achetées » visible aussi
-  const f = S.filtreInv || 'tous', autre = !['tous', 'collection', 'vendue', 'afinir'].includes(f), sp = S.sportInv, n = nbAFinir();
+  const f = S.filtreInv || 'tous', autre = !['tous', 'collection', 'listee', 'achetees', 'vendue', 'afinir'].includes(f), sp = S.sportInv, n = nbAFinir();
   return (n || f === 'afinir' ? `<button class="chip chip-afinir ${f === 'afinir' ? 'on' : ''}" data-f="afinir">${LIB_FILTRE('afinir')}${n ? ` <b>${(S.nbAFinir || 0) + (S.lotGardeN || 0) || ''}</b>` : ''}</button>` : '')
-    // 20 nov 2026 (rapport ergonomie) : 3 filtres visibles (Tout, Collection, Vendues) ; Sur eBay, Achetees et les autres : « Filtrer »
-    + ['tous', 'collection', 'vendue'].map(k => `<button class="chip ${f === k ? 'on' : ''}" data-f="${k}">${LIB_FILTRE(k)}</button>`).join('')
+    // 20 nov 2026 (Mathieu : « ou est parti l'onglet Bought et On eBay ? ») : les 5 filtres de tous les jours restent visibles
+    + ['tous', 'collection', 'listee', 'achetees', 'vendue'].map(k => `<button class="chip ${f === k ? 'on' : ''}" data-f="${k}">${LIB_FILTRE(k)}</button>`).join('')
     + (autre || sp ? `<button class="chip on" id="i-plus-f">${autre ? LIB_FILTRE(f) : nomSport(sp)} ▾</button>`
       : `<button class="chip i-f-rond" id="i-plus-f" aria-label="${esc(tt('Plus de filtres', 'More filters'))}"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.reglages}</svg></button>`);
 }
@@ -15093,7 +15147,10 @@ function brancherFiltresInv(){
     chargerInventaire(); tableauInv(); });
   const p = $('#i-plus-f'); if (p) p.onclick = () => {
     const ps = S.parSportInv || {}, sports = Object.entries(ps).sort((a, b) => b[1] - a[1]);
-    ouvrirFeuille(`<h3>${tt('Filtrer', 'Filter')}</h3><div class="menu-f">${filtresInv().map(([k]) => `<button class="choix-f ${S.filtreInv === k ? 'on' : ''}" data-ff="${k}">${LIB_FILTRE(k)}${S.filtreInv === k ? ' ✓' : ''}</button>`).join('')}</div>
+    // 20 nov 2026 (Mathieu : « beaucoup trop de choix pour rien ; mieux d'en donner un peu moins ») : la feuille ne repete plus les
+    // filtres deja visibles en haut (Tout, Collection, Sur eBay, Achetees, Vendues) ni « A finir » (sa pastille apparait seule)
+    const VIS = ['tous', 'collection', 'listee', 'achetees', 'vendue', 'afinir'];
+    ouvrirFeuille(`<h3>${tt('Filtrer', 'Filter')}</h3><div class="menu-f">${filtresInv().filter(([k]) => !VIS.includes(k)).map(([k]) => `<button class="choix-f ${S.filtreInv === k ? 'on' : ''}" data-ff="${k}">${LIB_FILTRE(k)}${S.filtreInv === k ? ' ✓' : ''}</button>`).join('')}</div>
       ${sports.length > 1 ? `<div class="sous">${tt('Sport', 'Sport')}</div><div class="menu-f"><button class="choix-f ${S.sportInv ? '' : 'on'}" data-fs="">${tt('Tous les sports', 'All sports')}${S.sportInv ? '' : ' ✓'}</button>${sports.map(([k, n]) => `<button class="choix-f ${S.sportInv === k ? 'on' : ''}" data-fs="${k}">${nomSport(k)} · ${n}${S.sportInv === k ? ' ✓' : ''}</button>`).join('')}</div>` : ''}`);
     const fin = () => { fermerFeuille(); const z = $('.i-filtres'); if (z) { z.innerHTML = filtresBarreInv(); brancherFiltresInv(); } chargerInventaire(); };
     $$('[data-ff]').forEach(b => b.onclick = () => { S.filtreInv = b.dataset.ff; fin(); });
@@ -15537,7 +15594,8 @@ async function vueAchetees(){
   $$('#i-liste .tuile-ach').forEach(t => t.onclick = async (e) => {
     if (e.target.closest('[data-sci]')) return;
     vibrer(); const x = S.achetees[t.dataset.cle]; if (!x) return;
-    if (x.carte_id) { const c = await API.carte_lire(x.carte_id).catch(() => null); if (c && c.id) feuilleCarte(c); return; }
+    // 20 nov 2026 : la copie ajoutee toute seule qui ressemble a une carte deja sur eBay : la question « c'est la meme ? » d'abord
+    if (x.carte_id && !x.peut_etre) { const c = await API.carte_lire(x.carte_id).catch(() => null); if (c && c.id) feuilleCarte(c); return; }
     feuilleAchetee(x);
   });
 }
@@ -15557,8 +15615,8 @@ function feuilleAchetee(x){
       <div class="achx-k"><span><small>${tt('Payé', 'Paid')}</small><b>${argent(x.cout, 2)}</b></span><span><small>${tt('Achetée le', 'Bought')}</small><b>${esc(dateCourte(x.achete_le) || '—')}</b></span>${x.jours != null ? `<span><small>${tt('Depuis', 'Held')}</small><b>${x.jours} ${tt('j', 'd')}</b></span>` : ''}</div>
       ${pe ? `<div class="ach-pe"><b>${pe.sur_ebay ? tt('Déjà sur eBay ?', 'Already on eBay?') : tt('Déjà dans ton inventaire ?', 'Already in your inventory?')}</b>
         <span>${esc(pe.titre)}</span><button class="btn" id="fach-lie">${tt('C’est la même : relier', 'Same card: link them')}</button></div>` : ''}
-      <button class="btn gros achx-aj ${pe ? 'secondaire' : ''}" id="fach-aj">${tt('Ajouter à l’inventaire', 'Add to inventory')}</button>
-      <div class="achx-3">
+      ${x.carte_id ? `<button class="btn gros achx-aj secondaire" id="fach-ouv">${tt('Non : ouvrir la carte', 'No: open the card')}</button>` : `<button class="btn gros achx-aj ${pe ? 'secondaire' : ''}" id="fach-aj">${tt('Ajouter à l’inventaire', 'Add to inventory')}</button>`}
+      <div class="achx-3" ${x.carte_id ? 'hidden' : ''}>
         <button class="achx-b" id="fach-gr"><b>${tt('En gradation', 'Grading')}</b><small>PSA, BGS…</small></button>
         <button class="achx-b" id="fach-vd"><b>${tt('Vendue', 'Sold')}</b><small>${tt('ailleurs', 'elsewhere')}</small></button>
         <button class="achx-b" id="fach-dn"><b>${tt('Donnée', 'Given away')}</b><small>${tt('cadeau', 'gift')}</small></button></div>
@@ -15585,6 +15643,8 @@ function feuilleAchetee(x){
     if (!r || !r.ok || !r.id) { b.disabled = false; return; }
     const c = await API.carte_lire(r.id).catch(() => null); MEMO.clear();
     if (c && c.id) formEnvoi(c, 'gradation'); else fermerFeuille(); };
+  const fo = $('#fach-ouv'); if (fo) fo.onclick = async () => { vibrer(); const c = await API.carte_lire(x.carte_id).catch(() => null); if (c && c.id) feuilleCarte(c); };
+  if (x.carte_id) return;
   $('#fach-aj').onclick = async () => { const b = $('#fach-aj'); b.disabled = true; vibrer();
     const r = await essai(API.achat_vers_inventaire(x.item_id, x.n || 0), tt('Ajoutée à l’inventaire', 'Added to inventory'));
     if (r && r.ok) { fermerFeuille(); MEMO.clear(); vueAchetees(); } else b.disabled = false; };
@@ -17069,6 +17129,24 @@ function popFermer(){
   f.removeAttribute('id'); f._fermer = null; document.body.classList.remove('pop-ouverte');
   f.classList.add('sort'); setTimeout(() => f.remove(), 200);
 }
+// 20 nov 2026 (Mathieu : « un X doit apparaitre au bout de la barre de recherche aussitot qu'on met du texte ») : toutes les barres de
+// recherche (la loupe + un champ) : un X efface le texte, garde le clavier ouvert et relance la recherche
+const RECH_SEL = '.recherche > input, .dq-bar > input, input[type="search"]';
+function majRechX(inp){
+  const par = inp.parentElement; if (!par) return;
+  let b = par.querySelector(':scope > .rech-x');
+  if (!b) { b = document.createElement('button'); b.type = 'button'; b.className = 'rech-x'; b.setAttribute('aria-label', tt('Effacer', 'Clear')); b.innerHTML = ICONES.x || '×';
+    b.addEventListener('mousedown', (e) => e.preventDefault());
+    b.addEventListener('click', () => { inp.value = ''; inp.dispatchEvent(new Event('input', {bubbles: true})); inp.dispatchEvent(new Event('change', {bubbles: true}));
+      inp.dispatchEvent(new KeyboardEvent('keyup', {bubbles: true, key: 'Backspace'})); inp.focus(); majRechX(inp); });
+    inp.insertAdjacentElement('afterend', b); }
+  b.hidden = !inp.value;
+}
+document.addEventListener('input', (e) => { const t = e.target; if (t && t.matches && t.matches(RECH_SEL)) majRechX(t); }, true);
+document.addEventListener('focusin', (e) => { const t = e.target; if (t && t.matches && t.matches(RECH_SEL)) majRechX(t); }, true);
+// un champ deja rempli a l'ouverture d'un ecran (recherche gardee) montre aussi son X
+new MutationObserver(() => { clearTimeout(S.tRechX); S.tRechX = setTimeout(() => $$(RECH_SEL).forEach(i => { if (i.value) majRechX(i); }), 120); })
+  .observe(document.body, {childList: true, subtree: true});
 // 4 nov 2026 (revue) : Echap ferme ce qui est par-dessus : d'abord la vue detaillee, puis la fenetre, puis la feuille
 document.addEventListener('keydown', (e) => { if (e.key !== 'Escape' || e.isComposing) return;
   const f = $('#pop-fond'); if (f && f._fermer) { f._fermer(); return; }
@@ -17612,10 +17690,10 @@ async function banniereAchats(){
   const r = await API.achats_liste().catch(() => null);
   // 5 nov 2026 (Mathieu : « ou est l'onglet achat ebay ? ») : la zone a un nom clair et reste visible meme quand tout est ajoute
   if (!$('#i-achats') || !r || !r.ok || !(r.achats || []).length) { if (z) z.innerHTML = ''; return; }
-  const n = r.a_ajouter || 0;
+  const n = r.a_ajouter || 0, dep = r.depuis ? dateCourte(r.depuis) : '';
   z.innerHTML = `<button class="acc-pil i-ach" id="i-ach-b"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12l-1 13H7L6 7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg></span>
     <span class="ap-t"><b>${tt('Mes achats eBay', 'My eBay purchases')}${n ? ` <em class="i-ach-n">${n}</em>` : ''}</b>
-    <small>${n ? tt(`${n} à ajouter : le prix payé devient leur coût`, `${n} to add: the price paid becomes their cost`) : tt('Tout est dans ton inventaire', 'All in your inventory')}</small></span><i aria-hidden="true">›</i></button>`;
+    <small>${n ? tt(`${n} en cours d’ajout`, `${n} being added`) : tt('Ajoutés tout seuls avec le prix payé', 'Added automatically with the price paid')}${dep ? tt(` · avant le ${dep} : à la main`, ` · before ${dep}: by hand`) : ''}</small></span><i aria-hidden="true">›</i></button>`;
   $('#i-ach-b').onclick = () => { vibrer(); feuilleAchats(); };
 }
 async function feuilleAchats(){
@@ -17629,17 +17707,17 @@ async function feuilleAchats(){
     const lig = (a) => `<div class="rangee fa-l">${photoOk(a.photo) ? `<span class="vig"><img src="${esc(photoNet(a.photo, 140))}" alt="" loading="lazy" data-oe="rm"></span>` : `<span class="vig">${SVG_CARTE}</span>`}
       <span class="milieu"><a class="nom" href="${esc(lienE(a))}" target="_blank" rel="noopener">${esc(titreCourt(a.titre))}</a>
         <span class="sous">${esc(dateCourte(a.date) || '')} · ${argent(a.cout, 2)} ${tt('payé', 'paid')}</span></span>
-      ${a.carte_id ? `<button class="pilule" data-voir="${a.carte_id}">${tt('Voir', 'View')}</button>` : `<button class="pilule fa-aj" data-aj="${esc(a.item_id)}" data-n="${a.n}">${tt('Ajouter', 'Add')}</button>`}</div>`;
-    z.innerHTML = !r.achats.length ? `<div class="vide">${r.ebay ? tt('Aucun achat eBay dans les 90 derniers jours.', 'No eBay purchases in the last 90 days.') : tt('Connecte ton compte eBay pour voir tes achats.', 'Connect your eBay account to see your purchases.')}</div>`
-      : `<div class="sous" style="margin-bottom:10px">${tt('Tes achats et encans gagnés sur eBay (90 derniers jours, la limite d’eBay). Ajoutés à l’inventaire avec le vrai prix payé (port et taxes compris) : ton profit est juste quand tu revends.', 'Your eBay purchases and won auctions (last 90 days, eBay’s limit). Added to inventory with the real price paid (shipping and taxes included): your profit is right when you resell.')}</div>
-        ${libres.length ? `<div class="r-titre">${tt('À ajouter', 'To add')} · ${libres.length}${libres.length > 1 ? `<button class="lien-t" id="fa-tout" style="float:right">${tt('Tout ajouter', 'Add all')}</button>` : ''}</div><div class="liste">${libres.map(lig).join('')}</div>` : ''}
-        ${lies.length ? `<div class="r-titre" style="margin-top:14px">${tt('Déjà dans ton inventaire', 'Already in your inventory')} · ${lies.length}</div><div class="liste">${lies.slice(0, 60).map(lig).join('')}</div>` : ''}`;
-    $$('[data-aj]', z).forEach(b => b.onclick = async () => { b.disabled = true; vibrer();
-      const x = await essai(API.achat_vers_inventaire(b.dataset.aj, +b.dataset.n), tt('Ajoutée à l’inventaire', 'Added to inventory'));
-      if (x && x.ok) { const a = r.achats.find(y => y.item_id === b.dataset.aj && String(y.n) === b.dataset.n); if (a) a.carte_id = x.id; peindre(); chargerInventaire(); banniereAchats(); } else b.disabled = false; });
-    const t_ = $('#fa-tout', z); if (t_) t_.onclick = async () => { t_.disabled = true; vibrer(); let n = 0;
-      for (const a of r.achats.filter(y => !y.carte_id)) { const x = await API.achat_vers_inventaire(a.item_id, a.n).catch(() => null); if (x && x.ok) { a.carte_id = x.id; n++; } }
-      toast(tt(`${n} cartes ajoutées à l’inventaire`, `${n} cards added to inventory`)); peindre(); chargerInventaire(); banniereAchats(); };
+      ${a.carte_id ? `<button class="pilule" data-voir="${a.carte_id}">${tt('Voir', 'View')}</button>` : ''}</div>`;
+    // 20 nov 2026 (Mathieu : « tout doit etre automatise ») : les achats entrent tout seuls dans l'inventaire ; plus de bouton
+    // Ajouter. eBay ne donne que 90 jours d'achats : la fenetre le dit et montre comment ajouter les plus vieux (le +, avec le prix paye)
+    const dep = r.depuis ? dateCourte(r.depuis) : '';
+    const vieux = `<div class="fa-vieux"><b>${tt(`Tes achats d’avant le ${dep}`, `Your purchases before ${dep}`)}</b><span>${tt('eBay ne nous donne que les 90 derniers jours. Ajoute les plus vieux avec le +, en entrant le prix payé : ton profit restera juste.', 'eBay only gives us the last 90 days. Add older ones with the +, entering the price paid: your profit stays right.')}</span><button class="btn petit" id="fa-plus">${tt('Ajouter une carte', 'Add a card')}</button></div>`;
+    z.innerHTML = !r.achats.length ? `<div class="vide">${r.ebay ? tt('Aucun achat eBay dans les 90 derniers jours.', 'No eBay purchases in the last 90 days.') : tt('Connecte ton compte eBay pour voir tes achats.', 'Connect your eBay account to see your purchases.')}</div>${r.ebay && dep ? vieux : ''}`
+      : `<div class="sous" style="margin-bottom:10px">${tt('Tes achats et encans gagnés sur eBay entrent tout seuls dans ton inventaire, avec le vrai prix payé (port et taxes compris) : ton profit est juste quand tu revends.', 'Your eBay purchases and won auctions go into your inventory automatically, with the real price paid (shipping and taxes included): your profit is right when you resell.')}</div>
+        ${libres.length ? `<div class="r-titre">${tt('En cours d’ajout', 'Being added')} · ${libres.length}</div><div class="liste">${libres.map(lig).join('')}</div>` : ''}
+        ${lies.length ? `<div class="r-titre" style="margin-top:14px">${tt('Dans ton inventaire', 'In your inventory')} · ${lies.length}</div><div class="liste">${lies.slice(0, 60).map(lig).join('')}</div>` : ''}
+        ${dep ? vieux : ''}`;
+    const fp = $('#fa-plus', z); if (fp) fp.onclick = () => { vibrer(); fermerFeuille(); ajoutCollection(); };
     $$('[data-voir]', z).forEach(b => b.onclick = async () => { const c = await API.carte_lire(+b.dataset.voir).catch(() => null); if (c && c.id) { fermerFeuille(); feuilleCarte(c); } });
   };
   peindre();
@@ -20370,6 +20448,8 @@ function blocPourquoi(q){
     + (cx.age ? ` · ${cx.age} ${tt('ans', 'y.o.')}` : '') + (cx.repech && cx.repech <= 40 ? ` · ${tt('choix', 'pick')} #${cx.repech}` : '')
     + (cx.toi_ratio && cx.toi_ratio >= 0.9 ? ` · ${tt('temps de jeu maintenu', 'ice time steady')}` : '')
     + (cx.etat === 'rebond' && cx.l5 != null ? ` · <b class="vert">${cx.l5} pts ${tt('en 5 matchs', 'in 5 games')}</b>` : '')]);
+  // 20 nov 2026 : la fiche ne montre que la nouvelle la plus recente ; toutes les autres sont ici
+  (q.nouvelles || []).slice(0, 4).forEach(n => L.push([tt('Ce qui fait bouger son score', 'What moves his score') + (n.date ? ' · ' + esc(dateCourte(n.date)) : ''), n.lien ? `<a href="${esc(urlSure(n.lien))}" target="_blank" rel="noopener">${esc(n.titre)}</a>` : esc(n.titre)]));
   (q.actu || []).slice(0, 3).forEach(n => L.push([tt('Dans l’actu', 'In the news') + (n.date ? ' · ' + esc(dateCourte(n.date)) : ''), n.lien ? `<a href="${esc(urlSure(n.lien))}" target="_blank" rel="noopener">${esc(n.titre)}</a>` : esc(n.titre)]));
   if (!L.length) return '';
   return `<div class="j-pq"><div class="v-rang-t"><b>${tt('Pourquoi il bouge', 'Why he’s moving')}</b></div><div class="liste">${L.map(([k, v]) => `<div class="rangee"><span class="milieu"><span class="det">${k}</span><span class="nom">${v}</span></span></div>`).join('')}</div></div>`;
@@ -20397,12 +20477,15 @@ async function pastillesTendance(z, nom){
 // 12 nov 2026 : le bento du joueur. r = sa fiche (tout de suite), t = tendance_joueur (pourquoi, forme, popularite ; arrive
 // apres). Des tuiles de 1 ou 2 colonnes, sans trou (la derniere tuile seule s'etire). Des stats et des faits publics ;
 // la valeur de sa carte seulement si le serveur l'envoie (admin).
+const ech0 = (q) => !!(q && q.echange);
 function bentoJoueur(r, t){
   const q = (t && t.pourquoi) || {}, T = [], dec = (x) => String(x).replace('.', tt(',', '.'));
   const tuile = (k, v, s_, c, o = {}) => T.push({h: `<${o.id ? `button id="${o.id}"` : o.fait ? 'button data-jfait' : 'div'} class="jb-t ${o.large ? 'l' : ''} ${o.cls || ''}"><span class="jb-k">${k}</span><b class="jb-v ${c || ''}">${v}</b>${s_ ? `<small>${s_}</small>` : ''}${o.id || o.fait ? '<i class="jb-f">›</i>' : ''}</${o.id || o.fait ? 'button' : 'div'}>`, l: !!o.large});
   // la tete (2 colonnes) : sa photo, son nom, son equipe, ses pastilles, la cloche
   const pils = [];
-  if (t) { const pi = pastillesIndice(t); if (pi) pils.push(pi); }
+  // 20 nov 2026 (Mathieu : « que ca fit sur une page et que ca look plus simple ») : la pastille « 4 pts · 2 matchs cette
+  // semaine » de l'en-tete repetait la tuile Cette semaine : elle part
+  if (t) { const pi = pastillesIndice({...t, semaine: null}); if (pi) pils.push(pi); }
   if (r.recrue) pils.push(capsule(tt('Recrue · ', 'Rookie · ') + esc(r.recrue), 'or petit'));
   const cr = r.carriere || null;
   if (cr && cr.temple && !(q.legende || {}).temple) pils.push(capsule(tt('Temple de la renommée', 'Hall of Fame'), 'or petit'));
@@ -20417,7 +20500,7 @@ function bentoJoueur(r, t){
   // les evenements des 30 derniers jours (titre + lien vers la source, jamais le texte de l'article)
   const TY = {temple: [tt('Temple', 'Hall of Fame'), 'or'], honneur: [tt('Honneur', 'Honour'), 'or'], trophee: [tt('Trophée', 'Award'), 'or'], exploit: [tt('Exploit', 'Big game'), 'vert'],
     rappel: [tt('Rappel', 'Call-up'), 'vert'], contrat: [tt('Contrat', 'Contract'), 'acc'], choc: [tt('Mise en échec', 'Big hit'), 'acc'], blessure: [tt('Blessure', 'Injury'), 'rouge'], negatif: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge']};
-  const nv = (q.nouvelles || []).slice(0, 3), ech = q.echange;
+  const nv = (q.nouvelles || []).slice(0, ech0(q) ? 0 : 1), ech = q.echange;     // 20 nov 2026 : la plus recente (les autres : Pourquoi il bouge)
   if (nv.length || ech) T.push({h: `<div class="jb-t l jb-nv"><span class="jb-k">${tt('Ce qui fait bouger son score', 'What moves his score')}</span>
     ${ech ? `<div class="jb-nl"><span class="jb-nt">${tag(tt('Échange', 'Trade'), ech.sens === 'baisse' ? 'rouge' : ech.sens === 'hausse' ? 'vert' : 'acc')}</span><span class="jb-nx">${esc(ech.de_nom)} → ${esc(ech.vers_nom)}${ech.sens === 'baisse' ? tt(' · un plus petit marché : ses cartes baissent souvent', ' · a smaller market: his cards often drop') : ech.sens === 'hausse' ? tt(' · un plus gros marché : ses cartes montent souvent', ' · a bigger market: his cards often rise') : ''}</span></div>` : ''}
     ${nv.map(n => { const [l, c] = TY[n.type] || [tt('Actu', 'News'), 'acc'];
@@ -20433,7 +20516,7 @@ function bentoJoueur(r, t){
     if (sg && sg.mj) tuile(tt('Cette saison', 'This season'), svp(sg.efficacite), `${tt('moy. ', 'GAA ')}${gaa(sg.moyenne)} · ${sg.v || 0} ${tt('V', 'W')} · ${sg.mj} ${tt('matchs', 'games')}`, sg.efficacite >= 0.915 ? 'vert' : sg.efficacite != null && sg.efficacite < 0.89 ? 'rouge' : '');
   }
   const w = gard ? null : q.semaine;
-  if (w && w.mj) tuile(tt('Cette semaine', 'This week'), w.pts + ' pts', `${w.b || 0} ${tt('buts', 'goals')} · ${w.mj} ${tt('matchs', 'games')}`, w.pts >= 5 ? 'rouge' : w.pts >= 3 ? 'vert' : '');
+  if (w && w.mj) tuile(tt('Cette semaine', 'This week'), w.pts + ' pts', `${w.b || 0} ${(w.b || 0) > 1 ? tt('buts', 'goals') : tt('but', 'goal')} · ${w.mj} ${w.mj > 1 ? tt('matchs', 'games') : tt('match', 'game')}`, w.pts >= 5 ? 'rouge' : w.pts >= 3 ? 'vert' : '');
   else if (!gard && q.cinq != null && q.actif !== false) tuile(tt('5 derniers', 'Last 5'), q.cinq + ' pts', tt('matchs', 'games'), q.cinq >= 5 ? 'vert' : '');
   const sa = q.saison;
   const g = q.legende || {};
@@ -20693,8 +20776,10 @@ const ALARMES = () => [
 // de notifs il veut et met les joueurs qu'il veut tracker ; max 5 en non pro et 20 en pro ») : une seule page, trois blocs
 // simples (Nouveautés · Mes joueurs suivis · Ce que je reçois) ; la cloche du haut y mène aussi
 async function vueNotifs(arg){
-  V().innerHTML = `<section class="ecran notifs"><div class="titre">${tt('Notifications', 'Notifications')}</div><div id="nt-z"><div class="lecture"><span class="roue"></span></div></div></section>`;
+  // 20 nov 2026 (Mathieu : « ou est le X pour quitter les notifications ») : un X revient a l'ecran d'avant
+  V().innerHTML = `<section class="ecran notifs"><div class="titre nt-tt">${tt('Notifications', 'Notifications')}<button class="pop-x nt-x" id="nt-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button></div><div id="nt-z"><div class="lecture"><span class="roue"></span></div></div></section>`;
   const [r, ra, p] = await Promise.all([API.alertes_liste().catch(() => ({alertes:[], notifications:[]})), API.alarmes_lire().catch(() => null), API.deals_profil_lire().catch(() => ({favoris:[], favoris_max:5}))]);
+  const nx = $('#nt-x'); if (nx) nx.onclick = () => { vibrer(); if (history.length > 1) history.back(); else location.hash = '#accueil'; };
   const z = $('#nt-z'); if (!z) return;
   const al = (ra && ra.alarmes) || {}, FAV = [...(p.favoris || [])], FMAX = p.favoris_max || 5, FPRO = p.favoris_max_pro || 20;
   // 9 nov 2026 (Mathieu : « lourd a l'oeil, on ne distingue pas facilement le but de la notif ») : une pastille et un mot par
