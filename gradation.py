@@ -17,14 +17,16 @@ from datetime import datetime, timedelta
 
 # (nom, prix US$, valeur declaree max US$, delai en jours ouvrables min, max) - releve du 3 nov 2026 (cardgrade.io, mise a
 # jour du 29 oct 2026 : Value rouvert ; allvintagecards.com, 6 sept 2026). A confirmer sur psacard.com avant d'envoyer.
+# 19 nov 2026 : psacard.com/submit (lu le 19 nov) : 79,99 $ (40-50 jours, 1 500 $), 149 $ (20-30, 2 500 $), 349 $ (7-10, 5 000 $),
+# 599 $ (5-7, 10 000 $), 999 $ (5-7, 25 000 $). Le niveau a 39,99 $ n'y est plus ; celui a 12,99 $ est reserve au Collectors Club.
 TARIFS_PSA = [
-    ("Value", 39.99, 500, 90, 100),
-    ("Regular", 79.99, 1500, 70, 80),
+    ("Regular", 79.99, 1500, 40, 50),
     ("Express", 149.00, 2500, 20, 30),
-    ("Super Express", 349.00, 5000, 10, 15),
-    ("Walk-Through", 599.00, 10000, 7, 10),
+    ("Super Express", 349.00, 5000, 7, 10),
+    ("Walk-Through", 599.00, 10000, 5, 7),
+    ("Premium 1", 999.00, 25000, 5, 7),
 ]
-TARIFS_DATE = "2026-11-03"
+TARIFS_DATE = "2026-11-19"
 PORT_CAD = 45.0                  # Canada -> PSA Canada (Mississauga, suivi, assure) et retour, pour UN colis (estime)
 
 # 3 nov 2026 (Mathieu : « ajouter l'option TAG, pas juste PSA ») : TAG (thecollectornation.com et pregradecards.com, releve

@@ -133,8 +133,10 @@ print("OK score slabcoach")
 
 # 9. 11 nov 2026 : l'ADMIN voit les ventes reelles de la meme carte sur le Radar ; les autres comptes : jamais
 import vendues
+from datetime import date as _date, timedelta as _td
+_j = lambda n: (_date.today() - _td(days=n)).isoformat()     # 20 nov 2026 : des dates relatives (le test ne vieillit plus)
 vendues.memes_cache = lambda t, q=None, n=16, age_max=0: {"ventes": [{"prix": 100}] * 6, "mediane": 100.0, "nb": 6,
-                                                          "points": [["2026-11-10", 110], ["2026-11-09", 104], ["2026-10-10", 90], ["2026-10-08", 92]]}
+                                                          "points": [[_j(2), 110], [_j(3), 104], [_j(33), 90], [_j(35), 92]]}
 lockerroom.ebay_prix_actif = lambda api=None: True
 r = api.mes_deals()
 av = [x.get("admin_vendu") for g in r["types"] for x in g["annonces"]]

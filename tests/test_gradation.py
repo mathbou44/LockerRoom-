@@ -8,9 +8,10 @@ p = gradation.probas(9, 9)
 assert abs(sum(p.values()) - 1) < 0.01 and max(p, key=p.get) == 9, p
 p = gradation.probas(9.5, 10)
 assert set(p) == {10, 9, 8} and p[10] > p[8], p
-assert gradation.service(400)["nom"] == "Value" and gradation.service(1200)["nom"] == "Regular" and gradation.service(4000)["nom"] == "Super Express"
+# 19 nov 2026 : le niveau a 39,99 $ (Value) n'est plus sur psacard.com : Regular est le premier niveau
+assert gradation.service(400)["nom"] == "Regular" and gradation.service(1200)["nom"] == "Regular" and gradation.service(4000)["nom"] == "Super Express"
 r = gradation.calculer(150, {10: {"valeur": 600, "n": 12}, 9: {"valeur": 260, "n": 20}, 8: {"valeur": 180, "n": 9}}, 9, 10, 1.38)
-assert r["verdict"] == "oui" and r["gain"] > 0 and r["service"]["nom"] == "Value" and r["retour_prevu"], r
+assert r["verdict"] == "oui" and r["gain"] > 0 and r["service"]["nom"] == "Regular" and r["retour_prevu"], r
 r = gradation.calculer(150, {10: {"valeur": 300, "n": 12}, 9: {"valeur": 170, "n": 20}, 8: {"valeur": 120, "n": 9}}, 8, 9, 1.38)
 assert r["verdict"] == "non" and r["gain"] < 0, r
 r = gradation.calculer(150, {9: {"valeur": 170, "n": 2}}, 9.5, 10, 1.38)

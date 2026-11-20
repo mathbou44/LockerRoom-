@@ -705,7 +705,7 @@ def demo():
         abort(404)
     erreur = ""
     if request.method == "POST" and _trop_d_essais():
-        erreur = "<p style='color:#FFB3B3'>Trop d’essais : réessaie dans 15 minutes</p>"
+        erreur = "<p style='color:#FFB3B3'>Trop d’essais : réessaie dans 15 minutes / Too many tries: wait 15 minutes</p>"
     elif request.method == "POST":
         if hmac.compare_digest(str(request.form.get("code") or "").strip(), code):
             cid, nouveau = comptes.trouver_ou_creer(_DEMO_EBAY_ID, "Demo", "demo")
@@ -717,14 +717,14 @@ def demo():
                     _remplir_demo()
             return redirect("/")
         _noter_echec()
-        erreur = "<p style='color:#FFB3B3'>Code incorrect</p>"
+        erreur = "<p style='color:#FFB3B3'>Code incorrect / Wrong code</p>"
     return _page_langue("<!doctype html><meta name='viewport' content='width=device-width,initial-scale=1'><title>SlabCoach</title><link rel='icon' href='/favicon.ico?v=2'>"
             "<body style='background:#0B0B0E;color:#F4F2EE;font-family:system-ui;display:grid;place-items:center;min-height:90vh'>"
             "<form method='post' style='display:grid;gap:12px;width:min(320px,90vw)'><img src='/logo_sc_gold_poli.png' width='72' style='margin:auto' alt=''>"
-            "<b style='font-size:22px'>SlabCoach · démo</b><input name='code' autocomplete='off' autofocus placeholder='Code d’accès' "
+            "<b style='font-size:22px'>SlabCoach · démo / demo</b><input name='code' autocomplete='off' autofocus placeholder='Code d’accès / Access code' "
             "style='padding:12px;border-radius:10px;border:1px solid #2B2A32;background:#151519;color:#F4F2EE;font-size:16px'>"
-            f"{erreur}<button style='padding:12px;border-radius:10px;border:0;background:#E9CF8E;font-weight:700;font-size:16px'>Entrer</button>"
-            "<a href='/connexion' style='color:#A9A6B1;font-size:13px'>‹ Retour</a></form></body>")
+            f"{erreur}<button style='padding:12px;border-radius:10px;border:0;background:#E9CF8E;font-weight:700;font-size:16px'>Entrer / Enter</button>"
+            "<a href='/connexion' style='color:#A9A6B1;font-size:13px'>‹ Retour / Back</a></form></body>")
 
 
 def _remplir_demo():
@@ -1181,7 +1181,7 @@ def connexion():
         page = page.replace("{rappel}", "<div class='rappel-meme'>Déjà un compte ? Connecte-toi de la même façon, ou "
                             "<a href='/auth/code'>entre un code d’appareil</a></div>")
         demo = os.environ.get("LOCKERROOM_DEMO_CODE") and "LockerRoomiOS" in (request.headers.get("User-Agent") or "")
-        page = page.replace("{demo}", "<a href='/demo'>Démo</a>" if demo else "")
+        page = page.replace("{demo}", "<a href='/demo'>Démo / Demo</a>" if demo else "")
         return _page_langue(page)
     if not CODE_ACCES:
         return redirect("/")

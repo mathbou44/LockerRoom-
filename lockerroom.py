@@ -4065,6 +4065,20 @@ class Api:
                     r["vendre_tot"] = {"jours": vg["jours"], "baisse_pct": vg["baisse_pct"]}
         except Exception as e:
             print("Vendre tot : " + repr(e)[:160], flush=True)
+        # 20 nov 2026 (Mathieu : « dans Achetees et Collection, un indice : le joueur est a chier en ce moment, vends-la pas ») :
+        # une carte pas vendue et pas sur eBay d'un joueur cle dont le marche est sous sa normale (marche_cles : verifie chaque
+        # semaine sur l'annee de ventes : 93 % de ces creux remontaient 2 mois plus tard) -> « Garde-la ». Le « joueur en feu,
+        # vends » n'est pas montre : la flambee seule n'a jamais ete un signal sur dans nos mesures.
+        try:
+            import marche_cles
+            for r in out:
+                if r.get("statut") == "Vendue" or r.get("item_number") or r.get("vendre_tot") or (r.get("sport") or "hockey") != "hockey":
+                    continue
+                mb = marche_cles.bas(r.get("joueur") or "") if r.get("joueur") else None
+                if mb and mb.get("source") == "marche" and mb.get("ecart_pct") is not None:
+                    r["garder_bas"] = {"ecart_pct": mb["ecart_pct"]}
+        except Exception as e:
+            print("Garde-la : " + repr(e)[:160], flush=True)
         if f.get("vendre_tot"):
             out = [r for r in out if r.get("vendre_tot")]
         if f.get("a_afficher"):
@@ -9285,6 +9299,11 @@ class Api:
             r["watchlist"] = watchlist.verifier(self)
         except Exception as e:
             print("Watchlist : " + repr(e), flush=True)
+        try:                                    # 20 nov 2026 : le prix final des encans finis de la watchlist
+            import watchlist
+            r["watch_finales"] = watchlist.finales(self)
+        except Exception as e:
+            print("Watchlist (prix finals) : " + repr(e), flush=True)
         try:                                    # 29 oct 2026 : la promotion des annonces programmees passees en ligne
             r["promos"] = self.promos_attente_appliquer()
         except Exception as e:

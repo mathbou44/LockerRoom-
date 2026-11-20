@@ -453,14 +453,15 @@ def raffiner(q, ventes, futur):
     return ventes + neuves
 
 
-def rechercher(q, fond=True, usage=None):
-    """Ventes eBay d'une recherche (toutes cartes confondues : filtrer ensuite). {ventes, erreur, cache}."""
+def rechercher(q, fond=True, usage=None, sans_cache=False):
+    """Ventes eBay d'une recherche (toutes cartes confondues : filtrer ensuite). {ventes, erreur, cache}.
+    sans_cache (20 nov 2026, le prix final d'un encan de la watchlist) : une recherche d'avant la fin ne le contient pas."""
     if _coupe():
         return {"ventes": [], "erreur": None, "coupe": True}
     q = " ".join(str(q or "").split())[:120]
     if not q:
         return {"ventes": [], "erreur": None}
-    deja = _cache_lire(q.lower())
+    deja = None if sans_cache else _cache_lire(q.lower())
     if deja is not None:
         return {"ventes": deja, "erreur": None, "cache": True}
     if not actif():

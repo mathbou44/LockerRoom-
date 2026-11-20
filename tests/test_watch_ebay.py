@@ -90,6 +90,8 @@ c = lockerroom.Api(os.path.join(tempfile.mkdtemp(), "p.db"))
 c.watch_ajouter({"item_id": "701", "titre": "vieux", "valeur": 100, "total": 20, "encan": True, "fin": iso(-13 * 60)})
 c.watch_ajouter({"item_id": "702", "titre": "recent", "valeur": 100, "total": 20, "encan": True, "fin": iso(-60)})
 c.watch_ajouter({"item_id": "703", "titre": "fixe", "valeur": 100, "total": 20})
+# 20 nov 2026 : un encan fini attend son prix final avant de sortir (7 jours au plus) : ici, il est connu
+_c = watchlist._cx(c); _c.execute("UPDATE watchlist SET final=25 WHERE encan=1"); _c.commit(); _c.close()
 assert sorted(x["item_id"] for x in c.watch_liste()["cartes"]) == ["702", "703"]
 c.watch_regler({"garder_h": 0})
 assert [x["item_id"] for x in c.watch_liste()["cartes"]] == ["703"]

@@ -460,7 +460,7 @@ def tableau(api):
         ("csp", "Politique de contenu (CSP)", os.environ.get("LR_CSP", "1") != "0", "Bloque les scripts injectés.", "Ne mets pas LR_CSP=0 en production."),
         ("sauvegarde", "Sauvegarde de nuit", bool(sv.get("actif")) and age_sv is not None and age_sv < 30, ("Dernière il y a " + str(int(age_sv)) + " h.") if age_sv is not None else "Aucune sauvegarde réussie.", "Configure Cloudflare R2 (R2_BUCKET et ses clés)."),
         ("erreurs", "Erreurs des dernières 24 h", erreurs["h24"] == 0, f"{erreurs['h24']} erreur(s).", "Regarde la liste des erreurs dans l’admin."),
-        ("demo", "Pas de code démo ouvert", not os.environ.get("LOCKERROOM_DEMO_CODE"), "Aucun accès démo public.", "Retire LOCKERROOM_DEMO_CODE avant le lancement."),
+        ("demo", "Pas de code démo ouvert", not os.environ.get("LOCKERROOM_DEMO_CODE"), "Aucun accès démo public.", "Garde-le pendant l’examen d’Apple, puis retire LOCKERROOM_DEMO_CODE de Render une fois l’app acceptée."),
     ]
     mem = s.get("memoire") or {}
     disque = s.get("disque") or {}

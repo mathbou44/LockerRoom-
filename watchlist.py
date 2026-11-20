@@ -9,6 +9,9 @@ l'utilisateur qui les a demandees, une par carte) :
   seuil  la mise (ou le prix) depasse la mise max : plus rentable
 Rien n'est mise ni achete par SlabCoach : le bouton ouvre l'annonce sur eBay.
 """
+import json
+import os
+import re
 from datetime import datetime, timedelta, timezone
 
 SCHEMA = """
@@ -53,6 +56,11 @@ def _cx(api):
         c.execute("ALTER TABLE watchlist ADD COLUMN taxe REAL")
     except Exception:
         pass
+    for col in ("final REAL", "final_le TEXT", "final_essais INTEGER DEFAULT 0", "final_essai_le TEXT"):   # 20 nov 2026 : le prix final
+        try:
+            c.execute("ALTER TABLE watchlist ADD COLUMN " + col)
+        except Exception:
+            pass
     return c
 
 
@@ -474,14 +482,104 @@ def rafraichir(api, item_id, a, maint=None):
         c.close()
 
 
+FINAL_JOURS = 7                 # un encan fini attend son prix final 7 jours au plus
+FINAL_ESSAIS = 3                # recherches de ventes (credits) par encan, espacees de 6 h
+_RE_ITM = re.compile(r"/itm/(?:[^/?#]*/)?(\d{9,15})")
+
+
+def finales(api, maint=None, chercher=True, rechercher=None):
+    """20 nov 2026 (Mathieu : « on devrait voir le prix final de l'encan dans la watchlist, pour comparer ce qu'on avait mis
+    contre ce qui a ete vendu ; et c'est tres important pour nos donnees : les cartes que je mise sont des cartes tres
+    demandees ») : le prix final de chaque encan fini de la watchlist. D'abord nos ventes reelles (base_ventes : l'adresse
+    /itm/<numero> de la vente) ; sinon, 90 min apres la fin, une recherche de ventes de la carte (3 au plus, aux 6 h). Chaque
+    prix trouve est aussi garde pour nos donnees (finales_mises.jsonl : la carte, la mise max, la valeur ; aucun compte)."""
+    import sqlite3
+    import comptes
+    maint = maint or _maint()
+    c = _cx(api)
+    try:
+        lst = [dict(r) for r in c.execute("SELECT * FROM watchlist WHERE encan=1 AND final IS NULL")]
+    finally:
+        c.close()
+    fins = {}
+    for x in lst:
+        f = _dt(x.get("fin"))
+        if f and f < maint and f > maint - timedelta(days=FINAL_JOURS):
+            fins[str(x["item_id"])] = (x, f)
+    if not fins:
+        return 0
+    trouves = {}
+    d0 = min(f for _, f in fins.values()).strftime("%Y-%m-%d")
+    try:
+        cx = sqlite3.connect(os.path.join(comptes.DONNEES, "base_ventes.sqlite"), timeout=30)
+        try:
+            for url, cle, prix in cx.execute("SELECT url, cle, prix FROM ventes WHERE le >= ?", (d0,)):
+                m = _RE_ITM.search(str(url or "")) or _RE_ITM.search(str(cle or ""))
+                if m and m.group(1) in fins and prix:
+                    trouves[m.group(1)] = float(prix)
+        finally:
+            cx.close()
+    except sqlite3.Error:
+        pass
+    essais = []
+    if chercher:
+        if rechercher is None:
+            import vendues
+            rechercher = lambda q: (vendues.rechercher(q, fond=True, sans_cache=True) or {}).get("ventes") or []   # noqa: E731
+        import cartes_match
+        for k, (x, f) in fins.items():
+            if k in trouves or f > maint - timedelta(minutes=90) or int(x.get("final_essais") or 0) >= FINAL_ESSAIS:
+                continue
+            de = _dt(x.get("final_essai_le"))
+            if de and de > maint - timedelta(hours=6):
+                continue
+            q = (cartes_match.requete_ebay(cartes_match.cible_titre(x.get("titre") or "")) or "").strip()
+            essais.append(k)
+            if not q:
+                continue
+            try:
+                for v in rechercher(q) or []:
+                    m = _RE_ITM.search(str(v.get("url") or ""))
+                    if ((m and m.group(1) == k) or str(v.get("item_id") or "") == k) and v.get("prix"):
+                        trouves[k] = float(v["prix"])
+                        break
+            except Exception as e:
+                print("Watchlist (prix final) : " + repr(e)[:160], flush=True)
+    c = _cx(api)
+    try:
+        for k in essais:
+            if k not in trouves:
+                c.execute("UPDATE watchlist SET final_essais=COALESCE(final_essais,0)+1, final_essai_le=? WHERE item_id=?",
+                          (maint.isoformat(timespec="seconds"), k))
+        for k, p in trouves.items():
+            c.execute("UPDATE watchlist SET final=?, final_le=? WHERE item_id=?", (round(p, 2), maint.isoformat(timespec="seconds"), k))
+        c.commit()
+    finally:
+        c.close()
+    if trouves:
+        try:
+            with open(os.path.join(comptes.DONNEES, "finales_mises.jsonl"), "a", encoding="utf-8") as fo:
+                for k, p in trouves.items():
+                    x = fins[k][0]
+                    fo.write(json.dumps({"item_id": k, "titre": x.get("titre"), "fin": x.get("fin"), "final": round(p, 2),
+                                         "mise_max": x.get("mise_max"), "valeur": x.get("valeur"), "le": maint.isoformat(timespec="seconds")},
+                                        ensure_ascii=False) + "\n")
+        except OSError:
+            pass
+    return len(trouves)
+
+
 def purger(api, maint=None):
     """Les encans termines depuis plus de « garder_h » heures sortent de la watchlist (jamais un prix fixe)."""
     maint = maint or _maint()
     lim = maint - timedelta(hours=reglages(api).get("garder_h", 12))
     c = _cx(api)
     try:
-        vieux = [r[0] for r in c.execute("SELECT item_id, fin FROM watchlist WHERE encan=1").fetchall()
-                 if (lambda f: f is not None and f < lim)(_dt(r[1]))]
+        # 20 nov 2026 (Mathieu : « voir le prix final de l'encan dans la watchlist ; apres, il decidera s'il veut supprimer ») :
+        # un encan fini reste tant que son prix final n'est pas trouve (7 jours au plus)
+        lim7 = maint - timedelta(days=FINAL_JOURS)
+        vieux = [r[0] for r in c.execute("SELECT item_id, fin, final FROM watchlist WHERE encan=1").fetchall()
+                 if (lambda f: f is not None and (f < lim7 or (f < lim and r[2] is not None)))(_dt(r[1]))]
         if vieux:
             c.executemany("DELETE FROM watchlist WHERE item_id=?", [(i,) for i in vieux])
             c.commit()
@@ -644,7 +742,7 @@ def liste(api):
         _mises_a_jour(api, lst)
     else:
         for x in lst:
-            for k in ("valeur", "valeur_cad", "mise_max", "mise_min", "mise_perso", "profit", "sans_comps_le", "rabais", "ratio", "gain"):
+            for k in ("valeur", "valeur_cad", "mise_max", "mise_min", "mise_perso", "profit", "sans_comps_le", "rabais", "ratio", "gain", "final"):
                 x.pop(k, None)
     maint = _maint()
     # 31 oct 2026 (Mathieu : « il reste de la place : le profit calcule, qui s'ajuste en live avec le nouveau prix de
