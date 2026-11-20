@@ -188,7 +188,9 @@ def _connecter(chemin=None):
                      ("vues", "INTEGER"), ("impressions", "INTEGER"), ("trafic_le", "TEXT"), ("photos_orig", "TEXT"), ("studio_v", "INTEGER"),
                      ("etat_json", "TEXT"), ("etat_le", "TEXT"), ("envoi_json", "TEXT"), ("soumission_id", "INTEGER"),
                      ("a_finir_le", "TEXT"), ("valeur_annonces", "REAL"), ("valeur_annonces_n", "INTEGER"),
-                     ("valeur_annonces_le", "TEXT"), ("coins_json", "TEXT"), ("photo_ebay_le", "TEXT")):         # 9 nov 2026 : repere prix sans vente (annonces pareilles - 10 %)         # 9 nov 2026 : preparee pour la vente, pas encore sur eBay (onglet « A finir »)            # 1er nov 2026 - l'etat estime (pre-gradation)   # 31 oct 2026 - vues des annonces
+                     ("valeur_annonces_le", "TEXT"), ("coins_json", "TEXT"), ("photo_ebay_le", "TEXT"),
+                     # 20 nov 2026 : l'analyse de prix par les comps (ventes reelles de la meme carte), a part de la valeur
+                     ("comps_valeur", "REAL"), ("comps_n", "INTEGER"), ("comps_sure", "INTEGER"), ("comps_le", "TEXT")):         # 9 nov 2026 : repere prix sans vente (annonces pareilles - 10 %)         # 9 nov 2026 : preparee pour la vente, pas encore sur eBay (onglet « A finir »)            # 1er nov 2026 - l'etat estime (pre-gradation)   # 31 oct 2026 - vues des annonces
         if col not in cols:
             c.execute(f"ALTER TABLE cartes ADD COLUMN {col} {typ}")
     # 1er nov 2026 - soumissions : les colonnes ajoutees apres coup
@@ -3990,6 +3992,9 @@ class Api:
                 r_["tendance"] = tend[r_["id"]]
             if public or not prix_annonces_permis():
                 for k_ in ("valeur_annonces", "valeur_annonces_n", "valeur_annonces_le"):
+                    r_.pop(k_, None)
+            if public:                               # 20 nov 2026 : l'analyse par les comps : admin et Platine
+                for k_ in ("comps_valeur", "comps_n", "comps_sure", "comps_le"):
                     r_.pop(k_, None)
         # 24 oct 2026 - repere prix : ton prix face aux memes cartes en vente (sante : mediane, plus bas, nombre)
         with _verrou:
@@ -9299,6 +9304,10 @@ class Api:
             r["watchlist"] = watchlist.verifier(self)
         except Exception as e:
             print("Watchlist : " + repr(e), flush=True)
+        try:                                    # 20 nov 2026 : l'analyse de prix de l'inventaire (comps)
+            r["comps_inv"] = self.comps_inventaire()
+        except Exception as e:
+            print("Comps de l'inventaire : " + repr(e), flush=True)
         try:                                    # 20 nov 2026 : le prix final des encans finis de la watchlist
             import watchlist
             r["watch_finales"] = watchlist.finales(self)
@@ -9349,6 +9358,8 @@ class Api:
         except Exception as e:
             return {"ok": False, "erreur": str(e)}
         vs = self._ventes_inventaire([v for v in (r.get("ventes") or []) if v.get("prix")], carte)
+        if not vs and not r.get("erreur"):
+            self._comps_garder(cid, None, 0, False)
         if not vs:                      # rien de neuf (ou recherche indisponible) : la derniere valeur connue reste, dite comme telle
             return {"ok": True, "valeur": carte.get("valeur"), "n": 0, "gardee": carte.get("valeur") is not None, "erreur": r.get("erreur"),
                     **self._repere_annonces(carte, t)}
@@ -9356,6 +9367,7 @@ class Api:
         val = sure if sure else round(statistics.median(float(v["prix"]) for v in vs), 2)
         # 5 nov 2026 (comme la CL Value) : des ventes qui datent -> la valeur suit l'indice du joueur depuis (indices.py)
         val, ajust = self._valeur_vieillie(val, _pv if sure and isinstance(_pv, list) else vs, carte)
+        self._comps_garder(cid, val, len(vs), bool(sure))
         # 9 nov 2026 (revue « aucun faux indice ») : une valeur tiree d'une ou deux ventes qui ne se tiennent pas n'est pas
         # gardee (elle donnerait un faux « trop cher » dans l'inventaire) ; seulement une valeur sure ou 3 ventes et plus
         if sure or (carte.get("valeur") is None and len(vs) >= 3):
@@ -9364,6 +9376,45 @@ class Api:
         approx = self._repere_annonces(carte, t) if not (sure or len(vs) >= 3) else {}
         return {"ok": True, "valeur": val, "n": len(vs), "sure": bool(sure), "derniere": (recentes[0].get("le") or "")[:10] or None,
                 "ajustee": ajust, **approx}
+
+    def _comps_garder(self, cid, val, n, sure):
+        """20 nov 2026 (Mathieu : « en Platine, je devrais voir si ma carte est bien pricee avec les comps ; j'avais une Tua
+        Tagovailoa a 120 qui en vaut 40 ») : le resultat des comps de la carte, garde a part de sa valeur (jamais confondu avec
+        une valeur entree a la main), avec la date : l'analyse de prix de l'inventaire le lit."""
+        with _verrou:
+            c = self._db()
+            try:
+                c.execute("UPDATE cartes SET comps_valeur=?, comps_n=?, comps_sure=?, comps_le=? WHERE id=?",
+                          (val, int(n or 0), 1 if sure else 0, datetime.now().isoformat(timespec="seconds"), cid))
+                c.commit()
+            finally:
+                c.close()
+
+    COMPS_INV_HEURE = 12            # cartes analysees par heure (une recherche de ventes chacune, cache 30 min)
+    COMPS_INV_JOURS = 7             # une analyse vaut une semaine
+
+    def comps_inventaire(self, n=None):
+        """20 nov 2026 : chaque heure, les cartes pas vendues (en stock ou sur eBay) sans analyse de prix de moins d'une
+        semaine passent par leurs comps (carte_valeur). Admin et Platine seulement (les comps : comps_permis)."""
+        if not comps_permis(self):
+            return 0
+        lim = (datetime.now() - timedelta(days=self.COMPS_INV_JOURS)).isoformat(timespec="seconds")
+        with _verrou:
+            c = self._db()
+            try:
+                ids = [r[0] for r in c.execute("SELECT id FROM cartes WHERE statut IN ('En stock', 'Listée') AND (comps_le IS NULL OR comps_le < ?) "
+                                               "ORDER BY CASE WHEN statut='Listée' THEN 0 ELSE 1 END, COALESCE(prix_demande, 0) DESC LIMIT ?",
+                                               (lim, int(n or self.COMPS_INV_HEURE)))]
+            finally:
+                c.close()
+        fait = 0
+        for i in ids:
+            try:
+                self.carte_valeur(i)
+                fait += 1
+            except Exception as e:
+                print("Comps de l'inventaire : " + repr(e)[:160], flush=True)
+        return fait
 
     def _repere_annonces(self, carte, titre=None, res=None):
         # 10 nov 2026 (Mathieu : « legaux a 100 % ») : licence de l'API eBay §9.5 : les annonces lues par l'API ne servent
