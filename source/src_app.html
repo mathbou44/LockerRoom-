@@ -6340,6 +6340,18 @@ html body .ecran.bk-page > .entete::before{display:none !important}
 .acc-pil .ap-v.ok::before{content:''; display:inline-block; width:7px; height:7px; margin-right:6px; border-radius:50%; background:currentColor; vertical-align:1px}
 /* a l'ordi : deux colonnes (une ligne de 1 350 px eloignait le mot de son etat ; l'oeil n'a plus a traverser l'ecran) */
 @media (min-width:1100px){ html:not(.tel-large) .ecran.reglages #g-pils{display:grid !important; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px 14px; align-items:stretch} html:not(.tel-large) .ecran.reglages #g-pils > .acc-pil{margin:0 !important} }
+/* Reglages des notifications : 3 lignes, des fenetres, des interrupteurs (plus de cases a cocher, plus de carte dans une carte) */
+.notifs #nt-pils{display:flex; flex-direction:column; gap:10px} .notifs .nt-note{margin:14px 4px 0; font-size:13.5px}
+@media (min-width:1100px){ html:not(.tel-large) .notifs #nt-pils{display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:14px} }
+.feuille .f-bloc.f-uni > .nt-bloc{background:none !important; border:0 !important; box-shadow:none !important; padding:0 !important; margin:0 !important; border-radius:0 !important}
+.feuille .f-bloc.f-uni > .nt-bloc > .nt-t{display:none !important}
+.feuille .f-bloc.f-uni .al-cases{gap:0} .feuille .f-bloc.f-uni .al-case{background:none; border-radius:0; padding:7px 2px; min-height:50px; border-bottom:1px solid var(--ligne); box-sizing:border-box}
+.feuille .f-bloc.f-uni .al-cases .al-case:last-child, .feuille .f-bloc.f-uni > .nt-bloc > .al-case{border-bottom:0}
+.feuille .f-bloc.f-uni .al-case .t b{font-size:16px; font-weight:600} .feuille .f-bloc.f-uni .al-case .t span{font-size:13px; line-height:1.3}
+.feuille .f-bloc.f-uni .al-seuil{margin:0; padding:6px 2px 8px; border-bottom:1px solid var(--ligne); flex-wrap:nowrap} .feuille .f-bloc.f-uni .al-seuil[hidden]{display:none}
+.al-case input[type=checkbox][data-nt]{-webkit-appearance:none; appearance:none; width:50px; height:30px; border-radius:15px; background:#34333D; position:relative; flex:none; margin:0; cursor:pointer; transition:background .2s; accent-color:auto}
+.al-case input[type=checkbox][data-nt]::after{content:''; position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%; background:#fff; transition:left .2s}
+.al-case input[type=checkbox][data-nt]:checked{background:var(--acc)} .al-case input[type=checkbox][data-nt]:checked::after{left:23px}
 /* une seule facon de titrer une feuille de reglage : le titre de la feuille ; le bloc n'a plus sa boite ni sa petite etiquette */
 .feuille h3.f-titre{margin:2px 48px 14px 2px; font-size:20px; font-weight:700; letter-spacing:0; text-transform:none}
 .feuille .f-ret{height:32px; margin:-4px 0 4px -4px; font-size:15.5px; cursor:pointer}
@@ -14003,7 +14015,7 @@ const MAJ_APP = () => [
     ['colis', tt('Consignation au cell', 'Consignment on your phone'), tt('La liste Excel ou PDF se crée maintenant sur ton téléphone. Les cartes en vente sur eBay sont retirées d’eBay, après ton OK.', 'The Excel or PDF list now works on your phone. Cards for sale on eBay are removed from eBay, after your OK.')],
     ['graphe', tt('Tes prix, mieux jugés', 'Your prices, judged better'), tt('Un prix jusqu’à la plus haute vente récente n’est plus « trop cher ». Une tuile « À ajuster » montre les annonces au-dessus du marché.', 'A price up to the highest recent sale is no longer “too high”. A “To adjust” tile shows listings above market.')],
     ['breaks', tt('Breaks plus clairs', 'Clearer Breaks'), tt('Les joueurs en slabs côte à côte, avec la cote SlabIQ du joueur.', 'Players as slabs side by side, with the player’s SlabIQ rating.')],
-    ['profil', tt('Profil plus clair', 'Clearer Profile'), tt('Chaque ligne montre son état (eBay connecté, ton sport, tes frais). Depuis un réglage, un retour ramène à la liste.', 'Each row shows its state (eBay connected, your sport, your fees). From a setting, a back link returns to the list.')],
+    ['profil', tt('Profil plus clair', 'Clearer Profile'), tt('Chaque ligne montre son état (eBay connecté, ton sport, tes frais). Les réglages des notifications tiennent sur une page.', 'Each row shows its state (eBay connected, your sport, your fees). Notification settings fit on one page.')],
     ['etoile', tt('Chance de séries sur chaque carte', 'Playoff chance on every card'), tt('Dans le Radar, un trophée et un % : la chance que l’équipe du joueur fasse les séries. Les repères (En feu, Buzz, Clé…) ont tous le même badge.', 'In the Radar, a trophy and a %: the chance the player’s team makes the playoffs. Markers (On fire, Buzz, Key…) all share the same badge.')],
   ]},
   {n: 240, le: '2026-11-20', points: [
@@ -21896,6 +21908,10 @@ async function vueNotifs(arg){
       ${presents.size > 1 ? `<div class="pastilles defile nt-f">${FILTRES.filter(([k]) => k === 'tout' || presents.has(k)).map(([k, t]) => `<button class="chip ${k === 'tout' ? 'on' : ''}" data-ntf="${k}">${t}</button>`).join('')}</div>` : ''}
       <div id="nt-liste"></div><button class="btn ghost petit" id="nt-plus" hidden style="margin-top:8px">${tt('Voir plus', 'See more')}</button></div>
     </div><div id="nt-p-reg">
+    <div class="acc-pils" id="nt-pils"></div>
+    <div class="sous nt-note">${tt('Au plus 3 notifications par jour, rien entre 22 h et 8 h : le reste t’attend ici.', 'At most 3 notifications a day, none between 10 pm and 8 am: the rest waits here.')}</div>
+    ${permis ? '' : `<button class="btn" id="nt-perm" style="margin-top:12px">${tt('Activer les notifications sur cet appareil', 'Turn on notifications on this device')}</button>`}
+    <div id="nt-res" hidden>
     <div class="nt-bloc"><div class="nt-t">${tt('Mes joueurs suivis', 'My tracked players')} <span class="fv-n" id="nt-n"></span></div>
       <div class="sous" style="margin-bottom:10px">${tt('Joueurs ou équipes. Ils passent aussi en premier dans tes deals (★).', 'Players or teams. They also come first in your deals (★).')}</div>
       <div class="fv-l" id="nt-fav"></div>
@@ -21904,13 +21920,28 @@ async function vueNotifs(arg){
       <label class="al-case" style="margin-top:10px"><span class="al-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.cloche}</svg></span><span class="t"><b>${tt('M’avertir quand ils sont en deal', 'Alert me when they’re on deal')}</b><span>${tt('Une notification par deal, jamais deux fois', 'One notification per deal, never twice')}</span></span><input type="checkbox" data-nt="mes_joueurs" ${al.mes_joueurs ? 'checked' : ''}></label></div>
     <div class="nt-bloc"><div class="nt-t">${tt('Ce que je reçois', 'What I get')}</div>
       <div class="al-cases">${autres.map(([k, ic, t, d]) => `<label class="al-case"><span class="al-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL[ic] || ''}</svg></span><span class="t"><b>${t}</b><span>${d}</span></span><input type="checkbox" data-nt="${k}" ${al[k] ? 'checked' : ''}></label>`).join('')}</div>
-      <div class="al-seuil" id="nt-seuil" ${al.gros_deal ? '' : 'hidden'}><span>${tt('Gros deal à partir de', 'Big deal from')}</span>${[30, 40, 50, 60].map(v => `<button class="chip ${+al.seuil_deal === v ? 'on' : ''}" data-seuil="${v}">−${v} %</button>`).join('')}</div>
-      <div class="sous" style="margin-top:8px">${tt('Au plus 3 notifications par jour, rien entre 22 h et 8 h : le reste t’attend ici.', 'At most 3 notifications a day, none between 10 pm and 8 am: the rest waits here.')}</div>
-      ${permis ? '' : `<button class="btn" id="nt-perm" style="margin-top:10px">${tt('Activer les notifications sur cet appareil', 'Turn on notifications on this device')}</button>`}</div>
+      <div class="al-seuil" id="nt-seuil" ${al.gros_deal ? '' : 'hidden'}><span>${tt('À partir de', 'From')}</span>${[30, 40, 50, 60].map(v => `<button class="chip ${+al.seuil_deal === v ? 'on' : ''}" data-seuil="${v}">−${v} %</button>`).join('')}</div>
+      </div>
     <div class="nt-bloc"><div class="nt-t">${tt('Mes alertes de prix', 'My price alerts')}</div>
       ${(r.alertes || []).length ? `<div class="liste">${r.alertes.map(a => `<div class="rangee"><span class="milieu"><span class="nom">${esc(a.q)}</span><span class="det">≤ ${argent(a.prix_max, 0)}</span></span><button class="ix" data-alx="${a.id}" aria-label="${esc(tt('Retirer', 'Remove'))}">${ICONES.x}</button></div>`).join('')}</div>`
         : `<div class="sous">${tt('Aucune. Choisis une carte et un prix : on te prévient quand elle passe en dessous.', 'None. Pick a card and a price: we’ll tell you when it drops below.')}</div>`}
-      <button class="btn ghost" id="nt-nv" style="margin-top:10px">${ICONES.plus} ${tt('Nouvelle alerte de prix', 'New price alert')}</button></div></div>`;
+      <button class="btn ghost" id="nt-nv" style="margin-top:10px">${ICONES.plus} ${tt('Nouvelle alerte de prix', 'New price alert')}</button></div></div></div>`;
+  // 21 nov 2026 (Mathieu, Profil : « info, design, layout ; pense Apple ; identique de page en page » ; ses regles : jamais
+  // de defilement, tout tient sur une page) : les Reglages des notifications faisaient presque 2 ecrans de haut (10 cartes
+  // dans une carte, des cases a cocher). Maintenant, comme le Profil : 3 lignes qui disent leur etat ; chacune ouvre sa
+  // fenetre (les memes blocs, deplaces : rien d'autre ne change) ; des interrupteurs comme partout ailleurs.
+  const NTG = [['cible', tt('Mes joueurs suivis', 'My tracked players'), tt('Ils passent en premier dans tes deals', 'They come first in your deals')],
+    ['cloche', tt('Ce que je reçois', 'What I get'), tt('Deals, ventes, nouvelles de tes joueurs', 'Deals, sales, news on your players')],
+    ['etiquette', tt('Mes alertes de prix', 'My price alerts'), tt('Une carte, un prix : on te prévient', 'A card, a price: we tell you')]];
+  const ntBlocs = $$('#nt-res > .nt-bloc');
+  { const se = $('#nt-seuil'), gd = $('[data-nt="gros_deal"]'); if (se && gd && gd.closest('.al-case')) gd.closest('.al-case').after(se); }      // le seuil juste sous « Gros deal »
+  $('#nt-pils').innerHTML = NTG.map(([ic, t, d], i) => pilAcc('nt-g' + i, ic, `${esc(t)}<small class="gg-s">${esc(d)}</small>`, '')).join('');
+  NTG.forEach(([ic, t], i) => { $('#nt-g' + i).onclick = () => { vibrer(); feuilleBloc(ntBlocs[i], `<h3 class="f-titre">${esc(t)}</h3>`); $('#f-bloc').classList.add('f-uni'); }; });
+  const majNt = () => { try {
+    const cases = $$('[data-nt]').filter(c => c.dataset.nt !== 'mes_joueurs'), on = cases.filter(c => c.checked).length, nA = $$('[data-alx]').length;
+    const V_ = [[FAV.length ? '' : 'a', FAV.length ? `${FAV.length} / ${FMAX}` : tt('Aucun', 'None')], [on ? 'ok' : '', on ? tt(`${on} sur ${cases.length}`, `${on} of ${cases.length}`) : tt('Aucune', 'None')], ['', nA ? String(nA) : tt('Aucune', 'None')]];
+    V_.forEach(([cl, v], i) => { const l = $('#nt-g' + i); if (!l) return; const x = l.querySelector('.ap-v'); if (x) x.remove(); l.querySelector('i').insertAdjacentHTML('beforebegin', `<span class="ap-v ${cl}">${esc(v)}</span>`); });
+  } catch (e) {} };
   const montrer = (k) => { ong = k; $('#nt-p-liste').hidden = k !== 'liste'; $('#nt-p-reg').hidden = k !== 'reglages';
     $$('[data-ong]').forEach(x => x.classList.toggle('on', x.dataset.ong === k)); history.replaceState(null, '', k === 'reglages' ? '#notifs/reglages' : '#notifs'); };
   montrer(ong);
@@ -21931,6 +21962,7 @@ async function vueNotifs(arg){
     $('#nt-pro').innerHTML = plein && !p.pro ? `<button class="pr-pro" data-nt-pro style="margin-top:8px">${icN('cadenas')}${tt(`Jusqu’à ${FPRO} joueurs avec Pro`, `Up to ${FPRO} players with Pro`)}</button>` : '';
     const bp = $('[data-nt-pro]'); if (bp) bp.onclick = () => feuillePro('joueurs');
     $$('[data-ntx]').forEach(b => b.onclick = () => { FAV.splice(+b.dataset.ntx, 1); vibrer(); peindre(); sauverFav(); });
+    majNt();
   };
   $('#nt-aj').onsubmit = (e) => { e.preventDefault(); let v = $('#nt-in').value.trim().replace(/\s+/g, ' ');
     if (v === v.toLowerCase() || v === v.toUpperCase()) v = v.toLowerCase().replace(/(^|[\s\-'’.])([a-zà-ÿ])/g, (m, x, y) => x + y.toUpperCase());   // « matvei gridin » -> « Matvei Gridin »
@@ -21944,9 +21976,10 @@ async function vueNotifs(arg){
   $$('[data-nt]').forEach(c => c.onchange = () => {
     if (c.checked) demanderNotifications();
     if (c.dataset.nt === 'gros_deal') $('#nt-seuil').hidden = !c.checked;
+    majNt();
     API.alarmes_regler({[c.dataset.nt]: c.checked}).then(() => toast(c.checked ? tt('Activée', 'On') : tt('Coupée', 'Off'), 1200)).catch(() => {}); });
   $$('[data-seuil]').forEach(b => b.onclick = () => { $$('[data-seuil]').forEach(x => x.classList.toggle('on', x === b)); API.alarmes_regler({seuil_deal: +b.dataset.seuil}).catch(() => {}); });
-  $$('[data-alx]').forEach(b => b.onclick = async () => { await API.alerte_supprimer(+b.dataset.alx).catch(() => {}); b.closest('.rangee').remove(); });
+  $$('[data-alx]').forEach(b => b.onclick = async () => { await API.alerte_supprimer(+b.dataset.alx).catch(() => {}); b.closest('.rangee').remove(); majNt(); });
   const pm = $('#nt-perm'); if (pm) pm.onclick = () => { demanderNotifications(); pm.remove(); };
   peindreListe(false);
   $('#nt-plus').onclick = () => peindreListe(true);
