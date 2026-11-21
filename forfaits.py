@@ -21,7 +21,12 @@ from datetime import datetime, timedelta
 
 ESSAI_JOURS = 14
 LIMITES = {                    # Gratuit (apres l'essai) ; Pro = illimite
-    "annonces_mois": 5,        # annonces creees depuis l'app par mois
+    # 21 nov 2026 (Mathieu : « c'est trop peu ; le gratuit doit donner envie de rester avec nous, pas de partir parce qu'il
+    # n'est capable de rien faire ; 10 annonces max par mois sur eBay, 20 recherches max par semaine dans le Radar ») :
+    # 10 annonces par mois (5 avant), 15 cartes dans le Radar (6 avant, dont ses 3 meilleures), 20 recherches par semaine
+    # dans le Radar (aucune avant)
+    "annonces_mois": 10,       # annonces creees depuis l'app par mois
+    "radar_semaine": 20,       # recherches dans le Radar par semaine
     "valeur_jour": 5,          # recherches « combien vaut une carte » par jour
     "deals": 5,                # deals visibles
     "repere": 3,               # cartes de l'inventaire avec le repere prix vs marche
@@ -39,6 +44,7 @@ class LimiteAtteinte(Exception):
                "valeur_jour": f"Tes {limite} recherches gratuites du jour sont utilisées : passe au forfait Pro pour continuer.",
                "preparer_jour": f"Tes {limite} annonces préparées du jour sont utilisées : reviens demain ou passe au forfait Pro.",
                "offres_jour": f"Tes {limite} offres gratuites du jour sont envoyées : reviens demain ou passe au forfait Pro.",
+               "radar_semaine": f"Tes {limite} recherches gratuites de la semaine sont utilisées : reviens lundi ou passe au forfait Pro.",
                }.get(cle, "Fonction Pro : passe au forfait Pro pour continuer.")
         try:                                  # 27 oct 2026 (revue Apple 3.1.1) : dans l'app iPhone, pas d'appel a acheter ailleurs
             import lockerroom
@@ -47,6 +53,7 @@ class LimiteAtteinte(Exception):
                        "valeur_jour": f"Tes {limite} recherches gratuites du jour sont utilisées : reviens demain.",
                        "preparer_jour": f"Tes {limite} annonces préparées du jour sont utilisées : reviens demain.",
                        "offres_jour": f"Tes {limite} offres gratuites du jour sont envoyées : reviens demain.",
+                       "radar_semaine": f"Tes {limite} recherches gratuites de la semaine sont utilisées : reviens lundi.",
                        }.get(cle, "Limite du forfait gratuit atteinte.")
         except Exception:
             pass
@@ -133,6 +140,8 @@ def _chemin():
 
 def _cle_periode(cle):
     maint = datetime.now()
+    if cle.endswith("_semaine"):              # la semaine ISO (du lundi au dimanche)
+        return maint.strftime("%G-S%V")
     return maint.strftime("%Y-%m") if cle.endswith("_mois") else maint.strftime("%Y-%m-%d")
 
 
@@ -198,5 +207,11 @@ def produit_permis(pid):
 def resume():
     """Pour l'ecran : forfait, essai, et ce qui reste dans le Gratuit."""
     e = etat()
-    reste = {k: (None if e["pro"] else max(0, LIMITES[k] - utilise(k))) for k in ("annonces_mois", "valeur_jour")}
-    return {**e, "limites": LIMITES, "reste": reste}
+    reste = {k: (None if e["pro"] else max(0, LIMITES[k] - utilise(k))) for k in ("annonces_mois", "valeur_jour", "radar_semaine")}
+    lim = dict(LIMITES)
+    try:                                         # 21 nov 2026 : les cartes visibles du Radar en Gratuit (pour la fenetre « Passer Pro »)
+        import lockerroom
+        lim["radar_cartes"] = lockerroom.Api.RADAR_GRATUIT
+    except Exception:
+        pass
+    return {**e, "limites": lim, "reste": reste}

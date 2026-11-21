@@ -6374,6 +6374,25 @@ html body .ecran .md-rech.tiq-rech, html:not(.tel-large) body .tete-fixe:has(.d-
 .ach-tri svg{width:16px; height:16px; flex:none; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
 .ach-tri select{-webkit-appearance:none; appearance:none; height:34px; padding:0 26px 0 2px; border:0; background:transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239A98A6' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E") right 6px center / 14px no-repeat; color:var(--texte); font:600 14.5px var(--f-txt, inherit); cursor:pointer; outline:0}
 .ach-tri select option{background:#1B1B22; color:#F4F2EE}
+/* 21 nov 2026 (fenetre « Passer Pro », facon Apple) */
+.pro-tete h3{font-size:24px; font-weight:700; letter-spacing:-.01em; margin:2px 0 0}
+.pro-av{display:flex; flex-direction:column; gap:11px; margin:14px 2px 14px}
+.pro-av .pa{display:flex; align-items:center; gap:14px}
+.pro-av .pa-i{flex:none; width:38px; height:38px; border-radius:12px; display:grid; place-items:center; background:linear-gradient(145deg,#F2D98C,#C9A24A); color:#1A1206}
+.pro-av .pa-i svg{width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round}
+.pro-av .pa-t{display:flex; flex-direction:column; gap:2px; min-width:0} .pro-av .pa-t b{font-size:16.5px; font-weight:700} .pro-av .pa-t span{font-size:14px; line-height:1.35; color:var(--doux)}
+.pro-tab{margin:0 0 12px; border-radius:16px; background:rgba(255,255,255,.045); border:1px solid var(--ligne); overflow:hidden}
+.pro-tab .pt-h, .pro-tab .pt-l{display:grid; grid-template-columns:minmax(0, 1fr) 86px 64px; align-items:center; gap:8px; padding:0 14px; min-height:35px}
+.pro-tab .pt-h{min-height:30px; font:700 11.5px var(--f-cond); letter-spacing:.12em; text-transform:uppercase; color:var(--doux)}
+.pro-tab .pt-l{border-top:1px solid var(--ligne); font-size:14.5px}
+.pro-tab .pt-h span:not(:first-child), .pro-tab .pt-l span:not(:first-child){text-align:center; font-variant-numeric:tabular-nums}
+.pro-tab .pt-l span:nth-child(2){color:var(--doux)} .pro-tab span.pro{color:#E8C77A; font-weight:700}
+.pro-tab .pt-g{border-top:1px solid var(--ligne); padding:8px 14px; font-size:12.5px; line-height:1.3; color:var(--doux); text-align:center}
+.feuille .pro-tete{gap:6px} .feuille .pro-tete h3{margin:0}
+@media (min-width:900px){ html:not(.tel-large) .pro-corps{display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1.12fr); gap:20px; align-items:center; margin:14px 0 14px}
+  html:not(.tel-large) .pro-corps .pro-av{margin:0; gap:16px} html:not(.tel-large) .pro-corps .pro-tab{margin:0}
+  html:not(.tel-large) .pro-corps .pro-tab .pt-h, html:not(.tel-large) .pro-corps .pro-tab .pt-l{grid-template-columns:minmax(0, 1fr) 76px 54px; padding:0 12px} }
+.ra-2{display:grid; grid-template-columns:1fr 1fr; gap:12px} .ra-2 .ra-g{margin:0} .ra-2n{display:block; margin:-6px 0 12px; font-size:12.5px; color:var(--doux)}
 /* une seule facon de titrer une feuille de reglage : le titre de la feuille ; le bloc n'a plus sa boite ni sa petite etiquette */
 .feuille h3.f-titre{margin:2px 48px 14px 2px; font-size:20px; font-weight:700; letter-spacing:0; text-transform:none}
 .feuille .f-ret{height:32px; margin:-4px 0 4px -4px; font-size:15.5px; cursor:pointer}
@@ -10522,12 +10541,32 @@ const AVANTAGES_PRO = () => [
   [tt('Annonces illimitées depuis tes photos', 'Unlimited listings from your photos'), tt(`Gratuit : ${(S.forfait || {}).limites ? S.forfait.limites.annonces_mois : 5} par mois`, `Free: ${(S.forfait || {}).limites ? S.forfait.limites.annonces_mois : 5} per month`)],
   [tt('Repère prix sur tout ton inventaire', 'Price check on your whole inventory'), tt('ton prix vs les mêmes cartes, d’un coup d’œil', 'your price vs the same cards, at a glance')],
   [tt('Valeur d’une carte illimitée', 'Unlimited card values'), tt('Gratuit : 5 recherches par jour', 'Free: 5 searches per day')],
-  [tt('Tout le Radar SlabIQ, les meilleures cartes comprises', 'The full SlabIQ Radar, best cards included'), tt('Gratuit : 6 cartes, les meilleures verrouillées', 'Free: 6 cards, the best ones locked')],
+  [tt('Tout le Radar SlabIQ, les meilleures cartes comprises', 'The full SlabIQ Radar, best cards included'), tt('Gratuit : 15 cartes, dont tes 3 meilleures', 'Free: 15 cards, including your 3 best')],
   [tt('Analyse de breaks sur tous les produits', 'Break analysis on every product'), tt('Gratuit : 1 produit', 'Free: 1 product')],
   [tt('Photos lues par l’IA illimitées', 'Unlimited AI photo reads'), ''],
   [tt('Offres illimitées aux acheteurs intéressés', 'Unlimited offers to interested buyers'), tt('Gratuit : 3 par jour', 'Free: 3 per day')],
   [tt('Prix eBay en automatique', 'Automatic eBay prices'), tt('ajustés chaque jour selon le marché, dans tes limites', 'adjusted daily to the market, within your limits')],
   [tt('Le look Pro', 'The Pro look'), tt('les reflets de ta palette, partout dans l’app', 'your palette’s shine, all through the app')]];
+// 21 nov 2026 (Mathieu, fenetre « Go Pro » : « revoir le layout et le design, full Apple ; nos etudes et Apple ») : 9 lignes a
+// cocher, c'etait une liste a lire. Maintenant, comme les pages d'abonnement d'Apple : 3 avantages (une icone, un titre, une
+// ligne), puis UN petit tableau Gratuit / Pro (on compare d'un coup d'oeil, et on voit ce que le Gratuit garde pour toujours).
+// Les chiffres viennent du serveur (forfaits.LIMITES) : la fenetre ne peut pas dire autre chose que la regle.
+function proCorpsHtml(){
+  const L = (S.forfait || {}).limites || {}, n = (k, d) => L[k] != null ? L[k] : d;
+  const ic = (d) => `<svg viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
+  const AV = [[IC_PIL.deals || IC_PIL.etiquette, tt('Tout le Radar', 'The full Radar'), tt('Toutes les cartes, recherches illimitées.', 'Every card, unlimited searches.')],
+    [IC_PIL.photo, tt('Annonces illimitées', 'Unlimited listings'), tt('De tes photos à eBay, sans compter.', 'From your photos to eBay, no counting.')],
+    [IC_PIL.graphe, tt('Prix automatiques', 'Automatic prices'), tt('Tes prix eBay suivent le marché.', 'Your eBay prices follow the market.')]];
+  const T = [[tt('Cartes du Radar', 'Radar cards'), n('radar_cartes', 15), tt('Toutes', 'All')],
+    [tt('Recherches Radar', 'Radar searches'), n('radar_semaine', 20) + tt(' / sem.', ' / wk'), '∞'],
+    [tt('Annonces eBay', 'eBay listings'), n('annonces_mois', 10) + tt(' / mois', ' / mo'), '∞'],
+    [tt('Offres aux acheteurs', 'Offers to buyers'), n('offres_jour', 3) + tt(' / jour', ' / day'), '∞'],
+    [tt('Analyse de breaks', 'Break analysis'), n('breaks_produits', 1) + tt(' produit', ' product'), tt('Tous', 'All')]];
+  return `<div class="pro-corps"><div class="pro-av">${AV.map(([d, t, x]) => `<div class="pa"><span class="pa-i">${ic(d)}</span><span class="pa-t"><b>${esc(t)}</b><span>${esc(x)}</span></span></div>`).join('')}</div>
+    <div class="pro-tab"><div class="pt-h"><span></span><span>${tt('Gratuit', 'Free')}</span><span class="pro">Pro</span></div>
+      ${T.map(([l, g, p_]) => `<div class="pt-l"><span>${esc(l)}</span><span>${esc(String(g))}</span><span class="pro">${esc(String(p_))}</span></div>`).join('')}
+      <div class="pt-g">${tt('Inventaire, ventes, profit, Score SlabIQ : gratuits pour toujours.', 'Inventory, sales, profit, SlabIQ score: free forever.')}</div></div></div>`;
+}
 // 27 oct 2026 (revue Apple 3.1.1 / 3.1.2) : dans l'app iPhone, le Pro s'achete avec l'identifiant Apple (StoreKit 2,
 // plugin NativePurchases). Le serveur verifie la transaction signee par Apple (achats_apple.py). La feuille montre ce
 // qu'Apple exige : nom, duree et prix de l'abonnement, renouvellement automatique et comment l'annuler, Conditions et
@@ -10543,12 +10582,12 @@ if (NATIF && NP()) {                                      // renouvellement ou a
   try { NP().addListener('transactionUpdated', (t) => { envoyerTransactionApple(t).catch(() => {}); }); } catch (e) {}
 }
 async function feuilleProIOS(f, raison){
-  const lim = AVANTAGES_PRO().map(([a, b]) => `<div class="av"><span class="coche">✓</span><div><b>${esc(a)}</b>${b ? `<span>${esc(b)}</span>` : ''}</div></div>`).join('');
+  const lim = proCorpsHtml();
   const tete = (h) => `<div class="pro-tete"><span class="badge-f pro grand">✦ PRO</span><h3>${h}</h3></div>`;
   const info = await API.apple_achat_info().catch(() => null);
-  if (!info || !info.ok) { ouvrirFeuille(tete(tt('Forfait Pro', 'Pro plan')) + `<div class="avantages">${lim}</div><button class="btn ghost" data-act="fermer">OK</button>`); return; }
+  if (!info || !info.ok) { ouvrirFeuille(tete(tt('Forfait Pro', 'Pro plan')) + `${lim}<button class="btn ghost" data-act="fermer">OK</button>`); return; }
   if (info.pro_apple || info.pro_ailleurs) {
-    ouvrirFeuille(tete(tt('Tu es Pro', 'You’re Pro')) + `<div class="avantages">${lim}</div>
+    ouvrirFeuille(tete(tt('Tu es Pro', 'You’re Pro')) + `${lim}
       ${info.pro_apple && NP() ? `<button class="btn ghost" id="fp-gerer-apple">${tt('Gérer mon abonnement', 'Manage my subscription')}</button>` : ''}
       <button class="btn ghost" data-act="fermer">OK</button>`);
     const g = $('#fp-gerer-apple'); if (g) g.onclick = () => NP().manageSubscriptions().catch(e => toast(e.message));
@@ -10556,11 +10595,11 @@ async function feuilleProIOS(f, raison){
   }
   if (!NP()) {                                            // ancienne version de l'app (avant l'achat integre)
     ouvrirFeuille(tete(f.essai ? tt(`Essai Pro : encore ${f.jours_restants} jour${f.jours_restants > 1 ? 's' : ''}`, `Pro trial: ${f.jours_restants} day${f.jours_restants > 1 ? 's' : ''} left`) : tt('Forfait Pro', 'Pro plan'))
-      + `<div class="avantages">${lim}</div><div class="sous" style="text-align:center">${tt('Mets l’app à jour dans l’App Store pour prendre le Pro.', 'Update the app in the App Store to get Pro.')}</div><button class="btn ghost" data-act="fermer">OK</button>`);
+      + `${lim}<div class="sous" style="text-align:center">${tt('Mets l’app à jour dans l’App Store pour prendre le Pro.', 'Update the app in the App Store to get Pro.')}</div><button class="btn ghost" data-act="fermer">OK</button>`);
     return;
   }
   ouvrirFeuille(tete(f.essai ? tt(`Ton essai Pro : encore ${f.jours_restants} jour${f.jours_restants > 1 ? 's' : ''}`, `Your Pro trial: ${f.jours_restants} day${f.jours_restants > 1 ? 's' : ''} left`) : tt('Passe au Pro', 'Go Pro'))
-    + `<div class="avantages">${lim}</div><div id="fp-apple">${roue}</div>`);
+    + `${lim}<div id="fp-apple">${roue}</div>`);
   let prod = null;
   try { const r = await NP().getProducts({productIdentifiers:[info.produit], productType:'subs'}); prod = (r.products || [])[0] || null; } catch (e) {}
   const z = $('#fp-apple'); if (!z) return;
@@ -10603,13 +10642,14 @@ async function feuillePro(raison){
   const prix = f.prix ? `${f.prix.montant.toLocaleString(LOC(), {minimumFractionDigits:2, maximumFractionDigits:2})} $ / ${tt(f.prix.intervalle === 'year' ? 'an' : 'mois', f.prix.intervalle === 'year' ? 'year' : 'month')}` : '';
   const motif = {annonces_mois: tt('Tu as utilisé tes annonces gratuites du mois.', 'You used your free listings this month.'),
     valeur_jour: tt('Tu as utilisé tes recherches gratuites du jour.', 'You used your free searches today.'),
+    radar_semaine: tt('Tu as utilisé tes recherches gratuites de la semaine dans le Radar.', 'You used your free Radar searches this week.'),
     repere: tt('Le repère prix sur toutes tes cartes est une fonction Pro.', 'The price check on all your cards is a Pro feature.'),
     deals: tt('Tous les deals sont dans le Pro.', 'All deals are in Pro.'),
     radar: tt('Les meilleures cartes de ton Radar t’attendent : débloque-les toutes avec le Pro.', 'The best cards in your Radar are waiting: unlock them all with Pro.'), offres_jour: tt('Tes offres gratuites du jour sont envoyées. En Pro, c’est illimité.', 'Your free offers for today are sent. Pro is unlimited.'), prix_auto: tt('Le mode Auto des prix fait partie de Pro.', 'Auto pricing is part of Pro.'), breaks: tt('L’analyse de tous les produits est dans le Pro.', 'Analysis of every product is in Pro.')}[raison] || '';
   ouvrirFeuille(`<div class="pro-tete"><span class="badge-f pro grand">✦ PRO</span>
       <h3>${f.payant ? tt('Tu es Pro', 'You’re Pro') : f.essai ? tt(`Ton essai Pro : encore ${f.jours_restants} jour${f.jours_restants > 1 ? 's' : ''}`, `Your Pro trial: ${f.jours_restants} day${f.jours_restants > 1 ? 's' : ''} left`) : tt('Passe au Pro', 'Go Pro')}</h3>
       ${motif ? `<div class="sous" style="font-size:15px">${esc(motif)}</div>` : ''}</div>
-    <div class="avantages">${AVANTAGES_PRO().map(([a, b]) => `<div class="av"><span class="coche">✓</span><div><b>${esc(a)}</b>${b ? `<span>${esc(b)}</span>` : ''}</div></div>`).join('')}</div>
+    ${proCorpsHtml()}
     ${f.payant ? `<button class="btn ghost" id="fp-gerer">${tt('Gérer mon abonnement', 'Manage my subscription')}</button>${f.engage ? `<div class="sous" style="text-align:center">${tt(`Forfait annuel : engagé jusqu’au ${esc(f.engagement_fin || '')}.`, `Yearly plan: committed until ${esc(f.engagement_fin || '')}.`)} ${f.annulation_demandee ? tt('Annulation demandée.', 'Cancellation requested.') : `<button class="lien-t" id="fp-annuler">${tt('Demander l’annulation', 'Request cancellation')}</button>`}</div>` : ''}`
       : f.paiements && f.prix_annuel && f.prix ? `<div class="pro-plans">
           <button class="pro-plan reco" id="fp-annuel"><span class="pp-n">${tt('Annuel', 'Yearly')}${f.prix.montant > f.prix_annuel.montant ? `<i>−${Math.round(100 * (1 - f.prix_annuel.montant / f.prix.montant))} %</i>` : ''}</span><b>${prixMois(f.prix_annuel)}</b><small>${tt('12 mois, payé chaque mois', '12 months, billed monthly')}</small></button>
@@ -11470,10 +11510,15 @@ S.ana = {produit:null, boites:1, mode:'equipes', cout:'', marge:'', decote:15, d
 // 28 oct 2026 (Mathieu : « ça remet toujours à 1 boîte même si je mets 16 ») : les reglages du break etaient seulement en
 // memoire (l'app qui se recharge = 1 boite). Gardes sur l'appareil : le produit, et pour CHAQUE produit ses boites, son cout
 // et le profit vise (le nombre de boites d'une caisse change d'un produit a l'autre).
+// 21 nov 2026 (Mathieu : « on ne devrait jamais avoir des joueurs a 1 $ ; le breaker met son prix plancher et on part de la ») :
+// le plancher se regle dans la meme fenetre que le prix paye et le profit ; 5 $ tant qu'il n'a rien choisi (1 $ avant)
+const planDef = () => { const A = S.ana; if (A.plancher > 0) return A.plancher;
+  try { const p = JSON.parse(localStorage.getItem('lr_ana') || '{}').plancher; if (p > 0) return (A.plancher = +p); } catch (e) {}
+  const r = +((S.reglages || {}).plancher_place || 0); return r > 1 ? r : 5; };
 function anaSauver(){
   const A = S.ana; if (!A.produit) return;
   try { const m = JSON.parse(localStorage.getItem('lr_ana') || '{}'); m.produit = A.produit; m.tri = A.tri; m.budget = A.budget;
-    m.par = m.par || {}; m.par[A.produit] = {boites:A.boites, cout:A.cout, marge:A.marge, tri:A.tri};
+    m.par = m.par || {}; m.par[A.produit] = {boites:A.boites, cout:A.cout, marge:A.marge, tri:A.tri}; if (A.plancher) m.plancher = A.plancher;
     localStorage.setItem('lr_ana', JSON.stringify(m)); } catch (e) {}
 }
 function anaCharger(produit){
@@ -11887,8 +11932,12 @@ function feuilleReglagesAna(r, vendeur){
     ${vendeur ? `<div class="ra-g"><span class="lib">${tt('Prix payé pour le lot', 'Price paid for the lot')} (${symDevise()})</span>
         <input class="champ" id="ra-lot" type="number" inputmode="decimal" value="${esc(A.cout ? Math.round(convertir(nb(A.cout) * bx)) : '')}" placeholder="${esc(tt('Obligatoire', 'Required'))}">
         <small>${r.prix_boite_marche ? tt('Repère eBay : ', 'eBay guide: ') + argentCourt(r.prix_boite_marche) + tt(' par boîte', ' per box') : tt('Ce que tu as payé pour ces boîtes', 'What you paid for these boxes')}</small></div>
-      <div class="ra-g"><span class="lib">${tt('Profit visé (%)', 'Target profit (%)')}</span>
-        <input class="champ" id="ra-marge" type="number" inputmode="decimal" value="${esc(A.marge ?? '')}" placeholder="${esc(tt('Obligatoire · ex. 25', 'Required · e.g. 25'))}"></div>`
+      <div class="ra-2"><div class="ra-g"><span class="lib">${tt('Profit visé (%)', 'Target profit (%)')}</span>
+        <input class="champ" id="ra-marge" type="number" inputmode="decimal" value="${esc(A.marge ?? '')}" placeholder="${esc(tt('Obligatoire · ex. 25', 'Required · e.g. 25'))}"></div>
+      <div class="ra-g"><span class="lib">${tt('Prix plancher', 'Floor price')} (${symDevise()})</span>
+        <input class="champ" id="ra-plancher" type="number" inputmode="decimal" value="${esc(Math.round(convertir(planDef())))}" placeholder="5">
+</div></div>
+      <small class="ra-2n">${tt('Plancher : aucune équipe ni aucun joueur sous ce prix.', 'Floor: no team or player under this price.')}</small>`
     : `<div class="ra-g"><span class="lib">${tt('Budget pour une place', 'Budget for a spot')} (${symDevise()})</span>
         <input class="champ" id="ra-budget" type="number" inputmode="decimal" value="${esc(A.budget ? Math.round(convertir(A.budget)) : '')}" placeholder="${esc(tt('Facultatif', 'Optional'))}"></div>
       <div class="ra-g"><span class="lib">${tt('Classer par', 'Rank by')}</span>
@@ -11910,6 +11959,7 @@ function feuilleReglagesAna(r, vendeur){
       $('#ra-lot').classList.toggle('manque', !okL); $('#ra-marge').classList.toggle('manque', !okM);
       if (!okL || !okM) { toast(tt('Entre ton prix payé et ton profit visé', 'Enter what you paid and your target profit'), 3000); (!okL ? $('#ra-lot') : $('#ra-marge')).focus(); return; }
       A.cout = versCAD(lot) / n0; A.marge = Math.max(0, Math.min(300, m));
+      { const pl = nb(($('#ra-plancher') || {}).value); A.plancher = pl > 0 ? Math.max(1, Math.min(5000, versCAD(pl))) : planDef(); }
     } else {
       const v = nb($('#ra-budget').value); A.budget = v ? versCAD(v) : 0; A.tri = tri;
     }
@@ -11920,7 +11970,7 @@ async function rendreAnalyse(){
   const z = $('#an-z'), A = S.ana, vendeur = breakVendeur();
   const zr_ = $('#an-rech'); if (zr_) zr_.innerHTML = '';
   A.demandesJ = A.demandesJ || {};
-  const args = (m) => ({produit_id:A.produit, boites:A.boites, mode: vendeur ? (m || A.mode) : 'equipes', cout_boite: vendeur ? A.cout : 0, marge:A.marge, decote:0,
+  const args = (m) => ({produit_id:A.produit, boites:A.boites, mode: vendeur ? (m || A.mode) : 'equipes', cout_boite: vendeur ? A.cout : 0, marge:A.marge, decote:0, ...(vendeur ? {plancher: planDef()} : {}),
     prix_demandes:A.demandes, prix_joueurs:A.demandesJ, acheteur: !vendeur});
   // 16 nov 2026 (« page break toujours aussi lente ») : si le calcul tarde (premier passage d'un produit apres une mise a
   // jour), on le dit et on laisse changer de produit au lieu d'une roue muette
@@ -12987,7 +13037,8 @@ function rechercheRadar(q, fin){
   if (e && (!e.l || Date.now() - e.t < 15 * 60e3)) return e.l || 'en';
   R[k] = {t: Date.now(), l: null};
   const ok = (l) => { R[k] = {t: Date.now(), l}; try { fin(); } catch (x) {} };
-  API.radar_chercher(q).then(r => { ok((r && r.ok && r.annonces) || []); if (!(r && r.ok)) R[k].t = 0; }).catch(() => { ok([]); R[k].t = 0; });
+  API.radar_chercher(q).then(r => { ok((r && r.ok && r.annonces) || []); if (!(r && r.ok)) R[k].t = 0;
+    if (r && r.limite && !S.radarLimiteDite) { S.radarLimiteDite = true; feuillePro('radar_semaine'); } }).catch(() => { ok([]); R[k].t = 0; });
   return 'en';
 }
 function filtrerDealsQ(q, deja){
@@ -14050,6 +14101,7 @@ const MAJ_APP = () => [
     ['colis', tt('Consignation au cell', 'Consignment on your phone'), tt('La liste Excel ou PDF se crée maintenant sur ton téléphone. Les cartes en vente sur eBay sont retirées d’eBay, après ton OK.', 'The Excel or PDF list now works on your phone. Cards for sale on eBay are removed from eBay, after your OK.')],
     ['graphe', tt('Tes prix, mieux jugés', 'Your prices, judged better'), tt('Un prix jusqu’à la plus haute vente récente n’est plus « trop cher ». Une tuile « À ajuster » montre les annonces au-dessus du marché.', 'A price up to the highest recent sale is no longer “too high”. A “To adjust” tile shows listings above market.')],
     ['breaks', tt('Breaks plus clairs', 'Clearer Breaks'), tt('Les joueurs en slabs côte à côte, avec la cote SlabIQ du joueur.', 'Players as slabs side by side, with the player’s SlabIQ rating.')],
+    ['etiquette', tt('Un Gratuit plus généreux', 'A more generous Free plan'), tt('15 cartes dans ton Radar (tes 3 meilleures comprises), 20 recherches par semaine et 10 annonces par mois.', '15 cards in your Radar (your 3 best included), 20 searches a week and 10 listings a month.')],
     ['profil', tt('Profil plus clair', 'Clearer Profile'), tt('Chaque ligne montre son état (eBay connecté, ton sport, tes frais). Les réglages des notifications tiennent sur une page.', 'Each row shows its state (eBay connected, your sport, your fees). Notification settings fit on one page.')],
     ['etoile', tt('Chance de séries sur chaque carte', 'Playoff chance on every card'), tt('Dans le Radar, un trophée et un % : la chance que l’équipe du joueur fasse les séries. Les repères (En feu, Buzz, Clé…) ont tous le même badge.', 'In the Radar, a trophy and a %: the chance the player’s team makes the playoffs. Markers (On fire, Buzz, Key…) all share the same badge.')],
   ]},

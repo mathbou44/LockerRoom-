@@ -50,5 +50,11 @@ T["5"] = ("2023-24 Upper Deck Extended Darryl Sittler Hockey Heroes Clear Cut #H
 lockerroom.Api._RECH.clear()
 assert "5" not in [x["item_id"] for x in api.radar_chercher("sittler")["annonces"]]
 forfaits.est_pro = lambda *a, **k: False
-assert api.radar_chercher("gridin").get("pro")             # gratuit : non
+# 21 nov 2026 : le Gratuit cherche aussi (20 par semaine) ; la limite atteinte est dite
+assert api.radar_chercher("gridin").get("ok") is True
+_v = forfaits.verifier
+def _plein(cle): raise forfaits.LimiteAtteinte(cle, 20)
+forfaits.verifier = _plein
+_r = api.radar_chercher("gridin"); assert _r.get("pro") and _r.get("limite") and not _r.get("ok"), _r
+forfaits.verifier = _v
 print("OK test_radar_chercher")

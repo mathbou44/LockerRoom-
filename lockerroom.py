@@ -7769,7 +7769,12 @@ class Api:
         except Exception:
             permis = False
         if not permis:
-            return {"ok": False, "pro": True, "q": q, "annonces": []}
+            # 21 nov 2026 (Mathieu : « 20 recherches max par semaine dans le Radar » en Gratuit ; avant : aucune)
+            try:
+                forfaits.verifier("radar_semaine")
+            except forfaits.LimiteAtteinte as e:
+                return {"ok": False, "pro": True, "limite": True, "erreur": str(e), "q": q, "annonces": []}
+            forfaits.compter("radar_semaine")
         pays = self._pays_radar()
         k = (" ".join(unicodedata.normalize("NFKD", q).encode("ascii", "ignore").decode().lower().split()), pays)
         e = Api._RECH.get(k)
@@ -7836,7 +7841,8 @@ class Api:
     # montre seulement RADAR_GRATUIT cartes : sa meilleure (la preuve que SlabIQ trouve de bonnes cartes) et quelques
     # cartes ordinaires. Les meilleures (score SlabIQ 75 et plus) restent en vue, floues et verrouillees : on voit leur score
     # et combien il y en a, jamais leur titre, leur prix ni leur lien (rien a contourner : le serveur ne les envoie pas).
-    RADAR_GRATUIT, RADAR_GRATUIT_SEUIL, RADAR_GRATUIT_VERROUS = 6, 75, 30
+    # 21 nov 2026 (Mathieu : « c'est trop peu ») : 15 cartes au lieu de 6, dont ses 3 meilleures au lieu d'une seule
+    RADAR_GRATUIT, RADAR_GRATUIT_SEUIL, RADAR_GRATUIT_VERROUS, RADAR_GRATUIT_TOP = 15, 75, 30, 3
 
     def _radar_gratuit(self, r):
         import hashlib
@@ -7849,7 +7855,8 @@ class Api:
             if isinstance(x, dict) and x.get("item_id") and x["item_id"] not in tous:
                 tous[x["item_id"]] = x
         l = sorted(tous.values(), key=lambda x: -(x.get("score") or 0))
-        vis = l[:1] + [x for x in l[1:] if (x.get("score") or 0) < self.RADAR_GRATUIT_SEUIL][:self.RADAR_GRATUIT - 1]
+        nt = self.RADAR_GRATUIT_TOP
+        vis = l[:nt] + [x for x in l[nt:] if (x.get("score") or 0) < self.RADAR_GRATUIT_SEUIL][:self.RADAR_GRATUIT - nt]
         vis_ids = {x["item_id"] for x in vis}
         verrous = [x for x in l if x["item_id"] not in vis_ids][:self.RADAR_GRATUIT_VERROUS]
         ver_ids = {x["item_id"] for x in verrous}
