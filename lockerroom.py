@@ -196,7 +196,7 @@ def _connecter(chemin=None):
                      ("a_finir_le", "TEXT"), ("valeur_annonces", "REAL"), ("valeur_annonces_n", "INTEGER"),
                      ("valeur_annonces_le", "TEXT"), ("coins_json", "TEXT"), ("photo_ebay_le", "TEXT"),
                      # 20 nov 2026 : l'analyse de prix par les comps (ventes reelles de la meme carte), a part de la valeur
-                     ("comps_valeur", "REAL"), ("comps_n", "INTEGER"), ("comps_sure", "INTEGER"), ("comps_le", "TEXT")):         # 9 nov 2026 : repere prix sans vente (annonces pareilles - 10 %)         # 9 nov 2026 : preparee pour la vente, pas encore sur eBay (onglet « A finir »)            # 1er nov 2026 - l'etat estime (pre-gradation)   # 31 oct 2026 - vues des annonces
+                     ("comps_valeur", "REAL"), ("comps_n", "INTEGER"), ("comps_sure", "INTEGER"), ("comps_le", "TEXT"), ("comps_haut", "REAL")):         # 9 nov 2026 : repere prix sans vente (annonces pareilles - 10 %)         # 9 nov 2026 : preparee pour la vente, pas encore sur eBay (onglet « A finir »)            # 1er nov 2026 - l'etat estime (pre-gradation)   # 31 oct 2026 - vues des annonces
         if col not in cols:
             c.execute(f"ALTER TABLE cartes ADD COLUMN {col} {typ}")
     # 1er nov 2026 - soumissions : les colonnes ajoutees apres coup
@@ -4018,7 +4018,7 @@ class Api:
                 for k_ in ("valeur_annonces", "valeur_annonces_n", "valeur_annonces_le"):
                     r_.pop(k_, None)
             if public:                               # 20 nov 2026 : l'analyse par les comps : admin et Platine
-                for k_ in ("comps_valeur", "comps_n", "comps_sure", "comps_le"):
+                for k_ in ("comps_valeur", "comps_n", "comps_sure", "comps_le", "comps_haut"):
                     r_.pop(k_, None)
         # 24 oct 2026 - repere prix : ton prix face aux memes cartes en vente (sante : mediane, plus bas, nombre)
         with _verrou:
@@ -9466,7 +9466,15 @@ class Api:
         # 20 nov 2026 (Mathieu : « calculee avec les last comps, ponderation plus elevee aux ventes recentes, puis la mediane ») :
         # la reference de la pastille de prix (Bon prix / Trop cher) = la mediane ponderee par la recence des ventes retenues
         cv = deals.mediane_recente(_pv if sure and isinstance(_pv, list) else vs)
-        self._comps_garder(cid, cv if cv is not None else val, len(vs), bool(sure))
+        # 21 nov 2026 (Mathieu : « je ne suis pas trop cher : c'est normal d'etre egal au plus haut comp, ou 10-15 % au-dessus de
+        # la mediane ») : la plus haute vente retenue (sans les prix aberrants) est gardee ; un prix a ce niveau n'est pas « trop cher »
+        try:
+            import cartes_match as _cmh
+            _mh, _gh = _cmh.mediane_robuste([float(v["prix"]) for v in (_pv if sure and isinstance(_pv, list) else vs) if v.get("prix")])
+            haut = round(float(_gh[-1]), 2) if _gh else None
+        except Exception:
+            haut = None
+        self._comps_garder(cid, cv if cv is not None else val, len(vs), bool(sure), haut)
         # 9 nov 2026 (revue « aucun faux indice ») : une valeur tiree d'une ou deux ventes qui ne se tiennent pas n'est pas
         # gardee (elle donnerait un faux « trop cher » dans l'inventaire) ; seulement une valeur sure ou 3 ventes et plus
         if sure or (carte.get("valeur") is None and len(vs) >= 3):
@@ -9476,15 +9484,15 @@ class Api:
         return {"ok": True, "valeur": val, "n": len(vs), "sure": bool(sure), "derniere": (recentes[0].get("le") or "")[:10] or None,
                 "ajustee": ajust, **approx}
 
-    def _comps_garder(self, cid, val, n, sure):
+    def _comps_garder(self, cid, val, n, sure, haut=None):
         """20 nov 2026 (Mathieu : « en Platine, je devrais voir si ma carte est bien pricee avec les comps ; j'avais une Tua
         Tagovailoa a 120 qui en vaut 40 ») : le resultat des comps de la carte, garde a part de sa valeur (jamais confondu avec
         une valeur entree a la main), avec la date : l'analyse de prix de l'inventaire le lit."""
         with _verrou:
             c = self._db()
             try:
-                c.execute("UPDATE cartes SET comps_valeur=?, comps_n=?, comps_sure=?, comps_le=? WHERE id=?",
-                          (val, int(n or 0), 1 if sure else 0, datetime.now().isoformat(timespec="seconds"), cid))
+                c.execute("UPDATE cartes SET comps_valeur=?, comps_n=?, comps_sure=?, comps_le=?, comps_haut=? WHERE id=?",
+                          (val, int(n or 0), 1 if sure else 0, datetime.now().isoformat(timespec="seconds"), haut, cid))
                 c.commit()
             finally:
                 c.close()

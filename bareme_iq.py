@@ -134,6 +134,12 @@ def sorte(titre):
         return ("D", "lot_checklist")                  # un lot, un checklist, une reimpression : jamais une bonne sorte
     yg = bool(YG.search(t))
     brut = " " + str(titre or "").lower() + " "
+    # 21 nov 2026 (Mathieu : « POE = Program of Excellence et non Young Guns ; le prix est tres different ») : nos ventes :
+    # Celebrini 69 $ (sa YG Canvas : 900 $ et plus), Schaefer 51 $, Bedard 43 $, Misa 13,50 $ ; les autres 3 $. Un insert Canvas,
+    # au niveau du 1st Round Draft ; jamais une YG ni une variante de YG, meme si le titre dit « Young Guns »
+    poe = bool(re.search(r"\bpoe\b|\bprogram(?:me)?s? of excellence\b", t + brut))
+    if poe:
+        yg = False
     # 17 nov 2026 (audit : « UD Series 1 Outburst #224 Sandis Vilmanis R/C » note D) : sans les mots « Young Guns », le numero
     # dit si c'est une YG (Series 1 : 201-250, Series 2 : 451-500, Extended : 701-750) quand c'est une recrue Upper Deck
     # 18 nov 2026 (Mathieu : « Bedard 1st Round Draft a 12 $ note A+ : c'est plus un B+ ») : l'insert 1st Round Draft d'Extended
@@ -188,6 +194,8 @@ def sorte(titre):
         c.append(("A", "bd_gems"))                    # 18 nov (Mathieu, apres la mesure : se vend comme une A+ ; A- -> A)
     if INSERTS_A.search(t):
         c.append(("A", "insert_a"))
+    if poe and not auto and not serie:
+        return ("B-", "poe")                          # teste aussi a C : accord 80,0 % (B- : 80,2 %) ; on garde B-
     if frd and not yg:
         c.append(("B", "frd"))                        # joueur A+ (Bedard) -> B+ ; joueur moyen -> C
     if FLUO.search(t):

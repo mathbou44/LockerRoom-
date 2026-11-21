@@ -73,3 +73,15 @@ ebay_compte.noter_synchro = lambda b: None
 a.ebay_synchroniser(90); a.ebay_synchroniser(90)
 assert vus[:2] == [729, 90], vus
 print("OK test_achats_auto")
+
+# 21 nov 2026 (Mathieu : « POE = Program of Excellence et non Young Guns ; le prix est tres different »)
+import cartes_match as _cm, bareme_iq as _bq
+_t = "MACKLIN CELEBRINI Upper Deck YOUNG GUNS CANVAS POE Rookies 2024-25 WOW!"
+assert _bq.sorte(_t) == ("B-", "poe") and "young guns" not in _cm.norm(_t) and " poe " in " " + _cm.norm(_t) + " "
+_c = _cm.cible("Macklin Celebrini 2024-25 Upper Deck Canvas Program of Excellence")
+assert _cm.raisons_refus(_c, "2024-25 UD Series 2 - Canvas Program of Excellence Macklin Celebrini #C259 (RC)") == []
+assert "pas une Program of Excellence" in _cm.raisons_refus(_c, "2024-25 Upper Deck Young Guns Canvas Macklin Celebrini #C211")
+_c2 = _cm.cible("Macklin Celebrini 2024-25 Upper Deck Young Guns Canvas")
+assert "Program of Excellence" in _cm.raisons_refus(_c2, _t) and _cm.raisons_refus(_c2, "2024-25 Upper Deck Young Guns Canvas Macklin Celebrini #C211") == []
+assert _bq.sorte("2024-25 Upper Deck Young Guns Canvas Macklin Celebrini #C211")[1] == "yg_variante"
+print("OK POE")

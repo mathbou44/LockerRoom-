@@ -760,28 +760,32 @@ def _calculer(api, langue, gens):
 
 def _globales(api, langue, force=False):
     """4 nov 2026 (tournee vitesse) : les astuces communes sont calculees une fois pour tous (10 a 20 s), pas par compte ;
-    perimees -> on rend les anciennes tout de suite et on recalcule en fond."""
+    perimees -> on rend les anciennes tout de suite et on recalcule en fond.
+    21 nov 2026 (Mathieu : « aucun tips, rien que des nouvelles, pourquoi ? ») : juste apres un deploiement, le cache est vide et
+    le 1er appel calculait SUR PLACE : 132 s ce matin (serveur occupe par les breaks). Cloudflare coupe a 100 s, l'app recevait
+    une erreur et restait sans astuces. Maintenant le calcul se fait toujours en fond : la reponse part tout de suite avec les
+    trucs du hobby (qui ne dependent d'aucun calcul), et les chiffres du jour s'ajoutent au prochain appel."""
     gens = [g for g in GENERATEURS if g.__name__ not in _PAR_COMPTE]
     c = _GLOBAL.get(langue)
-    if c and not force:
-        if time.time() - c["le"] >= FRAICHEUR_S:
-            with _VERROU:
-                lance = langue not in _EN_COURS
-                _EN_COURS.add(langue)
-            if lance:
-                import contextvars, threading
-                ctx = contextvars.copy_context()
+    if force:
+        l = _calculer(api, langue, gens)
+        _GLOBAL[langue] = {"le": time.time(), "l": l}
+        return l
+    if not c or time.time() - c["le"] >= FRAICHEUR_S:
+        with _VERROU:
+            lance = langue not in _EN_COURS
+            _EN_COURS.add(langue)
+        if lance:
+            import contextvars, threading
+            ctx = contextvars.copy_context()
 
-                def fond():
-                    try:
-                        _GLOBAL[langue] = {"le": time.time(), "l": _calculer(api, langue, gens)}
-                    finally:
-                        _EN_COURS.discard(langue)
-                threading.Thread(target=lambda: ctx.run(fond), daemon=True).start()
-        return c["l"]
-    l = _calculer(api, langue, gens)
-    _GLOBAL[langue] = {"le": time.time(), "l": l}
-    return l
+            def fond():
+                try:
+                    _GLOBAL[langue] = {"le": time.time(), "l": _calculer(api, langue, gens)}
+                finally:
+                    _EN_COURS.discard(langue)
+            threading.Thread(target=lambda: ctx.run(fond), daemon=True).start()
+    return c["l"] if c else []
 
 
 # -- 20 nov 2026 (Mathieu : « ou sont les tips and tricks ? Il y a une infinite de trucs pour aider les collectionneurs ») : une banque

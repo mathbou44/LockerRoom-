@@ -6252,6 +6252,47 @@ html.tel-large .fen.fa .fen-img{max-height:calc(46vh / 1.12) !important}
   .ecran:has(#m-corps) > .seg button, .ecran:has(#m-corps) .seg:not(.petit) button{font-size:11.5px !important; letter-spacing:.02em !important; padding:0 4px}
   #m-corps .bloc .total{padding:2px 0}
 }
+/* 21 nov 2026 (Mathieu, Breaks a l'ordi : « tout l'espace perdu dans les lignes : maximiser, des slabs cote a cote ») : les
+   joueurs en grille de petits slabs (l'etiquette en haut a la couleur de l'equipe) ; un slab ouvert prend toute la largeur */
+@media (min-width:1100px){
+  html body #an-z .score-liste{display:grid !important; grid-template-columns:repeat(auto-fill, minmax(290px, 1fr)); gap:10px !important;
+    background:none !important; border-radius:0 !important; overflow:visible !important}
+  html body #an-z .score-liste > .score-bloc.simple{border-radius:14px !important; overflow:hidden; border:1px solid rgba(255,255,255,.09) !important;
+    background:linear-gradient(180deg, color-mix(in srgb, var(--eq, #8B8BA0) 14%, #1c1c24), #1a1a21 70%) !important; padding-top:5px}
+  html body #an-z .score-liste > .score-bloc.simple::before{content:''; position:absolute; top:0; left:0; right:0; height:5px;
+    background:linear-gradient(90deg, var(--eq, #9FE6D2), color-mix(in srgb, var(--eq, #B9BEFF) 45%, #fff)) !important}
+  html body #an-z .score-liste > .score-bloc.simple + .score-bloc.simple::before{left:0}
+  html body #an-z .score-liste > .score-bloc.simple:has(> .exp-z:not([hidden])){grid-column:1 / -1}
+  html body #an-z .score-liste > .score-bloc.simple .score-l{min-height:60px; padding:8px 10px !important}
+  html body #an-z .score-liste > .score-bloc.simple .rang{width:auto; min-width:16px; font-size:13px}
+  html body #an-z .score-liste > .vide{grid-column:1 / -1}
+}
+/* 21 nov 2026 (Mathieu : « l'entete ne devrait pas avoir le fond noir ; on devrait voir le fond derriere chaque entete du site ») :
+   comme iOS, une entete fixe est transparente au repos ; quand la page defile, elle devient une vitre floutee (le fond passe a
+   travers), plus une bande noire qui coupe la page */
+html body .bk-fixe, html body .ecran.bk-page > .entete, html body #an-z > .an-fixe, html body .tiq-tf, html body .tete-fixe,
+html body .ecran:has(.tete-fixe) .d-barre, html body .ecran:has(.tete-fixe) .md-rech{background:transparent !important; box-shadow:none !important;
+  clip-path:none !important; -webkit-backdrop-filter:none; backdrop-filter:none; transition:background-color .2s}
+html body .ecran.bk-page > .entete::before{display:none !important}
+#vitre{position:fixed; top:0; left:0; right:0; height:0; z-index:16; pointer-events:none; background:rgba(11,11,14,.66);
+  -webkit-backdrop-filter:blur(22px) saturate(150%); backdrop-filter:blur(22px) saturate(150%);
+  -webkit-mask-image:linear-gradient(#000 calc(100% - 16px), transparent); mask-image:linear-gradient(#000 calc(100% - 16px), transparent)}
+.fc-px.fc-px-c{background:none !important; -webkit-text-fill-color:currentColor; color:var(--texte)} .fc-px.fc-px-c small{font:600 13px var(--f-txt, inherit); color:var(--doux); letter-spacing:0}
+/* 21 nov 2026 (Mathieu : « les tuiles devraient toutes etre de couleurs differentes, comme Apple et ses couleurs de produit ») :
+   chaque tuile de l'accueil a SA couleur (toujours la meme : on la retrouve d'un coup d'oeil), les couleurs systeme d'iOS */
+#acc-ft > #ft-radar{--tt:#0A84FF} #acc-ft > #ft-profit, #acc-ft > #ft-budget{--tt:#30D158} #acc-ft > #ft-inv{--tt:#FF9F0A}
+#acc-ft > #ft-tend{--tt:#FF375F} #acc-ft > #ft-breaks{--tt:#BF5AF2} #acc-ft > #ft-faire{--tt:#64D2FF} #acc-ft > #ft-iqq{--tt:#FFD60A}
+/* 21 nov 2026 (Mathieu : « je grossirais la fenetre [du joueur] de 1,5x ») : a l'ordi seulement (au cell elle prend deja l'ecran) */
+@media (min-width:900px){ html body #feuille.feuille:has(.fjc){max-width:min(780px, calc(100vw - 120px)) !important; width:min(780px, calc(100vw - 120px)) !important} #feuille:has(.fjc) .fjc{zoom:1.5} }
+/* 21 nov 2026 (Mathieu, watchlist a l'ordi : « le gros bouton Remove rouge en bas, ca fait bug ») : c'etait l'etiquette du geste
+   « glisser pour retirer » (cachee a droite de chaque ligne au cell) qui apparaissait dans la case vide de la grille. A l'ordi
+   on ne glisse pas (on retire par le bouton « Retirer » du haut ou l'etoile) : l'etiquette n'existe plus */
+@media (min-width:1100px), (hover:hover) and (pointer:fine){ .w-liste .w-ligne::after{display:none !important; content:none !important} }
+/* 21 nov 2026 : la 4e tuile « A ajuster » au telephone : 4 petites tuiles sur une rangee (jamais une tuile seule sur sa ligne) */
+@media (max-width:899px){ #i-tab:has(#it-aj){grid-template-columns:repeat(4, minmax(0,1fr)) !important; gap:6px !important}
+  #i-tab:has(#it-aj) .t-acc{padding:10px 8px !important; min-height:84px !important; border-radius:16px}
+  #i-tab:has(#it-aj) .t-acc b{font-size:21px !important} #i-tab:has(#it-aj) .t-acc .l{font-size:10.5px !important; letter-spacing:.04em !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  #i-tab:has(#it-aj) .t-acc .s{display:none !important} }
 /* 20 nov 2026 (« la loupe et le X trop proches des extremites ») */
 .dq-bar{padding:0 10px 0 18px !important} .tiq-rech{padding:0 16px 0 18px !important} .recherche{padding-left:16px; padding-right:12px}
 /* 20 nov 2026 (« Heating up » coupe) : le texte en degrade garde la place de ses jambages (g, p) */
@@ -7254,7 +7295,7 @@ async function feuilleJoueurBB(nom){
   ouvrirFeuille(`<div class="fj"><div class="lecture"><span class="roue"></span>${esc(nom)}</div></div>`, {centre: true});
   const r = await API.baseball_joueur(nom).catch(e => ({ok: false, erreur: e.message}));
   const z = $('#feuille .fj'); if (!z) return;
-  z.innerHTML = r.ok ? htmlJoueurBB(r) + `<a class="pilule fj-page" href="#joueur/${encodeURIComponent(nom)}" style="margin-top:12px">${tt('Sa page complète', 'Full page')} ›</a>` : `<div class="vide">${esc(r.erreur || 'Erreur')}</div>`;
+  z.innerHTML = r.ok ? htmlJoueurBB(r) : `<div class="vide">${esc(r.erreur || 'Erreur')}</div>`;
 }
 async function vueBBJoueur(arg){
   const nom = decodeURIComponent(arg || '');
@@ -11776,9 +11817,13 @@ async function rendreAnalyse(){
     const TRIS = TRIS_ANA().filter(t => comps() || t[0] !== 'valeur');
     const tri = TRIS.some(t => t[0] === A.tri) ? A.tri : 'place';
     const pH = (x) => ((x.chances || {}).hit || {}).p || 0;
-    const crit = {iq: (x) => (x.iq || 0) / 100, place: (x) => x.p_carte_prix || 0, hits: pH, rentab: (x) => x.p_rembourse || 0, recrue: (x) => x.ev_recrue != null ? x.ev_recrue / (x.demande || 1) : (x.p_recrue || 0),
+    let crit = {iq: (x) => (x.iq || 0) / 100, place: (x) => x.p_carte_prix || 0, hits: pH, rentab: (x) => x.p_rembourse || 0, recrue: (x) => x.ev_recrue != null ? x.ev_recrue / (x.demande || 1) : (x.p_recrue || 0),
       valeur: (x) => (x.ev || 0) / (x.demande || 1),
       argent: (x) => { const p = Math.min(.999999, pH(x)), px = x.demande || x.part_brute || x.prix_compare || x.prix || 0; return px > 0 ? -Math.log(1 - p) / px : 0; }}[tri];   // part exacte : le meme ordre avec 1 ou 32 boites
+    // 21 nov 2026 (Mathieu, Tableau : tout le monde « couvre la place : 16 % » et A+) : quand le critere est le meme pour tous, il
+    // ne classe rien ; on departage par SlabIQ (la demande pour le joueur), sinon tout le monde aurait A+
+    { const v_ = liste.map(crit), mn_ = Math.min(...v_), mx_ = Math.max(...v_);
+      if (liste.length > 3 && mx_ > 0 && (mx_ - mn_) / mx_ < 0.05 && liste.some(x => x.iq != null)) { const c0 = crit; crit = (x) => c0(x) * (0.35 + 0.65 * ((x.iq != null ? x.iq : 40) / 100)); } }
     const mxv = Math.max(1e-12, ...liste.map(crit));
     // 2 nov 2026 (Mathieu : « les scores ne doivent pas etre 0, c'est trop bas : 0 = aucune signature, patch, parallele ou SSP
     // de ce joueur ou equipe ») : une echelle en racine (un joueur a 1 % du premier vaut 10, pas 0) ; 0 seulement s'il n'a
@@ -14609,13 +14654,35 @@ document.addEventListener('click', (e) => {
       <div class="px-liste">${g.ventes.map(v => `<a class="px-l" ${v.url ? `href="${esc(urlSure(v.url))}" target="_blank" rel="noopener"` : ''}><span class="px-d">${esc(dateCourte(v.le))}</span><span class="px-t">${esc(v.titre)}</span><b>${argent(v.prix, 0)}</b></a>`).join('')}</div>`).join('')}
     <div class="sous" style="margin-top:12px">${esc(n.source || '')}. ${tt('Même carte et même condition seulement ; prix aberrants retirés ; une vente comptée une fois.', 'Same card and same condition only; outlier prices removed; each sale counted once.')}</div>`);
 }, true);
+function chargerAstuces(essai = 0){
+  S.astucesEnCours = true;
+  const L_ = typeof LANGUE !== 'undefined' ? LANGUE : null;
+  (sportApp() === 'baseball' ? API.astuces_baseball(L_) : API.astuces(false, L_)).then(r => {
+    const l = (r && r.astuces) || [];
+    if (!l.length && essai < 3) { setTimeout(() => chargerAstuces(essai + 1), [20000, 60000, 180000][essai]); return; }
+    S.astuces = l.length ? l : (S.astuces || []); if (S.newsMaj) S.newsMaj();
+    if (!S.astucesRelu && !l.some(x => x.calcule)) { S.astucesRelu = true; setTimeout(() => chargerAstuces(3), 60000); }
+  }).catch(() => { if (essai < 3) setTimeout(() => chargerAstuces(essai + 1), [20000, 60000, 180000][essai]); })
+    .finally(() => { S.astucesEnCours = false; });
+}
+// 21 nov 2026 : une seule vitre floutee derriere TOUTES les entetes fixes de l'ecran (du haut jusqu'au bas de la derniere) : le fond
+// de la page passe a travers ; au repos (page en haut), rien du tout
+const VITRE_SEL = '.bk-fixe, .ecran.bk-page > .entete, #an-z > .an-fixe, .tiq-tf, .tete-fixe, .ecran:has(.tete-fixe) .d-barre, .ecran:has(.tete-fixe) .md-rech';
+function majVitre(){
+  let v = document.getElementById('vitre');
+  if (!v) { v = document.createElement('div'); v.id = 'vitre'; v.setAttribute('aria-hidden', 'true'); (document.getElementById('vue') || document.body).appendChild(v); }   // dans #vue : sous ses entetes
+  let b = 0;
+  if ((scrollY || 0) > 6) document.querySelectorAll(VITRE_SEL).forEach(e => { if (getComputedStyle(e).position !== 'sticky') return;
+    const r = e.getBoundingClientRect(); if (r.height && r.top < innerHeight / 2) b = Math.max(b, r.bottom); });
+  const h = b ? Math.round(b + 10) + 'px' : '0px'; if (v.style.height !== h) v.style.height = h;
+}
+addEventListener('scroll', majVitre, {passive: true}); addEventListener('resize', majVitre); addEventListener('hashchange', () => setTimeout(majVitre, 60));
 function rendreNouvelles(items){
   const z = $('#acc-news'); if (!z) return;
-  if (!S.astuces && !S.astucesEnCours) {
-    S.astucesEnCours = true;
-    (sportApp() === 'baseball' ? API.astuces_baseball(typeof LANGUE !== 'undefined' ? LANGUE : null) : API.astuces(false, typeof LANGUE !== 'undefined' ? LANGUE : null)).then(r => { S.astuces = (r && r.astuces) || []; S.astucesEnCours = false; if (S.newsMaj) S.newsMaj(); })
-      .catch(() => { S.astuces = []; }).finally(() => { S.astucesEnCours = false; });
-  }
+  // 21 nov 2026 (Mathieu : « aucun tips, rien que des nouvelles, pourquoi ? ») : une erreur (serveur occupe juste apres une mise a
+  // jour) laissait l'accueil sans astuces pour toute la session. Maintenant : on reessaie (20 s, 60 s, 3 min), et une 2e lecture
+  // une minute plus tard ajoute les chiffres du jour que le serveur calculait en fond.
+  if (!S.astuces && !S.astucesEnCours) chargerAstuces();
   let L = [];
   const construire = () => {
     const news = items.slice(0, 8), tips = (S.astuces || []).slice(0, 30), out = [];      // 20 nov 2026 : la banque de trucs
@@ -15606,6 +15673,22 @@ function filtresBarreInv(){
 // 31 oct 2026 (Mathieu : « a vendre rapidement ou collection : deux mentalites ; simple, beau, l'info en quelques secondes ») :
 // 3 tuiles en haut de l'inventaire, comme l'accueil. Collection : ce qu'elle vaut et comment elle bouge, sa rarete, la
 // carte qui monte le plus. A vendre : combien, le temps reel pour vendre, ce qui dort (un tap : la liste).
+// 21 nov 2026 (Mathieu : « on devrait avoir une section "prix a ajuster / trop cher" ») : une 4e tuile dans l'inventaire en vente,
+// seulement s'il y en a : les annonces en ligne dont le prix est trop haut face a leurs ventes reelles. Un toucher : la liste,
+// la plus chere d'abord ; un 2e toucher : tout revient.
+function majTuileAjuster(){
+  const z = $('#i-tab'); if (!z || !z.querySelector('#it-pop, #it-liq, #it-dort')) return;
+  const L = (S.invTous || []).filter(c => c.statut === 'Listée').map(c => [c, repere(c)]).filter(x => x[1] && x[1].cl === 'rouge' && !x[1].bas)
+    .sort((a, b) => (nb(b[0].prix_demande) / b[1].ref) - (nb(a[0].prix_demande) / a[1].ref));
+  let d = $('#it-aj', z);
+  if (!L.length) { if (d && S.filtreCle !== 'aj') d.remove(); return; }
+  if (!d) { d = document.createElement('button'); d.className = 't-acc'; d.id = 'it-aj'; z.appendChild(d); }
+  d.innerHTML = `<span class="l">${tt('À ajuster', 'To adjust')}</span><b class="rouge">${L.length}</b><span class="s">${tt('prix au-dessus du marché', 'priced above market')}</span>`;
+  d.classList.toggle('on', S.filtreCle === 'aj');
+  const ids = L.map(x => x[0].id);
+  d.onclick = () => { vibrer(); const on = S.filtreCle !== 'aj'; S.filtreCle = on ? 'aj' : null; S.dortIds = on ? ids : null;
+    $$('#i-tab .t-acc').forEach(b => b.classList.remove('on')); d.classList.toggle('on', on); chargerInventaire(); };
+}
 async function tableauInv(){
   const z = $('#i-tab'); if (!z) return;
   if ((S.filtreInv || 'tous') === 'vendue') { tuilesVendues(); return; }       // 16 nov 2026 : les ventes ont leurs tuiles
@@ -15641,6 +15724,7 @@ async function tableauInv(){
       if (ids && ids.length) d.onclick = () => { vibrer(); const on = S.filtreCle !== cle; S.filtreCle = on ? cle : null; S.dortIds = on ? ids : null;
         $$('#i-tab .t-acc').forEach(b => b.classList.remove('on')); d.classList.toggle('on', on); chargerInventaire(); }; };
     filtre('it-pop', 'pop', v.populaires_ids); filtre('it-liq', 'liq', v.liquider_ids); filtre('it-dort', 'dort', v.dorment_ids);
+    try { majTuileAjuster(); } catch (e) {}
     const p0 = z.querySelector('.t-acc'); if (p0) p0.onclick = () => { const b = $('#i-res'); if (b) b.click(); };
     // les vues demandent l'acces « statistiques » d'eBay : une ligne discrete tant qu'il manque (les suivis marchent deja)
     // 15 nov 2026 : plus de ligne « Reconnecte eBay » ici (Reglages le dit)
@@ -15763,6 +15847,14 @@ function repere(c){
   const B = bandePrix(ref), ecart = prix / ref - 1;
   const pct = (x) => Math.round(Math.abs(x) * 100), long = lib + argentCourt(ref);
   if (ecart >= -0.05 && ecart <= B.vert) return {cl:'vert', court: tt('Bon prix', 'Good price'), long, ventes: parVentes, ref};
+  // 21 nov 2026 (Mathieu, une Buium a 40 $ « Too high +86 % » avec des ventes a 45 et 51 $ ; une Marchand /250 « +1308 % » :
+  // « je ne suis pas trop cher : c'est normal d'etre egal au plus haut comp, ou 10-15 % au-dessus de la mediane ponderee ») :
+  //  - un prix jusqu'a la plus haute vente retenue n'est jamais « cher » : « Haut de la fourchette » ;
+  //  - sans ventes reelles (valeur estimee, annonces), un ecart de plus du double dit que le REPERE est douteux, pas le prix :
+  //    on ne dit rien (aucun faux indice)
+  const haut = compsOk ? nb(c.comps_haut) : null;
+  if (ecart > B.vert && haut && prix <= haut * 1.02) return {cl:'or', court: tt('Haut de la fourchette', 'Top of the range'), long: long + tt(' · plus haute ', ' · highest ') + argentCourt(haut), ventes: parVentes, ref, hautOk: true};
+  if (ecart > 1 && !parVentes) return null;
   if (ecart > B.rouge) return {cl:'rouge', court: tt(`Trop cher +${pct(ecart)} %`, `Too high +${pct(ecart)}%`), long, ventes: parVentes, ref};
   if (ecart > B.vert) return {cl:'or', court: tt(`Un peu cher +${pct(ecart)} %`, `A bit high +${pct(ecart)}%`), long, ventes: parVentes, ref};
   if (ecart < -B.bas) return {cl:'rouge', court: tt(`Trop bas −${pct(ecart)} %`, `Too low −${pct(ecart)}%`), long, ventes: parVentes, ref, bas: true};
@@ -15962,6 +16054,7 @@ async function chargerInventaire(){
   const parSport = {}; tout.forEach(c => { const k = c.sport || sportPrincipal(); parSport[k] = (parSport[k] || 0) + 1; });
   if (S.sportInv && !parSport[S.sportInv]) S.sportInv = null;
   let l = S.sportInv ? tout.filter(c => (c.sport || sportPrincipal()) === S.sportInv) : tout;
+  S.invTous = l; try { majTuileAjuster(); } catch (e) {}
   if (S.dortIds) l = l.filter(c => S.dortIds.includes(c.id));          // 31 oct 2026 : les tuiles Populaires / À liquider / Dorment
   if (S.dortIds) { const o = new Map(S.dortIds.map((id, i) => [id, i])); l = l.slice().sort((a, b) => o.get(a.id) - o.get(b.id)); }
   // 17 nov 2026 (Mathieu : « pourquoi le profit n'est pas le meme ? » accueil 506 $ novembre vs Vendues 1,7 k$ depuis toujours) :
@@ -18541,15 +18634,17 @@ function feuilleEbay(c){
     const v = pr != null && co != null ? profitA(versCAD(pr), versCAD(co)) : null; pz.textContent = libP(v); pz.className = v == null ? '' : v >= 0 ? 'vert' : 'rouge'; };
   pp.oninput = maj; ci.oninput = maj; maj();
   $('#fc-ph-z').onclick = () => { vibrer(); galeriePhotos(photosCarte(c), 0, {brut: true}); };
-  $('#fe-ok').onclick = async () => { const b = $('#fe-ok'), pr = nb(pp.value), co = nb(ci.value);
+  $('#fe-ok').onclick = async () => { const b = $('#fe-ok'), pr = nb(pp.value), co = nb(ci.value); let offAj = null;
     const prCad = pr != null ? versCAD(pr) : null;
     if (prCad != null && Math.abs(prCad - (nb(c.prix_demande) || 0)) >= 0.02) {
       b.disabled = true; b.textContent = tt('Mise à jour sur eBay…', 'Updating eBay…');
       const r = prog ? await API.annonce_reviser(c.id, {titre: null, prix: prCad, debut: null}).catch(e => ({ok: false, erreur: e.message}))
         : await API.ebay_changer_prix(c.item_number, prCad).catch(e => ({ok: false, erreur: e.message}));
       b.disabled = false; b.textContent = tt('Enregistrer', 'Save');
-      if (!r || !r.ok) { toast(tt('eBay a refusé : ', 'eBay refused: ') + ((r && r.erreur) || 'eBay') + tt(' · rien n’a changé', ' · nothing changed'), 5000); return; } }
-    if (await essai(API.carte_sauver({id: c.id, cout: co == null ? null : versCAD(co), ...(prCad != null ? {prix_demande: prCad} : {})}), tt('Enregistré', 'Saved'))) { fermerFeuille(); chargerInventaire(); } };
+      if (!r || !r.ok) { toast(tt('eBay a refusé : ', 'eBay refused: ') + ((r && r.erreur) || 'eBay') + tt(' · rien n’a changé', ' · nothing changed'), 5000); return; }
+      if (r.offres) offAj = r.offres; }
+    if (await essai(API.carte_sauver({id: c.id, cout: co == null ? null : versCAD(co), ...(prCad != null ? {prix_demande: prCad} : {})}),
+      offAj ? tt('Enregistré · offres ajustées', 'Saved · offers adjusted') + (offAj.mini ? tt(' (refus sous ', ' (declined under ') + argent(offAj.mini, 2) + ')' : '') : tt('Enregistré', 'Saved'))) { fermerFeuille(); chargerInventaire(); } };
   $('#fe-tout').onclick = () => { vibrer(); fermerFeuille(); setTimeout(() => feuilleCarte(Object.assign({}, c, {_complet: true})), 220); };
   achatCarte(c); if ($('#c-promo')) promoCarte(c);
   remplirIQ($('#fe-iq'), c.titre || [c.annee, c.marque, c.joueur, c.parallele].filter(Boolean).join(' '));
@@ -18570,8 +18665,12 @@ function feuilleCarte(c){
     const etat = vendue ? tt('Vendue', 'Sold') : prog ? tt('Programmée ', 'Scheduled ') + dateProg(c.debut) : c.statut === 'Listée' ? tt('Sur eBay', 'On eBay') : (c.emplacement || tt('En stock', 'In stock'));
     const nPh = photosCarte(c).length;
     return `<div class="fc-heros"><button class="fc-ph fc-ph-z" id="fc-ph-z" aria-label="${esc(tt('Voir les photos', 'View photos'))}">${SVG_CARTE}${photoOk(c.photo) ? `<img src="${esc(photoNet(c.photo))}" alt="" data-oe="rm">` : ''}${nPh ? `<span class="fc-ph-n"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_D.loupe}</svg>${nPh > 1 ? nPh : ''}</span>` : ''}</button>
-      <div class="fc-inf"><b class="fc-nom">${esc(nom)}</b>${det ? `<span class="fc-det">${esc(det)}</span>` : ''}
-        <span class="fc-px">${argent(vendue ? c.prix_vendu : (c.prix_demande ?? c.valeur), 0)}</span>
+      ${''/* 21 nov 2026 (Mathieu, une Wembanyama importee de ses achats : « ca bug ? ») : une carte sans prix ni details montrait un
+        simple trait. Maintenant : son titre eBay quand les details manquent, et ce qu'elle a coute quand elle n'a pas encore de prix */}
+      <div class="fc-inf"><b class="fc-nom">${esc(nom)}</b>${det ? `<span class="fc-det">${esc(det)}</span>` : c.titre && c.titre !== nom ? `<span class="fc-det">${esc(c.titre)}</span>` : ''}
+        ${(() => { const px = vendue ? c.prix_vendu : (c.prix_demande ?? c.valeur);
+          return px != null && px !== '' ? `<span class="fc-px">${argent(px, 0)}</span>`
+            : c.cout != null && c.cout !== '' ? `<span class="fc-px fc-px-c"><small>${tt('Payée', 'Paid')}</small> ${argent(c.cout, 0)}</span>` : ''; })()}
         <span class="fc-st">${capsule(etat, vendue ? 'petit' : c.statut === 'Listée' ? 'acc petit' : 'petit')}</span>
         ${(() => { const r = !vendue ? repere(c) : null, m = c.marche || {};       // 8 nov 2026 : le detail du repere et l'interet, ici
           const l = [r ? `<b class="${r.cl}">${esc(r.court)}</b> · ${esc(r.long)}${r.ventes && m.n ? ' · ' + m.n + ' ' + tt('ventes', 'sales') : ''}${r.ventes && m.bas ? ' · ' + tt('plus bas ', 'lowest ') + argentCourt(m.bas) : ''}` : '',
@@ -21395,7 +21494,7 @@ function fenJoueurCompacte(r, t){
     ${top.length ? `<div class="fjc-ty"><span class="fjc-t">${tt('Ses cartes chaudes', 'His hot cards')}</span>
       <div class="fjc-tr">${top.map((x, i) => `<button class="fjc-tl" data-tyq="${esc(r.joueur + ' ' + qType(x.nom))}"><i>${i + 1}</i><span>${esc(nomTypeT(x.nom))}</span></button>`).join('')}</div></div>` : ''}
     ${!t ? `<div class="fjc-att"><span class="roue"></span></div>` : ''}
-    <div class="fjc-as">${act('j-cartes', 'carte', tt('Ses cartes', 'His cards'), r.cartes.length || null)}${(r.points || []).length >= 3 ? act('j-histo', 'graphe', tt('Ses ventes', 'His sales'), r.nb_ventes || null) : ''}${act('j-page', 'profil', tt('Sa page', 'Full page'), null)}</div>
+    <div class="fjc-as">${act('j-cartes', 'carte', tt('Ses cartes', 'His cards'), r.cartes.length || null)}${(r.points || []).length >= 3 ? act('j-histo', 'graphe', tt('Ses ventes', 'His sales'), r.nb_ventes || null) : ''}</div>
   </div>`;
 }
 // 12 nov 2026 : le joueur en petite fenetre (depuis la fiche d'une annonce) : le meme bento que sa page ; ses cartes et

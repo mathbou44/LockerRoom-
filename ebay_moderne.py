@@ -380,8 +380,47 @@ def changer_prix(item_id, prix):
         "sku": o["sku"], "offers": [{"offerId": o["offer_id"], "price": {"value": f"{prix:.2f}", "currency": "CAD"}}]}]})
     for x in (r or {}).get("responses") or []:
         if int(x.get("statusCode") or 200) >= 400:
-            raise RuntimeError("Prix refusé par eBay : " + " · ".join(e.get("message", "") for e in x.get("errors") or []))
+            msg = " · ".join(e.get("message", "") for e in x.get("errors") or [])
+            import ebay_ecriture
+            if ebay_ecriture._RE_OFFRES.search(msg):          # 21 nov 2026 : les seuils d'offres suivent le prix
+                return _prix_avec_offres(item_id, o, prix)
+            raise RuntimeError("Prix refusé par eBay : " + msg)
     return {"ok": True, "item_id": str(item_id), "prix": round(prix, 2), "avertissements": [], "api": "inventaire"}
+
+
+def _prix_avec_offres(item_id, o, prix):
+    """L'offre relue, son prix et ses seuils d'offres baisses ensemble (meme proportion), puis renvoyee en entier."""
+    import ebay_ecriture
+    _st, _h, of = rest("GET", f"/sell/inventory/v1/offer/{o['offer_id']}")
+    of = dict(of or {})
+    ps = dict(of.get("pricingSummary") or {})
+    try:
+        ancien = float((ps.get("price") or {}).get("value") or 0)
+    except (TypeError, ValueError):
+        ancien = 0.0
+    lp = dict(of.get("listingPolicies") or {})
+    bo = dict(lp.get("bestOfferTerms") or {})
+
+    def nb(k):
+        try:
+            return float((bo.get(k) or {}).get("value") or 0)
+        except (TypeError, ValueError):
+            return 0.0
+    auto, mini = ebay_ecriture.seuils_offres(prix, ancien, nb("autoAcceptPrice"), nb("autoDeclinePrice"))
+    for k, v in (("autoAcceptPrice", auto), ("autoDeclinePrice", mini)):
+        if v > 0:
+            bo[k] = {"value": f"{v:.2f}", "currency": "CAD"}
+        else:
+            bo.pop(k, None)
+    lp["bestOfferTerms"] = bo
+    ps["price"] = {"value": f"{prix:.2f}", "currency": "CAD"}
+    corps = {k: v for k, v in of.items() if k not in ("offerId", "status", "listing", "marketplaceId_", "errors", "warnings")}
+    corps.update(pricingSummary=ps, listingPolicies=lp)
+    st, _h, r = rest("PUT", f"/sell/inventory/v1/offer/{o['offer_id']}", corps)
+    if int(st or 200) >= 400:
+        raise RuntimeError("Prix refusé par eBay : " + " · ".join(e.get("message", "") for e in (r or {}).get("errors") or []))
+    return {"ok": True, "item_id": str(item_id), "prix": round(prix, 2), "avertissements": [], "api": "inventaire",
+            "offres": {"auto": auto or None, "mini": mini or None}}
 
 
 def retirer(item_id):

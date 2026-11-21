@@ -49,6 +49,7 @@ SYNONYMES = [                       # forme courte -> forme longue (dans la rech
     (r"\bpmg\b", "precious metal gems"), (r"\bskybox\s+(?=metal universe\b)", ""),
 ]
 _SYN_RE = [(re.compile(a), b) for a, b in SYNONYMES]
+_RE_POE = re.compile(r"\bprogram(?:me)?s? of excellence\b|\bp\.?o\.?e\b")
 
 # variantes qui changent le prix : une carte de base ne les a pas
 PARALLELES = [
@@ -138,6 +139,14 @@ def _norm(t):
     t = re.sub(r"(?<![\d/])\d{1,2}\s*/\s*\d{1,2}\s*/\s*(?:19|20)?\d{2}(?![\d/])", " ", t)
     for rx, rempl in _SYN_RE:
         t = rx.sub(rempl, t)
+    # 21 nov 2026 (Mathieu : une Celebrini « YOUNG GUNS CANVAS POE » comparee aux Young Guns Canvas : « vaut 714 $ », mise max
+    # 389 $, alors qu'elle se vend 60 a 100 $) : POE = Program of Excellence, un AUTRE insert Canvas (Equipe Canada junior), meme
+    # quand le vendeur ecrit aussi « Young Guns ». Le titre garde « poe » et perd « young guns » : elle ne se compare qu'aux POE.
+    # (Un lot « Young Guns, POE, Legends... pick from list » reste un lot : il est deja exclu ailleurs.)
+    if _RE_POE.search(t):
+        t = _RE_POE.sub(" poe ", t)
+        t = re.sub(r"\bpoe\b(\s+poe\b)+", "poe", re.sub(r"\s+", " ", t))
+        t = re.sub(r"\byoung guns\b", " ", t)
     return re.sub(r"\s+", " ", t).strip()
 
 
@@ -308,6 +317,8 @@ def raisons_refus(c, titre, appris=None):
             manque = [m for m in manque if m not in parents]
     if manque:
         r.append("autre carte (" + " ".join(manque[:3]) + " absent)")
+    if _a_mot(t, "poe") != _a_mot(c["texte"], "poe"):          # 21 nov 2026 : une POE ne se compare qu'a une POE
+        r.append("Program of Excellence" if _a_mot(t, "poe") else "pas une Program of Excellence")
     # 24 oct 2026 - « Will Smith / Lekkerimaki checklist » n'est pas la Young Guns de Will Smith
     if _a_mot(t, "checklist") and not _a_mot(c["texte"], "checklist"):
         r.append("checklist")

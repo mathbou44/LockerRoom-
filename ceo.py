@@ -143,7 +143,12 @@ SEMIS["securite_21nov"] = [
     ("s_cf_waf", "Cloudflare : pare-feu (règles gérées) + limite de débit", "Security → WAF → Managed rules : activer le Free Managed Ruleset. Rate limiting rules (1 règle gratuite) : chemin commence par /auth/ ou /connexion, 20 requêtes / 10 s par IP → Block. Ne pas activer Bot Fight Mode (bloque Stripe, Apple, eBay).", 1, None, "https://dash.cloudflare.com", "2026-11-24"),
     ("s_origine", "Verrouiller Render derrière Cloudflare (3 étapes, dans l'ordre)", "1) Cloudflare → Rules → Transform Rules → Modify Request Header : ajouter X-SC-Origine = un long secret (gestionnaire de mots de passe, 32+ caractères), pour tout le trafic. 2) Render → LR_ORIGINE_JETON = le même secret ; ouvrir https://www.slabcoach.com/sante/cloudflare → doit dire « oui ». 3) Render → LR_ORIGINE_BLOQUER = 1. Si le site tombe : enlever LR_ORIGINE_BLOQUER. Ne jamais écrire le secret dans le chat.", 1, None, None, "2026-11-25"),
 ]
-SEMIS_PROJET = {"licences_fc": "licences", "lancement_1dec": "lancement", "securite_21nov": "lancement"}
+SEMIS["matin_21nov"] = [
+    ("m_bfm", "Cloudflare : archiver l'alerte « Bot Fight Mode » (ne pas l'activer)", "Il peut bloquer les avis automatiques de Stripe, d'Apple et d'eBay. Bouton « Archive insight ».", 2, None, "https://dash.cloudflare.com", "2026-11-24"),
+    ("m_mot", "Valider ton mot de fondateur sur l'accueil du site", "« Comme un conseiller financier. Mais pour tes cartes. » + la petite note « pas des conseils financiers ». Dis à Claude si tu veux changer un mot.", 3, None, "https://www.slabcoach.com/#mot", None),
+    ("m_poe", "Vérifier une Program of Excellence dans le Radar après le push", "Ex. la Celebrini « Young Guns Canvas POE » : elle doit se comparer aux POE (60 à 100 $), plus aux Young Guns Canvas.", 2, None, None, "2026-11-22"),
+]
+SEMIS_PROJET = {"licences_fc": "licences", "lancement_1dec": "lancement", "securite_21nov": "lancement", "matin_21nov": "lancement"}
 PROJETS = {"licences": "Licences de données", "lancement": "Lancement", "general": "Général", "suivi": "Suivi"}
 
 

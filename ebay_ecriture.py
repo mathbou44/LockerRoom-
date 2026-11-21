@@ -170,8 +170,52 @@ def changer_prix(item_id, prix):
     corps = (f'<?xml version="1.0" encoding="utf-8"?><ReviseInventoryStatusRequest xmlns="{NS}">'
              f"<InventoryStatus><ItemID>{item_id}</ItemID><StartPrice>{prix:.2f}</StartPrice></InventoryStatus>"
              "</ReviseInventoryStatusRequest>")
-    r = ebay_compte.trading("ReviseInventoryStatus", corps)
+    try:
+        r = ebay_compte.trading("ReviseInventoryStatus", corps)
+    except RuntimeError as e:
+        if not _RE_OFFRES.search(str(e)):
+            raise
+        return _prix_avec_offres(item_id, prix)
     return {"ok": True, "item_id": item_id, "prix": round(prix, 2), "avertissements": ebay_compte.avertissements(r)}
+
+
+# 21 nov 2026 (Mathieu, un prix baisse de 20 $ a 10 $ : « eBay a refuse : Auto decline amount cannot be greater than or equal to
+# the Buy It Now price ; il faut baisser la limite d'acceptation automatique en meme temps ») : quand eBay refuse un prix a cause
+# des seuils d'offres, on lit ces seuils, on les baisse dans la MEME proportion que le prix (refus auto 70 % reste 70 %), et on
+# envoie le tout ensemble.
+_RE_OFFRES = re.compile(r"auto.?decline|auto.?accept|best ?offer", re.I)
+
+
+def seuils_offres(prix, ancien, auto, mini):
+    """Les seuils d'offres suivent le prix : meme proportion, toujours mini < auto < prix (au cent pres). 0 = pas de seuil."""
+    f = prix / ancien if ancien and ancien > 0 else 1.0
+    auto = round(auto * f, 2) if auto and auto > 0 else 0.0
+    mini = round(mini * f, 2) if mini and mini > 0 else 0.0
+    if auto >= prix:
+        auto = round(prix - 0.01, 2)
+    if mini >= (auto or prix):
+        mini = round((auto or prix) - 0.01, 2)
+    return max(0.0, auto), max(0.0, mini)
+
+
+def _prix_avec_offres(item_id, prix):
+    g = ebay_compte.trading("GetItem", f'<?xml version="1.0" encoding="utf-8"?><GetItemRequest xmlns="{NS}"><ItemID>{item_id}</ItemID>'
+                            "<OutputSelector>Item.StartPrice</OutputSelector><OutputSelector>Item.ListingDetails</OutputSelector></GetItemRequest>")
+
+    def nb(ch):
+        try:
+            return float(ebay_compte._txt(g, ch) or 0)
+        except ValueError:
+            return 0.0
+    ancien = nb("e:Item/e:StartPrice")
+    auto0, mini0 = nb("e:Item/e:ListingDetails/e:BestOfferAutoAcceptPrice"), nb("e:Item/e:ListingDetails/e:MinimumBestOfferPrice")
+    auto, mini = seuils_offres(prix, ancien, auto0, mini0)
+    det = ((f'<BestOfferAutoAcceptPrice currencyID="CAD">{auto:.2f}</BestOfferAutoAcceptPrice>' if auto > 0 else "")
+           + (f'<MinimumBestOfferPrice currencyID="CAD">{mini:.2f}</MinimumBestOfferPrice>' if mini > 0 else ""))
+    r = ebay_compte.trading("ReviseFixedPriceItem", _requete("ReviseFixedPriceItem",
+        f"<Item><ItemID>{item_id}</ItemID><StartPrice>{prix:.2f}</StartPrice>" + (f"<ListingDetails>{det}</ListingDetails>" if det else "") + "</Item>"))
+    return {"ok": True, "item_id": item_id, "prix": round(prix, 2), "avertissements": ebay_compte.avertissements(r),
+            "offres": {"auto": auto or None, "mini": mini or None}}
 
 
 # 8 nov 2026 (Mathieu : « les cartes a retirer de mon inventaire devraient aussi se supprimer dans eBay ») : terminer une
