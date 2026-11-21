@@ -26,6 +26,7 @@ import statistics
 import threading
 import time
 import urllib.error
+import reseau
 import urllib.parse
 import urllib.request
 from datetime import date, datetime, timedelta
@@ -58,7 +59,7 @@ def _get(url, timeout=20):
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
     for essai in range(3):
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as r:
+            with reseau.ouvrir(req, timeout=timeout) as r:
                 return json.loads(r.read() or b"null")
         except urllib.error.HTTPError as e:
             if e.code == 429:

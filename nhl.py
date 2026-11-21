@@ -17,6 +17,7 @@ import threading
 import time
 import unicodedata
 import urllib.parse
+import reseau
 import urllib.request
 
 GARDE_S = 6 * 3600                 # 10 nov 2026 : 12 h -> 6 h (« tout ce qui est vivant » : les matchs du soir, vus le matin)
@@ -56,7 +57,7 @@ def _norm(s):
 def _get(url):
     req = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": "SlabCoach/1.0 (+https://www.slabcoach.com)"})
     try:
-        with urllib.request.urlopen(req, timeout=15) as r:
+        with reseau.ouvrir(req, timeout=15) as r:
             return json.loads(r.read() or b"null")
     except Exception:
         return None

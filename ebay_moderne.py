@@ -17,6 +17,7 @@ import json
 import os
 import re
 import urllib.error
+import reseau
 import urllib.parse
 import urllib.request
 import uuid
@@ -48,7 +49,7 @@ def _envoyer(req, timeout=40):
     import appels_ebay
     appels_ebay.compter("autre")
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with reseau.ouvrir(req, timeout=timeout) as r:
             brut = r.read()
             return r.status, dict(r.headers), (json.loads(brut) if brut else {})
     except urllib.error.HTTPError as e:

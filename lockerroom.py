@@ -21,6 +21,7 @@ import random
 import threading
 import unicodedata
 import urllib.parse
+import reseau
 import time
 from datetime import date, datetime, timedelta, timezone
 
@@ -705,7 +706,7 @@ class Api:
             import urllib.request
             req = urllib.request.Request("https://www.bankofcanada.ca/valet/observations/FXUSDCAD/json?recent=1",
                                          headers={"User-Agent": "SlabCoach"})
-            with urllib.request.urlopen(req, timeout=8) as r:
+            with reseau.ouvrir(req, timeout=8) as r:
                 d = json.loads(r.read())
             obs = (d.get("observations") or [])[-1]
             usd_cad = float(obs["FXUSDCAD"]["v"])                    # 1 $ US = x $ CA
@@ -3448,7 +3449,7 @@ class Api:
             try:
                 q = urllib.parse.urlencode({"culture": "en-us", "limit": 8, "q": j})      # actifs ET espoirs repeches
                 req = urllib.request.Request("https://search.d3.nhle.com/api/v1/search/player?" + q, headers={"User-Agent": "SlabCoach"})
-                with urllib.request.urlopen(req, timeout=8) as r:
+                with reseau.ouvrir(req, timeout=8) as r:
                     res = json.loads(r.read().decode("utf-8")) or []
                 n = cartes_match.norm(j)
                 cands = [x for x in res if cartes_match.norm(x.get("name") or "") == n]
@@ -3456,7 +3457,7 @@ class Api:
                 pid = next((x.get("playerId") for x in cands), None)
                 if pid:
                     req = urllib.request.Request(f"https://api-web.nhle.com/v1/player/{pid}/landing", headers={"User-Agent": "SlabCoach"})
-                    with urllib.request.urlopen(req, timeout=8) as r:
+                    with reseau.ouvrir(req, timeout=8) as r:
                         url = (json.loads(r.read().decode("utf-8")) or {}).get("headshot")
                     if url and re.search(r"default|silhouette|placeholder", url, re.I):
                         url = None                          # pas de vraie photo : l'ecran met ses initiales

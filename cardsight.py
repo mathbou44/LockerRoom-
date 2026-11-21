@@ -19,6 +19,7 @@ import os
 import threading
 import time
 import urllib.error
+import reseau
 import urllib.request
 import uuid
 
@@ -66,7 +67,7 @@ def _appel(meth, chemin, corps=None, type_=None, timeout=25):
         h["Content-Type"] = type_
     req = urllib.request.Request(BASE + chemin, data=corps, method=meth, headers=h)
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with reseau.ouvrir(req, timeout=timeout) as r:
             brut = r.read()
             return r.status, (json.loads(brut) if brut else {})
     except urllib.error.HTTPError as e:

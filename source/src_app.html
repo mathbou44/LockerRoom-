@@ -5044,6 +5044,7 @@ html.tel-large .ecran.acc.acc-ft-mode > .acc-news2{order:9}
 @media (min-width:1100px){
   html body .ecran.large.joueur #jb.jb-3b{display:grid !important; grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important; grid-template-rows:auto minmax(0,1fr) !important; gap:12px}
   #jb.jb-3b > .jb-haut{grid-column:1 / -1; display:flex; gap:12px; min-width:0} #jb.jb-3b > .jb-haut > *{flex:1 1 0; min-width:0; margin:0} #jb.jb-3b > .jb-haut > .jb-tete{flex:2 1 0}
+  html body .ecran.large.joueur #jb.jb-1b > .jb-haut{grid-column:1 / -1 !important; order:0 !important; display:flex; gap:12px; min-width:0} #jb.jb-1b > .jb-haut > *{flex:1 1 0; min-width:0; margin:0} #jb.jb-1b > .jb-haut > .jb-tete{flex:2 1 0}
   #jb.jb-3b > .jb-gauche{grid-column:1; grid-row:2; display:flex; flex-direction:column; gap:12px; min-height:0; overflow:hidden}
   #jb.jb-3b > .jb-gauche > *{flex:none; margin:0 !important; min-height:0} #jb.jb-3b > .jb-gauche > :last-child{flex:1 1 auto; overflow:hidden} #jb.jb-3b > .jb-gauche > .jb-acts:last-child{flex:none; margin-top:auto !important}
   #jb.jb-3b .jb-acts{display:flex; gap:12px} #jb.jb-3b .jb-acts > .jb-a{flex:1 1 0; min-width:0; flex-direction:row; align-items:center; gap:12px; padding:10px 16px !important; min-height:0}
@@ -5056,6 +5057,18 @@ html.tel-large .ecran.acc.acc-ft-mode > .acc-news2{order:9}
   #jb.jb-3b > .jb-deals .jb-dw{flex:1 1 auto; min-height:0; display:flex; flex-direction:column} #jb.jb-3b > .jb-deals .jb-dg{flex:1 1 auto; min-height:0; align-content:stretch !important; grid-auto-rows:minmax(0,1fr)}
   #jb.jb-3b > .jb-deals .jb-dg > .tuile-deal{height:100%; max-height:none !important; min-height:0}
   #jb.jb-3b > .jb-deals .jb-dg > .tuile-deal .sd-slab{height:100% !important; aspect-ratio:auto !important; display:flex; flex-direction:column; min-height:0}
+}
+@media (max-width:699px){ #an-z .score-bloc.simple .rang{display:none} }
+/* 20 nov 2026 (Mathieu, la page de Demidov : la liste etiree sur toute la largeur, du vide dessous) : sans deals, ses cartes les plus
+   recherchees deviennent 5 tuiles cote a cote qui remplissent la hauteur ; le grand numero en haut, le nom dessous */
+@media (min-width:1100px){
+  .ecran.large.joueur #jb:not(:has(.jb-deals)) > .jb-ty{display:flex !important; flex-direction:column}
+  .ecran.large.joueur #jb:not(:has(.jb-deals)) > .jb-ty .ty-l{flex:1 1 auto; min-height:0; display:grid !important; grid-template-columns:repeat(auto-fit, minmax(0,1fr)); grid-auto-flow:column; gap:10px; margin-top:10px}
+  .ecran.large.joueur #jb:not(:has(.jb-deals)) > .jb-ty .ty-p{height:100%; width:100%; display:flex !important; flex-direction:column; align-items:flex-start; justify-content:flex-end; gap:10px;
+    padding:16px !important; border-radius:18px !important; font:600 17px/1.2 var(--f-txt, inherit) !important; white-space:normal; text-align:left; background:rgba(255,255,255,.05)}
+  .ecran.large.joueur #jb:not(:has(.jb-deals)) > .jb-ty .ty-p i{width:auto !important; height:auto !important; background:none !important; font:800 44px/1 var(--f-cond) !important; color:var(--acc); margin-bottom:auto}
+  .ecran.large.joueur #jb:not(:has(.jb-deals)) > .jb-ty .ty-p:first-child i{background:var(--holo) !important; -webkit-background-clip:text !important; background-clip:text !important; color:transparent}
+  .ecran.large.joueur #jb:not(:has(.jb-deals)) > .jb-ty > small{margin-top:10px}
 }
 .hon-l{display:flex; flex-direction:column; margin-top:12px} .hon-i{display:flex; align-items:center; gap:12px; padding:10px 2px; border-bottom:1px solid rgba(255,255,255,.07)} .hon-i:last-child{border-bottom:0}
 .hon-ic{width:32px; height:32px; flex:none; border-radius:10px; display:grid; place-items:center; background:linear-gradient(180deg, #F2C14E, #D99A2B)} .hon-ic svg{width:16px; height:16px; stroke:#1A1206 !important}
@@ -5892,7 +5905,10 @@ html.tel-large .fen.fa .fen-img{max-height:calc(46vh / 1.12) !important}
 }
 .ana-amp svg{width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round}
 .ana-amp.pt::after{content:''; position:absolute; top:8px; right:8px; width:8px; height:8px; border-radius:50%; background:#FF8C8C}
-.an-ampc{display:flex; flex-direction:column; gap:10px} .an-ampc p{margin:0; font-size:14.5px; line-height:1.45; color:#DCD9E2} .an-ampc .an-vague{margin:0}
+.an-ampc{display:flex; flex-direction:column; gap:10px}
+.amp-tri b{display:block; font-size:15px; margin-bottom:2px; color:var(--texte)} .amp-tri{color:var(--doux) !important; font-size:14px !important}
+.amp-l{display:flex; flex-direction:column; border-radius:14px; background:rgba(255,255,255,.05)} .amp-l > div{display:flex; align-items:center; gap:12px; padding:10px 12px}
+.amp-l > div + div{border-top:1px solid rgba(255,255,255,.07)} .amp-l .sc-b{flex:none; min-width:34px; text-align:center} .amp-l p{font-size:14px !important} .an-ampc p{margin:0; font-size:14.5px; line-height:1.45; color:#DCD9E2} .an-ampc .an-vague{margin:0}
 .ceo-tadd{margin-left:auto; border:0; background:rgba(255,255,255,.08); color:var(--texte); font:700 12px var(--f-cond); letter-spacing:.08em; text-transform:uppercase; padding:5px 10px; border-radius:99px; cursor:pointer}
 .ceo .ceo-c > .ceo-c-t:has(.ceo-tadd){display:flex; align-items:center; gap:6px}
 .ceo-mail{text-decoration:none; font:700 10.5px var(--f-cond); letter-spacing:.08em; text-transform:uppercase; color:#9FE6D2; background:rgba(159,230,210,.12); padding:2px 6px; border-radius:5px; margin-left:6px; vertical-align:1px}
@@ -6088,6 +6104,58 @@ html.tel-large .fen.fa .fen-img{max-height:calc(46vh / 1.12) !important}
 /* 6. les en-tetes ronds (« Analyser un produit », Breaks) : la fleche en pastille prisme */
 .tuile-analyse .go{width:40px; height:40px; flex-shrink:0; border-radius:50%; display:grid; place-items:center; border:2px solid transparent; font-size:20px; color:var(--texte);
   background:var(--pastille-fond) padding-box, var(--prisme) border-box}
+/* 20 nov 2026 (Mathieu : « revoir tout le layout de la page Break, le plus Apple possible ; tout est trop gros pour rien, les
+   pop-up sont laids, beaucoup d'info inutile ») : une liste groupee iOS. Des controles de 36 px, une rangee de 56 px par joueur,
+   le nom a gauche, une seule lettre a droite ; le detail en une bande ; plus de degrades d'equipe sur toute la rangee */
+.ecran.bk-page .bk-mode{max-width:420px; padding:3px; gap:3px; margin:0; border-radius:12px; background:rgba(118,118,128,.18); border:0}
+.ecran.bk-page .bk-mode button{padding:7px 8px; border-radius:9px; font:600 13.5px var(--f-txt, inherit); letter-spacing:0; text-transform:none; color:var(--texte)}
+.ecran.bk-page .bk-mode button.on{background:rgba(255,255,255,.16); color:var(--texte); box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.ecran.bk-page .entete .titre{font-size:clamp(34px, 4vw, 46px) !important}
+#an-z > .ana-tete2{height:auto !important; gap:8px; margin-bottom:10px; align-items:center}
+#an-z .ana-tete2 .ana-prod{min-width:0; padding:6px 12px 6px 6px !important; gap:10px !important; border-radius:14px !important; border:0; background:rgba(118,118,128,.14)}
+#an-z .ana-tete2 .ap-img{width:36px !important; height:36px !important; border-radius:9px !important}
+#an-z .ana-tete2 .ap-img:empty::after{width:18px; height:18px}
+#an-z .ana-tete2 .ana-prod b{font-size:15px !important; -webkit-line-clamp:1 !important} #an-z .ana-tete2 .ana-prod small{font-size:12px !important}
+#an-z .ana-tete2 .ana-reg, #an-z .ana-tete2 .ana-amp{width:40px !important; height:40px; flex:none; padding:0; border-radius:50% !important; border:0; background:rgba(118,118,128,.18); display:grid; place-items:center}
+#an-z .ana-tete2 .ana-reg span{display:none} #an-z .ana-tete2 .ana-reg svg{width:18px; height:18px}
+#an-z .ana-tete2 .ana-amp svg{width:19px; height:19px} #an-z .ana-amp.pt::after{top:6px; right:6px; width:7px; height:7px}
+#an-z > .seg{margin:0 0 10px !important; padding:3px; border-radius:12px; background:rgba(118,118,128,.18); max-width:420px}
+#an-z > .seg button{height:30px; border-radius:9px; font-size:13.5px; font-weight:600; letter-spacing:0; text-transform:none; color:var(--texte); background:none; border:0}
+#an-z > .seg button.on{background:rgba(255,255,255,.16); color:var(--texte); box-shadow:0 2px 8px rgba(0,0,0,.25)}
+#an-z .an-tri{margin:0 0 12px !important} #an-z .an-rbx{gap:8px} #an-z .an-rbx .recherche.petite input, #an-z .an-rbx .recherche input{height:36px !important; font-size:15px; border-radius:10px}
+#an-z .an-bx{height:36px; padding:0 12px; border-radius:10px; border:0; background:rgba(118,118,128,.18)} #an-z .an-bx b{font:700 15px var(--f-txt, inherit)} #an-z .an-bx svg{width:16px; height:16px}
+#an-z .score-liste{gap:0 !important; border-radius:16px; overflow:hidden; background:color-mix(in srgb, var(--carte) 85%, transparent)}
+#an-z .score-bloc.simple{border:0 !important; border-radius:0 !important; background:none !important; margin:0 !important; position:relative}
+#an-z .score-bloc.simple + .score-bloc.simple::before{content:''; position:absolute; top:0; left:78px; right:0; height:1px; background:rgba(255,255,255,.07)}
+#an-z .score-bloc.simple .score-l{min-height:56px; padding:8px 14px 8px 10px !important; gap:12px !important; border-radius:0 !important; box-shadow:none !important; border:0 !important}
+#an-z .score-bloc.simple .exp-z{border-radius:0 !important; box-shadow:none !important; border:0 !important; outline:0}
+#an-z .exp-z .bk-l{display:flex !important; flex-direction:row !important; align-items:center; flex-wrap:wrap; gap:8px 22px !important}
+#an-z .exp-z .bk-l > span:empty{display:none}
+#an-z .ana-tete2 .ana-prod, #an-z > .seg{border:0 !important; box-shadow:none !important}
+#an-z .exp-z .bk-lig{display:flex; flex-wrap:wrap; align-items:center; gap:10px 22px} #an-z .exp-z .bk-lig > *{margin:0}
+#an-z .score-bloc.simple .score-l:hover{background:rgba(255,255,255,.03)}
+#an-z .score-bloc.simple .rang{width:20px; font:600 13px var(--f-txt, inherit); color:var(--pale)}
+#an-z .score-bloc.simple .vig, #an-z .score-bloc.simple .vig-j, #an-z .score-bloc.simple .ecusson, #an-z .score-bloc.simple .ecu-eq{width:34px !important; height:34px !important; border-radius:10px !important; font-size:12px !important; flex:none}
+#an-z .score-bloc.simple .sl-n{flex:1 1 auto; align-items:flex-start !important; justify-content:center; padding:0 !important; border:0 !important; min-width:0; gap:1px}
+#an-z .score-bloc.simple .sl-n b{font:600 15.5px var(--f-txt, inherit) !important; color:var(--texte); display:flex; align-items:center; gap:6px; max-width:100%}
+#an-z .score-bloc.simple .sl-n > span{font:400 13px var(--f-txt, inherit) !important; color:var(--doux); letter-spacing:0}
+#an-z .score-bloc.simple .an-iq{font-size:10.5px; padding:1px 6px; min-width:0; height:auto; border-radius:6px; opacity:.85}
+#an-z .score-bloc.simple .score{min-width:0 !important; padding:0 !important; background:none !important; border:0 !important; flex-direction:row; gap:6px; align-items:center}
+#an-z .score-bloc.simple .score b{font:700 17px/1 var(--f-cond) !important; min-width:40px; height:28px; display:grid; place-items:center; border-radius:8px; background:color-mix(in srgb, currentColor 14%, transparent)}
+#an-z .score-bloc.simple .score small{display:none}
+#an-z .score-bloc.simple .score-l[aria-expanded="true"]{background:rgba(255,255,255,.04)}
+/* le detail : une bande, 3 chiffres sur une ligne, le prix et les liens sur une autre */
+#an-z .score-bloc.simple .exp-z{padding:4px 14px 12px 66px !important; gap:10px !important; border-top:0 !important; background:rgba(255,255,255,.04)}
+#an-z .exp-z .bk-t{display:none}
+#an-z .exp-z .bk-3{display:flex; gap:22px; flex-wrap:wrap}
+#an-z .exp-z .bk{padding:0 !important; border:0 !important; background:none !important; border-radius:0; flex-direction:row; align-items:baseline; gap:6px}
+#an-z .exp-z .bk .bk-i{display:none} #an-z .exp-z .bk b{font:700 19px var(--f-cond)} #an-z .exp-z .bk small{font-size:13px}
+#an-z .exp-z .bk.off{opacity:.45}
+#an-z .exp-z .bk-p{justify-content:flex-start; gap:10px} #an-z .exp-z .bk-p .champ{height:32px; min-height:0; max-width:110px; border-radius:9px; font-size:14px}
+#an-z .exp-z .bk-l{gap:18px; justify-content:flex-start} #an-z .exp-z .bk-l .plus{font-size:14px; padding:0} #an-z .exp-z .exp-calc summary{font-size:13.5px; color:var(--doux)}
+#an-z .exp-z .bk-j{font-size:13.5px}
+@media (min-width:900px){ #an-z .exp-z .bk-wrap{display:flex} }
+@media (max-width:699px){ #an-z .score-bloc.simple .exp-z{padding-left:14px !important} #an-z .exp-z .bk-3{gap:14px} }
 /* 20 nov 2026 (Mathieu : « on devrait pas avoir a scroller ici ») : la fiche d'une carte tient dans l'ecran du cell : photo
    plus basse, chiffres et lignes compacts, les liens (photo, modifier) sur la meme ligne que gradation et consignation */
 @media (max-width:899px){
@@ -11636,9 +11704,9 @@ async function rendreAnalyse(){
           ${t('or', '<rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 8h6"/>', rec || 0, vue === 'equipes' ? tt('une recrue', 'a rookie') : tt('sa recrue', 'his rookie'))}
           ${t('vert', '<circle cx="12" cy="12" r="8.5"/><path d="M14.5 9.2c-.5-.8-1.4-1.2-2.5-1.2-1.5 0-2.5.8-2.5 1.9 0 2.6 5 1.3 5 4.1 0 1.1-1.1 2-2.5 2-1.2 0-2.2-.5-2.7-1.4M12 6.5v11"/>', x.p_rembourse || 0, tt('place remboursée', 'spot paid back'))}</div>
         ${j0 ? `<div class="bk-j"><span class="sc-b ${couleurScore(j0.iq)}">${lettre(j0.iq)}</span><b>${esc(j0.nom)}</b><small>${tt('son meilleur joueur', 'its best player')}</small></div>` : ''}
-        <label class="bk-p"><span>${tt('Prix de la place', 'Spot price')}</span><input class="champ petit-n" type="number" inputmode="decimal" ${cle}="${esc(x.cle)}" value="${esc(val0 ? Math.round(convertir(val0)) : '')}" placeholder="${esc(tt('prix', 'price'))}"></label>
+        <div class="bk-lig"><label class="bk-p"><span>${tt('Prix de la place', 'Spot price')}</span><input class="champ petit-n" type="number" inputmode="decimal" ${cle}="${esc(x.cle)}" value="${esc(val0 ? Math.round(convertir(val0)) : '')}" placeholder="${esc(tt('prix', 'price'))}"></label>
         <div class="bk-l">${vue === 'joueurs' ? `<a class="plus" href="#joueur/${encodeURIComponent(x.cle)}">${comps() ? tt('Voir ses ventes', 'See his sales') : tt('Voir le joueur', 'See the player')} ›</a>` : '<span></span>'}
-          <details class="exp-calc"><summary>${tt('Comment c’est calculé', 'How it’s calculated')}</summary><div class="hits-d">${bandeHits(x)}</div>${explicationPlace(x, vue, r, n)}</details></div>`;
+          <details class="exp-calc"><summary>${tt('Comment c’est calculé', 'How it’s calculated')}</summary><div class="hits-d">${bandeHits(x)}</div>${explicationPlace(x, vue, r, n)}</details></div></div>`;
     };
     const ligne = (x, i) => {
       const [cl, lib] = TIERS(x.rel), hors = budget && x.prix_compare > budget;
@@ -11679,9 +11747,9 @@ async function rendreAnalyse(){
   $('#an-amp').onclick = () => { vibrer(); const tr = (TRIS_ANA().find(t => t[0] === (A.tri || 'place')) || TRIS_ANA()[0]);
     popOuvrir(`<button class="pop-x" id="amp-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
       <div class="pop-tete"><span class="pop-sur">${esc(P.nom)}</span><h3>${tt('Comment lire la liste', 'How to read the list')}</h3></div>
-      <div class="pop-corps an-ampc">${bvg ? bvg : ''}${vendeur ? '' : `<p><b>${esc(tr[1])}</b> · ${esc(tr[2])}</p>`}
-        <p>${tt('Le chiffre en couleur : à quel point la place vaut son prix (100 = le meilleur choix du produit). La pastille à côté du nom : le SlabIQ du joueur.', 'The coloured number: how much the spot is worth its price (100 = the best pick in the product). The badge next to the name: the player’s SlabIQ.')}</p>
-        <p class="sous">${tt('Change le classement ou le nombre de boîtes dans Réglages.', 'Change the ranking or the number of boxes in Settings.')}</p></div>`, popFermer);
+      <div class="pop-corps an-ampc">${bvg ? bvg : ''}${vendeur ? '' : `<p class="amp-tri"><b>${esc(tr[1])}</b>${esc(tr[2])}</p>`}
+        <div class="amp-l"><div><span class="sc-b vert">A+</span><p>${tt('La place vaut son prix (A+ : le meilleur choix du produit).', 'How good the spot is for its price (A+: the best pick).')}</p></div>
+          <div><span class="sc-b acc an-iq">B</span><p>${tt('À côté du nom : le SlabIQ du joueur.', 'Next to the name: the player’s SlabIQ.')}</p></div></div></div>`, popFermer);
     $('#amp-x').onclick = popFermer; };
   $('#an-chg').onclick = () => { location.hash = '#analyse/choisir'; };
   $$('#an-reg, #an-res, #an-att, #an-bx', z).forEach(b => b.onclick = () => feuilleReglagesAna(r, vendeur));
@@ -21223,7 +21291,12 @@ const tuilesVentesJoueur = (r) => {
 // qui remplissent l'ecran : en haut le joueur et ses chiffres sur une bande ; a gauche une colonne (palmares, gestes, cartes
 // recherchees, pourquoi elles ont bouge) dont le dernier bloc prend la hauteur qui reste ; a droite ses deals sur toute la hauteur
 function agencerJb(){
-  const z = $('#jb'); if (!z || innerWidth < 1100 || !z.querySelector(':scope > .jb-deals') || z.querySelector(':scope > .jb-haut')) return;
+  const z = $('#jb'); if (!z || innerWidth < 1100 || z.querySelector(':scope > .jb-haut')) return;
+  if (!z.querySelector(':scope > .jb-deals')) {        // sans deals : seulement la bande du haut (le joueur et ses chiffres remplissent la largeur)
+    const AUTRES0 = '.jb-a, .jb-hon, .jb-ty, .jb-mv, .jb-nv, .jb-cv, .jb-vt, .jb-att';
+    const h0 = document.createElement('div'); h0.className = 'jb-haut';
+    [...z.children].forEach(k => { if (k.matches('.jb-tete') || (k.matches('.jb-t') && !k.matches(AUTRES0))) h0.appendChild(k); });
+    if (h0.children.length) { z.prepend(h0); z.classList.add('jb-1b'); } return; }
   const haut = document.createElement('div'), gau = document.createElement('div'), acts = document.createElement('div');
   haut.className = 'jb-haut'; gau.className = 'jb-gauche'; acts.className = 'jb-acts';
   const AUTRES = '.jb-a, .jb-hon, .jb-ty, .jb-mv, .jb-nv, .jb-cv, .jb-vt, .jb-att, .jb-deals';

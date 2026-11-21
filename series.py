@@ -21,6 +21,7 @@ import threading
 import time
 import unicodedata
 import urllib.request
+import reseau
 from datetime import date, datetime
 
 W = (0.060524784931197596, 3.677417086690473, 0.6325000279840607, -0.11016413158613811, -0.09446767493548824)
@@ -58,7 +59,7 @@ def _ecrire(d):
 
 def _get(u):
     req = urllib.request.Request(u, headers={"User-Agent": "SlabCoach"})
-    with urllib.request.urlopen(req, timeout=30) as r:
+    with reseau.ouvrir(req, timeout=30) as r:
         return json.load(r)
 
 

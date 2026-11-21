@@ -24,7 +24,7 @@ import datetime as dt
 import gzip
 import json
 import os
-import pickle
+import json                      # 20 nov 2026 (Aikido) : le cache en JSON, plus de pickle
 import random
 import re
 import statistics as st
@@ -40,9 +40,10 @@ MAX_TESTS_CARTE = 6
 
 def charger(chemin):
     os.makedirs(TRAV, exist_ok=True)
-    cache = os.path.join(TRAV, "cartes_%d.pkl" % int(os.path.getmtime(chemin)))
+    cache = os.path.join(TRAV, "cartes_%d.json.gz" % int(os.path.getmtime(chemin)))
     if os.path.exists(cache):
-        return pickle.load(open(cache, "rb"))
+        with gzip.open(cache, "rt", encoding="utf-8") as f:
+            return {(k[0], tuple(k[1]) if k[1] else None): l for k, l in json.load(f)}
     import validation_iq as v
     import score_slab
     vus, par = set(), collections.defaultdict(list)
@@ -66,7 +67,8 @@ def charger(chemin):
             cle = (v.cle_carte(p[0]), (g.group(1).lower().replace("beckett", "bgs"), float(g.group(2))) if g else None)
             par[cle].append({"titre": p[0], "prix": pr, "le": p[2][:10]})
     cartes = {k: sorted(l, key=lambda x: x["le"]) for k, l in par.items() if len(l) >= 5}
-    pickle.dump(cartes, open(cache, "wb"))
+    with gzip.open(cache, "wt", encoding="utf-8") as f:
+        json.dump([[list(k), l] for k, l in cartes.items()], f)
     return cartes
 
 

@@ -25,6 +25,7 @@ import os
 import secrets
 import time
 import urllib.error
+import reseau
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -248,7 +249,7 @@ def _post_jeton(data):
     req = urllib.request.Request(url("jeton"), data=urllib.parse.urlencode(data).encode(), method="POST",
                                  headers={"Authorization": "Basic " + auth, "Content-Type": "application/x-www-form-urlencoded"})
     try:
-        with urllib.request.urlopen(req, timeout=20) as r:
+        with reseau.ouvrir(req, timeout=20) as r:
             return json.loads(r.read()), None
     except urllib.error.HTTPError as e:
         brut = e.read().decode("utf-8", "ignore")[:300]
@@ -298,7 +299,7 @@ def attente_existe(etat):
 def _identite(access_token):
     appels_ebay.compter("identity")
     req = urllib.request.Request(url("identite"), headers={"Authorization": "Bearer " + access_token, "Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=30) as r:
+    with reseau.ouvrir(req, timeout=30) as r:
         return json.loads(r.read())
 
 
@@ -411,7 +412,7 @@ def _get_json(url):
     req = urllib.request.Request(url, headers={"Authorization": "Bearer " + jeton(), "Accept": "application/json",
                                                "X-EBAY-C-MARKETPLACE-ID": "EBAY_CA"})
     try:
-        with urllib.request.urlopen(req, timeout=30) as r:
+        with reseau.ouvrir(req, timeout=30) as r:
             return json.loads(r.read())
     except urllib.error.HTTPError as e:
         raise RuntimeError(f"eBay HTTP {e.code} : {e.read().decode('utf-8', 'ignore')[:200]}")
@@ -491,7 +492,7 @@ def annonces_actives():
             "X-EBAY-API-IAF-TOKEN": jeton(), "Content-Type": "text/xml"})
         appels_ebay.exiger("trading", fond=True)
         appels_ebay.compter("trading")
-        with urllib.request.urlopen(req, timeout=40) as r:
+        with reseau.ouvrir(req, timeout=40) as r:
             lot, pages = lire_annonces_xml(r.read())
         tout += lot
         page += 1
@@ -806,7 +807,7 @@ def rechercher(q, categorie=None, prix_max=None, recentes=False, limite=50, fond
     appels_ebay.compter("browse")
     try:
         # 10 nov 2026 : un geste de l'utilisateur n'attend pas 30 s (le Radar a sa limite de temps) ; la tache de fond, oui
-        with urllib.request.urlopen(req, timeout=30 if fond else 15) as r:
+        with reseau.ouvrir(req, timeout=30 if fond else 15) as r:
             d = json.loads(r.read())
     except urllib.error.HTTPError as e:
         raise RuntimeError(f"eBay HTTP {e.code} : {e.read().decode('utf-8', 'ignore')[:200]}")
@@ -867,7 +868,7 @@ def article(item_id, fond=False, frais=False, pays="CA"):
                                                "X-EBAY-C-ENDUSERCTX": "contextualLocation=country%3D" + pays})
     appels_ebay.compter("browse")
     try:
-        with urllib.request.urlopen(req, timeout=30) as r:
+        with reseau.ouvrir(req, timeout=30) as r:
             d = json.loads(r.read())
     except urllib.error.HTTPError as e:
         raise RuntimeError(f"eBay HTTP {e.code} : {e.read().decode('utf-8', 'ignore')[:160]}")
@@ -906,7 +907,7 @@ def trading(appel, corps, fond=False):
         "X-EBAY-API-SITEID": SITE_ID, "X-EBAY-API-COMPATIBILITY-LEVEL": NIVEAU, "X-EBAY-API-CALL-NAME": appel,
         "X-EBAY-API-IAF-TOKEN": jeton(), "Content-Type": "text/xml"})
     try:
-        with urllib.request.urlopen(req, timeout=60) as r:
+        with reseau.ouvrir(req, timeout=60) as r:
             racine = _xml_sur(r.read())
     except urllib.error.HTTPError as e:
         raise RuntimeError(f"eBay HTTP {e.code} : {e.read().decode('utf-8', 'ignore')[:200]}")
@@ -931,7 +932,7 @@ def post_json(adresse, corps, marketplace="EBAY_CA"):
         "Authorization": "Bearer " + jeton(), "Content-Type": "application/json", "Accept": "application/json",
         "X-EBAY-C-MARKETPLACE-ID": marketplace})
     try:
-        with urllib.request.urlopen(req, timeout=30) as r:
+        with reseau.ouvrir(req, timeout=30) as r:
             brut = r.read()
             return json.loads(brut) if brut else {}
     except urllib.error.HTTPError as e:
@@ -1000,7 +1001,7 @@ def articles_lot(item_ids, fond=True):
                                                "X-EBAY-C-MARKETPLACE-ID": "EBAY_CA", "X-EBAY-C-ENDUSERCTX": "contextualLocation=country%3DCA"})
     appels_ebay.compter("browse")
     try:
-        with urllib.request.urlopen(req, timeout=30) as r:
+        with reseau.ouvrir(req, timeout=30) as r:
             d = json.loads(r.read())
     except urllib.error.HTTPError as e:
         raise RuntimeError(f"eBay HTTP {e.code} : {e.read().decode('utf-8', 'ignore')[:160]}")

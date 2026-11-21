@@ -17,6 +17,7 @@ import re
 import threading
 import time
 import urllib.parse
+import reseau
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -47,7 +48,7 @@ def _get(url, max_octets=3_000_000, timeout=25):
     if not _sur(url):
         raise ValueError("adresse refusée (gogts.net seulement)")
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    with reseau.ouvrir(req, timeout=timeout) as r:
         if not _sur(r.geturl()):
             raise ValueError("redirection refusée")
         brut = r.read(max_octets + 1)

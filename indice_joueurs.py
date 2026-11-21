@@ -23,6 +23,7 @@ Pastilles : « En creux » / « Sort de son creux » (11 nov : jeune talent sous
 Appels Highlightly : 1 par joueur par jour (le total de saison). Forfait gratuit (90/jour) : les favoris des utilisateurs,
 puis les plus demandes ; Pro (7 500/jour) : tout le monde, 4 sports.
 """
+import reseau
 import json
 import math
 import os
@@ -141,7 +142,7 @@ def rosters_lnh(vieux=None, maintenant=None):
         for saison, dest in ((cour_s, "c"), (prec_s, "p")):
             u = f"https://api-web.nhle.com/v1/roster/{'UTA' if club == 'UTA' else club}/{saison}"
             try:
-                with urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": "SlabCoach"}), timeout=15) as r:
+                with reseau.ouvrir(urllib.request.Request(u, headers={"User-Agent": "SlabCoach"}), timeout=15) as r:
                     j = json.loads(r.read().decode())
                 ok += 1
             except Exception:

@@ -26,6 +26,7 @@ import re
 import threading
 import time
 import urllib.error
+import reseau
 import urllib.request
 from datetime import datetime
 
@@ -305,7 +306,7 @@ def _choix_auto(corps):
 def modeles_disponibles():
     """Les modeles que la cle du serveur peut utiliser (API Models d'Anthropic), les plus recents d'abord."""
     req = urllib.request.Request("https://api.anthropic.com/v1/models?limit=100", headers={"x-api-key": _cle(), "anthropic-version": VERSION_API})
-    with urllib.request.urlopen(req, timeout=20) as r:
+    with reseau.ouvrir(req, timeout=20) as r:
         d = json.loads(r.read().decode("utf-8"))
     return [m.get("id") for m in d.get("data") or [] if m.get("id")]
 
@@ -333,7 +334,7 @@ def _appeler(corps, timeout=90, _reessai=True):
     req = urllib.request.Request(URL, data=json.dumps(corps).encode("utf-8"), method="POST", headers={
         "x-api-key": _cle(), "anthropic-version": VERSION_API, "content-type": "application/json"})
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with reseau.ouvrir(req, timeout=timeout) as r:
             return json.loads(r.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         if _reessai and e.code in (400, 404):

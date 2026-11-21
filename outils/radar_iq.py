@@ -4,7 +4,7 @@ SLABCOACH - la regle du Radar Pro, choisie sur le resultat qui compte (20 nov 20
 Mathieu : « une carte pas trop pire, mais il est pogne avec : il faut etre sur que ces cartes soient assez liquides et qu'ils
 les vendent ; des cartes assez desirees. Il faut un ecart notable avec quelqu'un qui choisit au hasard. »
 
-  python3 outils/radar_iq.py [A_maintenant.pkl du banc tests_site]
+  python3 outils/radar_iq.py [A_maintenant.json.gz du banc tests_site]
 
 LE RESULTAT : un achat est REUSSI si la meme carte (meme compagnie, meme note) se revend dans la periode qui suit (elle est
 liquide : l'acheteur n'est pas pogne avec) ET a au moins 90 % du prix paye (elle garde sa valeur). On mesure aussi le profit
@@ -27,7 +27,8 @@ import datetime as dt
 import itertools
 import json
 import os
-import pickle
+import gzip
+import json                      # 20 nov 2026 (Aikido) : le fichier du banc en JSON, plus de pickle
 import random
 import statistics as st
 import sys
@@ -105,7 +106,8 @@ GRILLE = {"s_min": (0, 76, 82, 86, 90), "liq_min": (0, 1, 2, 3, 5, 8), "rabais_m
 
 
 def lancer(chemin):
-    A = pickle.load(open(chemin, "rb"))["A"]
+    with gzip.open(chemin, "rt", encoding="utf-8") as f:
+        A = json.load(f)["A"]
     par, parj = preparer(A)
     T_app = achats(A, par, parj, "2026-09-18", "2026-09-28", "2026-09-28", "2026-10-19")
     T_test = achats(A, par, parj, "2026-10-19", "2026-10-29", "2026-10-29", "2026-11-20")
@@ -142,4 +144,4 @@ def lancer(chemin):
 
 
 if __name__ == "__main__":
-    lancer(sys.argv[1] if len(sys.argv) > 1 else "/tmp/claude-0/ts_std/A_maintenant.pkl")
+    lancer(sys.argv[1] if len(sys.argv) > 1 else "/tmp/claude-0/ts_std/A_maintenant.json.gz")

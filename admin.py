@@ -170,7 +170,8 @@ def prolonger_essai(cid, jours=7):
 def _maj_fichier(nom, cle="maj"):
     import comptes
     try:
-        with open(os.path.join(comptes.DONNEES, nom), encoding="utf-8") as f:
+        import reseau
+        with open(reseau.chemin_sur(comptes.DONNEES, nom), encoding="utf-8") as f:
             return (json.load(f) or {}).get(cle)
     except (OSError, ValueError):
         return None

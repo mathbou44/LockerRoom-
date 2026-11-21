@@ -18,6 +18,7 @@ import json
 import os
 import time
 import urllib.parse
+import reseau
 import urllib.request
 from datetime import datetime
 
@@ -112,7 +113,7 @@ def _annonces(aspect, filtre=None, pays="CA"):
     req = urllib.request.Request(adresse, headers={"Authorization": "Bearer " + ebay_compte.jeton_application(), "Accept": "application/json",
                                                   "X-EBAY-C-MARKETPLACE-ID": "EBAY_" + pays})
     appels_ebay.compter("browse")
-    with urllib.request.urlopen(req, timeout=30) as r:
+    with reseau.ouvrir(req, timeout=30) as r:
         return int((json.loads(r.read()) or {}).get("total") or 0)
 
 

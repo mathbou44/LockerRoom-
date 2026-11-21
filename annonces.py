@@ -12,6 +12,7 @@ offers accepted etc. doit etre tres tres tres friendly user »
   publier(d)        : photos televersees chez eBay, verification (frais) puis creation, promotion %.
 Toujours declenche par le tap du vendeur. Rien n'est publie sans « Publier ».
 """
+import reseau
 import base64
 import os
 import re
@@ -532,7 +533,7 @@ def _mkt(meth, chemin, corps=None):
     import appels_ebay
     appels_ebay.compter("autre")
     try:
-        with urllib.request.urlopen(req, timeout=30) as r:
+        with reseau.ouvrir(req, timeout=30) as r:
             brut = r.read()
             return (json.loads(brut) if brut else {}), r.headers
     except urllib.error.HTTPError as e:

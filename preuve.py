@@ -27,6 +27,7 @@ import json
 import os
 import threading
 import urllib.request
+import reseau
 from datetime import date, datetime, timedelta
 
 _verrou = threading.Lock()
@@ -176,7 +177,7 @@ def _ots(h_hex):
         try:
             req = urllib.request.Request(cal + "/digest", data=dig, method="POST",
                                          headers={"User-Agent": "SlabCoach", "Accept": "application/vnd.opentimestamps.v1"})
-            with urllib.request.urlopen(req, timeout=15) as r:
+            with reseau.ouvrir(req, timeout=15) as r:
                 rep = r.read()
             if rep:
                 return OTS_ENTETE + dig + rep

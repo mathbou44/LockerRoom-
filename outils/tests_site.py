@@ -23,7 +23,18 @@ import gzip
 import hashlib
 import json
 import os
-import pickle
+import json
+# 20 nov 2026 (Aikido « Using Pickle can lead to remote code execution ») : les fichiers de travail en JSON (gzip), plus de pickle
+def _ecrire(obj, chemin):
+    with gzip.open(chemin, "wt", encoding="utf-8") as f:
+        json.dump(obj, f)
+
+
+def _lire(chemin):
+    with gzip.open(chemin, "rt", encoding="utf-8") as f:
+        return json.load(f)
+
+
 import random
 import re
 import shutil
@@ -61,9 +72,9 @@ def regles():
 # ---------------------------------------------------------------- etape 1 : les ventes
 def charger(chemin):
     os.makedirs(TRAV, exist_ok=True)
-    cache = os.path.join(TRAV, "rows_%d.pkl" % int(os.path.getmtime(chemin)))
+    cache = os.path.join(TRAV, "rows_%d.json.gz" % int(os.path.getmtime(chemin)))
     if os.path.exists(cache):
-        return pickle.load(open(cache, "rb"))
+        return [tuple(r) for r in _lire(cache)]
     sys.path.insert(0, LR)
     import validation_iq as v
     import score_slab
@@ -84,7 +95,7 @@ def charger(chemin):
             vus.add(r)
             if not score_slab.sport_autre(p[0]) and (v._RE_HOCKEY_SUR.search(p[0]) or v._equipe_lnh(p[0])):
                 out.append(r)
-    pickle.dump(out, open(cache, "wb"))
+    _ecrire(out, cache)
     return out
 
 
@@ -98,14 +109,14 @@ def _annoter_sous(rows_pkl, donnees, sortie, apprendre_avant=None, mesurer_des=N
     if mesurer_des:
         a += ["--mesurer", mesurer_des]
     subprocess.run(a, check=True, env=env, cwd=LR)
-    return pickle.load(open(sortie, "rb"))
+    return _lire(sortie)
 
 
 def _annoter_ici(rows_pkl, sortie, apprendre=None, mesurer=None):
     sys.path.insert(0, LR)
     import validation_iq as v
     import bareme_iq as bq
-    rows = pickle.load(open(rows_pkl, "rb"))
+    rows = [tuple(r) for r in _lire(rows_pkl)]
     v.time.sleep = lambda s: None                 # pas de pause (c'est pour le serveur)
     info = {}
     if apprendre:
@@ -157,7 +168,7 @@ def _annoter_ici(rows_pkl, sortie, apprendre=None, mesurer=None):
                         cie=g.group(1).upper().replace("BECKETT", "BGS") if g else "", p=p, j=j, so=bq.NOTE[so], nj=nj, ra=ra, nom=nom, src=src,
                         t=t[:120], fin=bq.lettre(s_), s=s_, connu=connu))
     info["joueurs"] = len({x["nom"] for x in out if x["connu"]})
-    pickle.dump({"A": out, "info": info}, open(sortie, "wb"))
+    _ecrire({"A": out, "info": info}, sortie)
 
 
 # ---------------------------------------------------------------- etape 3 : les mesures
@@ -361,15 +372,15 @@ def lancer(chemin, ecrire=False):
     js = sorted(r[2] for r in rows)
     C0, C = js[int(len(js) * .65)], js[int(len(js) * .80)]
     print(f"{len(rows)} ventes de hockey, {js[0]} -> {js[-1]} ; lettres fixees avant {C0}, reventes apres {C}", flush=True)
-    rp = os.path.join(TRAV, "rows_courant.pkl")
-    pickle.dump(rows, open(rp, "wb"))
+    rp = os.path.join(TRAV, "rows_courant.json.gz")
+    _ecrire(rows, rp)
     R = regles()
     res = {}
     for nom, apprendre in (("avant", None), ("maintenant", C0)):
         dd = os.path.join(TRAV, "donnees_" + nom)
         shutil.rmtree(dd, ignore_errors=True)
         shutil.copytree(BASE_DONNEES, dd)
-        res[nom] = _annoter_sous(rp, dd, os.path.join(TRAV, f"A_{nom}.pkl"), apprendre, C0)
+        res[nom] = _annoter_sous(rp, dd, os.path.join(TRAV, f"A_{nom}.json.gz"), apprendre, C0)
         print(nom, res[nom]["info"], flush=True)
     A = res["maintenant"]["A"]
     m, fin, par, radar = mesures(A, C0, C, R)

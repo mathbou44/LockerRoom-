@@ -22,6 +22,7 @@ import threading
 import time
 import unicodedata
 import urllib.error
+import reseau
 import urllib.request
 
 BASE = "https://api.psacard.com/publicapi"
@@ -69,7 +70,7 @@ def _get(chemin):
     req = urllib.request.Request(BASE + chemin, headers={"Authorization": "bearer " + os.environ.get("PSA_JETON", "").strip(),
                                                          "Accept": "application/json"})
     try:
-        with urllib.request.urlopen(req, timeout=20) as r:
+        with reseau.ouvrir(req, timeout=20) as r:
             brut = r.read()
             return r.status, (json.loads(brut) if brut else None)
     except urllib.error.HTTPError as e:

@@ -10,6 +10,7 @@ Reglage (ebay_avis.json, a cote de ce fichier) : l'adresse PUBLIQUE exacte (http
 et le jeton de verification (32 a 80 caracteres) - les deux sont colles dans
 developer.ebay.com > Alerts & Notifications.
 """
+import reseau
 import hashlib
 import json
 import os
@@ -88,7 +89,7 @@ def _cle_publique(kid):
         return e
     req = urllib.request.Request(ebay_compte._env()["api"] + "/commerce/notification/v1/public_key/" + urllib.parse.quote(kid, safe=""),
                                  headers={"Authorization": "Bearer " + ebay_compte.jeton_application(), "Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=15) as r:
+    with reseau.ouvrir(req, timeout=15) as r:
         d = json.loads(r.read())
     brut = "".join(str(d.get("key") or "").replace("-----BEGIN PUBLIC KEY-----", "").replace("-----END PUBLIC KEY-----", "").split())
     pem = "-----BEGIN PUBLIC KEY-----\n" + "\n".join(brut[i:i + 64] for i in range(0, len(brut), 64)) + "\n-----END PUBLIC KEY-----\n"

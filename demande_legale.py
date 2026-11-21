@@ -21,6 +21,7 @@ import threading
 import time
 import unicodedata
 import urllib.parse
+import reseau
 import urllib.request
 from datetime import date, datetime, timedelta
 
@@ -87,7 +88,7 @@ def _ecrire(d):
 def _get(url, timeout=15):
     req = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": UA})
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with reseau.ouvrir(req, timeout=timeout) as r:
             return json.loads(r.read() or b"null")
     except Exception:
         return None
@@ -111,7 +112,7 @@ def _wiki_lot(noms):
         def lire_u(adr):
             for _essai in range(4):
                 try:
-                    with urllib.request.urlopen(urllib.request.Request(adr, headers={"User-Agent": UA}), timeout=30) as r:
+                    with reseau.ouvrir(urllib.request.Request(adr, headers={"User-Agent": UA}), timeout=30) as r:
                         return json.loads(r.read())
                 except urllib.error.HTTPError as e:
                     if e.code != 429:
@@ -165,7 +166,7 @@ def _vues_fr(titre):
          f"{urllib.parse.quote(str(titre).replace(' ', '_'), safe='')}/daily/{deb:%Y%m%d}/{fin:%Y%m%d}")
     for _essai in range(3):
         try:
-            with urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": UA}), timeout=20) as r:
+            with reseau.ouvrir(urllib.request.Request(u, headers={"User-Agent": UA}), timeout=20) as r:
                 time.sleep(0.5)
                 return sum(int(it.get("views") or 0) for it in json.loads(r.read()).get("items") or [])
         except urllib.error.HTTPError as e:

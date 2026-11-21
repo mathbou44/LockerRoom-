@@ -23,6 +23,7 @@ import sqlite3
 import threading
 import time
 import urllib.error
+import reseau
 import urllib.parse
 import urllib.request
 from datetime import date, datetime, timedelta, timezone
@@ -123,7 +124,7 @@ def _page(q, page, par_page, debut=None):
          "sort": "lastSoldDescending", "singleUnitOnly": "true", "limit": str(par_page), "page": str(page)}
     req = urllib.request.Request(historique.URL + "?" + urllib.parse.urlencode(p),
                                  headers={"Authorization": "Bearer " + historique._cle(), "Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=45) as r:
+    with reseau.ouvrir(req, timeout=45) as r:
         return json.loads(r.read().decode("utf-8"))
 
 
@@ -432,7 +433,7 @@ def _offre_une(nom):
                                  headers={"Authorization": "Bearer " + ebay_compte.jeton_application(), "Accept": "application/json",
                                           "X-EBAY-C-MARKETPLACE-ID": "EBAY_CA"})
     appels_ebay.compter("browse")
-    with urllib.request.urlopen(req, timeout=30) as r:
+    with reseau.ouvrir(req, timeout=30) as r:
         d = json.loads(r.read())
     prix = []
     for it in d.get("itemSummaries") or []:

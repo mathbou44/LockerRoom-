@@ -18,6 +18,7 @@ import os
 import secrets
 import time
 import urllib.error
+import reseau
 import urllib.parse
 import urllib.request
 
@@ -133,7 +134,7 @@ def _post(url, data):
                                  headers={"Content-Type": "application/x-www-form-urlencoded", "Accept": "application/json",
                                           "User-Agent": "SlabCoach"})
     try:
-        with urllib.request.urlopen(req, timeout=15) as r:
+        with reseau.ouvrir(req, timeout=15) as r:
             return json.loads(r.read())
     except urllib.error.HTTPError as e:
         raise RuntimeError(f"refus (HTTP {e.code}) : {e.read().decode('utf-8', 'ignore')[:160]}")
@@ -146,7 +147,7 @@ def _cles_publiques(f, lecteur=None):
     if lecteur:
         brut = lecteur(FOURNISSEURS[f]["jwks"])
     else:
-        with urllib.request.urlopen(urllib.request.Request(FOURNISSEURS[f]["jwks"], headers={"User-Agent": "SlabCoach"}), timeout=10) as r:
+        with reseau.ouvrir(urllib.request.Request(FOURNISSEURS[f]["jwks"], headers={"User-Agent": "SlabCoach"}), timeout=10) as r:
             brut = r.read()
     cles = {k["kid"]: k for k in json.loads(brut).get("keys") or [] if k.get("kty") == "RSA"}
     _JWKS[f] = {"le": time.time(), "cles": cles}
@@ -233,7 +234,7 @@ def revoquer_apple(jeton):
                                      data=urllib.parse.urlencode({"client_id": cfg("apple")["client_id"], "client_secret": _secret_apple(),
                                                                   "token": jeton, "token_type_hint": "refresh_token"}).encode(),
                                      headers={"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "SlabCoach"})
-        with urllib.request.urlopen(req, timeout=15) as r:      # Apple repond 200, corps vide
+        with reseau.ouvrir(req, timeout=15) as r:      # Apple repond 200, corps vide
             return 200 <= r.status < 300
     except Exception:
         return False

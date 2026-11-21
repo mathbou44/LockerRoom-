@@ -17,6 +17,7 @@ import re
 import threading
 import time
 import urllib.error
+import reseau
 import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta
@@ -167,7 +168,7 @@ def _taux():
 def _appel(params, delai):
     req = urllib.request.Request(URL_API + "?" + urllib.parse.urlencode(params),
                                  headers={"x-market-api-key": _cle(), "Accept": "application/json", "User-Agent": "SlabCoach/1.0"})
-    with urllib.request.urlopen(req, timeout=delai) as r:
+    with reseau.ouvrir(req, timeout=delai) as r:
         return json.loads(r.read().decode("utf-8"))
 
 

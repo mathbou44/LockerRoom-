@@ -19,6 +19,7 @@ import statistics
 import threading
 import time
 import urllib.error
+import reseau
 import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta
@@ -664,7 +665,7 @@ def comparer(q, ventes_cs, appel=None):
             url = URL_API + "/v1/scrape?" + urllib.parse.urlencode({"keyword": q, "categoryId": CATEGORIE_CARTES, "count": NB_PAR_REQUETE,
                                                                     "ebaySite": "ebay.com", "hydrateBoa": "true"})
             req = urllib.request.Request(url, headers={"Authorization": "Bearer " + _cle(), "Accept": "application/json"})
-            with urllib.request.urlopen(req, timeout=30) as r:
+            with reseau.ouvrir(req, timeout=30) as r:
                 d = json.loads(r.read().decode("utf-8"))
         else:
             d = appel(q)
@@ -751,7 +752,7 @@ def _appel(q, site, attendre=True, usage=None, compte=None, delai=25):
     req = urllib.request.Request(url, headers={"Authorization": "Bearer " + _cle(), "Accept": "application/json"})
     _compter(usage, compte)                     # 27 oct 2026 (revue) : compte AVANT l'appel (deux appels en meme temps)
     try:
-        with urllib.request.urlopen(req, timeout=delai) as r:
+        with reseau.ouvrir(req, timeout=delai) as r:
             d = json.loads(r.read().decode("utf-8"))
         _PANNE_N[0] = 0                         # ca repond : fin de la panne
         return d, None

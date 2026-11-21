@@ -15,6 +15,7 @@ import re
 import threading
 import time
 import urllib.request
+import reseau
 from datetime import date, datetime
 
 URL = "https://www.checklistinsider.com/ci-api/wp/v2/pages/795"
@@ -106,7 +107,7 @@ def analyser(rendu):
 
 def _telecharger():
     req = urllib.request.Request(URL, headers={"User-Agent": UA, "Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=25) as r:
+    with reseau.ouvrir(req, timeout=25) as r:
         if (urllib.request.urlparse(r.geturl()).hostname or "").lower() != HOTE:
             raise ValueError("redirection refusée")
         brut = r.read(6_000_000)

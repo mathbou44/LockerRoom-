@@ -17,6 +17,7 @@ import threading
 import time
 import unicodedata
 import urllib.parse
+import reseau
 import urllib.request
 from datetime import date
 
@@ -40,7 +41,7 @@ def _n(t):
 def _get(chemin, params=None, timeout=20):
     u = BASE + chemin + ("?" + urllib.parse.urlencode(params, safe=",[]()") if params else "")
     try:
-        with urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": UA, "Accept": "application/json"}), timeout=timeout) as r:
+        with reseau.ouvrir(urllib.request.Request(u, headers={"User-Agent": UA, "Accept": "application/json"}), timeout=timeout) as r:
             return json.loads(r.read())
     except Exception as e:
         _ETAT["erreur"] = {"le": time.time(), "texte": f"{type(e).__name__} {chemin}"[:160]}
@@ -49,7 +50,7 @@ def _get(chemin, params=None, timeout=20):
 
 def _chemin(nom):
     import comptes
-    return os.path.join(comptes.DONNEES, nom)
+    return reseau.chemin_sur(comptes.DONNEES, nom)
 
 
 def _lire(nom):

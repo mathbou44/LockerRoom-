@@ -14,6 +14,7 @@ import sqlite3
 import threading
 import time
 import urllib.error
+import reseau
 import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
@@ -200,7 +201,7 @@ def rechercher(q, chasseur=False, jours=JOURS, principal=False, cache_s=None, de
     pris = _verrou.acquire() if chasseur else _verrou.acquire(timeout=3)
     try:
         try:
-            with urllib.request.urlopen(req, timeout=delai or (30 if chasseur else 15)) as r:
+            with reseau.ouvrir(req, timeout=delai or (30 if chasseur else 15)) as r:
                 d = json.loads(r.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             try:
