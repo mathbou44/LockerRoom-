@@ -178,6 +178,10 @@ SEMIS_PROJET = {"licences_fc": "licences", "lancement_1dec": "lancement", "secur
 PROJETS = {"licences": "Licences de données", "lancement": "Lancement", "general": "Général", "suivi": "Suivi"}
 
 
+CLOS = {"clos_21nov": {"l1_pousser": "Fait par Claude le 21 nov : poussée et en ligne (dernier envoi à 16 h 32).",
+                       "v_piles": "Fait par Claude le 21 nov : les piles sont lues ; la cause des minutes lentes après une mise à jour est corrigée."}}
+
+
 def taches(cfg=None):
     """Les taches, la plus importante d'abord (priorite, puis echeance, puis la plus vieille)."""
     cfg = cfg if cfg is not None else lire()
@@ -202,6 +206,14 @@ def _semer(cur):
             for t in l:
                 if t.get("id") == "sv_pousser" and t.get("etat") != "fait":
                     t.update(etat="fait", fait_le=maint, note=(t.get("note") or "") + " (remplacée par « Pousser la version du 21 nov »)")
+    # 21 nov 2026 (Mathieu : « ca fait beaucoup, c'est tout moi ?! ») : ce que Claude a deja fait se coche tout seul, une fois
+    for lot, faits in CLOS.items():
+        if lot in vus:
+            continue
+        for t in l:
+            if t.get("id") in faits and t.get("etat") != "fait":
+                t.update(etat="fait", fait_le=maint, note=((t.get("note") or "") + " — " + faits[t["id"]]).strip(" —"))
+        vus.add(lot)
     cur["semis"] = sorted(vus)
     return cur
 

@@ -291,10 +291,15 @@ def _chemin():
 
 def lire():
     p = _chemin()
+    # 21 nov 2026 (vitesse) : appele une fois par carte ; la date du fichier n'est redemandee au disque qu'aux 2 s
+    m_ = time.monotonic()
+    if _ETAT.get("d") is not None and _ETAT.get("ch") == p and m_ - _ETAT.get("vu", 0.0) < 2.0:
+        return _ETAT["d"] or {}
     try:
         mt = os.path.getmtime(p)
     except OSError:
         return {}
+    _ETAT["vu"], _ETAT["ch"] = m_, p
     if _ETAT["mt"] != mt:
         try:
             with open(p, encoding="utf-8") as f:
@@ -311,6 +316,7 @@ def ecrire(d):
         with open(p + ".tmp", "w", encoding="utf-8") as f:
             json.dump(d, f, ensure_ascii=False)
         os.replace(p + ".tmp", p)
+    _ETAT["vu"] = 0.0                     # ecrit ici : relu tout de suite
 
 
 def passe(jours=365):

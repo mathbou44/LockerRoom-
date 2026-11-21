@@ -544,8 +544,10 @@ def popularite(cartes, maint=None):
             return False
         return v is None or med is None or v < max(10, med / 2)
     liq = sorted((x for x in l if froid(x)), key=lambda x: -(age(x) or 0))
-    return {"populaires": len(pops), "liquider": len(liq), "populaires_ids": [x["id"] for x in pops[:40]],
-            "liquider_ids": [x["id"] for x in liq[:40]], "vues_mediane": med,
+    # 21 nov 2026 (Mathieu : « pourquoi ca dit 78 si j'en compte seulement 40 ? ») : la tuile comptait tout, mais la liste
+    # s'arretait a 40 : le chiffre et la liste disent maintenant la meme chose
+    return {"populaires": len(pops), "liquider": len(liq), "populaires_ids": [x["id"] for x in pops[:1500]],
+            "liquider_ids": [x["id"] for x in liq[:1500]], "vues_mediane": med,
             "top": ({"id": pops[0]["id"], "joueur": pops[0].get("joueur"),
                      "watchers": int(pops[0].get("watchers") or 0), "vues": pops[0].get("vues")} if pops else None)}
 
@@ -3912,23 +3914,120 @@ class Api:
         L = [(r[0], titre_de(r), joueur_de(r[2])) for r in R]
         import hashlib
         import score_modele
-        cle = (comptes.courant() or "local") + ":" + str(score_modele._M.get("empreinte", 0.0)) + ":" + hashlib.md5(json.dumps(L).encode()).hexdigest()
+        # 21 nov 2026 (vitesse, lu dans les piles du serveur : inventaire_scores 70 s et plus apres chaque mise a jour, et deux
+        # fois en meme temps) :
+        #  - le modele est charge AVANT de calculer la cle (sinon le 1er appel gardait son resultat sous l'empreinte 0 et le
+        #    2e recalculait tout) ;
+        #  - un seul calcul a la fois par compte (l'inventaire et ses tableaux demandaient le meme calcul en parallele) ;
+        #  - le score de chaque carte est garde sur le disque du compte (a cote de sa base) : apres une mise a jour, rien a
+        #    recalculer ; une carte ajoutee ou changee : seulement elle ;
+        #  - une fois par jour, tout est refait en fond (les ventes d'hier comptent) : personne n'attend.
+        # Le score d'une carte ne depend pas des autres cartes du lot (verifie : un lot, une par une, un sous-lot : identiques).
+        try:
+            score_modele.charger()
+        except Exception:
+            pass
+        emp = str(score_modele._M.get("empreinte", 0.0))
+        compte_ = comptes.courant() or "local"
+        cle = compte_ + ":" + emp + ":" + hashlib.md5(json.dumps(L).encode()).hexdigest()
         if cle in Api._INV_SCORES:
             return Api._INV_SCORES[cle]
-        out = {}
-        try:
-            import score_modele
-            sc = score_modele.scores([str(t or "") for _, t, _ in L], [j or None for _, _, j in L]) if L else []
-            out = {str(i): s_ for (i, _, _), s_ in zip(L, sc or []) if s_ is not None}
-        except Exception as e:
-            print("Scores de l'inventaire : " + repr(e), flush=True)
-        r = {"ok": True, "scores": out}
-        if L and not out:
-            return r                     # (modele pas encore charge, ou erreur) : rien de garde, le prochain appel reessaie
-        if len(Api._INV_SCORES) > 500:
-            Api._INV_SCORES.clear()
-        Api._INV_SCORES[cle] = r
+        with Api._INV_SC_GARDE:
+            v_ = Api._INV_SC_VERROUS.setdefault(self.chemin_db, threading.Lock())
+        with v_:
+            if cle in Api._INV_SCORES:
+                return Api._INV_SCORES[cle]
+            jour = datetime.now().strftime("%Y-%m-%d")
+            d = self._inv_sc_lire(emp)
+            connus = (d or {}).get("cartes") or {}
+            out, cartes, manq = {}, {}, []
+            for i, t, j in L:
+                h = Api._inv_sc_h(t, j)
+                e = connus.get(str(i))
+                if isinstance(e, list) and len(e) == 2 and e[0] == h:
+                    cartes[str(i)] = e
+                    if e[1] is not None:
+                        out[str(i)] = e[1]
+                else:
+                    manq.append((i, t, j, h))
+            if manq:
+                try:
+                    sc = score_modele.scores([str(t or "") for _, t, _, _ in manq], [j or None for _, _, j, _ in manq])
+                except Exception as e:
+                    print("Scores de l'inventaire : " + repr(e), flush=True)
+                    sc = None
+                if sc is None:
+                    return {"ok": True, "scores": out}       # (modele pas encore charge, ou erreur) : rien de garde, le prochain appel reessaie
+                for (i, _t, _j, h), s_ in zip(manq, sc):
+                    cartes[str(i)] = [h, s_]
+                    if s_ is not None:
+                        out[str(i)] = s_
+                self._inv_sc_ecrire({"empreinte": emp, "jour": (d or {}).get("jour") or jour, "cartes": cartes})
+            r = {"ok": True, "scores": out}
+            if len(Api._INV_SCORES) > 500:
+                Api._INV_SCORES.clear()
+            Api._INV_SCORES[cle] = r
+        if d and d.get("jour") != jour and L:
+            self._inv_sc_refaire(L, emp, cle, jour)
         return r
+
+    _INV_SC_GARDE = threading.Lock()
+    _INV_SC_VERROUS = {}
+    _INV_SC_FOND = set()
+    _INV_SC_UN = threading.Lock()          # un seul recalcul complet a la fois sur le serveur (le calcul prend le processeur)
+
+    @staticmethod
+    def _inv_sc_h(t, j):
+        import hashlib
+        return hashlib.md5((str(t or "") + "|" + str(j or "")).encode()).hexdigest()[:16]
+
+    def _inv_sc_chemin(self):
+        return os.path.splitext(self.chemin_db)[0] + "_scores_iq.json"
+
+    def _inv_sc_lire(self, emp):
+        try:
+            with open(self._inv_sc_chemin(), encoding="utf-8") as f:
+                d = json.load(f)
+            if isinstance(d, dict) and d.get("empreinte") == emp and isinstance(d.get("cartes"), dict):
+                return d
+        except (OSError, ValueError):
+            pass
+        return None
+
+    def _inv_sc_ecrire(self, d):
+        ch = self._inv_sc_chemin()
+        try:
+            tmp = ch + ".tmp" + str(threading.get_ident())
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(d, f)
+            os.replace(tmp, ch)
+        except OSError as e:
+            print("Scores de l'inventaire (disque) : " + repr(e)[:120], flush=True)
+
+    def _inv_sc_refaire(self, L, emp, cle, jour):
+        """Le recalcul du jour, en fond (les scores d'hier restent affiches pendant ce temps)."""
+        ch = self.chemin_db
+        with Api._INV_SC_GARDE:
+            if ch in Api._INV_SC_FOND:
+                return
+            Api._INV_SC_FOND.add(ch)
+
+        def travail():
+            try:
+                with Api._INV_SC_UN:
+                    import score_modele
+                    sc = score_modele.scores([str(t or "") for _, t, _ in L], [j or None for _, _, j in L])
+                    if sc is None:
+                        return
+                    cartes = {str(i): [Api._inv_sc_h(t, j), s_] for (i, t, j), s_ in zip(L, sc)}
+                    self._inv_sc_ecrire({"empreinte": emp, "jour": jour, "cartes": cartes})
+                    Api._INV_SCORES[cle] = {"ok": True, "scores": {k: v[1] for k, v in cartes.items() if v[1] is not None}}
+            except Exception as e:
+                print("Scores de l'inventaire (fond) : " + repr(e)[:160], flush=True)
+            finally:
+                with Api._INV_SC_GARDE:
+                    Api._INV_SC_FOND.discard(ch)
+        comptes.fil(travail, nom="scores-inventaire")
 
     # 14 nov 2026 (Mathieu : « 157 $ de profit ? 170 - 59 et les frais, ca fait pas 157 ») : le profit d'une carte vendue
     # etait calcule A LA VENTE, avec le cout connu a ce moment-la (souvent aucun) ; quand l'achat eBay se reliait ensuite
@@ -9298,6 +9397,10 @@ class Api:
             _m = _cm.joueur(nom)
             if _m:
                 out["marche"] = {k: _m.get(k) for k in ("lettre", "lettre_valeur", "lettre_liquidite", "tendance_pct")}
+                try:                                   # 21 nov 2026 : la date du dernier calcul (« a jour le ... »)
+                    out["marche"]["maj"] = str(_cm.lire().get("le") or "")[:10] or None
+                except Exception:
+                    pass
                 if self._est_admin():
                     out["marche"].update({k: _m.get(k) for k in ("n", "moyenne", "mediane", "par_semaine")})
         except Exception:
@@ -12231,7 +12334,7 @@ class Api:
         dorment = sorted((x for x in av if x.get("cree_le") and str(x["cree_le"]) < lim), key=lambda x: str(x["cree_le"]))
         vente = {"n": len(av), "valeur": round(sum((x.get("prix_demande") or x.get("valeur") or 0) for x in av), 2),
                  "delai_median": round(statistics.median(jours)) if len(jours) >= 3 else None, "n_vendues": len(jours),
-                 "dorment": len(dorment), "dorment_ids": [x["id"] for x in dorment[:30]]}
+                 "dorment": len(dorment), "dorment_ids": [x["id"] for x in dorment[:1500]]}
         vente.update(popularite(av, maint))
         try:
             vente["analytics"] = ebay_compte.a_analytics()

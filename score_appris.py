@@ -54,6 +54,7 @@ REAPPRENDRE_J = int(os.environ.get("LR_SCORE_REAPPRENDRE_J", "3"))   # 12 nov 20
 HEURES_NUIT = (7, 8, 9)               # heure du serveur (UTC sur Render) : 2 h a 5 h a Montreal
 _verrou = threading.Lock()
 _CACHE = {"vois": {}, "vois_jour": None}
+VOIS_CACHE_MAX = 1500                # joueurs (et blocs) gardes en matrice pour la journee
 
 STOP = set("psa bgs sgc cgc gem mint mt nm rc rookie card cards hockey nhl the and of with a new lot".split())
 MARQUES = ["upper deck", "o-pee-chee", "opc", "sp authentic", "spx", "sp game used", "the cup", "ice", "artifacts", "trilogy",
@@ -636,8 +637,11 @@ def _cache_jour(jour):
     if _CACHE["vois_jour"] != jour:
         _CACHE["vois"].clear()
         _CACHE["vois_jour"] = jour
-    if len(_CACHE["vois"]) > 600:
-        _CACHE["vois"].clear()
+    # 21 nov 2026 (vitesse) : a 600 entrees, TOUT etait vide d'un coup : un inventaire de plus de 600 joueurs revectorisait
+    # toutes leurs ventes a chaque calcul (70 s et plus). Maintenant : les plus anciennes sortent, les autres restent.
+    if len(_CACHE["vois"]) > VOIS_CACHE_MAX:
+        for k in list(_CACHE["vois"])[:len(_CACHE["vois"]) - VOIS_CACHE_MAX + 200]:
+            _CACHE["vois"].pop(k, None)
 
 
 def _xv_du(c, bk, jour):

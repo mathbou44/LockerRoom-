@@ -6352,6 +6352,11 @@ html body .ecran.bk-page > .entete::before{display:none !important}
 .al-case input[type=checkbox][data-nt]{-webkit-appearance:none; appearance:none; width:50px; height:30px; border-radius:15px; background:#34333D; position:relative; flex:none; margin:0; cursor:pointer; transition:background .2s; accent-color:auto}
 .al-case input[type=checkbox][data-nt]::after{content:''; position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%; background:#fff; transition:left .2s}
 .al-case input[type=checkbox][data-nt]:checked{background:var(--acc)} .al-case input[type=checkbox][data-nt]:checked::after{left:23px}
+/* 21 nov 2026 (Mathieu : « la date de la mise a jour des ventes, en petit dessous, pour dire que c'est a jour ») */
+.fjc-k .fjc-maj{display:block; margin-top:3px; font-size:11.5px; font-weight:500; letter-spacing:0; text-transform:none; color:var(--doux)}
+/* 21 nov 2026 (Mathieu : « la loupe en Pro et Bronze est trop proche du bord ; pas pareil qu'en admin et Platine ») : une regle
+   faite pour l'enveloppe de la recherche des Deals (padding 0) tombait aussi sur le champ du Radar, qui est le champ lui-meme */
+html body .ecran .md-rech.tiq-rech, html:not(.tel-large) body .tete-fixe:has(.d-ligne) > .md-rech.tiq-rech{padding:0 16px 0 18px !important}
 /* une seule facon de titrer une feuille de reglage : le titre de la feuille ; le bloc n'a plus sa boite ni sa petite etiquette */
 .feuille h3.f-titre{margin:2px 48px 14px 2px; font-size:20px; font-weight:700; letter-spacing:0; text-transform:none}
 .feuille .f-ret{height:32px; margin:-4px 0 4px -4px; font-size:15.5px; cursor:pointer}
@@ -6442,6 +6447,7 @@ html body .onglets .pastille[hidden], html body .onglets .cloche-n[hidden]{displ
 /* 20 nov 2026 (Mathieu : « revoit l'interface admin, jamais de scroll bar, tout toujours fit sur une page, aucun espace
    inutilise », « pense comme Apple, simple et sexy ») : la console a l'ordi tient dans l'ecran, sans barre de defilement */
 .ceo-al > [hidden]{display:none !important}
+.ceo-qui.on{background:var(--acc); color:var(--acc-texte)}
 .ceo-pg{display:flex; align-items:center; justify-content:center; gap:14px; padding-top:8px; font:700 13px var(--f-cond); letter-spacing:.08em; color:var(--doux)}
 .ceo-pg[hidden]{display:none} .ceo-pg button{width:30px; height:30px; border-radius:50%; border:1px solid var(--ligne); background:var(--carte2); color:var(--texte); font-size:17px; line-height:1; cursor:pointer}
 .ceo-pg button:disabled{opacity:.3; cursor:default}
@@ -19688,7 +19694,12 @@ async function vueCEO(){
   // 16 nov 2026 (« ca doit devenir mon outil de travail ») : ses taches et les alertes dans la meme liste, la plus importante d'abord
   const TCH = r.taches || [], PJ = r.projets || {}, LIBP = [tt('Urgent', 'Urgent'), tt('Urgent', 'Urgent'), tt('Bientôt', 'Soon'), tt('À faire', 'To do'), tt('Quand tu peux', 'When you can')];
   const ouvertes = TCH.filter(t => t.etat !== 'fait');
-  const todo = [...(r.alertes || []).map(x => ({a: x, p: prioA(x)})), ...ouvertes.map(t => ({t, p: prioTache(t)}))].sort((x, y) => x.p - y.p);
+  // 21 nov 2026 (Mathieu : « ca fait beaucoup, c'est tout moi ?! ») : les taches « Claude : ... » ont leur propre liste ; le
+  // compteur et la liste du haut ne montrent que ce qui est a LUI
+  const estClaude = (t) => /^\s*claude\b/i.test((t && t.titre) || '');
+  const todoTous = [...(r.alertes || []).map(x => ({a: x, p: prioA(x)})), ...ouvertes.map(t => ({t, p: prioTache(t)}))].sort((x, y) => x.p - y.p);
+  const todoC = todoTous.filter(o => o.t && estClaude(o.t)), todo = todoTous.filter(o => !(o.t && estClaude(o.t)));
+  const quiC = S.ceoQui === 'claude' && todoC.length > 0, todoVu = quiC ? todoC : todo;
   const ligneTodo = (o, n) => { const g = Math.floor(o.p / 1000);
     if (o.a) { const x = o.a; return `<div class="ceo-al-l ${x.ton}"><button class="ceo-al-b" data-va="${x.section}"><i>${n + 1}</i><em class="ceo-pr p${g}">${LIBP[g]}</em><span>${esc(txtAlerte(x))}</span><small>${esc((SECTIONS.find(s_ => s_[0] === x.section) || ['', ''])[1])}</small><b>›</b></button>${x.k === 'obl' ? `<button class="ceo-ok" data-of="${x.cle}" aria-label="${esc(tt('Marquer fait', 'Mark done'))}" title="${esc(tt('Marquer fait', 'Mark done'))}">✓</button>` : ''}</div>`; }
     const t = o.t, ton = g <= 1 ? 'rouge' : g === 2 ? 'or' : 'acc';
@@ -19742,8 +19753,8 @@ async function vueCEO(){
         ${kpi(tt('Sécurité', 'Security'), sec.score + (S.langue === 'en' ? '%' : ' %'), tt(`${(sec.verifs || []).filter(v => v.ok).length} / ${(sec.verifs || []).length} vérifications`, `${(sec.verifs || []).filter(v => v.ok).length} / ${(sec.verifs || []).length} checks`), sec.score >= 80 ? 'vert' : sec.score >= 50 ? 'or' : 'rouge')}
       </div>
       <div class="ceo-home"><div class="ceo-home-g">
-        <div class="ceo-c ceo-todo"><div class="ceo-c-t">${tt('À faire', 'To do')}${todo.length ? ` <em class="ceo-nb ${todo.some(o => o.p < 2000) ? 'rouge' : 'acc'}">${todo.length}</em>` : ''}<button class="ceo-tadd" data-tadd aria-label="${esc(tt('Ajouter une tâche', 'Add a task'))}">+ ${tt('Tâche', 'Task')}</button></div>
-          ${todo.length ? `<div class="ceo-al">${todo.map((o, n) => ligneTodo(o, n)).join('')}</div>`
+        <div class="ceo-c ceo-todo"><div class="ceo-c-t">${tt('À faire', 'To do')}${todo.length ? ` <em class="ceo-nb ${todo.some(o => o.p < 2000) ? 'rouge' : 'acc'}">${todo.length}</em>` : ''}${todoC.length ? `<button class="ceo-tadd ceo-qui ${quiC ? 'on' : ''}" data-qui>${quiC ? tt('À moi', 'Mine') + ' · ' + todo.length : 'Claude · ' + todoC.length}</button>` : ''}<button class="ceo-tadd" data-tadd ${todoC.length ? 'style="margin-left:6px"' : ''} aria-label="${esc(tt('Ajouter une tâche', 'Add a task'))}">+ ${tt('Tâche', 'Task')}</button></div>
+          ${todoVu.length ? `<div class="ceo-al">${todoVu.map((o, n) => ligneTodo(o, n)).join('')}</div>`
             : `<div class="ceo-vide">${tt('Rien à faire aujourd’hui. Tout roule.', 'Nothing to do today. All good.')}</div>`}</div>
         </div>
         <div class="ceo-home-d">
@@ -19933,6 +19944,7 @@ async function vueCEO(){
   brancherTaches($('.ceo-todo'));
   $$('[data-tfl]').forEach(b => b.onclick = () => { vibrer(); S.ceoTf = b.dataset.tfl; $$('[data-tfl]').forEach(x => x.classList.toggle('on', x === b)); peindreTaches(); });
   $$('[data-tadd]').forEach(b => b.onclick = () => { vibrer(); popTache(null, PJ, recharger); });
+  $$('[data-qui]').forEach(b => b.onclick = () => { vibrer(); S.ceoQui = S.ceoQui === 'claude' ? 'moi' : 'claude'; recharger(); });
   $$('[data-fini]').forEach(b => b.onclick = () => { vibrer(); popFinies(); });
   $$('[data-cn]').forEach(b => b.onclick = (e) => { e.preventDefault(); vibrer(); aller(b.dataset.cn); });
   $$('[data-va]').forEach(b => b.onclick = () => { vibrer(); aller(b.dataset.va); });
@@ -21665,7 +21677,7 @@ function fenJoueurCompacte(r, t){
   else if (!gard && q.cinq != null && q.actif !== false) K.push(`<div class="fjc-k"><span>${tt('5 derniers', 'Last 5')}</span><b class="${q.cinq >= 5 ? 'vert' : ''}">${q.cinq} pts</b><small>${tt('matchs', 'games')}</small></div>`);
   else if (q.semaine && q.semaine.mj) K.push(`<div class="fjc-k"><span>${tt('Cette semaine', 'This week')}</span><b>${q.semaine.pts} pts</b><small>${q.semaine.mj} ${tt('matchs', 'games')}</small></div>`);
   const tp = mk.tendance_pct, pop = (t && t.popularite) || null;
-  if (tp != null) K.push(`<div class="fjc-k"><span>${tt('Ses ventes', 'His sales')}</span><b class="${tp >= 5 ? 'vert' : tp <= -5 ? 'rouge' : ''}">${Math.abs(Math.round(tp)) < 3 ? tt('Stable', 'Steady') : (tp > 0 ? '↑ +' : '↓ −') + Math.abs(Math.round(tp)) + ' %'}</b></div>`);
+  if (tp != null) K.push(`<div class="fjc-k"><span>${tt('Ses ventes', 'His sales')}</span><b class="${tp >= 5 ? 'vert' : tp <= -5 ? 'rouge' : ''}">${Math.abs(Math.round(tp)) < 3 ? tt('Stable', 'Steady') : (tp > 0 ? '↑ +' : '↓ −') + Math.abs(Math.round(tp)) + ' %'}</b>${mk.maj ? `<small class="fjc-maj">${tt('à jour le', 'updated')} ${esc(dateCourte(mk.maj))}</small>` : ''}</div>`);
   else if (pop && pop.sens) K.push(`<div class="fjc-k"><span>${tt('Tendance', 'Trend')}</span><b class="${pop.sens === 'hausse' ? 'vert' : pop.sens === 'baisse' ? 'rouge' : ''}">${pop.sens === 'hausse' ? '↑ ' + tt('Hausse', 'Up') : pop.sens === 'baisse' ? '↓ ' + tt('Baisse', 'Down') : tt('Stable', 'Steady')}</b><small>${tt('intérêt, 30 j', 'interest, 30 d')}</small></div>`);
   else if (r.mediane) K.push(`<div class="fjc-k"><span>${tt('Sa carte', 'His card')}</span><b class="vert">${argent(r.mediane, 0)}</b><small>${tt('valeur', 'value')}</small></div>`);
   const parties = ((fo && fo.parties) || []).slice(0, 5);

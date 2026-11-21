@@ -64,10 +64,16 @@ def lire():
             shutil.copyfile(AMORCE, ch)
         except OSError:
             pass
+    # 21 nov 2026 (vitesse, lu dans les piles du serveur) : lire() est appele une fois PAR CARTE (score de chaque annonce) et
+    # demandait chaque fois la date du fichier au disque (lent sur le disque de Render) : au plus une verification aux 2 s
+    m_ = time.monotonic()
+    if _ETAT.get("d") is not None and _ETAT.get("ch") == ch and m_ - _ETAT.get("vu", 0.0) < 2.0:
+        return _ETAT["d"]
     try:
         mt = os.path.getmtime(ch)
     except OSError:
         return {"joueurs": {}, "modele": None, "labo": None}
+    _ETAT["vu"], _ETAT["ch"] = m_, ch
     if _ETAT["mtime"] != mt:
         try:
             with open(ch, encoding="utf-8") as f:
@@ -83,6 +89,7 @@ def _ecrire(d):
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(d, f, ensure_ascii=False)
     os.replace(tmp, ch)
+    _ETAT["vu"] = 0.0                     # ecrit ici : relu tout de suite
 
 
 def _get(url, timeout=15):
