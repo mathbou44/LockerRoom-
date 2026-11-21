@@ -4304,7 +4304,10 @@ body.vd-ouverte::before{content:''; position:fixed; top:0; left:0; right:0; heig
   background:color-mix(in srgb, var(--fond) 92%, transparent); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px)}
 .bk-fixe .bk-mode{margin:0} .bk-fixe #an-rech:empty{display:none} .bk-fixe .recherche{margin:0}
 @media (min-width:900px){ .bk-fixe{margin:0; padding:10px 0 12px; top:calc(var(--haut) + 34px); background:var(--fond);
-  box-shadow:0 0 0 100vmax var(--fond); clip-path:inset(-200px -100vmax -1px -100vmax)} }
+  box-shadow:0 0 0 100vmax var(--fond); clip-path:inset(-200px -100vmax -1px -100vmax)}
+  .ecran.bk-page > .entete{position:sticky; top:var(--bk-t0, 52px); z-index:19; margin-bottom:0}
+  .ecran.bk-page > .entete::before{content:''; position:absolute; inset:-400px -100vmax -24px -100vmax; background:var(--fond); z-index:-1}
+  .ecran.bk-page > .bk-fixe{top:var(--bk-t1, 140px) !important; clip-path:inset(0 -100vmax -1px -100vmax)} }
 /* 20 nov 2026 : les achats d'avant les 90 jours d'eBay : a la main */
 .fa-vieux{display:flex; flex-direction:column; gap:6px; margin-top:14px; padding:12px 14px; border-radius:16px; border:1px solid color-mix(in srgb, var(--or) 40%, var(--ligne)); background:color-mix(in srgb, var(--or) 8%, var(--carte))}
 .fa-vieux b{font-size:15px} .fa-vieux span{font-size:13.5px; color:var(--doux)} .fa-vieux .btn{align-self:flex-start}
@@ -5038,6 +5041,22 @@ html.tel-large .ecran.acc.acc-ft-mode > .acc-news2{order:9}
   .ecran.large.joueur #jb > .jb-a .jb-k{flex:1} .ecran.large.joueur #jb > .jb-a b{font-size:24px; position:static !important} .ecran.large.joueur #jb > .jb-a .jb-f{position:static}
 }
 .jb-deals{display:none}
+@media (min-width:1100px){
+  html body .ecran.large.joueur #jb.jb-3b{display:grid !important; grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important; grid-template-rows:auto minmax(0,1fr) !important; gap:12px}
+  #jb.jb-3b > .jb-haut{grid-column:1 / -1; display:flex; gap:12px; min-width:0} #jb.jb-3b > .jb-haut > *{flex:1 1 0; min-width:0; margin:0} #jb.jb-3b > .jb-haut > .jb-tete{flex:2 1 0}
+  #jb.jb-3b > .jb-gauche{grid-column:1; grid-row:2; display:flex; flex-direction:column; gap:12px; min-height:0; overflow:hidden}
+  #jb.jb-3b > .jb-gauche > *{flex:none; margin:0 !important; min-height:0} #jb.jb-3b > .jb-gauche > :last-child{flex:1 1 auto; overflow:hidden} #jb.jb-3b > .jb-gauche > .jb-acts:last-child{flex:none; margin-top:auto !important}
+  #jb.jb-3b .jb-acts{display:flex; gap:12px} #jb.jb-3b .jb-acts > .jb-a{flex:1 1 0; min-width:0; flex-direction:row; align-items:center; gap:12px; padding:10px 16px !important; min-height:0}
+  #jb.jb-3b .jb-acts > .jb-a .jb-k{flex:1} #jb.jb-3b .jb-acts > .jb-a b{font-size:24px; position:static !important} #jb.jb-3b .jb-acts > .jb-a .jb-f{position:static}
+  #jb.jb-3b .jb-gauche > .jb-hon{flex-direction:row; align-items:baseline; flex-wrap:wrap; column-gap:12px; padding:12px 16px} #jb.jb-3b .jb-gauche > .jb-hon .jb-k{flex-basis:100%}
+  #jb.jb-3b .jb-gauche > .jb-ty:last-child{display:flex; flex-direction:column} #jb.jb-3b .jb-gauche > .jb-ty:last-child .ty-l{flex:1; flex-direction:column !important; flex-wrap:nowrap; justify-content:space-evenly; gap:6px}
+  #jb.jb-3b .jb-gauche > .jb-ty:last-child .ty-l > *{width:100%; flex:1 1 0; max-height:62px; font-size:15px} #jb.jb-3b .jb-gauche > .jb-ty:not(:last-child) .ty-l{flex-direction:row !important; flex-wrap:wrap; gap:6px}
+  #jb.jb-3b .jb-gauche > .jb-ty small{display:none}
+  html body .ecran.large.joueur #jb.jb-3b > .jb-deals{grid-column:2 !important; grid-row:2 !important; display:flex !important; flex-direction:column; min-height:0}
+  #jb.jb-3b > .jb-deals .jb-dw{flex:1 1 auto; min-height:0; display:flex; flex-direction:column} #jb.jb-3b > .jb-deals .jb-dg{flex:1 1 auto; min-height:0; align-content:stretch !important; grid-auto-rows:minmax(0,1fr)}
+  #jb.jb-3b > .jb-deals .jb-dg > .tuile-deal{height:100%; max-height:none !important; min-height:0}
+  #jb.jb-3b > .jb-deals .jb-dg > .tuile-deal .sd-slab{height:100% !important; aspect-ratio:auto !important; display:flex; flex-direction:column; min-height:0}
+}
 .hon-l{display:flex; flex-direction:column; margin-top:12px} .hon-i{display:flex; align-items:center; gap:12px; padding:10px 2px; border-bottom:1px solid rgba(255,255,255,.07)} .hon-i:last-child{border-bottom:0}
 .hon-ic{width:32px; height:32px; flex:none; border-radius:10px; display:grid; place-items:center; background:linear-gradient(180deg, #F2C14E, #D99A2B)} .hon-ic svg{width:16px; height:16px; stroke:#1A1206 !important}
 .hon-i b{flex:1; font-size:15px; font-weight:600} .hon-i em{font-style:normal; font:700 15px var(--f-cond); color:var(--or)}
@@ -11111,11 +11130,17 @@ const imgProduit = (id, nom) => { const u = (S.imgProd || {})[id]; return u ? `<
 async function vueAnalyse(arg){
   const vendeur = breakVendeur(), A = S.ana;
   if (arg && arg !== 'choisir' && A.produit !== decodeURIComponent(arg)) anaCharger(decodeURIComponent(arg));
-  V().innerHTML = `<section class="ecran large"><div class="entete"><div class="titre">${tt('Breaks', 'Breaks')}</div>
+  V().innerHTML = `<section class="ecran large bk-page"><div class="entete"><div class="titre">${tt('Breaks', 'Breaks')}</div>
       <div class="pastilles">${vendeur ? '<a class="pilule" href="#breaks/liste">' + tt('Mes breaks', 'My breaks') + '</a>' : ''}</div></div>
     <div class="bk-fixe"><div class="bk-mode" role="tablist" aria-label="${esc(tt('Je…', 'I…'))}">${[['acheteur', tt('J’achète une place', 'I buy a spot')], ['breaker', tt('Je fais un break', 'I run a break')]].map(([k, l]) =>
       `<button role="tab" aria-selected="${S.breakMode === k}" class="${S.breakMode === k ? 'on' : ''}" data-bkm="${k}">${l}</button>`).join('')}</div><div id="an-rech"></div></div>
     <div id="an-z">${roue}</div></section>`;
+  // 20 nov 2026 (Mathieu : « je peux scroller l'entete et je ne devrais pas ») : a l'ordi, le titre ET la barre restent exactement
+  // ou ils sont : chacun colle a sa propre position de depart, rien ne bouge
+  { const sec = $('.bk-page'), en = sec && $('.bk-page > .entete'); if (sec && en && innerWidth >= 900) { const fx = () => {
+      if (!en.isConnected) return removeEventListener('resize', fx);
+      if (scrollY > 2) return; sec.style.setProperty('--bk-t0', Math.round(en.getBoundingClientRect().top) + 'px'); const fe = $('.bk-page > .bk-fixe'); if (fe) sec.style.setProperty('--bk-t1', Math.round(fe.getBoundingClientRect().top) + 'px'); };
+    if (scrollY) scrollTo(0, 0); fx(); addEventListener('resize', fx); sec.addEventListener('animationend', fx); setTimeout(fx, 700); } }
   $$('[data-bkm]').forEach(b => b.onclick = () => choisirBreakMode(b.dataset.bkm));
   if (!A.produit || arg === 'choisir') return choisirProduitAnalyse();
   rendreAnalyse();
@@ -21189,6 +21214,22 @@ const tuilesVentesJoueur = (r) => {
   return (cv ? `<div class="jb-t jb-cv"><span class="jb-k">${tt('Ses ventes', 'His sales')} · ${r.nb_ventes || ''}</span>${courbeVentes(r.points, {h: 150})}</div>` : '')
     + (v.length ? `<div class="jb-t jb-vt"><span class="jb-k">${tt('Vendues récemment', 'Recently sold')}</span><div class="jb-vg">${v.map(k => `<div class="jb-v"><span>${SVG_CARTE}${k.photo ? `<img src="${esc(photoNet(k.photo, 300))}" alt="" loading="lazy" data-oe="rm">` : ''}</span><b>${argent(k.prix, 0)}</b><small>${k.le ? esc(dateCourte(k.le)) : ''}</small></div>`).join('')}</div></div>` : '');
 };
+// 20 nov 2026 (Mathieu, la page de Kyle Connor : « gros espace inutilise ») : a l'ordi, avec ses deals, la page devient 3 blocs
+// qui remplissent l'ecran : en haut le joueur et ses chiffres sur une bande ; a gauche une colonne (palmares, gestes, cartes
+// recherchees, pourquoi elles ont bouge) dont le dernier bloc prend la hauteur qui reste ; a droite ses deals sur toute la hauteur
+function agencerJb(){
+  const z = $('#jb'); if (!z || innerWidth < 1100 || !z.querySelector(':scope > .jb-deals') || z.querySelector(':scope > .jb-haut')) return;
+  const haut = document.createElement('div'), gau = document.createElement('div'), acts = document.createElement('div');
+  haut.className = 'jb-haut'; gau.className = 'jb-gauche'; acts.className = 'jb-acts';
+  const AUTRES = '.jb-a, .jb-hon, .jb-ty, .jb-mv, .jb-nv, .jb-cv, .jb-vt, .jb-att, .jb-deals';
+  const reste = [];
+  [...z.children].forEach(k => { if (k.matches('.jb-deals')) return;
+    if (k.matches('.jb-tete') || (k.matches('.jb-t') && !k.matches(AUTRES))) haut.appendChild(k);
+    else if (k.matches('.jb-a')) acts.appendChild(k); else reste.push(k); });
+  const hon = reste.filter(k => k.matches('.jb-hon')), suite = reste.filter(k => !k.matches('.jb-hon'));
+  hon.forEach(k => gau.appendChild(k)); if (acts.children.length) gau.appendChild(acts); suite.forEach(k => gau.appendChild(k));
+  z.prepend(haut); z.querySelector(':scope > .jb-deals').before(gau); z.classList.add('jb-3b');
+}
 const tuileDealsJoueur = (r) => {
   const d = r.deals || []; if (!d.length) return '';
   const pro = S.forfait && (S.forfait.pro || S.forfait.payant || S.forfait.offert);
@@ -21227,7 +21268,7 @@ async function vueJoueur(arg){
       ${r.alertes.length ? `<div id="j-b-al"><h3>${tt('Tes alertes', 'Your alerts')}</h3><div class="pastilles">${r.alertes.map(a => capsule(a.q + ' ≤ ' + argentCourt(a.prix_max), 'or')).join('')}</div></div>` : ''}
     </div>
   </section>`;
-  const remplir = () => { const L = $$('#jb > .jb-a'); L.forEach(x => x.classList.remove('jb-a2', 'jb-a3')); if (L.length === 1) L[0].classList.add('jb-a3'); else if (L.length === 2) L[0].classList.add('jb-a2'); };
+  const remplir = () => { const L = $$('#jb > .jb-a'); L.forEach(x => x.classList.remove('jb-a2', 'jb-a3')); if (L.length === 1) L[0].classList.add('jb-a3'); else if (L.length === 2) L[0].classList.add('jb-a2'); agencerJb(); };
   const brancher = () => {
     for (const [b, bl] of [['j-ind', 'j-b-ind'], ['j-histo', 'j-b-histo'], ['j-cartes', 'j-b-cartes'], ['j-tout-v', 'j-b-vend'], ['j-al', 'j-b-al']]) { const x = $('#' + b); if (x) x.onclick = () => { vibrer(); feuilleBloc($('#' + bl)); }; }
     const al = $('#j-alerte'); if (al) al.onclick = () => { vibrer(); feuilleAlerte(r.requete, r.mediane ? Math.round(r.mediane * 0.8) : ''); };
