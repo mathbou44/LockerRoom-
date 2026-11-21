@@ -112,7 +112,38 @@ SEMIS["suivi"] = [
 SEMIS["licences_fc"] = [
     ("lic_fc", "Demander à Fanatics Collect une entente pour montrer leurs enchères", "Leurs conditions interdisent d'extraire leurs données : il faut leur accord écrit (API ou flux des lots Weekly et Premier, affichage dans l'app, affiliation). En attendant : un bouton « Fanatics Collect » ouvre leurs enchères de la semaine.", 2, "fc", "https://help.fanaticscollect.com/hc/en-us/articles/18437607549853-Contact-Us"),
 ]
-SEMIS_PROJET = {"licences_fc": "licences"}
+# 21 nov 2026 (Mathieu : « les priorites et choses a faire devraient toujours etre dans la to-do de la page admin ») : la liste
+# du lancement du 1er decembre (docs/PRIORITES_LANCEMENT.md), une tache par point. 7e element (facultatif) : l'echeance.
+# REGLE : toute nouvelle priorite ou chose a faire va ICI (un nouveau semis), pas seulement dans un document.
+SEMIS["lancement_1dec"] = [
+    ("l1_pousser", "Pousser la version du 21 nov et attendre « live » sur Render", "GitHub Desktop → Commit → Push. Inclut : notes App Store sur le site, autos B+ dans SlabIQ, Vendre sur un écran.", 1, None, None, "2026-11-21"),
+    ("l1_apple", "Soumettre l'app à Apple", "Build Codemagic (vérifier qu'il passe : il contient la fenêtre de note d'Apple), captures, fiche App Store, note au réviseur avec le code démo. Pas de « Bêta » visible.", 1, None, "https://appstoreconnect.apple.com", "2026-11-22"),
+    ("l1_parcours", "Tester le parcours d'un nouveau compte au cell", "Inscription → Pour bien partir → relier eBay → 1re carte → Radar → Breaks → essai Pro. Noter tout ce qui accroche ; Claude corrige en direct.", 1, None, None, "2026-11-22"),
+    ("l1_stripe_id", "Stripe : finir la vérification d'identité", "Sans elle, pas de paiements le 1er décembre. Le prix annuel est dans la tâche « Stripe : créer le prix annuel ».", 1, None, "https://dashboard.stripe.com", "2026-11-25"),
+    ("l1_paiement", "Faire un vrai paiement test de bout en bout", "Essai 14 jours → Pro → annulation → remboursement. Après la vérification Stripe.", 1, None, None, "2026-11-27"),
+    ("l2_cloudflare", "Cloudflare : 2FA, HSTS et DMARC", "2FA sur le compte ; HSTS dans Edge Certificates ; DMARC p=none. Ne pas activer Bot Fight Mode (bloque Stripe, Apple, eBay).", 2, None, "https://dash.cloudflare.com", "2026-11-28"),
+    ("l2_aikido_scan", "Aikido : relancer le scan après le push", "Ignorer avec la raison : lightgbm, liste IP GitHub, CSP. Envoyer à Claude ce qui reste.", 2, None, None, "2026-11-24"),
+    ("l2_courriels", "Courriels de licence (7, dont Fanatics) : choisir l'adresse d'envoi", "Claude prépare les brouillons dans Gmail ; tu dis « envoie » pour chacun.", 2, None, None, "2026-11-26"),
+    ("l2_demo", "Après l'approbation d'Apple : retirer le code démo", "Conseil dans la section Sécurité.", 2, None, None, None),
+    ("l2_c_2comptes", "Claude : test 2 comptes sur tous les écrans", "Personne ne doit voir les données d'un autre compte.", 2, None, None, "2026-11-26"),
+    ("l2_c_fenetres", "Claude : Bilan vide et page joueur sans données", "Les 2 dernières fenêtres à passer « Apple ».", 3, None, None, "2026-11-27"),
+    ("l2_c_nouv", "Claude : Nouveautés à jour la veille du lancement", "Règle : après chaque grosse mise à jour.", 2, None, None, "2026-11-30"),
+    ("d_vitrine", "Décider : supprimer ui/vitrine.html ?", "Pas servie, dit encore « 9/10 ».", 3, None, None, None),
+    ("d_cadence", "Décider : « réentraîné plusieurs fois par semaine » ?", "Le site dit « chaque semaine » ; c'est aux 3 jours.", 3, None, None, None),
+    ("d_noncartes", "Décider : refuser les non-cartes aussi à l'ajout manuel ?", "Aujourd'hui, seul l'import automatique les écarte.", 3, None, None, None),
+    ("d_baseball", "Décider : baseball le 1er décembre ou après ?", "Budget SoldComps / TheCardAPI.", 3, None, None, None),
+    ("d_ygr", "Décider : YG Renewed à D ou à B ?", "Le marché la place à B. B : accord 80,5 % au lieu de 80,3 %, le reste ne bouge pas.", 3, None, None, None),
+    ("d_asc", "Décider : clé App Store Connect pour les téléchargements ?", "Apple ne publie pas ce chiffre. Clé API (rôle « Sales ») dans Render ; en attendant, le site montre « X+ collectionneurs ».", 4, None, None, None),
+    ("ap_baseball", "Après le lancement : la version baseball", "La même app que le hockey, page par page, avec nos données de baseball.", 4, None, None, None),
+]
+# 21 nov 2026 (Mathieu : « un pare-feu pour empecher un hacker de ne pas payer ou d'aller chercher mon data ») : le pare-feu
+# Cloudflare devant le site, et Render qui refuse tout ce qui ne passe pas par lui (server.py, LR_ORIGINE_*)
+SEMIS["securite_21nov"] = [
+    ("s_cf_proxy", "Cloudflare : www.slabcoach.com et slabcoach.com en orange (proxied)", "DNS → les 2 lignes doivent avoir le nuage orange. Gris = le pare-feu ne voit rien passer.", 1, None, "https://dash.cloudflare.com", "2026-11-24"),
+    ("s_cf_waf", "Cloudflare : pare-feu (règles gérées) + limite de débit", "Security → WAF → Managed rules : activer le Free Managed Ruleset. Rate limiting rules (1 règle gratuite) : chemin commence par /auth/ ou /connexion, 20 requêtes / 10 s par IP → Block. Ne pas activer Bot Fight Mode (bloque Stripe, Apple, eBay).", 1, None, "https://dash.cloudflare.com", "2026-11-24"),
+    ("s_origine", "Verrouiller Render derrière Cloudflare (3 étapes, dans l'ordre)", "1) Cloudflare → Rules → Transform Rules → Modify Request Header : ajouter X-SC-Origine = un long secret (gestionnaire de mots de passe, 32+ caractères), pour tout le trafic. 2) Render → LR_ORIGINE_JETON = le même secret ; ouvrir https://www.slabcoach.com/sante/cloudflare → doit dire « oui ». 3) Render → LR_ORIGINE_BLOQUER = 1. Si le site tombe : enlever LR_ORIGINE_BLOQUER. Ne jamais écrire le secret dans le chat.", 1, None, None, "2026-11-25"),
+]
+SEMIS_PROJET = {"licences_fc": "licences", "lancement_1dec": "lancement", "securite_21nov": "lancement"}
 PROJETS = {"licences": "Licences de données", "lancement": "Lancement", "general": "Général", "suivi": "Suivi"}
 
 
@@ -131,11 +162,15 @@ def _semer(cur):
     for projet, items in SEMIS.items():
         if projet in vus:
             continue
-        for tid, titre, note, prio, modele, lien in items:
+        for tid, titre, note, prio, modele, lien, *ech in items:
             if not any(t.get("id") == tid for t in l):
                 l.append({"id": tid, "titre": titre, "note": note, "prio": prio, "projet": SEMIS_PROJET.get(projet, projet), "etat": "a_faire",
-                          "modele": modele, "lien": lien, "cree_le": maint, "echeance": None, "fait_le": None})
+                          "modele": modele, "lien": lien, "cree_le": maint, "echeance": (ech or [None])[0], "fait_le": None})
         vus.add(projet)
+        if projet == "lancement_1dec":     # 21 nov : « Pousser v84 a v95 » est remplacee par « Pousser la version du 21 nov »
+            for t in l:
+                if t.get("id") == "sv_pousser" and t.get("etat") != "fait":
+                    t.update(etat="fait", fait_le=maint, note=(t.get("note") or "") + " (remplacée par « Pousser la version du 21 nov »)")
     cur["semis"] = sorted(vus)
     return cur
 

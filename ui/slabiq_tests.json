@@ -1,6 +1,6 @@
 {
  "le": "2026-11-20",
- "empreinte": "4a1282e417be37a8",
+ "empreinte": "e39041f0ea121811",
  "regles": {
   "fixe": 86.0,
   "encan": 82.0,
@@ -12,48 +12,43 @@
  "ventes": 142155,
  "ventes_total": 416934,
  "joueurs": 915,
- "accord": 0.802,
- "accord_avant": 0.667,
- "rho": 0.952,
- "inversions": [
-  [
-   "B",
-   "C"
-  ]
- ],
- "corrections": 224,
+ "accord": 0.803,
+ "accord_avant": 0.666,
+ "rho": 0.929,
+ "inversions": [],
+ "corrections": 225,
  "lettres": {
   "D": {
-   "cartes": 24516,
-   "reventes": 0.094
-  },
-  "B": {
-   "cartes": 36409,
-   "reventes": 0.091
-  },
-  "A": {
-   "cartes": 10514,
-   "reventes": 0.406
-  },
-  "B+": {
-   "cartes": 36081,
-   "reventes": 0.251
+   "cartes": 27959,
+   "reventes": 0.089
   },
   "C": {
-   "cartes": 38812,
-   "reventes": 0.11
-  },
-  "E": {
-   "cartes": 11724,
-   "reventes": 0.042
+   "cartes": 38368,
+   "reventes": 0.108
   },
   "A-": {
-   "cartes": 9830,
-   "reventes": 0.199
+   "cartes": 10599,
+   "reventes": 0.189
+  },
+  "A": {
+   "cartes": 10482,
+   "reventes": 0.396
+  },
+  "B+": {
+   "cartes": 39434,
+   "reventes": 0.237
+  },
+  "B": {
+   "cartes": 32970,
+   "reventes": 0.095
+  },
+  "E": {
+   "cartes": 8017,
+   "reventes": 0.037
   },
   "A+": {
-   "cartes": 1300,
-   "reventes": 0.223
+   "cartes": 1357,
+   "reventes": 0.302
   }
  },
  "pro": {
@@ -68,13 +63,13 @@
   "profit_apres_frais": 0.196
  },
  "pro_avant": {
-  "n": 2827,
-  "reussi": 0.298,
+  "n": 2830,
+  "reussi": 0.299,
   "reussi_ic95": [
    0.282,
-   0.314
+   0.316
   ],
-  "revendue": 0.424,
+  "revendue": 0.425,
   "garde": 0.703,
   "profit_apres_frais": 0.045
  },
@@ -105,16 +100,16 @@
   "cartes": 8942,
   "cartes_radar": 136
  },
- "x_ahaut_e": 9.2,
- "x_aplus_e": 5.3,
- "x_a_e": 9.7,
+ "x_ahaut_e": 10.4,
+ "x_aplus_e": 8.2,
+ "x_a_e": 10.7,
  "sim": {
   "r_sans": -0.0488,
-  "r_avec": 0.0603,
-  "bat": 0.948,
-  "ecart": 577,
-  "p10": 115,
-  "p90": 1054,
+  "r_avec": 0.0629,
+  "bat": 0.955,
+  "ecart": 580,
+  "p10": 145,
+  "p90": 989,
   "mois": [
    "2025-11",
    "2025-12",

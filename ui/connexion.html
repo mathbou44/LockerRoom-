@@ -90,6 +90,8 @@ main{position:relative; min-height:100%; display:grid; place-items:center}
 .titre{margin-top:26px}
 .btn{margin-top:34px}
 .note.offre{margin-top:18px}
+.confiance{display:flex; align-items:flex-start; justify-content:center; gap:7px; margin:10px auto 0; max-width:340px; color:#8C8996; font-size:12.5px; line-height:1.45; text-decoration:none}
+.confiance svg{flex:none; margin-top:2px; color:#9FE6D2} .confiance:hover span{text-decoration:underline}
 .rappel-meme{margin-top:10px; font-size:13px; line-height:1.45; color:#8C8996}
 .rappel-meme a{color:#B9B4FF; font-weight:600; text-decoration:none; white-space:nowrap}
 @font-face{font-family:'Manrope'; font-weight:800; font-display:swap; src:url(/manrope-800.woff2) format('woff2')}
@@ -119,6 +121,7 @@ main{position:relative; min-height:100%; display:grid; place-items:center}
   <div class="ou">ou</div>
   <div class="tiers">{autres}</div>
   <div class="note offre">14 jours de Pro offerts · aucune carte de crédit</div>
+  <a class="confiance" href="/securite"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Paiement par Stripe ou Apple · aucun mot de passe gardé · données jamais vendues</span></a>
   {rappel}
   <div class="liens"><a href="/">‹ Retour au site</a><a href="/support">Support</a><a href="/confidentialite">Confidentialité</a><a href="/conditions">Conditions</a>{demo}</div>
 </div></main>

@@ -262,7 +262,7 @@ app.config["MAX_CONTENT_LENGTH"] = 64 * 1024 * 1024        # 5 nov 2026 : photos
 #        # 23 oct 2026 - 2 photos ; 3 nov 2026 : + rasantes et 8 gros plans des coins
 # pages qui restent publiques : break partage, retour et avis eBay, pages legales, icones
 _PUBLIQUES = ("/b/", "/api/b/", "/api/ebay_retour", "/ebay/suppression-compte", "/confidentialite", "/conditions",
-              "/support", "/tarifs", "/pricing", "/a-propos", "/about", "/preuve", "/proof", "/slabiq", "/langue", "/robots.txt", "/sitemap.xml", "/logo_sc_", "/syne-800.woff2", "/manrope-", "/barlow-", "/connexion", "/icone", "/favicon", "/manifest.json", "/stripe/webhook", "/apple/notifications", "/sante", "/csp-rapport", "/.well-known/security.txt", "/security.txt")
+              "/support", "/securite", "/security", "/tarifs", "/pricing", "/a-propos", "/about", "/preuve", "/proof", "/slabiq", "/langue", "/robots.txt", "/sitemap.xml", "/logo_sc_", "/syne-800.woff2", "/manrope-", "/barlow-", "/connexion", "/icone", "/favicon", "/manifest.json", "/stripe/webhook", "/apple/notifications", "/sante", "/csp-rapport", "/.well-known/security.txt", "/security.txt")
 
 
 import comptes  # noqa: E402
@@ -307,6 +307,30 @@ def sante_render():
     return "ok", 200, {"Content-Type": "text/plain", "Cache-Control": "no-store"}
 
 
+# 21 nov 2026 (Mathieu : « un pare-feu pour empecher un hacker de ne pas payer ou d'aller chercher mon data ; impenetrable et
+# fiable ») : le pare-feu, c'est Cloudflare (regles WAF, limite de debit, DDoS). Mais l'adresse directe de Render
+# (xxx.onrender.com) le contournait. Maintenant : Cloudflare ajoute un en-tete secret a chaque requete (Transform Rule) et le
+# serveur refuse tout ce qui n'a pas cet en-tete. 3 etapes, dans l'ordre (sinon le site tombe) :
+#   1. Cloudflare : Rules > Transform Rules > Modify Request Header : X-SC-Origine = <un long secret>, pour tout le trafic ;
+#   2. Render : LR_ORIGINE_JETON = le meme secret ; verifier https://www.slabcoach.com/sante/cloudflare -> « oui » ;
+#   3. Render : LR_ORIGINE_BLOQUER = 1 (le refus commence).
+# Tant que l'en-tete est verifie, la vraie adresse du visiteur vient de Cloudflare (CF-Connecting-IP) : les limites d'essais
+# visent la bonne personne, pas un serveur de Cloudflare partage par des milliers de gens.
+_ORIGINE_SECRET = os.environ.get("LR_ORIGINE_JETON") or ""
+_ORIGINE_BLOQUER = os.environ.get("LR_ORIGINE_BLOQUER") == "1" and len(_ORIGINE_SECRET) >= 24
+
+
+def _via_cloudflare():
+    import hmac
+    v = request.headers.get("X-SC-Origine") or ""
+    return bool(_ORIGINE_SECRET) and bool(v) and hmac.compare_digest(v.encode(), _ORIGINE_SECRET.encode())
+
+
+@app.route("/sante/cloudflare")
+def sante_cloudflare():
+    return ("oui" if _via_cloudflare() else "non"), 200, {"Content-Type": "text/plain", "Cache-Control": "no-store"}
+
+
 # 20 nov 2026 (revue de performance : « que tout performe au maximum ») : le serveur ne mesurait pas le temps de ses requetes.
 # Chaque requete de plus de LR_LENT_S secondes (2 par defaut) est notee dans le journal (« Lent : ... ») avec sa duree : on
 # sait enfin quels ecrans sont lents en vrai, avec les vraies donnees. Rien d'autre n'est garde (ni compte, ni parametre).
@@ -336,8 +360,10 @@ def _chrono_fin(rep):
 @app.before_request
 def _garde():
     from flask import redirect, session
-    if request.path == "/sante":
+    if request.path in ("/sante", "/sante/cloudflare"):
         return None
+    if _ORIGINE_BLOQUER and not _via_cloudflare():        # 21 nov 2026 : seulement par Cloudflare (le pare-feu)
+        return ("Accès refusé", 403, {"Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store"})
     if request.method == "POST" and not request.path.startswith(_POST_EXEMPTES) and not _meme_site():
         return ("Requête refusée (autre site)", 403)
     comptes.activer(None)
@@ -691,6 +717,9 @@ _ECHECS = {}
 def _ip():
     # 3 nov 2026 (revue de securite) : la DERNIERE adresse de X-Forwarded-For (celle que Render ajoute) ; la premiere est
     # ecrite par le client (une nouvelle a chaque essai contournait la limite d'essais)
+    # 21 nov 2026 : derriere Cloudflare (en-tete secret verifie), la vraie adresse du visiteur est CF-Connecting-IP
+    if HEBERGE and _via_cloudflare() and request.headers.get("CF-Connecting-IP"):
+        return request.headers["CF-Connecting-IP"].strip()
     return (request.headers.get("X-Forwarded-For") or request.remote_addr or "").split(",")[-1].strip() if HEBERGE \
         else (request.remote_addr or "")
 
@@ -845,7 +874,9 @@ _EN = [("Ton inventaire eBay, tes prix et tes ventes, tout seuls.", "Your eBay i
        ("Cette connexion n’est pas encore offerte : utilise eBay", "This sign-in isn’t available yet: use eBay"),
        ("Connexion interrompue : réessaie", "Sign-in interrupted: try again"), ("‹ Retour au site", "‹ Back to site"),
        ("14 jours de Pro offerts · aucune carte de crédit", "14 days of Pro on us · no credit card"),
-       ("Trop d’essais : réessaie dans 15 minutes", "Too many attempts: try again in 15 minutes")]
+       ("Trop d’essais : réessaie dans 15 minutes", "Too many attempts: try again in 15 minutes"),
+       ("Paiement par Stripe ou Apple · aucun mot de passe gardé · données jamais vendues", "Payment by Stripe or Apple · no password kept · data never sold"),
+       (">Sécurité</a>", ">Security</a>")]
 
 
 def _langue():
@@ -870,6 +901,9 @@ SITE_PAGES = {
     "slabiq": ("/slabiq", "site_slabiq.html", "SlabIQ · SlabCoach", "SlabIQ · SlabCoach",
                "Une lettre de A+ à E pour chaque carte de sport. Apprise sur plus de 415 000 ventes réelles, testée sur des ventes qu’elle n’avait jamais vues.",
                "One letter from A+ to E for every sports card. Learned from 415,000+ real sales, tested on sales it had never seen."),
+    "securite": ("/securite", "site_securite.html", "Sécurité · SlabCoach", "Security · SlabCoach",
+                 "Paiement par Stripe ou Apple, aucun mot de passe gardé, connexion chiffrée, comptes séparés, données jamais vendues.",
+                 "Payment by Stripe or Apple, no password kept, encrypted connection, separate accounts, data never sold."),
     "apropos": ("/a-propos", "site_apropos.html", "Qui nous sommes · SlabCoach", "About us · SlabCoach",
                 "SlabCoach est fait au Québec par un collectionneur qui voulait passer plus de temps avec ses cartes, et moins à chercher.",
                 "SlabCoach is made in Quebec by a collector who wanted to spend more time with his cards, and less time searching."),
@@ -898,6 +932,21 @@ def _page_vitrine(page="accueil", contenu_force=None):
             .replace("{{CHEMIN}}", chemin))
     for k in SITE_PAGES:
         html = html.replace("{{ACT_" + k.upper() + "}}", "actif" if k == page else "")
+    # 21 nov 2026 (page Securite) : ces 2 lignes s'affichent seulement si c'est vrai en ce moment
+    if "{{SECU_" in html:
+        cf = _via_cloudflare() or bool(request.headers.get("CF-Ray"))
+        try:
+            import sauvegarde
+            sv = sauvegarde.actif()
+        except Exception:
+            sv = False
+        html = html.replace("{{SECU_CF}}", _SECU_CF if cf else "").replace("{{SECU_SAUV}}", _SECU_SAUV if sv else "")
+    # 20 nov 2026 (Mathieu : « toutes les bonnes notes sur notre site en slide show, automatiquement ») : les vraies notes App Store
+    try:
+        import avis_app
+        html = avis_app.injecter(html, contenu)
+    except Exception:
+        html = html.replace("{{AVIS_LIGNE}}", "").replace("{{AVIS_SECTION}}", "")
     # 19 nov 2026 (audit du site) : le Pro annuel n'est annonce que s'il est vraiment offert (le prix Stripe existe) ; sinon le
     # client qui le choisit recevait « Le forfait annuel n'est pas encore offert »
     try:
@@ -1127,6 +1176,26 @@ def page_slabiq():
     return _page_vitrine("slabiq")
 
 
+_SECU_CF = ('<li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+            '<path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/><circle cx="12" cy="12" r="9"/></svg><div><b><span class="fr">Derrière un pare-feu</span>'
+            '<span class="en">Behind a firewall</span></b><span class="fr">Le site passe par Cloudflare : pare-feu applicatif et protection contre les attaques '
+            'par saturation, avant même d’arriver chez nous.</span><span class="en">The site runs through Cloudflare: a web application firewall and protection '
+            'against flood attacks, before traffic even reaches us.</span></div></li>')
+_SECU_SAUV = ('<li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+              '<path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg><div><b><span class="fr">Sauvegardé chaque nuit</span><span class="en">Backed up every night</span></b>'
+              '<span class="fr">Une copie de toutes les données part chaque nuit hors de notre hébergeur. Un compte supprimé en disparaît aussi, après 8 semaines au plus.</span>'
+              '<span class="en">A copy of all data leaves our host every night. A deleted account disappears from it too, within 8 weeks at most.</span></div></li>')
+
+
+@app.route("/securite")
+@app.route("/security")
+def page_securite():
+    if "LockerRoomiOS" in (request.headers.get("User-Agent") or ""):      # comme /a-propos : la vitrine a des prix du site
+        from flask import redirect
+        return redirect("/connexion")
+    return _page_vitrine("securite")
+
+
 @app.route("/a-propos")
 @app.route("/about")
 def page_apropos():
@@ -1208,6 +1277,7 @@ def connexion():
         page = page.replace("{autres}", "".join(_BOUTONS_TIERS[f] for f in ("apple", "google") if f in autres))
         if ios:                                   # app iPhone : pas de lien vers la vitrine (prix du site)
             page = page.replace('<a href="/">‹ Retour au site</a>', "")
+            page = page.replace('<a class="confiance" href="/securite">', '<div class="confiance">').replace("données jamais vendues</span></a>", "données jamais vendues</span></div>")
         if not autres:
             page = page.replace('<div class="ou">ou</div>', "")
         # 2 nov 2026 : ouvrir le compte de l'autre appareil. 9 nov 2026 (Mathieu : 2 comptes, « un moyen beton pour que ca

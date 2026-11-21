@@ -1,0 +1,49 @@
+<!-- 21 nov 2026 (Mathieu : « l'utilisateur qui cree son compte doit sentir que notre site n'est pas un scam : solide,
+     securitaire et vrai ») : ce qu'on fait vraiment, en mots simples. Chaque phrase est vraie dans le code ; les 2 lignes
+     marquees {{SECU_*}} n'apparaissent que si c'est vrai en ce moment (Cloudflare devant le site, sauvegarde de nuit branchee). -->
+<style>
+.sc-h{padding:76px 0 30px;text-align:center}
+.sc-h h1{margin:12px auto 0;max-width:22ch}
+.sc-h .sous-titre{margin:18px auto 0;max-width:38ch;font-size:19px;line-height:1.5;color:var(--doux)}
+.sc-l{list-style:none;margin:10px auto 0;padding:0;display:grid;grid-template-columns:1fr 1fr;column-gap:48px;max-width:980px}
+.sc-l li{display:flex;gap:16px;padding:20px 0;border-top:1px solid rgba(255,255,255,.07)}
+.sc-l svg{flex:none;width:24px;height:24px;margin-top:2px;color:#9FE6D2}
+.sc-l b{display:block;font-size:17px;margin-bottom:5px} .sc-l span{font-size:15.5px;line-height:1.55;color:var(--doux)}
+.sc-l a{color:var(--texte)}
+.sc-v{max-width:720px;margin:34px auto 0;padding:20px 22px;border-radius:18px;background:var(--carte);border:1px solid var(--ligne);font-size:15.5px;line-height:1.6;color:var(--doux)}
+.sc-v b{color:var(--texte)}
+@media (max-width:900px){.sc-l{grid-template-columns:1fr} .sc-h{padding:52px 0 18px} .sc-h .sous-titre{font-size:17px}}
+</style>
+<div class="sc-h"><div class="conteneur">
+  <p class="kicker holo-t"><span class="fr">Sécurité</span><span class="en">Security</span></p>
+  <h1><span class="fr">Ton compte est entre bonnes mains.</span><span class="en">Your account is in good hands.</span></h1>
+  <p class="sous-titre"><span class="fr">Ce qu’on fait pour protéger ton argent, tes données et tes cartes. Sans jargon.</span><span class="en">What we do to protect your money, your data and your cards. No jargon.</span></p>
+</div></div>
+<section><div class="conteneur">
+  <ul class="sc-l">
+    <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+      <div><b><span class="fr">Ton numéro de carte ne passe jamais chez nous</span><span class="en">Your card number never reaches us</span></b>
+      <span class="fr">Sur le site, Stripe s’occupe du paiement ; dans l’app, c’est Apple. SlabCoach ne voit ni ne garde aucun numéro de carte.</span><span class="en">On the website, Stripe handles payment; in the app, Apple does. SlabCoach never sees or keeps a card number.</span></div></li>
+    <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 20 3M16 7l3 3M14 9l2 2"/></svg>
+      <div><b><span class="fr">Aucun mot de passe à voler</span><span class="en">No password to steal</span></b>
+      <span class="fr">Tu te connectes avec Apple, Google ou eBay. Ton mot de passe reste chez eux : on n’en garde aucun.</span><span class="en">You sign in with Apple, Google or eBay. Your password stays with them: we keep none.</span></div></li>
+    <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      <div><b><span class="fr">Chiffré de ton écran à nos serveurs</span><span class="en">Encrypted from your screen to our servers</span></b>
+      <span class="fr">Tout passe en HTTPS, imposé par ton navigateur. Ta session est protégée contre les scripts et les autres sites.</span><span class="en">Everything goes over HTTPS, enforced by your browser. Your session is protected from scripts and other sites.</span></div></li>
+    <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
+      <div><b><span class="fr">Ton compte, à toi seul</span><span class="en">Your account, yours alone</span></b>
+      <span class="fr">Chaque compte a son propre espace. Avant chaque mise à jour, des tests automatiques vérifient qu’aucun compte ne voit les données d’un autre.</span><span class="en">Every account has its own space. Before every update, automatic tests check that no account can see another’s data.</span></div></li>
+    <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg>
+      <div><b><span class="fr">Les tentatives sont bloquées</span><span class="en">Guessing gets blocked</span></b>
+      <span class="fr">Après quelques codes erronés, l’accès se bloque 15 minutes. Deviner un code est impossible en pratique.</span><span class="en">After a few wrong codes, access locks for 15 minutes. Guessing a code is impossible in practice.</span></div></li>
+    <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 6.1A9.8 9.8 0 0 1 12 6c5 0 9 6 9 6a17 17 0 0 1-3.2 3.7M6.6 6.6A17 17 0 0 0 3 12s4 6 9 6a9 9 0 0 0 4.4-1.1"/></svg>
+      <div><b><span class="fr">Tes données ne sont jamais vendues</span><span class="en">Your data is never sold</span></b>
+      <span class="fr">Pas de publicité, pas de revente. Tu supprimes ton compte dans l’app quand tu veux, et tout est effacé.</span><span class="en">No ads, no resale. Delete your account in the app any time, and everything is erased.</span></div></li>
+    {{SECU_CF}}
+    {{SECU_SAUV}}
+    <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v12H8l-4 4z"/></svg>
+      <div><b><span class="fr">Tu as trouvé une faille ?</span><span class="en">Found a security issue?</span></b>
+      <span class="fr">Écris à <a href="mailto:support@slabcoach.com">support@slabcoach.com</a>. On corrige vite, et on te remercie.</span><span class="en">Write to <a href="mailto:support@slabcoach.com">support@slabcoach.com</a>. We fix fast, and we thank you.</span></div></li>
+  </ul>
+  <p class="sc-v"><b><span class="fr">Pour être franc :</span><span class="en">To be honest:</span></b> <span class="fr">aucun site au monde n’est impénétrable. Ce qu’on promet, c’est de prendre ça au sérieux : des vérifications à chaque mise à jour, des correctifs rapides, et la vérité si un jour quelque chose arrive. C’est aussi pour ça que <a href="/preuve">nos résultats sont publics</a>.</span><span class="en">no website in the world is impenetrable. What we promise is to take it seriously: checks with every update, fast fixes, and the truth if anything ever happens. It’s also why <a href="/preuve">our results are public</a>.</span></p>
+</div></section>

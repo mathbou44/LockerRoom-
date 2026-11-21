@@ -3882,14 +3882,21 @@ class Api:
         # 16 nov 2026 (Mathieu : « aucun SlabIQ score affiche » dans l'inventaire) : une carte entree a la main (ou un titre
         # trop court) n'avait pas de titre utilisable : le titre est complete avec ses champs (annee, marque, set, joueur,
         # parallele, tirage, gradation)
+        # 20 nov 2026 (Mathieu : « pourquoi C ? deux mega bonnes recrues du CH, une /25 de Premier : ca devrait etre A ») : le titre
+        # « 2025-26 Ivan Demidov / Jacob Fowler /25 » ne disait ni Premier, ni Rookie, ni Patch (ils sont dans le set et le
+        # parallele) : chaque champ absent du titre y est ajoute, toujours ; une carte a deux joueurs est notee sur le premier
         def titre_de(r):
             i, t, j, an, ma, se, pa, ti, gr, au = r
             t = str(t or "").strip()
-            if len(t) >= 25:
-                return t
-            bouts = [str(x) for x in (an, ma, se, j, pa, ("/" + str(ti)) if ti else None, "Auto" if au else None, gr) if x]
+            tl = t.lower()
+            bouts = [str(x) for x in (an, ma, se, j, pa, ("/" + str(ti)) if ti else None, "Auto" if au else None, gr)
+                     if x and str(x).strip().lower() not in tl]
             return " ".join(dict.fromkeys([t] + bouts if t else bouts)).strip()
-        L = [(r[0], titre_de(r), r[2]) for r in R]
+
+        def joueur_de(j):
+            j = str(j or "").strip()
+            return re.split(r"\s*(?:/|&|\+|,|\bet\b|\band\b)\s*", j)[0].strip() or None if j else None
+        L = [(r[0], titre_de(r), joueur_de(r[2])) for r in R]
         import hashlib
         import score_modele
         cle = (comptes.courant() or "local") + ":" + str(score_modele._M.get("empreinte", 0.0)) + ":" + hashlib.md5(json.dumps(L).encode()).hexdigest()
@@ -5406,6 +5413,35 @@ class Api:
     # consignation : la carte va en encan, comme chez un consignataire ») : le SUIVI de l'envoi. La carte reste dans la
     # collection ; elle porte l'envoi (ou, quand, combien) et l'app avertit quand c'est en retard.
     COMPAGNIES = ("PSA", "BGS", "SGC", "CGC", "TAG", "Autre")
+
+    # 20 nov 2026 (Mathieu : « il manque toute l'info de la carte » dans la liste de consignation) : chaque titre decode en colonnes
+    # (saison, produit, numero, parallele, numerotee, gradation, auto, patch, recrue) ; ce que la carte enregistre a la priorite
+    def consig_details(self, titres):
+        out = []
+        for t in list(titres or [])[:400]:
+            t = str(t or "")[:200]
+            try:
+                d = cartes_match.cible_titre(t)
+            except Exception:
+                d = {}
+            g = d.get("grade") or {}
+            an = d.get("annee")
+            n_ = " " + cartes_match.norm(t) + " "
+            _CONNUS = ("sp authentic", "sp game used", "the cup", "young guns", "ultimate collection", "black diamond", "artifacts", "trilogy",
+                       "premier", "splendor", "tableau", "stature", "ice", "spx", "allure", "credentials", "clear cut", "series 1", "series 2",
+                       "extended series", "o-pee-chee platinum", "metal universe", "parkhurst", "synergy", "chronology", "mvp", "future watch")
+            pr_ = [p_ for p_ in list(cartes_match.PRODUITS) + list(_CONNUS) if len(p_) >= 3 and " " + p_ + " " in n_]
+            prod = (max(pr_, key=len) if pr_ else "").title().replace("Sp ", "SP ").replace("Spx", "SPx").replace("Mvp", "MVP").replace("O-Pee-Chee", "").strip()
+            for mq, nom_ in (("o-pee-chee", "O-Pee-Chee"), ("opc", "O-Pee-Chee"), ("upper deck", "Upper Deck"), ("topps", "Topps"), ("panini", "Panini"), ("bowman", "Bowman")):
+                if " " + mq + " " in n_ and nom_.lower() not in prod.lower():
+                    prod = (nom_ + " " + prod).strip()
+                    break
+            out.append({"annee": (f"{an}-{str(an + 1)[2:]}" if isinstance(an, int) and an >= 1950 else ""), "produit": prod,
+                        "numero": ("#" + str(d["num"])) if d.get("num") else "", "serie": ("/" + str(d["serie"])) if d.get("serie") else "",
+                        "parallele": " ".join(sorted((d.get("paralleles") or set()) - set(d.get("produits") or []))).title(),
+                        "grade": (str(g.get("cie") or "").upper() + " " + str(g.get("note") or "")).strip() if g else "",
+                        "auto": bool(d.get("auto")), "patch": bool(d.get("patch")), "rc": bool(d.get("rc"))})
+        return {"ok": True, "details": out}
 
     def carte_envoi(self, cid, d=None):
         """d = {type: 'gradation'|'encan', ...} pour envoyer ; d = None (ou {retour: ...}) pour la revenue."""

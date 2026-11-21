@@ -193,7 +193,8 @@ def sorte(titre):
     if FLUO.search(t):
         c.append(("D", "fluorescence"))               # 18 nov (Mathieu : « ca vaut pas grand-chose » ; mesure E ; B+ -> D)
     if auto:
-        c.append(("B", "auto"))
+        c.append(("B+", "auto"))                      # 20 nov 2026 (nuit, teste sur ventes jamais vues) : B -> B+ ; le marche dit A-
+                                                      # (10 187 ventes) ; accord 0,797 -> 0,803, A/E 9,6x -> 10,7x, Radar Pro egal
     if patch:
         c.append(("B", "patch"))
     if DAZZ.search(t):
@@ -201,6 +202,14 @@ def sorte(titre):
     if serie:
         s = int(serie)
         c.append(("A-" if s <= 10 else "B+" if s <= 50 else "B" if s <= 199 else "C", "numerotee"))
+    # 20 nov 2026 (Mathieu : « les OPC Platinum Marquee Rookie numerotees sont tres recherchees et collectionnees, surtout avec Lane
+    # Hutson ») : mesure sur nos 648 000 ventes de hockey (prix / prix median du meme joueur) : OPC Platinum recrue /1-10 x5,2 ·
+    # /11-50 x1,8 · /51-99 x1,1 · /100-199 x0,77 · /200-299 x0,52, contre x2,4 · x1,2 · x0,64 · x0,33 pour les autres recrues
+    # numerotees : une tranche plus haut a tirage egal. Teste avant/apres (ventes jamais vues) : accord 80,2 -> 79,9 %, Radar Pro
+    # inchange (71 %) ; garde sur decision de Mathieu (« go »)
+    if serie and rc and OPC_PLAT.search(t) and not auto:
+        s = int(serie)
+        c.append(("A+" if s <= 10 else "A-" if s <= 50 else "B+" if s <= 199 else "B", "opc_plat_num"))   # Mathieu : « les OPC Platinum numerotees sont toutes des cartes B a A+ »
     if yg and serie:
         c.append(("A+", "yg_variante"))               # une YG numerotee est une variante
     # 18 nov 2026 (Mathieu : « les SSP sont au moins A-, les SP B+ ; gradees PSA 10, elles sont tres tres recherchees,

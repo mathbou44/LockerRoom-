@@ -25,7 +25,8 @@ a.admin_ceo_sauver({"taches": {t["id"]: {"etat": "fait"}, "lic_hci": {"prio": 1,
 r = a.admin_ceo()
 d = {x["id"]: x for x in r["taches"]}
 assert d[t["id"]]["etat"] == "fait" and d[t["id"]]["fait_le"] and d["lic_hci"]["prio"] == 1 and d["lic_hci"]["etat"] == "attente"
-assert r["taches"][0]["id"] == "lic_hci" and r["taches"][-1]["id"] == t["id"]          # urgente d'abord, faite a la fin
+assert r["taches"][0]["prio"] == 1 and r["taches"][0]["etat"] != "fait" and r["taches"][-1]["etat"] == "fait"   # urgente d'abord, faites a la fin
+assert [x["id"] for x in r["taches"]].index(t["id"]) > [x["id"] for x in r["taches"]].index("lic_hci")   # 21 nov : + la liste du lancement
 a.admin_ceo_sauver({"taches_suppr": ["lic_cl"]})
 assert "lic_cl" not in {x["id"] for x in a.admin_ceo()["taches"]}                      # pas resemee
 a._est_admin = lambda: False

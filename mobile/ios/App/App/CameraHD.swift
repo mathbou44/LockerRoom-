@@ -14,6 +14,7 @@ import UIKit
 import AVFoundation
 import ImageIO
 import Capacitor
+import StoreKit
 
 // Le controleur de l'app : le meme que Capacitor, plus la camera HD
 class SCBridgeViewController: CAPBridgeViewController {
@@ -28,8 +29,22 @@ public class CameraHDPlugin: CAPPlugin, CAPBridgedPlugin {
     public let jsName = "CameraHD"
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "infos", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "prendre", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "prendre", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "avis", returnType: CAPPluginReturnPromise)
     ]
+
+    // 20 nov 2026 (Mathieu : « une methode de notation pour notre app ») : la fenetre de note d'Apple, dans l'app.
+    // Apple decide si elle s'affiche (au plus 3 fois par an par personne) ; on ne sait jamais la note donnee.
+    @objc public func avis(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            guard let scene = UIApplication.shared.connectedScenes
+                    .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene else {
+                call.resolve(["ok": false]); return
+            }
+            SKStoreReviewController.requestReview(in: scene)
+            call.resolve(["ok": true])
+        }
+    }
 
     @objc public func infos(_ call: CAPPluginCall) {
         guard let c = ChoixCamera.meilleur(mode: "carte") else { call.resolve(["ok": false]); return }
