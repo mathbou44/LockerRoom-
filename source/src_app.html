@@ -6255,16 +6255,29 @@ html.tel-large .fen.fa .fen-img{max-height:calc(46vh / 1.12) !important}
 /* 21 nov 2026 (Mathieu, Breaks a l'ordi : « tout l'espace perdu dans les lignes : maximiser, des slabs cote a cote ») : les
    joueurs en grille de petits slabs (l'etiquette en haut a la couleur de l'equipe) ; un slab ouvert prend toute la largeur */
 @media (min-width:1100px){
-  html body #an-z .score-liste{display:grid !important; grid-template-columns:repeat(auto-fill, minmax(290px, 1fr)); gap:10px !important;
-    background:none !important; border-radius:0 !important; overflow:visible !important}
-  html body #an-z .score-liste > .score-bloc.simple{border-radius:14px !important; overflow:hidden; border:1px solid rgba(255,255,255,.09) !important;
-    background:linear-gradient(180deg, color-mix(in srgb, var(--eq, #8B8BA0) 14%, #1c1c24), #1a1a21 70%) !important; padding-top:5px}
-  html body #an-z .score-liste > .score-bloc.simple::before{content:''; position:absolute; top:0; left:0; right:0; height:5px;
-    background:linear-gradient(90deg, var(--eq, #9FE6D2), color-mix(in srgb, var(--eq, #B9BEFF) 45%, #fff)) !important}
+  /* 21 nov 2026 (Mathieu : « trop d'information compactee, faut ventiler ; c'est loin d'etre Apple ») : moins de slabs par rangee
+     (3 ou 4, plus 5), de l'air entre eux et dedans, et une seule information par slab : le joueur, sa chance, sa note. La petite
+     lettre SlabIQ et le rang sortent de la grille (ils restent dans le detail, un toucher) */
+  html body #an-z .score-liste{display:grid !important; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:16px !important;
+    background:none !important; border-radius:0 !important; overflow:visible !important; padding-top:6px}
+  html body #an-z .score-liste > .score-bloc.simple{border-radius:18px !important; overflow:hidden; border:1px solid rgba(255,255,255,.07) !important;
+    background:linear-gradient(180deg, color-mix(in srgb, var(--eq, #8B8BA0) 9%, #1b1b22), #18181e 75%) !important; padding-top:3px;
+    transition:transform .15s ease, border-color .15s ease}
+  html body #an-z .score-liste > .score-bloc.simple:hover{transform:translateY(-1px); border-color:rgba(255,255,255,.16) !important}
+  html body #an-z .score-liste > .score-bloc.simple::before{content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg, var(--eq, #9FE6D2), color-mix(in srgb, var(--eq, #B9BEFF) 45%, #fff)) !important; opacity:.85}
   html body #an-z .score-liste > .score-bloc.simple + .score-bloc.simple::before{left:0}
   html body #an-z .score-liste > .score-bloc.simple:has(> .exp-z:not([hidden])){grid-column:1 / -1}
-  html body #an-z .score-liste > .score-bloc.simple .score-l{min-height:60px; padding:8px 10px !important}
-  html body #an-z .score-liste > .score-bloc.simple .rang{width:auto; min-width:16px; font-size:13px}
+  html body #an-z .score-liste > .score-bloc.simple .score-l{min-height:84px; padding:16px 18px !important; gap:16px !important}
+  html body #an-z .score-liste > .score-bloc.simple .score-l:hover{background:none}
+  html body #an-z .score-liste > .score-bloc.simple .rang, html body #an-z .score-liste > .score-bloc.simple .an-iq{display:none !important}
+  html body #an-z .score-liste > .score-bloc.simple .vig, html body #an-z .score-liste > .score-bloc.simple .vig-j,
+  html body #an-z .score-liste > .score-bloc.simple .ecusson, html body #an-z .score-liste > .score-bloc.simple .ecu-eq{width:48px !important; height:48px !important}
+  html body #an-z .score-liste > .score-bloc.simple .sl-n{gap:5px}
+  html body #an-z .score-liste > .score-bloc.simple .sl-n b{font-size:17.5px; font-weight:600; letter-spacing:-.005em}
+  html body #an-z .score-liste > .score-bloc.simple .sl-n > span{font-size:13.5px; opacity:.8}
+  html body #an-z .score-liste > .score-bloc.simple .score{min-width:54px; padding:9px 10px; border-radius:14px}
+  html body #an-z .score-liste > .score-bloc.simple .score small{display:none}
   html body #an-z .score-liste > .vide{grid-column:1 / -1}
 }
 /* 21 nov 2026 (Mathieu : « l'entete ne devrait pas avoir le fond noir ; on devrait voir le fond derriere chaque entete du site ») :

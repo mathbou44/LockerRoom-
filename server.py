@@ -340,10 +340,61 @@ except ValueError:
     _LENT_S = 2.0
 
 
+# 21 nov 2026 (Mathieu : « repasse tous les codes pour maximiser la reponse et la rapidite du serveur ») : le journal de Render
+# montre que le serveur est rapide en regime normal, et tres lent 3 a 5 minutes apres CHAQUE mise a jour (caches vides + les
+# memes calculs lances 2-3 fois en meme temps). Pour savoir OU le temps passe en vrai (avec les vraies donnees) :
+#  - chaque ligne « Lent » dit combien de requetes roulaient en meme temps ;
+#  - un gardien note, au plus une fois par 20 s, la pile d'appels (fichier:ligne, jamais une donnee) d'une requete qui dure
+#    depuis plus de LR_PILE_S secondes (8 par defaut) : « Pile lente : ... ».
+_EN_VOL = {}                      # id du fil -> (debut, chemin)
+_EN_VOL_VERROU = threading.Lock()
+try:
+    _PILE_S = float(os.environ.get("LR_PILE_S") or 8.0)
+except ValueError:
+    _PILE_S = 8.0
+
+
+def en_vol():
+    return len(_EN_VOL)
+
+
+def _gardien_piles():
+    import traceback
+    dernier = 0.0
+    while True:
+        time.sleep(4)
+        try:
+            m = time.perf_counter()
+            if m - dernier < 20 or _PILE_S <= 0:
+                continue
+            with _EN_VOL_VERROU:
+                lents = sorted(((m - t0, ch, tid) for tid, (t0, ch) in _EN_VOL.items() if m - t0 >= _PILE_S), reverse=True)
+            if not lents:
+                continue
+            d, ch, tid = lents[0]
+            fr = sys._current_frames().get(tid)
+            if fr is None:
+                continue
+            pile = [f"{os.path.basename(f.filename)}:{f.lineno} {f.name}" for f in traceback.extract_stack(fr)
+                    if "site-packages" not in f.filename and "/lib/python" not in f.filename][-7:]
+            print(f"Pile lente : {ch} {d:.0f} s · {len(_EN_VOL)} en cours · " + " < ".join(reversed(pile)), flush=True)
+            dernier = m
+        except Exception:
+            pass
+
+
 @app.before_request
 def _chrono_debut():
     from flask import g
     g._t0 = time.perf_counter()
+    if request.path.startswith("/api/"):
+        with _EN_VOL_VERROU:
+            _EN_VOL[threading.get_ident()] = (g._t0, request.path)
+
+
+@app.teardown_request
+def _chrono_sortie(_e=None):
+    _EN_VOL.pop(threading.get_ident(), None)
 
 
 @app.after_request
@@ -353,7 +404,7 @@ def _chrono_fin(rep):
     if t0 is not None and _LENT_S > 0:
         d = time.perf_counter() - t0
         if d >= _LENT_S and request.path != "/sante":
-            print(f"Lent : {request.method} {request.path} {d:.1f} s ({rep.status_code})", flush=True)
+            print(f"Lent : {request.method} {request.path} {d:.1f} s ({rep.status_code}) · {len(_EN_VOL)} en cours", flush=True)
     return rep
 
 
@@ -1704,6 +1755,46 @@ def _hote_local_ok():
         return h in {socket.gethostname().lower(), socket.getfqdn().lower(), socket.gethostname().lower() + ".local"}
 
 
+# 21 nov 2026 (vitesse) : le journal montre les MEMES lectures lancees 2 ou 3 fois au meme instant par le meme ecran
+# (inventaire_scores x3 : 53, 83 et 110 s ; inventaire_tableaux x3 ; admin_resume x2...). Chacune refaisait tout le calcul et
+# elles se ralentissaient entre elles. Maintenant : une seule calcule, les autres attendent SA reponse. Seulement pour des
+# lectures, seulement entre appels identiques de la MEME session (memes temoins, meme appareil) : rien ne change au resultat.
+_PARTAGEABLES = frozenset("""inventaire_scores inventaire_tableaux inventaire_liste analyse_break accueil acheteur_accueil mes_deals
+deals_liste admin_resume budget_etat catalogue_liste astuces astuces_baseball watch_liste accueil_live conseils quoi_de_neuf
+accueil_progres joueur_fiche tendance_joueur produits_liste bilan reglages_lire collection collection_sets admin_ceo
+baseball_statut baseball_joueur consignataires_liste forfait tendances_iq""".split())
+_VOLS = {}
+_VOLS_VERROU = threading.Lock()
+
+
+def _appel_partage(nom, args, m):
+    if nom not in _PARTAGEABLES:
+        return m(*args)
+    try:
+        import hashlib
+        qui = hashlib.sha256(((request.headers.get("Cookie") or "") + "|" + (request.headers.get("User-Agent") or "")).encode()).hexdigest()
+        cle = (comptes.courant(), qui, nom, json.dumps(args, sort_keys=True, default=str))
+    except Exception:
+        return m(*args)
+    with _VOLS_VERROU:
+        v = _VOLS.get(cle)
+        chef = v is None
+        if chef:
+            v = _VOLS[cle] = {"ev": threading.Event(), "res": None, "ok": False}
+    if not chef:
+        if v["ev"].wait(100) and v["ok"]:
+            return v["res"]
+        return m(*args)                      # le premier a echoue ou tarde trop : ce fil fait son propre calcul
+    try:
+        v["res"] = m(*args)
+        v["ok"] = True
+        return v["res"]
+    finally:
+        with _VOLS_VERROU:
+            _VOLS.pop(cle, None)
+        v["ev"].set()
+
+
 @app.route("/api/<nom>", methods=["POST"])
 def dispatcher(nom):
     if nom.startswith("_") or nom in _INTERNES:
@@ -1739,7 +1830,7 @@ def dispatcher(nom):
             activite.noter_api(nom, comptes.courant())
         except Exception:
             pass
-        res = m(*args)
+        res = _appel_partage(nom, args, m)
         if nom == "ebay_url_connexion" and isinstance(res, dict) and res.get("url"):
             return _lier_navigateur(jsonify(res), res["url"])
         return jsonify(res)
@@ -2178,8 +2269,29 @@ def _rechauffer():
         _rechauffer0()
 
 
+def _attendre_calme(maxi=90):
+    """Le travail de fond laisse passer les clients : il attend qu'aucune requete de l'app ne roule (au plus maxi secondes)."""
+    t0 = time.time()
+    while len(_EN_VOL) > 0 and time.time() - t0 < maxi:
+        time.sleep(0.5)
+
+
 def _rechauffer0():
-    time.sleep(int(os.environ.get("LR_RECHAUFFER_S") or 20))
+    # 21 nov 2026 (vitesse) : le modele SlabIQ, le catalogue et la presence au catalogue etaient charges par le PREMIER client
+    # apres une mise a jour (4,5 s seul ; 50 a 110 s quand plusieurs ecrans le demandaient en meme temps). Maintenant : charges
+    # 3 s apres le demarrage, avant que les clients reviennent.
+    time.sleep(3)
+    try:
+        import score_modele
+        import demande_legale
+        import catalogue as _cat
+        score_modele.charger()
+        demande_legale.presence_catalogue()
+        _cat.liste()
+        score_modele.scores(["2024-25 Upper Deck Young Guns Macklin Celebrini #451 RC"], [None])
+    except Exception as e:
+        print("Rechauffage (modele) : " + repr(e)[:160], flush=True)
+    time.sleep(max(0, int(os.environ.get("LR_RECHAUFFER_S") or 20) - 3))
     try:
         import deals
         for i, g in enumerate((deals.lire_vite() or {}).get("deals") or []):
@@ -2201,6 +2313,7 @@ def _rechauffer0():
         # 16 nov 2026 : les memes arguments que l'ecran de l'acheteur (meme cle de cache) ; tous les produits, du plus recent
         # au plus vieux : le SlabIQ de leurs joueurs est garde sur le disque, seul le tout premier passage coute
         for p in sorted(catalogue.liste(), key=lambda x: str(x.get("sortie") or ""), reverse=True):
+            _attendre_calme()                    # 21 nov 2026 : jamais pendant qu'un client attend une reponse
             try:
                 api.analyse_break({"produit_id": p["id"], "boites": 1, "mode": "equipes", "cout_boite": 0, "decote": 0,
                                    "prix_demandes": {}, "prix_joueurs": {}, "acheteur": True})
@@ -2239,6 +2352,8 @@ def _revalider_deals():
 
 if HEBERGE and os.environ.get("LOCKERROOM_TACHES", "1") == "1":
     demarrer_taches()          # gunicorn importe ce fichier : 1 seul worker (voir render.yaml)
+if HEBERGE:
+    threading.Thread(target=_gardien_piles, daemon=True).start()
 
 
 if __name__ == "__main__":

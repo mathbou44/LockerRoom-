@@ -148,7 +148,25 @@ SEMIS["matin_21nov"] = [
     ("m_mot", "Valider ton mot de fondateur sur l'accueil du site", "« Comme un conseiller financier. Mais pour tes cartes. » + la petite note « pas des conseils financiers ». Dis à Claude si tu veux changer un mot.", 3, None, "https://www.slabcoach.com/#mot", None),
     ("m_poe", "Vérifier une Program of Excellence dans le Radar après le push", "Ex. la Celebrini « Young Guns Canvas POE » : elle doit se comparer aux POE (60 à 100 $), plus aux Young Guns Canvas.", 2, None, None, "2026-11-22"),
 ]
-SEMIS_PROJET = {"licences_fc": "licences", "lancement_1dec": "lancement", "securite_21nov": "lancement", "matin_21nov": "lancement"}
+# 21 nov 2026 (Mathieu : « il me reste quoi a faire pour rendre mon site, les donnees des utilisateurs et mes donnees
+# inviolables ? ») : ce qui reste, par ordre de risque reel. Le plus grand risque n'est pas le code : c'est un de TES comptes vole.
+SEMIS["securite_reste"] = [
+    ("sr_2fa", "Activer la 2FA sur TOUS les comptes qui tiennent les clés", "Le risque no 1 : un compte volé donne tout. Avec une app d'authentification (pas le SMS) : GitHub, Render, Cloudflare, Stripe, Apple (développeur), eBay (développeur et vendeur), Google (ton Gmail), le registraire du domaine, Codemagic, Anthropic. Garde les codes de secours dans ton gestionnaire de mots de passe.", 1, None, None, "2026-11-23"),
+    ("sr_github", "GitHub : dépôt privé, analyse des secrets, branche main protégée", "Settings → General : le dépôt LockerRoom- doit être Private. Settings → Code security : activer Secret scanning et Push protection. Vérifier qui a accès (Collaborators).", 1, None, "https://github.com/mathbou44/LockerRoom-/settings", "2026-11-23"),
+    ("sr_restaure", "Sauvegarde : vérifier qu'elle part chaque nuit, et tester UNE restauration", "Admin → Sécurité : la sauvegarde R2 doit être « active » avec une date d'hier. Puis télécharger un .zip et vérifier qu'il s'ouvre (une sauvegarde jamais testée n'en est pas une).", 2, None, None, "2026-11-27"),
+    ("sr_admin", "Admin : confirmer la 2e vérification (iPhone relié + code de secours)", "La console admin demande un code envoyé sur ton iPhone. Vérifie que ton iPhone est relié et que le code de secours (LOCKERROOM_ADMIN_CODE) est dans Render et dans ton gestionnaire de mots de passe.", 2, None, None, "2026-11-25"),
+    ("sr_loi25", "Loi 25 : ouvrir un registre des incidents de confidentialité (même vide)", "Tu es déjà nommé responsable dans la Politique de confidentialité. Il reste le registre (un simple document daté). En cas d'incident sérieux : aviser la CAI et les personnes touchées. À valider avec un avocat.", 3, None, "https://www.cai.gouv.qc.ca", "2026-11-28"),
+    ("sr_plan", "Plan d'incident d'une page : quoi faire si un compte ou une clé est volé", "Claude l'écrit : dans l'ordre, changer les clés dans Render, révoquer les sessions, vérifier Stripe, restaurer la sauvegarde, aviser. Tu le relis et tu le gardes hors de l'app.", 3, None, None, "2026-11-28"),
+    ("sr_alertes", "Alertes : Render (déploiement raté, service tombé) et Stripe (Radar) vers ton courriel", "Render → Settings → Notifications. Stripe → Radar : règles par défaut activées. Un moniteur gratuit (ex. UptimeRobot) sur /sante.", 3, None, None, "2026-11-28"),
+    ("sr_c_deps", "Claude : audit des dépendances et test 2 comptes avant le 1er décembre", "pip-audit sur requirements.txt + le test « personne ne voit les données d'un autre » sur tous les écrans, sur la version finale.", 2, None, None, "2026-11-28"),
+]
+# 21 nov 2026 (Mathieu : « repasse tous les codes pour maximiser la reponse et la rapidite du serveur ») : la suite de la revue
+SEMIS["vitesse_21nov"] = [
+    ("v_piles", "Après le push : demander à Claude « regarde les piles lentes »", "Le serveur note maintenant OÙ il perd son temps (lignes « Pile lente » du journal Render). 30 minutes après le push, Claude les lit et corrige les vrais points lents, avec tes vraies données.", 1, None, None, "2026-11-22"),
+    ("v_push", "À partir du 1er décembre : pousser tôt le matin ou tard le soir", "Chaque mise à jour redémarre le serveur : 3 à 5 minutes plus lentes pour tout le monde. Jamais en pleine soirée.", 2, None, None, "2026-12-01"),
+    ("v_c_radar", "Claude : accélérer l'ouverture du Radar (3,5 s à chaque fois)", "La seule lenteur en régime normal dans le journal : deals_liste 3,4 à 3,9 s, annonce_detail 2,3 à 3 s.", 2, None, None, "2026-11-25"),
+]
+SEMIS_PROJET = {"licences_fc": "licences", "lancement_1dec": "lancement", "securite_21nov": "lancement", "matin_21nov": "lancement", "securite_reste": "lancement", "vitesse_21nov": "lancement"}
 PROJETS = {"licences": "Licences de données", "lancement": "Lancement", "general": "Général", "suivi": "Suivi"}
 
 

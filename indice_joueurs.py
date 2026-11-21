@@ -960,12 +960,21 @@ def passe_si_besoin():
 
 
 # -- 4. lectures ------------------------------------------------------------------------------------------------------
+_IDX_NORM = {"id": None, "d": {}}
+
+
 def indice(nom):
     I = lire().get("indice") or {}
     if nom in I:
         return I[nom]
-    k = _norm(nom)
-    return next((v for n, v in I.items() if _norm(n) == k), None)
+    # 21 nov 2026 (vitesse) : un nom ecrit autrement (accent, casse) faisait normaliser les ~900 noms a CHAQUE appel (des
+    # centaines d'appels par ecran de break) ; la table des noms normalises est faite une fois par version de l'indice
+    if _IDX_NORM["id"] != id(I):
+        d = {}
+        for n, v in I.items():
+            d.setdefault(_norm(n), v)
+        _IDX_NORM["d"], _IDX_NORM["id"] = d, id(I)
+    return _IDX_NORM["d"].get(_norm(nom))
 
 
 def top(n=12, filtre=None, actifs=None):
