@@ -6334,6 +6334,23 @@ html body .ecran.bk-page > .entete::before{display:none !important}
 .csg-i > .csg-v{flex:0 0 30px !important; width:30px !important; height:42px}
 .csg-eb.csg-q{display:flex; flex-direction:column; gap:6px; border-color:color-mix(in srgb, var(--rouge) 45%, var(--ligne)) !important} .csg-eb.csg-q b{font-size:15px; color:var(--texte)}
 .csg-eb.csg-q span{font-size:13px; line-height:1.35} .csg-eb.csg-q > div{display:grid; grid-template-columns:1fr 1.4fr; gap:8px; margin-top:4px} .csg-eb.csg-q .btn{margin:0; min-height:40px}
+/* 21 nov 2026 (Mathieu, Profil : « info, design, layout ; pense Apple ; identique de page en page ») */
+.acc-pil .ap-v{flex:none; max-width:42%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14.5px; font-weight:500; color:var(--doux)}
+.acc-pil .ap-v.ok{color:var(--vert)} .acc-pil .ap-v.a{color:var(--acc); font-weight:600}
+.acc-pil .ap-v.ok::before{content:''; display:inline-block; width:7px; height:7px; margin-right:6px; border-radius:50%; background:currentColor; vertical-align:1px}
+/* a l'ordi : deux colonnes (une ligne de 1 350 px eloignait le mot de son etat ; l'oeil n'a plus a traverser l'ecran) */
+@media (min-width:1100px){ html:not(.tel-large) .ecran.reglages #g-pils{display:grid !important; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px 14px; align-items:stretch} html:not(.tel-large) .ecran.reglages #g-pils > .acc-pil{margin:0 !important} }
+/* une seule facon de titrer une feuille de reglage : le titre de la feuille ; le bloc n'a plus sa boite ni sa petite etiquette */
+.feuille h3.f-titre{margin:2px 48px 14px 2px; font-size:20px; font-weight:700; letter-spacing:0; text-transform:none}
+.feuille .f-ret{height:32px; margin:-4px 0 4px -4px; font-size:15.5px; cursor:pointer}
+.feuille .f-bloc.f-uni > .r-bloc{background:none !important; border:0 !important; box-shadow:none !important; padding:0 !important; margin:0 !important; border-radius:0 !important}
+.feuille .f-bloc.f-uni > .r-bloc > .r-titre, .feuille .f-bloc.f-uni > details.r-bloc > summary{display:none !important}
+.feuille .f-bloc.f-uni > .r-bloc::before, .feuille .f-bloc.f-uni > .r-bloc::after{display:none !important}
+/* les liens du compte : de vraies lignes qu'on voit qu'on peut toucher (44 px, un chevron) */
+.feuille .f-bloc.f-uni .r-lien{display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; min-height:48px; padding:0 2px; font-size:16px; text-align:left; border-bottom:1px solid var(--ligne); align-self:stretch; color:var(--texte); text-decoration:none; box-sizing:border-box}
+.feuille .f-bloc.f-uni .r-lien.danger{color:var(--rouge)}
+.feuille .f-bloc.f-uni .r-lien::after{content:'›'; flex:none; color:var(--doux); font-size:20px; line-height:1}
+.feuille .f-bloc.f-uni .r-lien:last-of-type{border-bottom:0}
 /* 21 nov 2026 (Mathieu : « les icones doivent toutes etre dans le meme format et style que celui ecrit Key, un par-dessus
    l'autre, comme des badges ») : un seul badge (.sd-b) pour tout ce qui se pose sur la photo d'un slab */
 html body .sd-ph .sd-cs{position:absolute; left:6px; top:6px; z-index:3; display:flex; flex-direction:column; align-items:flex-start; gap:4px; max-width:calc(100% - 50px)}
@@ -7272,6 +7289,7 @@ function route(){
   if (!vues[ecran]) { location.replace('#accueil'); return; }
   vues[ecran](arg);
 }
+window.addEventListener('hashchange', (e) => { try { S.hashAvant = new URL(e.oldURL).hash || ''; } catch (er) {} });      // d'ou on arrive (pour un retour qui ramene au bon ecran)
 window.addEventListener('hashchange', route);
 // ============================================================
 // 13 nov 2026 (Mathieu : « bien separer les sports ; un selecteur Hockey / Baseball ; chaque ecran baseball s'allume quand
@@ -13985,6 +14003,7 @@ const MAJ_APP = () => [
     ['colis', tt('Consignation au cell', 'Consignment on your phone'), tt('La liste Excel ou PDF se crée maintenant sur ton téléphone. Les cartes en vente sur eBay sont retirées d’eBay, après ton OK.', 'The Excel or PDF list now works on your phone. Cards for sale on eBay are removed from eBay, after your OK.')],
     ['graphe', tt('Tes prix, mieux jugés', 'Your prices, judged better'), tt('Un prix jusqu’à la plus haute vente récente n’est plus « trop cher ». Une tuile « À ajuster » montre les annonces au-dessus du marché.', 'A price up to the highest recent sale is no longer “too high”. A “To adjust” tile shows listings above market.')],
     ['breaks', tt('Breaks plus clairs', 'Clearer Breaks'), tt('Les joueurs en slabs côte à côte, avec la cote SlabIQ du joueur.', 'Players as slabs side by side, with the player’s SlabIQ rating.')],
+    ['profil', tt('Profil plus clair', 'Clearer Profile'), tt('Chaque ligne montre son état (eBay connecté, ton sport, tes frais). Depuis un réglage, un retour ramène à la liste.', 'Each row shows its state (eBay connected, your sport, your fees). From a setting, a back link returns to the list.')],
     ['etoile', tt('Chance de séries sur chaque carte', 'Playoff chance on every card'), tt('Dans le Radar, un trophée et un % : la chance que l’équipe du joueur fasse les séries. Les repères (En feu, Buzz, Clé…) ont tous le même badge.', 'In the Radar, a trophy and a %: the chance the player’s team makes the playoffs. Markers (On fire, Buzz, Key…) all share the same badge.')],
   ]},
   {n: 240, le: '2026-11-20', points: [
@@ -15215,10 +15234,15 @@ function rangeeBreak(b){
 async function vueBreaks(arg){
   if (['calc', 'liste', 'produits'].includes(arg)) S.ongletBreaks = arg;
   const o = S.ongletBreaks;
+  // 21 nov 2026 (Mathieu : « aucun moyen de revenir une fois My breaks clique ») : un vrai retour en haut a gauche, comme
+  // partout (‹ Breaks), a la place de la grosse tuile « Analyser un produit » qui menait au meme ecran sans le dire
+  // (ouvert depuis le Profil : le retour ramene au Profil ; sinon a l'ecran Breaks)
+  if (S.hashAvant && !/^#breaks?(\/|$)/.test(S.hashAvant)) S.breaksDe = S.hashAvant;
+  const deProfil = /^#reglages/.test(S.breaksDe || '');
   V().innerHTML = `<section class="ecran">
-    <div class="entete"><div class="titre">Breaks</div>
-      <button class="rond acc" id="b-plus" aria-label="Nouveau">${ICONES.plus}</button></div>
-    <a class="tuile-analyse" href="#analyse"><b>${tt('Analyser un produit', 'Analyze a product')}</b><span>${tt('Prix de chaque place selon ton coût et ta marge, chances de recrue et de hit', 'Price of each spot from your cost and margin, rookie and hit odds')}</span><span class="go">→</span></a>
+    <a class="retour" href="${deProfil ? '#reglages' : '#analyse'}">${ICONES.retour} ${deProfil ? tt('Profil', 'Profile') : 'Breaks'}</a>
+    <div class="entete"><div class="titre">${tt('Mes breaks', 'My breaks')}</div>
+      <button class="rond acc" id="b-plus" aria-label="${esc(tt('Nouveau', 'New'))}">${ICONES.plus}</button></div>
     <div class="seg">${[['calc','Calculer'],['liste','Mes breaks'],['produits','Produits']].map(([k, t]) => `<button data-o="${k}" class="${o === k ? 'on' : ''}">${t}</button>`).join('')}</div>
     <div id="b-corps">${roue}</div></section>`;
   $$('.seg button', V()).forEach(b => b.onclick = () => { location.hash = '#breaks/' + b.dataset.o; });
@@ -22274,7 +22298,7 @@ async function vueReglages(arg){
     $('#g-reessai').onclick = () => vueReglages(arg);
     return;
   }
-  appliquerActivites(act);
+  appliquerActivites(act); S.activitesProfil = act;
   const pal = r.paliers_rachat || [];
   // 23 oct 2026 (Mathieu : « la section reglages est beaucoup trop lourde ») - 4 blocs simples ;
   // le technique (sandbox, appels API, cles, EPN, avis eBay) dans « Avancé », ferme.
@@ -22464,39 +22488,86 @@ function pastillerReglages(){
   const gf = $('#g-forfait'); if (gf) res.appendChild(gf);
   $$('.profil-tete [data-pro-ouvrir]').forEach(b => b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); vibrer();
     const g = $('#g-forfait'); if (g && !g.hidden && g.innerHTML.trim()) { g.hidden = false; feuilleBloc(g); } else feuillePro(); });
+  // 21 nov 2026 (Mathieu : « analyser toute la section Profil : info, design, layout ; l'humain est paresseux ; pense Apple ;
+  // le meme design de page en page ») :
+  //  - chaque ligne dit son ETAT (eBay connecte, le sport, le nom de la boutique...) : on sait sans ouvrir (reconnaitre
+  //    plutot que se rappeler) ;
+  //  - des noms qui ne se repetent plus (« Ma boutique › Ma boutique », « aide » a deux endroits, « Mon profil » dans le Profil) ;
+  //  - une icone qui dit la chose (plus de crochet passe-partout) ;
+  //  - toutes les feuilles de reglage ont LE meme titre (plus de petite etiquette dans une boite dans la feuille) ;
+  //  - depuis un reglage, « ‹ le groupe » ramene a la liste du groupe (changer deux reglages sans tout refaire).
+  const multi_ = !!(S.forfait || {}).multi;
+  const NOMS = [[/^(ma boutique|my store)$/i, tt('Nom et logo', 'Name and logo'), 'boutique'],
+    [/^(mon profil|my profile)$/i, tt('Mon niveau et mon but', 'My level and goal'), 'cible'],
+    [/^(compte et aide|account and help)$/i, multi_ ? tt('Soutien, conditions, déconnexion', 'Support, terms, sign out') : tt('Soutien et conditions', 'Support and terms'), 'aide'],
+    [/^(ce que je fais|what i do)$/i, tt('Mes onglets', 'My tabs'), 'reglages'],
+    [/tour de l|app tour/i, tt('Le tour de l’app', 'App tour'), 'oeil'],
+    [/entra[iî]nement|training/i, tt('Entraînement de l’IA', 'AI training'), 'ampoule']];
+  const nomDe = (t) => { const x = NOMS.find(([re]) => re.test(t)); return x ? [x[1], x[2]] : [t, icone(t)]; };
+  // l'etat d'un reglage, en un ou deux mots (rien si on ne sait pas)
+  const r_ = S.reglages || {};
+  const etatDe = (t) => {
+    try {
+      if (/ebay/i.test(t) && !/partner/i.test(t)) { const e = S.ebayStatut; return e ? (e.connecte ? ['ok', tt('Connecté', 'Connected')] : ['a', tt('À connecter', 'Not connected')]) : null; }
+      if (/sport/i.test(t)) return ['', nomSport(r_.sport || 'hockey')];
+      if (/palette/i.test(t)) { const pl = PALETTES.find(x => x.k === clePalette(r_.palette)); return pl ? ['', tt(pl.fr, pl.en)] : null; }
+      if (/^(ma boutique|my store)$/i.test(t)) return r_.nom_boutique && r_.nom_boutique !== 'Ma boutique' ? ['', r_.nom_boutique] : null;
+      if (/photo/i.test(t)) return ['', r_.photo_studio === false ? tt('Telles quelles', 'As they are') : tt('Fond flou', 'Blurred')];
+      if (/frais|fees/i.test(t)) return r_.frais_ebay_pct != null ? ['', 'eBay ' + r_.frais_ebay_pct + ' %'] : null;
+      if (/entra[iî]nement|training/i.test(t)) return ['', r_.ia_entrainement_ok ? tt('Activé', 'On') : tt('Désactivé', 'Off')];
+      if (/^(ce que je fais|what i do)$/i.test(t)) { const a_ = S.activitesProfil || {}; return ['', [tt('eBay', 'eBay'), a_.breaks && 'Breaks', a_.magasin && tt('Comptoir', 'Counter')].filter(Boolean).join(' · ')]; }
+    } catch (e) {}
+    return null;
+  };
+  const valHtml = (e) => e && e[1] ? `<span class="ap-v ${e[0] || ''}">${esc(e[1])}</span>` : '';
+  const poser = (el, e) => { if (!el) return; const v = el.querySelector('.ap-v'); if (v) v.remove(); const h = valHtml(e); if (h) el.querySelector('i').insertAdjacentHTML('beforebegin', h); };
   const ordre = (t) => ['ebay', 'profil', 'deals', 'faire', 'photo', 'boutique', 'frais', 'palette', 'sport', 'guide', 'idee', 'news', 'admin', 'aide'].indexOf(icone(t));
   const items = blocs.map(b => ({b, t: titreDe(b)})).filter(x => x.t).sort((x, y) => ordre(x.t) - ordre(y.t)).map(({b, t}) => {
     res.appendChild(b);
-    return {t, ic: icone(t), ouvrir: () => {
+    const [lib, ic] = nomDe(t);
+    return {t, lib, ic, ouvrir: (retour) => {
       if (b.matches('button, a')) { fermerFeuille(); b.click(); return; }   // Mon profil, Le tour, Une idée : leur action
       if (b.tagName === 'DETAILS') b.open = true;
-      feuilleBloc(b, '', formulaire(b) ? `<button class="btn" id="g-ok-f">${tt('Enregistrer', 'Save')}</button>` : '');
+      feuilleBloc(b, `${retour ? `<button class="retour f-ret" id="gg-ret" type="button">${ICONES.retour} ${esc(retour[0])}</button>` : ''}<h3 class="f-titre">${esc(lib)}</h3>`, formulaire(b) ? `<button class="btn" id="g-ok-f">${tt('Enregistrer', 'Save')}</button>` : '');
+      $('#f-bloc').classList.add('f-uni');
+      const gr = $('#gg-ret'); if (gr) gr.onclick = () => { vibrer(); retour[1](); };
       const f = $('#g-ok-f'); if (f) f.onclick = async () => { await $('#g-ok').onclick(); fermerFeuille(); };
     }};
   });
   // 9 nov 2026 (Mathieu : « on pourrait pas regrouper quelques onglets ? ca fait beaucoup ») : 16 lignes -> 6 groupes ;
   // un groupe s'ouvre dans une feuille avec ses reglages ; un groupe d'un seul reglage l'ouvre directement
   const GROUPES = [
-    ['compte', tt('Mon compte', 'My account'), 'profil', tt('eBay, appareils, aide', 'eBay, devices, help'), /ebay|appareil|device|compte et aide|account and help/i],
-    ['prefs', tt('Mes préférences', 'My preferences'), 'palette', tt('Profil, deals, sport, couleurs', 'Profile, deals, sport, colors'), null],
+    ['compte', tt('Mon compte', 'My account'), 'profil', multi_ ? tt('eBay, appareils, déconnexion', 'eBay, devices, sign out') : tt('eBay, soutien, conditions', 'eBay, support, terms'), /ebay|appareil|device|compte et aide|account and help/i],
+    ['prefs', tt('Mes préférences', 'My preferences'), 'palette', tt('Deals, sport, couleurs, onglets', 'Deals, sport, colors, tabs'), null],
     ['notifs', tt('Notifications', 'Notifications'), 'cloche', tt('Ce que je reçois, mes joueurs', 'What I get, my players'), 'lien'],
-    ['boutique', tt('Ma boutique', 'My store'), 'boutique', tt('Logo, photos, frais', 'Logo, photos, fees'), /boutique|store|photos de mes annonces|listing photos|frais|fees/i],
+    ['boutique', tt('Ma boutique', 'My store'), 'boutique', tt('Nom, logo, photos, frais', 'Name, logo, photos, fees'), /boutique|store|photos de mes annonces|listing photos|frais|fees/i],
     ['aide', tt('Aide et idées', 'Help and ideas'), 'aide', tt('Le tour de l’app, nous écrire', 'App tour, write to us'), /tour|idée|idea/i],
     ['donnees', tt('Données et avancé', 'Data and advanced'), 'admin', tt('IA, partage, réglages techniques', 'AI, sharing, technical settings'), /entra[iî]nement|training|partag|share|avanc|advanced/i]];
   const dans = (it) => (GROUPES.find(([k, , , , re]) => re instanceof RegExp && re.test(it.t)) || GROUPES[1])[0];
+  // l'etat montre sur la ligne d'un groupe : celui de son reglage le plus utile
+  const ETAT_G = {compte: /ebay/i, prefs: /sport/i, boutique: /^(ma boutique|my store)$/i};
+  const etatGroupe = (k, membres) => { const m = ETAT_G[k] && membres.find(it => ETAT_G[k].test(it.t)); return m ? etatDe(m.t) : null; };
+  const majs = [];
   GROUPES.forEach(([k, titre, ic, sous]) => {
     const membres = items.filter(it => dans(it) === k);
     if (k !== 'notifs' && !membres.length) return;
     pils.insertAdjacentHTML('beforeend', pilAcc('gg-' + k, ic, `${esc(titre)}<small class="gg-s">${esc(sous)}</small>`, ''));
-    pils.lastElementChild.onclick = () => {
+    const ligne = pils.lastElementChild;
+    poser(ligne, etatGroupe(k, membres)); majs.push(() => poser(ligne, etatGroupe(k, membres)));
+    const ouvrirGroupe = () => {
+      ouvrirFeuille(`<h3 class="f-titre">${esc(titre)}</h3><div class="acc-pils" id="gg-sous"></div>`);
+      membres.forEach((it, i) => { $('#gg-sous').insertAdjacentHTML('beforeend', pilAcc('ggs-' + i, it.ic, esc(it.lib), ''));
+        const l = $('#gg-sous').lastElementChild; poser(l, etatDe(it.t));
+        l.onclick = () => { vibrer(); it.ouvrir([titre, ouvrirGroupe]); }; });
+    };
+    ligne.onclick = () => {
       vibrer();
       if (k === 'notifs') { location.hash = '#notifs/reglages'; return; }
       if (membres.length === 1) { membres[0].ouvrir(); return; }
-      ouvrirFeuille(`<h3>${esc(titre)}</h3><div class="acc-pils" id="gg-sous"></div>`);
-      membres.forEach((it, i) => { $('#gg-sous').insertAdjacentHTML('beforeend', pilAcc('ggs-' + i, it.ic, esc(it.t), ''));
-        $('#gg-sous').lastElementChild.onclick = () => { vibrer(); it.ouvrir(); }; });
+      ouvrirGroupe();
     };
   });
+  window.majValeursProfil = () => { if (pils.isConnected) majs.forEach(f => { try { f(); } catch (e) {} }); };
   // 20 nov 2026 (rapport ergonomie) : « Nouveautés » quitte l'accueil pour le Profil (le point s'allume s'il y a du neuf)
   const nvx = majNonVues().length;
   pils.insertAdjacentHTML('beforeend', pilAcc('gg-maj', 'conseils', `${esc(tt('Nouveautés', 'What’s new'))}<small class="gg-s">${esc(tt('Ce qui a changé dans l’app', 'What changed in the app'))}</small>`, nvx ? String(nvx) : '', 'acc'));
@@ -22560,6 +22631,7 @@ async function rendreBlocEbay(){
   const z = $('#g-ebay'); if (!z) return;
   let s; try { s = await API.ebay_statut(); } catch (e) { z.innerHTML = tag(e.message, 'rouge'); return; }
   marquerEnv(s); S.ebaySite = s.site;
+  S.ebayStatut = s; try { majValeursProfil(); } catch (e) {}
   if (!document.body.contains(z)) return;        // ecran redessine entre-temps (ex. volet change)
   // 22 oct 2026 - heberge : l'EPN et le stockage local sont geres par nous, pas par le client
   if (s.multi) { const e = $('#g-epn-bloc'), l = $('#g-local'); if (e) e.hidden = true; if (l) l.hidden = true; }
