@@ -166,7 +166,14 @@ SEMIS["vitesse_21nov"] = [
     ("v_push", "À partir du 1er décembre : pousser tôt le matin ou tard le soir", "Chaque mise à jour redémarre le serveur : 3 à 5 minutes plus lentes pour tout le monde. Jamais en pleine soirée.", 2, None, None, "2026-12-01"),
     ("v_c_radar", "Claude : accélérer l'ouverture du Radar (3,5 s à chaque fois)", "La seule lenteur en régime normal dans le journal : deals_liste 3,4 à 3,9 s, annonce_detail 2,3 à 3 s.", 2, None, None, "2026-11-25"),
 ]
-SEMIS_PROJET = {"licences_fc": "licences", "lancement_1dec": "lancement", "securite_21nov": "lancement", "matin_21nov": "lancement", "securite_reste": "lancement", "vitesse_21nov": "lancement"}
+SEMIS["consig_21nov"] = [
+    ("cg_test", "Tester la consignation dans l'app iPhone : Excel, PDF et retrait d'eBay", "Inventaire → Consigner → choisir 1 ou 2 cartes en vente sur eBay. 1) La question « Retirer d'eBay ? » apparaît ; 2) Export (Excel) ouvre le fichier dans Safari (Partager pour l'enregistrer) ; 3) Imprimer / PDF ouvre la liste (Partager → Imprimer). Claude n'a pas pu l'essayer dans la vraie app : dis-lui ce qui accroche.", 1, None, None, "2026-11-22"),
+]
+SEMIS["soir_21nov"] = [
+    ("d_series", "Décision : la chance de séries (trophée + %) est maintenant visible par tous dans le Radar", "Avant : admin et Platine seulement. Maintenant : tous les forfaits voient le % (il vient du classement public de la LNH). Le « +x % à la revente », tiré de nos ventes, reste admin et Platine (licence eBay). Si tu préfères garder le % pour le Pro seulement, dis-le à Claude.", 2, None, None, "2026-11-24"),
+    ("c_hagens", "Claude : comprendre pourquoi une seule note d'expert (Hagens B+) fait bouger tout le test SlabIQ", "Testé le 21 nov : Hagens en B+ dans la liste d'experts donnait Radar Pro 71 % → 67,6 % et A/E 10,4× → 9,3× : pas gardé (règle : jamais pire). En attendant, un joueur inconnu du modèle n'a plus de lettre dans Breaks (au lieu d'un « C » trompeur). À creuser avant de noter les espoirs à la main.", 3, None, None, None),
+]
+SEMIS_PROJET = {"licences_fc": "licences", "lancement_1dec": "lancement", "securite_21nov": "lancement", "matin_21nov": "lancement", "securite_reste": "lancement", "vitesse_21nov": "lancement", "consig_21nov": "lancement", "soir_21nov": "lancement"}
 PROJETS = {"licences": "Licences de données", "lancement": "Lancement", "general": "Général", "suivi": "Suivi"}
 
 

@@ -262,7 +262,7 @@ app.config["MAX_CONTENT_LENGTH"] = 64 * 1024 * 1024        # 5 nov 2026 : photos
 #        # 23 oct 2026 - 2 photos ; 3 nov 2026 : + rasantes et 8 gros plans des coins
 # pages qui restent publiques : break partage, retour et avis eBay, pages legales, icones
 _PUBLIQUES = ("/b/", "/api/b/", "/api/ebay_retour", "/ebay/suppression-compte", "/confidentialite", "/conditions",
-              "/support", "/securite", "/security", "/tarifs", "/pricing", "/a-propos", "/about", "/preuve", "/proof", "/slabiq", "/langue", "/robots.txt", "/sitemap.xml", "/logo_sc_", "/syne-800.woff2", "/manrope-", "/barlow-", "/connexion", "/icone", "/favicon", "/manifest.json", "/stripe/webhook", "/apple/notifications", "/sante", "/csp-rapport", "/.well-known/security.txt", "/security.txt")
+              "/support", "/securite", "/security", "/x/", "/tarifs", "/pricing", "/a-propos", "/about", "/preuve", "/proof", "/slabiq", "/langue", "/robots.txt", "/sitemap.xml", "/logo_sc_", "/syne-800.woff2", "/manrope-", "/barlow-", "/connexion", "/icone", "/favicon", "/manifest.json", "/stripe/webhook", "/apple/notifications", "/sante", "/csp-rapport", "/.well-known/security.txt", "/security.txt")
 
 
 import comptes  # noqa: E402
@@ -1245,6 +1245,21 @@ def page_securite():
         from flask import redirect
         return redirect("/connexion")
     return _page_vitrine("securite")
+
+
+@app.route("/x/<jeton>/<nom>")
+def fichier_temporaire(jeton, nom):
+    """21 nov 2026 : un fichier fabrique pour l'app iPhone (liste de consignation), 20 min, lien impossible a deviner."""
+    import re as _re
+    import exports_temp
+    f = exports_temp.lire(jeton) if _re.fullmatch(r"[0-9a-f]{32}", str(jeton or "")) else None
+    if not f:
+        return ("Ce lien n’est plus valide : refais l’export dans l’app. / This link expired: export again in the app.", 404,
+                {"Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store"})
+    h = {"Content-Type": f["type"], "Cache-Control": "private, no-store", "X-Robots-Tag": "noindex"}
+    if not f["type"].startswith("text/html"):       # a l'ordi (?d=1) : telecharge ; au cell : Safari l'ouvre (apercu, Partager)
+        h["Content-Disposition"] = ("attachment" if request.args.get("d") == "1" else "inline") + '; filename="' + _re.sub(r"[^A-Za-z0-9._-]+", "-", f["nom"]) + '"'
+    return (f["octets"], 200, h)
 
 
 @app.route("/a-propos")

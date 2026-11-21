@@ -3107,6 +3107,19 @@ class Api:
                 # recherche ne monte pas plus haut que son indice + 20, meme avec des cartes rares dans le produit
                 iq_ = int(min(g[1], float(ij["indice"]) + 20)) if ij.get("indice") is not None else g[1]
                 pl.setdefault("iq_joueurs", []).append({"nom": j, "iq": iq_, "meilleur": g[2], "carte": g[3], "pastilles": pil[:2]})
+                # 21 nov 2026 (Mathieu, Breaks : « c'est quoi le C ? Hagens est facilement un B+ ») : la petite lettre a cote du
+                # nom etait la moyenne de SES CARTES DANS CE PRODUIT (ponderee par les chances de les tirer) : une autre mesure
+                # que la cote du joueur, sous la meme pastille. Maintenant la pastille montre la cote SlabIQ DU JOUEUR, la meme
+                # que sur sa fiche (_cote_joueur) ; la moyenne du produit reste dans le calcul et le classement.
+                if "equipe" in pl and j == pl.get("cle") and "cote_j" not in pl:
+                    try:
+                        cj = self._cote_joueur(j)
+                        if cj.get("lettre") and cj.get("source") != "inconnu":      # joueur inconnu : aucune pastille (pas un faux E)
+                            pl["cote_j"], pl["cote_n"] = cj["lettre"], cj.get("note")
+                        else:
+                            pl["cote_j"] = ""
+                    except Exception:
+                        pass
                 if pl.get("iq") is None or iq_ > pl["iq"]:
                     pl["iq"] = iq_
                 if "en_feu" in pil or "rebond" in pil:
@@ -5989,6 +6002,51 @@ class Api:
         out["ok"] = not out["erreurs"] or out["retirees"] > 0
         return out
 
+    def consig_fichier(self, lignes, maison=None, fmt="xlsx", photos=True, langue=None):
+        """21 nov 2026 (Mathieu : « sur le cell, je suis incapable de creer le fichier Excel ou PDF ») : la liste de consignation
+        fabriquee par le serveur (un vrai .xlsx, ou la page a imprimer), gardee 20 min derriere un lien impossible a deviner :
+        l'app iPhone l'ouvre dans Safari (enregistrer, partager, imprimer). -> {ok, url, nom}"""
+        import exports_temp
+        en = (langue or self.reglages_lire().get("langue")) == "en"
+        jour = date.today().isoformat()
+        m = re.sub(r"[^\w]+", "-", str(maison or "")).strip("-").lower()[:40] or "liste"
+        if not [x for x in (lignes or []) if isinstance(x, dict)]:
+            return {"ok": False, "erreur": "Aucune carte"}
+        try:
+            if fmt == "html":
+                nom, typ, octets = f"consignation-{m}-{jour}.html", "text/html; charset=utf-8", exports_temp.consig_html(lignes, maison, jour, bool(photos), en)
+            else:
+                nom = f"consignation-{m}-{jour}.xlsx"
+                typ, octets = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", exports_temp.consig_xlsx(lignes, maison, jour, en)
+        except Exception as e:
+            print("Consignation (fichier) : " + repr(e)[:200], flush=True)
+            return {"ok": False, "erreur": "Fichier impossible à créer"}
+        return {"ok": True, "url": f"/x/{exports_temp.garder(nom, typ, octets)}/{nom}", "nom": nom}
+
+    def consig_retirer_ebay(self, ids):
+        """21 nov 2026 (Mathieu : « les cartes affichees sur eBay doivent etre retirees d'eBay si on les envoie en consignation » ;
+        l'app demande d'abord « es-tu sur ? ») : termine l'annonce eBay de chaque carte encore en vente et la remet « En stock »
+        (la carte RESTE dans l'inventaire). Si eBay refuse une annonce, sa carte ne change pas. -> {ok, terminees, erreurs}"""
+        out = {"ok": True, "terminees": 0, "erreurs": []}
+        for cid in list(dict.fromkeys(int(i) for i in (ids or []) if str(i).strip().lstrip("-").isdigit()))[:200]:
+            c = self.carte_lire(cid)
+            if not c or not c.get("item_number") or c.get("statut") != "Listée":
+                continue
+            r = self._ecrire_ebay("terminer", c["item_number"])
+            if not r.get("ok"):
+                out["erreurs"].append({"id": cid, "titre": c.get("titre"), "erreur": r.get("erreur") or "eBay a refusé"})
+                continue
+            with _verrou:
+                cx = self._db()
+                try:
+                    cx.execute("UPDATE cartes SET statut='En stock' WHERE id=? AND statut='Listée'", (cid,))
+                    cx.commit()
+                finally:
+                    cx.close()
+            out["terminees"] += 1
+        out["ok"] = not out["erreurs"] or out["terminees"] > 0
+        return out
+
     def carte_vendre(self, cid, d):
         """d : {canal: 'eBay'|'Magasin'|'Break'|'Autre', prix, port_paye, port_charge, frais (optionnel), date, client_id}"""
         d = d or {}
@@ -7536,8 +7594,8 @@ class Api:
 
     def _pastilles_radar(self, r):
         """19 nov 2026 (Mathieu : « comprendre en 1 seconde, visuellement leger ») : deux petites pastilles sur la photo.
-        « Culte » / « Carte cle » (sets tres collectionnes, pour tous) et, admin et Platine, la chance de series de l'equipe
-        (series.py). Ne touche pas au score SlabIQ."""
+        « Culte » / « Carte cle » (sets tres collectionnes) et la chance de series de l'equipe (series.py) : pour tous
+        (21 nov 2026) ; l'effet a la revente reste admin et Platine. Ne touche pas au score SlabIQ."""
         if not isinstance(r, dict):
             return r
         try:
@@ -7552,8 +7610,14 @@ class Api:
                 hockey = str(x.get("sport") or "hockey") == "hockey"          # les sets cultes et les series : la LNH
                 if "culte" not in x:
                     x["culte"] = sets_cultes.info(x.get("titre") or "", j) if hockey else None
-                if ser and j and hockey:
-                    x["series"] = series.pour_joueur(j)
+                # 21 nov 2026 (Mathieu : « mettre le % des series de l'equipe dans le slab comme dans admin et Platine ») :
+                # la chance de series vient du classement public de la LNH : pour tous. L'effet a la revente (« +x % »),
+                # lui, est tire de nos ventes : admin et Platine seulement (licence eBay), comme avant.
+                se = series.pour_joueur(j) if (j and hockey) else None
+                if se and not ser:
+                    se = {k: v for k, v in se.items() if k != "effet"}
+                if se:
+                    x["series"] = se
                 elif "series" in x:
                     x.pop("series", None)
         except Exception as e:

@@ -6303,9 +6303,82 @@ html body .ecran.bk-page > .entete::before{display:none !important}
 @media (min-width:1100px), (hover:hover) and (pointer:fine){ .w-liste .w-ligne::after{display:none !important; content:none !important} }
 /* 21 nov 2026 : la 4e tuile « A ajuster » au telephone : 4 petites tuiles sur une rangee (jamais une tuile seule sur sa ligne) */
 @media (max-width:899px){ #i-tab:has(#it-aj){grid-template-columns:repeat(4, minmax(0,1fr)) !important; gap:6px !important}
-  #i-tab:has(#it-aj) .t-acc{padding:10px 8px !important; min-height:84px !important; border-radius:16px}
-  #i-tab:has(#it-aj) .t-acc b{font-size:21px !important} #i-tab:has(#it-aj) .t-acc .l{font-size:10.5px !important; letter-spacing:.04em !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  /* 21 nov 2026 (Mathieu, au cell : « grossis un peu l'information pour mieux remplir les tuiles ») : le libelle et le chiffre plus
+     gros, le chiffre centre dans l'espace sous le libelle (plus de vide au milieu de la tuile) */
+  #i-tab:has(#it-aj) .t-acc{padding:11px 6px 12px !important; min-height:92px !important; border-radius:16px; align-items:center !important; text-align:center !important; justify-content:flex-start !important; gap:0 !important}
+  #i-tab:has(#it-aj) .t-acc b{font-size:clamp(25px, 7.6vw, 32px) !important; line-height:1 !important; margin:auto 0 !important; letter-spacing:-.01em}
+  #i-tab:has(#it-aj) .t-acc .l{font-size:12px !important; letter-spacing:.05em !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%}
   #i-tab:has(#it-aj) .t-acc .s{display:none !important} }
+/* 21 nov 2026 (Mathieu, au cell : « l'appareil photo n'est pas centre ») : il l'est (au pixel), mais la pastille de l'onglet actif
+   (Radar ou Inventaire) prenait toute la largeur de sa case et venait coller sur l'appareil photo d'un seul cote : l'oeil le
+   voyait decale. La pastille est plus etroite (9 px d'air de chaque cote) : le meme espace des deux cotes de l'appareil photo. */
+@media (max-width:899px){
+  body .onglets a.on:not(.centre){background:none !important; position:relative; isolation:isolate}
+  body .onglets a.on:not(.centre)::after{content:''; position:absolute; z-index:-1; top:0; bottom:0; left:9px; right:9px; border-radius:20px;
+    background:color-mix(in srgb, var(--acc) 15%, rgba(255,255,255,.04))}
+}
+/* 21 nov 2026 (Mathieu, au cell : « je ne devrais pas avoir a scroller sur cette page ; enleve le +33 et fais defiler la liste,
+   seulement la liste ») : la fenetre de consignation tient dans l'ecran ; tout est fixe sauf la liste des cartes */
+#feuille.feuille:has(#cs-l){overflow:hidden !important; max-height:calc(100dvh - 56px) !important; gap:10px !important}
+#feuille.feuille:has(#cs-l) > *{flex:none}
+#feuille.feuille:has(#cs-l) > #cs-l{flex:1 1 auto; min-height:112px; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; margin-bottom:0; scrollbar-width:thin}
+#feuille.feuille:has(#cs-l) > .csg-m{margin:2px 0 0} #feuille.feuille:has(#cs-l) > .csg-info, #feuille.feuille:has(#cs-l) > .csg-ph{margin:0}
+#feuille.feuille:has(#cs-l) > .csg-suivi{margin:0 auto} #feuille.feuille:has(#cs-l) > .bandeau{margin:0; padding:9px 12px; font-size:13.5px}
+.csg-eb .roue{width:14px; height:14px; vertical-align:-2px; margin-right:4px}
+.csg-i > .csg-v{flex:0 0 30px !important; width:30px !important; height:42px}
+.csg-eb.csg-q{display:flex; flex-direction:column; gap:6px; border-color:color-mix(in srgb, var(--rouge) 45%, var(--ligne)) !important} .csg-eb.csg-q b{font-size:15px; color:var(--texte)}
+.csg-eb.csg-q span{font-size:13px; line-height:1.35} .csg-eb.csg-q > div{display:grid; grid-template-columns:1fr 1.4fr; gap:8px; margin-top:4px} .csg-eb.csg-q .btn{margin:0; min-height:40px}
+/* 21 nov 2026 (Mathieu : « les icones doivent toutes etre dans le meme format et style que celui ecrit Key, un par-dessus
+   l'autre, comme des badges ») : un seul badge (.sd-b) pour tout ce qui se pose sur la photo d'un slab */
+html body .sd-ph .sd-cs{position:absolute; left:6px; top:6px; z-index:3; display:flex; flex-direction:column; align-items:flex-start; gap:4px; max-width:calc(100% - 50px)}
+.sd-b{display:inline-flex; align-items:center; gap:4px; height:22px; max-width:100%; padding:0 8px 0 7px; border-radius:99px; box-sizing:border-box; font:700 11px/1 var(--f-cond); letter-spacing:.07em; text-transform:uppercase; white-space:nowrap;
+  color:#D9D6E0; background:rgba(14,14,18,.86); border:1px solid color-mix(in srgb, currentColor 62%, transparent); -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px); box-shadow:0 1px 4px rgba(0,0,0,.4)}
+button.sd-b{cursor:pointer; margin:0; -webkit-appearance:none; appearance:none}
+.sd-b svg{flex:none; width:12px; height:12px; fill:none; stroke:currentColor; stroke-width:2.1; stroke-linecap:round; stroke-linejoin:round}
+.sd-b > span{min-width:0; overflow:hidden; text-overflow:ellipsis}
+.sd-b.b-vert{color:var(--vert)} .sd-b.b-rouge{color:var(--rouge)} .sd-b.b-or{color:#E8C26A} .sd-b.b-acc{color:var(--acc)} .sd-b.b-creux{color:#8EC9FF}
+.sd-b.b-cle, .sd-b.b-culte{border-color:transparent; background:linear-gradient(rgba(14,14,18,.9),rgba(14,14,18,.9)) padding-box, linear-gradient(120deg,#9FE6D2,#B79CF2,#F2B6D2,#E8C77A) border-box}
+.sd-b.b-cle{color:#E8C77A} .sd-b.b-cle svg{fill:currentColor; stroke-width:1.2} .sd-b.b-culte{color:#F4F2F8}
+.sd-b.big{height:30px; padding:0 14px 0 12px; font-size:14px; gap:6px} .sd-b.big svg{width:15px; height:15px}
+/* 21 nov 2026 (Mathieu : « le chiffre de notif est drolement place » ; « mettre identique a Apple ») : la pastille rouge
+   d'Apple (rouge systeme, chiffre blanc, ronde), posee sur le coin en haut a droite de l'icone, jamais coupee */
+html body .onglets .pastille, html body .onglets .cloche-n{box-sizing:border-box; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:#FF3B30; color:#fff;
+  font:600 11.5px/18px -apple-system, 'SF Pro Text', system-ui, 'Barlow', sans-serif; letter-spacing:0; text-align:center; font-variant-numeric:tabular-nums; box-shadow:0 0 0 2px rgba(11,11,14,.96)}
+html body .onglets .pastille[hidden], html body .onglets .cloche-n[hidden]{display:none !important}
+@media (max-width:899px){ html body .onglets > a{position:relative} html body .onglets > a .pastille{position:absolute; top:-2px; left:calc(50% + 6px); margin:0; transform:none} }
+@media (min-width:900px) and (hover:hover){
+  html body .onglets:is(.rail-ferme, :not(:hover):not(:has(:focus-visible))) > a{position:relative; overflow:visible}
+  html body .onglets:is(.rail-ferme, :not(:hover):not(:has(:focus-visible))) > a .pastille,
+  html body .onglets:is(.rail-ferme, :not(:hover):not(:has(:focus-visible))) > a .cloche-n{position:absolute !important; left:29px; top:3px; margin:0; transform:none}
+}
+/* 21 nov 2026 (Mathieu, Notifications : « on pourrait simplifier cette vue et grossir un peu le texte, c'est petit ») : 2 lignes au
+   lieu de 3 (le titre et l'heure ; la sorte en couleur + le detail), le texte plus gros, et 2 colonnes a l'ordi (la liste
+   n'occupait que le quart gauche de l'ecran) */
+.nt-h{display:flex; align-items:baseline; gap:10px; min-width:0} .nt-h b{flex:1 1 auto; min-width:0; font-size:16.5px}
+.nt-h i{flex:none; font-style:normal; font-size:13px; color:var(--doux); font-variant-numeric:tabular-nums}
+.notifs .nt-d{font-size:14.5px} .nt-d em{font-style:normal; font-weight:700; color:var(--doux)} .nt-d em.vert{color:var(--vert)} .nt-d em.acc{color:var(--acc)} .nt-d em.or{color:var(--or)} .nt-d em.rouge{color:var(--rouge)}
+.notifs .nt-l{padding:12px 4px; gap:14px} .notifs .nt-ic{width:42px; height:42px} .notifs .nt-ph{width:44px; height:58px}
+.notifs .nt-jour{font-size:13px; margin:14px 0 6px}
+@media (min-width:1100px){
+  .notifs #nt-liste{display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); column-gap:36px; align-items:start}
+  .notifs #nt-liste > .nt-jour, .notifs #nt-liste > .nt-vide, .notifs #nt-liste > :not(.nt-l){grid-column:1 / -1}
+  .notifs .nt-h b{font-size:17.5px} .notifs .nt-d{font-size:15px}
+  .notifs .seg button{height:38px; font-size:15px !important}
+}
+/* 21 nov 2026 (Mathieu, Breaks a l'ordi : « je grossirais legerement l'entete, genre 1,25x, c'est petit ») */
+@media (min-width:1100px){
+  html body .ecran.bk-page > .entete .titre{font-size:40px !important}
+  html body .bk-fixe .bk-mode, html body #an-z .an-fixe #an-v{width:min(540px, 100%) !important; max-width:540px !important}
+  html body .bk-fixe .bk-mode button, html body #an-z .an-fixe #an-v button{height:40px !important; min-height:40px !important; font-size:16.5px !important}
+  html body #an-z .an-fixe .ana-prod{min-height:62px !important; padding-top:8px !important; padding-bottom:8px !important}
+  html body #an-z .an-fixe .ana-prod .ap-img{width:44px !important; height:44px !important}
+  html body #an-z .an-fixe .ana-prod b, html body #an-z .an-fixe .ana-prod > span:not(.ap-img) > :first-child{font-size:19.5px !important}
+  html body #an-z .an-fixe .ana-prod small, html body #an-z .an-fixe .ana-prod > span:not(.ap-img) > :last-child:not(:first-child){font-size:14.5px !important}
+  html body #an-z .an-fixe .ana-reg, html body #an-z .an-fixe .ana-amp{width:50px !important; height:50px !important}
+  html body #an-z .an-fixe .ana-reg svg, html body #an-z .an-fixe .ana-amp svg{width:23px !important; height:23px !important}
+  html body #an-z .an-fixe .an-rbx .recherche{min-height:54px !important} html body #an-z .an-fixe .an-rbx .recherche input{font-size:18px !important; height:54px !important}
+  html body #an-z .an-fixe .an-bx{height:54px !important; min-width:62px !important; font-size:18px !important} html body #an-z .an-fixe .an-bx svg{width:20px !important; height:20px !important}
+}
 /* 20 nov 2026 (« la loupe et le X trop proches des extremites ») */
 .dq-bar{padding:0 10px 0 18px !important} .tiq-rech{padding:0 16px 0 18px !important} .recherche{padding-left:16px; padding-right:12px}
 /* 20 nov 2026 (« Heating up » coupe) : le texte en degrade garde la place de ses jambages (g, p) */
@@ -6436,7 +6509,7 @@ const LECTURES = new Set(['consig_details', 'achetees_tableau', 'accueil_tendanc
   'inventaire_tableaux', 'watch_liste', 'ventes_analyse']);
 // 11 nov 2026 (« ca lag quand je switch ») : carte_valeur (l'estimation en fond des cartes sans valeur) vidait la memoire a
 // chaque fois : chaque changement de vue de l'inventaire rechargeait tout du serveur
-const SANS_EFFET = new Set(['carte_histoire', 'carte_valeur', 'activite_page', 'deals_etat', 'accueil_live', 'annonce_detail', 'carte_comps', 'valeur_carte', 'joueur_fiche', 'checklist',
+const SANS_EFFET = new Set(['consig_fichier', 'carte_histoire', 'carte_valeur', 'activite_page', 'deals_etat', 'accueil_live', 'annonce_detail', 'carte_comps', 'valeur_carte', 'joueur_fiche', 'checklist',
   'catalogue_checklist', 'break_detail', 'photo_statut', 'demandes_reponses', 'demandes_mes', 'ebay_environnement', 'logo_lire', 'prix_auto_lire',
   // 28 oct 2026 (vitesse) : ces appels ne changent rien a ce que les ecrans affichent : ils ne vident plus la memoire
   'push_enregistrer', 'calculer_prix', 'calculer_catalogue', 'carte_lire', 'rachat_calculer', 'clients_liste', 'break_ventes_joueur',
@@ -11258,21 +11331,32 @@ document.addEventListener('click', (e) => { const b = e.target.closest && e.targ
 // « ★ Clé » / « Culte » : un set tres collectionne (sets_cultes.py, pour tous) ; un trophee + % : la chance de series de l'equipe
 // (series.py, admin et Platine). Un tap explique en 2 lignes.
 const IC_TROPH = '<svg viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4"/></svg>';
+// 21 nov 2026 (Mathieu : « on fire, in a slump, buzz, etc. : les icones doivent toutes etre dans le meme format et style que
+// celui ecrit Key, un par-dessus l'autre, comme des badges ») : UNE seule forme de badge sur la photo du slab (une icone au
+// trait + un mot, la meme hauteur, le meme fond), empiles en haut a gauche. La couleur dit le sens.
+const IC_BADGE = {feu: '<path d="M12 3c.8 3.6 4.6 5.2 4.6 9.6a4.6 4.6 0 0 1-9.2 0c0-1.8.8-3.1 1.9-4.1.3 1.6 1.1 2.4 1.9 2.400C11.3 8.5 10.6 6 12 3z"/>',
+  creux: '<path d="M3 7l6 6 4-4 8 8"/><path d="M21 12v5h-5"/>', hausse: '<path d="M3 17l6-6 4 4 8-8"/><path d="M21 12V7h-5"/>',
+  buzz: '<path d="M13 3 5 13.5h6L10 21l8-10.500h-6z"/>', etoile: '<path d="M12 3.5l2.5 5.1 5.6.800-4 3.9 1 5.6-5.1-2.7-5 2.7.900-5.6-4-3.9 5.6-.800z"/>',
+  echange: '<path d="M4 8h14l-3-3M20 16H6l3 3"/>', medaille: '<circle cx="12" cy="9" r="5"/><path d="M9 13.5 7.5 21l4.5-2.5 4.5 2.5-1.5-7.5"/>',
+  bas: '<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>', alerte: '<path d="M12 4 3 19h18z"/><path d="M12 10v4M12 16.800v.200"/>',
+  moi: '<circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4-5.5 7-5.500s6 1.5 7 5.5"/>', gemme: '<path d="M6 4h12l3 5-9 11L3 9z"/><path d="M3 9h18"/>',
+  trophee: '<path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4"/>'};
+const badgeSlab = (txt, ton, ic, attrs) => `<${attrs ? 'button' : 'span'} class="sd-b b-${esc(ton || '')}" ${attrs || ''}><svg viewBox="0 0 24 24" aria-hidden="true">${IC_BADGE[ic] || IC_BADGE.etoile}</svg><span>${esc(txt)}</span></${attrs ? 'button' : 'span'}>`;
 function pastillesCS(x, est){
-  const c = x.culte, se = x.series; if (!c && !se) return est || '';
-  return `<span class="sd-cs">${est || ''}${c ? `<button class="sd-cu ${c.cle ? 'cle' : ''}" data-cu="${esc(c.set)}" data-cu-cle="${c.cle ? 1 : ''}">${c.cle ? '★ ' + tt('Clé', 'Key') : tt('Culte', 'Iconic')}</button>` : ''}${se ? `<button class="sd-se t-${esc(se.ton)}" data-se="${esc(JSON.stringify(se))}">${IC_TROPH}${se.p} %</button>` : ''}</span>`;
+  const c = x.culte, se = x.series; if (!c && !se) return est && est.includes('sd-b') ? `<span class="sd-cs">${est}</span>` : est || '';
+  return `<span class="sd-cs">${est || ''}${c ? badgeSlab(c.cle ? tt('Clé', 'Key') : tt('Culte', 'Iconic'), c.cle ? 'cle' : 'culte', c.cle ? 'etoile' : 'gemme', `data-cu="${esc(c.set)}" data-cu-cle="${c.cle ? 1 : ''}"`) : ''}${se ? badgeSlab(se.p + ' %', se.ton, 'trophee', `data-se="${esc(JSON.stringify(se))}"`) : ''}</span>`;
 }
 document.addEventListener('click', (e) => {
   const b = e.target.closest && e.target.closest('[data-cu],[data-se]'); if (!b) return;
   e.preventDefault(); e.stopPropagation(); vibrer();
-  if (b.dataset.cu) { ouvrirFeuille(`<div class="cs-f"><span class="sd-cu big ${b.dataset.cuCle ? 'cle' : ''}">${b.dataset.cuCle ? '★ ' + tt('Carte clé', 'Key card') : tt('Set culte', 'Iconic set')}</span>
+  if (b.dataset.cu) { ouvrirFeuille(`<div class="cs-f"><span class="sd-b big b-${b.dataset.cuCle ? 'cle' : 'culte'}"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_BADGE[b.dataset.cuCle ? 'etoile' : 'gemme']}</svg><span>${b.dataset.cuCle ? tt('Carte clé', 'Key card') : tt('Set culte', 'Iconic set')}</span></span>
       <b>${esc(b.dataset.cu)}</b><span>${b.dataset.cuCle ? tt('LA carte que les collectionneurs de ce set veulent.', 'THE card collectors of this set want.') : tt('Un des sets les plus collectionnés du hockey.', 'One of hockey’s most collected sets.')}</span></div>`); return; }
   let se = {}; try { se = JSON.parse(b.dataset.se); } catch (er) {}
   const CONS = {mai: tt('Vendre en mai (le pic)', 'Sell in May (the peak)'), mars: tt('Vendre avant mars', 'Sell before March'), suivre: tt('À suivre', 'Keep watching'),
     maintenant: tt('En séries : vendre maintenant', 'In the playoffs: sell now'), trop_tard: tt('Hors séries : les prix baissent', 'Out of the playoffs: prices drop')};
   ouvrirFeuille(`<div class="cs-f"><span class="cs-p t-${esc(se.ton || '')}">${IC_TROPH}<b>${se.p} %</b></span>
     <b>${tt('Chance de séries', 'Playoff chance')} · ${esc(se.eq || '')}</b>
-    <span class="cs-c t-${esc(se.ton || '')}">${CONS[se.conseil] || ''} · ${se.effet > 0 ? '+' : ''}${se.effet} % ${tt('à la revente', 'at resale')}</span></div>`);
+    <span class="cs-c t-${esc(se.ton || '')}">${CONS[se.conseil] || ''}${se.effet != null ? ` · ${se.effet > 0 ? '+' : ''}${se.effet} % ${tt('à la revente', 'at resale')}` : ''}</span></div>`);
 }, true);
 function tuileDeal(x){
   // 30 oct 2026 (Mathieu : « l'annonce du deal : le nom du joueur en haut, son % sous la mediane des dernieres ventes et le
@@ -11885,7 +11969,7 @@ async function rendreAnalyse(){
       return `<div class="score-bloc simple ${i >= 60 ? 'loin' : ''}"${ceq ? ` style="--eq:${ceq}"` : ''} data-nom="${esc(String(x.nom + ' ' + (x.equipe || '') + ' ' + (x.vedettes || []).join(' ')).toLowerCase())}"><button class="score-l ${hors ? 'hors' : ''}" data-exp="${i}" aria-expanded="false">
         <span class="rang">${i + 1}</span>
         ${vue === 'equipes' ? ecussonEquipe(x.cle) : vignetteJoueur(x.cle, x.equipe)}
-        <span class="sl-n"><b>${esc(x.nom)}${x.iq != null ? ` <span class="sc-b ${couleurScore(x.iq)} an-iq" title="SlabIQ">${lettre(x.iq)}</span>` : ''}${x.iq_chaud ? ` <span class="an-feu">${icN('feu')}</span>` : ''}</b><span>${esc(vue === 'equipes' ? (x.vedettes || []).slice(0, 2).join(' · ') : (x.equipe || ''))} · ${
+        <span class="sl-n"><b>${esc(x.nom)}${x.cote_j ? ` <span class="sc-b ${couleurScore(x.cote_n != null ? x.cote_n : x.iq)} an-iq" title="${esc(tt('Cote SlabIQ du joueur', 'Player’s SlabIQ rating'))}">${esc(x.cote_j)}</span>` : x.cote_j === '' ? '' : x.iq != null ? ` <span class="sc-b ${couleurScore(x.iq)} an-iq" title="SlabIQ">${lettre(x.iq)}</span>` : ''}${x.iq_chaud ? ` <span class="an-feu">${icN('feu')}</span>` : ''}</b><span>${esc(vue === 'equipes' ? (x.vedettes || []).slice(0, 2).join(' · ') : (x.equipe || ''))} · ${
           tri === 'place' ? tt('couvre la place : ', 'covers the spot: ') + chanceTxt(x.p_carte_prix || 0) : tri === 'rentab' ? tt('rentable : ', 'break even: ') + chanceTxt(x.p_rembourse || 0)
           : tri === 'recrue' ? (x.recrue_prix && comps() ? (/young guns/i.test(x.recrue_nom || '') ? 'YG' : tt('recrue', 'rookie')) + ' ~' + argentCourt(x.recrue_prix) + ' · ' + chanceTxt(x.p_recrue_carte || 0)
             : x.ev_recrue != null && comps() ? tt('recrues : ~', 'rookies: ~') + argentCourt(x.ev_recrue) : tt('recrue : ', 'rookie: ') + chanceTxt(x.p_recrue || 0))
@@ -13891,6 +13975,12 @@ function expliquerTendancesIQ(){
 const MAJ_APP = () => [
   // 20 nov 2026 (Mathieu : « important de mettre cet onglet a jour apres chaque grosse mise a jour ») : ce qui change pour la
   // personne, en mots simples ; jamais un detail technique
+  {n: 241, le: '2026-11-21', points: [
+    ['colis', tt('Consignation au cell', 'Consignment on your phone'), tt('La liste Excel ou PDF se crée maintenant sur ton téléphone. Les cartes en vente sur eBay sont retirées d’eBay, après ton OK.', 'The Excel or PDF list now works on your phone. Cards for sale on eBay are removed from eBay, after your OK.')],
+    ['graphe', tt('Tes prix, mieux jugés', 'Your prices, judged better'), tt('Un prix jusqu’à la plus haute vente récente n’est plus « trop cher ». Une tuile « À ajuster » montre les annonces au-dessus du marché.', 'A price up to the highest recent sale is no longer “too high”. A “To adjust” tile shows listings above market.')],
+    ['breaks', tt('Breaks plus clairs', 'Clearer Breaks'), tt('Les joueurs en slabs côte à côte, avec la cote SlabIQ du joueur.', 'Players as slabs side by side, with the player’s SlabIQ rating.')],
+    ['etoile', tt('Chance de séries sur chaque carte', 'Playoff chance on every card'), tt('Dans le Radar, un trophée et un % : la chance que l’équipe du joueur fasse les séries. Les repères (En feu, Buzz, Clé…) ont tous le même badge.', 'In the Radar, a trophy and a %: the chance the player’s team makes the playoffs. Markers (On fire, Buzz, Key…) all share the same badge.')],
+  ]},
   {n: 240, le: '2026-11-20', points: [
     ['colis', tt('Consigner en un geste', 'Consign in one go'), tt('Choisis tes cartes, choisis la maison (Slab Sharks, Rémi Card Trader…) : SlabCoach prépare la liste à joindre au colis, en Excel ou en PDF.', 'Pick your cards and the consignment house: SlabCoach makes the list to put in the package, in Excel or PDF.')],
     ['ebay', tt('Tes achats eBay arrivent seuls', 'Your eBay buys come in on their own'), tt('Chaque carte achetée sur eBay entre dans « Achetées » avec le prix payé. Seulement des cartes : pas les cadres, chandails ni boîtes.', 'Every card you buy on eBay lands in “Bought” with what you paid. Cards only: no frames, jerseys or boxes.')],
@@ -18345,9 +18435,9 @@ function feuilleConsigner(cartes){
   ouvrirFeuille(`<h3>${tt('Envoyer en consignation', 'Send to consignment')}</h3><div class="sous">${L.length} ${L.length > 1 ? tt('cartes', 'cards') : tt('carte', 'card')} · ${tt('une liste prête à joindre au colis', 'a list ready to put in the package')}</div>
     <div class="csg-m" id="cs-m">${M.map(([n]) => `<button class="chip ${n === maison ? 'on' : ''}" data-cm="${esc(n)}">${esc(n)}</button>`).join('')}<input class="champ csg-autre" id="cs-autre" placeholder="${esc(tt('Autre…', 'Other…'))}" value="${M.some(x => x[0] === maison) ? '' : esc(maison)}"></div>
     <div class="csg-info" id="cs-info">${info()}</div>
-    ${surEbay ? `<div class="bandeau info">${tt(`${surEbay} ${surEbay > 1 ? 'sont' : 'est'} en vente sur eBay : termine l’annonce avant d’envoyer.`, `${surEbay} ${surEbay > 1 ? 'are' : 'is'} for sale on eBay: end the listing before shipping.`)}</div>` : ''}
-    <div class="csg-l">${L.slice(0, 6).map(x => `<div class="csg-i">${x.photo ? `<img src="${esc(x.photo)}" alt="" loading="lazy">` : `<span class="csg-v">${SVG_CARTE}</span>`}<span><b>${esc(x.joueur || x.titre)}</b><small>${esc(x.titre && x.joueur ? x.titre : [x.annee, x.set || x.marque, x.parallele, x.grade].filter(Boolean).join(' · '))}</small></span></div>`).join('')}
-      ${L.length > 6 ? `<div class="csg-plus">+ ${L.length - 6}</div>` : ''}</div>
+    ${surEbay ? `<div class="bandeau info csg-eb" id="cs-eb">${tt(`${surEbay} ${surEbay > 1 ? 'sont' : 'est'} en vente sur eBay : ${surEbay > 1 ? 'elles seront retirées' : 'elle sera retirée'} d’eBay.`, `${surEbay} ${surEbay > 1 ? 'are' : 'is'} for sale on eBay: ${surEbay > 1 ? 'they' : 'it'} will be removed from eBay.`)}</div>` : ''}
+    <div class="csg-l" id="cs-l">${L.map(x => `<div class="csg-i">${x.photo ? `<img src="${esc(x.photo)}" alt="" loading="lazy">` : `<span class="csg-v">${SVG_CARTE}</span>`}<span><b>${esc(x.joueur || x.titre)}</b><small>${esc(x.titre && x.joueur ? x.titre : [x.annee, x.set || x.marque, x.parallele, x.grade].filter(Boolean).join(' · '))}</small></span></div>`).join('')}
+      </div>
     <label class="csg-ph"><input type="checkbox" id="cs-ph" checked> ${tt('Photos dans la version imprimée', 'Photos in the printed version')}</label>
     <div class="csg-b"><button class="btn" id="cs-xls">${tt('Exporter (Excel)', 'Export (Excel)')}</button><button class="btn ghost" id="cs-pdf">${tt('Imprimer / PDF', 'Print / PDF')}</button></div>
     <button class="lien-doux csg-suivi" id="cs-suivi">${tt('Les suivre dans « Consignation »', 'Track them in “Consignment”')} ›</button>`);
@@ -18356,9 +18446,56 @@ function feuilleConsigner(cartes){
   $('#cs-autre').oninput = () => { if (val('cs-autre').trim()) { $$('#cs-m .chip').forEach(x => x.classList.remove('on')); $('#cs-info').innerHTML = info(); } };
   $('#cs-ph').onchange = (e) => { photos = e.target.checked; };
   const garder = () => { S.consigMaison = nomM(); };
-  $('#cs-xls').onclick = async () => { vibrer(); garder(); await completerConsig(L); exporterCsv(csvConsig(L, nomM()), `consignation-${nomM().replace(/[^\w]+/g, '-').toLowerCase()}-${auj()}.csv`, true); };
-  $('#cs-pdf').onclick = async () => { vibrer(); garder(); await completerConsig(L); imprimerConsig(L, nomM(), photos); };
-  $('#cs-suivi').onclick = async () => { vibrer(); garder(); const b = $('#cs-suivi'); b.disabled = true;
+  // 21 nov 2026 (Mathieu : « les cartes affichees sur eBay doivent etre retirees d'eBay si on les envoie en consignation ; un
+  // message simple pour demander s'il est sur de continuer ») : avant d'exporter, d'imprimer ou de les suivre, UNE question
+  // claire ; oui = les annonces sont terminees sur eBay (les cartes restent dans l'inventaire) ; non = rien ne se passe.
+  let ebayFait = !surEbay;
+  const retirerEbay = async () => {
+    if (ebayFait) return true;
+    const n = surEbay;
+    // (la question est posee DANS la fenetre, a la place du bandeau : une autre fenetre fermerait celle-ci)
+    const z0 = $('#cs-eb'); if (!z0) return true;
+    const txt0 = z0.innerHTML;
+    const oui = await new Promise(res => {
+      z0.classList.add('csg-q');
+      z0.innerHTML = `<b>${tt(`Retirer ${n} annonce${n > 1 ? 's' : ''} d’eBay ?`, `Remove ${n} listing${n > 1 ? 's' : ''} from eBay?`)}</b>
+        <span>${tt(`En continuant, ${n > 1 ? 'elles sont retirées' : 'elle est retirée'} d’eBay tout de suite. ${n > 1 ? 'Les cartes restent' : 'La carte reste'} dans ton inventaire.`, `If you continue, ${n > 1 ? 'they are' : 'it is'} removed from eBay right away. ${n > 1 ? 'The cards stay' : 'The card stays'} in your inventory.`)}</span>
+        <div><button class="btn ghost petit" id="cs-eb-non">${tt('Annuler', 'Cancel')}</button><button class="btn danger petit" id="cs-eb-oui">${tt('Retirer et continuer', 'Remove and continue')}</button></div>`;
+      $('#cs-eb-non').onclick = () => { vibrer(); res(false); }; $('#cs-eb-oui').onclick = () => { vibrer(); res(true); };
+      z0.scrollIntoView({block: 'nearest'});
+    });
+    z0.classList.remove('csg-q');
+    if (!oui) { z0.innerHTML = txt0; return false; }
+    const z = $('#cs-eb'); if (z) z.innerHTML = `<span class="roue"></span> ${tt('Retrait d’eBay…', 'Removing from eBay…')}`;
+    $$('#cs-xls, #cs-pdf, #cs-suivi').forEach(b => b.disabled = true);
+    const r = await API.consig_retirer_ebay(cartes.filter(c => c.item_number && c.statut === 'Listée').map(c => c.id)).catch(e => ({ok: false, erreurs: [], erreur: e.message}));
+    $$('#cs-xls, #cs-pdf, #cs-suivi').forEach(b => b.disabled = false);
+    const ko = (r && r.erreurs || []).length, ok_ = (r && r.terminees) || 0;
+    if (!r || (!ok_ && (ko || r.erreur))) { if (z) z.textContent = tt('eBay n’a pas pu les retirer : réessaie, ou retire-les sur eBay.', 'eBay couldn’t remove them: try again, or remove them on eBay.'); toast((r && (r.erreur || (r.erreurs[0] || {}).erreur)) || 'eBay', 5000); return false; }
+    ebayFait = true; cartes.forEach(c => { if (c.statut === 'Listée' && !(r.erreurs || []).some(e => e.id === c.id)) c.statut = 'En stock'; });
+    if (z) z.textContent = !ok_ && !ko ? tt('Plus aucune annonce en ligne sur eBay.', 'No listing left on eBay.') : ko ? tt(`${ok_} retirée${ok_ > 1 ? 's' : ''} d’eBay · ${ko} à retirer à la main sur eBay.`, `${ok_} removed from eBay · ${ko} to remove by hand on eBay.`) : tt(`✓ ${ok_} annonce${ok_ > 1 ? 's retirées' : ' retirée'} d’eBay.`, `✓ ${ok_} listing${ok_ > 1 ? 's' : ''} removed from eBay.`);
+    MEMO.clear(); return true;
+  };
+  // 21 nov 2026 (Mathieu : « sur le cell, je suis incapable de creer le fichier Excel ou PDF ») : dans l'app iPhone, la page ne
+  // peut ni telecharger ni imprimer. Le serveur fabrique le fichier (un vrai .xlsx, ou la liste a imprimer) et l'app l'ouvre
+  // dans Safari (enregistrer, partager, imprimer). A l'ordi : le .xlsx se telecharge directement.
+  const tel = /iPhone|iPad|Android/i.test(navigator.userAgent);
+  const fichier = async (fmt) => {
+    const r = await API.consig_fichier(L.map(x => ({joueur: x.joueur, titre: x.titre, annee: x.annee, marque: x.marque, set: x.set, numero: x.numero, parallele: x.parallele, tirage: x.tirage, grade: x.grade, extras: x.extras || '', photo: x.photo})),
+      nomM(), fmt, photos, typeof LANGUE !== 'undefined' ? LANGUE : null).catch(() => null);
+    if (!r || !r.ok || !r.url) return false;
+    const url = location.origin + r.url + (tel ? '' : '?d=1'), B = NATIF && PLUG().Browser;
+    if (B) B.open({url, presentationStyle: 'popover', toolbarColor: '#0B0B0E'}); else location.assign(url);
+    toast(fmt === 'html' ? tt('Touche Partager, puis Imprimer', 'Tap Share, then Print') : tel ? tt('Touche Partager pour l’enregistrer ou l’envoyer', 'Tap Share to save or send it') : tt('Enregistré dans tes Téléchargements', 'Saved to your Downloads'), 4000);
+    return true;
+  };
+  $('#cs-xls').onclick = async () => { vibrer(); garder(); if (!await retirerEbay()) return; const b = $('#cs-xls'); b.disabled = true; await completerConsig(L);
+    if (!await fichier('xlsx')) exporterCsv(csvConsig(L, nomM()), `consignation-${nomM().replace(/[^\w]+/g, '-').toLowerCase()}-${auj()}.csv`, true);
+    b.disabled = false; };
+  $('#cs-pdf').onclick = async () => { vibrer(); garder(); if (!await retirerEbay()) return; const b = $('#cs-pdf'); b.disabled = true; await completerConsig(L);
+    if (!(NATIF && await fichier('html'))) imprimerConsig(L, nomM(), photos);
+    b.disabled = false; };
+  $('#cs-suivi').onclick = async () => { vibrer(); garder(); if (!await retirerEbay()) return; const b = $('#cs-suivi'); b.disabled = true;
     let ok = 0; for (const c of cartes) { const r = await API.carte_envoi(c.id, {type: 'consignation', chez: nomM(), envoye_le: auj(), alerte_jours: 45}).catch(() => null); if (r && r.carte) ok++; }
     fermerFeuille(); S.selInv = null; S.selBut = null; chargerInventaire();
     toast(tt(`${ok} carte${ok > 1 ? 's' : ''} en consignation chez ${nomM()}`, `${ok} card${ok > 1 ? 's' : ''} consigned with ${nomM()}`), 3500); };
@@ -20754,6 +20891,7 @@ function tuileRadar(x, src){
   const L = {en_feu: [tt('En feu', 'On fire'), 'rouge'], echange_baisse: [tt('Échangé · baisse', 'Traded · down'), 'rouge'], echange_hausse: [tt('Échangé · hausse', 'Traded · up'), 'vert'], echange: [tt('Nouvelle équipe', 'New team'), 'acc'], honneur: [tt('Honoré', 'Honored'), 'or'], occasion: [tt('Bonne occasion', 'Buy low'), 'vert'], mauvaise: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], rebond: [tt('Sort de son creux', 'Bouncing back'), 'vert'], en_creux: [tt('En creux', 'In a slump'), 'p-creux'],
     legende: [tt('Légende', 'Legend'), 'or'], recrue: [tt('Recrue', 'Rookie'), 'or p-rc'], buzz: ['Buzz', 'acc']};
   const pj = (x.pastilles_j || []).find(k => L[k]);
+  const ICB = {en_feu: 'feu', echange_baisse: 'echange', echange_hausse: 'echange', echange: 'echange', honneur: 'medaille', occasion: 'bas', mauvaise: 'alerte', rebond: 'hausse', en_creux: 'creux', legende: 'medaille', recrue: 'etoile', buzz: 'buzz'};
   // 12 nov 2026 (Mathieu : « pas besoin de Small seller sur la tuile ; il le saura dans la fiche ») 
   // 16 nov 2026 (« SlabCoach x SlabIQ s'adapte a son utilisateur ») : une annonce sur SES joueurs ou SES sortes de cartes
   const pm = x.pour_moi || [], pmT = pm.includes('joueur') ? [tt('Ton joueur', 'Your player'), 'acc'] : pm.includes('type') ? [tt('Pour toi', 'For you'), 'acc'] : null;
@@ -20761,7 +20899,7 @@ function tuileRadar(x, src){
   // tout neuf (les prix baissent souvent ensuite) : « Vérifie le prix », sans aucun chiffre
   const vf = (x.verifier || []).length ? [tt('Vérifie le prix', 'Check the price'), 'or'] : null;
   const mbT = x.marche_bas != null && x.marche_bas !== false ? [libMB(typeof x.marche_bas === 'number' ? x.marche_bas : null), 'vert'] : null;
-  const t1 = estNumerique(x.titre) ? [tt('Carte numérique ?', 'Digital card?'), 'rouge'] : vf || mbT || (pj ? L[pj] : pmT);
+  const t1 = estNumerique(x.titre) ? [tt('Carte numérique ?', 'Digital card?'), 'rouge', 'alerte'] : vf ? [...vf, 'alerte'] : mbT ? [...mbT, 'bas'] : pj ? [L[pj][0], /p-creux/.test(L[pj][1]) ? 'creux' : L[pj][1].split(' ')[0], ICB[pj]] : pmT ? [...pmT, 'moi'] : null;
   const ms = Date.parse(x.fin || '') - Date.now(), urgent = x.encan && ms > 0 && ms < 3600e3;
   const nomR = x.joueur_n || x.joueur || titreCourt(x.titre);
   const detR = x.carte_n || (x.joueur_n || x.joueur ? titreCourt(String(x.titre || '').replace(new RegExp(String(x.joueur_n || x.joueur).trim().split(/\s+/).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s+'), 'i'), ' ').replace(/\s+/g, ' ').trim()) : titreCourt(x.titre));
@@ -20772,7 +20910,7 @@ function tuileRadar(x, src){
          x.encan ? [tt('Mises', 'Bids'), x.mises != null ? String(x.mises) : '—'] : [tt('Port', 'Ship'), x.port_cad != null ? (x.port_cad > 0 ? argentCourt(x.port_cad) : tt('Gratuit', 'Free')) : tt('Inclus', 'Incl.')],
          x.prix_max ? [tt('Ton prix', 'Yours'), argentCourt(x.prix_max), 'mx'] : [tt('Total', 'Total'), argentCourt(tout || x.total), tout ? 'mx' : '']],
     photo: x.photo,
-    puits: `${pastillesCS(x, t1 ? `<span class="sr-tag">${tag(t1[0], t1[1])}</span>` : '')}${boutonWatch(x)}${x.encan ? `<span class="sd-fin ${urgent ? 'urg' : ''}">${icH()}${finDans(x.fin)}</span>` : ''}${x.n_autres ? `<span class="sr-aut">+${x.n_autres} ${tt(x.n_autres > 1 ? 'annonces' : 'annonce', x.n_autres > 1 ? 'listings' : 'listing')}</span>` : ''}`})}${ligneAdminVendu(x)}</div>`;
+    puits: `${pastillesCS(x, t1 ? badgeSlab(t1[0], t1[1], t1[2]) : '')}${boutonWatch(x)}${x.encan ? `<span class="sd-fin ${urgent ? 'urg' : ''}">${icH()}${finDans(x.fin)}</span>` : ''}${x.n_autres ? `<span class="sr-aut">+${x.n_autres} ${tt(x.n_autres > 1 ? 'annonces' : 'annonce', x.n_autres > 1 ? 'listings' : 'listing')}</span>` : ''}`})}${ligneAdminVendu(x)}</div>`;
 }
 // le toucher sur le score : « pourquoi ce score », bref et clair (la carte, puis le joueur), et comment SlabIQ fonctionne
 const _SC = {};
@@ -21703,7 +21841,7 @@ async function vueNotifs(arg){
     let sujet = /^\d{4}/.test(n.sujet || '') ? titreCourt(n.sujet) : (n.sujet || n.titre || '');
     if (sujet.length > 8 && sujet === sujet.toUpperCase()) sujet = sujet.toLowerCase().replace(/(^|[\s\-/])([a-zà-ÿ])/g, (m, a, b) => a + b.toUpperCase());   // TITRE EN MAJUSCULES -> Titre Normal
     const corps = `<span class="nt-ic ${cl}"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL[ic] || IC_PIL.cloche}</svg></span>
-      <span class="nt-m"><span class="nt-k ${cl}">${lib}<i>· ${n.le && jourDe(n.le) === tt('Plus tôt', 'Earlier') ? ilYa(n.le) : heure(n.le)}</i></span><b>${esc(sujet)}</b>${n.detail ? `<span class="nt-d">${esc(n.detail)}</span>` : ''}</span>
+      <span class="nt-m"><span class="nt-h"><b>${esc(sujet)}</b><i>${n.le && jourDe(n.le) === tt('Plus tôt', 'Earlier') ? ilYa(n.le) : heure(n.le)}</i></span><span class="nt-d"><em class="${cl}">${lib}</em>${n.detail ? ' · ' + esc(n.detail) : ''}</span></span>
       ${n.photo ? `<img class="nt-ph" src="${esc(n.photo)}" alt="" loading="lazy">` : ''}${n.lu ? '' : '<span class="nt-pt" aria-label="' + esc(tt('Nouvelle', 'New')) + '"></span>'}`;
     return id ? `<div class="nt-l" ${attrsAnnonce({item_id:id, titre:n.sujet || n.titre, photo:n.photo, total:n.total, url:n.url && /^https?:/.test(n.url) ? n.url : 'https://www.ebay.ca/itm/' + id})}>${corps}</div>`
       : `<a class="nt-l" href="${esc(urlSure(/^#/.test(n.url || '') ? n.url : '#notifs'))}">${corps}</a>`;

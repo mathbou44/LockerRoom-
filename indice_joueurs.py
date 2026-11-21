@@ -969,11 +969,13 @@ def indice(nom):
         return I[nom]
     # 21 nov 2026 (vitesse) : un nom ecrit autrement (accent, casse) faisait normaliser les ~900 noms a CHAQUE appel (des
     # centaines d'appels par ecran de break) ; la table des noms normalises est faite une fois par version de l'indice
-    if _IDX_NORM["id"] != id(I):
+    # (on garde l'objet lui-meme, pas son id() : Python redonne le meme id a un nouvel objet une fois l'ancien libere, et la
+    # table d'hier aurait servi pour l'indice d'aujourd'hui)
+    if _IDX_NORM["id"] is not I:
         d = {}
         for n, v in I.items():
             d.setdefault(_norm(n), v)
-        _IDX_NORM["d"], _IDX_NORM["id"] = d, id(I)
+        _IDX_NORM["d"], _IDX_NORM["id"] = d, I
     return _IDX_NORM["d"].get(_norm(nom))
 
 

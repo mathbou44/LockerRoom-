@@ -45,8 +45,16 @@ r = api._pastilles_radar({"deals": [{"titre": "2020-21 Upper Deck The Cup Tim St
                                     {"titre": "2025-26 Metal Universe PMG Blue /50 Michael Misa", "joueur_n": "Michael Misa"}], "suivis": []})
 assert r["deals"][0]["culte"]["set"] == "2020-21 The Cup", r["deals"][0]
 assert r["deals"][1]["culte"] is None
-if lockerroom.comps_permis(api):
-    assert r["deals"][1]["series"]["eq"] == "SJS", r["deals"][1]
+# 21 nov 2026 : la chance de series pour tous ; l'effet a la revente (tire de nos ventes) : admin et Platine seulement
+assert r["deals"][1]["series"]["eq"] == "SJS" and r["deals"][1]["series"]["p"] == 15, r["deals"][1]
+assert ("effet" in r["deals"][1]["series"]) == bool(lockerroom.comps_permis(api)), r["deals"][1]
+_cp = lockerroom.comps_permis
+try:
+    lockerroom.comps_permis = lambda api=None: False
+    r2 = api._pastilles_radar({"deals": [{"titre": "2025-26 Metal Universe PMG Blue /50 Michael Misa", "joueur_n": "Michael Misa"}]})
+    assert r2["deals"][0]["series"]["p"] == 15 and "effet" not in r2["deals"][0]["series"], r2
+finally:
+    lockerroom.comps_permis = _cp
 import inspect
 assert "_pastilles_radar(" in inspect.getsource(lockerroom.Api.deals_liste)
 print("OK pastilles radar")
