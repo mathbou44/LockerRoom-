@@ -46,3 +46,22 @@ assert "pass" not in _s.split("except Exception")[1][:40], "une erreur du gardie
 assert "_gardien_assurer()" in _i.getsource(server._chrono_debut)
 assert server._pile_lisible(_i.currentframe()).startswith("test_vitesse_partage.py:")
 print("OK gardien des piles")
+
+# 21 nov 2026 (2e suivi) : sur Render, gunicorn precharge l'app dans le maitre ; le worker (copie sans les fils) se rechauffe
+# lui-meme a sa premiere requete, une seule fois par processus ; le processus qui a lance les taches ne le refait pas
+import os as _os
+assert "_worker_assurer()" in _i.getsource(server._chrono_debut)
+assert '_CHAUD["pid"] = os.getpid()' in _i.getsource(server.demarrer_taches)
+_lances = []
+_vrai, server._rechauffer_worker = server._rechauffer_worker, (lambda: _lances.append(1))
+try:
+    server._CHAUD["pid"] = _os.getpid()
+    server._worker_assurer(); assert not _lances, "deja rechauffe dans ce processus : rien a relancer"
+    server._CHAUD["pid"] = -1                    # comme dans un worker copie du maitre (autre pid)
+    server._worker_assurer(); server._worker_assurer()
+    import time as _t
+    _t.sleep(0.2)
+    assert _lances == [1] and server._CHAUD["pid"] == _os.getpid(), _lances
+finally:
+    server._rechauffer_worker = _vrai
+print("OK rechauffage du worker")

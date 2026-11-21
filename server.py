@@ -347,6 +347,7 @@ except ValueError:
 #  - un gardien note, au plus une fois par 20 s, la pile d'appels (fichier:ligne, jamais une donnee) d'une requete qui dure
 #    depuis plus de LR_PILE_S secondes (8 par defaut) : « Pile lente : ... ».
 _EN_VOL = {}                      # id du fil -> (debut, chemin)
+_TACHES_ICI = HEBERGE and os.environ.get("LOCKERROOM_TACHES", "1") == "1"
 _EN_VOL_VERROU = threading.Lock()
 try:
     _PILE_S = float(os.environ.get("LR_PILE_S") or 8.0)
@@ -442,6 +443,8 @@ def _chrono_debut():
             _EN_VOL[threading.get_ident()] = (g._t0, request.path)
         if HEBERGE:
             _gardien_assurer()
+    if _TACHES_ICI and _CHAUD["pid"] != os.getpid():
+        _worker_assurer()
 
 
 @app.teardown_request
@@ -2254,6 +2257,7 @@ def demarrer_taches():
     threading.Thread(target=_ebay_auto, daemon=True).start()
     threading.Thread(target=_watch_boucle, daemon=True, name="watchlist").start()
     threading.Thread(target=_revalider_deals, daemon=True, name="revalider").start()
+    _CHAUD["pid"] = os.getpid()               # ce processus-ci se rechauffe (un worker copie du maitre le fera pour lui-meme)
     threading.Thread(target=_rechauffer, daemon=True, name="rechauffer").start()
     threading.Thread(target=_reprendre_banque_yg, daemon=True, name="banque-yg-reprise").start()
     threading.Thread(target=_moment_yg_boucle, daemon=True, name="moment-yg").start()
@@ -2337,6 +2341,53 @@ def _rechauffer():
         _rechauffer0()
 
 
+# 21 nov 2026 (2e suivi vitesse) : LA cause des minutes lentes apres chaque mise a jour. Sur Render, gunicorn precharge l'app
+# (« --preload » vient de l'environnement de Render) : server.py est importe dans le processus MAITRE, puis le worker qui
+# repond aux clients en est une copie SANS les fils lances a l'import. Tout le travail de fond (chasseur, valeurs, rechauffage)
+# roule donc dans le maitre : ce qu'il ecrit sur le disque sert a tous, mais ce qu'il charge en MEMOIRE (modele SlabIQ,
+# catalogue, jugement des deals) ne sert a personne, et le premier client du worker payait tout (inventaire 98 s). Preuve :
+# « Gardien des piles : actif (pid 43) » imprime par le maitre, avant « Booting worker with pid: 76 ».
+# Maintenant : le worker se rechauffe lui-meme, lance par sa premiere requete (la verification de sante de Render arrive
+# quelques secondes apres le demarrage, avant les clients). Rien d'autre ne bouge : le travail de fond reste dans le maitre.
+_CHAUD = {"pid": None}
+_CHAUD_VERROU = threading.Lock()
+
+
+def _rechauffer_worker():
+    try:
+        with comptes.systeme():
+            t0 = time.time()
+            import score_modele
+            import demande_legale
+            import catalogue as _cat
+            score_modele.charger()
+            demande_legale.presence_catalogue()
+            _cat.liste()
+            score_modele.scores(["2024-25 Upper Deck Young Guns Macklin Celebrini #451 RC"], [None])
+            print(f"Rechauffage du worker (pid {os.getpid()}) : modele et catalogue prets en {time.time() - t0:.1f} s", flush=True)
+            time.sleep(10)
+            import deals
+            for i, g in enumerate((deals.lire_vite() or {}).get("deals") or []):
+                if i % 20 == 0:
+                    _attendre_calme(10)          # jamais pendant qu'un client attend une reponse
+                deals.valide(g)
+            api.catalogue_liste()
+            print(f"Rechauffage du worker (pid {os.getpid()}) : deals et catalogue prets", flush=True)
+    except Exception as e:
+        print("Rechauffage du worker : " + repr(e)[:200], flush=True)
+
+
+def _worker_assurer():
+    """Le processus qui repond aux clients s'est-il rechauffe ? Sinon (worker copie du maitre), on le lance, une fois."""
+    if _CHAUD["pid"] == os.getpid():
+        return
+    with _CHAUD_VERROU:
+        if _CHAUD["pid"] == os.getpid():
+            return
+        _CHAUD["pid"] = os.getpid()
+    threading.Thread(target=_rechauffer_worker, daemon=True, name="rechauffer-worker").start()
+
+
 def _attendre_calme(maxi=90):
     """Le travail de fond laisse passer les clients : il attend qu'aucune requete de l'app ne roule (au plus maxi secondes)."""
     t0 = time.time()
@@ -2418,7 +2469,7 @@ def _revalider_deals():
         print("Revalidation des deals : " + repr(e), flush=True)
 
 
-if HEBERGE and os.environ.get("LOCKERROOM_TACHES", "1") == "1":
+if _TACHES_ICI:
     demarrer_taches()          # gunicorn importe ce fichier : 1 seul worker (voir render.yaml)
 if HEBERGE:
     _gardien_assurer()

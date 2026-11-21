@@ -6308,7 +6308,13 @@ html body .ecran.bk-page > .entete::before{display:none !important}
   #i-tab:has(#it-aj) .t-acc{padding:11px 6px 12px !important; min-height:92px !important; border-radius:16px; align-items:center !important; text-align:center !important; justify-content:flex-start !important; gap:0 !important}
   #i-tab:has(#it-aj) .t-acc b{font-size:clamp(25px, 7.6vw, 32px) !important; line-height:1 !important; margin:auto 0 !important; letter-spacing:-.01em}
   #i-tab:has(#it-aj) .t-acc .l{font-size:12px !important; letter-spacing:.05em !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%}
-  #i-tab:has(#it-aj) .t-acc .s{display:none !important} }
+  #i-tab:has(#it-aj) .t-acc .s{display:none !important}
+  /* 21 nov 2026 (Mathieu : « y'a genre un double fond dans la pastille, ca fait bizarre ») : a 4 tuiles etroites, l'etiquette
+     gardait son propre fond arrondi (plus etroit que la tuile) et la tuile un 2e cadre a l'interieur : une seule surface,
+     le mot, un filet, le chiffre */
+  #i-tab:has(#it-aj) .t-acc{box-shadow:none !important}
+  #i-tab:has(#it-aj) .t-acc.on{box-shadow:inset 0 0 0 2.5px var(--acc) !important; border-color:var(--acc) !important}
+  #i-tab:has(#it-aj) .t-acc .l{background:none !important; box-shadow:none !important; border-radius:0 !important; align-self:stretch !important; width:auto !important; max-width:none !important; margin:0 !important; padding:0 0 8px !important; text-align:center} }
 /* 21 nov 2026 (Mathieu, au cell : « l'appareil photo n'est pas centre ») : il l'est (au pixel), mais la pastille de l'onglet actif
    (Radar ou Inventaire) prenait toute la largeur de sa case et venait coller sur l'appareil photo d'un seul cote : l'oeil le
    voyait decale. La pastille est plus etroite (9 px d'air de chaque cote) : le meme espace des deux cotes de l'appareil photo. */

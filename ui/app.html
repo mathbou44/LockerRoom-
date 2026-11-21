@@ -5672,7 +5672,10 @@ html body .ecran.bk-page > .entete::before{display:none !important}
 #i-tab:has(#it-aj) .t-acc{padding:11px 6px 12px !important; min-height:92px !important; border-radius:16px; align-items:center !important; text-align:center !important; justify-content:flex-start !important; gap:0 !important}
 #i-tab:has(#it-aj) .t-acc b{font-size:clamp(25px, 7.6vw, 32px) !important; line-height:1 !important; margin:auto 0 !important; letter-spacing:-.01em}
 #i-tab:has(#it-aj) .t-acc .l{font-size:12px !important; letter-spacing:.05em !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%}
-#i-tab:has(#it-aj) .t-acc .s{display:none !important} }
+#i-tab:has(#it-aj) .t-acc .s{display:none !important}
+#i-tab:has(#it-aj) .t-acc{box-shadow:none !important}
+#i-tab:has(#it-aj) .t-acc.on{box-shadow:inset 0 0 0 2.5px var(--acc) !important; border-color:var(--acc) !important}
+#i-tab:has(#it-aj) .t-acc .l{background:none !important; box-shadow:none !important; border-radius:0 !important; align-self:stretch !important; width:auto !important; max-width:none !important; margin:0 !important; padding:0 0 8px !important; text-align:center} }
 @media (max-width:899px){
 body .onglets a.on:not(.centre){background:none !important; position:relative; isolation:isolate}
 body .onglets a.on:not(.centre)::after{content:''; position:absolute; z-index:-1; top:0; bottom:0; left:9px; right:9px; border-radius:20px;
