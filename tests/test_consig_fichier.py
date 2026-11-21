@@ -37,3 +37,13 @@ r = a.consig_retirer_ebay([ida, idb, idc, "x"])
 assert r["terminees"] == 1 and len(r["erreurs"]) == 1 and r["erreurs"][0]["id"] == idb and vus == [("terminer", "111111111111"), ("terminer", "222222222222")], (r, vus)
 assert a.carte_lire(ida)["statut"] == "En stock" and a.carte_lire(idb)["statut"] == "Listée" and a.carte_lire(idc)
 print("OK test_consig_fichier")
+
+# 21 nov 2026 : une case vide reste vide (elle devenait une apostrophe) ; le fichier des prix d'un break
+import io as _io, openpyxl as _ox, exports_temp as _et
+_ws = _ox.load_workbook(_io.BytesIO(_et.consig_xlsx([{"joueur": "A", "titre": "=1+1"}], "Maison", "2026-11-21"))).active
+_l = [c.value for c in list(_ws.iter_rows(min_row=3, max_row=3))[0]]
+assert _l[1] == "A" and _l[2] in (None, "") and _l[10] == "'=1+1", _l
+_ws = _ox.load_workbook(_io.BytesIO(_et.break_xlsx([{"nom": "Montreal Canadiens", "prix": 1125, "vedettes": "Ivan Demidov"}, {"nom": "=X", "prix": "x", "vedettes": ""}], "Tableau", "equipes", "1 boîte", False))).active
+_r = [[c.value for c in r] for r in _ws.iter_rows(min_row=2, max_row=6)]
+assert _r[0][:3] == ["N°", "Équipe", "Prix"] and _r[1][1:4] == ["Montreal Canadiens", 1125, "Ivan Demidov"] and _r[2][1] == "'=X" and _r[2][3] in (None, "") and _r[4][2] == "=SUM(C3:C4)", _r
+print("OK fichier des prix d'un break")

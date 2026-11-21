@@ -40,6 +40,12 @@ def _t(l, n=160):
     return " ".join(str(l or "").split())[:n]
 
 
+def _sur(v):
+    """Du texte seulement : une valeur qui commence par = + - @ ne devient jamais une formule (une case vide reste vide)."""
+    v = str(v or "")
+    return "'" + v if v[:1] and v[:1] in "=+-@" else v
+
+
 def _lignes(lignes):
     out = []
     for i, x in enumerate([x for x in (lignes or []) if isinstance(x, dict)][:500]):
@@ -65,8 +71,8 @@ def consig_xlsx(lignes, maison, jour, en=False):
     for c in ws[2]:
         c.font = Font(bold=True)
     for x in L:      # (du texte seulement : une valeur qui commence par = + - @ ne devient jamais une formule)
-        ws.append([x["no"]] + [("'" + v if v[:1] in "=+-@" else v) for v in (x["joueur"], x["annee"], x["marque"], x["set"], x["numero"], x["parallele"],
-                                                                             x["tirage"], x["grade"], x["extras"], x["titre"])] + [""])
+        ws.append([x["no"]] + [_sur(v) for v in (x["joueur"], x["annee"], x["marque"], x["set"], x["numero"], x["parallele"],
+                                                 x["tirage"], x["grade"], x["extras"], x["titre"])] + [""])
     for i, w in enumerate((5, 24, 10, 16, 26, 11, 20, 11, 12, 16, 60, 22), 1):
         ws.column_dimensions[get_column_letter(i)].width = w
     ws.freeze_panes = "A3"
@@ -94,3 +100,43 @@ def consig_html(lignes, maison, jour, photos=True, en=False):
             f"<h1>{e(t('Consignation', 'Consignment'))}{' · ' + e(_t(maison, 60)) if maison else ''}</h1><p>{e(jour)} · {len(L)} {t('cartes', 'cards')} · {e(t('dans l’ordre du colis', 'in package order'))}</p>"
             f"<table><thead><tr><th></th>{'<th></th>' if photos else ''}<th>{t('Carte', 'Card')}</th><th>{t('Gradation', 'Grade')}</th><th>{t('Prix minimum', 'Minimum')}</th></tr></thead><tbody>{rangs}</tbody></table>"
             f"<div class=\"sig\"><div>{t('Nom', 'Name')}</div><div>{e(t('Courriel / téléphone', 'Email / phone'))}</div><div>{t('Signature', 'Signature')}</div></div></body></html>").encode("utf-8")
+
+
+def break_xlsx(lignes, produit, mode, resume=None, en=False):
+    """21 nov 2026 (Mathieu : « une option d'extraire un fichier Excel avec les prix pour les personnes qui runnent un break ») :
+    une ligne par place (equipe, joueur ou division), son prix, ses vedettes, et deux colonnes a remplir (acheteur, paye)."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font
+    from openpyxl.utils import get_column_letter
+    L = []
+    for x in [x for x in (lignes or []) if isinstance(x, dict)][:800]:
+        try:
+            prix = round(float(x.get("prix") or 0), 2)
+        except (TypeError, ValueError):
+            prix = 0
+        L.append((_t(x.get("nom"), 80), prix, _t(x.get("vedettes"), 160)))
+    quoi = {"equipes": ("Team", "Équipe"), "joueurs": ("Player", "Joueur"), "divisions": ("Division", "Division")}.get(str(mode), ("Spot", "Place"))[0 if en else 1]
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Break"
+    ws.append([f"{_t(produit, 80)} · {len(L)} {'spots' if en else 'places'}" + (f" · {_t(resume, 120)}" if resume else "")])
+    ws["A1"].font = Font(bold=True, size=13)
+    ws.append(["No.", quoi, "Price" if en else "Prix", "Key players" if en else "Vedettes", "Buyer" if en else "Acheteur", "Paid" if en else "Payé"] if en
+              else ["N°", quoi, "Prix", "Vedettes", "Acheteur", "Payé"])
+    for c in ws[2]:
+        c.font = Font(bold=True)
+    for i, (nom, prix, ved) in enumerate(L, 1):      # (du texte seulement : jamais une formule)
+        ws.append([i, _sur(nom), prix, _sur(ved), "", ""])
+    n = len(L)
+    ws.append([])
+    ws.append(["", "Total", f"=SUM(C3:C{n + 2})" if n else 0])
+    ws.cell(row=n + 4, column=2).font = Font(bold=True)
+    ws.cell(row=n + 4, column=3).font = Font(bold=True)
+    for r in range(3, n + 5):
+        ws.cell(row=r, column=3).number_format = '#,##0 "$"'
+    for i, w in enumerate((5, 30, 12, 44, 24, 10), 1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+    ws.freeze_panes = "A3"
+    b = io.BytesIO()
+    wb.save(b)
+    return b.getvalue()

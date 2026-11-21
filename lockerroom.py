@@ -6122,6 +6122,22 @@ class Api:
             return {"ok": False, "erreur": "Fichier impossible à créer"}
         return {"ok": True, "url": f"/x/{exports_temp.garder(nom, typ, octets)}/{nom}", "nom": nom}
 
+    def break_fichier(self, lignes, produit=None, mode=None, resume=None, langue=None):
+        """21 nov 2026 (Mathieu : « extraire un fichier Excel avec les prix pour les personnes qui runnent un break ») : les
+        prix des places qu'il vient de calculer (ses propres chiffres : son cout, sa marge), en .xlsx. -> {ok, url, nom}"""
+        import exports_temp
+        en = (langue or self.reglages_lire().get("langue")) == "en"
+        if not [x for x in (lignes or []) if isinstance(x, dict)]:
+            return {"ok": False, "erreur": "Aucune place"}
+        m = re.sub(r"[^\w]+", "-", str(produit or "")).strip("-").lower()[:50] or "break"
+        try:
+            nom = f"break-{m}-{date.today().isoformat()}.xlsx"
+            octets = exports_temp.break_xlsx(lignes, produit, mode, resume, en)
+        except Exception as e:
+            print("Break (fichier) : " + repr(e)[:200], flush=True)
+            return {"ok": False, "erreur": "Fichier impossible à créer"}
+        return {"ok": True, "url": f"/x/{exports_temp.garder(nom, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', octets)}/{nom}", "nom": nom}
+
     def consig_retirer_ebay(self, ids):
         """21 nov 2026 (Mathieu : « les cartes affichees sur eBay doivent etre retirees d'eBay si on les envoie en consignation » ;
         l'app demande d'abord « es-tu sur ? ») : termine l'annonce eBay de chaque carte encore en vente et la remet « En stock »
@@ -10114,6 +10130,9 @@ class Api:
                         if cur.rowcount:
                             print(f"Achats : {cur.rowcount} copie(s) automatique(s) remise(s) dans Achetees", flush=True)
                         c.commit()
+                n_ph = Api._photo_achat_vers_carte(c)          # 21 nov 2026 : les cartes deja ajoutees sans photo recoivent celle de leur achat
+                if n_ph:
+                    print(f"Achats : {n_ph} carte(s) ont recu la photo de leur achat", flush=True)
                 # les liens vers une carte qui n'existe plus (supprimee avant le 20 nov 2026) : retires, jamais reajoutes
                 c.execute("UPDATE achats_ebay SET carte_id=-1 WHERE carte_id > 0 AND carte_id NOT IN (SELECT id FROM cartes)")
                 c.commit()
@@ -10415,10 +10434,26 @@ class Api:
                     c = self._db()
                     try:
                         c.execute("UPDATE achats_ebay SET photo=? WHERE item_id=?", (ph if isinstance(ph, str) else (ph[0] if ph else "-"), str(a["item_id"])))
+                        Api._photo_achat_vers_carte(c, a["item_id"])
                         c.commit()
                     finally:
                         c.close()
         threading.Thread(target=lambda: ctx.run(tache), daemon=True, name="photos-achats").start()
+
+    @staticmethod
+    def _photo_achat_vers_carte(c, item_id=None):
+        """La photo d'un achat eBay va sur la carte creee toute seule a partir de lui, si elle n'en a pas (jamais par-dessus une
+        photo). item_id=None : toutes les cartes concernees (rattrapage)."""
+        try:
+            if "photo" not in {r[1] for r in c.execute("PRAGMA table_info(cartes)")}:
+                return 0
+            q = ("UPDATE cartes SET photo=(SELECT a.photo FROM achats_ebay a WHERE a.carte_id = cartes.id AND a.photo LIKE 'https://%' LIMIT 1) "
+                 "WHERE source='achat eBay' AND COALESCE(photo,'')='' AND id IN (SELECT carte_id FROM achats_ebay WHERE photo LIKE 'https://%'"
+                 + (" AND item_id=?" if item_id is not None else "") + ")")
+            return c.execute(q, (str(item_id),) if item_id is not None else ()).rowcount
+        except sqlite3.Error as e:
+            print("Photo d'achat vers la carte : " + repr(e)[:120], flush=True)
+            return 0
 
     def _achats_table(self, c):
         c.execute(self._SQL_ACHATS)
@@ -10518,8 +10553,27 @@ class Api:
         d = {"titre": titre, "cout": a["cout"], "statut": "En stock", "source": "achat eBay",
              "emplacement": emplacement if emplacement in ("Collection", "Réserve", "Magasin") else "Réserve",
              "joueur": cartes_match.joueur_du_titre(titre) or None, "note": f"Achat eBay #{item_id} ({a['date'] or ''})".strip()}
-        if a["photo"] and a["photo"] != "-" and str(a["photo"]).startswith("https://"):
-            d["photo"] = a["photo"]
+        ph = a["photo"]
+        if not ph:
+            # 21 nov 2026 (Mathieu : « la photo doit etre importee directement aussi ») : la carte arrivait sans photo quand
+            # l'achat n'avait pas encore la sienne (elle venait plus tard, mais restait sur l'achat, pas sur la carte)
+            try:
+                if ebay_compte.statut().get("connecte"):
+                    ph = ebay_compte.photo_item(item_id) or ebay_compte.photo_heritee(item_id)
+                    ph = ph if isinstance(ph, str) or not ph else ph[0]
+                    if ph:
+                        with _verrou:
+                            c = self._db()
+                            try:
+                                c.execute("UPDATE achats_ebay SET photo=? WHERE item_id=?", (ph, str(item_id)))
+                                c.commit()
+                            finally:
+                                c.close()
+            except Exception as e:
+                print("Photo d'achat " + str(item_id) + " : " + repr(e)[:120], flush=True)
+                ph = None
+        if ph and ph != "-" and str(ph).startswith("https://"):
+            d["photo"] = ph
         r = self.carte_sauver({k: v for k, v in d.items() if v not in (None, "")})
         with _verrou:
             c = self._db()
@@ -10688,6 +10742,7 @@ class Api:
                             c = self._db()
                             try:
                                 c.execute("UPDATE achats_ebay SET photo=? WHERE item_id=?", (u, str(i)))
+                                Api._photo_achat_vers_carte(c, i)
                                 c.commit()
                             finally:
                                 c.close()

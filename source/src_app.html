@@ -6357,6 +6357,23 @@ html body .ecran.bk-page > .entete::before{display:none !important}
 /* 21 nov 2026 (Mathieu : « la loupe en Pro et Bronze est trop proche du bord ; pas pareil qu'en admin et Platine ») : une regle
    faite pour l'enveloppe de la recherche des Deals (padding 0) tombait aussi sur le champ du Radar, qui est le champ lui-meme */
 html body .ecran .md-rech.tiq-rech, html:not(.tel-large) body .tete-fixe:has(.d-ligne) > .md-rech.tiq-rech{padding:0 16px 0 18px !important}
+/* 21 nov 2026 (Mathieu, « Je fais un break » : « a corriger ») : les noms et les prix etaient coupes : .ps-n servait aussi a
+   une autre fenetre (un gros chiffre centre de 70 px, du texte en colonne) et la grille tombait a 178 px par tuile */
+.place-s .ps-n{display:block !important; min-width:0; text-align:left}
+.place-s .ps-n b{display:block !important; min-width:0 !important; text-align:left !important; font:700 16px/1.2 var(--f-txt, inherit) !important; color:var(--texte) !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.place-s .ps-n span{display:block !important; margin-top:3px; font-size:13px !important; font-weight:400 !important; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.place-s .ps-n span a, .place-s .ps-n b a{color:inherit; text-decoration:none}
+.place-s .ps-p{font-size:24px !important; padding-left:6px}
+@media (min-width:900px){ html:not(.tel-large) body .grille-c.grille-places{grid-template-columns:repeat(auto-fill, minmax(292px, 1fr)) !important; gap:12px !important} }
+.an-actions{display:flex; gap:10px; margin-top:14px} .an-actions #an-creer{flex:1 1 auto; margin:0} .an-actions #an-xls{flex:none; display:inline-flex; align-items:center; gap:8px; margin:0; width:auto; padding-left:18px; padding-right:18px}
+.an-actions #an-xls svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+@media (max-width:599px){ .an-actions{flex-direction:column} .an-actions #an-xls{justify-content:center} }
+/* 21 nov 2026 (Achetées : un tri simple) */
+.ach-bar{align-items:center; gap:10px} .ach-bar > span:first-child{flex:1 1 auto}
+.ach-tri{display:inline-flex; align-items:center; gap:6px; height:36px; padding:0 4px 0 12px; margin-left:auto; border-radius:999px; background:var(--carte); border:1px solid var(--ligne); color:var(--doux)}
+.ach-tri svg{width:16px; height:16px; flex:none; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+.ach-tri select{-webkit-appearance:none; appearance:none; height:34px; padding:0 26px 0 2px; border:0; background:transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239A98A6' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E") right 6px center / 14px no-repeat; color:var(--texte); font:600 14.5px var(--f-txt, inherit); cursor:pointer; outline:0}
+.ach-tri select option{background:#1B1B22; color:#F4F2EE}
 /* une seule facon de titrer une feuille de reglage : le titre de la feuille ; le bloc n'a plus sa boite ni sa petite etiquette */
 .feuille h3.f-titre{margin:2px 48px 14px 2px; font-size:20px; font-weight:700; letter-spacing:0; text-transform:none}
 .feuille .f-ret{height:32px; margin:-4px 0 4px -4px; font-size:15.5px; cursor:pointer}
@@ -6550,7 +6567,7 @@ const LECTURES = new Set(['consig_details', 'achetees_tableau', 'accueil_tendanc
   'inventaire_tableaux', 'watch_liste', 'ventes_analyse']);
 // 11 nov 2026 (« ca lag quand je switch ») : carte_valeur (l'estimation en fond des cartes sans valeur) vidait la memoire a
 // chaque fois : chaque changement de vue de l'inventaire rechargeait tout du serveur
-const SANS_EFFET = new Set(['consig_fichier', 'carte_histoire', 'carte_valeur', 'activite_page', 'deals_etat', 'accueil_live', 'annonce_detail', 'carte_comps', 'valeur_carte', 'joueur_fiche', 'checklist',
+const SANS_EFFET = new Set(['consig_fichier', 'break_fichier', 'carte_histoire', 'carte_valeur', 'activite_page', 'deals_etat', 'accueil_live', 'annonce_detail', 'carte_comps', 'valeur_carte', 'joueur_fiche', 'checklist',
   'catalogue_checklist', 'break_detail', 'photo_statut', 'demandes_reponses', 'demandes_mes', 'ebay_environnement', 'logo_lire', 'prix_auto_lire',
   // 28 oct 2026 (vitesse) : ces appels ne changent rien a ce que les ecrans affichent : ils ne vident plus la memoire
   'push_enregistrer', 'calculer_prix', 'calculer_catalogue', 'carte_lire', 'rachat_calculer', 'clients_liste', 'break_ventes_joueur',
@@ -11946,7 +11963,8 @@ async function rendreAnalyse(){
         ${r.mode === 'equipes' ? ecussonEquipe(x.cle) : r.mode === 'joueurs' ? vignetteJoueur(x.cle) : `<span class="ecu-eq" style="--c1:${COUL_EQ(x.cle)};--c2:#111115"><i>${esc(String(x.nom).split(/\s+/).map(m => m[0]).join('').slice(0, 3))}</i></span>`}
         <div class="ps-n"><b>${r.mode === 'joueurs' ? lienJoueur(x.cle, x.nom) : esc(x.nom)}</b>${(x.vedettes || [])[0] && r.mode !== 'joueurs' ? `<span>${x.vedettes.slice(0, 2).map(v => lienJoueur(v)).join(' · ')}</span>` : ''}</div>
         <span class="ps-p">${argent(x.prix, 0)}</span></div>`).join('')}</div>
-      <button class="btn" id="an-creer" style="margin-top:14px">${tt('Créer ce break avec ces prix', 'Create this break with these prices')}</button>`;
+      <div class="an-actions"><button class="btn" id="an-creer">${tt('Créer ce break avec ces prix', 'Create this break with these prices')}</button>
+        <button class="btn ghost" id="an-xls"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>${tt('Excel des prix', 'Prices to Excel')}</button></div>`;
   } else {
     const vue = A.vue === 'equipes' ? 'equipes' : 'joueurs';
     const liste = vue === 'joueurs' ? (r.joueurs || []) : [...r.places];
@@ -12088,6 +12106,17 @@ async function rendreAnalyse(){
     const vj = !e.hidden && $('.vj-z', e); if (vj) ventesJoueurBreak(vj, vj.dataset.vjP, vj.dataset.vjJ); });
   $$('[data-dem]', z).forEach(i => i.onchange = () => { const v = nb(i.value); if (v) A.demandes[i.dataset.dem] = versCAD(v); else delete A.demandes[i.dataset.dem]; rendreAnalyse(); });
   $$('[data-demj]', z).forEach(i => i.onchange = () => { const v = nb(i.value); if (v) A.demandesJ[i.dataset.demj] = versCAD(v); else delete A.demandesJ[i.dataset.demj]; rendreAnalyse(); });
+  // 21 nov 2026 (Mathieu : « une option d'extraire un fichier Excel avec les prix pour les personnes qui runnent un break »)
+  const xl = $('#an-xls'); if (xl) xl.onclick = async () => { vibrer(); xl.disabled = true;
+    const R_ = S.anaR || {}, P_ = (S.cat && S.cat.produits || []).find(p => p.id === S.ana.produit) || {};
+    const places = [...(R_.places || [])].sort((a, b) => b.prix - a.prix);
+    const res = await API.break_fichier(places.map(x => ({nom: x.nom, prix: x.prix, vedettes: R_.mode === 'joueurs' ? '' : (x.vedettes || []).slice(0, 4).join(', ')})),
+      ($('#an-chg b') || {}).textContent || P_.nom || '', R_.mode, `${R_.boites} ${tt('boîte(s)', 'box(es)')} · ${tt('coût', 'cost')} ${argent(R_.cout, 0)} · ${tt('total', 'total')} ${argent(R_.total, 0)}`, typeof LANGUE !== 'undefined' ? LANGUE : null).catch(() => null);
+    xl.disabled = false;
+    if (!res || !res.ok || !res.url) { toast((res && res.erreur) || tt('Fichier impossible à créer', 'Could not create the file')); return; }
+    const tel = /iPhone|iPad|Android/i.test(navigator.userAgent), url = location.origin + res.url + (tel ? '' : '?d=1'), B = NATIF && PLUG().Browser;
+    if (B) B.open({url, presentationStyle: 'popover', toolbarColor: '#0B0B0E'}); else location.assign(url);
+    toast(tel ? tt('Touche Partager pour l’enregistrer ou l’envoyer', 'Tap Share to save or send it') : tt('Enregistré dans tes Téléchargements', 'Saved to your Downloads'), 4000); };
   const cr = $('#an-creer'); if (cr) cr.onclick = async () => {
     const rg = S.reglages || {};
     const res = await essai(API.break_creer({nom: P.nom, catalogue_id: P.id, mode: A.mode, boites: r.boites, cout: r.cout,
@@ -16338,7 +16367,17 @@ async function vueAchetees(){
   // 15 nov 2026 (Mathieu : « la recherche ne semble pas marcher » dans Bought) : la barre de recherche filtre aussi les
   // cartes achetees (joueur, titre ; tous les mots, sans accents)
   const mots = normQ(S.rechInv).split(' ').filter(Boolean);
-  const L = (r.cartes || []).filter(x => !mots.length || (t => mots.every(m => t.includes(m)))(normQ([x.joueur, x.titre].join(' ')))), s = r.resume || {};
+  let L = (r.cartes || []).filter(x => !mots.length || (t => mots.every(m => t.includes(m)))(normQ([x.joueur, x.titre].join(' '))));
+  const s = r.resume || {};
+  // 21 nov 2026 (Mathieu, Achetées : « devrait nous donner une option de tri simple ») : un seul menu, 5 choix, garde sur l'appareil
+  const TRIS_ACH = [['', tt('À mettre d’abord', 'List now first')], ['vieux', tt('Les plus anciennes', 'Oldest first')], ['recent', tt('Les plus récentes', 'Newest first')],
+    ['cout', tt('Prix payé', 'Price paid')], ['iq', tt('Score SlabIQ', 'SlabIQ score')], ...(s.propose ? [['profit', tt('Profit estimé', 'Est. profit')]] : [])];
+  if (S.achTri == null) { try { S.achTri = localStorage.getItem('lr_ach_tri') || ''; } catch (e) { S.achTri = ''; } }
+  if (!TRIS_ACH.some(t => t[0] === S.achTri)) S.achTri = '';
+  { const n_ = (v, d) => v == null || isNaN(+v) ? d : +v;
+    const cmp = {vieux: (a, b) => n_(b.jours, -1) - n_(a.jours, -1), recent: (a, b) => n_(a.jours, 1e9) - n_(b.jours, 1e9), cout: (a, b) => n_(b.cout, 0) - n_(a.cout, 0),
+      iq: (a, b) => n_(b.score, -1) - n_(a.score, -1), profit: (a, b) => n_(b.profit, -1e9) - n_(a.profit, -1e9)}[S.achTri];
+    if (cmp) L = L.slice().sort(cmp); }
   S.achetees = Object.fromEntries(L.map(x => [x.cle, x]));
   // 16 nov 2026 (Mathieu : « revoir le menu en haut : plus sexy, plus grosse ecriture, prism ; pas besoin des details en petite
   // ecriture ») : 4 tuiles prism, un mot et un chiffre ; la regle des 90 jours dans le « ? »
@@ -16349,11 +16388,13 @@ async function vueAchetees(){
       <div class="ak bleu"><span class="ak-h"><span class="ak-i">${icA('<rect x="3.5" y="6" width="17" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/>')}</span><span class="ak-l">${tt('Payé', 'Paid')}</span></span><b class="ak-v">${argentCourt(s.paye || 0)}</b></div>
       ${s.propose ? `<div class="ak or"><span class="ak-h"><span class="ak-i">${icA('<path d="M4 17l6-6 4 4 6-7"/><path d="M15 8h5v5"/>')}</span><span class="ak-l">${tt('Profit estimé', 'Est. profit')}</span></span><b class="ak-v">${(s.profit >= 0 ? '+' : '−') + argentCourt(Math.abs(s.profit || 0))}</b></div>` : ''}</div>
     <div class="ach-bar">${s.a_ajouter ? `<button class="ach-aj" id="ach-aj">+ ${tt(`Ajouter ${s.a_ajouter} achat${s.a_ajouter > 1 ? 's' : ''}`, `Add ${s.a_ajouter} purchase${s.a_ajouter > 1 ? 's' : ''}`)}</button>` : '<span></span>'}
+      <label class="ach-tri"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5v14M4 16l3 3 3-3M17 19V5M14 8l3-3 3 3"/></svg><select id="ach-tri" aria-label="${esc(tt('Trier', 'Sort'))}">${TRIS_ACH.map(([k, t]) => `<option value="${k}" ${k === S.achTri ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
       <button class="md-iq-q" id="ach-q" aria-label="${esc(tt('Comment lire', 'How to read'))}">?</button></div>` : '';
   z.innerHTML = kp + (L.length ? `<div class="grille-c">${L.map(tuileAchetee).join('')}</div>`
     : mots.length ? `<div class="vide">${tt('Aucune carte achetée pour', 'No bought card for')} « ${esc(S.rechInv)} »</div>`
     : `<div class="vide">${r.ebay ? tt('Aucune carte achetée en attente : tout est sur eBay ou dans ta collection.', 'No bought card waiting: everything is on eBay or in your collection.') : tt('Connecte ton compte eBay pour voir tes achats, ou ajoute le prix payé à tes cartes.', 'Connect your eBay account to see your purchases, or add the price paid to your cards.')}</div>`);
   const aj = $('#ach-aj'); if (aj) aj.onclick = () => { vibrer(); feuilleAchats(); };
+  const at = $('#ach-tri'); if (at) at.onchange = () => { vibrer(); S.achTri = at.value; try { localStorage.setItem('lr_ach_tri', S.achTri); } catch (e) {} vueAchetees(); };
   const aq = $('#ach-q'); if (aq) aq.onclick = () => { vibrer(); popOuvrir(`<button class="pop-x" id="achq-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
     <div class="pop-tete"><span class="pop-sur">${tt('Achetées', 'Bought')}</span><h3>${tt('Tes cartes achetées', 'Your bought cards')}</h3></div>
     <div class="pop-corps an-ampc"><p><b>${tt('À mettre', 'List now')}</b> · ${tt(`achetées il y a ${s.apres_j || 90} jours et plus, et en forte demande.`, `bought ${s.apres_j || 90}+ days ago, in high demand.`)}</p>
