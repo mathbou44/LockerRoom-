@@ -358,29 +358,79 @@ def en_vol():
     return len(_EN_VOL)
 
 
-def _gardien_piles():
+# 21 nov 2026 (2e suivi) : en production, AUCUNE « Pile lente » en 4 heures, meme pour une requete de 98 s : le gardien ne
+# disait rien, et on ne savait pas s'il roulait. Maintenant : il s'annonce au demarrage (« Gardien des piles : actif »), il
+# est (re)lance par la premiere requete s'il ne roule pas dans CE processus, il ne se tait plus sur une erreur, une requete
+# sans pile lisible ne cache plus les autres, et il echantillonne aussi les requetes de 1,5 a 8 s (« Pile : ... », au plus
+# 4 par chemin par 10 min) : c'est la que vivent les lenteurs de tous les jours (Deals 3,3 s aux 45 s).
+try:
+    _PILE_COURT_S = float(os.environ.get("LR_PILE_COURT_S") or 1.5)
+except ValueError:
+    _PILE_COURT_S = 1.5
+_GARDIEN = {"pid": None, "fil": None}
+
+
+def _pile_lisible(fr):
     import traceback
-    dernier = 0.0
+    pile = [f"{os.path.basename(f.filename)}:{f.lineno} {f.name}" for f in traceback.extract_stack(fr)
+            if "site-packages" not in f.filename and "/lib/python" not in f.filename][-7:]
+    return " < ".join(reversed(pile)) or "(hors du code de l'app)"
+
+
+def _gardien_piles():
+    print(f"Gardien des piles : actif (pid {os.getpid()}, longue {_PILE_S:.0f} s, echantillon {_PILE_COURT_S:g} s)", flush=True)
+    dernier, courts, err_le = 0.0, {}, 0.0
     while True:
-        time.sleep(4)
+        time.sleep(1)
         try:
             m = time.perf_counter()
-            if m - dernier < 20 or _PILE_S <= 0:
-                continue
             with _EN_VOL_VERROU:
-                lents = sorted(((m - t0, ch, tid) for tid, (t0, ch) in _EN_VOL.items() if m - t0 >= _PILE_S), reverse=True)
-            if not lents:
+                vols = sorted(((m - t0, ch, tid) for tid, (t0, ch) in list(_EN_VOL.items())), reverse=True)
+            if not vols or vols[0][0] < min(_PILE_S, _PILE_COURT_S or _PILE_S):
                 continue
-            d, ch, tid = lents[0]
-            fr = sys._current_frames().get(tid)
-            if fr is None:
-                continue
-            pile = [f"{os.path.basename(f.filename)}:{f.lineno} {f.name}" for f in traceback.extract_stack(fr)
-                    if "site-packages" not in f.filename and "/lib/python" not in f.filename][-7:]
-            print(f"Pile lente : {ch} {d:.0f} s · {len(_EN_VOL)} en cours · " + " < ".join(reversed(pile)), flush=True)
-            dernier = m
-        except Exception:
-            pass
+            cadres = sys._current_frames()
+            if m - dernier >= 20:
+                for d, ch, tid in vols:
+                    if d < _PILE_S:
+                        break
+                    fr = cadres.get(tid)
+                    if fr is None:
+                        continue
+                    print(f"Pile lente : {ch} {d:.0f} s · {len(vols)} en cours · " + _pile_lisible(fr), flush=True)
+                    dernier = m
+                    break
+            if _PILE_COURT_S > 0:
+                for d, ch, tid in vols:
+                    if not (_PILE_COURT_S <= d < _PILE_S):
+                        continue
+                    vus = [t for t in courts.get(ch, ()) if m - t < 600]
+                    fr = cadres.get(tid) if len(vus) < 4 else None
+                    if fr is not None:
+                        print(f"Pile : {ch} {d:.1f} s · " + _pile_lisible(fr), flush=True)
+                        vus.append(m)
+                    courts[ch] = vus
+                if len(courts) > 400:
+                    courts.clear()
+        except Exception as e:
+            if time.time() - err_le > 300:
+                err_le = time.time()
+                print("Gardien des piles : " + repr(e)[:200], flush=True)
+
+
+def _gardien_assurer():
+    """Le gardien roule dans CE processus (sinon on le lance) : appele au chargement et par chaque requete de l'API."""
+    if _PILE_S <= 0:
+        return
+    f = _GARDIEN.get("fil")
+    if _GARDIEN.get("pid") == os.getpid() and f is not None and f.is_alive():
+        return
+    with _EN_VOL_VERROU:
+        f = _GARDIEN.get("fil")
+        if _GARDIEN.get("pid") == os.getpid() and f is not None and f.is_alive():
+            return
+        f = threading.Thread(target=_gardien_piles, daemon=True, name="gardien-piles")
+        _GARDIEN["pid"], _GARDIEN["fil"] = os.getpid(), f
+        f.start()
 
 
 @app.before_request
@@ -390,11 +440,14 @@ def _chrono_debut():
     if request.path.startswith("/api/"):
         with _EN_VOL_VERROU:
             _EN_VOL[threading.get_ident()] = (g._t0, request.path)
+        if HEBERGE:
+            _gardien_assurer()
 
 
 @app.teardown_request
 def _chrono_sortie(_e=None):
-    _EN_VOL.pop(threading.get_ident(), None)
+    with _EN_VOL_VERROU:
+        _EN_VOL.pop(threading.get_ident(), None)
 
 
 @app.after_request
@@ -2368,7 +2421,7 @@ def _revalider_deals():
 if HEBERGE and os.environ.get("LOCKERROOM_TACHES", "1") == "1":
     demarrer_taches()          # gunicorn importe ce fichier : 1 seul worker (voir render.yaml)
 if HEBERGE:
-    threading.Thread(target=_gardien_piles, daemon=True).start()
+    _gardien_assurer()
 
 
 if __name__ == "__main__":

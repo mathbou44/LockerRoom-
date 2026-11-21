@@ -37,3 +37,12 @@ import indice_joueurs as ij
 ij.lire = lambda: {"indice": {"Tim Stützle": {"indice": 77}, "Connor McDavid": {"indice": 99}}}
 assert ij.indice("Connor McDavid")["indice"] == 99 and ij.indice("tim stutzle")["indice"] == 77 and ij.indice("Personne") is None
 print("OK test_vitesse_partage")
+
+# 21 nov 2026 (2e suivi) : le gardien s'annonce, se relance dans le processus courant et echantillonne les requetes courtes
+import inspect as _i
+_s = _i.getsource(server._gardien_piles)
+assert "Gardien des piles : actif" in _s and "Pile : " in _s and "Pile lente : " in _s, "le gardien doit s'annoncer et echantillonner"
+assert "pass" not in _s.split("except Exception")[1][:40], "une erreur du gardien ne doit plus etre avalee"
+assert "_gardien_assurer()" in _i.getsource(server._chrono_debut)
+assert server._pile_lisible(_i.currentframe()).startswith("test_vitesse_partage.py:")
+print("OK gardien des piles")
