@@ -2012,6 +2012,17 @@ html body .adm-grille2 > .adm-tu .adm-tu-t small{color:color-mix(in oklab, var(-
 html body .acc-sec{padding-left:3px; overflow:visible}
 html body .acc-sec > span::before{flex:none; width:8px; height:8px; box-shadow:0 0 0 3px color-mix(in srgb, var(--c) 22%, transparent)}
 html body .acc-sec > span{color:color-mix(in oklab, var(--c) 72%, #fff)}
+/* 22 nov 2026 (Mathieu : « un encadre noir derriere, enleve ca ») : le titre de section du tableau CEO n'a plus de bandeau opaque */
+@media (min-width:900px){
+  html body .ecran.ceo-e .ceo-sec.on > .ceo-st{position:static !important; background:none !important; box-shadow:none !important; padding:0 !important; margin:0 0 6px !important}
+  html body .ceo-sec[data-sec="outils"] .adm-emb .adm-tu{padding:5px 12px !important}
+  html body .ceo-sec[data-sec="outils"] .adm-emb .adm-tu-i{width:28px !important; height:28px !important}
+  html body .ceo-sec[data-sec="outils"] .adm-emb .acc-sec{margin:4px 0 3px !important} html body .ceo-sec[data-sec="outils"] .adm-emb .acc-sec > span{font-size:13px}
+  html body .ceo-sec[data-sec="outils"] .adm-emb .adm-grille2{gap:6px !important; margin:0 0 4px !important}
+  html body .ceo-sec[data-sec="outils"] .adm-emb .adm-etat{padding:6px 14px !important}
+  html body .ceo-sec[data-sec="outils"] .adm-emb .adm-etat-t{display:flex !important; flex-direction:row !important; align-items:baseline; gap:12px; min-width:0}
+  html body .ceo-sec[data-sec="outils"] .adm-emb .adm-etat-t > *{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+}
 /* 20 nov 2026 : le prix final d'un encan fini de la watchlist */
 .w-final b{color:var(--texte)} .w-fin-at b{font-size:16px !important; color:var(--doux) !important; font-weight:600}
 .w-ecart{margin-top:4px; font-size:15px; font-weight:700} .w-ecart.vert{color:var(--vert)} .w-ecart.rouge{color:var(--rouge)}
@@ -13031,7 +13042,7 @@ async function feuilleMegaTest(){
   const pj = r.cartes ? Math.round(100 * (r.cartes_finies || 0) / r.cartes) : 0;
   const pcr = r.plafond ? Math.min(100, Math.round(100 * (r.credits || 0) / r.plafond)) : 0;
   const etat = r.en_cours ? tt('En cours', 'Running') : {aucune: tt('Pas commencé', 'Not started'), terminee: tt('Terminé', 'Done'), plafond: tt('Plafond atteint', 'Cap reached'),
-    attente_mois: tt('En attente : reprend seul quand le mois a des crédits', 'Waiting: resumes by itself when the month has credits'), erreur: tt('Arrêté (erreur) : réessaie aux 6 h', 'Stopped (error): retries every 6 h'),
+    attente_mois: tt('En attente : reprend seul quand le mois a des crédits', 'Waiting: resumes by itself when the month has credits'), erreur: tt('Arrêté (erreur) : réessaie seul dans l’heure', 'Stopped (error): retries by itself within the hour'),
     interrompue: tt('En pause : reprend seul', 'Paused: resumes by itself'), en_cours: tt('En pause : reprend seul', 'Paused: resumes by itself'), arretee: tt('Arrêté', 'Stopped')}[r.statut] || r.statut;
   ouvrirFeuille(`<h3>${tt('Méga test 3 ans', '3-year mega test')}</h3>
     <div class="sous" style="margin-bottom:10px">${tt('Jusqu’à 3 ans de ventes de chaque carte exacte de nos archives (CompSniper), pour savoir si l’acheteur du Radar Pro fait de l’argent à 3, 6 et 12 mois, frais compris.', 'Up to 3 years of sales for each exact card in our archives (CompSniper), to learn whether a Pro Radar buyer makes money at 3, 6 and 12 months, fees included.')}</div>
@@ -20096,7 +20107,7 @@ async function vueCEO(){
       ${tete('expert', tt('Questions, flip ou garder, validation', 'Questions, flip or keep, validation'))}
       <div id="ceo-ex-z"><div class="lecture"><span class="roue"></span></div></div>
       ${tete('outils', tt('Chasseur, SlabIQ, catalogue, serveur', 'Hunter, SlabIQ, catalogue, server'))}
-      <div id="ceo-outils"><div class="lecture"><span class="roue"></span></div></div>
+      <div id="ceo-outils-z"><div class="lecture"><span class="roue"></span></div></div>
 
       ${tete('taches', tt(`${ouvertes.length} ouvertes`, `${ouvertes.length} open`))}
       <div class="ceo-tf"><div class="chips">${[['ouvertes', tt('À faire', 'To do'), ouvertes.filter(t => t.etat !== 'attente').length], ['attente', tt('En attente', 'Waiting'), ouvertes.filter(t => t.etat === 'attente').length]].map(([k, l, c]) => `<button class="chip ${(S.ceoTf || 'ouvertes') === k ? 'on' : ''}" data-tfl="${k}">${l} <b>${c}</b></button>`).join('')}</div>
@@ -20228,7 +20239,7 @@ async function vueCEO(){
     $$('[data-pk]', d).forEach(x => x.onclick = () => { vibrer(); ddFermer(); aller(x.dataset.pk); }); };
   const aller = (k) => { majNavM(k); S.ceoSec = k;
     if (k === 'expert') { const ze = $('#ceo-ex-z'); if (ze && !ze.dataset.fait) { ze.dataset.fait = '1'; vueExpert(ze); } }
-    if (k === 'outils') { const zo = $('#ceo-outils'); if (zo && !zo.dataset.fait) { zo.dataset.fait = '1'; const o = S.admOnglet; S.admOnglet = null; vueAdmin(o, zo); } } $$('.ceo-sec').forEach(x => x.classList.toggle('on', x.dataset.sec === k)); $$('[data-cn]').forEach(x => x.classList.toggle('on', x.dataset.cn === k));
+    if (k === 'outils') { /* 22 nov 2026 : #ceo-outils est aussi l'id du titre de la section (les outils se dessinaient dans son bandeau noir) */ const zo = $('#ceo-outils-z'); if (zo && !zo.dataset.fait) { zo.dataset.fait = '1'; const o = S.admOnglet; S.admOnglet = null; vueAdmin(o, zo); } } $$('.ceo-sec').forEach(x => x.classList.toggle('on', x.dataset.sec === k)); $$('[data-cn]').forEach(x => x.classList.toggle('on', x.dataset.cn === k));
     const n = $('.ceo-nav [data-cn="' + k + '"]'); if (n && n.scrollIntoView && innerWidth < 1100) n.scrollIntoView({inline: 'center', block: 'nearest'}); scrollTo(0, 0); const cm_ = $('.ceo-main'); if (cm_) cm_.scrollTop = 0;
     requestAnimationFrame(() => { if (k === 'taches') paginerColonnes($('#ceo-tl')); if (k === 'obligations') paginerColonnes($('.ceo-obls')); }); };
   aller(S.ceoSec);
@@ -21167,15 +21178,19 @@ async function chargerGrader(el){
     note = x && x.note_min != null ? x.note_min : null; }
   const r = await API.carte_grader(el.dataset.grader, note).catch(() => null);
   if (!el.isConnected || !r || !r.ok) { el.innerHTML = ''; return; }
-  const V = {oui: [tt('Ça vaut la peine', 'Worth it'), 'vert'], 'peut-etre': [tt('Peut-être', 'Maybe'), 'or'], non: [tt('Pas rentable', 'Not worth it'), 'rouge']}[r.verdict] || ['—', ''];
+  // 22 nov 2026 (Mathieu : « moins de texte, simplifie au max, pense Apple ») : un verdict, un montant, une ligne ; le detail
+  // (multiple, seuil, PSA 9, frais) reste dans l'infobulle
+  const V = {oui: [tt('Oui', 'Yes'), 'vert'], 'peut-etre': [tt('Peut-être', 'Maybe'), 'or'], non: [tt('Non', 'No'), 'rouge']}[r.verdict] || ['—', ''];
   const pc = (x) => Math.round((x || 0) * 100) + ' %';
-  const ligne = r.seuil_10 != null
-    ? tt(`Un PSA 10 vaut ${String(r.multiple).replace('.', ',')}× la brute. Il faut ${pc(r.seuil_10)} de chances d’avoir un 10 pour ne pas perdre ; ${r.source === 'pregrade' ? 'ton pré-grade' : 'le marché'} dit ${pc(r.chance_10)}.`,
-         `A PSA 10 is worth ${r.multiple}× the raw. You need a ${pc(r.seuil_10)} chance of a 10 to break even; ${r.source === 'pregrade' ? 'your pre-grade' : 'the market'} says ${pc(r.chance_10)}.`)
-    : tt(`Un PSA 10 vaut ${String(r.multiple).replace('.', ',')}× la brute : même un 10 ne couvre pas les frais.`, `A PSA 10 is worth ${r.multiple}× the raw: even a 10 doesn’t cover the fees.`);
-  el.innerHTML = `<div class="grd"><div class="grd-h"><span class="grd-k">${tt('Grader ?', 'Grade it?')}</span><b class="${V[1]}">${V[0]}</b>
-      ${r.gain != null ? `<em class="${r.gain >= 0 ? 'vert' : 'rouge'}">${r.gain >= 0 ? '+' : '−'}${argent(Math.abs(r.gain), 0)} ${tt('espéré', 'expected')}</em>` : ''}</div>
-    <p>${ligne}</p>${r.brute != null ? `<small>${tt('Brute', 'Raw')} ${argent(r.brute, 0)} · PSA 10 ${argent(r.psa10, 0)} · PSA 9 ${argent(r.psa9, 0)} · ${tt('frais PSA et envoi', 'PSA fees and shipping')} ${argent(r.frais, 0)}</small>` : ''}</div>`;
+  const n = r.chance_10 > 0 ? Math.max(1, Math.round(1 / r.chance_10)) : null;
+  const chance = n == null ? '' : n <= 1 ? tt('presque sûr d’avoir un 10', 'a 10 is almost sure') : tt(`1 chance sur ${n} d’avoir un 10`, `1 in ${n} chance of a 10`);
+  const ligne = r.seuil_10 != null && r.brute != null
+    ? `PSA 10 ${argent(r.psa10, 0)} ${tt('au lieu de', 'instead of')} ${argent(r.brute, 0)}${chance ? ' · ' + chance : ''}`
+    : tt('Même un 10 ne paierait pas les frais.', 'Even a 10 wouldn’t pay the fees.');
+  const detail = r.brute != null ? `${tt('Brute', 'Raw')} ${argent(r.brute, 0)} · PSA 10 ${argent(r.psa10, 0)} · PSA 9 ${argent(r.psa9, 0)} · ${tt('frais', 'fees')} ${argent(r.frais, 0)}${r.seuil_10 != null ? ' · ' + tt('il faut', 'need') + ' ' + pc(r.seuil_10) + ' ' + tt('de 10', 'of 10s') + ', ' + (r.source === 'pregrade' ? tt('ton pré-grade', 'your pre-grade') : tt('le marché', 'the market')) + ' ' + pc(r.chance_10) : ''}` : '';
+  el.innerHTML = `<div class="grd" title="${esc(detail)}"><div class="grd-h"><span class="grd-k">${tt('Grader ?', 'Grade it?')}</span><b class="${V[1]}">${V[0]}</b>
+      ${r.gain != null ? `<em class="${r.gain >= 0 ? 'vert' : 'rouge'}">${r.gain >= 0 ? '+' : '−'}${argent(Math.abs(r.gain), 0)}</em>` : ''}</div>
+    <p>${ligne}</p></div>`;
 }
 new MutationObserver(() => { document.querySelectorAll('[data-grader]:not([data-gok])').forEach(chargerGrader); })
   .observe(document.documentElement, {childList: true, subtree: true});

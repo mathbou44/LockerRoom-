@@ -1112,6 +1112,9 @@ def _part_cie(g):
 
 def _facteur_note(g_cible, g_vente):
     """Ce qu'il faut multiplier le prix d'une vente (sa note, sa compagnie) pour l'avoir a la note de la carte ; None = inconnu."""
+    import cartes_match
+    if not g_cible and g_vente:                  # 22 nov 2026 (Mathieu) : une brute ne se compare jamais a un 9 ou un 10 ramene ;
+        return 1.0 if cartes_match.grade_bas(g_vente) else None      # une vente sous 9 vaut une brute telle quelle
     p0, p1 = _part_note(g_cible), _part_note(g_vente)
     if not p0 or not p1:
         return None

@@ -95,7 +95,7 @@ _RE_COULEURS_PATCH = re.compile(r"\b(?:\d+|one|two|three|four|five|six|tri|dual|
 COULEURS_SERIE = {"silver", "gold", "red", "blue", "green", "orange", "purple", "pink", "black", "emerald", "ruby", "sapphire",
                   "violet", "aqua", "bronze", "copper"}
 _RE_ANNEE = re.compile(r"\b(19[5-9]\d|20[0-4]\d)\s*(?:[-/]\s*(\d{2,4}))?\b|\b(\d{2})\s*-\s*(\d{2})\b")
-_RE_GRADE = re.compile(r"\b(psa|bgs|sgc|cgc|tag|ksa|hga|beckett|bccg|csg|gma|isa|ags|mnt)\s*-?\s*(gem\s*(?:mint|mt)?\s*|mint\s*|pristine\s*|black label\s*)?(10|9\.5|9|8\.5|8|7\.5|7|6|5|4|3|2|1)?\b")
+_RE_GRADE = re.compile(r"\b(psa|bgs|sgc|cgc|tag|ksa|hga|beckett|bccg|csg|gma|isa|ags|mnt|aca)\s*-?\s*(gem\s*(?:mint|mt)?\s*|mint\s*|pristine\s*|black label\s*)?(10|9\.5|9|8\.5|8|7\.5|7|6|5|4|3|2|1)?\b")
 _RE_SERIE = re.compile(r"(?:#\s*)?(?:\b\d{1,4}\s*)?/\s*0*(\d{1,4})\b|\b(\d{1,4})\s+of\s+(\d{1,4})\b|\b1\s*/\s*1\b|\bone of one\b")
 _RE_NUM = re.compile(r"(?:#|\bno\.?\s*|\bcard\s*)\s*([a-z]{0,4}-?\d{1,4}[a-z]?)\b")
 _RE_AUTO = re.compile(r"(?<!non )(?<!non-)(?<!no )(?<!not )\bauto\b|\bon card\b|\bsticker auto\b")
@@ -180,6 +180,15 @@ def _vrai_grade(m):
     « Beckett » est aussi un PRENOM. Sans note juste apres (Beckett 9.5), « beckett », « tag », « isa »... ne disent pas
     qu'une carte est gradee ; « psa », « bgs », « sgc », « cgc » le disent toujours."""
     return bool(m.group(3)) or m.group(1) in ("psa", "bgs", "sgc", "cgc")
+
+
+def grade_bas(g):
+    """22 nov 2026 (Mathieu : « tout ce qui est gradé 8 et moins, traiter comme une raw pour le bid price et les comps, mais pas
+    mettre des 9 ou des 10 » ; une Bouchard Young Guns ACA 8.5) : une note sous 9 vaut une brute."""
+    try:
+        return bool(g) and float(str(g.get("note") or "").replace(",", ".")) < 9
+    except ValueError:
+        return False
 
 
 def _sans_grade(t):
@@ -273,7 +282,10 @@ def cible(recherche):
     d = decoder(recherche)
     t = d["texte"]
     d["mots"] = _mots_requis(d)
-    d["veut_grade"] = bool(d["grade"]) or bool(re.search(r"\bgraded\b|\bslab\b", t))
+    d["grade_bas"] = d["grade"] if grade_bas(d["grade"]) else None
+    if d["grade_bas"]:                     # 22 nov 2026 : une note sous 9 = une brute (comps de brutes, jamais de 9 ni de 10)
+        d["grade"] = None
+    d["veut_grade"] = bool(d["grade"]) or (not d["grade_bas"] and bool(re.search(r"\bgraded\b|\bslab\b", t)))
     d["brute"] = bool(re.search(r"\braw\b|\bungraded\b", t))
     d["veut_serie"] = d["serie"] is not None or bool(re.search(r"\bnumbered\b|\bserial\b|#\s*d\b", t))
     d["base"] = bool(re.search(r"\bbase\b", t))
@@ -342,7 +354,7 @@ def raisons_refus(c, titre, appris=None):
     elif c["veut_grade"]:
         if not a["grade"]:
             r.append("pas gradée")
-    elif a["grade"]:
+    elif a["grade"] and not grade_bas(a["grade"]):          # 22 nov 2026 : une vente sous 9 compte comme une brute
         r.append("gradée")
     # auto, patch
     # 16 nov 2026 (Luke Hughes Honorable Numbers « RPA ») : « RPA » sans « auto » ne tranche pas (Rookie Patch Auto, ou une

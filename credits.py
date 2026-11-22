@@ -88,7 +88,7 @@ def etiquettes(cib):
         s = None
     if s:
         L.append("serie /25-" if s <= 25 else "serie /26-99" if s <= 99 else "serie /100+")
-    g = cib.get("grade")
+    g = cib.get("grade") or cib.get("grade_bas")         # 22 nov 2026 : une note sous 9 se cherche comme une brute, sa categorie reste
     if g:
         n = str((g or {}).get("note") or "")
         try:

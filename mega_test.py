@@ -113,6 +113,16 @@ def _larges():
     return out
 
 
+def _sans_joueur(q):
+    """22 nov 2026 (« psa 10 rookie » avait pris 28 pages) : une recherche sans nom de joueur melange des cartes differentes."""
+    try:
+        import cartes_match
+        j = cartes_match.joueur_du_titre(q or "")
+    except Exception:
+        return False
+    return len(str(j or "").split()) < 2
+
+
 def construire_plan(n_max=PLAN_MAX, aujourd=None):
     """Les recherches de nos archives (hockey), les plus vendues d'abord. -> nombre de recherches dans le plan."""
     import base_ventes
@@ -130,7 +140,7 @@ def construire_plan(n_max=PLAN_MAX, aujourd=None):
         vieilles = dict(c.execute("SELECT q, MIN(le) FROM ventes GROUP BY q").fetchall())
         prix = {}
         for q, n, _d in rows:
-            if q in larges or not q or len(q.split()) < 2:
+            if q in larges or not q or len(q.split()) < 2 or _sans_joueur(q):
                 continue
             ps = [p for (p,) in c.execute("SELECT prix FROM ventes WHERE q=? AND le >= ? AND prix > 0", (q, d_an))]
             if ps:
@@ -255,6 +265,9 @@ def _collecter(plafond, arret, pause):
             c = _cx()
             try:
                 c.execute("UPDATE plan SET fini=0, raison=NULL WHERE raison='pages max' AND pages < ?", (PAGES_MAX,))
+                for (q_,) in c.execute("SELECT q FROM plan WHERE fini=0").fetchall():
+                    if _sans_joueur(q_):
+                        c.execute("UPDATE plan SET fini=1, raison='sans joueur' WHERE q=?", (q_,))
                 c.commit()
             finally:
                 c.close()
@@ -287,17 +300,20 @@ def _collecter(plafond, arret, pause):
                         d = _page(q, page, debut, fin)
                         break
                     except urllib.error.HTTPError as e:
-                        if e.code == 429 and essais < 3:
+                        # 22 nov 2026 (« CompSniper HTTP 503 », arrete 35 min) : une panne passagere (429, 5xx) attend et reessaie :
+                        # 30 s, 1, 2, 4 puis 5 min
+                        if (e.code == 429 or e.code >= 500) and essais < 5:
                             essais += 1
-                            time.sleep(60 * essais)
+                            _texte(f"{q} · page {page} · CompSniper HTTP {e.code}, nouvel essai {essais}/5")
+                            time.sleep(min(300, 30 * 2 ** (essais - 1)))
                             continue
                         fin_statut = "erreur"
                         _run_maj(erreur=f"CompSniper HTTP {e.code}")
                         return None
                     except Exception as e:
-                        if essais < 2:
+                        if essais < 5:
                             essais += 1
-                            time.sleep(10)
+                            time.sleep(min(300, 30 * 2 ** (essais - 1)))
                             continue
                         fin_statut = "erreur"
                         _run_maj(erreur="CompSniper injoignable (" + type(e).__name__ + ")")
@@ -383,8 +399,8 @@ def continuer_si_besoin():
     st = r.get("statut") or "aucune"
     if st in ("terminee", "plafond", "arretee", "essai_rate"):
         return None
-    if st == "erreur" and time.time() - (r.get("battement") or 0) < 6 * 3600:
-        return None                                          # une erreur : on reessaie aux 6 heures
+    if st == "erreur" and time.time() - (r.get("battement") or 0) < 15 * 60:
+        return None                                          # une erreur : on reessaie au prochain tour (chaque heure), 15 min au moins apres
     if credits_disponibles() <= 0:
         if st == "aucune":
             _run_maj(texte="En attente de crédits (budget du mois LR_HISTORIQUE_MOIS moins la réserve de l'app)", battement=time.time())

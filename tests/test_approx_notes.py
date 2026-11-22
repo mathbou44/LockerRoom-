@@ -14,7 +14,8 @@ V = [{"titre": "2021-22 O-Pee-Chee Platinum Cole Caufield Rookie Auto Violet Pix
      {"titre": "2021-22 O-Pee-Chee Platinum Cole Caufield Rookie Auto PSA 8", "prix": 90, "le": d(10), "url": "u4"}]
 r = deals.valeur_approx({"titre": "2021-22 O-Pee-Chee Platinum Cole Caufield Rookie Auto Emerald Surge 1/10 PSA 8"}, V)
 assert r and r[1] == "approx" and 150 < r[0] < 400, r
-assert any("PSA 10" in (v.get("note") or "") for v in r[3])
+# 22 nov 2026 (Mathieu : « 8 et moins = une raw, pas de 9 ni de 10 ») : jamais une PSA 9 ou 10 ramenee pour une PSA 8
+assert not any(x in (v.get("note") or "") for v in r[3] for x in ("PSA 10", "PSA 9")), r[3]
 # une PSA 10 vaut plus qu'une PSA 8 de la meme carte (memes ventes)
 r10 = deals.valeur_approx({"titre": "2021-22 O-Pee-Chee Platinum Cole Caufield Rookie Auto Emerald Surge 1/10 PSA 10"}, V)
 assert r10 and r10[0] > r[0], (r10, r)

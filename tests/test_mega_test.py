@@ -60,20 +60,37 @@ print("COLLECTE OK")
 
 # garde-fous : une page repetee (l'API ignore la page) termine la recherche ; 3 ans atteints aussi
 mega_test._run_maj(statut="aucune", credits=0)
-c = mega_test._cx(); c.execute("DELETE FROM plan"); c.execute("INSERT INTO plan (q, ordre, n_an, prix) VALUES ('rep a', 0, 9, 50), ('vieux b', 1, 9, 50)"); c.commit(); c.close()
+c = mega_test._cx(); c.execute("DELETE FROM plan"); c.execute("INSERT INTO plan (q, ordre, n_an, prix) VALUES ('cole caufield young guns', 0, 9, 50), ('nick suzuki young guns', 1, 9, 50)"); c.commit(); c.close()
 def page2(q, p, debut, fin):
     APP.append((q, p))
-    if q == "rep a":
+    if q == "cole caufield young guns":
         return {"results": [{"itemId": f"x{i}", "title": f"rep {i}", "soldPrice": {"amount": "50"}, "soldDate": jr(10 + i)} for i in range(50)]}
     return {"results": [{"itemId": f"v{p}{i}", "title": f"vieux {i}", "soldPrice": {"amount": "50"}, "soldDate": jr(1100 + i)} for i in range(50)]}
 mega_test._page = page2
 APP.clear(); b = mega_test.collecter(pause=0)
-assert APP == [("rep a", 1), ("rep a", 2), ("vieux b", 1)] and b["raisons"] == {"page repetee": 1, "3 ans atteints": 1}, (APP, b)
+assert APP == [("cole caufield young guns", 1), ("cole caufield young guns", 2), ("nick suzuki young guns", 1)] and b["raisons"] == {"page repetee": 1, "3 ans atteints": 1}, (APP, b)
+# 22 nov 2026 : une recherche sans joueur (« psa 10 rookie ») n'entre jamais ; une panne 503 attend et reessaie
+assert mega_test._sans_joueur("psa 10 rookie") and not mega_test._sans_joueur("connor bedard young guns")
+mega_test._run_maj(statut="aucune", credits=0)
+c = mega_test._cx(); c.execute("DELETE FROM plan"); c.execute("INSERT INTO plan (q, ordre, n_an, prix) VALUES ('psa 10 rookie', 0, 99, 50), ('quinn hughes young guns', 1, 9, 50)"); c.commit(); c.close()
+import urllib.error
+N503 = []
+def page503(q, p, debut, fin):
+    APP.append((q, p))
+    if len(N503) < 2:
+        N503.append(1); raise urllib.error.HTTPError("u", 503, "x", {}, None)
+    return {"results": []}
+mega_test._page = page503
+dormi = []; _dormir = mega_test.time.sleep; mega_test.time.sleep = lambda s_: dormi.append(s_)
+APP.clear(); b = mega_test.collecter(pause=0)
+assert APP == [("quinn hughes young guns", 1)] * 3 and b["statut"] == "terminee" and dormi[:2] == [30, 60], (APP, b, dormi)
+assert b["raisons"] == {"sans joueur": 1, "toutes les ventes": 1}, b
+mega_test.time.sleep = _dormir
 print("GARDE-FOUS OK")
 
 # les credits : le plafond de la collecte ; le budget du mois moins la reserve de l'app (a sec : attend le mois suivant)
 mega_test._run_maj(statut="aucune", credits=0)
-c = mega_test._cx(); c.execute("DELETE FROM plan"); c.execute("INSERT INTO plan (q, ordre, n_an, prix) VALUES ('long c', 0, 9, 50)"); c.commit(); c.close()
+c = mega_test._cx(); c.execute("DELETE FROM plan"); c.execute("INSERT INTO plan (q, ordre, n_an, prix) VALUES ('lane hutson young guns', 0, 9, 50)"); c.commit(); c.close()
 def page3(q, p, debut, fin):
     APP.append((q, p))
     return {"results": [{"itemId": f"l{p}-{i}", "title": f"long {i}", "soldPrice": {"amount": "50"}, "soldDate": jr(5 + p)} for i in range(50)]}
@@ -85,7 +102,7 @@ mega_test._run_maj(statut="interrompue", plafond=1000)
 os.environ["LR_HISTORIQUE_MOIS"] = str(historique.utilises()["mois"] + 100 + 2)          # 2 credits de libres apres la reserve
 APP.clear(); b = mega_test.collecter(pause=0)
 assert len(APP) == 2 and b["statut"] == "attente_mois", (APP, b)
-assert APP[0] == ("long c", 4)                                      # reprend a la page suivante
+assert APP[0] == ("lane hutson young guns", 4)                                      # reprend a la page suivante
 APP.clear(); assert mega_test.continuer_si_besoin() is None and not APP      # a sec : rien
 os.environ["LR_HISTORIQUE_MOIS"] = "100000"                         # le mois suivant : elle repart toute seule
 assert mega_test.continuer_si_besoin()["ok"]
@@ -93,7 +110,7 @@ for _ in range(200):
     time.sleep(0.05)
     if not mega_test.ETAT["en_cours"]:
         break
-assert APP and APP[0] == ("long c", 6), APP
+assert APP and APP[0] == ("lane hutson young guns", 6), APP
 os.environ["LR_MEGA_AUTO"] = "0"; mega_test._run_maj(statut="interrompue")
 assert mega_test.continuer_si_besoin() is None
 os.environ.pop("LR_MEGA_AUTO")
