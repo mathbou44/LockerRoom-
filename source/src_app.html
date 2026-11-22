@@ -1967,6 +1967,51 @@ html body .sd-ph .isl-mk.inv-mk{background:rgba(11,11,14,.9) !important; border:
   backdrop-filter:none; letter-spacing:.01em}
 html body .sd-ph .isl-mk.inv-mk.rouge{color:#FF8E8E} html body .sd-ph .isl-mk.inv-mk.vert{color:#86EBB5}
 html body .sd-ph .isl-mk.inv-mk.or{color:#F6DC94} html body .sd-ph .isl-mk.inv-mk.acc{color:#C6CAFF}
+/* 22 nov 2026 : Revenus et couts, 3 cartes a gros chiffre */
+html body .rv-3{display:grid; grid-template-columns:1fr; gap:10px; margin-top:10px}
+@media (min-width:900px){ html body .rv-3{grid-template-columns:repeat(3, minmax(0,1fr))} }
+html body .rv-3 .ceo-c{display:flex; flex-direction:column}
+html body .rv-h{display:flex; align-items:baseline; gap:8px; margin:2px 0 8px}
+html body .rv-h b{font:800 38px/1 'Barlow Condensed',sans-serif; color:var(--texte)} html body .rv-h b.vert{color:var(--vert)} html body .rv-h b.rouge{color:var(--rouge)}
+html body .rv-h span{color:var(--doux); font-size:14px}
+html body .rv-3 .ceo-q-b{margin-top:4px}
+html body .rv-3 .ceo-n{margin-top:auto; padding-top:8px}
+/* 22 nov 2026 : le test SlabIQ tient dans une fenetre a l'ordi (2 colonnes, rien a faire defiler) */
+@media (min-width:900px){
+  html body #feuille:has(.tq-2c){width:min(1120px, 94vw) !important; max-width:none !important; max-height:94vh; gap:8px; padding:14px 22px 16px; overflow:hidden}
+  html body #feuille:has(.tq-2c) > h3{margin:0} html body #feuille:has(.tq-2c) > .sous{font-size:12.5px; margin:0}
+  html body .tq-2c{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:18px; align-items:start; min-height:0}
+  html body .tq-2c > div{display:flex; flex-direction:column; gap:8px; min-width:0}
+  html body .tq-2c .iq-hero{margin:0; padding:16px 16px 14px}
+  html body .tq-2c .iq-big{font-size:58px} html body .tq-2c .iq-big i{font-size:38px}
+  html body .tq-2c .da-l{margin:4px 0 0}
+  html body .tq-2c .iq-coups{gap:6px} html body .tq-2c .iq-c{padding:8px 11px}
+  html body .tq-2c .iq-c:nth-child(n+5){display:none}
+  html body .tq-col2 > .sous{margin:0 !important; font-size:12.5px}
+  html body .tq-col2 > .tq-a{gap:3px} html body .tq-col2 > .tq-a > div{padding:5px 10px; font-size:12.5px}
+  html body .tq-col2 > .tq-a > div:nth-child(n+11){display:none}
+  html body .tq-col2 > .tq-tech{margin:0} html body .tq-col2 > .tq-tech[open]{max-height:38vh; overflow:auto}
+  html body .tq-liens{display:flex; flex-wrap:wrap; gap:4px 16px} html body .tq-liens a.lien-t{margin:0 !important; font-size:13px}
+  html body .tq-col2 > .sous:last-of-type{font-size:11.5px; color:var(--pale)}
+  html body .tq-col2 > #tq-go{margin-top:2px}
+}
+/* 22 nov 2026 (Mathieu : « des couleurs differentes dans les tuiles pour aider la separation, dans le theme de la couleur choisie ») :
+   les 4 teintes des tuiles = la couleur choisie et ses voisines sur le cercle (meme clarte, meme force), plus une complementaire
+   adoucie. Avant : la meme couleur, plus claire ou plus sombre (tout se ressemblait). Navigateurs sans « oklch(from ...) » : comme avant. */
+@supports (color: oklch(from red l c h)){
+  html body{--t2:oklch(from var(--acc) l c calc(h + 50)); --t3:oklch(from var(--acc) l c calc(h - 50)); --t4:oklch(from var(--acc) l calc(c * .75) calc(h + 160))}
+}
+/* les tuiles teintees : un peu plus de couleur et de contraste ; l'icone et le chiffre prennent la teinte de leur tuile */
+html body :is(.psb-g, .ceo-kpis, .achx-k, .adm-kpi2, .an-bilan, .bil-ks, .fjc-tr, .adm-grille2) > :not(.ak){background:radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--tt) 38%, transparent), transparent 64%),
+    linear-gradient(160deg, color-mix(in srgb, var(--tt) 28%, var(--carte2, var(--carte))), color-mix(in srgb, var(--tt) 11%, var(--carte2, var(--carte)))) !important;
+  border:1px solid color-mix(in srgb, var(--tt) 58%, var(--ligne)) !important}
+html body .adm-grille2 > .adm-tu .adm-tu-i svg{stroke:color-mix(in oklab, var(--tt) 55%, #fff)}
+html body .adm-grille2 > .adm-tu:not(.vert):not(.rouge):not(.or) .adm-tu-v{color:color-mix(in oklab, var(--tt) 45%, #fff)}
+html body .adm-grille2 > .adm-tu .adm-tu-t small{color:color-mix(in oklab, var(--texte) 72%, transparent)}
+/* les points des titres de section : ronds, nets, jamais coupes (un anneau doux au lieu d'un halo flou qui se faisait rogner) */
+html body .acc-sec{padding-left:3px; overflow:visible}
+html body .acc-sec > span::before{flex:none; width:8px; height:8px; box-shadow:0 0 0 3px color-mix(in srgb, var(--c) 22%, transparent)}
+html body .acc-sec > span{color:color-mix(in oklab, var(--c) 72%, #fff)}
 /* 20 nov 2026 : le prix final d'un encan fini de la watchlist */
 .w-final b{color:var(--texte)} .w-fin-at b{font-size:16px !important; color:var(--doux) !important; font-weight:600}
 .w-ecart{margin-top:4px; font-size:15px; font-weight:700} .w-ecart.vert{color:var(--vert)} .w-ecart.rouge{color:var(--rouge)}
@@ -12901,6 +12946,18 @@ async function feuilleTestIQ(){
   } else if (!r.en_cours) h += `<div class="vide">${tt('Pas encore de rapport. Lance le test : quelques minutes.', 'No report yet. Run the test: a few minutes.')}</div>`;
   h += `<button class="btn" id="tq-go" ${r.en_cours ? 'disabled' : ''}>${r.en_cours ? tt('Test en cours…', 'Test running…') : tt('Lancer le test', 'Run the test')}</button>`;
   ouvrirFeuille(h);
+  // 22 nov 2026 (Mathieu : « revois le design pour que ca fit sur une fenetre ») : a l'ordi, 2 colonnes sans defilement :
+  // a gauche les alertes et les meilleurs coups ; a droite le direct, les liens et le bouton
+  (() => { const fe = $('#feuille'), hero = fe.querySelector('.iq-hero');
+    if (!hero || !matchMedia('(min-width: 900px)').matches) return;
+    const w = document.createElement('div'), c1 = document.createElement('div'), c2 = document.createElement('div');
+    w.className = 'tq-2c'; c1.className = 'tq-col1'; c2.className = 'tq-col2'; hero.before(w); w.append(c1, c2);
+    let n = hero, dansC1 = true;
+    while (n) { const suiv = n.nextElementSibling;
+      if (dansC1 && n !== hero && n.classList.contains('da-l') && !(suiv && suiv.classList.contains('iq-coups'))) dansC1 = false;
+      (dansC1 ? c1 : c2).append(n); n = suiv; }
+    const liens = [...c2.querySelectorAll(':scope > a.lien-t')];
+    if (liens.length) { const l = document.createElement('div'); l.className = 'tq-liens'; liens[0].before(l); l.append(...liens); } })();
   const go = $('#tq-go'); if (go) go.onclick = async () => { vibrer(); go.disabled = true; await API.slabiq_test_lancer().catch(() => null); setTimeout(feuilleTestIQ, 1500); };
   if (r.en_cours) setTimeout(() => { if ($('#tq-go') && $('#fond-feuille') && !$('#fond-feuille').hidden) feuilleTestIQ(); }, 10000);
 }
@@ -20054,20 +20111,29 @@ async function vueCEO(){
       <button class="pilule" id="ceo-tous">${tt('Tous les abonnés et leurs actions', 'All subscribers and actions')} ›</button>
 
       ${tete('revenus')}
-      <div class="ceo-2"><div class="ceo-c"><div class="ceo-c-t">${tt('Revenus', 'Revenue')}</div>
-          <div class="ceo-lg"><span>${tt('Prix du Pro', 'Pro price')}</span><b>${ceoCAD(rv.prix_mois)} / ${tt('mois', 'mo')}</b></div>
-          <div class="ceo-lg"><span>${tt('Revenu mensuel récurrent', 'Monthly recurring revenue')}</span><b class="vert">${ceoCAD(rv.mrr)}</b></div>
-          <div class="ceo-lg"><span>${tt('Revenu annualisé', 'Annualized revenue')}</span><b>${ceoCAD(rv.arr, 0)}</b></div>
-          <div class="ceo-c-t" style="margin-top:14px">${tt('Seuil TPS/TVQ (30 000 $ sur 4 trimestres)', 'GST/QST threshold ($30,000 over 4 quarters)')}</div>
-          <div class="ceo-q-b gros"><i class="${rv.annualise >= 0.8 * rv.seuil_tps ? 'rouge' : ''}" style="width:${Math.min(100, Math.round(100 * (rv.annualise || 0) / rv.seuil_tps))}%"></i></div>
-          <small class="ceo-n">${tt(`${Math.round(100 * (rv.annualise || 0) / rv.seuil_tps)} % du seuil, au rythme d’aujourd’hui.`, `${Math.round(100 * (rv.annualise || 0) / rv.seuil_tps)}% of the threshold at today’s pace.`)}</small></div>
-        <div class="ceo-c"><div class="ceo-c-t">${tt('Coûts par mois (en $ CA)', 'Costs per month (CAD)')}</div>
-          <div class="ceo-lg"><span>${tt('Abonnements (fixes)', 'Subscriptions (fixed)')}</span><b>${ceoCAD(c.fixe_mois)}</b></div>
-          <div class="ceo-lg"><span>${tt('Frais Stripe', 'Stripe fees')}<small>2,9 % + 0,30 $ + Billing 0,7 %</small></span><b>${ceoCAD(c.frais_stripe)}</b></div>
-          <div class="ceo-lg"><span>${tt('Commission Apple', 'Apple commission')}<small>${tt('15 % (petites entreprises)', '15% (small business)')}</small></span><b>${ceoCAD(c.frais_apple)}</b></div>
-          <div class="ceo-lg"><span>${tt('IA (Anthropic) ce mois', 'AI (Anthropic) this month')}<small>$${c.ia_usd} US${c.ia_plafond_usd ? ' / ' + c.ia_plafond_usd : ''}</small></span><b>${ceoCAD(c.ia_cad)}</b></div>
-          <div class="ceo-lg tot"><span>${tt('Total', 'Total')}</span><b>${ceoCAD(c.total_mois)}</b></div>
-          <small class="ceo-n">${tt(`Dollar US à ${String(c.usd_cad).replace('.', ',')} $ CA (Banque du Canada).`, `US dollar at ${c.usd_cad} CAD (Bank of Canada).`)}</small></div></div>
+      ${(() => { // 22 nov 2026 (Mathieu : « revoit le design ») : 3 cartes, un gros chiffre chacune, lisibles en 2 secondes ;
+        // le seuil TPS/TVQ n'est plus un 2e bandeau qui chevauchait le revenu annualise
+        const net = (rv.mrr || 0) - (c.total_mois || 0), pSeuil = Math.round(100 * (rv.annualise || 0) / (rv.seuil_tps || 30000));
+        const parAbo = (rv.prix_mois || 0) * (1 - 0.036) - 0.30, besoin = parAbo > 0 ? Math.ceil(((c.fixe_mois || 0) + (c.ia_cad || 0)) / parAbo) : null;
+        const usd = (v) => LANGUE === 'en' ? 'US$' + v : String(v).replace('.', ',') + ' $ US';
+        return `<div class="rv-3">
+        <div class="ceo-c"><div class="ceo-c-t">${tt('Revenus', 'Revenue')}</div>
+          <div class="rv-h"><b class="vert">${ceoCAD(rv.mrr)}</b><span>${tt('par mois', 'per month')}</span></div>
+          <div class="ceo-lg"><span>${tt('Prix du Pro', 'Pro price')}</span><b>${ceoCAD(rv.prix_mois)}</b></div>
+          <div class="ceo-lg"><span>${tt('Par an, à ce rythme', 'Per year, at this pace')}</span><b>${ceoCAD(rv.arr, 0)}</b></div>
+          <div class="ceo-lg"><span>${tt('Seuil TPS/TVQ', 'GST/QST threshold')}<small>${tt('30 000 $ sur 4 trimestres', '$30,000 over 4 quarters')}</small></span><b>${pSeuil} %</b></div>
+          <div class="ceo-q-b"><i class="${pSeuil >= 80 ? 'rouge' : ''}" style="width:${Math.max(pSeuil ? 2 : 0, Math.min(100, pSeuil))}%"></i></div></div>
+        <div class="ceo-c"><div class="ceo-c-t">${tt('Coûts', 'Costs')}</div>
+          <div class="rv-h"><b>${ceoCAD(c.total_mois)}</b><span>${tt('par mois', 'per month')}</span></div>
+          <div class="ceo-lg"><span>${tt('Abonnements', 'Subscriptions')}</span><b>${ceoCAD(c.fixe_mois)}</b></div>
+          <div class="ceo-lg"><span>${tt('IA (Anthropic)', 'AI (Anthropic)')}<small>${usd(c.ia_usd)}${c.ia_plafond_usd ? ' · ' + tt('plafond ', 'cap ') + usd(c.ia_plafond_usd) : ''}</small></span><b>${ceoCAD(c.ia_cad)}</b></div>
+          <div class="ceo-lg"><span>Stripe<small>2,9 % + 0,30 $ + 0,7 %</small></span><b>${ceoCAD(c.frais_stripe)}</b></div>
+          <div class="ceo-lg"><span>Apple<small>15 %</small></span><b>${ceoCAD(c.frais_apple)}</b></div></div>
+        <div class="ceo-c"><div class="ceo-c-t">${tt('Résultat', 'Result')}</div>
+          <div class="rv-h"><b class="${net >= 0 ? 'vert' : 'rouge'}">${ceoCAD(net)}</b><span>${tt('par mois', 'per month')}</span></div>
+          <div class="ceo-lg"><span>${tt('Par an', 'Per year')}</span><b class="${net >= 0 ? 'vert' : 'rouge'}">${ceoCAD(net * 12, 0)}</b></div>
+          <div class="ceo-lg tot"><span>${tt('Abonnés Pro pour couvrir les coûts', 'Pro subscribers to cover costs')}<small>${tt('payés par Stripe', 'paid through Stripe')}</small></span><b>${besoin != null ? ceoNb(besoin) : '—'}</b></div>
+          <small class="ceo-n">${tt(`Dollar US à ${String(c.usd_cad).replace('.', ',')} $ CA (Banque du Canada).`, `US dollar at ${c.usd_cad} CAD (Bank of Canada).`)}</small></div></div>`; })()}
 
       ${tete('services', tt(`${(r.services || []).length} abonnements`, `${(r.services || []).length} subscriptions`))}
       <div class="ceo-c"><div class="sv-tot"><span>${tt('Par mois', 'Per month')}</span><b>${ceoCAD(c.fixe_mois)}</b><em>${tt('par an', 'per year')} ${ceoCAD(Math.round(c.fixe_mois * 12))}</em></div>
