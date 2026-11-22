@@ -456,8 +456,11 @@ FAMILLES_VUE = [
     ("sp", "A+ à B+", "Les courtes impressions", "Short prints",
      [("SSP ou SP gradée PSA 10", "SSP or SP graded PSA 10", "A+"), ("SSP, 16-Bit, case hit", "SSP, 16-Bit, case hit", "A-"),
       ("SP, variation", "SP, variation", "B+")]),
-    ("inserts", "B à C", "Les autres inserts", "Other inserts",
-     [("Auto, Patch", "Auto, Patch", "B"), ("Retro Young Guns d’un vétéran", "Veteran Retro Young Guns", "B"),
+    # 21 nov 2026 (Mathieu : « pas tout a fait vrai, ca ») : « Auto, Patch : B » sous « autres inserts » : un auto n'est pas un
+    # insert, et le bareme lui donne B+ depuis le 20 nov (B pour une patch sans auto). La vue dit maintenant ce que le bareme fait.
+    ("inserts", "B+ à C", "Autos, patchs et autres inserts", "Autos, patches & other inserts",
+     [("Auto (hors recrue)", "Auto (non-rookie)", "B+"), ("Patch ou jersey, sans auto", "Patch or jersey, no auto", "B"),
+      ("Retro Young Guns d’un vétéran", "Veteran Retro Young Guns", "B"),
       ("Dazzlers", "Dazzlers", "C")]),
     ("eviter", "D", "À éviter", "Skip these",
      [("Bases, lots, checklists", "Base cards, lots, checklists", "D"), ("Young Guns Renewed, Fluorescence", "Young Guns Renewed, Fluorescence", "D")]),

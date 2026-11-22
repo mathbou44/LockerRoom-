@@ -1,6 +1,6 @@
 {
  "le": "2026-11-21",
- "empreinte": "15463a451da6a083",
+ "empreinte": "cefa51079f463b64",
  "regles": {
   "fixe": 86.0,
   "encan": 82.0,
@@ -18,37 +18,37 @@
  "inversions": [],
  "corrections": 225,
  "lettres": {
-  "B": {
-   "cartes": 33118,
-   "reventes": 0.095
+  "B+": {
+   "cartes": 39425,
+   "reventes": 0.237
   },
   "C": {
    "cartes": 38299,
    "reventes": 0.107
   },
-  "B+": {
-   "cartes": 39425,
-   "reventes": 0.237
-  },
   "A": {
    "cartes": 10475,
    "reventes": 0.396
   },
-  "E": {
-   "cartes": 8021,
-   "reventes": 0.038
+  "B": {
+   "cartes": 33118,
+   "reventes": 0.095
   },
-  "A-": {
-   "cartes": 10596,
-   "reventes": 0.189
+  "A+": {
+   "cartes": 1356,
+   "reventes": 0.302
   },
   "D": {
    "cartes": 27894,
    "reventes": 0.089
   },
-  "A+": {
-   "cartes": 1356,
-   "reventes": 0.302
+  "A-": {
+   "cartes": 10596,
+   "reventes": 0.189
+  },
+  "E": {
+   "cartes": 8021,
+   "reventes": 0.038
   }
  },
  "pro": {
