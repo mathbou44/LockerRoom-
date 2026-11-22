@@ -236,6 +236,16 @@ footer .mention{flex-basis:100%; font-size:12.5px}
 .menu-p a{display:block; padding:13px 2px; font:700 19px 'Barlow Condensed',sans-serif; text-decoration:none; color:var(--texte); border-bottom:1px solid rgba(255,255,255,.05)}
 .haut.ouvert .menu-p{display:block}
 @media (max-width:760px){ .menu-b{display:inline-flex} .nav .connecter{display:none} }
+/* 22 nov 2026 (Mathieu : « quand je clique La preuve rien se passe, simplifie la version cell sans affecter la version web ») :
+   au cell, le menu couvre l'ecran (fond plein : plus rien ne transparait), 4 choix, la langue dedans ; la barre garde le logo,
+   « Commencer » et le menu */
+@media (max-width:760px){
+  .nav .lang{display:none}
+  .menu-p{top:64px; height:calc(100dvh - 64px); background:#0b0b0e; padding:8px 22px 24px; overflow:auto}
+  .menu-p a{padding:18px 2px; font-size:24px}
+  .menu-p a.lang-m{border-bottom:none; margin-top:10px; font-size:16px; font-weight:600; color:var(--doux)}
+  body:has(.haut.ouvert){overflow:hidden}
+}
 /* menu defilant des avantages (colle sous la barre, suit la lecture) */
 .sousnav{position:sticky; top:64px; z-index:15; background:rgba(11,11,14,.86); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-bottom:1px solid rgba(255,255,255,.05)}
 .sousnav .conteneur{display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; padding-top:10px; padding-bottom:10px}
@@ -383,9 +393,8 @@ h2{font-size:clamp(34px,4.6vw,54px)}
   </nav>
   <div class="menu-p">
     <a href="/#deals"><span class="fr">Fonctionnalités</span><span class="en">Features</span></a>
-    <a href="/#moment"><span class="fr">La preuve</span><span class="en">The proof</span></a>
+    <a href="/slabiq#tests"><span class="fr">La preuve</span><span class="en">The proof</span></a>
     <a href="/tarifs"><span class="fr">Tarifs</span><span class="en">Pricing</span></a>
-    <a href="/a-propos"><span class="fr">Qui nous sommes</span><span class="en">About us</span></a>
     <a href="/connexion"><span class="fr">Se connecter</span><span class="en">Sign in</span></a>
   </div>
 </div></header>
@@ -409,6 +418,9 @@ h2{font-size:clamp(34px,4.6vw,54px)}
 (function(){
   var h = document.querySelector('.haut'), b = document.querySelector('.menu-b');
   if (b) b.addEventListener('click', function(){ var o = h.classList.toggle('ouvert'); b.setAttribute('aria-expanded', o ? 'true' : 'false'); });
+  // 22 nov 2026 : au cell, le choix de langue est dans le menu (la barre reste simple)
+  var lg = document.querySelector('.nav .lang'), mp = document.querySelector('.menu-p');
+  if (lg && mp && !mp.querySelector('.lang-m')) { var c = lg.cloneNode(true); c.className = 'lang-m'; mp.appendChild(c); }
   document.querySelectorAll('.menu-p a').forEach(function(a){ a.addEventListener('click', function(){ h.classList.remove('ouvert'); }); });
   // le menu defilant suit la lecture
   var sn = document.querySelector('.sousnav'); if (!sn || !('IntersectionObserver' in window)) return;
