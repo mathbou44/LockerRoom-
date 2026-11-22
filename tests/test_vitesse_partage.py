@@ -52,6 +52,10 @@ print("OK gardien des piles")
 import os as _os
 assert "_worker_assurer()" in _i.getsource(server._chrono_debut)
 assert '_CHAUD["pid"] = os.getpid()' in _i.getsource(server.demarrer_taches)
+# 21 nov 2026 (3e suivi) : le worker rechauffe aussi ses breaks (le calcul est garde en memoire, par processus), sans jamais
+# passer devant un client
+_srw = _i.getsource(server._rechauffer_worker)
+assert "analyse_break" in _srw and "_attendre_calme" in _srw and "[:12]" in _srw
 _lances = []
 _vrai, server._rechauffer_worker = server._rechauffer_worker, (lambda: _lances.append(1))
 try:

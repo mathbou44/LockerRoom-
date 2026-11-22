@@ -10685,6 +10685,8 @@ class Api:
     ACHETEES_FORT = 80                     # un score SlabIQ de 80 et plus : forte demande
     ACHETEES_PASTILLES_FORTES = ("en_feu", "en_hausse", "honneur", "buzz", "echange_hausse", "rebond")
 
+    _PH_ACH_VUS = {}                               # {base du compte: {item_id: quand on l'a cherche dans les archives}}
+
     def _photos_achats_locales(self, ids):
         """14 nov 2026 (Mathieu : « pourquoi on n'a pas les photos ? on doit aller les chercher », dans « Achetees ») : eBay ne
         rend plus la photo d'une annonce terminee depuis plus de 90 jours. On la cherche chez nous, par son numero d'annonce :
@@ -10720,7 +10722,13 @@ class Api:
                             out.setdefault(str(x["item_id"]), x["photo"])
             except Exception:
                 pass
-        reste = [i for i in ids if i not in out][:60]
+        # 21 nov 2026 (vitesse : 2 a 4 s a CHAQUE ouverture d'« Achetees ») : chercher 60 numeros dans 800 000 archives lit toute
+        # la table ; un numero deja cherche sans succes n'est recherche qu'aux 6 heures (les archives grossissent 1 fois/jour)
+        vus = Api._PH_ACH_VUS.setdefault(self.chemin_db, {})
+        m_ = time.time()
+        reste = [i for i in ids if i not in out and m_ - vus.get(i, 0) > 6 * 3600][:60]
+        for i in reste:
+            vus[i] = m_
         if reste:
             try:
                 import base_ventes

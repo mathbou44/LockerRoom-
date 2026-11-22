@@ -87,6 +87,20 @@ base_ventes.noter("joe ordinaire young guns", [{"titre": "x", "prix": 12, "le": 
 ph = api._photos_achats_locales(["123456789012", "987654321098", "111"])
 assert ph == {"123456789012": "https://i.ebayimg.com/w.jpg", "987654321098": "https://i.ebayimg.com/v.jpg"}, ph
 print("PHOTOS LOCALES OK")
+# 21 nov 2026 (vitesse) : un numero cherche sans succes dans les archives n'est pas recherche a chaque ouverture (6 heures)
+_vrai_cx = base_ventes._cx; _n_cx = []
+base_ventes._cx = lambda *a, **k: (_n_cx.append(1), _vrai_cx(*a, **k))[1]
+try:
+    assert api._photos_achats_locales(["555555555555"]) == {} and len(_n_cx) == 1
+    assert api._photos_achats_locales(["555555555555"]) == {} and len(_n_cx) == 1, "pas deux fois de suite"
+    assert api._photos_achats_locales(["555555555555", "666666666666"]) == {} and len(_n_cx) == 2, "un nouveau numero : cherche"
+    lockerroom.Api._PH_ACH_VUS.clear()                      # 6 heures plus tard (ou un redemarrage)
+    base_ventes.noter("joe ordinaire young guns", [{"titre": "y", "prix": 15, "le": "2026-08-02", "photo": "https://i.ebayimg.com/z.jpg",
+                                                     "url": "https://www.ebay.ca/itm/555555555555"}], sport="hockey")
+    assert api._photos_achats_locales(["555555555555"]) == {"555555555555": "https://i.ebayimg.com/z.jpg"}
+finally:
+    base_ventes._cx = _vrai_cx
+print("PHOTOS LOCALES : PAS DE RECHERCHE REPETEE OK")
 
 # 14 nov 2026 (« je parle de la photo de la carte ») : rien chez nous ni chez eBay (plus de 90 jours) -> l'annonce active de
 # la MEME carte (admin), dite « photo semblable » ; une autre carte ne compte pas

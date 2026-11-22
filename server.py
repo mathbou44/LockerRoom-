@@ -2379,6 +2379,21 @@ def _rechauffer_worker():
                 deals.valide(g)
             api.catalogue_liste()
             print(f"Rechauffage du worker (pid {os.getpid()}) : deals et catalogue prets", flush=True)
+            # 21 nov 2026 (suivi vitesse) : le calcul d'un break est garde 20 min EN MEMOIRE ; le rechauffage des breaks tournait
+            # dans le maitre, donc le worker calculait quand meme le premier break demande par un client (jusqu'a 15 s le matin).
+            # Les 12 produits les plus recents, doucement (apres 4 min, 20 s entre chaque, jamais pendant qu'un client attend).
+            time.sleep(int(os.environ.get("LR_RECHAUFFER_BREAKS_S") or 120) + 120)
+            n_b = 0
+            for p in sorted(_cat.liste(), key=lambda x: str(x.get("sortie") or ""), reverse=True)[:12]:
+                _attendre_calme(30)
+                try:
+                    api.analyse_break({"produit_id": p["id"], "boites": 1, "mode": "equipes", "cout_boite": 0, "decote": 0,
+                                       "prix_demandes": {}, "prix_joueurs": {}, "acheteur": True})
+                    n_b += 1
+                except Exception as e:
+                    print("Rechauffage du worker (break) : " + repr(e)[:120], flush=True)
+                time.sleep(20)
+            print(f"Rechauffage du worker (pid {os.getpid()}) : {n_b} breaks prets", flush=True)
     except Exception as e:
         print("Rechauffage du worker : " + repr(e)[:200], flush=True)
 
