@@ -1944,6 +1944,24 @@ class Api:
                     x["marche_bas"] = mb_[j_].get("ecart_pct") if mb_[j_].get("ecart_pct") is not None else True
                     x["pour_moi_pts"] += Api.MARCHE_BAS_PTS
 
+    def joueurs_en_main(self):
+        """21 nov 2026 (Mathieu : « donner une vraie plus-value ») : {joueur en minuscules: nombre de cartes que le compte a en
+        main (En stock ou Listee)}. Tendances s'en sert : dans « A vendre », TES joueurs d'abord, avec « Tu en as N »."""
+        out = {}
+        try:
+            c = self._db()
+            try:
+                rows = c.execute("SELECT COALESCE(joueur, ''), COALESCE(titre, '') FROM cartes WHERE statut IN ('En stock', 'Listée')").fetchall()
+            finally:
+                c.close()
+            for j, t in rows:
+                j = str(j or "").strip() or (cartes_match.joueur_du_titre(t) or "")
+                if j:
+                    out[j.lower()] = out.get(j.lower(), 0) + 1
+        except Exception as e:
+            print("Joueurs en main : " + repr(e)[:160], flush=True)
+        return {"ok": True, "joueurs": out}
+
     def _profil_deals(self):
         """Le profil de deals du compte, pret a appliquer (None = rien de regle)."""
         p = self.reglages_lire().get("deals_profil")
@@ -8764,7 +8782,7 @@ class Api:
                     # « il joue bien » : un joueur ACTIF (jamais une legende a la retraite : Gordie Howe), pas en creux, cote A ou B
                     if sig == "acheter" and (not nv[1].get("actif") or "en_creux" in f_["pastilles"] or str(f_.get("lettre") or "E")[:1] not in ("A", "B")):
                         continue
-                    f_["marche"] = {k: x.get(k) for k in ("vs_mediane_pct", "sous_sommet_pct", "mois_pct", "taux", "mois", "bas_depuis_j", "haut_depuis_j", "hist_j")}
+                    f_["marche"] = {k: x.get(k) for k in ("vs_mediane_pct", "sous_sommet_pct", "mois_pct", "taux", "mois", "gain", "bas_depuis_j", "haut_depuis_j", "hist_j")}
                     l.append(f_)
                 cats[sig] = l[:40]
         except Exception as e:
@@ -9503,7 +9521,7 @@ class Api:
                     if sg_ == "acheter" and (not _v.get("actif") or "en_creux" in (_v.get("pastilles") or []) or str(_l or "E")[:1] not in ("A", "B")):
                         sg_ = None
                     if sg_:
-                        lg.update(signal=sg_, taux=_e.get("taux"), mois=_e.get("mois"))
+                        lg.update(signal=sg_, taux=_e.get("taux"), mois=_e.get("mois"), gain=_e.get("gain"))
                     out.setdefault("marche", {})["long"] = lg
             except Exception:
                 pass

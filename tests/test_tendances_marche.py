@@ -13,7 +13,7 @@ indice_joueurs.lire = lambda: {"indice": I, "le": "2026-11-21T10:00:00"}
 vrai_note = bareme_iq.note_joueur
 bareme_iq.note_joueur = lambda nom, c=None, **k: (NOTES[nom], bareme_iq.lettre_joueur(NOTES[nom]), "test") if nom in NOTES else vrai_note(nom, c, **k)
 assert bareme_iq.lettre_joueur(82.0)[:1] in ("A", "B") and bareme_iq.lettre_joueur(55.0)[:1] not in ("A", "B"), (bareme_iq.lettre_joueur(82.0), bareme_iq.lettre_joueur(55.0))
-L = {"acheter": [{"nom": "Bon Creux", "vs_mediane_pct": -30, "sous_sommet_pct": -40, "mois_pct": -5, "taux": 0.58, "mois": 3, "bas_depuis_j": 300, "haut_depuis_j": 0, "hist_j": 364, "n": 40},
+L = {"acheter": [{"nom": "Bon Creux", "vs_mediane_pct": -30, "sous_sommet_pct": -40, "mois_pct": -5, "taux": 0.58, "mois": 3, "gain": 24.0, "bas_depuis_j": 300, "haut_depuis_j": 0, "hist_j": 364, "n": 40},
                  {"nom": "Bon Glace Froide", "vs_mediane_pct": -28, "sous_sommet_pct": -35, "mois_pct": -5, "taux": 0.58, "bas_depuis_j": 90, "haut_depuis_j": 0, "hist_j": 364, "n": 40},
                  {"nom": "Moyen Creux", "vs_mediane_pct": -25, "sous_sommet_pct": -30, "mois_pct": -5, "taux": 0.54, "bas_depuis_j": 60, "haut_depuis_j": 0, "hist_j": 364, "n": 40},
                  {"nom": "Legende Retraitee", "vs_mediane_pct": -34, "sous_sommet_pct": -40, "mois_pct": -5, "taux": 0.65, "bas_depuis_j": 60, "haut_depuis_j": 0, "hist_j": 364, "n": 40},
@@ -34,7 +34,7 @@ a, v = r["cats"]["acheter"], r["cats"]["vendre"]
 assert [x["nom"] for x in a] == ["Bon Creux"], [x["nom"] for x in a]            # pas le joueur en creux sur la glace, pas le C, pas l'inconnu
 assert [x["nom"] for x in v] == ["Bon Sommet", "Moyen Sommet"], [x["nom"] for x in v]
 m = a[0]["marche"]
-assert m == {"vs_mediane_pct": -30, "sous_sommet_pct": -40, "mois_pct": -5, "taux": 0.58, "mois": 3, "bas_depuis_j": 300, "haut_depuis_j": 0, "hist_j": 364}, m
+assert m == {"vs_mediane_pct": -30, "sous_sommet_pct": -40, "mois_pct": -5, "taux": 0.58, "mois": 3, "gain": 24.0, "bas_depuis_j": 300, "haut_depuis_j": 0, "hist_j": 364}, m
 assert a[0]["lettre"][:1] in ("A", "B") and v[0]["marche"]["haut_depuis_j"] == 350
 assert r["compte"]["acheter"] == 1 and r["compte"]["vendre"] == 2 and r["preuve"] == PREUVE
 # jamais un prix : aucune cle de prix dans ce qui sort pour ces listes
@@ -64,4 +64,10 @@ A = [{"titre": "2020-21 Upper Deck Young Guns Bon Creux #201", "joueur": "Bon Cr
 lockerroom.Api._pour_moi(A, {})
 assert A[0].get("marche_bas") == -30 and A[0]["pour_moi_pts"] >= lockerroom.Api.MARCHE_BAS_PTS, A[0]
 assert "marche_bas" not in A[1] and "marche_bas" not in A[2], (A[1], A[2])
+# « Tu en as N » : les joueurs que le compte a en main (En stock ou Listee), pour mettre SES joueurs d'abord dans « A vendre »
+api.carte_sauver({"titre": "2020-21 Upper Deck Young Guns Bon Sommet #201", "joueur": "Bon Sommet", "statut": "En stock"})
+api.carte_sauver({"titre": "2021-22 SP Authentic Bon Sommet Future Watch", "joueur": "Bon Sommet", "statut": "En stock"})
+api.carte_sauver({"titre": "2019-20 O-Pee-Chee Moyen Sommet", "joueur": "Moyen Sommet", "statut": "Vendue"})
+jm = api.joueurs_en_main()
+assert jm["ok"] and jm["joueurs"].get("bon sommet") == 2 and "moyen sommet" not in jm["joueurs"], jm
 print("OK test_tendances_marche (Radar : la carte d'un joueur a acheter monte, ecart %s %%)" % A[0]["marche_bas"])

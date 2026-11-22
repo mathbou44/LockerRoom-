@@ -58,7 +58,7 @@ finally:
     marche_cles.series = vrai
 V, E = D["verif"], D["etats"]
 a, v = V["achat"], V["vente"]
-assert a["actif"] and a["taux"] > a["base"] + 0.2 and a["n"] >= mj.N_TEST_MIN and a["borne"] > a["base"], a
+assert a["actif"] and a["taux"] > a["base"] + 0.2 and a["n"] >= mj.N_PARIS_MIN and a["borne"] > a["base"], a
 assert v["actif"] and v["taux"] > v["base"] + 0.2 and v["n"] >= mj.N_TEST_MIN, v
 assert a["du"] and a["au"] and a["du"] < a["au"] and len(a["essais"]) == len(mj.ACHATS) * len(mj.HORIZONS) and a["essayes"] == len(a["essais"]) and len(v["essais"]) == len(mj.VENTES)
 assert E["Vet Dip"]["signal"] == "acheter" and 0 < E["Vet Dip"]["taux"] <= 1 and E["Vet Dip"]["vs_mediane_pct"] <= -20, E["Vet Dip"]
@@ -67,9 +67,22 @@ assert "signal" not in E["Kid Dip"] and not E["Kid Dip"]["etabli"], "une recrue 
 assert E["Vet High"]["signal"] == "vendre" and E["Vet High"]["vs_mediane_pct"] >= 30, E["Vet High"]
 assert "signal" not in E["Vet Flat"], E["Vet Flat"]
 # jamais plus que ce qui est mesure : le taux d'un joueur est celui d'un bareme essaye, qui bat le hasard avec assez de cas
-ok = {t["taux"] for t in a["essais"] if t["n"] >= mj.N_TEST_MIN and t["borne"] > t["base"]}
+ok = {t["taux"] for t in a["essais"] if t["ok"]}
 # 21 nov 2026 (« pas mieux que 70 % ? ») : chaque bareme d'achat est verifie a 2, 3 et 4 mois ; le joueur porte le delai du sien
 assert {t["mois"] for t in a["essais"]} == {2, 3, 4} and all(t.get("base") is not None for t in a["essais"] if t["n"])
+# « une vraie plus-value » : le bareme retenu laisse une marge apres les frais (remontee mediane mesuree de 20 % et plus)
+# « une vraie plus-value » : un achat est juge comme un pari (un par joueur et par creux), gagnant APRES les frais
+assert E["Vet Dip"]["gain"] > 0 and a["frais"] == mj.FRAIS and a["n_min"] == mj.N_PARIS_MIN, (E["Vet Dip"], a.get("frais"))
+assert all(t["n"] <= 45 * 2 + 4 for t in a["essais"]), "un pari par joueur et par creux, pas un par semaine"
+_pp = [{"j": "A", "jour": 100}, {"j": "A", "jour": 107}, {"j": "A", "jour": 163}, {"j": "A", "jour": 171}, {"j": "B", "jour": 107}]
+assert [(x["j"], x["jour"]) for x in mj.paris(_pp)] == [("A", 100), ("B", 107), ("A", 171)], mj.paris(_pp)
+_v0 = mj.FRAIS; mj.FRAIS = 0.9                                   # des frais absurdes : plus aucun pari gagnant, donc personne a acheter
+marche_cles.series = lambda ventes, noms: {k: v for k, v in S.items() if marche_cles._titre(k) in noms or k in noms}
+try:
+    _d = mj.calculer([], base, date.fromordinal(FIN))
+    assert "signal" not in _d["etats"]["Vet Dip"] and not _d["verif"]["achat"]["actif"], "rien ne couvre les frais : personne a acheter"
+finally:
+    marche_cles.series = vrai; mj.FRAIS = _v0
 assert E["Vet Dip"]["mois"] in (2, 3, 4) and mj.point(serie(creux_passe), FIN - 150, suite=(106, 134))["apres"] is not None
 assert E["Vet Dip"]["taux"] in ok, (E["Vet Dip"]["taux"], ok)
 

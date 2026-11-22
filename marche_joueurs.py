@@ -44,7 +44,7 @@ import threading
 import time
 from datetime import date, datetime
 
-VERSION = 2
+VERSION = 5
 PAS = 30                 # jours d'une tranche
 N_TRANCHES = 11          # tranches d'avant (l'annee)
 H0, H1 = 46, 74          # « deux mois apres »
@@ -64,6 +64,20 @@ ACHATS = (("sommet", 0.15), ("sommet", 0.20), ("sommet", 0.25), ("sommet", 0.30)
 # profond met plus de 2 mois a remonter. Mesure : -25 % sous sa normale -> 56 % a 2 mois, 72 % a 3 mois ; -30 % -> 62 % puis 80 %.
 # Chaque bareme d'achat est donc verifie a 2, 3 et 4 mois ; le joueur porte le meilleur bareme qu'il remplit, AVEC son delai.
 HORIZONS = ((2, 46, 74), (3, 76, 104), (4, 106, 134))
+# 21 nov 2026 (Mathieu : « il faut donner une vraie plus-value, c'est primordial » ; « continue jusqu'a ce que le signal d'acheter
+# soit efficace ») : « remonte de 5 % » ne paie pas les frais. Un signal d'achat est maintenant juge comme un VRAI PARI :
+#   - un seul pari par joueur et par creux (le premier signal, puis rien pendant 10 semaines) : 10 semaines du meme creux ne
+#     font pas 10 preuves ;
+#   - gagnant = on revend plus cher qu'on a paye APRES les frais (eBay ~13 % + l'envoi : 15 %) ;
+#   - le bareme est garde s'il a assez de paris, s'il gagne plus souvent que d'acheter n'importe quel joueur etabli (borne
+#     prudente), plus d'une fois sur deux (55 %), ET si son gain net median est d'au moins 5 %.
+# Mesure le 21 nov (3-4 mois) : acheter n'importe qui : 22-25 % de gagnants, -17 % net ; creux de -20 % : ~45 %, ~0 % net ;
+# -25 % : ~55 %, +0 a +8 % ; -30 % et plus : 65-73 %, +1 a +12 % net (15 paris, 12 joueurs).
+FRAIS = 0.15
+ESPACE_PARI_J = 70
+N_PARIS_MIN = 12
+TAUX_MIN_ACHAT = 0.55          # « efficace » : plus d'un pari sur deux gagne apres les frais...
+GAIN_NET_MIN = 5.0             # ... et le gain net median vaut la peine (5 % et plus) ; -20 % a 4 mois (51 %, +1 %) ne passe pas
 VENTES = (0.10, 0.20, 0.30, 0.40, 0.50, 0.60)
 _ETAT = {"mt": None, "d": None, "en_cours": False, "vu": 0.0}
 _verrou = threading.Lock()
@@ -240,6 +254,37 @@ def verifier(P, etablis):
             "vente_etablis": cote(E, VENTES, signal_vente, baisse, "vente")}
 
 
+def paris(l):
+    """Un pari par joueur et par creux : le premier signal, puis rien pendant ESPACE_PARI_J jours."""
+    out, vu = [], {}
+    for x in sorted(l, key=lambda x: x["jour"]):
+        if x["jour"] - vu.get(x["j"], -10 ** 9) >= ESPACE_PARI_J:
+            out.append(x)
+            vu[x["j"]] = x["jour"]
+    return out
+
+
+def verifier_achat(P, etablis, mois):
+    """Les baremes d'achat juges comme des paris, apres les frais -> {base, base_n, essais: [{regle, mois, n, joueurs, taux, borne,
+    gain_med, base, ok}], du, au}. taux = la part des paris gagnants apres les frais ; gain_med = le gain net median (%)."""
+    net = lambda x: (x["apres"] / x["niveau"]) * (1 - FRAIS) - 1
+    E = [x for x in P if x["j"] in etablis]
+    base = (sum(1 for x in E if net(x) > 0) / len(E)) if E else None
+    essais = []
+    for r in ACHATS:
+        l = paris([x for x in E if signal_achat(x, r)])
+        k = sum(1 for x in l if net(x) > 0)
+        e = {"regle": list(r), "mois": mois, "n": len(l), "joueurs": len({x["j"] for x in l}), "taux": round(k / len(l), 3) if l else None,
+             "borne": round(wilson(k, len(l)), 3), "gain_med": round(statistics.median([net(x) for x in l]) * 100, 1) if l else None,
+             "base": round(base, 3) if base is not None else None}
+        e["ok"] = bool(len(l) >= N_PARIS_MIN and base is not None and e["borne"] > base and e["taux"] >= TAUX_MIN_ACHAT
+                       and (e["gain_med"] or 0) >= GAIN_NET_MIN)
+        essais.append(e)
+    jj = [x["jour"] for x in E if x.get("jour")]
+    return {"base": round(base, 3) if base is not None else None, "base_n": len(E), "essais": essais,
+            "du": date.fromordinal(min(jj)).isoformat() if jj else None, "au": date.fromordinal(max(jj)).isoformat() if jj else None}
+
+
 def _etablis(base):
     out = set()
     for nom, v in (base or {}).items():
@@ -270,23 +315,20 @@ def calculer(ventes=None, base=None, aujourd=None):
     S = marche_cles.series(ventes, noms)
     fin = aujourd.toordinal()
     V = verifier(points_passes(S, fin), etab)
-    # les achats : aussi a 3 et 4 mois ; chaque essai dit son delai et SON hasard (la part de tous les joueurs etablis qui montent)
-    a = V["achat"]
-    for t in a["essais"]:
-        t.update(mois=HORIZONS[0][0], base=a["base"])
+    # les achats : des paris, apres les frais, a 2, 3 et 4 mois ; chaque essai dit son delai et SON hasard
+    P2 = points_passes(S, fin)
+    a = verifier_achat(P2, etab, HORIZONS[0][0])
     for mois, h0, h1 in HORIZONS[1:]:
-        b = verifier(points_passes(S, fin, h0=h0, h1=h1), etab)["achat"]
-        for t in b["essais"]:
-            t.update(mois=mois, base=b["base"])
+        b = verifier_achat(points_passes(S, fin, h0=h0, h1=h1), etab, mois)
         a["essais"] += b["essais"]
         if b.get("du") and (not a.get("du") or b["du"] < a["du"]):
             a["du"] = b["du"]
-    bons = [t for t in a["essais"] if t["n"] >= N_TEST_MIN and t.get("base") is not None and t["borne"] > t["base"]]
-    a["actif"] = bool(bons)
-    a["essayes"] = len(a["essais"])
+    bons = [t for t in a["essais"] if t["ok"]]
+    a.update(actif=bool(bons), essayes=len(a["essais"]), n_min=N_PARIS_MIN, frais=FRAIS, bouge=BOUGE)
     if bons:
         m = max(bons, key=lambda t: t["borne"])
         a.update({k: m[k] for k in ("regle", "taux", "borne", "n", "joueurs", "gain_med", "mois")})
+    V["achat"] = a
     etats = {}
     for nom, sj in S.items():
         x = point(sj, fin)
@@ -298,10 +340,10 @@ def calculer(ventes=None, base=None, aujourd=None):
         a = V["achat"]
         # toute regle qui bat le hasard compte ; la meilleure que le joueur remplit dit la force du signal (son taux mesure)
         if nom in etab and a.get("base") is not None:
-            ok = [t for t in a["essais"] if t["n"] >= N_TEST_MIN and t.get("base") is not None and t["borne"] > t["base"] and signal_achat(x, tuple(t["regle"]))]
+            ok = [t for t in a["essais"] if t.get("ok") and signal_achat(x, tuple(t["regle"]))]
             if ok:
                 m = max(ok, key=lambda t: t["borne"])
-                e.update(signal="acheter", taux=m["taux"], regle=m["regle"], mois=m.get("mois"))
+                e.update(signal="acheter", taux=m["taux"], regle=m["regle"], mois=m.get("mois"), gain=m.get("gain_med"))
         # a vendre : un joueur etabli est juge sur les etablis (leur sommet retombe plus surement) ; sans bareme valable la
         # (trop peu de cas), sur tous les joueurs
         for v in ([V.get("vente_etablis") or {}] if nom in etab else []) + [V["vente"]]:
@@ -399,7 +441,7 @@ def etat(nom):
 def liste(signal, n=40):
     """[{nom, sous_sommet_pct, vs_mediane_pct, mois_pct}] : « acheter » (le plus loin de son sommet d'abord) ou « vendre »."""
     E = lire().get("etats") or {}
-    l = [{"nom": k, **{c: e.get(c) for c in ("sous_sommet_pct", "vs_mediane_pct", "mois_pct", "n", "taux", "mois", "bas_depuis_j", "haut_depuis_j", "hist_j")}}
+    l = [{"nom": k, **{c: e.get(c) for c in ("sous_sommet_pct", "vs_mediane_pct", "mois_pct", "n", "taux", "mois", "gain", "bas_depuis_j", "haut_depuis_j", "hist_j")}}
          for k, e in E.items() if e.get("signal") == signal]
     # le signal le plus sur d'abord (son taux mesure), puis le plus loin de son niveau habituel
     l.sort(key=(lambda x: (-(x["taux"] or 0), x["vs_mediane_pct"])) if signal == "acheter" else (lambda x: (-(x["taux"] or 0), -x["vs_mediane_pct"])))
@@ -409,7 +451,7 @@ def liste(signal, n=40):
 def preuve():
     """Ce que la verification a mesure, pour le dire tel quel : {achat: {taux, base, n, gain_med, regle}, vente: {...}} (actifs seulement)."""
     V = lire().get("verif") or {}
-    return {k: {c: V[k].get(c) for c in ("taux", "borne", "base", "n", "joueurs", "gain_med", "regle", "base_n", "essais", "essayes", "mois", "du", "au", "apres_j", "bouge", "n_min")}
+    return {k: {c: V[k].get(c) for c in ("taux", "borne", "base", "n", "joueurs", "gain_med", "regle", "base_n", "essais", "essayes", "mois", "du", "au", "apres_j", "bouge", "n_min", "frais")}
             for k in ("achat", "vente", "vente_etablis") if (V.get(k) or {}).get("actif")}
 
 
