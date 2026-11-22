@@ -6532,6 +6532,10 @@ html body .ecran .md-rech.tiq-rech, html:not(.tel-large) body .tete-fixe:has(.d-
   .tiq-seg{display:flex} .tiq-seg ~ .tiq-av[data-on="bas"] > .tiq-pan.vendre, .tiq-seg ~ .tiq-av[data-on="vendre"] > .tiq-pan.bas{display:none} .tiq-seg ~ .tiq-av > .tiq-pan > .am-t{display:none} .tiq-seg ~ .tiq-av > .tiq-pan{padding-top:12px} }
 @media (max-width:1099px){ .tiq-s .tiq-note{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin:0} .tiq-s .tiq-kr2{gap:6px} .tiq-s .tiq-kr2 .tiq-kp{padding:6px 12px} }
 .inv-av{cursor:pointer; pointer-events:auto}
+.pv-g{font-size:19px; line-height:1.35; margin:2px 0 16px} .pv-g b{font:800 26px/1 var(--f-cond); color:var(--rouge)}
+.pv-r{display:grid; grid-template-columns:1fr auto; align-items:center; gap:6px 12px; padding:10px 0; border-top:1px solid var(--ligne)} .pv-r > span:first-child{grid-column:1 / -1; font-size:14.5px; color:var(--doux)}
+.pv-r > b{font:800 20px/1 var(--f-cond); color:var(--rouge)} .pv-r > b.gr{color:var(--doux)}
+.pv-pts{display:flex; gap:6px} .pv-pts i{width:18px; height:18px; border-radius:50%; background:rgba(255,255,255,.08)} .pv-pts i.on{background:var(--rouge)} .pv-pts i.gr{background:rgba(255,255,255,.42)}
 .mz-l{display:flex; flex-direction:column; gap:6px} .mz-r{display:flex; align-items:center; gap:12px; width:100%; padding:11px 12px; border-radius:14px; border:1px solid var(--ligne); background:var(--carte); color:var(--texte); font:inherit; text-align:left; cursor:pointer}
 .mz-t{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px} .mz-t b{font:700 16.5px var(--f-cond); letter-spacing:.02em} .mz-t small{color:var(--doux); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .mz-r em{font-style:normal; font:700 14px var(--f-cond); color:var(--acc); white-space:nowrap} .mz-r > i{font-style:normal; color:var(--doux)} .mz-r:active{transform:scale(.99)}
@@ -14267,7 +14271,7 @@ async function vueTendancesIQ(arg){
   const pvBtn = (k) => fourch(k) ? `<button class="tiq-pv" data-pvm="${k}"><b class="${k === 'acheter' ? 'vert' : 'rouge'}">${fourch(k)}</b><span>${k === 'acheter' ? tt(`ont remonté en ${delaiA()} mois`, `were up ${delaiA()} months later`) : tt('ont rebaissé en 2 mois', 'were down 2 months later')}${PV(k).base != null ? ' · ' + tt('hasard ', 'chance ') + (k === 'acheter' ? hasardA() : pctT(PV(k).base)) : ''}</span><i><u>${tt('La preuve', 'The proof')}</u> ›</i></button>` : '';
   const pan = (k, titre) => { const L = r.cats[k] || []; if (!L.length) return '';
     return `<div class="tiq-g tiq-pan ${k}"><div class="am-t tiq-gt">${titre}<em class="tiq-pn">${L.length}</em></div><p class="tiq-ps">${phraseM(k)}</p><div class="tiq-lm">${L.map(x => ligneM(x, k)).join('')}</div>
-      <div class="tiq-pf">${L.length > 3 ? `<button class="tiq-pl2 tiq-tous" data-tl="${k}">${tt(`Voir les ${L.length}`, `See all ${L.length}`)} ›</button>` : ''}${ADM_T && k !== 'bas' ? `<button class="tiq-pl2" data-pvm="${k}">${tt('Vérifié sur nos ventes', 'Checked on our sales')} ›</button>` : ''}</div></div>`; };
+      <div class="tiq-pf">${L.length > 3 ? `<button class="tiq-pl2 tiq-tous" data-tl="${k}">${tt(`Voir les ${L.length}`, `See all ${L.length}`)} ›</button>` : ''}${(k === 'vendre' || (ADM_T && k === 'acheter')) ? `<button class="tiq-pl2" data-pvm="${k}">${tt('Est-ce que ça marche ?', 'Does it work?')} ›</button>` : ''}</div></div>`; };
   // la preuve : chaque bareme essaye, le nombre de cas et de joueurs, sa reussite et le mouvement median (jamais plus que ce qui est mesure)
   const feuillePreuve = (k) => { const ach = k === 'acheter', Ps = ach ? [S.tiqPreuve.achat] : [S.tiqPreuve.vente_etablis, S.tiqPreuve.vente], P0 = Ps.find(Boolean); if (!P0) return;
     const jr = (d) => d ? new Date(d + 'T12:00:00').toLocaleDateString(tt('fr-CA', 'en-CA'), {month: 'long', year: 'numeric'}) : '';
@@ -14284,6 +14288,20 @@ async function vueTendancesIQ(arg){
       return `<table class="tiq-pt"><tr><th>${tt('Signal', 'Signal')}</th><th colspan="2">${tt('Joueurs établis', 'Established players')}</th><th colspan="2">${tt('Tous les joueurs', 'All players')}</th></tr>
         ${R.map(g => { const a = E && (E.essais || []).find(e => e.regle === g), b = T && (T.essais || []).find(e => e.regle === g);
           return `<tr class="${bon(E || {}, a) || bon(T || {}, b) ? '' : 'x'}"><td>${nomR(g)}</td>${cel(E, a)}${cel(T, b)}</tr>`; }).join('')}</table>`; };
+    // 22 nov 2026 (Mathieu : « beaucoup trop complique, 90 % des clients comprendront pas ») : « À vendre » en une phrase et deux
+    // rangees de 10 points, comme Sante d'Apple : « 7 fois sur 10 » contre « 5 fois sur 10 au hasard ». Notre chiffre est ARRONDI
+    // VERS LE BAS (la mediane des joueurs de la liste) : jamais plus que ce qui est mesure. Le tableau : l'admin seulement.
+    const tV = (r.cats.vendre || []).map(x => (x.marche || {}).taux).filter(Boolean).sort((a, b) => a - b);
+    const nV = tV.length ? Math.floor(10 * tV[Math.floor((tV.length - 1) / 2)]) : null, nH = P0.base != null ? Math.round(10 * P0.base) : null;
+    const pts = (n, cl) => `<span class="pv-pts">${Array.from({length: 10}, (_, i) => `<i class="${i < n ? cl : ''}"></i>`).join('')}</span>`;
+    if (!ach && nV != null && nH != null && nV > nH) {
+      ouvrirFeuille(`<h3>${tt('À vendre : est-ce que ça marche ?', 'To sell: does it work?')}</h3>
+        <p class="pv-g">${tt(`<b>${nV} fois sur 10</b>, le prix du joueur a baissé dans les 2 mois.`, `<b>${nV} times out of 10</b>, the player’s price dropped within 2 months.`)}</p>
+        <div class="pv-r"><span>${tt('Quand SlabCoach dit « à vendre »', 'When SlabCoach says “to sell”')}</span>${pts(nV, 'on')}<b>${nV}/10</b></div>
+        <div class="pv-r"><span>${tt('Un joueur pris au hasard', 'A random player')}</span>${pts(nH, 'gr')}<b class="gr">${nH}/10</b></div>
+        <p class="sous" style="margin:12px 0 0">${tt(`Mesuré sur nos vraies ventes, de ${jr(P0.du)} à ${jr(P0.au)}. Ce qui s’est passé, pas une garantie.`, `Measured on our real sales, ${jr(P0.du)} to ${jr(P0.au)}. What happened, not a guarantee.`)}</p>
+        ${ADM_T ? `<details class="tiq-p2d"><summary>${tt('Le détail (admin)', 'The details (admin)')}</summary>${tabV(Ps[0], Ps[1])}</details>` : ''}`);
+      return; }
     ouvrirFeuille(`<h3>${ach ? tt('À acheter : la preuve', 'To buy: the proof') : tt('À vendre : la preuve', 'To sell: the proof')}</h3>
       ${(() => { // 22 nov 2026 (Mathieu : « mettre plus simple ») : deux chiffres cote a cote et une phrase ; le tableau, replie
         const hz = ach ? hasardA() : pctT(P0.base);
