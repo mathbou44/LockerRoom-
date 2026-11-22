@@ -676,7 +676,7 @@ def a_acheter_noms():
             if not nv:
                 continue
             past = nv[1].get("pastilles") or []
-            if "en_creux" in past:
+            if not nv[1].get("actif") or "en_creux" in past:
                 continue
             c = nv[1].get("criteres") or {}
             note = _bq.note_joueur(nv[0], c, recrue=float(c.get("recrue") or 0) >= 90)[0]
@@ -8761,9 +8761,10 @@ class Api:
                     if not nv:
                         continue
                     f_ = fiche(nv[0], nv[1])
-                    if sig == "acheter" and ("en_creux" in f_["pastilles"] or str(f_.get("lettre") or "E")[:1] not in ("A", "B")):
+                    # « il joue bien » : un joueur ACTIF (jamais une legende a la retraite : Gordie Howe), pas en creux, cote A ou B
+                    if sig == "acheter" and (not nv[1].get("actif") or "en_creux" in f_["pastilles"] or str(f_.get("lettre") or "E")[:1] not in ("A", "B")):
                         continue
-                    f_["marche"] = {k: x.get(k) for k in ("vs_mediane_pct", "sous_sommet_pct", "mois_pct", "taux", "bas_depuis_j", "haut_depuis_j", "hist_j")}
+                    f_["marche"] = {k: x.get(k) for k in ("vs_mediane_pct", "sous_sommet_pct", "mois_pct", "taux", "mois", "bas_depuis_j", "haut_depuis_j", "hist_j")}
                     l.append(f_)
                 cats[sig] = l[:40]
         except Exception as e:
@@ -9499,10 +9500,10 @@ class Api:
                 if _e:
                     lg = {k: _e.get(k) for k in ("vs_mediane_pct", "sous_sommet_pct", "bas_depuis_j", "haut_depuis_j", "hist_j")}
                     sg_ = _e.get("signal")
-                    if sg_ == "acheter" and ("en_creux" in (_v.get("pastilles") or []) or str(_l or "E")[:1] not in ("A", "B")):
+                    if sg_ == "acheter" and (not _v.get("actif") or "en_creux" in (_v.get("pastilles") or []) or str(_l or "E")[:1] not in ("A", "B")):
                         sg_ = None
                     if sg_:
-                        lg.update(signal=sg_, taux=_e.get("taux"))
+                        lg.update(signal=sg_, taux=_e.get("taux"), mois=_e.get("mois"))
                     out.setdefault("marche", {})["long"] = lg
             except Exception:
                 pass

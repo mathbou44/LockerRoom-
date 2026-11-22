@@ -44,7 +44,7 @@ import threading
 import time
 from datetime import date, datetime
 
-VERSION = 1
+VERSION = 2
 PAS = 30                 # jours d'une tranche
 N_TRANCHES = 11          # tranches d'avant (l'annee)
 H0, H1 = 46, 74          # « deux mois apres »
@@ -58,7 +58,12 @@ BOUGE = 0.05             # « remonte » / « rebaisse » : 5 %
 TOL_DEPUIS = 0.02                 # « au plus bas en N jours » : un niveau plus bas de moins de 2 % ne compte pas (le bruit)
 SEMAINES = 26            # semaines rejouees
 N_TEST_MIN = 30
-ACHATS = (("sommet", 0.15), ("sommet", 0.20), ("sommet", 0.25), ("sommet", 0.30), ("mediane", 0.10), ("mediane", 0.15), ("mediane", 0.20))
+ACHATS = (("sommet", 0.15), ("sommet", 0.20), ("sommet", 0.25), ("sommet", 0.30), ("mediane", 0.10), ("mediane", 0.15), ("mediane", 0.20),
+          ("mediane", 0.25), ("mediane", 0.30), ("mediane", 0.35))
+# 21 nov 2026 (Mathieu : « on fait pas mieux que 70 % pour l'achat ? » ; « le voir sur des plus grands time frames ») : un creux
+# profond met plus de 2 mois a remonter. Mesure : -25 % sous sa normale -> 56 % a 2 mois, 72 % a 3 mois ; -30 % -> 62 % puis 80 %.
+# Chaque bareme d'achat est donc verifie a 2, 3 et 4 mois ; le joueur porte le meilleur bareme qu'il remplit, AVEC son delai.
+HORIZONS = ((2, 46, 74), (3, 76, 104), (4, 106, 134))
 VENTES = (0.10, 0.20, 0.30, 0.40, 0.50, 0.60)
 _ETAT = {"mt": None, "d": None, "en_cours": False, "vu": 0.0}
 _verrou = threading.Lock()
@@ -97,7 +102,8 @@ def point(sj, jour, suite=False):
         return None
     out = {"niveau": niv, "n": n, "sommet": h[1] if len(h) >= 4 else h[0], "mediane": statistics.median(h), "prec": hist[0]}
     if suite:
-        out["apres"] = _niveau(sj, ref, jour + H0, jour + H1)[0]
+        h0, h1 = suite if isinstance(suite, tuple) else (H0, H1)
+        out["apres"] = _niveau(sj, ref, jour + h0, jour + h1)[0]
     return out
 
 
@@ -191,11 +197,12 @@ def wilson(k, n, z=1.96):
     return (p + z * z / (2 * n) - z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n))) / d
 
 
-def points_passes(S, fin, semaines=SEMAINES):
+def points_passes(S, fin, semaines=SEMAINES, h0=None, h1=None):
     out = []
-    for jour in range(fin - H1, fin - H1 - 7 * semaines, -7):
+    h0, h1 = (H0, H1) if h0 is None else (h0, h1)
+    for jour in range(fin - h1, fin - h1 - 7 * semaines, -7):
         for j, sj in S.items():
-            x = point(sj, jour, suite=True)
+            x = point(sj, jour, suite=(h0, h1))
             if x and x.get("apres") is not None:
                 x["j"] = j
                 x["jour"] = jour
@@ -263,6 +270,23 @@ def calculer(ventes=None, base=None, aujourd=None):
     S = marche_cles.series(ventes, noms)
     fin = aujourd.toordinal()
     V = verifier(points_passes(S, fin), etab)
+    # les achats : aussi a 3 et 4 mois ; chaque essai dit son delai et SON hasard (la part de tous les joueurs etablis qui montent)
+    a = V["achat"]
+    for t in a["essais"]:
+        t.update(mois=HORIZONS[0][0], base=a["base"])
+    for mois, h0, h1 in HORIZONS[1:]:
+        b = verifier(points_passes(S, fin, h0=h0, h1=h1), etab)["achat"]
+        for t in b["essais"]:
+            t.update(mois=mois, base=b["base"])
+        a["essais"] += b["essais"]
+        if b.get("du") and (not a.get("du") or b["du"] < a["du"]):
+            a["du"] = b["du"]
+    bons = [t for t in a["essais"] if t["n"] >= N_TEST_MIN and t.get("base") is not None and t["borne"] > t["base"]]
+    a["actif"] = bool(bons)
+    a["essayes"] = len(a["essais"])
+    if bons:
+        m = max(bons, key=lambda t: t["borne"])
+        a.update({k: m[k] for k in ("regle", "taux", "borne", "n", "joueurs", "gain_med", "mois")})
     etats = {}
     for nom, sj in S.items():
         x = point(sj, fin)
@@ -274,10 +298,10 @@ def calculer(ventes=None, base=None, aujourd=None):
         a = V["achat"]
         # toute regle qui bat le hasard compte ; la meilleure que le joueur remplit dit la force du signal (son taux mesure)
         if nom in etab and a.get("base") is not None:
-            ok = [t for t in a["essais"] if t["n"] >= N_TEST_MIN and t["borne"] > a["base"] and signal_achat(x, tuple(t["regle"]))]
+            ok = [t for t in a["essais"] if t["n"] >= N_TEST_MIN and t.get("base") is not None and t["borne"] > t["base"] and signal_achat(x, tuple(t["regle"]))]
             if ok:
                 m = max(ok, key=lambda t: t["borne"])
-                e.update(signal="acheter", taux=m["taux"], regle=m["regle"])
+                e.update(signal="acheter", taux=m["taux"], regle=m["regle"], mois=m.get("mois"))
         # a vendre : un joueur etabli est juge sur les etablis (leur sommet retombe plus surement) ; sans bareme valable la
         # (trop peu de cas), sur tous les joueurs
         for v in ([V.get("vente_etablis") or {}] if nom in etab else []) + [V["vente"]]:
@@ -375,7 +399,7 @@ def etat(nom):
 def liste(signal, n=40):
     """[{nom, sous_sommet_pct, vs_mediane_pct, mois_pct}] : « acheter » (le plus loin de son sommet d'abord) ou « vendre »."""
     E = lire().get("etats") or {}
-    l = [{"nom": k, **{c: e.get(c) for c in ("sous_sommet_pct", "vs_mediane_pct", "mois_pct", "n", "taux", "bas_depuis_j", "haut_depuis_j", "hist_j")}}
+    l = [{"nom": k, **{c: e.get(c) for c in ("sous_sommet_pct", "vs_mediane_pct", "mois_pct", "n", "taux", "mois", "bas_depuis_j", "haut_depuis_j", "hist_j")}}
          for k, e in E.items() if e.get("signal") == signal]
     # le signal le plus sur d'abord (son taux mesure), puis le plus loin de son niveau habituel
     l.sort(key=(lambda x: (-(x["taux"] or 0), x["vs_mediane_pct"])) if signal == "acheter" else (lambda x: (-(x["taux"] or 0), -x["vs_mediane_pct"])))
@@ -385,7 +409,7 @@ def liste(signal, n=40):
 def preuve():
     """Ce que la verification a mesure, pour le dire tel quel : {achat: {taux, base, n, gain_med, regle}, vente: {...}} (actifs seulement)."""
     V = lire().get("verif") or {}
-    return {k: {c: V[k].get(c) for c in ("taux", "borne", "base", "n", "joueurs", "gain_med", "regle", "base_n", "essais", "du", "au", "apres_j", "bouge", "n_min")}
+    return {k: {c: V[k].get(c) for c in ("taux", "borne", "base", "n", "joueurs", "gain_med", "regle", "base_n", "essais", "essayes", "mois", "du", "au", "apres_j", "bouge", "n_min")}
             for k in ("achat", "vente", "vente_etablis") if (V.get(k) or {}).get("actif")}
 
 

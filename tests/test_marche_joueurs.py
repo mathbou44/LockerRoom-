@@ -60,14 +60,17 @@ V, E = D["verif"], D["etats"]
 a, v = V["achat"], V["vente"]
 assert a["actif"] and a["taux"] > a["base"] + 0.2 and a["n"] >= mj.N_TEST_MIN and a["borne"] > a["base"], a
 assert v["actif"] and v["taux"] > v["base"] + 0.2 and v["n"] >= mj.N_TEST_MIN, v
-assert a["du"] and a["au"] and a["du"] < a["au"] and len(a["essais"]) == len(mj.ACHATS) and len(v["essais"]) == len(mj.VENTES)
+assert a["du"] and a["au"] and a["du"] < a["au"] and len(a["essais"]) == len(mj.ACHATS) * len(mj.HORIZONS) and a["essayes"] == len(a["essais"]) and len(v["essais"]) == len(mj.VENTES)
 assert E["Vet Dip"]["signal"] == "acheter" and 0 < E["Vet Dip"]["taux"] <= 1 and E["Vet Dip"]["vs_mediane_pct"] <= -20, E["Vet Dip"]
 assert E["Vet Dip"]["bas_depuis_j"] == E["Vet Dip"]["hist_j"] and E["Vet Dip"]["etabli"]
 assert "signal" not in E["Kid Dip"] and not E["Kid Dip"]["etabli"], "une recrue en creux : jamais a acheter (mesure : ca ne remonte pas mieux que le hasard)"
 assert E["Vet High"]["signal"] == "vendre" and E["Vet High"]["vs_mediane_pct"] >= 30, E["Vet High"]
 assert "signal" not in E["Vet Flat"], E["Vet Flat"]
 # jamais plus que ce qui est mesure : le taux d'un joueur est celui d'un bareme essaye, qui bat le hasard avec assez de cas
-ok = {t["taux"] for t in a["essais"] if t["n"] >= mj.N_TEST_MIN and t["borne"] > a["base"]}
+ok = {t["taux"] for t in a["essais"] if t["n"] >= mj.N_TEST_MIN and t["borne"] > t["base"]}
+# 21 nov 2026 (« pas mieux que 70 % ? ») : chaque bareme d'achat est verifie a 2, 3 et 4 mois ; le joueur porte le delai du sien
+assert {t["mois"] for t in a["essais"]} == {2, 3, 4} and all(t.get("base") is not None for t in a["essais"] if t["n"])
+assert E["Vet Dip"]["mois"] in (2, 3, 4) and mj.point(serie(creux_passe), FIN - 150, suite=(106, 134))["apres"] is not None
 assert E["Vet Dip"]["taux"] in ok, (E["Vet Dip"]["taux"], ok)
 
 # un bareme qui ne bat pas le hasard : aucun signal
