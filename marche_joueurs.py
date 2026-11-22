@@ -44,7 +44,7 @@ import threading
 import time
 from datetime import date, datetime
 
-VERSION = 6
+VERSION = 7
 PAS = 30                 # jours d'une tranche
 N_TRANCHES = 11          # tranches d'avant (l'annee)
 H0, H1 = 46, 74          # « deux mois apres »
@@ -146,7 +146,11 @@ def _depuis(sj, jour, niveau, semaines=52):
     # le bruit) ; un joueur pose au fond de son creux depuis un mois reste « au plus bas en 12 mois »
     bas = next((j - 7 for j, v in pts if v < niveau * (1 - TOL_DEPUIS)), hist)
     haut = next((j - 7 for j, v in pts if v > niveau * (1 + TOL_DEPUIS)), hist)
-    return {"bas_depuis_j": bas, "haut_depuis_j": haut, "hist_j": hist}
+    # 21 nov 2026 (Mathieu : « plus Apple et sexy, moins Excel ») : sa courbe de 12 mois (un point aux 4 semaines, le plus vieux
+    # d'abord, puis aujourd'hui), pour la petite courbe a cote de son nom, comme dans Bourse. Des niveaux relatifs, jamais un prix.
+    d = dict(pts)
+    courbe = [round(d[a], 3) for a in range(336, 0, -28) if a in d] + [round(niveau, 3)]
+    return {"bas_depuis_j": bas, "haut_depuis_j": haut, "hist_j": hist, "courbe": courbe if len(courbe) >= 5 else None}
 
 
 def _chemin_signaux():
@@ -447,10 +451,21 @@ def etat(nom):
 def liste(signal, n=40):
     """[{nom, sous_sommet_pct, vs_mediane_pct, mois_pct}] : « acheter » (le plus loin de son sommet d'abord) ou « vendre »."""
     E = lire().get("etats") or {}
-    l = [{"nom": k, **{c: e.get(c) for c in ("sous_sommet_pct", "vs_mediane_pct", "mois_pct", "n", "taux", "mois", "gain", "bas_depuis_j", "haut_depuis_j", "hist_j")}}
+    l = [{"nom": k, **{c: e.get(c) for c in ("sous_sommet_pct", "vs_mediane_pct", "mois_pct", "n", "taux", "mois", "gain", "bas_depuis_j", "haut_depuis_j", "hist_j", "courbe")}}
          for k, e in E.items() if e.get("signal") == signal]
     # le signal le plus sur d'abord (son taux mesure), puis le plus loin de son niveau habituel
     l.sort(key=(lambda x: (-(x["taux"] or 0), x["vs_mediane_pct"])) if signal == "acheter" else (lambda x: (-(x["taux"] or 0), -x["vs_mediane_pct"])))
+    return l[:n]
+
+
+def liste_bas(n=40, jours=30, pct=-10):
+    """21 nov 2026 (Mathieu : « au moins mettre la plus basse mediane en X jours », comme Amazon) : un FAIT, pas un signal : les
+    joueurs etablis dont le marche est le plus bas depuis `jours` jours et plus, et a `pct` % ou moins sous sa normale de 12 mois.
+    Le plus long « au plus bas » d'abord."""
+    E = lire().get("etats") or {}
+    l = [{"nom": k, **{c: e.get(c) for c in ("sous_sommet_pct", "vs_mediane_pct", "mois_pct", "n", "bas_depuis_j", "haut_depuis_j", "hist_j", "courbe")}}
+         for k, e in E.items() if e.get("etabli") and (e.get("bas_depuis_j") or 0) >= jours and (e.get("vs_mediane_pct") if e.get("vs_mediane_pct") is not None else 0) <= pct]
+    l.sort(key=lambda x: (-x["bas_depuis_j"], x["vs_mediane_pct"]))
     return l[:n]
 
 

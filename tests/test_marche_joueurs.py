@@ -109,3 +109,14 @@ print("OK test_marche_joueurs (creux d'un etabli -> acheter %s %% vs hasard %s %
 _t = next(t for t in a["essais"] if t["ok"])
 assert _t["taux"] < _t["taux_brut"] and abs(_t["taux"] - (_t["gagnes"] + _t["base"] * mj.POIDS_PRUDENT) / (_t["n"] + mj.POIDS_PRUDENT)) < 0.002, _t
 print("OK test_marche_joueurs (taux prudent : %s %% brut -> %s %% montre, sur %s paris)" % (round(_t["taux_brut"] * 100), round(_t["taux"] * 100), _t["n"]))
+
+# 21 nov 2026 (soir ; « au moins la plus basse mediane en X jours ») : la liste des faits, sans signal
+_b = [x["nom"] for x in mj.liste_bas()]
+assert "Vet Dip" in _b and "Kid Dip" not in _b and "Vet Flat" not in _b and "Vet High" not in _b, _b
+assert mj.liste_bas()[0]["bas_depuis_j"] >= 30 and mj.liste_bas(jours=9999) == []
+print("OK test_marche_joueurs (au plus bas : %s)" % _b[:3])
+
+# la petite courbe de 12 mois (comme dans Bourse) : le plus vieux d'abord, aujourd'hui a la fin ; des niveaux relatifs
+_c = E["Vet Dip"]["courbe"]
+assert _c and len(_c) >= 8 and _c[-1] < _c[0] * 0.75 and all(0 < v < 3 for v in _c) and mj.liste_bas()[0].get("courbe"), _c
+print("OK test_marche_joueurs (courbe : %s points, de %s a %s)" % (len(_c), _c[0], _c[-1]))

@@ -23,6 +23,7 @@ L = {"acheter": [{"nom": "Bon Creux", "vs_mediane_pct": -30, "sous_sommet_pct": 
 PREUVE = {"achat": {"taux": 0.58, "base": 0.35, "n": 89, "joueurs": 28, "essais": [{"regle": ["mediane", 0.2], "n": 89, "joueurs": 28, "taux": 0.58, "borne": 0.48, "gain_med": 13.9}], "du": "2026-03-15", "au": "2026-09-06"}}
 marche_joueurs.liste = lambda signal, n=40: L[signal][:n]
 marche_joueurs.preuve = lambda: PREUVE
+marche_joueurs.liste_bas = lambda n=40, **k: [dict(x, taux=None) for x in L["acheter"]][:n]
 ETATS = {x["nom"]: dict(x, signal=s) for s, l in L.items() for x in l}
 marche_joueurs.etat = lambda nom: ETATS.get(nom)
 
@@ -34,8 +35,10 @@ a, v = r["cats"]["acheter"], r["cats"]["vendre"]
 assert [x["nom"] for x in a] == ["Bon Creux"], [x["nom"] for x in a]            # pas le joueur en creux sur la glace, pas le C, pas l'inconnu
 assert [x["nom"] for x in v] == ["Bon Sommet", "Moyen Sommet"], [x["nom"] for x in v]
 m = a[0]["marche"]
-assert m == {"vs_mediane_pct": -30, "sous_sommet_pct": -40, "mois_pct": -5, "taux": 0.58, "mois": 3, "gain": 24.0, "bas_depuis_j": 300, "haut_depuis_j": 0, "hist_j": 364}, m
+assert m == {"vs_mediane_pct": -30, "sous_sommet_pct": -40, "mois_pct": -5, "taux": 0.58, "mois": 3, "gain": 24.0, "bas_depuis_j": 300, "haut_depuis_j": 0, "hist_j": 364, "courbe": None}, m
 assert a[0]["lettre"][:1] in ("A", "B") and v[0]["marche"]["haut_depuis_j"] == 350
+# « au plus bas » : un fait montre a tous, meme filtre « bon joueur » (actif, pas en creux sur la glace, A ou B)
+assert [x["nom"] for x in r["cats"]["bas"]] == ["Bon Creux"] and r["compte"]["bas"] == 1 and r["cats"]["bas"][0]["marche"]["bas_depuis_j"] == 300, r["cats"]["bas"]
 assert r["compte"]["acheter"] == 1 and r["compte"]["vendre"] == 2 and r["preuve"] == PREUVE
 # jamais un prix : aucune cle de prix dans ce qui sort pour ces listes
 assert not any(k in json.dumps(a + v) for k in ('"prix"', '"mediane"', '"moyenne"', '"niveau"')), "des ecarts en %, jamais un prix"

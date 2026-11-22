@@ -8780,17 +8780,19 @@ class Api:
             import marche_joueurs
             preuve = marche_joueurs.preuve()
             Imin = {n_.lower(): (n_, w) for n_, w in I.items()}
-            for sig in ("acheter", "vendre"):
+            # « bas » (21 nov, soir) : un FAIT montre a tous (« au plus bas en 8 mois »), sans promesse ni barres ; meme filtre
+            # « bon joueur » que l'achat (actif, pas en creux sur la glace, cote A ou B)
+            for sig in ("acheter", "vendre", "bas"):
                 l = []
-                for x in marche_joueurs.liste(sig, 80):
+                for x in (marche_joueurs.liste_bas(80) if sig == "bas" else marche_joueurs.liste(sig, 80)):
                     nv = Imin.get(x["nom"].lower())
                     if not nv:
                         continue
                     f_ = fiche(nv[0], nv[1])
                     # « il joue bien » : un joueur ACTIF (jamais une legende a la retraite : Gordie Howe), pas en creux, cote A ou B
-                    if sig == "acheter" and (not nv[1].get("actif") or "en_creux" in f_["pastilles"] or str(f_.get("lettre") or "E")[:1] not in ("A", "B")):
+                    if sig in ("acheter", "bas") and (not nv[1].get("actif") or "en_creux" in f_["pastilles"] or str(f_.get("lettre") or "E")[:1] not in ("A", "B")):
                         continue
-                    f_["marche"] = {k: x.get(k) for k in ("vs_mediane_pct", "sous_sommet_pct", "mois_pct", "taux", "mois", "gain", "bas_depuis_j", "haut_depuis_j", "hist_j")}
+                    f_["marche"] = {k: x.get(k) for k in ("vs_mediane_pct", "sous_sommet_pct", "mois_pct", "taux", "mois", "gain", "bas_depuis_j", "haut_depuis_j", "hist_j", "courbe")}
                     l.append(f_)
                 cats[sig] = l[:40]
         except Exception as e:
@@ -8800,7 +8802,7 @@ class Api:
         st = indice_joueurs.statut()
         r = {"ok": True, "cats": cats, "suivis": st.get("joueurs"), "actifs": len(actifs), "le": d.get("le"), "preuve": preuve,
              "compte": {**{k: sum(1 for v in I.values() if k in (v.get("pastilles") or [])) for k in ("en_feu", "rebond", "recrue", "en_creux", "buzz", "en_hausse", "legende")},
-                        "marche_bas": len(cats.get("marche_bas") or []), "acheter": len(cats.get("acheter") or []), "vendre": len(cats.get("vendre") or [])}}
+                        "marche_bas": len(cats.get("marche_bas") or []), "acheter": len(cats.get("acheter") or []), "bas": len(cats.get("bas") or []), "vendre": len(cats.get("vendre") or [])}}
         # 17 nov 2026 (Mathieu : « un utilisateur devrait pouvoir chercher son joueur dans le Trending ») : tous les joueurs suivis
         # (nom, equipe, lettre), pour une recherche instantanee dans la page
         try:

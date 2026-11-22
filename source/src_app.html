@@ -6398,7 +6398,7 @@ html body .ecran .md-rech.tiq-rech, html:not(.tel-large) body .tete-fixe:has(.d-
    sa preuve mesuree ; a l'ordi tout tient dans la page (seules les listes defilent) ; au telephone 5 lignes, puis « Voir tout » */
 .tiq-av{display:grid; grid-template-columns:1fr; gap:12px; margin-bottom:12px} .tiq-av > *{min-width:0; margin:0} .tiq-col{display:grid; gap:12px} .tiq-col > .tiq-g{margin:0; min-width:0}
 .tiq-pan{gap:0} .tiq-pan .am-t{margin-bottom:10px; display:flex; align-items:center}
-.tiq-pan.acheter .am-t{background:repeating-linear-gradient(115deg, rgba(255,255,255,.035) 0 1px, transparent 1px 7px), linear-gradient(100deg, color-mix(in srgb, var(--vert) 22%, transparent), rgba(159,230,210,.10) 60%, rgba(185,190,255,.10))}
+.tiq-pan.acheter .am-t, .tiq-pan.bas .am-t{background:repeating-linear-gradient(115deg, rgba(255,255,255,.035) 0 1px, transparent 1px 7px), linear-gradient(100deg, color-mix(in srgb, var(--vert) 22%, transparent), rgba(159,230,210,.10) 60%, rgba(185,190,255,.10))}
 .tiq-pan.vendre .am-t{background:repeating-linear-gradient(115deg, rgba(255,255,255,.035) 0 1px, transparent 1px 7px), linear-gradient(100deg, color-mix(in srgb, var(--rouge) 22%, transparent), rgba(242,179,214,.10) 60%, rgba(241,213,142,.10))}
 .tiq-gt .tiq-pn, h3 .tiq-pn{font:700 14px var(--f-cond); font-style:normal; color:var(--doux); margin:0 auto 0 8px; letter-spacing:.04em}
 .tiq-ps{margin:0 0 2px; color:var(--doux); font-size:14px; line-height:1.3}
@@ -6407,6 +6407,8 @@ html body .ecran .md-rech.tiq-rech, html:not(.tel-large) body .tete-fixe:has(.d-
 .tiq-br{display:inline-flex; align-items:flex-end; gap:2px; height:11px; margin-right:7px} .tiq-br i{display:block; width:3px; border-radius:1px; background:rgba(255,255,255,.2)} .tiq-br i:nth-child(1){height:5px} .tiq-br i:nth-child(2){height:8px} .tiq-br i:nth-child(3){height:11px}
 .tiq-br.n1 i:nth-child(1), .tiq-br.n2 i:nth-child(-n+2), .tiq-br.n3 i{background:var(--texte)}
 .tiq-mn small em.tiq-ai{font:700 13.5px var(--f-txt, inherit); font-style:normal; color:var(--texte); white-space:nowrap; margin-right:8px}
+.tiq-sp{flex:none; width:64px; height:26px; overflow:visible} .tiq-sp path{fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round} .tiq-sp.h path{stroke:var(--vert)} .tiq-sp.b path{stroke:var(--rouge)} .tiq-sp.h circle{fill:var(--vert)} .tiq-sp.b circle{fill:var(--rouge)}
+.tiq-lm .tiq-m{border-bottom:0; padding:11px 0} .tiq-lm .tiq-m + .tiq-m{border-top:1px solid rgba(255,255,255,.06)} .tiq-mn b{font-size:19px} .tiq-pc{border-radius:10px; min-width:74px; padding:8px 8px; font-size:17.5px}
 .tiq-seg{display:none; margin:0 0 12px} .tiq-kr2{margin:0 0 10px}
 .tiq-m{display:flex; align-items:center; gap:12px; width:100%; border:0; border-bottom:1px solid var(--ligne); background:none; color:var(--texte); font:inherit; text-align:left; padding:10px 0; cursor:pointer}
 .tiq-m:last-child{border-bottom:0} .tiq-m:active{background:rgba(255,255,255,.03)}
@@ -6424,7 +6426,7 @@ html body .ecran .md-rech.tiq-rech, html:not(.tel-large) body .tete-fixe:has(.d-
 @media (max-width:699px){ .tiq-m .tiq-vs, .tiq-pt .tiq-vs, .tiq-pv i u{display:none} .tiq-pg b{font-size:34px} .tiq-pt{font-size:13.5px} .tiq-pt td, .tiq-pt th{padding-left:2px; padding-right:2px} }
 .tiq-pg b{white-space:nowrap} .tiq-pt td{white-space:nowrap}
 @media (max-width:1099px){ .tiq-av .tiq-lm .tiq-m:nth-child(n+6){display:none} .tiq-av .tiq-lm .tiq-m:nth-child(5){border-bottom:0}
-  .tiq-seg{display:flex} .tiq-seg ~ .tiq-av[data-on="acheter"] > .tiq-pan.vendre, .tiq-seg ~ .tiq-av[data-on="vendre"] > .tiq-pan.acheter{display:none} .tiq-seg ~ .tiq-av > .tiq-pan > .am-t{display:none} .tiq-seg ~ .tiq-av > .tiq-pan{padding-top:12px} }
+  .tiq-seg{display:flex} .tiq-seg ~ .tiq-av[data-on="bas"] > .tiq-pan.vendre, .tiq-seg ~ .tiq-av[data-on="vendre"] > .tiq-pan.bas{display:none} .tiq-seg ~ .tiq-av > .tiq-pan > .am-t{display:none} .tiq-seg ~ .tiq-av > .tiq-pan{padding-top:12px} }
 @media (min-width:1100px){
   .ecran.tiq.tiq-s{height:calc(100dvh - var(--bandeau-h, 0px)); display:flex; flex-direction:column; overflow:hidden; box-sizing:border-box}
   .ecran.tiq.tiq-s > .tete-fixe{position:relative; top:auto; flex:none}
@@ -13959,7 +13961,7 @@ const libMB = (e) => tt('Marché bas', 'Market low') + (e != null && e < 0 ? ' '
 // 21 nov 2026 (Mathieu : « toujours sortir la liste des joueurs a acheter (creux) et a vendre (sommet temporaire) ; je
 // reverrais la page Trend avec cette idee en tete ») : les deux listes d'abord ; chaque joueur montre son ecart, « au plus
 // bas depuis N jours » (comme Amazon) et le taux MESURE de son signal (jamais plus que ce qui est mesure)
-const CATS_IQ = () => [['acheter', tt('À acheter', 'To buy'), 'vert'], ['vendre', tt('À vendre', 'To sell'), 'rouge'], ['marche_bas', tt('Marché bas', 'Market low'), 'vert'], ['en_feu', tt('En feu', 'On fire'), 'rouge'], ['rebond', tt('Sortent du creux', 'Bouncing back'), 'vert'], ['recrue', tt('Recrues', 'Rookies'), 'or'],
+const CATS_IQ = () => [['bas', tt('Au plus bas', 'At their lowest'), 'vert'], ['acheter', tt('À acheter (essai)', 'To buy (trial)'), 'vert'], ['vendre', tt('À vendre', 'To sell'), 'rouge'], ['marche_bas', tt('Marché bas', 'Market low'), 'vert'], ['en_feu', tt('En feu', 'On fire'), 'rouge'], ['rebond', tt('Sortent du creux', 'Bouncing back'), 'vert'], ['recrue', tt('Recrues', 'Rookies'), 'or'],
   ['en_hausse', tt('En hausse', 'Rising'), 'vert'], ['buzz', 'Buzz', 'acc'], ['en_creux', tt('En creux', 'In a slump'), ''], ['top', tt('Plus recherchés', 'Most sought'), 'acc'], ['legende', tt('Légendes', 'Legends'), 'or']];
 // 16 nov 2026 (« revoir la methode dont les filtres sont appliques et l'info presentee ») : ce que veut dire chaque liste, en une phrase
 const pctT = (v) => v == null ? '' : Math.round(v * 100) + ' %';
@@ -14037,7 +14039,7 @@ async function vueTendancesIQ(arg){
   // deviennent une rangee de pastilles legeres, chacune ouvre sa liste ; « joueurs analyses » et le suivi des creux : dans la note
   const kp = (k, l, c) => (r.compte[k] || 0) ? `<button class="tiq-kp tiq-kb" data-tcat="${k}"><b class="${c}">${r.compte[k]}</b><span>${l}</span></button>` : '';
   S.tiqPreuve = r.preuve || {};
-  const sigM = (r.compte.acheter || 0) + (r.compte.vendre || 0) > 0;          // 21 nov 2026 : la page « À acheter | À vendre »
+  const sigM = (r.compte.bas || 0) + (r.compte.acheter || 0) + (r.compte.vendre || 0) > 0;          // 21 nov 2026 : la page « À acheter | À vendre »
   const blocs2 = `${top10.length ? `<div class="tiq-g"><button class="am-t tiq-gt" data-tout="top">${tt('Les joueurs les plus recherchés', 'Most sought-after players')}<span>${tt('Voir tout', 'See all')} ›</span></button>${top10.slice(0, 5).map((x, i) => `<button class="tiq-b" data-jpop="${esc(x.nom)}"><span class="tiq-bn">${i + 1}</span><span class="tiq-bl"><b>${esc(x.nom)}</b><i style="width:${Math.round(100 * ((x.note ?? x.indice) || 0) / mx)}%"></i></span><span class="tiq-bv">${x.lettre || lettre(x.indice)}</span></button>`).join('')}</div>` : ''}
     ${(r.familles || []).length ? `<div class="tiq-g"><button class="am-t tiq-gt" data-tout="types">${tt('Les cartes les plus recherchées', 'The most sought-after cards')}<span>${tt('Voir tout', 'See all')} ›</span></button>
       ${r.familles.slice(0, 5).map(x => `<button class="tiq-b tiq-fam" data-fam="${esc(x.cle)}"><span class="tiq-fl ${famCl(x.lettre)}">${esc(x.lettre.split(' ')[0])}</span><span class="tiq-bl"><b>${esc(tt(x.nom, x.nom_en))}</b><small>${esc(x.ex.slice(0, 2).map(e => tt(e.nom, e.nom_en)).join(' · '))}</small></span><span class="tiq-bv">›</span></button>`).join('')}</div>` : ''}`;
@@ -14052,13 +14054,19 @@ async function vueTendancesIQ(arg){
   // comme Bourse d'Apple : le nom, une ligne (« Au plus bas en 12 mois »), UN chiffre dans une pastille de couleur. La confiance :
   // 1 à 3 barres (le taux mesuré : 75 % et + = 3, 62 % et + = 2), plus aucun « 65 % rebound » ni fourchette sur la page ;
   // la preuve complète reste à un toucher (« Vérifié sur nos ventes ›»)
+  // 21 nov 2026 (Mathieu : « pourquoi en rouge les % ? ») : comme à la Bourse : une hausse en VERT, une baisse en ROUGE (la
+  // couleur dit le sens du marché, pas « vends »)
   const barres = (t, k) => { const n = k === 'vendre' ? (t >= 0.85 ? 3 : t >= 0.75 ? 2 : 1) : t >= 0.60 ? 3 : t >= 0.50 ? 2 : 1;     // à vendre : la force RELATIVE du sommet
     return `<span class="tiq-br n${n}" role="img" aria-label="${esc(tt('Force du signal', 'Signal strength'))} ${n}/3"><i></i><i></i><i></i></span>`; };
-  const sousM = (x, k) => { const m = x.marche || {}, dj = k === 'acheter' ? m.bas_depuis_j : m.haut_depuis_j, t = dj >= 30 ? depuisT(dj, k === 'acheter') : k === 'acheter' ? tt('sous sa normale', 'below his usual') : tt('au-dessus de sa normale', 'above his usual');
+  const sousM = (x, k) => { const m = x.marche || {}, dj = k !== 'vendre' ? m.bas_depuis_j : m.haut_depuis_j, t = dj >= 30 ? depuisT(dj, k !== 'vendre') : k !== 'vendre' ? tt('sous sa normale', 'below his usual') : tt('au-dessus de sa normale', 'above his usual');
     return t.charAt(0).toUpperCase() + t.slice(1); };
-  const ligneM = (x, k, at) => { const m = x.marche || {}, som = k === 'acheter' && m.sous_sommet_pct != null && m.vs_mediane_pct > -10;
-    return `<button class="tiq-m" ${at || 'data-jpop'}="${esc(x.nom)}"><span class="tiq-mn"><b>${esc(x.nom)}</b><small>${m.taux ? barres(m.taux, k) : ''}${k === 'vendre' && enMain(x.nom) ? `<em class="tiq-ai">${tt('Tu en as', 'You own')} ${enMain(x.nom)}</em>` : ''}${sousM(x, k)}</small></span><span class="tiq-pc ${k}">${sg(som ? m.sous_sommet_pct : m.vs_mediane_pct)}</span></button>`; };
-  const phraseM = (k) => k === 'acheter' ? tt('À l’essai, toi seulement : pas encore prouvé après les frais.', 'On trial, only you: not yet proven after fees.') : tt('Marché à un sommet. Le plus souvent, ça retombe.', 'Market at a peak. More often than not, it comes back down.');
+  // 21 nov 2026 (Mathieu : « plus Apple et sexy, moins Excel ») : la petite courbe de 12 mois à côté du nom, comme dans Bourse
+  const courbeM = (c, haut) => { if (!c || c.length < 5) return ''; const lo = Math.min(...c), hi = Math.max(...c), e = (hi - lo) || 1, W = 64, H = 26;
+    const P = c.map((v, i) => [2 + (W - 4) * i / (c.length - 1), 3 + (H - 6) * (1 - (v - lo) / e)]);
+    return `<svg class="tiq-sp ${haut ? 'h' : 'b'}" viewBox="0 0 ${W} ${H}" aria-hidden="true"><path d="${P.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join('')}"/><circle cx="${P[P.length - 1][0].toFixed(1)}" cy="${P[P.length - 1][1].toFixed(1)}" r="2.2"/></svg>`; };
+  const ligneM = (x, k, at) => { const m = x.marche || {}, som = k !== 'vendre' && m.sous_sommet_pct != null && m.vs_mediane_pct > -10;
+    return `<button class="tiq-m" ${at || 'data-jpop'}="${esc(x.nom)}"><span class="tiq-mn"><b>${esc(x.nom)}</b><small>${m.taux && k !== 'bas' ? barres(m.taux, k) : ''}${k === 'vendre' && enMain(x.nom) ? `<em class="tiq-ai">${tt('Tu en as', 'You own')} ${enMain(x.nom)}</em>` : ''}${sousM(x, k)}</small></span>${courbeM(m.courbe, (som ? m.sous_sommet_pct : m.vs_mediane_pct) > 0)}<span class="tiq-pc ${(som ? m.sous_sommet_pct : m.vs_mediane_pct) > 0 ? 'acheter' : 'vendre'}">${sg(som ? m.sous_sommet_pct : m.vs_mediane_pct)}</span></button>`; };
+  const phraseM = (k) => k === 'bas' ? tt('Bons joueurs dont le marché n’a pas été aussi bas depuis des mois. Un fait, pas une promesse.', 'Good players whose market hasn’t been this low in months. A fact, not a promise.') : k === 'acheter' ? tt('À l’essai, toi seulement : pas encore prouvé après les frais.', 'On trial, only you: not yet proven after fees.') : tt('Marché à un sommet. Le plus souvent, ça retombe.', 'Market at a peak. More often than not, it comes back down.');
   const fourch = (k) => { const t = (r.cats[k] || []).map(x => (x.marche || {}).taux).filter(Boolean); if (!t.length) return ''; const a = Math.round(Math.min(...t) * 100), b = Math.round(Math.max(...t) * 100);
     return a === b ? a + ' %' : a + tt(' à ', ' to ') + b + ' %'; };
   const PV = (k) => S.tiqPreuve[k === 'acheter' ? 'achat' : 'vente'] || (k === 'vendre' && S.tiqPreuve.vente_etablis) || {};
@@ -14069,7 +14077,7 @@ async function vueTendancesIQ(arg){
   const pvBtn = (k) => fourch(k) ? `<button class="tiq-pv" data-pvm="${k}"><b class="${k === 'acheter' ? 'vert' : 'rouge'}">${fourch(k)}</b><span>${k === 'acheter' ? tt(`ont remonté en ${delaiA()} mois`, `were up ${delaiA()} months later`) : tt('ont rebaissé en 2 mois', 'were down 2 months later')}${PV(k).base != null ? ' · ' + tt('hasard ', 'chance ') + (k === 'acheter' ? hasardA() : pctT(PV(k).base)) : ''}</span><i><u>${tt('La preuve', 'The proof')}</u> ›</i></button>` : '';
   const pan = (k, titre) => { const L = r.cats[k] || []; if (!L.length) return '';
     return `<div class="tiq-g tiq-pan ${k}"><div class="am-t tiq-gt">${titre}<em class="tiq-pn">${L.length}</em></div><p class="tiq-ps">${phraseM(k)}</p><div class="tiq-lm">${L.map(x => ligneM(x, k)).join('')}</div>
-      <div class="tiq-pf">${L.length > 5 ? `<button class="tiq-pl2 tiq-tous" data-tl="${k}">${tt(`Voir les ${L.length}`, `See all ${L.length}`)} ›</button>` : ''}${ADM_T ? `<button class="tiq-pl2" data-pvm="${k}">${tt('Vérifié sur nos ventes', 'Checked on our sales')} ›</button>` : ''}</div></div>`; };
+      <div class="tiq-pf">${L.length > 5 ? `<button class="tiq-pl2 tiq-tous" data-tl="${k}">${tt(`Voir les ${L.length}`, `See all ${L.length}`)} ›</button>` : ''}${ADM_T && k !== 'bas' ? `<button class="tiq-pl2" data-pvm="${k}">${tt('Vérifié sur nos ventes', 'Checked on our sales')} ›</button>` : ''}</div></div>`; };
   // la preuve : chaque bareme essaye, le nombre de cas et de joueurs, sa reussite et le mouvement median (jamais plus que ce qui est mesure)
   const feuillePreuve = (k) => { const ach = k === 'acheter', Ps = ach ? [S.tiqPreuve.achat] : [S.tiqPreuve.vente_etablis, S.tiqPreuve.vente], P0 = Ps.find(Boolean); if (!P0) return;
     const jr = (d) => d ? new Date(d + 'T12:00:00').toLocaleDateString(tt('fr-CA', 'en-CA'), {month: 'long', year: 'numeric'}) : '';
@@ -14090,7 +14098,7 @@ async function vueTendancesIQ(arg){
       <div class="tiq-pg"><b class="${ach ? 'vert' : 'rouge'}">${fourch(k)}</b><span>${ach ? tt(`de gagnants après les frais (${Math.round((P0.frais || .15) * 100)} %), taux prudent`, `winners after fees (${Math.round((P0.frais || .15) * 100)}%), cautious rate`) : tt('des signaux passés ont rebaissé de 5 % et plus', 'of past signals were down 5%+')}<br>${ach ? tt(`revendus ${delaiA()} mois plus tard · n’importe quel joueur : ${hasardA()}`, `resold ${delaiA()} months later · any player: ${hasardA()}`) : tt('2 mois plus tard · au hasard : ', '2 months later · by chance: ') + pctT(P0.base)}</span></div>
       ${ach ? tabA(Ps[0]) : tabV(Ps[0], Ps[1])}
       <p class="sous" style="margin:0">${tt(`On reprend chaque signal passé (${jr(P0.du)} à ${jr(P0.au)}) et on regarde le marché du joueur ${ach ? '2, 3 et 4' : '2'} mois plus tard, dans les vraies ventes. ${ach ? `Un seul pari par joueur et par creux. Gagnant = revendu plus cher qu’acheté, frais payés. ${nA[0]} barèmes essayés, ${nA[1]} retenus. Le taux prudent ramène un petit nombre de paris vers le hasard : quand on essaie ${nA[0]} barèmes, le meilleur a toujours l’air trop beau.` : 'À son plus haut = au-dessus de son sommet des 12 derniers mois. En gris : pas assez de cas, ou pas mieux que le hasard : jamais utilisé.'} Revérifié chaque jour avec les nouvelles ventes. Ce qui s’est passé, pas une garantie.`, `We replay every past signal (${jr(P0.du)} to ${jr(P0.au)}) and look at the player’s market ${ach ? '2, 3 and 4' : '2'} months later, in real sales. ${ach ? `One bet per player per dip. Winner = resold for more than paid, fees included. ${nA[0]} rules tried, ${nA[1]} kept. The cautious rate pulls a small number of bets toward chance: when you try ${nA[0]} rules, the best always looks too good.` : 'At his high = above his 12-month high. In grey: too few cases, or no better than chance: never used.'} Re-checked daily with new sales. What happened, not a guarantee.`)}</p>`); };
-  const feuilleListe = (k) => { const L = r.cats[k] || [], nom = (C.find(([c]) => c === k) || [])[1] || '', mk = k === 'acheter' || k === 'vendre', av = cat; cat = k;
+  const feuilleListe = (k) => { const L = r.cats[k] || [], nom = (C.find(([c]) => c === k) || [])[1] || '', mk = k === 'acheter' || k === 'vendre' || k === 'bas', av = cat; cat = k;
     const h = `<h3>${esc(nom)}</h3><p class="sous" style="margin:0 0 10px">${mk ? phraseM(k) : DESC_IQ()[k] || ''}</p><div class="${mk ? 'tiq-lm' : 'tiq-liste tiq-lf'}">${L.map(x => mk ? ligneM(x, k, 'data-jf') : carte(x).replace('data-jpop=', 'data-jf=')).join('')}</div>`; cat = av;
     ouvrirFeuille(h);
     $$('#feuille [data-jf]').forEach(b => b.onclick = () => { vibrer(); const n = b.dataset.jf; fermerFeuille(); setTimeout(() => feuilleJoueur(n), 220); });
@@ -14152,10 +14160,13 @@ async function vueTendancesIQ(arg){
     const note = `<div class="sous tiq-note">${tt(`${r.suivis || r.actifs || 0} joueurs analysés chaque jour, sur des données publiques. SlabIQ ne regarde jamais le prix des annonces.`, `${r.suivis || r.actifs || 0} players analyzed daily, on public data. SlabIQ never looks at listing prices.`)}${r.le ? ' · ' + tt('mis à jour ', 'updated ') + esc(ilYa(r.le)) : ''}</div>`;
     const ec = z.closest('.ecran'); if (ec) ec.classList.toggle('tiq-s', sigM);
     if (sigM) {
-      const autres = dispo.filter(([k]) => !['acheter', 'vendre', 'marche_bas', 'top', 'en_feu', 'rebond', 'recrue'].includes(k));
-      const ong = S.tiqOnglet === 'acheter' && (r.cats.acheter || []).length ? 'acheter' : (r.cats.vendre || []).length ? 'vendre' : 'acheter';
-      z.innerHTML = `${(r.cats.acheter || []).length && (r.cats.vendre || []).length ? `<div class="seg tiq-seg" id="tiq-seg"><button data-v="acheter" class="${ong === 'acheter' ? 'on' : ''}">${tt('À acheter (essai)', 'To buy (trial)')}</button><button data-v="vendre" class="${ong === 'vendre' ? 'on' : ''}">${tt('À vendre', 'To sell')}</button></div>` : ''}
-        <div class="tiq-av" data-on="${ong}">${pan('acheter', tt('À acheter', 'To buy'))}${pan('vendre', tt('À vendre', 'To sell'))}<div class="tiq-col">${blocs2}</div></div>
+      const autres = dispo.filter(([k]) => !['bas', 'vendre', 'marche_bas', 'top', 'en_feu', 'rebond', 'recrue'].includes(k) && (k !== 'acheter' || ADM_T));
+      // 21 nov 2026 (soir ; Mathieu : « au moins mettre la plus basse médiane en X jours ») : « Au plus bas » (un fait, pour tous) |
+      // « À vendre » ; l'essai « À acheter » reste dans « Plus de listes », pour l'admin seulement
+      const aB = (r.cats.bas || []).length > 0, aV = (r.cats.vendre || []).length > 0;
+      const ong = S.tiqOnglet === 'vendre' && aV ? 'vendre' : aB ? 'bas' : 'vendre';
+      z.innerHTML = `${aB && aV ? `<div class="seg tiq-seg" id="tiq-seg"><button data-v="bas" class="${ong === 'bas' ? 'on' : ''}">${tt('Au plus bas', 'At their lowest')}</button><button data-v="vendre" class="${ong === 'vendre' ? 'on' : ''}">${tt('À vendre', 'To sell')}</button></div>` : ''}
+        <div class="tiq-av" data-on="${ong}">${pan('bas', tt('Au plus bas', 'At their lowest'))}${pan('vendre', tt('À vendre', 'To sell'))}<div class="tiq-col">${blocs2}</div></div>
         <div class="tiq-kr tiq-kr2">${['en_feu', 'rebond', 'recrue'].map(k => (r.compte[k] || 0) ? `<button class="tiq-kp" data-tl="${k}"><b class="${k === 'rebond' ? 'vert' : k === 'recrue' ? 'or' : 'rouge'}">${r.compte[k]}</b><span>${k === 'en_feu' ? tt('en feu', 'on fire') : k === 'rebond' ? tt('sortent du creux', 'bouncing back') : tt('recrues', 'rookies')}</span></button>` : '').join('')}${autres.length ? `<button class="tiq-kp" id="tiq-autres"><span>${tt('Plus de listes', 'More lists')} ›</span></button>` : ''}</div>${note}`;
       $$('#tiq-seg button', z).forEach(b => b.onclick = () => { vibrer(); S.tiqOnglet = b.dataset.v; $$('#tiq-seg button', z).forEach(x => x.classList.toggle('on', x === b)); const av = $('.tiq-av', z); if (av) av.dataset.on = b.dataset.v; });
       $$('[data-tl]', z).forEach(b => b.onclick = () => { vibrer(); feuilleListe(b.dataset.tl); });
@@ -14230,7 +14241,7 @@ const MAJ_APP = () => [
   // 20 nov 2026 (Mathieu : « important de mettre cet onglet a jour apres chaque grosse mise a jour ») : ce qui change pour la
   // personne, en mots simples ; jamais un detail technique
   {n: 241, le: '2026-11-21', points: [
-    ['graphe', tt('Tendances : quoi vendre', 'Trending: what to sell'), tt('Les joueurs dont le marché est à un sommet : d’habitude, ça retombe. Tes joueurs d’abord (« Tu en as 2 »). Un chiffre, 1 à 3 barres : plus de barres, plus c’est sûr.', 'Players whose market is at a peak: it usually comes back down. Your players first (“You own 2”). One number, 1 to 3 bars: more bars, safer.')],
+    ['graphe', tt('Tendances : au plus bas, à vendre', 'Trending: at their lowest, to sell'), tt('Comme sur Amazon : les bons joueurs dont le marché est « au plus bas en X mois ». Et ceux à un sommet : le plus souvent, ça retombe. Tes joueurs d’abord (« Tu en as 2 »). Un chiffre, 1 à 3 barres : plus de barres, plus c’est sûr.', 'Like on Amazon: good players whose market is “lowest in X months”. And those at a peak: more often than not, it comes back down. Your players first (“You own 2”). One number, 1 to 3 bars: more bars, safer.')],
     ['colis', tt('Consignation au cell', 'Consignment on your phone'), tt('La liste Excel ou PDF se crée maintenant sur ton téléphone. Les cartes en vente sur eBay sont retirées d’eBay, après ton OK.', 'The Excel or PDF list now works on your phone. Cards for sale on eBay are removed from eBay, after your OK.')],
     ['graphe', tt('Tes prix, mieux jugés', 'Your prices, judged better'), tt('Un prix jusqu’à la plus haute vente récente n’est plus « trop cher ». Une tuile « À ajuster » montre les annonces au-dessus du marché.', 'A price up to the highest recent sale is no longer “too high”. A “To adjust” tile shows listings above market.')],
     ['breaks', tt('Breaks plus clairs', 'Clearer Breaks'), tt('Les joueurs en slabs côte à côte, avec la cote SlabIQ du joueur.', 'Players as slabs side by side, with the player’s SlabIQ rating.')],
