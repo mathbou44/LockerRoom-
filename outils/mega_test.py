@@ -8,7 +8,7 @@ Quand la collecte du serveur (mega_test.py : 3 ans de ventes de la meme carte, C
 La question a trancher : l'acheteur fait-il de l'argent ? Pour chaque date : les achats du Radar Pro contre les memes achats au
 hasard, a 3, 6 et 12 mois, sur la meme carte exacte, frais eBay compris (tests_site.mesures -> « gains »).
 
-  python3 outils/mega_test.py ventes_hockey.tsv.gz [--pas 91] [--min-jours 365]
+  python3 outils/mega_test.py ventes_hockey.tsv.gz [--pas 91] [--min-jours 365] [--dates N]
 
 Ecrit outils/mega_test_resultats.json (jamais le site : le site n'annonce que ce que Mathieu approuve) et un resume lisible.
 Verdict « prouve » a un horizon : a CHAQUE date mesuree (3 au moins), le Radar Pro a un gain net median > 0 ET un rendement du
@@ -55,7 +55,7 @@ def verdict(L, h):
             "pourquoi": "a chaque date" if not rates else f"rate a {len(rates)} date(s) sur {len(ok)}"}
 
 
-def calculer(chemin, pas=91, min_jours=365):
+def calculer(chemin, pas=91, min_jours=365, n_dates=None):
     os.makedirs(TRAV, exist_ok=True)
     with gzip.open(chemin, "rt", encoding="utf-8") as f:
         ent = f.readline()
@@ -63,6 +63,8 @@ def calculer(chemin, pas=91, min_jours=365):
         rows = [l for l in f if len(l.split("\t")) > i and l.split("\t")[i][:4].isdigit()]
     js = sorted(l.split("\t")[i][:10] for l in rows)
     fins = dates(js[0], js[-1], pas, min_jours)
+    if n_dates:                                        # les N plus recentes seulement (les vieilles dates n'ont presque pas de ventes)
+        fins = fins[-n_dates:]
     print(f"{len(rows)} ventes, {js[0]} -> {js[-1]} ; {len(fins)} dates : {', '.join(fins)}", flush=True)
     L = []
     for fin in fins:
@@ -109,7 +111,8 @@ if __name__ == "__main__":
     a = sys.argv[1:]
     pas = int(a[a.index("--pas") + 1]) if "--pas" in a else 91
     mj = int(a[a.index("--min-jours") + 1]) if "--min-jours" in a else 365
-    ch = [x for k, x in enumerate(a) if not x.startswith("--") and (k == 0 or a[k - 1] not in ("--pas", "--min-jours"))][0]
-    B = calculer(ch, pas, mj)
+    nd = int(a[a.index("--dates") + 1]) if "--dates" in a else None
+    ch = [x for k, x in enumerate(a) if not x.startswith("--") and (k == 0 or a[k - 1] not in ("--pas", "--min-jours", "--dates"))][0]
+    B = calculer(ch, pas, mj, nd)
     json.dump(B, open(SORTIE, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     print(resume(B))

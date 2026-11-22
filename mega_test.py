@@ -38,12 +38,13 @@ import reseau
 
 JOURS = 1095                         # 3 ans : le maximum de CompSniper
 PAR_PAGE = 50
-PAGES_MAX = 30                       # 1 500 ventes au plus par recherche
+PAGES_MAX = 80                       # 4 000 ventes au plus par recherche (22 nov : 30 -> 80, Mathieu a pris 50 000 credits :
+                                     # les Young Guns tres vendues vont enfin jusqu'a 3 ans)
 PLAFOND_DEFAUT = 8000                # credits au plus pour toute la collecte (le forfait : 10 000 par mois)
 PLAN_MAX = 3000                      # recherches au plus dans le plan
 VENTES_MIN = 3                       # ventes en un an dans nos archives, au moins
 DEJA_MIN = 10                        # une recherche avec 10 ventes connues : on ne repaie pas sa periode connue
-PAUSE_S = 1.2
+PAUSE_S = 0.3                        # 22 nov : 1,2 -> 0,3 s entre les pages (un 429 attend et reessaie seul)
 SONDE_N = 5                          # avant le vrai test : 5 credits, 5 cartes, leurs ventes d'il y a 2 a 3 ans seulement
 SONDE_JOURS = 730
 _verrou = threading.Lock()
@@ -250,6 +251,13 @@ def _collecter(plafond, arret, pause):
             c.close()
         if vide:
             construire_plan()
+        with _verrou:                                  # 22 nov : PAGES_MAX monte -> les cartes coupees au plafond de pages reprennent
+            c = _cx()
+            try:
+                c.execute("UPDATE plan SET fini=0, raison=NULL WHERE raison='pages max' AND pages < ?", (PAGES_MAX,))
+                c.commit()
+            finally:
+                c.close()
         taux = vendues._taux_usd_cad() or 1.37
         for q, plus_vieille, pages, debut, fin in _a_faire():
             if not debut:
