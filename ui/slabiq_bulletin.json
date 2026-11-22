@@ -1,5 +1,5 @@
 {
- "le": "2026-11-21",
+ "le": "2026-11-22",
  "methode": "tests_site rejoue a chaque date, avec les ventes connues ce jour-la",
  "lignes": [
   {
@@ -103,23 +103,23 @@
    "coupe": "2026-10-19",
    "revente_des": "2026-10-29",
    "revente_fin": "2026-11-19",
-   "ventes": 142155,
+   "ventes": 143148,
    "accord": 0.802,
-   "x_a_e": 10.4,
+   "x_a_e": 10.5,
    "pro": {
-    "n": 855,
-    "reussi": 0.71,
+    "n": 845,
+    "reussi": 0.711,
     "reussi_ic95": [
-     0.678,
+     0.682,
      0.742
     ],
-    "revendue": 0.855,
+    "revendue": 0.854,
     "profit_apres_frais": 0.196
    },
    "hasard": {
-    "n": 18959,
-    "reussi": 0.117,
-    "profit_apres_frais": 0.035
+    "n": 19094,
+    "reussi": 0.118,
+    "profit_apres_frais": 0.036
    }
   }
  ]

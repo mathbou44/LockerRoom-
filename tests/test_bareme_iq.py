@@ -92,3 +92,13 @@ assert S("2025-26 Upper Deck Series 2 Fluorescence Ivan Demidov") == "D"
 assert S("2025-26 SP Hockey Ivan Demidov #12") == "D"                              # « SP » le produit, pas un short print
 assert S("2025-26 Upper Deck MVP Ivan Demidov SP") == "B+"                         # « SP » = short print
 print("BAREME IQ OK")
+
+# 22 nov 2026 (Mathieu, Schaefer / Gatcomb Young Guns #499 notee A+ : « plus B que A+, c'est une Young Guns duo ») : la carte
+# des Young Guns a deux recrues (le « checklist ») n'est la Young Guns d'aucun des deux : B ; la vraie YG ne bouge pas
+import bareme_iq as _bq
+assert _bq.sorte("2025-26 Upper Deck Series 2 Matthew Schaefer Marc Gatcomb Young Guns #499 RC") == ("B", "yg_duo")
+assert _bq.sorte("2015-16 Upper Deck Young Guns Checklist Connor McDavid Max Domi #249")[1] == "yg_duo"
+assert _bq.sorte("2025-26 Upper Deck Series 2 Matthew Schaefer Young Guns #451 RC")[1] == "yg"
+assert _bq.sorte("2023-24 Upper Deck Young Guns Connor Bedard #451 PSA 10") == ("A+", "yg10")
+assert _bq.sorte("2024-25 Upper Deck Young Guns lot of 12 rookies") == ("D", "lot_checklist")
+print("BAREME IQ : YOUNG GUNS DUO OK")

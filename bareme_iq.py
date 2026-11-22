@@ -129,10 +129,20 @@ def sorte(titre):
     auto, patch, serie, g = bool(d.get("auto")), bool(d.get("patch")), d.get("serie"), d.get("grade")
     rc = bool(d.get("rc")) or bool(re.search(r"\brookies?\b|\brc\b|\br/c\b|\(rc\)", t + " " + str(titre or "").lower()))
     c = []                                             # (lettre, raison) : on garde la meilleure
-    if d.get("exclu") or re.search(r"\bchecklist\b|\blot\b|\breprint\b|\bcustom\b|\bu-? ?pick\b|\byou pick\b|\bpick (?:from|your|one)\b"
-                                          r"|\b(?:complete|finish) your set\b|\byou choose\b|\bfrom list\b|\bpick list\b", t):
+    # 22 nov 2026 (Mathieu, Schaefer / Gatcomb Young Guns #499 notee A+ : « plus B que A+, c'est une Young Guns duo ») : la carte
+    # des Young Guns a DEUX recrues (le « checklist » de la serie) n'est la Young Guns d'aucun des deux : B, pas A+ (ni D)
+    yg_duo = False
+    if YG.search(t) and not re.search(r"\blots?\b|\breprint\b|\bcustom\b|\bu-? ?pick\b|\byou pick\b|\bpick (?:from|your|one)\b|\byou choose\b", t):
+        try:
+            yg_duo = bool(re.search(r"\bchecklist\b", t)) or bool(cartes_match.cible_titre(titre or "").get("autres_joueurs"))
+        except Exception:
+            yg_duo = bool(re.search(r"\bchecklist\b", t))
+    if not yg_duo and (d.get("exclu") or re.search(r"\bchecklist\b|\blot\b|\breprint\b|\bcustom\b|\bu-? ?pick\b|\byou pick\b|\bpick (?:from|your|one)\b"
+                                          r"|\b(?:complete|finish) your set\b|\byou choose\b|\bfrom list\b|\bpick list\b", t)):
         return ("D", "lot_checklist")                  # un lot, un checklist, une reimpression : jamais une bonne sorte
-    yg = bool(YG.search(t))
+    yg = bool(YG.search(t)) and not yg_duo
+    if yg_duo:
+        c.append(("B", "yg_duo"))
     brut = " " + str(titre or "").lower() + " "
     # 21 nov 2026 (Mathieu : « POE = Program of Excellence et non Young Guns ; le prix est tres different ») : nos ventes :
     # Celebrini 69 $ (sa YG Canvas : 900 $ et plus), Schaefer 51 $, Bedard 43 $, Misa 13,50 $ ; les autres 3 $. Un insert Canvas,
@@ -145,7 +155,7 @@ def sorte(titre):
     # 18 nov 2026 (Mathieu : « Bedard 1st Round Draft a 12 $ note A+ : c'est plus un B+ ») : l'insert 1st Round Draft d'Extended
     # porte un numero dans la plage des YG (#740) ; ce n'est PAS une YG (nos ventes : Bedard 27 $ contre 254 $ pour sa YG)
     frd = bool(re.search(r"\b(?:1st|first) round draft\b|\bfrd\b", brut))
-    if not yg and not frd and rc and re.search(r"\bupper deck\b|\bud\b", brut) and not re.search(r"\bsp\b|\bice\b|\bartifacts\b|\bcup\b|\bpremier\b|\bmvp\b|\bo-pee-chee\b|\bopc\b|\bcanvas\b|\bchronology\b|\bsynergy\b|\btrilogy\b|\bultimate\b|\bclear cut\b|\bblack diamond\b|\bcredentials\b|\ballure\b|\bstature\b|\bmetal\b|\bengrained\b|\btim hortons\b|\bpremieres\b|\bauto", brut):
+    if not yg and not yg_duo and not frd and rc and re.search(r"\bupper deck\b|\bud\b", brut) and not re.search(r"\bsp\b|\bice\b|\bartifacts\b|\bcup\b|\bpremier\b|\bmvp\b|\bo-pee-chee\b|\bopc\b|\bcanvas\b|\bchronology\b|\bsynergy\b|\btrilogy\b|\bultimate\b|\bclear cut\b|\bblack diamond\b|\bcredentials\b|\ballure\b|\bstature\b|\bmetal\b|\bengrained\b|\btim hortons\b|\bpremieres\b|\bauto", brut):
         mn = re.search(r"#\s*(\d{3})\b", brut)
         no = int(mn.group(1)) if mn else None
         if no and ((re.search(r"\bseries (?:1|one|i)\b", brut) and 201 <= no <= 250) or (re.search(r"\bseries (?:2|two|ii)\b", brut) and 451 <= no <= 500)
