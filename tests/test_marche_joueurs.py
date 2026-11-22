@@ -104,3 +104,8 @@ assert sg["Vet Dip"][-1]["signal"] == "acheter" and sg["Vet High"][-1]["signal"]
 assert sg["Vet Dip"][-1]["le"] == date.fromordinal(FIN).isoformat() and "raisons" in sg["Vet Dip"][-1]
 print("OK test_marche_joueurs (creux d'un etabli -> acheter %s %% vs hasard %s %% ; sommet -> vendre %s %% vs %s %%)" % (
     round(a["taux"] * 100), round(a["base"] * 100), round(v["taux"] * 100), round(v["base"] * 100)))
+
+# 21 nov 2026 (recherche : le meilleur de 30 baremes a toujours l'air trop beau) : le taux montre est le taux PRUDENT
+_t = next(t for t in a["essais"] if t["ok"])
+assert _t["taux"] < _t["taux_brut"] and abs(_t["taux"] - (_t["gagnes"] + _t["base"] * mj.POIDS_PRUDENT) / (_t["n"] + mj.POIDS_PRUDENT)) < 0.002, _t
+print("OK test_marche_joueurs (taux prudent : %s %% brut -> %s %% montre, sur %s paris)" % (round(_t["taux_brut"] * 100), round(_t["taux"] * 100), _t["n"]))

@@ -44,7 +44,7 @@ import threading
 import time
 from datetime import date, datetime
 
-VERSION = 5
+VERSION = 6
 PAS = 30                 # jours d'une tranche
 N_TRANCHES = 11          # tranches d'avant (l'annee)
 H0, H1 = 46, 74          # « deux mois apres »
@@ -70,13 +70,18 @@ HORIZONS = ((2, 46, 74), (3, 76, 104), (4, 106, 134))
 #     font pas 10 preuves ;
 #   - gagnant = on revend plus cher qu'on a paye APRES les frais (eBay ~13 % + l'envoi : 15 %) ;
 #   - le bareme est garde s'il a assez de paris, s'il gagne plus souvent que d'acheter n'importe quel joueur etabli (borne
-#     prudente), plus d'une fois sur deux (55 %), ET si son gain net median est d'au moins 5 %.
+#     prudente), si son taux PRUDENT (voir POIDS_PRUDENT) atteint 45 %, ET si son gain net median est d'au moins 5 %.
 # Mesure le 21 nov (3-4 mois) : acheter n'importe qui : 22-25 % de gagnants, -17 % net ; creux de -20 % : ~45 %, ~0 % net ;
 # -25 % : ~55 %, +0 a +8 % ; -30 % et plus : 65-73 %, +1 a +12 % net (15 paris, 12 joueurs).
 FRAIS = 0.15
 ESPACE_PARI_J = 70
 N_PARIS_MIN = 12
-TAUX_MIN_ACHAT = 0.55          # « efficace » : plus d'un pari sur deux gagne apres les frais...
+# 21 nov 2026 (recherche : surapprentissage des backtests, Bailey et Lopez de Prado ; « haircut » de Harvey et Liu ; Bayes
+# empirique, Efron et Morris) : quand on essaie 30 baremes sur 15 paris, le meilleur a toujours l'air trop beau. Le taux MONTRE
+# est donc le taux PRUDENT : (gagnes + hasard x 10) / (paris + 10), comme si on avait deja vu 10 paris au taux du hasard.
+# 11 gagnes sur 15 = 73 % brut -> 54 % prudent. C'est lui qui decide si un bareme est garde et combien de barres on montre.
+POIDS_PRUDENT = 10
+TAUX_MIN_ACHAT = 0.45          # « efficace » : un taux prudent d'au moins 45 % (le hasard est a 21-25 %)...
 GAIN_NET_MIN = 5.0             # ... et le gain net median vaut la peine (5 % et plus) ; -20 % a 4 mois (51 %, +1 %) ne passe pas
 VENTES = (0.10, 0.20, 0.30, 0.40, 0.50, 0.60)
 _ETAT = {"mt": None, "d": None, "en_cours": False, "vu": 0.0}
@@ -274,7 +279,8 @@ def verifier_achat(P, etablis, mois):
     for r in ACHATS:
         l = paris([x for x in E if signal_achat(x, r)])
         k = sum(1 for x in l if net(x) > 0)
-        e = {"regle": list(r), "mois": mois, "n": len(l), "joueurs": len({x["j"] for x in l}), "taux": round(k / len(l), 3) if l else None,
+        e = {"regle": list(r), "mois": mois, "n": len(l), "gagnes": k, "joueurs": len({x["j"] for x in l}), "taux_brut": round(k / len(l), 3) if l else None,
+             "taux": round((k + (base or 0) * POIDS_PRUDENT) / (len(l) + POIDS_PRUDENT), 3) if l else None,
              "borne": round(wilson(k, len(l)), 3), "gain_med": round(statistics.median([net(x) for x in l]) * 100, 1) if l else None,
              "base": round(base, 3) if base is not None else None}
         e["ok"] = bool(len(l) >= N_PARIS_MIN and base is not None and e["borne"] > base and e["taux"] >= TAUX_MIN_ACHAT
