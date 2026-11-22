@@ -6532,6 +6532,12 @@ html body .ecran .md-rech.tiq-rech, html:not(.tel-large) body .tete-fixe:has(.d-
   .tiq-seg{display:flex} .tiq-seg ~ .tiq-av[data-on="bas"] > .tiq-pan.vendre, .tiq-seg ~ .tiq-av[data-on="vendre"] > .tiq-pan.bas{display:none} .tiq-seg ~ .tiq-av > .tiq-pan > .am-t{display:none} .tiq-seg ~ .tiq-av > .tiq-pan{padding-top:12px} }
 @media (max-width:1099px){ .tiq-s .tiq-note{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin:0} .tiq-s .tiq-kr2{gap:6px} .tiq-s .tiq-kr2 .tiq-kp{padding:6px 12px} }
 .inv-av{cursor:pointer; pointer-events:auto}
+.btn-haut{position:fixed; right:16px; bottom:110px; z-index:30; width:46px; height:46px; border-radius:50%; display:grid; place-items:center; padding:0; cursor:pointer;
+  background:rgba(28,28,34,.72); backdrop-filter:blur(14px) saturate(1.4); -webkit-backdrop-filter:blur(14px) saturate(1.4); border:1px solid rgba(255,255,255,.14);
+  box-shadow:0 6px 20px rgba(0,0,0,.35); opacity:0; transform:scale(.8) translateY(8px); pointer-events:none; transition:opacity .2s ease, transform .2s ease}
+.btn-haut.on{opacity:1; transform:none; pointer-events:auto} .btn-haut:active{transform:scale(.92)}
+.btn-haut svg{width:22px; height:22px; fill:none; stroke:var(--texte); stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round}
+@media (min-width:900px){ .btn-haut{display:none} }
 .av-c{display:flex; align-items:baseline; gap:10px; margin:2px 0 10px} .av-c b{font:800 40px/1 var(--f-cond); color:var(--vert)} .av-c span{color:var(--doux); font-size:15px}
 .av-g{display:block; width:100%; height:auto; overflow:visible} .av-g path{fill:none; stroke:var(--vert); stroke-width:3; stroke-linecap:round; stroke-linejoin:round} .av-g circle{fill:var(--vert)}
 .av-ax{display:flex; justify-content:space-between; font-size:12.5px; color:var(--doux); margin:6px 0 12px} .av-p{font-size:16px; line-height:1.4; margin:0 0 14px}
@@ -22454,6 +22460,23 @@ async function vueNotifs(arg){
   if (r.non_lues) { API.notifications_lues().catch(() => {}); majCloche(0); }
 }
 document.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('[data-alertes]'); if (b) { e.preventDefault(); if (!$('#fond-feuille').hidden) fermerFeuille(); location.hash = '#notifs'; } }, true);
+// 22 nov 2026 (Mathieu : « au cell, une fleche pour revenir en haut ultra rapidement quand on scroll ») : comme iOS, un petit
+// rond en verre au-dessus de la barre du bas, a droite ; il apparait apres un ecran et demi de defilement ; un toucher remonte
+(() => { if (window.__hautBtn) return; window.__hautBtn = 1;
+  const b = document.createElement('button'); b.className = 'btn-haut'; b.type = 'button'; b.setAttribute('aria-label', tt('Revenir en haut', 'Back to top'));
+  b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 14l6-6 6 6"/></svg>'; document.body.appendChild(b);
+  let f = 0;
+  const maj = () => { f = 0; const tel = innerWidth < 900, y = (document.scrollingElement || document.documentElement).scrollTop;
+    const on = tel && y > innerHeight * 1.5 && !document.querySelector('#fond-feuille:not([hidden])');
+    if (on) { const o = document.querySelector('.onglets'), t = o ? o.getBoundingClientRect().top : innerHeight - 90; b.style.bottom = Math.max(16, Math.round(innerHeight - t + 12)) + 'px'; }
+    b.classList.toggle('on', on); };
+  addEventListener('scroll', () => { if (!f) f = requestAnimationFrame(maj); }, {passive: true});
+  addEventListener('resize', () => { if (!f) f = requestAnimationFrame(maj); });
+  addEventListener('hashchange', () => setTimeout(maj, 60));
+  b.onclick = () => { vibrer(); const se = document.scrollingElement || document.documentElement;
+    if (se.scrollTop > innerHeight * 3) se.scrollTop = innerHeight;          // tres loin : un saut, puis la fin en douceur
+    window.scrollTo({top: 0, behavior: 'smooth'}); };
+})();
 function majCloche(n){ $$('.cloche-n').forEach(e => { e.hidden = !n; e.textContent = n || ''; });
   // 9 nov 2026 : la pastille « Notifications » de l'accueil montre aussi les non lues
   S.nonLues = n || 0; const q = $('#pil-notifs .n'); if (q) { q.hidden = !S.nonLues; q.className = 'n capsule' + (S.nonLues ? ' or' : ''); q.textContent = S.nonLues || ''; } }
