@@ -6530,6 +6530,7 @@ html body .ecran .md-rech.tiq-rech, html:not(.tel-large) body .tete-fixe:has(.d-
 .tiq-pg b{white-space:nowrap} .tiq-pt td{white-space:nowrap}
 @media (max-width:1099px){ .tiq-av .tiq-lm .tiq-m:nth-child(n+6){display:none} .tiq-av .tiq-lm .tiq-m:nth-child(5){border-bottom:0}
   .tiq-seg{display:flex} .tiq-seg ~ .tiq-av[data-on="bas"] > .tiq-pan.vendre, .tiq-seg ~ .tiq-av[data-on="vendre"] > .tiq-pan.bas{display:none} .tiq-seg ~ .tiq-av > .tiq-pan > .am-t{display:none} .tiq-seg ~ .tiq-av > .tiq-pan{padding-top:12px} }
+@media (max-width:1099px){ .tiq-s .tiq-note{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin:0} .tiq-s .tiq-kr2{gap:6px} .tiq-s .tiq-kr2 .tiq-kp{padding:6px 12px} }
 @media (min-width:1100px){
   .ecran.tiq.tiq-s{height:calc(100dvh - var(--bandeau-h, 0px)); display:flex; flex-direction:column; overflow:hidden; box-sizing:border-box}
   .ecran.tiq.tiq-s > .tete-fixe{position:relative; top:auto; flex:none}
@@ -14226,7 +14227,7 @@ async function vueTendancesIQ(arg){
   const pvBtn = (k) => fourch(k) ? `<button class="tiq-pv" data-pvm="${k}"><b class="${k === 'acheter' ? 'vert' : 'rouge'}">${fourch(k)}</b><span>${k === 'acheter' ? tt(`ont remonté en ${delaiA()} mois`, `were up ${delaiA()} months later`) : tt('ont rebaissé en 2 mois', 'were down 2 months later')}${PV(k).base != null ? ' · ' + tt('hasard ', 'chance ') + (k === 'acheter' ? hasardA() : pctT(PV(k).base)) : ''}</span><i><u>${tt('La preuve', 'The proof')}</u> ›</i></button>` : '';
   const pan = (k, titre) => { const L = r.cats[k] || []; if (!L.length) return '';
     return `<div class="tiq-g tiq-pan ${k}"><div class="am-t tiq-gt">${titre}<em class="tiq-pn">${L.length}</em></div><p class="tiq-ps">${phraseM(k)}</p><div class="tiq-lm">${L.map(x => ligneM(x, k)).join('')}</div>
-      <div class="tiq-pf">${L.length > 5 ? `<button class="tiq-pl2 tiq-tous" data-tl="${k}">${tt(`Voir les ${L.length}`, `See all ${L.length}`)} ›</button>` : ''}${ADM_T && k !== 'bas' ? `<button class="tiq-pl2" data-pvm="${k}">${tt('Vérifié sur nos ventes', 'Checked on our sales')} ›</button>` : ''}</div></div>`; };
+      <div class="tiq-pf">${L.length > 3 ? `<button class="tiq-pl2 tiq-tous" data-tl="${k}">${tt(`Voir les ${L.length}`, `See all ${L.length}`)} ›</button>` : ''}${ADM_T && k !== 'bas' ? `<button class="tiq-pl2" data-pvm="${k}">${tt('Vérifié sur nos ventes', 'Checked on our sales')} ›</button>` : ''}</div></div>`; };
   // la preuve : chaque bareme essaye, le nombre de cas et de joueurs, sa reussite et le mouvement median (jamais plus que ce qui est mesure)
   const feuillePreuve = (k) => { const ach = k === 'acheter', Ps = ach ? [S.tiqPreuve.achat] : [S.tiqPreuve.vente_etablis, S.tiqPreuve.vente], P0 = Ps.find(Boolean); if (!P0) return;
     const jr = (d) => d ? new Date(d + 'T12:00:00').toLocaleDateString(tt('fr-CA', 'en-CA'), {month: 'long', year: 'numeric'}) : '';
@@ -14304,6 +14305,19 @@ async function vueTendancesIQ(arg){
         <span class="tiq-k">${cle}</span></span>
       </button>`;
   };
+  // 22 nov 2026 (Mathieu, au cell : « je ne veux pas scroller dans la premiere page, a part si je clique sur Voir tout ») :
+  // au cell, la page tient dans l'ecran : on enleve des rangees (5 au plus, 3 au moins) tant que la page deborde ;
+  // la liste complete reste a « Voir les N › »
+  function ajusterTiq(z) { if (!z || !z.isConnected) return;
+    const R = [...z.querySelectorAll('.tiq-av .tiq-m, .tiq-av .tiq-b')], note = $('.tiq-note', z);
+    R.forEach(x => x.style.display = ''); if (note) note.style.display = '';
+    if (innerWidth >= 1100) return;
+    const deb = () => document.documentElement.scrollHeight - innerHeight > 1;
+    let vis = R.filter(x => x.offsetParent);
+    while (deb() && vis.length > 3) { vis.pop().style.display = 'none'; }
+    if (deb() && note) note.style.display = 'none'; }
+  if (!window.__tiqFit) { window.__tiqFit = 1; let t; addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => ajusterTiq($('#tiq-z')), 150); }); }
+  requestAnimationFrame(() => setTimeout(() => ajusterTiq($('#tiq-z')), 400));
   let ouvert = false;                         // 16 nov 2026 : 12 joueurs, puis « Voir les N › »
   let plusOuvert = false;
   const peindre = () => {
@@ -14324,7 +14338,7 @@ async function vueTendancesIQ(arg){
       z.innerHTML = `${OPT.length > 1 ? `<div class="chips tiq-seg" id="tiq-seg">${OPT.map(([k, n]) => `<button class="chip ${ong === k ? 'on' : ''}" data-v="${k}">${n}</button>`).join('')}</div>` : ''}
         <div class="tiq-av" data-on="${ong}">${pan('bas', tt('Au plus bas', 'At their lowest'))}${pan('vendre', tt('À vendre', 'To sell'))}<div class="tiq-col">${blocs2}</div></div>
         <div class="tiq-kr tiq-kr2">${['en_feu', 'rebond', 'recrue'].map(k => (r.compte[k] || 0) ? `<button class="tiq-kp" data-tl="${k}"><b class="${k === 'rebond' ? 'vert' : k === 'recrue' ? 'or' : 'rouge'}">${r.compte[k]}</b><span>${k === 'en_feu' ? tt('en feu', 'on fire') : k === 'rebond' ? tt('sortent du creux', 'bouncing back') : tt('recrues', 'rookies')}</span></button>` : '').join('')}${autres.length ? `<button class="tiq-kp" id="tiq-autres"><span>${tt('Plus de listes', 'More lists')} ›</span></button>` : ''}</div>${note}`;
-      $$('#tiq-seg button', z).forEach(b => b.onclick = () => { vibrer(); S.tiqOnglet = b.dataset.v; $$('#tiq-seg button', z).forEach(x => x.classList.toggle('on', x === b)); const av = $('.tiq-av', z); if (av) av.dataset.on = b.dataset.v; });
+      $$('#tiq-seg button', z).forEach(b => b.onclick = () => { vibrer(); S.tiqOnglet = b.dataset.v; $$('#tiq-seg button', z).forEach(x => x.classList.toggle('on', x === b)); const av = $('.tiq-av', z); if (av) av.dataset.on = b.dataset.v; ajusterTiq(z); });
       $$('[data-tl]', z).forEach(b => b.onclick = () => { vibrer(); feuilleListe(b.dataset.tl); });
       $$('[data-pvm]', z).forEach(b => b.onclick = () => { vibrer(); feuillePreuve(b.dataset.pvm); });
       $$('[data-tout]', z).forEach(b => b.onclick = () => { vibrer(); toutListe(b.dataset.tout); });
@@ -14332,7 +14346,7 @@ async function vueTendancesIQ(arg){
       const au = $('#tiq-autres', z); if (au) au.onclick = () => { vibrer();
         ouvrirFeuille(`<h3>${tt('Quelle liste ?', 'Which list?')}</h3><div class="tiq-menu">${autres.map(([k, n]) => `<button class="tiq-mi" data-tm="${k}"><span><b>${n}</b><small>${DESC_IQ()[k] || ''}</small></span><em>${(r.cats[k] || []).length}</em></button>`).join('')}</div>`);
         $$('#feuille [data-tm]').forEach(b => b.onclick = () => { vibrer(); const k = b.dataset.tm; fermerFeuille(); setTimeout(() => feuilleListe(k), 220); }); };
-      remplirPortraits(z);
+      remplirPortraits(z); ajusterTiq(z);
       if (arg && !['acheter', 'vendre'].includes(arg) && (r.cats[arg] || []).length && !S.tiqArgVu) { S.tiqArgVu = 1; setTimeout(() => { feuilleListe(arg); S.tiqArgVu = 0; }, 150); }
       return;
     }
