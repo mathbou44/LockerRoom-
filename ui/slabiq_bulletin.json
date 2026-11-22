@@ -1,0 +1,126 @@
+{
+ "le": "2026-11-21",
+ "methode": "tests_site rejoue a chaque date, avec les ventes connues ce jour-la",
+ "lignes": [
+  {
+   "fin": "2026-09-24",
+   "coupe": "2026-09-03",
+   "revente_des": "2026-09-13",
+   "revente_fin": "2026-09-24",
+   "ventes": 58752,
+   "accord": 0.673,
+   "x_a_e": 5.0,
+   "pro": {
+    "n": 210,
+    "reussi": 0.705,
+    "reussi_ic95": [
+     0.643,
+     0.762
+    ],
+    "revendue": 0.776,
+    "profit_apres_frais": 0.1
+   },
+   "hasard": {
+    "n": 11670,
+    "reussi": 0.063,
+    "profit_apres_frais": 0.017
+   }
+  },
+  {
+   "fin": "2026-10-08",
+   "coupe": "2026-09-17",
+   "revente_des": "2026-09-28",
+   "revente_fin": "2026-10-08",
+   "ventes": 78844,
+   "accord": 0.745,
+   "x_a_e": 7.5,
+   "pro": {
+    "n": 302,
+    "reussi": 0.672,
+    "reussi_ic95": [
+     0.626,
+     0.725
+    ],
+    "revendue": 0.765,
+    "profit_apres_frais": 0.159
+   },
+   "hasard": {
+    "n": 13801,
+    "reussi": 0.077,
+    "profit_apres_frais": 0.024
+   }
+  },
+  {
+   "fin": "2026-10-22",
+   "coupe": "2026-10-01",
+   "revente_des": "2026-10-11",
+   "revente_fin": "2026-10-22",
+   "ventes": 104154,
+   "accord": 0.779,
+   "x_a_e": 6.5,
+   "pro": {
+    "n": 476,
+    "reussi": 0.599,
+    "reussi_ic95": [
+     0.555,
+     0.643
+    ],
+    "revendue": 0.67,
+    "profit_apres_frais": 0.204
+   },
+   "hasard": {
+    "n": 19414,
+    "reussi": 0.088,
+    "profit_apres_frais": 0.031
+   }
+  },
+  {
+   "fin": "2026-11-05",
+   "coupe": "2026-10-14",
+   "revente_des": "2026-10-24",
+   "revente_fin": "2026-11-05",
+   "ventes": 126952,
+   "accord": 0.782,
+   "x_a_e": 9.9,
+   "pro": {
+    "n": 781,
+    "reussi": 0.641,
+    "reussi_ic95": [
+     0.608,
+     0.673
+    ],
+    "revendue": 0.784,
+    "profit_apres_frais": 0.179
+   },
+   "hasard": {
+    "n": 21951,
+    "reussi": 0.089,
+    "profit_apres_frais": 0.027
+   }
+  },
+  {
+   "fin": "2026-11-19",
+   "coupe": "2026-10-19",
+   "revente_des": "2026-10-29",
+   "revente_fin": "2026-11-19",
+   "ventes": 142155,
+   "accord": 0.802,
+   "x_a_e": 10.4,
+   "pro": {
+    "n": 855,
+    "reussi": 0.71,
+    "reussi_ic95": [
+     0.678,
+     0.742
+    ],
+    "revendue": 0.855,
+    "profit_apres_frais": 0.196
+   },
+   "hasard": {
+    "n": 18959,
+    "reussi": 0.117,
+    "profit_apres_frais": 0.035
+   }
+  }
+ ]
+}
