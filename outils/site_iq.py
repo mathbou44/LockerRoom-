@@ -218,8 +218,9 @@ def ecrire(R, defi):
     s = sub1(s, r'<p class="kicker holo-t"><span class="fr">Nos tests · [^<]*</span><span class="en">Our tests · [^<]*</span></p>',
              f'<p class="kicker holo-t"><span class="fr">{kick_fr}</span><span class="en">{kick_en}</span></p>')
     s = sub1(s, r'(<div><b class="holo-t">)[^<]*(</b><span><span class="fr">ventes de hockey testées)', rf'\g<1>{fr(R["ventes"])}\g<2>')
-    s = sub1(s, r'<div><b class="holo-t">[^<]*</b><span><span class="fr">d’accord avec le marché \(avant : [^)]*\)</span><span class="en">agreement with the market \(before: [^)]*\)</span></span></div>',
-             f'<div><b class="holo-t">{acc_txt}</b><span><span class="fr">d’accord avec le marché (avant : {aav} %)</span><span class="en">agreement with the market (before: {aav}%)</span></span></div>')
+    # 22 nov 2026 (Mathieu : « pas besoin de mettre avant ») : l'accord seul, sans l'ancien chiffre
+    s = sub1(s, r'<div><b class="holo-t">[^<]*</b><span><span class="fr">d’accord avec le marché(?: \(avant : [^)]*\))?</span><span class="en">agreement with the market(?: \(before: [^)]*\))?</span></span></div>',
+             f'<div><b class="holo-t">{acc_txt}</b><span><span class="fr">d’accord avec le marché</span><span class="en">agreement with the market</span></span></div>')
     s = sub1(s, r'<div><b class="holo-t">[^<]*</b><span><span class="fr">des (?:cartes|achats) du Radar Pro [^<]*</span><span class="en">of Pro Radar [^<]*</span></span></div>',
              f'<div><b class="holo-t">{pro} %</b><span><span class="fr">des achats du Radar Pro se revendent sans perdre leur valeur (au hasard : {pha} %)</span><span class="en">of Pro Radar buys resell without losing value (at random: {pha}%)</span></span></div>')
     s = sub1(s, r'<div class="iq-bars" role="img" aria-label="Reventes par lettre">.*?</div></div>(\s*<p class="iq-note">)',
