@@ -14130,6 +14130,12 @@ async function vueTendancesIQ(arg){
     <button class="md-iq-q" id="tiq-q" aria-label="SlabIQ">?</button></div>
     <div class="tiq-rech"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input id="tiq-r" type="search" autocomplete="off" placeholder="${esc(tt('Chercher ton joueur…', 'Search your player…'))}" aria-label="${esc(tt('Chercher un joueur', 'Search a player'))}"><div class="tiq-rl" id="tiq-rl"></div></div></div><div id="tiq-z">${barreProg(Date.now(), 4, tt('SlabIQ analyse les joueurs…', 'SlabIQ is analyzing players…'))}</div></section>`;
   $('#tiq-q').onclick = () => { vibrer(); expliquerTendancesIQ(); };
+  // 22 nov 2026 (Mathieu, au cell : « le titre Trending bouge en scrollant ») : l'en-tete colle exactement la ou il est deja (avant :
+  // il remontait sous la barre du haut et les lumieres) ; rien ne bouge au defilement
+  (() => { const tf = $('.tiq-tf'); if (!tf || !matchMedia('(max-width: 899px)').matches) return;
+    const fixer = () => { if (!tf.isConnected) return; const sc = (document.scrollingElement || document.documentElement).scrollTop;
+      if (sc > 4) return; tf.style.top = Math.max(0, Math.round(tf.getBoundingClientRect().top)) + 'px'; };
+    requestAnimationFrame(() => requestAnimationFrame(fixer)); setTimeout(fixer, 400); })();
   // 21 nov 2026 (Mathieu : « donner une vraie plus-value ») : dans « À vendre », TES joueurs d'abord, avec « Tu en as N »
   const [r, jm_] = await Promise.all([API.tendances_iq().catch(e => ({ok: false, erreur: e.message})), API.joueurs_en_main().catch(() => null)]);
   // 21 nov 2026 (soir ; Mathieu : « un réel avantage mesurable et prouvé, sinon on attend ») : « À acheter » n'est pas prouvé
