@@ -230,12 +230,46 @@ def mesures(A, C0, C, R):
     pro_avant = pro_reel(lambda a: a["s"] >= R["fixe"], R["prix_min"])          # le Radar Pro jusqu'au 19 nov : A et A+ seulement
     hasard = pro_reel(lambda a: True, R["prix_min"])
     realisme = {"frais": [FRAIS, FIXE]}
+
+    # 22 nov 2026 (mega test, Mathieu : « pas prouve : que l'acheteur fait de l'argent ») : l'achat comme un vrai pari, a horizon
+    # fixe. Pour chaque achat entre C0 et C dont l'horizon est deja passe : la MEME carte revendue dans les H jours (mediane),
+    # apres les frais eBay (13,25 % + 0,40 $). Gagnant : revendu plus cher que paye, frais compris. Rendement du panier : tout
+    # ce qui est revendu / tout ce qui a ete paye pour ces cartes, moins 1. Jamais revendu dans les H jours : compte a part (pogne).
+    der = max(a["j"] for a in A)
+
+    def gains(regle, pmin):
+        out = {}
+        for H in (90, 180, 365):
+            G_, payes, recus, pogne = [], 0.0, 0.0, 0
+            for a in A:
+                if not (C0 <= a["j"] < C) or a["p"] < max(10, pmin) or a["ra"] in ("base", "lot_checklist") or not regle(a):
+                    continue
+                fH = (dt.date.fromisoformat(a["j"]) + dt.timedelta(days=H)).isoformat()
+                if fH > der:
+                    continue
+                L = [p for j, p in par[(a["k"], a["gr"])] if a["j"] < j <= fH]
+                if not L:
+                    pogne += 1
+                    continue
+                net = st.median(L) * (1 - FRAIS) - FIXE
+                G_.append((net - a["p"]) / a["p"])
+                payes += a["p"]
+                recus += net
+            n = len(G_) + pogne
+            out[str(H)] = dict(n=n, revendus=len(G_), pogne=round(pogne / n, 3) if n else None,
+                               gagnants=round(sum(g > 0 for g in G_) / n, 3) if n else None,
+                               gain_net_median=round(st.median(G_), 3) if G_ else None,
+                               rendement_panier=round(recus / payes - 1, 3) if payes else None)
+        return out
+    gain = {"pro": gains(radar, R["prix_min"]), "hasard": gains(lambda a: True, R["prix_min"])}
     # la simulation d'un an : 400 collectionneurs, 500 $ par mois, cartes de R prix_min a 150 $, au hasard ou avec SlabIQ
     fin = {k: st.median([p for j, p in v if j >= C]) for k, v in par.items() if any(j >= C for j, p in v)}
     # 20 nov 2026 : essaye avec la regle du Radar Pro (liquidite) : +4,0 % contre +6,0 % avec la lettre seule (avant aout 2026, nos
     # archives ont trop peu de ventes pour juger la liquidite : peu de cartes passent). La simulation garde la lettre A et plus.
-    ventes = [(a["j"], (a["k"], a["gr"]), a["p"], a["s"], a["nom"]) for a in A if "2025-11-01" <= a["j"] < C]
-    d = dt.date(2025, 11, 1)
+    # 22 nov 2026 (mega test) : un test rejoue avant novembre 2025 simule l'annee d'avant sa date C (avant : la simulation
+    # partait toujours du 1er nov 2025 et plantait). Le test courant ne change pas (C est apres le 1er nov 2025).
+    d = dt.date(2025, 11, 1) if C > "2025-11-01" else dt.date.fromisoformat(C) - dt.timedelta(days=365)
+    ventes = [(a["j"], (a["k"], a["gr"]), a["p"], a["s"], a["nom"]) for a in A if d.isoformat() <= a["j"] < C]
     P = []
     while d.isoformat() < C:
         n_ = (d.replace(day=1) + dt.timedelta(days=32)).replace(day=1)
@@ -286,7 +320,7 @@ def mesures(A, C0, C, R):
     sim = dict(sans=ms, avec=ma, r_sans=round(float(np.median(a_)) - 1, 4), r_avec=round(float(np.median(b_)) - 1, 4), bat=round(float(np.mean(b_ > a_)), 3),
                ecart=round(float(np.median(eb - ea))), p10=round(float(np.percentile(eb - ea, 10))), p90=round(float(np.percentile(eb - ea, 90))),
                mois=[pp[0][:7] for pp in P], prix=[pmin_s, 150], seuil=R["fixe"])
-    return dict(lettres=lettres, pro=pro_now, pro_avant=pro_avant, hasard=hasard, sim=sim, realisme=realisme), fin, par, radar
+    return dict(lettres=lettres, pro=pro_now, pro_avant=pro_avant, hasard=hasard, gains=gain, sim=sim, realisme=realisme), fin, par, radar
 
 
 PROD = [("the cup", "The Cup"), ("sp authentic", "SP Authentic"), ("sp game used", "SP Game Used"), ("spx", "SPx"), ("ultimate", "Ultimate"),
@@ -371,6 +405,12 @@ def lancer(chemin, ecrire=False):
     rows = charger(chemin)
     js = sorted(r[2] for r in rows)
     C0, C = js[int(len(js) * .65)], js[int(len(js) * .80)]
+    # 22 nov 2026 (mega test) : sur 3 ans, un achat juge a 12 mois doit etre fait plus d'un an avant la fin ; les coupes en JOURS
+    # avant la derniere vente (LR_TESTS_C0_JOURS, LR_TESTS_C_JOURS) remplacent les parts de ventes. Le test du site : inchange.
+    if os.environ.get("LR_TESTS_C0_JOURS") and os.environ.get("LR_TESTS_C_JOURS"):
+        der_ = dt.date.fromisoformat(js[-1][:10])
+        C0 = (der_ - dt.timedelta(days=int(os.environ["LR_TESTS_C0_JOURS"]))).isoformat()
+        C = (der_ - dt.timedelta(days=int(os.environ["LR_TESTS_C_JOURS"]))).isoformat()
     print(f"{len(rows)} ventes de hockey, {js[0]} -> {js[-1]} ; lettres fixees avant {C0}, reventes apres {C}", flush=True)
     rp = os.path.join(TRAV, "rows_courant.json.gz")
     _ecrire(rows, rp)
@@ -384,7 +424,16 @@ def lancer(chemin, ecrire=False):
         print(nom, res[nom]["info"], flush=True)
     A = res["maintenant"]["A"]
     m, fin, par, radar = mesures(A, C0, C, R)
-    df = defi(A, par, C0, C, radar)
+    # 22 nov 2026 (mega test) : rejoue a une vieille date, le defi peut manquer de cartes : il n'est pas une mesure du mega test
+    # (LR_TESTS_SANS_DEFI=1) ; le test du site, lui, l'exige toujours
+    if os.environ.get("LR_TESTS_SANS_DEFI") == "1":
+        try:
+            df = defi(A, par, C0, C, radar)
+        except SystemExit as e:
+            print(e, flush=True)
+            df = {"stats": None}
+    else:
+        df = defi(A, par, C0, C, radar)
     L = m["lettres"]
     out = dict(le=dt.date.today().isoformat(), empreinte=empreinte(), regles=R, coupe=C0, revente_des=C, revente_fin=js[-1],
                ventes=res["maintenant"]["info"]["mesure"]["ventes"], ventes_total=len(rows), joueurs=res["maintenant"]["info"]["joueurs"],

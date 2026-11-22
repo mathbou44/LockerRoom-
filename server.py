@@ -1985,6 +1985,11 @@ def _valeurs_auto():
             base_ventes.enrichir_si_besoin()
         except Exception as e:
             print("Base des ventes : " + str(e), flush=True)
+        try:                                    # 22 nov 2026 - le mega test : 3 ans de ventes de la meme carte (CompSniper)
+            import mega_test
+            mega_test.continuer_si_besoin()
+        except Exception as e:
+            print("Mega test : " + repr(e)[:160], flush=True)
         try:                                    # 10 nov 2026 - le banc de validation (backtest valeur, deals, tendance ; 1 fois/jour)
             import banc
             banc.passe_si_besoin()
@@ -2277,6 +2282,12 @@ def _reprendre_banque_yg():
         banque_yg.reprendre_si_besoin()
     except Exception as e:
         print("Banque YG (reprise) : " + repr(e)[:160], flush=True)
+    try:                                         # 22 nov 2026 : le mega test reprend lui aussi apres un redemarrage
+        time.sleep(60)
+        import mega_test
+        mega_test.continuer_si_besoin()
+    except Exception as e:
+        print("Mega test (reprise) : " + repr(e)[:160], flush=True)
 
 
 def _valeur_actuelle(titre):

@@ -102,13 +102,20 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   et « À vendre » (58-62 % rebaissent sur la carte exacte, hasard 42 %). Ne pas fouiller d'autres barèmes sans plus d'historique.
 
 ## En attente
-- **Méga test 3 ans (priorité 1, demandé le 22 nov)** : CompSniper (`historique.py`, `/v1/research/sold`, 50 ventes par page,
-  jusqu'à 1 095 jours ; Mathieu a le forfait 10 000 requêtes/mois ; la clé est dans Render seulement, donc le rattrapage doit
-  tourner SUR LE SERVEUR). À bâtir : un rattrapage par carte exacte (clé : année, mots de `cartes_match.identite`, parallèles,
-  tirage, auto, note), repris après un redémarrage, avec une réserve de requêtes pour l'app ; puis refaire les tests (Radar Pro,
-  à vendre, au plus bas, saisons) sur 3 ans. Vérifier d'abord `LR_HISTORIQUE_MOIS` (ne pas y toucher : c'est Mathieu).
-  Leçon du 21 nov : un test sur le marché du JOUEUR ou sur une « sorte » de carte mélange des cartes différentes et gonfle
-  les taux ; toujours tester sur la même carte exacte, un pari par creux, frais compris.
+- **Méga test 3 ans (bâti le 22 nov, priorité 1)** : `mega_test.py` (serveur) part seul après le push (boucle de l'heure + reprise
+  au démarrage ; `LR_MEGA_AUTO=0` pour l'empêcher). 1) Sonde : 5 crédits, les 5 cartes les plus vendues, fenêtre −1 095 à −730 jours ;
+  rien de plus vieux que 2 ans → statut `essai_rate`, on s'arrête. 2) Collecte : le plan = les recherches `q` de base_ventes (carte
+  exacte, `cartes_match.requete_ebay`), 30 $+, 3 ventes+ en un an, sans les recherches larges ; pages de 50, jusqu'à 1 095 jours,
+  fenêtre qui s'arrête à la plus vieille vente connue (+2 j) si 10 ventes connues ; 30 pages max/carte ; arrêt si page répétée.
+  Crédits : plafond 8 000 (admin), jamais plus que `LR_HISTORIQUE_MOIS` − `LR_MEGA_RESERVE` (1 500) ; à sec → `attente_mois`,
+  reprend seul. Les ventes vont dans base_ventes (donc dans l'export). Admin → SlabIQ et données → « Méga test 3 ans ».
+  3) La mesure : télécharger « Toutes les ventes (hockey) », puis `python3 outils/mega_test.py ventes_hockey.tsv.gz` (le test du site
+  rejoué tous les 91 jours, coupes en jours : lettres avant fin−455 j, achats jusqu'à fin−90 j ; `tests_site.mesures` → `gains` :
+  Radar Pro vs hasard, revente de la même carte à 90/180/365 j, frais 13,25 % + 0,40 $). Verdict « prouvé » à un horizon : à chaque
+  date (3 au moins, 30 achats+), gain net médian > 0 ET rendement du panier > 0 ET plus de gagnants que le hasard. Résultat dans
+  `outils/mega_test_resultats.json`, jamais sur le site sans l'accord de Mathieu. Tests : `tests/test_mega_test.py`.
+  À vérifier par Mathieu : `LR_HISTORIQUE_MOIS` (95 par défaut = rien ne bouge). Leçon du 21 nov : toujours la même carte exacte,
+  un pari par creux, frais compris.
 - **Apple (samedi)** : note au réviseur fournie à Mathieu ; il doit y mettre le code démo. Pas de « Bêta » visible.
   Après l'approbation : retirer le code démo (conseil dans `ceo.py`).
 - **Baseball** : test SlabIQ à refaire dès que Mathieu exporte des ventes fraîches (Entraîner SlabIQ → ↓ Ventes Baseball).

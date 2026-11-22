@@ -12965,6 +12965,34 @@ async function feuilleMomentYG(){
   if (r.en_cours) setTimeout(() => { if ($('#mo-go') && !$('#fond-feuille').hidden) feuilleMomentYG(); }, 8000);
 }
 // les textes d'etat de la collecte (serveur, en francais) -> la langue choisie
+// 22 nov 2026 (Mathieu : « fais le mega test CompSniper ») : 3 ans de ventes de la meme carte, collectees sur le serveur
+// (mega_test.py) ; la mesure se fait ensuite sur l'export (outils/mega_test.py). Admin seulement.
+async function feuilleMegaTest(){
+  const r = await API.admin_mega_test().catch(e => ({ok: false, erreur: e.message}));
+  if (!r || !r.ok) { toast((r && r.erreur) || 'Erreur'); return; }
+  const cs = r.compsniper || {}, nb = (v) => (v || 0).toLocaleString(LOC());
+  const pj = r.cartes ? Math.round(100 * (r.cartes_finies || 0) / r.cartes) : 0;
+  const pcr = r.plafond ? Math.min(100, Math.round(100 * (r.credits || 0) / r.plafond)) : 0;
+  const etat = r.en_cours ? tt('En cours', 'Running') : {aucune: tt('Pas commencé', 'Not started'), terminee: tt('Terminé', 'Done'), plafond: tt('Plafond atteint', 'Cap reached'),
+    attente_mois: tt('En attente : reprend seul quand le mois a des crédits', 'Waiting: resumes by itself when the month has credits'), erreur: tt('Arrêté (erreur) : réessaie aux 6 h', 'Stopped (error): retries every 6 h'),
+    interrompue: tt('En pause : reprend seul', 'Paused: resumes by itself'), en_cours: tt('En pause : reprend seul', 'Paused: resumes by itself'), arretee: tt('Arrêté', 'Stopped')}[r.statut] || r.statut;
+  ouvrirFeuille(`<h3>${tt('Méga test 3 ans', '3-year mega test')}</h3>
+    <div class="sous" style="margin-bottom:10px">${tt('Jusqu’à 3 ans de ventes de chaque carte exacte de nos archives (CompSniper), pour savoir si l’acheteur du Radar Pro fait de l’argent à 3, 6 et 12 mois, frais compris.', 'Up to 3 years of sales for each exact card in our archives (CompSniper), to learn whether a Pro Radar buyer makes money at 3, 6 and 12 months, fees included.')}</div>
+    <div class="jb tq-g">
+      <div class="jb-t"><span class="jb-k">${tt('Cartes', 'Cards')}</span><b class="jb-v">${nb(r.cartes_finies)} / ${nb(r.cartes)}</b><small>${tt('complètes', 'done')} (${pj} %)</small></div>
+      <div class="jb-t"><span class="jb-k">${tt('Ventes ajoutées', 'Sales added')}</span><b class="jb-v">${nb(r.ventes)}</b><small>${nb(r.pages)} ${tt('pages', 'pages')}</small></div>
+      <div class="jb-t"><span class="jb-k">CompSniper</span><b class="jb-v">${nb(cs.mois)}</b><small>${tt('utilisés ce mois sur', 'used this month of')} ${nb(cs.budget_mois)} · ${tt('dispo', 'free')} ${nb(r.dispo)}</small></div></div>
+    <div class="by-prog"><div class="by-l"><b>${esc(etat)}</b><span>${nb(r.credits)} / ${nb(r.plafond)} ${tt('crédits', 'credits')}${r.battement ? ' · ' + ilYa(new Date(r.battement * 1000).toISOString()) : ''}</span></div>
+      <div class="by-b"><i style="width:${pj}%"></i></div>${r.texte || r.erreur ? `<div class="by-l"><span>${esc(r.texte || '')}</span>${r.erreur ? `<span class="rouge">${esc(r.erreur)}</span>` : ''}</div>` : ''}</div>
+    ${cs.budget_mois != null && cs.budget_mois - (r.reserve_app || 0) < 500 ? `<div class="bandeau info" style="margin-top:10px">${tt(`Budget du mois trop petit (LR_HISTORIQUE_MOIS = ${nb(cs.budget_mois)}) : monte-le dans Render (forfait 10 000) pour que le test avance.`, `Monthly budget too small (LR_HISTORIQUE_MOIS = ${nb(cs.budget_mois)}): raise it in Render (10,000 plan) so the test moves.`)}</div>` : ''}
+    <div style="display:flex;gap:10px;align-items:flex-end;margin-top:12px"><label class="md-l" style="flex:1;margin:0">${tt('Crédits au plus (tout le test)', 'Max credits (whole test)')}<input class="champ" id="mt-pl" type="number" inputmode="numeric" value="${r.plafond || 8000}"></label>
+    <button class="btn" id="mt-go" ${r.en_cours ? 'disabled' : ''} style="flex:1;margin:0">${r.en_cours ? tt('Collecte en cours…', 'Collecting…') : tt('Lancer ou reprendre', 'Start or resume')}</button></div>
+    <div class="sous" style="font-size:12.5px;margin-top:6px">${tt(`Jamais plus que le budget du mois, moins ${nb(r.reserve_app)} gardés pour l’app. Part et reprend seul.`, `Never more than the monthly budget, minus ${nb(r.reserve_app)} kept for the app. Starts and resumes by itself.`)} <a class="lien-t" href="/admin/ventes_export.tsv.gz?sport=hockey" download>${tt('Toutes les ventes (hockey)', 'All sales (hockey)')}</a></div>`);
+  const go = $('#mt-go'); if (go) go.onclick = async () => { vibrer(); go.disabled = true;
+    const x = await API.admin_mega_test_lancer(entierYG($('#mt-pl').value) || 8000).catch(e => ({ok: false, erreur: e.message}));
+    if (x && x.ok === false) toast(x.erreur || 'Erreur'); setTimeout(feuilleMegaTest, 1500); };
+  if (r.en_cours) setTimeout(() => { if ($('#mt-go') && !$('#fond-feuille').hidden) feuilleMegaTest(); }, 10000);
+}
 function texteBanqueYG(t){
   t = String(t || ''); if (LANGUE !== 'en') return t;
   const m = {'Démarrage': 'Starting', 'Reprise': 'Resuming', 'Arrêtée': 'Stopped', 'Terminée': 'Done', 'Plafond de crédits atteint': 'Credit cap reached',
@@ -20258,6 +20286,7 @@ async function vueAdmin(onglet, cible){
     [tt('SlabIQ et données', 'SlabIQ and data'), [
       ['iqtest', 'pouls', tt('Test SlabIQ', 'SlabIQ test'), admAge(t.slabiq_test) != null ? ilYa(t.slabiq_test) : '—', tt('le bilan et le journal en direct', 'results and live journal'), '', () => feuilleTestIQ()],
       ['banqueyg', 'graphe', tt('Banque Young Guns', 'Young Guns bank'), '', tt('18 mois de ventes, offre, nouvelles : le timing de SlabIQ', '18 months of sales, supply, news: SlabIQ timing'), '', () => feuilleBanqueYG()],
+      ['megatest', 'pouls', tt('Méga test 3 ans', '3-year mega test'), '', tt('3 ans de ventes de la même carte : l’acheteur fait-il de l’argent ?', '3 years of same-card sales: does the buyer make money?'), '', () => feuilleMegaTest()],
       ['momentyg', 'cible', tt('SlabIQ · moment d’achat', 'SlabIQ · buy timing'), '', tt('Feu vert, taux mesurés, itérations de la semaine, journal en direct', 'Green light, measured rates, weekly iterations, live record'), '', () => feuilleMomentYG()],
       ['types', 'etoile', tt('Types de cartes', 'Card types'), m_.apres != null ? 'ρ ' + decFr(m_.avant) + ' → ' + decFr(m_.apres) : String(tc.types || 0), tc.actif === false ? tt('en pause : pas mieux', 'paused: not better') : tt('test avant / après', 'before / after test'), m_.apres == null ? '' : m_.apres > m_.avant ? 'vert' : 'rouge', () => feuilleTypesAdmin()],
       ['effets', 'pouls', tt('Ce qui fait bouger les cartes', 'What moves cards'), '', tt('chaque événement : prix et ventes après', 'each event: price and sales after'), '', () => feuilleEffets()],

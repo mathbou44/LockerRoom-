@@ -2236,6 +2236,25 @@ class Api:
             plafond = 6000
         return banque_yg.lancer(plafond)
 
+    # 22 nov 2026 (Mathieu : « fais le mega test CompSniper ») : 3 ans de ventes de la meme carte, collectees sur le serveur
+    def admin_mega_test(self):
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import mega_test
+        return mega_test.bilan()
+
+    def admin_mega_test_lancer(self, plafond=None):
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l'administrateur"}
+        import mega_test
+        try:
+            plafond = max(10, min(30000, int(plafond))) if plafond else None
+        except (TypeError, ValueError):
+            plafond = None
+        if plafond:
+            mega_test._run_maj(plafond=plafond)
+        return mega_test.lancer(plafond)
+
     # 15 nov 2026 (Mathieu : « on ne doit jamais arreter d'iterer et d'ameliorer SlabIQ ») : le moment d'achat (Young Guns),
     # ses regles en place, chaque iteration de la semaine (garde ou change, et pourquoi) et le journal en direct
     def admin_moment_yg(self):
