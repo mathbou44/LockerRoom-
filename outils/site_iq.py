@@ -272,7 +272,9 @@ def ecrire(R, defi):
     # 20 nov 2026 (Mathieu : « valide l'info, partout ») : la FAQ disait « 5 fois » (une A seule, ancienne mesure) : la meme mesure
     s = sub1(s, r'une carte A ou A\+ se revend [0-9]+ fois plus souvent qu’une E', f'une carte A ou A+ se revend {x_ae} fois plus souvent qu’une E')
     s = sub1(s, r'an A or A\+ card resells [0-9]+ times more often than an E', f'an A or A+ card resells {x_ae} times more often than an E')
-    om, orr = round(st_["ok_marche"] * 100), round(st_["ok_radar"] * 100)
+    # 22 nov 2026 (rapport du tour complet : l'accueil disait 70 % / 8 % (le defi), la page SlabIQ 71 % / 11 % (le Radar Pro),
+    # pour la MEME phrase) : une seule mesure partout, celle du Radar Pro (iq_publie.pro)
+    om, orr = pha, pro
     s = sub1(s, r'<a class="iqp-test" href="/slabiq#defi"><b class="holo-t">.*?</b><span><span class="fr">[^<]*</span><span class="en">[^<]*</span></span>',
              f'<a class="iqp-test" href="/slabiq#defi"><b class="holo-t"><span class="fr">{orr} %</span><span class="en">{orr}%</span></b><span><span class="fr">des cartes du Radar Pro se sont revendues sans perdre leur valeur. Au hasard : {om} %. Et toi, ferais-tu mieux ?</span><span class="en">of Pro Radar cards resold without losing value. At random: {om}%. Could you do better?</span></span>')
     open(p, "w", encoding="utf-8").write(s)

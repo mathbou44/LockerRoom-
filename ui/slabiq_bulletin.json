@@ -99,27 +99,27 @@
    }
   },
   {
-   "fin": "2026-11-19",
-   "coupe": "2026-10-19",
+   "fin": "2026-11-22",
+   "coupe": "2026-10-18",
    "revente_des": "2026-10-29",
-   "revente_fin": "2026-11-19",
-   "ventes": 143148,
-   "accord": 0.802,
-   "x_a_e": 10.5,
+   "revente_fin": "2026-11-22",
+   "ventes": 153747,
+   "accord": 0.799,
+   "x_a_e": 10.0,
    "pro": {
-    "n": 845,
-    "reussi": 0.711,
+    "n": 974,
+    "reussi": 0.665,
     "reussi_ic95": [
-     0.682,
-     0.742
+     0.637,
+     0.696
     ],
-    "revendue": 0.854,
-    "profit_apres_frais": 0.196
+    "revendue": 0.837,
+    "profit_apres_frais": 0.191
    },
    "hasard": {
-    "n": 19094,
-    "reussi": 0.118,
-    "profit_apres_frais": 0.036
+    "n": 21510,
+    "reussi": 0.114,
+    "profit_apres_frais": 0.035
    }
   }
  ]
