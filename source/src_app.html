@@ -2045,6 +2045,31 @@ html body .tiq-p2 b{font:800 38px/1 var(--f-cond); white-space:nowrap} html body
 html body .tiq-p2s{margin:2px 0 0; font-size:16px; line-height:1.4}
 html body .tiq-p2d > summary{cursor:pointer; color:var(--doux); font-size:14px; padding:6px 0}
 html body .tiq-p2d[open] > summary{margin-bottom:8px}
+/* 22 nov 2026 : Tendances au cell : un menu, une liste a la fois (Au plus bas, A vendre, Joueurs, Cartes) */
+@media (max-width:1099px){
+  html body .tiq-seg{display:flex !important; justify-content:flex-start !important; gap:6px; margin:0 0 12px !important; padding:0 !important; overflow-x:auto; scrollbar-width:none} html body .tiq-seg::-webkit-scrollbar{display:none}
+  html body .tiq-seg .chip{flex:0 0 auto}
+  html body .tiq-seg ~ .tiq-av > .tiq-pan{display:none !important}
+  html body .tiq-seg ~ .tiq-av[data-on="bas"] > .tiq-pan.bas, html body .tiq-seg ~ .tiq-av[data-on="vendre"] > .tiq-pan.vendre{display:flex !important}
+  html body .tiq-seg ~ .tiq-av > .tiq-col{display:none !important}
+  html body .tiq-seg ~ .tiq-av:is([data-on="joueurs"], [data-on="cartes"]) > .tiq-col{display:block !important}
+  html body .tiq-seg ~ .tiq-av[data-on="joueurs"] > .tiq-col > .tiq-gc, html body .tiq-seg ~ .tiq-av[data-on="cartes"] > .tiq-col > .tiq-gj{display:none !important}
+}
+/* 22 nov 2026 (Mathieu : « chaque page de l'inventaire pareille : des petites cases une a cote de l'autre, de la meme grosseur ») :
+   au cell, TOUS les onglets de l'inventaire (Tout, Collection, Sur eBay, Achetees, Vendues) ont la meme rangee de tuiles : un mot,
+   un filet, un chiffre ; autant de colonnes egales que de tuiles */
+@media (max-width:899px){
+  html body #i-tab:not(:empty), html body .ach-k2{display:grid !important; grid-template-columns:none !important; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); gap:6px !important; margin:2px 0 14px !important}
+  html body #i-tab .t-acc, html body .ach-k2 .ak{padding:11px 6px 12px !important; min-height:92px !important; border-radius:16px !important; display:flex !important; flex-direction:column !important;
+    align-items:center !important; text-align:center !important; justify-content:flex-start !important; gap:0 !important; box-shadow:none !important}
+  html body #i-tab .t-acc.on{box-shadow:inset 0 0 0 2.5px var(--acc) !important; border-color:var(--acc) !important}
+  html body #i-tab .t-acc .l, html body .ach-k2 .ak-l{font:700 12px var(--f-cond) !important; letter-spacing:.05em !important; text-transform:uppercase; color:var(--texte);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; background:none !important; box-shadow:none !important; border-radius:0 !important;
+    align-self:stretch !important; width:auto !important; max-width:none !important; margin:0 !important; padding:0 0 8px !important; text-align:center; border-bottom:1px solid color-mix(in srgb, var(--texte) 16%, transparent)}
+  html body #i-tab .t-acc b, html body .ach-k2 .ak-v{font:800 clamp(22px, 7vw, 32px)/1 var(--f-cond) !important; margin:auto 0 !important; letter-spacing:-.01em; white-space:nowrap}
+  html body #i-tab .t-acc .s, html body .ach-k2 .ak-i{display:none !important}
+  html body .ach-k2 .ak-h{display:block; align-self:stretch} html body .ach-k2 .ak-l{display:block}
+}
 /* 20 nov 2026 : le prix final d'un encan fini de la watchlist */
 .w-final b{color:var(--texte)} .w-fin-at b{font-size:16px !important; color:var(--doux) !important; font-weight:600}
 .w-ecart{margin-top:4px; font-size:15px; font-weight:700} .w-ecart.vert{color:var(--vert)} .w-ecart.rouge{color:var(--rouge)}
@@ -14164,8 +14189,8 @@ async function vueTendancesIQ(arg){
   const kp = (k, l, c) => (r.compte[k] || 0) ? `<button class="tiq-kp tiq-kb" data-tcat="${k}"><b class="${c}">${r.compte[k]}</b><span>${l}</span></button>` : '';
   S.tiqPreuve = r.preuve || {};
   const sigM = (r.compte.bas || 0) + (r.compte.acheter || 0) + (r.compte.vendre || 0) > 0;          // 21 nov 2026 : la page « À acheter | À vendre »
-  const blocs2 = `${top10.length ? `<div class="tiq-g"><button class="am-t tiq-gt" data-tout="top">${tt('Les joueurs les plus recherchés', 'Most sought-after players')}<span>${tt('Voir tout', 'See all')} ›</span></button>${top10.slice(0, 5).map((x, i) => `<button class="tiq-b" data-jpop="${esc(x.nom)}"><span class="tiq-bn">${i + 1}</span><span class="tiq-bl"><b>${esc(x.nom)}</b><i style="width:${Math.round(100 * ((x.note ?? x.indice) || 0) / mx)}%"></i></span><span class="tiq-bv">${x.lettre || lettre(x.indice)}</span></button>`).join('')}</div>` : ''}
-    ${(r.familles || []).length ? `<div class="tiq-g"><button class="am-t tiq-gt" data-tout="types">${tt('Les cartes les plus recherchées', 'The most sought-after cards')}<span>${tt('Voir tout', 'See all')} ›</span></button>
+  const blocs2 = `${top10.length ? `<div class="tiq-g tiq-gj"><button class="am-t tiq-gt" data-tout="top">${tt('Les joueurs les plus recherchés', 'Most sought-after players')}<span>${tt('Voir tout', 'See all')} ›</span></button>${top10.slice(0, 5).map((x, i) => `<button class="tiq-b" data-jpop="${esc(x.nom)}"><span class="tiq-bn">${i + 1}</span><span class="tiq-bl"><b>${esc(x.nom)}</b><i style="width:${Math.round(100 * ((x.note ?? x.indice) || 0) / mx)}%"></i></span><span class="tiq-bv">${x.lettre || lettre(x.indice)}</span></button>`).join('')}</div>` : ''}
+    ${(r.familles || []).length ? `<div class="tiq-g tiq-gc"><button class="am-t tiq-gt" data-tout="types">${tt('Les cartes les plus recherchées', 'The most sought-after cards')}<span>${tt('Voir tout', 'See all')} ›</span></button>
       ${r.familles.slice(0, 5).map(x => `<button class="tiq-b tiq-fam" data-fam="${esc(x.cle)}"><span class="tiq-fl ${famCl(x.lettre)}">${esc(x.lettre.split(' ')[0])}</span><span class="tiq-bl"><b>${esc(tt(x.nom, x.nom_en))}</b><small>${esc(x.ex.slice(0, 2).map(e => tt(e.nom, e.nom_en)).join(' · '))}</small></span><span class="tiq-bv">›</span></button>`).join('')}</div>` : ''}`;
   const tete = `<div class="tiq-kr">${kp('marche_bas', tt('marché bas', 'market low'), 'vert')}${kp('en_feu', tt('en feu cette semaine', 'on fire this week'), 'rouge')}${kp('rebond', tt('sortent du creux', 'bouncing back'), 'vert')}${kp('recrue', tt('recrues suivies', 'rookies tracked'), 'or')}</div>
     <div class="tiq-2">${blocs2}</div>`;
@@ -14292,8 +14317,11 @@ async function vueTendancesIQ(arg){
       // 21 nov 2026 (soir ; Mathieu : « au moins mettre la plus basse médiane en X jours ») : « Au plus bas » (un fait, pour tous) |
       // « À vendre » ; l'essai « À acheter » reste dans « Plus de listes », pour l'admin seulement
       const aB = (r.cats.bas || []).length > 0, aV = (r.cats.vendre || []).length > 0;
-      const ong = S.tiqOnglet === 'vendre' && aV ? 'vendre' : aB ? 'bas' : 'vendre';
-      z.innerHTML = `${aB && aV ? `<div class="seg tiq-seg" id="tiq-seg"><button data-v="bas" class="${ong === 'bas' ? 'on' : ''}">${tt('Au plus bas', 'At their lowest')}</button><button data-v="vendre" class="${ong === 'vendre' ? 'on' : ''}">${tt('À vendre', 'To sell')}</button></div>` : ''}
+      // 22 nov 2026 (Mathieu : « pas les trois tableaux un apres l'autre ; un menu en haut comme l'inventaire ; un tableau par page ») :
+      // au cell, une rangee de choix (Au plus bas, A vendre, Joueurs, Cartes) et UNE liste a la fois ; a l'ordi (1100 px+), rien ne change
+      const OPT = [['bas', tt('Au plus bas', 'Lowest'), aB], ['vendre', tt('À vendre', 'To sell'), aV], ['joueurs', tt('Joueurs', 'Players'), top10.length > 0], ['cartes', tt('Cartes', 'Cards'), (r.familles || []).length > 0]].filter(o => o[2]);
+      const ong = (OPT.find(o => o[0] === S.tiqOnglet) || OPT[0] || ['bas'])[0];
+      z.innerHTML = `${OPT.length > 1 ? `<div class="chips tiq-seg" id="tiq-seg">${OPT.map(([k, n]) => `<button class="chip ${ong === k ? 'on' : ''}" data-v="${k}">${n}</button>`).join('')}</div>` : ''}
         <div class="tiq-av" data-on="${ong}">${pan('bas', tt('Au plus bas', 'At their lowest'))}${pan('vendre', tt('À vendre', 'To sell'))}<div class="tiq-col">${blocs2}</div></div>
         <div class="tiq-kr tiq-kr2">${['en_feu', 'rebond', 'recrue'].map(k => (r.compte[k] || 0) ? `<button class="tiq-kp" data-tl="${k}"><b class="${k === 'rebond' ? 'vert' : k === 'recrue' ? 'or' : 'rouge'}">${r.compte[k]}</b><span>${k === 'en_feu' ? tt('en feu', 'on fire') : k === 'rebond' ? tt('sortent du creux', 'bouncing back') : tt('recrues', 'rookies')}</span></button>` : '').join('')}${autres.length ? `<button class="tiq-kp" id="tiq-autres"><span>${tt('Plus de listes', 'More lists')} ›</span></button>` : ''}</div>${note}`;
       $$('#tiq-seg button', z).forEach(b => b.onclick = () => { vibrer(); S.tiqOnglet = b.dataset.v; $$('#tiq-seg button', z).forEach(x => x.classList.toggle('on', x === b)); const av = $('.tiq-av', z); if (av) av.dataset.on = b.dataset.v; });
