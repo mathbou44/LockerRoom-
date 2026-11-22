@@ -18,10 +18,10 @@ import os
 import time
 from datetime import datetime, timedelta
 
-TYPES = ["prix_cible", "gros_deal", "encan_fin", "en_feu", "acheteurs", "vendu", "mes_joueurs", "iq_nouvelle", "iq_occasion", "iq_haut", "marche_bas"]
+TYPES = ["prix_cible", "gros_deal", "encan_fin", "en_feu", "acheteurs", "vendu", "mes_joueurs", "iq_nouvelle", "iq_occasion", "iq_haut", "marche_bas", "a_vendre"]
 # 28 oct 2026 (audit Apple 4.5.4) : les alertes « promotionnelles » (deals, joueur en feu) seulement si l'utilisateur les coche
 DEFAUT = {"prix_cible": True, "gros_deal": False, "encan_fin": True, "en_feu": False, "acheteurs": True, "vendu": True,
-          "mes_joueurs": False, "iq_nouvelle": False, "iq_occasion": False, "iq_haut": False, "marche_bas": False, "seuil_deal": 40}
+          "mes_joueurs": False, "iq_nouvelle": False, "iq_occasion": False, "iq_haut": False, "marche_bas": False, "a_vendre": True, "seuil_deal": 40}
 MAX_JOUR = 3
 NUIT = (22, 8)
 
@@ -128,6 +128,26 @@ def marche_bas(api, etat, mes=None, maint=None):
         titre = f"{x['nom']} : marché bas" + (f" ({e} %)" if e is not None and e < 0 else "")
         texte = "Ses cartes sont sous leur prix habituel. D'habitude, ça remonte : c'est le moment de regarder."
         if _notifier(api, etat, f"mb:{k}:{quinz}", titre, texte, "#joueur/" + x["nom"], maint=maint):
+            return 1
+    return 0
+
+
+def a_vendre(api, etat, maint=None):
+    """22 nov 2026 (Mathieu : « ajouter cette option dans les notifications ») : une carte de SON inventaire, pas vendue et pas
+    sur eBay, dont le joueur est dans « A vendre » (son marche est a un sommet). Une fois par joueur aux 14 jours, une seule par
+    passe. L'ecart en %, jamais un prix."""
+    quinz = datetime.now().strftime("%G") + "-" + str(int(datetime.now().strftime("%V")) // 2)
+    vus = set()
+    for c in api.inventaire_liste({}) or []:
+        v = c.get("a_vendre") if isinstance(c, dict) else None
+        j = (c.get("joueur") or "").strip() if isinstance(c, dict) else ""
+        if not v or not j or j.lower() in vus:
+            continue
+        vus.add(j.lower())
+        e = v.get("ecart_pct")
+        titre = f"Temps de vendre : {j}" + (f" (+{e} %)" if isinstance(e, (int, float)) and e > 0 else "")
+        texte = "Son marché est à un sommet et ta carte n'est pas encore sur eBay. Le plus souvent, ça retombe."
+        if _notifier(api, etat, f"av:{j.lower()}:{quinz}", titre, texte, "#inventaire", maint=maint):
             return 1
     return 0
 
@@ -379,6 +399,13 @@ def verifier(api, maint=None):
             faits["marche_bas"] = marche_bas(api, etat, mes, maint) or 0
         except Exception as e:
             print("Alertes marche bas : " + repr(e), flush=True)
+
+    if r.get("a_vendre"):
+        try:
+            if a_vendre(api, etat, maint):
+                faits["a_vendre"] = 1
+        except Exception as e:
+            print("Alertes a vendre : " + repr(e), flush=True)
 
     # -- vendeur : acheteurs interesses, carte vendue -------------------------------------------------------------
     if r["acheteurs"]:

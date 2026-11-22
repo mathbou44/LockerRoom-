@@ -664,6 +664,25 @@ def _iq_break_ecrire(ck, cache):
 # Radar, ni fiche) tant que ce n'est pas prouve ; l'admin continue de voir la liste « a l'essai ».
 ACHAT_PROUVE = False
 _ACH_RADAR = {"le": 0.0, "v": {}}
+_VEN_NOMS = {"le": 0.0, "v": {}}
+
+
+def a_vendre_noms():
+    """22 nov 2026 (Mathieu : « dans l'inventaire, ce qui n'est pas encore en vente : une petite pastille verte Sell ; un toucher
+    montre le graphique ») : {joueur en minuscules: {ecart_pct, courbe, haut_depuis_j}} des joueurs de la liste « A vendre » de
+    Tendances (marche_joueurs : marche a un sommet). Le meme pour tous ; 10 min. Des ecarts en %, jamais un prix."""
+    A = _VEN_NOMS
+    if time.time() - A["le"] < 600:
+        return A["v"]
+    A["le"] = time.time()
+    try:
+        import marche_joueurs
+        A["v"] = {str(x["nom"]).lower(): {"ecart_pct": x.get("vs_mediane_pct"), "courbe": x.get("courbe"), "haut_depuis_j": x.get("haut_depuis_j")}
+                  for x in marche_joueurs.liste("vendre", 400)}
+    except Exception as e:
+        print("A vendre (inventaire) : " + repr(e)[:160], flush=True)
+    return A["v"]
+
 
 
 def a_acheter_noms():
@@ -4305,6 +4324,19 @@ class Api:
                     r["garder_bas"] = {"ecart_pct": mb["ecart_pct"]}
         except Exception as e:
             print("Garde-la : " + repr(e)[:160], flush=True)
+        # 22 nov 2026 (Mathieu : « ce qui est dans notre inventaire, pas encore en vente : une petite pastille verte Sell ») : une
+        # carte pas vendue et pas sur eBay d'un joueur de la liste « A vendre » (son marche est a un sommet) -> « a_vendre »
+        try:
+            V_ = a_vendre_noms()
+            if V_:
+                for r in out:
+                    if r.get("statut") in ("Vendue", "Listée") or r.get("item_number") or (r.get("sport") or "hockey") != "hockey" or r.get("garder_bas"):
+                        continue
+                    v_ = V_.get(str(r.get("joueur") or "").strip().lower())
+                    if v_:
+                        r["a_vendre"] = v_
+        except Exception as e:
+            print("A vendre : " + repr(e)[:160], flush=True)
         if f.get("vendre_tot"):
             out = [r for r in out if r.get("vendre_tot")]
         if f.get("a_afficher"):

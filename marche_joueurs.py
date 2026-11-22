@@ -149,7 +149,12 @@ def _depuis(sj, jour, niveau, semaines=52):
     # 21 nov 2026 (Mathieu : « plus Apple et sexy, moins Excel ») : sa courbe de 12 mois (un point aux 4 semaines, le plus vieux
     # d'abord, puis aujourd'hui), pour la petite courbe a cote de son nom, comme dans Bourse. Des niveaux relatifs, jamais un prix.
     d = dict(pts)
-    courbe = [round(d[a], 3) for a in range(336, 0, -28) if a in d] + [round(niveau, 3)]
+    # 22 nov 2026 (Mathieu : « pourquoi y'en a pas de graphique ? ») : un joueur qu'on suit depuis 3 ou 4 mois seulement n'avait
+    # que 3 ou 4 points aux 4 semaines, donc pas de courbe ; on resserre le pas (2 semaines, puis 1) jusqu'a avoir 5 points
+    for pas in (28, 14, 7):
+        courbe = [round(d[a], 3) for a in range(12 * pas, 0, -pas) if a in d] + [round(niveau, 3)]
+        if len(courbe) >= 5:
+            break
     return {"bas_depuis_j": bas, "haut_depuis_j": haut, "hist_j": hist, "courbe": courbe if len(courbe) >= 5 else None}
 
 

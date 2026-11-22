@@ -6531,6 +6531,10 @@ html body .ecran .md-rech.tiq-rech, html:not(.tel-large) body .tete-fixe:has(.d-
 @media (max-width:1099px){ .tiq-av .tiq-lm .tiq-m:nth-child(n+6){display:none} .tiq-av .tiq-lm .tiq-m:nth-child(5){border-bottom:0}
   .tiq-seg{display:flex} .tiq-seg ~ .tiq-av[data-on="bas"] > .tiq-pan.vendre, .tiq-seg ~ .tiq-av[data-on="vendre"] > .tiq-pan.bas{display:none} .tiq-seg ~ .tiq-av > .tiq-pan > .am-t{display:none} .tiq-seg ~ .tiq-av > .tiq-pan{padding-top:12px} }
 @media (max-width:1099px){ .tiq-s .tiq-note{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin:0} .tiq-s .tiq-kr2{gap:6px} .tiq-s .tiq-kr2 .tiq-kp{padding:6px 12px} }
+.inv-av{cursor:pointer; pointer-events:auto}
+.av-c{display:flex; align-items:baseline; gap:10px; margin:2px 0 10px} .av-c b{font:800 40px/1 var(--f-cond); color:var(--vert)} .av-c span{color:var(--doux); font-size:15px}
+.av-g{display:block; width:100%; height:auto; overflow:visible} .av-g path{fill:none; stroke:var(--vert); stroke-width:3; stroke-linecap:round; stroke-linejoin:round} .av-g circle{fill:var(--vert)}
+.av-ax{display:flex; justify-content:space-between; font-size:12.5px; color:var(--doux); margin:6px 0 12px} .av-p{font-size:16px; line-height:1.4; margin:0 0 14px}
 @media (min-width:1100px){
   .ecran.tiq.tiq-s{height:calc(100dvh - var(--bandeau-h, 0px)); display:flex; flex-direction:column; overflow:hidden; box-sizing:border-box}
   .ecran.tiq.tiq-s > .tete-fixe{position:relative; top:auto; flex:none}
@@ -16445,6 +16449,19 @@ async function poserScoresInv(){
 document.addEventListener('click', (e) => { const b = e.target.closest('.inv-iq[data-iq], .isl-sc[data-iq]'); if (!b) return; e.preventDefault(); e.stopPropagation(); vibrer();
   const c = (S.invL || []).find(x => String(x.id) === b.dataset.iq) || {};
   pourquoiScore({score: (S.invScores || {})[b.dataset.iq] ?? c.score_iq ?? null, titre: c.titre || [c.annee, c.marque, c.joueur, c.parallele].filter(Boolean).join(' '), joueur: c.joueur}); }, true);
+// 22 nov 2026 : la pastille « Vends » d'une carte de l'inventaire : la courbe de 12 mois de son joueur, une phrase, un bouton
+document.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('.inv-av[data-avd]'); if (!b) return; e.preventDefault(); e.stopPropagation(); vibrer();
+  const c = (S.invL || []).find(x => String(x.id) === b.dataset.avd) || {}, v = c.a_vendre || {}, j = c.joueur || '';
+  const k = v.courbe || [], lo = Math.min(...k), hi = Math.max(...k), ec = (hi - lo) || 1, W = 320, H = 120;
+  const P = k.map((y, i) => [8 + (W - 16) * i / Math.max(1, k.length - 1), 10 + (H - 20) * (1 - (y - lo) / ec)]);
+  const g = k.length >= 3 ? `<svg class="av-g" viewBox="0 0 ${W} ${H}" aria-hidden="true"><path d="${P.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join('')}"/><circle cx="${P[P.length - 1][0].toFixed(1)}" cy="${P[P.length - 1][1].toFixed(1)}" r="5"/></svg>` : '';
+  const mois = v.haut_depuis_j >= 30 ? Math.round(v.haut_depuis_j / 30) : 0;
+  ouvrirFeuille(`<h3 class="f-titre">${esc(j)}</h3>
+    <div class="av-c">${v.ecart_pct != null ? `<b>+${esc(String(v.ecart_pct))} %</b>` : ''}<span>${mois >= 2 ? tt(`Au plus haut en ${mois} mois`, `Highest in ${mois} months`) : tt('Au-dessus de sa normale', 'Above his usual')}</span></div>
+    ${g}<div class="av-ax"><span>${tt('Il y a 12 mois', '12 months ago')}</span><span>${tt('Aujourd’hui', 'Today')}</span></div>
+    <p class="av-p">${tt('Son marché est à un sommet. Le plus souvent, ça retombe : c’est le bon moment pour la mettre en vente.', 'His market is at a peak. More often than not, it comes back down: a good time to list it.')}</p>
+    <button class="btn" id="av-ok">${tt('Voir la carte', 'Open the card')}</button>`);
+  const ok = $('#av-ok'); if (ok) ok.onclick = () => { vibrer(); fermerFeuille(); const t = document.querySelector(`#i-liste .tuile-inv[data-id="${CSS.escape(b.dataset.avd)}"]`); if (t) setTimeout(() => t.click(), 220); }; }, true);
 // 19 nov 2026 : une carte gradee (slab) : le cadrage garde l'etiquette ; jamais le fond flou du studio (il floutait l'etiquette)
 const estGradee = (c) => /^\s*(psa|bgs|sgc|cgc|tag|beckett|ksa)\b/i.test(String(c.grade || '')) || /\b(psa|bgs|sgc|cgc|ksa)\s*(?:gem\s*(?:mint|mt)?\s*)?\d+(?:\.\d)?\b/i.test(String(c.titre || ''));
 function tuileInv(c){
@@ -16461,6 +16478,9 @@ function tuileInv(c){
     : envoiDe(c) ? capsule(envoiDe(c).type === 'gradation' ? (envoiDe(c).etape ? tt('À soumettre', 'To submit') : tt('Au gradage', 'At grading')) + ' · ' + envoiDe(c).compagnie : tt('En encan', 'At auction'), (envoiRetard(envoiDe(c)) ? 'or' : 'acc') + ' petit')
     : c.a_finir ? capsule(tt('Prête à publier', 'Ready to list'), 'vert petit')
     : c.vendre_tot ? capsule(tt('Vends tôt', 'Sell early'), 'rouge petit')
+    // 22 nov 2026 (Mathieu : « une petite pastille verte : Sell ; quand tu cliques, ca te montre le graphique ») : son joueur est
+    // dans « À vendre » (marché à un sommet) et la carte n'est pas sur eBay
+    : c.a_vendre ? `<span class="capsule vert petit inv-av" data-avd="${esc(String(c.id))}" role="button" aria-label="${esc(tt('Vends : voir le graphique', 'Sell: see the chart'))}">${tt('Vends', 'Sell')}</span>`
     : c.garder_bas ? capsule(tt('Garde-la', 'Hold it'), 'vert petit')        // 20 nov 2026 : joueur au marche bas (remonte d'habitude)
     : c.a_afficher ? capsule(tt('À mettre sur eBay', 'List on eBay'), 'or petit')
     : capsule(c.emplacement || tt('En stock', 'In stock'), 'petit');
@@ -22309,9 +22329,9 @@ async function vueNotifs(arg){
   const SORTE = {vente:[tt('Vendue', 'Sold'), 'dollar', 'vert'], acheteurs:[tt('Acheteurs', 'Buyers'), 'oeil', 'acc'], deal:['Deal', 'deals', 'or'],
     encan:[tt('Encan', 'Auction'), 'horloge', 'or'], trop_cher:[tt('Trop cher', 'Too pricey'), 'attention', 'rouge'], joueur:[tt('En feu', 'On fire'), 'feu', 'or'],
     valeur:[tt('Valeur', 'Value'), 'graphe', 'acc'], prix:[tt('Prix cible', 'Target price'), 'cible', 'vert'], info:['Info', 'cloche', ''],
-    iq_bonne:['SlabIQ', 'graphe', 'vert'], iq_mauvaise:['SlabIQ', 'attention', 'rouge'], iq_occasion:[tt('Occasion', 'Buy low'), 'cible', 'acc']};
+    iq_bonne:['SlabIQ', 'graphe', 'vert'], iq_mauvaise:['SlabIQ', 'attention', 'rouge'], iq_occasion:[tt('Occasion', 'Buy low'), 'cible', 'acc'], a_vendre:[tt('Vends', 'Sell'), 'dollar', 'vert']};
   const FILTRES = [['tout', tt('Tout', 'All')], ['iq', 'SlabIQ'], ['deal', 'Deals'], ['encan', tt('Encans', 'Auctions')], ['vente', tt('Ventes', 'Sales')], ['prix', tt('Prix', 'Prices')]];
-  const groupe = (k) => /^iq_/.test(k) ? 'iq' : k === 'trop_cher' ? 'encan' : k === 'acheteurs' ? 'vente' : k === 'joueur' || k === 'valeur' ? 'deal' : k;
+  const groupe = (k) => /^iq_/.test(k) ? 'iq' : k === 'trop_cher' ? 'encan' : k === 'acheteurs' || k === 'a_vendre' ? 'vente' : k === 'joueur' || k === 'valeur' ? 'deal' : k;
   let filtre = 'tout';
   const heure = (le) => { const d = new Date(le); return isNaN(d) ? '' : d.toLocaleTimeString(LOC(), {hour:'2-digit', minute:'2-digit'}); };
   const jourDe = (le) => { const d = new Date(le), a = new Date(); a.setHours(0, 0, 0, 0); const h = new Date(a - 864e5);
@@ -22335,7 +22355,15 @@ async function vueNotifs(arg){
     const pl = $('#nt-plus'); if (pl) pl.hidden = tout || l.length <= max;
   };
   const presents = new Set(notifs.map(n => groupe(n.sorte)));
-  const autres = ALARMES().filter(([k]) => k !== 'mes_joueurs');
+  // 22 nov 2026 (Mathieu : « simplifier le tableau de notifications au maximum, avec tout ce qui est interessant selon nos
+  // services ») : 11 cases devenues 4 interrupteurs (5 pour l'admin) ; chacun regle ses alertes d'un coup
+  const ADM_N = !!(S.forfait && S.forfait.admin);
+  const GRP = [['g_vendre', 'dollar', tt('Temps de vendre', 'Time to sell'), tt('Une carte pas encore sur eBay : son joueur est à un sommet', 'A card not on eBay yet: its player is at a peak'), ['a_vendre']],
+    ['g_ventes', 'oeil', tt('Mes ventes', 'My sales'), tt('Une carte vendue, des acheteurs qui regardent', 'A card sold, buyers watching'), ['vendu', 'acheteurs']],
+    ['g_joueurs', 'graphe', tt('Mes joueurs', 'My players'), tt('En feu, SlabIQ qui monte, une grosse nouvelle', 'On fire, SlabIQ rising, big news'), ['en_feu', 'iq_haut', 'iq_nouvelle']],
+    ['g_acheter', 'cible', tt('Bons moments pour acheter', 'Good times to buy'), tt('Marché bas, ton prix cible atteint', 'Market low, your target price hit'), ['marche_bas', 'iq_occasion', 'prix_cible']],
+    ...(ADM_N ? [['gros_deal', 'feu', tt('Deals', 'Deals'), tt('Gros deal, encan qui finit', 'Big deal, auction ending'), ['gros_deal', 'encan_fin']]] : [])];
+  void ALARMES;
   const permis = (() => { try { return !('Notification' in window) || NATIF || Notification.permission !== 'default'; } catch (e) { return true; } })();
   // 9 nov 2026 (Mathieu : « separer les settings des notifications, propre, comme la section des breaks en haut ») :
   // deux onglets en haut ; Notifications = ce qui est arrive ; Reglages = mes joueurs, ce que je recois, mes alertes de prix
@@ -22357,7 +22385,7 @@ async function vueNotifs(arg){
       <div id="nt-pro"></div>
       <label class="al-case" style="margin-top:10px"><span class="al-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.cloche}</svg></span><span class="t"><b>${tt('M’avertir quand ils sont en deal', 'Alert me when they’re on deal')}</b><span>${tt('Une notification par deal, jamais deux fois', 'One notification per deal, never twice')}</span></span><input type="checkbox" data-nt="mes_joueurs" ${al.mes_joueurs ? 'checked' : ''}></label></div>
     <div class="nt-bloc"><div class="nt-t">${tt('Ce que je reçois', 'What I get')}</div>
-      <div class="al-cases">${autres.map(([k, ic, t, d]) => `<label class="al-case"><span class="al-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL[ic] || ''}</svg></span><span class="t"><b>${t}</b><span>${d}</span></span><input type="checkbox" data-nt="${k}" ${al[k] ? 'checked' : ''}></label>`).join('')}</div>
+      <div class="al-cases">${GRP.map(([g, ic, t, d, ks]) => `<label class="al-case"><span class="al-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL[ic] || ''}</svg></span><span class="t"><b>${t}</b><span>${d}</span></span><input type="checkbox" data-nt="${g}" data-ks="${ks.join(' ')}" ${ks.some(k => al[k]) ? 'checked' : ''}></label>`).join('')}</div>
       <div class="al-seuil" id="nt-seuil" ${al.gros_deal ? '' : 'hidden'}><span>${tt('À partir de', 'From')}</span>${[30, 40, 50, 60].map(v => `<button class="chip ${+al.seuil_deal === v ? 'on' : ''}" data-seuil="${v}">−${v} %</button>`).join('')}</div>
       </div>
     <div class="nt-bloc"><div class="nt-t">${tt('Mes alertes de prix', 'My price alerts')}</div>
@@ -22369,7 +22397,7 @@ async function vueNotifs(arg){
   // dans une carte, des cases a cocher). Maintenant, comme le Profil : 3 lignes qui disent leur etat ; chacune ouvre sa
   // fenetre (les memes blocs, deplaces : rien d'autre ne change) ; des interrupteurs comme partout ailleurs.
   const NTG = [['cible', tt('Mes joueurs suivis', 'My tracked players'), tt('Ils passent en premier dans tes deals', 'They come first in your deals')],
-    ['cloche', tt('Ce que je reçois', 'What I get'), tt('Deals, ventes, nouvelles de tes joueurs', 'Deals, sales, news on your players')],
+    ['cloche', tt('Ce que je reçois', 'What I get'), tt('Temps de vendre, ventes, tes joueurs', 'Time to sell, sales, your players')],
     ['etiquette', tt('Mes alertes de prix', 'My price alerts'), tt('Une carte, un prix : on te prévient', 'A card, a price: we tell you')]];
   const ntBlocs = $$('#nt-res > .nt-bloc');
   { const se = $('#nt-seuil'), gd = $('[data-nt="gros_deal"]'); if (se && gd && gd.closest('.al-case')) gd.closest('.al-case').after(se); }      // le seuil juste sous « Gros deal »
@@ -22415,7 +22443,7 @@ async function vueNotifs(arg){
     if (c.checked) demanderNotifications();
     if (c.dataset.nt === 'gros_deal') $('#nt-seuil').hidden = !c.checked;
     majNt();
-    API.alarmes_regler({[c.dataset.nt]: c.checked}).then(() => toast(c.checked ? tt('Activée', 'On') : tt('Coupée', 'Off'), 1200)).catch(() => {}); });
+    API.alarmes_regler(Object.fromEntries((c.dataset.ks || c.dataset.nt).split(' ').map(k => [k, c.checked]))).then(() => toast(c.checked ? tt('Activée', 'On') : tt('Coupée', 'Off'), 1200)).catch(() => {}); });
   $$('[data-seuil]').forEach(b => b.onclick = () => { $$('[data-seuil]').forEach(x => x.classList.toggle('on', x === b)); API.alarmes_regler({seuil_deal: +b.dataset.seuil}).catch(() => {}); });
   $$('[data-alx]').forEach(b => b.onclick = async () => { await API.alerte_supprimer(+b.dataset.alx).catch(() => {}); b.closest('.rangee').remove(); majNt(); });
   const pm = $('#nt-perm'); if (pm) pm.onclick = () => { demanderNotifications(); pm.remove(); };
