@@ -102,6 +102,13 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   et « À vendre » (58-62 % rebaissent sur la carte exacte, hasard 42 %). Ne pas fouiller d'autres barèmes sans plus d'historique.
 
 ## En attente
+- **Méga test 3 ans (priorité 1, demandé le 22 nov)** : CompSniper (`historique.py`, `/v1/research/sold`, 50 ventes par page,
+  jusqu'à 1 095 jours ; Mathieu a le forfait 10 000 requêtes/mois ; la clé est dans Render seulement, donc le rattrapage doit
+  tourner SUR LE SERVEUR). À bâtir : un rattrapage par carte exacte (clé : année, mots de `cartes_match.identite`, parallèles,
+  tirage, auto, note), repris après un redémarrage, avec une réserve de requêtes pour l'app ; puis refaire les tests (Radar Pro,
+  à vendre, au plus bas, saisons) sur 3 ans. Vérifier d'abord `LR_HISTORIQUE_MOIS` (ne pas y toucher : c'est Mathieu).
+  Leçon du 21 nov : un test sur le marché du JOUEUR ou sur une « sorte » de carte mélange des cartes différentes et gonfle
+  les taux ; toujours tester sur la même carte exacte, un pari par creux, frais compris.
 - **Apple (samedi)** : note au réviseur fournie à Mathieu ; il doit y mettre le code démo. Pas de « Bêta » visible.
   Après l'approbation : retirer le code démo (conseil dans `ceo.py`).
 - **Baseball** : test SlabIQ à refaire dès que Mathieu exporte des ventes fraîches (Entraîner SlabIQ → ↓ Ventes Baseball).
