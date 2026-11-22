@@ -8706,10 +8706,34 @@ class Api:
         except Exception as e:
             print("Tendances (marche bas) : " + repr(e), flush=True)
             cats["marche_bas"] = []
+        # 21 nov 2026 (Mathieu : « toujours sortir la liste des joueurs a acheter (creux) et a vendre (sommet temporaire) » ;
+        # « bons joueurs, marche qui diminue, pas parce qu'ils produisent moins ») : marche_joueurs (verifie sur le passe a
+        # chaque passe). A acheter : un joueur etabli, cote B et plus, PAS en creux sur la glace. Des ecarts en %, jamais un prix.
+        preuve = {}
+        try:
+            import marche_joueurs
+            preuve = marche_joueurs.preuve()
+            Imin = {n_.lower(): (n_, w) for n_, w in I.items()}
+            for sig in ("acheter", "vendre"):
+                l = []
+                for x in marche_joueurs.liste(sig, 80):
+                    nv = Imin.get(x["nom"].lower())
+                    if not nv:
+                        continue
+                    f_ = fiche(nv[0], nv[1])
+                    if sig == "acheter" and ("en_creux" in f_["pastilles"] or str(f_.get("lettre") or "E")[:1] not in ("A", "B")):
+                        continue
+                    f_["marche"] = {k: x.get(k) for k in ("vs_mediane_pct", "sous_sommet_pct", "mois_pct", "taux", "bas_depuis_j", "haut_depuis_j", "hist_j")}
+                    l.append(f_)
+                cats[sig] = l[:40]
+        except Exception as e:
+            print("Tendances (acheter / vendre) : " + repr(e), flush=True)
+            cats.setdefault("acheter", [])
+            cats.setdefault("vendre", [])
         st = indice_joueurs.statut()
-        r = {"ok": True, "cats": cats, "suivis": st.get("joueurs"), "actifs": len(actifs), "le": d.get("le"),
+        r = {"ok": True, "cats": cats, "suivis": st.get("joueurs"), "actifs": len(actifs), "le": d.get("le"), "preuve": preuve,
              "compte": {**{k: sum(1 for v in I.values() if k in (v.get("pastilles") or [])) for k in ("en_feu", "rebond", "recrue", "en_creux", "buzz", "en_hausse", "legende")},
-                        "marche_bas": len(cats.get("marche_bas") or [])}}
+                        "marche_bas": len(cats.get("marche_bas") or []), "acheter": len(cats.get("acheter") or []), "vendre": len(cats.get("vendre") or [])}}
         # 17 nov 2026 (Mathieu : « un utilisateur devrait pouvoir chercher son joueur dans le Trending ») : tous les joueurs suivis
         # (nom, equipe, lettre), pour une recherche instantanee dans la page
         try:
@@ -9426,6 +9450,22 @@ class Api:
                     pass
                 if self._est_admin():
                     out["marche"].update({k: _m.get(k) for k in ("n", "moyenne", "mediane", "par_semaine")})
+            # 21 nov 2026 (Mathieu : « il faut le voir sur des plus grands time frames » ; « comme sur Amazon, le plus bas depuis
+            # X jours ») : son marche vs son niveau habituel de 12 mois, depuis quand il est aussi bas / aussi haut, et le signal
+            # (a acheter : etabli, cote A ou B, pas en creux sur la glace). Des ecarts en %, jamais un prix.
+            try:
+                import marche_joueurs as _mj
+                _e = _mj.etat(nom)
+                if _e:
+                    lg = {k: _e.get(k) for k in ("vs_mediane_pct", "sous_sommet_pct", "bas_depuis_j", "haut_depuis_j", "hist_j")}
+                    sg_ = _e.get("signal")
+                    if sg_ == "acheter" and ("en_creux" in (_v.get("pastilles") or []) or str(_l or "E")[:1] not in ("A", "B")):
+                        sg_ = None
+                    if sg_:
+                        lg.update(signal=sg_, taux=_e.get("taux"))
+                    out.setdefault("marche", {})["long"] = lg
+            except Exception:
+                pass
         except Exception:
             pass
         return out

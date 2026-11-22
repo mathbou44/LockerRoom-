@@ -2083,6 +2083,12 @@ def _valeurs_auto():
                 print("Marche des joueurs cles : passe lancee", flush=True)
         except Exception as e:
             print("Marche des joueurs cles : " + str(e), flush=True)
+        try:                                    # 21 nov 2026 - a acheter / a vendre : le marche de chaque joueur (1 fois/jour, verifie)
+            import marche_joueurs
+            if marche_joueurs.passe_si_besoin():
+                print("Marche des joueurs : passe lancee", flush=True)
+        except Exception as e:
+            print("Marche des joueurs : " + str(e), flush=True)
         try:                                    # 12 nov 2026 - SlabIQ : le test et le journal en direct (1 fois/semaine)
             import slabiq_test
             if slabiq_test.passe_si_besoin():
