@@ -152,6 +152,14 @@ def a_vendre(api, etat, maint=None):
     return 0
 
 
+def _signaux():
+    try:
+        import lockerroom
+        return lockerroom.signaux_marche_actifs()
+    except Exception:
+        return True
+
+
 def reglages(api):
     r = api.reglages_lire().get("alarmes") or {}
     out = dict(DEFAUT)
@@ -394,13 +402,13 @@ def verifier(api, maint=None):
         except Exception as e:
             print("Alertes SlabIQ haut : " + repr(e), flush=True)
 
-    if r.get("marche_bas"):
+    if r.get("marche_bas") and _signaux():
         try:
             faits["marche_bas"] = marche_bas(api, etat, mes, maint) or 0
         except Exception as e:
             print("Alertes marche bas : " + repr(e), flush=True)
 
-    if r.get("a_vendre"):
+    if r.get("a_vendre") and _signaux():
         try:
             if a_vendre(api, etat, maint):
                 faits["a_vendre"] = 1

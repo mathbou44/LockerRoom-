@@ -203,7 +203,13 @@ SEMIS["tour_22nov"] = [
     ("c_tour_mesure", "Claude : ce soir, méga test + « À vendre » sur la carte exacte + tests du site et bulletin refaits", "Avec l'export de 19 h 45. Chiffres publiés refaits partout (tests/test_chiffres_partout.py bloque toute discordance).", 1, None, None, "2026-11-22"),
     ("c_tour_baseball", "Claude : plan baseball (ventes par carte exacte, barème du baseball, test)", "Test du 22 nov : les lettres sont à l'envers au baseball (rho −0,44), le Radar Pro ne bat pas le hasard. Ouvrir au printemps 2027 si le test passe.", 3, None, None, None),
 ]
-SEMIS_PROJET = {"tour_22nov": "lancement", "megatest_22nov": "lancement", "bulletin_22nov": "lancement", "achat_21nov": "lancement", "historique_21nov": "lancement", "tendances_21nov": "lancement", "licences_fc": "licences", "lancement_1dec": "lancement", "securite_21nov": "lancement", "matin_21nov": "lancement", "securite_reste": "lancement", "vitesse_21nov": "lancement", "consig_21nov": "lancement", "soir_21nov": "lancement"}
+SEMIS["legal_22nov"] = [
+    ("l_growth", "eBay : remplir l'Application Growth Check", "Demander par écrit le droit de montrer des signaux de marché (écarts en %, jamais un prix) tirés de ventes passées, et l'accès aux ventes (Marketplace Insights). Claude prépare le texte ; tu l'envoies.", 1, None, "https://developer.ebay.com/grow/application-growth-check", "2026-11-28"),
+    ("l_avocat", "Une heure avec un avocat en technologie avant de vendre le Pro", "Questions : ventes eBay obtenues d'un tiers (CompSniper) dans un abonnement payant ; licence API eBay §9.5 ; les pastilles « Vends » et « Marché bas ».", 1, None, None, "2026-11-30"),
+    ("l_offre", "Décider : effacer l'historique « offre du jour » de la banque YG", "Des chiffres de l'API eBay (annonces actives, prix médian demandé) gardés plus de 24 h, contre la licence §8.1.3. La collecte est coupée ; aucun modèle ne s'en sert. Claude efface sur ton « oui ».", 2, None, None, "2026-11-25"),
+    ("l_sources", "Ajouter une 2e source de ventes (Goldin, Fanatics, Heritage)", "Moins dépendre d'eBay et de CompSniper : si eBay bloque CompSniper, les signaux s'arrêtent. Demander les conditions d'une licence de données.", 2, None, None, None),
+]
+SEMIS_PROJET = {"legal_22nov": "licences", "tour_22nov": "lancement", "megatest_22nov": "lancement", "bulletin_22nov": "lancement", "achat_21nov": "lancement", "historique_21nov": "lancement", "tendances_21nov": "lancement", "licences_fc": "licences", "lancement_1dec": "lancement", "securite_21nov": "lancement", "matin_21nov": "lancement", "securite_reste": "lancement", "vitesse_21nov": "lancement", "consig_21nov": "lancement", "soir_21nov": "lancement"}
 PROJETS = {"licences": "Licences de données", "lancement": "Lancement", "general": "Général", "suivi": "Suivi"}
 
 

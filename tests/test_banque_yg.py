@@ -54,6 +54,8 @@ print("REPRISE OK")
 LUS = []
 banque_yg._offre_une = lambda nom: (LUS.append(nom), (123, 45.0))[1]
 c_ = banque_yg._cx(); nj = c_.execute("SELECT COUNT(DISTINCT joueur) FROM faits").fetchone()[0]; c_.close()
+assert banque_yg.offre_du_jour() == 0 and not LUS                         # 22 nov 2026 : coupee par defaut (contenu de l'API eBay)
+os.environ["LR_OFFRE_EBAY"] = "1"
 assert banque_yg.offre_du_jour() == nj and banque_yg.offre_du_jour() == 0 and len(LUS) == nj, (nj, LUS)
 print("OFFRE OK")
 # les nouvelles : titre + lien, une fois

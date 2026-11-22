@@ -383,6 +383,16 @@ def _vendeur_info(x):
     return {"vendeur": x.get("vendeur") or None, "vendeur_score": sc, "petit_vendeur": petit}
 
 
+def signaux_marche_actifs():
+    """22 nov 2026 (Mathieu : « tout modifier pour qu'on soit safe le plus possible, et rester ultra performant ») : UN
+    interrupteur (LR_SIGNAUX_MARCHE=0) coupe d'un geste tous les signaux de marche tires des ventes recoltees (Tendances
+    « Au plus bas » / « A vendre » / « A acheter », la pastille « Vends » et « Garde-la » de l'inventaire, « Marche bas » du
+    Radar, les notifications « Temps de vendre » et « Marche bas ») si eBay ou CompSniper le demande. Ces signaux ne
+    viennent jamais de l'API eBay (licence §9.5 : pas de prix suggere a partir du contenu de l'API) : des ventes passees
+    obtenues d'un tiers, montrees en ecarts % seulement, jamais un prix ni une annonce."""
+    return os.environ.get("LR_SIGNAUX_MARCHE", "1") != "0"
+
+
 def ebay_prix_actif(api=None):
     """27 oct 2026 - interrupteur du serveur (LOCKERROOM_EBAY_PRIX=0) : coupe d'un geste les fonctions de prix sur les
     ANNONCES eBay (deals, prix suggere d'une annonce, repere prix et comparables, « Mettre au prix du marche ») si eBay
@@ -672,6 +682,8 @@ def a_vendre_noms():
     montre le graphique ») : {joueur en minuscules: {ecart_pct, courbe, haut_depuis_j}} des joueurs de la liste « A vendre » de
     Tendances (marche_joueurs : marche a un sommet). Le meme pour tous ; 10 min. Des ecarts en %, jamais un prix."""
     A = _VEN_NOMS
+    if not signaux_marche_actifs():
+        return {}
     if time.time() - A["le"] < 600:
         return A["v"]
     A["le"] = time.time()
@@ -689,7 +701,7 @@ def a_acheter_noms():
     """21 nov 2026 : {joueur en minuscules: ecart % vs sa normale de 12 mois} des joueurs « A acheter » (marche_joueurs), avec le
     meme filtre que la page Tendances : suivi par l'Indice, PAS en creux sur la glace, cote A ou B. Le meme pour tous ; 10 min."""
     A = _ACH_RADAR
-    if not ACHAT_PROUVE:
+    if not ACHAT_PROUVE or not signaux_marche_actifs():
         return {}
     if time.time() - A["le"] < 600:
         return A["v"]
@@ -1952,7 +1964,7 @@ class Api:
             x["pour_moi"] = pm
             x["pour_moi_pts"] = sum(Api.POUR_MOI_PTS[k] for k in pm)
             # 16 nov 2026 (Mathieu : « savoir quand un joueur cle est plus bas qu'a l'habitude ») : il monte dans le Radar
-            j_ = x.get("joueur") or cartes_match.joueur_du_titre(t)
+            j_ = (x.get("joueur") or cartes_match.joueur_du_titre(t)) if signaux_marche_actifs() else None
             if j_:
                 if j_ not in mb_:
                     try:
@@ -4316,7 +4328,7 @@ class Api:
         # vends » n'est pas montre : la flambee seule n'a jamais ete un signal sur dans nos mesures.
         try:
             import marche_cles
-            for r in out:
+            for r in (out if signaux_marche_actifs() else []):
                 if r.get("statut") == "Vendue" or r.get("item_number") or r.get("vendre_tot") or (r.get("sport") or "hockey") != "hockey":
                     continue
                 mb = marche_cles.bas(r.get("joueur") or "") if r.get("joueur") else None
@@ -8833,7 +8845,7 @@ class Api:
             Imin = {n_.lower(): (n_, w) for n_, w in I.items()}
             # « bas » (21 nov, soir) : un FAIT montre a tous (« au plus bas en 8 mois »), sans promesse ni barres ; meme filtre
             # « bon joueur » que l'achat (actif, pas en creux sur la glace, cote A ou B)
-            for sig in ("acheter", "vendre", "bas"):
+            for sig in (("acheter", "vendre", "bas") if signaux_marche_actifs() else ()):
                 l = []
                 for x in (marche_joueurs.liste_bas(80) if sig == "bas" else marche_joueurs.liste(sig, 80)):
                     nv = Imin.get(x["nom"].lower())

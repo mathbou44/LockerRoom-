@@ -16,3 +16,10 @@ assert alarmes.a_vendre(a, alarmes._lire()) == 1
 n = a.alertes_liste()["notifications"]
 assert any(x.get("sorte") == "a_vendre" and x.get("sujet", "").startswith("Sidney Crosby") for x in n), n
 print("OK a_vendre")
+# 22 nov 2026 : l'interrupteur LR_SIGNAUX_MARCHE=0 coupe tout d'un geste (pastille, notification)
+os.environ["LR_SIGNAUX_MARCHE"] = "0"
+lockerroom._VEN_NOMS["le"] = 0
+L = a.inventaire_liste({}); L = L if isinstance(L, list) else L["cartes"]
+assert not any(x.get("a_vendre") for x in L), L
+assert lockerroom.a_vendre_noms() == {}
+print("OK interrupteur")

@@ -447,7 +447,12 @@ def _offre_une(nom):
 
 
 def offre_du_jour(max_joueurs=160):
-    """Une fois par jour : le nombre d'annonces actives de la YG de chaque joueur collecte. -> nombre de joueurs lus."""
+    """Une fois par jour : le nombre d'annonces actives de la YG de chaque joueur collecte. -> nombre de joueurs lus.
+    22 nov 2026 (Mathieu : « safe le plus possible ») : COUPEE par defaut. Ces chiffres viennent de l'API eBay (Browse) ; la
+    licence demande de ne pas garder ce contenu plus de 24 h (§8.1.3) ni de s'en servir pour modeliser des prix (§9.5). Aucun
+    modele ne s'en servait. LR_OFFRE_EBAY=1 pour la rouvrir (seulement avec l'accord ecrit d'eBay)."""
+    if os.environ.get("LR_OFFRE_EBAY") != "1":
+        return 0
     jour = date.today().isoformat()
     c = _cx()
     try:
@@ -509,7 +514,8 @@ def exporter():
         d = {"genere": datetime.now(timezone.utc).isoformat(timespec="seconds"),
              "ventes": [dict(zip(("q", "joueur", "titre", "prix_usd", "devise", "prix_cad", "le", "item_id"), r))
                         for r in c.execute("SELECT q, joueur, titre, prix_usd, devise, prix_cad, le, item_id FROM ventes")],
-             "offre": [dict(zip(("jour", "joueur", "annonces", "prix_median"), r)) for r in c.execute("SELECT jour, joueur, annonces, prix_median FROM offre")],
+             # 22 nov 2026 : le contenu de l'API eBay ne sort plus dans l'export (licence §8.1.3, §9.5)
+             "offre": [dict(zip(("jour", "joueur", "annonces", "prix_median"), r)) for r in c.execute("SELECT jour, joueur, annonces, prix_median FROM offre")] if os.environ.get("LR_OFFRE_EBAY") == "1" else [],
              "nouvelles": [dict(zip(("lien", "joueur", "titre", "le", "type", "sens"), r)) for r in c.execute("SELECT lien, joueur, titre, le, type, sens FROM nouvelles")]}
     finally:
         c.close()
