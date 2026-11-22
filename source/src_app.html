@@ -2031,6 +2031,12 @@ html body .acc-sec > span{color:color-mix(in oklab, var(--c) 72%, #fff)}
 }
 /* 22 nov 2026 : « 195 / 3,000 » sur une ligne dans la fenetre du mega test */
 html body #feuille:has(#mt-go) .jb-v{white-space:nowrap; font-size:26px}
+/* 22 nov 2026 (Mathieu, au cell : les titres de section des outils admin etaient coupes par les tuiles) : le titre garde sa place
+   (plus de marge negative dessous), ses lettres ne sont plus rognees */
+html body .adm-emb .acc-sec{margin:16px 0 8px !important}
+html body .adm-emb .acc-sec > span{line-height:1.25; padding:2px 0}
+/* au cell, le menu deroulant dit deja le nom de la section : pas de 2e titre identique dessous */
+@media (max-width:899px){ html body .ecran.ceo-e .ceo-sec.on > .ceo-st{display:none !important} }
 /* 20 nov 2026 : le prix final d'un encan fini de la watchlist */
 .w-final b{color:var(--texte)} .w-fin-at b{font-size:16px !important; color:var(--doux) !important; font-weight:600}
 .w-ecart{margin-top:4px; font-size:15px; font-weight:700} .w-ecart.vert{color:var(--vert)} .w-ecart.rouge{color:var(--rouge)}
