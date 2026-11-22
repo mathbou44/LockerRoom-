@@ -48,3 +48,18 @@ if lg is not None:
     t3 = api.tendance_joueur("Bon Sommet"); l3 = ((t3.get("iq") or t3).get("marche") or {}).get("long") or {}
     assert l3.get("signal") == "vendre", l3
 print("OK test_tendances_marche (a acheter : %s ; a vendre : %s ; fiche : %s)" % ([x["nom"] for x in a], [x["nom"] for x in v], "long" if lg is not None else "sans fiche ici"))
+
+# -- le Radar (Mathieu, Caufield : « le genre de joueur qu'on devrait avoir dans le Radar quand on cherche qui acheter ») : les
+#    cartes d'un joueur « A acheter » montent, avec son ecart ; pas celles du joueur en creux sur la glace ni du joueur cote C
+lockerroom._ACH_RADAR.update(le=0.0, v={})
+N = lockerroom.a_acheter_noms()
+assert N == {"bon creux": -30}, N
+import marche_cles
+marche_cles.bas = lambda nom: None
+A = [{"titre": "2020-21 Upper Deck Young Guns Bon Creux #201", "joueur": "Bon Creux", "prix": 50.0},
+     {"titre": "2020-21 Upper Deck Young Guns Bon Glace Froide #202", "joueur": "Bon Glace Froide", "prix": 50.0},
+     {"titre": "2020-21 Upper Deck Young Guns Moyen Creux #203", "joueur": "Moyen Creux", "prix": 50.0}]
+lockerroom.Api._pour_moi(A, {})
+assert A[0].get("marche_bas") == -30 and A[0]["pour_moi_pts"] >= lockerroom.Api.MARCHE_BAS_PTS, A[0]
+assert "marche_bas" not in A[1] and "marche_bas" not in A[2], (A[1], A[2])
+print("OK test_tendances_marche (Radar : la carte d'un joueur a acheter monte, ecart %s %%)" % A[0]["marche_bas"])

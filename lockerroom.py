@@ -657,6 +657,39 @@ def _iq_break_ecrire(ck, cache):
         print("Cache SlabIQ break : " + repr(e)[:120], flush=True)
 
 
+_ACH_RADAR = {"le": 0.0, "v": {}}
+
+
+def a_acheter_noms():
+    """21 nov 2026 : {joueur en minuscules: ecart % vs sa normale de 12 mois} des joueurs « A acheter » (marche_joueurs), avec le
+    meme filtre que la page Tendances : suivi par l'Indice, PAS en creux sur la glace, cote A ou B. Le meme pour tous ; 10 min."""
+    A = _ACH_RADAR
+    if time.time() - A["le"] < 600:
+        return A["v"]
+    A["le"] = time.time()                      # un seul calcul a la fois ; en cas d'erreur, l'ancienne liste reste
+    try:
+        import marche_joueurs, indice_joueurs, bareme_iq as _bq
+        I = {str(n).lower(): (n, w) for n, w in ((indice_joueurs.lire() or {}).get("indice") or {}).items()}
+        out = {}
+        for x in marche_joueurs.liste("acheter", 200):
+            nv = I.get(str(x["nom"]).lower())
+            if not nv:
+                continue
+            past = nv[1].get("pastilles") or []
+            if "en_creux" in past:
+                continue
+            c = nv[1].get("criteres") or {}
+            note = _bq.note_joueur(nv[0], c, recrue=float(c.get("recrue") or 0) >= 90)[0]
+            if "en_feu" in past:
+                note = min(100.0, note + _bq.FEU_PTS)
+            if str(_bq.lettre_joueur(note) or "E")[:1] in ("A", "B"):
+                out[str(nv[0]).lower()] = x.get("vs_mediane_pct")
+        A["v"] = out
+    except Exception as e:
+        print("A acheter (Radar) : " + repr(e)[:160], flush=True)
+    return A["v"]
+
+
 class Api:
     def __init__(self, chemin_db=None):
         _API_REF[:] = [self]                 # 10 nov 2026 : ebay_prix_actif() sait si c'est l'admin
@@ -1900,6 +1933,13 @@ class Api:
                         mb_[j_] = marche_cles.bas(j_)
                     except Exception:
                         mb_[j_] = None
+                    # 21 nov 2026 (Mathieu, Caufield : « le genre de joueur qu'on devrait avoir dans le Radar quand on cherche qui
+                    # acheter ») : un joueur de la liste « A acheter » des Tendances (etabli, A ou B, pas en creux sur la glace,
+                    # marche sous sa normale de 12 mois) monte aussi dans le Radar, avec son ecart
+                    if not mb_[j_]:
+                        e_ = a_acheter_noms().get(str(j_).lower())
+                        if e_ is not None:
+                            mb_[j_] = {"ecart_pct": e_}
                 if mb_[j_]:
                     x["marche_bas"] = mb_[j_].get("ecart_pct") if mb_[j_].get("ecart_pct") is not None else True
                     x["pour_moi_pts"] += Api.MARCHE_BAS_PTS
