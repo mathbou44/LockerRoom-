@@ -657,6 +657,12 @@ def _iq_break_ecrire(ck, cache):
         print("Cache SlabIQ break : " + repr(e)[:120], flush=True)
 
 
+# 21 nov 2026 (soir) : le signal « A acheter » n'est PAS prouve. Rejoue sur la MEME carte exacte (ce qu'on achete vraiment), un
+# creux de -30 % et plus gagne 45-50 % du temps apres 15 % de frais, gain net median ~0 % (hasard : 25 %) ; avec 5 ventes et plus
+# pour mesurer le creux, ce n'est pas mieux que le hasard. Les 65-80 % mesures sur le marche du JOUEUR venaient du melange de
+# cartes differentes. Mathieu : « un reel avantage mesurable et prouve, sinon on attend ». Donc : rien de public (ni liste, ni
+# Radar, ni fiche) tant que ce n'est pas prouve ; l'admin continue de voir la liste « a l'essai ».
+ACHAT_PROUVE = False
 _ACH_RADAR = {"le": 0.0, "v": {}}
 
 
@@ -664,6 +670,8 @@ def a_acheter_noms():
     """21 nov 2026 : {joueur en minuscules: ecart % vs sa normale de 12 mois} des joueurs « A acheter » (marche_joueurs), avec le
     meme filtre que la page Tendances : suivi par l'Indice, PAS en creux sur la glace, cote A ou B. Le meme pour tous ; 10 min."""
     A = _ACH_RADAR
+    if not ACHAT_PROUVE:
+        return {}
     if time.time() - A["le"] < 600:
         return A["v"]
     A["le"] = time.time()                      # un seul calcul a la fois ; en cas d'erreur, l'ancienne liste reste
@@ -9520,6 +9528,8 @@ class Api:
                     sg_ = _e.get("signal")
                     if sg_ == "acheter" and (not _v.get("actif") or "en_creux" in (_v.get("pastilles") or []) or str(_l or "E")[:1] not in ("A", "B")):
                         sg_ = None
+                    if sg_ == "acheter" and not ACHAT_PROUVE and not self._est_admin():
+                        sg_ = None                     # pas prouve : l'admin seulement (a l'essai)
                     if sg_:
                         lg.update(signal=sg_, taux=_e.get("taux"), mois=_e.get("mois"), gain=_e.get("gain"))
                     out.setdefault("marche", {})["long"] = lg

@@ -53,6 +53,9 @@ print("OK test_tendances_marche (a acheter : %s ; a vendre : %s ; fiche : %s)" %
 
 # -- le Radar (Mathieu, Caufield : « le genre de joueur qu'on devrait avoir dans le Radar quand on cherche qui acheter ») : les
 #    cartes d'un joueur « A acheter » montent, avec son ecart ; pas celles du joueur en creux sur la glace ni du joueur cote C
+# 21 nov 2026 (soir) : tant que l'achat n'est pas prouve, rien ne monte dans le Radar ; le mecanisme reste pret
+assert lockerroom.ACHAT_PROUVE is False and lockerroom.a_acheter_noms() == {}
+lockerroom.ACHAT_PROUVE = True
 lockerroom._ACH_RADAR.update(le=0.0, v={})
 N = lockerroom.a_acheter_noms()
 assert N == {"bon creux": -30}, N
