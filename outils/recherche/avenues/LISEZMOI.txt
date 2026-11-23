@@ -23,3 +23,21 @@ Les achats a 5-7 ventes reussissaient 3 fois sur 10 ; a 8 ventes et plus, 7 sur 
 (liquidite.py : LIQ_MIN = 8, RABAIS_MAX = 0.0). La lettre minimum (A-) compte peu une fois la liquidite et le prix regles.
 A savoir : les achats du Radar Pro sont concentres (3 recrues = 39 % des achats de la regle d'avant) ; par carte differente,
 la regle d'avant donnait 53 % et la nouvelle 68 %.
+
+SUITE DU 23 NOV (Mathieu, devant le graphique du site « 500 $ de cartes par mois pendant un an » : « toujours vrai ou on fait
+encore mieux ? »)
+  sim.py       rejoue la simulation du site (memes definitions que tests_site.mesures ; attention : la date de fin est
+               revente_des = 29 oct 2026, pas « coupe » = 15 oct) ; retrouve exactement -4,7 % / +6,6 % / 604 $ / 96 %
+  sim2.py      la meme a 3 dates de fin, et en payant la MEDIANE au lieu du prix de la vente (borne basse)
+Resultat (un an, cartes de 30 a 150 $, fin 29 oct) :
+  au hasard                               -4,7 %   5 856 $ mis   -275 $
+  lettre A et plus (LE SITE)              +6,6 %   5 108 $ mis   +339 $
+  Radar Pro d'avant (5 ventes, +10 %)     +1,1 %   5 046 $ mis    +55 $
+  Radar Pro (8 ventes, <= mediane)        +8,1 %   4 050 $ mis   +331 $   <- mieux en %, pareil en dollars (moins de cartes)
+  A et plus, <= mediane                  +23,4 %   4 129 $ mis   +978 $   <- UN MIRAGE, ne pas publier :
+     - cartes gradees (etat fixe) : hasard +18 %, lettre +20 %, lettre + <= mediane +20 % : aucun gain ;
+     - cartes brutes : tout le gain vient des rabais de plus de 15 % sous la mediane (a 15 % pres : -4 %, sous la lettre
+       seule a +3 %) : une copie brute tres sous son prix l'est souvent pour une raison (etat, variante sous la meme cle) ;
+     - en payant la mediane au lieu du prix de la vente : -12 %.
+Le Radar Pro du matin, lui, TIENT : garde sa valeur 76 % avec un rabais leger (0,85 a 1,00 de la mediane, 323 achats),
+73 % sur les cartes gradees seules (179 achats), contre 47 % au-dessus de la mediane. On ne change ni le site ni la regle.

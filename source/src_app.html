@@ -2072,6 +2072,25 @@ html body .tiq-p2d[open] > summary{margin-bottom:8px}
   html body #i-tab .t-acc .s, html body .ach-k2 .ak-i{display:none !important}
   html body .ach-k2 .ak-h{display:block; align-self:stretch} html body .ach-k2 .ak-l{display:block}
 }
+/* 23 nov 2026 (Mathieu, le Radar au cell : « beaucoup trop d'infos dans l'entete ») : SlabIQ en petite pastille a cote des onglets ;
+   Mon radar + 2 petites icones rondes (chercher, trier) sur UNE rangee ; « Voir » est dans Mon radar ; la recherche est fermee
+   tant qu'on ne touche pas la loupe (elle prend alors la place de la barre). A l'ordi (1100 px et plus), rien ne change. */
+html body .d-iqp{gap:8px; padding:0 6px 0 12px; border-color:color-mix(in srgb, var(--acc) 40%, var(--ligne)); background:linear-gradient(90deg, color-mix(in srgb, var(--acc) 16%, var(--carte)), var(--carte)); color:var(--texte); cursor:pointer}
+html body .d-iqp .md-iq-l{font-size:17px} html body .d-iqp .md-iq-q{width:22px; height:22px; font-size:13px}
+html body .md-barre{grid-template-columns:minmax(0,1fr) auto auto !important; align-items:center}
+html body .md-barre > .md-glow{grid-column:auto !important} html body .md-barre > .md-dd{display:none !important}
+html body .md-ic{flex:none; width:46px; height:46px; border-radius:50%; display:grid; place-items:center; border:1px solid var(--ligne); background:var(--carte); color:var(--texte); cursor:pointer; padding:0; transition:transform .15s}
+html body .md-ic:active{transform:scale(.94)} html body .md-ic svg{width:21px; height:21px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+html body .md > .md-rech{display:none; margin:0 0 14px} html body .md.rech > .md-rech{display:flex; transform-origin:right center; animation:mdRech .22s ease-out} html body .md.rech > .md-barre{display:none}
+@keyframes mdRech{from{transform:scaleX(.15); opacity:0}}
+html body .md-rech-x{flex:none; width:32px; height:32px; border-radius:50%; border:0; display:grid; place-items:center; background:rgba(255,255,255,.08); color:var(--texte); cursor:pointer; padding:0} html body .md-rech-x svg{width:14px; height:14px}
+@media (prefers-reduced-motion:reduce){ html body .md.rech > .md-rech{animation:none} }
+@media (min-width:1100px) and (min-height:640px){
+  html:not(.tel-large) body .d-iqp, html:not(.tel-large) body .md-ic, html:not(.tel-large) body .md-rech-x{display:none !important}
+  html:not(.tel-large) body .md-barre{grid-template-columns:1.2fr 1fr 1fr !important; align-items:stretch}
+  html:not(.tel-large) body .md-barre > .md-dd{display:flex !important}
+  html:not(.tel-large) body .md.rech > .md-barre{display:grid} html:not(.tel-large) body .md > .md-rech{display:flex}
+}
 /* 23 nov 2026 (Mathieu : « le plus simple et efficace pour aider les nouveaux utilisateurs ») : « Que veux-tu faire ? » : une
    ligne par besoin (pastille ronde, le besoin, la page en petit) ; la 1re, son but, porte le contour prisme. Le « ? » : en haut a
    gauche au cell, dans la barre de cote a l'ordi. */
@@ -2085,7 +2104,7 @@ html body .ga-l b{flex:1; min-width:0; font-size:16.5px; font-weight:700; line-h
 html body .ga-l em{flex:none; font:700 12.5px var(--f-cond); font-style:normal; letter-spacing:.06em; text-transform:uppercase; color:var(--doux); white-space:nowrap}
 html body .ga-l em::after{content:' ›'}
 html body .ga-n{display:block; margin-top:4px; text-align:center; font-size:13px; color:var(--doux)}
-html body .haut-aide{color:var(--doux); cursor:pointer; padding:0} html body .haut-aide svg{width:24px; height:24px}
+html body .haut-aide{display:flex; align-items:center; justify-content:center; width:44px; height:44px; border:none; border-radius:22px; background:transparent; color:var(--doux); cursor:pointer; padding:0} html body .haut-aide svg{width:24px; height:24px}
 html body .onglets > a.nav-aide{display:none !important}
 @media (min-width:900px){ html body .onglets > a.nav-aide{display:flex !important} }
 @media (max-width:360px){ html body .ga-l b{font-size:15px} html body .ga-l em{font-size:11.5px} }
@@ -6546,6 +6565,11 @@ html body .ecran .md-rech.tiq-rech, html:not(.tel-large) body .tete-fixe:has(.d-
 .tiq-sp{flex:none; width:64px; height:26px; overflow:visible} .tiq-sp path{fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round} .tiq-sp.h path{stroke:var(--vert)} .tiq-sp.b path{stroke:var(--rouge)} .tiq-sp.h circle{fill:var(--vert)} .tiq-sp.b circle{fill:var(--rouge)}
 .tiq-lm .tiq-m{border-bottom:0; padding:11px 0} .tiq-lm .tiq-m + .tiq-m{border-top:1px solid rgba(255,255,255,.06)} .tiq-mn b{font-size:19px} .tiq-pc{border-radius:10px; min-width:74px; padding:8px 8px; font-size:17.5px}
 .tiq-seg{display:none; margin:0 0 12px} .tiq-kr2{margin:0 0 10px}
+/* 23 nov 2026 : le rang (top 25) et la ligne verrouillee du Gratuit (le nom flou, le % bien visible) */
+.tiq-rg{flex:none; width:22px; font:700 15px/1 var(--f-cond); font-style:normal; color:var(--doux); text-align:center; font-variant-numeric:tabular-nums}
+.tiq-m.tiq-ver .tiq-flou{filter:blur(6px); opacity:.75; user-select:none; pointer-events:none} .tiq-m.tiq-ver small{display:flex; align-items:center; gap:5px; color:var(--or)}
+.tiq-cad{display:inline-flex} .tiq-cad svg, .tiq-deb svg{width:13px; height:13px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+.tiq-deb{display:inline-flex; align-items:center; gap:6px; color:var(--or) !important} .tiq-debf{width:100%; margin-top:14px}
 .tiq-m{display:flex; align-items:center; gap:12px; width:100%; border:0; border-bottom:1px solid var(--ligne); background:none; color:var(--texte); font:inherit; text-align:left; padding:10px 0; cursor:pointer}
 .tiq-m:last-child{border-bottom:0} .tiq-m:active{background:rgba(255,255,255,.03)}
 .tiq-m .tiq-mono{width:40px; height:40px; flex:none} .tiq-m .tiq-mono b{font-size:15px}
@@ -8111,7 +8135,9 @@ function majBarreMode(){
     // 20 nov 2026 (rapport ergonomie : un seul « + » par ecran) : plus de « + » en haut a gauche, loin du pouce, qui ouvrait un
     // autre menu que celui de la page ; la place reste vide pour garder le nom au centre (ajouter : la camera du centre, le « + »
     // de l'inventaire ; le comptoir et les breaks : le Profil ; le budget : l'accueil ; une alerte : depuis une carte)
-    b.innerHTML = voir ? `<button class="rond haut-plus haut-aide" data-guide aria-label="${esc(tt('Que veux-tu faire ?', 'What do you want to do?'))}">${ICO_AIDE}</button>
+    // 23 nov 2026 (Mathieu : « tout semble trop decale vers le haut ») : PAS la classe « rond » : dans la barre elle fait 36 px, et la
+    // case de gauche (44 px) donnait sa hauteur a la barre ; avec « rond », la barre perdait 8 px et tout l'ecran montait
+    b.innerHTML = voir ? `<button class="haut-plus haut-aide" data-guide aria-label="${esc(tt('Que veux-tu faire ?', 'What do you want to do?'))}">${ICO_AIDE}</button>
       <div class="haut-nom" id="h-nom"><span class="haut-ligne">${perso && S.logo ? `<img class="haut-logo" src="${esc(S.logo)}" alt="">` : LOGO_HOLO('haut-logo', true)}<span class="haut-mot">${perso ? esc(nomMarque()) : '<b>slab</b>coach'}</span></span>
 </div>
       <span class="haut-dr">${(S.forfait || {}).admin_reel ? `<button class="haut-vue v-${esc(S.forfait.vue || 'admin')}" id="h-vue" aria-label="${esc(tt('Changer de vue', 'Switch view'))}">${S.forfait.vue === 'pro' ? 'PRO' : S.forfait.vue === 'platine' ? 'PLATINE' : S.forfait.vue === 'gratuit' ? tt('GRATUIT', 'FREE') : sportApp() === 'baseball' ? 'MLB' : 'ADMIN'}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></button>` : ''}
@@ -8339,6 +8365,7 @@ async function configurerRadar(o){
       const aucun = tt('Aucun', 'None');
       h = `<h3>${tt('Ton radar', 'Your radar')}</h3>
         <div class="liste rq-recap">
+          ${o.voir ? ligne('v', tt('Afficher', 'Show'), esc(S.mdVoirTxt || tt('Tout', 'All')), false) : ''}
           ${ligne(0, tt('Joueurs et équipes', 'Players & teams'), fav.length ? esc(fav.slice(0, 4).join(', ')) + (fav.length > 4 ? ' +' + (fav.length - 4) : '') : tt('Tous (chasse large)', 'All (wide hunt)'), fav.length)}
           ${ligne(1, tt('Cartes', 'Cards'), co.size ? esc([...co].map(NOM_SORTE).join(', ')) : tt('Toutes', 'All'), co.size)}
           ${ligne(2, tt('Budget', 'Budget'), budget ? '≤ ' + argentCourt(budget) : tt('Pas de limite', 'No limit'), budget)}
@@ -8395,6 +8422,7 @@ async function configurerRadar(o){
       $$('[data-rv]', f).forEach(x => x.oninput = () => { vend[+x.dataset.rv] = x.value.trim(); });
     } else {
       $$('[data-aller]', f).forEach(b => b.onclick = () => { vibrer();
+        if (b.dataset.aller === 'v') { const v = o.voir; fin(false).then(() => { if (v) setTimeout(v, 80); }); return; }      // 23 nov 2026 : « Voir » du Radar vit ici
         avant = {fav: [...fav], co: new Set(co), budget, vend: [...vend]};          // « Annuler » remet comme avant
         i = +b.dataset.aller; montrer(); });
     }
@@ -10867,6 +10895,7 @@ async function feuillePro(raison){
     radar_semaine: tt('Tu as utilisé tes recherches gratuites de la semaine dans le Radar.', 'You used your free Radar searches this week.'),
     repere: tt('Le repère prix sur toutes tes cartes est une fonction Pro.', 'The price check on all your cards is a Pro feature.'),
     deals: tt('Tous les deals sont dans le Pro.', 'All deals are in Pro.'),
+    tendances: tt('Les plus gros mouvements de chaque liste sont dans le Pro. En Gratuit : les 5 derniers.', 'The biggest moves in each list are in Pro. Free: the last 5.'),
     radar: tt('Les meilleures cartes de ton Radar t’attendent : débloque-les toutes avec le Pro.', 'The best cards in your Radar are waiting: unlock them all with Pro.'), offres_jour: tt('Tes offres gratuites du jour sont envoyées. En Pro, c’est illimité.', 'Your free offers for today are sent. Pro is unlimited.'), prix_auto: tt('Le mode Auto des prix fait partie de Pro.', 'Auto pricing is part of Pro.'), breaks: tt('L’analyse de tous les produits est dans le Pro.', 'Analysis of every product is in Pro.')}[raison] || '';
   ouvrirFeuille(`<div class="pro-tete"><span class="badge-f pro grand">✦ PRO</span>
       <h3>${f.payant ? tt('Tu es Pro', 'You’re Pro') : f.essai ? tt(`Ton essai Pro : encore ${f.jours_restants} jour${f.jours_restants > 1 ? 's' : ''}`, `Your Pro trial: ${f.jours_restants} day${f.jours_restants > 1 ? 's' : ''} left`) : tt('Passe au Pro', 'Go Pro')}</h3>
@@ -12960,7 +12989,7 @@ async function vueDeals(arg){
     ${''/* 16 nov 2026 (Mathieu : « ca prend de l'espace en long et en hauteur pour rien ; en pastilles a cote de Deals et
        Watchlist ») : les onglets, le prochain tour (admin) et « annonces verifiees » sur UNE rangee */}
     <div class="d-ligne"><div class="d-onglets" role="tablist"><a role="tab" href="#deals" aria-selected="${!w}" class="${w ? '' : 'on'}">${comps() ? 'Deals' : tt('Mes cibles', 'My targets')}<span class="d-nb" id="d-nb" hidden></span></a>
-      <a role="tab" href="#deals/watch" aria-selected="${w}" class="${w ? 'on' : ''}">${ICO_ETOILE}${tt('Watchlist', 'Watchlist')}<span class="w-nb" hidden></span></a></div>
+      <a role="tab" href="#deals/watch" aria-selected="${w}" class="${w ? 'on' : ''}">${ICO_ETOILE}${tt('Watchlist', 'Watchlist')}<span class="w-nb" hidden></span></a></div>${w ? '' : `<button class="d-pil d-iqp" id="d-iqp" aria-label="${esc(tt('Comment SlabIQ note une carte', 'How SlabIQ grades a card'))}"><span class="md-iq-l">Slab<i>IQ</i></span><span class="md-iq-q">?</span></button>`}
     ${!w && S.forfait && S.forfait.admin ? `<a class="d-pil" id="d-tour" href="#admin/serveur"></a>` : ''}${!w && comps() ? `<button class="d-pil d-enc" id="d-enc" title="${esc(tt('Relire maintenant la mise de chaque enchère', 'Re-read every auction bid now'))}">↻ <span>${tt('Enchères', 'Auctions')}</span></button>` : ''}${!w && S.forfait && S.forfait.admin ? `<span id="d-preuve"></span><button class="d-adm-o" id="d-adm-o" aria-label="${esc(tt('Outils admin du Radar', 'Radar admin tools'))}">${icN('admin')}</button>` : ''}</div></div>
     <div id="d-res" data-vue="${w ? 'watch' : 'deals'}">${barreProg(Date.now(), w ? 8 : 12, w ? tt('Chargement de ta watchlist…', 'Loading your watchlist…') : tt('Recherche des deals sur eBay…', 'Looking for deals on eBay…'))}</div>
     <p class="mention-epn">${tt('Les liens vers eBay peuvent être des liens affiliés (eBay Partner Network) : SlabCoach peut toucher une commission, sans frais pour toi. SlabCoach n’est pas affilié à eBay. Les estimations sont celles de SlabCoach, pas d’eBay.', 'Links to eBay may be affiliate links (eBay Partner Network): SlabCoach may earn a commission at no cost to you. SlabCoach is not affiliated with eBay. Estimates are SlabCoach’s, not eBay’s.')}</p></section>`;
@@ -13204,7 +13233,8 @@ async function wowRadar(z){
   const b = document.createElement('div'); b.className = 'md-wow' + (haut ? '' : ' bas');
   b.innerHTML = `<button class="md-wow-b"><span class="md-wow-e" aria-hidden="true">★</span><span class="md-wow-t"><b>${esc(titre)}</b><small>${esc(sous)}</small></span><em>${tt('Voir ses cartes', 'See his cards')} ›</em></button><button class="md-wow-x" aria-label="${esc(tt('Fermer', 'Close'))}">✕</button>`;
   const barre = $('.md-barre', md); if (barre) barre.after(b); else md.prepend(b);
-  $('.md-wow-b', b).onclick = () => { vibrer(); const q = $('#md-q'); if (q) { q.value = x.joueur; q.dispatchEvent(new Event('input', {bubbles: true})); } };
+  $('.md-wow-b', b).onclick = () => { vibrer(); const q = $('#md-q'); if (q) { q.value = x.joueur; q.dispatchEvent(new Event('input', {bubbles: true})); }
+    const lp = $('#md-loupe', md); if (md._rech && lp && lp.offsetParent) md._rech(true, false); };        // 23 nov 2026 : au cell le champ est fermé : on l'ouvre pour qu'on voie le filtre (et son ×)
   $('.md-wow-x', b).onclick = () => { b.remove(); try { localStorage.setItem('sc_wow_vus', JSON.stringify([...vus, x.id].slice(-20))); } catch (e) {} };
 }
 async function feuilleSignalJoueurs(){
@@ -13525,6 +13555,7 @@ async function chargerDeals(frais){
   suiteDeals();
   const da = $('#d-aide'); if (da) da.onclick = feuilleAideDeals;
   const dxi = $('#d-x-iq'); if (dxi) dxi.onclick = () => { vibrer(); expliquerSlabIQ(); };
+  const dip = $('#d-iqp'); if (dip) dip.onclick = () => { vibrer(); expliquerSlabIQ(); };
   // 29 oct 2026 (Mathieu : « je veux voir tous les deals des gros vendeurs ») : un tap
 
   // 28 oct 2026 (Mathieu : « encore que des rookies ») : deux raccourcis, un tap
@@ -14362,8 +14393,15 @@ async function vueTendancesIQ(arg){
   const courbeM = (c, haut) => { if (!c || c.length < 5) return ''; const lo = Math.min(...c), hi = Math.max(...c), e = (hi - lo) || 1, W = 64, H = 26;
     const P = c.map((v, i) => [2 + (W - 4) * i / (c.length - 1), 3 + (H - 6) * (1 - (v - lo) / e)]);
     return `<svg class="tiq-sp ${haut ? 'h' : 'b'}" viewBox="0 0 ${W} ${H}" aria-hidden="true"><path d="${P.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join('')}"/><circle cx="${P[P.length - 1][0].toFixed(1)}" cy="${P[P.length - 1][1].toFixed(1)}" r="2.2"/></svg>`; };
-  const ligneM = (x, k, at) => { const m = x.marche || {}, som = !HAUT(k) && m.sous_sommet_pct != null && m.vs_mediane_pct > -10;
-    return `<button class="tiq-m" ${at || 'data-jpop'}="${esc(x.nom)}"><span class="tiq-mn"><b>${esc(x.nom)}</b><small>${m.taux && k !== 'bas' && k !== 'haut' ? barres(m.taux, k) : ''}${HAUT(k) && enMain(x.nom) ? `<em class="tiq-ai">${tt('Tu en as', 'You own')} ${enMain(x.nom)}</em>` : ''}${sousM(x, k)}</small></span>${courbeM(m.courbe, (som ? m.sous_sommet_pct : m.vs_mediane_pct) > 0)}<span class="tiq-pc ${(som ? m.sous_sommet_pct : m.vs_mediane_pct) > 0 ? 'acheter' : 'vendre'}">${sg(som ? m.sous_sommet_pct : m.vs_mediane_pct)}</span></button>`; };
+  // 23 nov 2026 (Mathieu : « un top 25 dans chaque, du plus gros pourcentage au plus petit ; en Gratuit, seulement les 5 du bas
+  // débloqués ») : « bas » et « haut » portent leur rang (1 à 25) et l'écart vs la normale, sur lequel la liste est classée. Une
+  // ligne verrouillée (Gratuit) : le rang, le % et la petite courbe, sans le nom (le serveur ne l'envoie pas) ; un toucher : le Pro.
+  const FAIT = (k) => k === 'bas' || k === 'haut';
+  const ligneV = (x, rg) => { const m = x.marche || {}, v = m.vs_mediane_pct || 0;
+    return `<button class="tiq-m tiq-ver" data-pro-lock="tendances" aria-label="${esc(tt('Réservé au Pro', 'Pro only'))}"><i class="tiq-rg">${rg}</i><span class="tiq-mn"><b class="tiq-flou" aria-hidden="true">${'Joueur de hockey'.slice(0, 9 + (rg * 3) % 8)}</b><small><span class="tiq-cad">${icN('cadenas')}</span>${tt('Réservé au Pro', 'Pro only')}</small></span>${courbeM(m.courbe, v > 0)}<span class="tiq-pc ${v > 0 ? 'acheter' : 'vendre'}">${sg(v)}</span></button>`; };
+  const ligneM = (x, k, at, rg) => { if (x.verrou) return ligneV(x, rg);
+    const m = x.marche || {}, som = k === 'acheter' && m.sous_sommet_pct != null && m.vs_mediane_pct > -10;
+    return `<button class="tiq-m" ${at || 'data-jpop'}="${esc(x.nom)}">${FAIT(k) && rg ? `<i class="tiq-rg">${rg}</i>` : ''}<span class="tiq-mn"><b>${esc(x.nom)}</b><small>${m.taux && k !== 'bas' && k !== 'haut' ? barres(m.taux, k) : ''}${HAUT(k) && enMain(x.nom) ? `<em class="tiq-ai">${tt('Tu en as', 'You own')} ${enMain(x.nom)}</em>` : ''}${sousM(x, k)}</small></span>${courbeM(m.courbe, (som ? m.sous_sommet_pct : m.vs_mediane_pct) > 0)}<span class="tiq-pc ${(som ? m.sous_sommet_pct : m.vs_mediane_pct) > 0 ? 'acheter' : 'vendre'}">${sg(som ? m.sous_sommet_pct : m.vs_mediane_pct)}</span></button>`; };
   const phraseM = (k) => k === 'bas' ? tt('Bons joueurs dont le marché n’a pas été aussi bas depuis des mois. Un fait, pas une promesse.', 'Good players whose market hasn’t been this low in months. A fact, not a promise.') : k === 'haut' ? tt('Bons joueurs dont le marché n’a pas été aussi haut depuis des mois. Un fait, pas une promesse.', 'Good players whose market hasn’t been this high in months. A fact, not a promise.') : k === 'acheter' ? tt('À l’essai, toi seulement : pas encore prouvé après les frais.', 'On trial, only you: not yet proven after fees.') : tt('Marché à un sommet. Le plus souvent, ça retombe.', 'Market at a peak. More often than not, it comes back down.');
   const fourch = (k) => { const t = (r.cats[k] || []).map(x => (x.marche || {}).taux).filter(Boolean); if (!t.length) return ''; const a = Math.round(Math.min(...t) * 100), b = Math.round(Math.max(...t) * 100);
     return a === b ? a + ' %' : a + tt(' à ', ' to ') + b + ' %'; };
@@ -14374,8 +14412,8 @@ async function vueTendancesIQ(arg){
     const a = Math.round(Math.min(...e) * 100), b = Math.round(Math.max(...e) * 100); return a === b ? a + ' %' : a + tt(' à ', ' to ') + b + ' %'; };
   const pvBtn = (k) => fourch(k) ? `<button class="tiq-pv" data-pvm="${k}"><b class="${k === 'acheter' ? 'vert' : 'rouge'}">${fourch(k)}</b><span>${k === 'acheter' ? tt(`ont remonté en ${delaiA()} mois`, `were up ${delaiA()} months later`) : tt('ont rebaissé en 2 mois', 'were down 2 months later')}${PV(k).base != null ? ' · ' + tt('hasard ', 'chance ') + (k === 'acheter' ? hasardA() : pctT(PV(k).base)) : ''}</span><i><u>${tt('La preuve', 'The proof')}</u> ›</i></button>` : '';
   const pan = (k, titre, cls) => { const L = r.cats[k] || []; if (!L.length) return '';
-    return `<div class="tiq-g tiq-pan ${cls || k}"><div class="am-t tiq-gt">${titre}<em class="tiq-pn">${L.length}</em></div><p class="tiq-ps">${phraseM(k)}</p><div class="tiq-lm">${L.map(x => ligneM(x, k)).join('')}</div>
-      <div class="tiq-pf">${L.length > 3 ? `<button class="tiq-pl2 tiq-tous" data-tl="${k}">${tt(`Voir les ${L.length}`, `See all ${L.length}`)} ›</button>` : ''}${(k === 'vendre' || (ADM_T && k === 'acheter')) ? `<button class="tiq-pl2" data-pvm="${k}">${tt('Est-ce que ça marche ?', 'Does it work?')} ›</button>` : ''}</div></div>`; };
+    return `<div class="tiq-g tiq-pan ${cls || k}"><div class="am-t tiq-gt">${titre}<em class="tiq-pn">${L.length}</em></div><p class="tiq-ps">${phraseM(k)}</p><div class="tiq-lm">${L.map((x, i) => ligneM(x, k, null, i + 1)).join('')}</div>
+      <div class="tiq-pf">${L.length > 3 ? `<button class="tiq-pl2 tiq-tous" data-tl="${k}">${tt(`Voir les ${L.length}`, `See all ${L.length}`)} ›</button>` : ''}${FAIT(k) && L.some(x => x.verrou) ? `<button class="tiq-pl2 tiq-deb" data-pro-lock="tendances">${icN('cadenas')}${tt(`Débloquer les ${L.filter(x => x.verrou).length} premiers`, `Unlock the top ${L.filter(x => x.verrou).length}`)} ›</button>` : ''}${(k === 'vendre' || (ADM_T && k === 'acheter')) ? `<button class="tiq-pl2" data-pvm="${k}">${tt('Est-ce que ça marche ?', 'Does it work?')} ›</button>` : ''}</div></div>`; };
   // la preuve : chaque bareme essaye, le nombre de cas et de joueurs, sa reussite et le mouvement median (jamais plus que ce qui est mesure)
   const feuillePreuve = (k) => { const ach = k === 'acheter', Ps = ach ? [S.tiqPreuve.achat] : [S.tiqPreuve.vente_etablis, S.tiqPreuve.vente], P0 = Ps.find(Boolean); if (!P0) return;
     const jr = (d) => d ? new Date(d + 'T12:00:00').toLocaleDateString(tt('fr-CA', 'en-CA'), {month: 'long', year: 'numeric'}) : '';
@@ -14415,7 +14453,7 @@ async function vueTendancesIQ(arg){
       ${ach ? tabA(Ps[0]) : tabV(Ps[0], Ps[1])}
       <p class="sous" style="margin:0">${tt(`On reprend chaque signal passé (${jr(P0.du)} à ${jr(P0.au)}) et on regarde le marché du joueur ${ach ? '2, 3 et 4' : '2'} mois plus tard, dans les vraies ventes. ${ach ? `Un seul pari par joueur et par creux. Gagnant = revendu plus cher qu’acheté, frais payés. ${nA[0]} barèmes essayés, ${nA[1]} retenus. Le taux prudent ramène un petit nombre de paris vers le hasard : quand on essaie ${nA[0]} barèmes, le meilleur a toujours l’air trop beau.` : 'À son plus haut = au-dessus de son sommet des 12 derniers mois. En gris : pas assez de cas, ou pas mieux que le hasard : jamais utilisé.'} Revérifié chaque jour avec les nouvelles ventes. Ce qui s’est passé, pas une garantie.`, `We replay every past signal (${jr(P0.du)} to ${jr(P0.au)}) and look at the player’s market ${ach ? '2, 3 and 4' : '2'} months later, in real sales. ${ach ? `One bet per player per dip. Winner = resold for more than paid, fees included. ${nA[0]} rules tried, ${nA[1]} kept. The cautious rate pulls a small number of bets toward chance: when you try ${nA[0]} rules, the best always looks too good.` : 'At his high = above his 12-month high. In grey: too few cases, or no better than chance: never used.'} Re-checked daily with new sales. What happened, not a guarantee.`)}</p></details>`); };
   const feuilleListe = (k) => { const L = r.cats[k] || [], nom = (C.find(([c]) => c === k) || [])[1] || '', mk = k === 'acheter' || k === 'vendre' || k === 'bas' || k === 'haut', av = cat; cat = k;
-    const h = `<h3>${esc(nom)}</h3><p class="sous" style="margin:0 0 10px">${mk ? phraseM(k) : DESC_IQ()[k] || ''}</p><div class="${mk ? 'tiq-lm' : 'tiq-liste tiq-lf'}">${L.map(x => mk ? ligneM(x, k, 'data-jf') : carte(x).replace('data-jpop=', 'data-jf=')).join('')}</div>`; cat = av;
+    const h = `<h3>${esc(nom)}</h3><p class="sous" style="margin:0 0 10px">${mk ? phraseM(k) : DESC_IQ()[k] || ''}</p><div class="${mk ? 'tiq-lm' : 'tiq-liste tiq-lf'}">${L.map((x, i) => mk ? ligneM(x, k, 'data-jf', i + 1) : carte(x).replace('data-jpop=', 'data-jf=')).join('')}</div>${mk && L.some(x => x.verrou) ? `<button class="btn tiq-debf" data-pro-lock="tendances">${tt(`Débloquer les ${L.filter(x => x.verrou).length} premiers avec le Pro`, `Unlock the top ${L.filter(x => x.verrou).length} with Pro`)}</button>` : ''}`; cat = av;
     ouvrirFeuille(h);
     $$('#feuille [data-jf]').forEach(b => b.onclick = () => { vibrer(); const n = b.dataset.jf; fermerFeuille(); setTimeout(() => feuilleJoueur(n), 220); });
     };
@@ -14575,6 +14613,9 @@ function expliquerTendancesIQ(){
 const MAJ_APP = () => [
   // 20 nov 2026 (Mathieu : « important de mettre cet onglet a jour apres chaque grosse mise a jour ») : ce qui change pour la
   // personne, en mots simples ; jamais un detail technique
+  {n: 243, le: '2026-11-23', points: [
+    ['deals', tt('Un Radar plus dégagé', 'A cleaner Radar'), tt('Tes cartes remontent : la loupe et le tri sont deux petits boutons, « Voir » est dans Mon radar.', 'Your cards move up: search and sort are two small buttons, “Show” is inside My Radar.')],
+    ['graphe', tt('Tendances : un top 25', 'Trending: a top 25'), tt('Plus bas et Plus haut : les 25 plus gros mouvements, du plus gros au plus petit. En Gratuit : les 5 derniers.', 'Lowest and Highest: the 25 biggest moves, biggest first. Free: the last 5.')]]},
   {n: 242, le: '2026-11-23', points: [
     ['aide', tt('Que veux-tu faire ?', 'What do you want to do?'), tt('Un « ? » en haut : tout ce que SlabCoach fait, sur une page. Un toucher t’y amène.', 'A “?” at the top: everything SlabCoach does, on one page. One tap takes you there.')],
     ['deals', tt('Un Radar Pro plus sûr', 'A safer Pro Radar'), tt('Seulement des cartes qui se vendent souvent, jamais au-dessus de leur prix courant.', 'Only cards that sell often, never above their going price.')],
@@ -21768,29 +21809,43 @@ async function vueMesDeals(z, frais){
     if (S.mdAttente) $('#md-fil', z).insertAdjacentHTML('beforeend', `<div class="rech-ebay"><span class="roue"></span>${tt('Recherche sur eBay…', 'Searching eBay…')}</div>`);
     if (String(S.mdQ || '').trim().length >= 3) $('#md-fil', z).insertAdjacentHTML('beforeend', boutonFanatics(S.mdQ, 'margin-top:14px'));
     const mp = $('#md-plus', z); if (mp) mp.onclick = () => { S.mdMax = max + 40; peindre(); };
-    const ft = $('#md-f-t', z); if (ft) ft.textContent = (S.mdF ? (groupes.find(([k]) => k === S.mdF) || [0, ''])[1] : tt('Tout', 'All')) + (sans0 ? tt(' · avec mises', ' · with bids') : '') + ' · ' + l.length + (((S.reglages || {}).pays || 'CA') === 'US' ? ' · US' : '');
+    S.mdVoirTxt = (S.mdF ? (groupes.find(([k]) => k === S.mdF) || [0, ''])[1] : tt('Tout', 'All')) + (sans0 ? tt(' · avec mises', ' · with bids') : '') + ' · ' + l.length + (((S.reglages || {}).pays || 'CA') === 'US' ? ' · US' : '');
+    const ft = $('#md-f-t', z); if (ft) ft.textContent = S.mdVoirTxt;
     const tt_ = $('#md-t-t', z); if (tt_) tt_.textContent = ((TRIS_RADAR().concat([['ecart', tt('Sous le vendu', 'Below sold')]]).find(([k]) => k === S.mdTri)) || [0, ''])[1];
     remplirComparer(z);
   };
-  z.innerHTML = `<div class="md">
-    <button class="md-iq" id="md-iq"><span class="md-iq-l">Slab<i>IQ</i></span><span class="md-iq-t">${tt('Chaque carte a sa note, de A+ à E : touche-la pour voir pourquoi', 'Every card has a grade, A+ to E: tap it to see why')}</span><span class="md-iq-q">?</span></button>
+  // 23 nov 2026 (Mathieu, au cell : « beaucoup trop d'infos dans l'entête ») : la grosse bande SlabIQ devient une petite pastille
+  // à côté de Mes cibles et Watchlist ; « Voir » entre dans Mon radar (c'était un doublon) ; « Trier » et la recherche deviennent
+  // deux petites icônes à droite de Mon radar : la loupe s'élargit en champ, son × la referme. La nouvelle WOW reste là.
+  // À l'ordi, rien ne change (le titre, les onglets et la recherche tiennent déjà sur une rangée).
+  z.innerHTML = `<div class="md${String(S.mdQ || '').trim() ? ' rech' : ''}">
+    <div class="tiq-rech md-rech"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input id="md-q" type="search" autocomplete="off" value="${esc(S.mdQ || '')}" placeholder="${esc(tt('Chercher un joueur, un set…', 'Search a player, a set…'))}" aria-label="${esc(tt('Chercher dans le Radar', 'Search the Radar'))}"><button class="md-rech-x" id="md-q-x" type="button" aria-label="${esc(tt('Fermer la recherche', 'Close search'))}">${ICONES.x || '×'}</button></div>
     <div class="md-barre">
       <button class="rq-glow md-glow ${r.profil_vide ? 'neuf' : ''}" id="md-cfg"><div class="md-g-t"><span>${tt('Mon radar', 'My radar')}</span></div><i class="md-g-eng" aria-label="${esc(tt('Régler mon radar', 'Set up my radar'))}"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.reglages}</svg></i></button>
       ${nb_ ? `<button class="md-dd" id="md-f"><small>${tt('Voir', 'Show')}</small><b id="md-f-t"></b><i>▾</i></button>
-      <button class="md-dd" id="md-t"><small>${tt('Trier', 'Sort')}</small><b id="md-t-t"></b><i>▾</i></button>` : ''}</div>
+      <button class="md-dd" id="md-t"><small>${tt('Trier', 'Sort')}</small><b id="md-t-t"></b><i>▾</i></button>` : ''}
+      <button class="md-ic" id="md-loupe" aria-label="${esc(tt('Chercher dans le Radar', 'Search the Radar'))}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></button>
+      ${nb_ ? `<button class="md-ic" id="md-t2" aria-label="${esc(tt('Trier', 'Sort'))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5v14M3.5 15.5 7 19l3.5-3.5M13 7h8M13 12h6M13 17h4"/></svg></button>` : ''}</div>
     ${r.gratuit && r.gratuit.verrouillees > 0 ? `<button class="md-gratuit" data-pro-lock="radar"><span class="md-g-n"><b>${r.gratuit.trouvees}</b><small>${tt('cartes', 'cards')}</small></span>
       <span class="md-g-t"><b>${tt(`SlabIQ a trouvé ${r.gratuit.trouvees} cartes pour toi`, `SlabIQ found ${r.gratuit.trouvees} cards for you`)}</b><small>${r.gratuit.meilleures ? tt(`dont ${r.gratuit.meilleures} avec un score de ${r.gratuit.seuil} et plus. Tu en vois ${r.gratuit.visibles} : débloque les ${r.gratuit.verrouillees} autres avec le Pro.`, `including ${r.gratuit.meilleures} scoring ${r.gratuit.seuil}+. You see ${r.gratuit.visibles}: unlock the other ${r.gratuit.verrouillees} with Pro.`) : tt(`Tu en vois ${r.gratuit.visibles} : débloque les ${r.gratuit.verrouillees} autres avec le Pro.`, `You see ${r.gratuit.visibles}: unlock the other ${r.gratuit.verrouillees} with Pro.`)}</small></span>
       <span class="badge-f pro">✦ PRO</span></button>` : ''}
     ${rien && r.partiel ? `<div class="sous md-dec" style="text-align:center">${r.erreur_txt ? esc(r.erreur_txt) : r.erreur_code === 'lent' ? tt('eBay est lent en ce moment : réessaie dans une minute.', 'eBay is slow right now: try again in a minute.') : tt('eBay ne répond pas en ce moment : réessaie dans une minute.', 'eBay isn’t answering right now: try again in a minute.')}</div>
       ${(r.erreurs_detail || []).length ? `<details class="sous md-dec"><summary>Admin</summary>${r.erreurs_detail.map(esc).join('<br>')}</details>` : ''}` : ''}
-    ${`<div class="tiq-rech md-rech"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input id="md-q" type="search" autocomplete="off" value="${esc(S.mdQ || '')}" placeholder="${esc(tt('Chercher un joueur, un set…', 'Search a player, a set…'))}" aria-label="${esc(tt('Chercher dans le Radar', 'Search the Radar'))}"></div>`}
     <div id="md-fil"></div></div>`;
   if (nb_) peindre();
-  const iqb = $('#md-iq', z); if (iqb) iqb.onclick = () => { vibrer(); expliquerSlabIQ(); };
   wowRadar(z);
+  // la loupe : un toucher l'élargit en champ (à la place de la barre, même hauteur) ; le × vide la recherche et la referme
+  { const mdz = $('.md', z), lp = $('#md-loupe', z), qx = $('#md-q-x', z), rc = $('.md-rech', z), br = $('.md-barre', z);
+    // le champ garde la hauteur de la barre qu'il remplace (rien ne bouge dessous) ; le focus se fait DANS le toucher (sinon iOS n'ouvre pas le clavier)
+    const ouvrir = (on, focus) => { if (!mdz) return; if (on && rc && br && br.offsetHeight) rc.style.height = br.offsetHeight + 'px'; mdz.classList.toggle('rech', on);
+      if (on && focus) { const q = $('#md-q'); if (q) try { q.focus({preventScroll: true}); } catch (e) { q.focus(); } } };
+    if (mdz) mdz._rech = ouvrir;                // la nouvelle WOW (« Voir ses cartes ») ouvre aussi le champ, sans clavier
+    if (mdz && lp && rc && br && mdz.classList.contains('rech')) { mdz.classList.remove('rech'); const h = lp.offsetParent ? br.offsetHeight : 0; mdz.classList.add('rech'); if (h) rc.style.height = h + 'px'; }
+    if (lp) lp.onclick = () => { vibrer(); ouvrir(true, true); };
+    if (qx) qx.onclick = () => { vibrer(); const q = $('#md-q'); if (q && (q.value || S.mdQ)) { q.value = ''; S.mdQ = ''; S.mdMax = 40; peindre(); } ouvrir(false); }; }
   const mq = $('#md-q', z); if (mq) { let tq; mq.oninput = () => { clearTimeout(tq); tq = setTimeout(() => { S.mdQ = mq.value; S.mdMax = 40; peindre(); }, 160); }; }
   rangerRecherche();
-  const reQ = () => configurerRadar({apres: (ok) => { if (ok && z.isConnected) vueMesDeals(z); }});
+  const reQ = () => configurerRadar({apres: (ok) => { if (ok && z.isConnected) vueMesDeals(z); }, voir: nb_ ? () => ouvrirVoir() : null});
   $('#md-cfg').onclick = () => { vibrer(); reQ(); };
   // 11 nov 2026 (Mathieu : « les filtres et le tri en menu deroulant ou en fenetre, pour maximiser les annonces ») : deux
   // boutons compacts ; chacun ouvre une petite feuille avec ses choix (et le nombre d'annonces de chaque rangee)
@@ -21798,7 +21853,8 @@ async function vueMesDeals(z, frais){
   const nbG = (k) => k ? [...tous.values()].filter(x => x._g.has(k)).length : nb_;
   const choix = (titre, l, actuel, f) => { ouvrirFeuille(`<h3>${titre}</h3><div class="md-ch">${l.map(([k, n, c]) => `<button class="${k === actuel ? 'on' : ''}" data-v="${esc(k)}"><span>${esc(n)}</span>${c != null ? `<b>${c}</b>` : ''}${k === actuel ? '<i>✓</i>' : ''}</button>`).join('')}</div>`);
     $$('.md-ch [data-v]').forEach(b => b.onclick = () => { vibrer(); fermerFeuille(); f(b.dataset.v); }); };
-  const mf = $('#md-f', z); if (mf) mf.onclick = () => { vibrer(); choix(tt('Voir', 'Show'), [['', tt('Tout', 'All'), nb_], ...groupes.map(([k, n]) => [k, n, nbG(k)])], S.mdF || '', v => { S.mdF = v; S.mdMax = 40; peindre(); });
+  const mf = $('#md-f', z); if (mf) mf.onclick = () => { vibrer(); ouvrirVoir(); };
+  const ouvrirVoir = () => { choix(tt('Voir', 'Show'), [['', tt('Tout', 'All'), nb_], ...groupes.map(([k, n]) => [k, n, nbG(k)])], S.mdF || '', v => { S.mdF = v; S.mdMax = 40; peindre(); });
     // 11 nov 2026 (Mathieu : « Canada et Etats-Unis coinces ensemble : deux pays a cliquer, deux pastilles avec des drapeaux ;
     // Canada choisi mais une carte des Etats-Unis proposee ») : les pays d'ou les cartes sont expediees, un, l'autre ou les deux
     const f_ = document.querySelector('.md-ch');
@@ -21808,7 +21864,9 @@ async function vueMesDeals(z, frais){
       $('#md-s0').onchange = (e) => { try { localStorage.setItem('lr_md_sans0', e.target.checked ? '1' : '0'); } catch (x) {} e.target.closest('.md-sans0').classList.toggle('on', e.target.checked); vibrer(); S.mdMax = 40; peindre(); };
       f_.insertAdjacentHTML('afterend', blocProvenance());
       brancherProvenance(() => { fermerFeuille(); for (const k of [...MEMO.keys()]) if (k.startsWith('mes_deals')) MEMO.delete(k); if (z.isConnected) vueMesDeals(z); }); } };
-  const mt = $('#md-t', z); if (mt) mt.onclick = () => { vibrer(); choix(tt('Trier', 'Sort'), tris().map(([k, n]) => [k, n]), S.mdTri, v => { S.mdTri = v; peindre(); }); };
+  const trier = () => { vibrer(); choix(tt('Trier', 'Sort'), tris().map(([k, n]) => [k, n]), S.mdTri, v => { S.mdTri = v; peindre(); }); };
+  const mt = $('#md-t', z); if (mt) mt.onclick = trier;
+  const mt2 = $('#md-t2', z); if (mt2) mt2.onclick = trier;
   // 1re visite d'un Radar vide : le formulaire s'ouvre seul (une fois)
   let vu = false; try { vu = localStorage.getItem('lr_radar_q') === '1'; } catch (e) {}
   if (r.profil_vide && !(r.cibles || []).length && !vu && !(S.reglages && S.reglages.radar_q)) setTimeout(() => { if (z.isConnected && $('#fond-feuille').hidden) reQ(); }, 600);

@@ -8783,7 +8783,32 @@ class Api:
 
     _TEND_IQ = {"le": 0.0, "v": None}
 
+    # 23 nov 2026 (Mathieu : « pourquoi juste 10 et 18 ? Un top 25 dans chaque, du plus gros pourcentage au plus petit ; la meme
+    # vue en Gratuit, avec seulement les 5 du bas debloques ») : « Au plus bas » et « Au plus haut » = les TEND_TOP plus gros ecarts
+    # (vs la normale de 12 mois) parmi les bons joueurs dont le marche est a son plus bas / plus haut depuis 30 jours et plus.
+    # En Gratuit, les TEND_GRATUIT derniers rangs se lisent ; les autres gardent leur rang, leur % et leur petite courbe, mais
+    # ni le nom ni la fiche du joueur (rien a contourner : le serveur ne les envoie pas).
+    TEND_TOP, TEND_GRATUIT, TEND_PCT_MIN = 25, 5, 1
+
     def tendances_iq(self):
+        r = self._tendances_iq0()
+        try:
+            if isinstance(r, dict) and r.get("ok") and not forfaits.est_pro() and not self._est_admin():
+                return self._tendances_gratuit(r)
+        except Exception as e:
+            print("Tendances gratuit : " + repr(e), flush=True)
+        return r
+
+    def _tendances_gratuit(self, r):
+        cats, verrous = dict(r.get("cats") or {}), 0
+        for k in ("bas", "haut"):
+            L = cats.get(k) or []
+            n = max(0, len(L) - self.TEND_GRATUIT)
+            verrous += n
+            cats[k] = [{"verrou": True, "marche": {c: (x.get("marche") or {}).get(c) for c in ("vs_mediane_pct", "courbe")}} for x in L[:n]] + L[n:]
+        return {**r, "cats": cats, "gratuit": {"verrous": verrous, "libres": self.TEND_GRATUIT, "top": self.TEND_TOP}}
+
+    def _tendances_iq0(self):
         """12 nov 2026 (Mathieu : « un onglet Tendances : les joueurs a surveiller, comment l'IA les a analyses, des stats, des
         graphiques ; le maximum legal ») : la page Tendances SlabIQ. Seulement des donnees publiques (stats LNH, recherches
         Wikipedia, nouvelles, palmares) et l'Indice SlabIQ du joueur avec ses criteres (0-100) ; jamais un prix eBay.
@@ -8857,7 +8882,8 @@ class Api:
             # 12 mois »), sans conseil de vente ni preuve ; il prend la place de « A vendre » tant que la vente n'est pas prouvee
             for sig in ((("acheter", "vendre", "bas") if VENTE_PROUVEE else ("acheter", "bas", "haut")) if signaux_marche_actifs() else ()):
                 l = []
-                for x in (marche_joueurs.liste_bas(80) if sig == "bas" else marche_joueurs.liste_haut(80) if sig == "haut" else marche_joueurs.liste(sig, 80)):
+                for x in (marche_joueurs.liste_bas(600, pct=-self.TEND_PCT_MIN) if sig == "bas" else marche_joueurs.liste_haut(600, pct=self.TEND_PCT_MIN) if sig == "haut"
+                          else marche_joueurs.liste(sig, 80)):
                     nv = Imin.get(x["nom"].lower())
                     if not nv:
                         continue
@@ -8869,6 +8895,9 @@ class Api:
                         continue
                     f_["marche"] = {k: x.get(k) for k in ("vs_mediane_pct", "sous_sommet_pct", "mois_pct", "taux", "mois", "gain", "bas_depuis_j", "haut_depuis_j", "hist_j", "courbe")}
                     l.append(f_)
+                if sig in ("bas", "haut"):               # le plus gros ecart d'abord (− pour « bas », + pour « haut »), les 25 premiers
+                    l.sort(key=lambda f: (f["marche"].get("vs_mediane_pct") or 0) * (1 if sig == "bas" else -1))
+                    l = l[:self.TEND_TOP]
                 cats[sig] = l[:40]
         except Exception as e:
             print("Tendances (acheter / vendre) : " + repr(e), flush=True)

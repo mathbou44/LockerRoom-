@@ -29,7 +29,10 @@ auto = s[j:s.index("document.addEventListener('click'", j)]
 assert "guide_app" in auto and "sc_guide_app" in auto and "$('#pop-fond')" in auto and "S.questionOuvert" in auto and "surAccueil()" in auto
 assert "questionnaireProfil(() => { chargerConseils(true); setTimeout(guideAppAuto, 500); })" in s
 # toujours a un toucher : le « ? » du haut (cell), celui de la barre de cote (ordi), Profil › Le tour de l'app
-assert 'class="rond haut-plus haut-aide" data-guide' in s and 'class="nav-aide" data-guide' in s and "$('#g-tour').onclick = () => guideApp();" in s
+# 23 nov 2026 (Mathieu : « tout semble trop decale vers le haut ») : le « ? » garde la case de 44 px de l'ancienne place vide ; avec la
+# classe « rond » (36 px dans la barre), la barre du haut perdait 8 px et tout l'ecran montait
+assert 'class="rond haut-plus haut-aide"' not in s and re.search(r"html body \.haut-aide\{[^}]*width:44px; height:44px", s)
+assert 'class="haut-plus haut-aide" data-guide' in s and 'class="nav-aide" data-guide' in s and "$('#g-tour').onclick = () => guideApp();" in s
 assert ":not(.nav-aide)" in s, "le « ? » de l'ordi ne compte pas parmi les onglets du cell"
 assert "closest('[data-guide]')" in s
 # l'ancien tour en 8 ecrans n'existe plus
