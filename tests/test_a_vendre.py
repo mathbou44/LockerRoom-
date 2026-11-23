@@ -9,6 +9,12 @@ lockerroom._VEN_NOMS.update({"le": 9e18, "v": {"sidney crosby": {"ecart_pct": 22
 a = lockerroom.Api(os.path.join(tempfile.mkdtemp(), "a.db"))
 a.carte_sauver({"joueur": "Sidney Crosby", "annee": "2005-06", "set_nom": "Young Guns", "numero": "201", "cout": 500, "sport": "hockey"})
 a.carte_sauver({"joueur": "Connor McDavid", "annee": "2015-16", "set_nom": "Young Guns", "numero": "201", "cout": 500, "sport": "hockey"})
+# 23 nov 2026 (Mathieu : « oui, enleve si ce n'est plus bon ») : pas prouve au prix reel -> rien par defaut (ni pastille, ni notification)
+L = a.inventaire_liste({}); L = L if isinstance(L, list) else L["cartes"]
+assert lockerroom.VENTE_PROUVEE is False and lockerroom.a_vendre_noms() == {} and not any(x.get("a_vendre") for x in L), L
+assert alarmes.a_vendre(a, alarmes._lire()) == 0 and a.alarmes_lire()["vente_prouvee"] is False
+print("OK retire par defaut")
+lockerroom.VENTE_PROUVEE = True                    # le mecanisme reste pret : le reste du test le rallume
 L = a.inventaire_liste({}); L = L if isinstance(L, list) else L["cartes"]
 g = {x["joueur"]: x.get("a_vendre") for x in L}
 assert g["Sidney Crosby"]["ecart_pct"] == 22 and not g["Connor McDavid"], g

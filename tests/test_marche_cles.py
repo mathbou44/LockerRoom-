@@ -29,13 +29,13 @@ auj = date(2026, 11, 16)
 J = lambda n: (auj - timedelta(days=n)).isoformat()
 
 
-def ventes_joueur(nom, creux_les, profondeur=0.75, rebond=True):
+def ventes_joueur(nom, creux_les, profondeur=0.75, rebond=True, duree=45):
     """~1 an de ventes : une YG (~100 $) et une Kaboom (~1 000 $), avec des creux (puis un retour a la normale)."""
     v = []
     for d in range(420, -1, -2):
         f = 1.0
         for c in creux_les:
-            if c - 14 < d <= c:
+            if c - duree < d <= c:
                 f = profondeur
             elif rebond is False and d <= c:
                 f = profondeur
@@ -77,6 +77,14 @@ for i in range(12):
     l2.append({"nom": nom, "score": 70, "raisons": []})
 d2 = mc.calculer(ventes=V2, liste=l2, aujourd=auj)
 assert not d2["verif"]["actif"], d2["verif"]
+# 23 nov 2026 : un creux de 14 jours qui revient tout de suite a la normale « remontait » toujours quand on comparait a l'indice du
+# jour du signal (choisi parce qu'il etait bas). Contre le prix REEL des 14 jours qui suivent, il n'y a plus rien a gagner : pas actif.
+V5, l5 = [], []
+for i in range(12):
+    nom = "Joueur Bref%d" % i; l5.append({"nom": nom, "score": 80, "raisons": []})
+    V5 += ventes_joueur(nom, creux_les=[300 - 7 * i, 160 - 5 * i], duree=14)
+d5 = mc.calculer(ventes=V5, liste=l5, aujourd=auj)
+assert not d5["verif"]["actif"], d5["verif"]
 mc.ecrire(d2)
 assert mc.bas("Joueur Bas0") is None
 print("MARCHE CLES OK", {k: v[k] for k in ("seuil", "taux", "base", "n", "gain_med")})

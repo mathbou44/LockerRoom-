@@ -22437,7 +22437,8 @@ async function vueNotifs(arg){
     ['g_ventes', 'oeil', tt('Mes ventes', 'My sales'), tt('Une carte vendue, des acheteurs qui regardent', 'A card sold, buyers watching'), ['vendu', 'acheteurs']],
     ['g_joueurs', 'graphe', tt('Mes joueurs', 'My players'), tt('En feu, SlabIQ qui monte, une grosse nouvelle', 'On fire, SlabIQ rising, big news'), ['en_feu', 'iq_haut', 'iq_nouvelle']],
     ['g_acheter', 'cible', tt('Bons moments pour acheter', 'Good times to buy'), tt('Marché bas, ton prix cible atteint', 'Market low, your target price hit'), ['marche_bas', 'iq_occasion', 'prix_cible']],
-    ...(ADM_N ? [['gros_deal', 'feu', tt('Deals', 'Deals'), tt('Gros deal, encan qui finit', 'Big deal, auction ending'), ['gros_deal', 'encan_fin']]] : [])];
+    ...(ADM_N ? [['gros_deal', 'feu', tt('Deals', 'Deals'), tt('Gros deal, encan qui finit', 'Big deal, auction ending'), ['gros_deal', 'encan_fin']]] : [])]
+    .filter(g => g[0] !== 'g_vendre' || (ra && ra.vente_prouvee));      // 23 nov 2026 : « Temps de vendre » retire tant que ce n'est pas prouve au prix reel
   void ALARMES;
   const permis = (() => { try { return !('Notification' in window) || NATIF || Notification.permission !== 'default'; } catch (e) { return true; } })();
   // 9 nov 2026 (Mathieu : « separer les settings des notifications, propre, comme la section des breaks en haut ») :
@@ -22472,7 +22473,7 @@ async function vueNotifs(arg){
   // dans une carte, des cases a cocher). Maintenant, comme le Profil : 3 lignes qui disent leur etat ; chacune ouvre sa
   // fenetre (les memes blocs, deplaces : rien d'autre ne change) ; des interrupteurs comme partout ailleurs.
   const NTG = [['cible', tt('Mes joueurs suivis', 'My tracked players'), tt('Ils passent en premier dans tes deals', 'They come first in your deals')],
-    ['cloche', tt('Ce que je reçois', 'What I get'), tt('Temps de vendre, ventes, tes joueurs', 'Time to sell, sales, your players')],
+    ['cloche', tt('Ce que je reçois', 'What I get'), tt('Ventes, tes joueurs, prix cibles', 'Sales, your players, price targets')],
     ['etiquette', tt('Mes alertes de prix', 'My price alerts'), tt('Une carte, un prix : on te prévient', 'A card, a price: we tell you')]];
   const ntBlocs = $$('#nt-res > .nt-bloc');
   { const se = $('#nt-seuil'), gd = $('[data-nt="gros_deal"]'); if (se && gd && gd.closest('.al-case')) gd.closest('.al-case').after(se); }      // le seuil juste sous « Gros deal »

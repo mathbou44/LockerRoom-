@@ -28,6 +28,13 @@ ETATS = {x["nom"]: dict(x, signal=s) for s, l in L.items() for x in l}
 marche_joueurs.etat = lambda nom: ETATS.get(nom)
 
 api = lockerroom.Api()
+# 23 nov 2026 : « A vendre » n'est pas prouve au prix reel -> retire de Tendances et de la fiche, pour tous
+lockerroom.Api._TEND_IQ.update(v=None, le=0)
+r0 = api.tendances_iq()
+assert lockerroom.VENTE_PROUVEE is False and not (r0["cats"].get("vendre") or []) and r0["compte"]["vendre"] == 0 and r0["cats"]["acheter"], r0["compte"]
+t0 = api.tendance_joueur("Bon Sommet"); l0 = ((t0.get("iq") or t0).get("marche") or {}).get("long") if isinstance(t0, dict) else None
+assert l0 is None or "signal" not in l0, l0
+lockerroom.VENTE_PROUVEE = True                    # le mecanisme reste pret : le reste du test le rallume
 lockerroom.Api._TEND_IQ.update(v=None, le=0)
 r = api.tendances_iq()
 assert r["ok"], r

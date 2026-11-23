@@ -197,7 +197,7 @@ def _tranche(titre):
 # joueurs (leaders, checklists) n'est pas la sienne ; une vente de moins de PRIX_MIN ne dit rien du marche ; et chaque sorte
 # compte UNE fois dans l'indice (la mediane de ses ventes), pour qu'un lot ne fasse pas l'indice a lui seul.
 PRIX_MIN = 5.0
-VERSION = 2             # un calcul d'une autre version n'est jamais lu (il est refait a la prochaine passe)
+VERSION = 3             # un calcul d'une autre version n'est jamais lu (il est refait a la prochaine passe)
 
 
 def sorte(titre):
@@ -314,22 +314,26 @@ def points_passes(S, fin=None, pas=7):
             if ix is None:
                 continue
             fx, _ = indice_a(sj, jour, nor, jour + H0, jour + H1)
-            if fx is not None:
-                out.append((j, jour, ix, fx))
+            # 23 nov 2026 : le prix REEL de celui qui agit sur le signal = l'indice des 14 jours APRES (jamais l'indice qui a
+            # declenche le signal : choisi parce qu'il etait bas, il « remonte » tout seul, par simple retour a la moyenne)
+            ex, _ = indice_a(sj, jour, nor, jour, jour + W)
+            if fx is not None and ex is not None:
+                out.append((j, jour, ix, fx, ex))
     return out
 
 
 def verifier(P):
-    """Les seuils contre le hasard. -> {seuil, taux, n, base, base_n, gain_med, actif, essais}."""
+    """Les seuils contre le hasard. -> {seuil, taux, n, base, base_n, gain_med, actif, essais}. « Remonte » = 5 % plus haut que
+    l'indice des 14 jours qui SUIVENT le signal (le prix reel), pas que l'indice du jour du signal."""
     base_n = len(P)
-    base_k = sum(1 for _, _, ix, fx in P if fx >= ix * REMONTE)
+    base_k = sum(1 for _, _, ix, fx, ex in P if fx >= ex * REMONTE)
     base = base_k / base_n if base_n else None
     essais, best = [], None
     for s in SEUILS:
-        l = [(ix, fx) for _, _, ix, fx in P if ix <= 1 - s]
-        k = sum(1 for ix, fx in l if fx >= ix * REMONTE)
+        l = [(ex, fx) for _, _, ix, fx, ex in P if ix <= 1 - s]         # choisi sur l'indice du jour, juge contre le prix reel d'apres
+        k = sum(1 for ex, fx in l if fx >= ex * REMONTE)
         e = {"seuil": s, "n": len(l), "taux": round(k / len(l), 3) if l else None, "borne": round(wilson(k, len(l)), 3),
-             "gain_med": round(statistics.median([fx / ix - 1 for ix, fx in l]) * 100, 1) if l else None}
+             "gain_med": round(statistics.median([fx / ex - 1 for ex, fx in l]) * 100, 1) if l else None}
         essais.append(e)
         if len(l) >= N_TEST_MIN and base is not None and e["borne"] > base and (best is None or e["borne"] > best["borne"]):
             best = e

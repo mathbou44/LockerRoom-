@@ -673,6 +673,12 @@ def _iq_break_ecrire(ck, cache):
 # cartes differentes. Mathieu : « un reel avantage mesurable et prouve, sinon on attend ». Donc : rien de public (ni liste, ni
 # Radar, ni fiche) tant que ce n'est pas prouve ; l'admin continue de voir la liste « a l'essai ».
 ACHAT_PROUVE = False
+# 23 nov 2026 (Mathieu : « oui, enleve si ce n'est plus bon ») : le signal « A vendre » (marche du joueur a un sommet) tenait a 59-73 %
+# quand on comparait au prix QUI DECLENCHE le signal ; contre le prix reel des 14 jours suivants, 51-52 % : une illusion (la hausse
+# etait surtout une vente chanceuse ; docs/RECHERCHE_MODELE_22NOV.md). Tant que ce n'est pas prouve au prix reel : plus de pastille
+# « Vends » dans l'inventaire, plus de notification « Temps de vendre », plus de liste « A vendre » dans Tendances ni dans la fiche.
+# Le mecanisme reste pret (VENTE_PROUVEE = True le rallume).
+VENTE_PROUVEE = False
 _ACH_RADAR = {"le": 0.0, "v": {}}
 _VEN_NOMS = {"le": 0.0, "v": {}}
 
@@ -682,7 +688,7 @@ def a_vendre_noms():
     montre le graphique ») : {joueur en minuscules: {ecart_pct, courbe, haut_depuis_j}} des joueurs de la liste « A vendre » de
     Tendances (marche_joueurs : marche a un sommet). Le meme pour tous ; 10 min. Des ecarts en %, jamais un prix."""
     A = _VEN_NOMS
-    if not signaux_marche_actifs():
+    if not VENTE_PROUVEE or not signaux_marche_actifs():
         return {}
     if time.time() - A["le"] < 600:
         return A["v"]
@@ -8845,7 +8851,7 @@ class Api:
             Imin = {n_.lower(): (n_, w) for n_, w in I.items()}
             # « bas » (21 nov, soir) : un FAIT montre a tous (« au plus bas en 8 mois »), sans promesse ni barres ; meme filtre
             # « bon joueur » que l'achat (actif, pas en creux sur la glace, cote A ou B)
-            for sig in (("acheter", "vendre", "bas") if signaux_marche_actifs() else ()):
+            for sig in ((("acheter", "vendre", "bas") if VENTE_PROUVEE else ("acheter", "bas")) if signaux_marche_actifs() else ()):
                 l = []
                 for x in (marche_joueurs.liste_bas(80) if sig == "bas" else marche_joueurs.liste(sig, 80)):
                     nv = Imin.get(x["nom"].lower())
@@ -9602,6 +9608,8 @@ class Api:
                         sg_ = None
                     if sg_ == "acheter" and not ACHAT_PROUVE and not self._est_admin():
                         sg_ = None                     # pas prouve : l'admin seulement (a l'essai)
+                    if sg_ == "vendre" and not VENTE_PROUVEE:
+                        sg_ = None                     # 23 nov 2026 : pas prouve au prix reel : retire pour tous
                     if sg_:
                         lg.update(signal=sg_, taux=_e.get("taux"), mois=_e.get("mois"), gain=_e.get("gain"))
                     out.setdefault("marche", {})["long"] = lg
@@ -9753,7 +9761,7 @@ class Api:
     # 29 oct 2026 (Mathieu : « l'utilisateur doit pouvoir regler ses alarmes de maniere simple » ; « il peut les cocher »)
     def alarmes_lire(self):
         import alarmes
-        return {"ok": True, "alarmes": alarmes.reglages(self)}
+        return {"ok": True, "alarmes": alarmes.reglages(self), "vente_prouvee": VENTE_PROUVEE}
 
     def alarmes_regler(self, d=None):
         import alarmes

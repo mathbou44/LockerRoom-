@@ -246,3 +246,4 @@ Mathieu : « go ». `signal_joueurs.py`, Admin → Mesures → « Signal par jou
   notes en direct.
 - La note : une fois par jour, la meme carte, 7 jours avant contre jours 8 a 60 apres. « Direct » et « rattrapage » sont comptes a part.
 - On le montre aux clients seulement quand il tient en direct.
+- Le meme jour, « A vendre » est retire de l'app (pastille, notification, liste) : la preuve ne tenait que contre le prix du signal.
