@@ -8929,6 +8929,13 @@ class Api:
         Api._ACC_TEND.update(le=m, v=r)
         return r
 
+    def signal_joueurs_admin(self):
+        """23 nov 2026 (Mathieu : « go ») : ADMIN - le signal par joueur en direct (Achete / Vends / Attends), son journal et sa note."""
+        if not self._est_admin(reel=True):
+            return {"ok": False, "erreur": "Admin seulement"}
+        import signal_joueurs
+        return signal_joueurs.admin()
+
     def types_cartes_admin(self):
         """12 nov 2026 : ADMIN - le tableau complet des types de cartes (prime contre la carte typique du joueur, volume,
         fiabilite du classement)."""

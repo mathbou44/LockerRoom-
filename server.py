@@ -2012,6 +2012,11 @@ def _valeurs_auto():
             indice_joueurs.passe_si_besoin()
         except Exception as e:
             print("Indice joueurs : " + str(e), flush=True)
+        try:                                    # 23 nov 2026 - le signal par joueur (admin) : les matchs du soir, le journal, la note
+            import signal_joueurs
+            signal_joueurs.passe_si_besoin()
+        except Exception as e:
+            print("Signal joueurs : " + str(e), flush=True)
         try:                                    # 11 nov 2026 - Score SlabCoach : la memoire du marche (chaque jour), reappris (chaque semaine)
             import score_appris
             r_sa = score_appris.taches_si_besoin()

@@ -228,3 +228,21 @@ sur ses 5 matchs d'avant) : +10,1 % et 6,6 sur 10 avant, +6,9 % et 6,5 depuis. U
   seulement que le prix du jour du match n'a pas encore bouge.
 - Meme le signal fort (+12 a +16 % brut) est a la limite des frais de 13 % : on ne promet pas de profit de revente.
 - Retirer des regles apres avoir vu leur note embellit un peu le total : la vraie preuve sera le suivi en direct cette saison.
+
+
+---
+
+## 23 nov : le signal en direct (admin seulement)
+
+Mathieu : « go ». `signal_joueurs.py`, Admin → Mesures → « Signal par joueur ».
+- Chaque heure, le serveur lit les soirs de match manquants sur l'API publique de la LNH, reconnait le cas de chaque joueur suivi
+  et ecrit le signal dans un journal qui ne se retouche pas. Aucun prix dans le declencheur.
+- Regles gardees (v1.1) : gros match, tour du chapeau, jeune en feu = Achete (« fort » si le joueur etait deja chaud ou tour du
+  chapeau) ; jeune en panne = Attends ; recrue en panne = Vends. Les regles retirees par la recherche sont notees en silence.
+- Un cas de plus, vu le matin meme : **l'echange**. Dylan Larkin passe de Detroit a Montreal le 22 nov au soir. Arriver a Toronto ou
+  Montreal = Achete (fort), en partir = Vends (etude du 14 nov : Kreider +143 %, Marchenko +161 %, Knies -50 %, Robertson -47 % ;
+  4 cas). Le matin du 23, Larkin n'etait sur AUCUN alignement de la LNH : la detection lit maintenant les manchettes
+  (`indice_joueurs.echange_par_nouvelles`), et l'alignement confirme ensuite. Larkin, Dach et Montembeault sont les premiers cas
+  notes en direct.
+- La note : une fois par jour, la meme carte, 7 jours avant contre jours 8 a 60 apres. « Direct » et « rattrapage » sont comptes a part.
+- On le montre aux clients seulement quand il tient en direct.

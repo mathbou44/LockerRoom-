@@ -225,7 +225,8 @@ SEMIS_PROJET = {"signal_22nov": "lancement", "recherche_22nov": "lancement", "le
 PROJETS = {"licences": "Licences de données", "lancement": "Lancement", "general": "Général", "suivi": "Suivi"}
 
 
-CLOS = {"clos_22nov_soir": {"r_promesse": "Décidé par Mathieu le 22 nov au soir : oui, la promesse est « le bon moment » ; pas de profit de revente promis pour l'instant."},
+CLOS = {"clos_23nov": {"s_direct": "Décidé par Mathieu le 23 nov : go. Fait par Claude : le signal sort en admin (Mesures → Signal par joueur) et se note seul."},
+        "clos_22nov_soir": {"r_promesse": "Décidé par Mathieu le 22 nov au soir : oui, la promesse est « le bon moment » ; pas de profit de revente promis pour l'instant."},
         "clos_22nov": {"t_cadence": "Décidé par Mathieu le 22 nov : on garde « chaque semaine » (le site le dit déjà).",
                        "c_tour_mesure": "Fait par Claude le 22 nov au soir : méga test, « À vendre » sur la carte exacte, tests du site et bulletin refaits."},
         "clos_21nov": {"l1_pousser": "Fait par Claude le 21 nov : poussée et en ligne (dernier envoi à 16 h 32).",
