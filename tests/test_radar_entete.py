@@ -25,6 +25,12 @@ assert "html body .md > .md-rech{display:none" in s and "html body .md.rech > .m
 # la nouvelle WOW reste sous la barre, et « Voir ses cartes » ouvre le champ (sinon le filtre serait invisible)
 w0 = s.index("async function wowRadar("); wowf = s[w0:s.index("\n}", w0)]
 assert "barre.after(b)" in wowf and "md._rech(true, false)" in wowf
+# ... et elle respire : le meme espace dessous (les 1res tuiles) que dessus (la barre) ; avant : 2 px, collee aux tuiles
+assert "html body .md-wow{margin:0 0 14px}" in s and re.search(r"\n\.md-barre\{[^}]*margin-bottom:14px", s)
+# « et centre My Radar » : le titre au milieu du bouton au cell (marge de gauche = l'engrenage de 30 px + l'espace), a gauche a l'ordi
+assert "html body .md-barre .md-glow .md-g-t{flex:1; align-items:center; margin-left:40px}" in s
+assert "html:not(.tel-large) body .md-barre .md-glow .md-g-t{flex:0 1 auto; align-items:normal; margin-left:0}" in s
+assert re.search(r"\.md-barre \.md-glow \.md-g-eng\{flex:none; width:30px", s), "l'engrenage a change de largeur : revoir la marge du titre"
 # 4. « Voir » vit dans Mon radar : la 1re rangee de la fenetre ouvre la meme feuille qu'avant
 assert "voir: nb_ ? () => ouvrirVoir() : null" in vue and "const ouvrirVoir = () => { choix(tt('Voir', 'Show')," in vue
 c0 = s.index("async function configurerRadar(") if "async function configurerRadar(" in s else s.index("function configurerRadar(")

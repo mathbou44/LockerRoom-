@@ -1908,6 +1908,9 @@ html body .md-ic{flex:none; width:46px; height:46px; border-radius:50%; display:
 html body .md-ic:active{transform:scale(.94)} html body .md-ic svg{width:21px; height:21px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
 html body .md > .md-rech{display:none; margin:0 0 14px} html body .md.rech > .md-rech{display:flex; transform-origin:right center; animation:mdRech .22s ease-out} html body .md.rech > .md-barre{display:none}
 @keyframes mdRech{from{transform:scaleX(.15); opacity:0}}
+html body .md-wow{margin:0 0 14px}
+html body .md-barre .md-glow .md-g-t{flex:1; align-items:center; margin-left:40px}
+@media (max-width:480px){ html body .md-barre .md-glow .md-g-t{margin-left:37px} }
 html body .md-rech-x{flex:none; width:32px; height:32px; border-radius:50%; border:0; display:grid; place-items:center; background:rgba(255,255,255,.08); color:var(--texte); cursor:pointer; padding:0} html body .md-rech-x svg{width:14px; height:14px}
 @media (prefers-reduced-motion:reduce){ html body .md.rech > .md-rech{animation:none} }
 @media (min-width:1100px) and (min-height:640px){
@@ -1915,6 +1918,7 @@ html:not(.tel-large) body .d-iqp, html:not(.tel-large) body .md-ic, html:not(.te
 html:not(.tel-large) body .md-barre{grid-template-columns:1.2fr 1fr 1fr !important; align-items:stretch}
 html:not(.tel-large) body .md-barre > .md-dd{display:flex !important}
 html:not(.tel-large) body .md.rech > .md-barre{display:grid} html:not(.tel-large) body .md > .md-rech{display:flex}
+html:not(.tel-large) body .md-barre .md-glow .md-g-t{flex:0 1 auto; align-items:normal; margin-left:0}
 }
 html body .ga{padding:6px 14px 16px; display:flex; flex-direction:column; gap:8px; overflow-y:auto}
 html body .ga-l{display:flex; align-items:center; gap:12px; min-height:54px; padding:8px 14px 8px 8px; border-radius:16px; border:1px solid var(--ligne); background:var(--carte2, #1E1E25); color:var(--texte); font:inherit; text-align:left; cursor:pointer; transition:transform .15s}
