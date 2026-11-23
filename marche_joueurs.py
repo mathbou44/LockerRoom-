@@ -474,6 +474,17 @@ def liste_bas(n=40, jours=30, pct=-10):
     return l[:n]
 
 
+def liste_haut(n=40, jours=30, pct=10):
+    """23 nov 2026 (Mathieu : « on a enleve "at their highest" ?! ») : le pendant de liste_bas, un FAIT, pas un signal : les joueurs
+    etablis dont le marche est le plus haut depuis `jours` jours et plus, et a `pct` % ou plus au-dessus de sa normale de 12
+    mois. Aucun conseil de vente (« ca retombe » n'est pas prouve au prix reel : lockerroom.VENTE_PROUVEE). Le plus long d'abord."""
+    E = lire().get("etats") or {}
+    l = [{"nom": k, **{c: e.get(c) for c in ("sous_sommet_pct", "vs_mediane_pct", "mois_pct", "n", "bas_depuis_j", "haut_depuis_j", "hist_j", "courbe")}}
+         for k, e in E.items() if e.get("etabli") and (e.get("haut_depuis_j") or 0) >= jours and (e.get("vs_mediane_pct") if e.get("vs_mediane_pct") is not None else 0) >= pct]
+    l.sort(key=lambda x: (-x["haut_depuis_j"], -x["vs_mediane_pct"]))
+    return l[:n]
+
+
 def preuve():
     """Ce que la verification a mesure, pour le dire tel quel : {achat: {taux, base, n, gain_med, regle}, vente: {...}} (actifs seulement)."""
     V = lire().get("verif") or {}

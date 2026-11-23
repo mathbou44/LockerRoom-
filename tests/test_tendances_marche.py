@@ -24,6 +24,7 @@ PREUVE = {"achat": {"taux": 0.58, "base": 0.35, "n": 89, "joueurs": 28, "essais"
 marche_joueurs.liste = lambda signal, n=40: L[signal][:n]
 marche_joueurs.preuve = lambda: PREUVE
 marche_joueurs.liste_bas = lambda n=40, **k: [dict(x, taux=None) for x in L["acheter"]][:n]
+marche_joueurs.liste_haut = lambda n=40, **k: [{c: v_ for c, v_ in x.items() if c not in ("taux", "mois", "gain")} for x in L["vendre"]][:n]
 ETATS = {x["nom"]: dict(x, signal=s) for s, l in L.items() for x in l}
 marche_joueurs.etat = lambda nom: ETATS.get(nom)
 
@@ -34,6 +35,11 @@ r0 = api.tendances_iq()
 assert lockerroom.VENTE_PROUVEE is False and not (r0["cats"].get("vendre") or []) and r0["compte"]["vendre"] == 0 and r0["cats"]["acheter"], r0["compte"]
 t0 = api.tendance_joueur("Bon Sommet"); l0 = ((t0.get("iq") or t0).get("marche") or {}).get("long") if isinstance(t0, dict) else None
 assert l0 is None or "signal" not in l0, l0
+# 23 nov 2026 (Mathieu : « on a enleve "at their highest" ?! ») : le FAIT reste : « Au plus haut », le pendant de « Au plus bas »
+# (bon joueur actif, A ou B), sans taux, sans delai, sans gain : aucun conseil de vente, et jamais un prix
+h0 = r0["cats"]["haut"]
+assert [x["nom"] for x in h0] == ["Bon Sommet"] and r0["compte"]["haut"] == 1, ([x["nom"] for x in h0], r0["compte"])       # « Moyen Sommet » est cote C
+assert h0[0]["marche"]["haut_depuis_j"] == 350 and h0[0]["marche"]["vs_mediane_pct"] == 62 and not h0[0]["marche"].get("taux") and not h0[0]["marche"].get("gain"), h0[0]["marche"]
 lockerroom.VENTE_PROUVEE = True                    # le mecanisme reste pret : le reste du test le rallume
 lockerroom.Api._TEND_IQ.update(v=None, le=0)
 r = api.tendances_iq()
@@ -47,6 +53,7 @@ assert a[0]["lettre"][:1] in ("A", "B") and v[0]["marche"]["haut_depuis_j"] == 3
 # « au plus bas » : un fait montre a tous, meme filtre « bon joueur » (actif, pas en creux sur la glace, A ou B)
 assert [x["nom"] for x in r["cats"]["bas"]] == ["Bon Creux"] and r["compte"]["bas"] == 1 and r["cats"]["bas"][0]["marche"]["bas_depuis_j"] == 300, r["cats"]["bas"]
 assert r["compte"]["acheter"] == 1 and r["compte"]["vendre"] == 2 and r["preuve"] == PREUVE
+assert not r["cats"].get("haut") and r["compte"]["haut"] == 0, "« A vendre » rallume : la liste de faits « Au plus haut » lui laisse la place"
 # jamais un prix : aucune cle de prix dans ce qui sort pour ces listes
 assert not any(k in json.dumps(a + v) for k in ('"prix"', '"mediane"', '"moyenne"', '"niveau"')), "des ecarts en %, jamais un prix"
 

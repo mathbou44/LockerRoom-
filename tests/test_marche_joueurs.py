@@ -115,6 +115,11 @@ _b = [x["nom"] for x in mj.liste_bas()]
 assert "Vet Dip" in _b and "Kid Dip" not in _b and "Vet Flat" not in _b and "Vet High" not in _b, _b
 assert mj.liste_bas()[0]["bas_depuis_j"] >= 30 and mj.liste_bas(jours=9999) == []
 print("OK test_marche_joueurs (au plus bas : %s)" % _b[:3])
+# 23 nov 2026 (Mathieu : « on a enleve "at their highest" ?! ») : le pendant, un fait aussi : au plus haut, au-dessus de sa normale
+_h = [x["nom"] for x in mj.liste_haut()]
+assert "Vet High" in _h and "Vet Dip" not in _h and "Vet Flat" not in _h, _h
+assert mj.liste_haut()[0]["haut_depuis_j"] >= 30 and mj.liste_haut()[0]["vs_mediane_pct"] >= 10 and mj.liste_haut(jours=9999) == [] and "taux" not in mj.liste_haut()[0]
+print("OK test_marche_joueurs (au plus haut : %s)" % _h[:3])
 
 # la petite courbe de 12 mois (comme dans Bourse) : le plus vieux d'abord, aujourd'hui a la fin ; des niveaux relatifs
 _c = E["Vet Dip"]["courbe"]

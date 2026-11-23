@@ -73,6 +73,7 @@ REGLAGES_DEFAUT = {
     "non_cartes_retires": False,                                # 20 nov 2026 : les objets (cadres, photos...) sortis une fois                                 # 20 nov 2026 : copies d'achats remises une fois dans « Achetees »                                      # 20 nov 2026 : « Pour bien partir » ferme par la personne
     "prix_auto": {},                                            # 27 oct 2026 : mode Auto des prix eBay (voir prix_auto_regler)
     "tuto_vendeur": 0, "tuto_acheteur": 0,                      # 31 oct 2026 : le tour de l'app deja vu (par compte)
+    "guide_app": 0,                                             # 23 nov 2026 : « Que veux-tu faire ? » deja montre au nouveau (par compte)
     "watch": {},                                                # 29 oct 2026 : alarmes de la watchlist (voir watchlist.regler)
     "photo_studio": True,
     "flou_niveau": 2,                                           # 30 oct 2026 : fond flou 1 leger, 2 moyen, 3 fort
@@ -677,7 +678,8 @@ ACHAT_PROUVE = False
 # quand on comparait au prix QUI DECLENCHE le signal ; contre le prix reel des 14 jours suivants, 51-52 % : une illusion (la hausse
 # etait surtout une vente chanceuse ; docs/RECHERCHE_MODELE_22NOV.md). Tant que ce n'est pas prouve au prix reel : plus de pastille
 # « Vends » dans l'inventaire, plus de notification « Temps de vendre », plus de liste « A vendre » dans Tendances ni dans la fiche.
-# Le mecanisme reste pret (VENTE_PROUVEE = True le rallume).
+# Le mecanisme reste pret (VENTE_PROUVEE = True le rallume). Le FAIT, lui, reste vrai et se montre comme « Au plus bas » :
+# Tendances garde une liste « Au plus haut » (marche_joueurs.liste_haut), sans conseil, sans barres et sans preuve.
 VENTE_PROUVEE = False
 _ACH_RADAR = {"le": 0.0, "v": {}}
 _VEN_NOMS = {"le": 0.0, "v": {}}
@@ -8851,15 +8853,19 @@ class Api:
             Imin = {n_.lower(): (n_, w) for n_, w in I.items()}
             # « bas » (21 nov, soir) : un FAIT montre a tous (« au plus bas en 8 mois »), sans promesse ni barres ; meme filtre
             # « bon joueur » que l'achat (actif, pas en creux sur la glace, cote A ou B)
-            for sig in ((("acheter", "vendre", "bas") if VENTE_PROUVEE else ("acheter", "bas")) if signaux_marche_actifs() else ()):
+            # « haut » (23 nov ; Mathieu : « on a enleve "at their highest" ?! ») : le pendant de « bas », un FAIT (« au plus haut en
+            # 12 mois »), sans conseil de vente ni preuve ; il prend la place de « A vendre » tant que la vente n'est pas prouvee
+            for sig in ((("acheter", "vendre", "bas") if VENTE_PROUVEE else ("acheter", "bas", "haut")) if signaux_marche_actifs() else ()):
                 l = []
-                for x in (marche_joueurs.liste_bas(80) if sig == "bas" else marche_joueurs.liste(sig, 80)):
+                for x in (marche_joueurs.liste_bas(80) if sig == "bas" else marche_joueurs.liste_haut(80) if sig == "haut" else marche_joueurs.liste(sig, 80)):
                     nv = Imin.get(x["nom"].lower())
                     if not nv:
                         continue
                     f_ = fiche(nv[0], nv[1])
                     # « il joue bien » : un joueur ACTIF (jamais une legende a la retraite : Gordie Howe), pas en creux, cote A ou B
                     if sig in ("acheter", "bas") and (not nv[1].get("actif") or "en_creux" in f_["pastilles"] or str(f_.get("lettre") or "E")[:1] not in ("A", "B")):
+                        continue
+                    if sig == "haut" and (not nv[1].get("actif") or str(f_.get("lettre") or "E")[:1] not in ("A", "B")):      # un bon joueur actif, comme « bas »
                         continue
                     f_["marche"] = {k: x.get(k) for k in ("vs_mediane_pct", "sous_sommet_pct", "mois_pct", "taux", "mois", "gain", "bas_depuis_j", "haut_depuis_j", "hist_j", "courbe")}
                     l.append(f_)
@@ -8871,7 +8877,7 @@ class Api:
         st = indice_joueurs.statut()
         r = {"ok": True, "cats": cats, "suivis": st.get("joueurs"), "actifs": len(actifs), "le": d.get("le"), "preuve": preuve,
              "compte": {**{k: sum(1 for v in I.values() if k in (v.get("pastilles") or [])) for k in ("en_feu", "rebond", "recrue", "en_creux", "buzz", "en_hausse", "legende")},
-                        "marche_bas": len(cats.get("marche_bas") or []), "acheter": len(cats.get("acheter") or []), "bas": len(cats.get("bas") or []), "vendre": len(cats.get("vendre") or [])}}
+                        "marche_bas": len(cats.get("marche_bas") or []), "acheter": len(cats.get("acheter") or []), "bas": len(cats.get("bas") or []), "vendre": len(cats.get("vendre") or []), "haut": len(cats.get("haut") or [])}}
         # 17 nov 2026 (Mathieu : « un utilisateur devrait pouvoir chercher son joueur dans le Trending ») : tous les joueurs suivis
         # (nom, equipe, lettre), pour une recherche instantanee dans la page
         try:

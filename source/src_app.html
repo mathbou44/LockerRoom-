@@ -2049,6 +2049,8 @@ html body .tiq-p2d[open] > summary{margin-bottom:8px}
 @media (max-width:1099px){
   html body .tiq-seg{display:flex !important; justify-content:flex-start !important; gap:6px; margin:0 0 12px !important; padding:0 !important; overflow-x:auto; scrollbar-width:none} html body .tiq-seg::-webkit-scrollbar{display:none}
   html body .tiq-seg .chip{flex:0 0 auto}
+  /* 23 nov 2026 : avec « Plus haut », 4 choix : ils se partagent la rangee (aucun defilement de cote, meme sur un petit ecran) */
+  html body .tiq-seg:has(.chip:nth-child(4)){gap:5px} html body .tiq-seg:has(.chip:nth-child(4)) .chip{flex:1 1 auto; min-width:0; padding-left:6px; padding-right:6px; text-align:center; justify-content:center}
   html body .tiq-seg ~ .tiq-av > .tiq-pan{display:none !important}
   html body .tiq-seg ~ .tiq-av[data-on="bas"] > .tiq-pan.bas, html body .tiq-seg ~ .tiq-av[data-on="vendre"] > .tiq-pan.vendre{display:flex !important}
   html body .tiq-seg ~ .tiq-av > .tiq-col{display:none !important}
@@ -2070,6 +2072,23 @@ html body .tiq-p2d[open] > summary{margin-bottom:8px}
   html body #i-tab .t-acc .s, html body .ach-k2 .ak-i{display:none !important}
   html body .ach-k2 .ak-h{display:block; align-self:stretch} html body .ach-k2 .ak-l{display:block}
 }
+/* 23 nov 2026 (Mathieu : « le plus simple et efficace pour aider les nouveaux utilisateurs ») : « Que veux-tu faire ? » : une
+   ligne par besoin (pastille ronde, le besoin, la page en petit) ; la 1re, son but, porte le contour prisme. Le « ? » : en haut a
+   gauche au cell, dans la barre de cote a l'ordi. */
+html body .ga{padding:6px 14px 16px; display:flex; flex-direction:column; gap:8px; overflow-y:auto}
+html body .ga-l{display:flex; align-items:center; gap:12px; min-height:54px; padding:8px 14px 8px 8px; border-radius:16px; border:1px solid var(--ligne); background:var(--carte2, #1E1E25); color:var(--texte); font:inherit; text-align:left; cursor:pointer; transition:transform .15s}
+html body .ga-l:active{transform:scale(.98)}
+html body .ga-l:first-child{border:1.5px solid transparent; background:linear-gradient(var(--carte2, #1E1E25), var(--carte2, #1E1E25)) padding-box, var(--holo) border-box}
+html body .ga-i{flex:none; width:38px; height:38px; border-radius:50%; display:grid; place-items:center; background:color-mix(in srgb, var(--acc) 16%, transparent); color:var(--acc)}
+html body .ga-i svg{width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round}
+html body .ga-l b{flex:1; min-width:0; font-size:16.5px; font-weight:700; line-height:1.2}
+html body .ga-l em{flex:none; font:700 12.5px var(--f-cond); font-style:normal; letter-spacing:.06em; text-transform:uppercase; color:var(--doux); white-space:nowrap}
+html body .ga-l em::after{content:' ›'}
+html body .ga-n{display:block; margin-top:4px; text-align:center; font-size:13px; color:var(--doux)}
+html body .haut-aide{color:var(--doux); cursor:pointer; padding:0} html body .haut-aide svg{width:24px; height:24px}
+html body .onglets > a.nav-aide{display:none !important}
+@media (min-width:900px){ html body .onglets > a.nav-aide{display:flex !important} }
+@media (max-width:360px){ html body .ga-l b{font-size:15px} html body .ga-l em{font-size:11.5px} }
 /* 20 nov 2026 : le prix final d'un encan fini de la watchlist */
 .w-final b{color:var(--texte)} .w-fin-at b{font-size:16px !important; color:var(--doux) !important; font-weight:600}
 .w-ecart{margin-top:4px; font-size:15px; font-weight:700} .w-ecart.vert{color:var(--vert)} .w-ecart.rouge{color:var(--rouge)}
@@ -5600,6 +5619,7 @@ input[type=number]{-moz-appearance:textfield; appearance:textfield}
   <a href="#comptoir" data-onglet="comptoir" data-mode="vendeur"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9h18l-1.5 11h-15z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg>Comptoir</a>
   <a href="#bilan" data-onglet="bilan" data-mode="vendeur"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Bilan</a>
   <a href="#alertes" data-onglet="alertes" class="nav-alertes" data-alertes><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>Alertes<span class="cloche-n" hidden></span></a>
+  <a href="#accueil" class="nav-aide" data-guide><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1 1-1 1.7M12 17h.01"/></svg>Guide</a>
   <a href="#idees" data-onglet="idees" class="nav-idees"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z"/></svg>Idées</a>
   <a href="#admin" data-onglet="admin" class="nav-admin" hidden><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="m9 12 2 2 4-4"/></svg>Admin</a>
   <a href="#reglages" data-onglet="reglages" class="nav-moi" aria-label="Profil"><span class="moi-av"><img id="nav-moi-img" src="/icone.png" alt=""></span>Profil</a>
@@ -6514,6 +6534,8 @@ html body .ecran .md-rech.tiq-rech, html:not(.tel-large) body .tete-fixe:has(.d-
 @media (min-width:1100px) and (min-height:840px){ .tiq-s .tiq-av:is(.tiq-c3, .tiq-c2) > .tiq-col > .tiq-g > .tiq-b{display:flex !important} }
 .tiq-pan.acheter .am-t, .tiq-pan.bas .am-t{background:repeating-linear-gradient(115deg, rgba(255,255,255,.035) 0 1px, transparent 1px 7px), linear-gradient(100deg, color-mix(in srgb, var(--vert) 22%, transparent), rgba(159,230,210,.10) 60%, rgba(185,190,255,.10))}
 .tiq-pan.vendre .am-t{background:repeating-linear-gradient(115deg, rgba(255,255,255,.035) 0 1px, transparent 1px 7px), linear-gradient(100deg, color-mix(in srgb, var(--rouge) 22%, transparent), rgba(242,179,214,.10) 60%, rgba(241,213,142,.10))}
+/* 23 nov 2026 : « Au plus haut » est un fait (une hausse, en vert), pas un « vends » en rouge */
+.tiq-pan.vendre.haut .am-t{background:repeating-linear-gradient(115deg, rgba(255,255,255,.035) 0 1px, transparent 1px 7px), linear-gradient(100deg, color-mix(in srgb, var(--vert) 22%, transparent), rgba(159,230,210,.10) 60%, rgba(185,190,255,.10))}
 .tiq-gt .tiq-pn, h3 .tiq-pn{font:700 14px var(--f-cond); font-style:normal; color:var(--doux); margin:0 auto 0 8px; letter-spacing:.04em}
 .tiq-ps{margin:0 0 2px; color:var(--doux); font-size:14px; line-height:1.3}
 .tiq-pf{display:flex; flex-wrap:wrap; justify-content:space-between; gap:4px 14px; padding-top:8px; border-top:1px solid var(--ligne)} .tiq-pl2{border:0; background:none; padding:4px 0; font:700 13px var(--f-cond); letter-spacing:.06em; text-transform:uppercase; color:var(--acc); cursor:pointer}
@@ -6547,8 +6569,11 @@ html body .ecran .md-rech.tiq-rech, html:not(.tel-large) body .tete-fixe:has(.d-
 .pv-r{display:grid; grid-template-columns:1fr auto; align-items:center; gap:6px 12px; padding:10px 0; border-top:1px solid var(--ligne)} .pv-r > span:first-child{grid-column:1 / -1; font-size:14.5px; color:var(--doux)}
 .pv-r > b{font:800 20px/1 var(--f-cond); color:var(--rouge)} .pv-r > b.gr{color:var(--doux)}
 .pv-pts{display:flex; gap:6px} .pv-pts i{width:18px; height:18px; border-radius:50%; background:rgba(255,255,255,.08)} .pv-pts i.on{background:var(--rouge)} .pv-pts i.gr{background:rgba(255,255,255,.42)}
-.nl-wow{background:linear-gradient(120deg, color-mix(in srgb, var(--or) 20%, transparent), transparent 62%) !important; box-shadow:inset 3px 0 0 var(--or)}
-.nl-s.nl-wow{border-color:color-mix(in srgb, var(--or) 55%, transparent) !important; box-shadow:inset 3px 0 0 var(--or), 0 8px 26px -14px var(--or)}
+/* 23 nov 2026 (Mathieu : « normal, le mauve plus epais de l'encadre a gauche ? ») : non. La barre d'accent a gauche (3 px en
+   dedans) suivait les coins ronds et donnait un contour inegal. Un contour fin et egal partout : l'etoile, l'etiquette et le fond
+   suffisent a faire ressortir la nouvelle. */
+.nl-wow{background:linear-gradient(120deg, color-mix(in srgb, var(--or) 20%, transparent), transparent 62%) !important; box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--or) 55%, transparent)}
+.nl-s.nl-wow{border-color:color-mix(in srgb, var(--or) 55%, transparent) !important; box-shadow:0 8px 26px -14px var(--or)}
 .nl-wow .nl-t small{color:var(--or) !important; font-weight:800 !important; letter-spacing:.08em} .nl-wow .nl-t b{font-weight:800 !important}
 .nl-ic.nl-wowi{background:var(--or) !important; color:#1b1503; font:800 24px/1 var(--f-cond)} .nl-w{font-style:normal; font-size:12.5px; font-weight:700} .nl-w.vert{color:var(--vert)} .nl-w.rouge{color:var(--rouge)}
 .md-wow{display:flex; align-items:stretch; gap:6px; margin:10px 0 2px; border-radius:16px; border:1px solid color-mix(in srgb, var(--or) 55%, transparent);
@@ -7811,7 +7836,7 @@ function appliquerActivites(a){
   // 26 oct 2026 (Mathieu : « inspiré des meilleures apps ») : comme CollX et Ludex, l'action principale au centre de
   // la barre du bas, en bouton rond doré : Valeur (acheteur : scanner ou chercher une carte), Vendre (vendeur : une photo)
   const mobile = matchMedia('(max-width:899px)').matches;
-  const vis = $$('a:not([hidden]):not(.nav-reglages):not(.nav-moi):not(.nav-admin):not(.nav-alertes)' + (mobile ? ':not(.nav-idees):not(.nav-logo)' : ''), nav);
+  const vis = $$('a:not([hidden]):not(.nav-reglages):not(.nav-moi):not(.nav-admin):not(.nav-alertes):not(.nav-aide)' + (mobile ? ':not(.nav-idees):not(.nav-logo)' : ''), nav);
   $$('a', nav).forEach(x => x.classList.remove('centre'));
   // 20 nov 2026 : la camera est le bouton du centre, quel que soit le nombre d'onglets visibles (Breaks sort de la barre du cell)
   const c = vis.find(x => ['valeur', 'vendre'].includes(x.dataset.onglet));
@@ -8086,7 +8111,7 @@ function majBarreMode(){
     // 20 nov 2026 (rapport ergonomie : un seul « + » par ecran) : plus de « + » en haut a gauche, loin du pouce, qui ouvrait un
     // autre menu que celui de la page ; la place reste vide pour garder le nom au centre (ajouter : la camera du centre, le « + »
     // de l'inventaire ; le comptoir et les breaks : le Profil ; le budget : l'accueil ; une alerte : depuis une carte)
-    b.innerHTML = voir ? `<span class="haut-plus" aria-hidden="true"></span>
+    b.innerHTML = voir ? `<button class="rond haut-plus haut-aide" data-guide aria-label="${esc(tt('Que veux-tu faire ?', 'What do you want to do?'))}">${ICO_AIDE}</button>
       <div class="haut-nom" id="h-nom"><span class="haut-ligne">${perso && S.logo ? `<img class="haut-logo" src="${esc(S.logo)}" alt="">` : LOGO_HOLO('haut-logo', true)}<span class="haut-mot">${perso ? esc(nomMarque()) : '<b>slab</b>coach'}</span></span>
 </div>
       <span class="haut-dr">${(S.forfait || {}).admin_reel ? `<button class="haut-vue v-${esc(S.forfait.vue || 'admin')}" id="h-vue" aria-label="${esc(tt('Changer de vue', 'Switch view'))}">${S.forfait.vue === 'pro' ? 'PRO' : S.forfait.vue === 'platine' ? 'PLATINE' : S.forfait.vue === 'gratuit' ? tt('GRATUIT', 'FREE') : sportApp() === 'baseball' ? 'MLB' : 'ADMIN'}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></button>` : ''}
@@ -8152,27 +8177,46 @@ async function changerMode(m){
   const ecran = (location.hash || '#accueil').slice(1).split('/')[0];
   if (!location.hash || ['accueil', 'inventaire', 'reglages'].includes(ecran)) route(); else location.hash = '#accueil';
 }
-// 31 oct 2026 (Mathieu : « au debut, quand l'utilisateur cree son compte, un petit tutorial de tout ce qu'il peut faire
-// et consulter ») : un tour en pastilles rondes prisme, une idee par ecran, en mots simples ; revoir : Profil › Le tour de l'app
-const TUTO = {
-  vendeur: () => [
-    ['logo', tt('Bienvenue sur SlabCoach', 'Welcome to SlabCoach'), tt('Ton coach pour vendre tes cartes plus vite et au bon prix. Voici ce que tu peux faire, en 1 minute.', 'Your coach to sell your cards faster and at the right price. Here’s what you can do, in 1 minute.')],
-    ['ebay', tt('Tout arrive seul', 'Everything comes in by itself'), tt('Connecte eBay une fois : tes annonces, tes ventes et tes achats arrivent dans l’app, à jour chaque heure.', 'Connect eBay once: your listings, sales and purchases come into the app, updated every hour.')],
-    ['photo', tt('Vendre : une photo', 'Sell: one photo'), tt('L’app lit la carte, trouve le bon prix et prépare le titre, la livraison et la description. Tu touches « Publier ».', 'The app reads the card, finds the right price and builds the title, shipping and description. You tap “Publish”.')],
-    ['graphe', tt('Le bon prix, toujours', 'Always the right price'), tt('Chaque annonce est comparée aux ventes réelles : vert, bien placé ; rouge, trop cher. Un tap change le prix sur eBay.', 'Each listing is compared to real sales: green, well priced; red, too high. One tap changes the price on eBay.')],
-    ['horloge', tt('Programmer et promouvoir', 'Schedule and promote'), tt('Mets tes cartes en ligne au moment voulu, avec une promotion eBay au % que tu choisis.', 'Put your cards online when you want, with an eBay promotion at the % you choose.')],
-    ['carte', tt('Ton inventaire', 'Your inventory'), tt('Chaque carte avec son coût, sa valeur et son profit. Le coût vient tout seul de tes achats eBay.', 'Each card with its cost, value and profit. The cost comes by itself from your eBay purchases.')],
-    ['faire', tt('Ton accueil', 'Your home'), tt('« À faire », ton profit du mois, les nouvelles du hobby et des conseils pour toi.', '“To do”, your month’s profit, hobby news and tips for you.')]],
-  acheteur: () => [
-    ['logo', tt('Bienvenue sur SlabCoach', 'Welcome to SlabCoach'), tt('Ton coach pour trouver les bonnes cartes au bon prix. Voici ce que tu peux faire, en 1 minute.', 'Your coach to find the right cards at the right price. Here’s what you can do, in 1 minute.')],
-    ['deals', 'Radar', tt('Les cartes de tes joueurs, dans ton budget, et chaque annonce à ton prix cible ou moins. On surveille eBay pour toi.', 'Your players’ cards, in your budget, and every listing at or under your target price. We watch eBay for you.')],
-    ['etoile', tt('Ta watchlist', 'Your watchlist'), tt('Touche l’étoile d’une carte : on t’avertit avant la fin de l’encan et si la mise devient trop haute.', 'Tap a card’s star: we alert you before the auction ends and if the bid gets too high.')],
-    ['cible', tt('Ton prix cible', 'Your target price'), tt('Choisis une carte et ton prix : dès qu’une annonce passe à ton prix ou moins, elle arrive dans ton Radar.', 'Pick a card and your price: as soon as a listing hits your price or less, it lands in your Radar.')],
-    ['loupe', tt('Trouver une carte', 'Find a card'), tt('Tape la carte : on te montre la même carte en vente (variante, note, auto…), et la forme du joueur.', 'Type the card: we show the same card for sale (parallel, grade, auto…), and the player’s form.')],
-    ['carte', tt('Ta collection', 'Your collection'), tt('Ajoute tes cartes avec une photo : ton inventaire, ce que tu as payé, tes notes, au même endroit.', 'Add your cards with a photo: your inventory, what you paid, your notes, in one place.')],
-    ['breaks', tt('Les breaks', 'Breaks'), tt('Pour un produit : les équipes et les joueurs les plus recherchés.', 'For a product: the most wanted teams and players.')],
-    ['cloche', tt('Tes alertes', 'Your alerts'), tt('Dans la cloche, coche ce que tu veux recevoir : prix cible atteint, encan de ta watchlist qui finit…', 'In the bell, check what you want: target price hit, watchlist auction ending…')]]};
+// 31 oct 2026 : le tour de l'app en 8 ecrans (TUTO, tutoriel) ; 23 nov 2026 : remplace par UNE fenetre, « Que veux-tu faire ? » (guideApp)
 const IC_PIL_TUTO = {etoile: '<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z"/>', loupe: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>'};
+// 23 nov 2026 (Mathieu : « le plus simple et efficace pour aider les nouveaux utilisateurs a comprendre tout ce que l'app fait » ;
+// pas de chat IA, pas de tour en 8 ecrans) : UNE fenetre, « Que veux-tu faire ? ». Chaque ligne dit un besoin dans les mots du
+// collectionneur et, en petit, le nom de la page qui le fait ; un toucher y mene. Montree une fois au nouveau compte (apres ses
+// 3 questions), puis toujours a un toucher : le « ? » en haut a gauche (cell) ou dans la barre de cote (ordi), et
+// Profil › Le tour de l'app. Sa 1re ligne suit son but (collection, profit, breaks). docs/GUIDE_ACCROCHE.md : 40 mots au plus.
+const ICO_AIDE = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1 1-1 1.7M12 17h.01"/></svg>';
+const GUIDE_APP = () => {
+  const L = [
+    ['radar', 'deals', tt('Trouver une bonne carte', 'Find a good card'), 'Radar', '#deals'],
+    ['valeur', 'loupe', tt('Vérifier une carte', 'Check a card'), 'SlabIQ', '#valeur'],
+    ['collection', 'carte', tt('Suivre ma collection', 'Track my collection'), S.mode === 'acheteur' ? tt('Ma collection', 'My collection') : tt('Inventaire', 'Inventory'), '#inventaire'],
+    ['vendre', 'photo', tt('Vendre en une photo', 'Sell from one photo'), tt('Vendre', 'Sell'), '#vendre'],
+    ['joueurs', 'pouls', tt('Voir qui monte', 'See who’s rising'), tt('Tendances', 'Trending'), '#iq'],
+    ['breaks', 'breaks', tt('Évaluer un break', 'Evaluate a break'), 'Breaks', '#analyse'],
+    ['alertes', 'cloche', tt('Être averti à temps', 'Get timely alerts'), tt('Alertes', 'Alerts'), '#alertes']];
+  const but = {collection: 'collection', breaks: 'breaks'}[(S.reglages || {}).objectif] || 'radar';      // sa 1re ligne : son but
+  return [...L.filter(x => x[0] === but), ...L.filter(x => x[0] !== but)];
+};
+function guideApp(auto){
+  const L = GUIDE_APP();
+  try { localStorage.setItem('sc_guide_app', '1'); } catch (e) {}
+  if (!(S.reglages || {}).guide_app) API.reglages_sauver({guide_app: 1}).then(r => { if (r && r.ok !== false) S.reglages = {...(S.reglages || {}), guide_app: 1}; }).catch(() => {});
+  popOuvrir(`<button class="pop-x" id="ga-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
+    <div class="pop-tete"><span class="pop-sur">${auto ? tt('Bienvenue', 'Welcome') : 'SlabCoach'}</span><h3>${tt('Que veux-tu faire ?', 'What do you want to do?')}</h3></div>
+    <div class="ga">${L.map(([k, ic, t, page]) => `<button class="ga-l" data-ga="${k}"><span class="ga-i">${icP(ic)}</span><b>${t}</b><em>${page}</em></button>`).join('')}
+      ${auto ? `<small class="ga-n">${tt('Ce guide reste à un toucher : le « ? » en haut.', 'This guide stays one tap away: the “?” at the top.')}</small>` : ''}</div>`);
+  $('#ga-x').onclick = popFermer;
+  $$('[data-ga]').forEach(b => b.onclick = () => { vibrer(); const x = L.find(y => y[0] === b.dataset.ga); popFermer(); if (x) location.hash = x[4]; });
+}
+// une seule fois par compte, et jamais par-dessus autre chose (une autre fenetre, une feuille, le questionnaire)
+function guideAppAuto(essais = 0){
+  let vu = !!(S.reglages || {}).guide_app; try { vu = vu || !!localStorage.getItem('sc_guide_app'); } catch (e) {}
+  if (vu || sportApp() === 'baseball') return;
+  const libre = !$('.tuto-fond') && !$('#pop-fond') && (!$('#fond-feuille') || $('#fond-feuille').hidden) && !S.questionOuvert && !S.radarQOuvert;
+  if (!libre || !surAccueil()) { if (essais < 10) setTimeout(() => guideAppAuto(essais + 1), 3000); return; }
+  guideApp(true);
+}
+document.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('[data-guide]'); if (!b) return; e.preventDefault(); vibrer(); guideApp(); });
 // 26 oct 2026 (Mathieu : « un questionnaire au début pour demander le niveau de connaissance de l'utilisateur
 // pour adapter la zone conseil ») : 3 questions, une fois ; modifiable dans Réglages
 function questionnaireProfil(ensuite, forcer){
@@ -8364,29 +8408,6 @@ async function configurerRadar(o){
       if ([0, 1, 2, 6].includes(i)) await sauverProfil();
       change = true; i = RECAP; montrer(); };
   };
-  montrer();
-}
-function tutoriel(mode, forcer, ensuite){
-  const cle = 'lr_tuto_' + mode;
-  const suite = () => { if (ensuite) try { ensuite(); } catch (e) {} };
-  try { if (!forcer && localStorage.getItem(cle)) return suite(); localStorage.setItem(cle, '1'); } catch (e) {}
-  if (!forcer && S.reglages && S.reglages['tuto_' + mode]) return suite();
-  const etapes = TUTO[mode](); let i = 0;
-  API.reglages_sauver({['tuto_' + mode]: 1}).then(r => { if (r && r.ok !== false) S.reglages = {...(S.reglages || {}), ['tuto_' + mode]: 1}; }).catch(() => {});
-  const f = document.createElement('div'); f.className = 'tuto-fond'; document.body.appendChild(f);
-  let fini = false;
-  const fermer = () => { f.remove(); if (!fini) { fini = true; suite(); } };
-  const montrer = () => {
-    const [ico, t, d] = etapes[i];
-    const pic = ico === 'logo' ? `<img src="${LOGO_SC}" alt="">` : `<svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL[ico] || IC_PIL_TUTO[ico] || ''}</svg>`;
-    f.innerHTML = `<div class="tuto ${mode === 'acheteur' ? 'a' : 'v'}"><div class="tuto-ico tuto-rond ${ico === 'logo' ? 'logo' : ''}">${pic}</div><h3>${esc(t)}</h3><p>${esc(d)}</p>
-      ${i === etapes.length - 1 ? `<small class="tuto-rev">${tt('Revois ce tour quand tu veux : Profil › Le tour de l’app', 'See this tour again anytime: Profile › App tour')}</small>` : ''}
-      <div class="tuto-pts">${etapes.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>
-      <div class="tuto-bas"><button class="plus" id="tu-passer">${tt('Passer', 'Skip')}</button><button class="btn" id="tu-ok">${i < etapes.length - 1 ? tt('Suivant', 'Next') : tt('C’est parti', 'Let’s go')}</button></div></div>`;
-    $('#tu-passer', f).onclick = fermer;
-    $('#tu-ok', f).onclick = () => { if (++i < etapes.length) montrer(); else fermer(); };
-  };
-  f.onclick = (e) => { if (e.target === f) fermer(); };
   montrer();
 }
 const vignette = (photo, titre) => photo ? `<img class="vig" src="${esc(photoNet(photo))}" alt="" loading="lazy">`
@@ -14229,7 +14250,7 @@ const libMB = (e) => tt('Marché bas', 'Market low') + (e != null && e < 0 ? ' '
 // 21 nov 2026 (Mathieu : « toujours sortir la liste des joueurs a acheter (creux) et a vendre (sommet temporaire) ; je
 // reverrais la page Trend avec cette idee en tete ») : les deux listes d'abord ; chaque joueur montre son ecart, « au plus
 // bas depuis N jours » (comme Amazon) et le taux MESURE de son signal (jamais plus que ce qui est mesure)
-const CATS_IQ = () => [['bas', tt('Au plus bas', 'At their lowest'), 'vert'], ['acheter', tt('À acheter (essai)', 'To buy (trial)'), 'vert'], ['vendre', tt('À vendre', 'To sell'), 'rouge'], ['marche_bas', tt('Marché bas', 'Market low'), 'vert'], ['en_feu', tt('En feu', 'On fire'), 'rouge'], ['rebond', tt('Sortent du creux', 'Bouncing back'), 'vert'], ['recrue', tt('Recrues', 'Rookies'), 'or'],
+const CATS_IQ = () => [['bas', tt('Au plus bas', 'At their lowest'), 'vert'], ['haut', tt('Au plus haut', 'At their highest'), 'vert'], ['acheter', tt('À acheter (essai)', 'To buy (trial)'), 'vert'], ['vendre', tt('À vendre', 'To sell'), 'rouge'], ['marche_bas', tt('Marché bas', 'Market low'), 'vert'], ['en_feu', tt('En feu', 'On fire'), 'rouge'], ['rebond', tt('Sortent du creux', 'Bouncing back'), 'vert'], ['recrue', tt('Recrues', 'Rookies'), 'or'],
   ['en_hausse', tt('En hausse', 'Rising'), 'vert'], ['buzz', 'Buzz', 'acc'], ['en_creux', tt('En creux', 'In a slump'), ''], ['top', tt('Plus recherchés', 'Most sought'), 'acc'], ['legende', tt('Légendes', 'Legends'), 'or']];
 // 16 nov 2026 (« revoir la methode dont les filtres sont appliques et l'info presentee ») : ce que veut dire chaque liste, en une phrase
 const pctT = (v) => v == null ? '' : Math.round(v * 100) + ' %';
@@ -14313,7 +14334,7 @@ async function vueTendancesIQ(arg){
   // deviennent une rangee de pastilles legeres, chacune ouvre sa liste ; « joueurs analyses » et le suivi des creux : dans la note
   const kp = (k, l, c) => (r.compte[k] || 0) ? `<button class="tiq-kp tiq-kb" data-tcat="${k}"><b class="${c}">${r.compte[k]}</b><span>${l}</span></button>` : '';
   S.tiqPreuve = r.preuve || {};
-  const sigM = (r.compte.bas || 0) + (r.compte.acheter || 0) + (r.compte.vendre || 0) > 0;          // 21 nov 2026 : la page « À acheter | À vendre »
+  const sigM = (r.compte.bas || 0) + (r.compte.acheter || 0) + (r.compte.vendre || 0) + (r.compte.haut || 0) > 0;          // 21 nov 2026 : la page « À acheter | À vendre »
   const blocs2 = `${top10.length ? `<div class="tiq-g tiq-gj"><button class="am-t tiq-gt" data-tout="top">${tt('Les joueurs les plus recherchés', 'Most sought-after players')}<span>${tt('Voir tout', 'See all')} ›</span></button>${top10.map((x, i) => `<button class="tiq-b" data-jpop="${esc(x.nom)}"><span class="tiq-bn">${i + 1}</span><span class="tiq-bl"><b>${esc(x.nom)}</b><i style="width:${Math.round(100 * ((x.note ?? x.indice) || 0) / mx)}%"></i></span><span class="tiq-bv">${x.lettre || lettre(x.indice)}</span></button>`).join('')}</div>` : ''}
     ${(r.familles || []).length ? `<div class="tiq-g tiq-gc"><button class="am-t tiq-gt" data-tout="types">${tt('Les cartes les plus recherchées', 'The most sought-after cards')}<span>${tt('Voir tout', 'See all')} ›</span></button>
       ${r.familles.slice(0, 10).map(x => `<button class="tiq-b tiq-fam" data-fam="${esc(x.cle)}"><span class="tiq-fl ${famCl(x.lettre)}">${esc(x.lettre.split(' ')[0])}</span><span class="tiq-bl"><b>${esc(tt(x.nom, x.nom_en))}</b><small>${esc(x.ex.slice(0, 2).map(e => tt(e.nom, e.nom_en)).join(' · '))}</small></span><span class="tiq-bv">›</span></button>`).join('')}</div>` : ''}`;
@@ -14332,15 +14353,18 @@ async function vueTendancesIQ(arg){
   // couleur dit le sens du marché, pas « vends »)
   const barres = (t, k) => { const n = k === 'vendre' ? (t >= 0.85 ? 3 : t >= 0.75 ? 2 : 1) : t >= 0.60 ? 3 : t >= 0.50 ? 2 : 1;     // à vendre : la force RELATIVE du sommet
     return `<span class="tiq-br n${n}" role="img" aria-label="${esc(tt('Force du signal', 'Signal strength'))} ${n}/3"><i></i><i></i><i></i></span>`; };
-  const sousM = (x, k) => { const m = x.marche || {}, dj = k !== 'vendre' ? m.bas_depuis_j : m.haut_depuis_j, t = dj >= 30 ? depuisT(dj, k !== 'vendre') : k !== 'vendre' ? tt('sous sa normale', 'below his usual') : tt('au-dessus de sa normale', 'above his usual');
+  // 23 nov 2026 (Mathieu : « on a enleve "at their highest" ?! ») : « haut » = le FAIT (« au plus haut en 12 mois »), le pendant de
+  // « bas » : memes lignes que l'ancien « a vendre », sans barres de confiance, sans preuve, sans conseil
+  const HAUT = (k) => k === 'vendre' || k === 'haut';
+  const sousM = (x, k) => { const m = x.marche || {}, dj = !HAUT(k) ? m.bas_depuis_j : m.haut_depuis_j, t = dj >= 30 ? depuisT(dj, !HAUT(k)) : !HAUT(k) ? tt('sous sa normale', 'below his usual') : tt('au-dessus de sa normale', 'above his usual');
     return t.charAt(0).toUpperCase() + t.slice(1); };
   // 21 nov 2026 (Mathieu : « plus Apple et sexy, moins Excel ») : la petite courbe de 12 mois à côté du nom, comme dans Bourse
   const courbeM = (c, haut) => { if (!c || c.length < 5) return ''; const lo = Math.min(...c), hi = Math.max(...c), e = (hi - lo) || 1, W = 64, H = 26;
     const P = c.map((v, i) => [2 + (W - 4) * i / (c.length - 1), 3 + (H - 6) * (1 - (v - lo) / e)]);
     return `<svg class="tiq-sp ${haut ? 'h' : 'b'}" viewBox="0 0 ${W} ${H}" aria-hidden="true"><path d="${P.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join('')}"/><circle cx="${P[P.length - 1][0].toFixed(1)}" cy="${P[P.length - 1][1].toFixed(1)}" r="2.2"/></svg>`; };
-  const ligneM = (x, k, at) => { const m = x.marche || {}, som = k !== 'vendre' && m.sous_sommet_pct != null && m.vs_mediane_pct > -10;
-    return `<button class="tiq-m" ${at || 'data-jpop'}="${esc(x.nom)}"><span class="tiq-mn"><b>${esc(x.nom)}</b><small>${m.taux && k !== 'bas' ? barres(m.taux, k) : ''}${k === 'vendre' && enMain(x.nom) ? `<em class="tiq-ai">${tt('Tu en as', 'You own')} ${enMain(x.nom)}</em>` : ''}${sousM(x, k)}</small></span>${courbeM(m.courbe, (som ? m.sous_sommet_pct : m.vs_mediane_pct) > 0)}<span class="tiq-pc ${(som ? m.sous_sommet_pct : m.vs_mediane_pct) > 0 ? 'acheter' : 'vendre'}">${sg(som ? m.sous_sommet_pct : m.vs_mediane_pct)}</span></button>`; };
-  const phraseM = (k) => k === 'bas' ? tt('Bons joueurs dont le marché n’a pas été aussi bas depuis des mois. Un fait, pas une promesse.', 'Good players whose market hasn’t been this low in months. A fact, not a promise.') : k === 'acheter' ? tt('À l’essai, toi seulement : pas encore prouvé après les frais.', 'On trial, only you: not yet proven after fees.') : tt('Marché à un sommet. Le plus souvent, ça retombe.', 'Market at a peak. More often than not, it comes back down.');
+  const ligneM = (x, k, at) => { const m = x.marche || {}, som = !HAUT(k) && m.sous_sommet_pct != null && m.vs_mediane_pct > -10;
+    return `<button class="tiq-m" ${at || 'data-jpop'}="${esc(x.nom)}"><span class="tiq-mn"><b>${esc(x.nom)}</b><small>${m.taux && k !== 'bas' && k !== 'haut' ? barres(m.taux, k) : ''}${HAUT(k) && enMain(x.nom) ? `<em class="tiq-ai">${tt('Tu en as', 'You own')} ${enMain(x.nom)}</em>` : ''}${sousM(x, k)}</small></span>${courbeM(m.courbe, (som ? m.sous_sommet_pct : m.vs_mediane_pct) > 0)}<span class="tiq-pc ${(som ? m.sous_sommet_pct : m.vs_mediane_pct) > 0 ? 'acheter' : 'vendre'}">${sg(som ? m.sous_sommet_pct : m.vs_mediane_pct)}</span></button>`; };
+  const phraseM = (k) => k === 'bas' ? tt('Bons joueurs dont le marché n’a pas été aussi bas depuis des mois. Un fait, pas une promesse.', 'Good players whose market hasn’t been this low in months. A fact, not a promise.') : k === 'haut' ? tt('Bons joueurs dont le marché n’a pas été aussi haut depuis des mois. Un fait, pas une promesse.', 'Good players whose market hasn’t been this high in months. A fact, not a promise.') : k === 'acheter' ? tt('À l’essai, toi seulement : pas encore prouvé après les frais.', 'On trial, only you: not yet proven after fees.') : tt('Marché à un sommet. Le plus souvent, ça retombe.', 'Market at a peak. More often than not, it comes back down.');
   const fourch = (k) => { const t = (r.cats[k] || []).map(x => (x.marche || {}).taux).filter(Boolean); if (!t.length) return ''; const a = Math.round(Math.min(...t) * 100), b = Math.round(Math.max(...t) * 100);
     return a === b ? a + ' %' : a + tt(' à ', ' to ') + b + ' %'; };
   const PV = (k) => S.tiqPreuve[k === 'acheter' ? 'achat' : 'vente'] || (k === 'vendre' && S.tiqPreuve.vente_etablis) || {};
@@ -14349,8 +14373,8 @@ async function vueTendancesIQ(arg){
   const hasardA = () => { const e = ((S.tiqPreuve.achat || {}).essais || []).map(x => x.base).filter(x => x != null); if (!e.length) return pctT(PV('acheter').base);
     const a = Math.round(Math.min(...e) * 100), b = Math.round(Math.max(...e) * 100); return a === b ? a + ' %' : a + tt(' à ', ' to ') + b + ' %'; };
   const pvBtn = (k) => fourch(k) ? `<button class="tiq-pv" data-pvm="${k}"><b class="${k === 'acheter' ? 'vert' : 'rouge'}">${fourch(k)}</b><span>${k === 'acheter' ? tt(`ont remonté en ${delaiA()} mois`, `were up ${delaiA()} months later`) : tt('ont rebaissé en 2 mois', 'were down 2 months later')}${PV(k).base != null ? ' · ' + tt('hasard ', 'chance ') + (k === 'acheter' ? hasardA() : pctT(PV(k).base)) : ''}</span><i><u>${tt('La preuve', 'The proof')}</u> ›</i></button>` : '';
-  const pan = (k, titre) => { const L = r.cats[k] || []; if (!L.length) return '';
-    return `<div class="tiq-g tiq-pan ${k}"><div class="am-t tiq-gt">${titre}<em class="tiq-pn">${L.length}</em></div><p class="tiq-ps">${phraseM(k)}</p><div class="tiq-lm">${L.map(x => ligneM(x, k)).join('')}</div>
+  const pan = (k, titre, cls) => { const L = r.cats[k] || []; if (!L.length) return '';
+    return `<div class="tiq-g tiq-pan ${cls || k}"><div class="am-t tiq-gt">${titre}<em class="tiq-pn">${L.length}</em></div><p class="tiq-ps">${phraseM(k)}</p><div class="tiq-lm">${L.map(x => ligneM(x, k)).join('')}</div>
       <div class="tiq-pf">${L.length > 3 ? `<button class="tiq-pl2 tiq-tous" data-tl="${k}">${tt(`Voir les ${L.length}`, `See all ${L.length}`)} ›</button>` : ''}${(k === 'vendre' || (ADM_T && k === 'acheter')) ? `<button class="tiq-pl2" data-pvm="${k}">${tt('Est-ce que ça marche ?', 'Does it work?')} ›</button>` : ''}</div></div>`; };
   // la preuve : chaque bareme essaye, le nombre de cas et de joueurs, sa reussite et le mouvement median (jamais plus que ce qui est mesure)
   const feuillePreuve = (k) => { const ach = k === 'acheter', Ps = ach ? [S.tiqPreuve.achat] : [S.tiqPreuve.vente_etablis, S.tiqPreuve.vente], P0 = Ps.find(Boolean); if (!P0) return;
@@ -14390,7 +14414,7 @@ async function vueTendancesIQ(arg){
       <details class="tiq-p2d"><summary>${tt('Le détail', 'The details')}</summary>
       ${ach ? tabA(Ps[0]) : tabV(Ps[0], Ps[1])}
       <p class="sous" style="margin:0">${tt(`On reprend chaque signal passé (${jr(P0.du)} à ${jr(P0.au)}) et on regarde le marché du joueur ${ach ? '2, 3 et 4' : '2'} mois plus tard, dans les vraies ventes. ${ach ? `Un seul pari par joueur et par creux. Gagnant = revendu plus cher qu’acheté, frais payés. ${nA[0]} barèmes essayés, ${nA[1]} retenus. Le taux prudent ramène un petit nombre de paris vers le hasard : quand on essaie ${nA[0]} barèmes, le meilleur a toujours l’air trop beau.` : 'À son plus haut = au-dessus de son sommet des 12 derniers mois. En gris : pas assez de cas, ou pas mieux que le hasard : jamais utilisé.'} Revérifié chaque jour avec les nouvelles ventes. Ce qui s’est passé, pas une garantie.`, `We replay every past signal (${jr(P0.du)} to ${jr(P0.au)}) and look at the player’s market ${ach ? '2, 3 and 4' : '2'} months later, in real sales. ${ach ? `One bet per player per dip. Winner = resold for more than paid, fees included. ${nA[0]} rules tried, ${nA[1]} kept. The cautious rate pulls a small number of bets toward chance: when you try ${nA[0]} rules, the best always looks too good.` : 'At his high = above his 12-month high. In grey: too few cases, or no better than chance: never used.'} Re-checked daily with new sales. What happened, not a guarantee.`)}</p></details>`); };
-  const feuilleListe = (k) => { const L = r.cats[k] || [], nom = (C.find(([c]) => c === k) || [])[1] || '', mk = k === 'acheter' || k === 'vendre' || k === 'bas', av = cat; cat = k;
+  const feuilleListe = (k) => { const L = r.cats[k] || [], nom = (C.find(([c]) => c === k) || [])[1] || '', mk = k === 'acheter' || k === 'vendre' || k === 'bas' || k === 'haut', av = cat; cat = k;
     const h = `<h3>${esc(nom)}</h3><p class="sous" style="margin:0 0 10px">${mk ? phraseM(k) : DESC_IQ()[k] || ''}</p><div class="${mk ? 'tiq-lm' : 'tiq-liste tiq-lf'}">${L.map(x => mk ? ligneM(x, k, 'data-jf') : carte(x).replace('data-jpop=', 'data-jf=')).join('')}</div>`; cat = av;
     ouvrirFeuille(h);
     $$('#feuille [data-jf]').forEach(b => b.onclick = () => { vibrer(); const n = b.dataset.jf; fermerFeuille(); setTimeout(() => feuilleJoueur(n), 220); });
@@ -14465,16 +14489,19 @@ async function vueTendancesIQ(arg){
     const note = `<div class="sous tiq-note">${tt(`${r.suivis || r.actifs || 0} joueurs analysés chaque jour, sur des données publiques. SlabIQ ne regarde jamais le prix des annonces.`, `${r.suivis || r.actifs || 0} players analyzed daily, on public data. SlabIQ never looks at listing prices.`)}${r.le ? ' · ' + tt('mis à jour ', 'updated ') + esc(ilYa(r.le)) : ''}</div>`;
     const ec = z.closest('.ecran'); if (ec) ec.classList.toggle('tiq-s', sigM);
     if (sigM) {
-      const autres = dispo.filter(([k]) => !['bas', 'vendre', 'marche_bas', 'top', 'en_feu', 'rebond', 'recrue'].includes(k) && (k !== 'acheter' || ADM_T));
+      const autres = dispo.filter(([k]) => !['bas', 'haut', 'vendre', 'marche_bas', 'top', 'en_feu', 'rebond', 'recrue'].includes(k) && (k !== 'acheter' || ADM_T));
       // 21 nov 2026 (soir ; Mathieu : « au moins mettre la plus basse médiane en X jours ») : « Au plus bas » (un fait, pour tous) |
       // « À vendre » ; l'essai « À acheter » reste dans « Plus de listes », pour l'admin seulement
       const aB = (r.cats.bas || []).length > 0, aV = (r.cats.vendre || []).length > 0;
+      // 23 nov 2026 : « Au plus haut » (un fait, comme « Au plus bas ») prend la case de « À vendre » tant que la vente n'est pas prouvée
+      const aH = !aV && (r.cats.haut || []).length > 0;
       // 22 nov 2026 (Mathieu : « pas les trois tableaux un apres l'autre ; un menu en haut comme l'inventaire ; un tableau par page ») :
       // au cell, une rangee de choix (Au plus bas, A vendre, Joueurs, Cartes) et UNE liste a la fois ; a l'ordi (1100 px+), rien ne change
-      const OPT = [['bas', tt('Au plus bas', 'Lowest'), aB], ['vendre', tt('À vendre', 'To sell'), aV], ['joueurs', tt('Joueurs', 'Players'), top10.length > 0], ['cartes', tt('Cartes', 'Cards'), (r.familles || []).length > 0]].filter(o => o[2]);
+      // 4 choix sur une rangee, sans defiler de cote : au cell, « Plus bas » et « Plus haut » (le titre complet est dans la liste)
+      const OPT = [['bas', aH ? tt('Plus bas', 'Lowest') : tt('Au plus bas', 'Lowest'), aB], ['vendre', aH ? tt('Plus haut', 'Highest') : tt('À vendre', 'To sell'), aV || aH], ['joueurs', tt('Joueurs', 'Players'), top10.length > 0], ['cartes', tt('Cartes', 'Cards'), (r.familles || []).length > 0]].filter(o => o[2]);
       const ong = (OPT.find(o => o[0] === S.tiqOnglet) || OPT[0] || ['bas'])[0];
       z.innerHTML = `${OPT.length > 1 ? `<div class="chips tiq-seg" id="tiq-seg">${OPT.map(([k, n]) => `<button class="chip ${ong === k ? 'on' : ''}" data-v="${k}">${n}</button>`).join('')}</div>` : ''}
-        <div class="tiq-av${aB && aV ? '' : aB || aV ? ' tiq-c3' : ' tiq-c2'}" data-on="${ong}">${pan('bas', tt('Au plus bas', 'At their lowest'))}${pan('vendre', tt('À vendre', 'To sell'))}<div class="tiq-col">${blocs2}</div></div>
+        <div class="tiq-av${aB && (aV || aH) ? '' : aB || aV || aH ? ' tiq-c3' : ' tiq-c2'}" data-on="${ong}">${pan('bas', tt('Au plus bas', 'At their lowest'))}${aH ? pan('haut', tt('Au plus haut', 'At their highest'), 'vendre haut') : pan('vendre', tt('À vendre', 'To sell'))}<div class="tiq-col">${blocs2}</div></div>
         <div class="tiq-kr tiq-kr2">${['en_feu', 'rebond', 'recrue'].map(k => (r.compte[k] || 0) ? `<button class="tiq-kp" data-tl="${k}"><b class="${k === 'rebond' ? 'vert' : k === 'recrue' ? 'or' : 'rouge'}">${r.compte[k]}</b><span>${k === 'en_feu' ? tt('en feu', 'on fire') : k === 'rebond' ? tt('sortent du creux', 'bouncing back') : tt('recrues', 'rookies')}</span></button>` : '').join('')}${autres.length ? `<button class="tiq-kp" id="tiq-autres"><span>${tt('Plus de listes', 'More lists')} ›</span></button>` : ''}</div>${note}`;
       $$('#tiq-seg button', z).forEach(b => b.onclick = () => { vibrer(); S.tiqOnglet = b.dataset.v; $$('#tiq-seg button', z).forEach(x => x.classList.toggle('on', x === b)); const av = $('.tiq-av', z); if (av) av.dataset.on = b.dataset.v; ajusterTiq(z); });
       $$('[data-tl]', z).forEach(b => b.onclick = () => { vibrer(); feuilleListe(b.dataset.tl); });
@@ -14548,6 +14575,11 @@ function expliquerTendancesIQ(){
 const MAJ_APP = () => [
   // 20 nov 2026 (Mathieu : « important de mettre cet onglet a jour apres chaque grosse mise a jour ») : ce qui change pour la
   // personne, en mots simples ; jamais un detail technique
+  {n: 242, le: '2026-11-23', points: [
+    ['aide', tt('Que veux-tu faire ?', 'What do you want to do?'), tt('Un « ? » en haut : tout ce que SlabCoach fait, sur une page. Un toucher t’y amène.', 'A “?” at the top: everything SlabCoach does, on one page. One tap takes you there.')],
+    ['deals', tt('Un Radar Pro plus sûr', 'A safer Pro Radar'), tt('Seulement des cartes qui se vendent souvent, jamais au-dessus de leur prix courant.', 'Only cards that sell often, never above their going price.')],
+    ['graphe', tt('Tendances : au plus bas, au plus haut', 'Trending: at their lowest, at their highest'), tt('Deux faits, pas des promesses : les bons joueurs dont le marché n’a pas été aussi bas, ou aussi haut, depuis des mois.', 'Two facts, not promises: good players whose market hasn’t been this low, or this high, in months.')],
+    ['news', tt('Les gros échanges ressortent', 'Big trades stand out'), tt('Un gros joueur échangé : une étoile dans les nouvelles et une bannière en haut du Radar.', 'A big player traded: a star in the news and a banner at the top of the Radar.')]]},
   {n: 241, le: '2026-11-21', points: [
     ['graphe', tt('Tendances : au plus bas, à vendre', 'Trending: at their lowest, to sell'), tt('Comme sur Amazon : les bons joueurs dont le marché est « au plus bas en X mois ». Et ceux à un sommet : le plus souvent, ça retombe. Tes joueurs d’abord (« Tu en as 2 »). Un chiffre, 1 à 3 barres : plus de barres, plus c’est sûr.', 'Like on Amazon: good players whose market is “lowest in X months”. And those at a peak: more often than not, it comes back down. Your players first (“You own 2”). One number, 1 to 3 bars: more bars, safer.')],
     ['colis', tt('Consignation au cell', 'Consignment on your phone'), tt('La liste Excel ou PDF se crée maintenant sur ton téléphone. Les cartes en vente sur eBay sont retirées d’eBay, après ton OK.', 'The Excel or PDF list now works on your phone. Cards for sale on eBay are removed from eBay, after your OK.')],
@@ -15132,7 +15164,7 @@ function demarrerAccueilLive(){
   };
   chargerConseils(false);
   // les comptes d'avant le questionnaire : une fois, sur l'accueil ; ensuite les conseils s'adaptent
-  if (S.reglages && !S.reglages.niveau && !S.questionVue) { S.questionVue = true; setTimeout(() => { if (surAccueil()) questionnaireProfil(() => chargerConseils(true)); }, 1500); }
+  if (S.reglages && !S.reglages.niveau && !S.questionVue) { S.questionVue = true; setTimeout(() => { if (surAccueil()) questionnaireProfil(() => { chargerConseils(true); setTimeout(guideAppAuto, 500); }); }, 1500); }
   const cm = $('#cs-maj'); if (cm) cm.onclick = () => chargerConseils(true);
   tic(); S.tHorloge = setInterval(tic, 1000);
   rendreMotDuJour();
@@ -22972,7 +23004,7 @@ async function vueReglages(arg){
     <div class="r-bloc"><div class="r-titre">${tt('Entraînement de l’IA', 'AI training')}</div><button class="r-ligne" id="g-entr"><span class="t"><b>${tt('Aider à entraîner l’IA de SlabCoach', 'Help train SlabCoach’s AI')}</b><span>${tt('Quand une carte examinée revient du gradage (ou que tu confirmes un défaut), SlabCoach garde ses photos d’examen, les mesures et la vraie note pour entraîner son analyseur. Sans ton nom, ton pseudo ni tes prix. Retirer efface tes exemples.', 'When an examined card comes back from grading (or you confirm a defect), SlabCoach keeps its exam photos, measurements and real grade to train its analyzer. Without your name, username or prices. Withdrawing erases your examples.')}</span></span><span class="interrupteur ${(S.reglages || {}).ia_entrainement_ok ? 'on' : ''}"><i></i></span></button></div>
     <button class="r-bloc r-idee" id="g-deals"><span class="aaj-n">★</span><span><b>${tt('Mes deals', 'My deals')}</b><small>${tt('Pays d’achat, ramassage, mes vendeurs, filtres', 'Buying country, pickup, my sellers, filters')}</small></span></button>
     <button class="r-bloc r-idee" id="g-profil"><span class="aaj-n">◎</span><span><b>${tt('Mon profil', 'My profile')}</b><small>${tt('Niveau, but, budget : pour des conseils à ta mesure', 'Level, goal, budget: tips made for you')}</small></span><span class="fl">›</span></button>
-    <button class="r-bloc r-idee" id="g-tour"><span class="aaj-n">▶</span><span><b>${tt('Le tour de l’app', 'App tour')}</b><small>${tt('Tout ce que tu peux faire, en 1 minute', 'Everything you can do, in 1 minute')}</small></span><span class="fl">›</span></button>
+    <button class="r-bloc r-idee" id="g-tour"><span class="aaj-n">▶</span><span><b>${tt('Le tour de l’app', 'App tour')}</b><small>${tt('Tout ce que tu peux faire, sur une page', 'Everything you can do, on one page')}</small></span><span class="fl">›</span></button>
     <a class="r-bloc r-idee" href="#guide"><span class="aaj-n">★</span><span><b>${tt('Guide du hobby', 'Hobby guide')}</b><small>${tt('Produits, sortes de cartes, budget : tout pour bien acheter', 'Products, card types, budget: buy smart')}</small></span><span class="fl">›</span></a>
     <button class="r-bloc r-idee" id="g-idee"><span class="aaj-n">?</span><span><b>${tt('Une idée ? Un problème ?', 'An idea? A problem?')}</b><small>${tt('Écris-nous, on répond ici dans l’app', 'Write to us, we reply here in the app')}</small></span><span class="fl">›</span></button>
     <div class="r-bloc"><div class="r-titre">${tt('Palette de l’app', 'App palette')}</div>
@@ -23061,7 +23093,7 @@ async function vueReglages(arg){
   if ($('#g-idee')) $('#g-idee').onclick = feuilleIdee;
   if ($('#g-deals')) $('#g-deals').onclick = () => { vibrer(); feuilleReglagesDeals(); };
   if ($('#g-profil')) $('#g-profil').onclick = () => questionnaireProfil(() => toast(tt('Profil enregistré', 'Profile saved')), true);
-  if ($('#g-tour')) $('#g-tour').onclick = () => tutoriel(S.mode === 'acheteur' ? 'acheteur' : 'vendeur', true);
+  if ($('#g-tour')) $('#g-tour').onclick = () => guideApp();
   if ($('#g-entr')) $('#g-entr').onclick = async () => {
     const on = !($('#g-entr .interrupteur').classList.contains('on'));
     const res = await essai(API.reglages_sauver({ia_entrainement_ok: on}), on ? tt('Merci : tes examens aideront l’IA', 'Thanks: your exams will help the AI') : tt('Retiré : tes exemples sont effacés', 'Withdrawn: your examples are erased'));
