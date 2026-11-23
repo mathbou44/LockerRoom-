@@ -29,7 +29,7 @@ PLAFOND_APPELS = 40                # appels a la LNH par passe (une passe par he
 JOURS_RELUS = 45                   # on rattrape au plus 45 jours de matchs
 MATCHS_GARDES = 130                # par joueur
 RATTRAPAGE_JOUEURS = 5             # historiques de joueurs relus par passe (2 appels chacun)
-GRANDS = ("ACHETE", "VENDS", "ATTENDS")
+GRANDS = ("ACHETE", "FENETRE", "VENDS", "ATTENDS")
 _verrou = threading.Lock()
 _ETAT = {"le": 0.0, "en_cours": False, "note_jour": None}
 
@@ -150,11 +150,20 @@ REGLES = {
 
 def decision(cas, evs, chaud=False):
     """-> {signal, raison, ev, fort} ou None s'il n'y a rien ce soir. fort = tour du chapeau, ou gros match d'un joueur deja
-    chaud (5 points et plus a ses 5 matchs d'avant) : le critere qui pesait le plus dans la recherche."""
+    chaud (5 points et plus a ses 5 matchs d'avant) : le critere qui pesait le plus dans la recherche. Signaux : ACHETE (garder
+    1 a 3 mois), FENETRE (fenetre de vente de 2 semaines), ATTENDS, VENDS, OBSERVE (note en silence)."""
     for e in ORDRE:
         if e in evs:
             s, r = REGLES[(cas, e)]
-            return {"signal": s, "raison": r, "ev": e, "fort": bool(s == "ACHETE" and (chaud or "chapeau" in evs))}
+            fort = bool(s == "ACHETE" and (chaud or "chapeau" in evs))
+            # 23 nov 2026 (la boucle complete, boucle.py / profil.py) : un gros match ISOLE fait monter les cartes 2 semaines (+7 a
+            # +11 %), puis ca retombe a zero en 30 a 60 jours : pas un achat, une FENETRE de vente. Deja chaud : +13 a +17 % a 30 j,
+            # et ca tient 4 mois (jeune joueur : +21 a +36 % a 60 j, 12 a 14 joueurs, a confirmer).
+            if s == "ACHETE" and e == "gros" and not fort:
+                s, r = "FENETRE", "Gros match isolé : ça monte 2 semaines, puis ça retombe"
+            elif fort and chaud and e != "chapeau":
+                r = "Gros match, déjà en feu"
+            return {"signal": s, "raison": r, "ev": e, "fort": fort}
     return None
 
 
@@ -431,21 +440,25 @@ def mesurer(ventes, nom, jour, auj):
     d = date.fromisoformat(jour)
     a0, a1 = (d - timedelta(days=7)).isoformat(), (d - timedelta(days=1)).isoformat()
     b0, b1 = (d + timedelta(days=8)).isoformat(), min(d + timedelta(days=60), auj).isoformat()
+    c0, c1 = (d + timedelta(days=2)).isoformat(), min(d + timedelta(days=14), auj).isoformat()      # la fenetre de vente (FENETRE)
     C = {}
     for le, prix, titre in ventes:
-        cote = "a" if a0 <= le <= a1 else "b" if b0 <= le <= b1 else None
-        if cote:
-            C.setdefault(_cle_carte(titre, nom), {"a": [], "b": [], "t": titre})[cote].append(prix)
-    tous, forts = [], []
+        cotes = (["a"] if a0 <= le <= a1 else []) + (["b"] if b0 <= le <= b1 else []) + (["c"] if c0 <= le <= c1 else [])
+        for cote in cotes:
+            C.setdefault(_cle_carte(titre, nom), {"a": [], "b": [], "c": [], "t": titre})[cote].append(prix)
+    tous, forts, tot = [], [], []
     for c in C.values():
         if c["a"] and c["b"]:
             v = math.log(statistics.median(c["b"]) / statistics.median(c["a"]))
             tous.append(v)
             if _carte_forte(c["t"]):
                 forts.append(v)
-    if not tous:
+        if c["a"] and c["c"]:
+            tot.append(math.log(statistics.median(c["c"]) / statistics.median(c["a"])))
+    if not tous and not tot:
         return None
-    return {"y": round(statistics.median(tous), 4), "n": len(tous), "yf": round(statistics.median(forts), 4) if forts else None, "nf": len(forts)}
+    return {"y": round(statistics.median(tous), 4) if tous else None, "n": len(tous), "yf": round(statistics.median(forts), 4) if forts else None,
+            "nf": len(forts), "y14": round(statistics.median(tot), 4) if tot else None, "n14": len(tot)}
 
 
 def noter(maintenant=None, ventes=None):
@@ -490,6 +503,7 @@ def bilan(J=None):
         L = [e for e in J.get("journal") or [] if filtre(e)]
         A = [e for e in L if e["signal"] == "ACHETE"]
         out[nom_] = {"achete": ligne(A, 1), "achete_fort": ligne([e for e in A if e.get("fort")], 1), "achete_cartes_fortes": ligne(A, 1, "yf"),
+                     "fenetre": ligne([e for e in L if e["signal"] == "FENETRE"], 1, "y14"),
                      "vends": ligne([e for e in L if e["signal"] == "VENDS"], -1), "attends": ligne([e for e in L if e["signal"] == "ATTENDS"], -1),
                      "observe": {"n": sum(1 for e in L if e["signal"] == "OBSERVE")}}
     return out
@@ -501,7 +515,7 @@ def admin():
     N = J.get("notes") or {}
     dern = sorted(J.get("journal") or [], key=lambda e: (e["jour"], e.get("cree") or ""), reverse=True)
     lignes = [dict({k: e.get(k) for k in ("nom", "jour", "signal", "fort", "raison", "cas", "ev", "pts", "buts", "direct")},
-                   note=(lambda n: None if not n or n.get("y") is None else round(100 * (math.exp(n["y"]) - 1), 1))(N.get(e["id"])))
+                   note=(lambda n, k: None if not n or n.get(k) is None else round(100 * (math.exp(n[k]) - 1), 1))(N.get(e["id"]), "y14" if e["signal"] == "FENETRE" else "y"))
               for e in dern if e["signal"] in GRANDS][:40]
     jours = M.get("jours") or {}
     return {"ok": True, "actif": actif(), "depuis": J.get("depuis"), "le": J.get("le"), "signaux": len(J.get("journal") or []),

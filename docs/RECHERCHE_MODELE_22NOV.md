@@ -247,3 +247,40 @@ Mathieu : « go ». `signal_joueurs.py`, Admin → Mesures → « Signal par jou
 - La note : une fois par jour, la meme carte, 7 jours avant contre jours 8 a 60 apres. « Direct » et « rattrapage » sont comptes a part.
 - On le montre aux clients seulement quand il tient en direct.
 - Le meme jour, « A vendre » est retire de l'app (pastille, notification, liste) : la preuve ne tenait que contre le prix du signal.
+
+---
+
+## 23 nov (matin) : la boucle complete, quand entrer ET quand sortir (`boucle.py`, `profil.py`)
+
+Meme carte (cartes fortes SlabIQ si possible), prix des 7 jours d'avant contre une fenetre de 10 jours a chaque horizon.
+La saison recrue est maintenant la plus vieille annee des cartes recrues (le mode prenait Ovechkin et Crosby pour des jeunes).
+
+**Deux gros matchs ne se valent pas.** « Fort » = le joueur etait deja chaud (5 points et plus a ses 5 matchs d'avant) ou tour du chapeau.
+| Horizon | FORT avant aout 26 | FORT depuis | FAIBLE (gros match isole) avant | FAIBLE depuis |
+|---|---|---|---|---|
+| 7 j | +4,6 % (6,1 sur 10) | +9,8 % (6,4) | +4,5 % (5,9) | +8,0 % (5,7) |
+| 14 j | +9,8 % (6,4) | +10,1 % (6,5) | +7,4 % (5,6) | +10,8 % (6,3) |
+| 21 j | +15,8 % (6,8) | +13,6 % (6,4) | +6,1 % (6,0) | +6,6 % (5,3) |
+| 30 j | +13,0 % (6,5) | +17,2 % (7,0) | +3,2 % (5,3) | +0,3 % (5,0) |
+| 60 j | +14,3 % (6,7) | trop tot | +0,3 % (5,0) | trop tot |
+| 120 j | +14,1 % (6,2) | trop tot | +2,9 % (5,4) | trop tot |
+161 a 183 cas forts et 114 a 139 cas faibles avant aout ; 43 a 107 et 36 a 91 depuis ; 60 a 75 joueurs.
+
+- **Fort : on achete et on garde.** La hausse se batit en 3 a 4 semaines et tient 4 mois. Un seul signal par joueur aux 45 jours :
+  +9,4 % a 30 j (61 joueurs, 6 mois positifs sur 7), +15,4 % depuis aout (33 joueurs) ; +13,9 % a 60 j.
+- **Faible : une fenetre de vente, pas un achat.** Ca monte 2 semaines (+7 a +11 %), puis ca retombe a zero en 30 a 60 jours.
+- **Jeune joueur (saisons 2 et 3) deja chaud : le cas le plus fort.** +17 % a 14 j, +28 % a 30 j (8,1 sur 10), +36 % a 60 j (8,4 sur 10) ;
+  un signal par joueur aux 45 jours : +12 % a 30 j, +21 % a 60 j (7,5 sur 10). C'est le seul cas qui depasse nettement les frais de 13 %.
+  **Mais 12 a 14 joueurs, une seule saison** (Celebrini, Fantilli, Gauthier, Hutson, Johnston, Knies, Carlsson...) : a confirmer.
+- **Veteran deja chaud :** +5 a +6 % a 30-60 j avant aout (6 sur 10) ; +15,4 % a 30 j depuis aout (6,8 sur 10, 31 joueurs).
+
+**Quand sortir.** Quatorze regles de sortie testees (duree fixe ; 2, 3 ou 4 matchs sans point ; 5 ou 10 derniers matchs sous sa base ; la sequence
+qui retombe). Sortir quand le joueur refroidit ne sert a rien : apres ces sorties, le prix monte encore de 2 a 5 %. La hausse d'un signal fort
+est une marche d'escalier qui reste. Meilleure sortie : garder 60 a 90 jours, ou jusqu'a une vraie passe froide (10 matchs sous sa base).
+Aller-retour complet, entree au prix d'avant : +9 a +12 % brut pour tous les signaux, +14 a +15 % pour les forts (a peu pres les frais).
+
+**Le marche reagit plus vite qu'avant.** Avant aout 2026, acheter le jour du match ou le lendemain donnait presque le meme gain. Depuis
+(marche plus dense), l'entree « jour du match et lendemain » ne donne plus rien : tout le gain est dans le prix d'avant. La vitesse compte.
+
+**Dans le code (signal_joueurs.py, v1.2).** Gros match isole = FENETRE (fenetre de vente de 2 semaines, notee sur les jours 2 a 14) ;
+gros match deja chaud ou tour du chapeau = ACHETE fort (★ ; ★★ pour un jeune joueur) ; le reste inchange.

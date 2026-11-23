@@ -9,6 +9,7 @@ import comptes
 comptes.DONNEES = os.environ["LOCKERROOM_DONNEES"]
 comptes.DOSSIER_COMPTES = os.path.join(comptes.DONNEES, "comptes")
 from datetime import date, datetime, timedelta
+import math
 import signal_joueurs as sj
 
 # 1. le cas du joueur : la saison recrue (regle du Calder) puis recrue / jeune / veteran
@@ -41,7 +42,7 @@ print("OK evenements")
 
 # 3. le tableau de decision
 d_ = lambda cas, evs, chaud=False: (lambda x: x and (x["signal"], x["ev"], x["fort"]))(sj.decision(cas, evs, chaud))
-assert d_("veteran", ["gros"]) == ("ACHETE", "gros", False) and d_("veteran", ["gros"], True) == ("ACHETE", "gros", True)
+assert d_("veteran", ["gros"]) == ("FENETRE", "gros", False) and d_("veteran", ["gros"], True) == ("ACHETE", "gros", True)   # isole : fenetre de vente ; deja chaud : achete
 assert d_("jeune", ["chapeau", "gros"]) == ("ACHETE", "chapeau", True) and d_("jeune", ["feu"]) == ("ACHETE", "feu", False)
 assert d_("jeune", ["panne"]) == ("ATTENDS", "panne", False) and d_("recrue", ["panne"]) == ("VENDS", "panne", False)
 assert d_("veteran", ["panne"])[0] == "OBSERVE" and d_("veteran", ["feu"])[0] == "OBSERVE" and d_("recrue", ["gros"])[0] == "OBSERVE"
@@ -114,7 +115,7 @@ M = sj.lire_matchs(); del M["jours"]["2026-11-22"]; M["joueurs"]["2"]["m"] = [g 
 M["joueurs"]["2"]["m"][-1][1] = 1; sj._ecrire("signal_matchs.json", M)
 sj.passe(datetime(2026, 11, 26, 9, 0), faux_get({"2026-11-22": [(21, 2, "OFF", [(2, 3, 0)])]}), suivis, {})
 e = [x for x in sj.lire_journal()["journal"] if x["nom"] == "Jeune Homme" and x["ev"] == "gros"][0]
-assert e["signal"] == "ACHETE" and e["direct"] is False, e
+assert e["signal"] == "FENETRE" and e["direct"] is False, e
 print("OK passe et journal")
 
 # 6. la note : LA MEME carte, 7 jours avant contre jours 8 a 60 apres ; les cartes fortes selon SlabIQ a part
@@ -126,9 +127,10 @@ V = [("2026-11-18", 100.0, "2015-16 Upper Deck Young Guns Vet Eran #201"), ("202
      ("2026-12-10", 70.0, "2019-20 SP Authentic Vet Eran #12")]                                            # pas d'avant
 m = sj.mesurer(V, "Vet Eran", "2026-11-22", date(2026, 12, 20))
 assert m["n"] == 2 and m["nf"] == 1 and abs(m["yf"] - 0.7419) < 1e-3, m                                    # YG : 100 -> mediane(120, 300) = 210
-import math
+assert m["n14"] == 1 and abs(m["y14"] - math.log(3)) < 1e-3, m                                             # jours 2 a 14 : mediane(999, 300, 120) = 300 contre 100
 assert abs(m["y"] - (math.log(2.1) + math.log(0.9)) / 2) < 1e-3, m
-assert sj.mesurer(V, "Vet Eran", "2026-11-22", date(2026, 11, 28)) is None                                 # trop tot : rien apres le jour 8
+m0 = sj.mesurer(V, "Vet Eran", "2026-11-22", date(2026, 11, 28))
+assert m0["y"] is None and m0["n"] == 0 and m0["n14"] == 1, m0                                             # trop tot pour les jours 8 a 60 ; la fenetre de 2 semaines a deja une vente
 n = sj.noter(datetime(2026, 12, 20, 5, 0), {"vet eran": V})
 J = sj.lire_journal(); idv = next(e["id"] for e in J["journal"] if e["nom"] == "Vet Eran")
 assert n >= 1 and J["notes"][idv]["n"] == 2 and J["notes"][idv]["final"] is False, (n, J["notes"])
@@ -137,7 +139,7 @@ sj.noter(datetime(2027, 1, 25, 5, 0), {"vet eran": V}); J = sj.lire_journal()
 assert J["notes"][idv]["final"] is True and all(J["notes"][e["id"]]["final"] for e in J["journal"])       # apres 60 jours : finale, meme sans vente
 B = sj.bilan(J)
 assert B["direct"]["achete"]["n"] == 3 and B["direct"]["achete"]["notes"] == 1 and B["direct"]["achete"]["bon"] == 10.0, B
-assert B["direct"]["achete_cartes_fortes"]["med"] == 110.0 and B["direct"]["vends"]["n"] == 2 and B["rattrapage"]["achete"]["n"] == 1, B
+assert B["direct"]["achete_cartes_fortes"]["med"] == 110.0 and B["direct"]["vends"]["n"] == 2 and B["rattrapage"]["achete"]["n"] == 0 and B["rattrapage"]["fenetre"]["n"] == 1, B
 a = sj.admin()
 assert a["ok"] and a["signaux"] == 7 and a["derniers"][0]["jour"] >= a["derniers"][-1]["jour"] and all(x["signal"] in sj.GRANDS for x in a["derniers"])
 assert next(x for x in a["derniers"] if x["nom"] == "Vet Eran")["note"] is not None

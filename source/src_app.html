@@ -13192,11 +13192,11 @@ async function feuilleSignalJoueurs(){
   const B = (r.bilan || {}).direct || {}, pc = (v) => (v > 0 ? '+' : '') + decFr(v) + ' %';
   const T = (k, x) => `<div class="jb-t"><span class="jb-k">${k}</span><b class="jb-v">${x && x.notes ? decFr(x.bon) + ' / 10' : '—'}</b><small>${x && x.notes
     ? pc(x.med) + ' · ' + x.notes + ' ' + tt('notés', 'scored') : ((x && x.n) || 0) + ' ' + tt('en attente', 'pending')}</small></div>`;
-  const P = {ACHETE: ['vert', tt('Achète', 'Buy')], VENDS: ['rouge', tt('Vends', 'Sell')], ATTENDS: ['or', tt('Attends', 'Wait')]};
-  const plus = [[tt('Signal fort', 'Strong signal'), B.achete_fort], [tt('Cartes fortes SlabIQ', 'SlabIQ strong cards'), B.achete_cartes_fortes]]
+  const P = {ACHETE: ['vert', tt('Achète', 'Buy')], FENETRE: ['acc', tt('Fenêtre', 'Window')], VENDS: ['rouge', tt('Vends', 'Sell')], ATTENDS: ['or', tt('Attends', 'Wait')]};
+  const plus = [[tt('Fenêtre de vente (2 semaines)', 'Sell window (2 weeks)'), B.fenetre], [tt('Signal fort', 'Strong signal'), B.achete_fort], [tt('Cartes fortes SlabIQ', 'SlabIQ strong cards'), B.achete_cartes_fortes]]
     .filter(([, x]) => x && x.notes).map(([k, x]) => `${k} : ${decFr(x.bon)} / 10 (${pc(x.med)})`).join(' · ');
   const L = (r.derniers || []).map(e => { const [c, n] = P[e.signal] || ['acc', e.signal];
-    return `<div class="sg-r"><span class="capsule ${c} petit">${n}${e.fort ? ' ★' : ''}</span><span class="sg-t"><b>${esc(e.nom)}</b><small>${esc(e.raison || '')}</small></span><em>${e.note != null
+    return `<div class="sg-r"><span class="capsule ${c} petit">${n}${e.fort ? (e.cas === 'jeune' ? ' ★★' : ' ★') : ''}</span><span class="sg-t"><b>${esc(e.nom)}</b><small>${esc(e.raison || '')}</small></span><em>${e.note != null
       ? pc(e.note) : dateCourte(e.jour)}</em></div>`; }).join('');
   ouvrirFeuille(`<h3>${tt('Signal par joueur', 'Player signal')}</h3>
     <div class="sous" style="margin-bottom:10px">${tt('Admin seulement. Déclenché par les matchs de la LNH et les échanges, jamais par un prix. Bon conseil = la même carte est allée du bon côté, 7 jours avant contre jours 8 à 60 après.',

@@ -12,7 +12,9 @@ for (k, g), S in by.items():
     if k[1] and str(S[0][3]).startswith(REC): AR[k[0]][k[1]] += len(S)
     L = sorted((s[0], math.log(s[1])) for s in S if s[1] >= 3)
     if len(L) >= 3: CJ[k[0]].append((np.array([x[0] for x in L]), np.array([x[1] for x in L]), S[0][5], k[1]))
-RY = {n: c.most_common(1)[0][0] for n, c in AR.items() if sum(c.values()) >= 5}
+# la saison recrue = la PLUS VIEILLE annee de ses cartes recrues (3 ventes et plus) : le mode prenait Ovechkin et Crosby pour des jeunes
+# (leurs « Young Guns Renewed » recentes se vendent plus que leurs vraies recrues de 2005)
+RY = {n: min(y for y, k in c.items() if k >= 3) for n, c in AR.items() if any(k >= 3 for k in c.values())}
 # ---- les signaux, soir par soir
 SIG = []
 gm = collections.defaultdict(set)
