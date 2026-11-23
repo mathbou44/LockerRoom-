@@ -1,6 +1,6 @@
 {
- "le": "2026-11-22",
- "empreinte": "9aa53e06a11665b0",
+ "le": "2026-11-23",
+ "empreinte": "429ea2fbc2c1ae43",
  "regles": {
   "fixe": 86.0,
   "encan": 82.0,
@@ -18,21 +18,13 @@
  "inversions": [],
  "corrections": 209,
  "lettres": {
-  "C": {
-   "cartes": 50664,
-   "reventes": 0.096
-  },
-  "D": {
-   "cartes": 31129,
-   "reventes": 0.095
-  },
   "B+": {
    "cartes": 52717,
    "reventes": 0.21
   },
-  "A+": {
-   "cartes": 2354,
-   "reventes": 0.141
+  "C": {
+   "cartes": 50664,
+   "reventes": 0.096
   },
   "E": {
    "cartes": 11326,
@@ -42,25 +34,33 @@
    "cartes": 39794,
    "reventes": 0.101
   },
-  "A-": {
-   "cartes": 16881,
-   "reventes": 0.14
+  "D": {
+   "cartes": 31129,
+   "reventes": 0.095
   },
   "A": {
    "cartes": 16378,
    "reventes": 0.251
+  },
+  "A-": {
+   "cartes": 16881,
+   "reventes": 0.14
+  },
+  "A+": {
+   "cartes": 2354,
+   "reventes": 0.141
   }
  },
  "pro": {
-  "n": 1046,
-  "reussi": 0.63,
+  "n": 475,
+  "reussi": 0.777,
   "reussi_ic95": [
-   0.601,
-   0.659
+   0.739,
+   0.813
   ],
-  "revendue": 0.814,
-  "garde": 0.774,
-  "profit_apres_frais": 0.202
+  "revendue": 0.901,
+  "garde": 0.862,
+  "profit_apres_frais": 0.248
  },
  "pro_avant": {
   "n": 3898,
@@ -147,12 +147,12 @@
  "defi": {
   "gagne": 1.0,
   "egal": 0.0,
-  "iq": 10.1,
+  "iq": 13.1,
   "hasard": 1.2,
   "ok_marche": 0.079,
-  "ok_radar": 0.625,
+  "ok_radar": 0.75,
   "cartes": 13699,
-  "cartes_radar": 152
+  "cartes_radar": 64
  },
  "x_ahaut_e": 7.4,
  "x_aplus_e": 4.4,

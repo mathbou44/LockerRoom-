@@ -16,6 +16,8 @@ qu'elle se vend (liquidite.py). L'utilisateur voit la lettre et l'annonce : jama
 
 Teste sur des achats jamais vus (outils/radar_iq.py ; reussi = la carte se revend ensuite ET a au moins 90 % du prix paye) :
 oct. : hasard 11,7 %, ancienne regle (A et A+) 29,8 %, cette regle 71,0 % ; nov. : hasard 11,3 %, cette regle 60,3 %.
+23 nov 2026 (Mathieu : « B : 78 % ») : 8 ventes en 60 jours et jamais au-dessus de ce que la carte se vend (liquidite.py :
+78 a 90 % aux 5 dates du bulletin, contre 59 a 76 % avant).
 Les annonces sont gardees au plus 12 h (prix fixe) ou jusqu'a la fin de l'encan, et le Radar relit la fiche en direct quand
 on l'ouvre. Un encan dont la mise monte au-dessus de la limite de prix sort de la liste.
 """

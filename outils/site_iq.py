@@ -169,6 +169,58 @@ def pente(sans_fin, avec_fin):
 </svg>'''
 
 
+def bloc_vs(R, page):
+    """23 nov 2026 (Mathieu : « ces comparatifs sur notre site, a la Apple : leger et en surface, comme les stats de leur
+    laptop ; le meilleur que l'on puisse faire ») : seul ou avec SlabCoach, 3 gros chiffres et 2 barres chacun, entre
+    <!--vs--> et <!--/vs--> sur l'accueil et sur la page SlabIQ. Tout vient du test (ui/slabiq_tests.json), avec les arrondis
+    d'iq_publie : rien d'ecrit a la main. « Seul » = tous les achats de la meme periode (le « hasard » du test)."""
+    pro, pha = iq_publie.pro(R)
+    rv, rvh = iq_publie.revendue(R)
+    x = iq_publie.fois(R)
+    w_e = max(4, round(100 / R["x_ahaut_e"]))
+    pmin = int(R["regles"]["prix_min"])
+
+    def col(t_fr, t_en, chiffre, a_fr, a_en, wa, s_fr, s_en, s_val, ws):
+        val = f' <em><span class="fr">{s_val} %</span><span class="en">{s_val}%</span></em>' if s_val is not None else ""
+        return (f'<div class="cmp-c"><h3><span class="fr">{t_fr}</span><span class="en">{t_en}</span></h3><b class="cmp-n holo-t">{chiffre}</b>'
+                f'<p class="cmp-l"><span><span class="fr">{a_fr}</span><span class="en">{a_en}</span></span></p><span class="cmp-t"><i class="cmp-a" style="--w:{wa}"></i></span>'
+                f'<p class="cmp-l"><span><span class="fr">{s_fr}</span><span class="en">{s_en}</span></span>{val}</p><span class="cmp-t"><i class="cmp-s" style="--w:{ws}"></i></span></div>')
+    cols = (col("Ta carte garde sa valeur", "Your card holds its value", f"{pro}<small>%</small>", "Avec le Radar Pro", "With the Pro Radar", pro, "Seul", "On your own", pha, pha)
+            + col("Ta carte se revend", "Your card resells", f"{rv}<small>%</small>", "Avec le Radar Pro", "With the Pro Radar", rv, "Seul", "On your own", rvh, rvh)
+            + col("Une A se revend plus qu’une E", "An A resells more than an E", f'{x}<small class="x">×</small>', "Carte A ou A+", "A or A+ card", 100, "Carte E", "E card", None, w_e))
+    if page == "accueil":
+        faits = (f'<span><b class="holo-t">{iq_publie.ventes_k(R)}</b> <span class="fr">ventes réelles apprises</span><span class="en">real sales learned</span></span>'
+                 f'<span><b class="holo-t">{fr(R["joueurs"])}</b> <span class="fr">joueurs notés chaque semaine</span><span class="en">players rated every week</span></span>')
+        liens = ('<a href="/slabiq#tests"><span class="fr">Voir le test ›</span><span class="en">See the test ›</span></a>'
+                 '<a href="/slabiq#defi"><span class="fr">Fais le défi ›</span><span class="en">Take the challenge ›</span></a>'
+                 '<a href="/slabiq"><span class="fr">Comment SlabIQ fonctionne ›</span><span class="en">How SlabIQ works ›</span></a>')
+    else:
+        acc_fr, acc_en, _ = iq_publie.accord(R)
+        faits = (f'<span><b class="holo-t">{fr(R["ventes"])}</b> <span class="fr">ventes de hockey testées</span><span class="en">hockey sales tested</span></span>'
+                 f'<span><b class="holo-t">{acc_fr}</b> <span class="fr">d’accord avec le marché</span><span class="en">agreement with the market</span></span>')
+        liens = ""
+    n, nh = R["pro"]["n"], R["hasard"]["n"]
+    if page == "accueil":                       # l'accueil : l'essentiel ; les definitions completes sont sur la page SlabIQ
+        note_fr = (f"Test du {jour_fr(R['le'])} sur des ventes jamais vues par SlabIQ : {fr(n)} achats du Radar Pro, contre les {fr(nh)} achats de "
+                   f"{pmin} $ et plus de la même période (seul). Garde sa valeur : la même carte s’est revendue ensuite à au moins 90 % du prix payé. "
+                   f"Les résultats passés ne garantissent pas les résultats futurs.")
+        note_en = (f"Test of {jour_en(R['le'])} on sales SlabIQ had never seen: {en(n)} Pro Radar buys, versus the {en(nh)} buys of ${pmin} and up "
+                   f"from the same period (on your own). Holds its value: the same card later resold for at least 90% of the price paid. "
+                   f"Past results don’t guarantee future results.")
+    else:
+        note_fr = (f"Radar Pro : les {fr(n)} achats qu’il aurait montrés du {jour_fr(R['coupe'])} au {jour_fr(R['revente_des'])}. Seul : tous les achats "
+                   f"de {pmin} $ et plus de la même période ({fr(nh)}), sans carte de base ni lot. Garde sa valeur : la même carte s’est revendue ensuite "
+                   f"à au moins 90 % du prix payé ; jamais revendue : ratée. Se revend : elle s’est revendue avant le {jour_fr(R['revente_fin'])}. "
+                   f"Les résultats passés ne garantissent pas les résultats futurs.")
+        note_en = (f"Pro Radar: the {en(n)} buys it would have shown from {jour_en(R['coupe'])} to {jour_en(R['revente_des'])}. On your own: every buy "
+                   f"of ${pmin} and up from the same period ({en(nh)}), no base cards or lots. Holds its value: the same card later resold for at "
+                   f"least 90% of the price paid; never resold: a miss. Resells: it resold before {jour_en(R['revente_fin'])}. "
+                   f"Past results don’t guarantee future results.")
+    return (f'<!--vs--><div class="cmp">{cols}</div><div class="cmp-bas"><p class="cmp-faits">{faits}</p>'
+            + (f'<p class="cmp-liens">{liens}</p>' if liens else "")
+            + f'</div><p class="cmp-note"><span class="fr">{note_fr}</span><span class="en">{note_en}</span></p><!--/vs-->')
+
+
 SIM_BOUTON = ('<button class="sim-mois" type="button" aria-expanded="false"><span class="fr">Voir mois par mois</span>'
               '<span class="en">See month by month</span></button>')
 
@@ -184,19 +236,10 @@ def ecrire(R, defi):
     k_ventes = iq_publie.ventes_k(R)
     pmin, pmax = int(sim["prix"][0]), int(sim["prix"][1])
     m0, m1 = sim["mois"][0], sim["mois"][-1]
-    L = R["lettres"]
-    lets = [x for x in ORDRE if x in L]
-    mx = max(L[x]["reventes"] for x in lets)
-    bars = "".join(f'<div><em>{L[x]["reventes"]:.2f}'.replace(".", ",") + f'</em><s style="--h:{round(100 * L[x]["reventes"] / mx)}"></s><i>{x}</i></div>' for x in lets)
-    inv_l = [(a, b) for i, a in enumerate(lets) for b in lets[i + 1:] if L[b]["reventes"] > L[a]["reventes"] * 1.03]
-    if inv_l:
-        ex_fr = ", ".join(f"{b} devant {a}" for a, b in inv_l[:3])
-        ex_en = ", ".join(f"{b} ahead of {a}" for a, b in inv_l[:3])
-        note_fr = f"Reventes de la même carte entre le {jour_fr(R['revente_des'])} et le {jour_fr(R['revente_fin'])}, par lettre (cartes vues avant). L’ordre n’est pas encore parfait ({ex_fr}) : on y travaille."
-        note_en = f"Resales of the same card between {jour_en(R['revente_des'])} and {jour_en(R['revente_fin'])}, by letter (cards seen before). The order isn’t perfect yet ({ex_en}): we’re on it."
-    else:
-        note_fr = f"Reventes de la même carte après le {jour_fr(R['revente_des'])}, par lettre (cartes vues avant). Chaque lettre se revend plus que la suivante."
-        note_en = f"Resales of the same card after {jour_en(R['revente_des'])}, by letter (cards seen before). Each letter resells more than the next."
+    # 23 nov 2026 (Mathieu : « enleve, ca va porter a confusion ») : plus de graphique des reventes par lettre sur la page. Il
+    # montrait A+ sous A : une A+ est plus rare et plus chere (1 130 $ en mediane contre 280 $), il y a moins de copies, donc moins
+    # de reventes de la meme carte ; le graphique comptait les copies qui circulent, pas la valeur de la lettre, et laissait
+    # croire qu'une A vaut mieux qu'une A+. La mesure reste dans ui/slabiq_tests.json (« lettres ») ; le site garde A et A+ contre E.
     le_fr, le_en = jour_fr(R["le"]).replace(f" {dt.date.fromisoformat(R['le']).year}", f" {dt.date.fromisoformat(R['le']).year}"), jour_en(R["le"])
     d_le = dt.date.fromisoformat(R["le"])
     kick_fr, kick_en = f"Nos tests · {d_le.day} {MFc[d_le.month - 1]} {d_le.year}", f"Our tests · {MEc[d_le.month - 1]} {d_le.day}, {d_le.year}"
@@ -205,7 +248,6 @@ def ecrire(R, defi):
     pro, pha = iq_publie.pro(R)
     # 19 nov 2026 (Mathieu : « 80 % c'est plus beau que 79 ») : jamais un chiffre plus haut que la mesure ; a moins d'un point
     # sous un chiffre rond (multiple de 5), on ecrit « ≈ » (79,4 % -> « ≈ 80 % »)
-    acc_txt, acc_en, aav = iq_publie.accord(R)
     acc = round(R["accord"] * 100)
     seuil = {95: "A+", 88: "A", 86: "A", 82: "A-"}.get(int(sim["seuil"]), "A")
 
@@ -217,16 +259,9 @@ def ecrire(R, defi):
     s = sub1(s, r'(<div><b class="holo-t">)[^<]*(</b><span><span class="fr">joueurs notés chaque semaine)', rf'\g<1>{fr(R["joueurs"])}\g<2>')
     s = sub1(s, r'<p class="kicker holo-t"><span class="fr">Nos tests · [^<]*</span><span class="en">Our tests · [^<]*</span></p>',
              f'<p class="kicker holo-t"><span class="fr">{kick_fr}</span><span class="en">{kick_en}</span></p>')
-    s = sub1(s, r'(<div><b class="holo-t">)[^<]*(</b><span><span class="fr">ventes de hockey testées)', rf'\g<1>{fr(R["ventes"])}\g<2>')
-    # 22 nov 2026 (Mathieu : « pas besoin de mettre avant ») : l'accord seul, sans l'ancien chiffre
-    s = sub1(s, r'<div><b class="holo-t">[^<]*</b><span><span class="fr">d’accord avec le marché(?: \(avant : [^)]*\))?</span><span class="en">agreement with the market(?: \(before: [^)]*\))?</span></span></div>',
-             f'<div><b class="holo-t">{acc_txt}</b><span><span class="fr">d’accord avec le marché</span><span class="en">agreement with the market</span></span></div>')
-    s = sub1(s, r'<div><b class="holo-t">[^<]*</b><span><span class="fr">des (?:cartes|achats) du Radar Pro [^<]*</span><span class="en">of Pro Radar [^<]*</span></span></div>',
-             f'<div><b class="holo-t">{pro} %</b><span><span class="fr">des achats du Radar Pro se revendent sans perdre leur valeur (au hasard : {pha} %)</span><span class="en">of Pro Radar buys resell without losing value (at random: {pha}%)</span></span></div>')
-    s = sub1(s, r'<div class="iq-bars" role="img" aria-label="Reventes par lettre">.*?</div></div>(\s*<p class="iq-note">)',
-             f'<div class="iq-bars" role="img" aria-label="Reventes par lettre">{bars}</div>\\g<1>')
-    s = sub1(s, r'<p class="iq-note"><span class="fr">Reventes de la même carte (?:après|entre)[^<]*</span><span class="en">Resales of the same card (?:after|between)[^<]*</span></p>',
-             f'<p class="iq-note"><span class="fr">{note_fr}</span><span class="en">{note_en}</span></p>')
+    # 23 nov 2026 (Mathieu : « ces comparatifs sur notre site, a la Apple ») : les 3 tuiles des tests (ventes testees, accord,
+    # Radar Pro) sont devenues le comparatif « seul ou avec SlabCoach » (bloc_vs) : tout le bloc est reecrit depuis le test
+    s = sub1(s, r'<!--vs-->.*?<!--/vs-->', lambda m: bloc_vs(R, "slabiq"))
     sim_html = f'''<div class="sim">
     <div class="sim-chf">
       <div><span><span class="fr">Sans SlabIQ</span><span class="en">Without SlabIQ</span></span><b class="neg"><span class="fr">{pfr(r_s)}</span><span class="en">{pen(r_s)}</span></b></div>
@@ -263,9 +298,9 @@ def ecrire(R, defi):
     # ---- l'accueil : les memes chiffres
     p = os.path.join(UI, "site_accueil.html")
     s = open(p, encoding="utf-8").read()
-    s = sub1(s, r'(<div><b class="holo-t">)[^<]*(</b><span><span class="fr">ventes réelles apprises)', rf'\g<1>{k_ventes}\g<2>')
     s = majX(s, x_ae)
-    s = sub1(s, r'(<div><b class="holo-t">)[^<]*(</b><span><span class="fr">joueurs notés chaque semaine)', rf'\g<1>{fr(R["joueurs"])}\g<2>')
+    # 23 nov 2026 : la section SlabIQ de l'accueil = le comparatif « seul ou avec SlabCoach » (ventes apprises et joueurs dedans)
+    s = sub1(s, r'<!--vs-->.*?<!--/vs-->', lambda m: bloc_vs(R, "accueil"))
     # 19 nov 2026 (Mathieu : « 5x ici, 10x la : attention, audit tout le site ») : une seule mesure partout (A et plus contre E)
     # 19 nov 2026 (audit) : « +780 $ avec SlabIQ » laissait croire a 780 $ de profit ; c'est l'ECART avec un achat au hasard
     # 20 nov 2026 (Mathieu : « vendeur d'un coup sec ») : le chiffre du defi, le plus parlant : une carte du Radar Pro contre une au hasard
@@ -274,9 +309,6 @@ def ecrire(R, defi):
     s = sub1(s, r'an A or A\+ card resells [0-9]+ times more often than an E', f'an A or A+ card resells {x_ae} times more often than an E')
     # 22 nov 2026 (rapport du tour complet : l'accueil disait 70 % / 8 % (le defi), la page SlabIQ 71 % / 11 % (le Radar Pro),
     # pour la MEME phrase) : une seule mesure partout, celle du Radar Pro (iq_publie.pro)
-    om, orr = pha, pro
-    s = sub1(s, r'<a class="iqp-test" href="/slabiq#defi"><b class="holo-t">.*?</b><span><span class="fr">[^<]*</span><span class="en">[^<]*</span></span>',
-             f'<a class="iqp-test" href="/slabiq#defi"><b class="holo-t"><span class="fr">{orr} %</span><span class="en">{orr}%</span></b><span><span class="fr">des cartes du Radar Pro se sont revendues sans perdre leur valeur. Au hasard : {om} %. Et toi, ferais-tu mieux ?</span><span class="en">of Pro Radar cards resold without losing value. At random: {om}%. Could you do better?</span></span>')
     open(p, "w", encoding="utf-8").write(s)
     R2 = {k: v for k, v in R.items() if k != "sim"}
     R2["sim"] = {k: v for k, v in sim.items() if k not in ("sans", "avec")}

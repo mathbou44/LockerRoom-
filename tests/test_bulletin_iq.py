@@ -18,9 +18,9 @@ assert s.count("<!--bulletin-->") == 1 and s.count("<!--/bulletin-->") == 1
 bloc = re.search(r"<!--bulletin-->.*?<!--/bulletin-->", s, re.S).group(0)
 assert bloc == b.rendre(B), "la page dit exactement ce que le fichier mesure (refaire : python3 outils/bulletin_iq.py --rendre)"
 for x in L:
-    assert f'{round(x["pro"]["reussi"] * 100)} %</b>' in bloc and f'<td>{x["pro"]["n"]}</td>' in bloc
+    assert f'{int(x["pro"]["reussi"] * 100 + 1e-9)} %</b>' in bloc and f'<td>{x["pro"]["n"]}</td>' in bloc      # 23 nov 2026 : vers le bas, comme le gros chiffre du site
 lo = min(x["pro"]["reussi"] for x in L)
-assert f"{round(lo * 100)} à " in bloc and "profit" not in bloc.lower(), "la fourchette part du PIRE resultat ; aucun mot sur un profit"
+assert f"{int(lo * 100 + 1e-9)} à " in bloc and "profit" not in bloc.lower(), "la fourchette part du PIRE resultat ; aucun mot sur un profit"
 # une ligne se lit telle quelle dans un resultat de tests_site ; un bulletin d'une seule date ne s'affiche pas
 l1 = b.ligne("2026-11-19", T)
 assert l1["pro"]["reussi"] == T["pro"]["reussi"] and l1["hasard"]["n"] == T["hasard"]["n"] and b.rendre({"lignes": [l1]}) == ""

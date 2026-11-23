@@ -17,8 +17,7 @@ for f in ("site_slabiq.html", "site_accueil.html"):
     x = f"{iq_publie.fois(R)}×"          # 22 nov 2026 : le meme arrondi que le site et l'app (vers le bas)
     assert re.findall(r'>(\d+)×<', s) and set(re.findall(r'>(\d+×)<', s)) == {x}, (f, set(re.findall(r'>(\d+×)<', s)), x)
 s = open(os.path.join(ICI, "ui", "site_slabiq.html"), encoding="utf-8").read()
-assert (f'{round(R["accord"] * 100)} %</b>' in s or f'≈ {round(R["accord"] * 20) * 5} %</b>' in s) and f'{int(R["pro"]["reussi"] * 100 + 1e-9)} %</b>' in s \
-    and f'(au hasard : {int(R["hasard"]["reussi"] * 100 + 1e-9)} %)' in s
+assert (f'{round(R["accord"] * 100)} %</b>' in s or f'≈ {round(R["accord"] * 20) * 5} %</b>' in s)
 # 20 nov 2026 (Mathieu : « valide l'info ; change-la partout : site, app, ordi ») : la fenetre SlabIQ de l'app prend les MEMES
 # textes (iq_publie), et le site les montre tels quels
 import iq_publie
@@ -27,7 +26,21 @@ assert P and P["le"] == R["le"]
 acc = open(os.path.join(ICI, "ui", "site_accueil.html"), encoding="utf-8").read()
 assert f'>{P["ventes"]}</b>' in acc and f'>{P["ventes"]}</b>' in s, P["ventes"]
 assert f'>{P["fois"]}×<' in acc and f'>{P["fois"]}×<' in s
-assert f'{P["accord_fr"]}</b>' in s and f'{P["pro"]} %</b>' in s and f'(au hasard : {P["hasard"]} %)' in s
+assert f'{P["accord_fr"]}</b>' in s
+# 23 nov 2026 (Mathieu : « ces comparatifs sur notre site, a la Apple ») : le comparatif « seul ou avec SlabCoach » des deux pages
+# est ecrit par outils/site_iq.bloc_vs depuis le test : le site montre exactement ce bloc (aucun chiffre retouche a la main), avec
+# les arrondis d'iq_publie (le Radar Pro vers le bas ; « seul » au plus proche : jamais plus d'ecart que la mesure)
+sys.path.insert(0, os.path.join(ICI, "outils"))
+import site_iq
+for f, page, texte in (("site_accueil.html", "accueil", acc), ("site_slabiq.html", "slabiq", s)):
+    bloc = site_iq.bloc_vs(R, page)
+    assert texte.count("<!--vs-->") == 1 and bloc in texte, (f, "le comparatif n'est pas celui du test : refaire outils/tests_site.py --ecrire")
+    assert f'<b class="cmp-n holo-t">{P["pro"]}<small>%</small></b>' in bloc and f'<span class="fr">{P["hasard"]} %</span>' in bloc
+    assert f'<b class="cmp-n holo-t">{P["revendue"]}<small>%</small></b>' in bloc and f'<span class="fr">{P["revendue_seul"]} %</span>' in bloc
+    assert f'<b class="cmp-n holo-t">{P["fois"]}<small class="x">×</small></b>' in bloc
+    assert bloc.count('<span class="fr">') == bloc.count('<span class="en">')
+assert P["pro"] <= R["pro"]["reussi"] * 100 and P["revendue"] <= R["pro"]["revendue"] * 100          # jamais plus que la mesure
+assert P["hasard"] >= int(R["hasard"]["reussi"] * 100) and P["revendue_seul"] >= R["hasard"]["revendue"] * 100 - 0.5
 assert f'se revend {P["fois"]} fois plus souvent' in acc and not re.search(r'se revend (?!%d )[0-9]+ fois' % P["fois"], acc)
 app = open(os.path.join(ICI, "source", "src_app.html"), encoding="utf-8").read()
 assert "9/10" not in app and "5× plus" not in app and "5× more" not in app, "l'app ne doit plus ecrire de chiffre SlabIQ en dur"

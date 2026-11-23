@@ -1,0 +1,25 @@
+AVENUES DU 23 NOV 2026 (Mathieu : « analyser toutes les avenues pour augmenter le plus le % de chacun des outils SlabIQ »)
+
+Donnees : le fichier de travail du test du site (A_maintenant.json.gz dans $LR_TESTS_TRAV, ecrit par outils/tests_site.py).
+Lancer dans l'ordre, depuis un dossier de travail (les .pkl s'y ecrivent) :
+
+  charge.py    A_maintenant.json.gz -> A.pkl (une ligne par vente : cle de la carte, lettre, sorte, prix, jour)
+  lettres.py   pourquoi A+ se revend moins que A : c'est la MESURE, pas la lettre. Une A+ coute 1 130 $ en mediane (A : 280 $) et
+               84 % des A+ n'ont aucune vente dans les 60 jours d'avant : moins de copies, donc moins de reventes de la meme
+               carte. A ventes egales avant, la part revendue est la meme de A+ a D ; seule E est nettement plus basse.
+  radar.py     refait la mesure du Radar Pro (memes definitions que tests_site.mesures) avec les signaux de chaque achat ;
+               retrouve exactement les chiffres publies (1 046 achats, 63,0 %, 81,4 %, 20,2 %)
+  balaie.py    210 regles (note, ventes en 60 j, prix contre la mediane), choisies sur une periode, jugees sur une autre
+  cinq.py      les regles retenues aux 5 dates du bulletin
+  verif.py     variete (cartes et joueurs differents) ; une carte ou un joueur ne compte qu'une fois : le gain tient
+  verif2.py    le MARCHE de la carte tient-il mieux ? Non : le gain de « <= mediane » vient du prix paye, pas du marche
+
+Resultat (garde sa valeur, aux 5 dates : 27 sept, 11 oct, 25 oct, 8 nov, 22 nov) :
+  regle d'avant (5 ventes, prix +10 %)   76 74 59 64 63 %    225 cartes differentes, 33 joueurs
+  8 ventes                               86 81 72 71 67 %    130 cartes, 25 joueurs
+  8 ventes, prix <= mediane  (RETENUE)   90 88 80 82 78 %    104 cartes, 23 joueurs
+  12 ventes, prix <= mediane             97 92 84 84 81 %     60 cartes, 16 joueurs
+Les achats a 5-7 ventes reussissaient 3 fois sur 10 ; a 8 ventes et plus, 7 sur 10. Mathieu a choisi « 8 ventes, <= mediane »
+(liquidite.py : LIQ_MIN = 8, RABAIS_MAX = 0.0). La lettre minimum (A-) compte peu une fois la liquidite et le prix regles.
+A savoir : les achats du Radar Pro sont concentres (3 recrues = 39 % des achats de la regle d'avant) ; par carte differente,
+la regle d'avant donnait 53 % et la nouvelle 68 %.

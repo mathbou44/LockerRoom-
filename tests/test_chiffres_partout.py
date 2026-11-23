@@ -23,19 +23,29 @@ def doit(page, nom, motif, texte):
         erreurs.append(f"{page} : {nom} ne montre pas le dernier test ({motif})")
 
 
+# 23 nov 2026 (Mathieu : « ces comparatifs sur notre site, a la Apple ») : le Radar Pro (garde sa valeur, se revend), « seul » et
+# A contre E sont dans le comparatif des deux pages (outils/site_iq.bloc_vs) ; les ventes apprises, les joueurs, les ventes testees
+# et l'accord sont juste dessous
+rv, rvh = iq_publie.revendue(R)
+for page, t in (("accueil", acc), ("slabiq", sl)):
+    doit(page, "Radar Pro, garde sa valeur", rf'<b class="cmp-n holo-t">{pro}<small>%</small></b>.*?<span class="fr">Seul</span>.*?<span class="fr">{pha} %</span>', t)
+    doit(page, "Radar Pro, se revend", rf'<b class="cmp-n holo-t">{rv}<small>%</small></b>.*?<span class="fr">Seul</span>.*?<span class="fr">{rvh} %</span>', t)
+    doit(page, "A et A+ contre E (comparatif)", rf'<b class="cmp-n holo-t">{x}<small class="x">×</small></b>', t)
+    for m in re.findall(r'<b class="cmp-n holo-t">([0-9]+)<small>%', t):
+        if int(m) not in (pro, rv):
+            erreurs.append(f"{page} : un « {m} % » dans le comparatif qui n'est pas dans le dernier test")
 # l'accueil
-doit("accueil", "Radar Pro", rf'<a class="iqp-test" href="/slabiq#defi"><b class="holo-t"><span class="fr">{pro} %</span>.*?Au hasard : {pha} %', acc)
+doit("accueil", "ventes apprises", rf'<b class="holo-t">{re.escape(k)}</b> <span class="fr">ventes réelles apprises', acc)
 doit("accueil", "A et A+ contre E", rf'une carte A ou A\+ se revend {x} fois plus souvent', acc)
 for m in re.findall(r'<b class="holo-t">([0-9]+)×</b><span><span class="fr">plus de reventes', acc + sl):
     if int(m) != x:
         erreurs.append(f"un « {m}× plus de reventes » au lieu de {x}×")
-for m in re.findall(r'<b class="holo-t">([^<]*)</b><span><span class="fr">ventes réelles apprises', acc + sl):
+for m in re.findall(r'<b class="holo-t">([^<]*)</b>(?:<span>| )<span class="fr">ventes réelles apprises', acc + sl):
     if m != k:
         erreurs.append(f"« {m} ventes réelles apprises » au lieu de {k}")
 # la page SlabIQ
-doit("slabiq", "ventes testees", rf'<b class="holo-t">{re.escape(nb)}</b><span><span class="fr">ventes de hockey testées', sl)
-doit("slabiq", "accord", rf'<b class="holo-t">{re.escape(acc_fr)}</b><span><span class="fr">d’accord avec le marché</span>', sl)
-doit("slabiq", "Radar Pro", rf'<b class="holo-t">{pro} %</b><span><span class="fr">des achats du Radar Pro se revendent sans perdre leur valeur \(au hasard : {pha} %\)', sl)
+doit("slabiq", "ventes testees", rf'<b class="holo-t">{re.escape(nb)}</b> <span class="fr">ventes de hockey testées', sl)
+doit("slabiq", "accord", rf'<b class="holo-t">{re.escape(acc_fr)}</b> <span class="fr">d’accord avec le marché</span>', sl)
 if "(avant :" in sl.split("d’accord avec le marché")[1][:20]:
     erreurs.append("slabiq : l'accord montre encore « (avant : X %) »")
 # l'app lit les memes chiffres

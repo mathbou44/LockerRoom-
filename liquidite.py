@@ -9,7 +9,7 @@ Pour chaque annonce, deux signaux tires de nos archives de ventes (base_ventes, 
 compagnie, meme note) :
   liq : le nombre de ventes de la carte dans les 60 derniers jours (elle se vend : on n'est pas pogne avec) ;
   med : sa mediane ponderee par la recence (demi-vie 15 j, 90 jours, sans les prix aberrants), pour ne garder que les annonces
-        pas plus de 10 % au-dessus de ce que la carte se vend.
+        qui ne depassent pas ce que la carte se vend (23 nov 2026 ; avant : jusqu'a 10 % au-dessus).
 Rien de ceci n'est montre : l'utilisateur voit la lettre SlabIQ et l'annonce, jamais une valeur, une mediane ni un compte.
 
 Teste (outils/radar_iq.py, regle choisie sur septembre, jamais sur la periode de test) : un achat « reussi » = la meme carte
@@ -17,6 +17,17 @@ se revend ensuite ET a au moins 90 % du prix paye.
   achats du 19 au 29 oct. : hasard 11,7 % ; Radar Pro d'avant (A et A+) 29,8 % ; cette regle 71,0 % (IC 95 % 67,6-74,4) ;
   achats du 1er au 8 nov. : hasard 11,3 % ; cette regle 60,3 % (57,3-63,2).
 Sans le prix (liquidite seulement) : 62,4 % et 51,8 %. LR_RADAR_PRIX=0 dans Render enleve le prix de la regle.
+
+23 nov 2026 (Mathieu : « analyser toutes les avenues pour augmenter le plus le % » ; il choisit « B : 78 % ») : 8 ventes en 60
+jours (avant : 5) et jamais au-dessus de ce que la carte se vend (avant : jusqu'a 10 % au-dessus). Pourquoi : les achats a 5-7
+ventes reussissaient 3 fois sur 10, ceux a 8 ventes et plus 7 fois sur 10. Aux 5 dates du bulletin, sur les memes ventes :
+  avant (5 ventes, +10 %)      : 76, 74, 59, 64, 63 %   (225 cartes differentes a la derniere date)
+  8 ventes, +10 %              : 86, 81, 72, 71, 67 %   (130 cartes)
+  8 ventes, <= mediane (ICI)   : 90, 88, 80, 82, 78 %   (104 cartes) ; se revend : 90 % (avant 81 %)
+  12 ventes, <= mediane        : 97, 92, 84, 84, 81 %   (60 cartes, 16 joueurs : trop mince)
+A savoir : le gain de « 8 ventes » vient de la liquidite (la carte se revend plus) ; le gain de « <= mediane » vient du prix paye
+(le marche de la carte ne tient pas mieux : l'acheteur ne paie juste jamais trop cher). Moins d'annonces passent : si le Radar
+Pro est trop vide, revenir a RABAIS_MAX = 0.10 (« 8 ventes » seul) et refaire les tests du site. Recherche : outils/recherche/avenues/.
 
 L'index se remplit en fond, par paquets, depuis les ventes deja archivees (base_ventes.sqlite, en lecture seulement) : aucun
 appel de plus a SoldComps ni a eBay. 20 nov 2026 (Render : « database is locked ») : l'index a son propre fichier
@@ -32,9 +43,9 @@ import threading
 import time
 
 NOTE_MIN = 82                       # A- et plus
-LIQ_MIN = 5
+LIQ_MIN = 8                         # 23 nov 2026 : 8 ventes en 60 jours (avant : 5)
 LIQ_JOURS = 60
-RABAIS_MAX = 0.10                   # l'annonce : au plus 10 % au-dessus de la mediane recente
+RABAIS_MAX = 0.0                    # 23 nov 2026 : l'annonce ne depasse pas la mediane recente (avant : +10 %)
 MED_JOURS = 90
 DEMI_VIE = 15.0
 RAFRAICHIR_S = 1800

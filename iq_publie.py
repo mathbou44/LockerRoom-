@@ -40,13 +40,21 @@ def pro(R):
     return int(R["pro"]["reussi"] * 100 + 1e-9), int(R["hasard"]["reussi"] * 100 + 1e-9)
 
 
+def revendue(R):
+    """23 nov 2026 (le comparatif « seul ou avec SlabCoach ») : (Radar Pro, seul) en % entiers : la meme carte s'est revendue
+    ensuite. Le Radar Pro vers le bas, le point de comparaison au plus proche (la moitie vers le haut) : jamais plus d'ecart
+    que la mesure."""
+    return int(R["pro"]["revendue"] * 100 + 1e-9), int(R["hasard"]["revendue"] * 100 + 0.5)
+
+
 def publics(chemin=None):
     """Pour l'app : les memes textes que le site. {} si la mesure n'est pas la."""
     R = lire(chemin)
     try:
         a_fr, a_en, av = accord(R)
         p, h = pro(R)
+        rv, rvh = revendue(R)
         return {"le": R["le"], "ventes": ventes_k(R), "fois": fois(R), "accord_fr": a_fr, "accord_en": a_en, "accord_avant": av,
-                "pro": p, "hasard": h, "joueurs": int(R.get("joueurs") or 0)}
+                "pro": p, "hasard": h, "revendue": rv, "revendue_seul": rvh, "joueurs": int(R.get("joueurs") or 0)}
     except (KeyError, TypeError, ValueError):
         return {}

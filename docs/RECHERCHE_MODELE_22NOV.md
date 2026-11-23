@@ -284,3 +284,34 @@ Aller-retour complet, entree au prix d'avant : +9 a +12 % brut pour tous les sig
 
 **Dans le code (signal_joueurs.py, v1.2).** Gros match isole = FENETRE (fenetre de vente de 2 semaines, notee sur les jours 2 a 14) ;
 gros match deja chaud ou tour du chapeau = ACHETE fort (★ ; ★★ pour un jeune joueur) ; le reste inchange.
+
+## 23 nov : les avenues du Radar Pro (outils/recherche/avenues/)
+
+Question de Mathieu : a-t-on analyse toutes les avenues pour monter le % de chaque outil SlabIQ ? Non : il en restait une, sur le Radar Pro.
+
+**Le constat.** Sous la regle du 20 nov (A- et plus, 5 ventes de la meme carte en 60 jours, pas plus de 10 % au-dessus de sa mediane),
+les achats a 5-7 ventes reussissaient 3 fois sur 10 ; ceux a 8 ventes et plus, 7 fois sur 10. 210 regles essayees (note minimum,
+ventes en 60 jours, prix contre la mediane), choisies sur une periode et jugees sur une autre.
+
+| Regle | 27 sept | 11 oct | 25 oct | 8 nov | 22 nov | Cartes differentes |
+|---|---|---|---|---|---|---|
+| Avant : 5 ventes, +10 % | 76 % | 74 % | 59 % | 64 % | 63 % | 225 (33 joueurs) |
+| 8 ventes, +10 % | 86 % | 81 % | 72 % | 71 % | 67 % | 130 (25) |
+| **8 ventes, <= mediane (retenue)** | 90 % | 88 % | 80 % | 82 % | 78 % | 104 (23) |
+| 12 ventes, <= mediane | 97 % | 92 % | 84 % | 84 % | 81 % | 60 (16) |
+
+(Rejoue sur les memes ventes avec les lettres d'aujourd'hui ; le bulletin officiel refait chaque date avec ses propres lettres.)
+
+- L'effet est regulier : plus de ventes exigees et un prix plus bas donnent toujours mieux, a chaque date. Ce n'est pas une regle fouillee.
+- Une carte ou un joueur ne comptant qu'une fois, le gain tient (par carte, derniere date : 53 % -> 68 %).
+- **D'ou vient le gain.** « 8 ventes » : la carte se revend plus (81 % -> 89 %). « <= mediane » : le marche de la carte ne tient pas
+  mieux (64 % contre 60 % des cartes revendues gardent 90 % de leur mediane d'avant) ; l'acheteur ne paie juste jamais trop cher.
+- La lettre minimum compte peu une fois la liquidite et le prix regles (B+ et plus donne presque la meme chose).
+- Limite : les achats du Radar Pro sont concentres sur les recrues de l'annee (3 joueurs = 39 % des achats de l'ancienne regle).
+
+**A+ sous A dans les reventes par lettre : la mesure, pas la lettre.** Une A+ coute 1 130 $ en mediane (A : 280 $) et 84 % des A+ n'ont
+aucune vente dans les 60 jours d'avant. Moins de copies, donc moins de reventes de la meme carte. A ventes egales avant, la part
+revendue est a peu pres la meme de A+ a D ; seule E est nettement plus basse.
+
+**Decision (Mathieu, 23 nov) :** « 8 ventes, <= mediane ». Test officiel : 77,7 % gardent leur valeur (IC 95 % : 73,9-81,3), 90,1 % se
+revendent, 24,8 % rentables apres frais, 475 achats ; seul : 11,1 %, 20,5 %, 3,6 % (30 922 achats).

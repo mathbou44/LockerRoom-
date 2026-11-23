@@ -10,7 +10,8 @@ et mesure ses reventes exactement comme d'habitude. Chaque ligne du bulletin est
   python3 outils/bulletin_iq.py --rendre                               (reecrit la page avec ui/slabiq_bulletin.json)
 
 « Garde sa valeur » (la mesure du Radar Pro) : la meme carte s'est revendue apres la date a au moins 90 % du prix paye ; une
-carte jamais revendue compte comme ratee. « Au hasard » : les memes achats sans SlabIQ (meme prix minimum, ni base ni lot).
+carte jamais revendue compte comme ratee. « Seul » (avant le 23 nov : « au hasard ») : tous les achats de la meme periode, sans
+SlabIQ (meme prix minimum, ni base ni lot) : le meme mot que le comparatif du site (outils/site_iq.bloc_vs).
 """
 import datetime as dt
 import gzip
@@ -67,6 +68,9 @@ _ME = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "No
 jfr = lambda d: "%d %s" % (int(d[8:10]), _M[int(d[5:7]) - 1])
 jen = lambda d: "%s %d" % (_ME[int(d[5:7]) - 1], int(d[8:10]))
 pc = lambda x: "–" if x is None else str(round(x * 100))
+# 23 nov 2026 : le Radar Pro s'ecrit comme partout sur le site (iq_publie.pro : vers le bas, jamais plus que la mesure) ; sinon la
+# derniere ligne du bulletin disait 78 % et le gros chiffre 77 % pour la meme mesure (77,7 %)
+pb = lambda x: "–" if x is None else str(int(x * 100 + 1e-9))
 
 
 def rendre(B):
@@ -77,19 +81,19 @@ def rendre(B):
     lo, hi = min(x["pro"]["reussi"] for x in L), max(x["pro"]["reussi"] for x in L)
     hlo, hhi = min(x["hasard"]["reussi"] for x in L), max(x["hasard"]["reussi"] for x in L)
     r = "".join(f'<tr style="border-top:1px solid rgba(255,255,255,.08)"><td style="text-align:left;white-space:nowrap;padding:9px 0"><span class="fr">{jfr(x["fin"])}</span><span class="en">{jen(x["fin"])}</span></td><td>{x["pro"]["n"]}</td>'
-                f'<td><b class="holo-t">{pc(x["pro"]["reussi"])} %</b></td><td>{pc(x["hasard"]["reussi"])} %</td></tr>' for x in L)
+                f'<td><b class="holo-t">{pb(x["pro"]["reussi"])} %</b></td><td>{pc(x["hasard"]["reussi"])} %</td></tr>' for x in L)
     return (f'<!--bulletin--><div class="iq-bul" style="margin:26px 0 6px"><h3><span class="fr">Le même test, refait à {len(L)} dates</span>'
             f'<span class="en">The same test, rerun on {len(L)} dates</span></h3>'
             f'<table style="width:100%;border-collapse:collapse;text-align:right;font-variant-numeric:tabular-nums"><tr style="opacity:.6;font-size:.82em">'
             f'<th style="text-align:left;font-weight:500;padding:6px 0"><span class="fr">Test du</span><span class="en">Test of</span></th>'
             f'<th style="font-weight:500"><span class="fr">Achats du Radar Pro</span><span class="en">Pro Radar buys</span></th>'
             f'<th style="font-weight:500"><span class="fr">Gardent leur valeur</span><span class="en">Hold their value</span></th>'
-            f'<th style="font-weight:500"><span class="fr">Au hasard</span><span class="en">At random</span></th></tr>{r}</table>'
+            f'<th style="font-weight:500"><span class="fr">Seul</span><span class="en">On your own</span></th></tr>{r}</table>'
             f'<p class="iq-note"><span class="fr">Chaque ligne est le test tel qu’il aurait été publié ce jour-là, avec seulement les ventes connues à cette date. '
-            f'À chaque fois : {pc(lo)} à {pc(hi)} % des achats du Radar Pro se sont revendus sans perdre leur valeur (au hasard : {pc(hlo)} à {pc(hhi)} %). '
+            f'À chaque fois : {pb(lo)} à {pb(hi)} % des achats du Radar Pro se sont revendus sans perdre leur valeur (seul : {pc(hlo)} à {pc(hhi)} %). '
             f'« Garde sa valeur » : la même carte s’est revendue ensuite à au moins 90 % du prix payé ; jamais revendue : ratée.</span>'
             f'<span class="en">Each row is the test as it would have been published that day, with only the sales known on that date. '
-            f'Every time: {pc(lo)} to {pc(hi)}% of Pro Radar buys resold without losing value (at random: {pc(hlo)} to {pc(hhi)}%). '
+            f'Every time: {pb(lo)} to {pb(hi)}% of Pro Radar buys resold without losing value (on your own: {pc(hlo)} to {pc(hhi)}%). '
             f'“Holds its value”: the same card later resold for at least 90% of the price paid; never resold: a miss.</span></p></div><!--/bulletin-->')
 
 

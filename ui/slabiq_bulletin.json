@@ -1,5 +1,5 @@
 {
- "le": "2026-11-22",
+ "le": "2026-11-23",
  "methode": "tests_site rejoue a chaque date, avec les ventes connues ce jour-la",
  "lignes": [
   {
@@ -11,14 +11,14 @@
    "accord": 0.647,
    "x_a_e": 3.8,
    "pro": {
-    "n": 397,
-    "reussi": 0.786,
+    "n": 187,
+    "reussi": 0.925,
     "reussi_ic95": [
-     0.746,
-     0.824
+     0.888,
+     0.957
     ],
-    "revendue": 0.864,
-    "profit_apres_frais": 0.154
+    "revendue": 0.963,
+    "profit_apres_frais": 0.246
    },
    "hasard": {
     "n": 18313,
@@ -35,14 +35,14 @@
    "accord": 0.687,
    "x_a_e": 5.3,
    "pro": {
-    "n": 464,
-    "reussi": 0.733,
+    "n": 214,
+    "reussi": 0.883,
     "reussi_ic95": [
-     0.694,
-     0.774
+     0.836,
+     0.925
     ],
-    "revendue": 0.812,
-    "profit_apres_frais": 0.192
+    "revendue": 0.916,
+    "profit_apres_frais": 0.308
    },
    "hasard": {
     "n": 21729,
@@ -59,14 +59,14 @@
    "accord": 0.709,
    "x_a_e": 4.8,
    "pro": {
-    "n": 638,
-    "reussi": 0.589,
+    "n": 278,
+    "reussi": 0.802,
     "reussi_ic95": [
-     0.55,
-     0.629
+     0.752,
+     0.845
     ],
-    "revendue": 0.683,
-    "profit_apres_frais": 0.185
+    "revendue": 0.842,
+    "profit_apres_frais": 0.306
    },
    "hasard": {
     "n": 25768,
@@ -83,14 +83,14 @@
    "accord": 0.76,
    "x_a_e": 6.9,
    "pro": {
-    "n": 996,
-    "reussi": 0.642,
+    "n": 476,
+    "reussi": 0.817,
     "reussi_ic95": [
-     0.609,
-     0.674
+     0.779,
+     0.851
     ],
-    "revendue": 0.792,
-    "profit_apres_frais": 0.195
+    "revendue": 0.895,
+    "profit_apres_frais": 0.307
    },
    "hasard": {
     "n": 34825,
@@ -107,14 +107,14 @@
    "accord": 0.765,
    "x_a_e": 7.8,
    "pro": {
-    "n": 1046,
-    "reussi": 0.63,
+    "n": 475,
+    "reussi": 0.777,
     "reussi_ic95": [
-     0.601,
-     0.659
+     0.739,
+     0.813
     ],
-    "revendue": 0.814,
-    "profit_apres_frais": 0.202
+    "revendue": 0.901,
+    "profit_apres_frais": 0.248
    },
    "hasard": {
     "n": 30922,
