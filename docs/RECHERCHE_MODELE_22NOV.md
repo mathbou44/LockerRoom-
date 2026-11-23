@@ -114,3 +114,28 @@ le momentum existe surtout du cote perdant, et le retour a la moyenne mesure sur
 
 **Limites.** 80 % des lignes viennent d'aout a nov. 2026. Les regles « ATTENDS » reposent sur 19 a 39 joueurs. Semaines qui se
 chevauchent : les cas ne sont pas independants. Forme et Wikipedia arretes au 12 nov. Pas d'historique d'abonnes Instagram.
+
+### Grande recherche de regles (726 756 combinaisons)
+
+`jeu2.py` : 70 criteres, chaque famille avec plusieurs fenetres (medianes 60/90/180/365 j, EMA 3/7/14/30/60/120, moyennes simples
+60/120/200/365, hauts et bas 90/200/365, bandes de Bollinger, RSI sur 10 ventes, volume 14 et 30 j, forme 3/5/10/20 matchs, buts,
+serie de points, Wikipedia 3/7/14/30 j, ecart carte contre joueur). `cherche.py` : toutes les paires de conditions x 6 seuils
+x 3 ages de carte x 3 horizons. **On choisit sur le passe, on juge une seule fois sur la periode suivante.**
+
+| Horizon | Regles essayees | 25 meilleurs ACHATS : passe -> jamais vu | 25 meilleurs ATTENDS : passe -> jamais vu |
+|---|---|---|---|
+| 30 j | 261 459 | +10,2 % -> -2,6 % (2 sur 25 tiennent) | -10,3 % -> -12,4 % (25 sur 25 tiennent) |
+| 60 j | 262 713 | +15,9 % -> +0,9 % (mediane -5,7 %) | -13,0 % -> -5,7 % (19 sur 25) |
+| 90 j | 202 584 | +26,3 % -> +2,2 % (mediane -3,8 %) | -18,6 % -> -2,3 % (18 sur 25) |
+
+- **Aucune regle d'achat ne survit.** Les « meilleures » du passe (+10 a +26 %, en hausse 70 a 80 %) retombent a zero sur la
+  periode suivante. C'est l'effet d'avoir cherche parmi des centaines de milliers : on trouve toujours du hasard qui a l'air d'une regle.
+- **Une regle ATTENDS tient aux trois horizons, avec presque le meme chiffre avant et apres :**
+  **carte de moins de 10 mois + ses ventes qui explosent (sa part du marche a triple et plus).**
+  30 j : -8,8 % -> -11,8 % (558 cas, 60 joueurs, en hausse 28 %). 60 j : -15,5 % -> -16,7 % (252 cas, 22 joueurs, en hausse 24 %).
+  90 j : -18,0 % -> -9,1 % (442 cas, 23 joueurs, en hausse 31 %). Avec les ventes du JOUEUR qui explosent aussi : -14,9 % a 30 j
+  (122 cas, 18 joueurs, en hausse 25 %).
+  Lecture : quand une carte neuve inonde le marche, le prix continue de tomber. C'est aussi un vrai signal de VENTE pour celui qui
+  vient de l'ouvrir : vendre tout de suite plutot que dans 2 mois vaut 11 a 17 %. Mesure au prix reel, pas au prix du signal.
+- Le modele d'apprentissage avec 70 criteres ne fait pas mieux qu'avec 34 (bas 20 % : -5,2 % a 30 j, -5,6 % a 60 j, -7,7 % a 90 j ;
+  haut 20 % : 0 %). Plus de criteres n'ajoute rien : c'est la profondeur de l'historique qui manque, pas les variables.
