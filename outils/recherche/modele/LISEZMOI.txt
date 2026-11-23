@@ -1,0 +1,23 @@
+Modele « Timing / Signal par joueur » : scripts de recherche du 22 nov 2026 (soir). Rien ici n'est branche dans l'app.
+Rapport : docs/RECHERCHE_MODELE_22NOV.md.
+
+Entrees (chemins en dur, a adapter) :
+  - /tmp/claude-0/ts/A_maintenant.json.gz : ventes annotees par outils/tests_site.py (titre, prix, date, joueur, type, cote)
+  - slabiq_donnees.json.gz : export admin (Mesures -> Test SlabIQ -> Telecharger les donnees du test) : matchs LNH et vues Wikipedia
+  - /tmp/an/by.pkl : ancienne cle stricte (jeu.py, jeu2.py seulement)
+
+Ordre :
+  1. cle2.py          cle de carte canonique (decodeur de l'app) -> by2.pkl. Double les cas utilisables.
+  2. jeu3.py          tableaux A3 (carte x semaine) et B3 (indice du joueur x semaine), 100 criteres, prix reel 14 j apres le signal
+  3. labo.py          les cas + l'apprentissage en marchant (walk-forward) ; ml3.py (cartes), mlB.py (joueurs), techniques.py (regles de bourse)
+  4. evenements.py    etude d'evenements au jour pres sur l'indice ; evenements2.py par cas (lit le debut de evenements.py)
+  5. evenements3.py   la verification la plus directe : la meme carte, avant et apres ; evenements4.py : jumelage SlabIQ + recrues
+  6. signal_joueur.py LE SIGNAL v1 (fonctions pures : cas, evenements, tableau de decision)
+  7. rejoue.py        rejoue l'histoire soir par soir et note le signal (« bon conseil X sur 10 »)
+  8. force.py         la force du signal : apprend avant aout 2026, juge apres
+Anciens (premiere passe, cle stricte) : jeu.py, entraine.py, joueur.py, regles.py, jeu2.py, cherche.py, entraine2.py.
+
+Regles de mesure a ne jamais lacher :
+  - le prix d'entree n'est jamais le prix qui declenche le signal (bruit) : mediane des 14 j apres, ou meme carte avant / apres ;
+  - on choisit sur le passe, on juge une fois sur la suite ; un evenement par joueur par 14 jours ;
+  - une regle n'est gardee que si elle tient sur les deux periodes (avant / depuis aout 2026).

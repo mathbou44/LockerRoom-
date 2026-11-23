@@ -139,3 +139,92 @@ x 3 ages de carte x 3 horizons. **On choisit sur le passe, on juge une seule foi
   vient de l'ouvrir : vendre tout de suite plutot que dans 2 mois vaut 11 a 17 %. Mesure au prix reel, pas au prix du signal.
 - Le modele d'apprentissage avec 70 criteres ne fait pas mieux qu'avec 34 (bas 20 % : -5,2 % a 30 j, -5,6 % a 60 j, -7,7 % a 90 j ;
   haut 20 % : 0 %). Plus de criteres n'ajoute rien : c'est la profondeur de l'historique qui manque, pas les variables.
+
+---
+
+## Le signal par joueur (v1) : un detecteur de cas branche sur les matchs
+
+Decide avec Mathieu le 22 nov au soir : la promesse est « acheter et vendre au bon moment », pas « revendre avec profit apres frais ».
+
+### 1. Deux fois plus de cas : la cle de carte canonique (`cle2.py`)
+La cle stricte coupait la meme carte en dizaines de morceaux (la Young Guns de Demidov : 40 ecritures du titre). Avec le decodeur
+de l'app (joueur, annee, numero, tirage, paralleles, auto, patch) : 270 596 « cartes » deviennent 178 838 ; les ventes utilisables
+(cartes de 4 ventes et plus) passent de 174 674 a 294 477 ; les cas notes a 30 j de 21 100 a 43 773. Verifie : les morceaux
+recolles ont la meme mediane de prix.
+
+### 2. Les techniques de bourse sur l'indice du joueur (`jeu3.py`, `techniques.py`) : rien a l'achat
+Indice causal pour 456 joueurs (chaque vente d'une carte deja vue donne le niveau du joueur). L'indice suit les vraies cartes
+(correlation 0,55 a 30 j, 0,70 a 60 j). Regles testees au prix reel :
+- Croix doree (EMA7 > EMA30 > EMA120) : -0,8 % a 30 j contre -1,8 % pour les autres. Pas de hausse.
+- Prix au-dessus ou au-dessous de sa moyenne 200 j, elan 60 et 180 j, acceleration, MACD : rien de fiable.
+- Seul le cote baisse parle : croix de la mort -3 a -4 % ; elan 180 j a -15 % : -5 % ; volume du joueur qui explose pendant que
+  le prix baisse : -11 a -13 % a 60 et 90 j (-13 a -15 % sur ses vraies cartes).
+- Apprentissage en marchant, 100 criteres : correlation hors echantillon +0,04 a +0,10. Un modele PAR CAS fait moins bien qu'un
+  seul modele qui connait le cas (pas assez de donnees par cas).
+
+### 3. La courbe de vie d'une carte (meme carte, prix reel)
+| Age de la carte | 30 j | 60 j | 90 j |
+|---|---|---|---|
+| 0 a 5 mois | -3 a -6 % | -10 a -12 % | -15 % |
+| 6 a 11 mois | -3 a -6 % | -6 a -10 % | -5 a -9 % |
+| 12 a 14 mois | -1,7 % | -1,4 % | 0 % |
+| 15 mois et plus | -2 a +2 % | -2 a +4 % | -2 a +3 % |
+Une carte de l'annee (brute) a baisse a 60 j pendant 15 mois sur 15. Le plancher est vers 12 mois.
+
+### 4. Ce qui fait bouger un joueur : les matchs, au jour pres (`evenements3.py` : LA MEME CARTE, 7 j avant contre apres)
+| Evenement | Jour meme | Lendemain | Jours 8 a 30 | Jours 31 a 60 | Cas |
+|---|---|---|---|---|---|
+| Match de 0 point (temoin) | +1,4 % | -0,5 % | -0,1 % | -1,9 % | 731 |
+| 2 points | 0 % | 0 % | +1,8 % | +1,5 % | 625 |
+| Gros match (3 points+ ou 2 buts+) | -1,0 % | +4,5 % | +4,6 % | +5,9 % | 435, 165 joueurs |
+| 2 buts et plus | +0,1 % | +5,9 % | +6,5 % | +10,2 % | 304 |
+| Tour du chapeau | -1,0 % | +20,3 % | +14,1 % | +16,9 % | 35 a 56, 45 joueurs |
+| Debut de sequence en feu | +1,9 % | +6,7 % | +5,9 % | +2,6 % | 227 |
+| Panne de 4 matchs (0,5 pt/match+) | -3,1 % | -2,3 % | -3,2 % | -4,9 % | 170 |
+| Nouvelle sans gros match (Wikipedia x3) | +0,9 % | +3,8 % | 0 % | 0 % | 320 |
+- Le gros match tient sur les deux periodes : +5,6 % avant aout 2026, +6,8 % depuis (jours 31 a 60).
+- Dose et effet : 0 point, 2 points, 3 points, 2 buts, tour du chapeau : la hausse grandit avec la performance.
+- Le jour du match le prix n'a pas bouge ; le lendemain c'est fait. L'avantage est la vitesse.
+- Recrue de l'annee (rejoue avec la vraie annee recrue, `rejoue.py`) : meme apres un gros match ses cartes baissent
+  (-5,6 % sur les jours 8 a 60, 21 cas). Recrue en panne : -21 %, 21 cas, 17 joueurs.
+
+### 5. Jumele a la cote SlabIQ (`evenements4.py`)
+Apres un gros match ou une sequence en feu : les types de carte forts selon SlabIQ (Young Guns, auto, RPA ; note du type 88+) font
++6,8 % (jours 8 a 30) et +8,7 % (jours 31 a 60, en hausse 62 %) ; les cartes ordinaires -0,5 % et +3,6 %. Le signal dit QUAND,
+SlabIQ dit QUELLE carte. (La lettre finale melange une photo de novembre : on se fie ici a la note du type de carte.)
+
+### 6. Le signal v1 rejoue soir par soir (`signal_joueur.py`, `rejoue.py`)
+3 207 signaux. Note : meme carte, 7 j avant contre jours 8 a 60. « Bon conseil » = le prix est alle du bon cote.
+| Signal | Mediane | Bon conseil | Avant aout 2026 | Depuis | Cas |
+|---|---|---|---|---|---|
+| ACHETE (tous) | +6,2 % | 6,1 sur 10 | +7,3 %, 6,1 | +4,2 %, 6,2 | 657, 172 joueurs |
+| ACHETE, cartes fortes SlabIQ | +8,4 % | 6,3 sur 10 | +9,5 %, 6,4 | +5,9 %, 6,0 | 576 |
+| ACHETE, cartes ordinaires | +1,5 % | 5,2 sur 10 | +1,3 %, 5,0 | +1,7 %, 5,5 | 386 |
+| ACHETE veteran, gros match | +5,8 % | 6,1 | +6,4 %, 6,0 | +4,6 %, 6,2 | 358 |
+| ACHETE veteran, tour du chapeau | +11,8 % | 6,7 | +10,7 %, 6,1 | +14,7 %, 7,6 | 45 |
+| ACHETE jeune, sequence en feu | +15,0 % | 7,6 | +22,4 %, 7,6 | trop peu | 42 |
+| ATTENDS jeune en panne | -6,9 % | 7,0 | -5,4 %, 6,8 | -17,6 %, 7,5 | 53 |
+| VENDS recrue en panne | -21,0 % | 8,6 | -16,0 %, 8,6 | trop peu | 21 |
+| ACHETE veteran, sequence en feu | +1,2 % | 5,4 | | | 112 : a retirer |
+| ATTENDS veteran en panne | -0,6 % | 5,0 | | | 128 : a retirer |
+| VENDS nouvelle sans match | 0 % | 4,8 | | | 327 : a retirer |
+Temoin (soir d'un match de 0 point) : le prix est plus haut ensuite 4,5 a 4,9 fois sur 10, mediane de -0,1 a -1,9 %.
+
+### 7. La force du signal, apprise par un modele (`force.py`)
+Appris sur les 441 ACHETE d'avant aout 2026, juge sur les 216 d'apres (jamais vus), criteres publics le soir meme :
+| Tiers predit | Mediane (jours 8 a 60) | Bon conseil |
+|---|---|---|
+| Bas | +2,7 % | 5,6 sur 10 |
+| Milieu | -0,7 % | 5,0 sur 10 |
+| Haut (« signal fort ») | +15,8 % | 7,6 sur 10 |
+(72 cas par tiers ; modele lineaire : +11,9 %, 7,1 sur 10.) Le critere qui pese le plus : le joueur etait DEJA chaud (5 points et plus
+sur ses 5 matchs d'avant) : +10,1 % et 6,6 sur 10 avant, +6,9 % et 6,5 depuis. Un gros match isole apres une passe froide :
++3,2 % et 5,1 sur 10 avant, -3,9 % et 4,6 depuis.
+
+### Limites
+- Un an et demi d'historique, mince avant aout 2026 ; une seule saison complete. Les lignes de 20 a 60 cas sont a confirmer.
+- Depuis aout 2026 : debut de saison seulement (les fenetres de 60 j sont coupees au 22 nov).
+- Dates au jour pres : on ne sait pas a quelle heure la vente s'est faite. « Acheter le soir meme au prix d'avant » n'est pas prouve,
+  seulement que le prix du jour du match n'a pas encore bouge.
+- Meme le signal fort (+12 a +16 % brut) est a la limite des frais de 13 % : on ne promet pas de profit de revente.
+- Retirer des regles apres avoir vu leur note embellit un peu le total : la vraie preuve sera le suivi en direct cette saison.

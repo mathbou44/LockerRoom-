@@ -217,11 +217,16 @@ SEMIS["recherche_22nov"] = [
     ("r_donnees", "Télécharger les données du test SlabIQ (matchs et Wikipedia à jour)", "Admin → Mesures → Test SlabIQ → « Télécharger les données du test ». Celles du 12 nov ont servi à la recherche ; des fraîches doublent les cas.", 2, None, None, "2026-11-24"),
     ("r_escalier", "Vérifier : A+ se revend moins que A, et B+ plus que A-, sur le nouvel export", "Reventes du 29 oct au 22 nov : A+ 14 %, A 25 %, A- 14 %, B+ 21 %. Le site dit maintenant 7 fois (avant : 9). Claude regarde pourquoi avant le lancement.", 1, None, None, "2026-11-25"),
 ]
-SEMIS_PROJET = {"recherche_22nov": "lancement", "legal_22nov": "licences", "tour_22nov": "lancement", "megatest_22nov": "lancement", "bulletin_22nov": "lancement", "achat_21nov": "lancement", "historique_21nov": "lancement", "tendances_21nov": "lancement", "licences_fc": "licences", "lancement_1dec": "lancement", "securite_21nov": "lancement", "matin_21nov": "lancement", "securite_reste": "lancement", "vitesse_21nov": "lancement", "consig_21nov": "lancement", "soir_21nov": "lancement"}
+SEMIS["signal_22nov"] = [
+    ("s_direct", "Décider : suivre le signal par joueur en direct, en admin seulement", "Le signal v1 (Achète / Vends / Attends) vient des matchs de la LNH, pas des prix. Rejoué : Achète +6,2 % et 6,1 sur 10 ; signal fort +15,8 % et 7,6 sur 10 (72 cas). Claude le branche en admin, il se note seul chaque semaine, et on le montre aux clients quand il tient en direct. Détail : docs/RECHERCHE_MODELE_22NOV.md.", 1, None, None, "2026-11-25"),
+    ("s_vendre", "Décider : la pastille « Vends » et la liste « À vendre » avant le lancement", "Avec le prix réel des 14 jours suivants, « carte à +20 % de sa normale » retombe à 52 % (illusion : la hausse était une vente chanceuse). La preuve affichée (« N fois sur 10 ») est à refaire ou la pastille à retirer. Claude refait la mesure sur la liste de l'app.", 1, None, None, "2026-11-25"),
+]
+SEMIS_PROJET = {"signal_22nov": "lancement", "recherche_22nov": "lancement", "legal_22nov": "licences", "tour_22nov": "lancement", "megatest_22nov": "lancement", "bulletin_22nov": "lancement", "achat_21nov": "lancement", "historique_21nov": "lancement", "tendances_21nov": "lancement", "licences_fc": "licences", "lancement_1dec": "lancement", "securite_21nov": "lancement", "matin_21nov": "lancement", "securite_reste": "lancement", "vitesse_21nov": "lancement", "consig_21nov": "lancement", "soir_21nov": "lancement"}
 PROJETS = {"licences": "Licences de données", "lancement": "Lancement", "general": "Général", "suivi": "Suivi"}
 
 
-CLOS = {"clos_22nov": {"t_cadence": "Décidé par Mathieu le 22 nov : on garde « chaque semaine » (le site le dit déjà).",
+CLOS = {"clos_22nov_soir": {"r_promesse": "Décidé par Mathieu le 22 nov au soir : oui, la promesse est « le bon moment » ; pas de profit de revente promis pour l'instant."},
+        "clos_22nov": {"t_cadence": "Décidé par Mathieu le 22 nov : on garde « chaque semaine » (le site le dit déjà).",
                        "c_tour_mesure": "Fait par Claude le 22 nov au soir : méga test, « À vendre » sur la carte exacte, tests du site et bulletin refaits."},
         "clos_21nov": {"l1_pousser": "Fait par Claude le 21 nov : poussée et en ligne (dernier envoi à 16 h 32).",
                        "v_piles": "Fait par Claude le 21 nov : les piles sont lues ; la cause des minutes lentes après une mise à jour est corrigée."}}
