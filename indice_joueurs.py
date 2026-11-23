@@ -128,18 +128,23 @@ def detecter_echange(h, vu=None, aujourdhui=None):
 # n'en avait pas, ou une vieille : « TOR »). La verite de chaque jour : les alignements des 32 clubs (API publique de la LNH,
 # 64 appels par jour) : l'equipe de CETTE saison et celle(s) de la saison derniere de chaque joueur.
 ROSTERS_H = 20
+ROSTERS_PREC_J = 7
 
 
-def rosters_lnh(vieux=None, maintenant=None):
-    """{le, saison, cour: {nom normalise: club}, prec: {nom normalise: [clubs]}} ; relu au plus aux 20 h."""
-    if vieux and vieux.get("cour") and time.time() - (vieux.get("le") or 0) < ROSTERS_H * 3600:
+def rosters_lnh(vieux=None, maintenant=None, force=False):
+    """{le, le_prec, saison, cour: {nom normalise: club}, prec: {nom normalise: [clubs]}} ; relu au plus aux 20 h.
+    23 nov 2026 (Larkin echange a Montreal un dimanche soir : 20 h, c'est trop long) : force=True relit tout de suite les
+    alignements de CETTE saison (32 appels) ; ceux de la saison d'avant ne changent plus : relus aux 7 jours seulement."""
+    if not force and vieux and vieux.get("cour") and time.time() - (vieux.get("le") or 0) < ROSTERS_H * 3600:
         return vieux
     import urllib.request
     an, _deb = _debut_saison(maintenant or date.today())
     cour_s, prec_s = f"{an}{an + 1}", f"{an - 1}{an}"
+    garder_prec = bool(vieux and vieux.get("prec") and vieux.get("saison") == cour_s
+                       and time.time() - (vieux.get("le_prec") or vieux.get("le") or 0) < ROSTERS_PREC_J * 86400)
     cour, prec, ok = {}, {}, 0
     for club in sorted(k for k in EQUIPES_NOM if k != "ARI"):
-        for saison, dest in ((cour_s, "c"), (prec_s, "p")):
+        for saison, dest in ((cour_s, "c"),) if garder_prec else ((cour_s, "c"), (prec_s, "p")):
             u = f"https://api-web.nhle.com/v1/roster/{'UTA' if club == 'UTA' else club}/{saison}"
             try:
                 with reseau.ouvrir(urllib.request.Request(u, headers={"User-Agent": "SlabCoach"}), timeout=15) as r:
@@ -158,9 +163,133 @@ def rosters_lnh(vieux=None, maintenant=None):
                         prec.setdefault(n, [])
                         if club not in prec[n]:
                             prec[n].append(club)
-    if ok < 20 and vieux:
+    if ok < (10 if garder_prec else 20) and vieux:
         return vieux                                         # la LNH ne repond pas : on garde la derniere lecture
-    return {"le": time.time(), "saison": cour_s, "cour": cour, "prec": prec}
+    maint = time.time()
+    if garder_prec:
+        return {"le": maint, "le_prec": vieux.get("le_prec") or vieux.get("le") or maint, "saison": cour_s, "cour": cour, "prec": vieux["prec"]}
+    return {"le": maint, "le_prec": maint, "saison": cour_s, "cour": cour, "prec": prec}
+
+
+# 23 nov 2026 (Mathieu : « echange entre Montreal et Detroit : on devrait absolument l'avoir capte ») : une nouvelle d'echange
+# FERME (pas une rumeur) qui nomme un de nos joueurs fait relire les alignements tout de suite, au lieu d'attendre 20 h.
+ECHANGE_FERME = re.compile(r"\btraded?s?\b|\bacquire[sd]?\b|\bdealt\b|\b[ée]chang[ée]e?s?\b|\bacquis\b|\bacquiert\b|\bacqui[eè]rent\b|\bobtien(?:t|nent)\b", re.I)
+ECHANGE_RUMEUR = re.compile(r"rumou?r|rumeur|\bcould\b|\bshould\b|\bmight\b|\bwould\b|\btargets?\b|\bif\b|\?|\bmock\b|proposal|\binterest|int[ée]r[êe]t|"
+                            r"deadline|\bwatch\b|\btalks?\b|\bmarket\b|\bbait\b|\bboard\b|\bblock\b|\btiers?\b|candidat|potenti|\boptions?\b|destinations?|landing spot|\bwants?\b|\brequest|\bdemande\b|pourrait|devrait|\bsi\b", re.I)
+ROSTERS_VITE_S = 75 * 60           # apres une nouvelle d'echange : au plus une relecture aux 75 minutes...
+ROSTERS_VITE_MAX = 10              # ... et au plus 10 par jour (320 appels)
+
+
+def echange_annonce(d, base, aujourdhui=None, items=None):
+    """Nos joueurs nommes dans une nouvelle d'echange ferme d'aujourd'hui ou d'hier, dont le changement d'equipe n'est pas encore
+    note (une fois note, on arrete de relire)."""
+    aujourdhui = aujourdhui or date.today()
+    items = [x for x in (actu(2) if items is None else items)
+             if ECHANGE_FERME.search(x.get("titre") or "") and not ECHANGE_RUMEUR.search(x.get("titre") or "")]
+    if not items:
+        return []
+    noms = set(base or {}) | set((d or {}).get("indice") or {})
+    par = set(_actu_par_joueur(noms, items))
+    # « Larkin traded to Canadiens » : le nom de famille seul suffit ICI (6 lettres et plus, un seul de nos joueurs le porte) :
+    # une fausse alerte ne coute qu'une relecture, ce sont les alignements qui disent la verite
+    fam = {}
+    for n in noms:
+        k = _norm(n).split()
+        if len(k) >= 2 and len(k[-1]) >= 6:
+            fam.setdefault(k[-1], []).append(n)
+    for x in items:
+        for w in set(re.findall(r"[a-z'\-]{6,}", _norm(x.get("titre")))):
+            if len(fam.get(w) or []) == 1:
+                par.add(fam[w][0])
+    ech, lim = (d or {}).get("echanges") or {}, (aujourdhui - timedelta(days=2)).isoformat()
+    return sorted(n for n in par if not (n in ech and str(ech[n].get("le") or "") >= lim))
+
+
+# 23 nov 2026 : le matin apres l'echange, Larkin n'etait sur AUCUN alignement (retire de Detroit, pas encore ajoute a Montreal) :
+# les alignements seuls auraient pris des jours. Les manchettes le disent tout de suite. Garde-fous : mots FERMES (pas une rumeur),
+# UNE seule equipe d'arrivee possible dans le titre, et une confirmation : deux manchettes d'accord, ou une manchette et le
+# joueur absent de l'alignement de son club. Les alignements gardent le dernier mot (ils confirment, ou ils effacent).
+_EQ_TITRE = {"ducks": "ANA", "anaheim": "ANA", "bruins": "BOS", "boston": "BOS", "sabres": "BUF", "buffalo": "BUF", "flames": "CGY",
+             "calgary": "CGY", "hurricanes": "CAR", "canes": "CAR", "carolina": "CAR", "caroline": "CAR", "blackhawks": "CHI", "chicago": "CHI",
+             "avalanche": "COL", "colorado": "COL", "blue jackets": "CBJ", "columbus": "CBJ", "dallas": "DAL", "red wings": "DET",
+             "detroit": "DET", "oilers": "EDM", "edmonton": "EDM", "panthers": "FLA", "florida": "FLA", "floride": "FLA",
+             "los angeles": "LAK", "minnesota": "MIN", "canadiens": "MTL", "canadien": "MTL", "habs": "MTL", "montreal": "MTL",
+             "predators": "NSH", "nashville": "NSH", "devils": "NJD", "new jersey": "NJD", "islanders": "NYI", "rangers": "NYR",
+             "senators": "OTT", "senateurs": "OTT", "ottawa": "OTT", "flyers": "PHI", "philadelphia": "PHI", "philadelphie": "PHI",
+             "penguins": "PIT", "pittsburgh": "PIT", "sharks": "SJS", "san jose": "SJS", "kraken": "SEA", "seattle": "SEA",
+             "st louis": "STL", "lightning": "TBL", "tampa bay": "TBL", "tampa": "TBL", "maple leafs": "TOR", "leafs": "TOR",
+             "toronto": "TOR", "mammoth": "UTA", "utah": "UTA", "canucks": "VAN", "vancouver": "VAN", "golden knights": "VGK",
+             "vegas": "VGK", "capitals": "WSH", "washington": "WSH", "winnipeg": "WPG"}
+_RE_EQ_TITRE = re.compile(r"\b(" + "|".join(sorted((re.escape(k) for k in _EQ_TITRE), key=len, reverse=True)) + r")\b")
+NOUVELLES_SANS_SUITE_J = 3         # une manchette jamais confirmee : effacee si le joueur est encore dans son club 3 jours apres
+NOUVELLES_MAX_J = 10               # ... ou s'il n'est nulle part apres 10 jours
+
+
+def equipes_du_titre(titre):
+    """Les clubs nommes dans une manchette -> {abreviations}."""
+    t = re.sub(r"[^a-z ]", " ", _norm(titre))
+    return {_EQ_TITRE[m] for m in _RE_EQ_TITRE.findall(t)}
+
+
+def echange_par_nouvelles(d, base, aujourdhui=None, items=None):
+    """Note dans d["echanges"] le changement d'equipe annonce par les manchettes (source « nouvelles »). -> les joueurs notes."""
+    aujourdhui = aujourdhui or date.today()
+    items = [x for x in (actu(2) if items is None else items)
+             if ECHANGE_FERME.search(x.get("titre") or "") and not ECHANGE_RUMEUR.search(x.get("titre") or "")]
+    if not items:
+        return []
+    noms = set(base or {}) | set((d or {}).get("indice") or {})
+    ech, vus = d.setdefault("echanges", {}), d.get("equipes_vues") or {}
+    R = d.get("rosters") or {}
+    rc, frais = R.get("cour") or {}, time.time() - (R.get("le") or 0) < 26 * 3600
+    lim, faits = (aujourdhui - timedelta(days=2)).isoformat(), []
+    for nom in sorted(echange_annonce(d, base, aujourdhui, items)):
+        k = _norm(nom)
+        club = rc.get(k) or (vus.get(nom) or {}).get("eq") or abrev_equipe((((base or {}).get(nom) or {}).get("nhl") or {}).get("equipe"))
+        if not club:
+            continue
+        voix = {}                                            # club d'arrivee -> {source : jour}
+        fam = k.split()[-1]
+        for x in items:
+            t = _norm(x.get("titre"))
+            if not (k in t or (len(fam) >= 6 and re.search(r"\b" + re.escape(fam) + r"\b", t))):
+                continue
+            S = equipes_du_titre(x.get("titre"))
+            arr = (S - {club}) if club in S else S
+            if len(arr) != 1:
+                continue                                     # aucune ou plusieurs equipes d'arrivee possibles : on ne devine pas
+            src = re.sub(r"^https?://(www\.)?", "", str(x.get("lien") or x.get("titre") or ""))[:60].split("/")[0]
+            voix.setdefault(next(iter(arr)), {})[src] = max(str(x.get("date") or "")[:10], lim)
+        if len(voix) != 1:
+            continue
+        vers, par = next(iter(voix.items()))
+        if vers == club or not (len(par) >= 2 or (frais and k not in rc)):
+            continue
+        if nom in ech and ech[nom].get("vers") == vers:
+            continue
+        ech[nom] = {"de": club, "vers": vers, "le": min(min(par.values()), aujourdhui.isoformat()), "source": "nouvelles"}
+        faits.append(nom)
+    if faits:
+        print("Echange (manchettes) : " + ", ".join(f"{n} {ech[n]['de']} -> {ech[n]['vers']}" for n in faits[:6]), flush=True)
+    return faits
+
+
+def rosters_vite(d, base, aujourdhui=None, items=None, lecteur=None):
+    """Relit les alignements de cette saison si une nouvelle d'echange nomme un de nos joueurs. -> les joueurs, ou []."""
+    aujourdhui = aujourdhui or date.today()
+    noms = echange_annonce(d, base, aujourdhui, items)
+    if not noms:
+        return []
+    R, V = d.get("rosters") or {}, d.get("rosters_vite") or {}
+    if V.get("jour") != aujourdhui.isoformat():
+        V = {"jour": aujourdhui.isoformat(), "n": 0}
+    if time.time() - (R.get("le") or 0) < ROSTERS_VITE_S or V["n"] >= ROSTERS_VITE_MAX:
+        return []
+    d["rosters"] = (lecteur or rosters_lnh)(R, force=True)
+    V["n"] += 1
+    d["rosters_vite"] = V
+    print("Alignements LNH relus (nouvelle d'echange) : " + ", ".join(noms[:6]), flush=True)
+    return noms
 
 
 def suivre_echanges(d, base, aujourdhui=None):
@@ -190,12 +319,22 @@ def suivre_echanges(d, base, aujourdhui=None):
         x = detecter_echange(h, vu if vu and vu.get("eq") else None, aujourdhui)
         if x and (vu and vu.get("eq") and vu["eq"] != abr or nom not in ech):
             if not (nom in ech and ech[nom].get("vers") == x["vers"] and x["source"] != "vu"):
+                if nom in ech and ech[nom].get("vers") == x["vers"] and str(ech[nom].get("source") or "").startswith("nouvelles"):
+                    x = dict(x, le=min(str(ech[nom].get("le") or x["le"]), x["le"]), source="nouvelles+vu")   # annonce, puis confirme
                 ech[nom] = x
         if not vu or vu.get("eq") != abr:
             vus[nom] = {"eq": abr, "le": aujourdhui.isoformat()}
     lim = (aujourdhui - timedelta(days=ECHANGE_JOURS)).isoformat()
     for nom in [n for n, x in ech.items() if str(x.get("le") or "") < lim]:
         ech.pop(nom, None)
+    for nom in [n for n, x in ech.items() if x.get("source") == "nouvelles"]:      # 23 nov 2026 : une manchette jamais confirmee
+        x, la = ech[nom], rc.get(_norm(nom))
+        try:
+            age = (aujourdhui - date.fromisoformat(str(x.get("le"))[:10])).days
+        except ValueError:
+            age = NOUVELLES_MAX_J
+        if (la == x.get("de") and age >= NOUVELLES_SANS_SUITE_J) or (la != x.get("vers") and age >= NOUVELLES_MAX_J):
+            ech.pop(nom, None)
     return ech
 
 
@@ -613,6 +752,10 @@ def calculer(d=None, base=None, demande=None):
     except Exception as e:
         print("Grosses nouvelles : " + repr(e)[:120], flush=True)
     try:
+        echange_par_nouvelles(d, base)            # 23 nov 2026 : la manchette d'abord, l'alignement confirme ensuite
+    except Exception as e:
+        print("Echanges (manchettes) : " + repr(e)[:160], flush=True)
+    try:
         echanges = suivre_echanges(d, base)
     except Exception as e:
         print("Echanges : " + repr(e), flush=True)
@@ -822,12 +965,13 @@ def passe(max_appels=None, sport="hockey"):
     d = lire()
     d = {"joueurs": dict(d.get("joueurs") or {}), "indice": d.get("indice") or {}, "le": d.get("le") or 0,
          "equipes_vues": dict(d.get("equipes_vues") or {}), "echanges": dict(d.get("echanges") or {}), "rosters": d.get("rosters"),
-         "grosses": dict(d.get("grosses") or {})}
+         "grosses": dict(d.get("grosses") or {}), "rosters_vite": d.get("rosters_vite")}
+    base = (demande_legale.lire() or {}).get("joueurs") or {}
     try:
         d["rosters"] = rosters_lnh(d.get("rosters"))
+        rosters_vite(d, base)                     # 23 nov 2026 : une nouvelle d'echange -> on relit tout de suite
     except Exception as e:
         print("Alignements LNH : " + repr(e)[:160], flush=True)
-    base = (demande_legale.lire() or {}).get("joueurs") or {}
     jour = date.today().isoformat()
     lus = 0
     if highlightly.actif():

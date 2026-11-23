@@ -67,7 +67,7 @@ def stats_joueur(nom, sport="hockey"):
 
 
 highlightly.stats_joueur = stats_joueur
-ij.rosters_lnh = lambda vieux=None, maintenant=None: vieux        # 14 nov 2026 : pas de reseau dans le test
+ij.rosters_lnh = lambda vieux=None, maintenant=None, force=False: vieux        # 14 nov 2026 : pas de reseau dans le test
 r = ij.passe()
 assert r["lus"] == 3 and compte["n"] == 6, (r, compte)                 # 10 - 4 gardes pour l'essai admin = 6 appels
 assert ij.indice("feu joueur") and ij.top(3)[0]["indice"] >= ij.top(3)[-1]["indice"]
