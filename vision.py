@@ -1152,6 +1152,13 @@ def _infos_mesures(prep):
             out.append(f"MESURE de l'app ({face}) : " + " ; ".join(bouts) + ". Verifie chacun sur les zooms : vrai blanchiment, ou reflet / fond ?")
         elif any(x.get("mesurable") for x in list((u.get("coins") or {}).values()) + list((u.get("bords") or {}).values())):
             out.append(f"MESURE de l'app ({face}) : aucun blanc mesure la ou la bordure est foncee ou coloree : un « net » est attendu sauf si tu vois autre chose.")
+        ec = m.get("eclats") or {}
+        eb = [f"coin {nom} : {x['blanc_mm2']} mm2 de blanc colle a l'arete" for nom, x in (ec.get("coins") or {}).items() if x.get("mesurable") and (x.get("blanc_mm2") or 0) >= 0.15]
+        eb += [f"bord {nom} : {x['points']} points blancs sur l'arete" + (" (presque un lisere continu)" if x.get("lisere") else "")
+               for nom, x in (ec.get("bords") or {}).items() if x.get("mesurable") and (x.get("points") or 0) >= 3]
+        if eb:
+            out.append(f"ECLATS mesures par l'app ({face}, la ou la carte est foncee pres de l'arete) : " + " ; ".join(eb)
+                       + ". Sur les zooms : vrai eclat ou blanchiment, ou reflet / poussiere / motif imprime ?")
         sil = m.get("silhouette") or {}
         sb = []
         for nom, x in (sil.get("coins") or {}).items():
@@ -1329,6 +1336,22 @@ def _candidats_verif(f, mes):
             pf = x.get("points_fins") or 0
             if x.get("mesurable") and pf >= 3:
                 ajout("bord", nom, "quelques_points" if pf >= 5 else "point_blanc", f"l'app mesure {pf} petits points blancs sur la ligne de coupe")
+        # 22 nov 2026 : les eclats blancs mesures la ou l'arete est foncee (mesures.eclats), meme quand usure() n'a pas pu lire
+        # le coin ou le bord : le modele les revoit un a un sur leur gros plan (rien n'est montre sans sa confirmation)
+        ec = m.get("eclats") or {}
+        for nom, x in (ec.get("coins") or {}).items():
+            if nom in reflets:
+                continue
+            if x.get("mesurable") and (x.get("blanc_mm2") or 0) >= 0.15:
+                ajout("coin", nom, "effilochage_leger" if x["blanc_mm2"] >= 0.5 else "point_blanc",
+                      f"l'app mesure {x['blanc_mm2']} mm2 de blanc colle a l'arete du coin (carton arrache ou pointe blanchie ?)")
+            elif (x.get("points") or 0) >= 2:
+                ajout("coin", nom, "point_blanc", f"l'app voit {x['points']} petits points blancs sur l'arete a moins de 3 mm de ce coin")
+        for nom, x in (ec.get("bords") or {}).items():
+            if x.get("mesurable") and (x.get("points") or 0) >= 3:
+                ajout("bord", nom, "ebrechures" if x.get("lisere") else ("quelques_points" if x["points"] >= 5 else "point_blanc"),
+                      f"l'app voit {x['points']} points blancs sur l'arete (la ou la carte est foncee)"
+                      + (" ; le plus long : " + str(x["liste"][0]["long_mm"]) + " mm a " + str(x["liste"][0]["pos_mm"]) + " mm du debut" if x.get("liste") else ""))
         for nom, x in (sil.get("coins") or {}).items():
             if x.get("mesurable") and (x.get("relatif") or 0) >= 0.3:
                 ajout("coin", nom, "point_blanc" if x["relatif"] < 0.8 else "effilochage_leger",

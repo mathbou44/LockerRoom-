@@ -469,6 +469,31 @@ def nettete_gros_plan(im):
 
 
 # -- 4. trouver la carte dans la photo (sans contour du telephone) ------------------------------------------------------
+def trouver_carte_serree(im):
+    """22 nov 2026 (la Demidov Premier : la carte remplit presque toute la photo, trouver_carte() lisait son propre bord comme
+    du fond) : le fond = le cadre exterieur de 2 % de la photo, sur ses 4 cotes ; la carte = les rangees et colonnes dont plus
+    de la moitie des pixels s'en distinguent. Le format doit etre celui d'une carte. -> quad 0..1000 ou None."""
+    if np is None or im is None:
+        return None
+    k = 900 / max(im.size)
+    p = im.convert("RGB").resize((max(1, int(im.size[0] * k)), max(1, int(im.size[1] * k))))
+    a = _arr(p)
+    H, W, _ = a.shape
+    b = max(3, int(min(W, H) * 0.02))
+    cadre = np.concatenate([a[:b].reshape(-1, 3), a[-b:].reshape(-1, 3), a[:, :b].reshape(-1, 3), a[:, -b:].reshape(-1, 3)])
+    fond = np.median(cadre, axis=0)
+    m = np.sqrt(((a - fond[None, None, :]) ** 2).sum(axis=2)) > 45
+    rows, cols = np.where(m.mean(axis=1) > 0.5)[0], np.where(m.mean(axis=0) > 0.5)[0]
+    if rows.size < 20 or cols.size < 20:
+        return None
+    y0, y1, x0, x1 = int(rows.min()), int(rows.max()) + 1, int(cols.min()), int(cols.max()) + 1
+    r = (x1 - x0) / max(1, (y1 - y0))
+    if not (0.62 <= r <= 0.82 or 1.22 <= r <= 1.6) or (x1 - x0) * (y1 - y0) < 0.3 * W * H:
+        return None
+    f = lambda v, n: max(0, min(1000, round(v / n * 1000)))
+    return [[f(x0, W), f(y0, H)], [f(x1, W), f(y0, H)], [f(x1, W), f(y1, H)], [f(x0, W), f(y1, H)]]
+
+
 def trouver_carte(im):
     """La carte sur un fond (tapis, presentoir) : chaque rangee est comparee a son propre fond (les 4 % de gauche et de
     droite, que la carte ne touche pas) ; la carte = les colonnes et les rangees ou plus de la moitie des pixels
@@ -618,6 +643,134 @@ def _arete(prof_l, ref_bord, ref_fond):
     i = int(idx[0])
     d = v[i + 1] - v[i]
     return i + (-v[i] / d if d else 0.5)
+
+
+def eclats(carte_marge, marge):
+    """22 nov 2026 (Mathieu : « sans que je te le dise, l'aurais-tu trouve ? » ; tests a l'aveugle Demidov, Hughes, Michkov) :
+    les ECLATS BLANCS sur l'arete, la ou la carte est FONCEE juste a l'interieur, quel que soit le reste de la bordure
+    (usure() abandonnait un coin ou un bord entier des qu'une partie etait claire ou brillante : « contour incertain »,
+    « bordure brillante »). L'arete de chaque cote est d'abord recalee sur la photo (le contour peut etre a 1 mm pres).
+    Un point blanc : le plus clair de la bande 0 a 0,45 mm de l'arete, au moins 70 plus clair que l'interieur LOCAL (0,9 a
+    1,8 mm), peu colore, sur un interieur fonce (< 90), et qui ne continue PAS vers l'interieur (0,6 a 0,85 mm : sombre) :
+    un reflet holographique ou un motif imprime clair, eux, continuent. Les coins : le blanc collé a l'arete dans le carre
+    de 2,5 mm (carton arrache, pointe blanchie), sans les formes imprimees qui rentrent plus loin que 1,5 mm.
+    -> {"px_mm", "bords": {nom: {"mesurable", "lu_pct", "points", "liste": [{pos_mm, long_mm}], "lisere"}},
+        "coins": {nom: {"mesurable", "blanc_mm2", "points"}}} ; None si pas mesurable."""
+    if np is None or carte_marge is None:
+        return None
+    a = _arr(carte_marge)
+    Hm, Wm, _ = a.shape
+    mx, my = int(round(Wm * marge / (1 + 2 * marge))), int(round(Hm * marge / (1 + 2 * marge)))
+    W, H = Wm - 2 * mx, Hm - 2 * my
+    if H < 200 or W < 200:
+        return None
+    px_mm = min(W, H) / MM_COURT
+    La, Sa = _lum(a), _sat(a)
+    # chaque cote vu comme une image (n positions x profondeur), la profondeur 0 = l'arete du contour, vers l'interieur
+    def vue(nom, arr):
+        if nom == "haut":
+            return arr[:, mx:Wm - mx].T, my
+        if nom == "bas":
+            return arr[::-1, mx:Wm - mx].T, my
+        if nom == "gauche":
+            return arr[my:Hm - my, :], mx
+        return arr[my:Hm - my, ::-1], mx
+    def mm(v):
+        return int(round(v * px_mm))
+    out = {"px_mm": round(px_mm, 1), "bords": {}, "coins": {}}
+    marge_coin = mm(3.0)
+    points_coin = {k: 0 for k in ("haut-gauche", "haut-droit", "bas-droit", "bas-gauche")}
+    fin = {"haut": ("haut-gauche", "haut-droit"), "bas": ("bas-gauche", "bas-droit"), "gauche": ("haut-gauche", "bas-gauche"), "droit": ("haut-droit", "bas-droit")}
+    decal = {}
+    for nom in ("haut", "bas", "gauche", "droit"):
+        V, o = vue(nom, La)
+        Vs, _ = vue(nom, Sa)
+        n = V.shape[0]
+        # recaler l'arete : la ou le profil moyen (milieu du cote) monte le plus, entre -1,2 et +1,2 mm du contour
+        mid = V[int(0.2 * n):int(0.8 * n)]
+        prof = np.median(mid, axis=0)
+        lo, hi = max(1, o - mm(1.2)), min(V.shape[1] - 2, o + mm(1.2))
+        g = prof[lo + 1:hi + 1] - prof[lo:hi]
+        e = lo + int(np.argmax(g)) if g.size and float(g.max()) > 3 else o
+        decal[nom] = e - o
+        d1, i0, i1, k0, k1 = e + mm(0.45), e + mm(0.9), e + mm(1.8), e + mm(0.6), e + mm(0.85)
+        pas = max(1, mm(0.05))
+        idx = np.arange(0, n, pas)
+        bande = V[idx, max(0, e - mm(0.1)):d1]
+        lb = bande.max(axis=1)
+        sb = np.take_along_axis(Vs[idx, max(0, e - mm(0.1)):d1], bande.argmax(axis=1)[:, None], axis=1)[:, 0]
+        li = np.median(V[idx, i0:i1], axis=1)
+        lk = V[idx, k0:k1].max(axis=1)
+        fonce = li < 90
+        lu = float(fonce.mean())
+        if lu < 0.15:
+            out["bords"][nom] = {"mesurable": False, "raison": "bordure claire", "lu_pct": round(100 * lu)}
+            continue
+        tache = fonce & (lb > li + 70) & (lb > 130) & (sb < 0.30) & (lk < li + 45)
+        groupes, k = [], 0
+        while k < len(idx):
+            if tache[k]:
+                j = k
+                while j + 1 < len(idx) and (tache[j + 1] or (j + 2 < len(idx) and tache[j + 2])):
+                    j += 1
+                pos = (idx[k] + idx[j]) / 2
+                groupes.append({"pos_mm": round(float(pos) / px_mm, 1), "long_mm": round(float(idx[j] - idx[k] + pas) / px_mm, 2), "_px": float(pos)})
+                k = j + 1
+            else:
+                k += 1
+        for g_ in groupes:
+            if g_["_px"] < marge_coin:
+                points_coin[fin[nom][0]] += 1
+            elif g_["_px"] > n - marge_coin:
+                points_coin[fin[nom][1]] += 1
+        liste = [{k_: v for k_, v in g_.items() if k_ != "_px"} for g_ in groupes]
+        long_lu = n / px_mm * lu
+        out["bords"][nom] = {"mesurable": True, "lu_pct": round(100 * lu), "points": len(liste), "decalage_mm": round(decal[nom] / px_mm, 2),
+                             "liste": sorted(liste, key=lambda g_: -g_["long_mm"])[:12],
+                             # beaucoup de points sur la longueur lue : un lisere blanc (bord effrite ou coupe rugueuse)
+                             "lisere": len(liste) >= max(12, 0.3 * long_lu)}
+    # les coins : le blanc collé a l'arete (recalee) dans le carre de 2,5 mm, sur un coin fonce
+    cc, pr = mm(2.5), mm(1.5)
+    for nom in ("haut-gauche", "haut-droit", "bas-droit", "bas-gauche"):
+        cy, cx = ("haut", "bas")["bas" in nom], ("gauche", "droit")["droit" in nom]
+        y0 = my + decal.get(cy, 0) if cy == "haut" else Hm - my - decal.get(cy, 0)
+        x0 = mx + decal.get(cx, 0) if cx == "gauche" else Wm - mx - decal.get(cx, 0)
+        ys = slice(y0, y0 + cc) if cy == "haut" else slice(max(0, y0 - cc), y0)
+        xs = slice(x0, x0 + cc) if cx == "gauche" else slice(max(0, x0 - cc), x0)
+        l_, s_ = La[ys, xs], Sa[ys, xs]
+        if l_.shape != (cc, cc):
+            continue
+        if cx == "droit":
+            l_, s_ = l_[:, ::-1], s_[:, ::-1]
+        if cy == "bas":
+            l_, s_ = l_[::-1], s_[::-1]
+        fond_coin = float(np.median(l_[pr:, pr:])) if l_[pr:, pr:].size else 255.0
+        if fond_coin >= 90:
+            out["coins"][nom] = {"mesurable": False, "raison": "coin clair", "points": points_coin[nom]}
+            continue
+        blanc = (l_ > max(150.0, fond_coin + 70)) & (s_ < 0.30)
+        # les taches collees a l'arete seulement, et pas une forme imprimee qui rentre plus loin que 1,5 mm
+        yy, xx = np.mgrid[0:cc, 0:cc]
+        prof_ = np.minimum(yy, xx)
+        garde = np.zeros_like(blanc)
+        vu = np.zeros_like(blanc)
+        for (sy, sx) in zip(*np.nonzero(blanc & (prof_ <= mm(0.3)))):
+            if vu[sy, sx]:
+                continue
+            pile, comp = [(sy, sx)], []
+            vu[sy, sx] = True
+            while pile:
+                py, px_ = pile.pop()
+                comp.append((py, px_))
+                for qy, qx in ((py + 1, px_), (py - 1, px_), (py, px_ + 1), (py, px_ - 1)):
+                    if 0 <= qy < cc and 0 <= qx < cc and blanc[qy, qx] and not vu[qy, qx]:
+                        vu[qy, qx] = True
+                        pile.append((qy, qx))
+            if max(prof_[p] for p in comp) < pr:
+                for p in comp:
+                    garde[p] = True
+        out["coins"][nom] = {"mesurable": True, "blanc_mm2": round(float(garde.sum()) / px_mm ** 2, 2), "points": points_coin[nom]}
+    return out
 
 
 def silhouette(carte_marge, marge):

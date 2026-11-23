@@ -284,6 +284,45 @@ def regle(carte, face):
     return out
 
 
+# 22 nov 2026 (Mathieu : « trouve un moyen de clarifier l'image, des sites le font ») : un zoom de coin ou de bord est
+# agrandi par un petit reseau entraine pour ca (FSRCNN x4, 40 Ko, modeles/), puis renforce (contraste local) : un point
+# blanc de 3 pixels devient une tache nette. Sans OpenCV ou sans le modele : l'agrandissement Lanczos d'avant.
+_SR = {"m": None, "essaye": False}
+
+
+def _sr():
+    if not _SR["essaye"]:
+        _SR["essaye"] = True
+        try:
+            import os
+            import cv2
+            ch = os.path.join(os.path.dirname(os.path.abspath(__file__)), "modeles", "FSRCNN_x4.pb")
+            m = cv2.dnn_superres.DnnSuperResImpl_create()
+            m.readModel(ch)
+            m.setModel("fsrcnn", 4)
+            _SR["m"] = m
+        except Exception as e:
+            print("Examen (clarifier) : " + repr(e)[:160], flush=True)
+    return _SR["m"]
+
+
+def clarifier(z, cote):
+    """Une petite zone (PIL) -> agrandie a cote x cote environ, plus nette."""
+    m = _sr()
+    if m is not None and z.size[0] * z.size[1] <= 700 * 700:
+        try:
+            import numpy as _np
+            import cv2
+            bgr = cv2.cvtColor(_np.asarray(z.convert("RGB")), cv2.COLOR_RGB2BGR)
+            up = m.upsample(bgr)
+            bl = cv2.GaussianBlur(up, (0, 0), 2)
+            up = cv2.addWeighted(up, 1.5, bl, -0.5, 0)
+            z = Image.fromarray(cv2.cvtColor(up, cv2.COLOR_BGR2RGB))
+        except Exception as e:
+            print("Examen (clarifier) : " + repr(e)[:160], flush=True)
+    return z.resize((cote, int(round(cote * z.size[1] / z.size[0]))), Image.LANCZOS)
+
+
 def _etiquette(im, texte):
     d = ImageDraw.Draw(im)
     w = 8 + 7 * len(texte)
@@ -300,7 +339,7 @@ def mosaique_coins(carte, face):
     out = Image.new("RGB", (2 * T + 6, 2 * T + 6), (40, 40, 40))
     pos = {"haut-gauche": (0, 0), "haut-droit": (W - c, 0), "bas-gauche": (0, H - c), "bas-droit": (W - c, H - c)}
     for i, (nom, (x, y)) in enumerate(pos.items()):
-        z = carte.crop((x, y, x + c, y + c)).resize((T, T), Image.LANCZOS)
+        z = clarifier(carte.crop((x, y, x + c, y + c)), T).resize((T, T), Image.LANCZOS)
         out.paste(_etiquette(z, f"{face} - coin {nom}"), ((i % 2) * (T + 6), (i // 2) * (T + 6)))
     return out
 
@@ -519,7 +558,7 @@ def preparer(photos_octets, quads=None, rasante=None, rasante2=None, gros_plans=
         if not q:                                           # 3 nov 2026 : pas de contour du telephone -> l'app trouve la carte
             try:
                 import mesures
-                q0 = mesures.trouver_carte(im)
+                q0 = mesures.trouver_carte(im) or mesures.trouver_carte_serree(im)
                 # 9 nov 2026 : une carte transparente (acrylique) : son vrai bord est plus loin que l'image imprimee
                 qt = mesures.bord_transparent(im, q0) if q0 else None
                 transp = bool(qt)
@@ -651,7 +690,8 @@ def _mesurer(im, q, c, z, transparent=False):
                   "bords": {k: dict(nm) for k in ("haut", "bas", "gauche", "droit")}}
         else:
             us = mesures.usure(z, 0.03) if z is not None else None
-        return {"centrage": mesures.centrage(c), "usure": us, "transparent": transparent,
+        ec = mesures.eclats(z, 0.03) if (z is not None and not transparent) else None
+        return {"centrage": mesures.centrage(c), "usure": us, "transparent": transparent, "eclats": ec,
                 "silhouette": mesures.silhouette(z, 0.03) if z is not None else None, "qualite": mesures.qualite(c, natif)}
     except Exception as e:
         print("Examen (mesures) : " + repr(e), flush=True)
