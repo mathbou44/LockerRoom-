@@ -278,6 +278,122 @@ def _melanger(liste, n):
     return melange[:n]
 
 
+# 23 nov 2026 (Mathieu, capture « Canadiens Acquire Dylan Larkin » perdue parmi les autres : « les trades des gros joueurs
+# doivent stand out des news ; on doit voir que cette news est speciale ; de meme pour tout ce qui est WOW ») : une nouvelle
+# est WOW quand elle nomme un GROS joueur et annonce un echange ferme (pas une rumeur), une entree au Temple, un grand honneur,
+# un trophee ou un exploit. Elle porte « wow » (type, joueur, et pour un echange : le sens pour ses cartes), et la plus
+# recente monte en tete. Une seule par joueur et par type : dix sources qui repetent le meme echange ne font pas dix bandeaux.
+WOW_TYPES = ("echange", "temple", "honneur", "trophee", "exploit")
+WOW_EPINGLE_H = 48                 # heures en tete de liste
+_GROS = {"le": 0.0, "v": ({}, {})}
+
+
+def _gros_joueurs():
+    """({nom normalise: nom} pour un echange, {…} pour le reste). Un gros joueur : un joueur cle (marche_cles), une vedette,
+    un Indice eleve ou une grande carriere. Plus large pour un echange (un bon joueur qui change de club, ca compte). 15 min."""
+    if time.time() - _GROS["le"] < 900:
+        return _GROS["v"]
+    _GROS["le"] = time.time()
+    ech, gros = {}, {}
+    try:
+        import marche_cles
+        for nom in (marche_cles.lire() or {}).get("cles") or {}:
+            ech[norm(nom)] = gros[norm(nom)] = nom
+    except Exception:
+        pass
+    try:
+        import deals
+        for nom in deals.VEDETTES:
+            ech[norm(nom)] = gros[norm(nom)] = nom
+    except Exception:
+        pass
+    try:
+        import demande_legale
+        import indice_joueurs
+        I = (indice_joueurs.lire() or {}).get("indice") or {}
+        for nom, e in ((demande_legale.lire() or {}).get("joueurs") or {}).items():
+            pts = float((((e or {}).get("nhl") or {}).get("carriere") or {}).get("points") or 0)
+            ind = float((I.get(nom) or {}).get("indice") or 0)
+            if pts >= 400 or ind >= 60:
+                ech[norm(nom)] = nom
+            if pts >= 600 or ind >= 70:
+                gros[norm(nom)] = nom
+    except Exception:
+        pass
+    _GROS["v"] = (ech, gros)
+    return _GROS["v"]
+
+
+def wow_de(titre, gros=None):
+    """Le « wow » d'une manchette -> {type, joueur, sens?, de?, vers?} ou None."""
+    try:
+        import indice_joueurs as ij
+    except Exception:
+        return None
+    if ij.ECHANGE_FERME.search(titre or ""):          # un echange (poids 0 dans classer_evenement : on le reconnait ici)
+        if ij.ECHANGE_RUMEUR.search(titre or ""):
+            return None
+        ty = "echange"
+    else:
+        ty, _po = ij.classer_evenement(titre or "")
+        if ty not in WOW_TYPES or ty == "echange":
+            return None
+    ech, autres = gros if gros is not None else _gros_joueurs()
+    noms = ech if ty == "echange" else autres
+    t = " " + norm(titre) + " "
+    j = next((nom for k, nom in noms.items() if f" {k} " in t), None)
+    if not j and ty == "echange":                     # « Larkin traded to Canadiens » : le nom de famille seul, s'il n'y en a qu'un
+        fam = {}
+        for k, nom in noms.items():
+            p = k.split()
+            if len(p) >= 2 and len(p[-1]) >= 6:
+                fam.setdefault(p[-1], []).append(nom)
+        j = next((l[0] for w, l in fam.items() if len(l) == 1 and f" {w} " in t), None)
+    if not j:
+        return None
+    out = {"type": ty, "joueur": j}
+    if ty == "echange":
+        try:
+            x = ij.echange_de(j)
+            if x:
+                out.update(sens=x.get("sens"), de=x.get("de_nom"), vers=x.get("vers_nom"))
+            else:                                     # pas encore note : le club d'arrivee nomme dans le titre
+                import demande_legale
+                club = ij.abrev_equipe(((((demande_legale.lire() or {}).get("joueurs") or {}).get(j) or {}).get("nhl") or {}).get("equipe"))
+                S = ij.equipes_du_titre(titre)
+                arr = (S - {club}) if club in S else S
+                if club and len(arr) == 1:
+                    v = next(iter(arr))
+                    out.update(sens=ij.sens_echange(club, v), de=ij.EQUIPES_NOM.get(club, club), vers=ij.EQUIPES_NOM.get(v, v))
+        except Exception:
+            pass
+    return out
+
+
+def marquer_wow(items, langue="fr", gros=None, maintenant=None):
+    """Pose « wow » sur UNE nouvelle par (joueur, type) (celle de la langue du client si possible) -> celles a epingler (48 h)."""
+    choisis = {}
+    for x in items:
+        w = wow_de(x.get("titre"), gros)
+        if not w:
+            continue
+        k = (w["joueur"], w["type"])
+        if k not in choisis or (langue_de(choisis[k][0]) != langue and langue_de(x) == langue):
+            choisis[k] = (x, w)
+    lim = (maintenant or datetime.now(timezone.utc)) - timedelta(hours=WOW_EPINGLE_H)
+    epingles = []
+    for x, w in choisis.values():
+        x["wow"] = w
+        try:
+            h = datetime.fromisoformat(str(x.get("heure") or x.get("date")))
+            h = h if h.tzinfo else h.replace(tzinfo=timezone.utc)
+        except ValueError:
+            continue
+        if h >= lim:
+            epingles.append((h, x))
+    return [x for _h, x in sorted(epingles, key=lambda e: e[0], reverse=True)][:2]
+
+
 def pour(sports_client, joueurs=(), n=16, langue="fr"):
     """Nouvelles d'un client : ses sports, celles qui nomment SES joueurs d'abord, sources melangees.
     24 oct 2026 (Mathieu) : client anglophone = nouvelles en anglais ; francophone = bilingue (FR / EN en alternance)."""
@@ -294,6 +410,11 @@ def pour(sports_client, joueurs=(), n=16, langue="fr"):
             if "news.google." in str(y.get("lien") or "") or y.get("source") in ("ESPN", "Google News", "Hobby"):
                 continue                           # anciens caches : sources retirees
             tous.append(y)
+    try:
+        epingles = marquer_wow(tous, langue)
+    except Exception as e:
+        print("Nouvelles (wow) : " + repr(e)[:160], flush=True)
+        epingles = []
     en = [x for x in tous if langue_de(x) == "en"]
     fr = [x for x in tous if langue_de(x) == "fr"]
     if langue == "en":
@@ -312,4 +433,7 @@ def pour(sports_client, joueurs=(), n=16, langue="fr"):
     avec = next((k for k, x in enumerate(melange) if x.get("image")), None)
     if avec:                                     # la premiere nouvelle a l'ecran : une avec photo si possible
         melange.insert(0, melange.pop(avec))
+    for x in reversed(epingles):                 # 23 nov 2026 : le WOW recent passe devant tout le reste
+        melange = [x] + [y for y in melange if y is not x and y.get("lien") != x.get("lien")]
+    melange = melange[:max(n, len(epingles))]
     return {"items": melange, "maj": c.get("maj"), "etat": c.get("etat") or {}}

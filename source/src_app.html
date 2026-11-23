@@ -6501,6 +6501,17 @@ html body .ecran .md-rech.tiq-rech, html:not(.tel-large) body .tete-fixe:has(.d-
    sa preuve mesuree ; a l'ordi tout tient dans la page (seules les listes defilent) ; au telephone 5 lignes, puis « Voir tout » */
 .tiq-av{display:grid; grid-template-columns:1fr; gap:12px; margin-bottom:12px} .tiq-av > *{min-width:0; margin:0} .tiq-col{display:grid; gap:12px} .tiq-col > .tiq-g{margin:0; min-width:0}
 .tiq-pan{gap:0} .tiq-pan .am-t{margin-bottom:10px; display:flex; align-items:center}
+/* 23 nov 2026 (Mathieu, Tendances a l'ordi : « revoir le layout, l'espace est mal utilise ») : sans la liste « A vendre », le tiers
+   droit de l'ecran restait vide. A l'ordi : trois colonnes egales (Au plus bas, Joueurs, Cartes) qui prennent toute la largeur, et
+   jusqu'a 10 rangees par colonne selon la hauteur de l'ecran. Au cell et avec deux listes : 5 rangees, comme avant. */
+.tiq-col > .tiq-g > .tiq-b:nth-child(n+7){display:none}
+@media (min-width:1100px){
+  .tiq-s .tiq-av.tiq-c3{grid-template-columns:repeat(3, minmax(0,1fr))} .tiq-s .tiq-av.tiq-c2{grid-template-columns:repeat(2, minmax(0,1fr))}
+  .tiq-s .tiq-av:is(.tiq-c3, .tiq-c2) > .tiq-col{display:contents}
+  .tiq-s .tiq-av:is(.tiq-c3, .tiq-c2) > .tiq-col > .tiq-g{justify-content:flex-start; gap:1.1vh} .tiq-s .tiq-av:is(.tiq-c3, .tiq-c2) .tiq-col .tiq-b{padding:5px 0}
+}
+@media (min-width:1100px) and (min-height:700px){ .tiq-s .tiq-av:is(.tiq-c3, .tiq-c2) > .tiq-col > .tiq-g > .tiq-b:nth-child(-n+9){display:flex} }
+@media (min-width:1100px) and (min-height:840px){ .tiq-s .tiq-av:is(.tiq-c3, .tiq-c2) > .tiq-col > .tiq-g > .tiq-b{display:flex !important} }
 .tiq-pan.acheter .am-t, .tiq-pan.bas .am-t{background:repeating-linear-gradient(115deg, rgba(255,255,255,.035) 0 1px, transparent 1px 7px), linear-gradient(100deg, color-mix(in srgb, var(--vert) 22%, transparent), rgba(159,230,210,.10) 60%, rgba(185,190,255,.10))}
 .tiq-pan.vendre .am-t{background:repeating-linear-gradient(115deg, rgba(255,255,255,.035) 0 1px, transparent 1px 7px), linear-gradient(100deg, color-mix(in srgb, var(--rouge) 22%, transparent), rgba(242,179,214,.10) 60%, rgba(241,213,142,.10))}
 .tiq-gt .tiq-pn, h3 .tiq-pn{font:700 14px var(--f-cond); font-style:normal; color:var(--doux); margin:0 auto 0 8px; letter-spacing:.04em}
@@ -6536,6 +6547,18 @@ html body .ecran .md-rech.tiq-rech, html:not(.tel-large) body .tete-fixe:has(.d-
 .pv-r{display:grid; grid-template-columns:1fr auto; align-items:center; gap:6px 12px; padding:10px 0; border-top:1px solid var(--ligne)} .pv-r > span:first-child{grid-column:1 / -1; font-size:14.5px; color:var(--doux)}
 .pv-r > b{font:800 20px/1 var(--f-cond); color:var(--rouge)} .pv-r > b.gr{color:var(--doux)}
 .pv-pts{display:flex; gap:6px} .pv-pts i{width:18px; height:18px; border-radius:50%; background:rgba(255,255,255,.08)} .pv-pts i.on{background:var(--rouge)} .pv-pts i.gr{background:rgba(255,255,255,.42)}
+.nl-wow{background:linear-gradient(120deg, color-mix(in srgb, var(--or) 20%, transparent), transparent 62%) !important; box-shadow:inset 3px 0 0 var(--or)}
+.nl-s.nl-wow{border-color:color-mix(in srgb, var(--or) 55%, transparent) !important; box-shadow:inset 3px 0 0 var(--or), 0 8px 26px -14px var(--or)}
+.nl-wow .nl-t small{color:var(--or) !important; font-weight:800 !important; letter-spacing:.08em} .nl-wow .nl-t b{font-weight:800 !important}
+.nl-ic.nl-wowi{background:var(--or) !important; color:#1b1503; font:800 24px/1 var(--f-cond)} .nl-w{font-style:normal; font-size:12.5px; font-weight:700} .nl-w.vert{color:var(--vert)} .nl-w.rouge{color:var(--rouge)}
+.md-wow{display:flex; align-items:stretch; gap:6px; margin:10px 0 2px; border-radius:16px; border:1px solid color-mix(in srgb, var(--or) 55%, transparent);
+  background:linear-gradient(120deg, color-mix(in srgb, var(--or) 22%, var(--carte)), var(--carte) 70%); box-shadow:0 10px 30px -18px var(--or)}
+.md-wow.bas{border-color:color-mix(in srgb, var(--rouge) 50%, transparent); background:linear-gradient(120deg, color-mix(in srgb, var(--rouge) 16%, var(--carte)), var(--carte) 70%); box-shadow:none}
+.md-wow-b{flex:1; min-width:0; display:flex; align-items:center; gap:12px; padding:10px 6px 10px 14px; border:0; background:none; color:var(--texte); font:inherit; text-align:left; cursor:pointer}
+.md-wow-e{flex:none; width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:var(--or); color:#1b1503; font:800 18px/1 var(--f-cond)} .md-wow.bas .md-wow-e{background:var(--rouge); color:#fff}
+.md-wow-t{flex:1; min-width:0; display:flex; flex-direction:column; gap:1px} .md-wow-t b{font:800 16px var(--f-cond); letter-spacing:.02em; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.md-wow-t small{font-size:12.5px; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis} .md-wow-b em{flex:none; font-style:normal; font:700 13px var(--f-cond); color:var(--or); white-space:nowrap} .md-wow.bas .md-wow-b em{color:var(--rouge)}
+.md-wow-x{flex:none; width:40px; border:0; background:none; color:var(--doux); font-size:14px; cursor:pointer} @media (max-width:560px){ .md-wow-b em{display:none} .md-wow-t small{white-space:normal} }
 .sg-l{display:flex; flex-direction:column; margin-top:12px; max-height:44vh; overflow-y:auto} .sg-r{display:flex; align-items:center; gap:10px; padding:9px 2px; border-bottom:1px solid var(--ligne)}
 .sg-r:last-child{border-bottom:0} .sg-r .capsule{flex:none; min-width:64px; text-align:center} .sg-t{flex:1; min-width:0; display:flex; flex-direction:column} .sg-t b{font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .sg-t small{color:var(--doux); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis} .sg-r em{font-style:normal; font:700 13px var(--f-cond); color:var(--doux); white-space:nowrap}
@@ -13133,6 +13156,36 @@ async function feuilleMesures(t, tc, m_){
 }
 // 23 nov 2026 (Mathieu : « go ») : le signal par joueur, en direct, ADMIN seulement. Trois tuiles (bon conseil sur 10), puis les
 // derniers signaux. Declenche par les matchs et les echanges, jamais par un prix ; note sur la meme carte (signal_joueurs.py).
+// 23 nov 2026 (Mathieu : « les trades des gros joueurs doivent stand out des news ; de meme pour tout ce qui est WOW ») : la
+// nouvelle WOW (nouvelles.marquer_wow) a son etoile, son nom en or et, pour un echange, ce que ca veut dire pour ses cartes
+function nlSur(n){
+  if (n.wow) return '★ ' + ({echange: tt('Échange majeur', 'Big trade'), temple: tt('Temple de la renommée', 'Hall of Fame'), honneur: tt('Grand honneur', 'Major honour'),
+    trophee: tt('Trophée', 'Trophy'), exploit: tt('Exploit', 'Milestone')}[n.wow.type] || tt('Grosse nouvelle', 'Big news'));
+  return n.sortie ? (n.a_venir ? tt('Bientôt', 'Coming soon') : tt('Nouveau produit', 'New product')) : n.marche ? tt('Marché', 'Market') : n.astuce ? tt('Astuce', 'Tip') : esc(n.libelle || nomSport(n.sport) || tt('Nouvelle', 'News'));
+}
+function nlWow(n){
+  const w = n.wow; if (!w || w.type !== 'echange' || !w.sens || w.sens === 'neutre') return '';
+  return `<em class="nl-w ${w.sens === 'hausse' ? 'vert' : 'rouge'}">${esc(w.joueur)} · ${w.sens === 'hausse' ? tt('ses cartes montent souvent', 'his cards often rise') : tt('ses cartes baissent souvent', 'his cards often drop')}</em>`;
+}
+// 23 nov 2026 (Mathieu, Larkin a Montreal : « il devrait etre vu des l'ouverture du Radar, sans fucker tout l'ordre ») : UN bandeau
+// fin au-dessus de la grille pour le WOW du moment ; un toucher montre ses cartes (la recherche du Radar) ; rien n'est reclasse.
+// Il se ferme (✕) et ne revient pas pour le meme evenement.
+async function wowRadar(z){
+  let w;
+  try { w = S.wowR && Date.now() - S.wowR.t < 3e5 ? S.wowR.v : ((await API.wow_actuel()) || {}).wow || []; S.wowR = {t: Date.now(), v: w}; } catch (e) { return; }
+  let vus = []; try { vus = JSON.parse(localStorage.getItem('sc_wow_vus') || '[]'); } catch (e) {}
+  const x = (w || []).find(y => !vus.includes(y.id)), md = $('.md', z);
+  if (!x || !md || $('.md-wow', md)) return;
+  const ech = x.type === 'echange', haut = x.sens !== 'baisse';
+  const titre = ech ? tt(`${x.joueur} échangé à ${x.vers}`, `${x.joueur} traded to ${x.vers}`) : x.joueur + ' · ' + nlSur({wow: x}).slice(2);
+  const sous = !ech ? (x.titre || '') : haut ? tt('Un gros joueur dans un gros marché : ses cartes montent souvent. À surveiller.', 'A big player in a big market: his cards often rise. One to watch.')
+    : tt('Il quitte un gros marché : ses cartes baissent souvent.', 'He leaves a big market: his cards often drop.');
+  const b = document.createElement('div'); b.className = 'md-wow' + (haut ? '' : ' bas');
+  b.innerHTML = `<button class="md-wow-b"><span class="md-wow-e" aria-hidden="true">★</span><span class="md-wow-t"><b>${esc(titre)}</b><small>${esc(sous)}</small></span><em>${tt('Voir ses cartes', 'See his cards')} ›</em></button><button class="md-wow-x" aria-label="${esc(tt('Fermer', 'Close'))}">✕</button>`;
+  const barre = $('.md-barre', md); if (barre) barre.after(b); else md.prepend(b);
+  $('.md-wow-b', b).onclick = () => { vibrer(); const q = $('#md-q'); if (q) { q.value = x.joueur; q.dispatchEvent(new Event('input', {bubbles: true})); } };
+  $('.md-wow-x', b).onclick = () => { b.remove(); try { localStorage.setItem('sc_wow_vus', JSON.stringify([...vus, x.id].slice(-20))); } catch (e) {} };
+}
 async function feuilleSignalJoueurs(){
   const r = await API.signal_joueurs_admin().catch(e => ({ok: false, erreur: e.message}));
   if (!r || !r.ok) { toast((r && r.erreur) || 'Erreur'); return; }
@@ -14261,9 +14314,9 @@ async function vueTendancesIQ(arg){
   const kp = (k, l, c) => (r.compte[k] || 0) ? `<button class="tiq-kp tiq-kb" data-tcat="${k}"><b class="${c}">${r.compte[k]}</b><span>${l}</span></button>` : '';
   S.tiqPreuve = r.preuve || {};
   const sigM = (r.compte.bas || 0) + (r.compte.acheter || 0) + (r.compte.vendre || 0) > 0;          // 21 nov 2026 : la page « À acheter | À vendre »
-  const blocs2 = `${top10.length ? `<div class="tiq-g tiq-gj"><button class="am-t tiq-gt" data-tout="top">${tt('Les joueurs les plus recherchés', 'Most sought-after players')}<span>${tt('Voir tout', 'See all')} ›</span></button>${top10.slice(0, 5).map((x, i) => `<button class="tiq-b" data-jpop="${esc(x.nom)}"><span class="tiq-bn">${i + 1}</span><span class="tiq-bl"><b>${esc(x.nom)}</b><i style="width:${Math.round(100 * ((x.note ?? x.indice) || 0) / mx)}%"></i></span><span class="tiq-bv">${x.lettre || lettre(x.indice)}</span></button>`).join('')}</div>` : ''}
+  const blocs2 = `${top10.length ? `<div class="tiq-g tiq-gj"><button class="am-t tiq-gt" data-tout="top">${tt('Les joueurs les plus recherchés', 'Most sought-after players')}<span>${tt('Voir tout', 'See all')} ›</span></button>${top10.map((x, i) => `<button class="tiq-b" data-jpop="${esc(x.nom)}"><span class="tiq-bn">${i + 1}</span><span class="tiq-bl"><b>${esc(x.nom)}</b><i style="width:${Math.round(100 * ((x.note ?? x.indice) || 0) / mx)}%"></i></span><span class="tiq-bv">${x.lettre || lettre(x.indice)}</span></button>`).join('')}</div>` : ''}
     ${(r.familles || []).length ? `<div class="tiq-g tiq-gc"><button class="am-t tiq-gt" data-tout="types">${tt('Les cartes les plus recherchées', 'The most sought-after cards')}<span>${tt('Voir tout', 'See all')} ›</span></button>
-      ${r.familles.slice(0, 5).map(x => `<button class="tiq-b tiq-fam" data-fam="${esc(x.cle)}"><span class="tiq-fl ${famCl(x.lettre)}">${esc(x.lettre.split(' ')[0])}</span><span class="tiq-bl"><b>${esc(tt(x.nom, x.nom_en))}</b><small>${esc(x.ex.slice(0, 2).map(e => tt(e.nom, e.nom_en)).join(' · '))}</small></span><span class="tiq-bv">›</span></button>`).join('')}</div>` : ''}`;
+      ${r.familles.slice(0, 10).map(x => `<button class="tiq-b tiq-fam" data-fam="${esc(x.cle)}"><span class="tiq-fl ${famCl(x.lettre)}">${esc(x.lettre.split(' ')[0])}</span><span class="tiq-bl"><b>${esc(tt(x.nom, x.nom_en))}</b><small>${esc(x.ex.slice(0, 2).map(e => tt(e.nom, e.nom_en)).join(' · '))}</small></span><span class="tiq-bv">›</span></button>`).join('')}</div>` : ''}`;
   const tete = `<div class="tiq-kr">${kp('marche_bas', tt('marché bas', 'market low'), 'vert')}${kp('en_feu', tt('en feu cette semaine', 'on fire this week'), 'rouge')}${kp('rebond', tt('sortent du creux', 'bouncing back'), 'vert')}${kp('recrue', tt('recrues suivies', 'rookies tracked'), 'or')}</div>
     <div class="tiq-2">${blocs2}</div>`;
   const sg = (v) => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' %';
@@ -14421,7 +14474,7 @@ async function vueTendancesIQ(arg){
       const OPT = [['bas', tt('Au plus bas', 'Lowest'), aB], ['vendre', tt('À vendre', 'To sell'), aV], ['joueurs', tt('Joueurs', 'Players'), top10.length > 0], ['cartes', tt('Cartes', 'Cards'), (r.familles || []).length > 0]].filter(o => o[2]);
       const ong = (OPT.find(o => o[0] === S.tiqOnglet) || OPT[0] || ['bas'])[0];
       z.innerHTML = `${OPT.length > 1 ? `<div class="chips tiq-seg" id="tiq-seg">${OPT.map(([k, n]) => `<button class="chip ${ong === k ? 'on' : ''}" data-v="${k}">${n}</button>`).join('')}</div>` : ''}
-        <div class="tiq-av" data-on="${ong}">${pan('bas', tt('Au plus bas', 'At their lowest'))}${pan('vendre', tt('À vendre', 'To sell'))}<div class="tiq-col">${blocs2}</div></div>
+        <div class="tiq-av${aB && aV ? '' : aB || aV ? ' tiq-c3' : ' tiq-c2'}" data-on="${ong}">${pan('bas', tt('Au plus bas', 'At their lowest'))}${pan('vendre', tt('À vendre', 'To sell'))}<div class="tiq-col">${blocs2}</div></div>
         <div class="tiq-kr tiq-kr2">${['en_feu', 'rebond', 'recrue'].map(k => (r.compte[k] || 0) ? `<button class="tiq-kp" data-tl="${k}"><b class="${k === 'rebond' ? 'vert' : k === 'recrue' ? 'or' : 'rouge'}">${r.compte[k]}</b><span>${k === 'en_feu' ? tt('en feu', 'on fire') : k === 'rebond' ? tt('sortent du creux', 'bouncing back') : tt('recrues', 'rookies')}</span></button>` : '').join('')}${autres.length ? `<button class="tiq-kp" id="tiq-autres"><span>${tt('Plus de listes', 'More lists')} ›</span></button>` : ''}</div>${note}`;
       $$('#tiq-seg button', z).forEach(b => b.onclick = () => { vibrer(); S.tiqOnglet = b.dataset.v; $$('#tiq-seg button', z).forEach(x => x.classList.toggle('on', x === b)); const av = $('.tiq-av', z); if (av) av.dataset.on = b.dataset.v; ajusterTiq(z); });
       $$('[data-tl]', z).forEach(b => b.onclick = () => { vibrer(); feuilleListe(b.dataset.tl); });
@@ -14957,15 +15010,15 @@ function rendreNewsListe(){
   // 20 nov 2026 (Mathieu : « les icones sont decalees… plus sexy », « pense comme Apple ») : une pastille de couleur pleine
   // par genre, comme les reglages d'iOS ; le marche a la baisse a sa fleche vers le bas (avant : la meme fleche montante partout)
   const BAS_ = '<path d="M4 5h16M5 9l4 4 3-3 7 7M15 17h4v-4"/>';
-  const ico = (n) => { const k = n.sortie || n.produit ? 'produit' : n.marche ? (/baisse/.test(n.id || '') ? 'baisse' : 'hausse') : n.astuce ? 'astuce' : 'sport';
+  const ico = (n) => { if (n.wow) return '<span class="nl-ic nl-wowi" aria-hidden="true">★</span>'; const k = n.sortie || n.produit ? 'produit' : n.marche ? (/baisse/.test(n.id || '') ? 'baisse' : 'hausse') : n.astuce ? 'astuce' : 'sport';
     return `<span class="nl-ic nl-${k}"><svg viewBox="0 0 24 24" aria-hidden="true">${k === 'produit' ? IC_PIL.breaks : k === 'hausse' ? IC_PIL.graphe : k === 'baisse' ? BAS_ : k === 'astuce' ? IC_PIL.ampoule : IC_SP[n.sport] || IC_PIL.news}</svg></span>`; };
   // 16 nov 2026 (Mathieu, capture au cell : « mettre les nouvelles en bas, en un carre gris qui defile avec les petits points
   // en bas pour voir quelle page on est ; leger ; une fenetre avec plus d'info quand on clique ») : au cell, un carrousel
   // leger sous les tuiles ; un toucher ouvre la nouvelle en grand
   if (!estBureau()) {
     const M = L.slice(0, 12);
-    z.innerHTML = `<div class="nl-car" id="nl-car">${M.map((n, j) => `<button class="nl-s" data-nl="${j}">${n.image && !n.astuce ? `<span class="nl-img" style="background-image:${cssUrl(n.image)}"></span>` : ico(n)}
-        <span class="nl-t"><small>${n.sortie ? (n.a_venir ? tt('Bientôt', 'Coming soon') : tt('Nouveau produit', 'New product')) : n.marche ? tt('Marché', 'Market') : n.astuce ? tt('Astuce', 'Tip') : esc(n.libelle || nomSport(n.sport) || tt('Nouvelle', 'News'))}${n.date && !n.astuce ? ' · ' + esc(dateCourte(n.date)) : ''}</small><b>${insec(esc(String(n.titre || '').slice(0, 120)))}</b></span></button>`).join('')}</div>
+    z.innerHTML = `<div class="nl-car" id="nl-car">${M.map((n, j) => `<button class="nl-s${n.wow ? ' nl-wow' : ''}" data-nl="${j}">${n.image && !n.astuce ? `<span class="nl-img" style="background-image:${cssUrl(n.image)}"></span>` : ico(n)}
+        <span class="nl-t"><small>${nlSur(n)}${n.date && !n.astuce ? ' · ' + esc(dateCourte(n.date)) : ''}</small><b>${insec(esc(String(n.titre || '').slice(0, 120)))}</b>${nlWow(n)}</span></button>`).join('')}</div>
       ${M.length > 1 ? `<div class="nl-pts" aria-hidden="true">${M.map((_, j) => `<i class="${j ? '' : 'on'}"></i>`).join('')}</div>` : ''}`;
     z.hidden = false;
     const car = $('#nl-car', z), pts = $$('.nl-pts i', z);
@@ -14978,8 +15031,8 @@ function rendreNewsListe(){
   // 20 nov 2026 (rapport ergonomie) : le titre dit ce qu'il y a dessous : « Astuces » quand ce n'est que des astuces
   const _ast = L.slice(0, 7).every(n => n.astuce);
   z.innerHTML = `<div class="acc-sec" style="--c:#F2C14E"><span>${_ast ? tt('Astuces', 'Tips') : tt('Nouvelles', 'News')}</span><button class="lien-doux" id="nl-tout">${tt('Tout voir', 'See all')} ›</button></div>
-    <div class="nl-l">${L.slice(0, estBureau() ? 7 : 4).map((n, j) => `<button class="nl" data-nl="${j}">${n.image && !n.astuce ? `<span class="nl-img" style="background-image:${cssUrl(n.image)}"></span>` : ico(n)}
-      <span class="nl-t"><small>${n.sortie ? (n.a_venir ? tt('Bientôt', 'Coming soon') : tt('Nouveau produit', 'New product')) : n.marche ? tt('Marché', 'Market') : n.astuce ? tt('Astuce', 'Tip') : esc(n.libelle || nomSport(n.sport) || tt('Nouvelle', 'News'))}${n.date && !n.astuce ? ' · ' + esc(dateCourte(n.date)) : ''}</small><b>${insec(esc(String(n.titre || '').slice(0, 110)))}</b></span></button>`).join('')}</div>`;
+    <div class="nl-l">${L.slice(0, estBureau() ? 7 : 4).map((n, j) => `<button class="nl${n.wow ? ' nl-wow' : ''}" data-nl="${j}">${n.image && !n.astuce ? `<span class="nl-img" style="background-image:${cssUrl(n.image)}"></span>` : ico(n)}
+      <span class="nl-t"><small>${nlSur(n)}${n.date && !n.astuce ? ' · ' + esc(dateCourte(n.date)) : ''}</small><b>${insec(esc(String(n.titre || '').slice(0, 110)))}</b>${nlWow(n)}</span></button>`).join('')}</div>`;
   z.hidden = false;
   const ouvrir = (k) => { vibrer(); feuilleBloc($('#acc-nouv')); requestAnimationFrame(() => { rendreNouvelles((S.live && S.live.nouvelles) || []); if (S.newsAller) S.newsAller(k, false); }); };
   $$('[data-nl]', z).forEach(b => b.onclick = () => ouvrir(+b.dataset.nl));
@@ -15167,7 +15220,7 @@ function rendreTicker(){
   const z = $('#acc-ticker'), L = S.newsListe || []; if (!z) return;
   if (!L.length) { z.hidden = true; return; }
   const item = (n, j) => `<button class="tk ${n.astuce ? 'astuce' : ''}" data-tk="${j}"><span class="tk-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${n.marche ? IC_PIL.graphe : n.astuce ? IC_PIL.ampoule : IC_SP[n.sport] || IC_PIL.news}</svg></span>
-    <span class="tk-t"><small>${n.sortie ? (n.a_venir ? tt('Bientôt', 'Coming soon') : tt('Nouveau produit', 'New product')) : n.marche ? tt('Marché', 'Market') : n.astuce ? tt('Astuce', 'Tip') : esc(n.libelle || nomSport(n.sport) || tt('Nouvelle', 'News'))}</small><b>${insec(esc(String(n.titre || '').slice(0, 120)))}</b></span></button>`;
+    <span class="tk-t"><small>${nlSur(n)}</small><b>${insec(esc(String(n.titre || '').slice(0, 120)))}</b></span></button>`;
   const html = L.map(item).join('');
   z.innerHTML = `<div class="tk-piste" style="--tk-d:${Math.max(24, L.length * 7)}s">${html}${html}</div>`;
   z.hidden = false;
@@ -21702,6 +21755,7 @@ async function vueMesDeals(z, frais){
     <div id="md-fil"></div></div>`;
   if (nb_) peindre();
   const iqb = $('#md-iq', z); if (iqb) iqb.onclick = () => { vibrer(); expliquerSlabIQ(); };
+  wowRadar(z);
   const mq = $('#md-q', z); if (mq) { let tq; mq.oninput = () => { clearTimeout(tq); tq = setTimeout(() => { S.mdQ = mq.value; S.mdMax = 40; peindre(); }, 160); }; }
   rangerRecherche();
   const reQ = () => configurerRadar({apres: (ok) => { if (ok && z.isConnected) vueMesDeals(z); }});

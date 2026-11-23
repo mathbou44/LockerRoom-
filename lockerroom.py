@@ -8935,6 +8935,42 @@ class Api:
         Api._ACC_TEND.update(le=m, v=r)
         return r
 
+    _WOW = {"le": 0.0, "v": None}
+
+    def wow_actuel(self):
+        """23 nov 2026 (Mathieu, Larkin a Montreal : « il devrait etre vu des l'ouverture du Radar, sans fucker tout l'ordre ») : le
+        WOW du moment, pour UN bandeau au-dessus du Radar : un gros joueur echange vers ou depuis un gros marche (4 jours), puis
+        les autres nouvelles WOW (Temple, grand honneur, trophee, exploit ; 48 h). Le meme pour tous ; 5 min. Aucun prix."""
+        A = Api._WOW
+        if A["v"] is not None and time.time() - A["le"] < 300:
+            return A["v"]
+        ech, autres = [], []
+        try:
+            import indice_joueurs as ij
+            import nouvelles
+            gros = nouvelles._gros_joueurs()
+            lim = (date.today() - timedelta(days=4)).isoformat()
+            for nom in (ij.lire().get("echanges") or {}):
+                x = ij.echange_de(nom)
+                if (not x or str(x.get("le") or "") < lim or x.get("sens") not in ("hausse", "baisse")
+                        or x.get("source") in ("saisons", "alignements") or nouvelles.norm(nom) not in gros[0]):
+                    continue
+                ech.append({"id": f"ech:{nouvelles.norm(nom)}:{x.get('vers')}", "type": "echange", "joueur": nom, "sens": x["sens"],
+                            "de": x.get("de_nom"), "vers": x.get("vers_nom"), "le": str(x["le"])[:10]})
+            ech.sort(key=lambda e: e["le"], reverse=True)
+            ech.sort(key=lambda e: e["sens"] != "hausse")              # celui qui ARRIVE dans un gros marche d'abord
+            items = [dict(i) for i in (((nouvelles.lire_cache().get("sports") or {}).get("hockey")) or [])[:150]]
+            for x in nouvelles.marquer_wow(items, "fr", gros):
+                w = x["wow"]
+                if w["type"] != "echange":
+                    autres.append({"id": f"{w['type']}:{nouvelles.norm(w['joueur'])}:{str(x.get('date') or '')[:10]}", "type": w["type"],
+                                   "joueur": w["joueur"], "titre": str(x.get("titre") or "")[:120], "le": str(x.get("date") or "")[:10]})
+        except Exception as e:
+            print("Wow : " + repr(e)[:160], flush=True)
+        r = {"ok": True, "wow": (ech + autres)[:4]}
+        A.update(le=time.time(), v=r)
+        return r
+
     def signal_joueurs_admin(self):
         """23 nov 2026 (Mathieu : « go ») : ADMIN - le signal par joueur en direct (Achete / Vends / Attends), son journal et sa note."""
         if not self._est_admin(reel=True):
