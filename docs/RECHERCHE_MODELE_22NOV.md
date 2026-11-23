@@ -69,3 +69,48 @@ une carte qu'il veut garder ne paie pas les frais de revente : le timing seul lu
 - Bernard et Thomas (1989), dérive après l'annonce des résultats.
 - Dimson et Spaenjers (2014), objets de collection : rendements et coûts de transaction.
 - Engelberg, Le et Williams (2018), anomalies boursières dans les cartes de baseball.
+
+---
+
+## Suite du 22 nov (soir) : le modele d'apprentissage « Timing »
+
+Scripts : `outils/recherche/modele/` (jeu.py batit les donnees, entraine.py apprend en marchant, joueur.py regroupe par joueur, regles.py teste les declencheurs).
+
+**Methode.** Une ligne = une carte exacte (meme grade) une semaine donnee, de mars 2025 a nov. 2026 : 131 237 lignes, 34 criteres
+(mediane 30/90/365 j, EMA 7/30/90, moyenne 200 j, distance du haut et du bas, volume en part de marche, age de la carte, les AUTRES
+cartes du joueur, forme 5 et 15 matchs contre sa base, jours sans match, pics Wikipedia, marche entier). Modele : arbres boostes
+(LightGBM), entraine sur le passe, teste sur le mois suivant jamais vu, 12 mois de suite.
+
+**Correction importante : le prix d'entree.** Avant, on comparait le prix futur au prix qui declenche le signal. Ce prix est bruite
+(une vente chanceuse). Ici le prix d'achat ou de vente est la mediane des 14 jours APRES le signal. Consequence :
+- « Carte a +20 % de sa normale = vends » : contre le prix du signal, plus bas 61 a 64 % du temps a 60 j (comme avant).
+  Contre le prix reel des 14 jours suivants : 52 %. **Le signal de vente n'existe presque plus** : 14 jours apres, la carte a
+  deja reperdu 10 %. La hausse etait surtout une vente chanceuse, pas un prix qu'on peut obtenir.
+- Meme chose au niveau joueur (ses autres cartes a +20 % vs 91-365 j) : 51 %. Rien.
+- A refaire sur la liste « A vendre » de l'app avant le lancement (pastille Sell, feuille de preuve, notification).
+
+**Ce que le modele trouve (cas jamais vus, prix reel).**
+- Il classe : correlation positive 11 mois sur 12 (30 j), 8 sur 10 au niveau joueur (60 j).
+- Il trouve surtout ce qu'il faut EVITER : les 20 % du bas baissent de 5 % a 30 j et de 7 % a 60 j (en hausse 39 %).
+  Au niveau joueur : -8,5 % a 60 j, en baisse 64 % du temps (184 joueur-semaines, 54 joueurs).
+- Il ne trouve PAS d'achat qui monte : les 10 % du haut font 0 % (en hausse 50 %). Net de frais : -13 %.
+
+**Declencheurs simples tires du modele (toutes les donnees, prix reel).**
+| Regle | 30 j | 60 j | 90 j | Tient |
+|---|---|---|---|---|
+| ATTENDS : carte de moins de 10 mois + les autres cartes du joueur en baisse de 10 % | -6,3 % | -8,9 % | -9,8 % (hausse 29 %) | sous les autres 12 a 14 mois sur 14 a 16 ; 19 a 32 joueurs |
+| ATTENDS : joueur en creux (5 matchs) + ses cartes en baisse sur 90 j | -3,9 % | -8,4 % | -11,7 % (hausse 25 %) | 10 a 13 mois sur 11 a 14 |
+| ACHETE : joueur en feu (+0,3 pt/match), carte pas montee, carte de plus de 10 mois | +1,8 % | +3,4 % | +10,6 % (hausse 64 %) | au-dessus 13 mois sur 16, MAIS gains surtout d'aout 2025 a janv. 2026 ; faible depuis fevrier |
+| ACHETE (paires) : les autres cartes du joueur ont monte de 10 %, celle-ci non | +0,9 % | +3,5 % | +5,8 % | 5 a 7 mois sur 7 a 10 |
+| Pic Wikipedia, carte pas encore montee | -5,0 % | -2,4 % | -4,2 % | rien |
+| Tendance haussiere du joueur (90 j + EMA) | 0 % | -0,2 % | -1,0 % | rien |
+| Retour a la moyenne (carte a -20 %, joueur stable) | 0 % | +0,2 % | +2,4 % | rien de fiable |
+| Saison morte (pas de match depuis 126 j) | -2,8 % | -5,9 % | +1,3 % | deux etes seulement, contradictoires |
+
+Aucune regle ne bat les frais de 13 % en revente. La meilleure (en feu) finit a -4 % net a 90 j.
+
+**Lecture.** La baisse a de l'elan (une carte jeune qui baisse continue de baisser), la hausse n'en a pas. Comme en bourse :
+le momentum existe surtout du cote perdant, et le retour a la moyenne mesure sur des prix bruites est en bonne partie une illusion.
+
+**Limites.** 80 % des lignes viennent d'aout a nov. 2026. Les regles « ATTENDS » reposent sur 19 a 39 joueurs. Semaines qui se
+chevauchent : les cas ne sont pas independants. Forme et Wikipedia arretes au 12 nov. Pas d'historique d'abonnes Instagram.
