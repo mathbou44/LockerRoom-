@@ -36,8 +36,10 @@ for racine, dossiers, fichiers in os.walk(ICI):
 assert vus > 150, vus
 assert not fautes, "pickle (ou un cousin) est revenu : passer par outils/recherche/cache_recherche.py -> " + ", ".join(fautes[:12])
 # l'exception reste ce qu'elle est : deux fonctions de demande_legale.py, rien d'autre
-src = open(os.path.join(ICI, "demande_legale.py"), encoding="utf-8").read()
-assert src.count("import pickle") == 2 and src.count("pickle.") == 2, "demande_legale.py : l'exception a grossi (ou a disparu : retirer alors EXCEPTIONS)"
+arbre = ast.parse(open(os.path.join(ICI, "demande_legale.py"), encoding="utf-8").read())
+imports = sum(1 for n in ast.walk(arbre) if isinstance(n, ast.Import) and any(a.name == "pickle" for a in n.names))
+appels = sorted(n.attr for n in ast.walk(arbre) if isinstance(n, ast.Attribute) and isinstance(n.value, ast.Name) and n.value.id == "pickle")
+assert imports == 2 and appels == ["dump", "load"], f"demande_legale.py : l'exception a grossi (ou a disparu : retirer alors EXCEPTIONS) : {imports} imports, {appels}"
 # le remplacant : ce qui entre ressort identique, et rien n'est execute a la lecture
 sys.path.insert(0, os.path.join(ICI, "outils", "recherche"))
 import cache_recherche as cr

@@ -417,6 +417,7 @@ def labo(d=None, verite=None):
             meilleur = nom_c
     # 10 nov 2026 : des arbres (gradient boosting) captent ce qu'une droite ne voit pas (une legende retiree, une recrue n°1)
     gb = _arbres_cv(lignes, y)
+    aj = None                                # 23 nov 2026 : l'etat du modele ecrit en JSON (voir _sauver_arbres_json)
     if gb:
         res["arbres"] = gb["mesure"]
         if gb["mesure"]["rho"] is not None and (meilleur is None or gb["mesure"]["rho"] > res[meilleur]["rho"]):
@@ -424,13 +425,18 @@ def labo(d=None, verite=None):
     if meilleur == "arbres":
         modele = {"pieces": list(PIECES), "nom": "arbres", "arbres": True, "n": len(lignes), "le": datetime.now().isoformat(timespec="seconds")}
         _sauver_arbres(gb["modele"])
+        # 23 nov 2026 (Aikido, pickle) : 1er temps : le meme modele AUSSI en JSON, verifie contre scikit-learn sur chaque joueur
+        try:
+            aj = _sauver_arbres_json(gb["modele"], [[l[1][k] for k in PIECES] for l in lignes])
+        except Exception as e:
+            aj = {"ok": False, "erreur": repr(e)[:160]}
     else:
         ks = combos[meilleur]
         mu, sd, w, b = _ajuster([[l[1][k] for k in ks] for l in lignes], y)
         modele = {"pieces": ks, "mu": mu, "sd": sd, "w": w, "b": b, "nom": meilleur, "n": len(lignes),
                   "le": datetime.now().isoformat(timespec="seconds")}
     return {"n": len(lignes), "seules": seules, "combinaisons": res, "garde": meilleur, "modele": modele,
-            "equipes": table_equipes(d, verite)}
+            "equipes": table_equipes(d, verite), "arbres_json": aj}
 
 
 def table_equipes(d=None, verite=None):
@@ -492,6 +498,72 @@ def _arbres_cv(lignes, y):
             meilleur = (rho, int(top), m)
     meilleur[2].fit(X, yy)
     return {"mesure": {"rho": meilleur[0], "top20": meilleur[1], "type": type(meilleur[2]).__name__}, "modele": meilleur[2]}
+
+
+# -- 23 nov 2026 (Aikido, critique : « Using Pickle can lead to remote code execution ») : le modele d'arbres SANS pickle ----------
+# Lire un pickle, c'est executer ce qu'il contient. Ici le fichier est le notre (ecrit et relu par notre serveur), mais on le
+# retire quand meme, en DEUX temps pour ne jamais laisser les joueurs sans ventes sans modele (leur valeur changerait) :
+#   1er temps (ce code) : a chaque passe horaire, le modele est AUSSI ecrit en JSON (rien que des nombres : les noeuds de chaque
+#     arbre) et notre predicteur est compare a scikit-learn sur tous les joueurs (labo.arbres_json : ok, ecart). On lit encore pickle.
+#   2e temps (apres une passe en ligne avec ok = True) : _arbres() lit le JSON ; pickle et l'exception de tests/test_sans_pickle.py partent.
+def _chemin_arbres_json():
+    return _chemin().replace(".json", "_arbres.json")
+
+
+def _exporter_arbres(m):
+    """Une foret ou un gradient boosting de scikit-learn -> un dictionnaire de nombres (les noeuds de chaque arbre)."""
+    import numpy as np
+    nom = type(m).__name__
+    if nom == "RandomForestRegressor":
+        arbres, base, taux, moyenne = [e.tree_ for e in m.estimators_], 0.0, 1.0, True
+    elif nom == "GradientBoostingRegressor":
+        arbres = [e.tree_ for e in np.ravel(m.estimators_)]
+        base = float(np.ravel(m.init_.predict(np.zeros((1, int(m.n_features_in_)))))[0])
+        taux, moyenne = float(m.learning_rate), False
+    else:
+        raise TypeError("modele d'arbres inconnu : " + nom)
+    return {"v": 1, "type": nom, "n_pieces": int(m.n_features_in_), "base": base, "taux": taux, "moyenne": moyenne,
+            "arbres": [{"g": t.children_left.tolist(), "d": t.children_right.tolist(), "f": t.feature.tolist(),
+                        "s": t.threshold.tolist(), "v": t.value[:, 0, 0].tolist()} for t in arbres]}
+
+
+class ArbresJson:
+    """Le predicteur du modele exporte : memes reponses que scikit-learn (qui compare en float32 : nous aussi), sans le charger."""
+
+    def __init__(self, d):
+        if d.get("v") != 1 or not d.get("arbres"):
+            raise ValueError("modele d'arbres illisible")
+        self.d, self.n_features_in_ = d, int(d["n_pieces"])
+
+    def _un(self, x):
+        import numpy as np
+        x = [float(np.float32(v)) for v in x]
+        tot = 0.0
+        for a in self.d["arbres"]:
+            g, dr, f, s, i = a["g"], a["d"], a["f"], a["s"], 0
+            while g[i] != -1:
+                i = g[i] if x[f[i]] <= s[i] else dr[i]
+            tot += a["v"][i]
+        return tot / len(self.d["arbres"]) if self.d["moyenne"] else self.d["base"] + self.d["taux"] * tot
+
+    def predict(self, X):
+        return [self._un(x) for x in X]
+
+
+def _sauver_arbres_json(m, X=None):
+    """Ecrit le modele en JSON (ecriture atomique) et, si X est donne, mesure l'ecart avec scikit-learn sur chaque ligne."""
+    d = _exporter_arbres(m)
+    ch = _chemin_arbres_json()
+    with open(ch + ".tmp", "w", encoding="utf-8") as f:
+        json.dump(d, f, separators=(",", ":"))
+    os.replace(ch + ".tmp", ch)
+    out = {"ok": True, "type": d["type"], "arbres": len(d["arbres"]), "ko": os.path.getsize(ch) // 1024}
+    if X:
+        with open(ch, encoding="utf-8") as f:
+            relu = ArbresJson(json.load(f))
+        ecart = max(abs(float(u) - float(v)) for u, v in zip(m.predict(X), relu.predict(X)))
+        out.update(n=len(X), ecart=float("%.3g" % ecart), ok=ecart < 1e-9)
+    return out
 
 
 _ARBRES = {"m": None, "mt": None}
@@ -695,7 +767,8 @@ def passe_si_besoin():
     def tache():
         try:
             r = passe()
-            print("Demande legale :", r.get("lus"), "joueurs lus ; labo", (r.get("labo") or {}).get("combinaisons"), flush=True)
+            print("Demande legale :", r.get("lus"), "joueurs lus ; labo", (r.get("labo") or {}).get("combinaisons"),
+                  "; arbres JSON", (r.get("labo") or {}).get("arbres_json"), flush=True)
         except Exception as e:
             print("Demande legale : " + repr(e), flush=True)
         finally:

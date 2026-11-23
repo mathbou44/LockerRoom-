@@ -54,6 +54,14 @@ assert "> #d-tour, html body .d-ligne:has(#d-tour) > #d-enc{order:3}" in adm and
 assert "html body .ecran:has(#d-tour) .d-barre{margin-top:0}" in adm, "le meme espace avant la recherche"
 assert "@media (max-width:409px){ html body .d-ligne:has(#d-tour) > .d-iqp{display:none} }" in s, "sous 410 px la pastille ne tient pas a cote des onglets"
 assert re.search(r"\n\.tete-fixe\{display:flex; flex-direction:column; gap:16px\}", s), "l'espace de reference (titre -> onglets) a change : revoir les 16 px"
+# 7. le Radar ADMIN a l'ordi (Mathieu : « oui ») : sous 1800 px, les pastilles en version courte et des onglets a leur largeur, pour
+#    que la roue admin reste sur la rangee et que la recherche garde sa place (avant : roue dessous, recherche de 30 px)
+o0 = s.index("@media (min-width:1100px) and (min-height:640px) and (max-width:1799px){")
+ordi = s[o0:s.index("\n}", o0)]
+assert "html:not(.tel-large) body .d-ligne:has(#d-tour){flex-wrap:nowrap}" in ordi
+assert ".d-ligne:has(#d-tour) .d-pl{display:none}" in ordi and ".d-ligne:has(#d-tour) .d-pc{display:inline}" in ordi
+assert "> #d-enc span{display:none}" in ordi and "> .d-onglets a{min-width:0;" in ordi
+assert "#d-x-iq{display:none}" not in s, "le titre « Radar × SlabIQ » reste entier"
 # l'app construite suit la source
 a = open(os.path.join(ICI, "ui", "app.html"), encoding="utf-8").read()
 assert 'id="d-iqp"' in a and 'id="md-loupe"' in a and 'id="md-q-x"' in a and 'id="md-iq"' not in a, "reconstruire ui/app.html"

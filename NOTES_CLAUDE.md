@@ -131,8 +131,10 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   nouvelle WOW a 14 px dessus ET dessous (`html body .md-wow{margin:0 0 14px}` ; avant : collée aux tuiles).
   Radar ADMIN au cell (`.d-ligne:has(#d-tour)`, 699 px et moins) : 2 rangées en flex (une coupure `::after` pleine largeur) :
   [Deals | Watchlist] [SlabIQ] … (roue admin) ; puis prochain tour, ↻ encans, annonces vérifiées ; 16 px entre le titre, les
-  rangées et la recherche. Sous 410 px la pastille SlabIQ se cache en admin. À VOIR : à l'ordi en vue admin (1465 px), la
-  rangée est trop longue : la roue admin passe dessous et la recherche est écrasée (30 px) ; pas touché (pas demandé).
+  rangées et la recherche. Sous 410 px la pastille SlabIQ se cache en admin. À l'ordi en vue admin, sous 1800 px : pastilles
+  en version courte (`.d-pc`) et onglets à leur largeur : tout tient sur UNE rangée, la recherche fait ~400 px à 1465 px
+  (avant : roue dessous, recherche de 30 px). Reste serré entre 1100 et 1250 px. Pour mesurer en local, retirer la carte
+  « Tune your Radar » de `.tete-fixe` (elle élargit la colonne du titre ; Mathieu ne l'a pas).
 - **Tendances top 25** (23 nov, `lockerroom.tendances_iq`, `TEND_TOP/TEND_GRATUIT/TEND_PCT_MIN`) : Plus bas et Plus haut =
   les 25 plus gros écarts (seuil 1 %, plus 10 %), triés du plus gros au plus petit, avec un rang. Gratuit (ni Pro ni admin) :
   `_tendances_gratuit` vide les 20 premiers (le serveur n'envoie que le % et la courbe : `verrou`), les 5 derniers lisibles ;
@@ -183,8 +185,17 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   Les 22-23 nov, 34 scripts de `outils/recherche/` avaient RAMENÉ pickle : retiré le 23 nov (`cache_recherche.py` : .json.gz et
   .csv.gz, relus identiques) ; `tests/test_sans_pickle.py` l'interdit partout. RESTE UN pickle : `demande_legale.py` (le modèle
   sklearn de la demande, écrit et relu par notre serveur). À retirer en 2 temps, car un trou sans modèle changerait la valeur
-  des joueurs sans ventes : (1) écrire AUSSI les arbres en JSON à chaque passe horaire + un prédicteur maison vérifié égal à
-  sklearn ; (2) après une passe en ligne, lire le JSON, retirer pickle et l'exception du test. Attend le « go » de Mathieu.
+  des joueurs sans ventes. Mathieu a dit « oui » (23 nov, 14 h 50).
+  **1er temps : FAIT le 23 nov** (`demande_legale._exporter_arbres`, `ArbresJson`, `_sauver_arbres_json` ; `tests/test_arbres_json.py`) :
+  chaque passe horaire écrit `demande_legale_arbres.json` (5 Mo) et compare notre prédicteur à sklearn sur tous les joueurs ;
+  l'état est dans `labo.arbres_json` et dans le journal (« Demande legale : … ; arbres JSON {'ok': True, …, 'ecart': …} »).
+  Mesuré en local sur le vrai modèle (forêt de 500 arbres, 757 joueurs) : écart 4e-16, 0 demande différente, 1 ms par joueur
+  (sklearn : 88 ms). On lit ENCORE pickle.
+  **2e temps : À FAIRE**, au moins 1 h 30 après la mise en ligne du 1er temps : vérifier dans les journaux Render la ligne
+  « arbres JSON {'ok': True » (demander à Mathieu l'espace Render : un seul existe, « LockerRoom », mais il doit le confirmer) ;
+  puis `_arbres()` lit le JSON (`ArbresJson(json.load(...))`), retirer `_sauver_arbres`, les 2 `import pickle`, `_chemin_arbres`
+  (.pkl), l'exception `EXCEPTIONS` et le bloc « l'exception reste » de `tests/test_sans_pickle.py`. L'ancien fichier .pkl reste
+  sur le disque (pas de suppression sans permission).
 - Prix annuel Stripe à confirmer. Réponse d'eBay (prix vendus montrés au public) toujours attendue.
 
 - Inventaire = des CARTES seulement (20 nov 2026, Mathieu : « un cadre signe, c'est pas une carte ; pas de tables de cuisine ni de chaudrons ») : rien n'entre tout seul s'il n'est pas une carte a l'unite (cartes_match.est_carte_seule). Objets signes, cadres, photos, chandails, rondelles, fournitures, boites scellees, places de break : jamais importes automatiquement.

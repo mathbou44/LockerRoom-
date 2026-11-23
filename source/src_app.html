@@ -2099,6 +2099,16 @@ html body .md > .md-rech{display:none; margin:0 0 14px} html body .md.rech > .md
   html body .ecran:has(#d-tour) .d-barre{margin-top:0}
 }
 @media (max-width:409px){ html body .d-ligne:has(#d-tour) > .d-iqp{display:none} }
+/* 23 nov 2026 (Mathieu : « oui » a « je corrige l'entete admin a l'ordi ? ») : a l'ordi, en vue ADMIN, la rangee (onglets, prochain tour,
+   encans, annonces verifiees, roue) etait trop longue sous 1800 px : la roue passait dessous et la recherche etait ecrasee (30 px).
+   Sous 1800 px : les pastilles en version courte (comme au cell) et des onglets a leur largeur ; tout tient sur UNE rangee. */
+@media (min-width:1100px) and (min-height:640px) and (max-width:1799px){
+  html:not(.tel-large) body .d-ligne:has(#d-tour){flex-wrap:nowrap}
+  html:not(.tel-large) body .d-ligne:has(#d-tour) .d-pl{display:none} html:not(.tel-large) body .d-ligne:has(#d-tour) .d-pc{display:inline}
+  html:not(.tel-large) body .d-ligne:has(#d-tour) > #d-enc span{display:none}
+  html:not(.tel-large) body .d-ligne:has(#d-tour) > .d-onglets a{min-width:0; padding-left:18px; padding-right:18px}
+  html:not(.tel-large) body .d-ligne:has(#d-tour) > .d-pil, html:not(.tel-large) body .d-ligne:has(#d-tour) > #d-preuve .d-pil{white-space:nowrap}
+}
 /* 23 nov 2026 : sur les cells etroits (moins de 410 px), le badge « Vaut plus scellee » d'une boite passait sous le crochet vert */
 @media (max-width:410px){ html body .tuile-prod .coin .capsule{padding:0 7px; font-size:11.5px; letter-spacing:.02em; gap:4px} }
 /* 23 nov 2026 (Mathieu, capture du cell : « espacer les nouvelles et les premieres tuiles ») : la nouvelle WOW etait collee aux
