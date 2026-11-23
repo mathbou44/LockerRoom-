@@ -257,13 +257,23 @@ def verifier_alertes(api, rechercher=None):
 
 
 # -- 3. vaut-il la peine d'ouvrir ? -----------------------------------------------------------------------------
-def verdict_ouvrir(ev_boite, prix_boite):
-    """Valeur revendable attendue d'une boite vs son prix de vente scellee."""
+OUVRIR_PART_MIN = 50.0       # % de la valeur de la boite qui doit venir de VRAIES ventes pour oser un verdict
+
+
+def verdict_ouvrir(ev_boite, prix_boite, part_mesuree=None):
+    """Valeur revendable attendue d'une boite vs son prix de vente scellee.
+    23 nov 2026 (Mathieu, devant « Keep sealed -93 % » sur Ice : « tu veux dire quoi ? ») : la valeur d'Ice et d'Artifacts venait
+    a 0 % de vraies ventes (nos valeurs par defaut, bien trop basses : 15 $ de cartes par boite d'Ice) : le badge annoncait plus
+    que ce qu'on mesure. Pas de verdict tant que moins de la moitie de la valeur de la boite vient de vraies ventes
+    (calcul.prix_catalogue : part_mesuree, en %). part_mesuree None = inconnue (appel direct) : le verdict est rendu."""
     if not ev_boite or not prix_boite:
+        return None
+    if part_mesuree is not None and part_mesuree < OUVRIR_PART_MIN:
         return None
     r = ev_boite / prix_boite
     return {"ratio": round(r, 2), "pct": round(100 * (r - 1)),
-            "verdict": "ouvrir" if r >= 1.05 else "neutre" if r >= 0.85 else "garder"}
+            "verdict": "ouvrir" if r >= 1.05 else "neutre" if r >= 0.85 else "garder",
+            "mesure_pct": None if part_mesuree is None else round(part_mesuree)}
 
 
 # -- 4. tendances ----------------------------------------------------------------------------------------------

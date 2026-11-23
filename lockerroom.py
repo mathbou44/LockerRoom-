@@ -1648,10 +1648,13 @@ class Api:
             k = (cle, p["id"])
             ev = self._EV_CACHE.get(k)                 # 4 nov 2026 : lu une fois (un autre fil peut vider le cache entre-temps)
             if ev is None:
-                ev = calcul.prix_catalogue(catalogue.charger(p["id"]), boites=1)["ev_par_boite"]
+                r_ = calcul.prix_catalogue(catalogue.charger(p["id"]), boites=1)
+                ev = (r_["ev_par_boite"], r_.get("part_mesuree") or 0.0)      # 23 nov 2026 : + la part de cette valeur qui vient de vraies ventes
                 self._EV_CACHE[k] = ev
+            ev, part = ev
             boite = valeur_produit.de(p["id"]).get("boite")       # 26 oct 2026 : vaut-il la peine d'ouvrir ?
-            out.append(dict(p, ev_par_boite=ev, prix_boite=boite, ouvrir=marche.verdict_ouvrir(ev, boite)))
+            # 23 nov 2026 : pas de verdict « ouvrir / scellee » sans vraies ventes (marche.OUVRIR_PART_MIN)
+            out.append(dict(p, ev_par_boite=ev, ev_mesuree_pct=part, prix_boite=boite, ouvrir=marche.verdict_ouvrir(ev, boite, part)))
         return {"produits": out, "valeurs": valeurs.statut()}
 
     # -- 24 oct 2026 : checklists Excel de Beckett (telechargees par l'utilisateur, deposees dans l'app) -----------

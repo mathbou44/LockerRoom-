@@ -321,14 +321,14 @@ def ouvrir(api=None, langue="fr"):
     o = p["ouvrir"]
     garder = o["verdict"] == "garder"
     return {"id": "ouvrir", "niveau": "tous", "genre": "break",
-            "titre": t(f"{p['nom']} : {'mieux vaut la garder scellée' if garder else 'ses cartes valent plus que la boîte'}",
-                       f"{p['nom']}: {'better kept sealed' if garder else 'its cards are worth more than the box'}"),
+            "titre": t(f"{p['nom']} : {'elle vaut plus scellée' if garder else 'ses cartes valent plus que la boîte'}",
+                       f"{p['nom']}: {'worth more sealed' if garder else 'its cards are worth more than the box'}"),
             "chiffre": f"{o['pct']:+d} %" if isinstance(o.get("pct"), int) else "",
             "texte": t(f"Une boîte se vend {p['prix_boite']:.0f} $ scellée ; ses cartes revendables valent en moyenne {p['ev_par_boite']:.0f} $ "
-                       "(ventes réelles, sans les cartes de moins de 1,50 $).",
+                       f"({o.get('mesure_pct') or 50} % de cette valeur vient de vraies ventes ; sans les cartes de moins de 1,50 $).",
                        f"A box sells for ${p['prix_boite']:.0f} sealed; its resellable cards are worth ${p['ev_par_boite']:.0f} on average "
-                       "(real sales, without cards under $1.50)."),
-            "truc": t("Garder scellée : revends la boîte, ou garde-la. Ouvrir : seulement si tu acceptes le hasard, car la moyenne cache "
+                       f"({o.get('mesure_pct') or 50}% of that value comes from real sales; cards under $1.50 not counted)."),
+            "truc": t("Vaut plus scellée : revends la boîte, ou garde-la. Ouvrir : seulement si tu acceptes le hasard, car la moyenne cache "
                       "beaucoup de boîtes sous leur prix.",
                       "Sealed: resell the box or keep it. Open: only if you accept the luck of the draw, since the average hides many "
                       "boxes below their price."),
