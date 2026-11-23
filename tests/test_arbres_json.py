@@ -1,7 +1,8 @@
 """23 nov 2026 (Aikido, critique : pickle ; Mathieu : « oui » au retrait en deux temps) : le modele d'arbres de la demande des
-joueurs (demande_legale) part AUSSI en JSON a chaque passe, avec notre propre predicteur. 1er temps : on lit encore pickle, mais
-le JSON est ecrit et compare a scikit-learn (labo.arbres_json). Ce test prouve que le predicteur rend les MEMES reponses que
-scikit-learn, pour une foret comme pour un gradient boosting, y compris pile sur les seuils des arbres (compares en float32)."""
+joueurs (demande_legale) est ecrit et relu en JSON, avec notre propre predicteur ; plus aucun pickle (2e temps, apres avoir vu
+en ligne « arbres JSON {'ok': True, ..., 'n': 920, 'ecart': 2.44e-15} »). Ce test prouve que le predicteur rend les MEMES reponses
+que scikit-learn, pour une foret comme pour un gradient boosting, y compris pile sur les seuils des arbres (compares en
+float32), et que le modele d'arbres n'est garde que si son JSON est ecrit et verifie."""
 import json, os, sys, tempfile, random
 ICI = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ICI)
@@ -40,6 +41,11 @@ for m in (RandomForestRegressor(n_estimators=40, min_samples_leaf=3, max_feature
     relu = dl.ArbresJson(json.load(open(dl._chemin_arbres_json(), encoding="utf-8")))
     assert max(abs(float(u) - float(v)) for u, v in zip(m.predict(np.array(X[:50])), relu.predict(X[:50]))) < 1e-9
     assert not os.path.exists(dl._chemin_arbres_json() + ".tmp")
+    # la lecture du service : _arbres() rend ce modele-la, relu du JSON (et le relit quand le fichier change)
+    os.utime(dl._chemin_arbres_json(), (1700000000 + m.n_estimators, 1700000000 + m.n_estimators))
+    lu = dl._arbres()
+    assert isinstance(lu, dl.ArbresJson) and lu.n_features_in_ == P and lu.d["type"] == d["type"]
+    assert abs(float(lu.predict([X[3]])[0]) - float(m.predict(np.array([X[3]]))[0])) < 1e-9
 # un modele qu'on ne connait pas n'est pas exporte de travers ; un fichier abime n'est pas lu
 try:
     dl._exporter_arbres(object()); raise SystemExit("un modele inconnu doit etre refuse")
@@ -49,8 +55,16 @@ try:
     dl.ArbresJson({"v": 2, "arbres": []}); raise SystemExit("un fichier d'une autre version doit etre refuse")
 except ValueError:
     pass
-# le 1er temps : labo() ecrit le JSON et note son etat ; la lecture, elle, n'a pas encore change (2e temps apres une passe en ligne)
+# un fichier abime ne fait pas tomber le service : pas de modele d'arbres jusqu'a la passe suivante
+open(dl._chemin_arbres_json(), "w", encoding="utf-8").write("{pas du json")
+os.utime(dl._chemin_arbres_json(), (1700009999, 1700009999))
+assert dl._arbres() is None
+os.remove(dl._chemin_arbres_json()); dl._ARBRES.update(m=None, mt=None)
+assert dl._arbres() is None
+# labo() : le modele d'arbres n'est garde QUE si son JSON est ecrit et rend les reponses de scikit-learn ; sinon la meilleure droite
 src = open(os.path.join(ICI, "demande_legale.py"), encoding="utf-8").read()
-assert 'aj = _sauver_arbres_json(gb["modele"], [[l[1][k] for k in PIECES] for l in lignes])' in src and '"arbres_json": aj}' in src
+i = src.index('aj = _sauver_arbres_json(gb["modele"], [[l[1][k] for k in PIECES] for l in lignes])')
+assert 'if aj.get("ok"):\n                meilleur = "arbres"' in src[i:i + 400] and '"arbres_json": aj}' in src
 assert '"; arbres JSON", (r.get("labo") or {}).get("arbres_json")' in src, "le journal de la passe dit si le JSON est bon"
-print("OK test_arbres_json (foret et gradient boosting : memes reponses que scikit-learn, seuils compris ; le fichier se relit)")
+assert not hasattr(dl, "_sauver_arbres") and not hasattr(dl, "_chemin_arbres"), "l'ancien fichier .pkl n'est plus ni ecrit ni lu"
+print("OK test_arbres_json (foret et gradient boosting : memes reponses que scikit-learn, seuils compris ; le service relit le JSON)")

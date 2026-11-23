@@ -421,15 +421,16 @@ def labo(d=None, verite=None):
     if gb:
         res["arbres"] = gb["mesure"]
         if gb["mesure"]["rho"] is not None and (meilleur is None or gb["mesure"]["rho"] > res[meilleur]["rho"]):
-            meilleur = "arbres"
+            # 23 nov 2026 (Aikido, pickle) : le modele est ecrit en JSON et relu par NOTRE predicteur ; il n'est garde que si ce
+            # predicteur rend les reponses de scikit-learn sur chaque joueur (sinon : la meilleure droite, comme avant les arbres)
+            try:
+                aj = _sauver_arbres_json(gb["modele"], [[l[1][k] for k in PIECES] for l in lignes])
+            except Exception as e:
+                aj = {"ok": False, "erreur": repr(e)[:160]}
+            if aj.get("ok"):
+                meilleur = "arbres"
     if meilleur == "arbres":
         modele = {"pieces": list(PIECES), "nom": "arbres", "arbres": True, "n": len(lignes), "le": datetime.now().isoformat(timespec="seconds")}
-        _sauver_arbres(gb["modele"])
-        # 23 nov 2026 (Aikido, pickle) : 1er temps : le meme modele AUSSI en JSON, verifie contre scikit-learn sur chaque joueur
-        try:
-            aj = _sauver_arbres_json(gb["modele"], [[l[1][k] for k in PIECES] for l in lignes])
-        except Exception as e:
-            aj = {"ok": False, "erreur": repr(e)[:160]}
     else:
         ks = combos[meilleur]
         mu, sd, w, b = _ajuster([[l[1][k] for k in ks] for l in lignes], y)
@@ -501,11 +502,13 @@ def _arbres_cv(lignes, y):
 
 
 # -- 23 nov 2026 (Aikido, critique : « Using Pickle can lead to remote code execution ») : le modele d'arbres SANS pickle ----------
-# Lire un pickle, c'est executer ce qu'il contient. Ici le fichier est le notre (ecrit et relu par notre serveur), mais on le
-# retire quand meme, en DEUX temps pour ne jamais laisser les joueurs sans ventes sans modele (leur valeur changerait) :
-#   1er temps (ce code) : a chaque passe horaire, le modele est AUSSI ecrit en JSON (rien que des nombres : les noeuds de chaque
-#     arbre) et notre predicteur est compare a scikit-learn sur tous les joueurs (labo.arbres_json : ok, ecart). On lit encore pickle.
-#   2e temps (apres une passe en ligne avec ok = True) : _arbres() lit le JSON ; pickle et l'exception de tests/test_sans_pickle.py partent.
+# Lire un pickle, c'est executer ce qu'il contient. Le fichier etait le notre (ecrit et relu par notre serveur), mais on l'a
+# retire quand meme, en DEUX temps pour ne jamais laisser les joueurs sans ventes sans modele (leur valeur aurait change) :
+#   1er temps (15 h 13) : a chaque passe horaire, le modele AUSSI en JSON (rien que des nombres : les noeuds de chaque arbre),
+#     et notre predicteur compare a scikit-learn sur tous les joueurs. Vu en ligne a 15 h 19 : « arbres JSON {'ok': True,
+#     'type': 'GradientBoostingRegressor', 'arbres': 300, 'ko': 253, 'n': 920, 'ecart': 2.44e-15} ».
+#   2e temps (ce code) : _arbres() lit le JSON ; plus aucun pickle. L'ancien fichier ..._arbres.pkl reste sur le disque, ignore.
+# Bonus : la reponse pour un joueur prend 1 ms (scikit-learn : 88 ms) et le service n'a plus besoin de charger scikit-learn pour lire.
 def _chemin_arbres_json():
     return _chemin().replace(".json", "_arbres.json")
 
@@ -569,26 +572,18 @@ def _sauver_arbres_json(m, X=None):
 _ARBRES = {"m": None, "mt": None}
 
 
-def _chemin_arbres():
-    return _chemin().replace(".json", "_arbres.pkl")
-
-
-def _sauver_arbres(m):
-    import pickle
-    with open(_chemin_arbres() + ".tmp", "wb") as f:
-        pickle.dump(m, f)
-    os.replace(_chemin_arbres() + ".tmp", _chemin_arbres())
-
-
 def _arbres():
-    import pickle
+    """Le modele d'arbres de la derniere passe, relu du JSON : rien que des nombres, aucun code n'est execute a la lecture."""
     try:
-        mt = os.path.getmtime(_chemin_arbres())
+        mt = os.path.getmtime(_chemin_arbres_json())
     except OSError:
         return None
     if _ARBRES["mt"] != mt:
-        with open(_chemin_arbres(), "rb") as f:            # notre propre modele, ecrit par notre serveur
-            _ARBRES.update(m=pickle.load(f), mt=mt)
+        try:
+            with open(_chemin_arbres_json(), encoding="utf-8") as f:
+                _ARBRES.update(m=ArbresJson(json.load(f)), mt=mt)
+        except (OSError, ValueError, KeyError, TypeError):
+            _ARBRES.update(m=None, mt=mt)                  # fichier illisible : pas de modele d'arbres jusqu'a la passe suivante
     return _ARBRES["m"]
 
 

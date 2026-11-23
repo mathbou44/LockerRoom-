@@ -2,13 +2,13 @@
 ce qu'il contient. Le 20 nov, outils/banc_valeur.py et outils/radar_iq.py sont passes au JSON ; les 22-23 nov, 34 scripts de
 recherche l'avaient ramene. Regle : AUCUN pickle (ni pandas read_pickle / to_pickle, ni shelve, marshal, dill, joblib) dans le
 code du depot. Les fichiers de travail de la recherche passent par outils/recherche/cache_recherche.py (JSON et CSV compresses).
-Une seule exception connue, a retirer en deux temps (voir NOTES_CLAUDE.md) : demande_legale.py garde le modele de la demande
-des joueurs, un fichier que NOTRE serveur ecrit et relit lui-meme."""
+La derniere exception (demande_legale.py, le modele de la demande des joueurs) est partie le 23 nov en deux temps : le modele
+est ecrit et relu en JSON (tests/test_arbres_json.py). Il n'y a plus AUCUNE exception."""
 import ast, os, sys, tempfile, math, collections
 ICI = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INTERDITS = {"pickle", "cPickle", "_pickle", "shelve", "marshal", "dill", "joblib", "cloudpickle"}
 APPELS = {"read_pickle", "to_pickle"}
-EXCEPTIONS = {"demande_legale.py": {"pickle"}}          # le modele de la demande (arbres) : ecrit et relu par notre serveur seulement
+EXCEPTIONS = {}                                         # aucune : ne rien ajouter ici sans en parler a Mathieu
 vus, fautes = 0, []
 for racine, dossiers, fichiers in os.walk(ICI):
     dossiers[:] = [d for d in dossiers if d not in (".git", "__pycache__", "node_modules", ".venv", "venv")]
@@ -35,11 +35,7 @@ for racine, dossiers, fichiers in os.walk(ICI):
                     fautes.append(f"{rel}:{getattr(n, 'lineno', '?')} {nom}")
 assert vus > 150, vus
 assert not fautes, "pickle (ou un cousin) est revenu : passer par outils/recherche/cache_recherche.py -> " + ", ".join(fautes[:12])
-# l'exception reste ce qu'elle est : deux fonctions de demande_legale.py, rien d'autre
-arbre = ast.parse(open(os.path.join(ICI, "demande_legale.py"), encoding="utf-8").read())
-imports = sum(1 for n in ast.walk(arbre) if isinstance(n, ast.Import) and any(a.name == "pickle" for a in n.names))
-appels = sorted(n.attr for n in ast.walk(arbre) if isinstance(n, ast.Attribute) and isinstance(n.value, ast.Name) and n.value.id == "pickle")
-assert imports == 2 and appels == ["dump", "load"], f"demande_legale.py : l'exception a grossi (ou a disparu : retirer alors EXCEPTIONS) : {imports} imports, {appels}"
+assert not EXCEPTIONS, "plus aucune exception : le modele de la demande est en JSON depuis le 23 nov"
 # le remplacant : ce qui entre ressort identique, et rien n'est execute a la lecture
 sys.path.insert(0, os.path.join(ICI, "outils", "recherche"))
 import cache_recherche as cr
@@ -62,4 +58,4 @@ if pd is not None:
                        "c": pd.Categorical(["yg", "auto", "yg"], categories=["auto", "base", "yg"])}, index=[10, 20, 35])
     cr.sauver_df(df, os.path.join(d, "t.csv.gz")); r = cr.charger_df(os.path.join(d, "t.csv.gz"))
     pd.testing.assert_frame_equal(df, r, check_exact=True)
-print(f"OK test_sans_pickle ({vus} fichiers Python lus, aucun pickle hors l'exception connue ; le cache JSON/CSV rend ce qu'on lui donne)")
+print(f"OK test_sans_pickle ({vus} fichiers Python lus, AUCUN pickle, sans exception ; le cache JSON/CSV rend ce qu'on lui donne)")

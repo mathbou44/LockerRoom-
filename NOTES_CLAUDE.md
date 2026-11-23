@@ -183,19 +183,15 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   empreintes, object-src none, form-action self ; restent style-src unsafe-inline et img-src https:, nécessaires), SSRF (faux
   positif : `reseau_sur`, `tests/test_aikido_ssrf.py`), lightgbm.
   Les 22-23 nov, 34 scripts de `outils/recherche/` avaient RAMENÉ pickle : retiré le 23 nov (`cache_recherche.py` : .json.gz et
-  .csv.gz, relus identiques) ; `tests/test_sans_pickle.py` l'interdit partout. RESTE UN pickle : `demande_legale.py` (le modèle
-  sklearn de la demande, écrit et relu par notre serveur). À retirer en 2 temps, car un trou sans modèle changerait la valeur
-  des joueurs sans ventes. Mathieu a dit « oui » (23 nov, 14 h 50).
-  **1er temps : FAIT le 23 nov** (`demande_legale._exporter_arbres`, `ArbresJson`, `_sauver_arbres_json` ; `tests/test_arbres_json.py`) :
-  chaque passe horaire écrit `demande_legale_arbres.json` (5 Mo) et compare notre prédicteur à sklearn sur tous les joueurs ;
-  l'état est dans `labo.arbres_json` et dans le journal (« Demande legale : … ; arbres JSON {'ok': True, …, 'ecart': …} »).
-  Mesuré en local sur le vrai modèle (forêt de 500 arbres, 757 joueurs) : écart 4e-16, 0 demande différente, 1 ms par joueur
-  (sklearn : 88 ms). On lit ENCORE pickle.
-  **2e temps : À FAIRE**, au moins 1 h 30 après la mise en ligne du 1er temps : vérifier dans les journaux Render la ligne
-  « arbres JSON {'ok': True » (demander à Mathieu l'espace Render : un seul existe, « LockerRoom », mais il doit le confirmer) ;
-  puis `_arbres()` lit le JSON (`ArbresJson(json.load(...))`), retirer `_sauver_arbres`, les 2 `import pickle`, `_chemin_arbres`
-  (.pkl), l'exception `EXCEPTIONS` et le bloc « l'exception reste » de `tests/test_sans_pickle.py`. L'ancien fichier .pkl reste
-  sur le disque (pas de suppression sans permission).
+  .csv.gz, relus identiques). Le DERNIER pickle (`demande_legale.py`, le modèle sklearn de la demande des joueurs sans ventes) est
+  parti le 23 nov en deux temps, pour ne jamais laisser ces joueurs sans modèle : (1) 15 h 13 : chaque passe horaire écrit aussi
+  `demande_legale_arbres.json` et compare notre prédicteur (`ArbresJson`) à sklearn ; vu dans les journaux Render à 15 h 19 :
+  « arbres JSON {'ok': True, 'type': 'GradientBoostingRegressor', 'arbres': 300, 'ko': 253, 'n': 920, 'ecart': 2.44e-15} » ;
+  (2) `_arbres()` lit le JSON ; `labo()` ne garde le modèle d'arbres que si son JSON est écrit et vérifié (sinon la meilleure
+  droite). PLUS AUCUN pickle dans le dépôt : `tests/test_sans_pickle.py` (aucune exception) et `tests/test_arbres_json.py`.
+  L'ancien `/data/demande_legale_arbres.pkl` reste sur le disque, ignoré (pas de suppression sans permission).
+  Render : Mathieu a confirmé l'espace « LockerRoom » pour LIRE les journaux (service `lockerroom`, srv-dbeacqfb9u1s73912rag) ;
+  la ligne à chercher : « Demande legale : … ; arbres JSON … » (une passe peu après chaque démarrage, puis chaque heure).
 - Prix annuel Stripe à confirmer. Réponse d'eBay (prix vendus montrés au public) toujours attendue.
 
 - Inventaire = des CARTES seulement (20 nov 2026, Mathieu : « un cadre signe, c'est pas une carte ; pas de tables de cuisine ni de chaudrons ») : rien n'entre tout seul s'il n'est pas une carte a l'unite (cartes_match.est_carte_seule). Objets signes, cadres, photos, chandails, rondelles, fournitures, boites scellees, places de break : jamais importes automatiquement.
