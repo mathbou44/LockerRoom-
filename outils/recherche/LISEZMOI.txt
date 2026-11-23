@@ -1,0 +1,1 @@
+Scripts de recherche du 22 nov 2026 (voir docs/RECHERCHE_MODELE_22NOV.md). Brouillons de mesure : ils lisent des fichiers de travail (by.pkl = ventes annotees par carte exacte, tirees de outils/tests_site.py ; abn.pkl = rendements_anormaux.py ; slabiq_donnees.json.gz = export admin). A refaire proprement avant de s'en servir dans l'app.

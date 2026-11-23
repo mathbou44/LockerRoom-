@@ -3,123 +3,123 @@
  "methode": "tests_site rejoue a chaque date, avec les ventes connues ce jour-la",
  "lignes": [
   {
-   "fin": "2026-09-24",
-   "coupe": "2026-09-03",
-   "revente_des": "2026-09-13",
-   "revente_fin": "2026-09-24",
-   "ventes": 58752,
-   "accord": 0.673,
-   "x_a_e": 5.0,
+   "fin": "2026-09-27",
+   "coupe": "2026-08-23",
+   "revente_des": "2026-09-10",
+   "revente_fin": "2026-09-27",
+   "ventes": 93036,
+   "accord": 0.647,
+   "x_a_e": 3.8,
    "pro": {
-    "n": 210,
-    "reussi": 0.705,
+    "n": 397,
+    "reussi": 0.786,
     "reussi_ic95": [
-     0.643,
-     0.762
+     0.746,
+     0.824
     ],
-    "revendue": 0.776,
-    "profit_apres_frais": 0.1
+    "revendue": 0.864,
+    "profit_apres_frais": 0.154
    },
    "hasard": {
-    "n": 11670,
-    "reussi": 0.063,
-    "profit_apres_frais": 0.017
+    "n": 18313,
+    "reussi": 0.071,
+    "profit_apres_frais": 0.02
    }
   },
   {
-   "fin": "2026-10-08",
-   "coupe": "2026-09-17",
-   "revente_des": "2026-09-28",
-   "revente_fin": "2026-10-08",
-   "ventes": 78844,
-   "accord": 0.745,
-   "x_a_e": 7.5,
+   "fin": "2026-10-11",
+   "coupe": "2026-09-09",
+   "revente_des": "2026-09-26",
+   "revente_fin": "2026-10-11",
+   "ventes": 114803,
+   "accord": 0.687,
+   "x_a_e": 5.3,
    "pro": {
-    "n": 302,
-    "reussi": 0.672,
+    "n": 464,
+    "reussi": 0.733,
     "reussi_ic95": [
-     0.626,
-     0.725
+     0.694,
+     0.774
     ],
-    "revendue": 0.765,
-    "profit_apres_frais": 0.159
+    "revendue": 0.812,
+    "profit_apres_frais": 0.192
    },
    "hasard": {
-    "n": 13801,
-    "reussi": 0.077,
-    "profit_apres_frais": 0.024
+    "n": 21729,
+    "reussi": 0.08,
+    "profit_apres_frais": 0.025
    }
   },
   {
-   "fin": "2026-10-22",
-   "coupe": "2026-10-01",
-   "revente_des": "2026-10-11",
-   "revente_fin": "2026-10-22",
-   "ventes": 104154,
-   "accord": 0.779,
-   "x_a_e": 6.5,
+   "fin": "2026-10-25",
+   "coupe": "2026-09-25",
+   "revente_des": "2026-10-10",
+   "revente_fin": "2026-10-25",
+   "ventes": 139781,
+   "accord": 0.709,
+   "x_a_e": 4.8,
    "pro": {
-    "n": 476,
-    "reussi": 0.599,
+    "n": 638,
+    "reussi": 0.589,
     "reussi_ic95": [
-     0.555,
-     0.643
+     0.55,
+     0.629
     ],
-    "revendue": 0.67,
-    "profit_apres_frais": 0.204
+    "revendue": 0.683,
+    "profit_apres_frais": 0.185
    },
    "hasard": {
-    "n": 19414,
-    "reussi": 0.088,
-    "profit_apres_frais": 0.031
+    "n": 25768,
+    "reussi": 0.084,
+    "profit_apres_frais": 0.029
    }
   },
   {
-   "fin": "2026-11-05",
-   "coupe": "2026-10-14",
-   "revente_des": "2026-10-24",
-   "revente_fin": "2026-11-05",
-   "ventes": 126952,
-   "accord": 0.782,
-   "x_a_e": 9.9,
+   "fin": "2026-11-08",
+   "coupe": "2026-10-08",
+   "revente_des": "2026-10-23",
+   "revente_fin": "2026-11-08",
+   "ventes": 176910,
+   "accord": 0.76,
+   "x_a_e": 6.9,
    "pro": {
-    "n": 781,
-    "reussi": 0.641,
+    "n": 996,
+    "reussi": 0.642,
     "reussi_ic95": [
-     0.608,
-     0.673
+     0.609,
+     0.674
     ],
-    "revendue": 0.784,
-    "profit_apres_frais": 0.179
+    "revendue": 0.792,
+    "profit_apres_frais": 0.195
    },
    "hasard": {
-    "n": 21951,
-    "reussi": 0.089,
+    "n": 34825,
+    "reussi": 0.086,
     "profit_apres_frais": 0.027
    }
   },
   {
    "fin": "2026-11-22",
-   "coupe": "2026-10-18",
+   "coupe": "2026-10-15",
    "revente_des": "2026-10-29",
    "revente_fin": "2026-11-22",
-   "ventes": 153747,
-   "accord": 0.799,
-   "x_a_e": 10.0,
+   "ventes": 180519,
+   "accord": 0.765,
+   "x_a_e": 7.8,
    "pro": {
-    "n": 974,
-    "reussi": 0.665,
+    "n": 1046,
+    "reussi": 0.63,
     "reussi_ic95": [
-     0.637,
-     0.696
+     0.601,
+     0.659
     ],
-    "revendue": 0.837,
-    "profit_apres_frais": 0.191
+    "revendue": 0.814,
+    "profit_apres_frais": 0.202
    },
    "hasard": {
-    "n": 21510,
-    "reussi": 0.114,
-    "profit_apres_frais": 0.035
+    "n": 30922,
+    "reussi": 0.111,
+    "profit_apres_frais": 0.036
    }
   }
  ]

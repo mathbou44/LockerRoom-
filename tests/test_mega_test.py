@@ -1,13 +1,14 @@
 """22 nov 2026 (Mathieu : « fais le mega test CompSniper ») : 3 ans de ventes de la meme carte, collectes sur le serveur."""
 import os, sys, tempfile, time
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ["LOCKERROOM_DONNEES"] = tempfile.mkdtemp()
 import comptes
 comptes.DONNEES = os.environ["LOCKERROOM_DONNEES"]
 import mega_test, historique, vendues, base_ventes
-jr = lambda k: (datetime.now() - timedelta(days=k)).strftime("%Y-%m-%d")
-auj = date.today()
+# 22 nov 2026 : le jour en UTC, comme mega_test.fenetre (le test ratait entre 19 h et minuit, heure de Montreal)
+jr = lambda k: (datetime.now(timezone.utc) - timedelta(days=k)).strftime("%Y-%m-%d")
+auj = datetime.now(timezone.utc).date()
 vendues._taux_usd_cad = lambda: 1.40
 mega_test.PAUSE_S = 0
 

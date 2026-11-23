@@ -211,11 +211,19 @@ SEMIS["legal_22nov"] = [
     ("l_goldin", "Envoyer à Goldin la demande de licence des ventes", "Courriel prêt (Claude, 22 nov). Goldin appartient à eBay depuis 2024 : une entente avec eux couvre aussi la question eBay. Aucun scraping avant l'accord.", 1, None, "https://goldin.co", "2026-11-25"),
     ("l_cardladder", "Option : Card Ladder (une licence pour eBay, Goldin et Fanatics)", "Card Ladder (Collectors, PSA) a déjà des ententes avec eBay et Fanatics : une seule licence pourrait tout couvrir. Courriel prêt.", 2, None, "https://www.cardladder.com", "2026-11-28"),
 ]
-SEMIS_PROJET = {"legal_22nov": "licences", "tour_22nov": "lancement", "megatest_22nov": "lancement", "bulletin_22nov": "lancement", "achat_21nov": "lancement", "historique_21nov": "lancement", "tendances_21nov": "lancement", "licences_fc": "licences", "lancement_1dec": "lancement", "securite_21nov": "lancement", "matin_21nov": "lancement", "securite_reste": "lancement", "vitesse_21nov": "lancement", "consig_21nov": "lancement", "soir_21nov": "lancement"}
+SEMIS["recherche_22nov"] = [
+    ("r_verdict", "Méga test du 22 nov au soir : pas prouvé (à lire)", "1,15 M de ventes, 6 dates : le Radar Pro choisit 2 à 3 fois mieux que le hasard, mais l'acheteur perd 11 à 28 % après frais à 3, 6 et 12 mois. « À vendre » tient sur la carte exacte : 59 à 73 % contre 40 à 45 %. Détail : docs/RECHERCHE_MODELE_22NOV.md.", 1, None, None, "2026-11-23"),
+    ("r_promesse", "Décider : la promesse devient « le bon moment » (SlabIQ Timing), pas « achète pour revendre »", "La recherche : acheter le creux va dans le mauvais sens ; un joueur en feu continue de monter ; une recrue de l'année perd beaucoup ses 12 premiers mois. Claude bâtit et teste le score Timing si tu dis oui.", 1, None, None, "2026-11-25"),
+    ("r_donnees", "Télécharger les données du test SlabIQ (matchs et Wikipedia à jour)", "Admin → Mesures → Test SlabIQ → « Télécharger les données du test ». Celles du 12 nov ont servi à la recherche ; des fraîches doublent les cas.", 2, None, None, "2026-11-24"),
+    ("r_escalier", "Vérifier : A+ se revend moins que A, et B+ plus que A-, sur le nouvel export", "Reventes du 29 oct au 22 nov : A+ 14 %, A 25 %, A- 14 %, B+ 21 %. Le site dit maintenant 7 fois (avant : 9). Claude regarde pourquoi avant le lancement.", 1, None, None, "2026-11-25"),
+]
+SEMIS_PROJET = {"recherche_22nov": "lancement", "legal_22nov": "licences", "tour_22nov": "lancement", "megatest_22nov": "lancement", "bulletin_22nov": "lancement", "achat_21nov": "lancement", "historique_21nov": "lancement", "tendances_21nov": "lancement", "licences_fc": "licences", "lancement_1dec": "lancement", "securite_21nov": "lancement", "matin_21nov": "lancement", "securite_reste": "lancement", "vitesse_21nov": "lancement", "consig_21nov": "lancement", "soir_21nov": "lancement"}
 PROJETS = {"licences": "Licences de données", "lancement": "Lancement", "general": "Général", "suivi": "Suivi"}
 
 
-CLOS = {"clos_21nov": {"l1_pousser": "Fait par Claude le 21 nov : poussée et en ligne (dernier envoi à 16 h 32).",
+CLOS = {"clos_22nov": {"t_cadence": "Décidé par Mathieu le 22 nov : on garde « chaque semaine » (le site le dit déjà).",
+                       "c_tour_mesure": "Fait par Claude le 22 nov au soir : méga test, « À vendre » sur la carte exacte, tests du site et bulletin refaits."},
+        "clos_21nov": {"l1_pousser": "Fait par Claude le 21 nov : poussée et en ligne (dernier envoi à 16 h 32).",
                        "v_piles": "Fait par Claude le 21 nov : les piles sont lues ; la cause des minutes lentes après une mise à jour est corrigée."}}
 
 
