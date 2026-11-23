@@ -1,1 +1,6 @@
-Scripts de recherche du 22 nov 2026 (voir docs/RECHERCHE_MODELE_22NOV.md). Brouillons de mesure : ils lisent des fichiers de travail (by.pkl = ventes annotees par carte exacte, tirees de outils/tests_site.py ; abn.pkl = rendements_anormaux.py ; slabiq_donnees.json.gz = export admin). A refaire proprement avant de s'en servir dans l'app.
+Scripts de recherche du 22 nov 2026 (voir docs/RECHERCHE_MODELE_22NOV.md). Brouillons de mesure : ils lisent des fichiers de travail (by.json.gz = ventes annotees par carte exacte, tirees de outils/tests_site.py ; abn.pkl = rendements_anormaux.py ; slabiq_donnees.json.gz = export admin). A refaire proprement avant de s'en servir dans l'app.
+
+23 nov 2026 (Aikido, « Using Pickle can lead to remote code execution ») : plus AUCUN pickle ici. Les fichiers de travail
+passent par cache_recherche.py : objets Python en .json.gz (cr.sauver / cr.charger), tableaux pandas en .csv.gz
+(cr.sauver_df / cr.charger_df). Verifie sur les 30 fichiers de travail du 22-23 nov : relus identiques (valeurs, types, index).
+tests/test_sans_pickle.py interdit son retour.

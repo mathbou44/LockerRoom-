@@ -129,6 +129,10 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   ne change (les 3 menus, la recherche dans l'entête fixe). Le focus du champ se fait DANS le toucher (iOS).
   Au cell : le titre « Mon radar » est centré dans son bouton (`.md-g-t` : marge de gauche = l'engrenage + l'espace) et la
   nouvelle WOW a 14 px dessus ET dessous (`html body .md-wow{margin:0 0 14px}` ; avant : collée aux tuiles).
+  Radar ADMIN au cell (`.d-ligne:has(#d-tour)`, 699 px et moins) : 2 rangées en flex (une coupure `::after` pleine largeur) :
+  [Deals | Watchlist] [SlabIQ] … (roue admin) ; puis prochain tour, ↻ encans, annonces vérifiées ; 16 px entre le titre, les
+  rangées et la recherche. Sous 410 px la pastille SlabIQ se cache en admin. À VOIR : à l'ordi en vue admin (1465 px), la
+  rangée est trop longue : la roue admin passe dessous et la recherche est écrasée (30 px) ; pas touché (pas demandé).
 - **Tendances top 25** (23 nov, `lockerroom.tendances_iq`, `TEND_TOP/TEND_GRATUIT/TEND_PCT_MIN`) : Plus bas et Plus haut =
   les 25 plus gros écarts (seuil 1 %, plus 10 %), triés du plus gros au plus petit, avec un rang. Gratuit (ni Pro ni admin) :
   `_tendances_gratuit` vide les 20 premiers (le serveur n'envoie que le % et la courbe : `verrou`), les 5 derniers lisibles ;
@@ -170,7 +174,17 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
 - **Courriels de licence (7, dont Fanatics)** : attendent le connecteur Gmail et le choix de l'adresse d'envoi.
 - **Cloudflare** : activer la 2FA (créer un mot de passe via « mot de passe oublié » car il se connecte avec Google),
   activer HSTS (Edge Certificates), ajouter DMARC p=none. Ne PAS activer Bot Fight Mode (bloque Stripe, Apple, eBay).
-- **Aikido** : relancer le scan ; ignorer avec raison lightgbm, liste IP GitHub, SSRF (faux positif), CSP.
+- **Aikido** (23 nov, capture de Mathieu : 1 critique, 2 hauts, 4 moyens, 3 bas) : le tableau datait d'avant le 20 nov au soir.
+  DÉJÀ corrigés et en ligne : pickle dans `outils/banc_valeur.py` et `outils/radar_iq.py` ; « document write » de
+  `site_slabiq.html` (DOMParser) ; HSTS (vérifié en ligne le 23 nov : `max-age=63072000; includeSubDomains` sur www.slabcoach.com).
+  → Mathieu : RELANCER LE SCAN. À ignorer avec raison : liste IP GitHub (réservé à GitHub Enterprise), CSP (scripts par
+  empreintes, object-src none, form-action self ; restent style-src unsafe-inline et img-src https:, nécessaires), SSRF (faux
+  positif : `reseau_sur`, `tests/test_aikido_ssrf.py`), lightgbm.
+  Les 22-23 nov, 34 scripts de `outils/recherche/` avaient RAMENÉ pickle : retiré le 23 nov (`cache_recherche.py` : .json.gz et
+  .csv.gz, relus identiques) ; `tests/test_sans_pickle.py` l'interdit partout. RESTE UN pickle : `demande_legale.py` (le modèle
+  sklearn de la demande, écrit et relu par notre serveur). À retirer en 2 temps, car un trou sans modèle changerait la valeur
+  des joueurs sans ventes : (1) écrire AUSSI les arbres en JSON à chaque passe horaire + un prédicteur maison vérifié égal à
+  sklearn ; (2) après une passe en ligne, lire le JSON, retirer pickle et l'exception du test. Attend le « go » de Mathieu.
 - Prix annuel Stripe à confirmer. Réponse d'eBay (prix vendus montrés au public) toujours attendue.
 
 - Inventaire = des CARTES seulement (20 nov 2026, Mathieu : « un cadre signe, c'est pas une carte ; pas de tables de cuisine ni de chaudrons ») : rien n'entre tout seul s'il n'est pas une carte a l'unite (cartes_match.est_carte_seule). Objets signes, cadres, photos, chandails, rondelles, fournitures, boites scellees, places de break : jamais importes automatiquement.

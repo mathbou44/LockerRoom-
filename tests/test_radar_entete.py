@@ -43,6 +43,17 @@ m0 = s.index("html:not(.tel-large) body .d-iqp, html:not(.tel-large) body .md-ic
 assert "@media (min-width:1100px) and (min-height:640px){" in s[m0 - 60:m0]
 assert "html:not(.tel-large) body .md-barre > .md-dd{display:flex !important}" in s[m0:m0 + 700]
 assert "matchMedia('(min-width:1100px) and (min-height:640px)')" in s[s.index("function rangerRecherche("):s.index("function rangerRecherche(") + 300]
+# 6. le Radar ADMIN au cell (Mathieu : « enlever une rangee dans l'entete, reorganiser un peu, et espace egal ») : 2 rangees
+#    (onglets + pastille SlabIQ + roue admin ; puis prochain tour, encans, annonces verifiees), 16 px partout
+k0 = s.index("html body .d-ligne:has(#d-tour){display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0}")
+adm = s[k0:s.index("@media (max-width:409px)", k0) + 120]
+assert "@media (max-width:699px){" in s[k0 - 40:k0], "seulement au telephone (l'ordi garde sa rangee)"
+assert '::after{content:""; order:2; flex:0 0 100%; height:0}' in adm, "la coupure entre les 2 rangees (8 + 0 + 8 = 16 px)"
+assert "> .d-onglets, html body .d-ligne:has(#d-tour) > .d-iqp{order:1}" in adm and "> .d-adm-o{order:1; margin-left:auto}" in adm
+assert "> #d-tour, html body .d-ligne:has(#d-tour) > #d-enc{order:3}" in adm and "> #d-preuve{order:3; flex:1 1 0; min-width:0}" in adm
+assert "html body .ecran:has(#d-tour) .d-barre{margin-top:0}" in adm, "le meme espace avant la recherche"
+assert "@media (max-width:409px){ html body .d-ligne:has(#d-tour) > .d-iqp{display:none} }" in s, "sous 410 px la pastille ne tient pas a cote des onglets"
+assert re.search(r"\n\.tete-fixe\{display:flex; flex-direction:column; gap:16px\}", s), "l'espace de reference (titre -> onglets) a change : revoir les 16 px"
 # l'app construite suit la source
 a = open(os.path.join(ICI, "ui", "app.html"), encoding="utf-8").read()
 assert 'id="d-iqp"' in a and 'id="md-loupe"' in a and 'id="md-q-x"' in a and 'id="md-iq"' not in a, "reconstruire ui/app.html"

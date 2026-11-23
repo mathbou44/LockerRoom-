@@ -1,5 +1,6 @@
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))); import cache_recherche as cr   # 23 nov 2026 : plus de pickle (Aikido)
 import pandas as pd, numpy as np, datetime as dt
-df=pd.read_pickle('jeu.pkl')
+df=cr.charger_df('jeu.csv.gz')
 for h in ('y30','y60','y90'): df['e'+h]=df[h]-df.pe
 df['mois']=df.t.map(lambda t: dt.date.fromordinal(t).strftime('%y-%m'))
 F=lambda lr: np.exp(lr)*(1-0.1325)-1

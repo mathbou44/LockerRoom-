@@ -1,9 +1,10 @@
 # Etude d'evenements AU JOUR PRES sur l'indice du joueur : que fait le prix les jours qui suivent
 #  (a) un gros match (3 points et plus, ou 2 buts et plus), (b) un pic de nouvelles (Wikipedia x3), (c) une panne (5 matchs sans point pour un bon joueur).
-import pickle, gzip, json, math, bisect, collections, datetime as dt, sys, runpy
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))); import cache_recherche as cr   # 23 nov 2026 : plus de pickle (Aikido)
+import gzip, json, math, bisect, collections, datetime as dt, sys, runpy
 import numpy as np
 sys.argv = ['x']; O = lambda s: dt.date.fromisoformat(s).toordinal()
-by = pickle.load(open('by2.pkl', 'rb')); D = json.load(gzip.open('/mnt/user-data/uploads/Downloads/slabiq_donnees.json.gz', 'rt'))
+by = cr.charger('by2.json.gz'); D = json.load(gzip.open('/mnt/user-data/uploads/Downloads/slabiq_donnees.json.gz', 'rt'))
 PJ = collections.defaultdict(list)
 for (k, g), S in by.items():
     for s in S:
@@ -68,7 +69,7 @@ for nom, v in D['wiki'].items():
         if a[i] >= 3 * b and a[i] >= 400 and i - dern > 21: pics.append((nom.lower(), O(ds[i]))); dern = i
         elif a[i] >= 3 * b: dern = i
 etude('PIC DE NOUVELLES (Wikipedia x3, 400 vues et plus, premier jour)', pics)
-pickle.dump({'gros': gros, 'pics': pics, 'feu5': feu5, 'pannes': pannes}, open('ev3.pkl', 'wb'))
+cr.sauver({'gros': gros, 'pics': pics, 'feu5': feu5, 'pannes': pannes}, 'ev3.json.gz')
 # saison 2025-26 seulement (avant aout 2026) vs debut 2026-27 : est-ce que ca tient dans les deux ?
 lim = O('2026-08-01')
 for lab, EV in (('GROS MATCH', gros), ('EN FEU', feu5), ('PIC', pics)):

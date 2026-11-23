@@ -1,5 +1,6 @@
-import pickle, statistics as st, collections, math, gzip, json, random
-abn=pickle.load(open('abn.pkl','rb'))
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import cache_recherche as cr   # 23 nov 2026 : plus de pickle (Aikido)
+import statistics as st, collections, math, gzip, json, random
+abn=cr.charger('abn.json.gz')
 D=json.load(gzip.open('/mnt/user-data/uploads/Downloads/slabiq_donnees.json.gz','rt'))
 NHL={k.lower(): v for k,v in D['nhl'].items()}
 def mi(d): return int(d[:4])*12+int(d[5:7])-1

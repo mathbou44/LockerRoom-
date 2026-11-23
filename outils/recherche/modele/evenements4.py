@@ -1,8 +1,9 @@
 # Le jumelage avec la cote SlabIQ : au meme gros match, une carte A reagit-elle autrement qu'une carte C ?
-import pickle, gzip, json, math, bisect, collections, datetime as dt
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))); import cache_recherche as cr   # 23 nov 2026 : plus de pickle (Aikido)
+import gzip, json, math, bisect, collections, datetime as dt
 import numpy as np
 O = lambda s: dt.date.fromisoformat(s).toordinal()
-by = pickle.load(open('by2.pkl', 'rb')); E = pickle.load(open('ev4.pkl', 'rb')); ev3 = pickle.load(open('ev3.pkl', 'rb'))
+by = cr.charger('by2.json.gz'); E = cr.charger('ev4.json.gz'); ev3 = cr.charger('ev3.json.gz')
 D = json.load(gzip.open('/mnt/user-data/uploads/Downloads/slabiq_donnees.json.gz', 'rt'))
 CJ = collections.defaultdict(list)
 for (k, g), S in by.items():

@@ -1,10 +1,10 @@
-import pickle
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))); import cache_recherche as cr   # 23 nov 2026 : plus de pickle (Aikido)
 from radar import prep, regle, bilan
 W = [("27 sept", "2026-08-23", "2026-09-10", "2026-09-27"), ("11 oct", "2026-09-09", "2026-09-26", "2026-10-11"),
      ("25 oct", "2026-09-25", "2026-10-10", "2026-10-25"), ("8 nov", "2026-10-08", "2026-10-23", "2026-11-08"),
      ("22 nov", "2026-10-15", "2026-10-29", "2026-11-22")]
 P = {w[0]: prep(*w[1:]) for w in W}
-pickle.dump(P, open("P5.pkl", "wb"))
+cr.sauver(P, "P5.json.gz")
 C = [("actuelle 82/5/+10 %", 82, 5, .10), ("liq 8", 82, 8, .10), ("liq 8, +5 %", 82, 8, .05), ("liq 8, <= mediane", 82, 8, 0.0),
      ("liq 12", 82, 12, .10), ("liq 12, <= mediane", 82, 12, 0.0), ("liq 5, <= mediane", 82, 5, 0.0), ("liq 8 sans prix", 82, 8, None), ("liq 5 sans prix", 82, 5, None)]
 print(f"{'':22}" + "".join(f"{w[0]:>22}" for w in W))

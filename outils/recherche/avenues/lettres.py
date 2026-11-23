@@ -1,5 +1,6 @@
-import pickle, collections, statistics as st
-A = pickle.load(open("A.pkl", "rb"))
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))); import cache_recherche as cr   # 23 nov 2026 : plus de pickle (Aikido)
+import collections, statistics as st
+A = cr.charger("A.json.gz")
 C0, C = "2026-10-15", "2026-10-29"
 ORD = ["A+", "A", "A-", "B+", "B", "C", "D", "E"]
 lettre, ra, avant60, pmed = {}, {}, collections.Counter(), collections.defaultdict(list)

@@ -1,7 +1,8 @@
 # Cle de carte CANONIQUE : la cle stricte (tous les mots du titre) coupe la meme carte en dizaines de morceaux
 # (« #205 2025-26 ... series 1 », « #205 2025 ... canadiens montreal »...). Ici on se sert du decodeur de l'app (cartes_match) :
 # joueur + annee + numero de carte + tirage (/99) + paralleles + auto + patch (+ mots d'identite s'il n'y a pas de numero).
-import sys, gzip, json, collections, pickle, datetime as dt
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))); import cache_recherche as cr   # 23 nov 2026 : plus de pickle (Aikido)
+import sys, gzip, json, collections, datetime as dt
 sys.path.insert(0, '/home/claude/mathbou44/lockerroom-')
 import cartes_match as cm
 A = json.load(gzip.open('/tmp/claude-0/ts/A_maintenant.json.gz', 'rt')); A = A['A'] if isinstance(A, dict) else A
@@ -30,4 +31,4 @@ def bilan(lab, B):
 bilan('STRICTE ', strict); bilan('CANONIQUE', by)
 top = sorted(by.items(), key=lambda kv: -len(kv[1]))[:6]
 for k, v in top: print(len(v), k)
-pickle.dump(dict(by), open('/home/claude/modele/by2.pkl', 'wb'))
+cr.sauver(dict(by), '/home/claude/modele/by2.json.gz')

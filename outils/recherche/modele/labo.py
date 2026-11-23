@@ -1,4 +1,5 @@
 # Le labo : charge les tableaux (A3 cartes, B3 joueurs), definit LES CAS, et fournit l'apprentissage « en marchant ».
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))); import cache_recherche as cr   # 23 nov 2026 : plus de pickle (Aikido)
 import pandas as pd, numpy as np, datetime as dt, lightgbm as lgb, warnings
 from scipy.stats import spearmanr
 warnings.filterwarnings('ignore')
@@ -6,7 +7,7 @@ FOND = ['f3', 'f5', 'f10', 'f20', 'g5', 'g10', 'serie5', 'base', 'repos', 'wk3',
 pc = lambda x: f"{100*(np.exp(x)-1):+5.1f}%"
 FRAIS = lambda lr: np.exp(lr) * (1 - 0.1325) - 1
 def charger():
-    A = pd.read_pickle('A3.pkl'); B = pd.read_pickle('B3.pkl')
+    A = cr.charger_df('A3.csv.gz'); B = cr.charger_df('B3.csv.gz')
     for c in FOND:                       # sur la glace + nouvelles : une seule colonne, que le joueur ait un indice ou non
         A[c] = A[c].where(A[c].notna(), A.get('j_' + c)) if 'j_' + c in A else A[c]
         if 'j_' + c in A: del A['j_' + c]

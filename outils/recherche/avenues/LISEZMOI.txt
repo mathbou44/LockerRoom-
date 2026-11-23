@@ -1,9 +1,9 @@
 AVENUES DU 23 NOV 2026 (Mathieu : « analyser toutes les avenues pour augmenter le plus le % de chacun des outils SlabIQ »)
 
 Donnees : le fichier de travail du test du site (A_maintenant.json.gz dans $LR_TESTS_TRAV, ecrit par outils/tests_site.py).
-Lancer dans l'ordre, depuis un dossier de travail (les .pkl s'y ecrivent) :
+Lancer dans l'ordre, depuis un dossier de travail (les fichiers de travail .json.gz s'y ecrivent, par cache_recherche : plus de pickle) :
 
-  charge.py    A_maintenant.json.gz -> A.pkl (une ligne par vente : cle de la carte, lettre, sorte, prix, jour)
+  charge.py    A_maintenant.json.gz -> A.json.gz (une ligne par vente : cle de la carte, lettre, sorte, prix, jour)
   lettres.py   pourquoi A+ se revend moins que A : c'est la MESURE, pas la lettre. Une A+ coute 1 130 $ en mediane (A : 280 $) et
                84 % des A+ n'ont aucune vente dans les 60 jours d'avant : moins de copies, donc moins de reventes de la meme
                carte. A ventes egales avant, la part revendue est la meme de A+ a D ; seule E est nettement plus basse.

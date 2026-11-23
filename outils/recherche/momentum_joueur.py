@@ -1,6 +1,7 @@
 # D. Momentum ou retour a la moyenne ? Indice mensuel par JOUEUR (ventes repetees de ses cartes de 12 mois et +), puis : le passe predit-il la suite ?
-import pickle, statistics as st, collections, datetime as dt, re, math
-by=pickle.load(open('by.pkl','rb'))
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import cache_recherche as cr   # 23 nov 2026 : plus de pickle (Aikido)
+import statistics as st, collections, datetime as dt, re, math
+by=cr.charger('by.json.gz')
 def saison(k):
     m=re.search(r'\b(19|20)(\d\d)-(\d\d)\b',k)
     if m: return int(m.group(1)+m.group(2))

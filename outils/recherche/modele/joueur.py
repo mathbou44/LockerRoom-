@@ -1,8 +1,9 @@
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))); import cache_recherche as cr   # 23 nov 2026 : plus de pickle (Aikido)
 import pandas as pd, numpy as np, warnings; warnings.filterwarnings('ignore')
 from scipy.stats import spearmanr
 from sklearn.tree import DecisionTreeRegressor, export_text
-for nomf, c in (('p30.pkl','ey30'),('p60.pkl','ey60')):
-    P=pd.read_pickle(nomf)
+for nomf, c in (('p30.csv.gz','ey30'),('p60.csv.gz','ey60')):
+    P=cr.charger_df(nomf)
     J=P.groupby(['fold','t','nom']).agg(pred=('pred','mean'), y=(c,'median'), n=(c,'size')).reset_index()
     J=J[J.n>=3]
     q=J.groupby('t').pred.rank(pct=True)
@@ -12,7 +13,7 @@ for nomf, c in (('p30.pkl','ey30'),('p60.pkl','ey60')):
     ic=J.groupby('fold').apply(lambda g: spearmanr(g.pred,g.y)[0] if len(g)>15 else np.nan)
     print('  IC par mois:',' '.join(f'{k[2:]}:{v:+.2f}' for k,v in ic.items()), ' positifs',int((ic>0).sum()),'/',int(ic.notna().sum()))
     b=J[q<=.1].groupby('nom').size().sort_values(ascending=False).head(8); print('  souvent en bas:',dict(b))
-P=pd.read_pickle('p60.pkl')
+P=cr.charger_df('p60.csv.gz')
 C=['r30','r90','r7','macd','ema30_90','sma200','haut','bas','vol','age','j_r30','j_r90','j_part','f5','f15','base','repos','wk7','wk30','wkmax','p0','grn','disp','n30']
 q=P.groupby('fold').pred.rank(pct=True)
 print('\nprofil du 10 % du bas vs le reste (medianes) :')

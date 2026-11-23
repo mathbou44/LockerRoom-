@@ -1,5 +1,6 @@
 # Evenements, par CAS : la reaction depend-elle du joueur (recrue, etoile), de la taille du match, de la periode ?
-import pickle, gzip, json, math, bisect, collections, datetime as dt, sys
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))); import cache_recherche as cr   # 23 nov 2026 : plus de pickle (Aikido)
+import gzip, json, math, bisect, collections, datetime as dt, sys
 import numpy as np
 O = lambda s: dt.date.fromisoformat(s).toordinal()
 import evenements as _e          # memes donnees et meme indice que evenements.py (il affiche d'abord sa propre etude)
@@ -60,9 +61,9 @@ for k in sorted(E):
 # nouvelles SANS performance : pic Wikipedia sans gros match la veille ou le jour meme
 gm = collections.defaultdict(set)
 for nom, d in E['3 points+'] + E['2 buts+']: gm[nom].add(d)
-ev = pickle.load(open('ev3.pkl', 'rb')); pics = ev['pics']
+ev = cr.charger('ev3.json.gz'); pics = ev['pics']
 print(); etude('PIC Wikipedia AVEC gros match (j-1, j)', [(n, d) for n, d in pics if gm[n] & {d, d - 1}], mini=20)
 etude('PIC Wikipedia SANS gros match', [(n, d) for n, d in pics if not gm[n] & {d, d - 1, d - 2}])
 etude('PIC SANS gros match, joueur actif (LNH connue)', [(n, d) for n, d in pics if not gm[n] & {d, d - 1, d - 2} and n in NHL and len(NHL[n]) > 40])
 etude('PIC, joueur sans matchs LNH (retraite, espoir)', [(n, d) for n, d in pics if n not in NHL or len(NHL[n]) <= 40])
-pickle.dump(dict(E), open('ev4.pkl', 'wb'))
+cr.sauver(dict(E), 'ev4.json.gz')

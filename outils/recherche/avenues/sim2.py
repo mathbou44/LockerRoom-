@@ -1,12 +1,13 @@
 """Suite de sim.py : la regle « prix <= mediane » choisit des ventes qui ont fini bas ; dans un encan, on ne connait pas le
 prix final d'avance. Deux bornes : (haut) on paie le prix de la vente ; (bas) on paie la MEDIANE (sa mise maximale) chaque fois
 que la vente a fini a la mediane ou dessous. Et 3 dates de fin (la valeur = mediane des ventes d'apres la date)."""
-import pickle, collections, statistics as st, bisect, datetime as dt, sys, random, json
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))); import cache_recherche as cr   # 23 nov 2026 : plus de pickle (Aikido)
+import collections, statistics as st, bisect, datetime as dt, sys, random, json
 import os
 import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))   # la racine du depot
 import liquidite
-A = pickle.load(open("A.pkl", "rb"))
+A = cr.charger("A.json.gz")
 PMIN, FIXE, ENCAN = 30.0, 86.0, 82.0
 par = collections.defaultdict(list)
 for a in A: par[(a["k"], a["gr"])].append((a["j"], a["p"]))

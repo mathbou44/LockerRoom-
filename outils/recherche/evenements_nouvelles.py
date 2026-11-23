@@ -1,6 +1,7 @@
 # G. Etude d'evenements : un pic de visites Wikipedia (une NOUVELLE) -> le prix de ses cartes avant / apres, compare a des dates au hasard du meme joueur
-import pickle, statistics as st, collections, datetime as dt, math, gzip, json, random, bisect
-by=pickle.load(open('by.pkl','rb'))
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import cache_recherche as cr   # 23 nov 2026 : plus de pickle (Aikido)
+import statistics as st, collections, datetime as dt, math, gzip, json, random, bisect
+by=cr.charger('by.json.gz')
 D=json.load(gzip.open('/mnt/user-data/uploads/Downloads/slabiq_donnees.json.gz','rt'))
 WIKI={k.lower(): v for k,v in D['wiki'].items()}; NHL={k.lower(): v for k,v in D['nhl'].items()}
 CJ=collections.defaultdict(list)
@@ -50,4 +51,4 @@ show('Pic SANS performance (nouvelle hors glace : blessure, echange, contrat...)
 top=sorted(EV,key=lambda e:-e[2])[:25]
 print('\nLes plus gros pics :'); 
 for e in top: print(f"   {e[4]} {e[0]} x{e[2]:.0f} pts3j={e[3]} cartes={len(CJ[e[0]])}")
-pickle.dump(EV,open('ev.pkl','wb'))
+cr.sauver(EV, 'ev.json.gz')

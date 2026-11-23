@@ -1,8 +1,9 @@
 # Apprentissage « en marchant » : on entraine sur le passe, on predit le mois suivant jamais vu, on avance d'un mois.
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))); import cache_recherche as cr   # 23 nov 2026 : plus de pickle (Aikido)
 import pandas as pd, numpy as np, datetime as dt, lightgbm as lgb, sys, warnings
 from scipy.stats import spearmanr
 warnings.filterwarnings('ignore')
-df = pd.read_pickle('jeu.pkl')
+df = cr.charger_df('jeu.csv.gz')
 for h in ('y30', 'y60', 'y90'): df['e' + h] = df[h] - df.pe
 df['typ'] = df.typ.astype('category'); df['grc'] = (df.gr > 0).astype(int); df['grn'] = df.gr
 CRIT = ['p0', 'n30', 'r30', 'r90', 'r7', 'macd', 'ema30_90', 'sma200', 'haut', 'bas', 'disp', 'vol', 'age', 'grn', 'typ',
@@ -35,10 +36,10 @@ def marche(cible, gap, debut=(2025, 11), fin=(2026, 10), crit=CRIT, relatif=True
             g = P[s][cible]; print(f"  {nomq:10s} n={len(g):5d} mediane {100*(np.exp(g.median())-1):+6.1f}%  en hausse {100*(g>0).mean():3.0f}%  net de frais median {100*FRAIS(g.median()):+6.1f}%  gagnants nets {100*(FRAIS(g)>0).mean():3.0f}%")
     return P, mo
 if __name__ == '__main__':
-    P30, mo = marche('ey30', 46); P30.to_pickle('p30.pkl')
+    P30, mo = marche('ey30', 46); cr.sauver_df(P30, 'p30.csv.gz')
     imp = pd.Series(mo.booster_.feature_importance('gain'), index=CRIT).sort_values(ascending=False)
     print('\ncriteres qui comptent (gain) :', ', '.join(f'{k} {100*v/imp.sum():.0f}%' for k, v in imp.head(14).items()))
-    P60, mo = marche('ey60', 76); P60.to_pickle('p60.pkl')
+    P60, mo = marche('ey60', 76); cr.sauver_df(P60, 'p60.csv.gz')
     marche('ey30', 46, relatif=False)
     # reference naive : seulement le rendement 30 j de la carte
     marche('ey30', 46, crit=['r30'])

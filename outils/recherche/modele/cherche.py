@@ -1,8 +1,9 @@
 # Grande recherche de regles : toutes les paires de conditions (critere x seuil) x filtre d'age x horizon.
 # On CHOISIT sur le passe (train), on JUGE une seule fois sur la periode suivante jamais regardee (test). Sinon, avec un million d'essais,
 # on trouve toujours une regle « parfaite » par chance.
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))); import cache_recherche as cr   # 23 nov 2026 : plus de pickle (Aikido)
 import pandas as pd, numpy as np, datetime as dt, sys, warnings; warnings.filterwarnings('ignore')
-df = pd.read_pickle('jeu2.pkl'); O = lambda s: dt.date.fromisoformat(s).toordinal()
+df = cr.charger_df('jeu2.csv.gz'); O = lambda s: dt.date.fromisoformat(s).toordinal()
 EXCL = {'t', 'nom', 'typ', 'gr', 'pe', 'ey30', 'ey60', 'ey90', 'nm'}
 F = [c for c in df.columns if c not in EXCL]
 FRAIS = lambda lr: np.exp(lr) * (1 - 0.1325) - 1
@@ -57,7 +58,7 @@ def recherche(h, test0, K=25, nmin=200, sortie=None):
             if k >= K: break
         Z = np.array(rows); out[sens] = Z
         print(f"  => les {len(Z)} premieres : ecart moyen train {pc(Z[:,0].mean())} -> test {pc(Z[:,1].mean())} ; mediane test {pc(np.median(Z[:,2]))} ; en hausse {100*Z[:,3].mean():.0f}% ; {int((np.sign(Z[:,1])==sens).sum())}/{len(Z)} gardent le bon signe")
-    if sortie is not None: R.assign(a=[atoms[int(i)] for i in R.i], b=[atoms[int(j)] for j in R.j]).to_pickle(sortie)
+    if sortie is not None: cr.sauver_df(R.assign(a=[atoms[int(i)] for i in R.i], b=[atoms[int(j)] for j in R.j]), sortie)
     return out
 if __name__ == '__main__':
-    recherche(30, '2026-07-06', sortie='regles30.pkl'); recherche(60, '2026-06-15', sortie='regles60.pkl'); recherche(90, '2026-04-13', sortie='regles90.pkl')
+    recherche(30, '2026-07-06', sortie='regles30.csv.gz'); recherche(60, '2026-06-15', sortie='regles60.csv.gz'); recherche(90, '2026-04-13', sortie='regles90.csv.gz')

@@ -1,9 +1,10 @@
-# Jeu 3 : cle de carte CANONIQUE (by2.pkl, voir cle2.py) + INDICE PAR JOUEUR (le « cours de l'action » du joueur).
+# Jeu 3 : cle de carte CANONIQUE (by2.json.gz, voir cle2.py) + INDICE PAR JOUEUR (le « cours de l'action » du joueur).
 # Deux tableaux : A3 = une ligne par (carte, semaine) ; B3 = une ligne par (joueur, semaine).
 # Tout critere ne lit que des ventes <= t. Prix d'entree = mediane des 14 j APRES t ; sorties a 30, 60 et 90 j.
-import pickle, gzip, json, math, bisect, collections, datetime as dt, sys
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))); import cache_recherche as cr   # 23 nov 2026 : plus de pickle (Aikido)
+import gzip, json, math, bisect, collections, datetime as dt, sys
 import numpy as np, pandas as pd
-by = pickle.load(open('by2.pkl', 'rb'))
+by = cr.charger('by2.json.gz')
 D = json.load(gzip.open('/mnt/user-data/uploads/Downloads/slabiq_donnees.json.gz', 'rt'))
 O = lambda s: dt.date.fromisoformat(s).toordinal(); NAN = float('nan')
 NHL = {}
@@ -141,5 +142,5 @@ for c in ('r_90', 'r7', 'e7_30', 'pente60'):
 for h in ('ey30', 'ey60', 'ey90'):
     x = A[A[h].notna()].groupby(['t', 'nom'])[h].agg(['median', 'size']); x = x[x['size'] >= 3]['median'].rename('v' + h)
     B = B.join(x, on=['t', 'nom'])
-A.to_pickle('A3.pkl'); B.to_pickle('B3.pkl')
+cr.sauver_df(A, 'A3.csv.gz'); cr.sauver_df(B, 'B3.csv.gz')
 print('A', len(A), len(A.columns), A[['ey30', 'ey60', 'ey90']].notna().sum().to_dict()); print('B', len(B), len(B.columns), B[['ey30', 'ey60', 'ey90', 'vey30', 'vey60']].notna().sum().to_dict(), B.nom.nunique())

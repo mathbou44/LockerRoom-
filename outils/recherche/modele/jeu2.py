@@ -1,8 +1,9 @@
 # Jeu LARGE : memes lignes que jeu.py (carte exacte + grade, semaine t) mais chaque famille de criteres a plusieurs fenetres
 # (medianes, moyennes simples, moyennes exponentielles, hauts/bas, volume, forme, nouvelles). Aucun critere ne lit apres t.
-import pickle, gzip, json, math, re, bisect, collections, datetime as dt, sys
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))); import cache_recherche as cr   # 23 nov 2026 : plus de pickle (Aikido)
+import gzip, json, math, re, bisect, collections, datetime as dt, sys
 import numpy as np, pandas as pd
-by = pickle.load(open('/tmp/an/by.pkl', 'rb'))
+by = cr.charger('/tmp/an/by.json.gz')
 D = json.load(gzip.open('/mnt/user-data/uploads/Downloads/slabiq_donnees.json.gz', 'rt'))
 O = lambda s: dt.date.fromisoformat(s).toordinal()
 NHL = {}
@@ -102,4 +103,4 @@ for t in range(T0, T1 + 1, 7):
         v = [f[c] for f in cart.values() if f[c] == f[c]]; mm = float(np.median(v)) if v else NAN
         for f in cart.values(): f['m_' + c] = mm
     rows.extend(cart.values()); print(dt.date.fromordinal(t), len(cart), file=sys.stderr)
-df = pd.DataFrame(rows); df.to_pickle('jeu2.pkl'); print(len(df), len(df.columns), df[['ey30', 'ey60', 'ey90']].notna().sum().to_dict())
+df = pd.DataFrame(rows); cr.sauver_df(df, 'jeu2.csv.gz'); print(len(df), len(df.columns), df[['ey30', 'ey60', 'ey90']].notna().sum().to_dict())

@@ -1,6 +1,7 @@
 # La FORCE du signal ACHETE : un petit modele apprend, sur les signaux d'avant aout 2026, lesquels ont le mieux marche,
 # puis on le juge sur les signaux d'apres (jamais vus). Criteres : seulement des choses publiques le soir du match.
-import pickle, gzip, json, math, bisect, collections, datetime as dt
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))); import cache_recherche as cr   # 23 nov 2026 : plus de pickle (Aikido)
+import gzip, json, math, bisect, collections, datetime as dt
 import numpy as np, pandas as pd, warnings; warnings.filterwarnings('ignore')
 import rejoue as R, signal_joueur as sj
 from sklearn.linear_model import LogisticRegression, Ridge
@@ -46,4 +47,4 @@ dc('joueur a moins de 0,7 pt/match', A.base < 0.7); dc('joueur a 0,7-1,0', (A.ba
 dc('debut de saison (60 premiers jours)', A.jours_saison <= 60); dc('milieu', (A.jours_saison > 60) & (A.jours_saison <= 150)); dc('fin de saison et series (150 j+)', A.jours_saison > 150)
 dc('deja chaud (5 pts+ sur les 5 d\'avant)', A.pts5_avant >= 5); dc('froid avant (<=2 pts sur les 5 d\'avant)', A.pts5_avant <= 2)
 dc('tres populaire (Wikipedia haut)', A['pop'] >= A['pop'].quantile(.67)); dc('peu populaire', A['pop'] <= A['pop'].quantile(.33)); dc('jeune', A.jeune == 1); dc('veteran', A.jeune == 0)
-T.to_pickle('signaux_notes.pkl')
+cr.sauver_df(T, 'signaux_notes.csv.gz')

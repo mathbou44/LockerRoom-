@@ -1,6 +1,7 @@
-import pickle, collections, statistics as st
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))); import cache_recherche as cr   # 23 nov 2026 : plus de pickle (Aikido)
+import collections, statistics as st
 from radar import regle, bilan
-P = pickle.load(open("P5.pkl", "rb"))
+P = cr.charger("P5.json.gz")
 C = [("actuelle", 82, 5, .10), ("liq 8", 82, 8, .10), ("liq 8 <= med", 82, 8, 0.0), ("liq 12 <= med", 82, 12, 0.0)]
 print("== variete : cartes et joueurs distincts parmi les achats (fenetre du 22 nov), part du joueur le plus present, part des YG")
 S0 = P["22 nov"]

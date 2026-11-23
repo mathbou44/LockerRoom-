@@ -1,7 +1,8 @@
 # Meme apprentissage en marchant que entraine.py, sur le jeu large (70 criteres), + lecture par joueur.
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))); import cache_recherche as cr   # 23 nov 2026 : plus de pickle (Aikido)
 import pandas as pd, numpy as np, entraine as e, warnings; warnings.filterwarnings('ignore')
 from scipy.stats import spearmanr
-d = pd.read_pickle('jeu2.pkl'); d['typ'] = d.typ.astype('category'); d['grn'] = d.gr
+d = cr.charger_df('jeu2.csv.gz'); d['typ'] = d.typ.astype('category'); d['grn'] = d.gr
 C = [c for c in d.columns if c not in {'t', 'nom', 'gr', 'pe', 'ey30', 'ey60', 'ey90', 'nm'}]
 e.df = d
 for c, gap in (('ey30', 46), ('ey60', 76), ('ey90', 106)):

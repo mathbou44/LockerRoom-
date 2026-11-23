@@ -1,6 +1,7 @@
-import pickle, itertools, collections, statistics as st
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))); import cache_recherche as cr   # 23 nov 2026 : plus de pickle (Aikido)
+import itertools, collections, statistics as st
 from radar import regle, bilan
-P = pickle.load(open("P.pkl", "rb"))
+P = cr.charger("P.json.gz")
 ch, ju = P["choix"], P["juge"]
 base_c, base_j = bilan([x for x in ch if regle(x)]), bilan([x for x in ju if regle(x)])
 print("actuelle  choix", base_c, "\n          juge ", base_j)

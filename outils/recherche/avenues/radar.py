@@ -1,8 +1,9 @@
-import pickle, collections, statistics as st, bisect, datetime as dt, sys, itertools
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))); import cache_recherche as cr   # 23 nov 2026 : plus de pickle (Aikido)
+import collections, statistics as st, bisect, datetime as dt, sys, itertools
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))   # la racine du depot
 import liquidite
-A = pickle.load(open("A.pkl", "rb"))
+A = cr.charger("A.json.gz")
 par = collections.defaultdict(list)
 for a in A:
     par[(a["k"], a["gr"])].append((a["j"], a["p"]))
@@ -42,6 +43,6 @@ def bilan(S):
 if __name__ == "__main__":
     F = {"choix": ("2026-09-25", "2026-10-10", "2026-10-25"), "juge": ("2026-10-15", "2026-10-29", "2026-11-22")}
     P = {k: prep(*v) for k, v in F.items()}
-    pickle.dump(P, open("P.pkl", "wb"))
+    cr.sauver(P, "P.json.gz")
     for k, S in P.items():
         print(k, "hasard", bilan(S), " regle actuelle", bilan([x for x in S if regle(x)]))

@@ -1908,6 +1908,17 @@ html body .md-ic{flex:none; width:46px; height:46px; border-radius:50%; display:
 html body .md-ic:active{transform:scale(.94)} html body .md-ic svg{width:21px; height:21px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
 html body .md > .md-rech{display:none; margin:0 0 14px} html body .md.rech > .md-rech{display:flex; transform-origin:right center; animation:mdRech .22s ease-out} html body .md.rech > .md-barre{display:none}
 @keyframes mdRech{from{transform:scaleX(.15); opacity:0}}
+@media (max-width:699px){
+html body .d-ligne:has(#d-tour){display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0}
+html body .d-ligne:has(#d-tour)::after{content:""; order:2; flex:0 0 100%; height:0}
+html body .d-ligne:has(#d-tour) > .d-onglets, html body .d-ligne:has(#d-tour) > .d-iqp{order:1}
+html body .d-ligne:has(#d-tour) > .d-adm-o{order:1; margin-left:auto}
+html body .d-ligne:has(#d-tour) > #d-tour, html body .d-ligne:has(#d-tour) > #d-enc{order:3}
+html body .d-ligne:has(#d-tour) > #d-preuve{order:3; flex:1 1 0; min-width:0}
+html body .d-ligne:has(#d-tour) > .d-iqp{height:36px}
+html body .ecran:has(#d-tour) .d-barre{margin-top:0}
+}
+@media (max-width:409px){ html body .d-ligne:has(#d-tour) > .d-iqp{display:none} }
 @media (max-width:410px){ html body .tuile-prod .coin .capsule{padding:0 7px; font-size:11.5px; letter-spacing:.02em; gap:4px} }
 html body .md-wow{margin:0 0 14px}
 html body .md-barre .md-glow .md-g-t{flex:1; align-items:center; margin-left:40px}

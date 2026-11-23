@@ -4,10 +4,10 @@ Rapport : docs/RECHERCHE_MODELE_22NOV.md.
 Entrees (chemins en dur, a adapter) :
   - /tmp/claude-0/ts/A_maintenant.json.gz : ventes annotees par outils/tests_site.py (titre, prix, date, joueur, type, cote)
   - slabiq_donnees.json.gz : export admin (Mesures -> Test SlabIQ -> Telecharger les donnees du test) : matchs LNH et vues Wikipedia
-  - /tmp/an/by.pkl : ancienne cle stricte (jeu.py, jeu2.py seulement)
+  - /tmp/an/by.json.gz : ancienne cle stricte (jeu.py, jeu2.py seulement)
 
 Ordre :
-  1. cle2.py          cle de carte canonique (decodeur de l'app) -> by2.pkl. Double les cas utilisables.
+  1. cle2.py          cle de carte canonique (decodeur de l'app) -> by2.json.gz. Double les cas utilisables.
   2. jeu3.py          tableaux A3 (carte x semaine) et B3 (indice du joueur x semaine), 100 criteres, prix reel 14 j apres le signal
   3. labo.py          les cas + l'apprentissage en marchant (walk-forward) ; ml3.py (cartes), mlB.py (joueurs), techniques.py (regles de bourse)
   4. evenements.py    etude d'evenements au jour pres sur l'indice ; evenements2.py par cas (lit le debut de evenements.py)

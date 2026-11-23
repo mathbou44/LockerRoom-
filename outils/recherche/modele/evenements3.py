@@ -1,9 +1,10 @@
 # Verification la plus directe : LA MEME CARTE, avant (7 j avant l'evenement) et apres. Pas d'indice, pas de modele.
 # + replication sur deux periodes (avant / depuis aout 2026) + un seul evenement par joueur par 14 j (cas independants).
-import pickle, math, bisect, collections, datetime as dt
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))); import cache_recherche as cr   # 23 nov 2026 : plus de pickle (Aikido)
+import math, bisect, collections, datetime as dt
 import numpy as np
 O = lambda s: dt.date.fromisoformat(s).toordinal()
-by = pickle.load(open('by2.pkl', 'rb')); E = pickle.load(open('ev4.pkl', 'rb')); ev3 = pickle.load(open('ev3.pkl', 'rb'))
+by = cr.charger('by2.json.gz'); E = cr.charger('ev4.json.gz'); ev3 = cr.charger('ev3.json.gz')
 CJ = collections.defaultdict(list)
 for (k, g), S in by.items():
     L = sorted((s[0], math.log(s[1])) for s in S if s[1] >= 3)

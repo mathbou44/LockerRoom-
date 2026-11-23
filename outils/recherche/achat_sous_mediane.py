@@ -1,5 +1,6 @@
-import pickle, statistics as st, collections, datetime as dt, bisect, re
-by=pickle.load(open('by.pkl','rb'))
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import cache_recherche as cr   # 23 nov 2026 : plus de pickle (Aikido)
+import statistics as st, collections, datetime as dt, bisect, re
+by=cr.charger('by.json.gz')
 FR, FIX = 0.1325, 0.40
 def saison(k):
     m=re.search(r'\b(19|20)(\d\d)-(\d\d)\b',k)

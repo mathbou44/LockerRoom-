@@ -1,8 +1,9 @@
 # Jeu de donnees du modele de timing : une ligne = (carte exacte + grade, date t). Tout ce qui est a gauche de t = criteres ; a droite = cible.
 # Aucune fuite : chaque critere ne lit que des ventes <= t. Cible = prix median de la MEME carte 16-45 j (h30) et 46-75 j (h60) apres t.
-import pickle, gzip, json, math, re, bisect, collections, datetime as dt, statistics as st, sys
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))); import cache_recherche as cr   # 23 nov 2026 : plus de pickle (Aikido)
+import gzip, json, math, re, bisect, collections, datetime as dt, statistics as st, sys
 import numpy as np
-by = pickle.load(open('/tmp/an/by.pkl', 'rb'))
+by = cr.charger('/tmp/an/by.json.gz')
 D = json.load(gzip.open('/mnt/user-data/uploads/Downloads/slabiq_donnees.json.gz', 'rt'))
 O = lambda s: dt.date.fromisoformat(s).toordinal()
 NHL = {}
@@ -110,5 +111,5 @@ for t in range(T0, T1 + 1, 7):
     rows.extend(cart.values())
     print(dt.date.fromordinal(t), len(cart), file=sys.stderr)
 import pandas as pd
-df = pd.DataFrame(rows); df.to_pickle('jeu.pkl')
+df = pd.DataFrame(rows); cr.sauver_df(df, 'jeu.csv.gz')
 print(len(df), df[['y30', 'y60', 'y90']].notna().sum().to_dict())

@@ -2,12 +2,13 @@
 la simulation du site (memes definitions que tests_site.mesures : 400 collectionneurs, 500 $ par mois, cartes de 30 a 150 $,
 valeur = mediane des ventes d'apres le 29 oct 2026) rejouee avec d'autres regles d'achat : la lettre seule (le site), puis
 la regle du Radar Pro (ventes en 60 jours, prix contre la mediane des 90 jours d'AVANT l'achat : rien du futur)."""
-import pickle, collections, statistics as st, bisect, datetime as dt, sys, random, json
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))); import cache_recherche as cr   # 23 nov 2026 : plus de pickle (Aikido)
+import collections, statistics as st, bisect, datetime as dt, sys, random, json
 import os
 import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))   # la racine du depot
 import liquidite
-A = pickle.load(open("A.pkl", "rb"))
+A = cr.charger("A.json.gz")
 C, PMIN, FIXE, ENCAN = "2026-10-29", 30.0, 86.0, 82.0
 par = collections.defaultdict(list)
 for a in A:

@@ -1,6 +1,7 @@
 # Rendements mensuels ANORMAUX par joueur : chaque carte vs les cartes du meme age le meme mois (comme un rendement anormal en bourse)
-import pickle, statistics as st, collections, datetime as dt, re, math, gzip, json
-by=pickle.load(open('by.pkl','rb'))
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import cache_recherche as cr   # 23 nov 2026 : plus de pickle (Aikido)
+import statistics as st, collections, datetime as dt, re, math, gzip, json
+by=cr.charger('by.json.gz')
 def saison(k):
     m=re.search(r'\b(19|20)(\d\d)-(\d\d)\b',k)
     if m: return int(m.group(1)+m.group(2))
@@ -36,4 +37,4 @@ for h in (1,2,3):
         if (m,b) in bench: P[(nom,m)].append(lr-bench[(m,b)])
     out[h]={kk: (st.median(v),len(v)) for kk,v in P.items()}
     print('h',h,'joueur-mois',len(out[h]),'avec >=2 cartes',sum(1 for v in out[h].values() if v[1]>=2))
-pickle.dump(out,open('abn.pkl','wb'))
+cr.sauver(out, 'abn.json.gz')

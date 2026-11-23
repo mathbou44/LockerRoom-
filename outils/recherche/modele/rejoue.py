@@ -1,11 +1,12 @@
 # On REJOUE l'histoire jour par jour : chaque soir de match (et chaque pic de nouvelles) le signal est calcule avec ce qu'on savait
 # ce soir-la, puis note sur LA MEME CARTE : prix des 7 jours d'avant contre prix des jours 8 a 60 apres.
 # « Bon conseil » : ACHETE -> le prix a monte ; VENDS et ATTENDS -> le prix a baisse.
-import pickle, gzip, json, math, bisect, collections, datetime as dt, sys
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))); import cache_recherche as cr   # 23 nov 2026 : plus de pickle (Aikido)
+import gzip, json, math, bisect, collections, datetime as dt, sys
 import numpy as np
 import signal_joueur as sj
 O = lambda s: dt.date.fromisoformat(s).toordinal()
-by = pickle.load(open('by2.pkl', 'rb')); D = json.load(gzip.open('/mnt/user-data/uploads/Downloads/slabiq_donnees.json.gz', 'rt'))
+by = cr.charger('by2.json.gz'); D = json.load(gzip.open('/mnt/user-data/uploads/Downloads/slabiq_donnees.json.gz', 'rt'))
 REC = ('yg', 'fw_auto', 'rc_auto', 'cup_rpa', 'premier_rpa', 'ice_premieres', 'opc_plat')
 CJ = collections.defaultdict(list); AR = collections.defaultdict(collections.Counter)
 for (k, g), S in by.items():
@@ -71,4 +72,4 @@ if __name__ == '__main__':
         L = [x for x in SIG if x[4] == s]
         print(ligne(f'TOUS LES {s}', L, sens)); print(ligne('   le lendemain seulement', L, sens, (1, 1))); print(ligne('   jours 2 a 7', L, sens, (2, 7))); print(ligne('   jours 8 a 30', L, sens, (8, 30))); print(ligne('   jours 31 a 60', L, sens, (31, 60)))
         print(ligne('   cartes fortes selon SlabIQ (YG, auto, RPA)', L, sens, fort=True)); print(ligne('   cartes ordinaires', L, sens, fort=False))
-    pickle.dump(SIG, open('signaux.pkl', 'wb'))
+    cr.sauver(SIG, 'signaux.json.gz')
