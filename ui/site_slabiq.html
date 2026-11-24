@@ -35,44 +35,6 @@
 .vs-l h4{margin:0 0 6px -20px; font-size:18px}
 .vs-prix{margin-top:22px; text-align:center; font-size:20px} .vs-prix b{font-size:26px; white-space:nowrap}
 @media (max-width:900px){ .vs{grid-template-columns:1fr} .vs-x{font-size:44px} .vs-l{grid-template-columns:1fr} }
-
-.sim{margin-top:28px; padding:22px; border-radius:24px; border:1.5px solid transparent; background:linear-gradient(var(--carte),var(--carte)) padding-box, linear-gradient(120deg,#9FE6D2,#B79CF2,#F2B6D2,#E8C77A) border-box}
-.sim-chf{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px}
-.sim-chf > div{padding:14px 16px; border-radius:18px; background:rgba(255,255,255,.03); border:1px solid var(--ligne); text-align:center}
-.sim-chf > div > span{display:block; font-size:16px; color:var(--doux)} .sim-chf b{display:block; margin-top:4px; font:800 46px/1 'Barlow Condensed',sans-serif}
-.sim-chf b.neg{color:#8f95a3}
-.sim-g{position:relative; margin-top:16px} .sim-svg{display:block; width:100%; height:auto}
-.sim-svg .g{stroke:rgba(255,255,255,.07); stroke-width:1} .sim-svg .ty, .sim-svg .tx{fill:var(--doux); font:500 12px Barlow,sans-serif} .sim-svg .ty{text-anchor:end} .sim-svg .tx{text-anchor:middle}
-.sim-svg polyline{fill:none; stroke-linecap:round; stroke-linejoin:round} .sim-svg .l-inv{stroke:#6c6b66; stroke-width:1.5; stroke-dasharray:5 5}
-.sim-svg .l-sans{stroke:#8f95a3; stroke-width:2.5} .sim-svg .l-avec{stroke-width:3.5} .sim-svg .l-glow{stroke-width:9; opacity:.5}
-.sim-svg .p-a{fill:#F2B6D2; stroke:var(--carte); stroke-width:3} .sim-svg .p-s{fill:#8f95a3; stroke:var(--carte); stroke-width:3}
-.sim-svg .v-a, .sim-svg .v-s{font:800 20px 'Barlow Condensed',sans-serif; fill:#f3f1ff} .sim-svg .v-s{fill:#b9bdc7} .sim-svg .n{font:500 13px Barlow,sans-serif; fill:var(--doux)}
-.sim-svg .hl{stroke:rgba(255,255,255,.35); stroke-width:1; opacity:0} .sim-svg .hit{fill:transparent; cursor:crosshair}
-.sim-tip{position:absolute; top:6px; min-width:138px; padding:10px 12px; border-radius:14px; background:#16161b; border:1px solid var(--ligne); font-size:14px; pointer-events:none; box-shadow:0 10px 30px rgba(0,0,0,.4)}
-.sim-tip b{display:block; margin-bottom:4px} .sim-tip span{display:flex; align-items:center; gap:8px}
-/* 20 nov 2026 (Mathieu : « trop gros, ca fit meme pas dans l'ecran ») : compact ; a l'ordi, les chiffres a gauche et le graphique a droite */
-#toi-vs-iq h2{font-size:clamp(28px,3.2vw,42px); max-width:none}
-.sim-pente{display:block; width:100%; height:auto; max-height:340px}
-.sim-pente line{fill:none; stroke-linecap:round} .sim-pente .l-inv{stroke:#6c6b66; stroke-width:1.5; stroke-dasharray:5 5}
-.sim-pente .b-avec{} .sim-pente .b-glow{opacity:.35} .sim-pente text{text-anchor:middle} .sim-pente .ty{text-anchor:end}
-.sim-pente .l-sans{stroke:#8f95a3} .sim-pente .l-glow{stroke-width:11; opacity:.5}
-.sim-pente .p-a{fill:#F2B6D2; stroke:var(--carte); stroke-width:3} .sim-pente .p-s{fill:#8f95a3; stroke:var(--carte); stroke-width:3}
-.sim-pente .v-a, .sim-pente .v-s{font:800 26px 'Barlow Condensed',sans-serif; fill:#f3f1ff} .sim-pente .v-s{fill:#b9bdc7} .sim-pente .n{font:500 14px Barlow,sans-serif; fill:var(--doux)}
-@media (max-width:900px){ .sim-pente .tx, .sim-pente .ty{font-size:20px !important} .sim-pente .n{font-size:22px !important} .sim-pente .v-a, .sim-pente .v-s{font-size:40px !important} }
-.sim-pente .p-0{fill:#f3f1ff} .sim-g .sim-svg{display:none} .sim-g.detail .sim-svg{display:block} .sim-g.detail .sim-pente{display:none}
-.sim-pente .v-a, .sim-pente .v-s{font-size:34px} .sim-pente .n{font-size:16px} .sim-pente .tx.tl{text-anchor:start}
-.sim-pente .ty{fill:var(--doux); font:500 13px Barlow,sans-serif; text-anchor:end} .sim-pente .tx{fill:var(--doux); font:500 14px Barlow,sans-serif; text-anchor:middle}
-.sim-mois{display:block; margin:6px auto 0; padding:7px 14px; border-radius:999px; border:1px solid var(--ligne); background:none; color:var(--doux); font:600 14px Barlow,sans-serif; cursor:pointer}
-.sim-mois:hover{color:var(--texte); border-color:rgba(255,255,255,.25)}
-@media (min-width:1000px){
-  .sim{display:grid; grid-template-columns:230px minmax(0,1fr); column-gap:26px; align-items:center; padding:20px 24px}
-  .sim > .sim-chf{grid-column:1; grid-row:1 / span 4; grid-template-columns:1fr; gap:10px}
-  .sim > .sim-g, .sim > .sim-mois, .sim > .sim-leg{grid-column:2}
-  .sim-chf > div{padding:12px 14px} .sim-chf b{font-size:36px}
-  .sim-g{margin-top:0} .sim-g .sim-svg{max-height:340px}
-}
-.sim-leg{display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:8px 16px; margin:12px 0 0; font-size:15px; color:var(--doux)}
-.k-a, .k-s, .k-i{display:inline-block; width:18px; height:4px; border-radius:2px; margin-right:-8px} .k-a{background:linear-gradient(90deg,#9FE6D2,#B79CF2,#F2B6D2,#E8C77A)} .k-s{background:#8f95a3} .k-i{background:repeating-linear-gradient(90deg,#6c6b66 0 5px,transparent 5px 9px)}
 .df{margin-top:26px; padding:24px; border-radius:24px; border:1.5px solid transparent; background:linear-gradient(var(--carte),var(--carte)) padding-box, linear-gradient(120deg,#9FE6D2,#B79CF2,#F2B6D2,#E8C77A) border-box}
 .df [hidden]{display:none !important} .df-in{text-align:center} .df-p{max-width:640px; margin:0 auto 18px; font-size:18px; line-height:1.5}
 .df-t{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:14px} .df-t b{font:800 26px/1 'Barlow Condensed',sans-serif} .df-t span{color:var(--doux); font-size:16px} .df-t em{margin-left:auto; font-style:normal; font-weight:700; color:#9FE6D2}
@@ -97,10 +59,7 @@
 .df-bar s{display:block; height:12px; border-radius:999px; background:rgba(255,255,255,.06); position:relative; overflow:hidden; text-decoration:none}
 .df-bar s::after{content:''; position:absolute; inset:0 auto 0 0; width:calc(var(--w) * 1%); border-radius:999px; background:rgba(224,122,122,.7)}
 .df-bar s.pr::after{background:linear-gradient(90deg,#9FE6D2,#B79CF2,#F2B6D2,#E8C77A)} .df-bar em{font-style:normal; color:var(--doux); font-size:14px; text-align:center; margin-top:4px}
-.sim-chf b{white-space:nowrap}
-@media (max-width:900px){ .sim-svg .tx, .sim-svg .ty{font-size:22px} .sim-svg .v-a, .sim-svg .v-s{font-size:30px} .sim-svg .n{font-size:22px} .sim-chf b{font-size:26px}
-  .sim-svg .n{display:none}
-  .sim{padding:16px} .sim-chf{grid-template-columns:1fr 1fr 1fr; gap:8px} .sim-chf > div > span{font-size:13px}
+@media (max-width:900px){
   .df{padding:16px} .df-c{grid-template-columns:1fr 1fr} .df-rv{grid-template-columns:1fr} .df-t{flex-wrap:wrap} .df-live{margin-left:0} .df-k{min-height:84px} }
 </style>
 <div class="page-tete"><div class="conteneur">
@@ -110,45 +69,8 @@
 </div></div>
 <section id="toi-vs-iq" style="padding-top:28px"><div class="conteneur">
   <p class="kicker holo-t"><span class="fr">Toi seul ou avec SlabIQ</span><span class="en">On your own or with SlabIQ</span></p>
-  <h2><span class="fr">500 $ de cartes par mois pendant 1 an : avec ou sans SlabIQ ?</span><span class="en">$500 of cards a month for a year: with or without SlabIQ?</span></h2>
-  <div class="sim">
-    <div class="sim-chf">
-      <div><span><span class="fr">Sans SlabIQ</span><span class="en">Without SlabIQ</span></span><b class="neg"><span class="fr">−4,7 %</span><span class="en">−4.7%</span></b></div>
-      <div class="pr"><span><span class="fr">Avec SlabIQ</span><span class="en">With SlabIQ</span></span><b class="holo-t"><span class="fr">+6,6 %</span><span class="en">+6.6%</span></b></div>
-      <div><span><span class="fr">Écart en 1 an</span><span class="en">Gap in 1 year</span></span><b class="holo-t"><span class="fr">≈ 600 $</span><span class="en">≈ $600</span></b></div>
-    </div>
-    <div class="sim-g"><svg class="sim-pente" viewBox="0 0 600 360" role="img" aria-label="Profit after 12 months">
-  <defs><linearGradient id="peP" x1="0" x2="0" y1="1" y2="0"><stop offset="0" stop-color="#9FE6D2"/><stop offset=".55" stop-color="#B79CF2"/><stop offset="1" stop-color="#F2B6D2"/></linearGradient>
-  <linearGradient id="peS" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#8f95a3" stop-opacity=".55"/><stop offset="1" stop-color="#8f95a3" stop-opacity=".2"/></linearGradient>
-  <filter id="peG" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="14"/></filter></defs>
-  <path d="M354.0,180.0 V99.9 Q354.0,85.9 368.0,85.9 H452.0 Q466.0,85.9 466.0,99.9 V180.0 Z" class="b-glow" filter="url(#peG)" fill="url(#peP)"/>
-  <path d="M134.0,180.0 V240.5 Q134.0,254.5 148.0,254.5 H232.0 Q246.0,254.5 246.0,240.5 V180.0 Z" class="b-sans" fill="url(#peS)"/><path d="M354.0,180.0 V99.9 Q354.0,85.9 368.0,85.9 H452.0 Q466.0,85.9 466.0,99.9 V180.0 Z" class="b-avec" fill="url(#peP)"/>
-  <line x1="94.0" x2="506.0" y1="180.0" y2="180.0" class="l-inv"/>
-  <text x="86.0" y="184.0" class="ty"><tspan class="fr">0 $</tspan><tspan class="en">$0</tspan></text>
-  <text x="190" y="292.5" class="v-s"><tspan class="fr">−277 $</tspan><tspan class="en">−$277</tspan></text><text x="190" y="316.5" class="n"><tspan class="fr">Sans SlabIQ</tspan><tspan class="en">Without SlabIQ</tspan></text><text x="410" y="71.9" class="v-a"><tspan class="fr">+350 $</tspan><tspan class="en">+$350</tspan></text><text x="410" y="35.9" class="n"><tspan class="fr">Avec SlabIQ</tspan><tspan class="en">With SlabIQ</tspan></text>
-  <text x="8" y="22" class="tx tl"><tspan class="fr">Au bout de 12 mois</tspan><tspan class="en">After 12 months</tspan></text>
-</svg><svg class="sim-svg" viewBox="0 0 760 320" role="img" aria-label="Profit over 12 months">
-  <defs><linearGradient id="simP" x1="0" x2="1"><stop offset="0" stop-color="#9FE6D2"/><stop offset=".45" stop-color="#B79CF2"/><stop offset=".75" stop-color="#F2B6D2"/><stop offset="1" stop-color="#E8C77A"/></linearGradient>
-  <linearGradient id="simA" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#B79CF2" stop-opacity=".30"/><stop offset="1" stop-color="#B79CF2" stop-opacity="0"/></linearGradient>
-  <filter id="simG" x="-5%" y="-20%" width="110%" height="140%"><feGaussianBlur stdDeviation="5"/></filter></defs>
-  <line x1="64" x2="638" y1="284.0" y2="284.0" class="g"/><text x="54" y="288.0" class="ty">−400</text><line x1="64" x2="638" y1="239.3" y2="239.3" class="g"/><text x="54" y="243.3" class="ty">−200</text><line x1="64" x2="638" y1="150.0" y2="150.0" class="g"/><text x="54" y="154.0" class="ty">+200</text><line x1="64" x2="638" y1="105.3" y2="105.3" class="g"/><text x="54" y="109.3" class="ty">+400</text><line x1="64" x2="638" y1="60.7" y2="60.7" class="g"/><text x="54" y="64.7" class="ty">+600</text><line x1="64" x2="638" y1="16.0" y2="16.0" class="g"/><text x="54" y="20.0" class="ty">+800</text><line x1="64" x2="638" y1="194.7" y2="194.7" class="l-inv"/><text x="54" y="198.7" class="ty">0</text><text x="64.0" y="310" class="tx"><tspan class="fr">nov.</tspan><tspan class="en">Nov</tspan></text><text x="167.3" y="310" class="tx"><tspan class="fr">janv.</tspan><tspan class="en">Jan</tspan></text><text x="270.5" y="310" class="tx"><tspan class="fr">mars</tspan><tspan class="en">Mar</tspan></text><text x="373.8" y="310" class="tx"><tspan class="fr">mai</tspan><tspan class="en">May</tspan></text><text x="477.1" y="310" class="tx"><tspan class="fr">juil.</tspan><tspan class="en">Jul</tspan></text><text x="580.4" y="310" class="tx"><tspan class="fr">sept.</tspan><tspan class="en">Sep</tspan></text><text x="632.0" y="310" class="tx"><tspan class="fr">oct.</tspan><tspan class="en">Oct</tspan></text>
-  <polygon points="64.0,194.7 64.0,189.1 115.6,182.6 167.3,160.7 218.9,110.2 270.5,112.0 322.2,69.2 373.8,41.2 425.5,77.0 477.1,121.4 528.7,114.5 580.4,114.7 632.0,116.5 632.0,194.7" fill="url(#simA)"/>
-  <polyline points="64.0,199.6 115.6,207.6 167.3,210.7 218.9,196.5 270.5,198.5 322.2,182.8 373.8,159.2 425.5,217.4 477.1,251.4 528.7,256.5 580.4,199.4 632.0,256.5" class="l-sans"/>
-  <polyline points="64.0,189.1 115.6,182.6 167.3,160.7 218.9,110.2 270.5,112.0 322.2,69.2 373.8,41.2 425.5,77.0 477.1,121.4 528.7,114.5 580.4,114.7 632.0,116.5" stroke="url(#simP)" class="l-glow" filter="url(#simG)"/>
-  <polyline points="64.0,189.1 115.6,182.6 167.3,160.7 218.9,110.2 270.5,112.0 322.2,69.2 373.8,41.2 425.5,77.0 477.1,121.4 528.7,114.5 580.4,114.7 632.0,116.5" stroke="url(#simP)" class="l-avec"/>
-  <circle cx="632.0" cy="116.5" r="6.5" class="p-a"/><circle cx="632.0" cy="256.5" r="5" class="p-s"/>
-  <text x="646.0" y="118.5" class="v-a"><tspan class="fr">+350 $</tspan><tspan class="en">+$350</tspan></text>
-  <text x="646.0" y="136.5" class="n"><tspan class="fr">Avec SlabIQ</tspan><tspan class="en">With SlabIQ</tspan></text>
-  <text x="646.0" y="278.5" class="v-s"><tspan class="fr">−277 $</tspan><tspan class="en">−$277</tspan></text>
-  <text x="646.0" y="296.5" class="n"><tspan class="fr">Sans SlabIQ</tspan><tspan class="en">Without SlabIQ</tspan></text>
-  <line class="hl" x1="0" x2="0" y1="16" y2="284"/>
-  <rect class="hit" x="64" y="16" width="568" height="268"/>
-</svg><div class="sim-tip" hidden></div></div>
-    <button class="sim-mois" type="button" aria-expanded="false"><span class="fr">Voir mois par mois</span><span class="en">See month by month</span></button>
-    <p class="sim-leg"><i class="k-a"></i><span class="fr">Avec SlabIQ</span><span class="en">With SlabIQ</span><i class="k-s"></i><span class="fr">Sans SlabIQ</span><span class="en">Without SlabIQ</span><i class="k-i"></i><span class="fr">0 $ : ni gain ni perte</span><span class="en">$0: break-even</span></p>
-    <p class="sim-leg"><span class="fr">Le profit : la valeur des cartes (leurs reventes) moins l’argent mis.</span><span class="en">Profit: the cards’ value (their resales) minus the money spent.</span></p>
-  </div>
-  <script type="application/json" id="sim-data">{"inv": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "sans": [-22, -58, -72, -8, -17, 53, 159, -102, -254, -277, -21, -277], "avec": [25, 54, 152, 378, 370, 562, 687, 527, 328, 359, 358, 350], "mf": ["nov.", "d\u00e9c.", "janv.", "f\u00e9vr.", "mars", "avr.", "mai", "juin", "juil.", "ao\u00fbt", "sept.", "oct."], "me": ["Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct"], "x0": 64, "dx": 51.63636363636363, "w": 760, "profit": true}</script>
+  <h2><span class="fr">Tes chances, seul ou avec SlabIQ.</span><span class="en">Your odds, on your own or with SlabIQ.</span></h2>
+  <!--vs--><div class="cmp"><div class="cmp-c"><h3><span class="fr">Ta carte garde sa valeur</span><span class="en">Your card holds its value</span></h3><b class="cmp-n holo-t">77<small>%</small></b><p class="cmp-l"><span><span class="fr">Avec le Radar Pro</span><span class="en">With the Pro Radar</span></span></p><span class="cmp-t"><i class="cmp-a" style="--w:77"></i></span><p class="cmp-l"><span><span class="fr">Seul</span><span class="en">On your own</span></span> <em><span class="fr">11 %</span><span class="en">11%</span></em></p><span class="cmp-t"><i class="cmp-s" style="--w:11"></i></span></div><div class="cmp-c"><h3><span class="fr">Ta carte se revend</span><span class="en">Your card resells</span></h3><b class="cmp-n holo-t">90<small>%</small></b><p class="cmp-l"><span><span class="fr">Avec le Radar Pro</span><span class="en">With the Pro Radar</span></span></p><span class="cmp-t"><i class="cmp-a" style="--w:90"></i></span><p class="cmp-l"><span><span class="fr">Seul</span><span class="en">On your own</span></span> <em><span class="fr">21 %</span><span class="en">21%</span></em></p><span class="cmp-t"><i class="cmp-s" style="--w:21"></i></span></div><div class="cmp-c"><h3><span class="fr">Une A se revend plus qu’une E</span><span class="en">An A resells more than an E</span></h3><b class="cmp-n holo-t">7<small class="x">×</small></b><p class="cmp-l"><span><span class="fr">Carte A ou A+</span><span class="en">A or A+ card</span></span></p><span class="cmp-t"><i class="cmp-a" style="--w:100"></i></span><p class="cmp-l"><span><span class="fr">Carte E</span><span class="en">E card</span></span></p><span class="cmp-t"><i class="cmp-s" style="--w:14"></i></span></div></div><div class="cmp-bas"><p class="cmp-faits"><span><span class="fr"><b class="holo-t">180 519</b> ventes de hockey testées</span><span class="en"><b class="holo-t">180,519</b> hockey sales tested</span></span><span><span class="fr"><b class="holo-t">76 %</b> d’accord avec le marché</span><span class="en"><b class="holo-t">76%</b> agreement with the market</span></span></p></div><p class="cmp-note"><span class="fr">Radar Pro : les 475 achats qu’il aurait montrés du 15 octobre 2026 au 29 octobre 2026. Seul : tous les achats de 30 $ et plus de la même période (30 922), sans carte de base ni lot. Garde sa valeur : la même carte s’est revendue ensuite à au moins 90 % du prix payé ; jamais revendue : ratée. Se revend : elle s’est revendue avant le 22 novembre 2026. Les résultats passés ne garantissent pas les résultats futurs.</span><span class="en">Pro Radar: the 475 buys it would have shown from October 15, 2026 to October 29, 2026. On your own: every buy of $30 and up from the same period (30,922), no base cards or lots. Holds its value: the same card later resold for at least 90% of the price paid; never resold: a miss. Resells: it resold before November 22, 2026. Past results don’t guarantee future results.</span></p><!--/vs-->
   <div class="vs-l">
     <ul><h4><span class="fr">Toi seul</span><span class="en">On your own</span></h4>
       <li><span class="fr">Des heures à fouiller eBay</span><span class="en">Hours digging through eBay</span></li>
@@ -163,7 +85,6 @@
   </div>
   <p class="vs-prix"><span class="fr">Tout ça pour <b class="holo-t">7,99 $</b> par mois<span class="si-annuel">, ou <b class="holo-t">5,99 $</b> à l’année</span>. Moins de 2 $ par semaine.</span><span class="en">All that for <b class="holo-t">$7.99</b> a month<span class="si-annuel">, or <b class="holo-t">$5.99</b> with the yearly plan</span>. Under $2 a week.</span></p>
   <div class="iq-cta"><a class="btn holo" href="/connexion"><span class="fr">Essayer 14 jours gratuits</span><span class="en">Try 14 days free</span></a><a class="btn ghost" href="#defi"><span class="fr">Faire le défi SlabIQ</span><span class="en">Take the SlabIQ challenge</span></a></div>
-  <p class="iq-note"><span class="fr">Simulation sur de vraies ventes eBay (novembre 2025 à octobre 2026) : 400 collectionneurs virtuels achètent chacun 500 $ de cartes de 30 à 150 $ par mois, au hasard ou seulement les cartes A et plus de SlabIQ (il dépense parfois moins, faute de cartes A ; l’argent non dépensé reste dans ses poches). La valeur finale : les reventes de la même carte après le 29 octobre 2026. Médianes, avant frais de revente. SlabIQ fait mieux dans 96 % des simulations. Les résultats passés ne garantissent pas les résultats futurs : selon tes achats, l’écart peut être plus petit ou plus grand, et tu peux perdre de l’argent. SlabIQ t’aide à choisir ; il ne garantit pas de gain.</span><span class="en">Simulation on real eBay sales (November 2025 to October 2026): 400 virtual collectors each buy $500 of $30–$150 cards a month, at random or only SlabIQ A and up (they sometimes spend less, for lack of A cards; unspent money stays in their pocket). Final value: resales of the same card after October 29, 2026. Medians, before resale fees. SlabIQ does better in 96% of simulations. Past results don’t guarantee future results: depending on what you buy, the gap can be smaller or larger, and you can lose money. SlabIQ helps you choose; it doesn’t guarantee a gain.</span></p>
 </div></section>
 <section id="defi"><div class="conteneur">
   <p class="kicker holo-t"><span class="fr">Le défi SlabIQ</span><span class="en">The SlabIQ challenge</span></p>
@@ -218,7 +139,6 @@
 <section id="tests"><div class="conteneur">
   <p class="kicker holo-t"><span class="fr">Nos tests · 23 nov. 2026</span><span class="en">Our tests · Nov 23, 2026</span></p>
   <h2><span class="fr">Testé sur des ventes qu’il n’avait jamais vues.</span><span class="en">Tested on sales it had never seen.</span></h2>
-  <!--vs--><div class="cmp"><div class="cmp-c"><h3><span class="fr">Ta carte garde sa valeur</span><span class="en">Your card holds its value</span></h3><b class="cmp-n holo-t">77<small>%</small></b><p class="cmp-l"><span><span class="fr">Avec le Radar Pro</span><span class="en">With the Pro Radar</span></span></p><span class="cmp-t"><i class="cmp-a" style="--w:77"></i></span><p class="cmp-l"><span><span class="fr">Seul</span><span class="en">On your own</span></span> <em><span class="fr">11 %</span><span class="en">11%</span></em></p><span class="cmp-t"><i class="cmp-s" style="--w:11"></i></span></div><div class="cmp-c"><h3><span class="fr">Ta carte se revend</span><span class="en">Your card resells</span></h3><b class="cmp-n holo-t">90<small>%</small></b><p class="cmp-l"><span><span class="fr">Avec le Radar Pro</span><span class="en">With the Pro Radar</span></span></p><span class="cmp-t"><i class="cmp-a" style="--w:90"></i></span><p class="cmp-l"><span><span class="fr">Seul</span><span class="en">On your own</span></span> <em><span class="fr">21 %</span><span class="en">21%</span></em></p><span class="cmp-t"><i class="cmp-s" style="--w:21"></i></span></div><div class="cmp-c"><h3><span class="fr">Une A se revend plus qu’une E</span><span class="en">An A resells more than an E</span></h3><b class="cmp-n holo-t">7<small class="x">×</small></b><p class="cmp-l"><span><span class="fr">Carte A ou A+</span><span class="en">A or A+ card</span></span></p><span class="cmp-t"><i class="cmp-a" style="--w:100"></i></span><p class="cmp-l"><span><span class="fr">Carte E</span><span class="en">E card</span></span></p><span class="cmp-t"><i class="cmp-s" style="--w:14"></i></span></div></div><div class="cmp-bas"><p class="cmp-faits"><span><b class="holo-t">180 519</b> <span class="fr">ventes de hockey testées</span><span class="en">hockey sales tested</span></span><span><b class="holo-t">76 %</b> <span class="fr">d’accord avec le marché</span><span class="en">agreement with the market</span></span></p></div><p class="cmp-note"><span class="fr">Radar Pro : les 475 achats qu’il aurait montrés du 15 octobre 2026 au 29 octobre 2026. Seul : tous les achats de 30 $ et plus de la même période (30 922), sans carte de base ni lot. Garde sa valeur : la même carte s’est revendue ensuite à au moins 90 % du prix payé ; jamais revendue : ratée. Se revend : elle s’est revendue avant le 22 novembre 2026. Les résultats passés ne garantissent pas les résultats futurs.</span><span class="en">Pro Radar: the 475 buys it would have shown from October 15, 2026 to October 29, 2026. On your own: every buy of $30 and up from the same period (30,922), no base cards or lots. Holds its value: the same card later resold for at least 90% of the price paid; never resold: a miss. Resells: it resold before November 22, 2026. Past results don’t guarantee future results.</span></p><!--/vs-->
   <!--bulletin--><div class="iq-bul" style="margin:26px 0 6px"><h3><span class="fr">Le même test, refait à 5 dates</span><span class="en">The same test, rerun on 5 dates</span></h3><table style="width:100%;border-collapse:collapse;text-align:right;font-variant-numeric:tabular-nums"><tr style="opacity:.6;font-size:.82em"><th style="text-align:left;font-weight:500;padding:6px 0"><span class="fr">Test du</span><span class="en">Test of</span></th><th style="font-weight:500"><span class="fr">Achats du Radar Pro</span><span class="en">Pro Radar buys</span></th><th style="font-weight:500"><span class="fr">Gardent leur valeur</span><span class="en">Hold their value</span></th><th style="font-weight:500"><span class="fr">Seul</span><span class="en">On your own</span></th></tr><tr style="border-top:1px solid rgba(255,255,255,.08)"><td style="text-align:left;white-space:nowrap;padding:9px 0"><span class="fr">27 sept.</span><span class="en">Sep 27</span></td><td>187</td><td><b class="holo-t">92 %</b></td><td>7 %</td></tr><tr style="border-top:1px solid rgba(255,255,255,.08)"><td style="text-align:left;white-space:nowrap;padding:9px 0"><span class="fr">11 oct.</span><span class="en">Oct 11</span></td><td>214</td><td><b class="holo-t">88 %</b></td><td>8 %</td></tr><tr style="border-top:1px solid rgba(255,255,255,.08)"><td style="text-align:left;white-space:nowrap;padding:9px 0"><span class="fr">25 oct.</span><span class="en">Oct 25</span></td><td>278</td><td><b class="holo-t">80 %</b></td><td>8 %</td></tr><tr style="border-top:1px solid rgba(255,255,255,.08)"><td style="text-align:left;white-space:nowrap;padding:9px 0"><span class="fr">8 nov.</span><span class="en">Nov 8</span></td><td>476</td><td><b class="holo-t">81 %</b></td><td>9 %</td></tr><tr style="border-top:1px solid rgba(255,255,255,.08)"><td style="text-align:left;white-space:nowrap;padding:9px 0"><span class="fr">22 nov.</span><span class="en">Nov 22</span></td><td>475</td><td><b class="holo-t">77 %</b></td><td>11 %</td></tr></table><p class="iq-note"><span class="fr">Chaque ligne est le test tel qu’il aurait été publié ce jour-là, avec seulement les ventes connues à cette date. À chaque fois : 77 à 92 % des achats du Radar Pro se sont revendus sans perdre leur valeur (seul : 7 à 11 %). « Garde sa valeur » : la même carte s’est revendue ensuite à au moins 90 % du prix payé ; jamais revendue : ratée.</span><span class="en">Each row is the test as it would have been published that day, with only the sales known on that date. Every time: 77 to 92% of Pro Radar buys resold without losing value (on your own: 7 to 11%). “Holds its value”: the same card later resold for at least 90% of the price paid; never resold: a miss.</span></p></div><!--/bulletin-->
 <div class="iq-2c">
     <div><h3><span class="fr">Comment on teste</span><span class="en">How we test</span></h3><ol>
@@ -240,24 +160,6 @@
   // 20 nov 2026 (Aikido « document write methods can lead to XSS ») : plus d'innerHTML ; le HTML (texte deja echappe) est lu par
   // DOMParser, qui n'execute jamais de script, puis pose comme des noeuds
   var poser = function(el, html){ var d = new DOMParser().parseFromString('<!doctype html><body>' + html, 'text/html'); el.replaceChildren.apply(el, Array.prototype.slice.call(d.body.childNodes)); };
-  // le graphique : la valeur au survol
-  var sd = document.getElementById('sim-data');
-  if (sd) {
-    var S = JSON.parse(sd.textContent), g = document.querySelector('.sim-g'), svg = g.querySelector('.sim-svg'), tip = g.querySelector('.sim-tip'), hl = svg.querySelector('.hl');
-    var nf = function(n){ var sg = S.profit && n > 0 ? '+' : n < 0 ? '−' : ''; n = Math.abs(n); return sg + (EN ? '$' + n.toLocaleString('en-US') : n.toLocaleString('fr-CA').replace(/ | /g, ' ') + ' $'); };
-    var bouge = function(ev){
-      var r = svg.getBoundingClientRect(), x = (ev.clientX - r.left) * S.w / r.width, i = Math.max(0, Math.min(11, Math.round((x - S.x0) / S.dx)));
-      var px = S.x0 + i * S.dx; hl.setAttribute('x1', px); hl.setAttribute('x2', px); hl.style.opacity = 1;
-      tip.hidden = false; poser(tip, '<b>' + (EN ? S.me[i] : S.mf[i]) + '</b><span><i class="k-a"></i>' + nf(S.avec[i]) + '</span><span><i class="k-s"></i>' + nf(S.sans[i]) + '</span>');
-      var left = px * r.width / S.w; tip.style.left = Math.min(r.width - 150, Math.max(0, left + 12)) + 'px';
-    };
-    // 20 nov 2026 : d'abord le depart et le resultat (une ligne qui monte, une qui descend) ; « Voir mois par mois » : le chemin complet
-    var bm = document.querySelector('.sim-mois');
-    if (bm) bm.addEventListener('click', function(){ var o = g.classList.toggle('detail'); bm.setAttribute('aria-expanded', o ? 'true' : 'false');
-      poser(bm, o ? '<span class="fr">Voir le départ et l’arrivée</span><span class="en">See start and finish</span>' : '<span class="fr">Voir mois par mois</span><span class="en">See month by month</span>'); });
-    svg.querySelector('.hit').addEventListener('pointermove', bouge);
-    svg.querySelector('.hit').addEventListener('pointerleave', function(){ tip.hidden = true; hl.style.opacity = 0; });
-  }
   // le defi (20 nov 2026) : toi parmi 8 cartes du marche ; SlabIQ dans son Radar Pro (meme semaine, meme gamme de prix)
   var dd = document.getElementById('defi-data'); if (!dd) return;
   var D = JSON.parse(dd.textContent);

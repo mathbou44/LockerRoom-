@@ -860,7 +860,7 @@ class Api:
         # 9 nov 2026 : un compte qui vient d'etre cree (30 min) : l'app demande s'il y en a deja un sur un autre appareil
         try:
             neuf = bool(multi and info.get("cree_le") and datetime.now() - datetime.fromisoformat(str(info["cree_le"])[:19]) < timedelta(minutes=30)
-                        and not info.get("identites_reliees_vu"))
+                        and not info.get("identites_reliees_vu") and not info.get("demo"))      # 23 nov 2026 : jamais au compte demo (l'equipe d'Apple)
         except ValueError:
             neuf = False
         return {**forfaits.resume(), "multi": multi, "compte_neuf": neuf, "admin": self._est_admin(), "admin_reel": self._est_admin(reel=True), "vue": vue_simulee() or "admin", "comps": comps_permis(self), "admin_a_verifier": adm_c and not self._est_admin(),
@@ -1154,6 +1154,14 @@ class Api:
                     r["complement"] = src
         except Exception as e:
             print("CardSight : " + repr(e), flush=True)
+        try:                                   # 23 nov 2026 : le code de la carte dit le parallele (#BA-AK = Blue Rainbow)
+            import cartes_match
+            avant = r["champs"].get("parallele")
+            r["champs"], r["a_verifier"] = cartes_match.completer_par_code(r["champs"], r.get("a_verifier"))
+            if r["champs"].get("parallele") != avant:
+                r["champs"].pop("titre", None)
+        except Exception as e:
+            print("Code de la carte : " + repr(e), flush=True)
         ch = r["champs"]
         ch["sport"] = sports.valide(ch.get("sport")) if ch.get("sport") else self.sport_de(ch)
         if not ch.get("titre"):
@@ -1167,7 +1175,9 @@ class Api:
     # redemarrage du serveur reprend tout seul.
     _LOT_FILS = {}
     _LOT_VERROU = threading.Lock()
-    LOT_PARALLELE = 2
+    # 23 nov 2026 (Mathieu : « c'est quand meme long ») : 3 cartes a la fois (2 avant). Le travail est de l'attente (IA, ventes,
+    # eBay) : le meme nombre d'appels, plus tot. Chaque carte ecrit ses temps dans le journal (« Lot : carte lue en ... »).
+    LOT_PARALLELE = 3
     _LOT_NOMS = {"joueur": "joueur", "annee": "saison", "marque": "marque", "set_nom": "set", "parallele": "parallèle / insert",
                  "numero": "n° de carte", "tirage": "numérotée /", "grade": "gradation", "equipe": "équipe", "numero_serie": "numéro de série",
                  "auto": "auto", "recrue": "recrue", "relique": "relique", "sport": "sport", "cert": "certificat"}
@@ -1377,6 +1387,7 @@ class Api:
         if not r:
             return
         refs, but, impair, langue, essais, cle = json.loads(r[0] or "[]"), r[1], r[2], r[3], r[4] or 0, r[5]
+        t0 = time.time()
         try:
             photos = ["data:image/jpeg;base64," + base64.b64encode(open(photos_cartes.chemin(x), "rb").read()).decode() for x in refs]
         except (OSError, TypeError):
@@ -1421,11 +1432,20 @@ class Api:
             self._lot_maj(jid, etat="revoir", raison=nom + ("coin coupé : reprends la photo" if p[k].get("entiere") is False else "photo floue : reprends-la"))
             return
         champs = dict(res.get("champs") or {})
+        try:                                          # 23 nov 2026 : le code de la carte dit le parallele (#BA-AK = Blue Rainbow)
+            import cartes_match
+            avant = champs.get("parallele")
+            champs, res["a_verifier"] = cartes_match.completer_par_code(champs, res.get("a_verifier"))
+            if champs.get("parallele") != avant:
+                champs.pop("titre", None)
+        except Exception as e:
+            print("Lot (code de la carte) : " + repr(e), flush=True)
         ch_sport = champs.get("sport")
         champs["sport"] = sports.valide(ch_sport) if ch_sport else self.sport_de(champs)
         if not champs.get("titre"):
             champs["titre"] = ebay_csv.titre_annonce(champs)
         self._lot_maj(jid, etat="prix")
+        t1 = time.time()
         try:
             prep = self.annonce_preparer(champs, langue or "fr")
         except Exception as e:
@@ -1441,10 +1461,12 @@ class Api:
         if coll:
             carte["emplacement"] = "Collection"
             carte["valeur"] = prix or None
+        t2 = time.time()
         g = self.carte_garder({"carte": carte, "titre": titre, "prix": None if coll else prix, "photos": refs, "cle": cle})
         if not g or not g.get("ok"):
             self._lot_maj(jid, etat="revoir", raison=str((g or {}).get("erreur") or "Pas enregistrée")[:160])
             return
+        print(f"Lot : carte lue en {time.time() - t0:.1f} s (lecture {t1 - t0:.1f} · titre et prix {t2 - t1:.1f} · garde {time.time() - t2:.1f})", flush=True)
         try:                                          # les coins lus par l'IA : la photo studio (fond flou) se fera avec eux
             co = [x.get("coins") for x in p]
             if any(co):
@@ -4218,6 +4240,8 @@ class Api:
             sql += " AND statut!='Vendue' AND cout IS NULL"
         if f.get("a_lister"):
             sql += " AND statut='En stock' AND COALESCE(emplacement,'') NOT IN ('Magasin','Collection')"
+        if f.get("a_programmer"):                    # 23 nov 2026 (vitesse) : pas sur eBay, pas vendues ; le tri se fait dans la base
+            sql += " AND COALESCE(statut,'') NOT IN ('Vendue','Listée') AND (item_number IS NULL OR item_number='' OR item_number=0)"
         if f.get("emplacement"):
             sql += " AND emplacement=?"
             args.append(f["emplacement"])
@@ -7072,6 +7096,7 @@ class Api:
         modele = annonces.modele(r.get("modele_annonce"))
         fp, ff = (r["frais_ebay_pct"] or 0) / 100, r["frais_ebay_fixe"] or 0
         prix, comps, n, note, source, vendues_l = None, [], 0, None, None, []
+        tp = [time.time(), 0.0, 0.0, 0.0]        # 23 nov 2026 : debut, puis fin des ventes, des cartes proches, des annonces
         bassin_v = []                            # 10 nov 2026 : les ventes deja lues, pour les cartes similaires
         vendu, affiche = None, None             # 30 oct 2026 : les 2 reperes montres au vendeur (ventes et annonces)
         # 30 oct 2026 (Mathieu : « proposer un prix selon les last sold ») : d'abord les VENTES reelles de la meme carte
@@ -7101,6 +7126,7 @@ class Api:
                     n, source = len(ventes), ("vendues" if sure else "vendues_peu")
             except Exception as e:
                 note = str(e)[:120]
+        tp[1] = time.time()
         if titre and not prix and ebay_prix_actif():
             # 10 nov 2026 (Mathieu : « c'est le prix suggere qui va etre difficile », licence eBay §9.5 : les annonces lues
             # par l'API ne doivent pas servir a modeliser un prix) : sans ventes de LA carte, les VENTES des cartes proches
@@ -7117,6 +7143,7 @@ class Api:
                     vendues_l = [{k: v.get(k) for k in ("titre", "prix", "le", "url", "photo", "note")} for v in vv[:10]]
             except Exception as e:
                 print("Preparer (similaires) : " + repr(e), flush=True)
+        tp[2] = time.time()
         if titre:
             try:
                 cib = cartes_match.cible_titre(titre, c.get("joueur"))
@@ -7141,6 +7168,9 @@ class Api:
             except Exception as e:               # 9 nov 2026 (Mathieu : « erreur de serveur » apres le titre) : eBay qui
                 note = str(e)[:120]              # repond mal ne bloque jamais la vente : pas de comps, l'annonce continue
                 print("Preparer (annonces eBay) : " + repr(e), flush=True)
+        tp[3] = time.time()
+        if tp[3] - tp[0] > 8:
+            print(f"Preparer lent : {tp[3] - tp[0]:.1f} s (ventes {tp[1] - tp[0]:.1f} · cartes proches {tp[2] - tp[1]:.1f} · annonces eBay {tp[3] - tp[2]:.1f}) · source {source}", flush=True)
         franco = (langue or r.get("langue") or "fr") != "en"
         desc = annonces.description(c, titre, franco, modele["etat"], r.get("nom_boutique"), modele["retours"], modele["expedition"])
         # 30 oct 2026 : une description par livraison (l'ecran montre celle qui partira vraiment : politique eBay, suivi > 30 $...)
@@ -7304,8 +7334,10 @@ class Api:
 
     def serie_candidates(self):
         """Les cartes pretes a publier : en stock (pas sur eBay, pas vendues), avec un titre, un prix et une photo."""
+        # 23 nov 2026 (Mathieu : « c'est quand meme long ce processus » ; journal du serveur : 10,0 s pour cet ecran) : on lisait
+        # TOUT l'inventaire (les cartes vendues et en ligne aussi, avec leur examen) pour n'en garder que quelques-unes
         out = []
-        for c in self.inventaire_liste({}) or []:
+        for c in self.inventaire_liste({"a_programmer": True}) or []:
             if c.get("statut") in ("Vendue", "Listée") or c.get("item_number"):
                 continue
             try:

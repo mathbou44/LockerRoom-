@@ -35,17 +35,24 @@ for page, t in (("accueil", acc), ("slabiq", sl)):
         if int(m) not in (pro, rv):
             erreurs.append(f"{page} : un « {m} % » dans le comparatif qui n'est pas dans le dernier test")
 # l'accueil
-doit("accueil", "ventes apprises", rf'<b class="holo-t">{re.escape(k)}</b> <span class="fr">ventes réelles apprises', acc)
+doit("accueil", "ventes apprises", rf'<b class="holo-t">{re.escape(k)}</b> ventes réelles apprises</span><span class="en"><b class="holo-t">{re.escape(k)}</b> real sales learned', acc)
 doit("accueil", "A et A+ contre E", rf'une carte A ou A\+ se revend {x} fois plus souvent', acc)
 for m in re.findall(r'<b class="holo-t">([0-9]+)×</b><span><span class="fr">plus de reventes', acc + sl):
     if int(m) != x:
         erreurs.append(f"un « {m}× plus de reventes » au lieu de {x}×")
-for m in re.findall(r'<b class="holo-t">([^<]*)</b>(?:<span>| )<span class="fr">ventes réelles apprises', acc + sl):
+for m in re.findall(r'<b class="holo-t">([^<]*)</b>(?:<span><span class="fr">| )ventes réelles apprises', acc + sl):
     if m != k:
         erreurs.append(f"« {m} ventes réelles apprises » au lieu de {k}")
 # la page SlabIQ
-doit("slabiq", "ventes testees", rf'<b class="holo-t">{re.escape(nb)}</b> <span class="fr">ventes de hockey testées', sl)
-doit("slabiq", "accord", rf'<b class="holo-t">{re.escape(acc_fr)}</b> <span class="fr">d’accord avec le marché</span>', sl)
+# 23 nov 2026 (Mathieu : « oui corrige ») : chaque chiffre dans les deux langues (« 180 519 » / « 180,519 », « 76 % » / « 76% »)
+nb_en = f"{R['ventes']:,}"
+doit("slabiq", "ventes testees", rf'<b class="holo-t">{re.escape(nb)}</b> ventes de hockey testées</span><span class="en"><b class="holo-t">{re.escape(nb_en)}</b> hockey sales tested', sl)
+doit("slabiq", "accord", rf'<b class="holo-t">{re.escape(acc_fr)}</b> d’accord avec le marché</span><span class="en"><b class="holo-t">{re.escape(acc_en)}</b> agreement with the market', sl)
+for page, t in (("accueil", acc), ("slabiq", sl)):                # jamais un nombre a la francaise dans une phrase anglaise du comparatif
+    bloc = t[t.index("<!--vs-->"):t.index("<!--/vs-->")]
+    for m in re.findall(r'<span class="en">((?:(?!</span>).)*)</span>', bloc):
+        if re.search(r"\d \d{3}\b|\d\s%", m):
+            erreurs.append(f"{page} : un nombre a la francaise en anglais : « {m[:60]} »")
 if "(avant :" in sl.split("d’accord avec le marché")[1][:20]:
     erreurs.append("slabiq : l'accord montre encore « (avant : X %) »")
 # l'app lit les memes chiffres

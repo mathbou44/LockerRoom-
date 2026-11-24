@@ -155,6 +155,65 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   sans chiffre ; l'astuce de l'accueil (`astuces.ouvrir`) dit la part de vraies ventes. Sur les valeurs locales du 22 oct :
   6 produits sur 26 gardent un verdict. À regarder en ligne : combien en gardent un avec les valeurs du jour.
 
+- **Site : la simulation d'un an est RETIRÉE** (23 nov, Mathieu : « oui » ; `ui/site_slabiq.html`, `outils/site_iq.py`,
+  `tests/test_site_sans_simulation.py`). Le graphique « un budget de cartes par mois pendant 1 an, avec ou sans SlabIQ » affichait
+  un profit AVANT frais eBay (+350 $ / −277 $ ; après frais 13,25 % + 0,40 $ : −412 $ / −1 048 $, écart ≈ 640 $, 96 % des cas)
+  avec des lettres fixées après coup (apprises jusqu'à la mi-octobre 2026, achats dès nov. 2025). Le méga test du 22 nov
+  (`outils/mega_test_resultats.json` : lettres connues à l'époque, frais compris) ne prouve aucun profit de revente (raté à
+  6 dates sur 6 ; le Radar Pro a 2 à 3 fois plus de gagnants que le hasard). À sa place, en haut de la page SlabIQ : le
+  comparatif mesuré (`<!--vs-->`, remonté de « Nos tests ») sous « Tes chances, seul ou avec SlabIQ. ». La mesure `sim` reste
+  dans `ui/slabiq_tests.json` pour la recherche. NE JAMAIS remettre un profit de revente sur le site.
+  Même jour : dans le comparatif (`site_iq.bloc_vs`, les deux pages), chaque chiffre des « faits » est écrit dans les deux langues
+  (« 180 519 » / « 180,519 », « 76 % » / « 76% ») ; `tests/test_chiffres_partout.py` refuse un nombre à la française en anglais.
+- **Ce qui s'améliore tout seul (vérifié dans les journaux Render le 23 nov, question de Mathieu)** : aucune tâche programmée côté
+  Claude ; tout est sur le serveur. Score SlabCoach : réappris aux 3 jours, la nuit (`score_appris`, journal « Score SlabCoach :
+  … reapprendre lance » : 18 et 21 nov), gardé seulement s'il tient le garde-fou (précision ≥ 0,90 sur 10 jours jamais vus, pas
+  plus de 0,01 sous la dernière mesure). Validation SlabIQ : 1 fois/semaine (`validation_iq`, dernière passe le 18 nov au soir :
+  accord 0,639 sur 128 114 ventes ; corrections automatiques + questions à l'expert). Chaque heure : la demande des joueurs.
+  PAS automatique : les tests publiés sur le site (export des ventes par Mathieu → `outils/tests_site.py --ecrire` → push) et
+  les réponses de Mathieu aux questions de SlabIQ (Admin → Entraîner SlabIQ).
+- **Plan des 6 premiers mois et envoi à Apple (23 nov au soir ; Mathieu : « planifier mes premiers 5-6 mois », puis « j'ai rien
+  demandé à Apple encore »)** : le plan est sur le Whiteboard « SlabCoach : les 6 premiers mois »
+  (https://claude.ai/artifact/4QXyEyEFH3pq9g8Pe4YYGW) : déc. tenir debout, janv. lire les chiffres des premiers essais, avant le
+  15 fév. être prêt (Series 2 prévue le 24 fév., date limite des échanges le 1er mars 2027), mars acquisition, avril rétention,
+  mai décider (baseball, licences, Platine). Zones : Apple, données, serveur (un seul processus), argent, légal, lui seul, se faire
+  connaître, dispersion. Dans la liste admin (`ceo.py`) : `SEMIS["apple_23nov"]` (ap_accord et ap_build le 24, ap_soumettre le 25,
+  ap_planb le 29) et `SEMIS["plan_6mois_23nov"]` (projet « Les 6 premiers mois » : p6_charge, p6_support, p6_budget, p6_pc,
+  p6_createurs, p6_janvier, p6_fevrier, p6_mai) ; `CLOS["clos_23nov_soir"]` ferme `t_sim` et `l1_apple` (remplacée).
+  **Fiche App Store refaite** (`mobile/APP_STORE.md`) : l'ancienne (27 oct) promettait « le vrai prix… tiré des ventes réelles »
+  et des « ventes comparables » que le public ne voit plus ; la nouvelle suit le site (« Collectionne plus. Cherche moins. », la
+  lettre, le Radar, la collection). Sous-titre « Cartes de hockey notées A+ à E ». Captures : à refaire par Mathieu sur son iPhone
+  en vue Pro (celles de `mobile/captures_v2/` datent du 27 oct). **Note au réviseur vérifiée pas à pas** sur un iPhone simulé
+  (serveur local `LOCKERROOM_MULTI=1` + `LOCKERROOM_DEMO_CODE`, agent « LockerRoomiOS », faux plugin `NativePurchases`) : le lien
+  de l'écran de connexion s'appelle « Démo / Demo » (la note disait « Code de démonstration ») ; l'achat intégré : Profil › pastille
+  « GO PRO » › « See Pro » (la feuille montre nom, durée, prix, renouvellement, Conditions, Confidentialité, Restaurer) ; la
+  suppression du compte : Profil › My account › « Help, sign out, delete account ». Deux corrections dans l'app : le compte démo ne
+  voit plus la fenêtre « Tu utilises déjà SlabCoach ailleurs ? » (`lockerroom.py`, `compte_neuf`) et la ligne du Profil
+  « Soutien, conditions, déconnexion » devient « Aide, déconnexion, suppression » (règle 5.1.1(v)). Tests : `tests/test_demo_apple.py`,
+  `tests/test_ceo_apple.py`. PAS vérifié : l'état réel chez Apple (accord « Applications payantes », abonnement créé, clés APNs
+  dans Render) ni un build Codemagic récent : seul Mathieu peut le voir. Dans l'app iPhone, le Pro est mensuel seulement.
+- **Lot de cartes : vitesse, titre, retirer (23 nov au soir ; Mathieu en direct sur son iPhone)**. Mesuré dans le journal Render
+  (son lot de 19 h 28, heure de Toronto) : 4 cartes en 1 min 50 s (la 1re en 20 s, les autres 35 à 60 s, l'étape « titre et prix »
+  domine), puis `serie_candidates` 10,0 s et `paires_verifier` 6,6 s à l'ouverture de « Programmer ». Fait : (1) `LOT_PARALLELE`
+  3 (2 avant) ; (2) chaque carte écrit « Lot : carte lue en X s (lecture · titre et prix · garde) » et `annonce_preparer` écrit
+  « Preparer lent : … (ventes · cartes proches · annonces eBay) » au-delà de 8 s : ON NE SAIT PAS ENCORE quelle partie du prix
+  est lente (SoldComps/CompSniper 15 s max par appel, TheCardAPI 12 s, eBay) : lire ces lignes après son prochain lot avant de
+  toucher au reste ; (3) `serie_candidates` ne lit que les cartes à programmer (`inventaire_liste({"a_programmer": True})`) :
+  sur un inventaire simulé de 2 000 cartes (504 Mo), disque froid : 0,92 s → 0,23 s ; le gain réel dépend de son inventaire, à
+  relire dans le journal (« Lent : POST /api/serie_candidates ») ; (4) ESSAYÉ PUIS RETIRÉ : noter la paire devant/dos
+  confirmée par la lecture du lot dans le cache de `paires_verifier` (gagnait 6,6 s) : c'est la 2e vérification demandée par
+  Mathieu le 11 nov après 3 annonces au mauvais dos ; `tests/test_lot_serveur.py` la garde. Ne pas l'enlever sans son accord. Piste non faite : `inventaire_liste`
+  lit encore `json_extract(etat_json…)` pour tout l'inventaire (page Inventaire) : mettre note_min/note_max en colonnes.
+  **Titre** (« 2x opc et c'est une blue rainbow. Sert-toi du code BA ») : `annonces.titre_optimise` et `ebay_csv.titre_annonce`
+  n'écrivent plus la marque quand le set la contient ; `cartes_match.completer_par_code` (appelé aux 2 lectures) donne le
+  parallèle d'après le code, table `codes_variantes.json` apprise des ventes par `outils/apprendre_codes_variantes.py <export>
+  --ecrire` (20 ventes par saison, 85 % des titres, noms faits de couleurs et de finis seulement) : BA = Blue Rainbow
+  (O-Pee-Chee Platinum 2022-23 à 2024-25, 96 % de 395 ventes), RA = Red Rainbow (2025-26 seulement ; avant, RA = Rookie
+  Autographs). Une autre couleur lue sur la carte n'est jamais écrasée (le champ passe « à vérifier »). À relancer avec chaque
+  nouvel export. **Programmer, étape 2** : bouton « Retirer » par carte (sort du lot, reste dans l'inventaire ; la dernière
+  retirée ramène à l'étape 1). Nouveautés n: 244. Tests : `test_codes_variantes.py`, `test_lot_vitesse.py`. Tâche admin `lv_temps`.
+  Vu sans y toucher : Kaplan Future Watch Auto /999 à 5 $ et Wood Inscribed à 250 $ dans la même capture (prix à regarder).
+
 ## En attente
 - **Méga test 3 ans (bâti le 22 nov, priorité 1)** : `mega_test.py` (serveur) part seul après le push (boucle de l'heure + reprise
   au démarrage ; `LR_MEGA_AUTO=0` pour l'empêcher). 1) Sonde : 5 crédits, les 5 cartes les plus vendues, fenêtre −1 095 à −730 jours ;
@@ -170,8 +229,13 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   `outils/mega_test_resultats.json`, jamais sur le site sans l'accord de Mathieu. Tests : `tests/test_mega_test.py`.
   À vérifier par Mathieu : `LR_HISTORIQUE_MOIS` (95 par défaut = rien ne bouge). Leçon du 21 nov : toujours la même carte exacte,
   un pari par creux, frais compris.
-- **Apple (samedi)** : note au réviseur fournie à Mathieu ; il doit y mettre le code démo. Pas de « Bêta » visible.
+- **Apple (URGENCE no 1 depuis le 23 nov au soir : rien n'est soumis, lancement le 1er décembre)** : calendrier en tête de
+  `mobile/APP_STORE.md` (mardi 24 : accord « Applications payantes », abonnement, build Codemagic ; mercredi 25 : TestFlight,
+  6 captures, fiche, soumettre en publication manuelle ; Action de grâce américaine le jeudi 26). Plan B à faire décider : lancer
+  sur le web le 1er décembre si Apple n'a pas approuvé. Il met lui-même le code démo dans la note. Pas de « Bêta » visible.
   Après l'approbation : retirer le code démo (conseil dans `ceo.py`).
+- **Deux réponses attendues de Mathieu (plan des 6 mois)** : son budget de données par mois et son temps par semaine (questions
+  ouvertes sur le Whiteboard ; tâche `p6_budget`).
 - **Baseball** : test SlabIQ à refaire dès que Mathieu exporte des ventes fraîches (Entraîner SlabIQ → ↓ Ventes Baseball).
 - **Courriels de licence (7, dont Fanatics)** : attendent le connecteur Gmail et le choix de l'adresse d'envoi.
 - **Cloudflare** : activer la 2FA (créer un mot de passe via « mot de passe oublié » car il se connecte avec Google),

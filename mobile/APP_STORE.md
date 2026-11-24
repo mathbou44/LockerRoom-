@@ -18,16 +18,26 @@ c'est construit, voir « Achat intégré » plus bas.
 
 ---
 
-## Calendrier réaliste
+## Calendrier de la semaine du 23 novembre 2026
 
-| Jour | Toi | Résultat |
+Rien n'est encore soumis à Apple (Mathieu, 23 nov au soir). Le lancement est le 1er décembre : voici le chemin le plus court.
+L'app existe déjà dans App Store Connect (Apple ID 6827726629) et Codemagic est branché.
+
+| Quand | Toi | Résultat |
 |---|---|---|
-| ✅ Fait | Inscription Apple Developer (99 $ US) | Accepté |
-| Aujourd'hui | Étapes 1 à 4 ci-dessous + compte Codemagic | Tout est prêt pour le 1er build |
-| Mar–mer | Créer l'app dans App Store Connect + la clé API, lancer le 1er build | La version arrive dans TestFlight (≈ 30 min) |
-| Mer | Tester sur ton iPhone avec TestFlight, prendre les vraies captures | Fiche complète |
-| Jeu | Soumettre à Apple | Examen : souvent 24–48 h |
-| Ven–sam | Corriger si Apple demande quelque chose, sinon publier | Dans l'App Store |
+| Mardi 24 | App Store Connect : accepter l'accord « Applications payantes » et remplir banque et taxes ; créer l'abonnement `com.slabcoach.app.pro.mensuel` (7,99 $ CA) ; régler l'adresse des avis du serveur | L'achat intégré peut être testé |
+| Mardi 24 | Codemagic : « Start new build » › ios-app-store | La version arrive dans TestFlight (≈ 30 min) |
+| Mercredi 25 | TestFlight sur ton iPhone : tester « S'abonner » puis « Restaurer mes achats » ; prendre les captures (voir plus bas) | Tout est vérifié sur un vrai iPhone |
+| Mercredi 25 | Coller la fiche ci-dessous, joindre les captures, la note au réviseur avec ton code démo, choisir le build, **publication manuelle**, puis « Soumettre pour examen » | En examen |
+| Du jeudi 26 au dimanche 29 | Répondre vite si Apple demande quelque chose | Long congé américain (Action de grâce le 26) : l'examen peut être plus lent |
+| Lundi 30 | Si c'est approuvé : ne rien publier encore | Prêt |
+| Mardi 1er décembre | « Publier cette version » | Dans l'App Store |
+
+**Plan B, si Apple n'a pas approuvé le 1er décembre :** on lance quand même sur le web (www.slabcoach.com marche sur iPhone dans
+Safari). L'app iPhone suit dès l'approbation. Un premier envoi avec abonnement est souvent refusé une fois : c'est normal, on corrige et on renvoie.
+
+**À savoir :** dans l'app iPhone, le Pro est mensuel seulement (un seul produit chez Apple). L'annuel se vend sur le web ; un 2e
+produit Apple (annuel) peut s'ajouter après le lancement.
 
 L’inscription Apple est faite. Le Bundle ID est `com.slabcoach.app` : il ne pourra plus changer, le nom affiché (SlabCoach) oui. Si tu avais déjà créé `com.cardcoach.app`, laisse-le de côté : il ne sert à rien.
 
@@ -97,7 +107,8 @@ Les clés restent dans Render, jamais dans GitHub.
 >    - Nom de référence : `SlabCoach Pro mensuel`
 >    - **Identifiant du produit : `com.slabcoach.app.pro.mensuel`** (exactement : c'est ce que l'app demande)
 >    - Durée : **1 mois** · Prix : **7,99 $ CA** (Apple calcule les autres pays)
->    - Localisation FR et EN : nom « SlabCoach Pro », description « Annonces, valeurs, deals et breaks illimités »
+>    - Localisation FR et EN : nom « SlabCoach Pro », description FR « Tout le Radar, annonces illimitées », EN « The full Radar and unlimited listings »
+>      (23 nov 2026 : c'est ce que la feuille « Passe au Pro » de l'app montre aujourd'hui ; l'ancienne parlait de « valeurs » et de « deals »)
 >    - Capture pour l'examen : la feuille « Passe au Pro » de l'app (fais-la dans TestFlight)
 > 3. **App Store Connect › ton app › Infos de l'app › Avis du serveur App Store** (App Store Server Notifications),
 >    **version 2**, pour la production ET le bac à sable :
@@ -114,28 +125,38 @@ Les clés restent dans Render, jamais dans GitHub.
 > `Conditions d'utilisation : https://slabcoach.com/conditions · Confidentialité : https://slabcoach.com/confidentialite`
 
 **Nom :** SlabCoach
-**Sous-titre (30 car.) :** Cartes sportives : vrais prix
-**Catégorie :** Sports (secondaire : Affaires)
+**Sous-titre (30 car.) :** Cartes de hockey notées A+ à E
+**Sous-titre EN (30 car.) :** Hockey cards rated A+ to E
+**Catégorie :** Sports (secondaire : Style de vie)
 **Âge :** réponds au questionnaire honnêtement. Jeux d'argent réels : *aucun* (aucune mise, aucun paiement, aucun prix
 dans l'app). Mais l'app sert aussi aux breakers : ils y notent les places vendues ailleurs et font le TIRAGE des équipes.
 Si le questionnaire demande « jeux de hasard simulés » ou « concours », lis bien la définition : ce n'est pas un jeu dans
-l'app, mais ne cache pas les breaks. Le résultat sera probablement 9+ ou 12+ : ne le force pas. Accès Web sans restriction : *non* (seulement des annonces eBay précises,
-dans une fenêtre Safari intégrée). Contenu généré par les utilisateurs : *non*. Le résultat sera probablement 4+ ou 9+ :
-ne le force pas.
+l'app, mais ne cache pas les breaks. Accès Web sans restriction : *non* (seulement des annonces précises, dans une fenêtre
+Safari intégrée). Contenu généré par les utilisateurs : *non*. Le résultat sera probablement 4+ ou 9+ : ne le force pas.
 
-**Texte promotionnel :**
-Le vrai prix de tes cartes, tiré des ventes réelles, pas des prix demandés.
+> **23 nov 2026 : fiche refaite pour l'app d'aujourd'hui.** L'ancienne (27 oct) promettait « le vrai prix de tes cartes, tiré
+> des ventes réelles » et des « ventes comparables ». Le public ne voit plus aucun prix tiré d'eBay (règle de licence), et la
+> promesse est « acheter et vendre au bon moment », avec le ton du hobby. Une fiche qui promet ce que l'app ne montre pas est
+> un motif de refus chez Apple (règle 2.3.1). Les sept points suivent le guide « Que veux-tu faire ? » de l'app.
+
+**Texte promotionnel (170 car.) :**
+Collectionne plus. Cherche moins. Une lettre sur chaque carte, un Radar qui cherche pour toi, ta collection suivie toute seule.
+
+**Texte promotionnel EN :**
+Collect more. Search less. One letter on every card, a Radar that searches for you, your collection tracked on its own.
 
 **Description (FR) :**
-SlabCoach aide les collectionneurs, vendeurs et breakers de cartes sportives à acheter et vendre au bon prix.
+SlabCoach aide les collectionneurs de cartes de hockey à acheter et vendre au bon moment, sans passer leurs soirées à fouiller.
 
-- Valeur d'une carte : les ventes réelles de la MÊME carte (même parallèle, même numérotation, gradée ou non), pas les prix demandés. Pas assez de ventes sûres ? L'app le dit au lieu d'inventer un prix.
-- Deals : les annonces bien sous ce que la carte se vend vraiment, avec les ventes comparables.
-- Breaks : pour chaque joueur et chaque équipe, la chance d'avoir un hit et la chance de rentabiliser ta place, calculées sur la checklist et les cotes publiées par le fabricant. Tout est expliqué.
-- Vendre : une photo, l'app lit la carte (avec ta permission), trouve le bon prix et prépare ton annonce.
-- Inventaire et bilan : ton stock, tes coûts, ton profit réel.
-- Alertes de prix : une notification quand LA carte que tu veux passe sous ton prix.
-- Ta palette : 6 couleurs inspirées des parallèles.
+- SlabIQ : une lettre, de A+ à E, sur chaque carte. Est-ce qu'elle va se revendre, et garder sa valeur ? Touche la lettre pour voir pourquoi.
+- Radar : dis-lui ce que tu collectionnes (joueurs, équipes, budget). Il cherche pour toi et te montre les meilleures cartes d'abord.
+- Collection : tes cartes au même endroit, suivies toutes seules, avec ce qu'elles t'ont coûté et ton profit réel.
+- Vendre en une photo : l'app lit la carte (avec ta permission) et prépare ton annonce.
+- Tendances : les joueurs en hausse, en baisse, au plus bas et au plus haut. Des faits, pas des promesses.
+- Breaks : ce que vaut ta place avant de payer, et tes chances d'avoir un hit selon la checklist et les cotes publiées par le fabricant.
+- Alertes : une notification quand la carte que tu veux passe sous ton prix cible.
+
+SlabIQ t'aide à choisir ; il ne garantit pas de gain.
 
 Connexion avec Apple ou avec ton compte de vente en ligne (page officielle, aucun mot de passe dans l'app). Rien n'est acheté ni vendu sans ton geste.
 
@@ -143,47 +164,58 @@ Forfait Pro optionnel : abonnement mensuel renouvelé automatiquement, payé ave
 Conditions d'utilisation : https://slabcoach.com/conditions · Confidentialité : https://slabcoach.com/confidentialite
 
 **Description (EN) :**
-SlabCoach helps sports card collectors, sellers and breakers buy and sell at the right price.
+SlabCoach helps hockey card collectors buy and sell at the right time, without spending their evenings digging.
 
-- Card value: real sales of the SAME card (same parallel, numbering, graded or raw), not asking prices. Not enough reliable sales? The app says so instead of guessing.
-- Deals: listings well below what the card actually sells for, with comparable sales.
-- Breaks: for every player and team, your chance of a hit and your chance to get your money back, from the manufacturer's checklist and published odds. Everything is explained.
-- Sell: one photo, the app reads the card (with your permission), finds the right price and drafts your listing.
-- Inventory and report: your stock, costs and real profit.
-- Price alerts: a notification when THE card you want drops under your price.
+- SlabIQ: one letter, A+ to E, on every card. Will it resell, and hold its value? Tap the letter to see why.
+- Radar: tell it what you collect (players, teams, budget). It searches for you and shows the best cards first.
+- Collection: your cards in one place, tracked on their own, with what they cost you and your real profit.
+- Sell in one photo: the app reads the card (with your permission) and drafts your listing.
+- Trending: players rising, falling, at their lowest and at their highest. Facts, not promises.
+- Breaks: what your spot is worth before you pay, and your odds of a hit from the manufacturer's checklist and published odds.
+- Alerts: a notification when the card you want drops under your target price.
+
+SlabIQ helps you choose; it does not guarantee a gain.
 
 Sign in with Apple or with your marketplace account (official page, no password in the app). Nothing is bought or sold without your tap.
 
+Optional Pro plan: monthly auto-renewing subscription, paid with your Apple ID, cancel anytime in iPhone Settings.
 Terms of use: https://slabcoach.com/conditions · Privacy: https://slabcoach.com/confidentialite
 
 > Pas de marque d'autrui dans le nom, le sous-titre ni les mots-clés (règles 2.3.7 et 5.2.1) : « eBay », « LNH »,
 > « Young Guns », « Upper Deck » sont retirés des mots-clés. Dans la description, une mention descriptive reste
 > possible, mais j'ai gardé « compte de vente en ligne » pour ne rien laisser croire à un partenariat.
 
-**Mots-clés (100 car.) :** cartes,hockey,cartes sportives,prix,valeur,break,recrue,collection,vendre,comps,gradation,inventaire
+**Mots-clés (100 car.) :** cartes,hockey,collection,recrue,radar,alerte,break,inventaire,vendre,sportives,gradation,rookie
+**Mots-clés EN (100 car.) :** cards,hockey,collection,rookie,radar,alerts,break,inventory,sell,sports,grading,collector
 
 **URL d'assistance :** https://slabcoach.com/support
 **URL de confidentialité :** https://slabcoach.com/confidentialite
 **URL marketing (facultatif) :** https://slabcoach.com
 
-**Captures :** `captures_v2/` (27 oct 2026) : Accueil, Inventaire et Vendre en FR et EN, 1320 × 2868 (iPhone 6,9 po),
-tirées de l'app avec le compte démo, sans bannière « SANDBOX ». Ajoute sur ton iPhone (TestFlight) une capture Deals
-et une Valeur avec tes vraies données (le compte démo n'a pas de deals). Ne plus utiliser `captures_brouillon/`
-(ancien logo LockerRoom, nouvelles RDS, « valeur attendue »).
+**Captures (23 nov 2026) :** à prendre sur TON iPhone, dans TestFlight, c'est le plus rapide (5 minutes). Les captures d'un
+iPhone Pro Max ont la bonne taille (6,9 po). Avant : Profil › passe la vue à **Pro** (jamais « Admin » : Apple ne doit voir ni
+les outils admin ni un prix tiré d'eBay). Six écrans, en français puis en anglais (Profil › langue) :
+1. Accueil ; 2. Radar (tes cartes, avec la lettre SlabIQ) ; 3. la fenêtre SlabIQ d'une carte (touche la lettre) ;
+4. Inventaire ; 5. Tendances ; 6. Breaks.
+Ne plus utiliser `captures_v2/` (27 oct : ancien accueil, ancien Radar) ni `captures_brouillon/`.
 
 ## Notes pour l'examen d'Apple (Review Notes, en anglais)
-28 oct 2026 (audit) : compte démo GRATUIT (l'équipe d'Apple doit voir l'achat intégré), natif mis en avant, breaks
+23 nov 2026 : 1er paragraphe refait pour l'app d'aujourd'hui (plus de « real-sales card values ») ; le chemin du compte démo et celui de
+l'achat intégré sont ceux de l'app d'aujourd'hui, refaits pas à pas sur un iPhone simulé (tests/test_demo_apple.py). 28 oct 2026 (audit) : compte démo GRATUIT (l'équipe d'Apple doit voir l'achat intégré), natif mis en avant, breaks
 décrits honnêtement. Remplace <TON CODE> par la valeur de LOCKERROOM_DEMO_CODE (Render).
 ```
-SlabCoach is a tool for sports card collectors, sellers and breakers: real-sales card values, deals, break pricing
-and odds, inventory and profit.
+SlabCoach is a companion app for hockey card collectors. Every card gets a SlabIQ letter (A+ to E) that estimates how
+well it resells and holds its value; a Radar surfaces listings that match the user's own targets (players, teams,
+budget); the app also tracks the user's collection, drafts a listing from one photo, shows player trends and break
+odds. SlabIQ helps users choose; the app promises no financial gain.
 
-DEMO ACCOUNT: on the sign-in screen tap "Code de démonstration" and enter: <TON CODE>.
+DEMO ACCOUNT: at the bottom of the sign-in screen, tap "Démo / Demo" and enter: <TON CODE>.
 It is a FREE account (trial ended) with sample inventory, breaks and sales, so you can see the In-App Purchase.
 No eBay account is needed.
 
 IN-APP PURCHASE: SlabCoach Pro (auto-renewable subscription, monthly, product com.slabcoach.app.pro.mensuel).
-Where to find it: Profile tab (bottom right) > "Mon forfait" > "Voir le Pro" (also the "Pro" badges in the app). The sheet shows the
+Where to find it: Profile tab (bottom right) > tap the "GO PRO" badge under the name > "See Pro" ("Voir le Pro" in
+French). Also: Profile > My account > My plan, and the "Pro" badges in the app. The sheet shows the
 price, period, auto-renewal terms, Terms of Use, Privacy Policy and "Restore purchases". The app shows no other way
 to pay and no external prices.
 
@@ -199,8 +231,8 @@ PRIVACY: card photos are sent to a third-party AI (Anthropic) only after an expl
 card with AI?"), withdrawable in Settings. Support messages may be sorted by the same AI (stated in the form and in
 the privacy policy). Promotional alerts (deals) are off until the user turns them on.
 
-ACCOUNT DELETION: Profile > Account and help > Delete my SlabCoach account (immediate; Sign in with Apple tokens are
-revoked).
+ACCOUNT DELETION: Profile > My account > "Help, sign out, delete account" > Delete my SlabCoach account (immediate;
+Sign in with Apple tokens are revoked).
 
 BREAKS: breakers use the app to price spots, record spots they sold on their own channels and run the random team
 assignment. No payment, wager, bet or prize happens in the app.

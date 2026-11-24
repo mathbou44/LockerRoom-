@@ -1065,6 +1065,62 @@ def corriger_produit(titre, table=None):
     return (t2, f"{faux} -> {bon} (code #{pre})") if t2 != titre else (titre, None)
 
 
+# 23 nov 2026 (Mathieu, O-Pee-Chee Platinum #BA-AK lue « Autographs » : « c'est une blue rainbow. Sert-toi du code BA ») : le
+# code dit parfois le PARALLELE quand la carte ne l'ecrit pas. Table apprise de nos ventes par produit et par saison
+# (outils/apprendre_codes_variantes.py -> codes_variantes.json) : BA = Blue Rainbow, RA = Red Rainbow en 2025-26 seulement.
+_VAR = {"t": None}
+_GENERIQUES = {"auto", "autos", "autograph", "autographs", "autographed", "base", "rookie", "rookies", "signature", "signatures",
+               "parallel", "insert"}
+_COULEURS = set("blue red gold green orange purple violet black emerald silver pink yellow teal white bronze copper".split())
+
+
+def codes_variantes():
+    if _VAR["t"] is None:
+        import json
+        import os
+        try:
+            with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "codes_variantes.json"), encoding="utf-8") as f:
+                _VAR["t"] = {(c["produit"], c["prefixe"]): c for c in (json.load(f) or {}).get("codes") or []}
+        except (OSError, ValueError, KeyError):
+            _VAR["t"] = {}
+    return _VAR["t"]
+
+
+def variante_du_code(produit, numero, saison):
+    """(« O-Pee-Chee Platinum », « BA-AK », « 2023-24 ») -> « Blue Rainbow », ou None si le code ne dit rien de sur."""
+    m = re.match(r"\s*#?([A-Za-z]{2,5})-[A-Za-z0-9]{1,5}\s*$", str(numero or ""))
+    if not m:
+        return None
+    ps = produits_du_titre(produit)
+    if len(ps) != 1:
+        return None
+    e = codes_variantes().get((ps[0], m.group(1).upper()))
+    an = re.search(r"(20\d\d)", str(saison or ""))
+    if not e or not an:
+        return None
+    return e["variante"] if any(k.startswith(an.group(1)) for k in e.get("saisons") or {}) else None
+
+
+def completer_par_code(champs, a_verifier=None):
+    """La fiche lue sur la photo -> (fiche, a_verifier) : le parallele que le code donne. Un parallele vide ou generique
+    (« Autographs ») est remplace ; une AUTRE couleur lue sur la carte n'est jamais ecrasee : le champ passe a verifier."""
+    ch, av = dict(champs or {}), list(a_verifier or [])
+    var = variante_du_code(" ".join(str(ch.get(k) or "") for k in ("marque", "set_nom")), ch.get("numero"), ch.get("annee"))
+    if not var:
+        return ch, av
+    mots = re.findall(r"[a-z]+", norm(ch.get("parallele") or ""))
+    if all(w in mots for w in var.lower().split()):
+        return ch, av
+    if all(w in _GENERIQUES for w in mots):
+        if any(w.startswith("auto") or w.startswith("signature") for w in mots):
+            ch["auto"] = True
+        ch["parallele"] = var
+        return ch, [x for x in av if x != "parallele"]
+    if "parallele" not in av:                        # la carte dit autre chose (une autre couleur, un insert) : on le montre
+        av.append("parallele")
+    return ch, av
+
+
 _CIB = {"le": 0.0, "d": {}}
 
 

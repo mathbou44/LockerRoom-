@@ -1,0 +1,40 @@
+{
+ "appris_le": "2026-11-23",
+ "ventes": 1151045,
+ "codes": [
+  {
+   "produit": "o-pee-chee platinum",
+   "prefixe": "BA",
+   "variante": "Blue Rainbow",
+   "saisons": {
+    "2022-23": [
+     43,
+     46
+    ],
+    "2023-24": [
+     107,
+     120
+    ],
+    "2024-25": [
+     228,
+     229
+    ]
+   },
+   "n": 395,
+   "part": 0.957
+  },
+  {
+   "produit": "o-pee-chee platinum",
+   "prefixe": "RA",
+   "variante": "Red Rainbow",
+   "saisons": {
+    "2025-26": [
+     185,
+     185
+    ]
+   },
+   "n": 185,
+   "part": 1.0
+  }
+ ]
+}

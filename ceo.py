@@ -224,11 +224,37 @@ SEMIS["signal_22nov"] = [
 SEMIS["radar_23nov"] = [
     ("ra_volume", "Regarder : le Radar Pro a-t-il encore assez de cartes ?", "Depuis le 23 nov, le Radar Pro demande 8 ventes en 60 jours et jamais au-dessus du prix courant. Au test : 77 % des achats gardent leur valeur (avant 63 %) et 90 % se revendent (avant 81 %), mais 104 cartes différentes au lieu de 225. Ouvre le Radar Pro quelques fois cette semaine. S'il est trop vide, dis-le à Claude : on revient à « 8 ventes » seul (67 %).", 1, None, None, "2026-11-27"),
 ]
-SEMIS_PROJET = {"radar_23nov": "lancement", "signal_22nov": "lancement", "recherche_22nov": "lancement", "legal_22nov": "licences", "tour_22nov": "lancement", "megatest_22nov": "lancement", "bulletin_22nov": "lancement", "achat_21nov": "lancement", "historique_21nov": "lancement", "tendances_21nov": "lancement", "licences_fc": "licences", "lancement_1dec": "lancement", "securite_21nov": "lancement", "matin_21nov": "lancement", "securite_reste": "lancement", "vitesse_21nov": "lancement", "consig_21nov": "lancement", "soir_21nov": "lancement"}
-PROJETS = {"licences": "Licences de données", "lancement": "Lancement", "general": "Général", "suivi": "Suivi"}
+# 23 nov 2026 au soir (Mathieu : « j'ai rien demande a apple encore », a 8 jours du lancement) : l'envoi a Apple passe en
+# premier, decoupe en gestes d'un jour ; l'ancienne tache « Soumettre l'app a Apple » (due le 22) est remplacee (CLOS).
+SEMIS["apple_23nov"] = [
+    ("ap_accord", "Apple, mardi : accord « Applications payantes », banque et taxes", "App Store Connect → Entreprise (Accords, taxes et transactions bancaires). Sans un accord « Actif », l'abonnement Pro ne peut ni se tester ni se vendre. C'est ce qu'Apple met le plus de temps à valider : en premier.", 1, None, "https://appstoreconnect.apple.com", "2026-11-24"),
+    ("ap_build", "Apple, mardi : créer l'abonnement Pro mensuel, puis lancer le build", "Abonnement com.slabcoach.app.pro.mensuel (étapes dans mobile/APP_STORE.md). Puis Codemagic → Start new build → ios-app-store : la version arrive dans TestFlight en 30 minutes environ.", 1, None, "https://codemagic.io/apps", "2026-11-24"),
+    ("ap_soumettre", "Apple, mercredi : tester dans TestFlight, 6 captures, coller la fiche, soumettre", "Sur ton iPhone : « S'abonner » puis « Restaurer mes achats ». Captures en vue Pro (jamais Admin). La fiche du 23 nov est dans mobile/APP_STORE.md (l'ancienne promettait de vrais prix : ne plus l'utiliser). Publication manuelle. Le long congé américain commence jeudi : chaque jour compte.", 1, None, "https://appstoreconnect.apple.com", "2026-11-25"),
+    ("ap_planb", "Décider : si Apple n'a pas approuvé le 1er décembre, on lance quand même sur le web ?", "Claude recommande oui : slabcoach.com marche dans Safari sur iPhone, et l'app suit dès l'approbation. Un premier envoi avec abonnement est souvent refusé une fois.", 1, None, None, "2026-11-29"),
+]
+# 23 nov 2026 (Mathieu : « planifier a quoi peut ressembler mes premiers 5-6 mois et trouver des zones ou je dois me preparer ») :
+# un preparatif par zone, avec une date ; le plan complet est sur le Whiteboard « SlabCoach : les 6 premiers mois »
+SEMIS["plan_6mois_23nov"] = [
+    ("p6_charge", "Claude : test de charge avant le 1er décembre", "Le serveur roule sur un seul processus. Simuler beaucoup de monde en même temps sur l'accueil, le Radar et les Tendances, et dire ce qu'il tient. À refaire début février, avant Series 2.", 1, None, None, "2026-11-28"),
+    ("p6_support", "Claude : dix réponses types pour le support", "Annuler, rembourser, relier eBay, carte mal reconnue, lettre SlabIQ contestée, compte supprimé. Tu réponds en une minute au cell.", 2, None, None, "2026-11-30"),
+    ("p6_budget", "Fixer ton budget de données par mois", "Dis un chiffre à Claude. Il ajoute une alerte à 70 % et le coût par utilisateur actif dans Mesures. Sans plafond, une grosse semaine peut vider les crédits et figer les cotes.", 2, None, None, "2026-12-04"),
+    ("p6_pc", "Décider : comment livrer quand ton PC est fermé", "Le 23 nov, sept livraisons ont attendu ton PC. À regarder ensemble : garder GitHub Desktop, ou une autre façon que tu approuves du cell.", 2, None, None, "2026-12-11"),
+    ("p6_createurs", "Approcher trois créateurs ou boutiques de cartes", "Un lancement sans relais reste silencieux. Claude prépare les messages ; tu envoies.", 3, None, None, "2026-12-18"),
+    ("p6_janvier", "Lire les chiffres des premiers essais de 14 jours", "Combien passent au Pro, restent en Gratuit ou partent. On ajuste le prix et ce qui est verrouillé sur ces faits, pas avant.", 2, None, None, "2027-01-18"),
+    ("p6_fevrier", "Être prêt pour la plus grosse semaine du hockey", "Series 2 est prévue le 24 février (peut changer) et la date limite des échanges est le 1er mars. Avant le 15 : checklist chargée, test de charge refait, budget de données monté pour deux semaines.", 2, None, None, "2027-02-15"),
+    ("p6_mai", "Décider : baseball, licences de données, Platine", "Pas de deuxième sport avant d'avoir lu une saison complète de hockey.", 4, None, None, "2027-05-03"),
+]
+# 23 nov 2026 au soir (Mathieu, lot de 4 cartes : « c'est quand meme long ce processus ») : on corrige ce qui est mesure
+SEMIS["lot_23nov"] = [
+    ("lv_temps", "Faire un lot de 4 cartes après le push, puis le dire à Claude", "Depuis le 23 nov, chaque carte d'un lot écrit ses temps dans le journal (lecture, titre et prix, garde). Ton lot de 19 h 28 : 1 min 50 s pour 4 cartes, la 1re en 20 s, les autres en 35 à 60 s. Claude lit le journal et corrige l'étape lente.", 2, None, None, "2026-11-25"),
+]
+SEMIS_PROJET = {"lot_23nov": "lancement", "apple_23nov": "lancement", "plan_6mois_23nov": "six_mois", "radar_23nov": "lancement", "signal_22nov": "lancement", "recherche_22nov": "lancement", "legal_22nov": "licences", "tour_22nov": "lancement", "megatest_22nov": "lancement", "bulletin_22nov": "lancement", "achat_21nov": "lancement", "historique_21nov": "lancement", "tendances_21nov": "lancement", "licences_fc": "licences", "lancement_1dec": "lancement", "securite_21nov": "lancement", "matin_21nov": "lancement", "securite_reste": "lancement", "vitesse_21nov": "lancement", "consig_21nov": "lancement", "soir_21nov": "lancement"}
+PROJETS = {"licences": "Licences de données", "lancement": "Lancement", "six_mois": "Les 6 premiers mois", "general": "Général", "suivi": "Suivi"}
 
 
-CLOS = {"clos_23nov": {"s_vendre": "Décidé par Mathieu le 23 nov : on enlève. Fait par Claude : plus de pastille « Vends », de notification « Temps de vendre » ni de liste « À vendre » tant que ce n'est pas prouvé au prix réel.",
+CLOS = {"clos_23nov_soir": {"t_sim": "Décidé par Mathieu le 23 nov : on l'enlève. Fait par Claude : la page SlabIQ ne montre plus de profit de revente.",
+                            "l1_apple": "Remplacée le 23 nov par les trois étapes « Apple, mardi » et « Apple, mercredi » : rien n'était encore soumis."},
+        "clos_23nov": {"s_vendre": "Décidé par Mathieu le 23 nov : on enlève. Fait par Claude : plus de pastille « Vends », de notification « Temps de vendre » ni de liste « À vendre » tant que ce n'est pas prouvé au prix réel.",
                        "s_direct": "Décidé par Mathieu le 23 nov : go. Fait par Claude : le signal sort en admin (Mesures → Signal par joueur) et se note seul."},
         "clos_22nov_soir": {"r_promesse": "Décidé par Mathieu le 22 nov au soir : oui, la promesse est « le bon moment » ; pas de profit de revente promis pour l'instant."},
         "clos_22nov": {"t_cadence": "Décidé par Mathieu le 22 nov : on garde « chaque semaine » (le site le dit déjà).",

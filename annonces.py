@@ -110,6 +110,11 @@ def titre_optimise(c):
         k = p.lower()
         if any(k in v for v in vus):
             continue
+        # 23 nov 2026 (Mathieu : « 2x opc ») : la marque « O-Pee-Chee » puis le set « O-Pee-Chee Platinum » : le plus long seul
+        for u in [u for u in uniques if re.search(r"(?<![a-z0-9])" + re.escape(u[0].lower()) + r"(?![a-z0-9])", k)]:
+            uniques.remove(u)
+            vus.discard(u[0].lower())
+            w = max(w, u[1])
         vus.add(k)
         uniques.append((p, w))
     while len(" ".join(p for p, _ in uniques)) > 80 and len(uniques) > 2:

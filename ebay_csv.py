@@ -178,7 +178,10 @@ def lire_ventes(contenu):
 
 def titre_annonce(c):
     """Annee, marque, set, parallele, JOUEUR, tirage, auto, gradation, #numero (80 caracteres)."""
-    p = [c.get("annee"), c.get("marque"), c.get("set_nom"), c.get("parallele"), str(c.get("joueur") or "").upper(),
+    marque, set_nom = str(c.get("marque") or "").strip(), str(c.get("set_nom") or "").strip()
+    if marque and re.search(r"(?<![a-z0-9])" + re.escape(marque.lower()) + r"(?![a-z0-9])", set_nom.lower()):
+        marque = ""                                # 23 nov 2026 : « O-Pee-Chee » + « O-Pee-Chee Platinum » : une seule fois
+    p = [c.get("annee"), marque, set_nom, c.get("parallele"), str(c.get("joueur") or "").upper(),
          f"/{c['tirage']}" if c.get("tirage") else None, "Auto" if c.get("auto") else None,
          c.get("grade") if c.get("grade") and str(c.get("grade")).lower() != "raw" else None,
          f"#{c['numero']}" if c.get("numero") else None]

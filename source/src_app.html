@@ -382,6 +382,8 @@ details.reglage summary::-webkit-details-marker{display:none}
 .pg-vd{display:inline-flex; align-items:center; gap:5px; height:28px; padding:0 10px 0 8px; border-radius:999px; border:1px solid color-mix(in srgb, var(--acc) 35%, var(--ligne)); background:var(--acc-fonce); color:var(--acc); font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer}
 .pg-vd svg{width:14px; height:14px} .pg-vd .ic-ext{width:11px; height:11px; stroke:currentColor; fill:none; stroke-width:2.2}
 .pg-n{font-size:11px; color:var(--pale); margin-left:auto}
+.pg-rt{height:28px; padding:0 6px; border:0; background:none; color:var(--doux); font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer} .pg-rt:active{color:var(--texte)}
+@media (max-width:400px){ .pg-act{gap:3px} .pg-rt{padding:0 2px} }
 .pg-p2{display:flex; flex-direction:column; align-items:stretch; width:auto !important; gap:3px; position:relative}
 .pg-p2 > span{position:absolute; left:11px; top:11px; font:700 17px var(--f-cond); color:var(--doux); pointer-events:none}
 .pg-p2 input{width:92px !important; height:44px; padding:0 10px 0 24px !important; border-radius:14px; text-align:right; font:700 20px var(--f-cond)}
@@ -10587,7 +10589,7 @@ function rendrePG(){
     <div class="pg-liste pg-l2s">${L.map(x => `<div class="pg-l2">${vig(x)}<div class="pg-c2">
         <button class="pg-t2" data-pte="${x.id}" aria-label="${esc(tt('Corriger le titre', 'Edit the title'))}">${esc(x.titre || tt('Ajoute un titre', 'Add a title'))}</button>
         <textarea class="champ pg-ta" rows="3" maxlength="80" data-pt="${x.id}" hidden>${esc(x.titre || '')}</textarea>
-        <div class="pg-act"><button class="pg-vd" data-pv="${x.id}">${ICO_VENDUS}<span>${tt('Vendus', 'Sold')}</span>${EXT}</button><small class="pg-n" hidden>${(x.titre || '').length}/80</small></div></div>
+        <div class="pg-act"><button class="pg-vd" data-pv="${x.id}">${ICO_VENDUS}<span>${tt('Vendus', 'Sold')}</span>${EXT}</button><button class="pg-rt" data-prt="${x.id}">${tt('Retirer', 'Remove')}</button><small class="pg-n" hidden>${(x.titre || '').length}/80</small></div></div>
       <label class="pg-prix pg-p2"><span>$</span><input class="champ" type="number" inputmode="decimal" step="0.01" data-pp="${x.id}" value="${esc(x.prix ?? '')}" placeholder="${x.prix_cherche === 'en_cours' ? '…' : '0'}">${x.prix_auto ? `<small class="pg-sug">${(x.prix_auto === 'annonces' ? tt('annonces −10 %', 'listings −10%') : x.prix_auto === 'similaires' ? tt('cartes proches', 'similar cards') : tt('ventes', 'sales')) + (negoPct(PG.mod) ? ` · +${negoPct(PG.mod)} % ${tt('négo', 'nego')}` : '')}</small>` : ''}</label></div>`).join('')}</div>`;
   if (e === 3) corps = `<div class="pg-q">${tt('Expédition', 'Shipping')}</div><div class="pg-sous">${PG.polMode === 'prix' ? tt('Une politique selon le prix de chaque carte.', 'A policy based on each card’s price.') : tt('La même pour toutes les cartes du lot.', 'The same for every card in the batch.')}</div>
     ${pol && pol.expedition.length ? `<div class="bloc-v pol-z">${polTete()}${polAide(false)}${sel('pg-pexp', pol.expedition, o.politique_exp, tt('Aucune : réglages de l’app', 'None: app settings'))}
@@ -10687,6 +10689,11 @@ function brancherPG(){
     ta.oninput = () => { if (n) n.textContent = ta.value.length + '/80'; };
     ta.onblur = () => { b.textContent = ta.value.trim() || tt('Ajoute un titre', 'Add a title'); ta.hidden = true; b.hidden = false; if (n) n.hidden = true; }; });
   $$('[data-pv]').forEach(b => b.onclick = () => { vibrer(); const ta = $(`[data-pt="${b.dataset.pv}"]`); ouvrirDansApp(urlVendusEbay(requeteVendus(ta ? ta.value : ''))); });
+  // 23 nov 2026 (Mathieu : « incapable de supprimer une carte à partir de ce stade ») : « Retirer » sort la carte de CE lot,
+  // sans retourner à l'étape 1 ; elle reste dans l'inventaire. La dernière carte retirée ramène au choix des cartes.
+  $$('[data-prt]').forEach(b => b.onclick = () => { vibrer(); pgLire(); const x_ = PG.cartes.find(c => String(c.id) === b.dataset.prt); if (x_) PG.choisis.delete(x_.id);
+    if (!PG.choisis.size) PG.etape = 1;
+    rendrePG(); toast(tt('Retirée de ce lot · elle reste dans ton inventaire', 'Removed from this batch · still in your inventory'), 2600); });
   const p = $('#pg-prec'); if (p) p.onclick = () => { pgLire(); PG.etape--; rendrePG(); scrollTo(0, 0); };
   const s = $('#pg-suiv'); if (s) s.onclick = () => {
     pgLire();
@@ -14650,6 +14657,10 @@ function expliquerTendancesIQ(){
 const MAJ_APP = () => [
   // 20 nov 2026 (Mathieu : « important de mettre cet onglet a jour apres chaque grosse mise a jour ») : ce qui change pour la
   // personne, en mots simples ; jamais un detail technique
+  {n: 244, le: '2026-11-23', points: [
+    ['photo', tt('Lots : trois cartes à la fois', 'Batches: three cards at a time'), tt('Un lot se lit trois cartes à la fois, au lieu de deux.', 'A batch now reads three cards at a time, instead of two.')],
+    ['ebay', tt('Mise en vente : retirer une carte', 'Listing: remove a card'), tt('À l’étape des prix, « Retirer » sort une carte du lot. Elle reste dans ton inventaire.', 'On the price step, “Remove” takes a card out of the batch. It stays in your inventory.')],
+    ['etiquette', tt('Des titres plus justes', 'More accurate titles'), tt('Le code d’une carte aide à trouver son parallèle (#BA = Blue Rainbow). La marque n’est plus écrite deux fois.', 'A card’s code helps find its parallel (#BA = Blue Rainbow). The brand is no longer written twice.')]]},
   {n: 243, le: '2026-11-23', points: [
     ['breaks', tt('Breaks : « Vaut plus scellée »', 'Breaks: “Worth more sealed”'), tt('Le badge d’une boîte ne paraît que si on a assez de vraies ventes de ses cartes. Sinon : rien.', 'A box’s badge only shows when we have enough real sales of its cards. Otherwise: nothing.')],
     ['deals', tt('Un Radar plus dégagé', 'A cleaner Radar'), tt('Tes cartes remontent : la loupe et le tri sont deux petits boutons, « Voir » est dans Mon radar.', 'Your cards move up: search and sort are two small buttons, “Show” is inside My Radar.')],
@@ -23273,7 +23284,8 @@ function pastillerReglages(){
   const multi_ = !!(S.forfait || {}).multi;
   const NOMS = [[/^(ma boutique|my store)$/i, tt('Nom et logo', 'Name and logo'), 'boutique'],
     [/^(mon profil|my profile)$/i, tt('Mon niveau et mon but', 'My level and goal'), 'cible'],
-    [/^(compte et aide|account and help)$/i, multi_ ? tt('Soutien, conditions, déconnexion', 'Support, terms, sign out') : tt('Soutien et conditions', 'Support and terms'), 'aide'],
+    // 23 nov 2026 (envoi a Apple, regle 5.1.1(v)) : la ligne dit qu'on y supprime son compte (avant : « Soutien, conditions, deconnexion »)
+    [/^(compte et aide|account and help)$/i, multi_ ? tt('Aide, déconnexion, suppression', 'Help, sign out, delete account') : tt('Soutien et conditions', 'Support and terms'), 'aide'],
     [/^(ce que je fais|what i do)$/i, tt('Mes onglets', 'My tabs'), 'reglages'],
     [/tour de l|app tour/i, tt('Le tour de l’app', 'App tour'), 'oeil'],
     [/entra[iî]nement|training/i, tt('Entraînement de l’IA', 'AI training'), 'ampoule']];
