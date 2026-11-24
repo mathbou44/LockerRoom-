@@ -954,7 +954,7 @@ def _page_connexion():
         return _PAGE_EBAY
 
 _BOUTONS_TIERS = {
-    "apple": ("<a class='btn-t apple' href='/auth/apple'><svg viewBox='0 0 17 20' aria-hidden='true'><path fill='currentColor' d='M14.1 10.6c0-2.4 2-3.6 2.1-3.7-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9-.8 0-1.9-.9-3.2-.8-1.6 0-3.1 1-4 2.4-1.7 3-.4 7.3 1.2 9.7.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8s1.9.8 3.2.8c1.3 0 2.1-1.2 2.9-2.4.9-1.3 1.3-2.6 1.3-2.7 0 0-2.4-.9-2.4-3.9zM11.8 3.4c.7-.8 1.1-1.9 1-3-.9 0-2.1.6-2.8 1.4-.6.7-1.2 1.8-1 2.9 1.1.1 2.1-.5 2.8-1.3z'/></svg>"
+    "apple": ("<a class='btn-t apple' href='/auth/apple'><span class='apl' aria-hidden='true'>&#xF8FF;</span><svg viewBox='0 0 17 20' aria-hidden='true'><path fill='currentColor' d='M14.1 10.6c0-2.4 2-3.6 2.1-3.7-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9-.8 0-1.9-.9-3.2-.8-1.6 0-3.1 1-4 2.4-1.7 3-.4 7.3 1.2 9.7.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8s1.9.8 3.2.8c1.3 0 2.1-1.2 2.9-2.4.9-1.3 1.3-2.6 1.3-2.7 0 0-2.4-.9-2.4-3.9zM11.8 3.4c.7-.8 1.1-1.9 1-3-.9 0-2.1.6-2.8 1.4-.6.7-1.2 1.8-1 2.9 1.1.1 2.1-.5 2.8-1.3z'/></svg>"
               "Continuer avec Apple</a>"),
     "google": ("<a class='btn-t google' href='/auth/google'><svg viewBox='0 0 18 18' aria-hidden='true'><path fill='#4285F4' d='M17.6 9.2c0-.6-.1-1.2-.2-1.8H9v3.4h4.8a4.1 4.1 0 0 1-1.8 2.7v2.2h2.9c1.7-1.6 2.7-3.9 2.7-6.5z'/>"
                "<path fill='#34A853' d='M9 18c2.4 0 4.5-.8 6-2.2l-2.9-2.2c-.8.5-1.8.9-3.1.9-2.4 0-4.4-1.6-5.1-3.8H.9v2.3A9 9 0 0 0 9 18z'/>"
@@ -965,7 +965,10 @@ _BOUTONS_TIERS = {
 
 # 24 oct 2026 - pages de connexion en francais ou en anglais : ?lang=, sinon le choix de l'app (temoin lr_langue),
 # sinon la langue du navigateur ; un lien en haut a gauche pour changer.
-_EN = [("Ton inventaire eBay, tes prix et tes ventes, tout seuls.", "Your eBay inventory, prices and sales, on autopilot."),
+_EN = [("Sur l’iPhone, chez eBay, entre ton courriel et ton mot de passe eBay : « Continuer avec Google » ne fonctionne pas dans une app (règle de Google).",
+        "On iPhone, at eBay, enter your eBay email and password: “Continue with Google” doesn’t work inside an app (a Google rule)."),   # 24 nov 2026 : avant tout le reste (elle contient « Continuer avec Google »)
+       ("Aucun mot de passe gardé · données jamais vendues", "No password kept · data never sold"),
+       ("Ton inventaire eBay, tes prix et tes ventes, tout seuls.", "Your eBay inventory, prices and sales, on autopilot."),
        ("Se connecter avec eBay", "Sign in with eBay"), ("Aucun mot de passe dans l’app · ton compte est créé tout seul",
        "No password in the app · your account is created automatically"), ("Confidentialité", "Privacy"),
        (">Conditions<", ">Terms<"), ("Connexion eBay interrompue : réessaie", "eBay sign-in interrupted: try again"),
@@ -977,7 +980,7 @@ _EN = [("Ton inventaire eBay, tes prix et tes ventes, tout seuls.", "Your eBay i
        ("Code de démonstration", "Demo code"), ("Continuer avec Apple", "Continue with Apple"), ("Continuer avec Google", "Continue with Google"),
        ("Recommandé", "Recommended"), ("Déjà un compte ? Connecte-toi de la même façon, ou ",
        "Already have an account? Sign in the same way, or "), ("entre un code d’appareil", "enter a device code"), (">Démo<", ">Demo<"), ("Ton inventaire et tes ventes arrivent tout seuls", "Your inventory and sales come in on their own"),
-       ('<div class="ou">ou</div>', '<div class="ou">or</div>'), ("Pas de compte eBay ? Aucun problème.", "No eBay account? No problem."),
+       ("Pas de compte eBay ? Aucun problème.", "No eBay account? No problem."),
        ("Cette connexion n’est pas encore offerte : utilise eBay", "This sign-in isn’t available yet: use eBay"),
        ("Connexion interrompue : réessaie", "Sign-in interrupted: try again"), ("‹ Retour au site", "‹ Back to site"),
        ("14 jours de Pro offerts · aucune carte de crédit", "14 days of Pro on us · no credit card"),
@@ -1400,8 +1403,9 @@ def connexion():
         if ios:                                   # app iPhone : pas de lien vers la vitrine (prix du site)
             page = page.replace('<a href="/">‹ Retour au site</a>', "")
             page = page.replace('<a class="confiance" href="/securite">', '<div class="confiance">').replace("données jamais vendues</span></a>", "données jamais vendues</span></div>")
-        if not autres:
-            page = page.replace('<div class="ou">ou</div>', "")
+            # 24 nov 2026 (revue avant l'envoi a Apple, regle 3.1.1(a)) : hors des Etats-Unis, l'app ne doit orienter vers aucun
+            # autre moyen de paiement que l'achat integre. « Paiement par Stripe ou Apple » nommait Stripe DANS l'app : retire.
+            page = page.replace("Paiement par Stripe ou Apple · aucun mot de passe gardé · données jamais vendues", "Aucun mot de passe gardé · données jamais vendues")
         # 2 nov 2026 : ouvrir le compte de l'autre appareil. 9 nov 2026 (Mathieu : 2 comptes, « un moyen beton pour que ca
         # n'arrive pas aux utilisateurs ») : partout, le rappel de se connecter pareil. 10 nov 2026 (« trop d'info ») : 1 ligne
         page = page.replace("{rappel}", "<div class='rappel-meme'>Déjà un compte ? Connecte-toi de la même façon, ou "

@@ -47,7 +47,8 @@ class MemeNombre(unittest.TestCase):
 
     def test_les_memes_rangees_que_l_app(self):
         """Le fil de l'app (vueMesDeals : ajouter(...)) et le compte du serveur lisent les memes rangees."""
-        src = open(os.path.join(RACINE, "source", "src_app.html"), encoding="utf-8").read()
+        with open(os.path.join(RACINE, "source", "src_app.html"), encoding="utf-8") as f:
+            src = f.read()
         i = src.index("const ajouter = (cle, nom, l)")
         bloc = src[i:src.index("S.mdTous = tous;", i)]
         app = set(re.findall(r"\br\.([a-z_]+)", bloc)) - {"profil"}
@@ -67,7 +68,8 @@ class MemeNombre(unittest.TestCase):
             self.assertTrue(r["tout_le"] > 0)
             d = a.acheteur_accueil()
             self.assertEqual(d["nb_deals"], 15, "l'accueil doit donner le meme nombre que le Radar")
-            self.assertEqual(d["nb_deals_le"], r["tout_le"])
+            # l'accueil recalcule parfois le Radar pour son carrousel : son heure n'est jamais plus vieille que celle du Radar envoye
+            self.assertGreaterEqual(d["nb_deals_le"], r["tout_le"])
             # un Radar plus recent (une carte de plus) : l'accueil suit tout de suite, sans attendre ses 10 minutes
             a._mes_deals0 = lambda frais=False: dict(RADAR, recherchees=RADAR["recherchees"] + [an(50)])
             r2 = a.mes_deals()
@@ -79,7 +81,8 @@ class MemeNombre(unittest.TestCase):
             a._mes_deals0, lockerroom.ebay_prix_actif, lockerroom.forfaits.est_pro = avant
 
     def test_l_app_n_a_qu_une_source(self):
-        src = open(os.path.join(RACINE, "source", "src_app.html"), encoding="utf-8").read()
+        with open(os.path.join(RACINE, "source", "src_app.html"), encoding="utf-8") as f:
+            src = f.read()
         self.assertIn("function radarNb(n, le)", src)
         self.assertIn("radarNb(nb_, r.tout_le)", src)
         self.assertNotIn("'99+'", src, "le vrai nombre s'ecrit en entier, le meme partout")

@@ -175,10 +175,20 @@ def _ecrire(chemin, d):
     os.replace(tmp, chemin)
 
 
+def _chemin_serveur():
+    """Le compteur du SERVEUR (plafond mensuel commun) : il n'appartient a aucun compte.
+    24 nov 2026 : depuis le 20 nov au soir (comptes.garde : en ligne, sans compte = refuse), le chasseur, qui tourne sans
+    compte, ne pouvait plus lire ce fichier : _chemins() demandait d'abord le dossier d'un compte. Chaque verification de
+    photo d'un deal tombait (« Deals (photo) : SansCompte », 100 fois en 8 minutes dans le journal) : la 2e verification par
+    photo ne tournait plus du tout. Le fichier du serveur se lit maintenant sans passer par le dossier d'un compte."""
+    import comptes
+    return os.path.join(comptes.DONNEES, "vision_serveur.json")
+
+
 def _chemins():
     import comptes
     d = comptes.dossier() or DOSSIER
-    return os.path.join(d, "vision_usage.json"), os.path.join(comptes.DONNEES, "vision_serveur.json")
+    return os.path.join(d, "vision_usage.json"), _chemin_serveur()
 
 
 def _limite_compte():
@@ -541,7 +551,7 @@ SYSTEME_TRI = ("Tu tries les photos d'un lot de cartes de sport. Les photos vien
 def _noter_serveur(usage):
     entree, sortie = int(usage.get("input_tokens") or 0), int(usage.get("output_tokens") or 0)
     usd = entree / 1e6 * PRIX_ENTREE + sortie / 1e6 * PRIX_SORTIE
-    serveur = _chemins()[1]
+    serveur = _chemin_serveur()
     with _verrou:
         d = _lire(serveur)
         m = d.setdefault(_mois(), {"n": 0, "usd": 0.0})
@@ -557,7 +567,7 @@ def trier(photos):
     photos = [p for p in (photos or []) if p][:MAX_TRI]
     if len(photos) < 2:
         return []
-    if (_lire(_chemins()[1]).get(_mois()) or {}).get("usd", 0) >= PLAFOND_SERVEUR_USD:
+    if (_lire(_chemin_serveur()).get(_mois()) or {}).get("usd", 0) >= PLAFOND_SERVEUR_USD:
         raise Erreur("La reconnaissance photo est en pause pour quelques heures.")
     contenu = []
     for i, p in enumerate(photos):
@@ -608,7 +618,7 @@ def verifier_paires(paires):
     paires = [(a, b) for a, b in (paires or []) if a and b][:MAX_PAIRES]
     if not paires:
         return []
-    if (_lire(_chemins()[1]).get(_mois()) or {}).get("usd", 0) >= PLAFOND_SERVEUR_USD:
+    if (_lire(_chemin_serveur()).get(_mois()) or {}).get("usd", 0) >= PLAFOND_SERVEUR_USD:
         raise Erreur("La reconnaissance photo est en pause pour quelques heures.")
     contenu = []
     for k, (a, b) in enumerate(paires):
@@ -812,7 +822,7 @@ def _verifier_etat():
         import forfaits
         raise Erreur(f"Tes {st['limite']} analyses d'état du mois sont utilisées" + ("" if forfaits.est_pro() else
                      f" : passe au Pro pour en avoir {ETAT_PRO} par mois") + ".")
-    _s = _chemins()[1]
+    _s = _chemin_serveur()
     if (_lire(_s).get(_mois()) or {}).get("usd", 0) >= PLAFOND_SERVEUR_USD:
         raise Erreur("L'analyse photo est en pause pour quelques heures : réessaie plus tard.")
 
@@ -1741,7 +1751,7 @@ def verifier_deal(photo_url, titre, attendu=None):
         lim = DEALS_PHOTO_JOUR
     if _deals_photo_compteur() >= lim:
         return None
-    _, serveur = _chemins()
+    serveur = _chemin_serveur()              # 24 nov 2026 : le chasseur n'a pas de compte
     if (_lire(serveur).get(_mois()) or {}).get("usd", 0) >= PLAFOND_SERVEUR_USD:
         return None
     url = re.sub(r"/s-l\d+\.(jpg|jpeg|png|webp)", r"/s-l1600.\1", str(photo_url))

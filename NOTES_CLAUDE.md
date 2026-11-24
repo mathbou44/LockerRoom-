@@ -481,6 +481,46 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   767 px (iPhone de 852 px) ; iPhone SE (667 px) : rangées de 40 px, 619 px, sans défiler. Scripts `vue/filtres.py`,
   `vue/filtres2.py`. Test `tests/test_filtres_ios.py`. Les règles `.fx-*` (pastilles) sont retirées. À FAIRE dans le même
   style : la feuille « Ton radar » de la vue Pro et les autres feuilles de réglages (pas encore converties).
+- **Revue avant l'envoi à Apple (24 nov, 13 h 05 ; Mathieu : « qu'est-ce qui vaudrait la peine d'être repassé avant l'envoi à
+  Apple ? je te laisse me dire où aller et on le fait »)**. Constat de départ (vérifié : `mobile/capacitor.config.json`,
+  `server.url` = le site) : l'app iPhone est une coquille qui charge le site. Donc : ce qui compte AVANT de soumettre, c'est
+  (1) ce qui est dans la coquille (textes des permissions, écran hors ligne, icône : déjà passés le 27-28 oct, relus, corrects)
+  et (2) le chemin de la personne d'Apple pendant ses 10 minutes (connexion → Démo → accueil → Radar → fiche → Profil → GO PRO →
+  supprimer le compte). Tout le reste (mise à jour automatique des données, nouvelles, SlabIQ, standardiser TOUTES les pages)
+  est du côté du serveur : ça se livre n'importe quel jour APRÈS, sans nouvel examen. Ordre retenu : 1. l'écran de connexion
+  (FAIT, ci-dessous) ; 2. les feuilles du chemin d'Apple au style iOS des Filtres (Profil, Pro, Mon compte, « Ton radar ») :
+  À FAIRE ; 3. pendant l'examen, un seul push par jour, tard le soir (ajouté au calendrier de `mobile/APP_STORE.md`) ;
+  4. après l'envoi : `g_c_auto` (26 nov), puis le reste des pages. Sécurité : le scan Aikido est corrigé (20 nov) ; il reste SES
+  réglages Cloudflare et la 2FA (`g_cloudflare`, `g_comptes`). Aucune tâche ajoutée à la liste (elle est à sa limite : 25).
+  **Écran de connexion** (`ui/connexion.html`, `server.py`) : lu les règles en vigueur le 24 nov (developer.apple.com :
+  App Review Guidelines 3.1.1(a), 4.8 ; guide « Sign in with Apple »). Trois corrections : (a) DANS l'app iPhone, la ligne
+  « Paiement par Stripe ou Apple » nommait Stripe : remplacée par « Aucun mot de passe gardé · données jamais vendues » (3.1.1(a) :
+  hors des États-Unis, aucun bouton, lien ni appel à l'action vers un autre moyen de paiement ; une simple mention n'est pas
+  traitée par la règle, mais elle n'apportait rien dans l'app) ; le site garde sa ligne ; (b) le bouton Apple suit le guide
+  d'Apple pour un bouton sur mesure : pas plus petit que les autres, visible sans défiler (iPhone SE compris : tout tient en
+  667 px), blanc sur fond sombre, logo et titre noirs, titre à 43 % de la hauteur (50 px → 21,5 px), police du système d'abord ;
+  sur un appareil Apple, le logo est le glyphe du système (U+F8FF), vérifié par un dessin d'essai, sinon le tracé reste ;
+  (c) la note « Sur l'iPhone, chez eBay… » restait en français dans la page anglaise (vieilles versions de l'app seulement) :
+  traduite. Les trois boutons sont dans UNE pile (`.conn`), même hauteur, même police ; le « ou » est retiré. NON vérifié sur un
+  vrai iPhone : le glyphe du logo Apple (mon navigateur d'essai n'a pas la police d'Apple) : Mathieu doit le regarder une fois
+  (Safari → slabcoach.com/connexion). Le guide d'Apple dit de n'utiliser que le logo téléchargé d'Apple Design Resources : si
+  Apple accroche là-dessus, y prendre le fichier SVG officiel. Test `tests/test_connexion_apple.py`. Script `vue/connexion.py`
+  (aperçu local : `LOCKERROOM_MULTI=1` + des valeurs bidon pour GOOGLE_* et APPLE_* afin d'afficher les trois boutons).
+- **La vérification par photo du chasseur ne tournait plus depuis le 20 nov au soir (trouvé le 24 nov, 13 h 30, en lisant le
+  journal pour le suivi des rangées du Radar)**. Journal Render : « Compte manquant (dossier, fil deals) : refuse » puis
+  « Deals (photo) : SansCompte('Aucun compte pour dossier') », 100 fois en 8 minutes (12 h 25 à 12 h 33), la première le
+  21 nov à 00:06:57Z, soit la mise en ligne du garde-fou du 20 nov (`comptes.garde` : en ligne, sans compte = refusé). Cause :
+  `vision.verifier_deal` lisait le compteur du SERVEUR par `_chemins()`, qui demande d'abord le dossier d'un COMPTE ; le
+  chasseur tourne sans compte. `deals.photo_refusee` attrapait l'erreur et gardait le deal : depuis 4 jours, aucun deal très
+  sous la médiane (`PHOTO_RATIO` 0,50) n'était vérifié par photo, et l'onglet Erreurs de l'admin se remplissait.
+  Corrigé : `vision._chemin_serveur()` (le fichier du serveur ne passe plus par le dossier d'un compte ; les 5 lectures du
+  compteur du serveur l'utilisent). Le garde-fou du 20 nov reste entier (`_chemins()` sans compte est toujours refusé).
+  Dépense : inchangée dans ses plafonds existants (40 photos par jour `DEALS_PHOTO_JOUR`, 50 $ par mois
+  `LR_VISION_PLAFOND_USD`) ; aucun plafond touché. Aucun autre « Compte manquant » dans le journal depuis le 21 nov.
+  Test `tests/test_photo_chasseur.py`. LEÇON : chercher « Traceback » ne suffit pas pour lire le journal : `comptes.garde`
+  écrit une pile SANS ce mot. Chercher aussi « Compte manquant » et les lignes « X : Erreur(...) ».
+  **Suivi des deux rangées** (tâche planifiée de 13 h 05) : aucune nouvelle ligne « Vitrine : … » depuis 12 h 23
+  (16 à la une · 1 211 très recherchées · 6 606 jugées) ; le serveur a redémarré à 13 h 04 (push).
 
 ## En attente
 - **Méga test 3 ans (bâti le 22 nov, priorité 1)** : `mega_test.py` (serveur) part seul après le push (boucle de l'heure + reprise

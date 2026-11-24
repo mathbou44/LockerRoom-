@@ -72,9 +72,6 @@ main{position:relative; min-height:100%; display:grid; place-items:center}
 .note + .note{margin-top:6px}
 .btn .reco{position:absolute; top:-10px; right:14px; padding:3px 9px; border-radius:999px; font:700 10.5px 'Barlow Condensed',sans-serif; letter-spacing:.08em; text-transform:uppercase; color:#F4F2EE; background:#1E2038; box-shadow:0 0 0 1px rgba(185,190,255,.35)}
 .btn{overflow:visible} .btn::after{border-radius:14px}
-.ou{display:flex; align-items:center; gap:12px; width:100%; margin-top:18px; color:#8C8996; font-size:13px}
-.ou::before,.ou::after{content:''; flex:1; height:1px; background:var(--ligne)}
-.tiers{display:grid; gap:10px; width:100%; margin-top:14px} .tiers:empty{display:none}
 .btn-t{display:flex; align-items:center; justify-content:center; gap:10px; height:56px; border-radius:14px; text-decoration:none; font:700 17px 'Barlow Condensed',sans-serif; transition:transform .15s}
 .btn-t:hover{transform:translateY(-1px)} .btn-t:focus-visible{outline:3px solid var(--ivoire); outline-offset:3px}
 .btn-t svg{width:18px; height:18px}
@@ -105,6 +102,32 @@ main{position:relative; min-height:100%; display:grid; place-items:center}
 @keyframes monte{from{opacity:0; transform:translateY(14px)} to{opacity:1; transform:none}}
 @media (max-width:700px){ .s1,.s2{opacity:.35} .s1{left:-90px; top:6%} .s2{right:-90px; top:8%} .s3,.s4{display:none} .lueur{width:620px; height:620px} }
 @media (prefers-reduced-motion:reduce){ .logo::after,.btn::after{animation:none} .boite{animation:none} }
+/* 24 nov 2026 (Mathieu : « l'interface d'accueil pour le log in, on n'a jamais revu ça ; fie-toi a la methode Apple ») : l'ecran
+   de connexion comme une app iOS. UNE pile de trois boutons egaux (50 px, meme rayon, meme police), plus de « ou ». Le bouton
+   Apple suit le guide d'Apple pour un bouton sur mesure : pas plus petit que les autres, visible sans defiler, blanc sur fond
+   sombre, logo et titre noirs, et le titre a 43 % de la hauteur du bouton (50 px -> 21,5 px) dans la police du systeme. Sur un
+   appareil Apple, le logo est celui que dessine l'appareil (le glyphe du systeme) ; ailleurs, le trace. Sur un petit iPhone
+   (667 px de haut), le logo rapetisse et tout tient sans defiler. */
+.conn{display:grid; gap:10px; width:100%; margin-top:30px}
+.conn .btn, .conn .btn-t{height:50px; margin:0; padding:0 18px; border-radius:14px; gap:8px; font:600 21.5px/1 -apple-system, BlinkMacSystemFont, 'Barlow', system-ui, sans-serif; letter-spacing:-.01em; white-space:nowrap}
+.conn .btn{font-weight:700}
+.conn .btn-t.apple{font-weight:500; background:#fff; color:#000; border:0}
+.conn .btn-t.google{font-weight:500}
+.conn .btn-t svg{width:20px; height:22px; flex:none}
+.conn .btn-t.apple svg{margin-top:-3px}
+.btn-t .apl{display:none; font:500 1.08em/1 -apple-system, BlinkMacSystemFont, sans-serif; margin-top:-.12em}
+html.pomme .btn-t.apple .apl{display:inline-block} html.pomme .btn-t.apple svg{display:none}
+.logo{width:112px; height:112px}
+.mot-sc{margin-top:18px}
+.titre{margin-top:22px}
+.note.ios-seul{margin-top:12px}
+.note.offre{margin-top:16px}
+.liens{margin-top:22px; flex-wrap:wrap; row-gap:8px}
+@media (max-width:360px){ .conn .btn, .conn .btn-t{font-size:19px; padding:0 12px} }
+@media (max-height:740px){
+  .logo{width:72px; height:72px} .mot-sc{margin-top:12px; font-size:clamp(32px,9vw,40px)} .titre{margin-top:14px; font-size:22px}
+  .douleur{margin-top:6px; font-size:14px} .conn{margin-top:18px; gap:8px} .note.offre{margin-top:12px} .confiance{margin-top:6px} .rappel-meme{margin-top:6px} .liens{margin-top:14px}
+}
 </style>
 </head>
 <body>
@@ -116,10 +139,11 @@ main{position:relative; min-height:100%; display:grid; place-items:center}
   <h1 class="titre">Collectionne plus. <em>Cherche moins.</em></h1>
   <p class="douleur" id="douleur" aria-live="off"></p>
   {erreur}
-  <a class="btn" href="/auth/ebay">Se connecter avec eBay<span class="reco">Recommandé</span></a>
+  <div class="conn">
+    <a class="btn" href="/auth/ebay">Se connecter avec eBay<span class="reco">Recommandé</span></a>
+    {autres}
+  </div>
   <div class="note ios-seul" id="note-ios" hidden>Sur l’iPhone, chez eBay, entre ton courriel et ton mot de passe eBay : « Continuer avec Google » ne fonctionne pas dans une app (règle de Google).</div>
-  <div class="ou">ou</div>
-  <div class="tiers">{autres}</div>
   <div class="note offre">14 jours de Pro offerts · aucune carte de crédit</div>
   <a class="confiance" href="/securite"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Paiement par Stripe ou Apple · aucun mot de passe gardé · données jamais vendues</span></a>
   {rappel}
@@ -139,6 +163,15 @@ main{position:relative; min-height:100%; display:grid; place-items:center}
    slabcoachauth://retour?b=... ramene un billet a usage unique, echange ici contre la session avec le secret de l'app. */
 (function () {
   var ua = navigator.userAgent, C = window.Capacitor, P = C && C.Plugins;
+  // 24 nov 2026 : sur un appareil Apple, le logo du bouton est celui que dessine l'appareil (le glyphe U+F8FF de la police du
+  // systeme). On verifie qu'il se dessine vraiment (un autre trace qu'un caractere absent) ; sinon, le trace reste.
+  try { if (/iPhone|iPad|iPod|Macintosh/.test(ua)) {
+    var cv = document.createElement("canvas"); cv.width = cv.height = 28; var cx = cv.getContext("2d");
+    cx.font = "22px -apple-system, BlinkMacSystemFont, sans-serif"; cx.textBaseline = "top";
+    var trace = function (ch) { cx.clearRect(0, 0, 28, 28); cx.fillText(ch, 2, 2); return Array.prototype.join.call(cx.getImageData(0, 0, 28, 28).data, ""); };
+    var t = trace("\uF8FF");
+    if (/[1-9]/.test(t) && t !== trace("\uFFFF") && t !== trace("\uF8FE")) document.documentElement.classList.add("pomme");
+  } } catch (e) {}
   var flux = /SlabCoachAuth/.test(ua) && P && P.Browser && P.App;
   if (/LockerRoomiOS/.test(ua) && !flux) { var n = document.getElementById("note-ios"); if (n) n.hidden = false; }
   if (!flux) return;

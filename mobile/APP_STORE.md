@@ -29,6 +29,7 @@ L'app existe déjà dans App Store Connect (Apple ID 6827726629) et Codemagic es
 | Mardi 24 | Codemagic : « Start new build » › ios-app-store | La version arrive dans TestFlight (≈ 30 min) |
 | Mercredi 25 | TestFlight sur ton iPhone : tester « S'abonner » puis « Restaurer mes achats » ; prendre les captures (voir plus bas) | Tout est vérifié sur un vrai iPhone |
 | Mercredi 25 | Coller la fiche ci-dessous, joindre les captures, la note au réviseur avec ton code démo, choisir le build, **publication manuelle**, puis « Soumettre pour examen » | En examen |
+| Tant qu'Apple examine | **Un seul push par jour, tard le soir.** Chaque push redémarre le serveur, et l'app est lente une minute ou deux : si la personne d'Apple l'ouvre à ce moment-là, elle peut la refuser (« l'app ne charge pas ») | L'examen ne tombe pas sur un redémarrage |
 | Du jeudi 26 au dimanche 29 | Répondre vite si Apple demande quelque chose | Long congé américain (Action de grâce le 26) : l'examen peut être plus lent |
 | Lundi 30 | Si c'est approuvé : ne rien publier encore | Prêt |
 | Mardi 1er décembre | « Publier cette version » | Dans l'App Store |
