@@ -521,6 +521,20 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   écrit une pile SANS ce mot. Chercher aussi « Compte manquant » et les lignes « X : Erreur(...) ».
   **Suivi des deux rangées** (tâche planifiée de 13 h 05) : aucune nouvelle ligne « Vitrine : … » depuis 12 h 23
   (16 à la une · 1 211 très recherchées · 6 606 jugées) ; le serveur a redémarré à 13 h 04 (push).
+- **Le chemin de la personne d'Apple, passé écran par écran (24 nov, 13 h 50 ; point 2 de la revue avant l'envoi)**. Script
+  `vue/chemin.py` (iPhone simulé 393 × 852, agent de l'app, faux plugin d'achat ; serveur local `LOCKERROOM_MULTI=1` +
+  `LOCKERROOM_DEMO_CODE`) : Démo → questions d'accueil (« Passer ») → accueil → Profil (`#reglages`) → Mon compte → Aide,
+  déconnexion, suppression → Supprimer → GO PRO → Radar. Constat : ces écrans étaient déjà en listes ; pas de refonte.
+  Quatre corrections : (1) **« Noter SlabCoach sur l'App Store » menait à une page qui n'existe pas** (l'app n'est pas publiée :
+  `apps.apple.com/ca/app/id6827726629` répond par une erreur) : un lien mort pendant l'examen. La rangée ne s'affiche que si
+  Apple renvoie la fiche de l'app : `avis_app.en_ligne()` (le lookup iTunes, relu aux 6 h ; `lire_lookup` rend aussi `existe`),
+  passé à l'app par `forfait().app_store`. Elle apparaîtra seule après la publication. (2) **La feuille d'achat de l'iPhone
+  tient sur un écran** (832 px → 710 px pour 767) : nom, durée, prix, « S'abonner », « Restaurer », renouvellement, Conditions et
+  Confidentialité sans défiler (styles `#feuille:has(#fp-apple) …`). (3) **« Aide, déconnexion, suppression »** en liste groupée
+  d'iOS : trois groupes (l'aide ; se déconnecter ; supprimer en rouge), bloc marqué `.r-aide`, séparateurs `.r-sep` (invisibles
+  hors de la feuille). (4) « Supprimer mon compte » : le lien des abonnements Apple en couleur d'accent, le champ respire.
+  Vu et laissé tel quel : le Profil (déjà des rangées avec chevrons), la fenêtre « Ton radar » (rangées, deux boutons), les
+  questions d'accueil. Test : `tests/test_avis_app.py` (publiée ou non, Apple muet). Les captures : `vue/chemin_apres_*.png`.
 
 ## En attente
 - **Méga test 3 ans (bâti le 22 nov, priorité 1)** : `mega_test.py` (serveur) part seul après le push (boucle de l'heure + reprise

@@ -872,7 +872,12 @@ class Api:
                         and not info.get("identites_reliees_vu") and not info.get("demo"))      # 23 nov 2026 : jamais au compte demo (l'equipe d'Apple)
         except ValueError:
             neuf = False
-        return {**forfaits.resume(), "multi": multi, "compte_neuf": neuf, "admin": self._est_admin(), "admin_reel": self._est_admin(reel=True), "vue": vue_simulee() or "admin", "comps": comps_permis(self), "admin_a_verifier": adm_c and not self._est_admin(),
+        try:                                      # 24 nov 2026 : « Noter sur l'App Store » seulement si l'app y est publiee
+            import avis_app
+            app_store = avis_app.en_ligne()
+        except Exception:
+            app_store = False
+        return {**forfaits.resume(), "app_store": app_store, "multi": multi, "compte_neuf": neuf, "admin": self._est_admin(), "admin_reel": self._est_admin(reel=True), "vue": vue_simulee() or "admin", "comps": comps_permis(self), "admin_a_verifier": adm_c and not self._est_admin(),
                 "admin_verif_active": adm_c and comptes.MULTI and self._admin_verif_possible(), "communaute": ventes_communaute.actif(),
                 # 27 oct 2026 - revue legale : logos et photos de la LNH = marques et contenu de la LNH (conditions : usage
                 # non commercial) -> coupes par defaut ; seulement avec une licence (LOCKERROOM_LOGOS_LNH=1)

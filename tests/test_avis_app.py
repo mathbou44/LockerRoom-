@@ -26,8 +26,25 @@ assert A.html_section({"avis": l[:2], "notes": {}}) == ""   # moins de 3 bons co
 lg = A.html_bandeau(d, comptes=1234)
 assert "4,6" in lg and "42 notes sur l’App Store" in lg and "1 200+" in lg and "1,200+" in lg
 assert A.html_bandeau({"notes": {"moyenne": 5.0, "nb": 2}}, comptes=10) == ""   # trop peu : on ne montre rien
-assert A.lire_lookup({"resultCount": 1, "results": [{"averageUserRating": 4.71, "userRatingCount": 9}]}) == {"moyenne": 4.71, "nb": 9}
-assert A.lire_lookup({"resultCount": 0, "results": []})["nb"] == 0
+assert A.lire_lookup({"resultCount": 1, "results": [{"averageUserRating": 4.71, "userRatingCount": 9}]}) == {"moyenne": 4.71, "nb": 9, "existe": True}
+assert A.lire_lookup({"resultCount": 0, "results": []}) == {"moyenne": None, "nb": 0, "existe": False}
+# 24 nov 2026 (revue avant l'envoi a Apple) : l'app est-elle publiee ? Tant qu'Apple ne renvoie pas sa fiche, l'app ne montre
+# pas « Noter SlabCoach sur l'App Store » (le lien mene a une page qui n'existe pas : un lien mort pendant l'examen).
+vrai_json = A._json
+try:
+    A._json = lambda url: {"resultCount": 0, "results": []} if "lookup" in url else {"feed": {}}
+    assert A.rafraichir()["en_ligne"] is False and A.en_ligne() is False          # pas publiee : Apple repond « rien »
+    A._json = lambda url: {"resultCount": 1, "results": [{"trackName": "SlabCoach"}]} if "lookup" in url else {"feed": {}}
+    assert A.rafraichir()["en_ligne"] is True and A.en_ligne() is True            # publiee, meme sans aucune note
+    def muet(url): raise OSError("Apple ne repond pas")
+    A._json = muet
+    assert A.rafraichir()["en_ligne"] is True                                     # Apple muet : on garde ce qu'on savait
+finally:
+    A._json = vrai_json
+src = open(os.path.join(ICI, "source", "src_app.html"), encoding="utf-8").read()
+i = src.index("href=\"${LIEN_NOTE}\"")
+assert "app_store" in src[i - 160:i], "la rangee « Noter sur l'App Store » depend de forfait.app_store"
+assert '"app_store": app_store' in open(os.path.join(ICI, "lockerroom.py"), encoding="utf-8").read()
 # la page : rien d'affiche ni de {{...}} oublie quand il n'y a pas encore de notes
 p = A.injecter("<head></head>{{AVIS_LIGNE}}|{{AVIS_SECTION}}", "{{AVIS_LIGNE}}")
 assert p == "<head></head>|", p

@@ -63,17 +63,20 @@ def lire_flux(d, pays):
 
 
 def lire_lookup(d):
-    r = ((d or {}).get("results") or [{}])[0] if (d or {}).get("results") else {}
-    return {"moyenne": r.get("averageUserRating"), "nb": r.get("userRatingCount") or 0}
+    res = (d or {}).get("results") or []
+    r = res[0] if res else {}
+    return {"moyenne": r.get("averageUserRating"), "nb": r.get("userRatingCount") or 0, "existe": bool(res)}
 
 
 def rafraichir():
     """Relit Apple ; garde l'ancien cache si Apple ne repond pas."""
     avis, notes = [], {"moyenne": None, "nb": 0}
     tot_n, tot_s = 0, 0.0
+    existe, repondu = False, False                  # 24 nov 2026 : l'app est-elle publiee ? (Apple renvoie sa fiche, ou rien)
     for p in PAYS:
         try:
             l = lire_lookup(_json(f"https://itunes.apple.com/lookup?id={APP_ID}&country={p}"))
+            repondu, existe = True, existe or l["existe"]
             if l["nb"] and l["moyenne"]:
                 tot_n += int(l["nb"])
                 tot_s += float(l["moyenne"]) * int(l["nb"])
@@ -90,11 +93,13 @@ def rafraichir():
         if a["id"] and a["id"] not in vus:
             vus.add(a["id"])
             uniques.append(a)
-    d = {"maj": time.time(), "notes": notes, "avis": uniques[:200]}
+    vieux = charger()
+    en_ligne_ = existe if repondu else bool(vieux.get("en_ligne"))        # Apple muet : on garde ce qu'on savait
+    d = {"maj": time.time(), "notes": notes, "avis": uniques[:200], "en_ligne": en_ligne_}
     if not uniques and not tot_n:
-        vieux = charger()
         if vieux.get("avis") or (vieux.get("notes") or {}).get("nb"):
             vieux["maj"] = time.time()      # Apple muet : on garde ce qu'on avait, on reessaie dans 6 h
+            vieux["en_ligne"] = en_ligne_
             d = vieux
     try:
         tmp = _fichier() + ".tmp"
@@ -129,6 +134,16 @@ def donnees():
                         _en_cours[0] = False
                 threading.Thread(target=_f, daemon=True).start()
     return d
+
+
+def en_ligne():
+    """24 nov 2026 (revue avant l'envoi a Apple) : True seulement quand Apple renvoie la fiche de l'app (elle est publiee).
+    Tant qu'elle ne l'est pas, le lien « Noter SlabCoach sur l'App Store » mene a une page qui n'existe pas : l'app ne le
+    montre pas (un lien mort pendant l'examen = un motif de refus). Il apparait seul, au plus 6 heures apres la publication."""
+    try:
+        return bool(donnees().get("en_ligne"))
+    except Exception:
+        return False
 
 
 def bons_avis(d):

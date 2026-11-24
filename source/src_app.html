@@ -4156,6 +4156,38 @@ body.zp-ouvert{overflow:hidden}
 .iq-c b{font:800 26px var(--f-cond); color:var(--rouge)} .iq-c.hausse b{color:var(--vert)} .iq-c small{font-size:11.5px; color:var(--doux)}
 .iq-c em{position:absolute; top:10px; right:12px; font-style:normal; color:var(--vert); font-weight:800}
 .tq-tech{margin-top:18px; border-top:1px solid var(--ligne); padding-top:10px} .tq-tech > summary{cursor:pointer; color:var(--doux); font-weight:600; font-size:14px; padding:8px 0}
+/* 24 nov 2026 (revue du chemin de la personne d'Apple, au style iOS des Filtres).
+   1) « Aide, déconnexion, suppression » : une liste groupee comme dans Reglages d'iOS : trois groupes arrondis (l'aide ; se
+      deconnecter ; supprimer en rouge), des rangees de 44 px, le filet part du texte. Seulement ce bloc (.r-aide) : les autres
+      blocs des reglages gardent leur mise en page.
+   2) « Supprimer mon compte » : le lien vers les abonnements Apple se voit (couleur d'accent), le champ respire.
+   3) La feuille d'achat de l'iPhone tient sur UN ecran : le nom, la duree, le prix, « S'abonner », « Restaurer », le
+      renouvellement, Conditions et Confidentialite se voient sans defiler (avant : 832 px pour 767 px de feuille). */
+.r-sep{display:none}
+.feuille .f-bloc.f-uni > .r-bloc.r-aide{gap:0 !important}
+.feuille .f-bloc.f-uni > .r-aide .r-sep{display:block; height:14px}
+.feuille .f-bloc.f-uni > .r-aide .r-lien{position:relative; min-height:44px; padding:0 14px 0 16px; font-size:17px; background:var(--carte); border-bottom:0; border-radius:0}
+.feuille .f-bloc.f-uni > .r-aide .r-lien + .r-lien::before{content:""; position:absolute; top:0; left:16px; right:0; height:1px; background:var(--ligne); opacity:.6}
+.feuille .f-bloc.f-uni > .r-aide .r-lien:not(.r-lien + .r-lien){border-top-left-radius:14px; border-top-right-radius:14px}
+.feuille .f-bloc.f-uni > .r-aide .r-lien:not(:has(+ .r-lien)){border-bottom-left-radius:14px; border-bottom-right-radius:14px}
+.feuille .f-bloc.f-uni > .r-aide .r-lien:active{background:color-mix(in srgb, var(--carte) 86%, #fff)}
+.feuille .f-bloc.f-uni > .r-aide .r-sortie{color:var(--acc)}
+.feuille .f-bloc.f-uni > .r-aide .r-sortie::after, .feuille .f-bloc.f-uni > .r-aide .r-lien.danger::after{content:none}
+.feuille .f-bloc.f-uni > .r-aide .r-note{margin-top:10px; padding:0 16px; font-size:13px}
+.feuille .sc-lien{color:var(--acc); font-size:16px; padding:2px 0}
+.feuille .sc-lab{display:flex; flex-direction:column; gap:8px; font-size:15px; color:var(--doux)}
+#feuille:has(#fp-apple){gap:10px}
+#feuille:has(#fp-apple) .pro-tete{flex-direction:row; justify-content:center; align-items:center; gap:12px; margin-top:-6px}
+#feuille:has(#fp-apple) .pro-tete h3{font-size:22px}
+#feuille:has(#fp-apple) .badge-f.pro.grand{height:30px; font-size:13.5px; padding:0 12px}
+#feuille:has(#fp-apple) .pro-av{gap:8px; margin:4px 2px 10px}
+#feuille:has(#fp-apple) .pro-av .pa-i{width:34px; height:34px; border-radius:10px}
+#feuille:has(#fp-apple) .pro-tab{margin-bottom:8px}
+#feuille:has(#fp-apple) .pro-tab .pt-l{min-height:31px}
+#feuille:has(#fp-apple) .pro-tab .pt-g{padding:6px 14px}
+#feuille:has(#fp-apple) .abo-apple{margin:0 0 10px}
+#feuille:has(#fp-apple) #fp-apple .btn + .btn{margin-top:8px}
+#feuille:has(#fp-apple) .petit-legal{margin-top:8px; font-size:11.5px; line-height:1.4}
 /* 12 nov 2026 : la feuille Filtres, tres simple (5 questions, des pastilles) */
 /* 24 nov 2026 (Mathieu : « revoir le layout pour que cet onglet fitte sur une page ; fie-toi tout le temps a la methode Apple,
    comment iOS classe ses affaires ») : la feuille Filtres comme Reglages d'iOS. Des groupes arrondis sur le fond de la
@@ -7163,8 +7195,8 @@ function feuilleSupprimerCompte(){
     <div class="sous" style="font-size:15px">${tt('Ton compte SlabCoach et toutes ses données (inventaire, ventes, breaks, réglages, lien avec eBay) seront effacés pour de bon. Ton compte eBay, lui, ne change pas.', 'Your SlabCoach account and all its data (inventory, sales, breaks, settings, eBay link) will be erased for good. Your eBay account itself is not affected.')}
       ${NATIF ? tt(' Un abonnement acheté avec ton identifiant Apple ne s’arrête pas tout seul : annule-le dans Réglages de l’iPhone › ton nom › Abonnements, sinon Apple continue de le facturer.', ' A subscription bought with your Apple ID does not stop on its own: cancel it in iPhone Settings › your name › Subscriptions, otherwise Apple keeps billing it.')
         : tt(' Un abonnement Pro pris sur le site sera annulé.', ' A Pro subscription bought on the website will be cancelled.')}</div>
-    ${NATIF ? `<a class="r-lien" href="https://apps.apple.com/account/subscriptions" target="_blank" rel="noopener">${tt('Gérer mes abonnements Apple', 'Manage my Apple subscriptions')}</a>` : ''}
-    <label>${tt('Écris SUPPRIMER pour confirmer', 'Type DELETE to confirm')}<input class="champ" id="sc-mot" autocomplete="off" autocapitalize="characters"></label>
+    ${NATIF ? `<a class="r-lien sc-lien" href="https://apps.apple.com/account/subscriptions" target="_blank" rel="noopener">${tt('Gérer mes abonnements Apple', 'Manage my Apple subscriptions')} ›</a>` : ''}
+    <label class="sc-lab">${tt('Écris SUPPRIMER pour confirmer', 'Type DELETE to confirm')}<input class="champ" id="sc-mot" autocomplete="off" autocapitalize="characters"></label>
     <button class="btn danger" id="sc-ok">${tt('Supprimer définitivement', 'Delete permanently')}</button>`);
   $('#sc-ok').onclick = async () => {
     const r = await essai(API.compte_supprimer(val('sc-mot')));
@@ -23290,14 +23322,16 @@ async function vueReglages(arg){
       <button class="btn ghost petit" id="g-val-maj">Mettre à jour maintenant</button></div>
       <div class="r-note" id="g-local">Données gardées sur ce PC (lockerroom.db) · aucun mot de passe enregistré.</div>
     </details>
-    <div class="r-bloc"><div class="r-titre">${tt('Compte et aide', 'Account and help')}</div>
-      <a class="r-lien" href="${LIEN_NOTE}" target="_blank" rel="noopener">${tt('Noter SlabCoach sur l’App Store', 'Rate SlabCoach on the App Store')}</a>
+    <div class="r-bloc r-aide"><div class="r-titre">${tt('Compte et aide', 'Account and help')}</div>
+      ${''/* 24 nov 2026 (revue avant l'envoi a Apple) : tant que l'app n'est pas publiee, ce lien mene a une page qui n'existe pas */}
+      ${(S.forfait || {}).app_store ? `<a class="r-lien" href="${LIEN_NOTE}" target="_blank" rel="noopener">${tt('Noter SlabCoach sur l’App Store', 'Rate SlabCoach on the App Store')}</a>` : ''}
       <a class="r-lien" href="/support" ${NATIF ? '' : 'target="_blank" rel="noopener"'}>${tt('Aide et support', 'Help and support')}</a>
       <a class="r-lien" href="/confidentialite" ${NATIF ? '' : 'target="_blank" rel="noopener"'}>${tt('Politique de confidentialité', 'Privacy policy')}</a>
       <a class="r-lien" href="/conditions" ${NATIF ? '' : 'target="_blank" rel="noopener"'}>${tt('Conditions d’utilisation', 'Terms of use')}</a>
-      ${(S.forfait || {}).multi ? `<a class="r-lien" href="/deconnexion" data-act="deconnexion">${tt('Quitter SlabCoach (me déconnecter)', 'Sign out of SlabCoach')}</a>
-        <button class="r-lien danger" id="g-supprimer">${tt('Supprimer mon compte SlabCoach', 'Delete my SlabCoach account')}</button>` : ''}
       ${r.ia_photos_ok ? `<button class="r-lien" id="g-ia-retirer">${tt('Lecture des photos par l’IA (Anthropic) : permise · retirer', 'Photo reading by AI (Anthropic): allowed · withdraw')}</button>` : ''}
+      ${''/* 24 nov 2026 : dans la feuille, trois groupes comme dans Reglages d'iOS : l'aide ; se deconnecter ; supprimer (en rouge) */}
+      ${(S.forfait || {}).multi ? `<i class="r-sep" aria-hidden="true"></i><a class="r-lien r-sortie" href="/deconnexion" data-act="deconnexion">${tt('Quitter SlabCoach (me déconnecter)', 'Sign out of SlabCoach')}</a>
+        <i class="r-sep" aria-hidden="true"></i><button class="r-lien danger" id="g-supprimer">${tt('Supprimer mon compte SlabCoach', 'Delete my SlabCoach account')}</button>` : ''}
       <div class="r-note">${tt('SlabCoach n’est affilié ni à eBay, ni à Upper Deck, ni à PSA, ni à la LNH.', 'SlabCoach is not affiliated with eBay, Upper Deck, PSA or the NHL.')}</div></div>
   </section>`;
   brancherBadge($('.profil-tete'));
