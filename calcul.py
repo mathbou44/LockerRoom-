@@ -17,7 +17,7 @@ import unicodedata
 
 # -- equipes : voir sports.py (23 oct 2026 - NHL, NFL, NBA, MLB) -------------------------
 import sports
-_RE_NATIONALE = re.compile(r"(?i)^(team\s|equipe\s|tbd(\s+tbd)?$|na(\s+na)?$)")   # nationales et cases vides
+_RE_NATIONALE = re.compile(r"(?i)^(team\s|equipe\s|all[\s-]?stars?\b|tbd(\s+tbd)?$|na(\s+na)?$)")   # nationales et cases vides
 
 EQUIPES_LNH = sports.equipes("hockey")
 
@@ -37,6 +37,42 @@ def nom_equipe(code, sport=None):
 
 def division(code, sport=None):
     return sports.division(code, sport)
+
+
+# 24 nov 2026 (Mathieu, capture de Tableau par divisions : « Other · Sam Bennett · Connor McDavid » : « c'est quoi, "other
+# division" lol ? ») : les cartes « Team Canada » (Crosby, McDavid, Bennett, Binnington) n'ont pas d'equipe de la ligue, donc
+# pas de division : elles formaient une 5e place « Autre ». Dans un break par divisions, une carte d'equipe nationale suit
+# le joueur : elle va dans la division de SON equipe de la ligue, lue sur ses autres cartes du meme produit. « Autre » ne
+# reste que pour un joueur qui n'a aucune carte d'une equipe de la ligue dans le produit.
+def equipes_ligue(cartes, sport=None):
+    """{joueur: le code de son equipe de la ligue}, d'apres ses cartes du produit (la plus frequente)."""
+    par = {}
+    for c in cartes:
+        noms = [x.strip() for x in re.split(r"\s*/\s*", str(c.get("joueur") or "")) if x.strip()]
+        codes = [code_equipe(e, sport) for e in re.split(r"\s*/\s*|\s*,\s*", str(c.get("equipe") or "")) if e.strip()]
+        if len(noms) != 1 or len(set(codes)) != 1 or division(codes[0], sport) == "Autre":
+            continue                                     # une carte a plusieurs joueurs ou equipes ne dit pas qui joue ou
+        d = par.setdefault(noms[0], {})
+        d[codes[0]] = d.get(codes[0], 0) + 1
+    return {j: max(sorted(d.items()), key=lambda kv: kv[1])[0] for j, d in par.items()}
+
+
+def equipes_carte(c, equipes, sport=None, ligue=None):
+    """Les equipes d'une carte pour un break : une equipe NATIONALE (« Team Canada ») est remplacee par l'equipe de la ligue
+    du joueur (de chaque joueur d'une carte double), quand ses autres cartes du produit la donnent ; sinon elle reste."""
+    if not ligue:
+        return list(equipes)
+    noms = [x.strip() for x in re.split(r"\s*/\s*", str(c.get("joueur") or "")) if x.strip()]
+    out = []
+    for e in equipes:
+        siens = [ligue[n] for n in noms if n in ligue] if _RE_NATIONALE.match(str(e)) and division(e, sport) == "Autre" else []
+        out.extend(siens or [e])
+    return list(dict.fromkeys(out))
+
+
+def divisions_carte(c, equipes, sport=None, ligue=None):
+    """Les divisions d'une carte : celles de ses equipes ; pour une equipe nationale, celle de l'equipe du joueur."""
+    return sorted({division(e, sport) for e in equipes_carte(c, equipes, sport, ligue)} or {"Autre"})
 
 
 # -- poids des cartes ------------------------------------------------------------------
@@ -174,14 +210,15 @@ def prix_places(checklist, boites=1, cout_boite=0.0, marge=0.25, frais_pct=0.109
     for g, n in nb_groupe.items():
         attendu[g] = (par_boite[g] * boites / n) if g in par_boite and n else 1.0
     cles = {}
+    ligue_j = equipes_ligue(checklist, sport) if mode in ("divisions", "equipes") else None
     for c in checklist:
         equipes = [code_equipe(e, sport) for e in re.split(r"\s*/\s*|\s*,\s*", str(c.get("equipe") or "")) if e.strip()] or ["?"]
         if mode == "joueurs":
             cle = [str(c.get("joueur") or "?").strip()]
         elif mode == "divisions":
-            cle = sorted({division(e, sport) for e in equipes})
+            cle = divisions_carte(c, equipes, sport, ligue_j)
         else:
-            cle = equipes
+            cle = equipes_carte(c, equipes, sport, ligue_j)      # 24 nov 2026 : la carte d'equipe nationale suit le joueur
         f = ETOILES.get(int(etoiles.get(str(c.get("joueur") or "").strip(), 3) or 3), 1.0)
         valeur = poids_carte(c, poids) * f * attendu[_groupe(c)] / len(cle)     # carte a 2 equipes : moitie chacune
         for k in cle:
@@ -285,6 +322,7 @@ def prix_catalogue(prod, boites=1, cout_boite=0.0, marge=0.25, frais_pct=0.109, 
     taux = prod["_taux"]
     cache, cles = {}, {}
     ev_total = ev_mesuree = 0.0
+    ligue_j = equipes_ligue(prod.get("cartes") or [], sport) if mode in ("divisions", "equipes") else None
     for c, s, n in catalogue.cartes_attendues(prod, boites):
         nom = s["nom"]
         v1, mesure = valeurs.valeur_carte(prod, nom, c.get("joueur"), se, taux, cache)      # 25 oct 2026 : ventes reelles
@@ -298,9 +336,9 @@ def prix_catalogue(prod, boites=1, cout_boite=0.0, marge=0.25, frais_pct=0.109, 
         if mode == "joueurs":
             k_list = [x.strip() for x in re.split(r"\s*/\s*", str(c.get("joueur") or "?")) if x.strip()] or ["?"]
         elif mode == "divisions":
-            k_list = sorted({division(e, sport) for e in equipes})
+            k_list = divisions_carte(c, equipes, sport, ligue_j)
         else:
-            k_list = list(dict.fromkeys(equipes))
+            k_list = equipes_carte(c, list(dict.fromkeys(equipes)), sport, ligue_j)     # 24 nov 2026 : Team Canada suit le joueur
         g = s.get("groupe") or "base"
         for k in k_list:
             d = cles.setdefault(k, {"cle": k, "ev": 0.0, "recrues": 0.0, "hits": 0.0, "numerotees": 0.0, "vedettes": {}, "n": 0.0})

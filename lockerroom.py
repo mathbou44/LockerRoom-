@@ -3982,12 +3982,16 @@ class Api:
                 c.close()
         return {"ok": True}
 
-    def _place_de_equipe(self, places, mode, equipe, joueur, sport=None):
+    def _place_de_equipe(self, places, mode, equipe, joueur, sport=None, ligue=None):
         code = calcul.code_equipe(equipe, sport)
+        # 24 nov 2026 : une carte d'equipe nationale (Team Canada) suit le joueur : son equipe de la ligue, et sa division
+        if ligue and joueur and str(joueur).strip() in ligue and calcul.division(code, sport) == "Autre":
+            code = ligue[str(joueur).strip()]
+        dv = calcul.division(code, sport) if mode == "divisions" else None
         for p in places:
             if mode == "joueurs" and joueur and str(p["cle"]).strip().lower() == str(joueur).strip().lower():
                 return p
-            if mode == "divisions" and p["cle"] == calcul.division(code, sport):
+            if mode == "divisions" and p["cle"] == dv:
                 return p
             if mode == "equipes" and p["cle"] == code:
                 return p
@@ -4014,7 +4018,14 @@ class Api:
             equipe = pf["gagnant"]
         else:
             equipe = equipes[0] if equipes else ""
-        place = self._place_de_equipe(places, b["mode"], equipe, d.get("joueur"), sport)
+        ligue = None
+        if b.get("mode") in ("divisions", "equipes") and d.get("joueur") and b.get("catalogue_id") and calcul.division(equipe, sport) == "Autre":
+            try:
+                import catalogue
+                ligue = calcul.equipes_ligue(catalogue.charger(b["catalogue_id"]).get("cartes") or [], sport)
+            except Exception:
+                ligue = None
+        place = self._place_de_equipe(places, b["mode"], equipe, d.get("joueur"), sport, ligue)
         with _verrou:
             c = self._db()
             try:
@@ -8025,7 +8036,38 @@ class Api:
             print("Pastilles radar : " + repr(e), flush=True)
         return r
 
+    # 24 nov 2026 (vitesse du Radar, lu dans le journal : deux « Radar (temps) : 20 s » finis a la meme seconde) : l'accueil et le
+    # Radar demandent chacun le meme calcul au meme moment, et un seul serveur faisait donc deux fois les memes recherches
+    # eBay. Un seul calcul a la fois par compte : le deuxieme attend le resultat du premier (45 s au plus) et en recoit une
+    # copie ; si le premier echoue ou tarde trop, il calcule lui-meme, comme avant.
+    _RADAR_UN = {}
+    _RADAR_UN_VERROU = threading.Lock()
+    RADAR_ATTENTE_S = 45
+
     def mes_deals(self, frais=False):
+        cle = (self.chemin_db, self._cle_tout())
+        with Api._RADAR_UN_VERROU:
+            e = Api._RADAR_UN.get(cle)
+            premier = e is None
+            if premier:
+                e = Api._RADAR_UN[cle] = (threading.Event(), [])
+        if not premier:
+            e[0].wait(self.RADAR_ATTENTE_S)
+            if e[1]:
+                import copy as _copie
+                return _copie.deepcopy(e[1][0])
+            return self._mes_deals1(frais)
+        try:
+            r = self._mes_deals1(frais)
+            if isinstance(r, dict) and r.get("ok") is not False:
+                e[1].append(r)
+            return r
+        finally:
+            with Api._RADAR_UN_VERROU:
+                Api._RADAR_UN.pop(cle, None)
+            e[0].set()
+
+    def _mes_deals1(self, frais=False):
         r = self._filtrer_provenance(self._mes_deals0(frais))
         r = self._pastilles_radar(r)
         try:

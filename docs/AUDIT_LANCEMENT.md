@@ -8,11 +8,40 @@ Les outils d'audit restent dans le dépôt et tournent avec la suite de tests.
 
 | Passe | État | Outil |
 |---|---|---|
-| 1. Les calculs d'argent | en cours (frais, taxes, surtaxe des États-Unis, mise max : faits ; bilan, breaks, gradation, change : à faire) | `tests/test_taxe_province.py`, `tests/test_surtaxe_us.py` |
-| 2. SlabIQ, Radar, chiffres du site | à faire | |
+| 1. Les calculs d'argent | **fait** (139 vérifications, 0 écart) | `outils/audit_calculs.py`, `tests/test_audit_calculs.py`, `tests/test_taxe_province.py`, `tests/test_surtaxe_us.py` |
+| 2. SlabIQ, Radar, chiffres du site | **fait** (lettres, constantes, limites, prix, chiffres des tests) | `tests/test_audit_coherence.py`, `tests/test_site_a_jour.py` |
 | 3. Chaque fonction du serveur | **fait** | `outils/audit_api.py`, `tests/test_audit_api.py` |
-| 4. L'app écran par écran | commencé (le chemin de la personne d'Apple : `vue/chemin.py` ; la watchlist sans l'outil de prix : `tests/test_miser_sans_prix.py`) | |
-| 5. Le site | à faire (l'écran de connexion est fait) | |
+| 4. L'app écran par écran | **fait** pour ce qu'un serveur local peut voir (5 balayages : Pro et Gratuit, français et anglais, 430 × 932 et 375 × 667, Admin) ; les écrans branchés sur eBay se vérifient sur le vrai téléphone | `outils/audit_ecrans.py`, `tests/test_fiche_ferme_au_retour.py`, `tests/test_miser_sans_prix.py` |
+| 5. Le site | **fait** (10 pages, 994 vérifications, 0 écart) | `outils/audit_site.py`, `tests/test_audit_coherence.py` |
+
+## Bilan de l'audit (24 nov, soir)
+
+**Corrigé pendant l'audit** (tout est dans les sections plus bas) : la surtaxe de 50 % sur les cartes des États-Unis, exacte
+au lieu d'une moyenne ; « Miser » et « Miser en lot » pour les comptes sans l'outil de prix ; le Profil qui bougeait ; les
+cotes de Splendor ; le bouton SlabIQ et la fenêtre « Ton radar » ; « À liquider » sous 20 $ et « À ajuster » au-dessus ;
+la carte d'équipe nationale dans un break par divisions (« Autre ») ; 11 textes restés en français dans l'app en anglais ;
+deux calculs du Radar lancés en même temps ; la fiche d'une annonce qui restait ouverte par-dessus un autre écran après
+« Retour ».
+
+**À décider par Mathieu** (rien ici ne bloque le lancement) :
+
+1. **Le bilan compte une vente libre au comptoir (sans carte) comme du profit à 100 %.** La règle du 17 nov dit : pas de
+   profit quand le coût est inconnu. Une vente libre n'a pas de coût : la traiter pareil (profit « — ») ou la laisser ?
+2. **Petits iPhone (375 × 667, iPhone SE).** L'Accueil dépasse de 62 points, Vendre de 80, le Profil de 208, les
+   Notifications de 42. Sur 430 × 932 (le sien) et 393 × 852, tout tient. Resserrer pour le SE, ou accepter qu'il défile ?
+3. **Page des tarifs : « 10 à 50 $ US » et « 5 à 25 $ US »** (prix d'autres apps, « novembre 2026 »). Le dépôt ne garde
+   aucune source pour ces deux fourchettes. Sa règle : le site n'annonce jamais plus que ce qui est mesuré. À confirmer
+   avec les noms des apps et la date de lecture, ou à retirer.
+4. **Le Comptoir dépasse l'écran de 63 points** (activité éteinte par défaut).
+5. **Les crochets verts de « Ton radar »** (demandés le 15 nov, retirés par le nouveau dessin façon Réglages d'iOS).
+
+**Sans risque (vu, laissé)** : deux places de break d'égale valeur sont départagées par l'ordre de la liste (un pas
+d'arrondi au plus) ; la pastille du sport déjà choisi ne fait rien (un onglet choisi) ; les erreurs brutes du Radar ne
+partent qu'au vrai admin.
+
+**Ce que l'audit ne peut pas voir d'ici** : tout ce qui demande un vrai compte eBay relié (mise en vente, enchère par
+Gixen, synchronisation des ventes), l'achat intégré d'Apple, les notifications, la caméra. Ces chemins se vérifient sur
+l'iPhone, avec TestFlight, avant de soumettre.
 
 ## Passe 3 : chaque fonction du serveur (fait le 24 nov)
 
@@ -40,7 +69,7 @@ Trouvailles :
   d'une liste…) finissent en « Erreur du serveur ». L'app n'envoie jamais ça ; rien ne fuit, rien ne tombe ; la limite de
   demandes par minute protège le journal. Laissé tel quel (100 fonctions à durcir une par une pour un gain nul à l'écran).
 
-## Passe 1 : les calculs d'argent (en cours)
+## Passe 1 : les calculs d'argent (fait)
 
 Faits vérifiés à la source le 24 nov 2026 :
 
@@ -96,7 +125,7 @@ Trouvailles :
 
 Voir NOTES_CLAUDE.md, « Vitesse du Radar » : trois correctifs et la ligne « Radar (temps) » du journal.
 
-## Passe 4 : l'app écran par écran (commencée le 24 nov)
+## Passe 4 : l'app écran par écran
 
 - **Corrigé (capture de Mathieu, vue Pro : « Ça me sort ça quand je veux bid in a batch »).** Watchlist › « Miser » et « Miser
   en lot » répondaient « Aucun encan à miser pour l'instant (fini, ou déjà au-dessus de ta mise max) » avec 5 encans en
@@ -139,8 +168,69 @@ Voir NOTES_CLAUDE.md, « Vitesse du Radar » : trois correctifs et la ligne « R
   les vues de SES annonces, rien des ventes : permises à tous les forfaits. Une annonce populaire n'est plus jamais dans
   l'une ou l'autre (avant : 95 jours et 3 suivis = « populaire » ET « à liquider »). En Admin et Platine, « À ajuster »
   compte en plus les cartes au-dessus du marché (`lockerroom.popularite`, `tests/test_popularite.py`).
-- **À faire.** Le balayage de chaque écran et feuille, vues Gratuit, Pro et Admin, FR et EN, 430 × 932, 393 × 852 et 375 × 667.
+- **Ajouté (Mathieu, vue Pro : « on pourrait ajouter un bouton see comp on eBay près du prix ? »).** Sans l'outil de prix,
+  la fiche d'une annonce offre une tuile « Vendues sur eBay » : elle ouvre les ventes de la carte chez eBay et le guide « le
+  bon prix en 10 secondes » (le dernier vendu tapé, +15 % pour la négociation, un toucher met le prix). La personne lit eBay
+  elle-même : SlabCoach ne recopie ni ne juge aucun prix. En Admin et Platine, la tuile « Ton prix » (comps) reste.
+- **Corrigé (Mathieu, Tableau par divisions : « c'est quoi, "other division" lol ? »).** Les 10 cartes « Team Canada » (Crosby,
+  McDavid, Bennett, Binnington) n'ont pas d'équipe de la ligue : elles formaient une 5e place « Autre » à 415 $. Une carte
+  d'équipe nationale (ou « All Star ») suit maintenant le joueur : l'équipe et la division de SON équipe de la ligue, lue
+  sur ses autres cartes du produit. Par équipes, sa valeur n'allait à personne ; elle compte maintenant pour l'équipe du
+  joueur. Une carte tirée pendant le break trouve sa place de la même façon (`calcul.equipes_ligue`, `equipes_carte`,
+  `divisions_carte` ; `tests/test_divisions_nationales.py`). Les divisions se disent en anglais dans l'app en anglais.
+- **Balayage automatique (24 nov, `outils/audit_ecrans.py`).** 22 écrans, vues Pro et Gratuit simulées par le serveur, en
+  anglais, 430 × 932 avec les marges de l'iPhone. Chaque bouton sans geste branché est touché ; s'il ne se passe rien, il
+  est noté. Résultat après les correctifs du jour : **0 erreur JavaScript, 0 appel refusé, 0 bouton mort**, 3 textes restés
+  en français (corrigés : les divisions, « Boîte hobby (tin) », « Connecte ton compte eBay (Profil) »). Le Comptoir dépasse
+  l'écran de 63 points (activité éteinte par défaut : à voir). **Limite :** le serveur local n'a pas de compte eBay relié
+  et peu de cartes ; beaucoup d'écrans sont vus dans leur état vide. Les bogues du jour venaient tous d'écrans PLEINS
+  (watchlist avec des encans, inventaire avec des annonces) : ils ont été trouvés par Mathieu, pas par le balayage.
+- **À faire.** Le même balayage en français et à 375 × 667, avec un compte de test rempli (watchlist, annonces, ventes) ; la
+  vue Admin ; chaque feuille ouverte (le balayage touche les boutons, il n'inspecte pas encore le contenu des feuilles).
   L'iPhone de Mathieu fait 430 × 932 points (ses captures), pas 393 × 852.
+
+- **Suite du balayage (24 nov, soir) : compte de test rempli** (8 annonces, 5 cartes en stock, 4 ventes, 4 encans suivis).
+  Cinq passages : Pro en anglais et en français, Pro à 375 × 667, Gratuit en français, Admin. **0 erreur JavaScript,
+  0 appel refusé, 0 bouton mort.**
+  - **Corrigé : la fiche d'une annonce restait ouverte par-dessus l'écran suivant.** Avec la fiche ouverte, le bouton
+    Retour du navigateur changeait l'écran derrière elle. Une feuille se fermait déjà au changement d'écran ; la fiche
+    suit maintenant la même règle (`hashchange` → `fermerAnnonce`, `tests/test_fiche_ferme_au_retour.py`). Trouvé par une
+    croix notée « morte » à l'Inventaire : c'était la fiche ouverte à la Watchlist.
+  - Le balayage est plus juste : un bouton qui disparaît après le toucher n'est pas mort ; un onglet déjà choisi n'est pas
+    suspect ; ce qui est dans un carrousel n'est pas « trop large » ; une fenêtre restée ouverte d'un écran à l'autre est
+    signalée (« RESTE »).
+
+## Passe 1, la fin : chaque calcul refait à la main (24 nov, `outils/audit_calculs.py`)
+
+Un compte de test, des chiffres choisis, et chaque résultat recalculé de façon indépendante puis comparé à celui de l'app :
+**139 vérifications, 0 écart.** Profit d'une vente eBay (13,25 % + 0,30 ou 0,40 $) ; bilan du mois par canal (profit
+seulement quand le coût est connu) ; valeur « à vendre » de l'inventaire ; revente d'un deal, budget et mise max à trois
+taux de taxe (toujours 15 $ et 30 % de profit au moins) ; taxes d'achat (Alberta, Québec, surtaxe des États-Unis) ; places
+d'un break (`repartir`, `profit_break`, `prix_places`) ; rachat au comptoir ; **gradation** (chances qui font 100 %,
+valeur espérée, coût = service en $ US × taux + port, gain, verdict ; aucune note inventée sans ventes gradées). L'outil
+tourne avec la suite (`tests/test_audit_calculs.py`).
+
+## Passe 2 : ce qui est écrit deux fois dit la même chose (24 nov, `tests/test_audit_coherence.py`)
+
+- **Lettres SlabIQ** : les seuils de l'app (`NOTES_IQ`) et du serveur (`bareme_iq.lettre`) donnent la même lettre pour
+  chaque note de 0 à 100, par demi-point.
+- **Revente d'un deal** : frais, port moyen, matériel d'envoi, profit minimum (30 % et 15 $), taxe par défaut, port inconnu
+  (15 $) : mêmes chiffres dans l'app et au serveur ; `netDeal` et la mise max donnent le même montant à 27, 80 et 400 $.
+- **Forfait gratuit** : la page des tarifs dit les limites que le serveur applique (5 recherches par jour, 15 cartes au
+  Radar dont 3 meilleures, 20 recherches par semaine, 10 annonces par mois, 1 produit de break, 3 offres par jour,
+  14 jours d'essai), en français et en anglais.
+- **Prix** : 7,99 $ par mois partout (accueil, SlabIQ, tarifs, conditions, description de la page) ; 5,99 $ avec
+  l'engagement d'un an : 24 $ d'économie et −25 %, vérifiés.
+- **Chiffres de SlabIQ** : chaque « ventes » et chaque pourcentage du site est un résultat consigné dans
+  `ui/slabiq_tests.json` ou `ui/slabiq_bulletin.json` (5 tests rejoués ; le Radar Pro devant 5 fois sur 5).
+
+## Passe 5 : le site (24 nov, `outils/audit_site.py`)
+
+10 pages, **994 vérifications, 0 écart** : chaque lien interne mène à une page du serveur ; chaque ancre a sa cible ;
+chaque texte français a son anglais et l'inverse ; aucun gabarit `{{…}}` sans remplacement ; chaque image a son texte de
+remplacement ; aucune image de tiers ; aucun superlatif sans mesure, aucune garantie de résultat, aucun profit de revente,
+aucune source non autorisée ; un seul titre principal par page ; chaque page du menu a sa route en français et en
+anglais. L'outil tourne avec la suite.
 
 ## Vitesse : premières mesures en production (24 nov, 16 h 13, deux minutes après un déploiement)
 
@@ -152,7 +242,8 @@ Voir NOTES_CLAUDE.md, « Vitesse du Radar » : trois correctifs et la ligne « R
 
 - Le calcul des scores n'est pas le problème (1,5 s pour 145 annonces).
 - **Deux calculs identiques ont tourné en même temps** (même seconde de fin) : l'accueil et le Radar le demandent chacun.
-  À faire : un seul calcul, le deuxième attend le résultat du premier.
+  **Corrigé le 24 nov** : un seul calcul par compte ; le deuxième attend le résultat du premier (45 s au plus, sinon il
+  calcule lui-même). `lockerroom.Api.mes_deals` → `_mes_deals1`, `tests/test_radar_un_calcul.py`.
 - **« Ventes (admin) » : 7 s sur 20, pour l'admin seulement.** À faire : hors du calcul (en fond, gardé d'un Radar à l'autre).
 - La recherche « petits tous » prend 5 à 6 s à elle seule.
 

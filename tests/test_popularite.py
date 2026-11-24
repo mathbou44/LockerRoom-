@@ -61,6 +61,14 @@ def test_ecran_juge_un_prix_seulement_avec_l_outil():
     assert "prix au-dessus du marché" not in f and "tt('prix à revoir', 'price to review')" in f
     assert "if (S.valEnCours || !prixOutil()) return;" in src                             # aucune recherche de valeur sans l'outil
     assert "S.invAjuster = enLigne ? (v.ajuster_ids || []) : [];" in src
+    # 24 nov 2026 (Mathieu : « on pourrait ajouter un bouton see comp on eBay pres du prix ? ») : sans l'outil de prix, la fiche
+    # d'une annonce offre les VENDUES chez eBay et le guide du bon prix ; la personne lit eBay elle-meme, rien n'est recopie
+    k = src.index("function feuilleEbay(c){")
+    fiche = src[k:src.index("\nfunction feuilleCarte(c){", k)]
+    assert '<button class="fe-k fe-vd" id="fe-vendus">' in fiche and "tt('Vendues sur eBay', 'Sold on eBay')" in fiche
+    assert fiche.index("${r_ ? `<div class=\"fe-k fe-${r_.cl}\">") < fiche.index('id="fe-vendus"')      # a la place de « Ton prix », jamais avec
+    assert "feuilleVendusEbay(c.titre || [c.annee, c.marque, c.set_nom, c.joueur, c.parallele].filter(Boolean).join(' '), (v) => { pp.value = v; maj(); });" in fiche
+    assert "LH_Sold=1&LH_Complete=1" in src[src.index("function urlVendusEbay("):src.index("function urlVendusEbay(") + 500]
 
 
 def test_sans_vues_suivis_seulement():
