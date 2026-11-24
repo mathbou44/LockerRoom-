@@ -287,6 +287,48 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   « le site ne doit jamais annoncer plus que ce qui est mesuré ». À vérifier avant : mémoire et durée sur Render (le test prend
   ~11 min ici, 1,15 M de ventes ; un seul processus). Essayé : le navigateur de l'app Claude sur son PC n'est PAS connecté à
   l'admin (renvoi à /connexion) ; ne pas lui redemander de s'y connecter, il ne veut aucun clic.
+- **Nouvel export du 23 nov, 22 h 10 (hockey 1 772 256 lignes, 1 456 171 uniques ; baseball 138 510)** : copies dans
+  `/home/claude/export_2311/` (la VM ne les garde pas : les redemander). 444 000 ventes de plus que le matin, surtout 2023-2025.
+  Test du site refait SANS écrire (`LR_TESTS_TRAV=/tmp/claude-0/ts2311soir`, 12 min) : 768 209 ventes, coupe 27 sept (avant :
+  15 oct), reventes dès le 22 oct. Radar Pro 74,0 % (674 achats, IC 70,9-77,2 ; publié : 77,7 % sur 475) : revendue 92,9 %
+  (90,1), garde sa valeur 79,7 % (86,2) = c'est « garde » qui baisse. Seul 9,6 % (11,1). Accord 0,743 (0,765), rho 0,976
+  (0,952), UNE inversion B (7,9 %) sous C (9,7 %). A / E : 7,0 fois (7,8). Simulation : +9,4 % contre -1,8 %, bat 94 % (96).
+  RIEN PUBLIÉ : demandé à Mathieu s'il publie 74 % (il trouve que la baisse « paraît mal » ; la règle dit que le site ne dit
+  jamais plus que la mesure). Les deux tests ne couvrent pas la même période : ne pas dire « baisse » sans le préciser. Cause
+  non vérifiée (hypothèse : achats de fin septembre, au sommet du début de saison).
+- **Radar Pro : « pas une carte neuve » (nuit du 23 au 24 nov ; Mathieu : « continue à travailler pour rendre SlabIQ
+  infaillible et modifie au besoin, tu as mon accord si c'est pour s'améliorer »)**. Recherche : `outils/recherche/garde/`
+  (LISEZMOI.txt). Trouvé : (1) avec la MÊME règle, le chiffre du Radar Pro va de 43 à 90 % selon la fenêtre sur un an : la
+  « baisse » 92 → 74 % n'était pas SlabIQ qui s'empire ; (2) la cause des mauvaises fenêtres = les cartes NEUVES (moins de 45
+  jours depuis leur 1re vente : 27-35 % réussis ; 60 jours et plus : 74-86 %) : les sorties (Series 2 en mars, Extended en
+  juin, Series 1 en novembre). Règle ajoutée, sans nouveau réglage : `liquidite.VIEUX_MIN = 1` = au moins une vente entre 60
+  et 90 jours avant (`liquidite.signaux` rend maintenant (liq, med, vieux) ; `passe(liq, med, total, vieux)` ; vieux inconnu =
+  refusée). Choisie sur oct. 2025 à mars 2026 (70,0 → 85,6 %), jugée sur avril à oct. 2026 (72,2 → 84,8 %). `vitrine.py` :
+  `_vieux` gardé avec l'annonce, `_completer()` remplit les annonces déjà en vitrine au balayage suivant (sinon elles
+  resteraient cachées). `outils/tests_site.py` mesure la même règle. Interrupteur : `LR_RADAR_ANCIENNETE=0` dans Render.
+  Test officiel refait et ÉCRIT sur le site (export du 23 nov au soir) : Radar Pro 84,6 % (454 achats, IC 81,1-87,7 ; avant
+  la règle : 74,0 % sur 674), se revend 96,7 %, seul 9,6 %. Bulletin refait aux 5 dates (29 sept, 13 oct, 27 oct, 10 nov,
+  24 nov) : 86, 92, 86, 88, 85 % ; seul 11, 10, 9, 10, 10 %. Le site dit : 84 % contre 10 %, 96 % contre 19 %, 6 fois (A et
+  A+ contre E : 6,8), ≈ 75 % d'accord (0,743), 765 k+ ventes, 990 joueurs. `iq_publie.pro` : « seul » au plus proche (9,6 →
+  10, comme le bulletin ; avant : 9 d'un côté, 10 de l'autre). Nouveautés : un point ajouté à l'entrée 244.
+  REJETÉ (sur-apprentissage : bon sur la période de choix, rien sur l'autre) : A et plus seulement, 50 $ et plus. À OFFRIR à
+  Mathieu, pas appliqué (tient sur les deux périodes, mais moitié moins de cartes) : + 12 ventes et prix à 7 % sous la médiane
+  = 91 % (44 cartes différentes à la dernière fenêtre contre 83). PAS RÉGLÉ : la pire fenêtre de l'année reste à 67 % (mai
+  2026 : Demidov 63 %, Bedard 58 %) ; environ une annonce sur trois ne passe plus (vérifier que le Radar Pro a assez de
+  cartes après le push : Admin, tâche `g_cell` point 3) ; B se revend moins que C (7,9 contre 9,7 %) = la MESURE (reventes de
+  la même carte : B = autos, numérotées, patchs, peu de copies ; C = cartes de base), rien changé, à reprendre jeudi.
+  Page SlabIQ, liste « Amélioré cette semaine » (écrite à la main dans `ui/site_slabiq.html`) : ligne ajoutée « Radar Pro : plus
+  de cartes tout juste sorties ». La 1re ligne de cette liste, « 214 joueurs ajustés par le marché », n'est PAS tirée du test
+  (le test du soir compte 124 corrections) : à vérifier ou à retirer jeudi.
+  Vu en passant, pas corrigé : `tests/test_vitrine.py` a échoué une fois sur « database is locked » (PRAGMA journal_mode=WAL
+  de `liquidite._cx` pendant que le fil de fond écrit) ; pas reproduit en 8 passes.
+- **État du push (24 nov, 0 h 15)** : Mathieu a poussé lui-même à 22 h 05 (commits 49786a7 et 102be57 « oudh », en ligne à
+  22 h 06, aucun Traceback au journal ; la minute lente d'après push est toujours là : `achetees_tableau` 24,6 s,
+  `admin_resume` 19,4 s). Ce push contient : règle de prix et « À vérifier », Activité, « À liquider », consignation, Misa
+  (code de carte, SP Game Used), ménage et tâche `g_c_auto`. PAS POUSSÉ (sur son PC, md5 vérifiés, 18 fichiers) : le Radar Pro
+  « pas une carte neuve », le test du site et le bulletin refaits, `iq_publie.pro`, Nouveautés, `outils/recherche/garde/`.
+  Le PC affichait « Enter your PIN » : ne jamais le taper. Vu au journal : eBay répond 429 (« Too many requests ») à la
+  synchro des vues des annonces (22 h 07 et 23 h 09) : pas regardé.
 
 ## En attente
 - **Méga test 3 ans (bâti le 22 nov, priorité 1)** : `mega_test.py` (serveur) part seul après le push (boucle de l'heure + reprise

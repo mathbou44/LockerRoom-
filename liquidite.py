@@ -29,6 +29,21 @@ A savoir : le gain de « 8 ventes » vient de la liquidite (la carte se revend p
 (le marche de la carte ne tient pas mieux : l'acheteur ne paie juste jamais trop cher). Moins d'annonces passent : si le Radar
 Pro est trop vide, revenir a RABAIS_MAX = 0.10 (« 8 ventes » seul) et refaire les tests du site. Recherche : outils/recherche/avenues/.
 
+23 nov 2026 au soir (Mathieu, devant « garde sa valeur » qui passe de 86 a 80 % sur un export plus gros : « continue a travailler
+pour rendre SlabIQ infaillible ») : une carte NEUVE perd sa valeur. Sur 8 275 achats du Radar Pro rejoues d'oct. 2025 a oct. 2026
+(27 fenetres : 21 jours d'achats, 30 jours de reventes), par anciennete de la carte (jours depuis sa 1re vente chez nous) :
+  moins de 21 jours 30-35 % ; 21 a 45 jours 27-35 % ; 45 a 60 jours 54-79 % ; 60 jours et plus 74-86 %.
+Ce sont les sorties (Series 2 en mars, Extended en juin, Series 1 en novembre) : le prix d'une recrue part haut et descend pendant
+deux mois. La regle ajoutee : la carte se vendait DEJA il y a deux mois (au moins une vente entre 60 et 90 jours avant). Aucun
+nouveau reglage : ce sont les deux durees deja en place (LIQ_JOURS, MED_JOURS). Choisie sur les achats d'oct. 2025 a mars 2026,
+jugee sur ceux d'avril a oct. 2026 :
+  choix : 70,0 % -> 85,6 % (par carte differente 72 -> 80 %) ; pire fenetre 43 % -> 72 %
+  juge  : 72,2 % -> 84,8 % (par carte differente 69 -> 79 %) ; pire fenetre 53 % -> 67 %
+Essaye en plus et REJETE (bon sur la periode de choix, rien sur l'autre) : A et plus seulement (90 % puis 84 %), 50 $ et plus.
+Pas retenu, trop peu de cartes : 12 ventes, prix a 7 % sous la mediane (+2 a 3 points chacun). Environ une annonce sur trois
+ne passe plus (derniere fenetre : 83 cartes differentes au lieu de 125). LR_RADAR_ANCIENNETE=0 dans Render enleve cette regle.
+Ce que ca ne regle PAS : meme avec elle, une fenetre sur l'annee tombe a 67 % (mai 2026). Recherche : outils/recherche/garde/.
+
 L'index se remplit en fond, par paquets, depuis les ventes deja archivees (base_ventes.sqlite, en lecture seulement) : aucun
 appel de plus a SoldComps ni a eBay. 20 nov 2026 (Render : « database is locked ») : l'index a son propre fichier
 (liquidite.sqlite, en WAL) : il n'attend jamais apres les longues lectures des archives, et les archives n'attendent pas apres lui.
@@ -46,6 +61,7 @@ NOTE_MIN = 82                       # A- et plus
 LIQ_MIN = 8                         # 23 nov 2026 : 8 ventes en 60 jours (avant : 5)
 LIQ_JOURS = 60
 RABAIS_MAX = 0.0                    # 23 nov 2026 : l'annonce ne depasse pas la mediane recente (avant : +10 %)
+VIEUX_MIN = 1                       # 23 nov 2026 au soir : au moins une vente entre LIQ_JOURS et MED_JOURS jours avant (pas une carte neuve)
 MED_JOURS = 90
 DEMI_VIE = 15.0
 RAFRAICHIR_S = 1800
@@ -63,6 +79,10 @@ def _ch():
 
 def prix_permis():
     return (os.environ.get("LR_RADAR_PRIX") or "1").strip() not in ("0", "non", "false")
+
+
+def anciennete_permise():
+    return (os.environ.get("LR_RADAR_ANCIENNETE") or "1").strip() not in ("0", "non", "false")
 
 
 def cle(titre):
@@ -174,8 +194,8 @@ def _rafraichir_si_besoin():
 
 
 def signaux(titres):
-    """{titre: (liq, med)} pour des annonces ; None si l'index n'est pas encore pret (l'annonce sera jugee au prochain
-    balayage plutot que rejetee)."""
+    """{titre: (liq, med, vieux)} pour des annonces ; None si l'index n'est pas encore pret (l'annonce sera jugee au prochain
+    balayage plutot que rejetee). vieux : les ventes de la carte entre LIQ_JOURS et MED_JOURS jours avant aujourd'hui."""
     _rafraichir_si_besoin()
     c = _cx()
     if _ch() not in _ETAT["pret"]:
@@ -183,19 +203,23 @@ def signaux(titres):
         return None
     auj = dt.date.today().isoformat()
     l60 = (dt.date.today() - dt.timedelta(days=LIQ_JOURS)).isoformat()
+    l90 = (dt.date.today() - dt.timedelta(days=MED_JOURS)).isoformat()
     out = {}
     try:
         for t in titres:
             hist = c.execute("SELECT le, prix FROM liquidite WHERE cle = ?", (cle(t),)).fetchall()
-            out[t] = (sum(1 for le, _ in hist if le >= l60), mediane_recente(hist, auj))
+            out[t] = (sum(1 for le, _ in hist if le >= l60), mediane_recente(hist, auj), sum(1 for le, _ in hist if l90 <= le < l60))
     finally:
         c.close()
     return out
 
 
-def passe(liq, med, total):
-    """La regle du Radar Pro sur les signaux d'une annonce (la note SlabIQ se juge a part)."""
+def passe(liq, med, total, vieux=None):
+    """La regle du Radar Pro sur les signaux d'une annonce (la note SlabIQ se juge a part). vieux inconnu (None) : refusee
+    (on ne montre pas une carte dont on ne sait pas si elle est neuve)."""
     if (liq or 0) < LIQ_MIN:
+        return False
+    if anciennete_permise() and (vieux or 0) < VIEUX_MIN:
         return False
     if not prix_permis():
         return True

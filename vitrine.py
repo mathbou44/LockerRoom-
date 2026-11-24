@@ -18,6 +18,8 @@ Teste sur des achats jamais vus (outils/radar_iq.py ; reussi = la carte se reven
 oct. : hasard 11,7 %, ancienne regle (A et A+) 29,8 %, cette regle 71,0 % ; nov. : hasard 11,3 %, cette regle 60,3 %.
 23 nov 2026 (Mathieu : « B : 78 % ») : 8 ventes en 60 jours et jamais au-dessus de ce que la carte se vend (liquidite.py :
 78 a 90 % aux 5 dates du bulletin, contre 59 a 76 % avant).
+23 nov 2026 au soir : et la carte se vendait deja il y a deux mois (une carte neuve perd sa valeur : liquidite.py). Les annonces
+deja en vitrine sont completees au prochain balayage (_completer), sans attendre qu'elles expirent.
 Les annonces sont gardees au plus 12 h (prix fixe) ou jusqu'a la fin de l'encan, et le Radar relit la fiche en direct quand
 on l'ouvre. Un encan dont la mise monte au-dessus de la limite de prix sort de la liste.
 """
@@ -91,6 +93,8 @@ def ajouter(annonces):
                 continue
             neuves.append({**{c: a.get(c) for c in CHAMPS if a.get(c) is not None}, "item_id": k, "total": tot, "vu": maint})
     if not neuves:
+        if _completer():
+            _ecrire_si_besoin()
         return 0
     try:
         import score_slab
@@ -121,14 +125,39 @@ def ajouter(annonces):
             if ok and sig is None:
                 continue                                 # l'index n'est pas pret : jugee au prochain balayage
             if ok:
-                x["_liq"], x["_med"] = sig.get(x["titre"]) or (0, None)
-                ok = liquidite.passe(x["_liq"], x["_med"], x["total"])
+                x["_liq"], x["_med"], x["_vieux"] = sig.get(x["titre"]) or (0, None, 0)
+                ok = liquidite.passe(x["_liq"], x["_med"], x["total"], x["_vieux"])
             P[x["item_id"]] = x if ok else None          # None : deja jugee, pas assez recherchee ou liquide (pas renotee)
             gardees += 1 if ok else 0
         _ETAT["sale"] = True
         _purger(P, maint)
+    _completer()
     _ecrire_si_besoin()
     return gardees
+
+
+def _completer(plafond=400):
+    """23 nov 2026 au soir : les annonces entrees en vitrine avant la regle « pas une carte neuve » n'ont pas leur signal
+    (_vieux) : on le lit dans l'index, par paquets, au lieu d'attendre qu'elles expirent (une annonce a prix fixe revue a
+    chaque balayage n'expire jamais). Tant qu'il manque, l'annonce n'est pas montree."""
+    with _VERROU:
+        manque = [(k, x["titre"]) for k, x in _pool().items() if x is not None and "_vieux" not in x and x.get("titre")][:plafond]
+    if not manque:
+        return 0
+    try:
+        sig = liquidite.signaux([t for _, t in manque])
+    except Exception as e:
+        print("Vitrine (completer) : " + repr(e)[:160], flush=True)
+        return 0
+    if sig is None:
+        return 0
+    with _VERROU:
+        P = _pool()
+        for k, t in manque:
+            if P.get(k) is not None and t in sig:
+                P[k]["_liq"], P[k]["_med"], P[k]["_vieux"] = sig[t]
+        _ETAT["sale"] = True
+    return len(manque)
 
 
 def _purger(P, maint):
@@ -165,11 +194,11 @@ def liste(n=80, prix_min=None, prix_max=None):
         L = [dict(x) for x in _pool().values() if x is not None and _vivante(x, maint)]
     pm = PRIX_MIN if prix_min is None else float(prix_min)
     L = [x for x in L if (x.get("total") or 0) >= pm and (not prix_max or (x.get("total") or 0) <= float(prix_max))
-         and liquidite.passe(x.get("_liq"), x.get("_med"), x.get("total"))]       # le prix d'un encan monte
+         and liquidite.passe(x.get("_liq"), x.get("_med"), x.get("total"), x.get("_vieux"))]       # le prix d'un encan monte
     L.sort(key=lambda x: (-(x.get("score") or 0), 0 if x.get("encan") else 1, _ts(x.get("fin")) or 9e12, -(x.get("total") or 0)))
     out = []
     for x in L[: max(1, int(n))]:
-        x.pop("_liq", None), x.pop("_med", None)         # jamais montres : seulement la lettre
+        x.pop("_liq", None), x.pop("_med", None), x.pop("_vieux", None)         # jamais montres : seulement la lettre
         x["joueur_n"] = x.get("joueur")
         x["a_la_une"] = True
         out.append(x)

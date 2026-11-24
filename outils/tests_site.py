@@ -204,10 +204,13 @@ def mesures(A, C0, C, R):
         j60 = (dt.date.fromisoformat(a["j"]) - dt.timedelta(days=liquidite.LIQ_JOURS)).isoformat()
         j90 = (dt.date.fromisoformat(a["j"]) - dt.timedelta(days=liquidite.MED_JOURS)).isoformat()
         i90 = bisect.bisect_left(js, j90)
-        return i - bisect.bisect_left(js, j60), liquidite.mediane_recente(list(zip(js[i90:i], ps[i90:i])), a["j"], avant=True)
+        i60 = bisect.bisect_left(js, j60)
+        # 23 nov 2026 au soir : + les ventes entre 60 et 90 jours avant (la carte n'est pas neuve), comme liquidite.signaux
+        return i - i60, liquidite.mediane_recente(list(zip(js[i90:i], ps[i90:i])), a["j"], avant=True), i60 - i90
 
     def radar(a):
-        return a["s"] >= liquidite.NOTE_MIN and liquidite.passe(*signaux(a), a["p"])
+        liq, med_, vieux = signaux(a)
+        return a["s"] >= liquidite.NOTE_MIN and liquidite.passe(liq, med_, a["p"], vieux)
     FRAIS, FIXE = 0.1325, 0.40
 
     def pro_reel(regle, pmin, runs=1000, seed=5):

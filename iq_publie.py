@@ -36,8 +36,10 @@ def accord(R):
 
 
 def pro(R):
-    """(Radar Pro, hasard) en % entiers, vers le bas."""
-    return int(R["pro"]["reussi"] * 100 + 1e-9), int(R["hasard"]["reussi"] * 100 + 1e-9)
+    """(Radar Pro, seul) en % entiers. Le Radar Pro vers le bas ; « seul » au plus proche (la moitie vers le haut), comme
+    revendue() et comme le bulletin : jamais plus d'ecart que la mesure. 23 nov 2026 au soir : « seul » mesure a 9,6 % s'ecrivait
+    « 9 % » dans le comparatif et « 10 % » dans le bulletin de la meme page ; avant, 11,1 % donnait 11 partout."""
+    return int(R["pro"]["reussi"] * 100 + 1e-9), int(R["hasard"]["reussi"] * 100 + 0.5)
 
 
 def revendue(R):

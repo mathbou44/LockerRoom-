@@ -1,0 +1,38 @@
+GARDE SA VALEUR (23 nov 2026 au soir)
+
+Mathieu, devant le test du soir sur un export plus gros (1 772 256 lignes ; Radar Pro 74,0 %, « garde sa valeur » 80 % contre
+86 % publie) : « continue a travailler pour rendre SlabIQ infaillible et modifie au besoin, tu as mon accord si c'est pour
+s'ameliorer ».
+
+Donnees : le fichier de travail du test du site (A_maintenant.json.gz dans $LR_TESTS_TRAV, ecrit par outils/tests_site.py).
+
+  banc.py        refait la mesure du Radar Pro (memes definitions que tests_site.mesures) a n'importe quelle fenetre, avec ce
+                 qu'on savait de la carte AVANT l'achat ; retrouve exactement le test officiel (674 achats, 74,0 %, 92,9 %, 79,7 %)
+  diag.py        tous les achats du Radar Pro sur 27 fenetres comparables (21 jours d'achats, 30 jours de reventes, d'oct. 2025
+                 a oct. 2026), ranges par signal ; ecrit P.json.gz
+  regles.py      les regles candidates : choisies sur oct. 2025 a mars 2026, jugees sur avril a oct. 2026
+  lettres_bc.py  pourquoi B se revend moins que C
+
+CE QU'ON A TROUVE
+1. Le chiffre du Radar Pro depend beaucoup de la periode : de 43 % a 90 % selon la fenetre, sur un an, avec la MEME regle. La
+   « baisse » de 92 a 74 % n'est pas SlabIQ qui s'empire : ce sont des fenetres differentes.
+2. La cause des mauvaises fenetres : les cartes NEUVES. Par anciennete de la carte (jours depuis sa 1re vente chez nous) :
+     moins de 21 jours 30-35 % reussis ; 21 a 45 jours 27-35 % ; 45 a 60 jours 54-79 % ; 60 jours et plus 74-86 %.
+   Ce sont les sorties (Series 2 Young Guns en mars, Extended en juin-juillet, Series 1 en novembre) : une recrue part haut et
+   descend pendant deux mois. L'app le dit deja au VENDEUR (« Vends tot », carte sortie depuis moins de 60 jours) ; le Radar
+   Pro, cote ACHETEUR, ne s'en servait pas.
+3. La regle ajoutee (liquidite.VIEUX_MIN = 1) : la carte se vendait deja il y a deux mois (au moins une vente entre 60 et 90
+   jours avant). Aucun nouveau reglage (les deux durees existaient). Elle tient sur les deux periodes :
+     choix : 70,0 -> 85,6 % (par carte differente 72 -> 80 %), pire fenetre 43 -> 72 %
+     juge  : 72,2 -> 84,8 % (par carte differente 69 -> 79 %), pire fenetre 53 -> 67 %
+     test officiel du soir (achats du 27 sept au 22 oct) : 74,0 -> 84,6 % (454 achats, 85 cartes, 20 joueurs ; avant 674, 131, 26)
+   « Age vrai de 60 jours » (1re vente) donnait presque pareil (83,1 et 83,9 %) avec plus de cartes (99 contre 83 a la derniere
+   fenetre), mais demande une table de plus et un rattrapage sur le serveur : pas pris a une semaine du lancement.
+4. REJETE (bon sur la periode de choix, rien sur l'autre : du sur-apprentissage) : A et plus seulement (89,8 % puis 84,1 %) ;
+   50 $ et plus (87,4 % puis 82,9 %). Pas retenu (tient, mais trop peu de cartes) : 12 ventes ; prix a 7 % sous la mediane.
+   Sans effet : la tendance du joueur, la tendance de la carte sur 14 jours.
+5. Ce que ca ne regle PAS : avec la regle, la pire fenetre de l'annee reste a 67 % (mai 2026). « Infaillible » n'existe pas :
+   le site doit continuer a publier le chiffre mesure, avec sa fourchette.
+6. B se revend moins que C : c'est la MESURE (les reventes de la MEME carte), pas la lettre. B = surtout des autographes, des
+   numerotees et des patchs (1 a 2 % de ces cartes se revendent : peu de copies) ; C = surtout des cartes de base (4 %). Et a
+   sorte egale, les C (14-17 $) tournent plus que les B (32-38 $). Rien change ; a reprendre au test de jeudi (g_c_jeudi).

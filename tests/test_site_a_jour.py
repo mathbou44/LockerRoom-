@@ -41,6 +41,8 @@ for f, page, texte in (("site_accueil.html", "accueil", acc), ("site_slabiq.html
     assert bloc.count('<span class="fr">') == bloc.count('<span class="en">')
 assert P["pro"] <= R["pro"]["reussi"] * 100 and P["revendue"] <= R["pro"]["revendue"] * 100          # jamais plus que la mesure
 assert P["hasard"] >= int(R["hasard"]["reussi"] * 100) and P["revendue_seul"] >= R["hasard"]["revendue"] * 100 - 0.5
+# 23 nov 2026 au soir : « seul » au plus proche partout sur la page (9,6 % : « 10 % » au comparatif ET au bulletin, pas 9 et 10)
+assert P["hasard"] == int(R["hasard"]["reussi"] * 100 + 0.5) and P["pro"] == int(R["pro"]["reussi"] * 100 + 1e-9)
 assert f'se revend {P["fois"]} fois plus souvent' in acc and not re.search(r'se revend (?!%d )[0-9]+ fois' % P["fois"], acc)
 app = open(os.path.join(ICI, "source", "src_app.html"), encoding="utf-8").read()
 assert "9/10" not in app and "5× plus" not in app and "5× more" not in app, "l'app ne doit plus ecrire de chiffre SlabIQ en dur"
