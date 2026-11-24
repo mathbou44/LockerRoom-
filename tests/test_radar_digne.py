@@ -31,4 +31,31 @@ assert not d({"score": 92, "total": 45, "sorte": "D"}, fixe_strict=True)        
 assert d({"score": 84, "total": 45})                                            # admin / Platine : A- a prix fixe : oui
 assert d({"score": 30, "total": 35}, iq_min=0, fixe_strict=True)                # il a choisi « toutes les notes » : son choix
 assert not d({"score": 84, "total": 45}, iq_min=82, fixe_strict=True)          # « A- et + » choisi : la regle du prix fixe tient
+# 24 nov 2026 (Mathieu : « il nous faut beaucoup de cartes a proposer ; chaque personne collectionne des equipes et des joueurs
+# differents, donc notre Radar doit s'adapter aux demandes de chacun et leur offrir le meilleur ») : sur nos ventes, 2 joueurs
+# sur 3 n'ont aucune carte B+ : la rangee de celui qui les suit etait vide. Elle se complete avec les meilleures de CE joueur.
+R = Api._radar_rangee_suivie
+T = lambda i, sc, tot=60, **k: {"item_id": str(i), "titre": f"2023-24 Upper Deck Premier Luke Evangelista Rookie Auto Patch /{100 + i}", "score": sc, "total": tot, **k}
+toutes = [T(i, 50 + i % 20) for i in range(40)]                                  # ses cartes : des C et des B (50 a 69), aucune B+
+toutes += [T(90, 68, sorte="D"), T(91, 69, 25), T(92, 45), T(93, 69), {"item_id": "94", "titre": "x", "total": 80}]   # base, 25 $, une D, une masquee, sans note
+l = R(toutes, [], None, {"93"})
+assert len(l) == Api.RADAR_RANGEE_MIN == 24 and all(x.get("elargi") for x in l)   # avant : rien du tout
+assert [x["score"] for x in l] == sorted((x["score"] for x in l), reverse=True) and l[0]["score"] == 69     # ses meilleures d'abord
+assert not {"90", "91", "92", "93", "94"} & {x["item_id"] for x in l}             # jamais une base, sous 30 $, une D, une masquee, sans note
+assert min(x["score"] for x in l) >= Api.RADAR_RANGEE_PLANCHER == 50
+assert "91" in {x["item_id"] for x in R(toutes, [], 5, set())}                    # ... sauf s'il a choisi 5 $ comme prix minimum
+# la regle garde 2 cartes : elles restent en premier, sans etiquette ; le reste complete jusqu'a 24
+bonnes = [T(200, 84, encan=True), T(201, 78, pour_moi=["joueur"])]
+l = R(toutes + bonnes, bonnes)
+assert [x["item_id"] for x in l[:2]] == ["200", "201"] and not l[0].get("elargi") and not l[1].get("elargi") and len(l) == 24 and l[2].get("elargi")
+# assez de cartes par la regle : rien n'est ajoute
+pleines = [T(300 + i, 85) for i in range(30)]
+l = R(toutes + pleines, pleines)
+assert len(l) == 30 and not any(x.get("elargi") for x in l)
+# une autre annonce de la MEME carte ne fait pas une 2e tuile
+meme = dict(T(200, 84), item_id="400", total=75)
+l = R([meme] + bonnes, bonnes)
+assert len(l) == 2 and {x["item_id"] for x in l} == {"200", "201"} and l[0].get("n_autres") == 1
+# rien a ajouter : la rangee reste comme la regle l'a laissee
+assert R([T(92, 45)], []) == [] and len(R(bonnes, bonnes)) == 2
 print("RADAR DIGNE OK")

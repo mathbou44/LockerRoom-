@@ -329,6 +329,49 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   « pas une carte neuve », le test du site et le bulletin refaits, `iq_publie.pro`, Nouveautés, `outils/recherche/garde/`.
   Le PC affichait « Enter your PIN » : ne jamais le taper. Vu au journal : eBay répond 429 (« Too many requests ») à la
   synchro des vues des annonces (22 h 07 et 23 h 09) : pas regardé.
+- **Radar : « beaucoup de cartes », pour chacun (24 nov, 7 h 51 ; Mathieu : « il nous faut beaucoup de cartes à proposer. Chaque
+  personne collectionne des équipes et joueurs différents, donc notre radar doit s'adapter aux demandes de chacun et leur
+  offrir le meilleur »)**. Sa réponse à l'offre « 91 % avec moitié moins de cartes » : NON, on garde plus de cartes. Mesuré
+  (`outils/recherche/garde/couverture.py`, ventes de 30 $ et plus des 90 derniers jours, 522 joueurs qui se vendent) : 427
+  joueurs n'ont AUCUNE carte à 82 et plus (règle par défaut), 343 aucune à 76 et plus (règle d'un joueur SUIVI) : celui qui
+  suit Evangelista, Dorofeyev ou Doan ne voyait rien de lui, sans le savoir. Fait :
+  (1) `lockerroom.Api._radar_rangee_suivie` : la rangée d'un joueur ou d'une équipe SUIVI n'est plus jamais vide ; sous
+  `RADAR_RANGEE_MIN` = 24 tuiles, on complète avec les meilleures de ce joueur (note la plus haute d'abord, « elargi »),
+  jamais une base ni un lot, jamais sous C (`RADAR_RANGEE_PLANCHER` = 50), jamais sous son prix minimum. Si l'utilisateur a
+  choisi lui-même sa note minimum dans les Filtres, son choix tient (rien d'ajouté). Avec le plancher C, il reste 11
+  joueurs sur 522 sans aucune carte. « À la une » (la règle prouvée) ne change pas ; l'empreinte du test non plus.
+  (2) Filtres du Radar : le choix par défaut s'appelait « B et + », mais le serveur appliquait la règle du 19 nov (A- et
+  plus ; B+ pour ses joueurs), et choisir « B et + » renvoyait cette même règle (impossible d'avoir les B). Maintenant :
+  « Recommandé » (défaut, `iq_min` nul) et « B et + » envoie 65 pour vrai.
+  (3) Journal : « Vitrine : N annonces montrables · … », une fois aux 30 min (`deals._vitrine`) : après le push, lire ce
+  chiffre pour juger si « À la une » a assez de cartes avec la règle « pas une carte neuve » (elle en enlève une sur trois
+  au banc ; « À la une » montre 60 tuiles au plus).
+  Tests : `test_radar_digne.py` (complété), `test_radar_suivi_plein.py` (le Radar complet, de la recherche à la réponse).
+  Nouveautés : « Tes joueurs, toujours là » (entrée 244). TROUVÉ, PAS CHANGÉ, à lui de décider : les barres du Radar ne
+  suivent pas les lettres (la lettre A- commence à 80, la barre « A- et plus » est à 82 ; B+ : 73 contre 76 ; A : 85 contre
+  86) : une carte notée A- à 81 ne passe pas « A- et plus ». Les aligner donnerait plus de cartes, mais `liquidite.NOTE_MIN`
+  fait partie de la règle testée (refaire le test du site et le bulletin, environ 1 h 15 de calcul).
+- **État du push (24 nov, 8 h 15)** : Mathieu a poussé à 8 h 00 (commit d8bf62f « push », en ligne à 8 h 02) : le Radar Pro
+  « pas une carte neuve » et le site refait sont EN LIGNE (vérifié : la page SlabIQ dit 84 % contre 10 %, 5 fois sur 5,
+  84 à 92 % ; aucun Traceback au journal). PAS POUSSÉ (sur son PC, md5 vérifiés, 8 fichiers) : la rangée suivie jamais vide,
+  les Filtres (« Recommandé », « B et + » pour vrai), le journal « Vitrine : N annonces montrables », `couverture.py`.
+  GitHub Desktop affichait encore « 0 changed files » et ne réagissait pas aux clics (3e fois : 23 nov 20 h 54, 21 h 11,
+  24 nov 8 h 12) : lui demander de le redémarrer, puis Commit + Push.
+- **« Presque pas de cartes dans le Radar Pro, ça fait pas de sens » (Mathieu, 24 nov, 8 h 29, 25 min après le push de la
+  règle « pas une carte neuve »)**. MA FAUTE : les annonces déjà en vitrine n'avaient pas leur signal `_vieux` ; `passe()`
+  les refuse tant qu'il manque, et `_completer` ne passait qu'au balayage suivant du chasseur, 400 à la fois : « À la une »
+  VIDE après la mise en ligne. Corrigé dans `lockerroom.py` (pas dans `vitrine.py`, qui fait partie de l'empreinte du test) :
+  `vitrine._completer(vitrine.MAX)` juste avant `vitrine.liste(90, …)`. Test : fin de `test_radar_suivi_plein.py`. Leçon :
+  une règle qui a besoin d'une donnée neuve doit remplir cette donnée AVANT d'être appliquée, pas « au prochain passage ».
+  Reste vrai après la correction : la règle enlève environ une annonce sur trois de « À la une » ; lire au journal
+  « Vitrine : N annonces montrables » après le push et le lui dire ; s'il n'y en a pas assez, c'est à lui de choisir entre
+  84,6 % (règle en place) et 74 % avec toutes les cartes (`LR_RADAR_ANCIENNETE=0` dans Render, puis refaire le test du site).
+- **« Le 505 est coupé » (24 nov, 8 h 18, fiche d'une annonce du Radar, vue Pro)** : la tuile « Mise actuelle » a 3 lignes
+  (titre, chiffre, « 7 mises · + 13 $ port ») dans un tiers de la hauteur de la photo ; le chiffre (`overflow:hidden` dans une
+  colonne flex) était le seul à pouvoir rétrécir et se faisait couper le bas. Corrigé pour les DEUX fiches : publique
+  (`.fen.fa.fa-pub.fb .fb-t` : rien ne rétrécit, tuile plus serrée, petite ligne 11,5 à 14 px) et admin / Platine au téléphone
+  (même défaut, pas signalé : 4 à 15 px coupés ; les 3 chiffres prennent `calc(19.9vw - 51px)` quand une tuile a sa 3e ligne).
+  Mesuré avec `/home/claude/vue/fiche505.py` sur 11 tailles (320 à 1440 px) : tout tient, 2 px de marge au moins.
 
 ## En attente
 - **Méga test 3 ans (bâti le 22 nov, priorité 1)** : `mega_test.py` (serveur) part seul après le push (boucle de l'heure + reprise

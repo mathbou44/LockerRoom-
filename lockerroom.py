@@ -1889,6 +1889,16 @@ class Api:
     # juge (licence eBay §9.5 : pas de prix modelise) : seulement la note de la carte. Ses prix cibles (alertes) restent.
     RADAR_FIXE_MIN = int(os.environ.get("LR_RADAR_FIXE_MIN") or 86)          # A (19 nov 2026 : A- -> A, 62 % -> 70 % au test)
     RADAR_FIXE_MIN_SUIVI = 82                                                # A-
+    # 24 nov 2026 (Mathieu : « il nous faut beaucoup de cartes a proposer ; chaque personne collectionne des equipes et des
+    # joueurs differents, donc notre Radar doit s'adapter aux demandes de chacun et leur offrir le meilleur ») : mesure sur nos
+    # ventes des 90 derniers jours (30 $ et plus, ni base ni lot) : sur 522 joueurs qui se vendent, 343 (2 sur 3) n'ont AUCUNE
+    # carte B+ (76) ou mieux : celui qui suit Evangelista, Dorofeyev ou Doan ne voyait rien, sans le savoir. La rangee d'un
+    # joueur ou d'une equipe qu'IL a choisi de suivre n'est plus jamais vide : si la regle laisse moins de RADAR_RANGEE_MIN
+    # cartes, on complete avec les meilleures de CE joueur (la plus haute note d'abord). Jamais une base, jamais un lot,
+    # jamais une D ni une E, jamais sous son prix minimum. La lettre affichee reste la vraie. S'il a choisi lui-meme sa note
+    # minimum dans les Filtres, son choix tient tel quel. « A la une » (la regle prouvee, vitrine.py) ne change pas.
+    RADAR_RANGEE_MIN = 24
+    RADAR_RANGEE_PLANCHER = 50                                               # C et plus
 
     @staticmethod
     def _radar_fixe_ok(x):
@@ -1936,6 +1946,37 @@ class Api:
         return True
 
     _SORTES_NETTES = {"yg", "yg10", "yg_variante", "yg_renewed", "cup_rpa", "premier_rpa", "fw_auto", "ice_premieres", "opc_plat_auto", "bd_gems"}
+
+    @staticmethod
+    def _radar_meilleures(toutes, gardees, prix_min=None, masquees=()):
+        """Les annonces d'une rangee suivie que la regle a ecartees, la meilleure note d'abord : de quoi completer la rangee
+        (RADAR_RANGEE_MIN). Jamais une base ni un lot (sorte D), jamais sous C, jamais sous le prix minimum, jamais une masquee."""
+        deja = {str(x.get("item_id")) for x in gardees or [] if isinstance(x, dict)}
+        lim = Api.RADAR_PRIX_MIN if prix_min is None else float(prix_min)
+        reste = []
+        for x in toutes or []:
+            if not isinstance(x, dict) or str(x.get("item_id")) in deja or str(x.get("item_id")) in masquees:
+                continue
+            sc, tot = x.get("score"), _float(x.get("total"))
+            if sc is None or sc < Api.RADAR_RANGEE_PLANCHER or x.get("sorte") == "D" or (tot is not None and tot < lim):
+                continue
+            reste.append(x)
+        reste.sort(key=lambda x: -float(x.get("score") or 0))
+        return reste
+
+    @staticmethod
+    def _radar_rangee_suivie(toutes, gardees, prix_min=None, masquees=()):
+        """Les tuiles d'une rangee suivie (une par carte) : celles de la regle d'abord, puis, s'il en manque, les meilleures de
+        ce joueur ou de cette equipe (« elargi »), jusqu'a RADAR_RANGEE_MIN."""
+        tuiles = Api._grouper_memes(gardees)
+        if len(tuiles) >= Api.RADAR_RANGEE_MIN:
+            return tuiles
+        reste = Api._radar_meilleures(toutes, gardees, prix_min, masquees)
+        if not reste:
+            return tuiles
+        for x in reste:
+            x["elargi"] = True
+        return Api._grouper_memes(list(gardees or []) + reste)[:Api.RADAR_RANGEE_MIN]
 
     @staticmethod
     def _grouper_memes(l, garder=10):
@@ -8470,6 +8511,15 @@ class Api:
             # les cartes A et A+ que le chasseur a vues dans son balayage (gros vendeurs, hits, categorie) ; aucune valeur
             try:
                 import vitrine
+                # 24 nov 2026 (Mathieu, 25 minutes apres le push de la regle « pas une carte neuve » : « presque pas de cartes
+                # dans le Radar Pro, ca fait pas de sens ») : les annonces deja en vitrine n'avaient pas encore leur signal
+                # (_vieux) et restaient cachees jusqu'au balayage suivant du chasseur, 400 a la fois : « A la une » etait VIDE
+                # apres chaque mise en ligne. On les complete ici, toutes, avant de lire la liste (des lectures dans l'index :
+                # rapide, et il n'y a plus rien a faire les fois suivantes).
+                try:
+                    vitrine._completer(vitrine.MAX)
+                except Exception as e:
+                    print("Radar (vitrine, completer) : " + repr(e)[:120], flush=True)
                 une = vitrine.liste(90, prof.get("prix_min"), prof.get("prix_max"))
                 for x in une:
                     try:
@@ -8479,9 +8529,14 @@ class Api:
                 a_la_une = Api._grouper_memes(garde(une))[:60]
             except Exception as e:
                 print("Radar (vitrine) : " + repr(e)[:120], flush=True)
+            _suivies = {id(g) for g in pour_toi if isinstance(g, dict)}
             for g in pour_toi + decouvrir + chauds_creux + chasses + types + list(groupes or []):
                 if isinstance(g, dict) and "annonces" in g:
-                    g["annonces"] = Api._grouper_memes(garde(g.get("annonces")))[:g.pop("_cap", None) or None]
+                    cap_ = g.pop("_cap", None) or None
+                    if id(g) in _suivies and Api.RADAR_FILTRE and _iq is None:       # 24 nov 2026 : SES joueurs, SES equipes : jamais vide
+                        g["annonces"] = Api._radar_rangee_suivie(g.get("annonces"), garde(g.get("annonces")), _pm, _msq)[:cap_]
+                    else:
+                        g["annonces"] = Api._grouper_memes(garde(g.get("annonces")))[:cap_]
             for v in vend:
                 if isinstance(v, dict) and "annonces" in v:
                     v["annonces"] = garde(v.get("annonces"))

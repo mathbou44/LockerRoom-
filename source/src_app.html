@@ -5178,6 +5178,15 @@ html.tel-large .ecran.acc.acc-ft-mode > .acc-news2{order:9}
 /* 18 nov 2026 (« reduire un peu la hauteur pour enlever le scrolling », la fiche publique d'une annonce) */
 .fen.fen.fa.fa-pub.fb .fb-top{height:min(calc(var(--fb-ph) * 1.22 + 40px), 44vh) !important; min-height:200px}
 .fen.fen.fa.fa-pub.fb{gap:8px !important} .fen.fa.fa-pub.fb .fb-t b{font-size:clamp(26px, 8vw, 40px)}
+/* 24 nov 2026 (Mathieu, fiche d'une Bedard dans le Radar : « le 505 est coupe ») : avec une 3e ligne (« 7 mises · + 13 $ port »),
+   la tuile etait trop pleine pour sa hauteur (un tiers de la photo) et le gros chiffre, seul element qui pouvait retrecir, se
+   faisait couper le bas. Le chiffre ne retrecit plus jamais ; la tuile est un peu plus serree pour que les 3 lignes tiennent. */
+.fen.fa.fa-pub.fb .fb-t{padding:5px 8px; gap:1px}
+.fen.fa.fa-pub.fb .fb-t b{flex:none}
+.fen.fa.fa-pub.fb .fb-t .fb-k{flex:none}
+.fen.fa.fa-pub.fb .fb-t em{flex:none; font-size:clamp(11.5px, 3.3vw, 14px); line-height:1.2; max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+@media (max-width:350px){ .fen.fa.fa-pub.fb .fb-t{padding:3px 6px; gap:0} }
+@media (max-height:740px){ .fen.fa.fa-pub.fb .fb-t b{font-size:clamp(26px, 8vw, 30px)} }
 /* 18 nov 2026 (« le X est mal place ») : les fenetres en 2 colonnes laissent une rangee au X, en haut a droite */
 @media (min-width:1000px){ #feuille > .fvd, #feuille > .fcx, #feuille > .achx{padding-top:34px} #feuille > .fc > h3{padding-right:52px} }
 .fe-mk{display:grid; grid-template-columns:repeat(auto-fit, minmax(0,1fr)); gap:10px} .fe-mk:empty{display:none}
@@ -5798,6 +5807,11 @@ html.tel-large .fen.fa .fen-img{max-height:calc(46vh / 1.12) !important}
   .fen.fa.fb-adm .fb-k{font-size:12.5px; letter-spacing:.12em}
   .fen.fa.fb-adm .fb-t b{font-size:clamp(24px, 8.4vw, 34px)}
   .fen.fa.fb-adm .fb-t em{font-size:11.5px}
+  /* 24 nov 2026 (« le 505 est coupe ») : la meme tuile, ici plus basse (un tiers de la photo : 18,9vw - 7,5px). Rien ne retrecit
+     plus ; quand une tuile a sa 3e ligne (mises, port), les 3 chiffres prennent la taille qui laisse tenir les 3 lignes */
+  .fen.fa.fb-adm .fb-t > *{flex:none}
+  .fen.fa.fb-adm .fb-t em{line-height:1.2; max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .fen.fa.fb-adm .fb-col:has(em) .fb-t b{font-size:clamp(20px, calc(19.9vw - 51px), 34px); line-height:.95; padding-top:0}
   .fen.fa.fb-adm .fb-nom b{font-size:22px}
   .fen.fa.fb-adm .fb-nom span{font-size:12.5px; -webkit-line-clamp:1}
   .fen.fa.fb-adm .fa-verdict{padding:8px 12px; gap:10px; align-items:center}
@@ -5810,6 +5824,7 @@ html.tel-large .fen.fa .fen-img{max-height:calc(46vh / 1.12) !important}
   .fen.fa.fb-adm .fa-car .fv{flex:0 0 20%; min-width:60px} .fen.fa.fb-adm .fa-car .fv b{font-size:15px}
   .fen.fa.fb-adm .fa-btns .btn{min-height:48px} .fen.fa.fb-adm .fa-btns .sd-et{width:48px; height:48px}
 }
+@media (max-width:350px){ .fen.fa.fb-adm .fb-t{padding:2px 6px} .fen.fa.fb-adm .fb-k{font-size:11px} .fen.fa.fb-adm .fb-t em{font-size:10px} }
 
 .fen.fa.fa-pub .fa-photo{flex:1 1 0 !important; height:auto !important; min-height:130px}
 .fen.fa.fa-pub .fen-img{max-height:none !important}
@@ -11037,9 +11052,13 @@ async function feuilleFiltresDeals(){
   const PV0 = PROV(); const PV = new Set(PV0);
   let tri = F.tri || 'rabais', ty = F.type || '';
   // 16 nov 2026 (Mathieu : « me donner la chance de mettre des cartes de tous les Slab Score si je veux ») : la note minimum ;
-  // par defaut B et plus (la regle du Radar) ; « Toutes » montre aussi les C, D, E et les bases
-  const IQS = [[0, tt('Toutes', 'All')], [50, tt('C et +', 'C & up')], [65, tt('B et +', 'B & up')], [80, tt('A- et +', 'A- & up')], [92, 'A+']];
-  let iqm = p.iq_min != null ? +p.iq_min : (F.iq_min != null ? +F.iq_min : 65);
+  // « Toutes » montre aussi les C, D, E et les bases.
+  // 24 nov 2026 (Mathieu : « il nous faut beaucoup de cartes a proposer ») : le choix par defaut s'appelait « B et + », mais
+  // depuis le 19 nov la regle par defaut du serveur est plus stricte (A- et plus ; B+ pour ses joueurs), et choisir « B et + »
+  // renvoyait cette meme regle : impossible d'avoir vraiment les B. Le defaut dit ce qu'il est (« Recommandé » : la regle du
+  // Radar, et les meilleures cartes de SES joueurs et equipes) ; « B et + » envoie maintenant 65 pour vrai.
+  const IQS = [[-1, tt('Recommandé', 'Recommended')], [0, tt('Toutes', 'All')], [50, tt('C et +', 'C & up')], [65, tt('B et +', 'B & up')], [80, tt('A- et +', 'A- & up')], [92, 'A+']];
+  let iqm = p.iq_min != null ? +p.iq_min : (F.iq_min != null ? +F.iq_min : -1);
   ouvrirFeuille(`<h3>${tt('Filtres', 'Filters')}</h3>
     <div class="fx-s"><div class="fx-t"><span>${tt('Ordre', 'Order')}</span></div>
       <div class="fx-pl" id="fd-tri">${TRIS_DEALS().map(([k, t]) => `<button class="fx-p ${k === tri ? 'on' : ''}" data-tri="${k}">${t}</button>`).join('')}</div>
@@ -11107,9 +11126,9 @@ async function feuilleFiltresDeals(){
          joueurs: $('#fd-seul').checked ? noms : [], avec_mise: false, vendeurs: false});
     F.pays_exclus = [];                                                // remplace par « Expediees de » (le reglage du compte)
     F.tri = raz ? 'rabais' : tri; F.type = raz ? '' : ty; if (F.type === 'encan' && F.tri === 'rabais') F.tri = 'fin';
-    F.iq_min = raz ? null : iqm;
+    F.iq_min = raz || iqm < 0 ? null : iqm;
     const d = raz ? {collectionne: [], favoris: [], prix_min: null, prix_max: null, iq_min: null}
-      : {collectionne: [...ep], favoris: noms, prix_min: null, prix_max: bud ? Math.round(versCAD(bud) * 100) / 100 : null, iq_min: iqm === 65 ? null : iqm};
+      : {collectionne: [...ep], favoris: noms, prix_min: null, prix_max: bud ? Math.round(versCAD(bud) * 100) / 100 : null, iq_min: iqm < 0 ? null : iqm};
     const pvN = raz ? ['CA', 'US'] : ['CA', 'US'].filter(k => PV.has(k));
     if (pvN.join() !== PV0.join()) { const x = await API.reglages_sauver({provenance: pvN}).catch(() => null); if (x) S.reglages = x; }
     const r = await API.deals_profil_regler(d).catch(e => ({ok:false, erreur:e.message}));
@@ -14684,6 +14703,7 @@ const MAJ_APP = () => [
     ['photo', tt('Lots : trois cartes à la fois', 'Batches: three cards at a time'), tt('Un lot se lit trois cartes à la fois, au lieu de deux.', 'A batch now reads three cards at a time, instead of two.')],
     ['ebay', tt('Mise en vente : retirer une carte', 'Listing: remove a card'), tt('À l’étape des prix, « Retirer » sort une carte du lot. Elle reste dans ton inventaire.', 'On the price step, “Remove” takes a card out of the batch. It stays in your inventory.')],
     ['etiquette', tt('Des titres plus justes', 'More accurate titles'), tt('Le code d’une carte aide à trouver son parallèle (#BA = Blue Rainbow). La marque n’est plus écrite deux fois.', 'A card’s code helps find its parallel (#BA = Blue Rainbow). The brand is no longer written twice.')],
+    ['deals', tt('Tes joueurs, toujours là', 'Your players, always there'), tt('Le Radar montre maintenant les meilleures cartes de chaque joueur et équipe que tu suis, même les moins connus. Dans Filtres, « B et + » montre vraiment les B.', 'The Radar now shows the best cards of every player and team you follow, even lesser-known ones. In Filters, “B & up” really shows the Bs.')],
     ['deals', tt('Radar Pro : pas de cartes tout juste sorties', 'Pro Radar: no just-released cards'), tt('Une carte qui vient de sortir part haut, puis descend pendant deux mois. Le Radar Pro attend qu’elle se vende depuis deux mois.', 'A just-released card starts high, then drops for two months. The Pro Radar waits until it has been selling for two months.')]]},
   {n: 243, le: '2026-11-23', points: [
     ['breaks', tt('Breaks : « Vaut plus scellée »', 'Breaks: “Worth more sealed”'), tt('Le badge d’une boîte ne paraît que si on a assez de vraies ventes de ses cartes. Sinon : rien.', 'A box’s badge only shows when we have enough real sales of its cards. Otherwise: nothing.')],

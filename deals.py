@@ -2934,12 +2934,21 @@ def rares_requetes():
     return [x.strip() for x in e.split(";") if x.strip()] if e else list(RARES_Q)
 
 
+_VITRINE_JOURNAL = [0.0]
+
+
 def _vitrine(l):
     """19 nov 2026 : ce que le chasseur balaie nourrit aussi la vitrine du Radar Pro (vitrine.py : la note de la carte, jamais
     une valeur ni un comparable)."""
     try:
         import vitrine
         vitrine.ajouter(l)
+        # 24 nov 2026 (Mathieu : « il nous faut beaucoup de cartes a proposer ») : combien d'annonces « A la une » peut montrer,
+        # au journal, une fois aux 30 minutes : pour juger avec un vrai chiffre si la regle « pas une carte neuve » en laisse assez
+        if time.time() - _VITRINE_JOURNAL[0] > 1800:
+            _VITRINE_JOURNAL[0] = time.time()
+            e = vitrine.etat()
+            print(f"Vitrine : {len(vitrine.liste(4000))} annonces montrables · {e.get('cartes')} en vitrine · {e.get('jugees')} jugees", flush=True)
     except Exception as e:
         print("Vitrine : " + repr(e)[:160], flush=True)
 
