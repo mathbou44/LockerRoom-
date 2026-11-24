@@ -7979,10 +7979,52 @@ class Api:
         r = self._pastilles_radar(r)
         try:
             if not forfaits.est_pro() and not self._est_admin():
-                return self._radar_gratuit(r)
+                r = self._radar_gratuit(r)
         except Exception as e:
             print("Radar gratuit : " + repr(e), flush=True)
-        return r
+        return self._radar_compter(r)
+
+    # 24 nov 2026 (Mathieu : « pourquoi 99+ dans la page Radar et 11 dans la page d'accueil ? ») : UN seul nombre. Deux causes :
+    # 1) le compte de l'accueil oubliait les deux rangees du haut (« A la une » depuis le 19 nov, « Tres recherchees » depuis
+    #    aujourd'hui) ; 2) il etait range sous une cle (compte + provenance + forfait) et relu sous une autre (sans le forfait) :
+    #    l'accueil retombait sur la longueur de son carrousel (24 au plus). Maintenant : le nombre est compte ICI, a chaque Radar
+    #    envoye, sur les memes rangees que l'app (son « Tout » : chaque annonce une fois), avec l'heure du serveur ; l'accueil
+    #    relit ce nombre-la, et l'app garde le plus recent des deux (tout_le / nb_deals_le).
+    _TOUT_PLATES = ("a_la_une", "recherchees", "deals", "petits")
+    _TOUT_GROUPES = ("pour_toi", "types", "chasses", "chauds", "creux", "decouvrir", "vendeurs")
+
+    @staticmethod
+    def _radar_tout(r):
+        """Le « Tout » du Radar : chaque annonce de chaque rangee, une seule fois (ce que l'app affiche)."""
+        vus = set()
+        if not isinstance(r, dict):
+            return 0
+        for k in Api._TOUT_PLATES:
+            v = r.get(k) or []
+            v = (v.get("annonces") or []) if isinstance(v, dict) else v
+            vus.update(str(x.get("item_id")) for x in v if isinstance(x, dict) and x.get("item_id"))
+        for k in Api._TOUT_GROUPES:
+            for g in r.get(k) or []:
+                if isinstance(g, dict):
+                    vus.update(str(x.get("item_id")) for x in (g.get("annonces") or []) if isinstance(x, dict) and x.get("item_id"))
+        return len(vus)
+
+    def _cle_tout(self):
+        import comptes
+        return (comptes.courant() or "local") + ":" + ",".join(self._provenance()) + (":pro" if forfaits.est_pro() else ":gratuit")
+
+    def _radar_compter(self, r):
+        if not isinstance(r, dict) or not r.get("ok"):
+            return r
+        try:
+            n, le = self._radar_tout(r), round(time.time(), 2)
+            if len(self._MES_DEALS_N) > 4000:
+                self._MES_DEALS_N.clear()
+            self._MES_DEALS_N[self._cle_tout()] = (n, le)
+            return {**r, "tout_n": n, "tout_le": le}
+        except Exception as e:
+            print("Radar (total) : " + repr(e), flush=True)
+            return r
 
     # 19 nov 2026 (Mathieu : « quand je cherche Gridin dans le Radar je ne trouve rien, mais sur eBay oui ; ca doit etre le cas
     # de plusieurs joueurs » ; « si l'utilisateur cherche un joueur, toutes ses cartes qui entrent dans notre bareme doivent
@@ -9736,20 +9778,14 @@ class Api:
 
     def _mes_deals_garde(self):
         """« Mes deals » pour l'accueil : garde 10 min par compte (l'accueil s'ouvre souvent ; eBay n'est relu qu'aux 10 min)."""
-        import comptes
-        k = (comptes.courant() or "local") + ":" + ",".join(self._provenance()) + (":pro" if forfaits.est_pro() else ":gratuit")
+        k = self._cle_tout()
         g = self._MES_DEALS.get(k)
-        if g and time.time() - g[0] < 600:
+        if g and time.time() - g[0] < 600 and k in self._MES_DEALS_N:
             return g[1]
-        r = self.mes_deals() or {}
         # 11 nov 2026 (Mathieu : « regarde le nombre de deals du Radar sur l'accueil et le nombre reel ») : le nombre de
-        # l'accueil = le « Tout » du Radar (toutes les annonces, sans doublon), plus seulement les 24 du carrousel
-        vus_t = set()
-        for g_ in [{"annonces": r.get("deals") or []}] + [x for k_ in ("pour_toi", "types", "chasses", "chauds", "creux", "decouvrir", "vendeurs")
-                                                          for x in (r.get(k_) or [])] + [{"annonces": r.get("petits") or []}]:
-            vus_t.update(str(x.get("item_id")) for x in (g_.get("annonces") or []) if x.get("item_id"))
-        self._MES_DEALS_N[k] = len(vus_t)
-        l = r.get("deals") or []
+        # l'accueil = le « Tout » du Radar. 24 nov 2026 : il est compte dans mes_deals (_radar_compter), une seule fois.
+        r = self.mes_deals() or {}
+        l = list(r.get("deals") or [])
         if not l:                     # 10 nov 2026 : sans prix cible, les annonces de SES joueurs (ou « a decouvrir »)
             vus = set()
             for g in (r.get("pour_toi") or []) + (r.get("types") or []) + (r.get("chauds") or []) + (r.get("decouvrir") or []):
@@ -13172,10 +13208,11 @@ class Api:
                        and _dv.encore_ouvert(x) and (x.get("total") or 0) <= _dv.prix_max(x["valeur"], taxe=_dv.taxe_de(x)))
         except Exception:
             n_su = 0
-        n_tot = len(deals) + n_su
+        n_tot, n_le = len(deals) + n_su, None
         if not ebay_prix_actif():
-            import comptes as _cpt
-            n_tot = max(n_tot, self._MES_DEALS_N.get((_cpt.courant() or "local") + ":" + ",".join(self._provenance())) or 0)
+            tn = self._MES_DEALS_N.get(self._cle_tout())          # 24 nov 2026 : le nombre du dernier Radar envoye a ce compte
+            if tn:
+                n_tot, n_le = tn
         try:                                          # 14 nov 2026 : le meme slab partout (joueur, carte, score SlabIQ en coin)
             import score_slab
             score_slab.annoter_lot([x for x in deals[:24] if x.get("score") is None])
@@ -13184,7 +13221,7 @@ class Api:
                     x["joueur_n"], x["carte_n"] = self._etiquette_deal(x.get("titre") or "", None)
         except Exception as e:
             print("Accueil (slabs) : " + repr(e), flush=True)
-        return {"mois": m0, "deals": deals[:24], "nb_deals": n_tot, "gain_deals": round(sum(max(0, d["gain"]) for d in deals), 2),
+        return {"mois": m0, "deals": deals[:24], "nb_deals": n_tot, "nb_deals_le": n_le, "gain_deals": round(sum(max(0, d["gain"]) for d in deals), 2),
                 "achats": {"n": len(achats), "depense": depense, "valeur": valeur,
                            "latent": round(sum(((a.get("valeur") or a.get("prix_demande") or 0) * (1 - fp) - ff - (a["cout"] or 0))
                                              for a in achats if a.get("valeur") or a.get("prix_demande")), 2)},

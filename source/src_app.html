@@ -4157,29 +4157,60 @@ body.zp-ouvert{overflow:hidden}
 .iq-c em{position:absolute; top:10px; right:12px; font-style:normal; color:var(--vert); font-weight:800}
 .tq-tech{margin-top:18px; border-top:1px solid var(--ligne); padding-top:10px} .tq-tech > summary{cursor:pointer; color:var(--doux); font-weight:600; font-size:14px; padding:8px 0}
 /* 12 nov 2026 : la feuille Filtres, tres simple (5 questions, des pastilles) */
+/* 24 nov 2026 (Mathieu : « revoir le layout pour que cet onglet fitte sur une page ; fie-toi tout le temps a la methode Apple,
+   comment iOS classe ses affaires ») : la feuille Filtres comme Reglages d'iOS. Des groupes arrondis sur le fond de la
+   feuille ; une rangee de 44 px par choix (la hauteur d'une rangee iOS) : le nom a gauche, le choix en gris a droite avec le
+   double chevron ; le menu est celui du telephone (un <select> invisible couvre la rangee). Un filet part du texte, pas du
+   bord. L'interrupteur a la taille de celui d'iOS (51 x 31). En haut : « Réinitialiser » a gauche, le titre au centre, le X. */
+.io-tete{display:grid; grid-template-columns:1fr auto 1fr; align-items:center; min-height:34px; margin-top:-12px}      /* a la hauteur du X */
+.io-tete h3{margin:0; font-size:17px; font-weight:700; text-align:center}
+.io-raz{justify-self:start; border:0; background:none; color:var(--acc); font:500 17px var(--f-txt, inherit); padding:6px 4px 6px 2px; cursor:pointer}
+.io-raz:active{opacity:.5}
+.io-f{display:flex; flex-direction:column; gap:14px}
+.io-g{background:var(--carte); border-radius:14px; overflow:hidden}
+.io-r{position:relative; display:flex; align-items:center; gap:10px; min-height:44px; padding:0 14px 0 16px; font-size:17px; line-height:1.2; color:var(--texte)}
+.io-r + .io-r::before{content:""; position:absolute; top:0; left:16px; right:0; height:1px; background:var(--ligne); opacity:.6}
+.io-r[hidden] + .io-r::before, .io-r + .io-cur::before{display:none}
+.io-l{flex:1 1 auto; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.io-v{flex:0 1 auto; min-width:0; max-width:62%; color:var(--doux); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:right}
+.io-c{flex:none; width:9px; height:15px; color:var(--doux); opacity:.75}
+.io-m{cursor:pointer} .io-m:active{background:rgba(255,255,255,.07)}
+.io-m select{position:absolute; inset:0; width:100%; height:100%; margin:0; border:0; opacity:0; font-size:16px; cursor:pointer; -webkit-appearance:none; appearance:none}
+.io-m:has(select:focus-visible), .io-sw:has(input:focus-visible), .io-aj:has(.io-in:focus-visible){box-shadow:inset 0 0 0 2px var(--acc)}
+.io-r .fd-pm{flex:none; padding:2px; border-radius:9px; background:rgba(118,118,128,.24)} .io-r .fd-pm button{height:28px; min-width:48px; padding:0 10px; border-radius:7px; font-size:14px}
+.io-cur{gap:14px; padding-top:0; padding-bottom:6px; min-height:40px}
+.io-cur .fd-r{flex:1 1 auto; min-width:0; margin:0; height:6px}
+.io-cur .fd-pv{flex:none; min-width:52px; margin:0; text-align:right; font:600 17px var(--f-txt, inherit); color:var(--vert); font-variant-numeric:tabular-nums}
+.io-cur .fd-pv.zero{color:var(--doux); font-weight:400}                     /* aucun minimum : en gris, comme les autres choix */
+.io-ch{flex:none; display:flex; gap:6px}
+.io-p{position:relative; height:30px; padding:0 11px; border-radius:15px; border:1px solid var(--ligne); background:transparent; color:var(--doux); font:600 14px var(--f-txt, inherit); cursor:pointer; white-space:nowrap}
+.io-p::after{content:""; position:absolute; inset:-7px -3px}                 /* la zone du doigt : toute la hauteur de la rangee */
+.io-p.on{color:var(--texte); border-color:var(--acc); background:color-mix(in srgb, var(--acc) 24%, transparent)}
+.io-fvl{gap:8px; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch; margin:0} .io-fvl::-webkit-scrollbar{display:none}
+.io-fvl .fv-p{flex:none; height:30px; font-size:14px; white-space:nowrap} .io-fvl .fv-p button{width:26px; height:26px}
+.io-aj{gap:10px}
+.io-in{flex:1 1 auto; min-width:0; height:44px; padding:0; border:0; background:none; color:var(--texte); font:inherit; outline:0}
+.io-in::placeholder{color:var(--doux); opacity:1} .io-in:disabled{opacity:.6}
+.io-n{flex:none; color:var(--doux); font-size:14px; font-variant-numeric:tabular-nums}
+.io-plus{flex:none; width:28px; height:28px; border-radius:50%; border:0; background:var(--acc); color:#111118; font:700 20px/1 var(--f-txt, inherit); display:grid; place-items:center; padding:0 0 2px; cursor:pointer}
+.io-plus:disabled{opacity:.3}
+.io-sw{cursor:pointer} .io-sw input{position:absolute; opacity:0; pointer-events:none}
+.io-sw i{flex:none; position:relative; width:51px; height:31px; border-radius:99px; background:rgba(120,120,128,.32); transition:background .2s}
+.io-sw i::after{content:""; position:absolute; top:2px; left:2px; width:27px; height:27px; border-radius:50%; background:#fff; box-shadow:0 2px 5px rgba(0,0,0,.3); transition:transform .2s}
+.io-sw input:checked + i{background:#30D158} .io-sw input:checked + i::after{transform:translateX(20px)}
+#feuille:has(> .io-f) .fd-app{padding-top:8px}
+@media (max-width:380px){ .io-r{font-size:16px; padding:0 12px 0 14px} .io-p{padding:0 8px; font-size:13.5px} .io-ch{gap:5px} .io-r + .io-r::before{left:14px} }
+/* un petit telephone (iPhone SE, 667 px de haut) : des rangees de 40 px et une feuille plus haute, pour que la barre « Appliquer » tienne aussi */
+@media (max-height:700px){ #feuille:has(> .io-f){max-height:96vh; max-height:calc(100dvh - 24px)} .io-r{min-height:40px} .io-in{height:40px} .io-cur{min-height:38px} .io-f{gap:12px} }
+@media (prefers-reduced-motion:reduce){ .io-sw i, .io-sw i::after{transition:none} }
 .fx-h{display:flex; align-items:center; justify-content:space-between; gap:10px} .fx-h h3{margin:0}
-.fx-raz{display:block; margin:6px auto 4px; border:0; background:none; color:var(--doux); font-size:14px; font-weight:600; padding:10px 14px; cursor:pointer; text-decoration:underline; text-underline-offset:3px}
-.fx-n{font:500 13px var(--f-txt, inherit); letter-spacing:0; text-transform:none; color:var(--doux); margin-left:6px}
-.fx-s{display:flex; flex-direction:column; gap:10px; padding:18px 0; border-bottom:1px solid var(--ligne)} .fx-s:last-of-type{border-bottom:0}
-.fx-t{display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:34px}
-.fx-t > span{font:700 15px var(--f-cond); letter-spacing:.12em; text-transform:uppercase}
-.fx-pl{display:flex; flex-wrap:wrap; gap:8px}
-.fx-p{height:40px; padding:0 16px; border-radius:999px; border:1.5px solid var(--ligne); background:var(--carte2); color:var(--doux); font-weight:700; font-size:15px; cursor:pointer; transition:all .15s}
-.fx-p.on{color:var(--texte); border-color:var(--acc); background:color-mix(in srgb, var(--acc) 18%, var(--carte2))}
-.fx-seul{display:inline-flex; align-items:center; gap:8px; font-size:14px; color:var(--doux); cursor:pointer}
-.fx-seul input{position:absolute; opacity:0; pointer-events:none}
-.fx-seul i{position:relative; width:44px; height:26px; border-radius:99px; background:var(--ligne); transition:background .15s}
-.fx-seul i::after{content:""; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition:transform .15s}
-.fx-seul input:checked + i{background:var(--vert)} .fx-seul input:checked + i::after{transform:translateX(18px)}
-.fx-s .fd-pv{margin:0} .fx-s .fd-r{margin:6px 0 2px}
 .fx-vs{display:flex; flex-direction:column; gap:8px}
-.fx-s .fv-aj .btn{width:46px; padding:0; font-size:22px}
 .fd-pils{display:flex; flex-wrap:wrap; gap:14px 6px; justify-content:flex-start; margin:4px 0 2px}
 .fd-p{min-width:76px} .fd-p .ap-ic{width:54px; height:54px; background:var(--ligne)} .fd-p .ap-ic b{position:relative; font:700 16px var(--f-cond); color:var(--texte)}
 .fd-p.on .ap-ic{background:conic-gradient(from 210deg, var(--h1,#9FE6D2), var(--h2,#B9BEFF), var(--h3,#F2B3D6), var(--h4,#F1D58E), var(--h1,#9FE6D2))}
 .fd-p.on .ap-ic::before{background:var(--acc-fonce)} .fd-p.on small{color:var(--texte); font-weight:600} .fd-p small{font-size:13px}
 .fd-app{position:sticky; bottom:0; margin:4px -18px -18px; padding:12px 18px calc(14px + var(--bas)); background:linear-gradient(180deg, rgba(19,19,23,0), #131317 30%); animation:popEntre .2s ease}
-.fd-app .btn{width:100%; margin:0} #fd-raz{margin-top:6px}
+.fd-app .btn{width:100%; margin:0}
 .td-eres{margin:4px 0 6px} .i-ach{margin:0 0 12px} .i-ach .ap-t{display:flex; flex-direction:column; gap:2px; white-space:normal} .i-ach .ap-t small{font-size:12.5px; color:var(--doux); font-weight:500} .i-ach-n{font-style:normal; display:inline-block; min-width:22px; padding:1px 7px; margin-left:6px; border-radius:11px; background:var(--acc); color:#14141a; font-size:12.5px; text-align:center; vertical-align:2px} .fa-l .vig img{width:100%;height:100%;object-fit:cover;border-radius:6px} .fa-sug{display:flex;flex-wrap:wrap;gap:6px} .fa-aj{background:var(--acc);color:#14141a;border-color:transparent;flex:none} .fa-l .milieu{min-width:0} .td-sports{margin:10px 0 2px; flex-wrap:wrap; overflow:visible} .td-plus{display:block; margin:10px auto 0}
 .fd-pt{display:flex; align-items:center; justify-content:space-between; gap:10px} .fd-pm{width:auto} .fd-pm button{min-width:52px; padding:8px 14px}
 .fd-pv{display:block; margin:6px 0 2px; font:700 22px var(--f-cond); color:var(--vert)}
@@ -4852,19 +4883,6 @@ html.tel-large .ecran.acc.acc-ft-mode > .acc-news2{order:9}
 .tiq-cl{font:700 28px/1 var(--f-cond); min-width:40px; text-align:right; color:var(--acc)} .tiq-cl.vert{color:var(--vert)} .tiq-cl.or{color:var(--or)}
 .tiq-liste .tiq-c:active{background:rgba(255,255,255,.03)}
 .tiq-plus{display:flex; margin:14px auto 0}
-/* 16 nov 2026 (Mathieu : « les filtres : tout dans la meme fenetre sans scroller ») : chaque question sur UNE rangee
-   (le nom a gauche, les pastilles a droite), des pastilles plus basses, moins d'air entre les rangees */
-#feuille .fx-s{display:grid; grid-template-columns:132px minmax(0, 1fr); align-items:center; column-gap:14px; row-gap:6px; padding:10px 0}
-#feuille .fx-s > .fx-t{min-height:0; font-size:13px}
-#feuille .fx-s > :not(.fx-t){grid-column:2}
-#feuille .fx-s > .fx-pl + .fx-pl{margin-top:0 !important}
-#feuille .fx-p{height:34px; padding:0 13px; font-size:14px}
-#feuille .prov{padding:7px 12px}
-#feuille .fx-s .fd-pv{font-size:16px} #feuille .fx-s .fd-r{margin:0}
-#feuille .fx-s:has(.fd-pm) > .fx-t{grid-row:1 / span 2; flex-direction:column; align-items:flex-start; gap:8px}
-#feuille .fx-s:has(#fv-l) > .fx-t{grid-column:1 / -1}
-#feuille .fx-s:has(#fv-l) > :not(.fx-t){grid-column:1 / -1}
-#feuille .fx-raz{margin-top:2px}
 @media (min-width:900px){ .feuille:has(#fd-tri){max-width:880px; width:min(880px, 94vw); max-height:92vh; gap:6px} .feuille:has(#fd-tri) > h3{margin:0}
   .feuille:has(#fd-tri) .fx-s{grid-template-columns:150px minmax(0, 1fr)} .feuille:has(#fd-tri) .fv-aj .champ{height:40px} }
 @media (max-width:560px){ #feuille .fx-s{grid-template-columns:1fr} #feuille .fx-s > :not(.fx-t){grid-column:1} #feuille .fx-s:has(.fd-pm) > .fx-t{grid-row:auto; flex-direction:row; align-items:center} }
@@ -7632,6 +7650,21 @@ async function produits(force){ if (!S.produits || force) S.produits = await API
 // ============================================================
 // 10 nov 2026 (Mathieu : « les comps : admin seulement pour le lancement, 100 % legal ») : vrai si ce compte voit les comps
 const comps = () => !S.forfait || S.forfait.comps !== false;
+// 24 nov 2026 (Mathieu : « pourquoi 99+ dans la page Radar et 11 dans la page d'accueil ? ») : le nombre du Radar, UN seul partout
+// (l'onglet du bas, la tuile de l'accueil, la page Radar). Le Radar et l'accueil l'apportent chacun avec l'heure du serveur
+// (tout_le, nb_deals_le) : le plus recent gagne ; une vieille copie gardee sur le telephone ne l'ecrase jamais. Le vrai
+// nombre s'ecrit en entier (214, pas « 99+ ») : il tient dans la pastille.
+const nbTxt = n => n > 999 ? '999+' : String(n || '');
+function radarNb(n, le){
+  if (typeof n === 'number' && (le || 0) >= ((S.nbRadar || {}).le || 0)) S.nbRadar = {n, le: le || 0};
+  const v = S.nbRadar ? S.nbRadar.n : 0, pD = $('#pastille-deals');
+  if (pD) { pD.hidden = !v; pD.textContent = v ? nbTxt(v) : ''; }
+  return v;
+}
+function nbRadarAccueil(a){
+  if (comps()) { const n = (a && a.nb_deals) || 0, pD = $('#pastille-deals'); if (pD && a) { pD.hidden = !n; pD.textContent = n ? nbTxt(n) : ''; } return n; }
+  return a ? radarNb(typeof a.nb_deals === 'number' ? a.nb_deals : null, a.nb_deals_le) : ((S.nbRadar || {}).n || 0);
+}
 function route(){
   const h = (location.hash || '#accueil').slice(1);
   if (!h.startsWith('inventaire')) { S.selInv = null; S.selBut = null; const sb = document.getElementById('sel-inv'); if (sb) sb.remove(); }   // 8 nov : la barre de selection
@@ -10800,7 +10833,7 @@ async function changerVue(v){
   // 14 nov 2026 (Mathieu : « pourquoi un profit dans la version Pro du Radar ? » ; « c'est revenu mais faudrait pas que ca
   // arrive ») : les copies gardees sur le telephone (pour ouvrir vite) venaient de l'autre vue ; a la reouverture de l'app,
   // la copie ADMIN des deals s'affichait une seconde en vue Pro. Changer de vue efface toutes les copies.
-  gardesVider(); MEMO.clear(); GARDE_SAUTER.t = Date.now();
+  gardesVider(); MEMO.clear(); GARDE_SAUTER.t = Date.now(); S.nbRadar = null;          // 24 nov 2026 : le nombre du Radar est celui de la vue
   try { localStorage.setItem('lr_vue_g', v); } catch (e) {}
   await chargerForfait();
   toast(v === 'admin' ? tt('Ta vue admin', 'Your admin view') : tt('Tu vois l’app comme un utilisateur ', 'You see the app as a ') + (v === 'pro' ? 'Pro' : tt('Gratuit', 'Free user')));
@@ -11042,7 +11075,7 @@ async function feuilleFiltresDeals(){
   let pm = F.profit_mode === '$' || (F.gain_min && !F.rabais_min) ? '$' : '%';
   let pv = pm === '$' ? Math.round(convertir(F.gain_min || 0)) : (+F.rabais_min || 0);
   const PMAX = {'%': 70, '$': 500}, PPAS = {'%': 5, '$': 10};
-  const libP = () => !pv ? tt('Tous les deals', 'All deals') : pm === '%' ? tt(`−${pv} % ou plus sous la valeur`, `${pv}% or more below value`) : tt(`+${fmtMontant(pv, 0)} de profit ou plus`, `+${fmtMontant(pv, 0)} profit or more`);
+  const libP = () => !pv ? tt('Tous', 'Any') : pm === '%' ? tt(`${pv} %`, `${pv}%`) : `+${fmtMontant(pv, 0)}`;      // 24 nov 2026 : court, au bout du curseur
   // 12 nov 2026 (Mathieu : « beaucoup trop de choix et de texte, c'est melangeant ; tres tres simple », admin = pro) :
   // 5 questions, rien que des pastilles et un curseur, aucune phrase d'aide. Le pays d'achat, le ramassage et mes vendeurs
   // eBay vivent dans Reglages > Mes deals ; « boutiques suivies » et « au moins une mise » sont retires.
@@ -11059,33 +11092,48 @@ async function feuilleFiltresDeals(){
   // Radar, et les meilleures cartes de SES joueurs et equipes) ; « B et + » envoie maintenant 65 pour vrai.
   const IQS = [[-1, tt('Recommandé', 'Recommended')], [0, tt('Toutes', 'All')], [50, tt('C et +', 'C & up')], [65, tt('B et +', 'B & up')], [80, tt('A- et +', 'A- & up')], [92, 'A+']];
   let iqm = p.iq_min != null ? +p.iq_min : (F.iq_min != null ? +F.iq_min : -1);
-  ouvrirFeuille(`<h3>${tt('Filtres', 'Filters')}</h3>
-    <div class="fx-s"><div class="fx-t"><span>${tt('Ordre', 'Order')}</span></div>
-      <div class="fx-pl" id="fd-tri">${TRIS_DEALS().map(([k, t]) => `<button class="fx-p ${k === tri ? 'on' : ''}" data-tri="${k}">${t}</button>`).join('')}</div>
-      <div class="fx-pl" id="fd-ty" style="margin-top:8px">${[['', tt('Toutes les annonces', 'All listings')], ['fixe', tt('Prix fixe', 'Buy It Now')], ['encan', tt('Encans', 'Auctions')]].map(([k, t]) => `<button class="fx-p ${k === ty ? 'on' : ''}" data-ty="${k}">${t}</button>`).join('')}</div></div>
-    <div class="fx-s"><div class="fx-t"><span>${tt('Profit minimum', 'Minimum profit')}</span>
+  // 24 nov 2026 (Mathieu : « revoir le layout pour que cet onglet fitte sur une page : il faut que je scrolle et je ne devrais
+  // pas ; on perd de l'espace avec les petites tuiles ; un menu deroulant a quelques places ; fie-toi tout le temps a la methode
+  // Apple, comment iOS classe ses affaires : la personne se retrouve sans s'en rendre compte ») : la feuille Filtres est batie
+  // comme Reglages d'iOS. Des groupes arrondis ; UNE rangee de 44 px par choix : le nom a gauche, le choix a droite, et le
+  // menu NATIF du telephone (un vrai <select> : sur l'iPhone, c'est le menu d'iOS, avec son crochet). Un interrupteur pour
+  // oui/non, un curseur pour le profit. « Réinitialiser » en haut a gauche, comme dans une feuille iOS ; « Appliquer » apparait
+  // en bas au premier changement (3 nov). Avant : 997 px de haut pour 767 px de feuille ; maintenant tout tient sans defiler.
+  const opts_ = (L, v) => L.map(([k, t]) => `<option value="${esc(String(k))}" ${String(k) === String(v) ? 'selected' : ''}>${esc(t)}</option>`).join('');
+  const CHEV = `<svg class="io-c" viewBox="0 0 10 16" aria-hidden="true"><path d="M1.6 6 5 2.6 8.4 6M1.6 10 5 13.4 8.4 10" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const menu = (id, nom, L, v) => `<label class="io-r io-m"><span class="io-l">${nom}</span><span class="io-v" id="${id}-v">${esc((L.find(x => String(x[0]) === String(v)) || L[0])[1])}</span>${CHEV}<select id="${id}" aria-label="${esc(nom)}">${opts_(L, v)}</select></label>`;
+  const TYS = [['', tt('Toutes', 'All')], ['fixe', tt('Prix fixe', 'Buy It Now')], ['encan', tt('Encans', 'Auctions')]];
+  const PVS = [['CA,US', tt('Canada et États-Unis', 'Canada & USA')], ['CA', 'Canada'], ['US', tt('États-Unis', 'USA')]];
+  const prov0 = ['CA', 'US'].filter(k => PV.has(k)).join(',') || 'CA,US';
+  ouvrirFeuille(`<div class="io-tete"><button class="io-raz" id="fd-raz">${tt('Réinitialiser', 'Reset')}</button><h3>${tt('Filtres', 'Filters')}</h3><span></span></div>
+    <div class="io-f">
+    <div class="io-g">
+      ${menu('fd-tri', tt('Trier par', 'Sort by'), TRIS_DEALS(), tri)}
+      ${menu('fd-ty', tt('Annonces', 'Listings'), TYS, ty)}
+    </div>
+    <div class="io-g">
+      <div class="io-r"><span class="io-l">${tt('Profit minimum', 'Minimum profit')}</span>
         <div class="seg fd-pm">${['%', '$'].map(m => `<button data-pm="${m}" class="${pm === m ? 'on' : ''}">${m === '$' ? symDevise() : '%'}</button>`).join('')}</div></div>
-      <b class="fd-pv" id="fd-pv">${esc(libP())}</b>
-      <input type="range" class="fd-r" id="fd-r" min="0" max="${PMAX[pm]}" step="${PPAS[pm]}" value="${Math.min(pv, PMAX[pm])}"></div>
-    <div class="fx-s"><div class="fx-t"><span>${tt('Note SlabIQ', 'SlabIQ grade')}</span></div>
-      <div class="fx-pl" id="fd-iq">${IQS.map(([v, t]) => `<button class="fx-p ${v === iqm ? 'on' : ''}" data-iq="${v}">${t}</button>`).join('')}</div></div>
-    <div class="fx-s"><div class="fx-t"><span>${tt('Budget par carte', 'Budget per card')}</span></div>
-      <div class="fx-pl" id="fd-bud">${budL.map(v => `<button class="fx-p ${v === bud ? 'on' : ''}" data-bud="${v}">${v ? '≤ ' + fmtMontant(v, 0) : tt('Tout', 'Any')}</button>`).join('')}</div></div>
-    <div class="fx-s"><div class="fx-t"><span>${tt('Cartes', 'Cards')}</span></div>
-      <div class="fx-pl" id="fd-ep">${[['recrues', tt('Recrues', 'Rookies')], ['veterans', tt('Vétérans', 'Veterans')], ['legendes', tt('Légendes', 'Legends')]].map(([k, t]) => `<button class="fx-p ${ep.has(k) ? 'on' : ''}" data-ep="${k}">${t}</button>`).join('')}</div></div>
-    <div class="fx-s"><div class="fx-t"><span>${tt('Expédiées de', 'Ships from')}</span></div>
-      <div class="prov-p">${[['CA', 'Canada'], ['US', tt('États-Unis', 'USA')]].map(([k, n]) => `<button class="prov ${PV.has(k) ? 'on' : ''}" data-pv="${k}"><span class="prov-f">${drapeau(k)}</span><span>${n}</span><i>${PV.has(k) ? '✓' : ''}</i></button>`).join('')}</div></div>
-    <div class="fx-s"><div class="fx-t"><span>${tt('Mes joueurs', 'My players')} <small class="fx-n" id="fv-n"></small></span><label class="fx-seul"><span>${tt('Seulement eux', 'Only them')}</span><input type="checkbox" id="fd-seul" ${seul ? 'checked' : ''}><i></i></label></div>
-      <div class="fv-l" id="fv-l"></div>
-      <form class="fv-aj" id="fv-aj"><input class="champ" id="fv-in" enterkeyhint="done" autocomplete="off" placeholder="${esc(tt('Ajouter un joueur', 'Add a player'))}"><button class="btn petit" id="fv-ok" aria-label="${esc(tt('Ajouter', 'Add'))}">+</button></form></div>
-    <button class="fx-raz" id="fd-raz">${tt('Réinitialiser', 'Reset')}</button>
+      <div class="io-r io-cur"><input type="range" class="fd-r" id="fd-r" aria-label="${esc(tt('Profit minimum', 'Minimum profit'))}" min="0" max="${PMAX[pm]}" step="${PPAS[pm]}" value="${Math.min(pv, PMAX[pm])}"><b class="fd-pv" id="fd-pv">${esc(libP())}</b></div>
+      ${menu('fd-iq', tt('Note SlabIQ', 'SlabIQ grade'), IQS, iqm)}
+      ${menu('fd-bud', tt('Budget par carte', 'Budget per card'), budL.map(v => [v, v ? '≤ ' + fmtMontant(v, 0) : tt('Tout', 'Any')]), bud)}
+      <div class="io-r"><span class="io-l">${tt('Cartes', 'Cards')}</span>
+        <div class="io-ch" id="fd-ep">${[['recrues', tt('Recrues', 'Rookies')], ['veterans', tt('Vétérans', 'Veterans')], ['legendes', tt('Légendes', 'Legends')]].map(([k, t]) => `<button class="io-p ${ep.has(k) ? 'on' : ''}" data-ep="${k}" aria-pressed="${ep.has(k)}">${t}</button>`).join('')}</div></div>
+      ${menu('fd-prov', tt('Expédiées de', 'Ships from'), PVS, prov0)}
+    </div>
+    <div class="io-g">
+      <div class="io-r io-fvl" id="fv-l"></div>
+      <form class="io-r io-aj" id="fv-aj"><input class="io-in" id="fv-in" enterkeyhint="done" autocomplete="off" aria-label="${esc(tt('Ajouter un joueur', 'Add a player'))}" placeholder="${esc(tt('Ajouter un joueur', 'Add a player'))}"><small class="io-n" id="fv-n"></small><button class="io-plus" id="fv-ok" aria-label="${esc(tt('Ajouter', 'Add'))}">+</button></form>
+      <label class="io-r io-sw"><span class="io-l">${tt('Seulement mes joueurs', 'Only my players')}</span><input type="checkbox" id="fd-seul" ${seul ? 'checked' : ''}><i></i></label>
+    </div>
+    </div>
     <div class="fd-app" id="fd-app" hidden><button class="btn" id="fd-ok">${tt('Appliquer', 'Apply')}</button></div>`);
   // la barre « Appliquer » : visible des qu'un choix change (sinon on ne sait pas si ca a pris)
   const marquer = () => { const a_ = $('#fd-app'); if (a_) a_.hidden = false; };
   setTimeout(() => { const z = $('#feuille'); if (!z) return;
-    z.addEventListener('click', (e) => { if (e.target.closest('[data-ep], [data-pm], [data-fvx], [data-bud], [data-pv], [data-tri], [data-ty], [data-iq], #fv-ok')) setTimeout(marquer, 0); });
+    z.addEventListener('click', (e) => { if (e.target.closest('[data-ep], [data-pm], [data-fvx], #fv-ok')) setTimeout(marquer, 0); });
     z.addEventListener('input', (e) => { if (e.target.matches('#fd-r')) marquer(); });
-    z.addEventListener('change', (e) => { if (e.target.matches('input[type=checkbox]')) marquer(); }); }, 0);
+    z.addEventListener('change', (e) => { if (e.target.matches('input[type=checkbox], select')) marquer(); }); }, 0);
   const peindreFav = () => {
     $('#fv-l').innerHTML = FAV.map((n, i) => `<span class="fv-p">${esc(n)}<button data-fvx="${i}" aria-label="${esc(tt('Retirer', 'Remove'))}">×</button></span>`).join('');
     $('#fv-l').hidden = !FAV.length; $('#fv-n').textContent = `${FAV.length}/${FMAX}`;
@@ -11100,21 +11148,25 @@ async function feuilleFiltresDeals(){
     $('#fv-in').value = ''; vibrer(); peindreFav(); };
   peindreFav();
   const peindreP = () => { const r = $('#fd-r'); r.max = PMAX[pm]; r.step = PPAS[pm]; r.value = Math.min(pv, PMAX[pm]);
-    r.style.setProperty('--p', (100 * r.value / PMAX[pm]) + '%'); $('#fd-pv').textContent = libP();
+    r.style.setProperty('--p', (100 * r.value / PMAX[pm]) + '%'); $('#fd-pv').textContent = libP(); $('#fd-pv').classList.toggle('zero', !pv);
     $$('[data-pm]').forEach(x => x.classList.toggle('on', x.dataset.pm === pm)); };
   $('#fd-r').oninput = (e) => { pv = +e.target.value; peindreP(); };
   $('#fd-r').onchange = () => vibrer();
   $$('[data-pm]').forEach(b => b.onclick = () => { if (pm === b.dataset.pm) return; pm = b.dataset.pm; pv = 0; vibrer(); peindreP(); });
   peindreP();
-  $$('#fd-ep [data-ep]').forEach(b => b.onclick = () => { const k = b.dataset.ep; ep.has(k) ? ep.delete(k) : ep.add(k); b.classList.toggle('on', ep.has(k)); vibrer(); });
-  $$('#fd-tri [data-tri]').forEach(b => b.onclick = () => { tri = b.dataset.tri; $$('#fd-tri [data-tri]').forEach(x => x.classList.toggle('on', x === b)); vibrer(); });
-  $$('#fd-ty [data-ty]').forEach(b => b.onclick = () => { ty = b.dataset.ty; $$('#fd-ty [data-ty]').forEach(x => x.classList.toggle('on', x === b)); vibrer(); });
-  $$('#fd-iq [data-iq]').forEach(b => b.onclick = () => { iqm = +b.dataset.iq; $$('#fd-iq [data-iq]').forEach(x => x.classList.toggle('on', x === b)); vibrer(); });
-  $$('#fd-bud [data-bud]').forEach(b => b.onclick = () => { bud = +b.dataset.bud; $$('#fd-bud [data-bud]').forEach(x => x.classList.toggle('on', x === b)); vibrer(); });
-  $$('[data-pv]').forEach(b => b.onclick = () => { const k = b.dataset.pv;
-    if (PV.has(k) && PV.size === 1) { toast(tt('Garde au moins un pays', 'Keep at least one country'), 2200); return; }
-    PV.has(k) ? PV.delete(k) : PV.add(k); vibrer();
-    $$('[data-pv]').forEach(x => { const o = PV.has(x.dataset.pv); x.classList.toggle('on', o); x.querySelector('i').textContent = o ? '✓' : ''; }); });
+  $$('#fd-ep [data-ep]').forEach(b => b.onclick = () => { const k = b.dataset.ep; ep.has(k) ? ep.delete(k) : ep.add(k); b.classList.toggle('on', ep.has(k)); b.setAttribute('aria-pressed', ep.has(k)); vibrer(); });
+  // un menu : le choix s'ecrit a droite de sa rangee
+  const poser = (id, v) => { const m_ = $('#' + id); m_.value = v; $('#' + id + '-v').textContent = (m_.options[m_.selectedIndex] || {}).text || ''; };
+  const lier = (id, f) => { const m_ = $('#' + id); m_.onchange = () => { f(m_.value); poser(id, m_.value); vibrer(); }; };
+  lier('fd-tri', v => { tri = v; });
+  // 24 nov 2026 (Mathieu : « quand je clique sur Best deal, ça revient à Ending soon ; c'est comme si ce tri ne marche pas ») :
+  // avec « Encans », « Appliquer » remplacait EN SILENCE « Meilleur deal » par « Finit bientôt ». Maintenant : choisir
+  // « Encans » propose « Finit bientôt » SOUS SES YEUX (la mise d'un encan monte jusqu'a la fin) ; s'il rechoisit
+  // « Meilleur deal », son choix reste.
+  lier('fd-ty', v => { ty = v; if (ty === 'encan' && tri === 'rabais') { tri = 'fin'; poser('fd-tri', 'fin'); } });
+  lier('fd-iq', v => { iqm = +v; });
+  lier('fd-bud', v => { bud = +v; });
+  lier('fd-prov', v => { PV.clear(); v.split(',').forEach(k => PV.add(k)); });
 
   const appliquer = async (raz) => {
     const enCours = $('#fv-in').value.trim();                          // un nom tape sans toucher « + » compte aussi
@@ -11125,7 +11177,7 @@ async function feuilleFiltresDeals(){
          gain_min: pm === '$' && pv ? Math.round(versCAD(pv)) : null,
          joueurs: $('#fd-seul').checked ? noms : [], avec_mise: false, vendeurs: false});
     F.pays_exclus = [];                                                // remplace par « Expediees de » (le reglage du compte)
-    F.tri = raz ? 'rabais' : tri; F.type = raz ? '' : ty; if (F.type === 'encan' && F.tri === 'rabais') F.tri = 'fin';
+    F.tri = raz ? 'rabais' : tri; F.type = raz ? '' : ty;              // 24 nov 2026 : l'ordre choisi reste (plus de remplacement en silence)
     F.iq_min = raz || iqm < 0 ? null : iqm;
     const d = raz ? {collectionne: [], favoris: [], prix_min: null, prix_max: null, iq_min: null}
       : {collectionne: [...ep], favoris: noms, prix_min: null, prix_max: bud ? Math.round(versCAD(bud) * 100) / 100 : null, iq_min: iqm < 0 ? null : iqm};
@@ -13579,7 +13631,7 @@ async function chargerDeals(frais){
     vueMesDeals(z, frais);
     return;
   }
-  const pD = $('#pastille-deals'); if (pD) { pD.hidden = !d.n; pD.textContent = d.n || ''; }
+  const pD = $('#pastille-deals'); if (pD) { pD.hidden = !d.n; pD.textContent = d.n ? nbTxt(d.n) : ''; }
   const dn = $('#d-nb'); if (dn) { dn.hidden = !d.n; dn.textContent = d.n || ''; }
   // 27 oct 2026 (Mathieu : « les users doivent TOUJOURS voir quelque chose ») : « a surveiller » (15 a 30 % sous la valeur)
   // 7 nov 2026 (Mathieu : « enlever la section to watch ») : plus de « a surveiller » a l'ecran
@@ -14706,7 +14758,8 @@ const MAJ_APP = () => [
     ['graphe', tt('Une preuve plus solide', 'Stronger proof'), tt('Chaque vente compte maintenant une seule fois, et une même carte se reconnaît peu importe comment le vendeur écrit son titre. « À la une » montre plus de cartes.', 'Every sale now counts exactly once, and the same card is recognized however the seller writes its title. “Top cards” shows more cards.')],
     ['deals', tt('Radar : beaucoup plus de cartes', 'Radar: many more cards'), tt('Sous « À la une », une nouvelle rangée « Très recherchées » : toutes les cartes A- et mieux en vente, la meilleure note d’abord.', 'Below “Top cards”, a new “Highly sought” row: every A- and better card for sale, best grade first.')],
     ['deals', tt('Tes joueurs, toujours là', 'Your players, always there'), tt('Le Radar montre maintenant les meilleures cartes de chaque joueur et équipe que tu suis, même les moins connus. Dans Filtres, « B et + » montre vraiment les B.', 'The Radar now shows the best cards of every player and team you follow, even lesser-known ones. In Filters, “B & up” really shows the Bs.')],
-    ['deals', tt('Radar Pro : pas de cartes tout juste sorties', 'Pro Radar: no just-released cards'), tt('Une carte qui vient de sortir part haut, puis descend pendant deux mois. Le Radar Pro attend qu’elle se vende depuis deux mois.', 'A just-released card starts high, then drops for two months. The Pro Radar waits until it has been selling for two months.')]]},
+    ['deals', tt('Radar Pro : pas de cartes tout juste sorties', 'Pro Radar: no just-released cards'), tt('Une carte qui vient de sortir part haut, puis descend pendant deux mois. Le Radar Pro attend qu’elle se vende depuis deux mois.', 'A just-released card starts high, then drops for two months. The Pro Radar waits until it has been selling for two months.')],
+    ['deals', tt('Radar : le même nombre partout', 'Radar: the same number everywhere'), tt('L’accueil, l’onglet du bas et le Radar montrent le même nombre de cartes, écrit en entier.', 'Home, the bottom tab and the Radar show the same number of cards, written in full.')]]},
   {n: 243, le: '2026-11-23', points: [
     ['breaks', tt('Breaks : « Vaut plus scellée »', 'Breaks: “Worth more sealed”'), tt('Le badge d’une boîte ne paraît que si on a assez de vraies ventes de ses cartes. Sinon : rien.', 'A box’s badge only shows when we have enough real sales of its cards. Otherwise: nothing.')],
     ['deals', tt('Un Radar plus dégagé', 'A cleaner Radar'), tt('Tes cartes remontent : la loupe et le tri sont deux petits boutons, « Voir » est dans Mon radar.', 'Your cards move up: search and sort are two small buttons, “Show” is inside My Radar.')],
@@ -14903,7 +14956,7 @@ async function vueAccueil(arg){
   appliquerActivites(d.activites);
   const h = d.hero, st = d.stock, vi = d.vitesse;
   const pB = $('#pastille-breaks'); if (pB) { pB.hidden = !d.a_envoyer; pB.textContent = d.a_envoyer || ''; }
-  const pD = $('#pastille-deals'); if (pD && a) { pD.hidden = !a.nb_deals; pD.textContent = a.nb_deals || ''; }
+  const nbR = nbRadarAccueil(a);                 // 24 nov 2026 : le meme nombre que la page Radar
   // 3 chiffres qui comptent, en grand
   // 11 nov 2026 (Mathieu : « mieux ventiler l'accueil : beau, doux a l'oeil, bien separe, on sait ce qu'on regarde ») : chaque
   // chiffre a sa couleur (profit vert, radar mauve, stock or) et son icone
@@ -14914,7 +14967,7 @@ async function vueAccueil(arg){
   $('#acc-tuiles').innerHTML = [
     S.mode === 'acheteur' ? `<a class="t-acc" href="#guide" id="t-budget"><span class="l">${tt('Budget du mois', 'Monthly budget')}</span><b>…</b><span class="s">${tt('touche pour le fixer', 'tap to set it')}</span></a>`
       : tuile('Profit', (h.profit < 0 ? '−' : '') + argentCourt(Math.abs(h.profit)), nomMois(h.mois) + (h.nb_ventes ? ` · ${h.nb_ventes} vente${h.nb_ventes > 1 ? 's' : ''}` : ''), h.profit > 0 ? 'vert' : h.profit < 0 ? 'rouge' : '', '#bilan" id="t-profit'),
-    tuile('Radar', a && a.gain_deals > 0 ? '+' + argentCourt(a.gain_deals) : String((a && a.nb_deals) || 0), a && a.nb_deals ? (comps() ? `${a.nb_deals} sous la valeur` : ((a.deals || []).some(x => x.pourtoi) ? `${a.nb_deals} ${tt('pour toi', 'for you')}` : `${a.nb_deals} ${tt('à ton prix', 'at your price')}`)) : 'on cherche pour toi', a && a.gain_deals > 0 ? 'or' : '', '#deals'),
+    tuile('Radar', a && a.gain_deals > 0 ? '+' + argentCourt(a.gain_deals) : String(nbR), nbR ? (comps() ? `${nbR} sous la valeur` : `${nbTxt(nbR)} ${tt('pour toi', 'for you')}`) : 'on cherche pour toi', a && a.gain_deals > 0 ? 'or' : '', '#deals'),
     S.mode === 'acheteur' ? tuile(tt('Ma collection', 'My collection'), argentKpi(st.valeur), `${st.nb} carte${st.nb > 1 ? 's' : ''}`, '', '#inventaire" id="t-stock')
       : tuile('Stock', argentKpi(st.valeur), `${st.nb} carte${st.nb > 1 ? 's' : ''}${vi.delai_median != null ? ' · ' + vi.delai_median + ' j' : ''}`, '', '#inventaire" id="t-stock'),
   ].join('');
@@ -15111,9 +15164,9 @@ function tuilesAccueil(d, a, h, gestes, admin){
   const z = $('#acc-ft'); if (!z) return;
   // 17 nov 2026 (audit, un debutant qui veut se partir une collection) : celui qui a repondu « Collectionner » voit son budget du
   // mois et SA collection, pas un profit a 0 $ ni « Vendre »
-  const st = d.stock || {}, ach = S.mode === 'acheteur' || (S.reglages || {}).objectif === 'collection', nbD = (a && a.nb_deals) || 0;
+  const st = d.stock || {}, ach = S.mode === 'acheteur' || (S.reglages || {}).objectif === 'collection', nbD = nbRadarAccueil(a);
   const brk = (d.breaks_ouverts || []).length, rien = !gestes.length;
-  const radarSous = nbD ? (comps() ? tt(`${nbD} sous la valeur`, `${nbD} under value`) : ((a.deals || []).some(x => x.pourtoi) ? tt(`${nbD} pour toi`, `${nbD} for you`) : tt(`${nbD} à ton prix`, `${nbD} at your price`))) : tt('on cherche pour toi', 'searching for you');
+  const radarSous = nbD ? (comps() ? tt(`${nbD} sous la valeur`, `${nbD} under value`) : tt(`${nbD} pour toi`, `${nbD} for you`)) : tt('on cherche pour toi', 'searching for you');
   z.innerHTML = [
     tuileFT('ft-radar', 'deals', 'Radar', a && a.gain_deals > 0 ? '+' + argentCourt(a.gain_deals) : String(nbD), radarSous, '#deals', 'k-radar'),
     ach ? tuileFT('ft-budget', 'budget', tt('Budget du mois', 'Monthly budget'), '…', tt('touche pour le voir', 'tap to see it'), '#guide', 'k-budget')
@@ -15224,9 +15277,9 @@ function histoiresDeals(a){
     return titreCourt(x.titre).split(/\s+/).filter(w => !/^(\d|#|rc|auto|sp|ud|series)/i.test(w)).slice(0, 2).join(' ') || 'Deal'; };
   // 28 oct 2026 (Mathieu : « les cercles en forme de slab, et le % dans la portion de gradation ») : chaque story est un
   // petit slab : l'etiquette en haut porte le rabais a la place de la note, la photo dans la fenetre
-  const nb_ = (a && a.nb_deals) || L.length;
+  const nb_ = nbRadarAccueil(a) || L.length;
   const tous = `<a class="hist hist-tous" role="listitem" href="#deals"><span class="anneau slab neuf"><span class="slab-in">
-      <span class="slab-lab"><small>RADAR</small><b>${nb_ > 99 ? '99+' : nb_}</b></span><span class="slab-ph ico">${ICO_MODE.acheteur}</span></span></span><span class="nom">${tt('Tous', 'All')}</span></a>`;
+      <span class="slab-lab"><small>RADAR</small><b>${nbTxt(nb_)}</b></span><span class="slab-ph ico">${ICO_MODE.acheteur}</span></span></span><span class="nom">${tt('Tous', 'All')}</span></a>`;
   return tous + tri.map(x => x.verrou ? `<button class="hist hist-deal hist-verrou" role="listitem" data-pro-lock="radar" aria-label="${esc(tt('Carte réservée au Pro', 'Pro-only card'))}">
     <span class="anneau slab"><span class="slab-in"><span class="slab-lab"><small>PRO</small><b>${x.score != null ? x.score : '✦'}</b></span>
       <span class="slab-ph">${x.photo ? `<img src="${esc(photoNet(x.photo))}" alt="" loading="lazy" decoding="async" data-oe="rm">` : SVG_CARTE}</span></span></span>
@@ -21907,7 +21960,7 @@ async function vueMesDeals(z, frais){
       .forEach(([j]) => { groupes.push(['p:' + j, j]); for (const x of tous.values()) if ((x.joueur_n || x.joueur) === j) x._g.add('p:' + j); }); }
   S.mdTous = tous;
   const nb_ = tous.size;
-  const pD = $('#pastille-deals'); if (pD) { pD.hidden = !nb_; pD.textContent = nb_ > 99 ? '99+' : (nb_ || ''); }
+  radarNb(nb_, r.tout_le);                       // 24 nov 2026 : le meme nombre que l'accueil, ecrit en entier
   if (!groupes.some(([k]) => k === S.mdF)) S.mdF = '';
   S.mdTri = S.mdTri || 'score';
   const rien = !nb_;

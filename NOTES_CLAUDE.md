@@ -444,6 +444,43 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   « Chaque vente comptée une seule fois » ; la ligne « 214 joueurs ajustés par le marché » n'est toujours pas vérifiée.
   PAS FAIT : la même carte écrite SANS son numéro (« C98 » sans dièse, ou pas de numéro du tout) garde une autre clé ; les
   annonces à plusieurs exemplaires vendus le même jour au même prix comptent pour une vente.
+- **État (24 nov, 12 h 25)** : Mathieu a poussé à 12 h 16 (commit dbdd62b, en ligne à 12 h 18, aucun Traceback ni
+  « Liquidite (index) » au journal). Le site en ligne dit : 87 % contre 13 %, 98 % contre 25 %, 4×, 68 %, « 87 à 91 % »,
+  « 5 fois sur 5 » (vérifié). Journal à 12 h 23 : « Vitrine : 16 a la une · 1211 tres recherchees · 6606 jugees » (peut-être
+  avant la fin de la reconstruction de `liquidite2.sqlite` : un rappel est programmé pour relire le compte). Rien n'attend
+  sur son PC sauf ces notes. À PENSER (pas un défaut nouveau, mais à dire clairement un jour) : « À la une » montre un encan
+  tant que sa mise COURANTE est sous la médiane ; le test, lui, juge les achats au prix FINAL sous la médiane. Un encan qui
+  finit au-dessus sort de la rangée avant la fin, mais l'utilisateur Pro ne voit pas jusqu'où il peut miser (la licence
+  interdit de montrer un prix tiré d'eBay) : le 87 % vaut pour celui qui achète pendant que la carte est encore affichée.
+- **« 214 joueurs ajustés par le marché » RETIRÉE du site (24 nov, 12 h 27 ; Mathieu : « non je ne sais pas, donc si tu sais pas
+  aussi, retire »)** : la ligne de la liste « Amélioré cette semaine » (`ui/site_slabiq.html`, écrite à la main) n'avait aucune
+  source (ni test, ni notes). Règle rappelée : une ligne du site sans mesure derrière se retire.
+- **Le nombre du Radar : UN seul partout (24 nov, 12 h 50 ; Mathieu : « pourquoi 99+ dans la page Radar et 11 dans la page
+  d'accueil ? »)**. Deux causes dans `lockerroom.py` : (1) le compte de l'accueil (`_mes_deals_garde`) oubliait les deux rangées
+  du haut (`a_la_une` depuis le 19 nov, `recherchees` depuis ce matin : MON oubli) ; (2) il était rangé sous une clé (compte +
+  provenance + forfait) et relu par `acheteur_accueil` sous une autre (sans le forfait) : l'accueil retombait toujours sur la
+  longueur de son carrousel (24 au plus). Corrigé : `Api._radar_tout(r)` (chaque annonce de chaque rangée une fois, les mêmes
+  rangées que l'app : `_TOUT_PLATES`, `_TOUT_GROUPES`), compté dans `mes_deals` à CHAQUE Radar envoyé (`_radar_compter` :
+  `tout_n`, `tout_le` = heure du serveur), relu par l'accueil sous la même clé (`_cle_tout`) : `nb_deals`, `nb_deals_le`.
+  Dans l'app : `radarNb(n, le)` garde le plus récent des deux et écrit l'onglet du bas ; `nbRadarAccueil(a)` pour les tuiles ;
+  le nombre s'écrit en entier (`nbTxt` : 214, plus « 99+ » ; « 999+ » au-delà). Étiquette de la tuile : toujours « N pour toi »
+  (« à ton prix » aurait été faux pour tout le Radar). `changerVue` remet `S.nbRadar` à zéro. Test `tests/test_radar_meme_nombre.py`
+  (dont : les rangées lues par l'app = celles comptées par le serveur). **Le « 35 » de 12 h 30** n'était pas un bogue de compte :
+  c'était le DERNIER Radar gardé (serveur : 6 h ; téléphone : 36 h), montré pendant que le neuf se calculait (journal : « Pile
+  lente : /api/mes_deals 8 s » à 12 h 30 min 59 s) ; il se remplace seul 20 s plus tard si on est en haut de la page.
+- **Tri « Meilleur deal » avec « Encans » (24 nov ; Mathieu : « quand je clique sur Best deal, ça revient à Ending soon »)** :
+  `appliquer` de `feuilleFiltresDeals` remplaçait EN SILENCE `rabais` par `fin` quand le type était `encan`. Maintenant : choisir
+  « Encans » propose « Finit bientôt » sous ses yeux (la mise d'un encan monte) ; « Meilleur deal » rechoisi RESTE.
+- **Feuille Filtres façon Réglages d'iOS (24 nov ; Mathieu : « que ça fitte sur une page ; fie-toi tout le temps à la méthode
+  Apple ; la personne se retrouve sans s'en rendre compte »)**. Règle de design à garder pour TOUTES les feuilles de réglages :
+  groupes arrondis (`.io-g`), une rangée de 44 px par choix (`.io-r`) : le nom à gauche, le choix en gris à droite + double
+  chevron, et le menu NATIF du téléphone (un `<select>` invisible couvre la rangée : `.io-m`, aide `menu(id, nom, L, v)` +
+  `lier`/`poser`) ; interrupteur 51 × 31 (`.io-sw`) ; « Réinitialiser » en haut à gauche, titre centré, le X ; « Appliquer »
+  apparaît en bas au premier changement. « Expédiées de » : un menu à 3 choix ; « Cartes » : 3 pastilles sur la rangée (choix
+  multiple) ; mes joueurs : une rangée qui défile de côté. Mesuré : 997 px → 591 px (665 avec « Appliquer ») pour une feuille de
+  767 px (iPhone de 852 px) ; iPhone SE (667 px) : rangées de 40 px, 619 px, sans défiler. Scripts `vue/filtres.py`,
+  `vue/filtres2.py`. Test `tests/test_filtres_ios.py`. Les règles `.fx-*` (pastilles) sont retirées. À FAIRE dans le même
+  style : la feuille « Ton radar » de la vue Pro et les autres feuilles de réglages (pas encore converties).
 
 ## En attente
 - **Méga test 3 ans (bâti le 22 nov, priorité 1)** : `mega_test.py` (serveur) part seul après le push (boucle de l'heure + reprise
