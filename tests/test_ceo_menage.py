@@ -37,7 +37,7 @@ T["g_cell"]["etat"] = "fait"; T["sr_2fa"]["etat"] = "a_faire"
 n = len(c["taches"]); c = ceo._semer(c); T2 = {t["id"]: t for t in c["taches"]}
 assert len(c["taches"]) == n and T2["g_cell"]["etat"] == "fait" and T2["sr_2fa"]["etat"] == "a_faire"
 # 6. sur SA liste d'avant (deja semee, des taches cochees a la main) : le menage passe une fois, sans rien doubler
-avant = ceo._semer({"semis": ["menage_23nov", "clos_menage_23nov"], "taches": []})          # sa liste, telle qu'elle etait a 20 h
+avant = ceo._semer({"semis": ["menage_23nov", "clos_menage_23nov", "auto_23nov", "clos_auto_23nov"], "taches": []})          # sa liste, telle qu'elle etait a 20 h
 assert not any(t["id"].startswith("g_") for t in avant["taches"]) and sum(t["etat"] != "fait" for t in avant["taches"]) == 87
 avant["semis"] = [x for x in avant["semis"] if "menage" not in x]
 next(t for t in avant["taches"] if t["id"] == "sr_github")["etat"] = "fait"           # il l'avait deja fait
@@ -46,3 +46,7 @@ A = {t["id"]: t for t in apres["taches"]}
 assert len(A) == len(apres["taches"]) and A["g_comptes"]["etat"] == "a_faire" and A["sr_2fa"]["etat"] == "fait" and "Regroupée" in A["sr_2fa"]["note"]
 assert "Regroupée" not in (A["sr_github"]["note"] or ""), "une tache deja faite garde sa note"
 print("OK test_ceo_menage (%d ouvertes : %d a lui, %d a Claude)" % (len(ouv), len(ouv) - len(claude), len(claude)))
+# 7. 23 nov, 21 h 55 (Mathieu : « je veux pas cliquer, tout doit se faire auto ») : sa tache de telechargement se ferme avec sa
+#    raison, l'automatisation du test du site devient une tache de Claude ; la liste ne grossit pas
+assert T["r_donnees"]["etat"] == "fait" and "rien à télécharger" in T["r_donnees"]["note"]
+assert T["g_c_auto"]["etat"] == "a_faire" and re.match(r"Claude\b", T["g_c_auto"]["titre"]) and "Garde-fou" in T["g_c_auto"]["note"]

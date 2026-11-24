@@ -264,11 +264,18 @@ SEMIS["menage_23nov"] = [
     ("g_c_vitesse", "Claude : vitesse (lots, Radar, minutes lentes après un push) et test de charge", "Fait le 23 nov : la mise en vente ne lit plus tout l'inventaire, 3 cartes à la fois dans un lot, les temps de chaque carte au journal. Reste : lire les temps du prochain lot et corriger l'étape lente ; l'ouverture du Radar (3,5 s) ; les requêtes de 5 à 11 s dans la minute qui suit un push ; un test de charge avant le 1er décembre (un seul processus).", 1, None, None, "2026-11-28"),
     ("g_c_jeudi", "Claude : au test de jeudi, l'escalier des lettres et l'effet d'une seule note d'expert", "Sur le nouvel export : A+ se revend-il moins que A, et B+ plus que A- ? Pourquoi une seule note (Hagens B+) fait bouger tout le test ? Et la cause de la baisse 92 → 77 % du Radar Pro (mêmes cartes qu'en septembre, ou plus de cartes ?).", 2, None, None, "2026-11-26"),
 ]
-SEMIS_PROJET = {"menage_23nov": "lancement", "lot_23nov": "lancement", "apple_23nov": "lancement", "plan_6mois_23nov": "six_mois", "radar_23nov": "lancement", "signal_22nov": "lancement", "recherche_22nov": "lancement", "legal_22nov": "licences", "tour_22nov": "lancement", "megatest_22nov": "lancement", "bulletin_22nov": "lancement", "achat_21nov": "lancement", "historique_21nov": "lancement", "tendances_21nov": "lancement", "licences_fc": "licences", "lancement_1dec": "lancement", "securite_21nov": "lancement", "matin_21nov": "lancement", "securite_reste": "lancement", "vitesse_21nov": "lancement", "consig_21nov": "lancement", "soir_21nov": "lancement"}
+# 23 nov 2026, 21 h 55 (Mathieu : « je veux pas cliquer, tout doit se faire auto ») : sa tache « Telecharger les donnees du test »
+# se ferme (le signal par joueur se note deja seul sur le serveur) ; le test publie sur le site, encore manuel (export par
+# Mathieu -> Claude -> push), devient une tache de Claude : le faire tourner sur le serveur.
+SEMIS["auto_23nov"] = [
+    ("g_c_auto", "Claude : le test du site tourne seul sur le serveur (plus d'export ni de push)", "Aujourd'hui : tu exportes les ventes, Claude refait le test, puis un push. À faire : le serveur le refait seul la nuit et le site se met à jour seul. Garde-fou : si le test échoue ou si un chiffre bouge trop d'un coup, le site garde les anciens chiffres et l'admin t'avertit.", 2, None, None, "2026-11-26"),
+]
+SEMIS_PROJET = {"auto_23nov": "lancement", "menage_23nov": "lancement", "lot_23nov": "lancement", "apple_23nov": "lancement", "plan_6mois_23nov": "six_mois", "radar_23nov": "lancement", "signal_22nov": "lancement", "recherche_22nov": "lancement", "legal_22nov": "licences", "tour_22nov": "lancement", "megatest_22nov": "lancement", "bulletin_22nov": "lancement", "achat_21nov": "lancement", "historique_21nov": "lancement", "tendances_21nov": "lancement", "licences_fc": "licences", "lancement_1dec": "lancement", "securite_21nov": "lancement", "matin_21nov": "lancement", "securite_reste": "lancement", "vitesse_21nov": "lancement", "consig_21nov": "lancement", "soir_21nov": "lancement"}
 PROJETS = {"licences": "Licences de données", "lancement": "Lancement", "six_mois": "Les 6 premiers mois", "general": "Général", "suivi": "Suivi"}
 
 
-CLOS = {"clos_menage_23nov": {
+CLOS = {"clos_auto_23nov": {"r_donnees": "Retirée le 23 nov (« je veux pas cliquer, tout doit se faire auto ») : le signal par joueur se note seul sur le serveur chaque jour ; rien à télécharger."},
+        "clos_menage_23nov": {
     "r_verdict": "Lu : tes décisions des 22 et 23 nov en sortent (la promesse est « le bon moment », plus de profit de revente sur le site).",
     "d_tendances": "Décidé les 22 et 23 nov : « À vendre » est retiré, « À acheter » reste caché du public ; Tendances montre Plus bas et Plus haut.",
     "d_achat_preuve": "En place depuis le 21 nov : « À acheter » est caché du public tant que ce n'est pas prouvé.",
