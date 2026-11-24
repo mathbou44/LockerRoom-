@@ -2948,7 +2948,7 @@ def _vitrine(l):
         if time.time() - _VITRINE_JOURNAL[0] > 1800:
             _VITRINE_JOURNAL[0] = time.time()
             e = vitrine.etat()
-            print(f"Vitrine : {len(vitrine.liste(4000))} annonces montrables · {e.get('cartes')} en vitrine · {e.get('jugees')} jugees", flush=True)
+            print(f"Vitrine : {len(vitrine.liste(4000))} a la une · {len(vitrine.recherchees(4000))} tres recherchees · {e.get('jugees')} jugees", flush=True)
     except Exception as e:
         print("Vitrine : " + repr(e)[:160], flush=True)
 

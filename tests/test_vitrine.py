@@ -33,11 +33,35 @@ liquidite.rafraichir(pause=0)
 s_ = liquidite.signaux([MCD, RPA, MCD.replace("PSA 10", "SGC 10")])
 assert s_[MCD][0] == 9 and 2400 <= s_[MCD][1] <= 2480, s_
 assert s_[MCD.replace("PSA 10", "SGC 10")][1] == 900, s_
-assert liquidite.passe(8, 2400, 2400, 1) and not liquidite.passe(8, 2400, 2410, 1) and not liquidite.passe(7, 2400, 1000, 1)   # 8 ventes ; jamais au-dessus
+assert liquidite.passe(5, 2400, 2400, 1) and not liquidite.passe(5, 2400, 2410, 1) and not liquidite.passe(4, 2400, 1000, 1)   # 5 vraies ventes ; jamais au-dessus
 # 23 nov 2026 au soir : pas une carte neuve (au moins une vente entre 60 et 90 jours avant) ; signal inconnu = refusee
 assert not liquidite.passe(8, 2400, 2400, 0) and not liquidite.passe(8, 2400, 2400) and liquidite.VIEUX_MIN == 1
+# 24 nov 2026 (Mathieu, une Rantanen Canvas PSA 10 partie a 63 $ : « j'espere qu'on l'avait captee » ; « on doit etre parfait avant
+# Apple ») : 1) la meme vente trouvee par deux recherches (meme numero d'annonce, prix converti a 2 cents pres) compte UNE fois ;
+# 2) la meme carte ecrite autrement (« 2015 » ou « 2015-16 », « #C98 » ou « C98 », « UD », « Series 1 », un tiret) a UNE cle ;
+# 3) deux cartes differentes gardent deux cles
+RAN = ["2015 UPPER DECK #C98 MIKKO RANTANEN UD CANVAS YOUNG GUNS RC ROOKIE PSA 10", "Upper Deck 2015-16 UD Canvas Young Guns Mikko Rantanen RC #C98 PSA 10",
+       "2015-16 Upper Deck - Ud Canvas Young Guns Mikko Rantanen #C98 (RC) PSA 10", "2015-16 UD Series 1 UD Canvas Young Guns Mikko Rantanen #C98 RC PSA 10"]
+assert len({liquidite.cle(t) for t in RAN}) == 1, {liquidite.cle(t) for t in RAN}
+assert liquidite.cle(RAN[0]) != liquidite.cle(RAN[0].replace("PSA 10", "PSA 9")) != liquidite.cle(RAN[0].replace("PSA 10", ""))      # la note compte
+assert liquidite.cle("2025 Upper Deck Extended Series 1st Round Rookies Outburst Ivan Demidov") != liquidite.cle("2025-26 Upper Deck Young Guns Outburst Ivan Demidov #205")
+assert liquidite.cle("2025-26 SP Hockey Rookie Authentics Patch RC - Michael Misa #122") != liquidite.cle("2025-26 SP Game Used - #AR-MM Michael Misa Authentic Rookies Patch")
+assert liquidite.cle("1985-86 O-Pee-Chee Mario Lemieux #9") != liquidite.cle("1985-86 Topps Mario Lemieux #9")                          # deux produits
+assert liquidite.id_vente("https://www.ebay.com/itm/286123456789?nordt=true") == liquidite.id_vente("https://www.ebay.ca/itm/mikko-rantanen/286123456789") == "286123456789"
+c = base_ventes._cx()
+jr = lambda n: (date.today() - timedelta(days=n)).isoformat()
+c.executemany("INSERT INTO ventes VALUES (?,?,?,?,?,?,?,?,?)", [
+    ("rantanen canvas", "u1", RAN[0], 92.97, jr(30), None, "https://www.ebay.com/itm/286123456789", 0, jr(1)),
+    ("rantanen young guns psa 10", "u1", RAN[0], 92.99, jr(30), None, "https://www.ebay.ca/itm/x/286123456789", 0, jr(1)),       # la MEME vente
+    ("rantanen psa", "u1", RAN[0], 93.40, jr(29), None, "https://www.ebay.com/itm/286123456789?x=1", 0, jr(1)),                    # encore elle, un jour plus tard
+    ("rantanen canvas", "u2", RAN[1], 114.38, jr(8), None, "https://www.ebay.com/itm/286999000111", 0, jr(1)),                    # une autre vente, ecrite autrement
+    ("rantanen canvas", "u3", RAN[3], 70.0, jr(70), None, "https://www.ebay.com/itm/286999000222", 0, jr(1))])                    # il y a 70 jours
+c.commit(); c.close()
+liquidite.rafraichir(pause=0)
+sr = liquidite.signaux([RAN[2]])[RAN[2]]                   # demandee sous une 3e facon d'ecrire
+assert sr[0] == 2 and sr[2] == 1 and 92 <= sr[1] <= 115, sr      # 2 vraies ventes en 60 jours (pas 4), 1 il y a 2 mois
 assert len(s_[MCD]) == 3 and s_[MCD][2] == 1 and s_[MCD.replace("PSA 10", "SGC 10")][2] == 0, s_   # une vente a 70 jours ; la SGC : aucune
-assert liquidite.LIQ_MIN == 8 and liquidite.RABAIS_MAX == 0.0
+assert liquidite.LIQ_MIN == 5 and liquidite.RABAIS_MAX == 0.0
 fin = (datetime.now(timezone.utc) + timedelta(hours=5)).isoformat()
 fini = (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat()
 A = [{"item_id": "1", "titre": "2015-16 Upper Deck Young Guns Connor McDavid #201 PSA 10", "prix_cad": 2300, "port_cad": 0, "encan": True, "fin": fin},
@@ -93,6 +117,13 @@ with vitrine._VERROU:
 assert vitrine.liste() == []
 vitrine.ajouter([])
 assert {x["item_id"] for x in vitrine.liste()} == {"1", "4"}
+# 24 nov 2026 : des signaux venus de l'ancien index (ventes comptees en double) sont relus dans le nouveau, sans rien cacher d'ici la
+with vitrine._VERROU:
+    x1_ = vitrine._pool()["1"]
+    x1_["_liq"], x1_["_sv"] = 99, 1
+vitrine.ajouter([])
+with vitrine._VERROU:
+    assert vitrine._pool()["1"]["_liq"] == 9 and vitrine._pool()["1"]["_sv"] == liquidite.VERSION, vitrine._pool()["1"]
 # l'interrupteur de Render (LR_RADAR_ANCIENNETE=0) : la regle d'avant
 os.environ["LR_RADAR_ANCIENNETE"] = "0"
 assert liquidite.passe(8, 2400, 2400, 0) and liquidite.passe(8, 2400, 2400)

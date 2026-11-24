@@ -70,17 +70,28 @@ def regles():
 
 
 # ---------------------------------------------------------------- etape 1 : les ventes
+DOUBLONS = [None]               # « exacts » (la colonne id de l'export) ou « estimes »
+
+
 def charger(chemin):
     os.makedirs(TRAV, exist_ok=True)
-    cache = os.path.join(TRAV, "rows_%d.json.gz" % int(os.path.getmtime(chemin)))
-    if os.path.exists(cache):
+    cache = os.path.join(TRAV, "rows2_%d_%d.json.gz" % (int(os.path.getmtime(chemin)), os.path.getsize(chemin)))
+    if os.path.exists(cache) and os.path.exists(cache + ".doublons"):
+        DOUBLONS[0] = _lire(cache + ".doublons")
         return [tuple(r) for r in _lire(cache)]
     sys.path.insert(0, LR)
     import validation_iq as v
     import score_slab
-    vus, out = set(), []
+    # 24 nov 2026 (Mathieu : « on doit etre parfait avant Apple ») : UNE vente = une ligne. Nos archives gardent une vente une fois
+    # par recherche qui l'a trouvee, au prix converti a quelques cents pres. L'export a maintenant la colonne « id » (le numero de
+    # l'annonce vendue) : la meme vente ne compte qu'une fois. Sans cette colonne (vieil export) : doublons ESTIMES (meme titre,
+    # a 1 jour pres, prix a 1 % pres), et le test refuse d'ecrire le site (lancer).
+    sys.path.insert(0, LR)
+    import liquidite
+    vus, out, par_t, par_id = set(), [], {}, {}
     with gzip.open(chemin, "rt", encoding="utf-8") as f:
-        next(f)
+        ent = next(f).rstrip("\n").split("\t")
+        ii = ent.index("id") if "id" in ent else None
         for l in f:
             p = l.rstrip("\n").split("\t")
             if len(p) < 3 or not p[2]:
@@ -93,9 +104,22 @@ def charger(chemin):
             if pr < 3 or r in vus:
                 continue
             vus.add(r)
+            if ii is not None and len(p) > ii and p[ii]:       # la meme annonce, a un jour et 5 % pres : la meme vente (liquidite.meme_vente)
+                g = par_id.setdefault(p[ii], [])
+                if liquidite.meme_vente(g, r[2], pr):
+                    continue
+                g.append((r[2], pr))
+            elif ii is None:
+                jour = dt.date.fromisoformat(r[2]).toordinal() if len(r[2]) == 10 else 0
+                g = par_t.setdefault(p[0], [])
+                if any(abs(jour - j2) <= 1 and abs(pr - p2) <= 0.01 * max(pr, p2) for j2, p2 in g):
+                    continue
+                g.append((jour, pr))
             if not score_slab.sport_autre(p[0]) and (v._RE_HOCKEY_SUR.search(p[0]) or v._equipe_lnh(p[0])):
                 out.append(r)
+    DOUBLONS[0] = "exacts" if ii is not None else "estimes"
     _ecrire(out, cache)
+    _ecrire(DOUBLONS[0], cache + ".doublons")
     return out
 
 
@@ -127,6 +151,7 @@ def _annoter_ici(rows_pkl, sortie, apprendre=None, mesurer=None):
         info["mesure"] = {k: m[k] for k in ("ventes", "rho", "accord_global", "inversions")}
     import cartes_match
     import indice_joueurs
+    import liquidite
     import score_slab
     I = (indice_joueurs.lire() or {}).get("indice") or {}
     Il = {k.lower(): x for k, x in I.items()}
@@ -164,7 +189,8 @@ def _annoter_ici(rows_pkl, sortie, apprendre=None, mesurer=None):
         if pg is not None and s_ > pg:
             s_ = float(pg)
         # 20 nov 2026 : la compagnie aussi (une PSA 10 et une SGC 10 ne sont pas la meme carte : avant, seule la note comptait)
-        out.append(dict(k=v.cle_carte(t) + ("|" + g.group(1).lower().replace("beckett", "bgs") if g else ""), gr=float(g.group(2)) if g else 0.0,
+        # 24 nov 2026 : la MEME cle que l'app (liquidite.cle_base : sans le bruit d'ecriture du titre) ; avant : v.cle_carte
+        out.append(dict(k=liquidite.cle_base(t) + ("|" + g.group(1).lower().replace("beckett", "bgs") if g else ""), gr=float(g.group(2)) if g else 0.0,
                         cie=g.group(1).upper().replace("BECKETT", "BGS") if g else "", p=p, j=j, so=bq.NOTE[so], nj=nj, ra=ra, nom=nom, src=src,
                         t=t[:120], fin=bq.lettre(s_), s=s_, connu=connu))
     info["joueurs"] = len({x["nom"] for x in out if x["connu"]})
@@ -438,7 +464,7 @@ def lancer(chemin, ecrire=False):
     else:
         df = defi(A, par, C0, C, radar)
     L = m["lettres"]
-    out = dict(le=dt.date.today().isoformat(), empreinte=empreinte(), regles=R, coupe=C0, revente_des=C, revente_fin=js[-1],
+    out = dict(le=dt.date.today().isoformat(), empreinte=empreinte(), regles=R, doublons=DOUBLONS[0], coupe=C0, revente_des=C, revente_fin=js[-1],
                ventes=res["maintenant"]["info"]["mesure"]["ventes"], ventes_total=len(rows), joueurs=res["maintenant"]["info"]["joueurs"],
                accord=res["maintenant"]["info"]["mesure"]["accord_global"], accord_avant=res["avant"]["info"]["mesure"]["accord_global"],
                rho=res["maintenant"]["info"]["mesure"]["rho"], inversions=res["maintenant"]["info"]["mesure"]["inversions"],
@@ -456,6 +482,9 @@ def lancer(chemin, ecrire=False):
     json.dump(out, open(os.path.join(TRAV, "resultats.json"), "w"), ensure_ascii=False, indent=1)
     json.dump(df, open(os.path.join(TRAV, "defi_pool.json"), "w"), ensure_ascii=False, separators=(",", ":"))
     if ecrire:
+        if DOUBLONS[0] != "exacts":
+            raise SystemExit("Le site ne s'ecrit qu'avec les doublons EXACTS : il faut un export des ventes avec la colonne « id » "
+                             "(Admin, Mesures, Toutes les ventes).")
         import site_iq
         site_iq.ecrire(out, df)
     return out

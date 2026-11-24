@@ -408,6 +408,42 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   dans l'index et dans le test, passer `liquidite.cle` à la clé canonique (nouvel index, relecture des archives), puis banc
   CHOIX / JUGE, test du site et bulletin. Les chiffres publiés (84,6 %) sont mesurés AVEC ces doublons : à refaire ensuite.
   Vraies ventes récentes de la Rantanen (PSA 10) : 80 $ (9 oct), 93 $ (22 oct), 70 $ (30 oct), 114 $ (16 nov).
+- **Les vraies ventes : le chantier (24 nov, 10 h 23 ; Mathieu : « Oui on doit être parfait avant Apple »)**. FAIT dans le bac
+  à sable (PAS livré tant que le test du site n'est pas refait avec des doublons exacts) :
+  `liquidite.py` : `VERSION = 2`, nouvel index `liquidite2.sqlite` (clé (cle, idv) : une vente = le numéro de l'annonce
+  vendue, `id_vente`), `cle_base` (la clé stricte sans le bruit d'écriture : saison, dièse, « Series 1 », « Upper Deck » /
+  « UD », ponctuation), `LIQ_MIN = 5` (5 VRAIES ventes ; choisi au banc : 85,3 % / 89,7 %, 131 cartes différentes à la
+  dernière fenêtre, contre 85,6 / 84,8 % et 83 cartes avant). La clé du décodeur (cle2) est REJETÉE (confond des cartes).
+  `vitrine.py` : `_sv` (version des signaux) : les annonces en vitrine sont relues dans le nouvel index dès qu'il est prêt.
+  `outils/tests_site.py` : une vente = une ligne (colonne « id » de l'export ; sans elle : doublons estimés et REFUS
+  d'écrire le site), clé de carte = `liquidite.cle_base` (toutes les mesures : « la même carte » veut dire la même chose
+  partout), `doublons` dans les résultats. Tests : `test_ventes_une_fois.py`, `test_vitrine.py`, `test_export_id.py`.
+  LIVRÉ sur son PC et à pousser par lui : `server.py` (l'export a la 5e colonne « id », jamais le lien). ENSUITE : il
+  télécharge « Toutes les ventes · Hockey » et le joint ; alors : `banc2.py <A> <trav> <export>` + `regles2.py` (revalider
+  5 ventes avec les doublons exacts), `tests_site.py <export> --ecrire`, `bulletin_iq.py <export> --ecrire` (4 dates, 50
+  min), suite de tests, livraison de TOUT (liquidite, vitrine, tests_site, site, tests, recherche). Après la mise en ligne :
+  l'index se rebâtit seul en fond (quelques minutes) ; lire « Vitrine : N annonces montrables » au journal.
+- **Les vraies ventes : RÉSULTATS (24 nov, midi ; export de 10 h 52 avec la colonne « id » : 1 778 722 lignes pour 1 264 949
+  annonces vendues, soit 29 % de lignes en double)**. « La même vente » = la même annonce, à un jour et 5 % près
+  (`liquidite.meme_vente`, la même fonction dans l'index du serveur et dans `tests_site.charger`). Banc (doublons exacts) :
+  5 ventes = 87,5 % (choix) / 90,3 % (jugé), 116 cartes différentes à la dernière fenêtre (avant : 85,6 / 84,8 %, 83).
+  Test officiel ÉCRIT sur le site (achats du 9 sept au 15 oct 2026, 620 380 ventes) : « À la une » 87,1 % (638 achats, IC
+  84,6-89,7), se revend 98,7 %, seul 12,7 %. DEUX CHIFFRES BAISSENT (les doublons les gonflaient) : A et A+ contre E 4,3 fois
+  (le site dit 4× ; avant 6×) et l'accord avec le marché 0,685 (68 % ; avant ≈ 75 %). B reste sous C. Le site dit : 87 %
+  contre 13 %, 98 % contre 25 %, 4×, 68 %, 620 k+ ventes. `deals._vitrine` : le journal dit maintenant « Vitrine : N a la
+  une · M tres recherchees · J jugees ». Vu au journal avant ce chantier (10 h 53) : 14 à la une, 231 annonces jugées depuis
+  la remise à zéro de la vitrine : la rangée « Très recherchées » se remplit au rythme du chasseur, pas en une heure.
+- **Les vraies ventes : LIVRÉ (24 nov, 13 h)**. Bulletin refait aux 5 dates sur les vraies ventes (29 sept, 13 oct, 27 oct,
+  10 nov, 24 nov) : 88, 91, 92, 90, 87 % ; seul 15, 16, 13, 12, 13 % ; le site dit « 87 à 91 % », « 12 à 16 % », « 5 fois sur
+  5 ». Suite de tests complète : passe. 17 fichiers sur son PC (md5 vérifiés) : `liquidite.py`, `vitrine.py`, `deals.py`,
+  `outils/tests_site.py`, le site (`ui/site_slabiq.html`, `ui/site_accueil.html`, `ui/slabiq_tests.json`,
+  `ui/slabiq_bulletin.json`), l'app, les tests, la recherche. APRÈS SON PUSH : (1) l'index `liquidite2.sqlite` se rebâtit
+  seul en fond dès la 1re ouverture du Radar (une à trois minutes ; d'ici là les annonces en vitrine gardent leurs anciens
+  signaux) ; (2) lire au journal « Vitrine : N a la une · M tres recherchees · J jugees » et le lui dire ; (3) vérifier
+  qu'il n'y a pas de « Liquidite (index) : … » ni de Traceback. Liste « Amélioré cette semaine » du site : ligne ajoutée
+  « Chaque vente comptée une seule fois » ; la ligne « 214 joueurs ajustés par le marché » n'est toujours pas vérifiée.
+  PAS FAIT : la même carte écrite SANS son numéro (« C98 » sans dièse, ou pas de numéro du tout) garde une autre clé ; les
+  annonces à plusieurs exemplaires vendus le même jour au même prix comptent pour une vente.
 
 ## En attente
 - **Méga test 3 ans (bâti le 22 nov, priorité 1)** : `mega_test.py` (serveur) part seul après le push (boucle de l'heure + reprise

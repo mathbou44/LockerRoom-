@@ -74,3 +74,32 @@ compte(R, canon, "cle canonique, avec les doublons")
 L4 = compte(uniques, canon, "cle canonique, sans les doublons")
 ex = [a for a in uniques if "rantanen" in a["nom"].lower() and "canvas" in a["t"].lower() and a["gr"] == 10.0]
 print("Rantanen Canvas PSA 10, 90 jours, sans doublons :", sorted((a["j"][:10], round(a["p"])) for a in ex), "| cles strictes :", len({a["k"] for a in ex}), "| cles canoniques :", len({canon(a) for a in ex}))
+
+# 3. la cle canonique melange-t-elle des cartes differentes ? La dispersion des prix d'une meme « carte » (ecart-type du log du
+#    prix, cartes de 8 ventes et plus en 60 jours, doublons enleves) : si la cle canonique melangeait des cartes, elle monterait
+import math
+import statistics as st
+
+
+def dispersion(L, cle, nom):
+    P = collections.defaultdict(list)
+    for a in L:
+        if a["j"][:10] >= d(60):
+            P[cle(a)].append(math.log(a["p"]))
+    S = sorted(st.pstdev(v) for v in P.values() if len(v) >= 8)
+    if S:
+        print(f"  {nom:36s} {len(S):5d} cartes | dispersion mediane {st.median(S):.3f} | 9e decile {S[int(len(S) * .9)]:.3f}")
+    return P
+
+
+print("dispersion des prix dans une meme carte (plus c'est bas, plus c'est la meme carte) :")
+Ps = dispersion(uniques, stricte, "cle stricte")
+Pc = dispersion(uniques, canon, "cle canonique")
+# les cartes que SEULE la cle canonique trouve liquides : leur dispersion a part
+seul = {k for k, v in Pc.items() if len(v) >= 8} - {canon(a) for a in uniques if len(Ps[stricte(a)]) >= 8}
+S = sorted(st.pstdev(Pc[k]) for k in seul)
+print(f"  liquides seulement avec la canonique  {len(S):5d} cartes | dispersion mediane {st.median(S):.3f} | 9e decile {S[int(len(S) * .9)]:.3f}")
+pire = sorted(seul, key=lambda k: -st.pstdev(Pc[k]))[:5]
+for k in pire:
+    ex_ = [a for a in uniques if canon(a) == k and a["j"][:10] >= d(60)]
+    print("   la plus dispersee :", round(st.pstdev(Pc[k]), 2), k[0][:4], "|", sorted({(round(a["p"]), a["t"][:58]) for a in ex_})[:4])

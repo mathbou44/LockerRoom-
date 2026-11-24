@@ -36,3 +36,34 @@ CE QU'ON A TROUVE
 6. B se revend moins que C : c'est la MESURE (les reventes de la MEME carte), pas la lettre. B = surtout des autographes, des
    numerotees et des patchs (1 a 2 % de ces cartes se revendent : peu de copies) ; C = surtout des cartes de base (4 %). Et a
    sorte egale, les C (14-17 $) tournent plus que les B (32-38 $). Rien change ; a reprendre au test de jeudi (g_c_jeudi).
+
+SUITE DU 24 NOV : LES VRAIES VENTES (Mathieu, une Rantanen UD Canvas Young Guns PSA 10 partie a 63 $ en encan : « j'espere qu'on
+l'avait captee » ; puis « on doit etre parfait avant Apple »)
+
+  couverture.py  combien de joueurs ont des cartes qui passent la regle du Radar (2 sur 3 n'en avaient aucune)
+  cle_carte.py   les doublons et la cle de carte : 36 % des lignes de 30 $ et plus des 90 derniers jours sont la meme vente gardee
+                 plusieurs fois (une fois par recherche, prix converti a quelques cents pres) ; la meme carte a plusieurs cles
+                 (la Rantanen : 59 lignes sous 21 cles)
+  banc2.py       le banc sur des ventes dedoublonnees, avec la cle liquidite.cle_base ; ecrit P2.json.gz
+  regles2.py     le nombre de ventes de la regle, re-choisi sur de vraies ventes
+
+CE QU'ON A TROUVE
+7. « 8 ventes en 60 jours » voulait souvent dire 3 ou 4 vraies ventes ; et de vraies cartes liquides etaient refusees parce que
+   leurs ventes etaient eparpillees sous plusieurs cles.
+8. La cle « canonique » du decodeur (joueur, annee, numero, paralleles ; outils/recherche/modele/cle2.py) est REJETEE pour la
+   liquidite : deux fois plus de cartes liquides, mais elle confond des cartes differentes (une « 1st Round Rookies Outburst » a
+   50 $ avec la Young Guns Outburst a 700 $ ; la carte-liste McDavid / Virtanen a 174 $ avec la Young Guns Canvas a 1 990 $).
+   Retenue : la cle stricte SANS le bruit d'ecriture (saison, diese du numero, « Series 1 », « Upper Deck » / « UD », ponctuation) :
+   elle ne peut pas confondre deux cartes ; +30 % de cartes liquides ; dispersion des prix d'une meme carte 0,174 -> 0,190.
+9. La regle re-choisie, doublons EXACTS (export du 24 nov avec la colonne « id » : 1 778 722 lignes pour 1 264 949 annonces
+   vendues ; liquidite.meme_vente : la meme annonce, a un jour et 5 % pres). Prix <= mediane, pas une carte neuve ;
+   choix (oct. 2025 a mars 2026) / juge (avril a oct. 2026) / cartes differentes a la derniere fenetre :
+     2 ventes 84,1 / 86,6 %  174     3 ventes 85,3 / 88,1 %  148     4 ventes 86,9 / 89,3 %  134
+     5 ventes 87,5 / 90,3 %  116  <- retenue (LIQ_MIN = 5)     6 ventes 88,3 / 91,3 %  103     8 ventes 88,9 / 92,2 %  86
+   Avant (ventes en double, ancienne cle, « 8 ventes ») : 85,6 / 84,8 %, 83 cartes. « Pas une carte neuve » compte toujours
+   autant : 4 ventes avec les cartes neuves = 69,6 / 77,8 %. (Avec les doublons seulement ESTIMES, le banc donnait 85,3 / 89,7 %
+   a 5 ventes : l'estimation en laissait passer.)
+10. Le test officiel sur ces vraies ventes (achats du 9 sept au 15 oct 2026, 620 380 ventes) : « A la une » 87,1 % (638 achats,
+    IC 84,6-89,7 ; avant 84,6 % sur 454), se revend 98,7 %, seul 12,7 %. Deux chiffres BAISSENT parce que les doublons les
+    gonflaient : A contre E 4,5 fois (avant 7,0 ; le site dit 4 fois, A et A+ contre E : 4,3) et l'accord avec le marche
+    0,685 (avant 0,743).

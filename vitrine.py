@@ -144,6 +144,7 @@ def ajouter(annonces):
                 continue                                 # l'index n'est pas pret : jugee au prochain balayage
             if ok:                                       # 24 nov 2026 : gardee des que la carte est A- ou mieux ; la regle se juge a la lecture
                 x["_liq"], x["_med"], x["_vieux"] = sig.get(x["titre"]) or (0, None, 0)
+                x["_sv"] = liquidite.VERSION
             P[x["item_id"]] = x if ok else None          # None : deja jugee, pas assez recherchee (pas renotee)
             gardees += 1 if ok and liquidite.passe(x["_liq"], x["_med"], x["total"], x["_vieux"]) else 0
         _ETAT["sale"] = True
@@ -157,8 +158,11 @@ def _completer(plafond=400):
     """23 nov 2026 au soir : les annonces entrees en vitrine avant la regle « pas une carte neuve » n'ont pas leur signal
     (_vieux) : on le lit dans l'index, par paquets, au lieu d'attendre qu'elles expirent (une annonce a prix fixe revue a
     chaque balayage n'expire jamais). Tant qu'il manque, l'annonce n'est pas montree."""
+    # 24 nov 2026 : et les annonces dont les signaux viennent de l'ancien index (ventes comptees en double, ancienne cle de
+    # carte : liquidite.VERSION) : relues des que le nouvel index est pret ; d'ici la, leurs anciens signaux servent encore
     with _VERROU:
-        manque = [(k, x["titre"]) for k, x in _pool().items() if x is not None and "_vieux" not in x and x.get("titre")][:plafond]
+        manque = [(k, x["titre"]) for k, x in _pool().items()
+                  if x is not None and x.get("titre") and ("_vieux" not in x or x.get("_sv") != liquidite.VERSION)][:plafond]
     if not manque:
         return 0
     try:
@@ -173,6 +177,7 @@ def _completer(plafond=400):
         for k, t in manque:
             if P.get(k) is not None and t in sig:
                 P[k]["_liq"], P[k]["_med"], P[k]["_vieux"] = sig[t]
+                P[k]["_sv"] = liquidite.VERSION
         _ETAT["sale"] = True
     return len(manque)
 
@@ -233,7 +238,7 @@ def _sortir(L, n, prix_min, prix_max, prouvees):
     L.sort(key=lambda x: (-(x.get("score") or 0), 0 if x.get("encan") else 1, _ts(x.get("fin")) or 9e12, -(x.get("total") or 0)))
     out = []
     for x in L[: max(1, int(n))]:
-        x.pop("_liq", None), x.pop("_med", None), x.pop("_vieux", None)         # jamais montres : seulement la lettre
+        x.pop("_liq", None), x.pop("_med", None), x.pop("_vieux", None), x.pop("_sv", None)         # jamais montres : seulement la lettre
         x["joueur_n"] = x.get("joueur")
         if prouvees:
             x["a_la_une"] = True

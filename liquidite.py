@@ -44,6 +44,26 @@ Pas retenu, trop peu de cartes : 12 ventes, prix a 7 % sous la mediane (+2 a 3 p
 ne passe plus (derniere fenetre : 83 cartes differentes au lieu de 125). LR_RADAR_ANCIENNETE=0 dans Render enleve cette regle.
 Ce que ca ne regle PAS : meme avec elle, une fenetre sur l'annee tombe a 67 % (mai 2026). Recherche : outils/recherche/garde/.
 
+24 nov 2026 (Mathieu, une Rantanen UD Canvas Young Guns PSA 10 partie a 63 $ en encan : « j'espere qu'on l'avait captee » ; puis
+« on doit etre parfait avant Apple ») : la liquidite comptait MAL les ventes, dans les deux sens.
+  1. La meme vente etait comptee 2, 3 ou 4 fois : nos archives la gardent une fois par recherche qui l'a trouvee, au prix
+     converti a quelques cents pres (36 % des lignes de 30 $ et plus des 90 derniers jours). Maintenant : une vente = le numero
+     de l'annonce eBay vendue (id_vente), une seule ligne dans l'index.
+  2. La meme carte avait plusieurs cles selon la facon d'ecrire le titre (la Rantanen : 21). Maintenant : cle_base.
+« 8 ventes en 60 jours » voulait donc souvent dire 3 ou 4 vraies ventes, et de vraies cartes liquides etaient refusees. La regle
+re-choisie sur de vraies ventes (outils/recherche/garde/banc2.py et regles2.py ; choix : oct. 2025 a mars 2026 ; juge : avril
+a oct. 2026 ; prix <= mediane, pas une carte neuve) :
+  2 ventes : 84,1 % / 86,6 %   174 cartes differentes a la derniere fenetre
+  3 ventes : 85,3 % / 88,1 %   148
+  4 ventes : 86,9 % / 89,3 %   134
+  5 ventes : 87,5 % / 90,3 %   116   <- ICI (LIQ_MIN = 5) ; avant (doublons, ancienne cle, « 8 ventes ») : 85,6 % / 84,8 %, 83 cartes
+  6 ventes : 88,3 % / 91,3 %   103
+  8 ventes : 88,9 % / 92,2 %    86
+Doublons EXACTS (l'export du 24 nov avec la colonne « id » : 1 778 722 lignes pour 1 264 949 annonces vendues ; meme_vente).
+« Pas une carte neuve » compte toujours autant : 4 ventes avec les cartes neuves = 69,6 % / 77,8 %. Test officiel refait sur ces
+vraies ventes (achats du 9 sept au 15 oct 2026) : 87,1 % gardent leur valeur (638 achats ; avant : 84,6 % sur 454).
+Nouvel index : liquidite2.sqlite (l'ancien reste la).
+
 L'index se remplit en fond, par paquets, depuis les ventes deja archivees (base_ventes.sqlite, en lecture seulement) : aucun
 appel de plus a SoldComps ni a eBay. 20 nov 2026 (Render : « database is locked ») : l'index a son propre fichier
 (liquidite.sqlite, en WAL) : il n'attend jamais apres les longues lectures des archives, et les archives n'attendent pas apres lui.
@@ -58,7 +78,7 @@ import threading
 import time
 
 NOTE_MIN = 82                       # A- et plus
-LIQ_MIN = 8                         # 23 nov 2026 : 8 ventes en 60 jours (avant : 5)
+LIQ_MIN = 5                         # 24 nov 2026 : 5 VRAIES ventes en 60 jours (23 nov : 8, comptees avec les doublons)
 LIQ_JOURS = 60
 RABAIS_MAX = 0.0                    # 23 nov 2026 : l'annonce ne depasse pas la mediane recente (avant : +10 %)
 VIEUX_MIN = 1                       # 23 nov 2026 au soir : au moins une vente entre LIQ_JOURS et MED_JOURS jours avant (pas une carte neuve)
@@ -72,9 +92,12 @@ _V = threading.Lock()
 _ETAT = {"le": 0.0, "en_cours": False, "pret": set(), "tables": set()}
 
 
+VERSION = 2                         # 24 nov 2026 : la cle sans le bruit d'ecriture ; une vente comptee une seule fois
+
+
 def _ch():
     import comptes
-    return os.path.join(comptes.DONNEES, "liquidite.sqlite")
+    return os.path.join(comptes.DONNEES, "liquidite2.sqlite")     # 24 nov 2026 : un nouvel index (liquidite.sqlite : l'ancien)
 
 
 def prix_permis():
@@ -85,11 +108,74 @@ def anciennete_permise():
     return (os.environ.get("LR_RADAR_ANCIENNETE") or "1").strip() not in ("0", "non", "false")
 
 
-def cle(titre):
-    """La carte : le titre normalise (validation_iq.cle_carte) + la compagnie + la note (une PSA 10 et une SGC 10 different)."""
+_RE_SAISON = re.compile(r"^((?:19|20)\d\d)(?:[-/](?:\d\d|\d{4}))?$")
+_RE_PONCT = re.compile(r"^[\W_]+$")
+_SERIES = frozenset(("series", "serie", "one", "two", "1", "2", "s1", "s2"))
+_RE_ITM = re.compile(r"/itm/(?:[^/?]+/)?(\d{9,15})")
+
+
+def cle_base(titre):
+    """La carte, sans la compagnie ni la note : les mots du titre (validation_iq.cle_carte) SANS le bruit d'ecriture.
+    24 nov 2026 (Mathieu, une Rantanen Canvas Young Guns PSA 10 partie a 63 $ : « j'espere qu'on l'avait captee ») : la meme
+    carte avait 21 cles (« 2015 » ou « 2015-16 », « #C98 » ou « C98 », « Series 1 », « UD » ou « Upper Deck », un tiret seul).
+    On n'enleve QUE ce qui ne peut pas confondre deux cartes : la saison garde son annee de debut, le numero perd son diese,
+    « Series 1 » part quand le numero est la, « Upper Deck » / « UD » partent, la ponctuation seule part. Essaye et REJETE : une
+    cle faite par le decodeur (joueur, annee, numero, paralleles) : deux fois plus de cartes liquides, mais elle confondait une
+    « 1st Round Rookies Outburst » a 50 $ avec la Young Guns Outburst a 700 $ (outils/recherche/garde/cle_carte.py)."""
     import validation_iq
+    toks = validation_iq.cle_carte(titre).split()
+    a_num = any(t.startswith("#") and len(t) > 1 for t in toks)
+    out = set()
+    for t in toks:
+        if _RE_PONCT.match(t):
+            continue
+        m = _RE_SAISON.match(t)
+        if m:
+            out.add(m.group(1))
+        elif t.startswith("#"):
+            t = t.lstrip("#").replace("-", "")
+            if t:
+                out.add(t)
+        elif t == "ud" or (a_num and t in _SERIES):
+            continue
+        else:
+            out.add(t)
+    if "upper" in out and "deck" in out:
+        out -= {"upper", "deck"}
+    return " ".join(sorted(out))
+
+
+def cle(titre):
+    """La carte : cle_base + la compagnie + la note (une PSA 10 et une SGC 10 different)."""
     g = G.search(titre or "")
-    return validation_iq.cle_carte(titre) + ("|" + g.group(1).lower().replace("beckett", "bgs") + "|" + str(float(g.group(2))) if g else "||0.0")
+    return cle_base(titre) + ("|" + g.group(1).lower().replace("beckett", "bgs") + "|" + str(float(g.group(2))) if g else "||0.0")
+
+
+def meme_vente(deja, le, prix):
+    """La ligne (le, prix) est-elle une vente DEJA comptee de la meme annonce ? deja : [(le 'AAAA-MM-JJ', prix)] de cette annonce.
+    Oui si a un jour pres (deux sources, deux fuseaux) et a 5 % pres (le taux de change du jour ou on l'a lue). Une annonce a
+    plusieurs exemplaires vendus a des jours differents, ou a des prix differents le meme jour (« choisis ta carte »), garde
+    chacune de ses ventes. Mesure sur l'export du 24 nov : 1 778 722 lignes pour 1 264 949 annonces ; 1,9 % des annonces ont
+    des lignes a plusieurs dates (a un jour pres pour 86 % d'entre elles)."""
+    try:
+        j = dt.date.fromisoformat(str(le)[:10]).toordinal()
+    except ValueError:
+        return False
+    p = float(prix or 0)
+    for le2, p2 in deja:
+        try:
+            if abs(j - dt.date.fromisoformat(str(le2)[:10]).toordinal()) <= 1 and abs(p - float(p2)) <= 0.05 * max(p, float(p2)):
+                return True
+        except ValueError:
+            continue
+    return False
+
+
+def id_vente(url, titre=None, le=None, prix=None):
+    """Une vente = une annonce eBay vendue : son numero (dans le lien). Nos archives la gardent une fois par recherche qui l'a
+    trouvee, au prix converti a quelques cents pres : sans ce numero, la meme vente comptait 2, 3 ou 4 fois."""
+    m = _RE_ITM.search(str(url or ""))
+    return m.group(1) if m else hashlib.md5(f"{titre}|{le}|{prix}".encode("utf-8", "ignore")).hexdigest()[:16]
 
 
 def mediane_recente(hist, jour, dv=DEMI_VIE, jours=MED_JOURS, avant=False):
@@ -119,7 +205,7 @@ def _cx():
     if _ch() in _ETAT["tables"]:
         return c
     c.execute("PRAGMA journal_mode=WAL")
-    c.execute("CREATE TABLE IF NOT EXISTS liquidite (cle TEXT, le TEXT, prix REAL, h TEXT, PRIMARY KEY (cle, le, prix, h)) WITHOUT ROWID")
+    c.execute("CREATE TABLE IF NOT EXISTS liquidite (cle TEXT, idv TEXT, le TEXT, prix REAL, PRIMARY KEY (cle, idv, le, prix)) WITHOUT ROWID")
     c.execute("CREATE INDEX IF NOT EXISTS liquidite_le ON liquidite (le)")
     c.execute("CREATE TABLE IF NOT EXISTS liquidite_etat (k TEXT PRIMARY KEY, v TEXT)")
     _ETAT["tables"].add(_ch())
@@ -158,16 +244,22 @@ def rafraichir(pause=0.05):
             while True:
                 v = base_ventes._cx()                     # une courte lecture par paquet, jamais de transaction ouverte
                 try:
-                    rows = v.execute("SELECT rowid, titre, prix, le FROM ventes WHERE rowid > ? ORDER BY rowid LIMIT ?", (dernier, PAQUET)).fetchall()
+                    rows = v.execute("SELECT rowid, titre, prix, le, url FROM ventes WHERE rowid > ? ORDER BY rowid LIMIT ?", (dernier, PAQUET)).fetchall()
                 finally:
                     v.close()
                 if not rows:
                     break
-                lignes = []
-                for _rid, t, p, le in rows:
+                lignes, lot = [], {}
+                for _rid, t, p, le, u in rows:
                     le = str(le or "")[:10]
                     if t and p and float(p) >= 3 and le >= d0:
-                        lignes.append((cle(t), le, round(float(p), 2), hashlib.md5(t.encode("utf-8", "ignore")).hexdigest()[:12]))
+                        k, i = cle(t), id_vente(u, t, le, p)
+                        if (k, i) not in lot:                    # les ventes deja gardees de cette annonce (l'index, puis ce paquet)
+                            lot[(k, i)] = c.execute("SELECT le, prix FROM liquidite WHERE cle = ? AND idv = ?", (k, i)).fetchall()
+                        if meme_vente(lot[(k, i)], le, p):       # la meme vente, relue par une autre recherche : une seule ligne
+                            continue
+                        lot[(k, i)].append((le, float(p)))
+                        lignes.append((k, i, le, round(float(p), 2)))
                 dernier = rows[-1][0]
                 c.executemany("INSERT OR IGNORE INTO liquidite VALUES (?,?,?,?)", lignes)
                 c.execute("INSERT OR REPLACE INTO liquidite_etat VALUES ('rowid', ?)", (str(dernier),))
