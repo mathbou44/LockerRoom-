@@ -38,7 +38,8 @@ class FiltresIOS(unittest.TestCase):
         for id_ in ("fd-tri", "fd-ty", "fd-iq", "fd-bud", "fd-prov"):
             self.assertIn("menu('%s'," % id_, self.fn, id_)
             self.assertIn("lier('%s'," % id_, self.fn, id_)
-        self.assertIn("<select id=\"${id}\" aria-label=", self.fn)
+        self.assertIn("<select id=\"${id}\" aria-label=", self.src)          # le menu partage (ioMenu)
+        self.assertIn("const menu = ioMenu;", self.fn)
         self.assertIn("e.target.matches('input[type=checkbox], select')", self.fn, "« Appliquer » doit apparaitre quand un menu change")
 
     def test_plus_de_rangees_de_pastilles(self):

@@ -56,6 +56,13 @@ AMORCE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "demande_legal
 
 def lire():
     ch = _chemin()
+    # 21 nov 2026 (vitesse, lu dans les piles du serveur) : lire() est appele une fois PAR CARTE (score de chaque annonce) et
+    # demandait chaque fois la date du fichier au disque (lent sur le disque de Render) : au plus une verification aux 2 s
+    # 24 nov 2026 : la verification « le fichier existe-t-il ? » (l'amorce) passait AVANT ce raccourci : encore un appel au
+    # disque par carte (pile du serveur : « exists < demande_legale.lire < evergreen._faits < score_slab._jeune »). Elle suit.
+    m_ = time.monotonic()
+    if _ETAT.get("d") is not None and _ETAT.get("ch") == ch and m_ - _ETAT.get("vu", 0.0) < 2.0:
+        return _ETAT["d"]
     if not os.path.exists(ch) and os.path.exists(AMORCE):
         # 10 nov 2026 : l'amorce (758 joueurs deja lus : LNH + Wikipedia, donnees publiques) : le labo et le modele
         # demarrent tout de suite en ligne ; les joueurs sont ensuite relus chaque semaine
@@ -64,11 +71,6 @@ def lire():
             shutil.copyfile(AMORCE, ch)
         except OSError:
             pass
-    # 21 nov 2026 (vitesse, lu dans les piles du serveur) : lire() est appele une fois PAR CARTE (score de chaque annonce) et
-    # demandait chaque fois la date du fichier au disque (lent sur le disque de Render) : au plus une verification aux 2 s
-    m_ = time.monotonic()
-    if _ETAT.get("d") is not None and _ETAT.get("ch") == ch and m_ - _ETAT.get("vu", 0.0) < 2.0:
-        return _ETAT["d"]
     try:
         mt = os.path.getmtime(ch)
     except OSError:

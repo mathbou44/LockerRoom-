@@ -86,6 +86,7 @@ REGLAGES_DEFAUT = {
     # les pays d'ou les cartes du Radar peuvent etre expediees (un, l'autre ou les deux)
     "provenance": ["CA", "US"],
     "pays": "CA",                # 8 nov 2026 : d'ou l'utilisateur achete (CA | US) : taxes, douanes et deals de son pays d'abord
+    "province": "",              # 24 nov 2026 : sa province (AB, BC, ... QC) : la taxe de SES achats ; vide = Quebec, comme avant
     # 30 oct 2026 (Mathieu : « la personne qui a le profil doit pouvoir personnaliser ses deals un peu ») :
     # collectionne : recrues | veterans | legendes | hits | gradees (vide = tout) ; favoris : joueurs ou equipes
     "deals_profil": {},                                            # 30 oct 2026 : vendeurs ou l'acheteur ramasse sur place (pas de port)                                       # 29 oct 2026 : photo studio (fond clair) ou les photos telles quelles
@@ -157,6 +158,12 @@ def _net_rev(valeur):
     """7 nov 2026 : ce qui reste de la revente d'un deal (deals.net_revente : frais eBay sur prix + port, pub, envoi)."""
     import deals as _d
     return _d.net_revente(valeur)
+
+
+class MessageClient(ValueError):
+    """24 nov 2026 (audit de chaque fonction) : une erreur dont le TEXTE est fait pour l'utilisateur (« Logo invalide : une
+    image de moins de 300 Ko », « Scan trop lourd »). Le serveur l'envoie telle quelle a l'ecran. Avant, ces messages
+    partaient en « Erreur du serveur : réessaie dans un instant » : l'utilisateur ne savait pas quoi corriger."""
 
 
 def _paye(total, x=None):
@@ -763,7 +770,29 @@ class Api:
         return _connecter(self.chemin_db)
 
     # -- reglages ------------------------------------------------------------------------
+    # 24 nov 2026 (vitesse ; lu dans les piles du serveur : 3 Radars lents sur 10 etaient pris dans reglages_lire). Les reglages
+    # sont lus des dizaines de fois par Radar (pays, provenance, alarmes, chasses, chaque recherche...), et CHAQUE lecture
+    # ouvrait la base du compte sous le verrou commun a tout le serveur (et relisait le logo pour en faire l'empreinte). Ils
+    # sont maintenant gardes 2 secondes par base ; toute ecriture (reglages_sauver, logo_sauver) vide la garde tout de suite.
+    _REGL = {}
+    REGL_S = 2.0
+
+    def _reglages_oublier(self):
+        Api._REGL.pop(self.chemin_db, None)
+
     def reglages_lire(self):
+        import copy
+        ch_ = self.chemin_db
+        g_ = Api._REGL.get(ch_)
+        if g_ and time.monotonic() - g_[0] < Api.REGL_S:
+            return copy.deepcopy(g_[1])
+        r = self._reglages_lire0()
+        if len(Api._REGL) > 400:
+            Api._REGL.clear()
+        Api._REGL[ch_] = (time.monotonic(), copy.deepcopy(r))
+        return r
+
+    def _reglages_lire0(self):
         r = dict(REGLAGES_DEFAUT)
         with _verrou:
             c = self._db()
@@ -1095,11 +1124,12 @@ class Api:
                     c.execute("DELETE FROM reglages WHERE k='logo'")
                 else:
                     if len(data_url) > LOGO_MAX or not _RE_LOGO.match(data_url):
-                        raise ValueError("Logo invalide : une image PNG ou JPEG de moins de 300 Ko")
+                        raise MessageClient("Logo invalide : une image PNG ou JPEG de moins de 300 Ko")
                     c.execute("INSERT OR REPLACE INTO reglages VALUES ('logo', ?)", (json.dumps(data_url),))
                 c.commit()
             finally:
                 c.close()
+                self._reglages_oublier()
         return self.reglages_lire()
 
     def reglages_sauver(self, nouveaux):
@@ -1123,11 +1153,12 @@ class Api:
                     if k in REGLAGES_DEFAUT:
                         j = json.dumps(v)
                         if len(j) > REGLAGE_MAX_OCTETS:         # 12 nov 2026 (revue) : une valeur geante ne gonfle pas la base
-                            raise ValueError("Réglage trop long : " + k)
+                            raise MessageClient("Réglage trop long : " + k)
                         c.execute("INSERT OR REPLACE INTO reglages VALUES (?,?)", (k, j))
                 c.commit()
             finally:
                 c.close()
+                self._reglages_oublier()
         return self.reglages_lire()
 
     # -- sports (23 oct 2026) : devine, sinon le sport principal des Reglages ----------------
@@ -4778,7 +4809,7 @@ class Api:
         def ouvrir(u):
             brut = examen.data_url_octets(u)
             if len(brut) > 40_000_000:
-                raise ValueError("Scan trop lourd (40 Mo au plus)")
+                raise MessageClient("Scan trop lourd (40 Mo au plus)")
             im = examen.ouvrir(brut)
             if im.size[0] * im.size[1] > photos_cartes.MAX_PIXELS:
                 im.thumbnail((8000, 8000))
@@ -8102,7 +8133,7 @@ class Api:
             if not Api._radar_digne(x, _pm, _iq, not cp):
                 continue
             try:
-                self._frais_reels(x, pays)
+                self._frais_reels(x, pays, self._province())
             except Exception:
                 pass
             if cp:
@@ -8258,7 +8289,7 @@ class Api:
                 c.close()
             ch = self.chasses_liste().get("chasses") or []
             cle = (comptes.courant() or "local") + ":" + hashlib.md5(json.dumps(
-                [[tuple(a) for a in al], self.deals_profil_lire(), self.reglages_lire().get("pays"), self._est_admin(), vue_simulee(), ch,
+                [[tuple(a) for a in al], self.deals_profil_lire(), self.reglages_lire().get("pays"), self._province(), self._est_admin(), vue_simulee(), ch,
                  [self.reglages_lire().get(k) for k in ("budget_mois", "objectif")], "score-v9"],                         # 18 nov 2026 : prix fixe A- (Pro) ; 16 nov 2026 : Radar a neuf (bareme A+ a E, petits vendeurs filtres, noms)
                 sort_keys=True, default=str).encode()).hexdigest()
         except Exception:
@@ -8361,6 +8392,12 @@ class Api:
         import cartes_match
         from concurrent.futures import ThreadPoolExecutor, wait
         t0 = time.time()
+        # 24 nov 2026 (vitesse : un Radar de 29 s juste apres un push, 8 a 30 s dans la journee) : le temps de chaque etape,
+        # ecrit dans le journal quand le Radar prend 4 s et plus (« Radar (temps) : ... »), et les 3 recherches les plus lentes
+        _tm, _td = [("debut", t0)], {}
+
+        def _marque(nom):
+            _tm.append((nom, time.time()))
         c = marche._cx(self)
         try:
             al = marche._dicts(c.execute("SELECT id, q, prix_max FROM alertes WHERE actif=1 ORDER BY id DESC LIMIT 25"))
@@ -8468,12 +8505,22 @@ class Api:
         taches += [("creux", n, lambda n=n: un_joueur(n, None, 30)) for n in creux_noms]
         taches.append(("petits", "tous", lambda: self._radar_petits(prof)))
         resultats, msgs = {}, []
+        _marque("preparation")
         if taches:
             ex = ThreadPoolExecutor(max_workers=8)
             futurs = {}
+
+            def _chrono(fn, nom):
+                def f():
+                    d0 = time.time()
+                    try:
+                        return fn()
+                    finally:
+                        _td[nom] = round(time.time() - d0, 1)
+                return f
             for k, cle, fn in taches:
                 ctx = contextvars.copy_context()          # le compte courant suit chaque recherche (quota par compte)
-                futurs[ex.submit(ctx.run, fn)] = (k, id(cle) if isinstance(cle, dict) else cle)
+                futurs[ex.submit(ctx.run, _chrono(fn, f"{k} {cle if isinstance(cle, str) else ''}".strip()))] = (k, id(cle) if isinstance(cle, dict) else cle)
             fait, pas_fait = wait(list(futurs), timeout=max(5.0, float(os.environ.get("LR_RADAR_DELAI_S") or 15) - (time.time() - t0)))
             for fu in fait:
                 k, cle = futurs[fu]
@@ -8488,6 +8535,7 @@ class Api:
                 k, cle = futurs[fu]
                 erreurs.append(f"{k} {cle if not isinstance(cle, int) else ''} : trop long")
             ex.shutdown(wait=False, cancel_futures=True)
+        _marque("recherches")
         out, groupes, a_la_une, recherchees = [], [], [], []
         for a in al:
             r = resultats.get(("alerte", id(a)))
@@ -8515,12 +8563,14 @@ class Api:
         for x in out + [y for g in pour_toi + decouvrir + chauds_creux + chasses + types for y in g.get("annonces") or []] \
                 + [y for v in vend for y in v.get("annonces") or []]:
             try:
-                self._frais_reels(x, pays)
+                self._frais_reels(x, pays, self._province())
             except Exception:
                 pass
+        _marque("frais")
         # 10 nov 2026 : le Score SlabCoach (le modele appris : titre sans le joueur + donnees publiques ; jamais le prix)
         score_slab.annoter_lot(out + [y for g in pour_toi + decouvrir + chauds_creux + chasses + types for y in g.get("annonces") or []]
                                + [y for v in vend for y in v.get("annonces") or []])
+        _marque("scores")
         # 16 nov 2026 (Mathieu : « dire que SlabCoach x SlabIQ s'adapte a son utilisateur ; faire en sorte que ce soit le
         # cas ») : le score reste UN seul chiffre (le meme pour tout le monde) ; ce qui s'adapte, c'est l'ordre et le pourquoi :
         # ses joueurs suivis, les sortes de cartes qu'il collectionne et son budget poussent une annonce plus haut dans SON
@@ -8535,6 +8585,7 @@ class Api:
                                    + [y for v in vend for y in v.get("annonces") or []])
         except Exception as e:
             print("Radar (verifier) : " + repr(e)[:120], flush=True)
+        _marque("pour moi et verification")
         # 16 nov 2026 (Mathieu : « genre de cartes de merde qui ne devraient pas etre dans le Radar », des D a 2-12 $) : le Radar
         # ne montre que des cartes qu'un expert regarderait : B et plus (C+ et plus pour SES joueurs suivis), jamais une base,
         # jamais sous 10 $ (ou sous le prix minimum choisi par l'utilisateur)
@@ -8576,7 +8627,7 @@ class Api:
                 rech = vitrine.recherchees(Api.RADAR_RECHERCHEES_LUES, prof.get("prix_min"), prof.get("prix_max"))
                 for x in une + rech:
                     try:
-                        self._frais_reels(x, pays)
+                        self._frais_reels(x, pays, self._province())
                     except Exception:
                         pass
                 une_g = garde(une)
@@ -8607,17 +8658,29 @@ class Api:
                 petits = [y for y in petits if str(y.get("item_id")) not in caches or y.get("autres")]
         except Exception as e:
             print("Radar (qualite) : " + repr(e)[:120], flush=True)
+        _marque("filtre et vitrine")
         # 11 nov 2026 (Mathieu : « dans la version admin, le cout d'acquisition avec les ventes ; il y a juste moi ») : l'ADMIN
         # (verifie cote serveur, jamais en vue simulee) voit sur chaque annonce du Radar les ventes reelles de la meme carte
         # (cache et archives seulement : aucun appel) et sa mise max. Les autres comptes ne recoivent jamais ces champs.
         if self._est_admin() and ebay_prix_actif(self):
             self._radar_admin_vendu(out + [y for g in pour_toi + decouvrir + chauds_creux + chasses + types for y in g.get("annonces") or []]
                                     + [y for v in vend for y in v.get("annonces") or []], pays)
+        _marque("ventes (admin)")
         try:
             import alarmes
             feu = bool(alarmes.reglages(self).get("en_feu"))
         except Exception:
             feu = False
+        try:
+            _tot = time.time() - t0
+            if _tot >= float(os.environ.get("LR_RADAR_TEMPS_S") or 4):
+                _et = " · ".join(f"{n} {round(b - a, 1)}" for (_, a), (n, b) in zip(_tm, _tm[1:]) if b - a >= 0.05)
+                _lentes = ", ".join(f"{n} {d} s" for n, d in sorted(_td.items(), key=lambda x: -x[1])[:3])
+                _nb = len(out) + sum(len(g.get("annonces") or []) for g in pour_toi + decouvrir + chauds + creux_l + chasses + types) + len(petits)
+                print(f"Radar (temps) : {round(_tot, 1)} s = {_et} | {len(taches)} recherches, {sum(1 for e in erreurs if e.endswith('trop long'))} trop longues"
+                      f" ; les plus lentes : {_lentes or 'aucune'} | {_nb} annonces gardees, {len(a_la_une) + len(recherchees)} de la vitrine", flush=True)
+        except Exception as e:
+            print("Radar (temps) : " + repr(e)[:120], flush=True)
         if erreurs:
             print(f"Radar ({round(time.time() - t0, 1)} s) : " + " | ".join(erreurs[:6]), flush=True)
             try:
@@ -8626,7 +8689,7 @@ class Api:
             except Exception:
                 pass
         return {"ok": True, "deals": out[:120], "a_la_une": a_la_une, "recherchees": recherchees, "cibles": groupes, "vendeurs": vend, "pour_toi": pour_toi,
-                "decouvrir": decouvrir, "chauds": chauds, "creux": creux_l, "petits": petits, "chasses": chasses, "types": types, "alerte_feu": feu, "pays": pays,
+                "decouvrir": decouvrir, "chauds": chauds, "creux": creux_l, "petits": petits, "chasses": chasses, "types": types, "alerte_feu": feu, "pays": pays, "province": self._province(),
                 "profil": {k: prof.get(k) for k in ("collectionne", "favoris", "prix_min", "prix_max", "iq_min")},
                 "profil_vide": not (prof.get("favoris") or prof.get("collectionne") or prof.get("prix_max")),
                 "partiel": bool(erreurs), "erreur_txt": msgs[0] if msgs else None,
@@ -8635,13 +8698,13 @@ class Api:
                 "duree_s": round(time.time() - t0, 1)}
 
     @staticmethod
-    def _frais_reels(x, pays="CA"):
+    def _frais_reels(x, pays="CA", prov=None):
         """10 nov 2026 (Mathieu : « un bon plus sur notre app vs eBay ») : ce que l'acheteur paiera VRAIMENT, en $ CA : le
         prix + le port + les taxes de son pays, et les frais d'importation d'une carte qui vient d'ailleurs (estimes). Ce
         n'est pas un jugement du prix : c'est le calcul de la facture de CETTE annonce."""
         import deals as _dl
         try:
-            t = _dl.taxe_de({**x, "_pays": pays})
+            t = _dl.taxe_de({**x, "_pays": pays, "_prov": prov})       # 24 nov 2026 : la taxe de SA province
         except Exception:
             return x
         if x.get("total"):
@@ -8824,6 +8887,12 @@ class Api:
         out.sort(key=lambda x: str(x.get("fin") or ""))
         return {"annonces": out[:limite], "n": len(out)}
     RADAR_MAX_JOUEURS = 10
+
+    def _province(self):
+        """24 nov 2026 : la province de l'acheteur (la taxe de ses achats au Canada) ; vide si elle n'est pas choisie."""
+        import deals as _dl
+        k = str(self.reglages_lire().get("province") or "").strip().upper()
+        return k if k in _dl.TAXES_PROVINCE else ""
 
     def _pays_radar(self):
         """11 nov 2026 (Mathieu : « l'option Canada / USA ») : le Radar cherche sur le eBay du pays de l'acheteur (port, taxes)."""
@@ -9460,7 +9529,7 @@ class Api:
         out.sort(key=lambda x: x["total"])
         pays = self.reglages_lire().get("pays") or "CA"
         for x in out:
-            self._frais_reels(x, pays)
+            self._frais_reels(x, pays, self._province())
         return out
 
     def verifier_prix(self, item_id=None, titre=None):
@@ -10482,7 +10551,10 @@ class Api:
         ailleurs : l'utilisateur entre son cout lui-meme. Jamais un cout deja entre n'est remplace."""
         import difflib
         if achats is None:
-            achats = ebay_compte.achats(90)
+            try:
+                achats = ebay_compte.achats(90)
+            except RuntimeError as e:             # 24 nov 2026 (audit) : « Compte eBay non connecté » arrivait en « Erreur du serveur »
+                return {"ok": False, "erreur": str(e)[:200], "achats": 0, "relies": 0}
         taux = 1 / float(self.taux_change().get("usd") or 0.72)                  # 1 $ US -> $ CA
         res = {"achats": len(achats), "relies": 0}
         with _verrou:

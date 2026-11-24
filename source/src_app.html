@@ -11077,6 +11077,14 @@ const nbFiltresDeals = (F) => ['prix_min', 'prix_max', 'rabais_min', 'gain_min']
 // 31 oct 2026 (Mathieu : « la zone Mes deals et Filtres dans Deals, c'est la meme chose : moins complique ; et assure-toi
 // que le filtre fonctionne quand il est applique ») : UNE seule fenetre, 4 questions simples. Ce qui dure (ce que je
 // collectionne, mon budget, mes joueurs, mes vendeurs) est garde sur le compte ; le reste sur le telephone.
+// 24 nov 2026 : une rangee « menu » comme dans Reglages d'iOS (le nom a gauche, le choix a droite, le menu NATIF du telephone),
+// partagee par toutes les feuilles de reglages : ioMenu(id, nom, [[valeur, texte], ...], valeur choisie) ; ioLier(id, f)
+const IO_CHEV = `<svg class="io-c" viewBox="0 0 10 16" aria-hidden="true"><path d="M1.6 6 5 2.6 8.4 6M1.6 10 5 13.4 8.4 10" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+function ioMenu(id, nom, L, v){
+  const opts_ = L.map(([k, t]) => `<option value="${esc(String(k))}" ${String(k) === String(v) ? 'selected' : ''}>${esc(t)}</option>`).join('');
+  return `<label class="io-r io-m"><span class="io-l">${nom}</span><span class="io-v" id="${id}-v">${esc((L.find(x => String(x[0]) === String(v)) || L[0])[1])}</span>${IO_CHEV}<select id="${id}" aria-label="${esc(nom)}">${opts_}</select></label>`;
+}
+function ioLier(id, f){ const m_ = $('#' + id); if (!m_) return; m_.onchange = () => { $('#' + id + '-v').textContent = (m_.options[m_.selectedIndex] || {}).text || ''; vibrer(); f(m_.value); }; }
 async function feuilleFiltresDeals(){
   const F = S.dealsF;
   // 3 nov 2026 (Mathieu : « quand je clique sur les filtres, rien ne se passe ») : le serveur lent, la feuille attendait son
@@ -11131,9 +11139,7 @@ async function feuilleFiltresDeals(){
   // menu NATIF du telephone (un vrai <select> : sur l'iPhone, c'est le menu d'iOS, avec son crochet). Un interrupteur pour
   // oui/non, un curseur pour le profit. « Réinitialiser » en haut a gauche, comme dans une feuille iOS ; « Appliquer » apparait
   // en bas au premier changement (3 nov). Avant : 997 px de haut pour 767 px de feuille ; maintenant tout tient sans defiler.
-  const opts_ = (L, v) => L.map(([k, t]) => `<option value="${esc(String(k))}" ${String(k) === String(v) ? 'selected' : ''}>${esc(t)}</option>`).join('');
-  const CHEV = `<svg class="io-c" viewBox="0 0 10 16" aria-hidden="true"><path d="M1.6 6 5 2.6 8.4 6M1.6 10 5 13.4 8.4 10" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-  const menu = (id, nom, L, v) => `<label class="io-r io-m"><span class="io-l">${nom}</span><span class="io-v" id="${id}-v">${esc((L.find(x => String(x[0]) === String(v)) || L[0])[1])}</span>${CHEV}<select id="${id}" aria-label="${esc(nom)}">${opts_(L, v)}</select></label>`;
+  const menu = ioMenu;
   const TYS = [['', tt('Toutes', 'All')], ['fixe', tt('Prix fixe', 'Buy It Now')], ['encan', tt('Encans', 'Auctions')]];
   const PVS = [['CA,US', tt('Canada et États-Unis', 'Canada & USA')], ['CA', 'Canada'], ['US', tt('États-Unis', 'USA')]];
   const prov0 = ['CA', 'US'].filter(k => PV.has(k)).join(',') || 'CA,US';
@@ -11239,7 +11245,14 @@ async function feuilleReglagesDeals(){
     ${p.vendeurs_max ? ligne('rd-vend', IC_PIL.profil, tt('Mes vendeurs eBay', 'My eBay sellers') + (p.pro ? '' : ' <span class="badge-f pro">✦ PRO</span>'), vs.length ? esc(vs.join(', ')) : tt('Aucun', 'None')) : ''}
     <button class="acc-pil fd-ram" id="rd-fil"><span class="ap-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_PIL.graphe}</svg></span><span class="ap-t"><b>${tt('Filtres', 'Filters')}</b><small>${tt('Profit, budget, cartes, pays, joueurs', 'Profit, budget, cards, country, players')}</small></span><i aria-hidden="true">›</i></button>`);
   $('#rd-pays').onclick = () => { vibrer();
-    ouvrirFeuille(`<h3>${tt('J’achète depuis', 'I buy from')}</h3><div class="prov-p">${[['CA', 'Canada'], ['US', tt('États-Unis', 'USA')]].map(([k, n]) => `<button class="prov ${pa === k ? 'on' : ''}" data-pays="${k}"><span class="prov-f">${drapeau(k)}</span><span>${n}</span><i>${pa === k ? '✓' : ''}</i></button>`).join('')}</div>`);
+    // 24 nov 2026 (audit des calculs) : la taxe du « Total » suit la province de l'acheteur (avant : celle du Quebec pour tous)
+    const PROVS = [['AB', 'Alberta'], ['BC', tt('Colombie-Britannique', 'British Columbia')], ['MB', 'Manitoba'], ['NB', tt('Nouveau-Brunswick', 'New Brunswick')],
+      ['NL', tt('Terre-Neuve-et-Labrador', 'Newfoundland and Labrador')], ['NS', tt('Nouvelle-Écosse', 'Nova Scotia')], ['NT', tt('Territoires du Nord-Ouest', 'Northwest Territories')],
+      ['NU', 'Nunavut'], ['ON', 'Ontario'], ['PE', tt('Île-du-Prince-Édouard', 'Prince Edward Island')], ['QC', tt('Québec', 'Quebec')], ['SK', 'Saskatchewan'], ['YT', 'Yukon']];
+    ouvrirFeuille(`<h3>${tt('J’achète depuis', 'I buy from')}</h3><div class="prov-p">${[['CA', 'Canada'], ['US', tt('États-Unis', 'USA')]].map(([k, n]) => `<button class="prov ${pa === k ? 'on' : ''}" data-pays="${k}"><span class="prov-f">${drapeau(k)}</span><span>${n}</span><i>${pa === k ? '✓' : ''}</i></button>`).join('')}</div>
+      ${pa === 'CA' ? `<div class="io-g">${ioMenu('rd-prov', tt('Ma province', 'My province'), PROVS, (S.reglages || {}).province || 'QC')}</div>
+        <div class="sous" style="font-size:13px; padding:0 16px">${tt('Sert à calculer la taxe dans le « Total » d’une carte.', 'Used to work out the tax in a card’s “Total”.')}</div>` : ''}`);
+    ioLier('rd-prov', async (v) => { const r = await essai(API.reglages_sauver({province: v}), tt('Enregistré', 'Saved')); if (r) { S.reglages = r; MEMO.clear(); } });
     $$('[data-pays]').forEach(b => b.onclick = async () => { const r = await essai(API.reglages_sauver({pays: b.dataset.pays}), tt('Enregistré', 'Saved'));
       if (r) { S.reglages = r; MEMO.clear(); feuilleReglagesDeals(); } }); };
   $('#rd-ram').onclick = () => { vibrer(); feuilleRamassage(() => feuilleReglagesDeals()); };
@@ -14791,6 +14804,7 @@ const MAJ_APP = () => [
     ['deals', tt('Radar : beaucoup plus de cartes', 'Radar: many more cards'), tt('Sous « À la une », une nouvelle rangée « Très recherchées » : toutes les cartes A- et mieux en vente, la meilleure note d’abord.', 'Below “Top cards”, a new “Highly sought” row: every A- and better card for sale, best grade first.')],
     ['deals', tt('Tes joueurs, toujours là', 'Your players, always there'), tt('Le Radar montre maintenant les meilleures cartes de chaque joueur et équipe que tu suis, même les moins connus. Dans Filtres, « B et + » montre vraiment les B.', 'The Radar now shows the best cards of every player and team you follow, even lesser-known ones. In Filters, “B & up” really shows the Bs.')],
     ['deals', tt('Radar Pro : pas de cartes tout juste sorties', 'Pro Radar: no just-released cards'), tt('Une carte qui vient de sortir part haut, puis descend pendant deux mois. Le Radar Pro attend qu’elle se vende depuis deux mois.', 'A just-released card starts high, then drops for two months. The Pro Radar waits until it has been selling for two months.')],
+    ['deals', tt('Le « Total » avec la taxe de ta province', 'The “Total” with your province’s tax'), tt('Choisis ta province dans Profil › Mes préférences › Mes deals › J’achète depuis. Avant, c’était la taxe du Québec pour tout le monde.', 'Pick your province in Profile › My preferences › My deals › I buy from. Before, everyone got Quebec’s tax.')],
     ['deals', tt('Radar : le même nombre partout', 'Radar: the same number everywhere'), tt('L’accueil, l’onglet du bas et le Radar montrent le même nombre de cartes, écrit en entier.', 'Home, the bottom tab and the Radar show the same number of cards, written in full.')]]},
   {n: 243, le: '2026-11-23', points: [
     ['breaks', tt('Breaks : « Vaut plus scellée »', 'Breaks: “Worth more sealed”'), tt('Le badge d’une boîte ne paraît que si on a assez de vraies ventes de ses cartes. Sinon : rien.', 'A box’s badge only shows when we have enough real sales of its cards. Otherwise: nothing.')],

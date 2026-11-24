@@ -535,6 +535,35 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   hors de la feuille). (4) « Supprimer mon compte » : le lien des abonnements Apple en couleur d'accent, le champ respire.
   Vu et laissé tel quel : le Profil (déjà des rangées avec chevrons), la fenêtre « Ton radar » (rangées, deux boutons), les
   questions d'accueil. Test : `tests/test_avis_app.py` (publiée ou non, Apple muet). Les captures : `vue/chemin_apres_*.png`.
+- **Vitesse du Radar : mesuré dans le journal, trois correctifs, des temps par étape (24 nov, 15 h ; tâche `g_c_vitesse`
+  devancée parce que la personne d'Apple ouvrira le Radar)**. Faits (journal Render, « Lent : POST /api/mes_deals ») : 20,4 s,
+  21,2 s, 30,4 s, 29,0 s (juste après le push de 14 h 48), 12,5 s, 8 à 9 s ; ce n'est PAS seulement après un redémarrage. Dix
+  piles de Radars lents (« Pile lente : /api/mes_deals ») : 3 dans `_radar_admin_vendu → vendues.memes_cache →
+  vendues.archives` (ADMIN seulement, plafonné à 6 s ; la requête `titre LIKE '%nom%'` balaie 1,78 million de ventes : à
+  refaire avec un index, pas fait) ; 3 dans `reglages_lire` ; 2 dans le score (`indice_joueurs.lire → getmtime`,
+  `demande_legale.lire → exists` : un appel au disque PAR CARTE) ; 2 en attente des recherches eBay (limite 15 s,
+  `LR_RADAR_DELAI_S`) ; 1 dans `_radar_garder`. Mesuré dans le bac : le score lui-même est rapide (0,5 à 0,9 ms par annonce).
+  Corrigé : (1) `reglages_lire` gardé 2 s par base (`Api._REGL`, `REGL_S`), vidé par `reglages_sauver` et `logo_sauver`
+  (`_reglages_oublier`) ; rend une copie ; (2) `indice_joueurs.lire` : la date du fichier au plus aux 2 s (`_ecrire` se voit
+  tout de suite) ; (3) `demande_legale.lire` : la vérification d'existence passe APRÈS le raccourci de 2 s. Ajouté : la ligne
+  « Radar (temps) : 19.3 s = préparation 0.4 · recherches 9.1 · scores 2.3 · … | 12 recherches, 0 trop longues ; les plus
+  lentes : … | N annonces gardées » écrite quand un Radar prend 4 s et plus (`LR_RADAR_TEMPS_S`). Test
+  `tests/test_vitesse_radar.py`. À FAIRE après le push : lire ces lignes, puis décider avec des chiffres : (a) un premier Radar
+  « rapide » pour un compte sans Radar gardé (les deux rangées de la vitrine tout de suite, le reste 20 s après : le compte
+  démo d'Apple est dans ce cas, et un Radar gardé de plus de 6 h aussi) ; (b) l'index pour `vendues.archives`.
+  À savoir : Mathieu en vue Pro simulée n'a JAMAIS le Radar gardé (calcul complet à chaque ouverture) : ses temps sont le pire cas.
+- **AUDIT AVANT LE LANCEMENT (24 nov, 15 h ; Mathieu : « repasse chaque fonction et calcul ; un audit intense de l'app et du site
+  avant le release officiel »)**. Le rapport vivant : `docs/AUDIT_LANCEMENT.md` (chaque trouvaille : corrigé / à décider /
+  sans risque). Cinq passes : 1 calculs d'argent (EN COURS), 2 SlabIQ-Radar-chiffres, 3 chaque fonction du serveur (FAIT),
+  4 l'app écran par écran, 5 le site. Fait ce jour : `outils/audit_api.py` (321 fonctions, 4 083 appels, compte gratuit et
+  sans session, arguments tordus ; `--test` = les règles qui ne doivent jamais casser ; `tests/test_audit_api.py` le lance à
+  chaque suite) : 0 fonction d'admin ouverte, 0 sans session, 0 champ réservé. Corrigé : mauvais nombre d'arguments → 400 et
+  plus rien dans Admin › Erreurs (`server.dispatcher`, `inspect.signature(m).bind`) ; `lockerroom.MessageClient` (les
+  messages faits pour l'utilisateur arrivent tels quels) ; `couts_depuis_achats` sans eBay. Calculs : la taxe d'achat suit la
+  PROVINCE (`deals.TAXES_PROVINCE`, `taxe_province`, `_prov` dans `taxe_de` ; réglage `province` ; menu dans « J'achète
+  depuis » avec `ioMenu`/`ioLier`, les aides de menu iOS maintenant partagées) ; 0,30 $ par commande de 10 $ et moins
+  (`calcul.profit_vente`). Tests `tests/test_taxe_province.py`. RESTE À FAIRE : passe 1 (bilan, breaks, gradation, taux de
+  change, valeur d'inventaire : recalcul indépendant sur un compte semé), passes 2, 4 et 5.
 
 ## En attente
 - **Méga test 3 ans (bâti le 22 nov, priorité 1)** : `mega_test.py` (serveur) part seul après le push (boucle de l'heure + reprise

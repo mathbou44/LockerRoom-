@@ -393,10 +393,17 @@ def _chemin():
 
 def lire():
     p = _chemin()
+    # 24 nov 2026 (vitesse, lu dans les piles du serveur : « getmtime < indice_joueurs.lire < indice < score_slab.score ») :
+    # lire() est appele une fois PAR CARTE (le score de chaque annonce) et demandait chaque fois la date du fichier au disque
+    # (lent sur le disque de Render). Au plus une verification aux 2 secondes ; une ecriture (_ecrire) se voit tout de suite.
+    m_ = time.monotonic()
+    if _ETAT["d"] is not None and _ETAT.get("p") == p and m_ - _ETAT.get("vu", 0.0) < 2.0:
+        return _ETAT["d"]
     try:
         mt = os.path.getmtime(p)
     except OSError:
         return {"joueurs": {}, "indice": {}, "le": 0}
+    _ETAT["vu"], _ETAT["p"] = m_, p
     if _ETAT["d"] is None or _ETAT["mt"] != mt:
         try:
             with open(p, encoding="utf-8") as f:
@@ -414,6 +421,7 @@ def _ecrire(d):
             json.dump(d, f, ensure_ascii=False)
         os.replace(p + ".tmp", p)
     _ETAT["d"], _ETAT["mt"] = d, os.path.getmtime(p)
+    _ETAT["vu"], _ETAT["p"] = time.monotonic(), p
 
 
 # -- 1. les totaux de saison, notes chaque jour ------------------------------------------------------------------

@@ -1910,6 +1910,16 @@ def dispatcher(nom):
         args = []
     if not isinstance(args, list):
         args = [args]
+    # 24 nov 2026 (audit : chaque fonction appelee avec des arguments tordus) : un appel qui n'a pas le bon NOMBRE d'arguments
+    # (une vieille version de l'app gardee sur un telephone, un appel fabrique) finissait en « Erreur du serveur » et
+    # s'ecrivait dans Admin > Erreurs (461 cas sur 4 083 appels d'essai). C'est une erreur de l'appel, pas du serveur : 400.
+    try:
+        import inspect
+        inspect.signature(m).bind(*args)
+    except TypeError:
+        return jsonify({"ok": False, "erreur": "Demande invalide : mets l’app à jour, puis réessaie"}), 400
+    except ValueError:
+        pass
     try:
         try:                                 # 9 nov 2026 : l'activite anonyme (le nom de la fonction, jamais ses donnees)
             import activite
@@ -1921,6 +1931,8 @@ def dispatcher(nom):
             return _lier_navigateur(jsonify(res), res["url"])
         return jsonify(res)
     except Exception as e:  # l'ecran affiche l'erreur dans un toast
+        if isinstance(e, lockerroom.MessageClient):          # 24 nov 2026 : un message fait pour l'utilisateur arrive tel quel
+            return jsonify({"ok": False, "erreur": str(e)[:300]})
         try:
             import admin
             admin.noter_erreur("api " + nom, e)

@@ -103,6 +103,21 @@ def etranger(x, pays=None):
 # 8 nov 2026 (Mathieu : « prioriser les deals canadiens pour un Canadien et americains pour un Americain, a cause des tarifs
 # douaniers ») : un acheteur aux Etats-Unis paie la taxe de vente de son Etat (environ 7 %) sur un achat americain, et des
 # frais d'importation sur une carte venue du Canada (estimes : eBay ne nous les donne que pour un acheteur canadien)
+# 24 nov 2026 (audit des calculs avant le lancement) : la taxe d'un achat au Canada etait celle du QUEBEC (14,975 %) pour TOUT
+# le monde : le « Total » d'une carte montre a un acheteur de l'Alberta (5 %) etait gonfle de pres de 10 %, celui d'un
+# Ontarien (13 %) de 2 %. La taxe suit maintenant la province de l'acheteur (reglage « province », choisi dans Mes deals ›
+# J'achete depuis). Sans province : le Quebec, comme avant. Taux de 2026 (TPS ou TVH + taxe provinciale ; taxtips.ca, revise
+# le 28 aout 2026 ; la Nouvelle-Ecosse est a 14 % depuis le 1er avril 2025).
+TAXES_PROVINCE = {"AB": 5.0, "BC": 12.0, "MB": 12.0, "NB": 15.0, "NL": 15.0, "NS": 14.0, "NT": 5.0, "NU": 5.0, "ON": 13.0,
+                  "PE": 15.0, "QC": 14.975, "SK": 11.0, "YT": 5.0}
+
+
+def taxe_province(prov=None):
+    """La taxe de vente (fraction) d'un achat livre dans cette province ; province inconnue ou vide : TAXE_ACHAT (Quebec)."""
+    k = str(prov or "").strip().upper()
+    return round(TAXES_PROVINCE[k] / 100, 5) if k in TAXES_PROVINCE else TAXE_ACHAT
+
+
 TAXE_US = _env_pct("LR_TAXE_US", "7")
 IMPORT_US = _env_pct("LR_IMPORT_US", "15")
 PAYS = ("CA", "US")
@@ -121,11 +136,12 @@ def taxe_de(x, pays=None):
             return float(x["taxe"])
         except (TypeError, ValueError):
             pass
+    chez_moi = taxe_province(x.get("_prov")) if x.get("_prov") else TAXE_ACHAT      # 24 nov 2026 : la province de l'acheteur
     if not etranger(x):
-        return TAXE_ACHAT
+        return chez_moi
     if x.get("import_lu"):
         pct = _pct_import(x)
-        return round(pct + TAXE_IMPORT, 4) if pct > 0 else TAXE_ACHAT
+        return round(pct + TAXE_IMPORT, 4) if pct > 0 else chez_moi
     return IMPORT_DEFAUT
 
 

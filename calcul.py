@@ -406,7 +406,12 @@ def profit_vente(prix, cout=0.0, port_paye=0.0, port_charge=0.0, frais_pct=0.132
     prix, cout = float(prix or 0), float(cout or 0)
     port_paye, port_charge = float(port_paye or 0), float(port_charge or 0)
     base = prix + port_charge
-    frais = round(base * (float(frais_pct) + float(promo_pct)) + (float(frais_fixe) if prix else 0), 2)
+    # 24 nov 2026 (audit des calculs ; ebay.ca, « Selling fees ») : le frais par commande est de 0,30 $ pour une commande de
+    # 10 $ et moins, 0,40 $ au-dessus. Avant : toujours 0,40 $ (le profit d'une carte a 8 $ etait 0,10 $ trop bas).
+    fixe = float(frais_fixe) if prix else 0.0
+    if 0 < base <= 10 and fixe > 0.30:
+        fixe = 0.30
+    frais = round(base * (float(frais_pct) + float(promo_pct)) + fixe, 2)
     net = round(base - frais - port_paye, 2)
     return {"frais": frais, "net": net, "profit": round(net - cout, 2),
             "marge_pct": round(100 * (net - cout) / cout, 1) if cout else None}
