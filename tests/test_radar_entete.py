@@ -35,8 +35,8 @@ assert re.search(r"\.md-barre \.md-glow \.md-g-eng\{flex:none; width:30px", s), 
 assert "voir: nb_ ? () => ouvrirVoir() : null" in vue and "const ouvrirVoir = () => { choix(tt('Voir', 'Show')," in vue
 c0 = s.index("async function configurerRadar(") if "async function configurerRadar(" in s else s.index("function configurerRadar(")
 cfg = s[c0:s.index("\nfunction ", c0 + 50) if "\nfunction " in s[c0 + 50:] else len(s)]
-r0 = cfg.index('<div class="liste rq-recap">')
-assert cfg.index("ligne('v', tt('Afficher', 'Show')", r0) < cfg.index("ligne(0, tt('Joueurs et équipes'", r0)
+r0 = cfg.index('<div class="io-f">')                  # 24 nov 2026 : la liste est batie comme Reglages d'iOS (tests/test_radar_ios.py)
+assert cfg.index("nav('v', tt('Afficher', 'Show')", r0) < cfg.index("nav(0, tt('Joueurs et équipes'", r0)
 assert "if (b.dataset.aller === 'v') { const v = o.voir; fin(false).then(() => { if (v) setTimeout(v, 80); }); return; }" in cfg
 # 5. a l'ordi (la meme condition que rangerRecherche) : les 3 menus restent, pas de pastille, de loupe ni de x
 m0 = s.index("html:not(.tel-large) body .d-iqp, html:not(.tel-large) body .md-ic, html:not(.tel-large) body .md-rech-x{display:none !important}")
