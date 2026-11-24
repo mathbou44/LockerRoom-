@@ -528,10 +528,15 @@ def _nom_majuscules(titre):
 _RE_RELIQUE = re.compile(r"patch|relic|jersey|memorabilia|swatch|game[- ]used|game[- ]worn|patch-?tacular|materials?\b|threads|fabric", re.I)          # 31 oct 2026 : version du recadrage studio (2 : cartes couchees reconnues, carte centree)
 
 
+LIQUIDER_J, LIQUIDER_TOUT_J = 60, 90
+
+
 def popularite(cartes, maint=None):
     """31 oct 2026 - l'interet des acheteurs pour TES annonces eBay : les suivis (« j'aime » / watchers) et les vues (30 j).
     Populaires : 2 suivis et plus, ou deux fois plus de vues que tes annonces typiques (30 vues minimum).
-    A liquider : en ligne depuis 30 jours ou plus, 0 suivi, et peu de vues (moins de la moitie du typique) ou vues inconnues.
+    A liquider (23 nov 2026, Mathieu devant « 80 a liquider » : « 30 jours c'est peu ; si pas de watchers, peu ou pas de views,
+    ou 90 jours affiche : ca semble etre une carte sans interet ») : en ligne depuis 90 jours ou plus ; ou depuis 60 jours ou plus
+    avec 0 suivi et peu de vues (moins de la moitie du typique) ou vues inconnues. Avant : 30 jours.
     Aucune annonce en ligne : None (l'ecran garde « Se vend en » et « Dorment »)."""
     maint = maint or datetime.now()
     l = [x for x in cartes if x.get("statut") == "Listée" and x.get("item_number")
@@ -551,7 +556,11 @@ def popularite(cartes, maint=None):
     pops = sorted((x for x in l if pop(x)), key=lambda x: (-(int(x.get("watchers") or 0)), -(int(x.get("vues") or 0))))
     def froid(x):
         a, v = age(x), x.get("vues")
-        if a is None or a < 30 or int(x.get("watchers") or 0) > 0:
+        if a is None:
+            return False
+        if a >= LIQUIDER_TOUT_J:
+            return True
+        if a < LIQUIDER_J or int(x.get("watchers") or 0) > 0:
             return False
         return v is None or med is None or v < max(10, med / 2)
     liq = sorted((x for x in l if froid(x)), key=lambda x: -(age(x) or 0))
@@ -6628,7 +6637,14 @@ class Api:
                 except Exception:
                     vs = []
                 sure = _deals.valeur_sure(vs, titre_c)[0] if len(vs) >= 2 else None
-                ev = sante.evaluer_vendues(a["prix_demande"], sure, len(vs), sante.age_jours(a.get("debut")), a.get("watchers"))
+                # 23 nov 2026 : le repere = le plus haut de la derniere vente (3 mois) et de la mediane ponderee (sante.py)
+                try:
+                    _rec = sorted(vs, key=lambda v: str(v.get("le") or ""), reverse=True)
+                    _der, _pon = (float(_rec[0]["prix"]) if _rec else None), _deals.mediane_recente(vs)
+                except Exception:
+                    _der = _pon = None
+                ev = sante.evaluer_vendues(a["prix_demande"], sure, len(vs), sante.age_jours(a.get("debut")), a.get("watchers"),
+                                           derniere=_der, ponderee=_pon)
             else:
                 semblables = [x for x in res if x["item_id"] != str(a["item_number"])]
                 # 10 nov 2026 (licence eBay §9.5) : sans accord d'eBay, les annonces pareilles ne donnent plus de verdict
@@ -6738,6 +6754,11 @@ class Api:
                 out = []
                 for s in _dicts(c.execute("SELECT * FROM sante WHERE verdict=? AND fait=0", (verdict,))):
                     a = actives.get(s["item_number"])
+                    # 23 nov 2026 (la Misa a 55 $ dite « + 424 % » sur 3 ventes d'une autre version) : un repere douteux deja
+                    # garde (passe d'avant) ne sort ni dans « Trop cheres » ni dans le mode Auto ; il sera rejuge a sa prochaine passe
+                    if a and verdict == "baisser" and _float(s.get("mediane")) and _float(a.get("prix_demande")) \
+                            and _float(a["prix_demande"]) > _float(s["mediane"]) * sante.DOUTE_FOIS and (s.get("n") or 0) < sante.DOUTE_N:
+                        continue
                     if a:
                         out.append({**s, "titre": a["titre"], "prix": a["prix_demande"], "photo": a.get("photo"), "watchers": a.get("watchers"),
                                     "age": sante.age_jours(a.get("debut")), "carte_id": a["id"], "cout": a.get("cout")})

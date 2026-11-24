@@ -233,6 +233,60 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   baisse PAS vérifiée (hypothèse : plus de cartes couvertes) : tâche `g_c_jeudi`. Règle de livraison rappelée (ex-tâche `v_push`) :
   à partir du 1er décembre, pousser tôt le matin ou tard le soir (chaque push = 3 à 5 minutes lentes : le 23 nov à 20 h 01,
   `achetees_tableau` 10,8 s et `accueil` 5,5 s dans la minute suivante).
+- **Admin « Activité » refaite (23 nov, « bcp trop long à scroller pour rien »)** : `adminActivite` : période + 3 chiffres sur une
+  ligne, graphique de 54 px (svg `preserveAspectRatio="none"` : il grandissait avec la fenêtre, ≈ 290 px), les 3 classements côte
+  à côte (6 lignes, 4 au cell, « Tout voir · N »), « jamais utilisées » dans un `<details>`, commentaires en pastilles par
+  catégorie (un toucher montre la liste). Mesuré à 1456×760 : 656 px, aucun défilement. Test : `test_activite_compacte.py`.
+  LEÇON pour les autres fenêtres admin : à l'ordi, une fenêtre tient sur un écran ; les listes en colonnes, le détail au toucher.
+- **Repère de prix d'une annonce (23 nov au soir ; Mathieu : « va falloir que tu fasses attention », 3e fois sur ce sujet après
+  les 8 et 21 nov)**. Sa Michael Misa 2025-26 SP Rookie Authentics OR (jersey) à 55 $ : « Too high +424 % · market $10 · 3 sales »
+  avec le bouton « Match the market · $10 », alors que la même carte s'est vendue 61 $ (3 oct.). Dans nos ventes, le #122 existe en
+  4 versions : base /1749 et Blue (2 à 6 $), Jersey (10 à 14 $), Jersey Patch (42 à 83 $), Gold « Game Used Patch » (≈ 60 $).
+  Le repère de l'annonce (`sante`, passe `_sante` → `c.marche`) a très probablement pris les ventes « Jersey » : PAS vérifié (je
+  n'ai ni le titre de sa fiche ni les 3 ventes ; lui demander). Sa règle, redite : « le prix est toujours plus cher que la last
+  sold des 3 derniers mois / moyenne pondérée, la plus chère, d'environ 15 % ». Fait : `sante.evaluer_vendues(…, derniere,
+  ponderee)` : repère = max(dernière vente 90 j, médiane pondérée `deals.mediane_recente`) ; bon prix = repère + 15 %
+  (`MARGE_NEGO`) ; « baisser » seulement au-delà de + 25 % (`HAUT_VENDUES`, avant + 15 %) et la suggestion = repère + 15 % ;
+  plus du DOUBLE du repère avec moins de 8 ventes → verdict « verifier », aucune suggestion (donc jamais de baisse automatique
+  ni de rabais conseillé) ; `sante_liste("baisser")` écarte aussi les vieux repères douteux ; à l'écran `repere(c)` dit
+  « À vérifier · même version ? » sans bouton, et « Mettre au marché » = repère + marge de négo (15 %). Le chemin des comps
+  (`comps_valeur`) a la même garde. Test : `test_prix_repere.py`. RESTE (important, pas fait) : `cartes_match` traite « Jersey »
+  comme « Patch » (`patch: True` pour les deux) et la couleur OR de cette carte n'est lisible que par le lettrage doré : revoir
+  la séparation Jersey / Patch / Or au banc (`outils/banc_valeur.py`) avant d'y toucher, jamais à l'aveugle.
+- **« À liquider » (23 nov, tuile à 80 : « 30 jours c'est peu ; si pas de watchers, peu ou pas de views, ou 90 jours affiché »)** :
+  `lockerroom.popularite` : 90 jours en ligne et plus, OU 60 jours et plus avec 0 suivi et peu de vues (ou vues inconnues) ;
+  avant : 30 jours. Le 60 est MON choix (le même que « traîne ») : il n'a pas donné de chiffre, lui faire confirmer.
+  Test : `test_popularite.py`.
+- **Consignation, « rien se passe quand je clique » (23 nov, 59 cartes)** : aucun appel `consig_*` au journal Render entre
+  20 h 54 et 21 h 07 : rien ne partait du navigateur. Reproduit : Exporter, Exporter (ou Imprimer), puis Annuler → la question
+  « Retirer N annonces d'eBay ? » restait affichée avec des boutons morts. `feuilleConsigner` : une seule question à la fois
+  (`question`), bandeau d'origine gardé une fois (`bandeau0`). Test : `test_consig_question.py`. PAS confirmé que c'était SA
+  suite de gestes : lui faire réessayer après le push. Rappel : « Retirer et continuer » termine vraiment les annonces sur eBay.
+- **Misa, la cause trouvée (23 nov, 21 h 30 ; son titre : « 2025-26 SP Hockey Rookie Authentics Patch RC - Michael Misa #122 »)**.
+  Rejoué sur l'export : 6 ventes retenues dans les 90 jours, valeur sûre 10,49 $. 5 des 6 étaient des « SP Game Used - Authentic
+  Rookies #AR-MM » (autre produit, autre carte ; de 1,43 à 143 $) ; la 6e est « SP ROOKIE AUTHENTICS JERSEY #122 » vendue 10,49 $
+  le 20 nov. La vente Gold à 61 $ est refusée parce que son titre ne dit pas « Gold » ; les « Jersey Patch » à 43 $ datent de
+  plus de 90 jours. Corrigé dans `cartes_match.raisons_refus` : (1) une vente qui porte un code de carte avec dièse (`_code_diese`,
+  #AR-MM) n'est pas la carte #122, ni celle d'un autre code ; (2) « SP Game Used » en toutes lettres d'un seul côté = autre
+  produit, sauf si l'autre titre dit aussi « game used ». « SP » seul ne tranche rien (short print). Mesuré sur 19 562 paires
+  de vraies ventes : 25 comparaisons retirées sur 1 435 gardées (1,7 %), toutes de vraies erreurs à la lecture. Test :
+  `test_misa_comps.py`. PAS RÉGLÉ et à lui de trancher : sa carte (dos « JERSEY », lettrage doré) est-elle la version Gold
+  (≈ 61 $) ou la Jersey (10,49 $ le 20 nov) ? Avec son titre actuel il reste UNE vente en 90 jours : plus de verdict.
+  Mathieu, 21 h 44 : morceau « uni » = c'est une JERSEY. Le « marché 10 $ » était donc le bon ordre de grandeur (10,49 $ le
+  20 nov ; 13 et 14 $ en mars), obtenu avec 5 mauvaises ventes sur 6 ; c'est le mot « Patch » de son titre qui est faux.
+  Mathieu, 21 h 41 : « pas gold ». Sur Misa #122 seulement, trois niveaux de prix : Rookie Authentics sans morceau 1 à 6 $
+  (15 ventes), « Jersey » 10 à 14 $ (3), « Patch » pas Gold médiane 43 $ (5), Gold 60 $ (1). Une seule carte : trop mince pour
+  changer la règle pour toutes ; mesurer Jersey seul contre Patch sur tous les jeux avant d'y toucher.
+  Jersey et Patch restent confondus par `_RE_PATCH` (les vendeurs mélangent les deux mots : ne pas séparer à l'aveugle).
+- **« Je veux pas cliquer, tout doit se faire auto » (Mathieu, 23 nov, 21 h 55)**. État vérifié : le serveur refait seul le
+  test de prédiction chaque semaine (`slabiq_test`, fichier `slabiq_test_donnees.json.gz`) et le signal par joueur se note seul
+  chaque jour (`signal_joueurs.noter`). Encore manuel : (1) le test PUBLIÉ sur le site (export des ventes par Mathieu →
+  `outils/tests_site.py --ecrire` → push) ; (2) le push par GitHub Desktop (sa règle : jamais de git depuis la VM). Fait :
+  sa tâche `r_donnees` fermée, tâche Claude `g_c_auto` (26 nov) : faire tourner le test du site SUR le serveur, la nuit, le site
+  lit le résultat ; garde-fou obligatoire (échec ou chiffre qui bouge trop = on garde les anciens chiffres + alerte admin), car
+  « le site ne doit jamais annoncer plus que ce qui est mesuré ». À vérifier avant : mémoire et durée sur Render (le test prend
+  ~11 min ici, 1,15 M de ventes ; un seul processus). Essayé : le navigateur de l'app Claude sur son PC n'est PAS connecté à
+  l'admin (renvoi à /connexion) ; ne pas lui redemander de s'y connecter, il ne veut aucun clic.
 
 ## En attente
 - **Méga test 3 ans (bâti le 22 nov, priorité 1)** : `mega_test.py` (serveur) part seul après le push (boucle de l'heure + reprise

@@ -312,6 +312,22 @@ def _decoder_memo(titre):
 IMPLIQUES = {"exquisite": {"cup"}, "watch": {"authentic"}}
 
 
+_RE_CODE_DIESE = re.compile(r"#\s?([A-Za-z]{2,5})-([A-Za-z0-9]{1,5})\b")
+_RE_SP_GU = re.compile(r"\bsp\s+game\s+used\b")
+
+
+def _code_diese(t):
+    """« ... #AR-MM ... » -> « AR-MM » : un code de carte ecrit avec son diese (sans diese, « Pee-Chee » ou « Game-Used » y
+    ressembleraient)."""
+    m = _RE_CODE_DIESE.search(str(t or ""))
+    return (m.group(1) + "-" + m.group(2)).upper() if m else None
+
+
+def _sp_game_used(t):
+    """« SP Game Used » nomme en toutes lettres (« SP » seul veut aussi dire « short print » : on n'en tire rien)."""
+    return bool(_RE_SP_GU.search(norm(t or "")))
+
+
 def raisons_refus(c, titre, appris=None):
     """[] si l'annonce est la meme carte, sinon pourquoi pas (en mots simples)."""
     a = _decoder_memo(titre)
@@ -347,6 +363,17 @@ def raisons_refus(c, titre, appris=None):
         r.append("autre année")
     if c["num"] and a["num"] and a["num"].replace("-", "") != c["num"].replace("-", ""):      # YGR10 = YGR-10
         r.append("autre numéro")
+    # 23 nov 2026 (Mathieu, sa Misa « 2025-26 SP Hockey Rookie Authentics Patch RC #122 » a 55 $ dite « marche 10 $ » : 5 des 6
+    # ventes retenues etaient des « SP Game Used - Authentic Rookies #AR-MM », un AUTRE produit et une AUTRE carte) :
+    #  - une vente qui porte un code de carte (#AR-MM) n'est pas la carte #122, ni une carte d'un autre code ;
+    #  - une vente « SP Game Used » n'est pas une carte d'un autre produit (et l'inverse), sauf si l'autre titre dit aussi
+    #    « game used » (« Game Used Patch » est un type de carte, pas le produit).
+    ca_, cc_ = _code_diese(titre), _code_diese(c.get("texte"))
+    if "autre numéro" not in r and ca_ and ((c["num"] and not a["num"] and not cc_) or (cc_ and cc_ != ca_)):
+        r.append("autre numéro")
+    ga_, gc_ = _sp_game_used(titre), _sp_game_used(c.get("texte"))
+    if ga_ != gc_ and "game used" not in norm((c.get("texte") if ga_ else titre) or ""):
+        r.append("autre produit (sp game used)")
     # gradation
     if c["grade"]:
         if not a["grade"] or a["grade"]["cie"] != c["grade"]["cie"] or (c["grade"]["note"] and a["grade"]["note"] != c["grade"]["note"]):

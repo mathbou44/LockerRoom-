@@ -78,19 +78,36 @@ def evaluer(prix, semblables, age=None, watchers=None):
     return {"verdict": verdict, "suggestion": sugg, "mediane": med, "n": n, "ecart": ecart}
 
 
-def evaluer_vendues(prix, valeur, nb, age=None, watchers=None):
+# 23 nov 2026 (Mathieu, une Misa Rookie Authentics OR a 55 $ dite « Too high +424 % · market $10 · 3 sales », avec des ventes
+# de la meme carte a 61 $ : « va falloir que tu fasses attention » et « le prix est toujours plus cher que la last sold des 3
+# derniers mois / moyenne ponderee, la plus chere, d'environ 15 % ») :
+#  - le repere = le PLUS HAUT de la derniere vente (3 mois) et de la mediane ponderee par la recence ;
+#  - le bon prix = ce repere + 15 % (la marge pour negocier) ; « trop cher » seulement au-dela de + 25 % ;
+#  - un prix a plus du DOUBLE du repere avec moins de 8 ventes : ce sont presque toujours les ventes d'une AUTRE version de la
+#    carte (jersey au lieu de patch, base au lieu d'or). Verdict « verifier » : aucun prix suggere, donc jamais de baisse
+#    automatique ni de rabais conseille.
+MARGE_NEGO = 0.15
+HAUT_VENDUES = 1.25
+DOUTE_FOIS, DOUTE_N = 2.0, 8
+
+
+def evaluer_vendues(prix, valeur, nb, age=None, watchers=None, derniere=None, ponderee=None):
     """27 oct 2026 (Mathieu : « impossible que je sois 90 % au-dessus du marche ») : le repere d'une CARTE se juge sur
     ses ventes reelles SURES (deals.valeur_sure), jamais sur les prix demandes. Sans valeur sure : pas de verdict prix."""
     prix = float(prix or 0)
-    ecart = round(prix / valeur - 1, 3) if valeur else None
+    ref = (max([float(x) for x in (derniere, ponderee) if x] or [float(valeur)]) if valeur else None)
+    ecart = round(prix / ref - 1, 3) if ref else None
+    juste = ref * (1 + MARGE_NEGO) if ref else None
     verdict, sugg = "ok", None
-    if valeur and prix > valeur * HAUT:
-        verdict, sugg = "baisser", prix_rond(valeur * 0.98, plafond=prix)
-    elif valeur and prix < valeur * BAS:
-        verdict, sugg = "monter", prix_rond(valeur * 0.95)
+    if ref and prix > ref * DOUTE_FOIS and (nb or 0) < DOUTE_N:
+        verdict = "verifier"
+    elif ref and prix > ref * HAUT_VENDUES:
+        verdict, sugg = "baisser", prix_rond(juste, plafond=prix)
+    elif ref and prix < ref * BAS:
+        verdict, sugg = "monter", prix_rond(juste)
     elif age is not None and age >= TRAINE_JOURS:
         verdict, sugg = "traine", prix_rond(prix * (0.90 if not watchers else 0.95), plafond=prix)
-    return {"verdict": verdict, "suggestion": sugg, "mediane": valeur, "n": nb if valeur else 0, "ecart": ecart}
+    return {"verdict": verdict, "suggestion": sugg, "mediane": round(ref, 2) if ref else None, "n": nb if ref else 0, "ecart": ecart}
 
 
 def opportunites(ref_prix, trouvees, exclure=()):

@@ -4399,7 +4399,18 @@ body.pop-ouverte{overflow:hidden}
 .act-l{display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto; align-items:center; gap:10px; padding:4px 0; font-size:13.5px}
 .act-n{overflow:hidden; text-overflow:ellipsis; white-space:nowrap} .act-l b{font:600 13px var(--f-cond); min-width:28px; text-align:right}
 .act-b{height:8px; border-radius:4px; background:var(--carte2); overflow:hidden} .act-b i{display:block; height:100%; border-radius:4px; background:var(--or)}
-.act-g{width:100%; height:auto; display:block; margin-top:8px} .act-g rect{fill:var(--or)} .act-g text{fill:var(--doux); font-size:9px}
+.act-g{width:100%; height:54px; display:block; margin-top:6px} .act-g rect{fill:var(--or)}
+.act-gx{display:flex; justify-content:space-between; margin-top:4px; font-size:11.5px; color:var(--doux)}
+.act-tete{display:flex; flex-wrap:wrap; align-items:center; gap:10px 22px} .act-tete .pastilles{margin:0}
+.act-k{display:flex; gap:22px; margin-left:auto} .act-k > div{display:flex; flex-direction:column; align-items:flex-end; line-height:1.15}
+.act-k span{font-size:11px; color:var(--doux); text-transform:uppercase; letter-spacing:.05em} .act-k b{font:800 24px var(--f-cond)} .act-k small{font-size:11.5px; color:var(--doux)}
+.act-cols{display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px; align-items:start} .act-cols > .act-bloc{margin-top:10px}
+.act-bloc > .r-titre{display:flex; justify-content:space-between; align-items:baseline; gap:10px} .act-bloc > .r-titre .sous{font-weight:400; text-transform:none; letter-spacing:0}
+.act-d{margin-top:8px} .act-d > summary{cursor:pointer; font-size:13px; color:var(--doux); list-style-position:inside} .act-d > .sous{margin-top:6px}
+.act-coms{display:flex; flex-wrap:wrap; gap:8px; margin-top:8px} .act-coms .pilule i{font-style:normal; display:inline-grid; place-items:center; min-width:18px; height:18px; margin-left:4px; padding:0 5px; border-radius:9px; background:var(--rouge); color:#fff; font:700 11px var(--f-cond)}
+.act-col .act-l{padding:2px 0; line-height:1.25}
+.act-pied{margin-top:10px; text-align:center}
+@media (max-width:900px){ .act-cols{grid-template-columns:1fr} .act-k{margin-left:0; width:100%; justify-content:space-between; gap:10px} .act-k > div{align-items:flex-start} }
 .act-cat{display:flex; justify-content:space-between; align-items:baseline; gap:10px}
 .act-faire{list-style:none; padding:0; margin:8px 0 0; display:flex; flex-direction:column; gap:8px}
 .act-faire li{display:flex; gap:10px; align-items:flex-start} .act-faire li > span{display:flex; flex-direction:column; gap:2px; min-width:0} .act-faire small{color:var(--doux); font-size:12.5px}
@@ -16545,7 +16556,7 @@ async function tableauInv(){
     z.innerHTML = !v.n ? '' : t(tt('À vendre', 'For sale'), argentKpi(v.valeur), v.delai_median != null ? tt('se vend en ~', 'sells in ~') + v.delai_median + tt(' j', ' d') : `${v.n} ${v.n > 1 ? tt('cartes', 'cards') : tt('carte', 'card')}`)
       + (enLigne ? t(tt('Populaires', 'Popular'), String(v.populaires), sousPop, v.populaires ? 'vert' : '', 'it-pop')
                  : t(tt('Se vend en', 'Sells in'), v.delai_median != null ? '~' + v.delai_median + tt(' j', ' d') : '—', v.delai_median != null ? tt('tes ventes · 6 mois', 'your sales · 6 months') : tt('pas assez de ventes', 'not enough sales')))
-      + (enLigne ? t(tt('À liquider', 'To clear'), String(v.liquider), tt('30 j+ sans intérêt', '30 d+ no interest'), v.liquider ? 'or' : '', 'it-liq')
+      + (enLigne ? t(tt('À liquider', 'To clear'), String(v.liquider), tt('60 j+ sans intérêt · 90 j+', '60 d+ no interest · 90 d+'), v.liquider ? 'or' : '', 'it-liq')
                  : t(tt('Dorment', 'Sleeping'), String(v.dorment), tt('plus de 60 jours', 'over 60 days'), v.dorment ? 'or' : '', 'it-dort'));
     const filtre = (id, cle, ids) => { const d = $('#' + id); if (!d) return; d.classList.toggle('on', S.filtreCle === cle);
       if (ids && ids.length) d.onclick = () => { vibrer(); const on = S.filtreCle !== cle; S.filtreCle = on ? cle : null; S.dortIds = on ? ids : null;
@@ -16673,6 +16684,12 @@ function repere(c){
   // (75e-85e centiles : < 20 $ +26/+44 % ; 20-50 $ +16/+30 % ; 50-100 $ +12/+27 % ; 100 $ et plus +12/+20 %)
   const B = bandePrix(ref), ecart = prix / ref - 1;
   const pct = (x) => Math.round(Math.abs(x) * 100), long = lib + argentCourt(ref);
+  // 23 nov 2026 (Mathieu, une Misa OR à 55 $ : « Too high +424 % · market $10 · 3 sales », ses vraies ventes à 61 $ : « va
+  // falloir que tu fasses attention ») : plus du double du repère avec moins de 8 ventes, ce sont presque toujours les ventes
+  // d'une AUTRE version de la carte : on le dit (« À vérifier »), sans « trop cher » ni bouton pour s'y mettre
+  const nRef = compsOk ? (c.comps_n || 0) : (m && m.n) || 0;
+  if (parVentes && ((!compsOk && m && m.verdict === 'verifier') || (ecart > 1 && nRef < 8)))
+    return {cl:'acc', court: tt('À vérifier', 'Check the comps'), long: long + tt(' · même version ?', ' · same version?'), ventes: parVentes, ref, douteux: true};
   if (ecart >= -0.05 && ecart <= B.vert) return {cl:'vert', court: tt('Bon prix', 'Good price'), long, ventes: parVentes, ref};
   // 21 nov 2026 (Mathieu, une Buium a 40 $ « Too high +86 % » avec des ventes a 45 et 51 $ ; une Marchand /250 « +1308 % » :
   // « je ne suis pas trop cher : c'est normal d'etre egal au plus haut comp, ou 10-15 % au-dessus de la mediane ponderee ») :
@@ -19201,13 +19218,19 @@ function feuilleConsigner(cartes){
   // 21 nov 2026 (Mathieu : « les cartes affichees sur eBay doivent etre retirees d'eBay si on les envoie en consignation ; un
   // message simple pour demander s'il est sur de continuer ») : avant d'exporter, d'imprimer ou de les suivre, UNE question
   // claire ; oui = les annonces sont terminees sur eBay (les cartes restent dans l'inventaire) ; non = rien ne se passe.
-  let ebayFait = !surEbay;
+  let ebayFait = !surEbay, question = false;
+  const bandeau0 = ($('#cs-eb') || {}).innerHTML || '';
   const retirerEbay = async () => {
     if (ebayFait) return true;
     const n = surEbay;
     // (la question est posee DANS la fenetre, a la place du bandeau : une autre fenetre fermerait celle-ci)
     const z0 = $('#cs-eb'); if (!z0) return true;
-    const txt0 = z0.innerHTML;
+    // 23 nov 2026 (Mathieu, 59 cartes : « rien se passe quand je clique ») : un 2e toucher sur Exporter / Imprimer pendant que
+    // la question est affichee en posait une 2e par-dessus ; « Annuler » remettait alors l'ANCIENNE question, avec des boutons
+    // morts (reproduit : aucun appel ne partait). Une seule question a la fois ; le bandeau d'origine est garde une fois.
+    if (question) { z0.scrollIntoView({block: 'nearest'}); return false; }
+    question = true;
+    const txt0 = bandeau0;
     const oui = await new Promise(res => {
       z0.classList.add('csg-q');
       z0.innerHTML = `<b>${tt(`Retirer ${n} annonce${n > 1 ? 's' : ''} d’eBay ?`, `Remove ${n} listing${n > 1 ? 's' : ''} from eBay?`)}</b>
@@ -19216,7 +19239,7 @@ function feuilleConsigner(cartes){
       $('#cs-eb-non').onclick = () => { vibrer(); res(false); }; $('#cs-eb-oui').onclick = () => { vibrer(); res(true); };
       z0.scrollIntoView({block: 'nearest'});
     });
-    z0.classList.remove('csg-q');
+    z0.classList.remove('csg-q'); question = false;
     if (!oui) { z0.innerHTML = txt0; return false; }
     const z = $('#cs-eb'); if (z) z.innerHTML = `<span class="roue"></span> ${tt('Retrait d’eBay…', 'Removing from eBay…')}`;
     $$('#cs-xls, #cs-pdf, #cs-suivi').forEach(b => b.disabled = true);
@@ -19526,7 +19549,7 @@ function feuilleEbay(c){
       // bouton pour s'y mettre), l'interet de l'annonce (vues, suivis), et la lettre SlabIQ de la carte
       return `<div class="fe-mk">
         ${r_ ? `<div class="fe-k fe-${r_.cl}"><span>${tt('Ton prix', 'Your price')}</span><b>${esc(r_.court)}</b><small>${esc(r_.long)}${r_.ventes && m_.n ? ' · ' + m_.n + ' ' + tt('ventes', 'sales') : ''}</small>
-          ${r_.cl !== 'vert' && r_.ref ? `<button class="lien-t" id="fe-aumk" data-ref="${r_.ref}">${tt('Mettre au marché', 'Match the market')} · ${argent(rond5(r_.ref * 1.1), 0)}</button>` : ''}</div>` : ''}
+          ${r_.cl !== 'vert' && r_.ref && !r_.douteux ? `<button class="lien-t" id="fe-aumk" data-ref="${r_.ref}">${tt('Mettre au marché', 'Match the market')} · ${argent(rond5(r_.ref * (1 + nego() / 100)), 0)}</button>` : ''}</div>` : ''}
         ${c.vues != null || c.watchers ? `<div class="fe-k"><span>${tt('Intérêt', 'Interest')}</span><b>${c.vues != null ? c.vues : '—'} <em>${tt('vues', 'views')}</em></b><small>${c.watchers || 0} ${tt(c.watchers === 1 ? 'personne la suit' : 'personnes la suivent', c.watchers === 1 ? 'watcher' : 'watchers')}</small></div>` : ''}
       </div><div id="fe-iq" class="v-iq"></div>`; })()}
     <div id="c-achat" class="fc-achat"></div><div id="c-promo" class="fc-achat"></div>
@@ -19550,7 +19573,7 @@ function feuilleEbay(c){
   $('#fe-tout').onclick = () => { vibrer(); fermerFeuille(); setTimeout(() => feuilleCarte(Object.assign({}, c, {_complet: true})), 220); };
   achatCarte(c); if ($('#c-promo')) promoCarte(c);
   remplirIQ($('#fe-iq'), c.titre || [c.annee, c.marque, c.joueur, c.parallele].filter(Boolean).join(' '));
-  const am = $('#fe-aumk'); if (am) am.onclick = () => { vibrer(); pp.value = dev2(rond5(+am.dataset.ref * 1.1)); maj(); };
+  const am = $('#fe-aumk'); if (am) am.onclick = () => { vibrer(); pp.value = dev2(rond5(+am.dataset.ref * (1 + nego() / 100))); maj(); };
 }
 function feuilleCarte(c){
   if (c && c.id && c.statut === 'Vendue' && !c._complet) return feuilleVendue(c);
@@ -20842,31 +20865,42 @@ async function adminActivite(){
   const z = $('#adm-z'), j = S.jAct || 30;
   const d = await API.admin_activite(j).catch(e => ({ok:false, erreur:e.message}));
   if (!d.ok) { z.innerHTML = `<div class="vide">${esc(d.erreur)}</div>`; return; }
+  // 23 nov 2026 (Mathieu : « refaire cette fenêtre, bcp trop long à scroller pour rien ») : tout sur un écran à l'ordi. Les 3
+  // chiffres à côté de la période, un graphique bas (il prenait 290 px), les 3 classements côte à côte (6 lignes, « Tout voir »
+  // pour le reste), les commentaires repliés par catégorie. Rien n'est enlevé : le détail s'ouvre d'un toucher.
   const nomF = (k) => String(k).replace(/_/g, ' ');
   const barres = (l, max) => l.map(([k, n]) => `<div class="act-l"><span class="act-n">${esc(nomF(k))}</span><span class="act-b"><i style="width:${Math.max(3, Math.round(100 * n / (max || 1)))}%"></i></span><b>${n}</b></div>`).join('');
+  const N_TOP = estBureau() ? 6 : 4, ouvert = S.actTout || {};
+  const col = (cle, titre, l, max, pied) => { const tout = !!ouvert[cle], vis = tout ? l : l.slice(0, N_TOP);
+    return `<div class="bloc act-bloc act-col"><div class="r-titre">${titre}${l.length > N_TOP ? `<button class="lien-t" data-at="${cle}">${tout ? tt('Moins', 'Less') : tt('Tout voir', 'See all') + ' · ' + l.length}</button>` : ''}</div>
+      ${vis.length ? barres(vis, max) : `<div class="sous">${tt('Rien encore.', 'Nothing yet.')}</div>`}${pied || ''}</div>`; };
   const mx = Math.max(1, ...d.serie.map(x => x.actifs));
-  const W = 300, H = 70, bw = W / d.serie.length;
-  const graphe = `<svg class="act-g" viewBox="0 0 ${W} ${H + 14}" role="img" aria-label="${esc(tt('Personnes actives par jour', 'Active people per day'))}">
-    ${d.serie.map((x, i) => `<rect x="${(i * bw + 0.5).toFixed(1)}" y="${(H - H * x.actifs / mx).toFixed(1)}" width="${Math.max(1, bw - 1.5).toFixed(1)}" height="${(H * x.actifs / mx).toFixed(1)}" rx="1.5"><title>${x.jour} : ${x.actifs}</title></rect>`).join('')}
-    <text x="0" y="${H + 12}">${esc(dateCourte(d.serie[0].jour))}</text><text x="${W}" y="${H + 12}" text-anchor="end">${tt('aujourd’hui', 'today')}</text></svg>`;
+  const W = 300, H = 60, bw = W / d.serie.length;
+  const graphe = `<svg class="act-g" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${esc(tt('Personnes actives par jour', 'Active people per day'))}">
+    ${d.serie.map((x, i) => `<rect x="${(i * bw + 0.5).toFixed(1)}" y="${(H - H * x.actifs / mx).toFixed(1)}" width="${Math.max(1, bw - 1.5).toFixed(1)}" height="${(H * x.actifs / mx).toFixed(1)}"><title>${x.jour} : ${x.actifs}</title></rect>`).join('')}</svg>
+    <div class="act-gx"><span>${esc(dateCourte(d.serie[0].jour))}</span><span>${tt('aujourd’hui', 'today')}</span></div>`;
   const a = d.abonnes || {};
-  const coms = d.commentaires || [];
-  z.innerHTML = `<div class="pastilles" style="margin-bottom:10px">${[7, 30, 90].map(n => `<button class="pilule ${n === j ? 'on' : ''}" data-j="${n}">${n} ${tt('jours', 'days')}</button>`).join('')}</div>
-    <div class="hero-l adm-kpi">
-      <div class="kpi acc"><span class="lib">${tt('Actifs aujourd’hui', 'Active today')}</span><span class="v">${d.actifs_auj}</span><span class="s">${tt('moyenne 7 j : ', '7-day avg: ')}${decFr(d.actifs_7j_moy)}</span></div>
-      <div class="kpi"><span class="lib">${tt('Comptes', 'Accounts')}</span><span class="v">${a.total ?? '—'}</span><span class="s">+${a.nouveaux_7j ?? 0} ${tt('cette semaine', 'this week')}</span></div>
-      <div class="kpi"><span class="lib">${tt('Actions', 'Actions')}</span><span class="v">${d.appels}</span><span class="s">${j} ${tt('jours', 'days')}</span></div></div>
-    <div class="bloc act-bloc"><div class="r-titre">${tt('Personnes actives par jour', 'Active people per day')}</div>${graphe}</div>
-    <div class="bloc act-bloc"><div class="r-titre">${tt('Écrans les plus visités', 'Most visited screens')}</div>${d.pages.length ? barres(d.pages, d.pages[0][1]) : `<div class="sous">${tt('Rien encore : les visites se comptent depuis cette version.', 'Nothing yet: visits are counted from this version on.')}</div>`}</div>
-    <div class="bloc act-bloc"><div class="r-titre">${tt('Fonctions les plus utilisées', 'Most used features')}</div>${d.fonctions_top.length ? barres(d.fonctions_top.slice(0, 12), d.fonctions_top[0][1]) : `<div class="sous">${tt('Rien encore.', 'Nothing yet.')}</div>`}</div>
-    <div class="bloc act-bloc"><div class="r-titre">${tt('Les moins utilisées', 'Least used')}</div>${d.fonctions_moins.length ? barres(d.fonctions_moins.slice(0, 10), Math.max(...d.fonctions_moins.map(x => x[1]))) : ''}
-      ${d.jamais.length ? `<div class="sous" style="margin-top:8px">${tt('Jamais utilisées sur la période : ', 'Never used in this period: ')}${d.jamais.slice(0, 40).map(k => esc(nomF(k))).join(' · ')}</div>` : ''}</div>
-    <div class="r-titre" style="margin-top:16px">${tt('Commentaires par catégorie', 'Feedback by category')}</div>
-    ${coms.length ? coms.map(g => `<div class="bloc act-bloc"><div class="act-cat"><b>${esc(tt(...(LIB_CAT_DEM[g.categorie] || [g.categorie, g.categorie])))}</b><span class="sous">${g.n} · ${g.ouvertes} ${tt('ouvert(s)', 'open')}</span></div>
-      ${g.a_faire.length ? `<ul class="act-faire">${g.a_faire.map(x => `<li><i class="p${x.priorite}">${x.priorite}</i><span><b>${esc(x.resume)}</b><small>${esc(x.a_faire)}</small></span></li>`).join('')}</ul>` : `<div class="sous">${tt('Rien à faire d’ouvert.', 'Nothing open to do.')}</div>`}</div>`).join('')
-      : `<div class="vide">${tt('Aucun commentaire sur la période.', 'No feedback in this period.')}</div>`}
-    <div class="sous" style="margin-top:12px">${tt('Anonyme : des compteurs par jour (écrans, fonctions, nombre de personnes), jamais qui a fait quoi. Gardés 90 jours.', 'Anonymous: daily counters (screens, features, number of people), never who did what. Kept 90 days.')}</div>`;
+  const coms = d.commentaires || [], comOuv = coms.reduce((n, g) => n + (g.ouvertes || 0), 0), comSel = coms.find(g => g.categorie === S.actCom);
+  const moins = d.fonctions_moins || [];
+  z.innerHTML = `<div class="act-tete"><div class="pastilles">${[7, 30, 90].map(n => `<button class="pilule ${n === j ? 'on' : ''}" data-j="${n}">${n} ${tt('jours', 'days')}</button>`).join('')}</div>
+      <div class="act-k"><div><span>${tt('Actifs aujourd’hui', 'Active today')}</span><b>${d.actifs_auj}</b><small>${tt('moy. 7 j : ', '7-day avg: ')}${decFr(d.actifs_7j_moy)}</small></div>
+        <div><span>${tt('Comptes', 'Accounts')}</span><b>${a.total ?? '—'}</b><small>+${a.nouveaux_7j ?? 0} ${tt('cette semaine', 'this week')}</small></div>
+        <div><span>${tt('Actions', 'Actions')}</span><b>${nbFr(d.appels)}</b><small>${j} ${tt('jours', 'days')}</small></div></div></div>
+    <div class="bloc act-bloc"><div class="r-titre">${tt('Personnes actives par jour', 'Active people per day')}<span class="sous">${tt('max ', 'max ')}${mx}</span></div>${graphe}</div>
+    <div class="act-cols">
+      ${col('pages', tt('Écrans les plus visités', 'Most visited screens'), d.pages || [], (d.pages[0] || [0, 1])[1])}
+      ${col('top', tt('Fonctions les plus utilisées', 'Most used features'), d.fonctions_top || [], (d.fonctions_top[0] || [0, 1])[1])}
+      ${col('moins', tt('Les moins utilisées', 'Least used'), moins, Math.max(1, ...moins.map(x => x[1])),
+        d.jamais.length ? `<details class="act-d"><summary>${d.jamais.length} ${tt('jamais utilisées sur la période', 'never used in this period')}</summary><div class="sous">${d.jamais.slice(0, 60).map(k => esc(nomF(k))).join(' · ')}</div></details>` : '')}
+    </div>
+    <div class="bloc act-bloc"><div class="r-titre">${tt('Commentaires', 'Feedback')}<span class="sous">${coms.length ? comOuv + ' ' + tt('ouvert(s)', 'open') : ''}</span></div>
+      ${coms.length ? `<div class="act-coms">${coms.map(g => `<button class="pilule ${S.actCom === g.categorie ? 'on' : ''}" data-ac="${esc(g.categorie)}">${esc(tt(...(LIB_CAT_DEM[g.categorie] || [g.categorie, g.categorie])))} ${g.n}${g.ouvertes ? ` <i>${g.ouvertes}</i>` : ''}</button>`).join('')}</div>
+        ${comSel ? (comSel.a_faire.length ? `<ul class="act-faire">${comSel.a_faire.map(x => `<li><i class="p${x.priorite}">${x.priorite}</i><span><b>${esc(x.resume)}</b><small>${esc(x.a_faire)}</small></span></li>`).join('')}</ul>` : `<div class="sous" style="margin-top:8px">${tt('Rien à faire d’ouvert.', 'Nothing open to do.')}</div>`) : ''}`
+        : `<div class="sous">${tt('Aucun commentaire sur la période.', 'No feedback in this period.')}</div>`}</div>
+    <div class="sous act-pied">${tt('Anonyme : des compteurs par jour, jamais qui a fait quoi. Gardés 90 jours.', 'Anonymous: daily counters, never who did what. Kept 90 days.')}</div>`;
   $$('[data-j]', z).forEach(b => b.onclick = () => { S.jAct = +b.dataset.j; adminActivite(); });
+  $$('[data-at]', z).forEach(b => b.onclick = () => { S.actTout = {...ouvert, [b.dataset.at]: !ouvert[b.dataset.at]}; adminActivite(); });
+  $$('[data-ac]', z).forEach(b => b.onclick = () => { S.actCom = S.actCom === b.dataset.ac ? null : b.dataset.ac; adminActivite(); });
 }
 async function adminAbonnes(){
   const z = $('#adm-z'); const d = await API.admin_abonnes().catch(e => ({ok:false, erreur:e.message}));
