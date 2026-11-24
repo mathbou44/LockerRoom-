@@ -391,6 +391,23 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   Empreinte changée (vitrine.py) : test du site refait et écrit (mêmes chiffres). Tests : `test_vitrine.py`,
   `test_radar_suivi_plein.py`. À VÉRIFIER après le push : le compte au journal (« Vitrine : N annonces montrables · … ») et,
   avec lui, ce qu'il voit en vue Pro ; si la rangée est trop mêlée ou trop longue, `RADAR_RECHERCHEES_MAX` (200).
+- **La liquidité compte mal les ventes (24 nov, 10 h 17 ; Mathieu, devant une Rantanen UD Canvas Young Guns PSA 10 de
+  slabsharksinc partie à 63 $ C en encan : « j'espère qu'on l'avait captée »)**. Impossible de vérifier d'ici ce que son Radar
+  montrait à ce moment-là. Ce que la règle aurait fait : PAS « À la une » : sous son titre exact la carte avait 2 ventes en 60
+  jours chez nous (il en faut 8), et ces 2 lignes sont la MÊME vente (92,97 et 92,99 $ le 22 oct). Deux défauts trouvés
+  (`outils/recherche/garde/cle_carte.py`) : (1) LA MÊME VENTE EST GARDÉE PLUSIEURS FOIS : la clé de `base_ventes.ventes` est
+  (q, url) : une vente trouvée par 3 recherches = 3 lignes, au prix converti à quelques cents près ; l'index
+  (`liquidite`, clé (cle, le, prix, h)) ne les confond pas. Estimé sur les ventes de 30 $ et plus des 90 derniers jours (même
+  titre, à 1 jour près, prix à 1 % près) : 53 272 lignes sur 149 257 (36 %). L'export (titre, prix, le, q) n'a pas l'URL : pas
+  de dédoublonnage exact possible dans le test. (2) LA MÊME CARTE A PLUSIEURS CLÉS : `liquidite.cle` = tous les mots du titre
+  (« 2015 » et « 2015-16 », « Series 1 », l'ordre des mots) : la Rantanen = 59 lignes sous 21 clés. Effet sur les cartes
+  « liquides » (8 ventes en 60 jours ET vendue il y a 2 mois) : en place 386 ; sans doublons 165 ; clé canonique (le décodeur,
+  comme `outils/recherche/modele/cle2.py`) sans doublons 489. Donc aujourd'hui « 8 ventes » veut souvent dire 3 ou 4 vraies
+  ventes, et de vraies cartes liquides sont refusées. À FAIRE (pas commencé, un vrai chantier : il touche la règle testée) :
+  ajouter un identifiant de vente à l'export (`/admin/ventes_export.tsv.gz` : l'URL hachée), dédoublonner par cet identifiant
+  dans l'index et dans le test, passer `liquidite.cle` à la clé canonique (nouvel index, relecture des archives), puis banc
+  CHOIX / JUGE, test du site et bulletin. Les chiffres publiés (84,6 %) sont mesurés AVEC ces doublons : à refaire ensuite.
+  Vraies ventes récentes de la Rantanen (PSA 10) : 80 $ (9 oct), 93 $ (22 oct), 70 $ (30 oct), 114 $ (16 nov).
 
 ## En attente
 - **Méga test 3 ans (bâti le 22 nov, priorité 1)** : `mega_test.py` (serveur) part seul après le push (boucle de l'heure + reprise

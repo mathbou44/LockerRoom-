@@ -1617,6 +1617,13 @@ def mes_photos(nom):
 
 
 _EXPORT_V = {}                 # 19 nov 2026 : sport -> debut de l'export en cours (expire seul apres 10 min)
+_RE_ITM = _re.compile(r"/itm/(?:[^/?]+/)?(\d{9,15})")
+
+
+def _id_vente_export(url):
+    """Le numero de l'annonce eBay dans son lien (comme vendues._id_vente) ; vide si le lien n'en a pas."""
+    m = _RE_ITM.search(str(url or ""))
+    return m.group(1) if m else ""
 
 
 @app.route("/admin/ventes_export.tsv.gz")
@@ -1645,17 +1652,21 @@ def admin_ventes_export():
     def flux():
       try:
         z = zlib.compressobj(4, zlib.DEFLATED, 31)
-        yield z.compress(b"titre\tprix\tle\tq\n")
+        # 24 nov 2026 (Mathieu, une Rantanen Canvas PSA 10 partie a 63 $ : « j'espere qu'on l'avait captee ») : une 5e colonne,
+        # « id » : le numero de l'annonce eBay vendue (jamais son lien). La cle de nos archives est (recherche, lien) : une vente
+        # trouvee par 3 recherches y est 3 fois, au prix converti a quelques cents pres. Sans identifiant, impossible de les
+        # confondre a coup sur dans les tests (estime : 36 % des lignes de 30 $ et plus des 90 derniers jours).
+        yield z.compress(b"titre\tprix\tle\tq\tid\n")
         c = _bv._cx(sport)
         try:
-            cur = c.execute("SELECT titre, prix, le, q FROM ventes")
+            cur = c.execute("SELECT titre, prix, le, q, url FROM ventes")
             while True:
                 rows = cur.fetchmany(1500)
                 if not rows:
                     break
                 time.sleep(0.05)
-                bloc = "".join("%s\t%s\t%s\t%s\n" % (str(t or "").replace("\t", " ").replace("\n", " "), p_, le or "",
-                                                       str(q or "").replace("\t", " ").replace("\n", " ")) for t, p_, le, q in rows)
+                bloc = "".join("%s\t%s\t%s\t%s\t%s\n" % (str(t or "").replace("\t", " ").replace("\n", " "), p_, le or "",
+                                                           str(q or "").replace("\t", " ").replace("\n", " "), _id_vente_export(u)) for t, p_, le, q, u in rows)
                 out = z.compress(bloc.encode("utf-8"))
                 if out:
                     yield out
