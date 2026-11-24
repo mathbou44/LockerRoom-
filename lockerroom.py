@@ -170,7 +170,7 @@ def _paye(total, x=None):
     """7 nov 2026 : ce que tu paies vraiment (mise ou prix + port, taxes de l'achat comprises : deals.cout_achat) ;
     8 nov : hors Canada, les frais d'importation de l'annonce x (deals.taxe_de)."""
     import deals as _d
-    return _d.cout_achat(total, _d.taxe_de(x) if x is not None else None)
+    return _d.cout_achat(total, _d.taxe_de(x, total=total) if x is not None else None)     # 24 nov : la surtaxe suit le prix
 
 
 def _maintenant():
@@ -536,6 +536,13 @@ _RE_RELIQUE = re.compile(r"patch|relic|jersey|memorabilia|swatch|game[- ]used|ga
 
 
 LIQUIDER_J, LIQUIDER_TOUT_J = 60, 90
+# 24 nov 2026 (Mathieu, devant « To clear 186 » : « ca me semble enorme ; pour les cartes sous 20 $ le clear fait du sens
+# (envoyees en consignation, genre), mais pour les cartes plus cheres je crois que simplement revoir le prix aiderait, car on
+# a encore de la place pour jouer ») : une annonce sans interet de MOINS de 20 $ est « a liquider » ; a 20 $ et plus, elle
+# est « a ajuster » (le prix a revoir). Les deux reposent sur les jours en ligne, les suivis et les vues de SES annonces :
+# rien n'est tire des ventes, donc permis a tous les forfaits. Et une annonce populaire n'est jamais ni l'une ni l'autre
+# (avant : 95 jours en ligne avec 3 suivis = « populaire » ET « a liquider »).
+LIQUIDER_PRIX = 20.0
 
 
 def popularite(cartes, maint=None):
@@ -549,7 +556,7 @@ def popularite(cartes, maint=None):
     l = [x for x in cartes if x.get("statut") == "Listée" and x.get("item_number")
          and not (x.get("debut") and str(x["debut"])[:19] > maint.isoformat()[:19])]
     if not l:
-        return {"populaires": None, "liquider": None, "populaires_ids": [], "liquider_ids": []}
+        return {"populaires": None, "liquider": None, "ajuster": None, "populaires_ids": [], "liquider_ids": [], "ajuster_ids": []}
     vues = sorted(int(x["vues"]) for x in l if x.get("vues") is not None)
     med = statistics.median(vues) if len(vues) >= 3 else None
     def age(x):
@@ -570,11 +577,19 @@ def popularite(cartes, maint=None):
         if a < LIQUIDER_J or int(x.get("watchers") or 0) > 0:
             return False
         return v is None or med is None or v < max(10, med / 2)
-    liq = sorted((x for x in l if froid(x)), key=lambda x: -(age(x) or 0))
+    def prix(x):
+        try:
+            return float(x.get("prix_demande") or 0)
+        except (TypeError, ValueError):
+            return 0.0
+    froides = sorted((x for x in l if froid(x) and not pop(x)), key=lambda x: -(age(x) or 0))
+    liq = [x for x in froides if prix(x) < LIQUIDER_PRIX]            # sans prix connu : comme avant, a liquider
+    ajuster = [x for x in froides if prix(x) >= LIQUIDER_PRIX]       # le prix a revoir (la plus vieille d'abord)
     # 21 nov 2026 (Mathieu : « pourquoi ca dit 78 si j'en compte seulement 40 ? ») : la tuile comptait tout, mais la liste
     # s'arretait a 40 : le chiffre et la liste disent maintenant la meme chose
     return {"populaires": len(pops), "liquider": len(liq), "populaires_ids": [x["id"] for x in pops[:1500]],
             "liquider_ids": [x["id"] for x in liq[:1500]], "vues_mediane": med,
+            "ajuster": len(ajuster), "ajuster_ids": [x["id"] for x in ajuster[:1500]], "liquider_prix": LIQUIDER_PRIX,
             "top": ({"id": pops[0]["id"], "joueur": pops[0].get("joueur"),
                      "watchers": int(pops[0].get("watchers") or 0), "vues": pops[0].get("vues")} if pops else None)}
 
@@ -2552,7 +2567,7 @@ class Api:
             return {"ok": True, "etapes": et, "verdict": "Pas un deal : pas assez de ventes de cette carte pour une valeur sûre.", "titre": t}
         v, src, n = va[0], va[1], va[2]
         add(True, "Valeur", f"{round(v)} $ · {n} vente(s) · source {src}")
-        tx = _d.taxe_de(a)
+        tx = _d.taxe_de(a, valeur=v)                 # 24 nov 2026 : hors Canada, la surtaxe au prix max (pas au prix du moment)
         pmx = _d.prix_max(v, taxe=tx)
         port = a.get("port_cad")
         mise_max = round(pmx - _d.port_eff(port), 2)
@@ -8704,7 +8719,7 @@ class Api:
         n'est pas un jugement du prix : c'est le calcul de la facture de CETTE annonce."""
         import deals as _dl
         try:
-            t = _dl.taxe_de({**x, "_pays": pays, "_prov": prov})       # 24 nov 2026 : la taxe de SA province
+            t = _dl.taxe_de({**x, "_pays": pays, "_prov": prov}, total=x.get("total"))   # 24 nov 2026 : la taxe de SA province, au prix affiche
         except Exception:
             return x
         if x.get("total"):
@@ -9490,7 +9505,7 @@ class Api:
             rec, avant = [b for a, b in pts if a >= j14], [b for a, b in pts if j42 <= a < j14]
             tend = round(100 * (statistics.median(rec) / statistics.median(avant) - 1)) if len(rec) >= 2 and len(avant) >= 2 else None
             tot = x.get("total") or round((x.get("prix_cad") or 0) + (x.get("port_cad") or 0), 2)
-            am = round(max(0.0, _dv.prix_max(med, taxe=_dv.taxe_de({**x, "_pays": pays}))), 2)
+            am = round(max(0.0, _dv.prix_max(med, taxe=_dv.taxe_de({**x, "_pays": pays}, valeur=med))), 2)
             x["admin_vendu"] = {"med": round(med, 2), "nb": vc["nb"], "tend_pct": tend, "achat_max": am,
                                 "ecart_pct": round(100 * (tot / med - 1)) if tot and med else None}
         return items
@@ -12224,7 +12239,7 @@ class Api:
             elif not suivi and not _dl.valide(x):
                 r = "invalide"
             elif x.get("valeur") and x.get("total") is not None:
-                pm = _dl.prix_max(x["valeur"], taxe=_dl.taxe_de(x))
+                pm = _dl.prix_max(x["valeur"], taxe=_dl.taxe_de(x, valeur=x["valeur"]))
                 if (not x.get("encan") and x["total"] > pm) or (x.get("encan") and x.get("mise_max") is not None
                                                                and float(x["total"]) - float(x.get("port") or 0) > float(x["mise_max"]) + 0.5) \
                         or (suivi and x["total"] > pm):
@@ -12326,7 +12341,7 @@ class Api:
         rg = self.reglages_lire()
         pays = str(rg.get("pays") or "CA").upper()
         pays = pays if pays in _dl.PAYS else "CA"
-        tout = [x for x in tout if x.get("encan") or not (x.get("valeur") and x.get("total") and x["total"] > _dl.prix_max(x["valeur"], taxe=_dl.taxe_de(x)))]
+        tout = [x for x in tout if x.get("encan") or not (x.get("valeur") and x.get("total") and x["total"] > _dl.prix_max(x["valeur"], taxe=_dl.taxe_de(x, valeur=x["valeur"])))]
         # 2 nov 2026 (Mathieu : « quand le prix suggere est depasse par le bid actuel, ce n'est plus un deal, il ne devrait plus
         # etre la ») : la mise du moment (hors port) au-dessus de la mise max -> hors des deals, tout de suite a la lecture
         tout = [x for x in tout if not (x.get("encan") and x.get("mise_max") is not None and x.get("total")
@@ -12341,7 +12356,7 @@ class Api:
             x["_pays"] = pays
             x["etranger"] = _dl.etranger(x)
             if pays != "CA" and x.get("encan") and x.get("valeur") and not x.get("mise_perso"):
-                x["mise_max"] = round(_dl.prix_max(x["valeur"], taxe=_dl.taxe_de(x)) - _dl.port_eff(x.get("port")), 2)
+                x["mise_max"] = round(_dl.prix_max(x["valeur"], taxe=_dl.taxe_de(x, valeur=x["valeur"])) - _dl.port_eff(x.get("port")), 2)
             x["taxe_achat"] = _dl.taxe_de(x)
         for x in tout:
             if x.get("valeur") and x.get("total") is not None:
@@ -12503,7 +12518,7 @@ class Api:
                 if not e_ or time.time() - e_[0] >= self.VAL_CACHE_S:      # absente ou perimee : en fond
                     plus_tard.append(x)
                 if vc:
-                    x = dict(x, valeur=vc[0], n=vc[1], mise_max=round(_dl.prix_max(vc[0], taxe=_dl.taxe_de(x)) - _dl.port_eff(x.get("port")), 2))
+                    x = dict(x, valeur=vc[0], n=vc[1], mise_max=round(_dl.prix_max(vc[0], taxe=_dl.taxe_de(x, valeur=vc[0])) - _dl.port_eff(x.get("port")), 2))
             y = self._ramasser(dict(_dl.a_jour(x), source="marche", recrue=bool(x.get("recrue"))), chez_s)
             # 5 nov 2026 (Mathieu : « il doit toujours y avoir une analyse si elle est dans les deals ») : un encan sans valeur
             # (ses ventes se calculent en fond) n'est pas montre ; il arrive dans les deals des que sa valeur est connue
@@ -12515,7 +12530,7 @@ class Api:
                 y["rabais"] = round(100 * (1 - (y.get("total") or 0) / y["valeur"]))
                 # 31 oct 2026 (Mathieu : « se faire retirer du dashboard si ce n'est plus un deal ») : valeur connue et mise
                 # au-dessus de 70 % de celle-ci -> pas un deal : hors de l'ecran Deals (la watchlist, elle, le montre en rouge)
-                if (y.get("total") or 0) > _dl.prix_max(y["valeur"], taxe=_dl.taxe_de(y)):
+                if (y.get("total") or 0) > _dl.prix_max(y["valeur"], taxe=_dl.taxe_de(y, valeur=y["valeur"])):
                     continue
             suivis.append(y)
         self._valeurs_en_fond(plus_tard)
@@ -12584,7 +12599,7 @@ class Api:
                 print("SlabIQ (deals) : " + repr(e), flush=True)
         # 31 oct 2026 (Mathieu : « les deals n'apparaissent pas au fur et a mesure, ca reste a 35 ») : un encan d'un gros vendeur
         # qui vient de recevoir sa valeur et qui est a 70 % ou moins de celle-ci est un deal : il compte dans le nombre
-        n_su = sum(1 for x in suivis if x.get("valeur") and (x.get("total") or 0) <= _dl.prix_max(x["valeur"], taxe=_dl.taxe_de(x)))
+        n_su = sum(1 for x in suivis if x.get("valeur") and (x.get("total") or 0) <= _dl.prix_max(x["valeur"], taxe=_dl.taxe_de(x, valeur=x["valeur"])))
         return self._pastilles_radar({"ok": True, "deals": lst[:240], "n": n + n_su, "n_encans_valorises": n_su, "pro": pro, "limite": None if pro else forfaits.LIMITES["deals"],
                 "suivis": suivis,
                 "pres": pres, "secours": secours, "secours_le": (dd.get("secours") or {}).get("le") if secours else None,
@@ -12708,7 +12723,7 @@ class Api:
         etape(bool(valeur), (f"Valeur : {valeur:.0f} $ ({va[2]} ventes)" if valeur else
                              "Pas de valeur sûre : pas assez de ventes de CETTE carte (même série, même numérotation)"))
         mise = (x["prix_cad"] or 0)
-        mm = round(_dl.prix_max(valeur, taxe=_dl.taxe_de(x)) - _dl.port_eff(x.get("port_cad")), 2) if valeur else None
+        mm = round(_dl.prix_max(valeur, taxe=_dl.taxe_de(x, valeur=valeur)) - _dl.port_eff(x.get("port_cad")), 2) if valeur else None
         if mm is not None:
             etape(mise <= mm + 0.5, f"Mise actuelle {mise:.0f} $ contre mise max {mm:.0f} $" + ("" if mise <= mm + 0.5 else " : déjà trop haute, plus un deal"))
         try:
@@ -13112,13 +13127,13 @@ class Api:
                 print("Patchs (fiche) : " + repr(e)[:200], flush=True)
         suggere = None
         if saison_v:
-            suggere = {"vente": valeur, "achat_max": round(max(0.0, _deals.prix_max(valeur, taxe=_deals.taxe_de(a))), 2), "source": saison_v[1]}
+            suggere = {"vente": valeur, "achat_max": round(max(0.0, _deals.prix_max(valeur, taxe=_deals.taxe_de(a, valeur=valeur))), 2), "source": saison_v[1]}
         elif valeur and (vm or n >= 3):
             pv = sorted((x.get("prix_patch") or x["prix"]) for x in ventes if x.get("prix")) if vm else sorted(x["total"] for x in comps)
             vente = pv[max(0, int(len(pv) * 0.6) - 1)] if len(pv) >= 3 else valeur     # vendues : un peu au-dessus du milieu
             suggere = {"vente": round(vente if vm else min(vente, valeur), 2),
                        # 2 nov 2026 (« pourquoi le max bid change ? ») : la meme regle que les deals et la watchlist (70 %)
-                       "achat_max": round(max(0.0, _deals.prix_max(valeur, taxe=_deals.taxe_de(a))), 2), "source": "vendues" if vm else "annonces"}
+                       "achat_max": round(max(0.0, _deals.prix_max(valeur, taxe=_deals.taxe_de(a, valeur=valeur))), 2), "source": "vendues" if vm else "annonces"}
         # 26 oct 2026 (Mathieu : « les deals sont pas bons avec les last sold ») : la fenetre a les ventes de CETTE carte ;
         # si elles disent que ce n'est pas un deal, l'annonce sort des deals de tout le monde (et sa valeur est corrigee)
         # 3 nov 2026 : ventes PAS LUES (SoldComps en panne, budget du jour) : on ne corrige rien (avant : le deal etait retire
@@ -13132,7 +13147,7 @@ class Api:
                 if x_:
                     chasseur = {"valeur": x_["valeur"], "le": x_.get("vu_le")}
                     valeur, juger = x_["valeur"], True
-                    suggere = {"vente": valeur, "achat_max": round(max(0.0, _deals.prix_max(valeur, taxe=_deals.taxe_de(a))), 2), "source": "chasseur"}
+                    suggere = {"vente": valeur, "achat_max": round(max(0.0, _deals.prix_max(valeur, taxe=_deals.taxe_de(a, valeur=valeur))), 2), "source": "chasseur"}
             except Exception as e:
                 print("Deals (valeur du chasseur) : " + repr(e), flush=True)
         corr = None
@@ -13164,7 +13179,7 @@ class Api:
             # 10 nov 2026 : la fiche publique montre ce qu'il paiera vraiment (taxes, importation) : la facture, pas un jugement
             pays_ = self.reglages_lire().get("pays") or "CA"
             return {"ok": True, "article": {**a, "total": total}, "comps": [], "n": 0, "coupe": True,
-                    "taxe_achat": _deals.taxe_de({**a, "_pays": pays_}), "etranger": _deals.etranger({**a, "_pays": pays_}, pays_),
+                    "taxe_achat": _deals.taxe_de({**a, "_pays": pays_}, total=total), "etranger": _deals.etranger({**a, "_pays": pays_}, pays_),
                     "mes_achats": mes_achats, "deja_achetee": deja_achetee}
         return {"ok": True, "article": {**a, "total": total}, "comps": comps, "mediane": med, "n": n, "deal_retire": bool(maj_deal and maj_deal.get("retire")) or bool(isinstance(corr, dict) and corr.get("retire")),
                 "suggere": suggere, "ventes": ventes, "mediane_vendue": None if saison_v else vc.get("mediane"),
@@ -13178,7 +13193,9 @@ class Api:
                 "valeur_chasseur": chasseur, "ventes_panne": panne, "vieux_cache": bool(vc.get("vieux_cache")),
                 "points": vc.get("points") or [], "tendance": vc.get("tendance"), "autres_joueurs": autres,
                 "rabais": round(100 * (1 - total / valeur)) if total and valeur and juger else None,
-                "taxe_achat": _deals.taxe_de(a), "etranger": _deals.etranger(a),
+                # 24 nov 2026 : hors Canada, la surtaxe ne touche pas le port : un encan se juge a sa mise max, un prix fixe a son prix
+                "taxe_achat": _deals.taxe_de(a, valeur=valeur) if a.get("encan") and valeur else _deals.taxe_de(a, total=total),
+                "etranger": _deals.etranger(a),
                 "gain": round(_net_rev(valeur) - _paye(total, a), 2) if total and valeur and juger else None,
                 "peu_de_ventes": not juger, "pourquoi": pourquoi if not juger else None, "nb_trouvees": nb_v,
                 "mes_achats": mes_achats, "deja_achetee": deja_achetee, "mes_retirees": vc.get("mes_retirees") or 0}
@@ -13282,7 +13299,7 @@ class Api:
             import deals as _dv
             ids_ = {str(x.get("item_id")) for x in deals}
             n_su = sum(1 for x in (_dv.lire_vite().get("suivis") or []) if x.get("valeur") and str(x.get("item_id")) not in ids_
-                       and _dv.encore_ouvert(x) and (x.get("total") or 0) <= _dv.prix_max(x["valeur"], taxe=_dv.taxe_de(x)))
+                       and _dv.encore_ouvert(x) and (x.get("total") or 0) <= _dv.prix_max(x["valeur"], taxe=_dv.taxe_de(x, valeur=x["valeur"])))
         except Exception:
             n_su = 0
         n_tot, n_le = len(deals) + n_su, None

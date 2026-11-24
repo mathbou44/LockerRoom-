@@ -6,7 +6,9 @@ import deals, ebay_compte, cartes_match
 sub = 106.17 + 18.58
 # 1. le Canada : 14,975 % ; hors Canada pas encore relue : prudent ; relue avec les frais d'eBay : ceux-la
 assert deals.taxe_de({"lieu": "CA", "total": 50}) == deals.TAXE_ACHAT == deals.taxe_de({})
-assert deals.taxe_de({"lieu": "US", "total": 50}) == deals.IMPORT_DEFAUT
+assert deals.taxe_de({"lieu": "US"}) == deals.IMPORT_DEFAUT                     # ni prix ni valeur : le chiffre prudent
+# 24 nov 2026 : aux Etats-Unis, la surtaxe de 50 % sur le PRIX (pas le port) + la TPS sur le tout (tests/test_surtaxe_us.py)
+assert abs(deals.taxe_de({"lieu": "US", "total": 50, "port": 15}) - (1.05 * (50 + 0.5 * 35) / 50 - 1)) < 0.0002
 assert abs((sub * (1 + deals.IMPORT_DEFAUT)) - 186.73) < 0.5                     # sa commande, au dollar pres
 a = {"lieu": "US", "import_lu": True, "import_cad": 53.09, "prix_cad": 106.17, "port_cad": 18.58}
 assert abs(deals.taxe_de(a) - (53.09 / sub + deals.TAXE_IMPORT)) < 0.001
@@ -14,8 +16,9 @@ assert abs(sub * (1 + deals.taxe_de(a)) - 186.73) < 0.5
 assert deals.taxe_de({"lieu": "US", "import_lu": True, "import_cad": 0, "prix_cad": 50}) == deals.TAXE_ACHAT   # expedie par le vendeur
 # 2. la mise max baisse d'autant ; le pourcentage suit le prix (garde avec le deal)
 assert deals.prix_max(300, taxe=deals.taxe_de(a)) < deals.prix_max(300) * 0.8
-x = dict(deals.achat(a), total=200.0)
-assert abs(deals.taxe_de(x) - deals.taxe_de(a)) < 0.001
+x = dict(deals.achat(a), total=200.0, port=18.58)
+assert x["import_taux"] == 0.5                                                   # le taux lu (sur le prix) est garde avec le deal
+assert abs(deals.taxe_de(x) - (1.05 * (200 + 0.5 * (200 - 18.58)) / 200 - 1)) < 0.0002   # et il suit le prix
 assert deals.achat({"lieu": "US"}) == {"lieu": "US"}                             # une recherche n'efface pas les frais lus
 assert deals.cout_achat(100, 0.5) == 150.0 and deals.cout_achat(100) == round(100 * (1 + deals.TAXE_ACHAT), 2)
 # 3. eBay : les frais d'importation de getItem

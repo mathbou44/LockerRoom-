@@ -136,7 +136,52 @@ def taux_par_boite(prod):
             if reste_b > 0:
                 taux[base[0]] = round(reste_b, 2)
     _estimer_par_tirage(prod, se, taux)
+    _estimer_boite_numerotee(prod, se, taux, fmt)
     return taux
+
+
+# 24 nov 2026 (Mathieu, capture de Splendor : un crochet vert sur la tuile, puis « les chances de tirage de ce produit ne sont
+# pas encore connues ») : un produit dont AUCUNE cote n'est publiee, mais dont chaque carte est NUMEROTEE et dont on connait
+# le nombre de cartes par boite (Splendor : 1 carte par boite, 94 sous-ensembles numerotes sur 96). Les tirages imprimes
+# disent tout : la part d'un sous-ensemble dans une boite = ses exemplaires / tous les exemplaires imprimes, fois les cartes
+# de la boite. C'est la regle des lignes combinees (« X, Y ou Z : 1 par boite », au prorata du tirage), appliquee a la boite
+# entiere. Prudent : un sous-ensemble sans tirage connu ne recoit aucune cote, mais compte dans le total (au tirage median),
+# donc les autres ne sont jamais gonfles. Marquees « estimees ».
+BOITE_NUM_PART = 0.90            # au moins 90 % des sous-ensembles de la boite ont un tirage connu
+
+
+def _exemplaires(prod, se, nom):
+    """Les exemplaires imprimes d'un sous-ensemble (somme des tirages de ses cartes, sinon cartes x tirage) ; None : inconnu."""
+    s = se.get(nom) or {}
+    lc = _liste_de(prod, se, nom) if prod.get("_par_se") is not None else []
+    if lc and bool((prod.get("_par_se") or {}).get(nom)) and all(c.get("tirage") for c in lc):
+        return sum(float(c["tirage"]) for c in lc)
+    tir, k = tirage_de(s), _nb_cartes(prod, se, nom)
+    return float(k * tir) if tir and k else None
+
+
+def _estimer_boite_numerotee(prod, se, taux, fmt):
+    if not fmt or any((v or 0) > 0 for v in taux.values()):
+        return []                                            # une cote au moins est publiee : les regles d'avant suffisent
+    try:
+        par_boite = float(fmt["paquets"]) * float(fmt["cartes_par_paquet"])
+    except (TypeError, ValueError, KeyError):
+        return []
+    noms = [n for n, s in se.items() if not re.search(r"oversized|retail|blaster|hanger|tin\b|mega", n, re.I)]
+    ex = {n: _exemplaires(prod, se, n) for n in noms}
+    connus = {n: v for n, v in ex.items() if v}
+    if par_boite <= 0 or len(noms) < 3 or len(connus) < BOITE_NUM_PART * len(noms):
+        return []
+    tirs = sorted(tirage_de(se[n]) or 0 for n in connus)
+    mediane = float(tirs[len(tirs) // 2] or 1)
+    total = sum(connus.values()) + sum((_nb_cartes(prod, se, n) or 1) * mediane for n in noms if n not in connus)
+    if total <= 0:
+        return []
+    for n, v in connus.items():
+        taux[n] = round(par_boite * v / total, 6)
+    prod["_estimees"] = list(prod.get("_estimees") or []) + sorted(connus)
+    prod["_boite_numerotee"] = True
+    return sorted(connus)
 
 
 # 30 oct 2026 (Mathieu : « ta methode d'evaluation des odds et du retour sur investissement doit etre robuste ») ----------
@@ -326,6 +371,8 @@ def _liste(fs):
                     "recrues_par_boite": round(recrues, 1), "hits_par_boite": round(hits, 2),
                     "cotes_manquantes": len(etat_cotes(p)["manquantes"]), "complete": etat_cotes(p)["complete"],
                     "cotes_estimees": len(p.get("_estimees") or []),
+                    # 24 nov 2026 : aucune cote du tout (ni publiee ni deduite des tirages) : l'analyse des places serait vide
+                    "sans_cotes": not any((v or 0) > 0 for v in t.values()),
                     "preliminaire": any("preliminaire" in str(n).lower() for n in (p.get("notes") or [])[:1])})
     out.sort(key=lambda x: str(x.get("sortie") or ""), reverse=True)
     return out

@@ -167,6 +167,33 @@ def calibrer_import(d, annonces=None):
     return d.get("import_defaut")
 
 
+def calibrer_surtaxe(d, annonces=None):
+    """24 nov 2026 (Mathieu : « ce sont les tarifs, on doit en tenir compte ») : la surtaxe du Canada sur une carte des
+    Etats-Unis (50 % du PRIX depuis le 8 sept. 2026) suit ce qu'eBay facture VRAIMENT : la mediane de (frais
+    d'importation / prix de la carte) sur les annonces americaines relues ces 14 jours ; 15 au moins, sinon rien ne
+    change. Si Ottawa change le taux, l'app le suit sans qu'on y touche."""
+    import deals
+    if annonces is None:
+        g = deals.lire()
+        annonces = [x for k in ("deals", "suivis", "pres", "retires") for x in (g.get(k) or []) if isinstance(x, dict)]
+    lim = (datetime.now(timezone.utc) - timedelta(days=14)).isoformat()
+    r, vus = [], set()
+    for x in annonces:
+        if not x.get("import_lu") or str(x.get("lieu") or "").upper() != "US" or x.get("item_id") in vus:
+            continue
+        if str(x.get("vu_le") or x.get("import_le") or "9") < lim:
+            continue
+        taux = deals._taux_import(x)[0]
+        if taux and taux > 0:
+            vus.add(x.get("item_id"))
+            r.append(taux)
+    d["surtaxe_n"] = len(r)
+    if len(r) >= 15:
+        d["surtaxe_us"] = round(min(0.80, max(0.05, statistics.median(r))), 4)
+        d["surtaxe_le"] = datetime.now().isoformat(timespec="seconds")
+    return d.get("surtaxe_us")
+
+
 def calibrer_import_us(d, annonces=None, lire_article=None, n_max=8):
     """Douanes pour un acheteur aux Etats-Unis : quelques annonces canadiennes relues avec un acheteur americain (8 appels
     Browse par jour au plus). Si eBay y donne ses frais d'importation (5 au moins), l'estimation IMPORT_US les suit."""
@@ -203,13 +230,15 @@ def appliquer(d=None):
         deals.IMPORT_DEFAUT = float(d["import_defaut"])
     if d.get("import_us") is not None and not os.environ.get("LR_IMPORT_US"):
         deals.IMPORT_US = float(d["import_us"])
+    if d.get("surtaxe_us") is not None and not os.environ.get("LR_SURTAXE_US"):
+        deals.SURTAXE_US = float(d["surtaxe_us"])
 
 
 def rafraichir(alerter=None, lire_page=_telecharger, us=True):
     with _VERROU:
         d = lire()
         nouv = _verifier_sources(d, alerter, lire_page)
-        for nom, f in (("import", calibrer_import), ("import_us", calibrer_import_us if us else None)):
+        for nom, f in (("import", calibrer_import), ("surtaxe", calibrer_surtaxe), ("import_us", calibrer_import_us if us else None)):
             if not f:
                 continue
             try:
@@ -219,7 +248,8 @@ def rafraichir(alerter=None, lire_page=_telecharger, us=True):
         d["le"] = datetime.now().isoformat(timespec="seconds")
         _ecrire(d)
         appliquer(d)
-        return {"ok": True, "nouveautes": len(nouv), "import_defaut": d.get("import_defaut"), "import_us": d.get("import_us")}
+        return {"ok": True, "nouveautes": len(nouv), "import_defaut": d.get("import_defaut"), "import_us": d.get("import_us"),
+                "surtaxe_us": d.get("surtaxe_us")}
 
 
 def rafraichir_si_besoin(alerter=None):
@@ -250,4 +280,5 @@ def resume():
     return {"le": d.get("le"), "nouveautes": (d.get("nouveautes") or [])[:12],
             "sources": {k: {"le": v.get("le"), "erreur": v.get("erreur"), "n": len(v.get("vus") or [])} for k, v in (d.get("sources") or {}).items()},
             "import_defaut": round(deals.IMPORT_DEFAUT * 100, 1), "import_n": d.get("import_n"), "import_le": d.get("import_le"),
-            "import_us": round(deals.IMPORT_US * 100, 1), "import_us_n": d.get("import_us_n"), "import_us_le": d.get("import_us_le")}
+            "import_us": round(deals.IMPORT_US * 100, 1), "import_us_n": d.get("import_us_n"), "import_us_le": d.get("import_us_le"),
+            "surtaxe_us": round(deals.SURTAXE_US * 100, 1), "surtaxe_n": d.get("surtaxe_n"), "surtaxe_le": d.get("surtaxe_le")}

@@ -3799,6 +3799,15 @@ table.bt{width:100%; border-collapse:collapse; font-size:14px; table-layout:fixe
 .tk-t b{white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; max-width:330px; font-size:16px; line-height:1.28}
 @media (prefers-reduced-motion:reduce){ .tk-piste{animation:none} .acc-ticker{overflow-x:auto} }
 .ecran.reglages .acc-pils{margin-top:12px}
+/* 24 nov 2026 (Mathieu, capture du Profil qui glisse de 16 points : « je ne devrais pas pouvoir bouger l'ecran ») : quand le
+   Profil depasse l'ecran de peu, il se serre juste assez pour tenir (--pk de 0 a 1, pose par tenirProfil) : des rangees de
+   58 a 50 points (iOS : 44 au moins), des espaces un peu plus courts. S'il depasse de trop (petit ecran), rien ne change
+   et la page defile comme avant. */
+html body .ecran.reglages:has(#g-pils){row-gap:calc(14px - 5px * var(--pk, 0)); padding-bottom:calc(24px - 18px * var(--pk, 0))}
+html body .ecran.reglages #g-pils{gap:calc(8px - 3px * var(--pk, 0)); margin-top:calc(12px - 6px * var(--pk, 0))}
+html body .ecran.reglages #g-pils > .acc-pil{min-height:calc(58px - 8px * var(--pk, 0)); padding-top:calc(9px - 4px * var(--pk, 0)); padding-bottom:calc(9px - 4px * var(--pk, 0))}
+html body .ecran.reglages .profil-rac .pr-r{padding-top:calc(10px - 4px * var(--pk, 0)); padding-bottom:calc(9px - 4px * var(--pk, 0))}
+@media (max-width:899px){ body:has(.ecran.reglages #g-pils){padding-bottom:calc(96px + var(--bas) - 12px * var(--pk, 0))} }
 .vendre.vs .vs-photo{display:flex; flex-direction:column; gap:8px; max-width:420px; margin:0 auto; width:100%}
 .vendre.vs .photo-princ{height:min(32vh, 300px)}
 .vs-barre .resume-p span{display:none}
@@ -4226,6 +4235,23 @@ body.zp-ouvert{overflow:hidden}
 .io-n{flex:none; color:var(--doux); font-size:14px; font-variant-numeric:tabular-nums}
 .io-plus{flex:none; width:28px; height:28px; border-radius:50%; border:0; background:var(--acc); color:#111118; font:700 20px/1 var(--f-txt, inherit); display:grid; place-items:center; padding:0 0 2px; cursor:pointer}
 .io-plus:disabled{opacity:.3}
+/* 24 nov 2026 (Mathieu : « My radar, c'est laid, ca brise l'experience Apple ») : la fenetre « Ton radar » avec les memes pieces */
+.io-fin{justify-self:end; font-weight:600; padding:6px 2px 6px 4px}
+.io-fl{flex:none; width:8px; height:13px; color:var(--doux); opacity:.55}
+.io-t{padding:0 16px; margin:2px 0 -8px; font-size:13px; color:var(--doux); text-align:left}
+.tuto.rq.rq-ios{align-items:stretch; text-align:left; gap:14px; padding:12px 14px 16px; background:#131317; border-radius:22px}
+.tuto.rq.rq-ios .io-tete{margin-top:0} .tuto.rq.rq-ios .io-tete h3{margin:0; font-size:17px; font-weight:700}
+.tuto.rq.rq-ios button.io-r{width:100%; border:0; background:none; font:inherit; font-size:17px; text-align:left; color:var(--texte)}
+.tuto.rq.rq-ios .io-l .badge-f, .tuto.rq.rq-ios .io-tete .badge-f{margin-left:6px; vertical-align:1px}
+.io-ok{flex:none; width:16px; height:12px; color:var(--acc); opacity:0} .io-r.on .io-ok{opacity:1}
+.io-x{flex:none; width:26px; height:26px; border-radius:50%; border:0; background:rgba(120,120,128,.24); color:var(--doux); display:grid; place-items:center; padding:0; cursor:pointer} .io-x svg{width:11px; height:11px}
+.tuto.rq.rq-ios > p{margin:0; padding:0 6px; font-size:13px; line-height:1.35; color:var(--doux); text-align:left}
+.tuto.rq.rq-ios .rq-prix{flex:0 0 84px; text-align:right} .tuto.rq.rq-ios .rq-l2{max-height:46vh; overflow-y:auto}
+.tuto.rq.rq-ios .rq-sel{justify-content:flex-start}
+.tuto.rq.rq-ios .rq-grille .chip, .tuto.rq.rq-ios .rq-sel .chip{text-transform:none; letter-spacing:0; font:500 15px var(--f-txt, inherit); border-radius:12px}
+.tuto.rq.rq-ios .rq-cherche{margin-top:0}
+.tuto.rq.rq-ios .rq-seg{margin-top:0; padding:2px; border-radius:9px; border:0; background:rgba(118,118,128,.24)}
+.tuto.rq.rq-ios .rq-seg button{height:32px; border-radius:7px; text-transform:none; letter-spacing:0; font:600 14px var(--f-txt, inherit)}
 .io-sw{cursor:pointer} .io-sw input{position:absolute; opacity:0; pointer-events:none}
 .io-sw i{flex:none; position:relative; width:51px; height:31px; border-radius:99px; background:rgba(120,120,128,.32); transition:background .2s}
 .io-sw i::after{content:""; position:absolute; top:2px; left:2px; width:27px; height:27px; border-radius:50%; background:#fff; box-shadow:0 2px 5px rgba(0,0,0,.3); transition:transform .2s}
@@ -8455,8 +8481,8 @@ async function configurerRadar(o){
     if (o.allerRadar) { if (location.hash === '#deals') { if (change) route(); } else location.hash = '#deals'; }
     if (o.apres) o.apres(change);
   };
-  const bas = () => i === RECAP ? `<div class="tuto-bas"><button class="plus" id="rq-passer">${tt('Fermer', 'Close')}</button><button class="btn" id="rq-ok">${tt('Voir mon radar', 'See my radar')}</button></div>`
-    : `<div class="tuto-bas"><button class="plus" id="rq-ann">${tt('Annuler', 'Cancel')}</button><button class="btn" id="rq-ok">OK</button></div>`;
+  const bas = () => '';                             // 24 nov 2026 : « Annuler » et « OK » sont dans l'en-tete, comme une feuille d'iOS
+  const inter = (id, on, t) => `<label class="io-r io-sw"><span class="io-l">${t}</span><input type="checkbox" id="${id}" ${on ? 'checked' : ''}><i></i></label>`;
   const bascule = (id, on, t, d) => `<label class="bascule fd-l rq-bas"><span><b>${t}</b>${d ? `<small>${d}</small>` : ''}</span><input type="checkbox" id="${id}" ${on ? 'checked' : ''}></label>`;
   const montrer = () => {
     let h = '';
@@ -8466,7 +8492,7 @@ async function configurerRadar(o){
       // recherche en haut (elle cherche dans les joueurs ET les equipes), tes choix juste dessous, puis Joueurs | Equipes en
       // onglets et une grille reguliere qui defile
       h = `<h3>${tt('Tes joueurs et équipes préférés ?', 'Your favorite players and teams?')}</h3>
-        <p>${tt('Aucun ? Touche OK : on chassera large.', 'None? Tap OK: we’ll hunt wide.')}</p>
+        <p>${tt('Aucun ? Touche OK : on chassera large.', 'None? Tap Done: we’ll hunt wide.')}</p>
         <form class="rq-cherche" id="rq-f"><span class="rq-loupe">${ICONES.loupe}</span><input class="champ" id="rq-q" placeholder="${esc(tt('Cherche un joueur ou une équipe', 'Search a player or team'))}" autocomplete="off" enterkeyhint="done"></form>
         <div class="rq-sel" id="rq-sel"></div>
         <div class="seg rq-seg" id="rq-seg"><button type="button" data-o="j" class="${S.rqOng === 'e' ? '' : 'on'}">${tt('Joueurs', 'Players')}</button><button type="button" data-o="e" class="${S.rqOng === 'e' ? 'on' : ''}">${tt('Équipes', 'Teams')}</button></div>
@@ -8474,38 +8500,59 @@ async function configurerRadar(o){
     } else if (i === 1) {
       h = `<h3>${tt('Quelles cartes ?', 'Which cards?')}</h3>
         <p>${tt('Sans joueur choisi : toutes les cartes de ces sortes.', 'With no player: every card of these kinds.')}</p>
-        <div class="chips rq-w">${C.map(([k, t]) => `<button class="chip ${co.has(k) ? 'on' : ''}" data-c="${k}">${t}</button>`).join('')}</div>`;
+        <div class="io-g">${C.map(([k, t]) => `<button class="io-r io-m ${co.has(k) ? 'on' : ''}" data-c="${k}"><span class="io-l">${t}</span>${IO_OK}</button>`).join('')}</div>`;
     } else if (i === 2) {
       h = `<h3>${tt('Ton budget par carte ?', 'Your budget per card?')}</h3><p>${tt('Port compris.', 'Shipping included.')}</p>
-        <div class="q-opts rq-b">${B.map(([v, l]) => `<button class="q-o ${(v ? budget && Math.abs(budget - versCAD(v)) < 1 : !budget) ? 'on' : ''}" data-b="${v}"><b>${v ? '≤ ' + l : l}</b></button>`).join('')}</div>`;
+        <div class="io-g">${B.map(([v, l]) => `<button class="io-r io-m ${(v ? budget && Math.abs(budget - versCAD(v)) < 1 : !budget) ? 'on' : ''}" data-b="${v}"><span class="io-l">${v ? '≤ ' + argentCourt(versCAD(v)) : l}</span>${IO_OK}</button>`).join('')}</div>`;
     } else if (i === 3) {
       h = `<h3>${tt('Tes prix cibles', 'Your target prices')}</h3><p>${tt('Une carte précise et ton prix : on t’avertit dès qu’elle passe dessous.', 'A specific card and your price: we tell you when it drops under.')}</p>
-        <div class="liste rq-l">${cibles.map(a => `<div class="rangee"><span class="milieu"><span class="nom">${esc(a.q)}</span><span class="det">≤ ${argentCourt(a.prix_max)}</span></span><button class="ix" data-alx="${a.id}" aria-label="${esc(tt('Retirer', 'Remove'))}">${ICONES.x}</button></div>`).join('')}</div>
-        <form class="rq-aj rq-cible" id="rq-cf"><input class="champ" id="rq-cq" placeholder="${esc(tt('Ex. Bedard Young Guns', 'E.g. Bedard Young Guns'))}" autocomplete="off"><input class="champ" id="rq-cp" type="number" inputmode="decimal" placeholder="${esc(symDevise())}"><button class="btn ghost" type="submit">${ICONES.plus}</button></form>`;
+        <div class="io-g rq-l2">${cibles.map(a => `<div class="io-r"><span class="io-l">${esc(a.q)}</span><span class="io-v">≤ ${argentCourt(a.prix_max)}</span><button class="io-x" data-alx="${a.id}" aria-label="${esc(tt('Retirer', 'Remove'))}">${ICONES.x}</button></div>`).join('')}
+          <form class="io-r io-aj" id="rq-cf"><input class="io-in" id="rq-cq" placeholder="${esc(tt('Ex. Bedard Young Guns', 'E.g. Bedard Young Guns'))}" autocomplete="off" enterkeyhint="next" aria-label="${esc(tt('La carte', 'The card'))}"><input class="io-in rq-prix" id="rq-cp" type="number" inputmode="decimal" placeholder="${esc(tt('Prix', 'Price'))} ${esc(symDevise())}" aria-label="${esc(tt('Ton prix', 'Your price'))}"><button class="io-plus" type="submit" aria-label="${esc(tt('Ajouter', 'Add'))}">+</button></form></div>`;
     } else if (i === 4) {
       h = `<h3>${tt('Tes alertes', 'Your alerts')}</h3>
-        ${bascule('rq-a1', alm.prix_cible !== false, tt('Prix cible atteint', 'Target price hit'), '')}
-        ${bascule('rq-a2', !!alm.en_feu, tt('Mes joueurs en feu', 'My players on fire'), tt('Une grosse semaine, une intronisation…', 'A big week, a Hall of Fame call…'))}
-`;
+        <div class="io-g">${inter('rq-a1', alm.prix_cible !== false, tt('Prix cible atteint', 'Target price hit'))}${inter('rq-a2', !!alm.en_feu, tt('Mes joueurs en feu', 'My players on fire'))}</div>
+        <p>${tt('En feu : une grosse semaine, une intronisation…', 'On fire: a big week, a Hall of Fame call…')}</p>`;
     } else if (i === 6) {
       h = `<h3>${tt('Mes vendeurs eBay', 'My eBay sellers')}${pro ? '' : ' <span class="badge-f pro">✦ PRO</span>'}</h3>
         <p>${tt('Leurs annonces passent en premier dans ton radar.', 'Their listings come first in your radar.')}</p>
-        <div class="rq-vend">${Array.from({length: vmax}, (_, k) => `<input class="champ" data-rv="${k}" value="${esc(vend[k] || '')}" placeholder="${esc(tt('pseudo eBay', 'eBay username'))}" autocapitalize="off" autocorrect="off" spellcheck="false" ${pro ? '' : 'disabled'}>`).join('')}</div>`;
+        <div class="io-g">${Array.from({length: vmax}, (_, k) => `<label class="io-r"><input class="io-in" data-rv="${k}" value="${esc(vend[k] || '')}" placeholder="${esc(tt('pseudo eBay', 'eBay username'))}" aria-label="${esc(tt('Vendeur', 'Seller'))} ${k + 1}" autocapitalize="off" autocorrect="off" spellcheck="false" ${pro ? '' : 'disabled'}></label>`).join('')}</div>`;
     } else {
-      const ligne = (k, t, v, fait) => `<button class="rangee rq-r ${fait ? 'fait' : ''}" data-aller="${k}"><span class="milieu"><span class="nom">${t}${fait ? '<i class="rq-ck" aria-label="ok">✓</i>' : ''}</span><span class="det">${v}</span></span><i class="fl">›</i></button>`;
+      // 24 nov 2026 (Mathieu, capture de la fenetre : « revoir le layout/design de My radar, c'est laid, ca brise l'experience
+      // "Apple" simple et beau ») : la liste est batie comme Reglages d'iOS, avec les memes pieces que la feuille Filtres. Des
+      // groupes arrondis ; une rangee de 44 points par reglage : le nom a gauche, le choix en gris a droite, un chevron. Le
+      // budget se choisit dans le menu NATIF du telephone et les deux alertes sont des interrupteurs : deux fenetres de moins a
+      // ouvrir. « OK » en haut a droite, comme une feuille d'iOS (avant : « Fermer » et un gros bouton en bas) ; toucher a
+      // cote ferme aussi. Plus de crochets verts : le choix ecrit a droite dit deja ce qui est regle.
       const aucun = tt('Aucun', 'None');
-      h = `<h3>${tt('Ton radar', 'Your radar')}</h3>
-        <div class="liste rq-recap">
-          ${o.voir ? ligne('v', tt('Afficher', 'Show'), esc(S.mdVoirTxt || tt('Tout', 'All')), false) : ''}
-          ${ligne(0, tt('Joueurs et équipes', 'Players & teams'), fav.length ? esc(fav.slice(0, 4).join(', ')) + (fav.length > 4 ? ' +' + (fav.length - 4) : '') : tt('Tous (chasse large)', 'All (wide hunt)'), fav.length)}
-          ${ligne(1, tt('Cartes', 'Cards'), co.size ? esc([...co].map(NOM_SORTE).join(', ')) : tt('Toutes', 'All'), co.size)}
-          ${ligne(2, tt('Budget', 'Budget'), budget ? '≤ ' + argentCourt(budget) : tt('Pas de limite', 'No limit'), budget)}
-          ${ligne(3, tt('Prix cibles', 'Target prices'), cibles.length ? cibles.length + ' ' + tt('carte' + (cibles.length > 1 ? 's' : ''), 'card' + (cibles.length > 1 ? 's' : '')) : aucun, cibles.length)}
-          ${ligne(4, tt('Alertes', 'Alerts'), [alm.prix_cible !== false ? tt('prix cible', 'target price') : '', alm.en_feu ? tt('en feu', 'on fire') : ''].filter(Boolean).join(' · ') || aucun, alm.prix_cible !== false || alm.en_feu)}
-          ${ligne(6, tt('Vendeurs', 'Sellers'), vend.filter(Boolean).length ? esc(vend.filter(Boolean).join(', ')) : aucun, vend.some(Boolean))}
+      const nav = (k, t, v, plus) => `<button class="io-r io-m" data-aller="${k}"><span class="io-l">${t}${plus || ''}</span><span class="io-v">${v}</span>${IO_FL}</button>`;
+      const enDev = (cad) => (typeof DEVISE !== 'undefined' && DEVISE === 'USD' && typeof TAUX_USD !== 'undefined') ? cad * TAUX_USD : cad;
+      const bOpt = B.find(([v]) => v && budget && Math.abs(budget - versCAD(v)) < 1);
+      const budU = bOpt ? bOpt[0] : (budget ? Math.round(enDev(budget)) : 0);
+      const BL = [...new Set([...B.map(x => x[0]).filter(Boolean), ...(budU ? [budU] : [])])].sort((a, b) => a - b).map(v => [v, '≤ ' + argentCourt(versCAD(v))]).concat([[0, tt('Pas de limite', 'No limit')]]);
+      h = `<div class="io-tete"><span></span><h3>${tt('Ton radar', 'Your radar')}</h3><button class="io-raz io-fin" id="rq-ok">${tt('OK', 'Done')}</button></div>
+        <div class="io-f">
+          ${o.voir ? `<div class="io-g">${nav('v', tt('Afficher', 'Show'), esc(S.mdVoirTxt || tt('Tout', 'All')))}</div>` : ''}
+          <div class="io-g">
+            ${nav(0, tt('Joueurs et équipes', 'Players & teams'), fav.length ? esc(fav.slice(0, 2).join(', ')) + (fav.length > 2 ? ' +' + (fav.length - 2) : '') : tt('Tous', 'All'))}
+            ${nav(1, tt('Cartes', 'Cards'), co.size ? esc([...co].map(NOM_SORTE).join(', ')) : tt('Toutes', 'All'))}
+            ${ioMenu('rq-bud', tt('Budget par carte', 'Budget per card'), BL, budU)}
+          </div>
+          <div class="io-t">${tt('Alertes', 'Alerts')}</div>
+          <div class="io-g">
+            ${nav(3, tt('Prix cibles', 'Target prices'), cibles.length ? cibles.length + ' ' + tt('carte' + (cibles.length > 1 ? 's' : ''), 'card' + (cibles.length > 1 ? 's' : '')) : aucun)}
+            ${inter('rq-a1', alm.prix_cible !== false, tt('Prix cible atteint', 'Target price hit'))}
+            ${inter('rq-a2', !!alm.en_feu, tt('Mes joueurs en feu', 'My players on fire'))}
+          </div>
+          <div class="io-g">${nav(6, tt('Mes vendeurs eBay', 'My eBay sellers'), vend.filter(Boolean).length ? esc(vend.filter(Boolean).join(', ')) : aucun, pro ? '' : ' <span class="badge-f pro">✦ PRO</span>')}</div>
         </div>`;
     }
-    f.innerHTML = `<div class="tuto quest a rq ${i === RECAP ? 'rq-liste' : 'rq-fen'}">${h}${bas()}</div>`;
+    if (i !== RECAP) {                                // chaque fenetre : « Annuler » a gauche, son nom au centre, « OK » a droite
+      const T_ = {0: tt('Joueurs et équipes', 'Players & teams'), 1: tt('Cartes', 'Cards'), 2: tt('Budget par carte', 'Budget per card'), 3: tt('Prix cibles', 'Target prices'), 4: tt('Alertes', 'Alerts'),
+        6: tt('Mes vendeurs eBay', 'My eBay sellers') + (pro ? '' : ' <span class="badge-f pro">✦ PRO</span>')};
+      h = `<div class="io-tete"><button class="io-raz" id="rq-ann">${tt('Annuler', 'Cancel')}</button><h3>${T_[i] || ''}</h3><button class="io-raz io-fin" id="rq-ok">${tt('OK', 'Done')}</button></div>` + h.replace(/^\s*<h3>[\s\S]*?<\/h3>/, '');
+    }
+    f.innerHTML = `<div class="tuto quest a rq rq-ios ${i === RECAP ? 'rq-liste' : 'rq-fen'}">${h}${bas()}</div>`;
+    f.onclick = i === RECAP ? (e) => { if (e.target === f) { const b_ = $('#rq-ok', f); if (b_) b_.click(); } } : null;      // toucher a cote ferme la liste
     // les gestes de chaque fenetre
     if (i === 0) {
       const estEq = (n) => EQUIPES_LNH.includes(n);
@@ -8556,13 +8603,18 @@ async function configurerRadar(o){
         if (b.dataset.aller === 'v') { const v = o.voir; fin(false).then(() => { if (v) setTimeout(v, 80); }); return; }      // 23 nov 2026 : « Voir » du Radar vit ici
         avant = {fav: [...fav], co: new Set(co), budget, vend: [...vend]};          // « Annuler » remet comme avant
         i = +b.dataset.aller; montrer(); });
+      // 24 nov 2026 : le budget (menu natif) et les deux alertes (interrupteurs) se reglent dans la liste meme
+      ioLier('rq-bud', async (v) => { budget = +v ? Math.round(versCAD(+v) * 100) / 100 : null; await sauverProfil(); });
+      const a1_ = $('#rq-a1', f); if (a1_) a1_.onchange = (e) => { vibrer(); alm.prix_cible = e.target.checked; API.alarmes_regler({prix_cible: e.target.checked}).catch(() => {}); change = true; };
+      const a2_ = $('#rq-a2', f); if (a2_) a2_.onchange = (e) => { vibrer(); alm.en_feu = e.target.checked; API.radar_alerte_feu(e.target.checked).catch(() => {}); change = true; if (e.target.checked) demanderNotifications(); };
     }
     const ps = $('#rq-passer', f); if (ps) ps.onclick = () => fin(false);
     const an = $('#rq-ann', f); if (an) an.onclick = () => { vibrer();
       if (avant) { fav.splice(0, fav.length, ...avant.fav); co.clear(); avant.co.forEach(k => co.add(k)); budget = avant.budget; vend.splice(0, vend.length, ...avant.vend); }
       i = RECAP; montrer(); };
     $('#rq-ok', f).onclick = async () => { vibrer();
-      if (i === RECAP) { fin(false); if (!o.allerRadar) { if (location.hash !== '#deals') location.hash = '#deals'; } return; }
+      // « OK » ferme ; si un reglage a change ailleurs que sur le Radar, on y va voir le resultat
+      if (i === RECAP) { const ch_ = change; fin(false); if (!o.allerRadar && ch_ && location.hash !== '#deals') location.hash = '#deals'; return; }
       const b_ = $('#rq-ok', f); if (b_) { b_.disabled = true; b_.innerHTML = '<span class="roue"></span>'; }
       if ([0, 1, 2, 6].includes(i)) await sauverProfil();
       change = true; i = RECAP; montrer(); };
@@ -11080,6 +11132,8 @@ const nbFiltresDeals = (F) => ['prix_min', 'prix_max', 'rabais_min', 'gain_min']
 // 24 nov 2026 : une rangee « menu » comme dans Reglages d'iOS (le nom a gauche, le choix a droite, le menu NATIF du telephone),
 // partagee par toutes les feuilles de reglages : ioMenu(id, nom, [[valeur, texte], ...], valeur choisie) ; ioLier(id, f)
 const IO_CHEV = `<svg class="io-c" viewBox="0 0 10 16" aria-hidden="true"><path d="M1.6 6 5 2.6 8.4 6M1.6 10 5 13.4 8.4 10" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const IO_OK = `<svg class="io-ok" viewBox="0 0 16 12" aria-hidden="true"><path d="M1.5 6.5 5.8 10.5 14.5 1.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const IO_FL = `<svg class="io-fl" viewBox="0 0 8 14" aria-hidden="true"><path d="M1.5 1.5 7 7l-5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 function ioMenu(id, nom, L, v){
   const opts_ = L.map(([k, t]) => `<option value="${esc(String(k))}" ${String(k) === String(v) ? 'selected' : ''}>${esc(t)}</option>`).join('');
   return `<label class="io-r io-m"><span class="io-l">${nom}</span><span class="io-v" id="${id}-v">${esc((L.find(x => String(x[0]) === String(v)) || L[0])[1])}</span>${IO_CHEV}<select id="${id}" aria-label="${esc(nom)}">${opts_}</select></label>`;
@@ -11462,7 +11516,7 @@ async function chargerWatch(){
         ${x.ebay_le && !fini ? `<span class="w-eb">✓ eBay</span>` : ''}</div>
       <div class="w-mil"><div class="w-t">${esc(titreCourt(x.titre))}</div>
         ${fini ? finW(x, cur) : ''}${fini ? '' : `<div class="w-pr2"><div class="${dep ? 'rouge' : ''}"><small>${x.encan ? tt('Mise', 'Bid') : tt('Prix', 'Price')}</small><b>${cur}</b></div>
-          ${!r.prix ? '' : `<button class="w-max2 ${x.mise_perso ? 'perso' : ''}" data-wmax="${esc(x.item_id)}"><small>${x.encan ? tt('Ta mise max', 'Your max bid') : tt('Paie au plus', 'Pay at most')} ✎</small><b class="${(x.mise_max == null && x.sans_comps) || (x.mise_max != null && x.mise_max < 1 && !x.mise_perso) ? 'w-sc' : ''}">${x.mise_max != null && x.mise_max < 1 && !x.mise_perso && x.valeur ? tt('Trop petite', 'Too small') : x.mise_max != null ? argent(x.mise_max, 0) : x.sans_comps ? tt('Pas de comps', 'No comps') : '—'}</b></button>${x.profit != null ? `<div class="w-pro ${x.profit > 0 ? 'vert' : 'rouge'}"><small>${x.encan ? tt('Profit actuel', 'Profit now') : tt('Profit', 'Profit')}</small><b>${x.profit > 0 ? '+' : '−'}${argent(Math.abs(x.profit), 0)}</b></div>` : ''}`}</div>`}
+          ${!r.prix ? (x.mise_perso && x.mise_max != null ? `<div><small>${tt('Ta mise', 'Your bid')}</small><b>${argent(x.mise_max, 0)}</b></div>` : '') : `<button class="w-max2 ${x.mise_perso ? 'perso' : ''}" data-wmax="${esc(x.item_id)}"><small>${x.encan ? tt('Ta mise max', 'Your max bid') : tt('Paie au plus', 'Pay at most')} ✎</small><b class="${(x.mise_max == null && x.sans_comps) || (x.mise_max != null && x.mise_max < 1 && !x.mise_perso) ? 'w-sc' : ''}">${x.mise_max != null && x.mise_max < 1 && !x.mise_perso && x.valeur ? tt('Trop petite', 'Too small') : x.mise_max != null ? argent(x.mise_max, 0) : x.sans_comps ? tt('Pas de comps', 'No comps') : '—'}</b></button>${x.profit != null ? `<div class="w-pro ${x.profit > 0 ? 'vert' : 'rouge'}"><small>${x.encan ? tt('Profit actuel', 'Profit now') : tt('Profit', 'Profit')}</small><b>${x.profit > 0 ? '+' : '−'}${argent(Math.abs(x.profit), 0)}</b></div>` : ''}`}</div>`}
         ${dep ? `<div class="w-dep">${tt('Dépasse ta mise max', 'Over your max bid')}</div>` : ''}</div>
       <div class="w-dr"><button class="lien-doux w-verif" data-verif="${esc(x.item_id)}" data-verif-t="${esc(x.titre || '')}" data-verif-p="${esc(x.total || 0)}" data-verif-e="${x.encan ? 1 : ''}">${tt('Vérifier', 'Check')}</button>${x.etat === 'ok' && x.url ? (x.encan ? `<button class="w-go" data-wmiser="${esc(x.item_id)}">${tt('Miser', 'Bid')}</button>` : `<a class="w-go" href="${esc(lienAchat(x.url, 'watch'))}" target="_blank" rel="noopener">${tt('Acheter', 'Buy')}</a>`) : ''}
         <button class="sd-et on w-et" data-watch="${esc(x.item_id)}" aria-pressed="true" aria-label="${esc(tt('Retirer de la watchlist', 'Remove from watchlist'))}">${ICO_ETOILE}</button></div></div>`;
@@ -11599,7 +11653,9 @@ function feuilleWatchEbay(L, W){
 // dans la zone des mises avec son montant, il lui reste juste a dire oui ; le plus possible, en lot idealement ») :
 // SlabCoach ne mise jamais : il prepare (montant dans la devise de l'annonce, minimum d'eBay, fin), copie le montant
 // et ouvre la mise de l'annonce sur eBay ; en lot, l'encan suivant arrive tout seul au retour dans l'app
-const argentDev = (v, dv) => (Math.round((+v || 0) * 100) / 100).toLocaleString(LOC(), {minimumFractionDigits: (+v || 0) % 1 ? 2 : 0, maximumFractionDigits: 2}) + ' ' + dv;
+// 24 nov 2026 (audit des ecrans) : en anglais, le signe avant le montant (« $28 », « US $62 ») ; avant : « 28 $ » partout
+const argentDev = (v, dv) => { const n = (Math.round((+v || 0) * 100) / 100).toLocaleString(LOC(), {minimumFractionDigits: (+v || 0) % 1 ? 2 : 0, maximumFractionDigits: 2});
+  return tt(n + ' ' + dv, dv === '$' ? '$' + n : dv === '$ US' ? 'US $' + n : dv + ' ' + n); };
 const devCourt = (d) => d === 'CAD' || !d ? '$' : d === 'USD' ? '$ US' : d;
 // 31 oct 2026 (Mathieu : « ca me dit de me connecter, apres erreur serveur, apres Safari, apres l'app : c'est lourd ») :
 // la page de mise d'eBay (bfl/placebid) dans le navigateur de l'app demande de se connecter puis plante. Maintenant :
@@ -11625,15 +11681,18 @@ async function feuilleMiser(id, lot){
   if (id) Q = Q.filter(x => x.item_id === String(id)); else Q = Q.filter(x => !x.trop_bas || x.mise_perso);
   if (!Q.length) { ouvrirFeuille(`<h3>${tt('Ma mise', 'My bid')}</h3><div class="vide">${tt('Aucun encan à miser pour l’instant (fini, ou déjà au-dessus de ta mise max).', 'No auction to bid on right now (ended, or already over your max bid).')}</div>`); return; }
   const M = {i: 0, faits: 0, envoye: false};
-  const montant = (x) => x._m ?? (x.trop_bas ? (x.mise_min ?? x.mise_max) : x.mise_max);
+  // 24 nov 2026 (Mathieu, vue Pro : « ca me sort ca quand je veux bid in a batch ») : un encan sans mise max conseillee
+  // (compte sans l'outil de prix, carte sans valeur) se mise quand meme : l'utilisateur ecrit son montant, a partir du
+  // minimum d'eBay
+  const montant = (x) => x._m ?? (x.trop_bas || x.mise_max == null ? (x.mise_min ?? x.mise_max) : x.mise_max);
   const etape = () => {
     if (M.i >= Q.length) { fin(); return; }
     const x = Q[M.i], m = montant(x), dv = devCourt(x.devise);
     ouvrirFeuille(`<h3>${lot ? tt(`Miser · ${M.i + 1} / ${Q.length}`, `Bid · ${M.i + 1} / ${Q.length}`) : tt('Ma mise', 'My bid')}</h3>
       <div class="mi-carte">${x.photo ? `<img src="${esc(photoNet(x.photo, 300))}" alt="">` : ''}<div><b>${esc(titreCourt(x.titre))}</b>
         <small>${icH()}${finCourt(x.reste_min)}${x.mise_actuelle != null ? ' · ' + tt('mise ', 'bid ') + argentDev(x.mise_actuelle, dv) : ''}${x.mises != null ? ' · ' + x.mises + ' ' + tt(x.mises > 1 ? 'mises' : 'mise', x.mises > 1 ? 'bids' : 'bid') : ''}</small></div></div>
-      <div class="mi-info">${x.valeur_cad ? `<span>${tt('Vaut', 'Worth')} <b>${argentCourt(x.valeur_cad)}</b></span>` : ''}<span>${tt('Ta mise max', 'Your max bid')} <b>${argentDev(x.mise_max, dv)}</b></span>${x.mise_min != null ? `<span>${tt('Minimum eBay', 'eBay minimum')} <b>${argentDev(x.mise_min, dv)}</b></span>` : ''}</div>
-      <label class="large mi-l">${tt('Ma mise', 'My bid')} (${x.devise === 'USD' ? '$ US' : !x.devise || x.devise === 'CAD' ? '$ CA' : x.devise})<input class="champ mi-in" id="mi-v" type="number" inputmode="decimal" step="1" min="0" value="${Math.floor(m)}"></label>
+      <div class="mi-info">${x.valeur_cad ? `<span>${tt('Vaut', 'Worth')} <b>${argentCourt(x.valeur_cad)}</b></span>` : ''}${x.mise_max != null ? `<span>${tt('Ta mise max', 'Your max bid')} <b>${argentDev(x.mise_max, dv)}</b></span>` : ''}${x.mise_min != null ? `<span>${tt('Minimum eBay', 'eBay minimum')} <b>${argentDev(x.mise_min, dv)}</b></span>` : ''}</div>
+      <label class="large mi-l">${tt('Ma mise', 'My bid')} (${x.devise === 'USD' ? '$ US' : !x.devise || x.devise === 'CAD' ? '$ CA' : x.devise})<input class="champ mi-in" id="mi-v" type="number" inputmode="decimal" step="1" min="0" value="${m != null ? (x.mise_max == null ? Math.ceil(m) : Math.floor(m)) : ''}"></label>
       <div class="mi-av" id="mi-av"></div>
       <a class="btn mi-go" id="mi-go" href="${esc(lienMise(x))}" target="_blank" rel="noopener"></a>
       <div class="sous" style="text-align:center">${tt('Le montant est copié. Sur eBay : « Enchérir », colle-le dans ton enchère max et confirme.', 'The amount is copied. On eBay: “Place bid”, paste it as your max bid and confirm.')}</div>
@@ -11643,7 +11702,7 @@ async function feuilleMiser(id, lot){
       go.textContent = tt(`Miser ${argentDev(v, dv)} sur eBay`, `Bid ${argentDev(v, dv)} on eBay`);
       go.classList.toggle('off', !v || (x.mise_min != null && v < x.mise_min));
       av.innerHTML = x.mise_min != null && v < x.mise_min ? `<span class="rouge">${tt('eBay demande au moins ', 'eBay needs at least ')}${argentDev(x.mise_min, dv)}</span>`
-        : v > x.mise_max ? `<span class="or">${tt('Au-dessus de ta mise max : moins rentable', 'Above your max bid: less profitable')}</span>` : ''; };
+        : x.mise_max != null && v > x.mise_max ? `<span class="or">${tt('Au-dessus de ta mise max : moins rentable', 'Above your max bid: less profitable')}</span>` : ''; };
     i.oninput = maj; maj();
     go.onclick = (e) => { const v = nb(i.value) || 0; copier(String(Math.floor(v * 100) / 100)); vibrer(); M.envoye = true; M.faits++;
       if (ouvrirMiseEbay(x)) { e.preventDefault(); e.stopPropagation(); }
@@ -11676,12 +11735,12 @@ async function feuilleMiser(id, lot){
         <div class="w-ph">${SVG_CARTE}${x.photo ? `<img src="${esc(photoNet(x.photo, 300))}" alt="" loading="lazy" decoding="async" data-oe="rm">` : ''}</div>
         <div class="w-mil"><div class="w-t">${esc(titreCourt(x.titre))}</div>
           <div class="mi-s">${x.valeur_cad ? `<span>${tt('Médiane', 'Median')} <b>${argentCourt(x.valeur_cad)}</b></span>` : ''}<span>${icH()}${finCourt(x.reste_min)}</span>${x.mise_actuelle != null ? `<span>${tt('mise', 'bid')} ${argentDev(x.mise_actuelle, devCourt(x.devise))}</span>` : ''}</div></div>
-        <label class="mi-case"><input type="number" inputmode="decimal" step="1" min="0" data-k="${k}" placeholder="${Math.floor(x.mise_max)}" value="${x._m != null ? x._m : ''}" aria-label="${esc(tt('Ma mise', 'My bid'))}"><small>${x.devise === 'USD' ? '$ US' : '$ CA'}</small></label></div>`).join('')}</div>
-      <div class="sous" style="text-align:center;margin-top:10px">${tt('En pâle : ta mise max conseillée. Laisse-la, ou écris ton montant.', 'In grey: your suggested max bid. Keep it, or type your own.')}</div>`);
-    const val = (x) => x._m != null && x._m !== '' ? +x._m : Math.floor(x.mise_max);
+        <label class="mi-case"><input type="number" inputmode="decimal" step="1" min="0" data-k="${k}" placeholder="${x.mise_max != null ? Math.floor(x.mise_max) : x.mise_min != null ? Math.ceil(x.mise_min) : ''}" value="${x._m != null ? x._m : ''}" aria-label="${esc(tt('Ma mise', 'My bid'))}"><small>${x.devise === 'USD' ? '$ US' : '$ CA'}</small></label></div>`).join('')}</div>
+      <div class="sous" style="text-align:center;margin-top:10px">${W_.some(x => x.mise_max != null && !x.mise_perso) ? tt('En pâle : ta mise max conseillée. Laisse-la, ou écris ton montant.', 'In grey: your suggested max bid. Keep it, or type your own.') : tt('Écris ton montant pour chaque encan. En pâle : le minimum d’eBay.', 'Type your amount for each auction. In grey: the eBay minimum.')}</div>`);
+    const val = (x) => x._m != null && x._m !== '' ? +x._m : x.mise_max != null ? Math.floor(x.mise_max) : 0;
     const prets = () => W_.filter(x => val(x) > 0 && !(x.mise_min != null && val(x) < x.mise_min));
     const maj = () => { const n = prets().length, b = $('#ml-go'); b.textContent = tt(`Miser sur eBay (${n})`, `Bid on eBay (${n})`); b.disabled = !n;
-      $$('.mi-case input').forEach(i => { const x = W_[+i.dataset.k], v = val(x); i.closest('.mi-t').classList.toggle('mi-bas', x.mise_min != null && v < x.mise_min); }); };
+      $$('.mi-case input').forEach(i => { const x = W_[+i.dataset.k], v = val(x); i.closest('.mi-t').classList.toggle('mi-bas', v > 0 && x.mise_min != null && v < x.mise_min); }); };       // une case vide n'est pas « trop basse »
     const garder = (i, x) => { clearTimeout(x._t); x._t = setTimeout(() => { x._t = null;
       const v = x._m, cad = v != null && v > 0 ? Math.round(v * (x.taux || 1) * 100) / 100 : null;
       API.watch_mise_max(x.item_id, cad, cad ? v : null, cad ? x.devise : null, true)
@@ -11725,6 +11784,7 @@ async function feuilleGixen(montants){
   if (!r.ok) { ouvrirFeuille(`<h3>Gixen</h3><div class="vide">${esc(r.erreur || 'Erreur')}</div>`); return; }
   let L = r.cartes || [];
   if (montants) L = L.filter(x => montants[x.item_id] != null).map(x => ({...x, mise_max: +montants[x.item_id], trop_bas: false}));
+  L = L.filter(x => x.mise_max != null);                 // 24 nov 2026 : un encan sans mise max n'a rien a exporter
   const bons = L.filter(x => !x.trop_bas);
   const m = (x) => `${x.mise_max.toFixed(0)} $${x.devise === 'CAD' ? '' : ' ' + (x.devise === 'USD' ? 'US' : x.devise)}`;
   ouvrirFeuille(`<h3>Gixen</h3>
@@ -12002,8 +12062,9 @@ async function choisirProduitAnalyse(){
               à l'envers) ; et le serveur ne rend un verdict que si la moitié de la valeur de la boîte vient de vraies ventes */}
       ${p.ouvrir ? `<div class="coin">${capsule(p.ouvrir.verdict === 'ouvrir' ? tt('Ouvrir', 'Open') + ' +' + p.ouvrir.pct + ' %' : p.ouvrir.verdict === 'garder' ? tt('Vaut plus scellée', 'Worth more sealed') : tt('Neutre', 'Even') + ' ' + (p.ouvrir.pct > 0 ? '+' : '') + p.ouvrir.pct + ' %', (p.ouvrir.verdict === 'ouvrir' ? 'vert' : p.ouvrir.verdict === 'garder' ? 'rouge' : 'or') + ' petit')}</div>` : ''}
       ${'' /* 20 nov 2026 (Mathieu : « des crochets, pas de crochets : on pense que le produit n'est pas complet ») : chaque produit a sa checklist : le crochet partout */}
-      ${!p.complete && S.forfait && S.forfait.admin ? '' : `<span class="ck-ok" title="${esc(tt('Checklist dans SlabCoach', 'Checklist in SlabCoach'))}">✓</span>`}
-      ${!p.complete && S.forfait && S.forfait.admin ? `<span class="ck-manq">${capsule(p.cotes_manquantes + ' ' + tt(p.cotes_manquantes > 1 ? 'cotes' : 'cote', p.cotes_manquantes > 1 ? 'odds' : 'odd'), 'or petit')}</span>` : ''}</button>`).join('')}</div>
+      ${'' /* 24 nov 2026 (Mathieu, Splendor : le crochet vert, puis « chances de tirage pas encore connues » : « ?? ») : un produit sans AUCUNE cote ne porte pas le crochet */}
+      ${p.sans_cotes ? `<span class="ck-manq">${capsule(tt('Cotes à venir', 'Odds coming'), 'or petit')}</span>` : !p.complete && S.forfait && S.forfait.admin ? '' : `<span class="ck-ok" title="${esc(tt('Checklist dans SlabCoach', 'Checklist in SlabCoach'))}">✓</span>`}
+      ${!p.sans_cotes && !p.complete && S.forfait && S.forfait.admin ? `<span class="ck-manq">${capsule(p.cotes_manquantes + ' ' + tt(p.cotes_manquantes > 1 ? 'cotes' : 'cote', p.cotes_manquantes > 1 ? 'odds' : 'odd'), 'or petit')}</span>` : ''}</button>`).join('')}</div>
     <div class="ph-liens"><a href="#calendrier">${tt('Calendrier des sorties', 'Release calendar')}</a></div>`;
   // 15 nov 2026 (Mathieu : « minimise l'info, pas de flafla ») : la tuile = le visuel du produit (saison + nom) et le crochet
   // vert ; plus de nom en double, plus de « Checklist et cotes completes », plus de paragraphe d'explication
@@ -13184,6 +13245,11 @@ async function vueDeals(arg){
   // 13 nov 2026 (Mathieu : « revoir le haut de ma page : plus petites tuiles ou pop-up, ca prend beaucoup de place ») : une
   // seule ligne (le prochain tour du chasseur) et un bouton rond qui ouvre les outils admin du Radar dans une fenetre
   const ao_ = $("#d-adm-o"); if (ao_) ao_.onclick = () => { vibrer(); outilsRadarAdmin(); };
+  // 24 nov 2026 (Mathieu, vue Pro : « le bouton SlabIQ ne fonctionne pas ») : ces boutons de l'en-tete n'etaient branches
+  // qu'a la fin de la liste des deals (Admin, Platine) ; le Radar des autres comptes sortait avant : des boutons morts
+  { const dxi_ = $('#d-x-iq'); if (dxi_) dxi_.onclick = () => { vibrer(); expliquerSlabIQ(); };
+    const dip_ = $('#d-iqp'); if (dip_) dip_.onclick = () => { vibrer(); expliquerSlabIQ(); };
+    const da_ = $('#d-aide'); if (da_) da_.onclick = () => { vibrer(); (comps() ? feuilleAideDeals : expliquerSlabIQ)(); }; }
   // 19 nov 2026 (Mathieu : « un bouton pour forcer le refresh des prix des encheres ») : relit la mise de chaque encan sur eBay
   const en_ = $('#d-enc'); if (en_) en_.onclick = async () => { vibrer(); if (en_.disabled) return; en_.disabled = true; en_.classList.add('on');
     const s_ = en_.innerHTML; en_.innerHTML = `<span class="roue"></span><span>${tt('Lecture…', 'Reading…')}</span>`;
@@ -14805,6 +14871,11 @@ const MAJ_APP = () => [
     ['deals', tt('Tes joueurs, toujours là', 'Your players, always there'), tt('Le Radar montre maintenant les meilleures cartes de chaque joueur et équipe que tu suis, même les moins connus. Dans Filtres, « B et + » montre vraiment les B.', 'The Radar now shows the best cards of every player and team you follow, even lesser-known ones. In Filters, “B & up” really shows the Bs.')],
     ['deals', tt('Radar Pro : pas de cartes tout juste sorties', 'Pro Radar: no just-released cards'), tt('Une carte qui vient de sortir part haut, puis descend pendant deux mois. Le Radar Pro attend qu’elle se vende depuis deux mois.', 'A just-released card starts high, then drops for two months. The Pro Radar waits until it has been selling for two months.')],
     ['deals', tt('Le « Total » avec la taxe de ta province', 'The “Total” with your province’s tax'), tt('Choisis ta province dans Profil › Mes préférences › Mes deals › J’achète depuis. Avant, c’était la taxe du Québec pour tout le monde.', 'Pick your province in Profile › My preferences › My deals › I buy from. Before, everyone got Quebec’s tax.')],
+    ['deals', tt('Cartes des États-Unis : le vrai prix', 'US cards: the real price'), tt('Depuis le 8 septembre 2026, le Canada ajoute 50 % au prix d’une carte achetée aux États-Unis. Le « Total » le compte au dollar près.', 'Since September 8, 2026, Canada adds 50% to the price of a card bought in the US. The “Total” counts it to the dollar.')],
+    ['deals', tt('Mon radar : plus simple', 'My radar: simpler'), tt('Tes réglages sur une seule liste, comme les Réglages de ton iPhone. Le budget et les alertes se règlent sans ouvrir de fenêtre.', 'Your settings in a single list, like your iPhone’s Settings. Budget and alerts are set without opening a window.')],
+    ['etiquette', tt('Inventaire : à liquider ou à ajuster', 'Inventory: to clear or to adjust'), tt('Une annonce sans intérêt depuis longtemps : moins de 20 $, à liquider ; 20 $ et plus, son prix est à revoir.', 'A listing with no interest for a long time: under $20, to clear; $20 and up, its price needs a review.')],
+    ['breaks', tt('Breaks : Splendor se classe', 'Breaks: Splendor now ranks'), tt('Aucune cote publiée, mais chaque carte est numérotée : SlabCoach déduit les chances de ses tirages.', 'No published odds, but every card is numbered: SlabCoach works out the chances from the print runs.')],
+    ['etoile', tt('Watchlist : miser en lot pour tous', 'Watchlist: batch bidding for everyone'), tt('« Miser » et « Miser en lot » préparent tous tes encans. Écris ton montant : il reste écrit quand tu reviens.', '“Bid” and “Bid in a batch” prepare all your auctions. Type your amount: it stays when you come back.')],
     ['deals', tt('Radar : le même nombre partout', 'Radar: the same number everywhere'), tt('L’accueil, l’onglet du bas et le Radar montrent le même nombre de cartes, écrit en entier.', 'Home, the bottom tab and the Radar show the same number of cards, written in full.')]]},
   {n: 243, le: '2026-11-23', points: [
     ['breaks', tt('Breaks : « Vaut plus scellée »', 'Breaks: “Worth more sealed”'), tt('Le badge d’une boîte ne paraît que si on a assez de vraies ventes de ses cartes. Sinon : rien.', 'A box’s badge only shows when we have enough real sales of its cards. Otherwise: nothing.')],
@@ -16636,16 +16707,22 @@ function filtresBarreInv(){
 // 21 nov 2026 (Mathieu : « on devrait avoir une section "prix a ajuster / trop cher" ») : une 4e tuile dans l'inventaire en vente,
 // seulement s'il y en a : les annonces en ligne dont le prix est trop haut face a leurs ventes reelles. Un toucher : la liste,
 // la plus chere d'abord ; un 2e toucher : tout revient.
+// 24 nov 2026 (Mathieu, vue Pro : « pour les "to adjust" en Pro, t'utilises les ventes actuelles ? » ; « pour les cartes plus
+// cheres, simplement revoir le prix aiderait ») : deux raisons de revoir un prix.
+//  1. Pour TOUS les forfaits : 20 $ et plus, en ligne depuis longtemps, sans interet (le serveur : ajuster_ids ; les jours en
+//     ligne, les suivis et les vues de SES annonces, rien des ventes).
+//  2. Admin et Platine seulement : au-dessus du marche (ses comps). Avant, cette raison jouait aussi en vue Pro, par la valeur
+//     gardee sur la carte (tiree des ventes) : un jugement de prix reserve sortait pour un compte qui n'y a pas droit.
 function majTuileAjuster(){
   const z = $('#i-tab'); if (!z || !z.querySelector('#it-pop, #it-liq, #it-dort')) return;
-  const L = (S.invTous || []).filter(c => c.statut === 'Listée').map(c => [c, repere(c)]).filter(x => x[1] && x[1].cl === 'rouge' && !x[1].bas)
+  const L = !prixOutil() ? [] : (S.invTous || []).filter(c => c.statut === 'Listée').map(c => [c, repere(c)]).filter(x => x[1] && x[1].cl === 'rouge' && !x[1].bas)
     .sort((a, b) => (nb(b[0].prix_demande) / b[1].ref) - (nb(a[0].prix_demande) / a[1].ref));
+  const ids = [...new Set([...L.map(x => x[0].id), ...(S.invAjuster || [])])];
   let d = $('#it-aj', z);
-  if (!L.length) { if (d && S.filtreCle !== 'aj') d.remove(); return; }
+  if (!ids.length) { if (d && S.filtreCle !== 'aj') d.remove(); return; }
   if (!d) { d = document.createElement('button'); d.className = 't-acc'; d.id = 'it-aj'; z.appendChild(d); }
-  d.innerHTML = `<span class="l">${tt('À ajuster', 'To adjust')}</span><b class="rouge">${L.length}</b><span class="s">${tt('prix au-dessus du marché', 'priced above market')}</span>`;
+  d.innerHTML = `<span class="l">${tt('À ajuster', 'To adjust')}</span><b class="rouge">${ids.length}</b><span class="s">${tt('prix à revoir', 'price to review')}</span>`;
   d.classList.toggle('on', S.filtreCle === 'aj');
-  const ids = L.map(x => x[0].id);
   d.onclick = () => { vibrer(); const on = S.filtreCle !== 'aj'; S.filtreCle = on ? 'aj' : null; S.dortIds = on ? ids : null;
     $$('#i-tab .t-acc').forEach(b => b.classList.remove('on')); d.classList.toggle('on', on); chargerInventaire(); };
 }
@@ -16678,12 +16755,13 @@ async function tableauInv(){
     z.innerHTML = !v.n ? '' : t(tt('À vendre', 'For sale'), argentKpi(v.valeur), v.delai_median != null ? tt('se vend en ~', 'sells in ~') + v.delai_median + tt(' j', ' d') : `${v.n} ${v.n > 1 ? tt('cartes', 'cards') : tt('carte', 'card')}`)
       + (enLigne ? t(tt('Populaires', 'Popular'), String(v.populaires), sousPop, v.populaires ? 'vert' : '', 'it-pop')
                  : t(tt('Se vend en', 'Sells in'), v.delai_median != null ? '~' + v.delai_median + tt(' j', ' d') : '—', v.delai_median != null ? tt('tes ventes · 6 mois', 'your sales · 6 months') : tt('pas assez de ventes', 'not enough sales')))
-      + (enLigne ? t(tt('À liquider', 'To clear'), String(v.liquider), tt('60 j+ sans intérêt · 90 j+', '60 d+ no interest · 90 d+'), v.liquider ? 'or' : '', 'it-liq')
+      + (enLigne ? t(tt('À liquider', 'To clear'), String(v.liquider), tt(`moins de ${argentCourt(v.liquider_prix || 20)} · sans intérêt`, `under ${argentCourt(v.liquider_prix || 20)} · no interest`), v.liquider ? 'or' : '', 'it-liq')
                  : t(tt('Dorment', 'Sleeping'), String(v.dorment), tt('plus de 60 jours', 'over 60 days'), v.dorment ? 'or' : '', 'it-dort'));
     const filtre = (id, cle, ids) => { const d = $('#' + id); if (!d) return; d.classList.toggle('on', S.filtreCle === cle);
       if (ids && ids.length) d.onclick = () => { vibrer(); const on = S.filtreCle !== cle; S.filtreCle = on ? cle : null; S.dortIds = on ? ids : null;
         $$('#i-tab .t-acc').forEach(b => b.classList.remove('on')); d.classList.toggle('on', on); chargerInventaire(); }; };
     filtre('it-pop', 'pop', v.populaires_ids); filtre('it-liq', 'liq', v.liquider_ids); filtre('it-dort', 'dort', v.dorment_ids);
+    S.invAjuster = enLigne ? (v.ajuster_ids || []) : [];        // 24 nov 2026 : 20 $ et plus, sans interet : le prix a revoir
     try { majTuileAjuster(); } catch (e) {}
     const p0 = z.querySelector('.t-acc'); if (p0) p0.onclick = () => { const b = $('#i-res'); if (b) b.click(); };
     // les vues demandent l'acces « statistiques » d'eBay : une ligne discrete tant qu'il manque (les suivis marchent deja)
@@ -16783,7 +16861,13 @@ async function vueInventaire(arg){
 }
 // le repere prix : ton prix face a la mediane des memes cartes en vente (et le plus bas de la concurrence)
 const nego = () => { const m = (S.reglages && S.reglages.modele_annonce) || {}; return m.nego_pct != null ? +m.nego_pct : 15; };
+// 24 nov 2026 (Mathieu : « pour les "to adjust" en Pro, t'utilises les ventes actuelles ? ») : juger un prix (« trop cher », « bon
+// prix », « au-dessus du marche ») = l'outil de prix reserve (Admin, Platine). Le garde-fou est ICI, a la source : la tuile de
+// l'inventaire l'avait deja (16 nov), mais la tuile « A ajuster » et la fiche de la carte passaient encore par la valeur gardee
+// sur la carte, tiree des ventes.
+const prixOutil = () => comps() && !!(S.forfait && (S.forfait.admin || S.forfait.comps));
 function repere(c){
+  if (!prixOutil()) return null;
   const m = c.marche, prix = nb(c.prix_demande);
   // 5 nov 2026 (Mathieu : « on doit voir si notre prix de vente est bon dans cette vue ») : sans 3 ventes reelles, la valeur
   // estimee de la carte sert de repere (dit comme tel)
@@ -16990,7 +17074,7 @@ async function retirerCartes(cartes){
 // 9 nov 2026 : les cartes en vente sans repere (pas de marche ni de valeur) : leur valeur d'apres les ventes reelles, 6 a la
 // fois au plus et une fois par jour par carte (le budget des recherches) ; la tuile se met a jour sur place
 async function estimerManquantes(l){
-  if (S.valEnCours) return;
+  if (S.valEnCours || !prixOutil()) return;            // 24 nov 2026 : sans l'outil de prix, aucune recherche de valeur
   const auj = new Date().toISOString().slice(0, 10);
   let fait = {}; try { fait = JSON.parse(localStorage.getItem('lr_val_t') || '{}'); } catch (e) {}
   S.valSans = S.valSans || new Set(Object.keys(fait).filter(k => fait[k].n === 0 && fait[k].j === auj).map(Number));
@@ -23440,8 +23524,22 @@ async function vueReglages(arg){
 
 // 29 oct 2026 (Mathieu : « le moins chargé possible, le plus de pop-up ») : le Profil devient une liste de pastilles ;
 // chaque réglage s'ouvre dans une feuille (les blocs restent dans la page, cachés : tout continue de marcher)
+// 24 nov 2026 (Mathieu : « je ne devrais pas pouvoir bouger l'ecran ») : le Profil qui depasse de peu se serre juste assez
+// pour tenir sans defiler ; s'il depasse de trop meme serre (petit ecran), il reste comme avant et defile
+function tenirProfil(){
+  const ec = $('.ecran.reglages'), d = document.scrollingElement, R = document.documentElement;
+  if (!ec || !$('#g-pils') || !d) { R.style.removeProperty('--pk'); return; }
+  const dep = (k) => { R.style.setProperty('--pk', String(k)); return d.scrollHeight - innerHeight; };
+  if (dep(0) <= 0) return;
+  if (dep(1) > 0) { dep(0); return; }
+  let a = 0, b = 1;
+  for (let i = 0; i < 6; i++) { const m = (a + b) / 2; if (dep(m) > 0) a = m; else b = m; }
+  dep(b);
+}
+if (!window.__tenirProfil) { window.__tenirProfil = true; addEventListener('resize', () => { if ($('.ecran.reglages #g-pils')) tenirProfil(); }); }
 function pastillerReglages(){
   const ec = $('.ecran.reglages'); if (!ec) return;
+  setTimeout(tenirProfil, 0); setTimeout(tenirProfil, 700); setTimeout(tenirProfil, 2500);       // apres le rendu, puis quand eBay et le forfait ont repondu
   const res = document.createElement('div'); res.className = 'acc-reserve'; res.id = 'g-reserve';
   const pils = document.createElement('div'); pils.className = 'acc-pils'; pils.id = 'g-pils';
   const titreDe = (b) => b.id === 'g-ebay' ? tt('Compte eBay', 'eBay account') : ((b.querySelector('.r-titre') || b.querySelector('b') || {}).textContent || '').trim();

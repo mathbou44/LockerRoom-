@@ -741,9 +741,14 @@ def liste(api):
         _valeurs_manquantes(api, lst)
         _mises_a_jour(api, lst)
     else:
+        # 24 nov 2026 (Mathieu, vue Pro : « Bid in a batch » repondait « No auction to bid on right now ») : la mise max
+        # CONSEILLEE reste reservee, mais une mise que l'utilisateur a ECRITE lui-meme est la sienne (ce n'est pas un prix
+        # tire d'eBay) : elle est gardee et revient, comme pour l'admin (12 nov : « tous mes prix sont disparus »)
         for x in lst:
+            perso = bool(x.get("mise_perso")) and x.get("mise_max") is not None
             for k in ("valeur", "valeur_cad", "mise_max", "mise_min", "mise_perso", "profit", "sans_comps_le", "rabais", "ratio", "gain", "final"):
-                x.pop(k, None)
+                if not (perso and k in ("mise_max", "mise_perso")):
+                    x.pop(k, None)
     maint = _maint()
     # 31 oct 2026 (Mathieu : « il reste de la place : le profit calcule, qui s'ajuste en live avec le nouveau prix de
     # l'encan ») : ce que la carte rapporte si tu l'as au prix du moment = valeur revendue, moins les frais eBay, moins
@@ -892,11 +897,15 @@ def preparer(api, lire_article=None):
     maint = _maint()
     out = []
     for x in liste(api)["cartes"]:
-        if not x.get("encan") or x.get("etat") == "fini" or x.get("mise_max") is None:
+        # 24 nov 2026 (Mathieu, vue Pro : « ca me sort ca quand je veux bid in a batch ») : un encan SANS mise max
+        # (compte sans l'outil de prix, ou carte sans valeur) etait saute : « Miser » et « Miser en lot » ne menaient
+        # nulle part pour un compte Gratuit ou Pro. Il est maintenant prepare aussi : l'utilisateur ecrit son montant
+        if not x.get("encan") or x.get("etat") == "fini":
             continue
+        mm = x.get("mise_max")
         y = {"item_id": str(x["item_id"]), "titre": x.get("titre"), "url": x.get("url"), "photo": x.get("photo"),
-             "reste_min": x.get("reste_min"), "fin": x.get("fin"), "mise_max_cad": x["mise_max"], "total_cad": x.get("total"),
-             "etat": x.get("etat"), "devise": "CAD", "mise_max": x["mise_max"], "mise_actuelle": None, "taux": 1.0,
+             "reste_min": x.get("reste_min"), "fin": x.get("fin"), "mise_max_cad": mm, "total_cad": x.get("total"),
+             "etat": x.get("etat"), "devise": "CAD", "mise_max": mm, "mise_actuelle": None, "taux": 1.0,
              "mise_min": None, "mises": None, "valeur_cad": x.get("valeur"), "mise_perso": bool(x.get("mise_perso"))}
         try:
             a = lire_article(y["item_id"])
@@ -905,10 +914,11 @@ def preparer(api, lire_article=None):
             if t:
                 y["devise"] = dev
                 # arrondi vers le bas, au dollar (une mise de 39,73 $ US -> 39 $ US) : jamais au-dessus de la mise max
-                y["mise_max"] = float(int(x["mise_max"] / t + 1e-6)) if dev != "CAD" else float(int(x["mise_max"] + 1e-6))
-                # 12 nov 2026 : la mise ecrite a la main dans cette devise revient exactement (pas reconvertie)
-                if x.get("mise_perso") and x.get("mise_devise") and str(x.get("mise_dev") or "") == dev:
-                    y["mise_max"] = float(x["mise_devise"])
+                if mm is not None:
+                    y["mise_max"] = float(int(mm / t + 1e-6)) if dev != "CAD" else float(int(mm + 1e-6))
+                    # 12 nov 2026 : la mise ecrite a la main dans cette devise revient exactement (pas reconvertie)
+                    if x.get("mise_perso") and x.get("mise_devise") and str(x.get("mise_dev") or "") == dev:
+                        y["mise_max"] = float(x["mise_devise"])
                 y["mise_actuelle"] = a.get("prix_devise") or (a.get("prix_cad") / t if a.get("prix_cad") else None)
                 y["taux"], y["mises"] = t, a.get("mises")
                 y["mise_min"] = mise_minimum(y["mise_actuelle"], a.get("mises"))
@@ -918,8 +928,8 @@ def preparer(api, lire_article=None):
                 y["reste_min"] = int((f - maint).total_seconds() // 60) if f else y["reste_min"]
         except Exception as e:
             y["erreur"] = str(e)[:120]
-        y["trop_bas"] = (y["mise_actuelle"] is not None and y["mise_actuelle"] >= y["mise_max"]) or \
-            (y["mise_min"] is not None and y["mise_min"] > y["mise_max"])
+        y["trop_bas"] = y["mise_max"] is not None and ((y["mise_actuelle"] is not None and y["mise_actuelle"] >= y["mise_max"]) or
+                                                       (y["mise_min"] is not None and y["mise_min"] > y["mise_max"]))
         out.append(y)
     out.sort(key=lambda z: z["reste_min"] if z["reste_min"] is not None else 10 ** 7)
-    return {"ok": True, "cartes": out, "texte": "\n".join(f"{z['item_id']} {z['mise_max']:.2f}" for z in out if not z["trop_bas"])}
+    return {"ok": True, "cartes": out, "texte": "\n".join(f"{z['item_id']} {z['mise_max']:.2f}" for z in out if z["mise_max"] is not None and not z["trop_bas"])}

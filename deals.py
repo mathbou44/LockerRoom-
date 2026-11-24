@@ -92,6 +92,25 @@ def _env_pct(nom, defaut):
 TAXE_IMPORT = _env_pct("LR_TAXE_IMPORT", "7.13")
 IMPORT_DEFAUT = _env_pct("LR_IMPORT_DEFAUT", "49.7")
 
+# 24 nov 2026 (audit des calculs ; Mathieu : « ce sont les tarifs, on doit en tenir compte. Renseigne-toi ») : verifie aux
+# sources officielles, lues ce jour-la.
+#  - Tarif des douanes du Canada 2026, chapitre 49 : le numero 4911.91.00.30 nomme les « cartes a collectionner » (cartes
+#    de baseball, de hockey, de football et similaires) ;
+#  - Finances Canada, liste en vigueur le 8 septembre 2026 (Decret de surtaxe visant les Etats-Unis (2026)) : le numero
+#    4911.91.00 est a 50 % ;
+#  - ASFC, Avis des douanes 26-23 : la surtaxe vise aussi les achats personnels, SANS montant minimum ; elle se calcule
+#    sur la valeur de la marchandise (le prix, pas le port) et la TPS se calcule sur la valeur + la surtaxe.
+# Sa commande du 8 novembre le confirme au cent : 53,09 = 50 % de 106,17 (le prix seul) ; 8,89 = 5 % de (106,17 + 18,58 +
+# 53,09). Avant : +49,7 % de (prix + port) pour toute carte hors Canada pas encore relue. C'etait juste pour SA commande
+# (un port de 15 % du total), mais 8 points trop bas pour une carte chere au port gratuit (+57,5 %) et deux fois trop
+# haut pour une carte de 10 $ au port de 20 $. Maintenant : la surtaxe sur le PRIX, la taxe sur le tout.
+# Non mesure (une seule commande, au Quebec) : eBay y a percu la TPS seule (pas la TVQ) ; dans une province a TVH, la
+# loi fait percevoir la TVH. Si la surtaxe est levee : LR_SURTAXE_US=0 sur Render, ou la veille (veille_ebay) la suit
+# d'elle-meme des que 15 annonces relues donnent un autre taux.
+SURTAXE_US = _env_pct("LR_SURTAXE_US", "50")
+TPS_IMPORT = _env_pct("LR_TPS_IMPORT", "5")
+PROV_TVH = ("ON", "NS", "NB", "NL", "PE")
+
 
 def etranger(x, pays=None):
     """Hors du pays de l'acheteur (Canada par defaut ; « _pays » : celui de l'acheteur, pose par l'ecran Deals)."""
@@ -123,9 +142,78 @@ IMPORT_US = _env_pct("LR_IMPORT_US", "15")
 PAYS = ("CA", "US")
 
 
-def taxe_de(x, pays=None):
-    """Les taxes et frais sur l'achat d'une annonce (fraction du prix + port) pour un acheteur au Canada (14,975 % ; hors
-    Canada, les frais d'importation d'eBay) ou aux Etats-Unis (pays="US"). Un chiffre deja calcule (« taxe ») est garde."""
+def taxe_import(prov=None):
+    """La taxe percue a l'importation (fraction) : la TVH dans une province a TVH, la TPS (5 %) ailleurs."""
+    k = str(prov or "").strip().upper()
+    return round(TAXES_PROVINCE[k] / 100, 5) if k in PROV_TVH else TPS_IMPORT
+
+
+def _port_de(x):
+    port = x.get("port_cad") if x.get("port_cad") is not None else x.get("port")
+    try:
+        return max(0.0, float(port_eff(port)))
+    except (TypeError, ValueError):
+        return PORT_INCONNU
+
+
+def _total_de(x):
+    """Le total (prix + port) d'une annonce, ou 0 s'il n'est pas connu."""
+    try:
+        t = float(x.get("total") or 0)
+        if t <= 0 and x.get("prix_cad"):
+            t = float(x["prix_cad"]) + _port_de(x)
+        return max(0.0, t)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _taux_import(x):
+    """Les frais d'importation d'une annonce hors Canada -> (s, plat). s : la surtaxe en fraction du PRIX de la carte
+    (annonce relue : ce qu'eBay a facture, 0 si le vendeur expedie lui-meme ; pas relue, aux Etats-Unis : SURTAXE_US).
+    plat : des frais lus dont on ne connait que la part du total. (None, None) : inconnu."""
+    if x.get("import_lu"):
+        if x.get("import_taux") is not None:
+            try:
+                return max(0.0, min(1.0, float(x["import_taux"]))), None
+            except (TypeError, ValueError):
+                pass
+        pct = _pct_import(x)
+        if pct <= 0:
+            return 0.0, None
+        try:
+            imp = float(x.get("import_cad") or 0)
+            if imp > 0:
+                if x.get("import_pct"):                       # garde avec le deal : le prix du moment de la lecture
+                    prix0 = imp / float(x["import_pct"]) - float(x.get("port_cad") or x.get("port") or 0)
+                else:
+                    prix0 = float(x.get("prix_cad") or 0)
+                if prix0 > 0 and 0.02 <= imp / prix0 <= 1.0:
+                    return round(imp / prix0, 4), None
+        except (TypeError, ValueError, ZeroDivisionError):
+            pass
+        return None, pct
+    if str(x.get("lieu") or "").strip().upper() == "US":
+        return SURTAXE_US, None
+    return None, None
+
+
+def _frac_import(total, port, s, t):
+    """Surtaxe et taxe en fraction du total (prix + port) : la surtaxe sur le prix seul, la taxe sur le tout."""
+    return (1 + t) * (total + s * max(0.0, total - port)) / total - 1
+
+
+def _total_max(budget, port, s, t):
+    """Le plus haut total (prix + port) dont la facture, surtaxe et taxe comprises, tient dans « budget »."""
+    tot = (budget + (1 + t) * s * port) / ((1 + t) * (1 + s))
+    return tot if tot > port else budget / (1 + t)
+
+
+def taxe_de(x, pays=None, total=None, valeur=None):
+    """Les taxes et frais sur l'achat d'une annonce (fraction du prix + port) pour un acheteur au Canada (la taxe de sa
+    province ; hors Canada, la surtaxe et la taxe d'importation) ou aux Etats-Unis (pays="US"). Un chiffre deja calcule
+    (« taxe ») est garde. Hors Canada, la fraction depend du prix (la surtaxe ne touche pas le port) : elle est calculee
+    pour « total » s'il est donne, sinon pour le plus haut prix payable de « valeur » (ou de la valeur d'un encan : la
+    mise max), sinon pour le total de l'annonce."""
     x = x or {}
     pays = pays or x.get("_pays")
     if pays and str(pays).upper() == "US":
@@ -139,10 +227,27 @@ def taxe_de(x, pays=None):
     chez_moi = taxe_province(x.get("_prov")) if x.get("_prov") else TAXE_ACHAT      # 24 nov 2026 : la province de l'acheteur
     if not etranger(x):
         return chez_moi
-    if x.get("import_lu"):
-        pct = _pct_import(x)
-        return round(pct + TAXE_IMPORT, 4) if pct > 0 else chez_moi
-    return IMPORT_DEFAUT
+    s, plat = _taux_import(x)
+    t = taxe_import(x.get("_prov"))
+    if plat is not None:
+        return round(plat + t * (1 + plat), 4)
+    if s is None:
+        return IMPORT_DEFAUT
+    if s <= 0:
+        return chez_moi                                   # relue, sans frais d'importation : le vendeur expedie lui-meme
+    port, tot = _port_de(x), 0.0
+    try:
+        if total is not None:
+            tot = float(total)
+        else:
+            v = valeur if valeur is not None else (x.get("valeur") if x.get("encan") else None)
+            b = _budget(v) if v else 0.0
+            tot = _total_max(b, port, s, t) if b > 0 else _total_de(x)
+    except (TypeError, ValueError):
+        tot = 0.0
+    if tot <= 0:
+        return IMPORT_DEFAUT                              # ni prix ni valeur : le chiffre prudent
+    return round(_frac_import(tot, port, s, t), 4)
 
 
 def _pct_import(a):
@@ -169,6 +274,9 @@ def achat(a):
         out["lieu"] = a["lieu"]
     if a.get("import_lu"):
         out.update(import_lu=True, import_cad=a.get("import_cad"), import_pct=_pct_import(a), taxe=None)
+        s, _ = _taux_import(a)                               # 24 nov 2026 : la surtaxe en fraction du PRIX (elle suit la mise)
+        if s is not None:
+            out["import_taux"] = s
     return out
 
 
@@ -189,10 +297,21 @@ def prix_max(valeur, profit_min=None, min_dollars=None, taxe=None):
         return 0.0
     if v <= 0:
         return 0.0
+    return _budget(v, profit_min, min_dollars) / (1 + (TAXE_ACHAT if taxe is None else float(taxe)))
+
+
+def _budget(valeur, profit_min=None, min_dollars=None):
+    """Ce que tu peux payer EN TOUT (taxes et frais d'importation compris) pour garder le profit voulu a la revente."""
+    try:
+        v = float(valeur or 0)
+    except (TypeError, ValueError):
+        return 0.0
+    if v <= 0:
+        return 0.0
     p = PROFIT_MIN if profit_min is None else float(profit_min)
     dm = PROFIT_MIN_D if min_dollars is None else float(min_dollars)
     net = net_revente(v)
-    return max(0.0, min(net / (1 + p), net - dm) / (1 + (TAXE_ACHAT if taxe is None else float(taxe))))
+    return max(0.0, min(net / (1 + p), net - dm))
 RATIO_PRES = 0.85                # 27 oct 2026 : « a surveiller » = 70 a 85 % de la valeur (jamais affiche comme un deal)
 PAR_TOUR_ENCANS = 30             # 26 oct 2026 (Mathieu : « aucune enchere se terminant ? ») : 30 recherches d encans par heure
 VERSION = 4                      # 27 oct 2026 : valeur SURE (numeros speciaux, recence, coherence), vendeur, etat (v4)
@@ -343,7 +462,7 @@ def corriger(item_id, valeur, gain, total, source=None):
             d = lire()
             for g in d.get("suivis") or []:
                 if str(g.get("item_id")) == iid:
-                    g.update(valeur=valeur, mise_max=round(prix_max(valeur, taxe=taxe_de(g)) - port_eff(g.get("port")), 2))
+                    g.update(valeur=valeur, mise_max=round(prix_max(valeur, taxe=taxe_de(g, valeur=valeur)) - port_eff(g.get("port")), 2))
             _ecrire(d)
     l = d.get("deals") or []
     x = next((g for g in l if str(g.get("item_id")) == iid), None)
@@ -352,7 +471,7 @@ def corriger(item_id, valeur, gain, total, source=None):
     with _verrou:
         d = lire()
         l = d.get("deals") or []
-        retirer = not valeur or (gain is not None and gain <= 1) or (total and total > prix_max(valeur, taxe=taxe_de(x)) and not x.get("encan"))
+        retirer = not valeur or (gain is not None and gain <= 1) or (total and total > prix_max(valeur, taxe=taxe_de(x, valeur=valeur)) and not x.get("encan"))
         if not retirer:
             for g in l:
                 if str(g.get("item_id")) == iid:
@@ -363,7 +482,7 @@ def corriger(item_id, valeur, gain, total, source=None):
                     if gain is not None:
                         g["gain"] = gain
                     if g.get("encan"):          # 27 oct 2026 (revue) : la mise max suit la nouvelle valeur
-                        g["mise_max"] = round(prix_max(valeur, taxe=taxe_de(g)) - port_eff(g.get("port")), 2)
+                        g["mise_max"] = round(prix_max(valeur, taxe=taxe_de(g, valeur=valeur)) - port_eff(g.get("port")), 2)
                         if g["mise_max"] <= (g.get("total") or 0) - (g.get("port") or 0):
                             retirer = True
         if retirer:
@@ -478,8 +597,8 @@ def maj_prix(item_id, total, port=None, mises=None, fin=None, achat_=None, encan
             if y.get("valeur"):
                 y["ratio"] = round(y["total"] / y["valeur"], 3)
                 if y.get("encan"):
-                    y["mise_max"] = round(prix_max(y["valeur"], taxe=taxe_de(y)) - port_eff(y.get("port")), 2)
-        if x and x.get("valeur") and x["total"] > prix_max(x["valeur"], taxe=taxe_de(x)):
+                    y["mise_max"] = round(prix_max(y["valeur"], taxe=taxe_de(y, valeur=y["valeur"])) - port_eff(y.get("port")), 2)
+        if x and x.get("valeur") and x["total"] > prix_max(x["valeur"], taxe=taxe_de(x, valeur=x["valeur"])):
             d["deals"] = [y for y in d.get("deals") or [] if str(y.get("item_id")) != k]
             _noter_retires(d, [k])
             retire = True
@@ -502,11 +621,11 @@ def _revalider_un(x):
     if len(bons) == len(vs):
         return x
     m, _pv = valeur_sure(bons, x.get("titre") or "")
-    if not m or not x.get("total") or x["total"] > prix_max(m, taxe=taxe_de(x)):
+    if not m or not x.get("total") or x["total"] > prix_max(m, taxe=taxe_de(x, valeur=m)):
         return None
     x.update(valeur=m, vendues=bons, ratio=round(x["total"] / m, 3))
     if x.get("encan"):
-        x["mise_max"] = round(prix_max(m, taxe=taxe_de(x)) - port_eff(x.get("port")), 2)
+        x["mise_max"] = round(prix_max(m, taxe=taxe_de(x, valeur=m)) - port_eff(x.get("port")), 2)
     return x
 
 
@@ -529,7 +648,7 @@ def a_jour(x):
             if y.get("total"):
                 y["ratio"] = round(float(y["total"]) / y["valeur"], 3)
     if y.get("encan"):
-        y["mise_max"] = round(prix_max(y["valeur"], taxe=taxe_de(y)) - port_eff(y.get("port")), 2)
+        y["mise_max"] = round(prix_max(y["valeur"], taxe=taxe_de(y, valeur=y["valeur"])) - port_eff(y.get("port")), 2)
     return y
 
 
@@ -568,7 +687,7 @@ def reestimer_approx(max_n=400):
                 if va and g.get("valeur_source") in ("approx", "autre_saison", "autre_note"):
                     g.pop("gain", None)
                     g.update(valeur=va[0], n=va[2], vendues=va[3], valeur_source=va[1], corrige_le=maint_,
-                             mise_max=round(prix_max(va[0], taxe=taxe_de(g)) - port_eff(g.get("port")), 2))
+                             mise_max=round(prix_max(va[0], taxe=taxe_de(g, valeur=va[0])) - port_eff(g.get("port")), 2))
                     n += 1
         _ecrire(d)
     _VALIDES.clear()
@@ -609,7 +728,7 @@ def revalider_produits():
                 y = a_jour(x)
                 if y.get("valeur") and x.get("valeur") and abs(float(y["valeur"]) - float(x["valeur"])) >= 0.5:
                     y["corrige_le"] = maint_
-                if cle == "deals" and not y.get("encan") and y.get("total") and y.get("valeur") and y["total"] > prix_max(y["valeur"], taxe=taxe_de(y)):
+                if cle == "deals" and not y.get("encan") and y.get("total") and y.get("valeur") and y["total"] > prix_max(y["valeur"], taxe=taxe_de(y, valeur=y["valeur"])):
                     n_d += 1
                     continue
                 l2.append(y)
@@ -632,11 +751,11 @@ def _rejuger(x):
     if cartes_match.abimee(x.get("titre") or ""):
         return False
     m, _pv = valeur_sure([v for v in x.get("vendues") or [] if v.get("prix")], x.get("titre") or "")
-    if not m or not x.get("total") or x["total"] > prix_max(m, taxe=taxe_de(x)):
+    if not m or not x.get("total") or x["total"] > prix_max(m, taxe=taxe_de(x, valeur=m)):
         return False
     x.update(valeur=m, ratio=round(x["total"] / m, 3), v=VERSION)
     if x.get("encan"):
-        x["mise_max"] = round(prix_max(m, taxe=taxe_de(x)) - port_eff(x.get("port")), 2)
+        x["mise_max"] = round(prix_max(m, taxe=taxe_de(x, valeur=m)) - port_eff(x.get("port")), 2)
     return True
 
 
@@ -1678,7 +1797,7 @@ def _prometteuse(a, t, pv, pa, maint, cib=None):
                 return False
         except ValueError:
             return False
-    if len(pv) == 1 and t <= prix_max(pv[0]["prix"], taxe=taxe_de(a)):
+    if len(pv) == 1 and t <= prix_max(pv[0]["prix"], taxe=taxe_de(a, valeur=pv[0]["prix"])):
         return True
     if a.get("encan") and not pv and cib and _hit(cib) and (t >= HIT_MIN or hit_fort(a.get("titre"))):     # 13 nov : la mise de 1 $ d'un gros hit ne dit rien
         return True
@@ -1922,7 +2041,7 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
     med_a, source_a, n_a, ventes_a = va
     # 13 nov 2026 (Mathieu : « une 2 couleurs vaut a peu pres 60 % d'une 4 couleurs ») : une patch qui a l'air d'un deal :
     # ses ventes ramenees aux couleurs de SA patch (titres, sinon photos lues une fois, budget du jour) avant de juger
-    if ventes_a and t <= prix_max(med_a, taxe=taxe_de(a)):
+    if ventes_a and t <= prix_max(med_a, taxe=taxe_de(a, valeur=med_a)):
         try:
             import patchs
             if patchs.est_patch(a.get("titre")):
@@ -1931,7 +2050,7 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
                     med_a = round(med_a * rp, 2)
         except Exception as e:
             print("Patchs (chasseur) : " + repr(e)[:200], flush=True)
-    if t > prix_max(med_a, taxe=taxe_de(a)):
+    if t > prix_max(med_a, taxe=taxe_de(a, valeur=med_a)):
         st["_res"] = ("pres" if t <= med_a * RATIO_PRES and not a.get("encan") else "trop_cher", round(t / med_a, 3))
         st["trop_cher"] = st.get("trop_cher", 0) + 1
         deals.pop(a["item_id"], None)
@@ -1964,7 +2083,7 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
                            # 7 nov 2026 : valeur des saisons voisines (pas de comps de SA saison) : dit a l'utilisateur
                            **({"saisons": sorted({v.get("saison") for v in ventes_a or [] if v.get("saison")})} if source_a == "autre_saison" else {}),
                            # 27 oct 2026 : encan - la mise maximale pour que ca reste un deal (70 % de la valeur, port compris)
-                           "port": a.get("port_cad"), "mise_max": round(prix_max(med_a, taxe=taxe_de(a)) - port_eff(a.get("port_cad")), 2) if a.get("encan") else None,
+                           "port": a.get("port_cad"), "mise_max": round(prix_max(med_a, taxe=taxe_de(a, valeur=med_a)) - port_eff(a.get("port_cad")), 2) if a.get("encan") else None,
                            "comps": comps or [], "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION,
                            "vendeur": a.get("vendeur"), "vendeur_score": a.get("vendeur_score"), **achat(a),
                            # 13 nov 2026 : titre au mauvais produit (le code de la carte le dit) : juge avec le bon
@@ -2075,7 +2194,7 @@ def _noter_suivi(st, a, bassin, maint):
         "item_id": str(a["item_id"]), "titre": a.get("titre"), "total": t, "photo": a.get("photo"), "url": a.get("url"),
         "encan": True, "fin": f, "mises": a.get("mises"), "port": a.get("port_cad"), "vendeur": a.get("vendeur"), "vendeur_score": a.get("vendeur_score"), **achat(a),
         "valeur": va[0] if va else None, "n": va[2] if va else 0, "vendues": va[3] if va else [],
-        "mise_max": round(prix_max(va[0], taxe=taxe_de(a)) - port_eff(a.get("port_cad")), 2) if va else None,
+        "mise_max": round(prix_max(va[0], taxe=taxe_de(a, valeur=va[0])) - port_eff(a.get("port_cad")), 2) if va else None,
         "sport": sport, "vu_le": maint.isoformat(timespec="seconds"), "v": VERSION, "suivi": True, "recrue": rec}
     return "ok_recrue" if rec else "ok"
 
@@ -2315,7 +2434,7 @@ def _verifier_tard(st, deals, maint, bassin, verif, d=None):
         if s_ is not None and not s_.get("valeur"):
             va = valeur_ou_saison(a, (nv or []) + (bassin.candidats(cib) if bassin else []), [], cib=cib)
             if va:
-                s_.update(valeur=va[0], n=va[2], vendues=va[3], mise_max=round(prix_max(va[0], taxe=taxe_de(a)) - port_eff(a.get("port_cad")), 2))
+                s_.update(valeur=va[0], n=va[2], vendues=va[3], mise_max=round(prix_max(va[0], taxe=taxe_de(a, valeur=va[0])) - port_eff(a.get("port_cad")), 2))
         if dv:
             _noter_journal(st, a, r, cib, dv)
 
@@ -2419,7 +2538,7 @@ def _garder_lu(d2, garde_):
         if x.get("valeur") and (y.get("prix_lu_le") or y.get("corrige_le")):
             x["ratio"] = round((x.get("total") or 0) / x["valeur"], 3)
             if x.get("encan") and not x.get("mise_perso"):
-                x["mise_max"] = round(prix_max(x["valeur"], taxe=taxe_de(x)) - port_eff(x.get("port")), 2)
+                x["mise_max"] = round(prix_max(x["valeur"], taxe=taxe_de(x, valeur=x["valeur"])) - port_eff(x.get("port")), 2)
     return garde_
 
 
@@ -2430,7 +2549,7 @@ def _fusion_suivi(vieux, x):
         y = dict(x)
         for k in ("valeur", "n", "vendues"):
             y[k] = vieux.get(k)
-        y["mise_max"] = round(prix_max(vieux["valeur"], taxe=taxe_de(x)) - port_eff(x.get("port")), 2)
+        y["mise_max"] = round(prix_max(vieux["valeur"], taxe=taxe_de(x, valeur=vieux["valeur"])) - port_eff(x.get("port")), 2)
         return y
     return x
 
@@ -3259,7 +3378,7 @@ def reverifier(lire_article=None, max_=None):
             pass
         if not fini and t and t <= (x.get("valeur") or 0) * PHOTO_RATIO and photo_refusee(x["item_id"], x.get("photo") or a.get("photo"), x.get("titre"), x.get("q")):
             fini = True                                  # 2 nov 2026 : la photo montre une autre carte
-        if fini or not t or cartes_match.abimee(a.get("titre") or "") or t > prix_max((x.get("valeur") or 0), taxe=taxe_de(dict(x, **achat(a)))):
+        if fini or not t or cartes_match.abimee(a.get("titre") or "") or t > prix_max((x.get("valeur") or 0), taxe=taxe_de(dict(x, **achat(a)), valeur=(x.get("valeur") or 0))):
             deals.pop(x["item_id"], None)
             st.setdefault("_retires", []).append(x["item_id"])
             st["reverif_retires"] = st.get("reverif_retires", 0) + 1
@@ -3267,7 +3386,7 @@ def reverifier(lire_article=None, max_=None):
         x.update(total=t, ratio=round(t / x["valeur"], 3), mises=a.get("mises", x.get("mises")), fin=a.get("fin") or x.get("fin"),
                  port=a.get("port_cad"), vu_le=maint.isoformat(timespec="seconds"), **achat(a))
         if x.get("encan"):
-            x["mise_max"] = round(prix_max(x["valeur"], taxe=taxe_de(x)) - port_eff(a.get("port_cad")), 2)
+            x["mise_max"] = round(prix_max(x["valeur"], taxe=taxe_de(x, valeur=x["valeur"])) - port_eff(a.get("port_cad")), 2)
     garde_ = _sauver(d, deals, maint, st)
     return {"ok": True, "deals": len(garde_), "stats": st}
 
@@ -3348,7 +3467,7 @@ def fin_proche(lire_lot=None, maint=None):
         garde = []
         for x in d2.get("deals") or []:
             ok = maj(x)
-            if ok and x.get("valeur") and str(x.get("item_id")) in demandes and (x.get("total") or 0) > prix_max(x["valeur"], taxe=taxe_de(x)):
+            if ok and x.get("valeur") and str(x.get("item_id")) in demandes and (x.get("total") or 0) > prix_max(x["valeur"], taxe=taxe_de(x, valeur=x["valeur"])):
                 ok = False                                 # la mise a monte : plus un deal
             (garde if ok else sortis).append(x)
         d2["deals"] = garde
@@ -3432,7 +3551,7 @@ def prix_fixes(lire_lot=None, maint=None):
         x.update(total=t, port=a.get("port_cad", x.get("port")), vu_le=vu, prix_lu_le=vu, **achat(a))
         if x.get("valeur"):
             x["ratio"] = round(t / x["valeur"], 3)
-            if t > prix_max(x["valeur"], taxe=taxe_de(x)):       # le prix a monte : plus un deal
+            if t > prix_max(x["valeur"], taxe=taxe_de(x, valeur=x["valeur"])):       # le prix a monte : plus un deal
                 return False
         return True
 
@@ -3730,7 +3849,7 @@ def valoriser_suivis(rechercher=None, n_max=None):
                 import credits
                 va_ = valeur_ou_saison(x, v, [], cib=cib)
                 t_ = _total(x) or x.get("total")
-                res_ = "sans_ventes" if not va_ else ("deal" if t_ and t_ <= prix_max(va_[0], taxe=taxe_de(x)) else "trop_cher")
+                res_ = "sans_ventes" if not va_ else ("deal" if t_ and t_ <= prix_max(va_[0], taxe=taxe_de(x, valeur=va_[0])) else "trop_cher")
                 ratio_ = round(t_ / va_[0], 3) if va_ and t_ and va_[0] else None
                 credits.noter(cib, x.get("vendeur"), t_, res_, ratio_, cache=bool(r.get("cache")), n_ventes=len(v), encan=True)
                 noter_jugee(x, res_, ratio_)
@@ -3808,7 +3927,7 @@ def valoriser_suivis(rechercher=None, n_max=None):
                 if va and (not g.get("valeur") or (g.get("valeur_source") in ("approx", "autre_saison", "autre_note") and va[1] in ("vendues", "echange", "unique"))
                            or (g.get("valeur_source") == "approx" and va[1] == "autre_note")):
                     g.update(valeur=va[0], n=va[2], vendues=va[3], valeur_source=va[1],
-                             mise_max=round(prix_max(va[0], taxe=taxe_de(g)) - port_eff(g.get("port")), 2))
+                             mise_max=round(prix_max(va[0], taxe=taxe_de(g, valeur=va[0])) - port_eff(g.get("port")), 2))
             cov = d.get("prio_couverture")
             if cov and analyses:
                 if cov.get("ids"):                  # 7 nov : chaque carte comptee une fois, le detail par vendeur suit
