@@ -1,6 +1,6 @@
 {
- "le": "2026-11-23",
- "empreinte": "a0ac1319af0bc030",
+ "le": "2026-11-24",
+ "empreinte": "9da5a6b585571f95",
  "regles": {
   "fixe": 86.0,
   "encan": 82.0,
@@ -23,37 +23,37 @@
  ],
  "corrections": 124,
  "lettres": {
-  "D": {
-   "cartes": 42038,
-   "reventes": 0.087
+  "A+": {
+   "cartes": 3414,
+   "reventes": 0.147
   },
   "B+": {
    "cartes": 97367,
    "reventes": 0.159
   },
-  "C": {
-   "cartes": 76618,
-   "reventes": 0.097
-  },
-  "E": {
-   "cartes": 16855,
-   "reventes": 0.032
+  "D": {
+   "cartes": 42038,
+   "reventes": 0.087
   },
   "B": {
    "cartes": 65226,
    "reventes": 0.079
   },
-  "A-": {
-   "cartes": 33714,
-   "reventes": 0.135
-  },
   "A": {
    "cartes": 26260,
    "reventes": 0.225
   },
-  "A+": {
-   "cartes": 3414,
-   "reventes": 0.147
+  "C": {
+   "cartes": 76618,
+   "reventes": 0.097
+  },
+  "A-": {
+   "cartes": 33714,
+   "reventes": 0.135
+  },
+  "E": {
+   "cartes": 16855,
+   "reventes": 0.032
   }
  },
  "pro": {

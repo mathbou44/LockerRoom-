@@ -76,5 +76,25 @@ score_slab.annoter_lot = lambda l: None
 assert api.deals_profil_regler({"favoris": [], "collectionne": [], "prix_min": None, "prix_max": None, "iq_min": None})["ok"]
 r3 = api.mes_deals(True)
 assert "777" in {x["item_id"] for x in r3["a_la_une"]}, [x["item_id"] for x in r3["a_la_une"]]
+# 24 nov 2026 (Mathieu, en vue Pro : « only 34 are showing » ; il choisit « deux rangees ») : sous « A la une », « Tres
+# recherchees » : les annonces de la vitrine dont la carte est A- ou mieux mais qui ne passent pas la regle prouvee
+T2 = "2015-16 Upper Deck Young Guns Connor McDavid #201 PSA 9"                 # une autre carte (PSA 9) : aucune vente chez nous
+with vitrine._VERROU:
+    P_ = vitrine._pool()
+    P_["778"] = {"item_id": "778", "titre": MCD, "total": 2900.0, "prix_cad": 2900, "port_cad": 0, "vu": time.time(), "score": 95, "sorte": "A+",
+                 "joueur": "Connor McDavid", "encan": True, "fin": "2099-01-01T00:00:00Z", "_liq": 10, "_med": 2400.0, "_vieux": 3}      # la MEME carte, plus chere
+    P_["779"] = {"item_id": "779", "titre": T2, "total": 400.0, "prix_cad": 400, "port_cad": 0, "vu": time.time(), "score": 90, "sorte": "A+",
+                 "joueur": "Connor McDavid", "encan": True, "fin": "2099-01-01T00:00:00Z", "_liq": 0, "_med": None, "_vieux": 0}          # jamais vendue chez nous
+r4 = api.mes_deals(True)
+une, rech = {x["item_id"] for x in r4["a_la_une"]}, {x["item_id"] for x in r4["recherchees"]}
+assert "777" in une and "779" in rech and not une & rech, (une, rech)
+assert "778" not in rech and "778" not in une                       # la meme carte qu'une « A la une » : rangee avec elle (« autres »), pas une 2e tuile
+t777 = next(x for x in r4["a_la_une"] if x["item_id"] == "777")
+assert [a_["item_id"] for a_ in t777.get("autres") or []] == ["778"]
+assert all("_liq" not in x and "_med" not in x and "_vieux" not in x for x in r4["a_la_une"] + r4["recherchees"])      # jamais un signal
+# le forfait gratuit : la nouvelle rangee passe par le meme filtre (3 meilleures visibles, le reste verrouille sans titre ni prix)
+g_ = api._radar_gratuit(r4)
+assert all(x.get("verrou") or x["item_id"] in {y["item_id"] for y in r4["a_la_une"] + r4["recherchees"]} for x in g_["recherchees"])
+assert g_["gratuit"]["trouvees"] >= len(une | rech)
 print("OK test_radar_suivi_plein (%d tuiles : %d par la regle, %d ajoutees ; notes %s a %s)" % (len(A), n_regle, len(el),
       round(min(x["score"] for x in A)), round(max(x["score"] for x in A))))

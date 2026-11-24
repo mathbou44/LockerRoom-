@@ -20,6 +20,12 @@ oct. : hasard 11,7 %, ancienne regle (A et A+) 29,8 %, cette regle 71,0 % ; nov.
 78 a 90 % aux 5 dates du bulletin, contre 59 a 76 % avant).
 23 nov 2026 au soir : et la carte se vendait deja il y a deux mois (une carte neuve perd sa valeur : liquidite.py). Les annonces
 deja en vitrine sont completees au prochain balayage (_completer), sans attendre qu'elles expirent.
+24 nov 2026 (Mathieu, en vue Pro : « only 34 are showing » ; « il nous faut beaucoup de cartes a proposer » ; il choisit « deux
+rangees ») : la vitrine garde maintenant TOUTES les annonces dont la carte est A- ou mieux (jamais une base, 30 $ et plus), avec
+leurs signaux. « A la une » (liste) reste la regle prouvee, telle quelle ; « Tres recherchees » (recherchees) montre les autres :
+la lettre SlabIQ, sans la preuve de revente (au test, A et A+ sans la regle : 24 % gardent leur valeur, contre 84,6 %). Avant,
+une annonce qui ne passait pas la regle etait oubliee pour de bon (None) : le nouveau fichier (vitrine2.json) reprend les
+annonces deja en vitrine et laisse rejuger les autres au prochain balayage.
 Les annonces sont gardees au plus 12 h (prix fixe) ou jusqu'a la fin de l'encan, et le Radar relit la fiche en direct quand
 on l'ouvre. Un encan dont la mise monte au-dessus de la limite de prix sort de la liste.
 """
@@ -46,7 +52,12 @@ CHAMPS = ("item_id", "titre", "prix_cad", "port_cad", "encan", "fin", "mises", "
 
 def _chemin():
     import comptes
-    return os.path.join(comptes.DONNEES, "vitrine_liq.json")     # 20 nov 2026 : un nouveau fichier : tout est rejuge
+    return os.path.join(comptes.DONNEES, "vitrine2.json")        # 24 nov 2026 : les deux rangees (avant : vitrine_liq.json)
+
+
+def _chemin_avant():
+    import comptes
+    return os.path.join(comptes.DONNEES, "vitrine_liq.json")
 
 
 def _pool():
@@ -55,7 +66,14 @@ def _pool():
             with open(_chemin(), encoding="utf-8") as f:
                 _ETAT["pool"] = json.load(f) or {}
         except (OSError, ValueError):
-            _ETAT["pool"] = {}
+            # 24 nov 2026 : la 1re fois, on reprend les annonces deja en vitrine (« A la une » ne se vide pas a la mise en
+            # ligne) ; celles qui avaient ete refusees (None) ne sont PAS reprises : elles seront rejugees au prochain balayage
+            try:
+                with open(_chemin_avant(), encoding="utf-8") as f:
+                    _ETAT["pool"] = {k: x for k, x in (json.load(f) or {}).items() if isinstance(x, dict)}
+                _ETAT["sale"] = True
+            except (OSError, ValueError):
+                _ETAT["pool"] = {}
     return _ETAT["pool"]
 
 
@@ -124,11 +142,10 @@ def ajouter(annonces):
             ok = x.pop("_ok")
             if ok and sig is None:
                 continue                                 # l'index n'est pas pret : jugee au prochain balayage
-            if ok:
+            if ok:                                       # 24 nov 2026 : gardee des que la carte est A- ou mieux ; la regle se juge a la lecture
                 x["_liq"], x["_med"], x["_vieux"] = sig.get(x["titre"]) or (0, None, 0)
-                ok = liquidite.passe(x["_liq"], x["_med"], x["total"], x["_vieux"])
-            P[x["item_id"]] = x if ok else None          # None : deja jugee, pas assez recherchee ou liquide (pas renotee)
-            gardees += 1 if ok else 0
+            P[x["item_id"]] = x if ok else None          # None : deja jugee, pas assez recherchee (pas renotee)
+            gardees += 1 if ok and liquidite.passe(x["_liq"], x["_med"], x["total"], x["_vieux"]) else 0
         _ETAT["sale"] = True
         _purger(P, maint)
     _completer()
@@ -167,9 +184,14 @@ def _purger(P, maint):
         for k in [k for k, x in P.items() if x is None][: len(P) - MAX * 3]:
             del P[k]
     vivantes = [k for k, x in P.items() if x is not None]
-    if len(vivantes) > MAX:
-        for k in sorted(vivantes, key=lambda k: (P[k].get("score") or 0, P[k].get("total") or 0))[: len(vivantes) - MAX]:
+    if len(vivantes) > MAX:                             # 24 nov 2026 : les « Tres recherchees » partent avant les « A la une »
+        for k in sorted(vivantes, key=lambda k: (_prouvee(P[k]), P[k].get("score") or 0, P[k].get("total") or 0))[: len(vivantes) - MAX]:
             del P[k]
+
+
+def _prouvee(x):
+    """L'annonce passe la regle prouvee du Radar Pro (liquide, pas neuve, jamais au-dessus de ce que la carte se vend)."""
+    return liquidite.passe(x.get("_liq"), x.get("_med"), x.get("total"), x.get("_vieux"))
 
 
 def _ecrire_si_besoin(forcer=False):
@@ -192,15 +214,29 @@ def liste(n=80, prix_min=None, prix_max=None):
     maint = time.time()
     with _VERROU:
         L = [dict(x) for x in _pool().values() if x is not None and _vivante(x, maint)]
+    return _sortir(L, n, prix_min, prix_max, True)
+
+
+def recherchees(n=300, prix_min=None, prix_max=None):
+    """24 nov 2026 : les autres annonces de la vitrine : la carte est A- ou mieux, mais l'annonce ne passe pas la regle prouvee
+    (pas assez de ventes, carte neuve, ou plus chere que ce qu'elle se vend). La lettre SlabIQ, sans la preuve de revente."""
+    maint = time.time()
+    with _VERROU:
+        L = [dict(x) for x in _pool().values() if x is not None and _vivante(x, maint)]
+    return _sortir(L, n, prix_min, prix_max, False)
+
+
+def _sortir(L, n, prix_min, prix_max, prouvees):
     pm = PRIX_MIN if prix_min is None else float(prix_min)
     L = [x for x in L if (x.get("total") or 0) >= pm and (not prix_max or (x.get("total") or 0) <= float(prix_max))
-         and liquidite.passe(x.get("_liq"), x.get("_med"), x.get("total"), x.get("_vieux"))]       # le prix d'un encan monte
+         and _prouvee(x) == prouvees and ("_vieux" in x or prouvees)]                # le prix d'un encan monte ; signal manquant : cachee
     L.sort(key=lambda x: (-(x.get("score") or 0), 0 if x.get("encan") else 1, _ts(x.get("fin")) or 9e12, -(x.get("total") or 0)))
     out = []
     for x in L[: max(1, int(n))]:
         x.pop("_liq", None), x.pop("_med", None), x.pop("_vieux", None)         # jamais montres : seulement la lettre
         x["joueur_n"] = x.get("joueur")
-        x["a_la_une"] = True
+        if prouvees:
+            x["a_la_une"] = True
         out.append(x)
     return out
 
@@ -209,4 +245,5 @@ def etat():
     with _VERROU:
         P = _pool()
         v = [x for x in P.values() if x is not None]
-    return {"cartes": len(v), "jugees": len(P), "a_plus": sum(1 for x in v if (x.get("score") or 0) >= 92)}
+    une = sum(1 for x in v if _prouvee(x))
+    return {"cartes": une, "recherchees": len(v) - une, "jugees": len(P), "a_plus": sum(1 for x in v if (x.get("score") or 0) >= 92)}

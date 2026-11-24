@@ -372,6 +372,25 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   (`.fen.fa.fa-pub.fb .fb-t` : rien ne rétrécit, tuile plus serrée, petite ligne 11,5 à 14 px) et admin / Platine au téléphone
   (même défaut, pas signalé : 4 à 15 px coupés ; les 3 chiffres prennent `calc(19.9vw - 51px)` quand une tuile a sa 3e ligne).
   Mesuré avec `/home/claude/vue/fiche505.py` sur 11 tailles (320 à 1440 px) : tout tient, 2 px de marge au moins.
+- **État du push (24 nov, 9 h 01)** : Mathieu a poussé à 8 h 55 (commit c4b3b3f, en ligne à 8 h 56, aucun Traceback) : la
+  vitrine complétée par le Radar, le « 505 », la rangée suivie jamais vide, les Filtres, le journal « Vitrine : N annonces
+  montrables ». Rien n'attend sur son PC. Pas encore de balayage ni de Radar ouvert 4 minutes après : le compte de « À la
+  une » n'est pas encore au journal (un rappel est programmé dans cette conversation pour le lire et le lui dire).
+- **Radar Pro : deux rangées (24 nov, 9 h 02 ; Mathieu, en vue Pro après la correction : « Only 34 are showing in pro's
+  view… » ; à la question posée, il choisit « Deux rangées »)**. « À la une » = la règle prouvée, INCHANGÉE (84,6 %).
+  Nouveau, juste dessous : « Très recherchées » = toutes les autres annonces dont la carte est A- ou mieux que le chasseur
+  voit (jamais une base, 30 $ et plus), la meilleure note d'abord, sans la preuve de revente (au test, A et A+ sans la
+  règle : 24 % gardent leur valeur). `vitrine.py` : la vitrine GARDE maintenant ces annonces avec leurs signaux (avant :
+  `None`, oubliées pour de bon) ; `liste()` = prouvées, `recherchees()` = les autres ; nouveau fichier `vitrine2.json` qui
+  reprend les annonces de `vitrine_liq.json` (« À la une » ne se vide pas à la mise en ligne) ; les anciens refus sont rejugés
+  au balayage suivant (la rangée se remplit en une heure environ) ; quand la vitrine est pleine (4 000), les « Très
+  recherchées » partent avant les « À la une ». `lockerroom.py` : clé `recherchees` dans la réponse du Radar (200 tuiles au
+  plus ; une carte déjà « À la une » n'y revient pas : ses autres annonces se rangent sous sa tuile), ajoutée aux aides
+  (pastilles, forfait gratuit, provenance). App : rangée « Très recherchées » ; dans une même lettre, les « À la une »
+  passent avant. Site et app : la preuve dit maintenant « À la une » en toutes lettres (`outils/site_iq.py`, fenêtre SlabIQ).
+  Empreinte changée (vitrine.py) : test du site refait et écrit (mêmes chiffres). Tests : `test_vitrine.py`,
+  `test_radar_suivi_plein.py`. À VÉRIFIER après le push : le compte au journal (« Vitrine : N annonces montrables · … ») et,
+  avec lui, ce qu'il voit en vue Pro ; si la rangée est trop mêlée ou trop longue, `RADAR_RECHERCHEES_MAX` (200).
 
 ## En attente
 - **Méga test 3 ans (bâti le 22 nov, priorité 1)** : `mega_test.py` (serveur) part seul après le push (boucle de l'heure + reprise

@@ -112,19 +112,21 @@ def bloc_vs(R, page):
                  + fait(acc_fr, acc_en, "d’accord avec le marché", "agreement with the market"))
         liens = ""
     n, nh = R["pro"]["n"], R["hasard"]["n"]
+    # 24 nov 2026 (Mathieu choisit « deux rangees ») : le Radar Pro montre aussi « Tres recherchees », sans la preuve de revente ;
+    # la mesure est celle de la rangee « A la une » (la regle de liquidite.py) : le site le dit en toutes lettres
     if page == "accueil":                       # l'accueil : l'essentiel ; les definitions completes sont sur la page SlabIQ
-        note_fr = (f"Test du {jour_fr(R['le'])} sur des ventes jamais vues par SlabIQ : {fr(n)} achats du Radar Pro, contre les {fr(nh)} achats de "
+        note_fr = (f"Test du {jour_fr(R['le'])} sur des ventes jamais vues par SlabIQ : {fr(n)} achats « À la une » du Radar Pro, contre les {fr(nh)} achats de "
                    f"{pmin} $ et plus de la même période (seul). Garde sa valeur : la même carte s’est revendue ensuite à au moins 90 % du prix payé. "
                    f"Les résultats passés ne garantissent pas les résultats futurs.")
-        note_en = (f"Test of {jour_en(R['le'])} on sales SlabIQ had never seen: {en(n)} Pro Radar buys, versus the {en(nh)} buys of ${pmin} and up "
+        note_en = (f"Test of {jour_en(R['le'])} on sales SlabIQ had never seen: {en(n)} “Top cards” buys of the Pro Radar, versus the {en(nh)} buys of ${pmin} and up "
                    f"from the same period (on your own). Holds its value: the same card later resold for at least 90% of the price paid. "
                    f"Past results don’t guarantee future results.")
     else:
-        note_fr = (f"Radar Pro : les {fr(n)} achats qu’il aurait montrés du {jour_fr(R['coupe'])} au {jour_fr(R['revente_des'])}. Seul : tous les achats "
+        note_fr = (f"Radar Pro : les {fr(n)} achats que sa rangée « À la une » aurait montrés du {jour_fr(R['coupe'])} au {jour_fr(R['revente_des'])}. Seul : tous les achats "
                    f"de {pmin} $ et plus de la même période ({fr(nh)}), sans carte de base ni lot. Garde sa valeur : la même carte s’est revendue ensuite "
                    f"à au moins 90 % du prix payé ; jamais revendue : ratée. Se revend : elle s’est revendue avant le {jour_fr(R['revente_fin'])}. "
                    f"Les résultats passés ne garantissent pas les résultats futurs.")
-        note_en = (f"Pro Radar: the {en(n)} buys it would have shown from {jour_en(R['coupe'])} to {jour_en(R['revente_des'])}. On your own: every buy "
+        note_en = (f"Pro Radar: the {en(n)} buys its “Top cards” row would have shown from {jour_en(R['coupe'])} to {jour_en(R['revente_des'])}. On your own: every buy "
                    f"of ${pmin} and up from the same period ({en(nh)}), no base cards or lots. Holds its value: the same card later resold for at "
                    f"least 90% of the price paid; never resold: a miss. Resells: it resold before {jour_en(R['revente_fin'])}. "
                    f"Past results don’t guarantee future results.")
@@ -177,8 +179,8 @@ def ecrire(R, defi):
     g_fr, g_en = ("100 %", "100%") if g >= 100 else (("plus de 99 %", "over 99%") if g >= 99 else (f"{int(g)} %", f"{int(g)}%"))
     pe = defi["periode"]
     s = sub1(s, r'<p class="iq-note"><span class="fr">Vraies cartes de hockey (?:vendues|achetées) sur eBay[^<]*</span><span class="en">Real hockey cards (?:sold|bought) on eBay[^<]*</span></p>',
-             f'<p class="iq-note"><span class="fr">Vraies cartes de hockey achetées sur eBay du {jour_fr(pe[0])} au {jour_fr(pe[1])}, de 30 à 500 $. Le Radar Pro : les cartes que SlabIQ t’aurait montrées cette semaine-là, dans la même gamme de prix. « Revendue, valeur gardée » : la même carte s’est revendue entre le {jour_fr(pe[1])} et le {jour_fr(R["revente_fin"])} à au moins 90 % de son prix ; une carte qui ne s’est pas revendue compte comme ratée. Sur les {fr(st_["cartes"])} cartes du test, {round(st_["ok_marche"] * 100)} % prises au hasard ont gardé leur valeur, contre {round(st_["ok_radar"] * 100)} % des cartes du Radar Pro. Sur 20 000 parties simulées, SlabIQ garde en moyenne {str(st_["iq"]).replace(".", ",")} bonnes cartes sur 16, un choix au hasard {str(st_["hasard"]).replace(".", ",")}, et SlabIQ gagne {g_fr} des parties. Les résultats passés ne garantissent pas les résultats futurs.</span>'
-             f'<span class="en">Real hockey cards bought on eBay from {jour_en(pe[0])} to {jour_en(pe[1])}, $30 to $500. The Pro Radar: the cards SlabIQ would have shown you that week, in the same price range. “Resold, value kept”: the same card resold between {jour_en(pe[1])} and {jour_en(R["revente_fin"])} for at least 90% of its price; a card that didn’t resell counts as a miss. Across the test’s {en(st_["cartes"])} cards, {round(st_["ok_marche"] * 100)}% picked at random held their value, versus {round(st_["ok_radar"] * 100)}% of Pro Radar cards. Over 20,000 simulated games, SlabIQ keeps {st_["iq"]} good cards out of 16 on average, a random pick {st_["hasard"]}, and SlabIQ wins {g_en} of games. Past results don’t guarantee future results.</span></p>')
+             f'<p class="iq-note"><span class="fr">Vraies cartes de hockey achetées sur eBay du {jour_fr(pe[0])} au {jour_fr(pe[1])}, de 30 à 500 $. Le Radar Pro : les cartes « À la une » que SlabIQ t’aurait montrées cette semaine-là, dans la même gamme de prix. « Revendue, valeur gardée » : la même carte s’est revendue entre le {jour_fr(pe[1])} et le {jour_fr(R["revente_fin"])} à au moins 90 % de son prix ; une carte qui ne s’est pas revendue compte comme ratée. Sur les {fr(st_["cartes"])} cartes du test, {round(st_["ok_marche"] * 100)} % prises au hasard ont gardé leur valeur, contre {round(st_["ok_radar"] * 100)} % des cartes du Radar Pro. Sur 20 000 parties simulées, SlabIQ garde en moyenne {str(st_["iq"]).replace(".", ",")} bonnes cartes sur 16, un choix au hasard {str(st_["hasard"]).replace(".", ",")}, et SlabIQ gagne {g_fr} des parties. Les résultats passés ne garantissent pas les résultats futurs.</span>'
+             f'<span class="en">Real hockey cards bought on eBay from {jour_en(pe[0])} to {jour_en(pe[1])}, $30 to $500. The Pro Radar: the “Top cards” SlabIQ would have shown you that week, in the same price range. “Resold, value kept”: the same card resold between {jour_en(pe[1])} and {jour_en(R["revente_fin"])} for at least 90% of its price; a card that didn’t resell counts as a miss. Across the test’s {en(st_["cartes"])} cards, {round(st_["ok_marche"] * 100)}% picked at random held their value, versus {round(st_["ok_radar"] * 100)}% of Pro Radar cards. Over 20,000 simulated games, SlabIQ keeps {st_["iq"]} good cards out of 16 on average, a random pick {st_["hasard"]}, and SlabIQ wins {g_en} of games. Past results don’t guarantee future results.</span></p>')
     POOL = json.dumps({"pool": defi["pool"], "bandes": defi["bandes"], "stats": {k: st_[k] for k in ("ok_marche", "ok_radar")}}, ensure_ascii=False, separators=(",", ":"))
     s = sub1(s, r'<script type="application/json" id="defi-data">.*?</script>', f'<script type="application/json" id="defi-data">{POOL}</script>'.replace("\\", "\\\\"))
     open(p, "w", encoding="utf-8").write(s)

@@ -57,6 +57,17 @@ assert "6" not in ids and "7" not in ids, ids            # 45 % au-dessus de ce 
 assert "1" in ids and "4" in ids, ids
 assert "8" not in ids, ids                               # 23 nov 2026 au soir : une carte neuve perd sa valeur : pas en vitrine
 assert all(x["score"] >= 82 and x["a_la_une"] and "_med" not in x and "_liq" not in x and "_vieux" not in x for x in L)
+# 24 nov 2026 (Mathieu, en vue Pro : « only 34 are showing » ; il choisit « deux rangees ») : les annonces dont la carte est A- ou
+# mieux mais qui ne passent pas la regle prouvee ne sont plus oubliees : elles sortent dans « Tres recherchees », jamais dans
+# « A la une » ; une base et une carte a 14 $ n'y entrent pas plus qu'avant ; aucun signal n'est montre
+RR = vitrine.recherchees()
+ids_r = [x["item_id"] for x in RR]
+assert "6" in ids_r and "8" in ids_r, ids_r               # trop chere ; carte neuve : pas « A la une », mais recherchees
+assert not {"1", "4"} & set(ids_r) and not {"2", "3", "5"} & set(ids_r), ids_r     # les prouvees n'y sont pas ; ni base, ni 14 $, ni encan fini
+assert all(x["score"] >= 82 and not x.get("a_la_une") and "_med" not in x and "_liq" not in x and "_vieux" not in x for x in RR)
+assert [x["score"] for x in RR] == sorted((x["score"] for x in RR), reverse=True)
+e_ = vitrine.etat()
+assert e_["cartes"] == 2 and e_["recherchees"] == len(RR) >= 2, e_
 # deja vue : le prix se met a jour, sans la renoter
 vitrine.ajouter([{"item_id": "1", "titre": A[0]["titre"], "prix_cad": 2400, "port_cad": 0, "encan": True, "fin": fin, "mises": 9}])
 x1 = next(x for x in vitrine.liste() if x["item_id"] == "1")
@@ -64,6 +75,7 @@ assert x1["total"] == 2400 and x1["mises"] == 9
 # l'encan monte au-dessus de la limite : il sort de la liste (et revient s'il redescend, ce qui n'arrive pas)
 vitrine.ajouter([{"item_id": "1", "titre": A[0]["titre"], "prix_cad": 2900, "port_cad": 0, "encan": True, "fin": fin, "mises": 12}])
 assert "1" not in [x["item_id"] for x in vitrine.liste()]
+assert "1" in [x["item_id"] for x in vitrine.recherchees()]      # 24 nov 2026 : ... et passe dans « Tres recherchees » (toujours une A+)
 vitrine.ajouter([{"item_id": "1", "titre": A[0]["titre"], "prix_cad": 2500, "port_cad": 0, "encan": True, "fin": fin, "mises": 10}])
 assert "1" not in [x["item_id"] for x in vitrine.liste()]      # 23 nov 2026 : 2500 depasse ce qu'elle se vend (avant : permis jusqu'a +10 %)
 vitrine.ajouter([{"item_id": "1", "titre": A[0]["titre"], "prix_cad": 2400, "port_cad": 0, "encan": True, "fin": fin, "mises": 9}])
@@ -85,6 +97,19 @@ assert {x["item_id"] for x in vitrine.liste()} == {"1", "4"}
 os.environ["LR_RADAR_ANCIENNETE"] = "0"
 assert liquidite.passe(8, 2400, 2400, 0) and liquidite.passe(8, 2400, 2400)
 del os.environ["LR_RADAR_ANCIENNETE"]
+# 24 nov 2026 : a la mise en ligne des deux rangees, la vitrine d'avant (vitrine_liq.json) est reprise : ses annonces restent
+# « A la une » sans attendre un balayage ; ses refus (None) ne sont pas repris : ils seront rejuges
+import json as _json
+import comptes as _comptes
+d2 = tempfile.mkdtemp()
+with vitrine._VERROU:
+    avant = {k: x for k, x in vitrine._pool().items()}
+_json.dump({**{k: x for k, x in avant.items() if k in ("1", "4")}, "99": None}, open(os.path.join(d2, "vitrine_liq.json"), "w"))
+d1, _comptes.DONNEES = _comptes.DONNEES, d2
+vitrine._ETAT["pool"] = None
+assert set(vitrine._pool()) == {"1", "4"}
+_comptes.DONNEES = d1
+vitrine._ETAT["pool"] = None
 # le test publie sur le site mesure la MEME regle (le test suit l'app) : memes durees, meme fonction
 ts = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "outils", "tests_site.py"), encoding="utf-8").read()
 assert "i60 - i90" in ts and 'liquidite.passe(liq, med_, a["p"], vieux)' in ts and "liquidite.MED_JOURS" in ts and "liquidite.LIQ_JOURS" in ts

@@ -14703,6 +14703,7 @@ const MAJ_APP = () => [
     ['photo', tt('Lots : trois cartes à la fois', 'Batches: three cards at a time'), tt('Un lot se lit trois cartes à la fois, au lieu de deux.', 'A batch now reads three cards at a time, instead of two.')],
     ['ebay', tt('Mise en vente : retirer une carte', 'Listing: remove a card'), tt('À l’étape des prix, « Retirer » sort une carte du lot. Elle reste dans ton inventaire.', 'On the price step, “Remove” takes a card out of the batch. It stays in your inventory.')],
     ['etiquette', tt('Des titres plus justes', 'More accurate titles'), tt('Le code d’une carte aide à trouver son parallèle (#BA = Blue Rainbow). La marque n’est plus écrite deux fois.', 'A card’s code helps find its parallel (#BA = Blue Rainbow). The brand is no longer written twice.')],
+    ['deals', tt('Radar : beaucoup plus de cartes', 'Radar: many more cards'), tt('Sous « À la une », une nouvelle rangée « Très recherchées » : toutes les cartes A- et mieux en vente, la meilleure note d’abord.', 'Below “Top cards”, a new “Highly sought” row: every A- and better card for sale, best grade first.')],
     ['deals', tt('Tes joueurs, toujours là', 'Your players, always there'), tt('Le Radar montre maintenant les meilleures cartes de chaque joueur et équipe que tu suis, même les moins connus. Dans Filtres, « B et + » montre vraiment les B.', 'The Radar now shows the best cards of every player and team you follow, even lesser-known ones. In Filters, “B & up” really shows the Bs.')],
     ['deals', tt('Radar Pro : pas de cartes tout juste sorties', 'Pro Radar: no just-released cards'), tt('Une carte qui vient de sortir part haut, puis descend pendant deux mois. Le Radar Pro attend qu’elle se vende depuis deux mois.', 'A just-released card starts high, then drops for two months. The Pro Radar waits until it has been selling for two months.')]]},
   {n: 243, le: '2026-11-23', points: [
@@ -21878,6 +21879,9 @@ async function vueMesDeals(z, frais){
     for (const x of l) { const y = tous.get(x.item_id) || {...x, _g: new Set()}; y._g.add(cle); if (x.prix_max && !y.prix_max) { y.prix_max = x.prix_max; y.sous_pct = x.sous_pct; } tous.set(x.item_id, y); } };
   // 19 nov 2026 : « À la une » : les cartes A et A+ que le chasseur a vues partout (vitrine.py), en premier
   ajouter('top', tt('À la une', 'Top cards'), r.a_la_une);
+  // 24 nov 2026 (Mathieu, en vue Pro : « only 34 are showing » ; il choisit « deux rangees ») : sous « À la une » (la regle prouvee),
+  // toutes les autres cartes A- et mieux que le chasseur voit : la lettre SlabIQ, sans la preuve de revente
+  ajouter('rech', tt('Très recherchées', 'Highly sought'), r.recherchees);
   ajouter('cibles', tt('Prix cibles', 'Target prices'), r.deals);
   (r.pour_toi || []).forEach(g => ajouter('j:' + g.joueur, g.joueur, g.annonces));
   (r.types || []).forEach(g => ajouter('t:' + g.type, NOM_SORTE(g.type), g.annonces));
@@ -21927,7 +21931,9 @@ async function vueMesDeals(z, frais){
       for (const x of l) { const j = (x.joueur_n || x.joueur || x.item_id) + '|' + gL(x), k = vu.get(j) || 0; vu.set(j, k + 1); rang.set(x.item_id, Math.floor(k / 2)); }
       // 17 nov 2026 (Mathieu : « ca dit trier par score mais je retrouve des A+ plus bas ») : la diversite se fait DANS une meme
       // lettre : tous les A+ d'abord (2 par joueur avant de revenir au meme), puis les A, etc.
-      l = l.map((x, i) => [x, i]).sort((a, b) => gL(a[0]) - gL(b[0]) || rang.get(a[0].item_id) - rang.get(b[0].item_id) || a[1] - b[1]).map(a => a[0]); }
+      // 24 nov 2026 : dans une meme lettre, les cartes « À la une » (prouvees) passent avant les « Très recherchées »
+      const pr = (x) => x._g && x._g.has('top') ? 0 : x._g && x._g.size === 1 && x._g.has('rech') ? 2 : 1;
+      l = l.map((x, i) => [x, i]).sort((a, b) => gL(a[0]) - gL(b[0]) || pr(a[0]) - pr(b[0]) || rang.get(a[0].item_id) - rang.get(b[0].item_id) || a[1] - b[1]).map(a => a[0]); }
     const max = S.mdMax || 40;
     $('#md-fil', z).innerHTML = l.length ? `<div class="grille-slab md-grille">${l.slice(0, max).map(x => tuileRadar(x)).join('')}</div>${l.length > max ? `<button class="btn ghost" id="md-plus">${tt('Voir plus', 'See more')} · ${l.length - max}</button>` : ''}`
       : S.mdAttente ? '' : `<div class="vide">${tt('Rien ici pour l’instant.', 'Nothing here yet.')}</div>`;
@@ -22080,7 +22086,7 @@ function expliquerSlabIQ(){
     $('#iqx-xt').textContent = tt(`Une carte A ou A+ se revend ${P.fois} fois plus qu’une E.`, `An A or A+ card resells ${P.fois} times more than an E.`);
     const S_ = [[P.ventes, tt('ventes réelles apprises', 'real sales learned'), 'holo'],
       [tt(P.accord_fr, P.accord_en), tt('d’accord avec le marché', 'agreement with the market'), 'acc'],
-      [tt(P.pro + ' %', P.pro + '%'), tt(`des achats du Radar Pro se revendent sans perte. Au hasard : ${P.hasard} %.`, `of Pro Radar buys resell without a loss. At random: ${P.hasard}%.`), 'vert']];
+      [tt(P.pro + ' %', P.pro + '%'), tt(`des achats « À la une » du Radar Pro se revendent sans perte. Au hasard : ${P.hasard} %.`, `of the Pro Radar’s “Top cards” buys resell without a loss. At random: ${P.hasard}%.`), 'vert']];
     $('#iqx-ch').innerHTML = S_.map(([v, l, c]) => `<div class="iqx-s ${c}"><b>${esc(String(v))}</b><small>${l}</small></div>`).join('');
     const dt_ = new Date(P.le + 'T12:00:00').toLocaleDateString(LOC(), {day: 'numeric', month: 'long', year: 'numeric'});
     $('#iqx-note').innerHTML = esc(tt(`Mesuré le ${dt_}, sur des ventes que SlabIQ n’avait jamais vues.`, `Measured on ${dt_}, on sales SlabIQ had never seen.`))

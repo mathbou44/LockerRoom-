@@ -1898,6 +1898,7 @@ class Api:
     # jamais une D ni une E, jamais sous son prix minimum. La lettre affichee reste la vraie. S'il a choisi lui-meme sa note
     # minimum dans les Filtres, son choix tient tel quel. « A la une » (la regle prouvee, vitrine.py) ne change pas.
     RADAR_RANGEE_MIN = 24
+    RADAR_RECHERCHEES_LUES, RADAR_RECHERCHEES_MAX = 600, 200                   # 24 nov 2026 : « Tres recherchees », sous « A la une »
     RADAR_RANGEE_PLANCHER = 50                                               # C et plus
 
     @staticmethod
@@ -7951,7 +7952,7 @@ class Api:
             import sets_cultes
             import series
             ser = comps_permis(self)
-            items = [x for k in ("deals", "petits", "suivis", "pres", "a_la_une") for x in (r.get(k) or []) if isinstance(x, dict)]
+            items = [x for k in ("deals", "petits", "suivis", "pres", "a_la_une", "recherchees") for x in (r.get(k) or []) if isinstance(x, dict)]
             items += [x for k in ("pour_toi", "decouvrir", "chauds", "creux", "chasses", "types", "vendeurs", "cibles")
                       for g in (r.get(k) or []) if isinstance(g, dict) for x in (g.get("annonces") or []) if isinstance(x, dict)]
             for x in items:
@@ -8084,7 +8085,7 @@ class Api:
             return r
         secs = ("pour_toi", "decouvrir", "chauds", "creux", "chasses", "types", "vendeurs", "cibles")
         tous = {}
-        for x in list(r.get("deals") or []) + list(r.get("a_la_une") or []) + list(r.get("petits") or []) + [y for k in secs for g in (r.get(k) or [])
+        for x in list(r.get("deals") or []) + list(r.get("a_la_une") or []) + list(r.get("recherchees") or []) + list(r.get("petits") or []) + [y for k in secs for g in (r.get(k) or [])
                                                                               for y in ((g or {}).get("annonces") or [])]:
             if isinstance(x, dict) and x.get("item_id") and x["item_id"] not in tous:
                 tous[x["item_id"]] = x
@@ -8109,6 +8110,7 @@ class Api:
         out["deals"] = filtre(r.get("deals"))
         out["petits"] = filtre(r.get("petits"))
         out["a_la_une"] = filtre(r.get("a_la_une"))
+        out["recherchees"] = filtre(r.get("recherchees"))
         for k in secs:
             out[k] = [dict(g, annonces=filtre(g.get("annonces"))) if isinstance(g, dict) else g for g in (r.get(k) or [])]
         out["gratuit"] = {"trouvees": len(l), "visibles": len(vis), "verrouillees": len(l) - len(vis),
@@ -8172,13 +8174,13 @@ class Api:
         tous_pays = set(prov) >= {"CA", "US"}
         ok = lambda x: not Api._encan_douteux(x, maint) and (tous_pays or not str(x.get("lieu") or "").strip() or str(x.get("lieu")).upper()[:2] in prov)
         if tous_pays:                                # rien a filtrer (aucun encan douteux) : la reponse telle quelle
-            items = [x for k in ("deals", "petits", "a_la_une") for x in (r.get(k) or []) if isinstance(x, dict)]
+            items = [x for k in ("deals", "petits", "a_la_une", "recherchees") for x in (r.get(k) or []) if isinstance(x, dict)]
             items += [x for k in ("pour_toi", "decouvrir", "chauds", "creux", "chasses", "types", "vendeurs", "cibles")
                       for g in (r.get(k) or []) if isinstance(g, dict) for x in (g.get("annonces") or []) if isinstance(x, dict)]
             if not any(Api._encan_douteux(x, maint) for x in items):
                 return r
         out = dict(r)
-        for k in ("deals", "petits", "a_la_une"):
+        for k in ("deals", "petits", "a_la_une", "recherchees"):
             if isinstance(out.get(k), list):
                 out[k] = [x for x in out[k] if not isinstance(x, dict) or ok(x)]
         for k in ("pour_toi", "decouvrir", "chauds", "creux", "chasses", "types", "vendeurs", "cibles"):
@@ -8439,7 +8441,7 @@ class Api:
                 k, cle = futurs[fu]
                 erreurs.append(f"{k} {cle if not isinstance(cle, int) else ''} : trop long")
             ex.shutdown(wait=False, cancel_futures=True)
-        out, groupes, a_la_une = [], [], []
+        out, groupes, a_la_une, recherchees = [], [], [], []
         for a in al:
             r = resultats.get(("alerte", id(a)))
             if isinstance(r, list):
@@ -8521,12 +8523,20 @@ class Api:
                 except Exception as e:
                     print("Radar (vitrine, completer) : " + repr(e)[:120], flush=True)
                 une = vitrine.liste(90, prof.get("prix_min"), prof.get("prix_max"))
-                for x in une:
+                # 24 nov 2026 (Mathieu, en vue Pro : « only 34 are showing » ; il choisit « deux rangees ») : sous « A la une »
+                # (la regle prouvee, inchangee), « Tres recherchees » : les autres annonces dont la carte est A- ou mieux
+                # (vitrine.recherchees), la meilleure note d'abord. Une carte deja « A la une » n'y revient pas.
+                rech = vitrine.recherchees(Api.RADAR_RECHERCHEES_LUES, prof.get("prix_min"), prof.get("prix_max"))
+                for x in une + rech:
                     try:
                         self._frais_reels(x, pays)
                     except Exception:
                         pass
-                a_la_une = Api._grouper_memes(garde(une))[:60]
+                une_g = garde(une)
+                ids_une = {str(x.get("item_id")) for x in une_g}
+                tuiles = Api._grouper_memes(une_g + garde(rech))
+                a_la_une = [t for t in tuiles if str(t.get("item_id")) in ids_une][:60]
+                recherchees = [t for t in tuiles if str(t.get("item_id")) not in ids_une][:Api.RADAR_RECHERCHEES_MAX]
             except Exception as e:
                 print("Radar (vitrine) : " + repr(e)[:120], flush=True)
             _suivies = {id(g) for g in pour_toi if isinstance(g, dict)}
@@ -8568,7 +8578,7 @@ class Api:
                 admin.noter_erreur("radar", RuntimeError(" | ".join(erreurs[:6])))
             except Exception:
                 pass
-        return {"ok": True, "deals": out[:120], "a_la_une": a_la_une, "cibles": groupes, "vendeurs": vend, "pour_toi": pour_toi,
+        return {"ok": True, "deals": out[:120], "a_la_une": a_la_une, "recherchees": recherchees, "cibles": groupes, "vendeurs": vend, "pour_toi": pour_toi,
                 "decouvrir": decouvrir, "chauds": chauds, "creux": creux_l, "petits": petits, "chasses": chasses, "types": types, "alerte_feu": feu, "pays": pays,
                 "profil": {k: prof.get(k) for k in ("collectionne", "favoris", "prix_min", "prix_max", "iq_min")},
                 "profil_vide": not (prof.get("favoris") or prof.get("collectionne") or prof.get("prix_max")),
