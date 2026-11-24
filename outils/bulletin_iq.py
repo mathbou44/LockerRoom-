@@ -74,26 +74,36 @@ pb = lambda x: "–" if x is None else str(int(x * 100 + 1e-9))
 
 
 def rendre(B):
-    """Le bloc de la page SlabIQ (francais et anglais), entre <!--bulletin--> et <!--/bulletin-->."""
+    """Le bloc de la page SlabIQ (francais et anglais), entre <!--bulletin--> et <!--/bulletin-->.
+    23 nov 2026 (Mathieu, devant le tableau 92, 88, 80, 81, 77 % : « on dirait qu'on s'empire... remplacer par autre chose de
+    plus convaincant ») : plus de tableau par date. Les MEMES resultats, tous montres, sur une seule echelle : un point par
+    test, le Radar Pro d'un cote, « seul » de l'autre. Ce qui convainc est l'ecart, repete a chaque test ; le chiffre du jour
+    (le plus bas) reste ecrit en toutes lettres, la fourchette part du pire resultat, aucun mot sur un profit."""
     L = [x for x in B.get("lignes") or [] if (x.get("pro") or {}).get("n")]
     if len(L) < 2:
         return ""
+    n = len(L)
     lo, hi = min(x["pro"]["reussi"] for x in L), max(x["pro"]["reussi"] for x in L)
     hlo, hhi = min(x["hasard"]["reussi"] for x in L), max(x["hasard"]["reussi"] for x in L)
-    r = "".join(f'<tr style="border-top:1px solid rgba(255,255,255,.08)"><td style="text-align:left;white-space:nowrap;padding:9px 0"><span class="fr">{jfr(x["fin"])}</span><span class="en">{jen(x["fin"])}</span></td><td>{x["pro"]["n"]}</td>'
-                f'<td><b class="holo-t">{pb(x["pro"]["reussi"])} %</b></td><td>{pc(x["hasard"]["reussi"])} %</td></tr>' for x in L)
-    return (f'<!--bulletin--><div class="iq-bul" style="margin:26px 0 6px"><h3><span class="fr">Le même test, refait à {len(L)} dates</span>'
-            f'<span class="en">The same test, rerun on {len(L)} dates</span></h3>'
-            f'<table style="width:100%;border-collapse:collapse;text-align:right;font-variant-numeric:tabular-nums"><tr style="opacity:.6;font-size:.82em">'
-            f'<th style="text-align:left;font-weight:500;padding:6px 0"><span class="fr">Test du</span><span class="en">Test of</span></th>'
-            f'<th style="font-weight:500"><span class="fr">Achats du Radar Pro</span><span class="en">Pro Radar buys</span></th>'
-            f'<th style="font-weight:500"><span class="fr">Gardent leur valeur</span><span class="en">Hold their value</span></th>'
-            f'<th style="font-weight:500"><span class="fr">Seul</span><span class="en">On your own</span></th></tr>{r}</table>'
-            f'<p class="iq-note"><span class="fr">Chaque ligne est le test tel qu’il aurait été publié ce jour-là, avec seulement les ventes connues à cette date. '
-            f'À chaque fois : {pb(lo)} à {pb(hi)} % des achats du Radar Pro se sont revendus sans perdre leur valeur (seul : {pc(hlo)} à {pc(hhi)} %). '
+    gagne = sum(1 for x in L if (x["pro"].get("reussi_ic95") or [x["pro"]["reussi"]])[0] > x["hasard"]["reussi"])   # meme prudente, la mesure bat « seul »
+    pts = lambda cle: "".join(f'<i style="left:{100 * x[cle]["reussi"]:.1f}%"></i>' for x in L)
+    der = L[-1]
+    return (f'<!--bulletin--><div class="iq-bul">'
+            f'<h3><span class="fr">Refait {n} fois. Le Radar Pro l’emporte {gagne}&nbsp;fois&nbsp;sur&nbsp;{n}.</span>'
+            f'<span class="en">Rerun {n} times. The Pro Radar wins {gagne}&nbsp;out&nbsp;of&nbsp;{n}.</span></h3>'
+            f'<p class="iq-rep-s"><span class="fr">Achats qui gardent leur valeur · un point par test</span><span class="en">Buys that hold their value · one dot per test</span></p>'
+            f'<div class="iq-rep"><div class="iq-rep-l pro"><span class="iq-rep-n"><span class="fr">Radar Pro</span><span class="en">Pro Radar</span></span>'
+            f'<span class="iq-rep-t">{pts("pro")}</span>'
+            f'<b class="holo-t"><span class="fr">{pb(lo)} à {pb(hi)} %</span><span class="en">{pb(lo)} to {pb(hi)}%</span></b></div>'
+            f'<div class="iq-rep-l"><span class="iq-rep-n"><span class="fr">Seul</span><span class="en">On your own</span></span>'
+            f'<span class="iq-rep-t">{pts("hasard")}</span>'
+            f'<b><span class="fr">{pc(hlo)} à {pc(hhi)} %</span><span class="en">{pc(hlo)} to {pc(hhi)}%</span></b></div>'
+            f'<div class="iq-rep-x"><span></span><span class="iq-rep-e"><i>0</i><i>50</i><i>100 %</i></span><span></span></div></div>'
+            f'<p class="iq-note"><span class="fr">Du {jfr(L[0]["fin"])} au {jfr(der["fin"])} : chaque point est le test complet, refait avec seulement les ventes connues ce jour-là. '
+            f'Le plus récent : {pb(der["pro"]["reussi"])} % ({der["pro"]["n"]} achats), contre {pc(der["hasard"]["reussi"])} % seul. '
             f'« Garde sa valeur » : la même carte s’est revendue ensuite à au moins 90 % du prix payé ; jamais revendue : ratée.</span>'
-            f'<span class="en">Each row is the test as it would have been published that day, with only the sales known on that date. '
-            f'Every time: {pb(lo)} to {pb(hi)}% of Pro Radar buys resold without losing value (on your own: {pc(hlo)} to {pc(hhi)}%). '
+            f'<span class="en">From {jen(L[0]["fin"])} to {jen(der["fin"])}: each dot is the full test, rerun with only the sales known on that day. '
+            f'The latest: {pb(der["pro"]["reussi"])}% ({der["pro"]["n"]} buys), versus {pc(der["hasard"]["reussi"])}% on your own. '
             f'“Holds its value”: the same card later resold for at least 90% of the price paid; never resold: a miss.</span></p></div><!--/bulletin-->')
 
 

@@ -5624,7 +5624,10 @@ input[type=number]{-moz-appearance:textfield; appearance:textfield}
   /* « redevenu asymetrique avec le bas des nouvelles » : les nouvelles remplissent toute la hauteur, leur bas = celui des tuiles */
   html:not(.tel-large) .ecran.ecran.acc.acc-ft-mode > .acc-news2{display:flex; flex-direction:column; overflow:hidden}
   html:not(.tel-large) .ecran.ecran.acc.acc-ft-mode > .acc-news2 > .nl-l{flex:1 1 auto; display:flex; flex-direction:column; min-height:0}
-  html:not(.tel-large) .ecran.ecran.acc.acc-ft-mode > .acc-news2 > .nl-l > .nl{flex:1 1 0; min-height:0}
+  /* 23 nov 2026 (Mathieu, la nouvelle « Échange majeur » à l'ordi : « c'est tout pogné ») : 7 rangées de hauteur égale dans une
+     hauteur fixe : une rangée de 3 lignes débordait sur ses voisines. Une rangée garde toujours la hauteur de son texte ; on en
+     montre moins quand l'écran est court (nlAjuster), et elles se partagent l'espace qui reste */
+  html:not(.tel-large) .ecran.ecran.acc.acc-ft-mode > .acc-news2 > .nl-l > .nl{flex:1 0 auto; min-height:0}
 }
 
 /* 15 nov 2026 (Mathieu : « incapable de scroller » dans la fiche d'une annonce) : la fiche avait une hauteur fixe et rien ne
@@ -11986,13 +11989,22 @@ async function feuilleGTS(produits, force){
 // des sorties ; un tap sur un produit = deposer son Excel (reconnu et mis au catalogue)
 const SPORTS_POP = [['hockey', 'Hockey'], ['baseball', 'Baseball'], ['basketball', 'Basketball'], ['football', 'Football']];
 const dateSortie = (x) => x.date ? new Date(x.date + 'T12:00:00').toLocaleDateString(LOC(), {day: 'numeric', month: 'short'}) : tt('à venir', 'TBA');
-async function blocSorties(){
+async function blocSorties(force){
   const z = $('#adm-sorties'); if (!z) return;
-  const r = await API.admin_sorties().catch(() => null);
-  if (!$('#adm-sorties') || !r || !r.ok) return;
+  // 23 nov 2026 (Mathieu, « Loading… 94 % » : « c'est très très long ») : le calendrier ne répondait pas et la fenêtre restait
+  // sur la barre pour toujours. Une réponse, quelle qu'elle soit, remplace la barre : la raison et « Réessayer », ou « rien à venir »
+  const r = await API.admin_sorties(!!force).catch(e => ({ok: false, erreur: e.message}));
+  if (!$('#adm-sorties')) return;
+  if (!r || !r.ok) {
+    z.innerHTML = `<div class="vide">${esc((r && r.erreur) || tt('Calendrier des sorties injoignable', 'Release calendar unreachable'))}<br><button class="btn petit" id="adm-so-re" style="margin-top:12px">${tt('Réessayer', 'Try again')}</button></div>`;
+    $('#adm-so-re').onclick = () => { vibrer(); z.innerHTML = '<div class="lecture"><span class="roue"></span></div>'; blocSorties(true); };
+    return; }
   const l = (r.produits || []).filter(x => ['Upper Deck', 'Topps'].includes(x.marque) && SPORTS_POP.some(s => s[0] === x.sport) && x.dans != null && x.dans >= -14)
     .sort((a, b) => a.dans - b.dans).slice(0, 8);
-  if (!l.length) return;
+  if (!l.length) {
+    z.innerHTML = `<div class="vide">${tt('Aucune sortie Upper Deck ou Topps dans les prochaines semaines.', 'No Upper Deck or Topps release in the coming weeks.')}<br><button class="btn petit" id="adm-so-t" style="margin-top:12px">${tt('Tout voir', 'See all')}</button></div>`;
+    $('#adm-so-t').onclick = () => feuillePopulaires([], r);
+    return; }
   z.innerHTML = `<div class="bloc adm-so"><div class="r-titre">${tt('Sorties Upper Deck et Topps', 'Upper Deck & Topps releases')}<button class="lien-t" id="adm-so-t">${tt('Tout voir', 'See all')}</button></div>
     <div class="adm-so-l">${l.map((x, i) => `<button class="adm-so-r ${x.dans < 0 ? 'passe' : x.dans <= 7 ? 'bientot' : ''}" data-so="${i}">
       <span class="d"><b>${dateSortie(x)}</b><small>${x.dans < 0 ? tt('sorti', 'out') : x.dans === 0 ? tt('auj.', 'today') : tt('dans ', 'in ') + x.dans + tt(' j', ' d')}</small></span>
@@ -15125,6 +15137,13 @@ function tuileTendances(r){
   // « +35 » ne disait rien : ce sont les points gagnes par son indice SlabIQ en 30 jours
   if (s_ && x) s_.textContent = `${x.nom}${x.ecart ? ' · ' + (x.ecart > 0 ? '▲ +' : '▼ −') + Math.abs(Math.round(x.ecart)) + tt(' pts en 30 j', ' pts in 30 d') : ''}`;
 }
+// 23 nov 2026 (« c'est tout pogné ») : à l'ordi, la liste a une hauteur fixe (le bas des tuiles) : on ne montre que les
+// rangées qui y tiennent en entier, 3 au moins ; rien n'est coupé ni écrasé
+function nlAjuster(){
+  const l = $('#acc-news2 .nl-l'); if (!l) return;
+  const R = [...l.children]; R.forEach(r => { r.style.display = ''; });
+  let k = R.length; while (k > 3 && l.scrollHeight > l.clientHeight + 1) R[--k].style.display = 'none';
+}
 // les nouvelles : une courte liste (4), une petite image a gauche ; un tap ouvre la nouvelle en grand
 function rendreNewsListe(){
   const z = $('#acc-news2'), L = S.newsListe || []; if (!z) return;
@@ -15156,6 +15175,8 @@ function rendreNewsListe(){
     <div class="nl-l">${L.slice(0, estBureau() ? 7 : 4).map((n, j) => `<button class="nl${n.wow ? ' nl-wow' : ''}" data-nl="${j}">${n.image && !n.astuce ? `<span class="nl-img" style="background-image:${cssUrl(n.image)}"></span>` : ico(n)}
       <span class="nl-t"><small>${nlSur(n)}${n.date && !n.astuce ? ' · ' + esc(dateCourte(n.date)) : ''}</small><b>${insec(esc(String(n.titre || '').slice(0, 110)))}</b>${nlWow(n)}</span></button>`).join('')}</div>`;
   z.hidden = false;
+  nlAjuster(); requestAnimationFrame(nlAjuster);
+  if (!S.nlFit) { S.nlFit = true; let t_; addEventListener('resize', () => { clearTimeout(t_); t_ = setTimeout(nlAjuster, 150); }); }
   const ouvrir = (k) => { vibrer(); feuilleBloc($('#acc-nouv')); requestAnimationFrame(() => { rendreNouvelles((S.live && S.live.nouvelles) || []); if (S.newsAller) S.newsAller(k, false); }); };
   $$('[data-nl]', z).forEach(b => b.onclick = () => ouvrir(+b.dataset.nl));
   const t = $('#nl-tout', z); if (t) t.onclick = () => ouvrir(0);

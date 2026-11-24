@@ -23,6 +23,8 @@ HOTE = "www.checklistinsider.com"
 FRAICHEUR_S = 12 * 3600
 UA = "Mozilla/5.0 (SlabCoach release calendar; +https://slabcoach.com)"
 _verrou = threading.Lock()
+ECHEC_S = 15 * 60
+_ECHEC = {"le": 0.0, "raison": ""}
 
 SPORTS = (("hockey", r"\bhockey\b|\bnhl\b"), ("baseball", r"\bbaseball\b|\bmlb\b"), ("basketball", r"\bbasketball\b|\bnba\b|\bwnba\b"),
           ("football", r"\bfootball\b|\bnfl\b"), ("soccer", r"\bsoccer\b|\bfifa\b|premier league|\bmls\b|\buefa\b|bundesliga|la liga"))
@@ -120,14 +122,26 @@ def lister(force=False, telecharger=None):
     d = _lire()
     if d.get("produits") and not force and time.time() - d.get("le", 0) < FRAICHEUR_S:
         return {"ok": True, "produits": d["produits"], "maj": d.get("maj"), "cache": True}
+    if not force and telecharger is None and time.time() - _ECHEC["le"] < ECHEC_S:      # il vient de refuser : pas a chaque ouverture
+        if d.get("produits"):
+            return {"ok": True, "produits": d["produits"], "maj": d.get("maj"), "erreur": _ECHEC["raison"]}
+        return {"ok": False, "produits": [], "erreur": "Calendrier des sorties injoignable : " + _ECHEC["raison"]}
     try:
         l = (telecharger or _telecharger)()
         if not l:
             raise ValueError("calendrier vide (la page a peut-être changé)")
     except Exception as e:
+        # 23 nov 2026 (la fenetre admin restait sur « Loading… 94 % ») : la raison va au journal et l'admin la lit en clair ;
+        # un refus n'est pas redemande a chaque ouverture (15 min), sauf « Reessayer ». Un site qui nous refuse (403) n'est
+        # JAMAIS contourne (autre agent, autre adresse) : on demande la permission ou on entre les dates a la main.
+        code = getattr(e, "code", None)
+        raison = ("le site du calendrier refuse notre serveur (%s)" % code if code in (401, 403) else "page introuvable (404)" if code == 404
+                  else "le site ne répond pas" if "timed out" in str(e).lower() else str(e)[:160])
+        print("Sorties : " + repr(e)[:200], flush=True)
+        _ECHEC.update(le=time.time(), raison=raison)
         if d.get("produits"):
-            return {"ok": True, "produits": d["produits"], "maj": d.get("maj"), "erreur": str(e)[:160]}
-        return {"ok": False, "produits": [], "erreur": "Calendrier des sorties injoignable : " + str(e)[:160]}
+            return {"ok": True, "produits": d["produits"], "maj": d.get("maj"), "erreur": raison}
+        return {"ok": False, "produits": [], "erreur": "Calendrier des sorties injoignable : " + raison}
     for x in l:
         x.update(sport=sport_de(x["nom"]), marque=marque_de(x["nom"]), phare=bool(PHARES.search(x["nom"])))
     with _verrou:

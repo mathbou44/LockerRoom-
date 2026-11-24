@@ -8,7 +8,8 @@ c = ceo._semer({"semis": [], "taches": []})
 L = {t["id"]: t for t in c["taches"]}
 # Apple : 3 gestes dates avant le long conge americain (jeudi 26), et le plan B a decider avant le 1er decembre
 assert [L[i]["echeance"] for i in ("ap_accord", "ap_build", "ap_soumettre", "ap_planb")] == ["2026-11-24", "2026-11-24", "2026-11-25", "2026-11-29"]
-assert all(L[i]["prio"] == 1 and L[i]["projet"] == "lancement" and L[i]["etat"] == "a_faire" for i in ("ap_accord", "ap_build", "ap_soumettre", "ap_planb"))
+assert all(L[i]["prio"] == 1 and L[i]["projet"] == "lancement" for i in ("ap_accord", "ap_build", "ap_soumettre", "ap_planb"))
+assert all(L[i]["etat"] == "a_faire" for i in ("ap_accord", "ap_build", "ap_soumettre"))      # le plan B est passe dans « petites decisions » (menage du 23 nov)
 # l'ancienne tache (due le 22) et la decision sur la simulation se ferment seules, avec la raison
 assert L["l1_apple"]["etat"] == "fait" and "Remplacée" in L["l1_apple"]["note"]
 assert L["t_sim"]["etat"] == "fait" and "enlève" in L["t_sim"]["note"]

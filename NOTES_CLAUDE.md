@@ -213,6 +213,26 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   nouvel export. **Programmer, étape 2** : bouton « Retirer » par carte (sort du lot, reste dans l'inventaire ; la dernière
   retirée ramène à l'étape 1). Nouveautés n: 244. Tests : `test_codes_variantes.py`, `test_lot_vitesse.py`. Tâche admin `lv_temps`.
   Vu sans y toucher : Kaplan Future Watch Auto /999 à 5 $ et Wood Inscribed à 250 $ dans la même capture (prix à regarder).
+- **Soirée du 23 nov, suite (Mathieu en direct, à l'ordi)**. (1) **Nouvelles de l'accueil à l'ordi** (« c'est tout pogné ») :
+  7 rangées de hauteur égale dans une hauteur fixe ; la nouvelle WOW (3 lignes) débordait (mesuré à 1456×690 : rangée 75 px,
+  texte 79 px). Rangées `flex:1 0 auto` + `nlAjuster()` (cache les dernières rangées tant que la liste déborde, 3 au moins ;
+  refait au changement de taille). Test : `test_nouvelles_rangees.py`. (2) **Admin « Sorties à venir »** (« Loading… 94 % ») :
+  le serveur répondait en < 1 s par un refus (réponse de 101 octets = « HTTP Error 403: Forbidden » ; la page de Checklist
+  Insider se lit d'ailleurs, donc c'est notre serveur qui est refusé) et `blocSorties` sortait sans rien afficher. Maintenant :
+  la raison + « Réessayer », ou « rien à venir » ; `sorties.lister` écrit « Sorties : … » au journal et ne redemande pas avant
+  15 min. NE JAMAIS contourner ce refus (autre agent, autre adresse) : demander la permission ou entrer les dates à la main ;
+  à faire décider par Mathieu. Test : `test_sorties_refus.py`. (3) **Ménage de la liste admin** (« 86 tâches c'est bcp trop ») :
+  `SEMIS["menage_23nov"]` + `CLOS["clos_menage_23nov"]` : 87 ouvertes → 25 (18 à lui, 7 à Claude) ; les petites tâches d'un sujet
+  = une tâche avec sa liste dans la note. RÈGLE : une nouvelle tâche seulement si elle ne tient dans aucune existante ; jamais
+  plus d'une vingtaine à lui. Test : `test_ceo_menage.py`. (4) **Page SlabIQ, « Nos tests »** (« on dirait qu'on s'empire…
+  remplacer par autre chose de plus convaincant ») : plus de tableau par date ; `bulletin_iq.rendre` montre les mêmes 5
+  résultats, un point par test sur une échelle (Radar Pro 77 à 92 %, seul 7 à 11 %), titre « Refait 5 fois. Le Radar Pro
+  l'emporte 5 fois sur 5. » (compté seulement si le bas de l'intervalle bat « seul »), le plus récent écrit en toutes lettres.
+  « SlabIQ s'améliore chaque semaine » N'EST PAS écrit : le chiffre du Radar Pro baisse de test en test (92 → 77 %) ; ce qui
+  monte dans les mêmes tests : accord 0,65 → 0,77, « A se revend X fois plus que E » 3,8 → 7,8, achats 187 → 475. Cause de la
+  baisse PAS vérifiée (hypothèse : plus de cartes couvertes) : tâche `g_c_jeudi`. Règle de livraison rappelée (ex-tâche `v_push`) :
+  à partir du 1er décembre, pousser tôt le matin ou tard le soir (chaque push = 3 à 5 minutes lentes : le 23 nov à 20 h 01,
+  `achetees_tableau` 10,8 s et `accueil` 5,5 s dans la minute suivante).
 
 ## En attente
 - **Méga test 3 ans (bâti le 22 nov, priorité 1)** : `mega_test.py` (serveur) part seul après le push (boucle de l'heure + reprise
