@@ -57,6 +57,14 @@ SCRIPT = textwrap.dedent('''
     p = dict(APPELS[-1][2])
     assert p["mode"] == "subscription" and p["client_reference_id"] == cid and p["line_items[0][price]"] == "price_test_pro"
     assert p["subscription_data[metadata][compte]"] == cid and p["success_url"].endswith("/#reglages/pro-ok")
+    # 24 nov 2026 (vrai paiement de Mathieu) : le retour de Stripe se fait a l'adresse ou le client EST, meme quand Render
+    # donne sa propre adresse (ou il n'est pas connecte)
+    with server.app.test_request_context("/", base_url="https://www.slabcoach.com"):
+        assert paiements.adresse_publique() == "https://www.slabcoach.com"
+    with server.app.test_request_context("/", base_url="https://slabcoach.com"):
+        assert paiements.adresse_publique() == "https://slabcoach.com"
+    with server.app.test_request_context("/", base_url="https://slabcoach.com.pirate.example"):
+        assert paiements.adresse_publique() == os.environ["RENDER_EXTERNAL_URL"]          # une autre adresse : celle de Render, comme avant
 
     SECRET = os.environ["STRIPE_WEBHOOK_SECRET"]
     def envoyer(ev, secret=SECRET, decalage=0):

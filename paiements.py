@@ -75,6 +75,19 @@ def mode():
 
 
 def adresse_publique():
+    # 24 nov 2026 (vrai paiement de Mathieu : apres avoir paye, Stripe le ramenait sur lockerroom-….onrender.com, ou il
+    # n'est PAS connecte : il voyait le site au lieu de son compte Pro) : le retour se fait a l'adresse ou l'utilisateur
+    # EST (slabcoach.com ou www.slabcoach.com), comme pour Apple et Google (server._base_publique). L'adresse de Render ne
+    # sert plus qu'en dernier recours.
+    try:
+        from flask import has_request_context, request
+        if has_request_context():
+            import re
+            h = (request.host or "").split(",")[0].strip().lower()
+            if re.fullmatch(r"(www\.)?slabcoach\.com", h):
+                return "https://" + h
+    except Exception:
+        pass
     a = (os.environ.get("LOCKERROOM_URL") or os.environ.get("RENDER_EXTERNAL_URL") or "").strip().rstrip("/")
     if a:
         return a
