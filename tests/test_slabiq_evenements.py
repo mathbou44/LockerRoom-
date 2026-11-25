@@ -31,7 +31,8 @@ base = {"Carey Price": {"nhl": {"actif": False, "hhof": True, "trophees_n": 6}, 
 I.actu = lambda jours=7: items
 out = I.calculer(d={"joueurs": {}}, base=base, demande=lambda n: {"Nick Suzuki": 90, "Carey Price": 80}.get(n, 5))
 assert "honneur" in out["Carey Price"]["pastilles"] and out["Carey Price"]["ev_pos"] > 25, out["Carey Price"]
-assert "mauvaise" in out["Nick Suzuki"]["pastilles"] and "occasion" in out["Nick Suzuki"]["pastilles"], out["Nick Suzuki"]
+# 25 nov 2026 : une manchette de blessure donne l'etat « blesse » (affiche « Mauvaise nouvelle », explique au toucher), plus « mauvaise »
+assert out["Nick Suzuki"]["pastilles"][0] == "blesse" and "mauvaise" not in out["Nick Suzuki"]["pastilles"] and "occasion" in out["Nick Suzuki"]["pastilles"], out["Nick Suzuki"]
 assert "occasion" not in (out.get("Joe Bloggs") or {}).get("pastilles", [])
 # 4. les notifications SlabIQ : a activer (off par defaut), sur les joueurs de TES cartes ; la cloche les reconnait
 api = lockerroom.Api(os.path.join(os.environ["LOCKERROOM_DONNEES"], "t.db"))

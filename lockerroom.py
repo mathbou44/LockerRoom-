@@ -12718,6 +12718,14 @@ class Api:
                 "diag": _d.diagnostic(dd), "total": len(tout), "bassin": dd.get("bassin"), "nb_flux": len(_d.flux_liste()),
                 "watch": self._watch_ids(), "caches_chance": n_caches[0] if adm_ else None})
 
+    def aubaines_manquees(self):
+        """25 nov 2026 (Mathieu : « on ne devrait jamais manquer ce genre de deal-la ») : ADMIN. Dans nos ventes, les cartes
+        vendues au prix max du chasseur ou moins : montrees avant la fin ou non, et pourquoi (manquees.py). Aucun credit."""
+        if not self._est_admin():
+            return {"ok": False, "erreur": "Réservé à l’admin"}
+        import manquees
+        return {"ok": True, **manquees.resume(), "valeur_min": manquees.VALEUR_MIN, "tard_h": manquees.TARD_H}
+
     def vendeurs_rapport(self):
         """12 nov 2026 (Mathieu : « un rapport des vendeurs avec lesquels les ventes finissent le plus sous la mediane des last
         sold ») : ADMIN. Chaque vendeur dont on connait des encans finis (45 derniers jours) : prix final / valeur, cout avec le
@@ -12734,6 +12742,7 @@ class Api:
         l.sort(key=lambda x: (x["n"] < _dl.PERF_N_MIN, x["score"]))
         a = chances._lire()
         return {"ok": True, "vendeurs": l, "moyenne": p.get("moyenne"), "encans": p.get("encans"), "n_min": _dl.PERF_N_MIN,
+                "aubaine": chances.AUBAINE, "moitie": chances.MOITIE,
                 "archives": len(a.get("encans") or {}), "le": a.get("le"), "ramassage": sorted(ram),
                 "ordre_priorite": _dl.ordre_priorite(ram)}
 

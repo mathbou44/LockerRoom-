@@ -1,5 +1,5 @@
 {
- "le": "2026-11-24",
+ "le": "2026-11-25",
  "methode": "tests_site rejoue a chaque date, avec les ventes connues ce jour-la",
  "lignes": [
   {
@@ -8,7 +8,7 @@
    "revente_des": "2026-08-11",
    "revente_fin": "2026-09-29",
    "ventes": 153214,
-   "accord": 0.65,
+   "accord": 0.649,
    "x_a_e": 2.6,
    "pro": {
     "n": 1428,
@@ -32,7 +32,7 @@
    "revente_des": "2026-09-03",
    "revente_fin": "2026-10-13",
    "ventes": 167660,
-   "accord": 0.651,
+   "accord": 0.653,
    "x_a_e": 2.8,
    "pro": {
     "n": 1055,
@@ -56,7 +56,7 @@
    "revente_des": "2026-09-23",
    "revente_fin": "2026-10-27",
    "ventes": 185065,
-   "accord": 0.64,
+   "accord": 0.643,
    "x_a_e": 4.1,
    "pro": {
     "n": 689,
@@ -80,7 +80,7 @@
    "revente_des": "2026-10-08",
    "revente_fin": "2026-11-10",
    "ventes": 202231,
-   "accord": 0.672,
+   "accord": 0.668,
    "x_a_e": 4.5,
    "pro": {
     "n": 581,
@@ -104,7 +104,7 @@
    "revente_des": "2026-10-15",
    "revente_fin": "2026-11-24",
    "ventes": 213174,
-   "accord": 0.685,
+   "accord": 0.684,
    "x_a_e": 4.5,
    "pro": {
     "n": 638,

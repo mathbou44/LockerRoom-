@@ -673,3 +673,125 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
 - **Balayage apres la soiree (25 nov, 22 h)** : Pro en anglais a 430 x 932 et Gratuit en francais a 375 x 667 : 0 erreur JavaScript, 0 appel refuse, 0 bouton mort, aucune fenetre restee ouverte. Restent a defiler : les listes (Watchlist, Inventaire, Breaks, Ventes, Calendrier, Guide) et, sur le petit iPhone seulement, Idees (184) et le Comptoir (255).
 - **PAS ENCORE POUSSE au 24 nov 22 h 30 (son PC etait verrouille)** : le Bilan refait, la grille de centrage sur un ecran, l'envoi automatique. Tout est dans son dossier GitHub ; 293 tests passent.
 
+- **Baseball, test du 25 nov (export du 23 nov, rien d'écrit sur le site ; `outils/tests_site_bb.py`, 34 s)** : 138 510 lignes,
+  68 916 ventes utiles (43 318 doublons, 21 268 sous 3 $), 168 joueurs (hockey : 990). 93 % des ventes datent d'oct.-nov. 2026
+  (nov. seul : 78 %) : pas de profondeur. rho 0,20 (hockey 0,929), accord 0,752, inversions A+/A, B+/B, B-/C+ ; Radar Pro 21 achats
+  seulement (90,5 %) ; fenêtre de revente de 6 jours (reventes 1 à 3 % par lettre = non mesurable) ; simulation 12 semaines
+  négative avec et sans (-3,5 % contre -6,3 %). 16 corrections, toutes des espoirs montés à A+ (effet de mode sur 6 semaines).
+  Verdict dit à Mathieu : PAS publiable ; il manque de l'historique (2023-2026) et des joueurs (~500 + vintage), pas du volume
+  récent. Parts de marché : aucune donnée trouvée pour le Canada (son 50 % hockey / 25 % baseball n'est pas vérifié) ; aux É.-U.
+  le baseball est 1er en cartes gradées 2025 (3,6 M sur 10,0 M), le basketball pèse plus en dollars sur eBay.
+- **Baseball, décision du 25 nov (Mathieu)** : le hockey d'abord (lancement lundi 30 nov), le baseball en « release officiel » à
+  l'ouverture de la saison MLB 2027 (calendrier : 24-25 mars 2027 ; lock-out attendu le 1er déc., en 2022 l'ouverture avait
+  glissé au 7 avril). Il veut payer 3 ans d'historique, « féroce », viser le marché américain, des heures d'itération comme au
+  hockey ; tout ce que le hockey offre (sortes de cartes par décennie, parallèles, gros joueurs par décennie, junk wax, gradable).
+  Demandé à Mathieu : (1) son budget de données par mois, (2) le « go » pour bâtir la moisson d'historique baseball (comme le
+  méga test 3 ans) APRÈS le lancement, (3) un export Ventes Baseball par semaine, (4) 5 à 10 testeurs américains en février.
+  Dit franchement : source = eBay via SoldComps seulement (pas Goldin / Fanatics / PSA sans accord écrit) donc pas « les mêmes
+  données que Card Ladder » ; le vintage haut de gamme se vend surtout en maisons d'encan. Rien de baseball dans l'app avant lundi.
+- **Sources de checklists baseball, tour du 25 nov (Mathieu : « regarde partout, la base va être énorme »)** :
+  - **TheCardAPI Catalog** (notre 2e source de ventes) : 16,7 M cartes, 346 000 ensembles, 16 sports ; checklists, drapeaux
+    recrue/auto/relique, tirages, parallèles liés au produit parent (`/api/v1/catalog`, `/catalog/sets`, `/catalog/releases/{id}/checklists`).
+    Forfaits : Free 0 $ (5 000 ventes/j, 30 j), Starter 9 $, Builder 49 $ (+29 $ catalogue, 500 fiches/j, plafond 250 000),
+    Pro 199 $ (catalogue inclus, 2 000 fiches/j, plafond 1 M ; ventes 200 000/j, 180 j d'historique). Pas d'export en bloc.
+  - **ALERTE conditions TheCardAPI (mises à jour le 15 nov 2026)** : forfait GRATUIT = « No persistent local storage », « Non-commercial
+    use only ». Or `thecardapi.py` archive la moisson dans base_ventes sur le forfait gratuit. Payant : stockage permis
+    (Starter 500 000 ventes, Builder 5 M, Pro 25 M), effacement sous 30 j si l'abonnement s'arrête ; entraîner un modèle avec
+    leurs données = entente écrite à part ; œuvres dérivées (analyses, indices) à nous. Dit à Mathieu ; il décide (forfait payant
+    ou arrêt de la moisson). Ne pas toucher Render.
+  - **CardSight AI** : identification par photo (joueur, produit, numéro, confiance) + parallèles candidats classés (17 000 motifs),
+    baseball depuis 1933, catalogue 17 M ; gratuit 750 appels/mois, 14,95 $ pour 5 000, 199,95 $ pour 100 000. Conditions non lues.
+    Candidat pour le « dernier recours visuel » à la place de l'API eBay. À tester contre notre vision.py sur de vraies photos.
+  - **Fichiers par produit** : Beckett (tableur par page, import existant), Topps (topps.com/pages/checklists, « Download checklist » ;
+    conditions réputées interdire la collecte automatique : téléchargement à la main seulement), GTS (gts.py lit déjà le hockey ;
+    catégorie baseball à ajouter, page non ouverte d'ici). **Écartés** : TCDB (pas d'API officielle, seulement des aspirateurs tiers),
+    Checklist Insider (refuse notre serveur), Baseballcardpedia (licence inconnue), SportsCardsPro (CSV payant, à effacer à la fin).
+  - Les 3 ans de ventes ne viendront PAS de TheCardAPI (180 j max) : SoldComps, comme le méga test hockey.
+- **25 nov, matin (captures de Mathieu sur iPhone) : quatre changements, livrés ensemble (p86)** :
+  - **SlabIQ, Renewed numérotée** (« Renewed Exclusives est une carte B » ; Makar Renewed Exclusives /100 notée C) : `bareme_iq.renewed()` :
+    une YG Renewed NUMÉROTÉE suit la règle des numérotées (/100 → B, High Gloss /10 → A-), raison `yg_renewed_num` ; la Renewed de base
+    reste D. Nos ventes (sans les gradées) : base 2,86 $ en médiane (6 820), Exclusives /100 51,57 $ (299), High Gloss /10 212 $ (52).
+    `score_slab` (YG 2024-25 d'un vétéran sans le mot « Renewed ») passe par la même fonction (base : E, inchangé). L'empreinte a
+    changé → `tests_site.py export_2411 --ecrire` + `bulletin_iq.py --ecrire` refaits (chaine4.sh) : accord 0,685 → 0,684, Radar Pro
+    inchangé (87 %, 638 achats), le site dit « 25 nov. ». Décision « YG Renewed à D ou à B ? » (ceo `d_ygr`) : toujours ouverte pour la BASE.
+  - **Joueur blessé / absent** (« Bedard est blessé, il devrait avoir le badge » puis « pourquoi on l'a pas capté ? On doit TOUS les
+    capter ») : `indice_joueurs.suivre_blessures` (état `d["blessures"]`, durée lue dans la manchette, retour, nom de famille seul +
+    équipe) et `absents()` (les sommaires de matchs de `signal_joueurs`, 45 jours : un patineur régulier encore dans l'alignement qui
+    rate ses 2 derniers matchs). Pastilles `blesse` / `absent`, en PREMIER dans la liste ; `mauvaise` ne s'ajoute plus par-dessus.
+    Gardiens : manchettes seulement. `pourquoi()` renvoie `blessure` et `absent`. Test : `tests/test_blessures.py`.
+    Dit à Mathieu : sans manchette on ne distingue pas blessure / suspension / laissé de côté ; 2 à 4 jours de délai ; un flux officiel
+    payant (Sportradar, SportsDataIO) donnerait tout le jour même (prix non vérifié) ; ESPN exclu par sa règle.
+  - **Pastilles = « Bad news » + notification à la iOS** (09 h 49 : « Bad news c'est mieux, et quand tu cliques sur la pastille t'as
+    l'explication ; inspire-toi d'Apple iOS pour le pop-up de la notif ») : sur la tuile, `blesse` et `absent` s'affichent « Mauvaise
+    nouvelle / Bad news ». TOUTES les pastilles d'une annonce se touchent (`data-np`, plus `data-cu` / `data-se` déjà là) →
+    `notifPastille()` : verre dépoli, icône à gauche, titre gras, joueur en gris à droite, texte, lien « Lire la nouvelle » ; descend du
+    haut, ne bloque rien (toucher ailleurs, glisser vers le haut, 8 s). Textes : `NP_TXT()` ; faits du joueur : `npDetail()` via
+    `API.tendance_joueur` (gardé 10 min). L'ancienne feuille `.cs-f` (Clé, Culte, chance de séries) est remplacée. Aperçu : `vue/badge.py`.
+  - **Photos du Radar** (« les photos loadent pas assez vite », tuiles McDavid et Frondell vides en 5G faible) : `photosVite()` (les photos
+    de l'écran en `eager` + priorité haute, les autres ~1600 px avant d'arriver, par IntersectionObserver ; un MutationObserver les
+    trouve), une photo en échec est redemandée UNE fois (`?r=1`, cachée pendant l'attente) avant d'être enlevée, `preconnect` vers
+    i.ebayimg.com. Mêmes adresses et tailles. Non mesuré sur son réseau.
+  - Leçon : dans cette VM, un travail lancé en fond et les serveurs locaux tombent entre deux tours ; ne pas dormir en avant-plan
+    (Mathieu interrompt) : travailler, puis relire `/tmp/chaine4_etat.log`.
+- **Miser en lot : essai du lien avec le montant (25 nov, 16 h ; Mathieu : « si tu ouvres le lien, le prix est déjà rentré, tu as
+  juste à faire bid »)** : état avant = 4 gestes par encan (ouvrir, Enchérir, coller, confirmer). Trois voies dites à Mathieu : l'API
+  Offer d'eBay (`ebay_ecriture.miser`, diffusion limitée, demande par l'eBay Partner Network : pas déposée), le lien pré-rempli,
+  Gixen pour tous (non recommandé : mot de passe d'un tiers). Vérifié dans le navigateur de son PC, NON connecté à eBay :
+  `/itm/ID?bolp=1&maxbid=N` renvoie à la connexion avec `ru=…/itm/ID?cta=placebid` (+ `maxbid=N`) ; `/bfl/placebid/ID?maxbid=N&currencyId=CAD`
+  renvoie à la connexion en gardant `maxbid` dans l'adresse de retour ; l'ancien `offer.ebay.com … MakeBid` est mort depuis 2021.
+  PAS vérifié : que le montant arrive inscrit une fois connecté (il faut son compte ; jamais de mot de passe). Rappel du 31 oct :
+  `/bfl/placebid` dans le navigateur de l'app avait planté après la connexion. LIVRÉ (p87) : pour l'ADMIN seulement, sous le bouton
+  de mise, trois essais (A app eBay, B annonce dans le navigateur de l'app, C page de mise) : `lienMisePre`, `ouvrirMisePre`,
+  `.mi-essai` ; le montant reste copié ; rien ne change pour les clients. Test : `tests/test_mise_preremplie.py`.
+  À faire après sa réponse (A, B, C ou aucun) : brancher le gagnant pour tous, ou retirer l'essai.
+- **Vendeurs : les aubaines (25 nov, 16 h 46 ; Mathieu, Sergachev SP Authentic Limited Auto Material /100 vendue 32 $ + 12,75 $ le
+  24 oct : « on aurait dû la capter » ; « les vendeurs pour lesquels les ventes bien en dessous des last sold sortent le plus
+  souvent » ; « Minting, est-ce qu'on les regarde ? »)** : dit à Mathieu : (1) notre fichier de ventes (SoldComps / TheCardAPI) n'a PAS
+  le vendeur ; seuls les encans finis suivis par le chasseur l'ont (`encans_archive.json`, 45 jours, sur le serveur : pas lisible
+  d'ici) ; (2) le rapport existe depuis le 12 nov : Admin → Outils du Radar → « Vendeurs : les aubaines » (`feuilleVendeursPerf`,
+  `Api.vendeurs_rapport`, `chances.perf_vendeurs`) ; AJOUTÉ : par vendeur, le nombre et la part d'encans finis à 70 % ou moins de la
+  valeur, port compris (`aubaines`, `sous_70`) et à moitié prix (`moitie`, `sous_50`) ; le rapport est maintenant CLASSÉ par cette
+  part (l'ordre du chasseur ne change pas). Test : `tests/test_vendeurs_perf.py`. (3) La Sergachev : dans nos ventes (item
+  198720521671), 6 ventes de la même carte : 127, 53, 86, 30,51, 32, 107 $ → médiane 69,45 $ ; `deals.prix_max` = 35,11 $ port
+  compris : 32 + 12,75 = 44,75 $ n'était PAS un deal selon sa règle des 30 % ; à 32 $ sans port (ramassage) oui, de justesse. Et le
+  24 oct le chasseur ne cherchait que les recrues des joueurs les plus demandés (vendeurs suivis : 29 oct). (4) « Minting » : aucun
+  vendeur de ce nom dans `VENDEURS_DEFAUT` ; demandé son pseudo eBay exact. À FAIRE après le push : lire le rapport avec lui.
+- **Mintink suivi + le rapport des vendeurs dit vrai (25 nov, 16 h 54 ; Mathieu, photo « Mintink Trading Cards (13997) » ; « les plus
+  gros vendeurs au Canada par volume ? » ; « être sûr de scanner tout eBay » ; « propose-moi une manière d'améliorer la méthode avec
+  les crédits qu'on a »)** : (1) `mintink` (pseudo lu sur ebay.ca/str/mintink : lien `_ssn=mintink` ; 58 000 ventes, encans) ajouté à
+  `deals.VENDEURS_DEFAUT` (groupe hockey, pas prioritaire), `VENDEURS_V = 4` (ajouté aux listes déjà réglées). (2) ERREUR DE MA PART
+  corrigée : j'avais écrit que le rapport « Vendeurs : les aubaines » couvre « tous les vendeurs vus, suivis ou non ». FAUX :
+  `chances.archiver` ne garde que les encans des vendeurs SUIVIS (`_noter_suivi`) et, pour les autres vendeurs, seulement leurs encans
+  retenus comme DEALS : leur part d'aubaines est gonflée. Le rapport les montre maintenant à part (« Pas suivis : … Part gonflée, pas
+  comparable »). Le balayage de la catégorie (`balayer`) n'archive rien. (3) Dit à Mathieu, franchement : on ne scanne PAS tout eBay.
+  Couvert : les vendeurs suivis (tous leurs encans) ; la catégorie hockey : encans de 15 $ et plus des 24 prochaines heures (2 000),
+  les 1 000 qui finissent le plus tôt à tout prix, les raretés jusqu'à 72 h, les nouvelles annonces à prix fixe. Trous : fiche sans
+  « Ice Hockey », carte sous 15 $ loin de la fin, carte sans ventes de la même carte (pas de valeur = pas de deal), plafonds (eBay
+  5 000 appels / jour pour toute l'app ; ventes ciblées : 40 / jour + 250 pour les prioritaires). Aucun classement public des vendeurs
+  eBay par volume. (4) PROPOSÉ (rien de bâti, attend son choix) : A. chaque nuit, « aubaines manquées » : depuis nos ventes du jour,
+  chaque encan fini à 70 % ou moins de la médiane de la même carte : montré avant la fin ou non, et pourquoi (jamais vu / vu sans
+  valeur / vu trop tard / trop cher avec le port) : 0 crédit ; B. UNE seule file de crédits, classée par dollars attendus par crédit
+  (écart valeur approx. − prix, taux d'aubaines mesuré du vendeur, heures restantes) : plus de crédits = plus bas dans la même file ;
+  C. archiver chaque encan du balayage qui a une valeur (tous les vendeurs) → vrai taux par vendeur et volume par vendeur → les N
+  meilleurs suivis automatiquement (N suit les crédits) ; à valider avec la règle « contenu eBay 24 h » ; D. balayage aux heures où
+  les encans finissent (soir, dimanche). Recommandé : A d'abord (admin seulement, sans risque pour le lancement), le reste après lundi.
+- **Les aubaines manquées : bâti (25 nov, 17 h 02 ; Mathieu : « la meilleure chose pour capter le plus de cartes possible à l'avenir,
+  et que ça aide SlabIQ à améliorer son modèle ; si c'est A, on fait A »)** : nouveau module `manquees.py`. (1) LE REGISTRE
+  (`chasse_vus.sqlite`, 21 jours) : `deals._juger` y note chaque annonce jugée : heure de la 1re vue, heures avant la fin, verdict le
+  plus fort (deal > photo > trop_cher > sans_ventes / comps_vieilles > ecartee / joueur / sport > fenetre), 1er moment « deal », notre
+  valeur. AUCUN contenu d'eBay gardé : la clé est une empreinte SHA-256 du numéro d'annonce (règle « rien d'eBay plus de 24 h »
+  respectée). `_juger0` dit pourquoi il sort tôt (`st["_sortie"]`). Écrit par paquets (`manquees.vider()` dans `_sauver`). (2) LE
+  RAPPORT (`aubaines_manquees.json`, aux 12 h, à la fin d'un tour, 7 minutes au plus, 0 crédit, 0 appel) : dans `base_ventes`, les
+  ventes des 10 derniers jours ; une AUBAINE = carte de 30 $ et plus vendue à `deals.prix_max(valeur)` ou moins (≈ 51 % de la valeur :
+  SA règle des 30 % ; port de la vente inconnu), valeur = `valeur_sure` des ventes de la même carte des jours d'AVANT ; le registre
+  dit : montrée (dont « à moins d'une heure de la fin »), jamais vue, vue sans valeur, trop chère sur le coup, vue trop tôt, écartée.
+  Rien avant le 1er jour entier du registre. (3) ÉCRAN : Admin → Outils du Radar → « Aubaines manquées » (`feuilleManquees`,
+  `Api.aubaines_manquees`, admin seulement) : le % montrées, les raisons, les plus grosses. Test : `tests/test_aubaines_manquees.py`.
+  (4) MESURÉ sur l'export du 24 nov (pas de registre : seulement « combien d'aubaines ») : 15 nov : 14 sur 6 172 ventes ; 16 nov : 8
+  sur 4 361 ; 17 nov : 2 sur 4 311 (les ventes arrivent avec des jours de retard). Peu d'aubaines par jour, et plusieurs sont des
+  ERREURS DE VALEUR : c'est là que la mesure aide le modèle. Deux corrigées tout de suite dans `cartes_match.py` : « Oversized » (le
+  grand format de boîte passait pour la Young Guns : Schaefer 47 $ contre 210 $) = variante exigée dans les deux sens (+ synonyme
+  « oversize ») ; « READ / SEE DESCRIPTION », « flaw » = carte abîmée. Vues, PAS corrigées : « Rookie Redemptions RED-207 » (carte
+  d'équipe prise pour un joueur « redemptions »), une PSA 10 à 28 $ contre 86 $ (Byram YG), « Draft SP-1 » McKenna, les lots à emoji
+  (Sennecke Stature /999 à 8 $ contre 43 $). Suite complète : 296 fichiers, 0 échec. À FAIRE : lire le rapport avec lui 2 jours après
+  le push ; puis B (une file de crédits), C (vendeurs par la mesure), D (heures du balayage) selon ce que les raisons montrent.

@@ -47,6 +47,7 @@ SYNONYMES = [                       # forme courte -> forme longue (dans la rech
     # que ses vraies ventes existent) : PMG = Precious Metal Gems = « Precious Gems » ; « Skybox » souvent absent du titre
     (r"\bprecious metal gems?\b(\s+pmg\b)?", "precious metal gems"), (r"\bprecious gems?\b", "precious metal gems"),
     (r"\bpmg\b", "precious metal gems"), (r"\bskybox\s+(?=metal universe\b)", ""),
+    (r"\bover[- ]?sized?\b", "oversized"),            # 25 nov 2026 : « oversize », « over-sized » : le grand format (voir PARALLELES)
 ]
 _SYN_RE = [(re.compile(a), b) for a, b in SYNONYMES]
 _RE_POE = re.compile(r"\bprogram(?:me)?s? of excellence\b|\bp\.?o\.?e\b")
@@ -62,6 +63,9 @@ PARALLELES = [
     "french", "emerald", "ruby", "bronze", "copper", "mini", "acetate", "achievements", "rookie redemption",
     "artist proof", "premier", "jumbo", "fluorescent", "galactic", "nebula", "ice",
     "checklist",                 # 31 oct 2026 : la « Young Guns Checklist » Schaefer / Misa (15 $) n'est pas sa Young Guns (222 $)
+    # 25 nov 2026 (les aubaines manquees, 1er essai sur nos ventes : une Schaefer Young Guns « Oversized » a 47 $ comptee comme
+    # une aubaine contre sa Young Guns a 210 $ ; pareil Jack Hughes, Martone) : le grand format de boite est une AUTRE carte
+    "oversized",
 ]
 _PAR_TOK = [(p, re.findall(r"[a-z0-9]+", p)[0]) for p in PARALLELES]
 # 19 nov 2026 (Mathieu, la Kucherov Allure 16-Bit « SSP » : « aucune vente trouvee », 130point en montre 8) : « SSP » et
@@ -518,7 +522,10 @@ _RE_NUM_SERIE = re.compile(r"(?<![\d/])#?\s*0*(\d{1,4})\s*/\s*0*(\d{1,4})\b|\b0*
 _RE_ABIMEE = re.compile(r"\b(creased?|creases|creasing|damaged?|dings?|dinged|bent|bend|stain(ed|s)?(?! glass)|water damage|poor( condition)?|"
                         r"scratch(ed|es)?|chipped|chipping|surface wear|edge wear|corner wear|soft corners?|"
                         r"miscut|off[- ]?cent(er|re)d?|as[- ]is|writing|written on|torn|tears?|trimmed|altered|fake|replica|"
-                        r"counterfeit|filler|low grade|abimee?|pliee?|tachee?)\b")
+                        r"counterfeit|filler|low grade|abimee?|pliee?|tachee?|"
+                        # 25 nov 2026 (les aubaines manquees, 1er essai : une Hutson Young Guns « READ DESCRIPTION » a 50 $ contre 100 $) :
+                        # le vendeur qui renvoie a sa description annonce un defaut
+                        r"(read|see|voir|lire) (the |la )?desc(ription)?|flaw(s|ed)?)\b")
 
 
 _RE_APRES_SAISON = re.compile(r"\s*(upper deck|ud\b|o-?pee|opc\b|sp\b|series|s[12]\b|tim hortons|parkhurst|mvp\b|ice\b|artifacts|"

@@ -12,6 +12,8 @@
 <link rel="icon" href="/favicon.ico?v=2" sizes="any">
 <link rel="apple-touch-icon" href="/icone.png">
 <title>SlabCoach</title>
+<link rel="preconnect" href="https://i.ebayimg.com">
+<link rel="dns-prefetch" href="https://i.ebayimg.com">
 <link rel="preload" href="/barlow-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/barlow-cond-700.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/manrope-800.woff2" as="font" type="font/woff2" crossorigin>
@@ -1229,6 +1231,23 @@ button.jb-t, a.jb-t{cursor:pointer} .jb-t.l{grid-column:span 2}
 .isl-sc{position:relative} .isl-sens{position:absolute; top:3px; right:4px; font-style:normal; font-size:9px; line-height:1}
 .isl-sens.hausse, .isl-sens.feu{color:var(--vert)} .isl-sens.baisse{color:var(--rouge)}
 .slab-u .sd-c{white-space:normal !important; display:-webkit-box; -webkit-line-clamp:2 !important; -webkit-box-orient:vertical; overflow:hidden; font-size:12px !important; line-height:1.2 !important; min-height:2.4em}
+/* 25 nov 2026 (Mathieu : « inspire-toi d'Apple iOS pour le pop-up de la notif ») : la notification d'une pastille */
+.np{position:fixed; left:8px; right:8px; top:calc(env(safe-area-inset-top) + 8px); margin:0 auto; max-width:440px; z-index:10100; box-sizing:border-box;
+  display:flex; gap:12px; align-items:flex-start; padding:13px 16px 14px 13px; border-radius:26px; color:#fff; text-align:left;
+  background:rgba(44,44,50,.74); -webkit-backdrop-filter:blur(34px) saturate(180%); backdrop-filter:blur(34px) saturate(180%);
+  border:.5px solid rgba(255,255,255,.16); box-shadow:0 18px 50px rgba(0,0,0,.5);
+  transform:translateY(-150%); opacity:0; transition:transform .52s cubic-bezier(.2,.9,.25,1.1), opacity .22s; touch-action:none; -webkit-user-select:none; user-select:none}
+.np.on{transform:none; opacity:1}
+.np-ic{flex:none; width:40px; height:40px; border-radius:10px; display:grid; place-items:center; background:rgba(255,255,255,.12); color:var(--acc)}
+.np-ic svg{width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round}
+.np.t-rouge .np-ic{color:var(--rouge)} .np.t-vert .np-ic{color:var(--vert)} .np.t-or .np-ic, .np.t-cle .np-ic{color:#E8C26A} .np.t-creux .np-ic{color:#8EC9FF} .np.t-culte .np-ic{color:#F4F2F8}
+.np-t{flex:1; min-width:0; display:flex; flex-direction:column; gap:3px}
+.np-h{display:flex; align-items:baseline; justify-content:space-between; gap:10px} .np-h b{font-size:15.5px; font-weight:700; line-height:1.25; letter-spacing:-.01em}
+.np-h small{flex:none; max-width:46%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; color:rgba(235,235,245,.6)}
+.np-t p{margin:0; font-size:15px; line-height:1.33; color:rgba(255,255,255,.9)} .np-t a{align-self:flex-start; margin-top:4px; font-size:14px; font-weight:600; color:var(--acc); text-decoration:none}
+.tag[data-np], .sd-b[data-np]{cursor:pointer}
+.mi-essai{display:flex; flex-direction:column; align-items:center; gap:6px; margin-top:10px; padding-top:10px; border-top:1px dashed var(--ligne)} .mi-essai small{color:var(--doux); font-size:12.5px} .mi-essai span{display:flex; gap:6px; flex-wrap:wrap; justify-content:center}
+@media (prefers-reduced-motion: reduce){ .np{transition:opacity .2s; transform:none} }
 .cs-f{display:flex; flex-direction:column; align-items:center; text-align:center; gap:8px; padding:6px 0 4px} .cs-f > b{font-size:18px} .cs-f > span:last-child{color:var(--doux); font-size:15px}
 .sd-cu.big{height:30px; padding:0 14px; font-size:14px; cursor:default}
 .cs-p{display:inline-flex; align-items:center; gap:6px; color:var(--doux)} .cs-p svg{width:30px; height:30px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round} .cs-p b{font:800 44px/1 var(--f-cond)}
@@ -5975,6 +5994,10 @@ html.tel-large .fen.fa .fen-img{max-height:calc(46vh / 1.12) !important}
 .vpf-m{display:flex; flex-direction:column; gap:2px; min-width:0; flex:1} .vpf-m b{font-size:14.5px; display:flex; flex-wrap:wrap; gap:4px; align-items:center; word-break:break-all} .vpf-m small{font-size:12px; color:var(--doux); line-height:1.3}
 .vpf-c{display:flex; flex-direction:column; align-items:flex-end; flex-shrink:0} .vpf-c b{font:700 19px var(--f-cond)} .vpf-c small{font-size:11px; color:var(--doux)}
 .vpf-c.vert b{color:var(--vert)} .vpf-c.rouge b{color:var(--rouge)}
+.am-haut{display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:20px; background:var(--carte); border:1px solid var(--ligne)}
+.am-haut > b{font:700 40px var(--f-cond); line-height:1} .am-haut > b.vert{color:var(--vert)} .am-haut > b.rouge{color:var(--rouge)}
+.am-haut span{display:flex; flex-direction:column; gap:3px; font-size:14.5px; font-weight:600; min-width:0} .am-haut small{font-size:12px; color:var(--doux); font-weight:400}
+#am-z .vpf-m b{word-break:normal; font-size:13.5px; line-height:1.25}
 .pq-t{display:flex; flex-direction:column; gap:3px; margin-bottom:10px} .pq-t b{font-size:15px; line-height:1.3} .pq-t small{font-size:12.5px; color:var(--doux)}
 .pq-l{display:flex; flex-direction:column; gap:6px}
 .pq-e{display:flex; gap:10px; align-items:flex-start; font-size:13.5px; line-height:1.35} .pq-e i{width:22px; height:22px; flex-shrink:0; border-radius:50%; display:grid; place-items:center; font-style:normal; font-size:12px; font-weight:700}
@@ -7354,8 +7377,33 @@ document.addEventListener('error', (e) => {
     if (i.parentNode && i.parentNode.parentNode) i.parentNode.replaceWith(sp);
     return;
   }
+  // 25 nov 2026 (Mathieu, Radar en reseau faible : des tuiles restees sans photo) : une photo qui echoue une fois (reseau lent,
+  // coupure) est redemandee une fois avant d'etre enlevee ; avant, la tuile restait vide jusqu'au prochain affichage
+  if (k === 'rm' && !i.dataset.r && /^https?:/i.test(i.currentSrc || i.src || '')) {
+    i.dataset.r = '1'; const u = i.src;
+    i.style.visibility = 'hidden'; i.addEventListener('load', () => { i.style.visibility = ''; }, {once: true});   // pas d'icone d'image brisee pendant l'attente
+    setTimeout(() => { if (i.isConnected) i.src = u + (u.includes('?') ? '&' : '?') + 'r=1'; }, 1200);
+    return;
+  }
   i.remove();
 }, true);
+// 25 nov 2026 (Mathieu : « les photos ne loadent pas assez vite ») : les photos de cartes sont en loading="lazy" ; iOS ne les
+// demande qu'au dernier moment. Ici : celles de l'ecran visible partent tout de suite (priorite haute), les autres environ
+// deux ecrans AVANT d'arriver a l'ecran. Rien d'autre ne change (memes adresses, memes tailles).
+const obsPh = ('IntersectionObserver' in window) ? new IntersectionObserver((es) => es.forEach((e) => {
+  if (!e.isIntersecting) return; e.target.loading = 'eager'; obsPh.unobserve(e.target); }), {rootMargin: '1600px 0px'}) : null;
+let _phT = 0;
+function photosVite(){
+  _phT = 0;
+  const vh = window.innerHeight || 800;
+  document.querySelectorAll('img[loading="lazy"]:not([data-pv])').forEach((im) => {
+    im.dataset.pv = '1';
+    const r = im.getBoundingClientRect();
+    if (r.width && r.bottom > -200 && r.top < vh * 1.5) { im.loading = 'eager'; if (r.top < vh) { try { im.fetchPriority = 'high'; } catch (er) {} } }
+    else if (obsPh) obsPh.observe(im);
+  });
+}
+if (obsPh && 'MutationObserver' in window) new MutationObserver(() => { if (!_phT) _phT = setTimeout(photosVite, 60); }).observe(document.documentElement, {childList: true, subtree: true});
 document.addEventListener('click', (e) => {
   const b = e.target.closest && e.target.closest('[data-act]'); if (!b) return;
   const k = b.dataset.act;
@@ -11723,6 +11771,20 @@ const devCourt = (d) => d === 'CAD' || !d ? '$' : d === 'USD' ? '$ US' : d;
 // la page de mise d'eBay (bfl/placebid) dans le navigateur de l'app demande de se connecter puis plante. Maintenant :
 // dans l'app iPhone, l'annonce s'ouvre DIRECTEMENT dans l'app eBay (deja connectee) ; sur le web, la page de l'annonce
 const lienMise = (x) => { let o = 'https://www.ebay.ca'; try { o = new URL(x.url).origin; } catch (e) {} return lienAchat(o + '/itm/' + x.item_id, 'mise'); };
+// 25 nov 2026 (Mathieu : « si tu ouvres le lien, le prix est deja rentre, tu as juste a faire bid ») : ESSAI, admin seulement.
+// Verifie ce jour-la dans un navigateur non connecte : eBay reconnait encore /itm/ID?bolp=1&maxbid=N (il renvoie a la connexion
+// avec « cta=placebid ») et /bfl/placebid/ID?maxbid=N (le montant reste dans l'adresse de retour). PAS verifie : que le montant
+// arrive inscrit une fois connecte (il faut son compte). Le 31 oct, /bfl/placebid dans le navigateur de l'app avait plante
+// apres la connexion. Trois essais sous le bouton : A l'app eBay, B l'annonce dans le navigateur de l'app, C la page de mise.
+// Le montant est toujours copie : si rien n'est inscrit, on colle comme avant.
+const lienMisePre = (x, v, sorte) => { let o = 'https://www.ebay.ca'; try { o = new URL(x.url).origin; } catch (e) {}
+  const m = String(Math.floor((+v || 0) * 100) / 100), id = encodeURIComponent(x.item_id);
+  return lienAchat(sorte === 'page' ? `${o}/bfl/placebid/${id}?maxbid=${m}&currencyId=${encodeURIComponent(x.devise || 'CAD')}` : `${o}/itm/${id}?bolp=1&maxbid=${m}`, 'mise'); };
+function ouvrirMisePre(x, v, essai){
+  const u = lienMisePre(x, v, essai === 'C' ? 'page' : 'itm'), B = NATIF && PLUG().Browser;
+  if (essai === 'A' && NATIF && ouvrirEbayApp(u)) return;
+  if (B) B.open({url: u, presentationStyle: 'popover', toolbarColor: '#0B0B0E'}); else window.open(u, '_blank', 'noopener');
+}
 function ouvrirMiseEbay(x){
   if (!NATIF) return false;
   const web = lienMise(x);
@@ -11758,6 +11820,7 @@ async function feuilleMiser(id, lot){
       <div class="mi-av" id="mi-av"></div>
       <a class="btn mi-go" id="mi-go" href="${esc(lienMise(x))}" target="_blank" rel="noopener"></a>
       <div class="sous" style="text-align:center">${tt('Le montant est copié. Sur eBay : « Enchérir », colle-le dans ton enchère max et confirme.', 'The amount is copied. On eBay: “Place bid”, paste it as your max bid and confirm.')}</div>
+      ${S.forfait && S.forfait.admin ? `<div class="mi-essai"><small>${tt('Essai (admin) : montant déjà inscrit ?', 'Test (admin): amount already filled in?')}</small><span>${(NATIF ? ['A', 'B', 'C'] : ['B', 'C']).map(k => `<button class="btn ghost petit" data-essai="${k}">${k} · ${k === 'A' ? tt('app eBay', 'eBay app') : k === 'B' ? tt('annonce', 'listing') : tt('page de mise', 'bid page')}</button>`).join('')}</span></div>` : ''}
       ${lot ? `<div class="mi-nav"><button class="btn ghost petit" id="mi-passe">${tt('Passer', 'Skip')}</button>${M.i + 1 < Q.length ? `<button class="btn ghost petit" id="mi-suiv">${tt('Suivant ›', 'Next ›')}</button>` : ''}</div>` : ''}`);
     const i = $('#mi-v'), go = $('#mi-go'), av = $('#mi-av');
     const maj = () => { const v = nb(i.value) || 0; x._m = v;
@@ -11770,6 +11833,9 @@ async function feuilleMiser(id, lot){
       if (ouvrirMiseEbay(x)) { e.preventDefault(); e.stopPropagation(); }
       if (v > 0 && x.taux) API.watch_mise_max(x.item_id, Math.round(v * x.taux * 100) / 100, v, x.devise, true).catch(() => {});   // ta mise devient ta mise max (alertes), dans la devise de l'annonce
       toast(tt('Montant copié : colle-le sur eBay', 'Amount copied: paste it on eBay'), 2500); };
+    $$('[data-essai]').forEach(bt => { bt.onclick = () => { const v = nb(i.value) || 0; if (!v) { toast(tt('Entre un montant', 'Enter an amount')); return; }
+      copier(String(Math.floor(v * 100) / 100)); vibrer(); M.envoye = true; M.faits++; ouvrirMisePre(x, v, bt.dataset.essai);
+      toast(tt(`Essai ${bt.dataset.essai} : montant copié au cas où`, `Test ${bt.dataset.essai}: amount copied just in case`), 2500); }; });
     const p = $('#mi-passe'); if (p) p.onclick = () => { M.i++; etape(); };
     const sv = $('#mi-suiv'); if (sv) sv.onclick = () => { M.i++; etape(); };
   };
@@ -11978,7 +12044,8 @@ const IC_TROPH = '<svg viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H
 // 21 nov 2026 (Mathieu : « on fire, in a slump, buzz, etc. : les icones doivent toutes etre dans le meme format et style que
 // celui ecrit Key, un par-dessus l'autre, comme des badges ») : UNE seule forme de badge sur la photo du slab (une icone au
 // trait + un mot, la meme hauteur, le meme fond), empiles en haut a gauche. La couleur dit le sens.
-const IC_BADGE = {feu: '<path d="M12 3c.8 3.6 4.6 5.2 4.6 9.6a4.6 4.6 0 0 1-9.2 0c0-1.8.8-3.1 1.9-4.1.3 1.6 1.1 2.4 1.9 2.400C11.3 8.5 10.6 6 12 3z"/>',
+// 25 nov 2026 (Mathieu, Bedard opere : « il devrait avoir le badge injured ») : croix = « Blessé » (l'etat dure tant qu'il est absent)
+const IC_BADGE = {croix: '<rect x="4.5" y="4.5" width="15" height="15" rx="4"/><path d="M12 8.5v7M8.5 12h7"/>', moins: '<circle cx="12" cy="12" r="8"/><path d="M8.5 12h7"/>', feu: '<path d="M12 3c.8 3.6 4.6 5.2 4.6 9.6a4.6 4.6 0 0 1-9.2 0c0-1.8.8-3.1 1.9-4.1.3 1.6 1.1 2.4 1.9 2.400C11.3 8.5 10.6 6 12 3z"/>',
   creux: '<path d="M3 7l6 6 4-4 8 8"/><path d="M21 12v5h-5"/>', hausse: '<path d="M3 17l6-6 4 4 8-8"/><path d="M21 12V7h-5"/>',
   buzz: '<path d="M13 3 5 13.5h6L10 21l8-10.500h-6z"/>', etoile: '<path d="M12 3.5l2.5 5.1 5.6.800-4 3.9 1 5.6-5.1-2.7-5 2.7.900-5.6-4-3.9 5.6-.800z"/>',
   echange: '<path d="M4 8h14l-3-3M20 16H6l3 3"/>', medaille: '<circle cx="12" cy="9" r="5"/><path d="M9 13.5 7.5 21l4.5-2.5 4.5 2.5-1.5-7.5"/>',
@@ -11990,17 +12057,95 @@ function pastillesCS(x, est){
   const c = x.culte, se = x.series; if (!c && !se) return est && est.includes('sd-b') ? `<span class="sd-cs">${est}</span>` : est || '';
   return `<span class="sd-cs">${est || ''}${c ? badgeSlab(c.cle ? tt('Clé', 'Key') : tt('Culte', 'Iconic'), c.cle ? 'cle' : 'culte', c.cle ? 'etoile' : 'gemme', `data-cu="${esc(c.set)}" data-cu-cle="${c.cle ? 1 : ''}"`) : ''}${se ? badgeSlab(se.p + ' %', se.ton, 'trophee', `data-se="${esc(JSON.stringify(se))}"`) : ''}</span>`;
 }
+// 25 nov 2026 (Mathieu : « quand tu cliques sur la pastille t'as l'explication ; inspire-toi d'Apple iOS pour le pop-up de la
+// notif ») : UNE seule fenetre pour toutes les pastilles d'une annonce : une notification a la iOS (verre depoli, l'icone a
+// gauche, le titre en gras, le texte dessous) qui descend du haut de l'ecran. Elle ne bloque rien : un toucher ailleurs, un
+// glissement vers le haut ou 8 secondes la referment.
+let _npT = 0;
+function fermerNotif(){
+  clearTimeout(_npT); const n = $('#np'); if (!n) return;
+  n.classList.remove('on'); setTimeout(() => { if (n.isConnected && !n.classList.contains('on')) n.remove(); }, 320);
+}
+function notifPastille(o){
+  let n = $('#np'); if (n) n.remove();
+  n = document.createElement('div'); n.id = 'np'; n.className = 'np t-' + (o.ton || 'acc'); n.setAttribute('role', 'status');
+  const rendre = (x) => { n.innerHTML = `<span class="np-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_BADGE[x.ic] || IC_BADGE.etoile}</svg></span>
+    <div class="np-t"><div class="np-h"><b>${esc(x.titre || '')}</b>${x.qui ? `<small>${esc(x.qui)}</small>` : ''}</div>
+      <p>${esc(x.texte || '')}</p>${x.lien ? `<a href="${esc(urlSure(x.lien))}" target="_blank" rel="noopener">${tt('Lire la nouvelle', 'Read the story')} ›</a>` : ''}</div>`; };
+  rendre(o); document.body.appendChild(n);
+  requestAnimationFrame(() => requestAnimationFrame(() => n.classList.add('on')));
+  let y0 = null;
+  n.addEventListener('pointerdown', (e) => { y0 = e.clientY; clearTimeout(_npT); });
+  n.addEventListener('pointermove', (e) => { if (y0 != null && e.clientY - y0 < -18) { y0 = null; fermerNotif(); } });
+  n.addEventListener('pointerup', (e) => { if (y0 != null && !e.target.closest('a')) fermerNotif(); y0 = null; });
+  clearTimeout(_npT); _npT = setTimeout(fermerNotif, o.lien ? 10000 : 8000);
+  return {maj: (x) => { if (n.isConnected) rendre({...o, ...x}); }};
+}
+document.addEventListener('pointerdown', (e) => { const n = $('#np'); if (n && !n.contains(e.target) && !(e.target.closest && e.target.closest('[data-np],[data-cu],[data-se]'))) fermerNotif(); }, true);
+// ce que veut dire chaque pastille : [titre, ton, icone, texte]. Des faits, jamais une promesse.
+const NP_TXT = () => ({
+  blesse: [tt('Mauvaise nouvelle · Blessé', 'Bad news · Injured'), 'rouge', 'croix', tt('Il est blessé et ne joue pas en ce moment.', 'He is injured and not playing right now.')],
+  absent: [tt('Mauvaise nouvelle · Absent', 'Bad news · Out'), 'rouge', 'alerte', tt('Il rate les matchs de son club en ce moment.', 'He is missing his club’s games right now.')],
+  mauvaise: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge', 'alerte', tt('Une mauvaise nouvelle récente : blessure, suspension, ballottage ou renvoi.', 'Recent bad news: injury, suspension, waivers or a demotion.')],
+  en_feu: [tt('En feu', 'On fire'), 'rouge', 'feu', tt('Une des meilleures semaines de la ligue.', 'One of the best weeks in the league.')],
+  en_hausse: [tt('En hausse', 'Rising'), 'vert', 'hausse', tt('Son rythme de points monte cette saison.', 'His scoring pace is climbing this season.')],
+  buzz: ['Buzz', 'acc', 'buzz', tt('On parle beaucoup de lui ces jours-ci.', 'He is getting a lot of attention these days.')],
+  legende: [tt('Légende', 'Legend'), 'or', 'medaille', tt('Sa place dans l’histoire du hockey est faite.', 'His place in hockey history is secure.')],
+  recrue: [tt('Recrue', 'Rookie'), 'or', 'etoile', tt('C’est sa saison recrue : ses cartes de cette année sont ses cartes recrues.', 'This is his rookie season: this year’s cards are his rookie cards.')],
+  en_creux: [tt('En creux', 'In a slump'), 'creux', 'creux', tt('Un bon jeune joueur nettement sous son rythme habituel.', 'A good young player well below his usual pace.')],
+  rebond: [tt('Sort de son creux', 'Bouncing back'), 'vert', 'hausse', tt('Ses 5 derniers matchs sont revenus à son rythme d’avant.', 'His last 5 games are back to his earlier pace.')],
+  honneur: [tt('Honoré', 'Honored'), 'or', 'medaille', tt('Un honneur récent : trophée, Temple de la renommée ou étoile.', 'A recent honour: trophy, Hall of Fame or star.')],
+  echange_baisse: [tt('Échangé · baisse', 'Traded · down'), 'rouge', 'echange', tt('Il vient de changer d’équipe. Ses cartes baissent souvent après ce genre d’échange.', 'He just changed teams. His cards often drop after this kind of trade.')],
+  echange_hausse: [tt('Échangé · hausse', 'Traded · up'), 'vert', 'echange', tt('Il vient de changer d’équipe. Ses cartes montent souvent après ce genre d’échange.', 'He just changed teams. His cards often rise after this kind of trade.')],
+  echange: [tt('Nouvelle équipe', 'New team'), 'acc', 'echange', tt('Il vient de changer d’équipe.', 'He just changed teams.')],
+  occasion: [tt('Bonne occasion', 'Buy low'), 'vert', 'bas', tt('Un bon joueur qui traverse une mauvaise passe.', 'A good player going through a rough patch.')],
+  numerique: [tt('Carte numérique ?', 'Digital card?'), 'rouge', 'alerte', tt('Le titre parle d’une carte numérique (digital, NFT, code). Vérifie que c’est une vraie carte.', 'The title mentions a digital card (digital, NFT, code). Check that it is a physical card.')],
+  verifier: [tt('Vérifie le prix', 'Check the price'), 'or', 'alerte', tt('Plus chère que d’habitude, ou produit tout neuf : les prix baissent souvent ensuite.', 'Pricier than usual, or a brand-new product: prices often drop afterwards.')],
+  marche_bas: [tt('Marché bas', 'Low market'), 'vert', 'bas', tt('Ses cartes clés se vendent sous leur niveau habituel en ce moment.', 'His key cards are selling below their usual level right now.')],
+  pour_joueur: [tt('Ton joueur', 'Your player'), 'acc', 'moi', tt('Un des joueurs que tu suis.', 'One of the players you follow.')],
+  pour_type: [tt('Pour toi', 'For you'), 'acc', 'moi', tt('Une sorte de carte que tu collectionnes.', 'A kind of card you collect.')]});
+// les faits du joueur qui precisent la pastille (API.tendance_joueur : des donnees publiques, jamais un prix)
+function npDetail(k, q, gen){
+  if (!q) return null;
+  const ev = (sens, types) => (q.nouvelles || []).find(e => e && e.titre && (sens == null || e.sens === sens) && (!types || types.includes(e.type)));
+  if (k === 'blesse' && q.blessure && q.blessure.titre) { const b = q.blessure;
+    return {texte: '« ' + b.titre + ' »' + (b.explicite && b.jusqu ? ' ' + tt('Retour prévu vers le ', 'Expected back around ') + dateCourte(b.jusqu) + '.' : ''), lien: b.lien}; }
+  if ((k === 'absent' || k === 'blesse') && q.absent && q.absent.rates) { const a = q.absent;
+    return {texte: tt(`Il a raté les ${a.rates} derniers matchs de son club${a.dernier ? ' (dernier match : ' + dateCourte(a.dernier) + ')' : ''}.${k === 'absent' ? ' Aucune manchette ne dit pourquoi.' : ''}`,
+      `He missed his club’s last ${a.rates} games${a.dernier ? ' (last game: ' + dateCourte(a.dernier) + ')' : ''}.${k === 'absent' ? ' No headline says why.' : ''}`)}; }
+  if (k === 'mauvaise') { const e = ev(-1); if (e) return {texte: '« ' + e.titre + ' »', lien: e.lien}; }
+  if (k === 'honneur') { const e = ev(1, ['temple', 'honneur', 'trophee']); if (e) return {texte: '« ' + e.titre + ' »', lien: e.lien}; }
+  if (k === 'en_feu' && q.semaine && q.semaine.mj) return {texte: tt(`${q.semaine.pts} points en ${q.semaine.mj} matchs cette semaine.`, `${q.semaine.pts} points in ${q.semaine.mj} games this week.`)};
+  if ((k === 'en_hausse' || k === 'en_creux') && q.saison && q.saison.ecart_pct != null) { const p = q.saison.ecart_pct;
+    return {texte: gen + ' ' + tt(`Son rythme : ${p > 0 ? '+' : '−'}${Math.abs(p)} % par rapport à ses saisons d’avant.`, `His pace: ${p > 0 ? '+' : '−'}${Math.abs(p)}% vs his earlier seasons.`)}; }
+  if (k === 'buzz' && q.buzz && q.buzz.pct > 0) return {texte: gen + ' ' + tt(`Ses visites Wikipédia : +${q.buzz.pct} %.`, `His Wikipedia views: +${q.buzz.pct}%.`)};
+  if (k === 'legende' && q.legende) { const l = q.legende, f = [];
+    if (l.temple) f.push(tt('Temple de la renommée', 'Hall of Fame')); if (l.top100) f.push(tt('Top 100 de la LNH', 'NHL Top 100'));
+    if (l.coupes) f.push(l.coupes + ' ' + tt(l.coupes > 1 ? 'Coupes Stanley' : 'Coupe Stanley', l.coupes > 1 ? 'Stanley Cups' : 'Stanley Cup'));
+    if (l.trophees) f.push(l.trophees + ' ' + tt(l.trophees > 1 ? 'trophées' : 'trophée', l.trophees > 1 ? 'trophies' : 'trophy'));
+    if (f.length) return {texte: f.join(' · ') + '.'}; }
+  if (k.startsWith('echange') && q.echange && q.echange.de_nom && q.echange.vers_nom) return {texte: q.echange.de_nom + ' → ' + q.echange.vers_nom + '. ' + gen.replace(/^[^.]+\.\s*/, '')};
+  return null;
+}
+const _NPQ = new Map();
 document.addEventListener('click', (e) => {
-  const b = e.target.closest && e.target.closest('[data-cu],[data-se]'); if (!b) return;
+  const b = e.target.closest && e.target.closest('[data-np],[data-cu],[data-se]'); if (!b) return;
   e.preventDefault(); e.stopPropagation(); vibrer();
-  if (b.dataset.cu) { ouvrirFeuille(`<div class="cs-f"><span class="sd-b big b-${b.dataset.cuCle ? 'cle' : 'culte'}"><svg viewBox="0 0 24 24" aria-hidden="true">${IC_BADGE[b.dataset.cuCle ? 'etoile' : 'gemme']}</svg><span>${b.dataset.cuCle ? tt('Carte clé', 'Key card') : tt('Set culte', 'Iconic set')}</span></span>
-      <b>${esc(b.dataset.cu)}</b><span>${b.dataset.cuCle ? tt('LA carte que les collectionneurs de ce set veulent.', 'THE card collectors of this set want.') : tt('Un des sets les plus collectionnés du hockey.', 'One of hockey’s most collected sets.')}</span></div>`); return; }
-  let se = {}; try { se = JSON.parse(b.dataset.se); } catch (er) {}
-  const CONS = {mai: tt('Vendre en mai (le pic)', 'Sell in May (the peak)'), mars: tt('Vendre avant mars', 'Sell before March'), suivre: tt('À suivre', 'Keep watching'),
-    maintenant: tt('En séries : vendre maintenant', 'In the playoffs: sell now'), trop_tard: tt('Hors séries : les prix baissent', 'Out of the playoffs: prices drop')};
-  ouvrirFeuille(`<div class="cs-f"><span class="cs-p t-${esc(se.ton || '')}">${IC_TROPH}<b>${se.p} %</b></span>
-    <b>${tt('Chance de séries', 'Playoff chance')} · ${esc(se.eq || '')}</b>
-    <span class="cs-c t-${esc(se.ton || '')}">${CONS[se.conseil] || ''}${se.effet != null ? ` · ${se.effet > 0 ? '+' : ''}${se.effet} % ${tt('à la revente', 'at resale')}` : ''}</span></div>`);
+  if (b.dataset.cu) { const cle = !!b.dataset.cuCle;
+    notifPastille({ic: cle ? 'etoile' : 'gemme', ton: cle ? 'cle' : 'culte', titre: cle ? tt('Carte clé', 'Key card') : tt('Set culte', 'Iconic set'), qui: b.dataset.cu,
+      texte: cle ? tt('LA carte que les collectionneurs de ce set veulent.', 'THE card collectors of this set want.') : tt('Un des sets les plus collectionnés du hockey.', 'One of hockey’s most collected sets.')}); return; }
+  if (b.dataset.se) { let se = {}; try { se = JSON.parse(b.dataset.se); } catch (er) {}
+    const CONS = {mai: tt('Vendre en mai (le pic)', 'Sell in May (the peak)'), mars: tt('Vendre avant mars', 'Sell before March'), suivre: tt('À suivre', 'Keep watching'),
+      maintenant: tt('En séries : vendre maintenant', 'In the playoffs: sell now'), trop_tard: tt('Hors séries : les prix baissent', 'Out of the playoffs: prices drop')};
+    notifPastille({ic: 'trophee', ton: se.ton || 'acc', titre: tt('Chance de séries', 'Playoff chance') + ' · ' + se.p + ' %', qui: se.eq || '',
+      texte: (CONS[se.conseil] || '') + (se.effet != null ? ` · ${se.effet > 0 ? '+' : ''}${se.effet} % ${tt('à la revente', 'at resale')}` : '')}); return; }
+  const k = b.dataset.np, d = NP_TXT()[k]; if (!d) return;
+  const qui = b.dataset.npJ || '', titre = k === 'marche_bas' && b.dataset.npL ? b.dataset.npL : d[0];
+  const nt = notifPastille({ic: d[2], ton: d[1], titre, qui, texte: d[3]});
+  if (!qui || ['numerique', 'verifier', 'marche_bas', 'pour_joueur', 'pour_type', 'recrue', 'rebond', 'occasion'].includes(k)) return;
+  const c = _NPQ.get(qui), frais = c && Date.now() - c.t < 600000;
+  (frais ? Promise.resolve(c.q) : API.tendance_joueur(qui).then(r => { const q = (r && r.pourquoi) || null; _NPQ.set(qui, {t: Date.now(), q}); return q; }))
+    .then(q => { const x = npDetail(k, q, d[3]); if (x) nt.maj(x); }).catch(() => {});
 }, true);
 function tuileDeal(x){
   // 30 oct 2026 (Mathieu : « l'annonce du deal : le nom du joueur en haut, son % sous la mediane des dernieres ventes et le
@@ -12751,7 +12896,7 @@ const attrsAnnonce = (x) => x && x.item_id ? `data-annonce="${esc(x.item_id)}" d
 document.addEventListener('click', (e) => {
   const a = e.target.closest('[data-annonce]'); if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return;
   if (a.dataset.glisse) { e.preventDefault(); e.stopPropagation(); return; }      // 31 oct : un glissement n'ouvre pas la fiche
-  if (e.target.closest('[data-masquer], [data-refus], [data-bonne], [data-comps], [data-pasdeal], [data-watch], [data-wmax], [data-wmiser], [data-sc], [data-cu], [data-se], .w-go, .x')) return;
+  if (e.target.closest('[data-masquer], [data-refus], [data-bonne], [data-comps], [data-pasdeal], [data-watch], [data-wmax], [data-wmiser], [data-sc], [data-cu], [data-se], [data-np], .w-go, .x')) return;
   e.preventDefault(); e.stopPropagation();
   S.fenOrigine = a.getBoundingClientRect();          // 29 oct : la fiche s'ouvre depuis l'annonce touchee
   ouvrirAnnonce({item_id:a.dataset.annonce, titre:a.dataset.titre, photo:a.dataset.photo, total:nb(a.dataset.total), url:a.dataset.url, q:a.dataset.q || null});
@@ -13041,12 +13186,12 @@ async function ouvrirAnnonce(base){
   const proPils = (a, encan) => {
     const sp = scoreP, c = (sp && sp.carte) || {};
     const alerteN = estNumerique(a.titre || base.titre) ? [`<span class="capsule rouge">${tt('Carte numérique ? Vérifie que c’est une vraie carte avant de miser', 'Digital card? Check it’s a real card before bidding')}</span>`] : [];
-    const L = {en_feu: [tt('En feu', 'On fire'), 'rouge'], echange_baisse: [tt('Échangé · baisse', 'Traded · down'), 'rouge'], echange_hausse: [tt('Échangé · hausse', 'Traded · up'), 'vert'], echange: [tt('Nouvelle équipe', 'New team'), 'acc'], honneur: [tt('Honoré', 'Honored'), 'or'], occasion: [tt('Bonne occasion', 'Buy low'), 'vert'], mauvaise: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], en_hausse: [tt('En hausse', 'Rising'), 'vert'], legende: [tt('Légende', 'Legend'), 'or'], recrue: [tt('Recrue', 'Rookie'), 'or p-rc'], buzz: ['Buzz', 'acc'], actu: [tt('Dans l’actu', 'In the news'), 'acc'], en_creux: [tt('En creux', 'In a slump'), 'p-creux'], rebond: [tt('Sort de son creux', 'Bouncing back'), 'vert']};
+    const L = {blesse: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], absent: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], en_feu: [tt('En feu', 'On fire'), 'rouge'], echange_baisse: [tt('Échangé · baisse', 'Traded · down'), 'rouge'], echange_hausse: [tt('Échangé · hausse', 'Traded · up'), 'vert'], echange: [tt('Nouvelle équipe', 'New team'), 'acc'], honneur: [tt('Honoré', 'Honored'), 'or'], occasion: [tt('Bonne occasion', 'Buy low'), 'vert'], mauvaise: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], en_hausse: [tt('En hausse', 'Rising'), 'vert'], legende: [tt('Légende', 'Legend'), 'or'], recrue: [tt('Recrue', 'Rookie'), 'or p-rc'], buzz: ['Buzz', 'acc'], actu: [tt('Dans l’actu', 'In the news'), 'acc'], en_creux: [tt('En creux', 'In a slump'), 'p-creux'], rebond: [tt('Sort de son creux', 'Bouncing back'), 'vert']};
     const pils = [], ri = raisonIQ(sp, base.item_id);
     if (ri === 'marche_bas' || (sp && (sp.pastilles || []).includes('marche_bas'))) pils.push(tag(libMB((sp.marche || {}).ecart_pct), 'vert'));
     else if (ri && RAISONS_IQ()[ri]) pils.push(tag(RAISONS_IQ()[ri][0], RAISONS_IQ()[ri][1]));
     if (c.type && c.type.niveau === 'ultra') pils.push(tag(tt('Ultra recherchée', 'Ultra sought-after'), 'or'));
-    if (sp) (sp.pastilles || []).filter(k => L[k] && !(ri === 'chaud' && ['en_feu', 'en_hausse', 'buzz'].includes(k))).forEach(k => pils.push(tag(L[k][0], L[k][1])));
+    if (sp) (sp.pastilles || []).filter(k => L[k] && !(ri === 'chaud' && ['en_feu', 'en_hausse', 'buzz'].includes(k))).forEach(k => pils.push(tag(L[k][0], L[k][1]).replace('<span class="tag', `<span role="button" tabindex="0" data-np="${esc(k)}" data-np-j="${esc(sp.joueur || '')}" class="tag`)));
     if (sp && sp.semaine && sp.semaine.mj) pils.push(tag(`${sp.semaine.pts} pts · ${sp.semaine.mj} ${tt('matchs', 'games')} ${tt('cette semaine', 'this week')}`));
     if (c.auto && c.patch) pils.push(tag(tt('Auto-patch', 'Auto-patch'), 'acc')); else { if (c.auto) pils.push(tag('Auto', 'acc')); if (c.patch) pils.push(tag(tt('Patch', 'Patch'), 'acc')); }
     if (c.rc && !(sp && (sp.pastilles || []).includes('recrue'))) pils.push(tag(tt('Recrue (RC)', 'Rookie (RC)')));
@@ -14338,7 +14483,7 @@ async function remplirIQ(el, q, r){
   if (!el.isConnected || !sp || !sp.ok || sp.score == null) return;
   _SC[q + '|'] = sp;
   const qual = sp.score >= 80 ? tt('Très recherchée', 'Highly sought') : sp.score >= 65 ? tt('Recherchée', 'Sought after') : sp.score >= 50 ? tt('Correcte', 'Decent') : tt('Peu recherchée', 'Low demand');
-  const L = {en_feu: [tt('En feu', 'On fire'), 'rouge'], echange_baisse: [tt('Échangé · baisse', 'Traded · down'), 'rouge'], echange_hausse: [tt('Échangé · hausse', 'Traded · up'), 'vert'], echange: [tt('Nouvelle équipe', 'New team'), 'acc'], honneur: [tt('Honoré', 'Honored'), 'or'], occasion: [tt('Bonne occasion', 'Buy low'), 'vert'], mauvaise: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], en_hausse: [tt('En hausse', 'Rising'), 'vert'], legende: [tt('Légende', 'Legend'), 'or'], recrue: [tt('Recrue', 'Rookie'), 'or p-rc'], buzz: ['Buzz', 'acc'], en_creux: [tt('En creux', 'In a slump'), 'p-creux'], rebond: [tt('Sort de son creux', 'Bouncing back'), 'vert']};
+  const L = {blesse: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], absent: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], en_feu: [tt('En feu', 'On fire'), 'rouge'], echange_baisse: [tt('Échangé · baisse', 'Traded · down'), 'rouge'], echange_hausse: [tt('Échangé · hausse', 'Traded · up'), 'vert'], echange: [tt('Nouvelle équipe', 'New team'), 'acc'], honneur: [tt('Honoré', 'Honored'), 'or'], occasion: [tt('Bonne occasion', 'Buy low'), 'vert'], mauvaise: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], en_hausse: [tt('En hausse', 'Rising'), 'vert'], legende: [tt('Légende', 'Legend'), 'or'], recrue: [tt('Recrue', 'Rookie'), 'or p-rc'], buzz: ['Buzz', 'acc'], en_creux: [tt('En creux', 'In a slump'), 'p-creux'], rebond: [tt('Sort de son creux', 'Bouncing back'), 'vert']};
   const pils = (sp.pastilles || []).filter(k => L[k]).slice(0, 3).map(k => tag(L[k][0], L[k][1])).join('');
   if (el.classList.contains('vj-iq')) { el.innerHTML = `<button class="vj-iqb" id="v-iq-b"><small>SlabIQ</small><b class="${famCl(lettre(sp.score))}">${lettre(sp.score)}</b><span>${esc(qual)}</span></button>`;
     $('#v-iq-b', el).onclick = () => { vibrer(); pourquoiScore({score: sp.score, titre: q}); }; return; }
@@ -14555,7 +14700,7 @@ async function remplirMoment(z){
   if (!z) return;
   const r = await API.joueurs_du_moment().catch(() => null);
   if (!z.isConnected || !r || !(r.joueurs || []).length) return;
-  const P = {en_feu: [tt('En feu', 'On fire'), 'rouge'], echange_baisse: [tt('Échangé · baisse', 'Traded · down'), 'rouge'], echange_hausse: [tt('Échangé · hausse', 'Traded · up'), 'vert'], echange: [tt('Nouvelle équipe', 'New team'), 'acc'], honneur: [tt('Honoré', 'Honored'), 'or'], occasion: [tt('Bonne occasion', 'Buy low'), 'vert'], mauvaise: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], rebond: [tt('Sort du creux', 'Bouncing back'), 'vert'], recrue: [tt('Recrue', 'Rookie'), 'or p-rc'], en_creux: [tt('En creux', 'In a slump'), 'p-creux']};
+  const P = {blesse: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], absent: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], en_feu: [tt('En feu', 'On fire'), 'rouge'], echange_baisse: [tt('Échangé · baisse', 'Traded · down'), 'rouge'], echange_hausse: [tt('Échangé · hausse', 'Traded · up'), 'vert'], echange: [tt('Nouvelle équipe', 'New team'), 'acc'], honneur: [tt('Honoré', 'Honored'), 'or'], occasion: [tt('Bonne occasion', 'Buy low'), 'vert'], mauvaise: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], rebond: [tt('Sort du creux', 'Bouncing back'), 'vert'], recrue: [tt('Recrue', 'Rookie'), 'or p-rc'], en_creux: [tt('En creux', 'In a slump'), 'p-creux']};
   // 11 nov 2026 (Mathieu : « la section des joueurs : le meme format que le reste ») : le meme titre de section que l'accueil
   z.innerHTML = `<div class="acc-sec" style="--c:#FF8A80"><span>${tt('Joueurs du moment', 'Players to watch')}</span><a href="#iq">${tt('Tendances', 'Trending')} ›</a></div>
     <div class="am-l am-auto">${r.joueurs.map(j => `<a class="am-j" data-jpop="${esc(j.nom)}" href="#joueur/${encodeURIComponent(j.nom)}"><span class="vig-j" data-vj="${esc(j.nom)}">${SVG_CARTE}</span>
@@ -14797,7 +14942,7 @@ async function vueTendancesIQ(arg){
   const actuTxt = (a) => !a ? '' : typeof a === 'string' ? a : (a.titre || a.texte || a.resume || '');
   const carte = (x) => {
     const cr = Object.entries(x.criteres || {}).filter(([k]) => CRIT_IQ()[k]).sort((a, b) => b[1] - a[1]).slice(0, 4);
-    const P = {en_feu: [tt('En feu', 'On fire'), 'rouge'], echange_baisse: [tt('Échangé · baisse', 'Traded · down'), 'rouge'], echange_hausse: [tt('Échangé · hausse', 'Traded · up'), 'vert'], echange: [tt('Nouvelle équipe', 'New team'), 'acc'], honneur: [tt('Honoré', 'Honored'), 'or'], occasion: [tt('Bonne occasion', 'Buy low'), 'vert'], mauvaise: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], rebond: [tt('Sort du creux', 'Bouncing back'), 'vert'], recrue: [tt('Recrue', 'Rookie'), 'or p-rc'], en_hausse: [tt('En hausse', 'Rising'), 'vert'],
+    const P = {blesse: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], absent: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], en_feu: [tt('En feu', 'On fire'), 'rouge'], echange_baisse: [tt('Échangé · baisse', 'Traded · down'), 'rouge'], echange_hausse: [tt('Échangé · hausse', 'Traded · up'), 'vert'], echange: [tt('Nouvelle équipe', 'New team'), 'acc'], honneur: [tt('Honoré', 'Honored'), 'or'], occasion: [tt('Bonne occasion', 'Buy low'), 'vert'], mauvaise: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], rebond: [tt('Sort du creux', 'Bouncing back'), 'vert'], recrue: [tt('Recrue', 'Rookie'), 'or p-rc'], en_hausse: [tt('En hausse', 'Rising'), 'vert'],
       buzz: ['Buzz', 'acc'], en_creux: [tt('En creux', 'In a slump'), 'p-creux'], legende: [tt('Légende', 'Legend'), 'or'], actu: [tt('Dans l’actu', 'In the news'), 'acc'],
       marche_bas: [libMB((x.marche || {}).ecart_pct), 'vert']};
     const ligne = x.semaine ? `${x.semaine.pts} pts · ${x.semaine.b || 0} ${tt('buts', 'goals')} · ${x.semaine.mj} ${tt('matchs', 'games')} ${tt('cette semaine', 'this week')}`
@@ -14928,6 +15073,8 @@ const MAJ_APP = () => [
   // 20 nov 2026 (Mathieu : « important de mettre cet onglet a jour apres chaque grosse mise a jour ») : ce qui change pour la
   // personne, en mots simples ; jamais un detail technique
   {n: 244, le: '2026-11-23', points: [
+    ['deals', tt('Touche une pastille : elle s’explique', 'Tap a badge: it explains itself'), tt('Sur une annonce, touche « Mauvaise nouvelle », « Légende », « En creux » ou n’importe quelle pastille : une notification dit pourquoi. Un joueur blessé, ou qui rate les matchs de son club, est maintenant signalé.', 'On a listing, tap “Bad news”, “Legend”, “In a slump” or any badge: a notification tells you why. A player who is injured, or missing his club’s games, is now flagged.')],
+    ['photo', tt('Des photos plus rapides', 'Faster photos'), tt('Dans le Radar, les photos se chargent avant d’arriver à l’écran, et une photo qui échoue est redemandée.', 'In the Radar, photos load before they reach the screen, and a failed photo is requested again.')],
     ['photo', tt('Cartes couchées : debout dans le slab', 'Landscape cards: upright in the slab'), tt('Une carte horizontale se tourne toute seule pour remplir son slab. Et dans « Changer la photo », deux photos choisies d’un coup deviennent le devant et le dos.', 'A horizontal card now turns by itself to fill its slab. And in “Change the photo”, two photos picked at once become the front and the back.')],
     ['reglages', tt('Petits iPhone : tout tient', 'Small iPhones: everything fits'), tt('Sur un petit écran, le Profil range ses dernières lignes sous « Plus ». Vendre et les Notifications tiennent sans défiler.', 'On a small screen, Profile tucks its last rows under “More”. Sell and Notifications fit without scrolling.')],
     ['photo', tt('Lots : trois cartes à la fois', 'Batches: three cards at a time'), tt('Un lot se lit trois cartes à la fois, au lieu de deux.', 'A batch now reads three cards at a time, instead of two.')],
@@ -17293,7 +17440,7 @@ async function chargerInventaire(){
 // les cartes achetees pas encore sur eBay, de la plus pressee a la moins pressee
 const QUAND_ACH = () => ({maintenant: [tt('À mettre maintenant', 'List it now'), 'vert'], prete: [tt('Prête', 'Ready'), 'acc'],
   attendre_creux: [tt('Attendre · en creux', 'Wait · slump'), 'or'], inconnu: ['', '']});
-const PAST_ACH = () => ({en_feu: [tt('En feu', 'On fire'), 'rouge'], en_hausse: [tt('En hausse', 'Rising'), 'vert'], honneur: [tt('Honoré', 'Honored'), 'or'],
+const PAST_ACH = () => ({blesse: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], absent: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], en_feu: [tt('En feu', 'On fire'), 'rouge'], en_hausse: [tt('En hausse', 'Rising'), 'vert'], honneur: [tt('Honoré', 'Honored'), 'or'],
   buzz: ['Buzz', 'acc'], rebond: [tt('Sort du creux', 'Bouncing back'), 'vert'], en_creux: [tt('En creux', 'In a slump'), 'p-creux'],
   echange_hausse: [tt('Échangé · hausse', 'Traded · up'), 'vert'], echange_baisse: [tt('Échangé · baisse', 'Traded · down'), 'rouge'], recrue: [tt('Recrue', 'Rookie'), 'or p-rc']});
 // 14 nov 2026 (Mathieu : « la meme carte : dans Bought, une icone On eBay ou Not listed yet ; faut le savoir ») : l'etat eBay
@@ -20283,7 +20430,7 @@ async function blocSauvegardeR2(){
 // on les priorise dans le classement sans le dire ; Savage, Remi, CF31 : pas de port ») : ADMIN, du meilleur pour nous au pire
 async function feuilleVendeursPerf(){
   popOuvrir(`<button class="pop-x" id="vp-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
-    <div class="pop-tete"><span class="pop-sur">Admin · Radar</span><h3>${tt('Les vendeurs qui finissent sous la valeur', 'Sellers who end under value')}</h3></div>
+    <div class="pop-tete"><span class="pop-sur">Admin · Radar</span><h3>${tt('Les vendeurs où les aubaines sortent le plus', 'Sellers with the most bargains')}</h3></div>
     <div class="pop-corps" id="vp-z"><div class="lecture"><span class="roue"></span></div></div>`, popFermer);
   $('#vp-x').onclick = popFermer;
   const r = await API.vendeurs_rapport().catch(e => ({ok: false, erreur: e.message}));
@@ -20293,13 +20440,49 @@ async function feuilleVendeursPerf(){
   const pc = (x) => Math.round(100 * x) + '\u00a0%', m = r.moyenne || 1;
   const ligne = (x, i) => { const cl = x.n < r.n_min ? '' : x.score <= m - 0.04 ? 'vert' : x.score >= m + 0.04 ? 'rouge' : '';
     return `<div class="vpf-l"><span class="vpf-r">${x.n >= r.n_min ? i + 1 : '·'}</span><span class="vpf-m"><b>${esc(x.vendeur)}${x.ramassage ? ' ' + tag(tt('Ramassage', 'Pickup'), 'vert') : ''}${x.prioritaire ? ' ' + tag(tt('Prioritaire', 'Priority'), 'acc') : !x.suivi ? ' ' + tag(tt('Pas suivi', 'Not tracked'), '') : ''}${x.volume ? ' ' + tag(tt('Volume', 'Volume'), 'rouge') : ''}</b>
-      <small>${x.n} ${tt('encans', 'auctions')} · ${tt('finit à', 'ends at')} ${pc(x.ratio)} ${tt('de la valeur', 'of value')} · ${pc(x.sous_mise)} ${tt('sous notre mise max', 'under our max bid')}${x.port_moy ? ' · ' + tt('port', 'shipping') + ' ~' + argentCourt(x.port_moy) : ''}</small></span>
-      <span class="vpf-c ${cl}"><b>${pc(x.cout)}</b><small>${tt('avec port', 'with ship.')}</small></span></div>`; };
-  const ok = r.vendeurs.filter(x => x.n >= r.n_min), peu = r.vendeurs.filter(x => x.n < r.n_min);
-  z.innerHTML = `<div class="sous" style="margin-bottom:10px">${tt(`Chaque encan fini, prix final + port, contre la valeur (la médiane des ventes de la même carte). Le plus bas = le meilleur pour nous. Moyenne : ${pc(m)}. Le chasseur passe les vendeurs dans cet ordre ; rien n’apparaît dans les pastilles.`, `Each finished auction, final price + shipping, vs the value (median of the same card’s sales). Lowest = best for us. Average: ${pc(m)}. The hunter goes through sellers in this order; nothing shows on the badges.`)}</div>
+      <small>${x.n} ${tt('encans', 'auctions')} · <strong>${x.aubaines || 0}</strong> ${tt('à 70 % ou moins', 'at 70% or less')} · ${x.moitie || 0} ${tt('à moitié prix', 'at half price')}</small>
+      <small>${tt('finit à', 'ends at')} ${pc(x.ratio)} ${tt('de la valeur', 'of value')} · ${pc(x.cout)} ${tt('avec le port', 'with shipping')} · ${pc(x.sous_mise)} ${tt('sous notre mise max', 'under our max bid')}${x.port_moy ? ' · ' + tt('port', 'shipping') + ' ~' + argentCourt(x.port_moy) : ''}</small></span>
+      <span class="vpf-c ${(x.sous_70 || 0) >= 0.3 && x.n >= r.n_min ? 'vert' : cl === 'rouge' ? 'rouge' : ''}"><b>${pc(x.sous_70 || 0)}</b><small>${tt('d’aubaines', 'bargains')}</small></span></div>`; };
+  // 25 nov 2026 (Mathieu : « les vendeurs pour lesquels les ventes bien en dessous des last sold sortent le plus souvent ») : le
+  // classement suit la PART des encans finis a 70 % ou moins de la valeur, port compris ; a part egale, le plus d'aubaines
+  r.vendeurs.sort((a, b) => ((a.n < r.n_min) - (b.n < r.n_min)) || ((b.sous_70 || 0) - (a.sous_70 || 0)) || ((b.aubaines || 0) - (a.aubaines || 0)));
+  // 25 nov 2026 : un vendeur PAS suivi n'a ici que ses encans retenus comme deals (les autres ne sont pas gardes) : sa part
+  // d'aubaines est gonflee. Il est montre a part, jamais classe avec les vendeurs suivis (dont TOUS les encans comptent).
+  const ok = r.vendeurs.filter(x => x.n >= r.n_min && x.suivi), hors = r.vendeurs.filter(x => x.n >= r.n_min && !x.suivi), peu = r.vendeurs.filter(x => x.n < r.n_min);
+  z.innerHTML = `<div class="sous" style="margin-bottom:10px">${tt(`Chaque encan fini des 45 derniers jours, prix final + port, contre la valeur (la médiane des ventes de la même carte). Classés par la part d’aubaines : finis à 70 % ou moins de la valeur. Coût moyen de tous : ${pc(m)}.`, `Every auction that ended in the last 45 days, final price + shipping, vs the value (median of the same card’s sales). Ranked by share of bargains: ended at 70% or less of the value. Average cost overall: ${pc(m)}.`)}</div>
     <div class="vpf-liste">${ok.map(ligne).join('')}</div>
+    ${hors.length ? `<div class="qd-s">${tt('Pas suivis : seulement leurs encans retenus comme deals. Part gonflée, pas comparable.', 'Not tracked: only their auctions kept as deals. Inflated share, not comparable.')}</div><div class="vpf-liste">${hors.map(ligne).join('')}</div>` : ''}
     ${peu.length ? `<div class="qd-s">${tt(`Pas encore assez d’encans (moins de ${r.n_min})`, `Not enough auctions yet (under ${r.n_min})`)}</div><div class="vpf-liste">${peu.map(ligne).join('')}</div>` : ''}
     <div class="sous" style="margin-top:10px">${r.encans} ${tt('encans mesurés', 'auctions measured')} · ${tt('ordre des prioritaires', 'priority order')} : ${r.ordre_priorite.map(esc).join(' › ')}</div>`;
+}
+// 25 nov 2026 (Mathieu : « on aurait du capter cette carte-la » ; « on ne devrait jamais manquer ce genre de deal-la ») : dans
+// NOS ventes, les cartes vendues au prix max du chasseur ou moins : montrees avant la fin ou non, et pourquoi. Aucun credit.
+async function feuilleManquees(){
+  popOuvrir(`<button class="pop-x" id="am-x" aria-label="${esc(tt('Fermer', 'Close'))}">${ICONES.x || '×'}</button>
+    <div class="pop-tete"><span class="pop-sur">Admin · Radar</span><h3>${tt('Les aubaines manquées', 'Missed bargains')}</h3></div>
+    <div class="pop-corps" id="am-z"><div class="lecture"><span class="roue"></span></div></div>`, popFermer);
+  $('#am-x').onclick = popFermer;
+  const r = await API.aubaines_manquees().catch(e => ({ok: false, erreur: e.message}));
+  const z = $('#am-z'); if (!z) return;
+  if (!r.ok) { z.innerHTML = `<div class="vide">${esc(r.erreur || 'Erreur')}</div>`; return; }
+  const P = r.periode || {}, pc = (x) => Math.round(100 * x) + ' %';
+  if (!r.depuis || !P.jours) { z.innerHTML = `<div class="vide">${tt('Le registre vient de démarrer : le chasseur note chaque annonce qu’il juge. Les premières mesures arrivent quand les ventes de ces annonces nous parviennent, dans un jour ou deux.', 'The register just started: the hunter logs every listing it judges. The first measurements come once those sales reach us, in a day or two.')}</div>`; return; }
+  const RAISONS = {jamais_vue: [tt('Jamais vues', 'Never seen'), tt('le chasseur n’a pas croisé l’annonce', 'the hunter never came across the listing'), 'rouge'],
+    sans_valeur: [tt('Vues, sans valeur', 'Seen, no value'), tt('pas assez de ventes de la carte à ce moment', 'not enough sales of the card at the time'), 'acc'],
+    trop_cher: [tt('Vues, trop chères sur le coup', 'Seen, too expensive then'), tt('avec le port ou les taxes', 'with shipping or taxes'), ''],
+    fenetre: [tt('Vues trop tôt', 'Seen too early'), tt('à plus de 24 h de la fin ou sans mise, pas revues', 'over 24 h from the end or no bid, not seen again'), 'acc'],
+    ecartee: [tt('Écartées', 'Set aside'), tt('photo, état, joueur non reconnu', 'photo, condition, player not recognized'), '']};
+  const ra = P.raisons || {}, ordre = Object.keys(RAISONS).filter(k => ra[k]).sort((a, b) => ra[b] - ra[a]);
+  const ligneR = (k) => `<div class="vpf-l"><span class="vpf-m"><b>${RAISONS[k][0]}</b><small>${RAISONS[k][1]}</small></span><span class="vpf-c ${RAISONS[k][2] === 'rouge' ? 'rouge' : ''}"><b>${ra[k]}</b></span></div>`;
+  const ligneX = (x) => `<div class="vpf-l"><span class="vpf-m"><b>${esc(x.titre)}</b>
+      <small>${tt('vendue', 'sold')} ${argent(x.prix, 2)} · ${tt('valait', 'worth')} ${argentCourt(x.valeur)} · ${tt('prix max', 'max price')} ${argentCourt(x.max)}</small>
+      <small>${tag((RAISONS[x.raison] || RAISONS.ecartee)[0], (RAISONS[x.raison] || RAISONS.ecartee)[2])}${x.vu_h != null && x.vu_h >= 0 ? ' ' + tt('vue', 'seen') + ' ' + (x.vu_h >= 1 ? Math.round(x.vu_h) + ' h' : Math.max(1, Math.round(60 * x.vu_h)) + ' min') + ' ' + tt('avant la fin', 'before the end') : ''} · ${esc(x.jour)}</small></span></div>`;
+  z.innerHTML = `<div class="am-haut"><b class="${P.part != null && P.part >= 0.8 ? 'vert' : P.part != null && P.part < 0.5 ? 'rouge' : ''}">${P.part != null ? pc(P.part) : '—'}</b>
+      <span>${tt(`${P.montrees} aubaines montrées avant la fin sur ${P.aubaines}`, `${P.montrees} of ${P.aubaines} bargains shown before the end`)}<small>${tt(`${P.jours} derniers jours mesurés · ${P.ventes} ventes regardées`, `last ${P.jours} days measured · ${P.ventes} sales checked`)}</small></span></div>
+    ${P.tard ? `<div class="sous" style="margin:8px 0">${tt(`${P.tard} montrées à moins d’une heure de la fin.`, `${P.tard} shown less than an hour before the end.`)}</div>` : ''}
+    ${ordre.length ? `<div class="qd-s">${tt('Pourquoi les autres ont échappé', 'Why the others slipped through')}</div><div class="vpf-liste">${ordre.map(ligneR).join('')}</div>` : ''}
+    ${(r.exemples || []).length ? `<div class="qd-s">${tt('Les plus grosses', 'The biggest ones')}</div><div class="vpf-liste">${r.exemples.slice(0, 40).map(ligneX).join('')}</div>` : ''}
+    <div class="sous" style="margin-top:10px">${tt(`Une aubaine : une carte de ${argentCourt(r.valeur_min)} et plus, vendue au prix max du chasseur ou moins (30 % de profit après les frais), contre les ventes de la même carte d’avant. Le port de la vente n’est pas connu. Seules les ventes que nous recevons comptent, depuis le ${esc(r.depuis)}.`, `A bargain: a card worth ${argentCourt(r.valeur_min)} or more, sold at the hunter’s max price or less (30% profit after fees), vs earlier sales of the same card. The sale’s shipping is unknown. Only sales we receive count, since ${esc(r.depuis)}.`)}${r.coupe ? ' ' + tt('Calcul coupé après 7 minutes : la suite au prochain.', 'Run cut after 7 minutes: the rest next time.') : ''}</div>`;
 }
 // 12 nov 2026 (Mathieu : « y aller par ordre pour limiter le gaspillage de credit ») : l'ordre dans lequel le chasseur depense
 // ses recherches de ventes (profit attendu par credit : test de depart sur 38 600 ventes, puis les vrais resultats)
@@ -21048,7 +21231,8 @@ async function vueAdmin(onglet, cible){
       ['chasseur', 'deals', tt('Chasseur de deals', 'Deal hunter'), admAge(t.deals) != null ? ilYa(t.deals) : '—', tt('dernier tour · relancer, budget', 'last run · rerun, budget'), admAge(t.deals) != null && admAge(t.deals) > 3 ? 'rouge' : '', () => admPop(tt('Chasseur de deals', 'Deal hunter'), adminServeur, SERVEUR_PART.chasseur)],
       ['vendeurs', 'boutique', tt('Vendeurs suivis', 'Followed sellers'), '', tt('la liste et un test eBay', 'the list and an eBay test'), '', () => admPop(tt('Vendeurs suivis', 'Followed sellers'), adminServeur, SERVEUR_PART.vendeurs)],
       ['credits', 'graphe', tt('Ordre des crédits', 'Credit order'), '', tt('ce qui rapporte le plus par recherche', 'what pays most per search'), '', () => feuilleCredits()],
-      ['perf', 'dollar', tt('Vendeurs sous la valeur', 'Sellers under value'), '', tt('qui finit le plus bas pour nous', 'who ends lowest for us'), '', () => feuilleVendeursPerf()],
+      ['perf', 'dollar', tt('Vendeurs : les aubaines', 'Sellers: the bargains'), '', tt('chez qui les encans finissent à 70 % ou moins', 'whose auctions end at 70% or less'), '', () => feuilleVendeursPerf()],
+      ['manquees', 'alerte', tt('Aubaines manquées', 'Missed bargains'), '', tt('montrées avant la fin ou non, et pourquoi', 'shown before the end or not, and why'), '', () => feuilleManquees()],
       ['pourquoi', 'cible', tt('Pas dans le Radar ?', 'Not in the Radar?'), '', tt('colle un lien eBay', 'paste an eBay link'), '', () => feuillePourquoi()]]],
     [tt('SlabIQ et données', 'SlabIQ and data'), [
       // 22 nov 2026 (Mathieu : « beaucoup de pages differentes de tests, c'est melangeant ») : UNE tuile « Mesures » ; dedans,
@@ -21985,10 +22169,10 @@ function tuileRadar(x, src){
     nom: tt('Réservée au Pro', 'Pro only'), det: tt('Titre, prix et lien avec le Pro', 'Title, price and link with Pro'), score: x.score,
     k3: [[tt('Prix', 'Price'), '•••'], [tt('Mises', 'Bids'), '•••'], [tt('Lien', 'Link'), 'PRO', 'mx']], photo: x.photo,
     puits: `<span class="sr-cad"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><b>PRO</b></span>${x.encan && x.fin ? `<span class="sd-fin">${icH()}${finDans(x.fin)}</span>` : ''}`})}</div>`;
-  const L = {en_feu: [tt('En feu', 'On fire'), 'rouge'], echange_baisse: [tt('Échangé · baisse', 'Traded · down'), 'rouge'], echange_hausse: [tt('Échangé · hausse', 'Traded · up'), 'vert'], echange: [tt('Nouvelle équipe', 'New team'), 'acc'], honneur: [tt('Honoré', 'Honored'), 'or'], occasion: [tt('Bonne occasion', 'Buy low'), 'vert'], mauvaise: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], rebond: [tt('Sort de son creux', 'Bouncing back'), 'vert'], en_creux: [tt('En creux', 'In a slump'), 'p-creux'],
+  const L = {blesse: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], absent: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], en_feu: [tt('En feu', 'On fire'), 'rouge'], echange_baisse: [tt('Échangé · baisse', 'Traded · down'), 'rouge'], echange_hausse: [tt('Échangé · hausse', 'Traded · up'), 'vert'], echange: [tt('Nouvelle équipe', 'New team'), 'acc'], honneur: [tt('Honoré', 'Honored'), 'or'], occasion: [tt('Bonne occasion', 'Buy low'), 'vert'], mauvaise: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], rebond: [tt('Sort de son creux', 'Bouncing back'), 'vert'], en_creux: [tt('En creux', 'In a slump'), 'p-creux'],
     legende: [tt('Légende', 'Legend'), 'or'], recrue: [tt('Recrue', 'Rookie'), 'or p-rc'], buzz: ['Buzz', 'acc']};
   const pj = (x.pastilles_j || []).find(k => L[k]);
-  const ICB = {en_feu: 'feu', echange_baisse: 'echange', echange_hausse: 'echange', echange: 'echange', honneur: 'medaille', occasion: 'bas', mauvaise: 'alerte', rebond: 'hausse', en_creux: 'creux', legende: 'medaille', recrue: 'etoile', buzz: 'buzz'};
+  const ICB = {blesse: 'alerte', absent: 'alerte', en_feu: 'feu', echange_baisse: 'echange', echange_hausse: 'echange', echange: 'echange', honneur: 'medaille', occasion: 'bas', mauvaise: 'alerte', rebond: 'hausse', en_creux: 'creux', legende: 'medaille', recrue: 'etoile', buzz: 'buzz'};
   // 12 nov 2026 (Mathieu : « pas besoin de Small seller sur la tuile ; il le saura dans la fiche ») 
   // 16 nov 2026 (« SlabCoach x SlabIQ s'adapte a son utilisateur ») : une annonce sur SES joueurs ou SES sortes de cartes
   const pm = x.pour_moi || [], pmT = pm.includes('joueur') ? [tt('Ton joueur', 'Your player'), 'acc'] : pm.includes('type') ? [tt('Pour toi', 'For you'), 'acc'] : null;
@@ -21997,6 +22181,8 @@ function tuileRadar(x, src){
   const vf = (x.verifier || []).length ? [tt('Vérifie le prix', 'Check the price'), 'or'] : null;
   const mbT = x.marche_bas != null && x.marche_bas !== false ? [libMB(typeof x.marche_bas === 'number' ? x.marche_bas : null), 'vert'] : null;
   const t1 = estNumerique(x.titre) ? [tt('Carte numérique ?', 'Digital card?'), 'rouge', 'alerte'] : vf ? [...vf, 'alerte'] : mbT ? [...mbT, 'bas'] : pj ? [L[pj][0], /p-creux/.test(L[pj][1]) ? 'creux' : L[pj][1].split(' ')[0], ICB[pj]] : pmT ? [...pmT, 'moi'] : null;
+  // 25 nov 2026 (Mathieu : « quand tu cliques sur la pastille t'as l'explication ») : la cle de l'explication (notifPastille)
+  const t1k = estNumerique(x.titre) ? 'numerique' : vf ? 'verifier' : mbT ? 'marche_bas' : pj ? pj : pmT ? (pm.includes('joueur') ? 'pour_joueur' : 'pour_type') : '';
   const ms = Date.parse(x.fin || '') - Date.now(), urgent = x.encan && ms > 0 && ms < 3600e3;
   const nomR = x.joueur_n || x.joueur || titreCourt(x.titre);
   const detR = x.carte_n || (x.joueur_n || x.joueur ? titreCourt(String(x.titre || '').replace(new RegExp(String(x.joueur_n || x.joueur).trim().split(/\s+/).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s+'), 'i'), ' ').replace(/\s+/g, ' ').trim()) : titreCourt(x.titre));
@@ -22007,7 +22193,7 @@ function tuileRadar(x, src){
          x.encan ? [tt('Mises', 'Bids'), x.mises != null ? String(x.mises) : '—'] : [tt('Port', 'Ship'), x.port_cad != null ? (x.port_cad > 0 ? argentCourt(x.port_cad) : tt('Gratuit', 'Free')) : tt('Inclus', 'Incl.')],
          x.prix_max ? [tt('Ton prix', 'Yours'), argentCourt(x.prix_max), 'mx'] : [tt('Total', 'Total'), argentCourt(tout || x.total), tout ? 'mx' : '']],
     photo: x.photo,
-    puits: `${pastillesCS(x, t1 ? badgeSlab(t1[0], t1[1], t1[2]) : '')}${boutonWatch(x)}${x.encan ? `<span class="sd-fin ${urgent ? 'urg' : ''}">${icH()}${finDans(x.fin)}</span>` : ''}${x.n_autres ? `<span class="sr-aut">+${x.n_autres} ${tt(x.n_autres > 1 ? 'annonces' : 'annonce', x.n_autres > 1 ? 'listings' : 'listing')}</span>` : ''}`})}${ligneAdminVendu(x)}</div>`;
+    puits: `${pastillesCS(x, t1 ? badgeSlab(t1[0], t1[1], t1[2], `data-np="${esc(t1k)}" data-np-j="${esc(x.joueur_n || x.joueur || '')}" data-np-l="${esc(t1[0])}"`) : '')}${boutonWatch(x)}${x.encan ? `<span class="sd-fin ${urgent ? 'urg' : ''}">${icH()}${finDans(x.fin)}</span>` : ''}${x.n_autres ? `<span class="sr-aut">+${x.n_autres} ${tt(x.n_autres > 1 ? 'annonces' : 'annonce', x.n_autres > 1 ? 'listings' : 'listing')}</span>` : ''}`})}${ligneAdminVendu(x)}</div>`;
 }
 // le toucher sur le score : « pourquoi ce score », bref et clair (la carte, puis le joueur), et comment SlabIQ fonctionne
 const _SC = {};
@@ -22581,7 +22767,7 @@ function blocPourquoi(q){
 // (stats et donnees publiques seulement : jamais un prix)
 function pastillesIndice(g){
   if (!g) return '';
-  const L = {en_feu: [tt('En feu', 'On fire'), 'rouge'], echange_baisse: [tt('Échangé · baisse', 'Traded · down'), 'rouge'], echange_hausse: [tt('Échangé · hausse', 'Traded · up'), 'vert'], echange: [tt('Nouvelle équipe', 'New team'), 'acc'], honneur: [tt('Honoré', 'Honored'), 'or'], occasion: [tt('Bonne occasion', 'Buy low'), 'vert'], mauvaise: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], en_hausse: [tt('En hausse', 'Rising'), 'vert'], buzz: ['Buzz', 'acc'], actu: [tt('Dans l’actu', 'In the news'), 'acc'], legende: [tt('Légende', 'Legend'), 'or'], recrue: [tt('Recrue', 'Rookie'), 'or p-rc'], en_creux: [tt('En creux', 'In a slump'), 'p-creux'], rebond: [tt('Sort de son creux', 'Bouncing back'), 'vert']};
+  const L = {blesse: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], absent: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], en_feu: [tt('En feu', 'On fire'), 'rouge'], echange_baisse: [tt('Échangé · baisse', 'Traded · down'), 'rouge'], echange_hausse: [tt('Échangé · hausse', 'Traded · up'), 'vert'], echange: [tt('Nouvelle équipe', 'New team'), 'acc'], honneur: [tt('Honoré', 'Honored'), 'or'], occasion: [tt('Bonne occasion', 'Buy low'), 'vert'], mauvaise: [tt('Mauvaise nouvelle', 'Bad news'), 'rouge'], en_hausse: [tt('En hausse', 'Rising'), 'vert'], buzz: ['Buzz', 'acc'], actu: [tt('Dans l’actu', 'In the news'), 'acc'], legende: [tt('Légende', 'Legend'), 'or'], recrue: [tt('Recrue', 'Rookie'), 'or p-rc'], en_creux: [tt('En creux', 'In a slump'), 'p-creux'], rebond: [tt('Sort de son creux', 'Bouncing back'), 'vert']};
   const out = (g.pastilles || []).filter(k => L[k]).map(k => tag(L[k][0], L[k][1]));
   const w = g.semaine; if (w && w.mj) out.push(tag(`${w.pts} pts · ${w.mj} ${tt('matchs', 'games')} ${tt('cette semaine', 'this week')}`));
   return out.join('');

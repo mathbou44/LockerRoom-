@@ -124,6 +124,7 @@ LIBELLES = {"yg": ("Young Guns", "Young Guns"), "yg_variante": ("Young Guns para
             "opc_plat_auto": ("OPC Platinum auto", "OPC Platinum auto"), "bd_gems": ("Black Diamond auto", "Black Diamond auto"),
             "dazzlers": ("Dazzlers", "Dazzlers"), "auto": ("Auto", "Auto"), "patch": ("Patch", "Patch"), "ssp": ("SSP", "SSP"),
             "sp": ("SP / variation", "SP / variation"), "base": ("Base", "Base"), "yg_renewed": ("Young Guns Renewed", "Young Guns Renewed"),
+            "yg_renewed_num": ("Young Guns Renewed numérotée", "Numbered Young Guns Renewed"),
             "insert_retro": ("Retro Young Guns d’un vétéran", "Veteran Retro Young Guns"), "numerotee": ("Numérotée", "Numbered"),
             "fluorescence": ("Fluorescence", "Fluorescence"), "case_hit": ("Case hit", "Case hit")}
 
@@ -317,7 +318,7 @@ def mesurer(rows):
             "accord_global": round(sum(a[0] for a in acc.values()) / max(1, sum(a[1] for a in acc.values())), 3)}
 
 
-SORTES_TRANCHEES = {"fluorescence", "dazzlers", "yg_renewed", "bd_gems", "ssp", "ssp10", "sp", "sp10"}
+SORTES_TRANCHEES = {"fluorescence", "dazzlers", "yg_renewed", "yg_renewed_num", "bd_gems", "ssp", "ssp10", "sp", "sp10"}
 
 
 def decider(m):

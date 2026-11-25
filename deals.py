@@ -1908,7 +1908,19 @@ def _juger(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=N
     """Une annonce : deal ou non (et pourquoi). Les memes regles pour le prix fixe, les encans et les flux."""
     st.pop("_dern_verif", None)
     st.pop("_res", None)
+    st.pop("_sortie", None)
+    deja = a.get("item_id") in (st.get("_vus") or ())
     _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete, comps, bassin, verif)
+    # 25 nov 2026 (Mathieu : « on ne devrait jamais manquer ce genre de deal-la ») : chaque annonce jugee laisse une ligne au
+    # registre des aubaines manquees (manquees.py) : quand on l'a vue, et ce qu'on en a conclu. Aucun credit, aucun appel.
+    sortie = st.pop("_sortie", None)
+    if not deja and _total(a):
+        try:
+            import manquees
+            res_, ratio_ = st.get("_res") or (None, None)
+            manquees.noter(a, res_ or sortie or "autre", maint, valeur=(_total(a) / ratio_) if ratio_ else None)
+        except Exception as e:
+            print("Manquees (noter) : " + repr(e)[:200], flush=True)
     dv = st.pop("_dern_verif", None)
     if dv:
         import cartes_match
@@ -1928,18 +1940,23 @@ def _juger0(a, r, brut_v, actives, maint, deals, st, ventes_requete=None, comps=
         except ValueError:
             return
         if fin_dt < maint or not encan_admis(a, maint):      # 7 nov : Savage, Remi, CF31 : 5 jours ; les autres : 24 h et une mise
+            st["_sortie"] = "fenetre"
             return
     cib = cartes_match.cible_titre(a.get("titre") or "")
     if cib.get("exclu") or not cib.get("joueur"):
+        st["_sortie"] = "joueur"
         return                                                                  # lot, ou on ne sait pas quel joueur
     if cartes_match.abimee(a.get("titre") or "") or vendeur_risque(a):
         st["ecartees"] = st.get("ecartees", 0) + 1                              # abimee, douteuse, ou vendeur sans historique
         deals.pop(a.get("item_id"), None)
+        st["_sortie"] = "ecartee"
         return
     if r.get("suivi") and not sport_carte(a.get("titre"), cib):
+        st["_sortie"] = "sport"
         return                                                                  # 29 oct : vendeurs suivis : pas de soccer, tennis...
     if not _sport_servi(a, r, cib):
         st["autre_sport"] = st.get("autre_sport", 0) + 1                        # 13 nov : un sport que le chasseur ne sert pas
+        st["_sortie"] = "sport"
         return
     st["annonces"] = st.get("annonces", 0) + 1
     if a.get("encan"):
@@ -2476,6 +2493,12 @@ def _sauver(d, deals, maint, st, **champs):
     nouveaux_suivis = st.pop("_suivis", None)
     st.pop("_dern_verif", None)
     st.pop("_res", None)
+    st.pop("_sortie", None)
+    try:                                             # 25 nov 2026 : le registre des annonces jugees (aubaines manquees)
+        import manquees
+        manquees.vider()
+    except Exception as e:
+        print("Manquees (vider) : " + repr(e)[:200], flush=True)
     couverture = st.pop("_couverture", None)
     st.pop("_prio_cov", None)
     st.pop("_prio_v", None)
@@ -2730,7 +2753,10 @@ def flux_hits(curseur):
 # Groupe 1 : les specialistes du hockey ; groupe 2 : les mega-vendeurs multi-sports (leurs cartes de hockey seulement).
 # 16 nov 2026 (Mathieu : « ajouter ce vendeur dans les suivis comme Savage, CF31 », THE HOBBY SPOT and QCB, Canada, 24K
 # ventes ; pseudo lu dans « A propos » de sa boutique)
+# 25 nov 2026 (Mathieu : « Minting, est-ce qu'on les regarde ? », photo « Mintink Trading Cards (13997) ») : pseudo « mintink »,
+# lu sur sa boutique eBay (ebay.ca/str/mintink, lien « _ssn=mintink ») ; Vaughan / Toronto, 58 000 ventes, des encans
 VENDEURS_DEFAUT = ["savage.cards", "remi-card-trader", "cf31_sports_cards", "slabsharksinc", "wests01", "thehobbyspot_dot_ca",     # hockey
+                   "mintink",
                    "ultsportscards", "rakesecret", "sforget76", "dcsports87", "probstein123"]                 # + mega-vendeurs
 # 30 oct 2026 (Mathieu : « toujours passer le scan avec Savage en premier, ensuite Remi, ensuite CF31, Slab Sharks et le
 # reste ») : ces 4 vendeurs sont cherches SEULS (chacun ses pages d'encans, jamais noyes dans un groupe), dans cet ordre,
@@ -2827,7 +2853,7 @@ def groupes_vendeurs(vs=None):
         + [v for v in vs if v.lower() in vendeurs_dernier()]                   # 2 nov 2026 : les maisons a volume en dernier
     return [[v] for v in prio] + [autres[k:k + VENDEURS_PAR_APPEL] for k in range(0, len(autres), VENDEURS_PAR_APPEL)]
 VENDEURS_PAR_APPEL = 5                   # 5 vendeurs par recherche : chaque groupe a ses 10 pages d'encans (2 000)
-VENDEURS_V = 3                  # 16 nov 2026 : + thehobbyspot_dot_ca (ajoute aux listes deja reglees)
+VENDEURS_V = 4                  # 25 nov 2026 : + mintink ; 16 nov : + thehobbyspot_dot_ca (ajoutes aux listes deja reglees)
 
 
 def vendeurs_suivis():
@@ -4098,6 +4124,14 @@ def chasser_si_besoin(force=False):
                 chances.resoudre()
             except Exception as e:
                 print("Chances : " + repr(e), flush=True)
+            try:                                         # 25 nov 2026 : les aubaines manquees (aux 12 h, sans credit)
+                import manquees
+                rm = manquees.calculer_si_besoin(b)
+                if rm:
+                    rs = manquees.resume(rm)["periode"]
+                    print(f"Manquees : {rs['aubaines']} aubaines en {rs['jours']} jours, {rs['montrees']} montrees avant la fin", flush=True)
+            except Exception as e:
+                print("Manquees : " + repr(e), flush=True)
             with _verrou:
                 d = lire()
                 d["bassin"] = b.n

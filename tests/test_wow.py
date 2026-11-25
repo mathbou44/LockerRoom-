@@ -39,7 +39,7 @@ assert nv.wow_de("Kirby Dach records hat trick", G) is None                     
 print("OK wow_de")
 
 # 2. une seule par joueur et par type (dans la langue du client si possible), epinglee 48 h
-maint = datetime(2026, 11, 23, 14, 0, tzinfo=timezone.utc)
+maint = datetime.now(timezone.utc)          # 25 nov 2026 : le test etait fige au 23 nov ; nv.pour lit l'heure reelle : apres 48 h, plus rien d'epingle (echec)
 def N(titre, h, langue="en", lien=None):
     d = maint - timedelta(hours=h)
     return {"titre": titre, "date": d.date().isoformat(), "heure": d.isoformat(), "lien": lien or "https://x.test/" + str(abs(hash(titre))), "langue": langue,

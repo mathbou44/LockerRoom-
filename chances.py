@@ -188,6 +188,9 @@ def _moy_tronquee(l, f=0.1):
     return sum(l) / len(l) if l else None
 
 
+AUBAINE, MOITIE = 0.70, 0.50
+
+
 def perf_vendeurs(ramassage=()):
     """{vendeur: {n, ratio, cout, score, sous_valeur, sous_mise, port_moy, groupe, ramassage}} + la moyenne de tous."""
     import deals
@@ -206,11 +209,15 @@ def perf_vendeurs(ramassage=()):
         port = 0.0 if v in ram else deals.port_eff(x.get("port"))
         r = max(0.1, min(3.0, x["final"] / x["valeur"]))
         c = max(0.1, min(3.0, (x["final"] + port) / x["valeur"]))
-        d = par.setdefault(v, {"r": [], "c": [], "sous_v": 0, "sous_m": 0, "ports": [], "score_ebay": x.get("vendeur_score"), "x": x})
+        d = par.setdefault(v, {"r": [], "c": [], "sous_v": 0, "sous_m": 0, "a70": 0, "a50": 0, "ports": [], "score_ebay": x.get("vendeur_score"), "x": x})
         d["r"].append(r)
         d["c"].append(c)
         d["sous_v"] += 1 if x["final"] < x["valeur"] else 0
         d["sous_m"] += 1 if x["final"] <= x["mise_max"] + 0.5 else 0
+        # 25 nov 2026 (Mathieu : « les vendeurs pour lesquels les ventes bien en dessous des last sold sortent le plus souvent ») :
+        # les VRAIES aubaines, port compris : fini a 70 % ou moins de la valeur, et a la moitie ou moins
+        d["a70"] += 1 if (x["final"] + port) <= AUBAINE * x["valeur"] else 0
+        d["a50"] += 1 if (x["final"] + port) <= MOITIE * x["valeur"] else 0
         d["ports"].append(port)
     # la moyenne de reference sans les maisons a volume (elles tireraient tout le monde vers le bas)
     tous_c = [c for v, d in par.items() if v not in deals.vendeurs_dernier() for c in d["c"]] or [c for d in par.values() for c in d["c"]]
@@ -222,6 +229,7 @@ def perf_vendeurs(ramassage=()):
         out[v] = {"n": n, "ratio": round(_moy_tronquee(d["r"]), 3), "cout": round(moy_c, 3),
                   "score": round((moy_c * n + g * POIDS_PRIOR) / (n + POIDS_PRIOR), 3),
                   "sous_valeur": round(d["sous_v"] / n, 3), "sous_mise": round(d["sous_m"] / n, 3),
+                  "aubaines": d["a70"], "sous_70": round(d["a70"] / n, 3), "moitie": d["a50"], "sous_50": round(d["a50"] / n, 3),
                   "port_moy": round(sum(d["ports"]) / n, 2), "groupe": groupe(d["x"]), "ramassage": v in ram,
                   "vendeur_score": d["score_ebay"]}
     res = {"vendeurs": out, "moyenne": round(g, 3), "encans": len(tous_c)}

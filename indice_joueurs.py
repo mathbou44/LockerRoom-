@@ -656,6 +656,217 @@ def classer_evenement(titre):
     return meil
 
 
+# -- 25 nov 2026 (Mathieu, Bedard opere a l'epaule, absent 4 mois : « il devrait avoir le badge injured, non ? ») --------
+# Une blessure dure plus longtemps que sa manchette : « Mauvaise nouvelle » s'eteint en 3 jours (DEMI_VIE_J) et le fil ne garde
+# que 7 jours. Ici on garde l'ETAT du joueur : d["blessures"][nom] = {depuis, jusqu, titre, lien, explicite, fini}.
+#   - la duree vient de la manchette (« out four months », « absent 6 a 8 semaines », « season-ending ») ; sans duree :
+#     BLESSURE_DEFAUT_J (30 jours pour une operation ou « indefinitely », 14 « week-to-week », 3 « day-to-day ») ;
+#   - l'etat finit a la date prevue, quand une manchette annonce son retour, ou des qu'il rejoue (ses matchs joues montent) ;
+#   - une manchette au nom de famille seul (« Bedard out four months for Blackhawks ») compte si ce nom est unique chez les
+#     joueurs actifs ET que la manchette nomme son equipe (jamais un homonyme).
+# Des TITRES publics seulement (nos flux RSS d'editeurs) : aucun prix, aucun texte d'article.
+BLESSURE_DEFAUT_J = 10
+_NB = {"a": 1, "an": 1, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+       "eleven": 11, "twelve": 12, "un": 1, "une": 1, "deux": 2, "trois": 3, "quatre": 4, "cinq": 5, "sept": 7, "huit": 8, "neuf": 9,
+       "dix": 10, "onze": 11, "douze": 12}
+_N = r"(\d{1,2}|" + "|".join(sorted(_NB, key=len, reverse=True)) + r")"
+_RE_DUREE = re.compile(r"\b(?:" + _N + r"\s*(?:-|–|to|a|à|ou|or)\s*)?" + _N + r"[\s-]*(days?|weeks?|months?|jours?|semaines?|mois)\b", re.I)
+_RE_SAISON_FINIE = re.compile(r"season[- ]ending|rest of (?:the )?(?:regular )?season|out for (?:the )?(?:season|year)|remainder of (?:the )?season|"
+                              r"fin de (?:la )?saison|reste de la saison|saison (?:est )?termin[ée]e", re.I)
+_RE_RETOUR = re.compile(r"\breturns (?:to|from|after|against|vs\.?|tonight|for)\b|\bactivated\b|back in (?:the )?lineup|cleared to (?:play|return)|"
+                        r"\bmakes? (?:his )?(?:season )?return\b|de retour au jeu|revient au jeu|effectue (?:son|un) retour|de retour dans la formation", re.I)
+# « expected to return in four months », « no timetable for his return » : pas un retour (le retour net gagne sur « surgery »)
+_RE_PAS_RETOUR = re.compile(r"expected to|could|might|\bmay\b|won.?t|will not|\bnot\b|no timetable|timeline|hopes?|eyes|nearing|targets?|"
+                            r"retour pr[ée]vu|pas de retour|ne reviendra pas|devrait|pourrait", re.I)
+_UNITE_J = {"d": 1, "j": 1, "w": 7, "s": 7, "m": 30}
+
+
+def _nb(x):
+    x = str(x or "").lower()
+    return int(x) if x.isdigit() else _NB.get(x)
+
+
+def duree_blessure(titre, le=None):
+    """(jours, explicite) : la duree d'absence que dit la manchette (la borne HAUTE d'un « 4 a 6 semaines »), sinon un defaut."""
+    t = str(titre or "")
+    if _RE_SAISON_FINIE.search(t):
+        j0 = le or date.today()
+        fin = date(j0.year + (1 if j0.month >= 7 else 0), 6, 30)
+        return max(1, (fin - j0).days), True
+    m = _RE_DUREE.search(t)
+    if m:
+        n = _nb(m.group(2))
+        if n:
+            return min(365, n * _UNITE_J[m.group(3)[0].lower()]), True
+    if re.search(r"week[- ]to[- ]week|semaine en semaine", t, re.I):
+        return 14, False
+    if re.search(r"day[- ]to[- ]day|au jour le jour", t, re.I):
+        return 3, False
+    if re.search(r"indefinitely|ind[ée]termin[ée]e|surgery|op[ée]r[ée]|long[- ]term|\bLTIR\b|long terme", t, re.I):
+        return 30, False
+    return BLESSURE_DEFAUT_J, False
+
+
+def _surnoms_equipe(code):
+    """Les mots qui nomment une equipe dans une manchette : « Blackhawks », « Chicago », « Maple Leafs » -> {leafs, toronto}."""
+    try:
+        import sports
+        nom = (sports._LNH.get(str(code or "").upper()) or ("",))[0]
+    except Exception:
+        nom = ""
+    m = _norm(nom).split()
+    if not m:
+        return set()
+    out = {m[-1]}
+    if m[-1].endswith("s"):
+        out.add(m[-1][:-1])                            # « le Canadien », « les Canadiens »
+    ville = " ".join(m[:-1]) if len(m) == 2 else " ".join(m[:-2] if m[-2] in ("maple", "red", "blue", "golden") else m[:-1])
+    if ville and ville not in ("new york",):           # deux equipes a New York : la ville ne dit pas laquelle
+        out.add(ville)
+    return out
+
+
+def _joueurs_de_la_manchette(titre, par_famille, info):
+    """Les joueurs que la manchette nomme : le nom complet ; ou le nom de famille seul, unique chez les actifs, avec son equipe."""
+    t = " " + _norm(titre) + " "
+    out = []
+    for mot in set(t.split()):
+        cands = par_famille.get(mot)
+        if not cands:
+            continue
+        pleins = [n for n in cands if " " + _norm(n) + " " in t]
+        if pleins:
+            out += pleins
+            continue
+        actifs = [n for n in cands if (info.get(n) or {}).get("actif")]
+        if len(mot) >= 5 and len(actifs) == 1 and any(" " + s_ + " " in t for s_ in _surnoms_equipe((info.get(actifs[0]) or {}).get("equipe"))):
+            out.append(actifs[0])
+    return list(dict.fromkeys(out))
+
+
+# Meme jour (Mathieu : « pourquoi on n'a pas capte Bedard ? On doit TOUS les capter ») : les manchettes ne suffiront jamais (un nom
+# de famille seul, un flux en panne, un joueur dont personne ne parle). Les MATCHS, eux, ne mentent pas : signal_joueurs lit deja
+# chaque soir le sommaire de tous les matchs de la LNH (qui a joue). Un patineur toujours dans l'alignement de son club, qui
+# jouait regulierement et qui a rate ses ABSENT_MIN derniers matchs, est « absent » : avec une manchette de blessure il est
+# « blesse », sans manchette il reste « absent » (jamais « blesse » sans preuve : une suspension, un joueur laisse de cote).
+# Les gardiens ne jouent pas tous les matchs : pour eux, les manchettes seulement.
+ABSENT_MIN = 2
+ABSENT_FENETRE_J = 45
+
+
+def matchs_par_joueur(base, M=None):
+    """{nom: [dates de ses matchs, triees]} de nos patineurs, d'apres les sommaires lus chaque soir (signal_joueurs)."""
+    if M is None:
+        try:
+            import signal_joueurs
+            M = signal_joueurs.lire_matchs()
+        except Exception:
+            M = {}
+    J = (M or {}).get("joueurs") or {}
+    out = {}
+    for nom, e in (base or {}).items():
+        h = (e or {}).get("nhl") or {}
+        g = J.get(str(h.get("id") or ""))
+        if g and h.get("pos") != "G":
+            out[nom] = sorted(str(x[0])[:10] for x in g.get("m") or [])
+    return out
+
+
+def absents(info, matchs, alignement=None, aujourdhui=None):
+    """{nom: {rates, depuis, dernier}} : les patineurs qui ont rate les derniers matchs de leur club. alignement = les noms
+    (normalises) de l'alignement du jour : un joueur qui n'y est plus (renvoye, echange) n'est pas « absent »."""
+    auj = aujourdhui or date.today()
+    lim = (auj - timedelta(days=ABSENT_FENETRE_J)).isoformat()
+    clubs = {}
+    for nom, dates in (matchs or {}).items():
+        i = info.get(nom) or {}
+        if i.get("actif") and i.get("equipe") and (alignement is None or _norm(nom) in alignement):
+            clubs.setdefault(i["equipe"], {})[nom] = [x for x in dates if x >= lim]
+    out = {}
+    for club, joueurs in clubs.items():
+        compte = {}
+        for dates in joueurs.values():
+            for x in dates:
+                compte[x] = compte.get(x, 0) + 1
+        actifs_n = sum(1 for dates in joueurs.values() if dates)
+        seuil = max(4, 0.4 * actifs_n)                 # un match du club = un soir ou une bonne part de ses joueurs ont joue
+        T = sorted(x for x, n in compte.items() if n >= seuil)
+        if len(T) < 5 or T[-1] < (auj - timedelta(days=7)).isoformat():
+            continue                                   # pas assez de matchs lus, ou la saison est arretee
+        for nom, dates in joueurs.items():
+            D = set(dates)
+            joues = [x for x in T if x in D]
+            if not joues:
+                continue
+            rates = [x for x in T if x > joues[-1]]
+            avant = [x for x in T if x <= joues[-1]][-5:]
+            if len(rates) >= ABSENT_MIN and len(avant) >= 3 and sum(1 for x in avant if x in D) >= 3:
+                out[nom] = {"rates": len(rates), "depuis": rates[0], "dernier": joues[-1]}
+    return out
+
+
+def suivre_blessures(d, items, info, stats_j=None, aujourdhui=None, absents_=None, matchs=None):
+    """Met a jour d["blessures"] avec les manchettes du fil (7 jours) -> {nom: etat} des joueurs blesses AUJOURD'HUI.
+    absents_ : un joueur blesse qui rate encore ses matchs reste blesse, meme passe la date prevue. matchs : il a rejoue."""
+    B = d.setdefault("blessures", {})
+    auj = aujourdhui or date.today()
+    par_famille = {}
+    for n in info:
+        p = _norm(n).split()
+        if len(p) >= 2:
+            par_famille.setdefault(p[-1], []).append(n)
+    for x in sorted(items or [], key=lambda x: str(x.get("date") or "")):
+        titre = x.get("titre") or ""
+        retour = bool(_RE_RETOUR.search(titre)) and not _RE_PAS_RETOUR.search(titre)
+        if not retour and classer_evenement(titre)[0] != "blessure":
+            continue
+        le = str(x.get("date") or auj.isoformat())[:10]
+        try:
+            j_le = date.fromisoformat(le)
+        except ValueError:
+            continue
+        for nom in _joueurs_de_la_manchette(titre, par_famille, info):
+            b = B.get(nom)
+            if retour:
+                if b and not b.get("fini") and le >= b["depuis"]:
+                    b["fini"] = le
+                continue
+            if b and b.get("fini") and le <= b["fini"]:
+                continue                               # une vieille manchette, relue : il est deja revenu
+            jours, explicite = duree_blessure(titre, j_le)
+            jusqu = (j_le + timedelta(days=jours)).isoformat()
+            if not b or b.get("fini") or b["jusqu"] < le:
+                B[nom] = {"depuis": le, "jusqu": jusqu, "titre": titre[:160], "lien": x.get("lien"), "explicite": explicite}
+            elif explicite and (not b.get("explicite") or le >= b.get("vu", b["depuis"])):
+                b.update({"jusqu": jusqu, "titre": titre[:160], "lien": x.get("lien"), "explicite": True, "vu": le})   # la plus recente qui dit la duree
+            elif not b.get("explicite") and jusqu > b["jusqu"]:
+                b["jusqu"] = jusqu
+    out = {}
+    for nom in list(B):
+        b = B[nom]
+        if not b.get("fini"):                          # il a joue un match apres la manchette (sommaires de la LNH)
+            apres = [x for x in (matchs or {}).get(nom) or [] if x > b["depuis"]]
+            if apres:
+                b["fini"] = apres[0]
+        if not b.get("fini"):                          # il rejoue : ses matchs joues ont monte depuis la blessure
+            jr = ((stats_j or {}).get(nom) or {}).get("jours") or {}
+            dates = sorted(jr)
+            try:
+                seuil = (date.fromisoformat(b["depuis"]) + timedelta(days=2)).isoformat()
+            except ValueError:
+                seuil = b["depuis"]
+            avant = [k for k in dates if k <= seuil]
+            if avant and dates[-1] > seuil and (jr[dates[-1]].get("mj") or 0) > (jr[avant[-1]].get("mj") or 0) \
+                    and jr[dates[-1]].get("an") == jr[avant[-1]].get("an"):
+                b["fini"] = dates[-1]
+        encore = not b.get("fini") and nom in (absents_ or {})          # la date prevue est passee, mais il rate encore ses matchs
+        if not encore and (b["jusqu"] < (auj - timedelta(days=14)).isoformat() or (b.get("fini") and b["fini"] < (auj - timedelta(days=14)).isoformat())):
+            B.pop(nom)                                 # du passe : on oublie
+        elif not b.get("fini") and (b["jusqu"] >= auj.isoformat() or encore):
+            out[nom] = b
+    return out
+
+
 def _age_j(dt, aujourdhui=None):
     try:
         return max(0.0, ((aujourdhui or date.today()) - date.fromisoformat(str(dt)[:10])).days)
@@ -834,6 +1045,18 @@ def calculer(d=None, base=None, demande=None):
         except Exception:
             cx = None
         info[nom] = {"creux": cx, "actif": actif, "forme": fs, "equipe": h.get("equipe"), "legende_vraie": bool(h.get("hhof") or h.get("top100") or (h.get("trophees_n") or 0) >= 5)}
+    try:
+        matchs_j = matchs_par_joueur(base)
+        absents_ = absents(info, matchs_j, set(rc_) if rc_ else None)
+    except Exception as e:
+        print("Absents : " + repr(e)[:160], flush=True)
+        matchs_j, absents_ = {}, {}
+    try:
+        blesses = suivre_blessures(d, actu(), info, stats_j, absents_=absents_, matchs=matchs_j)
+    except Exception as e:
+        print("Blessures : " + repr(e)[:160], flush=True)
+        blesses = {}
+    d["absents"] = absents_                            # garde pour la fiche du joueur (« a rate N matchs »)
     rangs = {k: _rangs(v) for k, v in brut.items()}
     out = {}
     for nom in noms:
@@ -902,8 +1125,12 @@ def calculer(d=None, base=None, demande=None):
             else:
                 past.append("echange")
         bon = i["legende_vraie"] or (r.get("demande") or 0) >= 70 or (r.get("notoriete") or 0) >= 80 or (r.get("rythme") or 0) >= 75
-        if neg >= 8 and pos < neg:
-            past.append("mauvaise")
+        if neg >= 8 and pos < neg and nom not in blesses and nom not in absents_:
+            past.append("mauvaise")                    # blesse / absent s'affichent deja « Mauvaise nouvelle » (une seule pastille)
+        if nom in blesses:
+            past.insert(0, "blesse")                   # 25 nov 2026 : en premier (la tuile du Radar montre UNE pastille de joueur)
+        elif nom in absents_:
+            past.insert(0, "absent")                   # il rate ses matchs, sans manchette de blessure : « Absent », pas « Blessé »
         if bon and i["actif"] and ("en_creux" in past or (neg >= 8 and pos < neg)):
             past.append("occasion")
         out[nom] = {"indice": round(val, 1), "criteres": {k: v for k, v in r.items() if v is not None}, "pastilles": past,
@@ -973,7 +1200,8 @@ def passe(max_appels=None, sport="hockey"):
     d = lire()
     d = {"joueurs": dict(d.get("joueurs") or {}), "indice": d.get("indice") or {}, "le": d.get("le") or 0,
          "equipes_vues": dict(d.get("equipes_vues") or {}), "echanges": dict(d.get("echanges") or {}), "rosters": d.get("rosters"),
-         "grosses": dict(d.get("grosses") or {}), "rosters_vite": d.get("rosters_vite")}
+         "grosses": dict(d.get("grosses") or {}), "rosters_vite": d.get("rosters_vite"), "blessures": dict(d.get("blessures") or {}),
+         "absents": dict(d.get("absents") or {})}
     base = (demande_legale.lire() or {}).get("joueurs") or {}
     try:
         d["rosters"] = rosters_lnh(d.get("rosters"))
@@ -1174,6 +1402,12 @@ def pourquoi(nom):
     gr = (d.get("grosses") or {}).get(nom_vrai) or next((x for n, x in (d.get("grosses") or {}).items() if _norm(n) == k), None)
     if gr:
         out["nouvelles"] = gr                         # 14 nov 2026 : les evenements des 30 derniers jours (titre + lien)
+    bl = (d.get("blessures") or {}).get(nom_vrai)
+    if bl and not bl.get("fini") and str(bl.get("jusqu") or "") >= date.today().isoformat():
+        out["blessure"] = {k: bl.get(k) for k in ("depuis", "jusqu", "titre", "lien", "explicite")}   # 25 nov 2026
+    ab = (d.get("absents") or {}).get(nom_vrai)
+    if ab:
+        out["absent"] = ab                            # {rates, depuis, dernier} : il a rate ses derniers matchs
     I = d.get("indice") or {}
     if v.get("indice") is not None:
         pairs = [x for x in I.values() if x.get("actif") == v.get("actif")]

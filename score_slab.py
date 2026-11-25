@@ -238,7 +238,9 @@ def score(titre, joueur=None):
     if so_r in ("yg", "insert_retro", "yg_variante") and (bq._annee(str(titre or "").lower()) or 0) == 2024 \
             and not re.search(r"\brookies?\b|\brc\b|\(rc\)", str(titre or "").lower()) \
             and float(crit.get("recrue") or 0) < 80 and _veteran(nom or j):
-        so, so_r = "E", "yg_renewed"
+        # 25 nov 2026 (Mathieu : « Renewed Exclusives est une carte B ») : numerotee = la regle des numerotees (bareme_iq.renewed)
+        import cartes_match as _cm
+        so, so_r = bq.renewed(" " + str(titre or "").lower() + " ", (_cm._decoder_memo(titre or "") or {}).get("serie"), base="E")
     nj, lj, src = bq.note_joueur(nom or (ij or {}).get("nom"), crit, recrue=bq.recrue_recente(titre, bool(c.get("rc")) or so_r.startswith("yg"))
                                     # 17 nov 2026 (Gridin) : un joueur dans ses 2 premieres saisons, meme sur une carte qui n'est pas sa recrue
                                     or float((crit or {}).get("recrue") or 0) >= 90,

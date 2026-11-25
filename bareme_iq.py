@@ -13,7 +13,8 @@ LA SORTE (la carte seulement, pas le joueur) -> une lettre :
   A  : Young Guns raw (et gradee 9 et moins) ; Ice Premieres
        (auto / patch), OPC Platinum Rookie Auto, Black Diamond Rookie Gems Auto ; Clear Cut, Manga, Color Blast
   B  : les autos de base de produits moyens ; patch / jersey sans auto
-  C  : Dazzlers (18 nov) ; D : Fluorescence, Young Guns Renewed (18 nov)
+  C  : Dazzlers (18 nov) ; D : Fluorescence, Young Guns Renewed (18 nov ; numerotee = la regle des numerotees, 25 nov :
+       Renewed Exclusives /100 B, Renewed High Gloss /10 A-)
   Courtes impressions (18 nov) : SSP / 16-Bit A- ; SP B+ ; gradee 10 : A+
   Numerotees (une parallele sans autre raison) : /10 et moins A- ; /25 a /50 B+ ; /99 a /199 B ; /250 et plus C
   D  : une carte de base, sans numero
@@ -121,6 +122,18 @@ def _gem(g):
     return n in ("10", "9.5") or n.startswith("10")
 
 
+def renewed(brut, serie, base="D"):
+    """La sorte d'une Young Guns Renewed. 18 nov 2026 (Mathieu, apres la mesure) : la Renewed de base = D.
+    25 nov 2026 (Mathieu, Makar Renewed Exclusives /100 notee C : « Renewed Exclusives est une carte B ») : nos ventes de hockey
+    (export du 23 nov, sans les gradees) : Renewed de base 2,86 $ en mediane (6 820 ventes), Renewed Exclusives /100 51,57 $ (299),
+    Renewed High Gloss /10 212 $ (52). Une Renewed NUMEROTEE suit donc la regle des numerotees (/100 -> B, /10 -> A-) ; les mots
+    « Exclusives » et « High Gloss » disent le tirage quand le titre ne le dit pas."""
+    s = int(serie) if serie else (10 if re.search(r"\bhigh gloss\b", brut) else 100 if re.search(r"\bexclusives?\b", brut) else None)
+    if s:
+        return ("A-" if s <= 10 else "B+" if s <= 50 else "B" if s <= 199 else "C", "yg_renewed_num")
+    return (base, "yg_renewed")
+
+
 def sorte(titre):
     """(lettre, raison) de la SORTE de carte, d'apres le titre (cartes_match le decode)."""
     import cartes_match
@@ -164,7 +177,7 @@ def sorte(titre):
     # 16 nov 2026 (Mathieu : « les Young Guns Renewed ne valent presque rien ; seulement McDavid, Crosby, Ovechkin passent
     # 10 $ » ; verifie sur nos ventes : McDavid 15 $, Crosby 13,50 $, Ovechkin 12,60 $, les autres 2 a 6 $, la masse 1,90 $)
     if yg and re.search(r"\brenewed\b", brut):
-        return ("D", "yg_renewed")                    # 18 nov 2026 (Mathieu, apres la mesure : E -> D)
+        return renewed(brut, serie)
     if yg and re.search(r"\bretro\b|\brenewed\b", brut) and not re.search(r"\brookies?\b|\brc\b|\(rc\)", brut):
         yg = False                                     # une « Retro / Renewed Young Guns » d'un veteran : un insert, pas sa YG
         c.append(("B", "insert_retro"))
@@ -471,6 +484,7 @@ FAMILLES_VUE = [
     ("inserts", "B+ à C", "Autos, patchs et autres inserts", "Autos, patches & other inserts",
      [("Auto (hors recrue)", "Auto (non-rookie)", "B+"), ("Patch ou jersey, sans auto", "Patch or jersey, no auto", "B"),
       ("Retro Young Guns d’un vétéran", "Veteran Retro Young Guns", "B"),
+      ("Young Guns Renewed Exclusives /100", "Young Guns Renewed Exclusives /100", "B"),
       ("Dazzlers", "Dazzlers", "C")]),
     ("eviter", "D", "À éviter", "Skip these",
      [("Bases, lots, checklists", "Base cards, lots, checklists", "D"), ("Young Guns Renewed, Fluorescence", "Young Guns Renewed, Fluorescence", "D")]),
