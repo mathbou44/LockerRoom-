@@ -27,8 +27,11 @@ deux calculs du Radar lancés en même temps ; la fiche d'une annonce qui restai
 
 1. **Le bilan compte une vente libre au comptoir (sans carte) comme du profit à 100 %.** La règle du 17 nov dit : pas de
    profit quand le coût est inconnu. Une vente libre n'a pas de coût : la traiter pareil (profit « — ») ou la laisser ?
-2. **Petits iPhone (375 × 667, iPhone SE).** L'Accueil dépasse de 62 points, Vendre de 80, le Profil de 208, les
-   Notifications de 42. Sur 430 × 932 (le sien) et 393 × 852, tout tient. Resserrer pour le SE, ou accepter qu'il défile ?
+2. ~~Petits iPhone (375 × 667, iPhone SE)~~ **Réglé le 24 nov au soir** (Mathieu : « si c'est trop serré, cache certaines
+   options dans le menu ; ça doit rester clean ») : le Profil plie ses dernières lignes derrière « Plus » (une feuille les
+   montre), le dessin de Vendre et l'état vide des Notifications sont plus petits. Mesuré : 0 point de dépassement à
+   430 × 932, 393 × 852, 375 × 812 et 375 × 667 pour l'Accueil, Vendre, le Profil et les Notifications
+   (`tests/test_profil_petit_ecran.py`). L'Accueil tenait déjà (les 62 points venaient des pastilles de sport, admin seulement).
 3. **Page des tarifs : « 10 à 50 $ US » et « 5 à 25 $ US »** (prix d'autres apps, « novembre 2026 »). Le dépôt ne garde
    aucune source pour ces deux fourchettes. Sa règle : le site n'annonce jamais plus que ce qui est mesuré. À confirmer
    avec les noms des apps et la date de lecture, ou à retirer.
@@ -246,4 +249,30 @@ anglais. L'outil tourne avec la suite.
   calcule lui-même). `lockerroom.Api.mes_deals` → `_mes_deals1`, `tests/test_radar_un_calcul.py`.
 - **« Ventes (admin) » : 7 s sur 20, pour l'admin seulement.** À faire : hors du calcul (en fond, gardé d'un Radar à l'autre).
 - La recherche « petits tous » prend 5 à 6 s à elle seule.
+
+## Soirée du 24 nov : prix, petits écrans, trois captures de Mathieu
+
+- **Prix : 8,99 $ par mois ; annuel à −20 % (7,19 $ par mois, 12 mois, 21,60 $ d'économie).** Mathieu : « 8,99 serait déjà
+  mieux ; pour l'annuel, un rabais de 20 % ». Écrit une seule fois dans `forfaits.py` (`PRIX_PRO`, `RABAIS_ANNUEL`,
+  `PRIX_PRO_ANNUEL`, `ECONOMIE_ANNUEL`) ; le site (accueil, SlabIQ, tarifs), les conditions et la description des pages
+  disent ces chiffres, et `tests/test_audit_coherence.py` refuse tout ancien prix. « Moins de 2 $ par semaine » devient
+  « Environ 2 $ par semaine » (2,07 $). **Le prix FACTURÉ ne vit pas dans le code** : Stripe (au 24 nov : un seul prix,
+  7,99 $ par mois, aucun abonné) et Apple. À faire le même jour : deux prix dans Stripe, `STRIPE_PRIX_PRO` et
+  `STRIPE_PRIX_PRO_ANNUEL` dans Render, 8,99 $ dans App Store Connect.
+- **« Il manque l'abonnement annuel »** : le code est prêt depuis le 18 nov ; le site et l'app montrent l'annuel dès que
+  `STRIPE_PRIX_PRO_ANNUEL` existe (sinon `.si-annuel` est caché). Dans l'app iPhone, Apple n'a que le produit mensuel :
+  un annuel demande un 2e produit dans App Store Connect et le code pour deux produits (à décider).
+- **Stripe : une exigence en retard** (lu par l'API le 24 nov) : la photo en direct de la pièce d'identité
+  (`individual.verification.document_live_capture`, « past due »). Paiements et virements encore actifs.
+- **Fiche d'une carte : « List on eBay » écrasé en une barre de 20 points** (capture). La feuille est une colonne flexible à
+  hauteur limitée ; le bouton était le seul à pouvoir rétrécir. Il garde sa hauteur et devient le bouton secondaire
+  (`tests/test_fiche_carte_boutons.py`).
+- **Carte couchée pas tournée dans son slab** (la Wolf, capture) : une photo déjà cadrée serré sortait du recadrage
+  (« rien à gagner ») sans être tournée. `photoCadree` tourne maintenant l'image entière quand le contour est couché, ou
+  quand aucun contour n'est trouvé et que l'image a les proportions d'une carte couchée (1,36 à 1,46 ; une photo 4:3 n'est
+  pas touchée).
+- **Changer la photo : le devant et le dos d'un coup** : deux photos choisies dans la photothèque = la 1re le devant, la
+  2e le dos.
+- **En production après le push de 18 h 54** : déploiement en ligne à 18 h 55, aucune erreur ; une seule ligne
+  « Radar (temps) » par demande (21,9 s en admin : recherches 8,0 · ventes (admin) 7,2 · « petits tous » 7,1 s).
 

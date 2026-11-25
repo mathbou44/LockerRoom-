@@ -47,14 +47,29 @@ for texte in (f"{L['valeur_jour']} recherches de cartes par jour", f"{L['valeur_
               f"{L['annonces_mois']} annonces par mois", f"{L['annonces_mois']} listings per month",
               f"{L['breaks_produits']} produit", f"{L['offres_jour']} par jour", f"{forfaits.ESSAI_JOURS} jours offerts", f"{forfaits.ESSAI_JOURS} days free", f"The Radar: {A.RADAR_GRATUIT} cards, including its {A.RADAR_GRATUIT_TOP} best, and {L['radar_semaine']} searches a week"):
     assert texte in tarifs, texte
+P, PA = forfaits.PRIX_PRO, forfaits.PRIX_PRO_ANNUEL                     # 24 nov 2026 : 8,99 $ ; 7,19 $ avec l'engagement d'un an (−20 %)
+assert (P, PA, forfaits.RABAIS_ANNUEL, forfaits.ECONOMIE_ANNUEL) == (8.99, 7.19, 0.20, 21.6)
+fr = lambda v: ("%.2f" % v).replace(".", ",") + " $"
+en = lambda v: "$%.2f" % v
 prix = set()
-for nom in ("site_accueil.html", "site_slabiq.html", "site_tarifs.html", "conditions.html"):
+for nom in ("site_accueil.html", "site_slabiq.html", "site_tarifs.html", "conditions.html", "support.html"):
     h = open(os.path.join(RACINE, "ui", nom), encoding="utf-8").read()
-    prix |= set(re.findall(r"\b(\d{1,2})[,.]99\b", h))
-assert prix <= {"7", "5"}, prix                           # 7,99 $ par mois ; 5,99 $ par mois avec l'engagement d'un an
-assert "24 $ d’économie sur l’année" in tarifs and abs((7.99 - 5.99) * 12 - 24) < 0.001 and round((1 - 5.99 / 7.99) * 100) == 25 and "−25 %" in tarifs
+    prix |= set(re.findall(r"(?<![\d,.])(\d{1,2}[,.]\d{2})(?:\s?\$|\b)(?=[^<]{0,40}(?:mois|month|ann|year))", h)) | set(re.findall(r"\$(\d{1,2}\.\d{2})", h))
+assert {x.replace(",", ".") for x in prix} <= {"%.2f" % P, "%.2f" % PA, "21.60"}, prix      # aucun ancien prix ne traine
+for nom in ("site_accueil.html", "site_slabiq.html", "site_tarifs.html"):
+    h = open(os.path.join(RACINE, "ui", nom), encoding="utf-8").read()
+    assert fr(P) in h and en(P) in h and "7,99" not in h and "7.99" not in h and "5,99" not in h and "5.99" not in h, nom
+assert fr(PA) in tarifs and en(PA) in tarifs and "−%d %%" % round(forfaits.RABAIS_ANNUEL * 100) in tarifs and "−%d%%" % round(forfaits.RABAIS_ANNUEL * 100) in tarifs
+assert "21,60 $ d’économie sur l’année" in tarifs and "Save $21.60 over the year" in tarifs and "24 $" not in tarifs
+assert abs(round(1 - PA / P, 2) - forfaits.RABAIS_ANNUEL) < 1e-9
+slabiq = open(os.path.join(RACINE, "ui", "site_slabiq.html"), encoding="utf-8").read()
+assert 1.9 < P * 12 / 52 < 2.2 and "Environ 2 $ par semaine." in slabiq and "About $2 a week." in slabiq and "Moins de 2 $" not in slabiq     # 2,07 $ : plus « moins de 2 $ »
+cond = open(os.path.join(RACINE, "ui", "conditions.html"), encoding="utf-8").read()
+assert "8,99 $ CA par mois" in cond and "CA$8.99 per month" in cond
 srv = open(os.path.join(RACINE, "server.py"), encoding="utf-8").read()
-assert "Pro à 7,99 $ CA par mois. 14 jours de Pro offerts" in srv and "7.99 CAD a month" in srv
+assert "Pro à 8,99 $ CA par mois. 14 jours de Pro offerts" in srv and "$8.99 CAD a month" in srv
+# le forfait annuel ne se montre sur le site que s'il s'achete (STRIPE_PRIX_PRO_ANNUEL) : sinon « .si-annuel » est cache
+assert ".si-annuel{display:none !important}" in srv and 'class="forfait pro si-annuel"' in tarifs and '<span class="si-annuel">' in slabiq
 # 4 c. SlabIQ : les chiffres du site sont ceux des tests consignes (ui/slabiq_tests.json, ui/slabiq_bulletin.json), jamais plus
 T = json.load(open(os.path.join(RACINE, "ui", "slabiq_tests.json"), encoding="utf-8"))
 B = json.load(open(os.path.join(RACINE, "ui", "slabiq_bulletin.json"), encoding="utf-8"))

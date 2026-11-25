@@ -1808,6 +1808,11 @@ html[lang=en] body.sandbox::before{content:'SANDBOX eBay · test data'}
 .fc-g3 > label:has(#c-prix){order:1} .fc-g3 > label:has(#c-cout){order:2} .fc-g3 > #c-pp{order:3; grid-column:1 / -1; margin:-2px 0 0}
 .fc-g3 > #c-eb{order:5; grid-column:auto; justify-self:start; align-self:end; margin-bottom:2px} .fc-g3 > label:has(#c-emp){order:4; grid-column:auto} .fc-g3 > label.large:has(#c-titre){order:0}
 .btn.fc-ok{flex:none; min-height:54px; height:auto; padding:14px 18px; font-size:17px}
+/* 24 nov 2026 (Mathieu, capture : « le List on eBay est beaucoup trop petit ») : quand la fiche est plus haute que la feuille, ce bouton
+   etait le seul a pouvoir retrecir : il s'ecrasait en une barre de 20 points. Il garde sa hauteur ; la feuille defile. */
+#feuille .btn#c-ebay{flex:none; min-height:54px; height:auto; padding:14px 18px}
+/* une seule action pleine par feuille (Enregistrer) : « Mettre en vente sur eBay » est le bouton secondaire, au telephone comme a l'ordi */
+#feuille .btn#c-ebay{background:linear-gradient(var(--carte2), var(--carte2)) padding-box, var(--prisme) border-box !important; border:1.5px solid transparent !important; color:var(--texte) !important; box-shadow:none !important}
 @media (max-width:899px){ .fc-g3{grid-template-columns:1fr 1fr !important} .fc-g3 > label:has(#c-emp){grid-column:auto} }
 /* 19 nov 2026 (Mathieu : « reduire les entetes dans toutes les pages de l'inventaire et du Radar ; ca prend beaucoup trop de
    place pour rien ») : a l'ordinateur, l'en-tete de l'inventaire = 2 rangees basses : titre, recherche, boutons ; puis les
@@ -3346,6 +3351,9 @@ body.pro .onglets a.on{color:var(--acc)}
 .ph-liens a, .ph-liens button{color:var(--acc); background:none; border:0; font:inherit; font-weight:600; padding:8px 4px; cursor:pointer; text-decoration:none} .ph-liens span{color:var(--pale)}
 .assist{max-width:520px} .assist > .titre{margin-top:4px} .assist > .sous{font-size:15px; line-height:1.45; color:var(--doux)}
 .guide-ph{display:flex; justify-content:center; padding:6px 0}
+/* 24 nov 2026 (iPhone SE, 667 points de haut) : le dessin de la carte plus petit, « Entrer a la main » reste visible sans defiler ; l'etat vide des notifications moins haut */
+@media (max-width:699px) and (max-height:700px){ .ecran.vendre .guide-ph svg{width:84px; height:112px} .notifs .nt-vide:has(.nt-vi){padding-top:44px; padding-bottom:44px} }
+.pk-plie{display:none !important}
 .guide-ph svg{width:150px; height:200px} .guide-ph .g-carte{fill:var(--carte2); stroke:var(--ligne-fort); stroke-width:1.5}
 .guide-ph .g-coins{fill:none; stroke:var(--acc); stroke-width:3; stroke-linecap:round; stroke-linejoin:round} .guide-ph .g-sol{stroke:var(--ligne-fort); stroke-width:2; stroke-linecap:round}
 .conseils-ph{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px}
@@ -9092,8 +9100,18 @@ function photoCadree(url, o){
   const marge = (o && o.marge) ?? 0.05, debout = !!(o && o.debout), slab = !!(o && o.slab), cle = url + '|' + marge + '|' + debout + (slab ? '|s' : '');
   if (_CROP.has(cle)) return _CROP.get(cle);
   const p = (async () => {
-    const q = await contourPhoto(url); if (!q) return null;
     const im = await chargerImage(url), W = im.naturalWidth, H = im.naturalHeight;
+    // 24 nov 2026 (Mathieu : « la Wolf devrait etre tournee de 90 degres comme la Demidov / Fowler, automatiquement ») : une
+    // photo DEJA cadree serre sur une carte couchee ne passait pas par le recadrage (« rien a gagner ») : elle restait
+    // couchee, toute petite dans le slab. Elle se tourne maintenant en entier, sans rien couper.
+    const toutTourner = () => { const k = Math.min(1, 760 / Math.max(W, H)), w = Math.round(W * k), h = Math.round(H * k);
+      const cv = document.createElement('canvas'); cv.width = h; cv.height = w; const g = cv.getContext('2d');
+      g.translate(h, 0); g.rotate(Math.PI / 2); g.drawImage(im, 0, 0, W, H, 0, 0, w, h);
+      const out = {src: cv.toDataURL('image/jpeg', 0.86), ratio: h / w, tourne: true}; cv.width = cv.height = 0; return out; };
+    const q = await contourPhoto(url);
+    // aucun contour trouve : on tourne seulement une image qui a LES proportions d'une carte couchee (88,9 x 63,5 mm = 1,40) :
+    // une photo de telephone (4:3 = 1,33 ; 3:2 = 1,5 ; 16:9 = 1,78) n'est pas touchee
+    if (!q) return debout && W / H > 1.36 && W / H < 1.46 ? toutTourner() : null;
     const xs = q.map(p => p[0] / 1000 * W), ys = q.map(p => p[1] / 1000 * H);
     let x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
     if (x1 - x0 < W * 0.2 || y1 - y0 < H * 0.2) return null;
@@ -9105,7 +9123,7 @@ function photoCadree(url, o){
     if (slab) y0 = Math.max(0, y0 - 0.3 * (y1 - y0));
     const m = marge * Math.max(x1 - x0, y1 - y0);
     x0 = Math.max(0, x0 - m); y0 = Math.max(0, y0 - m); x1 = Math.min(W, x1 + m); y1 = Math.min(H, y1 + m);
-    if ((x1 - x0) * (y1 - y0) > 0.93 * W * H) return null;                     // deja cadree : rien a gagner
+    if ((x1 - x0) * (y1 - y0) > 0.93 * W * H) return debout && (x1 - x0) > (y1 - y0) * 1.1 ? toutTourner() : null;   // deja cadree : rien a couper ; couchee, on la tourne
     const tourner = debout && (x1 - x0) > (y1 - y0) * 1.1;
     // 11 nov 2026 (« ca lag quand je switch ») : une tuile fait ~170 px ; 760 px suffisent (avant 1400 : lourd a decoder)
     const k = Math.min(1, 760 / Math.max(x1 - x0, y1 - y0)), w = Math.round((x1 - x0) * k), h = Math.round((y1 - y0) * k);
@@ -14869,6 +14887,8 @@ const MAJ_APP = () => [
   // 20 nov 2026 (Mathieu : « important de mettre cet onglet a jour apres chaque grosse mise a jour ») : ce qui change pour la
   // personne, en mots simples ; jamais un detail technique
   {n: 244, le: '2026-11-23', points: [
+    ['photo', tt('Cartes couchées : debout dans le slab', 'Landscape cards: upright in the slab'), tt('Une carte horizontale se tourne toute seule pour remplir son slab. Et dans « Changer la photo », deux photos choisies d’un coup deviennent le devant et le dos.', 'A horizontal card now turns by itself to fill its slab. And in “Change the photo”, two photos picked at once become the front and the back.')],
+    ['reglages', tt('Petits iPhone : tout tient', 'Small iPhones: everything fits'), tt('Sur un petit écran, le Profil range ses dernières lignes sous « Plus ». Vendre et les Notifications tiennent sans défiler.', 'On a small screen, Profile tucks its last rows under “More”. Sell and Notifications fit without scrolling.')],
     ['photo', tt('Lots : trois cartes à la fois', 'Batches: three cards at a time'), tt('Un lot se lit trois cartes à la fois, au lieu de deux.', 'A batch now reads three cards at a time, instead of two.')],
     ['ebay', tt('Mise en vente : retirer une carte', 'Listing: remove a card'), tt('À l’étape des prix, « Retirer » sort une carte du lot. Elle reste dans ton inventaire.', 'On the price step, “Remove” takes a card out of the batch. It stays in your inventory.')],
     ['etiquette', tt('Des titres plus justes', 'More accurate titles'), tt('Le code d’une carte aide à trouver son parallèle (#BA = Blue Rainbow). La marque n’est plus écrite deux fois.', 'A card’s code helps find its parallel (#BA = Blue Rainbow). The brand is no longer written twice.')],
@@ -15499,6 +15519,7 @@ const IC_CONSEIL = new Proxy({}, {get: (_, k) => { const m = {acheter:'deals', v
   const d = (typeof IC_PIL !== 'undefined' && IC_PIL[m[k] || 'ampoule']) || ''; return `<svg class="cs-svg" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`; }});
 // 29 oct 2026 : une pastille = un sujet, sur une ligne ; le detail s'ouvre dans une feuille fluide
 const IC_PIL = {
+  trois: '<circle cx="6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/>',
   budget: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M16 14.5h2"/>',
   faire:'<path d="M5 12l4 4 10-10"/>', conseils:'<path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z"/>',
   breaks:'<rect x="4" y="7" width="16" height="13" rx="2"/><path d="M9 7V5h6v2M4 12h16"/>', news:'<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/>',
@@ -17571,7 +17592,8 @@ function ficheCollection(c, opts){
       ouvrirFeuille(`<h3>${tt('Changer la photo', 'Change the photo')}</h3>
         <div class="seg" style="margin:6px 0 14px">${[[0, tt('Devant', 'Front')], [1, n > 1 ? tt('Dos', 'Back') : tt('Ajouter le dos', 'Add the back')]].map(([k, l]) => `<button data-fa="${k}" class="${face === k ? 'on' : ''}">${l}</button>`).join('')}</div>
         <button class="btn" id="cp-cam">${tt('Prendre une photo', 'Take a photo')}</button>
-        <label class="btn ghost">${tt('Choisir dans la photothèque', 'Choose from the library')}<input type="file" accept="image/*" id="cp-lib" hidden></label>
+        <label class="btn ghost">${tt('Choisir dans la photothèque', 'Choose from the library')}<input type="file" accept="image/*" id="cp-lib" multiple hidden></label>
+        <div class="sous" style="text-align:center; margin-top:8px">${tt('Deux photos choisies : la 1re devient le devant, la 2e le dos.', 'Two photos picked: the 1st becomes the front, the 2nd the back.')}</div>
         ${n > 1 ? `<button class="btn ghost" id="cp-inv">${tt('Inverser le devant et le dos', 'Swap front and back')}</button>` : ''}`);
       const iv = $('#cp-inv'); if (iv) iv.onclick = async () => { vibrer(); fermerFeuille();
         const r = await essai(API.carte_photos_inverser(c.id), tt('Devant et dos inversés', 'Front and back swapped'));
@@ -17579,9 +17601,13 @@ function ficheCollection(c, opts){
         if (r && (location.hash || '').startsWith('#inventaire')) vueInventaire(); };
       $$('[data-fa]').forEach(b => b.onclick = () => { face = +b.dataset.fa; vibrer(); peindre(); });
       $('#cp-cam').onclick = () => { fermerFeuille(); ouvrirScanner({but:'photo', cid:c.id, index: face}); };
-      $('#cp-lib').onchange = async (ev) => { const f = ev.target.files && ev.target.files[0]; if (!f) return;
-        let ph; try { ph = await reduirePhoto(f); } catch (x) { toast(tt('Photo illisible : reprends-la', 'Unreadable photo: try again')); return; }
-        fermerFeuille(); await changerPhotoCarte(c.id, ph, face); };
+      // 24 nov 2026 (Mathieu : « je devrais pouvoir selectionner le devant et l'arriere ») : deux photos choisies d'un coup =
+      // le devant puis le dos ; une seule = la face choisie en haut, comme avant
+      $('#cp-lib').onchange = async (ev) => { const F = [...(ev.target.files || [])].slice(0, 2); if (!F.length) return;
+        const P = []; try { for (const f of F) P.push(await reduirePhoto(f)); } catch (x) { toast(tt('Photo illisible : reprends-la', 'Unreadable photo: try again')); return; }
+        fermerFeuille();
+        if (P.length === 2) { const r = await essai(API.carte_photo_changer(c.id, P[0], 0)); if (r) await changerPhotoCarte(c.id, P[1], 1); }
+        else await changerPhotoCarte(c.id, P[0], face); };
     };
     peindre();
   };
@@ -20366,7 +20392,7 @@ const CEO_TXT = () => ({
     platine: [tt('Version Platine (comps)', 'Platinum plan (comps)'), tt('Ta vue admin devient un forfait payant plus cher : valeurs tirées des ventes, prix calculés, deals avec mise max. Déjà prête : il suffit d’une licence commerciale des ventes (ou de l’accord écrit d’eBay), puis LR_PLATINE=1 dans Render. Tu peux la voir dès maintenant : vue « Platine ».', 'Your admin view becomes a pricier paid plan: values from sales, computed prices, deals with max bid. Already built: it only needs a commercial sales licence (or eBay’s written approval), then LR_PLATINE=1 in Render. You can preview it now: “Platinum” view.')],
     epn: [tt('Affiliation eBay (eBay Partner Network)', 'eBay affiliation (eBay Partner Network)'), tt('Chaque achat fait par un lien du Radar peut rapporter une commission, sans rien coûter à l’acheteur. Déjà branché dans l’app : il faut seulement l’identifiant de campagne (LOCKERROOM_EPN_CAMPID). À dire clairement aux utilisateurs.', 'Every purchase made through a Radar link can earn a commission, at no cost to the buyer. Already wired in the app: it only needs the campaign ID (LOCKERROOM_EPN_CAMPID). Disclose it clearly to users.')],
     parrainage: [tt('Parrainage', 'Referrals'), tt('Un mois de Pro offert à celui qui invite et à celui qui s’inscrit. Chaque collectionneur connaît d’autres collectionneurs.', 'One month of Pro for the inviter and the new user. Every collector knows other collectors.')],
-    boutiques: [tt('Forfait Boutique', 'Shop plan'), tt('Comptoir, rachats, consignation et rapport de taxes valent plus que 7,99 $ pour un commerce : un forfait à part, plus cher.', 'Counter, buys, consignment and tax report are worth more than $7.99 to a business: a separate, higher plan.')],
+    boutiques: [tt('Forfait Boutique', 'Shop plan'), tt('Comptoir, rachats, consignation et rapport de taxes valent plus que 8,99 $ pour un commerce : un forfait à part, plus cher.', 'Counter, buys, consignment and tax report are worth more than $8.99 to a business: a separate, higher plan.')],
     commandites: [tt('Commandites claires', 'Clear sponsorships'), tt('Une boutique, un breaker ou un salon mis en vedette, toujours identifié « commandité ». Attention : le site et la politique disent « aucune publicité » ; il faudrait les mettre à jour.', 'A shop, breaker or card show featured, always labelled “sponsored”. Careful: the site and policy say “no ads”; they would need updating.')],
     createurs: [tt('Créateurs de contenu', 'Content creators'), tt('YouTubeurs et streamers de breaks : un code promo à eux et une commission sur les abonnements qu’ils amènent.', 'YouTubers and break streamers: their own promo code and a commission on the subscriptions they bring.')],
     salons: [tt('Salons et boutiques du Québec', 'Quebec shows and shops'), tt('Une affiche avec code QR au comptoir des boutiques partenaires et aux salons ; essai prolongé pour ceux qui scannent.', 'A QR-code poster at partner shop counters and card shows; longer trial for those who scan.')],
@@ -23540,15 +23566,31 @@ async function vueReglages(arg){
 // chaque réglage s'ouvre dans une feuille (les blocs restent dans la page, cachés : tout continue de marcher)
 // 24 nov 2026 (Mathieu : « je ne devrais pas pouvoir bouger l'ecran ») : le Profil qui depasse de peu se serre juste assez
 // pour tenir sans defiler ; s'il depasse de trop meme serre (petit ecran), il reste comme avant et defile
+// 24 nov 2026 (Mathieu, iPhone SE : « si c'est trop serre, cache certaines options dans le menu ; ca doit rester clean ») :
+// sur un petit telephone, si le Profil depasse encore une fois serre au maximum, ses dernieres lignes passent derriere une
+// ligne « Plus » (une feuille les montre) : rien ne disparait, et l'ecran ne bouge plus. Les moins utilisees se plient d'abord.
+const PLIER_PROFIL = ['gg-maj', 'gg-donnees', 'gg-aide', 'gg-boutique'];
 function tenirProfil(){
-  const ec = $('.ecran.reglages'), d = document.scrollingElement, R = document.documentElement;
-  if (!ec || !$('#g-pils') || !d) { R.style.removeProperty('--pk'); return; }
+  const ec = $('.ecran.reglages'), d = document.scrollingElement, R = document.documentElement, pils = $('#g-pils');
+  if (!ec || !pils || !d) { R.style.removeProperty('--pk'); return; }
+  $$('.pk-plie', pils).forEach(x => x.classList.remove('pk-plie')); { const p0 = $('#gg-plus'); if (p0) p0.remove(); }
   const dep = (k) => { R.style.setProperty('--pk', String(k)); return d.scrollHeight - innerHeight; };
+  const serrer = () => { if (dep(0) <= 0) return; let a = 0, b = 1; for (let i = 0; i < 6; i++) { const m = (a + b) / 2; if (dep(m) > 0) a = m; else b = m; } dep(b); };
   if (dep(0) <= 0) return;
-  if (dep(1) > 0) { dep(0); return; }
-  let a = 0, b = 1;
-  for (let i = 0; i < 6; i++) { const m = (a + b) / 2; if (dep(m) > 0) a = m; else b = m; }
-  dep(b);
+  if (dep(1) <= 0) { serrer(); return; }
+  const L = PLIER_PROFIL.map(id => document.getElementById(id)).filter(l => l && l.parentElement === pils);
+  if (innerWidth >= 900 || L.length < 2) { dep(0); return; }            // a l'ordi, la page defile comme avant
+  pils.insertAdjacentHTML('beforeend', pilAcc('gg-plus', 'trois', `${esc(tt('Plus', 'More'))}<small class="gg-s"></small>`, ''));
+  const plus = pils.lastElementChild, plies = [];
+  for (const l of L) { l.classList.add('pk-plie'); plies.unshift(l); if (plies.length >= 2 && d.scrollHeight - innerHeight <= 0) break; }
+  const COURT = {'gg-boutique': tt('Boutique', 'Store'), 'gg-aide': tt('Aide', 'Help'), 'gg-donnees': tt('Données', 'Data'), 'gg-maj': tt('Nouveautés', 'What’s new')};
+  plus.querySelector('.gg-s').textContent = plies.map(l => COURT[l.id]).filter(Boolean).join(', ');
+  const neuf = plies.map(l => l.querySelector('.n.capsule')).find(Boolean), pn = plus.querySelector('.n');     // le point « Nouveautes » suit
+  if (neuf && pn) { pn.hidden = false; pn.className = neuf.className; pn.textContent = neuf.textContent; }
+  plus.onclick = () => { vibrer();
+    ouvrirFeuille(`<h3 class="f-titre">${esc(tt('Plus', 'More'))}</h3><div class="acc-pils" id="gg-sous"></div>`);
+    plies.forEach(l => { const c = l.cloneNode(true); c.removeAttribute('id'); c.classList.remove('pk-plie'); c.onclick = () => l.click(); $('#gg-sous').appendChild(c); }); };
+  serrer();                                                              // puis juste assez serre, pas plus
 }
 if (!window.__tenirProfil) { window.__tenirProfil = true; addEventListener('resize', () => { if ($('.ecran.reglages #g-pils')) tenirProfil(); }); }
 function pastillerReglages(){

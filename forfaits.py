@@ -20,6 +20,13 @@ import time
 from datetime import datetime, timedelta
 
 ESSAI_JOURS = 14
+# 24 nov 2026 (Mathieu : « 8,99 serait deja mieux ; pour l'annuel, un rabais de 20 % ») : LE prix annonce, ecrit ici une seule
+# fois. Le site, les conditions et la description des pages doivent dire ces chiffres (tests/test_audit_coherence.py). Le
+# prix FACTURE vit dans Stripe (STRIPE_PRIX_PRO, STRIPE_PRIX_PRO_ANNUEL) et chez Apple : les changer la aussi, le meme jour.
+PRIX_PRO = 8.99                # $ CA par mois (7,99 avant)
+RABAIS_ANNUEL = 0.20           # engagement de 12 mois, paye chaque mois (25 % avant)
+PRIX_PRO_ANNUEL = round(PRIX_PRO * (1 - RABAIS_ANNUEL), 2)      # 7,19 $ par mois
+ECONOMIE_ANNUEL = round((PRIX_PRO - PRIX_PRO_ANNUEL) * 12, 2)   # 21,60 $ sur l'annee
 LIMITES = {                    # Gratuit (apres l'essai) ; Pro = illimite
     # 21 nov 2026 (Mathieu : « c'est trop peu ; le gratuit doit donner envie de rester avec nous, pas de partir parce qu'il
     # n'est capable de rien faire ; 10 annonces max par mois sur eBay, 20 recherches max par semaine dans le Radar ») :

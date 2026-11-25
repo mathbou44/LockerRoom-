@@ -70,7 +70,7 @@ OPPORTUNITES = [
     ("platine", "Version Platine (comps)", "Ta vue admin devient un forfait payant plus cher : valeurs tirées des ventes, prix calculés, deals avec mise max. Déjà prête : il suffit d'une licence commerciale des ventes (ou de l'accord écrit d'eBay), puis LR_PLATINE=1 dans Render.", "revenus"),
     ("epn", "Affiliation eBay (eBay Partner Network)", "Chaque achat fait par un lien du Radar peut rapporter une commission à SlabCoach, sans rien coûter à l’acheteur. Déjà branché dans l’app : il faut seulement l’identifiant de campagne. À dire clairement aux utilisateurs (lien affilié).", "affiliation"),
     ("parrainage", "Parrainage", "Un mois de Pro offert à celui qui invite et à celui qui s’inscrit. Le coût est faible et chaque collectionneur connaît d’autres collectionneurs.", "croissance"),
-    ("boutiques", "Forfait Boutique", "Les fonctions boutique (comptoir, rachats, consignation, rapport de taxes) valent plus que 7,99 $ pour un commerce : un forfait à part, plus cher.", "revenus"),
+    ("boutiques", "Forfait Boutique", "Les fonctions boutique (comptoir, rachats, consignation, rapport de taxes) valent plus que 8,99 $ pour un commerce : un forfait à part, plus cher.", "revenus"),
     ("commandites", "Commandites claires", "Une boutique locale, un breaker ou un salon de cartes mis en vedette, toujours identifié « commandité ». Attention : la politique et le site disent « aucune publicité » ; une commandite demanderait de mettre ces textes à jour.", "revenus"),
     ("createurs", "Créateurs de contenu", "YouTubeurs et streamers de breaks : un code promo à eux (ex. 1 mois offert) et une commission sur les abonnements qu’ils amènent.", "croissance"),
     ("salons", "Salons et boutiques du Québec", "Une affiche avec code QR au comptoir des boutiques partenaires et aux salons de cartes ; essai prolongé pour ceux qui scannent.", "croissance"),
@@ -100,7 +100,7 @@ SEMIS = {
 # cote apres les travaux des 17-18 nov
 SEMIS["suivi"] = [
     ("sv_pousser", "Pousser les dernières versions (v84 à v95), puis « Valider maintenant »", "GitHub Desktop → Push. Ensuite : Entraîner SlabIQ → Valider maintenant (lettres, audit Pro, questions).", 1, None, None),
-    ("sv_stripe_annuel", "Stripe : créer le prix annuel (5,99 $/mois, 12 mois)", "Puis STRIPE_PRIX_PRO_ANNUEL dans Render et le lien des conditions (frais d'annulation).", 2, None, "https://dashboard.stripe.com/products"),
+    ("sv_stripe_annuel", "Stripe : créer le prix annuel (7,19 $/mois, 12 mois)", "Puis STRIPE_PRIX_PRO_ANNUEL dans Render et le lien des conditions (frais d'annulation).", 2, None, "https://dashboard.stripe.com/products"),
     ("sv_soldcomps", "SoldComps : renouveler ou changer de plan", "Les crédits du blitz finissaient le 18 nov. Sans crédits : moins de comps récentes (règle des 45 jours).", 2, None, None),
     ("sv_aikido", "Aikido : marquer lightgbm « Ignore »", "Aucune version corrigée n'existe ; le reste est réglé.", 3, None, None),
     ("sv_recadrage", "Vérifier le recadrage photo sur une vraie carte (ex. Demidov holo)", "4 mm nets sur chaque côté : la carte ne doit plus être coupée.", 3, None, None),
@@ -253,7 +253,7 @@ SEMIS["lot_23nov"] = [
 # sujet deviennent UNE tache avec sa liste dans la note. 87 ouvertes -> 25 (18 a lui, 7 a Claude). Regle pour la suite :
 # une nouvelle tache seulement si elle ne tient dans aucune de celles-ci.
 SEMIS["menage_23nov"] = [
-    ("g_stripe", "Stripe : vérification d'identité, prix annuel, puis un vrai paiement test", "Dans l'ordre : 1) finir la vérification d'identité (sans elle, pas de paiements le 1er décembre) ; 2) créer le prix annuel (5,99 $/mois, 12 mois), puis STRIPE_PRIX_PRO_ANNUEL dans Render ; 3) un vrai paiement de bout en bout : essai 14 jours → Pro → annulation → remboursement.", 1, None, "https://dashboard.stripe.com", "2026-11-27"),
+    ("g_stripe", "Stripe : vérification d'identité, prix annuel, puis un vrai paiement test", "Dans l'ordre : 1) finir la vérification d'identité (sans elle, pas de paiements le 1er décembre) ; 2) le prix mensuel passe à 8,99 $ (STRIPE_PRIX_PRO) et le prix annuel à 7,19 $/mois, 12 mois (STRIPE_PRIX_PRO_ANNUEL), dans Stripe puis dans Render ; 3) un vrai paiement de bout en bout : essai 14 jours → Pro → annulation → remboursement.", 1, None, "https://dashboard.stripe.com", "2026-11-27"),
     ("g_cell", "Au cell, 20 minutes : 7 vérifications", "1) Parcours d'un nouveau compte : inscription → relier eBay → 1re carte → Radar → Breaks → essai Pro. 2) Un lot de 4 cartes, puis dis-le à Claude (il lit les temps au journal). 3) Le Radar Pro a-t-il assez de cartes ? 4) Consignation dans l'app iPhone : Excel, PDF, retrait d'eBay. 5) Le recadrage photo sur une vraie carte. 6) Le défi SlabIQ, 2 ou 3 fois. 7) Une Program of Excellence dans le Radar. Note ce qui accroche ; Claude corrige.", 1, None, None, "2026-11-26"),
     ("g_cloudflare", "Cloudflare et Render : 5 réglages de sécurité", "1) www.slabcoach.com et slabcoach.com en orange (proxied). 2) Pare-feu : règles gérées + limite de débit. 3) Verrouiller Render derrière Cloudflare (3 étapes, dans l'ordre : Admin → Sécurité). 4) 2FA sur le compte, HSTS (Edge Certificates), DMARC p=none. 5) Archiver l'alerte « Bot Fight Mode » sans l'activer (elle bloque Stripe, Apple, eBay). Coche ce qui est déjà fait.", 1, None, "https://dash.cloudflare.com", "2026-11-25"),
     ("g_comptes", "Sécurité des comptes : 2FA partout, GitHub privé, 2e vérification admin", "1) 2FA sur TOUS les comptes qui tiennent les clés (Render, GitHub, Apple, Stripe, eBay, Cloudflare, courriel). 2) GitHub : dépôt privé, analyse des secrets, branche main protégée. 3) Admin : confirmer la 2e vérification (iPhone relié + code de secours).", 1, None, None, "2026-11-25"),
@@ -615,7 +615,7 @@ def tableau(api):
         usd = 0.70
     usd_cad = round(1 / usd, 4) if usd else 1.4
     prix = a.get("prix") or {}
-    prix_m = (prix.get("montant") or 7.99) / (12 if prix.get("intervalle") == "year" else 1)
+    prix_m = (prix.get("montant") or __import__("forfaits").PRIX_PRO) / (12 if prix.get("intervalle") == "year" else 1)
     mrr = round(a["pro"] * prix_m, 2)
     frais_stripe = round(stripe_n * (prix_m * (0.029 + 0.007) + 0.30), 2)          # 2,9 % + 0,30 $ + Billing 0,7 %
     frais_apple = round(apple * prix_m * 0.15, 2)                                 # programme petites entreprises : 15 %

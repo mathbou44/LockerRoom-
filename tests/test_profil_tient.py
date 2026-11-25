@@ -18,7 +18,9 @@ for m in re.finditer(r"var\(--pk", src):                                        
 # 2. tenirProfil : rien si tout tient ; rien si ca ne tient pas meme serre ; sinon le plus petit serrage qui tient
 i = src.index("function tenirProfil(){")
 f = src[i:src.index("\nfunction pastillerReglages(){", i)]
-assert "if (dep(0) <= 0) return;" in f and "if (dep(1) > 0) { dep(0); return; }" in f
+# 24 nov 2026 (soir) : s'il depasse meme serre, un petit telephone plie ses dernieres lignes derriere « Plus »
+# (tests/test_profil_petit_ecran.py) ; a l'ordi, il reste comme avant et defile
+assert "if (dep(0) <= 0) return;" in f and "if (dep(1) <= 0) { serrer(); return; }" in f and "if (innerWidth >= 900 || L.length < 2) { dep(0); return; }" in f
 assert "if (dep(m) > 0) a = m; else b = m;" in f and "dep(b);" in f
 assert "R.style.removeProperty('--pk')" in f                                     # hors du Profil : plus de serrage
 assert "addEventListener('resize'" in f                                          # l'ecran tourne ou change de taille
