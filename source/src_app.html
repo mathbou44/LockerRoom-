@@ -15355,9 +15355,18 @@ function remplirAccTel(){
   const e = $('.ecran.acc.acc-ft-mode'); if (!e) return;
   if (innerWidth >= 700 || estBureau()) { e.style.minHeight = ''; e.classList.remove('acc-plein'); return; }
   const nav = document.querySelector('.onglets'), r = e.getBoundingClientRect(), y0 = r.top + (scrollY || 0);
-  const bas = nav && getComputedStyle(nav).position === 'fixed' ? nav.getBoundingClientRect().top + (scrollY || 0) : innerHeight;
+  // 24 nov 2026 (Mathieu, capture : « encore decale vers le haut, et quand je rafraichis c'est pire ») : le haut de la barre
+  // du bas se lisait a l'ecran PUIS on y ajoutait le defilement. La barre est fixe : pendant le rebond d'iOS (tirer pour
+  // rafraichir, defilement negatif) ou pendant qu'elle glisse en place, la hauteur sortait trop petite et laissait un trou
+  // en bas. Sa place se calcule maintenant d'apres sa mise en page (bas de l'ecran, moins sa marge, moins sa hauteur), qui
+  // ne bouge ni avec le rebond ni avec une animation ; et on remesure une fois l'ecran pose.
+  let bas = innerHeight;
+  if (nav) { const cs = getComputedStyle(nav), b = parseFloat(cs.bottom);
+    if (cs.position === 'fixed') bas = isFinite(b) && nav.offsetHeight ? innerHeight - b - nav.offsetHeight : nav.getBoundingClientRect().top; }
   const h = Math.round(bas - y0 - 18);
   if (h > 420) { e.style.minHeight = h + 'px'; e.classList.add('acc-plein'); }
+  if (!remplirAccTel.encore) { remplirAccTel.encore = true;
+    [400, 1200, 2600].forEach(ms => setTimeout(() => { remplirAccTel.encore = true; remplirAccTel(); if (ms === 2600) remplirAccTel.encore = false; }, ms)); }
 }
 addEventListener('resize', () => { clearTimeout(S.tRemplir); S.tRemplir = setTimeout(remplirAccTel, 150); });
 function tuileTendances(r){
@@ -22952,6 +22961,8 @@ async function vueNotifs(arg){
     <div class="acc-pils" id="nt-pils"></div>
     <div class="sous nt-note">${tt('Au plus 3 notifications par jour, rien entre 22 h et 8 h : le reste t’attend ici.', 'At most 3 notifications a day, none between 10 pm and 8 am: the rest waits here.')}</div>
     ${permis ? '' : `<button class="btn" id="nt-perm" style="margin-top:12px">${tt('Activer les notifications sur cet appareil', 'Turn on notifications on this device')}</button>`}
+    ${''/* 24 nov 2026 (Mathieu : « toujours pas recu de notifications ») : un essai, et la raison si rien n'arrive */}
+    ${NATIF ? `<button class="lien-doux" id="nt-essai" style="display:block; margin:12px auto 0">${tt('Envoyer une notification d’essai', 'Send a test notification')}</button>` : ''}
     <div id="nt-res" hidden>
     <div class="nt-bloc"><div class="nt-t">${tt('Mes joueurs suivis', 'My tracked players')} <span class="fv-n" id="nt-n"></span></div>
       <div class="sous" style="margin-bottom:10px">${tt('Joueurs ou équipes. Ils passent aussi en premier dans tes deals (★).', 'Players or teams. They also come first in your deals (★).')}</div>
@@ -23022,6 +23033,12 @@ async function vueNotifs(arg){
   $$('[data-seuil]').forEach(b => b.onclick = () => { $$('[data-seuil]').forEach(x => x.classList.toggle('on', x === b)); API.alarmes_regler({seuil_deal: +b.dataset.seuil}).catch(() => {}); });
   $$('[data-alx]').forEach(b => b.onclick = async () => { await API.alerte_supprimer(+b.dataset.alx).catch(() => {}); b.closest('.rangee').remove(); majNt(); });
   const pm = $('#nt-perm'); if (pm) pm.onclick = () => { demanderNotifications(); pm.remove(); };
+  const es = $('#nt-essai'); if (es) es.onclick = async () => { vibrer(); es.disabled = true;
+    const r = await API.push_essai().catch(e => ({ok: false, erreur: e.message})); es.disabled = false;
+    const M = {serveur: tt('Les notifications ne sont pas encore branchées de notre côté.', 'Notifications aren’t connected on our side yet.'),
+      appareil: tt('Cet iPhone n’a pas encore accepté les notifications : Réglages de l’iPhone › SlabCoach › Notifications.', 'This iPhone hasn’t allowed notifications yet: iPhone Settings › SlabCoach › Notifications.'),
+      apple: tt('Apple a refusé l’envoi. On regarde ça.', 'Apple refused the send. We’re on it.')};
+    toast(r && r.ok ? tt('Envoyée : regarde ton écran verrouillé.', 'Sent: check your lock screen.') : ((M[r && r.cause] || (r && r.erreur) || tt('Pas envoyée', 'Not sent')) + (r && r.detail ? ' · ' + r.detail : '')), 7000); };
   peindreListe(false);
   $('#nt-plus').onclick = () => peindreListe(true);
   $$('[data-ntf]').forEach(b => b.onclick = () => { filtre = b.dataset.ntf; vibrer(); $$('[data-ntf]').forEach(x => x.classList.toggle('on', x === b)); peindreListe(false); });

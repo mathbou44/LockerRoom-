@@ -25,7 +25,7 @@ L'app existe déjà dans App Store Connect (Apple ID 6827726629) et Codemagic es
 
 | Quand | Toi | Résultat |
 |---|---|---|
-| Mardi 24 | App Store Connect : accepter l'accord « Applications payantes » et remplir banque et taxes ; créer l'abonnement `com.slabcoach.app.pro.mensuel` (7,99 $ CA) ; régler l'adresse des avis du serveur | L'achat intégré peut être testé |
+| Mardi 24 | App Store Connect : accepter l'accord « Applications payantes » et remplir banque et taxes ; créer l'abonnement `com.slabcoach.app.pro.mensuel` (8,99 $ CA) ; régler l'adresse des avis du serveur | L'achat intégré peut être testé |
 | Mardi 24 | Codemagic : « Start new build » › ios-app-store | La version arrive dans TestFlight (≈ 30 min) |
 | Mercredi 25 | TestFlight sur ton iPhone : tester « S'abonner » puis « Restaurer mes achats » ; prendre les captures (voir plus bas) | Tout est vérifié sur un vrai iPhone |
 | Mercredi 25 | Coller la fiche ci-dessous, joindre les captures, la note au réviseur avec ton code démo, choisir le build, **publication manuelle**, puis « Soumettre pour examen » | En examen |
@@ -107,7 +107,7 @@ Les clés restent dans Render, jamais dans GitHub.
 > 2. **App Store Connect › ton app › Abonnements › +** : groupe **SlabCoach Pro**, puis un abonnement :
 >    - Nom de référence : `SlabCoach Pro mensuel`
 >    - **Identifiant du produit : `com.slabcoach.app.pro.mensuel`** (exactement : c'est ce que l'app demande)
->    - Durée : **1 mois** · Prix : **7,99 $ CA** (Apple calcule les autres pays)
+>    - Durée : **1 mois** · Prix : **8,99 $ CA** (Apple calcule les autres pays)
 >    - Localisation FR et EN : nom « SlabCoach Pro », description FR « Tout le Radar, annonces illimitées », EN « The full Radar and unlimited listings »
 >      (23 nov 2026 : c'est ce que la feuille « Passe au Pro » de l'app montre aujourd'hui ; l'ancienne parlait de « valeurs » et de « deals »)
 >    - Capture pour l'examen : la feuille « Passe au Pro » de l'app (fais-la dans TestFlight)

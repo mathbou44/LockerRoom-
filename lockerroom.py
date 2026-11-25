@@ -962,6 +962,32 @@ class Api:
             pass
         return {"ok": True}
 
+    def push_essai(self):
+        """24 nov 2026 (Mathieu : « toujours pas recu de notifications ») : une notification d'essai sur les iPhone de CE compte,
+        et, si elle ne part pas, POURQUOI : le serveur n'est pas branche a Apple, aucun iPhone n'a accepte, ou Apple refuse.
+        Le detail technique (variables, reponse d'Apple) ne va qu'au vrai admin."""
+        import apns
+        admin = self._est_admin(reel=True)
+        with _verrou:
+            c = self._db()
+            try:
+                c.execute("CREATE TABLE IF NOT EXISTS push_jetons (jeton TEXT PRIMARY KEY, plateforme TEXT, le TEXT)")
+                nb = c.execute("SELECT COUNT(*) FROM push_jetons").fetchone()[0]
+            finally:
+                c.close()
+        if not apns.actif():
+            manque = [k for k in ("APNS_KEY_ID", "APNS_TEAM_ID", "APNS_KEY") if not os.environ.get(k)]
+            return {"ok": False, "cause": "serveur", "appareils": nb, "erreur": "Les notifications ne sont pas encore branchées.",
+                    "detail": ("Render : il manque " + ", ".join(manque)) if admin else None}
+        if not nb:
+            return {"ok": False, "cause": "appareil", "appareils": 0, "erreur": "Cet iPhone n'a pas encore accepté les notifications."}
+        apns.DERNIER.clear()
+        n = self._push("SlabCoach", "Les notifications marchent sur cet iPhone.", {"lien": "#notifs"})
+        d = dict(apns.DERNIER)
+        return {"ok": n > 0, "cause": None if n else "apple", "appareils": nb, "envoyees": n,
+                "erreur": None if n else "Apple a refusé l'envoi.",
+                "detail": (f"Apple {d.get('code')} : {d.get('texte')}" if admin and not n and d else None)}
+
     def _push(self, titre, texte, donnees=None):
         """Envoie a tous les iPhone du compte courant ; oublie les jetons perimes."""
         import apns

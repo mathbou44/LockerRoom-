@@ -23,6 +23,9 @@ _verrou = threading.Lock()
 _JWT = {"le": 0.0, "v": None}
 
 
+DERNIER = {}                   # la derniere reponse d'Apple : {code, texte, le}
+
+
 def actif():
     return all(os.environ.get(k) for k in ("APNS_KEY_ID", "APNS_TEAM_ID", "APNS_KEY"))
 
@@ -72,7 +75,9 @@ def envoyer(jeton, titre, texte, donnees=None, client=None):
                 client.close()
     except Exception as e:
         print("APNs : " + repr(e), flush=True)
+        DERNIER.update(code=0, texte=repr(e)[:200], le=time.time())
         return "erreur"
+    DERNIER.update(code=r.status_code, texte=(r.text or "")[:200], le=time.time())      # 24 nov 2026 : pour l'essai (Api.push_essai)
     if r.status_code == 200:
         return "ok"
     if r.status_code == 410 or (r.status_code == 400 and "BadDeviceToken" in r.text):
