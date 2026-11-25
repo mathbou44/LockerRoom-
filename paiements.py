@@ -312,6 +312,12 @@ def recevoir(corps, entete):
         ev = json.loads(corps)
     except ValueError:
         return 400, "corps illisible"
+    # 24 nov 2026 (audit, capture de Mathieu : « No such subscription ... a similar object exists in test mode ») : un avis du
+    # mode TEST etait accepte par le serveur en VRAI mode (le secret du webhook dans Render etait celui du mode test). Meme
+    # avec une bonne signature, un avis de l'autre mode n'est jamais applique : il ne peut ni donner ni retirer un forfait.
+    if isinstance(ev, dict) and isinstance(ev.get("livemode"), bool) and mode() in ("test", "reel") and ev["livemode"] != (mode() == "reel"):
+        print(f"Stripe : avis du mode {'reel' if ev['livemode'] else 'test'} ignore (le serveur est en mode {mode()}). Verifier STRIPE_WEBHOOK_SECRET.", flush=True)
+        return 200, "autre mode : ignoré"
     r = traiter(ev)
     if not r:
         return 200, "ignoré"

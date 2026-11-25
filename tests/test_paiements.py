@@ -71,6 +71,11 @@ SCRIPT = textwrap.dedent('''
     assert envoyer(paye, decalage=900).status_code == 400                  # trop vieux (rejeu)
     assert c.post("/stripe/webhook", data=b"{}").status_code == 400        # pas de signature
     assert comptes.info(cid).get("forfait") is None
+    # 24 nov 2026 (audit) : un avis de l'AUTRE mode (ici : du vrai mode, sur un serveur a cle de test), meme bien signe, n'est
+    # jamais applique : il ne donne pas le Pro
+    r_autre = envoyer(dict(paye, id="evt_autre_mode", livemode=True))
+    assert r_autre.status_code == 200 and r_autre.get_json()["recu"] == "autre mode : ignoré", r_autre.get_json()
+    assert comptes.info(cid).get("forfait") is None
     assert envoyer(paye).status_code == 200
     i = comptes.info(cid)
     assert i["forfait"] == "pro" and i["stripe_client"] == "cus_1" and i["forfait_fin"] == 1790000000, i

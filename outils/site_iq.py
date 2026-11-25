@@ -195,6 +195,9 @@ def ecrire(R, defi):
     # 19 nov 2026 (audit) : « +780 $ avec SlabIQ » laissait croire a 780 $ de profit ; c'est l'ECART avec un achat au hasard
     # 20 nov 2026 (Mathieu : « vendeur d'un coup sec ») : le chiffre du defi, le plus parlant : une carte du Radar Pro contre une au hasard
     # 20 nov 2026 (Mathieu : « valide l'info, partout ») : la FAQ disait « 5 fois » (une A seule, ancienne mesure) : la meme mesure
+    # 24 nov 2026 : la phrase sous le titre (« Ne mise plus a l'aveugle. ») dit le nombre de ventes testees : il suit le test
+    s = sub1(s, r'(<a href="/slabiq#tests">)[0-9][0-9 \u202f\u00a0]*( ventes de hockey</a>)', lambda m: m.group(1) + fr(R["ventes"]) + m.group(2))
+    s = sub1(s, r'(<a href="/slabiq#tests">)[0-9][0-9,]*( hockey sales</a>)', lambda m: m.group(1) + en(R["ventes"]) + m.group(2))
     s = sub1(s, r'une carte A ou A\+ se revend [0-9]+ fois plus souvent qu’une E', f'une carte A ou A+ se revend {x_ae} fois plus souvent qu’une E')
     s = sub1(s, r'an A or A\+ card resells [0-9]+ times more often than an E', f'an A or A+ card resells {x_ae} times more often than an E')
     # 22 nov 2026 (rapport du tour complet : l'accueil disait 70 % / 8 % (le defi), la page SlabIQ 71 % / 11 % (le Radar Pro),

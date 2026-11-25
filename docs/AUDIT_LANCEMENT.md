@@ -275,4 +275,13 @@ anglais. L'outil tourne avec la suite.
   2e le dos.
 - **En production après le push de 18 h 54** : déploiement en ligne à 18 h 55, aucune erreur ; une seule ligne
   « Radar (temps) » par demande (21,9 s en admin : recherches 8,0 · ventes (admin) 7,2 · « petits tous » 7,1 s).
+- **TROUVÉ, À RÉGLER AVANT LE LANCEMENT : le secret du webhook Stripe dans Render est très probablement celui du mode test.**
+  Un avis du mode test (l'abonnement d'essai à 1 $ qui se renouvelle) a été accepté par le serveur le 24 nov à 9 h 22
+  (`POST /stripe/webhook` → 200), alors que la clé est celle du vrai mode. Avec ce secret, un avis du vrai mode serait
+  refusé : un client paierait sans devenir Pro. À faire par Mathieu : coller le « Signing secret » de l'adresse du vrai
+  mode dans `STRIPE_WEBHOOK_SECRET` (Render), puis un vrai paiement de bout en bout. Le code ignore maintenant tout avis
+  de l'autre mode (`paiements.recevoir`). **Leçon pour l'audit : les cinq passes ne voyaient pas les variables de Render ;
+  seul un vrai paiement prouve le chemin de l'argent.**
+- **Phrase du site** : « Ne mise plus à l'aveugle. » sous le titre de l'accueil, avec le nombre de ventes testées et le lien
+  vers la preuve (choix de Mathieu).
 

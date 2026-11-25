@@ -87,6 +87,18 @@ for nom in ("site_accueil.html", "site_slabiq.html", "site_tarifs.html", "site_a
     for m in re.finditer(r"(\d{2})[,.](\d)\s?%", h):                                    # un pourcentage : un resultat mesure, pas un autre
         v = float(m.group(1) + "." + m.group(2))
         assert any(abs(v - x * 100) < 0.051 for x in MESURES), (nom, v)
+# 4 d. la phrase sous le titre de l'accueil (24 nov 2026, choisie par Mathieu) : le nombre de ventes TESTEES, celui du test, dans
+# les deux langues, avec le lien vers la preuve ; l'outil du site le remet a jour apres chaque test
+acc = open(os.path.join(RACINE, "ui", "site_accueil.html"), encoding="utf-8").read()
+nfr, nen = f"{T['ventes']:,}".replace(",", " "), f"{T['ventes']:,}"
+assert '<p class="punch"><b><span class="fr">Ne mise plus à l’aveugle.</span><span class="en">Never bid blind again.</span></b>' in acc
+assert f'SlabIQ a testé <a href="/slabiq#tests">{nfr} ventes de hockey</a> pour noter chaque carte de A+ à E.' in acc
+assert f'SlabIQ tested <a href="/slabiq#tests">{nen} hockey sales</a> to grade every card from A+ to E.' in acc
+assert acc.index('class="punch"') < acc.index('class="actions"') and acc.index("</h1>") < acc.index('class="punch"')
+assert 'id="tests"' in open(os.path.join(RACINE, "ui", "site_slabiq.html"), encoding="utf-8").read()
+outil = open(os.path.join(RACINE, "outils", "site_iq.py"), encoding="utf-8").read()
+assert "ventes de hockey</a>)', lambda m: m.group(1) + fr(R[\"ventes\"]) + m.group(2))" in outil and "hockey sales</a>)', lambda m: m.group(1) + en(R[\"ventes\"]) + m.group(2))" in outil
+assert ".punch{" in open(os.path.join(RACINE, "ui", "site_base.html"), encoding="utf-8").read()
 # 5. le site : liens, ancres, francais et anglais par paires, gabarits, rien d'interdit
 r = subprocess.run([sys.executable, os.path.join(RACINE, "outils", "audit_site.py"), "--test"], capture_output=True, text=True, timeout=120)
 sortie = (r.stdout or "") + (r.stderr or "")
