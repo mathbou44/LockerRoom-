@@ -4344,6 +4344,18 @@ button.vd-cz > span{border-bottom:1px solid var(--ligne); padding-bottom:2px} .v
 .cg .cg-z{width:min(calc(100% - 36px), calc(70vh * var(--ar, .714)))}   /* 18 nov : jamais etiree (la Demidov ecrasee en largeur) */ .cg-mode{margin:0; flex-wrap:nowrap; align-items:center} #cg-note{margin-left:auto} #cg-note .cg-n{margin:0; white-space:nowrap}
 .cg .cg-r{flex-wrap:nowrap; white-space:nowrap} .cg-tips{margin:6px 0 6px 18px; padding:0} .cg-tips li{margin:4px 0}
 .vd.cg > *{flex-shrink:0}  /* rien ne se tasse quand « Enregistrer » apparait : la grille ne saute pas sous le doigt */
+/* 24 nov 2026 (Mathieu, captures : « je peux bouger toute la page et le Save est trop bas, on ne le voit pas ; tout doit
+   tenir dans un ecran ; le texte explicatif derriere un point d'interrogation ») : la grille prend la hauteur qui RESTE une
+   fois les boutons et « Enregistrer » places (avant : 70 % de l'ecran, quoi qu'il y ait autour) ; rien ne depasse en largeur ;
+   les explications ne s'ouvrent qu'avec « Comment ? » (la page defile alors, le temps de lire). */
+.vd.cg{overflow-x:hidden; gap:10px; padding-top:calc(env(safe-area-inset-top) + 16px)}
+.vd.cg .cg-h{min-height:44px; padding-right:58px}
+.vd.cg > *{max-width:100%; min-width:0}
+.vd.cg .chips{flex-wrap:nowrap; margin:0} .vd.cg .cg-mode .chip{padding-left:12px; padding-right:12px; min-width:0; white-space:nowrap} .vd.cg #cg-note{flex:none}
+.vd.cg:not(.cg-aide-on) .cg-expl{display:none}
+.vd.cg:not(.cg-aide-on){overflow-y:hidden}
+.vd.cg:not(.cg-aide-on) .cg-z{--cgh:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 352px); width:min(calc(100% - 36px), calc(var(--cgh) * var(--ar, .714))); max-height:var(--cgh)}
+.vd.cg:not(.cg-aide-on) .env-b{margin-top:auto}
 .cg-leg{display:flex; flex-wrap:wrap; justify-content:center; gap:6px 14px; font:700 12px var(--f-cond); letter-spacing:.04em; color:var(--doux)}
 .cg-leg span{display:flex; align-items:center; gap:6px} .cg-leg i{width:12px; height:12px; border-radius:3px}
 .cg-leg .z10 i{background:rgba(143,212,164,.8)} .cg-leg .z9 i{background:rgba(233,207,142,.8)} .cg-leg .z8 i{background:rgba(240,160,90,.8)} .cg-leg .z7 i{background:rgba(255,120,120,.8)}
@@ -6295,6 +6307,35 @@ html.tel-large .fen.fa .fen-img{max-height:calc(46vh / 1.12) !important}
 .bil-c:last-child{border-bottom:0} .bil-c small{color:var(--doux)} .bil-c span{text-align:right; font:700 16px var(--f-cond)} .bil-c .vert{color:var(--vert)} .bil-c .rouge{color:var(--rouge)}
 .bil-p{display:flex; flex-wrap:wrap; gap:8px 20px; margin:10px 2px; font-size:13.5px; color:var(--doux)} .bil-p b{color:var(--texte)}
 .bil-act{display:grid; grid-template-columns:1fr; gap:8px; margin-top:12px} .bil-act .btn{margin:0}
+/* 24 nov 2026 : le Bilan refait (un chiffre en grand, trois reperes, des lignes serrees) ; tient sur une page au telephone */
+.bil2 .b2-tete{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:nowrap; margin-bottom:10px}
+.bil2 .b2-tete .titre{margin:0; min-width:0}
+.bil2 .bil-m{gap:4px; flex:none} .bil2 .bil-m b{min-width:0; padding:0 6px; font-size:17px; white-space:nowrap} .bil2 .bil-m .rond{width:38px; height:38px}
+.bil2 .b2-mc{display:none}
+.b2-heros{display:flex; flex-direction:column; align-items:center; text-align:center; padding:18px 16px 14px; border-radius:22px; background:var(--carte); border:1px solid var(--ligne); position:relative; overflow:hidden}
+.b2-heros::before{content:''; position:absolute; left:0; right:0; top:0; height:2px; background:linear-gradient(100deg,#9FE6D2,#B9BEFF 36%,#F2B3D6 68%,#F1D58E); opacity:.6}
+.b2-lib{font:700 12px var(--f-cond); letter-spacing:.14em; text-transform:uppercase; color:var(--doux)}
+.b2-n{font:700 clamp(46px, 13vw, 60px)/1.02 var(--f-cond); margin-top:2px} .b2-n.vert{color:var(--vert)} .b2-n.rouge{color:var(--rouge)}
+.b2-ev{font-size:13.5px; color:var(--doux); margin-top:2px} .b2-ev em{font-style:normal; font-weight:700} .b2-ev em.vert{color:var(--vert)} .b2-ev em.rouge{color:var(--rouge)}
+.b2-3{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); width:100%; margin-top:14px; padding-top:12px; border-top:1px solid var(--ligne)}
+.b2-3 > div{display:flex; flex-direction:column; gap:1px; min-width:0} .b2-3 > div + div{border-left:1px solid var(--ligne)}
+.b2-3 b{font:700 22px/1.1 var(--f-cond)} .b2-3 span{font-size:12.5px; color:var(--doux)}
+.bil2 .bil-eau{margin-top:12px; gap:7px; padding-top:14px; padding-bottom:14px} .bil2 .bil-eau .bloc-t{margin-bottom:2px}
+.bil2 .bil-l{grid-template-columns:92px minmax(0,1fr) 74px; gap:10px; font-size:14px} .bil2 .bil-l span{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.bil2 .bil-l i{height:8px} .bil2 .bil-l b{font-size:16px} .bil2 .bil-l.tot{padding-top:7px} .bil2 .bil-l.tot b{font-size:19px}
+.bil2 .bil-av{margin-top:2px; padding:8px 12px; text-align:left}
+.bil2 .b2-go{margin-top:12px} .bil2 .b2-liens{display:flex; justify-content:center; gap:22px; margin-top:6px}
+.bil2 .b2-liens button{display:inline-flex; align-items:center; gap:6px} .bil2 .b2-liens svg{width:16px; height:16px}
+@media (max-width:699px){ .bil2 .b2-ml{display:none} .bil2 .b2-mc{display:inline} }
+@media (max-width:699px){ .bil2 .b2-tete{margin-bottom:8px} .bil2 .b2-tete .titre{font-size:clamp(30px, 9vw, 38px); line-height:1}
+  .b2-heros{padding:14px 14px 12px} .b2-n{font-size:50px} .b2-3{margin-top:10px; padding-top:10px}
+  .bil2 .bil-eau{margin-top:10px; gap:6px; padding-top:12px; padding-bottom:12px} .bil2 .b2-go{margin-top:10px} .bil2 .b2-liens{margin-top:2px} .bil2 .b2-liens button{padding:6px 4px} }
+@media (max-width:699px) and (max-height:880px){ .b2-heros{padding:10px 14px 9px} .b2-n{font-size:42px} .b2-ev{font-size:12.5px} .b2-3{margin-top:7px; padding-top:7px} .b2-3 b{font-size:19px}
+  .bil2 .bil-eau{gap:4px; padding-top:9px; padding-bottom:9px; margin-top:8px} .bil2 .bil-eau .bloc-t{display:none} .bil2 .bil-l{font-size:13.5px} .bil2 .bil-l i{height:6px} .bil2 .bil-l b{font-size:15px}
+  .bil2 .bil-av{padding:6px 10px; font-size:12.5px} .bil2 .b2-go{margin-top:8px; height:46px} }
+@media (max-width:699px) and (max-height:700px){ .bil2 .b2-tete{margin-bottom:4px} .bil2 .b2-tete .titre{font-size:26px} .b2-lib{display:none} .b2-heros{padding:7px 12px 7px} .bil2 .bil-eau{padding-top:7px; padding-bottom:7px; margin-top:6px} .bil2 .bil-av{margin-top:0; padding:4px 10px} .b2-n{font-size:34px} .b2-3{margin-top:5px; padding-top:5px} .b2-3 b{font-size:17px} .b2-3 span{font-size:11.5px}
+  .bil2 .bil-l i{display:none} .bil2 .bil-l{grid-template-columns:minmax(0,1fr) auto} .bil2 .bil-eau{gap:2px} .bil2 .b2-go{height:42px; margin-top:6px} .bil2 .b2-liens{font-size:13px} }
+@media (min-width:900px){ .ecran.bil2 #b-corps{max-width:720px} }
 @media (min-width:700px){ .bil-ks{grid-template-columns:repeat(4, minmax(0,1fr))} .bil-act{grid-template-columns:1.4fr 1fr 1fr} }
 @media (max-width:480px){ .bil-l{grid-template-columns:110px minmax(0,1fr) 72px; gap:8px; font-size:13.5px} .bil-c{grid-template-columns:minmax(0,1fr) 70px 70px} .bil-c small{display:none} }
 .sj{display:flex; flex-direction:column; gap:8px}
@@ -19315,7 +19356,7 @@ function voirCentrage(e, cid, apres){
         <span class="cg-m" data-m="l"></span><span class="cg-m" data-m="r"></span><span class="cg-m" data-m="t"></span><span class="cg-m" data-m="b"></span>
         ${doigt ? `<div class="cg-doigt" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10 9.5V4a2 2 0 0 0-4 0v10"/><path d="M14 10V9a2 2 0 0 0-4 0v1"/><path d="M18 11v-1a2 2 0 0 0-4 0"/><path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-6-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg><span>${tt('Glisse', 'Drag')}</span></div>` : ''}</div>
       <div class="cg-leg">${(face === 'dos' ? [[75, 10, 'z10'], [90, 9, 'z9']] : [[55, 10, 'z10'], [60, 9, 'z9'], [65, 8, 'z8'], [70, 7, 'z7']]).map(([lim, n, c]) => `<span class="${c}"><i></i>${n} ≤ ${lim}/${100 - lim}</span>`).join('')}</div>
-      <div class="sous">${sans
+      <div class="sous cg-expl">${sans
         ? tt('<b>Carte sans bordure</b> : PSA juge le centrage avec le dessin. Le contour blanc est le bord de la carte, il ne bouge pas.', '<b>Borderless card</b>: PSA judges centering from the design. The white outline is the card’s edge; it doesn’t move.')
           + `<ol class="cg-tips"><li>${tt('Choisis un élément imprimé qui devrait être centré et qui va presque d’un côté à l’autre : une ligne de texte (souvent le nom), une boîte (les statistiques au dos), une bande ou un cadre du dessin.', 'Pick a printed element that should be centered and runs almost side to side: a text line (often the name), a box (the stats on the back), a band or a frame in the design.')}</li>
             <li>${tt('Gauche / droite : la ligne de gauche sur son bord gauche, celle de droite sur son bord droit. Le même élément des deux côtés.', 'Left / right: the left line on its left edge, the right line on its right edge. The same element on both sides.')}</li>
@@ -19327,6 +19368,7 @@ function voirCentrage(e, cid, apres){
         : tt('Le contour blanc est le bord de la carte, il ne bouge pas. Glisse chaque ligne depuis le bord jusqu’au bord intérieur du cadre imprimé : la bande entre les deux est la bordure.', 'The white outline is the card’s edge; it doesn’t move. Drag each line from the edge to the inner edge of the printed frame: the band in between is the border.')}
         ${tt(face === 'dos' ? 'Dos (normes PSA) : 10 jusqu’à 75/25, 9 et moins jusqu’à 90/10.' : 'Devant (normes PSA) : 10 jusqu’à 55/45, 9 jusqu’à 60/40, 8 jusqu’à 65/35, 7 jusqu’à 70/30.', face === 'dos' ? 'Back (PSA standards): 10 up to 75/25, 9 and below up to 90/10.' : 'Front (PSA standards): 10 up to 55/45, 9 up to 60/40, 8 up to 65/35, 7 up to 70/30.')} <a href="#" data-bareme-cg>${tt('Barème', 'Scale')}</a></div>
       <div class="env-b"><button class="btn" id="cg-ok" hidden>${tt('Enregistrer', 'Save')}</button>${v.manuel ? `<button class="pilule" id="cg-auto">${tt('Remettre la mesure de l’app', 'Restore the app’s measure')}</button>` : ''}</div>`;
+    o.classList.toggle('cg-aide-on', !!aide);      // 24 nov 2026 : les explications ne se montrent qu'avec « Comment ? »
     o.querySelector('.vd-x').onclick = fermer;
     const bc_ = o.querySelector('[data-bareme-cg]'); if (bc_) bc_.onclick = (ev) => { ev.preventDefault(); baremePSA(); };
     $$('[data-f]', o).forEach(b => b.onclick = () => { face = b.dataset.f; mode = null; peindre(); });
@@ -19757,7 +19799,7 @@ function feuilleVendue(c){
       <label class="fvd-l fvd-in"><span>${tt('Ton coût (taxes et port inclus)', 'Your cost (tax & shipping incl.)')}</span><span class="fvd-c">− <input class="champ" id="c-cout" type="number" inputmode="decimal" step="0.01" value="${dev2(c.cout)}" placeholder="0"></span></label>
       ${ligne('Profit', '—', 'fvd-tot', 'fvd-p')}
     </div>
-    ${pc && !nb(c.port_paye) ? `<div class="sous fvd-av">${tt('L’acheteur a payé ', 'The buyer paid ')}${argent(pc, 2)}${tt(' de port : entre ce que l’envoi t’a coûté, sinon ce montant compte comme du profit.', ' for shipping: enter what shipping cost you, otherwise it counts as profit.')}</div>` : ''}
+    ${pc && !nb(c.port_paye) ? `<div class="sous fvd-av">${tt('L’acheteur a payé ', 'The buyer paid ')}${argent(pc, 2)}${tt(' de port : entre ce que l’envoi t’a coûté, sinon ce montant compte comme du profit.', ' for shipping: enter what shipping cost you, otherwise it counts as profit.')} <button class="lien-t" id="fvd-pa">${tt('Toujours le même envoi ?', 'Always the same shipping?')}</button></div>` : ''}
     <div id="c-achat" class="fc-achat"></div>
     <div class="fvd-act"><button class="btn" id="fvd-ok">${tt('Enregistrer', 'Save')}</button><button class="lien-doux" id="fvd-tout">${tt('Modifier la fiche', 'Edit the listing')} ›</button></div>
     <button class="lien-doux fvd-ann" id="fvd-ann">${tt('Pas vendue (l’acheteur n’a pas payé)', 'Not sold (buyer didn’t pay)')}</button></div>`);
@@ -23238,11 +23280,12 @@ async function vueBilan(){
   // canaux seulement s'il y en a plusieurs ; le mois se change avec deux fleches
   S.mois = S.mois || new Date().toISOString().slice(0, 7);
   const nomMois = (m) => { const [y, mo] = m.split('-').map(Number); const t = new Date(y, mo - 1, 15).toLocaleDateString(LOC(), {month: 'long', year: 'numeric'}); return t.charAt(0).toUpperCase() + t.slice(1); };
+  const moisCourt = (m) => { const [y, mo] = m.split('-').map(Number); const t = new Date(y, mo - 1, 15).toLocaleDateString(LOC(), {month: 'short', year: 'numeric'}); return t.charAt(0).toUpperCase() + t.slice(1); };
   const decale = (m, n) => { const [y, mo] = m.split('-').map(Number); const d = new Date(y, mo - 1 + n, 15); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
   const ceMois = new Date().toISOString().slice(0, 7);
-  V().innerHTML = `<section class="ecran bil">
-    <div class="entete"><div class="titre">${tt('Bilan', 'Report')}</div>
-      <div class="bil-m"><button class="rond" id="b-prec" aria-label="${esc(tt('Mois précédent', 'Previous month'))}">‹</button><b>${esc(nomMois(S.mois))}</b><button class="rond" id="b-suiv" aria-label="${esc(tt('Mois suivant', 'Next month'))}" ${S.mois >= ceMois ? 'disabled' : ''}>›</button></div></div>
+  V().innerHTML = `<section class="ecran bil bil2">
+    <div class="entete b2-tete"><div class="titre">${tt('Bilan', 'Report')}</div>
+      <div class="bil-m"><button class="rond" id="b-prec" aria-label="${esc(tt('Mois précédent', 'Previous month'))}">‹</button><b><span class="b2-ml">${esc(nomMois(S.mois))}</span><span class="b2-mc">${esc(moisCourt(S.mois))}</span></b><button class="rond" id="b-suiv" aria-label="${esc(tt('Mois suivant', 'Next month'))}" ${S.mois >= ceMois ? 'disabled' : ''}>›</button></div></div>
     <div id="b-corps">${roue}</div></section>`;
   $('#b-prec').onclick = () => { vibrer(); S.mois = decale(S.mois, -1); vueBilan(); };
   $('#b-suiv').onclick = () => { if (S.mois >= ceMois) return; vibrer(); S.mois = decale(S.mois, 1); vueBilan(); };
@@ -23256,8 +23299,8 @@ async function vueBilan(){
   const ev = (v) => v == null ? '' : `<em class="${v >= 0 ? 'vert' : 'rouge'}">${v >= 0 ? '▲' : '▼'} ${pc(Math.abs(v))}</em> ${tt('vs mois passé', 'vs last month')}`;
   // ou va l'argent : chaque ligne, sa barre (proportionnelle aux ventes)
   const autres = Math.round((b.revenus - d.couts - d.frais - d.port - (b.profit + b.depenses)) * 100) / 100;   // ex. breaks, magasin
-  const lignes = [[tt('Ventes', 'Sales'), b.revenus, 'v'], [tt('Coût des cartes', 'Card cost'), -(d.couts || 0), 'c'], [tt('Frais eBay et paiement', 'eBay and payment fees'), -(d.frais || 0), 'c'],
-    [tt('Livraison', 'Shipping'), -(d.port || 0), 'c'], ...(Math.abs(autres) >= 1 ? [[tt('Autres (breaks, magasin)', 'Other (breaks, shop)'), -autres, 'c']] : []),
+  const lignes = [[tt('Ventes', 'Sales'), b.revenus, 'v'], [tt('Coût des cartes', 'Card cost'), -(d.couts || 0), 'c'], [tt('Frais eBay', 'eBay fees'), -(d.frais || 0), 'c'],
+    [tt('Livraison', 'Shipping'), -(d.port || 0), 'c'], ...(Math.abs(autres) >= 1 ? [[tt('Autres', 'Other'), -autres, 'c']] : []),
     [tt('Dépenses', 'Expenses'), -(b.depenses || 0), 'c']].filter(([, v], i) => i === 0 || Math.abs(v) >= 0.5);
   const mx = Math.max(1, b.revenus, ...lignes.map(([, v]) => Math.abs(v)));
   const eau = `<div class="bloc bil-eau"><div class="bloc-t">${tt('Où va ton argent', 'Where your money goes')}</div>
@@ -23267,20 +23310,44 @@ async function vueBilan(){
   const phrase = nb ? tt(`En ${nomMois(S.mois).toLowerCase()}, tu as vendu <b>${nb} carte${nb > 1 ? 's' : ''}</b> pour <b>${argent(b.revenus, 0)}</b> et gardé <b class="${b.profit >= 0 ? 'vert' : 'rouge'}">${argent(b.profit, 0)}</b> de profit.`,
       `In ${nomMois(S.mois)}, you sold <b>${nb} card${nb > 1 ? 's' : ''}</b> for <b>${argent(b.revenus, 0)}</b> and kept <b class="${b.profit >= 0 ? 'vert' : 'rouge'}">${argent(b.profit, 0)}</b> in profit.`)
     : tt('Aucune vente ce mois-ci.', 'No sales this month.');
-  $('#b-corps').innerHTML = `<p class="bil-ph">${phrase}</p>
-    <div class="bil-ks">${kpi(tt('Ventes', 'Sales'), argentKpi(b.revenus), ev(vsR) || `${nb} ${tt(nb > 1 ? 'cartes' : 'carte', nb > 1 ? 'cards' : 'card')}`)}
-      ${kpi(tt('Profit net', 'Net profit'), argentKpi(b.profit), ev(vsP) || tt('après tout', 'after everything'), b.profit >= 0 ? 'vert' : 'rouge')}
-      ${kpi(tt('Marge', 'Margin'), marge == null ? '—' : pc(marge), tt('du prix de vente', 'of the sale price'))}
-      ${kpi(tt('Dépenses', 'Expenses'), argentKpi(b.depenses), tt('fournitures, gradation…', 'supplies, grading…'))}</div>
-    ${nb || b.depenses ? eau : ''}
+  // 24 nov 2026 (Mathieu, capture : « revois le design de cette page, elle semble vieille ; elle doit tenir sur une page
+  // comme toutes les autres ») : comme le resume d'une app d'Apple : UN chiffre en grand (le profit net du mois) et sa
+  // tendance, trois reperes dessous (ventes, cartes, marge), puis « ou va ton argent » en lignes serrees, une seule action
+  // pleine ; « depense » et « exporter » deviennent deux liens. Le titre et le mois partagent une rangee.
+  const rep3 = (val, lib) => `<div><b>${val}</b><span>${lib}</span></div>`;
+  $('#b-corps').innerHTML = !nb && !b.depenses ? `<div class="vide">${phrase}</div>
+    <div class="b2-liens ph-liens"><button id="b-dep">${ICONES.plus} ${tt('Ajouter une dépense', 'Add an expense')}</button></div><button id="b-csv" hidden></button>`
+    : `<div class="b2-heros"><span class="b2-lib">${tt('Profit net', 'Net profit')}</span>
+      <b class="b2-n ${b.profit >= 0 ? 'vert' : 'rouge'}">${b.profit < 0 ? '−' : ''}${argent(Math.abs(b.profit), 0)}</b>
+      <small class="b2-ev">${ev(vsP) || tt('après tout', 'after everything')}</small>
+      <div class="b2-3">${rep3(argentKpi(b.revenus), tt('Ventes', 'Sales'))}${rep3(nb, tt(nb > 1 ? 'Cartes' : 'Carte', nb > 1 ? 'Cards' : 'Card'))}${rep3(marge == null ? '—' : pc(marge), tt('Marge', 'Margin'))}</div></div>
+    ${eau}
     ${canaux.length > 1 ? `<div class="bloc bil-can"><div class="bloc-t">${tt('Par canal', 'By channel')}</div>${canaux.map(([k, v]) => `<div class="bil-c"><b>${esc(k)}</b><small>${v.nb} ${k === 'Breaks' ? 'break' + (v.nb > 1 ? 's' : '') : tt('vente' + (v.nb > 1 ? 's' : ''), 'sale' + (v.nb > 1 ? 's' : ''))}</small><span>${argent(v.revenus, 0)}</span><span class="${v.profit >= 0 ? 'vert' : 'rouge'}">${v.profit >= 0 ? '+' : '−'}${argent(Math.abs(v.profit), 0)}</span></div>`).join('')}</div>` : ''}
     ${b.taxes_percues || b.rachats ? `<div class="bil-p">${b.taxes_percues ? `<span>${tt('Taxes perçues au comptoir', 'Taxes collected at the counter')} <b>${argent(b.taxes_percues)}</b></span>` : ''}${b.rachats ? `<span>${tt('Rachats payés comptant', 'Cash buybacks')} <b>${argent(b.rachats)}</b></span>` : ''}</div>` : ''}
-    <div class="bil-act"><a class="btn" href="#ventes/${esc(S.mois)}">${tt('Voir mes ventes du mois', 'See this month’s sales')} ›</a>
-      <button class="btn ghost" id="b-dep">${ICONES.plus} ${tt('Ajouter une dépense', 'Add an expense')}</button><button class="btn ghost" id="b-csv">${ICONES.export} ${tt('Exporter (CSV)', 'Export (CSV)')}</button></div>`;
+    <a class="btn b2-go" href="#ventes/${esc(S.mois)}">${tt('Voir mes ventes du mois', 'See this month’s sales')} ›</a>
+    <div class="b2-liens ph-liens"><button id="b-dep">${ICONES.plus} ${tt('Ajouter une dépense', 'Add an expense')}</button><button id="b-csv">${ICONES.export} ${tt('Exporter (CSV)', 'Export (CSV)')}</button></div>`;
   $('#b-dep').onclick = feuilleDepense;
   $('#b-csv').onclick = async () => { const r = await essai(API.bilan_csv(S.mois)); if (r) telecharger(r.nom, r.csv); };
   const sc = $('#b-sc'); if (sc) sc.onclick = () => { vibrer(); S.filtreV = 'sans'; location.hash = '#ventes/' + S.mois; };
 }
+// 24 nov 2026 (Mathieu : « sous 30 $ c'est toujours 3 $ de ship ; ca devrait etre automatique ») : l'envoi automatique des
+// petites ventes eBay. Deux chiffres, une action : les ventes passees dont la case est vide se remplissent, les prochaines aussi.
+function feuillePortAuto(){
+  const pa = (S.reglages || {}).port_auto || {};
+  ouvrirFeuille(`<h3 class="f-titre">${tt('Envoi automatique', 'Automatic shipping')}</h3>
+    <div class="sous" style="margin-bottom:12px">${tt('eBay ne nous dit pas ce que l’envoi t’a coûté. Pour tes petites ventes, dis-le une fois : on le compte pour toi, sur tes ventes passées et les prochaines. Un montant déjà entré n’est jamais changé.', 'eBay doesn’t tell us what shipping cost you. For your small sales, say it once: we count it for you, on past and future sales. An amount you already entered is never changed.')}</div>
+    <div class="grille-champs"><label>${tt('Ventes de moins de', 'Sales under')}<div class="ac-cout"><input class="champ" id="pa-s" type="number" inputmode="decimal" value="${esc(pa.seuil || 30)}"><span>$</span></div></label>
+      <label>${tt('L’envoi me coûte', 'Shipping costs me')}<div class="ac-cout"><input class="champ" id="pa-m" type="number" inputmode="decimal" value="${esc(pa.montant || 3)}"><span>$</span></div></label></div>
+    <button class="btn" id="pa-ok" style="margin-top:14px">${tt('Appliquer', 'Apply')}</button>
+    ${pa.seuil ? `<button class="lien-doux" id="pa-off" style="display:block; margin:10px auto 0">${tt('Arrêter l’envoi automatique', 'Stop automatic shipping')}</button>` : ''}`);
+  const regler = async (s_, m_) => { const r = await essai(API.port_auto_regler(s_, m_)); if (!r) return;
+    if (S.reglages) S.reglages.port_auto = r.port_auto; fermerFeuille();
+    toast(!r.port_auto.seuil ? tt('Envoi automatique arrêté', 'Automatic shipping stopped') : r.appliquees ? tt(`${r.appliquees} vente${r.appliquees > 1 ? 's' : ''} mise${r.appliquees > 1 ? 's' : ''} à jour`, `${r.appliquees} sale${r.appliquees > 1 ? 's' : ''} updated`) : tt('C’est réglé pour tes prochaines ventes', 'Set for your next sales'), 3500);
+    route(); };
+  $('#pa-ok').onclick = () => { vibrer(); regler(nb(val('pa-s')), nb(val('pa-m'))); };
+  const off = $('#pa-off'); if (off) off.onclick = () => { vibrer(); regler(0, 0); };
+}
+document.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('#fvd-pa'); if (!b) return; e.preventDefault(); e.stopPropagation(); vibrer(); feuillePortAuto(); }, true);
 // 5 nov 2026 (Mathieu : « une section pour mes solds et faire une analyse profit ») : les ventes d'une periode, ce
 // qu'elles ont rapporte (le profit ne compte que les ventes avec un cout : les autres sont a relier a leur achat eBay)
 const PERIODES_V = () => [['30', tt('30 j', '30 d')], ['90', tt('90 j', '90 d')], ['365', tt('12 mois', '12 mo')], ['tout', tt('Tout', 'All')]];

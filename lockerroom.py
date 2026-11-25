@@ -72,6 +72,7 @@ REGLAGES_DEFAUT = {
     "auto_coll_corrige": False,
     "non_cartes_retires": False,                                # 20 nov 2026 : les objets (cadres, photos...) sortis une fois                                 # 20 nov 2026 : copies d'achats remises une fois dans « Achetees »                                      # 20 nov 2026 : « Pour bien partir » ferme par la personne
     "prix_auto": {},                                            # 27 oct 2026 : mode Auto des prix eBay (voir prix_auto_regler)
+    "port_auto": {},                                            # 24 nov 2026 : {"seuil": 30, "montant": 3} : l'envoi paye des petites ventes eBay ; vide = eteint
     "tuto_vendeur": 0, "tuto_acheteur": 0,                      # 31 oct 2026 : le tour de l'app deja vu (par compte)
     "guide_app": 0,                                             # 23 nov 2026 : « Que veux-tu faire ? » deja montre au nouveau (par compte)
     "watch": {},                                                # 29 oct 2026 : alarmes de la watchlist (voir watchlist.regler)
@@ -1172,6 +1173,47 @@ class Api:
                 c.close()
                 self._reglages_oublier()
         return self.reglages_lire()
+
+    # 24 nov 2026 (Mathieu : « pour les cartes de moins de 30 $ c'est toujours 3 $ de ship ; comment ca, ce n'est pas
+    # automatique ? ») : eBay donne le prix, le port paye par l'acheteur et les frais, jamais ce que l'envoi a coute au
+    # vendeur. Tant que la case reste vide, le port de l'acheteur comptait comme du profit. Un reglage PAR COMPTE, eteint par
+    # defaut : sous un prix choisi, l'envoi vaut un montant fixe (une enveloppe et un timbre). Il ne remplit que les ventes
+    # eBay ou la case est VIDE (NULL) : un montant entre a la main, meme 0, n'est jamais ecrase ; les cartes en consignation
+    # (profit = une commission) ne sont pas touchees. Le montant pose se voit et se corrige dans la fiche de la vente.
+    def _port_auto_appliquer(self, c, r):
+        pa = (r or {}).get("port_auto") or {}
+        try:
+            seuil, montant = float(pa.get("seuil") or 0), float(pa.get("montant") or 0)
+        except (TypeError, ValueError, AttributeError):
+            return 0
+        if seuil <= 0 or montant <= 0:
+            return 0
+        cur = c.execute("UPDATE cartes SET port_paye=?, profit=ROUND(COALESCE(profit,0) - ?, 2) WHERE statut='Vendue' AND canal='eBay' "
+                        "AND port_paye IS NULL AND prix_vendu IS NOT NULL AND prix_vendu < ? AND consignataire_id IS NULL",
+                        (montant, montant, seuil))
+        return cur.rowcount or 0
+
+    def port_auto_regler(self, seuil, montant):
+        """Regle (ou eteint avec 0) l'envoi automatique des petites ventes eBay, et remplit tout de suite les ventes passees
+        dont la case est vide. -> {"ok", "appliquees", "port_auto"}"""
+        try:
+            seuil, montant = round(float(seuil or 0), 2), round(float(montant or 0), 2)
+        except (TypeError, ValueError):
+            return {"ok": False, "erreur": "Montants invalides"}
+        if not (0 <= seuil <= 10000 and 0 <= montant <= 100):
+            return {"ok": False, "erreur": "Montants invalides"}
+        pa = {"seuil": seuil, "montant": montant} if seuil > 0 and montant > 0 else {}
+        self.reglages_sauver({"port_auto": pa})
+        Api._REGL.pop(self.chemin_db, None)
+        n = 0
+        with _verrou:
+            c = self._db()
+            try:
+                n = self._port_auto_appliquer(c, {"port_auto": pa})
+                c.commit()
+            finally:
+                c.close()
+        return {"ok": True, "appliquees": n, "port_auto": pa}
 
     def reglages_sauver(self, nouveaux):
         if (nouveaux or {}).get("ia_entrainement_ok") is False and self.reglages_lire().get("ia_entrainement_ok"):
@@ -6700,6 +6742,7 @@ class Api:
                                    pv["frais"], pv["profit"], v["date"] or _maintenant(), "import eBay", _maintenant()))
                     c.execute("INSERT INTO ventes_ebay_vues VALUES (?)", (v["transaction_id"],))
                     nouvelles += 1
+                self._port_auto_appliquer(c, r)                  # 24 nov 2026 : l'envoi automatique des petites ventes, si le compte l'a regle
                 c.commit()
             finally:
                 c.close()
