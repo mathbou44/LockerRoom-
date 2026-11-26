@@ -1312,6 +1312,41 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   À DÉCIDER avec lui quand la collecte aura fini (on connaîtra son vrai coût) : rafraîchir les DONNÉES chaque semaine coûte
   des crédits (une semaine de ventes par recherche : de l'ordre de 2 000 à 2 500 crédits par semaine) ; sans ça, la liste
   refaite chaque semaine vieillit avec ses données.
+- **26 nov, 15 h 26 : courriel de Render « HTTP health check failed (timed out after 5 seconds) » juste après le push de p108**
+  CAUSE TROUVÉE ET REJOUÉE : sur Render gunicorn précharge l'app dans le MAÎTRE (où roulent les fils de fond) ; le worker est une
+  copie (fork). Si un fil du maître est DANS un `print(..., flush=True)` à l'instant du fork (le gardien des piles s'annonce
+  justement là), le worker hérite du verrou interne de `sys.stdout` à l'état « pris » pour toujours : chaque fil du worker reste
+  bloqué sur sa ligne d'accès après UNE requête (vérification de santé comprise) ; les 32 fils tombent en ~2 minutes, Render
+  redémarre. Signature dans le journal : « RuntimeError: reentrant call inside <_io.BufferedWriter name='<stdout>'> » dans les
+  premières secondes, puis AUCUNE ligne d'accès (« ... "GET /sante HTTP/1.1" 200 ») de tout le démarrage. Vu 1 fois sur les 13
+  derniers démarrages (15 h 23 → redémarré à 15 h 26:01, sain depuis 15 h 26:13). Ce n'est PAS le code de p108.
+  CORRIGÉ (p109) : `sorties_fork.py` (`os.register_at_fork(after_in_child=refaire)`, installé tout en haut de `server.py`) : dans
+  la copie, des sorties NEUVES sur les descripteurs 1 et 2 (verrous neufs) et les handlers de logging (gunicorn) pointés dessus ;
+  les anciennes ne sont ni vidées ni libérées. `tests/test_sorties_fork.py` rejoue l'accident (sans le remède : l'enfant ne peut
+  plus écrire, même signature ; avec : il écrit). Rejoué aussi avec gunicorn 27.0.1 `--preload` : sans le remède 4 réponses puis
+  plus rien, 0 ligne d'accès ; avec : 24 / 24. NE PAS enlever ce module tant que Render précharge l'app.
+  Reste le même risque, plus rare, pour un verrou de NOTRE code tenu par un fil du maître à l'instant d'un fork (seulement si
+  gunicorn recrée un worker en pleine journée) : pas traité.
+  Aussi (p109) : `demande_legale._noms_marche` : sur une base occupée (« database is locked », 15 h 29) la liste des joueurs du
+  marché restait VIDE 24 h ; maintenant nouvel essai 2 minutes plus tard, la liste d'avant en attendant
+  (`tests/test_noms_marche_retente.py`). Qui tient `base_ventes` plus de 5 s au départ de la boucle : pas encore trouvé.
+- **26 nov, 15 h 29 : « je vois beaucoup de Young Guns… être sûr qu'on capte tous les parallèles les plus vendus de PSA 10 puis
+  PSA 9 » ; « le temps est important »** → sa lecture de la méthode est la bonne (200 joueurs × « psa 10 » et « psa 9 », 30 pages,
+  120 jours ; cartes exactes ; puis la raw de chaque carte vue 4 fois en PSA 10 ; médianes sur la MÊME période :
+  `d0 = max(1re raw, 1re PSA 10)`). Pourquoi presque seulement des Young Guns : la liste de 15 h 02 datait d'AVANT la phase raw
+  (1 500 crédits ; les raw des autres sortes arrivaient à peine) et ne se refaisait qu'à la fin de la collecte.
+  FAIT (p109) : pendant une collecte (`statut == en_cours`) la liste est refaite à chaque tour de la boucle
+  (`REFAIRE_COLLECTE_MIN = 50`) ; la COUVERTURE est mesurée à chaque calcul (`analyser()["couverture"]` : pour les titres qui
+  disent PSA 10 / PSA 9, combien sont rangés, pourquoi pas — `classer(titre, joueur, pourquoi)` —, et les paires de mots les
+  plus vues dans les PSA 10 « sorte pas reconnue ») et écrite dans le journal (« A grader : PSA 10 : N ventes rangees sur M
+  (X %) ; le reste : … », « A grader : mots des PSA 10 sans sorte reconnue : … », « A grader : cartes vues en PSA 10 hors de la
+  liste : … ») : c'est par le journal de Render que je la lis (je ne suis pas connecté en admin). Sur la copie locale de nos
+  archives (60 joueurs) : PSA 10 59 % rangées (36 % sans sorte reconnue, souvent d'autres sports ou un titre sans set), liste
+  101 cartes dont 71 Young Guns et 30 autres (Allure, Dazzlers, O-Pee-Chee Platinum, SPx, Skates Silver, Future Watch…).
+  MESURÉ (copie locale, 60 joueurs) : passer de 120 à 60 jours change le rendement de 2 % en médiane, mais de plus de 10 % pour
+  15 cartes sur 70 (Misa YG ×4,39 → ×3,26 : sa PSA 10 est passée de 417 $ à 309 $ ; Gauthier YG ×4,47 → ×5,30) ; à 60 jours il
+  reste 71 cartes sur 101, à 45 jours 53. PROPOSÉ À MATHIEU, PAS FAIT (règle de calcul : son OK d'abord) : les 60 derniers
+  jours quand la carte a assez de ventes des deux côtés dans ces 60 jours, sinon 120 jours.
 - **Demandé pour demain (21 h 02)** : « améliore SlabIQ et refais nos tests avec les nouvelles data une fois obtenues ; tu devrais
   aller chercher tout automatiquement » → refaire les tests sur les ventes de la collecte de 3 ans ; SlabIQ ne change que si le test
   le prouve ; le test publié sur le site doit tourner seul sur le serveur (tâche `g_c_auto`), sans export à la main.

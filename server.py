@@ -21,6 +21,13 @@ import threading
 import time
 from datetime import date, datetime, timedelta, timezone
 
+import sorties_fork
+
+# 26 nov 2026 (courriel de Render apres un push : « HTTP health check failed ») : le worker de gunicorn est une copie du
+# maitre ; s'il est copie pendant qu'un fil du maitre ecrit sur la sortie, il herite d'une sortie verrouillee pour toujours
+# et ses fils tombent un par un sur leur ligne d'acces. Des sorties neuves dans chaque copie (voir sorties_fork.py).
+sorties_fork.installer()
+
 DOSSIER = os.path.dirname(os.path.abspath(__file__))
 PORT = int(os.environ.get("LOCKERROOM_PORT", "8430"))
 _VERROU = None

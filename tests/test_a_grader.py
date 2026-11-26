@@ -106,6 +106,54 @@ for _ in range(400):
     time.sleep(0.05)
 banque_psa._run_maj(statut="terminee", battement=time.time() - 3600)
 assert a_grader.refaire_si_besoin() is None
+
+# 26 nov, 15 h 29 (Mathieu : « je vois beaucoup de Young Guns ») : la liste datait d'avant les recherches raw de la collecte. Pendant
+# une collecte, elle suit : refaite a chaque tour de la boucle (une fois l'heure), jamais deux fois dans la meme heure
+def attendre_calcul():
+    for _ in range(600):
+        if not a_grader.ETAT["en_cours"]:
+            return
+        time.sleep(0.05)
+    raise AssertionError("le calcul ne finit pas")
+
+
+attendre_calcul()
+banque_psa._run_maj(statut="en_cours", battement=time.time())
+assert a_grader.REFAIRE_COLLECTE_MIN == 50
+os.utime(a_grader._chemin(), (time.time() - 20 * 60,) * 2)
+assert a_grader.refaire_si_besoin() is None, "une liste de 20 minutes n'est pas refaite, meme pendant la collecte"
+os.utime(a_grader._chemin(), (time.time() - 55 * 60,) * 2)
+assert a_grader.refaire_si_besoin() is not None, "pendant la collecte, une liste de pres d'une heure est refaite"
+attendre_calcul()
+banque_psa._run_maj(statut="erreur", battement=time.time() - 3600)
+os.utime(a_grader._chemin(), (time.time() - 55 * 60,) * 2)
+assert a_grader.refaire_si_besoin() is None, "collecte arretee : retour au rythme de la semaine"
+banque_psa._run_maj(statut="terminee", battement=time.time() - 3600)
+
+# ---- 3b. la couverture est MESUREE : parmi les ventes dont le titre dit PSA 10 (ou PSA 9), combien sont rangees, et pourquoi pas
+pq = []
+assert a_grader.classer("Connor Bedard PSA 10 rookie card gem", "Connor Bedard", pq) is None and pq == ["sorte pas reconnue"]
+pq = []
+assert a_grader.classer("2023-24 UD Young Guns Connor Bedard #451 PSA 10?", "Connor Bedard", pq) is None and pq == ["pas encore gradee"]
+pq = []
+assert a_grader.classer("2023-24 Upper Deck Connor Bedard Young Guns #451 RC PSA 10 GEM MINT", "Connor Bedard", pq) and pq == []
+assert a_grader.classer("2023-24 Upper Deck Connor Bedard Young Guns #451 RC PSA 10 GEM MINT", "Connor Bedard"), "sans la liste : comme avant"
+rt = a_grader._RE_NOTE_TITRE
+assert rt.search("Bedard YG PSA 10 GEM").group(1) == "10" and rt.search("Bedard YG PSA-9").group(1) == "9"
+assert not rt.search("Bedard YG PSA 9.5") and not rt.search("Bedard YG PSA 100") and not rt.search("Bedard YG BGS 10")
+assert a_grader._duos("2024-25 Upper Deck Fleer Retro Macklin Celebrini Metal Universe #12 PSA 10 GEM MINT", "Macklin Celebrini") == \
+    {"fleer retro", "retro metal", "metal universe"}
+jr_ = lambda k: (datetime.now(timezone.utc) - timedelta(days=k)).strftime("%Y-%m-%d")
+lot = [("c%d" % k, "2023-24 Upper Deck Connor Bedard Young Guns #451 RC PSA 10 GEM MINT", 900.0, jr_(3 + k), "Connor Bedard") for k in range(6)]
+lot += [("m%d" % k, "Connor Bedard PSA 10 Fancy Hologram gem mint", 50.0, jr_(4 + k), "Connor Bedard") for k in range(4)]
+lot += [("e1", "2023-24 UD Young Guns Connor Bedard #451 PSA 10?", 300.0, jr_(5), "Connor Bedard"),
+        ("n1", "2023-24 Upper Deck Connor Bedard Young Guns #451 RC PSA 9 MINT", 400.0, jr_(6), "Connor Bedard"),
+        ("r1", "2023-24 Upper Deck Connor Bedard Young Guns #451 RC", 250.0, jr_(7), "Connor Bedard")]
+cv = a_grader.analyser(lot)["couverture"]
+assert cv["10"]["lues"] == 11 and cv["10"]["rangees"] == 6, cv["10"]
+assert cv["10"]["raisons"] == {"sorte pas reconnue": 4, "pas encore gradee": 1}, cv["10"]
+assert cv["9"] == {"lues": 1, "rangees": 1, "raisons": {}}, cv["9"]
+assert ["fancy hologram", 4] in cv["sortes_inconnues"], cv["sortes_inconnues"]
 T = a_grader.top_tendances()
 assert len(T["cartes"]) == 1 and T["n"] == 1 and T["semaine"] == 7 and T["frais_psa"] == 41.0 and T["le"]
 # 26 nov, 14 h 58 (journal : la collecte PSA morte sur « database is locked » 22 s apres le depart du calcul) : pendant que la liste

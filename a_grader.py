@@ -51,6 +51,7 @@ P10_MIN = 5                          # 4 -> 5 des le premier essai : a 4 ventes,
 P9_MIN = 3
 REFAIRE_J = 7                        # 26 nov, 15 h 06 (Mathieu : « le top 100 a grader qui se refresh chaque semaine ») : refaite chaque semaine,
                                      # une fois de plus quand la collecte PSA finit, et quand l'admin le demande
+REFAIRE_COLLECTE_MIN = 50            # pendant une collecte PSA : la liste est refaite a chaque tour de la boucle (1 h)
 N_TOP = 100
 ETAT = {"en_cours": False, "texte": None}
 _verrou = threading.Lock()
@@ -69,6 +70,28 @@ def frais_psa():
     return grader.FRAIS_PSA + grader.ENVOI_PSA
 
 
+# la mesure de la couverture (voir analyser) : le titre DIT-il PSA 10 ou PSA 9 ? et les mots d'un titre qui peuvent nommer une sorte
+_RE_NOTE_TITRE = re.compile(r"\bpsa[\s\-]*(10|9)(?![\d.])", re.I)
+N_INCONNUES = 25
+_MOTS_VIDES = set("psa gem mint mt rc rookie rookies card cards hockey nhl the and of for with a an in on upper deck ud graded grade pop new "
+                  "sp ssp rare hot invest low nm near pack fresh free shipping ship auto autograph signed jersey patch read see pics "
+                  "year first 1st nice sharp centered clean beautiful stunning must have look wow tm inc co ltd lot edition hof".split())
+
+
+def _duos(titre, joueur=None):
+    """Les paires de mots voisins d'un titre, sans le nom du joueur, les annees, les numeros ni les mots de vendeur : ce qui
+    reste nomme presque toujours le set ou la parallele (« fleer retro », « metal universe »...)."""
+    nom = set(re.findall(r"[a-z]+", str(joueur or "").lower()))
+    try:
+        import cartes_match as cm
+        for n in cm._noms_dans(cm.norm(titre)):               # les joueurs connus nommes dans le titre
+            nom.update(n.split())
+    except Exception:
+        pass
+    mots = [w for w in re.findall(r"[a-z][a-z'\-]*[a-z]", str(titre or "").lower()) if w not in _MOTS_VIDES and w not in nom]
+    return {mots[k] + " " + mots[k + 1] for k in range(len(mots) - 1)}
+
+
 _NOMS = {"le": 0.0, "d": {}}
 
 
@@ -85,42 +108,50 @@ def beau_nom(j):
     return _NOMS["d"].get(j) or " ".join(w.capitalize() for w in str(j or "").split())
 
 
-def classer(titre, joueur=None):
+def classer(titre, joueur=None, pourquoi=None):
     """Un titre -> ((joueur, recherche raw, annee, /N), note) avec note = « raw », « 10 » ou « 9 » ; None si la vente ne doit
-    pas compter (voir le point 2 du haut)."""
+    pas compter (voir le point 2 du haut). `pourquoi` (une liste) recoit alors la raison, pour mesurer ce qu'on laisse passer."""
     import cartes_match as cm
     import tendance_sortes as ts
+    def non(raison):
+        if pourquoi is not None:
+            pourquoi.append(raison)
+        return None
     t = str(titre or "")
     try:
         ct = cm.cible_titre(t, joueur)
     except Exception:
-        return None
-    if not ct.get("joueur") or ct.get("autres_joueurs") or not ct.get("carte_nommee") or not ct.get("ident"):
-        return None                                           # il faut un SET : une couleur seule n'est pas une carte
+        return non("titre illisible")
+    if not ct.get("joueur"):
+        return non("joueur pas reconnu")
+    if ct.get("autres_joueurs"):
+        return non("plusieurs joueurs")
+    if not ct.get("carte_nommee") or not ct.get("ident"):
+        return non("sorte pas reconnue")                      # il faut un SET : une couleur seule n'est pas une carte
     g = ct.get("grade")
     if g:
         if g.get("cie") != "psa" or str(g.get("note") or "") not in ("10", "9"):
-            return None                                       # une autre compagnie, une autre note, « PSA ready »
+            return non("autre note ou compagnie")             # une autre compagnie, une autre note, « PSA ready »
         if cm.espere_note(t):
-            return None                                       # « PSA 10 ? », « PSA 10 contender » : une raw qui espere (la regle des comps)
+            return non("pas encore gradee")                      # « PSA 10 ? », « PSA 10 contender » : une raw qui espere (la regle des comps)
         note = str(g["note"])
     else:
         if ct.get("grade_bas") or _RE_GRADEE.search(t):
-            return None                                       # une PSA 8, une SGC, une « graded 9 » : gradee, donc pas une raw
+            return non("autre note ou compagnie")             # une PSA 8, une SGC, une « graded 9 » : gradee, donc pas une raw
         if cm._RE_ABIMEE.search(t.lower()):
-            return None                                       # abimee : pas une carte a grader
+            return non("abimee")                              # abimee : pas une carte a grader
         note = "raw"
     serie = ct.get("serie")
     try:
         q_note = cm.requete_ebay(ct)
         if cm.raisons_refus(cm.cible(q_note + (f" /{serie}" if serie else "")), t):
-            return None                                       # un lot ecrit avec « + », la suite d'un set, etc.
+            return non("lot ou autre carte")                  # un lot ecrit avec « + », la suite d'un set, etc.
     except Exception:
-        return None
+        return non("titre illisible")
     ct["grade"] = None
     q = cm.requete_ebay(ct)
     if len(q.split()) < 3 or ts.autre_carte(t, q):
-        return None
+        return non("lot ou autre carte")
     num = re.sub(r"[^a-z0-9]", "", str(ct.get("num") or "").lower()) or None
     return (ct["joueur"], q, ct.get("annee"), serie, num), note
 
@@ -142,6 +173,12 @@ def analyser(ventes, aujourd=None, jours=JOURS, respirer=None):
     d_min = (auj - timedelta(days=jours)).isoformat()
     vues, cartes, lues, rangees = set(), {}, 0, 0
     noms = {}
+    # 26 nov 2026 (Mathieu : « je veux juste etre sur qu'on capte tous les paralleles les plus vendus de PSA 10 puis PSA 9 ») :
+    # on le MESURE au lieu de le supposer. Pour les ventes dont le titre dit PSA 10 (ou PSA 9) : combien sont rangees dans une
+    # carte exacte, pourquoi les autres ne le sont pas, et les mots qui reviennent le plus dans celles dont on ne reconnait
+    # pas la sorte (un set ou une parallele que le decodeur ne connait pas encore).
+    couv = {n: {"lues": 0, "rangees": 0, "raisons": {}} for n in ("10", "9")}
+    mots_inconnus = {}
     for i, (cle, titre, prix, le, joueur) in enumerate(ventes):
         if respirer and i % 200 == 199:
             respirer(i)
@@ -150,7 +187,21 @@ def analyser(ventes, aujourd=None, jours=JOURS, respirer=None):
             continue
         vues.add(cle)
         lues += 1
-        r = classer(titre, joueur)
+        m = _RE_NOTE_TITRE.search(str(titre or ""))
+        dit = m.group(1) if m else None
+        pq = [] if dit else None
+        r = classer(titre, joueur, pq)
+        if dit:
+            cv = couv[dit]
+            cv["lues"] += 1
+            if r and r[1] == dit:
+                cv["rangees"] += 1
+            else:
+                raison = pq[0] if pq else "autre note ou compagnie"
+                cv["raisons"][raison] = cv["raisons"].get(raison, 0) + 1
+                if raison == "sorte pas reconnue" and dit == "10" and len(mots_inconnus) < 200000:
+                    for duo in _duos(titre, joueur):
+                        mots_inconnus[duo] = mots_inconnus.get(duo, 0) + 1
         if not r:
             continue
         rangees += 1
@@ -238,7 +289,10 @@ def analyser(ventes, aujourd=None, jours=JOURS, respirer=None):
                     "reste10": round(r10, 2), "reste9": round(r9, 2) if r9 is not None else None, "seuil": seuil,
                     "du": d0, "jours": (auj - datetime.strptime(d0, "%Y-%m-%d").date()).days})
     out.sort(key=lambda x: (-x["rendement"], -x["reste10"]))
-    return {"cartes": out[:N_LISTE], "n_cartes": len(out), "lues": lues, "rangees": rangees, "ecartees": ecartees,
+    for cv in couv.values():
+        cv["raisons"] = dict(sorted(cv["raisons"].items(), key=lambda x: -x[1]))
+    couv["sortes_inconnues"] = [[d, n] for d, n in sorted(mots_inconnus.items(), key=lambda x: (-x[1], x[0]))[:N_INCONNUES] if n >= 3]
+    return {"cartes": out[:N_LISTE], "n_cartes": len(out), "lues": lues, "rangees": rangees, "ecartees": ecartees, "couverture": couv,
             "frais_psa": fp, "frais_ebay": FRAIS_EBAY, "jours": jours, "le": datetime.now().isoformat(timespec="seconds"),
             "regles": {"raw_min": RAW_MIN, "p10_min": P10_MIN, "p9_min": P9_MIN}}
 
@@ -320,6 +374,18 @@ def calculer():
         json.dump(r, f, ensure_ascii=False)
     os.replace(ch + ".tmp", ch)
     print(f"A grader : {r['n_cartes']} cartes ({r['lues']} ventes lues, {r['rangees']} rangees, {r['secondes']} s)", flush=True)
+    try:
+        cv = r.get("couverture") or {}
+        for n in ("10", "9"):
+            x = cv.get(n) or {}
+            if x.get("lues"):
+                pq = ", ".join(f"{k} {v}" for k, v in list((x.get("raisons") or {}).items())[:6])
+                print(f"A grader : PSA {n} : {x['rangees']} ventes rangees sur {x['lues']} ({100 * x['rangees'] // x['lues']} %)" + (" ; le reste : " + pq if pq else ""), flush=True)
+        if cv.get("sortes_inconnues"):
+            print("A grader : mots des PSA 10 sans sorte reconnue : " + ", ".join(f"{d} {n}" for d, n in cv["sortes_inconnues"]), flush=True)
+        print("A grader : cartes vues en PSA 10 hors de la liste : " + ", ".join(f"{k} {v}" for k, v in (r.get("ecartees") or {}).items()), flush=True)
+    except Exception as e:
+        print("A grader (couverture) : " + repr(e)[:120], flush=True)
     return r
 
 
@@ -376,7 +442,11 @@ def refaire_si_besoin():
     except Exception:
         return None
     finie_apres = mt is not None and b.get("statut") == "terminee" and (b.get("battement") or 0) > mt
-    if mt is not None and time.time() - mt < REFAIRE_J * 86400 and not finie_apres:
+    # 26 nov 2026 : la liste de 15 h 02 datait d'AVANT les recherches raw de la collecte (presque seulement des Young Guns, la
+    # seule sorte dont on avait deja les raw) et serait restee telle quelle jusqu'a la fin. Pendant une collecte, elle suit :
+    # refaite a chaque tour de la boucle (une fois l'heure), sans que personne clique.
+    suit = mt is not None and b.get("statut") == "en_cours" and time.time() - mt >= REFAIRE_COLLECTE_MIN * 60
+    if mt is not None and time.time() - mt < REFAIRE_J * 86400 and not finie_apres and not suit:
         return None
     return lancer()
 

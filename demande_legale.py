@@ -696,6 +696,9 @@ def _noms_marche(jours=60, n_min=12, max_=300):
                 cnt[j] += 1
         _MARCHE["noms"] = [n.title() for n, k in cnt.most_common(max_) if k >= n_min]
     except Exception as e:
+        # 26 nov 2026 : la base etait occupee au demarrage (« database is locked ») et la liste restait VIDE 24 h (les
+        # prospects et les legendes redevenaient « inconnus ») : on reessaie dans 2 minutes, avec la liste d'avant
+        _MARCHE["le"] = time.time() - 86400 + 120
         print("Demande (noms du marche) : " + repr(e), flush=True)
     return _MARCHE["noms"]
 
