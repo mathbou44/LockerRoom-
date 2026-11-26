@@ -1,0 +1,25 @@
+LA CARTE ET LE RESTE DU JOUEUR - le test sur 3 ans (26 nov 2026)
+
+Mathieu : « separer carte, separer joueur, mais aussi un mix des deux ; si un joueur est en baisse mais qu'une carte monte,
+c'est peut-etre le temps de vendre ; aucune erreur, sinon on perd toute notre credibilite ».
+
+Les scripts (ecrits pour /tmp/v26 : adapter les chemins) :
+  pipeline.py   l'export « Toutes les ventes (hockey) » -> une vraie base base_ventes.sqlite -> base_ventes.cartes_toutes(detail=True)
+                (le VRAI chemin du serveur ; jamais un echantillon filtre a la main)
+  histo.py      la mesure de tendance_sortes rejouee tous les 14 jours du 1er janv. 2024 au 19 oct. 2026 : 4 918 mesures, 387 cartes,
+                205 joueurs ; pour chacune, le prix median des 30 jours suivants (f30) et du 2e mois (f60) contre son niveau
+  double.py     1er essai : le « reste du joueur » = toutes ses autres cles (y compris la MEME carte dans une autre note)
+  croise.py, croise2.py   les 9 cas carte x reste du 1er essai, intervalles par joueur
+  double4.py    version STRICTE : le reste = une autre base de carte (tendance_sortes.base_carte), 20 ventes au moins
+
+RESULTATS (version stricte, 1 258 mesures, 160 cartes, 38 joueurs avec 20 ventes au moins pour le reste)
+  - « une carte qui monte seule redescend » (1er essai : -5,3 % au 2e mois, 32 joueurs) : FAUX SIGNAL. Le reste etait souvent la
+    meme carte dans une autre note. En strict : -0,3 % [-6,3 ; +11,1], 13 joueurs. Rien dans l'app.
+  - carte en hausse / reste en baisse : 7 mesures sur 1 770 ; carte en baisse / reste en hausse : 11. Ca n'arrive presque jamais.
+  - carte et reste en hausse : +6,2 % [-3,6 ; +8,8], 9 joueurs en hausse, 9 en baisse, Celebrini = 163 des 297 cas. Pas un signal.
+  - LE SEUL FAIT : le reste baisse, la carte ne monte pas -> le mois suivant -5,0 % (mediane) [-6,7 ; -2,1] ; 348 mesures,
+    77 cartes, 19 joueurs : 14 en baisse, 4 en hausse ; sans les 5 joueurs les plus presents : -2,2 % (Bedard = 104 des 348).
+    2e mois : -7,2 % [-10,3 ; -3,0], 15 joueurs en baisse, 3 en hausse. Temoin (carte stable, reste neutre) : -1,9 % [-6,9 ; +2,1].
+    L'app l'ecrit en joueurs (« chez 14 joueurs sur 19 »), sans grandeur : tendance_sortes.CROISE_MESURE.
+
+A REFAIRE a chaque gros ajout de ventes (un export), et CROISE_MESURE mis a jour avec sa date.

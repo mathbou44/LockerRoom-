@@ -1,125 +1,125 @@
 {
- "le": "2026-11-25",
+ "le": "2026-11-26",
  "methode": "tests_site rejoue a chaque date, avec les ventes connues ce jour-la",
  "lignes": [
   {
-   "fin": "2026-09-29",
-   "coupe": "2026-04-07",
-   "revente_des": "2026-08-11",
-   "revente_fin": "2026-09-29",
-   "ventes": 153214,
-   "accord": 0.649,
-   "x_a_e": 2.6,
+   "fin": "2026-10-01",
+   "coupe": "2026-04-03",
+   "revente_des": "2026-08-07",
+   "revente_fin": "2026-10-01",
+   "ventes": 177661,
+   "accord": 0.658,
+   "x_a_e": 2.7,
    "pro": {
-    "n": 1428,
-    "reussi": 0.878,
+    "n": 1466,
+    "reussi": 0.862,
     "reussi_ic95": [
-     0.861,
-     0.895
+     0.844,
+     0.88
     ],
-    "revendue": 0.987,
-    "profit_apres_frais": 0.345
+    "revendue": 0.986,
+    "profit_apres_frais": 0.335
    },
    "hasard": {
-    "n": 35063,
-    "reussi": 0.151,
-    "profit_apres_frais": 0.057
+    "n": 40233,
+    "reussi": 0.14,
+    "profit_apres_frais": 0.053
    }
   },
   {
-   "fin": "2026-10-13",
-   "coupe": "2026-05-27",
-   "revente_des": "2026-09-03",
-   "revente_fin": "2026-10-13",
-   "ventes": 167660,
-   "accord": 0.653,
-   "x_a_e": 2.8,
+   "fin": "2026-10-15",
+   "coupe": "2026-05-16",
+   "revente_des": "2026-09-01",
+   "revente_fin": "2026-10-15",
+   "ventes": 193403,
+   "accord": 0.64,
+   "x_a_e": 3.0,
    "pro": {
-    "n": 1055,
-    "reussi": 0.911,
+    "n": 1193,
+    "reussi": 0.894,
     "reussi_ic95": [
-     0.893,
-     0.928
+     0.877,
+     0.912
     ],
-    "revendue": 0.987,
-    "profit_apres_frais": 0.309
+    "revendue": 0.982,
+    "profit_apres_frais": 0.298
    },
    "hasard": {
-    "n": 33342,
-    "reussi": 0.156,
-    "profit_apres_frais": 0.054
+    "n": 38473,
+    "reussi": 0.147,
+    "profit_apres_frais": 0.051
    }
   },
   {
-   "fin": "2026-10-27",
-   "coupe": "2026-08-03",
-   "revente_des": "2026-09-23",
-   "revente_fin": "2026-10-27",
-   "ventes": 185065,
-   "accord": 0.643,
-   "x_a_e": 4.1,
+   "fin": "2026-10-29",
+   "coupe": "2026-07-15",
+   "revente_des": "2026-09-22",
+   "revente_fin": "2026-10-29",
+   "ventes": 210918,
+   "accord": 0.646,
+   "x_a_e": 4.6,
    "pro": {
-    "n": 689,
-    "reussi": 0.917,
+    "n": 853,
+    "reussi": 0.903,
     "reussi_ic95": [
-     0.896,
-     0.936
+     0.883,
+     0.924
     ],
-    "revendue": 0.988,
-    "profit_apres_frais": 0.274
+    "revendue": 0.996,
+    "profit_apres_frais": 0.317
    },
    "hasard": {
-    "n": 30655,
-    "reussi": 0.134,
-    "profit_apres_frais": 0.044
+    "n": 36266,
+    "reussi": 0.141,
+    "profit_apres_frais": 0.049
    }
   },
   {
-   "fin": "2026-11-10",
-   "coupe": "2026-08-29",
+   "fin": "2026-11-12",
+   "coupe": "2026-08-21",
    "revente_des": "2026-10-08",
-   "revente_fin": "2026-11-10",
-   "ventes": 202231,
-   "accord": 0.668,
-   "x_a_e": 4.5,
+   "revente_fin": "2026-11-12",
+   "ventes": 227611,
+   "accord": 0.676,
+   "x_a_e": 5.0,
    "pro": {
-    "n": 581,
-    "reussi": 0.898,
+    "n": 704,
+    "reussi": 0.895,
     "reussi_ic95": [
-     0.873,
-     0.923
+     0.871,
+     0.916
     ],
-    "revendue": 0.99,
-    "profit_apres_frais": 0.267
+    "revendue": 0.996,
+    "profit_apres_frais": 0.276
    },
    "hasard": {
-    "n": 30180,
+    "n": 35588,
     "reussi": 0.122,
     "profit_apres_frais": 0.043
    }
   },
   {
-   "fin": "2026-11-24",
-   "coupe": "2026-09-09",
-   "revente_des": "2026-10-15",
-   "revente_fin": "2026-11-24",
-   "ventes": 213174,
-   "accord": 0.684,
-   "x_a_e": 4.5,
+   "fin": "2026-11-26",
+   "coupe": "2026-09-01",
+   "revente_des": "2026-10-14",
+   "revente_fin": "2026-11-26",
+   "ventes": 236349,
+   "accord": 0.692,
+   "x_a_e": 5.2,
    "pro": {
-    "n": 638,
-    "reussi": 0.871,
+    "n": 735,
+    "reussi": 0.878,
     "reussi_ic95": [
-     0.846,
-     0.897
+     0.853,
+     0.902
     ],
-    "revendue": 0.987,
-    "profit_apres_frais": 0.285
+    "revendue": 0.988,
+    "profit_apres_frais": 0.282
    },
    "hasard": {
-    "n": 31192,
-    "reussi": 0.127,
-    "profit_apres_frais": 0.05
+    "n": 36081,
+    "reussi": 0.125,
+    "profit_apres_frais": 0.049
    }
   }
  ]

@@ -49,6 +49,25 @@ def revendue(R):
     return int(R["pro"]["revendue"] * 100 + 1e-9), int(R["hasard"]["revendue"] * 100 + 0.5)
 
 
+CHEMIN_BULLETIN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ui", "slabiq_bulletin.json")
+
+
+def fois_seul(R, bulletin=None):
+    """26 nov 2026 (Mathieu : « on est combien de fois meilleur avec SlabCoach ? on doit etre vraiment simple ») : combien de fois
+    plus souvent une carte du Radar Pro garde sa valeur qu'une carte achetee seul. -> (N entier, bas, haut) : N = le PIRE des
+    tests (le test du site et chaque date du bulletin), arrondi vers le bas : « N fois » est donc vrai a CHAQUE test ; bas et
+    haut : l'etendue, a une decimale vers le bas. Le 26 nov : 6,0 a 7,3 -> « 6× » (le test du jour seul dirait 7)."""
+    if bulletin is None:
+        bulletin = lire(CHEMIN_BULLETIN)
+    L = [(x.get("pro") or {}, x.get("hasard") or {}) for x in (bulletin or {}).get("lignes") or []]
+    cp, ch = R.get("pro") or {}, R.get("hasard") or {}
+    if not any(p.get("n") == cp.get("n") and p.get("reussi") == cp.get("reussi") for p, _h in L):      # la derniere ligne du bulletin EST le test du site
+        L.append((cp, ch))
+    r = [p["reussi"] / h["reussi"] for p, h in L if p.get("n") and p.get("reussi") and h.get("reussi")]
+    bas, haut = min(r), max(r)
+    return int(bas + 1e-9), int(bas * 10 + 1e-9) / 10, int(haut * 10 + 1e-9) / 10, len(r)
+
+
 def publics(chemin=None):
     """Pour l'app : les memes textes que le site. {} si la mesure n'est pas la."""
     R = lire(chemin)
@@ -57,6 +76,7 @@ def publics(chemin=None):
         p, h = pro(R)
         rv, rvh = revendue(R)
         return {"le": R["le"], "ventes": ventes_k(R), "fois": fois(R), "accord_fr": a_fr, "accord_en": a_en, "accord_avant": av,
-                "pro": p, "hasard": h, "revendue": rv, "revendue_seul": rvh, "joueurs": int(R.get("joueurs") or 0)}
+                "pro": p, "hasard": h, "revendue": rv, "revendue_seul": rvh, "joueurs": int(R.get("joueurs") or 0),
+                "fois_seul": fois_seul(R)[0]}
     except (KeyError, TypeError, ValueError):
         return {}

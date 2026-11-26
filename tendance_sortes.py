@@ -185,7 +185,7 @@ def _etalement(pts, av):
     return None
 
 
-def mesure_carte(points, auj, lu=None):
+def mesure_carte(points, auj, lu=None, frais=None):
     """Une carte : ses 30 derniers jours contre les 60 d'avant. -> {lr, n_av, n_re, mediane, norm_av, norm_re} ou None.
     lu : la date de la derniere lecture de ses ventes ; sans elle, la date de sa derniere vente. Plus de FRAIS_J jours : rien."""
     import tendance_stats as ts
@@ -193,7 +193,7 @@ def mesure_carte(points, auj, lu=None):
     if len(pts) < 4:
         return None
     vu = max(pts[-1][0], _jour(lu) or pts[-1][0])
-    if (auj - vu).days > FRAIS_J:
+    if (auj - vu).days > (FRAIS_J if frais is None else frais):
         return None
     med = statistics.median(p for _d, p in pts)
     if med < ts.PRIX_MIN:
@@ -312,7 +312,9 @@ def _cartes_exactes(cartes):
         nom = re.sub(r"(?<=-)[a-z]", lambda m_: m_.group(0).upper(), j.title() if j == j.lower() else j)      # « Brandsegg-Nygard »
         if cartes_m._norm(j).strip() != jn:
             nom = re.sub(r"(?<=-)[a-z]", lambda m_: m_.group(0).upper(), jn.title())                         # « Alex Ovechkin »
-        g = gr.setdefault((jn, k), {"joueur": nom, "v": {}, "an_q": None, "detail": False, "lu": None})
+        g = gr.setdefault((jn, k), {"joueur": nom, "v": {}, "an_q": None, "detail": False, "lu": None, "qs": {}})
+        if c.get("q"):                                   # ses recherches (pour la relecture : relire_si_besoin)
+            g["qs"][str(c["q"])] = len(c.get("ventes") or c.get("points") or ())
         if c.get("annee") and re.search(r"\b(19|20)\d\d\b", str(c.get("q") or c.get("carte") or "")):
             g["an_q"] = int(c["annee"])                  # la recherche nomme sa saison
         if c.get("lu_le") and str(c["lu_le"]) > str(g["lu"] or ""):
@@ -394,6 +396,65 @@ def _saisons(g):
     return [(yy, pt([x for x in v if x[2] == yy])) for yy in sorted(ans) if ans[yy] >= SAISON_DATEES_MIN]
 
 
+# 26 nov 2026 (Mathieu : « separer carte, separer joueur, mais aussi un mix des deux ; si un joueur est en baisse mais qu'une carte
+# monte, c'est peut-etre le temps de vendre ; aucune erreur, sinon on perd toute notre credibilite ») : LA CARTE ET LE RESTE DU
+# JOUEUR. « Le reste du joueur » = ses AUTRES cartes mesurees (memes garde-fous), agregees comme une sorte. JAMAIS la meme carte
+# dans une autre note (Young Guns PSA 10 contre Young Guns) ni sous un autre nom (« upper deck young guns 201 ») : base_carte().
+# Le reste « monte » ou « baisse » quand le mouvement est net et d'au moins CROISE_PCT %, sur CROISE_VENTES_MIN ventes au moins.
+# Ce que disent 3 ans de ventes (export du 26 nov 2026, rejoue aux 14 jours du 1er janv. 2024 au 19 oct. 2026 ; scripts et
+# resultats : outils/recherche/tendances_croisees/) :
+#  - 1er essai (le reste = toutes les autres cles du joueur) : « une carte qui monte seule perd 5,3 % dans les 2 mois ». FAUX
+#    SIGNAL : le « reste » etait souvent la MEME carte dans une autre note. En version stricte : -0,3 % [-6,3 ; +11,1], 13
+#    joueurs : rien. Rien n'est ecrit la-dessus dans l'app.
+#  - les deux cas imagines n'arrivent presque jamais : carte en hausse / reste en baisse : 7 mesures sur 1 770 ; carte en baisse /
+#    reste en hausse : 11. Une carte et le reste du joueur bougent ensemble.
+#  - carte ET reste en hausse : +6,2 % [-0,8 ; +9,4], mais 10 joueurs en hausse et 10 en baisse (Celebrini = 163 des 314 cas) :
+#    PAS un signal.
+#  - le SEUL fait qui tient, « joueur_baisse » : le reste du joueur baisse (au moins 20 ventes) et la carte ne monte pas -> le
+#    mois suivant, la carte valait 5,0 % de moins (mediane ; intervalle a 95 % par joueur [-6,7 ; -2,1] ; 348 mesures, 77 cartes,
+#    19 joueurs : 14 en baisse, 4 en hausse, 1 a zero ; sans les 5 joueurs les plus presents : -2,2 %, Bedard = 104 des 348). Le
+#    2e mois : -7,2 % [-10,3 ; -3,0] (15 joueurs en baisse, 3 en hausse). Temoin (carte stable, reste neutre) : -1,9 % [-6,9 ; +2,1].
+# L'ecran ecrit ce fait en JOUEURS (« chez 14 joueurs sur 19 »), sans grandeur (elle depend trop de Bedard), jamais « vends »,
+# jamais un profit. Les chiffres viennent de CROISE_MESURE (envoyes par page()), pas de l'ecran.
+CROISE_PCT = 5
+CROISE_SEMAINE_MIN = 6
+CROISE_VENTES_MIN = 20
+N_LISTE_JOUEURS = 40
+CROISE_MESURE = {"le": "2026-11-26", "du": "2024-01-01", "au": "2026-10-19", "mesures": 1258, "cartes": 160, "joueurs": 38,
+                 "joueur_baisse": {"n": 348, "cartes": 77, "joueurs": 19, "jours": 30, "pct": -5.0, "ic95": [-6.7, -2.1],
+                                   "baissent": 14, "montent": 4, "sans_top5": -2.2}}
+_RE_NOTE_BASE = re.compile(r"\b(psa|bgs|sgc|cgc|ksa|hga|bccg|tag|gma|mnt|aca|isa|csg)\b(\s*\d+(\.5)?)?")
+
+
+def base_carte(k):
+    """La carte sans sa note ni sa marque : « young guns psa 10 » et « upper deck young guns 201 » -> « young guns »."""
+    b = _RE_NOTE_BASE.sub(" ", str(k or ""))
+    b = re.sub(r"\bupper deck\b|\bud\b|\bgraded\b|\braw\b|\b\d{1,3}\b", " ", b)
+    return " ".join(b.split())
+
+
+def croiser(pc, mes, auj):
+    """Ajoute a chaque carte publiee « reste » (les AUTRES cartes du joueur : pct, sens, ventes, nombre de cartes) et « croix » :
+    « joueur_baisse » quand le reste baisse et que la carte ne monte pas (le seul fait mesure), sinon None. Sans autre carte
+    mesuree du joueur, ou avec moins de CROISE_VENTES_MIN ventes pour le reste : pas de « reste »."""
+    parj = {}
+    for _j, jn, k, m in mes:
+        parj.setdefault(jn, []).append((k, m))
+    for cle, x in pc.items():
+        b = base_carte(x["sorte"])
+        au = [m for k, m in parj.get(cle.split("|")[0], ()) if not (base_carte(k) == b and m.get("saison") == x.get("saison"))]
+        if not au:
+            continue
+        a = _agreger(au, auj, CROISE_SEMAINE_MIN)
+        if a["n"] < CROISE_VENTES_MIN:
+            continue
+        sj = ("hausse" if a["net"] and a["pct"] >= CROISE_PCT else "baisse" if a["net"] and a["pct"] <= -CROISE_PCT
+              else "neutre" if abs(a["pct"]) < 2 * CROISE_PCT else "flou")
+        x["reste"] = {"pct": a["pct"], "sens": sj, "n": a["n"], "n_cartes": len(au)}
+        x["croix"] = "joueur_baisse" if sj == "baisse" and x["sens"] != "hausse" else None
+    return pc
+
+
 def _mesures(cartes, auj):
     """Une mesure par carte EXACTE (un joueur, une sorte, une saison) qui passe tous les garde-fous -> [(joueur, cle du joueur,
     sorte, mesure)]. Sert a la carte du joueur et a la sorte tous joueurs."""
@@ -452,10 +513,45 @@ def par_carte(cartes, auj=None, mesures=None):
     return out
 
 
+# 26 nov 2026 (Mathieu : « oui » a 1 000 credits par mois) : RELIRE LES CARTES EXACTES. Une carte dont la derniere vente ou la
+# derniere lecture a plus de FRAIS_J (10) jours sort des tendances : le 26 nov, 173 cartes passaient tous les garde-fous, 401 sans
+# celui de la fraicheur (228 perdues, dont 101 publiables). a_relire() : les cartes qui passent les autres garde-fous et dont la
+# fraicheur tombera avant le prochain calcul (plus de RELIRE_AGE_J jours) ; relire_si_besoin() (la boucle du serveur, chaque
+# heure) relit leur recherche, une page = 1 credit CompSniper, RELIRE_PASSE au plus par heure, jamais plus de LR_RELIRE_MOIS
+# (1 000) par mois, et toujours dans le budget du mois de historique. Environ 230 cartes x 3 ou 4 lectures par mois.
+RELIRE_AGE_J = FRAIS_J - AUX_JOURS - 1
+RELIRE_PASSE = 60
+RELIRE_MOIS = 1000
+RELIRE_RECALCUL_MIN = 10
+_RELIRE = {"en_cours": False}
+
+
+def a_relire(cartes, auj):
+    """-> [[recherche, age en jours, ventes], ...] : les cartes a relire, les plus vendues d'abord (une recherche par carte)."""
+    out = {}
+    for (jn, k), g in _cartes_exactes(cartes).items():
+        if not g.get("qs"):
+            continue
+        for saison, pts in _saisons(g):
+            m = mesure_carte(pts, auj, g["lu"], frais=10 ** 6)
+            if not m or ("young guns" not in k and m["mediane"] < PRIX_MIN_HORS_YG) or (m.get("disp") and m["disp"] > DISPERSION_MAX):
+                continue
+            ds = [d for d in (_jour(a) for a, _b in pts) if d]
+            vu = max(max(ds), _jour(g["lu"]) or max(ds))
+            age = (auj - vu).days
+            if age <= RELIRE_AGE_J:
+                continue
+            q = max(g["qs"], key=lambda x: (g["qs"][x], x))
+            n_ = m["n_av"] + m["n_re"]
+            if q not in out or n_ > out[q][2]:
+                out[q] = [q, age, n_]
+    return sorted(out.values(), key=lambda x: (-x[2], x[0]))
+
+
 def listes(cartes, auj=None, n=N_LISTE):
     auj = auj or datetime.now()
     mes = _mesures(cartes, auj)
-    ps, pc = par_sorte(None, auj, mes), par_carte(None, auj, mes)
+    ps, pc = par_sorte(None, auj, mes), croiser(par_carte(None, auj, mes), mes, auj)
     gros = {k: x for k, x in pc.items() if x["n"] >= LISTE_VENTES_MIN}
     tri = lambda d, s, nb: sorted((x for x in d.values() if x["sens"] == s), key=lambda x: ((-x["pct"] if s == "hausse" else x["pct"]), x["p"] or 1))[:nb]
     return {"hausses": tri(ps, "hausse", n), "baisses": tri(ps, "baisse", n), "sortes": ps, "n_sortes": len(ps),
@@ -479,6 +575,7 @@ def calculer(maint=None):
         return {"partiel": reste, "lues": lues}
     cartes = [c for c in cartes if (c.get("sport") or "hockey") == "hockey"]
     r = listes(cartes, maint)
+    r["a_relire"] = a_relire(cartes, maint or datetime.now())
     r["le"] = (maint or datetime.now()).isoformat(timespec="seconds")
     r["n_cartes_lues"] = len(cartes)
     ch = _chemin()
@@ -514,9 +611,19 @@ def lire():
     return v
 
 
+# 26 nov 2026 (journal Render, 10 h, apres le push : « 54 554 ventes encore a trier (184 498 lues) ») : le mega test a ajoute
+# des dizaines de milliers de ventes ; une passe trie 15 000 ventes (base_ventes.NOUVELLES_MAX) et la boucle du serveur ne
+# repasse qu'une fois par heure : les tendances des cartes auraient attendu 4 heures. Le fil de passe_si_besoin enchaine les
+# passes (une pause entre deux : le serveur respire) jusqu'a ce que le tri soit fini, et s'arrete si une passe n'avance pas.
+PASSES_MAX = 12
+PAUSE_PASSE_S = 45
+_PARTIEL = {"n": 0}
+
+
 def calculer_si_besoin():
     """Refait aux 3 jours (ou la premiere fois) ; jamais deux calculs a la fois. Tant que le tri des ventes n'est pas fini, un
     essai aux 10 minutes au plus, et rien n'est publie."""
+    _PARTIEL["n"] = 0
     try:
         age = time.time() - os.path.getmtime(_chemin())
     except OSError:
@@ -531,6 +638,7 @@ def calculer_si_besoin():
     try:
         r = calculer()
         if r.get("partiel"):
+            _PARTIEL["n"] = int(r["partiel"])
             print(f"Tendance des sortes : {r['partiel']} ventes encore a trier ({r['lues']} lues) : on attend la prochaine passe", flush=True)
             return None
         _ESSAI["le"] = 0.0
@@ -555,10 +663,108 @@ def passe_si_besoin():
 
     def tache():
         try:
-            calculer_si_besoin()
+            avant = None
+            for _ in range(PASSES_MAX):
+                if calculer_si_besoin() is not None or not _PARTIEL["n"]:
+                    break                                   # publie, ou rien a faire
+                if avant is not None and _PARTIEL["n"] >= avant:
+                    break                                   # le tri n'avance pas : on reessaiera a la prochaine heure
+                avant = _PARTIEL["n"]
+                time.sleep(PAUSE_PASSE_S)
+                _ESSAI["le"] = 0.0                          # la passe suivante part tout de suite (pas dans 10 minutes)
         except Exception as e:
             print("Tendance des sortes : " + repr(e)[:200], flush=True)
     threading.Thread(target=tache, daemon=True, name="tendance-sortes").start()
+    return True
+
+
+def _chemin_relire():
+    import comptes
+    return os.path.join(comptes.DONNEES, "tendance_relire.json")
+
+
+def etat_relire():
+    """{mois, n (credits de ce mois), faites {recherche: quand}, depuis_calcul}"""
+    try:
+        with open(_chemin_relire(), encoding="utf-8") as f:
+            e = json.load(f) or {}
+    except (OSError, ValueError):
+        e = {}
+    mois = datetime.now().strftime("%Y-%m")
+    if e.get("mois") != mois:
+        e = {"mois": mois, "n": 0, "faites": e.get("faites") or {}, "depuis_calcul": e.get("depuis_calcul") or 0}
+    e.setdefault("faites", {})
+    e.setdefault("depuis_calcul", 0)
+    return e
+
+
+def plafond_relire():
+    try:
+        return max(0, int(os.environ.get("LR_RELIRE_MOIS") or RELIRE_MOIS))
+    except ValueError:
+        return RELIRE_MOIS
+
+
+def relire(max_n=RELIRE_PASSE):
+    """Relit les recherches des cartes a relire (a_relire, garde avec les tendances). -> le nombre de credits depenses."""
+    import historique
+    L = (lire() or {}).get("a_relire") or []
+    if not L or not historique.actif():
+        return 0
+    e, plafond, n, maint = etat_relire(), plafond_relire(), 0, time.time()
+    reste = 0
+    for q, _age, _n in L:
+        if maint - (e["faites"].get(q) or 0) < RELIRE_AGE_J * 86400:
+            continue                                     # deja relue
+        if e["n"] >= plafond or n >= max_n:
+            reste += 1
+            continue
+        if historique._cache(historique.cle_q(q), RELIRE_AGE_J * 86400) is not None:
+            e["faites"][q] = maint                       # une autre tache vient de la lire : rien a payer
+            continue
+        _v, err = historique.rechercher(q, chasseur=True, principal=True, cache_s=RELIRE_AGE_J * 86400)
+        if err:                                          # budget du mois, quota, panne : on s'arrete, la prochaine heure reessaiera
+            reste += 1
+            break
+        e["faites"][q] = time.time()
+        e["n"] += 1
+        n += 1
+        time.sleep(0.4)
+    e["faites"] = {q: t_ for q, t_ in e["faites"].items() if maint - t_ < 40 * 86400}
+    e["depuis_calcul"] += n
+    # tout est relu : le calcul repart a la prochaine heure (sans attendre 3 jours), pour publier les cartes redevenues fraiches
+    if not reste and e["depuis_calcul"] >= RELIRE_RECALCUL_MIN:
+        try:
+            vieux = time.time() - (AUX_JOURS + 1) * 86400
+            os.utime(_chemin(), (vieux, vieux))
+            e["depuis_calcul"] = 0
+        except OSError:
+            pass
+    try:
+        with open(_chemin_relire() + ".tmp", "w", encoding="utf-8") as f:
+            json.dump(e, f, ensure_ascii=False)
+        os.replace(_chemin_relire() + ".tmp", _chemin_relire())
+    except OSError:
+        pass
+    if n:
+        print(f"Tendance des cartes : {n} cartes relues ({e['n']} / {plafond} credits ce mois-ci, {reste} a venir)", flush=True)
+    return n
+
+
+def relire_si_besoin():
+    """La boucle du serveur (chaque heure) : la relecture dans son fil, jamais deux a la fois."""
+    if _RELIRE["en_cours"] or not ((lire() or {}).get("a_relire")):
+        return None
+    _RELIRE["en_cours"] = True
+
+    def tache():
+        try:
+            relire()
+        except Exception as e:
+            print("Tendance des cartes (relecture) : " + repr(e)[:200], flush=True)
+        finally:
+            _RELIRE["en_cours"] = False
+    threading.Thread(target=tache, daemon=True, name="tendance-relire").start()
     return True
 
 
@@ -586,6 +792,13 @@ def public(x):
         r["joueur"] = x["joueur"]
         r["saison"] = _saison_txt(x.get("saison"))
         r["brut"] = x.get("brut") if net else None
+        re_ = x.get("reste")
+        if re_:                                  # le reste du joueur : un % seulement quand il est net (hausse ou baisse)
+            r["reste"] = {"sens": re_["sens"], "pct": re_["pct"] if re_["sens"] in ("hausse", "baisse") else None, "n": re_["n"], "n_cartes": re_["n_cartes"]}
+            r["croix"] = x.get("croix")
+            if r["croix"] == "joueur_baisse":    # le fait mesure voyage avec la carte (la fenetre s'ouvre aussi du Radar)
+                f = CROISE_MESURE["joueur_baisse"]
+                r["fait"] = {"baissent": f["baissent"], "joueurs": f["joueurs"], "depuis": int(CROISE_MESURE["du"][:4]), "le": CROISE_MESURE["le"]}
     return r
 
 
@@ -595,7 +808,14 @@ def page():
     ps, pc = r.get("sortes") or {}, r.get("cartes") or {}
     if not ps and not pc:
         return None
+    # « Joueur + cartes » : toutes les cartes mesurees d'un meme joueur, cote a cote (2 cartes au moins : notes comprises)
+    pj = {}
+    for x in pc.values():
+        pj.setdefault(x["cle"].split("|")[0], []).append(x)
+    gr = sorted((sorted(l, key=lambda x: -x["n"]) for l in pj.values() if len(l) >= 2), key=lambda l: -sum(x["n"] for x in l))[:N_LISTE_JOUEURS]
     return {"hausses": [public(x) for x in r.get("cartes_hausses") or []], "baisses": [public(x) for x in r.get("cartes_baisses") or []],
+            "par_joueur": [{"joueur": l[0]["joueur"], "n": sum(x["n"] for x in l), "cartes": [public(x) for x in l]} for l in gr],
+            "croise_mesure": CROISE_MESURE,
             "toutes": [public(x) for x in sorted(ps.values(), key=lambda x: -x["n"])], "n_sortes": len(ps), "n_cartes": len(pc),
             "n_ventes": r.get("n_ventes"), "le": r.get("le"), "jours": r.get("jours") or [JOURS_RECENT, JOURS_AVANT]}
 

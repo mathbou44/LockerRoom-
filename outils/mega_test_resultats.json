@@ -1,0 +1,655 @@
+{
+ "le": "2026-11-26",
+ "fichier": "ventes_hockey.tsv.gz",
+ "du": "2013-04-28",
+ "au": "2026-11-26",
+ "pas_jours": 91,
+ "lignes": [
+  {
+   "fin": "2025-02-27",
+   "coupe": "2023-11-30",
+   "revente_des": "2024-11-29",
+   "ventes": 134825,
+   "pro": {
+    "n": 1164,
+    "reussi": 0.42,
+    "reussi_ic95": [
+     0.391,
+     0.449
+    ],
+    "revendue": 0.961,
+    "profit_apres_frais": 0.19
+   },
+   "hasard": {
+    "n": 59433,
+    "reussi": 0.074,
+    "profit_apres_frais": 0.034
+   },
+   "gains": {
+    "pro": {
+     "90": {
+      "n": 1164,
+      "revendus": 1157,
+      "pogne": 0.006,
+      "gagnants": 0.214,
+      "gain_net_median": -0.115,
+      "rendement_panier": -0.121
+     },
+     "180": {
+      "n": 831,
+      "revendus": 829,
+      "pogne": 0.002,
+      "gagnants": 0.232,
+      "gain_net_median": -0.11,
+      "rendement_panier": -0.114
+     },
+     "365": {
+      "n": 131,
+      "revendus": 131,
+      "pogne": 0.0,
+      "gagnants": 0.206,
+      "gain_net_median": -0.138,
+      "rendement_panier": -0.105
+     }
+    },
+    "hasard": {
+     "90": {
+      "n": 59433,
+      "revendus": 14632,
+      "pogne": 0.754,
+      "gagnants": 0.051,
+      "gain_net_median": -0.169,
+      "rendement_panier": -0.187
+     },
+     "180": {
+      "n": 44475,
+      "revendus": 12519,
+      "pogne": 0.719,
+      "gagnants": 0.063,
+      "gain_net_median": -0.173,
+      "rendement_panier": -0.189
+     },
+     "365": {
+      "n": 15038,
+      "revendus": 4489,
+      "pogne": 0.701,
+      "gagnants": 0.073,
+      "gain_net_median": -0.181,
+      "rendement_panier": -0.164
+     }
+    }
+   }
+  },
+  {
+   "fin": "2025-05-29",
+   "coupe": "2024-02-29",
+   "revente_des": "2025-02-28",
+   "ventes": 169457,
+   "pro": {
+    "n": 1646,
+    "reussi": 0.382,
+    "reussi_ic95": [
+     0.357,
+     0.405
+    ],
+    "revendue": 0.913,
+    "profit_apres_frais": 0.117
+   },
+   "hasard": {
+    "n": 62190,
+    "reussi": 0.082,
+    "profit_apres_frais": 0.037
+   },
+   "gains": {
+    "pro": {
+     "90": {
+      "n": 1646,
+      "revendus": 1636,
+      "pogne": 0.006,
+      "gagnants": 0.205,
+      "gain_net_median": -0.115,
+      "rendement_panier": -0.124
+     },
+     "180": {
+      "n": 1148,
+      "revendus": 1142,
+      "pogne": 0.005,
+      "gagnants": 0.196,
+      "gain_net_median": -0.127,
+      "rendement_panier": -0.152
+     },
+     "365": {
+      "n": 412,
+      "revendus": 411,
+      "pogne": 0.002,
+      "gagnants": 0.189,
+      "gain_net_median": -0.133,
+      "rendement_panier": -0.152
+     }
+    },
+    "hasard": {
+     "90": {
+      "n": 62190,
+      "revendus": 15395,
+      "pogne": 0.752,
+      "gagnants": 0.051,
+      "gain_net_median": -0.167,
+      "rendement_panier": -0.188
+     },
+     "180": {
+      "n": 44667,
+      "revendus": 12613,
+      "pogne": 0.718,
+      "gagnants": 0.059,
+      "gain_net_median": -0.184,
+      "rendement_panier": -0.203
+     },
+     "365": {
+      "n": 16290,
+      "revendus": 5368,
+      "pogne": 0.67,
+      "gagnants": 0.067,
+      "gain_net_median": -0.197,
+      "rendement_panier": -0.247
+     }
+    }
+   }
+  },
+  {
+   "fin": "2025-08-28",
+   "coupe": "2024-05-30",
+   "revente_des": "2025-05-30",
+   "ventes": 204704,
+   "pro": {
+    "n": 1642,
+    "reussi": 0.549,
+    "reussi_ic95": [
+     0.525,
+     0.574
+    ],
+    "revendue": 0.965,
+    "profit_apres_frais": 0.164
+   },
+   "hasard": {
+    "n": 64814,
+    "reussi": 0.085,
+    "profit_apres_frais": 0.035
+   },
+   "gains": {
+    "pro": {
+     "90": {
+      "n": 1642,
+      "revendus": 1636,
+      "pogne": 0.004,
+      "gagnants": 0.253,
+      "gain_net_median": -0.102,
+      "rendement_panier": -0.117
+     },
+     "180": {
+      "n": 1219,
+      "revendus": 1215,
+      "pogne": 0.003,
+      "gagnants": 0.182,
+      "gain_net_median": -0.144,
+      "rendement_panier": -0.155
+     },
+     "365": {
+      "n": 368,
+      "revendus": 367,
+      "pogne": 0.003,
+      "gagnants": 0.141,
+      "gain_net_median": -0.156,
+      "rendement_panier": -0.171
+     }
+    },
+    "hasard": {
+     "90": {
+      "n": 64814,
+      "revendus": 15495,
+      "pogne": 0.761,
+      "gagnants": 0.05,
+      "gain_net_median": -0.164,
+      "rendement_panier": -0.167
+     },
+     "180": {
+      "n": 46249,
+      "revendus": 12721,
+      "pogne": 0.725,
+      "gagnants": 0.058,
+      "gain_net_median": -0.183,
+      "rendement_panier": -0.181
+     },
+     "365": {
+      "n": 12677,
+      "revendus": 3851,
+      "pogne": 0.696,
+      "gagnants": 0.059,
+      "gain_net_median": -0.205,
+      "rendement_panier": -0.189
+     }
+    }
+   }
+  },
+  {
+   "fin": "2025-11-27",
+   "coupe": "2024-08-29",
+   "revente_des": "2025-08-29",
+   "ventes": 246322,
+   "pro": {
+    "n": 1813,
+    "reussi": 0.719,
+    "reussi_ic95": [
+     0.697,
+     0.74
+    ],
+    "revendue": 0.978,
+    "profit_apres_frais": 0.266
+   },
+   "hasard": {
+    "n": 72078,
+    "reussi": 0.102,
+    "profit_apres_frais": 0.044
+   },
+   "gains": {
+    "pro": {
+     "90": {
+      "n": 1813,
+      "revendus": 1804,
+      "pogne": 0.005,
+      "gagnants": 0.245,
+      "gain_net_median": -0.109,
+      "rendement_panier": -0.127
+     },
+     "180": {
+      "n": 1279,
+      "revendus": 1276,
+      "pogne": 0.002,
+      "gagnants": 0.21,
+      "gain_net_median": -0.136,
+      "rendement_panier": -0.164
+     },
+     "365": {
+      "n": 343,
+      "revendus": 343,
+      "pogne": 0.0,
+      "gagnants": 0.087,
+      "gain_net_median": -0.277,
+      "rendement_panier": -0.264
+     }
+    },
+    "hasard": {
+     "90": {
+      "n": 72078,
+      "revendus": 17569,
+      "pogne": 0.756,
+      "gagnants": 0.051,
+      "gain_net_median": -0.172,
+      "rendement_panier": -0.171
+     },
+     "180": {
+      "n": 52486,
+      "revendus": 14397,
+      "pogne": 0.726,
+      "gagnants": 0.059,
+      "gain_net_median": -0.183,
+      "rendement_panier": -0.182
+     },
+     "365": {
+      "n": 15246,
+      "revendus": 4641,
+      "pogne": 0.696,
+      "gagnants": 0.059,
+      "gain_net_median": -0.232,
+      "rendement_panier": -0.214
+     }
+    }
+   }
+  },
+  {
+   "fin": "2026-02-26",
+   "coupe": "2024-11-28",
+   "revente_des": "2025-11-28",
+   "ventes": 307680,
+   "pro": {
+    "n": 2053,
+    "reussi": 0.794,
+    "reussi_ic95": [
+     0.777,
+     0.812
+    ],
+    "revendue": 0.977,
+    "profit_apres_frais": 0.566
+   },
+   "hasard": {
+    "n": 79790,
+    "reussi": 0.131,
+    "profit_apres_frais": 0.084
+   },
+   "gains": {
+    "pro": {
+     "90": {
+      "n": 2053,
+      "revendus": 2045,
+      "pogne": 0.004,
+      "gagnants": 0.315,
+      "gain_net_median": -0.087,
+      "rendement_panier": -0.047
+     },
+     "180": {
+      "n": 1482,
+      "revendus": 1479,
+      "pogne": 0.002,
+      "gagnants": 0.277,
+      "gain_net_median": -0.103,
+      "rendement_panier": -0.088
+     },
+     "365": {
+      "n": 495,
+      "revendus": 495,
+      "pogne": 0.0,
+      "gagnants": 0.21,
+      "gain_net_median": -0.137,
+      "rendement_panier": -0.122
+     }
+    },
+    "hasard": {
+     "90": {
+      "n": 79790,
+      "revendus": 20850,
+      "pogne": 0.739,
+      "gagnants": 0.063,
+      "gain_net_median": -0.157,
+      "rendement_panier": -0.13
+     },
+     "180": {
+      "n": 57252,
+      "revendus": 16136,
+      "pogne": 0.718,
+      "gagnants": 0.068,
+      "gain_net_median": -0.162,
+      "rendement_panier": -0.151
+     },
+     "365": {
+      "n": 17773,
+      "revendus": 5477,
+      "pogne": 0.692,
+      "gagnants": 0.076,
+      "gain_net_median": -0.166,
+      "rendement_panier": -0.143
+     }
+    }
+   }
+  },
+  {
+   "fin": "2026-05-28",
+   "coupe": "2025-02-27",
+   "revente_des": "2026-02-27",
+   "ventes": 373374,
+   "pro": {
+    "n": 2575,
+    "reussi": 0.785,
+    "reussi_ic95": [
+     0.77,
+     0.801
+    ],
+    "revendue": 0.988,
+    "profit_apres_frais": 0.562
+   },
+   "hasard": {
+    "n": 96515,
+    "reussi": 0.139,
+    "profit_apres_frais": 0.088
+   },
+   "gains": {
+    "pro": {
+     "90": {
+      "n": 2575,
+      "revendus": 2566,
+      "pogne": 0.003,
+      "gagnants": 0.377,
+      "gain_net_median": -0.06,
+      "rendement_panier": 0.01
+     },
+     "180": {
+      "n": 1561,
+      "revendus": 1558,
+      "pogne": 0.002,
+      "gagnants": 0.402,
+      "gain_net_median": -0.05,
+      "rendement_panier": 0.065
+     },
+     "365": {
+      "n": 422,
+      "revendus": 422,
+      "pogne": 0.0,
+      "gagnants": 0.507,
+      "gain_net_median": 0.003,
+      "rendement_panier": -0.01
+     }
+    },
+    "hasard": {
+     "90": {
+      "n": 96515,
+      "revendus": 27024,
+      "pogne": 0.72,
+      "gagnants": 0.074,
+      "gain_net_median": -0.145,
+      "rendement_panier": -0.114
+     },
+     "180": {
+      "n": 62597,
+      "revendus": 19225,
+      "pogne": 0.693,
+      "gagnants": 0.089,
+      "gain_net_median": -0.145,
+      "rendement_panier": -0.079
+     },
+     "365": {
+      "n": 18912,
+      "revendus": 5947,
+      "pogne": 0.686,
+      "gagnants": 0.095,
+      "gain_net_median": -0.136,
+      "rendement_panier": -0.102
+     }
+    }
+   }
+  },
+  {
+   "fin": "2026-08-27",
+   "coupe": "2025-05-29",
+   "revente_des": "2026-05-29",
+   "ventes": 443663,
+   "pro": {
+    "n": 3534,
+    "reussi": 0.752,
+    "reussi_ic95": [
+     0.738,
+     0.767
+    ],
+    "revendue": 0.948,
+    "profit_apres_frais": 0.441
+   },
+   "hasard": {
+    "n": 112640,
+    "reussi": 0.118,
+    "profit_apres_frais": 0.068
+   },
+   "gains": {
+    "pro": {
+     "90": {
+      "n": 3534,
+      "revendus": 3518,
+      "pogne": 0.005,
+      "gagnants": 0.311,
+      "gain_net_median": -0.089,
+      "rendement_panier": -0.028
+     },
+     "180": {
+      "n": 2235,
+      "revendus": 2232,
+      "pogne": 0.001,
+      "gagnants": 0.41,
+      "gain_net_median": -0.057,
+      "rendement_panier": 0.088
+     },
+     "365": {
+      "n": 545,
+      "revendus": 543,
+      "pogne": 0.004,
+      "gagnants": 0.466,
+      "gain_net_median": -0.028,
+      "rendement_panier": 0.192
+     }
+    },
+    "hasard": {
+     "90": {
+      "n": 112640,
+      "revendus": 33605,
+      "pogne": 0.702,
+      "gagnants": 0.073,
+      "gain_net_median": -0.162,
+      "rendement_panier": -0.128
+     },
+     "180": {
+      "n": 78398,
+      "revendus": 25829,
+      "pogne": 0.671,
+      "gagnants": 0.101,
+      "gain_net_median": -0.139,
+      "rendement_panier": -0.072
+     },
+     "365": {
+      "n": 19879,
+      "revendus": 6603,
+      "pogne": 0.668,
+      "gagnants": 0.116,
+      "gain_net_median": -0.133,
+      "rendement_panier": -0.031
+     }
+    }
+   }
+  },
+  {
+   "fin": "2026-11-26",
+   "coupe": "2025-08-28",
+   "revente_des": "2026-08-28",
+   "ventes": 691901,
+   "pro": {
+    "n": 4038,
+    "reussi": 0.774,
+    "reussi_ic95": [
+     0.761,
+     0.786
+    ],
+    "revendue": 0.986,
+    "profit_apres_frais": 0.383
+   },
+   "hasard": {
+    "n": 125115,
+    "reussi": 0.144,
+    "profit_apres_frais": 0.073
+   },
+   "gains": {
+    "pro": {
+     "90": {
+      "n": 4038,
+      "revendus": 4024,
+      "pogne": 0.003,
+      "gagnants": 0.318,
+      "gain_net_median": -0.086,
+      "rendement_panier": -0.028
+     },
+     "180": {
+      "n": 3006,
+      "revendus": 3002,
+      "pogne": 0.001,
+      "gagnants": 0.349,
+      "gain_net_median": -0.085,
+      "rendement_panier": 0.018
+     },
+     "365": {
+      "n": 580,
+      "revendus": 579,
+      "pogne": 0.002,
+      "gagnants": 0.6,
+      "gain_net_median": 0.099,
+      "rendement_panier": 0.397
+     }
+    },
+    "hasard": {
+     "90": {
+      "n": 125115,
+      "revendus": 39533,
+      "pogne": 0.684,
+      "gagnants": 0.074,
+      "gain_net_median": -0.168,
+      "rendement_panier": -0.132
+     },
+     "180": {
+      "n": 93370,
+      "revendus": 32456,
+      "pogne": 0.652,
+      "gagnants": 0.095,
+      "gain_net_median": -0.163,
+      "rendement_panier": -0.096
+     },
+     "365": {
+      "n": 22936,
+      "revendus": 8773,
+      "pogne": 0.618,
+      "gagnants": 0.144,
+      "gain_net_median": -0.126,
+      "rendement_panier": 0.065
+     }
+    }
+   }
+  }
+ ],
+ "verdicts": {
+  "90": {
+   "prouve": false,
+   "dates": 8,
+   "ratees": [
+    "2025-02-27",
+    "2025-05-29",
+    "2025-08-28",
+    "2025-11-27",
+    "2026-02-26",
+    "2026-05-28",
+    "2026-08-27",
+    "2026-11-26"
+   ],
+   "pourquoi": "rate a 8 date(s) sur 8"
+  },
+  "180": {
+   "prouve": false,
+   "dates": 8,
+   "ratees": [
+    "2025-02-27",
+    "2025-05-29",
+    "2025-08-28",
+    "2025-11-27",
+    "2026-02-26",
+    "2026-05-28",
+    "2026-08-27",
+    "2026-11-26"
+   ],
+   "pourquoi": "rate a 8 date(s) sur 8"
+  },
+  "365": {
+   "prouve": false,
+   "dates": 8,
+   "ratees": [
+    "2025-02-27",
+    "2025-05-29",
+    "2025-08-28",
+    "2025-11-27",
+    "2026-02-26",
+    "2026-05-28",
+    "2026-08-27"
+   ],
+   "pourquoi": "rate a 7 date(s) sur 8"
+  }
+ }
+}

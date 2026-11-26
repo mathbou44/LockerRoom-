@@ -265,7 +265,9 @@ assert c3["n"] == 26 and c3["n_re"] == 12 and c3["sens"] == "hausse" and 74 <= c
 det = base_ventes.cartes_toutes(jours=130, n_min=4, max_q=20000, detail=True)
 e0 = [e for e in det if e["q"] == "jacob fowler young guns"][0]
 assert e0["lu_le"] and len(e0["ventes"]) == 26 and all(v[3] == 2025 and v[2].startswith("https://www.ebay.ca/itm/31") for v in e0["ventes"]), e0["ventes"][:2]
-assert len(e0["points"]) > 26                                              # cartes_match, lui, laisse passer la Renewed et le lot (a corriger a part)
+# 26 nov 2026 (Mathieu : « corrige ») : cartes_match refuse maintenant lui-meme la Renewed et le lot « + » (avant, seul le
+# garde-fou des tendances les ecartait : les comps des autres ecrans les gardaient)
+assert len(e0["points"]) == 26, len(e0["points"])
 assert "points" in base_ventes.cartes_toutes(jours=130)[0] and "ventes" not in base_ventes.cartes_toutes(jours=130)[0]      # sans detail : comme avant
 tb = ts_.de_titre(T1, "Jacob Fowler")
 assert tb and tb["cle"] == "jacob fowler|young guns|2025" and tb["pct"] == c3["pct"], tb
@@ -289,7 +291,112 @@ with contextlib.redirect_stdout(io.StringIO()) as jl:
             th.join(120)
 assert "cartes mesurees" in jl.getvalue() and time.time() - os.path.getmtime(ch2) < 120 and not ts_._ETAT["en_cours"], jl.getvalue()
 assert ts_.passe_si_besoin() is None
+# 26 nov 2026 (journal du serveur apres le push : « 54 554 ventes encore a trier ») : le fil enchaine les passes de tri jusqu'au
+# bout au lieu d'attendre la boucle de l'heure suivante ; il s'arrete si une passe n'avance pas
+def fil(reponses):
+    appels = []
+    vrai = ts_.calculer
+    ts_.calculer = lambda maint=None: (appels.append(1), reponses[min(len(appels), len(reponses)) - 1])[1]
+    os.utime(ch2, (time.time() - 4 * 86400,) * 2)
+    ts_._ESSAI["le"] = 0.0
+    try:
+        with contextlib.redirect_stdout(io.StringIO()) as j:
+            assert ts_.passe_si_besoin() is True
+            for th in threading.enumerate():
+                if th.name == "tendance-sortes":
+                    th.join(60)
+    finally:
+        ts_.calculer = vrai
+    return len(appels), j.getvalue()
+ts_.PAUSE_PASSE_S = 0
+fini = {"n_cartes": 148, "cartes_hausses": [], "cartes_baisses": [], "n_sortes": 2, "n_cartes_lues": 9, "n_ventes": 99}
+n_, jl2 = fil([{"partiel": 54554, "lues": 184498}, {"partiel": 39554, "lues": 199498}, {"partiel": 24554, "lues": 214498}, fini])
+assert n_ == 4 and jl2.count("encore a trier") == 3 and "148 cartes mesurees" in jl2, (n_, jl2)
+n_, jl2 = fil([{"partiel": 54554, "lues": 1}, {"partiel": 54554, "lues": 1}, fini])
+assert n_ == 2 and "cartes mesurees" not in jl2, "le tri n'avance pas : le fil s'arrete (la boucle de l'heure reessaiera)"
+n_, jl2 = fil([{"partiel": 900000 - 60000 * i, "lues": 1} for i in range(40)])
+assert n_ == ts_.PASSES_MAX, n_                                                    # jamais plus de PASSES_MAX passes de suite
+assert not ts_._ETAT["en_cours"]
+
+# ---------------------------------------------------------------- 26 nov 2026 : la carte et le RESTE du joueur, par joueur
+# (Mathieu : « separer carte, separer joueur, mais aussi un mix des deux ; aucune erreur, sinon on perd toute notre credibilite »)
+assert ts_.base_carte("young guns psa 10") == ts_.base_carte("upper deck young guns 201") == ts_.base_carte("young guns") == "young guns"
+assert ts_.base_carte("young guns canvas bgs 9.5") == "young guns canvas" != ts_.base_carte("young guns")
+def mesure_de(pct, n=30):                        # une carte mesuree : n ventes avant, n ventes dans les 30 derniers jours
+    pts = [(jr2(40 + i), 100 * (1 + 0.02 * ((i % 3) - 1))) for i in range(n)] + [(jr2(2 + (i % 26)), 100 * (1 + pct / 100) * (1 + 0.02 * ((i % 3) - 1))) for i in range(n)]
+    m = ts_.mesure_carte(pts, MAINT); m["saison"] = 2025
+    return m
+def croix(pct_carte, autres, sens_carte=None):
+    mes = [("Test Joueur", "test joueur", "young guns", mesure_de(pct_carte))] + [("Test Joueur", "test joueur", k, mesure_de(p_, n_)) for k, p_, n_ in autres]
+    pc = ts_.par_carte(None, MAINT, mes)
+    return ts_.croiser(pc, mes, MAINT)["test joueur|young guns|2025"]
+x = croix(-20, [("young guns canvas", -25, 30), ("dazzlers green", -30, 30)])
+assert x["sens"] == "baisse" and x["reste"]["sens"] == "baisse" and x["reste"]["n_cartes"] == 2 and x["croix"] == "joueur_baisse", x.get("reste")
+x = croix(-20, [("young guns psa 10", -25, 30), ("upper deck young guns 201", -30, 30)])
+assert "reste" not in x and not x.get("croix"), "la meme carte dans une autre note ou sous un autre nom n'est PAS le reste du joueur"
+x = croix(-20, [("young guns canvas", -25, 4)])
+assert "reste" not in x, "moins de 20 ventes pour le reste : rien n'est dit"
+x = croix(+30, [("young guns canvas", -25, 30)])
+assert x["sens"] == "hausse" and x["reste"]["sens"] == "baisse" and x["croix"] is None, "la carte monte : le fait mesure ne s'applique pas"
+x = croix(+30, [("young guns canvas", 0, 30)])
+assert x["reste"]["sens"] == "neutre" and x["croix"] is None, "« monte seule » n'est PAS un signal (faux signal du 1er essai) : aucun mot"
+x = croix(+30, [("young guns canvas", +30, 30)])
+assert x["reste"]["sens"] == "hausse" and x["croix"] is None, "tout monte : pas un signal non plus"
+M = ts_.CROISE_MESURE["joueur_baisse"]
+assert set(ts_.CROISE_MESURE) >= {"le", "du", "au", "joueur_baisse"} and "seule" not in ts_.CROISE_MESURE and M["baissent"] + M["montent"] <= M["joueurs"] and M["ic95"][1] < 0
+pub = ts_.public(croix(-20, [("young guns canvas", -25, 30)]))
+assert pub["croix"] == "joueur_baisse" and pub["fait"] == {"baissent": M["baissent"], "joueurs": M["joueurs"], "depuis": 2024, "le": ts_.CROISE_MESURE["le"]}
+assert pub["reste"]["pct"] is not None and "prix" not in json.dumps(pub) and "mediane" not in json.dumps(pub)
+assert ts_.public(croix(+30, [("young guns canvas", 0, 30)]))["reste"] == {"sens": "neutre", "pct": None, "n": 60, "n_cartes": 1}, "pas de % quand le reste n'est pas net"
+pg = ts_.page()
+assert "par_joueur" in pg and pg["croise_mesure"] == ts_.CROISE_MESURE and all(len(g["cartes"]) >= 2 and g["joueur"] for g in pg["par_joueur"])
+import inspect, lockerroom as lr_
+assert 'so["par_joueur"] = []' in inspect.getsource(lr_.Api._tendances_gratuit), "Gratuit : pas la vue Joueur + cartes"
+
+# ---------------------------------------------------------------- 26 nov 2026 : relire les cartes exactes (1 000 credits par mois au plus)
+import historique
+assert ts_.RELIRE_MOIS == 1000 and ts_.plafond_relire() == 1000 and ts_.RELIRE_AGE_J == ts_.FRAIS_J - ts_.AUX_JOURS - 1
+def carte_q(q, age, n=20, pas=3, prix=60.0):      # une recherche : n ventes regulieres, la derniere il y a « age » jours
+    return {"joueur": "Jacob Fowler", "carte": q, "q": q, "sport": "hockey", "annee": 2025, "lu_le": jr2(age),
+            "points": [[jr2(age + pas * i), prix + (i % 3)] for i in range(n)], "ventes": [[jr2(age + pas * i), prix + (i % 3), "4%011d" % (abs(hash(q)) % 10 ** 8 * 100 + i), 2025] for i in range(n)]}
+AR = ts_.a_relire([carte_q("jacob fowler young guns", 12), carte_q("jacob fowler young guns canvas", 3), carte_q("jacob fowler dazzlers pink", 8, 8, 9),
+                   carte_q("jacob fowler dazzlers blue", 15, 8, 9, 6.0)], MAINT)
+assert [x[0] for x in AR] == ["jacob fowler young guns", "jacob fowler dazzlers pink"] and AR[0][1] == 12, AR      # la Canvas est fraiche (3 jours) ; la Blue vaut 6 $ (sous le plancher)
+appels, cache = [], {}
+vr, vc, va = historique.rechercher, historique._cache, historique.actif
+historique.actif = lambda: True
+historique._cache = lambda q, age=None: cache.get(q)
+def faux_rechercher(q, **kw):
+    assert kw.get("chasseur") and kw.get("principal") and kw.get("cache_s") == ts_.RELIRE_AGE_J * 86400, kw
+    appels.append(q); return ([], "budget") if q == "panne" else ([{"titre": "x"}], None)
+historique.rechercher = faux_rechercher
+vl = ts_.lire
+try:
+    if os.path.exists(ts_._chemin_relire()): os.remove(ts_._chemin_relire())
+    ts_.lire = lambda: {"a_relire": [["q%d" % i, 12, 50 - i] for i in range(8)]}
+    cache["q2"] = [1]                                                                  # deja lue par une autre tache : gratuite
+    os.environ["LR_RELIRE_MOIS"] = "5"
+    with contextlib.redirect_stdout(io.StringIO()) as j3:
+        assert ts_.relire(max_n=3) == 3 and appels == ["q0", "q1", "q3"], appels          # 3 par passe, les plus vendues d'abord
+        assert ts_.relire(max_n=3) == 2 and appels[3:] == ["q4", "q5"], appels             # le plafond du mois (5) arrete la passe
+        assert ts_.relire(max_n=3) == 0 and len(appels) == 5                                # plus un credit ce mois-ci
+    e3 = ts_.etat_relire()
+    assert e3["n"] == 5 and set(e3["faites"]) == {"q0", "q1", "q2", "q3", "q4", "q5"} and "5 / 5" in j3.getvalue(), (e3, j3.getvalue())
+    os.environ["LR_RELIRE_MOIS"] = "50"
+    ts_.lire = lambda: {"a_relire": [["panne", 12, 9], ["apres", 12, 8]]}
+    assert ts_.relire() == 0 and appels[-1] == "panne", "budget du mois ou panne : on s'arrete, rien n'est compte"
+    assert ts_.etat_relire()["n"] == 5
+finally:
+    historique.rechercher, historique._cache, historique.actif, ts_.lire = vr, vc, va, vl
+    os.environ.pop("LR_RELIRE_MOIS", None)
+    if os.path.exists(ts_._chemin_relire()): os.remove(ts_._chemin_relire())
+assert "tendance_sortes.relire_si_besoin()" in src("server.py")
+assert "a_relire" in json.load(open(ch2, encoding="utf-8")) and "a_relire" not in json.dumps(ts_.page()), "la liste a relire reste sur le serveur"
+
 app = src("ui/app.html")
+for m in ("data-tmode=", "data-jmix=", "resteTD", "tiq-mixv", "it-vper", "data-per="):
+    assert m in app, m
+assert "t.fait" in src("source/src_app.html") and "14 joueurs" not in src("source/src_app.html"), "les chiffres du fait viennent du serveur, pas de l'ecran"
 for m in ("data-td=", "feuilleSorte", "data-tmode=", "badgeTend", "bandeTend", "ajusterPS", "psg", "tiq-mode"):
     assert m in app, m
 s0 = src("source/src_app.html")

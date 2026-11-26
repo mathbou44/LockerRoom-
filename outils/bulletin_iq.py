@@ -67,7 +67,9 @@ _M = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juill.", "août", "sept
 _ME = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 jfr = lambda d: "%d %s" % (int(d[8:10]), _M[int(d[5:7]) - 1])
 jen = lambda d: "%s %d" % (_ME[int(d[5:7]) - 1], int(d[8:10]))
-pc = lambda x: "–" if x is None else str(round(x * 100))
+# 26 nov 2026 : « seul » mesure a 12,5 % s'ecrivait « 12 % » ici (round() de Python arrondit 12,5 au pair) et « 13 % » dans le
+# comparatif de la meme page (iq_publie.pro : la moitie vers le haut) : le meme arrondi partout
+pc = lambda x: "–" if x is None else str(int(x * 100 + 0.5))
 # 23 nov 2026 : le Radar Pro s'ecrit comme partout sur le site (iq_publie.pro : vers le bas, jamais plus que la mesure) ; sinon la
 # derniere ligne du bulletin disait 78 % et le gros chiffre 77 % pour la meme mesure (77,7 %)
 pb = lambda x: "–" if x is None else str(int(x * 100 + 1e-9))

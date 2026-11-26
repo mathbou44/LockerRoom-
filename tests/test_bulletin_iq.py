@@ -29,7 +29,13 @@ assert f"{int(lo * 100 + 1e-9)} à {int(hi * 100 + 1e-9)} %" in bloc and f"{int(
 assert "profit" not in bloc.lower(), "aucun mot sur un profit"
 # le plus recent (le plus bas aujourd'hui) reste ecrit en toutes lettres, avec son nombre d'achats
 der = L[-1]
-assert f'Le plus récent : {int(der["pro"]["reussi"] * 100 + 1e-9)} % ({der["pro"]["n"]} achats), contre {round(der["hasard"]["reussi"] * 100)} % seul' in bloc
+assert f'Le plus récent : {int(der["pro"]["reussi"] * 100 + 1e-9)} % ({der["pro"]["n"]} achats), contre {int(der["hasard"]["reussi"] * 100 + 0.5)} % seul' in bloc
+# 26 nov 2026 : « seul » a 12,5 % : « 13 % » ici comme dans le comparatif de la meme page (iq_publie.pro, la moitie vers le haut) ;
+# avant, round() de Python ecrivait « 12 % » dans le bulletin et « 13 % » au-dessus
+sys.path.insert(0, LR)
+import iq_publie
+assert b.pc(0.125) == "13" and b.pc(0.124) == "12" and b.pc(None) == "–"
+assert f'contre {iq_publie.pro(T)[1]} % seul' in bloc, "le meme chiffre « seul » que le comparatif"
 # « l'emporte N fois sur N » : compte seulement les tests ou le BAS de l'intervalle bat « seul »
 g = sum(1 for x in L if x["pro"]["reussi_ic95"][0] > x["hasard"]["reussi"])
 assert f"l’emporte {g}&nbsp;fois&nbsp;sur&nbsp;{len(L)}" in bloc and f"wins {g}&nbsp;out&nbsp;of&nbsp;{len(L)}" in bloc

@@ -9196,6 +9196,7 @@ class Api:
                 n = max(0, len(L) - self.TEND_GRATUIT)
                 so[k] = [{"verrou": True, "pct": x.get("pct"), "sens": x.get("sens"), "serie": x.get("serie")} for x in L[:n]] + L[n:]
             so["toutes"] = []
+            so["par_joueur"] = []               # 26 nov 2026 : « Joueur + cartes » (toutes les cartes d'un joueur) : Pro
             out["sortes"] = so
         return out
 

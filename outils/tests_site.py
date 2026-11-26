@@ -246,13 +246,28 @@ def mesures(A, C0, C, R):
                 continue
             L = [p for j, p in par[(a["k"], a["gr"])] if j >= C]
             m_ = st.median(L) if L else None
-            L_.append((m_ is not None, m_ is not None and m_ >= 0.9 * a["p"], m_ is not None and m_ * (1 - FRAIS) - FIXE >= a["p"]))
+            L_.append((m_ is not None, m_ is not None and m_ >= 0.9 * a["p"], m_ is not None and m_ * (1 - FRAIS) - FIXE >= a["p"], a["nom"]))
         if not L_:
             return dict(n=0)
         n, rev = len(L_), sum(x[0] for x in L_)
         rng = random.Random(seed)
         bs = sorted(sum(x[1] for x in rng.choices(L_, k=n)) / n for _ in range(runs))
+        # 26 nov 2026 (Mathieu : « oui » a l'intervalle plus prudent) : les achats du Radar Pro viennent de peu de joueurs (735
+        # achats, 33 joueurs, 62 % de cinq d'entre eux) : deux achats du meme joueur ne sont pas deux essais independants.
+        # L'intervalle PAR JOUEUR retire des JOUEURS (avec tous leurs achats), pas des achats : il est plus large et plus honnete.
+        # (Son propre tirage : celui de reussi_ic95 ne change pas.)
+        parj = collections.defaultdict(list)
+        for x in L_:
+            parj[x[3]].append(x[1])
+        noms = sorted(parj)
+        rngj = random.Random(seed + 1)
+        bj = []
+        for _ in range(runs):
+            t_ = [parj[x] for x in rngj.choices(noms, k=len(noms))]
+            bj.append(sum(map(sum, t_)) / sum(map(len, t_)))
+        bj.sort()
         return dict(n=n, reussi=round(sum(x[1] for x in L_) / n, 3), reussi_ic95=[round(bs[int(.025 * runs)], 3), round(bs[int(.975 * runs)], 3)],
+                    joueurs=len(noms), reussi_ic95_joueurs=[round(bj[int(.025 * runs)], 3), round(bj[int(.975 * runs)], 3)],
                     revendue=round(rev / n, 3), garde=round(sum(x[1] for x in L_) / rev, 3) if rev else None,
                     profit_apres_frais=round(sum(x[2] for x in L_) / n, 3))
     pro_now = pro_reel(radar, R["prix_min"])

@@ -2136,6 +2136,7 @@ def _valeurs_auto():
             import tendance_sortes
             if tendance_sortes.passe_si_besoin():
                 print("Tendance des cartes : calcul lance", flush=True)
+            tendance_sortes.relire_si_besoin()     # 26 nov 2026 : relit les cartes dont la fraicheur tombe (1 000 credits par mois au plus)
         except Exception as e:
             print("Tendance des cartes : " + str(e), flush=True)
         try:                                    # 10 nov 2026 - TheCardAPI : les ventes de hockey d'hier -> nos archives (1 fois/jour)

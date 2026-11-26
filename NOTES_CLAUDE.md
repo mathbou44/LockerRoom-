@@ -971,8 +971,7 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
     7 à 17 %, quelle que soit la lettre : c'est la rareté, pas une erreur de lettre.
   * Suite complète le 26 nov, 8 h 30 : 298 fichiers, 0 échec. Livré (p99) : `source/src_app.html`, `ui/app.html`,
     `tests/test_tendance_sortes.py`, `NOTES_CLAUDE.md`. PAS poussé.
-  * EN ATTENTE de lui : « publie » (les tests du site) ; « corrige » (cartes_match : Young Guns Renewed, lots) ; les crédits pour
-    relire les cartes exactes ; l'état du méga test.
+  * (Répondu à 8 h 52 : « Oui à tout » : voir plus bas. Restent : le NOMBRE de crédits et l'état du méga test.)
 - **26 nov, 8 h 30 – 8 h 45 : le calcul des tendances ne partait pas sur le serveur**. Push de p99 par Mathieu à 8 h 29 (commit
   c4f3fef). Constat dans le journal Render : entre le déploiement de 7 h 30 et celui de 8 h 30, AUCUNE ligne « Tendance des
   sortes » : le calcul était accroché seulement à la FIN d'un tour du chasseur (un tour par heure au plus, long, et chaque
@@ -982,6 +981,178 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   lance » puis « Tendance des sortes : N cartes mesurees… » (ou « N ventes encore a trier »). Suite complète : 298 fichiers,
   0 échec. Livré (p100) : `tendance_sortes.py`, `server.py`, `tests/test_tendance_sortes.py`, `NOTES_CLAUDE.md`. À POUSSER, puis
   lire le journal et comparer aux 148 cartes de mon calcul sur l'export du 26.
+- **26 nov, 8 h 52 – 10 h 30 : « Oui à tout » (publie, corrige, intervalle par joueur) et « pourquoi la simulation baisse ? »**
+  * POURQUOI LA SIMULATION BAISSE (+10,5 % → +7,9 %) : le code n'a pas changé (même empreinte `2fdb41790cb59bca`). Simulation
+    rejouée hors serveur en changeant UNE chose à la fois (`/tmp/sim/decomp.py`, `cf.py`, `cf2.py` ; moyenne de 4 tirages) :
+    publié 10,5 % → prix de revente mis à jour (2 jours de plus, ventes arrivées en retard ; Jagr 1990 Score Canadian PSA 10 :
+    médiane 164 → 144 $) 10,0 % → 7 cartes de plus qui ont maintenant une revente, presque toutes perdantes (Bedard YG
+    Achievement payée 81 $, revendue 37 $) 9,1 % → coupe au 14 oct 8,7-9,0 % → 4 joueurs que l'apprentissage monte à la note A
+    avec plus de ventes (Yzerman 76 → 86, Richter 66 → 88, Binnington, Kucherov ; Yzerman : −18 %) 8,2 % → les 11 241 ventes
+    ajoutées dans l'année simulée : +0,0. Bruit d'un tirage à l'autre : ±0,3 point (publié 10,1 à 10,6 ; refait 7,9 à 8,6 sur 8
+    graines : le tirage publié, 7,9, est le plus bas). Le panier « avec SlabIQ » = environ 3 400 achats possibles de ~290 cartes,
+    20 joueurs par mois (Hutson, Demidov, Caufield, Sennecke, Kaprizov en tête) : une dizaine de cartes déplacent le résultat de
+    2 points. RAPPEL : la simulation n'est PLUS sur le site depuis le 23 nov (gardée dans `ui/slabiq_tests.json`, recherche).
+  * « CORRIGE » : `cartes_match.py`, deux règles dans `raisons_refus` (elles n'ajoutent que des refus) :
+    (1) LOT ÉCRIT AVEC « + » : `_plus_lot(titre)` (champ `plus` de `decoder`, le champ `exclu` ne change PAS : le Radar, la lettre
+    SlabIQ et le test du site s'en servent) : « Young Guns + Dazzlers », « + Base YG », « + 3 Rookie Cards », « +more », « + Bonus ».
+    Pas un lot : le « + » après un mot d'état (« NM-MINT + Oilers », « EX+ »), envoi / étui / certificat / compliment, les deux
+    morceaux d'une même carte (« Jersey + Stick »), une ligue (« Murakami + MLB »), le mot suivant est dans la recherche ou un
+    joueur connu (« Celebrini + Will Smith »). Vaut pour les recherches ET les comparables d'une annonce.
+    (2) SUITE D'UN SET : « Renewed » (aussi « renewd », le code #YGR-nn) et « Achievement » (aussi #YGA-nn) absents de la
+    recherche = une autre carte, SEULEMENT quand la recherche nomme un set ou une variante (`cible()["carte_nommee"]` : un
+    `SETS_CLES` hors marques / séries, ou une parallèle). « anze kopitar », « mcdavid upper deck », « mcdavid edmonton oilers
+    psa 9 » gardent tout, comme avant. Les comparables d'une annonce (`ident`) avaient déjà leur règle : inchangés.
+    PAS dans la règle : « Flashback », « Throwback », « Rewind » (les légendes n'ont de « Young Guns » que la Flashback 2001-02 :
+    « jaromir jagr young guns » = 100 % de Flashback ; les refuser viderait la recherche).
+    AVANT / APRÈS sur les 1,97 M de ventes (`/tmp/tri/avant_apres.py`) : 6 628 ventes écartées (6 086 Renewed, 277 Achievement,
+    265 lots), 371 recherches touchées ; médiane des 90 jours : bouge de plus de 5 % pour 113 recherches, plus de 25 % pour 60,
+    plus que doublée pour 34 (toutes en hausse). « sidney crosby young guns » 78 → 20 ventes, 20 $ → 1 831 $ ; « connor mcdavid
+    young guns » 97 → 42, 20 $ → 1 312 $ ; Ovechkin 15 $ → 1 568 $ ; Kucherov 2,79 $ → 311 $ ; MacKinnon 7 $ → 370 $ ; Makar 9 $ →
+    324 $. Lots : 194 recherches, 9 dont la médiane bouge de plus de 5 %. 2 recherches sans vente en 90 jours après (« nick suzuki
+    young guns psa 10 » : ses 2 ventes étaient des Renewed). Les cartes du PLAN (cible avec l'année) étaient déjà protégées par
+    l'année : la faille touchait les recherches sans année (chasseur, fiches, recherche d'un utilisateur).
+    `base_ventes.retrier_si_regle_change()` (appelée au début de `cartes_toutes`) : efface UNE fois par base (`PRAGMA
+    user_version`, `TRI_VERSION = 1`) le verdict gardé (table `accepte`, ok = 1) des ventes dont le titre porte renew /
+    achievement / YGR / YGA / « + » : 8 306 verdicts sur 463 964 dans la base du 26 ; la passe suivante les refait. À CHAQUE
+    changement de règle du tri : monter `TRI_VERSION` et ajuster le motif.
+    RESTE (pas fait, à lui dire) : (a) une Renewed dont le titre ne dit ni « Renewed » ni #YGR (« Upper Deck 2024-25 Series 2
+    Young Guns Connor McDavid #201 ») passe encore dans une recherche sans année : 2 des 20 ventes de Crosby en 90 jours, 4-5
+    des 42 de McDavid ; la médiane tient, mais il faudrait une règle « saison dominante » au niveau de la liste (l'année des
+    titres est bruitée : pas « la plus ancienne ») ; (b) « Mint + SP Rookie » passe (le « + » après un mot d'état) ; (c)
+    `liquidite.cle_base` lit « 2025/26 » comme une numérotation « /26 » (clé « /26 205 demidov guns ivan young » vue dans le test).
+  * INTERVALLE PAR JOUEUR : `outils/tests_site.pro_reel` : `joueurs` et `reussi_ic95_joueurs` (on retire des JOUEURS avec tous
+    leurs achats, 1 000 tirages, son propre tirage : `reussi_ic95` ne change pas). Radar Pro : 33 joueurs, [0,798 ; 0,954]
+    (stable : [0,795 ; 0,951] à 10 000 et 50 000 tirages). J'avais dit « 81 à 94 » à Mathieu (calcul à la main du matin) : le
+    calcul officiel donne 79 à 95, corrigé dans mon message. `outils/site_iq.bloc_vs` : une phrase de plus dans la note de la
+    page SlabIQ seulement (« Ces 735 achats viennent de 33 joueurs : avec d'autres joueurs, le résultat du Radar Pro irait de
+    79 % à 95 % »), bornes vers le bas ; `tests/test_site_a_jour.py` la vérifie (FR et EN, absente de l'accueil).
+  * « PUBLIE » : `tests_site.py export_2611 --ecrire` (`LR_TESTS_TRAV=/tmp/v26/ts`) : publié 25 nov → 26 nov : ventes testées
+    213 174 → 236 349 ; joueurs 990 → 1 001 ; accord 0,684 → 0,692 (« ≈ 70 % ») ; rho 0,929 → 0,952 ; Radar Pro 638 achats
+    87,1 % → 735 achats 87,8 % [85,3 ; 90,2] ; seul 12,7 % → 12,5 % ; A et A+ contre E 4,3× → 4,9× (le site écrit 4×) ; défi :
+    100 %. Fichiers : `ui/slabiq_tests.json`, `ui/site_slabiq.html`, `ui/site_accueil.html`.
+    BULLETIN refait aux 4 dates d'avant (`/tmp/v26/bul/lancer.py` = `bulletin_iq.calculer`, deux dates à la fois sur 2 cœurs,
+    ~15 min par paire) : 1er oct 86,2 % (1 466 achats), 15 oct 89,4 % (1 193), 29 oct 90,3 % (853), 12 nov 89,5 % (704), 26 nov
+    87,8 % (735) ; seul 14,0 / 14,7 / 14,1 / 12,2 / 12,5 % ; la page : « Refait 5 fois. Le Radar Pro l'emporte 5 fois sur 5 »,
+    « 86 à 90 % » contre « 12 à 15 % » (avant : 87 à 91 %). `bulletin_iq.pc` : la moitié vers le haut, comme `iq_publie.pro`
+    (12,5 % seul s'écrivait « 12 % » au bulletin et « 13 % » au comparatif de la même page : round() de Python). À noter : avec les vieilles ventes du méga test,
+    les coupes (65 % et 80 % des ventes par date) reculent : le test du 1er oct fixe ses lettres avant le 3 avril et mesure les
+    reventes après le 7 août (avant le méga test : coupes bien plus tardives).
+  * CRÉDITS pour relire les cartes exactes (pas fait, il doit donner un chiffre) : avec la fraîcheur de 10 jours, 173 cartes
+    passent tous les garde-fous (148 publiées) ; sans la fraîcheur : 401 (249 publiables) : 228 cartes perdues faute de relecture,
+    dont 101 publiables tout de suite. Une lecture = 1 page = 1 crédit ; aux 10 jours = 3 lectures par mois : environ 700
+    crédits par mois pour ces 228 cartes. Mon « 1 360 cartes » du matin comptait AVANT le plancher de 20 $ et le minimum de
+    ventes : corrigé dans mon message. Proposé : plafond de 1 000 crédits par mois. Les autos / numérotées par recherches de
+    carte exacte : un autre budget, pas chiffré.
+  * Push de p100 par Mathieu à 9 h 53 (commit 83796c9) : le calcul des tendances a maintenant sa place dans la boucle du serveur.
+  * Suite complète le 26 nov, vers 10 h 15 : 299 fichiers, 0 échec (153 + 146 ; `test_tendance_sortes.py` attendait encore que
+    cartes_match laisse passer la Renewed et le lot : mis à jour). Livré (p101) : `cartes_match.py`, `base_ventes.py`,
+    `outils/tests_site.py`, `outils/site_iq.py`, `outils/bulletin_iq.py`, `ui/slabiq_tests.json`, `ui/slabiq_bulletin.json`,
+    `ui/site_slabiq.html`, `ui/site_accueil.html`, `tests/test_tri_lots_suites.py` (nouveau), `tests/test_site_a_jour.py`,
+    `tests/test_bulletin_iq.py`, `tests/test_tendance_sortes.py`, `NOTES_CLAUDE.md`. À POUSSER.
+    APRÈS LE PUSH : au premier `cartes_toutes`, 8 000 verdicts environ sont refaits (une passe) ; tant qu'il en reste à trier, le
+    calcul des tendances attend (« N ventes encore a trier ») et réessaie aux 10 minutes.
+  * JOURNAL DU SERVEUR après son push (déploiement en ligne à 9 h 55) : « Tendance des cartes : calcul lance » à 9 h 57, puis
+    « Tendance des sortes : 54554 ventes encore a trier (184498 lues) » à 10 h 00 : le méga test a ajouté des dizaines de milliers
+    de ventes, une passe en trie 15 000 et la boucle ne repasse qu'aux heures (4 heures d'attente). Corrigé :
+    `tendance_sortes.passe_si_besoin` enchaîne les passes dans son fil (`PASSES_MAX = 12`, `PAUSE_PASSE_S = 45`, `_PARTIEL`),
+    s'arrête si une passe n'avance pas ; une passe = 2 min 20 s sur le serveur. Tant que rien n'est publié, la page Trending ne
+    montre PAS le choix « Joueurs | Cartes » (il n'apparaît qu'avec des données) : d'où sa capture de 10 h 05 avec la vieille
+    puce « CARDS » (« The most sought-after cards »). Ajouté au paquet p101 : `tendance_sortes.py`, `tests/test_tendance_sortes.py`
+    (54 fichiers de tests qui touchent au tri, à la base des ventes et aux tendances relancés : 0 échec).
+  * DEMANDE DE 10 h 06 (Mathieu, capture de Trending) : remplacer l'onglet « Cards » actuel par les tendances des cartes ; trois
+    vues : les joueurs seuls, les cartes seules, et un mélange joueur + carte (« si un joueur est en baisse mais qu'une carte monte,
+    c'est peut-être le temps de vendre la carte, et vice-versa ») ; « aucune erreur, sinon on perd toute notre crédibilité » ;
+    « si tu as des questions, je vais valider ». PAS ENCORE BÂTI : je lui ai d'abord donné ce que disent les 3 ans de ventes
+    (`/tmp/v26/croise.py` sur `histo_14_double.json`, 2 981 mesures, 98 joueurs ; « joueur » = ses AUTRES cartes, par les ventes) :
+    - les deux cas qu'il décrit n'arrivent presque jamais : carte en hausse / joueur en baisse : 10 mesures (5 joueurs) ; carte en
+      baisse / joueur en hausse : 7 mesures (5 joueurs). Une carte et le reste du joueur bougent ensemble : rien à conseiller là ;
+    - une carte qui monte SEULE (joueur neutre) redescend : −0,9 % à 30 jours, −5,3 % à 60 jours [−9,3 ; −3,0] (111 mesures, 32
+      joueurs ; sans les 5 plus gros −4,6 ; un joueur = une voix : 25 en baisse, 7 en hausse) ; le témoin (carte stable, joueur
+      neutre) : 0,0 % ;
+    - le joueur baisse (carte stable) : −2,9 % à 30 jours [−5,1 ; −1,5], −5,0 % à 60 jours (30 joueurs, 24 en baisse) ; carte et
+      joueur en baisse : −4,2 % puis −5,5 % ;
+    - carte et joueur en hausse : +3,4 % [−0,1 ; +9,5], sans les 5 plus gros 0,0 (Celebrini = 85 des 234 cas) : pas un signal.
+    PLAN PROPOSÉ (à valider par lui) : trois onglets en haut de Trending : « Joueurs », « Cartes », « Joueur + carte » ; la puce
+    « Cards » actuelle disparaît dès que les tendances des cartes sont là (sa liste des sortes recherchées : un lien dans
+    « Cartes ») ; « Joueur + carte » montre les deux tendances côte à côte (la carte, et le reste des cartes du joueur) et ne
+    dit en mots que ce qui est mesuré (« monte seule : en moyenne, redescend dans les 2 mois » ; « le reste du joueur baisse »),
+    jamais « vends » ni un profit. À TESTER AVANT : la même croix avec l'indice public du joueur (celui de l'onglet Joueurs).
+  * MÉGA TEST : je ne peux pas voir son état : le journal Render n'a qu'une ligne (« Mega test : tour (en_cours) », 25 nov
+    21 h 12) et rien après les déploiements de 7 h 30 et 8 h 30 ; le navigateur intégré de son PC n'est pas connecté à SlabCoach
+    (je ne me connecte jamais pour lui). À lui de le dire (écran admin).
+- **26 nov, 10 h 17 – 11 h 30 : « Oui go pour 1 et 2 et voici mega test »** (Trending en trois vues ; 1 000 crédits par mois pour
+  relire les cartes ; capture du méga test : TERMINÉ, 2 999 / 3 000 cartes, 1 209 131 ventes ajoutées, 23 533 pages, 26 967 crédits ;
+  CompSniper : 35 931 utilisés ce mois-ci sur 50 000). Et à 10 h 10 : « pour Sold et Profit on devrait pouvoir ajuster le time
+  frame jusqu'à 1 an ».
+  * ERREUR DE MA PART, CORRIGÉE AVANT DE BÂTIR : je lui avais écrit à 10 h 15 « une carte qui monte seule redescend : −5 % dans
+    les 2 mois (32 joueurs) ». FAUX SIGNAL : dans ce 1er test, « le reste du joueur » comptait la MÊME carte dans une autre note
+    (Young Guns PSA 10 contre Young Guns). En version stricte (une autre base de carte, `tendance_sortes.base_carte`, 20 ventes au
+    moins) : −0,3 % [−6,3 ; +11,1], 13 joueurs : rien. Le seul fait qui tient : le reste du joueur baisse et la carte ne monte
+    pas → le mois suivant −5,0 % [−6,7 ; −2,1], 348 mesures, 19 joueurs : 14 en baisse, 4 en hausse (sans les 5 plus gros : −2,2 % ;
+    Bedard = 104 des 348). L'app l'écrit EN JOUEURS (« chez 14 joueurs sur 19 »), sans grandeur. Détail et scripts :
+    `outils/recherche/tendances_croisees/LISEZMOI.txt` ; constantes : `tendance_sortes.CROISE_MESURE` (à refaire à chaque gros export).
+  * `tendance_sortes.py` : `croiser()` (chaque carte publiée reçoit `reste` = ses autres cartes, et `croix = "joueur_baisse"` quand
+    le fait s'applique) ; `public()` envoie `reste` (un % seulement s'il est net), `croix`, `fait` {baissent, joueurs, depuis} ;
+    `page()` : `par_joueur` (les joueurs avec 2 cartes mesurées ou plus, notes comprises, 40 au plus) et `croise_mesure`.
+    Le 26 nov : 15 joueurs, 36 cartes (Martone, Schaefer, C. Hutson, Sennecke, Celebrini, Demidov, Bedard…). `lockerroom.
+    _tendances_gratuit` : `par_joueur` vidé (Pro).
+  * ÉCRAN (`source/src_app.html`, `ui/app.html`) : Trending = trois vues en haut, « Joueurs | Cartes | Joueur + cartes » (la 3e
+    seulement s'il y a des joueurs à 2 cartes). « Joueur + cartes » : une ligne par joueur (▲ n · ▼ n · ● n), un toucher ouvre ses
+    cartes (courbe + %), chacune ouvre sa fenêtre ; 3 colonnes à l'ordi. La puce « Cartes » de la vue Joueurs (« les cartes les
+    plus recherchées ») s'efface au cell dès que les sortes « toutes » sont là (Pro) ; sa liste s'ouvre de Cartes → Par sorte →
+    « Les sortes les plus recherchées › » ; à l'ordi, la colonne reste (rien ne bouge). Fenêtre d'une carte : une ligne « Les
+    autres cartes du joueur baissent (−18 %) : 5 cartes, 148 ventes. Depuis 2024, dans ce cas… » (`resteTD`, chiffres du
+    serveur). Aperçus (`/home/claude/vue/tend4.py`, `vend.py`) : cell 390 et 375, ordi 1830 et 1280 : tout tient, aucune erreur JS.
+  * VENTES : le choix de période existait (menu sous les tuiles : ce mois-ci, 90 jours, 12 mois, depuis le début) mais au cell
+    les tuiles ne disaient pas leur période (`.s` caché) : « VENDU · NOV », « PROFIT · 12 MO » dans le titre de la tuile, et
+    toucher Vendu ou Profit ouvre une feuille « Période » (les 4 choix).
+  * RELIRE LES CARTES EXACTES (son « oui » à 1 000 crédits par mois) : `tendance_sortes.a_relire()` (calculé avec les tendances,
+    gardé dans `tendance_sortes.json`, jamais envoyé à l'écran) : les cartes qui passent les garde-fous et dont la dernière vente
+    ou lecture a plus de 6 jours (`RELIRE_AGE_J` = 10 − 3 − 1 : avant que la fraîcheur tombe au calcul suivant) : 319 le 26 nov.
+    `relire_si_besoin()` dans la boucle horaire de `server.py` (son fil) → `relire()` : `historique.rechercher(q, chasseur=True,
+    principal=True, cache_s=6 jours)` (1 page = 1 crédit, compté dans le budget du mois de CompSniper), 60 par heure au plus,
+    `LR_RELIRE_MOIS` (1 000 par défaut, RIEN à régler dans Render) ; état dans `tendance_relire.json` ; quand tout est relu (10
+    lectures ou plus), le fichier des tendances est vieilli pour que le calcul reparte à l'heure suivante. Journal : « Tendance
+    des cartes : N cartes relues (n / 1000 credits ce mois-ci, r a venir) ». Attendu : ~320 crédits au premier passage (5 à 6
+    heures), puis ~1 000 par mois ; les listes devraient passer de ~148 à ~250 cartes.
+  * MESURE DU MÉGA TEST (son « refais nos tests avec les nouvelles data ») sur l'export du 26 : `LR_MEGA_TRAV=/tmp/v26/mega
+    python3 outils/mega_test.py export_2611 --dates 8` (une date aux 91 jours du 27 févr. 2025 au 26 nov. 2026 ; ~55 min sur un
+    cœur). VERDICT : PAS PROUVÉ à 3, 6 et 12 mois (comme le 22 nov). Radar Pro, frais eBay compris (13,25 % + 0,40 $) :
+    à 3 mois, gain net médian −12, −12, −10, −11, −9, −6, −9, −9 % (8 dates) ; gagnants 20 à 38 % contre 5 à 7 % au hasard ;
+    jamais revendus : 0 à 1 % ; à 6 mois : −5 à −14 %, gagnants 18 à 41 % contre 6 à 10 % ; à 12 mois : −28 à +10 % (la dernière
+    date seulement est positive : +10 %, panier +40 %, 580 achats). Ce que ça dit : les cartes du Radar Pro se revendent (99 %+)
+    et gagnent 4 à 6 fois plus souvent que des achats au hasard, mais après les frais l'acheteur médian perd encore ~9 % à 3
+    mois. Le site n'annonce toujours AUCUN profit de revente (règle permanente). `outils/mega_test_resultats.json` mis à jour
+    (jamais sur le site). `tests/test_mega_test.py` : OK.
+  * Suite complète le 26 nov vers 11 h : 299 fichiers ; 3 échecs pendant que la machine calculait le méga test, tous réglés :
+    `test_sans_pickle` (mes scripts de recherche utilisaient pickle : passés à `cache_recherche`), `test_score_appris` et
+    `test_slabiq_test` (délai de 600 s dépassé sous la charge : OK relancés seuls). Livré (p102) : `tendance_sortes.py`,
+    `server.py`, `lockerroom.py`, `source/src_app.html`, `ui/app.html`, `tests/test_tendance_sortes.py`,
+    `outils/mega_test_resultats.json`, `outils/recherche/tendances_croisees/` (7 fichiers), `NOTES_CLAUDE.md`. Avec p101 (pas
+    encore poussé) : 30 fichiers à pousser en une fois.
+- **26 nov, 11 h 20 – 12 h : « On est combien de fois meilleur avec SlabCoach ? On doit être vraiment simple »** puis « Oui » à
+  ma proposition : UN chiffre, une phrase, deux barres, à la place du comparatif à trois colonnes (garde sa valeur, se revend,
+  A contre E).
+  * `iq_publie.fois_seul(R, bulletin=None)` → (N, bas, haut, nombre de tests) : N = le PIRE rapport « Radar Pro garde sa valeur /
+    seul » parmi le test du site et chaque date du bulletin (`ui/slabiq_bulletin.json`), vers le bas : « N fois » est vrai à
+    CHAQUE test, jamais écrit à la main. Le 26 nov : 6,16 / 6,08 / 6,40 / 7,34 / 7,02 → « 6× » (le test du jour seul dirait 7).
+    `publics()["fois_seul"]` pour l'app.
+  * Ce qu'il y a DANS le 6× (dit à Mathieu) : surtout la revente (99 % des cartes du Radar Pro se revendent contre 25 % seul :
+    4 fois), un peu la valeur (parmi les revendues, 89 % gardent leur valeur contre 51 % : 1,8 fois) ; « seul » = tous les achats
+    de 30 $ et plus de la même période (acheter sans trier). JAMAIS « 6 fois plus de profit » (méga test : pas prouvé).
+  * `outils/site_iq.bloc_vs` : `<div class="cmp cmp-un">` : « 6× » en gros, « plus de chances que ta carte garde sa valeur. »,
+    « Avec le Radar Pro 87 % » et « Seul 13 % » (deux barres) ; la note de la page SlabIQ perd la définition de « Se revend » et
+    gagne « « 6× » : à chacun de nos 5 tests, le Radar Pro a fait au moins 6 fois mieux que seul (de 6,0 à 7,3 fois) ».
+    Styles : `ui/site_base.html` (`.cmp-un`). Pages réécrites avec `site_iq.ecrire(R, defi)` depuis `/tmp/v26/ts/resultats.json`
+    et `defi_pool.json` (le test n'a pas été refait : mêmes chiffres).
+  * App, fenêtre SlabIQ (`expliquerSlabIQ`) : le gros chiffre devient « 6× » avec la même phrase que le site (« … Avec le Radar
+    Pro : 87 %. Seul : 13 %. ») ; « 4× : une carte A ou A+ se revend plus souvent qu'une E » passe dans la rangée du dessous ;
+    « au hasard » → « seul ». La fenêtre défilait déjà au cell avant (950 px pour 707) ; à l'ordi elle tient.
+  * `tests/test_site_a_jour.py` (le N× = le pire des tests, un seul gros chiffre, même phrase dans l'app) et
+    `tests/test_chiffres_partout.py` mis à jour ; aperçus : `/home/claude/vue/site6.py` (page SlabIQ et accueil, cell et ordi),
+    `iqx.py`. Suite complète vers midi : 299 fichiers, 0 échec. Livré (p103) : `iq_publie.py`, `outils/site_iq.py`,
+    `ui/site_base.html`, `ui/site_slabiq.html`, `ui/site_accueil.html`, `source/src_app.html`, `ui/app.html`,
+    `tests/test_site_a_jour.py`, `tests/test_chiffres_partout.py`, `NOTES_CLAUDE.md`.
 - **Demandé pour demain (21 h 02)** : « améliore SlabIQ et refais nos tests avec les nouvelles data une fois obtenues ; tu devrais
   aller chercher tout automatiquement » → refaire les tests sur les ventes de la collecte de 3 ans ; SlabIQ ne change que si le test
   le prouve ; le test publié sur le site doit tourner seul sur le serveur (tâche `g_c_auto`), sans export à la main.

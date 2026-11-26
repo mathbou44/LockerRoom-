@@ -208,6 +208,54 @@ def _apres_pop(t, debut):
     return bool(_RE_POP_AVANT.search(t[max(0, debut - 16):debut]))
 
 
+# 26 nov 2026 (Mathieu : « corrige » ; deux failles vues en verifiant les tendances des cartes, mesurees sur 1,97 M de ventes) :
+#  1. un lot ecrit avec un « + » (« Young Guns + Dazzlers », « + Base YG », « + 3 Rookie Cards », « +more ») passait pour la carte
+#     seule : son prix (deux cartes ou plus) gonflait les comps. _plus_lot(titre) -> les deux mots qui suivent le « + », ou None.
+#     Pas un lot : la cote d'etat (« EX+ », « NM-MINT + Oilers » : le « + » suit un mot d'etat), un envoi ou un etui offert
+#     (« + free shipping », « + holder »), un certificat (« + PSA Auto »), un compliment (« + Beauty »), les deux morceaux de la
+#     meme carte (« Jersey + Stick », « Patch + Auto »), une ligue dans le nom du set (« Murakami + MLB »). Deux joueurs sur la meme
+#     carte (« Celebrini + Will Smith ») : laisses aux regles des joueurs (raisons_refus regarde si le mot est dans la recherche).
+#  2. sans annee dans la recherche, la SUITE d'un set (« Young Guns Renewed », « Young Guns Achievement ») passait pour le set
+#     lui-meme : des milliers de ventes « Renewed » a 4 $ rangees avec de vraies Young Guns (Kaprizov, McDavid, Malkin...), et des
+#     Renewed PSA 10 a 91-105 $ avec la Tkachuk YG PSA 10. Seulement quand la recherche nomme un set ou une variante : une
+#     recherche qui ne nomme que le joueur (« anze kopitar »), une equipe ou une marque garde toutes ses cartes, comme avant.
+_RE_PLUS = re.compile(r"(?<=\s)\+\s*([a-z0-9#'/\-]+)(?:\s+([a-z0-9#'/\-]+))?")
+_RE_ETAT_PLUS = re.compile(r"(?:\b(?:mint|mt|nm|nrmt|ex|exmt|vg|vgex|good|gd|fair|fr|poor|pr|excellent|fine|gem)|[0-9]\s*\))\s*$")
+_PLUS_BENIN = set("""free shipping ship shipped coupon coupons holder holders onetouch one-touch one touch toploader top-loader
+    top loader sleeve sleeves case stand magnetic mag beauty beautiful centered centering sharp nice wow look rare hot fresh
+    clean pop gem mint invest tracking tracked insurance protection protector penny psa bgs sgc cgc jsa coa dna beckett cert
+    certified authenticated auth loa grade graded slab combined
+    jersey stick patch auto autograph relic swatch memorabilia hockey mlb nba nfl nhl""".split())
+# « Flashback », « Throwback », « Rewind » ne sont PAS ici : les legendes n'ont de « Young Guns » que la Flashback de 2001-02
+# (« jaromir jagr young guns » = sa Flashback, 100 % de ses ventes) ; les refuser viderait la recherche.
+# Le code de la carte le dit aussi quand le vendeur oublie le mot : #YGR-10 = Young Guns Renewed, #YGA-6 = Young Guns Achievement.
+_RE_SUITE = re.compile(r"\b(renewed|renewd|achievements?|ygr-?\d{1,3}|yga-?\d{1,3})\b")
+# les « sets » trop vagues pour dire quelle carte c'est : une marque, une serie (une recherche « mcdavid upper deck » reste large)
+_SETS_VAGUES = {"upper deck", "panini", "topps", "bowman", "donruss", "fleer", "score", "leaf", "series 1", "series 2", "extended", "update"}
+
+
+def _suite_absente(t, tc):
+    """« renewed » ou « achievement » quand le titre (normalise) porte cette suite de set et que la recherche ne la nomme pas."""
+    for m in _RE_SUITE.finditer(t):
+        ren = m.group(1).startswith(("renew", "ygr"))
+        if not re.search(r"\b(?:renew|ygr)" if ren else r"\b(?:achievement|yga)", tc):
+            return "renewed" if ren else "achievement"
+    return None
+
+
+def _plus_lot(titre):
+    """Les deux mots qui suivent un « + » de lot dans un titre (« Young Guns + Dazzlers » -> ("dazzlers", "")), sinon None."""
+    t = str(titre or "").lower()
+    if "+" not in t:
+        return None
+    for m in _RE_PLUS.finditer(t):
+        w1, w2 = m.group(1).strip("-'/#"), (m.group(2) or "").strip("-'/#")
+        if not w1 or w1 in _PLUS_BENIN or _RE_ETAT_PLUS.search(t[:m.start()]):
+            continue
+        return (w1, w2)
+    return None
+
+
 def decoder(texte):
     """Ce que dit un titre (ou une recherche) sur la carte."""
     t = norm(texte)
@@ -258,7 +306,7 @@ def decoder(texte):
     return {"texte": t, "annee": _annee(t), "num": num, "serie": serie, "grade": grade,
             "auto": bool(_RE_AUTO.search(t)), "patch": bool(_RE_PATCH.search(t)), "rc": bool(_RE_RC.search(t)),
             "inscr": bool(_RE_INSCR.search(t)) and not _RE_INSCR_INNE.search(t),
-            "paralleles": par, "exclu": exclu}
+            "paralleles": par, "exclu": exclu, "plus": _plus_lot(texte)}
 
 
 def _mots_requis(d):
@@ -294,6 +342,9 @@ def cible(recherche):
     d["veut_serie"] = d["serie"] is not None or bool(re.search(r"\bnumbered\b|\bserial\b|#\s*d\b", t))
     d["base"] = bool(re.search(r"\bbase\b", t))
     d["produits"] = _produits_dans(t)
+    # 26 nov 2026 : la recherche nomme-t-elle plus que le joueur (un set, un produit) ? (regle des suites de set, raisons_refus)
+    mots_t = set(_RE_TOK.findall(t))
+    d["carte_nommee"] = bool(d["paralleles"]) or any(m0 in mots_t and s_ not in _SETS_VAGUES and _a_mot(t, s_) for s_, m0 in _SETS_TOK)
     return d
 
 
@@ -339,6 +390,18 @@ def raisons_refus(c, titre, appris=None):
     r = []
     if a["exclu"] and not c["exclu"]:
         r.append("lot / pas une carte seule")
+    # 26 nov 2026 : le lot ecrit avec « + » (voir _plus_lot) ; jamais quand la recherche est elle-meme un lot, ni quand le mot
+    # qui suit le « + » est dans la recherche (deux joueurs sur la meme carte, un produit nomme)
+    pl = a.get("plus")
+    if pl and not r and not c["exclu"] and not c.get("plus") and not any(w and _a_mot(c["texte"], w) for w in pl) \
+            and not _noms_dans(norm(" ".join(pl))):
+        r.append("lot / pas une carte seule")
+    # 26 nov 2026 : la suite d'un set que la recherche ne nomme pas (« Young Guns Renewed ») = une autre carte. Seulement pour une
+    # recherche par mots qui nomme une carte ; les comparables d'une annonce (« ident ») ont deja leur regle plus bas.
+    if c.get("carte_nommee") and "ident" not in c:
+        ms = _suite_absente(t, c["texte"])
+        if ms:
+            r.append("autre carte (" + ms + ")")
     manque = [m for m in c["mots"] if not _a_mot(t, m)]
     # 30 oct 2026 : « Crosby » sans « Sidney » reste Crosby (le prenom manque souvent dans les titres de ventes)
     jp = (c.get("joueur") or "").split()

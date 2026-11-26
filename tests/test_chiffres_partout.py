@@ -28,12 +28,16 @@ def doit(page, nom, motif, texte):
 # et l'accord sont juste dessous
 rv, rvh = iq_publie.revendue(R)
 for page, t in (("accueil", acc), ("slabiq", sl)):
-    doit(page, "Radar Pro, garde sa valeur", rf'<b class="cmp-n holo-t">{pro}<small>%</small></b>.*?<span class="fr">Seul</span>.*?<span class="fr">{pha} %</span>', t)
-    doit(page, "Radar Pro, se revend", rf'<b class="cmp-n holo-t">{rv}<small>%</small></b>.*?<span class="fr">Seul</span>.*?<span class="fr">{rvh} %</span>', t)
-    doit(page, "A et A+ contre E (comparatif)", rf'<b class="cmp-n holo-t">{x}<small class="x">×</small></b>', t)
-    for m in re.findall(r'<b class="cmp-n holo-t">([0-9]+)<small>%', t):
-        if int(m) not in (pro, rv):
-            erreurs.append(f"{page} : un « {m} % » dans le comparatif qui n'est pas dans le dernier test")
+    # 26 nov 2026 (Mathieu : « on est combien de fois meilleur avec SlabCoach ? vraiment simple ») : UN chiffre (« 6× », le pire
+    # des tests refaits : iq_publie.fois_seul), une phrase, deux barres (Radar Pro, seul) ; plus de colonnes « se revend » ni « A contre E »
+    xs = iq_publie.fois_seul(R)[0]
+    doit(page, "Radar Pro contre seul (N×)", rf'<b class="cmp-n holo-t">{xs}<small class="x">×</small></b>', t)
+    doit(page, "Radar Pro, garde sa valeur", rf'<span class="fr">Avec le Radar Pro</span>.*?<span class="fr">{pro} %</span>.*?<span class="fr">Seul</span>.*?<span class="fr">{pha} %</span>', t)
+    if len(re.findall(r'class="cmp-n ', t)) != 1:
+        erreurs.append(f"{page} : le comparatif doit montrer UN seul gros chiffre")
+    for m in re.findall(r'<b class="cmp-n holo-t">([0-9]+)<small', t):
+        if int(m) != xs:
+            erreurs.append(f"{page} : un « {m}× » dans le comparatif qui n'est pas celui des tests")
 # l'accueil
 doit("accueil", "ventes apprises", rf'<b class="holo-t">{re.escape(k)}</b> ventes réelles apprises</span><span class="en"><b class="holo-t">{re.escape(k)}</b> real sales learned', acc)
 doit("accueil", "A et A+ contre E", rf'une carte A ou A\+ se revend {x} fois plus souvent', acc)

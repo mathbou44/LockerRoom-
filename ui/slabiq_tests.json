@@ -1,5 +1,5 @@
 {
- "le": "2026-11-25",
+ "le": "2026-11-26",
  "empreinte": "2fdb41790cb59bca",
  "regles": {
   "fixe": 86.0,
@@ -7,88 +7,107 @@
   "prix_min": 30.0
  },
  "doublons": "exacts",
- "coupe": "2026-09-09",
- "revente_des": "2026-10-15",
- "revente_fin": "2026-11-24",
- "ventes": 213174,
- "ventes_total": 620380,
- "joueurs": 990,
- "accord": 0.684,
+ "coupe": "2026-09-01",
+ "revente_des": "2026-10-14",
+ "revente_fin": "2026-11-26",
+ "ventes": 236349,
+ "ventes_total": 691901,
+ "joueurs": 1001,
+ "accord": 0.692,
  "accord_avant": 0.671,
- "rho": 0.929,
+ "rho": 0.952,
  "inversions": [
+  [
+   "A-",
+   "B+"
+  ],
   [
    "B",
    "C"
   ]
  ],
- "corrections": 112,
+ "corrections": 118,
  "lettres": {
-  "C": {
-   "cartes": 67348,
-   "reventes": 0.114
-  },
-  "B+": {
-   "cartes": 85994,
-   "reventes": 0.151
-  },
-  "A-": {
-   "cartes": 29919,
-   "reventes": 0.106
-  },
   "E": {
-   "cartes": 15464,
-   "reventes": 0.04
+   "cartes": 17268,
+   "reventes": 0.035
   },
   "B": {
-   "cartes": 58735,
-   "reventes": 0.085
+   "cartes": 76162,
+   "reventes": 0.072
   },
-  "A": {
-   "cartes": 22190,
-   "reventes": 0.181
-  },
-  "D": {
-   "cartes": 38132,
+  "C": {
+   "cartes": 77112,
    "reventes": 0.108
   },
+  "B+": {
+   "cartes": 96163,
+   "reventes": 0.142
+  },
+  "A-": {
+   "cartes": 31913,
+   "reventes": 0.099
+  },
+  "D": {
+   "cartes": 42012,
+   "reventes": 0.102
+  },
+  "A": {
+   "cartes": 22837,
+   "reventes": 0.182
+  },
   "A+": {
-   "cartes": 2799,
-   "reventes": 0.094
+   "cartes": 2966,
+   "reventes": 0.098
   }
  },
  "pro": {
-  "n": 638,
-  "reussi": 0.871,
+  "n": 735,
+  "reussi": 0.878,
   "reussi_ic95": [
-   0.846,
-   0.897
+   0.853,
+   0.902
   ],
-  "revendue": 0.987,
-  "garde": 0.883,
-  "profit_apres_frais": 0.285
+  "joueurs": 33,
+  "reussi_ic95_joueurs": [
+   0.798,
+   0.954
+  ],
+  "revendue": 0.988,
+  "garde": 0.888,
+  "profit_apres_frais": 0.282
  },
  "pro_avant": {
-  "n": 3392,
-  "reussi": 0.31,
+  "n": 4078,
+  "reussi": 0.301,
   "reussi_ic95": [
-   0.294,
-   0.326
+   0.288,
+   0.314
   ],
-  "revendue": 0.506,
-  "garde": 0.614,
-  "profit_apres_frais": 0.07
+  "joueurs": 47,
+  "reussi_ic95_joueurs": [
+   0.258,
+   0.336
+  ],
+  "revendue": 0.494,
+  "garde": 0.609,
+  "profit_apres_frais": 0.068
  },
  "hasard": {
-  "n": 31192,
-  "reussi": 0.127,
+  "n": 36081,
+  "reussi": 0.125,
   "reussi_ic95": [
-   0.124,
-   0.131
+   0.121,
+   0.128
   ],
-  "revendue": 0.251,
-  "garde": 0.507,
-  "profit_apres_frais": 0.05
+  "joueurs": 1738,
+  "reussi_ic95_joueurs": [
+   0.107,
+   0.141
+  ],
+  "revendue": 0.247,
+  "garde": 0.505,
+  "profit_apres_frais": 0.049
  },
  "gains": {
   "pro": {
@@ -153,23 +172,23 @@
  "defi": {
   "gagne": 1.0,
   "egal": 0.0,
-  "iq": 14.2,
-  "hasard": 1.4,
-  "ok_marche": 0.089,
-  "ok_radar": 0.883,
-  "cartes": 25469,
-  "cartes_radar": 77
+  "iq": 14.1,
+  "hasard": 1.3,
+  "ok_marche": 0.085,
+  "ok_radar": 0.878,
+  "cartes": 29138,
+  "cartes_radar": 74
  },
- "x_ahaut_e": 4.3,
- "x_aplus_e": 2.4,
- "x_a_e": 4.5,
+ "x_ahaut_e": 4.9,
+ "x_aplus_e": 2.8,
+ "x_a_e": 5.2,
  "sim": {
-  "r_sans": -0.0109,
-  "r_avec": 0.1051,
-  "bat": 0.92,
-  "ecart": 635,
-  "p10": 97,
-  "p90": 1268,
+  "r_sans": -0.0062,
+  "r_avec": 0.0791,
+  "bat": 0.87,
+  "ecart": 497,
+  "p10": -94,
+  "p90": 1081,
   "mois": [
    "2025-11",
    "2025-12",

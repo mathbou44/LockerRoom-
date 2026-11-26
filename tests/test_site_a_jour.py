@@ -35,11 +35,37 @@ import site_iq
 for f, page, texte in (("site_accueil.html", "accueil", acc), ("site_slabiq.html", "slabiq", s)):
     bloc = site_iq.bloc_vs(R, page)
     assert texte.count("<!--vs-->") == 1 and bloc in texte, (f, "le comparatif n'est pas celui du test : refaire outils/tests_site.py --ecrire")
-    assert f'<b class="cmp-n holo-t">{P["pro"]}<small>%</small></b>' in bloc and f'<span class="fr">{P["hasard"]} %</span>' in bloc
-    assert f'<b class="cmp-n holo-t">{P["revendue"]}<small>%</small></b>' in bloc and f'<span class="fr">{P["revendue_seul"]} %</span>' in bloc
-    assert f'<b class="cmp-n holo-t">{P["fois"]}<small class="x">×</small></b>' in bloc
+    # 26 nov 2026 (Mathieu : « on est combien de fois meilleur avec SlabCoach ? on doit etre vraiment simple ») : UN gros chiffre
+    # (« 6× plus de chances que ta carte garde sa valeur »), les deux pourcentages du jour dessous ; plus de 2e ni de 3e colonne
+    assert f'<b class="cmp-n holo-t">{P["fois_seul"]}<small class="x">×</small></b>' in bloc and bloc.count('class="cmp-n ') == 1, "un seul gros chiffre"
+    assert 'plus de chances que ta carte garde sa valeur.' in bloc and 'more likely your card holds its value.' in bloc
+    assert f'<em><span class="fr">{P["pro"]} %</span>' in bloc and f'<em><span class="fr">{P["hasard"]} %</span>' in bloc
+    assert f'style="--w:{P["pro"]}"' in bloc and f'style="--w:{P["hasard"]}"' in bloc and "Se revend" not in bloc and "Resells" not in bloc
     assert bloc.count('<span class="fr">') == bloc.count('<span class="en">')
 assert P["pro"] <= R["pro"]["reussi"] * 100 and P["revendue"] <= R["pro"]["revendue"] * 100          # jamais plus que la mesure
+# le « N× » : le PIRE des tests refaits (le test du site et chaque date du bulletin), vers le bas : vrai a CHAQUE test
+B = json.load(open(os.path.join(ICI, "ui", "slabiq_bulletin.json"), encoding="utf-8"))
+xs, xs_bas, xs_haut, xs_n = iq_publie.fois_seul(R)
+rapports = [x["pro"]["reussi"] / x["hasard"]["reussi"] for x in B["lignes"]]
+assert xs == P["fois_seul"] == int(min(rapports)) and xs_n == len(B["lignes"]) and all(r_ >= xs for r_ in rapports), (xs, rapports)
+assert xs <= R["pro"]["reussi"] / R["hasard"]["reussi"] and xs <= P["pro"] / P["hasard"], "« N× » ne dit jamais plus que les deux % affiches"
+assert xs_bas <= min(rapports) and xs_haut <= max(rapports) and iq_publie.fois_seul(R, {"lignes": []})[3] == 1
+pire = {"lignes": B["lignes"] + [{"pro": {"n": 50, "reussi": 0.40}, "hasard": {"reussi": 0.20}}]}
+assert iq_publie.fois_seul(R, pire)[0] == 2, "un test moins bon fait baisser le chiffre : il n'est jamais ecrit a la main"
+assert f"« {xs}× » : à chacun de nos {xs_n} tests, le Radar Pro a fait au moins {xs} fois mieux que seul" in s and "fois mieux que seul" not in acc
+app0 = open(os.path.join(ICI, "source", "src_app.html"), encoding="utf-8").read()
+assert "P.fois_seul" in app0 and "plus de chances que ta carte garde sa valeur. Avec le Radar Pro : ${P.pro} %. Seul : ${P.hasard} %." in app0, "l'app dit la meme phrase que le site"
+assert "se revendent sans perte" not in app0 and "Au hasard :" not in app0
+# 26 nov 2026 (Mathieu : « oui » a l'intervalle plus prudent) : les achats du Radar Pro viennent de peu de joueurs ; la page SlabIQ
+# dit l'intervalle calcule PAR JOUEUR (tests_site.pro_reel retire des joueurs, pas des achats), bornes arrondies vers le bas ;
+# l'accueil garde l'essentiel (pas d'intervalle).
+icj, nj = R["pro"]["reussi_ic95_joueurs"], R["pro"]["joueurs"]
+lo, hi = int(icj[0] * 100 + 1e-9), int(icj[1] * 100 + 1e-9)
+assert 0 < icj[0] <= R["pro"]["reussi"] <= icj[1] <= 1 and nj >= 10, (icj, nj)
+assert f"viennent de {nj} joueurs : avec d’autres joueurs, le résultat du Radar Pro irait de {lo} % à {hi} %" in s, "la page SlabIQ dit l'intervalle par joueur"
+assert f"come from {nj} players: with other players, the Pro Radar result would range from {lo}% to {hi}%" in s
+assert "irait de" not in acc and "would range from" not in acc
+assert icj[1] - icj[0] >= R["pro"]["reussi_ic95"][1] - R["pro"]["reussi_ic95"][0], "par joueur : au moins aussi large que par achat"
 assert P["hasard"] >= int(R["hasard"]["reussi"] * 100) and P["revendue_seul"] >= R["hasard"]["revendue"] * 100 - 0.5
 # 23 nov 2026 au soir : « seul » au plus proche partout sur la page (9,6 % : « 10 % » au comparatif ET au bulletin, pas 9 et 10)
 assert P["hasard"] == int(R["hasard"]["reussi"] * 100 + 0.5) and P["pro"] == int(R["pro"]["reussi"] * 100 + 1e-9)

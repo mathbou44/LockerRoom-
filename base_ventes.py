@@ -410,10 +410,38 @@ NOUVELLES_MAX = 15000            # 3 nov 2026 : ventes nouvelles triees par pass
 # fenetre que la derniere passe n'a pas eu le temps de trier (NOUVELLES_MAX) : tant qu'il en reste, la mesure n'est pas complete.
 A_TRIER = {"n": 0}
 
+# 26 nov 2026 (Mathieu : « corrige ») : deux regles du tri ont change (cartes_match : le lot ecrit avec « + », la suite d'un set
+# « Renewed » / « Achievement »). Le verdict GARDE (table accepte) des ventes que ces regles peuvent toucher est efface UNE fois par
+# base (PRAGMA user_version) : la passe suivante les retrie avec la regle d'aujourd'hui. Sans ca, les tendances des joueurs
+# garderaient pour toujours les « Young Guns Renewed » a 4 $ rangees avec les vraies Young Guns de Crosby ou McDavid.
+TRI_VERSION = 1
+
+
+def retrier_si_regle_change():
+    """-> le nombre de verdicts effaces (0 quand la base est deja a jour)."""
+    try:
+        with _verrou:
+            c = _cx()
+            try:
+                c.execute("CREATE TABLE IF NOT EXISTS accepte (q TEXT, cle TEXT, ok INTEGER, PRIMARY KEY (q, cle))")
+                if c.execute("PRAGMA user_version").fetchone()[0] >= TRI_VERSION:
+                    return 0
+                n = c.execute("DELETE FROM accepte WHERE ok = 1 AND EXISTS (SELECT 1 FROM ventes v WHERE v.q = accepte.q AND v.cle = accepte.cle "
+                              "AND (v.titre LIKE '%renew%' OR v.titre LIKE '%achievement%' OR v.titre LIKE '%YGR%' OR v.titre LIKE '%YGA%' "
+                              "OR v.titre LIKE '% +%'))").rowcount
+                c.execute("PRAGMA user_version = %d" % TRI_VERSION)
+                c.commit()
+                return n
+            finally:
+                c.close()
+    except sqlite3.Error:
+        return 0
+
 
 def cartes_toutes(jours=42, n_min=4, max_q=12000, detail=False):
     import cartes_match
     import time as _t
+    retrier_si_regle_change()
     auj = datetime.now()
     d0 = (auj - timedelta(days=jours)).strftime("%Y-%m-%d")
     # 3 nov 2026 (Mathieu : « 5 min de loading ») : le tri des ventes (cartes_match, ~100 000 titres) refait aux 15 min

@@ -88,14 +88,16 @@ def bloc_vs(R, page):
     w_e = max(4, round(100 / R["x_ahaut_e"]))
     pmin = int(R["regles"]["prix_min"])
 
-    def col(t_fr, t_en, chiffre, a_fr, a_en, wa, s_fr, s_en, s_val, ws):
-        val = f' <em><span class="fr">{s_val} %</span><span class="en">{s_val}%</span></em>' if s_val is not None else ""
-        return (f'<div class="cmp-c"><h3><span class="fr">{t_fr}</span><span class="en">{t_en}</span></h3><b class="cmp-n holo-t">{chiffre}</b>'
-                f'<p class="cmp-l"><span><span class="fr">{a_fr}</span><span class="en">{a_en}</span></span></p><span class="cmp-t"><i class="cmp-a" style="--w:{wa}"></i></span>'
-                f'<p class="cmp-l"><span><span class="fr">{s_fr}</span><span class="en">{s_en}</span></span>{val}</p><span class="cmp-t"><i class="cmp-s" style="--w:{ws}"></i></span></div>')
-    cols = (col("Ta carte garde sa valeur", "Your card holds its value", f"{pro}<small>%</small>", "Avec le Radar Pro", "With the Pro Radar", pro, "Seul", "On your own", pha, pha)
-            + col("Ta carte se revend", "Your card resells", f"{rv}<small>%</small>", "Avec le Radar Pro", "With the Pro Radar", rv, "Seul", "On your own", rvh, rvh)
-            + col("Une A se revend plus qu’une E", "An A resells more than an E", f'{x}<small class="x">×</small>', "Carte A ou A+", "A or A+ card", 100, "Carte E", "E card", None, w_e))
+    # 26 nov 2026 (Mathieu : « on est combien de fois meilleur avec SlabCoach ? on doit etre vraiment simple dans notre maniere de
+    # montrer la difference » ; « oui » a la phrase unique) : UN chiffre (« 6× »), UNE phrase, deux barres (Radar Pro, seul). Avant :
+    # trois colonnes (garde sa valeur, se revend, A contre E). Le « N× » est le PIRE des tests refaits (iq_publie.fois_seul) :
+    # vrai a chaque test, jamais ecrit a la main ; les deux pourcentages sont ceux du test du jour.
+    xs, xs_bas, xs_haut, xs_n = iq_publie.fois_seul(R)
+    dec = lambda v, virg: (f"{v:.1f}".replace(".", ",") if virg else f"{v:.1f}")
+    cols = (f'<div class="cmp-c"><b class="cmp-n holo-t">{xs}<small class="x">×</small></b><div class="cmp-d">'
+            f'<h3><span class="fr">plus de chances que ta carte garde sa valeur.</span><span class="en">more likely your card holds its value.</span></h3>'
+            f'<p class="cmp-l"><span><span class="fr">Avec le Radar Pro</span><span class="en">With the Pro Radar</span></span><em><span class="fr">{pro} %</span><span class="en">{pro}%</span></em></p><span class="cmp-t"><i class="cmp-a" style="--w:{pro}"></i></span>'
+            f'<p class="cmp-l"><span><span class="fr">Seul</span><span class="en">On your own</span></span><em><span class="fr">{pha} %</span><span class="en">{pha}%</span></em></p><span class="cmp-t"><i class="cmp-s" style="--w:{pha}"></i></span></div></div>')
     # 23 nov 2026 (Mathieu : « oui corrige ») : en anglais, les faits s'ecrivaient a la francaise (« 180 519 », « 76 % ») : chaque
     # chiffre est maintenant ecrit dans les deux langues (« 180,519 », « 76% »)
     def fait(n_fr, n_en, t_fr, t_en):
@@ -124,13 +126,25 @@ def bloc_vs(R, page):
     else:
         note_fr = (f"Radar Pro : les {fr(n)} achats que sa rangée « À la une » aurait montrés du {jour_fr(R['coupe'])} au {jour_fr(R['revente_des'])}. Seul : tous les achats "
                    f"de {pmin} $ et plus de la même période ({fr(nh)}), sans carte de base ni lot. Garde sa valeur : la même carte s’est revendue ensuite "
-                   f"à au moins 90 % du prix payé ; jamais revendue : ratée. Se revend : elle s’est revendue avant le {jour_fr(R['revente_fin'])}. "
+                   f"à au moins 90 % du prix payé avant le {jour_fr(R['revente_fin'])} ; jamais revendue : ratée. "
                    f"Les résultats passés ne garantissent pas les résultats futurs.")
         note_en = (f"Pro Radar: the {en(n)} buys its “Top cards” row would have shown from {jour_en(R['coupe'])} to {jour_en(R['revente_des'])}. On your own: every buy "
                    f"of ${pmin} and up from the same period ({en(nh)}), no base cards or lots. Holds its value: the same card later resold for at "
-                   f"least 90% of the price paid; never resold: a miss. Resells: it resold before {jour_en(R['revente_fin'])}. "
+                   f"least 90% of the price paid before {jour_en(R['revente_fin'])}; never resold: a miss. "
                    f"Past results don’t guarantee future results.")
-    return (f'<!--vs--><div class="cmp">{cols}</div><div class="cmp-bas"><p class="cmp-faits">{faits}</p>'
+    # 26 nov 2026 (Mathieu : « oui ») : la page SlabIQ dit aussi l'intervalle PAR JOUEUR du Radar Pro (les achats viennent de peu
+    # de joueurs : tests_site.pro_reel). Les deux bornes arrondies vers le bas : jamais plus que la mesure.
+    icj, nj = R["pro"].get("reussi_ic95_joueurs"), R["pro"].get("joueurs")
+    if page != "accueil" and icj and nj:
+        lo, hi = int(icj[0] * 100 + 1e-9), int(icj[1] * 100 + 1e-9)
+        note_fr += (f" Ces {fr(n)} achats viennent de {fr(nj)} joueurs : avec d’autres joueurs, le résultat du Radar Pro irait de {lo} % à {hi} % "
+                    f"(intervalle à 95 %, calculé par joueur).")
+        note_en += (f" These {en(n)} buys come from {en(nj)} players: with other players, the Pro Radar result would range from {lo}% to {hi}% "
+                    f"(95% interval, computed by player).")
+    if page != "accueil":
+        note_fr += (f" « {xs}× » : à chacun de nos {xs_n} tests, le Radar Pro a fait au moins {xs} fois mieux que seul (de {dec(xs_bas, True)} à {dec(xs_haut, True)} fois).")
+        note_en += (f" “{xs}×”: in each of our {xs_n} tests, the Pro Radar did at least {xs} times better than on your own ({dec(xs_bas, False)} to {dec(xs_haut, False)} times).")
+    return (f'<!--vs--><div class="cmp cmp-un">{cols}</div><div class="cmp-bas"><p class="cmp-faits">{faits}</p>'
             + (f'<p class="cmp-liens">{liens}</p>' if liens else "")
             + f'</div><p class="cmp-note"><span class="fr">{note_fr}</span><span class="en">{note_en}</span></p><!--/vs-->')
 
