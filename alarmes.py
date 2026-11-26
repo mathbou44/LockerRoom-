@@ -229,7 +229,7 @@ def _notifier(api, etat, cle, titre, texte, lien, total=None, photo=None, maint=
             if api._push(titre, texte, {"lien": lien}) and not force:
                 q["n"] += 1
         except Exception as e:
-            print("Push : " + repr(e), flush=True)
+            print("Push : " + type(e).__name__ + " : " + str(e)[:160], flush=True)      # 25 nov 2026 : jamais repr(e) (une cle au journal)
     return True
 
 

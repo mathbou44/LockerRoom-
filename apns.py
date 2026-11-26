@@ -14,13 +14,70 @@ Render (variables) - rien n'est envoye tant qu'elles manquent :
 Le jeton d'authentification (JWT ES256) est refait toutes les 50 minutes, comme Apple le demande.
 """
 import base64
+import hashlib
 import json
 import os
+import re
 import threading
 import time
 
 _verrou = threading.Lock()
 _JWT = {"le": 0.0, "v": None}
+_PRET = {"cle": None, "ok": False}
+
+
+class CleIllisible(ValueError):
+    """APNS_KEY ne se lit pas. 25 nov 2026 : une cle collee sans ses lignes BEGIN / END faisait planter le serveur, et
+    l'erreur ecrite au journal contenait les octets de la cle. Ce message-ci ne contient JAMAIS la cle."""
+    def __init__(self):
+        super().__init__("APNS_KEY illisible : colle tout le fichier .p8 dans Render")
+
+
+_RE_PEM = re.compile(r"-----BEGIN ([A-Z ]*PRIVATE KEY)-----(.*?)-----END \1-----", re.S)
+
+
+def cle_pem(brut):
+    """La cle telle qu'elle est collee dans Render -> un PEM propre. Accepte : le fichier .p8 au complet ; le meme sur une
+    seule ligne ou avec des « \\n » ecrits ; seulement le corps (sans les lignes BEGIN / END) ; le fichier encode en base64."""
+    t = str(brut or "").replace("\\n", "\n").replace("\r", "").strip().strip("\"'").strip()
+    sorte, m = "PRIVATE KEY", _RE_PEM.search(t)
+    if m:
+        sorte, corps = m.group(1), "".join(m.group(2).split())
+    else:
+        corps = "".join(t.split())
+        try:
+            d = base64.b64decode(corps, validate=True)
+        except Exception:
+            raise CleIllisible() from None
+        m2 = _RE_PEM.search(d.decode("latin-1"))
+        if m2:                                           # le fichier entier, encode en base64
+            sorte, corps = m2.group(1), "".join(m2.group(2).split())
+    if len(corps) < 80 or re.search(r"[^A-Za-z0-9+/=]", corps):
+        raise CleIllisible() from None
+    return f"-----BEGIN {sorte}-----\n" + "\n".join(corps[i:i + 64] for i in range(0, len(corps), 64)) + f"\n-----END {sorte}-----\n"
+
+
+def _charger_cle():
+    from cryptography.hazmat.primitives import serialization
+    try:
+        return serialization.load_pem_private_key(cle_pem(os.environ.get("APNS_KEY")).encode(), password=None)
+    except Exception:
+        raise CleIllisible() from None                  # jamais l'erreur d'origine : elle peut porter la cle
+
+
+def pret():
+    """Les trois variables sont la ET la cle se lit. (actif() : les variables sont la, sans plus.)"""
+    if not actif():
+        return False
+    k = hashlib.sha256((os.environ.get("APNS_KEY") or "").encode()).hexdigest()
+    if _PRET["cle"] != k:
+        try:
+            _charger_cle()
+            ok = True
+        except CleIllisible:
+            ok = False
+        _PRET.update(cle=k, ok=ok)
+    return _PRET["ok"]
 
 
 DERNIER = {}                   # la derniere reponse d'Apple : {code, texte, le}
@@ -36,17 +93,14 @@ def _b64(b):
 
 def jeton_auth(maintenant=None):
     """JWT signe ES256 : {alg, kid} . {iss: equipe, iat}."""
-    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives import hashes
     from cryptography.hazmat.primitives.asymmetric import ec
     from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
     t = int(maintenant or time.time())
     with _verrou:
         if _JWT["v"] and t - _JWT["le"] < 3000:
             return _JWT["v"]
-        cle_txt = os.environ["APNS_KEY"].replace("\\n", "\n").strip()
-        if "BEGIN" not in cle_txt:
-            cle_txt = base64.b64decode(cle_txt).decode()
-        cle = serialization.load_pem_private_key(cle_txt.encode(), password=None)
+        cle = _charger_cle()
         tete = _b64(json.dumps({"alg": "ES256", "kid": os.environ["APNS_KEY_ID"]}, separators=(",", ":")).encode())
         corps = _b64(json.dumps({"iss": os.environ["APNS_TEAM_ID"], "iat": t}, separators=(",", ":")).encode())
         sig = cle.sign(f"{tete}.{corps}".encode(), ec.ECDSA(hashes.SHA256()))
@@ -62,7 +116,14 @@ def envoyer(jeton, titre, texte, donnees=None, client=None):
         return "erreur"
     hote = "api.sandbox.push.apple.com" if os.environ.get("APNS_SANDBOX") == "1" else "api.push.apple.com"
     corps = {"aps": {"alert": {"title": str(titre)[:120], "body": str(texte)[:240]}, "sound": "default"}, **(donnees or {})}
-    tetes = {"authorization": "bearer " + jeton_auth(), "apns-topic": os.environ.get("APNS_TOPIC") or "com.slabcoach.app",
+    try:
+        auth = jeton_auth()
+    except Exception as e:                               # 25 nov 2026 : jamais repr(e) ici (voir CleIllisible)
+        msg = str(e) if isinstance(e, CleIllisible) else "signature impossible (" + type(e).__name__ + ")"
+        print("APNs : " + msg, flush=True)
+        DERNIER.update(code=0, texte=msg, le=time.time())
+        return "erreur"
+    tetes = {"authorization": "bearer " + auth, "apns-topic": os.environ.get("APNS_TOPIC") or "com.slabcoach.app",
              "apns-push-type": "alert", "apns-priority": "10"}
     try:
         import httpx

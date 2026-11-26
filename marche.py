@@ -252,7 +252,7 @@ def verifier_alertes(api, rechercher=None):
                 api._push(f"Prix cible : {a['q']} à {tot:.2f} $", (x.get("titre") or "")[:140] + (f" (+{len(nouv_a) - 1})" if len(nouv_a) > 1 else ""),
                           {"lien": "#alertes"})
             except Exception as e:
-                print("Push : " + repr(e), flush=True)
+                print("Push : " + type(e).__name__ + " : " + str(e)[:160], flush=True)      # 25 nov 2026 : jamais repr(e) (une cle au journal)
     return {"ok": True, "alertes": len(al), "nouvelles": nouvelles}
 
 

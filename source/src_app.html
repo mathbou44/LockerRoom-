@@ -1238,13 +1238,16 @@ button.jb-t, a.jb-t{cursor:pointer} .jb-t.l{grid-column:span 2}
   border:.5px solid rgba(255,255,255,.16); box-shadow:0 18px 50px rgba(0,0,0,.5);
   transform:translateY(-150%); opacity:0; transition:transform .52s cubic-bezier(.2,.9,.25,1.1), opacity .22s; touch-action:none; -webkit-user-select:none; user-select:none}
 .np.on{transform:none; opacity:1}
-.np-ic{flex:none; width:40px; height:40px; border-radius:10px; display:grid; place-items:center; background:rgba(255,255,255,.12); color:var(--acc)}
-.np-ic svg{width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round}
+/* 25 nov 2026 (soir, Mathieu a l'ordi : « pourquoi un par-dessus l'autre ? ») : ces regles s'appelaient .np-ic et .np-t tout
+   court, comme le sapin et le cadeau du pied du menu de l'ordi (.np-fete .np-ic, .np-t) : elles les empilaient dans un carre
+   gris. Elles ne valent plus que DANS la notification (.np > ...). */
+.np > .np-ic{flex:none; width:40px; height:40px; border-radius:10px; display:grid; place-items:center; background:rgba(255,255,255,.12); color:var(--acc)}
+.np > .np-ic svg{width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round}
 .np.t-rouge .np-ic{color:var(--rouge)} .np.t-vert .np-ic{color:var(--vert)} .np.t-or .np-ic, .np.t-cle .np-ic{color:#E8C26A} .np.t-creux .np-ic{color:#8EC9FF} .np.t-culte .np-ic{color:#F4F2F8}
-.np-t{flex:1; min-width:0; display:flex; flex-direction:column; gap:3px}
+.np > .np-t{flex:1; min-width:0; display:flex; flex-direction:column; gap:3px}
 .np-h{display:flex; align-items:baseline; justify-content:space-between; gap:10px} .np-h b{font-size:15.5px; font-weight:700; line-height:1.25; letter-spacing:-.01em}
 .np-h small{flex:none; max-width:46%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; color:rgba(235,235,245,.6)}
-.np-t p{margin:0; font-size:15px; line-height:1.33; color:rgba(255,255,255,.9)} .np-t a{align-self:flex-start; margin-top:4px; font-size:14px; font-weight:600; color:var(--acc); text-decoration:none}
+.np > .np-t p{margin:0; font-size:15px; line-height:1.33; color:rgba(255,255,255,.9)} .np > .np-t a{align-self:flex-start; margin-top:4px; font-size:14px; font-weight:600; color:var(--acc); text-decoration:none}
 .tag[data-np], .sd-b[data-np]{cursor:pointer}
 .mi-essai{display:flex; flex-direction:column; align-items:center; gap:6px; margin-top:10px; padding-top:10px; border-top:1px dashed var(--ligne)} .mi-essai small{color:var(--doux); font-size:12.5px} .mi-essai span{display:flex; gap:6px; flex-wrap:wrap; justify-content:center}
 @media (prefers-reduced-motion: reduce){ .np{transition:opacity .2s; transform:none} }
@@ -4887,6 +4890,15 @@ body{--t1:var(--acc); --t2:color-mix(in oklab, var(--acc) 58%, #fff); --t3:color
   @media (max-height:740px){ .ecran.acc.acc-ft-mode.acc-plein .ft-t{min-height:52px; padding-top:7px; padding-bottom:7px} .ecran.acc.acc-ft-mode.acc-plein .ft-t{overflow:hidden} .ecran.acc.acc-ft-mode.acc-plein .ft-s{display:none} .ecran.acc.acc-ft-mode.acc-plein .ft-t{display:grid; grid-template-columns:auto minmax(0,1fr); grid-auto-flow:row; align-content:center; column-gap:9px; row-gap:0} .ecran.acc.acc-ft-mode.acc-plein .ft-h{display:contents} .ecran.acc.acc-ft-mode.acc-plein .ft-t .ap-ic{grid-column:1; grid-row:1 / span 2; align-self:center} .ecran.acc.acc-ft-mode.acc-plein .ft-n{grid-column:2; grid-row:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.2} .ecran.acc.acc-ft-mode.acc-plein .ft-t:not(:has(.ft-v)) .ap-ic{grid-row:1} .ecran.acc.acc-ft-mode.acc-plein .ft-v{grid-column:2; grid-row:2; font-size:18px !important; line-height:1.1; justify-self:start} .ecran.acc.acc-ft-mode.acc-plein > .acc-ft{gap:8px} .ecran.acc.acc-ft-mode.acc-plein{gap:8px} .ecran.acc.acc-ft-mode > .acc-mot{padding:6px 10px} .acc-ft-mode .ft-v{font-size:20px !important} .acc-ft-mode .ft-n{font-size:15.5px} .acc-ft-mode .ft-s{font-size:13px} .acc-ft-mode .ft-t .ap-ic{width:28px; height:28px} .acc-ft-mode .ft-n{font-size:16.5px} .ecran.acc.acc-ft-mode.acc-plein > .acc-news2 .nl-s{min-height:58px} .ecran.acc.acc-ft-mode > .acc-mot .mot-t{font-size:13.5px !important} }
   .ecran.acc.acc-ft-mode.acc-plein > .acc-news2 .nl-s{min-height:76px}
 }
+/* 25 nov 2026 (Mathieu, capture de l'accueil au cell : « tout est legerement trop haut, le Good evening est presque dans les
+   lumieres et y'a un gap sous les nouvelles ») : mesure sur un iPhone de 932 de haut : les ampoules descendent a 133, le
+   « Bonsoir » commencait a 130 (sa marge des fetes etait ecrasee par la regle du cell) ; en bas, 42 de vide entre les points des
+   nouvelles et la barre (24 de marge interne + 18 de reserve). Le « Bonsoir » descend de 12 sous les lumieres ; la marge interne du
+   bas s'en va en mode plein ecran : il reste les 18 de reserve, comme entre les autres blocs. Les tuiles gagnent le reste. */
+@media (max-width:699px){
+  .ecran.acc.acc-ft-mode.acc-plein{padding-bottom:0 !important}
+  body.fetes .ecran.acc.acc-ft-mode > .acc-salut-tel{margin-top:12px !important}
+}
 /* 16 nov 2026 : au cell, les nouvelles en bas : un carre gris leger qui defile, des points dessous ; « Bonjour, nom » en haut */
 .nl-car{display:flex; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; border-radius:18px; overscroll-behavior-x:contain}
 .nl-car::-webkit-scrollbar{display:none}
@@ -7340,7 +7352,16 @@ if (NATIF) {
   (() => {
     let x0 = null, y0 = 0, dx = 0, fl = null;
     const fleche = () => { if (!fl) { fl = document.createElement('div'); fl.className = 'retour-geste'; fl.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>'; document.body.appendChild(fl); } return fl; };
-    document.addEventListener('touchstart', (e) => { const t = e.touches[0]; x0 = t.clientX < 24 && e.touches.length === 1 && !(e.target.closest && e.target.closest('.cg-z')) ? t.clientX : null; y0 = t.clientY; dx = 0; }, {passive:true});
+    // 25 nov 2026 (Mathieu, capture : la fleche restee plantee au milieu de l'ecran des Breaks ; « elle bug », « sert pas a
+    // grand chose ») : iOS annule souvent un toucher parti du bord (touchcancel, jamais de touchend) : la fleche restait
+    // affichee. Elle s'efface a l'annulation et a chaque nouveau toucher ; et sur l'accueil sans fenetre ouverte il n'y a nulle
+    // part ou revenir : pas de geste, pas de fleche.
+    const cacher = () => { x0 = null; if (fl) fl.style.opacity = 0; };
+    const nullePart = () => $('#fond-feuille').hidden && !$('.pop-fond') && ((location.hash || '#accueil').slice(1).split('/')[0] || 'accueil') === 'accueil';
+    document.addEventListener('touchstart', (e) => { const t = e.touches[0]; if (fl) fl.style.opacity = 0;
+      x0 = t.clientX < 24 && e.touches.length === 1 && !(e.target.closest && e.target.closest('.cg-z')) && !nullePart() ? t.clientX : null; y0 = t.clientY; dx = 0; }, {passive:true});
+    document.addEventListener('touchcancel', cacher, {passive:true});
+    document.addEventListener('visibilitychange', cacher);
     document.addEventListener('touchmove', (e) => { if (x0 === null) return; const t = e.touches[0]; dx = t.clientX - x0;
       if (Math.abs(t.clientY - y0) > 50 && dx < 30) { x0 = null; fleche().style.opacity = 0; return; }
       const f = fleche(), k = Math.min(1, Math.max(0, dx) / 90); f.style.opacity = k; f.style.transform = `translate(${Math.min(dx, 90) - 44}px, ${y0 - 22}px) scale(${0.7 + 0.3 * k})`; }, {passive:true});
@@ -12933,6 +12954,9 @@ function feuilleCalcul(pre){
   $$('.feuille input').forEach(i => i.oninput = calc); calc();
 }
 document.addEventListener('click', (e) => { if (!e.target.closest('[data-calc]')) return; e.preventDefault(); vibrer(); feuilleCalcul(); });
+// 25 nov 2026 : la tuile Admin au cadenas du Profil : le code de confirmation ; une fois confirme, l'app se recharge (vue admin,
+// pastille de vue dans l'entete)
+document.addEventListener('click', (e) => { if (!e.target.closest('[data-admin2]')) return; e.preventDefault(); vibrer(); feuilleVerifAdmin(() => location.reload()); });
 const fraisVente = () => { const r = S.reglages || {}; return [r.frais_ebay_pct != null ? r.frais_ebay_pct / 100 : 0.1325, r.frais_ebay_fixe != null ? r.frais_ebay_fixe : 0.40]; };
 // 6 nov 2026 (Mathieu : « minimum 25-30 % de profit apres tous les frais ») : le profit compte aussi le materiel d'envoi
 // (1,50 $ : le port de la revente est paye par l'acheteur) ; le prix max d'un deal laisse 30 % de profit net (deals.prix_max)
@@ -23674,8 +23698,14 @@ async function vueReglages(arg){
       ...(S.mode !== 'acheteur' ? [['calc', ICO_H.budget, tt('Profit', 'Profit')]] : []),        // 15 nov 2026 (« le $ dans profit est croche ») : la meme icone au trait que les autres pastilles
       ['#breaks/liste', ICO_H.breaks, tt('Mes breaks', 'My breaks')],
       // 15 nov 2026 (« trop d'options ») : le Guide vit dans « Aide et idées » (plus de pastille en double)
-      ...(S.forfait && S.forfait.admin ? [['#admin', '✦', 'Admin']] : []),
-    ].map(([h, ic, t]) => h === 'calc' ? `<button class="pr-r" data-calc><span class="pr-i">${ic}</span>${t}</button>` : h === 'alertes' ? `<button class="pr-r" data-alertes><span class="pr-i">${ic}</span>${t}</button>` : `<a class="pr-r" href="${h}"><span class="pr-i">${ic}</span>${t}</a>`).join('')}</div>
+      // 25 nov 2026 (Mathieu, le soir ou les notifications ont ete branchees : « je ne peux plus naviguer au travers des versions
+      // en format cell ») : depuis le 20 nov l'accueil n'a plus de pastilles ; un admin dont la session attend son code n'avait
+      // plus AUCUN endroit ou le confirmer sur son iPhone. La tuile Admin reste la, avec un cadenas : elle envoie le code.
+      // (Mathieu : « personne sauf moi doit voir la tuile admin ») : admin_a_verifier n'est vrai que pour un compte de
+      // LOCKERROOM_ADMINS (identite verifiee) ; et jamais quand l'admin deja confirme regarde l'app en vue Pro ou Gratuit
+      // (admin_reel) : ses captures pour l'App Store ne la montrent pas.
+      ...(S.forfait && S.forfait.admin ? [['#admin', '✦', 'Admin']] : S.forfait && S.forfait.admin_a_verifier && !S.forfait.admin_reel ? [['admin2', `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC_PIL.cadenas}</svg>`, 'Admin']] : []),
+    ].map(([h, ic, t]) => h === 'admin2' ? `<button class="pr-r" data-admin2><span class="pr-i">${ic}</span>${t}</button>` : h === 'calc' ? `<button class="pr-r" data-calc><span class="pr-i">${ic}</span>${t}</button>` : h === 'alertes' ? `<button class="pr-r" data-alertes><span class="pr-i">${ic}</span>${t}</button>` : `<a class="pr-r" href="${h}"><span class="pr-i">${ic}</span>${t}</a>`).join('')}</div>
     <div class="section">${tt('Réglages', 'Settings')}</div>
     <div class="r-bloc" id="g-ebay">${roue}</div>
     <div class="r-bloc" id="g-forfait" hidden></div>

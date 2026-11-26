@@ -795,3 +795,44 @@ Mis à jour le 20 nov 2026 (transfert vers un nouveau compte Claude).
   d'équipe prise pour un joueur « redemptions »), une PSA 10 à 28 $ contre 86 $ (Byram YG), « Draft SP-1 » McKenna, les lots à emoji
   (Sennecke Stature /999 à 8 $ contre 43 $). Suite complète : 296 fichiers, 0 échec. À FAIRE : lire le rapport avec lui 2 jours après
   le push ; puis B (une file de crédits), C (vendeurs par la mesure), D (heures du balayage) selon ce que les raisons montrent.
+- **Soirée Apple (25 nov, 17 h 52 à 20 h ; Mathieu a poussé à 17 h 48, en ligne 17 h 49)** : la liste est un doc (« Apple : la liste
+  de ce soir », 8 étapes + fiche + note). FAIT par lui dans App Store Connect : accord « Applications payantes » accepté, banque
+  envoyée (traitement 24 h), formulaires de taxes Canada (TPS / TVQ) et États-Unis, entente de développeur mise à jour acceptée,
+  DSA Europe = « pas commerçant / pas de distribution en UE » (À FAIRE à l'étape 8 : décocher les pays de l'UE dans Pricing and
+  Availability), abonnement `com.slabcoach.app.pro.mensuel` créé (8,99 $ CA, FR + EN, achats groupés « multiseat » refusés, image
+  1024 et capture d'examen fournies : `Téléchargements\SlabCoach-Pro-1024.png`, `SlabCoach-Passe-au-Pro-en.png`), App Information
+  (nom SlabCoach, sous-titre, Sports / Lifestyle, droits de contenu, cote 4+, avis du serveur v2 sur les deux adresses). Codemagic
+  ne bâtit JAMAIS seul (pas de `triggering` dans `codemagic.yaml`) : « Start new build » › ios-app-store. RESTE : build, TestFlight
+  (achat, restaurer), 6 captures FR + EN en vue Pro, fiche, note, soumettre.
+- **Clé APNs : panne et correctif (25 nov, 20 h 05)** : il n'existait AUCUNE clé de notifications (la seule clé Apple était celle de
+  « Sign in with Apple », variables `APPLE_*` : ne pas y toucher). Il en a créé une (« SlabCoach APNs », Key ID V839W78U58, fichier
+  dans Téléchargements) et a mis `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_KEY` dans Render (redémarrage 19 h 48). Deux pannes : (1) la
+  clé collée SANS ses lignes BEGIN / END : `apns.jeton_auth` la décodait en base64 puis `.decode()` plantait (« Server error » à la
+  notification d'essai) et `print("Push : " + repr(e))` (alarmes.py, marche.py) a écrit les OCTETS DE LA CLÉ au journal Render,
+  deux fois. Dit à Mathieu : révoquer cette clé, en créer une autre, coller le fichier au complet. (2) dès que les 3 variables
+  existent, `_admin_verif_possible()` devenait vrai : sa session n'était plus admin tant que le code (envoyé par notification…
+  qui ne pouvait pas partir) n'était pas confirmé : plus de pastille de vue sur son iPhone. CORRIGÉ dans le bac (à pousser) :
+  `apns.cle_pem` lit la clé sous 8 formes (fichier, une ligne, « \n » écrits, corps seul, base64, guillemets, CRLF) ;
+  `apns.CleIllisible` (message fixe, jamais la clé, `from None`) ; `apns.envoyer` ne plante plus et n'écrit jamais `repr(e)` ;
+  `apns.pret()` (les variables sont là ET la clé se lit) remplace `actif()` dans `_admin_verif_possible` : une clé illisible ne
+  bloque plus l'admin ; `push_essai` dit « Render : APNS_KEY illisible… » au compte admin. Tests : `tests/test_apns_cle.py`,
+  `tests/test_admin_verif.py` ; 40 fichiers de tests liés passent (pas la suite complète). Idée à lui proposer :
+  `LOCKERROOM_ADMIN_CODE` (code de secours, 8 caractères et plus) dans Render, pour ne jamais dépendre d'une notification.
+- **Admin introuvable au cell, flèche de retour plantée, accueil trop haut (25 nov, 20 h 25 ; Mathieu, captures)** : (1) LA VRAIE
+  CAUSE de « je ne peux plus naviguer au travers des versions en format cell » : depuis le 20 nov l'accueil n'a plus de pastilles,
+  et la tuile Admin du Profil ne s'affichait que pour un admin CONFIRMÉ : une session en attente de son code (dès que les
+  notifications marchent) n'avait AUCUN endroit où le demander sur l'iPhone. Maintenant : la tuile Admin reste au Profil, avec un
+  cadenas (`data-admin2`) : elle ouvre `feuilleVerifAdmin`, puis recharge l'app. (2) La flèche du geste « retour » restait
+  affichée quand iOS annule le toucher (`touchcancel`, jamais de `touchend`) : elle s'efface à l'annulation, à chaque nouveau
+  toucher et quand l'app passe en arrière-plan ; sur l'accueil sans fenêtre ouverte il n'y a nulle part où revenir : pas de geste.
+  Vérifié par un script (`vue/geste.py`). (3) Accueil au cell (mesuré sur 430 × 932 et 375 × 667, `vue/accueil.py`) : les
+  ampoules descendent à 133, le « Bonsoir » commençait à 130 (sa marge des fêtes était écrasée par `margin:0 2px !important`) :
+  +12 sous les lumières ; en bas, 42 de vide entre les nouvelles et la barre (24 de marge interne + 18 de réserve) : la marge
+  interne s'en va en mode `acc-plein`, il reste 18. 16 fichiers de tests liés passent (pas la suite complète).
+- **Deux retouches de 20 h 33 (Mathieu à l'ordi)** : (1) « pourquoi un par-dessus l'autre ? » (le sapin et le cadeau du pied du
+  menu, empilés dans un carré gris) : MA faute du matin : les règles de la notification des pastilles s'appelaient `.np-ic` et
+  `.np-t` tout court, comme celles du pied du menu (`.np-fete .np-ic`, `.np-t`). Elles sont maintenant sous `.np > …`. LEÇON :
+  chercher un nom de classe dans tout le fichier avant de le créer. Vérifié (`vue/pied.py`) : côte à côte, et la notification
+  garde son allure. (2) « personne sauf moi doit voir la tuile admin » : la tuile au cadenas ne s'affiche que si
+  `admin_a_verifier && !admin_reel` : un compte de `LOCKERROOM_ADMINS` dont la session n'est pas confirmée ; jamais un compte
+  ordinaire (test), ni l'admin confirmé qui regarde en vue Pro (ses captures pour l'App Store).

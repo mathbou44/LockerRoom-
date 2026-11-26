@@ -985,6 +985,10 @@ class Api:
         apns.DERNIER.clear()
         n = self._push("SlabCoach", "Les notifications marchent sur cet iPhone.", {"lien": "#notifs"})
         d = dict(apns.DERNIER)
+        if not n and d.get("code") == 0 and str(d.get("texte") or "").startswith("APNS_KEY"):
+            # 25 nov 2026 : la cle collee dans Render ne se lit pas : c'est le serveur, pas Apple ; dit au compte admin
+            return {"ok": False, "cause": "serveur", "appareils": nb, "envoyees": 0, "erreur": "Les notifications ne sont pas encore branchées.",
+                    "detail": ("Render : " + d["texte"]) if (admin or self._est_admin_compte()) else None}
         return {"ok": n > 0, "cause": None if n else "apple", "appareils": nb, "envoyees": n,
                 "erreur": None if n else "Apple a refusé l'envoi.",
                 "detail": (f"Apple {d.get('code')} : {d.get('texte')}" if admin and not n and d else None)}
@@ -2917,7 +2921,9 @@ class Api:
 
     def _admin_verif_possible(self):
         import apns
-        return bool(os.environ.get("LOCKERROOM_ADMIN_CODE")) or (apns.actif() and bool(self._jetons_admin()))
+        # 25 nov 2026 (Mathieu, le soir ou il a mis les cles APNs : plus d'admin sur son iPhone) : une cle APNs illisible ne
+        # peut envoyer aucun code : la verification n'est PAS possible, l'admin garde l'acces (jamais bloque dehors)
+        return bool(os.environ.get("LOCKERROOM_ADMIN_CODE")) or (apns.pret() and bool(self._jetons_admin()))
 
     def admin_verif_envoyer(self):
         """Envoie un code a 6 chiffres (5 min) sur l'iPhone de l'admin (notification)."""

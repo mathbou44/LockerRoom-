@@ -13,6 +13,7 @@ lockerroom.Api._est_admin_compte = lambda self: True
 comptes.MULTI = True
 envoyes = []
 apns.actif = lambda: True
+apns.pret = lambda: True                                 # 25 nov 2026 : la cle se lit (voir la fin du test)
 apns.envoyer = lambda j, t, x, *a, **k: (envoyes.append((j, x)), "ok")[1]
 app = Flask("t"); app.secret_key = "x"
 J1, J2 = "a" * 64, "b" * 64
@@ -51,4 +52,17 @@ os.environ.pop("LOCKERROOM_ADMIN_CODE")
 lockerroom.Api._est_admin_compte = lambda self: False
 with app.test_request_context("/"):
     assert not api.admin_verif_envoyer()["ok"] and not api.admin_verif_valider("123456")["ok"] and not api._est_admin()
+    # 25 nov 2026 (Mathieu : « personne sauf moi doit voir la tuile admin ») : un compte ordinaire n'a jamais rien a confirmer
+    fo = api.forfait()
+    assert fo["admin"] is False and fo["admin_reel"] is False and fo["admin_a_verifier"] is False, fo
 print("OK test_admin_verif")
+# 25 nov 2026 (Mathieu, le soir des cles APNs : plus d'admin sur son iPhone) : les variables sont la mais la cle ne se lit
+# pas -> aucun code ne peut partir -> la verification n'est pas « possible » -> l'admin garde l'acces
+apns.pret = lambda: False
+lockerroom.Api._est_admin_compte = lambda self: True
+with app.test_request_context("/"):                     # une session neuve, jamais confirmee
+    assert not api._admin_verif_possible() and api._est_admin()
+print("OK test_admin_verif (cle illisible)")
+app_ = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "source", "src_app.html"), encoding="utf-8").read()
+assert "S.forfait.admin_a_verifier && !S.forfait.admin_reel ? [['admin2'," in app_ and "feuilleVerifAdmin(() => location.reload())" in app_
+print("OK test_admin_verif (tuile au cadenas : admin seulement)")
